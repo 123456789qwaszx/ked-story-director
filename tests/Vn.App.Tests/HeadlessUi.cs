@@ -81,5 +81,6 @@ public static class TestAppBuilder
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
         .UseSkia();
     // ⛔ 더블탭 시간 창을 테스트가 쥐던 TestPlatformSettings는 2026-10-29에 걷혔다 — 그것을 쓰던 합성
-    //    더블클릭 테스트(카드 더블클릭 → 무대)가 무대와 함께 ked-story-compositor로 갔다.
+    //    더블클릭 테스트(카드 더블클릭 → 무대)는 무대가 ked-story-compositor로 가며 사라졌다. 그쪽에는
+    //    그래프가 없어(무대가 제 챕터 · 씬 선택기로 길을 찾는다) 이 몸짓 자체가 두 툴 어디에도 없다.
 }

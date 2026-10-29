@@ -1866,7 +1866,8 @@ public partial class GraphEditorView : UserControl
 
         card.PointerPressed += (_, args) => OnCardPressed(visual, args);
 
-        // ⛔ 카드 더블클릭 = "무대에서 본다"는 2026-10-29에 무대와 함께 ked-story-compositor로 갔다.
+        // ⛔ 카드 더블클릭 = "무대에서 본다"는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다
+        //    (그쪽에는 그래프가 없다 — 무대가 제 챕터 · 씬 선택기로 씬을 고른다).
         //    더블클릭은 이제 두 번 누른 것일 뿐이다(첫 누름이 시작한 끌기는 놓을 때 끝난다).
 
         return visual;
