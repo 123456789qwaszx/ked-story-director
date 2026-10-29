@@ -7,16 +7,14 @@
       "y": 0,
       "title": "닫힌 문 앞에서",
       "dialogueEntry": "Story_ch05_01",
-      "memo": "챕터 진입점",
-      "sourceRow": 2
+      "memo": "챕터 진입점"
     },
     {
       "episodeId": "main05.02",
       "x": 220,
       "y": 0,
       "title": "조용한 복도",
-      "dialogueEntry": "Story_ch05_02",
-      "sourceRow": 3
+      "dialogueEntry": "Story_ch05_02"
     },
     {
       "episodeId": "branch05.02A",
@@ -24,16 +22,14 @@
       "y": -120,
       "title": "라루의 제안",
       "dialogueEntry": "Story_ch05_02A",
-      "memo": "신뢰 루트",
-      "sourceRow": 4
+      "memo": "신뢰 루트"
     },
     {
       "episodeId": "main05.03",
       "x": 440,
       "y": 120,
       "title": "문 너머",
-      "dialogueEntry": "Story_ch05_03",
-      "sourceRow": 5
+      "dialogueEntry": "Story_ch05_03"
     },
     {
       "episodeId": "attach05.02s",
@@ -42,7 +38,6 @@
       "title": "샘플 섬 회상",
       "dialogueEntry": "Story_ch05_02_side",
       "memo": "의도한 섬 — 들어오는 간선이 없다(`도달불가 허용`으로 표시)",
-      "sourceRow": 6,
       "allowUnreachable": true
     },
     {
@@ -52,16 +47,14 @@
       "title": "선택의 밤",
       "dialogueEntry": "Story_ch05_end",
       "memo": "엔딩 후보",
-      "eventKey": "ch05_normal",
-      "sourceRow": 7
+      "eventKey": "ch05_normal"
     }
   ],
   "edges": [
     {
       "from": "main05.01",
       "to": "main05.02",
-      "optionLabel": "계속",
-      "sourceRow": 2
+      "optionLabel": "계속"
     },
     {
       "from": "main05.02",
@@ -69,7 +62,6 @@
       "optionLabel": "라루의 제안을 듣는다",
       "conditionLabel": "신뢰높음",
       "lockedMessage": "신뢰가 부족하다",
-      "sourceRow": 3,
       "statChanges": [
         {
           "key": "복도지남",
@@ -82,7 +74,6 @@
       "from": "main05.02",
       "to": "main05.03",
       "optionLabel": "혼자 문을 연다",
-      "sourceRow": 4,
       "statChanges": [
         {
           "key": "복도지남",
@@ -94,40 +85,34 @@
     {
       "from": "branch05.02A",
       "to": "main05.03",
-      "optionLabel": "계속",
-      "sourceRow": 5
+      "optionLabel": "계속"
     },
     {
       "from": "main05.03",
       "to": "main05.end",
-      "optionLabel": "계속",
-      "sourceRow": 6
+      "optionLabel": "계속"
     }
   ],
   "conditions": [
     {
       "label": "신뢰높음",
       "expression": "trust >= 3",
-      "description": "라루를 신뢰하는 상태",
-      "sourceRow": 2
+      "description": "라루를 신뢰하는 상태"
     },
     {
       "label": "분노누적",
       "expression": "anger >= 5",
-      "description": "분노가 임계에 닿음",
-      "sourceRow": 3
+      "description": "분노가 임계에 닿음"
     },
     {
       "label": "지쳐있음",
       "expression": "fatigue >= 4; anger <= 2",
-      "description": "피로하지만 화는 안 난 상태 (AND는 ; 로)",
-      "sourceRow": 4
+      "description": "피로하지만 화는 안 난 상태 (AND는 ; 로)"
     },
     {
       "label": "복도완료",
       "expression": "복도지남 == true",
-      "description": "복도(main05.02)를 지났는가 — 폐지된 cleared: 를 대신하는 깃발",
-      "sourceRow": 5
+      "description": "복도(main05.02)를 지났는가 — 폐지된 cleared: 를 대신하는 깃발"
     }
   ],
   "stats": [
@@ -136,24 +121,21 @@
       "initial": 0,
       "minimum": 0,
       "maximum": 10,
-      "displayName": "신뢰",
-      "sourceRow": 2
+      "displayName": "신뢰"
     },
     {
       "key": "anger",
       "initial": 0,
       "minimum": 0,
       "maximum": 10,
-      "displayName": "분노",
-      "sourceRow": 3
+      "displayName": "분노"
     },
     {
       "key": "fatigue",
       "initial": 0,
       "minimum": 0,
       "maximum": 10,
-      "displayName": "피로",
-      "sourceRow": 4
+      "displayName": "피로"
     },
     {
       "key": "복도지남",
@@ -161,20 +143,17 @@
       "minimum": 0,
       "maximum": 1,
       "displayName": "복도를 지났다",
-      "sourceRow": 5,
       "type": "Bool"
     }
   ],
   "choiceOptions": [
     {
       "text": "라루의 제안을 듣는다",
-      "index": "10",
-      "sourceRow": 2
+      "index": "10"
     },
     {
       "text": "혼자 문을 연다",
-      "index": "20",
-      "sourceRow": 3
+      "index": "20"
     }
   ],
   "fixtures": [
@@ -191,8 +170,7 @@
           "from": "main05.02",
           "to": "main05.03"
         }
-      ],
-      "sourceRow": 2
+      ]
     },
     {
       "name": "신뢰 루트",
@@ -206,8 +184,7 @@
           "from": "main05.02",
           "to": "branch05.02A"
         }
-      ],
-      "sourceRow": 3
+      ]
     },
     {
       "name": "분노 루트",
@@ -221,8 +198,7 @@
           "from": "main05.02",
           "to": "main05.03"
         }
-      ],
-      "sourceRow": 4
+      ]
     }
   ]
 }

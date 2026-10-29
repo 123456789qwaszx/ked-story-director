@@ -57,7 +57,6 @@ public sealed class ChapterDocumentTests : IDisposable
         Assert.Equal("첫 장면", episode.Memo);
         Assert.Equal("ev_corridor", episode.EventKey);
         Assert.Equal("sc_corridor", episode.SceneId);
-        Assert.Equal(3, episode.SourceRow);
         Assert.True(read.Episodes[1].AllowUnreachable);
 
         // 간선 — 문구·관문 둘·잠금 안내문·자동·스탯변화.
@@ -127,17 +126,17 @@ public sealed class ChapterDocumentTests : IDisposable
         ChapterId = "ch01",
         Episodes =
         [
-            new ChapterEpisode("ep01", "복도", "05A", "Story_ch01_01", 120, 40, "첫 장면", 3)
+            new ChapterEpisode("ep01", "복도", "05A", "Story_ch01_01", 120, 40, "첫 장면")
             {
                 EventKey = "ev_corridor",
                 SceneId = "sc_corridor"
             },
-            new ChapterEpisode("ep02", "옥상", "10", "Story_ch01_02", 300, 40, null, 4,
+            new ChapterEpisode("ep02", "옥상", "10", "Story_ch01_02", 300, 40, null,
                 AllowUnreachable: true)
         ],
         Edges =
         [
-            new ChapterEdge("ep01", "ep02", "같이 간다", "신뢰높음", "아직 이릅니다", 3)
+            new ChapterEdge("ep01", "ep02", "같이 간다", "신뢰높음", "아직 이릅니다")
             {
                 VisibleConditionLabel = "보임조건",
                 StatChanges =
@@ -146,26 +145,25 @@ public sealed class ChapterDocumentTests : IDisposable
                     new StatDelta("met", 1, StatChangeKind.Set)
                 ]
             },
-            new ChapterEdge("ep02", "ep01", null, null, null, 4) { Auto = true }
+            new ChapterEdge("ep02", "ep01", null, null, null) { Auto = true }
         ],
         Conditions =
         [
-            new ChapterCondition("신뢰높음", "trust >= 3", "친해졌을 때", [], IsValid: false, 3)
+            new ChapterCondition("신뢰높음", "trust >= 3", "친해졌을 때", [], IsValid: false)
         ],
         Stats =
         [
-            new ChapterStat("trust", "신뢰", 0, 0, 10, 3),
-            new ChapterStat("met", "만남", 0, 0, 1, 4, ChapterStatType.Bool)
+            new ChapterStat("trust", "신뢰", 0, 0, 10),
+            new ChapterStat("met", "만남", 0, 0, 1, ChapterStatType.Bool)
         ],
-        ChoiceOptions = [new ChapterChoiceOption("10", "같이 간다", "첫 갈림", 3)],
+        ChoiceOptions = [new ChapterChoiceOption("10", "같이 간다", "첫 갈림")],
         Fixtures =
         [
             new ChapterFixture(
                 "친한 경로",
                 IsActive: true,
                 new Dictionary<string, int>(StringComparer.Ordinal) { ["trust"] = 5 },
-                [new ChapterFixtureChoice("ep01", "ep02")],
-                3)
+                [new ChapterFixtureChoice("ep01", "ep02")])
         ]
     };
 }

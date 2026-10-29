@@ -176,7 +176,7 @@ public static class ChapterReachabilityProver
             ChapterDiagnosticCode.ReachabilityExplorationIncomplete,
             chapter.SourcePath,
             ChapterSheetNames.Episodes,
-            Row: null,
+            EpisodeId: null,
             $"이 챕터의 도달성은 **증명하지 못했습니다** — 상태 {visited:N0}개에서 탐색을 " +
             "멈췄습니다. 아래 「도달 불가」는 단정이 아니라 **찾지 못했다**는 뜻입니다. " +
             "스탯 깃발(0/1)은 갈래마다 다르게 켜지면 상태 수를 두 배로 만듭니다 — " +
@@ -356,7 +356,7 @@ public static class ChapterReachabilityProver
                 ChapterDiagnosticCode.EpisodeUnreachable,
                 chapter.SourcePath,
                 ChapterSheetNames.Episodes,
-                episode.SourceRow > 0 ? episode.SourceRow : null,
+                episode.EpisodeId,
                 $"{prefix}. {cause}"));
         }
     }

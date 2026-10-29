@@ -145,9 +145,9 @@ public sealed class ChapterReachabilityEquivalenceTests
             export.Validation.All,
             item => item.Code == ChapterDiagnosticCode.CoreRefusedChapter);
 
-        // ⛔ "어딘가 잘못됐다"로 떨어지면 실패다 — 기획자가 열 시트와 행까지 짚는다.
+        // ⛔ "어딘가 잘못됐다"로 떨어지면 실패다 — 기획자가 고칠 간선까지 짚는다.
         Assert.Equal(ChapterSheetNames.Edges, refusal.Sheet);
-        Assert.NotNull(refusal.Row);
+        Assert.Contains("간선 중간 → 끝", refusal.Message);
         Assert.Contains("Auto", refusal.Message);
     }
 
@@ -219,7 +219,7 @@ public sealed class ChapterReachabilityEquivalenceTests
     // ── 픽스처 ──────────────────────────────────────────────────────────────
 
     private static ChapterEpisode Episode(string id) =>
-        new(id, id, "", id, 0, 0, null, 2);
+        new(id, id, "", id, 0, 0, null);
 
     private static ChapterGraphModel Chapter(
         IReadOnlyList<ChapterEpisode> episodes,
@@ -231,7 +231,7 @@ public sealed class ChapterReachabilityEquivalenceTests
     {
         var stats = new List<ChapterStat>
         {
-            new("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: statMaximum, SourceRow: 2)
+            new("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: statMaximum)
         };
 
         var statKeys = stats.Select(stat => stat.Key).ToHashSet(StringComparer.Ordinal);
@@ -241,7 +241,7 @@ public sealed class ChapterReachabilityEquivalenceTests
             {
                 ConditionParseResult result = ConditionExpressionParser.Parse(pair.Expression, statKeys);
                 return new ChapterCondition(
-                    pair.Label, pair.Expression, null, result.Terms, result.IsValid, index + 2);
+                    pair.Label, pair.Expression, null, result.Terms, result.IsValid);
             })
             .ToList();
 
@@ -254,7 +254,7 @@ public sealed class ChapterReachabilityEquivalenceTests
                 edge.From, edge.To,
                 plainAdvance && index == edges.Count - 1 ? null : $"{edge.To}로",
                 edge.Condition,
-                null, index + 2)
+                null)
             {
                 StatChanges = edge.TrustDelta == 0
                     ? []

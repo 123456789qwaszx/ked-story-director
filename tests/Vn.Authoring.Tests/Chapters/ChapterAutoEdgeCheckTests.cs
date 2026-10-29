@@ -43,7 +43,7 @@ public sealed class ChapterAutoEdgeCheckTests
     {
         ChapterDocument chapter = Chapter(("opening", "ep01"), ("opening", "ep02"), ("opening", "ep03"));
         chapter.Edges.Add(Auto("ep01", "ep02"));
-        chapter.Edges.Add(new ChapterEdge("ep01", "ep03", "이쪽으로", null, null, 0));
+        chapter.Edges.Add(new ChapterEdge("ep01", "ep03", "이쪽으로", null, null));
 
         Assert.Contains(
             Errors(chapter),
@@ -70,24 +70,13 @@ public sealed class ChapterAutoEdgeCheckTests
         Assert.Contains(ChapterDiagnosticCode.AutoEdgeHasChoiceLabel, codes);
     }
 
-    [Fact]
-    public void 툴에서_만든_간선은_짚을_행이_없다()
-    {
-        // 들여온 값은 원래 행을 들고, 툴에서 만든 것은 0이다 — 0을 그대로 내보이면
-        // "0행"이라는 없는 자리를 짚는다.
-        ChapterDocument chapter = Chapter(("opening", "ep01"), ("classroom", "ep02"));
-        chapter.Edges.Add(Auto("ep01", "ep02"));
-
-        Assert.All(Errors(chapter), item => Assert.Null(item.Row));
-    }
-
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static List<ChapterDiagnostic> Errors(ChapterDocument chapter) =>
         [.. chapter.ToGraphModel("ch01").Errors];
 
     private static ChapterEdge Auto(string from, string to) =>
-        new(from, to, null, null, null, 0) { Auto = true };
+        new(from, to, null, null, null) { Auto = true };
 
     private static ChapterDocument Chapter(params (string SceneId, string EpisodeId)[] episodes)
     {
@@ -96,7 +85,7 @@ public sealed class ChapterAutoEdgeCheckTests
         foreach ((string sceneId, string episodeId) in episodes)
         {
             chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, 0, 0, null, 0)
+                episodeId, episodeId, string.Empty, episodeId, 0, 0, null)
             {
                 SceneId = sceneId
             });

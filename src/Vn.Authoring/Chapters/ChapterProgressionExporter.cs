@@ -139,26 +139,27 @@ public static class ChapterProgressionExporter
             .ToList();
     }
 
-    /// <summary>코어 경로(<c>Nodes[ep].NextOptions[i]</c>)를 시트·행으로 옮긴다.</summary>
+    /// <summary>코어 경로(<c>Nodes[ep].NextOptions[i]</c>)를 자리(에피소드 · 간선)로 옮긴다.</summary>
     private static ChapterDiagnostic Refusal(ChapterGraphModel chapter, string? path, string message)
     {
-        (string? sheet, int? row) = Locate(chapter, path);
+        (string? sheet, string? episodeId, ChapterEdge? edge) = Locate(chapter, path);
 
         return new ChapterDiagnostic(
             ChapterDiagnosticSeverity.Error,
             ChapterDiagnosticCode.CoreRefusedChapter,
             chapter.SourcePath,
             sheet,
-            row,
+            episodeId,
             $"진행 코어가 이 챕터를 싣지 못합니다 — {message}" +
+            (edge is null ? string.Empty : $" ({edge.Where})") +
             (path is { Length: > 0 } ? $" (코어 경로: {path})" : string.Empty));
     }
 
-    private static (string? Sheet, int? Row) Locate(ChapterGraphModel chapter, string? path)
+    private static (string? Sheet, string? EpisodeId, ChapterEdge? Edge) Locate(ChapterGraphModel chapter, string? path)
     {
         if (path is null || Episode(path) is not { } episodeId)
         {
-            return (null, null);
+            return (null, null, null);
         }
 
         // `Nodes[X].NextOptions[i]` — i는 **그 에피소드에서 나가는 간선의 순서**다.
@@ -171,15 +172,12 @@ public static class ChapterProgressionExporter
 
             if (index >= 0 && index < outgoing.Count)
             {
-                return (ChapterSheetNames.Edges, RowOf(outgoing[index].SourceRow));
+                return (ChapterSheetNames.Edges, null, outgoing[index]);
             }
         }
 
-        return (ChapterSheetNames.Episodes, RowOf(chapter.FindEpisode(episodeId)?.SourceRow ?? 0));
+        return (ChapterSheetNames.Episodes, episodeId, null);
     }
-
-    /// <summary>가져온 옛 행 번호만 자리로 친다 — 툴에서 만든 것은 0이다.</summary>
-    private static int? RowOf(int sourceRow) => sourceRow > 0 ? sourceRow : null;
 
     private static string? Episode(string path) => Between(path, "Nodes[", "]");
 
@@ -214,8 +212,6 @@ public static class ChapterProgressionExporter
     /// <b><c>Number</c></b>다. enum이 이름 문자열로 나가므로 그대로 내면 수입기가 모르는
     /// 이름을 만난다 — 조건 연산자를 <c>AtLeast → "GreaterOrEqual"</c>로 옮기는 것과
     /// 같은 자리, 같은 이유다.
-    ///
-    /// <c>SourceRow</c>는 싣지 않는다 — 엑셀 몇 행에서 왔는지는 저작의 사정이다.
     /// </summary>
     private static StatJson Stat(ChapterStat stat) => new()
     {

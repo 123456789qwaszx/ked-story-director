@@ -176,7 +176,7 @@ public sealed class ChapterBranchPanelTests
             editor.AddEpisode("ch01", "root", title: "root", 0, 0);
 
             ChapterDocument chapter = editor.FindChapter("ch01")!;
-            chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+            chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
 
             // 판이 이미 섰으므로 조건은 더하는 그 자리에서 판에 공급된다.
             editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");

@@ -181,13 +181,13 @@ public sealed class ChapterExportAndFixtureTests
             "invalid",
             "invalid",
             [
-                new ChapterEpisode("root", "루트", "", "root", 0, 0, null, 2),
-                new ChapterEpisode("a", "A", "", "a", 200, 0, null, 3),
-                new ChapterEpisode("b", "B", "", "b", 400, 0, null, 4)
+                new ChapterEpisode("root", "루트", "", "root", 0, 0, null),
+                new ChapterEpisode("a", "A", "", "a", 200, 0, null),
+                new ChapterEpisode("b", "B", "", "b", 400, 0, null)
             ],
             [
-                new ChapterEdge("root", "a", "A로", null, null, 11),
-                new ChapterEdge("root", "b", "B로", null, null, 12)
+                new ChapterEdge("root", "a", "A로", null, null),
+                new ChapterEdge("root", "b", "B로", null, null)
             ],
             [], [], [], []);
 
@@ -223,11 +223,13 @@ public sealed class ChapterExportAndFixtureTests
 
         Assert.Contains(refusals, item =>
             item.Code == ChapterDiagnosticCode.CoreRefusedChapter &&
-            item.Sheet == ChapterSheetNames.Edges && item.Row == 11 &&
+            item.Sheet == ChapterSheetNames.Edges &&
+            item.Message.Contains("간선 root → a \"A로\"", StringComparison.Ordinal) &&
             item.Message.Contains("유일한 간선", StringComparison.Ordinal));
         Assert.Contains(refusals, item =>
             item.Code == ChapterDiagnosticCode.CoreRefusedChapter &&
-            item.Sheet == ChapterSheetNames.Edges && item.Row == 12 &&
+            item.Sheet == ChapterSheetNames.Edges &&
+            item.Message.Contains("간선 root → b \"B로\"", StringComparison.Ordinal) &&
             item.Message.Contains("밖에서 들어오는 자리", StringComparison.Ordinal));
     }
 
@@ -252,7 +254,7 @@ public sealed class ChapterExportAndFixtureTests
         // 되어 있으면 그냥 안 쓰고 종료시키면 되니까." 그 길을 고르면 챕터가 거기서 끝난다.
         // v9 뒤로 그 칸은 어느 간선도 안 쓰는 사전 낱말이다.
         ChapterDocument document = SampleChapters.Load(SampleChapters.Corridor);
-        document.ChoiceOptions.Add(new ChapterChoiceOption("999", "아직 안 이은 문구", Memo: null, SourceRow: 0));
+        document.ChoiceOptions.Add(new ChapterChoiceOption("999", "아직 안 이은 문구", Memo: null));
 
         ChapterGraphModel chapter = document.ToGraphModel(SampleChapters.PathOf(SampleChapters.Corridor));
         ChapterValidationResult validation = ChapterValidator.Validate(chapter);
@@ -279,12 +281,12 @@ public sealed class ChapterExportAndFixtureTests
             "naming",
             string.Empty,
             [
-                new ChapterEpisode("ep1", "첫 화", "", "장면 1", 0, 0, null, 2),
-                new ChapterEpisode("ep2", "둘째", "", "new01", 200, 0, null, 3)
+                new ChapterEpisode("ep1", "첫 화", "", "장면 1", 0, 0, null),
+                new ChapterEpisode("ep2", "둘째", "", "new01", 200, 0, null)
             ],
-            [new ChapterEdge("ep1", "ep2", "다음", null, null, 2)],
+            [new ChapterEdge("ep1", "ep2", "다음", null, null)],
             [],
-            [new ChapterStat("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: 5, SourceRow: 2)],
+            [new ChapterStat("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: 5)],
             [],
             []);
 
@@ -355,8 +357,8 @@ public sealed class ChapterExportAndFixtureTests
         // 여기가 깨지면 계약서 G1~G5도 함께 고쳐야 한다.
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("gd");
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
-        chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10));
 
         editor.AddEpisode("gd", "ep1", "첫 화", 0, 0);
         editor.AddEpisode("gd", "ep2", "둘째", 200, 0);
@@ -403,14 +405,14 @@ public sealed class ChapterExportAndFixtureTests
             "stats",
             string.Empty,
             [
-                new ChapterEpisode("ep1", "첫 화", "", "ep1", 0, 0, null, 2),
-                new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null, 3)
+                new ChapterEpisode("ep1", "첫 화", "", "ep1", 0, 0, null),
+                new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null)
             ],
-            [new ChapterEdge("ep1", "ep2", "다음", null, null, 2)],
+            [new ChapterEdge("ep1", "ep2", "다음", null, null)],
             [],
             [
-                new ChapterStat("trust", "신뢰", Initial: 1, Minimum: 0, Maximum: 5, SourceRow: 2),
-                new ChapterStat("flag", "깃발", Initial: 0, Minimum: 0, Maximum: 1, SourceRow: 3,
+                new ChapterStat("trust", "신뢰", Initial: 1, Minimum: 0, Maximum: 5),
+                new ChapterStat("flag", "깃발", Initial: 0, Minimum: 0, Maximum: 1,
                     Type: ChapterStatType.Bool)
             ],
             [],
@@ -440,8 +442,6 @@ public sealed class ChapterExportAndFixtureTests
         // 경계 0은 키가 살아 있어야 한다 — WhenWritingDefault는 IntValue에만 걸려 있다.
         Assert.Equal(0, trust.GetProperty("Minimum").GetInt32());
 
-        // SourceRow는 저작의 사정이라 싣지 않는다.
-        Assert.False(trust.TryGetProperty("SourceRow", out _));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

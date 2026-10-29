@@ -32,7 +32,7 @@ public sealed class ChapterSheetEditTests : IDisposable
 
         // [＋ 챕터](AuthoringSession.CreateChapter)와 같은 모양 — 챕터 · 스탯 `trust` · 판.
         var editor = new ProjectEditor(new StoryProject { Title = "챕터 시트 편집" });
-        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 100, SourceRow: 0));
+        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 100));
         editor.EnsureChapterBoard("ch01");
 
         ProjectStore.Save(ManifestPath, editor.Project);

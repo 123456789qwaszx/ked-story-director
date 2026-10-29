@@ -87,8 +87,7 @@ public sealed class ChapterEditingTests
         Chapter.Fixtures.Add(new ChapterFixture(
             "경로", IsActive: true,
             new Dictionary<string, int>(StringComparer.Ordinal),
-            [new ChapterFixtureChoice("ep01", "ep02")],
-            SourceRow: 0));
+            [new ChapterFixtureChoice("ep01", "ep02")]));
 
         _editor.RenameEpisode("ch01", "ep01", "ep0A");
 
@@ -215,7 +214,7 @@ public sealed class ChapterEditingTests
     {
         // ⚠ 옛 경로에서는 셀에 원문이 남아 리더가 다음 읽기에 짚어 줬다. 이제 다시 읽는
         //    일이 없어 여기서 안 막으면 영영 사라진다.
-        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
 
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다", statChanges: "trust +3");
 
@@ -234,7 +233,7 @@ public sealed class ChapterEditingTests
     public void 조건은_해석을_담지_않고_식만_든다()
     {
         // 해석은 ToGraphModel이 식에서 다시 푼다 — 담아 두면 고친 식과 갈린다.
-        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
 
         _editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3", "친해졌을 때");
         Assert.Empty(Chapter.Conditions[0].Parsed);

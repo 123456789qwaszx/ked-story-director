@@ -228,11 +228,11 @@ public sealed class ChapterRailTests
 
         chapter.Episodes.AddRange(episodes
             .Select((id, index) => new ChapterEpisode(
-                id, id, "01", id, index * 100, 0, null, index + 2)));
+                id, id, "01", id, index * 100, 0, null)));
 
         chapter.Edges.AddRange(edges
             .Select((edge, index) => new ChapterEdge(
-                edge.From, edge.To, edge.Label, null, null, index + 2)
+                edge.From, edge.To, edge.Label, null, null)
             {
                 StatChanges = edge.Stats is null
                     ? []

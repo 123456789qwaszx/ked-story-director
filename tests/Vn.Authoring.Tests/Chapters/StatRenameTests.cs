@@ -114,7 +114,7 @@ public sealed class StatRenameTests
         Chapter(editor).Fixtures.Add(new ChapterFixture(
             "높은신뢰", IsActive: true,
             Stats: new Dictionary<string, int> { ["trust"] = 7, ["fatigue"] = 1 },
-            Choices: [], SourceRow: 0));
+            Choices: []));
 
         StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "호감");
 
@@ -186,7 +186,7 @@ public sealed class StatRenameTests
         //    정규화되던 것이 막던 근거였는데, `stat("키")`의 인자가 문자열 리터럴이 되면서
         //    정규화가 없어졌다 — 둘은 이제 게임에서도 서로 다른 스탯이다.
         ProjectEditor editor = World();
-        Chapter(editor).Stats.Add(new ChapterStat("호감_도", "호감_도", 0, 0, 10, SourceRow: 0));
+        Chapter(editor).Stats.Add(new ChapterStat("호감_도", "호감_도", 0, 0, 10));
 
         Assert.True(editor.RenameChapterStat("ch01", "trust", "호감 도").Applied);
         Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "호감 도");
@@ -244,8 +244,8 @@ public sealed class StatRenameTests
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("ch01");
 
-        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10, SourceRow: 0));
-        chapter.Stats.Add(new ChapterStat("fatigue", "fatigue", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("fatigue", "fatigue", 0, 0, 10));
 
         editor.AddEpisode("ch01", "root", title: "root", 0, 0);
         editor.AddEpisode("ch01", "a", title: "a", 0, 0);

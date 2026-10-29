@@ -257,7 +257,6 @@ public sealed partial class ProjectEditor
             Math.Round(episodePosition?.X ?? created.Layout.X, 2),
             Math.Round(episodePosition?.Y ?? created.Layout.Y, 2),
             Memo: null,
-            SourceRow: 0,
             AllowUnreachable: allowUnreachable)
         {
             SceneId = sceneId

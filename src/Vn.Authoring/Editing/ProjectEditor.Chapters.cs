@@ -619,7 +619,7 @@ public sealed partial class ProjectEditor
         Batch(() =>
         {
             Mutate(() => chapter.Conditions.Add(
-                new ChapterCondition(label, expression, description, Parsed: [], IsValid: false, SourceRow: 0)));
+                new ChapterCondition(label, expression, description, Parsed: [], IsValid: false)));
 
             SupplyChapterConditions(chapterId);
         });
@@ -1208,7 +1208,6 @@ public sealed partial class ProjectEditor
             initial,
             minimum,
             maximum,
-            SourceRow: 0,
             type));
 
         Mutate(() => chapter.Stats.Add(stat));
@@ -1361,7 +1360,7 @@ public sealed partial class ProjectEditor
 
             uses.Add(new ChapterUse(
                 ChapterUseKind.Edge,
-                EdgeWhere(edge),
+                edge.Where,
                 unlock && visible ? "표시조건 · 해금조건" : unlock ? "해금조건" : "표시조건"));
         }
 
@@ -1422,13 +1421,6 @@ public sealed partial class ProjectEditor
             .Where(node => string.Equals(node.Name, name, StringComparison.Ordinal));
     }
 
-    /// <summary>거절 목록에 적는 간선 한 줄 — 사람이 판에서 찾아갈 수 있게.</summary>
-    private static string EdgeWhere(ChapterEdge edge)
-    {
-        string option = edge.OptionLabel is { Length: > 0 } text ? $" \"{text}\"" : string.Empty;
-
-        return $"간선 {edge.FromEpisodeId} → {edge.ToEpisodeId}{option}";
-    }
     // ── 잔손 ────────────────────────────────────────────────────────────────
 
     private static ChapterEpisode? FindEpisode(ChapterDocument chapter, string episodeId) =>
@@ -1478,7 +1470,7 @@ public sealed partial class ProjectEditor
                 $"간선 {fromEpisodeId}→{toEpisodeId}이 같은 선택지 문구로 이미 있습니다.");
         }
 
-        return new ChapterEdge(fromEpisodeId, toEpisodeId, optionLabel, conditionLabel, LockedMessage: null, SourceRow: 0)
+        return new ChapterEdge(fromEpisodeId, toEpisodeId, optionLabel, conditionLabel, LockedMessage: null)
         {
             Auto = auto,
             StatChanges = statChanges is null ? [] : ParseDeltas(chapter, statChanges)
@@ -1514,7 +1506,7 @@ public sealed partial class ProjectEditor
         string index = ((chapter.ChoiceOptions.Count + 1) * 10).ToString(
             System.Globalization.CultureInfo.InvariantCulture);
 
-        chapter.ChoiceOptions.Add(new ChapterChoiceOption(index, text.Trim(), Memo: null, SourceRow: 0));
+        chapter.ChoiceOptions.Add(new ChapterChoiceOption(index, text.Trim(), Memo: null));
     }
 
     private static ChapterChoiceOption? FindChoice(ChapterDocument chapter, string text) =>
@@ -1654,7 +1646,6 @@ public sealed partial class ProjectEditor
                     Math.Round(node.Layout.X, 2),
                     Math.Round(node.Layout.Y, 2),
                     Memo: null,
-                    SourceRow: 0,
                     AllowUnreachable: true)
                 {
                     SceneId = SceneOfCaller(board, chapter, node)

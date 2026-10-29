@@ -57,7 +57,7 @@ public static class ChapterAutoEdgeCheck
             void Error(ChapterDiagnosticCode code, string message) =>
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Error, code, path, ChapterSheetNames.Edges,
-                    edge.SourceRow > 0 ? edge.SourceRow : null,
+                    null,
                     message));
 
             if (outgoing.GetValueOrDefault(edge.FromEpisodeId) != 1)

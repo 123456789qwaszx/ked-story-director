@@ -44,8 +44,8 @@ public sealed class ChapterSceneEntryCheckTests
         ChapterDocument chapter = Chapter(
             ("opening", "root"), ("opening", "second"), ("shared", "gate"));
 
-        chapter.Edges.Add(new ChapterEdge("root", "gate", "이쪽", null, null, 0));
-        chapter.Edges.Add(new ChapterEdge("second", "gate", "저쪽", null, null, 0));
+        chapter.Edges.Add(new ChapterEdge("root", "gate", "이쪽", null, null));
+        chapter.Edges.Add(new ChapterEdge("second", "gate", "저쪽", null, null));
 
         Assert.DoesNotContain(
             Errors(chapter), item => item.Code == ChapterDiagnosticCode.SceneHasManyEntries);
@@ -58,8 +58,8 @@ public sealed class ChapterSceneEntryCheckTests
         ChapterDocument chapter = Chapter(
             ("opening", "root"), ("opening", "a"), ("opening", "b"));
 
-        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null, 0));
-        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null, 0));
+        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null));
+        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null));
 
         Assert.DoesNotContain(
             Errors(chapter), item => item.Code == ChapterDiagnosticCode.SceneHasManyEntries);
@@ -71,13 +71,13 @@ public sealed class ChapterSceneEntryCheckTests
         // 첫 자리가 아니라 그것이 고칠 곳이다 — 코어도 같은 자리를 짚는다.
         ChapterDocument chapter = Chapter(("opening", "root"), ("shared", "a"), ("shared", "b"));
 
-        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null, 11));
-        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null, 22));
+        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null));
+        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null));
 
         ChapterDiagnostic found = Assert.Single(
             Errors(chapter), item => item.Code == ChapterDiagnosticCode.SceneHasManyEntries);
 
-        Assert.Equal(22, found.Row);
+        Assert.Contains("두 번째 자리를 만든 것: 간선 root → b \"B로\"", found.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -110,8 +110,8 @@ public sealed class ChapterSceneEntryCheckTests
     {
         ChapterDocument chapter = Chapter(("opening", "root"), ("shared", "a"), ("shared", "b"));
 
-        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null, 0));
-        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null, 0));
+        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null));
+        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null));
 
         return chapter;
     }
@@ -121,8 +121,8 @@ public sealed class ChapterSceneEntryCheckTests
     {
         ChapterDocument chapter = Chapter(("opening", "root"), ("left", "a"), ("right", "b"));
 
-        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null, 0));
-        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null, 0));
+        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null));
+        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null));
 
         return chapter;
     }
@@ -134,7 +134,7 @@ public sealed class ChapterSceneEntryCheckTests
         foreach ((string sceneId, string episodeId) in episodes)
         {
             chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, 0, 0, null, 0)
+                episodeId, episodeId, string.Empty, episodeId, 0, 0, null)
             {
                 SceneId = sceneId
             });

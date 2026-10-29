@@ -217,7 +217,7 @@ public sealed class ChapterStatEditTests
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("ch01");
 
-        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10));
 
         editor.AddEpisode("ch01", "root", title: "root", 0, 0);
         editor.AddEpisode("ch01", "a", title: "a", 0, 0);

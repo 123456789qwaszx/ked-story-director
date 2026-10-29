@@ -72,8 +72,8 @@ public sealed class SceneFrameTests
         ChapterDocument chapter = Chapter(
             session, ("opening", "root"), ("shared", "a"), ("shared", "b"));
 
-        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null, 0));
-        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null, 0));
+        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null));
+        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null));
 
         graph.Rebuild();
 
@@ -101,7 +101,7 @@ public sealed class SceneFrameTests
             (string? sceneId, string episodeId) = episodes[index];
 
             chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, index * 260, 0, null, index + 2)
+                episodeId, episodeId, string.Empty, episodeId, index * 260, 0, null)
             {
                 SceneId = sceneId
             });

@@ -12,11 +12,11 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class StatChangeEditorTests
 {
-    private static readonly ChapterStat Trust = new("trust", "신뢰", 0, 0, 10, 2);
-    private static readonly ChapterStat Anger = new("anger", "분노", 0, 0, 10, 3);
+    private static readonly ChapterStat Trust = new("trust", "신뢰", 0, 0, 10);
+    private static readonly ChapterStat Anger = new("anger", "분노", 0, 0, 10);
 
     private static readonly ChapterStat Key =
-        new("key", "열쇠", 0, 0, 1, 4, ChapterStatType.Bool);
+        new("key", "열쇠", 0, 0, 1, ChapterStatType.Bool);
 
     [Fact]
     public void 시트_글을_읽어_줄로_세우고_그대로_돌려준다() => HeadlessUi.Run(() =>

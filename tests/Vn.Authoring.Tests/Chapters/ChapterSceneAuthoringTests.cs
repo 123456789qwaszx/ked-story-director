@@ -43,9 +43,9 @@ public sealed class ChapterSceneAuthoringTests
     public void 같은_장면ID는_산출물에서도_같고_장면_진입점은_표시할_수_있다()
     {
         ChapterGraphModel chapter = Chapter(
-            Episode("root", "A", 2), Episode("inside", "A", 3), Episode("next", "B", 4),
-            new ChapterEdge("root", "inside", "계속", null, null, 11),
-            new ChapterEdge("inside", "next", "다음 장면", null, null, 12));
+            Episode("root", "A"), Episode("inside", "A"), Episode("next", "B"),
+            new ChapterEdge("root", "inside", "계속", null, null),
+            new ChapterEdge("inside", "next", "다음 장면", null, null));
 
         ChapterExportResult export = ChapterProgressionExporter.Export(chapter);
         Assert.False(export.Refused);
@@ -60,36 +60,37 @@ public sealed class ChapterSceneAuthoringTests
     }
 
     [Fact]
-    public void 같은_장면으로_두_번_들어가면_두번째_간선행으로_거부를_돌려준다()
+    public void 같은_장면으로_두_번_들어가면_두번째_간선으로_거부를_돌려준다()
     {
         ChapterGraphModel chapter = Chapter(
-            Episode("root", "root", 2), Episode("a", "shared", 3), Episode("b", "shared", 4),
-            new ChapterEdge("root", "a", "A로", null, null, 11),
-            new ChapterEdge("root", "b", "B로", null, null, 12));
+            Episode("root", "root"), Episode("a", "shared"), Episode("b", "shared"),
+            new ChapterEdge("root", "a", "A로", null, null),
+            new ChapterEdge("root", "b", "B로", null, null));
 
         ChapterExportResult export = ChapterProgressionExporter.Export(chapter);
 
         Assert.True(export.Refused);
         Assert.Contains(export.Validation.All, item =>
             item.Code == ChapterDiagnosticCode.CoreRefusedChapter &&
-            item.Sheet == ChapterSheetNames.Edges && item.Row == 12);
+            item.Sheet == ChapterSheetNames.Edges &&
+            item.Message.Contains("간선 root → b \"B로\"", StringComparison.Ordinal));
     }
 
     [Fact]
     public void 장면루트로의_재진입은_유효한_순환이다()
     {
         ChapterGraphModel chapter = Chapter(
-            Episode("root", "A", 2), Episode("middle", "B", 3),
-            new ChapterEdge("root", "middle", "나간다", null, null, 11),
-            new ChapterEdge("middle", "root", "돌아온다", null, null, 12));
+            Episode("root", "A"), Episode("middle", "B"),
+            new ChapterEdge("root", "middle", "나간다", null, null),
+            new ChapterEdge("middle", "root", "돌아온다", null, null));
 
         ChapterExportResult export = ChapterProgressionExporter.Export(chapter);
 
         Assert.False(export.Refused, string.Join(" / ", export.Validation.All.Select(item => item.Message)));
     }
 
-    private static ChapterEpisode Episode(string id, string sceneId, int row) =>
-        new(id, id, string.Empty, id, 0, 0, null, row) { SceneId = sceneId };
+    private static ChapterEpisode Episode(string id, string sceneId) =>
+        new(id, id, string.Empty, id, 0, 0, null) { SceneId = sceneId };
 
     private static ChapterGraphModel Chapter(
         ChapterEpisode first,

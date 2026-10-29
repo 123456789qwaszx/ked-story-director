@@ -97,7 +97,7 @@ public sealed class ChoiceSlotProjectionTests
         ProjectEditor editor = World();
         editor.FindChapter("ch01")!.Episodes.Add(new ChapterEpisode(
             "아직안씀", "빈 자리", Index: string.Empty, DialogueEntry: "아직안씀",
-            0, 0, Memo: null, SourceRow: 0));
+            0, 0, Memo: null));
         editor.AddEdge("ch01", "root", "아직안씀", optionLabel: "그쪽으로");
 
         GraphChoicePort slot = SlotsOf(editor, "root")[0];
@@ -114,7 +114,7 @@ public sealed class ChoiceSlotProjectionTests
         // 슬롯이 그 사실을 따로 지고 있어야 한다.
         ProjectEditor editor = World();
         editor.FindChapter("ch01")!.Edges.Add(
-            new ChapterEdge("root", "a", null, null, null, 0) { Auto = true });
+            new ChapterEdge("root", "a", null, null, null) { Auto = true });
 
         GraphChoicePort slot = SlotsOf(editor, "root")[0];
 

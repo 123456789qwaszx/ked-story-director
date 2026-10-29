@@ -68,7 +68,7 @@ public sealed class OpenAlignmentTests : IDisposable
         {
             chapter.Episodes.Add(new ChapterEpisode(
                 episodeId, episodeId, Index: string.Empty, DialogueEntry: episodeId,
-                x, 0, Memo: null, SourceRow: 0));
+                x, 0, Memo: null));
         }
 
         project.Chapters.Add(chapter);

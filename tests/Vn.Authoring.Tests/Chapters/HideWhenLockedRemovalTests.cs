@@ -27,8 +27,8 @@ public sealed class HideWhenLockedRemovalTests
 
         // 초기 3 — 간선의 해금조건이 `trust >= 3`이라, 0에서 시작하면 도달성 증명이
         // "어떤 경로로도 못 연다"며 내보내기를 막는다(그 판정은 옳다).
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 3, 0, 10, SourceRow: 0));
-        chapter.Stats.Add(new ChapterStat("fatigue", "피로", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 3, 0, 10));
+        chapter.Stats.Add(new ChapterStat("fatigue", "피로", 0, 0, 10));
 
         editor.AddEpisode("ch01", "시작", "첫 화", 0, 0);
         editor.AddEpisode("ch01", "끝", "끝 화", 200, 0);

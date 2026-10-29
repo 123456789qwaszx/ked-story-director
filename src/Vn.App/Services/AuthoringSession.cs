@@ -393,7 +393,7 @@ internal sealed class AuthoringSession
         foreach (Vn.Authoring.Definition.VariableSpec variable in Definition.Variables)
         {
             chapter.Stats.Add(new ChapterStat(
-                variable.Name, variable.Name, Initial: 0, Minimum: 0, Maximum: 100, SourceRow: 0));
+                variable.Name, variable.Name, Initial: 0, Minimum: 0, Maximum: 100));
         }
 
         SelectFile(EnsureChapterBoard(chapterId));

@@ -32,7 +32,7 @@ public sealed class ChapterGraphNavigationTests : IDisposable
 
         var editor = new ProjectEditor(new StoryProject { Title = "판 다루기 검증" });
         ChapterDocument chapter = editor.EnsureChapter("ch01");
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
 
         // 뷰포트보다 넓은 판 — 이동이 실제로 일어날 자리가 있어야 한다.
         // ⚠ v4부터 판은 에피소드가 <b>제 X·Y로</b> 그려진다(깊이 배치가 매번 벌려 주지

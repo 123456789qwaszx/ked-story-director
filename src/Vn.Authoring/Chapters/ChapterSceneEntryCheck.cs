@@ -64,7 +64,7 @@ public static class ChapterSceneEntryCheck
         // 장면 → 들어오는 자리들. 같은 자리로 여러 간선이 들어오는 것은 정상이라 자리만 센다.
         var landings = new Dictionary<string, List<string>>(StringComparer.Ordinal);
 
-        // 장면 → 두 번째 자리를 만든 간선. 없으면(시작점뿐이면) 짚을 행이 없다.
+        // 장면 → 두 번째 자리를 만든 간선. 없으면(시작점뿐이면) 짚을 간선이 없다.
         var offending = new Dictionary<string, ChapterEdge>(StringComparer.Ordinal);
 
         void Land(ChapterEpisode episode, ChapterEdge? by)
@@ -127,11 +127,12 @@ public static class ChapterSceneEntryCheck
                 ChapterDiagnosticCode.SceneHasManyEntries,
                 path,
                 ChapterSheetNames.Edges,
-                edge is { SourceRow: > 0 } ? edge.SourceRow : null,
+                null,
                 $"장면 '{sceneId}'에 밖에서 들어오는 자리가 {entries.Count}개입니다: " +
                 $"{string.Join(", ", entries)}. 장면은 한 자리에서만 시작해야 합니다 — " +
                 "롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 그 자리입니다. " +
-                "나머지 착지점은 다른 장면으로 나누세요."));
+                "나머지 착지점은 다른 장면으로 나누세요." +
+                (edge is null ? string.Empty : $" 두 번째 자리를 만든 것: {edge.Where}.")));
         }
 
         return diagnostics;

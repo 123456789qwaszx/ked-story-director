@@ -106,9 +106,9 @@ public sealed class ChapterLayerSeparationTests
             [
                 new ChapterCondition("신뢰높음", "trust >= 3", null,
                     [new ConditionTerm(ConditionTermKind.StatComparison, "trust", ConditionComparison.AtLeast, 3)],
-                    IsValid: true, SourceRow: 2)
+                    IsValid: true)
             ],
-            stats: [new ChapterStat("trust", "신뢰", 0, 0, 10, 2)],
+            stats: [new ChapterStat("trust", "신뢰", 0, 0, 10)],
             fixtures: [],
             diagnostics: []);
 

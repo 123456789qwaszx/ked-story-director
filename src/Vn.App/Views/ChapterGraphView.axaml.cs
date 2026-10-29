@@ -3416,8 +3416,7 @@ public partial class ChapterGraphView : UserControl
 
         foreach (ChapterDiagnostic diagnostic in all
                      .OrderByDescending(item => item.Severity)
-                     .ThenBy(item => item.Sheet, StringComparer.Ordinal)
-                     .ThenBy(item => item.Row ?? 0))
+                     .ThenBy(item => item.Sheet, StringComparer.Ordinal))
         {
             DiagnosticsPanel.Children.Add(DiagnosticLine(
                 diagnostic.Describe(),

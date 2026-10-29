@@ -88,21 +88,26 @@ public enum ChapterDiagnosticCode
 /// </summary>
 /// <param name="FilePath">어느 챕터인가 — 챕터 Id(엑셀 시절에는 워크북 경로였다).</param>
 /// <param name="Sheet">챕터 안의 어느 자리인가 — 에피소드·간선·조건·스탯(<see cref="ChapterSheetNames"/>).</param>
-/// <param name="Row">들여온 옛 값이면 그 행 번호(<c>SourceRow</c>), 툴에서 만든 것이면 null. 정렬에만 쓴다.</param>
+/// <param name="EpisodeId">
+/// 이 진단이 짚는 <b>에피소드</b> — 에피소드 자리의 진단에만 있다. 챕터 그래프가 카드에 오류 표식을 다는
+/// 근거다(<see cref="ChapterGraphModel.EpisodeHasError"/>).
+///
+/// ⛔ 2026-10-29(L8)까지 이 칸은 엑셀 행 번호(<c>Row</c> = 들여온 값의 <c>SourceRow</c>)였고 표식도 행으로
+/// 짝을 지었다. 툴에서 만든 에피소드는 행이 없어 <b>어떤 카드도 붉어지지 않았다</b>.
+/// </param>
 public sealed record ChapterDiagnostic(
     ChapterDiagnosticSeverity Severity,
     ChapterDiagnosticCode Code,
     string FilePath,
     string? Sheet,
-    int? Row,
+    string? EpisodeId,
     string Message)
 {
     /// <summary>
     /// "챕터 · 자리 — 메시지" 한 줄. 상태줄·목록이 그대로 쓴다.
     ///
-    /// ⚠ 2026-10-29(D2)까지는 "파일 · 시트 · 4행 · I열"이었다 — 엑셀 좌표다. 엑셀 연동이 걷혀 열 칸은
-    /// 레코드에서 빠졌고, 행(<see cref="Row"/>)은 들여온 옛 값의 순서로만 남아 문장에는 안 싣는다.
-    /// 무엇을 고칠지는 메시지가 대상(에피소드·간선·조건 이름)으로 말한다.
+    /// ⚠ 2026-10-29(D2)까지는 "파일 · 시트 · 4행 · I열"이었다 — 엑셀 좌표다. 엑셀 연동이 걷혀 열 칸이,
+    /// L8에 행 칸이 레코드에서 빠졌다. 무엇을 고칠지는 메시지가 대상(에피소드·간선·조건 이름)으로 말한다.
     /// </summary>
     public string Describe()
     {

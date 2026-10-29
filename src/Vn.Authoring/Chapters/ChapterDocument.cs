@@ -24,9 +24,9 @@ namespace Vn.Authoring.Chapters;
 /// 나오므로 <see cref="ToGraphModel"/>이 다시 푼다 — 담아 두면 식을 고쳤을 때 둘이 갈린다.
 /// 원문이 정본이라는 규율(§0.5 무해석성)이 저장물에서도 그대로다.
 ///
-/// ⚠ <b><c>SourceRow</c>는 들여온 옛 값의 이력일 뿐이다.</b> 엑셀에서 들여온 값은 원래 행 번호를
-/// 들고, 툴에서 만든 것은 0이다. 2026-10-29(D2)부터 순서(내보내기·선택지)는 이 번호가 아니라
-/// 챕터에 적힌 목록 순서를 따르고, 진단 문장에도 싣지 않는다.
+/// ⛔ 엑셀에서 들여온 값이 들고 있던 원래 행 번호(<c>SourceRow</c>)는 2026-10-29(L8)에 걷혔다. D2부터
+/// 순서(내보내기·선택지)는 챕터에 적힌 목록 순서를 따랐고, 마지막 쓰임(진단이 에피소드를 짚는 일)은
+/// 에피소드 Id로 바뀌었다.
 /// </summary>
 public sealed class ChapterDocument
 {
@@ -90,9 +90,6 @@ public sealed class ChapterDocument
     /// 성질을 봐서가 아니다. 둘 다 <b>값</b>을 본다 — 범위가 뒤집혔는가, 정의 파일이 그 스탯을
     /// 아는가. 안 옮기면 뒤집기와 함께 <b>조용히 사라지는</b> 검사가 된다(실제로 그랬다:
     /// 검증 보고의 경고 4건이 통째로 없어졌고 테스트가 그것을 잡았다).
-    ///
-    /// ⚠ 행 번호는 <see cref="ChapterStat.SourceRow"/>다 — 들여온 값이면 원래 자리를 짚고,
-    /// 툴에서 만든 것이면 0이다(짚을 행이 아직 없다).
     /// </summary>
     private IReadOnlyList<ChapterDiagnostic> StatDiagnostics(string path, GameDefinition? definition)
     {
@@ -103,14 +100,14 @@ public sealed class ChapterDocument
             if (stat.Minimum > stat.Maximum)
             {
                 diagnostics.Add(Stat(
-                    ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path, stat,
+                    ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
                     $"스탯 '{stat.Key}'의 최소({stat.Minimum})가 최대({stat.Maximum})보다 큽니다. " +
                     "이 범위는 도달성 증명(G7)의 탐색 경계라 비어 있으면 안 됩니다."));
             }
             else if (stat.Initial < stat.Minimum || stat.Initial > stat.Maximum)
             {
                 diagnostics.Add(Stat(
-                    ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path, stat,
+                    ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
                     $"스탯 '{stat.Key}'의 초기값({stat.Initial})이 " +
                     $"최소~최대({stat.Minimum}~{stat.Maximum}) 밖입니다."));
             }
@@ -121,7 +118,7 @@ public sealed class ChapterDocument
             {
                 diagnostics.Add(Stat(
                     ChapterDiagnosticSeverity.Warning,
-                    ChapterDiagnosticCode.StatMissingFromGameDefinition, path, stat,
+                    ChapterDiagnosticCode.StatMissingFromGameDefinition, path,
                     $"스탯 '{stat.Key}'가 game.definition.json에 없습니다. " +
                     "스탯의 원천은 정의 파일입니다(§3.1)."));
             }
@@ -158,7 +155,7 @@ public sealed class ChapterDocument
                     ChapterDiagnostics.CodeFor(problem.Kind),
                     path,
                     ChapterSheetNames.Conditions,
-                    condition.SourceRow > 0 ? condition.SourceRow : null,
+                    null,
                     $"조건 '{condition.Label}' — {problem.Message}"));
             }
         }
@@ -170,10 +167,8 @@ public sealed class ChapterDocument
         ChapterDiagnosticSeverity severity,
         ChapterDiagnosticCode code,
         string path,
-        ChapterStat stat,
         string message) =>
-        new(severity, code, path, ChapterSheetNames.Stats,
-            stat.SourceRow > 0 ? stat.SourceRow : null, message);
+        new(severity, code, path, ChapterSheetNames.Stats, EpisodeId: null, message);
 
     /// <summary>식 원문에서 해석 결과를 다시 만든다 — 담아 둔 것을 믿지 않는다.</summary>
     private ChapterCondition Reparse(ChapterCondition condition)

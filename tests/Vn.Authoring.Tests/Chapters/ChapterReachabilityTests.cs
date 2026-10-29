@@ -76,9 +76,9 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("곁길", row: 3),
-                Episode("ep2", row: 4)
+                Episode("ep1"),
+                Episode("곁길"),
+                Episode("ep2")
             ],
             edges: [("ep1", "곁길", null, 1), ("ep1", "ep2", "신뢰높음", 0)],
             conditions: [("신뢰높음", "trust >= 3")]);
@@ -101,9 +101,9 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("ep2", row: 3),
-                Episode("ep3", row: 4)
+                Episode("ep1"),
+                Episode("ep2"),
+                Episode("ep3")
             ],
             edges: [("ep1", "ep2", null, 1), ("ep2", "ep1", null, 1), ("ep2", "ep3", "신뢰높음", 0)],
             conditions: [("신뢰높음", "trust >= 3")]);
@@ -126,9 +126,9 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("ep2", row: 3),
-                Episode("ep3", row: 4)
+                Episode("ep1"),
+                Episode("ep2"),
+                Episode("ep3")
             ],
             edges: [("ep1", "ep2", "관문", 0), ("ep1", "ep3", "완료조건", 0)],
             conditions: [("관문", "trust >= 5"), ("완료조건", "trust >= 1")]);
@@ -149,7 +149,7 @@ public sealed class ChapterReachabilityTests
     public void 들어오는_간선이_없는_에피소드는_그렇게_말한다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("고아", row: 3)],
+            episodes: [Episode("ep1"), Episode("고아")],
             edges: [],
             conditions: []);
 
@@ -166,8 +166,8 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("보류", row: 3, allowUnreachable: true)
+                Episode("ep1"),
+                Episode("보류", allowUnreachable: true)
             ],
             edges: [],
             conditions: []);
@@ -187,8 +187,8 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("ep2", row: 3)
+                Episode("ep1"),
+                Episode("ep2")
             ],
             edges: [("ep1", "ep1", null, 1), ("ep1", "ep2", "신뢰높음", 0)],
             conditions: [("신뢰높음", "trust >= 3")],
@@ -210,7 +210,7 @@ public sealed class ChapterReachabilityTests
     public void 루트가_하나면_도착_스탯은_값_하나로_고정된다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("ep2", row: 3)],
+            episodes: [Episode("ep1"), Episode("ep2")],
             edges: [("ep1", "ep2", null, 2)],
             conditions: []);
 
@@ -230,10 +230,10 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("싼길", row: 3),
-                Episode("비싼길", row: 4),
-                Episode("합류", row: 5)
+                Episode("ep1"),
+                Episode("싼길"),
+                Episode("비싼길"),
+                Episode("합류")
             ],
             edges:
             [
@@ -260,7 +260,7 @@ public sealed class ChapterReachabilityTests
     public void 시작_에피소드는_스탯_초기값을_그대로_갖는다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("ep2", row: 3)],
+            episodes: [Episode("ep1"), Episode("ep2")],
             edges: [("ep1", "ep2", null, 1)],
             conditions: []);
 
@@ -275,7 +275,7 @@ public sealed class ChapterReachabilityTests
     public void 닿을_수_없는_에피소드에는_도착_스탯이_없다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("고아", row: 3)],
+            episodes: [Episode("ep1"), Episode("고아")],
             edges: [],
             conditions: []);
 
@@ -289,7 +289,7 @@ public sealed class ChapterReachabilityTests
     {
         // ep1↔ep2를 오가면 trust가 계속 쌓인다 — 폭은 스탯 최대(경계)에서 멈춘다.
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("ep2", row: 3)],
+            episodes: [Episode("ep1"), Episode("ep2")],
             edges: [("ep1", "ep2", null, 1), ("ep2", "ep1", null, 1)],
             conditions: [],
             statMaximum: 4);
@@ -372,24 +372,24 @@ public sealed class ChapterReachabilityTests
 
         for (int index = 0; index <= flags; index++)
         {
-            episodes.Add(Episode($"ep{index:00}", index + 2));
+            episodes.Add(Episode($"ep{index:00}"));
         }
 
         for (int index = 0; index < flags; index++)
         {
             stats.Add(new ChapterStat(
                 $"flag{index:00}", $"깃발{index:00}",
-                Initial: 0, Minimum: 0, Maximum: 1, SourceRow: index + 2));
+                Initial: 0, Minimum: 0, Maximum: 1));
 
             string from = $"ep{index:00}";
             string to = $"ep{index + 1:00}";
 
-            edges.Add(new ChapterEdge(from, to, "켠다", null, null, edges.Count + 2)
+            edges.Add(new ChapterEdge(from, to, "켠다", null, null)
             {
                 StatChanges = [new StatDelta($"flag{index:00}", 1, StatChangeKind.Set)]
             });
 
-            edges.Add(new ChapterEdge(from, to, "안 켠다", null, null, edges.Count + 2));
+            edges.Add(new ChapterEdge(from, to, "안 켠다", null, null));
         }
 
         return new ChapterGraphModel(
@@ -400,8 +400,8 @@ public sealed class ChapterReachabilityTests
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>v8 — 관문은 에피소드가 아니라 들어오는 길이 갖는다(간선 조건으로 준다).</summary>
-    private static ChapterEpisode Episode(string id, int row, bool allowUnreachable = false) =>
-        new(id, id, "01", $"Story_{id}", 0, 0, null, row, allowUnreachable);
+    private static ChapterEpisode Episode(string id, bool allowUnreachable = false) =>
+        new(id, id, "01", $"Story_{id}", 0, 0, null, allowUnreachable);
 
     /// <param name="edges">TrustDelta — 그 간선을 타는 순간 커밋되는 trust 증감 (2026-08-14 규칙).</param>
     private static ChapterGraphModel Chapter(
@@ -412,7 +412,7 @@ public sealed class ChapterReachabilityTests
     {
         var stats = new List<ChapterStat>
         {
-            new("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: statMaximum, SourceRow: 2)
+            new("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: statMaximum)
         };
 
         var statKeys = stats.Select(stat => stat.Key).ToHashSet(StringComparer.Ordinal);
@@ -422,14 +422,14 @@ public sealed class ChapterReachabilityTests
             {
                 ConditionParseResult result = ConditionExpressionParser.Parse(pair.Expression, statKeys);
                 return new ChapterCondition(
-                    pair.Label, pair.Expression, null, result.Terms, result.IsValid, index + 2);
+                    pair.Label, pair.Expression, null, result.Terms, result.IsValid);
             })
             .ToList();
 
         List<ChapterEdge> edgeList = edges
             .Select((edge, index) => new ChapterEdge(
                 edge.From, edge.To, null, edge.Condition,
-                null, index + 2)
+                null)
             {
                 StatChanges = edge.TrustDelta == 0
                     ? []

@@ -149,8 +149,8 @@ public sealed class ChapterEdgeLabelTests
             // [＋ 챕터](AuthoringSession.CreateChapter)와 같은 순서 — 챕터 · 스탯 · 판.
             var editor = new ProjectEditor(new StoryProject { Title = "간선 이름 검증" });
             ChapterDocument chapter = editor.EnsureChapter("ch01");
-            chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 100, SourceRow: 0));
-            chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 100, SourceRow: 0));
+            chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 100));
+            chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 100));
             editor.EnsureChapterBoard("ch01");
 
             ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);

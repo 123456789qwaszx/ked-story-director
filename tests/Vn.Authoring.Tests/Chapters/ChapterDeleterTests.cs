@@ -207,7 +207,7 @@ public sealed class ChapterDeleterTests : IDisposable
         var editor = new ProjectEditor(new StoryProject { Title = "제거" });
 
         ChapterDocument chapter = editor.EnsureChapter(Doomed);
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 5, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 5));
 
         // 에피소드를 세우면 판과 카드가 함께 서고, 판이 선 뒤의 조건은 판의 공급 노드로 간다.
         editor.AddEpisode(Doomed, EpisodeId, "조용한 복도", 0, 0);

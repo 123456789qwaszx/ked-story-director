@@ -85,7 +85,7 @@ public static class ChapterValidator
                     ChapterDiagnosticCode.EpisodeSceneEmpty,
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
-                    episode.SourceRow > 0 ? episode.SourceRow : null,
+                    episode.EpisodeId,
                     // Yarn이 줄 없는 노드를 안 싣는다는 사정은 위 주석의 것이다 (2026-08-26
                     // 소유자: "굳이 말할 필요 없어") — 기획자에게는 고치는 법 한 문장이면 된다.
                     $"'{episode.EpisodeId}'의 대사 노드 '{own.Name}'에 재생할 줄이 하나도 " +
@@ -157,7 +157,7 @@ public static class ChapterValidator
                 ChapterDiagnosticCode.DialogueEntryNodeMissing,
                 chapter.SourcePath,
                 ChapterSheetNames.Episodes,
-                episode.SourceRow > 0 ? episode.SourceRow : null,
+                episode.EpisodeId,
                 $"'{episode.EpisodeId}'의 대사엔트리 '{episode.DialogueEntry}'에 해당하는 " +
                 $"대사노드가 '{chapter.ChapterId}' 판에 없습니다. 이대로 내보내면 진행 JSON이 " +
                 "존재하지 않는 대사 노드를 부르고, 로드는 통과하는데 재생만 안 됩니다. " +

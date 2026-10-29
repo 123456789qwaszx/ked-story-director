@@ -41,7 +41,7 @@ public sealed class ChapterDeterministicExportTests : IDisposable
     public void 프로젝트를_저장하고_다시_열어_export해도_바이트가_같다()
     {
         var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("reload").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        editor.EnsureChapter("reload").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
         editor.AddEpisode("reload", "ep1", "첫 화", 0, 0);
         editor.AddEpisode("reload", "ep2", "둘째", 200, 0);
         editor.AddEdge("reload", "ep1", "ep2", optionLabel: "다음");
@@ -114,8 +114,8 @@ public sealed class ChapterDeterministicExportTests : IDisposable
         ChapterGraphModel chapter = Chapter(false);
         ChapterGraphModel mixed = new(
             chapter.ChapterId, chapter.SourcePath, chapter.Episodes,
-            [new ChapterEdge("ep1", "ep2", "가져온 길", null, null, 8),
-             new ChapterEdge("ep1", "ep3", "툴에서 이은 길", null, null, 0)],
+            [new ChapterEdge("ep1", "ep2", "가져온 길", null, null),
+             new ChapterEdge("ep1", "ep3", "툴에서 이은 길", null, null)],
             chapter.Conditions, chapter.Stats, chapter.Fixtures, chapter.Diagnostics);
 
         using JsonDocument json = JsonDocument.Parse(ChapterProgressionExporter.Export(mixed, null).Json!);
@@ -203,19 +203,19 @@ public sealed class ChapterDeterministicExportTests : IDisposable
         "ch", "",
         orderReversedInMemory
             // 첫 원소는 StartEpisode라는 모델 계약을 지키고, 나머지만 순서를 섞는다.
-            ? [Episode("ep1", 2), Episode("ep3", 4), Episode("ep2", 3)]
-            : [Episode("ep1", 2), Episode("ep2", 3), Episode("ep3", 4)],
+            ? [Episode("ep1"), Episode("ep3"), Episode("ep2")]
+            : [Episode("ep1"), Episode("ep2"), Episode("ep3")],
         [
-            new ChapterEdge("ep1", "ep3", "B", null, null, 9),
-            new ChapterEdge("ep1", "ep2", "A", null, null, 8)
+            new ChapterEdge("ep1", "ep3", "B", null, null),
+            new ChapterEdge("ep1", "ep2", "A", null, null)
         ],
         [],
         [
-            new ChapterStat("flag", "깃발", 0, 0, 1, 3, ChapterStatType.Bool),
-            new ChapterStat("trust", "신뢰", 0, 0, 5, 2)
+            new ChapterStat("flag", "깃발", 0, 0, 1, ChapterStatType.Bool),
+            new ChapterStat("trust", "신뢰", 0, 0, 5)
         ],
         [], []);
 
-    private static ChapterEpisode Episode(string id, int row) =>
-        new(id, id, "", id, 0, 0, null, row);
+    private static ChapterEpisode Episode(string id) =>
+        new(id, id, "", id, 0, 0, null);
 }

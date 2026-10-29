@@ -37,8 +37,7 @@ public sealed class SpeakerAndConditionRenameTests
                 "trust >= 3",
                 Description: null,
                 Parsed: [new ConditionTerm(ConditionTermKind.StatComparison, "trust", ConditionComparison.AtLeast, 3)],
-                IsValid: true,
-                SourceRow: 2)
+                IsValid: true)
         ],
         stats: [],
         fixtures: [],

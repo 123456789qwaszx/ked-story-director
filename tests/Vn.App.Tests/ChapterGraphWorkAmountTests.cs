@@ -30,7 +30,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
         Directory.CreateDirectory(_directory);
 
         var editor = new ProjectEditor(new StoryProject { Title = "일의 양" });
-        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
 
         string previous = string.Empty;
 

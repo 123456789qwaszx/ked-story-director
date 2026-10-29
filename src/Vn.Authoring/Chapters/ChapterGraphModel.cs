@@ -10,7 +10,6 @@ namespace Vn.Authoring.Chapters;
 /// </summary>
 /// <param name="Index">"05"·"05A"·"★"처럼 사람이 붙이는 표시용 순번. 숫자가 아니어도 된다.</param>
 /// <param name="DialogueEntry">런타임이 재생할 대사 엔트리 이름. 비면 오류다.</param>
-/// <param name="SourceRow">들여온 옛 값의 엑셀 행 번호 — 이력일 뿐, 순서 · 진단 문장에는 안 쓴다(2026-10-29 D2).</param>
 /// <param name="AllowUnreachable">
 /// `도달불가 허용` 열(선택)이 켜져 있는가 (D3). 도달성 증명이 이 에피소드의 도달 불가를
 /// 오류가 아니라 알림으로 낮추되, 그 사실은 그래프에 표시된다 — 조용히 넘기지 않는다.
@@ -23,7 +22,6 @@ public sealed record ChapterEpisode(
     double X,
     double Y,
     string? Memo,
-    int SourceRow,
     bool AllowUnreachable = false)
 {
     // v9 (2026-08-17 소유자) — `선택지수` 열 폐지. 칸이라는 개념이 사라졌으니 셀 것도
@@ -73,8 +71,7 @@ public sealed record ChapterEdge(
     string? OptionLabel,
     string? ConditionLabel,
 
-    string? LockedMessage,
-    int SourceRow)
+    string? LockedMessage)
 {
     /// <summary>
     /// 플레이어 입력 없이 같은 장면의 다음 에피소드로 잇는 명시적 자동 진행 간선.
@@ -101,6 +98,14 @@ public sealed record ChapterEdge(
     /// 무엇이 잘못됐는지 짚어 준다). 담지 않으면 기획자는 빈 칸을 볼 수 없다.
     /// </summary>
     public bool HasNoOptionLabel => string.IsNullOrWhiteSpace(OptionLabel);
+
+    /// <summary>
+    /// 사람이 판에서 찾아갈 수 있게 적는 이 간선 — <c>간선 a → b "문구"</c>. 진단 · 거절 목록이 쓴다
+    /// (2026-10-29 L8 — 엑셀 행 번호로 짚던 자리를 대신한다).
+    /// </summary>
+    public string Where =>
+        $"간선 {FromEpisodeId} → {ToEpisodeId}" +
+        (OptionLabel is { Length: > 0 } text ? $" \"{text}\"" : string.Empty);
 
     /// <summary>표시·해금 중 하나라도 걸려 있으면 관문 있는 길이다 — 그래프가 색으로 알린다.</summary>
     public bool HasGate =>
@@ -140,8 +145,7 @@ public sealed record ChapterCondition(
     string Expression,
     string? Description,
     IReadOnlyList<ConditionTerm> Parsed,
-    bool IsValid,
-    int SourceRow);
+    bool IsValid);
 
 /// <summary>스탯의 타입 (2026-08-16 소유자) — `타입` 열(선택, 비면 int)이 정한다.</summary>
 public enum ChapterStatType
@@ -164,7 +168,6 @@ public sealed record ChapterStat(
     int Initial,
     int Minimum,
     int Maximum,
-    int SourceRow,
     ChapterStatType Type = ChapterStatType.Int);
 
 /// <summary>
@@ -180,8 +183,7 @@ public sealed record ChapterStat(
 public sealed record ChapterChoiceOption(
     string Index,
     string Text,
-    string? Memo,
-    int SourceRow);
+    string? Memo);
 
 /// <param name="From">고정 선택의 출발 에피소드.</param>
 /// <param name="To">그 선택이 향하는 도착 에피소드.</param>
@@ -195,8 +197,7 @@ public sealed record ChapterFixture(
     string Name,
     bool IsActive,
     IReadOnlyDictionary<string, int> Stats,
-    IReadOnlyList<ChapterFixtureChoice> Choices,
-    int SourceRow);
+    IReadOnlyList<ChapterFixtureChoice> Choices);
 
 /// <summary>
 /// 챕터 하나를 편 모양 — 검증·증명·내보내기·화면이 읽는다(<see cref="ChapterDocument.ToGraphModel"/>).
@@ -288,12 +289,14 @@ public sealed class ChapterGraphModel
     public ChapterCondition? FindCondition(string label) =>
         Conditions.FirstOrDefault(item => string.Equals(item.Label, label, StringComparison.Ordinal));
 
-    /// <summary>그 에피소드에 오류 진단이 붙어 있는가. 뷰가 노드에 표식을 다는 근거다.</summary>
+    /// <summary>
+    /// 그 에피소드에 오류 진단이 붙어 있는가. 뷰가 노드에 표식을 다는 근거다 — 진단이 짚는
+    /// 에피소드 Id로 찾는다(<see cref="ChapterDiagnostic.EpisodeId"/> · 2026-10-29 L8).
+    /// </summary>
     public bool EpisodeHasError(ChapterEpisode episode) =>
         Diagnostics.Any(item =>
             item.Severity == ChapterDiagnosticSeverity.Error &&
-            item.Row == episode.SourceRow &&
-            string.Equals(item.Sheet, ChapterSheetNames.Episodes, StringComparison.Ordinal));
+            string.Equals(item.EpisodeId, episode.EpisodeId, StringComparison.Ordinal));
 }
 
 /// <summary>시트 이름 한 곳. 리더와 뷰·테스트가 같은 문자열을 본다.</summary>

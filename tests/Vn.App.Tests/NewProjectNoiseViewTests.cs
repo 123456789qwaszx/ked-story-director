@@ -73,8 +73,8 @@ public sealed class NewProjectNoiseViewTests
 
             // 갓 만든 챕터 — 스탯 둘만 있고 에피소드는 아직 없다.
             var chapter = new ChapterDocument { ChapterId = "ch01" };
-            chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
-            chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10, SourceRow: 0));
+            chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+            chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10));
 
             var story = new StoryProject { Title = "새 프로젝트" };
             story.Chapters.Add(chapter);

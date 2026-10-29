@@ -60,7 +60,7 @@ public sealed class ChapterEpisodeIsolationTests
         // ch01에는 같은 이름의 에피소드만 있고 카드가 없다 — 옛 프로젝트의 어긋난 모양이다.
         editor.EnsureChapter("ch01").Episodes.Add(new ChapterEpisode(
             EpisodeId: "new01", Title: "new01", Index: string.Empty,
-            DialogueEntry: "new01", X: 0, Y: 0, Memo: null, SourceRow: 0));
+            DialogueEntry: "new01", X: 0, Y: 0, Memo: null));
 
         BoardAlignment alignment = editor.AlignBoardsWithChapters();
 

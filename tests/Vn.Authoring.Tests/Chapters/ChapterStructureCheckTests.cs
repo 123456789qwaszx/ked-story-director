@@ -158,7 +158,7 @@ public sealed class ChapterStructureCheckTests
     public void 범위가_어긋난_깃발은_오류다()
     {
         ChapterGraphModel model = Chapter(
-            stats: [new ChapterStat("met", "만남", 0, 0, 100, SourceRow: 0, ChapterStatType.Bool)]).ToGraphModel("ch01");
+            stats: [new ChapterStat("met", "만남", 0, 0, 100, ChapterStatType.Bool)]).ToGraphModel("ch01");
 
         Assert.Contains(model.Errors, item =>
             item.Code == ChapterDiagnosticCode.StatRangeInvalid && item.Message.Contains("bool", StringComparison.Ordinal));
@@ -179,8 +179,8 @@ public sealed class ChapterStructureCheckTests
 
     private static ChapterEpisode Episode(string episodeId, string? dialogueEntry = null) =>
         new(episodeId, episodeId, Index: string.Empty, DialogueEntry: dialogueEntry ?? episodeId,
-            0, 0, Memo: null, SourceRow: 0);
+            0, 0, Memo: null);
 
     private static ChapterEdge Edge(string from, string to, string? label) =>
-        new(from, to, label, ConditionLabel: null, LockedMessage: null, SourceRow: 0);
+        new(from, to, label, ConditionLabel: null, LockedMessage: null);
 }

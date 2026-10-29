@@ -83,7 +83,7 @@ public sealed class SupplyScopeTests
         foreach (string chapterId in new[] { "ch01", "ch02" })
         {
             ChapterDocument chapter = editor.EnsureChapter(chapterId);
-            chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10, SourceRow: 0));
+            chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10));
 
             editor.AddEpisode(chapterId, "root", title: "root", 0, 0);
             editor.AddChapterCondition(chapterId, "신뢰높음", "trust >= 3");

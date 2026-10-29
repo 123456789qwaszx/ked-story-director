@@ -161,7 +161,7 @@ public sealed class BranchEntryConditionTests
         editor.AddEpisode("ch01", "root", title: "root", 0, 0);
 
         ChapterDocument chapter = editor.FindChapter("ch01")!;
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 2));
+        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(

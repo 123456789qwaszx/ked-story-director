@@ -42,7 +42,7 @@ public sealed class SpeakerTabTests : IDisposable
 
         foreach ((string chapterId, string episodeId) in new[] { ("ch01", "ep01"), ("ch02", "ep02") })
         {
-            editor.EnsureChapter(chapterId).Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+            editor.EnsureChapter(chapterId).Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
             editor.AddEpisode(chapterId, episodeId, title: episodeId, 0, 0);
         }
 

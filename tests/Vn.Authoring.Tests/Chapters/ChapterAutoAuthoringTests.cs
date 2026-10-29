@@ -41,7 +41,7 @@ public sealed class ChapterAutoAuthoringTests
     [Fact]
     public void 자동_불변식은_위반마다_서로_다른_진단을_낸다()
     {
-        _editor.FindChapter("auto")!.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        _editor.FindChapter("auto")!.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
         _editor.AddEpisode("auto", "ep3", "셋째", 400, 0, sceneId: "scene-b");
         _editor.AddChapterCondition("auto", "항상", "trust >= 0");
 

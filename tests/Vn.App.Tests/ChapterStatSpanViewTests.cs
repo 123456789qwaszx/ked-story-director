@@ -29,8 +29,8 @@ public sealed class ChapterStatSpanViewTests : IDisposable
     public ChapterStatSpanViewTests()
     {
         ChapterDocument chapter = _editor.EnsureChapter("ch01");
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
-        chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10));
 
         // ep1 ─(+1)─ 싼길 ─┐
         //   └─(+3)─ 비싼길 ─┴─ 합류      (분노는 챕터 어디에서도 움직이지 않는다)

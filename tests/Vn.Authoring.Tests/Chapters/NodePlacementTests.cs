@@ -145,7 +145,7 @@ public sealed class NodePlacementTests
     }
 
     private static void Edge(StoryProject project, string from, string to) =>
-        project.Chapters.Single().Edges.Add(new ChapterEdge(from, to, "간다", null, null, 0));
+        project.Chapters.Single().Edges.Add(new ChapterEdge(from, to, "간다", null, null));
 
     /// <summary>ch01과 그 판 — 에피소드는 챕터에 있고, 카드는 아직 없다(엑셀에서 들여온 옛 프로젝트처럼).</summary>
     private static StoryProject World(params string[] episodeIds)
@@ -160,7 +160,7 @@ public sealed class NodePlacementTests
         {
             chapter.Episodes.Add(new ChapterEpisode(
                 episodeId, episodeId, Index: string.Empty, DialogueEntry: episodeId,
-                0, 0, Memo: null, SourceRow: 0));
+                0, 0, Memo: null));
         }
 
         return project;

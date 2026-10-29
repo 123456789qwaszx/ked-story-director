@@ -162,16 +162,16 @@ public sealed class ChapterDialogueEntryTests
         ChapterId = "ch01",
         Episodes =
         [
-            new ChapterEpisode("시작", "복도", string.Empty, "시작", 0, 0, null, 2),
-            new ChapterEpisode("믿는길", "믿는다", string.Empty, "믿는길", 1, 0, null, 3),
-            new ChapterEpisode("혼자길", "혼자 간다", string.Empty, "혼자길", 1, 1, null, 4)
+            new ChapterEpisode("시작", "복도", string.Empty, "시작", 0, 0, null),
+            new ChapterEpisode("믿는길", "믿는다", string.Empty, "믿는길", 1, 0, null),
+            new ChapterEpisode("혼자길", "혼자 간다", string.Empty, "혼자길", 1, 1, null)
         ],
         Edges =
         [
-            new ChapterEdge("시작", "믿는길", "믿는다", null, null, 2),
-            new ChapterEdge("시작", "혼자길", "혼자 간다", null, null, 3),
-            new ChapterEdge("믿는길", "혼자길", "계속", null, null, 4),
-            new ChapterEdge("혼자길", "믿는길", "계속", null, null, 5)
+            new ChapterEdge("시작", "믿는길", "믿는다", null, null),
+            new ChapterEdge("시작", "혼자길", "혼자 간다", null, null),
+            new ChapterEdge("믿는길", "혼자길", "계속", null, null),
+            new ChapterEdge("혼자길", "믿는길", "계속", null, null)
         ]
     }.ToGraphModel("ch01");
 }

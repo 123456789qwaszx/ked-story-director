@@ -44,9 +44,9 @@
 | L3 | 선택지 칩의 옛 길을 걷는다 (L-D3) — 레일 테스트는 챕터를 프로젝트에 두고 다시 쓴다 | `1bfc9f5` (run 43) |
 | L4 | Vn.Authoring의 죽은 묶음 — `ChapterRunState` · 판 파일 관리(가져오기 · 지우기 · 개명 · 노드 옮기기) · 프리뷰 흐름(`ChoiceOptionBundle` · `Cycle` · `PassedBlocks`) · 안 쓰는 `Clone` 사슬 · 엑셀 · 탐색기 시절 편집(`TryDecomposeSingle` · `MoveEpisodesToChapter` · `RemoveChoiceLabel` …) · 아무도 안 부르는 멤버 | a 기능째 죽은 묶음 `370e86c` (run 44) · b 아무도 안 부르는 멤버 · 주석 `ca79145` (run 45) |
 | L5 | 대본 가져오기 · 작가 변수의 남은 길 — `PlanScriptSync` · `ScriptParser` · 대본 개명 · 지우기 · `SourcePath`, set · assignment (L-D4). 일치 엔진 테스트는 `ScriptSynchronizer.Plan`으로 옮긴다. **갈래 고르기(L-D5)도 여기서 걷는다** — 시뮬레이션의 set 누적이 그것의 유일한 독자라 한 뿌리다 | `6e460b6` (run 46) |
-| L6 | 걷힌 기능의 화면 흔적 — 「X 설정」 카드(L-D6) · 옛 파일 호환 `excelEpisode`(L-D8) · 형식 거절 안내의 "대본을 가져오세요" | 이번 |
+| L6 | 걷힌 기능의 화면 흔적 — 「X 설정」 카드(L-D6) · 옛 파일 호환 `excelEpisode`(L-D8) · 형식 거절 안내의 "대본을 가져오세요" | `f31111a` (run 47) |
 | L7 | 현행 안내 문서 — README · ARCHITECTURE · ORIENTATION이 없는 코드 · 걷힌 기능을 가리키지 않게 | |
-| L8 | `SourceRow` 조사 → 걷기와 에피소드 오류 표시 결함 (L-D7) | |
+| L8 | `SourceRow` 조사 → 걷기와 에피소드 오류 표시 결함 (L-D7) | 이번 — L7보다 먼저 했다(안내 문서는 코드가 다 선 뒤에) |
 
 ## 4. 걷다가 찾은 것
 
@@ -68,3 +68,13 @@
   「X 설정」뿐이고, 둘 다 카드로 할 일이 없다. 숨은 노드는 접힌 판의 행도 차지하지 않는다.
 - **L6 · 남긴 것** — `GraphNodeKind.Set`은 투영이 노드 종류를 그대로 옮기는 자리라 남긴다(지금은
   카드로 나가지 않는다).
+- **L8 · 조사 결과 (L-D7)** — `SourceRow`의 쓰임은 셋뿐이었다: 진단이 자리를 짚는 행 번호(D2부터 문장에는
+  안 실렸다), 검증 보고의 정렬, 챕터 그래프 카드의 오류 표식. 셋째가 **고장 나 있었다** — 표식이 진단의
+  행과 에피소드의 행을 맞대는데, 툴에서 만든 에피소드는 행이 0이고 진단의 행은 null이라 엑셀이 걷힌 뒤로
+  어떤 카드도 붉어지지 않았다. **걷었다**: 진단은 행 대신 대상 `EpisodeId`를 들고(표식이 그것으로 찾는다 —
+  `EpisodeErrorMarkTests`), 간선을 짚던 행은 메시지의 `간선 a → b "문구"`(`ChapterEdge.Where`)가 대신한다.
+  여섯 레코드의 `SourceRow`와 저장 키 `sourceRow`(옛 파일의 키는 읽지 않고 지나간다), 견본 픽스처의
+  키도 함께 걷었다. 보고의 정렬은 심각도 → 자리 → 낸 순서다.
+- **L8 · 남긴 것** — `ChapterSheetNames`·`ChapterDiagnostic.Sheet`는 이름이 엑셀 시절 것이지만 지금은
+  "챕터 안의 어느 자리(에피소드 · 간선 · 조건 · 스탯)"를 뜻하고 보고 문장에 실린다. 이름만 바꾸는 일은
+  이 정리의 몫이 아니다.

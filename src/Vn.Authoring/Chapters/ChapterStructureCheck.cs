@@ -90,7 +90,7 @@ public static class ChapterStructureCheck
             if (string.IsNullOrWhiteSpace(edge.FromEpisodeId) || string.IsNullOrWhiteSpace(edge.ToEpisodeId))
             {
                 diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.EdgeEndpointBlank,
-                    path, edge, "간선의 출발·도착은 둘 다 있어야 합니다."));
+                    path, "간선의 출발·도착은 둘 다 있어야 합니다."));
                 continue;
             }
 
@@ -102,7 +102,7 @@ public static class ChapterStructureCheck
             foreach (StatDelta delta in edge.StatChanges.Where(delta => !statKeys.Contains(delta.Key)))
             {
                 diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatKeyUnknown,
-                    path, edge, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길의 스탯변화 '{delta.Key}'가 " +
+                    path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길의 스탯변화 '{delta.Key}'가 " +
                     "이 챕터의 스탯이 아닙니다."));
             }
 
@@ -111,7 +111,7 @@ public static class ChapterStructureCheck
             if (edge.HasNoOptionLabel && !edge.Auto)
             {
                 diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.OptionLabelBlank,
-                    path, edge, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길에 선택지 문구가 없습니다. " +
+                    path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길에 선택지 문구가 없습니다. " +
                     "일반 선택지에는 문구를 적으세요."));
             }
         }
@@ -122,7 +122,7 @@ public static class ChapterStructureCheck
                      .Where(group => group.Count() > 1))
         {
             diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.OptionEdgeMismatch,
-                path, duplicated.Last(), $"{duplicated.Key.Item1}→{duplicated.Key.Item2} 간선이 같은 선택지 문구로 " +
+                path, $"{duplicated.Key.Item1}→{duplicated.Key.Item2} 간선이 같은 선택지 문구로 " +
                 "여럿 있습니다 — 문구를 다르게 하거나 하나를 지워 주세요."));
         }
 
@@ -134,7 +134,7 @@ public static class ChapterStructureCheck
                      .Where(group => group.Select(edge => edge.ToEpisodeId).Distinct(StringComparer.Ordinal).Count() > 1))
         {
             diagnostics.Add(Edge(ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.OptionEdgeMismatch,
-                path, collided.Last(), $"'{collided.Key.Item1}'에서 '{collided.Key.Item2}' 선택지가 여러 갈래로 " +
+                path, $"'{collided.Key.Item1}'에서 '{collided.Key.Item2}' 선택지가 여러 갈래로 " +
                 "갑니다 — 플레이어에게는 같은 버튼 둘로 보이고, 이 문구에 매단 연출도 " +
                 "한 벌뿐이라 두 길이 같은 연출을 탑니다."));
         }
@@ -147,7 +147,7 @@ public static class ChapterStructureCheck
         if (!known.Contains(episodeId))
         {
             diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.EdgeEndpointUnknown,
-                path, edge, $"간선의 {field} '{episodeId}'가 이 챕터의 에피소드가 아닙니다."));
+                path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길의 {field} '{episodeId}'가 이 챕터의 에피소드가 아닙니다."));
         }
     }
 
@@ -158,7 +158,7 @@ public static class ChapterStructureCheck
         if (!string.IsNullOrEmpty(label) && !known.Contains(label))
         {
             diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.ConditionLabelUndefined,
-                path, edge, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길의 {field} '{label}'이 이 챕터의 " +
+                path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길의 {field} '{label}'이 이 챕터의 " +
                 "조건에 없습니다. 라벨↔식의 원천은 챕터 조건입니다(G-7)."));
         }
     }
@@ -182,7 +182,7 @@ public static class ChapterStructureCheck
         {
             diagnostics.Add(new ChapterDiagnostic(
                 ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
-                ChapterSheetNames.Stats, stat.SourceRow > 0 ? stat.SourceRow : null,
+                ChapterSheetNames.Stats, null,
                 $"'{stat.Key}'는 bool 스탯이라 범위가 0~1이고 처음값은 0이나 1이어야 합니다 " +
                 $"(지금 {stat.Minimum}~{stat.Maximum}, 처음값 {stat.Initial})."));
         }
@@ -201,7 +201,7 @@ public static class ChapterStructureCheck
             {
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.ConditionExpressionMalformed, path,
-                    ChapterSheetNames.Conditions, condition.SourceRow > 0 ? condition.SourceRow : null,
+                    ChapterSheetNames.Conditions, null,
                     $"조건 '{condition.Label}': '{term.Key}'는 bool 스탯입니다 — " +
                     $"'{term.Key} == true' 또는 '{term.Key} == false'로만 적을 수 있습니다."));
             }
@@ -216,14 +216,14 @@ public static class ChapterStructureCheck
                 if (isBool && !delta.IsSet)
                 {
                     diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatValueNotInteger,
-                        path, edge, $"'{delta.Key}'는 bool 스탯이라 증감을 쓸 수 없습니다 — " +
+                        path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길: '{delta.Key}'는 bool 스탯이라 증감을 쓸 수 없습니다 — " +
                         $"켜고 끄려면 '{delta.Key} true' 또는 '{delta.Key} false'로 적어 주세요."));
                 }
 
                 if (!isBool && delta.IsSet)
                 {
                     diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatValueNotInteger,
-                        path, edge, $"'{delta.Key}'는 정수 스탯이라 true/false로 정할 수 없습니다 — " +
+                        path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길: '{delta.Key}'는 정수 스탯이라 true/false로 정할 수 없습니다 — " +
                         $"'{delta.Key} +1'처럼 증감으로 적어 주세요."));
                 }
             }
@@ -235,7 +235,7 @@ public static class ChapterStructureCheck
                          .Where(group => group.Count() > 1))
             {
                 diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatValueNotInteger,
-                    path, edge, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길이 '{repeated.Key}'를 두 번 정합니다 — " +
+                    path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길이 '{repeated.Key}'를 두 번 정합니다 — " +
                     "한 번만 적어 주세요."));
             }
         }
@@ -246,12 +246,10 @@ public static class ChapterStructureCheck
     private static ChapterDiagnostic Episode(
         ChapterDiagnosticSeverity severity, ChapterDiagnosticCode code, string path,
         ChapterEpisode episode, string message) =>
-        new(severity, code, path, ChapterSheetNames.Episodes,
-            episode.SourceRow > 0 ? episode.SourceRow : null, message);
+        new(severity, code, path, ChapterSheetNames.Episodes, episode.EpisodeId, message);
 
     private static ChapterDiagnostic Edge(
         ChapterDiagnosticSeverity severity, ChapterDiagnosticCode code, string path,
-        ChapterEdge edge, string message) =>
-        new(severity, code, path, ChapterSheetNames.Edges,
-            edge.SourceRow > 0 ? edge.SourceRow : null, message);
+        string message) =>
+        new(severity, code, path, ChapterSheetNames.Edges, EpisodeId: null, message);
 }

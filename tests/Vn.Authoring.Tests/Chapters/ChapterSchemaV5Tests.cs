@@ -126,14 +126,14 @@ public sealed class ChapterSchemaV5Tests
     public void 선택지_사전은_인덱스와_대본뿐이고_간선이_문구를_직접_적는다()
     {
         var chapter = new ChapterDocument { ChapterId = "v9" };
-        chapter.Episodes.Add(new ChapterEpisode("ep1", "", "", "Story_ep1", 0, 0, null, 2));
-        chapter.Episodes.Add(new ChapterEpisode("ep2", "", "", "Story_ep2", 200, 0, null, 3));
-        chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "왼쪽으로", null, null, 2));
-        chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "계속", null, null, 3));
-        chapter.Edges.Add(new ChapterEdge("ep2", "ep1", "왼쪽으로", null, null, 4));   // 같은 문구 재사용
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 2));
-        chapter.ChoiceOptions.Add(new ChapterChoiceOption("10", "왼쪽으로", Memo: null, SourceRow: 2));
-        chapter.ChoiceOptions.Add(new ChapterChoiceOption("20", "오른쪽으로", "아직 아무 길도 안 쓴다", SourceRow: 3));
+        chapter.Episodes.Add(new ChapterEpisode("ep1", "", "", "Story_ep1", 0, 0, null));
+        chapter.Episodes.Add(new ChapterEpisode("ep2", "", "", "Story_ep2", 200, 0, null));
+        chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "왼쪽으로", null, null));
+        chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "계속", null, null));
+        chapter.Edges.Add(new ChapterEdge("ep2", "ep1", "왼쪽으로", null, null));   // 같은 문구 재사용
+        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        chapter.ChoiceOptions.Add(new ChapterChoiceOption("10", "왼쪽으로", Memo: null));
+        chapter.ChoiceOptions.Add(new ChapterChoiceOption("20", "오른쪽으로", "아직 아무 길도 안 쓴다"));
 
         ChapterGraphModel model = chapter.ToGraphModel("v9");
 

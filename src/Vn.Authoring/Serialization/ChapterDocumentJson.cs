@@ -13,6 +13,10 @@ namespace Vn.Authoring.Serialization;
 ///
 /// ⚠ <b>파생값은 안 쓴다.</b> 조건의 <c>Parsed</c>·<c>IsValid</c>는 식 원문에서 다시 나온다
 /// (<see cref="ChapterDocument.ToGraphModel"/>) — 담아 두면 식을 고쳤을 때 둘이 갈린다.
+///
+/// ⛔ 행마다 붙던 <c>sourceRow</c>(엑셀에서 들여온 값의 원래 행 번호)는 2026-10-29(L8)에 걷혔다.
+/// 진단이 에피소드를 행으로 짚던 마지막 쓰임이 Id로 바뀌어 읽을 곳이 없다. 옛 파일의 그 키는
+/// 읽지 않고 지나간다.
 /// </summary>
 internal static class ChapterDocumentJson
 {
@@ -85,7 +89,6 @@ internal static class ChapterDocumentJson
         Text(json, "memo", episode.Memo);
         Text(json, "eventKey", episode.EventKey);
         Text(json, "sceneId", episode.SceneId);
-        Row(json, episode.SourceRow);
 
         if (episode.AllowUnreachable)
         {
@@ -103,7 +106,6 @@ internal static class ChapterDocumentJson
         (double?)json["x"] ?? 0,
         (double?)json["y"] ?? 0,
         Optional(json["memo"]),
-        (int?)json["sourceRow"] ?? 0,
         (bool?)json["allowUnreachable"] ?? false)
     {
         EventKey = Optional(json["eventKey"]),
@@ -124,7 +126,6 @@ internal static class ChapterDocumentJson
         Text(json, "conditionLabel", edge.ConditionLabel);
         Text(json, "visibleConditionLabel", edge.VisibleConditionLabel);
         Text(json, "lockedMessage", edge.LockedMessage);
-        Row(json, edge.SourceRow);
 
         if (edge.Auto)
         {
@@ -168,8 +169,7 @@ internal static class ChapterDocumentJson
         Text(json["to"]),
         Optional(json["optionLabel"]),
         Optional(json["conditionLabel"]),
-        Optional(json["lockedMessage"]),
-        (int?)json["sourceRow"] ?? 0)
+        Optional(json["lockedMessage"]))
     {
         Auto = (bool?)json["auto"] ?? false,
         VisibleConditionLabel = Optional(json["visibleConditionLabel"]),
@@ -191,7 +191,6 @@ internal static class ChapterDocumentJson
         };
 
         Text(json, "description", condition.Description);
-        Row(json, condition.SourceRow);
 
         return json;
     }
@@ -202,8 +201,7 @@ internal static class ChapterDocumentJson
         Text(json["expression"]),
         Optional(json["description"]),
         Parsed: [],
-        IsValid: false,
-        (int?)json["sourceRow"] ?? 0);
+        IsValid: false);
 
     private static JsonObject WriteStat(ChapterStat stat)
     {
@@ -216,7 +214,6 @@ internal static class ChapterDocumentJson
         };
 
         Text(json, "displayName", stat.DisplayName);
-        Row(json, stat.SourceRow);
 
         if (stat.Type != ChapterStatType.Int)
         {
@@ -232,7 +229,6 @@ internal static class ChapterDocumentJson
         (int?)json["initial"] ?? 0,
         (int?)json["minimum"] ?? 0,
         (int?)json["maximum"] ?? 0,
-        (int?)json["sourceRow"] ?? 0,
         Enum.TryParse((string?)json["type"], out ChapterStatType type) ? type : ChapterStatType.Int);
 
     private static JsonObject WriteChoice(ChapterChoiceOption option)
@@ -241,7 +237,6 @@ internal static class ChapterDocumentJson
 
         Text(json, "index", option.Index);
         Text(json, "memo", option.Memo);
-        Row(json, option.SourceRow);
 
         return json;
     }
@@ -249,8 +244,7 @@ internal static class ChapterDocumentJson
     private static ChapterChoiceOption ReadChoice(JsonObject json) => new(
         Text(json["index"]),
         Text(json["text"]),
-        Optional(json["memo"]),
-        (int?)json["sourceRow"] ?? 0);
+        Optional(json["memo"]));
 
     private static JsonObject WriteFixture(ChapterFixture fixture)
     {
@@ -285,8 +279,6 @@ internal static class ChapterDocumentJson
             json["choices"] = choices;
         }
 
-        Row(json, fixture.SourceRow);
-
         return json;
     }
 
@@ -304,8 +296,7 @@ internal static class ChapterDocumentJson
             (bool?)json["active"] ?? false,
             stats,
             Take(json["choices"], choice => new ChapterFixtureChoice(
-                Text(choice["from"]), Text(choice["to"]))),
-            (int?)json["sourceRow"] ?? 0);
+                Text(choice["from"]), Text(choice["to"]))));
     }
 
     // ── 잔손 ────────────────────────────────────────────────────────────────
@@ -350,15 +341,6 @@ internal static class ChapterDocumentJson
         if (!string.IsNullOrEmpty(value))
         {
             json[name] = value;
-        }
-    }
-
-    /// <summary>0은 안 쓴다 — 툴에서 새로 만든 행은 원래 자리가 없다.</summary>
-    private static void Row(JsonObject json, int sourceRow)
-    {
-        if (sourceRow != 0)
-        {
-            json["sourceRow"] = sourceRow;
         }
     }
 

@@ -20,7 +20,7 @@ public sealed class ChapterEdgeStatTests
     public ChapterEdgeStatTests()
     {
         _editor.EnsureChapter("ch01");
-        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
 
         _editor.AddEpisode("ch01", "ep1", title: "", 0, 0);
         _editor.AddEpisode("ch01", "ep2", title: "", 1, 0);
@@ -71,7 +71,7 @@ public sealed class ChapterEdgeStatTests
         var fixture = new ChapterFixture(
             "기본", IsActive: true,
             new Dictionary<string, int>(StringComparer.Ordinal),
-            Array.Empty<ChapterFixtureChoice>(), SourceRow: 2);
+            Array.Empty<ChapterFixtureChoice>());
 
         FixtureWalkResult walk = ChapterFixtureWalker.Walk(model, fixture);
 

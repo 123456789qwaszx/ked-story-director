@@ -30,12 +30,12 @@ public sealed class ChapterSwitchTests : IDisposable
         var editor = new ProjectEditor(new StoryProject { Title = "챕터 전환 검증" });
 
         // ch01 — 고아 에피소드가 있어 도달 불가 오류가 난다.
-        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
         editor.AddEpisode("ch01", "시작", title: "", 0, 0);
         editor.AddEpisode("ch01", "고아", title: "", 1, 1);
 
         // ch02 — 깨끗하고, 간선에 증감이 있어 도착 스탯이 카드에 떠야 한다.
-        editor.EnsureChapter("ch02").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        editor.EnsureChapter("ch02").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
         editor.AddEpisode("ch02", "둘시작", title: "", 0, 0);
         editor.AddEpisode("ch02", "둘끝", title: "", 1, 0);
         editor.AddEdge("ch02", "둘시작", "둘끝");
