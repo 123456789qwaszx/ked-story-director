@@ -5,7 +5,7 @@ public static class OrthogonalEdgeRouter
 {
     /// <param name="leftward">
     /// 카드 <b>왼쪽</b> 포트에서 나가 도착 카드의 오른쪽으로 드는 선 — 오른쪽 선을 거울에 비춘 모양이다
-    /// (2026-10-29 소유자: 뿌리보다 왼쪽 분기는 박스 왼쪽에서).
+    /// (2026-10-29 소유자: 왼쪽으로 가는 분기는 박스 왼쪽에서 — <see cref="EdgeSide"/>).
     /// </param>
     public static IReadOnlyList<GraphPosition> Route(
         GraphPosition from,

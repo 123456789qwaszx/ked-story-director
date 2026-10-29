@@ -160,8 +160,9 @@ public sealed record GraphOutputPortProjection(
     GraphChoicePort? ChoicePort = null,
 
     /// <summary>
-    /// 카드 <b>왼쪽</b>에 서는 포트인가 — 잇는 곳이 뿌리보다 왼쪽이다(<see cref="RootSide"/>, 2026-10-29 소유자:
-    /// "분기가 뿌리 에피소드보다 왼쪽에 위치하면 박스 왼쪽에"). 선도 왼쪽으로 나가 도착 카드의 오른쪽으로 든다.
+    /// 카드 <b>왼쪽</b>에 서는 포트인가 — 잇는 카드가 이 카드보다 왼쪽이다(<see cref="EdgeSide"/>, 2026-10-29 소유자:
+    /// "분기가 … 왼쪽에 위치하면 박스 왼쪽에"). 선도 왼쪽으로 나가 도착 카드의 오른쪽으로 든다. 다른 판의 노드로 가는
+    /// 포트와 아직 안 이은 포트는 오른쪽이다.
     /// </summary>
     bool OnLeft = false);
 

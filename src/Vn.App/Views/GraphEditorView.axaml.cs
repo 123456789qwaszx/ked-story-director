@@ -676,14 +676,6 @@ public partial class GraphEditorView : UserControl
             // 많으므로, 들어오는 가지들은 도착 카드 앞의 접점 하나로 모인다.
             var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
 
-            // 뿌리 — 챕터 시작 에피소드의 카드. 그보다 왼쪽에 둔 카드는 선택지를 <b>왼쪽으로</b> 낸다
-            // (2026-10-29 소유자: "뿌리 에피소드보다 왼쪽에 위치하면 왼쪽으로 생성되도록"). 지금 그린 자리로 재므로
-            // 끄는 동안에도 넘어가는 순간 뒤집힌다.
-            Rect? root = chapter.StartEpisode is { } start &&
-                         spots.TryGetValue(start.EpisodeId, out (DialogueNode Node, Rect Rect) rootSpot)
-                ? rootSpot.Rect
-                : null;
-
             foreach ((string episodeId, (DialogueNode node, Rect rect)) in spots)
             {
                 // 챕터에서 지운 에피소드의 노드가 판에 남아 있으면 레일을 긋지 않는다 —
@@ -698,8 +690,7 @@ public partial class GraphEditorView : UserControl
                     .Where(edge => string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal))
                     .ToList();
 
-                bool mirrored = root is { } rootRect && RootSide.IsLeftOfRoot(rect.X, rootRect.X);
-                DrawRailsFrom(boardName, node, rect, edges, spots, nodeRects, freeNodes, arrivals, mirrored);
+                DrawRailsFrom(boardName, node, rect, edges, spots, nodeRects, freeNodes, arrivals);
             }
 
             foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
@@ -745,8 +736,7 @@ public partial class GraphEditorView : UserControl
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
         IReadOnlyDictionary<string, Rect> nodeRects,
         IReadOnlyList<DialogueNode> freeNodes,
-        Dictionary<string, List<(string From, string Label)>> arrivals,
-        bool mirrored = false)
+        Dictionary<string, List<(string From, string Label)>> arrivals)
     {
         IReadOnlyList<ExitPort> ports = NodeConnections.PortsOf(source, _session!.Project, _session.Definition);
         List<ExitPort> optionPorts = ports.Where(port => port.IsChoice).ToList();
@@ -800,18 +790,32 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        // 뿌리보다 왼쪽 카드는 거울에 비춘 모양이다 — 줄기는 카드 오른쪽 안에서 내려오고, 칩의 문구는 줄기
-        // 왼쪽에 서며, 내려가는 레인은 카드 <b>왼쪽</b>으로 빠진다.
-        double trunkX = mirrored ? sourceRect.Right - RailTrunkInset : sourceRect.X + RailTrunkInset;
-        double branchY = sourceRect.Bottom + RailFirstDrop;
-        int lane = 0;
+        // 선택지마다 제 도착을 본다 (H1 · 2026-10-29 소유자: "연결되어 있는 하나의 루트의 선택지 방향이 바뀌길") —
+        // 도착 카드가 이 카드보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다: 점이 줄기 쪽 · 문구가 그 왼쪽에 서고,
+        // 내려가는 레인은 카드 <b>왼쪽</b>으로 빠진다. 아직 안 이은 칸은 오른쪽이다. 지금 그린 자리로 재므로 끄는 동안에도
+        // 넘어가는 순간 뒤집힌다.
+        List<bool> lefts = branches
+            .Select(branch => branch.Target is { } target && EdgeSide.GoesLeft(sourceRect.X, target.X))
+            .ToList();
 
-        foreach ((ChapterEdge? edge, ExitPort? port, Rect? target, GraphChoicePort? slot) in branches)
+        // 줄기는 줄들이 나가는 쪽의 반대편에 선다 — 전부 오른쪽이면 카드 왼쪽 안(늘 쓰던 자리), 전부 왼쪽이면 카드
+        // 오른쪽 안, 양쪽이 섞이면 가운데(양쪽 문구가 설 자리가 반씩이다).
+        double trunkX = lefts.All(left => left) ? sourceRect.Right - RailTrunkInset
+            : lefts.Any(left => left) ? sourceRect.X + (sourceRect.Width / 2)
+            : sourceRect.X + RailTrunkInset;
+        double branchY = sourceRect.Bottom + RailFirstDrop;
+        int leftLane = 0;
+        int rightLane = 0;
+
+        for (int index = 0; index < branches.Count; index++)
         {
-            // 내려가는 레인은 카드 바깥에 가지마다 한 줄씩 — 같은 줄로 겹치면 어느 선이 어디로 가는지 안 보인다.
+            (ChapterEdge? edge, ExitPort? port, Rect? target, GraphChoicePort? slot) = branches[index];
+            bool mirrored = lefts[index];
+
+            // 내려가는 레인은 카드 바깥에 가지마다 한 줄씩(쪽마다 따로 센다) — 같은 줄로 겹치면 어느 선이 어디로 가는지 안 보인다.
             double laneX = mirrored
-                ? sourceRect.X - RailLaneOut - (lane++ * RailLaneGap)
-                : sourceRect.Right + RailLaneOut + (lane++ * RailLaneGap);
+                ? sourceRect.X - RailLaneOut - (leftLane++ * RailLaneGap)
+                : sourceRect.Right + RailLaneOut + (rightLane++ * RailLaneGap);
             DrawRailBranch(chapterId, source, edge, port, trunkX, branchY, laneX, target, nodeRects, freeNodes, slot, mirrored);
 
             if (edge is not null && target is not null)
@@ -956,7 +960,8 @@ public partial class GraphEditorView : UserControl
     /// 실제로 뻗어 나가는 자리가 거기이기 때문이다 — 카드 안에 두면 이야기가 어디로
     /// 갈라지는지 한눈에 안 보인다.
     /// </summary>
-    /// <param name="mirrored">뿌리보다 왼쪽 카드의 칩 — 점이 줄기 쪽(오른쪽)에, 문구가 그 왼쪽에 선다.</param>
+    /// <param name="mirrored">왼쪽으로 나가는 선택지(도착 카드가 이 카드보다 왼쪽, <see cref="EdgeSide"/>)의 칩 — 점이 줄기 쪽(오른쪽)에,
+    /// 문구가 그 왼쪽에 선다.</param>
     private Control SlotChip(GraphChoicePort slot, string nodeId, bool mirrored = false)
     {
         IReadOnlyList<GraphChoicePort> ports = SlotsOf(nodeId);
@@ -1605,7 +1610,7 @@ public partial class GraphEditorView : UserControl
             _session.ExpandedFileIds,
             _session.Definition);
 
-        // 카드를 옮겨 분기가 뿌리를 넘었으면 포트가 반대쪽으로 선다 — 포트 줄은 카드 안에 지어지므로 카드부터 다시 짓는다.
+        // 카드를 옮겨 분기의 도착이 출발 카드를 넘었으면 포트가 반대쪽으로 선다 — 포트 줄은 카드 안에 지어지므로 카드부터 다시 짓는다.
         if (PortSidesChanged(_projection))
         {
             Rebuild();
@@ -2533,7 +2538,7 @@ public partial class GraphEditorView : UserControl
         {
             Width = PortRadius * 2,
             Height = PortRadius * 2,
-            // 점의 가운데가 카드 가장자리에 걸린다 — 뿌리보다 왼쪽으로 가는 포트는 왼쪽 가장자리다(2026-10-29 소유자).
+            // 점의 가운데가 카드 가장자리에 걸린다 — 이 카드보다 왼쪽 카드로 가는 포트는 왼쪽 가장자리다(2026-10-29 소유자).
             Margin = port.OnLeft
                 ? new Thickness(-CardPadding - SpineInset - PortRadius, 0, 6, 0)
                 : new Thickness(6, 0, -CardPadding - PortRadius, 0),
