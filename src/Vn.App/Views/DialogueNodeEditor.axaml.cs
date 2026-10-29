@@ -619,7 +619,7 @@ public partial class DialogueNodeEditor : UserControl
         // 추가와 삭제 사이에 구분선 (소유자 지시) — 성격이 반대인 두 동작이 붙어 있으면 헷갈린다.
         panel.Children.Add(MenuSeparator());
 
-        Button remove = Item("삭제", "대본에서 이 줄을 뺍니다. LineId는 은퇴 상태로 남습니다.");
+        Button remove = Item("삭제", "대본에서 이 줄을 뺍니다.");
         remove.Click += (_, _) =>
         {
             flyout.Hide();
@@ -749,8 +749,12 @@ public partial class DialogueNodeEditor : UserControl
     // 태그 레일, 출구는 아래의 출구 레일로만 나타난다 — 태그가 없으면 레일도 없다.
     // 태그는 표시가 아니라 편집 진입점이다: 누르면 기존 편집 컨트롤이 Flyout으로 열린다.
 
-    /// <summary>헤더와 모든 카드가 공유하는 열 구성 — Index | LineId | Character | 대사 | ＋.</summary>
-    private const string RowColumns = "30,64,96,*,28";
+    /// <summary>
+    /// 헤더와 모든 카드가 공유하는 열 구성 — Index | 화자 | 대사 | ＋. 태그 · 출구 레일은 화자 열(30)에서 시작한다.
+    /// (⛔ LineId 열은 2026-10-29에 걷혔다 — 소유자: "LineId는 필요없으니 화면에 노출되지 않도록". 줄 신원은
+    /// 데이터에 그대로 산다.)
+    /// </summary>
+    private const string RowColumns = "30,96,*,28";
 
     /// <summary>목록 위에 한 번만 나오는 얇은 열 헤더.</summary>
     private Control BuildColumnHeader()
@@ -770,9 +774,8 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         Add("#", 0);
-        Add("LineId", 1);
-        Add("화자", 2);
-        Add("대사", 3);
+        Add("화자", 1);
+        Add("대사", 2);
         return header;
     }
 
@@ -847,13 +850,12 @@ public partial class DialogueNodeEditor : UserControl
         };
     }
 
-    /// <summary>Index | LineId | 화자 | 대사 | ＋ 의 메인 행. 높이는 한 줄로 고정이다.</summary>
+    /// <summary>Index | 화자 | 대사 | ＋ 의 메인 행. 높이는 한 줄로 고정이다.</summary>
     private Control BuildMainRow(DialogueNode node, DialogueScript script, ResolvedLine resolved)
     {
         // 선택지 라벨은 화자가 없는 버튼 텍스트다 (X9) — 화자 칸에는 ▶만 놓는다.
         bool isLabel = resolved.Line.Transition?.OpensOption == true;
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions(RowColumns) };
-        string revisionTip = $"{resolved.Line.LineId} · rev {resolved.Line.Revision}";
 
         var index = new TextBlock
         {
@@ -862,21 +864,8 @@ public partial class DialogueNodeEditor : UserControl
             Opacity = 0.45,
             VerticalAlignment = VerticalAlignment.Center
         };
-        ToolTip.SetTip(index, revisionTip);
         Grid.SetColumn(index, 0);
         row.Children.Add(index);
-
-        var lineId = new TextBlock
-        {
-            Text = resolved.Line.LineId,
-            FontSize = 9,
-            Opacity = 0.5,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis
-        };
-        ToolTip.SetTip(lineId, revisionTip);
-        Grid.SetColumn(lineId, 1);
-        row.Children.Add(lineId);
 
         // 긴 대사가 카드 높이를 늘리지 않는다 — 칸 안에서 가로로 흐른다.
         var text = new TextBox
@@ -943,7 +932,7 @@ public partial class DialogueNodeEditor : UserControl
                 VerticalAlignment = VerticalAlignment.Center
             };
             ToolTip.SetTip(icon, "선택지 버튼 텍스트 — 대사가 아닙니다.");
-            Grid.SetColumn(icon, 2);
+            Grid.SetColumn(icon, 1);
             row.Children.Add(icon);
         }
         else
@@ -992,16 +981,16 @@ public partial class DialogueNodeEditor : UserControl
             Grid.SetColumn(pick, 1);
             speakerCell.Children.Add(speaker);
             speakerCell.Children.Add(pick);
-            Grid.SetColumn(speakerCell, 2);
+            Grid.SetColumn(speakerCell, 1);
             row.Children.Add(speakerCell);
         }
 
         Wire(text);
-        Grid.SetColumn(text, 3);
+        Grid.SetColumn(text, 2);
         row.Children.Add(text);
 
         Button plus = BuildPlusButton(node, script, resolved);
-        Grid.SetColumn(plus, 4);
+        Grid.SetColumn(plus, 3);
         row.Children.Add(plus);
 
         return row;
@@ -1088,7 +1077,7 @@ public partial class DialogueNodeEditor : UserControl
         var rail = new WrapPanel
         {
             Orientation = Orientation.Horizontal,
-            Margin = new Thickness(94, 0, 0, 1)
+            Margin = new Thickness(30, 0, 0, 1)
         };
 
         if (resolved.Line.Transition is not null)
@@ -1422,7 +1411,7 @@ public partial class DialogueNodeEditor : UserControl
             _session!.Editor.MoveScriptLine(scriptId, lineId, 1)));
         Button remove = SmallButton("✕ 삭제", () =>
             _session!.Editor.RetireScriptLine(scriptId, lineId));
-        ToolTip.SetTip(remove, "대본에서 이 줄을 뺍니다. LineId는 은퇴 상태로 남습니다.");
+        ToolTip.SetTip(remove, "대본에서 이 줄을 뺍니다.");
         lineRow.Children.Add(remove);
         panel.Children.Add(lineRow);
 
@@ -1456,7 +1445,7 @@ public partial class DialogueNodeEditor : UserControl
         if (_chapterEpisode)
         {
             // 단추가 아니라 글이다 — 잇고 떼는 문이 여기가 아님이 모양으로 보인다.
-            caption.Margin = new Thickness(94, 0, 0, 0);
+            caption.Margin = new Thickness(30, 0, 0, 0);
             caption.Opacity = 0.8;
             ToolTip.SetTip(caption,
                 "이 갈래의 출구는 연출 그래프 카드의 IF 갈래 포트에서 잇고 뗍니다.");
@@ -1471,7 +1460,7 @@ public partial class DialogueNodeEditor : UserControl
             BorderThickness = new Thickness(0),
             Padding = new Thickness(2, 0),
             MinHeight = 0,
-            Margin = new Thickness(92, 0, 0, 0)
+            Margin = new Thickness(28, 0, 0, 0)
         };
         ToolTip.SetTip(button, "누르면 이 갈래의 출구를 고칩니다.");
 
@@ -1616,16 +1605,9 @@ public partial class DialogueNodeEditor : UserControl
 
             content.Children.Add(new TextBlock
             {
-                Text = orphan.Extension.LineId,
-                FontSize = 11,
-                Opacity = 0.7
-            });
-
-            content.Children.Add(new TextBlock
-            {
                 Text = orphan.LastKnownText is { } text
                     ? $"마지막 내용: {text.Speaker}: {text.Text}"
-                    : "이 대본에 없는 LineId입니다.",
+                    : "이 대본에 없는 줄입니다.",
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap
             });

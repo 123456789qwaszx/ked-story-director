@@ -1497,10 +1497,16 @@ public sealed partial class ProjectEditor
                     continue;
                 }
 
+                // 줄은 차례로 가리킨다 — 화면에 LineId를 보이지 않는다(2026-10-29 소유자).
+                int order = (Project.FindScript(node.ScriptId)?.ActiveLines
+                    .Select(line => line.Id)
+                    .ToList()
+                    .IndexOf(extension.LineId) ?? -1) + 1;
+
                 uses.Add(new ChapterUse(
                     ChapterUseKind.DialogueBranch,
                     $"대사 '{node.Name}'",
-                    $"줄 {extension.LineId}의 갈래"));
+                    order > 0 ? $"{order}번째 줄의 갈래" : "대본에서 사라진 줄의 갈래"));
             }
         }
 

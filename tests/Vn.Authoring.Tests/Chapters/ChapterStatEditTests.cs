@@ -190,6 +190,10 @@ public sealed class ChapterStatEditTests
         Assert.False(outcome.Applied);
         ChapterUse use = Assert.Single(outcome.Uses, item => item.Kind == ChapterUseKind.DialogueBranch);
         Assert.Contains("root", use.Where, StringComparison.Ordinal);
+
+        // 줄은 차례로 가리킨다 — LineId는 화면에 보이지 않는다(2026-10-29 소유자).
+        Assert.Equal("1번째 줄의 갈래", use.Detail);
+        Assert.DoesNotContain(lineId, use.Detail, StringComparison.Ordinal);
     }
 
     [Fact]
