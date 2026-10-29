@@ -872,7 +872,11 @@ public sealed partial class ProjectEditor
             //    한 벌씩 더 있었다 — 셋을 함께 걷었다.
             if (!string.Equals(node.DefaultExitTargetNodeId, targetNodeId, StringComparison.Ordinal))
             {
-                Mutate(() => node.DefaultExitTargetNodeId = targetNodeId);
+                Mutate(() =>
+                {
+                    node.DefaultExitTargetNodeId = targetNodeId;
+                    ForgetShapeIfCut(node, kind, branchOpenLineId, targetNodeId);
+                });
             }
 
             return;
@@ -891,7 +895,11 @@ public sealed partial class ProjectEditor
 
             if (!string.Equals(extension.DetourTargetNodeId, targetNodeId, StringComparison.Ordinal))
             {
-                Mutate(() => extension.DetourTargetNodeId = targetNodeId);
+                Mutate(() =>
+                {
+                    extension.DetourTargetNodeId = targetNodeId;
+                    ForgetShapeIfCut(dialogue, kind, branchOpenLineId, targetNodeId);
+                });
             }
 
             return;
@@ -910,6 +918,52 @@ public sealed partial class ProjectEditor
             else
             {
                 exits[branchOpenLineId] = targetNodeId;
+            }
+
+            ForgetShapeIfCut(dialogue, kind, branchOpenLineId, targetNodeId);
+        });
+    }
+
+    /// <summary>끊긴 출구의 선 모양은 걷는다 — 선이 없는데 모양만 파일에 남으면, 같은 자리를 다시 이을 때 옛 굽이가 되살아난다.</summary>
+    private static void ForgetShapeIfCut(StoryNode node, ExitPortKind kind, string? exitKey, string? targetNodeId)
+    {
+        if (targetNodeId is null)
+        {
+            node.EdgeShapes.Remove(EdgeShape.KeyOf(kind, exitKey));
+        }
+    }
+
+    /// <summary>
+    /// <b>실행 선의 모양을 정한다</b> (G3 · 2026-10-29 소유자: "곡선이나 그런 걸 조절할 수 있도록 해줘. 피그잼처럼").
+    /// 꼴을 바꾸거나 손잡이를 끌어 놓을 때 한 번 — 되돌리기 한 칸이다. null이나 기본 모양이면 자동으로 돌아간다.
+    /// 이어지지 않은 출구는 그을 선이 없어 아무것도 적지 않고, 바뀌는 것이 없어도 적지 않는다.
+    /// </summary>
+    public void SetExitShape(ExitPort exit, EdgeShape? shape)
+    {
+        ArgumentNullException.ThrowIfNull(exit);
+
+        if (!exit.IsConnected || Project.FindNode(exit.NodeId) is not { } node)
+        {
+            return;
+        }
+
+        string key = EdgeShape.KeyOf(exit);
+        EdgeShape? wanted = shape is null || shape.IsDefault ? null : shape;
+
+        if (Equals(node.EdgeShapes.GetValueOrDefault(key), wanted))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            if (wanted is null)
+            {
+                node.EdgeShapes.Remove(key);
+            }
+            else
+            {
+                node.EdgeShapes[key] = wanted;
             }
         });
     }

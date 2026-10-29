@@ -50,7 +50,8 @@ public sealed class GraphRootSideTests : IDisposable
         Assert.IsNotType<Ellipse>(leftRow.Children[0]);
 
         // 이어진 길의 레인은 카드 <b>왼쪽</b>으로 내려간다.
-        Assert.Contains(VerticalRails(graph), line => line.StartPoint.X < leftX);
+        Avalonia.Controls.Shapes.Path lane = Assert.Single(Lanes(graph), path => (string)path.Tag! == "레인:left>below");
+        Assert.True(lane.Data!.Bounds.Left < leftX);
     });
 
     [Fact]
@@ -114,10 +115,10 @@ public sealed class GraphRootSideTests : IDisposable
             new Point(knob.Bounds.Width / 2, knob.Bounds.Height / 2),
             graph.FindControl<Canvas>("GraphCanvas")!)!.Value;
 
-    /// <summary>실행 선(IF 갈래 · 분기) — 레일은 Line이고 이것만 Path다.</summary>
+    /// <summary>실행 선(IF 갈래 · 분기) — 레인과 그 누르는 자리는 Tag를 진다.</summary>
     private static IEnumerable<Avalonia.Controls.Shapes.Path> Edges(GraphEditorView graph) =>
         graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Avalonia.Controls.Shapes.Path>()
-            .Where(path => path.IsVisible && path.Data is not null);
+            .Where(path => path.IsVisible && path.Data is not null && path.Tag is null);
 
     private static void Redraw(GraphEditorView graph)
     {
@@ -141,9 +142,10 @@ public sealed class GraphRootSideTests : IDisposable
             .OrderBy(row => row.Tag as string, StringComparer.Ordinal)
             .ToList();
 
-    private static IEnumerable<Line> VerticalRails(GraphEditorView graph) =>
-        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Line>()
-            .Where(line => line.StartPoint.X == line.EndPoint.X && line.StartPoint.Y != line.EndPoint.Y);
+    /// <summary>선택지 레인 — Tag가 <c>레인:{출발}>{도착}</c>이다(G3부터 꺾은선 하나다).</summary>
+    private static IEnumerable<Avalonia.Controls.Shapes.Path> Lanes(GraphEditorView graph) =>
+        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Avalonia.Controls.Shapes.Path>()
+            .Where(path => (path.Tag as string)?.StartsWith("레인:", StringComparison.Ordinal) == true);
 
     /// <summary>ch01 판에 에피소드들을 그 자리에 세운다 — 첫 에피소드가 뿌리다.</summary>
     private (GraphEditorView Graph, AuthoringSession Session) Show(params (string Id, double X, double Y)[] episodes)

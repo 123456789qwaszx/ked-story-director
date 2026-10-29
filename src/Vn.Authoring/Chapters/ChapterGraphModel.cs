@@ -121,6 +121,13 @@ public sealed record ChapterEdge(
     /// (플레이어가 선택지를 보는 시점의 값).
     /// </summary>
     public IReadOnlyList<StatDelta> StatChanges { get; init; } = [];
+
+    /// <summary>
+    /// 연출 그래프에서 이 길(선택지 레인)을 사람이 고친 모양 (G3 · 2026-10-29 소유자: "피그잼처럼"). null이면 자동이다.
+    /// 간선이 들고 있어야 도착 · 문구를 고치거나 에피소드 이름을 바꿔도(<c>with</c>) 모양이 함께 간다.
+    /// 흐름과 산출물에는 아무 뜻이 없다 — 에피소드의 <see cref="ChapterEpisode.X"/>처럼 화면의 값이다.
+    /// </summary>
+    public Model.EdgeShape? Shape { get; init; }
 }
 
 /// <summary>

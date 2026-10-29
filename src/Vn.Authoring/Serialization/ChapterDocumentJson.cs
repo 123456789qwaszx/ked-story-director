@@ -155,6 +155,11 @@ internal static class ChapterDocumentJson
             json["statChanges"] = changes;
         }
 
+        if (EdgeShapeJson.Write(edge.Shape) is { } shape)
+        {
+            json["shape"] = shape;
+        }
+
         return json;
     }
 
@@ -171,7 +176,8 @@ internal static class ChapterDocumentJson
         StatChanges = Take(json["statChanges"], change => new StatDelta(
             Text(change["key"]),
             (int?)change["amount"] ?? 0,
-            Enum.TryParse((string?)change["kind"], out StatChangeKind kind) ? kind : StatChangeKind.Add))
+            Enum.TryParse((string?)change["kind"], out StatChangeKind kind) ? kind : StatChangeKind.Add)),
+        Shape = EdgeShapeJson.Read(json["shape"])
     };
 
     // ── 조건·스탯·선택지·픽스처 ────────────────────────────────────────────

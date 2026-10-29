@@ -297,6 +297,10 @@ public partial class GraphEditorView : UserControl
         _edges.Clear();
         _frames.Clear();
         _selectedEdge = null;
+        _selectedRail = null;
+        _bending = false;
+        _shapePreview = null;
+        HideShapeOverlay();
         SlotLabelBox = null;
 
         // 고른 간선이 사라졌으면 그 간선을 설명하던 줄도 사라져야 한다 — 안 그러면
@@ -596,6 +600,9 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
+        // 고른 레인이 이번에 안 그려지면(판을 접었다 · 길이 사라졌다) 손잡이도 내린다 — 맨 끝에서 본다.
+        _selectedRailDrawn = false;
+
         foreach (IGrouping<string, ExpandedNodeProjection> group in _projection.Items
                      .OfType<ExpandedNodeProjection>()
                      .GroupBy(item => item.FileId, StringComparer.Ordinal))
@@ -692,7 +699,7 @@ public partial class GraphEditorView : UserControl
                     .ToList();
 
                 bool mirrored = root is { } rootRect && RootSide.IsLeftOfRoot(rect.X, rootRect.X);
-                DrawRailsFrom(node, rect, edges, spots, nodeRects, freeNodes, arrivals, mirrored);
+                DrawRailsFrom(boardName, node, rect, edges, spots, nodeRects, freeNodes, arrivals, mirrored);
             }
 
             foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
@@ -705,6 +712,12 @@ public partial class GraphEditorView : UserControl
         for (int index = 0; index < _railVisuals.Count; index++)
         {
             GraphCanvas.Children.Insert(_frames.Count + index, _railVisuals[index]);
+        }
+
+        if (_selectedRail is not null && !_selectedRailDrawn)
+        {
+            _selectedRail = null;
+            HideShapeOverlay();
         }
     }
 
@@ -725,6 +738,7 @@ public partial class GraphEditorView : UserControl
     /// 배선이 유일한 선이고, 끝은 (진행) 합류선이 레인 끝으로 모은다.
     /// </summary>
     private void DrawRailsFrom(
+        string chapterId,
         DialogueNode source,
         Rect sourceRect,
         IReadOnlyList<ChapterEdge> edges,
@@ -798,7 +812,7 @@ public partial class GraphEditorView : UserControl
             double laneX = mirrored
                 ? sourceRect.X - RailLaneOut - (lane++ * RailLaneGap)
                 : sourceRect.Right + RailLaneOut + (lane++ * RailLaneGap);
-            DrawRailBranch(source, edge, port, trunkX, branchY, laneX, target, nodeRects, freeNodes, slot, mirrored);
+            DrawRailBranch(chapterId, source, edge, port, trunkX, branchY, laneX, target, nodeRects, freeNodes, slot, mirrored);
 
             if (edge is not null && target is not null)
             {
@@ -1102,6 +1116,7 @@ public partial class GraphEditorView : UserControl
     }
 
     private void DrawRailBranch(
+        string chapterId,
         DialogueNode source,
         ChapterEdge? edge,
         ExitPort? port,
@@ -1173,9 +1188,17 @@ public partial class GraphEditorView : UserControl
                     ? Math.Min(cursorX - RailLaneGap, laneX)
                     : Math.Max(cursorX + RailLaneGap, laneX);
 
-                _railVisuals.Add(RailLine(cursorX, y, dropX, y));
-                _railVisuals.Add(RailLine(dropX, y, dropX, junctionY));
-                _railVisuals.Add(RailLine(dropX, junctionY, junctionX, junctionY));
+                // 레인은 사람이 모양을 고칠 수 있는 선이다(G3) — 간선이 그 모양을 진다.
+                if (edge is not null)
+                {
+                    DrawLane(
+                        new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel),
+                        edge.Shape,
+                        new GraphPosition(cursorX, y),
+                        toward,
+                        dropX,
+                        new GraphPosition(junctionX, junctionY));
+                }
             }
 
             laneEnd = new Point(junctionX, junctionY);
@@ -2732,32 +2755,30 @@ public partial class GraphEditorView : UserControl
             GraphConnectionKind.Settings;
         edge.Label.IsVisible = showLabel;
 
-        IReadOnlyList<GraphPosition> route = OrthogonalEdgeRouter.Route(
+        // 사람이 고친 모양대로 긋는다(G3) — 끄는 중이면 그 미리보기로.
+        ShapedEdge shaped = EdgeShapeRouter.Execution(
             new GraphPosition(from.X, from.Y),
             new GraphPosition(to.X, to.Y),
-            leftward: leftward);
+            leftward,
+            ReferenceEquals(edge, _selectedEdge) && _shapePreview is { } preview ? preview : ExitShapeOf(edge));
 
-        var geometry = new StreamGeometry();
+        edge.Path.Data = ShapedGeometry(shaped);
 
-        using (StreamGeometryContext context = geometry.Open())
+        // 이름표는 선의 가운데 — 직각이면 가운데 세로 마디, 곡선이면 굽이의 한가운데다.
+        GraphPosition labelPoint = MiddleOf(shaped);
+        edge.Label.Measure(Size.Infinity);
+
+        if (ReferenceEquals(edge, _selectedEdge))
         {
-            context.BeginFigure(ToPoint(route[0]), isFilled: false);
+            PlaceShapeOverlay(shaped, ExitShapeOf(edge));
 
-            for (int index = 1; index < route.Count; index++)
+            // 손잡이도 선의 가운데에 선다 — 고른 동안 이름표는 손잡이 위로 비켜 가려지지 않는다.
+            if (shaped.Handle is not null)
             {
-                context.LineTo(ToPoint(route[index]));
+                labelPoint = labelPoint with { Y = labelPoint.Y - (edge.Label.DesiredSize.Height / 2) - 10 };
             }
-
-            context.EndFigure(isClosed: false);
         }
 
-        edge.Path.Data = geometry;
-
-        GraphPosition labelPoint = new(
-            (route[1].X + route[2].X) / 2,
-            (route[1].Y + route[2].Y) / 2);
-
-        edge.Label.Measure(Size.Infinity);
         Canvas.SetLeft(edge.Label, labelPoint.X - (edge.Label.DesiredSize.Width / 2));
         Canvas.SetTop(edge.Label, labelPoint.Y - (edge.Label.DesiredSize.Height / 2));
     }
@@ -3642,6 +3663,14 @@ public partial class GraphEditorView : UserControl
         }
 
         _selectedEdge = edge;
+        HideShapeOverlay();
+
+        // 선은 한 번에 하나만 고른다 — 실행 선을 고르면(또는 빈 곳을 누르면) 고른 레인은 놓는다.
+        if (_selectedRail is not null)
+        {
+            _selectedRail = null;
+            DrawChapterRails();
+        }
 
         if (edge is null)
         {
@@ -3649,6 +3678,7 @@ public partial class GraphEditorView : UserControl
         }
 
         edge.Path.StrokeThickness = 4;
+        PositionEdge(edge);
 
         string sourceName = FindNodeName(edge.Connection.SourceNodeId) ?? edge.Connection.SourceNodeId;
         string targetName = FindNodeName(edge.Connection.TargetNodeId) ?? edge.Connection.TargetNodeId;
@@ -3912,6 +3942,365 @@ public partial class GraphEditorView : UserControl
         Border Visual);
 
     private sealed record GraphNodeHit(string NodeId, GraphNodeKind NodeKind);
+
+    // ── 선 모양 고치기 (G3) ─────────────────────────────────────────────────
+    //
+    // 2026-10-29 소유자: "선이 생기는 모양새가 종종 이상할 때가 있는데, 원한다면 저것도 곡선이나 그런 걸 조절할 수
+    // 있도록 해줘. 피그잼처럼". 선(실행 선 · 선택지 레인)을 누르면 손잡이와 꼴 도구줄이 선다 — 손잡이를 끌면 선이
+    // 굽고, 도구줄로 직각 · 곡선 · 직선을 고르거나 자동으로 되돌린다. 끄는 동안은 화면만 바뀌고 놓을 때 한 번 적는다
+    // (되돌리기 한 칸 — 카드 끌기와 같다).
+
+    private static readonly IBrush SelectedLineBrush = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB));
+
+    /// <summary>고른 선택지 레인 — 챕터 간선의 신원(출발, 도착, 문구)이다.</summary>
+    private sealed record RailKey(string ChapterId, string From, string To, string? Label);
+
+    private RailKey? _selectedRail;
+
+    /// <summary>이번 레일 그리기에서 고른 레인이 그려졌는가.</summary>
+    private bool _selectedRailDrawn;
+
+    /// <summary>손잡이와 도구줄. 판을 다시 지어도 같은 것을 다시 얹는다 — 끄는 동안 붙잡은 포인터를 잃지 않는다.</summary>
+    private Ellipse? _bendHandle;
+    private Border? _shapeBar;
+    private StackPanel? _shapeButtons;
+    private EdgeShape? _shapeBarShows;
+
+    /// <summary>고른 선을 마지막으로 그은 모양 — 손잡이가 위아래로도 움직이는지(<see cref="ShapedEdge.FreeY"/>)를 본다.</summary>
+    private ShapedEdge? _selectedShaped;
+
+    private bool _bending;
+    private Point _bendStart;
+    private EdgeShape _bendFrom = EdgeShape.Default;
+
+    /// <summary>끄는 동안의 모양 — 놓을 때까지 프로젝트에 적지 않는다.</summary>
+    private EdgeShape? _shapePreview;
+
+    /// <summary>선택지 레인 하나 — 칩 끝에서 레인을 타고 도착 접점까지(<see cref="EdgeShapeRouter.Lane"/>).</summary>
+    private void DrawLane(
+        RailKey key, EdgeShape? stored, GraphPosition from, double toward, double laneX, GraphPosition junction)
+    {
+        bool selected = key.Equals(_selectedRail);
+        ShapedEdge lane = EdgeShapeRouter.Lane(
+            from, toward, laneX, junction, selected && _shapePreview is { } preview ? preview : stored);
+
+        _railVisuals.Add(new ShapePath
+        {
+            Data = ShapedGeometry(lane),
+            Stroke = selected ? SelectedLineBrush : RailBrush,
+            StrokeThickness = selected ? 2.4 : 1.4,
+            IsHitTestVisible = false,
+            Tag = $"레인:{key.From}>{key.To}"
+        });
+
+        // 누르는 자리 — 1.4px 선은 겨누기 어렵다. 넓고 투명한 같은 선이 받는다(카드 뒤라 카드를 가리지 않는다).
+        var hit = new ShapePath
+        {
+            Data = ShapedGeometry(lane),
+            Stroke = Brushes.Transparent,
+            StrokeThickness = 10,
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Tag = key
+        };
+        hit.PointerPressed += (_, args) =>
+        {
+            args.Handled = true;
+            SelectRail(key);
+        };
+        _railVisuals.Add(hit);
+
+        if (selected)
+        {
+            _selectedRailDrawn = true;
+            PlaceShapeOverlay(lane, stored);
+        }
+    }
+
+    private void SelectRail(RailKey key)
+    {
+        SelectEdge(null);
+        _selectedRail = key;
+        DrawChapterRails();
+        SetHint(key.Label is { Length: > 0 } label ? $"{key.From} → {key.To} · 「{label}」" : $"{key.From} → {key.To}");
+    }
+
+    /// <summary>실행 선의 모양 — 나가는 노드가 진다(<see cref="StoryNode.EdgeShapes"/>).</summary>
+    private EdgeShape? ExitShapeOf(EdgeVisual edge) =>
+        edge.Connection.ExecutionPort is { } exit && _session?.Project.FindNode(exit.NodeId) is { } node
+            ? node.EdgeShapes.GetValueOrDefault(EdgeShape.KeyOf(exit))
+            : null;
+
+    /// <summary>선택지 레인의 모양 — 간선이 진다(<see cref="ChapterEdge.Shape"/>).</summary>
+    private EdgeShape? RailShapeOf(RailKey key) =>
+        _session?.Editor.FindChapter(key.ChapterId)?.Edges.FirstOrDefault(edge =>
+            string.Equals(edge.FromEpisodeId, key.From, StringComparison.Ordinal) &&
+            string.Equals(edge.ToEpisodeId, key.To, StringComparison.Ordinal) &&
+            string.Equals(edge.OptionLabel, key.Label, StringComparison.Ordinal))?.Shape;
+
+    private EdgeShape? SelectedLineShape() =>
+        _selectedEdge is { } edge ? ExitShapeOf(edge)
+        : _selectedRail is { } rail ? RailShapeOf(rail)
+        : null;
+
+    private static StreamGeometry ShapedGeometry(ShapedEdge shaped)
+    {
+        var geometry = new StreamGeometry();
+
+        using (StreamGeometryContext context = geometry.Open())
+        {
+            context.BeginFigure(ToPoint(shaped.Points[0]), isFilled: false);
+
+            if (shaped.Kind == EdgeShapeKind.Curve)
+            {
+                for (int index = 1; index + 2 < shaped.Points.Count; index += 3)
+                {
+                    context.CubicBezierTo(
+                        ToPoint(shaped.Points[index]),
+                        ToPoint(shaped.Points[index + 1]),
+                        ToPoint(shaped.Points[index + 2]));
+                }
+            }
+            else
+            {
+                for (int index = 1; index < shaped.Points.Count; index++)
+                {
+                    context.LineTo(ToPoint(shaped.Points[index]));
+                }
+            }
+
+            context.EndFigure(isClosed: false);
+        }
+
+        return geometry;
+    }
+
+    /// <summary>선의 가운데 — 손잡이가 있으면 그 자리, 직선이면 두 끝의 가운데다.</summary>
+    private static GraphPosition MiddleOf(ShapedEdge shaped) =>
+        shaped.Handle ?? new GraphPosition(
+            (shaped.Points[0].X + shaped.Points[^1].X) / 2,
+            (shaped.Points[0].Y + shaped.Points[^1].Y) / 2);
+
+    /// <summary>고른 선에 손잡이와 도구줄을 얹는다. 도구줄은 <b>적힌</b> 모양을 비춘다(끄는 중의 미리보기가 아니라).</summary>
+    private void PlaceShapeOverlay(ShapedEdge shaped, EdgeShape? stored)
+    {
+        EnsureShapeOverlay();
+        _selectedShaped = shaped;
+
+        _bendHandle!.IsVisible = shaped.Handle is not null;
+
+        if (shaped.Handle is { } handle)
+        {
+            Canvas.SetLeft(_bendHandle, handle.X - 6);
+            Canvas.SetTop(_bendHandle, handle.Y - 6);
+        }
+
+        FillShapeBar(stored ?? EdgeShape.Default);
+
+        GraphPosition middle = MiddleOf(shaped);
+        Canvas.SetLeft(_shapeBar!, middle.X + 12);
+        Canvas.SetTop(_shapeBar!, middle.Y + 12);
+        _shapeBar!.IsVisible = true;
+    }
+
+    private void HideShapeOverlay()
+    {
+        _selectedShaped = null;
+
+        if (_bendHandle is not null)
+        {
+            _bendHandle.IsVisible = false;
+        }
+
+        if (_shapeBar is not null)
+        {
+            _shapeBar.IsVisible = false;
+        }
+    }
+
+    private void EnsureShapeOverlay()
+    {
+        if (_bendHandle is null)
+        {
+            _bendHandle = new Ellipse
+            {
+                Width = 12,
+                Height = 12,
+                Fill = Brushes.White,
+                Stroke = SelectedLineBrush,
+                StrokeThickness = 2,
+                ZIndex = 1000,
+                Cursor = new Cursor(StandardCursorType.SizeAll),
+                [ToolTip.TipProperty] = "끌어서 선을 굽힙니다."
+            };
+            _bendHandle.PointerPressed += OnBendPressed;
+            _bendHandle.PointerMoved += OnBendMoved;
+            _bendHandle.PointerReleased += OnBendReleased;
+
+            _shapeButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 };
+            _shapeBar = new Border
+            {
+                Child = _shapeButtons,
+                Padding = new Thickness(2),
+                CornerRadius = new CornerRadius(4),
+                BorderThickness = new Thickness(1),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x80, 0x80, 0x80)),
+                Background = new SolidColorBrush(Color.FromArgb(0xF2, 0xF6, 0xF7, 0xFA)),
+                ZIndex = 1000
+            };
+        }
+
+        // 판을 다시 지으면(Children.Clear) 떨어져 나간다 — 같은 것을 다시 얹는다.
+        if (_bendHandle.Parent is null)
+        {
+            GraphCanvas.Children.Add(_bendHandle);
+        }
+
+        if (_shapeBar!.Parent is null)
+        {
+            GraphCanvas.Children.Add(_shapeBar);
+        }
+    }
+
+    /// <summary>꼴 셋과 「자동」. 지금 꼴은 굵게 서고, 같은 꼴을 또 누르면 굽이를 그대로 둔다.</summary>
+    private void FillShapeBar(EdgeShape stored)
+    {
+        if (stored.Equals(_shapeBarShows))
+        {
+            return;
+        }
+
+        _shapeBarShows = stored;
+        _shapeButtons!.Children.Clear();
+
+        Button Choice(string text, string tip, EdgeShapeKind kind)
+        {
+            bool current = stored.Kind == kind;
+            var button = new Button
+            {
+                Content = text,
+                FontSize = 10,
+                Padding = new Thickness(6, 1),
+                MinHeight = 0,
+                FontWeight = current ? FontWeight.Bold : FontWeight.Normal,
+                [ToolTip.TipProperty] = tip
+            };
+
+            // ⚠ 지금 꼴이 아닐 때 Foreground를 null로 <b>적으면</b> 글이 사라진다 — 테마 값을 덮는다.
+            if (current)
+            {
+                button.Foreground = SelectedLineBrush;
+            }
+
+            // 꼴을 바꾸면 굽이는 처음부터다 — 직각에서 민 양이 곡선에서는 다른 뜻이다.
+            button.Click += (_, _) => UiGuard.Run(_session, "선 모양", () =>
+            {
+                if ((SelectedLineShape() ?? EdgeShape.Default).Kind != kind)
+                {
+                    ApplyShape(new EdgeShape(kind));
+                }
+            });
+
+            return button;
+        }
+
+        _shapeButtons.Children.Add(Choice("직각", "꺾인 선 — 손잡이로 꺾이는 자리를 옮깁니다.", EdgeShapeKind.Elbow));
+        _shapeButtons.Children.Add(Choice("곡선", "부드러운 곡선 — 손잡이로 굽이를 옮깁니다.", EdgeShapeKind.Curve));
+        _shapeButtons.Children.Add(Choice("직선", "두 끝을 곧게 잇습니다.", EdgeShapeKind.Straight));
+
+        var reset = new Button
+        {
+            Content = "↺ 자동",
+            FontSize = 10,
+            Padding = new Thickness(6, 1),
+            MinHeight = 0,
+            IsEnabled = !stored.IsDefault,
+            [ToolTip.TipProperty] = "고친 모양을 걷고 처음 자리로 되돌립니다."
+        };
+        reset.Click += (_, _) => UiGuard.Run(_session, "선 모양", () => ApplyShape(null));
+        _shapeButtons.Children.Add(reset);
+    }
+
+    /// <summary>고른 선에 모양을 적는다 — 실행 선은 노드에, 선택지 레인은 간선에.</summary>
+    private void ApplyShape(EdgeShape? shape)
+    {
+        if (_session is null)
+        {
+            return;
+        }
+
+        if (_selectedEdge?.Connection.ExecutionPort is { } exit)
+        {
+            _session.Editor.SetExitShape(exit, shape);
+        }
+        else if (_selectedRail is { } rail)
+        {
+            _session.Editor.SetEdgeShape(rail.ChapterId, rail.From, rail.To, rail.Label, shape);
+        }
+    }
+
+    private void OnBendPressed(object? sender, PointerPressedEventArgs args)
+    {
+        args.Handled = true;
+
+        if (!args.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        _bending = true;
+        _bendStart = args.GetPosition(GraphCanvas);
+        _bendFrom = SelectedLineShape() ?? EdgeShape.Default;
+        _shapePreview = null;
+        args.Pointer.Capture(_bendHandle);
+    }
+
+    private void OnBendMoved(object? sender, PointerEventArgs args)
+    {
+        if (!_bending)
+        {
+            return;
+        }
+
+        args.Handled = true;
+        Point at = args.GetPosition(GraphCanvas);
+        bool freeY = _selectedShaped?.FreeY ?? true;
+
+        _shapePreview = _bendFrom with
+        {
+            BendX = Math.Round(_bendFrom.BendX + (at.X - _bendStart.X)),
+            BendY = freeY ? Math.Round(_bendFrom.BendY + (at.Y - _bendStart.Y)) : _bendFrom.BendY
+        };
+
+        if (_selectedEdge is { } edge)
+        {
+            PositionEdge(edge);
+        }
+        else if (_selectedRail is not null)
+        {
+            DrawChapterRails();
+        }
+    }
+
+    private void OnBendReleased(object? sender, PointerReleasedEventArgs args)
+    {
+        if (!_bending)
+        {
+            return;
+        }
+
+        args.Handled = true;
+        _bending = false;
+        args.Pointer.Capture(null);
+
+        EdgeShape? bent = _shapePreview;
+        _shapePreview = null;
+
+        // 누르기만 하고 놓았으면 적을 것이 없다.
+        if (bent is not null)
+        {
+            UiGuard.Run(_session, "선 모양", () => ApplyShape(bent));
+        }
+    }
 
     private sealed class EdgeVisual
     {

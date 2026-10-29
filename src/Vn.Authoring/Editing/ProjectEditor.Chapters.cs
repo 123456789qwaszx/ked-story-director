@@ -667,6 +667,27 @@ public sealed partial class ProjectEditor
         });
     }
 
+    /// <summary>
+    /// <b>선택지 레인의 모양을 정한다</b> (G3 · 2026-10-29 소유자: "피그잼처럼") — 간선이 모양을 진다
+    /// (<see cref="ChapterEdge.Shape"/>). 되돌리기 한 칸이고, 자리만 바뀐 변경(<see cref="ProjectChangeKind.Layout"/>)이라
+    /// 판은 카드를 다시 짓지 않고 선만 다시 긋는다.
+    /// null이나 기본 모양이면 자동으로 돌아간다. 바뀌는 것이 없으면 아무것도 적지 않는다.
+    /// </summary>
+    public void SetEdgeShape(
+        string chapterId, string fromEpisodeId, string toEpisodeId, string? optionLabel, EdgeShape? shape)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        int index = RequireEdgeIndex(chapter, fromEpisodeId, toEpisodeId, optionLabel);
+        EdgeShape? wanted = shape is null || shape.IsDefault ? null : shape;
+
+        if (Equals(chapter.Edges[index].Shape, wanted))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () => chapter.Edges[index] = chapter.Edges[index] with { Shape = wanted });
+    }
+
     /// <summary>간선 삭제 — 사전의 문구는 남는다(다른 길에서 또 쓴다).</summary>
     public void RemoveEdge(
         string chapterId, string fromEpisodeId, string toEpisodeId, string? optionLabel = null)

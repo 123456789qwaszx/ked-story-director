@@ -1,3 +1,5 @@
+using Vn.Authoring.Flow;
+
 namespace Vn.Authoring.Model;
 
 /// <summary>그래프에 배치된 좌표. 파일 순서와는 아무 관계가 없다.</summary>
@@ -30,6 +32,12 @@ public abstract class StoryNode
     public string Name { get; set; }
 
     public NodeLayout Layout { get; set; } = new();
+
+    /// <summary>
+    /// 이 노드에서 나가는 실행 선의 모양 — 열쇠는 <see cref="EdgeShape.KeyOf(ExitPortKind, string?)"/>이다 (G3 · 2026-10-29).
+    /// 사람이 고친 선만 있다. 출구를 끊으면 그 선의 모양도 함께 걷힌다.
+    /// </summary>
+    public Dictionary<string, EdgeShape> EdgeShapes { get; init; } = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 노드가 끝난 뒤 이동할 노드. null이면 이야기가 여기서 멈춘다.
@@ -66,6 +74,7 @@ public sealed class SetNode : StoryNode
         return new SetNode(Id, Name)
         {
             Layout = Layout.Clone(),
+            EdgeShapes = new Dictionary<string, EdgeShape>(EdgeShapes, StringComparer.Ordinal),
             DefaultExitTargetNodeId = DefaultExitTargetNodeId,
             Conditions = Conditions.Select(item => item.Clone()).ToList()
         };
@@ -227,6 +236,7 @@ public sealed class DialogueNode : StoryNode
         return new DialogueNode(Id, Name)
         {
             Layout = Layout.Clone(),
+            EdgeShapes = new Dictionary<string, EdgeShape>(EdgeShapes, StringComparer.Ordinal),
             ScriptId = ScriptId,
             MarkedEpisodeId = MarkedEpisodeId,
             LineExtensions = LineExtensions.Select(item => item.Clone()).ToList(),

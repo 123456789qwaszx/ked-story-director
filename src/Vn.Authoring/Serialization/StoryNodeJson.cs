@@ -54,6 +54,22 @@ internal static class StoryNodeJson
             json["defaultExit"] = node.DefaultExitTargetNodeId;
         }
 
+        // 선 모양(G3) — ⚠ "lines"는 대사 노드의 LineId별 논리가 이미 쓰는 칸이라 이름이 다르다.
+        var shapes = new JsonObject();
+
+        foreach ((string key, EdgeShape shape) in node.EdgeShapes.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            if (EdgeShapeJson.Write(shape) is { } written)
+            {
+                shapes[key] = written;
+            }
+        }
+
+        if (shapes.Count > 0)
+        {
+            json["edgeShapes"] = shapes;
+        }
+
         switch (node)
         {
             case SetNode setNode:
@@ -95,6 +111,17 @@ internal static class StoryNodeJson
                 X = (double?)layout["x"] ?? 0,
                 Y = (double?)layout["y"] ?? 0
             };
+        }
+
+        if (json["edgeShapes"] is JsonObject shapes)
+        {
+            foreach ((string key, JsonNode? value) in shapes)
+            {
+                if (EdgeShapeJson.Read(value) is { } shape)
+                {
+                    node.EdgeShapes[key] = shape;
+                }
+            }
         }
 
         return node;
