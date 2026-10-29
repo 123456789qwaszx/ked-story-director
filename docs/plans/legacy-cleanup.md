@@ -45,7 +45,7 @@
 | L4 | Vn.Authoring의 죽은 묶음 — `ChapterRunState` · 판 파일 관리(가져오기 · 지우기 · 개명 · 노드 옮기기) · 프리뷰 흐름(`ChoiceOptionBundle` · `Cycle` · `PassedBlocks`) · 안 쓰는 `Clone` 사슬 · 엑셀 · 탐색기 시절 편집(`TryDecomposeSingle` · `MoveEpisodesToChapter` · `RemoveChoiceLabel` …) · 아무도 안 부르는 멤버 | a 기능째 죽은 묶음 `370e86c` (run 44) · b 아무도 안 부르는 멤버 · 주석 `ca79145` (run 45) |
 | L5 | 대본 가져오기 · 작가 변수의 남은 길 — `PlanScriptSync` · `ScriptParser` · 대본 개명 · 지우기 · `SourcePath`, set · assignment (L-D4). 일치 엔진 테스트는 `ScriptSynchronizer.Plan`으로 옮긴다. **갈래 고르기(L-D5)도 여기서 걷는다** — 시뮬레이션의 set 누적이 그것의 유일한 독자라 한 뿌리다 | `6e460b6` (run 46) |
 | L6 | 걷힌 기능의 화면 흔적 — 「X 설정」 카드(L-D6) · 옛 파일 호환 `excelEpisode`(L-D8) · 형식 거절 안내의 "대본을 가져오세요" | `f31111a` (run 47) |
-| L7 | 현행 안내 문서 — README · ARCHITECTURE · ORIENTATION이 없는 코드 · 걷힌 기능을 가리키지 않게 | 이번 — ARCHITECTURE · ORIENTATION을 지금 구조로 다시 썼고(옛 판은 `git show 82fc34d:ARCHITECTURE.md`), README · `two-graphs.md` · run-log 머리를 고쳤다 |
+| L7 | 현행 안내 문서 — README · ARCHITECTURE · ORIENTATION이 없는 코드 · 걷힌 기능을 가리키지 않게 | `27abe24` (run 49) — ARCHITECTURE · ORIENTATION을 지금 구조로 다시 썼고(옛 판은 `git show 82fc34d:ARCHITECTURE.md`), README · `two-graphs.md` · run-log 머리를 고쳤다 |
 | L8 | `SourceRow` 조사 → 걷기와 에피소드 오류 표시 결함 (L-D7) | `82fc34d` (run 48) — L7보다 먼저 했다(안내 문서는 코드가 다 선 뒤에) |
 
 ## 4. 걷다가 찾은 것
