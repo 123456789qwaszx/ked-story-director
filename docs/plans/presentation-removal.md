@@ -66,7 +66,7 @@ R3에서 정한 방법(`ProjectStore.Load`):
 | R1 | 화면 — 무대 프리뷰 탭과 그것만 쓰는 화면 · 대사 편집기의 무대 연동 · 카드 더블클릭 · 세션의 에셋 · 튜닝 · 오디오 · NAudio · 내장 기본 튜닝 | `8949b2b` (run 21 · 60 · 356 · 963 · 264) |
 | R2 | 출력 — 라이브 Yarn · 내보내기 단추 · 양식 선택 · 출력 검증 · CSV 묶음 · 모델의 내보내기 양식 · 출력 폴더 (Yarn 묶음 · 곡선은 연출과 얽혀 R3에서) | `d26fb60` (run 22 · 60 · 356 · 951 · 250) |
 | R3 | 저작 · 모델 — 연출 흐름(무대 접기 · 재생 경로 · 전환 · 모션 · 곡선 굽기) · 연출 편집(명령 · 빠른 명령 · 곡선 · 에셋 폴더) · 발행과 결과 저장소 · 결과 조합 · 연출 노드 · 명령 공급 노드 · 연출 배선 · 연출 카탈로그 · Yarn 이미터(노드 이름 규칙만 `YarnNaming`으로 남김) · 출력 장부 · 미리보기의 연출 조각과 Direction Sheet · 카드의 "vN 발행" · 직렬화 · 옛 프로젝트(§3) · `Vn.Authoring`의 `Ked.Presentation.Core` 참조 · R1이 남긴 더블클릭 시험 도우미 | `8694459` (run 23 · 60 · 356 · 623 · 246) |
-| R4 | `Ked.Presentation.Core` 프로젝트와 그 테스트(솔루션 · NUnit 패키지) · 문서 — README · two-graphs(지금 모습으로) · ORIENTATION · ARCHITECTURE · project-boundaries · external-overview · current-state(머리 안내와 프로젝트 표) · director-split(열린 것) | 이번 |
+| R4 | `Ked.Presentation.Core` 프로젝트와 그 테스트(솔루션 · NUnit 패키지) · 문서 — README · two-graphs(지금 모습으로) · ORIENTATION · ARCHITECTURE · project-boundaries · external-overview · current-state(머리 안내와 프로젝트 표) · director-split(열린 것) | `acbfdc1` (run 24 · 60 · 623 · 246 — `Ked.Presentation.Core.Tests`가 빠져 셋이다) |
 
 남는 것: `Vn.Core` · `Vn.Cli`(Yarn 분석 도구)는 저작 경로와 무관한 별도 도구라 그대로 둔다 — 게임용 Yarn은 이 툴이 내지 않으므로
 옮길지는 따로 정한다(CI의 "Yarn sample smoke"가 그것을 돌린다).
