@@ -249,21 +249,6 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 패널에서_간선을_더한다() => HeadlessUi.Run(() =>
-    {
-        using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        view.SelectEpisode("main05.01");
-        view.FindControl<ComboBox>("EdgeTargetCombo")!.SelectedItem = "main05.end";
-        view.AddEdgeFromPanel();
-
-        ChapterEdge edge = Edge(session, "main05.01", "main05.end");
-        // v12 — 툴이 놓는 길에는 기본 문구가 들어간다. 문구는 그 줄을 눌러 고친다.
-        Assert.Equal("계속", edge.OptionLabel);
-    });
-
-    [Fact]
     public void 선택지는_챕터의_모든_문구_중에서_고른다() => HeadlessUi.Run(() =>
     {
         // v9 (2026-08-17 소유자) — "자기 것만 고르는 게 아니라 모든 선택지 중에서 자유자재로."

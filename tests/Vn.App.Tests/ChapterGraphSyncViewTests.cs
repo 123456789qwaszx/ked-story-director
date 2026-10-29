@@ -276,7 +276,7 @@ public sealed class ChapterGraphSyncViewTests
 
         public string ManifestPath { get; }
 
-        public string ExportFolder => Path.Combine(_directory, ChapterGraphView.ExportFolderName);
+        public string ExportFolder => Path.Combine(_directory, ChapterExportService.ExportFolderName);
 
         public void Dispose()
         {

@@ -48,7 +48,7 @@ internal static class ChapterAddFlyout
 
             flyout.Hide();
             created?.Invoke(chapterId);
-            session.SetStatus($"챕터 '{chapterId}'를 만들었습니다. 장면은 챕터 줄을 우클릭해 더합니다.");
+            session.SetStatus($"챕터 '{chapterId}'를 만들었습니다. 판 가운데 [＋ 에피소드]로 첫 에피소드를 세웁니다.");
         });
 
         create.Click += (_, _) => Submit();

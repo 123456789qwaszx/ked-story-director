@@ -38,57 +38,14 @@ internal sealed class AuthoringSession
     public string? ProjectPath { get; private set; }
 
     /// <summary>
-    /// `game.definition.json`의 내용 — 기획자가 소유하는 어휘(스탯·조건·화자).
-    ///
-    /// ⚠ <b>바뀌면 스스로 알린다</b> (2026-08-26 소유자 보고: 챕터 그래프에서 화자를 지웠는데
-    /// 연출 그래프가 옛 목록을 계속 보였다). 예전에는 쓰는 자리마다 파일을 다시 읽고
-    /// <b>조용히</b> 이 칸만 갈아 끼웠고, 이미 그려진 화면은 그 사실을 알 길이 없어 제 노드를
-    /// 다시 고를 때까지 낡은 목록을 들고 있었다.
-    ///
-    /// <b>알림을 세터에 둔 이유</b>: 다시 읽는 자리가 다섯이라(열기·저장·화자 저장·변수 등록·
-    /// 새 프로젝트) 부르는 쪽마다 알림을 적으면 언젠가 한 곳이 빠진다. 값이 바뀌는 길이
-    /// 하나면 알림도 하나다.
+    /// `game.definition.json`의 내용 — 기획자가 소유하는 어휘(스탯·조건·화자). 화면은 그릴 때마다 여기서 읽는다.
     /// </summary>
-    public GameDefinition Definition
-    {
-        get;
-
-        private set
-        {
-            field = value;
-            DefinitionChanged?.Invoke(this, EventArgs.Empty);
-        }
-    } = GameDefinition.Empty;
-
-    /// <summary>
-    /// <b>A계층(기획자) 스탯 키</b> — 챕터 `스탯` 시트가 등록한 것들 (2026-08-17 소유자:
-    /// "둘은 서로 완전히 다른 계층이야").
-    ///
-    /// 정의 파일의 `variables`는 두 계층의 변수를 <b>한 목록에</b> 담고 있어서, 작가의 변수
-    /// 후보를 그대로 쓰면 <c>trust</c>에 <c>&lt;&lt;set&gt;&gt;</c>을 걸 수 있게 된다 —
-    /// <b>스탯이 변하는 자리는 간선뿐</b>이라는 규칙이 화면에서 깨진다. 그래서 작가 화면은
-    /// 이 집합을 빼고 후보를 세운다.
-    ///
-    /// 원천은 챕터 그래프가 편 목록 하나다(두 곳이 따로 챕터를 펴지 않는다).
-    /// </summary>
-    public IReadOnlySet<string> ChapterStatKeys { get; private set; } =
-        new HashSet<string>(StringComparer.Ordinal);
+    public GameDefinition Definition { get; private set; } = GameDefinition.Empty;
 
     // ⚠ `ChapterSpeakerNames`·`ChapterSpeakerCharacterIds`는 2026-08-23에 사라졌다
     // (소유자: "엑셀 내 어떤 것에서도 화자를 사용하지 않는다 … 화자는 툴 내부에서 직접
     // 정의해서 쓰는 게 맞는 것이였다"). 챕터 `화자` 시트가 폐지되면서 챕터에서 오는 화자
     // 어휘라는 것 자체가 없어졌다 — 화자의 유일한 원천은 <see cref="Definition"/>이다.
-
-    /// <summary>챕터 목록을 다시 읽을 때마다 A계층 어휘를 따라잡는다.</summary>
-    public void SupplyChapterVocabulary(IReadOnlyList<ChapterEntry> entries)
-    {
-        ArgumentNullException.ThrowIfNull(entries);
-
-        ChapterStatKeys = entries
-            .SelectMany(entry => entry.Model.Stats.Select(stat => stat.Key))
-            .Where(key => !string.IsNullOrWhiteSpace(key))
-            .ToHashSet(StringComparer.Ordinal);
-    }
 
     /// <summary>
     /// 새 노드가 추가될 현재 작업 파일.
@@ -137,15 +94,6 @@ internal sealed class AuthoringSession
     public event EventHandler? StatusChanged;
 
     public event EventHandler? SelectionChanged;
-
-    /// <summary>
-    /// <see cref="Definition"/>이 갈렸을 때 — 기획자의 어휘가 바뀌었다는 알림이다.
-    ///
-    /// ⚠ <b>프로젝트 변경(<see cref="Changed"/>)과 갈라 둔다.</b> 정의 파일은 프로젝트
-    /// 바깥에 살고, 저것으로 방송하면 챕터 재읽기·판 재구성이 딸려 온다(2026-08-18
-    /// 성능 항목의 그 고리다). 듣는 쪽은 <b>제가 그리는 목록만</b> 다시 세운다.
-    /// </summary>
-    public event EventHandler? DefinitionChanged;
 
     /// <summary>
     /// 현재 파일 또는 그래프 펼침 상태가 바뀌었을 때.
@@ -412,23 +360,6 @@ internal sealed class AuthoringSession
         return added > 0;
     }
 
-    public bool IsFileExpanded(string fileId)
-    {
-        return _expandedFileIds.Contains(fileId);
-    }
-
-    public IEnumerable<StoryNode> EnumerateExpandedNodes()
-    {
-        return Project.Files
-            .Where(file => _expandedFileIds.Contains(file.Id))
-            .SelectMany(file => file.Nodes);
-    }
-
-    /// <summary>
-    /// 챕터의 판 (챕터 v2, G-1 v2 — 챕터 = 판 1:1). 이름이 챕터 Id와 같은 StoryFile이 그
-    /// 챕터의 판이고, 없으면 만든다. 왼쪽 챕터 목록 클릭과 에피소드 동기화가 같은 이 규칙
-    /// 하나를 쓴다 — 두 곳이 갈리면 노드가 엉뚱한 판에 생긴다.
-    /// </summary>
     /// <summary>
     /// 그 챕터의 판을 보장한다. <b>규칙은 <see cref="ProjectEditor.EnsureChapterBoard"/>가
     /// 갖는다</b> (2026-08-23에 내려갔다 — 세션 상태를 하나도 안 보는 순수 편집 작업이었다).

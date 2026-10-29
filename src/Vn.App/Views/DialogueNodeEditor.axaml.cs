@@ -1426,9 +1426,6 @@ public partial class DialogueNodeEditor : UserControl
     }
 
 
-    private static string FormatNumber(double value) =>
-        value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-
     /// <summary>
     /// 대본에서 사라진 줄에 남은 조건 데이터. 자동으로 지우지 않으므로 눈에 보여야 한다.
     /// </summary>
@@ -1494,12 +1491,6 @@ public partial class DialogueNodeEditor : UserControl
     // `DefaultExitTargetNodeId`·발행 점프 모두 손대지 않았다.
     // 남은 후보 계산은 갈래(detour) 출구가 쓴다.
 
-    /// <summary>
-    /// 출구 후보 — <b>엑셀노드는 뺀다</b> (소유자 결정 2026-08-14). 에피소드 사이의 흐름은
-    /// 챕터 간선(기획자) 소유라, 자유 노드에서 엑셀노드로 점프하면 챕터 장부(표시/해금·
-    /// 스탯 환산·cleared 기록)를 전부 지나친다. 같은 에피소드로의 "복귀"도 함정이다 —
-    /// Yarn 점프는 노드 처음부터 다시 재생한다.
-    /// </summary>
     /// <summary>검증용 손잡이 — 갈래 출구 콤보가 받는 후보 그대로.</summary>
     internal List<StoryNode> ExitTargetsProbe(string nodeId) =>
         ExitTargets((DialogueNode)_session!.Project.FindNode(nodeId)!);

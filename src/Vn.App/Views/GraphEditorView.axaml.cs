@@ -197,7 +197,7 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Width = CanvasWidth;
         GraphCanvas.Height = CanvasHeight;
 
-        AddDialogueButton.Click += (_, _) => AddNode(GraphNodeKind.Dialogue);
+        AddDialogueButton.Click += (_, _) => AddDialogueNode();
         DeleteNodeButton.Click += (_, _) => DeleteSelectedNode();
 
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 대사 노드]가 거기에 선다.
@@ -978,7 +978,7 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<GraphChoicePort> ports = SlotsOf(nodeId);
         bool live = IsLive(slot, ports);
         bool auto = IsAutoSlot(slot, ports);
-        string text = LabelOf(slot, ports);
+        string text = LabelOf(slot);
         IBrush dot = SlotDot(slot, ports);
 
         var knob = new Ellipse
@@ -1039,7 +1039,7 @@ public partial class GraphEditorView : UserControl
         line.Children.Insert(
             mirrored ? 0 : 1,
             string.Equals(_editingSlot, SlotKey(slot), StringComparison.Ordinal)
-                ? SlotEditor(slot, ports)
+                ? SlotEditor(slot)
                 : label);
 
         // 꺼진 점을 누르면 <b>켠다</b>, 켜진 점을 누르면 <b>끈다</b> — 손짓 하나가 한 가지 뜻이다.
@@ -2445,7 +2445,7 @@ public partial class GraphEditorView : UserControl
             args.Handled = true;
         };
 
-        return new ProxyNodeRow(entry.NodeId, entry.NodeKind, index, row);
+        return new ProxyNodeRow(entry.NodeId, index, row);
     }
 
     // ── 선택지 슬롯 (R7 P-2) ────────────────────────────────────────────────
@@ -2566,7 +2566,7 @@ public partial class GraphEditorView : UserControl
     private static string SlotKey(GraphChoicePort choice) => choice.FromEpisodeId + "#" + choice.Slot;
 
     /// <summary>그 칸이 지금 지고 있는 문구 — 이은 것은 간선에서, 안 이은 것은 적어 둔 데서.</summary>
-    private string LabelOf(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
+    private string LabelOf(GraphChoicePort choice) =>
         choice.IsEmpty ? PendingText(choice) ?? string.Empty : choice.Label;
 
     /// <summary>
@@ -2575,7 +2575,7 @@ public partial class GraphEditorView : UserControl
     /// ⚠ 점을 눌러 켜는 길도 잠깐 있었는데 소유자가 물렸다 — 켜기와 적기가 갈라져 있으면
     /// 손짓이 둘이 되고, 켜 두고 안 적은 칸이 <b>뜻 없이</b> 붉게 남는다.
     /// </summary>
-    private bool IsArmed(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
+    private bool IsArmed(GraphChoicePort choice) =>
         choice.IsEmpty && PendingText(choice) is not null;
 
     /// <summary>
@@ -2594,7 +2594,7 @@ public partial class GraphEditorView : UserControl
     /// 살아 있는 칸인가 — 이어졌거나, 켰거나, 자동 길 자리다.
     /// </summary>
     private bool IsLive(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
-        !choice.IsEmpty || IsArmed(choice, slots) || IsAutoSlot(choice, slots);
+        !choice.IsEmpty || IsArmed(choice) || IsAutoSlot(choice, slots);
 
     /// <summary>지금 문구를 적고 있는 칸 — <b>테스트의 손잡이</b>이자 실제 입력칸이다.</summary>
     internal TextBox? SlotLabelBox { get; private set; }
@@ -2688,11 +2688,11 @@ public partial class GraphEditorView : UserControl
     /// 이미 이어진 길이면 <b>그 간선의 문구를 고치고</b>, 아직 안 이었으면 적어만 둔다.
     /// 어느 쪽이든 <b>챕터의 선택지 사전에 배운다</b> — 문구의 주인은 챕터다(v9).
     /// </summary>
-    private Control SlotEditor(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots)
+    private Control SlotEditor(GraphChoicePort choice)
     {
         var box = new TextBox
         {
-            Text = LabelOf(choice, slots),
+            Text = LabelOf(choice),
             FontSize = 10,
             Padding = new Thickness(3, 0),
             MinHeight = 0,
@@ -2706,9 +2706,9 @@ public partial class GraphEditorView : UserControl
 
             string wanted = box.Text?.Trim() ?? string.Empty;
 
-            if (keep && !string.Equals(wanted, LabelOf(choice, slots), StringComparison.Ordinal))
+            if (keep && !string.Equals(wanted, LabelOf(choice), StringComparison.Ordinal))
             {
-                Relabel(choice, slots, wanted);
+                Relabel(choice, wanted);
             }
 
             Rebuild();
@@ -2735,7 +2735,7 @@ public partial class GraphEditorView : UserControl
         return box;
     }
 
-    private void Relabel(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots, string wanted)
+    private void Relabel(GraphChoicePort choice, string wanted)
     {
         if (_session is null)
         {
@@ -3546,11 +3546,11 @@ public partial class GraphEditorView : UserControl
         // (2026-08-24 폐기), 그것이 곧 늘 서 있던 그 문구였다.
         SetHint(null);
 
-        GraphNodeHit? dropped = NodeAt(args.GetPosition(GraphCanvas));
+        string? dropped = NodeAt(args.GetPosition(GraphCanvas));
 
-        string? target = dropped is null || string.Equals(dropped.NodeId, port.NodeId, StringComparison.Ordinal)
+        string? target = dropped is null || string.Equals(dropped, port.NodeId, StringComparison.Ordinal)
             ? null
-            : dropped.NodeId;
+            : dropped;
 
         if (port.ChoicePort is { } choice)
         {
@@ -3602,7 +3602,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        string label = LabelOf(choice, slots);
+        string label = LabelOf(choice);
 
         // 문구가 없는 채로 살아 있는 칸은 <b>자동 길</b> 자리다 (§2 ③-a). 이미 이어진 자동 길을 옮기면
         // 자동 길 그대로다 — 그래서 아래의 장면 검사도 받는다.
@@ -3744,13 +3744,8 @@ public partial class GraphEditorView : UserControl
             : null;
     }
 
-    // AttachLatestResult(발행 결과 끌어 연결)는 2026-08-21에 사라졌다 — 연출 채널이
-    // 자동으로 최신 발행본을 고정하게 됐다(그 채널과 발행은 2026-10-29에 compositor로 갔다).
-    // HandleSupplyDrop(조건 공급 끌어 연결)은 2026-08-22에 같은 길을 갔다 — 설정노드의
-    // "이 챕터에 공급 중" 포트가 사라지면서 놓을 포트 자체가 없어졌다(공급 범위가 판
-    // 전체라 이을 것이 없다). 링크 데이터와 AddSettingsLink는 그대로 산다.
-
-    private GraphNodeHit? NodeAt(Point point)
+    /// <summary>그 자리의 노드 — 펼친 카드이거나 접힌 판의 노드 행. 없으면 null.</summary>
+    private string? NodeAt(Point point)
     {
         foreach (NodeCard card in _cards)
         {
@@ -3761,7 +3756,7 @@ public partial class GraphEditorView : UserControl
             if (point.X >= left && point.X <= left + CardWidth &&
                 point.Y >= top && point.Y <= top + height)
             {
-                return new GraphNodeHit(card.NodeId, card.NodeKind);
+                return card.NodeId;
             }
         }
 
@@ -3781,7 +3776,7 @@ public partial class GraphEditorView : UserControl
             //    각 행이 든 제 번호로 찾는다. 머리글을 누르면 아무 노드도 안 맞는다(맞다).
             if (proxy.Rows.FirstOrDefault(row => row.Index == rowIndex) is { } hit)
             {
-                return new GraphNodeHit(hit.NodeId, hit.NodeKind);
+                return hit.NodeId;
             }
         }
 
@@ -3869,7 +3864,7 @@ public partial class GraphEditorView : UserControl
         }
     }
 
-    private void AddNode(GraphNodeKind kind)
+    private void AddDialogueNode()
     {
         if (_session is null)
         {
@@ -3894,16 +3889,8 @@ public partial class GraphEditorView : UserControl
         double y = ClampNodeY(
             ((GraphScroll.Offset.Y + (GraphScroll.Viewport.Height / 2)) / _zoom) - 90 + stagger);
 
-        // 이 판에서 사람이 만드는 노드는 대사·설정뿐이다 — 노드 종류가 그 둘이고, 설정노드는
-        // 챕터마다 자동으로 선다.
-        StoryNode node = kind switch
-        {
-            GraphNodeKind.Dialogue => _session.Editor.AddDialogueNode(fileId, x, y),
-            GraphNodeKind.Set => _session.Editor.AddSetNode(fileId, x, y),
-            _ => throw new NotSupportedException($"지원하지 않는 그래프 노드 종류 '{kind}'입니다.")
-        };
-
-        _session.Select(node.Id);
+        // 이 판에서 사람이 만드는 노드는 대사뿐이다 — 설정노드는 챕터마다 자동으로 선다.
+        _session.Select(_session.Editor.AddDialogueNode(fileId, x, y).Id);
     }
 
     private void DeleteSelectedNode()
@@ -4068,13 +4055,7 @@ public partial class GraphEditorView : UserControl
         public int VisualRowCount { get; }
     }
 
-    private sealed record ProxyNodeRow(
-        string NodeId,
-        GraphNodeKind NodeKind,
-        int Index,
-        Border Visual);
-
-    private sealed record GraphNodeHit(string NodeId, GraphNodeKind NodeKind);
+    private sealed record ProxyNodeRow(string NodeId, int Index, Border Visual);
 
     // ── 선 모양 고치기 (G3) ─────────────────────────────────────────────────
     //

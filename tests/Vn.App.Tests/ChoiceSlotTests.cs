@@ -49,7 +49,7 @@ public sealed class ChoiceSlotTests : IDisposable
         // ⭐ 그 하나가 자동 길 자리다 — 가장 흔한 "그냥 다음" 잇기에 타이핑이 필요 없다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        IReadOnlyList<IBrush> dots = Dots(graph, session, "root");
+        IReadOnlyList<IBrush> dots = Dots(graph, "root");
 
         Assert.Equal(3, dots.Count);
         Assert.Equal(GraphEditorView.SlotLive, dots[0]);
@@ -64,9 +64,9 @@ public sealed class ChoiceSlotTests : IDisposable
         //    선택지가 하나라도 서면 자동일 수가 없으므로 화면이 먼저 그 문을 닫는다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Write(graph, session, "root", slot: 1, "왼쪽으로");
+        Write(graph, "root", slot: 1, "왼쪽으로");
 
-        IReadOnlyList<IBrush> dots = Dots(graph, session, "root");
+        IReadOnlyList<IBrush> dots = Dots(graph, "root");
 
         Assert.Equal(GraphEditorView.SlotLive, dots[1]);
         Assert.Equal(GraphEditorView.SlotAsleep, dots[0]);   // 자동 자리가 닫혔다
@@ -80,7 +80,7 @@ public sealed class ChoiceSlotTests : IDisposable
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "왼쪽으로");
         graph.Rebuild();
 
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, session, "root")[0]);
+        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[0]);
     });
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class ChoiceSlotTests : IDisposable
         // 챕터이고(v9 어휘집), 다음에 그 자리에서 고를 수 있어야 한다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Write(graph, session, "root", slot: 1, "왼쪽으로");
+        Write(graph, "root", slot: 1, "왼쪽으로");
 
         Assert.Contains(
             session.Editor.FindChapter("ch01")!.ChoiceOptions,
@@ -107,7 +107,7 @@ public sealed class ChoiceSlotTests : IDisposable
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "왼쪽으로");
         graph.Rebuild();
 
-        Write(graph, session, "root", slot: 0, "오른쪽으로");
+        Write(graph, "root", slot: 0, "오른쪽으로");
 
         ChapterEdge edge = Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
         Assert.Equal("오른쪽으로", edge.OptionLabel);
@@ -118,12 +118,12 @@ public sealed class ChoiceSlotTests : IDisposable
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Press(Labels(graph, session, "root")[1]);
+        Press(Labels(graph, "root")[1]);
         graph.SlotLabelBox!.Text = "안 쓸 문구";
         Key(graph.SlotLabelBox, Avalonia.Input.Key.Escape);
 
         Assert.Empty(session.Editor.FindChapter("ch01")!.ChoiceOptions);
-        Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, session, "root")[1]);
+        Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[1]);
     });
 
     [Fact]
@@ -134,10 +134,10 @@ public sealed class ChoiceSlotTests : IDisposable
         //    뜻 없이 붉게 남는다. 점은 <b>적을 자리로 데려가기만</b> 한다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Press(Rows(graph, session, "root")[1].Children.OfType<Ellipse>().Single());
+        Press(Rows(graph, "root")[1].Children.OfType<Ellipse>().Single());
 
         Assert.NotNull(graph.SlotLabelBox);
-        Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, session, "root")[1]);
+        Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[1]);
     });
 
     [Fact]
@@ -145,11 +145,11 @@ public sealed class ChoiceSlotTests : IDisposable
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Write(graph, session, "root", slot: 1, "왼쪽으로");
-        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, session, "root")[1]);
+        Write(graph, "root", slot: 1, "왼쪽으로");
+        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[1]);
 
-        Write(graph, session, "root", slot: 1, string.Empty);
-        Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, session, "root")[1]);
+        Write(graph, "root", slot: 1, string.Empty);
+        Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[1]);
     });
 
     [Fact]
@@ -164,8 +164,8 @@ public sealed class ChoiceSlotTests : IDisposable
         Drag(graph, session, "root", slot: 0, onto: null);
 
         Assert.Empty(session.Editor.FindChapter("ch01")!.Edges);
-        Assert.Equal("왼쪽으로", Labels(graph, session, "root")[0].Text);
-        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, session, "root")[0]);
+        Assert.Equal("왼쪽으로", Labels(graph, "root")[0].Text);
+        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
     });
 
     [Fact]
@@ -175,18 +175,18 @@ public sealed class ChoiceSlotTests : IDisposable
         // ⛔ 예전에는 이은 줄이 늘 위로 모여, 둘째 칸을 먼저 이으면 그 줄이 첫째로 올라갔다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Write(graph, session, "root", slot: 0, "asdsad");
-        Write(graph, session, "root", slot: 1, "rrrrrrr");
+        Write(graph, "root", slot: 0, "asdsad");
+        Write(graph, "root", slot: 1, "rrrrrrr");
         Drag(graph, session, "root", slot: 1, onto: "a");
 
-        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, session, "root").Take(2).Select(label => label.Text));
-        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, session, "root")[0]);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, session, "root")[1]);
+        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
+        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
 
         // 첫째 칸을 나중에 이어도 그 자리다 — 간선은 그 줄 자리에 끼워 들어가, 런타임 선택지 순서도 화면과 같다.
         Drag(graph, session, "root", slot: 0, onto: "a");
 
-        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, session, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(label => label.Text));
         Assert.Equal(
             ["asdsad", "rrrrrrr"],
             session.Editor.FindChapter("ch01")!.Edges.Select(edge => edge.OptionLabel));
@@ -203,9 +203,9 @@ public sealed class ChoiceSlotTests : IDisposable
 
         Drag(graph, session, "root", slot: 0, onto: null);
 
-        Assert.Equal(["하나", "둘"], Labels(graph, session, "root").Take(2).Select(label => label.Text));
-        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, session, "root")[0]);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, session, "root")[1]);
+        Assert.Equal(["하나", "둘"], Labels(graph, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
+        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
 
         // 다시 이으면 도로 첫째다 — 간선도 「둘」 앞에 선다.
         Drag(graph, session, "root", slot: 0, onto: "a");
@@ -220,7 +220,7 @@ public sealed class ChoiceSlotTests : IDisposable
         //    자리가 이 화면이 된 지금은 사람이 만들지 않은 점이 섞여 혼란스럽다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Assert.Equal(3, Rows(graph, session, "root").Count);
+        Assert.Equal(3, Rows(graph, "root").Count);
         Assert.DoesNotContain(Texts(graph), text => text.Contains("진행", StringComparison.Ordinal));
     });
 
@@ -242,7 +242,7 @@ public sealed class ChoiceSlotTests : IDisposable
         //    [챕터 그래프]에도 같은 길이 보이고 내보내기가 그대로 돈다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Write(graph, session, "root", slot: 1, "왼쪽으로");
+        Write(graph, "root", slot: 1, "왼쪽으로");
         Drag(graph, session, "root", slot: 1, onto: "a");
 
         ChapterEdge edge = Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
@@ -342,7 +342,7 @@ public sealed class ChoiceSlotTests : IDisposable
         // ⚠ 간선은 챕터 안의 길이다. 조용히 무시하면 사람은 손이 미끄러진 줄 안다.
         (GraphEditorView graph, AuthoringSession session) = Show(secondChapter: true);
 
-        Write(graph, session, "root", slot: 1, "저쪽으로");
+        Write(graph, "root", slot: 1, "저쪽으로");
         Drag(graph, session, "root", slot: 1, onto: "far");
 
         Assert.Empty(session.Editor.FindChapter("ch01")!.Edges);
@@ -358,7 +358,7 @@ public sealed class ChoiceSlotTests : IDisposable
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "왼쪽으로");
         graph.Rebuild();
 
-        Write(graph, session, "root", slot: 1, "왼쪽으로");
+        Write(graph, "root", slot: 1, "왼쪽으로");
         Drag(graph, session, "root", slot: 1, onto: "a");
 
         Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
@@ -373,8 +373,8 @@ public sealed class ChoiceSlotTests : IDisposable
         //    못 쓴다</b>(2026-09-16에 이 테스트가 잡았다).
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Write(graph, session, "root", slot: 1, "돌아간다");
-        Write(graph, session, "a", slot: 1, "돌아간다");
+        Write(graph, "root", slot: 1, "돌아간다");
+        Write(graph, "a", slot: 1, "돌아간다");
 
         Assert.DoesNotContain("오류", session.StatusMessage, StringComparison.Ordinal);
         Assert.Single(session.Editor.FindChapter("ch01")!.ChoiceOptions,
@@ -401,7 +401,7 @@ public sealed class ChoiceSlotTests : IDisposable
             session.Editor.FindChapter("ch01")!.Edges,
             edge => string.Equals(edge.ToEpisodeId, "곁가지", StringComparison.Ordinal));
 
-        Assert.Equal(3, Rows(graph, session, "곁가지").Count);
+        Assert.Equal(3, Rows(graph, "곁가지").Count);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -413,7 +413,7 @@ public sealed class ChoiceSlotTests : IDisposable
     private static void Drag(
         GraphEditorView graph, AuthoringSession session, string nodeName, int slot, string? onto)
     {
-        Press(Rows(graph, session, nodeName)[slot].Children.OfType<Ellipse>().Single());
+        Press(Rows(graph, nodeName)[slot].Children.OfType<Ellipse>().Single());
 
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
@@ -444,14 +444,14 @@ public sealed class ChoiceSlotTests : IDisposable
             .FirstOrDefault(card => card.Tag as string == NodeId(session, nodeName));
 
     /// <summary>그 에피소드의 선택지 칸 머리점들 — 칸 번호 차례대로.</summary>
-    private static IReadOnlyList<IBrush> Dots(GraphEditorView graph, AuthoringSession session, string episodeId) =>
-        Rows(graph, session, episodeId)
+    private static IReadOnlyList<IBrush> Dots(GraphEditorView graph, string episodeId) =>
+        Rows(graph, episodeId)
             .Select(row => row.Children.OfType<Ellipse>().Single().Stroke!)
             .ToList();
 
     private static IReadOnlyList<TextBlock> Labels(
-        GraphEditorView graph, AuthoringSession session, string episodeId) =>
-        Rows(graph, session, episodeId)
+        GraphEditorView graph, string episodeId) =>
+        Rows(graph, episodeId)
             .Select(row => row.Children.OfType<TextBlock>().SingleOrDefault())
             .Where(label => label is not null)
             .Select(label => label!)
@@ -462,7 +462,7 @@ public sealed class ChoiceSlotTests : IDisposable
     /// 줄은 Tag에 <c>{에피소드}#{칸}</c>을 진다.
     /// </summary>
     private static IReadOnlyList<StackPanel> Rows(
-        GraphEditorView graph, AuthoringSession session, string episodeId) =>
+        GraphEditorView graph, string episodeId) =>
         graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<StackPanel>()
             .Where(row => (row.Tag as string)?.StartsWith(episodeId + "#", StringComparison.Ordinal) == true)
             .OrderBy(row => (row.Tag as string)![(episodeId.Length + 1)..], StringComparer.Ordinal)
@@ -481,9 +481,9 @@ public sealed class ChoiceSlotTests : IDisposable
 
 
     /// <summary>그 칸에 문구를 적어 넣는다 — 사람이 하는 길 그대로다.</summary>
-    private static void Write(GraphEditorView graph, AuthoringSession session, string nodeName, int slot, string text)
+    private static void Write(GraphEditorView graph, string nodeName, int slot, string text)
     {
-        Press(Labels(graph, session, nodeName)[slot]);
+        Press(Labels(graph, nodeName)[slot]);
 
         graph.SlotLabelBox!.Text = text;
         Key(graph.SlotLabelBox, Avalonia.Input.Key.Enter);

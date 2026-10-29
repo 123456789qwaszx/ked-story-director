@@ -75,9 +75,6 @@ public partial class MainWindow : Window
         ChapterGraph.EntriesReloaded += entries =>
         {
             _chapters = entries;
-            // A계층 어휘(스탯 키·등록 화자)도 같은 읽기 하나에서 온다 — 작가 화면이
-            // 계층을 가르는 근거다 (2026-08-17).
-            _session.SupplyChapterVocabulary(entries);
             RebuildFileList();
             // 연출 그래프의 철도 배선(T1)도 같은 목록 하나를 본다 — 두 곳이 따로 읽지 않는다.
             Graph.SupplyChapters(entries);
@@ -314,84 +311,80 @@ public partial class MainWindow : Window
     /// </summary>
     private void RebuildFileList()
     {
+        ChapterGraph.ChapterListHost.Children.Clear();
+
+        foreach (ChapterEntry entry in _chapters)
         {
-            ChapterGraph.ChapterListHost.Children.Clear();
+            string chapterId = entry.ChapterId;
+            string? boardId = EpisodeNaming.BoardOf(_session.Project, chapterId)?.Id;
+            bool isActive = boardId is not null &&
+                string.Equals(_session.ActiveFileId, boardId, StringComparison.Ordinal);
 
-            foreach (ChapterEntry entry in _chapters)
+            string subtitle = $"에피소드 {entry.Model.Episodes.Count}개" +
+                (entry.HasErrors ? " · ⚠ 오류" : string.Empty);
+
+            var row = new Border
             {
-                string chapterId = entry.ChapterId;
-                string? boardId = EpisodeNaming.BoardOf(_session.Project, chapterId)?.Id;
-                bool isActive = boardId is not null &&
-                    string.Equals(_session.ActiveFileId, boardId, StringComparison.Ordinal);
-
-                string subtitle = entry.Model is null
-                    ? "읽기 실패 — 검증 보고 참조"
-                    : $"에피소드 {entry.Model.Episodes.Count}개" +
-                      (entry.HasErrors ? " · ⚠ 오류" : string.Empty);
-
-                var row = new Border
+                Padding = new Thickness(8, 6),
+                CornerRadius = new CornerRadius(5),
+                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+                Background = isActive
+                    ? new SolidColorBrush(Color.FromArgb(24, 37, 99, 235))
+                    : Brushes.Transparent,
+                Child = new StackPanel
                 {
-                    Padding = new Thickness(8, 6),
-                    CornerRadius = new CornerRadius(5),
-                    Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
-                    Background = isActive
-                        ? new SolidColorBrush(Color.FromArgb(24, 37, 99, 235))
-                        : Brushes.Transparent,
-                    Child = new StackPanel
+                    Spacing = 1,
+                    Children =
                     {
-                        Spacing = 1,
-                        Children =
+                        new TextBlock
                         {
-                            new TextBlock
-                            {
-                                Text = chapterId,
-                                FontWeight = FontWeight.SemiBold,
-                                TextTrimming = TextTrimming.CharacterEllipsis
-                            },
-                            new TextBlock
-                            {
-                                Text = subtitle,
-                                FontSize = 10,
-                                Opacity = 0.55,
-                                Foreground = entry.HasErrors ? Brushes.IndianRed : null,
-                                TextTrimming = TextTrimming.CharacterEllipsis
-                            }
+                            Text = chapterId,
+                            FontWeight = FontWeight.SemiBold,
+                            TextTrimming = TextTrimming.CharacterEllipsis
+                        },
+                        new TextBlock
+                        {
+                            Text = subtitle,
+                            FontSize = 10,
+                            Opacity = 0.55,
+                            Foreground = entry.HasErrors ? Brushes.IndianRed : null,
+                            TextTrimming = TextTrimming.CharacterEllipsis
                         }
                     }
-                };
+                }
+            };
 
-                row.PointerPressed += (_, args) =>
-                {
-                    if (args.GetCurrentPoint(row).Properties.IsRightButtonPressed)
-                    {
-                        ShowChapterContextFlyout(row, chapterId);
-                        args.Handled = true;
-                        return;
-                    }
-
-                    // 한 번 클릭 = 선택. (더블클릭이 챕터 엑셀을 열던 배선은 2026-10-29 · D2에
-                    // 엑셀 연동과 함께 걷혔다.)
-                    UiGuard.Run(_session, "챕터 선택", () =>
-                    {
-                        _session.SelectFile(_session.EnsureChapterBoard(chapterId));
-                        ChapterGraph.SelectChapter(chapterId);
-                    });
-                };
-
-                ChapterGraph.ChapterListHost.Children.Add(row);
-            }
-
-            if (_chapters.Count == 0)
+            row.PointerPressed += (_, args) =>
             {
-                ChapterGraph.ChapterListHost.Children.Add(new TextBlock
+                if (args.GetCurrentPoint(row).Properties.IsRightButtonPressed)
                 {
-                    Text = "챕터가 없습니다. ＋로 만드세요.",
-                    Margin = new Thickness(6, 10),
-                    Opacity = 0.55,
-                    FontSize = 11,
-                    TextWrapping = TextWrapping.Wrap
+                    ShowChapterContextFlyout(row, chapterId);
+                    args.Handled = true;
+                    return;
+                }
+
+                // 한 번 클릭 = 선택. (더블클릭이 챕터 엑셀을 열던 배선은 2026-10-29 · D2에
+                // 엑셀 연동과 함께 걷혔다.)
+                UiGuard.Run(_session, "챕터 선택", () =>
+                {
+                    _session.SelectFile(_session.EnsureChapterBoard(chapterId));
+                    ChapterGraph.SelectChapter(chapterId);
                 });
-            }
+            };
+
+            ChapterGraph.ChapterListHost.Children.Add(row);
+        }
+
+        if (_chapters.Count == 0)
+        {
+            ChapterGraph.ChapterListHost.Children.Add(new TextBlock
+            {
+                Text = "챕터가 없습니다. ＋로 만드세요.",
+                Margin = new Thickness(6, 10),
+                Opacity = 0.55,
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap
+            });
         }
     }
 
@@ -674,7 +667,8 @@ public partial class MainWindow : Window
     {
         return new FilePickerFileType("VnTool 프로젝트")
         {
-            Patterns = new[] { "*.vnproject.json", "*.vnstory.json", "*.json" }
+            // 판 파일(*.vnstory.json)은 열 수 없다 — 프로젝트는 매니페스트로 연다.
+            Patterns = new[] { "*.vnproject.json", "*.json" }
         };
     }
 

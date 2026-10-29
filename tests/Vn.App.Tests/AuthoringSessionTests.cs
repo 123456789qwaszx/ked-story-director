@@ -43,7 +43,7 @@ public class AuthoringSessionTests
 
             Assert.Equal(second.Id, session.ActiveFileId);
             Assert.Equal("nd_b", session.SelectedNodeId);
-            Assert.All(session.Project.Files, file => Assert.True(session.IsFileExpanded(file.Id)));
+            Assert.All(session.Project.Files, file => Assert.True(session.ExpandedFileIds.Contains(file.Id)));
             Assert.Equal(Path.GetFullPath(path), session.ProjectPath);
             Assert.False(session.IsDirty);
         }
@@ -117,8 +117,8 @@ public class AuthoringSessionTests
 
         StoryFile second = session.Editor.AddStoryFile("두 번째");
 
-        Assert.True(session.IsFileExpanded(first.Id));
-        Assert.True(session.IsFileExpanded(second.Id));
+        Assert.True(session.ExpandedFileIds.Contains(first.Id));
+        Assert.True(session.ExpandedFileIds.Contains(second.Id));
         Assert.Equal(
             new[] { first.Id, second.Id },
             session.ExpandedFileIds.OrderBy(id => session.Project.Files.FindIndex(file => file.Id == id)));
@@ -132,23 +132,20 @@ public class AuthoringSessionTests
         var session = new AuthoringSession();
         StoryFile first = session.ActiveFile!;
         StoryFile second = session.Editor.AddStoryFile("두 번째");
-        DialogueNode firstNode = session.Editor.AddDialogueNode(first.Id, name: "첫 파일");
-        DialogueNode secondNode = session.Editor.AddDialogueNode(second.Id, name: "둘째 파일");
+        session.Editor.AddDialogueNode(first.Id, name: "첫 파일");
+        session.Editor.AddDialogueNode(second.Id, name: "둘째 파일");
 
         session.SelectFile(second.Id);
 
         Assert.Equal(second.Id, session.ActiveFileId);
-        Assert.True(session.IsFileExpanded(first.Id));  // 다른 파일은 접히지 않는다
-        Assert.True(session.IsFileExpanded(second.Id));
-        Assert.Equal(
-            new[] { firstNode.Id, secondNode.Id },
-            session.EnumerateExpandedNodes().Select(node => node.Id));
+        Assert.True(session.ExpandedFileIds.Contains(first.Id));  // 다른 파일은 접히지 않는다
+        Assert.True(session.ExpandedFileIds.Contains(second.Id));
 
         // 접어 둔 파일을 고르면 펴 주기만 한다 — 고른 파일이 안 보이는 일은 없다.
         session.SetFileExpanded(first.Id, expanded: false);
         session.SelectFile(first.Id);
-        Assert.True(session.IsFileExpanded(first.Id));
-        Assert.True(session.IsFileExpanded(second.Id));
+        Assert.True(session.ExpandedFileIds.Contains(first.Id));
+        Assert.True(session.ExpandedFileIds.Contains(second.Id));
     }
 
     [Fact]
@@ -161,7 +158,7 @@ public class AuthoringSessionTests
 
         Assert.False(session.IsDirty);
         Assert.False(session.Editor.CanUndo);
-        Assert.False(session.IsFileExpanded(file.Id));
+        Assert.False(session.ExpandedFileIds.Contains(file.Id));
     }
 
     [Fact]
@@ -237,8 +234,8 @@ public class AuthoringSessionTests
         session.SetFileExpanded(second.Id, expanded: false);
         session.Editor.RenameNode(node.Id, "수정된 장면");
 
-        Assert.False(session.IsFileExpanded(second.Id));
-        Assert.True(session.IsFileExpanded(first.Id));
+        Assert.False(session.ExpandedFileIds.Contains(second.Id));
+        Assert.True(session.ExpandedFileIds.Contains(first.Id));
     }
 
     [Fact]
@@ -247,7 +244,7 @@ public class AuthoringSessionTests
         var session = new AuthoringSession();
         StoryFile added = session.Editor.AddStoryFile("추가");
 
-        Assert.True(session.IsFileExpanded(added.Id));
+        Assert.True(session.ExpandedFileIds.Contains(added.Id));
 
         session.Editor.Undo();
 
@@ -298,18 +295,11 @@ public class AuthoringSessionTests
     }
 
     /// <summary>
-    /// 기획자 어휘가 갈리면 <b>스스로 알린다</b> (2026-08-26 소유자 보고: 챕터 그래프에서
-    /// 화자를 지웠는데 연출 그래프가 옛 목록을 계속 보였다 — "바로바로 반영이 됐으면 해").
-    ///
-    /// 예전에는 <c>SaveSpeakers</c>가 파일을 쓰고 정의를 <b>조용히</b> 다시 읽었고, 이미
-    /// 그려진 화면은 그 사실을 알 길이 없어 제 노드를 다시 고를 때까지 낡은 목록을 들었다.
-    /// <b>지우기가 특히 나빴다</b>: 없는 이름이 드롭다운에 남아 고를 수 있었다.
-    ///
-    /// ⚠ 이 시험이 거는 것은 <b>알림이 온다</b>는 사실 하나다 — 누가 무엇을 다시 그리는지는
-    /// 듣는 쪽의 사정이고, 알림이 없으면 어느 쪽도 알 수가 없다.
+    /// 화자를 지우면 세션의 정의가 <b>곧바로</b> 바뀐다 (2026-08-26 소유자 보고: 챕터 그래프에서 화자를 지웠는데
+    /// 연출 그래프가 옛 목록을 계속 보였다 — "바로바로 반영이 됐으면 해"). 화면은 그릴 때마다 정의를 읽는다.
     /// </summary>
     [Fact]
-    public void 화자를_지우면_정의가_바뀌었다고_알린다()
+    public void 화자를_지우면_정의가_곧바로_바뀐다()
     {
         string directory = TempDirectory();
 
@@ -323,13 +313,9 @@ public class AuthoringSessionTests
                 new SpeakerSpec { Name = "윌로우" }
             ]));
 
-            int notified = 0;
-            session.DefinitionChanged += (_, _) => notified++;
-
             // 지우는 방식 — 남길 것만 넘긴다(통째로 쓰는 것이 규격이다).
             Assert.True(session.SaveSpeakers([new SpeakerSpec { Name = "라루" }]));
 
-            Assert.Equal(1, notified);
             Assert.Equal("라루", Assert.Single(session.Definition.Speakers).Name);
         }
         finally

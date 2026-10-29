@@ -130,11 +130,6 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     internal Button ProjectNewCenterButton => EmptyNewProjectButton;
 
-    /// <summary>
-    /// 판 한가운데의 [＋ 에피소드] — 챕터는 열렸는데 에피소드가 하나도 없을 때만 보인다.
-    /// 앞의 둘과 달리 배선도 이 뷰의 것이다(툴바 [＋ 에피소드]와 같은 길).
-    /// </summary>
-    internal Button EpisodeAddCenterButton => EmptyAddEpisodeButton;
 
     /// <summary>머리글 아래 한 줄 — 지금 활성인 판의 요약.</summary>
     internal TextBlock ChapterSummaryText => ChapterSummary;
@@ -206,7 +201,6 @@ public partial class ChapterGraphView : UserControl
         EdgeStatsHost.Children.Add(_edgeStats);
         EdgeFormStatsHost.Children.Add(_formStats);
 
-        // 관문은 v8에서 간선으로 옮겨 갔다 — 에피소드 콤보는 감춰져 있고 저장도 안 한다.
         AddNextEdgeButton.Click += (_, _) => UiGuard.Run(_session, "선택지 추가", AddChoiceSlotFromPanel);
         AddEdgeButton.Click += (_, _) => UiGuard.Run(_session, "간선 연결·수정", SubmitEdgeForm);
         DeleteEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 삭제", DeleteSelectedEpisode);
@@ -671,21 +665,12 @@ public partial class ChapterGraphView : UserControl
     private ChapterValidationResult ValidationFor(ChapterEntry entry) =>
         _export.ValidationFor(entry, _session?.ProjectPath, _session?.Project);
 
-    /// <summary>런타임 수입물이 나가는 자리. 에셋과 같은 규약 폴더 방식이다 — 매니페스트 없음.</summary>
     /// <summary>
     /// 툴이 길을 놓을 때 넣어 주는 문구 (v12). 빈 문구는 오류이므로 무언가는 있어야 하고,
     /// 기획자가 바로 고쳐 쓸 수 있는 가장 짧은 말이다.
     /// </summary>
     internal const string DefaultOptionLabel = "계속";
 
-    /// <summary>진행 JSON 폴더 이름. 정본은 <see cref="ChapterExportService"/>에 있다.</summary>
-    public const string ExportFolderName = ChapterExportService.ExportFolderName;
-
-    /// <summary>
-    /// G8 — 런타임 수입용 JSON을 쓴다. <b>검증을 통과해야만 나간다</b>(Gate C 3번) —
-    /// 오류가 있으면 파일을 만들지 않고 사유를 보고 패널에 세운다. 쓰레기가 런타임으로
-    /// 넘어가는 것보다 내보내기가 실패하는 편이 낫다.
-    /// </summary>
     // ── 판 다루기: 휠 확대·축소, 가운데 단추 끌어 이동 (2026-08-17 소유자) ──
     //
     // 연출 그래프(GraphEditorView)와 같은 손놀림·같은 산식이다. 판이 둘인데 다루는
@@ -1055,16 +1040,8 @@ public partial class ChapterGraphView : UserControl
 
             List<ChapterEdge> options = _optionsByEpisode.GetValueOrDefault(episode.EpisodeId) ?? [];
 
-            if (!_placed.TryGetValue(episode.EpisodeId, out (double X, double Y) position))
-            {
-                // 자리를 못 잡은 카드 — 포트가 없으니 중앙 직행선으로라도 그린다.
-                foreach (ChapterEdge edge in edges)
-                {
-                    DrawDirectEdge(edge);
-                }
-
-                continue;
-            }
+            // 자리는 늘 있다 — 자리를 정하는 쪽(DisplayPlacement)이 에피소드마다 하나씩 낸다.
+            (double X, double Y) position = _placed[episode.EpisodeId];
 
             int slots = SlotsFor(options.Count);
 
@@ -1133,7 +1110,7 @@ public partial class ChapterGraphView : UserControl
         Segment(port.X, port.Y, entry.X, entryY);
 
         // 화살촉은 진입하는 변을 향한다 — 위에서 아래로 꽂힌다(기본 방향이 아래다).
-        AddEdgeArrow(entry.X, entryY + 1, stroke, pointRight: false);
+        AddEdgeArrow(entry.X, entryY + 1, stroke);
 
         RegisterEdgeLines(edge, segments, stroke, thickness);
 
@@ -1159,20 +1136,14 @@ public partial class ChapterGraphView : UserControl
         AddEdgeLabel(edge, port, new Point(entry.X, entryY));
     }
 
-    private void AddEdgeArrow(
-        double x, double y, IBrush fill, bool pointRight, bool pointUp = false, bool pointLeft = false)
+    /// <summary>아래로 드는 화살촉 — 도착 카드 위 가운데로 들어간다.</summary>
+    private void AddEdgeArrow(double x, double y, IBrush fill)
     {
         var arrow = new Avalonia.Controls.Shapes.Polygon
         {
             Fill = fill,
             IsHitTestVisible = false,
-            Points = pointLeft
-                ? [new Point(0, -4), new Point(-7, 0), new Point(0, 4)]
-                : pointRight
-                    ? [new Point(0, -4), new Point(7, 0), new Point(0, 4)]
-                    : pointUp
-                        ? [new Point(-4, 0), new Point(0, -7), new Point(4, 0)]
-                        : [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
+            Points = [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
         };
 
         Canvas.SetLeft(arrow, x);
@@ -1237,64 +1208,6 @@ public partial class ChapterGraphView : UserControl
         (string, string, string) key = (edge.FromEpisodeId, edge.ToEpisodeId, EdgeLabelKey(edge));
         _lineByEdge[key] = segments;
         _lineBase[key] = (stroke, thickness);
-    }
-
-    private void DrawDirectEdge(ChapterEdge edge)
-    {
-        if (!_placed.TryGetValue(edge.FromEpisodeId, out (double X, double Y) fromPos) ||
-            !_placed.TryGetValue(edge.ToEpisodeId, out (double X, double Y) toPos))
-        {
-            // 끝점이 없는 간선은 그리지 않는다. 이미 오류로 보고돼 있고, 허공에 매다는 편이 나쁘다.
-            return;
-        }
-
-        (double x1, double y1) = (fromPos.X + (CardWidth / 2), fromPos.Y + (CardHeight / 2));
-        (double x2, double y2) = (toPos.X + (CardWidth / 2), toPos.Y + (CardHeight / 2));
-
-        var line = new Line
-        {
-            StartPoint = new Point(x1, y1),
-            EndPoint = new Point(x2, y2),
-            Stroke = edge.ConditionLabel is null
-                ? new SolidColorBrush(Color.Parse("#8894A0"))
-                : new SolidColorBrush(Color.Parse("#C08A3E")),
-            StrokeThickness = 1.6
-        };
-
-
-
-        // 간선의 정체를 시각 요소에 남긴다. 화면 없는 렌더 검증(Gate A)이 "무엇이 그려졌는지"를
-        // 색·좌표로 역추론하지 않고 이름으로 확인할 수 있어야 한다.
-        line.Tag = EdgeTag(edge);
-        GraphCanvas.Children.Add(line);
-
-        // 선택 강조는 제자리에서 입힌다(ApplySelectionVisuals) — 여기서는 기본 모습만 등록한다.
-        string fromId = edge.FromEpisodeId;
-        string toId = edge.ToEpisodeId;
-        string labelKey = EdgeLabelKey(edge);
-        _lineByEdge[(fromId, toId, labelKey)] = [line];
-        _lineBase[(fromId, toId, labelKey)] = (line.Stroke, line.StrokeThickness);
-
-        // 1.6px 실선은 사람이 못 누른다 — 보이지 않는 굵은 히트 선을 위에 겹친다.
-        // Transparent는 히트 대상이다(null과 다르다). 카드가 나중에 그려져 그 위를 덮으므로
-        // 간선의 가운데 구간만 클릭된다 — 그게 맞다.
-        var hit = new Line
-        {
-            StartPoint = line.StartPoint,
-            EndPoint = line.EndPoint,
-            Stroke = Brushes.Transparent,
-            StrokeThickness = 14,
-            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
-        };
-
-        hit.PointerPressed += (_, e) =>
-        {
-            e.Handled = true; // 캔버스(빈 공간 = 선택 해제)까지 흘러가면 곧바로 풀려 버린다
-            UiGuard.Run(_session, "간선 선택", () => SelectEdgeKey(fromId, toId, labelKey));
-        };
-        GraphCanvas.Children.Add(hit);
-
-        AddEdgeLabel(edge, new Point(x1, y1), new Point(x2, y2));
     }
 
     private void DrawEpisode(ChapterGraphModel model, ChapterEpisode episode)
@@ -1445,15 +1358,14 @@ public partial class ChapterGraphView : UserControl
         Canvas.SetTop(card, y);
         GraphCanvas.Children.Add(card);
 
-        DrawOptionPorts(model, episode, options, x, y);
+        DrawOptionPorts(options, x, y);
     }
 
     /// <summary>
     /// 카드 오른변의 선택지 포트들 — 문구(카드 안 오른쪽 정렬) + 테두리 위의 원.
     /// v9에서는 포트 하나가 곧 간선 하나다(문구가 붙은 길). 클릭하면 그 간선이 선택된다.
     /// </summary>
-    private void DrawOptionPorts(
-        ChapterGraphModel model, ChapterEpisode episode, IReadOnlyList<ChapterEdge> options, double x, double y)
+    private void DrawOptionPorts(IReadOnlyList<ChapterEdge> options, double x, double y)
     {
         // 들어오는 길이 모이는 점 하나 — 아래로 나가서 위로 들어온다.
         GraphCanvas.Children.Add(Dot(
@@ -2101,17 +2013,6 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>콤보·목록을 프로그램이 채우는 중 — 자동 저장 억제.</summary>
     private bool _fillingPanel;
-
-    /// <summary>표시·해금 콤보의 자동 저장 — 고르는 순간 그 셀 하나가 써진다.</summary>
-    private void AutoSaveGates()
-    {
-        if (_fillingPanel)
-        {
-            return;
-        }
-
-        UiGuard.Run(_session, "조건 저장", ApplyEpisodeFromPanel);
-    }
 
     /// <summary>
     /// 간선 패널의 자동 저장 (2026-08-17) — 고치는 순간 그 셀이 써진다. 패널을 채우는
@@ -3214,7 +3115,6 @@ public partial class ChapterGraphView : UserControl
         return refusal + "  " + string.Join(" / ", uses.Select(use => $"{use.Where} — {use.Detail}"));
     }
 
-    /// <summary>속성 패널의 [적용]. 모델의 현재 값과 다른 필드만 셀에 쓴다.</summary>
     /// <summary>
     /// 속성 패널의 [적용] — 에피소드 개명.
     ///
@@ -3250,23 +3150,6 @@ public partial class ChapterGraphView : UserControl
 
         _session.SetStatus(
             $"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다.");
-    }
-
-    /// <summary>도착만 주고 잇기 — 문구 없는 길(보이지 않는 기본)이 선다.</summary>
-    internal void AddEdgeFromPanel()
-    {
-        if (_selectedEpisodeId is not { } from ||
-            EdgeTargetCombo.SelectedItem is not string to ||
-            _selectedChapterId is not { } chapterId)
-        {
-            _session?.SetStatus("간선을 추가하려면 도착 에피소드를 골라 주세요.");
-            return;
-        }
-
-        // v12 — 문구 없이 길을 놓지 않는다.
-        ChapterEdit(
-            () => _session!.Editor.AddEdge(chapterId, from, to, optionLabel: DefaultOptionLabel),
-            $"간선 {from}→{to}을 '{DefaultOptionLabel}'로 더했습니다 — 문구는 그 줄을 눌러 고칩니다.");
     }
 
     /// <summary>
@@ -3427,12 +3310,6 @@ public partial class ChapterGraphView : UserControl
     /// <summary>머리글의 경고 표식 — <b>노랑</b>. 위 ⛔ 참조.</summary>
     private const string WarningMark = "🟡";
 
-    /// <summary>
-    /// 에피소드 동기화 보고를 먼저, 그 뒤에 오류·경고·정보를 심각도 순으로. 동기화는 사람이
-    /// 방금 한 행동의 결과인데 목록 끝에 두면 알림 더미에 묻혀 스크롤 밖으로 나간다(실사례 —
-    /// "숫자는 2개라는데 볼 방법이 없어"). 각 줄이 파일·시트·행·열을 그대로 말하고,
-    /// 머리글의 표식이 오류·경고를 든다.
-    /// </summary>
     /// <summary>
     /// 판 수준 경고 (2단계 가드레일) — 진행이 착지하는 카드로 향하는 출구. 막지 않고 크게 말한다.
     ///

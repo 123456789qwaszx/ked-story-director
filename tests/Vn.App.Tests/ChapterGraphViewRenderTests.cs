@@ -303,7 +303,7 @@ public sealed class ChapterGraphViewRenderTests
 
         (_, ChapterGraphView view) = Render(project);
 
-        Assert.True(view.EpisodeAddCenterButton.IsVisible);
+        Assert.True(view.FindControl<Button>("EmptyAddEpisodeButton")!.IsVisible);
         // 앞의 두 걸음은 이미 지났다 — 프로젝트도 챕터도 있다.
         Assert.False(view.ProjectNewCenterButton.IsVisible);
         Assert.False(view.ChapterAddCenterButton.IsVisible);
@@ -319,7 +319,7 @@ public sealed class ChapterGraphViewRenderTests
 
         Assert.False(view.ChapterAddCenterButton.IsVisible);
         Assert.False(view.ProjectNewCenterButton.IsVisible);
-        Assert.False(view.EpisodeAddCenterButton.IsVisible);
+        Assert.False(view.FindControl<Button>("EmptyAddEpisodeButton")!.IsVisible);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
