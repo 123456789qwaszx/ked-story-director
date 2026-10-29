@@ -123,6 +123,26 @@ public class GraphProjectionTests
     }
 
     [Fact]
+    public void 같은_줄의_분기_선은_열쇠가_서로_다르다()
+    {
+        // 화면은 끄는 동안 선을 이 열쇠로 다시 찾는다 — 같은 줄의 분기들이 한 열쇠를 나눠 가지면 모두 첫 선의
+        // 경로를 받아 나머지 분기가 끊긴 것처럼 보였다(2026-10-29 소유자 보고).
+        var editor = new Vn.Authoring.Editing.ProjectEditor(new StoryProject());
+        StoryFile file = editor.AddStoryFile("판");
+        DialogueNode source = editor.AddDialogueNode(file.Id, name: "본문");
+        string lineId = source.Script.ActiveLines.Single().Id;
+        editor.AddBranchMarker(source.Id, lineId);
+        editor.AddBranchMarker(source.Id, lineId);
+
+        IReadOnlyList<GraphConnectionProjection> connections = GraphProjectionBuilder.Build(
+            editor.Project,
+            new HashSet<string>([file.Id], StringComparer.Ordinal)).Connections;
+
+        Assert.Equal(2, connections.Count(connection => connection.ExecutionPort?.Kind == Vn.Authoring.Flow.ExitPortKind.Detour));
+        Assert.Equal(connections.Count, connections.Select(connection => connection.Key).Distinct().Count());
+    }
+
+    [Fact]
     public void 직교_간선은_수평과_수직_선분만_만든다()
     {
         IReadOnlyList<GraphPosition> points = OrthogonalEdgeRouter.Route(

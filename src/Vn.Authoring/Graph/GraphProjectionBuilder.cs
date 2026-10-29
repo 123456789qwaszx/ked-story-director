@@ -348,7 +348,10 @@ public static class GraphProjectionBuilder
                 }
 
                 result.Add(new RawConnection(
-                    $"execution:{exit.NodeId}:{exit.Kind}:{exit.BranchOpenLineId ?? "default"}",
+                    // ⚠ 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
+                    //   줄만 쓰면 같은 줄의 분기 선들이 한 열쇠를 나눠 가져, 끄는 동안 선을 열쇠로 다시 찾는 화면이
+                    //   모두 첫 선의 경로를 받는다 — 나머지 분기가 끊긴 것처럼 보였다.
+                    $"execution:{exit.NodeId}:{exit.Kind}:{(exit.Kind == ExitPortKind.Detour ? exit.ExitKey : exit.BranchOpenLineId) ?? "default"}",
                     exit.Kind == ExitPortKind.Default
                         ? GraphConnectionKind.ExecutionDefault
                         : GraphConnectionKind.ExecutionBranch,

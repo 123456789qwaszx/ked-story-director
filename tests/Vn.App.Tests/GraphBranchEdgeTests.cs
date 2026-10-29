@@ -60,4 +60,58 @@ public sealed class GraphBranchEdgeTests
 
         window.Close();
     });
+
+    [Fact]
+    public void 같은_줄의_분기_카드를_끌어도_다른_분기_선이_제자리에_남는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-10-29 소유자 보고: "생성된 분기를 드래그 할 경우에, 여러개의 분기 중에 가장 아래껏을 제외하고는
+        // 끊기는 버그". 끄는 동안 화면은 선을 열쇠로 다시 찾는데, 같은 줄의 분기 선들이 한 열쇠(줄)를 나눠 가져
+        // 모두 첫 선의 경로를 받았다.
+        var window = new MainWindow();
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        AuthoringSession session = window.SessionProbe;
+        DialogueNode source = session.Editor.AddDialogueNode(session.ActiveFile!.Id, name: "본문");
+        ScriptLine line = source.Script.ActiveLines.First();
+        session.Editor.SetScriptLineText(source.Id, line.Id, "라루", "첫 줄");
+        session.Editor.AddBranchMarker(source.Id, line.Id);
+        DialogueNode second = session.Editor.AddBranchMarker(source.Id, line.Id);
+
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;
+        Dispatcher.UIThread.RunJobs();
+
+        Canvas canvas = window.FindControl<GraphEditorView>("Graph")!.FindControl<Canvas>("GraphCanvas")!;
+        (double X, double Y)[] before = BranchLabels(canvas);
+        Assert.Equal(2, before.Distinct().Count());
+
+        Border card = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == second.Id);
+        Point grip = card.TranslatePoint(new Point(card.Bounds.Width / 2, 12), window)!.Value;
+        window.MouseDown(grip, MouseButton.Left);
+        window.MouseMove(grip + new Point(120, 160), RawInputModifiers.LeftMouseButton);
+        Dispatcher.UIThread.RunJobs();
+
+        // 끄는 동안: 선 둘이 각자 제 카드로 간다 — 끌지 않은 분기의 선은 그대로다.
+        (double X, double Y)[] during = BranchLabels(canvas);
+        Assert.Equal(2, during.Distinct().Count());
+        Assert.Contains(before[0], during);
+
+        window.MouseUp(grip + new Point(120, 160), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(2, BranchLabels(canvas).Distinct().Count());
+        Assert.Equal(
+            2,
+            ((DialogueNode)session.Project.FindNode(source.Id)!).FindExtension(line.Id)!.DetourTargetNodeIds.Count);
+
+        window.Close();
+    });
+
+    /// <summary>판에 선 분기 선 이름표들의 자리, 위에서부터.</summary>
+    private static (double X, double Y)[] BranchLabels(Canvas canvas) =>
+        canvas.Children.OfType<Border>()
+            .Where(border => border.IsVisible && border.Child is TextBlock { Text: "분기" })
+            .Select(border => (Canvas.GetLeft(border), Canvas.GetTop(border)))
+            .OrderBy(spot => spot.Item2)
+            .ToArray();
 }
