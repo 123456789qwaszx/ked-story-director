@@ -86,8 +86,7 @@ public static class GraphProjectionBuilder
                         node.Name,
                         KindOf(node),
                         new GraphPosition(node.Layout.X, node.Layout.Y),
-                        portsByNodeId[node.Id],
-                        BadgeFor(node, project)));
+                        portsByNodeId[node.Id]));
                 }
 
                 continue;
@@ -329,38 +328,6 @@ public static class GraphProjectionBuilder
                 EpisodeNaming.EpisodeIdOf(node),
                 episodeId,
                 StringComparison.Ordinal))?.Id;
-
-    /// <summary>
-    /// 카드에 붙는 짧은 부가 정보 — 어느 대본을 읽는가, 에피소드면 몇 줄인가.
-    /// (⛔ "vN 발행" 표시는 2026-10-29에 발행과 함께 compositor로 갔다.)
-    /// </summary>
-    private static string? BadgeFor(StoryNode node, StoryProject project)
-    {
-        switch (node)
-        {
-            case DialogueNode dialogue:
-            {
-                string badge = project.FindScript(dialogue.ScriptId)?.Name ?? "대본 없음";
-
-                // 챕터 에피소드 표식 — 카드만 봐도 자유 씬과 갈린다. 줄 수는 타임라인 읽기의
-                // 눈금이다(T1) — 어느 에피소드가 무거운지 카드에서 보인다.
-                //
-                // ⚠ 옛 문구는 "📄 엑셀"이었고 뜻은 <b>"이 본문은 엑셀 소유라 잠겼다"</b>였다.
-                //    2026-09-16에 그 잠금이 사라지면서(R-E) 남은 뜻은 <b>소속</b>뿐이다 —
-                //    "엑셀"이라고 적어 두면 카드가 없는 잠금을 계속 말하게 된다.
-                if (dialogue.MarkedEpisodeId is null)
-                {
-                    return badge;
-                }
-
-                int lineCount = project.FindScript(dialogue.ScriptId)?.ActiveLines.Count() ?? 0;
-                return $"📄 에피소드 · {badge} · {lineCount}줄";
-            }
-
-            default:
-                return null;
-        }
-    }
 
     private static IReadOnlyList<RawConnection> BuildRawConnections(
         StoryProject project,

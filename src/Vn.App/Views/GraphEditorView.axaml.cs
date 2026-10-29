@@ -30,9 +30,16 @@ namespace Vn.App.Views;
 public partial class GraphEditorView : UserControl
 {
     private const double CardWidth = 210;
-    private const double HeaderHeight = 46;
+
+    // 카드 머리 = 제목 한 줄과 그 아래 틈. 포트 줄의 자리(PortAnchor)가 이 값으로 세므로 머리는 높이를 고정한다 —
+    // 글꼴에 맡기면 선 끝이 점에서 비껴 닿는다(2026-10-29까지 부제를 둔 머리가 41px인데 46으로 세어 5px 아래에 닿았다).
+    // ⛔ 제목 아래의 부제(「대사 · 📄 에피소드 · {대본} · k줄」)는 2026-10-29에 걷혔다(소유자: "이 정보는 필요없으니까 치워").
+    private const double TitleHeight = 20;
+    private const double HeaderGap = 6;
+    private const double HeaderHeight = TitleHeight + HeaderGap;
     private const double PortRowHeight = 24;
     private const double CardPadding = 8;
+    private const double CardBorder = 1;
     private const double PortRadius = 6;
 
     /// <summary>카드 왼쪽 등뼈 막대(3) + 그 오른쪽 틈(7) — 몸통 칸은 그만큼 안에서 시작한다.</summary>
@@ -559,7 +566,6 @@ public partial class GraphEditorView : UserControl
 
     private static readonly IBrush RailBrush = new SolidColorBrush(Color.FromArgb(170, 120, 120, 120));
     private static readonly IBrush RailChipBrush = new SolidColorBrush(Color.FromRgb(0xC0, 0x6A, 0x14));
-    private const double RailTrunkInset = 30;   // 출발 카드 왼쪽에서 줄기까지
     private const double RailBranchGap = 44;    // 가지 사이 세로 간격
     private const double RailFirstDrop = 36;    // 카드 아래 첫 가지까지
     private const double RailArrivalRise = 26;  // 도착 카드 위 가운데 접점까지의 높이 (D3)
@@ -743,11 +749,11 @@ public partial class GraphEditorView : UserControl
             .Select(branch => branch.Target is { } target && EdgeSide.GoesLeft(sourceRect.X, target.X))
             .ToList();
 
-        // 줄기는 줄들이 나가는 쪽의 반대편에 선다 — 전부 오른쪽이면 카드 왼쪽 안(늘 쓰던 자리), 전부 왼쪽이면 카드
-        // 오른쪽 안, 양쪽이 섞이면 가운데(양쪽 문구가 설 자리가 반씩이다).
-        double trunkX = lefts.All(left => left) ? sourceRect.Right - RailTrunkInset
-            : lefts.Any(left => left) ? sourceRect.X + (sourceRect.Width / 2)
-            : sourceRect.X + RailTrunkInset;
+        // 줄기는 <b>언제나 카드 가운데 아래</b>다 (2026-10-29 소유자: "항상 노드 중앙 아래쪽에 선택지가 있도록").
+        // ⛔ H1에서는 줄들이 나가는 쪽의 반대편에 섰다(전부 오른쪽이면 카드 왼쪽 안, 전부 왼쪽이면 오른쪽 안, 섞이면
+        //    가운데) — 선 하나를 이으면 줄기가 옆으로 뛰어 카드마다 선택지 자리가 달라 보였다. 문구가 길면 레인이 그만큼
+        //    바깥으로 비켜 가므로(`DrawRailBranch`의 dropX) 반폭이어도 겹치지 않는다.
+        double trunkX = sourceRect.X + (sourceRect.Width / 2);
         double branchY = sourceRect.Bottom + RailFirstDrop;
         int leftLane = 0;
         int rightLane = 0;
@@ -1446,23 +1452,17 @@ public partial class GraphEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        var title = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+        var title = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            Height = TitleHeight,
+            Margin = new Thickness(0, 0, 0, HeaderGap)
+        };
         Grid.SetColumn(titleIcon, 0);
         Grid.SetColumn(titleName, 1);
         title.Children.Add(titleIcon);
         title.Children.Add(titleName);
         body.Children.Add(title);
-
-        body.Children.Add(new TextBlock
-        {
-            Text = node.Badge is null
-                ? NodeKindLabel(node.NodeKind)
-                : $"{NodeKindLabel(node.NodeKind)} · {node.Badge}",
-            FontSize = 10,
-            Opacity = 0.6,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            Margin = new Thickness(0, 1, 0, 6)
-        });
 
         // 등뼈 — 카드 왼쪽의 종 색 막대. 선택 테두리(파랑 2px)와 채널이 겹치지 않는다.
         var spine = new Border
@@ -1937,15 +1937,6 @@ public partial class GraphEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center
         };
 
-        var kind = new TextBlock
-        {
-            Text = NodeKindLabel(entry.NodeKind),
-            FontSize = 9,
-            Opacity = 0.5,
-            Margin = new Thickness(6, 0),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
         var output = new Ellipse
         {
             Width = ProxyPortRadius * 2,
@@ -1960,15 +1951,13 @@ public partial class GraphEditorView : UserControl
         var grid = new Grid
         {
             Height = ProxyRowHeight,
-            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto")
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto")
         };
         Grid.SetColumn(input, 0);
         Grid.SetColumn(name, 1);
-        Grid.SetColumn(kind, 2);
-        Grid.SetColumn(output, 3);
+        Grid.SetColumn(output, 2);
         grid.Children.Add(input);
         grid.Children.Add(name);
-        grid.Children.Add(kind);
         grid.Children.Add(output);
 
         var row = new Border
@@ -2494,7 +2483,7 @@ public partial class GraphEditorView : UserControl
     {
         double x = Canvas.GetLeft(card.Visual) + (card.Ports[portIndex].OnLeft ? 0 : CardWidth);
         double y = Canvas.GetTop(card.Visual)
-            + CardPadding + HeaderHeight
+            + CardBorder + CardPadding + HeaderHeight
             + (portIndex * PortRowHeight) + (PortRowHeight / 2);
 
         return new Point(x, y);
@@ -2504,7 +2493,7 @@ public partial class GraphEditorView : UserControl
     {
         return new Point(
             Canvas.GetLeft(card.Visual),
-            Canvas.GetTop(card.Visual) + CardPadding + (HeaderHeight / 2));
+            Canvas.GetTop(card.Visual) + CardBorder + CardPadding + (TitleHeight / 2));
     }
 
     private static Point ProxyRowAnchor(FileProxyVisual proxy, int rowIndex, bool output)
@@ -2842,7 +2831,7 @@ public partial class GraphEditorView : UserControl
     {
         return card.Visual.Bounds.Height > 0
             ? card.Visual.Bounds.Height
-            : HeaderHeight + (card.Ports.Count * PortRowHeight) + (CardPadding * 2) +
+            : HeaderHeight + (card.Ports.Count * PortRowHeight) + ((CardPadding + CardBorder) * 2) +
               (card.NodeKind == GraphNodeKind.Dialogue ? WritingBoxGap + WritingBoxHeight : 0);
     }
 
@@ -3501,15 +3490,6 @@ public partial class GraphEditorView : UserControl
         {
             GraphConnectionKind.ExecutionBranch => BranchPalette.Accent(connection.PaletteIndex),
             _ => new SolidColorBrush(Color.FromArgb(150, 100, 100, 100))
-        };
-    }
-
-    private static string NodeKindLabel(GraphNodeKind kind)
-    {
-        return kind switch
-        {
-            GraphNodeKind.Set => "설정",
-            _ => "대사"
         };
     }
 

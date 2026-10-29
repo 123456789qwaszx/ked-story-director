@@ -230,23 +230,6 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
-    public void 그래프_카드_배지에_에피소드_표식이_붙는다() => HeadlessUi.Run(() =>
-    {
-        (_, AuthoringSession session, string nodeId) = ShowEpisodeCard();
-
-        Vn.Authoring.Graph.GraphProjection projection = Vn.Authoring.Graph.GraphProjectionBuilder.Build(
-            session.Project,
-            session.Project.Files.Select(file => file.Id).ToHashSet(StringComparer.Ordinal));
-
-        Vn.Authoring.Graph.ExpandedNodeProjection card = projection.Items
-            .OfType<Vn.Authoring.Graph.ExpandedNodeProjection>()
-            .Single(item => item.NodeId == nodeId);
-
-        // ⚠ 옛 문구는 "📄 엑셀"이었다 — 뜻이 "엑셀 소유라 잠김"에서 <b>소속</b>으로 바뀌었다(R-E).
-        Assert.StartsWith("📄 에피소드", card.Badge);
-    });
-
-    [Fact]
     public void 자유_노드가_챕터_조건을_바로_쓴다() => HeadlessUi.Run(() =>
     {
         // 2단계 4번 — 작가가 설정노드를 손으로 잇지 않아도, 판 위의 자유 노드가

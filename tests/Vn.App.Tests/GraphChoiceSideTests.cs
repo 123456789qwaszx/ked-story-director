@@ -16,7 +16,7 @@ namespace Vn.App.Tests;
 /// 여전히 오른쪽으로 점과 글자가 유지 돼 … 연결되어 있는 하나의 루트의 선택지 방향이 바뀌길 원한거야"*).
 ///
 /// 도착 카드가 출발 카드보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다 — 점이 줄기 쪽 · 문구가 그 왼쪽에 서고 레인은 카드
-/// 왼쪽으로 빠진다. 줄기는 줄들이 나가는 쪽의 반대편에 선다(섞이면 가운데). 분기 포트도 같은 규칙이다.
+/// 왼쪽으로 빠진다. 줄기는 언제나 카드 가운데 아래다(2026-10-29 소유자). 분기 포트도 같은 쪽 규칙이다.
 ///
 /// 시험마다 챕터 시작 카드(start)를 멀리 오른쪽에 둔다 — 예전 규칙(시작 카드 기준으로 카드째 뒤집기)이면 결과가 달랐다.
 /// </summary>
@@ -50,7 +50,7 @@ public sealed class GraphChoiceSideTests : IDisposable
         StackPanel leftRow = Row(graph, "scene", "왼쪽 길");
         StackPanel rightRow = Row(graph, "scene", "오른쪽 길");
 
-        // 양쪽이 섞였으니 줄기는 가운데 — 왼쪽 줄은 줄기 왼쪽에(점이 줄기 쪽), 오른쪽 줄은 줄기 오른쪽에(점이 줄기 쪽) 선다.
+        // 줄기는 가운데 — 왼쪽 줄은 줄기 왼쪽에(점이 줄기 쪽), 오른쪽 줄은 줄기 오른쪽에(점이 줄기 쪽) 선다.
         Assert.Equal(trunkX - 14, Canvas.GetLeft(leftRow) + leftRow.DesiredSize.Width, precision: 3);
         Assert.IsType<Ellipse>(leftRow.Children[^1]);
         Assert.Equal(trunkX + 14, Canvas.GetLeft(rightRow), precision: 3);
@@ -62,7 +62,7 @@ public sealed class GraphChoiceSideTests : IDisposable
     });
 
     [Fact]
-    public void 전부_오른쪽이면_늘_쓰던_모양_전부_왼쪽이면_줄기가_오른쪽_안이다() => HeadlessUi.Run(() =>
+    public void 어느_쪽으로_나가든_줄기는_카드_가운데_아래다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show(
             ("start", 2400, 0), ("east", 800, 0), ("west", 800, 1400),
@@ -73,18 +73,25 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Editor.AddEdge("ch01", "west", "d", optionLabel: "서쪽 셋");
         Redraw(graph);
 
-        // 오른쪽뿐(빈 칸도 오른쪽) — 줄기는 카드 왼쪽 안이다.
-        StackPanel east = Row(graph, "east", "동쪽");
-        Assert.Equal(CardX(graph, session, "east") + 30 + 14, Canvas.GetLeft(east), precision: 3);
+        // 2026-10-29 소유자: "선택지의 위치가 어떤 때는 노드 중앙이였다가, 어떤 때는 왼쪽으로 치우쳐지는데, 이게 항상
+        // 노드 중앙 아래쪽에 선택지가 있도록 해줘." — 예전(H1)에는 오른쪽뿐이면 카드 왼쪽 안, 왼쪽뿐이면 오른쪽 안이었다.
 
-        // 셋이 다 왼쪽(빈 칸이 없다) — 줄기는 카드 오른쪽 안이다.
-        double westRight = CardX(graph, session, "west") + CardWidth;
+        // 오른쪽뿐(빈 칸도 오른쪽) — 줄기는 가운데, 줄은 그 오른쪽에 선다.
+        StackPanel east = Row(graph, "east", "동쪽");
+        Assert.Equal(CardX(graph, session, "east") + (CardWidth / 2) + 14, Canvas.GetLeft(east), precision: 3);
+
+        // 셋이 다 왼쪽(빈 칸이 없다) — 줄기는 역시 가운데, 줄은 그 왼쪽에 선다.
+        double westCenter = CardX(graph, session, "west") + (CardWidth / 2);
 
         foreach (string label in new[] { "서쪽 하나", "서쪽 둘", "서쪽 셋" })
         {
             StackPanel row = Row(graph, "west", label);
-            Assert.Equal(westRight - 30 - 14, Canvas.GetLeft(row) + row.DesiredSize.Width, precision: 3);
+            Assert.Equal(westCenter - 14, Canvas.GetLeft(row) + row.DesiredSize.Width, precision: 3);
         }
+
+        // 빈 칸만 있는 새 카드도 같은 자리다.
+        StackPanel blank = Rows(graph, "a").First();
+        Assert.Equal(CardX(graph, session, "a") + (CardWidth / 2) + 14, Canvas.GetLeft(blank), precision: 3);
     });
 
     [Fact]
@@ -154,6 +161,10 @@ public sealed class GraphChoiceSideTests : IDisposable
     }
 
     /// <summary>그 에피소드의 선택지 줄 하나 — Tag가 <c>{에피소드}#{칸}</c>이고 문구를 든다.</summary>
+    private static IEnumerable<StackPanel> Rows(GraphEditorView graph, string episodeId) =>
+        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<StackPanel>()
+            .Where(row => (row.Tag as string)?.StartsWith(episodeId + "#", StringComparison.Ordinal) == true);
+
     private static StackPanel Row(GraphEditorView graph, string episodeId, string label) =>
         graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<StackPanel>()
             .Single(row => (row.Tag as string)?.StartsWith(episodeId + "#", StringComparison.Ordinal) == true &&

@@ -190,8 +190,6 @@ public partial class DialogueNodeEditor : UserControl
             //    (R-E · §6.4) — 대본의 원본이 프로젝트가 됐으므로 잠글 것이 없다.
             NameBox.IsReadOnly = _chapterEpisode;
 
-            BuildScriptSummary(node);
-
             DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
             DialogueFlow flow = ConditionFlowResolver.Resolve(
                 node,
@@ -416,23 +414,6 @@ public partial class DialogueNodeEditor : UserControl
     }
 
     // ── 대본 ────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 대본은 노드가 생성될 때 함께 만들어진다 (X4, D-3). 여기는 표시만 한다 —
-    /// 가져오기·대본 선택 진입점은 제거됐고, 긴 외부 대본은 X12의 붙여넣기 경로가 맡는다.
-    /// </summary>
-    private void BuildScriptSummary(DialogueNode node)
-    {
-        ScriptDocument? current = _session!.Project.FindScript(node.ScriptId);
-
-        // 머리글 오른쪽 한 줄에 든다 (2026-08-22) — 잘릴 수 있으므로 전문은 툴팁이 든다.
-        string summary = current is null
-            ? "대본 없음 — [줄 추가]로 만듭니다."
-            : $"{current.ActiveLines.Count()}줄 · {current.PrimaryLocale}";
-
-        ScriptSummaryText.Text = summary;
-        ToolTip.SetTip(ScriptSummaryText, summary);
-    }
 
     private void AddLine()
     {

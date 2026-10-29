@@ -27,19 +27,17 @@ public readonly record struct GraphPosition(double X, double Y);
 
 public abstract record GraphItemProjection(string FileId, GraphPosition Position);
 
-/// <summary>펼쳐진 StoryFile 안에서 실제 노드 카드로 표시할 항목.</summary>
-/// <param name="Badge">
-/// 카드에 붙는 짧은 부가 정보 — 대사 노드는 대본 이름(에피소드면 줄 수까지)을 보여 준다.
-/// 표시용 문자열이며 여기서 데이터 의미를 역추론하지 않는다.
-/// </param>
+/// <summary>
+/// 펼쳐진 StoryFile 안에서 실제 노드 카드로 표시할 항목.
+/// (⛔ 카드 부제로 나가던 <c>Badge</c> — 대본 이름 · 에피소드면 줄 수 — 는 2026-10-29에 걷혔다. 소유자: "이 정보는 필요없으니까 치워".)
+/// </summary>
 public sealed record ExpandedNodeProjection(
     string FileId,
     string NodeId,
     string NodeName,
     GraphNodeKind NodeKind,
     GraphPosition Position,
-    IReadOnlyList<GraphOutputPortProjection> OutputPorts,
-    string? Badge = null)
+    IReadOnlyList<GraphOutputPortProjection> OutputPorts)
     : GraphItemProjection(FileId, Position);
 
 /// <summary>접힌 StoryFile 하나를 대신하는 회색 프록시.</summary>

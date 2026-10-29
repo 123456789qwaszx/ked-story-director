@@ -9,34 +9,13 @@
             <StackPanel Spacing="6">
                 <TextBox x:Name="NameBox" FontWeight="SemiBold" PlaceholderText="장면 이름" />
 
-                <!-- 대본은 노드와 함께 태어난다 (X4) — 선택·가져오기 진입점 없음.
-                     줄 수·로케일은 2026-08-22에 <b>이름 오른쪽</b>으로 올라왔다 (소유자) —
-                     제 줄을 차지할 만큼의 정보가 아니고, 머리글과 떨어져 있으면 무엇에 대한
-                     숫자인지 한 박자 늦게 읽힌다. -->
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                    <TextBlock Grid.Column="0"
-                               x:Name="ScriptSummaryTitleText"
-                               Text="대본"
-                               FontSize="11"
-                               Opacity="0.7"
-                               VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1"
-                               x:Name="ScriptSummaryText"
-                               Margin="8,0,6,0"
-                               FontSize="11"
-                               Opacity="0.65"
-                               VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
-                    <!-- ⛔ 대사 잠금 토글([🔒 대사 잠김])은 2026-09-16에 사라졌다 (R-E ·
-                         지시서 §6.4). 그것이 지키던 것은 "여기서 고쳐도 다음 동기화가
-                         되돌린다"였는데, 그 동기화가 R-D에서 철거됐다 — 이제 <b>모든 노드의
-                         대본은 툴 소유</b>이고 잠글 원본이 없다. 열의 자리는 남는다
-                         (Grid.Column 3 = [줄 추가]). -->
-                    <Button Grid.Column="3"
-                            x:Name="AddLineButton"
-                            Content="줄 추가"
-                            FontSize="11" />
-                </Grid>
+                <!-- ⛔ 「대본 · k줄 · ko-KR」 요약은 2026-10-29에 걷혔다 (소유자: 노드 종류 · 대본 이름 · 줄 수는
+                     "필요없으니까 치워" — 카드 부제와 같은 정보다). 대사 잠금 토글([🔒 대사 잠김])은
+                     2026-09-16에 사라졌다(R-E — 모든 노드의 대본은 툴 소유이고 잠글 원본이 없다). -->
+                <Button x:Name="AddLineButton"
+                        HorizontalAlignment="Right"
+                        Content="줄 추가"
+                        FontSize="11" />
 
                 <TextBlock x:Name="ProblemText"
                            FontSize="11"

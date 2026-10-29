@@ -282,7 +282,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 출구를 어디에 저장하나 | `Model/StoryNode.cs`의 `DialogueNode.BranchExits` · `ChoiceExits` · `DefaultExitTargetNodeId` |
 | 포트를 만드는 규칙 · 간선 문구 | `Flow/NodeConnections.cs`의 `PortsOf` · `LabelFor` |
 | 연결 · 해제 | `ProjectEditor.SetExitTarget` |
-| 그래프에 무엇이 나타나는지 · 카드 뱃지 | `Graph/GraphProjectionBuilder.cs`(`IsHiddenPlumbing` · `BadgeFor`) |
+| 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs`(`IsHiddenPlumbing`) |
 | 선의 쪽 · 경로 · 사람이 고친 모양 | `Graph/EdgeSide.cs` · `OrthogonalEdgeRouter.cs` · `EdgeShapeRouter.cs` |
 | 포트를 끌어 잇기 · 선택지 줄 · 선 고치기 | `App/Views/GraphEditorView.axaml.cs` |
 | 새 카드가 설 자리 | `Graph/NodePlacement.cs` |
