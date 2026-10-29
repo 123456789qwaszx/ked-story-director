@@ -123,6 +123,23 @@ public sealed class StoryProject
     }
 
     /// <summary>
+    /// 어느 대사 카드도 가리키지 않는 대본을 걷는다 (2026-10-29 · <c>docs/plans/script-merge.md</c> S1).
+    ///
+    /// ⛔ 그 전에는 대본을 <b>일부러</b> 안 지웠다 — "카드를 지워도 글은 남고 되돌리기 한 번이면 카드가 제 대본을 다시
+    /// 찾는다"였다. 되돌리기는 프로젝트를 통째로 되살리므로(스냅샷) 대본을 남겨 둘 까닭이 없었고, 남은 대본은 저장할 때마다
+    /// 매니페스트와 <c>script/</c> 폴더에 쌓였다.
+    /// </summary>
+    /// <returns>걷은 대본 수.</returns>
+    public int RemoveUnreferencedScripts()
+    {
+        var referenced = new HashSet<string>(
+            EnumerateNodes().OfType<DialogueNode>().Select(node => node.ScriptId).OfType<string>(),
+            StringComparer.Ordinal);
+
+        return Scripts.RemoveAll(script => !referenced.Contains(script.Id));
+    }
+
+    /// <summary>
     /// 프로젝트 안의 모든 SetNode 조건. 파일 순서, SetNode 순서, 조건 순서를 지킨다.
     /// 편집·진단용 전체 조회이며 DialogueNode의 드롭다운 범위에는 사용하지 않는다.
     /// Dialogue별 범위는 AvailableConditionResolver가 판을 기준으로 계산한다.

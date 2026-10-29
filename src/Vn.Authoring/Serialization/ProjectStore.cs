@@ -307,6 +307,10 @@ public static class ProjectStore
         project.Chapters.AddRange(manifest.Chapters);
         project.WriterSpeakers.AddRange(manifest.WriterSpeakers.Select(speaker => speaker.Clone()));
 
+        // 어느 카드도 안 가리키는 대본은 여기서 버린다(S1) — 2026-10-29까지 카드를 지워도 대본이 남아 쌓였다.
+        // 다음 저장이 매니페스트에서도 뺀다.
+        project.RemoveUnreferencedScripts();
+
         JsonSupport.ValidateProject(project);
         return project;
     }

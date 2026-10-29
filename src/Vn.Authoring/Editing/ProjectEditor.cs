@@ -77,6 +77,8 @@ public sealed partial class ProjectEditor
             RemoveReferencesToNode(node.Id);
         }
 
+        Project.RemoveUnreferencedScripts();
+
         if (file.Nodes.Any(node =>
             string.Equals(Project.StartNodeId, node.Id, StringComparison.Ordinal)))
         {
@@ -341,8 +343,8 @@ public sealed partial class ProjectEditor
     /// 그 분기가 다녀가던 카드(분기를 추가할 때 함께 선 에피소드)도 <b>다른 곳이 쓰지 않으면</b> 함께 걷는다.
     ///
     /// ⛔ 2026-10-29까지는 표식만 지우고 카드는 판에 남겼다 — "거기 써 둔 대사가 한 번의 실수로 사라진다"가
-    /// 근거였는데, 그러면 아무도 안 부르는 카드가 판에 남아 사람은 분기가 지워지지 않았다고 본다. 대본은 원래
-    /// 지우지 않고(<see cref="StoryProject.Scripts"/>) 되돌리기 한 번에 셋이 함께 돌아오므로 그 근거가 없어졌다.
+    /// 근거였는데, 그러면 아무도 안 부르는 카드가 판에 남아 사람은 분기가 지워지지 않았다고 본다. 되돌리기 한 번에
+    /// 표식 · 카드 · 대본이 함께 돌아오므로 그 근거가 없어졌다.
     ///
     /// ⚠ <b>남기는 경우</b> — 그 카드를 다른 곳이 쓰고 있으면 표식만 걷는다: 다른 표식 · 출구가 그리로 가거나,
     /// 챕터의 길(간선)이 그리로 들어오거나, 챕터의 시작 에피소드이거나, 다른 판에 서 있을 때. 다른 데서 이어 쓰는
@@ -460,6 +462,7 @@ public sealed partial class ProjectEditor
         {
             owner.Nodes.Remove(node);
             RemoveReferencesToNode(nodeId);
+            Project.RemoveUnreferencedScripts();   // 카드의 대본도 함께 간다(S1) — 되돌리기는 스냅샷이 되살린다
 
             if (string.Equals(Project.StartNodeId, nodeId, StringComparison.Ordinal))
             {
