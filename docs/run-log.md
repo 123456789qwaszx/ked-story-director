@@ -1,5 +1,9 @@
 # 에피소드 레이어 자율 실행 기록
 
+> ⛔ **ked-story-director (2026-10-29):** 이 기록은 VnTool 시절(~2026-09)의 것이다 — 엑셀 원본 · 연출 층 · 게임용 Yarn을 전제한다.
+> 지금의 진입점은 [`../ORIENTATION.md`](../ORIENTATION.md)와 [`design/two-graphs.md`](design/two-graphs.md)이고, 그 뒤의 단계와 결정은
+> [`plans/`](plans/)(`director-split` · `presentation-removal` · `excel-boundary` · `legacy-cleanup`)에 있다.
+
 > **처음 이어받는 세션은 [`handoff/current-state.md`](handoff/current-state.md)를 먼저 읽는다.**
 > 목적·계층 규칙·코드 지도·남은 일이 한 장에 정리되어 있다. 이 문서는 그 뒤의 상세 이력이다.
 

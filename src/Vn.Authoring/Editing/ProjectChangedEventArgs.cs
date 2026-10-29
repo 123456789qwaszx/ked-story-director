@@ -3,13 +3,13 @@ namespace Vn.Authoring.Editing;
 public enum ProjectChangeKind
 {
     /// <summary>
-    /// 노드·줄·조건·assignment·출구가 생기거나 사라지거나 순서가 바뀌었다.
+    /// 노드·줄·조건·출구가 생기거나 사라지거나 순서가 바뀌었다.
     /// 계산되는 갈래와 포트, 편집 행 자체가 달라지므로 화면 구조를 다시 만들어야 한다.
     /// </summary>
     Structure,
 
     /// <summary>
-    /// assignment 값이나 셸 상태처럼 현재 편집 컨트롤 구조와 파생 그래프가 바뀌지 않는 내용이다.
+    /// 셸 상태처럼 현재 편집 컨트롤 구조와 파생 그래프가 바뀌지 않는 내용이다.
     /// Dialogue 내용은 전용 변경 종류를 사용한다.
     /// </summary>
     Content,

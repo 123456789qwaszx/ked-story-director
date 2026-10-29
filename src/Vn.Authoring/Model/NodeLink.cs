@@ -12,7 +12,7 @@ namespace Vn.Authoring.Model;
 /// </summary>
 public enum NodeLinkKind
 {
-    /// <summary>SetNode가 DialogueNode에 조건과 assignment를 공급한다.</summary>
+    /// <summary>SetNode가 DialogueNode에 조건을 공급한다(옛 데이터 — 범위는 이제 판이 정한다).</summary>
     Settings
 }
 

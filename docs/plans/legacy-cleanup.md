@@ -45,8 +45,8 @@
 | L4 | Vn.Authoring의 죽은 묶음 — `ChapterRunState` · 판 파일 관리(가져오기 · 지우기 · 개명 · 노드 옮기기) · 프리뷰 흐름(`ChoiceOptionBundle` · `Cycle` · `PassedBlocks`) · 안 쓰는 `Clone` 사슬 · 엑셀 · 탐색기 시절 편집(`TryDecomposeSingle` · `MoveEpisodesToChapter` · `RemoveChoiceLabel` …) · 아무도 안 부르는 멤버 | a 기능째 죽은 묶음 `370e86c` (run 44) · b 아무도 안 부르는 멤버 · 주석 `ca79145` (run 45) |
 | L5 | 대본 가져오기 · 작가 변수의 남은 길 — `PlanScriptSync` · `ScriptParser` · 대본 개명 · 지우기 · `SourcePath`, set · assignment (L-D4). 일치 엔진 테스트는 `ScriptSynchronizer.Plan`으로 옮긴다. **갈래 고르기(L-D5)도 여기서 걷는다** — 시뮬레이션의 set 누적이 그것의 유일한 독자라 한 뿌리다 | `6e460b6` (run 46) |
 | L6 | 걷힌 기능의 화면 흔적 — 「X 설정」 카드(L-D6) · 옛 파일 호환 `excelEpisode`(L-D8) · 형식 거절 안내의 "대본을 가져오세요" | `f31111a` (run 47) |
-| L7 | 현행 안내 문서 — README · ARCHITECTURE · ORIENTATION이 없는 코드 · 걷힌 기능을 가리키지 않게 | |
-| L8 | `SourceRow` 조사 → 걷기와 에피소드 오류 표시 결함 (L-D7) | 이번 — L7보다 먼저 했다(안내 문서는 코드가 다 선 뒤에) |
+| L7 | 현행 안내 문서 — README · ARCHITECTURE · ORIENTATION이 없는 코드 · 걷힌 기능을 가리키지 않게 | 이번 — ARCHITECTURE · ORIENTATION을 지금 구조로 다시 썼고(옛 판은 `git show 82fc34d:ARCHITECTURE.md`), README · `two-graphs.md` · run-log 머리를 고쳤다 |
+| L8 | `SourceRow` 조사 → 걷기와 에피소드 오류 표시 결함 (L-D7) | `82fc34d` (run 48) — L7보다 먼저 했다(안내 문서는 코드가 다 선 뒤에) |
 
 ## 4. 걷다가 찾은 것
 
@@ -78,3 +78,9 @@
 - **L8 · 남긴 것** — `ChapterSheetNames`·`ChapterDiagnostic.Sheet`는 이름이 엑셀 시절 것이지만 지금은
   "챕터 안의 어느 자리(에피소드 · 간선 · 조건 · 스탯)"를 뜻하고 보고 문장에 실린다. 이름만 바꾸는 일은
   이 정리의 몫이 아니다.
+- **L7 · 다시 쓴 까닭** — ARCHITECTURE는 걷힌 코드 115곳(워크북 리더/라이터 · 연출 층 · 발행 · 합성 · Yarn 이미터 · `Vn.Core`)을
+  가리켰고 ORIENTATION은 VnTool 시절 지도였다. 고쳐 쓰기보다 지금 구조로 다시 쓰는 편이 짧고 맞았다. 여전히 맞는 설계 판단
+  (조건은 전환만 · 출구는 여는 줄 · 포트는 계산 · 애매하면 멈춤)과 규칙은 살렸고, 챕터 층의 판단(코어 재적재 관문 · 챕터 범위)을
+  더했다. 옛 판의 까닭은 git에 있다.
+- **L7 · 남긴 것** — `docs/handoff/*` · `external-overview` · `writer-guide` · `chapter-layer-guide` · `PLAN`·`R*` 계획은 이력이다(D-R5).
+  머리의 표식이 무엇이 걷혔는지 말하고, README 표가 「이력」이라 적는다.
