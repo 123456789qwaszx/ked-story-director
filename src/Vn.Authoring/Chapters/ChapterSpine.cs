@@ -1,5 +1,3 @@
-using Vn.Authoring.Model;
-
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
@@ -20,8 +18,8 @@ namespace Vn.Authoring.Chapters;
 /// 것이 바로 이것이다). 진행을 지나칠 것이 없다.</item>
 /// </list>
 ///
-/// ⚠ 같은 규칙이 <b>가드레일</b>(엑셀노드로 향하는 출구)과 <b>철도</b>(곁가지 웹 걷기)에
-/// 각각 한 벌씩 살고 있었다. 갈리면 한쪽은 경고하고 한쪽은 안 그리는 상태가 된다.
+/// 쓰는 자리는 가드레일(진행이 착지하는 카드로 향하는 출구 경고, <see cref="ChapterBoardSupply"/>)이다.
+/// ⛔ 철도가 곁가지 웹을 걷던 자리(<c>IsSideBranch</c>)는 2026-10-29에 그 웹 경로와 함께 걷혔다(legacy-cleanup.md L3).
 /// </summary>
 public static class ChapterSpine
 {
@@ -47,17 +45,5 @@ public static class ChapterSpine
         }
 
         return landed;
-    }
-
-    /// <summary>
-    /// 이 카드가 <b>곁가지</b>인가 — 진행이 착지하지 않는 카드.
-    /// 표식이 아예 없으면(챕터 판이 아닌 낙서판) 곁가지다.
-    /// </summary>
-    public static bool IsSideBranch(IReadOnlySet<string> landedOn, DialogueNode node)
-    {
-        ArgumentNullException.ThrowIfNull(landedOn);
-        ArgumentNullException.ThrowIfNull(node);
-
-        return node.MarkedEpisodeId is not { Length: > 0 } episodeId || !landedOn.Contains(episodeId);
     }
 }

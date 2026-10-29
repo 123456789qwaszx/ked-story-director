@@ -4,8 +4,6 @@ using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Editing;
-using Vn.Authoring.Flow;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
@@ -15,13 +13,17 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// T1 — 시나리오 그래프의 철도 배선 (소유자 그림). 챕터 간선이 챕터 판에 미러되고,
-/// 선택지 칩은 문구만 보인다(T-D4 — 수치는 챕터 그래프의 책임). 선택은 항상 에피소드 끝이므로
+/// 선택지 칸은 문구만 보인다(T-D4 — 수치는 챕터 그래프의 책임). 선택은 항상 에피소드 끝이므로
 /// 분기점은 출발 카드당 하나다.
+///
+/// 챕터는 프로젝트에 둔다 — 연출 그래프는 살아 있는 프로젝트의 챕터만 본다. ⛔ 전에는 셸이 공급한 챕터
+/// 목록을 가짜로 넣어 시험했고, 그 길(스냅샷 대체)과 그 길에서만 서던 옛 칩은 2026-10-29에 걷혔다
+/// (legacy-cleanup.md L3).
 /// </summary>
 public sealed class ChapterRailTests
 {
     [Fact]
-    public void 챕터_간선이_철도_배선으로_미러되고_칩은_문구만_보인다() => HeadlessUi.Run(() =>
+    public void 챕터_간선이_철도_배선으로_미러되고_칸은_문구만_보인다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
 
@@ -30,13 +32,13 @@ public sealed class ChapterRailTests
         AddEpisodeCard(session, fileId, "EP01");
         AddEpisodeCard(session, fileId, "EP02");
 
-        graph.SupplyChapters([Chapter("ch01",
+        Chapter(session, "ch01",
             episodes: ["EP00", "EP01", "EP02"],
             edges:
             [
                 ("EP00", "EP01", "라루를 믿는다", "trust +1"),
                 ("EP00", "EP02", "의심한다", "suspicion +1")
-            ])]);
+            ]);
 
         graph.Rebuild();
 
@@ -46,24 +48,18 @@ public sealed class ChapterRailTests
         List<Line> rails = canvas.Children.OfType<Line>().ToList();
         Assert.True(rails.Count >= 4, $"철도 선이 {rails.Count}개뿐입니다");
 
-        // 칩 — 문구만. 스탯변화·조건 문자열은 기본 화면에 없다(T-D4).
-        List<string> chips = canvas.Children.OfType<TextBlock>()
+        // 칸 — 문구만. 스탯변화·조건 문자열은 기본 화면에 없다(T-D4).
+        List<string> labels = Rows(canvas, "EP00")
+            .SelectMany(row => row.Children.OfType<TextBlock>())
             .Select(block => block.Text ?? string.Empty)
-            .Where(text => text.StartsWith("●", StringComparison.Ordinal))
             .ToList();
 
-        Assert.Contains("● 라루를 믿는다", chips);
-        Assert.Contains("● 의심한다", chips);
-        Assert.DoesNotContain(chips, chip => chip.Contains("trust") || chip.Contains("suspicion"));
+        Assert.Contains("라루를 믿는다", labels);
+        Assert.Contains("의심한다", labels);
+        Assert.DoesNotContain(labels, label => label.Contains("trust") || label.Contains("suspicion"));
 
         // 같은 출발의 가지들은 같은 분기점 X(줄기)를 공유한다 — 단일 분기점.
-        List<double> chipXs = canvas.Children.OfType<TextBlock>()
-            .Where(block => (block.Text ?? "").StartsWith("●", StringComparison.Ordinal))
-            .Select(Canvas.GetLeft)
-            .Distinct()
-            .ToList();
-
-        Assert.Single(chipXs);
+        Assert.Single(Rows(canvas, "EP00").Select(Canvas.GetLeft).Distinct());
 
         // 도착 포트 — 들어오는 가지가 있는 카드(EP01·EP02)의 위 가운데에 접점이 서고(D3),
         // 가지들은 카드에 직접 붙지 않고 그 접점으로 모인다 (소유자 보고로 고정).
@@ -89,14 +85,11 @@ public sealed class ChapterRailTests
 
         session.Editor.AddDialogueNode(fileId, name: "자유A");
         session.Editor.AddDialogueNode(fileId, name: "자유B");
-
-        graph.SupplyChapters([Chapter("ch01", episodes: ["EP00"], edges: [])]);
         graph.Rebuild();
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         Assert.Empty(canvas.Children.OfType<Line>());
-        Assert.DoesNotContain(canvas.Children.OfType<TextBlock>(),
-            block => (block.Text ?? "").StartsWith("●", StringComparison.Ordinal));
+        Assert.DoesNotContain(canvas.Children.OfType<StackPanel>(), row => row.Tag is string);
     });
 
     [Fact]
@@ -108,9 +101,9 @@ public sealed class ChapterRailTests
 
         AddEpisodeCard(session, fileId, "EP00"); // EP01은 아직 없다
 
-        graph.SupplyChapters([Chapter("ch01",
+        Chapter(session, "ch01",
             episodes: ["EP00", "EP01"],
-            edges: [("EP00", "EP01", "라루를 믿는다", null)])]);
+            edges: [("EP00", "EP01", "라루를 믿는다", null)]);
         graph.Rebuild();
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
@@ -155,25 +148,27 @@ public sealed class ChapterRailTests
 
         AddEpisodeCard(session, fileId, "EP99"); // 챕터에는 없는 에피소드
 
-        graph.SupplyChapters([Chapter("ch01",
-            episodes: ["EP00"],
-            edges: [])]);
+        Chapter(session, "ch01", episodes: ["EP00"], edges: []);
         graph.Rebuild();
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         Assert.Empty(canvas.Children.OfType<Line>());
-        Assert.DoesNotContain(canvas.Children.OfType<TextBlock>(),
-            block => (block.Text ?? "").Contains('⏹'));
+        Assert.Empty(Rows(canvas, "EP99"));
     });
 
     [Fact]
-    public void 옵션_포트가_칩으로_이사하고_스텁과_체인이_선다() => HeadlessUi.Run(() =>
+    public void 에피소드_카드의_선택지는_칸으로_서고_진행은_맨_아래다() => HeadlessUi.Run(() =>
     {
-        // T2 — 대사가 든 에피소드 카드에서 선택지가 칩으로 선다. 칩의 주인은 챕터 간선이다.
+        // T2 — 에피소드 카드의 선택지 · 기본 출구 포트는 카드 아래 칸으로 이사했다. 칸의 주인은 챕터 간선이다.
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
 
-        // 진행 간선을 일부러 먼저 둔다 — 그래도 화면은 선택지가 위여야 한다.
-        ChapterEntry entry = Chapter("ch01",
+        DialogueNode ep00 = AddEpisodeCard(session, fileId, "EP00");
+        ScriptDocument script = session.Project.FindScript(ep00.ScriptId)!;
+        session.Editor.SetScriptLineText(script.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
+        AddEpisodeCard(session, fileId, "EP01").Layout.X = 1200;
+
+        // 진행 간선을 일부러 먼저 둔다 — 그래도 화면은 선택지가 위여야 한다(소유자 보고: 반대면 헷갈린다).
+        Chapter(session, "ch01",
             episodes: ["EP00", "EP01"],
             edges:
             [
@@ -181,32 +176,9 @@ public sealed class ChapterRailTests
                 ("EP00", "EP01", "라루를 믿는다", "trust +1"),
                 ("EP00", "EP01", "의심한다", null)
             ]);
-
-        // v10 — 대본은 선택지를 선언하지 않는다. 대사 두 줄뿐이다. 새 카드는 빈 줄 하나로
-        // 서므로 그 줄을 먼저 채운다 — 안 채우면 붙여넣기가 그것을 지울 후보로 본다.
-        DialogueNode ep00 = AddEpisodeCard(session, fileId, "EP00");
-        ScriptDocument script = session.Project.FindScript(ep00.ScriptId)!;
-        session.Editor.SetScriptLineText(script.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
-
-        ScenarioPasteOutcome pasted = session.Editor.ApplyScenarioText(
-            ep00.Id, "윌로: 첫 줄\n라루: 둘째 줄", session.Definition, confirmDeletes: true);
-
-        Assert.True(pasted.Applied, string.Join(" / ", pasted.Problems));
-
-        DialogueNode ep01 = AddEpisodeCard(session, fileId, "EP01");
-        ep01.Layout.X = 1200;
-        ep01.Layout.Y = 60;
-
-        DialogueNode free = session.Editor.AddDialogueNode(fileId, name: "자유씬A");
-        free.Layout.X = 700;
-        free.Layout.Y = 420;
-
-        graph.SupplyChapters([entry]);
         graph.Rebuild();
 
-        var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-
-        // ① 에피소드 카드에서 옵션·기본 포트가 사라졌다 — 칩으로 이사(IF 갈래만 남는다).
+        // ① 에피소드 카드에는 기본 출구 · 선택지 포트가 없다 — 칸으로 이사했다(IF 갈래만 남는다).
         ExpandedNodeProjection projected = GraphProjectionBuilder
             .Build(session.Project, session.Project.Files.Select(file => file.Id)
                 .ToHashSet(StringComparer.Ordinal))
@@ -217,135 +189,26 @@ public sealed class ChapterRailTests
             port => port.Kind == GraphOutputPortKind.ExecutionDefault);
         Assert.DoesNotContain(projected.OutputPorts, port => port.ExecutionPort is { IsChoice: true });
 
-        // ② 칩의 주인은 챕터 간선이다. (구판 OPTION 스텁은 v10에서 사라졌다 —
-        //    대본이 선택지를 선언하지 않으므로 "안 이은 옵션"이라는 상태가 없다.)
-        List<string> chips = canvas.Children.OfType<TextBlock>()
-            .Select(block => block.Text ?? string.Empty)
-            .Where(text => text.StartsWith("●", StringComparison.Ordinal))
-            .ToList();
-        Assert.Contains("● 라루를 믿는다", chips);
-        Assert.Contains("● 의심한다", chips);
-
-        // 순서 — 선택지(간선 순서)가 위, 진행이 아래 (소유자 보고: 반대면 헷갈린다).
-        // EP01(엔딩)의 진행 스텁도 있으므로 EP00 분기점(같은 X)의 칩들만 본다.
-        double trunkLeft = canvas.Children.OfType<TextBlock>()
-            .Where(block => block.Text == "● 라루를 믿는다")
-            .Select(Canvas.GetLeft)
-            .Single();
-
-        double TopOf(string text) => canvas.Children.OfType<TextBlock>()
-            .Where(block => block.Text == text && Math.Abs(Canvas.GetLeft(block) - trunkLeft) < 0.5)
-            .Select(Canvas.GetTop)
-            .Single();
-
-        Assert.True(TopOf("● 라루를 믿는다") < TopOf("● 의심한다"));
-        Assert.True(TopOf("● 의심한다") < TopOf("○ 진행"));
-
-        // ③ 배선 — 칩에 자유 씬을 달면(칩이 부르는 그 SetExitTarget) 철도가 씬을 경유한다.
-        // v10에서 선택지 출구의 열쇠는 <b>문구</b>다 — 대본 줄이 아니라(대본은 선택지를
-        // 선언하지 않는다). 그래서 대본을 고쳐도 이 배선이 살아 있다.
-        session.Editor.SetExitTarget(ep00.Id, ExitPortKind.Choice, "의심한다", free.Id);
-
-        graph.Rebuild();
-
-        // 씬 카드로 진입하는 선 — 같은 높이면 왼쪽(x=카드-8), 아니면 카드 가운데(x=700+105)로 꺾인다.
-        Assert.Contains(canvas.Children.OfType<Avalonia.Controls.Shapes.Line>(),
-            line => Math.Abs(line.EndPoint.X - (700 - 8)) < 0.5 ||
-                    Math.Abs(line.EndPoint.X - (700 + 105)) < 0.5);
-
-        // ④ ⚠ 2026-09-17에 뒤집혔다 (R7 P-6 · 결정 ⑤). 전에는 커스텀 노드의 기본 출구
-        //    쓰기가 조용히 거절돼 씬이 곧장 (진행)으로 합류했다 — 그 거절이 곧 에피소드/
-        //    자유노드의 구분이었고, 구분이 없어졌으므로 배선이 서고 선도 그려진다.
-        DialogueNode sceneC = session.Editor.AddDialogueNode(fileId, name: "다음씬C");
-        sceneC.Layout.X = 960;
-        sceneC.Layout.Y = 300;
-        session.Editor.SetExitTarget(free.Id, ExitPortKind.Default, null, sceneC.Id);
-        Assert.Equal(sceneC.Id, free.DefaultExitTargetNodeId);
-
-        graph.Rebuild();
-
-        // 합류하는 자리가 <b>한 칸 뒤로 밀렸다</b>. 전에는 자유씬A가 곧장 (진행)으로
-        // 합류했는데, 이제 그 배선이 살아 다음씬C까지 이어지고 <b>다음씬C가</b> 합류한다.
-        Assert.Contains(canvas.Children.OfType<Avalonia.Controls.Shapes.Line>(),
-            line => Math.Abs(line.StartPoint.X - (960 + 210 + 6)) < 0.5);
-
-        Assert.DoesNotContain(canvas.Children.OfType<Avalonia.Controls.Shapes.Line>(),
-            line => Math.Abs(line.StartPoint.X - (700 + 210 + 6)) < 0.5);
-
-        // ⑤ (진행) 합류 (소유자 제안) — 척추 밖으로 확장한 웹의 노드 B: A의 갈래 출구로
-        // 이어지고 기본 출구는 비어 있다(= 진행). 그 출력도 레인 끝으로 이어져 보인다.
-        // (가짜 LineId 배선이라 이 뒤로는 편집기를 부르지 않는다 — 검증기가 막는다.)
-        DialogueNode webB = session.Editor.AddDialogueNode(fileId, name: "곁가지B");
-        webB.Layout.X = 950;
-        webB.Layout.Y = 560;
-        free.BranchExits["ln_fake_option"] = webB.Id;
-
-        graph.Rebuild();
-
-        double webOutX = 950 + 210 + 6; // 카드 오른쪽 + 6
-        Assert.Contains(canvas.Children.OfType<Avalonia.Controls.Shapes.Line>(),
-            line => Math.Abs(line.StartPoint.X - webOutX) < 0.5);
-    });
-
-    [Fact]
-    public void 대본에_OPTION이_없어도_간선마다_칩이_서고_자유_씬을_단다() => HeadlessUi.Run(() =>
-    {
-        // v9 (2026-08-17 소유자 보고) — "'이 문구의 Option이 대본에 없습니다' 라면서 레거시의
-        // 그런 느낌이야." 선택지의 주인이 챕터로 온 뒤 대본에 OPTION이 없는 것이 정상인데,
-        // 철도는 여전히 대본 OPTION을 기준으로 삼아 모든 간선을 유령으로 그리고 있었다.
-        (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
-
-        DialogueNode ep00 = AddEpisodeCard(session, fileId, "EP00"); // 대본에 OPTION 줄이 없다
-        AddEpisodeCard(session, fileId, "EP01");
-        AddEpisodeCard(session, fileId, "EP02");
-
-        DialogueNode free = session.Editor.AddDialogueNode(fileId, name: "자유씬A");
-        free.Layout.X = 700;
-        free.Layout.Y = 420;
-
-        graph.SupplyChapters([Chapter("ch01",
-            episodes: ["EP00", "EP01", "EP02"],
-            edges:
-            [
-                ("EP00", "EP01", "라루를 믿는다", null),
-                ("EP00", "EP02", "의심한다", null)
-            ])]);
-        graph.Rebuild();
-
+        // ② 칸의 차례 — 선택지(간선 순서)가 위, 문구 없는 진행이 그 아래다.
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-
-        // 간선 둘 = 칩 둘. 유령(흐린 칩)도, 레거시 경고도 없다.
-        List<TextBlock> chips = canvas.Children.OfType<TextBlock>()
-            .Where(block => (block.Text ?? string.Empty).StartsWith("●", StringComparison.Ordinal))
+        List<string> order = Rows(canvas, "EP00")
+            .Take(3)
+            .Select(row => row.Children.OfType<TextBlock>().Single().Text ?? string.Empty)
             .ToList();
-        Assert.Equal(["● 라루를 믿는다", "● 의심한다"], chips.Select(block => block.Text));
-        Assert.All(chips, chip => Assert.Equal(1, chip.Opacity));
 
-        // 문구를 열쇠로 자유 씬을 단다 — 대본의 줄이 아니라 챕터의 문구가 자리다.
-        session.Editor.SetExitTarget(ep00.Id, ExitPortKind.Choice, "라루를 믿는다", free.Id);
-
-        Assert.Equal(free.Id, ep00.ChoiceExits["라루를 믿는다"]);
-
-        graph.Rebuild();
-
-        // 철도가 그 씬 카드로 진입한다 — 같은 높이면 왼쪽(x=카드-8), 아니면 가운데(700+105).
-        Assert.Contains(canvas.Children.OfType<Line>(),
-            line => Math.Abs(line.EndPoint.X - (700 - 8)) < 0.5 ||
-                    Math.Abs(line.EndPoint.X - (700 + 105)) < 0.5);
-
-        // 대본을 고쳐도 이 배선은 살아 있다 — 문구의 주인은 챕터라 줄 청소에 쓸리지 않는다.
-        session.Editor.AddDialogueNode(fileId, name: "무관한노드");
-        Assert.Equal(free.Id, ep00.ChoiceExits["라루를 믿는다"]);
-
-        // 저장·재적재를 건너도 남는다 — 판 파일에 제 자리가 있다.
-        StoryFile saved = StoryFileJson.Read(
-            StoryFileJson.Write(session.Project.Files.Single(file => file.Id == fileId)));
-        DialogueNode reloaded = saved.Nodes.OfType<DialogueNode>()
-            .Single(node => node.MarkedEpisodeId == "EP00");
-        Assert.Equal(free.Id, reloaded.ChoiceExits["라루를 믿는다"]);
+        Assert.Equal("라루를 믿는다", order[0]);
+        Assert.Equal("의심한다", order[1]);
+        Assert.DoesNotContain(order[2], new[] { "라루를 믿는다", "의심한다" });
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    /// <summary>그 에피소드의 선택지 칸 줄들 — Tag가 <c>{에피소드}#{칸}</c>이고, 칸 번호 차례다.</summary>
+    private static List<StackPanel> Rows(Canvas canvas, string episodeId) =>
+        canvas.Children.OfType<StackPanel>()
+            .Where(row => (row.Tag as string)?.StartsWith(episodeId + "#", StringComparison.Ordinal) == true)
+            .OrderBy(row => (row.Tag as string)![(episodeId.Length + 1)..], StringComparer.Ordinal)
+            .ToList();
 
     private static DialogueNode AddEpisodeCard(AuthoringSession session, string fileId, string episodeId)
     {
@@ -354,32 +217,27 @@ public sealed class ChapterRailTests
         return node;
     }
 
-    private static ChapterEntry Chapter(
+    /// <summary>그 챕터에 에피소드와 간선을 바로 적는다 — 카드는 세우지 않는다(카드 없음 · 챕터 밖 카드를 꾸미려고).</summary>
+    private static void Chapter(
+        AuthoringSession session,
         string chapterId,
         IReadOnlyList<string> episodes,
         IReadOnlyList<(string From, string To, string? Label, string? Stats)> edges)
     {
-        List<ChapterEpisode> episodeList = episodes
-            .Select((id, index) => new ChapterEpisode(
-                id, id, "01", id, index * 100, 0, null, index + 2))
-            .ToList();
+        ChapterDocument chapter = session.Editor.EnsureChapter(chapterId);
 
-        List<ChapterEdge> edgeList = edges
+        chapter.Episodes.AddRange(episodes
+            .Select((id, index) => new ChapterEpisode(
+                id, id, "01", id, index * 100, 0, null, index + 2)));
+
+        chapter.Edges.AddRange(edges
             .Select((edge, index) => new ChapterEdge(
                 edge.From, edge.To, edge.Label, null, null, index + 2)
             {
                 StatChanges = edge.Stats is null
                     ? []
                     : [new StatDelta(edge.Stats.Split(' ')[0], int.Parse(edge.Stats.Split('+')[1]))]
-            })
-            .ToList();
-
-        var model = new ChapterGraphModel(
-            chapterId, chapterId, episodeList, edgeList,
-            Array.Empty<ChapterCondition>(), Array.Empty<ChapterStat>(),
-            Array.Empty<ChapterFixture>(), Array.Empty<ChapterDiagnostic>());
-
-        return new ChapterEntry(chapterId, model);
+            }));
     }
 
     private static (GraphEditorView Graph, AuthoringSession Session, string FileId) ShowBoard(string name)

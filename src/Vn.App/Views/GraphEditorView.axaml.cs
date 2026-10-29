@@ -66,15 +66,6 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private IReadOnlyList<ChapterEntry> _chapters = Array.Empty<ChapterEntry>();
 
-    /// <summary>
-    /// 이번 그리기에서 <b>곁가지</b>로 판정된 카드들 (R7 P-6 · 결정 ⑤ · 2026-09-17).
-    ///
-    /// ⛔ 전에는 <c>MarkedEpisodeId is null</c>이 이 뜻이었다 — 그 갈래가 곧 엑셀노드/자유노드의
-    /// 구분이었고 없어졌다. 판정은 <see cref="ChapterSpine"/> 한 벌이 한다: <b>진행이 착지하지
-    /// 않는 카드</b>가 곁가지다.
-    /// </summary>
-    private readonly HashSet<string> _sideBranchIds = new(StringComparer.Ordinal);
-
     internal void SupplyChapters(IReadOnlyList<ChapterEntry> entries)
     {
         _chapters = entries;
@@ -591,10 +582,6 @@ public partial class GraphEditorView : UserControl
 
         _railVisuals.Clear();
 
-        // ⚠ 곁가지 판정도 이번 그리기의 것이다 — 안 비우면 간선이 생겨 척추가 된 카드가
-        //    옛 판정을 그대로 들고 있어 웹으로 계속 걸린다.
-        _sideBranchIds.Clear();
-
         if (_session is null || _projection is null)
         {
             return;
@@ -611,33 +598,20 @@ public partial class GraphEditorView : UserControl
                 .FirstOrDefault(file => string.Equals(file.Id, group.Key, StringComparison.Ordinal))
                 ?.Name ?? string.Empty;
 
-            // ⛔ <b>살아 있는 프로젝트를 먼저 본다</b> (R7 · 2026-09-16). 예전에는 셸이 공급한
-            //    <c>_chapters</c> 스냅샷만 봤는데, 이제 이 화면이 <b>간선을 직접 긋는다</b> —
-            //    스냅샷은 셸이 다시 읽어 줄 때까지 낡아 있어 <b>방금 그은 길이 안 비친다</b>.
-            //
-            // ⚠ 스냅샷은 <b>뒷받침</b>으로 남는다: 프로젝트에 그 챕터가 없고 공급만 받은
-            //    상태(셸이 아직 들여오기 전)에서도 철도는 보여야 한다. 둘 다 같은 값을
-            //    말하므로 정본이 둘이 되는 것은 아니다 — 먼저 보는 쪽이 정해져 있다.
+            // 살아 있는 프로젝트의 챕터를 본다 — 이 화면이 간선을 직접 긋는다.
+            // ⛔ 셸이 공급한 챕터 목록(<c>_chapters</c>) 스냅샷을 뒷받침으로 보던 길은 2026-10-29에 걷혔다
+            //    (legacy-cleanup.md L3). 그 목록도 같은 프로젝트를 읽은 것이라, 프로젝트에 없는 챕터를 줄 수 있는 것은
+            //    낡은 스냅샷뿐이었다.
             ChapterGraphModel? chapter =
-                _session.Editor.FindChapter(boardName)?.ToGraphModel(boardName, _session.Definition)
-                ?? _chapters
-                    .FirstOrDefault(entry =>
-                        string.Equals(entry.ChapterId, boardName, StringComparison.Ordinal))
-                    ?.Model;
+                _session.Editor.FindChapter(boardName)?.ToGraphModel(boardName, _session.Definition);
 
             if (chapter is null)
             {
                 continue; // 챕터 판이 아니다 — 일반 프로젝트는 아무 변화 없다.
             }
 
-            // 진행이 착지하는 에피소드들 — 척추와 곁가지를 가르는 열쇠다(R7 P-6).
-            HashSet<string> landed = ChapterSpine.LandedOn(chapter.Episodes, chapter.Edges);
-
-            // 에피소드 Id → 척추 카드 자리, 그리고 판의 모든 노드 자리(체인 경유용).
-            // 아직 동기화 전인 에피소드는 없는 것으로 둔다 — 없는 노드로 선을 그으면 거짓말이다.
+            // 에피소드 Id → 그 카드 자리. 아직 카드가 없는 에피소드는 없는 것으로 둔다 — 없는 노드로 선을 그으면 거짓말이다.
             var spots = new Dictionary<string, (DialogueNode Node, Rect Rect)>(StringComparer.Ordinal);
-            var nodeRects = new Dictionary<string, Rect>(StringComparer.Ordinal);
-            var freeNodes = new List<DialogueNode>();
 
             foreach (ExpandedNodeProjection item in group)
             {
@@ -647,20 +621,9 @@ public partial class GraphEditorView : UserControl
                 }
 
                 var rect = new Rect(item.Position.X, item.Position.Y, CardWidth, CardHeightOf(card));
-                nodeRects[item.NodeId] = rect;
 
                 if (_session.Project.FindNode(item.NodeId) is DialogueNode dialogue)
                 {
-                    // ⚠ <b>갈래가 바뀌었다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는
-                    //    `MarkedEpisodeId`가 있으면 척추, 없으면 자유 씬이었다 — 그 갈래가
-                    //    곧 엑셀노드/자유노드의 구분이었고 없어졌다. 이제는 <b>진행이
-                    //    착지하는가</b>로 가른다(`ChapterSpine` 한 벌, 가드레일도 같은 것).
-                    if (ChapterSpine.IsSideBranch(landed, dialogue))
-                    {
-                        freeNodes.Add(dialogue);
-                        _sideBranchIds.Add(dialogue.Id);
-                    }
-
                     // ⭐ <b>곁가지도 제 가지와 선택지 칸을 받는다</b> (R7 P-6). 전에는 척추
                     //    카드만 여기 들어와 레일을 받았는데, 이제는 판의 모든 카드가
                     //    에피소드라 <b>전부 아래에 3칸이 뚫려야</b> 한다 — 곁가지에서
@@ -690,7 +653,7 @@ public partial class GraphEditorView : UserControl
                     .Where(edge => string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal))
                     .ToList();
 
-                DrawRailsFrom(boardName, node, rect, edges, spots, nodeRects, freeNodes, arrivals);
+                DrawRailsFrom(boardName, node, rect, edges, spots, arrivals);
             }
 
             foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
@@ -720,13 +683,12 @@ public partial class GraphEditorView : UserControl
     /// 문구로 짝을 찾았는데, v9에서 대본에 OPTION이 없는 것이 정상이 되면서 모든 간선이
     /// "유령"으로 보였다(소유자 보고). 이제 그 개념 자체가 없다.
     ///
-    /// 칩이 배선 진입점이다. 자유 씬은 <b>선택지 문구를 열쇠로</b> 매단다
-    /// (<see cref="ExitPortKind.Choice"/>) — 대본의 줄에 매이지 않으므로 대본을 고쳐도
-    /// 배선이 살아 있다. 구판 대본에 OPTION 줄이 남아 있고 문구가 같으면 <b>그 줄의 포트를
-    /// 그대로 쓴다</b>(옛 배선을 잃지 않는다).
+    /// 가지마다 그 칸(<see cref="SlotChip"/>)이 선다 — 문구를 고치고 점을 끌어 잇는 자리다.
     ///
-    /// 배선된 자유 씬이 있으면 가지는 <b>첫 씬의 입구까지만</b> 댄다 — 웹 속은 작가의 실행
-    /// 배선이 유일한 선이고, 끝은 (진행) 합류선이 레인 끝으로 모은다.
+    /// ⛔ 칸이 없는 가지의 옛 칩(「● 문구」 · 「○ 진행」)과 그 칩이 열던 자유 씬 배선, 배선된 자유 씬을 지나는 웹
+    ///    경로 · (진행) 합류선 · 「⏹ 종료」 스텁은 2026-10-29에 걷혔다(legacy-cleanup.md L3). 칸은 간선마다 늘 서므로
+    ///    칸 없는 가지는 낡은 챕터 스냅샷에서만 나왔고, 자유 씬 배선(<see cref="DialogueNode.ChoiceExits"/>)은 그 칩만
+    ///    적었다. 옛 파일의 배선 데이터는 그대로 오간다.
     /// </summary>
     private void DrawRailsFrom(
         string chapterId,
@@ -734,18 +696,12 @@ public partial class GraphEditorView : UserControl
         Rect sourceRect,
         IReadOnlyList<ChapterEdge> edges,
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
-        IReadOnlyDictionary<string, Rect> nodeRects,
-        IReadOnlyList<DialogueNode> freeNodes,
         Dictionary<string, List<(string From, string Label)>> arrivals)
     {
-        IReadOnlyList<ExitPort> ports = NodeConnections.PortsOf(source, _session!.Project, _session.Definition);
-        List<ExitPort> optionPorts = ports.Where(port => port.IsChoice).ToList();
-        ExitPort? defaultPort = ports.FirstOrDefault(port => port.Kind == ExitPortKind.Default);
-
         // 이 에피소드의 선택지 칸들 (R7) — 가지마다 제 칸을 얹어 <b>철도 위에서</b> 고치고 잇는다.
         IReadOnlyList<GraphChoicePort> slots = SlotsOf(source.Id);
 
-        var branches = new List<(ChapterEdge? Edge, ExitPort? Port, Rect? Target, GraphChoicePort? Slot)>();
+        var branches = new List<(ChapterEdge? Edge, Rect? Target, GraphChoicePort Slot)>();
 
         // 가지 순서 = <b>칸의 차례 그대로</b> (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해") — 이은 줄 · 적어 둔
         // 줄 · 빈 칸이 사람이 둔 자리에 선다(<see cref="SlotsOf"/>). 이은 줄끼리는 간선 시트 행 순서와 같다 — 잇는 순간
@@ -754,47 +710,26 @@ public partial class GraphEditorView : UserControl
         //    적은 순서가 뒤바뀌었다.
         // ⚠ 문구 없는 길(진행)은 이은 줄 가운데 맨 아래다 — 소유자 보고("진행이 선택지 위에 서니 헷갈린다"). 보이지 않는
         //   기본은 플레이어에게 버튼으로 안 뜨므로 선택지 순서를 왜곡하지도 않는다.
-        var drawn = new HashSet<ChapterEdge>(ReferenceEqualityComparer.Instance);
-
-        void AddEdgeBranch(ChapterEdge edge, GraphChoicePort? slot)
-        {
-            // 도착 노드가 아직 동기화 전이어도 가지는 보인다 — 숨기면 선택지가 통째로
-            // 사라져 그래프가 고장 난 것처럼 보인다(소유자 보고 2026-08-15). 없는 노드로
-            // 선을 긋는 대신 "동기화 전" 표식에서 멈춘다.
-            Rect? target = spots.TryGetValue(edge.ToEpisodeId, out (DialogueNode Node, Rect Rect) spot)
-                ? spot.Rect
-                : null;
-
-            branches.Add((edge, PortFor(source, edge, optionPorts, defaultPort), target, slot));
-            drawn.Add(edge);
-        }
-
         foreach (GraphChoicePort slot in slots)
         {
             if (slot.IsEmpty)
             {
-                branches.Add((null, null, null, slot));
+                branches.Add((null, null, slot));
             }
             else if (edges.FirstOrDefault(edge =>
                          string.Equals(edge.ToEpisodeId, slot.ToEpisodeId, StringComparison.Ordinal) &&
                          string.Equals(edge.OptionLabel ?? string.Empty, slot.Label, StringComparison.Ordinal))
                      is { } edge)
             {
-                AddEdgeBranch(edge, slot);
+                // 도착 노드가 아직 이 판에 없어도 가지는 보인다 — 숨기면 선택지가 통째로 사라져 그래프가 고장 난
+                // 것처럼 보인다(소유자 보고 2026-08-15). 없는 노드로 선을 긋는 대신 「카드 없음」 표식에서 멈춘다.
+                Rect? target = spots.TryGetValue(edge.ToEpisodeId, out (DialogueNode Node, Rect Rect) spot)
+                    ? spot.Rect
+                    : null;
+
+                branches.Add((edge, target, slot));
             }
         }
-
-        // 칸을 못 찾은 간선도 가지는 선다 — 숨기면 선택지가 통째로 사라져 보인다(진행은 맨 아래).
-        foreach (ChapterEdge edge in edges.Where(edge => !drawn.Contains(edge)).OrderBy(edge => edge.HasNoOptionLabel))
-        {
-            AddEdgeBranch(edge, null);
-        }
-
-        // ⛔ <b>대본에서 파생되던 가지는 걷었다</b> (R7 결정 ② · 2026-09-16 소유자).
-        //    구판 OPTION 스텁과 "진행"(기본 출구) 스텁이 여기 섰는데, 선택지를 긋는 자리가
-        //    이 화면이 된 지금은 <b>사람이 만들지 않은 점</b>이 섞여 혼란스럽다
-        //    (소유자: "붉은 점 하나만 있을 때 자동으로 그 위로 '진행' 점이 생긴다").
-        //    ⚠ 데이터는 그대로 산다 — 차후 「분기」 탭이 그것을 다시 화면에 올린다.
 
         if (branches.Count == 0)
         {
@@ -820,14 +755,14 @@ public partial class GraphEditorView : UserControl
 
         for (int index = 0; index < branches.Count; index++)
         {
-            (ChapterEdge? edge, ExitPort? port, Rect? target, GraphChoicePort? slot) = branches[index];
+            (ChapterEdge? edge, Rect? target, GraphChoicePort slot) = branches[index];
             bool mirrored = lefts[index];
 
             // 내려가는 레인은 카드 바깥에 가지마다 한 줄씩(쪽마다 따로 센다) — 같은 줄로 겹치면 어느 선이 어디로 가는지 안 보인다.
             double laneX = mirrored
                 ? sourceRect.X - RailLaneOut - (leftLane++ * RailLaneGap)
                 : sourceRect.Right + RailLaneOut + (rightLane++ * RailLaneGap);
-            DrawRailBranch(chapterId, source, edge, port, trunkX, branchY, laneX, target, nodeRects, freeNodes, slot, mirrored);
+            DrawRailBranch(chapterId, source, edge, trunkX, branchY, laneX, target, slot, mirrored);
 
             if (edge is not null && target is not null)
             {
@@ -876,7 +811,7 @@ public partial class GraphEditorView : UserControl
         (double junctionX, double junctionY) = ArrivalJunction(target);
 
         _railVisuals.Add(RailLine(junctionX, junctionY, junctionX, target.Y - 10));
-        _railVisuals.Add(RailArrow(junctionX, target.Y - 9, pointRight: false));
+        _railVisuals.Add(RailArrow(junctionX, target.Y - 9));
 
         var port = new Ellipse
         {
@@ -926,41 +861,6 @@ public partial class GraphEditorView : UserControl
         };
 
         _railVisuals.Add(port);
-    }
-
-    /// <summary>
-    /// 이 간선의 자유 씬이 매달릴 자리 (v9). 문구가 같은 구판 OPTION 줄이 대본에 있으면
-    /// 그 줄의 포트를 그대로 쓰고(옛 배선 보존), 없으면 <b>문구를 열쇠로 한 선택지 포트</b>를
-    /// 세운다. 문구 없는 길(보이지 않는 기본)은 노드의 기본 출구가 그 자리다.
-    /// </summary>
-    private ExitPort? PortFor(
-        DialogueNode source,
-        ChapterEdge edge,
-        IReadOnlyList<ExitPort> optionPorts,
-        ExitPort? defaultPort)
-    {
-        if (edge.HasNoOptionLabel)
-        {
-            return defaultPort;
-        }
-
-        ExitPort? legacy = optionPorts.FirstOrDefault(port =>
-            string.Equals(port.ChoiceText, edge.OptionLabel, StringComparison.Ordinal));
-
-        if (legacy is not null)
-        {
-            return legacy;
-        }
-
-        return new ExitPort(
-            ExitPortKind.Choice,
-            source.Id,
-            BranchOpenLineId: null,
-            Label: edge.OptionLabel!,
-            TargetNodeId: source.ChoiceExits.GetValueOrDefault(edge.OptionLabel!),
-            PaletteIndex: -1,
-            IsChoice: true,
-            ChoiceText: edge.OptionLabel);
     }
 
     /// <summary>
@@ -1062,36 +962,6 @@ public partial class GraphEditorView : UserControl
         return line;
     }
 
-    /// <summary>철도 가지의 옛 칩 — 아직 칸이 없는 가지(구판 OPTION 스텁·종료)가 쓴다.</summary>
-    private Control LegacyChip(
-        DialogueNode source, ChapterEdge? edge, ExitPort? port, IReadOnlyList<DialogueNode> freeNodes)
-    {
-        string chipText = edge is { HasNoOptionLabel: true } || (edge is null && port?.Kind == ExitPortKind.Default)
-            ? "○ 진행"
-            : $"● {edge?.OptionLabel ?? port?.ChoiceText}";
-
-        var chip = new TextBlock
-        {
-            Text = chipText,
-            FontSize = 11,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = RailChipBrush,
-            Opacity = chipText == "○ 진행" ? 0.75 : 1,
-            Background = Brushes.Transparent,
-            Cursor = new Cursor(StandardCursorType.Hand)
-        };
-
-        ToolTip.SetTip(chip, "누르면 상세와 자유 씬 배선이 열립니다. 값 편집은 챕터 그래프에서.");
-
-        chip.PointerPressed += (_, args) =>
-        {
-            args.Handled = true;
-            ShowRailChip(chip, source, edge, port, freeNodes);
-        };
-
-        return chip;
-    }
-
     /// <summary>
     /// 그 노드의 선택지 칸들 — <b>사람이 둔 차례 그대로</b> (H2). <see cref="GraphChoicePort.Slot"/>은 화면의 줄 번호다.
     ///
@@ -1181,23 +1051,17 @@ public partial class GraphEditorView : UserControl
         string chapterId,
         DialogueNode source,
         ChapterEdge? edge,
-        ExitPort? port,
         double trunkX,
         double y,
         double laneX,
         Rect? target,
-        IReadOnlyDictionary<string, Rect> nodeRects,
-        IReadOnlyList<DialogueNode> freeNodes,
-        GraphChoicePort? slot = null,
-        bool mirrored = false)
+        GraphChoicePort slot,
+        bool mirrored)
     {
         // 나아가는 쪽 — 거울이면 왼쪽(-1)이다. 칩 · 스텁 · 레인이 모두 이 쪽으로 선다.
         double toward = mirrored ? -1 : 1;
 
-        Control chip = slot is not null
-            ? SlotChip(slot, source.Id, mirrored)
-            : LegacyChip(source, edge, port, freeNodes);
-
+        Control chip = SlotChip(slot, source.Id, mirrored);
         chip.Measure(Size.Infinity);
 
         _railVisuals.Add(RailLine(trunkX, y, trunkX + (toward * 10), y));
@@ -1211,28 +1075,10 @@ public partial class GraphEditorView : UserControl
 
         // 아직 안 이은 칸은 <b>여기서 끝</b>이다 — 갈 곳이 없으니 선도 없고 "종료"도 아니다
         // (2026-09-16 소유자: "연결되지 않은 상태라면 '종료'라는 글자가 표시됩니다").
-        if (slot is { IsEmpty: true })
+        if (edge is null)
         {
             return;
         }
-
-        // 배선된 자유 씬이 있으면 레일은 <b>첫 씬의 입구까지만</b> 댄다 (소유자 보고
-        // 2026-08-15 — 레일이 체인을 관통해 그리니 작가의 실행 배선과 평행으로 겹쳐
-        // 가독성이 나빴다). 웹 속의 유일한 선은 작가의 배선이고, 웹의 끝(기본 출구 없음
-        // = 진행)은 합류선이 레인 끝으로 모은다.
-        List<Rect> chain = port is null ? new List<Rect>() : ChainRects(port, nodeRects);
-        bool web = chain.Count > 0;
-
-        if (web)
-        {
-            (cursorX, y) = RouteInto(cursorX, y, chain[0]);
-
-            // 스텁이 서야 한다면 웹 전체의 오른쪽 밖이다 — 합류선이 웹 속으로 되돌아
-            // 들어오는 모양을 만들지 않는다.
-            cursorX = Math.Max(cursorX, WebRight(port!, nodeRects, cursorX) + 12);
-        }
-
-        Point laneEnd;
 
         if (target is { } targetRect)
         {
@@ -1240,341 +1086,43 @@ public partial class GraphEditorView : UserControl
             // 화살표는 포트의 몫이다 — 가지들은 접점까지만 간다.
             //
             // ⭐ 접점은 도착 카드의 <b>위 가운데</b>다 (D3 · 2026-10-29 소유자: "위에서 아래로"). 칩에서 나온
-            //    가지는 카드 오른쪽의 제 레인으로 빠져 <b>아래로</b> 내려가고, 접점 줄에서 가로로 들어간다.
-            //    전에는 가로 레인이 도착 카드의 왼쪽 접점으로 들어갔다(흐름이 왼→오이던 때).
+            //    가지는 카드 바깥의 제 레인으로 빠져 <b>아래로</b> 내려가고, 접점 줄에서 가로로 들어간다.
             (double junctionX, double junctionY) = ArrivalJunction(targetRect);
 
-            if (!web)
-            {
-                double dropX = mirrored
-                    ? Math.Min(cursorX - RailLaneGap, laneX)
-                    : Math.Max(cursorX + RailLaneGap, laneX);
+            double dropX = mirrored
+                ? Math.Min(cursorX - RailLaneGap, laneX)
+                : Math.Max(cursorX + RailLaneGap, laneX);
 
-                // 레인은 사람이 모양을 고칠 수 있는 선이다(G3) — 간선이 그 모양을 진다.
-                if (edge is not null)
-                {
-                    DrawLane(
-                        new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel),
-                        edge.Shape,
-                        new GraphPosition(cursorX, y),
-                        toward,
-                        dropX,
-                        new GraphPosition(junctionX, junctionY));
-                }
-            }
+            // 레인은 사람이 모양을 고칠 수 있는 선이다(G3) — 간선이 그 모양을 진다.
+            DrawLane(
+                new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel),
+                edge.Shape,
+                new GraphPosition(cursorX, y),
+                toward,
+                dropX,
+                new GraphPosition(junctionX, junctionY));
 
-            laneEnd = new Point(junctionX, junctionY);
-        }
-        else if (edge is not null)
-        {
-            // 카드 없음 스텁 — 간선은 있는데 도착 에피소드의 카드가 아직 이 판에 없다. 없는 노드로
-            // 선을 긋는 대신 여기서 멈추고, 어디로 가는 길인지는 문구가 말한다.
-            var pending = new TextBlock
-            {
-                Text = $"▢ {edge.ToEpisodeId} (카드 없음)",
-                FontSize = 10,
-                Opacity = 0.55,
-                Foreground = RailChipBrush
-            };
-            ToolTip.SetTip(pending,
-                $"도착 에피소드 '{edge.ToEpisodeId}'의 카드가 아직 이 판에 없습니다 — " +
-                "프로젝트를 저장하고 다시 열면 빈 카드가 서고 여기로 이어집니다.");
-            pending.Measure(Size.Infinity);
-
-            _railVisuals.Add(RailLine(cursorX, y, cursorX + (toward * 18), y));
-            Canvas.SetLeft(pending, mirrored ? cursorX - 22 - pending.DesiredSize.Width : cursorX + 22);
-            Canvas.SetTop(pending, y - pending.DesiredSize.Height / 2);
-            _railVisuals.Add(pending);
-
-            laneEnd = new Point(cursorX + (toward * 18), y);
-        }
-        else
-        {
-            // 종료 스텁 — 이 길은 여기서 에피소드가 끝난다. 다음은 챕터가 정한다(없으면 엔딩).
-            var stop = new TextBlock
-            {
-                Text = "⏹ 종료",
-                FontSize = 10,
-                Opacity = 0.6,
-                IsHitTestVisible = false
-            };
-            stop.Measure(Size.Infinity);
-
-            _railVisuals.Add(RailLine(cursorX, y, cursorX + (toward * 18), y));
-            Canvas.SetLeft(stop, mirrored ? cursorX - 22 - stop.DesiredSize.Width : cursorX + 22);
-            Canvas.SetTop(stop, y - stop.DesiredSize.Height / 2);
-            _railVisuals.Add(stop);
-
-            laneEnd = new Point(cursorX + (toward * 18), y);
-        }
-
-        // (진행) 합류 (2026-08-15 소유자) — 척추(기본 출구 체인) 밖으로 확장한 커스텀 웹
-        // (선택지·조건 갈래로 이어진 자유 노드들)에서, 기본 출구가 빈 노드 = (진행)이다.
-        // 그 출력들을 이 레인의 끝(도착 접점 또는 ⏹)으로 모아 그린다 — "어디로 돌아가는지"가
-        // 눈에 보이고, 잇는 제스처는 출구를 비우는 것 하나다.
-        if (port is not null)
-        {
-            DrawAdvanceReturns(port, laneEnd, nodeRects);
-        }
-    }
-
-    /// <summary>
-    /// 옵션 배선에서 닿는 자유 웹 전체(기본 출구 + 갈래 출구)를 걷고, (진행) 노드
-    /// (기본 출구 없음)마다 레인 끝으로 합류선을 긋는다. 레일은 웹 속을 다시 긋지
-    /// 않으므로(입구만 댄다) 척추 끝도 여기서 레인 끝에 닿는다.
-    /// </summary>
-    private void DrawAdvanceReturns(ExitPort port, Point laneEnd, IReadOnlyDictionary<string, Rect> nodeRects)
-    {
-        var visited = new HashSet<string>(StringComparer.Ordinal);
-        var queue = new Queue<string>();
-
-        if (port.TargetNodeId is { } first)
-        {
-            queue.Enqueue(first);
-        }
-
-        while (queue.Count > 0)
-        {
-            string id = queue.Dequeue();
-
-            if (!visited.Add(id) ||
-                _session!.Project.FindNode(id) is not DialogueNode node ||
-                !_sideBranchIds.Contains(id))
-            {
-                continue;
-            }
-
-            foreach (string next in node.BranchExits.Values)
-            {
-                queue.Enqueue(next);
-            }
-
-            // ⚠ 관문이 걷혔다 (R7 P-6 · 2026-09-17) — 엑셀노드/자유노드 구분이 없어져
-            //    기본 출구는 모든 대사 노드가 가진다. 안 이어 뒀으면 (진행) 합류다.
-            if (node.DefaultExitTargetNodeId is { } defaultNext)
-            {
-                queue.Enqueue(defaultNext);
-            }
-            else if (nodeRects.TryGetValue(id, out Rect rect))
-            {
-                // (진행) — 오른쪽에서 나와 레인 끝으로 직교 합류.
-                double outX = rect.Right + 6;
-                double outY = rect.Y + rect.Height / 2;
-
-                _railVisuals.Add(RailLine(outX, outY, laneEnd.X, outY));
-
-                if (Math.Abs(laneEnd.Y - outY) > 0.5)
-                {
-                    _railVisuals.Add(RailLine(laneEnd.X, outY, laneEnd.X, laneEnd.Y));
-                }
-            }
-        }
-    }
-
-    /// <summary>옵션 배선에서 닿는 자유 웹의 오른쪽 끝 X — 스텁을 웹 밖에 세우기 위한 값.</summary>
-    private double WebRight(ExitPort port, IReadOnlyDictionary<string, Rect> nodeRects, double fallback)
-    {
-        double right = fallback;
-        var visited = new HashSet<string>(StringComparer.Ordinal);
-        var queue = new Queue<string>();
-
-        if (port.TargetNodeId is { } first)
-        {
-            queue.Enqueue(first);
-        }
-
-        while (queue.Count > 0)
-        {
-            string id = queue.Dequeue();
-
-            if (!visited.Add(id) ||
-                _session!.Project.FindNode(id) is not DialogueNode node ||
-                !_sideBranchIds.Contains(id))
-            {
-                continue;
-            }
-
-            if (nodeRects.TryGetValue(id, out Rect rect))
-            {
-                right = Math.Max(right, rect.Right);
-            }
-
-            foreach (string next in node.BranchExits.Values)
-            {
-                queue.Enqueue(next);
-            }
-
-            if (node.DefaultExitTargetNodeId is { } defaultNext)
-            {
-                queue.Enqueue(defaultNext);
-            }
-        }
-
-        return right;
-    }
-
-    /// <summary>배선된 자유 씬 체인 — 첫 배선에서 출발해 기본 출구를 따라간다. 자유 노드만 잇는다.</summary>
-    private List<Rect> ChainRects(ExitPort port, IReadOnlyDictionary<string, Rect> nodeRects)
-    {
-        var rects = new List<Rect>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        string? currentId = port.TargetNodeId;
-
-        while (currentId is not null &&
-               seen.Add(currentId) &&
-               nodeRects.TryGetValue(currentId, out Rect rect) &&
-               _sideBranchIds.Contains(currentId) &&
-               _session!.Project.FindNode(currentId) is DialogueNode free)
-        {
-            rects.Add(rect);
-            // 커스텀→커스텀 배선이 죽어(2026-08-21) 체인은 첫 씬 하나로 끝난다.
-            currentId = free.DefaultExitTargetNodeId;
-        }
-
-        return rects;
-    }
-
-    /// <summary>클립(자유 씬) 카드로 들어갔다 오른쪽으로 나온다. 반환 = 다음 구간의 시작점.</summary>
-    private (double X, double Y) RouteInto(double x, double y, Rect rect)
-    {
-        if (y >= rect.Y && y <= rect.Bottom)
-        {
-            _railVisuals.Add(RailLine(x, y, rect.X - 8, y));
-            _railVisuals.Add(RailArrow(rect.X - 7, y, pointRight: true));
-        }
-        else
-        {
-            double midX = rect.X + rect.Width / 2;
-            _railVisuals.Add(RailLine(x, y, midX, y));
-
-            bool above = rect.Bottom < y;
-            double endY = above ? rect.Bottom + 8 : rect.Y - 8;
-            _railVisuals.Add(RailLine(midX, y, midX, endY));
-            _railVisuals.Add(RailArrow(midX, above ? endY - 1 : endY + 1, pointRight: false, pointUp: above));
-        }
-
-        return (rect.Right + 6, rect.Y + rect.Height / 2);
-    }
-
-    /// <summary>
-    /// 칩 클릭 — 상세(읽기 전용) + 자유 씬 배선 (T2). 배선의 데이터는 기존 그대로다:
-    /// 옵션 칩 = <c>SetExitTarget(Branch, 옵션 줄)</c>, 진행 칩 = <c>SetExitTarget(Default)</c>.
-    /// 간선 값(문구·조건·스탯변화)은 여기서 못 고친다 — 챕터 소유(T-R1).
-    /// </summary>
-    private void ShowRailChip(
-        Control anchor,
-        DialogueNode source,
-        ChapterEdge? edge,
-        ExitPort? port,
-        IReadOnlyList<DialogueNode> freeNodes)
-    {
-        var panel = new StackPanel { Spacing = 3, MinWidth = 230 };
-
-        void Row(string text, bool bold = false, double opacity = 1) => panel.Children.Add(new TextBlock
-        {
-            Text = text,
-            FontSize = 11,
-            FontWeight = bold ? FontWeight.SemiBold : FontWeight.Normal,
-            Opacity = opacity,
-            TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 260
-        });
-
-        Row(edge?.OptionLabel ?? port?.ChoiceText ?? "(진행)", bold: true);
-
-        if (edge is not null)
-        {
-            Row($"{edge.FromEpisodeId} → {edge.ToEpisodeId}", opacity: 0.7);
-
-            if (!string.IsNullOrWhiteSpace(edge.ConditionLabel))
-            {
-                Row($"조건: {edge.ConditionLabel}", opacity: 0.85);
-            }
-
-            if (edge.StatChanges.Count > 0)
-            {
-                Row("스탯변화: " + string.Join("; ", edge.StatChanges
-                    .Select(delta => $"{delta.Key} {(delta.Amount >= 0 ? "+" : "")}{delta.Amount}")), opacity: 0.85);
-            }
-
-
-            if (!string.IsNullOrWhiteSpace(edge.LockedMessage))
-            {
-                Row($"잠금 안내: {edge.LockedMessage}", opacity: 0.7);
-            }
-        }
-        else
-        {
-            // 대본에만 남은 구판 OPTION 줄 — 짝할 간선이 없다.
-            Row("챕터에 이 선택지가 없습니다 — 대본에만 남은 옛 OPTION 줄입니다. " +
-                "쓰려면 챕터 그래프에서 이 문구로 길을 내고, 아니면 대본에서 그 줄을 빼세요.",
-                opacity: 0.6);
-        }
-
-        if (port is null)
-        {
-            new Flyout { Content = panel }.ShowAt(anchor);
             return;
         }
 
-        // ── 자유 씬 배선 ──
-        Row("이 길 위의 자유 씬", bold: true, opacity: 0.8);
-
-        List<DialogueNode> candidates = freeNodes
-            .Where(node => !string.Equals(node.Id, port.TargetNodeId, StringComparison.Ordinal))
-            .ToList();
-
-        var combo = new ComboBox
+        // 카드 없음 스텁 — 간선은 있는데 도착 에피소드의 카드가 아직 이 판에 없다. 없는 노드로
+        // 선을 긋는 대신 여기서 멈추고, 어디로 가는 길인지는 문구가 말한다.
+        var pending = new TextBlock
         {
-            ItemsSource = candidates.Select(node => node.Name).ToList(),
-            PlaceholderText = candidates.Count == 0 ? "판에 자유 노드가 없습니다" : "자유 씬 달기…",
-            FontSize = 11,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            IsEnabled = candidates.Count > 0
+            Text = $"▢ {edge.ToEpisodeId} (카드 없음)",
+            FontSize = 10,
+            Opacity = 0.55,
+            Foreground = RailChipBrush
         };
+        ToolTip.SetTip(pending,
+            $"도착 에피소드 '{edge.ToEpisodeId}'의 카드가 아직 이 판에 없습니다 — " +
+            "프로젝트를 저장하고 다시 열면 빈 카드가 서고 여기로 이어집니다.");
+        pending.Measure(Size.Infinity);
 
-        string sourceId = source.Id;
-        ExitPortKind kind = port.Kind;
-        // 선택지 포트(v9)의 열쇠는 문구, 갈래 포트는 여는 줄의 LineId다.
-        string? exitKey = port.ExitKey;
-
-        combo.SelectionChanged += (_, _) =>
-        {
-            if (combo.SelectedIndex >= 0 && combo.SelectedIndex < candidates.Count)
-            {
-                _session!.Editor.SetExitTarget(
-                    sourceId, kind, exitKey, candidates[combo.SelectedIndex].Id);
-            }
-        };
-
-        panel.Children.Add(combo);
-
-        if (port.TargetNodeId is { } wired)
-        {
-            string wiredName = _session!.Project.FindNode(wired)?.Name ?? wired;
-            var detach = new Button
-            {
-                Content = $"'{wiredName}' 떼기",
-                FontSize = 10,
-                Padding = new Thickness(8, 2),
-                HorizontalAlignment = HorizontalAlignment.Stretch
-            };
-            detach.Click += (_, _) =>
-                _session!.Editor.SetExitTarget(sourceId, kind, exitKey, null);
-            panel.Children.Add(detach);
-        }
-
-        Row("씬이 끝나면(출구 없음) 에피소드가 끝납니다 — 간선이 있으면 그 길로, 없으면 챕터 진행 종료.", opacity: 0.5);
-
-        if (port.Kind == ExitPortKind.Choice)
-        {
-            // 정직하게 — 배선은 저장되지만 내보내기가 아직 이 점프를 싣지 못한다.
-            // 런타임 계약(Gate D)이 v9 전이 규칙과 함께 열려 있는 항목이다.
-            Row("⚠ 이 배선은 저장되지만 아직 내보내기에 실리지 않습니다 — v9 전이 규칙과 함께 " +
-                "런타임 계약(Gate D) 개정을 기다리는 중입니다.", opacity: 0.55);
-        }
-
-        new Flyout { Content = panel }.ShowAt(anchor);
+        _railVisuals.Add(RailLine(cursorX, y, cursorX + (toward * 18), y));
+        Canvas.SetLeft(pending, mirrored ? cursorX - 22 - pending.DesiredSize.Width : cursorX + 22);
+        Canvas.SetTop(pending, y - pending.DesiredSize.Height / 2);
+        _railVisuals.Add(pending);
     }
 
     private static Line RailLine(double x1, double y1, double x2, double y2) => new()
@@ -1586,17 +1134,14 @@ public partial class GraphEditorView : UserControl
         IsHitTestVisible = false
     };
 
-    private static Polygon RailArrow(double x, double y, bool pointRight, bool pointUp = false)
+    /// <summary>아래로 드는 화살촉 — 도착 접점에서 카드 위 가운데로 든다.</summary>
+    private static Polygon RailArrow(double x, double y)
     {
         var arrow = new Polygon
         {
             Fill = RailBrush,
             IsHitTestVisible = false,
-            Points = pointRight
-                ? [new Point(0, -4), new Point(7, 0), new Point(0, 4)]
-                : pointUp
-                    ? [new Point(-4, 0), new Point(0, -7), new Point(4, 0)]
-                    : [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
+            Points = [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
         };
 
         Canvas.SetLeft(arrow, x);

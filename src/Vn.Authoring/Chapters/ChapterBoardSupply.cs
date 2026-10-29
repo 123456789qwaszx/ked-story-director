@@ -170,15 +170,8 @@ public static class ChapterBoardSupply
         //    (<c>MarkedEpisodeId</c>가 있는 노드)를 가리키면 경고했는데, 이제는 판의 대사
         //    노드가 <b>전부</b> 에피소드라 그 기준이면 <b>모든 배선이 운다</b>.
         //
-        // 진짜 기준은 <b>진행이 그 카드에 착지하는가</b>다 — 규칙은 <see cref="ChapterSpine"/>
-        // 한 벌이고, 철도의 곁가지 웹 걷기가 같은 것을 쓴다.
-        var landed = new HashSet<string>(
-            chapter.Edges.Select(edge => edge.ToEpisodeId), StringComparer.Ordinal);
-
-        if (chapter.StartEpisode is { } start)
-        {
-            landed.Add(start.EpisodeId);
-        }
+        // 진짜 기준은 <b>진행이 그 카드에 착지하는가</b>다 — 규칙은 <see cref="ChapterSpine"/> 한 벌이다.
+        HashSet<string> landed = ChapterSpine.LandedOn(chapter.Episodes, chapter.Edges);
 
         Dictionary<string, DialogueNode> excelNodes = editor.Project.EnumerateNodes()
             .OfType<DialogueNode>()

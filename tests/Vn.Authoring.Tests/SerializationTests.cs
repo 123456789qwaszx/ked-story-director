@@ -439,4 +439,18 @@ public class SerializationTests
         Directory.CreateDirectory(directory);
         return directory;
     }
+
+    [Fact]
+    public void 옛_파일의_선택지_자유_씬_배선은_열고_저장해도_남는다()
+    {
+        // 선택지 문구를 열쇠로 자유 씬을 달던 배선(DialogueNode.ChoiceExits) — 이 툴에서 적던 칩은 2026-10-29에
+        // 걷혔지만(legacy-cleanup.md L-D3) compositor가 같은 파일을 읽으므로 데이터는 그대로 오간다.
+        var sample = new Sample();
+        sample.Dialogue.ChoiceExits["라루를 믿는다"] = sample.TargetA.Id;
+
+        StoryFile saved = StoryFileJson.Read(StoryFileJson.Write(sample.File));
+        DialogueNode reloaded = saved.Nodes.OfType<DialogueNode>().Single(node => node.Id == sample.Dialogue.Id);
+
+        Assert.Equal(sample.TargetA.Id, reloaded.ChoiceExits["라루를 믿는다"]);
+    }
 }
