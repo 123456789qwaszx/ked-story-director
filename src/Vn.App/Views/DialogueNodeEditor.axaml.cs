@@ -1700,11 +1700,8 @@ public partial class DialogueNodeEditor : UserControl
         return 0;
     }
 
-    // ⛔ 노드 단위 내보내기([이 노드 내보내기…]·[이 노드 CSV…])는 2026-09-15에
-    //    [발행] 탭과 함께 사라졌다. 툴바의 [내보내기…]·[CSV 내보내기…]가 같은
-    //    PickNodeExportsAsync로 노드를 골라 내보내므로 한 일에 창구가 둘이었다
-    //    (MainWindow.OnExportClick·OnCsvExportClick). 계산 경로도 같았다 —
-    //    LiveNodeComposer.Compose 하나를 양쪽이 지났다. 지운 것은 두 번째 창구뿐이다.
+    // ⛔ 노드 단위 내보내기([이 노드 내보내기…]·[이 노드 CSV…])는 2026-09-15에 [발행] 탭과 함께
+    //    사라졌고, 툴바의 Yarn · CSV 내보내기도 2026-10-29에 ked-story-compositor로 갔다.
 
     private static Button SmallButton(string glyph, Action action)
     {

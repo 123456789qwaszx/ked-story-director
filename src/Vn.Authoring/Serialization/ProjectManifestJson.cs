@@ -89,15 +89,8 @@ public static class ProjectManifestJson
             root["quickCommands"] = quickCommands;
         }
 
-        if (WriteExportFormats(project.ExportFormats) is { } exportFormats)
-        {
-            root["exportFormats"] = exportFormats;
-        }
-
-        if (AssetRootSettings.NormalizePath(project.OutputPath) is { } outputPath)
-        {
-            root["outputPath"] = outputPath;
-        }
+        // ⛔ exportFormats(내보내기 양식) · outputPath(라이브 Yarn 출력 폴더)는 2026-10-29에 걷혔다 — Yarn과
+        //    문서는 ked-story-compositor가 낸다. 옛 파일의 두 키는 읽지 않고 지나간다.
 
         root["scripts"] = scripts;
         root["files"] = files;
@@ -281,8 +274,6 @@ public static class ProjectManifestJson
             ReadAssetRoots(root["assetRoots"]),
             ReadRecentCommands(root["recentCommands"]),
             ReadQuickCommands(root["quickCommands"]),
-            ReadExportFormats(root["exportFormats"]),
-            AssetRootSettings.NormalizePath((string?)root["outputPath"]),
             scripts,
             references,
             links,
@@ -291,39 +282,6 @@ public static class ProjectManifestJson
             easeCurves,
             compositions,
             (string?)root["results"]);
-    }
-
-    /// <summary>기본(전부 켬)이면 null — 기존 프로젝트 파일이 바뀌지 않는다.</summary>
-    internal static JsonObject? WriteExportFormats(ExportFormatSelection formats)
-    {
-        if (formats.IsDefault)
-        {
-            return null;
-        }
-
-        return new JsonObject
-        {
-            ["yarnTrio"] = formats.YarnTrio,
-            ["scriptCsv"] = formats.ScriptCsv,
-            ["reviewCsv"] = formats.ReviewCsv,
-            ["directionCsv"] = formats.DirectionCsv
-        };
-    }
-
-    internal static ExportFormatSelection ReadExportFormats(JsonNode? json)
-    {
-        if (json is not JsonObject formats)
-        {
-            return new ExportFormatSelection();
-        }
-
-        return new ExportFormatSelection
-        {
-            YarnTrio = (bool?)formats["yarnTrio"] ?? true,
-            ScriptCsv = (bool?)formats["scriptCsv"] ?? true,
-            ReviewCsv = (bool?)formats["reviewCsv"] ?? true,
-            DirectionCsv = (bool?)formats["directionCsv"] ?? true
-        };
     }
 
     internal static IReadOnlyList<string> ReadRecentCommands(JsonNode? json)
@@ -761,8 +719,6 @@ public sealed record ProjectManifest(
     AssetRootSettings AssetRoots,
     IReadOnlyList<string> RecentCommandIds,
     IReadOnlyList<StageQuickCommand>? QuickCommands,
-    ExportFormatSelection ExportFormats,
-    string? OutputPath,
     IReadOnlyList<ScriptFileReference> Scripts,
     IReadOnlyList<ProjectStoryFileReference> Files,
     IReadOnlyList<NodeLink> Links,

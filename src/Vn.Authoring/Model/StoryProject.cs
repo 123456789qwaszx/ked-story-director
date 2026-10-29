@@ -112,15 +112,6 @@ public sealed class StoryProject
     public IReadOnlyList<StageQuickCommand> EffectiveQuickCommands =>
         QuickCommands ?? StageQuickCommands.Default;
 
-    /// <summary>내보내기 양식 선택 (X13). 기본 전부 켬.</summary>
-    public ExportFormatSelection ExportFormats { get; init; } = new();
-
-    /// <summary>
-    /// 라이브 CompositionNode 출력 폴더 (X12c, D-1). 프로젝트 기준 상대 경로,
-    /// null이면 라이브 출력 없음 — 편의 기능이 저작을 막지 않는다.
-    /// </summary>
-    public string? OutputPath { get; set; }
-
     /// <summary>
     /// 프로젝트 전체 노드를 결정적인 순서로 펼친다.
     /// 파일 순서 → 각 파일의 Nodes 순서다.
@@ -217,8 +208,6 @@ public sealed class StoryProject
             AssetRoots = AssetRoots.Clone(),
             RecentCommandIds = new List<string>(RecentCommandIds),
             QuickCommands = QuickCommands?.Select(chip => chip.Copy()).ToList(),
-            ExportFormats = ExportFormats.Clone(),
-            OutputPath = OutputPath,
             Scripts = Scripts.Select(script => script.Clone()).ToList(),
             Files = Files.Select(file => file.Clone()).ToList(),
             Links = Links.Select(link => link.Clone()).ToList(),

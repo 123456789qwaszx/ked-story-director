@@ -64,36 +64,18 @@ public sealed class MainChromeTests
     }
 
     [Fact]
-    public void 시작하자마자_챕터_모드다() => HeadlessUi.Run(() =>
+    public void 위_띠에는_진행_JSON_폴더만_있고_Yarn_CSV_내보내기는_없다() => HeadlessUi.Run(() =>
     {
-        // 첫 탭이 챕터 그래프가 된 뒤로 시작 화면이 곧 접힌 상태다. XAML 기본값은
-        // 펼침이고 SelectionChanged는 이미 정해진 선택에 오지 않으므로, 생성자가
-        // 한 번 맞춰 주지 않으면 여기서만 어긋난다.
+        // 2026-10-29 — 게임용 Yarn과 문서(CSV)는 ked-story-compositor만 낸다(한 파일에는 내는 쪽이
+        // 하나다). 이 툴이 내는 것은 챕터 진행 JSON이고, 그것은 저절로 나가므로 꺼내 가는 단추만 있다.
         var window = new MainWindow();
         window.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.False(window.FindControl<Button>("ExportButton")!.IsVisible);
-
-        window.Close();
-    });
-
-    [Fact]
-    public void 챕터_탭에서는_연출_내보내기가_접힌다() => HeadlessUi.Run(() =>
-    {
-        // 챕터 툴바의 [내보내기](진행 JSON)와 이름이 같아, 한 화면에 "내보내기"가
-        // 둘이면 어느 쪽인지 헷갈린다 (소유자 보고).
-        var window = new MainWindow();
-        window.Show();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        var export = window.FindControl<Button>("ExportButton")!;
-
-        SelectTab(window, "GraphTabItem"); // 연출 그래프
-        Assert.True(export.IsVisible);
-
-        SelectTab(window, "ChapterTabItem"); // 챕터 그래프
-        Assert.False(export.IsVisible);
+        Assert.NotNull(window.FindControl<Button>("OpenExportFolderButton"));
+        Assert.Null(window.FindControl<Button>("ExportButton"));
+        Assert.Null(window.FindControl<Button>("CsvExportButton"));
+        Assert.Null(window.FindControl<Button>("ExportFormatsButton"));
 
         window.Close();
     });

@@ -25,9 +25,8 @@
                     <ComboBox x:Name="ChapterCombo" MinWidth="180" FontSize="11" />
                     <!-- ⛔ [폴더 열기]는 2026-08-26에 없앴다 (소유자). -->
                     <!-- [내보내기] 단추는 없앴다 (2026-08-17 소유자: "필요 없어 보이는데").
-                         작가의 Yarn이 LiveOutputService로 저절로 나가는데 챕터 진행 JSON만
-                         사람 손을 기다리면, 누른 순간의 낡은 파일이 디스크에 남는다. 이제
-                         다시 읽을 때마다 저절로 나간다 — G8의 거부 규칙은 그대로다. -->
+                         챕터 진행 JSON이 사람 손을 기다리면 누른 순간의 낡은 파일이 디스크에
+                         남는다. 다시 읽을 때마다 저절로 나간다 — G8의 거부 규칙은 그대로다. -->
                     <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                     <Button x:Name="AddEpisodeButton"
                             Content="＋ 에피소드"
