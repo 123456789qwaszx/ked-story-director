@@ -303,10 +303,5 @@ public static class ChapterSheetNames
     public const string Edges = "간선";
     public const string Conditions = "조건";
     public const string Stats = "스탯";
-    public const string Fixtures = "픽스처";
-    public const string Speakers = "화자";
     public const string Choices = "선택지";
-
-    public static IReadOnlyList<string> All { get; } =
-        [Episodes, Edges, Conditions, Stats, Fixtures, Speakers, Choices];
 }

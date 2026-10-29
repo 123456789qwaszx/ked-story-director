@@ -188,28 +188,4 @@ public class BranchFlowTests
         Assert.False(skipped.Lines[3].Taken);
         Assert.True(skipped.Lines[4].Taken); // 합류는 일반 흐름
     }
-
-    [Fact]
-    public void 칩_순환은_갈래들을_돌고_조건은_건너뜀을_거쳐_근사로_돌아온다()
-    {
-        var selection = new BranchSelection();
-        var block = new BranchFlow.Block(
-            "ln_if", IsChoice: false,
-            [new BranchFlow.Branch("ln_if", "참"), new BranchFlow.Branch("ln_elif", "다른 참")],
-            SelectedBranch: null);
-
-        selection.Cycle(block); // → 0
-        Assert.True(selection.TryGetCondition("ln_if", out int index) && index == 0);
-
-        selection.Cycle(block); // → 1
-        Assert.True(selection.TryGetCondition("ln_if", out index) && index == 1);
-
-        selection.Cycle(block); // → 건너뜀
-        Assert.True(selection.TryGetCondition("ln_if", out index) &&
-            index == BranchSelection.SkipAllBranches);
-
-        selection.Cycle(block); // → 미선택(근사)
-        Assert.False(selection.TryGetCondition("ln_if", out _));
-    }
-
 }

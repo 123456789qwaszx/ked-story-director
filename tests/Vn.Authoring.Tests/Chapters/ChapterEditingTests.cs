@@ -140,17 +140,6 @@ public sealed class ChapterEditingTests
     }
 
     [Fact]
-    public void 사전에서_낱말을_지워도_그것을_쓰는_길은_산다()
-    {
-        // 사전은 어휘집이지 배선이 아니다 (v9).
-        _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다");
-        _editor.RemoveChoiceLabel("ch01", "간다");
-
-        Assert.Empty(Chapter.ChoiceOptions);
-        Assert.Equal("간다", Chapter.Edges[0].OptionLabel);
-    }
-
-    [Fact]
     public void 배선을_고치면_도착과_문구가_한_번에_바뀐다()
     {
         _editor.AddEpisode("ch01", "ep03", "지하", 400, 0);

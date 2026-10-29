@@ -31,53 +31,6 @@ public sealed class BranchSelection
     public bool TryGetCondition(string blockLineId, out int branchIndex)
         => _conditionByBlock.TryGetValue(blockLineId, out branchIndex);
 
-    /// <summary>칩 클릭 순환: 갈래 0 → 1 → … → (조건만) 건너뜀 → 미선택(근사) → 다시 0.</summary>
-    public void Cycle(BranchFlow.Block block)
-    {
-        ArgumentNullException.ThrowIfNull(block);
-
-        if (block.IsChoice)
-        {
-            int current = TryGetChoice(block.BlockLineId, out string selected)
-                ? block.Branches.ToList().FindIndex(branch =>
-                    string.Equals(branch.LineId, selected, StringComparison.Ordinal))
-                : -1;
-
-            int next = current + 1;
-
-            if (next >= block.Branches.Count)
-            {
-                _choiceByBlock.Remove(block.BlockLineId); // 미선택 = 근사
-            }
-            else
-            {
-                _choiceByBlock[block.BlockLineId] = block.Branches[next].LineId;
-            }
-
-            return;
-        }
-
-        int currentIndex = TryGetCondition(block.BlockLineId, out int index)
-            ? index
-            : int.MinValue; // 미선택
-
-        int nextIndex = currentIndex switch
-        {
-            int.MinValue => 0,
-            SkipAllBranches => int.MinValue,
-            _ => currentIndex + 1 >= block.Branches.Count ? SkipAllBranches : currentIndex + 1,
-        };
-
-        if (nextIndex == int.MinValue)
-        {
-            _conditionByBlock.Remove(block.BlockLineId);
-        }
-        else
-        {
-            _conditionByBlock[block.BlockLineId] = nextIndex;
-        }
-    }
-
     public void Clear()
     {
         _choiceByBlock.Clear();
@@ -115,7 +68,7 @@ public sealed class BranchSelection
 /// 선택이 없는 블록은 기존 근사(전부 적용) + Unresolved 표시. <b>커서가 갈래 안에 있으면
 /// 그 갈래(를 감싼 전부)가 선택을 덮는다</b> — 보고 있는 라인이 화면에서 사라지면 안 된다.
 /// 작업 대본(DialogueLine)과 펼친 결과(DialogueResultLine)가 델리게이트로 같은 구현
-/// 하나를 지난다(규칙 사본 금지 — ChoiceOptionBundle과 같은 모양).
+/// 하나를 지난다(규칙 사본 금지).
 /// </summary>
 public static class BranchFlow
 {
@@ -340,31 +293,5 @@ public static class BranchFlow
         }
 
         return (blockStarts, framesOfLine);
-    }
-
-    /// <summary>커서까지 지나온 블록만 — 아직 닿지 않은 갈래는 고를 것도 없다(칩 노출용).</summary>
-    public static IReadOnlyList<Block> PassedBlocks<TLine>(
-        Analysis<TLine> analysis,
-        Func<TLine, string> lineIdOf,
-        string? cursorLineId)
-    {
-        ArgumentNullException.ThrowIfNull(analysis);
-        ArgumentNullException.ThrowIfNull(lineIdOf);
-
-        var scanned = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (AnalyzedLine<TLine> line in analysis.Lines)
-        {
-            scanned.Add(lineIdOf(line.Source));
-
-            if (string.Equals(lineIdOf(line.Source), cursorLineId, StringComparison.Ordinal))
-            {
-                break;
-            }
-        }
-
-        return analysis.Blocks
-            .Where(block => scanned.Contains(block.BlockLineId))
-            .ToArray();
     }
 }

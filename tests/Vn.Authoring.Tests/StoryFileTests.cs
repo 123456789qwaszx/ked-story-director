@@ -43,49 +43,6 @@ public class StoryFileTests
     }
 
     [Fact]
-    public void 노드를_다른_파일로_옮겨도_Id와_연결이_유지된다()
-    {
-        var project = new StoryProject();
-        var first = new StoryFile("sf_a", "A");
-        var second = new StoryFile("sf_b", "B");
-        project.Files.Add(first);
-        project.Files.Add(second);
-        var editor = new ProjectEditor(project);
-
-        DialogueNode source = editor.AddDialogueNode(first.Id, name: "출발");
-        // 기본 출구는 엑셀노드만 가진다 (2026-08-21) — 출발 노드를 에피소드 자리로 표시한다.
-        source.MarkedEpisodeId = "ep_출발";
-        DialogueNode moved = editor.AddDialogueNode(first.Id, name: "이동 대상");
-        editor.SetExitTarget(source.Id, Vn.Authoring.Flow.ExitPortKind.Default, null, moved.Id);
-
-        editor.MoveNodeToFile(moved.Id, second.Id);
-
-        Assert.DoesNotContain(first.Nodes, node => node.Id == moved.Id);
-        Assert.Same(moved, Assert.Single(second.Nodes));
-        Assert.Equal(moved.Id, source.DefaultExitTargetNodeId);
-        Assert.Same(second, project.FindFileContainingNode(moved.Id));
-    }
-
-    [Fact]
-    public void 같은_파일_안에서도_노드_순서를_옮길_수_있다()
-    {
-        var project = new StoryProject();
-        var file = new StoryFile("sf_a", "A");
-        project.Files.Add(file);
-        var editor = new ProjectEditor(project);
-
-        DialogueNode first = editor.AddDialogueNode(file.Id, name: "첫째");
-        DialogueNode second = editor.AddDialogueNode(file.Id, name: "둘째");
-        DialogueNode third = editor.AddDialogueNode(file.Id, name: "셋째");
-
-        editor.MoveNodeToFile(first.Id, file.Id, targetIndex: file.Nodes.Count);
-
-        Assert.Equal(
-            new[] { second.Id, third.Id, first.Id },
-            file.Nodes.Select(node => node.Id));
-    }
-
-    [Fact]
     public void 파일이_달라도_실행_간선은_프로젝트_전체에서_계산된다()
     {
         var project = new StoryProject();

@@ -63,102 +63,6 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 다른 프로젝트의 <c>.vnstory.json</c> 하나를 이 프로젝트의 파일(판)로 들여온다 (W51).
-    ///
-    /// 대사 노드가 참조하는 대본은 관례 위치(<c>../script/&lt;scriptId&gt;.vnscript.json</c>)에서
-    /// 함께 들여오고, 못 찾으면 경고로 남긴다(조용히 버리지 않는다 — 규칙 14).
-    /// Id가 이미 이 프로젝트에 있으면(같은 파일 재수입) 명확히 거부한다 — Id를 다시
-    /// 발급하면 노드 간 연결·LineId 계약이 소리 없이 끊어진다.
-    /// 다른 파일의 노드를 가리키던 실행 출구는 대상이 없으면 흐름 해석기가 알린다.
-    /// </summary>
-    public StoryFileImportOutcome ImportStoryFile(string storyJsonPath)
-    {
-        string fullPath = Path.GetFullPath(storyJsonPath);
-        StoryFile imported = StoryFileJson.Read(File.ReadAllText(fullPath));
-
-        if (Project.FindFile(imported.Id) is not null)
-        {
-            throw new InvalidOperationException(
-                $"파일 '{imported.Name}'({imported.Id})은 이미 이 프로젝트에 있습니다 — 같은 파일을 두 번 가져올 수 없습니다.");
-        }
-
-        foreach (StoryNode node in imported.Nodes)
-        {
-            if (Project.FindNode(node.Id) is not null)
-            {
-                throw new InvalidOperationException(
-                    $"노드 '{node.Name}'({node.Id})이 이미 이 프로젝트에 있습니다 — 같은 파일을 두 번 가져올 수 없습니다.");
-            }
-        }
-
-        // 저장 시 이 프로젝트의 story/ 관례 자리로 다시 쓰인다 — 원본 파일은 건드리지 않는다.
-        imported.RelativePath = ProjectStore.DefaultRelativePath(imported.Id);
-
-        // 딸린 대본 — 원본 프로젝트의 관례 자리(story/의 형제 script/)에서 찾는다.
-        string? sourceRoot = Path.GetDirectoryName(Path.GetDirectoryName(fullPath));
-        var scripts = new List<ScriptDocument>();
-        var warnings = new List<string>();
-
-        foreach (DialogueNode dialogue in imported.Nodes.OfType<DialogueNode>())
-        {
-            if (dialogue.ScriptId is not { } scriptId || Project.FindScript(scriptId) is not null ||
-                scripts.Any(script => string.Equals(script.Id, scriptId, StringComparison.Ordinal)))
-            {
-                continue;
-            }
-
-            string? scriptPath = sourceRoot is null
-                ? null
-                : Path.Combine(sourceRoot, ProjectStore.DefaultScriptPath(scriptId).Replace('/', Path.DirectorySeparatorChar));
-
-            if (scriptPath is not null && File.Exists(scriptPath))
-            {
-                scripts.Add(ScriptDocumentJson.Read(File.ReadAllText(scriptPath)));
-            }
-            else
-            {
-                warnings.Add(
-                    $"'{dialogue.Name}'의 대본({scriptId})을 찾지 못했습니다 — 원본 프로젝트의 script 폴더가 옆에 있어야 합니다.");
-            }
-        }
-
-        Mutate(() =>
-        {
-            foreach (ScriptDocument script in scripts)
-            {
-                Project.Scripts.Add(script);
-            }
-
-            Project.Files.Add(imported);
-        });
-
-        return new StoryFileImportOutcome(imported, scripts.Count, warnings);
-    }
-
-    /// <summary>
-    /// 시나리오 파일(판)을 통째로 제거한다 (W61). 안의 노드가 맺던 연결·출구는
-    /// 노드 삭제와 같은 규칙 하나(<see cref="RemoveReferencesToNode"/>)로 정리된다.
-    /// 대본은 지우지 않는다 — 대본은 판이 아니라 프로젝트의 것이다. 한 번의 되돌리기로 통째로 복구된다.
-    /// </summary>
-    public void RemoveStoryFile(string fileId)
-    {
-        StoryFile? file = Project.FindFile(fileId);
-
-        if (file is null)
-        {
-            return;
-        }
-
-        if (Project.Files.Count <= 1)
-        {
-            throw new InvalidOperationException(
-                "마지막 시나리오 파일은 제거할 수 없습니다 — 새 노드가 갈 곳이 없어집니다.");
-        }
-
-        Mutate(() => RemoveFileCore(file));
-    }
-
-    /// <summary>
     /// 판 하나를 걷는 <b>알맹이</b> — <see cref="Mutate"/> 밖이다.
     ///
     /// ⚠ 챕터를 지울 때 판과 챕터가 <b>한 번의 변경</b>이어야 해서 갈라 뒀다
@@ -178,14 +82,6 @@ public sealed partial class ProjectEditor
             string.Equals(Project.StartNodeId, node.Id, StringComparison.Ordinal)))
         {
             Project.StartNodeId = Project.EnumerateNodes().FirstOrDefault()?.Id;
-        }
-    }
-
-    public void RenameStoryFile(string fileId, string name)
-    {
-        if (Project.FindFile(fileId) is { } file && !string.Equals(file.Name, name, StringComparison.Ordinal))
-        {
-            Mutate(ProjectChangeKind.NodeMetadata, () => file.Name = name);
         }
     }
 
@@ -571,45 +467,6 @@ public sealed partial class ProjectEditor
             {
                 Project.StartNodeId = Project.EnumerateNodes().FirstOrDefault()?.Id;
             }
-        });
-    }
-
-    /// <summary>
-    /// 노드를 다른 StoryFile로 옮긴다. 같은 파일을 주면 그 파일 안에서 순서를 바꾼다.
-    /// 노드의 Id와 그래프 좌표, 연결은 그대로 유지된다.
-    /// </summary>
-    public void MoveNodeToFile(string nodeId, string targetFileId, int? targetIndex = null)
-    {
-        StoryFile? source = Project.FindFileContainingNode(nodeId);
-        StoryFile target = RequireFile(targetFileId);
-        StoryNode? node = Project.FindNode(nodeId);
-
-        if (source is null || node is null)
-        {
-            return;
-        }
-
-        int sourceIndex = source.Nodes.IndexOf(node);
-        int requested = Math.Clamp(targetIndex ?? target.Nodes.Count, 0, target.Nodes.Count);
-        int insertionIndex = requested;
-
-        if (ReferenceEquals(source, target))
-        {
-            // targetIndex는 이동 전 목록을 기준으로 받는다. 앞의 항목을 제거하면 뒤쪽 위치가 하나 줄어든다.
-            insertionIndex = requested > sourceIndex ? requested - 1 : requested;
-            insertionIndex = Math.Clamp(insertionIndex, 0, source.Nodes.Count - 1);
-
-            if (insertionIndex == sourceIndex)
-            {
-                return;
-            }
-        }
-
-        Mutate(() =>
-        {
-            source.Nodes.Remove(node);
-            int at = Math.Clamp(insertionIndex, 0, target.Nodes.Count);
-            target.Nodes.Insert(at, node);
         });
     }
 
