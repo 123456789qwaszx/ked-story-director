@@ -114,7 +114,7 @@ public sealed class ChapterLayerSeparationTests
 
         int linksBefore = board.Project.Links.Count;
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            board.Editor, GameDefinition.Empty, file.Id, chapter);
+            board.Editor, file.Id, chapter);
 
         Assert.Equal(linksBefore, board.Project.Links.Count);
 

@@ -54,13 +54,6 @@ public sealed record ExitPort(
     /// 기본 출구는 열쇠가 없다 — 노드에 자리가 하나뿐이다.
     /// </summary>
     public string? ExitKey => Kind == ExitPortKind.Choice ? ChoiceText : BranchOpenLineId;
-
-    public bool SamePortAs(ExitPort other)
-    {
-        return Kind == other.Kind &&
-            string.Equals(NodeId, other.NodeId, StringComparison.Ordinal) &&
-            string.Equals(ExitKey, other.ExitKey, StringComparison.Ordinal);
-    }
 }
 
 /// <summary>

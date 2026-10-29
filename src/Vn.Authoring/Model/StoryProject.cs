@@ -122,10 +122,6 @@ public sealed class StoryProject
                 script => string.Equals(script.Id, scriptId, StringComparison.Ordinal));
     }
 
-    /// <summary>이 대사 노드가 읽는 대본. 노드가 없거나 대본을 고르지 않았으면 null이다.</summary>
-    public ScriptDocument? ScriptOf(string? dialogueNodeId) =>
-        FindScript(FindDialogue(dialogueNodeId)?.ScriptId);
-
     /// <summary>
     /// 프로젝트 안의 모든 SetNode 조건. 파일 순서, SetNode 순서, 조건 순서를 지킨다.
     /// 편집·진단용 전체 조회이며 DialogueNode의 드롭다운 범위에는 사용하지 않는다.
@@ -142,19 +138,5 @@ public sealed class StoryProject
             ? null
             : EnumerateConditions()
                 .FirstOrDefault(item => string.Equals(item.Id, conditionId, StringComparison.Ordinal));
-    }
-
-    public StoryProject Clone()
-    {
-        return new StoryProject
-        {
-            FormatVersion = FormatVersion,
-            Title = Title,
-            StartNodeId = StartNodeId,
-            Scripts = Scripts.Select(script => script.Clone()).ToList(),
-            Files = Files.Select(file => file.Clone()).ToList(),
-            Links = Links.Select(link => link.Clone()).ToList(),
-            WriterSpeakers = WriterSpeakers.Select(speaker => speaker.Clone()).ToList()
-        };
     }
 }

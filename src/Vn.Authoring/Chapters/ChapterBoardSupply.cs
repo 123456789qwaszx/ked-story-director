@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
@@ -111,7 +110,6 @@ public static class ChapterBoardSupply
     /// </summary>
     public static void SupplyChapterConditionsToBoard(
         ProjectEditor editor,
-        GameDefinition definition,
         string fileId,
         ChapterGraphModel chapter)
     {

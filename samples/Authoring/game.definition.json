@@ -21,16 +21,6 @@
       "description": "현재 루트"
     }
   ],
-  "events": [
-    {
-      "name": "play_bgm",
-      "description": "배경음 재생"
-    },
-    {
-      "name": "show_cg",
-      "description": "일러스트 표시"
-    }
-  ],
   "conditions": [],
   "speakers": [
     {

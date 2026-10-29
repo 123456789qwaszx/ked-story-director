@@ -216,7 +216,6 @@ public sealed class StatRemoveTests
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
-            new Vn.Authoring.Definition.GameDefinition(),
             fileId,
             editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
 

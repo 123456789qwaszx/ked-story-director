@@ -32,13 +32,6 @@ internal sealed class ChapterBoard
     private readonly Dictionary<string, DialogueNode> _excelNodes =
         new(StringComparer.Ordinal);
 
-    /// <summary>
-    /// 노드별 실행 포트. 한 에피소드에서 간선이 여럿 나가므로 캐시한다 —
-    /// <see cref="NodeConnections.PortsOf"/>는 대본을 합치고 조건을 훑는다.
-    /// </summary>
-    private readonly Dictionary<string, IReadOnlyList<ExitPort>> _ports =
-        new(StringComparer.Ordinal);
-
     private ChapterBoard(StoryProject? project, string? chapterId)
     {
         _project = project;

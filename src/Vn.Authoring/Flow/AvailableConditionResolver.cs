@@ -65,9 +65,10 @@ public sealed class AvailableConditionCatalog
 /// <summary>
 /// DialogueNode가 사용할 수 있는 조건의 범위를 계산한다.
 ///
-/// 게임 전역 조건은 항상 들어오고, 프로젝트 조건은 활성화된 Settings link로 연결된
-/// SetNode의 것만 들어온다. 같은 Id가 여러 곳에서 공급되면 먼저 나온 하나만 사용한다.
-/// 순서는 게임 전역 조건 → Settings link Order → 프로젝트의 link 저장 순서 → SetNode 내부 순서다.
+/// 게임 전역 조건은 항상 들어오고, 프로젝트 조건은 <b>그 대사 노드와 같은 판</b>의 SetNode
+/// 것만 들어온다(<see cref="ConnectedSetNodeResolver"/> — 범위는 챕터다). 같은 Id가 여러 곳에서
+/// 공급되면 먼저 나온 하나만 사용한다. 순서는 게임 전역 조건 → 판 안의 노드 순서 → SetNode
+/// 내부 순서다.
 /// </summary>
 public static class AvailableConditionResolver
 {
@@ -133,7 +134,7 @@ public static class AvailableConditionResolver
 
     /// <summary>
     /// 현재 Dialogue 범위와 무관하게 조건 Id가 어디엔가 정의되어 있는지 찾는다.
-    /// Settings link가 끊긴 조건과 완전히 삭제된 조건을 구분하는 데 사용한다.
+    /// 범위 밖(다른 판)에 있는 조건과 완전히 삭제된 조건을 구분하는 데 사용한다.
     /// </summary>
     public static AvailableCondition? FindKnown(
         StoryProject project,

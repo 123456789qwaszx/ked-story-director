@@ -75,8 +75,6 @@ public sealed class DialogueScript
     /// <summary>대본에서 사라진 줄에 남은 대사 논리. 자동으로 지우지 않는다.</summary>
     public IReadOnlyList<OrphanLineExtension> Orphans { get; }
 
-    public bool HasScript => ScriptId is not null && IsResolved;
-
     public DialogueLine? Find(string? lineId)
     {
         return lineId is null

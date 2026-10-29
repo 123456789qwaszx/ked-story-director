@@ -642,49 +642,6 @@ public sealed partial class ProjectEditor
         });
     }
 
-    private void SetLineTransitionLegacy(string nodeId, string lineId, LineConditionTransition? transition)
-    {
-        DialogueNode node = RequireDialogue(nodeId);
-
-        if (Project.FindScript(node.ScriptId)?.FindLine(lineId) is not { IsRetired: false })
-        {
-            return;
-        }
-
-        DialogueLineExtension? existing = node.FindExtension(lineId);
-
-        if (existing?.Transition is null && transition is null)
-        {
-            return;
-        }
-
-        // 옵션 라벨 전환은 안정 Id를 가져야 한다. 이미 이 줄이 옵션이었다면 그 Id를 잇는다 —
-        // 라벨 전환 종류를 바꿨다고 정체성이 바뀌면 순서 경고(C3)가 성립하지 않는다.
-        if (transition is { OpensOption: true, OptionId: null })
-        {
-            transition = new LineConditionTransition(
-                transition.Kind,
-                optionId: existing?.Transition?.OptionId ?? Identifier.Option());
-        }
-
-        Mutate(() =>
-        {
-            DialogueLineExtension extension = existing ?? new DialogueLineExtension(lineId);
-
-            if (existing is null)
-            {
-                node.LineExtensions.Add(extension);
-            }
-
-            extension.Transition = transition;
-
-            // 순서가 중요하다. 먼저 주인 없는 출구를 버리고, 그다음에 빈 항목을 버린다.
-            // 반대로 하면 아직 출구가 매달려 있어 빈 항목이 남는다.
-            PruneBranchExits(node);
-            PruneLineExtensions(node);
-        });
-    }
-
     // ── 출구 ────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -1101,14 +1058,11 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 더 이상 갈래를 열지 않는 줄에 매달린 조건 출구를 버린다.
+    /// 주인 없는 출구를 버린다 — 갈래가 사라졌으면 거기 매달린 배선도 갈 곳이 없다.
     /// 남겨 두면 그래프에 주인 없는 간선이 생기고, 그 간선은 어느 화면에서도 지울 수 없다.
     ///
     /// 대본에서 사라진 줄의 출구는 여기서 지우지 않는다. 그것은 <b>고아</b>이지 쓰레기가 아니다.
     /// 대본을 되돌리면 살아나야 하고, 그때까지는 진단으로 보인다.
-    /// </summary>
-    /// <summary>
-    /// 주인 없는 출구를 버린다 — 갈래가 사라졌으면 거기 매달린 배선도 갈 곳이 없다.
     ///
     /// ⚠ <b>신원을 흐름 해석과 같은 규칙으로 짓는다</b>(<see cref="Flow.BranchAnchor"/>).
     /// 예전에는 여기가 <c>extension.Transition</c>(첫 전환) 하나만 보고 <b>맨 줄 Id</b>만
@@ -1219,6 +1173,13 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// 그 챕터의 다음 자리표시 Id. <b>화면이 손수 세지 않게</b> 열어 둔다 — 세는 규칙이
+    /// 화면마다 있으면 하나가 다른 목록을 훑다가 겹치는 Id를 내고, 그러면 <c>AddEpisode</c>가
+    /// *"이미 있습니다"*로 던진다.
+    /// </summary>
+    public string NextEpisodeId(string chapterId) => NextEpisodeId(RequireChapter(chapterId));
+
+    /// <summary>
     /// 그 챕터에서 <b>아직 안 쓰인 자리표시 EpisodeId</b> — <c>new01</c>, <c>new02</c>…
     ///
     /// ⛔ 이 규약은 2026-09-18까지 <b>화면 둘에 손으로 복사돼</b> 있었고(챕터 그래프·대본 탭),
@@ -1229,13 +1190,6 @@ public sealed partial class ProjectEditor
     /// ⚠ 사람이 고칠 것을 전제한 이름이다 — 이름을 정하는 것은 기획자의 일이고, 여기서는
     /// <b>겹치지 않는 자리</b>만 준다.
     /// </summary>
-    /// <summary>
-    /// 그 챕터의 다음 자리표시 Id. <b>화면이 손수 세지 않게</b> 열어 둔다 — 세는 규칙이
-    /// 화면마다 있으면 하나가 다른 목록을 훑다가 겹치는 Id를 내고, 그러면 <c>AddEpisode</c>가
-    /// *"이미 있습니다"*로 던진다.
-    /// </summary>
-    public string NextEpisodeId(string chapterId) => NextEpisodeId(RequireChapter(chapterId));
-
     private static string NextEpisodeId(Chapters.ChapterDocument chapter)
     {
         int number = 1;

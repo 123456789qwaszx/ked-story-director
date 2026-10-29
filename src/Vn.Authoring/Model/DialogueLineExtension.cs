@@ -97,8 +97,6 @@ public sealed class LineConditionTransition
     /// <summary>옵션 라벨 전환인지. 라벨 라인의 본문이 버튼 텍스트가 된다.</summary>
     public bool OpensOption =>
         Kind is ConditionTransitionKind.BeginChoice or ConditionTransitionKind.BeginNextOption;
-
-    public LineConditionTransition Clone() => new(Kind, ConditionId, OptionId);
 }
 
 /// <summary>변수를 어떻게 바꾸는지. Yarn의 <c>&lt;&lt;set&gt;&gt;</c> 연산자에 대응한다.</summary>
@@ -132,16 +130,6 @@ public static class SetOperators
     };
 }
 
-/// <summary>
-/// 이 줄에 도달했을 때 실행할 변수 변경 하나.
-///
-/// 변수 이름 후보는 게임 정의의 variables가 공급하지만, 후보에 없는 이름도 막지 않는다
-/// (편의 기능이 없다고 원고를 못 쓰게 하지 않는다). 값은 문자열 그대로 실어 나른다 —
-/// 숫자인지 불리언인지는 게임이 해석한다.
-///
-/// 세이브 리플레이가 <c>&lt;&lt;set&gt;&gt;</c>을 재실행해 변수를 재구축하므로(계약서 C5)
-/// 값은 결정적이어야 한다. 랜덤·외부 상태 참조를 여기 넣지 않는다.
-/// </summary>
 /// <summary>
 /// DialogueNode가 <b>대본 한 줄에 덧붙이는 대사 논리</b>.
 ///
@@ -181,22 +169,10 @@ public sealed class DialogueLineExtension
 
     /// <summary>
     /// 첫 전환 — 슬롯이 하나뿐이던 시절의 이름이다. 한 줄에 전환이 하나인 흔한 경우에
-    /// 부르는 쪽이 목록을 풀 이유가 없어 남겨 둔다. <b>넣으면 목록이 그 하나가 된다.</b>
+    /// 부르는 쪽이 목록을 풀 이유가 없어 남겨 둔다. 읽기 전용이다.
     /// 상태를 재생하는 쪽(흐름 계산·합성)은 반드시 <see cref="Transitions"/>를 봐야 한다.
     /// </summary>
-    public LineConditionTransition? Transition
-    {
-        get => Transitions.Count > 0 ? Transitions[0] : null;
-        set
-        {
-            Transitions.Clear();
-
-            if (value is not null)
-            {
-                Transitions.Add(value);
-            }
-        }
-    }
+    public LineConditionTransition? Transition => Transitions.Count > 0 ? Transitions[0] : null;
 
     /// <summary>
     /// <b>여기서 갈라진다</b> — 이 줄에서 다녀올 노드 (R7 P-5 · 2026-09-17 소유자).
@@ -222,11 +198,4 @@ public sealed class DialogueLineExtension
     /// <summary>이 확장이 아무것도 담고 있지 않은지. 빈 확장은 저장하지 않는다.</summary>
     public bool IsEmpty =>
         Transitions.Count == 0 && DetourTargetNodeId is null;
-
-    public DialogueLineExtension Clone() =>
-        new(LineId)
-        {
-            Transitions = Transitions.Select(transition => transition.Clone()).ToList(),
-            DetourTargetNodeId = DetourTargetNodeId
-        };
 }

@@ -246,7 +246,6 @@ public static class ConditionExpressionParser
                 .Select(character => char.IsLetterOrDigit(character) ? character : '_')
                 .ToArray());
 
-    /// <summary>두 글자 연산자를 먼저 본다. <c>&gt;=</c>를 <c>&gt;</c>로 읽으면 의미가 달라진다.</summary>
     /// <summary>
     /// 조건식 원문에서 <b>스탯키만</b> 갈아 끼운다 — 스탯 개명이 쓴다 (2026-09-17).
     ///
@@ -289,6 +288,7 @@ public static class ConditionExpressionParser
         return string.Join(";", rebuilt);
     }
 
+    /// <summary>두 글자 연산자를 먼저 본다. <c>&gt;=</c>를 <c>&gt;</c>로 읽으면 의미가 달라진다.</summary>
     private static bool TrySplitComparison(
         string term,
         out string key,

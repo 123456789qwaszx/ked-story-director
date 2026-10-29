@@ -1,5 +1,4 @@
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
@@ -24,10 +23,6 @@ namespace Vn.Authoring.Tests.Chapters;
 /// </summary>
 public sealed class SpeakerAndConditionRenameTests
 {
-    private static readonly GameDefinition Definition = GameDefinition.Parse("""
-        { "speakers": [ { "name": "라루", "characterId": "laru" } ] }
-        """)!;
-
     // ── 조건 라벨 ───────────────────────────────────────────────────────────
 
     /// <summary>스탯 하나를 견주는 챕터 조건 하나짜리 모델. 라벨만 갈아 끼울 수 있다.</summary>
@@ -65,7 +60,7 @@ public sealed class SpeakerAndConditionRenameTests
         DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문", scriptId: script.Id);
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, Definition, file.Id, ChapterWith("신뢰 높음"));
+            editor, file.Id, ChapterWith("신뢰 높음"));
 
         SetNode supply = file.Nodes.OfType<SetNode>()
             .Single(node => ChapterBoardSupply.IsConditionSupplyNode(node, file));
@@ -78,7 +73,7 @@ public sealed class SpeakerAndConditionRenameTests
 
         // 라벨이 바뀌었다 — 식은 그대로다.
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, Definition, file.Id, ChapterWith("신뢰가 높다"));
+            editor, file.Id, ChapterWith("신뢰가 높다"));
 
         ConditionDefinition condition = Assert.Single(supply.Conditions);
 
@@ -99,12 +94,12 @@ public sealed class SpeakerAndConditionRenameTests
         var editor = new ProjectEditor(project);
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, Definition, file.Id, ChapterWith("신뢰 높음"));
+            editor, file.Id, ChapterWith("신뢰 높음"));
 
         long revision = editor.Revision;
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, Definition, file.Id, ChapterWith("신뢰 높음"));
+            editor, file.Id, ChapterWith("신뢰 높음"));
 
         Assert.Equal(revision, editor.Revision);
     }

@@ -100,12 +100,11 @@ public sealed class ChapterExportService
     /// </param>
     public ChapterValidationResult ValidationFor(
         ChapterEntry entry,
-        string? projectPath,
         StoryProject? project = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        string fingerprint = Fingerprint(entry.Model!, BoardNames(project, entry.ChapterId));
+        string fingerprint = Fingerprint(entry.Model, BoardNames(project, entry.ChapterId));
 
         if (_cache.TryGetValue(entry.ChapterId, out var cached) &&
             string.Equals(cached.Fingerprint, fingerprint, StringComparison.Ordinal))
@@ -113,7 +112,7 @@ public sealed class ChapterExportService
             return cached.Result;
         }
 
-        ChapterValidationResult result = ChapterValidator.Validate(entry.Model!, project);
+        ChapterValidationResult result = ChapterValidator.Validate(entry.Model, project);
         ValidationComputeCount++;
         _cache[entry.ChapterId] = (fingerprint, result);
 
@@ -153,18 +152,13 @@ public sealed class ChapterExportService
 
         foreach (ChapterEntry entry in entries)
         {
-            if (entry.Model is null)
-            {
-                continue;
-            }
-
             // 검증은 챕터별로 한 벌만 계산한다 (2026-08-18) — 보고 패널이 쓰는 것과
             // 같은 결과다. 예전에는 내보내기가 안에서 또 증명해 같은 값을 두 번 치렀다.
             // 프로젝트를 함께 넘긴다 (2026-08-24) — 간선에 매달린 자유 씬(`ViaNodeId`)의
             // 원본이 워크북이 아니라 연출 그래프의 배선이라서, 챕터 모델만으로는 못 찾는다.
             ChapterExportResult result = ChapterProgressionExporter.ExportValidated(
                 entry.Model,
-                ValidationFor(entry, projectPath, project),
+                ValidationFor(entry, project),
                 project);
 
             if (result.Refused)

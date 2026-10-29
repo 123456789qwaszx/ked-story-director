@@ -1,6 +1,5 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 
 namespace Vn.Authoring.Editing;
 
@@ -670,7 +669,7 @@ public sealed partial class ProjectEditor
             EpisodeNaming.BoardOf(Project, chapterId) is { } board)
         {
             ChapterBoardSupply.SupplyChapterConditionsToBoard(
-                this, GameDefinition.Empty, board.Id, chapter.ToGraphModel(string.Empty));
+                this, board.Id, chapter.ToGraphModel(string.Empty));
         }
     }
 
@@ -959,8 +958,7 @@ public sealed partial class ProjectEditor
     {
         string read = Rendering.YarnSyntax.StatRead(statKey);
 
-        return Project.EnumerateNodes().OfType<SetNode>()
-            .Where(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name))
+        return SupplyNodesOf(chapterId)
             .SelectMany(node => node.Conditions)
             .Where(condition => condition.Expression.Contains(read, StringComparison.Ordinal))
             .ToList();
@@ -1061,7 +1059,7 @@ public sealed partial class ProjectEditor
                     IsValid = false
                 }));
 
-                emptied.AddRange(SuppliedNamed(chapter.Conditions[i].Label)
+                emptied.AddRange(SuppliedNamed(chapterId, chapter.Conditions[i].Label)
                     .Select(pair => pair.Condition));
             }
         }
@@ -1323,7 +1321,7 @@ public sealed partial class ProjectEditor
 
         // 아무도 안 부르면 판에 공급된 사본도 함께 걷는다 — 남겨 두면 정의 없는 조건이
         // 드롭다운에 계속 보인다.
-        List<(SetNode Node, ConditionDefinition Condition)> supplied = SuppliedNamed(target);
+        List<(SetNode Node, ConditionDefinition Condition)> supplied = SuppliedNamed(chapterId, target);
 
         Mutate(() =>
         {
@@ -1368,7 +1366,7 @@ public sealed partial class ProjectEditor
         }
 
         var ids = new HashSet<string>(
-            SuppliedNamed(target).Select(pair => pair.Condition.Id), StringComparer.Ordinal);
+            SuppliedNamed(chapterId, target).Select(pair => pair.Condition.Id), StringComparer.Ordinal);
 
         if (ids.Count == 0)
         {
@@ -1401,13 +1399,28 @@ public sealed partial class ProjectEditor
         return uses;
     }
 
-    /// <summary>판의 공급 노드가 이 이름으로 들고 있는 조건들.</summary>
-    private List<(SetNode Node, ConditionDefinition Condition)> SuppliedNamed(string label) =>
-        Project.EnumerateNodes().OfType<SetNode>()
-            .Where(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name))
+    /// <summary>그 챕터 판의 공급 노드가 이 이름으로 들고 있는 조건들.</summary>
+    private List<(SetNode Node, ConditionDefinition Condition)> SuppliedNamed(string chapterId, string label) =>
+        SupplyNodesOf(chapterId)
             .SelectMany(node => node.Conditions.Select(condition => (Node: node, Condition: condition)))
             .Where(pair => string.Equals(pair.Condition.Name, label, StringComparison.Ordinal))
             .ToList();
+
+    /// <summary>
+    /// <b>그 챕터의</b> 공급 노드 — 공급(<see cref="ChapterBoardSupply.SupplyChapterConditionsToBoard"/>)이
+    /// 찾는 것과 같은 이름 규약이다.
+    ///
+    /// ⚠ 2026-10-29(L4)까지는 이름 모양(<c>챕터 … 조건</c>)만 보고 <b>모든 챕터의</b> 공급 노드를
+    /// 훑었다. 스탯·조건은 챕터마다 따로라서, ch01의 <c>trust</c>를 고치거나 조건을 지우면
+    /// 같은 이름을 쓰는 ch02의 공급 사본까지 바뀌거나 걷혔다.
+    /// </summary>
+    private IEnumerable<SetNode> SupplyNodesOf(string chapterId)
+    {
+        string name = ChapterBoardSupply.ConditionSupplyNodeName(chapterId);
+
+        return Project.EnumerateNodes().OfType<SetNode>()
+            .Where(node => string.Equals(node.Name, name, StringComparison.Ordinal));
+    }
 
     /// <summary>거절 목록에 적는 간선 한 줄 — 사람이 판에서 찾아갈 수 있게.</summary>
     private static string EdgeWhere(ChapterEdge edge)

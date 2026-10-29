@@ -43,8 +43,6 @@ public sealed record ScenarioParseResult(
     IReadOnlyList<string> UnparsedLines,
     IReadOnlyList<ScenarioStructureIntent>? TrailingTransitions = null)
 {
-    public bool HasUnparsed => UnparsedLines.Count > 0;
-
     /// <summary>마지막 줄 뒤의 전환들. 없으면 빈 목록이다.</summary>
     public IReadOnlyList<ScenarioStructureIntent> Trailing =>
         TrailingTransitions ?? Array.Empty<ScenarioStructureIntent>();

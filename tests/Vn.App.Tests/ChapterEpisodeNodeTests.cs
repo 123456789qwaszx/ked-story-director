@@ -261,7 +261,7 @@ public sealed class ChapterEpisodeNodeTests
         ChapterGraphModel chapter = Chapter(session);
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, session.Definition, fileId, chapter);
+            session.Editor, fileId, chapter);
 
         Vn.Authoring.Flow.AvailableConditionCatalog available =
             Vn.Authoring.Flow.AvailableConditionResolver.Resolve(
@@ -271,7 +271,7 @@ public sealed class ChapterEpisodeNodeTests
 
         // 멱등 — 두 번 불러도 공급 노드·조건이 늘지 않는다.
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, session.Definition, fileId, chapter);
+            session.Editor, fileId, chapter);
 
         Assert.Single(session.Project.EnumerateNodes().OfType<SetNode>(),
             node => node.Name == "챕터 ch05 조건");
@@ -291,7 +291,7 @@ public sealed class ChapterEpisodeNodeTests
         ChapterGraphModel chapter = Chapter(session);
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, session.Definition, fileId, chapter);
+            session.Editor, fileId, chapter);
 
         SetNode supply = session.Project.EnumerateNodes().OfType<SetNode>()
             .Single(node => node.Name == "챕터 ch05 조건");

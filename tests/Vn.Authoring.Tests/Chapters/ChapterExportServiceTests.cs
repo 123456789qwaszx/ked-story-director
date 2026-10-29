@@ -40,9 +40,9 @@ public sealed class ChapterExportServiceTests : IDisposable
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
-        service.ValidationFor(entry, ProjectPath);
-        service.ValidationFor(entry, ProjectPath);
-        service.ValidationFor(entry, ProjectPath);
+        service.ValidationFor(entry);
+        service.ValidationFor(entry);
+        service.ValidationFor(entry);
 
         Assert.Equal(1, service.ValidationComputeCount);
     }
@@ -54,7 +54,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
-        service.ValidationFor(entry, ProjectPath);
+        service.ValidationFor(entry);
 
         ChapterGraphModel edited = new(
             entry.ChapterId, string.Empty,
@@ -62,7 +62,7 @@ public sealed class ChapterExportServiceTests : IDisposable
             [new ChapterEdge("ep1", "ep2", "다른 문구", null, null, 2)],
             [], entry.Model.Stats, [], []);
 
-        service.ValidationFor(entry with { Model = edited }, ProjectPath);
+        service.ValidationFor(entry with { Model = edited });
 
         Assert.Equal(2, service.ValidationComputeCount);
     }
@@ -72,9 +72,9 @@ public sealed class ChapterExportServiceTests : IDisposable
     {
         var service = new ChapterExportService();
 
-        service.ValidationFor(Entry("ch01", Sound), ProjectPath);
-        service.ValidationFor(Entry("ch02", Sound), ProjectPath);
-        service.ValidationFor(Entry("ch01", Sound), ProjectPath);   // 이미 안다
+        service.ValidationFor(Entry("ch01", Sound));
+        service.ValidationFor(Entry("ch02", Sound));
+        service.ValidationFor(Entry("ch01", Sound));   // 이미 안다
 
         Assert.Equal(2, service.ValidationComputeCount);
     }
@@ -177,7 +177,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
-        service.ValidationFor(entry, ProjectPath);
+        service.ValidationFor(entry);
         service.ExportAll([entry], ProjectPath);
 
         Assert.Equal(1, service.ValidationComputeCount);
@@ -223,7 +223,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         Assert.Equal(["ch01"], run.Refused);
 
         ChapterDiagnostic problem = Assert.Single(
-            service.ValidationFor(Entry("ch01", Sound), ProjectPath, editor.Project).All,
+            service.ValidationFor(Entry("ch01", Sound), editor.Project).All,
             item => item.Code == ChapterDiagnosticCode.DialogueEntryNodeMissing);
 
         Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);
@@ -261,7 +261,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         Assert.Equal(["ch01"], run.Refused);
 
         ChapterDiagnostic problem = Assert.Single(
-            service.ValidationFor(Entry("ch01", Sound), ProjectPath, editor.Project).All,
+            service.ValidationFor(Entry("ch01", Sound), editor.Project).All,
             item => item.Code == ChapterDiagnosticCode.DialogueEntryNodeMissing);
 
         Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);

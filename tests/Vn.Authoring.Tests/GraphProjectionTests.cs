@@ -197,7 +197,7 @@ public class GraphProjectionTests
             {
                 new DialogueLineExtension("ln_a1")
                 {
-                    Transition = LineConditionTransition.BeginIf("cd_x")
+                    Transitions = { LineConditionTransition.BeginIf("cd_x") }
                 }
             },
             BranchExits = { ["ln_a1"] = "nd_b" }

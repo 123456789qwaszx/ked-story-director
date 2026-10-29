@@ -156,7 +156,6 @@ public sealed class StatRenameTests
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
-            new Vn.Authoring.Definition.GameDefinition(),
             editor.Project.Files.Single(file => file.Name == "ch01").Id,
             editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
 
@@ -264,7 +263,6 @@ public sealed class StatRenameTests
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
-            new Vn.Authoring.Definition.GameDefinition(),
             fileId,
             editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
 

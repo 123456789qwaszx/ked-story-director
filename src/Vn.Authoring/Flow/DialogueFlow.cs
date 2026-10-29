@@ -121,10 +121,4 @@ public sealed class DialogueFlow
     public IReadOnlyList<ConditionBranch> Branches { get; }
 
     public IReadOnlyList<FlowProblem> Problems { get; }
-
-    public ConditionBranch? FindBranch(string openLineId)
-    {
-        return Branches.FirstOrDefault(
-            branch => string.Equals(branch.OpenLineId, openLineId, StringComparison.Ordinal));
-    }
 }

@@ -8,8 +8,6 @@ public sealed class NodeLayout
     public double X { get; set; }
 
     public double Y { get; set; }
-
-    public NodeLayout Clone() => new() { X = X, Y = Y };
 }
 
 /// <summary>
@@ -45,8 +43,6 @@ public abstract class StoryNode
     /// 실행 가능한 DialogueNode와 SetNode가 사용한다.
     /// </summary>
     public string? DefaultExitTargetNodeId { get; set; }
-
-    public abstract StoryNode Clone();
 }
 
 /// <summary>
@@ -68,17 +64,6 @@ public sealed class SetNode : StoryNode
 
     /// <summary>이 노드가 이후 대사 노드에 공급하는 조건들.</summary>
     public List<ConditionDefinition> Conditions { get; init; } = new();
-
-    public override StoryNode Clone()
-    {
-        return new SetNode(Id, Name)
-        {
-            Layout = Layout.Clone(),
-            EdgeShapes = new Dictionary<string, EdgeShape>(EdgeShapes, StringComparer.Ordinal),
-            DefaultExitTargetNodeId = DefaultExitTargetNodeId,
-            Conditions = Conditions.Select(item => item.Clone()).ToList()
-        };
-    }
 }
 
 /// <summary>
@@ -100,9 +85,6 @@ public sealed class ConditionDefinition
     public string Name { get; set; } = string.Empty;
 
     public string Expression { get; set; } = string.Empty;
-
-    public ConditionDefinition Clone() =>
-        new(Id) { Name = Name, Expression = Expression };
 }
 
 /// <summary>
@@ -193,21 +175,9 @@ public sealed class DialogueNode : StoryNode
     //    맞추려고 들고 있던 표다 — 다시 읽지 않으면 맞출 상대가 없고, 신원은 이제
     //    프로젝트가 그냥 갖는다. 구판 프로젝트 파일의 `excelLines`는 읽지 않고 지나간다.
 
-    /// <summary>
-    /// ⛔ <b>걷혔다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 이 속성은
-    /// <c>MarkedEpisodeId is null ? null : DefaultExitTargetNodeId</c>였다 — <b>커스텀(자유)
-    /// 노드에는 기본 출구가 없다</b>는 2026-08-21의 규칙이고, 그것이 곧 엑셀노드/자유노드의
-    /// 구분이었다.
-    ///
-    /// 그 구분이 없어졌다. 챕터 판의 대사 노드는 전부 에피소드라 관문이 언제나 열리고,
-    /// 챕터가 아닌 판(작가의 낙서판)에는 챕터 조건도 <c>&lt;&lt;detour&gt;&gt;</c>도 없어
-    /// 애초에 그 규칙이 말하던 상황이 아니다 — 거기서는 기본 출구가 노드를 잇는 유일한
-    /// 수단이라 막을 이유가 없다.
-    ///
-    /// 부르던 자리는 전부 <see cref="StoryNode.DefaultExitTargetNodeId"/>를 곧바로 본다.
-    /// </summary>
-    [Obsolete("R7 P-6: 엑셀노드/자유노드 구분이 없어져 DefaultExitTargetNodeId와 같다.", error: true)]
-    public string? EffectiveDefaultExit => DefaultExitTargetNodeId;
+    // ⛔ `EffectiveDefaultExit`(커스텀 노드에는 기본 출구가 없다 — 2026-08-21)는 R7 P-6
+    //    (결정 ⑤ · 2026-09-17)에 뜻을 잃고 `[Obsolete]` 껍데기로 남았다가 L4(2026-10-29)에
+    //    걷혔다. 엑셀노드/자유노드 구분이 없어져 `DefaultExitTargetNodeId`와 같았다.
 
     /// <summary>그 줄의 확장 — 없으면 만들어 붙인다. 빈 확장은 저장 때 알아서 빠진다.</summary>
     public DialogueLineExtension RequireExtension(string lineId)
@@ -229,21 +199,5 @@ public sealed class DialogueNode : StoryNode
             ? null
             : LineExtensions.FirstOrDefault(
                 item => string.Equals(item.LineId, lineId, StringComparison.Ordinal));
-    }
-
-    public override StoryNode Clone()
-    {
-        return new DialogueNode(Id, Name)
-        {
-            Layout = Layout.Clone(),
-            EdgeShapes = new Dictionary<string, EdgeShape>(EdgeShapes, StringComparer.Ordinal),
-            ScriptId = ScriptId,
-            MarkedEpisodeId = MarkedEpisodeId,
-            LineExtensions = LineExtensions.Select(item => item.Clone()).ToList(),
-            DefaultExitTargetNodeId = DefaultExitTargetNodeId,
-            BranchExits = new Dictionary<string, string>(BranchExits, StringComparer.Ordinal),
-            TrailingTransitions = [.. TrailingTransitions],
-            ChoiceExits = new Dictionary<string, string>(ChoiceExits, StringComparer.Ordinal)
-        };
     }
 }

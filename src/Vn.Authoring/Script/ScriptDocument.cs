@@ -35,8 +35,6 @@ public sealed class ScriptLine
 
     /// <summary>대본에서 사라진 줄. 순서에서 빠지지만 Id는 재사용하지 않는다.</summary>
     public bool IsRetired { get; set; }
-
-    public ScriptLine Clone() => new(Id, Revision, IsRetired);
 }
 
 /// <summary>
@@ -60,14 +58,6 @@ public sealed class ScriptLocale
 
     public LocalizedLine Find(string lineId) =>
         Entries.TryGetValue(lineId, out LocalizedLine? line) ? line : LocalizedLine.Empty;
-
-    public ScriptLocale Clone()
-    {
-        return new ScriptLocale(Locale)
-        {
-            Entries = new Dictionary<string, LocalizedLine>(Entries, StringComparer.Ordinal)
-        };
-    }
 }
 
 /// <summary>
@@ -147,18 +137,5 @@ public sealed class ScriptDocument
     public LocalizedLine Text(string lineId, string? locale = null)
     {
         return FindLocale(locale ?? PrimaryLocale)?.Find(lineId) ?? LocalizedLine.Empty;
-    }
-
-    public ScriptDocument Clone()
-    {
-        return new ScriptDocument(Id, Name)
-        {
-            SourcePath = SourcePath,
-            SourceRevision = SourceRevision,
-            SourceContentHash = SourceContentHash,
-            PrimaryLocale = PrimaryLocale,
-            Lines = Lines.Select(line => line.Clone()).ToList(),
-            Locales = Locales.Select(locale => locale.Clone()).ToList()
-        };
     }
 }

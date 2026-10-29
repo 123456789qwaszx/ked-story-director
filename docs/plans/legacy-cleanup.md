@@ -42,8 +42,17 @@
 | L1 | Yarn 도구 묶음을 걷는다 (L-D1) | `d9d5dac` (run 40) |
 | L2 | Vn.App의 죽은 코드 — 탐색기 · 재생 속도 · 음량 설정, 공급선 갈래 + 링크 편집 API (L-D2), 레일의 닿지 않는 갈래(⏹ 종료 스텁 등), 챕터 어휘 공급 · `DefinitionChanged`, 숨은 관문 콤보 · `AutoSaveGates`, `DrawDirectEdge`, 테스트만 부르는 멤버, 고아 주석 · 낡은 안내 글 | a 앱의 죽은 코드 `f6b0a8f` (run 41) · b 링크 편집 API `847bdc3` (run 42) |
 | L3 | 선택지 칩의 옛 길을 걷는다 (L-D3) — 레일 테스트는 챕터를 프로젝트에 두고 다시 쓴다 | `1bfc9f5` (run 43) |
-| L4 | Vn.Authoring의 죽은 묶음 — `ChapterRunState` · 판 파일 관리(가져오기 · 지우기 · 개명 · 노드 옮기기) · 프리뷰 흐름(`ChoiceOptionBundle` · `Cycle` · `PassedBlocks`) · 안 쓰는 `Clone` 사슬 · 엑셀 · 탐색기 시절 편집(`TryDecomposeSingle` · `MoveEpisodesToChapter` · `RemoveChoiceLabel` …) · 아무도 안 부르는 멤버 | a 기능째 죽은 묶음 — 이번 · b 아무도 안 부르는 멤버 · 주석 |
+| L4 | Vn.Authoring의 죽은 묶음 — `ChapterRunState` · 판 파일 관리(가져오기 · 지우기 · 개명 · 노드 옮기기) · 프리뷰 흐름(`ChoiceOptionBundle` · `Cycle` · `PassedBlocks`) · 안 쓰는 `Clone` 사슬 · 엑셀 · 탐색기 시절 편집(`TryDecomposeSingle` · `MoveEpisodesToChapter` · `RemoveChoiceLabel` …) · 아무도 안 부르는 멤버 | a 기능째 죽은 묶음 `370e86c` (run 44) · b 아무도 안 부르는 멤버 · 주석 — 이번 |
 | L5 | 대본 가져오기 · 작가 변수의 남은 길 — `PlanScriptSync` · `ScriptParser` · 대본 개명 · 지우기 · `SourcePath`, set · assignment (L-D4). 일치 엔진 테스트는 `ScriptSynchronizer.Plan`으로 옮긴다 | |
 | L6 | 걷힌 기능의 화면 흔적 — 갈래 고르기(L-D5) · 「X 설정」 카드(L-D6) · 옛 파일 호환 `excelEpisode`(L-D8) · 형식 거절 안내의 "대본을 가져오세요" | |
 | L7 | 현행 안내 문서 — README · ARCHITECTURE · ORIENTATION이 없는 코드 · 걷힌 기능을 가리키지 않게 | |
 | L8 | `SourceRow` 조사 → 걷기와 에피소드 오류 표시 결함 (L-D7) | |
+
+## 4. 걷다가 찾은 것
+
+- **L4b · 공급 조건의 범위** — 스탯 개명 · 스탯 비우고 지우기 · 조건 지우기 · 조건 쓰임 찾기가
+  이름 모양(`챕터 … 조건`)만 보고 **모든 챕터의** 공급 노드를 훑었다. 스탯 · 조건은 챕터마다
+  따로라 같은 이름을 쓰는 다른 챕터의 판까지 바뀌거나 걷혔다. 안 쓰이던 `chapterId` 매개변수가
+  가리킨 자리다 — 걷지 않고 **쓰게** 고쳤다(`SupplyScopeTests`).
+- **L4b · 남긴 것** — `ChapterRenameEffect.BoardRenamed`는 읽는 곳이 없지만 `SupplyRenamed`와 짝인
+  결과 값이라 남긴다.

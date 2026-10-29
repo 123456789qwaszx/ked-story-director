@@ -663,7 +663,7 @@ public partial class ChapterGraphView : UserControl
     internal int ValidationComputeCount => _export.ValidationComputeCount;
 
     private ChapterValidationResult ValidationFor(ChapterEntry entry) =>
-        _export.ValidationFor(entry, _session?.ProjectPath, _session?.Project);
+        _export.ValidationFor(entry, _session?.Project);
 
     /// <summary>
     /// 툴이 길을 놓을 때 넣어 주는 문구 (v12). 빈 문구는 오류이므로 무언가는 있어야 하고,

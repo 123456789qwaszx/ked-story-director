@@ -308,8 +308,9 @@ internal sealed class AuthoringSession
     // 작가 화면에서 `game.definition.json`의 speakers를 갈아 끼우던 길은 폐지됐다
     // (2026-08-17 소유자 — "이게 기획자가 쓰는 전용으로 되어야 하는데, 현재는 시나리오
     // 작가가 한것까지 저기에 들어간다"). 작가가 더한 화자는 프로젝트에 산다
-    // (`ProjectEditor.SetWriterSpeakers`). 정의 파일에 쓰는 창구는 아래 [등록] 하나뿐이고,
-    // 그것도 기획자 화면(챕터 그래프의 검증 보고)에서만 불린다.
+    // (`StoryProject.WriterSpeakers`). 정의 파일에 쓰는 창구는 아래 둘 — 화자 탭의
+    // [저장](`SaveSpeakers`)과 검증 보고의 [등록](`RegisterVariables`) — 뿐이고, 둘 다
+    // 기획자 화면(챕터 그래프)에서만 불린다.
 
     /// <summary>
     /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 챕터 그래프 [화자] 탭 전용

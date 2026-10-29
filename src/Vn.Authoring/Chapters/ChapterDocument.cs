@@ -68,18 +68,6 @@ public sealed class ChapterDocument
         ChoiceOptions);
 
     /// <summary>
-    /// 스탯에 대한 <b>모델 검사</b> — 옛 <c>ChapterWorkbookReader</c>가 `스탯` 시트를
-    /// 읽으며 하던 그 검사다 (R-F · 2026-09-16에 여기로 옮겨 왔다).
-    ///
-    /// ⚠ <b>왜 따라와야 했나</b>: 리더에 있었던 것은 <i>거기가 유일한 문이어서</i>였지 파일의
-    /// 성질을 봐서가 아니다. 둘 다 <b>값</b>을 본다 — 범위가 뒤집혔는가, 정의 파일이 그 스탯을
-    /// 아는가. 안 옮기면 뒤집기와 함께 <b>조용히 사라지는</b> 검사가 된다(실제로 그랬다:
-    /// 검증 보고의 경고 4건이 통째로 없어졌고 테스트가 그것을 잡았다).
-    ///
-    /// ⚠ 행 번호는 <see cref="ChapterStat.SourceRow"/>다 — 들여온 값이면 원래 자리를 짚고,
-    /// 툴에서 만든 것이면 0이다(짚을 행이 아직 없다).
-    /// </summary>
-    /// <summary>
     /// 저작한 값에 대한 검사 전부 — <b>값의 흠</b>이라 어디서 왔든(툴 · 옛 프로젝트 · 손으로 고친 파일) 봐야 하는 것들이다.
     ///
     /// ⛔ <b>새 검사를 더할 자리가 여기다.</b> 리더 안에만 두면 R-F 뒤에는 <b>툴이 소유한
@@ -94,6 +82,18 @@ public sealed class ChapterDocument
         .. ChapterStructureCheck.Of(Episodes, Edges, Conditions.Select(Reparse).ToList(), Stats, path)
     ];
 
+    /// <summary>
+    /// 스탯에 대한 <b>모델 검사</b> — 옛 <c>ChapterWorkbookReader</c>가 `스탯` 시트를
+    /// 읽으며 하던 그 검사다 (R-F · 2026-09-16에 여기로 옮겨 왔다).
+    ///
+    /// ⚠ <b>왜 따라와야 했나</b>: 리더에 있었던 것은 <i>거기가 유일한 문이어서</i>였지 파일의
+    /// 성질을 봐서가 아니다. 둘 다 <b>값</b>을 본다 — 범위가 뒤집혔는가, 정의 파일이 그 스탯을
+    /// 아는가. 안 옮기면 뒤집기와 함께 <b>조용히 사라지는</b> 검사가 된다(실제로 그랬다:
+    /// 검증 보고의 경고 4건이 통째로 없어졌고 테스트가 그것을 잡았다).
+    ///
+    /// ⚠ 행 번호는 <see cref="ChapterStat.SourceRow"/>다 — 들여온 값이면 원래 자리를 짚고,
+    /// 툴에서 만든 것이면 0이다(짚을 행이 아직 없다).
+    /// </summary>
     private IReadOnlyList<ChapterDiagnostic> StatDiagnostics(string path, GameDefinition? definition)
     {
         var diagnostics = new List<ChapterDiagnostic>();

@@ -165,7 +165,7 @@ public sealed class BranchEntryConditionTests
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, Definition.GameDefinition.Empty, fileId,
+            editor, fileId,
             chapter.ToGraphModel("ch01"));
 
         DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;

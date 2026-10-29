@@ -1,19 +1,5 @@
 namespace Vn.Authoring.Chapters;
 
-/// <param name="ReachableEpisodeIds">시작 에피소드에서 어떤 플레이로든 닿을 수 있는 에피소드.</param>
-/// <param name="ExplorationComplete">
-/// 상태공간을 끝까지 훑었는가. 상한에 걸려 중단했으면 false이고, 그때 "도달 불가"는
-/// 단정이 아니라 경고로 낮춰 보고돼 있다 — 증명하지 못한 것을 오류라고 말하지 않는다.
-/// </param>
-/// <param name="VisitedStates">
-/// 훑은 <b>(에피소드, 스탯 벡터)</b> 상태의 수. <see cref="ChapterReachabilityProver.StateLimit"/>
-/// 까지 센다.
-///
-/// ⭐ <b>이 숫자가 축소를 할지 말지를 정한다</b> (2026-09-17). 깃발은 0/1 정수라 <b>갈래마다
-/// 다르게 켜지면 상태공간을 두 배로</b> 만든다 — 그리고 깃발은 바로 그러려고 만든다. 작가
-/// 변수가 없어져 그런 기억이 전부 챕터 스탯으로 들어오므로, 언젠가 상한에 닿는다.
-/// <b>언제인지는 실제 대본을 돌려 봐야 안다.</b> 그래서 센다.
-/// </param>
 /// <summary>
 /// 그 에피소드에 <b>도착했을 때</b> 스탯 하나가 가질 수 있는 폭 (2026-08-17 소유자:
 /// "간선을 따라 왔을 때 스탯의 변화량이 노드에 표시되도록. 여러 루트가 있을 때는 스탯의
@@ -29,6 +15,20 @@ public sealed record ChapterStatSpan(string Key, string DisplayName, int Minimum
     public bool IsFixed => Minimum == Maximum;
 }
 
+/// <param name="ReachableEpisodeIds">시작 에피소드에서 어떤 플레이로든 닿을 수 있는 에피소드.</param>
+/// <param name="ExplorationComplete">
+/// 상태공간을 끝까지 훑었는가. 상한에 걸려 중단했으면 false이고, 그때 "도달 불가"는
+/// 단정이 아니라 경고로 낮춰 보고돼 있다 — 증명하지 못한 것을 오류라고 말하지 않는다.
+/// </param>
+/// <param name="VisitedStates">
+/// 훑은 <b>(에피소드, 스탯 벡터)</b> 상태의 수. <see cref="ChapterReachabilityProver.StateLimit"/>
+/// 까지 센다.
+///
+/// ⭐ <b>이 숫자가 축소를 할지 말지를 정한다</b> (2026-09-17). 깃발은 0/1 정수라 <b>갈래마다
+/// 다르게 켜지면 상태공간을 두 배로</b> 만든다 — 그리고 깃발은 바로 그러려고 만든다. 작가
+/// 변수가 없어져 그런 기억이 전부 챕터 스탯으로 들어오므로, 언젠가 상한에 닿는다.
+/// <b>언제인지는 실제 대본을 돌려 봐야 안다.</b> 그래서 센다.
+/// </param>
 public sealed record ChapterReachabilityResult(
     IReadOnlySet<string> ReachableEpisodeIds,
     IReadOnlyList<ChapterDiagnostic> Diagnostics,
@@ -54,9 +54,9 @@ public sealed record ChapterReachabilityResult(
 /// 유한하고 <b>완전 탐색이 된다</b> — 경계값 버그를 막으려던 정수 고정(G-3)이 이 증명을
 /// 가능하게 만들었다. float이면 여기서 결정 불가능이다.
 ///
-/// 에피소드 하나를 플레이하면 스탯이 그 에피소드의 증감 범위(<see cref="EpisodeStatRangeCalculator"/>)
-/// 안에서 변한다. 범위는 과대근사이므로 "도달 가능" 판정은 넓게, 즉 <b>진짜 도달 불가를
-/// 놓치는 일은 없게</b> 잡힌다.
+/// 스탯은 <b>간선을 탈 때</b> 그 간선의 증감(<see cref="ChapterEdge.StatChanges"/>)만큼 변한다 —
+/// 근사 없는 정확 전이다(<see cref="ApplyDeltas"/>). 에피소드마다 증감 범위를 과대근사하던 옛
+/// 계산기는 증감이 간선으로 옮겨 오며 쓸 데가 없어졌다.
 ///
 /// 조건이 묻는 것은 <b>스탯뿐이고</b>, 스탯은 걷는 도중에 정해진다 — 그래서 한 번만 걷는다.
 /// 2026-08-25까지는 고정점 반복이 있었는데, 도달 가능 집합 자체를 참조하는 <c>cleared:</c>

@@ -23,9 +23,6 @@ public sealed class GameDefinition
     [JsonPropertyName("variables")]
     public List<VariableSpec> Variables { get; init; } = new();
 
-    [JsonPropertyName("events")]
-    public List<EventSpec> Events { get; init; } = new();
-
     /// <summary>
     /// 프로젝트와 무관하게 게임이 언제나 제공하는 조건. 설정 노드가 만드는 조건에 더해진다.
     /// 여러 게임에서 반복되는 조건(예: 난이도, 언어)을 프로젝트마다 다시 만들지 않아도 된다.
@@ -115,15 +112,6 @@ public sealed class VariableSpec
     /// <summary>게임이 해석하는 타입 이름. VnTool은 그대로 보여 주기만 한다.</summary>
     [JsonPropertyName("type")]
     public string Type { get; init; } = string.Empty;
-
-    [JsonPropertyName("description")]
-    public string? Description { get; init; }
-}
-
-public sealed class EventSpec
-{
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
 
     [JsonPropertyName("description")]
     public string? Description { get; init; }

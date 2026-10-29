@@ -153,10 +153,8 @@ public class SampleProjectTests
         GameDefinition definition = GameDefinition.LoadBeside(SamplePath);
 
         Assert.Equal(4, definition.Variables.Count);
-        Assert.Contains(definition.Variables, variable => variable.Name == "favor");
-
         // 도구는 이 이름들을 코드로 알지 못한다. 파일이 공급할 뿐이다.
-        Assert.Equal(2, definition.Events.Count);
+        Assert.Contains(definition.Variables, variable => variable.Name == "favor");
     }
 
     /// <summary>
