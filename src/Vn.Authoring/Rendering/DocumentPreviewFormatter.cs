@@ -18,7 +18,6 @@ public static class DocumentPreviewFormatter
             DocumentOutputFormat.Scenario => FormatScenario(document),
             DocumentOutputFormat.Recording => FormatRecording(document),
             DocumentOutputFormat.Localization => FormatLocalization(document),
-            DocumentOutputFormat.Direction => FormatDirection(document),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(document),
                 document.Options.Format,
@@ -90,20 +89,10 @@ public static class DocumentPreviewFormatter
     {
         var builder = new StringBuilder();
 
-        foreach (RenderedSegment segment in document.Segments)
+        foreach (RenderedSegment segment in document.Segments.Where(
+                     item => item.Kind == RenderedSegmentKind.DialogueLine))
         {
-            switch (segment.Kind)
-            {
-                case RenderedSegmentKind.PresentationCommand:
-                    builder.Append("    [연기] ")
-                        .Append(CommandDisplay(segment))
-                        .Append('\n');
-                    break;
-
-                case RenderedSegmentKind.DialogueLine:
-                    AppendDialogue(builder, document.Options, segment, lineIdPrefix: "LINE");
-                    break;
-            }
+            AppendDialogue(builder, document.Options, segment, lineIdPrefix: "LINE");
         }
 
         return builder.ToString();
@@ -126,32 +115,6 @@ public static class DocumentPreviewFormatter
                 .Append('\t')
                 .Append(EscapeTabular(segment.LocalizedText))
                 .Append('\n');
-        }
-
-        return builder.ToString();
-    }
-
-    private static string FormatDirection(RenderedDocument document)
-    {
-        var builder = new StringBuilder();
-
-        foreach (RenderedSegment segment in document.Segments)
-        {
-            switch (segment.Kind)
-            {
-                case RenderedSegmentKind.PresentationCommand:
-                    builder.Append('[')
-                        .Append(CategoryLabel(segment))
-                        .Append("] ")
-                        .Append(CommandDisplay(segment))
-                        .Append('\n');
-                    break;
-
-                case RenderedSegmentKind.DialogueLine:
-                    AppendDialogue(builder, document.Options, segment, lineIdPrefix: "LINE");
-                    builder.Append('\n');
-                    break;
-            }
         }
 
         return builder.ToString();
@@ -190,33 +153,6 @@ public static class DocumentPreviewFormatter
         }
 
         builder.Append('\n');
-    }
-
-    private static string CommandDisplay(RenderedSegment segment)
-    {
-        var builder = new StringBuilder();
-        builder.Append(string.IsNullOrWhiteSpace(segment.Text)
-            ? segment.DefinitionId ?? segment.CommandName ?? "연출"
-            : segment.Text);
-
-        if (segment.Arguments is { Count: > 0 })
-        {
-            builder.Append(" (")
-                .Append(string.Join(
-                    ", ",
-                    segment.Arguments.Select(argument => $"{argument.Name}={argument.Value}")))
-                .Append(')');
-        }
-
-        return builder.ToString();
-    }
-
-    private static string CategoryLabel(RenderedSegment segment)
-    {
-        // 범주 어휘는 게임 정의가 공급한다. 표시 이름 → Id → 중립 라벨 순서로 고른다.
-        return segment.PresentationCategoryName
-            ?? segment.PresentationCategoryId
-            ?? "Presentation";
     }
 
     private static string EscapeTabular(string? value)

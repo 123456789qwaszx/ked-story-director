@@ -9,7 +9,7 @@ namespace Vn.Authoring.Flow;
 /// 대사창에 한 줄씩 흘리는 대신 블록의 버튼 묶음을 한 번에 보여 준다 — 런타임이
 /// 선택지를 제시하는 순간의 근사다. 라벨이 아닌 라인에서는 null(보통 대사창)이다.
 ///
-/// 순수 함수이고, 작업 중 대본(DialogueLine)과 발행 결과(DialogueResultLine)가
+/// 순수 함수이고, 작업 중 대본(DialogueLine)과 펼친 결과(DialogueResultLine)가
 /// 델리게이트로 같은 구현 하나를 지난다(규칙 사본 금지).
 /// </summary>
 public static class ChoiceOptionBundle

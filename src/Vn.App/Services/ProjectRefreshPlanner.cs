@@ -29,17 +29,11 @@ internal static class ProjectRefreshPlanner
             ProjectChangeKind.DialogueContent => new ProjectRefreshPlan(
                 RebuildGraph: false,
                 RefreshGraphPositions: false,
-                RebuildInspector: selectedNode is PresentationNode,
+                RebuildInspector: false,
                 RefreshPreview: selectedNode is DialogueNode,
                 // 곁기둥에서 고친 글이 카드의 글 칸에도 비친다(D4) — 안 그러면 낡은 칸의 글이
                 // 다음 넣기에서 방금 고친 줄을 도로 덮는다.
                 RefreshCardWriting: selectedNode is DialogueNode),
-
-            ProjectChangeKind.PresentationContent => new ProjectRefreshPlan(
-                RebuildGraph: false,
-                RefreshGraphPositions: false,
-                RebuildInspector: false,
-                RefreshPreview: selectedNode is DialogueNode),
 
             ProjectChangeKind.ConditionDefinition => new ProjectRefreshPlan(
                 RebuildGraph: true,
@@ -51,15 +45,8 @@ internal static class ProjectRefreshPlanner
             ProjectChangeKind.Connections => new ProjectRefreshPlan(
                 RebuildGraph: true,
                 RefreshGraphPositions: false,
-                // Settings link가 바뀌면 Dialogue 조건 목록이, 연출의 입력 결과가 바뀌면
-                // 읽기 전용 미러와 orphan 판정이 달라진다.
-                RebuildInspector: selectedNode is DialogueNode or PresentationNode),
-
-            // 발행은 편집 행을 바꾸지 않는다. 결과 목록과 그래프 뱃지만 새로 읽으면 된다.
-            ProjectChangeKind.Results => new ProjectRefreshPlan(
-                RebuildGraph: true,
-                RefreshGraphPositions: false,
-                RebuildInspector: selectedNode is DialogueNode or PresentationNode),
+                // Settings link가 바뀌면 Dialogue 조건 목록이 달라진다.
+                RebuildInspector: selectedNode is DialogueNode),
 
             ProjectChangeKind.NodeMetadata => new ProjectRefreshPlan(
                 RebuildGraph: true,

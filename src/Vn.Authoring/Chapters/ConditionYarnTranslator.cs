@@ -26,7 +26,7 @@ public sealed record ConditionYarnTranslation(string? Yarn, string? Problem)
 /// 쓰기는 세이브/로드 복귀와 도달성 증명이 <b>못 보는 뒷길</b>이다. 함수에는 왼쪽 변이 없다.</item>
 /// <item>⚠ 2026-09-01(G0)에 저쪽의 <c>PublishStats</c> 다리가 걷혔는데 이 번역기는 계속
 /// <c>$trust</c>를 냈다. <b>조용히 틀리지는 않았다</b> —
-/// <c>YarnBundleEmitter.ValidateProgressionStatReferences</c>가 <b>차단</b>으로 잡아
+/// 이미터의 진행 스탯 검증(<c>ValidateProgressionStatReferences</c> — 지금은 compositor에 있다)이 <b>차단</b>으로 잡아
 /// 내보내기 자체가 거절됐다. 대신 그날부터 <b>이 기능이 죽어 있었다</b>: 대사 카드에서
 /// 챕터 조건을 고를 수는 있는데 고르면 산출이 막혔다. 이 변경이 그 길을 다시 연다.</item>
 /// </list>

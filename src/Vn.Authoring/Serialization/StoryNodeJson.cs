@@ -1,7 +1,6 @@
 ﻿using System.Text.Json.Nodes;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 
 namespace Vn.Authoring.Serialization;
 
@@ -23,14 +22,18 @@ internal static class StoryNodeJson
     /// </summary>
     private const string LegacyEpisodeMarkKey = "excelEpisode";
 
+    /// <summary>
+    /// 연출 층의 노드 종류 — 연출 노드 · 명령 공급 노드. 2026-10-29에 <c>ked-story-compositor</c>로 갔다.
+    /// 옛 파일에 있으면 읽지 않는다(<see cref="Read"/>가 null) — 원본은 <see cref="ProjectStore"/>가 남긴다.
+    /// </summary>
+    public static IReadOnlyList<string> PresentationKinds { get; } = ["presentation", "commandSupply"];
+
     public static JsonObject Write(StoryNode node)
     {
         string kind = node switch
         {
             SetNode => "set",
             DialogueNode => "dialogue",
-            PresentationNode => "presentation",
-            CommandSupplyNode => "commandSupply",
             _ => throw new InvalidDataException($"지원하지 않는 노드 종류 '{node.GetType().Name}'입니다.")
         };
 
@@ -59,29 +62,27 @@ internal static class StoryNodeJson
             case DialogueNode dialogue:
                 WriteDialogueNode(dialogue, json);
                 break;
-            case PresentationNode presentation:
-                WritePresentationNode(presentation, json);
-                break;
-            case CommandSupplyNode supply:
-                WriteCommandSupplyNode(supply, json);
-                break;
         }
 
         return json;
     }
 
-    public static StoryNode Read(JsonObject json)
+    /// <summary>노드 하나를 읽는다. 연출 층의 노드(<see cref="PresentationKinds"/>)면 null이다.</summary>
+    public static StoryNode? Read(JsonObject json)
     {
         string id = (string?)json["id"] ?? Identifier.Node();
         string name = (string?)json["name"] ?? "이름 없음";
         string kind = (string?)json["kind"] ?? "dialogue";
 
+        if (PresentationKinds.Contains(kind))
+        {
+            return null;
+        }
+
         StoryNode node = kind switch
         {
             "set" => ReadSetNode(json, id, name),
             "dialogue" => ReadDialogueNode(json, id, name),
-            "presentation" => ReadPresentationNode(json, id, name),
-            "commandSupply" => ReadCommandSupplyNode(json, id, name),
             _ => throw new InvalidDataException($"지원하지 않는 노드 종류 '{kind}'입니다.")
         };
 
@@ -191,7 +192,7 @@ internal static class StoryNodeJson
             {
                 var transitionJson = new JsonObject
                 {
-                    ["kind"] = DialogueResultJson.KindName(transition.Kind)
+                    ["kind"] = KindName(transition.Kind)
                 };
 
                 if (transition.ConditionId is not null)
@@ -239,203 +240,6 @@ internal static class StoryNodeJson
 
         // ⛔ `excelLines`(인덱스 → LineId)는 2026-09-16에 더 내보내지 않는다 (R-D).
         //    구판 파일에 남아 있어도 읽지 않고 지나간다 — 뜻이 없는 값이다.
-    }
-
-    private static void WritePresentationNode(PresentationNode node, JsonObject json)
-    {
-        if (node.Source is { } source)
-        {
-            json["source"] = new JsonObject
-            {
-                ["resultId"] = source.ResultId,
-                ["version"] = source.Version,
-                ["contentHash"] = source.ContentHash
-            };
-        }
-
-        if (node.SetupCommands.Count > 0)
-        {
-            var setup = new JsonArray();
-
-            foreach (PresentationCommandInstance command in node.SetupCommands)
-            {
-                setup.Add(WriteCommand(command));
-            }
-
-            json["setup"] = setup;
-        }
-
-        var bindings = new JsonArray();
-
-        foreach (PresentationLineBinding binding in node.Bindings)
-        {
-            var commands = new JsonArray();
-
-            foreach (PresentationCommandInstance command in binding.Commands)
-            {
-                commands.Add(WriteCommand(command));
-            }
-
-            var bindingJson = new JsonObject
-            {
-                ["lineId"] = binding.LineId,
-                ["commands"] = commands
-            };
-
-            if (binding.Markers.Count > 0)
-            {
-                var markers = new JsonArray();
-
-                foreach (PresentationLineMarker marker in binding.Markers)
-                {
-                    markers.Add(new JsonObject
-                    {
-                        ["offset"] = marker.CharacterOffset,
-                        ["firstCommand"] = marker.FirstCommandIndex
-                    });
-                }
-
-                bindingJson["markers"] = markers;
-            }
-
-            bindings.Add(bindingJson);
-        }
-
-        json["bindings"] = bindings;
-    }
-
-    private static void WriteCommandSupplyNode(CommandSupplyNode node, JsonObject json)
-    {
-        if (node.Categories.Count > 0)
-        {
-            var categories = new JsonArray();
-
-            foreach (string categoryId in node.Categories)
-            {
-                categories.Add(categoryId);
-            }
-
-            json["categories"] = categories;
-        }
-
-        if (node.Presets.Count > 0)
-        {
-            var presets = new JsonArray();
-
-            foreach (CommandPreset preset in node.Presets)
-            {
-                var presetJson = new JsonObject
-                {
-                    ["id"] = preset.Id,
-                    ["name"] = preset.DisplayName,
-                    ["command"] = preset.CommandDefinitionId
-                };
-
-                if (preset.ArgumentValues.Count > 0)
-                {
-                    var arguments = new JsonObject();
-
-                    foreach ((string key, string value) in preset.ArgumentValues.OrderBy(
-                                 pair => pair.Key,
-                                 StringComparer.Ordinal))
-                    {
-                        arguments[key] = value;
-                    }
-
-                    presetJson["arguments"] = arguments;
-                }
-
-                if (preset.Note is not null)
-                {
-                    presetJson["note"] = preset.Note;
-                }
-
-                presets.Add(presetJson);
-            }
-
-            json["presets"] = presets;
-        }
-    }
-
-    private static CommandSupplyNode ReadCommandSupplyNode(JsonObject json, string id, string name)
-    {
-        var node = new CommandSupplyNode(id, name);
-
-        foreach (JsonNode? item in json["categories"]?.AsArray() ?? new JsonArray())
-        {
-            if ((string?)item is { Length: > 0 } categoryId)
-            {
-                node.Categories.Add(categoryId);
-            }
-        }
-
-        foreach (JsonNode? item in json["presets"]?.AsArray() ?? new JsonArray())
-        {
-            if (item is not JsonObject presetJson)
-            {
-                continue;
-            }
-
-            string presetId = (string?)presetJson["id"]
-                ?? throw new InvalidDataException($"CommandSupplyNode '{id}'의 프리셋에 id가 없습니다.");
-            var preset = new CommandPreset(presetId)
-            {
-                DisplayName = (string?)presetJson["name"] ?? string.Empty,
-                CommandDefinitionId = (string?)presetJson["command"] ?? string.Empty,
-                Note = (string?)presetJson["note"]
-            };
-
-            if (presetJson["arguments"] is JsonObject arguments)
-            {
-                foreach ((string key, JsonNode? value) in arguments)
-                {
-                    preset.ArgumentValues[key] = (string?)value ?? string.Empty;
-                }
-            }
-
-            node.Presets.Add(preset);
-        }
-
-        return node;
-    }
-
-    private static JsonObject WriteCommand(PresentationCommandInstance command)
-    {
-        var commandJson = new JsonObject
-        {
-            ["id"] = command.Id,
-            ["definitionId"] = command.DefinitionId
-        };
-
-        if (command.PresetId is not null)
-        {
-            commandJson["preset"] = command.PresetId;
-        }
-
-        if (!command.IsEnabled)
-        {
-            commandJson["enabled"] = false;
-        }
-
-        if (command.Arguments.Count > 0)
-        {
-            var arguments = new JsonObject();
-            foreach ((string key, string value) in command.Arguments.OrderBy(
-                         pair => pair.Key,
-                         StringComparer.Ordinal))
-            {
-                arguments[key] = value;
-            }
-
-            commandJson["arguments"] = arguments;
-        }
-
-        if (command.Note is not null)
-        {
-            commandJson["note"] = command.Note;
-        }
-
-        return commandJson;
     }
 
     private static SetNode ReadSetNode(JsonObject json, string id, string name)
@@ -491,7 +295,7 @@ internal static class StoryNodeJson
             foreach (JsonObject transitionJson in Transitions(lineJson))
             {
                 var transition = new LineConditionTransition(
-                    DialogueResultJson.ParseKind((string?)transitionJson["kind"]),
+                    ParseKind((string?)transitionJson["kind"]),
                     (string?)transitionJson["condition"],
                     (string?)transitionJson["option"]);
 
@@ -521,7 +325,7 @@ internal static class StoryNodeJson
             }
 
             var transition = new LineConditionTransition(
-                DialogueResultJson.ParseKind((string?)transitionJson["kind"]),
+                ParseKind((string?)transitionJson["kind"]),
                 (string?)transitionJson["condition"],
                 (string?)transitionJson["option"]);
 
@@ -549,97 +353,13 @@ internal static class StoryNodeJson
         return node;
     }
 
-    private static PresentationNode ReadPresentationNode(JsonObject json, string id, string name)
-    {
-        var node = new PresentationNode(id, name);
-
-        if (json["source"] is JsonObject sourceJson)
-        {
-            node.Source = new DialogueResultReference(
-                (string?)sourceJson["resultId"]
-                    ?? throw new InvalidDataException($"PresentationNode '{id}'의 source에 resultId가 없습니다."),
-                (int?)sourceJson["version"]
-                    ?? throw new InvalidDataException($"PresentationNode '{id}'의 source에 version이 없습니다."),
-                (string?)sourceJson["contentHash"]
-                    ?? throw new InvalidDataException($"PresentationNode '{id}'의 source에 contentHash가 없습니다."));
-        }
-
-        foreach (JsonNode? setupItem in json["setup"]?.AsArray() ?? new JsonArray())
-        {
-            if (setupItem is JsonObject setupJson)
-            {
-                node.SetupCommands.Add(ReadCommand(setupJson, id));
-            }
-        }
-
-        foreach (JsonNode? item in json["bindings"]?.AsArray() ?? new JsonArray())
-        {
-            if (item is not JsonObject bindingJson)
-            {
-                continue;
-            }
-
-            string lineId = (string?)bindingJson["lineId"]
-                ?? throw new InvalidDataException($"PresentationNode '{id}'의 binding에 lineId가 없습니다.");
-            var binding = new PresentationLineBinding(lineId);
-
-            foreach (JsonNode? commandItem in bindingJson["commands"]?.AsArray() ?? new JsonArray())
-            {
-                if (commandItem is JsonObject commandJson)
-                {
-                    binding.Commands.Add(ReadCommand(commandJson, id));
-                }
-            }
-
-            foreach (JsonNode? markerItem in bindingJson["markers"]?.AsArray() ?? new JsonArray())
-            {
-                if (markerItem is JsonObject markerJson)
-                {
-                    binding.Markers.Add(new PresentationLineMarker
-                    {
-                        CharacterOffset = (int?)markerJson["offset"] ?? 0,
-                        FirstCommandIndex = (int?)markerJson["firstCommand"] ?? 0
-                    });
-                }
-            }
-
-            node.Bindings.Add(binding);
-        }
-
-        return node;
-    }
-
-    private static PresentationCommandInstance ReadCommand(JsonObject commandJson, string nodeId)
-    {
-        string commandId = (string?)commandJson["id"]
-            ?? throw new InvalidDataException(
-                $"PresentationNode '{nodeId}'의 command에 id가 없습니다.");
-        string definitionId = (string?)commandJson["definitionId"] ?? string.Empty;
-        var command = new PresentationCommandInstance(commandId, definitionId)
-        {
-            PresetId = (string?)commandJson["preset"],
-            IsEnabled = (bool?)commandJson["enabled"] ?? true,
-            Note = (string?)commandJson["note"]
-        };
-
-        if (commandJson["arguments"] is JsonObject arguments)
-        {
-            foreach ((string key, JsonNode? value) in arguments)
-            {
-                command.Arguments[key] = (string?)value ?? string.Empty;
-            }
-        }
-
-        return command;
-    }
-
     /// <summary>전환 하나를 JSON으로. 갈래 출구는 <b>여는 전환</b>에만 붙는다.</summary>
     private static JsonObject TransitionJson(
         LineConditionTransition transition, DialogueNode node, DialogueLineExtension extension, bool hasExit)
     {
         var json = new JsonObject
         {
-            ["kind"] = DialogueResultJson.KindName(transition.Kind)
+            ["kind"] = KindName(transition.Kind)
         };
 
         if (transition.ConditionId is not null)
@@ -673,4 +393,24 @@ internal static class StoryNodeJson
 
         return lineJson["condition"] is JsonObject single ? [single] : [];
     }
+
+    private static string KindName(ConditionTransitionKind kind) => kind switch
+    {
+        ConditionTransitionKind.BeginIf => "beginIf",
+        ConditionTransitionKind.BeginElseIf => "beginElseIf",
+        ConditionTransitionKind.BeginChoice => "beginChoice",
+        ConditionTransitionKind.BeginNextOption => "beginNextOption",
+        ConditionTransitionKind.EndChoice => "endChoice",
+        _ => "endIf"
+    };
+
+    private static ConditionTransitionKind ParseKind(string? kind) => kind switch
+    {
+        "beginIf" => ConditionTransitionKind.BeginIf,
+        "beginElseIf" => ConditionTransitionKind.BeginElseIf,
+        "beginChoice" => ConditionTransitionKind.BeginChoice,
+        "beginNextOption" => ConditionTransitionKind.BeginNextOption,
+        "endChoice" => ConditionTransitionKind.EndChoice,
+        _ => ConditionTransitionKind.EndIf
+    };
 }

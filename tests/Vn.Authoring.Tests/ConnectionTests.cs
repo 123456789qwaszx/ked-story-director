@@ -130,18 +130,6 @@ public class ConnectionTests
     }
 
     [Fact]
-    public void 연출_공급_노드도_실행_출구를_가지지_않는다()
-    {
-        var sample = new Sample();
-        CommandSupplyNode supply = sample.Editor.AddCommandSupplyNode(sample.File.Id, name: "공급");
-
-        Assert.Empty(NodeConnections.PortsOf(supply, sample.Project));
-
-        sample.Editor.SetExitTarget(supply.Id, ExitPortKind.Default, null, sample.Dialogue.Id);
-        Assert.Null(supply.DefaultExitTargetNodeId);
-    }
-
-    [Fact]
     public void 없는_노드로는_연결되지_않는다()
     {
         var sample = new Sample();

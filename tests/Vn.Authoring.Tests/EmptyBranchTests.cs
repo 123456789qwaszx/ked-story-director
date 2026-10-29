@@ -156,7 +156,7 @@ public class EmptyBranchTests
             GameDefinition.Empty,
             confirmDeletes: true);
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
 
         // 마지막 대사 줄 <b>뒤에</b> 조건이 열리고 닫힌다.
@@ -199,7 +199,7 @@ public class EmptyBranchTests
         // 빈 갈래에 커스텀 씬을 매단다 — 신원은 줄이 아니라 꼬리 앵커다.
         sample.Dialogue.BranchExits[branch.OpenLineId] = sample.TargetDefault.Id;
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
 
         // 조건 갈래의 출구는 jump가 아니라 detour다 (2026-08-21).

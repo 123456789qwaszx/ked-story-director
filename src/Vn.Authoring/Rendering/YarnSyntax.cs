@@ -3,9 +3,8 @@ using System.Text;
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
-/// Yarn 표기 조립 규칙의 단일 구현. Preview(YarnPreviewFormatter)와
-/// 파일 이미터(YarnBundleEmitter)가 같은 코드를 지나야 화면에서 본 것과
-/// 파일에 쓴 것이 다른 이야기를 하지 않는다.
+/// Yarn 표기 조립 규칙 — 미리보기(YarnPreviewFormatter)와 노드 이름 규칙(<see cref="YarnNaming"/>) ·
+/// 챕터 조건 번역이 지난다. 게임용 Yarn 파일은 이 툴이 내지 않는다(<c>ked-story-compositor</c>의 이미터).
 /// </summary>
 internal static class YarnSyntax
 {
@@ -13,25 +12,6 @@ internal static class YarnSyntax
 
     public static string IndentOf(int level) =>
         string.Concat(Enumerable.Repeat(Indent, Math.Max(0, level)));
-
-    /// <summary>
-    /// <c>&lt;&lt;name v1 v2&gt;&gt;</c> — 런타임 커맨드는 인자를 순서로 읽는다.
-    /// Segment의 인자 목록이 이미 카탈로그 파라미터 순서이므로 값만 그 순서대로 잇는다.
-    /// </summary>
-    public static void AppendCommand(StringBuilder builder, RenderedSegment segment)
-    {
-        builder.Append("<<")
-            .Append(string.IsNullOrWhiteSpace(segment.CommandName)
-                ? segment.DefinitionId ?? "presentation"
-                : segment.CommandName);
-
-        foreach (RenderedArgument argument in segment.Arguments ?? Array.Empty<RenderedArgument>())
-        {
-            builder.Append(' ').Append(argument.Value);
-        }
-
-        builder.Append(">>");
-    }
 
     /// <summary><c>&lt;&lt;set $x += 1&gt;&gt;</c></summary>
     public static void AppendSet(StringBuilder builder, RenderedSegment segment)
@@ -163,7 +143,7 @@ internal static class YarnSyntax
 
         if (source.Length == 0)
         {
-            return string.Empty;   // 빈 이름은 발행 검증이 따로 막는다 — 여기서 지어내지 않는다.
+            return string.Empty;   // 빈 이름은 펼침 검증이 따로 막는다 — 여기서 지어내지 않는다.
         }
 
         var builder = new StringBuilder(source.Length);

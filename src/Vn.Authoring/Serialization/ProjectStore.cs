@@ -1,13 +1,12 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Serialization;
 
 /// <summary>
-/// manifest·대본·StoryFile·발행 결과를 물리 파일로 읽고 쓴다.
+/// manifest·대본·StoryFile을 물리 파일로 읽고 쓴다.
 /// StoryProject 자체는 경로 해석이나 파일 IO를 모른다.
 ///
 /// 디스크 배치:
@@ -15,8 +14,12 @@ namespace Vn.Authoring.Serialization;
 /// project.vnproject.json      목차와 파일을 넘나드는 관계
 /// script/&lt;scriptId&gt;.vnscript.json   대본 산출물 (줄 정체성 + locale별 본문)
 /// story/&lt;fileId&gt;.vnstory.json       노드
-/// results.vnresults.json      발행된 불변 결과
 /// </code>
+///
+/// ⛔ <b>연출은 읽지 않는다</b> (2026-10-29 — 연출은 <c>ked-story-compositor</c>의 것이다). 연출을 담은 옛
+/// 프로젝트를 열면 연출 데이터는 모델에 들어오지 않고, 그대로 저장하면 사라진다. 그래서 <b>열 때 원본을 한 번
+/// 남긴다</b> — <see cref="PresentationBackupFolder"/>에 manifest · 대본 · StoryFile · 발행 결과 파일 · 게임 정의를
+/// 같은 상대 경로로 복사한다. compositor는 그 폴더에서 연출을 가져간다.
 /// </summary>
 public static class ProjectStore
 {
@@ -40,8 +43,99 @@ public static class ProjectStore
                 $"개별 {ScriptDocumentJson.FileExtension} 대신 {ProjectManifestJson.FileExtension} manifest를 여세요.");
         }
 
-        StoryProject project = LoadManifest(openedPath, ProjectManifestJson.Read(json));
-        return new ProjectLoadResult(project, openedPath);
+        ProjectManifest manifest = ProjectManifestJson.Read(json);
+        StoryProject project = LoadManifest(openedPath, manifest, out bool storyCarriesPresentation);
+
+        string? backup = manifest.CarriesPresentation || storyCarriesPresentation
+            ? BackUpPresentationOriginal(openedPath, root, manifest)
+            : null;
+
+        return new ProjectLoadResult(project, openedPath, backup);
+    }
+
+    /// <summary>연출을 담은 옛 프로젝트의 원본을 남기는 폴더 이름(manifest 옆). 겹치면 뒤에 <c>-2</c>, <c>-3</c>…</summary>
+    public const string PresentationBackupFolder = "presentation-original";
+
+    /// <summary>옛 발행 결과 파일의 확장자 — 이 툴은 더 읽지 않고, 원본을 남길 때만 따라간다.</summary>
+    private const string LegacyResultsExtension = ".vnresults.json";
+
+    /// <summary>
+    /// manifest가 가리키는 파일 전부(대본 · StoryFile · 발행 결과)와 manifest · 게임 정의를 같은 상대 경로로 복사한다.
+    ///
+    /// ⚠ <b>같은 원본을 두 번 남기지 않는다</b> — 열기만 하고 저장하지 않으면 다음에 또 연출을 만난다. 이미 있는
+    /// 폴더의 내용이 지금 원본과 바이트까지 같으면 그 폴더를 그대로 쓰고, 다르면(옛 툴에서 그 사이 고쳤다) 새 번호를 단다.
+    /// </summary>
+    private static string BackUpPresentationOriginal(string manifestPath, JsonObject root, ProjectManifest manifest)
+    {
+        string rootDirectory = Path.GetDirectoryName(manifestPath)!;
+        var relativePaths = new List<string> { Path.GetFileName(manifestPath) };
+        relativePaths.AddRange(manifest.Scripts.Select(script => script.RelativePath));
+        relativePaths.AddRange(manifest.Files.Select(file => file.RelativePath));
+
+        // 발행 결과 파일 — 다른 부속 파일처럼 프로젝트 안의 상대 경로일 때만 따라간다(손댄 manifest가 밖을
+        // 가리키면 남기지 않는다. 그 경로로는 옛 툴도 열지 않았다).
+        if ((string?)root["results"] is { Length: > 0 } results)
+        {
+            try
+            {
+                relativePaths.Add(NormalizeRelativePath(results, LegacyResultsExtension));
+            }
+            catch (InvalidDataException)
+            {
+            }
+        }
+
+        relativePaths.Add(Definition.GameDefinition.FileName);
+
+        var sources = relativePaths
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(relative => (Relative: relative, Source: Path.Combine(rootDirectory, relative)))
+            .Where(item => File.Exists(item.Source))
+            .ToList();
+
+        for (int attempt = 1; ; attempt++)
+        {
+            string folder = Path.Combine(
+                rootDirectory,
+                attempt == 1 ? PresentationBackupFolder : $"{PresentationBackupFolder}-{attempt}");
+
+            if (Directory.Exists(folder))
+            {
+                bool same = sources.All(item =>
+                {
+                    string copy = Path.Combine(folder, item.Relative);
+                    return File.Exists(copy) && File.ReadAllBytes(copy).AsSpan()
+                        .SequenceEqual(File.ReadAllBytes(item.Source));
+                });
+
+                if (same)
+                {
+                    return folder;
+                }
+
+                continue;
+            }
+
+            try
+            {
+                foreach ((string relative, string source) in sources)
+                {
+                    string target = Path.Combine(folder, relative);
+                    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                    File.Copy(source, target);
+                }
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // 남기지 못한 채 열면 저장 한 번에 연출이 사라진다 — 열지 않는다.
+                throw new IOException(
+                    $"연출을 담은 옛 프로젝트라 원본을 '{folder}'에 남기려 했지만 실패했습니다. " +
+                    $"연출을 잃지 않으려고 열지 않습니다. ({exception.Message})",
+                    exception);
+            }
+
+            return folder;
+        }
     }
 
     public static void Save(string manifestPath, StoryProject project)
@@ -70,13 +164,6 @@ public static class ProjectStore
             writes.Add(new PendingWrite(
                 Resolve(rootDirectory, file.RelativePath, StoryFileJson.FileExtension),
                 StoryFileJson.Write(file)));
-        }
-
-        if (!project.Results.IsEmpty)
-        {
-            writes.Add(new PendingWrite(
-                Path.Combine(rootDirectory, ResultStoreJson.DefaultFileName),
-                ResultStoreJson.Write(project.Results)));
         }
 
         string manifestText = ProjectManifestJson.Write(project);
@@ -143,7 +230,10 @@ public static class ProjectStore
         return normalized;
     }
 
-    private static StoryProject LoadManifest(string manifestPath, ProjectManifest manifest)
+    private static StoryProject LoadManifest(
+        string manifestPath,
+        ProjectManifest manifest,
+        out bool storyCarriesPresentation)
     {
         string rootDirectory = Path.GetDirectoryName(manifestPath)
             ?? throw new InvalidDataException("프로젝트 manifest 디렉터리를 찾을 수 없습니다.");
@@ -151,11 +241,9 @@ public static class ProjectStore
         {
             FormatVersion = StoryProject.CurrentFormatVersion,
             Title = manifest.Title,
-            StartNodeId = manifest.StartNodeId,
-            AssetRoots = manifest.AssetRoots.Clone(),
-            RecentCommandIds = manifest.RecentCommandIds.ToList(),
-            QuickCommands = manifest.QuickCommands?.Select(chip => chip.Copy()).ToList()
+            StartNodeId = manifest.StartNodeId
         };
+        storyCarriesPresentation = false;
 
         foreach (ScriptFileReference reference in manifest.Scripts)
         {
@@ -191,7 +279,10 @@ public static class ProjectStore
                     storyPath);
             }
 
-            StoryFile file = StoryFileJson.Read(File.ReadAllText(storyPath, new UTF8Encoding(false)));
+            StoryFile file = StoryFileJson.Read(
+                File.ReadAllText(storyPath, new UTF8Encoding(false)),
+                out bool carried);
+            storyCarriesPresentation |= carried;
 
             if (!string.Equals(file.Id, reference.Id, StringComparison.Ordinal))
             {
@@ -209,39 +300,12 @@ public static class ProjectStore
             project.Files.Add(file);
         }
 
-        if (manifest.ResultsRelativePath is { } resultsRelative)
-        {
-            string resultsPath = Resolve(rootDirectory, resultsRelative, ResultStoreJson.FileExtension);
-
-            if (!File.Exists(resultsPath))
-            {
-                throw new FileNotFoundException(
-                    $"프로젝트가 참조하는 발행 결과 파일을 찾을 수 없습니다: {resultsRelative}",
-                    resultsPath);
-            }
-
-            ResultRepository results = ResultStoreJson.Read(
-                File.ReadAllText(resultsPath, new UTF8Encoding(false)));
-
-            foreach (DialogueResult result in results.DialogueResults)
-            {
-                project.Results.Add(result);
-            }
-
-            foreach (PresentationResult result in results.PresentationResults)
-            {
-                project.Results.Add(result);
-            }
-        }
-
         project.Links.AddRange(manifest.Links.Select(link => link.Clone()));
 
         // ⚠ 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지
         //    않는다(WriterSpeaker는 가변이라 복제한다).
         project.Chapters.AddRange(manifest.Chapters);
         project.WriterSpeakers.AddRange(manifest.WriterSpeakers.Select(speaker => speaker.Clone()));
-        project.EaseCurves.AddRange(manifest.EaseCurves.Select(curve => curve.Clone()));
-        project.Compositions.AddRange(manifest.Compositions.Select(item => item.Clone()));
 
         JsonSupport.ValidateProject(project);
         return project;
@@ -282,4 +346,10 @@ public static class ProjectStore
     }
 }
 
-public sealed record ProjectLoadResult(StoryProject Project, string ManifestPath);
+/// <param name="PresentationBackupDirectory">
+/// 연출을 담은 옛 프로젝트였으면 원본을 남긴 폴더(<see cref="ProjectStore.PresentationBackupFolder"/>), 아니면 null.
+/// </param>
+public sealed record ProjectLoadResult(
+    StoryProject Project,
+    string ManifestPath,
+    string? PresentationBackupDirectory = null);

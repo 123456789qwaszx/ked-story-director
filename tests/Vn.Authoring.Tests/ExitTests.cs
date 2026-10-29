@@ -200,7 +200,7 @@ public class ExitTests
     }
 
     [Fact]
-    public void 표식_없는_노드의_기본_출구도_쓰고_발행한다()
+    public void 표식_없는_노드의_기본_출구도_쓰고_펼친다()
     {
         var sample = new Sample();
 
@@ -208,7 +208,7 @@ public class ExitTests
 
         Assert.Equal(sample.TargetB.Id, sample.TargetA.DefaultExitTargetNodeId);
 
-        var result = sample.Editor.PublishDialogue(sample.TargetA.Id).Result;
+        var result = sample.Unfold(sample.TargetA.Id);
         Assert.Equal(sample.TargetB.Id, result.DefaultExitTargetNodeId);
     }
 

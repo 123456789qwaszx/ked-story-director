@@ -1,5 +1,4 @@
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Model;
@@ -10,9 +9,12 @@ namespace Vn.Authoring.Model;
 /// 세 종류의 데이터가 한 지붕 아래 있고, 서로 겹치지 않는다.
 /// <code>
 /// Scripts       작가의 대본에서 나온 줄 정체성과 locale별 화자·대사   ← 대사 본문의 유일한 원본
-/// Files/Nodes   그 줄들에 얹는 대사 논리와 연출, 그리고 실행 흐름
-/// Results       얼어붙은 발행 결과와 그 조합                        ← 불변, 추가만 가능
+/// Files/Nodes   그 줄들에 얹는 대사 논리와 실행 흐름
+/// Chapters      기획자의 챕터 구조
 /// </code>
+///
+/// ⛔ <b>연출은 여기 없다</b> (2026-10-29). 연출 노드 · 명령 공급 · 발행 결과 · 곡선 · 빠른 명령 · 에셋
+/// 설정은 <c>ked-story-compositor</c>의 것이다 — 그 툴은 이 파일을 읽기만 하고 연출은 제 파일에 둔다.
 ///
 /// 프로젝트는 여러 <see cref="StoryFile"/>을 가지고, 각 파일이 노드를 소유한다.
 /// 프로젝트 전체 노드 순서가 필요할 때는 <see cref="EnumerateNodes"/>를 사용한다.
@@ -21,7 +23,8 @@ namespace Vn.Authoring.Model;
 public sealed class StoryProject
 {
     /// <summary>
-    /// 대본 산출물·발행 결과·RuntimeComposition을 도입한 형식 버전.
+    /// 대본 산출물을 도입한 형식 버전. (발행 결과 · RuntimeComposition도 이 버전에 들어왔으나
+    /// 2026-10-29에 연출과 함께 compositor로 갔다 — 그 칸이 든 파일은 <c>ProjectStore</c>가 원본을 남기고 연다.)
     ///
     /// 버전 2 이하는 화자·대사를 DialogueNode가 직접 소유했고 Presentation이 편집 중인
     /// 노드를 실시간으로 읽었다. 그 데이터를 새 의미로 자동 해석하면 어느 줄이 어느 LineId인지
@@ -74,43 +77,8 @@ public sealed class StoryProject
     /// </summary>
     public List<WriterSpeaker> WriterSpeakers { get; init; } = new();
 
-    /// <summary>
-    /// 작가의 커스텀 이징 곡선 (W67 후속). 커맨드 다섯째 인자 <c>@이름</c>의 유일한 원천 —
-    /// 런타임용 <c>curves.json</c>은 내보내기가 여기서 만든다.
-    /// </summary>
-    public List<EaseCurve> EaseCurves { get; init; } = new();
-
-    /// <summary>발행된 불변 결과. 추가만 되고 내용이 바뀌지 않는다.</summary>
-    public ResultRepository Results { get; init; } = new();
-
-    /// <summary>대사 결과와 연출 결과를 짝지어 둔 정식 출력 입력.</summary>
-    public List<RuntimeComposition> Compositions { get; init; } = new();
-
     /// <summary>이야기가 시작되는 노드. null이면 아직 정하지 않은 것이다.</summary>
     public string? StartNodeId { get; set; }
-
-    /// <summary>프리뷰 에셋 폴더 설정. 미설정이어도 저작은 계속된다.</summary>
-    public AssetRootSettings AssetRoots { get; init; } = new();
-
-    /// <summary>
-    /// 최근 사용한 연출 커맨드 정의 Id, 최신이 앞. 갤러리의 "최근" 섹션이 읽는다.
-    /// 프로젝트에 저장한다 — 이 프로젝트에서 자주 쓰는 어휘는 프로젝트의 것이다.
-    /// </summary>
-    public List<string> RecentCommandIds { get; init; } = new();
-
-    /// <summary>갤러리 "최근" 섹션이 다 보여 줄 수 있는 만큼만 남긴다.</summary>
-    public const int MaxRecentCommands = 8;
-
-    /// <summary>
-    /// 무대 조절창 [자주 쓰는] 칩 목록 (2026-08-22). <b>null이면 아직 손대지 않은 것</b>이라
-    /// <see cref="StageQuickCommands.Default"/>가 선다 — 사람이 전부 지운 <b>빈 목록과 다르다</b>.
-    /// 이 구분이 없으면 "기본으로 돌려놓기"와 "다 지웠으니 그대로 둬라"가 같은 데이터가 된다.
-    /// </summary>
-    public List<StageQuickCommand>? QuickCommands { get; set; }
-
-    /// <summary>지금 화면에 설 칩 목록 — 손대지 않았으면 기본 목록이다.</summary>
-    public IReadOnlyList<StageQuickCommand> EffectiveQuickCommands =>
-        QuickCommands ?? StageQuickCommands.Default;
 
     /// <summary>
     /// 프로젝트 전체 노드를 결정적인 순서로 펼친다.
@@ -146,8 +114,6 @@ public sealed class StoryProject
 
     public DialogueNode? FindDialogue(string? nodeId) => FindNode(nodeId) as DialogueNode;
 
-    public PresentationNode? FindPresentation(string? nodeId) => FindNode(nodeId) as PresentationNode;
-
     public ScriptDocument? FindScript(string? scriptId)
     {
         return scriptId is null
@@ -159,14 +125,6 @@ public sealed class StoryProject
     /// <summary>이 대사 노드가 읽는 대본. 노드가 없거나 대본을 고르지 않았으면 null이다.</summary>
     public ScriptDocument? ScriptOf(string? dialogueNodeId) =>
         FindScript(FindDialogue(dialogueNodeId)?.ScriptId);
-
-    public RuntimeComposition? FindComposition(string? compositionId)
-    {
-        return compositionId is null
-            ? null
-            : Compositions.FirstOrDefault(
-                item => string.Equals(item.Id, compositionId, StringComparison.Ordinal));
-    }
 
     public NodeLink? FindLink(string? linkId)
     {
@@ -205,16 +163,10 @@ public sealed class StoryProject
             FormatVersion = FormatVersion,
             Title = Title,
             StartNodeId = StartNodeId,
-            AssetRoots = AssetRoots.Clone(),
-            RecentCommandIds = new List<string>(RecentCommandIds),
-            QuickCommands = QuickCommands?.Select(chip => chip.Copy()).ToList(),
             Scripts = Scripts.Select(script => script.Clone()).ToList(),
             Files = Files.Select(file => file.Clone()).ToList(),
             Links = Links.Select(link => link.Clone()).ToList(),
-            WriterSpeakers = WriterSpeakers.Select(speaker => speaker.Clone()).ToList(),
-            EaseCurves = EaseCurves.Select(curve => curve.Clone()).ToList(),
-            Results = Results.Clone(),
-            Compositions = Compositions.Select(item => item.Clone()).ToList()
+            WriterSpeakers = WriterSpeakers.Select(speaker => speaker.Clone()).ToList()
         };
     }
 }

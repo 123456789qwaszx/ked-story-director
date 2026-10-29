@@ -1,7 +1,5 @@
 using Ked.Progression;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Rendering;
-using Vn.Authoring.Results;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -80,67 +78,6 @@ public sealed class ChapterRuntimePreviewEquivalenceTests
 
         Assert.Equal(0, run.PendingChoiceCount);
     }
-
-    [Fact]
-    public void Yarn_로컬_변수는_허용하고_진행_스탯은_산출_전에_막는다()
-    {
-        var document = new RenderedDocument(
-            "node", ResultIdentity.Working(1, "hash"), null,
-            [
-                Segment("local", variable: "열쇠"),
-                Segment("condition", expression: "$열쇠 == true and $trust >= 2"),
-                Segment("stat-set", variable: "trust")
-            ]);
-        var problems = new List<YarnBundleProblem>();
-
-        YarnBundleEmitter.ValidateProgressionStatReferences(
-            document, new HashSet<string>(["trust"], StringComparer.Ordinal), problems);
-
-        YarnBundleProblem problem = Assert.Single(problems);
-        Assert.True(problem.IsBlocking);
-        Assert.Contains("trust", problem.Message);
-        Assert.DoesNotContain("열쇠", problem.Message);
-    }
-
-    [Fact]
-    public void 읽기_전용_함수로_적은_스탯은_안_막는다()
-    {
-        // ⚠ 2026-09-17에 뜻이 좁아졌다. 계층이 하나가 되면서 <b>읽기는 열렸고</b>, 막는 것은
-        //    이제 `$변수` 표기다 — 그 표기라야 `<<set>>`이 성립하기 때문이다.
-        var document = new RenderedDocument(
-            "node", ResultIdentity.Working(1, "hash"), null,
-            [Segment("condition", expression: "stat(\"trust\") >= 2")]);
-        var problems = new List<YarnBundleProblem>();
-
-        YarnBundleEmitter.ValidateProgressionStatReferences(
-            document, new HashSet<string>(["trust"], StringComparer.Ordinal), problems);
-
-        Assert.Empty(problems);
-    }
-
-    [Fact]
-    public void 스탯_쓰기는_읽기가_열린_뒤에도_막힌다()
-    {
-        // ⛔ 여기가 영원히 닫혀야 하는 쪽이다 — 대사 중의 스탯 쓰기는 세이브/로드 복귀와
-        //    도달성 증명이 <b>못 보는 뒷길</b>이다(2026-08-14에 J열을 폐지한 이유).
-        var document = new RenderedDocument(
-            "node", ResultIdentity.Working(1, "hash"), null,
-            [
-                Segment("read", expression: "stat(\"trust\") >= 2"),
-                Segment("write", variable: "trust")
-            ]);
-        var problems = new List<YarnBundleProblem>();
-
-        YarnBundleEmitter.ValidateProgressionStatReferences(
-            document, new HashSet<string>(["trust"], StringComparer.Ordinal), problems);
-
-        Assert.True(Assert.Single(problems).IsBlocking);
-    }
-
-    private static RenderedSegment Segment(string id, string? variable = null, string? expression = null) =>
-        new(id, variable is null ? RenderedSegmentKind.ConditionBegin : RenderedSegmentKind.SetAssignment,
-            variable is null ? DocumentLayer.Conditions : DocumentLayer.SetAssignments,
-            new RenderSourceReference(), Expression: expression, Variable: variable);
 
     private static ChapterGraphModel ChoiceChapter(int initial, bool includeOpen = true)
     {

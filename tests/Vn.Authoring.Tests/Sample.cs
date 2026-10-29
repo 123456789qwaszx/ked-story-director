@@ -1,6 +1,7 @@
 using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
+using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Tests;
@@ -9,8 +10,7 @@ namespace Vn.Authoring.Tests;
 /// 테스트가 공유하는 작은 프로젝트 하나.
 /// 대본 하나, 조건 두 개, 대사 노드 하나, 그리고 이동할 대상 노드 세 개를 갖춘다.
 ///
-/// LineId와 발행 시각은 예측 가능한 값으로 주입한다. 무작위 Id와 현재 시각은
-/// 결과 해시와 동기화 계획을 테스트에서 읽을 수 없게 만든다.
+/// LineId는 예측 가능한 값으로 주입한다. 무작위 Id는 동기화 계획을 테스트에서 읽을 수 없게 만든다.
 /// </summary>
 internal sealed class Sample
 {
@@ -22,10 +22,7 @@ internal sealed class Sample
         File = new StoryFile("sf_test", "테스트 파일");
         project.Files.Add(File);
 
-        Editor = new ProjectEditor(
-            project,
-            now: () => new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            newLineId: NextLineId);
+        Editor = new ProjectEditor(project, newLineId: NextLineId);
 
         Script = Editor.AddScript("본문 대본");
 
@@ -83,6 +80,16 @@ internal sealed class Sample
         return line.Id;
     }
 
+    /// <summary>그 대사 노드(기본: <see cref="Dialogue"/>)를 펼친 결과 — 미리보기 합성기와 흐름 해석이 읽는 모양.</summary>
+    public DialogueResult Unfold(string? nodeId = null) =>
+        DialoguePublisher.AsResult(DialoguePublisher.Draft(Project, nodeId ?? Dialogue.Id));
+
+    /// <summary>그 노드를 펼칠 때의 <b>막는</b> 문제 — 비어 있어야 노드가 성립한다.</summary>
+    public IReadOnlyList<PublishProblem> BlockingProblems(string? nodeId = null) =>
+        DialoguePublisher.Draft(Project, nodeId ?? Dialogue.Id).Problems
+            .Where(problem => problem.IsBlocking)
+            .ToList();
+
     /// <summary>작업지시서 6.2의 예시를 그대로 만든다.</summary>
     public (string L0, string L1, string L2, string L3, string L4, string L5, string L6) BuildSpecExample()
     {
@@ -97,7 +104,7 @@ internal sealed class Sample
         return (l0, l1, l2, l3, l4, l5, l6);
     }
 
-    /// <summary>대본 한 줄짜리 종점 노드. 발행할 수 있는 상태로 만들어 둔다.</summary>
+    /// <summary>대본 한 줄짜리 종점 노드. 문제 없이 펼쳐지는 상태로 만들어 둔다.</summary>
     private DialogueNode AddEndNode(string name)
     {
         ScriptDocument script = Editor.AddScript(name + " 대본");
@@ -107,51 +114,4 @@ internal sealed class Sample
     }
 
     private string NextLineId() => $"ln_{++_nextLineNumber:D3}";
-
-    /// <summary>
-    /// 테스트가 공유하는 작은 게임 정의. samples/Authoring의 3범주 정의와 같은 모양이다.
-    /// 범주와 파라미터 순서는 전부 데이터에서 온다 — 테스트도 그 원칙 위에서 쓴다.
-    /// </summary>
-    public static GameDefinition Definition { get; } = new()
-    {
-        PresentationCommandCategories =
-        {
-            new PresentationCategorySpec { Id = "camera", Name = "Camera" },
-            new PresentationCategorySpec { Id = "screen_effect", Name = "ScreenEffect" },
-            new PresentationCategorySpec { Id = "character_acting", Name = "CharacterActing" }
-        },
-        PresentationCommands =
-        {
-            Command("camera.closeup", "클로즈업", "camera", "camera", "closeup"),
-            Command("camera.wide", "와이드", "camera", "camera", "wide"),
-            Command("screen.shake", "화면 흔들림", "screen_effect", "screen_effect", "shake"),
-            Command("screen.flash", "플래시", "screen_effect", "screen_effect", "flash"),
-            Command("acting.smile", "미소", "character_acting", "character_acting", "smile")
-        }
-    };
-
-    private static PresentationCommandSpec Command(
-        string id,
-        string name,
-        string category,
-        string output,
-        string presetDefault)
-    {
-        return new PresentationCommandSpec
-        {
-            Id = id,
-            Name = name,
-            Category = category,
-            OutputCommand = output,
-            Parameters =
-            {
-                new PresentationParameterSpec
-                {
-                    Name = "preset",
-                    Type = "string",
-                    Default = presetDefault
-                }
-            }
-        };
-    }
 }

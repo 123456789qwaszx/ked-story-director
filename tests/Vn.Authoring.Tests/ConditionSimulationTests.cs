@@ -66,7 +66,7 @@ public class ConditionSimulationTests
 
     private static ConditionSimulation.Result Decide(
         IReadOnlyList<DialogueResultLine> lines,
-        StageBranchSelection manual,
+        BranchSelection manual,
         params (string Variable, string Value)[] initial)
     {
         return ConditionSimulation.Decide(
@@ -93,7 +93,7 @@ public class ConditionSimulationTests
     public void 참인_첫_갈래가_자동으로_선택된다()
     {
         ConditionSimulation.Result result = Decide(
-            Document(), new StageBranchSelection(), ("favor", "0"));
+            Document(), new BranchSelection(), ("favor", "0"));
 
         // favor 0 + 3 = 3 → 첫 갈래(>=2)가 참.
         Assert.True(result.Effective.TryGetCondition("ln_if", out int branch));
@@ -106,14 +106,14 @@ public class ConditionSimulationTests
     public void 시작값이_다르면_다른_갈래가_잡히고_전부_거짓이면_건너뛴다()
     {
         ConditionSimulation.Result second = Decide(
-            Document(), new StageBranchSelection(), ("favor", "-4"));
+            Document(), new BranchSelection(), ("favor", "-4"));
 
         // -4 + 3 = -1 → 첫 갈래 거짓, 둘째(>=0)도 거짓 → 건너뜀.
         Assert.True(second.Effective.TryGetCondition("ln_if", out int branch));
-        Assert.Equal(StageBranchSelection.SkipAllBranches, branch);
+        Assert.Equal(BranchSelection.SkipAllBranches, branch);
 
         ConditionSimulation.Result third = Decide(
-            Document(), new StageBranchSelection(), ("favor", "-3"));
+            Document(), new BranchSelection(), ("favor", "-3"));
 
         // -3 + 3 = 0 → 둘째 갈래(>=0)가 참.
         Assert.True(third.Effective.TryGetCondition("ln_if", out branch));
@@ -123,7 +123,7 @@ public class ConditionSimulationTests
     [Fact]
     public void 수동_선택이_자동을_덮는다()
     {
-        var manual = new StageBranchSelection();
+        var manual = new BranchSelection();
         manual.SelectCondition("ln_if", 1);
 
         ConditionSimulation.Result result = Decide(
@@ -145,7 +145,7 @@ public class ConditionSimulationTests
         ];
 
         ConditionSimulation.Result result = Decide(
-            document, new StageBranchSelection(), ("favor", "0"));
+            document, new BranchSelection(), ("favor", "0"));
 
         Assert.False(result.Effective.TryGetCondition("ln_if", out _)); // 근사로 남는다
         Assert.Contains("ln_if", result.UndecidableBlocks);
@@ -165,7 +165,7 @@ public class ConditionSimulationTests
         ];
 
         ConditionSimulation.Result result = Decide(
-            document, new StageBranchSelection(), ("favor", "0"));
+            document, new BranchSelection(), ("favor", "0"));
 
         // 첫 블록: favor 0 → >=0 참(자동), set +5 적용 → 둘째 블록: favor 5 → >=5 참.
         Assert.True(result.Effective.TryGetCondition("ln_if2", out int branch));
@@ -185,9 +185,9 @@ public class ConditionSimulationTests
         ];
 
         ConditionSimulation.Result result = Decide(
-            document, new StageBranchSelection(), ("favor", "0"));
+            document, new BranchSelection(), ("favor", "0"));
 
         Assert.True(result.Effective.TryGetCondition("ln_if2", out int branch));
-        Assert.Equal(StageBranchSelection.SkipAllBranches, branch); // +100이 안 들어갔다
+        Assert.Equal(BranchSelection.SkipAllBranches, branch); // +100이 안 들어갔다
     }
 }

@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
@@ -14,23 +13,23 @@ namespace Vn.Authoring.Tests;
 public class OutputPresetTests
 {
     [Fact]
-    public void 기본_프리셋_다섯_개를_결정적인_순서로_제공한다()
+    public void 기본_프리셋_네_개를_결정적인_순서로_제공한다()
     {
+        // ⛔ 다섯째 Direction Sheet(LineId+연출 테이블)는 2026-10-29에 연출과 함께 compositor로 갔다.
         Assert.Equal(
             new[]
             {
                 OutputPresetId.RuntimeFull,
                 OutputPresetId.ScenarioOnly,
                 OutputPresetId.RecordingScript,
-                OutputPresetId.LocalizationScript,
-                OutputPresetId.DirectionSheet
+                OutputPresetId.LocalizationScript
             },
             OutputPresetCatalog.All.Select(preset => preset.Id));
 
         Assert.Equal("Runtime Full", OutputPresetCatalog.RuntimeFull.DisplayName);
         Assert.Same(
-            OutputPresetCatalog.DirectionSheet,
-            OutputPresetCatalog.Get(OutputPresetId.DirectionSheet));
+            OutputPresetCatalog.LocalizationScript,
+            OutputPresetCatalog.Get(OutputPresetId.LocalizationScript));
     }
 
     [Fact]
@@ -59,7 +58,6 @@ public class OutputPresetTests
         // ⛔ SetAssignment 층은 2026-09-17에 비었다 — 작가 변수가 없어져 실릴 조각이 없다.
         Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.SetAssignment);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
-        Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.PresentationCommand);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DefaultJump);
@@ -80,7 +78,6 @@ public class OutputPresetTests
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
         Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.SetAssignment);
-        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.PresentationCommand);
         Assert.DoesNotContain(document.Segments, segment =>
             segment.Kind is RenderedSegmentKind.BranchJump
                 or RenderedSegmentKind.BranchDetour
@@ -100,7 +97,7 @@ public class OutputPresetTests
     [Fact]
     public void Recording_Script는_LineId_화자_대사만_남긴다()
     {
-        // 소유자 4형식 매핑의 2번(LineId+대본). 연출은 Direction Sheet의 몫이다.
+        // 소유자 4형식 매핑의 2번(LineId+대본).
         PresetSample sample = BuildPresetSample();
 
         RenderedDocument document = Compose(sample, OutputPresetCatalog.RecordingScript);
@@ -111,8 +108,6 @@ public class OutputPresetTests
         string text = DocumentPreviewFormatter.Format(document);
         Assert.Contains($"[LINE {sample.Opening}]", text, StringComparison.Ordinal);
         Assert.Contains("라루:", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("Camera", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("ScreenEffect", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -132,36 +127,6 @@ public class OutputPresetTests
     }
 
     [Fact]
-    public void Direction_Sheet는_모든_연출_범주와_LineId_참고_대사를_남긴다()
-    {
-        PresetSample sample = BuildPresetSample();
-
-        RenderedDocument document = Compose(sample, OutputPresetCatalog.DirectionSheet);
-        string?[] categories = document.Segments
-            .Where(segment => segment.Kind == RenderedSegmentKind.PresentationCommand)
-            .Select(segment => segment.PresentationCategoryId)
-            .ToArray();
-
-        Assert.Equal(
-            new[] { "camera", "screen_effect", "character_acting" },
-            categories);
-        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.SetAssignment);
-        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
-
-        string text = DocumentPreviewFormatter.Format(document);
-        Assert.Contains("[Camera]", text, StringComparison.Ordinal);
-        Assert.Contains("[ScreenEffect]", text, StringComparison.Ordinal);
-        Assert.Contains("[CharacterActing]", text, StringComparison.Ordinal);
-        Assert.Contains($"[LINE {sample.Opening}]", text, StringComparison.Ordinal);
-        Assert.Contains("첫 대사", text, StringComparison.Ordinal);
-
-        // 2026-08-18 — 화자를 켰다. 이 양식이 **줄 단위로 연출을 훑는 유일한 자리**가
-        // 됐기 때문이다: 런타임이 단일 대본만 읽게 되면서 `Pres_*.yarn`(서브 레인 사본)이
-        // 없어졌고, 화자가 없으면 누구 대사인지 세어 가며 맞춰야 한다.
-        Assert.Contains("라루", text, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void Localization_Provider의_번역문은_StoryProject가_아닌_Segment에만_들어간다()
     {
         PresetSample sample = BuildPresetSample();
@@ -173,9 +138,7 @@ public class OutputPresetTests
 
         RenderedDocument document = ResultDocumentComposer.Compose(
             sample.Dialogue,
-            sample.Presentation,
             sample.Sample.Project,
-            Sample.Definition,
             OutputPresetCatalog.LocalizationScript.Options,
             OutputPresetId.LocalizationScript,
             provider);
@@ -205,7 +168,6 @@ public class OutputPresetTests
             {
                 Assert.True(fullSources.TryGetValue(segment.Id, out RenderSourceReference? source));
                 Assert.Equal(source, segment.Source);
-                Assert.False(string.IsNullOrWhiteSpace(segment.Source.DialogueResultId));
                 Assert.False(string.IsNullOrWhiteSpace(segment.Source.NodeId));
             }
         }
@@ -215,9 +177,7 @@ public class OutputPresetTests
     {
         return ResultDocumentComposer.Compose(
             sample.Dialogue,
-            sample.Presentation,
             sample.Sample.Project,
-            Sample.Definition,
             preset.Options,
             preset.Id);
     }
@@ -247,35 +207,14 @@ public class OutputPresetTests
             null,
             sample.TargetDefault.Id);
 
-        DialogueResult dialogue = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
-
-        PresentationNode presentation = sample.Editor.AddPresentationNode(
-            sample.File.Id,
-            name: "통합 연출");
-        sample.Editor.SetPresentationSource(
-            presentation.Id,
-            dialogue.Identity.ResultId,
-            dialogue.Identity.Version);
-        sample.Editor.AddPresentationCommand(presentation.Id, opening, "camera.closeup");
-        sample.Editor.AddPresentationCommand(presentation.Id, opening, "screen.shake");
-        sample.Editor.AddPresentationCommand(presentation.Id, opening, "acting.smile");
-
-        PresentationResult published = sample.Editor.PublishPresentation(presentation.Id).Result;
-        sample.Editor.AddComposition(
-            dialogue.Identity.ResultId,
-            dialogue.Identity.Version,
-            published.Identity.ResultId,
-            published.Identity.Version,
-            name: "1장 합성");
-
-        return new PresetSample(sample, opening, dialogue, published);
+        return new PresetSample(sample, opening, sample.Unfold());
     }
 
     private sealed record PresetSample(
         Sample Sample,
         string Opening,
-        DialogueResult Dialogue,
-        PresentationResult Presentation);
+        DialogueResult Dialogue);
+
     private sealed class DictionaryLocalizedLineProvider : ILocalizedLineProvider
     {
         private readonly IReadOnlyDictionary<string, string> _lines;
@@ -290,5 +229,4 @@ public class OutputPresetTests
             return _lines.TryGetValue(lineId, out string? text) ? text : null;
         }
     }
-
 }

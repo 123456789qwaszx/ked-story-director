@@ -66,10 +66,8 @@
                  2026-08-21에 자동이 된 뒤로 읽기 전용 현황판이었고, 현황판은 볼 이유가
                  사라지면 지운다는 것이 이 판의 선례다([편집 자료] 현황판, 2026-08-21).
                  ③은 툴바 [내보내기…]·[CSV 내보내기…]가 같은 PickNodeExportsAsync로 노드를
-                 골라 내보내므로 창구가 둘이던 것이다. ⚠ 발행 자체는 그대로다 — 자동 발행
-                 (ProjectEditor.EnsurePresentationChannel)·Results 층·출력은 손대지 않았다.
-                 되살리려면 이 탭과 BuildResults/RefreshExportState/ExportNodeAsync를 함께
-                 되돌려야 한다(컨트롤만 세우면 갱신이 안 붙는다). -->
+                 골라 내보내므로 창구가 둘이던 것이다. ⛔ 발행 자체(자동 발행 · Results 층 · 출력)는
+                 2026-10-29에 연출과 함께 ked-story-compositor로 갔다. -->
 
             <TabItem Header="Script Preview">
                 <Grid RowDefinitions="Auto,*,Auto" Margin="12">

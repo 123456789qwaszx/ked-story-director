@@ -10,21 +10,15 @@ public enum ProjectChangeKind
 
     /// <summary>
     /// assignment 값이나 셸 상태처럼 현재 편집 컨트롤 구조와 파생 그래프가 바뀌지 않는 내용이다.
-    /// Dialogue와 Presentation 내용은 각자의 전용 변경 종류를 사용한다.
+    /// Dialogue 내용은 전용 변경 종류를 사용한다.
     /// </summary>
     Content,
 
     /// <summary>
     /// Dialogue LineBox의 화자나 대사 본문이 바뀌었다.
-    /// Dialogue 편집기는 유지하고 Preview와 선택된 Presentation의 읽기 전용 미러만 갱신한다.
+    /// Dialogue 편집기는 유지하고 Preview만 갱신한다.
     /// </summary>
     DialogueContent,
-
-    /// <summary>
-    /// Presentation command의 정의·활성·순서가 바뀌었다.
-    /// 연출 편집기의 행 구조는 그대로이고 연결된 Dialogue Preview만 다시 합성하면 된다.
-    /// </summary>
-    PresentationContent,
 
     /// <summary>
     /// 조건의 작가용 이름이나 평가식이 바뀌었다.
@@ -33,16 +27,10 @@ public enum ProjectChangeKind
     ConditionDefinition,
 
     /// <summary>
-    /// 조건 공급 link 또는 연출이 읽는 대사 결과가 바뀌었다.
+    /// 조건 공급 link가 바뀌었다.
     /// 그래프 간선과 연결 범위를 다시 계산해야 하지만 공급 노드의 입력 행은 유지한다.
     /// </summary>
     Connections,
-
-    /// <summary>
-    /// 결과가 발행되었거나 RuntimeComposition이 바뀌었다.
-    /// 작업 노드의 편집 행은 그대로이고, 결과 목록과 버전 뱃지만 새로 읽으면 된다.
-    /// </summary>
-    Results,
 
     /// <summary>
     /// 노드의 이름처럼 그래프와 참조 표시에는 영향을 주지만 현재 편집 행을 다시 만들 필요는 없는 값이 바뀌었다.
@@ -70,6 +58,5 @@ public sealed class ProjectChangedEventArgs : EventArgs
         ProjectChangeKind.Structure or
         ProjectChangeKind.ConditionDefinition or
         ProjectChangeKind.Connections or
-        ProjectChangeKind.NodeMetadata or
-        ProjectChangeKind.Results;
+        ProjectChangeKind.NodeMetadata;
 }

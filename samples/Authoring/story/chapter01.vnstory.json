@@ -102,16 +102,6 @@
       },
       "script": "sc_normal",
       "lines": []
-    },
-    {
-      "id": "nd_scene_direction",
-      "kind": "presentation",
-      "name": "의뢰 장면 연출",
-      "layout": {
-        "x": 360,
-        "y": 420
-      },
-      "bindings": []
     }
   ]
 }

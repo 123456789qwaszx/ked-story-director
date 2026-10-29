@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Serialization;
@@ -84,7 +83,6 @@ internal static class JsonSupport
         HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
         HashSet<string> linkIds = new(StringComparer.Ordinal);
         HashSet<(NodeLinkKind Kind, string Source, string Target)> linkPairs = new();
-        HashSet<string> presentationCommandIds = new(StringComparer.Ordinal);
 
         foreach (ScriptDocument script in project.Scripts)
         {
@@ -117,14 +115,9 @@ internal static class JsonSupport
                     throw new InvalidDataException($"노드 Id '{node.Id}'가 프로젝트 전체에서 중복됩니다.");
                 }
 
-                switch (node)
+                if (node is DialogueNode dialogue)
                 {
-                    case DialogueNode dialogue:
-                        ValidateDialogueNode(project, dialogue, scriptIds);
-                        break;
-                    case PresentationNode presentation:
-                        ValidatePresentationNode(presentation, presentationCommandIds);
-                        break;
+                    ValidateDialogueNode(project, dialogue, scriptIds);
                 }
             }
         }
@@ -157,20 +150,6 @@ internal static class JsonSupport
                     $"Settings link '{link.Id}'는 SetNode에서 DialogueNode로만 연결할 수 있습니다.");
             }
 
-            if (link.Kind == NodeLinkKind.CommandSupply &&
-                (source is not CommandSupplyNode || target is not PresentationNode))
-            {
-                throw new InvalidDataException(
-                    $"CommandSupply link '{link.Id}'는 CommandSupplyNode에서 PresentationNode로만 연결할 수 있습니다.");
-            }
-
-            if (link.Kind == NodeLinkKind.PresentationSupply &&
-                (source is not PresentationNode || target is not DialogueNode))
-            {
-                throw new InvalidDataException(
-                    $"PresentationSupply link '{link.Id}'는 PresentationNode에서 DialogueNode로만 연결할 수 있습니다.");
-            }
-
             if (!linkPairs.Add((link.Kind, link.SourceNodeId, link.TargetNodeId)))
             {
                 throw new InvalidDataException(
@@ -178,17 +157,10 @@ internal static class JsonSupport
             }
         }
 
-        ValidateCompositions(project);
-
         if (project.StartNodeId is not null && project.FindNode(project.StartNodeId) is null)
         {
             throw new InvalidDataException(
                 $"시작 노드 '{project.StartNodeId}'를 프로젝트에서 찾을 수 없습니다.");
-        }
-
-        if (project.FindNode(project.StartNodeId) is PresentationNode)
-        {
-            throw new InvalidDataException("PresentationNode는 프로젝트 시작 노드가 될 수 없습니다.");
         }
     }
 
@@ -298,86 +270,6 @@ internal static class JsonSupport
             {
                 throw new InvalidDataException(
                     $"DialogueNode '{node.Id}'의 선택지 출구가 없는 노드 '{target}'를 가리킵니다.");
-            }
-        }
-    }
-
-    private static void ValidatePresentationNode(
-        PresentationNode node,
-        HashSet<string> projectCommandIds)
-    {
-        if (node.DefaultExitTargetNodeId is not null)
-        {
-            throw new InvalidDataException(
-                $"PresentationNode '{node.Id}'는 실행 기본 출구를 가질 수 없습니다.");
-        }
-
-        if (node.Source is { Version: <= 0 })
-        {
-            throw new InvalidDataException(
-                $"PresentationNode '{node.Id}'는 발행되지 않은 대사 결과를 읽을 수 없습니다.");
-        }
-
-        HashSet<string> lineIds = new(StringComparer.Ordinal);
-
-        foreach (PresentationLineBinding binding in node.Bindings)
-        {
-            if (string.IsNullOrWhiteSpace(binding.LineId))
-            {
-                throw new InvalidDataException(
-                    $"PresentationNode '{node.Id}'에 빈 LineId binding이 있습니다.");
-            }
-
-            if (!lineIds.Add(binding.LineId))
-            {
-                throw new InvalidDataException(
-                    $"PresentationNode '{node.Id}'에서 LineId '{binding.LineId}' binding이 중복됩니다.");
-            }
-
-            foreach (PresentationCommandInstance command in binding.Commands)
-            {
-                if (!projectCommandIds.Add(command.Id))
-                {
-                    throw new InvalidDataException(
-                        $"Presentation command Id '{command.Id}'가 프로젝트에서 중복됩니다.");
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// 조합이 없는 결과를 가리키는 것은 저장 자체를 막는다. 합성 시점의 진단으로 미루면
-    /// 파일에 이미 깨진 참조가 들어간 뒤이고, 그것을 고칠 화면이 없다.
-    /// </summary>
-    private static void ValidateCompositions(StoryProject project)
-    {
-        HashSet<string> compositionIds = new(StringComparer.Ordinal);
-
-        foreach (RuntimeComposition composition in project.Compositions)
-        {
-            if (!compositionIds.Add(composition.Id))
-            {
-                throw new InvalidDataException(
-                    $"RuntimeComposition Id '{composition.Id}'가 중복됩니다.");
-            }
-
-            if (project.Results.FindDialogue(
-                    composition.DialogueResultId,
-                    composition.DialogueResultVersion) is null)
-            {
-                throw new InvalidDataException(
-                    $"RuntimeComposition '{composition.Id}'이 없는 대사 결과 " +
-                    $"'{composition.DialogueResultId} v{composition.DialogueResultVersion}'을 가리킵니다.");
-            }
-
-            if (composition.HasPresentation &&
-                project.Results.FindPresentation(
-                    composition.PresentationResultId,
-                    composition.PresentationResultVersion) is null)
-            {
-                throw new InvalidDataException(
-                    $"RuntimeComposition '{composition.Id}'이 없는 연출 결과 " +
-                    $"'{composition.PresentationResultId} v{composition.PresentationResultVersion}'을 가리킵니다.");
             }
         }
     }

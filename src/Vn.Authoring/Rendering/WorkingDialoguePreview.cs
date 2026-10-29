@@ -5,15 +5,10 @@ using Vn.Authoring.Results;
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
-/// 아직 발행하지 않은 DialogueNode를 정식 출력과 <b>같은 합성기로</b> 펼쳐 보여 준다.
+/// DialogueNode의 작업 상태를 그대로 펼쳐 보여 준다 — 곁기둥의 미리보기와 카드의 글 칸이 여기를 지난다.
 ///
-/// 미리 보기 전용 합성기를 따로 두면 화면에서 본 것과 발행된 것이 조금씩 다를 수 있고,
-/// 그 차이는 아무도 찾지 못한다. 그래서 여기서는 발행 초안을 만들고, 버전 0짜리
-/// 작업 중 결과로 감싼 다음, 정식 합성기에 그대로 넘긴다.
-///
-/// 결과는 <see cref="RenderedDocument.IsPublished"/>가 false다. 정식 결과와 헷갈릴 수 없고,
-/// 어떤 PresentationResult와도 짝지어지지 않는다. 연출은 <b>발행된</b> 대사 결과 위에서만
-/// 만들어지기 때문이다.
+/// 초안(<see cref="DialoguePublisher.Draft"/>)을 결과 모양으로 감싸 합성기에 넘기고, 초안의 문제는
+/// 진단 조각으로 끼운다.
 /// </summary>
 public static class WorkingDialoguePreview
 {
@@ -24,21 +19,14 @@ public static class WorkingDialoguePreview
         DocumentOutputOptions? options = null,
         OutputPresetId? presetId = null,
         ILocalizedLineProvider? localization = null,
-        string? locale = null,
-        DateTimeOffset? now = null)
+        string? locale = null)
     {
         ArgumentNullException.ThrowIfNull(project);
 
         DialogueDraft draft = DialoguePublisher.Draft(project, dialogueNodeId, definition, locale);
-        DialogueResult working = DialoguePublisher.AsWorkingResult(
-            draft,
-            now ?? DateTimeOffset.UnixEpoch);
-
         RenderedDocument document = ResultDocumentComposer.Compose(
-            working,
-            presentation: null,
+            DialoguePublisher.AsResult(draft),
             project,
-            definition,
             options,
             presetId,
             localization);
@@ -50,11 +38,8 @@ public static class WorkingDialoguePreview
             return document;
         }
 
-        // 진단은 작업 중에만 의미가 있다. 발행된 결과에는 막는 문제가 남아 있을 수 없다.
         return new RenderedDocument(
             document.SourceNodeId,
-            document.DialogueResult,
-            document.PresentationResult,
             InsertProblems(document, draft),
             document.Options,
             document.PresetId);
@@ -75,9 +60,6 @@ public static class WorkingDialoguePreview
             scenario.IncludeStructure,
             scenario.IncludeSetAssignments,
             scenario.IncludeConditions,
-            scenario.IncludePresentation,
-            scenario.PresentationCategories,
-            scenario.IncludeUncategorizedPresentation,
             scenario.IncludeDialogueText,
             scenario.IncludeLocalizedDialogue,
             scenario.IncludeSpeaker,

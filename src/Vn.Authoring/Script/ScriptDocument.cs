@@ -42,7 +42,7 @@ public sealed class ScriptLine
 /// <summary>
 /// 한 locale의 LineId별 화자·대사 표.
 ///
-/// LineId를 키로 쓰는 덕분에 언어를 추가해도 Dialogue 논리와 Presentation binding이
+/// LineId를 키로 쓰는 덕분에 언어를 추가해도 Dialogue 논리(그리고 compositor의 연출 binding)가
 /// 가리키는 Id는 전혀 바뀌지 않는다.
 /// </summary>
 public sealed class ScriptLocale

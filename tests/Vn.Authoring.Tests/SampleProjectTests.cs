@@ -25,7 +25,7 @@ public class SampleProjectTests
         StoryProject project = Load();
 
         Assert.Equal("게리에 1장", project.Title);
-        Assert.Equal(6, project.EnumerateNodes().Count());
+        Assert.Equal(5, project.EnumerateNodes().Count());
         Assert.Equal("nd_setup", project.StartNodeId);
         StoryFile file = Assert.Single(project.Files);
         Assert.Equal("sf_chapter01", file.Id);

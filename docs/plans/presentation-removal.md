@@ -34,7 +34,27 @@
 ## 3. 옛 프로젝트
 
 연출을 담은 옛 프로젝트를 이 툴로 열면 연출 데이터는 읽지 않고, 저장하면 사라진다. 그래서 **연출 데이터를 버리기 전에 원본을
-한 번 남긴다**(방법은 R3에서 정해 적는다). compositor는 그 원본에서 연출을 가져온다(compositor C2).
+한 번 남긴다**. compositor는 그 원본에서 연출을 가져온다(compositor C2).
+
+R3에서 정한 방법(`ProjectStore.Load`):
+
+- **알아보기** — manifest에 연출 키(`results` · `compositions` · `easeCurves` · `quickCommands` · `recentCommands` · `assetRoots`)나
+  연출 배선(`commandSupply` · `presentationSupply` · 형식 2의 `presentation`)이 있거나, StoryFile에 연출 노드(`presentation` ·
+  `commandSupply`)가 있으면 "연출을 담은 옛 프로젝트"다. 그 데이터는 모델에 들어오지 않는다.
+- **남기기** — **열 때** manifest 옆 `presentation-original/`에 manifest · 대본 · StoryFile · 발행 결과 파일 · `game.definition.json`을
+  같은 상대 경로로 복사한다. 저장 때가 아니라 열 때인 것은 "버리기 전에"를 확실히 하려는 것이다 — 그 뒤 무엇을 누르든 원본은 이미 있다.
+- **두 번 남기지 않는다** — 열기만 하고 닫으면 다음에 또 연출을 만난다. 이미 있는 폴더의 내용이 지금 원본과 바이트까지 같으면 그
+  폴더를 그대로 쓰고, 다르면(옛 툴에서 그 사이 고쳤다) `presentation-original-2`, `-3`…을 단다. 먼저 남긴 원본은 덮지 않는다.
+- **알리기** — 상태줄에 "연출 데이터는 읽지 않습니다 — 원본을 'presentation-original' 폴더에 남겼습니다(연출은
+  ked-story-compositor에서)"가 붙는다.
+- 한 번 저장하면 파일에 연출이 없으니 다음부터는 아무것도 남기지 않는다. 옛 `results.vnresults.json`은 지우지 않는다(manifest가
+  더 가리키지 않을 뿐이다).
+
+`game.definition.json`의 연출 카탈로그(`presentationCommandCategories` · `presentationCommands`)는 이 툴이 읽지 않지만 **지우지도
+않는다** — 화자를 저장할 때도 다른 키는 그대로 둔다(그 파일은 두 툴이 함께 읽는다).
+
+**남은 이름** — 대사 노드를 펼친 모양은 여전히 `DialogueResult` · `DialoguePublisher.Draft` · `PublishProblem`이라는 이름이다.
+미리보기 · 카드 글 칸 · 흐름 해석이 같은 펼침을 읽는다. 발행(`vN` · 내용 해시 · 결과 저장소)은 없다 — 이름만 그 시절의 것이다.
 
 ## 4. 단계
 
@@ -44,6 +64,6 @@
 |---|---|---|
 | R0 | 이 문서 · compositor 반입(`4e6d3a2` 이력째 — compositor run 1 · 계획 문서 `0658d61` run 2, 둘 다 녹색) | R1과 함께 `8949b2b` |
 | R1 | 화면 — 무대 프리뷰 탭과 그것만 쓰는 화면 · 대사 편집기의 무대 연동 · 카드 더블클릭 · 세션의 에셋 · 튜닝 · 오디오 · NAudio · 내장 기본 튜닝 | `8949b2b` (run 21 · 60 · 356 · 963 · 264) |
-| R2 | 출력 — 라이브 Yarn · 내보내기 단추 · 양식 선택 · 출력 검증 · CSV 묶음 · 모델의 내보내기 양식 · 출력 폴더 (Yarn 묶음 · 곡선은 연출과 얽혀 R3에서) | 이번 |
-| R3 | 저작 · 모델 — 연출 흐름 · 편집 · 채널 · 발행 · 모델 · 직렬화 · 옛 프로젝트 | |
+| R2 | 출력 — 라이브 Yarn · 내보내기 단추 · 양식 선택 · 출력 검증 · CSV 묶음 · 모델의 내보내기 양식 · 출력 폴더 (Yarn 묶음 · 곡선은 연출과 얽혀 R3에서) | `d26fb60` (run 22 · 60 · 356 · 951 · 250) |
+| R3 | 저작 · 모델 — 연출 흐름(무대 접기 · 재생 경로 · 전환 · 모션 · 곡선 굽기) · 연출 편집(명령 · 빠른 명령 · 곡선 · 에셋 폴더) · 발행과 결과 저장소 · 결과 조합 · 연출 노드 · 명령 공급 노드 · 연출 배선 · 연출 카탈로그 · Yarn 이미터(노드 이름 규칙만 `YarnNaming`으로 남김) · 출력 장부 · 미리보기의 연출 조각과 Direction Sheet · 카드의 "vN 발행" · 직렬화 · 옛 프로젝트(§3) · `Vn.Authoring`의 `Ked.Presentation.Core` 참조 · R1이 남긴 더블클릭 시험 도우미 | 이번 |
 | R4 | `Ked.Presentation.Core` · 문서(README · two-graphs) | |

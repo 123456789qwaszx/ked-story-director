@@ -62,10 +62,10 @@ public class GameDefinitionStoreTests
             Assert.Equal(["라루", "윌로"], definition.Speakers.Select(item => item.Name));
             Assert.Null(definition.FindSpeakerCharacterId("옛화자"));
 
-            // — 나머지 어휘는 그대로다.
+            // — 나머지 어휘는 그대로다. 이 툴이 읽지 않는 키(compositor의 연출 카탈로그)도 파일에 남는다.
             Assert.Single(definition.Variables);
             Assert.Equal("favor", definition.Variables[0].Name);
-            Assert.Single(definition.PresentationCommandCategories);
+            Assert.Contains("\"presentationCommandCategories\"", File.ReadAllText(definitionPath));
         }
         finally
         {

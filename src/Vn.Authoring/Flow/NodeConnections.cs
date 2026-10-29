@@ -32,7 +32,7 @@ public enum ExitPortKind
 /// <summary>
 /// 그래프에서 끌어다 연결할 수 있는 실행 출력 포트 하나.
 ///
-/// Settings·Presentation link는 실행 포트가 아니며 <see cref="StoryProject.Links"/>에 별도로 저장된다.
+/// Settings link는 실행 포트가 아니며 <see cref="StoryProject.Links"/>에 별도로 저장된다.
 /// 이 타입은 오직 다음 실행 노드를 결정하는 기본/조건 출구만 표현한다.
 /// </summary>
 /// <param name="IsChoice">선택지 옵션의 갈래인가 (IF 갈래와 구분 — 철도 배선 T2가 쓴다).</param>
@@ -65,7 +65,7 @@ public sealed record ExitPort(
 
 /// <summary>
 /// 노드의 실행 출력 포트 목록을 계산한다.
-/// Settings·Presentation 공급 연결은 여기에 섞지 않는다.
+/// Settings 공급 연결은 여기에 섞지 않는다.
 /// </summary>
 public static class NodeConnections
 {
@@ -81,9 +81,8 @@ public static class NodeConnections
 
         if (node is not DialogueNode)
         {
-            // 실행 출구는 DialogueNode만 가진다. SetNode·CommandSupplyNode는 공급자이고
-            // (조건·커맨드를 주는 쪽), PresentationNode는 결과 소비자다 — 셋 다
-            // 실행 순서를 결정하지 않는다. 공급 포트는 GraphProjection이 별도로 계산한다.
+            // 실행 출구는 DialogueNode만 가진다. SetNode는 조건을 주는 공급자라 실행 순서를
+            // 결정하지 않는다. 공급 포트는 GraphProjection이 별도로 계산한다.
             return ports;
         }
 

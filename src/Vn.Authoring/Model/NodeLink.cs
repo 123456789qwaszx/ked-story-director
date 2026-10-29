@@ -7,26 +7,13 @@ namespace Vn.Authoring.Model;
 /// <see cref="DialogueNode.BranchExits"/>가 소유한다. 이 목록에는 다음 노드를 정하지 않고
 /// 다른 노드의 저작 데이터를 공급하는 관계만 둔다.
 ///
-/// 연출은 더 이상 여기에 없다. PresentationNode는 편집 중인 노드가 아니라 발행된
-/// <see cref="Results.DialogueResult"/>를 읽으므로, 그 관계는 링크가 아니라
-/// <see cref="PresentationNode.Source"/>가 소유하고 그래프는 그것을 계산해 그린다.
+/// ⛔ 연출 쪽 두 종류(명령 공급 · 연출 공급)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로
+/// 갔다. 그 배선이 든 옛 파일은 읽을 때 빠진다(원본은 <c>ProjectStore</c>가 남긴다).
 /// </summary>
 public enum NodeLinkKind
 {
     /// <summary>SetNode가 DialogueNode에 조건과 assignment를 공급한다.</summary>
-    Settings,
-
-    /// <summary>CommandSupplyNode가 PresentationNode에 커맨드 범주와 프리셋을 공급한다.</summary>
-    CommandSupply,
-
-    /// <summary>
-    /// PresentationNode가 <b>발행한 결과</b>를 DialogueNode에 공급한다.
-    /// 내보내기는 이 연결로 짝을 찾는다 — 명시적 합성 레코드를 따로 만들지 않는다.
-    /// 형식 버전 2의 live Presentation link와 다르다: 여기서 흐르는 것은 편집 중인
-    /// 노드가 아니라 얼어붙은 PresentationResult이고, 그 결과의 Source가 어느 대사
-    /// 결과와 짝인지를 이미 못박고 있다.
-    /// </summary>
-    PresentationSupply
+    Settings
 }
 
 /// <summary>

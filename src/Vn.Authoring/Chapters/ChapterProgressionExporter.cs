@@ -82,7 +82,7 @@ public static class ChapterProgressionExporter
         return new ChapterExportResult(json, validation);
     }
 
-    /// <summary>저작 중 프리뷰를 코어 모델로 투영한다. 최종 발행 검증은 별도로 유지한다.</summary>
+    /// <summary>저작 중 프리뷰를 코어 모델로 투영한다. 최종 검증은 별도로 유지한다.</summary>
     internal static string SerializeUnchecked(ChapterGraphModel chapter, StoryProject? project = null)
     {
         ArgumentNullException.ThrowIfNull(chapter);
@@ -246,7 +246,7 @@ public static class ChapterProgressionExporter
         // 규칙은 지난다 — SanitizeNodeName이 `장면 1`을 `장면_1`로 만든다.
         DialogueEntryId = via.EpisodeNodeNameFor(episode) is { Length: > 0 } onBoard
             ? onBoard
-            : YarnBundleEmitter.StoryNodeTitleOf(episode.DialogueEntry),
+            : YarnNaming.StoryNodeTitleOf(episode.DialogueEntry),
         // v8 — 관문은 에피소드가 아니라 그 길(간선)이 갖는다. 노드의 두 필드는 스키마
         // 1:1을 위해 남기되 비어 나간다(⚠ 런타임 수입기가 NextOption 쪽을 읽어야 한다).
         VisibleConditions = [],

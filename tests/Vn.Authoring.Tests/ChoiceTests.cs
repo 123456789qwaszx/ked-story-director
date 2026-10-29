@@ -70,8 +70,8 @@ public class ChoiceTests
         Assert.True(condition.LastLineIndex >=
             flow.Lines.Single(line => line.Line.LineId == body2).Index);
 
-        // 발행도 막히지 않는다.
-        sample.Editor.PublishDialogue(sample.Dialogue.Id);
+        // 펼쳐도 막는 문제가 없다.
+        Assert.Empty(sample.BlockingProblems());
     }
 
     [Fact]
@@ -86,8 +86,7 @@ public class ChoiceTests
         DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
         Assert.Contains(flow.Problems, problem => problem.Kind == FlowProblemKind.MixedChain);
 
-        Assert.Throws<Vn.Authoring.Editing.PublishRejectedException>(
-            () => sample.Editor.PublishDialogue(sample.Dialogue.Id));
+        Assert.NotEmpty(sample.BlockingProblems());
     }
 
     [Fact]
@@ -118,12 +117,12 @@ public class ChoiceTests
             choice.Kind == ConditionChoiceKind.EndIf &&
             choice.Label == ConditionChoices.EndChoiceAndIfLabel);
 
-        sample.Editor.PublishDialogue(sample.Dialogue.Id); // 발행도 막히지 않는다
+        Assert.Empty(sample.BlockingProblems()); // 막는 문제도 없다
         _ = body;
     }
 
     [Fact]
-    public void 끝까지_열린_선택_블록은_발행되고_알림만_남는다()
+    public void 끝까지_열린_선택_블록은_막히지_않고_알림만_남는다()
     {
         // 규칙 개정 (2026-08-14 소유자 승인, 2단계 포트 규칙) — 선택지로 끝나는 노드는
         // 정상이다. 옵션들이 곧 노드의 끝이고, 이어진 옵션은 출구로 점프하며 안 이은
@@ -132,14 +131,11 @@ public class ChoiceTests
         sample.Line("라벨", LineConditionTransition.BeginChoice());
         sample.Line("본문");
 
-        Vn.Authoring.Results.DialogueDraft draft =
-            sample.Editor.InspectDialoguePublish(sample.Dialogue.Id);
+        DialogueDraft draft = DialoguePublisher.Draft(sample.Project, sample.Dialogue.Id);
 
-        Assert.True(draft.CanPublish);
+        Assert.DoesNotContain(draft.Problems, problem => problem.IsBlocking);
         Assert.Contains(draft.Problems, problem =>
             !problem.IsBlocking && problem.Message.Contains("문서 끝까지 열려"));
-
-        sample.Editor.PublishDialogue(sample.Dialogue.Id); // 막히지 않는다
     }
 
     // ── OptionId 정체성 ─────────────────────────────────────────────────────
@@ -178,10 +174,10 @@ public class ChoiceTests
         Assert.Equal(optionId, transition.OptionId);
     }
 
-    // ── 발행 ────────────────────────────────────────────────────────────────
+    // ── 펼침 ────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void 발행_결과에_OptionId가_얼어붙고_스키마는_지금_판이다()
+    public void 펼친_결과에_OptionId가_실린다()
     {
         var sample = new Sample();
         string label = sample.Line("라벨", LineConditionTransition.BeginChoice());
@@ -189,63 +185,9 @@ public class ChoiceTests
         sample.Line("끝", LineConditionTransition.EndChoice());
         string optionId = sample.Dialogue.FindExtension(label)!.Transition!.OptionId!;
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
 
-        // ⚠ 숫자를 손으로 적지 않는다 — 규격이 오를 때마다 이 줄이 걸리는데, 여기서
-        //    보려는 것은 <b>발행이 지금 판으로 찍히는가</b>이지 그 숫자가 몇인가가 아니다.
-        //    (v3: 선택 전환 · v4: 꼬리 전환 — 이력은 `DialogueResult`에 적혀 있다.)
-        Assert.Equal(DialogueResult.CurrentSchemaVersion, result.Identity.SchemaVersion);
         Assert.Equal(optionId, result.FindLine(label)!.Transition!.OptionId);
-
-        // 결과 저장 왕복에서도 유지된다.
-        ResultRepository reloaded = ResultStoreJson.Read(ResultStoreJson.Write(sample.Project.Results));
-        Assert.Equal(
-            optionId,
-            reloaded.DialogueResults.Single().FindLine(label)!.Transition!.OptionId);
-    }
-
-    [Fact]
-    public void 옵션_순서를_바꾸면_발행_검증이_세이브_경고를_낸다()
-    {
-        var sample = new Sample();
-        string label1 = sample.Line("옵션 A", LineConditionTransition.BeginChoice());
-        sample.Line("본문 A");
-        string label2 = sample.Line("옵션 B", LineConditionTransition.BeginNextOption());
-        sample.Line("본문 B");
-        sample.Line("끝", LineConditionTransition.EndChoice());
-
-        string idA = sample.Dialogue.FindExtension(label1)!.Transition!.OptionId!;
-        string idB = sample.Dialogue.FindExtension(label2)!.Transition!.OptionId!;
-        sample.Editor.PublishDialogue(sample.Dialogue.Id);
-
-        // 두 옵션의 정체성을 맞바꾼다 — 리플레이 인덱스가 다른 선택지를 가리키게 된다.
-        sample.Editor.SetLineTransition(sample.Dialogue.Id, label1, LineConditionTransition.BeginChoice(idB));
-        sample.Editor.SetLineTransition(sample.Dialogue.Id, label2, LineConditionTransition.BeginNextOption(idA));
-
-        DialogueDraft draft = DialoguePublisher.Draft(sample.Project, sample.Dialogue.Id);
-
-        PublishProblem warning = Assert.Single(
-            draft.Problems,
-            problem => problem.Kind == PublishProblemKind.ChoiceOrderChanged);
-        Assert.False(warning.IsBlocking);
-        Assert.Contains("다른 선택지를 리플레이", warning.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void 라벨_문구만_고치면_순서_경고가_없다()
-    {
-        var sample = new Sample();
-        string label = sample.Line("원래 라벨", LineConditionTransition.BeginChoice());
-        sample.Line("본문");
-        sample.Line("끝", LineConditionTransition.EndChoice());
-        sample.Editor.PublishDialogue(sample.Dialogue.Id);
-
-        sample.Editor.SetScriptLineText(sample.Script.Id, label, string.Empty, "고친 라벨");
-
-        DialogueDraft draft = DialoguePublisher.Draft(sample.Project, sample.Dialogue.Id);
-        Assert.DoesNotContain(
-            draft.Problems,
-            problem => problem.Kind == PublishProblemKind.ChoiceOrderChanged);
     }
 
     // ── 합성(Segment) ───────────────────────────────────────────────────────
@@ -258,8 +200,7 @@ public class ChoiceTests
         string body = sample.Line("본문");
         sample.Line("끝", LineConditionTransition.EndChoice());
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
-        RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
+        RenderedDocument document = ResultDocumentComposer.Compose(sample.Unfold(), project: sample.Project);
 
         RenderedSegment option = document.Segments.Single(segment =>
             segment.Kind == RenderedSegmentKind.ChoiceOption);
@@ -289,119 +230,20 @@ public class ChoiceTests
             problem.Kind == PublishProblemKind.ChoicePreviewNotice);
     }
 
-    // ── 이미터 ──────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void Story는_라벨과_효과_태그와_동기_변수를_내고_Pres는_합성_조건으로_같은_갈래를_탄다()
-    {
-        ChoiceWorld world = BuildChoiceWorld();
-
-        YarnBundle bundle = YarnBundleEmitter.Emit(
-            world.Dialogue,
-            world.Presentation,
-            world.Sample.Project,
-            Sample.Definition,
-            bundleName: "choices_ep");
-
-        Assert.False(bundle.HasBlockingProblems);
-
-        // Story: 라벨은 접두 없이(D6), 태그는 표시 전용(D5), 본문 첫 문장은 동기 변수 set.
-        Assert.Contains(
-            $"-> 안전한 길을 따라간다 #line:{world.Label1}",
-            bundle.StoryText,
-            StringComparison.Ordinal);
-        // ⛔ 옵션 본문의 set도, 거기서 파생되던 <b>미리보기 태그</b>도 안 나간다
-        //    (2026-09-17 — 작가 변수 폐지). 값이 변하는 자리는 챕터 간선의 `스탯변화`다.
-        Assert.DoesNotContain("<<set ", bundle.StoryText, StringComparison.Ordinal);
-
-        // 옵션 출구는 본문 끝의 jump다. 2026-08-18까지는 그 앞에 <<pres_end>>가 붙었는데
-        // 서브 레인이 없어져 함께 사라졌다.
-        Assert.Contains("    <<jump A로_간다>>", bundle.StoryText, StringComparison.Ordinal);
-        Assert.DoesNotContain("pres_end", bundle.StoryText, StringComparison.Ordinal);
-
-        // 합성 추적 변수(`$__ch_N`)도 사라졌다 — 서브 레인 사본이 같은 갈래를 타게 하려고
-        // 두었던 것이라, 레인이 없어지자 쓸 곳이 없다.
-        //
-        // ⛔ 선언 파일 쪽 단언은 2026-09-17에 걷었다 — **선언 파일 자체가 없어졌다.**
-        //    낼 파일이 없는데 "거기 안 나온다"를 재면, 없어진 것을 안 알아차린 채
-        //    언제까지나 초록인 테스트가 된다.
-        Assert.DoesNotContain("__ch_", bundle.StoryText, StringComparison.Ordinal);
-    }
-
-    private static int CountPlainLines(string yarn)
-    {
-        return yarn.Split('\n')
-            .Select(line => line.Trim())
-            .Count(line =>
-                line.Length > 0 &&
-                !line.StartsWith("<<", StringComparison.Ordinal) &&
-                !line.StartsWith("->", StringComparison.Ordinal) &&
-                !line.StartsWith("title:", StringComparison.Ordinal) &&
-                line != "---" &&
-                line != "===");
-    }
-
-    /// <summary>
-    /// options.yarn 상당: 선택 블록 2개, 본문 라인·set·정수 효과·옵션 출구·라인 연출 포함.
-    /// </summary>
-    internal static ChoiceWorld BuildChoiceWorld()
-    {
-        var sample = new Sample();
-
-        sample.Line("숲 입구에 도착했다.");
-
-        string label1 = sample.Line("안전한 길을 따라간다", LineConditionTransition.BeginChoice());
-        string body1 = sample.Line("안전한 길에서 평범한 재료를 얻었다.");
-
-        string label2 = sample.Line("깊은 숲으로 들어간다", LineConditionTransition.BeginNextOption());
-        sample.Line("숲 깊은 곳에서 희귀한 향신료를 발견했다.");
-
-        sample.Line("좋아. 가보자.", LineConditionTransition.EndChoice());
-
-        string label3 = sample.Line("바로 돌아간다", LineConditionTransition.BeginChoice());
-        sample.Line("돌아가는 길.");
-        sample.Line("조금 더 머문다", LineConditionTransition.BeginNextOption());
-        sample.Line("조금 더 머물렀다.");
-        sample.Line("끝.", LineConditionTransition.EndChoice());
-
-        // 첫 블록의 옵션이 아니라 두 번째 블록의 첫 옵션에 출구를 단다.
-        sample.Editor.SetExitTarget(
-            sample.Dialogue.Id,
-            ExitPortKind.Branch,
-            label3,
-            sample.TargetA.Id);
-        sample.Editor.SetExitTarget(
-            sample.Dialogue.Id,
-            ExitPortKind.Default,
-            null,
-            sample.TargetDefault.Id);
-
-        DialogueResult dialogue = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
-
-        PresentationNode node = sample.Editor.AddPresentationNode(sample.File.Id, name: "선택 연출");
-        sample.Editor.SetPresentationSource(node.Id, dialogue.Identity.ResultId, dialogue.Identity.Version);
-        sample.Editor.AddPresentationCommand(node.Id, body1, "camera.closeup");
-        PresentationResult presentation = sample.Editor.PublishPresentation(node.Id).Result;
-
-        return new ChoiceWorld(sample, label1, label2, dialogue, node, presentation);
-    }
-
     // ── 조건 안 선택지 (W54) ────────────────────────────────────────────────
 
-    /// <summary>W54: 조건 갈래 안에서 닫히는 선택 블록 + 그 조건 갈래의 출구.</summary>
-    internal static ChoiceWorld BuildNestedChoiceWorld()
+    [Fact]
+    public void 조건_안_선택지는_들여쓴_옵션으로_나오고_조건_출구는_선택_뒤에_detour한다()
     {
+        // W54: 조건 갈래 안에서 닫히는 선택 블록 + 그 조건 갈래의 출구.
         var sample = new Sample();
-
-        // 실컴파일까지 가는 월드다 — 조건 식은 Yarn 문법($ 접두)이어야 한다 (골든 월드와 동일).
-        sample.Editor.UpdateCondition(sample.ConditionA.Id, "호감 높음", "stat(\"favor\") >= 5");
 
         sample.Line("가게 앞이다.");
         string opener = sample.Line("주인이 있다", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         string label1 = sample.Line("치킨을 산다", LineConditionTransition.BeginChoice());
         string body1 = sample.Line("치킨을 샀다.");
-        string label2 = sample.Line("그냥 나온다", LineConditionTransition.BeginNextOption());
-        sample.Line("빈손으로 나왔다.");
+        sample.Line("그냥 나온다", LineConditionTransition.BeginNextOption());
+        string lastBody = sample.Line("빈손으로 나왔다.");
         sample.Line("주인이 인사했다.", LineConditionTransition.EndChoice());
         sample.Line("가게를 나섰다.", LineConditionTransition.EndIf());
         sample.Line("집으로 간다.");
@@ -410,50 +252,20 @@ public class ChoiceTests
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opener, sample.TargetA.Id);
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
 
-        DialogueResult dialogue = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        IReadOnlyList<RenderedSegment> segments =
+            ResultDocumentComposer.Compose(sample.Unfold(), project: sample.Project).Segments;
+        int Index(Func<RenderedSegment, bool> match) => segments.ToList().FindIndex(segment => match(segment));
 
-        PresentationNode node = sample.Editor.AddPresentationNode(sample.File.Id, name: "중첩 연출");
-        sample.Editor.SetPresentationSource(node.Id, dialogue.Identity.ResultId, dialogue.Identity.Version);
-        sample.Editor.AddPresentationCommand(node.Id, body1, "camera.closeup");
-        PresentationResult presentation = sample.Editor.PublishPresentation(node.Id).Result;
-
-        return new ChoiceWorld(sample, label1, label2, dialogue, node, presentation);
-    }
-
-    [Fact]
-    public void 조건_안_선택지는_들여쓴_옵션으로_나오고_조건_출구는_선택_뒤에_detour한다()
-    {
-        ChoiceWorld world = BuildNestedChoiceWorld();
-
-        YarnBundle bundle = YarnBundleEmitter.Emit(
-            world.Dialogue,
-            world.Presentation,
-            world.Sample.Project,
-            Sample.Definition,
-            bundleName: "nested_ep");
-        string story = bundle.Files
-            .Single(file => file.FileName.EndsWith("nested_ep.yarn", StringComparison.Ordinal)).Text;
-
-        Assert.Contains("\n    -> 치킨을 산다", story);   // 라벨이 조건 깊이만큼 들여쓰였다
-        Assert.Contains("\n        치킨을 샀다.", story);  // 옵션 본문은 라벨보다 한 단 더
-
-        // 동기 변수(`$__ch_N`)는 2026-08-18에 사라졌다 — 서브 레인 사본이 같은 갈래를
-        // 타게 하려던 것이라, 레인이 없어지자 쓸 곳이 없다.
-        Assert.DoesNotContain("__ch_", story, StringComparison.Ordinal);
+        Assert.Equal(1, segments.Single(segment => segment.Source.LineId == label1 &&
+            segment.Kind == RenderedSegmentKind.ChoiceOption).IndentLevel);   // 라벨이 조건 깊이만큼 들여쓰였다
+        Assert.Equal(2, segments.Single(segment => segment.Source.LineId == body1 &&
+            segment.Kind == RenderedSegmentKind.DialogueLine).IndentLevel);   // 옵션 본문은 라벨보다 한 단 더
 
         // 조건 갈래 출구(detour)는 선택 블록의 마지막 본문 뒤, endif 앞에서 나온다 —
         // 선택 전환에 새어 나오면 선택지가 제시되기 전에 떠나 버린다.
-        int lastOptionBody = story.IndexOf("빈손으로 나왔다.", StringComparison.Ordinal);
-        int detour = story.IndexOf("<<detour ", StringComparison.Ordinal);
-        int endif = story.IndexOf("<<endif>>", StringComparison.Ordinal);
-        Assert.True(lastOptionBody >= 0 && lastOptionBody < detour && detour < endif, story);
+        int lastOptionBody = Index(segment => segment.Source.LineId == lastBody);
+        int detour = Index(segment => segment.Kind == RenderedSegmentKind.BranchDetour);
+        int endif = Index(segment => segment.Kind == RenderedSegmentKind.ConditionEnd);
+        Assert.True(lastOptionBody >= 0 && lastOptionBody < detour && detour < endif);
     }
-
-    internal sealed record ChoiceWorld(
-        Sample Sample,
-        string Label1,
-        string Label2,
-        DialogueResult Dialogue,
-        PresentationNode PresentationNode,
-        PresentationResult Presentation);
 }

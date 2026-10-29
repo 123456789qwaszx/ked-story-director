@@ -108,7 +108,7 @@ internal sealed class ChapterBoard
     /// </summary>
     public string EpisodeNodeNameFor(ChapterEpisode episode) =>
         EpisodeNodeFor(episode) is { } node
-            ? YarnBundleEmitter.StoryNodeTitleOf(node.Name, node.Id)
+            ? YarnNaming.StoryNodeTitleOf(node.Name, node.Id)
             : string.Empty;
 
 }

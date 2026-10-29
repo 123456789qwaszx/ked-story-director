@@ -7,8 +7,7 @@ namespace Vn.Authoring.Rendering;
 ///
 /// 이 결과는 Preview일 뿐 저장 원본이나 역파싱 입력이 아니다. 노드 title과 jump에는 이름이
 /// 아니라 안정된 NodeId를 사용하여 같은 이름의 노드가 있어도 참조가 모호해지지 않게 한다.
-/// 실제 런타임 파일은 <see cref="YarnBundleEmitter"/>가 만들되, 표기 조립은
-/// <see cref="YarnSyntax"/>를 함께 쓴다.
+/// 게임용 파일은 이 툴이 내지 않는다(<c>ked-story-compositor</c>) — 표기 조립은 <see cref="YarnSyntax"/>를 쓴다.
 /// </summary>
 public static class YarnPreviewFormatter
 {
@@ -67,12 +66,6 @@ public static class YarnPreviewFormatter
 
             case RenderedSegmentKind.ConditionEnd:
                 builder.Append(indent).Append("<<endif>>\n");
-                break;
-
-            case RenderedSegmentKind.PresentationCommand:
-                builder.Append(indent);
-                YarnSyntax.AppendCommand(builder, segment);
-                builder.Append('\n');
                 break;
 
             case RenderedSegmentKind.DialogueLine:

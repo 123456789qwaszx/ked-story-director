@@ -2,7 +2,6 @@
 using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 
 namespace Vn.Authoring.Graph;
 
@@ -19,12 +18,11 @@ public static class GraphProjectionBuilder
     private const double EmptyProxyGapX = 280;
 
     /// <summary>
-    /// 카드를 그리지 않는 배관 노드인가 — 연출 노드 · 연출 공급 노드 · 챕터 조건 공급 설정노드
-    /// (까닭은 <see cref="Build"/> 안의 주석). 투영과 [자동 정렬](<see cref="NodePlacement.Arrange"/>)이
-    /// 같은 것을 부른다 — 안 그리는 노드를 정렬이 옮기면 보이지 않는 자리 다툼이 생긴다.
+    /// 카드를 그리지 않는 배관 노드인가 — 챕터 조건 공급 설정노드(까닭은 <see cref="Build"/> 안의 주석).
+    /// 투영과 [자동 정렬](<see cref="NodePlacement.Arrange"/>)이 같은 것을 부른다 — 안 그리는 노드를
+    /// 정렬이 옮기면 보이지 않는 자리 다툼이 생긴다.
     /// </summary>
     public static bool IsHiddenPlumbing(StoryNode node, StoryFile file) =>
-        node is PresentationNode or CommandSupplyNode ||
         ChapterBoardSupply.IsConditionSupplyNode(node, file);
 
     public static GraphProjection Build(
@@ -43,16 +41,10 @@ public static class GraphProjectionBuilder
         var kindByNodeId = new Dictionary<string, GraphNodeKind>(StringComparer.Ordinal);
         var portsByNodeId = new Dictionary<string, IReadOnlyList<GraphOutputPortProjection>>(StringComparer.Ordinal);
 
-        // 배관 노드는 카드를 그리지 않는다:
-        // - A 계층 격리 (2026-08-15 소유자) — 챕터 조건 공급 설정노드는 동기화의 배관이지
-        //   작가의 데이터가 아니다. 식(스탯 변수)이 연출 그래프에 노출되면 안 된다.
-        //   공급 자체는 데이터에 살아 있어 조건 라벨과 <<if>> 역조회는 변함없다.
-        // - 연출 노드 (2026-08-21 소유자) — 발행·배선이 자동화됐다
-        //   (ProjectEditor.EnsurePresentationChannel). 입구는 무대 프리뷰의 선택기이고
-        //   그래프에는 카드도 결과·공급 배선도 그리지 않는다. 데이터는 그대로 산다.
-        // - 연출 공급 노드 (같은 날, 소유자: "연출 공급을 제거해") — 이 노드가 잇던
-        //   상대가 연출 노드인데 그쪽이 숨었다. 공급 데이터는 살아 있어 커맨드 범위·
-        //   프리셋 해석(AvailablePresentationCommandResolver)은 변함없이 돈다.
+        // 배관 노드는 카드를 그리지 않는다 — A 계층 격리 (2026-08-15 소유자): 챕터 조건 공급
+        // 설정노드는 동기화의 배관이지 작가의 데이터가 아니다. 식(스탯 변수)이 연출 그래프에
+        // 노출되면 안 된다. 공급 자체는 데이터에 살아 있어 조건 라벨과 <<if>> 역조회는 변함없다.
+        // (연출 노드 · 연출 공급 노드도 여기 숨던 배관이었는데 2026-10-29에 compositor로 갔다.)
         var hiddenPlumbingNodeIds = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (StoryFile file in project.Files)
@@ -250,10 +242,6 @@ public static class GraphProjectionBuilder
         // 공급 범위가 판 전체가 된 2026-08-17 이후로 이을 곳이 없어 <b>사실 표시</b>로만
         // 남아 있었다. 카드가 늘 켜진 포트를 달고 있으면 "여기서 무언가를 이을 수 있다"고
         // 말하는 셈이라 오히려 거짓말이었다. 공급은 같은 판에 선 것으로 이미 성립한다.
-        //
-        // 연출·연출 공급 노드의 포트와 대사 노드의 발행 결과 포트는 2026-08-21에 사라졌다 —
-        // 발행·배선이 자동이 되면서(EnsurePresentationChannel) 그 카드들이 배관으로 숨었고,
-        // 끌어서 잇던 포트들은 이을 주체가 없다.
 
         ports.AddRange(ChoiceSlots(node, file, project));
 
@@ -345,8 +333,8 @@ public static class GraphProjectionBuilder
                 StringComparison.Ordinal))?.Id;
 
     /// <summary>
-    /// 카드에 붙는 짧은 부가 정보. 발행 버전과 읽는 버전을 즉시 알 수 있게 한다.
-    /// 모든 발행 버전을 카드로 펼치면 몇 번만 발행해도 그래프가 결과로 덮인다.
+    /// 카드에 붙는 짧은 부가 정보 — 어느 대본을 읽는가, 에피소드면 몇 줄인가.
+    /// (⛔ "vN 발행" 표시는 2026-10-29에 발행과 함께 compositor로 갔다.)
     /// </summary>
     private static string? BadgeFor(StoryNode node, StoryProject project)
     {
@@ -354,9 +342,7 @@ public static class GraphProjectionBuilder
         {
             case DialogueNode dialogue:
             {
-                DialogueResult? latest = project.Results.DialogueResultsOf(dialogue.Id).LastOrDefault();
-                string script = project.FindScript(dialogue.ScriptId)?.Name ?? "대본 없음";
-                string badge = latest is null ? script : $"{script} · v{latest.Identity.Version} 발행";
+                string badge = project.FindScript(dialogue.ScriptId)?.Name ?? "대본 없음";
 
                 // 챕터 에피소드 표식 — 카드만 봐도 자유 씬과 갈린다. 줄 수는 타임라인 읽기의
                 // 눈금이다(T1) — 어느 에피소드가 무거운지 카드에서 보인다.
@@ -372,25 +358,6 @@ public static class GraphProjectionBuilder
                 int lineCount = project.FindScript(dialogue.ScriptId)?.ActiveLines.Count() ?? 0;
                 return $"📄 에피소드 · {badge} · {lineCount}줄";
             }
-
-            case PresentationNode presentation:
-            {
-                if (presentation.Source is not { } source)
-                {
-                    return "입력 결과 없음";
-                }
-
-                DialogueResult? dialogueResult = project.Results.FindDialogue(
-                    source.ResultId,
-                    source.Version);
-
-                return dialogueResult is null
-                    ? $"{source.Label} (없음)"
-                    : $"{dialogueResult.SourceNodeName} v{source.Version} 읽는 중";
-            }
-
-            case CommandSupplyNode supply:
-                return $"{supply.Categories.Count}개 범주 · {supply.Presets.Count}개 프리셋";
 
             default:
                 return null;
@@ -434,11 +401,6 @@ public static class GraphProjectionBuilder
         // 범위가 판 전체이므로 선을 그리면 대사노드 수만큼 거미줄이 되고, 그 선이 무엇을
         // 정하지도 않는다. 구판 프로젝트에 남은 Settings 링크 데이터는 조용히 무시된다.
 
-        // 커맨드 공급·연출 공급 링크와 결과 스냅샷 간선은 2026-08-21에 그리기를 멈췄다 —
-        // 연출·연출 공급 노드가 배관으로 숨어 양 끝 중 하나가 늘 없는 간선이었다.
-        // 데이터(링크·Source)는 그대로 살아 내보내기 짝(NodeExportResolver)과 커맨드
-        // 범위 해석(AvailablePresentationCommandResolver)이 계속 쓴다.
-
         return result;
     }
 
@@ -460,8 +422,6 @@ public static class GraphProjectionBuilder
         {
             DialogueNode => GraphNodeKind.Dialogue,
             SetNode => GraphNodeKind.Set,
-            PresentationNode => GraphNodeKind.Presentation,
-            CommandSupplyNode => GraphNodeKind.CommandSupply,
             _ => throw new NotSupportedException($"지원하지 않는 노드 타입입니다: {node.GetType().Name}")
         };
     }
@@ -477,7 +437,7 @@ public static class GraphProjectionBuilder
     /// 안 적은 챕터. ②를 그대로 묶으면 에피소드 수만큼
     /// 장면 머리글이 생겨 프록시가 통째로 노이즈가 된다(<c>docs/plans/R6-explorer.md</c> §2).
     ///
-    /// ⚠ <b>자유 씬은 장면 밖이다.</b> 에피소드가 아닌 대사노드·설정·연출 노드는 챕터의
+    /// ⚠ <b>자유 씬은 장면 밖이다.</b> 에피소드가 아닌 대사노드·설정 노드는 챕터의
     /// 진행에 안 실리므로 장면 경계도 없다 — 맨 뒤 묶음으로 모은다.
     /// </summary>
     private static IReadOnlyList<CollapsedSceneGroup> SceneGroups(

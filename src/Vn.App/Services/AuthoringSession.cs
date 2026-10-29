@@ -1,5 +1,3 @@
-using Avalonia.Media.Imaging;
-using Vn.Authoring.Assets;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
@@ -40,7 +38,7 @@ internal sealed class AuthoringSession
     public string? ProjectPath { get; private set; }
 
     /// <summary>
-    /// `game.definition.json`의 내용 — 기획자가 소유하는 어휘(스탯·조건·화자·연출 카탈로그).
+    /// `game.definition.json`의 내용 — 기획자가 소유하는 어휘(스탯·조건·화자).
     ///
     /// ⚠ <b>바뀌면 스스로 알린다</b> (2026-08-26 소유자 보고: 챕터 그래프에서 화자를 지웠는데
     /// 연출 그래프가 옛 목록을 계속 보였다). 예전에는 쓰는 자리마다 파일을 다시 읽고
@@ -120,7 +118,7 @@ internal sealed class AuthoringSession
     /// 프리뷰 갈래 선택 (W35) — "지금 어느 갈래를 보고 있는가". 뷰 상태라 저장하지 않고,
     /// 프로젝트를 새로 열면 비워진다. 대사·연출 편집기가 같은 선택 하나를 본다(LineId 불변 덕).
     /// </summary>
-    public StageBranchSelection BranchSelection { get; } = new();
+    public BranchSelection BranchSelection { get; } = new();
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
     public bool IsDirty => !string.Equals(_savedSnapshot, ProjectSnapshotCodec.Encode(Project), StringComparison.Ordinal);
@@ -187,6 +185,15 @@ internal sealed class AuthoringSession
             fileListChanged: true);
     }
 
+    /// <summary>
+    /// 연출을 담은 옛 프로젝트를 열었을 때 한 줄 — 연출은 이 툴이 읽지 않고(저장하면 사라진다) 원본은 남겼다.
+    /// 연출은 ked-story-compositor가 그 원본에서 가져간다(2026-10-29).
+    /// </summary>
+    private static string PresentationBackupNote(string? backupDirectory) =>
+        backupDirectory is null
+            ? string.Empty
+            : $" · 연출 데이터는 읽지 않습니다 — 원본을 '{Path.GetFileName(backupDirectory)}' 폴더에 남겼습니다(연출은 ked-story-compositor에서)";
+
     public void Open(string path)
     {
         ProjectLoadResult loaded = ProjectStore.Load(path);
@@ -198,9 +205,9 @@ internal sealed class AuthoringSession
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
             $"{Path.GetFileName(ProjectPath)} · 대본 {project.Scripts.Count}개 · " +
-            $"노드 {project.EnumerateNodes().Count()}개 · " +
-            $"발행 결과 {project.Results.DialogueResults.Count + project.Results.PresentationResults.Count}개" +
-            alignment;
+            $"노드 {project.EnumerateNodes().Count()}개" +
+            alignment +
+            PresentationBackupNote(loaded.PresentationBackupDirectory);
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 

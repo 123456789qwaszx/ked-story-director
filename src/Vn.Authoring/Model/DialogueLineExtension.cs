@@ -2,7 +2,7 @@ namespace Vn.Authoring.Model;
 
 /// <summary>
 /// 조건·선택 흐름을 바꾸는 지점의 종류. 두 체인은 같은 기계로 계산되지만 섞이지 않는다
-/// (중첩은 발행 검증에서 거부 — 계약서 D7의 가용 배열 인덱스 문제를 아예 만들지 않는다).
+/// (중첩은 흐름 검증에서 거부 — 계약서 D7의 가용 배열 인덱스 문제를 아예 만들지 않는다).
 /// </summary>
 public enum ConditionTransitionKind
 {

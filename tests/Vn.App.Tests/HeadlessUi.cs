@@ -79,8 +79,7 @@ public static class TestAppBuilder
         //    (2026-09-16 소유자: 32GB · 90%에서 두 번 직접 껐다). 대본 한 편에 빈 줄이 없을
         //    수는 없으니 언젠가 반드시 밟는다.
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-        .UseSkia()
-        // 더블탭 시간 창을 테스트가 쥔다 — 합성 더블클릭이 스위트 부하의 진짜 시계에
-        // 매이지 않게 한다. 상세는 TestPlatformSettings.
-        .AfterSetup(_ => TestPlatformSettings.Install());
+        .UseSkia();
+    // ⛔ 더블탭 시간 창을 테스트가 쥐던 TestPlatformSettings는 2026-10-29에 걷혔다 — 그것을 쓰던 합성
+    //    더블클릭 테스트(카드 더블클릭 → 무대)가 무대와 함께 ked-story-compositor로 갔다.
 }

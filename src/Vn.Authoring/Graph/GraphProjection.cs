@@ -29,8 +29,8 @@ public abstract record GraphItemProjection(string FileId, GraphPosition Position
 
 /// <summary>펼쳐진 StoryFile 안에서 실제 노드 카드로 표시할 항목.</summary>
 /// <param name="Badge">
-/// 카드에 붙는 짧은 부가 정보. 대사 노드는 발행한 최신 버전을, 연출 노드는 읽고 있는
-/// 대사 결과 버전을 보여 준다. 표시용 문자열이며 여기서 데이터 의미를 역추론하지 않는다.
+/// 카드에 붙는 짧은 부가 정보 — 대사 노드는 대본 이름(에피소드면 줄 수까지)을 보여 준다.
+/// 표시용 문자열이며 여기서 데이터 의미를 역추론하지 않는다.
 /// </param>
 public sealed record ExpandedNodeProjection(
     string FileId,
@@ -99,11 +99,7 @@ public sealed record CollapsedNodeEntry(
 public enum GraphNodeKind
 {
     Dialogue,
-    Set,
-    Presentation,
-
-    /// <summary>PresentationNode에 커맨드 범주·프리셋을 공급하는 노드.</summary>
-    CommandSupply
+    Set
 }
 
 /// <summary>
@@ -113,8 +109,7 @@ public enum GraphNodeKind
 /// <b>간선 정합 규칙:</b> 간선의 어느 한쪽 끝 노드가 필터로 숨으면 그 간선도 함께 숨는다.
 /// 허공에 매달린 간선을 그리지 않는다.
 ///
-/// 고를 수 있는 것은 <b>대사·설정 둘</b>이다 (2026-08-21) — 연출·연출 공급 노드는 필터보다
-/// 먼저 배관으로 숨으므로(<see cref="GraphProjectionBuilder"/>) 토글이 정할 것이 없다.
+/// 고를 수 있는 것은 <b>대사·설정 둘</b>이다 — 노드 종류가 그 둘뿐이다.
 /// </summary>
 public sealed record GraphFilter(
     bool ShowDialogue = true,
@@ -141,13 +136,10 @@ public enum GraphOutputPortKind
     ExecutionBranch,
     Settings,
 
-    /// <summary>이 대사 노드가 발행한 결과. 연출 노드가 그 결과를 입력으로 읽는다.</summary>
-    PublishedResult,
-
     /// <summary>
     /// <b>챕터 간선 슬롯</b> — 이 에피소드에서 나가는 선택지 하나 (R7 P-1 · 2026-09-16).
     ///
-    /// ⛔ 다른 포트와 달리 <b>연출 층의 것이 아니다.</b> 이어 붙는 순간 고쳐지는 것은
+    /// ⛔ 다른 포트와 달리 <b>이 노드의 것이 아니다.</b> 이어 붙는 순간 고쳐지는 것은
     /// <c>ChapterDocument.Edges</c>이고, 그것이 내보내기·도달성 증명·런타임이 보는 그 값이다
     /// (<c>docs/plans/R7.md</c> §2 ①ᅳ 정본을 늘리지 않는다).
     /// </summary>
@@ -199,14 +191,7 @@ public enum GraphConnectionKind
 {
     ExecutionDefault,
     ExecutionBranch,
-    Settings,
-
-    /// <summary>
-    /// 발행된 대사 결과가 연출 노드의 <b>읽기 전용 입력</b>이 되는 관계.
-    /// 실행 흐름이 아니라 저작 의존성이며, 데이터는 링크가 아니라
-    /// <c>PresentationNode.Source</c>가 소유한다.
-    /// </summary>
-    ResultSnapshot
+    Settings
 }
 
 public enum GraphEndpointKind

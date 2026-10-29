@@ -1,21 +1,33 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 
 namespace Vn.Authoring.Serialization;
 
 /// <summary>
 /// 프로젝트 메타데이터와 <b>부속 파일의 목차</b>를 담는 manifest 형식.
 ///
-/// 본문은 어디에도 없다. 대본은 <c>scripts</c>가, 노드는 <c>files</c>가, 발행 결과는
-/// <c>results</c>가 가리키는 파일에 있다. manifest가 커지지 않아야 파일을 나눈 이유가 남는다.
-/// 조건 공급 link와 RuntimeComposition은 파일을 넘나드는 관계라서 여기에 둔다.
+/// 본문은 어디에도 없다. 대본은 <c>scripts</c>가, 노드는 <c>files</c>가 가리키는 파일에 있다.
+/// manifest가 커지지 않아야 파일을 나눈 이유가 남는다. 조건 공급 link는 파일을 넘나드는 관계라서 여기에 둔다.
+///
+/// ⛔ <b>연출 키는 쓰지 않고 읽지도 않는다</b> (2026-10-29) — <see cref="PresentationKeys"/>의 키와 연출 배선은
+/// <c>ked-story-compositor</c>의 것이다. 옛 파일에 있으면 <see cref="ProjectManifest.CarriesPresentation"/>만
+/// 켠다 — 저장하면 사라지므로 <see cref="ProjectStore"/>가 그 전에 원본을 남긴다.
 /// </summary>
 public static class ProjectManifestJson
 {
     public const int CurrentFormatVersion = StoryProject.CurrentFormatVersion;
     public const string FileExtension = ".vnproject.json";
+
+    /// <summary>
+    /// 연출 층이 manifest에 두던 키 — 발행 결과 파일 · 결과 조합 · 곡선 · 빠른 명령 · 최근 명령 · 에셋 폴더.
+    /// </summary>
+    public static IReadOnlyList<string> PresentationKeys { get; } =
+        ["results", "compositions", "easeCurves", "quickCommands", "recentCommands", "assetRoots"];
+
+    /// <summary>연출 층의 배선 종류 — 명령 공급 · 연출 공급, 그리고 형식 2 시절의 실시간 연출 link.</summary>
+    public static IReadOnlyList<string> PresentationLinkKinds { get; } =
+        ["commandSupply", "presentationSupply", "presentation"];
 
     public static string Write(StoryProject project)
     {
@@ -53,13 +65,6 @@ public static class ProjectManifestJson
             links.Add(WriteLink(link));
         }
 
-        var compositions = new JsonArray();
-
-        foreach (RuntimeComposition composition in project.Compositions)
-        {
-            compositions.Add(WriteComposition(composition));
-        }
-
         var root = new JsonObject
         {
             ["formatVersion"] = CurrentFormatVersion,
@@ -69,24 +74,6 @@ public static class ProjectManifestJson
         if (project.StartNodeId is not null)
         {
             root["startNode"] = project.StartNodeId;
-        }
-
-        if (WriteAssetRoots(project.AssetRoots) is { } assetRoots)
-        {
-            root["assetRoots"] = assetRoots;
-        }
-
-        if (project.RecentCommandIds.Count > 0)
-        {
-            root["recentCommands"] = new JsonArray(
-                project.RecentCommandIds.Select(id => (JsonNode)id).ToArray());
-        }
-
-        // 자주 쓰는 칩 (2026-08-22) — 손대지 않은 프로젝트에는 <b>키 자체를 안 쓴다</b>.
-        // 빈 배열은 "사람이 다 지웠다"는 뜻이라 기본 목록으로 되돌아가면 안 된다.
-        if (WriteQuickCommands(project.QuickCommands) is { } quickCommands)
-        {
-            root["quickCommands"] = quickCommands;
         }
 
         // ⛔ exportFormats(내보내기 양식) · outputPath(라이브 Yarn 출력 폴더)는 2026-10-29에 걷혔다 — Yarn과
@@ -114,22 +101,6 @@ public static class ProjectManifestJson
         if (WriteWriterSpeakers(project.WriterSpeakers) is { } writerSpeakers)
         {
             root["writerSpeakers"] = writerSpeakers;
-        }
-
-        // 커스텀 이징 곡선 (W67 후속) — 커브도 작가 자산이라 정의 파일이 아니라 여기 산다.
-        if (WriteEaseCurves(project.EaseCurves) is { } easeCurves)
-        {
-            root["easeCurves"] = easeCurves;
-        }
-
-        if (compositions.Count > 0)
-        {
-            root["compositions"] = compositions;
-        }
-
-        if (!project.Results.IsEmpty)
-        {
-            root["results"] = ResultStoreJson.DefaultFileName;
         }
 
         return JsonSupport.ToDeterministicText(root);
@@ -225,6 +196,7 @@ public static class ProjectManifestJson
 
         var links = new List<NodeLink>();
         HashSet<string> linkIds = new(StringComparer.Ordinal);
+        bool carriesPresentation = PresentationKeys.Any(key => root[key] is not null);
 
         foreach (JsonNode? item in root["links"]?.AsArray() ?? new JsonArray())
         {
@@ -233,7 +205,11 @@ public static class ProjectManifestJson
                 throw new InvalidDataException("프로젝트 manifest의 links 항목이 객체가 아닙니다.");
             }
 
-            NodeLink link = ReadLink(linkObject);
+            if (ReadLink(linkObject) is not { } link)
+            {
+                carriesPresentation = true; // 연출 배선 — 읽지 않는다
+                continue;
+            }
 
             if (!linkIds.Add(link.Id))
             {
@@ -243,109 +219,18 @@ public static class ProjectManifestJson
             links.Add(link);
         }
 
-        var compositions = new List<RuntimeComposition>();
-        HashSet<string> compositionIds = new(StringComparer.Ordinal);
-
-        foreach (JsonNode? item in root["compositions"]?.AsArray() ?? new JsonArray())
-        {
-            if (item is not JsonObject compositionObject)
-            {
-                throw new InvalidDataException("프로젝트 manifest의 compositions 항목이 객체가 아닙니다.");
-            }
-
-            RuntimeComposition composition = ReadComposition(compositionObject);
-
-            if (!compositionIds.Add(composition.Id))
-            {
-                throw new InvalidDataException(
-                    $"RuntimeComposition Id '{composition.Id}'가 manifest에서 중복됩니다.");
-            }
-
-            compositions.Add(composition);
-        }
-
         List<ChapterDocument> chapters = ChapterDocumentJson.Read(root["chapters"]);
         List<WriterSpeaker> writerSpeakers = ReadWriterSpeakers(root["writerSpeakers"]);
-        List<EaseCurve> easeCurves = ReadEaseCurves(root["easeCurves"]);
 
         return new ProjectManifest(
             (string?)root["title"] ?? "제목 없음",
             (string?)root["startNode"],
-            ReadAssetRoots(root["assetRoots"]),
-            ReadRecentCommands(root["recentCommands"]),
-            ReadQuickCommands(root["quickCommands"]),
             scripts,
             references,
             links,
             chapters,
             writerSpeakers,
-            easeCurves,
-            compositions,
-            (string?)root["results"]);
-    }
-
-    internal static IReadOnlyList<string> ReadRecentCommands(JsonNode? json)
-    {
-        if (json is not JsonArray array)
-        {
-            return Array.Empty<string>();
-        }
-
-        return array
-            .Select(item => (string?)item)
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Cast<string>()
-            .Take(StoryProject.MaxRecentCommands)
-            .ToArray();
-    }
-
-    /// <summary>비어 있으면 null — manifest에 빈 객체를 남기지 않는다.</summary>
-    internal static JsonObject? WriteAssetRoots(AssetRootSettings assetRoots)
-    {
-        if (assetRoots.IsEmpty)
-        {
-            return null;
-        }
-
-        var json = new JsonObject();
-
-        if (AssetRootSettings.NormalizePath(assetRoots.BackgroundsPath) is { } backgrounds)
-        {
-            json["backgrounds"] = backgrounds;
-        }
-
-        if (AssetRootSettings.NormalizePath(assetRoots.PortraitsPath) is { } portraits)
-        {
-            json["portraits"] = portraits;
-        }
-
-        if (AssetRootSettings.NormalizePath(assetRoots.BgmPath) is { } bgm)
-        {
-            json["bgm"] = bgm;
-        }
-
-        if (AssetRootSettings.NormalizePath(assetRoots.SfxPath) is { } sfx)
-        {
-            json["sfx"] = sfx;
-        }
-
-        return json.Count > 0 ? json : null;
-    }
-
-    internal static AssetRootSettings ReadAssetRoots(JsonNode? json)
-    {
-        if (json is not JsonObject assetRoots)
-        {
-            return new AssetRootSettings();
-        }
-
-        return new AssetRootSettings
-        {
-            BackgroundsPath = AssetRootSettings.NormalizePath((string?)assetRoots["backgrounds"]),
-            PortraitsPath = AssetRootSettings.NormalizePath((string?)assetRoots["portraits"]),
-            BgmPath = AssetRootSettings.NormalizePath((string?)assetRoots["bgm"]),
-            SfxPath = AssetRootSettings.NormalizePath((string?)assetRoots["sfx"])
-        };
+            carriesPresentation);
     }
 
     internal static IReadOnlyList<ScriptFileReference> ScriptReferencesOf(StoryProject project)
@@ -356,195 +241,6 @@ public static class ProjectManifestJson
                 script.Name,
                 ProjectStore.DefaultScriptPath(script.Id)))
             .ToList();
-    }
-
-    /// <summary>
-    /// 커스텀 곡선 직렬화 (W67 후속) — manifest와 undo 스냅샷 코덱이 <b>같은 이것 하나</b>를
-    /// 쓴다(코덱이 따로 쓰면 undo가 곡선을 조용히 지운다). 필드명(t·v·inTangent·outTangent)은
-    /// 내보내기 curves.json 스키마와 같은 낱말이다 — 두 파일을 나란히 볼 사람이 같은 것을
-    /// 다른 이름으로 읽지 않게. 이름이 빈 곡선은 파일에 안 쓴다.
-    /// </summary>
-    /// <summary>
-    /// 자주 쓰는 칩 직렬화 — manifest와 undo 스냅샷 코덱이 같은 것을 쓴다.
-    /// <b>null(손대지 않음)이면 null</b>을 돌려 키를 안 쓰고, 빈 목록은 빈 배열로 남긴다.
-    /// </summary>
-    internal static JsonArray? WriteQuickCommands(IReadOnlyList<StageQuickCommand>? chips)
-    {
-        if (chips is null)
-        {
-            return null;
-        }
-
-        var array = new JsonArray();
-
-        foreach (StageQuickCommand chip in chips)
-        {
-            var steps = new JsonArray();
-
-            foreach (StageQuickStep step in chip.Steps)
-            {
-                var args = new JsonObject();
-
-                // 인자 이름 순으로 — 결정적 출력이라야 저장할 때마다 diff가 안 생긴다.
-                foreach ((string key, string value) in step.Arguments.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-                {
-                    args[key] = value;
-                }
-
-                steps.Add(new JsonObject
-                {
-                    ["command"] = step.DefinitionId,
-                    ["args"] = args
-                });
-            }
-
-            array.Add(new JsonObject
-            {
-                ["name"] = chip.DisplayName,
-                ["steps"] = steps
-            });
-        }
-
-        return array;
-    }
-
-    internal static List<StageQuickCommand>? ReadQuickCommands(JsonNode? node)
-    {
-        if (node is not JsonArray array)
-        {
-            return null; // 키가 없다 = 손대지 않았다 → 기본 목록
-        }
-
-        var chips = new List<StageQuickCommand>();
-
-        foreach (JsonNode? item in array)
-        {
-            if (item is not JsonObject chip)
-            {
-                throw new InvalidDataException("quickCommands 항목이 객체가 아닙니다.");
-            }
-
-            // 묶음(2026-08-24)은 steps 배열이다. 그 전에 저장된 칩은 한 단계가 칩 자체에
-            // 펼쳐져 있으므로(command·args) 여기서 한 단계짜리 묶음으로 읽어 올린다 —
-            // <b>이미 담아 둔 칩이 조용히 사라지면 그것이 곧 데이터 손실이다.</b>
-            // 쓰기는 언제나 새 모양 하나다(두 벌로 쓰면 어느 쪽이 진실인지 못 말한다).
-            var steps = new List<StageQuickStep>();
-
-            List<JsonObject> stepNodes = chip["steps"] is JsonArray stepArray
-                ? stepArray
-                    .Select(entry => entry as JsonObject
-                        ?? throw new InvalidDataException("quickCommands 단계가 객체가 아닙니다."))
-                    .ToList()
-                : [chip];
-
-            foreach (JsonObject step in stepNodes)
-            {
-                if ((string?)step["command"] is not { Length: > 0 } definitionId)
-                {
-                    continue; // 커맨드 없는 단계는 낼 것이 없다
-                }
-
-                var arguments = new Dictionary<string, string>(StringComparer.Ordinal);
-
-                foreach (KeyValuePair<string, JsonNode?> pair in step["args"]?.AsObject() ?? new JsonObject())
-                {
-                    if ((string?)pair.Value is { } value)
-                    {
-                        arguments[pair.Key] = value;
-                    }
-                }
-
-                steps.Add(new StageQuickStep(definitionId, arguments));
-            }
-
-            // 단계 없는 칩은 <b>버리지 않는다</b> — 막 만든 빈 묶음이 그 모양이다
-            // (2026-08-24). 여기서 버리면 되돌리기 스냅샷을 오갈 때마다 칩이 사라지고,
-            // 그만큼 뒤 칩들의 자리가 밀려 펼쳐 둔 칩이 딴것으로 바뀐다.
-            chips.Add(new StageQuickCommand(
-                (string?)chip["name"] ?? (steps.Count > 0 ? steps[0].DefinitionId : string.Empty),
-                steps));
-        }
-
-        return chips;
-    }
-
-    internal static JsonArray? WriteEaseCurves(IReadOnlyList<EaseCurve> curves)
-    {
-        List<EaseCurve> named = curves
-            .Where(curve => !string.IsNullOrWhiteSpace(curve.Name))
-            .ToList();
-
-        if (named.Count == 0)
-        {
-            return null;
-        }
-
-        var array = new JsonArray();
-
-        foreach (EaseCurve curve in named)
-        {
-            var keys = new JsonArray();
-
-            foreach (Ked.Presentation.Core.CurveKey key in curve.Keys)
-            {
-                keys.Add(new JsonObject
-                {
-                    ["t"] = key.Time,
-                    ["v"] = key.Value,
-                    ["inTangent"] = key.InTangent,
-                    ["outTangent"] = key.OutTangent
-                });
-            }
-
-            var entry = new JsonObject { ["name"] = curve.Name, ["keys"] = keys };
-
-            if (curve.OwnerCommandId is { } owner)
-            {
-                entry["ownerCommandId"] = owner; // 커맨드 소유 곡선 — 없으면 보관함
-            }
-
-            array.Add(entry);
-        }
-
-        return array;
-    }
-
-    internal static List<EaseCurve> ReadEaseCurves(JsonNode? node)
-    {
-        var curves = new List<EaseCurve>();
-
-        foreach (JsonNode? item in node?.AsArray() ?? new JsonArray())
-        {
-            if (item is not JsonObject curve)
-            {
-                throw new InvalidDataException("easeCurves 항목이 객체가 아닙니다.");
-            }
-
-            var keys = new List<Ked.Presentation.Core.CurveKey>();
-
-            foreach (JsonNode? keyNode in curve["keys"]?.AsArray() ?? new JsonArray())
-            {
-                if (keyNode is not JsonObject key)
-                {
-                    throw new InvalidDataException("easeCurves의 keys 항목이 객체가 아닙니다.");
-                }
-
-                keys.Add(new Ked.Presentation.Core.CurveKey(
-                    (float?)key["t"] ?? 0f,
-                    (float?)key["v"] ?? 0f,
-                    (float?)key["inTangent"] ?? 0f,
-                    (float?)key["outTangent"] ?? 0f));
-            }
-
-            curves.Add(new EaseCurve
-            {
-                Name = (string?)curve["name"] ?? string.Empty,
-                Keys = keys,
-                OwnerCommandId = (string?)curve["ownerCommandId"]
-            });
-        }
-
-        return curves;
     }
 
     /// <summary>
@@ -608,8 +304,6 @@ public static class ProjectManifestJson
             ["kind"] = link.Kind switch
             {
                 NodeLinkKind.Settings => "settings",
-                NodeLinkKind.CommandSupply => "commandSupply",
-                NodeLinkKind.PresentationSupply => "presentationSupply",
                 _ => throw new InvalidDataException($"지원하지 않는 NodeLink 종류 '{link.Kind}'입니다.")
             },
             ["source"] = link.SourceNodeId,
@@ -625,18 +319,21 @@ public static class ProjectManifestJson
         return result;
     }
 
-    internal static NodeLink ReadLink(JsonObject json)
+    /// <summary>연출 배선(<see cref="PresentationLinkKinds"/>)이면 null — 그 배선은 compositor의 것이다.</summary>
+    internal static NodeLink? ReadLink(JsonObject json)
     {
         string id = (string?)json["id"]
             ?? throw new InvalidDataException("NodeLink에 id가 없습니다.");
-        NodeLinkKind kind = (string?)json["kind"] switch
+        string? kindName = (string?)json["kind"];
+
+        if (kindName is not null && PresentationLinkKinds.Contains(kindName))
+        {
+            return null;
+        }
+
+        NodeLinkKind kind = kindName switch
         {
             "settings" => NodeLinkKind.Settings,
-            "commandSupply" => NodeLinkKind.CommandSupply,
-            "presentationSupply" => NodeLinkKind.PresentationSupply,
-            "presentation" => throw new InvalidDataException(
-                $"NodeLink '{id}'는 연출 link입니다. 연출은 이제 발행된 대사 결과를 읽으므로 " +
-                "link로 저장하지 않습니다."),
             { } unknown => throw new InvalidDataException($"지원하지 않는 NodeLink 종류 '{unknown}'입니다."),
             _ => throw new InvalidDataException($"NodeLink '{id}'에 kind가 없습니다.")
         };
@@ -652,81 +349,20 @@ public static class ProjectManifestJson
         };
     }
 
-    internal static JsonObject WriteComposition(RuntimeComposition composition)
-    {
-        var json = new JsonObject
-        {
-            ["id"] = composition.Id,
-            ["name"] = composition.Name,
-            ["locale"] = composition.Locale,
-            ["dialogueResult"] = new JsonObject
-            {
-                ["resultId"] = composition.DialogueResultId,
-                ["version"] = composition.DialogueResultVersion
-            }
-        };
-
-        if (composition.HasPresentation)
-        {
-            json["presentationResult"] = new JsonObject
-            {
-                ["resultId"] = composition.PresentationResultId,
-                ["version"] = composition.PresentationResultVersion
-            };
-        }
-
-        return json;
-    }
-
-    internal static RuntimeComposition ReadComposition(JsonObject json)
-    {
-        string id = (string?)json["id"]
-            ?? throw new InvalidDataException("RuntimeComposition에 id가 없습니다.");
-
-        if (json["dialogueResult"] is not JsonObject dialogue)
-        {
-            throw new InvalidDataException($"RuntimeComposition '{id}'에 dialogueResult가 없습니다.");
-        }
-
-        var composition = new RuntimeComposition(id, (string?)json["name"] ?? "이름 없는 합성")
-        {
-            Locale = (string?)json["locale"] ?? Script.ScriptDocument.DefaultLocale,
-            DialogueResultId = (string?)dialogue["resultId"]
-                ?? throw new InvalidDataException(
-                    $"RuntimeComposition '{id}'의 dialogueResult에 resultId가 없습니다."),
-            DialogueResultVersion = (int?)dialogue["version"]
-                ?? throw new InvalidDataException(
-                    $"RuntimeComposition '{id}'의 dialogueResult에 version이 없습니다.")
-        };
-
-        if (json["presentationResult"] is JsonObject presentation)
-        {
-            composition.PresentationResultId = (string?)presentation["resultId"]
-                ?? throw new InvalidDataException(
-                    $"RuntimeComposition '{id}'의 presentationResult에 resultId가 없습니다.");
-            composition.PresentationResultVersion = (int?)presentation["version"]
-                ?? throw new InvalidDataException(
-                    $"RuntimeComposition '{id}'의 presentationResult에 version이 없습니다.");
-        }
-
-        return composition;
-    }
 }
 
+/// <param name="CarriesPresentation">
+/// 연출 데이터(<see cref="ProjectManifestJson.PresentationKeys"/>의 키나 연출 배선)가 있었다 — 읽지 않았다.
+/// </param>
 public sealed record ProjectManifest(
     string Title,
     string? StartNodeId,
-    AssetRootSettings AssetRoots,
-    IReadOnlyList<string> RecentCommandIds,
-    IReadOnlyList<StageQuickCommand>? QuickCommands,
     IReadOnlyList<ScriptFileReference> Scripts,
     IReadOnlyList<ProjectStoryFileReference> Files,
     IReadOnlyList<NodeLink> Links,
     IReadOnlyList<ChapterDocument> Chapters,
     IReadOnlyList<WriterSpeaker> WriterSpeakers,
-    IReadOnlyList<EaseCurve> EaseCurves,
-    IReadOnlyList<RuntimeComposition> Compositions,
-    string? ResultsRelativePath);
+    bool CarriesPresentation);
 
 public sealed record ScriptFileReference(
     string Id,

@@ -21,7 +21,7 @@ public static class ConditionSimulation
 {
     public sealed record Result(
         /// <summary>수동 + 자동을 합친 유효 선택 — 폴드·목록·칩이 이것을 쓴다.</summary>
-        StageBranchSelection Effective,
+        BranchSelection Effective,
         /// <summary>자동으로 판정된 조건 블록 id — 칩이 "(자동)"을 단다.</summary>
         IReadOnlySet<string> AutoBlocks,
         /// <summary>평가 불가로 남은 조건 블록 id — 칩 툴팁이 이유를 단다.</summary>
@@ -34,7 +34,7 @@ public static class ConditionSimulation
         Func<TLine, string?> expressionOf,
         Func<TLine, IEnumerable<(string Variable, SetOperatorKind Operator, string Value)>> setsOf,
         IEnumerable<(string Variable, string Value)> initialValues,
-        StageBranchSelection manual)
+        BranchSelection manual)
     {
         ArgumentNullException.ThrowIfNull(lines);
         ArgumentNullException.ThrowIfNull(kindOf);
@@ -65,7 +65,7 @@ public static class ConditionSimulation
             lineByLineId.TryAdd(lineIdOf(line), line);
         }
 
-        StageBranchSelection effective = manual.Clone();
+        BranchSelection effective = manual.Clone();
         var autoBlocks = new HashSet<string>(StringComparer.Ordinal);
         var undecidable = new HashSet<string>(StringComparer.Ordinal);
         var decisions = new int?[blockStarts.Count]; // null = 미결정(근사)
@@ -122,8 +122,8 @@ public static class ConditionSimulation
         IReadOnlyDictionary<string, TLine> lineByLineId,
         Func<TLine, string?> expressionOf,
         IReadOnlyDictionary<string, string> values,
-        StageBranchSelection manual,
-        StageBranchSelection effective,
+        BranchSelection manual,
+        BranchSelection effective,
         HashSet<string> autoBlocks,
         HashSet<string> undecidable)
     {
@@ -161,7 +161,7 @@ public static class ConditionSimulation
 
         int decision = Array.IndexOf(results, true) is var first and >= 0
             ? first
-            : StageBranchSelection.SkipAllBranches;
+            : BranchSelection.SkipAllBranches;
 
         effective.SelectCondition(blockId, decision);
         autoBlocks.Add(blockId);

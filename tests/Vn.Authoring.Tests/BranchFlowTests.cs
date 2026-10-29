@@ -33,13 +33,13 @@ public class BranchFlowTests
     ];
 
     private static BranchFlow.Analysis<DialogueResultLine> Analyze(
-        IReadOnlyList<DialogueResultLine> lines, StageBranchSelection selection, string? cursor)
+        IReadOnlyList<DialogueResultLine> lines, BranchSelection selection, string? cursor)
     {
         return BranchFlow.Analyze(
             lines,
             line => line.Transition?.Kind,
             line => line.LineId,
-            // BranchAwareLines와 같은 라벨 규칙: 선택지=버튼 텍스트, 조건=이름(없으면 식).
+            // 갈래 칩의 라벨 규칙: 선택지=버튼 텍스트, 조건=이름(없으면 식).
             line => line.Transition?.Kind is ConditionTransitionKind.BeginChoice
                 or ConditionTransitionKind.BeginNextOption
                 ? line.Text
@@ -52,7 +52,7 @@ public class BranchFlowTests
     public void 미선택_블록은_전부_적용하고_근사임을_표시한다()
     {
         BranchFlow.Analysis<DialogueResultLine> analysis =
-            Analyze(ChoiceDocument(), new StageBranchSelection(), cursor: "ln_end");
+            Analyze(ChoiceDocument(), new BranchSelection(), cursor: "ln_end");
 
         Assert.All(analysis.Lines, line => Assert.True(line.Taken || line.Unresolved));
         Assert.True(analysis.Lines[2].Unresolved);  // 갈래 안 라인
@@ -68,7 +68,7 @@ public class BranchFlowTests
     [Fact]
     public void 옵션을_고르면_그_갈래만_접힌다()
     {
-        var selection = new StageBranchSelection();
+        var selection = new BranchSelection();
         selection.SelectChoice("ln_labelA", "ln_labelB"); // 포도 갈래 선택
 
         BranchFlow.Analysis<DialogueResultLine> analysis =
@@ -87,7 +87,7 @@ public class BranchFlowTests
     [Fact]
     public void 커서가_있는_갈래가_선택을_덮는다()
     {
-        var selection = new StageBranchSelection();
+        var selection = new BranchSelection();
         selection.SelectChoice("ln_labelA", "ln_labelB"); // 포도 선택 상태에서
 
         BranchFlow.Analysis<DialogueResultLine> analysis =
@@ -115,7 +115,7 @@ public class BranchFlowTests
     public void 조건_안_선택지는_감싼_블록_전부의_선택을_따른다()
     {
         // W54 — 접히려면 조건도 그 갈래여야 하고, 선택지도 그 옵션이어야 한다.
-        var selection = new StageBranchSelection();
+        var selection = new BranchSelection();
         selection.SelectCondition("ln_if", 0);
         selection.SelectChoice("ln_labelA", "ln_labelB"); // 포도
 
@@ -129,7 +129,7 @@ public class BranchFlowTests
         Assert.All(analysis.Lines, line => Assert.False(line.Unresolved));
 
         // 조건을 건너뛰면 안의 선택지도 통째로 안 탄다.
-        selection.SelectCondition("ln_if", StageBranchSelection.SkipAllBranches);
+        selection.SelectCondition("ln_if", BranchSelection.SkipAllBranches);
         BranchFlow.Analysis<DialogueResultLine> skipped =
             Analyze(NestedDocument(), selection, cursor: null);
         Assert.False(skipped.Lines[5].Taken);
@@ -137,7 +137,7 @@ public class BranchFlowTests
         Assert.True(skipped.Lines[0].Taken); // 바깥은 그대로
 
         // 조건이 미선택이면 안의 선택 결과가 있어도 근사 표시가 남는다.
-        var partial = new StageBranchSelection();
+        var partial = new BranchSelection();
         partial.SelectChoice("ln_labelA", "ln_labelB");
         BranchFlow.Analysis<DialogueResultLine> approx =
             Analyze(NestedDocument(), partial, cursor: null);
@@ -150,7 +150,7 @@ public class BranchFlowTests
     {
         // 포도 본문을 보고 있으면 조건 갈래와 포도 옵션이 함께 선택으로 덮인다.
         BranchFlow.Analysis<DialogueResultLine> analysis =
-            Analyze(NestedDocument(), new StageBranchSelection(), cursor: "ln_b1");
+            Analyze(NestedDocument(), new BranchSelection(), cursor: "ln_b1");
 
         Assert.True(analysis.Lines[5].Taken);
         Assert.False(analysis.Lines[5].Unresolved);
@@ -171,7 +171,7 @@ public class BranchFlowTests
             Line(4, "ln_end", "합류", ConditionTransitionKind.EndIf),
         ];
 
-        var selection = new StageBranchSelection();
+        var selection = new BranchSelection();
         selection.SelectCondition("ln_if", 0);
 
         BranchFlow.Analysis<DialogueResultLine> first = Analyze(document, selection, cursor: "ln_end");
@@ -180,7 +180,7 @@ public class BranchFlowTests
         Assert.False(first.Lines[3].Taken);
         Assert.Equal(["호감 높음", "호감 낮음"], Assert.Single(first.Blocks).Branches.Select(branch => branch.Label));
 
-        selection.SelectCondition("ln_if", StageBranchSelection.SkipAllBranches);
+        selection.SelectCondition("ln_if", BranchSelection.SkipAllBranches);
 
         BranchFlow.Analysis<DialogueResultLine> skipped = Analyze(document, selection, cursor: "ln_end");
         Assert.False(skipped.Lines[1].Taken);
@@ -192,7 +192,7 @@ public class BranchFlowTests
     [Fact]
     public void 칩_순환은_갈래들을_돌고_조건은_건너뜀을_거쳐_근사로_돌아온다()
     {
-        var selection = new StageBranchSelection();
+        var selection = new BranchSelection();
         var block = new BranchFlow.Block(
             "ln_if", IsChoice: false,
             [new BranchFlow.Branch("ln_if", "참"), new BranchFlow.Branch("ln_elif", "다른 참")],
@@ -206,64 +206,10 @@ public class BranchFlowTests
 
         selection.Cycle(block); // → 건너뜀
         Assert.True(selection.TryGetCondition("ln_if", out index) &&
-            index == StageBranchSelection.SkipAllBranches);
+            index == BranchSelection.SkipAllBranches);
 
         selection.Cycle(block); // → 미선택(근사)
         Assert.False(selection.TryGetCondition("ln_if", out _));
     }
 
-    [Fact]
-    public void 갈래_인식_폴드_입력은_선택_라인까지_선택_갈래만_담는다()
-    {
-        DialogueResult dialogue = new(
-            new ResultIdentity("rs_bf", 1, DialogueResult.CurrentSchemaVersion, "sha256:test"),
-            "nd_bf", "장면", "sc_bf", 1, "ko-KR",
-            ChoiceDocument(),
-            Array.Empty<DialogueResultAssignment>(),
-            null,
-            DateTimeOffset.UnixEpoch);
-
-        var selection = new StageBranchSelection();
-        selection.SelectChoice("ln_labelA", "ln_labelA"); // 사과 갈래
-
-        BranchAwareLines.Result result = BranchAwareLines.UpTo(
-            dialogue, Array.Empty<PresentationResultBinding>(), "ln_end", selection);
-
-        Assert.Equal(
-            ["ln_0", "ln_labelA", "ln_a1", "ln_end"],
-            result.FoldLines.Select(line => line.LineId));
-        Assert.All(result.FoldLines, line => Assert.False(line.HasBranchTransition)); // 근사 아님
-        Assert.Equal(result.FoldLines.Select(line => line.LineId), result.TakenLines.Select(line => line.LineId));
-
-        BranchFlow.Block block = Assert.Single(result.Blocks);
-        Assert.Equal("ln_labelA", block.BlockLineId);
-
-        // 커서가 블록 앞이면 블록은 아직 칩에 없다.
-        BranchAwareLines.Result before = BranchAwareLines.UpTo(
-            dialogue, Array.Empty<PresentationResultBinding>(), "ln_0", selection);
-        Assert.Empty(before.Blocks);
-    }
-
-    [Fact]
-    public void 미선택이면_폴드_입력이_기존_근사와_같고_근사_표시가_남는다()
-    {
-        DialogueResult dialogue = new(
-            new ResultIdentity("rs_bf2", 1, DialogueResult.CurrentSchemaVersion, "sha256:test"),
-            "nd_bf2", "장면", "sc_bf2", 1, "ko-KR",
-            ChoiceDocument(),
-            Array.Empty<DialogueResultAssignment>(),
-            null,
-            DateTimeOffset.UnixEpoch);
-
-        BranchAwareLines.Result result = BranchAwareLines.UpTo(
-            dialogue, Array.Empty<PresentationResultBinding>(), "ln_end", new StageBranchSelection());
-
-        // 기존 LinesUpTo와 같은 라인 집합(전부) — 갈래 라인에만 근사 표시.
-        Assert.Equal(
-            MiniStageFold.LinesUpTo(dialogue, Array.Empty<PresentationResultBinding>(), "ln_end")
-                .Select(line => line.LineId),
-            result.FoldLines.Select(line => line.LineId));
-        Assert.True(result.FoldLines.First(line => line.LineId == "ln_a1").HasBranchTransition);
-        Assert.False(result.FoldLines.First(line => line.LineId == "ln_0").HasBranchTransition);
-    }
 }

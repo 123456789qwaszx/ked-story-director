@@ -6,15 +6,12 @@ using Vn.Authoring.Results;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// 발행 결과를 평평한 문서로 펼쳐도 조건 의미와 원본 식별자가 사라지지 않는지 검증한다.
+/// 펼친 결과를 평평한 문서로 합성해도 조건 의미와 원본 식별자가 사라지지 않는지 검증한다.
 /// Preview 문자열보다 Segment 목록이 먼저이며, Formatter는 그 목록을 읽기만 해야 한다.
-///
-/// 이전 <c>DialogueDocumentComposerTests</c>를 대체한다. 그때는 편집 중인 노드와 실시간으로
-/// 연결된 연출을 직접 합성했다. 지금 정식 출력의 입력은 얼어붙은 결과 두 개뿐이다.
+/// (⛔ 연출 명령 조각의 합성은 2026-10-29에 연출과 함께 ked-story-compositor로 갔다.)
 /// </summary>
 public class ResultDocumentComposerTests
 {
-
     [Fact]
     public void 조건_전환과_갈래_출구를_실행_순서대로_평평하게_합성한다()
     {
@@ -25,7 +22,7 @@ public class ResultDocumentComposerTests
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l3, sample.TargetB.Id);
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
 
         RenderedSegment[] meaningful = document.Segments
@@ -67,7 +64,6 @@ public class ResultDocumentComposerTests
         Assert.Equal(l1, firstJump.Source.LineId);
         Assert.Equal(l3, secondJump.Source.LineId);
         Assert.Equal(sample.Dialogue.Id, firstJump.Source.NodeId);
-        Assert.Equal(result.Identity.ResultId, firstJump.Source.DialogueResultId);
 
         RenderedSegment end = meaningful.Single(segment =>
             segment.Kind == RenderedSegmentKind.ConditionEnd);
@@ -89,7 +85,7 @@ public class ResultDocumentComposerTests
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opening, sample.TargetA.Id);
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
         string text = YarnPreviewFormatter.Format(document);
 
@@ -112,15 +108,14 @@ public class ResultDocumentComposerTests
     }
 
     /// <summary>
-    /// 발행 시점의 조건 이름과 식을 결과가 함께 얼린다.
-    /// 나중에 조건을 지워도 이미 발행한 결과는 같은 문서를 다시 만들어야 한다.
+    /// 펼친 순간의 조건 이름과 식을 결과가 함께 싣는다 — 합성기는 조건을 다시 찾지 않는다.
     /// </summary>
     [Fact]
     public void 결과는_조건이_삭제된_뒤에도_같은_식을_재현한다()
     {
         var sample = new Sample();
         sample.Line("조건 대사", LineConditionTransition.BeginIf(sample.ConditionA.Id));
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
 
         sample.Editor.RemoveCondition(sample.ConditionA.Id);
 
@@ -157,167 +152,22 @@ public class ResultDocumentComposerTests
             sample.ConditionA.Id,
             sample.Dialogue.FindExtension(opening)!.Transition!.ConditionId);
 
-        // 그리고 그 상태로는 발행되지 않는다.
-        Assert.False(document.IsPublished);
-        Assert.Throws<Vn.Authoring.Editing.PublishRejectedException>(
-            () => sample.Editor.PublishDialogue(sample.Dialogue.Id));
+        // 그리고 그 상태는 막는 문제다.
+        Assert.NotEmpty(sample.BlockingProblems());
     }
 
     [Fact]
-    public void 대사_Segment는_결과와_LineId_원본을_유지한다()
+    public void 대사_Segment는_노드와_LineId_원본을_유지한다()
     {
         var sample = new Sample();
         string line = sample.Line("원본 위치");
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
         RenderedSegment segment = Assert.Single(document.Segments, item =>
             item.Kind == RenderedSegmentKind.DialogueLine);
 
         Assert.Equal(sample.Dialogue.Id, segment.Source.NodeId);
         Assert.Equal(line, segment.Source.LineId);
-        Assert.Equal(result.Identity.ResultId, segment.Source.DialogueResultId);
     }
-
-    [Fact]
-    public void 연출_Command를_대사_앞에_작성_순서대로_삽입한다()
-    {
-        var context = new CompositionFixture();
-        PresentationCommandInstance camera = context.Sample.Editor.AddPresentationCommand(
-            context.Presentation.Id,
-            context.LineId,
-            "camera.closeup",
-            new Dictionary<string, string> { ["preset"] = "closeup" });
-        PresentationCommandInstance acting = context.Sample.Editor.AddPresentationCommand(
-            context.Presentation.Id,
-            context.LineId,
-            "acting.smile",
-            new Dictionary<string, string> { ["preset"] = "smile" });
-
-        PresentationResult presentation = context.PublishPresentation();
-        RenderedDocument document = ResultDocumentComposer.Compose(
-            context.Dialogue,
-            presentation,
-            context.Sample.Project,
-            Sample.Definition);
-
-        RenderedSegment[] commands = document.Segments
-            .Where(segment => segment.Kind == RenderedSegmentKind.PresentationCommand)
-            .ToArray();
-        RenderedSegment dialogue = document.Segments.Single(segment =>
-            segment.Kind == RenderedSegmentKind.DialogueLine && segment.Source.LineId == context.LineId);
-
-        Assert.Equal(
-            new[] { camera.Id, acting.Id },
-            commands.Select(segment => segment.Source.PresentationCommandId));
-        Assert.All(commands, segment => Assert.Equal(context.LineId, segment.Source.LineId));
-        Assert.All(commands, segment =>
-            Assert.Equal(context.Presentation.Id, segment.Source.PresentationNodeId));
-        Assert.All(commands, segment =>
-            Assert.Equal(presentation.Identity.ResultId, segment.Source.PresentationResultId));
-        Assert.True(Array.IndexOf(document.Segments.ToArray(), commands[1]) <
-                    Array.IndexOf(document.Segments.ToArray(), dialogue));
-
-        string text = YarnPreviewFormatter.Format(document);
-
-        // 런타임 문법은 포지셔널이다 — 파라미터 순서대로 값만 잇는다.
-        int cameraIndex = text.IndexOf("<<camera closeup>>", StringComparison.Ordinal);
-        int actingIndex = text.IndexOf("<<character_acting smile>>", StringComparison.Ordinal);
-        int dialogueIndex = text.IndexOf("연출 대사 #line:", StringComparison.Ordinal);
-        Assert.True(cameraIndex >= 0 && cameraIndex < actingIndex);
-        Assert.True(actingIndex < dialogueIndex);
-        Assert.Equal(DocumentLayer.Presentation, commands[0].Layer);
-    }
-
-
-    [Fact]
-    public void Setup_커맨드는_첫_줄보다_앞에_LineId_없이_펼쳐진다()
-    {
-        var context = new CompositionFixture();
-        context.Sample.Editor.AddPresentationSetupCommand(
-            context.Presentation.Id,
-            "camera.wide");
-
-        RenderedDocument document = ResultDocumentComposer.Compose(
-            context.Dialogue,
-            context.PublishPresentation(),
-            context.Sample.Project,
-            Sample.Definition);
-
-        RenderedSegment setup = document.Segments.Single(segment =>
-            segment.Kind == RenderedSegmentKind.PresentationCommand);
-        RenderedSegment firstLine = document.Segments.First(segment =>
-            segment.Kind == RenderedSegmentKind.DialogueLine);
-
-        Assert.Null(setup.Source.LineId);
-        Assert.Equal(context.Presentation.Id, setup.Source.PresentationNodeId);
-        Assert.True(document.Segments.ToList().IndexOf(setup) <
-                    document.Segments.ToList().IndexOf(firstLine));
-        Assert.Contains("<<camera wide>>", YarnPreviewFormatter.Format(document), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void 비활성_Command는_결과에_들어가지_않으므로_문서에도_없다()
-    {
-        var context = new CompositionFixture();
-        PresentationCommandInstance disabled = context.Sample.Editor.AddPresentationCommand(
-            context.Presentation.Id,
-            context.LineId,
-            "screen.flash");
-        context.Sample.Editor.SetPresentationCommandEnabled(
-            context.Presentation.Id,
-            disabled.Id,
-            enabled: false);
-
-        RenderedDocument document = ResultDocumentComposer.Compose(
-            context.Dialogue,
-            context.PublishPresentation(),
-            context.Sample.Project);
-
-        Assert.DoesNotContain(document.Segments, segment =>
-            segment.Kind == RenderedSegmentKind.PresentationCommand);
-    }
-
-    [Fact]
-    public void 연출이_없는_LineId는_대사만_출력된다()
-    {
-        var context = new CompositionFixture();
-        RenderedDocument document = ResultDocumentComposer.Compose(
-            context.Dialogue,
-            context.PublishPresentation(),
-            context.Sample.Project);
-
-        Assert.DoesNotContain(document.Segments, segment =>
-            segment.Kind == RenderedSegmentKind.PresentationCommand);
-        Assert.Contains(document.Segments, segment =>
-            segment.Kind == RenderedSegmentKind.DialogueLine && segment.Source.LineId == context.LineId);
-    }
-}
-
-/// <summary>대사 결과 하나와 그것을 읽는 연출 노드를 갖춘 작은 설정.</summary>
-internal sealed class CompositionFixture
-{
-    public CompositionFixture()
-    {
-        Sample = new Sample();
-        LineId = Sample.Line("연출 대사");
-        Dialogue = Sample.Editor.PublishDialogue(Sample.Dialogue.Id).Result;
-
-        Presentation = Sample.Editor.AddPresentationNode(Sample.File.Id, name: "카메라 연출");
-        Sample.Editor.SetPresentationSource(
-            Presentation.Id,
-            Dialogue.Identity.ResultId,
-            Dialogue.Identity.Version);
-    }
-
-    public Sample Sample { get; }
-
-    public string LineId { get; }
-
-    public DialogueResult Dialogue { get; }
-
-    public PresentationNode Presentation { get; }
-
-    public PresentationResult PublishPresentation() =>
-        Sample.Editor.PublishPresentation(Presentation.Id).Result;
 }

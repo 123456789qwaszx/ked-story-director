@@ -181,7 +181,6 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// 토글 상태로 만든 필터. 거르는 것은 화면이 아니라 투영이다.
-    /// 연출·연출 공급 노드는 필터 이전에 배관으로 숨는다(2026-08-21) — 토글이 없다.
     /// </summary>
     private GraphFilter CurrentFilter => new(
         ShowDialogue: FilterDialogueCheck.IsChecked == true,
@@ -1763,15 +1762,9 @@ public partial class GraphEditorView : UserControl
         GraphNodeKind.Dialogue => new CardStyle(
             Color.FromRgb(0x0D, 0x94, 0x88), Colors.White,
             Color.FromArgb(90, 128, 128, 128), 10, "✎"),
-        GraphNodeKind.Set => new CardStyle(
-            Color.FromRgb(0x3B, 0x82, 0xF6), Color.FromRgb(0xEF, 0xF6, 0xFF),
-            Color.FromArgb(90, 128, 128, 128), 10, "⚙"),
-        GraphNodeKind.Presentation => new CardStyle(
-            Color.FromRgb(0x8B, 0x5C, 0xF6), Color.FromRgb(0xFA, 0xF5, 0xFF),
-            Color.FromArgb(90, 128, 128, 128), 10, "🎬"),
         _ => new CardStyle(
-            Color.FromRgb(0x22, 0xC5, 0x5E), Color.FromRgb(0xF0, 0xFD, 0xF4),
-            Color.FromArgb(90, 128, 128, 128), 10, "🧰")
+            Color.FromRgb(0x3B, 0x82, 0xF6), Color.FromRgb(0xEF, 0xF6, 0xFF),
+            Color.FromArgb(90, 128, 128, 128), 10, "⚙")
     };
 
     /// <summary>챕터의 에피소드인가 — 소속을 묻는 것이지 잠금을 묻는 것이 아니다.</summary>
@@ -2465,9 +2458,7 @@ public partial class GraphEditorView : UserControl
     {
         bool branch = port.Kind == GraphOutputPortKind.ExecutionBranch;
         bool settings = port.Kind == GraphOutputPortKind.Settings;
-        bool presentation = port.Kind == GraphOutputPortKind.PublishedResult;
         IBrush settingsBrush = new SolidColorBrush(Color.FromRgb(0x0F, 0x76, 0x6E));
-        IBrush presentationBrush = new SolidColorBrush(Color.FromRgb(0x7C, 0x3A, 0xED));
 
         var label = new TextBlock
         {
@@ -2478,10 +2469,8 @@ public partial class GraphEditorView : UserControl
                 ? BranchPalette.Accent(port.PaletteIndex)
                 : settings
                     ? settingsBrush
-                    : presentation
-                        ? presentationBrush
-                        : null,
-            FontWeight = branch || settings || presentation ? FontWeight.SemiBold : FontWeight.Normal,
+                    : null,
+            FontWeight = branch || settings ? FontWeight.SemiBold : FontWeight.Normal,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Right
@@ -2491,9 +2480,7 @@ public partial class GraphEditorView : UserControl
             ? BranchPalette.Accent(port.PaletteIndex)
             : settings
                 ? settingsBrush
-                : presentation
-                    ? presentationBrush
-                    : Brushes.DimGray;
+                : Brushes.DimGray;
 
         var knob = new Ellipse
         {
@@ -2643,15 +2630,13 @@ public partial class GraphEditorView : UserControl
             StrokeDashArray = connection.Kind switch
             {
                 GraphConnectionKind.Settings => new AvaloniaList<double> { 5, 3 },
-                GraphConnectionKind.ResultSnapshot => new AvaloniaList<double> { 2, 3 },
                 _ => null
             }
         };
 
         bool showLabel = connection.Kind is
             GraphConnectionKind.ExecutionBranch or
-            GraphConnectionKind.Settings or
-            GraphConnectionKind.ResultSnapshot;
+            GraphConnectionKind.Settings;
         var label = new Border
         {
             Padding = new Thickness(5, 1),
@@ -2705,8 +2690,7 @@ public partial class GraphEditorView : UserControl
         edge.Path.IsVisible = true;
         bool showLabel = edge.Connection.Kind is
             GraphConnectionKind.ExecutionBranch or
-            GraphConnectionKind.Settings or
-            GraphConnectionKind.ResultSnapshot;
+            GraphConnectionKind.Settings;
         edge.Label.IsVisible = showLabel;
 
         IReadOnlyList<GraphPosition> route = OrthogonalEdgeRouter.Route(
@@ -3560,7 +3544,7 @@ public partial class GraphEditorView : UserControl
     }
 
     // AttachLatestResult(발행 결과 끌어 연결)는 2026-08-21에 사라졌다 — 연출 채널이
-    // 자동으로 최신 발행본을 고정한다(ProjectEditor.EnsurePresentationChannel).
+    // 자동으로 최신 발행본을 고정하게 됐다(그 채널과 발행은 2026-10-29에 compositor로 갔다).
     // HandleSupplyDrop(조건 공급 끌어 연결)은 2026-08-22에 같은 길을 갔다 — 설정노드의
     // "이 챕터에 공급 중" 포트가 사라지면서 놓을 포트 자체가 없어졌다(공급 범위가 판
     // 전체라 이을 것이 없다). 링크 데이터와 AddSettingsLink는 그대로 산다.
@@ -3624,7 +3608,6 @@ public partial class GraphEditorView : UserControl
         string kind = edge.Connection.Kind switch
         {
             GraphConnectionKind.Settings => "조건 공급",
-            GraphConnectionKind.ResultSnapshot => "발행 결과 입력",
             GraphConnectionKind.ExecutionBranch => $"조건 '{edge.Connection.Label}'",
             _ => "기본 출구"
         };
@@ -3692,8 +3675,8 @@ public partial class GraphEditorView : UserControl
         double y = ClampNodeY(
             ((GraphScroll.Offset.Y + (GraphScroll.Viewport.Height / 2)) / _zoom) - 90 + stagger);
 
-        // 이 판에서 사람이 만드는 노드는 대사·설정뿐이다 (2026-08-21) — 연출·연출 공급은
-        // 배관이라 채널이 짓고(EnsurePresentationChannel), 설정노드는 챕터마다 자동으로 선다.
+        // 이 판에서 사람이 만드는 노드는 대사·설정뿐이다 — 노드 종류가 그 둘이고, 설정노드는
+        // 챕터마다 자동으로 선다.
         StoryNode node = kind switch
         {
             GraphNodeKind.Dialogue => _session.Editor.AddDialogueNode(fileId, x, y),
@@ -3825,7 +3808,6 @@ public partial class GraphEditorView : UserControl
         return connection.Kind switch
         {
             GraphConnectionKind.Settings => new SolidColorBrush(Color.FromRgb(0x0F, 0x76, 0x6E)),
-            GraphConnectionKind.ResultSnapshot => new SolidColorBrush(Color.FromRgb(0x7C, 0x3A, 0xED)),
             GraphConnectionKind.ExecutionBranch => BranchPalette.Accent(connection.PaletteIndex),
             _ => new SolidColorBrush(Color.FromArgb(150, 100, 100, 100))
         };
@@ -3836,8 +3818,6 @@ public partial class GraphEditorView : UserControl
         return kind switch
         {
             GraphNodeKind.Set => "설정",
-            GraphNodeKind.Presentation => "연출",
-            GraphNodeKind.CommandSupply => "연출 공급",
             _ => "대사"
         };
     }

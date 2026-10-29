@@ -7,7 +7,7 @@ namespace Vn.Authoring.Flow;
 /// 줄에 적힌 전환만 보고 "지금 어떤 조건 갈래 안인가"를 앞에서부터 계산한다.
 ///
 /// 이 클래스가 조건 모델의 유일한 해석자다. 화면이 색을 칠할 때도, 그래프가 포트를 만들 때도,
-/// 결과를 발행할 때도 여기를 지난다. 해석이 두 벌 있으면 화면과 그래프가 다른 구조를
+/// 미리보기를 펼칠 때도 여기를 지난다. 해석이 두 벌 있으면 화면과 그래프가 다른 구조를
 /// 보여 주게 되고, 그때 작가는 어느 쪽이 맞는지 알 방법이 없다.
 ///
 /// 줄과 그 순서는 대본이 준다. 이 해석기는 <see cref="DialogueScriptResolver"/>가 합친
@@ -408,7 +408,7 @@ public static class ConditionFlowResolver
             AnchorFor(line, builders),
             conditionId: string.Empty,
             // 손으로 고친 파일이라 OptionId가 없을 수 있다. 빈 값으로 두면
-            // 발행 검증이 잡는다 — 여기서 새로 발급하면 열 때마다 Id가 달라진다.
+            // 펼침 검증(DialoguePublisher)이 잡는다 — 여기서 새로 발급하면 열 때마다 Id가 달라진다.
             optionId: transition.OptionId ?? string.Empty,
             chainIndex,
             branchIndexInChain,

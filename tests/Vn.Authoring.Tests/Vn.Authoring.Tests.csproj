@@ -20,9 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vn.Authoring\Vn.Authoring.csproj" />
-    <!-- 이미터 산출물 검증용. Vn.Core는 저작 경로에 관여하지 않고 출력 검증기로만 쓴다. -->
-    <ProjectReference Include="..\..\src\Vn.Core\Vn.Core.csproj" />
+    <!-- ⛔ Vn.Core(이미터 산출물 검증) 참조는 2026-10-29에 걷혔다 — Yarn 이미터가 ked-story-compositor로 갔다. -->
   </ItemGroup>
-
 
 </Project>

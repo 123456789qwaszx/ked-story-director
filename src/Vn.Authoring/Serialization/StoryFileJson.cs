@@ -16,7 +16,10 @@ public static class StoryFileJson
         return JsonSupport.ToDeterministicText(WriteObject(file));
     }
 
-    public static StoryFile Read(string json)
+    public static StoryFile Read(string json) => Read(json, out _);
+
+    /// <param name="carriedPresentation">연출 층의 노드가 있었다 — 읽지 않았다(<see cref="StoryNodeJson.PresentationKinds"/>).</param>
+    public static StoryFile Read(string json, out bool carriedPresentation)
     {
         JsonObject root = JsonSupport.ParseObject(json, "StoryFile");
         int version = (int?)root["formatVersion"] ?? 0;
@@ -27,7 +30,7 @@ public static class StoryFileJson
                 $"StoryFile 형식 버전 {version}은 지원하지 않습니다. 현재 버전은 {CurrentFormatVersion}입니다.");
         }
 
-        return ReadObject(root);
+        return ReadObject(root, out carriedPresentation);
     }
 
     internal static JsonObject WriteObject(StoryFile file)
@@ -47,7 +50,9 @@ public static class StoryFileJson
         };
     }
 
-    internal static StoryFile ReadObject(JsonObject root)
+    internal static StoryFile ReadObject(JsonObject root) => ReadObject(root, out _);
+
+    internal static StoryFile ReadObject(JsonObject root, out bool carriedPresentation)
     {
         if (root["nodes"] is not JsonArray nodes)
         {
@@ -60,6 +65,8 @@ public static class StoryFileJson
         var file = new StoryFile(id, name);
 
         HashSet<string> nodeIds = new(StringComparer.Ordinal);
+        carriedPresentation = false;
+
         foreach (JsonNode? item in nodes)
         {
             if (item is not JsonObject nodeJson)
@@ -67,7 +74,12 @@ public static class StoryFileJson
                 continue;
             }
 
-            StoryNode node = StoryNodeJson.Read(nodeJson);
+            if (StoryNodeJson.Read(nodeJson) is not { } node)
+            {
+                carriedPresentation = true;
+                continue;
+            }
+
             if (!nodeIds.Add(node.Id))
             {
                 throw new InvalidDataException($"StoryFile '{id}' 안에서 노드 Id '{node.Id}'가 중복됩니다.");

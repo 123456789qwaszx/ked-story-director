@@ -301,10 +301,10 @@ public sealed class ChapterExportAndFixtureTests
         Assert.Equal("장면_1", nodes[0].GetProperty("DialogueEntryId").GetString());
         Assert.Equal("new01", nodes[1].GetProperty("DialogueEntryId").GetString());
 
-        // 그리고 이 값의 주인은 이미터다 — 내보내기가 글자를 다시 조립하지 않는다.
-        // 이미터가 규칙을 바꾸는 날 이 단언이 저절로 따라간다.
+        // 그리고 이 값의 규칙은 한 자리(YarnNaming)다 — 내보내기가 글자를 다시 조립하지 않는다.
+        // 규칙이 바뀌는 날 이 단언이 저절로 따라간다(compositor의 이미터도 같은 규칙을 지난다).
         Assert.Equal(
-            YarnBundleEmitter.StoryNodeTitleOf("장면 1"),
+            YarnNaming.StoryNodeTitleOf("장면 1"),
             nodes[0].GetProperty("DialogueEntryId").GetString());
     }
 

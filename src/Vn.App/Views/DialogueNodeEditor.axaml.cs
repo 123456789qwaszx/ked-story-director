@@ -400,7 +400,7 @@ public partial class DialogueNodeEditor : UserControl
     }
 
     /// <summary>대본 라인의 갈래 분석 — 프리뷰 폴드와 같은 유효 선택(수동+자동)·커서 기준(사본 금지).</summary>
-    private BranchFlow.Analysis<DialogueLine> AnalyzeBranches(DialogueScript script, StageBranchSelection effective)
+    private BranchFlow.Analysis<DialogueLine> AnalyzeBranches(DialogueScript script, BranchSelection effective)
     {
         return BranchFlow.Analyze(
             script.Lines,
@@ -1628,10 +1628,9 @@ public partial class DialogueNodeEditor : UserControl
     //    필요없어 보이는데"). 그 탭이 보여 주던 것은 발행 상태 문구와 발행 이력
     //    목록뿐이었고, 둘 다 [이 상태를 발행]이 2026-08-21에 자동이 된 뒤로는
     //    읽기 전용 현황판이었다 — 현황판은 볼 이유가 사라지면 지운다([편집 자료]
-    //    현황판과 같은 결). ⚠ 발행 자체는 그대로다: 자동 발행
-    //    (ProjectEditor.EnsurePresentationChannel)·Results 층·연출 바인딩·출력은
-    //    한 줄도 안 건드렸다. 사라진 것은 그것을 들여다보던 창 하나다.
-    //    (수동 발행 Publish()는 그보다 앞선 2026-08-21에 이미 없어졌다.)
+    //    현황판과 같은 결). (수동 발행 Publish()는 그보다 앞선 2026-08-21에 이미 없어졌다.)
+    //    ⛔ 발행 자체(자동 발행 · Results 층 · 연출 바인딩 · 출력)는 2026-10-29에 연출과 함께
+    //    ked-story-compositor로 갔다.
 
     // ── 출구 후보 ───────────────────────────────────────────────────────────
     //
@@ -1654,7 +1653,6 @@ public partial class DialogueNodeEditor : UserControl
 
     private List<StoryNode> ExitTargets(DialogueNode node) => _session!.Project.EnumerateNodes()
         .Where(other => !string.Equals(other.Id, node.Id, StringComparison.Ordinal))
-        .Where(other => other is not PresentationNode)
         .Where(other => other is not DialogueNode { MarkedEpisodeId: not null })
         .ToList();
 

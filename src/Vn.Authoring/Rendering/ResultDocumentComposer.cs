@@ -1,85 +1,24 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 using Vn.Authoring.Results;
 
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
-/// 호환되지 않는 결과 조합으로 정식 문서를 만들려 했을 때.
-/// </summary>
-public sealed class IncompatibleCompositionException : InvalidOperationException
-{
-    public IncompatibleCompositionException(ResolvedComposition composition)
-        : base("호환되지 않는 결과 조합으로는 정식 출력을 만들지 않습니다. " +
-            composition.ProblemSummary())
-    {
-        Composition = composition;
-    }
-
-    public ResolvedComposition Composition { get; }
-}
-
-/// <summary>
-/// 발행된 <see cref="DialogueResult"/>와 (있다면) <see cref="PresentationResult"/>를
-/// 출력 옵션에 맞는 평평한 Segment 목록으로 합성한다.
+/// 펼친 <see cref="DialogueResult"/>를 출력 옵션에 맞는 평평한 Segment 목록으로 합성한다.
 ///
-/// <b>여기가 정식 출력의 유일한 입구다.</b> Runtime Full, 대본집, 녹음 대본, 번역표,
-/// 연출 지시서가 모두 같은 Segment 목록에서 나온다. 형식마다 합성기를 따로 두면
+/// <b>대사 미리보기의 유일한 입구다.</b> Runtime Full · 대본 · 녹음 대본 · 번역표가 모두 같은
+/// Segment 목록에서 나오고, 카드의 글 칸도 여기를 지난다(ScenarioOnly). 형식마다 합성기를 따로 두면
 /// 같은 원고에서 나온 문서들이 조금씩 다른 이야기를 하게 된다.
 ///
-/// 이 클래스는 조건 의미를 다시 계산하지 않는다. 결과가 이미 얼어붙은 구조를 들고 있다.
+/// 이 클래스는 조건 의미를 다시 계산하지 않는다. 결과가 이미 펼친 구조를 들고 있다.
 /// 문자열 문법도 모른다. 실제 표기는 Formatter가 맡는다.
+/// ⛔ 연출 명령 조각(연출 결과와의 합성)은 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔다.
 /// </summary>
 public static class ResultDocumentComposer
 {
-    /// <summary>조합 하나를 합성한다. 호환되지 않으면 문서를 만들지 않고 거부한다.</summary>
-    public static RenderedDocument Compose(
-        ResolvedComposition composition,
-        StoryProject? project = null,
-        GameDefinition? definition = null,
-        DocumentOutputOptions? options = null,
-        OutputPresetId? presetId = null,
-        ILocalizedLineProvider? localization = null)
-    {
-        ArgumentNullException.ThrowIfNull(composition);
-
-        if (!composition.IsCompatible)
-        {
-            throw new IncompatibleCompositionException(composition);
-        }
-
-        return Compose(
-            composition.Dialogue!,
-            composition.Presentation,
-            project,
-            definition,
-            options,
-            presetId,
-            localization);
-    }
-
-    public static RenderedDocument ComposePreset(
-        ResolvedComposition composition,
-        OutputPreset preset,
-        StoryProject? project = null,
-        GameDefinition? definition = null,
-        ILocalizedLineProvider? localization = null)
-    {
-        ArgumentNullException.ThrowIfNull(preset);
-
-        return Compose(composition, project, definition, preset.Options, preset.Id, localization);
-    }
-
-    /// <summary>
-    /// 결과 두 개를 직접 합성한다. 호환성 검사는 이미 끝났다고 본다.
-    /// 작업 중 미리 보기도 이 경로를 지난다. 미리 보기와 정식 출력이 다른 코드로 만들어지면
-    /// 화면에서 본 것과 발행된 것의 차이를 아무도 찾지 못한다.
-    /// </summary>
     public static RenderedDocument Compose(
         DialogueResult dialogue,
-        PresentationResult? presentation = null,
         StoryProject? project = null,
-        GameDefinition? definition = null,
         DocumentOutputOptions? options = null,
         OutputPresetId? presetId = null,
         ILocalizedLineProvider? localization = null)
@@ -87,12 +26,9 @@ public static class ResultDocumentComposer
         ArgumentNullException.ThrowIfNull(dialogue);
 
         options ??= OutputPresetCatalog.RuntimeFull.Options;
-        PresentationCommandCatalog catalog = PresentationCommandCatalog.For(definition);
 
         var segments = new List<RenderedSegment>();
-        var nodeSource = new RenderSourceReference(
-            NodeId: dialogue.SourceNodeId,
-            DialogueResultId: dialogue.Identity.ResultId);
+        var nodeSource = new RenderSourceReference(NodeId: dialogue.SourceNodeId);
 
         if (options.IncludeStructure)
         {
@@ -104,39 +40,10 @@ public static class ResultDocumentComposer
                 Text: dialogue.SourceNodeName));
         }
 
-        // ⛔ <b>설정노드의 할당은 노드 머리의 `set`으로 나가지 않는다</b> (2026-08-24,
-        // `docs/work-orders/chapter-scope-variables-orders.md` §4 — 호스트 쪽 실측).
-        //
-        // 그 할당은 <b>선언</b>이다: "이 챕터에 이런 변수가 이 초기값으로 있다".
-        // 그런데 여기서 세그먼트로 내면 이미터가 <b>모든 대사노드의 머리</b>에
-        // `<<set $x = 0>>`을 박았고, 그러면 초기화의 수명이 <b>에피소드</b>가 된다 —
-        // 에피소드1에서 켠 "열쇠를 찾았다"가 에피소드2 머리에서 지워졌다.
-        //
-        // 작가가 대본 <b>줄에</b> 직접 단 set은 그대로 나간다(아래 line.Sets) — 그건
-        // 이야기 도중의 변화이고, 지워야 할 것은 초기값 되밟기뿐이다.
-        //
-        // 되돌리는 일은 런타임이 맡는다: 챕터 진입에서 `<<declare>>`의 초기값으로 한 번
-        // (`ProgressionYarnBridge.BeginChapter`). 그래서 <b>선언 파일이 반드시 나가야
-        // 한다</b> — 그 길은 이미터가 `dialogue.Assignments`에서 직접 모으므로(세그먼트를
-        // 안 지난다) 이 변경에 영향받지 않는다.
-
-        if (options.IncludePresentation && presentation is not null)
-        {
-            // Setup은 어느 줄에도 속하지 않는 장면 준비다. 이미터에서 Set_ 노드 본문이 되고,
-            // Preview에서도 첫 줄보다 앞에 놓는다.
-            foreach (PresentationResultCommand command in presentation.SetupCommands)
-            {
-                AddCommandSegment(
-                    segments,
-                    dialogue,
-                    presentation,
-                    lineId: null,
-                    command,
-                    indentLevel: 0,
-                    catalog,
-                    options);
-            }
-        }
+        // ⛔ <b>설정노드의 할당은 노드 머리의 `set`으로 내지 않는다</b> (2026-08-24,
+        // `docs/work-orders/chapter-scope-variables-orders.md` §4). 그 할당은 챕터의 <b>선언</b>이라
+        // 노드마다 되밟으면 초기화의 수명이 에피소드가 된다. 작가가 대본 <b>줄에</b> 단 set은
+        // 그대로 낸다(아래 line.Sets) — 그건 이야기 도중의 변화다.
 
         int depth = 0;
         int choiceBlockOrdinal = -1;
@@ -182,8 +89,7 @@ public static class ResultDocumentComposer
             var lineSource = new RenderSourceReference(
                 NodeId: dialogue.SourceNodeId,
                 LineId: line?.LineId,
-                ConditionId: (tail ? transitions.FirstOrDefault() : line!.Transition)?.ConditionId,
-                DialogueResultId: dialogue.Identity.ResultId);
+                ConditionId: (tail ? transitions.FirstOrDefault() : line!.Transition)?.ConditionId);
 
             // 세그먼트 Id의 뿌리 — 줄이 없으면 노드의 꼬리다.
             string source = line?.LineId ?? $"{dialogue.SourceNodeId}:trailing";
@@ -338,7 +244,7 @@ public static class ResultDocumentComposer
 
             int indent = options.IncludeConditions || isOptionLabel ? depth : 0;
 
-            // 꼬리에는 대사도 연출도 없다 — 갈래를 열고 닫기만 한다. 출구는 전환에
+            // 꼬리에는 대사가 없다 — 갈래를 열고 닫기만 한다. 출구는 전환에
             // 실려 왔으므로 위 루프가 이미 대기시켰다.
             // (`tail`이 아니라 `line`으로 묻는다 — 그래야 아래가 널 아님으로 좁혀진다.)
             if (line is null)
@@ -377,36 +283,6 @@ public static class ResultDocumentComposer
                         Variable: operation.Variable,
                         Operator: SetOperators.Symbol(operation.Operator),
                         Value: operation.Value));
-                }
-            }
-
-            if (options.IncludePresentation && presentation is not null)
-            {
-                if (isOptionLabel)
-                {
-                    // 옵션 라벨은 메인 레인에서 advance를 소비하지 않으므로(계약서 B)
-                    // 서브 레인에 짝지을 자리가 없다. 붙은 연출은 조용히 버리지 않고 알린다.
-                    if (options.IncludeDiagnostics &&
-                        presentation.FindBinding(line.LineId) is { IsOrphan: false, Commands.Count: > 0 })
-                    {
-                        segments.Add(new RenderedSegment(
-                            Id: $"warning:{presentation.Identity.ResultId}:{line.LineId}:label",
-                            Kind: RenderedSegmentKind.Warning,
-                            Layer: DocumentLayer.Diagnostics,
-                            Source: lineSource,
-                            Text: $"옵션 라벨 라인 '{line.LineId}'의 연출은 서브 레인에 짝지을 자리가 없어 출력에서 빠집니다."));
-                    }
-                }
-                else
-                {
-                    AddPresentationCommands(
-                        segments,
-                        dialogue,
-                        presentation,
-                        line,
-                        indent,
-                        catalog,
-                        options);
                 }
             }
 
@@ -481,11 +357,6 @@ public static class ResultDocumentComposer
                 TargetNodeName: project?.FindNode(defaultTarget)?.Name));
         }
 
-        if (options.IncludeDiagnostics && presentation is not null)
-        {
-            AddOrphanWarnings(segments, dialogue, presentation);
-        }
-
         if (options.IncludeStructure)
         {
             segments.Add(new RenderedSegment(
@@ -495,13 +366,7 @@ public static class ResultDocumentComposer
                 Source: nodeSource));
         }
 
-        return new RenderedDocument(
-            dialogue.SourceNodeId,
-            dialogue.Identity,
-            presentation?.Identity,
-            segments,
-            options,
-            presetId);
+        return new RenderedDocument(dialogue.SourceNodeId, segments, options, presetId);
     }
 
     /// <summary>
@@ -587,108 +452,5 @@ public static class ResultDocumentComposer
             IndentLevel: indentLevel,
             Text: transition.ConditionName,
             Expression: expression));
-    }
-
-    private static void AddPresentationCommands(
-        List<RenderedSegment> segments,
-        DialogueResult dialogue,
-        PresentationResult presentation,
-        DialogueResultLine line,
-        int indentLevel,
-        PresentationCommandCatalog catalog,
-        DocumentOutputOptions options)
-    {
-        if (presentation.FindBinding(line.LineId) is not { IsOrphan: false } binding)
-        {
-            return;
-        }
-
-        foreach (PresentationResultCommand command in binding.Commands)
-        {
-            AddCommandSegment(
-                segments,
-                dialogue,
-                presentation,
-                line.LineId,
-                command,
-                indentLevel,
-                catalog,
-                options);
-        }
-    }
-
-    private static void AddCommandSegment(
-        List<RenderedSegment> segments,
-        DialogueResult dialogue,
-        PresentationResult presentation,
-        string? lineId,
-        PresentationResultCommand command,
-        int indentLevel,
-        PresentationCommandCatalog catalog,
-        DocumentOutputOptions options)
-    {
-        PresentationCommandDefinition? definition = catalog.Find(command.DefinitionId);
-
-        if (!options.IncludesPresentation(definition?.CategoryId))
-        {
-            return;
-        }
-
-        segments.Add(new RenderedSegment(
-            Id: $"presentation:{presentation.Identity.ResultId}:{command.CommandId}",
-            Kind: RenderedSegmentKind.PresentationCommand,
-            Layer: DocumentLayer.Presentation,
-            // 연출 Segment도 대사 결과 Id를 함께 들고 있다. 프리셋 필터로 대사가 빠져도
-            // 이 명령이 어느 결과의 어느 줄에 붙는 것인지 잃지 않아야 한다.
-            // Setup 커맨드는 어느 줄의 것도 아니므로 LineId가 없다.
-            Source: new RenderSourceReference(
-                NodeId: presentation.SourceNodeId,
-                LineId: lineId,
-                DialogueResultId: dialogue.Identity.ResultId,
-                PresentationResultId: presentation.Identity.ResultId,
-                PresentationNodeId: presentation.SourceNodeId,
-                PresentationCommandId: command.CommandId),
-            IndentLevel: indentLevel,
-            Text: definition?.DisplayName,
-            DefinitionId: command.DefinitionId,
-            CommandName: definition?.OutputCommandName ?? command.DefinitionId,
-            PresentationCategoryId: definition?.CategoryId,
-            PresentationCategoryName: catalog.FindCategory(definition?.CategoryId)?.DisplayName,
-            Arguments: ResolveArguments(definition, command),
-            Note: command.Note));
-    }
-
-    /// <summary>인자 순서·트레일링 생략 규칙은 <see cref="CommandText.ResolveOrdered"/> 하나다.</summary>
-    private static IReadOnlyList<RenderedArgument> ResolveArguments(
-        PresentationCommandDefinition? definition,
-        PresentationResultCommand command)
-    {
-        return CommandText.ResolveOrdered(definition, command.Arguments)
-            .Select(argument => new RenderedArgument(argument.Name, argument.Value))
-            .ToArray();
-    }
-
-    private static void AddOrphanWarnings(
-        List<RenderedSegment> segments,
-        DialogueResult dialogue,
-        PresentationResult presentation)
-    {
-        foreach (PresentationResultBinding binding in presentation.Bindings)
-        {
-            if (dialogue.ContainsLine(binding.LineId))
-            {
-                continue;
-            }
-
-            segments.Add(new RenderedSegment(
-                Id: $"warning:{presentation.Identity.ResultId}:{binding.LineId}",
-                Kind: RenderedSegmentKind.Warning,
-                Layer: DocumentLayer.Diagnostics,
-                Source: new RenderSourceReference(
-                    LineId: binding.LineId,
-                    PresentationResultId: presentation.Identity.ResultId,
-                    PresentationNodeId: presentation.SourceNodeId),
-                Text: $"LineId '{binding.LineId}'의 연출이 이 대사 결과에 붙지 않습니다."));
-        }
     }
 }
