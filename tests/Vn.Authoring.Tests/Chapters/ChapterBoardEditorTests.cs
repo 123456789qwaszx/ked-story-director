@@ -13,7 +13,7 @@ namespace Vn.Authoring.Tests.Chapters;
 public sealed class ChapterBoardEditorTests
 {
     [Fact]
-    public void 없으면_판을_만들고_설정_노드까지_세운다()
+    public void 없으면_판을_만든다()
     {
         var editor = new ProjectEditor(new StoryProject { Title = "판" });
 
@@ -22,9 +22,8 @@ public sealed class ChapterBoardEditorTests
         StoryFile board = editor.Project.FindFile(fileId)!;
         Assert.Equal("ch01", board.Name);
 
-        // 설정 노드는 챕터에 딸린 자리다 — 작가가 만들고 지우는 것이 아니다.
-        SetNode settings = Assert.Single(board.Nodes.OfType<SetNode>());
-        Assert.Equal(ProjectEditor.ChapterSettingsNodeName("ch01"), settings.Name);
+        // ⛔ 「ch01 설정」 노드는 2026-10-29(L6)부터 세우지 않는다 — 그 안을 채우던 편집기가 걷혔다.
+        Assert.Empty(board.Nodes.OfType<SetNode>());
     }
 
     [Fact]
@@ -39,7 +38,6 @@ public sealed class ChapterBoardEditorTests
 
         Assert.Equal(first, second);
         Assert.Single(editor.Project.Files);
-        Assert.Single(editor.Project.FindFile(first)!.Nodes.OfType<SetNode>());
     }
 
     [Fact]

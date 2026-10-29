@@ -3411,7 +3411,7 @@ public partial class GraphEditorView : UserControl
         double y = ClampNodeY(
             ((GraphScroll.Offset.Y + (GraphScroll.Viewport.Height / 2)) / _zoom) - 90 + stagger);
 
-        // 이 판에서 사람이 만드는 노드는 대사뿐이다 — 설정노드는 챕터마다 자동으로 선다.
+        // 이 판에서 사람이 만드는 노드는 대사뿐이다.
         _session.Select(_session.Editor.AddDialogueNode(fileId, x, y).Id);
     }
 
@@ -3422,15 +3422,8 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        // 설정 노드는 챕터에 딸린 자리다 (2026-08-17) — 지우면 그 챕터의 조건·아이템·화자가
-        // 통째로 사라지고, 어차피 다음에 판을 열 때 빈 채로 다시 선다.
-        if (_session.Project.FindNode(nodeId) is SetNode)
-        {
-            _session.SetStatus(
-                "설정 노드는 챕터마다 하나씩 있는 자리라 지우지 않습니다 — " +
-                "안의 조건·아이템·능력은 노드를 열어 하나씩 지울 수 있습니다.");
-            return;
-        }
+        // ⛔ 설정 노드를 지우지 않게 막던 자리는 2026-10-29(L6)에 걷혔다 — 설정 노드는 이제
+        //    연출 그래프에 카드가 없어(`GraphProjectionBuilder.IsHiddenPlumbing`) 고를 수 없다.
 
         // ⭐ <b>챕터 판의 대사 카드는 에피소드다</b> (R7 P-6 · 결정 ⑤). 그러니 그 카드를
         //    지우는 것은 <b>에피소드를 지우는 일</b>이고, 챕터 그래프와 같은 길을

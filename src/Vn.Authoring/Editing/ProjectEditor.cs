@@ -841,32 +841,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 그 판(챕터)의 <b>설정 노드</b>를 보장한다 (2026-08-17 소유자: "조건 노드라기보다는
-    /// 챕터별로 자동으로 저장되는 컨트롤러에 가까운 것 같아. 챕터 하나에 저런 설정을 담아두는
-    /// 노드가 상시로 뜨는거지").
-    ///
-    /// 공급 범위가 판 전체가 된 뒤로 설정노드는 <b>여러 개일 이유가 없다</b> — 어차피 다 같은
-    /// 곳에 미치므로 나눠 놓으면 "어디에 적었더라"만 생긴다. 그래서 챕터당 하나가 자동으로
-    /// 서고, 작가는 그 안을 채울 뿐 노드를 만들거나 지우지 않는다.
-    /// </summary>
-    /// <returns>그 판의 설정 노드. 이미 있으면 그대로 돌려준다(파일을 건드리지 않는다).</returns>
-    public SetNode EnsureChapterSettingsNode(string fileId)
-    {
-        StoryFile file = RequireFile(fileId);
-
-        // 챕터 조건 공급 노드(A계층 배관)는 세지 않는다 — 그건 기획자 자료를 나르는 자리다.
-        SetNode? existing = file.Nodes.OfType<SetNode>()
-            .FirstOrDefault(node => !Chapters.ChapterBoardSupply.IsConditionSupplyNode(node, file));
-
-        return existing ?? AddSetNode(fileId, name: ChapterSettingsNodeName(file.Name));
-    }
-
-    /// <summary>챕터 설정 노드의 이름 규약. 판 이름 = 챕터 Id다.</summary>
-    public static string ChapterSettingsNodeName(string chapterId) => $"{chapterId} 설정";
-
-    /// <summary>
-    /// 그 챕터의 <b>판</b>을 보장한다 — 없으면 만들고, 설정 노드까지 세워 돌려준다
-    /// (챕터 = 판 1:1, G-1 v2).
+    /// 그 챕터의 <b>판</b>을 보장한다 — 없으면 만들어 돌려준다 (챕터 = 판 1:1, G-1 v2).
     ///
     /// <b>왜 여기 있나 (2026-08-23)</b> — 이 함수는 오래 `AuthoringSession`에 살았는데,
     /// <b>세션 상태를 하나도 안 본다.</b> 열려 있는 파일도, 선택도, 저장 여부도 안 묻고
@@ -882,9 +857,10 @@ public sealed partial class ProjectEditor
         StoryFile? standing = Chapters.EpisodeNaming.BoardOf(Project, chapterId);
         StoryFile board = standing ?? AddStoryFile(chapterId);
 
-        // 챕터마다 설정 노드 하나가 상시로 선다 (2026-08-17 소유자) — 작가가 만들고 지우는
-        // 것이 아니라 챕터에 딸린 자리다.
-        EnsureChapterSettingsNode(board.Id);
+        // ⛔ 챕터마다 상시로 세우던 「X 설정」 노드(2026-08-17 소유자 — 작가 조건 · 변수를 담던
+        //    자리)는 2026-10-29(L6)부터 세우지 않는다. 그 안을 채우던 편집기가 걷혀 눌러도 빈
+        //    칸이었다. 옛 판에 남은 것은 데이터째 두고 연출 그래프에서만 숨긴다
+        //    (`GraphProjectionBuilder.IsHiddenPlumbing`) — 그 안의 조건은 그대로 고를 수 있다.
 
         // 판이 <b>막 섰으면</b> 챕터 조건이 함께 공급된다 (2026-10-29 · D2). 예전에는 이 일을
         // 엑셀 [대본 가져오기]가 했다 — 그 단추가 사라진 지금, 조건을 먼저 적고 에피소드를

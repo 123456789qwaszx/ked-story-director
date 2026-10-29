@@ -18,10 +18,14 @@ public static class GraphProjectionBuilder
     private const double EmptyProxyGapX = 280;
 
     /// <summary>
-    /// 카드를 그리지 않는 배관 노드인가 — 챕터 조건 공급 설정노드(까닭은 <see cref="Build"/> 안의 주석).
+    /// 카드를 그리지 않는 노드인가 — <b>설정노드 전부</b>다.
+    ///
+    /// 챕터 조건 공급 설정노드는 배관이라 원래 숨었다(까닭은 <see cref="Build"/> 안의 주석).
+    /// 남은 설정노드는 옛 판의 「X 설정」 카드뿐인데 — 작가 조건 · 변수를 담던 자리다 — 그 안을
+    /// 채우던 편집기가 걷혀 눌러도 빈 칸이었다. 2026-10-29(L6)부터 새 판에는 세우지 않고, 있는
+    /// 것은 여기서 숨긴다. 데이터는 그대로라 그 안의 조건은 대사의 조건 목록에서 계속 고른다.
     /// </summary>
-    public static bool IsHiddenPlumbing(StoryNode node, StoryFile file) =>
-        ChapterBoardSupply.IsConditionSupplyNode(node, file);
+    public static bool IsHiddenPlumbing(StoryNode node) => node is SetNode;
 
     public static GraphProjection Build(
         StoryProject project,
@@ -50,7 +54,7 @@ public static class GraphProjectionBuilder
                 rowIndexByNodeId[node.Id] = index;
                 portsByNodeId[node.Id] = BuildPorts(node, file, project, definition);
 
-                if (IsHiddenPlumbing(node, file))
+                if (IsHiddenPlumbing(node))
                 {
                     hiddenPlumbingNodeIds.Add(node.Id);
                 }

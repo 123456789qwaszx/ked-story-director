@@ -61,25 +61,6 @@ public class SerializationTests
         Assert.Equal("ep_hallway", reloaded.FindDialogue(sample.Dialogue.Id)!.MarkedEpisodeId);
     }
 
-    [Fact]
-    public void 옛_이름의_에피소드_표식도_읽는다()
-    {
-        // 칸 이름이 `excelEpisode` → `episodeMark`로 바뀌었다 (2026-09-17). 이 표식은
-        // 파생값이 아니라 저장된 신원이라, 못 읽으면 되살릴 방법이 없다 — 그래서
-        // 옛 이름도 계속 읽는다. 다시 저장하면 새 이름으로 옮겨 앉는다.
-        var sample = new Sample();
-        sample.Dialogue.MarkedEpisodeId = "ep_hallway";
-
-        string snapshot = ProjectSnapshotCodec.Encode(sample.Project)
-            .Replace("\"episodeMark\"", "\"excelEpisode\"", StringComparison.Ordinal);
-
-        Assert.Contains("\"excelEpisode\"", snapshot, StringComparison.Ordinal);
-
-        StoryProject reloaded = ProjectSnapshotCodec.Decode(snapshot);
-
-        Assert.Equal("ep_hallway", reloaded.FindDialogue(sample.Dialogue.Id)!.MarkedEpisodeId);
-    }
-
     // ⛔ `엑셀_행_신원_맵이_프로젝트와_함께_왕복한다`는 2026-09-16에 은퇴했다 (R-D).
     //    v4의 `ExcelLineMap`(인덱스 → LineId)이 저장을 지나 살아남는가를 지키던 테스트인데,
     //    그 표의 쓸모가 <b>워크북을 다시 읽을 때 줄을 맞추는 것</b>이었다. 다시 읽지 않으므로
@@ -255,7 +236,7 @@ public class SerializationTests
             () => ProjectManifestJson.Read(json));
 
         Assert.Contains("더 이상 열 수 없습니다", error.Message, StringComparison.Ordinal);
-        Assert.Contains("대본을 가져오세요", error.Message, StringComparison.Ordinal);
+        Assert.Contains("카드 글 칸에 붙여 넣으세요", error.Message, StringComparison.Ordinal);
     }
 
     /// <summary>이전 형식 파일을 열려다 실패해도 그 파일은 그대로 남아 있어야 한다.</summary>

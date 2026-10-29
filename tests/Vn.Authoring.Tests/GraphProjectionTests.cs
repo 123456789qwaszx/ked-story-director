@@ -15,13 +15,13 @@ public class GraphProjectionTests
             project,
             new HashSet<string>(new[] { fileA.Id }, StringComparer.Ordinal));
 
+        // 설정노드(setA)는 카드가 없다 (2026-10-29 · L6) — 펼친 판에는 대사 노드 하나만 선다.
         Assert.Collection(
             projection.Items,
-            first => Assert.Equal(setA.Id, Assert.IsType<ExpandedNodeProjection>(first).NodeId),
-            second => Assert.IsType<ExpandedNodeProjection>(second),
-            third =>
+            first => Assert.Equal("nd_a", Assert.IsType<ExpandedNodeProjection>(first).NodeId),
+            second =>
             {
-                CollapsedFileProjection proxy = Assert.IsType<CollapsedFileProjection>(third);
+                CollapsedFileProjection proxy = Assert.IsType<CollapsedFileProjection>(second);
                 Assert.Equal(fileB.Id, proxy.FileId);
                 CollapsedNodeEntry row = Assert.Single(proxy.Nodes);
                 Assert.Equal(dialogueB.Id, row.NodeId);
@@ -80,7 +80,7 @@ public class GraphProjectionTests
         Assert.Equal("nd_a", execution.SourceNodeId);
         Assert.Equal(dialogueB.Id, execution.TargetNodeId);
         Assert.Equal(GraphEndpointKind.CollapsedFileNodeOutput, execution.Source.Kind);
-        Assert.Equal(1, execution.Source.ProxyRowIndex);
+        Assert.Equal(0, execution.Source.ProxyRowIndex); // 숨은 설정노드는 행을 차지하지 않는다
         Assert.Equal(GraphEndpointKind.ExpandedNodeInput, execution.Target.Kind);
         _ = setA;
     }
@@ -105,23 +105,21 @@ public class GraphProjectionTests
     }
 
     [Fact]
-    public void 펼쳐진_SetNode에는_포트가_하나도_없다()
+    public void SetNode는_카드가_없다()
     {
         // SetNode는 조건 공급자다 — 실행 출구 포트가 애초에 없고, 남아 있던
-        // "이 챕터에 공급 중" 포트도 2026-08-22에 사라졌다 (소유자). 공급 범위가 판
-        // 전체가 된 2026-08-17 이후로 이을 곳이 없어 사실 표시로만 서 있었는데,
-        // 늘 켜진 포트는 "여기서 무언가를 이을 수 있다"는 거짓말이었다.
+        // "이 챕터에 공급 중" 포트도 2026-08-22에 사라졌다 (소유자). 2026-10-29(L6)부터는
+        // 카드째 숨는다: 그 안을 채우던 편집기가 걷혀 눌러도 빈 칸이었다. 데이터는 그대로다.
         var (project, fileA, _, setA, _, _) = BuildProject();
 
         GraphProjection projection = GraphProjectionBuilder.Build(
             project,
             new HashSet<string>(new[] { fileA.Id }, StringComparer.Ordinal));
 
-        ExpandedNodeProjection node = projection.Items
-            .OfType<ExpandedNodeProjection>()
-            .Single(item => item.NodeId == setA.Id);
-
-        Assert.Empty(node.OutputPorts);
+        Assert.DoesNotContain(
+            projection.Items.OfType<ExpandedNodeProjection>(),
+            item => item.NodeId == setA.Id);
+        Assert.Contains(project.EnumerateNodes(), node => node.Id == setA.Id);
     }
 
     [Fact]

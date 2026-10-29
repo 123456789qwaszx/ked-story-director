@@ -43,8 +43,8 @@
 | L2 | Vn.App의 죽은 코드 — 탐색기 · 재생 속도 · 음량 설정, 공급선 갈래 + 링크 편집 API (L-D2), 레일의 닿지 않는 갈래(⏹ 종료 스텁 등), 챕터 어휘 공급 · `DefinitionChanged`, 숨은 관문 콤보 · `AutoSaveGates`, `DrawDirectEdge`, 테스트만 부르는 멤버, 고아 주석 · 낡은 안내 글 | a 앱의 죽은 코드 `f6b0a8f` (run 41) · b 링크 편집 API `847bdc3` (run 42) |
 | L3 | 선택지 칩의 옛 길을 걷는다 (L-D3) — 레일 테스트는 챕터를 프로젝트에 두고 다시 쓴다 | `1bfc9f5` (run 43) |
 | L4 | Vn.Authoring의 죽은 묶음 — `ChapterRunState` · 판 파일 관리(가져오기 · 지우기 · 개명 · 노드 옮기기) · 프리뷰 흐름(`ChoiceOptionBundle` · `Cycle` · `PassedBlocks`) · 안 쓰는 `Clone` 사슬 · 엑셀 · 탐색기 시절 편집(`TryDecomposeSingle` · `MoveEpisodesToChapter` · `RemoveChoiceLabel` …) · 아무도 안 부르는 멤버 | a 기능째 죽은 묶음 `370e86c` (run 44) · b 아무도 안 부르는 멤버 · 주석 `ca79145` (run 45) |
-| L5 | 대본 가져오기 · 작가 변수의 남은 길 — `PlanScriptSync` · `ScriptParser` · 대본 개명 · 지우기 · `SourcePath`, set · assignment (L-D4). 일치 엔진 테스트는 `ScriptSynchronizer.Plan`으로 옮긴다. **갈래 고르기(L-D5)도 여기서 걷는다** — 시뮬레이션의 set 누적이 그것의 유일한 독자라 한 뿌리다 | 이번 |
-| L6 | 걷힌 기능의 화면 흔적 — 「X 설정」 카드(L-D6) · 옛 파일 호환 `excelEpisode`(L-D8) · 형식 거절 안내의 "대본을 가져오세요" | |
+| L5 | 대본 가져오기 · 작가 변수의 남은 길 — `PlanScriptSync` · `ScriptParser` · 대본 개명 · 지우기 · `SourcePath`, set · assignment (L-D4). 일치 엔진 테스트는 `ScriptSynchronizer.Plan`으로 옮긴다. **갈래 고르기(L-D5)도 여기서 걷는다** — 시뮬레이션의 set 누적이 그것의 유일한 독자라 한 뿌리다 | `6e460b6` (run 46) |
+| L6 | 걷힌 기능의 화면 흔적 — 「X 설정」 카드(L-D6) · 옛 파일 호환 `excelEpisode`(L-D8) · 형식 거절 안내의 "대본을 가져오세요" | 이번 |
 | L7 | 현행 안내 문서 — README · ARCHITECTURE · ORIENTATION이 없는 코드 · 걷힌 기능을 가리키지 않게 | |
 | L8 | `SourceRow` 조사 → 걷기와 에피소드 오류 표시 결함 (L-D7) | |
 
@@ -63,3 +63,8 @@
   카드 글 반영(`ApplyScenarioText`)이 지금도 올리고, 결과 문서가 개정 번호로 싣는다(compositor도 읽는다).
 - **L5 · 함께 걷은 잔손** — 쓰이지 않는 `using`, 테스트의 고아 도우미 셋, 깨진 cref 둘(분석기
   IDE0005 · IDE0051 · CS1574로 찾았다).
+- **L6 · 숨김의 범위** — 「X 설정」만 골라 숨기지 않고 **설정노드 전부**를 숨긴다
+  (`GraphProjectionBuilder.IsHiddenPlumbing`). 남은 설정노드는 조건 공급 배관(원래 숨었다)과 옛
+  「X 설정」뿐이고, 둘 다 카드로 할 일이 없다. 숨은 노드는 접힌 판의 행도 차지하지 않는다.
+- **L6 · 남긴 것** — `GraphNodeKind.Set`은 투영이 노드 종류를 그대로 옮기는 자리라 남긴다(지금은
+  카드로 나가지 않는다).

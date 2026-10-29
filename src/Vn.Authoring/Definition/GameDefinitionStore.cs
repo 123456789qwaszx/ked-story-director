@@ -4,11 +4,11 @@ using System.Text.Json.Nodes;
 namespace Vn.Authoring.Definition;
 
 /// <summary>
-/// <c>game.definition.json</c>에 쓰는 유일한 경로 — 지금은 <c>speakers</c>만 쓴다 (X5, D-4).
+/// <c>game.definition.json</c>에 쓰는 유일한 경로 — <c>speakers</c>(통째로)와 <c>variables</c>(더하기만)를 쓴다 (X5, D-4).
 ///
-/// 설정노드의 Speaker 등록 UI는 편집 창구일 뿐이고 저장은 언제나 이 파일이다.
+/// 챕터 그래프의 [화자] 탭과 검증 보고의 [등록]은 편집 창구일 뿐이고 저장은 언제나 이 파일이다.
 /// 도구 안에 사본을 두면 원천이 둘이 되어, 파일을 손으로 고친 날 둘 다 오류 없이
-/// 어긋난다. 다른 키(변수·커맨드 카탈로그 등)는 그대로 보존하고 <c>speakers</c>만 바꾼다.
+/// 어긋난다. 다른 키(커맨드 카탈로그 등)는 그대로 보존하고 쓰는 키만 바꾼다.
 /// </summary>
 public static class GameDefinitionStore
 {

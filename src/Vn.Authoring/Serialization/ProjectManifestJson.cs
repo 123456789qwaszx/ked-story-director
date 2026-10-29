@@ -125,7 +125,7 @@ public static class ProjectManifestJson
                 "그 형식에서는 화자·대사를 대사 노드가 직접 소유했고 연출이 편집 중인 노드를 " +
                 "실시간으로 읽었습니다. 지금 구조로 자동 변환하면 어느 문장이 어느 LineId인지 " +
                 "도구가 임의로 정하게 되므로, 덮어써서 원고를 잃는 대신 열지 않습니다. " +
-                "새 프로젝트를 만들고 대본을 가져오세요.");
+                "새 프로젝트를 만들고 대사를 카드 글 칸에 붙여 넣으세요.");
         }
 
         if (version != CurrentFormatVersion || root["files"] is not JsonArray files)

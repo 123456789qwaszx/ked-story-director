@@ -9,18 +9,12 @@ internal static class StoryNodeJson
     /// <summary>
     /// <see cref="DialogueNode.MarkedEpisodeId"/>가 앉는 칸. 2026-09-17에 <c>excelEpisode</c>에서
     /// 바뀌었다 — 엑셀은 이 값의 주인이 아니게 된 지 오래다(R-F).
+    ///
+    /// ⛔ 옛 이름 <c>excelEpisode</c>도 한동안 계속 읽었다(저장된 신원이라 못 읽으면 되살릴 길이 없다).
+    /// 2026-10-29(L6)에 그 갈래를 걷었다 — 2026-09-17 소유자: *"이전의 프로젝트들은 모두 버리고"*.
+    /// 그 뒤로 한 번이라도 저장한 프로젝트는 이미 새 이름으로 옮겨 앉아 있다.
     /// </summary>
     private const string EpisodeMarkKey = "episodeMark";
-
-    /// <summary>
-    /// ⚠ <b>옛 칸 이름은 계속 읽는다.</b> 이 표식은 파생값이 아니라 <b>저장된 신원</b>이라,
-    /// 못 읽으면 어느 카드가 어느 에피소드였는지 복원할 길이 없다. 다시 저장하면 새 이름으로
-    /// 옮겨 앉으므로 이 갈래는 프로젝트마다 <b>한 번만</b> 탄다.
-    ///
-    /// (같은 처지였던 <c>excelLines</c>를 R-D에서 그냥 버린 것과 다르다 — 그쪽은 워크북에서
-    /// 다시 만들 수 있었다.)
-    /// </summary>
-    private const string LegacyEpisodeMarkKey = "excelEpisode";
 
     /// <summary>
     /// 연출 층의 노드 종류 — 연출 노드 · 명령 공급 노드. 2026-10-29에 <c>ked-story-compositor</c>로 갔다.
@@ -297,7 +291,7 @@ internal static class StoryNodeJson
         var node = new DialogueNode(id, name)
         {
             ScriptId = (string?)json["script"],
-            MarkedEpisodeId = (string?)json[EpisodeMarkKey] ?? (string?)json[LegacyEpisodeMarkKey]
+            MarkedEpisodeId = (string?)json[EpisodeMarkKey]
         };
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 
