@@ -145,7 +145,7 @@ public sealed class DialogueLineExtension
     public LineConditionTransition? Transition => Transitions.Count > 0 ? Transitions[0] : null;
 
     /// <summary>
-    /// <b>여기서 갈라진다</b> — 이 줄에서 다녀올 노드 (R7 P-5 · 2026-09-17 소유자).
+    /// <b>여기서 갈라진다</b> — 이 줄 앞에서 다녀올 노드들, <b>목록 순서대로</b> (R7 P-5 · 2026-09-17 소유자).
     ///
     /// ⛔ <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚고, 갈지 말지는
     /// <b>다녀온 곳</b>이 정한다. 그래서 이 표식은 아무 조건 없이
@@ -162,10 +162,16 @@ public sealed class DialogueLineExtension
     /// ⚠ <b>전환(<see cref="Transitions"/>)이 아니다.</b> 전환은 전부 <b>구역</b>이고
     /// (<c>Begin…</c>/<c>End…</c> 쌍이 줄들을 감싼다), 이것은 <b>줄 사이에 끼는 카드 한 장</b>
     /// 이다. 구역이 아닌 것을 구역으로 적으면 닫는 자리가 없다.
+    ///
+    /// ⭐ <b>한 줄에 여럿</b> (2026-10-29 소유자: *"하나의 줄에 여러개의 분기가 있을 수 있게"* ·
+    /// <c>docs/plans/multi-branch.md</c>). 전에는 칸이 하나였다. 여럿이면 <b>차례로 다녀온다</b> —
+    /// <c>&lt;&lt;detour A&gt;&gt;</c> · <c>&lt;&lt;detour B&gt;&gt;</c> · 그 줄. 각자 제 첫머리 조건으로 들어갈지 정한다(그중
+    /// 하나만 가게 하려면 조건을 서로 겹치지 않게 건다). 분기 하나의 신원은 <b>줄과 다녀갈 노드</b>다 — 같은 줄에 같은
+    /// 노드는 두 번 들지 않는다.
     /// </summary>
-    public string? DetourTargetNodeId { get; set; }
+    public List<string> DetourTargetNodeIds { get; init; } = new();
 
     /// <summary>이 확장이 아무것도 담고 있지 않은지. 빈 확장은 저장하지 않는다.</summary>
     public bool IsEmpty =>
-        Transitions.Count == 0 && DetourTargetNodeId is null;
+        Transitions.Count == 0 && DetourTargetNodeIds.Count == 0;
 }

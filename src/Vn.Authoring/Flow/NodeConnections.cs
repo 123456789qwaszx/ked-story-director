@@ -20,11 +20,12 @@ public enum ExitPortKind
     Choice,
 
     /// <summary>
-    /// <b>「조건 분기」 표식</b>이 뚫은 출구 (R7 P-5 · 2026-09-17). 열쇠는 그 줄의 LineId다.
+    /// <b>「조건 분기」 표식</b>이 뚫은 출구 (R7 P-5 · 2026-09-17). 열쇠는 그 줄의 LineId와 다녀갈 노드다 — 한 줄에
+    /// 분기가 여럿일 수 있다(2026-10-29, <see cref="ExitPort.DetourKey"/>).
     ///
     /// ⛔ <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든 말든
     /// 다녀오고, 다녀온 자유 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다. 그래서 갈래와
-    /// 달리 여는 전환도 닫는 전환도 없다: <b>줄 하나가 곧 포트 하나</b>다.
+    /// 달리 여는 전환도 닫는 전환도 없다: <b>분기 하나가 곧 포트 하나</b>다.
     /// </summary>
     Detour
 }
@@ -50,10 +51,22 @@ public sealed record ExitPort(
     public bool IsConnected => TargetNodeId is not null;
 
     /// <summary>
-    /// 이 포트를 저장할 때의 열쇠. 갈래는 여는 줄의 LineId, 선택지는 <b>문구</b>다(v9).
-    /// 기본 출구는 열쇠가 없다 — 노드에 자리가 하나뿐이다.
+    /// 이 포트를 저장할 때의 열쇠. 갈래는 여는 줄의 LineId, 선택지는 <b>문구</b>다(v9), 분기는 줄과 다녀갈 노드다
+    /// (<see cref="DetourKey"/>). 기본 출구는 열쇠가 없다 — 노드에 자리가 하나뿐이다.
     /// </summary>
-    public string? ExitKey => Kind == ExitPortKind.Choice ? ChoiceText : BranchOpenLineId;
+    public string? ExitKey => Kind switch
+    {
+        ExitPortKind.Choice => ChoiceText,
+        ExitPortKind.Detour when BranchOpenLineId is { } lineId && TargetNodeId is { } target => DetourKey(lineId, target),
+        _ => BranchOpenLineId
+    };
+
+    /// <summary>
+    /// 분기 하나의 열쇠 — 줄과 다녀갈 노드 (2026-10-29). 한 줄에 분기가 여럿이라 줄만으로는 어느 분기인지 모른다.
+    /// 같은 줄에 같은 노드는 두 번 들지 않으므로 이 둘이면 하나를 가린다. 선 모양(<see cref="Model.EdgeShape"/>)의
+    /// 열쇠도 이것이다.
+    /// </summary>
+    public static string DetourKey(string lineId, string targetNodeId) => $"{lineId}>{targetNodeId}";
 }
 
 /// <summary>
@@ -102,19 +115,15 @@ public static class NodeConnections
                     ChoiceText: branch.IsChoice ? flow.Script.Find(branch.OpenLineId)?.Text : null));
             }
 
-            // 「조건 분기」 표식 — 줄 하나가 곧 포트 하나다 (R7 P-5). 대본에 적힌 순서
-            // 그대로 선다: 판에서 읽는 차례와 카드에서 보는 차례가 같아야 한다.
+            // 「조건 분기」 표식 — 분기 하나가 곧 포트 하나다 (R7 P-5). 대본에 적힌 순서, 한 줄 안에서는 다녀오는
+            // 차례 그대로 선다: 판에서 읽는 차례와 카드에서 보는 차례가 같아야 한다.
             foreach (DialogueLine line in flow.Script.Lines)
             {
-                if (dialogue.LineExtensions.FirstOrDefault(extension =>
-                        string.Equals(extension.LineId, line.LineId, StringComparison.Ordinal))
-                    is not { DetourTargetNodeId: { Length: > 0 } detour })
+                foreach (string detour in line.DetourTargetNodeIds)
                 {
-                    continue;
+                    ports.Add(new ExitPort(
+                        ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", detour, ports.Count));
                 }
-
-                ports.Add(new ExitPort(
-                    ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", detour, ports.Count));
             }
 
             // ⛔ ~~기본 출구는 엑셀노드만 가진다~~ (2026-08-21) — <b>걷혔다</b>

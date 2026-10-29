@@ -255,10 +255,13 @@ public static class ResultDocumentComposer
             //
             // ⚠ 조건이 없다: `<<if>>`로 감싸지 않고 `<<detour>>` 한 줄만 나간다. 성립하든
             //   말든 다녀오고, 다녀온 자유 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다.
-            if (line.DetourTargetNodeId is { Length: > 0 } marked)
+            //   여럿이면(2026-10-29) 적힌 차례로 한 줄씩 — 첫째의 Id는 그전과 같다.
+            for (int detour = 0; detour < line.DetourTargetNodeIds.Count; detour++)
             {
+                string marked = line.DetourTargetNodeIds[detour];
+
                 segments.Add(new RenderedSegment(
-                    Id: $"branch:{line.LineId}:mark",
+                    Id: detour == 0 ? $"branch:{line.LineId}:mark" : $"branch:{line.LineId}:mark:{detour}",
                     Kind: RenderedSegmentKind.BranchDetour,
                     Layer: DocumentLayer.ExecutionJumps,
                     Source: lineSource,

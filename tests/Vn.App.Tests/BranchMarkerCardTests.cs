@@ -96,7 +96,7 @@ public sealed class BranchMarkerCardTests : IDisposable
         remove.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.Null(Node(session, nodeId).FindExtension(lineId)?.DetourTargetNodeId);
+        Assert.Empty(Node(session, nodeId).FindExtension(lineId)?.DetourTargetNodeIds ?? []);
         Assert.Null(session.Project.FindNode(made.Id));
         Assert.Contains(made.Name, session.StatusMessage, StringComparison.Ordinal);
 

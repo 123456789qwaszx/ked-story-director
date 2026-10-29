@@ -1668,8 +1668,7 @@ public sealed partial class ProjectEditor
             bool calls =
                 caller.BranchExits.Values.Any(id =>
                     string.Equals(id, target.Id, StringComparison.Ordinal)) ||
-                caller.LineExtensions.Any(extension =>
-                    string.Equals(extension.DetourTargetNodeId, target.Id, StringComparison.Ordinal)) ||
+                caller.LineExtensions.Any(extension => extension.DetourTargetNodeIds.Contains(target.Id)) ||
                 caller.ChoiceExits.Values.Any(id =>
                     string.Equals(id, target.Id, StringComparison.Ordinal));
 

@@ -81,7 +81,7 @@ public sealed class ChapterBranchMarkersTests
         DialogueNode outsider = editor.AddDialogueNode(elsewhere.Id, 0, 0, "바깥");
 
         string lineId = caller.Script.ActiveLines.First().Id;
-        caller.RequireExtension(lineId).DetourTargetNodeId = outsider.Id;
+        caller.RequireExtension(lineId).DetourTargetNodeIds.Add(outsider.Id);
 
         Assert.Empty(ChapterBranchMarkers.For(editor.Project, "ch01"));
     }

@@ -18,9 +18,12 @@ public sealed record DialogueLine(
     LineConditionTransition? Transition,
     IReadOnlyList<LineConditionTransition>? ExtraTransitions = null,
 
-    /// <summary>「조건 분기」 표식이 가리키는 노드 (R7 P-5) — 이 줄 앞에서 다녀온다.</summary>
-    string? DetourTargetNodeId = null)
+    /// <summary>「조건 분기」 표식이 가리키는 노드들 (R7 P-5) — 이 줄 앞에서 차례로 다녀온다.</summary>
+    IReadOnlyList<string>? Detours = null)
 {
+    /// <summary>이 줄 앞에서 차례로 다녀올 노드들. 없으면 빈 목록이다.</summary>
+    public IReadOnlyList<string> DetourTargetNodeIds => Detours ?? Array.Empty<string>();
+
     /// <summary>이 줄 앞의 전환들 — 순서가 곧 일어나는 순서다 (2026-08-17).</summary>
     public IReadOnlyList<LineConditionTransition> Transitions =>
         Transition is null
@@ -112,7 +115,7 @@ public static class DialogueScriptResolver
                 text.Text,
                 extension?.Transition,
                 extension is { Transitions.Count: > 1 } ? extension.Transitions.Skip(1).ToList() : null,
-                extension?.DetourTargetNodeId));
+                extension is { DetourTargetNodeIds.Count: > 0 } ? [.. extension.DetourTargetNodeIds] : null));
         }
 
         var orphans = new List<OrphanLineExtension>();

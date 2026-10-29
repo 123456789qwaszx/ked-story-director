@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Rendering;
@@ -8,7 +9,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>「조건 분기」 표식</b> — 줄 하나가 곧 포트 하나 (R7 P-5 · `docs/plans/R7.md`).
+/// <b>「조건 분기」 표식</b> — 분기 하나가 곧 포트 하나 (R7 P-5 · `docs/plans/R7.md`). 한 줄에 여럿일 수 있다(2026-10-29 · `docs/plans/multi-branch.md`).
 ///
 /// ⛔ <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든 말든
 /// 다녀오고, 다녀온 자유 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다.
@@ -25,7 +26,7 @@ public sealed class BranchMarkerTests
 
         Assert.DoesNotContain(Ports(editor, node), port => port.Kind == ExitPortKind.Detour);
 
-        node.RequireExtension(lineId).DetourTargetNodeId = Target(editor).Id;
+        node.RequireExtension(lineId).DetourTargetNodeIds.Add(Target(editor).Id);
 
         ExitPort port = Assert.Single(Ports(editor, node), item => item.Kind == ExitPortKind.Detour);
 
@@ -40,7 +41,7 @@ public sealed class BranchMarkerTests
         // 갈래는 `ConditionId`가 있어야 열리지만 이 표식은 조건을 아예 안 진다 —
         // 갈지 말지는 다녀온 곳이 정한다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
-        node.RequireExtension(lineId).DetourTargetNodeId = Target(editor).Id;
+        node.RequireExtension(lineId).DetourTargetNodeIds.Add(Target(editor).Id);
 
         Assert.DoesNotContain(
             node.LineExtensions.SelectMany(extension => extension.Transitions),
@@ -58,7 +59,7 @@ public sealed class BranchMarkerTests
 
         editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, Target(editor).Id);
 
-        Assert.Equal(Target(editor).Id, node.FindExtension(lineId)!.DetourTargetNodeId);
+        Assert.Equal([Target(editor).Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
         Assert.Empty(node.BranchExits);
     }
 
@@ -70,7 +71,7 @@ public sealed class BranchMarkerTests
 
         editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, null);
 
-        Assert.Null(node.FindExtension(lineId)?.DetourTargetNodeId);
+        Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
         Assert.DoesNotContain(Ports(editor, node), port => port.Kind == ExitPortKind.Detour);
     }
 
@@ -79,7 +80,7 @@ public sealed class BranchMarkerTests
     {
         // 저장이 안 되면 다음에 열었을 때 포트가 통째로 사라진다 — 뚫어 둔 자리가 없어진다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
-        node.RequireExtension(lineId).DetourTargetNodeId = Target(editor).Id;
+        node.RequireExtension(lineId).DetourTargetNodeIds.Add(Target(editor).Id);
 
         StoryProject reopened = ProjectSnapshotCodec.Decode(
             ProjectSnapshotCodec.Encode(editor.Project));
@@ -87,7 +88,7 @@ public sealed class BranchMarkerTests
         DialogueNode again = reopened.EnumerateNodes().OfType<DialogueNode>()
             .First(item => string.Equals(item.Id, node.Id, StringComparison.Ordinal));
 
-        Assert.Equal(Target(editor).Id, again.FindExtension(lineId)!.DetourTargetNodeId);
+        Assert.Equal([Target(editor).Id], again.FindExtension(lineId)!.DetourTargetNodeIds);
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -127,7 +128,7 @@ public sealed class BranchMarkerTests
         // ⛔ `<<if>>`로 감싸지 않는다 — 연출 그래프는 "어디서 갈라지는가"만 짚고, 갈지
         //    말지는 다녀온 곳이 제 첫머리에서 정한다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
-        node.RequireExtension(lineId).DetourTargetNodeId = Target(editor).Id;
+        node.RequireExtension(lineId).DetourTargetNodeIds.Add(Target(editor).Id);
 
         RenderedDocument document = Rendered(editor, node);
 
@@ -160,7 +161,7 @@ public sealed class BranchMarkerTests
 
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
 
-        Assert.Equal(made.Id, node.FindExtension(lineId)!.DetourTargetNodeId);
+        Assert.Equal([made.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
         Assert.Single(Ports(editor, node), port => port.Kind == ExitPortKind.Detour);
 
         // ⚠ 뒤집힌 자리다 (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는 자유 씬이라 표식이 없었다 —
@@ -251,19 +252,131 @@ public sealed class BranchMarkerTests
         editor.Undo();
 
         Assert.Equal(before, editor.Project.Files[0].Nodes.Count);
-        Assert.Null(editor.Project.EnumerateNodes().OfType<DialogueNode>()
+        Assert.Empty(editor.Project.EnumerateNodes().OfType<DialogueNode>()
             .First(item => item.Id == node.Id)
-            .FindExtension(lineId)?.DetourTargetNodeId);
+            .FindExtension(lineId)?.DetourTargetNodeIds ?? []);
     }
 
     [Fact]
-    public void 한_자리에_둘은_못_둔다()
+    public void 한_자리에_여럿을_두면_차례로_다녀온다()
     {
-        // 표식은 줄 하나에 하나다 — 둘을 적을 칸이 없고, 있어도 어느 쪽이 먼저인지 말할 수 없다.
+        // ⛔ 2026-10-29까지는 줄 하나에 하나였다(칸이 하나뿐이었다). 소유자: *"하나의 줄에 여러개의 분기가 있을 수
+        //    있게"* — 둘째는 첫째 <b>뒤에</b> 서고, 대본에도 그 차례로 `<<detour>>`가 나간다. 각자 제 첫머리 조건으로
+        //    들어갈지 정한다(`docs/plans/multi-branch.md`).
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
-        editor.AddBranchMarker(node.Id, lineId);
+        DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
+        DialogueNode second = editor.AddBranchMarker(node.Id, lineId);
 
-        Assert.Throws<InvalidOperationException>(() => editor.AddBranchMarker(node.Id, lineId));
+        Assert.Equal([first.Id, second.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
+        Assert.Equal(
+            [first.Id, second.Id],
+            Ports(editor, node).Where(port => port.Kind == ExitPortKind.Detour).Select(port => port.TargetNodeId));
+        Assert.Equal(
+            [first.Id, second.Id],
+            Rendered(editor, node).Segments
+                .Where(segment => segment.Kind == RenderedSegmentKind.BranchDetour)
+                .Select(segment => segment.TargetNodeId));
+        Assert.Equal(
+            [first.Id, second.Id],
+            ChapterBranchMarkers.For(editor.Project, "ch01").Select(marker => marker.ToNodeId));
+
+        // 두 카드는 서로 다른 빈자리에 선다.
+        Assert.NotEqual((first.Layout.X, first.Layout.Y), (second.Layout.X, second.Layout.Y));
+    }
+
+    [Fact]
+    public void 포트로_바꾸면_그_분기_하나만_바뀌고_선_모양이_따라간다()
+    {
+        // 분기의 신원은 줄과 다녀갈 노드다 — 줄만으로는 어느 분기인지 모른다.
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
+        DialogueNode second = editor.AddBranchMarker(node.Id, lineId);
+        ExitPort firstPort = Ports(editor, node).Single(port => port.TargetNodeId == first.Id);
+        var bend = new EdgeShape(EdgeShapeKind.Curve, 0, 40);
+        editor.SetExitShape(firstPort, bend);
+
+        Assert.NotEqual(
+            firstPort.ExitKey,
+            Ports(editor, node).Single(port => port.TargetNodeId == second.Id).ExitKey);
+
+        // 다른 곳으로 이으면 제자리에서 바뀐다 — 다녀오는 차례도, 굽혀 둔 선 모양도 그대로다.
+        editor.SetExitTarget(firstPort, Target(editor).Id);
+        Assert.Equal([Target(editor).Id, second.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
+        ExitPort moved = Ports(editor, node).Single(port => port.TargetNodeId == Target(editor).Id);
+        Assert.Equal(bend, node.EdgeShapes[EdgeShape.KeyOf(moved)]);
+
+        // 끊으면 그 하나만 걷히고 모양도 걷힌다.
+        editor.SetExitTarget(moved, null);
+        Assert.Equal([second.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
+        Assert.Empty(node.EdgeShapes);
+
+        // 줄만 주고 끊으면 그 줄의 분기를 모두 끊는다.
+        editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, null);
+        Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
+    }
+
+    [Fact]
+    public void 같은_줄에_같은_곳은_두_번_들지_않는다()
+    {
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
+
+        editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, made.Id);
+
+        Assert.Equal([made.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
+    }
+
+    [Fact]
+    public void 하나면_문자열로_여럿이면_배열로_적는다()
+    {
+        // 하나뿐이면 2026-10-29 전과 같은 바이트다 — 분기가 하나인 판은 다시 써도 그대로다. 여럿이면 배열이다.
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
+
+        string single = StoryFileJson.Write(editor.Project.FindFileContainingNode(node.Id)!);
+        Assert.Contains($"\"detour\": \"{first.Id}\"", single, StringComparison.Ordinal);
+
+        DialogueNode second = editor.AddBranchMarker(node.Id, lineId);
+        string several = StoryFileJson.Write(editor.Project.FindFileContainingNode(node.Id)!);
+        StoryFile reread = StoryFileJson.Read(several);
+
+        Assert.Equal(
+            [first.Id, second.Id],
+            reread.Nodes.OfType<DialogueNode>().Single(item => item.Id == node.Id)
+                .FindExtension(lineId)!.DetourTargetNodeIds);
+    }
+
+    [Fact]
+    public void 옛_분기_선_모양은_그_줄의_첫_분기가_이어받는다()
+    {
+        // 2026-10-29 전에는 분기 선 모양의 열쇠가 줄만이었다(`detour:{줄}`) — 줄 하나에 분기가 하나였다.
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
+        StoryFile file = editor.Project.FindFileContainingNode(node.Id)!;
+        JsonObject root = JsonNode.Parse(StoryFileJson.Write(file))!.AsObject();
+        JsonObject card = root["nodes"]!.AsArray().Single(item => (string?)item!["id"] == node.Id)!.AsObject();
+        card["edgeShapes"] = new JsonObject { [$"detour:{lineId}"] = new JsonObject { ["kind"] = "curve", ["bendY"] = 40 } };
+
+        DialogueNode reread = StoryFileJson.Read(root.ToJsonString()).Nodes.OfType<DialogueNode>()
+            .Single(item => item.Id == node.Id);
+
+        Assert.Equal(
+            [EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, made.Id))],
+            reread.EdgeShapes.Keys);
+    }
+
+    [Fact]
+    public void 분기_하나를_지우면_같은_줄의_다른_분기는_남는다()
+    {
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
+        DialogueNode second = editor.AddBranchMarker(node.Id, lineId);
+
+        editor.RemoveBranchMarker(node.Id, lineId, first.Id);
+
+        Assert.Equal([second.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
+        Assert.Null(editor.Project.FindNode(first.Id));
+        Assert.NotNull(editor.Project.FindNode(second.Id));
     }
 
     [Fact]
@@ -286,10 +399,10 @@ public sealed class BranchMarkerTests
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
         string episodeId = EpisodeNaming.EpisodeIdOf(made);
 
-        BranchMarkerRemoval removal = Assert.IsType<BranchMarkerRemoval>(editor.RemoveBranchMarker(node.Id, lineId));
+        BranchMarkerRemoval removal = Assert.IsType<BranchMarkerRemoval>(editor.RemoveBranchMarker(node.Id, lineId, made.Id));
 
         Assert.Equal(made.Name, removal.TakenNodeName);
-        Assert.Null(node.FindExtension(lineId)?.DetourTargetNodeId);
+        Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
         Assert.Null(editor.Project.FindNode(made.Id));
         Assert.DoesNotContain(editor.Project.Chapters.Single().Episodes, episode => episode.EpisodeId == episodeId);
         Assert.DoesNotContain(Ports(editor, node), port => port.Kind == ExitPortKind.Detour);
@@ -300,13 +413,13 @@ public sealed class BranchMarkerTests
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
-        editor.RemoveBranchMarker(node.Id, lineId);
+        editor.RemoveBranchMarker(node.Id, lineId, made.Id);
 
         editor.Undo();
 
         // 되돌리기는 스냅샷을 새로 푼다 — 노드는 Id로 다시 찾는다.
         var restored = (DialogueNode)editor.Project.FindNode(node.Id)!;
-        Assert.Equal(made.Id, restored.FindExtension(lineId)?.DetourTargetNodeId);
+        Assert.Equal([made.Id], restored.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
         Assert.NotNull(editor.Project.FindNode(made.Id));
         Assert.Contains(
             editor.Project.Chapters.Single().Episodes,
@@ -321,11 +434,11 @@ public sealed class BranchMarkerTests
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
         editor.AddEdge("ch01", "root", EpisodeNaming.EpisodeIdOf(made), optionLabel: "따라간다");
 
-        BranchMarkerRemoval removal = editor.RemoveBranchMarker(node.Id, lineId)!;
+        BranchMarkerRemoval removal = editor.RemoveBranchMarker(node.Id, lineId, made.Id)!;
 
         Assert.Null(removal.TakenNodeName);
         Assert.Equal(made.Name, removal.KeptNodeName);
-        Assert.Null(node.FindExtension(lineId)?.DetourTargetNodeId);
+        Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
         Assert.NotNull(editor.Project.FindNode(made.Id));
     }
 
@@ -337,10 +450,10 @@ public sealed class BranchMarkerTests
         string otherLine = editor.InsertScriptLine(node.Id).Id;
         editor.SetExitTarget(node.Id, ExitPortKind.Detour, otherLine, made.Id);
 
-        editor.RemoveBranchMarker(node.Id, lineId);
+        editor.RemoveBranchMarker(node.Id, lineId, made.Id);
 
         Assert.NotNull(editor.Project.FindNode(made.Id));
-        Assert.Equal(made.Id, node.FindExtension(otherLine)?.DetourTargetNodeId);
+        Assert.Equal([made.Id], node.FindExtension(otherLine)?.DetourTargetNodeIds ?? []);
     }
 
     [Fact]
@@ -349,7 +462,7 @@ public sealed class BranchMarkerTests
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         long before = editor.Revision;
 
-        Assert.Null(editor.RemoveBranchMarker(node.Id, lineId));
+        Assert.Null(editor.RemoveBranchMarker(node.Id, lineId, "nd_없는_분기"));
         Assert.Equal(before, editor.Revision);
     }
 }

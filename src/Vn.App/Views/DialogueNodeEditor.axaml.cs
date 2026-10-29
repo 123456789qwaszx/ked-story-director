@@ -879,7 +879,7 @@ public partial class DialogueNodeEditor : UserControl
     /// </summary>
     private Control? BuildBranchMarkerCard(DialogueNode node, string lineId)
     {
-        if (node.FindExtension(lineId)?.DetourTargetNodeId is not { Length: > 0 } targetId)
+        if (node.FindExtension(lineId)?.DetourTargetNodeIds.FirstOrDefault() is not { Length: > 0 } targetId)
         {
             return null;
         }
@@ -918,7 +918,7 @@ public partial class DialogueNodeEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center
         });
 
-        row.Children.Add(RemoveBranchButton(node, lineId));
+        row.Children.Add(RemoveBranchButton(node, lineId, targetId));
 
         return new Border
         {
@@ -940,12 +940,12 @@ public partial class DialogueNodeEditor : UserControl
     /// [✕ 분기 지우기] (2026-10-29 소유자: *"조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다"*) —
     /// 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다.
     /// </summary>
-    private Button RemoveBranchButton(DialogueNode node, string lineId)
+    private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId)
     {
         Button remove = SmallButton("✕ 분기 지우기", () =>
             UiGuard.Run(_session!, "분기 지우기", () =>
             {
-                if (_session!.Editor.RemoveBranchMarker(node.Id, lineId) is { } removal)
+                if (_session!.Editor.RemoveBranchMarker(node.Id, lineId, targetId) is { } removal)
                 {
                     _session.SetStatus(removal.Describe());
                 }
@@ -1007,7 +1007,7 @@ public partial class DialogueNodeEditor : UserControl
         Section("분기");
 
         if (resolved.Line.LineId is { Length: > 0 } markerLineId &&
-            node.FindExtension(markerLineId)?.DetourTargetNodeId is { Length: > 0 })
+            node.FindExtension(markerLineId)?.DetourTargetNodeIds.FirstOrDefault() is { Length: > 0 } markerTargetId)
         {
             panel.Children.Add(new TextBlock
             {
@@ -1017,7 +1017,7 @@ public partial class DialogueNodeEditor : UserControl
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
-            panel.Children.Add(RemoveBranchButton(node, markerLineId));
+            panel.Children.Add(RemoveBranchButton(node, markerLineId, markerTargetId));
         }
         else
         {

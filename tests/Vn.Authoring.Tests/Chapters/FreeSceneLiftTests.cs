@@ -46,7 +46,7 @@ public sealed class FreeSceneLiftTests
 
         DialogueNode source = Source(editor);
         string lineId = source.Script.ActiveLines.First().Id;
-        source.RequireExtension(lineId).DetourTargetNodeId = free.Id;
+        source.RequireExtension(lineId).DetourTargetNodeIds.Add(free.Id);
 
         editor.LiftFreeScenes("ch01");
 

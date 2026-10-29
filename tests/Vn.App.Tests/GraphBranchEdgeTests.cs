@@ -50,15 +50,13 @@ public sealed class GraphBranchEdgeTests
         window.MouseUp(spot, MouseButton.Right);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Null(((DialogueNode)session.Project.FindNode(source.Id)!).FindExtension(line.Id)?.DetourTargetNodeId);
+        Assert.Empty(((DialogueNode)session.Project.FindNode(source.Id)!).FindExtension(line.Id)?.DetourTargetNodeIds ?? []);
         Assert.Null(session.Project.FindNode(made.Id));
 
         // 되돌리기 한 번이면 둘이 함께 돌아온다.
         session.Editor.Undo();
         Assert.NotNull(session.Project.FindNode(made.Id));
-        Assert.Equal(
-            made.Id,
-            ((DialogueNode)session.Project.FindNode(source.Id)!).FindExtension(line.Id)?.DetourTargetNodeId);
+        Assert.Equal([made.Id], ((DialogueNode)session.Project.FindNode(source.Id)!).FindExtension(line.Id)?.DetourTargetNodeIds ?? []);
 
         window.Close();
     });

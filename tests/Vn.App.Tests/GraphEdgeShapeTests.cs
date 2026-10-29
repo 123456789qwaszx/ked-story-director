@@ -138,7 +138,7 @@ public sealed class GraphEdgeShapeTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         // 실행 선의 직각은 가운데 세로 마디를 옆으로만 민다 — 위아래로 끈 몫은 버린다.
-        EdgeShape shape = ((DialogueNode)session.Project.FindNode(a.Id)!).EdgeShapes[$"detour:{lineId}"];
+        EdgeShape shape = ((DialogueNode)session.Project.FindNode(a.Id)!).EdgeShapes[$"detour:{lineId}>{branch.Id}"];
         Assert.NotEqual(0, shape.BendX);
         Assert.Equal(0, shape.BendY);
 

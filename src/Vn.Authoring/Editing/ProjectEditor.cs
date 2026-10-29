@@ -268,7 +268,8 @@ public sealed partial class ProjectEditor
     /// ⚠ 노드·대본·표식이 <b>한 번의 변경</b>이다. 갈라 두면 되돌리기 한 번에 표식만 사라져
     /// <b>아무도 안 부르는 씬</b>이 판에 남는다.
     /// </summary>
-    /// <param name="beforeLineId">이 줄 앞에서 갈라진다. 그 줄에 이미 표식이 있으면 거절한다.</param>
+    /// <param name="beforeLineId">이 줄 앞에서 갈라진다. 그 줄에 이미 분기가 있으면 그 뒤에 하나 더 선다(2026-10-29 —
+    /// 전에는 거절했다 · <c>docs/plans/multi-branch.md</c>). 차례로 다녀온다.</param>
     public DialogueNode AddBranchMarker(string nodeId, string beforeLineId, string? name = null)
     {
         if (Project.FindNode(nodeId) is not DialogueNode source)
@@ -285,12 +286,6 @@ public sealed partial class ProjectEditor
                 !string.Equals(line.Id, beforeLineId, StringComparison.Ordinal)))
         {
             throw new InvalidOperationException("그 줄이 이 노드의 대본에 없습니다.");
-        }
-
-        if (source.FindExtension(beforeLineId)?.DetourTargetNodeId is not null)
-        {
-            throw new InvalidOperationException(
-                "그 자리에는 이미 분기가 있습니다 — 한 자리에 하나만 둘 수 있습니다.");
         }
 
         // 분기로 다녀갈 카드는 원본의 <b>오른쪽</b>에 선다 (D3 · 2026-10-29 소유자: "분기는 기존처럼
@@ -314,7 +309,7 @@ public sealed partial class ProjectEditor
         Mutate(() =>
         {
             attach();
-            source.RequireExtension(beforeLineId).DetourTargetNodeId = created.Id;
+            source.RequireExtension(beforeLineId).DetourTargetNodeIds.Add(created.Id);
         });
 
         return created;
@@ -322,7 +317,8 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// <b>「분기 지우기」</b> (2026-10-29 소유자: *"조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다.
-    /// 지울 수 있도록 해주시고"*) — <see cref="AddBranchMarker"/>의 반대다. 그 줄 앞의 분기 표식을 걷고,
+    /// 지울 수 있도록 해주시고"*) — <see cref="AddBranchMarker"/>의 반대다. 그 줄 앞의 분기 하나(줄과 다녀갈 카드 —
+    /// 한 줄에 여럿일 수 있다)를 걷고,
     /// 그 분기가 다녀가던 카드(분기를 추가할 때 함께 선 에피소드)도 <b>다른 곳이 쓰지 않으면</b> 함께 걷는다.
     ///
     /// ⛔ 2026-10-29까지는 표식만 지우고 카드는 판에 남겼다 — "거기 써 둔 대사가 한 번의 실수로 사라진다"가
@@ -333,21 +329,22 @@ public sealed partial class ProjectEditor
     /// 챕터의 길(간선)이 그리로 들어오거나, 챕터의 시작 에피소드이거나, 다른 판에 서 있을 때. 다른 데서 이어 쓰는
     /// 에피소드를 분기 하나 지우다 함께 걷으면 안 된다.
     /// </summary>
-    /// <returns>지운 것. 그 자리에 분기가 없었으면 <c>null</c>이다.</returns>
-    public BranchMarkerRemoval? RemoveBranchMarker(string nodeId, string beforeLineId)
+    /// <param name="targetNodeId">그 분기가 다녀가는 카드 — 한 줄의 분기들 가운데 어느 것인지 가린다.</param>
+    /// <returns>지운 것. 그 자리에 그 분기가 없었으면 <c>null</c>이다.</returns>
+    public BranchMarkerRemoval? RemoveBranchMarker(string nodeId, string beforeLineId, string targetNodeId)
     {
         if (Project.FindNode(nodeId) is not DialogueNode source ||
-            source.FindExtension(beforeLineId)?.DetourTargetNodeId is not { Length: > 0 } targetId)
+            source.FindExtension(beforeLineId)?.DetourTargetNodeIds.Contains(targetNodeId) != true)
         {
             return null;
         }
 
-        StoryNode? target = Project.FindNode(targetId);
+        StoryNode? target = Project.FindNode(targetNodeId);
         bool take = target is DialogueNode card && MadeForThisBranchOnly(card, source, beforeLineId);
 
         Batch(() =>
         {
-            SetExitTarget(nodeId, ExitPortKind.Detour, beforeLineId, null);
+            SetDetourTarget(nodeId, beforeLineId, from: targetNodeId, to: null);
 
             if (!take)
             {
@@ -397,7 +394,7 @@ public sealed partial class ProjectEditor
             if (dialogue.BranchExits.Values.Concat(dialogue.ChoiceExits.Values)
                     .Any(target => string.Equals(target, card.Id, StringComparison.Ordinal)) ||
                 dialogue.LineExtensions.Any(extension =>
-                    string.Equals(extension.DetourTargetNodeId, card.Id, StringComparison.Ordinal) &&
+                    extension.DetourTargetNodeIds.Contains(card.Id) &&
                     !(ReferenceEquals(dialogue, source) &&
                       string.Equals(extension.LineId, beforeLineId, StringComparison.Ordinal))))
             {
@@ -634,6 +631,14 @@ public sealed partial class ProjectEditor
     public void SetExitTarget(ExitPort port, string? targetNodeId)
     {
         ArgumentNullException.ThrowIfNull(port);
+
+        // 분기는 줄 하나에 여럿이라 <b>그 분기</b>(지금 가는 곳)를 바꾼다 — 줄만 주면 어느 것인지 모른다.
+        if (port.Kind == ExitPortKind.Detour && port.BranchOpenLineId is { } lineId)
+        {
+            SetDetourTarget(port.NodeId, lineId, port.TargetNodeId, targetNodeId);
+            return;
+        }
+
         SetExitTarget(port.NodeId, port.Kind, port.ExitKey, targetNodeId);
     }
 
@@ -686,19 +691,12 @@ public sealed partial class ProjectEditor
 
         // 「조건 분기」 표식의 목표는 <b>그 줄</b>이 진다 (R7 P-5) — 갈래 출구 장부에 적으면
         // 여는 전환이 없는 고아가 되고, 저장할 때 그 칸이 전환 안에 있어 통째로 사라진다.
+        //
+        // 줄만 주면(2026-10-29 — 한 줄에 분기가 여럿) 대상이 있으면 그 줄의 분기 끝에 하나를 <b>더하고</b>(이미 있으면
+        // 그대로), 대상이 없으면 그 줄의 분기를 <b>모두</b> 끊는다. 분기 하나만 바꾸려면 포트(<see cref="ExitPort"/>)로 부른다.
         if (kind == ExitPortKind.Detour)
         {
-            DialogueLineExtension extension = dialogue.RequireExtension(branchOpenLineId);
-
-            if (!string.Equals(extension.DetourTargetNodeId, targetNodeId, StringComparison.Ordinal))
-            {
-                Mutate(() =>
-                {
-                    extension.DetourTargetNodeId = targetNodeId;
-                    ForgetShapeIfCut(dialogue, kind, branchOpenLineId, targetNodeId);
-                });
-            }
-
+            SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId);
             return;
         }
 
@@ -728,6 +726,90 @@ public sealed partial class ProjectEditor
         {
             node.EdgeShapes.Remove(EdgeShape.KeyOf(kind, exitKey));
         }
+    }
+
+    /// <summary>
+    /// 그 줄의 분기 하나를 바꾼다 (2026-10-29 — 한 줄에 분기가 여럿). <paramref name="from"/>은 지금 가는 곳이다.
+    /// <list type="bullet">
+    /// <item><c>from</c> 없음 · <c>to</c> 있음 — 그 줄 분기 끝에 더한다(이미 있으면 그대로).</item>
+    /// <item><c>from</c> 없음 · <c>to</c> 없음 — 그 줄의 분기를 모두 끊는다.</item>
+    /// <item><c>from</c> 있음 · <c>to</c> 없음 — 그 분기 하나를 끊는다.</item>
+    /// <item><c>from</c> 있음 · <c>to</c> 있음 — 그 분기를 제자리에서 다른 곳으로 잇는다(선 모양도 따라간다). <c>to</c>가
+    ///   그 줄에 이미 있으면 둘이 같은 곳이 되므로 <c>from</c>을 걷는다.</item>
+    /// </list>
+    /// 끊긴 분기의 선 모양은 걷는다(<see cref="ForgetShapeIfCut"/>와 같은 까닭).
+    /// </summary>
+    private void SetDetourTarget(string nodeId, string lineId, string? from, string? to)
+    {
+        if (Project.FindNode(nodeId) is not DialogueNode dialogue ||
+            (to is not null && Project.FindNode(to) is null))
+        {
+            return;
+        }
+
+        List<string> current = dialogue.FindExtension(lineId)?.DetourTargetNodeIds ?? [];
+        List<string> next = [.. current];
+        int at = from is null ? -1 : next.IndexOf(from);
+        string? movedTo = null;
+
+        if (from is not null && at < 0)
+        {
+            return;   // 그 분기가 없다 — 이미 바뀌었다
+        }
+
+        if (to is null)
+        {
+            if (from is null)
+            {
+                next.Clear();
+            }
+            else
+            {
+                next.RemoveAt(at);
+            }
+        }
+        else if (next.Contains(to))
+        {
+            if (from is not null && !string.Equals(from, to, StringComparison.Ordinal))
+            {
+                next.RemoveAt(at);
+            }
+        }
+        else if (from is null)
+        {
+            next.Add(to);
+        }
+        else
+        {
+            next[at] = to;
+            movedTo = to;
+        }
+
+        if (next.SequenceEqual(current, StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        Mutate(() =>
+        {
+            foreach (string gone in current.Where(target => !next.Contains(target)))
+            {
+                string goneKey = EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, gone));
+
+                if (movedTo is not null && dialogue.EdgeShapes.Remove(goneKey, out EdgeShape? kept))
+                {
+                    dialogue.EdgeShapes[EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, movedTo))] = kept;
+                }
+                else
+                {
+                    dialogue.EdgeShapes.Remove(goneKey);
+                }
+            }
+
+            DialogueLineExtension extension = dialogue.RequireExtension(lineId);
+            extension.DetourTargetNodeIds.Clear();
+            extension.DetourTargetNodeIds.AddRange(next);
+        });
     }
 
     /// <summary>

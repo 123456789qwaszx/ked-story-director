@@ -155,7 +155,7 @@ public static class DialoguePublisher
                         .Select(transition => Freeze(transition, project, definition, available))
                         .OfType<DialogueResultTransition>()
                         .ToArray(),
-                line.DetourTargetNodeId));
+                line.Detours));
         }
 
         AddFlowProblems(flow, problems);

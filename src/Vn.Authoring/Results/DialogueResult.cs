@@ -18,11 +18,14 @@ public sealed record DialogueResultLine(
     IReadOnlyList<DialogueResultTransition>? ExtraTransitions = null,
 
     /// <summary>
-    /// 「조건 분기」 표식이 가리키는 노드 (R7 P-5) — <b>이 줄 앞에서</b> 다녀온다.
+    /// 「조건 분기」 표식이 가리키는 노드들 (R7 P-5) — <b>이 줄 앞에서</b> 차례로 다녀온다.
     /// 조건이 아니다: 성립하든 말든 다녀오고, 다녀온 곳이 제 첫머리에서 판단한다.
     /// </summary>
-    string? DetourTargetNodeId = null)
+    IReadOnlyList<string>? Detours = null)
 {
+    /// <summary>이 줄 앞에서 차례로 다녀올 노드들 (2026-10-29부터 여럿일 수 있다). 없으면 빈 목록이다.</summary>
+    public IReadOnlyList<string> DetourTargetNodeIds => Detours ?? Array.Empty<string>();
+
     // ⛔ 줄의 변수 변경(`SetOperations` · `<<set>>`)은 작가 변수와 함께 2026-09-17에 비었고
     //    2026-10-29(L5)에 칸째 걷혔다. 값이 변하는 자리는 챕터 간선의 스탯 변화다.
 

@@ -29,7 +29,7 @@ public sealed record EdgeShape(EdgeShapeKind Kind = EdgeShapeKind.Elbow, double 
 
     /// <summary>
     /// 노드가 진 실행 선(<see cref="StoryNode.EdgeShapes"/>)의 열쇠 — 출구 종류와 그 출구의 열쇠
-    /// (<see cref="ExitPort.ExitKey"/>: 갈래 · 분기는 LineId, 선택지는 문구). 기본 출구는 노드에 하나라 종류만이다.
+    /// (<see cref="ExitPort.ExitKey"/>: 갈래는 LineId, 분기는 LineId와 다녀갈 카드, 선택지는 문구). 기본 출구는 노드에 하나라 종류만이다.
     /// </summary>
     public static string KeyOf(ExitPortKind kind, string? exitKey) =>
         exitKey is null

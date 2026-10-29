@@ -38,7 +38,7 @@
 | 판 · 카드 | `StoryProject.Files` — 판 이름 = ChapterId, 카드 = `DialogueNode`(+`MarkedEpisodeId`) | 연출 그래프 |
 | 연출 그래프의 카드 자리 | `StoryNode.Layout` | 사람(끌기). **챕터 그래프 자리와 별개다** |
 | 대사 본문 | 카드의 대본 `DialogueNode.Script`(`ScriptDocument`) — 줄의 신원은 `LineId`, 글은 locale별 `LocalizedLine(화자, 글)` | 카드 안 글 칸(D4) · 곁기둥 |
-| 분기 표식 | 대사 줄의 `DialogueLineExtension.DetourTargetNodeId` | **연출 그래프만.** 챕터 그래프는 읽어서 그린다 |
+| 분기 표식 | 대사 줄의 `DialogueLineExtension.DetourTargetNodeIds`(한 줄에 여럿 — 차례로 다녀온다 · 2026-10-29 `multi-branch`) | **연출 그래프만.** 챕터 그래프는 읽어서 그린다 |
 | 분기의 조건 | 다녀갈 카드의 첫 줄 `BeginIf` + 꼬리 `EndIf` | 챕터 그래프의 분기 패널 |
 | 화자 | `game.definition.json`의 speakers | 챕터 그래프 [화자] 탭 |
 | ⛔ 연출 | 이 툴에 없다 — compositor가 제 파일에 둔다(옛 프로젝트의 연출은 열 때 `presentation-original/`에 남긴다) | compositor |

@@ -116,9 +116,33 @@ internal static class StoryNodeJson
                     node.EdgeShapes[key] = shape;
                 }
             }
+
+            if (node is DialogueNode dialogue)
+            {
+                AdoptLineOnlyDetourShapes(dialogue);
+            }
         }
 
         return node;
+    }
+
+    /// <summary>
+    /// 분기 선 모양의 옛 열쇠(<c>detour:{줄}</c>)를 그 줄의 첫 분기 열쇠(<c>detour:{줄}&gt;{카드}</c>)로 옮긴다 —
+    /// 2026-10-29 전에는 줄 하나에 분기가 하나라 줄만으로 열쇠가 됐다(<see cref="ExitPort.DetourKey"/>).
+    /// </summary>
+    private static void AdoptLineOnlyDetourShapes(DialogueNode node)
+    {
+        foreach (DialogueLineExtension extension in node.LineExtensions)
+        {
+            string old = EdgeShape.KeyOf(ExitPortKind.Detour, extension.LineId);
+
+            if (extension.DetourTargetNodeIds.FirstOrDefault() is { } first &&
+                node.EdgeShapes.Remove(old, out EdgeShape? shape))
+            {
+                node.EdgeShapes.TryAdd(
+                    EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(extension.LineId, first)), shape);
+            }
+        }
     }
 
     private static void WriteSetNode(SetNode node, JsonObject json)
@@ -188,10 +212,11 @@ internal static class StoryNodeJson
                 lineJson["conditions"] = array;
             }
 
-            // 「조건 분기」 표식 (R7 P-5) — 이 줄에서 다녀올 노드. 조건이 아니다.
-            if (extension.DetourTargetNodeId is { Length: > 0 } detour)
+            // 「조건 분기」 표식 (R7 P-5) — 이 줄 앞에서 차례로 다녀올 노드들. 조건이 아니다.
+            // 하나면 문자열(그전과 같은 바이트), 여럿이면 배열이다(DetourJson).
+            if (DetourJson.Write(extension.DetourTargetNodeIds) is { } detours)
             {
-                lineJson["detour"] = detour;
+                lineJson["detour"] = detours;
             }
 
             lines.Add(lineJson);
@@ -351,10 +376,7 @@ internal static class StoryNodeJson
 
             // ⛔ 줄의 `set`도 2026-09-17에 폐지됐다 — 옛 파일에 남아 있어도 안 읽는다.
 
-            if ((string?)lineJson["detour"] is { Length: > 0 } detour)
-            {
-                extension.DetourTargetNodeId = detour;
-            }
+            extension.DetourTargetNodeIds.AddRange(DetourJson.Read(lineJson["detour"]));
 
             node.LineExtensions.Add(extension);
         }

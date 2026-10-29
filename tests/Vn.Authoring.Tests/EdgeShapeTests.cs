@@ -71,11 +71,12 @@ public sealed class EdgeShapeTests
         ProjectEditor editor = Chapter();
         DialogueNode a = EpisodeNaming.CardFor(editor.Project, "ch01", "a")!;
         string lineId = a.Script.ActiveLines.First().Id;
-        editor.AddBranchMarker(a.Id, lineId);
+        DialogueNode made = editor.AddBranchMarker(a.Id, lineId);
         ExitPort detour = DetourOf(editor, a.Id);
+        string key = $"detour:{lineId}>{made.Id}";   // 분기의 열쇠는 줄과 다녀갈 카드다 — 한 줄에 여럿일 수 있다
 
         editor.SetExitShape(detour, Curved);
-        Assert.Equal(Curved, a.EdgeShapes[$"detour:{lineId}"]);
+        Assert.Equal(Curved, a.EdgeShapes[key]);
 
         // 선을 끊으면 모양도 걷힌다 — 같은 줄에 다시 이을 때 옛 굽이가 되살아나지 않는다.
         editor.SetExitTarget(detour, null);
@@ -83,7 +84,7 @@ public sealed class EdgeShapeTests
 
         // 끊은 것을 되돌리면 모양도 함께 돌아온다(한 칸).
         editor.Undo();
-        Assert.Equal(Curved, Node(editor, a.Id).EdgeShapes[$"detour:{lineId}"]);
+        Assert.Equal(Curved, Node(editor, a.Id).EdgeShapes[key]);
     }
 
     [Fact]
@@ -109,7 +110,7 @@ public sealed class EdgeShapeTests
 
         DialogueNode a = EpisodeNaming.CardFor(editor.Project, "ch01", "a")!;
         string lineId = a.Script.ActiveLines.First().Id;
-        editor.AddBranchMarker(a.Id, lineId);
+        DialogueNode made = editor.AddBranchMarker(a.Id, lineId);
         editor.SetExitShape(DetourOf(editor, a.Id), new EdgeShape(EdgeShapeKind.Straight));
         editor.SetEdgeShape("ch01", "a", "b", "간다", Curved);
 
@@ -118,7 +119,7 @@ public sealed class EdgeShapeTests
         Assert.Equal(Curved, loaded.Chapters.Single().Edges.Single().Shape);
         Assert.Equal(
             new EdgeShape(EdgeShapeKind.Straight),
-            ((DialogueNode)loaded.FindNode(a.Id)!).EdgeShapes[$"detour:{lineId}"]);
+            ((DialogueNode)loaded.FindNode(a.Id)!).EdgeShapes[$"detour:{lineId}>{made.Id}"]);
     }
 
     // ── 선 긋기 ─────────────────────────────────────────────────────────────

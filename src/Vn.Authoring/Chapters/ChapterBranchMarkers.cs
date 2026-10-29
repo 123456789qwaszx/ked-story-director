@@ -6,7 +6,7 @@ namespace Vn.Authoring.Chapters;
 /// <summary>
 /// 한 챕터에 뚫린 <b>분기 표식</b>을 모으는 유일한 자리 (2026-09-18).
 ///
-/// 표식은 <see cref="DialogueLineExtension.DetourTargetNodeId"/> — <b>대사 줄</b>에 산다.
+/// 표식은 <see cref="DialogueLineExtension.DetourTargetNodeIds"/> — <b>대사 줄</b>에 산다(한 줄에 여럿일 수 있다 · 2026-10-29).
 /// 연출 그래프가 [＋ 분기]로 뚫고, 챕터 그래프는 그것을 <b>읽어서 그린다</b>.
 ///
 /// ⛔ <b>챕터 그래프는 표식을 만들지도 떼지도 않는다.</b> 뚫고 떼는 것은 연출 그래프의
@@ -23,7 +23,8 @@ public static class ChapterBranchMarkers
 {
     /// <param name="FromEpisodeId">분기가 뚫린 에피소드.</param>
     /// <param name="ToEpisodeId">다녀올 에피소드.</param>
-    /// <param name="LineId">그 줄 — 표식의 신원이다(한 에피소드가 분기를 여럿 가질 수 있다).</param>
+    /// <param name="LineId">그 줄. 다녀올 카드와 함께 표식의 신원이다(한 에피소드가 분기를 여럿 가질 수 있고, 한 줄에도
+    /// 여럿일 수 있다).</param>
     /// <param name="ToNodeId">다녀올 카드의 NodeId. 조건을 읽고 쓰는 쪽이 이것을 쓴다.</param>
     public sealed record Marker(
         string FromEpisodeId,
@@ -34,8 +35,8 @@ public static class ChapterBranchMarkers
     /// <summary>
     /// 그 챕터의 분기 전부. 챕터가 없거나 판이 없으면 빈 목록이다.
     ///
-    /// <b>대본에 적힌 차례 그대로</b> 선다 — 판에서 읽는 차례와 카드에서 보는 차례가 같아야
-    /// 한다(<c>NodeConnections</c>가 분기 포트를 세우는 규칙과 같다).
+    /// <b>대본에 적힌 차례 그대로</b>(한 줄 안에서는 다녀오는 차례로) 선다 — 판에서 읽는 차례와 카드에서 보는 차례가
+    /// 같아야 한다(<c>NodeConnections</c>가 분기 포트를 세우는 규칙과 같다).
     ///
     /// ⚠ <b>이 챕터 안에서 끝나는 표식만</b> 낸다. 다녀올 노드가 다른 판에 있으면(구판
     /// 프로젝트의 자유 씬이 그랬다) 챕터 그래프가 그릴 카드가 없으므로 뺀다 — 없는 카드로
@@ -63,13 +64,13 @@ public static class ChapterBranchMarkers
             // 읽는 차례가 아니다.
             foreach (ScriptLine line in card.Script.ActiveLines)
             {
-                if (card.FindExtension(line.Id)?.DetourTargetNodeId is not { Length: > 0 } target ||
-                    !onBoard.TryGetValue(target, out string? to))
+                foreach (string target in card.FindExtension(line.Id)?.DetourTargetNodeIds ?? [])
                 {
-                    continue;
+                    if (onBoard.TryGetValue(target, out string? to))
+                    {
+                        markers.Add(new Marker(from, to, line.Id, target));
+                    }
                 }
-
-                markers.Add(new Marker(from, to, line.Id, target));
             }
         }
 

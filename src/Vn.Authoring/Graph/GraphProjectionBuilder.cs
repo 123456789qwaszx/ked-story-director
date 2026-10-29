@@ -490,7 +490,8 @@ public static class GraphProjectionBuilder
         return exit.Kind switch
         {
             ExitPortKind.Default => $"execution:{exit.NodeId}:default",
-            ExitPortKind.Detour => $"execution:{exit.NodeId}:detour:{exit.BranchOpenLineId}",
+            // 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
+            ExitPortKind.Detour => $"execution:{exit.NodeId}:detour:{exit.ExitKey}",
             _ => $"execution:{exit.NodeId}:branch:{exit.BranchOpenLineId}"
         };
     }
