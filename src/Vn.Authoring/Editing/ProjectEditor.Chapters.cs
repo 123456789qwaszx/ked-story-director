@@ -562,6 +562,11 @@ public sealed partial class ProjectEditor
     // ── 간선 ────────────────────────────────────────────────────────────────
     // v9 — 길 하나가 곧 선택지 하나이고, 신원은 (출발, 도착, 문구)다.
 
+    /// <param name="before">
+    /// 이 간선 <b>앞에</b> 끼워 넣는다 — 없으면 끝에 붙는다 (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해").
+    /// 한 에피소드에서 나가는 간선의 순서가 곧 화면의 선택지 순서이자 런타임 <c>OptionIndex</c>라(§5-3), 연출 그래프는
+    /// 사람이 적어 둔 줄 자리에 맞춰 넣는다.
+    /// </param>
     public ChapterEdge AddEdge(
         string chapterId,
         string fromEpisodeId,
@@ -569,14 +574,18 @@ public sealed partial class ProjectEditor
         string? conditionLabel = null,
         string? optionLabel = null,
         string? statChanges = null,
-        bool auto = false)
+        bool auto = false,
+        ChapterEdge? before = null)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
         ChapterEdge edge = NewEdge(chapter, fromEpisodeId, toEpisodeId, optionLabel, conditionLabel, statChanges, auto);
+        int at = before is null
+            ? chapter.Edges.Count
+            : RequireEdgeIndex(chapter, before.FromEpisodeId, before.ToEpisodeId, before.OptionLabel);
 
         Mutate(() =>
         {
-            chapter.Edges.Add(edge);
+            chapter.Edges.Insert(at, edge);
             LearnChoiceLabel(chapter, optionLabel);
         });
 

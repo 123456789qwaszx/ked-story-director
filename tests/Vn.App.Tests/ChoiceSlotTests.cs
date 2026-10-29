@@ -169,6 +169,51 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
+    public void 아래_칸을_먼저_이어도_적은_순서가_그대로다() => HeadlessUi.Run(() =>
+    {
+        // H2 · 2026-10-29 소유자 — "선택지 문구를 적어둔 순서가 자꾸 뒤바뀌는데 … 선택지 문구의 순서를 유지해".
+        // ⛔ 예전에는 이은 줄이 늘 위로 모여, 둘째 칸을 먼저 이으면 그 줄이 첫째로 올라갔다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+
+        Write(graph, session, "root", slot: 0, "asdsad");
+        Write(graph, session, "root", slot: 1, "rrrrrrr");
+        Drag(graph, session, "root", slot: 1, onto: "a");
+
+        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, session, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, session, "root")[0]);
+        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, session, "root")[1]);
+
+        // 첫째 칸을 나중에 이어도 그 자리다 — 간선은 그 줄 자리에 끼워 들어가, 런타임 선택지 순서도 화면과 같다.
+        Drag(graph, session, "root", slot: 0, onto: "a");
+
+        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, session, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(
+            ["asdsad", "rrrrrrr"],
+            session.Editor.FindChapter("ch01")!.Edges.Select(edge => edge.OptionLabel));
+    });
+
+    [Fact]
+    public void 길을_끊어도_그_줄은_제자리다() => HeadlessUi.Run(() =>
+    {
+        // H2 — 예전에는 끊은 문구가 적어 둔 칸들의 맨 앞(= 이은 줄들 아래)으로 가서 순서가 뒤집혔다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "하나");
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "둘");
+        graph.Rebuild();
+
+        Drag(graph, session, "root", slot: 0, onto: null);
+
+        Assert.Equal(["하나", "둘"], Labels(graph, session, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(GraphEditorView.SlotLive, Dots(graph, session, "root")[0]);
+        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, session, "root")[1]);
+
+        // 다시 이으면 도로 첫째다 — 간선도 「둘」 앞에 선다.
+        Drag(graph, session, "root", slot: 0, onto: "a");
+
+        Assert.Equal(["하나", "둘"], session.Editor.FindChapter("ch01")!.Edges.Select(edge => edge.OptionLabel));
+    });
+
+    [Fact]
     public void 사람이_안_만든_점은_안_선다() => HeadlessUi.Run(() =>
     {
         // ⛔ 대본에서 파생되던 "진행"·구판 OPTION 스텁을 걷었다 (결정 ②) — 선택지를 긋는

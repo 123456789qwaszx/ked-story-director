@@ -747,11 +747,16 @@ public partial class GraphEditorView : UserControl
 
         var branches = new List<(ChapterEdge? Edge, ExitPort? Port, Rect? Target, GraphChoicePort? Slot)>();
 
-        // 가지 순서 = <b>읽는 순서</b>: ① 문구 있는 길들(간선 시트 행 순서 그대로 — 그것이
-        // 화면에 뜨는 순서다) ② 대본에만 남은 구판 OPTION 스텁 ③ 문구 없는 진행.
-        // 진행이 맨 아래인 것은 소유자 보고("진행이 선택지 위에 서니 헷갈린다") 때문이고,
-        // 보이지 않는 기본은 플레이어에게 버튼으로 안 뜨므로 선택지 순서를 왜곡하지도 않는다.
-        void AddEdgeBranch(ChapterEdge edge)
+        // 가지 순서 = <b>칸의 차례 그대로</b> (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해") — 이은 줄 · 적어 둔
+        // 줄 · 빈 칸이 사람이 둔 자리에 선다(<see cref="SlotsOf"/>). 이은 줄끼리는 간선 시트 행 순서와 같다 — 잇는 순간
+        // 그 자리에 끼워 넣기 때문이다(<see cref="JoinChoice"/>).
+        // ⛔ 예전에는 이은 길이 늘 위로, 적어만 둔 칸이 그 아래로 모였다 — 아래 칸을 먼저 이으면 그 줄이 위로 올라가
+        //    적은 순서가 뒤바뀌었다.
+        // ⚠ 문구 없는 길(진행)은 이은 줄 가운데 맨 아래다 — 소유자 보고("진행이 선택지 위에 서니 헷갈린다"). 보이지 않는
+        //   기본은 플레이어에게 버튼으로 안 뜨므로 선택지 순서를 왜곡하지도 않는다.
+        var drawn = new HashSet<ChapterEdge>(ReferenceEqualityComparer.Instance);
+
+        void AddEdgeBranch(ChapterEdge edge, GraphChoicePort? slot)
         {
             // 도착 노드가 아직 동기화 전이어도 가지는 보인다 — 숨기면 선택지가 통째로
             // 사라져 그래프가 고장 난 것처럼 보인다(소유자 보고 2026-08-15). 없는 노드로
@@ -760,12 +765,29 @@ public partial class GraphEditorView : UserControl
                 ? spot.Rect
                 : null;
 
-            branches.Add((edge, PortFor(source, edge, optionPorts, defaultPort), target, SlotFor(slots, edge)));
+            branches.Add((edge, PortFor(source, edge, optionPorts, defaultPort), target, slot));
+            drawn.Add(edge);
         }
 
-        foreach (ChapterEdge edge in edges.Where(edge => !edge.HasNoOptionLabel))
+        foreach (GraphChoicePort slot in slots)
         {
-            AddEdgeBranch(edge);
+            if (slot.IsEmpty)
+            {
+                branches.Add((null, null, null, slot));
+            }
+            else if (edges.FirstOrDefault(edge =>
+                         string.Equals(edge.ToEpisodeId, slot.ToEpisodeId, StringComparison.Ordinal) &&
+                         string.Equals(edge.OptionLabel ?? string.Empty, slot.Label, StringComparison.Ordinal))
+                     is { } edge)
+            {
+                AddEdgeBranch(edge, slot);
+            }
+        }
+
+        // 칸을 못 찾은 간선도 가지는 선다 — 숨기면 선택지가 통째로 사라져 보인다(진행은 맨 아래).
+        foreach (ChapterEdge edge in edges.Where(edge => !drawn.Contains(edge)).OrderBy(edge => edge.HasNoOptionLabel))
+        {
+            AddEdgeBranch(edge, null);
         }
 
         // ⛔ <b>대본에서 파생되던 가지는 걷었다</b> (R7 결정 ② · 2026-09-16 소유자).
@@ -773,17 +795,6 @@ public partial class GraphEditorView : UserControl
         //    이 화면이 된 지금은 <b>사람이 만들지 않은 점</b>이 섞여 혼란스럽다
         //    (소유자: "붉은 점 하나만 있을 때 자동으로 그 위로 '진행' 점이 생긴다").
         //    ⚠ 데이터는 그대로 산다 — 차후 「분기」 탭이 그것을 다시 화면에 올린다.
-
-        foreach (ChapterEdge edge in edges.Where(edge => edge.HasNoOptionLabel))
-        {
-            AddEdgeBranch(edge);
-        }
-
-        // 빈 칸은 맨 아래에 — 이미 그은 길 다음에 "여기에 더 놓을 수 있다"가 온다.
-        foreach (GraphChoicePort empty in slots.Where(item => item.IsEmpty))
-        {
-            branches.Add((null, null, null, empty));
-        }
 
         if (branches.Count == 0)
         {
@@ -1081,10 +1092,15 @@ public partial class GraphEditorView : UserControl
         return chip;
     }
 
-    /// <summary>그 에피소드의 노드가 낸 포트들 — 칸의 활성 판정이 이웃 칸을 봐야 한다.</summary>
-    /// <summary>그 노드의 선택지 칸들 — 챕터 간선 순서 그대로.</summary>
-    private IReadOnlyList<GraphChoicePort> SlotsOf(string nodeId) =>
-        _projection?.Items.OfType<ExpandedNodeProjection>()
+    /// <summary>
+    /// 그 노드의 선택지 칸들 — <b>사람이 둔 차례 그대로</b> (H2). <see cref="GraphChoicePort.Slot"/>은 화면의 줄 번호다.
+    ///
+    /// 투영은 이은 칸(간선 순서)을 앞에, 빈 칸을 뒤에 낸다 — 적어 둔 문구는 투영이 모른다(저장하지 않는다). 여기서
+    /// <see cref="RowsOf"/>의 차례에 맞춰 다시 세운다: 이은 줄 자리에는 간선을 순서대로 채우고, 나머지는 빈 칸이다.
+    /// </summary>
+    private IReadOnlyList<GraphChoicePort> SlotsOf(string nodeId)
+    {
+        List<GraphChoicePort> raw = _projection?.Items.OfType<ExpandedNodeProjection>()
             .FirstOrDefault(node => string.Equals(node.NodeId, nodeId, StringComparison.Ordinal))
             ?.OutputPorts
             .Select(port => port.ChoicePort)
@@ -1092,10 +1108,51 @@ public partial class GraphEditorView : UserControl
             .Select(choice => choice!)
             .ToList() ?? [];
 
-    private static GraphChoicePort? SlotFor(IReadOnlyList<GraphChoicePort> slots, ChapterEdge edge) =>
-        slots.FirstOrDefault(slot =>
-            string.Equals(slot.ToEpisodeId, edge.ToEpisodeId, StringComparison.Ordinal) &&
-            string.Equals(slot.Label, edge.OptionLabel ?? string.Empty, StringComparison.Ordinal));
+        if (raw.Count == 0)
+        {
+            return raw;
+        }
+
+        // 이은 칸은 간선 순서대로 — 단 문구 없는 길(진행)은 그 가운데 맨 아래다(소유자: "진행이 선택지 위에 서니 헷갈린다").
+        List<GraphChoicePort> joined = raw
+            .Where(choice => !choice.IsEmpty)
+            .OrderBy(choice => choice.Label.Length == 0)
+            .ToList();
+        List<ChoiceRow?> rows = RowsOf(raw[0].ChapterId, raw[0].FromEpisodeId, joined.Count);
+        var slots = new List<GraphChoicePort>();
+        int next = 0;
+
+        GraphChoicePort Blank(int at) => new(
+            raw[0].ChapterId, raw[0].FromEpisodeId, at,
+            Label: string.Empty, ToEpisodeId: null, ToNodeId: null, IsAuto: false);
+
+        foreach (ChoiceRow? row in rows)
+        {
+            slots.Add(row is ChoiceRow.Joined && next < joined.Count
+                ? joined[next++] with { Slot = slots.Count }
+                : Blank(slots.Count));
+        }
+
+        while (next < joined.Count)
+        {
+            slots.Add(joined[next++] with { Slot = slots.Count });
+        }
+
+        // 새로 낼 수 있는 칸은 늘 셋까지 선다(투영이 정한 수).
+        while (slots.Count < raw.Count)
+        {
+            slots.Add(Blank(slots.Count));
+        }
+
+        return slots;
+    }
+
+    /// <summary>이은 칸의 간선 — 신원은 (출발, 도착, 문구)다.</summary>
+    private ChapterEdge? EdgeOf(GraphChoicePort slot) =>
+        _session?.Editor.FindChapter(slot.ChapterId)?.Edges.FirstOrDefault(edge =>
+            string.Equals(edge.FromEpisodeId, slot.FromEpisodeId, StringComparison.Ordinal) &&
+            string.Equals(edge.ToEpisodeId, slot.ToEpisodeId, StringComparison.Ordinal) &&
+            string.Equals(edge.OptionLabel ?? string.Empty, slot.Label, StringComparison.Ordinal));
 
     /// <summary>철도 위의 점에서 끌기를 시작한다 — 선은 그 점에서 나간다.</summary>
     private void BeginSlotDrag(GraphChoicePort slot, Control knob, string nodeId)
@@ -2394,68 +2451,123 @@ public partial class GraphEditorView : UserControl
     // ── 선택지 슬롯 (R7 P-2) ────────────────────────────────────────────────
 
     /// <summary>
-    /// <b>아직 안 이은 칸에 적어 둔 문구들</b> — 에피소드마다 <b>차례대로</b>. `null`은 아직
-    /// 아무것도 안 적은 칸이다(= 꺼진 칸).
-    ///
-    /// ⛔ <b>자리 번호로 들지 않는다</b> (2026-09-16에 고쳤다). 간선이 하나 늘거나 줄면 빈 칸의
-    /// 자리 번호가 통째로 밀리는데, 번호를 열쇠로 쓰면 적어 둔 문구가 <b>엉뚱한 칸에 붙거나
-    /// 사라진다</b>. 차례로 들면 밀림이 저절로 맞는다 — 이은 길이 늘면 앞에서 하나 빠지고,
-    /// 끊으면 그 문구가 앞에 하나 들어온다.
-    ///
-    /// ⚠ 저장하지 않는다. 간선은 도착이 있어야 존재하므로 도착 없는 문구를 담을 칸이 챕터에
-    /// 없다(R6의 빈 장면과 같은 부류). 문구 자체는 적는 즉시 챕터의 선택지 사전에 배운다.
+    /// <b>선택지 줄 하나의 자리</b> (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해"). 이은 줄은 간선이 채우고,
+    /// 적어 둔 줄은 문구를 든다. 목록의 <c>null</c>은 아직 아무것도 안 적은 빈 칸이다.
     /// </summary>
-    private readonly Dictionary<string, List<string?>> _pending = new(StringComparer.Ordinal);
-
-    /// <summary>그 칸이 <b>빈 칸들 중 몇 번째</b>인가. 이은 칸이면 음수다.</summary>
-    private static int PendingAt(GraphChoicePort slot, IReadOnlyList<GraphChoicePort> slots) =>
-        slot.Slot - slots.Count(item => !item.IsEmpty);
-
-    private string? PendingText(GraphChoicePort slot, IReadOnlyList<GraphChoicePort> slots)
+    private abstract record ChoiceRow
     {
-        if (!_pending.TryGetValue(slot.FromEpisodeId, out List<string?>? list))
-        {
-            return null;
-        }
+        public sealed record Joined : ChoiceRow;
 
-        int at = PendingAt(slot, slots);
-
-        return at >= 0 && at < list.Count ? list[at] : null;
+        public sealed record Written(string Text) : ChoiceRow;
     }
 
-    private void SetPending(GraphChoicePort slot, IReadOnlyList<GraphChoicePort> slots, string? text)
+    /// <summary>
+    /// <b>에피소드마다 선택지 줄의 차례</b> — 사람이 둔 자리 그대로다. 열쇠는 <c>{챕터}/{에피소드}</c>.
+    ///
+    /// ⭐ 잇거나 끊어도 줄은 제자리다 — 이으면 그 줄이 「이은 줄」이 되고(간선은 이은 줄들 사이 같은 자리에 끼워
+    /// 넣는다), 끊으면 문구를 든 「적어 둔 줄」로 돌아온다. ⛔ 예전(`_pending`)에는 적어 둔 문구만 빈 칸들 사이의 차례로
+    /// 들고, 이은 줄은 늘 위로 모였다 — 아래 칸을 먼저 이으면 그 줄이 위로 올라가 적은 순서가 뒤바뀌었다.
+    ///
+    /// ⚠ 저장하지 않는다. 간선은 도착이 있어야 존재하므로 도착 없는 문구를 담을 칸이 챕터에 없다(R6의 빈 장면과
+    /// 같은 부류). 문구 자체는 적는 즉시 챕터의 선택지 사전에 배운다. 다시 열면 이은 줄이 간선 순서대로 위에 선다 —
+    /// 이은 줄끼리의 차례는 간선 순서와 늘 같으므로 잃는 것이 없다.
+    /// </summary>
+    private readonly Dictionary<string, List<ChoiceRow?>> _rows = new(StringComparer.Ordinal);
+
+    private static string RowsKey(string chapterId, string episodeId) => chapterId + "/" + episodeId;
+
+    /// <summary>
+    /// 그 에피소드의 줄 차례 — 이은 줄 자리 수를 지금 간선 수에 맞춘 뒤 돌려준다. 다른 화면(챕터 그래프)이나
+    /// 되돌리기가 길을 더하거나 걷었을 수 있다: 남는 이은 줄은 끝에서부터 빈 칸이 되고, 모자라면 마지막 이은 줄
+    /// 뒤의 빈 칸(없으면 끝)에 선다 — 간선은 끝에 붙으므로 이은 줄끼리의 차례가 간선 순서와 맞는다.
+    /// </summary>
+    private List<ChoiceRow?> RowsOf(string chapterId, string episodeId, int joinedCount)
     {
-        int at = PendingAt(slot, slots);
+        string key = RowsKey(chapterId, episodeId);
 
-        if (at < 0)
+        if (!_rows.TryGetValue(key, out List<ChoiceRow?>? rows))
         {
-            return;
+            rows = [];
         }
 
-        if (!_pending.TryGetValue(slot.FromEpisodeId, out List<string?>? list))
+        int joinedRows = rows.Count(row => row is ChoiceRow.Joined);
+
+        for (int index = rows.Count - 1; index >= 0 && joinedRows > joinedCount; index--)
         {
-            _pending[slot.FromEpisodeId] = list = [];
+            if (rows[index] is ChoiceRow.Joined)
+            {
+                rows[index] = null;
+                joinedRows--;
+            }
         }
 
-        while (list.Count <= at)
+        while (joinedRows < joinedCount)
         {
-            list.Add(null);
+            int last = rows.FindLastIndex(row => row is ChoiceRow.Joined);
+            int blank = rows.FindIndex(last + 1, row => row is null);
+
+            if (blank >= 0)
+            {
+                rows[blank] = new ChoiceRow.Joined();
+            }
+            else
+            {
+                rows.Add(new ChoiceRow.Joined());
+            }
+
+            joinedRows++;
         }
 
-        list[at] = text;
+        Keep(key, rows);
+        return rows;
+    }
 
-        // 꼬리의 꺼진 칸은 들고 있을 이유가 없다.
-        while (list.Count > 0 && list[^1] is null)
+    /// <summary>꼬리의 빈 칸은 들고 있을 이유가 없다 — 다 비면 열쇠째 걷는다.</summary>
+    private void Keep(string key, List<ChoiceRow?> rows)
+    {
+        while (rows.Count > 0 && rows[^1] is null)
         {
-            list.RemoveAt(list.Count - 1);
+            rows.RemoveAt(rows.Count - 1);
+        }
+
+        if (rows.Count == 0)
+        {
+            _rows.Remove(key);
+        }
+        else
+        {
+            _rows[key] = rows;
         }
     }
+
+    /// <summary>그 줄 자리를 바꾼다 — 목록이 짧으면 빈 칸으로 늘린다.</summary>
+    private void SetRow(GraphChoicePort slot, ChoiceRow? row)
+    {
+        string key = RowsKey(slot.ChapterId, slot.FromEpisodeId);
+        List<ChoiceRow?> rows = _rows.TryGetValue(key, out List<ChoiceRow?>? existing) ? existing : [];
+
+        while (rows.Count <= slot.Slot)
+        {
+            rows.Add(null);
+        }
+
+        rows[slot.Slot] = row;
+        Keep(key, rows);
+    }
+
+    private string? PendingText(GraphChoicePort slot) =>
+        slot.IsEmpty &&
+        _rows.TryGetValue(RowsKey(slot.ChapterId, slot.FromEpisodeId), out List<ChoiceRow?>? rows) &&
+        slot.Slot < rows.Count &&
+        rows[slot.Slot] is ChoiceRow.Written written
+            ? written.Text
+            : null;
 
     private static string SlotKey(GraphChoicePort choice) => choice.FromEpisodeId + "#" + choice.Slot;
 
     /// <summary>그 칸이 지금 지고 있는 문구 — 이은 것은 간선에서, 안 이은 것은 적어 둔 데서.</summary>
     private string LabelOf(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
-        choice.IsEmpty ? PendingText(choice, slots) ?? string.Empty : choice.Label;
+        choice.IsEmpty ? PendingText(choice) ?? string.Empty : choice.Label;
 
     /// <summary>
     /// 살아난 칸인가 — <b>문구를 적으면</b> 살아나고 비우면 도로 꺼진다 (2026-09-17 소유자).
@@ -2464,7 +2576,7 @@ public partial class GraphEditorView : UserControl
     /// 손짓이 둘이 되고, 켜 두고 안 적은 칸이 <b>뜻 없이</b> 붉게 남는다.
     /// </summary>
     private bool IsArmed(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
-        choice.IsEmpty && PendingText(choice, slots) is not null;
+        choice.IsEmpty && PendingText(choice) is not null;
 
     /// <summary>
     /// <b>자동 길 자리</b>인가 — 세 칸이 전부 꺼져 있을 때의 첫 칸 (R7 §2 ③-a).
@@ -2476,7 +2588,7 @@ public partial class GraphEditorView : UserControl
     private bool IsAutoSlot(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
         choice.IsAuto ||
         (choice.IsEmpty && choice.Slot == 0 &&
-         slots.All(other => other.IsEmpty && PendingText(other, slots) is null));
+         slots.All(other => other.IsEmpty && PendingText(other) is null));
 
     /// <summary>
     /// 살아 있는 칸인가 — 이어졌거나, 켰거나, 자동 길 자리다.
@@ -2634,7 +2746,7 @@ public partial class GraphEditorView : UserControl
         {
             // 담을 간선이 아직 없다 — 화면이 들고, 문구만 챕터의 어휘집에 남긴다.
             // ⚠ <b>비우면 도로 꺼진다</b> (2026-09-17 소유자) — 문구가 곧 그 칸의 생사다.
-            SetPending(choice, slots, wanted.Length > 0 ? wanted : null);
+            SetRow(choice, wanted.Length > 0 ? new ChoiceRow.Written(wanted) : null);
 
             if (wanted.Length > 0)
             {
@@ -3529,18 +3641,33 @@ public partial class GraphEditorView : UserControl
         }
         else
         {
-            _session.Editor.AddEdge(
-                choice.ChapterId, choice.FromEpisodeId, episodeId,
-                optionLabel: label.Length > 0 ? label : null,
-                auto: auto);
-        }
+            // 그 줄 자리 그대로 잇는다 (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해") — 간선은 이 줄 아래의 첫
+            // 이은 줄 앞에 끼워 넣는다. 그래야 이은 줄끼리의 차례(= 간선 순서 = 런타임 OptionIndex, §5-3)가 화면과 같다.
+            // ⛔ 예전에는 간선을 끝에 붙이고 이은 줄을 위로 모았다 — 아래 칸을 먼저 이으면 그 줄이 위로 올라갔다.
+            // ⚠ 문구 없는 길(진행)은 화면에서만 맨 아래로 내려 서므로 기준으로 삼지 않는다 — 간선 순서의 엉뚱한 자리다.
+            ChapterEdge? before = slots
+                .Skip(choice.Slot + 1)
+                .Where(slot => !slot.IsEmpty && slot.Label.Length > 0)
+                .Select(EdgeOf)
+                .FirstOrDefault(edge => edge is not null);
 
-        // 그 칸의 적어 둔 문구는 이제 간선이 들고 있다 — 차례에서 하나 뺀다. 뒤엣것들이
-        // 한 칸씩 앞으로 오는데, 간선이 하나 늘어 빈 칸도 한 칸씩 밀리므로 자리가 맞는다.
-        if (_pending.TryGetValue(choice.FromEpisodeId, out List<string?>? pending) &&
-            PendingAt(choice, slots) is var at and >= 0 && at < pending.Count)
-        {
-            pending.RemoveAt(at);
+            // 줄 차례를 먼저 바꾼다 — 간선이 서는 순간 판이 다시 그려지므로 그때 이미 맞아 있어야 한다.
+            ChoiceRow? was = PendingText(choice) is { } written ? new ChoiceRow.Written(written) : null;
+            SetRow(choice, new ChoiceRow.Joined());
+
+            try
+            {
+                _session.Editor.AddEdge(
+                    choice.ChapterId, choice.FromEpisodeId, episodeId,
+                    optionLabel: label.Length > 0 ? label : null,
+                    auto: auto,
+                    before: before);
+            }
+            catch
+            {
+                SetRow(choice, was);
+                throw;
+            }
         }
 
         _session.SetStatus(auto
@@ -3554,8 +3681,8 @@ public partial class GraphEditorView : UserControl
     /// 빈 곳에 놓았다 — 이어져 있던 길을 걷는다.
     ///
     /// ⚠ <b>문구는 안 잃는다</b> (2026-09-16 소유자: "연결을 끊더라도 사라지지 않고 유지").
-    /// 길을 끊는 것과 무엇을 물을지 정한 것은 다른 일이다 — 문구는 켜진 빈 칸으로 돌아와
-    /// 다시 이을 수 있다. 칸이 하나 비므로 차례의 <b>맨 앞</b>에 들어간다.
+    /// 길을 끊는 것과 무엇을 물을지 정한 것은 다른 일이다 — 문구는 켜진 칸으로 돌아와 다시 이을 수 있다.
+    /// 줄은 <b>제자리</b>에 남는다(H2 — 예전에는 적어 둔 칸들의 맨 앞으로 갔다).
     ///
     /// ⚠ 자동 길은 문구가 없으니 칸도 꺼진 채로 돌아온다.
     /// </summary>
@@ -3566,20 +3693,21 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        _session!.Editor.RemoveEdge(
-            choice.ChapterId, choice.FromEpisodeId, choice.ToEpisodeId!, choice.Label);
+        // 줄 차례를 먼저 바꾼다 — 간선이 걷히는 순간 판이 다시 그려진다.
+        SetRow(choice, choice.Label.Length > 0 ? new ChoiceRow.Written(choice.Label) : null);
 
-        if (choice.Label.Length > 0)
+        try
         {
-            if (!_pending.TryGetValue(choice.FromEpisodeId, out List<string?>? pending))
-            {
-                _pending[choice.FromEpisodeId] = pending = [];
-            }
-
-            pending.Insert(0, choice.Label);
+            _session!.Editor.RemoveEdge(
+                choice.ChapterId, choice.FromEpisodeId, choice.ToEpisodeId!, choice.Label);
+        }
+        catch
+        {
+            SetRow(choice, new ChoiceRow.Joined());
+            throw;
         }
 
-        _session.SetStatus(
+        _session!.SetStatus(
             $"'{choice.FromEpisodeId}' → '{choice.ToEpisodeId}' 길을 걷었습니다." +
             (choice.Label.Length > 0 ? $" 문구 '{choice.Label}'은 칸에 남겨 뒀습니다." : string.Empty));
 
