@@ -5,6 +5,11 @@
 
 제품 사용 흐름은 [README.md](README.md)에 있다.
 
+> ⛔ **ked-story-director (2026-10-29):** 연출 층(무대 · 연출 노드 · 명령 공급 · 발행과 결과 저장소 · 합성 · Yarn 이미터 ·
+> `Ked.Presentation.Core`)은 [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔다. 아래 본문의 그 부분은
+> 옛 구조다 — 걷은 목록은 [`docs/plans/presentation-removal.md`](docs/plans/presentation-removal.md), 지금 동작은
+> [`docs/design/two-graphs.md`](docs/design/two-graphs.md).
+>
 > **⚠ 이 문서의 유효 범위 (2026-08-18에 확인)**
 >
 > §1~§9의 본문은 **작가·연출 계층**(대본·노드·발행·합성·출력)을 다룬다. 그 서술은 지금도
@@ -145,19 +150,15 @@ Vn.Authoring ── 저작 도메인. 공식 원본. 화면도 파일 대화상�
 
 Vn.Core   ── Yarn 읽기·분석 엔진. 저작 도메인에는 관여하지 않는다.
    ▲
-   ├── Vn.Cli    Yarn 검증 콘솔
-   └── Vn.App    산출물 컴파일 검증 (2026-08-23 — 아래)
+   └── Vn.Cli    Yarn 검증 콘솔
 
-Ked.Presentation.Core ── 무대 상태 계산. 런타임 저장소에서 소스째 복사해 온 한 벌이다
-                         (architecture-decisions H-4 — 이쪽에서 고치거나 솎지 않는다).
-
-tests/Vn.Authoring.Tests        대본·동기화·조건 흐름·발행·합성·출력·저장·챕터 (760)
-tests/Vn.App.Tests              앱 서비스·화면 — 세션·갱신 범위·챕터 화면·일의 양·산출물 검증 (336)
-tests/Ked.Presentation.Core.Tests  무대 상태 계산 (344)
-tests/Vn.Core.Tests             Yarn 분석과 골든 픽스처 (60)
+tests/Vn.Authoring.Tests        대본·동기화·조건 흐름·펼침·미리보기·저장·챕터
+tests/Vn.App.Tests              앱 서비스·화면 — 세션·갱신 범위·챕터 화면·두 그래프
+tests/Vn.Core.Tests             Yarn 분석과 골든 픽스처
 ```
 
-테스트 수는 2026-08-24 기준 **1592개**다(Ked.Presentation.Core 344 · Vn.Core 60 · Vn.Authoring 846 · Vn.App 342).
+⛔ `Vn.App → Vn.Core`(산출물 컴파일 검증)와 `Ked.Presentation.Core`(무대 상태 계산)는 2026-10-29에 연출 층과 함께
+ked-story-compositor로 갔다. 테스트 수는 CI 기록이 정본이다(`docs/plans/presentation-removal.md` §4).
 
 ### `Vn.Authoring/Chapters/ChapterExportService` — 화면에서 나온 정책 (2026-08-23)
 

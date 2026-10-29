@@ -7,6 +7,10 @@
 > [`foundation-roadmap.md`](foundation-roadmap.md)에 있다.
 >
 > §3은 **M1 전에 잰 것**이고 §4가 그 결과다 — 무엇이 왜 새고 있었는지의 기록으로 남긴다.
+>
+> ⛔ **ked-story-director (2026-10-29):** `Ked.Presentation.Core`와 `Vn.App → Vn.Core` 선은 연출 층과 함께
+> [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔다. 지금 구역은
+> `Vn.Authoring` · `Vn.App` · `Ked.Progression` · `Vn.Core` · `Vn.Cli`다. 아래 그림과 표는 그 전의 기록이다.
 
 ---
 

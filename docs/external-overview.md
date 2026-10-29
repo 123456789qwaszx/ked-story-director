@@ -3,6 +3,10 @@
 > ⚠ **ked-story-director (2026-10-29 · D2):** 이 문서의 엑셀 관련 내용 — 챕터·대본 워크북, [대본] 탭, [대본/챕터 가져오기],
 > 워크북 출력·잠금 — 은 이 저장소에서 걷혔다. 원본은 프로젝트 하나이고 대사는 연출 그래프의 카드에 산다.
 > 지금 동작의 정본은 [`docs/design/two-graphs.md`](design/two-graphs.md)다.
+>
+> ⛔ **같은 날 연출 층 전체**(무대 프리뷰 · 연출 노드 · 발행 · 게임용 Yarn 번들 · `Ked.Presentation.Core`)가
+> [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔다. 이 툴이 내는 것은 원고와 progression JSON이다
+> ([`docs/plans/presentation-removal.md`](plans/presentation-removal.md)).
 
 기준일: 2026-09-17 (R7 완료 · 계층을 하나로)
 
@@ -57,7 +61,6 @@ VNStoryEditor_avalonia
 | `Vn.App` | Avalonia 화면과 OS 연결 | 도메인 규칙을 소유하지 않는다 |
 | `Vn.Core` | Yarn 구문 분석과 실제 컴파일러 기반 진단 | 저작 모델·엑셀·UI를 모른다 |
 | `Vn.Cli` | `Vn.Core`의 콘솔 진입점 | 분석 자동화와 골든 검증용 |
-| `Ked.Presentation.Core` | 무대 상태 계산 | 런타임이 주인인 사본 |
 | `Ked.Progression` | 산출물을 실제 소비자 규칙으로 다시 읽는 검증 오라클 | 런타임 사본과 동기화되어야 한다 |
 
 에디터의 `Ked.Progression`이 런타임보다 낡으면 “에디터에서는 통과했지만 게임은 거부하는” 틈이 생긴다.

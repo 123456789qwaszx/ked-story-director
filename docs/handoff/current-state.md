@@ -3,6 +3,9 @@
 > ⚠ **ked-story-director (2026-10-29 · D2):** 이 문서의 엑셀 관련 내용 — 챕터·대본 워크북, [대본] 탭, [대본/챕터 가져오기],
 > 워크북 출력·잠금 — 은 이 저장소에서 걷혔다. 원본은 프로젝트 하나이고 대사는 연출 그래프의 카드에 산다.
 > 지금 동작의 정본은 [`docs/design/two-graphs.md`](../design/two-graphs.md)다.
+>
+> ⛔ 같은 날 연출 층 전체(무대 · 연출 노드 · 발행 · 게임용 Yarn · `Ked.Presentation.Core`)가 `ked-story-compositor`로 갔다
+> ([`docs/plans/presentation-removal.md`](../plans/presentation-removal.md)).
 
 > ## ⛔ 이 문서는 **현재 상태가 아니다.** 이력이다.
 >

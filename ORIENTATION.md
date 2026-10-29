@@ -3,6 +3,11 @@
 > 2026-09-15 작성. 기준 커밋 `master@59b08d6`.
 > 이 문서는 레포의 기존 문서를 **대체하지 않는다.** 정본은 `docs/`와 `ARCHITECTURE.md`이고,
 > 이 문서는 "그 많은 문서를 어떤 순서로 읽고 무엇부터 건드릴지"를 정리한 안내판이다.
+>
+> ⛔ **ked-story-director (2026-10-29):** 연출 층 — 무대 프리뷰 · 연출 노드 · 발행(`Results/`의 저장소) · 게임용 Yarn 번들 ·
+> `Ked.Presentation.Core` — 은 [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔고, 엑셀 연동은
+> D2에서 걷혔다. 이 툴이 내는 것은 원고(프로젝트 파일)와 `progression.json`이다. 아래 본문은 그 전의 지도라 그 부분은 옛 이야기다 —
+> 지금 동작의 정본은 [`docs/design/two-graphs.md`](docs/design/two-graphs.md), 걷은 목록은 [`docs/plans/presentation-removal.md`](docs/plans/presentation-removal.md).
 
 ---
 
@@ -46,7 +51,7 @@ Yarn 편집기가 아니다. **편집기라기보다 컴파일러에 가깝다**
 
 다른 두 저장소는 **읽어서 맞추되 고치지 않는다.** 계약 변경이 필요하면 담당자에게 넘긴다.
 
-## 4. 프로젝트 6개 지도
+## 4. 프로젝트 5개 지도
 
 | 프로젝트 | 줄 수 | 역할 | 경계 |
 |---|---:|---|---|
@@ -54,22 +59,19 @@ Yarn 편집기가 아니다. **편집기라기보다 컴파일러에 가깝다**
 | **`Vn.App`** | 25k | Avalonia 화면과 OS 연결 | 도메인 규칙을 소유하지 않는다 |
 | **`Vn.Core`** | 3.5k | Yarn 파싱·진단 (실제 YarnSpinner 컴파일러) | 저작 모델·엑셀·UI를 모른다 |
 | **`Vn.Cli`** | 0.3k | `Vn.Core`의 콘솔 진입점 | 골든 검증·자동화용 |
-| **`Ked.Presentation.Core`** | 5k | 무대 상태 계산 | **유니티 런타임에서 소스째 복사해 온 사본.** 고치지 않는다 |
 | **`Ked.Progression`** | 2.5k | 산출물을 소비자 규칙으로 다시 읽는 **검증 오라클** | 런타임 사본과 동기화되어야 한다 |
 
 참조 방향:
 
 ```
-Ked.Presentation.Core ─┐
-Ked.Progression ───────┴→ Vn.Authoring ─┐
-                                         ├→ Vn.App
-                       Vn.Core ──────────┘
-                          └→ Vn.Cli
+Ked.Progression ──→ Vn.Authoring ──→ Vn.App
+
+Vn.Core ──→ Vn.Cli
 ```
 
-⚠ `Vn.Authoring`은 **여전히 `Vn.Core`를 모른다**(저작 도메인을 컴파일러에 묶지 않는다).
-`Vn.App → Vn.Core` 선만 2026-08-23에 넘었다 — 이미터 산출물을 진짜 Yarn 컴파일러에 걸어
-보기 위해서다(`Vn.App/Services/YarnOutputVerification`).
+⚠ `Vn.Authoring`은 **`Vn.Core`를 모른다**(저작 도메인을 컴파일러에 묶지 않는다). `Vn.App → Vn.Core` 선(이미터 산출물을
+진짜 Yarn 컴파일러에 걸어 보던 `YarnOutputVerification`)은 2026-10-29에 Yarn 출력과 함께 compositor로 갔다.
+⛔ `Ked.Presentation.Core`(무대 상태 계산 — 런타임에서 복사해 온 사본)도 같은 날 compositor로 갔다.
 
 ### `Vn.Authoring` 내부 폴더의 뜻
 
@@ -117,10 +119,9 @@ Ked.Progression ───────┴→ Vn.Authoring ─┐
 | 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs` — 화면이 아니라 여기 |
 | 노드 직렬화 | `Serialization/StoryNodeJson.cs` — 하나뿐 |
 | 연출 명령 목록 추가 | `game.definition.json` — **코드가 아니다** |
-| Yarn 노드 이름 규칙 | `Rendering/YarnBundleEmitter.StoryNodeTitleOf` — 밖에서 손으로 조립 금지 |
+| Yarn 노드 이름 규칙 | `Rendering/YarnNaming.StoryNodeTitleOf` — 밖에서 손으로 조립 금지 |
 | 도구 모음·창 제목 | `Vn.App/MainWindow.axaml{,.cs}` |
 | 그래프 화면 | `Vn.App/Views/GraphEditorView.axaml.cs` |
-| 무대 조절창 | `Vn.App/Views/StageSceneView.cs` |
 
 ## 7. 밟으면 조용히 터지는 지뢰 (처음 3개월치 실수 목록)
 

@@ -1,21 +1,23 @@
 # ked-story-director
 
-> **연출 툴.** 2026-10-29에 VnTool(`VNStoryEditor_avalonia` `dev` @ `f2a7bdc`)에서 이력째 갈라졌고, 같은 날 VnTool `dev`(`dd2d5be`)의
-> 연출 제거 뒤 변경을 반입했다(무대 프리뷰 · 에셋 탐색기는 남는다). **대본 탭과 엑셀 연동은 걷었다**(D2). 다음은 연출 그래프를
-> 위→아래로 세우고(D3), 대사를 카드 안에서 직접 쓰게 하는 것(D4)이다. 계획과 단계는
-> [`docs/plans/director-split.md`](docs/plans/director-split.md), 두 그래프의 설계 정리는 [`docs/design/two-graphs.md`](docs/design/two-graphs.md).
-> 아래 "문서" 표의 안내서 중 일부는 아직 VnTool 시절(엑셀 워크플로)을 설명한다 — 지금 동작의 정본은 `two-graphs.md`다.
+> **이야기의 뼈대와 대사를 쓰는 툴.** 2026-10-29에 VnTool(`VNStoryEditor_avalonia` `dev` @ `f2a7bdc`)에서 이력째 갈라졌다.
+> 대본 탭과 엑셀 연동을 걷었고(D2), 연출 그래프를 위→아래로 세웠고(D3), 대사를 카드 안에서 직접 쓴다(D4).
+> **연출(무대 프리뷰 · 연출 명령 · 게임용 Yarn · 발행)은 [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로
+> 갔다** — 그 툴은 이 툴의 프로젝트 파일을 원고로 읽고, 연출은 제 파일에 둔다. 계획과 단계는
+> [`docs/plans/director-split.md`](docs/plans/director-split.md) · [`docs/plans/presentation-removal.md`](docs/plans/presentation-removal.md),
+> 지금 동작의 정본은 [`docs/design/two-graphs.md`](docs/design/two-graphs.md).
+> 아래 "문서" 표의 안내서 중 일부는 아직 VnTool 시절(엑셀 워크플로 · 무대)을 설명한다.
 
 비주얼 노벨 저작 도구. C#/.NET 10 + Avalonia, 한국어 코드베이스.
 
-만들어 내는 것은 유니티 런타임(별도 저장소)이 먹는 데이터입니다 —
-`exported/{챕터}.progression.json` + Yarn 번들.
+만들어 내는 것은 **원고(프로젝트 파일)** 와 유니티 런타임(별도 저장소)이 먹는 **`exported/{챕터}.progression.json`** 입니다.
+게임용 Yarn 묶음은 compositor가 이 원고와 제 연출을 합쳐 냅니다.
 
 ## 두 그래프
 
-| | **① 챕터 그래프** (기획) | **② 연출 그래프** (대사 · 연출) |
+| | **① 챕터 그래프** (기획) | **② 연출 그래프** (대사 · 흐름) |
 |---|---|---|
-| 만드는 것 | 에피소드 구조 · 선택지 · 조건 · 스탯 | 에피소드마다 대사 카드 · 분기 · 커맨드 · 무대 · 초상화 |
+| 만드는 것 | 에피소드 구조 · 선택지 · 조건 · 스탯 | 에피소드마다 대사 카드 · 카드 안 글 · 분기 · 조건 갈래 · 선택지 잇기 |
 | 값이 사는 곳 | 프로젝트 | 프로젝트 |
 | 도구의 역할 | 편집하고 검증하고 낸다 | 편집한다 |
 
@@ -24,7 +26,7 @@
 모든 값의 원본은 **프로젝트 파일**입니다. 엑셀 워크북을 들여오고 내던 연동과 [대본] 탭은 2026-10-29(D2)에
 걷었습니다 — 나중에 다시 붙일 수 있지만 지금은 복잡하기만 하다는 판단입니다.
 
-- **대사 본문·화자** → 연출 그래프의 **대사 카드**(카드마다 대본 하나). 카드 안에서 직접 쓰는 것이 D4의 목표입니다.
+- **대사 본문·화자** → 연출 그래프의 **대사 카드**(카드마다 대본 하나). 카드 안의 글 칸에서 직접 씁니다(D4).
 - **에피소드 구조·간선·조건·스탯** → 챕터 그래프. 간선은 연출 그래프에서도 긋습니다(2026-09-17, R7): 카드 아래 칸에
   문구를 적어 다른 카드로 끌면 그것이 간선입니다. **창구가 둘이지 값이 사는 곳은 하나**입니다.
 - 챕터 조건은 판의 공급 노드로 저절로 건너가 대사 카드의 조건 목록에 뜹니다.
@@ -39,14 +41,15 @@
 ```text
 MyStory/
 ├─ 예제.vnproject.json         목차 · 챕터 · 파일을 넘나드는 관계
-├─ game.definition.json        초상화 매핑 · 연출 커맨드 어휘 · 스탯 · 화자
+├─ game.definition.json        스탯 · 화자 (compositor의 연출 커맨드 어휘도 여기 산다 — 이 툴은 읽지도 지우지도 않는다)
 ├─ script/                     카드의 대본 (줄 신원 + 본문)
 ├─ story/                      판(챕터마다 하나)과 그 위의 카드·노드
-├─ results.vnresults.json      발행된 결과
-├─ exported/
-│  └─ ch01.progression.json    런타임 수입물 — 검증을 통과하면 자동으로 나간다
-└─ assets/                     backgrounds · portraits · bgm · sfx
+└─ exported/
+   └─ ch01.progression.json    런타임 수입물 — 검증을 통과하면 자동으로 나간다
 ```
+
+연출을 담은 옛 프로젝트(VnTool 시절)를 열면 연출 데이터는 읽지 않고, 원본을 `presentation-original/`에 한 번 남깁니다
+(저장하면 연출이 빠지기 때문입니다). compositor가 그 폴더에서 연출을 가져갑니다.
 
 ## 실행
 
@@ -95,7 +98,7 @@ R0~R5의 순서·체크리스트·완료 근거는 [`docs/plans/PLAN.md`](docs/p
 ## Yarn 분석 도구
 
 `Vn.Core`와 `Vn.Cli`는 Yarn 프로젝트를 읽고 검증하는 별도 도구입니다. 저작 경로와 분리돼
-있습니다.
+있습니다(이 툴은 Yarn을 내지 않는다 — 게임용 Yarn은 compositor가 낸다).
 
 ```powershell
 dotnet run --project .\src\Vn.Cli\Vn.Cli.csproj -- .\samples\Valid\Demo.yarnproject .\samples\Valid\game.schema.json

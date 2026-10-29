@@ -9,9 +9,6 @@
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.1" />
 	<PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
     <PackageVersion Include="YarnSpinner.Compiler" Version="3.2.1" />
-    <!-- 챕터·에피소드 엑셀 (G1 읽기 · G5 쓰기). MIT — 의존 트리도 전부 MIT이고
-         SixLabors.Fonts만 Apache-2.0이다. 손수 OOXML을 쓰는 길은 여기서 닫는다:
-         G5가 드롭다운(데이터 유효성)·색·시트보호를 써야 하는데 그건 손으로 쓸 물건이 아니다. -->
     <!-- 화면 없는 렌더 검증 (Gate A). 창을 띄우지 않고 시각 트리와 배치를 그대로 확인한다 —
          전역 입력 주입으로 남의 창을 누르는 짓을 하지 않기 위한 대체 수단이다. Avalonia와 같은 MIT. -->
     <PackageVersion Include="Avalonia.Headless" Version="12.1.1" />
@@ -19,9 +16,5 @@
     <PackageVersion Include="xunit" Version="2.9.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
-    <!-- 코어 복사 테스트 전용 (W22). NUnit 4는 Assert.IsTrue 계열 클래식 API를 걷어냈으므로
-         원본(유니티 NUnit 3계열)과 같은 3.14에 고정한다. -->
-    <PackageVersion Include="NUnit" Version="3.14.0" />
-    <PackageVersion Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
 </Project>
