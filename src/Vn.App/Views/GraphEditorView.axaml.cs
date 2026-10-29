@@ -180,13 +180,6 @@ public partial class GraphEditorView : UserControl
     private Vector _proxyDragDelta;
 
     /// <summary>
-    /// 토글 상태로 만든 필터. 거르는 것은 화면이 아니라 투영이다.
-    /// </summary>
-    private GraphFilter CurrentFilter => new(
-        ShowDialogue: FilterDialogueCheck.IsChecked == true,
-        ShowSet: FilterSetCheck.IsChecked == true);
-
-    /// <summary>
     /// 우측 곁기둥의 내용을 셸이 물려준다 (2026-08-22) — 대사 노드 편집기.
     /// 자리는 이 판의 것이고(쓰는 화면이 여기뿐이다) 배선은 셸의 것이다: 편집기가
     /// 세션·선택 전환과 얽혀 있어 이 뷰로 옮기면 그 배선이 두 벌이 된다.
@@ -203,7 +196,6 @@ public partial class GraphEditorView : UserControl
 
         AddDialogueButton.Click += (_, _) => AddNode(GraphNodeKind.Dialogue);
         DeleteNodeButton.Click += (_, _) => DeleteSelectedNode();
-        ArrangeBoardButton.Click += (_, _) => ArrangeActiveBoard();
 
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 대사 노드]가 거기에 선다.
         // ⚠ 다시 그리기가 콤보를 맞출 때는 안 돈다(_syncingChapter) — 안 그러면
@@ -219,13 +211,6 @@ public partial class GraphEditorView : UserControl
             UiGuard.Run(_session, "챕터 고르기", () =>
                 _session.SelectFile(_session.EnsureChapterBoard(chapterId)));
         };
-
-        foreach (CheckBox check in new[] { FilterDialogueCheck, FilterSetCheck })
-        {
-            // 체크 하나가 곧 다시 그리기다 — 코드가 체크를 대신 눌러 주던 [흐름만]이
-            // 사라지며(2026-08-22) 재진입을 막던 빗장도 함께 없어졌다.
-            check.IsCheckedChanged += (_, _) => Rebuild();
-        }
 
         GraphCanvas.PointerMoved += OnCanvasPointerMoved;
         GraphCanvas.PointerReleased += OnCanvasPointerReleased;
@@ -296,8 +281,7 @@ public partial class GraphEditorView : UserControl
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
             _session.ExpandedFileIds,
-            _session.Definition,
-            CurrentFilter);
+            _session.Definition);
 
         // 카드 안 글 칸에 초점이 있었으면 다시 그린 뒤 그 칸으로 돌려준다(D4) — 판을 비우기 전에 잰다.
         WritingFocus? writing = CaptureWritingFocus();
@@ -1570,8 +1554,7 @@ public partial class GraphEditorView : UserControl
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
             _session.ExpandedFileIds,
-            _session.Definition,
-            CurrentFilter);
+            _session.Definition);
 
         PlaceVisuals(_projection);
     }
@@ -3686,35 +3669,6 @@ public partial class GraphEditorView : UserControl
         };
 
         _session.Select(node.Id);
-    }
-
-    /// <summary>
-    /// [자동 정렬] (D3-d) — 고른 챕터의 판을 위에서 아래로 다시 세운다(<see cref="NodePlacement.Arrange"/>).
-    /// <c>MoveNodes</c> 한 번이라 되돌리기 한 칸이다. 챕터 판이 아니면 말로 돌려보낸다 — 낙서판에는
-    /// 위아래를 정할 진행(챕터 간선)이 없다.
-    /// </summary>
-    private void ArrangeActiveBoard()
-    {
-        if (_session is not { } session)
-        {
-            return;
-        }
-
-        if (session.ActiveFile is not { } board || session.Editor.FindChapter(board.Name) is null)
-        {
-            session.SetStatus("자동 정렬은 챕터 판에서 합니다. 왼쪽 위 콤보에서 챕터를 고르세요.");
-            return;
-        }
-
-        UiGuard.Run(session, "자동 정렬", () =>
-        {
-            long before = session.Editor.Revision;
-            session.Editor.MoveNodes(NodePlacement.Arrange(session.Project, board.Name));
-
-            session.SetStatus(session.Editor.Revision == before
-                ? $"챕터 {board.Name}의 판은 이미 정렬된 모양입니다."
-                : $"챕터 {board.Name}의 판을 위에서 아래로 다시 세웠습니다. 되돌리기 한 번이면 돌아갑니다.");
-        });
     }
 
     private void DeleteSelectedNode()

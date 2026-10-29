@@ -1,5 +1,4 @@
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Graph;
@@ -20,7 +19,8 @@ namespace Vn.Authoring.Graph;
 /// 언제나 판 오른쪽 끝에 섰다(§6-1). 이제 부르는 쪽이 부모를 함께 준다.
 ///
 /// ⚠ <b>이미 선 카드는 안 옮긴다.</b> 자리는 사람이 끌어 정하는 것이다 — 여기서 정하는 것은 새로 서는
-/// 카드의 첫 자리뿐이고, 판 전체를 다시 세우는 일은 [자동 정렬](<see cref="Arrange"/>)이 사람이 누를 때만 한다.
+/// 카드의 첫 자리뿐이다. (⛔ 판 전체를 다시 세우던 연출 그래프의 [자동 정렬]은 2026-10-29에 걷혔다 — 소유자:
+/// *"자동 정렬과 필터가 있는데, 둘다 필요없으니 지워주십시오."*)
 /// </summary>
 public static class NodePlacement
 {
@@ -69,154 +69,6 @@ public static class NodePlacement
         ArgumentNullException.ThrowIfNull(source);
 
         return FirstFree(board, source.Layout.X + Column, source.Layout.Y);
-    }
-
-    /// <summary>
-    /// [자동 정렬] — 챕터 판 하나를 <b>위에서 아래로 다시 세운</b> 자리 (D3-d · 2026-10-29). 노드 Id → 자리.
-    /// 부르는 쪽이 <c>ProjectEditor.MoveNodes</c> 한 번으로 적는다(되돌리기 한 칸).
-    ///
-    /// <list type="bullet">
-    /// <item><b>에피소드 카드</b>: 줄 = 챕터 그래프의 깊이(<see cref="ChapterBranchPlanner.Depths"/>), 같은 줄은 에피소드를
-    ///       적은 순서대로 옆으로. 깊이가 없는(시작에서 닿지 않는) 에피소드는 한 줄 띄운 맨 아래 줄 — 챕터 그래프의
-    ///       [자동 정렬](<see cref="ChapterBranchPlanner.Layout"/>)과 같은 모양이다.</item>
-    /// <item><b>그 카드의 실행 출구(분기 · IF 갈래 · 기본)로 다녀가는 카드</b>: 그 카드의 <b>오른쪽</b>에 한 줄로.
-    ///       그 칸을 비워 두고 같은 줄의 다음 에피소드가 선다.</item>
-    /// <item><b>어디에도 안 매인 카드</b>(설정 노드 · 들어오는 길이 없는 자유 씬 · 챕터에 없는 에피소드의 카드): 맨 아래 한 줄.</item>
-    /// <item>숨은 배관(<see cref="GraphProjectionBuilder.IsHiddenPlumbing"/>)은 그리지 않으므로 건드리지 않는다.</item>
-    /// </list>
-    ///
-    /// 판의 왼쪽 위 구석(지금 카드들의 가장 작은 X · Y)은 그대로 둔다 — 한 화면에 챕터 판 여럿이 펼쳐져 있으므로
-    /// 원점으로 끌어오면 다른 판과 포개진다. 챕터 판이 아니면 빈 결과다.
-    /// </summary>
-    public static IReadOnlyDictionary<string, (double X, double Y)> Arrange(StoryProject project, string chapterId)
-    {
-        ArgumentNullException.ThrowIfNull(project);
-
-        var positions = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
-
-        if (EpisodeNaming.BoardOf(project, chapterId) is not { } board ||
-            project.Chapters.FirstOrDefault(item =>
-                string.Equals(item.ChapterId, chapterId, StringComparison.Ordinal)) is not { } chapter)
-        {
-            return positions;
-        }
-
-        List<StoryNode> drawn = board.Nodes
-            .Where(node => !GraphProjectionBuilder.IsHiddenPlumbing(node, board))
-            .ToList();
-
-        if (drawn.Count == 0)
-        {
-            return positions;
-        }
-
-        (double originX, double originY) = (drawn.Min(node => node.Layout.X), drawn.Min(node => node.Layout.Y));
-        var drawnIds = drawn.Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
-
-        ChapterGraphModel model = chapter.ToGraphModel(chapterId);
-        IReadOnlyDictionary<string, int> depths = ChapterBranchPlanner.Depths(model);
-
-        List<(int Depth, DialogueNode Card)> episodes = model.Episodes
-            .Select(episode => (Episode: episode, Card: EpisodeNaming.CardFor(project, chapterId, episode.EpisodeId)))
-            .Where(pair => pair.Card is not null && drawnIds.Contains(pair.Card.Id))
-            .Select(pair => (Depth: depths.TryGetValue(pair.Episode.EpisodeId, out int depth) ? depth : -1, Card: pair.Card!))
-            .ToList();
-
-        // 척추 = 진행이 닿는(깊이가 있는) 에피소드. 「분기 추가」의 카드도 챕터 판에서는 에피소드지만
-        // 진행이 착지하지 않는 곁가지라 깊이가 없다 — 그 카드는 다녀가는 카드의 오른쪽에 선다.
-        List<(int Depth, DialogueNode Card)> spine = episodes.Where(pair => pair.Depth >= 0).ToList();
-        var spineIds = spine.Select(pair => pair.Card.Id).ToHashSet(StringComparer.Ordinal);
-        int deepest = spine.Count == 0 ? 0 : spine.Max(pair => pair.Depth);
-
-        foreach (IGrouping<int, (int Depth, DialogueNode Card)> row in spine
-                     .GroupBy(pair => pair.Depth)
-                     .OrderBy(row => row.Key))
-        {
-            PlaceRow(row.Select(pair => pair.Card), originY + (row.Key * Row));
-        }
-
-        // 아무 데서도 다녀가지 않는 깊이 없는 에피소드 — 한 줄 띄운 맨 아래 줄(챕터 그래프의 Layout과 같은 모양).
-        List<DialogueNode> unreached = episodes
-            .Where(pair => pair.Depth < 0 && !positions.ContainsKey(pair.Card.Id))
-            .Select(pair => pair.Card)
-            .ToList();
-
-        if (unreached.Count > 0)
-        {
-            PlaceRow(unreached, originY + ((deepest + 2) * Row));
-        }
-
-        // 어디에도 안 매인 카드 — 맨 아래 한 줄.
-        double restY = positions.Count == 0 ? originY : positions.Values.Max(spot => spot.Y) + Row;
-        double restX = originX;
-
-        foreach (StoryNode node in drawn.Where(node => !positions.ContainsKey(node.Id)))
-        {
-            positions[node.Id] = (restX, restY);
-            restX += Column;
-        }
-
-        return positions;
-
-        // 한 줄 — 카드마다 제 자리, 그 오른쪽에 그 카드로 다녀가는 카드들, 그 다음 카드는 그만큼 비켜 선다.
-        void PlaceRow(IEnumerable<DialogueNode> cards, double y)
-        {
-            double x = originX;
-
-            foreach (DialogueNode card in cards)   // 에피소드를 적은 순서다
-            {
-                if (positions.ContainsKey(card.Id))
-                {
-                    continue;   // 같은 줄의 앞 카드가 다녀가는 카드로 이미 데려갔다
-                }
-
-                positions[card.Id] = (x, y);
-                x += Column;
-
-                foreach (StoryNode side in SideChainOf(project, card, spineIds, drawnIds, positions))
-                {
-                    positions[side.Id] = (x, y);
-                    x += Column;
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// 이 카드의 실행 출구로 다녀가는 카드들 — 출구를 따라 너비 우선으로, 에피소드 카드(제 줄에 선다)와 이미 자리를
-    /// 받은 카드에서 멈춘다. 같은 카드로 이어지는 출구가 여럿이어도 한 번이다.
-    /// </summary>
-    private static List<StoryNode> SideChainOf(
-        StoryProject project,
-        DialogueNode card,
-        IReadOnlySet<string> spineIds,
-        IReadOnlySet<string> drawnIds,
-        IReadOnlyDictionary<string, (double X, double Y)> placed)
-    {
-        var chain = new List<StoryNode>();
-        var seen = new HashSet<string>(StringComparer.Ordinal) { card.Id };
-        var queue = new Queue<StoryNode>([card]);
-
-        while (queue.Count > 0)
-        {
-            foreach (ExitPort port in NodeConnections.PortsOf(queue.Dequeue(), project))
-            {
-                if (port.TargetNodeId is not { } targetId ||
-                    !seen.Add(targetId) ||
-                    spineIds.Contains(targetId) ||
-                    !drawnIds.Contains(targetId) ||
-                    placed.ContainsKey(targetId) ||
-                    project.FindNode(targetId) is not { } target)
-                {
-                    continue;
-                }
-
-                chain.Add(target);
-                queue.Enqueue(target);
-            }
-        }
-
-        return chain;
     }
 
     /// <summary>

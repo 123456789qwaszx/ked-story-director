@@ -529,7 +529,7 @@ public sealed partial class ProjectEditor
         MoveNodes(new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal) { [nodeId] = (x, y) });
 
     /// <summary>
-    /// 여러 노드의 자리를 <b>한 번의 변경으로</b> 옮긴다 — 끌기를 놓을 때와 [자동 정렬]이 쓴다
+    /// 여러 노드의 자리를 <b>한 번의 변경으로</b> 옮긴다 — 끌기를 놓을 때 쓴다
     /// (2026-10-29 · D3, <c>docs/design/two-graphs.md</c> §6-2).
     ///
     /// <b>되돌리기 한 칸이다.</b> 예전에는 그래프가 포인터가 움직일 때마다 기록 없이 적었다 —

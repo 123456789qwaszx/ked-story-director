@@ -10,9 +10,9 @@
                 <!-- [+ 설정 노드]는 폐지됐다 (2026-08-17 소유자) — 설정노드는 챕터마다
                      하나가 자동으로 서는 컨트롤러라, 만들고 지우는 것이 아니다. -->
                 <!-- [+ 연출 노드] · [+ 연출 공급]도 폐지됐다 (2026-08-21 소유자) — 연출 노드는
-                     2026-10-29에 연출 층째 ked-story-compositor로 갔다. 남는 필터는 대사·설정 둘이다.
-                     [흐름만]도 2026-08-22에 폐지됐다 (소유자) — 체크 둘을 대신 눌러 주는
-                     단축일 뿐이라, 남은 토글이 둘뿐인 지금은 손이 더 가는 길이었다. -->
+                     2026-10-29에 연출 층째 ked-story-compositor로 갔다.
+                     [자동 정렬]과 필터(대사·설정)도 2026-10-29에 걷혔다 (소유자: "둘다 필요없으니
+                     지워주십시오") — 카드는 처음부터 제자리에 서고, 숨길 노드 종류가 남지 않았다. -->
                 <!--
                   챕터 고르기 (2026-08-25 소유자) — 챕터 그래프의 그 드롭다운을 여기서도
                   든다. 새 노드는 <b>지금 활성인 판</b>에 서는데, 그 판이 무엇인지 이 화면에
@@ -29,16 +29,6 @@
                 <Button x:Name="AddDialogueButton" Content="+ 대사 노드" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                 <Button x:Name="DeleteNodeButton" Content="노드 삭제" />
-                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
-                <!-- [자동 정렬] (D3-d · 2026-10-29) — 챕터 그래프의 그 단추와 짝이다. 고른 챕터의 판을
-                     위에서 아래로 다시 세운다(되돌리기 한 칸). 새 카드는 처음부터 그 모양으로 서고
-                     이미 선 카드는 저절로 옮기지 않으므로, 판 전체를 고치는 일은 사람이 누를 때만이다. -->
-                <Button x:Name="ArrangeBoardButton" Content="자동 정렬"
-                        ToolTip.Tip="고른 챕터의 판을 위에서 아래로 다시 세웁니다. 다음 에피소드는 아래, 분기로 다녀갈 카드는 오른쪽. 되돌리기 한 번이면 돌아갑니다." />
-                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
-                <TextBlock Text="필터" FontSize="11" Opacity="0.6" VerticalAlignment="Center" />
-                <CheckBox x:Name="FilterDialogueCheck" Content="대사" FontSize="11" IsChecked="True" />
-                <CheckBox x:Name="FilterSetCheck" Content="설정" FontSize="11" IsChecked="True" />
             </StackPanel>
         </Border>
 

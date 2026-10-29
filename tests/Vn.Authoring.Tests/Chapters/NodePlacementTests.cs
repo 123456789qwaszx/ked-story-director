@@ -133,84 +133,6 @@ public sealed class NodePlacementTests
         Assert.Equal((root.Layout.X, root.Layout.Y + NodePlacement.Row), (next.Layout.X, next.Layout.Y));
     }
 
-    // ── [자동 정렬] ─────────────────────────────────────────────────────────
-
-    [Fact]
-    public void 자동_정렬은_깊이대로_아래로_세우고_같은_깊이는_옆으로_둔다()
-    {
-        // root → a → c,  root → b — 흐트러뜨려 둔 판을 다시 세운다.
-        ProjectEditor editor = Chapter(("root", null), ("a", "root"), ("b", "root"), ("c", "a"));
-        Scatter(editor);
-
-        IReadOnlyDictionary<string, (double X, double Y)> spots = Arranged(editor);
-
-        Assert.Equal((0, 0), spots[CardId(editor, "root")]);
-        Assert.Equal((0, NodePlacement.Row), spots[CardId(editor, "a")]);
-        Assert.Equal((NodePlacement.Column, NodePlacement.Row), spots[CardId(editor, "b")]);
-        Assert.Equal((0, 2 * NodePlacement.Row), spots[CardId(editor, "c")]);
-    }
-
-    [Fact]
-    public void 분기로_다녀갈_카드는_그_카드_오른쪽에_서고_옆_에피소드는_비켜_선다()
-    {
-        ProjectEditor editor = Chapter(("root", null), ("a", "root"), ("b", "root"));
-        DialogueNode a = EpisodeNaming.CardFor(editor.Project, "ch01", "a")!;
-        string lineId = editor.Project.FindScript(a.ScriptId)!.ActiveLines.First().Id;
-        DialogueNode branch = editor.AddBranchMarker(a.Id, lineId);
-        Scatter(editor);
-
-        IReadOnlyDictionary<string, (double X, double Y)> spots = Arranged(editor);
-
-        Assert.Equal((0, NodePlacement.Row), spots[a.Id]);
-        Assert.Equal((NodePlacement.Column, NodePlacement.Row), spots[branch.Id]);
-        Assert.Equal((2 * NodePlacement.Column, NodePlacement.Row), spots[CardId(editor, "b")]);
-    }
-
-    [Fact]
-    public void 매인_데_없는_카드는_맨_아래_줄에_서고_숨은_배관은_건드리지_않는다()
-    {
-        ProjectEditor editor = Chapter(("root", null), ("a", "root"));
-        editor.AddChapterStat("ch01", "met", type: ChapterStatType.Bool);
-        editor.AddChapterCondition("ch01", "만났다", "met == 1");   // 숨은 조건 공급 노드가 선다
-        StoryFile board = EpisodeNaming.BoardOf(editor.Project, "ch01")!;
-        SetNode settings = editor.EnsureChapterSettingsNode(board.Id);
-        Scatter(editor);
-
-        IReadOnlyDictionary<string, (double X, double Y)> spots = Arranged(editor);
-
-        Assert.Equal((0, 2 * NodePlacement.Row), spots[settings.Id]);
-        Assert.DoesNotContain(
-            board.Nodes.Where(node => ChapterBoardSupply.IsConditionSupplyNode(node, board)),
-            node => spots.ContainsKey(node.Id));
-    }
-
-    [Fact]
-    public void 자동_정렬은_판의_왼쪽_위_구석을_지킨다()
-    {
-        // 한 화면에 챕터 판 여럿이 펼쳐진다 — 원점으로 끌어오면 다른 판과 포개진다.
-        ProjectEditor editor = Chapter(("root", null), ("a", "root"));
-        foreach (StoryNode node in EpisodeNaming.BoardOf(editor.Project, "ch01")!.Nodes)
-        {
-            editor.MoveNode(node.Id, node.Layout.X + 2000, node.Layout.Y + 1000);
-        }
-
-        (double X, double Y) corner = Corner(editor);
-        IReadOnlyDictionary<string, (double X, double Y)> spots = NodePlacement.Arrange(editor.Project, "ch01");
-
-        Assert.Equal(corner, spots[CardId(editor, "root")]);
-        Assert.Equal((corner.X, corner.Y + NodePlacement.Row), spots[CardId(editor, "a")]);
-    }
-
-    [Fact]
-    public void 챕터_판이_아니면_정렬할_것이_없다()
-    {
-        var editor = new ProjectEditor(new StoryProject());
-        string fileId = editor.EnsureChapterBoard("작가의 판");
-        editor.AddDialogueNode(fileId, 300, 300, "아무거나");
-
-        Assert.Empty(NodePlacement.Arrange(editor.Project, "작가의 판"));
-    }
-
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>ch01 — 에피소드마다 (Id, 부모)로 이어 세운다. 카드도 함께 선다.</summary>
@@ -233,36 +155,6 @@ public sealed class NodePlacementTests
 
         return editor;
     }
-
-    /// <summary>판의 그려지는 카드를 제멋대로 흩는다 — 사람이 끌어 흐트러뜨린 판이다. 왼쪽 위 구석은 (0, 0)으로 남긴다.</summary>
-    private static void Scatter(ProjectEditor editor)
-    {
-        StoryFile board = EpisodeNaming.BoardOf(editor.Project, "ch01")!;
-        int index = 0;
-
-        foreach (StoryNode node in board.Nodes.Where(node => !ChapterBoardSupply.IsConditionSupplyNode(node, board)))
-        {
-            editor.MoveNode(node.Id, (index * 977) % 2300, (index * 613) % 1700);
-            index++;
-        }
-    }
-
-    private static (double X, double Y) Corner(ProjectEditor editor)
-    {
-        StoryFile board = EpisodeNaming.BoardOf(editor.Project, "ch01")!;
-        List<StoryNode> drawn = board.Nodes.Where(node => !ChapterBoardSupply.IsConditionSupplyNode(node, board)).ToList();
-
-        return (drawn.Min(node => node.Layout.X), drawn.Min(node => node.Layout.Y));
-    }
-
-    private static IReadOnlyDictionary<string, (double X, double Y)> Arranged(ProjectEditor editor)
-    {
-        Assert.Equal((0, 0), Corner(editor));
-        return NodePlacement.Arrange(editor.Project, "ch01");
-    }
-
-    private static string CardId(ProjectEditor editor, string episodeId) =>
-        EpisodeNaming.CardFor(editor.Project, "ch01", episodeId)!.Id;
 
     /// <summary>그 에피소드의 카드를 그 자리에 세운다 — 사람이 끌어다 둔 것과 같다.</summary>
     private static void Place(StoryProject project, string episodeId, double x, double y)

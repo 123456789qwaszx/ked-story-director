@@ -102,34 +102,6 @@ public enum GraphNodeKind
     Set
 }
 
-/// <summary>
-/// 그래프에 어떤 노드 종류를 그릴지. 화면이 아니라 투영이 거른다 — 무엇이 보이는지의
-/// 규칙이 그리는 코드 안에 섞이면 테스트할 자리가 사라진다.
-///
-/// <b>간선 정합 규칙:</b> 간선의 어느 한쪽 끝 노드가 필터로 숨으면 그 간선도 함께 숨는다.
-/// 허공에 매달린 간선을 그리지 않는다.
-///
-/// 고를 수 있는 것은 <b>대사·설정 둘</b>이다 — 노드 종류가 그 둘뿐이다.
-/// </summary>
-public sealed record GraphFilter(
-    bool ShowDialogue = true,
-    bool ShowSet = true)
-{
-    public static GraphFilter All { get; } = new();
-
-    /// <summary>DialogueNode만 남기는 흐름 보기.</summary>
-    public static GraphFilter FlowOnly { get; } = new(
-        ShowDialogue: true,
-        ShowSet: false);
-
-    public bool Shows(GraphNodeKind kind) => kind switch
-    {
-        GraphNodeKind.Dialogue => ShowDialogue,
-        GraphNodeKind.Set => ShowSet,
-        _ => true
-    };
-}
-
 public enum GraphOutputPortKind
 {
     ExecutionDefault,

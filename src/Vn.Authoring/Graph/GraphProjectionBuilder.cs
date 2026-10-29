@@ -19,8 +19,6 @@ public static class GraphProjectionBuilder
 
     /// <summary>
     /// 카드를 그리지 않는 배관 노드인가 — 챕터 조건 공급 설정노드(까닭은 <see cref="Build"/> 안의 주석).
-    /// 투영과 [자동 정렬](<see cref="NodePlacement.Arrange"/>)이 같은 것을 부른다 — 안 그리는 노드를
-    /// 정렬이 옮기면 보이지 않는 자리 다툼이 생긴다.
     /// </summary>
     public static bool IsHiddenPlumbing(StoryNode node, StoryFile file) =>
         ChapterBoardSupply.IsConditionSupplyNode(node, file);
@@ -28,17 +26,13 @@ public static class GraphProjectionBuilder
     public static GraphProjection Build(
         StoryProject project,
         IReadOnlySet<string> expandedFileIds,
-        GameDefinition? definition = null,
-        GraphFilter? filter = null)
+        GameDefinition? definition = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(expandedFileIds);
 
-        filter ??= GraphFilter.All;
-
         var fileByNodeId = new Dictionary<string, StoryFile>(StringComparer.Ordinal);
         var rowIndexByNodeId = new Dictionary<string, int>(StringComparer.Ordinal);
-        var kindByNodeId = new Dictionary<string, GraphNodeKind>(StringComparer.Ordinal);
         var portsByNodeId = new Dictionary<string, IReadOnlyList<GraphOutputPortProjection>>(StringComparer.Ordinal);
 
         // 배관 노드는 카드를 그리지 않는다 — A 계층 격리 (2026-08-15 소유자): 챕터 조건 공급
@@ -54,7 +48,6 @@ public static class GraphProjectionBuilder
                 StoryNode node = file.Nodes[index];
                 fileByNodeId[node.Id] = file;
                 rowIndexByNodeId[node.Id] = index;
-                kindByNodeId[node.Id] = KindOf(node);
                 portsByNodeId[node.Id] = BuildPorts(node, file, project, definition);
 
                 if (IsHiddenPlumbing(node, file))
@@ -78,7 +71,7 @@ public static class GraphProjectionBuilder
             {
                 foreach (StoryNode node in file.Nodes)
                 {
-                    if (!filter.Shows(KindOf(node)) || hiddenPlumbingNodeIds.Contains(node.Id))
+                    if (hiddenPlumbingNodeIds.Contains(node.Id))
                     {
                         continue;
                     }
@@ -97,7 +90,7 @@ public static class GraphProjectionBuilder
             }
 
             IReadOnlyList<CollapsedNodeEntry> entries = file.Nodes
-                .Where(node => filter.Shows(KindOf(node)) && !hiddenPlumbingNodeIds.Contains(node.Id))
+                .Where(node => !hiddenPlumbingNodeIds.Contains(node.Id))
                 .Select(node => new CollapsedNodeEntry(
                     node.Id,
                     node.Name,
@@ -119,7 +112,7 @@ public static class GraphProjectionBuilder
                 scenes));
         }
 
-        // 접힌 파일의 행 번호는 필터로 남은 항목 기준이다. 원본 인덱스를 쓰면 간선 끝이
+        // 접힌 파일의 행 번호는 배관을 빼고 남은 항목 기준이다. 원본 인덱스를 쓰면 간선 끝이
         // 숨은 행을 가리켜 허공에 붙는다.
         //
         // ⚠ <b>장면 머리글도 한 행을 차지한다</b> (R6 S-3). 머리글을 안 세면 그 아래 노드의
@@ -157,10 +150,8 @@ public static class GraphProjectionBuilder
                 continue;
             }
 
-            // 간선 정합: 한쪽 끝 노드가 필터나 배관 숨김으로 안 보이면 간선도 숨는다.
-            if (!filter.Shows(kindByNodeId[raw.SourceNodeId]) ||
-                !filter.Shows(kindByNodeId[raw.TargetNodeId]) ||
-                hiddenPlumbingNodeIds.Contains(raw.SourceNodeId) ||
+            // 간선 정합: 한쪽 끝 노드가 배관 숨김으로 안 보이면 간선도 숨는다.
+            if (hiddenPlumbingNodeIds.Contains(raw.SourceNodeId) ||
                 hiddenPlumbingNodeIds.Contains(raw.TargetNodeId))
             {
                 continue;
