@@ -36,6 +36,9 @@ public partial class GraphEditorView : UserControl
     private const double CardPadding = 8;
     private const double PortRadius = 6;
 
+    /// <summary>카드 왼쪽 등뼈 막대(3) + 그 오른쪽 틈(7) — 몸통 칸은 그만큼 안에서 시작한다.</summary>
+    private const double SpineInset = 10;
+
     // 대사 카드 안의 글 칸 (D4) — 다섯 줄 남짓. 넘치면 칸이 스크롤한다(카드 높이가 글에 따라 출렁이면
     // 아래 레일과 선택지 칸이 쓰는 동안 들썩인다).
     private const double WritingBoxHeight = 88;
@@ -1579,8 +1582,22 @@ public partial class GraphEditorView : UserControl
             _session.ExpandedFileIds,
             _session.Definition);
 
+        // 카드를 옮겨 분기가 뿌리를 넘었으면 포트가 반대쪽으로 선다 — 포트 줄은 카드 안에 지어지므로 카드부터 다시 짓는다.
+        if (PortSidesChanged(_projection))
+        {
+            Rebuild();
+            return;
+        }
+
         PlaceVisuals(_projection);
     }
+
+    /// <summary>지금 선 카드들의 포트 쪽(<see cref="GraphOutputPortProjection.OnLeft"/>)이 새 투영과 다른가.</summary>
+    private bool PortSidesChanged(GraphProjection projection) =>
+        projection.Items.OfType<ExpandedNodeProjection>().Any(node =>
+            FindCard(node.NodeId) is { } card &&
+            card.Ports.Any(port => node.OutputPorts.FirstOrDefault(fresh =>
+                string.Equals(fresh.Key, port.Key, StringComparison.Ordinal)) is { } now && now.OnLeft != port.OnLeft));
 
     /// <summary>
     /// 끄는 동안 — 프로젝트는 그대로 두고 <b>화면의 자리만</b> 옮긴다 (D3 · §6-2).
@@ -1824,7 +1841,7 @@ public partial class GraphEditorView : UserControl
             Width = 3,
             Background = new SolidColorBrush(style.Accent),
             CornerRadius = new CornerRadius(1.5),
-            Margin = new Thickness(0, 1, 7, 1),
+            Margin = new Thickness(0, 1, SpineInset - 3, 1),
             VerticalAlignment = VerticalAlignment.Stretch
         };
 
@@ -2480,7 +2497,7 @@ public partial class GraphEditorView : UserControl
             FontWeight = branch || settings ? FontWeight.SemiBold : FontWeight.Normal,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Right
+            HorizontalAlignment = port.OnLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right
         };
 
         IBrush portBrush = branch
@@ -2493,11 +2510,16 @@ public partial class GraphEditorView : UserControl
         {
             Width = PortRadius * 2,
             Height = PortRadius * 2,
-            Margin = new Thickness(6, 0, -CardPadding - PortRadius, 0),
+            // 점의 가운데가 카드 가장자리에 걸린다 — 뿌리보다 왼쪽으로 가는 포트는 왼쪽 가장자리다(2026-10-29 소유자).
+            Margin = port.OnLeft
+                ? new Thickness(-CardPadding - SpineInset - PortRadius, 0, 6, 0)
+                : new Thickness(6, 0, -CardPadding - PortRadius, 0),
             Fill = port.IsConnected ? portBrush : Brushes.Transparent,
             Stroke = portBrush,
             StrokeThickness = 2,
             VerticalAlignment = VerticalAlignment.Center,
+            // 왼쪽 칸은 음수 여백이 넓어 열 폭이 0이 된다 — 가운데로 밀리지 않게 가장자리에 붙인다.
+            HorizontalAlignment = port.OnLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right,
             Cursor = new Cursor(StandardCursorType.Hand)
         };
 
@@ -2506,11 +2528,11 @@ public partial class GraphEditorView : UserControl
         var row = new Grid
         {
             Height = PortRowHeight,
-            ColumnDefinitions = new ColumnDefinitions("*,Auto")
+            ColumnDefinitions = new ColumnDefinitions(port.OnLeft ? "Auto,*" : "*,Auto")
         };
 
-        Grid.SetColumn(label, 0);
-        Grid.SetColumn(knob, 1);
+        Grid.SetColumn(label, port.OnLeft ? 1 : 0);
+        Grid.SetColumn(knob, port.OnLeft ? 0 : 1);
         row.Children.Add(label);
         row.Children.Add(knob);
 
@@ -2694,6 +2716,16 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
+        // 왼쪽 포트에서 나간 선은 도착 카드의 <b>오른쪽</b>으로 든다 — 왼쪽으로 들면 도착 카드를 가로지른다.
+        bool leftward = FromLeftPort(edge.Connection);
+
+        if (leftward &&
+            edge.Connection.Target.Kind == GraphEndpointKind.ExpandedNodeInput &&
+            FindCard(edge.Connection.Target.NodeId) is { } targetCard)
+        {
+            to = new Point(Canvas.GetLeft(targetCard.Visual) + CardWidth, to.Y);
+        }
+
         edge.Path.IsVisible = true;
         bool showLabel = edge.Connection.Kind is
             GraphConnectionKind.ExecutionBranch or
@@ -2702,7 +2734,8 @@ public partial class GraphEditorView : UserControl
 
         IReadOnlyList<GraphPosition> route = OrthogonalEdgeRouter.Route(
             new GraphPosition(from.X, from.Y),
-            new GraphPosition(to.X, to.Y));
+            new GraphPosition(to.X, to.Y),
+            leftward: leftward);
 
         var geometry = new StreamGeometry();
 
@@ -2728,6 +2761,13 @@ public partial class GraphEditorView : UserControl
         Canvas.SetLeft(edge.Label, labelPoint.X - (edge.Label.DesiredSize.Width / 2));
         Canvas.SetTop(edge.Label, labelPoint.Y - (edge.Label.DesiredSize.Height / 2));
     }
+
+    /// <summary>그 선이 카드 <b>왼쪽</b> 포트에서 나가는가.</summary>
+    private bool FromLeftPort(GraphConnectionProjection connection) =>
+        connection.Source.Kind == GraphEndpointKind.ExpandedNodeOutput &&
+        FindCard(connection.Source.NodeId) is { } card &&
+        card.PortIndex(connection.Source.PortKey) is var index and >= 0 &&
+        card.Ports[index].OnLeft;
 
     private bool TryEndpointAnchor(GraphEndpointProjection endpoint, out Point point)
     {
@@ -2782,10 +2822,10 @@ public partial class GraphEditorView : UserControl
         return false;
     }
 
-    /// <summary>펼쳐진 노드 카드의 출력 포트 좌표.</summary>
+    /// <summary>펼쳐진 노드 카드의 출력 포트 좌표 — 왼쪽 포트(<see cref="GraphOutputPortProjection.OnLeft"/>)면 왼쪽 가장자리다.</summary>
     private static Point PortAnchor(NodeCard card, int portIndex)
     {
-        double x = Canvas.GetLeft(card.Visual) + CardWidth;
+        double x = Canvas.GetLeft(card.Visual) + (card.Ports[portIndex].OnLeft ? 0 : CardWidth);
         double y = Canvas.GetTop(card.Visual)
             + CardPadding + HeaderHeight
             + (portIndex * PortRowHeight) + (PortRowHeight / 2);

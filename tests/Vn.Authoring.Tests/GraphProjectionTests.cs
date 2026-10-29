@@ -145,6 +145,28 @@ public class GraphProjectionTests
         Assert.True(points[1].X > 100);
     }
 
+    [Fact]
+    public void 왼쪽으로_나가는_간선은_거울에_비춘_모양이다()
+    {
+        // 대상이 왼쪽에 충분히 있으면 둘 사이 가운데에서 꺾는다.
+        IReadOnlyList<GraphPosition> far = OrthogonalEdgeRouter.Route(
+            new GraphPosition(800, 100),
+            new GraphPosition(310, 400),
+            leftward: true);
+
+        Assert.Equal(555, far[1].X);
+        Assert.Equal(555, far[2].X);
+
+        // 대상이 오른쪽이거나 가까우면 둘 다의 왼쪽으로 돈다 — 오른쪽으로 새지 않는다.
+        IReadOnlyList<GraphPosition> near = OrthogonalEdgeRouter.Route(
+            new GraphPosition(100, 100),
+            new GraphPosition(130, 400),
+            leftward: true);
+
+        Assert.Equal(100 - 48, near[1].X);
+        Assert.All(near, point => Assert.True(point.X <= 130));
+    }
+
     private static (
         StoryProject Project,
         StoryFile FileA,

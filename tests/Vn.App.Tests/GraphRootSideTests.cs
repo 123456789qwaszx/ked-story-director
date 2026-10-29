@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -67,7 +68,56 @@ public sealed class GraphRootSideTests : IDisposable
         }
     });
 
+    [Fact]
+    public void 뿌리보다_왼쪽_분기는_카드_왼쪽_포트에서_나간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-10-29 소유자 — "분기가 뿌리 에피소드보다 왼쪽에 위치하면 박스 왼쪽에 생성되도록 해줘".
+        (GraphEditorView graph, AuthoringSession session) = Show(("root", 800, 0));
+        DialogueNode root = Card(session, "root");
+        string lineId = session.Project.FindScript(root.ScriptId)!.ActiveLines.First().Id;
+        DialogueNode branch = session.Editor.AddBranchMarker(root.Id, lineId);
+        session.Editor.MoveNode(branch.Id, 100, 300);
+        Redraw(graph);
+
+        Ellipse knob = DetourKnob(graph, root.Id);
+        double rootLeft = CardX(graph, session, "root");
+
+        // 점이 카드 왼쪽 가장자리에 걸리고, 선은 그 왼쪽으로 나가 분기 카드의 오른쪽으로 든다.
+        Assert.Equal(0, Grid.GetColumn(knob));
+        Assert.Equal(rootLeft, Center(graph, knob).X, tolerance: 1.5);
+        Assert.Contains(Edges(graph), path => path.Data!.Bounds.Right <= rootLeft + 1);
+
+        // 분기 카드를 뿌리 오른쪽으로 옮기면(자리만 바뀐 변경) 포트도 오른쪽으로 돌아간다.
+        session.Editor.MoveNode(branch.Id, 1500, 300);
+        graph.RefreshPositions();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(1, Grid.GetColumn(DetourKnob(graph, root.Id)));
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    private static DialogueNode Card(AuthoringSession session, string episodeId) =>
+        session.Project.EnumerateNodes().OfType<DialogueNode>()
+            .Single(node => EpisodeNaming.EpisodeIdOf(node) == episodeId);
+
+    /// <summary>그 카드의 「분기」 포트 점.</summary>
+    private static Ellipse DetourKnob(GraphEditorView graph, string nodeId) =>
+        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
+            .Single(card => card.Tag as string == nodeId)
+            .GetVisualDescendants().OfType<Grid>()
+            .Single(row => row.Children.OfType<TextBlock>().Any(text => text.Text == "분기"))
+            .Children.OfType<Ellipse>().Single();
+
+    private static Point Center(GraphEditorView graph, Ellipse knob) =>
+        knob.TranslatePoint(
+            new Point(knob.Bounds.Width / 2, knob.Bounds.Height / 2),
+            graph.FindControl<Canvas>("GraphCanvas")!)!.Value;
+
+    /// <summary>실행 선(IF 갈래 · 분기) — 레일은 Line이고 이것만 Path다.</summary>
+    private static IEnumerable<Avalonia.Controls.Shapes.Path> Edges(GraphEditorView graph) =>
+        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Avalonia.Controls.Shapes.Path>()
+            .Where(path => path.IsVisible && path.Data is not null);
 
     private static void Redraw(GraphEditorView graph)
     {

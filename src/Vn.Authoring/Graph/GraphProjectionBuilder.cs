@@ -43,12 +43,15 @@ public static class GraphProjectionBuilder
 
         foreach (StoryFile file in project.Files)
         {
+            // 뿌리보다 왼쪽에 선 분기로 가는 포트는 카드 왼쪽에 선다 (2026-10-29 소유자) — 판마다 뿌리가 하나다.
+            double? rootX = RootSide.RootCard(project, file)?.Layout.X;
+
             for (int index = 0; index < file.Nodes.Count; index++)
             {
                 StoryNode node = file.Nodes[index];
                 fileByNodeId[node.Id] = file;
                 rowIndexByNodeId[node.Id] = index;
-                portsByNodeId[node.Id] = BuildPorts(node, file, project, definition);
+                portsByNodeId[node.Id] = BuildPorts(node, file, project, definition, rootX);
 
                 if (IsHiddenPlumbing(node, file))
                 {
@@ -194,11 +197,13 @@ public static class GraphProjectionBuilder
         return new GraphProjection(items, connections);
     }
 
+    /// <param name="rootX">그 판의 뿌리 카드 자리(<see cref="RootSide"/>). 챕터가 아닌 판이면 <c>null</c> — 포트는 늘 오른쪽이다.</param>
     private static IReadOnlyList<GraphOutputPortProjection> BuildPorts(
         StoryNode node,
         StoryFile file,
         StoryProject project,
-        GameDefinition? definition)
+        GameDefinition? definition,
+        double? rootX = null)
     {
         IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project, definition);
 
@@ -226,7 +231,11 @@ public static class GraphProjectionBuilder
                 exit.Label,
                 exit.PaletteIndex,
                 exit.IsConnected,
-                exit))
+                exit,
+                OnLeft: rootX is { } root &&
+                        exit.TargetNodeId is { } targetId &&
+                        project.FindNode(targetId) is { } target &&
+                        RootSide.IsLeftOfRoot(target.Layout.X, root)))
             .ToList();
 
         // 설정노드의 "이 챕터에 공급 중" 포트는 2026-08-22에 사라졌다 (소유자) —

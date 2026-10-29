@@ -157,7 +157,13 @@ public sealed record GraphOutputPortProjection(
     ExitPort? ExecutionPort,
 
     /// <summary><see cref="GraphOutputPortKind.Choice"/>일 때만 있다 (R7 P-1).</summary>
-    GraphChoicePort? ChoicePort = null);
+    GraphChoicePort? ChoicePort = null,
+
+    /// <summary>
+    /// 카드 <b>왼쪽</b>에 서는 포트인가 — 잇는 곳이 뿌리보다 왼쪽이다(<see cref="RootSide"/>, 2026-10-29 소유자:
+    /// "분기가 뿌리 에피소드보다 왼쪽에 위치하면 박스 왼쪽에"). 선도 왼쪽으로 나가 도착 카드의 오른쪽으로 든다.
+    /// </summary>
+    bool OnLeft = false);
 
 public enum GraphConnectionKind
 {
