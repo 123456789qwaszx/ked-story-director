@@ -16,8 +16,8 @@ namespace Vn.App.Tests;
 /// <b>대사 카드 안의 글 칸</b> (D4 · 2026-10-29, <c>docs/design/two-graphs.md</c> §7 D4 — 소유자: *"노드 안에 텍스트
 /// 공간이 있고 그곳에 직접 글을 작성하는 것까지"*).
 ///
-/// 한 줄이 대사 한 줄(<c>화자: 대사</c>)이고, 넣는 때는 초점을 잃을 때와 Ctrl+S다. 칸 안의 손짓(누르기 · 더블클릭)은
-/// 카드의 끌기와 무대 이동이 가로채지 않는다. 편집기 쪽 규칙(빈 첫 줄 · 되돌리기 한 칸 · 엄격한 넣기)은
+/// 한 줄이 대사 한 줄(<c>화자: 대사</c>)이고, 넣는 때는 초점을 잃을 때와 Ctrl+S다. 칸 안의 손짓(누르기 · 휠)은
+/// 카드의 끌기와 판의 확대가 가로채지 않는다. 편집기 쪽 규칙(빈 첫 줄 · 되돌리기 한 칸 · 엄격한 넣기)은
 /// <c>CardWritingTests</c>가 본다.
 /// </summary>
 public sealed class CardWritingBoxTests : IDisposable
@@ -154,7 +154,7 @@ public sealed class CardWritingBoxTests : IDisposable
     });
 
     [Fact]
-    public void 칸_안에서_누르고_끌어도_카드는_안_움직이고_더블클릭은_무대로_안_간다() => HeadlessUi.Run(() =>
+    public void 칸_안에서_누르고_끌어도_카드는_안_움직이고_그_노드가_골라진다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         TextBox box = Box(window, first.Id);
@@ -167,18 +167,6 @@ public sealed class CardWritingBoxTests : IDisposable
 
         StoryNode node = session.Project.FindNode(first.Id)!;
         Assert.Equal((40, 40), (node.Layout.X, node.Layout.Y));
-
-        using (TestPlatformSettings.Instance.HoldDoubleTapWindowOpen())
-        {
-            window.MouseDown(inside, MouseButton.Left);
-            window.MouseUp(inside, MouseButton.Left);
-            window.MouseDown(inside, MouseButton.Left);
-            window.MouseUp(inside, MouseButton.Left);
-        }
-
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.Equal(GraphTab, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);
         Assert.Equal(first.Id, session.SelectedNodeId);   // 칸에 들어가면 그 노드를 고른다
 
         window.Close();

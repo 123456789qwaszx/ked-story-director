@@ -12,9 +12,6 @@
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
-    <!-- 오디오 미리 듣기 (W62). 게임 런타임 오디오가 아니라 저작 확인용 재생이다. -->
-    <PackageReference Include="NAudio" />
-    <PackageReference Include="NAudio.Vorbis" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
@@ -40,13 +37,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Vn.App.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- 기본 튜닝 (W46) — 런타임 실측 덤프의 스냅샷 데이터.
-         '기본 튜닝 생성' 버튼이 이 내용을 프로젝트 옆 ExportedTuning으로 쓴다. -->
-    <EmbeddedResource Include="Assets\DefaultTuning\**\*.json"
-                      LogicalName="DefaultTuning/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!--
