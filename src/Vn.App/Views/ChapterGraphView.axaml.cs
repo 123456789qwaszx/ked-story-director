@@ -916,7 +916,7 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        _branchByLine.Clear();
+        _branchByKey.Clear();
 
         var stroke = new SolidColorBrush(Color.Parse("#7A6FB0"));
 
@@ -949,7 +949,8 @@ public partial class ChapterGraphView : UserControl
             };
 
             GraphCanvas.Children.Add(line);
-            _branchByLine[marker.LineId] = (marker, line);
+            string branchKey = Vn.Authoring.Flow.ExitPort.DetourKey(marker.LineId, marker.ToNodeId);
+            _branchByKey[branchKey] = (marker, line);
 
             // 1.6px 점선은 사람이 못 누른다 — 간선과 같은 수법으로 굵은 히트 선을 겹친다.
             var hit = new Line
@@ -961,12 +962,10 @@ public partial class ChapterGraphView : UserControl
                 Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
             };
 
-            string lineId = marker.LineId;
-
             hit.PointerPressed += (_, e) =>
             {
                 e.Handled = true; // 캔버스(빈 공간 = 선택 해제)까지 흘러가면 곧바로 풀린다
-                UiGuard.Run(_session, "분기 선택", () => SelectBranch(lineId));
+                UiGuard.Run(_session, "분기 선택", () => SelectBranch(branchKey));
             };
 
             GraphCanvas.Children.Add(hit);
@@ -1547,13 +1546,13 @@ public partial class ChapterGraphView : UserControl
         new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 고른 분기의 <b>줄</b> Id (2026-09-18). 한 에피소드가 분기를 여럿 가질 수 있어
-    /// 출발·도착만으로는 못 가른다 — 신원은 표식이 붙은 그 줄이다.
+    /// 고른 분기의 열쇠 — <b>줄과 다녀갈 카드</b>(<see cref="Vn.Authoring.Flow.ExitPort.DetourKey"/>). 한 에피소드가 분기를
+    /// 여럿 가질 수 있어 출발·도착만으로는 못 가르고(2026-09-18), 한 줄에도 여럿일 수 있어 줄만으로도 못 가른다(2026-10-29).
     /// </summary>
-    private string? _selectedBranchLineId;
+    private string? _selectedBranchKey;
 
-    /// <summary>이번 그리기의 분기 선들 — 줄 Id로 찾는다(선택 강조와 패널이 같은 것을 본다).</summary>
-    private readonly Dictionary<string, (ChapterBranchMarkers.Marker Marker, Line Line)> _branchByLine =
+    /// <summary>이번 그리기의 분기 선들 — 분기 열쇠로 찾는다(선택 강조와 패널이 같은 것을 본다).</summary>
+    private readonly Dictionary<string, (ChapterBranchMarkers.Marker Marker, Line Line)> _branchByKey =
         new(StringComparer.Ordinal);
 
     /// <summary>지금 끌고 있는 카드. 없으면 <c>null</c>.</summary>
@@ -1820,7 +1819,7 @@ public partial class ChapterGraphView : UserControl
     {
         _selectedEpisodeId = episodeId;
         _selectedEdgeKey = null;
-        _selectedBranchLineId = null;
+        _selectedBranchKey = null;
         HideEdgeForm(); // 다른 노드로 넘어가면 열려 있던 연결 폼은 닫는다
         ApplySelectionVisuals();
         RefreshPropertyPanel();
@@ -1830,19 +1829,19 @@ public partial class ChapterGraphView : UserControl
     {
         _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
         _selectedEpisodeId = null;
-        _selectedBranchLineId = null;
+        _selectedBranchKey = null;
         HideEdgeForm();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
     }
 
     /// <summary>
-    /// 분기 하나를 고른다 — <b>신원은 줄</b>이다 (2026-09-18). 한 에피소드가 분기를 여럿
-    /// 가질 수 있어 출발·도착만으로는 못 가른다.
+    /// 분기 하나를 고른다 — <b>신원은 줄과 다녀갈 카드</b>다(<see cref="Vn.Authoring.Flow.ExitPort.DetourKey"/>). 한 에피소드가
+    /// 분기를 여럿 가질 수 있고(2026-09-18) 한 줄에도 여럿일 수 있다(2026-10-29).
     /// </summary>
-    internal void SelectBranch(string? lineId)
+    internal void SelectBranch(string? branchKey)
     {
-        _selectedBranchLineId = lineId;
+        _selectedBranchKey = branchKey;
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
         HideEdgeForm();
@@ -1888,8 +1887,8 @@ public partial class ChapterGraphView : UserControl
 
         // 분기는 점선인 채로 굵어진다 — 굵기만 바꾸고 점선을 안 풀어야 "이것은 선택지가
         // 아니다"가 고른 뒤에도 남는다.
-        if (_selectedBranchLineId is { } branchLineId &&
-            _branchByLine.TryGetValue(branchLineId, out (ChapterBranchMarkers.Marker _, Line Line) branch))
+        if (_selectedBranchKey is { } branchKey &&
+            _branchByKey.TryGetValue(branchKey, out (ChapterBranchMarkers.Marker _, Line Line) branch))
         {
             branch.Line.Stroke = new SolidColorBrush(Color.Parse("#3D7BD9"));
             branch.Line.StrokeThickness = 3.4;
@@ -1920,8 +1919,8 @@ public partial class ChapterGraphView : UserControl
             : null;
 
         ChapterBranchMarkers.Marker? branch =
-            _selectedBranchLineId is { } branchLineId &&
-            _branchByLine.TryGetValue(branchLineId, out (ChapterBranchMarkers.Marker Marker, Line _) found)
+            _selectedBranchKey is { } branchKey &&
+            _branchByKey.TryGetValue(branchKey, out (ChapterBranchMarkers.Marker Marker, Line _) found)
                 ? found.Marker
                 : null;
 
@@ -2459,8 +2458,8 @@ public partial class ChapterGraphView : UserControl
     /// <summary>고른 분기의 조건을 적는다. 고르는 순간 나간다 — 간선 패널과 같은 감각이다.</summary>
     private void SaveBranchCondition()
     {
-        if (_fillingPanel || _session is null || _selectedBranchLineId is not { } lineId ||
-            !_branchByLine.TryGetValue(lineId, out (ChapterBranchMarkers.Marker Marker, Line _) branch))
+        if (_fillingPanel || _session is null || _selectedBranchKey is not { } branchKey ||
+            !_branchByKey.TryGetValue(branchKey, out (ChapterBranchMarkers.Marker Marker, Line _) branch))
         {
             return;
         }

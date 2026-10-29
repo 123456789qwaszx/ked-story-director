@@ -105,6 +105,40 @@ public sealed class BranchMarkerCardTests : IDisposable
     });
 
     [Fact]
+    public void 한_줄에_분기가_둘이면_카드_둘이_다녀오는_차례로_낀다() => HeadlessUi.Run(() =>
+    {
+        // 2026-10-29 소유자: "하나의 줄에 여러개의 분기가 있을 수 있게" — 위에서부터 차례로 다녀온다.
+        (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
+
+        DialogueNode first = session.Editor.AddBranchMarker(nodeId, lineId);
+        DialogueNode second = session.Editor.AddBranchMarker(nodeId, lineId);
+        Rebuild(editor, nodeId);
+
+        Control firstCard = Card(editor, lineId, first.Id)!;
+        Control secondCard = Card(editor, lineId, second.Id)!;
+        int at = editor.LineHost.Children.IndexOf(firstCard);
+
+        Assert.Equal(at + 1, editor.LineHost.Children.IndexOf(secondCard));
+        Assert.DoesNotContain("branch:", editor.LineHost.Children[at + 2].Tag as string ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains(Texts(firstCard), text => text.Contains("1/2", StringComparison.Ordinal));
+        Assert.Contains(Texts(secondCard), text => text.Contains("2/2", StringComparison.Ordinal));
+        Assert.Contains(Texts(firstCard), text => text.Contains(first.Name, StringComparison.Ordinal));
+        Assert.Contains(Texts(secondCard), text => text.Contains(second.Name, StringComparison.Ordinal));
+        Assert.Equal(
+            2,
+            NodeConnections.PortsOf(Node(session, nodeId), session.Project).Count(port => port.Kind == ExitPortKind.Detour));
+
+        // 첫 카드의 ✕는 그 분기 하나만 걷는다.
+        firstCard.GetVisualDescendants().OfType<Button>()
+            .Single(button => (button.Content as string)?.Contains('✕') == true)
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal([second.Id], Node(session, nodeId).FindExtension(lineId)!.DetourTargetNodeIds);
+        Assert.Null(session.Project.FindNode(first.Id));
+    });
+
+    [Fact]
     public void 카드가_포트_하나를_뚫는다() => HeadlessUi.Run(() =>
     {
         // 화면과 판이 같은 것을 말해야 한다 — 카드가 보이는데 포트가 없으면 이을 자리가 없다.
@@ -176,9 +210,14 @@ public sealed class BranchMarkerCardTests : IDisposable
     private static DialogueNode Node(AuthoringSession session, string nodeId) =>
         (DialogueNode)session.Project.FindNode(nodeId)!;
 
+    /// <summary>그 줄 앞의 첫 분기 카드. 없으면 <c>null</c>이다.</summary>
     private static Control? Card(DialogueNodeEditor editor, string lineId) =>
         editor.LineHost.Children.FirstOrDefault(child =>
-            Equals(child.Tag, DialogueNodeEditor.BranchMarkerTag(lineId)));
+            (child.Tag as string)?.StartsWith($"branch:{lineId}>", StringComparison.Ordinal) == true);
+
+    private static Control? Card(DialogueNodeEditor editor, string lineId, string targetId) =>
+        editor.LineHost.Children.FirstOrDefault(child =>
+            Equals(child.Tag, DialogueNodeEditor.BranchMarkerTag(lineId, targetId)));
 
     /// <summary>카드 바로 다음에 오는 줄 카드 — 낀 자리가 <b>앞</b>인지 재는 데 쓴다.</summary>
     private static Control LineCardAfter(DialogueNodeEditor editor, Control card) =>

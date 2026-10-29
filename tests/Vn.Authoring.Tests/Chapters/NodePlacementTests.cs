@@ -116,6 +116,13 @@ public sealed class NodePlacementTests
         Assert.Equal(
             (caller.Layout.X + NodePlacement.Column, caller.Layout.Y),
             (branch.Layout.X, branch.Layout.Y));
+
+        // 둘째 분기는 같은 열의 아래로 비켜 선다 — 오른쪽으로 비키면 원본에서 둘째로 가는 선이 첫째 카드를 가로지른다.
+        DialogueNode second = editor.AddBranchMarker(caller.Id, lineId);
+
+        Assert.Equal(
+            (caller.Layout.X + NodePlacement.Column, caller.Layout.Y + NodePlacement.Row),
+            (second.Layout.X, second.Layout.Y));
     }
 
     [Fact]

@@ -56,7 +56,7 @@ public sealed class ChapterBranchPanelTests
 
         Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
 
-        view.SelectBranch(project.BranchLineId);
+        view.SelectBranch(project.BranchKey);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
@@ -78,7 +78,7 @@ public sealed class ChapterBranchPanelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.SelectBranch(project.BranchLineId);
+        view.SelectBranch(project.BranchKey);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
@@ -100,7 +100,7 @@ public sealed class ChapterBranchPanelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.SelectBranch(project.BranchLineId);
+        view.SelectBranch(project.BranchKey);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
@@ -128,7 +128,7 @@ public sealed class ChapterBranchPanelTests
             branch.Id, firstLineId, [LineConditionTransition.BeginChoice()]);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        view.SelectBranch(project.BranchLineId);
+        view.SelectBranch(project.BranchKey);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.False(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
@@ -137,6 +137,32 @@ public sealed class ChapterBranchPanelTests
 
         Assert.True(blocked.IsVisible);
         Assert.False(string.IsNullOrWhiteSpace(blocked.Text));
+    });
+
+    [Fact]
+    public void 같은_줄의_분기_둘은_따로_고르고_조건도_따로_건다() => HeadlessUi.Run(() =>
+    {
+        // 2026-10-29 — 한 줄에 분기가 여럿일 수 있다. 줄만으로 고르면 둘째가 첫째를 덮어 점선 하나만 고를 수 있었다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        DialogueNode second = session.Editor.AddBranchMarker(caller.Id, project.BranchLineId);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(
+            2,
+            view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Line>()
+                .Count(line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true));
+
+        view.SelectBranch(Vn.Authoring.Flow.ExitPort.DetourKey(project.BranchLineId, second.Id));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        DialogueNode first = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, second.Id, session.Definition).Label);
+        Assert.Null(BranchEntryCondition.Read(session.Project, first.Id, session.Definition).Label);
     });
 
     private static (ChapterGraphView View, AuthoringSession Session) Show(TempProject project)
@@ -184,8 +210,9 @@ public sealed class ChapterBranchPanelTests
             DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
 
             BranchLineId = caller.Script.ActiveLines.First().Id;
-            BranchEpisodeId = EpisodeNaming.EpisodeIdOf(
-                editor.AddBranchMarker(caller.Id, BranchLineId));
+            DialogueNode branch = editor.AddBranchMarker(caller.Id, BranchLineId);
+            BranchEpisodeId = EpisodeNaming.EpisodeIdOf(branch);
+            BranchKey = Vn.Authoring.Flow.ExitPort.DetourKey(BranchLineId, branch.Id);
 
             ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);
             ProjectStore.Save(ManifestPath, editor.Project);
@@ -194,6 +221,9 @@ public sealed class ChapterBranchPanelTests
         public string ManifestPath { get; }
 
         public string BranchLineId { get; }
+
+        /// <summary>분기 하나의 열쇠 — 줄과 다녀갈 카드(한 줄에 분기가 여럿일 수 있다).</summary>
+        public string BranchKey { get; }
 
         public string BranchEpisodeId { get; }
 

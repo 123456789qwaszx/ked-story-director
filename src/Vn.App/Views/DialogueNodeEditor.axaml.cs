@@ -256,27 +256,20 @@ public partial class DialogueNodeEditor : UserControl
                 }
 
                 // 「조건 분기」 카드는 <b>줄 사이에</b> 낀다 (R7 P-5 · 2026-09-17 소유자) —
-                // 그 줄에 붙은 것이 아니라 그 줄 <b>앞에서</b> 갈라진다는 표식이다.
-                Control? marker = BuildBranchMarkerCard(node, line.Line.LineId);
+                // 그 줄에 붙은 것이 아니라 그 줄 <b>앞에서</b> 갈라진다는 표식이다. 여럿이면 다녀오는 차례로 쌓인다
+                // (2026-10-29 · multi-branch).
+                IReadOnlyList<Control> markers = BuildBranchMarkerCards(node, line.Line.LineId);
 
                 Control card = WrapForLineSelection(BuildCard(node, script, line), line.Line.LineId);
 
                 if (inChoice && choiceBox is not null)
                 {
-                    if (marker is not null)
-                    {
-                        choiceBox.Children.Add(marker);
-                    }
-
+                    choiceBox.Children.AddRange(markers);
                     choiceBox.Children.Add(card);
                 }
                 else
                 {
-                    if (marker is not null)
-                    {
-                        LineHost.Children.Add(marker);
-                    }
-
+                    LineHost.Children.AddRange(markers);
                     LineHost.Children.Add(card);
                 }
             }
@@ -867,7 +860,7 @@ public partial class DialogueNodeEditor : UserControl
     // ── 「조건 분기」 카드 (R7 P-5) ──────────────────────────────────────────
 
     /// <summary>
-    /// 그 줄 <b>앞</b>에 낀 「조건 분기」 카드. 표식이 없으면 <c>null</c>이다.
+    /// 그 줄 <b>앞</b>에 낀 「조건 분기」 카드들 — 분기마다 한 장, 다녀오는 차례로(2026-10-29 · 한 줄에 여럿). 표식이 없으면 빈 목록이다.
     ///
     /// ⛔ <b>내용이 없다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 (2026-09-17 소유자) —
     /// 구체적인 조건식도 선택지 문구도 여기서 정하지 않는다. 대본에는 <c>&lt;&lt;detour {노드}&gt;&gt;</c>
@@ -877,13 +870,17 @@ public partial class DialogueNodeEditor : UserControl
     /// 카드면 남긴다 — <see cref="Vn.Authoring.Editing.ProjectEditor.RemoveBranchMarker"/>). 같은 단추가 그 줄의
     /// ＋ 메뉴에도 선다.
     /// </summary>
-    private Control? BuildBranchMarkerCard(DialogueNode node, string lineId)
+    private IReadOnlyList<Control> BuildBranchMarkerCards(DialogueNode node, string lineId)
     {
-        if (node.FindExtension(lineId)?.DetourTargetNodeIds.FirstOrDefault() is not { Length: > 0 } targetId)
-        {
-            return null;
-        }
+        IReadOnlyList<string> targets = node.FindExtension(lineId)?.DetourTargetNodeIds ?? [];
 
+        return targets
+            .Select((targetId, order) => BuildBranchMarkerCard(node, lineId, targetId, order, targets.Count))
+            .ToList();
+    }
+
+    private Control BuildBranchMarkerCard(DialogueNode node, string lineId, string targetId, int order, int count)
+    {
         string name = _session?.Project.FindNode(targetId)?.Name ?? "(사라진 노드)";
 
         var row = new StackPanel
@@ -895,7 +892,8 @@ public partial class DialogueNodeEditor : UserControl
 
         row.Children.Add(new TextBlock
         {
-            Text = "⑂ 조건 분기",
+            // 여럿이면 차례를 붙인다 — 위에서부터 다녀온다.
+            Text = count > 1 ? $"⑂ 조건 분기 {order + 1}/{count}" : "⑂ 조건 분기",
             FontSize = 11,
             FontWeight = FontWeight.Bold,
             VerticalAlignment = VerticalAlignment.Center
@@ -911,7 +909,9 @@ public partial class DialogueNodeEditor : UserControl
 
         row.Children.Add(new TextBlock
         {
-            Text = "다녀왔다가 이 줄부터 이어집니다 — 조건은 다녀오는 곳의 첫머리에서 겁니다.",
+            Text = order < count - 1
+                ? "다녀왔다가 다음 분기로 갑니다 — 조건은 다녀오는 곳의 첫머리에서 겁니다."
+                : "다녀왔다가 이 줄부터 이어집니다 — 조건은 다녀오는 곳의 첫머리에서 겁니다.",
             FontSize = 10,
             Opacity = 0.55,
             TextWrapping = TextWrapping.Wrap,
@@ -922,7 +922,7 @@ public partial class DialogueNodeEditor : UserControl
 
         return new Border
         {
-            Tag = BranchMarkerTag(lineId),
+            Tag = BranchMarkerTag(lineId, targetId),
             Margin = new Thickness(0, 2, 0, 2),
             Padding = new Thickness(8, 4),
             CornerRadius = new CornerRadius(8),
@@ -933,16 +933,17 @@ public partial class DialogueNodeEditor : UserControl
         };
     }
 
-    /// <summary>그 줄의 「조건 분기」 카드가 지는 표 — 화면 테스트가 이것으로 찾는다.</summary>
-    internal static string BranchMarkerTag(string lineId) => $"branch:{lineId}";
+    /// <summary>그 줄의 「조건 분기」 카드 하나가 지는 표(줄과 다녀갈 카드) — 화면 테스트가 이것으로 찾는다.</summary>
+    internal static string BranchMarkerTag(string lineId, string targetId) =>
+        $"branch:{Vn.Authoring.Flow.ExitPort.DetourKey(lineId, targetId)}";
 
     /// <summary>
     /// [✕ 분기 지우기] (2026-10-29 소유자: *"조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다"*) —
     /// 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다.
     /// </summary>
-    private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId)
+    private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId, string label = "✕ 분기 지우기")
     {
-        Button remove = SmallButton("✕ 분기 지우기", () =>
+        Button remove = SmallButton(label, () =>
             UiGuard.Run(_session!, "분기 지우기", () =>
             {
                 if (_session!.Editor.RemoveBranchMarker(node.Id, lineId, targetId) is { } removal)
@@ -1006,45 +1007,55 @@ public partial class DialogueNodeEditor : UserControl
         //    돌아온다 — "어디서 갈라지는가"만 짚는 것이 연출 그래프의 몫이기 때문이다.
         Section("분기");
 
-        if (resolved.Line.LineId is { Length: > 0 } markerLineId &&
-            node.FindExtension(markerLineId)?.DetourTargetNodeIds.FirstOrDefault() is { Length: > 0 } markerTargetId)
+        // ⭐ 이미 분기가 있어도 「＋ 분기 추가」가 선다 (2026-10-29 소유자: *"하나의 줄에 여러개의 분기가 있을 수 있게"*)
+        //    — 새 분기는 그 뒤에 서고 차례로 다녀온다. 있는 분기는 하나씩 지운다.
+        IReadOnlyList<string> existing = resolved.Line.LineId is { Length: > 0 } markerLineId
+            ? node.FindExtension(markerLineId)?.DetourTargetNodeIds ?? []
+            : [];
+
+        if (existing.Count > 0)
         {
             panel.Children.Add(new TextBlock
             {
-                Text = "이 자리에는 이미 분기가 있습니다 — 한 줄에 하나만 둘 수 있습니다.",
+                Text = existing.Count == 1
+                    ? "이 줄 앞에 분기가 하나 있습니다 — 더하면 그 뒤에 서고 차례로 다녀옵니다."
+                    : $"이 줄 앞에 분기가 {existing.Count}개 있습니다 — 위에서부터 차례로 다녀옵니다.",
                 FontSize = 10,
                 Opacity = 0.6,
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
-            panel.Children.Add(RemoveBranchButton(node, markerLineId, markerTargetId));
+
+            foreach (string target in existing)
+            {
+                string name = _session?.Project.FindNode(target)?.Name ?? "(사라진 노드)";
+                panel.Children.Add(RemoveBranchButton(node, resolved.Line.LineId, target, $"✕ '{name}' 분기 지우기"));
+            }
         }
-        else
+
+        var addBranch = new Button
         {
-            var addBranch = new Button
+            Content = "＋ 분기 추가",
+            FontSize = 10,
+            Padding = new Thickness(7, 2)
+        };
+        ToolTip.SetTip(
+            addBranch,
+            "이 줄 앞에서 갈라집니다. 다녀올 에피소드가 함께 서고 이미 이어진 상태입니다 — " +
+            "조건은 그 에피소드의 첫머리에서 겁니다. 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
+
+        addBranch.Click += (_, _) =>
+        {
+            if (_building)
             {
-                Content = "＋ 분기 추가",
-                FontSize = 10,
-                Padding = new Thickness(7, 2)
-            };
-            ToolTip.SetTip(
-                addBranch,
-                "이 줄 앞에서 갈라집니다. 다녀올 에피소드가 함께 서고 이미 이어진 상태입니다 — " +
-                "조건은 그 에피소드의 첫머리에서 겁니다.");
+                return;
+            }
 
-            addBranch.Click += (_, _) =>
-            {
-                if (_building)
-                {
-                    return;
-                }
+            UiGuard.Run(_session!, "분기 추가", () =>
+                _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId));
+        };
 
-                UiGuard.Run(_session!, "분기 추가", () =>
-                    _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId));
-            };
-
-            panel.Children.Add(addBranch);
-        }
+        panel.Children.Add(addBranch);
 
         if (_chapterEpisode)
         {

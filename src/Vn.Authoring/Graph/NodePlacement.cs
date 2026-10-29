@@ -10,7 +10,9 @@ namespace Vn.Authoring.Graph;
 ///
 /// <list type="bullet">
 /// <item><b>선택지로 가는 다음 에피소드</b>는 부모 카드의 <b>아래</b>에 선다. 그 자리가 차 있으면 오른쪽으로 비켜 선다.</item>
-/// <item><b>분기로 다녀갈 카드</b>는 원본의 <b>오른쪽</b>에 선다(<see cref="BesideOf"/>).</item>
+/// <item><b>분기로 다녀갈 카드</b>는 원본의 <b>오른쪽</b>에 선다(<see cref="BesideOf"/>). 그 자리가 차 있으면(이미 분기가
+///   있으면) 같은 열의 <b>아래</b>로 비켜 선다 — 분기 카드들이 다녀오는 차례대로 위에서 아래로 쌓이고, 원본에서 나가는
+///   선이 앞 분기 카드를 지나지 않는다(2026-10-29 · 한 줄에 분기 여럿).</item>
 /// <item>부모가 없으면(시작 에피소드 · 들어오는 길이 없는 카드) 판의 맨 아래 카드 밑에, 판이 비었으면 원점에 선다.</item>
 /// </list>
 ///
@@ -62,13 +64,26 @@ public static class NodePlacement
             : FirstFree(board, cards.Min(card => card.Layout.X), cards.Max(card => card.Layout.Y) + Row);
     }
 
-    /// <summary>원본의 오른쪽 — 분기로 다녀갈 카드의 자리. 차 있으면 더 오른쪽으로 비켜 선다.</summary>
+    /// <summary>
+    /// 원본의 오른쪽 — 분기로 다녀갈 카드의 자리. 차 있으면 같은 열의 아래로 비켜 선다.
+    ///
+    /// ⛔ 2026-10-29까지는 더 오른쪽으로 비켰다 — 분기가 둘이면 둘째 카드가 첫째의 오른쪽에 서서, 원본에서 둘째로 가는
+    /// 선이 첫째 카드를 가로질렀다.
+    /// </summary>
     public static (double X, double Y) BesideOf(StoryFile board, StoryNode source)
     {
         ArgumentNullException.ThrowIfNull(board);
         ArgumentNullException.ThrowIfNull(source);
 
-        return FirstFree(board, source.Layout.X + Column, source.Layout.Y);
+        double x = source.Layout.X + Column;
+        double y = source.Layout.Y;
+
+        while (Occupied(board, x, y))
+        {
+            y += Row;
+        }
+
+        return (x, y);
     }
 
     /// <summary>
@@ -98,15 +113,17 @@ public static class NodePlacement
     /// <summary>그 자리에 카드가 있으면 한 칸씩 오른쪽으로 — 겹치지만 않으면 된다.</summary>
     private static (double X, double Y) FirstFree(StoryFile board, double x, double y)
     {
-        List<DialogueNode> cards = board.Nodes.OfType<DialogueNode>().ToList();
-
-        while (cards.Any(card =>
-                   Math.Abs(card.Layout.X - x) < Column / 2 &&
-                   Math.Abs(card.Layout.Y - y) < Row / 2))
+        while (Occupied(board, x, y))
         {
             x += Column;
         }
 
         return (x, y);
     }
+
+    /// <summary>그 자리(한 칸 반경)에 이미 카드가 섰는가.</summary>
+    private static bool Occupied(StoryFile board, double x, double y) =>
+        board.Nodes.OfType<DialogueNode>().Any(card =>
+            Math.Abs(card.Layout.X - x) < Column / 2 &&
+            Math.Abs(card.Layout.Y - y) < Row / 2);
 }
