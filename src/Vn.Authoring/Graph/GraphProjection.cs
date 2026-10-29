@@ -106,7 +106,6 @@ public enum GraphOutputPortKind
 {
     ExecutionDefault,
     ExecutionBranch,
-    Settings,
 
     /// <summary>
     /// <b>챕터 간선 슬롯</b> — 이 에피소드에서 나가는 선택지 하나 (R7 P-1 · 2026-09-16).
@@ -169,8 +168,7 @@ public sealed record GraphOutputPortProjection(
 public enum GraphConnectionKind
 {
     ExecutionDefault,
-    ExecutionBranch,
-    Settings
+    ExecutionBranch
 }
 
 public enum GraphEndpointKind
@@ -199,7 +197,6 @@ public sealed record GraphConnectionProjection(
     string TargetNodeId,
     string Label,
     int PaletteIndex,
-    string? LinkId,
     ExitPort? ExecutionPort,
     GraphEndpointProjection Source,
     GraphEndpointProjection Target);

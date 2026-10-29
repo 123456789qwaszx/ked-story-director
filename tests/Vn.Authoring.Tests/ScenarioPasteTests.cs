@@ -186,7 +186,6 @@ public class ScenarioPasteTests
         var file = editor.Project.Files[0];
         SetNode set = editor.AddSetNode(file.Id, name: "설정");
         ConditionDefinition condition = editor.AddCondition(set.Id, "호감 높음", "favor >= 5");
-        editor.AddSettingsLink(set.Id, node.Id);
 
         // 기존 첫 줄("라루: 첫 줄")이 닻으로 남고 나머지는 순수 삽입이다.
         editor.ApplyScenarioText(node.Id, """

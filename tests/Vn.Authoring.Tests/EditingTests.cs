@@ -236,8 +236,6 @@ public class EditingTests
 
         Assert.NotNull(change);
         Assert.Equal(ProjectChangeKind.ConditionDefinition, change!.Kind);
-        Assert.False(change!.NeedsInspectorRebuild);
-        Assert.True(change!.NeedsGraphRebuild);
     }
 
     [Fact]
@@ -282,8 +280,6 @@ public class EditingTests
         sample.Editor.SetScriptLineText(sample.Script.Id, line, "라루", "수정");
 
         Assert.Equal(ProjectChangeKind.DialogueContent, change!.Kind);
-        Assert.False(change.NeedsInspectorRebuild);
-        Assert.False(change.NeedsGraphRebuild);
     }
 
 }

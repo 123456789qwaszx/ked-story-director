@@ -35,7 +35,6 @@ internal sealed class Sample
         // 가지므로(2026-08-21) 그렇게 표시해야 출구 테스트들이 실물과 같은 길을 지난다.
         // 대상 노드 셋(TargetA·TargetB·TargetDefault)은 커스텀(자유) 씬 그대로다.
         Dialogue.MarkedEpisodeId = "ep_본문";
-        SettingsLink = Editor.AddSettingsLink(SetNode.Id, Dialogue.Id);
 
         TargetA = AddEndNode("A로 간다");
         TargetB = AddEndNode("B로 간다");
@@ -57,8 +56,6 @@ internal sealed class Sample
     public ConditionDefinition ConditionB { get; }
 
     public DialogueNode Dialogue { get; }
-
-    public NodeLink SettingsLink { get; }
 
     public DialogueNode TargetA { get; }
 

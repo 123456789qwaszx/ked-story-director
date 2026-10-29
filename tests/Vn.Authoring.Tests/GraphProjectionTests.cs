@@ -61,8 +61,8 @@ public class GraphProjectionTests
             project,
             new HashSet<string>(new[] { fileA.Id }, StringComparer.Ordinal));
 
-        Assert.DoesNotContain(projection.Connections,
-            connection => connection.Kind == GraphConnectionKind.Settings);
+        // 그려지는 선은 모두 실행 출구다 — 링크에서 나오는 선은 없다.
+        Assert.All(projection.Connections, connection => Assert.NotNull(connection.ExecutionPort));
     }
 
     [Fact]

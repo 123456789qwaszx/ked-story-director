@@ -7,32 +7,11 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// 실행 출구와 조건 공급은 서로 다른 관계이며, DialogueNode의 조건 범위는
-/// 활성 Settings link와 게임 전역 정의로만 결정된다는 계약.
+/// <b>조건 공급은 판 전체다</b> (2026-08-17 소유자: "챕터 단위로 전역에 쓰이는거야") — 같은 판의 설정노드가 그 판의
+/// 대사 노드에 조건을 공급하고, 다른 판(챕터)의 조건은 쓸 수 없다. 노드 사이의 공급 링크는 이제 아무것도 정하지 않는다.
 /// </summary>
-public class SettingsLinkTests
+public class ConditionSupplyTests
 {
-    [Fact]
-    public void 실행_출구와_Settings_link는_서로_독립적이다()
-    {
-        // 실행 출구는 DialogueNode가, 조건 공급은 link가 소유한다. 링크를 지워도 출구는 남는다.
-        var sample = new Sample();
-        sample.Editor.SetExitTarget(
-            sample.Dialogue.Id,
-            ExitPortKind.Default,
-            branchOpenLineId: null,
-            sample.TargetA.Id);
-
-        sample.Editor.RemoveLink(sample.SettingsLink.Id);
-
-        Assert.Equal(sample.TargetA.Id, sample.Dialogue.DefaultExitTargetNodeId);
-        Assert.Empty(sample.Project.Links);
-
-        ExitPort execution = NodeConnections.PortsOf(sample.Dialogue, sample.Project)
-            .Single(port => port.Kind == ExitPortKind.Default);
-        Assert.Equal(sample.TargetA.Id, execution.TargetNodeId);
-    }
-
     [Fact]
     public void 같은_판의_모든_설정노드가_챕터_전역으로_공급한다()
     {
@@ -200,75 +179,16 @@ public class SettingsLinkTests
     }
 
     [Fact]
-    public void Settings_link를_다시_연결하면_기존_Transition이_다시_유효해진다()
+    public void 옛_파일의_공급_링크는_그_노드를_지우면_함께_걷힌다()
     {
+        // 링크를 만드는 편집은 2026-10-29에 걷혔다(legacy-cleanup.md L-D2) — 옛 파일의 링크 데이터만 남는다.
+        // 없는 노드를 가리키는 링크가 파일에 남으면 다음에 열 때 검증이 거절한다.
         var sample = new Sample();
-        string line = sample.Line(
-            "조건 대사",
-            LineConditionTransition.BeginIf(sample.ConditionA.Id));
-        sample.Editor.RemoveLink(sample.SettingsLink.Id);
-
-        sample.Editor.AddSettingsLink(sample.SetNode.Id, sample.Dialogue.Id);
-
-        DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
-        Assert.DoesNotContain(flow.Problems, problem =>
-            problem.Kind is FlowProblemKind.UnavailableCondition or FlowProblemKind.UnknownCondition);
-        Assert.Equal(sample.ConditionA.Id, sample.Dialogue.FindExtension(line)!.Transition!.ConditionId);
-    }
-
-    [Fact]
-    public void 비활성_Settings_link를_다시_연결하면_활성화된다()
-    {
-        var sample = new Sample();
-        sample.Editor.SetLinkEnabled(sample.SettingsLink.Id, enabled: false);
-
-        NodeLink result = sample.Editor.AddSettingsLink(sample.SetNode.Id, sample.Dialogue.Id);
-
-        Assert.Same(sample.SettingsLink, result);
-        Assert.True(result.IsEnabled);
-        Assert.Contains(
-            AvailableConditionResolver.Resolve(sample.Project, sample.Dialogue.Id).Conditions,
-            condition => condition.Id == sample.ConditionA.Id);
-    }
-
-    [Fact]
-    public void Settings_link는_SetNode에서_DialogueNode로만_만든다()
-    {
-        var sample = new Sample();
-
-        Assert.Throws<InvalidOperationException>(() =>
-            sample.Editor.AddSettingsLink(sample.Dialogue.Id, sample.TargetA.Id));
-        Assert.Throws<InvalidOperationException>(() =>
-            sample.Editor.AddSettingsLink(sample.SetNode.Id, sample.SetNode.Id));
-    }
-
-    [Fact]
-    public void 노드를_삭제하면_그_노드의_Settings_link도_정리된다()
-    {
-        var sample = new Sample();
+        sample.Project.Links.Add(new NodeLink(
+            kind: NodeLinkKind.Settings, sourceNodeId: sample.SetNode.Id, targetNodeId: sample.Dialogue.Id));
 
         sample.Editor.RemoveNode(sample.SetNode.Id);
 
         Assert.Empty(sample.Project.Links);
-    }
-
-    [Fact]
-    public void Settings_link_변경은_Connections로_알린다()
-    {
-        var project = new StoryProject();
-        var file = new StoryFile("sf_event", "이벤트");
-        project.Files.Add(file);
-        var editor = new ProjectEditor(project);
-        SetNode setNode = editor.AddSetNode(file.Id);
-        DialogueNode dialogue = editor.AddDialogueNode(file.Id);
-        ProjectChangeKind? received = null;
-        editor.Changed += (_, args) => received = args.Kind;
-
-        NodeLink link = editor.AddSettingsLink(setNode.Id, dialogue.Id);
-        Assert.Equal(ProjectChangeKind.Connections, received);
-
-        received = null;
-        editor.RemoveLink(link.Id);
-        Assert.Equal(ProjectChangeKind.Connections, received);
     }
 }

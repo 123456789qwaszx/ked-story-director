@@ -18,6 +18,10 @@ public class SerializationTests
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
         sample.Editor.MoveNode(sample.Dialogue.Id, 120, 340);
 
+        // 옛 파일의 공급 링크 — 만드는 편집은 걷혔지만(legacy-cleanup.md L-D2) 데이터는 그대로 오간다.
+        sample.Project.Links.Add(new NodeLink(
+            kind: NodeLinkKind.Settings, sourceNodeId: sample.SetNode.Id, targetNodeId: sample.Dialogue.Id));
+
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
         StoryFile reloadedFile = Assert.Single(reloaded.Files);
         DialogueNode dialogue = reloaded.FindDialogue(sample.Dialogue.Id)!;

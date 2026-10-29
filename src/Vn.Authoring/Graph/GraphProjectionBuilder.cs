@@ -185,7 +185,6 @@ public static class GraphProjectionBuilder
                 raw.TargetNodeId,
                 raw.Label,
                 raw.PaletteIndex,
-                raw.LinkId,
                 raw.ExecutionPort,
                 source,
                 target));
@@ -387,7 +386,6 @@ public static class GraphProjectionBuilder
                     port.Key,
                     port.Label,
                     port.PaletteIndex,
-                    null,
                     exit));
             }
         }
@@ -535,6 +533,5 @@ public static class GraphProjectionBuilder
         string PortKey,
         string Label,
         int PaletteIndex,
-        string? LinkId,
         ExitPort? ExecutionPort);
 }

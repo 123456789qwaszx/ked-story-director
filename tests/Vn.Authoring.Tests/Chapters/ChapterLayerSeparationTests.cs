@@ -31,12 +31,10 @@ public sealed class ChapterLayerSeparationTests
         // A계층 — 동기화가 만드는 공급 노드(이름이 곧 신원).
         SetNode supply = editor.AddSetNode(file.Id, name: ChapterBoardSupply.ConditionSupplyNodeName("ch01"));
         editor.AddCondition(supply.Id, "신뢰높음", "$trust >= 3");
-        editor.AddSettingsLink(supply.Id, dialogue.Id);
 
         // B계층 — 작가가 직접 만든 설정노드.
         SetNode own = editor.AddSetNode(file.Id, name: "작가 조건");
         editor.AddCondition(own.Id, "우호적", "$mood == 1");
-        editor.AddSettingsLink(own.Id, dialogue.Id);
 
         return new Board(project, editor, dialogue, supply, own);
     }

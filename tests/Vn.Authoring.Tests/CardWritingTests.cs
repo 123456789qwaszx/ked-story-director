@@ -45,7 +45,7 @@ public sealed class CardWritingTests
     {
         // 줄 동기화와 조건 전환이 따로 Mutate이던 때는 한 번 물렀을 때 반쪽이 남았다(§5-7).
         (ProjectEditor editor, DialogueNode node) = NewCard();
-        ConditionDefinition condition = Condition(editor, node);
+        ConditionDefinition condition = Condition(editor);
         int changes = 0;
         editor.Changed += (_, _) => changes++;
 
@@ -75,7 +75,7 @@ public sealed class CardWritingTests
     {
         // 쓰는 면은 왕복해야 한다 — 보인 글을 손대지 않고 넣었는데 줄이 고쳐지거나 조건이 풀리면 안 된다.
         (ProjectEditor editor, DialogueNode node) = NewCard();
-        Condition(editor, node);
+        Condition(editor);
         editor.ApplyScenarioText(node.Id, """
             라루: 처음
             <<if favor >= 5>>
@@ -146,13 +146,11 @@ public sealed class CardWritingTests
         return (editor, editor.AddDialogueNode(file.Id, name: "장면"));
     }
 
-    /// <summary>favor >= 5 — 그 노드가 쓸 수 있게 설정 노드로 잇는다.</summary>
-    private static ConditionDefinition Condition(ProjectEditor editor, DialogueNode node)
+    /// <summary>favor >= 5 — 같은 판의 설정 노드에 두면 그 판의 노드가 쓸 수 있다.</summary>
+    private static ConditionDefinition Condition(ProjectEditor editor)
     {
         SetNode set = editor.AddSetNode(editor.Project.Files[0].Id, name: "설정");
-        ConditionDefinition condition = editor.AddCondition(set.Id, "호감 높음", "favor >= 5");
-        editor.AddSettingsLink(set.Id, node.Id);
-        return condition;
+        return editor.AddCondition(set.Id, "호감 높음", "favor >= 5");
     }
 
     private static List<ScriptLine> Lines(ProjectEditor editor, DialogueNode node) =>

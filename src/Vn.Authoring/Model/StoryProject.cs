@@ -126,22 +126,10 @@ public sealed class StoryProject
     public ScriptDocument? ScriptOf(string? dialogueNodeId) =>
         FindScript(FindDialogue(dialogueNodeId)?.ScriptId);
 
-    public NodeLink? FindLink(string? linkId)
-    {
-        return linkId is null
-            ? null
-            : Links.FirstOrDefault(link => string.Equals(link.Id, linkId, StringComparison.Ordinal));
-    }
-
-    public IEnumerable<NodeLink> EnumerateLinks(NodeLinkKind kind)
-    {
-        return Links.Where(link => link.Kind == kind);
-    }
-
     /// <summary>
     /// 프로젝트 안의 모든 SetNode 조건. 파일 순서, SetNode 순서, 조건 순서를 지킨다.
     /// 편집·진단용 전체 조회이며 DialogueNode의 드롭다운 범위에는 사용하지 않는다.
-    /// Dialogue별 범위는 AvailableConditionResolver가 Settings link를 기준으로 계산한다.
+    /// Dialogue별 범위는 AvailableConditionResolver가 판을 기준으로 계산한다.
     /// </summary>
     public IEnumerable<ConditionDefinition> EnumerateConditions()
     {

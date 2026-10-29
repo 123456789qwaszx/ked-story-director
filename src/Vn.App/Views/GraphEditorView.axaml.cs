@@ -2621,30 +2621,25 @@ public partial class GraphEditorView : UserControl
     private Control BuildPortRow(GraphOutputPortProjection port, NodeCard card, int index)
     {
         bool branch = port.Kind == GraphOutputPortKind.ExecutionBranch;
-        bool settings = port.Kind == GraphOutputPortKind.Settings;
-        IBrush settingsBrush = new SolidColorBrush(Color.FromRgb(0x0F, 0x76, 0x6E));
 
         var label = new TextBlock
         {
             Text = port.Label,
             FontSize = 10,
             Opacity = port.Kind == GraphOutputPortKind.ExecutionDefault ? 0.6 : 1,
-            Foreground = branch
-                ? BranchPalette.Accent(port.PaletteIndex)
-                : settings
-                    ? settingsBrush
-                    : null,
-            FontWeight = branch || settings ? FontWeight.SemiBold : FontWeight.Normal,
+            FontWeight = branch ? FontWeight.SemiBold : FontWeight.Normal,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = port.OnLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right
         };
 
-        IBrush portBrush = branch
-            ? BranchPalette.Accent(port.PaletteIndex)
-            : settings
-                ? settingsBrush
-                : Brushes.DimGray;
+        IBrush portBrush = branch ? BranchPalette.Accent(port.PaletteIndex) : Brushes.DimGray;
+
+        // ⚠ 갈래가 아닐 때 Foreground를 null로 <b>적으면</b> 글이 사라진다 — 테마 값을 덮는다.
+        if (branch)
+        {
+            label.Foreground = portBrush;
+        }
 
         var knob = new Ellipse
         {
@@ -2795,17 +2790,10 @@ public partial class GraphEditorView : UserControl
         var path = new ShapePath
         {
             Stroke = stroke,
-            StrokeThickness = 2,
-            StrokeDashArray = connection.Kind switch
-            {
-                GraphConnectionKind.Settings => new AvaloniaList<double> { 5, 3 },
-                _ => null
-            }
+            StrokeThickness = 2
         };
 
-        bool showLabel = connection.Kind is
-            GraphConnectionKind.ExecutionBranch or
-            GraphConnectionKind.Settings;
+        bool showLabel = connection.Kind == GraphConnectionKind.ExecutionBranch;
         var label = new Border
         {
             Padding = new Thickness(5, 1),
@@ -2867,10 +2855,7 @@ public partial class GraphEditorView : UserControl
         }
 
         edge.Path.IsVisible = true;
-        bool showLabel = edge.Connection.Kind is
-            GraphConnectionKind.ExecutionBranch or
-            GraphConnectionKind.Settings;
-        edge.Label.IsVisible = showLabel;
+        edge.Label.IsVisible = edge.Connection.Kind == GraphConnectionKind.ExecutionBranch;
 
         // 사람이 고친 모양대로 긋는다(G3) — 끄는 중이면 그 미리보기로.
         ShapedEdge shaped = EdgeShapeRouter.Execution(
@@ -3810,12 +3795,9 @@ public partial class GraphEditorView : UserControl
 
         string sourceName = FindNodeName(edge.Connection.SourceNodeId) ?? edge.Connection.SourceNodeId;
         string targetName = FindNodeName(edge.Connection.TargetNodeId) ?? edge.Connection.TargetNodeId;
-        string kind = edge.Connection.Kind switch
-        {
-            GraphConnectionKind.Settings => "조건 공급",
-            GraphConnectionKind.ExecutionBranch => $"조건 '{edge.Connection.Label}'",
-            _ => "기본 출구"
-        };
+        string kind = edge.Connection.Kind == GraphConnectionKind.ExecutionBranch
+            ? $"조건 '{edge.Connection.Label}'"
+            : "기본 출구";
 
         SetHint($"{sourceName} — {kind} → {targetName} · 우클릭으로 삭제");
     }
@@ -3845,11 +3827,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (_selectedEdge.Connection.LinkId is { } linkId)
-        {
-            _session.Editor.RemoveLink(linkId);
-        }
-        else if (_selectedEdge.Connection.ExecutionPort is { } exit)
+        if (_selectedEdge.Connection.ExecutionPort is { } exit)
         {
             // 분기 선을 지우는 것은 「분기 지우기」다 — 표식과, 분기가 다녀가던 에피소드를 함께 걷는다
             // (2026-10-29 소유자). 그 밖의 출구는 잇던 선만 끊는다.
@@ -3984,7 +3962,6 @@ public partial class GraphEditorView : UserControl
     {
         return connection.Kind switch
         {
-            GraphConnectionKind.Settings => new SolidColorBrush(Color.FromRgb(0x0F, 0x76, 0x6E)),
             GraphConnectionKind.ExecutionBranch => BranchPalette.Accent(connection.PaletteIndex),
             _ => new SolidColorBrush(Color.FromArgb(150, 100, 100, 100))
         };

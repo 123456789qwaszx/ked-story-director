@@ -969,79 +969,10 @@ public sealed partial class ProjectEditor
     }
 
     // ── 설정 공급 연결 ──────────────────────────────────────────────────────
-
-    /// <summary>
-    /// SetNode가 DialogueNode에 조건과 assignment를 공급하는 Settings link를 만든다.
-    /// 실행 순서는 바꾸지 않는다. 같은 소스와 대상의 링크가 이미 있으면 그것을 돌려준다.
-    /// </summary>
-    public NodeLink AddSettingsLink(string setNodeId, string dialogueNodeId)
-    {
-        if (Project.FindNode(setNodeId) is not SetNode)
-        {
-            throw new InvalidOperationException($"'{setNodeId}'는 설정 노드가 아닙니다.");
-        }
-
-        if (Project.FindNode(dialogueNodeId) is not DialogueNode)
-        {
-            throw new InvalidOperationException($"'{dialogueNodeId}'는 대사 노드가 아닙니다.");
-        }
-
-        NodeLink? existing = Project.Links.FirstOrDefault(link =>
-            link.Kind == NodeLinkKind.Settings &&
-            string.Equals(link.SourceNodeId, setNodeId, StringComparison.Ordinal) &&
-            string.Equals(link.TargetNodeId, dialogueNodeId, StringComparison.Ordinal));
-
-        if (existing is not null)
-        {
-            if (!existing.IsEnabled)
-            {
-                Mutate(ProjectChangeKind.Connections, () => existing.IsEnabled = true);
-            }
-
-            return existing;
-        }
-
-        int nextOrder = Project.Links
-            .Where(link =>
-                link.Kind == NodeLinkKind.Settings &&
-                string.Equals(link.TargetNodeId, dialogueNodeId, StringComparison.Ordinal))
-            .Select(link => link.Order)
-            .DefaultIfEmpty(-1)
-            .Max() + 1;
-
-        var link = new NodeLink(
-            kind: NodeLinkKind.Settings,
-            sourceNodeId: setNodeId,
-            targetNodeId: dialogueNodeId)
-        {
-            Order = nextOrder
-        };
-
-        Mutate(ProjectChangeKind.Connections, () => Project.Links.Add(link));
-        return link;
-    }
-
-    public void RemoveLink(string linkId)
-    {
-        NodeLink? link = Project.FindLink(linkId);
-
-        if (link is not null)
-        {
-            // Dialogue의 LineConditionTransition은 건드리지 않는다. 연결이 끊긴 뒤에는
-            // ConditionFlowResolver가 사용할 수 없는 조건으로 표시한다.
-            Mutate(ProjectChangeKind.Connections, () => Project.Links.Remove(link));
-        }
-    }
-
-    public void SetLinkEnabled(string linkId, bool enabled)
-    {
-        NodeLink? link = Project.FindLink(linkId);
-
-        if (link is not null && link.IsEnabled != enabled)
-        {
-            Mutate(ProjectChangeKind.Connections, () => link.IsEnabled = enabled);
-        }
-    }
+    //
+    // ⛔ 링크를 만들고 끊고 켜던 편집(AddSettingsLink · RemoveLink · SetLinkEnabled)은 2026-10-29에 걷혔다
+    //    (legacy-cleanup.md L-D2). 조건 공급은 2026-08-17부터 판 전체라 링크를 아무도 읽지 않는다. 옛 파일의 링크
+    //    데이터는 그대로 읽고 쓰고, 노드를 지우면 그 노드를 가리키던 링크도 함께 걷힌다(RemoveReferencesToNode).
 
     // ── 조건 ────────────────────────────────────────────────────────────────
 
