@@ -1,6 +1,0 @@
-{
-  "projectFileVersion": 3,
-  "baseLanguage": "ko",
-  "sourceFiles": [ "**/*.yarn" ],
-  "excludeFiles": []
-}

@@ -70,3 +70,4 @@ R3에서 정한 방법(`ProjectStore.Load`):
 
 남는 것: `Vn.Core` · `Vn.Cli`(Yarn 분석 도구)는 저작 경로와 무관한 별도 도구라 그대로 둔다 — 게임용 Yarn은 이 툴이 내지 않으므로
 옮길지는 따로 정한다(CI의 "Yarn sample smoke"가 그것을 돌린다).
+→ 2026-10-29 [`legacy-cleanup.md`](legacy-cleanup.md) L-D1에서 정했다: 이 저장소에서 **걷었다**(compositor에 이력째 같은 도구가 있다).

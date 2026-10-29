@@ -8,7 +8,6 @@
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.1" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.1" />
 	<PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
-    <PackageVersion Include="YarnSpinner.Compiler" Version="3.2.1" />
     <!-- 화면 없는 렌더 검증 (Gate A). 창을 띄우지 않고 시각 트리와 배치를 그대로 확인한다 —
          전역 입력 주입으로 남의 창을 누르는 짓을 하지 않기 위한 대체 수단이다. Avalonia와 같은 MIT. -->
     <PackageVersion Include="Avalonia.Headless" Version="12.1.1" />

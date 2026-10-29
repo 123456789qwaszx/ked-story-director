@@ -126,7 +126,7 @@ public class AppSettingsServiceTests
     public void 정상적인_설정은_그대로_읽는다()
     {
         string path = TempSettings();
-        string project = Path.GetFullPath("../../../../../samples/Valid/Demo.yarnproject");
+        string project = Path.GetFullPath("../../../../../samples/Authoring/project.vnproject.json");
 
         Write(path, $"{{ \"RecentProject\": {System.Text.Json.JsonSerializer.Serialize(project)} }}");
 

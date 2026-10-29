@@ -20,9 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Vn.Authoring\Vn.Authoring.csproj" />
-
-    <!-- ⛔ Vn.Core(Yarn 분석) 참조는 2026-10-29에 걷혔다 — 쓰던 자리(방금 낸 Yarn이 컴파일되는지 셸이
-         확인하던 출력 검증)가 Yarn 출력과 함께 ked-story-compositor로 갔다. -->
   </ItemGroup>
 
   <ItemGroup>

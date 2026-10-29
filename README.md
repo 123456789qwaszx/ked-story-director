@@ -94,12 +94,3 @@ R0~R5의 순서·체크리스트·완료 근거는 [`docs/plans/PLAN.md`](docs/p
 | [`docs/writer-guide.md`](docs/writer-guide.md) | 작가용 사용 안내 |
 | [`docs/handoff/io-reference.md`](docs/handoff/io-reference.md) | 모든 입출력의 형식 |
 | [`docs/runtime-ui-tooling-principles.md`](docs/runtime-ui-tooling-principles.md) | 도구 설계 원칙 (`원칙 §…` 인용의 출처) |
-
-## Yarn 분석 도구
-
-`Vn.Core`와 `Vn.Cli`는 Yarn 프로젝트를 읽고 검증하는 별도 도구입니다. 저작 경로와 분리돼
-있습니다(이 툴은 Yarn을 내지 않는다 — 게임용 Yarn은 compositor가 낸다).
-
-```powershell
-dotnet run --project .\src\Vn.Cli\Vn.Cli.csproj -- .\samples\Valid\Demo.yarnproject .\samples\Valid\game.schema.json
-```

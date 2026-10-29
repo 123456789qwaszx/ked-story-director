@@ -1,7 +1,0 @@
-{
-  "schemaVersion": 1,
-  "variables": [
-    { "id": "affection_ann", "type": "number", "default": 0 }
-  ],
-  "commands": []
-}

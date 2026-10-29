@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vn.Authoring\Vn.Authoring.csproj" />
-    <!-- ⛔ Vn.Core(이미터 산출물 검증) 참조는 2026-10-29에 걷혔다 — Yarn 이미터가 ked-story-compositor로 갔다. -->
   </ItemGroup>
 
 </Project>
