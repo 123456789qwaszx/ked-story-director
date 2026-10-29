@@ -1383,10 +1383,10 @@ public sealed partial class ProjectEditor
                 }
 
                 // 줄은 차례로 가리킨다 — 화면에 LineId를 보이지 않는다(2026-10-29 소유자).
-                int order = (Project.FindScript(node.ScriptId)?.ActiveLines
+                int order = node.Script.ActiveLines
                     .Select(line => line.Id)
                     .ToList()
-                    .IndexOf(extension.LineId) ?? -1) + 1;
+                    .IndexOf(extension.LineId) + 1;
 
                 uses.Add(new ChapterUse(
                     ChapterUseKind.DialogueBranch,

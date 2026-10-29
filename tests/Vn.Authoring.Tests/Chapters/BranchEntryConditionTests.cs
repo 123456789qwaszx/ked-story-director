@@ -43,7 +43,7 @@ public sealed class BranchEntryConditionTests
 
         BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
 
-        string firstLineId = editor.Project.FindScript(branch.ScriptId)!.ActiveLines.First().Id;
+        string firstLineId = branch.Script.ActiveLines.First().Id;
 
         LineConditionTransition opened =
             Assert.Single(branch.FindExtension(firstLineId)!.Transitions);
@@ -99,7 +99,7 @@ public sealed class BranchEntryConditionTests
         //    된다. 읽기만 하고 사유를 말한다.
         (ProjectEditor editor, _, DialogueNode branch) = World();
 
-        string firstLineId = editor.Project.FindScript(branch.ScriptId)!.ActiveLines.First().Id;
+        string firstLineId = branch.Script.ActiveLines.First().Id;
         editor.SetLineTransitions(branch.Id, firstLineId, [LineConditionTransition.BeginChoice()]);
 
         BranchEntryCondition.State state = BranchEntryCondition.Read(editor.Project, branch.Id);
@@ -169,7 +169,7 @@ public sealed class BranchEntryConditionTests
             chapter.ToGraphModel("ch01"));
 
         DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
-        string lineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
+        string lineId = caller.Script.ActiveLines.First().Id;
 
         return (editor, caller, editor.AddBranchMarker(caller.Id, lineId));
     }

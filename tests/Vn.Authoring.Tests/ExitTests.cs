@@ -145,7 +145,7 @@ public class ExitTests
         string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opener, sample.TargetA.Id);
 
-        sample.Editor.RetireScriptLine(sample.Script.Id, opener);
+        sample.Editor.RetireScriptLine(sample.Dialogue.Id, opener);
 
         Assert.Empty(sample.Dialogue.BranchExits);
         Assert.Empty(sample.Dialogue.LineExtensions);

@@ -78,7 +78,7 @@ public static class ChapterValidator
         {
             // ① 에피소드 자신의 대사 노드. 없는 것은 `VerifyDialogueEntriesOnBoard`가 짚으므로
             //    여기서는 <b>있는데 비었을 때</b>만 본다 — 같은 말을 두 번 하지 않는다.
-            if (board.EpisodeNodeFor(episode) is { } own && !HasPlayableLine(project, own))
+            if (board.EpisodeNodeFor(episode) is { } own && !HasPlayableLine(own))
             {
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Error,
@@ -96,10 +96,8 @@ public static class ChapterValidator
     }
 
     /// <summary>재생될 줄이 하나라도 있는가 — 본문이 비어도 줄은 줄이다(연출이 매달린다).</summary>
-    private static bool HasPlayableLine(StoryProject project, DialogueNode scene) =>
-        project.FindScript(scene.ScriptId) is { } document &&
-        document.Lines.Count > 0 &&
-        document.ActiveLines.Any();
+    private static bool HasPlayableLine(DialogueNode scene) =>
+        scene.Script.ActiveLines.Any();
 
     /// <summary>
     /// ⛔ <b>에피소드가 부를 대사 노드가 그 판에 실제로 있는가</b> (2026-08-23).

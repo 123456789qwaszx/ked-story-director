@@ -6,7 +6,7 @@ namespace Vn.Authoring.Results;
 
 public enum PublishProblemKind
 {
-    /// <summary>읽을 대본이 없다.</summary>
+    /// <summary>카드의 대본에 살아 있는 줄이 없다.</summary>
     MissingScript,
 
     /// <summary>같은 LineId가 결과 안에서 두 번 나온다.</summary>
@@ -46,7 +46,6 @@ public sealed class DialogueDraft
     public DialogueDraft(
         string sourceNodeId,
         string sourceNodeName,
-        string? sourceScriptId,
         int sourceScriptRevision,
         string locale,
         IReadOnlyList<DialogueResultLine> lines,
@@ -57,7 +56,6 @@ public sealed class DialogueDraft
         TrailingTransitions = trailingTransitions ?? Array.Empty<DialogueResultTransition>();
         SourceNodeId = sourceNodeId;
         SourceNodeName = sourceNodeName;
-        SourceScriptId = sourceScriptId;
         SourceScriptRevision = sourceScriptRevision;
         Locale = locale;
         Lines = lines;
@@ -68,8 +66,6 @@ public sealed class DialogueDraft
     public string SourceNodeId { get; }
 
     public string SourceNodeName { get; }
-
-    public string? SourceScriptId { get; }
 
     public int SourceScriptRevision { get; }
 
@@ -163,7 +159,7 @@ public static class DialoguePublisher
         }
 
         AddFlowProblems(flow, problems);
-        AddScriptProblems(project, node, problems);
+        AddScriptProblems(node, problems);
 
         // 선택지로 끝나는 노드는 정상이다 (2단계 포트 규칙, 2026-08-14 소유자 승인) —
         // 옵션들이 곧 노드의 끝이고, 이어진 옵션은 출구로 점프, 안 이은 옵션은 에피소드
@@ -197,8 +193,7 @@ public static class DialoguePublisher
         return new DialogueDraft(
             node.Id,
             node.Name,
-            script.ScriptId,
-            project.FindScript(script.ScriptId)?.SourceRevision ?? 0,
+            node.Script.SourceRevision,
             script.Locale,
             lines,
             // 커스텀 노드는 기본 출구가 없다 — detour의 복귀가 그 자리를 맡는다.
@@ -218,7 +213,6 @@ public static class DialoguePublisher
         return new DialogueResult(
             draft.SourceNodeId,
             draft.SourceNodeName,
-            draft.SourceScriptId,
             draft.SourceScriptRevision,
             draft.Locale,
             draft.Lines,
@@ -303,7 +297,6 @@ public static class DialoguePublisher
             {
                 // ⚠ 여기서는 <b>막는 문제</b>로 짚는다 — 미리보기가 [주의]로 보여 준다. 게임으로
                 //    내보낼 때 빈 씬을 완화하는 것은 compositor의 몫이다(지금 상태를 그대로 보낸다).
-                FlowProblemKind.MissingScript => (PublishProblemKind.MissingScript, true),
                 FlowProblemKind.UnknownCondition => (PublishProblemKind.UnknownCondition, true),
                 FlowProblemKind.UnavailableCondition => (PublishProblemKind.UnknownCondition, true),
                 FlowProblemKind.ElseIfWithoutIf => (PublishProblemKind.InvalidConditionStructure, true),
@@ -322,14 +315,10 @@ public static class DialoguePublisher
     }
 
     private static void AddScriptProblems(
-        StoryProject project,
         DialogueNode node,
         List<PublishProblem> problems)
     {
-        if (project.FindScript(node.ScriptId) is not { } document)
-        {
-            return;
-        }
+        Script.ScriptDocument document = node.Script;
 
         if (document.Lines.Count > 0 && document.ActiveLines.Any())
         {
@@ -340,7 +329,7 @@ public static class DialoguePublisher
         problems.Add(new PublishProblem(
             PublishProblemKind.MissingScript,
             null,
-            $"대본 '{document.Name}'에 살아 있는 줄이 없습니다. " +
+            "이 카드에 살아 있는 줄이 없습니다. " +
             "연출만 매다는 씬이면 정상이고, 아니라면 대사를 적어 주세요.",
             IsBlocking: true));
     }

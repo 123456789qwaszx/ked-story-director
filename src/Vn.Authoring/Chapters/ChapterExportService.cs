@@ -295,7 +295,7 @@ public sealed class ChapterExportService
             .OfType<DialogueNode>()
             .Select(node =>
                 $"{node.Name}{node.MarkedEpisodeId}" +
-                (project.FindScript(node.ScriptId)?.ActiveLines.Any() == true ? "1" : "0"))
+                (node.Script.ActiveLines.Any() ? "1" : "0"))
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
     }

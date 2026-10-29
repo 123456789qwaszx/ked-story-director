@@ -114,7 +114,7 @@ public sealed class BranchMarkerTests
 
         editor.AddDialogueNode(fileId, 400, 0, "곁가지");
 
-        string lineId = project.FindScript(node.ScriptId)!.ActiveLines.First().Id;
+        string lineId = node.Script.ActiveLines.First().Id;
 
         return (editor, node, lineId);
     }
@@ -334,7 +334,7 @@ public sealed class BranchMarkerTests
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
-        string otherLine = editor.InsertScriptLine(node.ScriptId!).Id;
+        string otherLine = editor.InsertScriptLine(node.Id).Id;
         editor.SetExitTarget(node.Id, ExitPortKind.Detour, otherLine, made.Id);
 
         editor.RemoveBranchMarker(node.Id, lineId);

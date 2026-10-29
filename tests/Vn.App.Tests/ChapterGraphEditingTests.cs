@@ -112,7 +112,7 @@ public sealed class ChapterGraphEditingTests
             .Single(node => node.MarkedEpisodeId == "branch05.02A");
 
         // 대본은 딸려 있어도 적힌 글이 없으면 빈 카드다 — 아무도 손대지 않은 자리다.
-        Vn.Authoring.Script.ScriptDocument blank = session.Project.FindScript(ghost.ScriptId)!;
+        Vn.Authoring.Script.ScriptDocument blank = ghost.Script;
         Assert.DoesNotContain(blank.ActiveLines, line => blank.Text(line.Id).Text.Length > 0);
 
         view.SelectEpisode("branch05.02A");
@@ -140,8 +140,7 @@ public sealed class ChapterGraphEditingTests
         script.Lines.Add(new Vn.Authoring.Script.ScriptLine("ln_keep"));
         script.RequireLocale(script.PrimaryLocale).Entries["ln_keep"] =
             new Vn.Authoring.Script.LocalizedLine("윌로", "잃으면 안 되는 줄");
-        session.Project.Scripts.Add(script);
-        written.ScriptId = script.Id;
+        written.Script = script;
 
         view.SelectEpisode("branch05.02A");
         view.DeleteSelectedEpisode();
@@ -156,8 +155,8 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         // 되돌리면 카드도 에피소드도 돌아오고, 글은 애초에 안 사라졌다.
-        Assert.NotNull(session.Project.FindNode(written.Id));
-        Assert.NotNull(session.Project.FindScript(script.Id));
+        DialogueNode back = Assert.IsType<DialogueNode>(session.Project.FindNode(written.Id));
+        Assert.Equal("잃으면 안 되는 줄", back.Script.Text("ln_keep").Text);
     });
 
     [Fact]
@@ -390,7 +389,7 @@ public sealed class ChapterGraphEditingTests
         // 첫 대사도 함께 심어져 있다 (2026-08-26 소유자) — 빈 대본은 검증이 오류로
         // 막으므로, 방금 더한 에피소드가 그 오류부터 들고 시작하지 않는다.
         Assert.True(
-            session.Project.FindScript(node.ScriptId) is { } document &&
+            node.Script is { } document &&
             document.ActiveLines.Any(),
             "새 에피소드의 대사 노드에 기본 대사 한 줄이 있어야 한다");
     });
@@ -670,15 +669,15 @@ public sealed class ChapterGraphEditingTests
     private static void WriteLines(
         AuthoringSession session, string episodeId, params (string Speaker, string Text)[] lines)
     {
-        string scriptId = EpisodeNaming.CardFor(session.Project, "ch05", episodeId)!.ScriptId!;
+        DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch05", episodeId)!;
 
         for (int index = 0; index < lines.Length; index++)
         {
             string lineId = index == 0
-                ? session.Project.FindScript(scriptId)!.ActiveLines.First().Id
-                : session.Editor.InsertScriptLine(scriptId).Id;
+                ? card.Script.ActiveLines.First().Id
+                : session.Editor.InsertScriptLine(card.Id).Id;
 
-            session.Editor.SetScriptLineText(scriptId, lineId, lines[index].Speaker, lines[index].Text);
+            session.Editor.SetScriptLineText(card.Id, lineId, lines[index].Speaker, lines[index].Text);
         }
 
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

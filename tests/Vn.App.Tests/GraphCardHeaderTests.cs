@@ -72,8 +72,8 @@ public sealed class GraphCardHeaderTests
 
         AuthoringSession session = window.SessionProbe;
         DialogueNode source = session.Editor.AddDialogueNode(session.ActiveFile!.Id, name: "본문");
-        ScriptLine line = session.Project.FindScript(source.ScriptId)!.ActiveLines.First();
-        session.Editor.SetScriptLineText(source.ScriptId!, line.Id, "라루", "첫 줄");
+        ScriptLine line = source.Script.ActiveLines.First();
+        session.Editor.SetScriptLineText(source.Id, line.Id, "라루", "첫 줄");
         DialogueNode made = session.Editor.AddBranchMarker(source.Id, line.Id);
 
         window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;

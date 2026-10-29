@@ -108,9 +108,9 @@ public class OutputPresetTests
         string opening = sample.Line(
             "첫 대사",
             LineConditionTransition.BeginIf(sample.ConditionA.Id));
-        sample.Editor.SetScriptLineText(sample.Script.Id, opening, "라루", "첫 대사");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, opening, "라루", "첫 대사");
         string ending = sample.Line("조건 뒤", LineConditionTransition.EndIf());
-        sample.Editor.SetScriptLineText(sample.Script.Id, ending, "윌로", "조건 뒤");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, ending, "윌로", "조건 뒤");
 
         // ⚠ 작가가 <b>줄에</b> 단 set — 2026-08-24부터 문서에 남는 set은 이것뿐이다.
         // 설정노드의 초기값은 선언으로만 나간다(작업지시 §4).

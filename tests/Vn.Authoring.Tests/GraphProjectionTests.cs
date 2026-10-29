@@ -190,7 +190,7 @@ public class GraphProjectionTests
         var dialogueA = new DialogueNode("nd_a", "대사 A")
         {
             Layout = new NodeLayout { X = 340, Y = 100 },
-            ScriptId = script.Id,
+            Script = script,
             LineExtensions =
             {
                 new DialogueLineExtension("ln_a1")
@@ -208,7 +208,6 @@ public class GraphProjectionTests
         fileA.Nodes.Add(setA);
         fileA.Nodes.Add(dialogueA);
         fileB.Nodes.Add(dialogueB);
-        project.Scripts.Add(script);
         project.Files.Add(fileA);
         project.Files.Add(fileB);
         project.Links.Add(new NodeLink(

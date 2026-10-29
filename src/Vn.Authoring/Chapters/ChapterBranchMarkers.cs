@@ -61,7 +61,7 @@ public static class ChapterBranchMarkers
 
             // 대본의 줄 차례로 훑는다 — 확장(LineExtensions)의 순서는 손댄 차례라 사람이
             // 읽는 차례가 아니다.
-            foreach (ScriptLine line in project.FindScript(card.ScriptId)?.ActiveLines ?? [])
+            foreach (ScriptLine line in card.Script.ActiveLines)
             {
                 if (card.FindExtension(line.Id)?.DetourTargetNodeId is not { Length: > 0 } target ||
                     !onBoard.TryGetValue(target, out string? to))

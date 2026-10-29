@@ -62,9 +62,8 @@ public sealed class GraphDragCommitTests
     {
         // 카드를 고르는 클릭이 되돌리기 한 칸을 먹으면, 그 앞의 편집은 Ctrl+Z를 두 번 눌러야 돌아온다.
         (MainWindow window, AuthoringSession session, DialogueNode dialogue) = Stage();
-        string scriptId = dialogue.ScriptId!;
-        string lineId = session.Project.FindScript(scriptId)!.ActiveLines.First().Id;
-        session.Editor.SetScriptLineText(scriptId, lineId, "라루", "고친 줄");
+        string lineId = dialogue.Script.ActiveLines.First().Id;
+        session.Editor.SetScriptLineText(dialogue.Id, lineId, "라루", "고친 줄");
 
         Point grip = CardGrip(window, dialogue.Id);
         window.MouseDown(grip, MouseButton.Left);
@@ -73,7 +72,8 @@ public sealed class GraphDragCommitTests
 
         session.Editor.Undo();
 
-        Assert.Equal("첫 줄", session.Project.FindScript(scriptId)!.Text(lineId).Text);
+        // 되돌리기는 프로젝트를 새 객체로 갈아 끼운다 — 지금 프로젝트에서 다시 찾는다.
+        Assert.Equal("첫 줄", session.Project.FindDialogue(dialogue.Id)!.Script.Text(lineId).Text);
 
         window.Close();
     });
@@ -116,9 +116,9 @@ public sealed class GraphDragCommitTests
         AuthoringSession session = window.SessionProbe;
 
         DialogueNode dialogue = session.Editor.AddDialogueNode(
-            session.ActiveFile!.Id, name: "본문", scriptId: session.Editor.AddScript("본문 대본").Id);
-        ScriptLine line = session.Editor.InsertScriptLine(dialogue.ScriptId!);
-        session.Editor.SetScriptLineText(dialogue.ScriptId!, line.Id, "라루", "첫 줄");
+            session.ActiveFile!.Id, name: "본문");
+        ScriptLine line = dialogue.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
+        session.Editor.SetScriptLineText(dialogue.Id, line.Id, "라루", "첫 줄");
         session.Editor.MoveNode(dialogue.Id, 40, 40);
 
         window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;

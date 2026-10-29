@@ -40,34 +40,20 @@ public sealed record OrphanLineExtension(
 /// </summary>
 public sealed class DialogueScript
 {
-    public static DialogueScript Empty { get; } = new(
-        null,
-        ScriptDocument.DefaultLocale,
-        false,
-        Array.Empty<DialogueLine>(),
-        Array.Empty<OrphanLineExtension>());
-
     public DialogueScript(
-        string? scriptId,
         string locale,
-        bool isResolved,
         IReadOnlyList<DialogueLine> lines,
         IReadOnlyList<OrphanLineExtension> orphans)
     {
-        ScriptId = scriptId;
         Locale = locale;
-        IsResolved = isResolved;
         Lines = lines;
         Orphans = orphans;
     }
 
-    /// <summary>노드가 읽겠다고 적어 둔 대본 Id. 그 대본이 실제로 있는지는 별개다.</summary>
-    public string? ScriptId { get; }
+    // ⛔ 읽겠다고 적어 둔 대본 Id(`ScriptId`)와 그것을 찾았는지(`IsResolved`)는 대본이 카드 안으로 들어오며
+    //    걷혔다(S2) — 카드는 언제나 제 대본을 든다.
 
     public string Locale { get; }
-
-    /// <summary>적어 둔 대본을 프로젝트에서 실제로 찾았는지.</summary>
-    public bool IsResolved { get; }
 
     /// <summary>대본 순서 그대로. 은퇴한 줄은 들어 있지 않다.</summary>
     public IReadOnlyList<DialogueLine> Lines { get; }
@@ -99,21 +85,7 @@ public static class DialogueScriptResolver
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(node);
 
-        ScriptDocument? document = project.FindScript(node.ScriptId);
-
-        if (document is null)
-        {
-            // 대본을 아직 고르지 않았거나 대본이 사라졌다. 확장 데이터는 전부 고아다.
-            return new DialogueScript(
-                node.ScriptId,
-                locale ?? ScriptDocument.DefaultLocale,
-                isResolved: false,
-                Array.Empty<DialogueLine>(),
-                node.LineExtensions
-                    .Select(extension => new OrphanLineExtension(extension, IsRetired: false, null))
-                    .ToArray());
-        }
-
+        ScriptDocument document = node.Script;
         string targetLocale = locale ?? document.PrimaryLocale;
         var extensions = new Dictionary<string, DialogueLineExtension>(StringComparer.Ordinal);
 
@@ -159,6 +131,6 @@ public static class DialogueScriptResolver
                 retired is null ? null : document.Text(extension.LineId, targetLocale)));
         }
 
-        return new DialogueScript(document.Id, targetLocale, isResolved: true, lines, orphans);
+        return new DialogueScript(targetLocale, lines, orphans);
     }
 }

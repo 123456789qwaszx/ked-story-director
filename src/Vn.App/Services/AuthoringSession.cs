@@ -143,8 +143,7 @@ internal sealed class AuthoringSession
         Definition = GameDefinition.LoadBeside(loaded.ManifestPath);
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
-            $"{Path.GetFileName(ProjectPath)} · 대본 {project.Scripts.Count}개 · " +
-            $"노드 {project.EnumerateNodes().Count()}개" +
+            $"{Path.GetFileName(ProjectPath)} · 노드 {project.EnumerateNodes().Count()}개" +
             alignment +
             PresentationBackupNote(loaded.PresentationBackupDirectory);
 

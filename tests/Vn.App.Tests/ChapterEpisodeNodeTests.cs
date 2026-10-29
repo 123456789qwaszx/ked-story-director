@@ -50,13 +50,13 @@ public sealed class ChapterEpisodeNodeTests
         Assert.True(editor.FindControl<Button>("AddLineButton")!.IsEnabled);
 
         DialogueNode node = session.Project.FindDialogue(nodeId)!;
-        int before = session.Project.FindScript(node.ScriptId)!.ActiveLines.Count();
+        int before = node.Script.ActiveLines.Count();
 
         editor.FindControl<Button>("AddLineButton")!
             .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(before + 1, session.Project.FindScript(node.ScriptId)!.ActiveLines.Count());
+        Assert.Equal(before + 1, node.Script.ActiveLines.Count());
     });
 
     [Fact]
@@ -127,7 +127,7 @@ public sealed class ChapterEpisodeNodeTests
         DialogueNode node = session.Project.FindDialogue(nodeId)!;
 
         Assert.Contains(
-            session.Project.FindScript(node.ScriptId)!.Locales
+            node.Script.Locales
                 .SelectMany(locale => locale.Entries.Values),
             line => line.Text == "연출 그래프에서 고친 대사");
     });
@@ -342,8 +342,8 @@ public sealed class ChapterEpisodeNodeTests
 
         // 대사 두 줄. 새 카드는 빈 줄 하나로 서는데, 그 줄을 먼저 채워야 붙여넣기가 그것을
         // 지울 후보로 보지 않는다(ScenarioPasteTests와 같은 준비).
-        ScriptDocument script = session.Project.FindScript(card.ScriptId)!;
-        session.Editor.SetScriptLineText(script.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
+        ScriptDocument script = card.Script;
+        session.Editor.SetScriptLineText(card.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
 
         ScenarioPasteOutcome pasted = session.Editor.ApplyScenarioText(
             card.Id, "윌로: 첫 줄\n라루: 둘째 줄", session.Definition, confirmDeletes: true);

@@ -21,7 +21,7 @@ public sealed class ChapterBranchMarkersTests
 
         Assert.Empty(ChapterBranchMarkers.For(editor.Project, "ch01"));
 
-        string lineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
+        string lineId = caller.Script.ActiveLines.First().Id;
         DialogueNode branch = editor.AddBranchMarker(caller.Id, lineId);
 
         ChapterBranchMarkers.Marker marker =
@@ -39,10 +39,10 @@ public sealed class ChapterBranchMarkersTests
         // ⚠ 확장(LineExtensions)의 순서는 <b>손댄 차례</b>라 사람이 읽는 차례가 아니다.
         (ProjectEditor editor, DialogueNode caller) = World();
 
-        editor.InsertScriptLine(caller.ScriptId!);
-        editor.InsertScriptLine(caller.ScriptId!);
+        editor.InsertScriptLine(caller.Id);
+        editor.InsertScriptLine(caller.Id);
 
-        List<string> lines = editor.Project.FindScript(caller.ScriptId)!.ActiveLines
+        List<string> lines = caller.Script.ActiveLines
             .Select(line => line.Id).ToList();
 
         // 뒤에서 앞으로 뚫는다 — 순서가 손댄 차례라면 여기서 뒤집혀 나온다.
@@ -59,9 +59,9 @@ public sealed class ChapterBranchMarkersTests
     {
         (ProjectEditor editor, DialogueNode caller) = World();
 
-        editor.InsertScriptLine(caller.ScriptId!);
+        editor.InsertScriptLine(caller.Id);
 
-        List<string> lines = editor.Project.FindScript(caller.ScriptId)!.ActiveLines
+        List<string> lines = caller.Script.ActiveLines
             .Select(line => line.Id).ToList();
 
         editor.AddBranchMarker(caller.Id, lines[0]);
@@ -80,7 +80,7 @@ public sealed class ChapterBranchMarkersTests
         StoryFile elsewhere = editor.AddStoryFile("낙서");
         DialogueNode outsider = editor.AddDialogueNode(elsewhere.Id, 0, 0, "바깥");
 
-        string lineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
+        string lineId = caller.Script.ActiveLines.First().Id;
         caller.RequireExtension(lineId).DetourTargetNodeId = outsider.Id;
 
         Assert.Empty(ChapterBranchMarkers.For(editor.Project, "ch01"));

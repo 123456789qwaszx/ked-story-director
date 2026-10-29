@@ -26,7 +26,7 @@ Avalonia 데스크톱 도구.** 원고(프로젝트 파일)는 연출 도구 [`k
 | 층 | 화면 | 값이 사는 곳 |
 |---|---|---|
 | 기획 — 에피소드 · 간선 · 조건 · 스탯 | ① 챕터 그래프 | `StoryProject.Chapters`(`ChapterDocument`) |
-| 대사 — 카드 · 글 · 분기 · 조건 갈래 | ② 연출 그래프 | `StoryProject.Files`(판 = 챕터 1:1) · `StoryProject.Scripts`(대본) |
+| 대사 — 카드 · 글 · 분기 · 조건 갈래 | ② 연출 그래프 | `StoryProject.Files`(판 = 챕터 1:1) — 카드마다 제 대본(`DialogueNode.Script`) |
 
 ## 3. 세 저장소 관계
 

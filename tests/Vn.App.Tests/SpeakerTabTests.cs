@@ -202,7 +202,7 @@ public sealed class SpeakerTabTests : IDisposable
     private static string FirstSpeaker(AuthoringSession session, string chapterId, string episodeId)
     {
         DialogueNode card = EpisodeNaming.CardFor(session.Project, chapterId, episodeId)!;
-        ScriptDocument script = session.Project.FindScript(card.ScriptId)!;
+        ScriptDocument script = card.Script;
 
         return script.ActiveLines
             .Select(line => script.Text(line.Id).Speaker)

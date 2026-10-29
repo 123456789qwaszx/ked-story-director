@@ -8,10 +8,12 @@ namespace Vn.Authoring.Model;
 ///
 /// 세 종류의 데이터가 한 지붕 아래 있고, 서로 겹치지 않는다.
 /// <code>
-/// Scripts       작가의 대본에서 나온 줄 정체성과 locale별 화자·대사   ← 대사 본문의 유일한 원본
-/// Files/Nodes   그 줄들에 얹는 대사 논리와 실행 흐름
+/// Files/Nodes   대사 카드 — 제 대본(줄 정체성과 locale별 화자·대사)과 그 줄들에 얹는 대사 논리 · 실행 흐름
 /// Chapters      기획자의 챕터 구조
 /// </code>
+///
+/// ⛔ 대본은 2026-10-29까지 카드와 따로 선 목록(<c>Scripts</c>)이었고 카드가 Id로 가리켰다. 카드와 늘 1:1이 된 뒤로
+/// 카드가 제 대본을 직접 든다(<see cref="DialogueNode.Script"/> · <c>docs/plans/script-merge.md</c> S2).
 ///
 /// ⛔ <b>연출은 여기 없다</b> (2026-10-29). 연출 노드 · 명령 공급 · 발행 결과 · 곡선 · 빠른 명령 · 에셋
 /// 설정은 <c>ked-story-compositor</c>의 것이다 — 그 툴은 이 파일을 읽기만 하고 연출은 제 파일에 둔다.
@@ -39,9 +41,6 @@ public sealed class StoryProject
 
     public string Title { get; set; } = "새 프로젝트";
 
-    /// <summary>작가의 대본에서 나온 산출물. 화자·대사의 유일한 수정 가능한 원본이다.</summary>
-    public List<ScriptDocument> Scripts { get; init; } = new();
-
     public List<StoryFile> Files { get; init; } = new();
 
     /// <summary>
@@ -51,7 +50,7 @@ public sealed class StoryProject
     /// ⛔ 이 목록이 서기 전까지 그 값들의 주인은 <c>chapters/{Id}.xlsx</c>였다 — 툴은
     /// 셀을 고치고 파일을 다시 읽었다. 이제 주인이 여기이고 워크북은 <b>산출물</b>이다.
     ///
-    /// ⚠ <b>대본과 짝을 이룬다.</b> <see cref="Scripts"/>가 대사 본문의 원본이듯 이쪽이
+    /// ⚠ <b>대본과 짝을 이룬다.</b> 카드의 대본(<see cref="DialogueNode.Script"/>)이 대사 본문의 원본이듯 이쪽이
     /// 구조의 원본이고, 둘을 잇는 것은 <c>DialogueNode.MarkedEpisodeId</c>다.
     /// </summary>
     public List<ChapterDocument> Chapters { get; init; } = new();
@@ -114,30 +113,9 @@ public sealed class StoryProject
 
     public DialogueNode? FindDialogue(string? nodeId) => FindNode(nodeId) as DialogueNode;
 
-    public ScriptDocument? FindScript(string? scriptId)
-    {
-        return scriptId is null
-            ? null
-            : Scripts.FirstOrDefault(
-                script => string.Equals(script.Id, scriptId, StringComparison.Ordinal));
-    }
-
-    /// <summary>
-    /// 어느 대사 카드도 가리키지 않는 대본을 걷는다 (2026-10-29 · <c>docs/plans/script-merge.md</c> S1).
-    ///
-    /// ⛔ 그 전에는 대본을 <b>일부러</b> 안 지웠다 — "카드를 지워도 글은 남고 되돌리기 한 번이면 카드가 제 대본을 다시
-    /// 찾는다"였다. 되돌리기는 프로젝트를 통째로 되살리므로(스냅샷) 대본을 남겨 둘 까닭이 없었고, 남은 대본은 저장할 때마다
-    /// 매니페스트와 <c>script/</c> 폴더에 쌓였다.
-    /// </summary>
-    /// <returns>걷은 대본 수.</returns>
-    public int RemoveUnreferencedScripts()
-    {
-        var referenced = new HashSet<string>(
-            EnumerateNodes().OfType<DialogueNode>().Select(node => node.ScriptId).OfType<string>(),
-            StringComparer.Ordinal);
-
-        return Scripts.RemoveAll(script => !referenced.Contains(script.Id));
-    }
+    /// <summary>모든 대사 카드의 대본 — 카드 순서대로. 화자 개명처럼 대본 전체를 훑는 일이 쓴다.</summary>
+    public IEnumerable<ScriptDocument> EnumerateScripts() =>
+        EnumerateNodes().OfType<DialogueNode>().Select(node => node.Script);
 
     /// <summary>
     /// 프로젝트 안의 모든 SetNode 조건. 파일 순서, SetNode 순서, 조건 순서를 지킨다.

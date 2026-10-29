@@ -153,7 +153,7 @@ public class ScriptSyncTests
 
         // 적용을 거부하고 대본은 손대지 않는다.
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(
-            () => fixture.Editor.ApplyScriptSync(plan));
+            () => fixture.Editor.ApplyScriptSync(fixture.Dialogue.Id, plan));
         Assert.Contains("확인이 필요한", error.Message, StringComparison.Ordinal);
         Assert.Equal(before, fixture.LineIds());
         Assert.Equal("둘", fixture.Script.Text(before[1]).Text);
@@ -214,15 +214,19 @@ internal sealed class SyncFixture
         project.Files.Add(file);
 
         Editor = new ProjectEditor(project, newLineId: () => $"ln_{++_nextLine:D3}");
-        Script = Editor.AddScript("동기화 대본");
-        Dialogue = Editor.AddDialogueNode(file.Id, name: "장면", scriptId: Script.Id);
+        Dialogue = Editor.AddDialogueNode(file.Id, name: "장면");
+
+        // 빈 대본에서 시작한다 — 카드가 들고 선 빈 첫 줄을 걷고 LineId 번호도 처음으로 되돌린다.
+        Script.Lines.Clear();
+        Script.RequireLocale(Script.PrimaryLocale).Entries.Clear();
+        _nextLine = 0;
 
         Sync(initialText);
     }
 
     public ProjectEditor Editor { get; }
 
-    public ScriptDocument Script { get; }
+    public ScriptDocument Script => Dialogue.Script;
 
     public DialogueNode Dialogue { get; }
 
@@ -255,7 +259,7 @@ internal sealed class SyncFixture
 
         if (!plan.HasConflicts)
         {
-            Editor.ApplyScriptSync(plan);
+            Editor.ApplyScriptSync(Dialogue.Id, plan);
         }
 
         return plan;

@@ -45,7 +45,7 @@ public sealed class SupplyScopeTests
 
         string fileId = editor.Project.Files.Single(file => file.Name == "ch02").Id;
         DialogueNode node = editor.AddDialogueNode(fileId, 0, 0, "root");
-        string lineId = editor.Project.FindScript(node.ScriptId)!.ActiveLines.First().Id;
+        string lineId = node.Script.ActiveLines.First().Id;
 
         editor.SetLineTransition(
             node.Id,

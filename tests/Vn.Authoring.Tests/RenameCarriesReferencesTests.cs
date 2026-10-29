@@ -36,11 +36,9 @@ public sealed class RenameCarriesReferencesTests
 
         editor.AddCondition(setNode.Id, "열쇠 있음", ability ? "$열쇠 == true" : "$열쇠 >= 1");
 
-        ScriptDocument script = editor.AddScript("본문");
-        ScriptLine line = editor.InsertScriptLine(script.Id);
-        editor.SetScriptLineText(script.Id, line.Id, "라루", "문을 연다");
-
-        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문", scriptId: script.Id);
+        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문");
+        ScriptLine line = dialogue.Script.ActiveLines.Single();   // 카드는 빈 첫 줄을 들고 선다
+        editor.SetScriptLineText(dialogue.Id, line.Id, "라루", "문을 연다");
 
         return new World(editor, file, setNode, dialogue, line.Id);
     }
@@ -91,7 +89,7 @@ public sealed class RenameCarriesReferencesTests
 
         Assert.Equal(1, world.Editor.RenameSpeaker("라루", "라루엘"));
 
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
         Assert.Equal("라루엘", script.Text(world.LineId, script.PrimaryLocale).Speaker);
     }
 
@@ -102,10 +100,10 @@ public sealed class RenameCarriesReferencesTests
         //   `ウィロー`면 그것은 이 개명의 대상이 아니고, 아직 번역 전이라 한국어 이름을
         //   그대로 들고 있는 locale은 자연히 함께 따라온다.
         World world = Build();
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
 
-        world.Editor.SetScriptLineText(script.Id, world.LineId, "ラル", "扉を開く", locale: "ja-JP");
-        world.Editor.SetScriptLineText(script.Id, world.LineId, "라루", "문을 연다", locale: "en-US");
+        world.Editor.SetScriptLineText(world.Dialogue.Id, world.LineId, "ラル", "扉を開く", locale: "ja-JP");
+        world.Editor.SetScriptLineText(world.Dialogue.Id, world.LineId, "라루", "문을 연다", locale: "en-US");
 
         world.Editor.RenameSpeaker("라루", "라루엘");
 
@@ -121,7 +119,7 @@ public sealed class RenameCarriesReferencesTests
         // 개명은 줄이 말하는 내용을 바꾸지 않는다 — 올리면 화자 하나에 그 화자의 모든 줄이
         // 재작업 대상이 된다.
         World world = Build();
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
         int before = script.FindLine(world.LineId)!.Revision;
 
         world.Editor.RenameSpeaker("라루", "라루엘");
@@ -133,12 +131,12 @@ public sealed class RenameCarriesReferencesTests
     public void 화자_개명은_되돌릴_수_있다()
     {
         World world = Build();
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
 
         world.Editor.RenameSpeaker("라루", "라루엘");
         world.Editor.Undo();
 
-        script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        script = world.Editor.Project.FindDialogue(world.Dialogue.Id)!.Script;   // 되돌리기는 프로젝트를 갈아 끼운다
         Assert.Equal("라루", script.Text(world.LineId, script.PrimaryLocale).Speaker);
     }
 }

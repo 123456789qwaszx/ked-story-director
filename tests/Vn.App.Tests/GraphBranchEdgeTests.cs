@@ -31,9 +31,9 @@ public sealed class GraphBranchEdgeTests
 
         AuthoringSession session = window.SessionProbe;
         DialogueNode source = session.Editor.AddDialogueNode(
-            session.ActiveFile!.Id, name: "본문", scriptId: session.Editor.AddScript("본문 대본").Id);
-        ScriptLine line = session.Editor.InsertScriptLine(source.ScriptId!);
-        session.Editor.SetScriptLineText(source.ScriptId!, line.Id, "라루", "첫 줄");
+            session.ActiveFile!.Id, name: "본문");
+        ScriptLine line = source.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
+        session.Editor.SetScriptLineText(source.Id, line.Id, "라루", "첫 줄");
         DialogueNode made = session.Editor.AddBranchMarker(source.Id, line.Id);
 
         window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;

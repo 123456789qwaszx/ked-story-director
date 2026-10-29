@@ -23,13 +23,17 @@ internal sealed class Sample
 
         Editor = new ProjectEditor(project, newLineId: NextLineId);
 
-        Script = Editor.AddScript("본문 대본");
-
         SetNode = Editor.AddSetNode(File.Id, name: "설정");
         ConditionA = Editor.AddCondition(SetNode.Id, "호감 높음", "favor >= 5");
         ConditionB = Editor.AddCondition(SetNode.Id, "신뢰 높음", "trust >= 3");
 
-        Dialogue = Editor.AddDialogueNode(File.Id, name: "본문", scriptId: Script.Id);
+        Dialogue = Editor.AddDialogueNode(File.Id, name: "본문");
+
+        // 본문 카드는 <b>빈 대본</b>으로 시작한다 — 시험마다 줄을 처음부터 쌓는다(<see cref="Line"/>). 카드가 태어날 때
+        // 든 빈 첫 줄을 걷고 LineId 번호도 처음으로 되돌린다(대본이 카드 안으로 들어오기 전과 같은 번호가 나온다).
+        Dialogue.Script.Lines.Clear();
+        Dialogue.Script.RequireLocale(Dialogue.Script.PrimaryLocale).Entries.Clear();
+        _nextLineNumber = 0;
         // 이 노드는 실제 제품의 에피소드(엑셀노드) 자리다 — 기본 출구는 엑셀노드만
         // 가지므로(2026-08-21) 그렇게 표시해야 출구 테스트들이 실물과 같은 길을 지난다.
         // 대상 노드 셋(TargetA·TargetB·TargetDefault)은 커스텀(자유) 씬 그대로다.
@@ -46,7 +50,11 @@ internal sealed class Sample
 
     public StoryFile File { get; }
 
-    public ScriptDocument Script { get; }
+    /// <summary>
+    /// 본문 카드의 대본 — 지금 프로젝트에서 찾는다. 되돌리기는 프로젝트를 새 객체로 갈아 끼우므로 들고 있던
+    /// <see cref="Dialogue"/>의 대본은 낡는다.
+    /// </summary>
+    public ScriptDocument Script => Project.FindDialogue(Dialogue.Id)!.Script;
 
     public SetNode SetNode { get; }
 
@@ -65,8 +73,8 @@ internal sealed class Sample
     /// <summary>대본에 줄을 하나 붙이고 그 줄의 LineId를 돌려준다.</summary>
     public string Line(string text, LineConditionTransition? transition = null)
     {
-        ScriptLine line = Editor.InsertScriptLine(Script.Id);
-        Editor.SetScriptLineText(Script.Id, line.Id, string.Empty, text);
+        ScriptLine line = Editor.InsertScriptLine(Dialogue.Id);
+        Editor.SetScriptLineText(Dialogue.Id, line.Id, string.Empty, text);
 
         if (transition is not null)
         {
@@ -103,10 +111,9 @@ internal sealed class Sample
     /// <summary>대본 한 줄짜리 종점 노드. 문제 없이 펼쳐지는 상태로 만들어 둔다.</summary>
     private DialogueNode AddEndNode(string name)
     {
-        ScriptDocument script = Editor.AddScript(name + " 대본");
-        ScriptLine line = Editor.InsertScriptLine(script.Id);
-        Editor.SetScriptLineText(script.Id, line.Id, "화자", name);
-        return Editor.AddDialogueNode(File.Id, name: name, scriptId: script.Id);
+        DialogueNode node = Editor.AddDialogueNode(File.Id, name: name);   // 빈 첫 줄을 들고 선다
+        Editor.SetScriptLineText(node.Id, node.Script.ActiveLines.Single().Id, "화자", name);
+        return node;
     }
 
     private string NextLineId() => $"ln_{++_nextLineNumber:D3}";

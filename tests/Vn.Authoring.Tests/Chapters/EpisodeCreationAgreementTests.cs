@@ -102,8 +102,7 @@ public sealed class EpisodeCreationAgreementTests
             editor.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => string.Equals(EpisodeNaming.EpisodeIdOf(node), episodeId, StringComparison.Ordinal));
 
-        Assert.NotNull(card.ScriptId);
-        Assert.NotNull(editor.Project.FindScript(card.ScriptId));
+        Assert.NotEmpty(card.Script.ActiveLines);   // 빈 첫 줄을 든 제 대본과 함께 선다
     }
 
     private static string Seed(ProjectEditor editor)

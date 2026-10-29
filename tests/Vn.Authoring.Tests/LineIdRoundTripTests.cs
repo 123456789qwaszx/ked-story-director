@@ -89,7 +89,7 @@ public class LineIdRoundTripTests
 
         Assert.True(outcome.Applied, outcome.Summary());
         Assert.Empty(outcome.Plan!.Conflicts);
-        Assert.Equal("말이 없었다.", editor.Project.FindScript(node.ScriptId!)!.Text("ln_002").Text);
+        Assert.Equal("말이 없었다.", node.Script.Text("ln_002").Text);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class LineIdRoundTripTests
         Assert.Equal(1, outcome.Plan!.Count(ScriptSyncKind.Modified));
         Assert.Equal(
             ["ln_001", "ln_002"],
-            editor.Project.FindScript(node.ScriptId!)!.ActiveLines.Select(line => line.Id));
+            node.Script.ActiveLines.Select(line => line.Id));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class LineIdRoundTripTests
 
         Assert.Equal(
             ["ln_001", "ln_003", "ln_004", "ln_002", "ln_005"],
-            editor.Project.FindScript(node.ScriptId!)!.ActiveLines.Select(line => line.Id));
+            node.Script.ActiveLines.Select(line => line.Id));
 
         // 하나도 새로 발급되지 않았다 — 전부 원래의 신원 그대로다.
         Assert.Equal(0, outcome.Plan!.Count(ScriptSyncKind.Inserted));
@@ -157,7 +157,7 @@ public class LineIdRoundTripTests
         Assert.True(outcome.Applied, outcome.Summary());
         Assert.Equal(1, outcome.Plan!.Count(ScriptSyncKind.Inserted));
 
-        List<string> ids = editor.Project.FindScript(node.ScriptId!)!
+        List<string> ids = node.Script
             .ActiveLines.Select(line => line.Id).ToList();
 
         Assert.Equal(3, ids.Count);
@@ -181,7 +181,7 @@ public class LineIdRoundTripTests
         Assert.True(outcome.Applied, outcome.Summary());
         Assert.Equal(
             ["ln_001", "ln_002"],
-            editor.Project.FindScript(node.ScriptId!)!.ActiveLines.Select(line => line.Id));
+            node.Script.ActiveLines.Select(line => line.Id));
     }
 
     // ── 옵션 (G3-2) ─────────────────────────────────────────────────────────
@@ -241,15 +241,14 @@ public class LineIdRoundTripTests
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
         DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");
-        string scriptId = node.ScriptId!;
 
-        editor.SetScriptLineText(scriptId, lines[0].LineId, lines[0].Speaker, lines[0].Text);
+        editor.SetScriptLineText(node.Id, lines[0].LineId, lines[0].Speaker, lines[0].Text);
 
         foreach ((string lineId, string speaker, string text) in lines.Skip(1))
         {
-            ScriptLine created = editor.InsertScriptLine(scriptId);
+            ScriptLine created = editor.InsertScriptLine(node.Id);
             Assert.Equal(lineId, created.Id);
-            editor.SetScriptLineText(scriptId, created.Id, speaker, text);
+            editor.SetScriptLineText(node.Id, created.Id, speaker, text);
         }
 
         return (editor, node);

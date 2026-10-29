@@ -142,8 +142,7 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        string scriptId = node.ScriptId ?? _session.Editor.EnsureDialogueScript(node.Id).Id;
-        ScriptLine line = _session.Editor.InsertScriptLine(scriptId); // 인덱스 없음 = 맨 끝
+        ScriptLine line = _session.Editor.InsertScriptLine(node.Id); // 인덱스 없음 = 맨 끝
         SelectLine(line.Id);
     }
 
@@ -350,10 +349,12 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>줄 카드 우클릭 메뉴 (W47) — 추가·삭제는 ＋ 플라이아웃과 같은 편집 경로 하나를 쓴다.</summary>
     private void ShowLineContextFlyout(Control anchor, string lineId)
     {
-        if (_session?.Project.FindDialogue(_nodeId) is not { } node || node.ScriptId is not { } scriptId)
+        if (_session?.Project.FindDialogue(_nodeId) is not { } node)
         {
             return;
         }
+
+        string nodeId = node.Id;
 
         var panel = new StackPanel { Spacing = 2, MinWidth = 140 };
 
@@ -389,7 +390,7 @@ public partial class DialogueNodeEditor : UserControl
         remove.Click += (_, _) =>
         {
             flyout.Hide();
-            UiGuard.Run(_session, "줄 삭제", () => _session!.Editor.RetireScriptLine(scriptId, lineId));
+            UiGuard.Run(_session, "줄 삭제", () => _session!.Editor.RetireScriptLine(nodeId, lineId));
         };
 
         // 마우스 지점에서 연다 (소유자 지시) — 카드 기준으로 뜨면 클릭한 곳과 멀어 헷갈린다.
@@ -422,15 +423,12 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        // 가져오기로 만들었던 옛 프로젝트의 대본 없는 노드도 여기서 처음 쓸 수 있게 된다.
-        string scriptId = node.ScriptId ?? _session.Editor.EnsureDialogueScript(node.Id).Id;
-
         // 선택한 줄이 있으면 그 바로 아래에 끼워 넣는다. 없으면 맨 끝, 비어 있으면 첫 줄.
         int? at = null;
 
-        if (_selectedLineId is not null && _session.Project.FindScript(scriptId) is { } document)
+        if (_selectedLineId is not null)
         {
-            int index = document.Lines.FindIndex(line =>
+            int index = node.Script.Lines.FindIndex(line =>
                 string.Equals(line.Id, _selectedLineId, StringComparison.Ordinal));
 
             if (index >= 0)
@@ -439,7 +437,7 @@ public partial class DialogueNodeEditor : UserControl
             }
         }
 
-        ScriptLine line = _session.Editor.InsertScriptLine(scriptId, at);
+        ScriptLine line = _session.Editor.InsertScriptLine(node.Id, at);
 
         // 새 줄이 새 선택이다 — 프리뷰 기준도 함께 옮긴다.
         SelectLine(line.Id);
@@ -586,13 +584,13 @@ public partial class DialogueNodeEditor : UserControl
         };
 
         AutoCompleteBox? speaker = null;
-        string scriptId = script.ScriptId ?? string.Empty;
+        string nodeId = _nodeId ?? string.Empty;
 
         // 글자가 바뀔 때마다 대본에 넣되, 그것이 카드 목록을 다시 만들지는 않는다.
         // 편집기가 내용 변경과 구조 변경을 구분해서 알리기 때문에 가능하다.
         void Commit()
         {
-            if (_building || scriptId.Length == 0)
+            if (_building || nodeId.Length == 0)
             {
                 return;
             }
@@ -605,7 +603,7 @@ public partial class DialogueNodeEditor : UserControl
             //    <i>"안 그러면 다음 동기화가 사람의 글을 지운다"</i>였다. 다시 읽는 동기화가
             //    없어졌으므로 지울 것도 없다 — 원본은 프로젝트다.
             _session!.Editor.SetScriptLineText(
-                scriptId, resolved.Line.LineId, nextSpeaker, nextText, script.Locale);
+                nodeId, resolved.Line.LineId, nextSpeaker, nextText, script.Locale);
         }
 
         // ⛔ 엑셀노드만 초점을 잃을 때 내던 갈래는 2026-09-16에 사라졌다 (R-E). 이유는
@@ -691,7 +689,7 @@ public partial class DialogueNodeEditor : UserControl
         Grid.SetColumn(text, 2);
         row.Children.Add(text);
 
-        Button plus = BuildPlusButton(node, script, resolved);
+        Button plus = BuildPlusButton(node, resolved);
         Grid.SetColumn(plus, 3);
         row.Children.Add(plus);
 
@@ -965,7 +963,7 @@ public partial class DialogueNodeEditor : UserControl
     /// 행 오른쪽의 ＋ — 줄 추가가 아니라 <b>이 줄에</b> 조건·선택지·Set·출구를 더하는
     /// 버튼이다. 항목은 전부 기존 데이터 구조와 기존 편집 컨트롤을 그대로 쓴다.
     /// </summary>
-    private Button BuildPlusButton(DialogueNode node, DialogueScript script, ResolvedLine resolved)
+    private Button BuildPlusButton(DialogueNode node, ResolvedLine resolved)
     {
         var plus = new Button
         {
@@ -978,14 +976,13 @@ public partial class DialogueNodeEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center
         };
         ToolTip.SetTip(plus, "이 줄에 조건·선택지·Set·출구를 더하거나 고칩니다.");
-        plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, script, resolved);
+        plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, resolved);
         return plus;
     }
 
     private void OpenLineMetaFlyout(
         Control anchor,
         DialogueNode node,
-        DialogueScript script,
         ResolvedLine resolved)
     {
         var panel = new StackPanel { Spacing = 4, MinWidth = 250 };
@@ -1104,15 +1101,15 @@ public partial class DialogueNodeEditor : UserControl
         // ⛔ 엑셀노드에서 이 구역을 통째로 안 내놓던 갈래는 2026-09-16에 사라졌다 (R-E) —
         //    줄 구성의 주인이 프로젝트가 됐으므로 모든 노드에서 선다.
         Section("줄");
-        string scriptId = script.ScriptId ?? string.Empty;
+        string nodeId = _nodeId ?? string.Empty;
         string lineId = resolved.Line.LineId;
         var lineRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         lineRow.Children.Add(SmallButton("▲ 위로", () =>
-            _session!.Editor.MoveScriptLine(scriptId, lineId, -1)));
+            _session!.Editor.MoveScriptLine(nodeId, lineId, -1)));
         lineRow.Children.Add(SmallButton("▼ 아래로", () =>
-            _session!.Editor.MoveScriptLine(scriptId, lineId, 1)));
+            _session!.Editor.MoveScriptLine(nodeId, lineId, 1)));
         Button remove = SmallButton("✕ 삭제", () =>
-            _session!.Editor.RetireScriptLine(scriptId, lineId));
+            _session!.Editor.RetireScriptLine(nodeId, lineId));
         ToolTip.SetTip(remove, "대본에서 이 줄을 뺍니다.");
         lineRow.Children.Add(remove);
         panel.Children.Add(lineRow);

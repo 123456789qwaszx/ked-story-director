@@ -210,15 +210,15 @@ public sealed class ChapterGraphSyncViewTests
     private static void WriteLines(
         AuthoringSession session, string episodeId, params (string Speaker, string Text)[] lines)
     {
-        string scriptId = EpisodeNaming.CardFor(session.Project, "ch05", episodeId)!.ScriptId!;
+        DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch05", episodeId)!;
 
         for (int index = 0; index < lines.Length; index++)
         {
             string lineId = index == 0
-                ? session.Project.FindScript(scriptId)!.ActiveLines.First().Id
-                : session.Editor.InsertScriptLine(scriptId).Id;
+                ? card.Script.ActiveLines.First().Id
+                : session.Editor.InsertScriptLine(card.Id).Id;
 
-            session.Editor.SetScriptLineText(scriptId, lineId, lines[index].Speaker, lines[index].Text);
+            session.Editor.SetScriptLineText(card.Id, lineId, lines[index].Speaker, lines[index].Text);
         }
 
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

@@ -163,8 +163,8 @@ public sealed class ChapterRailTests
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
 
         DialogueNode ep00 = AddEpisodeCard(session, fileId, "EP00");
-        ScriptDocument script = session.Project.FindScript(ep00.ScriptId)!;
-        session.Editor.SetScriptLineText(script.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
+        ScriptDocument script = ep00.Script;
+        session.Editor.SetScriptLineText(ep00.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
         AddEpisodeCard(session, fileId, "EP01").Layout.X = 1200;
 
         // 진행 간선을 일부러 먼저 둔다 — 그래도 화면은 선택지가 위여야 한다(소유자 보고: 반대면 헷갈린다).

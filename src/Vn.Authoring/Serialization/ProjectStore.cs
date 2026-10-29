@@ -152,7 +152,7 @@ public static class ProjectStore
         // 한 파일의 데이터가 잘못됐다는 이유로 앞 파일만 새 내용으로 바뀌는 일을 줄인다.
         var writes = new List<PendingWrite>();
 
-        foreach (ScriptDocument script in project.Scripts)
+        foreach (ScriptDocument script in project.EnumerateScripts())
         {
             writes.Add(new PendingWrite(
                 Resolve(rootDirectory, DefaultScriptPath(script.Id), ScriptDocumentJson.FileExtension),
@@ -244,6 +244,7 @@ public static class ProjectStore
             StartNodeId = manifest.StartNodeId
         };
         storyCarriesPresentation = false;
+        var scripts = new List<ScriptDocument>();
 
         foreach (ScriptFileReference reference in manifest.Scripts)
         {
@@ -265,8 +266,11 @@ public static class ProjectStore
                     $"manifest의 대본 Id '{reference.Id}'와 파일의 Id '{script.Id}'가 다릅니다.");
             }
 
-            project.Scripts.Add(script);
+            scripts.Add(script);
         }
+
+        // 카드마다 제 대본을 꽂는다(S2) — 어느 카드도 안 가리키는 대본은 받아 가는 카드가 없으니 여기서 버려진다(S1).
+        var table = new ScriptTable(scripts);
 
         foreach (ProjectStoryFileReference reference in manifest.Files)
         {
@@ -281,7 +285,8 @@ public static class ProjectStore
 
             StoryFile file = StoryFileJson.Read(
                 File.ReadAllText(storyPath, new UTF8Encoding(false)),
-                out bool carried);
+                out bool carried,
+                table);
             storyCarriesPresentation |= carried;
 
             if (!string.Equals(file.Id, reference.Id, StringComparison.Ordinal))
@@ -306,10 +311,6 @@ public static class ProjectStore
         //    않는다(WriterSpeaker는 가변이라 복제한다).
         project.Chapters.AddRange(manifest.Chapters);
         project.WriterSpeakers.AddRange(manifest.WriterSpeakers.Select(speaker => speaker.Clone()));
-
-        // 어느 카드도 안 가리키는 대본은 여기서 버린다(S1) — 2026-10-29까지 카드를 지워도 대본이 남아 쌓였다.
-        // 다음 저장이 매니페스트에서도 뺀다.
-        project.RemoveUnreferencedScripts();
 
         JsonSupport.ValidateProject(project);
         return project;

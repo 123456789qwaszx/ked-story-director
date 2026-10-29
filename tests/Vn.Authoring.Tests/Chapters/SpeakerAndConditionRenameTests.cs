@@ -54,9 +54,8 @@ public sealed class SpeakerAndConditionRenameTests
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
 
-        ScriptDocument script = editor.AddScript("본문");
-        ScriptLine line = editor.InsertScriptLine(script.Id);
-        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문", scriptId: script.Id);
+        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문");
+        ScriptLine line = dialogue.Script.ActiveLines.Single();   // 카드는 빈 첫 줄을 들고 선다
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor, file.Id, ChapterWith("신뢰 높음"));
@@ -116,9 +115,9 @@ public sealed class SpeakerAndConditionRenameTests
 
         // 챕터 판에 세우면 에피소드도 함께 선다 — 이름이 곧 EpisodeId다.
         DialogueNode node = editor.AddDialogueNode(fileId, name: episodeId);
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         ScriptLine line = script.ActiveLines.First();
-        editor.SetScriptLineText(script.Id, line.Id, speaker, "문을 연다");
+        editor.SetScriptLineText(node.Id, line.Id, speaker, "문을 연다");
 
         return new World(editor, script, line);
     }
@@ -154,9 +153,9 @@ public sealed class SpeakerAndConditionRenameTests
         var editor = new ProjectEditor(new StoryProject());
         string fileId = editor.AddStoryFile("낙서").Id;
         DialogueNode node = editor.AddDialogueNode(fileId, name: "메모");
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         ScriptLine line = script.ActiveLines.First();
-        editor.SetScriptLineText(script.Id, line.Id, "라루", "혼잣말");
+        editor.SetScriptLineText(node.Id, line.Id, "라루", "혼잣말");
 
         Assert.Equal(1, editor.RenameSpeaker("라루", "라루엘"));
 

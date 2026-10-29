@@ -56,21 +56,6 @@ public static class ConditionFlowResolver
         var problems = new List<FlowProblem>();
         var builders = new List<BranchBuilder>();
 
-        if (script.ScriptId is null)
-        {
-            problems.Add(new FlowProblem(
-                FlowProblemKind.MissingScript,
-                null,
-                "이 대사 노드가 읽을 대본이 없습니다. 대본을 만들고 노드에 연결하세요."));
-        }
-        else if (!script.IsResolved)
-        {
-            problems.Add(new FlowProblem(
-                FlowProblemKind.MissingScript,
-                null,
-                $"대본 '{script.ScriptId}'를 프로젝트에서 찾을 수 없습니다."));
-        }
-
         // 줄마다 (전환 적용 뒤 갈래, 적용 전 갈래, 깊이, 적용 전 깊이). 아직 완성되지 않은 갈래를 가리킨다.
         var perLine = new (BranchBuilder? Current, BranchBuilder? Preceding, int Depth, int PrecedingDepth)[script.Lines.Count];
 

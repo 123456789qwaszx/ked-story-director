@@ -45,7 +45,7 @@ public sealed class FreeSceneLiftTests
         editor.UpdateEpisode("ch01", "root", sceneId: "sc_아침");
 
         DialogueNode source = Source(editor);
-        string lineId = editor.Project.FindScript(source.ScriptId)!.ActiveLines.First().Id;
+        string lineId = source.Script.ActiveLines.First().Id;
         source.RequireExtension(lineId).DetourTargetNodeId = free.Id;
 
         editor.LiftFreeScenes("ch01");

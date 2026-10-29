@@ -73,7 +73,6 @@ public sealed class DialogueResult
     public DialogueResult(
         string sourceNodeId,
         string sourceNodeName,
-        string? sourceScriptId,
         int sourceScriptRevision,
         string locale,
         IReadOnlyList<DialogueResultLine> lines,
@@ -83,7 +82,6 @@ public sealed class DialogueResult
         TrailingTransitions = trailingTransitions ?? Array.Empty<DialogueResultTransition>();
         SourceNodeId = sourceNodeId;
         SourceNodeName = sourceNodeName;
-        SourceScriptId = sourceScriptId;
         SourceScriptRevision = sourceScriptRevision;
         Locale = locale;
         Lines = lines;
@@ -94,8 +92,6 @@ public sealed class DialogueResult
     public string SourceNodeId { get; }
 
     public string SourceNodeName { get; }
-
-    public string? SourceScriptId { get; }
 
     public int SourceScriptRevision { get; }
 

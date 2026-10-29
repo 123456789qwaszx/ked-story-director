@@ -78,7 +78,7 @@ internal static class StoryNodeJson
     }
 
     /// <summary>노드 하나를 읽는다. 연출 층의 노드(<see cref="PresentationKinds"/>)면 null이다.</summary>
-    public static StoryNode? Read(JsonObject json)
+    public static StoryNode? Read(JsonObject json, ScriptTable? scripts = null)
     {
         string id = (string?)json["id"] ?? Identifier.Node();
         string name = (string?)json["name"] ?? "이름 없음";
@@ -92,7 +92,7 @@ internal static class StoryNodeJson
         StoryNode node = kind switch
         {
             "set" => ReadSetNode(json, id, name),
-            "dialogue" => ReadDialogueNode(json, id, name),
+            "dialogue" => ReadDialogueNode(json, id, name, scripts),
             _ => throw new InvalidDataException($"지원하지 않는 노드 종류 '{kind}'입니다.")
         };
 
@@ -140,16 +140,14 @@ internal static class StoryNodeJson
     }
 
     /// <summary>
-    /// 대사 노드는 <b>대본 Id와 LineId별 논리만</b> 쓴다. 화자와 대사는 대본 파일에 있다.
+    /// 대사 노드는 <b>대본 Id와 LineId별 논리만</b> 쓴다. 화자와 대사는 대본 파일에 있다(형식 3 — 카드가 든 대본을
+    /// 따로 적는다. S3에서 카드 안으로 들어온다).
     /// 조건 갈래 출구는 갈래를 여는 줄의 항목 안에 함께 적어 둔다. 별도 배열로 나누면
     /// 줄이 사라졌을 때 짝 없는 출구가 파일에 남는다.
     /// </summary>
     private static void WriteDialogueNode(DialogueNode node, JsonObject json)
     {
-        if (node.ScriptId is not null)
-        {
-            json["script"] = node.ScriptId;
-        }
+        json["script"] = node.Script.Id;
 
         if (node.MarkedEpisodeId is not null)
         {
@@ -286,11 +284,12 @@ internal static class StoryNodeJson
         return node;
     }
 
-    private static DialogueNode ReadDialogueNode(JsonObject json, string id, string name)
+    private static DialogueNode ReadDialogueNode(JsonObject json, string id, string name, ScriptTable? scripts)
     {
+        string? scriptId = (string?)json["script"];
         var node = new DialogueNode(id, name)
         {
-            ScriptId = (string?)json["script"],
+            Script = scripts?.For(id, name, scriptId) ?? new Script.ScriptDocument(scriptId),
             MarkedEpisodeId = (string?)json[EpisodeMarkKey]
         };
         HashSet<string> lineIds = new(StringComparer.Ordinal);

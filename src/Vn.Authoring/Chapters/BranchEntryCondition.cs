@@ -48,7 +48,7 @@ public static class BranchEntryCondition
             return State.Refuse("그 분기 노드를 찾지 못했습니다.");
         }
 
-        if (project.FindScript(node.ScriptId)?.ActiveLines.FirstOrDefault() is not { } first)
+        if (node.Script.ActiveLines.FirstOrDefault() is not { } first)
         {
             return State.Refuse("대본이 비어 있어 조건을 걸 자리가 없습니다 — 첫 줄을 먼저 쓰세요.");
         }

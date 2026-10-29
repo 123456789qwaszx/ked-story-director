@@ -23,7 +23,7 @@ public sealed class EdgeSideTests
         editor.MoveNode(EpisodeNaming.CardFor(editor.Project, "ch01", "start")!.Id, 2000, 0);
         DialogueNode scene = EpisodeNaming.CardFor(editor.Project, "ch01", "scene")!;
         editor.MoveNode(scene.Id, 800, 0);
-        string lineId = editor.Project.FindScript(scene.ScriptId)!.ActiveLines.First().Id;
+        string lineId = scene.Script.ActiveLines.First().Id;
         DialogueNode branch = editor.AddBranchMarker(scene.Id, lineId);
 
         editor.MoveNode(branch.Id, 1200, 300);
@@ -41,7 +41,7 @@ public sealed class EdgeSideTests
         project.Files.Add(board);
         var editor = new ProjectEditor(project);
         DialogueNode node = editor.AddDialogueNode(board.Id, 800, 0, "본문");
-        string lineId = editor.Project.FindScript(node.ScriptId)!.ActiveLines.First().Id;
+        string lineId = node.Script.ActiveLines.First().Id;
         DialogueNode branch = editor.AddBranchMarker(node.Id, lineId);
 
         editor.MoveNode(branch.Id, 100, 0);

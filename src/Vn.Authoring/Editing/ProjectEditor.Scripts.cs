@@ -43,14 +43,6 @@ public sealed record ScenarioPasteOutcome(
 /// </summary>
 public sealed partial class ProjectEditor
 {
-    public ScriptDocument AddScript(string? name = null)
-    {
-        var script = new ScriptDocument(name: name ?? NextScriptName());
-        script.RequireLocale(script.PrimaryLocale);
-
-        Mutate(() => Project.Scripts.Add(script));
-        return script;
-    }
 
     /// <summary>
     /// ScenarioOnly 텍스트를 대사 노드에 반영한다 (X12a). <b>전량 재생성은 없다</b> —
@@ -85,7 +77,7 @@ public sealed partial class ProjectEditor
     {
         ArgumentNullException.ThrowIfNull(definition);
         DialogueNode node = RequireDialogue(dialogueNodeId);
-        ScriptDocument script = EnsureDialogueScript(node.Id);
+        ScriptDocument script = node.Script;
 
         ScenarioParseResult parsed = ScenarioTextParser.Parse(text, definition);
         var problems = new List<string>(parsed.UnparsedLines);
@@ -139,7 +131,7 @@ public sealed partial class ProjectEditor
 
         Batch(() =>
         {
-            ApplyScriptSync(plan);
+            ApplyScriptSync(node.Id, plan);
             ApplyScenarioTransitions(node, transitions);
         });
 
@@ -343,39 +335,15 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 대본 없는 대사 노드(가져오기 시절의 옛 프로젝트)에 전용 대본을 만들어 잇는다 (X4).
-    /// 이미 대본이 있으면 그대로 돌려준다.
-    /// </summary>
-    public ScriptDocument EnsureDialogueScript(string dialogueNodeId)
-    {
-        DialogueNode node = RequireDialogue(dialogueNodeId);
-
-        if (Project.FindScript(node.ScriptId) is { } existing)
-        {
-            return existing;
-        }
-
-        var script = new ScriptDocument(name: $"{node.Name} 대본");
-        script.RequireLocale(script.PrimaryLocale);
-
-        Mutate(() =>
-        {
-            Project.Scripts.Add(script);
-            node.ScriptId = script.Id;
-        });
-
-        return script;
-    }
-
-    /// <summary>
-    /// 계획을 적용한다. <see cref="ScriptSyncPlan.HasConflicts"/>면 아무것도 하지 않고 거부한다.
+    /// 그 카드의 대본에 계획을 적용한다. <see cref="ScriptSyncPlan.HasConflicts"/>면 아무것도 하지 않고 거부한다.
     /// 도구가 대신 고르는 순간 작가가 쓰지 않은 연출이 다른 대사에 붙는다.
     /// </summary>
-    public void ApplyScriptSync(ScriptSyncPlan plan)
+    public void ApplyScriptSync(string dialogueNodeId, ScriptSyncPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
 
-        ScriptDocument script = RequireScript(plan.ScriptId);
+        DialogueNode node = RequireDialogue(dialogueNodeId);
+        ScriptDocument script = node.Script;
 
         if (plan.HasConflicts)
         {
@@ -443,7 +411,7 @@ public sealed partial class ProjectEditor
 
             // 은퇴한 줄이 소유하던 대사 논리는 함께 접는다 (W47) — 카드가 없는 줄의
             // 조건은 지울 진입점조차 없는 유령이 된다.
-            PruneRetiredLineLogic(script.Id, lineId => !kept.Contains(lineId));
+            PruneRetiredLineLogic(node, lineId => !kept.Contains(lineId));
 
             script.Lines.Clear();
             script.Lines.AddRange(ordered);
@@ -492,10 +460,10 @@ public sealed partial class ProjectEditor
         return next.SequenceEqual(now, StringComparer.Ordinal);
     }
 
-    /// <summary>대본에 빈 줄 하나를 끼워 넣는다. 새 LineId를 발급한다.</summary>
-    public ScriptLine InsertScriptLine(string scriptId, int? index = null, string? locale = null)
+    /// <summary>그 카드의 대본에 빈 줄 하나를 끼워 넣는다. 새 LineId를 발급한다.</summary>
+    public ScriptLine InsertScriptLine(string dialogueNodeId, int? index = null, string? locale = null)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        ScriptDocument script = RequireDialogue(dialogueNodeId).Script;
         var line = new ScriptLine(_newLineId());
         string targetLocale = locale ?? script.PrimaryLocale;
 
@@ -513,9 +481,10 @@ public sealed partial class ProjectEditor
     /// 대본에서 줄을 은퇴시킨다. 물리적으로 지우지 않는다.
     /// 지우면 그 LineId를 가리키던 연출이 왜 고아가 되었는지 물을 수조차 없게 된다.
     /// </summary>
-    public void RetireScriptLine(string scriptId, string lineId)
+    public void RetireScriptLine(string dialogueNodeId, string lineId)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        DialogueNode node = RequireDialogue(dialogueNodeId);
+        ScriptDocument script = node.Script;
 
         if (script.FindLine(lineId) is not { IsRetired: false } line)
         {
@@ -525,7 +494,7 @@ public sealed partial class ProjectEditor
         Mutate(() =>
         {
             line.IsRetired = true;
-            PruneRetiredLineLogic(scriptId, id => string.Equals(id, lineId, StringComparison.Ordinal));
+            PruneRetiredLineLogic(node, id => string.Equals(id, lineId, StringComparison.Ordinal));
         });
     }
 
@@ -534,23 +503,19 @@ public sealed partial class ProjectEditor
     /// 접는다 (W47) — 줄 카드가 없으면 편집 진입점이 없어 지울 수도 없는 유령이 된다.
     /// 연출 바인딩은 남긴다: 고아 연출은 지우지 않고 해석기가 알리는 기존 정책 그대로다.
     /// </summary>
-    private void PruneRetiredLineLogic(string scriptId, Func<string, bool> retired)
+    private static void PruneRetiredLineLogic(DialogueNode node, Func<string, bool> retired)
     {
-        foreach (DialogueNode node in Project.EnumerateNodes().OfType<DialogueNode>()
-            .Where(item => string.Equals(item.ScriptId, scriptId, StringComparison.Ordinal)))
-        {
-            node.LineExtensions.RemoveAll(extension => retired(extension.LineId));
+        node.LineExtensions.RemoveAll(extension => retired(extension.LineId));
 
-            foreach (string exitLineId in node.BranchExits.Keys.Where(retired).ToList())
-            {
-                node.BranchExits.Remove(exitLineId);
-            }
+        foreach (string exitLineId in node.BranchExits.Keys.Where(retired).ToList())
+        {
+            node.BranchExits.Remove(exitLineId);
         }
     }
 
-    public void MoveScriptLine(string scriptId, string lineId, int delta)
+    public void MoveScriptLine(string dialogueNodeId, string lineId, int delta)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        ScriptDocument script = RequireDialogue(dialogueNodeId).Script;
         List<ScriptLine> active = script.ActiveLines.ToList();
         int from = active.FindIndex(line => string.Equals(line.Id, lineId, StringComparison.Ordinal));
 
@@ -584,13 +549,13 @@ public sealed partial class ProjectEditor
     /// 내용만 바뀌므로 편집 컨트롤을 다시 만들지 않는다.
     /// </summary>
     public void SetScriptLineText(
-        string scriptId,
+        string dialogueNodeId,
         string lineId,
         string speaker,
         string text,
         string? locale = null)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        ScriptDocument script = RequireDialogue(dialogueNodeId).Script;
 
         if (script.FindLine(lineId) is not { } line)
         {
@@ -648,7 +613,7 @@ public sealed partial class ProjectEditor
             return 0;
         }
 
-        List<(ScriptLocale Locale, string LineId, LocalizedLine Line)> hits = Project.Scripts
+        List<(ScriptLocale Locale, string LineId, LocalizedLine Line)> hits = Project.EnumerateScripts()
             .SelectMany(script => script.Locales)
             .SelectMany(locale => locale.Entries
                 .Where(entry => string.Equals(entry.Value.Speaker, from, StringComparison.Ordinal))
@@ -671,11 +636,4 @@ public sealed partial class ProjectEditor
         return hits.Count;
     }
 
-    private ScriptDocument RequireScript(string scriptId)
-    {
-        return Project.FindScript(scriptId)
-            ?? throw new InvalidOperationException($"대본 '{scriptId}'를 찾을 수 없습니다.");
-    }
-
-    private string NextScriptName() => $"대본 {Project.Scripts.Count + 1}";
 }

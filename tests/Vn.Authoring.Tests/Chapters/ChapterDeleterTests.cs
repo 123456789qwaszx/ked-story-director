@@ -214,8 +214,8 @@ public sealed class ChapterDeleterTests : IDisposable
         editor.AddChapterCondition(Doomed, "신뢰높음", "trust >= 3", "라루를 신뢰");
 
         DialogueNode card = EpisodeNaming.CardFor(editor.Project, Doomed, EpisodeId)!;
-        ScriptDocument script = editor.Project.FindScript(card.ScriptId)!;
-        editor.SetScriptLineText(script.Id, script.ActiveLines.First().Id, "윌로", "복도는 조용했다");
+        ScriptDocument script = card.Script;
+        editor.SetScriptLineText(card.Id, script.ActiveLines.First().Id, "윌로", "복도는 조용했다");
 
         if (secondBoard)
         {
@@ -233,7 +233,7 @@ public sealed class ChapterDeleterTests : IDisposable
 
     private static string FirstLine(StoryProject project, DialogueNode card)
     {
-        ScriptDocument script = project.FindScript(card.ScriptId)!;
+        ScriptDocument script = project.FindDialogue(card.Id)!.Script;   // 되돌리기 뒤에도 지금 프로젝트의 것
 
         return script.Text(script.ActiveLines.First().Id, script.PrimaryLocale).Text;
     }

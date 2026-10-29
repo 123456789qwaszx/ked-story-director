@@ -84,7 +84,7 @@ internal static class JsonSupport
         HashSet<string> linkIds = new(StringComparer.Ordinal);
         HashSet<(NodeLinkKind Kind, string Source, string Target)> linkPairs = new();
 
-        foreach (ScriptDocument script in project.Scripts)
+        foreach (ScriptDocument script in project.EnumerateScripts())
         {
             if (!scriptIds.Add(script.Id))
             {
@@ -117,7 +117,7 @@ internal static class JsonSupport
 
                 if (node is DialogueNode dialogue)
                 {
-                    ValidateDialogueNode(project, dialogue, scriptIds);
+                    ValidateDialogueNode(project, dialogue);
                 }
             }
         }
@@ -203,20 +203,13 @@ internal static class JsonSupport
     }
 
     /// <summary>
-    /// 대사 노드는 대본을 가리키기만 하고 본문을 소유하지 않는다. 여기서 확인하는 것은
-    /// 가리키는 대상이 실제로 있는지와 같은 LineId에 확장이 두 벌 붙지 않았는지다.
+    /// 같은 LineId에 확장이 두 벌 붙지 않았는지 본다. (카드는 제 대본을 든다 — 가리키는 대본이 있는지 보던 검사는
+    /// S2에 걷혔다. 형식 3 파일을 읽을 때 없는 대본을 가리키면 <see cref="ScriptTable"/>이 거절한다.)
     /// </summary>
     private static void ValidateDialogueNode(
         StoryProject project,
-        DialogueNode node,
-        HashSet<string> scriptIds)
+        DialogueNode node)
     {
-        if (node.ScriptId is { } scriptId && !scriptIds.Contains(scriptId))
-        {
-            throw new InvalidDataException(
-                $"DialogueNode '{node.Id}'가 없는 대본 '{scriptId}'를 가리킵니다.");
-        }
-
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 
         foreach (DialogueLineExtension extension in node.LineExtensions)

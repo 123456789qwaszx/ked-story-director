@@ -90,10 +90,8 @@ public sealed class ConditionDefinition
 /// <summary>
 /// 대본 하나를 읽어 그 줄들에 <b>대사 논리</b>를 얹는 노드.
 ///
-/// 줄 순서와 화자·대사는 여기 없다. <see cref="ScriptId"/>가 가리키는
-/// <see cref="Script.ScriptDocument"/>가 소유한다. 이 노드가 소유하는 것은
-/// LineId에 매달린 조건 전환과 출구뿐이다. 앞으로 선택지·변수 변경·인라인 이벤트도
-/// 같은 자리에 붙는다.
+/// 줄 순서와 화자·대사는 카드가 든 대본(<see cref="Script"/>)이 소유한다. 그 위에 카드가 소유하는 것은
+/// LineId에 매달린 조건 전환과 출구다.
 ///
 /// 이 분리 덕분에 대본을 다시 읽어 문구가 바뀌어도 조건 구조가 그대로 남고,
 /// 같은 문장을 고칠 수 있는 자리가 도구 안에 하나만 존재한다.
@@ -114,8 +112,14 @@ public sealed class DialogueNode : StoryNode
     {
     }
 
-    /// <summary>이 노드가 읽는 대본. null이면 아직 대본을 고르지 않은 것이다.</summary>
-    public string? ScriptId { get; set; }
+    /// <summary>
+    /// 이 카드의 대본 — 줄 신원(LineId) · 줄 개정 번호 · 은퇴한 줄 · locale별 화자 · 대사. 카드마다 하나다.
+    ///
+    /// ⛔ 2026-10-29까지는 대본이 프로젝트에 따로 서고(<c>StoryProject.Scripts</c>) 카드는 <c>ScriptId</c>로 가리켰다.
+    /// 따로 둔 까닭(작가 대본 가져오기 · 대본 나눠 쓰기 · 엑셀 대본 워크북)이 모두 걷혀 카드가 직접 든다
+    /// (<c>docs/plans/script-merge.md</c> S2).
+    /// </summary>
+    public Script.ScriptDocument Script { get; set; } = new();
 
     /// <summary>
     /// 이 노드가 <b>어느 에피소드인가</b>를 적어 둔 표식.

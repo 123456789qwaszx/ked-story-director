@@ -153,12 +153,13 @@ public sealed class CardWritingTests
         return editor.AddCondition(set.Id, "호감 높음", "favor >= 5");
     }
 
+    // 지금 프로젝트에서 다시 찾는다 — 되돌리기는 프로젝트를 새 객체로 갈아 끼운다.
     private static List<ScriptLine> Lines(ProjectEditor editor, DialogueNode node) =>
-        editor.Project.FindScript(node.ScriptId)!.ActiveLines.ToList();
+        editor.Project.FindDialogue(node.Id)!.Script.ActiveLines.ToList();
 
     private static (string Speaker, string Text) Said(ProjectEditor editor, DialogueNode node, string lineId)
     {
-        LocalizedLine line = editor.Project.FindScript(node.ScriptId)!.Text(lineId);
+        LocalizedLine line = editor.Project.FindDialogue(node.Id)!.Script.Text(lineId);
         return (line.Speaker, line.Text);
     }
 }

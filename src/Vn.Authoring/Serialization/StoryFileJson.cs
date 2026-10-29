@@ -19,7 +19,8 @@ public static class StoryFileJson
     public static StoryFile Read(string json) => Read(json, out _);
 
     /// <param name="carriedPresentation">연출 층의 노드가 있었다 — 읽지 않았다(<see cref="StoryNodeJson.PresentationKinds"/>).</param>
-    public static StoryFile Read(string json, out bool carriedPresentation)
+    /// <param name="scripts">카드에 꽂을 대본들(<see cref="ScriptTable"/>). 없으면 카드는 가리킨 Id만 든 빈 대본을 받는다.</param>
+    internal static StoryFile Read(string json, out bool carriedPresentation, ScriptTable? scripts = null)
     {
         JsonObject root = JsonSupport.ParseObject(json, "StoryFile");
         int version = (int?)root["formatVersion"] ?? 0;
@@ -30,8 +31,10 @@ public static class StoryFileJson
                 $"StoryFile 형식 버전 {version}은 지원하지 않습니다. 현재 버전은 {CurrentFormatVersion}입니다.");
         }
 
-        return ReadObject(root, out carriedPresentation);
+        return ReadObject(root, out carriedPresentation, scripts);
     }
+
+    public static StoryFile Read(string json, out bool carriedPresentation) => Read(json, out carriedPresentation, null);
 
     internal static JsonObject WriteObject(StoryFile file)
     {
@@ -50,9 +53,9 @@ public static class StoryFileJson
         };
     }
 
-    internal static StoryFile ReadObject(JsonObject root) => ReadObject(root, out _);
+    internal static StoryFile ReadObject(JsonObject root, ScriptTable? scripts = null) => ReadObject(root, out _, scripts);
 
-    internal static StoryFile ReadObject(JsonObject root, out bool carriedPresentation)
+    internal static StoryFile ReadObject(JsonObject root, out bool carriedPresentation, ScriptTable? scripts = null)
     {
         if (root["nodes"] is not JsonArray nodes)
         {
@@ -74,7 +77,7 @@ public static class StoryFileJson
                 continue;
             }
 
-            if (StoryNodeJson.Read(nodeJson) is not { } node)
+            if (StoryNodeJson.Read(nodeJson, scripts) is not { } node)
             {
                 carriedPresentation = true;
                 continue;

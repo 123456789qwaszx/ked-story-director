@@ -43,7 +43,7 @@ public class SampleProjectTests
     public void 대본이_화자와_대사를_소유하고_노드는_LineId만_가리킨다()
     {
         StoryProject project = Load();
-        ScriptDocument script = project.FindScript("sc_chapter01")!;
+        ScriptDocument script = project.EnumerateScripts().Single(item => item.Id == "sc_chapter01");
         DialogueNode scene = project.FindDialogue("nd_scene")!;
 
         Assert.Equal(8, script.ActiveLines.Count());

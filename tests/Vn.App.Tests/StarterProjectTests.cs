@@ -116,7 +116,7 @@ public sealed class StarterProjectTests : IDisposable
     private static List<LocalizedLine> Lines(StoryProject project, string episodeId)
     {
         DialogueNode card = EpisodeNaming.CardFor(project, "ch01", episodeId)!;
-        ScriptDocument script = project.FindScript(card.ScriptId)!;
+        ScriptDocument script = card.Script;
 
         return script.ActiveLines.Select(line => script.Text(line.Id)).ToList();
     }
@@ -206,14 +206,14 @@ internal static class StarterProject
             ?? throw new InvalidOperationException($"에피소드 '{episodeId}'에 카드가 없습니다.");
 
         ProjectEditor editor = session.Editor;
-        ScriptDocument script = editor.EnsureDialogueScript(card.Id);
+        ScriptDocument script = card.Script;
 
         for (int index = 0; index < lines.Length; index++)
         {
             string lineId = script.ActiveLines.ElementAtOrDefault(index)?.Id
-                ?? editor.InsertScriptLine(script.Id).Id;
+                ?? editor.InsertScriptLine(card.Id).Id;
 
-            editor.SetScriptLineText(script.Id, lineId, lines[index].Speaker, lines[index].Text);
+            editor.SetScriptLineText(card.Id, lineId, lines[index].Speaker, lines[index].Text);
         }
     }
 

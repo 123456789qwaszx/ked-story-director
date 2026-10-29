@@ -2053,11 +2053,12 @@ public partial class ChapterGraphView : UserControl
     {
         if (_session is null ||
             _selectedChapterId is not { } chapterId ||
-            EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is not { } card ||
-            _session.Project.FindScript(card.ScriptId) is not { } script)
+            EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is not { } card)
         {
             return string.Empty;
         }
+
+        Vn.Authoring.Script.ScriptDocument script = card.Script;
 
         var lines = new List<string>();
 

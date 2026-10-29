@@ -77,8 +77,6 @@ public sealed partial class ProjectEditor
             RemoveReferencesToNode(node.Id);
         }
 
-        Project.RemoveUnreferencedScripts();
-
         if (file.Nodes.Any(node =>
             string.Equals(Project.StartNodeId, node.Id, StringComparison.Ordinal)))
         {
@@ -109,33 +107,21 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 대사 노드를 만든다. scriptId를 주지 않으면 <b>전용 대본을 함께 만들어 잇는다</b> (X4, D-3)
-    /// — 노드는 생성 즉시 편집 대상이고, 첫 빈 줄까지 준비되어 바로 타이핑할 수 있다.
-    /// 노드·대본·첫 줄이 한 번의 편집이라 되돌리기 한 번에 함께 사라진다.
+    /// 대사 노드를 만든다 — <b>제 대본과 첫 빈 줄까지</b> 함께 선다 (X4, D-3). 노드는 생성 즉시 편집 대상이라
+    /// 바로 타이핑할 수 있다. 노드 · 대본 · 첫 줄이 한 번의 편집이라 되돌리기 한 번에 함께 사라진다.
+    /// (⛔ 이미 있는 대본을 주어 잇던 <c>scriptId</c>는 대본이 카드 안으로 들어오며 걷혔다 — S2.)
     /// </summary>
     public DialogueNode AddDialogueNode(
         string fileId,
         double x = 0,
         double y = 0,
         string? name = null,
-        string? scriptId = null,
         string? sceneId = null)
     {
-        if (scriptId is null)
-        {
-            (DialogueNode created, _, Action attach) = NewDialogueNodeCore(fileId, x, y, name, sceneId);
-            Mutate(attach);
+        (DialogueNode created, _, Action attach) = NewDialogueNodeCore(fileId, x, y, name, sceneId);
+        Mutate(attach);
 
-            return created;
-        }
-
-        var node = new DialogueNode(name: name ?? NextName("장면"))
-        {
-            Layout = new NodeLayout { X = x, Y = y },
-            ScriptId = scriptId
-        };
-
-        return AddNode(fileId, node);
+        return created;
     }
 
     /// <summary>
@@ -180,9 +166,9 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"노드 Id '{created.Id}'가 프로젝트 안에서 중복됩니다.");
         }
 
-        var script = new ScriptDocument(name: $"{created.Name} 대본");
+        ScriptDocument script = created.Script;
+        script.Name = $"{created.Name} 대본";   // 파일 형식이 아직 이름을 싣는다(S3에서 걷힌다)
         var firstLine = new ScriptLine(_newLineId());
-        created.ScriptId = script.Id;
 
         (ChapterDocument? chapter, ChapterEpisode? episode) =
             NewEpisodeFor(file, created, sceneId, allowUnreachable, title, episodePosition);
@@ -191,7 +177,6 @@ public sealed partial class ProjectEditor
         {
             script.Lines.Add(firstLine);
             script.RequireLocale(script.PrimaryLocale).Entries[firstLine.Id] = LocalizedLine.Empty;
-            Project.Scripts.Add(script);
             file.Nodes.Add(created);
             Project.StartNodeId ??= created.Id;
 
@@ -297,8 +282,7 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("판에 서 있지 않은 노드입니다.");
         }
 
-        if (Project.FindScript(source.ScriptId) is not { } script ||
-            script.ActiveLines.All(line =>
+        if (source.Script.ActiveLines.All(line =>
                 !string.Equals(line.Id, beforeLineId, StringComparison.Ordinal)))
         {
             throw new InvalidOperationException("그 줄이 이 노드의 대본에 없습니다.");
@@ -461,8 +445,7 @@ public sealed partial class ProjectEditor
         Mutate(() =>
         {
             owner.Nodes.Remove(node);
-            RemoveReferencesToNode(nodeId);
-            Project.RemoveUnreferencedScripts();   // 카드의 대본도 함께 간다(S1) — 되돌리기는 스냅샷이 되살린다
+            RemoveReferencesToNode(nodeId);   // 카드의 대본은 카드 안이라 함께 간다(S1 · S2)
 
             if (string.Equals(Project.StartNodeId, nodeId, StringComparison.Ordinal))
             {
@@ -543,7 +526,7 @@ public sealed partial class ProjectEditor
 
         DialogueNode node = RequireDialogue(nodeId);
 
-        if (Project.FindScript(node.ScriptId)?.FindLine(lineId) is not { IsRetired: false })
+        if (node.Script.FindLine(lineId) is not { IsRetired: false })
         {
             return;
         }
@@ -618,7 +601,7 @@ public sealed partial class ProjectEditor
     {
         DialogueNode node = RequireDialogue(nodeId);
 
-        if (Project.FindScript(node.ScriptId)?.ActiveLines.FirstOrDefault() is not { } first)
+        if (node.Script.ActiveLines.FirstOrDefault() is not { } first)
         {
             throw new InvalidOperationException(
                 "대본이 비어 있어 조건을 걸 자리가 없습니다 — 첫 줄을 먼저 쓰세요.");

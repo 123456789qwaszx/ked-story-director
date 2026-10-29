@@ -235,7 +235,7 @@ public static class ProjectManifestJson
 
     internal static IReadOnlyList<ScriptFileReference> ScriptReferencesOf(StoryProject project)
     {
-        return project.Scripts
+        return project.EnumerateScripts()
             .Select(script => new ScriptFileReference(
                 script.Id,
                 script.Name,

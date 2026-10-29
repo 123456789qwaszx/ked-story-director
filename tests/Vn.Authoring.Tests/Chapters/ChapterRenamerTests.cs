@@ -57,7 +57,7 @@ public sealed class ChapterRenamerTests : IDisposable
         Assert.Null(EpisodeNaming.CardFor(editor.Project, OldId, EpisodeId));
 
         // 원고가 그대로다 — 옮긴 것이지 새로 만든 것이 아니다.
-        ScriptDocument script = editor.Project.FindScript(card.ScriptId)!;
+        ScriptDocument script = card.Script;
         Assert.Equal("복도는 조용했다", script.Text(script.ActiveLines.First().Id, script.PrimaryLocale).Text);
     }
 
@@ -220,8 +220,8 @@ public sealed class ChapterRenamerTests : IDisposable
         editor.AddChapterCondition(OldId, "신뢰높음", "trust >= 3", "라루를 신뢰");
 
         DialogueNode card = EpisodeNaming.CardFor(editor.Project, OldId, EpisodeId)!;
-        ScriptDocument script = editor.Project.FindScript(card.ScriptId)!;
-        editor.SetScriptLineText(script.Id, script.ActiveLines.First().Id, "윌로", "복도는 조용했다");
+        ScriptDocument script = card.Script;
+        editor.SetScriptLineText(card.Id, script.ActiveLines.First().Id, "윌로", "복도는 조용했다");
 
         // 배관이 실제로 섰는지 확인하고 시작한다 — 없으면 위 두 테스트가 헛돈다.
         Assert.Single(

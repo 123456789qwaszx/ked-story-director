@@ -119,7 +119,7 @@ public sealed class GraphEdgeShapeTests : IDisposable
     {
         (Window window, GraphEditorView graph, AuthoringSession session) = Show();
         DialogueNode a = EpisodeNaming.CardFor(session.Project, "ch01", "a")!;
-        string lineId = session.Project.FindScript(a.ScriptId)!.ActiveLines.First().Id;
+        string lineId = a.Script.ActiveLines.First().Id;
         DialogueNode branch = session.Editor.AddBranchMarker(a.Id, lineId);
         session.Editor.MoveNode(branch.Id, 600, 120);
         Dispatcher.UIThread.RunJobs();

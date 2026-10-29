@@ -109,7 +109,7 @@ public sealed class NodePlacementTests
         editor.AddEpisode("ch01", "root", "복도", 0, 0);
 
         DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
-        string lineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
+        string lineId = caller.Script.ActiveLines.First().Id;
 
         DialogueNode branch = editor.AddBranchMarker(caller.Id, lineId);
 

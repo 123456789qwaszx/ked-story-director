@@ -207,10 +207,10 @@ public sealed class CardWritingBoxTests : IDisposable
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         session.Select(first.Id);
         Dispatcher.UIThread.RunJobs();   // 곁기둥이 선다 — 사람이 고르고 나서 고치는 순서 그대로
-        string scriptId = session.Project.FindDialogue(first.Id)!.ScriptId!;
-        string lineId = session.Project.FindScript(scriptId)!.ActiveLines.First().Id;
+        DialogueNode card = session.Project.FindDialogue(first.Id)!;
+        string lineId = card.Script.ActiveLines.First().Id;
 
-        session.Editor.SetScriptLineText(scriptId, lineId, "라루", "곁기둥에서 고쳤다");
+        session.Editor.SetScriptLineText(card.Id, lineId, "라루", "곁기둥에서 고쳤다");
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal("라루: 곁기둥에서 고쳤다", Box(window, first.Id).Text);
@@ -241,7 +241,7 @@ public sealed class CardWritingBoxTests : IDisposable
     private static List<(string Speaker, string Text)> Said(AuthoringSession session, string nodeId)
     {
         DialogueNode node = session.Project.FindDialogue(nodeId)!;
-        Vn.Authoring.Script.ScriptDocument script = session.Project.FindScript(node.ScriptId)!;
+        Vn.Authoring.Script.ScriptDocument script = node.Script;
 
         return script.ActiveLines
             .Select(line => (script.Text(line.Id).Speaker, script.Text(line.Id).Text))

@@ -72,7 +72,7 @@ public class SerializationTests
     {
         var sample = new Sample();
         string line = sample.Line("안녕하세요");
-        sample.Editor.SetScriptLineText(sample.Script.Id, line, "윌로", "안녕하세요");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line, "윌로", "안녕하세요");
 
         string first = ProjectSnapshotCodec.Encode(sample.Project);
         string second = ProjectSnapshotCodec.Encode(sample.Project);
@@ -179,13 +179,11 @@ public class SerializationTests
         var secondScript = new ScriptDocument("sc_b", "B 대본");
         secondScript.Lines.Add(new ScriptLine("ln_b"));
         secondScript.RequireLocale(secondScript.PrimaryLocale).Entries["ln_b"] = new LocalizedLine("", "고정");
-        project.Scripts.Add(firstScript);
-        project.Scripts.Add(secondScript);
 
         var first = new StoryFile("sf_a", "A", "story/a.vnstory.json");
         var second = new StoryFile("sf_b", "B", "story/b.vnstory.json");
-        first.Nodes.Add(new DialogueNode("nd_a", "A") { ScriptId = "sc_a" });
-        second.Nodes.Add(new DialogueNode("nd_b", "B") { ScriptId = "sc_b" });
+        first.Nodes.Add(new DialogueNode("nd_a", "A") { Script = firstScript });
+        second.Nodes.Add(new DialogueNode("nd_b", "B") { Script = secondScript });
         project.Files.Add(first);
         project.Files.Add(second);
 

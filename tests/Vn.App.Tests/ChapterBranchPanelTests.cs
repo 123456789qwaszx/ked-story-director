@@ -122,7 +122,7 @@ public sealed class ChapterBranchPanelTests
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
-        string firstLineId = session.Project.FindScript(branch.ScriptId)!.ActiveLines.First().Id;
+        string firstLineId = branch.Script.ActiveLines.First().Id;
 
         session.Editor.SetLineTransitions(
             branch.Id, firstLineId, [LineConditionTransition.BeginChoice()]);
@@ -183,7 +183,7 @@ public sealed class ChapterBranchPanelTests
 
             DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
 
-            BranchLineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
+            BranchLineId = caller.Script.ActiveLines.First().Id;
             BranchEpisodeId = EpisodeNaming.EpisodeIdOf(
                 editor.AddBranchMarker(caller.Id, BranchLineId));
 

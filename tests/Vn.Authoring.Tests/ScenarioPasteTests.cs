@@ -26,7 +26,7 @@ public class ScenarioPasteTests
         DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");
 
         // 자동 생성된 첫 빈 줄은 붙여넣기 시 삭제 후보가 되므로 본문을 채워 시작한다.
-        editor.SetScriptLineText(node.ScriptId!, "ln_001", "라루", "첫 줄");
+        editor.SetScriptLineText(node.Id, "ln_001", "라루", "첫 줄");
         return (editor, node);
     }
 
@@ -54,7 +54,7 @@ public class ScenarioPasteTests
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, text, Definition);
 
         Assert.True(outcome.Applied);
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         List<(string Speaker, string Text)> lines = script.ActiveLines
             .Select(line => (script.Text(line.Id).Speaker, script.Text(line.Id).Text))
             .ToList();
@@ -95,7 +95,6 @@ public class ScenarioPasteTests
         // (한 구간에 서로 다른 변경이 겹치면 Ambiguous로 적용을 거부하는 것이
         //  이 알고리즘의 설계다 — 그 거부는 아래 별도 테스트가 지킨다.)
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
-        string scriptId = node.ScriptId!;
 
         editor.ApplyScenarioText(node.Id, """
             라루: 첫 줄
@@ -108,7 +107,7 @@ public class ScenarioPasteTests
             윌로: 여덟째 줄
             """, Definition, confirmDeletes: true);
 
-        ScriptDocument script = editor.Project.FindScript(scriptId)!;
+        ScriptDocument script = node.Script;
         List<string> before = script.ActiveLines.Select(line => line.Id).ToList();
         Assert.Equal(8, before.Count);
 
@@ -149,7 +148,7 @@ public class ScenarioPasteTests
         editor.ApplyScenarioText(
             node.Id, "라루: 첫 줄\n윌로: 둘째 줄\n라루: 셋째 줄", Definition, confirmDeletes: true);
 
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         List<string> before = script.ActiveLines.Select(line => line.Id).ToList();
 
         // 인접한 두 줄을 동시에 고치면 어느 줄이 어느 줄의 수정인지 알 수 없다.
@@ -171,11 +170,11 @@ public class ScenarioPasteTests
 
         Assert.False(first.Applied);
         Assert.True(first.NeedsDeleteConfirmation);
-        Assert.Equal(2, editor.Project.FindScript(node.ScriptId)!.ActiveLines.Count()); // 그대로
+        Assert.Equal(2, node.Script.ActiveLines.Count()); // 그대로
 
         ScenarioPasteOutcome second = editor.ApplyScenarioText(node.Id, "라루: 첫 줄", Definition, confirmDeletes: true);
         Assert.True(second.Applied);
-        Assert.Single(editor.Project.FindScript(node.ScriptId)!.ActiveLines);
+        Assert.Single(node.Script.ActiveLines);
     }
 
     [Fact]
@@ -196,7 +195,7 @@ public class ScenarioPasteTests
             라루: 갈래 뒤 줄
             """, Definition, confirmDeletes: true);
 
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         List<string> ids = script.ActiveLines.Select(line => line.Id).ToList();
         Assert.Equal(3, ids.Count);
         Assert.Equal(ConditionTransitionKind.BeginIf, node.FindExtension(ids[1])!.Transition!.Kind);
@@ -209,7 +208,7 @@ public class ScenarioPasteTests
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, roundTrip, Definition, confirmDeletes: true);
         Assert.True(outcome.Applied);
         Assert.True(outcome.Plan!.IsNoOp);
-        Assert.Equal(ids, editor.Project.FindScript(node.ScriptId)!.ActiveLines.Select(line => line.Id));
+        Assert.Equal(ids, node.Script.ActiveLines.Select(line => line.Id));
     }
 
     [Fact]
@@ -228,7 +227,7 @@ public class ScenarioPasteTests
         Assert.True(outcome.Applied); // 대사는 들어온다
         Assert.Contains(outcome.Problems, problem => problem.Contains("미지의식", StringComparison.Ordinal));
 
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         string branchLineId = script.ActiveLines.Skip(1).First().Id;
         Assert.Null(node.FindExtension(branchLineId)?.Transition); // 추측해 잇지 않았다
     }
@@ -249,7 +248,7 @@ public class ScenarioPasteTests
 
         Assert.True(outcome.Applied);
         Assert.Equal(2, outcome.Parsed.UnparsedLines.Count);
-        Assert.Equal(2, editor.Project.FindScript(node.ScriptId)!.ActiveLines.Count());
+        Assert.Equal(2, node.Script.ActiveLines.Count());
     }
 
     [Fact]
@@ -258,7 +257,7 @@ public class ScenarioPasteTests
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
         editor.ApplyScenarioText(node.Id, "라루: 첫 줄\n선택 라벨\n윌로: 갈래 줄", Definition, confirmDeletes: true);
 
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         string labelId = script.ActiveLines.Skip(1).First().Id;
         editor.SetLineTransition(node.Id, labelId, LineConditionTransition.BeginChoice("op_test"));
 

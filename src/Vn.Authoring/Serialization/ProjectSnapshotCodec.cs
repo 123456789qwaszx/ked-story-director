@@ -22,7 +22,7 @@ public static class ProjectSnapshotCodec
 
         var scripts = new JsonArray();
 
-        foreach (ScriptDocument script in project.Scripts)
+        foreach (ScriptDocument script in project.EnumerateScripts())
         {
             JsonObject item = ScriptDocumentJson.WriteObject(script);
             item.Remove("formatVersion");
@@ -106,6 +106,8 @@ public static class ProjectSnapshotCodec
             StartNodeId = (string?)root["startNode"]
         };
 
+        var scripts = new List<ScriptDocument>();
+
         foreach (JsonNode? item in root["scripts"]?.AsArray() ?? new JsonArray())
         {
             if (item is not JsonObject scriptObject)
@@ -115,8 +117,10 @@ public static class ProjectSnapshotCodec
 
             JsonObject scriptRoot = scriptObject.DeepClone().AsObject();
             scriptRoot["formatVersion"] = ScriptDocumentJson.CurrentFormatVersion;
-            project.Scripts.Add(ScriptDocumentJson.ReadObject(scriptRoot));
+            scripts.Add(ScriptDocumentJson.ReadObject(scriptRoot));
         }
+
+        var table = new ScriptTable(scripts);
 
         foreach (JsonNode? item in files)
         {
@@ -133,7 +137,7 @@ public static class ProjectSnapshotCodec
                 ["nodes"] = fileObject["nodes"]?.DeepClone()
             };
 
-            StoryFile file = StoryFileJson.ReadObject(storyRoot);
+            StoryFile file = StoryFileJson.ReadObject(storyRoot, table);
             file.RelativePath = ProjectStore.NormalizeRelativeStoryPath(
                 (string?)fileObject["path"] ?? ProjectStore.DefaultRelativePath(file.Id));
             project.Files.Add(file);

@@ -70,7 +70,7 @@ public sealed class EdgeShapeTests
     {
         ProjectEditor editor = Chapter();
         DialogueNode a = EpisodeNaming.CardFor(editor.Project, "ch01", "a")!;
-        string lineId = editor.Project.FindScript(a.ScriptId)!.ActiveLines.First().Id;
+        string lineId = a.Script.ActiveLines.First().Id;
         editor.AddBranchMarker(a.Id, lineId);
         ExitPort detour = DetourOf(editor, a.Id);
 
@@ -108,7 +108,7 @@ public sealed class EdgeShapeTests
         Assert.DoesNotContain("edgeShapes", untouched, StringComparison.Ordinal);
 
         DialogueNode a = EpisodeNaming.CardFor(editor.Project, "ch01", "a")!;
-        string lineId = editor.Project.FindScript(a.ScriptId)!.ActiveLines.First().Id;
+        string lineId = a.Script.ActiveLines.First().Id;
         editor.AddBranchMarker(a.Id, lineId);
         editor.SetExitShape(DetourOf(editor, a.Id), new EdgeShape(EdgeShapeKind.Straight));
         editor.SetEdgeShape("ch01", "a", "b", "간다", Curved);

@@ -37,7 +37,7 @@
 | 챕터 그래프의 카드 자리 | `ChapterEpisode.X·Y` | 사람(끌기). 진행 JSON의 `Position`으로도 나간다 |
 | 판 · 카드 | `StoryProject.Files` — 판 이름 = ChapterId, 카드 = `DialogueNode`(+`MarkedEpisodeId`) | 연출 그래프 |
 | 연출 그래프의 카드 자리 | `StoryNode.Layout` | 사람(끌기). **챕터 그래프 자리와 별개다** |
-| 대사 본문 | `StoryProject.Scripts`(`ScriptDocument`) — 줄의 신원은 `LineId`, 글은 locale별 `LocalizedLine(화자, 글)` | 카드 안 글 칸(D4) · 곁기둥 |
+| 대사 본문 | 카드의 대본 `DialogueNode.Script`(`ScriptDocument`) — 줄의 신원은 `LineId`, 글은 locale별 `LocalizedLine(화자, 글)` | 카드 안 글 칸(D4) · 곁기둥 |
 | 분기 표식 | 대사 줄의 `DialogueLineExtension.DetourTargetNodeId` | **연출 그래프만.** 챕터 그래프는 읽어서 그린다 |
 | 분기의 조건 | 다녀갈 카드의 첫 줄 `BeginIf` + 꼬리 `EndIf` | 챕터 그래프의 분기 패널 |
 | 화자 | `game.definition.json`의 speakers | 챕터 그래프 [화자] 탭 |
@@ -148,7 +148,8 @@
 
 ### 3.4 대사 본문이 카드에 닿는 길 — 카드 안 글 칸 (D4 · 2026-10-29)
 
-- 노드는 `ScriptId`로 `ScriptDocument`를 가리키고, 노드 자신은 LineId에 붙는 논리(갈래 · 분기 표식)만 든다.
+- 노드는 제 대본(`Script`)을 들고, 그 위에 LineId에 붙는 논리(갈래 · 분기 표식)를 든다(2026-10-29 S2 전에는 따로 선
+  대본을 `ScriptId`로 가리켰다).
 - **대사 카드마다 글 칸이 있다**(포트 줄 아래, 높이 88 · 다섯 줄 남짓, 넘치면 칸이 스크롤). 보이는 글은
   `WorkingDialoguePreview.ScenarioText` — ScenarioOnly 표기(조건은 Yarn 문법 `<<if>>`) 그대로이되 진단 줄은 뺀다.
   한 줄이 대사 한 줄이고 `화자: 대사`(화자가 없으면 지문)다.

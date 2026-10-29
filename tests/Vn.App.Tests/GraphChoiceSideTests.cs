@@ -100,7 +100,7 @@ public sealed class GraphChoiceSideTests : IDisposable
         // 2026-10-29 소유자 — "분기가 … 왼쪽에 위치하면 박스 왼쪽에 생성되도록 해줘".
         (GraphEditorView graph, AuthoringSession session) = Show(("start", 2400, 0), ("scene", 800, 0));
         DialogueNode scene = Card(session, "scene");
-        string lineId = session.Project.FindScript(scene.ScriptId)!.ActiveLines.First().Id;
+        string lineId = scene.Script.ActiveLines.First().Id;
         DialogueNode branch = session.Editor.AddBranchMarker(scene.Id, lineId);
 
         // 시작 카드보다는 왼쪽이지만 출발 카드보다는 오른쪽 — 오른쪽 포트다.

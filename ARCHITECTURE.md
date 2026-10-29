@@ -23,7 +23,7 @@
 
 | | ① 챕터 그래프 (기획) | ② 연출 그래프 (대사 · 흐름) |
 |---|---|---|
-| 값 | `StoryProject.Chapters` — 에피소드 · 간선 · 조건 · 스탯 · 선택지 사전 · 픽스처 | `StoryProject.Files`(판 = 챕터 1:1) · `StoryProject.Scripts`(대본) |
+| 값 | `StoryProject.Chapters` — 에피소드 · 간선 · 조건 · 스탯 · 선택지 사전 · 픽스처 | `StoryProject.Files`(판 = 챕터 1:1) — 카드마다 제 대본(`DialogueNode.Script`) |
 | 화면 | `Vn.App/Views/ChapterGraphView.axaml{,.cs}` | `Vn.App/Views/GraphEditorView.axaml.cs` · `DialogueNodeEditor.axaml.cs` |
 
 **각 값의 주인은 한 곳뿐이다.** 창구가 둘이어도 값은 한 곳에 산다 — 간선은 챕터 그래프에서도 연출 그래프의 선택지 칸에서도
@@ -75,7 +75,7 @@ MyStory/
 |---|---|
 | `StoryProject.cs` | 프로젝트 — 판 · 대본 · 챕터 · 링크 · 작가 화자(`WriterSpeakers`) |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
-| `StoryNode.cs` | `DialogueNode`(대본을 `ScriptId`로 가리키고, 줄 논리 · 갈래 출구(`BranchExits`) · 선택지 출구(`ChoiceExits` — compositor가 읽는다) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
+| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 선택지 출구(`ChoiceExits` — compositor가 읽는다) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
 | `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 · 선택 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다 |
 | `EdgeShape.cs` | 사람이 고친 선 모양(꼴 · 굽이 — 자동 자리에서 옮긴 양) |
 | `NodeLink.cs` | 옛 공급 연결 데이터. 범위를 좁히지 않는다(조건 범위는 판이다 — `ConnectedSetNodeResolver`). 편집 API는 L2에 걷혔고 데이터는 남는다 |

@@ -37,7 +37,7 @@ public sealed class BoardAlignmentTests
 
             // 표식이 신원이다 — 이름만 맞으면 개명 한 번에 끊긴다.
             Assert.Equal(episodeId, card.MarkedEpisodeId);
-            Assert.NotNull(editor.Project.FindScript(card.ScriptId));
+            Assert.NotNull(card.Script);
         }
 
         // 에피소드가 늘지 않았다 — 있던 에피소드에 카드만 붙었다.
