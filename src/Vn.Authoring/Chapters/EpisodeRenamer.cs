@@ -1,5 +1,4 @@
 using Vn.Authoring.Editing;
-using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Chapters;
 

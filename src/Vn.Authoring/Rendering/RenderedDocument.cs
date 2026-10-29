@@ -4,7 +4,6 @@ namespace Vn.Authoring.Rendering;
 public enum RenderedSegmentKind
 {
     NodeHeader,
-    SetAssignment,
     ConditionBegin,
     ConditionElseIf,
     ConditionEnd,
@@ -35,7 +34,6 @@ public enum RenderedSegmentKind
 public enum DocumentLayer
 {
     Structure,
-    SetAssignments,
     Conditions,
     Dialogue,
     ExecutionJumps,
@@ -57,7 +55,7 @@ public sealed record RenderSourceReference(
 
 /// <summary>
 /// Formatter에 종속되지 않은 평면 문서 조각.
-/// Text는 대사·표시 이름·경고처럼 사람이 읽는 내용이고, Expression/Variable/TargetNodeId는
+/// Text는 대사·표시 이름·경고처럼 사람이 읽는 내용이고, Expression/TargetNodeId는
 /// Yarn뿐 아니라 다른 출력 형식도 다시 사용할 수 있는 의미 값이다.
 /// </summary>
 public sealed record RenderedSegment(
@@ -70,15 +68,11 @@ public sealed record RenderedSegment(
     string? LocalizedText = null,
     string? Speaker = null,
     string? Expression = null,
-    string? Variable = null,
-    string? Operator = null,
-    string? Value = null,
     string? TargetNodeId = null,
     string? TargetNodeName = null,
     string? OptionId = null,
     int? ChoiceBlockOrdinal = null,
-    int? ChoiceOptionIndex = null,
-    IReadOnlyList<string>? Tags = null);
+    int? ChoiceOptionIndex = null);
 
 /// <summary>
 /// 대사 결과 하나를 평평하게 합성한 결과.

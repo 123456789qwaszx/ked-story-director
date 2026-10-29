@@ -101,11 +101,6 @@ public static class ScriptDocumentJson
             ["sourceRevision"] = document.SourceRevision
         };
 
-        if (document.SourcePath is not null)
-        {
-            root["sourcePath"] = document.SourcePath;
-        }
-
         if (document.SourceContentHash is not null)
         {
             root["sourceContentHash"] = document.SourceContentHash;
@@ -125,7 +120,9 @@ public static class ScriptDocumentJson
         var document = new ScriptDocument(id, (string?)root["name"] ?? "이름 없는 대본")
         {
             PrimaryLocale = (string?)root["primaryLocale"] ?? ScriptDocument.DefaultLocale,
-            SourcePath = (string?)root["sourcePath"],
+
+            // ⛔ `sourcePath`(가져온 작가 파일의 경로)는 대본 가져오기와 함께 걷혔다
+            //    (2026-10-29 · L5). 옛 파일의 그 키는 읽지 않고 지나간다.
             SourceRevision = (int?)root["sourceRevision"] ?? 0,
             SourceContentHash = (string?)root["sourceContentHash"]
         };

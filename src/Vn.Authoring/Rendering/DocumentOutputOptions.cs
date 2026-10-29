@@ -28,7 +28,6 @@ public sealed class DocumentOutputOptions
     public DocumentOutputOptions(
         DocumentOutputFormat format,
         bool includeStructure,
-        bool includeSetAssignments,
         bool includeConditions,
         bool includeDialogueText,
         bool includeLocalizedDialogue,
@@ -39,7 +38,6 @@ public sealed class DocumentOutputOptions
     {
         Format = format;
         IncludeStructure = includeStructure;
-        IncludeSetAssignments = includeSetAssignments;
         IncludeConditions = includeConditions;
         IncludeDialogueText = includeDialogueText;
         IncludeLocalizedDialogue = includeLocalizedDialogue;
@@ -52,8 +50,6 @@ public sealed class DocumentOutputOptions
     public DocumentOutputFormat Format { get; }
 
     public bool IncludeStructure { get; }
-
-    public bool IncludeSetAssignments { get; }
 
     public bool IncludeConditions { get; }
 
@@ -80,7 +76,7 @@ public sealed record OutputPreset(
 /// <summary>
 /// 기본 출력 프리셋 카탈로그.
 ///
-/// 1) Runtime Full = 재생 순서 그대로(설정 · 조건 · LineId · 실행 출구) — 합성의 기본값이고 흐름 조각을 재는 자리,
+/// 1) Runtime Full = 재생 순서 그대로(조건 · LineId · 실행 출구) — 합성의 기본값이고 흐름 조각을 재는 자리,
 /// 2) Scenario Only = 대본+조건 — 카드 글 칸이 쓰는 면.
 /// ⛔ Direction Sheet(LineId+연출 테이블)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔고,
 /// Recording/Localization Script(LineId+대본)는 같은 날 그것을 고르던 Script Preview 탭과 함께 걷혔다.
@@ -92,11 +88,10 @@ public static class OutputPresetCatalog
     public static OutputPreset RuntimeFull { get; } = new(
         OutputPresetId.RuntimeFull,
         "Runtime Full",
-        "Set, 조건, LineId와 실행 출구를 모두 포함한 Yarn 스타일 Preview",
+        "조건, LineId와 실행 출구를 모두 포함한 Yarn 스타일 Preview",
         new DocumentOutputOptions(
             DocumentOutputFormat.YarnRuntime,
             includeStructure: true,
-            includeSetAssignments: true,
             includeConditions: true,
             includeDialogueText: true,
             includeLocalizedDialogue: false,
@@ -108,7 +103,7 @@ public static class OutputPresetCatalog
     public static OutputPreset ScenarioOnly { get; } = new(
         OutputPresetId.ScenarioOnly,
         "Scenario Only",
-        "조건과 화자·대사만 읽기 쉽게 표시하고 Set, 실행 출구는 숨김",
+        "조건과 화자·대사만 읽기 쉽게 표시하고 실행 출구는 숨김",
         new DocumentOutputOptions(
             DocumentOutputFormat.Scenario,
 
@@ -118,7 +113,6 @@ public static class OutputPresetCatalog
             //    <b>해석 못 한 줄</b>로 올린다. 그래서 저장할 때마다 자기가 낸 머리글이
             //    붉은 글씨로 되돌아오고 있었다. 어느 노드인지는 화면 위 제목이 말한다.
             includeStructure: false,
-            includeSetAssignments: false,
             includeConditions: true,
             includeDialogueText: true,
             includeLocalizedDialogue: false,

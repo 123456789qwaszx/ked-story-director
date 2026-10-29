@@ -87,21 +87,6 @@ public class SerializationTests
     //    ⚠ 구판 프로젝트 파일의 `excelLines`는 읽지 않고 지나간다 — 깨지지 않는다.
 
     [Fact]
-    public void 줄의_변수_변경은_순서와_연산자를_그대로_왕복한다()
-    {
-        var sample = new Sample();
-        string line = sample.Line("보수를 받는다");
-
-        StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
-        DialogueLineExtension extension = reloaded.FindDialogue(sample.Dialogue.Id)!
-            .FindExtension(line)!;
-
-        Assert.Equal(
-            Array.Empty<(string, SetOperatorKind, string)>(),
-            Array.Empty<(string, SetOperatorKind, string)>());
-    }
-
-    [Fact]
     public void 스냅샷은_결정적이고_LF이며_한글을_보존한다()
     {
         var sample = new Sample();

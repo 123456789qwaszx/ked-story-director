@@ -1,7 +1,5 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;

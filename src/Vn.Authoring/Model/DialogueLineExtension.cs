@@ -99,37 +99,6 @@ public sealed class LineConditionTransition
         Kind is ConditionTransitionKind.BeginChoice or ConditionTransitionKind.BeginNextOption;
 }
 
-/// <summary>변수를 어떻게 바꾸는지. Yarn의 <c>&lt;&lt;set&gt;&gt;</c> 연산자에 대응한다.</summary>
-public enum SetOperatorKind
-{
-    /// <summary><c>$x = value</c></summary>
-    Assign,
-
-    /// <summary><c>$x += value</c></summary>
-    Add,
-
-    /// <summary><c>$x -= value</c></summary>
-    Subtract
-}
-
-/// <summary>set 연산자의 표기 문자열은 여기 하나뿐이다. Yarn 표기와 같게 둔다.</summary>
-public static class SetOperators
-{
-    public static string Symbol(SetOperatorKind kind) => kind switch
-    {
-        SetOperatorKind.Add => "+=",
-        SetOperatorKind.Subtract => "-=",
-        _ => "="
-    };
-
-    public static SetOperatorKind Parse(string? symbol) => symbol switch
-    {
-        "+=" => SetOperatorKind.Add,
-        "-=" => SetOperatorKind.Subtract,
-        _ => SetOperatorKind.Assign
-    };
-}
-
 /// <summary>
 /// DialogueNode가 <b>대본 한 줄에 덧붙이는 대사 논리</b>.
 ///
@@ -141,7 +110,8 @@ public static class SetOperators
 /// 대본에서 사라진 LineId의 확장 데이터도 자동으로 지우지 않는다. 작가가 만든 조건 구조가
 /// 말없이 사라지는 것보다 고아로 남아 눈에 띄는 편이 낫다.
 ///
-/// 앞으로 선택지·변수 변경·인라인 이벤트가 붙을 자리도 여기다.
+/// ⛔ 줄의 변수 변경(<c>&lt;&lt;set&gt;&gt;</c> · <c>SetOperatorKind</c>)은 작가 변수와 함께 2026-09-17에
+/// 폐지됐고, 남은 연산자 표기도 2026-10-29(L5)에 걷혔다.
 /// </summary>
 public sealed class DialogueLineExtension
 {

@@ -4,7 +4,6 @@
   "name": "신뢰 경로",
   "primaryLocale": "ko-KR",
   "sourceRevision": 1,
-  "sourcePath": "raw/sc_trust.txt",
   "lines": [
     {
       "id": "ln_t1",

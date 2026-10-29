@@ -35,8 +35,7 @@ public class OutputPresetTests
         RenderedDocument document = Compose(sample, OutputPresetCatalog.RuntimeFull);
 
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.NodeHeader);
-        // ⛔ SetAssignment 층은 2026-09-17에 비었다 — 작가 변수가 없어져 실릴 조각이 없다.
-        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.SetAssignment);
+        // ⛔ SetAssignment 층은 2026-09-17에 비었고(작가 변수 폐지) 2026-10-29(L5)에 종류째 걷혔다.
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
@@ -57,7 +56,6 @@ public class OutputPresetTests
         Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.NodeHeader);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
-        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.SetAssignment);
         Assert.DoesNotContain(document.Segments, segment =>
             segment.Kind is RenderedSegmentKind.BranchJump
                 or RenderedSegmentKind.BranchDetour

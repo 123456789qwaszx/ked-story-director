@@ -1,7 +1,6 @@
 using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Editing;
@@ -105,7 +104,6 @@ public sealed partial class ProjectEditor
                         index + 1, line.Speaker, line.Text,
                         line.LineId ?? (index == 0 ? BlankOnlyLineIdOf(script) : null)))
                 .ToList(),
-            Array.Empty<ScriptParseProblem>(),
             Convert.ToHexString(
                 System.Security.Cryptography.SHA256.HashData(
                     System.Text.Encoding.UTF8.GetBytes(text ?? string.Empty))));
@@ -369,59 +367,6 @@ public sealed partial class ProjectEditor
         return script;
     }
 
-    public void RenameScript(string scriptId, string name)
-    {
-        if (Project.FindScript(scriptId) is { } script &&
-            !string.Equals(script.Name, name, StringComparison.Ordinal))
-        {
-            Mutate(ProjectChangeKind.NodeMetadata, () => script.Name = name);
-        }
-    }
-
-    /// <summary>
-    /// 대본을 지운다. 그 대본을 읽던 DialogueNode의 조건 구조는 남겨 둔다.
-    /// 지우면 작가가 만든 갈래가 조용히 무너지고, 대본을 다시 붙여도 되살아나지 않는다.
-    /// </summary>
-    public void RemoveScript(string scriptId)
-    {
-        if (Project.FindScript(scriptId) is not { } script)
-        {
-            return;
-        }
-
-        Mutate(() =>
-        {
-            Project.Scripts.Remove(script);
-
-            foreach (DialogueNode node in Project.EnumerateNodes().OfType<DialogueNode>())
-            {
-                if (string.Equals(node.ScriptId, scriptId, StringComparison.Ordinal))
-                {
-                    node.ScriptId = null;
-                }
-            }
-        });
-    }
-
-    /// <summary>
-    /// 작가의 평평한 대본 텍스트를 읽어 동기화 계획을 세운다. 아무것도 바꾸지 않는다.
-    /// 적용은 <see cref="ApplyScriptSync"/>가 한다.
-    /// </summary>
-    public ScriptSyncPlan PlanScriptSync(
-        string scriptId,
-        string rawText,
-        string? sourcePath = null,
-        string? locale = null)
-    {
-        ScriptDocument script = RequireScript(scriptId);
-        return ScriptSynchronizer.Plan(
-            script,
-            ScriptParser.Parse(rawText),
-            locale,
-            sourcePath,
-            _newLineId);
-    }
-
     /// <summary>
     /// 계획을 적용한다. <see cref="ScriptSyncPlan.HasConflicts"/>면 아무것도 하지 않고 거부한다.
     /// 도구가 대신 고르는 순간 작가가 쓰지 않은 연출이 다른 대사에 붙는다.
@@ -504,11 +449,6 @@ public sealed partial class ProjectEditor
             script.Lines.AddRange(ordered);
             script.SourceRevision++;
             script.SourceContentHash = plan.SourceContentHash;
-
-            if (plan.SourcePath is not null)
-            {
-                script.SourcePath = plan.SourcePath;
-            }
         });
     }
 
@@ -519,12 +459,11 @@ public sealed partial class ProjectEditor
     /// 고쳤는데 툴이 그대로"가 된다. 그래서 <b>바꿀 것이 없음이 확실할 때만</b> 참이고,
     /// 조금이라도 애매하면 거짓이다(그러면 평소대로 적용할 뿐 손해가 없다).
     ///
-    /// 네 가지를 전부 만족해야 한다:
+    /// 세 가지를 전부 만족해야 한다:
     ///   ① 원본 글이 지난번 반영한 것과 같은 해시
     ///   ② 모든 항목이 <c>Unchanged</c> — 하나라도 고침·끼움·지움이면 적용한다
     ///   ③ 살아 있는 줄의 <b>목록과 순서</b>가 계획이 남길 것과 정확히 같다
     ///      (은퇴한 줄이 되살아나야 하는 경우와 그 반대를 여기서 잡는다)
-    ///   ④ 원본 경로가 그대로
     /// </summary>
     private static bool ChangesNothing(ScriptDocument script, ScriptSyncPlan plan)
     {
@@ -536,13 +475,6 @@ public sealed partial class ProjectEditor
 
         // ② 고침·끼움·지움·이동이 하나라도 있으면 적용한다.
         if (plan.Entries.Any(entry => entry.Kind != ScriptSyncKind.Unchanged))
-        {
-            return false;
-        }
-
-        // ④ 원본 경로가 새로 붙거나 바뀌면 그것도 기록해야 한다.
-        if (plan.SourcePath is not null &&
-            !string.Equals(script.SourcePath, plan.SourcePath, StringComparison.Ordinal))
         {
             return false;
         }
@@ -737,24 +669,6 @@ public sealed partial class ProjectEditor
         });
 
         return hits.Count;
-    }
-
-    /// <summary>이 대사 노드가 읽을 대본을 정한다. 조건 구조는 LineId 기준으로 그대로 남는다.</summary>
-    public void SetDialogueScript(string dialogueNodeId, string? scriptId)
-    {
-        DialogueNode node = RequireDialogue(dialogueNodeId);
-
-        if (scriptId is not null && Project.FindScript(scriptId) is null)
-        {
-            throw new InvalidOperationException($"대본 '{scriptId}'를 찾을 수 없습니다.");
-        }
-
-        if (string.Equals(node.ScriptId, scriptId, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        Mutate(() => node.ScriptId = scriptId);
     }
 
     private ScriptDocument RequireScript(string scriptId)

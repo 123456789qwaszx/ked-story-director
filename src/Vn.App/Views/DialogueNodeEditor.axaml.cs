@@ -1,4 +1,3 @@
-using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -6,13 +5,8 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Vn.App.Services;
-using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
-using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Rendering;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.App.Views;
@@ -53,10 +47,6 @@ public partial class DialogueNodeEditor : UserControl
     /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 2026-08-23 결정, 문은 하나)
     /// </summary>
     private bool _chapterEpisode;
-
-    /// <summary>갈래 시작 줄(라벨·조건) → 블록/갈래 (W36-a). 클릭하면 그 갈래가 선택으로 남는다.</summary>
-    private readonly Dictionary<string, (BranchFlow.Block Block, int BranchIndex)> _branchStarts =
-        new(StringComparer.Ordinal);
 
     public DialogueNodeEditor()
     {
@@ -224,18 +214,9 @@ public partial class DialogueNodeEditor : UserControl
                 LineHost.Children.Add(BuildColumnHeader());
             }
 
-            // 갈래 트리 상태 (W36-a) — 헤더 문구용. 카드별 흐림은 RefreshBranchStates가 맡는다.
-            BranchFlow.Analysis<DialogueLine> branchAnalysis =
-                AnalyzeBranches(script, SimulateBranches(node, script).Effective);
-            var blockOfLine = new Dictionary<string, BranchFlow.Block>(StringComparer.Ordinal);
-
-            foreach (BranchFlow.Block block in branchAnalysis.Blocks)
-            {
-                foreach (BranchFlow.Branch branchStart in block.Branches)
-                {
-                    blockOfLine[branchStart.LineId] = block;
-                }
-            }
+            // ⛔ 갈래 고르기(W35 · W36)는 2026-10-29(L5)에 걷혔다 — 프리뷰가 어느 갈래를 접는지
+            //    고르고 나머지 카드를 흐리던 것이다. 프리뷰 · 재생이 먼저 걷혀, 남은 것은 이유 없이
+            //    흐려지는 줄뿐이었다.
 
             // 선택 블록은 조건과 달리 들여쓰기·색이 아니라 블록 전체를 감싸는 박스로 보여 준다.
             // 옵션 라벨과 본문 카드가 같은 박스 안에 순서대로 쌓인다.
@@ -251,20 +232,9 @@ public partial class DialogueNodeEditor : UserControl
                     choiceBox = new StackPanel { Spacing = 3 };
                     choiceChain = line.Branch!.ChainIndex;
 
-                    // 지금 프리뷰가 접는 갈래를 헤더에 그대로 쓴다 (W36-a).
-                    string headerText = "선택지 — 미선택 (문서 순서 근사)";
-
-                    if (blockOfLine.TryGetValue(line.Line.LineId, out BranchFlow.Block? headerBlock) &&
-                        headerBlock is { SelectedBranch: { } taken } &&
-                        taken >= 0 && taken < headerBlock.Branches.Count)
-                    {
-                        string label = headerBlock.Branches[taken].Label;
-                        headerText = $"선택지 — ▶ {(label.Length > 18 ? label[..18] + "…" : label)}";
-                    }
-
                     choiceBox.Children.Add(new TextBlock
                     {
-                        Text = headerText,
+                        Text = "선택지",
                         FontSize = 10,
                         FontWeight = FontWeight.Bold,
                         Opacity = 0.75
@@ -326,7 +296,6 @@ public partial class DialogueNodeEditor : UserControl
 
             AddOrphanCards(node, script);
             ShowProblems(flow);
-            RefreshBranchStates(node);
         }
         finally
         {
@@ -334,86 +303,7 @@ public partial class DialogueNodeEditor : UserControl
         }
     }
 
-    /// <summary>
-    /// 조건 값 시뮬 (W36-b) — 수동 선택 위에 "값이 이렇다면 이 갈래"의 자동 판정을 얹는다.
-    /// 시작값은 없다(작가 변수 폐지, 2026-09-17). 식은 노드 조건·게임 정의 조건에서 찾는다.
-    /// </summary>
-    private ConditionSimulation.Result SimulateBranches(DialogueNode node, DialogueScript script)
-    {
-        // ⛔ 작가 변수가 없어졌다 (2026-09-17) — 시뮬이 들고 시작할 값이 없다.
-        //    조건이 묻는 것은 이제 챕터 스탯뿐이고, 그것은 판이 아니라 진행이 든다.
-        var initial = new List<(string Variable, string Value)>();
-
-        return ConditionSimulation.Decide(
-            script.Lines,
-            line => line.Transition?.Kind,
-            line => line.LineId,
-            line => line.Transition?.ConditionId is { } conditionId
-                ? _session!.Project.FindCondition(conditionId)?.Expression
-                    ?? _session.Definition.Conditions.FirstOrDefault(condition =>
-                        string.Equals(condition.Id, conditionId, StringComparison.Ordinal))?.Expression
-                : null,
-            _ => Array.Empty<(string, SetOperatorKind, string)>(),
-            initial,
-            _session!.BranchSelection);
-    }
-
-    /// <summary>대본 라인의 갈래 분석 — 프리뷰 폴드와 같은 유효 선택(수동+자동)·커서 기준(사본 금지).</summary>
-    private BranchFlow.Analysis<DialogueLine> AnalyzeBranches(DialogueScript script, BranchSelection effective)
-    {
-        return BranchFlow.Analyze(
-            script.Lines,
-            line => line.Transition?.Kind,
-            line => line.LineId,
-            line => line.Text,
-            effective,
-            _selectedLineId);
-    }
-
-    /// <summary>
-    /// 갈래 트리 상태 갱신 (W36-a) — 선택되지 않은 갈래의 카드는 흐려진다(프리뷰에 접히지
-    /// 않는 줄이 밝게 남으면 화면이 거짓말을 한다). 미선택(근사) 갈래는 기존 밝기 그대로다.
-    /// 카드 재생성 없이 흐림만 바꾸므로 커서 이동마다 불러도 포커스를 잃지 않는다.
-    /// </summary>
-    private void RefreshBranchStates(DialogueNode node)
-    {
-        if (_session is null)
-        {
-            return;
-        }
-
-        DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
-        BranchFlow.Analysis<DialogueLine> analysis =
-            AnalyzeBranches(script, SimulateBranches(node, script).Effective);
-
-        _branchStarts.Clear();
-
-        foreach (BranchFlow.Block block in analysis.Blocks)
-        {
-            for (int branchIndex = 0; branchIndex < block.Branches.Count; branchIndex++)
-            {
-                _branchStarts[block.Branches[branchIndex].LineId] = (block, branchIndex);
-            }
-        }
-
-        foreach (BranchFlow.AnalyzedLine<DialogueLine> line in analysis.Lines)
-        {
-            if (!_lineCards.TryGetValue(line.Source.LineId, out Border? card) || card is null)
-            {
-                continue;
-            }
-
-            bool dimmed = !line.Taken && !line.Unresolved;
-            card.Opacity = dimmed ? 0.42 : 1;
-            ToolTip.SetTip(
-                card,
-                dimmed
-                    ? "선택되지 않은 갈래 — 프리뷰·재생에 접히지 않습니다. 갈래 시작 줄(라벨·조건)을 클릭하면 이 갈래를 봅니다."
-                    : null);
-        }
-    }
-
-    /// <summary>클릭한 줄을 왼쪽 강조 띠로 감싼다 — 고른 줄이 [줄 추가]의 자리와 갈래 선택의 기준이다.</summary>
+    /// <summary>클릭한 줄을 왼쪽 강조 띠로 감싼다 — 고른 줄이 [줄 추가]의 자리다.</summary>
     private Control WrapForLineSelection(Control card, string lineId)
     {
         var wrapper = new Border
@@ -517,30 +407,11 @@ public partial class DialogueNodeEditor : UserControl
 
         _selectedLineId = lineId;
 
-        // 갈래 시작 줄(라벨·조건) 클릭 = 그 갈래 선택 (W36-a) — 커서를 옮겨도 유지된다.
-        if (_session is not null &&
-            _branchStarts.TryGetValue(lineId, out (BranchFlow.Block Block, int BranchIndex) start))
-        {
-            if (start.Block.IsChoice)
-            {
-                _session.BranchSelection.SelectChoice(start.Block.BlockLineId, lineId);
-            }
-            else
-            {
-                _session.BranchSelection.SelectCondition(start.Block.BlockLineId, start.BranchIndex);
-            }
-        }
-
         foreach ((string cardLineId, Border card) in _lineCards)
         {
             card.BorderBrush = string.Equals(cardLineId, lineId, StringComparison.Ordinal)
                 ? LineSelectionBrush
                 : Brushes.Transparent;
-        }
-
-        if (_session?.Project.FindDialogue(_nodeId) is { } node)
-        {
-            RefreshBranchStates(node); // 커서 덮어쓰기·새 선택이 흐림 상태를 바꾼다
         }
     }
 
@@ -557,8 +428,7 @@ public partial class DialogueNodeEditor : UserControl
         // 머리글 오른쪽 한 줄에 든다 (2026-08-22) — 잘릴 수 있으므로 전문은 툴팁이 든다.
         string summary = current is null
             ? "대본 없음 — [줄 추가]로 만듭니다."
-            : $"{current.ActiveLines.Count()}줄 · {current.PrimaryLocale}" +
-              (current.SourcePath is null ? string.Empty : $" · {Path.GetFileName(current.SourcePath)}");
+            : $"{current.ActiveLines.Count()}줄 · {current.PrimaryLocale}";
 
         ScriptSummaryText.Text = summary;
         ToolTip.SetTip(ScriptSummaryText, summary);

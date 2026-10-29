@@ -88,13 +88,10 @@ public sealed class ScriptDocument
 
     public string Name { get; set; }
 
-    /// <summary>마지막으로 가져온 작가 파일의 경로. 기록용이며 저장 위치를 결정하지 않는다.</summary>
-    public string? SourcePath { get; set; }
-
-    /// <summary>동기화를 적용할 때마다 1씩 오른다. 아직 한 번도 읽지 않았으면 0이다.</summary>
+    /// <summary>동기화(카드 글 반영)를 적용할 때마다 1씩 오른다. 아직 한 번도 반영하지 않았으면 0이다.</summary>
     public int SourceRevision { get; set; }
 
-    /// <summary>마지막으로 반영한 원본 텍스트의 해시. 같은 파일을 다시 읽었는지 알 수 있다.</summary>
+    /// <summary>마지막으로 반영한 원본 텍스트의 해시. 같은 글을 다시 넣었는지 알 수 있다.</summary>
     public string? SourceContentHash { get; set; }
 
     public string PrimaryLocale { get; set; } = DefaultLocale;

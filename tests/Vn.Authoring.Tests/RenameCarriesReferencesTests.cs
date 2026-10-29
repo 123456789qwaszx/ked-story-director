@@ -1,4 +1,3 @@
-using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;

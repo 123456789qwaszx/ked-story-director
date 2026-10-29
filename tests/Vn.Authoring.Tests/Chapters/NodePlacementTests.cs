@@ -135,27 +135,6 @@ public sealed class NodePlacementTests
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <summary>ch01 — 에피소드마다 (Id, 부모)로 이어 세운다. 카드도 함께 선다.</summary>
-    private static ProjectEditor Chapter(params (string EpisodeId, string? Parent)[] episodes)
-    {
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("ch01");
-
-        foreach ((string episodeId, string? parent) in episodes)
-        {
-            if (parent is null)
-            {
-                editor.AddEpisode("ch01", episodeId, episodeId, 0, 0);
-            }
-            else
-            {
-                editor.AddNextEpisode("ch01", parent, episodeId, episodeId, 0, 0, optionLabel: $"{episodeId}로");
-            }
-        }
-
-        return editor;
-    }
-
     /// <summary>그 에피소드의 카드를 그 자리에 세운다 — 사람이 끌어다 둔 것과 같다.</summary>
     private static void Place(StoryProject project, string episodeId, double x, double y)
     {

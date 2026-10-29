@@ -9,7 +9,7 @@ namespace Vn.Authoring.Chapters;
 /// 대본 탭·연출 그래프·챕터 편집·내보내기). 한 규칙이 여러 곳에 살면 갈린다 — 이 저장소가
 /// 반복해서 다친 그 자리다(V1 자동 길 검사, 스탯 검사 두 벌, 챕터 개명 규율 두 벌).
 ///
-/// ⚠ <b>표식이 신원이고 이름은 글자다.</b> <see cref="DialogueNode.Name"/>은 사람이 판에서
+/// ⚠ <b>표식이 신원이고 이름은 글자다.</b> <see cref="StoryNode.Name"/>은 사람이 판에서
 /// 고치는 글자라 신원으로 삼으면 개명 때마다 끊긴다. 그래서 <see cref="DialogueNode.MarkedEpisodeId"/>가
 /// 먼저고, 이름은 아직 표식이 안 붙은 구판 프로젝트를 위한 뒷길이다.
 ///

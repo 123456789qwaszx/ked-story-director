@@ -29,7 +29,7 @@ internal static class AppSettingsService
     /// 임시 프로젝트가 <b>사용자의 진짜 최근 프로젝트를 덮어썼다</b> — 실제로 사용자의
     /// settings.json이 이미 지워진 임시 폴더를 가리키고 있었다.
     ///
-    /// 돌려세우는 자리는 <see cref="Vn.App.Tests.TestProcessIsolation"/> 하나다(어셈블리가
+    /// 돌려세우는 자리는 <c>Vn.App.Tests.TestProcessIsolation</c> 하나다(어셈블리가
     /// 실리는 순간 = 어떤 테스트보다 먼저). ⚠ 경로를 바꾸는 것만으로는 모자란다 —
     /// 복원 자체를 끄는 <see cref="MainWindow.RestoreRecentProjectOnOpen"/>이 짝이다.
     /// 임시 경로가 비어 있어 복원이 <b>조용히 실패하던 것</b>에 기대고 있었을 뿐이라,

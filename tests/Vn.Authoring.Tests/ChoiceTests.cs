@@ -208,11 +208,9 @@ public class ChoiceTests
         Assert.Equal(0, option.ChoiceBlockOrdinal);
         Assert.Equal(0, option.ChoiceOptionIndex);
 
-        // D5 — 정수 증감만 태그가 되고 키는 소문자다. 대입과 비정수는 태그를 만들지 않는다.
-        // ⛔ <b>미리보기 태그가 사라졌다</b> (2026-09-17 — 작가 변수 폐지). 태그는 줄의
-        //    `<<set>>`에서 <b>파생</b>되던 표시용 글자였다. 값이 변하는 자리가 챕터 간선의
+        // ⛔ <b>미리보기 태그가 사라졌다</b> (2026-09-17 — 작가 변수 폐지 · 칸은 2026-10-29 L5에 걷혔다).
+        //    태그는 줄의 `<<set>>`에서 <b>파생</b>되던 표시용 글자였다. 값이 변하는 자리가 챕터 간선의
         //    `스탯변화`로 옮겨졌으므로, 선택지에 비용을 보여 주려면 그쪽에서 다시 내야 한다.
-        Assert.Null(option.Tags);
 
         // 라벨은 일반 대사 라인으로 나오지 않는다.
         Assert.DoesNotContain(document.Segments, segment =>
@@ -224,10 +222,7 @@ public class ChoiceTests
 
         // ⛔ 「대문자 변수 소문자화」 알림은 2026-09-17에 사라졌다 — 그 알림은 옵션의
         //    <b>미리보기 태그</b>가 소문자 키로 조회된다는 사정이었고, 태그가 작가 변수
-        //    set에서 파생되던 것이라 함께 없어졌다.
-        DialogueDraft draft = DialoguePublisher.Draft(sample.Project, sample.Dialogue.Id);
-        Assert.DoesNotContain(draft.Problems, problem =>
-            problem.Kind == PublishProblemKind.ChoicePreviewNotice);
+        //    set에서 파생되던 것이라 함께 없어졌다(종류 `ChoicePreviewNotice`는 L5에 걷혔다).
     }
 
     // ── 조건 안 선택지 (W54) ────────────────────────────────────────────────

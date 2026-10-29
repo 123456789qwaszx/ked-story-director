@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Headless;
-using Vn.App;
 
 namespace Vn.App.Tests;
 

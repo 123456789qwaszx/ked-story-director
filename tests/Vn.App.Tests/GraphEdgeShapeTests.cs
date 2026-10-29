@@ -8,7 +8,6 @@ using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 

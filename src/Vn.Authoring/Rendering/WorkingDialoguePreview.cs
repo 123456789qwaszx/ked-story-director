@@ -59,7 +59,6 @@ public static class WorkingDialoguePreview
         var writing = new DocumentOutputOptions(
             scenario.Format,
             scenario.IncludeStructure,
-            scenario.IncludeSetAssignments,
             scenario.IncludeConditions,
             scenario.IncludeDialogueText,
             scenario.IncludeLocalizedDialogue,

@@ -159,8 +159,7 @@ public static class ResultDocumentComposer
                                 Speaker: options.IncludeSpeaker ? optionLine.CharacterName : null,
                                 OptionId: transition.OptionId,
                                 ChoiceBlockOrdinal: choiceBlockOrdinal,
-                                ChoiceOptionIndex: choiceOptionIndex,
-                                Tags: BuildEffectTags(optionLine.Sets)));
+                                ChoiceOptionIndex: choiceOptionIndex));
                         }
 
                         break;
@@ -268,24 +267,6 @@ public static class ResultDocumentComposer
                     TargetNodeName: project?.FindNode(marked)?.Name));
             }
 
-            if (options.IncludeSetAssignments)
-            {
-                for (int index = 0; index < line.Sets.Count; index++)
-                {
-                    DialogueResultSetOperation operation = line.Sets[index];
-
-                    segments.Add(new RenderedSegment(
-                        Id: $"set:{line.LineId}:{index}",
-                        Kind: RenderedSegmentKind.SetAssignment,
-                        Layer: DocumentLayer.SetAssignments,
-                        Source: lineSource,
-                        IndentLevel: indent,
-                        Variable: operation.Variable,
-                        Operator: SetOperators.Symbol(operation.Operator),
-                        Value: operation.Value));
-                }
-            }
-
             if (showDialogue && !isOptionLabel)
             {
                 segments.Add(new RenderedSegment(
@@ -367,36 +348,6 @@ public static class ResultDocumentComposer
         }
 
         return new RenderedDocument(dialogue.SourceNodeId, segments, options, presetId);
-    }
-
-    /// <summary>
-    /// 옵션 라벨의 표시용 스탯 미리보기 태그 (계약서 D5). 실제 효과가 아니라 표시 전용이다.
-    /// 정수 증감(+=/-=)만 태그가 되고, 대입(=)과 비정수는 만들지 않는다(런타임 파서가 버린다).
-    /// 키는 소문자 — 런타임 누적 표시 조회가 소문자 키로 일어난다.
-    /// </summary>
-    private static IReadOnlyList<string>? BuildEffectTags(
-        IReadOnlyList<DialogueResultSetOperation> sets)
-    {
-        List<string>? tags = null;
-
-        foreach (DialogueResultSetOperation operation in sets)
-        {
-            if (operation.Operator == SetOperatorKind.Assign ||
-                !int.TryParse(
-                    operation.Value.Trim(),
-                    System.Globalization.NumberStyles.AllowLeadingSign,
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    out int value))
-            {
-                continue;
-            }
-
-            int signed = operation.Operator == SetOperatorKind.Add ? value : -value;
-            tags ??= new List<string>();
-            tags.Add($"#{operation.Variable.ToLowerInvariant()}:{(signed < 0 ? "-" : "+")}{Math.Abs(signed)}");
-        }
-
-        return tags;
     }
 
     /// <summary>

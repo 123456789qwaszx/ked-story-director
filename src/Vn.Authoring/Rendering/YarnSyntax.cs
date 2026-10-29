@@ -9,18 +9,6 @@ namespace Vn.Authoring.Rendering;
 /// </summary>
 internal static class YarnSyntax
 {
-    /// <summary><c>&lt;&lt;set $x += 1&gt;&gt;</c></summary>
-    public static void AppendSet(StringBuilder builder, RenderedSegment segment)
-    {
-        builder.Append("<<set ")
-            .Append(NormalizeVariable(segment.Variable))
-            .Append(' ')
-            .Append(segment.Operator ?? "=")
-            .Append(' ')
-            .Append(segment.Value ?? string.Empty)
-            .Append(">>");
-    }
-
     public static void AppendCondition(StringBuilder builder, string keyword, string? expression)
     {
         builder.Append("<<")
@@ -55,7 +43,7 @@ internal static class YarnSyntax
     /// <inheritdoc cref="StatFunction"/>
     ///
     /// ⛔ <b>키를 정규화하지 않는다</b> (2026-09-17, 런타임 회신 §6.1이 잡았다).
-    /// 한때 <see cref="SanitizeVariableName"/>을 지났는데 <b>틀렸다</b>:
+    /// 한때 <c>SanitizeVariableName</c>(2026-10-29 L5에 걷혔다)을 지났는데 <b>틀렸다</b>:
     ///
     /// <code>
     /// 스탯 이름   호감도 (윌로우)
@@ -81,51 +69,6 @@ internal static class YarnSyntax
         (value ?? string.Empty)
             .Replace("\\", "\\\\", StringComparison.Ordinal)
             .Replace("\"", "\\\"", StringComparison.Ordinal);
-
-    public static string NormalizeVariable(string? variable)
-    {
-        string value = variable?.Trim() ?? string.Empty;
-
-        if (value.StartsWith('$'))
-        {
-            return value;
-        }
-
-        return "$" + value;
-    }
-
-    /// <summary>
-    /// 변수 이름에 쓸 수 있는 글자만 남긴다 — 문자·숫자·밑줄 (2026-08-25).
-    ///
-    /// <b>Yarn 식별자에는 공백이 못 들어간다.</b> 그대로 내면
-    /// <c>&lt;&lt;set $능력이 바뀌 += 4&gt;&gt;</c>가 되어 파서가 거기서 끊기고,
-    /// 그 노드만이 아니라 <b>번들 전체가</b> 컴파일에 실패한다.
-    ///
-    /// ⚠ 추측이 아니라 <b>정규화</b>다. 공백이 든 이름을 Yarn이 읽을 방법은 하나도 없으므로
-    /// 고를 것이 없다 — <see cref="SanitizeNodeName"/>·<c>Tier1Namespace</c>의 접두가
-    /// 이미 같은 규칙을 쓰고, 이 함수가 그 규칙의 <b>유일한 주인</b>이다.
-    ///
-    /// <b>입력과 출력 양쪽에 건다.</b> 입력(설정 노드의 변수 칸)에서 막으면 새로 생기지
-    /// 않고, 출력(접두 적용)에서 걸면 <b>이미 저장된 프로젝트</b>도 그날로 컴파일된다.
-    /// </summary>
-    public static string SanitizeVariableName(string? name)
-    {
-        string source = (name ?? string.Empty).TrimStart('$').Trim();
-
-        if (source.Length == 0)
-        {
-            return string.Empty;   // 빈 이름은 펼침 검증이 따로 막는다 — 여기서 지어내지 않는다.
-        }
-
-        var builder = new StringBuilder(source.Length);
-
-        foreach (char c in source)
-        {
-            builder.Append(char.IsLetterOrDigit(c) || c == '_' ? c : '_');
-        }
-
-        return builder.ToString();
-    }
 
     /// <summary>
     /// 노드 타이틀에 쓸 수 있는 이름으로 다듬는다. 문자·숫자·밑줄만 남긴다.

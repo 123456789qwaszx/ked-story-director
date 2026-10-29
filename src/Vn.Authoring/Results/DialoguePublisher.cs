@@ -1,7 +1,6 @@
 using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Results;
 
@@ -22,14 +21,8 @@ public enum PublishProblemKind
     /// <summary>출구가 없는 노드를 가리킨다.</summary>
     MissingExitTarget,
 
-    /// <summary>변수 이름이 비어 있는 등 성립하지 않는 변수 변경.</summary>
-    InvalidSetOperation,
-
     /// <summary>옵션 라벨에 안정 Id가 없거나 선택 구조가 성립하지 않는다.</summary>
     InvalidChoiceOption,
-
-    /// <summary>미리보기 태그 생성에 관한 알림(대문자 변수 소문자화 등). 막지 않는다.</summary>
-    ChoicePreviewNotice,
 
     /// <summary>대본에서 사라진 줄에 대사 논리가 남아 있다. 막지 않는다.</summary>
     OrphanData
@@ -57,7 +50,6 @@ public sealed class DialogueDraft
         int sourceScriptRevision,
         string locale,
         IReadOnlyList<DialogueResultLine> lines,
-        IReadOnlyList<DialogueResultAssignment> assignments,
         string? defaultExitTargetNodeId,
         IReadOnlyList<PublishProblem> problems,
         IReadOnlyList<DialogueResultTransition>? trailingTransitions = null)
@@ -69,7 +61,6 @@ public sealed class DialogueDraft
         SourceScriptRevision = sourceScriptRevision;
         Locale = locale;
         Lines = lines;
-        Assignments = assignments;
         DefaultExitTargetNodeId = defaultExitTargetNodeId;
         Problems = problems;
     }
@@ -88,8 +79,6 @@ public sealed class DialogueDraft
 
     /// <summary>마지막 줄 뒤의 전환들 — 대사 없는 조건 블록이 대본의 끝일 때 (2026-08-24).</summary>
     public IReadOnlyList<DialogueResultTransition> TrailingTransitions { get; }
-
-    public IReadOnlyList<DialogueResultAssignment> Assignments { get; }
 
     public string? DefaultExitTargetNodeId { get; }
 
@@ -162,7 +151,6 @@ public static class DialoguePublisher
                 line.Text,
                 Freeze(line.Transition, project, definition, available),
                 line.Transition?.OpensBranch == true ? branchExit : null,
-                null,
                 // 둘째 전환부터 — 겹쳐 닫기·연달아 열기가 여기 실린다 (2026-08-17).
                 line.Transitions.Count <= 1
                     ? null
@@ -205,9 +193,7 @@ public static class DialoguePublisher
         }
 
         // ⛔ 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지) — 설정노드는
-        //    이제 <b>조건만</b> 공급한다. 결과에 실을 배정이 없다.
-        var assignments = new List<DialogueResultAssignment>();
-
+        //    이제 <b>조건만</b> 공급한다. 결과의 배정 칸(`Assignments`)은 L5(2026-10-29)에 걷혔다.
         return new DialogueDraft(
             node.Id,
             node.Name,
@@ -215,7 +201,6 @@ public static class DialoguePublisher
             project.FindScript(script.ScriptId)?.SourceRevision ?? 0,
             script.Locale,
             lines,
-            assignments,
             // 커스텀 노드는 기본 출구가 없다 — detour의 복귀가 그 자리를 맡는다.
             node.DefaultExitTargetNodeId,
             problems,
@@ -237,7 +222,6 @@ public static class DialoguePublisher
             draft.SourceScriptRevision,
             draft.Locale,
             draft.Lines,
-            draft.Assignments,
             draft.DefaultExitTargetNodeId,
             draft.TrailingTransitions);
     }

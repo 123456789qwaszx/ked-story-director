@@ -73,7 +73,7 @@ public class ConditionSupplyTests
         Assert.DoesNotContain(choices, choice => choice.ConditionId == foreignCondition.Id);
 
         ScriptDocument script = editor.AddScript("전역 조건 대본");
-        editor.SetDialogueScript(dialogue.Id, script.Id);
+        dialogue.ScriptId = script.Id;
         ScriptLine globalLine = editor.InsertScriptLine(script.Id);
         editor.SetLineTransition(
             dialogue.Id,
@@ -149,7 +149,7 @@ public class ConditionSupplyTests
 
         DialogueNode dialogue = editor.AddDialogueNode(here.Id, name: "장면");
         ScriptDocument script = editor.AddScript("대본");
-        editor.SetDialogueScript(dialogue.Id, script.Id);
+        dialogue.ScriptId = script.Id;
         ScriptLine scriptLine = editor.InsertScriptLine(script.Id);
         editor.SetLineTransition(
             dialogue.Id, scriptLine.Id, LineConditionTransition.BeginIf(foreignCondition.Id));

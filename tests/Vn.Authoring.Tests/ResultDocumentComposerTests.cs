@@ -25,9 +25,7 @@ public class ResultDocumentComposerTests
         DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
 
-        RenderedSegment[] meaningful = document.Segments
-            .Where(segment => segment.Kind != RenderedSegmentKind.SetAssignment)
-            .ToArray();
+        RenderedSegment[] meaningful = document.Segments.ToArray();
 
         // 갈래 출구의 소유자는 여는 줄이지만(§4.2), 실행은 갈래의 끝에서 일어난다.
         // 출구가 여는 줄 바로 뒤에 나오면 갈래 본문이 그 아래 묻혀 실행되지 않는다.

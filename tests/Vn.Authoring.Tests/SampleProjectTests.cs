@@ -2,7 +2,6 @@ using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
-using Vn.Authoring.Editing;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Tests;
@@ -59,29 +58,6 @@ public class SampleProjectTests
             Path.Combine(Path.GetDirectoryName(SamplePath)!, "story", "chapter01.vnstory.json"));
         Assert.DoesNotContain("3분의 1이요?", storyText, StringComparison.Ordinal);
         Assert.DoesNotContain("\"speaker\"", storyText, StringComparison.Ordinal);
-    }
-
-    /// <summary>
-    /// 손으로 쓴 원본 대본을 다시 읽어도 LineId가 하나도 바뀌지 않아야 한다.
-    /// 이것이 깨지면 연출·녹음·번역이 전부 끊어진다.
-    /// </summary>
-    [Fact]
-    public void 원본_대본을_다시_읽어도_LineId가_그대로다()
-    {
-        StoryProject project = Load();
-        var editor = new ProjectEditor(project);
-        string rawPath = Path.Combine(Path.GetDirectoryName(SamplePath)!, "raw", "chapter01.txt");
-
-        ScriptSyncPlan plan = editor.PlanScriptSync(
-            "sc_chapter01",
-            File.ReadAllText(rawPath),
-            rawPath);
-
-        Assert.False(plan.HasConflicts);
-        Assert.True(plan.IsNoOp);
-        Assert.Equal(
-            new[] { "ln_a1", "ln_a2", "ln_b1", "ln_b2", "ln_c1", "ln_c2", "ln_d1", "ln_d2" },
-            plan.Entries.Select(entry => entry.LineId));
     }
 
     [Fact]

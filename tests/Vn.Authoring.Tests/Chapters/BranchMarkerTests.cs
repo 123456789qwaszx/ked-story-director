@@ -3,7 +3,6 @@ using Vn.Authoring.Editing;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 
 namespace Vn.Authoring.Tests.Chapters;

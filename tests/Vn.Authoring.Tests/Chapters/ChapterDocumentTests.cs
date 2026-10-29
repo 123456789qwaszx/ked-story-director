@@ -1,7 +1,6 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
-using Vn.Authoring.Tests.Fixtures;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -121,10 +120,6 @@ public sealed class ChapterDocumentTests : IDisposable
 
         Assert.DoesNotContain("chapters", File.ReadAllText(ManifestPath));
     }
-
-    /// <summary>저장되는 모양 그대로의 챕터 — 파생값은 안 들어 있다.</summary>
-    private static string Stored(ChapterDocument chapter) =>
-        ChapterDocumentJson.Write([chapter])!.ToJsonString();
 
     /// <summary>규격의 칸을 되도록 다 채운 챕터 하나 — 빈 값은 왕복에서 안 드러난다.</summary>
     private static ChapterDocument Sample() => new()

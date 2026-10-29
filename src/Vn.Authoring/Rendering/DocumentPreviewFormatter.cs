@@ -61,14 +61,7 @@ public static class DocumentPreviewFormatter
                     break;
 
                 case RenderedSegmentKind.ChoiceOption:
-                    builder.Append("-> ").Append(segment.Text ?? string.Empty);
-
-                    if (segment.Tags is { Count: > 0 })
-                    {
-                        builder.Append(" (").Append(string.Join(' ', segment.Tags)).Append(')');
-                    }
-
-                    builder.Append('\n');
+                    builder.Append("-> ").Append(segment.Text ?? string.Empty).Append('\n');
                     break;
 
                 case RenderedSegmentKind.Warning:

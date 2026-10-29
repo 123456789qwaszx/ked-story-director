@@ -1,7 +1,6 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 

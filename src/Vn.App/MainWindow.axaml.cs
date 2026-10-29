@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -11,8 +10,6 @@ using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
-using Vn.Authoring.Rendering;
-using Vn.Authoring.Results;
 using Vn.Authoring.Serialization;
 
 namespace Vn.App;

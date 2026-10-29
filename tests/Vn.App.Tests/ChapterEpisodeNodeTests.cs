@@ -6,7 +6,6 @@ using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
-using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
 using Vn.Authoring.Tests.Fixtures;

@@ -1,18 +1,14 @@
-using System.Diagnostics;
 using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using IoPath = System.IO.Path;
 using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Definition;
-using Vn.Authoring.Model;
 
 namespace Vn.App.Views;
 

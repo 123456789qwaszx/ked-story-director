@@ -1,5 +1,4 @@
 using Vn.App.Services;
-using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 
 namespace Vn.App.Tests;

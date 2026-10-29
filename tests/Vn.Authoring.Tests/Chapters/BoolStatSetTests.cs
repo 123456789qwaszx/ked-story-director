@@ -200,21 +200,6 @@ public sealed class BoolStatSetTests
     private static IEnumerable<ChapterDiagnostic> Errors(ChapterGraphModel model) =>
         model.Diagnostics.Where(item => item.Severity == ChapterDiagnosticSeverity.Error);
 
-    /// <summary>내보내기가 거부돼야 한다 — 코어가 돌려준 사유들.</summary>
-    private static IReadOnlyList<string> Refusals(ChapterGraphModel model)
-    {
-        ChapterExportResult result = ChapterProgressionExporter.Export(model);
-
-        Assert.True(result.Refused);
-
-        return
-        [
-            .. result.Validation.All
-                .Where(item => item.Code == ChapterDiagnosticCode.CoreRefusedChapter)
-                .Select(item => item.Message)
-        ];
-    }
-
     /// <summary>내보내고 첫 간선 첫 스탯변화의 (Op, Amount).</summary>
     private static (string Op, int Amount) OnlyStatChange(ChapterGraphModel model)
     {

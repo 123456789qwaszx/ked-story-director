@@ -1,9 +1,7 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
-using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 
 namespace Vn.App.Services;
@@ -71,11 +69,6 @@ internal sealed class AuthoringSession
 
     public string StatusMessage { get; private set; } = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
 
-    /// <summary>
-    /// 프리뷰 갈래 선택 (W35) — "지금 어느 갈래를 보고 있는가". 뷰 상태라 저장하지 않고,
-    /// 프로젝트를 새로 열면 비워진다. 대사·연출 편집기가 같은 선택 하나를 본다(LineId 불변 덕).
-    /// </summary>
-    public BranchSelection BranchSelection { get; } = new();
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
     public bool IsDirty => !string.Equals(_savedSnapshot, ProjectSnapshotCodec.Encode(Project), StringComparison.Ordinal);
@@ -120,7 +113,6 @@ internal sealed class AuthoringSession
 
         ProjectPath = null;
         Definition = GameDefinition.Empty;
-        BranchSelection.Clear();
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
 
@@ -149,7 +141,6 @@ internal sealed class AuthoringSession
 
         ProjectPath = loaded.ManifestPath;
         Definition = GameDefinition.LoadBeside(loaded.ManifestPath);
-        BranchSelection.Clear();
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
             $"{Path.GetFileName(ProjectPath)} · 대본 {project.Scripts.Count}개 · " +

@@ -7,7 +7,6 @@ namespace Vn.Authoring.Results;
 /// </summary>
 /// <param name="Revision">펼친 순간 대본 줄의 개정 번호.</param>
 /// <param name="BranchExitTargetNodeId">이 줄이 연 갈래가 끝났을 때 이동할 노드.</param>
-/// <param name="SetOperations">이 줄에 도달했을 때 실행할 변수 변경. 순서가 실행 순서다.</param>
 public sealed record DialogueResultLine(
     int Index,
     string LineId,
@@ -16,7 +15,6 @@ public sealed record DialogueResultLine(
     string Text,
     DialogueResultTransition? Transition = null,
     string? BranchExitTargetNodeId = null,
-    IReadOnlyList<DialogueResultSetOperation>? SetOperations = null,
     IReadOnlyList<DialogueResultTransition>? ExtraTransitions = null,
 
     /// <summary>
@@ -25,8 +23,8 @@ public sealed record DialogueResultLine(
     /// </summary>
     string? DetourTargetNodeId = null)
 {
-    public IReadOnlyList<DialogueResultSetOperation> Sets =>
-        SetOperations ?? Array.Empty<DialogueResultSetOperation>();
+    // ⛔ 줄의 변수 변경(`SetOperations` · `<<set>>`)은 작가 변수와 함께 2026-09-17에 비었고
+    //    2026-10-29(L5)에 칸째 걷혔다. 값이 변하는 자리는 챕터 간선의 스탯 변화다.
 
     /// <summary>
     /// 이 줄 앞에서 일어나는 전환들 — <b>순서가 곧 일어나는 순서</b>다 (2026-08-17).
@@ -41,12 +39,6 @@ public sealed record DialogueResultLine(
             ? Array.Empty<DialogueResultTransition>()
             : [Transition, .. ExtraTransitions ?? Array.Empty<DialogueResultTransition>()];
 }
-
-/// <summary>펼친 순간의 변수 변경 하나. Yarn <c>&lt;&lt;set&gt;&gt;</c>에 해당한다.</summary>
-public sealed record DialogueResultSetOperation(
-    string Variable,
-    SetOperatorKind Operator,
-    string Value);
 
 /// <summary>
 /// 펼친 순간의 조건·선택 전환. 조건 Id만이 아니라 이름과 식까지 함께 싣는다.
@@ -68,12 +60,10 @@ public sealed record DialogueResultTransition(
     string? OptionId = null,
     string? ExitTargetNodeId = null);
 
-/// <summary>연결되어 있던 SetNode의 변수 값.</summary>
-public sealed record DialogueResultAssignment(string Variable, string Value);
-
 /// <summary>
-/// DialogueNode의 작업 상태를 펼친 <b>불변</b> 결과 — 흐름 해석(<c>BranchFlow</c> · 조건 시뮬레이션)과
-/// 미리보기 합성기(<c>ResultDocumentComposer</c>)가 읽는 모양이다. 저장하지 않는다.
+/// DialogueNode의 작업 상태를 펼친 <b>불변</b> 결과 — 합성기(<c>ResultDocumentComposer</c>)가 읽는
+/// 모양이다(카드 글 칸 · 흐름 조각). 저장하지 않는다. (⛔ 이것을 함께 읽던 갈래 고르기 —
+/// <c>BranchFlow</c> · 조건 시뮬레이션 — 는 2026-10-29 L5에 걷혔다.)
 ///
 /// ⛔ 발행(<c>vN</c> 고정본 · 내용 해시 · 결과 저장소)은 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로
 /// 갔다. "결과"라는 이름은 그 시절의 것이 남았다.
@@ -87,7 +77,6 @@ public sealed class DialogueResult
         int sourceScriptRevision,
         string locale,
         IReadOnlyList<DialogueResultLine> lines,
-        IReadOnlyList<DialogueResultAssignment> assignments,
         string? defaultExitTargetNodeId,
         IReadOnlyList<DialogueResultTransition>? trailingTransitions = null)
     {
@@ -98,7 +87,6 @@ public sealed class DialogueResult
         SourceScriptRevision = sourceScriptRevision;
         Locale = locale;
         Lines = lines;
-        Assignments = assignments;
         DefaultExitTargetNodeId = defaultExitTargetNodeId;
     }
 
@@ -120,8 +108,6 @@ public sealed class DialogueResult
     /// 결과에 실어야 합성기가 노드를 다시 읽지 않고 문서 끝에서 그 블록을 닫는다.
     /// </summary>
     public IReadOnlyList<DialogueResultTransition> TrailingTransitions { get; }
-
-    public IReadOnlyList<DialogueResultAssignment> Assignments { get; }
 
     public string? DefaultExitTargetNodeId { get; }
 

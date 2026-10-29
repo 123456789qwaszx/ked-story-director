@@ -52,16 +52,12 @@ public sealed class ScriptSyncPlan
         string scriptId,
         string locale,
         string sourceContentHash,
-        string? sourcePath,
-        IReadOnlyList<ScriptSyncEntry> entries,
-        IReadOnlyList<ScriptParseProblem> parseProblems)
+        IReadOnlyList<ScriptSyncEntry> entries)
     {
         ScriptId = scriptId;
         Locale = locale;
         SourceContentHash = sourceContentHash;
-        SourcePath = sourcePath;
         Entries = entries;
-        ParseProblems = parseProblems;
     }
 
     public string ScriptId { get; }
@@ -70,12 +66,8 @@ public sealed class ScriptSyncPlan
 
     public string SourceContentHash { get; }
 
-    public string? SourcePath { get; }
-
     /// <summary>새 순서대로의 항목. 사라진 줄은 원래 있던 자리에 끼워 넣는다.</summary>
     public IReadOnlyList<ScriptSyncEntry> Entries { get; }
-
-    public IReadOnlyList<ScriptParseProblem> ParseProblems { get; }
 
     public IEnumerable<ScriptSyncEntry> Conflicts =>
         Entries.Where(entry => entry.Kind == ScriptSyncKind.Ambiguous);
@@ -139,7 +131,6 @@ public static class ScriptSynchronizer
         ScriptDocument document,
         ParsedScript parsed,
         string? locale = null,
-        string? sourcePath = null,
         Func<string>? newLineId = null)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -203,7 +194,7 @@ public static class ScriptSynchronizer
             previousNew = boundaryNew;
         }
 
-        return BuildPlan(document, targetLocale, oldLines, parsed, state, sourcePath, newLineId);
+        return BuildPlan(document, targetLocale, oldLines, parsed, state, newLineId);
     }
 
     private static ScriptSyncPlan BuildPlan(
@@ -212,7 +203,6 @@ public static class ScriptSynchronizer
         List<ScriptLine> oldLines,
         ParsedScript parsed,
         MatchState state,
-        string? sourcePath,
         Func<string> newLineId)
     {
         // 사라지거나 확정하지 못한 옛 줄은 바로 앞에서 짝이 맞은 새 줄 뒤에 끼워 넣는다.
@@ -305,9 +295,7 @@ public static class ScriptSynchronizer
             document.Id,
             locale,
             parsed.ContentHash,
-            sourcePath ?? document.SourcePath,
-            entries,
-            parsed.Problems);
+            entries);
     }
 
     private static void MatchGap(
