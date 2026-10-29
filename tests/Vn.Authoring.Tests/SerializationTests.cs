@@ -173,10 +173,10 @@ public class SerializationTests
         string directory = TempDirectory();
         string manifestPath = Path.Combine(directory, "project" + ProjectManifestJson.FileExtension);
         var project = new StoryProject { Title = "부분 변경" };
-        var firstScript = new ScriptDocument("sc_a", "A 대본");
+        var firstScript = new ScriptDocument();
         firstScript.Lines.Add(new ScriptLine("ln_a"));
         firstScript.RequireLocale(firstScript.PrimaryLocale).Entries["ln_a"] = new LocalizedLine("", "처음");
-        var secondScript = new ScriptDocument("sc_b", "B 대본");
+        var secondScript = new ScriptDocument();
         secondScript.Lines.Add(new ScriptLine("ln_b"));
         secondScript.RequireLocale(secondScript.PrimaryLocale).Entries["ln_b"] = new LocalizedLine("", "고정");
 
@@ -191,8 +191,9 @@ public class SerializationTests
         {
             ProjectStore.Save(manifestPath, project);
             string manifestBefore = File.ReadAllText(manifestPath);
-            string firstPath = Path.Combine(directory, "script", "sc_a.vnscript.json");
-            string secondPath = Path.Combine(directory, "script", "sc_b.vnscript.json");
+            // 형식 4 — 대본은 카드와 함께 판 파일에 든다. 줄 하나를 고치면 그 카드의 판만 바뀐다.
+            string firstPath = Path.Combine(directory, "story", "a.vnstory.json");
+            string secondPath = Path.Combine(directory, "story", "b.vnstory.json");
             string firstBefore = File.ReadAllText(firstPath);
             string secondBefore = File.ReadAllText(secondPath);
 
@@ -280,13 +281,15 @@ public class SerializationTests
         }
     }
 
-    [Fact]
-    public void 개별_StoryFile을_프로젝트로_잘못_열지_않는다()
+    [Theory]
+    [InlineData(1)]   // 형식 3 프로젝트의 판 파일
+    [InlineData(2)]   // 형식 4
+    public void 개별_StoryFile을_프로젝트로_잘못_열지_않는다(int version)
     {
         string directory = TempDirectory();
         string storyPath = Path.Combine(directory, "chapter.vnstory.json");
-        File.WriteAllText(storyPath, """
-            { "formatVersion": 1, "fileId": "sf_chapter", "name": "1장", "nodes": [] }
+        File.WriteAllText(storyPath, $$"""
+            { "formatVersion": {{version}}, "fileId": "sf_chapter", "name": "1장", "nodes": [] }
             """);
 
         try
@@ -307,12 +310,12 @@ public class SerializationTests
         Directory.CreateDirectory(Path.Combine(directory, "story"));
         string manifestPath = Path.Combine(directory, "project.vnproject.json");
         File.WriteAllText(manifestPath, """
-            { "formatVersion": 3, "scripts": [], "files": [
+            { "formatVersion": 4, "files": [
               { "id": "sf_manifest", "name": "A", "path": "story/a.vnstory.json" }
             ] }
             """);
         File.WriteAllText(Path.Combine(directory, "story", "a.vnstory.json"), """
-            { "formatVersion": 1, "fileId": "sf_actual", "name": "A", "nodes": [] }
+            { "formatVersion": 2, "fileId": "sf_actual", "name": "A", "nodes": [] }
             """);
 
         try
@@ -387,6 +390,18 @@ public class SerializationTests
         project.Links.Add(new NodeLink("lk_two", NodeLinkKind.Settings, setNode.Id, dialogue.Id));
 
         Assert.Throws<InvalidDataException>(() => ProjectSnapshotCodec.Encode(project));
+    }
+
+    [Fact]
+    public void 형식_4_manifest의_scripts는_읽지_않는다()
+    {
+        // 형식 3의 대본 목록은 저장할 때 지울 파일 목록이기도 하다 — 형식 4에 적힌 것은 따르지 않는다.
+        ProjectManifest manifest = ProjectManifestJson.Read("""
+            { "formatVersion": 4, "files": [],
+              "scripts": [ { "id": "sc_a", "name": "A", "path": "script/sc_a.vnscript.json" } ] }
+            """);
+
+        Assert.Empty(manifest.LegacyScripts);
     }
 
     [Fact]

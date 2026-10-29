@@ -7,7 +7,8 @@ namespace Vn.Authoring.Serialization;
 /// <summary>
 /// 프로젝트 메타데이터와 <b>부속 파일의 목차</b>를 담는 manifest 형식.
 ///
-/// 본문은 어디에도 없다. 대본은 <c>scripts</c>가, 노드는 <c>files</c>가 가리키는 파일에 있다.
+/// 본문은 어디에도 없다. 카드와 그 대본은 <c>files</c>가 가리키는 판 파일에 있다(형식 4 — 형식 3까지는 대본이
+/// 따로 선 파일이었고 <c>scripts</c>가 가리켰다. 그 목록은 옮길 때만 읽는다).
 /// manifest가 커지지 않아야 파일을 나눈 이유가 남는다. 조건 공급 link는 파일을 넘나드는 관계라서 여기에 둔다.
 ///
 /// ⛔ <b>연출 키는 쓰지 않고 읽지도 않는다</b> (2026-10-29) — <see cref="PresentationKeys"/>의 키와 연출 배선은
@@ -33,18 +34,6 @@ public static class ProjectManifestJson
     {
         ArgumentNullException.ThrowIfNull(project);
         JsonSupport.ValidateProject(project);
-
-        var scripts = new JsonArray();
-
-        foreach (ScriptFileReference reference in ScriptReferencesOf(project))
-        {
-            scripts.Add(new JsonObject
-            {
-                ["id"] = reference.Id,
-                ["name"] = reference.Name,
-                ["path"] = reference.RelativePath
-            });
-        }
 
         var files = new JsonArray();
 
@@ -79,7 +68,6 @@ public static class ProjectManifestJson
         // ⛔ exportFormats(내보내기 양식) · outputPath(라이브 Yarn 출력 폴더)는 2026-10-29에 걷혔다 — Yarn과
         //    문서는 ked-story-compositor가 낸다. 옛 파일의 두 키는 읽지 않고 지나간다.
 
-        root["scripts"] = scripts;
         root["files"] = files;
 
         if (links.Count > 0)
@@ -128,7 +116,8 @@ public static class ProjectManifestJson
                 "새 프로젝트를 만들고 대사를 카드 글 칸에 붙여 넣으세요.");
         }
 
-        if (version != CurrentFormatVersion || root["files"] is not JsonArray files)
+        if ((version != CurrentFormatVersion && version != StoryProject.LegacyScriptFilesFormatVersion) ||
+            root["files"] is not JsonArray files)
         {
             throw new InvalidDataException("VnTool 프로젝트 manifest가 아닙니다.");
         }
@@ -137,7 +126,13 @@ public static class ProjectManifestJson
         HashSet<string> scriptIds = new(StringComparer.Ordinal);
         HashSet<string> allPaths = new(StringComparer.OrdinalIgnoreCase);
 
-        foreach (JsonNode? item in root["scripts"]?.AsArray() ?? new JsonArray())
+        // 따로 선 대본 목록은 형식 3에서만 읽는다 — 저장할 때 그 파일들을 지우므로(옮겨 갔다), 형식 4에 손으로 적힌
+        // `scripts`가 남의 파일을 지우게 두지 않는다.
+        JsonArray? legacyScripts = version == StoryProject.LegacyScriptFilesFormatVersion
+            ? root["scripts"]?.AsArray()
+            : null;
+
+        foreach (JsonNode? item in legacyScripts ?? new JsonArray())
         {
             if (item is not JsonObject script)
             {
@@ -149,7 +144,7 @@ public static class ProjectManifestJson
             string path = ProjectStore.NormalizeRelativePath(
                 (string?)script["path"]
                     ?? throw new InvalidDataException($"대본 '{id}'에 path가 없습니다."),
-                ScriptDocumentJson.FileExtension);
+                ScriptDocumentJson.LegacyFileExtension);
 
             if (!scriptIds.Add(id))
             {
@@ -231,16 +226,6 @@ public static class ProjectManifestJson
             chapters,
             writerSpeakers,
             carriesPresentation);
-    }
-
-    internal static IReadOnlyList<ScriptFileReference> ScriptReferencesOf(StoryProject project)
-    {
-        return project.EnumerateScripts()
-            .Select(script => new ScriptFileReference(
-                script.Id,
-                script.Name,
-                ProjectStore.DefaultScriptPath(script.Id)))
-            .ToList();
     }
 
     /// <summary>
@@ -354,16 +339,18 @@ public static class ProjectManifestJson
 /// <param name="CarriesPresentation">
 /// 연출 데이터(<see cref="ProjectManifestJson.PresentationKeys"/>의 키나 연출 배선)가 있었다 — 읽지 않았다.
 /// </param>
+/// <param name="LegacyScripts">형식 3 매니페스트가 가리키던 따로 선 대본 파일들. 형식 4는 비어 있다.</param>
 public sealed record ProjectManifest(
     string Title,
     string? StartNodeId,
-    IReadOnlyList<ScriptFileReference> Scripts,
+    IReadOnlyList<ScriptFileReference> LegacyScripts,
     IReadOnlyList<ProjectStoryFileReference> Files,
     IReadOnlyList<NodeLink> Links,
     IReadOnlyList<ChapterDocument> Chapters,
     IReadOnlyList<WriterSpeaker> WriterSpeakers,
     bool CarriesPresentation);
 
+/// <summary>형식 3의 따로 선 대본 파일 하나 — 옮길 때만 읽는다.</summary>
 public sealed record ScriptFileReference(
     string Id,
     string Name,

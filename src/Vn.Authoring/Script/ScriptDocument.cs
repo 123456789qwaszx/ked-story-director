@@ -61,7 +61,7 @@ public sealed class ScriptLocale
 }
 
 /// <summary>
-/// 작가의 평평한 대본 하나에서 나온 저작 산출물.
+/// 대사 카드 하나의 대본 — 카드가 든다(<see cref="Model.DialogueNode.Script"/>).
 ///
 /// 두 가지를 함께 소유한다.
 ///   <b>줄 정체성과 순서</b> — <see cref="Lines"/>
@@ -71,22 +71,14 @@ public sealed class ScriptLocale
 /// 본문을 복사하지 않는다. 같은 문장을 고칠 수 있는 자리가 두 곳이 되면 어느 쪽이 진실인지
 /// 아무도 답할 수 없게 된다.
 ///
-/// 작가의 원본 파일은 <b>읽기 전용 가져오기 입력</b>이다. VnTool은 그 파일에 쓰지 않는다.
-/// 다시 읽어 들이는 것은 <see cref="ScriptSynchronizer"/>를 지나는 명시적인 동작이다.
+/// 글을 다시 넣는 것은 <see cref="ScriptSynchronizer"/>를 지나는 명시적인 동작이다(LineId를 잇는다).
+///
+/// ⛔ 2026-10-29까지는 카드와 따로 선 문서였다 — 제 Id · 이름을 들고 <c>script/*.vnscript.json</c>에 따로 저장됐고 카드는
+/// Id로 가리켰다. 카드와 늘 1:1이 된 뒤로 카드가 직접 들고 카드와 함께 저장된다(<c>docs/plans/script-merge.md</c>).
 /// </summary>
 public sealed class ScriptDocument
 {
     public const string DefaultLocale = "ko-KR";
-
-    public ScriptDocument(string? id = null, string name = "새 대본")
-    {
-        Id = id ?? Identifier.Script();
-        Name = name;
-    }
-
-    public string Id { get; }
-
-    public string Name { get; set; }
 
     /// <summary>동기화(카드 글 반영)를 적용할 때마다 1씩 오른다. 아직 한 번도 반영하지 않았으면 0이다.</summary>
     public int SourceRevision { get; set; }

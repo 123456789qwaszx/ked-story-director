@@ -4,43 +4,31 @@ using Vn.Authoring.Script;
 namespace Vn.Authoring.Serialization;
 
 /// <summary>
-/// 대본 산출물 하나를 결정적으로 직렬화한다.
+/// 카드의 대본 하나를 결정적으로 직렬화한다 — 카드 JSON의 <c>script</c> 칸이다(형식 4).
 ///
-/// 한 파일 안에 두 산출물이 함께 들어간다.
+/// 한 덩이 안에 두 산출물이 함께 들어간다.
 /// <code>
 /// lines    줄 정체성과 현재 순서 (산출물 1)
 /// locales  locale별 화자·대사     (산출물 2)
 /// </code>
 /// 나누어 저장하면 둘의 버전이 어긋날 수 있고, 어긋난 순간 LineId가 어느 문장을 가리키는지
-/// 알 수 없게 된다. 하나의 원자적 파일로 함께 움직이게 한다.
+/// 알 수 없게 된다. 하나의 덩이로 함께 움직이게 한다.
+///
+/// ⛔ 형식 3까지는 대본마다 따로 선 파일(<c>script/{Id}.vnscript.json</c>)이었다 — Id · 이름을 든. 그 파일은
+/// <see cref="ReadLegacyFile"/>로만 읽는다(옮기기 · <c>docs/plans/script-merge.md</c>).
 /// </summary>
 public static class ScriptDocumentJson
 {
-    public const int CurrentFormatVersion = 1;
-    public const string FileExtension = ".vnscript.json";
+    /// <summary>형식 3의 대본 파일 확장자. 그 파일을 읽어서 옮길 때만 쓴다.</summary>
+    public const string LegacyFileExtension = ".vnscript.json";
 
-    public static string Write(ScriptDocument document)
+    private const int LegacyFileFormatVersion = 1;
+
+    /// <summary>카드 JSON의 <c>script</c> 칸 — Id도 이름도 없다. 카드가 곧 신원이다.</summary>
+    internal static JsonObject WriteBody(ScriptDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        return JsonSupport.ToDeterministicText(WriteObject(document));
-    }
 
-    public static ScriptDocument Read(string json)
-    {
-        JsonObject root = JsonSupport.ParseObject(json, "대본");
-        int version = (int?)root["formatVersion"] ?? 0;
-
-        if (version != CurrentFormatVersion)
-        {
-            throw new InvalidDataException(
-                $"대본 형식 버전 {version}은 지원하지 않습니다. 현재 버전은 {CurrentFormatVersion}입니다.");
-        }
-
-        return ReadObject(root);
-    }
-
-    internal static JsonObject WriteObject(ScriptDocument document)
-    {
         var lines = new JsonArray();
 
         foreach (ScriptLine line in document.Lines)
@@ -94,9 +82,6 @@ public static class ScriptDocumentJson
 
         var root = new JsonObject
         {
-            ["formatVersion"] = CurrentFormatVersion,
-            ["scriptId"] = document.Id,
-            ["name"] = document.Name,
             ["primaryLocale"] = document.PrimaryLocale,
             ["sourceRevision"] = document.SourceRevision
         };
@@ -112,12 +97,10 @@ public static class ScriptDocumentJson
         return root;
     }
 
-    internal static ScriptDocument ReadObject(JsonObject root)
+    /// <param name="owner">문제를 알릴 때 짚을 이름 — 그 카드의 Id.</param>
+    internal static ScriptDocument ReadBody(JsonObject root, string owner)
     {
-        string id = (string?)root["scriptId"]
-            ?? throw new InvalidDataException("대본에 scriptId가 없습니다.");
-
-        var document = new ScriptDocument(id, (string?)root["name"] ?? "이름 없는 대본")
+        var document = new ScriptDocument
         {
             PrimaryLocale = (string?)root["primaryLocale"] ?? ScriptDocument.DefaultLocale,
 
@@ -137,11 +120,11 @@ public static class ScriptDocumentJson
             }
 
             string lineId = (string?)lineJson["id"]
-                ?? throw new InvalidDataException($"대본 '{id}'의 줄에 id가 없습니다.");
+                ?? throw new InvalidDataException($"'{owner}'의 대본 줄에 id가 없습니다.");
 
             if (!lineIds.Add(lineId))
             {
-                throw new InvalidDataException($"대본 '{id}'에서 LineId '{lineId}'가 중복됩니다.");
+                throw new InvalidDataException($"'{owner}'의 대본에서 LineId '{lineId}'가 중복됩니다.");
             }
 
             document.Lines.Add(new ScriptLine(
@@ -158,11 +141,11 @@ public static class ScriptDocumentJson
             }
 
             string locale = (string?)localeJson["locale"]
-                ?? throw new InvalidDataException($"대본 '{id}'의 locale에 이름이 없습니다.");
+                ?? throw new InvalidDataException($"'{owner}'의 대본 locale에 이름이 없습니다.");
 
             if (document.FindLocale(locale) is not null)
             {
-                throw new InvalidDataException($"대본 '{id}'에서 locale '{locale}'이 중복됩니다.");
+                throw new InvalidDataException($"'{owner}'의 대본에서 locale '{locale}'이 중복됩니다.");
             }
 
             var target = new ScriptLocale(locale);
@@ -178,7 +161,7 @@ public static class ScriptDocumentJson
                 if (!lineIds.Contains(lineId))
                 {
                     throw new InvalidDataException(
-                        $"대본 '{id}'의 locale '{locale}'이 없는 LineId '{lineId}'를 가리킵니다.");
+                        $"'{owner}'의 대본 locale '{locale}'이 없는 LineId '{lineId}'를 가리킵니다.");
                 }
 
                 target.Entries[lineId] = new LocalizedLine(
@@ -191,4 +174,27 @@ public static class ScriptDocumentJson
 
         return document;
     }
+
+    /// <summary>
+    /// 형식 3의 대본 파일 하나 — 그 대본의 Id와 내용. 이름(<c>name</c>)은 읽지 않는다(카드 이름이 곧 이름이다).
+    /// </summary>
+    internal static (string Id, ScriptDocument Script) ReadLegacyFile(string json)
+    {
+        JsonObject root = JsonSupport.ParseObject(json, "대본");
+        int version = (int?)root["formatVersion"] ?? 0;
+
+        if (version != LegacyFileFormatVersion)
+        {
+            throw new InvalidDataException($"대본 형식 버전 {version}은 지원하지 않습니다.");
+        }
+
+        string id = (string?)root["scriptId"]
+            ?? throw new InvalidDataException("대본에 scriptId가 없습니다.");
+
+        return (id, ReadBody(root, id));
+    }
+
+    /// <summary>같은 내용의 사본 — 형식 3에서 대본 하나를 두 카드가 가리켰을 때 둘째가 받는다.</summary>
+    internal static ScriptDocument Copy(ScriptDocument document) =>
+        ReadBody(WriteBody(document), "사본");
 }

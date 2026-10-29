@@ -6,15 +6,17 @@ using Vn.Authoring.Script;
 namespace Vn.Authoring.Serialization;
 
 /// <summary>
-/// manifest·대본·StoryFile을 물리 파일로 읽고 쓴다.
+/// manifest · StoryFile을 물리 파일로 읽고 쓴다.
 /// StoryProject 자체는 경로 해석이나 파일 IO를 모른다.
 ///
-/// 디스크 배치:
+/// 디스크 배치(형식 4):
 /// <code>
 /// project.vnproject.json      목차와 파일을 넘나드는 관계
-/// script/&lt;scriptId&gt;.vnscript.json   대본 산출물 (줄 정체성 + locale별 본문)
-/// story/&lt;fileId&gt;.vnstory.json       노드
+/// story/&lt;fileId&gt;.vnstory.json       판 — 카드와 그 대본(줄 정체성 + locale별 본문)
 /// </code>
+///
+/// ⛔ 형식 3까지는 대본이 <c>script/&lt;scriptId&gt;.vnscript.json</c>에 따로 있었다. 그런 프로젝트는 <b>읽어서 옮기고</b>,
+/// 저장할 때 옛 매니페스트가 가리키던 대본 파일을 지운다(<see cref="Save"/> · <c>docs/plans/script-merge.md</c>).
 ///
 /// ⛔ <b>연출은 읽지 않는다</b> (2026-10-29 — 연출은 <c>ked-story-compositor</c>의 것이다). 연출을 담은 옛
 /// 프로젝트를 열면 연출 데이터는 모델에 들어오지 않고, 그대로 저장하면 사라진다. 그래서 <b>열 때 원본을 한 번
@@ -40,7 +42,7 @@ public static class ProjectStore
         {
             throw new InvalidDataException(
                 "이 파일은 프로젝트가 소유하는 대본입니다. " +
-                $"개별 {ScriptDocumentJson.FileExtension} 대신 {ProjectManifestJson.FileExtension} manifest를 여세요.");
+                $"개별 {ScriptDocumentJson.LegacyFileExtension} 대신 {ProjectManifestJson.FileExtension} manifest를 여세요.");
         }
 
         ProjectManifest manifest = ProjectManifestJson.Read(json);
@@ -69,7 +71,7 @@ public static class ProjectStore
     {
         string rootDirectory = Path.GetDirectoryName(manifestPath)!;
         var relativePaths = new List<string> { Path.GetFileName(manifestPath) };
-        relativePaths.AddRange(manifest.Scripts.Select(script => script.RelativePath));
+        relativePaths.AddRange(manifest.LegacyScripts.Select(script => script.RelativePath));
         relativePaths.AddRange(manifest.Files.Select(file => file.RelativePath));
 
         // 발행 결과 파일 — 다른 부속 파일처럼 프로젝트 안의 상대 경로일 때만 따라간다(손댄 manifest가 밖을
@@ -152,12 +154,8 @@ public static class ProjectStore
         // 한 파일의 데이터가 잘못됐다는 이유로 앞 파일만 새 내용으로 바뀌는 일을 줄인다.
         var writes = new List<PendingWrite>();
 
-        foreach (ScriptDocument script in project.EnumerateScripts())
-        {
-            writes.Add(new PendingWrite(
-                Resolve(rootDirectory, DefaultScriptPath(script.Id), ScriptDocumentJson.FileExtension),
-                ScriptDocumentJson.Write(script)));
-        }
+        // 형식 3 매니페스트였다면 그것이 가리키던 대본 파일 — 내용은 판 파일로 옮겨 갔다. 새 매니페스트까지 다 쓴 뒤에 지운다.
+        IReadOnlyList<string> superseded = LegacyScriptFilesOf(fullManifestPath, rootDirectory);
 
         foreach (StoryFile file in project.Files)
         {
@@ -176,18 +174,72 @@ public static class ProjectStore
         }
 
         JsonSupport.WriteAtomic(fullManifestPath, manifestText);
+
+        RemoveSupersededScriptFiles(superseded, rootDirectory);
+    }
+
+    /// <summary>
+    /// 지금 디스크의 매니페스트가 형식 3이면 그것이 가리키던 대본 파일들(프로젝트 안의 경로만). 아니면 빈 목록이다.
+    /// 읽지 못하면(처음 저장 · 깨진 파일) 지울 것도 없다 — 지우는 일은 늘 아는 것만 한다.
+    /// </summary>
+    private static IReadOnlyList<string> LegacyScriptFilesOf(string manifestPath, string rootDirectory)
+    {
+        try
+        {
+            if (!File.Exists(manifestPath))
+            {
+                return [];
+            }
+
+            ProjectManifest manifest = ProjectManifestJson.Read(File.ReadAllText(manifestPath, new UTF8Encoding(false)));
+
+            return manifest.LegacyScripts
+                .Select(script => Resolve(rootDirectory, script.RelativePath, ScriptDocumentJson.LegacyFileExtension))
+                .ToList();
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// 옮겨 간 옛 대본 파일을 지운다(형식 3 → 4). 남겨 두면 읽지도 않는 사본이 진짜처럼 보인다. 못 지우면 그대로 둔다 —
+    /// 새 매니페스트는 그 파일을 가리키지 않으므로 해가 없다. 비게 된 <c>script/</c> 폴더도 걷는다.
+    /// </summary>
+    private static void RemoveSupersededScriptFiles(IReadOnlyList<string> files, string rootDirectory)
+    {
+        foreach (string file in files)
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // 잠겼거나 권한이 없다 — 다음 저장에는 이미 형식 4라 다시 시도하지 않는다. 남아도 읽지 않는다.
+            }
+        }
+
+        string legacyFolder = Path.Combine(rootDirectory, "script");
+
+        try
+        {
+            if (files.Count > 0 && Directory.Exists(legacyFolder) && !Directory.EnumerateFileSystemEntries(legacyFolder).Any())
+            {
+                Directory.Delete(legacyFolder);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // 비우지 못했으면 그대로 둔다.
+        }
     }
 
     public static string DefaultRelativePath(string fileId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
         return $"story/{fileId}{StoryFileJson.FileExtension}";
-    }
-
-    public static string DefaultScriptPath(string scriptId)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(scriptId);
-        return $"script/{scriptId}{ScriptDocumentJson.FileExtension}";
     }
 
     public static string NormalizeRelativeStoryPath(string relativePath) =>
@@ -244,11 +296,13 @@ public static class ProjectStore
             StartNodeId = manifest.StartNodeId
         };
         storyCarriesPresentation = false;
-        var scripts = new List<ScriptDocument>();
+        // 형식 3 — 따로 선 대본 파일을 읽어 카드에 꽂는다(형식 4는 대본이 판 파일 안에 있어 목록이 비었다).
+        // 어느 카드도 안 가리키는 대본은 받아 가는 카드가 없으니 여기서 버려진다.
+        var table = new ScriptTable();
 
-        foreach (ScriptFileReference reference in manifest.Scripts)
+        foreach (ScriptFileReference reference in manifest.LegacyScripts)
         {
-            string scriptPath = Resolve(rootDirectory, reference.RelativePath, ScriptDocumentJson.FileExtension);
+            string scriptPath = Resolve(rootDirectory, reference.RelativePath, ScriptDocumentJson.LegacyFileExtension);
 
             if (!File.Exists(scriptPath))
             {
@@ -257,20 +311,17 @@ public static class ProjectStore
                     scriptPath);
             }
 
-            ScriptDocument script = ScriptDocumentJson.Read(
+            (string id, ScriptDocument script) = ScriptDocumentJson.ReadLegacyFile(
                 File.ReadAllText(scriptPath, new UTF8Encoding(false)));
 
-            if (!string.Equals(script.Id, reference.Id, StringComparison.Ordinal))
+            if (!string.Equals(id, reference.Id, StringComparison.Ordinal))
             {
                 throw new InvalidDataException(
-                    $"manifest의 대본 Id '{reference.Id}'와 파일의 Id '{script.Id}'가 다릅니다.");
+                    $"manifest의 대본 Id '{reference.Id}'와 파일의 Id '{id}'가 다릅니다.");
             }
 
-            scripts.Add(script);
+            table.Add(id, script);
         }
-
-        // 카드마다 제 대본을 꽂는다(S2) — 어느 카드도 안 가리키는 대본은 받아 가는 카드가 없으니 여기서 버려진다(S1).
-        var table = new ScriptTable(scripts);
 
         foreach (ProjectStoryFileReference reference in manifest.Files)
         {
@@ -318,15 +369,14 @@ public static class ProjectStore
 
     private static bool LooksLikeStandaloneStoryFile(JsonObject root)
     {
-        return (int?)root["formatVersion"] == StoryFileJson.CurrentFormatVersion &&
-            root["fileId"] is not null &&
+        // 버전은 보지 않는다 — 형식 3의 판 파일(1)도 4의 것(2)도 manifest가 아니다. manifest에는 fileId가 없다.
+        return root["fileId"] is not null &&
             root["nodes"] is JsonArray;
     }
 
     private static bool LooksLikeStandaloneScript(JsonObject root)
     {
-        return (int?)root["formatVersion"] == ScriptDocumentJson.CurrentFormatVersion &&
-            root["scriptId"] is not null &&
+        return root["scriptId"] is not null &&
             root["lines"] is JsonArray;
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
@@ -36,28 +37,39 @@ public class SampleProjectTests
     }
 
     /// <summary>
-    /// 화자·대사는 대본 파일에만 있다. 노드 파일에는 LineId와 조건만 있다.
-    /// 이 두 가지를 한 파일에서 찾을 수 있게 되는 순간 진실이 두 곳이 된다.
+    /// 화자·대사는 카드의 대본(<c>script</c> 칸)에만 있다. 카드의 줄 칸(<c>lines</c>)에는 LineId와 조건만 있다.
+    /// 같은 글을 두 곳에서 찾을 수 있게 되는 순간 진실이 두 곳이 된다.
+    ///
+    /// 형식 4(2026-10-29)부터 둘은 한 파일 — 카드 하나 — 안에 함께 든다. 따로 선 대본 파일은 없다.
     /// </summary>
     [Fact]
-    public void 대본이_화자와_대사를_소유하고_노드는_LineId만_가리킨다()
+    public void 카드가_대본을_들고_줄_칸은_LineId만_가리킨다()
     {
         StoryProject project = Load();
-        ScriptDocument script = project.EnumerateScripts().Single(item => item.Id == "sc_chapter01");
         DialogueNode scene = project.FindDialogue("nd_scene")!;
+        ScriptDocument script = scene.Script;
 
         Assert.Equal(8, script.ActiveLines.Count());
         Assert.Equal(new LocalizedLine("라루", "3분의 1이요?"), script.Text("ln_a2"));
 
-        // 노드는 조건이 붙은 세 줄만 알고 있다. 나머지 줄은 대본이 순서를 정한다.
+        // 카드는 조건이 붙은 세 줄만 따로 안다. 나머지 줄은 대본이 순서를 정한다.
         Assert.Equal(
             new[] { "ln_b1", "ln_c1", "ln_d1" },
             scene.LineExtensions.Select(extension => extension.LineId));
 
-        string storyText = File.ReadAllText(
-            Path.Combine(Path.GetDirectoryName(SamplePath)!, "story", "chapter01.vnstory.json"));
-        Assert.DoesNotContain("3분의 1이요?", storyText, StringComparison.Ordinal);
-        Assert.DoesNotContain("\"speaker\"", storyText, StringComparison.Ordinal);
+        string sampleDirectory = Path.GetDirectoryName(SamplePath)!;
+        JsonObject card = JsonNode.Parse(File.ReadAllText(
+                Path.Combine(sampleDirectory, "story", "chapter01.vnstory.json")))!["nodes"]!
+            .AsArray()
+            .Single(node => (string?)node!["id"] == "nd_scene")!
+            .AsObject();
+
+        Assert.Equal("3분의 1이요?", (string?)card["script"]!["locales"]![0]!["entries"]!["ln_a2"]!["text"]);
+        Assert.DoesNotContain("speaker", card["lines"]!.ToJsonString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("text", card["lines"]!.ToJsonString(), StringComparison.Ordinal);
+
+        Assert.False(Directory.Exists(Path.Combine(sampleDirectory, "script")));
+        Assert.Null(JsonNode.Parse(File.ReadAllText(SamplePath))!["scripts"]);
     }
 
     [Fact]

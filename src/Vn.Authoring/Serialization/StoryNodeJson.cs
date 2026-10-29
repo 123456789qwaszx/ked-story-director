@@ -140,14 +140,14 @@ internal static class StoryNodeJson
     }
 
     /// <summary>
-    /// 대사 노드는 <b>대본 Id와 LineId별 논리만</b> 쓴다. 화자와 대사는 대본 파일에 있다(형식 3 — 카드가 든 대본을
-    /// 따로 적는다. S3에서 카드 안으로 들어온다).
+    /// 대사 노드는 <b>제 대본</b>(<c>script</c> — 줄 신원 · locale별 화자 · 대사)과 <b>LineId별 논리</b>를 쓴다(형식 4 ·
+    /// 2026-10-29). ⛔ 형식 3까지는 대본을 따로 선 파일에 두고 여기에는 그 Id만 적었다.
     /// 조건 갈래 출구는 갈래를 여는 줄의 항목 안에 함께 적어 둔다. 별도 배열로 나누면
     /// 줄이 사라졌을 때 짝 없는 출구가 파일에 남는다.
     /// </summary>
     private static void WriteDialogueNode(DialogueNode node, JsonObject json)
     {
-        json["script"] = node.Script.Id;
+        json["script"] = ScriptDocumentJson.WriteBody(node.Script);
 
         if (node.MarkedEpisodeId is not null)
         {
@@ -284,12 +284,34 @@ internal static class StoryNodeJson
         return node;
     }
 
+    /// <summary>
+    /// 카드의 대본 — 형식 4면 그 자리에 든 내용, 형식 3이면 가리킨 Id로 표(<see cref="ScriptTable"/>)에서 받는다.
+    /// 대본 없이 저장된 옛 카드는 빈 대본을 받는다.
+    /// </summary>
+    private static Script.ScriptDocument ReadScript(JsonNode? script, string nodeId, ScriptTable? scripts)
+    {
+        switch (script)
+        {
+            case JsonObject body:
+                return ScriptDocumentJson.ReadBody(body, nodeId);
+
+            case JsonValue reference when reference.TryGetValue(out string? scriptId):
+                return scripts?.For(nodeId, scriptId)
+                    ?? throw new InvalidDataException(
+                        $"DialogueNode '{nodeId}'가 따로 선 대본 '{scriptId}'를 가리킵니다 — 형식 3 판은 프로젝트와 함께 읽어야 합니다.");
+
+            default:
+                var empty = new Script.ScriptDocument();
+                empty.RequireLocale(empty.PrimaryLocale);
+                return empty;
+        }
+    }
+
     private static DialogueNode ReadDialogueNode(JsonObject json, string id, string name, ScriptTable? scripts)
     {
-        string? scriptId = (string?)json["script"];
         var node = new DialogueNode(id, name)
         {
-            Script = scripts?.For(id, name, scriptId) ?? new Script.ScriptDocument(scriptId),
+            Script = ReadScript(json["script"], id, scripts),
             MarkedEpisodeId = (string?)json[EpisodeMarkKey]
         };
         HashSet<string> lineIds = new(StringComparer.Ordinal);

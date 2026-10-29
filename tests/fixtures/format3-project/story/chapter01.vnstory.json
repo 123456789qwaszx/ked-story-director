@@ -1,0 +1,107 @@
+{
+  "formatVersion": 1,
+  "fileId": "sf_chapter01",
+  "name": "1장",
+  "nodes": [
+    {
+      "id": "nd_setup",
+      "kind": "set",
+      "name": "1장 설정",
+      "layout": {
+        "x": 60,
+        "y": 80
+      },
+      "defaultExit": "nd_scene",
+      "assignments": [
+        {
+          "variable": "favor",
+          "value": "0"
+        },
+        {
+          "variable": "trust",
+          "value": "0"
+        }
+      ],
+      "conditions": [
+        {
+          "id": "cd_favor",
+          "name": "호감 높음",
+          "expression": "favor >= 5"
+        },
+        {
+          "id": "cd_trust",
+          "name": "신뢰 높음",
+          "expression": "trust >= 3"
+        }
+      ]
+    },
+    {
+      "id": "nd_scene",
+      "kind": "dialogue",
+      "name": "의뢰 장면",
+      "layout": {
+        "x": 360,
+        "y": 80
+      },
+      "defaultExit": "nd_normal",
+      "script": "sc_chapter01",
+      "lines": [
+        {
+          "lineId": "ln_b1",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_favor",
+            "exit": "nd_good"
+          }
+        },
+        {
+          "lineId": "ln_c1",
+          "condition": {
+            "kind": "beginElseIf",
+            "condition": "cd_trust",
+            "exit": "nd_trust"
+          }
+        },
+        {
+          "lineId": "ln_d1",
+          "condition": {
+            "kind": "endIf"
+          }
+        }
+      ]
+    },
+    {
+      "id": "nd_good",
+      "kind": "dialogue",
+      "name": "호감 결말",
+      "layout": {
+        "x": 700,
+        "y": 40
+      },
+      "script": "sc_good",
+      "lines": []
+    },
+    {
+      "id": "nd_trust",
+      "kind": "dialogue",
+      "name": "신뢰 경로",
+      "layout": {
+        "x": 700,
+        "y": 220
+      },
+      "script": "sc_trust",
+      "lines": []
+    },
+    {
+      "id": "nd_normal",
+      "kind": "dialogue",
+      "name": "보류",
+      "layout": {
+        "x": 700,
+        "y": 400
+      },
+      "script": "sc_normal",
+      "lines": []
+    }
+  ]
+}

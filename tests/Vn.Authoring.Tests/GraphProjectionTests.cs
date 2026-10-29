@@ -184,7 +184,7 @@ public class GraphProjectionTests
         // 간선의 매개는 조건 갈래 출구다 (2026-08-21) — 기본 출구는 커스텀 노드에서
         // 폐지됐고 엑셀노드의 것은 카드가 아니라 철도 칩에 살아, 카드 간선을 만드는
         // 출구는 갈래 하나뿐이다.
-        var script = new ScriptDocument("sc_a", "대본 A");
+        var script = new ScriptDocument();
         script.Lines.Add(new ScriptLine("ln_a1"));
 
         var dialogueA = new DialogueNode("nd_a", "대사 A")

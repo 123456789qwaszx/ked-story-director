@@ -49,18 +49,14 @@ public sealed record ScriptSyncEntry(
 public sealed class ScriptSyncPlan
 {
     public ScriptSyncPlan(
-        string scriptId,
         string locale,
         string sourceContentHash,
         IReadOnlyList<ScriptSyncEntry> entries)
     {
-        ScriptId = scriptId;
         Locale = locale;
         SourceContentHash = sourceContentHash;
         Entries = entries;
     }
-
-    public string ScriptId { get; }
 
     public string Locale { get; }
 
@@ -292,7 +288,6 @@ public static class ScriptSynchronizer
         }
 
         return new ScriptSyncPlan(
-            document.Id,
             locale,
             parsed.ContentHash,
             entries);

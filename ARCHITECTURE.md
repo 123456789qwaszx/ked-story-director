@@ -15,7 +15,7 @@
 
 | | |
 |---|---|
-| **읽는 것** | 프로젝트 하나(`*.vnproject.json` · `script/` · `story/`)와 `game.definition.json` |
+| **읽는 것** | 프로젝트 하나(`*.vnproject.json` · `story/`)와 `game.definition.json` |
 | **쓰는 것** | 같은 프로젝트(원고), 그리고 `exported/{챕터}.progression.json`(유니티 런타임 수입물 — 검증을 통과하면 저절로) |
 | **읽어 가는 쪽** | [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가 원고를 **읽기만** 해서 제 연출과 합쳐 게임용 Yarn을 낸다 |
 
@@ -35,17 +35,19 @@
 MyStory/
 ├─ 예제.vnproject.json         매니페스트 — 판 목록 · 챕터(chapters[]) · 링크 · 작가 화자
 ├─ game.definition.json        스탯 후보(variables) · 게임 전역 조건 · 화자(speakers). compositor의 키도 산다 — 모르는 키는 보존한다
-├─ script/*.vnscript.json      대본 — 줄 신원(LineId) · 개정 번호 · locale별 화자 · 글
-├─ story/*.vnstory.json        판 — 노드(대사 · 설정)와 그 위의 줄 논리 · 출구 · 선 모양
+├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
+│                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
 └─ exported/{챕터}.progression.json
 ```
 
 | 형식 | 상수 | 파일 |
 |---|---|---|
-| 프로젝트 | `StoryProject.CurrentFormatVersion` = 3 (2 이하는 거부 — §8) | `*.vnproject.json` |
-| 대본 | `ScriptDocumentJson.CurrentFormatVersion` = 1 | `*.vnscript.json` |
-| 판 | `StoryFileJson.CurrentFormatVersion` = 1 | `*.vnstory.json` |
-| 되돌리기 스냅샷 | `ProjectSnapshotCodec.CurrentSnapshotVersion` = 2 | (메모리) |
+| 프로젝트 | `StoryProject.CurrentFormatVersion` = 4 (3은 읽어서 옮기고 2 이하는 거부 — §8) | `*.vnproject.json` |
+| 판 | `StoryFileJson.CurrentFormatVersion` = 2 (1은 형식 3과 함께 읽는다) | `*.vnstory.json` |
+| 되돌리기 스냅샷 | `ProjectSnapshotCodec.CurrentSnapshotVersion` = 3 | (메모리) |
+
+⛔ 형식 3까지는 대본이 `script/*.vnscript.json`에 따로 섰고(`ScriptDocumentJson` 형식 1) 카드는 그 Id를 가리켰다
+(2026-10-29 · [`docs/plans/script-merge.md`](docs/plans/script-merge.md)).
 
 진행 JSON의 모양은 런타임 계약이다 — [`docs/runtime-contract.md`](docs/runtime-contract.md).
 
@@ -56,7 +58,7 @@ MyStory/
 | `src/Vn.Authoring` | 저작 도메인 · 검증 · 도달성 증명 · 내보내기 | 화면을 모른다. 화면 없이 테스트한다 |
 | `src/Vn.App` | Avalonia 화면과 OS 연결 | 도메인 규칙을 소유하지 않는다 |
 | `src/Ked.Progression` | 런타임 진행 코어의 **사본** — 낸 JSON을 소비자 규칙으로 다시 실어 보는 오라클 | **고치지 않는다.** `CoreCopyInStepTests`의 지문이 지킨다 |
-| `tests/Vn.Authoring.Tests` · `tests/Vn.App.Tests` | xUnit · Avalonia 헤드리스 | `tests/fixtures/chapter-samples/` 견본 챕터 둘 |
+| `tests/Vn.Authoring.Tests` · `tests/Vn.App.Tests` | xUnit · Avalonia 헤드리스 | `tests/fixtures/chapter-samples/` 견본 챕터 둘 · `tests/fixtures/format3-project/` 형식 3 견본 |
 
 참조 방향: `Ked.Progression → Vn.Authoring → Vn.App`.
 
@@ -376,13 +378,19 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 
 고정은 시간(ms)이 아니라 **일의 횟수**로 건다 — `ChapterGraphWorkAmountTests`.
 
-## 8. 이전 프로젝트 정책 — 마이그레이션하지 않고 거부한다
+## 8. 이전 프로젝트 정책 — 1 · 2는 거부하고 3은 옮긴다
 
 형식 버전 1과 2는 **읽지 않는다.** `ProjectManifestJson.Read`가 이유를 담아 거부한다 — 그 형식에서는 노드가 화자 · 대사를 직접
 소유했고, 지금 구조로 바꾸려면 어느 문장이 어느 LineId인지 도구가 임의로 정해야 한다. 옮기려면 새 프로젝트를 만들고 대사를 카드
 글 칸에 붙여 넣는다. **거부는 파괴적이지 않다** — 원본 파일도 세션도 그대로 남는다.
 
-형식 3 안에서 걷힌 칸은 **읽지 않고 지나간다**(깨지지 않는다): `excelLines` · `excelEpisode` · 대본의 `sourcePath` · 챕터의
+**형식 3은 읽어서 옮긴다**(2026-10-29 · `script-merge`). 옮기기가 기계적이라서다 — 카드마다 가리키던 대본 파일의 내용을
+그대로 카드 안에 넣는다(LineId · 개정 번호 · 은퇴한 줄 그대로, `ScriptTable`). 한 대본을 두 카드가 가리켰으면 둘째는 같은 내용의
+사본을 받고, 어느 카드도 안 가리키는 대본은 버린다. 열기만 해서는 아무것도 지우지 않는다. **저장할 때** 옛 매니페스트가 가리키던
+대본 파일을 지운다(새 판 파일과 매니페스트를 다 쓴 뒤 · 매니페스트가 가리키지 않던 파일은 남긴다). 고정 자료
+`tests/fixtures/format3-project`(견본의 형식 3 시절)를 옮기면 지금 견본과 바이트까지 같다(`FormatThreeProjectTests`).
+
+형식 3 · 4 안에서 걷힌 칸은 **읽지 않고 지나간다**(깨지지 않는다): `excelLines` · `excelEpisode` · 대본의 `sourcePath` · 챕터의
 `sourceRow`. 연출 층을 담은 옛 프로젝트는 연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남긴다(compositor가 가져간다).
 열 때 카드 없는 에피소드에는 빈 카드가 선다(`AlignBoardsWithChapters`).
 

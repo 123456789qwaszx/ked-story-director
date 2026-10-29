@@ -25,14 +25,22 @@ namespace Vn.Authoring.Model;
 public sealed class StoryProject
 {
     /// <summary>
-    /// 대본 산출물을 도입한 형식 버전. (발행 결과 · RuntimeComposition도 이 버전에 들어왔으나
-    /// 2026-10-29에 연출과 함께 compositor로 갔다 — 그 칸이 든 파일은 <c>ProjectStore</c>가 원본을 남기고 연다.)
+    /// 지금 쓰는 형식 — <b>4</b>: 카드의 대본이 판 파일 안에 든다(2026-10-29 · <c>docs/plans/script-merge.md</c>).
+    ///
+    /// 형식 3은 대본을 <c>script/*.vnscript.json</c>에 따로 두고 카드가 Id로 가리켰다. <b>읽어서 옮긴다</b>
+    /// (<see cref="LegacyScriptFilesFormatVersion"/>) — 줄 신원 · 개정 번호를 그대로 옮기므로 도구가 정할 것이 없다.
     ///
     /// 버전 2 이하는 화자·대사를 DialogueNode가 직접 소유했고 Presentation이 편집 중인
     /// 노드를 실시간으로 읽었다. 그 데이터를 새 의미로 자동 해석하면 어느 줄이 어느 LineId인지
     /// 도구가 임의로 정하게 된다. 그래서 <b>읽지 않고 명시적으로 거부한다.</b>
     /// </summary>
-    public const int CurrentFormatVersion = 3;
+    public const int CurrentFormatVersion = 4;
+
+    /// <summary>
+    /// 대본을 따로 저장하던 형식(대본 산출물을 도입한 버전). 읽어서 형식 4로 옮긴다 — 다음 저장이 옛 대본 파일을 지운다.
+    /// (발행 결과 · RuntimeComposition도 이 버전에 들어왔으나 2026-10-29에 연출과 함께 compositor로 갔다.)
+    /// </summary>
+    public const int LegacyScriptFilesFormatVersion = 3;
 
     /// <summary>이 버전 이하는 읽지 않는다.</summary>
     public const int LastUnsupportedFormatVersion = 2;

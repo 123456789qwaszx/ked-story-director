@@ -77,22 +77,12 @@ internal static class JsonSupport
     {
         ArgumentNullException.ThrowIfNull(project);
 
-        HashSet<string> scriptIds = new(StringComparer.Ordinal);
         HashSet<string> fileIds = new(StringComparer.Ordinal);
         HashSet<string> nodeIds = new(StringComparer.Ordinal);
         HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
         HashSet<string> linkIds = new(StringComparer.Ordinal);
         HashSet<(NodeLinkKind Kind, string Source, string Target)> linkPairs = new();
 
-        foreach (ScriptDocument script in project.EnumerateScripts())
-        {
-            if (!scriptIds.Add(script.Id))
-            {
-                throw new InvalidDataException($"대본 Id '{script.Id}'가 중복됩니다.");
-            }
-
-            ValidateScript(script);
-        }
 
         foreach (StoryFile file in project.Files)
         {
@@ -164,20 +154,21 @@ internal static class JsonSupport
         }
     }
 
-    private static void ValidateScript(ScriptDocument script)
+    private static void ValidateScript(DialogueNode node)
     {
+        ScriptDocument script = node.Script;
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 
         foreach (ScriptLine line in script.Lines)
         {
             if (string.IsNullOrWhiteSpace(line.Id))
             {
-                throw new InvalidDataException($"대본 '{script.Id}'에 빈 LineId가 있습니다.");
+                throw new InvalidDataException($"'{node.Id}'의 대본에 빈 LineId가 있습니다.");
             }
 
             if (!lineIds.Add(line.Id))
             {
-                throw new InvalidDataException($"대본 '{script.Id}'에서 LineId '{line.Id}'가 중복됩니다.");
+                throw new InvalidDataException($"'{node.Id}'의 대본에서 LineId '{line.Id}'가 중복됩니다.");
             }
         }
 
@@ -188,7 +179,7 @@ internal static class JsonSupport
             if (!locales.Add(locale.Locale))
             {
                 throw new InvalidDataException(
-                    $"대본 '{script.Id}'에서 locale '{locale.Locale}'이 중복됩니다.");
+                    $"'{node.Id}'의 대본에서 locale '{locale.Locale}'이 중복됩니다.");
             }
 
             foreach (string lineId in locale.Entries.Keys)
@@ -196,20 +187,22 @@ internal static class JsonSupport
                 if (!lineIds.Contains(lineId))
                 {
                     throw new InvalidDataException(
-                        $"대본 '{script.Id}'의 locale '{locale.Locale}'이 없는 LineId '{lineId}'를 가리킵니다.");
+                        $"'{node.Id}'의 대본의 locale '{locale.Locale}'이 없는 LineId '{lineId}'를 가리킵니다.");
                 }
             }
         }
     }
 
     /// <summary>
-    /// 같은 LineId에 확장이 두 벌 붙지 않았는지 본다. (카드는 제 대본을 든다 — 가리키는 대본이 있는지 보던 검사는
+    /// 카드의 대본이 성립하는지, 같은 LineId에 확장이 두 벌 붙지 않았는지 본다. (카드는 제 대본을 든다 — 가리키는 대본이 있는지 보던 검사는
     /// S2에 걷혔다. 형식 3 파일을 읽을 때 없는 대본을 가리키면 <see cref="ScriptTable"/>이 거절한다.)
     /// </summary>
     private static void ValidateDialogueNode(
         StoryProject project,
         DialogueNode node)
     {
+        ValidateScript(node);
+
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 
         foreach (DialogueLineExtension extension in node.LineExtensions)

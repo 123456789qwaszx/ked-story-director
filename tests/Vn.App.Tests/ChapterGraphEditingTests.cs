@@ -129,14 +129,14 @@ public sealed class ChapterGraphEditingTests
         //    바꿔 판에 남겼다. 근거는 *"툴이 임의로 지우면 되돌릴 자리가 없다(판 편집에는
         //    Ctrl+Z가 없다)"*였는데, <b>같은 날 Ctrl+Z가 붙어 그 전제가 없어졌다</b>.
         //
-        // ⚠ 글은 그래도 안 사라진다 — 대본은 원래 안 지우고, 되돌리면 카드가 다시 찾는다.
+        // ⚠ 글은 그래도 안 사라진다 — 카드가 대본을 들고 있어(2026-10-29) 되돌리면 카드와 함께 돌아온다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         DialogueNode written = session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => node.MarkedEpisodeId == "branch05.02A");
 
-        var script = new Vn.Authoring.Script.ScriptDocument(name: "남은 대본");
+        var script = new Vn.Authoring.Script.ScriptDocument();
         script.Lines.Add(new Vn.Authoring.Script.ScriptLine("ln_keep"));
         script.RequireLocale(script.PrimaryLocale).Entries["ln_keep"] =
             new Vn.Authoring.Script.LocalizedLine("윌로", "잃으면 안 되는 줄");
@@ -154,7 +154,7 @@ public sealed class ChapterGraphEditingTests
         session.Editor.Undo();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // 되돌리면 카드도 에피소드도 돌아오고, 글은 애초에 안 사라졌다.
+        // 되돌리면 카드도 에피소드도 돌아오고, 글도 카드에 든 채 돌아온다.
         DialogueNode back = Assert.IsType<DialogueNode>(session.Project.FindNode(written.Id));
         Assert.Equal("잃으면 안 되는 줄", back.Script.Text("ln_keep").Text);
     });

@@ -233,7 +233,7 @@ internal static class StarterProject
 
         [무엇이 어디 있나]
           예제.vnproject.json  프로젝트 — 이것을 연다. 챕터(스탯 · 조건 · 에피소드 · 길)가 여기 있다
-          story/ · script/     연출 그래프의 판과 카드의 대사 — 툴이 쓰고 읽는다
+          story/               연출 그래프의 판과 카드(카드의 대사째) — 툴이 쓰고 읽는다
           game.definition.json 스탯 이름(trust · fatigue)과 화자(윌로 · 라루)의 원천
           assets/portraits/    표정 그림을 넣는 곳 (지금은 비어 있다)
           exported/            툴이 내는 진행 JSON — 손으로 고치지 않는다

@@ -167,7 +167,6 @@ public sealed partial class ProjectEditor
         }
 
         ScriptDocument script = created.Script;
-        script.Name = $"{created.Name} 대본";   // 파일 형식이 아직 이름을 싣는다(S3에서 걷힌다)
         var firstLine = new ScriptLine(_newLineId());
 
         (ChapterDocument? chapter, ChapterEpisode? episode) =

@@ -25,7 +25,6 @@ public class DialogueNodeCreationTests
         DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면 1");
 
         ScriptDocument script = node.Script;
-        Assert.Equal("장면 1 대본", script.Name);
 
         // 생성 직후 빈 라인 목록이 아니라 첫 줄이 준비되어 바로 타이핑한다.
         ScriptLine first = Assert.Single(script.ActiveLines);
@@ -43,9 +42,9 @@ public class DialogueNodeCreationTests
     //    읽을 때 빈 대본을 받는다(`ScriptTable`).
 
     [Fact]
-    public void 자동_대본도_저장_형식은_기존_그대로_왕복한다()
+    public void 카드의_대본이_카드와_함께_왕복한다()
     {
-        // 로드 호환 — 새 형식 필드 없이 기존 scripts/files 구조로 저장된다.
+        // 형식 4 — 대본은 카드 JSON의 `script` 칸에 든다. 줄 신원이 그대로 돌아와야 조건 · 출구가 붙는다.
         (ProjectEditor editor, StoryFile file) = BuildEditor();
         editor.AddDialogueNode(file.Id, name: "장면");
 
@@ -53,7 +52,7 @@ public class DialogueNodeCreationTests
 
         DialogueNode original = editor.Project.EnumerateNodes().OfType<DialogueNode>().Single();
         DialogueNode node = Assert.Single(decoded.EnumerateNodes().OfType<DialogueNode>());
-        Assert.Equal(original.Script.Id, node.Script.Id);
-        Assert.Single(node.Script.ActiveLines);
+        ScriptLine line = Assert.Single(node.Script.ActiveLines);
+        Assert.Equal(original.Script.ActiveLines.Single().Id, line.Id);
     }
 }

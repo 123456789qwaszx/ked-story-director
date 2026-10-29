@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
-using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Serialization;
 
@@ -13,21 +12,13 @@ namespace Vn.Authoring.Serialization;
 /// </summary>
 public static class ProjectSnapshotCodec
 {
-    public const int CurrentSnapshotVersion = 2;
+    /// <summary>3 — 카드의 대본이 카드 안에 든다(2026-10-29 · 프로젝트 형식 4). 스냅샷은 메모리에만 산다.</summary>
+    public const int CurrentSnapshotVersion = 3;
 
     public static string Encode(StoryProject project)
     {
         ArgumentNullException.ThrowIfNull(project);
         JsonSupport.ValidateProject(project);
-
-        var scripts = new JsonArray();
-
-        foreach (ScriptDocument script in project.EnumerateScripts())
-        {
-            JsonObject item = ScriptDocumentJson.WriteObject(script);
-            item.Remove("formatVersion");
-            scripts.Add(item);
-        }
 
         var files = new JsonArray();
 
@@ -58,7 +49,6 @@ public static class ProjectSnapshotCodec
             root["startNode"] = project.StartNodeId;
         }
 
-        root["scripts"] = scripts;
         root["files"] = files;
 
         if (links.Count > 0)
@@ -106,22 +96,6 @@ public static class ProjectSnapshotCodec
             StartNodeId = (string?)root["startNode"]
         };
 
-        var scripts = new List<ScriptDocument>();
-
-        foreach (JsonNode? item in root["scripts"]?.AsArray() ?? new JsonArray())
-        {
-            if (item is not JsonObject scriptObject)
-            {
-                throw new InvalidDataException("프로젝트 스냅샷의 scripts 항목이 객체가 아닙니다.");
-            }
-
-            JsonObject scriptRoot = scriptObject.DeepClone().AsObject();
-            scriptRoot["formatVersion"] = ScriptDocumentJson.CurrentFormatVersion;
-            scripts.Add(ScriptDocumentJson.ReadObject(scriptRoot));
-        }
-
-        var table = new ScriptTable(scripts);
-
         foreach (JsonNode? item in files)
         {
             if (item is not JsonObject fileObject)
@@ -137,7 +111,7 @@ public static class ProjectSnapshotCodec
                 ["nodes"] = fileObject["nodes"]?.DeepClone()
             };
 
-            StoryFile file = StoryFileJson.ReadObject(storyRoot, table);
+            StoryFile file = StoryFileJson.ReadObject(storyRoot);   // 카드의 대본은 카드 안에 든다
             file.RelativePath = ProjectStore.NormalizeRelativeStoryPath(
                 (string?)fileObject["path"] ?? ProjectStore.DefaultRelativePath(file.Id));
             project.Files.Add(file);
