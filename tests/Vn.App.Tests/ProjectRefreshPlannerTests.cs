@@ -48,7 +48,7 @@ public class ProjectRefreshPlannerTests
 
 
     [Fact]
-    public void Dialogue_내용_변경은_편집기를_재생성하지_않고_Preview만_갱신한다()
+    public void Dialogue_내용_변경은_편집기를_재생성하지_않고_카드_글_칸만_비춘다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(
             ProjectChangeKind.DialogueContent,
@@ -56,18 +56,19 @@ public class ProjectRefreshPlannerTests
 
         Assert.False(plan.RebuildGraph);
         Assert.False(plan.RebuildInspector);
-        Assert.True(plan.RefreshPreview);
+        Assert.True(plan.RefreshCardWriting);
     }
 
     [Fact]
-    public void 그래프_좌표_이동은_Preview를_다시_합성하지_않는다()
+    public void 그래프_좌표_이동은_자리만_다시_놓는다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(
             ProjectChangeKind.Layout,
             new DialogueNode(name: "장면"));
 
         Assert.True(plan.RefreshGraphPositions);
-        Assert.False(plan.RefreshPreview);
+        Assert.False(plan.RebuildInspector);
+        Assert.False(plan.RefreshCardWriting);
     }
 
     [Fact]

@@ -117,11 +117,12 @@ public sealed class BranchEntryConditionTests
 
         BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
 
-        string yarn = DocumentPreviewFormatter.Format(
-            WorkingDialoguePreview.Compose(editor.Project, caller.Id));
+        RenderedDocument document = WorkingDialoguePreview.Compose(editor.Project, caller.Id);
 
-        Assert.Contains($"<<detour {branch.Id}>>", yarn, StringComparison.Ordinal);
-        Assert.DoesNotContain("<<if", yarn, StringComparison.Ordinal);
+        // 문서 조각으로 잰다 — 게임용 Yarn은 ked-story-compositor가 이 조각을 그대로 옮겨 낸다.
+        Assert.Single(document.Segments, segment =>
+            segment.Kind == RenderedSegmentKind.BranchDetour && segment.TargetNodeId == branch.Id);
+        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
     }
 
     [Fact]
@@ -137,11 +138,11 @@ public sealed class BranchEntryConditionTests
 
         BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
 
-        string yarn = DocumentPreviewFormatter.Format(
-            WorkingDialoguePreview.Compose(editor.Project, branch.Id));
+        RenderedDocument document = WorkingDialoguePreview.Compose(editor.Project, branch.Id);
 
-        Assert.Contains("<<if stat(\"trust\") >= 3>>", yarn, StringComparison.Ordinal);
-        Assert.Contains("<<endif>>", yarn, StringComparison.Ordinal);
+        Assert.Single(document.Segments, segment =>
+            segment.Kind == RenderedSegmentKind.ConditionBegin && segment.Expression == "stat(\"trust\") >= 3");
+        Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionEnd);
     }
 
     /// <summary>

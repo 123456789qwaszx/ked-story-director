@@ -1,21 +1,20 @@
 namespace Vn.Authoring.Rendering;
 
-/// <summary>Preview 문자열의 표현 목적. 공식 저작 모델에는 저장되지 않는다.</summary>
+/// <summary>
+/// 문서의 표현 목적. 공식 저작 모델에는 저장되지 않는다.
+/// (⛔ 녹음 · 번역 대본은 2026-10-29에 Script Preview 탭과 함께 걷혔다 — 그 탭이 유일한 독자였다.)
+/// </summary>
 public enum DocumentOutputFormat
 {
     YarnRuntime,
-    Scenario,
-    Recording,
-    Localization
+    Scenario
 }
 
-/// <summary>도구가 기본 제공하는 읽기 전용 문서 프리셋.</summary>
+/// <summary>도구가 기본 제공하는 문서 프리셋.</summary>
 public enum OutputPresetId
 {
     RuntimeFull,
-    ScenarioOnly,
-    RecordingScript,
-    LocalizationScript
+    ScenarioOnly
 }
 
 /// <summary>
@@ -81,9 +80,10 @@ public sealed record OutputPreset(
 /// <summary>
 /// 기본 출력 프리셋 카탈로그.
 ///
-/// 1) Runtime Full = 재생 순서 그대로(설정 · 조건 · LineId · 실행 출구), 2) Recording/Localization Script =
-/// LineId+대본, 3) Scenario Only = 대본+조건 — 카드 글 칸이 쓰는 면.
-/// ⛔ 4) Direction Sheet(LineId+연출 테이블)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔다.
+/// 1) Runtime Full = 재생 순서 그대로(설정 · 조건 · LineId · 실행 출구) — 합성의 기본값이고 흐름 조각을 재는 자리,
+/// 2) Scenario Only = 대본+조건 — 카드 글 칸이 쓰는 면.
+/// ⛔ Direction Sheet(LineId+연출 테이블)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔고,
+/// Recording/Localization Script(LineId+대본)는 같은 날 그것을 고르던 Script Preview 탭과 함께 걷혔다.
 ///
 /// 프리셋 선택은 문서 합성 방법만 바꾸며 StoryProject를 수정하지 않는다.
 /// </summary>
@@ -126,50 +126,4 @@ public static class OutputPresetCatalog
             includeLineId: false,
             includeExecutionJumps: false,
             includeDiagnostics: true));
-
-    public static OutputPreset RecordingScript { get; } = new(
-        OutputPresetId.RecordingScript,
-        "Recording Script",
-        "녹음 전달용 LineId, 화자와 대사만 표시",
-        new DocumentOutputOptions(
-            DocumentOutputFormat.Recording,
-            includeStructure: false,
-            includeSetAssignments: false,
-            includeConditions: false,
-            includeDialogueText: true,
-            includeLocalizedDialogue: false,
-            includeSpeaker: true,
-            includeLineId: true,
-            includeExecutionJumps: false,
-            includeDiagnostics: false));
-
-    public static OutputPreset LocalizationScript { get; } = new(
-        OutputPresetId.LocalizationScript,
-        "Localization Script",
-        "번역 원문 전달용 LineId, 화자와 대사만 표시",
-        new DocumentOutputOptions(
-            DocumentOutputFormat.Localization,
-            includeStructure: false,
-            includeSetAssignments: false,
-            includeConditions: false,
-            includeDialogueText: true,
-            includeLocalizedDialogue: true,
-            includeSpeaker: true,
-            includeLineId: true,
-            includeExecutionJumps: false,
-            includeDiagnostics: false));
-
-    public static IReadOnlyList<OutputPreset> All { get; } = Array.AsReadOnly(
-        new[]
-        {
-            RuntimeFull,
-            ScenarioOnly,
-            RecordingScript,
-            LocalizationScript
-        });
-
-    public static OutputPreset Get(OutputPresetId id)
-    {
-        return All.First(preset => preset.Id == id);
-    }
 }

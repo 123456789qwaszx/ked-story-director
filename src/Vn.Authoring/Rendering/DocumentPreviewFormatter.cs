@@ -3,8 +3,11 @@ using System.Text;
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
-/// 프리셋의 목적에 맞는 읽기 전용 문자열 표현을 선택한다.
+/// 문서를 사람이 읽고 쓰는 글로 편다 — <b>시나리오 표기</b>(카드 안 글 칸, D4) 하나다.
 /// Segment 목록과 원본 매핑은 그대로 두고, 사람이 보는 표기만 바꾼다.
+///
+/// ⛔ Yarn · 녹음 대본 · 번역 대본 표기는 2026-10-29에 걷혔다 — 그것을 고르던 Script Preview 탭이
+/// 유일한 독자였다(소유자: "더 이상 필요없으니 완전히 제거하십시오"). 게임용 Yarn은 ked-story-compositor가 낸다.
 /// </summary>
 public static class DocumentPreviewFormatter
 {
@@ -12,17 +15,12 @@ public static class DocumentPreviewFormatter
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        return document.Options.Format switch
-        {
-            DocumentOutputFormat.YarnRuntime => YarnPreviewFormatter.Format(document),
-            DocumentOutputFormat.Scenario => FormatScenario(document),
-            DocumentOutputFormat.Recording => FormatRecording(document),
-            DocumentOutputFormat.Localization => FormatLocalization(document),
-            _ => throw new ArgumentOutOfRangeException(
+        return document.Options.Format == DocumentOutputFormat.Scenario
+            ? FormatScenario(document)
+            : throw new ArgumentOutOfRangeException(
                 nameof(document),
                 document.Options.Format,
-                "알 수 없는 문서 출력 형식입니다.")
-        };
+                "글로 펴는 문서는 시나리오 표기뿐입니다.");
     }
 
     private static string FormatScenario(RenderedDocument document)
@@ -85,41 +83,6 @@ public static class DocumentPreviewFormatter
         return builder.ToString();
     }
 
-    private static string FormatRecording(RenderedDocument document)
-    {
-        var builder = new StringBuilder();
-
-        foreach (RenderedSegment segment in document.Segments.Where(
-                     item => item.Kind == RenderedSegmentKind.DialogueLine))
-        {
-            AppendDialogue(builder, document.Options, segment, lineIdPrefix: "LINE");
-        }
-
-        return builder.ToString();
-    }
-
-    private static string FormatLocalization(RenderedDocument document)
-    {
-        var builder = new StringBuilder();
-        builder.Append("LineId\tSpeaker\tSourceText\tLocalizedText\n");
-
-        // 옵션 라벨도 번역 대상이다. 버튼 문구가 원문 그대로 남으면 번역본에서 빠진다.
-        foreach (RenderedSegment segment in document.Segments.Where(item =>
-                     item.Kind is RenderedSegmentKind.DialogueLine or RenderedSegmentKind.ChoiceOption))
-        {
-            builder.Append(EscapeTabular(segment.Source.LineId))
-                .Append('\t')
-                .Append(EscapeTabular(segment.Speaker))
-                .Append('\t')
-                .Append(EscapeTabular(segment.Text))
-                .Append('\t')
-                .Append(EscapeTabular(segment.LocalizedText))
-                .Append('\n');
-        }
-
-        return builder.ToString();
-    }
-
     private static void AppendDialogue(
         StringBuilder builder,
         DocumentOutputOptions options,
@@ -155,11 +118,4 @@ public static class DocumentPreviewFormatter
         builder.Append('\n');
     }
 
-    private static string EscapeTabular(string? value)
-    {
-        return (value ?? string.Empty)
-            .Replace("\r", string.Empty, StringComparison.Ordinal)
-            .Replace("\n", "\\n", StringComparison.Ordinal)
-            .Replace("\t", "\\t", StringComparison.Ordinal);
-    }
 }

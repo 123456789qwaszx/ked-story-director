@@ -204,10 +204,8 @@ public class ScenarioPasteTests
         Assert.Equal(condition.Id, node.FindExtension(ids[1])!.Transition!.ConditionId);
         Assert.Equal(ConditionTransitionKind.EndIf, node.FindExtension(ids[2])!.Transition!.Kind);
 
-        // ScenarioOnly로 다시 펼친 텍스트를 그대로 붙여넣으면 완전한 무변경이다.
-        RenderedDocument document = WorkingDialoguePreview.ComposePreset(
-            editor.Project, node.Id, OutputPresetCatalog.ScenarioOnly, Definition);
-        string roundTrip = DocumentPreviewFormatter.Format(document);
+        // 카드 글 칸에 보이는 글(ScenarioOnly 표기)을 그대로 넣으면 완전한 무변경이다.
+        string roundTrip = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id, Definition);
 
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, roundTrip, Definition, confirmDeletes: true);
         Assert.True(outcome.Applied);

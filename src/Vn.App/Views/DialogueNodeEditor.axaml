@@ -46,77 +46,18 @@
             </StackPanel>
         </Border>
 
-        <TabControl Grid.Row="1" x:Name="EditorTabs">
-            <TabItem Header="대사 편집">
-                <!-- ⚠ [기본 출구] 편집 구역은 2026-08-22에 사라졌다 (소유자: "연출그래프에서
-                     만질 일이 없을 테니 그냥 없애도 될 것 같아") — 같은 값을 판의 레일
-                     칩(`○ 진행`)이 이미 편집한다. 한 값에 편집 창구가 둘이면 어느 쪽이
-                     최신인지 화면이 대답하지 못한다. 데이터·포트·출력은 그대로다. -->
-                <!-- Background이 있어야 카드 아래 빈 공간이 우클릭을 받는다 (W49). -->
-                <ScrollViewer x:Name="LineScroll"
-                              Background="Transparent"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel x:Name="LineHost" Margin="12" Spacing="3" />
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- ⛔ [발행] 탭은 2026-09-15에 사라졌다 (소유자: "저거 솔직히 필요없어 보이는데").
-                 셋이 함께 걷혔다 — ① 발행 상태 문구(PublishStatusText) ② 발행 이력 목록
-                 (ResultHost) ③ 노드 단위 내보내기 단추 둘. ①②는 [이 상태를 발행]이
-                 2026-08-21에 자동이 된 뒤로 읽기 전용 현황판이었고, 현황판은 볼 이유가
-                 사라지면 지운다는 것이 이 판의 선례다([편집 자료] 현황판, 2026-08-21).
-                 ③은 툴바 [내보내기…]·[CSV 내보내기…]가 같은 PickNodeExportsAsync로 노드를
-                 골라 내보내므로 창구가 둘이던 것이다. ⛔ 발행 자체(자동 발행 · Results 층 · 출력)는
-                 2026-10-29에 연출과 함께 ked-story-compositor로 갔다. -->
-
-            <TabItem Header="Script Preview">
-                <Grid RowDefinitions="Auto,*,Auto" Margin="12">
-                    <Grid Grid.Row="0"
-                          ColumnDefinitions="*,220"
-                          Margin="0,0,0,8">
-                        <StackPanel Grid.Column="0" Spacing="2">
-                            <TextBlock Text="평면 문서 Preview" FontWeight="SemiBold" />
-                            <TextBlock x:Name="PreviewSummaryText"
-                                       FontSize="11"
-                                       Opacity="0.65"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Column="1" Spacing="3" Margin="12,0,0,0">
-                            <TextBlock Text="출력 프리셋" FontSize="10" Opacity="0.6" />
-                            <ComboBox x:Name="PreviewPresetCombo"
-                                      HorizontalAlignment="Stretch" />
-                        </StackPanel>
-                    </Grid>
-
-                    <TextBox Grid.Row="1"
-                             x:Name="PreviewBox"
-                             IsReadOnly="True"
-                             AcceptsReturn="True"
-                             TextWrapping="NoWrap"
-                             VerticalContentAlignment="Top" />
-
-                    <!-- ScenarioOnly만 편집면이다 (X12a). 나머지 양식은 읽기 전용 라이브 미러. -->
-                    <StackPanel Grid.Row="2" Spacing="4" Margin="0,8,0,0">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button x:Name="ApplyScenarioButton"
-                                    Content="텍스트 반영"
-                                    FontSize="11"
-                                    IsVisible="False" />
-                            <TextBlock x:Name="ScenarioApplyHintText"
-                                       FontSize="10"
-                                       Opacity="0.6"
-                                       VerticalAlignment="Center"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                        <TextBlock x:Name="ScenarioProblemsText"
-                                   FontSize="10"
-                                   Foreground="#C2410C"
-                                   TextWrapping="Wrap"
-                                   IsVisible="False" />
-                    </StackPanel>
-                </Grid>
-            </TabItem>
-        </TabControl>
+        <!-- ⚠ [기본 출구] 편집 구역은 2026-08-22에 사라졌다 (소유자: "연출그래프에서
+             만질 일이 없을 테니 그냥 없애도 될 것 같아") — 같은 값을 판의 레일
+             칩(`○ 진행`)이 이미 편집한다. 한 값에 편집 창구가 둘이면 어느 쪽이
+             최신인지 화면이 대답하지 못한다. 데이터·포트·출력은 그대로다.
+             ⛔ 탭은 2026-10-29에 걷혔다 — [발행] 탭(2026-09-15)에 이어 [Script Preview] 탭도 걷혀(소유자:
+             "더 이상 필요없으니 완전히 제거") 남는 것이 대사 편집 하나다. 긴 대본은 카드 안 글 칸(D4)에 붙여 넣는다. -->
+        <!-- Background이 있어야 카드 아래 빈 공간이 우클릭을 받는다 (W49). -->
+        <ScrollViewer Grid.Row="1"
+                      x:Name="LineScroll"
+                      Background="Transparent"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="LineHost" Margin="12" Spacing="3" />
+        </ScrollViewer>
     </Grid>
 </UserControl>

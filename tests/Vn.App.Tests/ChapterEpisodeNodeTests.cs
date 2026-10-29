@@ -42,14 +42,13 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
-    public void 챕터_에피소드도_줄을_더하고_텍스트를_반영한다() => HeadlessUi.Run(() =>
+    public void 챕터_에피소드도_줄을_더한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 지시서 §6.4가 이름으로 짚은 두 줄이다 —
-        //    `AddLineButton.IsEnabled = !_excelOwned` · `ApplyScenarioButton.IsEnabled = !_excelOwned`.
+        // ⛔ 지시서 §6.4가 이름으로 짚은 줄이다 — `AddLineButton.IsEnabled = !_excelOwned`.
+        //    (짝이던 [텍스트 반영]은 2026-10-29에 Script Preview 탭과 함께 걷혔다.)
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId) = ShowEpisodeCard();
 
         Assert.True(editor.FindControl<Button>("AddLineButton")!.IsEnabled);
-        Assert.True(editor.FindControl<Button>("ApplyScenarioButton")!.IsEnabled);
 
         DialogueNode node = session.Project.FindDialogue(nodeId)!;
         int before = session.Project.FindScript(node.ScriptId)!.ActiveLines.Count();

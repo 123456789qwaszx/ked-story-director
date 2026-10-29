@@ -30,7 +30,6 @@ internal static class ProjectRefreshPlanner
                 RebuildGraph: false,
                 RefreshGraphPositions: false,
                 RebuildInspector: false,
-                RefreshPreview: selectedNode is DialogueNode,
                 // 곁기둥에서 고친 글이 카드의 글 칸에도 비친다(D4) — 안 그러면 낡은 칸의 글이
                 // 다음 넣기에서 방금 고친 줄을 도로 덮는다.
                 RefreshCardWriting: selectedNode is DialogueNode),
@@ -51,14 +50,11 @@ internal static class ProjectRefreshPlanner
             ProjectChangeKind.NodeMetadata => new ProjectRefreshPlan(
                 RebuildGraph: true,
                 RefreshGraphPositions: false,
-                RebuildInspector: false,
-                RefreshPreview: selectedNode is DialogueNode),
+                RebuildInspector: false),
 
-            ProjectChangeKind.Content => new ProjectRefreshPlan(
-                RebuildGraph: false,
-                RefreshGraphPositions: false,
-                RebuildInspector: false,
-                RefreshPreview: selectedNode is DialogueNode),
+            // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다. (⛔ Script Preview를 다시 합성하던 몫은
+            // 2026-10-29에 그 탭과 함께 걷혔다.)
+            ProjectChangeKind.Content => default,
 
             _ => default
         };
@@ -69,5 +65,4 @@ internal readonly record struct ProjectRefreshPlan(
     bool RebuildGraph,
     bool RefreshGraphPositions,
     bool RebuildInspector,
-    bool RefreshPreview = false,
     bool RefreshCardWriting = false);

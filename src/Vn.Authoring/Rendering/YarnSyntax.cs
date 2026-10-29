@@ -3,16 +3,12 @@ using System.Text;
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
-/// Yarn 표기 조립 규칙 — 미리보기(YarnPreviewFormatter)와 노드 이름 규칙(<see cref="YarnNaming"/>) ·
+/// Yarn 표기 조립 규칙 — 카드 글 칸의 시나리오 표기(조건 줄)와 노드 이름 규칙(<see cref="YarnNaming"/>) ·
 /// 챕터 조건 번역이 지난다. 게임용 Yarn 파일은 이 툴이 내지 않는다(<c>ked-story-compositor</c>의 이미터).
+/// (⛔ Yarn 미리보기 서식은 2026-10-29에 Script Preview 탭과 함께 걷혔다.)
 /// </summary>
 internal static class YarnSyntax
 {
-    public const string Indent = "    ";
-
-    public static string IndentOf(int level) =>
-        string.Concat(Enumerable.Repeat(Indent, Math.Max(0, level)));
-
     /// <summary><c>&lt;&lt;set $x += 1&gt;&gt;</c></summary>
     public static void AppendSet(StringBuilder builder, RenderedSegment segment)
     {
@@ -32,31 +28,6 @@ internal static class YarnSyntax
             .Append(' ')
             .Append(string.IsNullOrWhiteSpace(expression) ? "false" : expression)
             .Append(">>");
-    }
-
-    public static void AppendJump(StringBuilder builder, string target)
-    {
-        builder.Append("<<jump ").Append(target).Append(">>");
-    }
-
-    /// <summary>
-    /// <c>&lt;&lt;detour 노드&gt;&gt;</c> — 대상 노드를 재생하고 이 자리로 돌아온다.
-    /// 조건 갈래의 커스텀 씬 출구가 쓴다 (YarnSpinner 3.x).
-    /// </summary>
-    public static void AppendDetour(StringBuilder builder, string target)
-    {
-        builder.Append("<<detour ").Append(target).Append(">>");
-    }
-
-    /// <summary>화자가 있으면 <c>화자: 대사</c>, 없으면 대사만.</summary>
-    public static void AppendDialogue(StringBuilder builder, RenderedSegment segment)
-    {
-        if (!string.IsNullOrWhiteSpace(segment.Speaker))
-        {
-            builder.Append(segment.Speaker).Append(": ");
-        }
-
-        builder.Append(segment.Text ?? string.Empty);
     }
 
     /// <summary>

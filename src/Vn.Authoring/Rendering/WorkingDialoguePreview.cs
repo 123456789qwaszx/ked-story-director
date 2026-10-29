@@ -5,7 +5,8 @@ using Vn.Authoring.Results;
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
-/// DialogueNode의 작업 상태를 그대로 펼쳐 보여 준다 — 곁기둥의 미리보기와 카드의 글 칸이 여기를 지난다.
+/// DialogueNode의 작업 상태를 그대로 펼쳐 보여 준다 — 카드의 글 칸이 여기를 지난다.
+/// (⛔ 곁기둥의 Script Preview는 2026-10-29에 걷혔다.)
 ///
 /// 초안(<see cref="DialoguePublisher.Draft"/>)을 결과 모양으로 감싸 합성기에 넘기고, 초안의 문제는
 /// 진단 조각으로 끼운다.
@@ -71,26 +72,6 @@ public static class WorkingDialoguePreview
             project, dialogueNodeId, definition, writing, OutputPresetId.ScenarioOnly);
 
         return DocumentPreviewFormatter.Format(document).TrimEnd('\n');
-    }
-
-    public static RenderedDocument ComposePreset(
-        StoryProject project,
-        string dialogueNodeId,
-        OutputPreset preset,
-        GameDefinition? definition = null,
-        ILocalizedLineProvider? localization = null,
-        string? locale = null)
-    {
-        ArgumentNullException.ThrowIfNull(preset);
-
-        return Compose(
-            project,
-            dialogueNodeId,
-            definition,
-            preset.Options,
-            preset.Id,
-            localization,
-            locale);
     }
 
     private static List<RenderedSegment> InsertProblems(RenderedDocument document, DialogueDraft draft)

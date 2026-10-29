@@ -188,7 +188,7 @@ public sealed class SpeakerTabTests : IDisposable
     private static List<Grid> Rows(ChapterGraphView view) =>
         view.FindControl<StackPanel>("SpeakerListPanel")!.Children.OfType<Grid>().ToList();
 
-    /// <summary>그 에피소드 카드의 대본에 대사를 넣는다 — 카드의 [텍스트 반영]과 같은 길.</summary>
+    /// <summary>그 에피소드 카드의 대본에 대사를 넣는다 — 카드 안 글 칸의 넣기와 같은 길.</summary>
     private static void WriteDialogue(AuthoringSession session, string chapterId, string episodeId, string text)
     {
         DialogueNode card = EpisodeNaming.CardFor(session.Project, chapterId, episodeId)!;

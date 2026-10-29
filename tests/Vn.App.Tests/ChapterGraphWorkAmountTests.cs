@@ -156,7 +156,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
         // (ProjectEditor.ApplyScriptSync의 "바꿀 것이 없으면 손대지 않는다").
         //
         // (2026-10-29 · D2: 예전에는 엑셀 대본 동기화가 감시자가 깰 때마다 이 길을 지났다.
-        // 동기화는 걷혔고, 같은 길을 카드의 [텍스트 반영]이 지난다.)
+        // 동기화는 걷혔고, 같은 길을 카드 안 글 칸의 넣기가 지난다.)
         (ChapterGraphView view, AuthoringSession session, Window window) = Show();
 
         DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch01", "ep0")!;

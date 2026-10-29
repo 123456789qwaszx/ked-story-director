@@ -130,11 +130,13 @@ public sealed class BranchMarkerTests
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         node.RequireExtension(lineId).DetourTargetNodeId = Target(editor).Id;
 
-        string yarn = Preview(editor, node);
+        RenderedDocument document = Rendered(editor, node);
 
-        // ⚠ 미리보기는 노드 <b>Id</b>로 낸다 — 번들 이미터가 제 이름 규칙으로 옮긴다.
-        Assert.Contains($"<<detour {Target(editor).Id}>>", yarn, StringComparison.Ordinal);
-        Assert.DoesNotContain("<<if", yarn, StringComparison.Ordinal);
+        // ⚠ 조각은 노드 <b>Id</b>를 든다 — compositor의 번들 이미터가 제 이름 규칙으로 옮긴다.
+        RenderedSegment detour = Assert.Single(
+            document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
+        Assert.Equal(Target(editor).Id, detour.TargetNodeId);
+        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
     }
 
     [Fact]
@@ -142,12 +144,13 @@ public sealed class BranchMarkerTests
     {
         (ProjectEditor editor, DialogueNode node, _) = World();
 
-        Assert.DoesNotContain("<<detour", Preview(editor, node), StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            Rendered(editor, node).Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
     }
 
-    private static string Preview(ProjectEditor editor, DialogueNode node) =>
-        DocumentPreviewFormatter.Format(
-            WorkingDialoguePreview.Compose(editor.Project, node.Id));
+    /// <summary>작업 상태를 문서 조각으로 편 것 — 게임용 Yarn은 compositor가 이 조각을 그대로 옮긴다.</summary>
+    private static RenderedDocument Rendered(ProjectEditor editor, DialogueNode node) =>
+        WorkingDialoguePreview.Compose(editor.Project, node.Id);
 
     // ── 「분기 추가」 (R7 P-5, 편집 명령) ───────────────────────────────────
 

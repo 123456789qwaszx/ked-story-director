@@ -73,40 +73,6 @@ public class ResultDocumentComposerTests
         Assert.Contains(meaningful, segment => segment.Source.LineId == l4);
     }
 
-    [Fact]
-    public void Yarn_Formatter는_NodeId와_LineId를_사용해_읽기_전용_문서를_만든다()
-    {
-        var sample = new Sample();
-
-        string opening = sample.Line("맞아요", LineConditionTransition.BeginIf(sample.ConditionA.Id));
-        sample.Editor.SetScriptLineText(sample.Script.Id, opening, "라루", "맞아요");
-        string ending = sample.Line("끝", LineConditionTransition.EndIf());
-
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opening, sample.TargetA.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
-
-        DialogueResult result = sample.Unfold();
-        RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
-        string text = YarnPreviewFormatter.Format(document);
-
-        string expected =
-            $"title: {sample.Dialogue.Id}\n" +
-            $"// name: {sample.Dialogue.Name}\n" +
-            "---\n" +
-            // 2026-08-24 — 설정노드 초기값 `<<set $favor = 0>>`이 여기서 빠졌다(작업지시 §4).
-            // 그 값은 선언 파일로만 나가고, 되돌리기는 챕터 진입에서 런타임이 한다.
-            $"<<if {sample.ConditionA.Expression}>>\n" +
-            $"    라루: 맞아요 #line:{opening}\n" +
-            $"    <<detour {sample.TargetA.Id}>>\n" +
-            "<<endif>>\n" +
-            $"끝 #line:{ending}\n" +
-            $"<<jump {sample.TargetDefault.Id}>>\n" +
-            "===\n";
-
-        Assert.Equal(expected, text);
-        Assert.DoesNotContain('\r', text);
-    }
-
     /// <summary>
     /// 펼친 순간의 조건 이름과 식을 결과가 함께 싣는다 — 합성기는 조건을 다시 찾지 않는다.
     /// </summary>

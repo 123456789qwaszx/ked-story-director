@@ -36,9 +36,6 @@ public partial class DialogueNodeEditor : UserControl
     private AuthoringSession? _session;
     private string? _nodeId;
     private bool _building;
-    private RenderedDocument? _previewDocument;
-    private readonly IReadOnlyList<OutputPreset> _outputPresets = OutputPresetCatalog.All;
-    private OutputPreset _selectedOutputPreset = OutputPresetCatalog.RuntimeFull;
     private string? _selectedLineId;
     private readonly Dictionary<string, Border> _lineCards = new(StringComparer.Ordinal);
 
@@ -67,16 +64,6 @@ public partial class DialogueNodeEditor : UserControl
 
         NameBox.LostFocus += (_, _) => CommitName();
         AddLineButton.Click += (_, _) => AddLine();
-
-        ApplyScenarioButton.Click += (_, _) => UiGuard.Run(_session, "텍스트 반영", ApplyScenario);
-
-        EditorTabs.SelectionChanged += (_, _) => RefreshPreview();
-
-        PreviewPresetCombo.ItemsSource = _outputPresets
-            .Select(preset => preset.DisplayName)
-            .ToArray();
-        PreviewPresetCombo.SelectedIndex = 0;
-        PreviewPresetCombo.SelectionChanged += (_, _) => OnPreviewPresetSelected();
 
         // 목록 아래 빈 공간 우클릭 = 맨 아래 줄 추가 (W49). 카드 위 우클릭은 카드가
         // 먼저 받아 Handled로 막고, 텍스트 칸은 기본 편집 메뉴의 자리다.
@@ -189,38 +176,11 @@ public partial class DialogueNodeEditor : UserControl
 
     internal string? NodeId => _nodeId;
 
-    /// <summary>현재 Preview가 보관하는 원본 매핑 Segment. 문자열 표시와 별개로 유지한다.</summary>
-    internal RenderedDocument? PreviewDocument => _previewDocument;
-
-    internal OutputPresetId SelectedOutputPresetId => _selectedOutputPreset.Id;
-
-    internal void SelectOutputPreset(OutputPresetId presetId)
-    {
-        int index = -1;
-
-        for (int itemIndex = 0; itemIndex < _outputPresets.Count; itemIndex++)
-        {
-            if (_outputPresets[itemIndex].Id == presetId)
-            {
-                index = itemIndex;
-                break;
-            }
-        }
-
-        if (index < 0 || index == PreviewPresetCombo.SelectedIndex)
-        {
-            return;
-        }
-
-        PreviewPresetCombo.SelectedIndex = index;
-    }
-
     internal void Rebuild()
     {
         if (_session is null || _session.Project.FindDialogue(_nodeId) is not { } node)
         {
             LineHost.Children.Clear();
-            ClearPreview();
             return;
         }
 
@@ -358,7 +318,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 LineHost.Children.Add(new TextBlock
                 {
-                    Text = "'줄 추가'를 누르면 바로 타이핑할 수 있습니다. 긴 대본은 Script Preview의 붙여넣기가 맡습니다.",
+                    Text = "'줄 추가'를 누르면 바로 타이핑할 수 있습니다. 긴 대본은 카드 안 글 칸에 붙여 넣습니다.",
                     Opacity = 0.6,
                     TextWrapping = TextWrapping.Wrap
                 });
@@ -367,7 +327,6 @@ public partial class DialogueNodeEditor : UserControl
             AddOrphanCards(node, script);
             ShowProblems(flow);
             RefreshBranchStates(node);
-            RefreshPreviewCore(node);
         }
         finally
         {
@@ -452,87 +411,6 @@ public partial class DialogueNodeEditor : UserControl
                     ? "선택되지 않은 갈래 — 프리뷰·재생에 접히지 않습니다. 갈래 시작 줄(라벨·조건)을 클릭하면 이 갈래를 봅니다."
                     : null);
         }
-    }
-
-    /// <summary>
-    /// 편집 컨트롤을 다시 만들지 않고 읽기 전용 Preview만 재합성한다.
-    /// 화자·대사를 입력하는 동안 내용 변경이 연속으로 와도 포커스를 잃지 않는다.
-    /// </summary>
-    internal void RefreshPreview()
-    {
-        if (_session is null || _session.Project.FindDialogue(_nodeId) is not { } node)
-        {
-            ClearPreview();
-            return;
-        }
-
-        RefreshPreviewCore(node);
-    }
-
-    private void RefreshPreviewCore(DialogueNode node)
-    {
-        _previewDocument = WorkingDialoguePreview.ComposePreset(
-            _session!.Project,
-            node.Id,
-            _selectedOutputPreset,
-            _session.Definition);
-
-        bool scenarioEditable = _selectedOutputPreset.Id == OutputPresetId.ScenarioOnly;
-
-        // ScenarioOnly는 편집면이다 (X12a). 사용자가 그 안에서 쓰는 중이면 라이브 미러가
-        // 붙여넣던 텍스트를 덮어쓰지 않는다 — 반영 버튼이 정식 반영 경로다.
-        if (!(scenarioEditable && PreviewBox.IsFocused))
-        {
-            PreviewBox.Text = DocumentPreviewFormatter.Format(_previewDocument);
-        }
-
-        PreviewBox.IsReadOnly = !scenarioEditable;
-        ApplyScenarioButton.IsVisible = scenarioEditable;
-        ScenarioApplyHintText.Text = scenarioEditable
-            ? "붙여넣거나 고친 뒤 [텍스트 반영] — 기존 줄의 LineId는 보존됩니다(diff 기반)."
-            : string.Empty;
-
-        PreviewSummaryText.Text =
-            $"{_selectedOutputPreset.DisplayName} · {_previewDocument.Segments.Count}개 Segment · " +
-            (scenarioEditable ? "편집 가능 — 저장 상태와 라이브 동기화" : "작업 중 미리 보기 (읽기 전용 라이브 미러)");
-    }
-
-    private string? _pendingDeleteText;
-
-    /// <summary>
-    /// ScenarioOnly 텍스트를 라인으로 반영한다 (X12a). 전량 재생성 없음 —
-    /// diff는 ScriptSynchronizer, 삭제는 같은 텍스트로 한 번 더 눌러 확인한다.
-    /// </summary>
-    private void ApplyScenario()
-    {
-        if (_session is null || _session.Project.FindDialogue(_nodeId) is not { } node)
-        {
-            return;
-        }
-
-        string text = PreviewBox.Text ?? string.Empty;
-        bool confirmDeletes = string.Equals(_pendingDeleteText, text, StringComparison.Ordinal);
-
-        ScenarioPasteOutcome outcome = _session.Editor.ApplyScenarioText(
-            node.Id, text, _session.Definition, confirmDeletes);
-
-        ScenarioProblemsText.IsVisible = outcome.Problems.Count > 0;
-        ScenarioProblemsText.Text = string.Join(
-            Environment.NewLine,
-            outcome.Problems.Select(problem => $"• {problem}"));
-
-        if (outcome.NeedsDeleteConfirmation && !confirmDeletes)
-        {
-            _pendingDeleteText = text;
-            _session.SetStatus($"{outcome.Summary()} — 같은 텍스트로 [텍스트 반영]을 한 번 더 누르면 적용합니다.");
-            return;
-        }
-
-        _pendingDeleteText = null;
-        _session.SetStatus(outcome.Applied
-            ? $"텍스트를 반영했습니다. {outcome.Summary()}" +
-              (outcome.Problems.Count > 0 ? $" · 확인할 항목 {outcome.Problems.Count}개" : string.Empty)
-            : outcome.Summary());
     }
 
     /// <summary>클릭한 줄을 왼쪽 강조 띠로 감싼다 — 고른 줄이 [줄 추가]의 자리와 갈래 선택의 기준이다.</summary>
@@ -664,33 +542,6 @@ public partial class DialogueNodeEditor : UserControl
         {
             RefreshBranchStates(node); // 커서 덮어쓰기·새 선택이 흐림 상태를 바꾼다
         }
-    }
-
-    private void OnPreviewPresetSelected()
-    {
-        if (_building ||
-            PreviewPresetCombo.SelectedIndex < 0 ||
-            PreviewPresetCombo.SelectedIndex >= _outputPresets.Count)
-        {
-            return;
-        }
-
-        OutputPreset selected = _outputPresets[PreviewPresetCombo.SelectedIndex];
-
-        if (_selectedOutputPreset.Id == selected.Id)
-        {
-            return;
-        }
-
-        _selectedOutputPreset = selected;
-        RefreshPreview();
-    }
-
-    private void ClearPreview()
-    {
-        _previewDocument = null;
-        PreviewBox.Text = string.Empty;
-        PreviewSummaryText.Text = "DialogueNode를 선택하면 작업 중 상태를 선택한 출력 프리셋으로 펼쳐 보여 줍니다.";
     }
 
     // ── 대본 ────────────────────────────────────────────────────────────────
