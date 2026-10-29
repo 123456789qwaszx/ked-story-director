@@ -80,9 +80,10 @@ public sealed class BranchMarkerCardTests : IDisposable
     });
 
     [Fact]
-    public void 분기_제거는_표식만_지우고_에피소드는_남긴다() => HeadlessUi.Run(() =>
+    public void 분기_지우기는_표식과_그_에피소드를_함께_걷는다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 함께 지우면 거기 써 둔 대사가 한 번의 실수로 사라진다.
+        // 2026-10-29 소유자 — "조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다." 예전 단추는 표식만 걷고
+        // 「분기 추가」가 세운 에피소드를 판에 남겼다. 이제 「분기 추가」의 반대다(되돌리기 한 번에 돌아온다).
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
         DialogueNode made = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -96,7 +97,8 @@ public sealed class BranchMarkerCardTests : IDisposable
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.Null(Node(session, nodeId).FindExtension(lineId)?.DetourTargetNodeId);
-        Assert.NotNull(session.Project.FindNode(made.Id));
+        Assert.Null(session.Project.FindNode(made.Id));
+        Assert.Contains(made.Name, session.StatusMessage, StringComparison.Ordinal);
 
         Rebuild(editor, nodeId);
         Assert.Null(Card(editor, lineId));

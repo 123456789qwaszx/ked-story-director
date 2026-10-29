@@ -3630,6 +3630,15 @@ public partial class GraphEditorView : UserControl
         }
         else if (_selectedEdge.Connection.ExecutionPort is { } exit)
         {
+            // 분기 선을 지우는 것은 「분기 지우기」다 — 표식과, 분기가 다녀가던 에피소드를 함께 걷는다
+            // (2026-10-29 소유자). 그 밖의 출구는 잇던 선만 끊는다.
+            if (exit.Kind == ExitPortKind.Detour && exit.ExitKey is { } lineId &&
+                _session.Editor.RemoveBranchMarker(exit.NodeId, lineId) is { } removal)
+            {
+                _session.SetStatus(removal.Describe());
+                return;
+            }
+
             _session.Editor.SetExitTarget(exit, null);
         }
     }

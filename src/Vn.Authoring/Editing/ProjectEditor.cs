@@ -441,6 +441,103 @@ public sealed partial class ProjectEditor
         return created;
     }
 
+    /// <summary>
+    /// <b>「분기 지우기」</b> (2026-10-29 소유자: *"조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다.
+    /// 지울 수 있도록 해주시고"*) — <see cref="AddBranchMarker"/>의 반대다. 그 줄 앞의 분기 표식을 걷고,
+    /// 그 분기가 다녀가던 카드(분기를 추가할 때 함께 선 에피소드)도 <b>다른 곳이 쓰지 않으면</b> 함께 걷는다.
+    ///
+    /// ⛔ 2026-10-29까지는 표식만 지우고 카드는 판에 남겼다 — "거기 써 둔 대사가 한 번의 실수로 사라진다"가
+    /// 근거였는데, 그러면 아무도 안 부르는 카드가 판에 남아 사람은 분기가 지워지지 않았다고 본다. 대본은 원래
+    /// 지우지 않고(<see cref="StoryProject.Scripts"/>) 되돌리기 한 번에 셋이 함께 돌아오므로 그 근거가 없어졌다.
+    ///
+    /// ⚠ <b>남기는 경우</b> — 그 카드를 다른 곳이 쓰고 있으면 표식만 걷는다: 다른 표식 · 출구가 그리로 가거나,
+    /// 챕터의 길(간선)이 그리로 들어오거나, 챕터의 시작 에피소드이거나, 다른 판에 서 있을 때. 다른 데서 이어 쓰는
+    /// 에피소드를 분기 하나 지우다 함께 걷으면 안 된다.
+    /// </summary>
+    /// <returns>지운 것. 그 자리에 분기가 없었으면 <c>null</c>이다.</returns>
+    public BranchMarkerRemoval? RemoveBranchMarker(string nodeId, string beforeLineId)
+    {
+        if (Project.FindNode(nodeId) is not DialogueNode source ||
+            source.FindExtension(beforeLineId)?.DetourTargetNodeId is not { Length: > 0 } targetId)
+        {
+            return null;
+        }
+
+        StoryNode? target = Project.FindNode(targetId);
+        bool take = target is DialogueNode card && MadeForThisBranchOnly(card, source, beforeLineId);
+
+        Batch(() =>
+        {
+            SetExitTarget(nodeId, ExitPortKind.Detour, beforeLineId, null);
+
+            if (!take)
+            {
+                return;
+            }
+
+            var card = (DialogueNode)target!;
+
+            if (Chapters.EpisodeNaming.ChapterOf(Project, card) is { } chapter &&
+                FindEpisode(chapter, Chapters.EpisodeNaming.EpisodeIdOf(card)) is not null)
+            {
+                RemoveEpisode(chapter.ChapterId, Chapters.EpisodeNaming.EpisodeIdOf(card));
+            }
+
+            RemoveNode(card.Id);
+        });
+
+        return new BranchMarkerRemoval(
+            TakenNodeName: take ? target!.Name : null,
+            KeptNodeName: take ? null : target?.Name);
+    }
+
+    /// <summary>
+    /// 그 카드를 쓰는 것이 <b>이 분기 하나뿐</b>인가 — 같은 판에 서 있고, 다른 표식 · 출구 · 챕터의 길이 그리로
+    /// 가지 않고, 시작 노드 · 챕터의 시작 에피소드가 아니다.
+    /// </summary>
+    private bool MadeForThisBranchOnly(DialogueNode card, DialogueNode source, string beforeLineId)
+    {
+        if (Project.FindFileContainingNode(card.Id) != Project.FindFileContainingNode(source.Id) ||
+            string.Equals(Project.StartNodeId, card.Id, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        foreach (StoryNode node in Project.EnumerateNodes())
+        {
+            if (string.Equals(node.DefaultExitTargetNodeId, card.Id, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (node is not DialogueNode dialogue)
+            {
+                continue;
+            }
+
+            if (dialogue.BranchExits.Values.Concat(dialogue.ChoiceExits.Values)
+                    .Any(target => string.Equals(target, card.Id, StringComparison.Ordinal)) ||
+                dialogue.LineExtensions.Any(extension =>
+                    string.Equals(extension.DetourTargetNodeId, card.Id, StringComparison.Ordinal) &&
+                    !(ReferenceEquals(dialogue, source) &&
+                      string.Equals(extension.LineId, beforeLineId, StringComparison.Ordinal))))
+            {
+                return false;
+            }
+        }
+
+        if (Chapters.EpisodeNaming.ChapterOf(Project, card) is not { } chapter)
+        {
+            return true;
+        }
+
+        string episodeId = Chapters.EpisodeNaming.EpisodeIdOf(card);
+
+        return !string.Equals(
+                   chapter.Episodes.FirstOrDefault()?.EpisodeId, episodeId, StringComparison.Ordinal) &&
+               !chapter.Edges.Any(edge => string.Equals(edge.ToEpisodeId, episodeId, StringComparison.Ordinal));
+    }
+
     public SetNode AddSetNode(
         string fileId,
         double x = 0,

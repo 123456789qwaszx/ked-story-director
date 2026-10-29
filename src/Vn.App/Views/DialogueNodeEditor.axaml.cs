@@ -1184,8 +1184,9 @@ public partial class DialogueNodeEditor : UserControl
     /// 구체적인 조건식도 선택지 문구도 여기서 정하지 않는다. 대본에는 <c>&lt;&lt;detour {노드}&gt;&gt;</c>
     /// 한 줄로 나가고, <c>&lt;&lt;if&gt;&gt;</c>가 없다.
     ///
-    /// ⚠ 지우는 것은 <b>표식뿐</b>이다 — 다녀오던 에피소드는 판에 그대로 선다. 함께 지우면
-    /// 거기 써 둔 대사가 한 번의 실수로 사라진다.
+    /// [✕ 분기 지우기]는 「분기 추가」의 반대다 — 표식과, 그 분기가 다녀가던 카드를 함께 걷는다(다른 곳이 쓰는
+    /// 카드면 남긴다 — <see cref="Vn.Authoring.Editing.ProjectEditor.RemoveBranchMarker"/>). 같은 단추가 그 줄의
+    /// ＋ 메뉴에도 선다.
     /// </summary>
     private Control? BuildBranchMarkerCard(DialogueNode node, string lineId)
     {
@@ -1228,10 +1229,7 @@ public partial class DialogueNodeEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center
         });
 
-        Button remove = SmallButton("✕ 분기 제거", () =>
-            _session!.Editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, null));
-        ToolTip.SetTip(remove, "표식만 지웁니다 — 다녀오던 에피소드는 판에 그대로 남습니다.");
-        row.Children.Add(remove);
+        row.Children.Add(RemoveBranchButton(node, lineId));
 
         return new Border
         {
@@ -1248,6 +1246,27 @@ public partial class DialogueNodeEditor : UserControl
 
     /// <summary>그 줄의 「조건 분기」 카드가 지는 표 — 화면 테스트가 이것으로 찾는다.</summary>
     internal static string BranchMarkerTag(string lineId) => $"branch:{lineId}";
+
+    /// <summary>
+    /// [✕ 분기 지우기] (2026-10-29 소유자: *"조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다"*) —
+    /// 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다.
+    /// </summary>
+    private Button RemoveBranchButton(DialogueNode node, string lineId)
+    {
+        Button remove = SmallButton("✕ 분기 지우기", () =>
+            UiGuard.Run(_session!, "분기 지우기", () =>
+            {
+                if (_session!.Editor.RemoveBranchMarker(node.Id, lineId) is { } removal)
+                {
+                    _session.SetStatus(removal.Describe());
+                }
+            }));
+        ToolTip.SetTip(
+            remove,
+            "분기와, 이 분기가 다녀가던 에피소드를 함께 지웁니다(다른 곳에서도 쓰는 에피소드면 남깁니다). " +
+            "되돌리기(Ctrl+Z)로 돌아옵니다.");
+        return remove;
+    }
 
     // ── ＋ (메타데이터 추가) ─────────────────────────────────────────────────
 
@@ -1310,6 +1329,7 @@ public partial class DialogueNodeEditor : UserControl
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
+            panel.Children.Add(RemoveBranchButton(node, markerLineId));
         }
         else
         {
