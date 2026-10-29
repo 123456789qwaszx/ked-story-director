@@ -666,6 +666,14 @@ public partial class GraphEditorView : UserControl
             // 많으므로, 들어오는 가지들은 도착 카드 앞의 접점 하나로 모인다.
             var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
 
+            // 뿌리 — 챕터 시작 에피소드의 카드. 그보다 왼쪽에 둔 카드는 선택지를 <b>왼쪽으로</b> 낸다
+            // (2026-10-29 소유자: "뿌리 에피소드보다 왼쪽에 위치하면 왼쪽으로 생성되도록"). 지금 그린 자리로 재므로
+            // 끄는 동안에도 넘어가는 순간 뒤집힌다.
+            Rect? root = chapter.StartEpisode is { } start &&
+                         spots.TryGetValue(start.EpisodeId, out (DialogueNode Node, Rect Rect) rootSpot)
+                ? rootSpot.Rect
+                : null;
+
             foreach ((string episodeId, (DialogueNode node, Rect rect)) in spots)
             {
                 // 챕터에서 지운 에피소드의 노드가 판에 남아 있으면 레일을 긋지 않는다 —
@@ -680,7 +688,8 @@ public partial class GraphEditorView : UserControl
                     .Where(edge => string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal))
                     .ToList();
 
-                DrawRailsFrom(node, rect, edges, spots, nodeRects, freeNodes, arrivals);
+                bool mirrored = root is { } rootRect && RootSide.IsLeftOfRoot(rect.X, rootRect.X);
+                DrawRailsFrom(node, rect, edges, spots, nodeRects, freeNodes, arrivals, mirrored);
             }
 
             foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
@@ -719,7 +728,8 @@ public partial class GraphEditorView : UserControl
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
         IReadOnlyDictionary<string, Rect> nodeRects,
         IReadOnlyList<DialogueNode> freeNodes,
-        Dictionary<string, List<(string From, string Label)>> arrivals)
+        Dictionary<string, List<(string From, string Label)>> arrivals,
+        bool mirrored = false)
     {
         IReadOnlyList<ExitPort> ports = NodeConnections.PortsOf(source, _session!.Project, _session.Definition);
         List<ExitPort> optionPorts = ports.Where(port => port.IsChoice).ToList();
@@ -773,15 +783,19 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        double trunkX = sourceRect.X + RailTrunkInset;
+        // 뿌리보다 왼쪽 카드는 거울에 비춘 모양이다 — 줄기는 카드 오른쪽 안에서 내려오고, 칩의 문구는 줄기
+        // 왼쪽에 서며, 내려가는 레인은 카드 <b>왼쪽</b>으로 빠진다.
+        double trunkX = mirrored ? sourceRect.Right - RailTrunkInset : sourceRect.X + RailTrunkInset;
         double branchY = sourceRect.Bottom + RailFirstDrop;
         int lane = 0;
 
         foreach ((ChapterEdge? edge, ExitPort? port, Rect? target, GraphChoicePort? slot) in branches)
         {
-            // 내려가는 레인은 카드 오른쪽에 가지마다 한 줄씩 — 같은 줄로 겹치면 어느 선이 어디로 가는지 안 보인다.
-            double laneX = sourceRect.Right + RailLaneOut + (lane++ * RailLaneGap);
-            DrawRailBranch(source, edge, port, trunkX, branchY, laneX, target, nodeRects, freeNodes, slot);
+            // 내려가는 레인은 카드 바깥에 가지마다 한 줄씩 — 같은 줄로 겹치면 어느 선이 어디로 가는지 안 보인다.
+            double laneX = mirrored
+                ? sourceRect.X - RailLaneOut - (lane++ * RailLaneGap)
+                : sourceRect.Right + RailLaneOut + (lane++ * RailLaneGap);
+            DrawRailBranch(source, edge, port, trunkX, branchY, laneX, target, nodeRects, freeNodes, slot, mirrored);
 
             if (edge is not null && target is not null)
             {
@@ -925,7 +939,8 @@ public partial class GraphEditorView : UserControl
     /// 실제로 뻗어 나가는 자리가 거기이기 때문이다 — 카드 안에 두면 이야기가 어디로
     /// 갈라지는지 한눈에 안 보인다.
     /// </summary>
-    private Control SlotChip(GraphChoicePort slot, string nodeId)
+    /// <param name="mirrored">뿌리보다 왼쪽 카드의 칩 — 점이 줄기 쪽(오른쪽)에, 문구가 그 왼쪽에 선다.</param>
+    private Control SlotChip(GraphChoicePort slot, string nodeId, bool mirrored = false)
     {
         IReadOnlyList<GraphChoicePort> ports = SlotsOf(nodeId);
         bool live = IsLive(slot, ports);
@@ -988,9 +1003,11 @@ public partial class GraphEditorView : UserControl
 
         line.Children.Add(knob);
 
-        line.Children.Add(string.Equals(_editingSlot, SlotKey(slot), StringComparison.Ordinal)
-            ? SlotEditor(slot, ports)
-            : label);
+        line.Children.Insert(
+            mirrored ? 0 : 1,
+            string.Equals(_editingSlot, SlotKey(slot), StringComparison.Ordinal)
+                ? SlotEditor(slot, ports)
+                : label);
 
         // 꺼진 점을 누르면 <b>켠다</b>, 켜진 점을 누르면 <b>끈다</b> — 손짓 하나가 한 가지 뜻이다.
         knob.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지", () =>
@@ -1091,22 +1108,26 @@ public partial class GraphEditorView : UserControl
         Rect? target,
         IReadOnlyDictionary<string, Rect> nodeRects,
         IReadOnlyList<DialogueNode> freeNodes,
-        GraphChoicePort? slot = null)
+        GraphChoicePort? slot = null,
+        bool mirrored = false)
     {
-        double cursorX = trunkX;
+        // 나아가는 쪽 — 거울이면 왼쪽(-1)이다. 칩 · 스텁 · 레인이 모두 이 쪽으로 선다.
+        double toward = mirrored ? -1 : 1;
 
         Control chip = slot is not null
-            ? SlotChip(slot, source.Id)
+            ? SlotChip(slot, source.Id, mirrored)
             : LegacyChip(source, edge, port, freeNodes);
 
         chip.Measure(Size.Infinity);
 
-        _railVisuals.Add(RailLine(trunkX, y, trunkX + 10, y));
-        Canvas.SetLeft(chip, trunkX + 14);
+        _railVisuals.Add(RailLine(trunkX, y, trunkX + (toward * 10), y));
+        Canvas.SetLeft(chip, mirrored ? trunkX - 14 - chip.DesiredSize.Width : trunkX + 14);
         Canvas.SetTop(chip, y - chip.DesiredSize.Height / 2);
 
         _railVisuals.Add(chip);
-        cursorX = trunkX + 14 + chip.DesiredSize.Width + 6;
+        double cursorX = mirrored
+            ? trunkX - 14 - chip.DesiredSize.Width - 6
+            : trunkX + 14 + chip.DesiredSize.Width + 6;
 
         // 아직 안 이은 칸은 <b>여기서 끝</b>이다 — 갈 곳이 없으니 선도 없고 "종료"도 아니다
         // (2026-09-16 소유자: "연결되지 않은 상태라면 '종료'라는 글자가 표시됩니다").
@@ -1145,7 +1166,9 @@ public partial class GraphEditorView : UserControl
 
             if (!web)
             {
-                double dropX = Math.Max(cursorX + RailLaneGap, laneX);
+                double dropX = mirrored
+                    ? Math.Min(cursorX - RailLaneGap, laneX)
+                    : Math.Max(cursorX + RailLaneGap, laneX);
 
                 _railVisuals.Add(RailLine(cursorX, y, dropX, y));
                 _railVisuals.Add(RailLine(dropX, y, dropX, junctionY));
@@ -1170,12 +1193,12 @@ public partial class GraphEditorView : UserControl
                 "프로젝트를 저장하고 다시 열면 빈 카드가 서고 여기로 이어집니다.");
             pending.Measure(Size.Infinity);
 
-            _railVisuals.Add(RailLine(cursorX, y, cursorX + 18, y));
-            Canvas.SetLeft(pending, cursorX + 22);
+            _railVisuals.Add(RailLine(cursorX, y, cursorX + (toward * 18), y));
+            Canvas.SetLeft(pending, mirrored ? cursorX - 22 - pending.DesiredSize.Width : cursorX + 22);
             Canvas.SetTop(pending, y - pending.DesiredSize.Height / 2);
             _railVisuals.Add(pending);
 
-            laneEnd = new Point(cursorX + 18, y);
+            laneEnd = new Point(cursorX + (toward * 18), y);
         }
         else
         {
@@ -1189,12 +1212,12 @@ public partial class GraphEditorView : UserControl
             };
             stop.Measure(Size.Infinity);
 
-            _railVisuals.Add(RailLine(cursorX, y, cursorX + 18, y));
-            Canvas.SetLeft(stop, cursorX + 22);
+            _railVisuals.Add(RailLine(cursorX, y, cursorX + (toward * 18), y));
+            Canvas.SetLeft(stop, mirrored ? cursorX - 22 - stop.DesiredSize.Width : cursorX + 22);
             Canvas.SetTop(stop, y - stop.DesiredSize.Height / 2);
             _railVisuals.Add(stop);
 
-            laneEnd = new Point(cursorX + 18, y);
+            laneEnd = new Point(cursorX + (toward * 18), y);
         }
 
         // (진행) 합류 (2026-08-15 소유자) — 척추(기본 출구 체인) 밖으로 확장한 커스텀 웹
