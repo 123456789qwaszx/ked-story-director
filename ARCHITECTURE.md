@@ -388,7 +388,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 그대로 카드 안에 넣는다(LineId · 개정 번호 · 은퇴한 줄 그대로, `ScriptTable`). 한 대본을 두 카드가 가리켰으면 둘째는 같은 내용의
 사본을 받고, 어느 카드도 안 가리키는 대본은 버린다. 열기만 해서는 아무것도 지우지 않는다. **저장할 때** 옛 매니페스트가 가리키던
 대본 파일을 지운다(새 판 파일과 매니페스트를 다 쓴 뒤 · 매니페스트가 가리키지 않던 파일은 남긴다). 고정 자료
-`tests/fixtures/format3-project`(견본의 형식 3 시절)를 옮기면 지금 견본과 바이트까지 같다(`FormatThreeProjectTests`).
+`tests/fixtures/format3-project`(견본의 형식 3 시절)를 옮기면 지금 견본과 글자까지 같다(`FormatThreeProjectTests`).
 
 형식 3 · 4 안에서 걷힌 칸은 **읽지 않고 지나간다**(깨지지 않는다): `excelLines` · `excelEpisode` · 대본의 `sourcePath` · 챕터의
 `sourceRow`. 연출 층을 담은 옛 프로젝트는 연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남긴다(compositor가 가져간다).

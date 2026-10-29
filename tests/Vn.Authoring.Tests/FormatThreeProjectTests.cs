@@ -12,7 +12,7 @@ namespace Vn.Authoring.Tests;
 /// 든다. 옮기기는 기계적이다 — 카드마다 가리키던 대본의 내용을 그대로 넣는다(LineId · 개정 번호 그대로).
 ///
 /// 고정 자료 <c>tests/fixtures/format3-project</c>는 견본(<c>samples/Authoring</c>)의 형식 3 시절 그대로다.
-/// 그것을 열어 저장하면 지금 견본과 바이트까지 같아야 한다 — 견본은 도구가 그렇게 옮긴 것이다.
+/// 그것을 열어 저장하면 지금 견본과 글자까지 같아야 한다 — 견본은 도구가 그렇게 옮긴 것이다.
 /// </summary>
 public sealed class FormatThreeProjectTests : IDisposable
 {
@@ -88,13 +88,14 @@ public sealed class FormatThreeProjectTests : IDisposable
 
         Assert.False(Directory.Exists(ScriptFolder));
 
-        // 지금 견본은 도구가 형식 3 견본을 이렇게 옮긴 것이다 — 바이트까지 같다.
+        // 지금 견본은 도구가 형식 3 견본을 이렇게 옮긴 것이다 — 글자까지 같다. (줄바꿈만 맞춰 본다: Windows 체크아웃은
+        // 저장소의 LF를 CRLF로 바꿔 놓는다.)
         Assert.Equal(
-            File.ReadAllBytes(Path.Combine(SampleDirectory, "project.vnproject.json")),
-            File.ReadAllBytes(Manifest));
+            TextOf(Path.Combine(SampleDirectory, "project.vnproject.json")),
+            TextOf(Manifest));
         Assert.Equal(
-            File.ReadAllBytes(Path.Combine(SampleDirectory, "story", "chapter01.vnstory.json")),
-            File.ReadAllBytes(StoryPath));
+            TextOf(Path.Combine(SampleDirectory, "story", "chapter01.vnstory.json")),
+            TextOf(StoryPath));
 
         // 옮긴 프로젝트는 다시 열린다.
         Assert.Equal(4, ProjectStore.Load(Manifest).Project.EnumerateScripts().Count());
@@ -178,4 +179,6 @@ public sealed class FormatThreeProjectTests : IDisposable
     }
 
     private static JsonObject ReadJson(string path) => JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+
+    private static string TextOf(string path) => File.ReadAllText(path).ReplaceLineEndings("\n");
 }
