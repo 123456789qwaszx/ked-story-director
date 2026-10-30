@@ -21,6 +21,79 @@ public sealed class ChapterBranchPlannerTests
         IReadOnlyList<ChapterEpisode> episodes, IReadOnlyList<ChapterEdge> edges) =>
         new("ch", "ch", episodes, edges, [], [], [], []);
 
+    // ── 연출 그래프를 본뜬 배치 (2026-10-30) ───────────────────────────────────
+
+    [Fact]
+    public void 연출_그래프의_자리를_챕터_간격으로_줄여_본뜬다()
+    {
+        // 소유자: "연출 그래프에 배치된 노드들을 참고해서 그와 거의 같은 형태로". 연출 그래프의 열 하나(320)는 챕터의
+        // 옆 칸(220), 줄 하나(400)는 깊이 한 칸(170)이다. 왼위가 (0,0)이다.
+        ChapterGraphModel model = Model(
+            [Episode("root", 0, 0), Episode("a", 0, 0), Episode("b", 0, 0), Episode("c", 0, 0)],
+            [Edge("root", "a"), Edge("root", "b")]);
+
+        IReadOnlyDictionary<string, (double X, double Y)> placed = ChapterBranchPlanner.LayoutLikeBoard(model, new Dictionary<string, (double X, double Y)>
+        {
+            ["root"] = (100, 100), ["a"] = (420, 500), ["b"] = (-220, 500), ["c"] = (740, 100)
+        });
+
+        Assert.Equal((220, 0), placed["root"]);
+        Assert.Equal((440, 170), placed["a"]);
+        Assert.Equal((0, 170), placed["b"]);
+        Assert.Equal((660, 0), placed["c"]);
+    }
+
+    [Fact]
+    public void 바짝_붙은_카드는_겹치지_않게_오른쪽으로_비킨다()
+    {
+        // 연출 카드(폭 210)를 붙여 놓으면 줄인 자리에서 챕터 카드(폭 190)가 겹친다 — 왼쪽 이웃의 오른쪽으로 비키고,
+        // 그 오른쪽 이웃도 따라 비킨다. 좌우 순서는 연출 그래프 그대로다.
+        ChapterGraphModel model = Model(
+            [Episode("root", 0, 0), Episode("a", 0, 0), Episode("b", 0, 0), Episode("under", 0, 0)],
+            []);
+
+        IReadOnlyDictionary<string, (double X, double Y)> placed = ChapterBranchPlanner.LayoutLikeBoard(model, new Dictionary<string, (double X, double Y)>
+        {
+            ["root"] = (0, 0), ["a"] = (230, 10), ["b"] = (460, 0), ["under"] = (230, 400)
+        });
+
+        Assert.Equal((0, 0), placed["root"]);
+        Assert.Equal(220, placed["a"].X);
+        Assert.Equal(440, placed["b"].X);
+        Assert.Equal(10 * 170 / 400.0, placed["a"].Y, 3);   // 세로 자리는 비키지 않는다
+        Assert.Equal(230 * 220 / 320.0, placed["under"].X, 3);   // 아래 줄은 부딪치지 않아 그대로
+        Assert.Equal(170, placed["under"].Y);
+    }
+
+    [Fact]
+    public void 연출_그래프에_카드가_없는_에피소드는_맨_아래_줄에_선다()
+    {
+        ChapterGraphModel model = Model(
+            [Episode("root", 0, 0), Episode("a", 0, 0), Episode("stray", 0, 0), Episode("stray2", 0, 0)],
+            [Edge("root", "a")]);
+
+        IReadOnlyDictionary<string, (double X, double Y)> placed = ChapterBranchPlanner.LayoutLikeBoard(model, new Dictionary<string, (double X, double Y)>
+        {
+            ["root"] = (0, 0), ["a"] = (0, 400)
+        });
+
+        Assert.Equal((0, 170 + 340), placed["stray"]);
+        Assert.Equal((220, 170 + 340), placed["stray2"]);
+    }
+
+    [Fact]
+    public void 연출_그래프에_카드가_하나도_없으면_흐름_순서_배치다()
+    {
+        ChapterGraphModel model = Model(
+            [Episode("root", 0, 0), Episode("a", 0, 0), Episode("b", 0, 0)],
+            [Edge("root", "a"), Edge("a", "b")]);
+
+        Assert.Equal(
+            ChapterBranchPlanner.Layout(model).OrderBy(pair => pair.Key, StringComparer.Ordinal),
+            ChapterBranchPlanner.LayoutLikeBoard(model, new Dictionary<string, (double X, double Y)>())
+                .OrderBy(pair => pair.Key, StringComparer.Ordinal));
+    }
+
     [Fact]
     public void 합류_노드의_깊이는_가장_깊은_부모_기준이다()
     {

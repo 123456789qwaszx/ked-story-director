@@ -22,7 +22,7 @@ namespace Vn.Authoring.Chapters;
 ///   <item><see cref="SuggestPlacement"/> — 새로 세우는 카드 하나의 자리</item>
 ///   <item><see cref="NeedsSeeding"/>가 참일 때 <see cref="Layout"/>로 <b>한 번 심기</b> —
 ///         엑셀에서 들여온 챕터는 X·Y가 전부 0이라 한 자리에 포개진다</item>
-///   <item>[자동 정렬] — 사람이 흐트러뜨린 판을 부를 때 다시 세운다</item>
+///   <item>[자동 정렬] — 연출 그래프에 카드가 하나도 없을 때(있으면 그 모양을 본뜬다 — <see cref="LayoutLikeBoard"/>)</item>
 /// </list>
 ///
 /// ⚠ 자동으로 <b>다시</b> 계산하지 않는다. 사람이 옮긴 자리를 그리기가 덮으면, 옮긴 일이
@@ -162,6 +162,94 @@ public static class ChapterBranchPlanner
         }
 
         return positions;
+    }
+
+    /// <summary>
+    /// <b>연출 그래프의 모양을 본뜬 배치</b> — 챕터 그래프의 [자동 정렬] (2026-10-30 소유자: *"자동 정렬 버튼을 눌렀을 때,
+    /// 연출 그래프에 배치된 노드들을 참고해서 그와 거의 같은 형태로 노드가 자동으로 배치되도록"*).
+    ///
+    /// 에피소드마다 그 카드가 연출 그래프(챕터의 판)에 선 자리를 챕터 그래프의 간격으로 줄인다 — 가로는 열 간격(연출
+    /// <see cref="Graph.NodePlacement.Column"/> → 챕터 <see cref="SiblingSpacing"/>), 세로는 줄 간격(<see cref="Graph.NodePlacement.Row"/>
+    /// → <see cref="DepthSpacing"/>). 왼위가 (0,0)이다. 줄인 자리에서 앞서 앉은 카드와 부딪치면(연출 그래프에서 카드를 바짝
+    /// 붙여 놓았을 때) 오른쪽으로 비킨다 — 왼쪽에서 오른쪽 차례로 앉히므로 비켜도 좌우 순서는 연출 그래프 그대로다.
+    ///
+    /// 연출 그래프에 카드가 없는 에피소드는 맨 아래 줄에 따로 선다(<see cref="Layout"/>의 고아 줄과 같은 모양). 카드가 하나도
+    /// 없으면 흐름 순서 배치(<see cref="Layout"/>)다.
+    /// </summary>
+    /// <param name="model">챕터.</param>
+    /// <param name="boardPositions">에피소드 Id마다 그 카드가 연출 그래프에 선 자리(왼위).</param>
+    public static IReadOnlyDictionary<string, (double X, double Y)> LayoutLikeBoard(
+        ChapterGraphModel model, IReadOnlyDictionary<string, (double X, double Y)> boardPositions)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+        ArgumentNullException.ThrowIfNull(boardPositions);
+
+        List<ChapterEpisode> onBoard = model.Episodes
+            .Where(episode => boardPositions.ContainsKey(episode.EpisodeId))
+            .ToList();
+
+        if (onBoard.Count == 0)
+        {
+            return Layout(model);
+        }
+
+        double left = onBoard.Min(episode => boardPositions[episode.EpisodeId].X);
+        double top = onBoard.Min(episode => boardPositions[episode.EpisodeId].Y);
+        var positions = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+
+        foreach (ChapterEpisode episode in onBoard
+                     .OrderBy(item => boardPositions[item.EpisodeId].X)
+                     .ThenBy(item => boardPositions[item.EpisodeId].Y))
+        {
+            (double boardX, double boardY) = boardPositions[episode.EpisodeId];
+            double x = (boardX - left) * BoardScaleX;
+            double y = (boardY - top) * BoardScaleY;
+
+            while (CollisionAt(positions.Values, x, y) is { } hit)
+            {
+                x = hit + SiblingSpacing;
+            }
+
+            positions[episode.EpisodeId] = (x, y);
+        }
+
+        // 연출 그래프에 카드가 없는 에피소드 — 그래프 아래에 한 줄로.
+        double strayY = positions.Values.Max(place => place.Y) + (2 * DepthSpacing);
+        int straySlot = 0;
+
+        foreach (ChapterEpisode episode in model.Episodes.Where(item => !positions.ContainsKey(item.EpisodeId)))
+        {
+            positions[episode.EpisodeId] = (straySlot * SiblingSpacing, strayY);
+            straySlot++;
+        }
+
+        return positions;
+    }
+
+    /// <summary>연출 그래프의 열 간격을 챕터 그래프의 옆 카드 간격으로.</summary>
+    private const double BoardScaleX = SiblingSpacing / Graph.NodePlacement.Column;
+
+    /// <summary>연출 그래프의 줄 간격을 챕터 그래프의 깊이 한 칸으로.</summary>
+    private const double BoardScaleY = DepthSpacing / Graph.NodePlacement.Row;
+
+    /// <summary>세로로 이만큼 안이면 같은 줄로 보고 가로로 비킨다 — 카드 높이(74)에 틈을 둔 값.</summary>
+    private const double CollisionBand = 120;
+
+    /// <summary>(x, y)에 앉으면 부딪치는 카드가 있으면 그 카드의 X(가장 오른쪽 것), 없으면 null.</summary>
+    private static double? CollisionAt(IEnumerable<(double X, double Y)> placed, double x, double y)
+    {
+        double? hit = null;
+
+        foreach ((double otherX, double otherY) in placed)
+        {
+            if (Math.Abs(otherX - x) < SiblingSpacing && Math.Abs(otherY - y) < CollisionBand &&
+                (hit is null || otherX > hit))
+            {
+                hit = otherX;
+            }
+        }
+
+        return hit;
     }
 
     /// <summary>

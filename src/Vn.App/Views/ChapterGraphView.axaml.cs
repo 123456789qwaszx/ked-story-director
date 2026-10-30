@@ -1703,10 +1703,11 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// <b>[자동 정렬]</b> — 흐름 순서(위에서 아래)로 전부 다시 세운다 (v4, 2026-09-18 · 방향은 2026-10-29 D3).
+    /// <b>[자동 정렬]</b> — <b>연출 그래프의 카드 자리를 본떠</b> 전부 다시 세운다 (2026-10-30 소유자: *"연출 그래프에
+    /// 배치된 노드들을 참고해서 그와 거의 같은 형태로"* — <see cref="ChapterBranchPlanner.LayoutLikeBoard"/>).
+    /// 연출 그래프에 카드가 하나도 없으면 흐름 순서(위에서 아래)다(v4, 2026-09-18 · 방향은 2026-10-29 D3).
     ///
-    /// 자리의 주인이 사람이 되면 <b>돌아올 길</b>이 있어야 한다. 그 길이 곧 v3까지 매번
-    /// 돌던 깊이 배치다 — 없앤 것이 아니라 <b>부를 때만 도는 것</b>으로 바뀌었다.
+    /// 자리의 주인이 사람이 되면 <b>돌아올 길</b>이 있어야 한다 — 손으로 옮기다 판이 엉키면 이것을 누른다.
     ///
     /// ⚠ 한 번의 변경이다(<c>MoveEpisodes</c>) — Ctrl+Z 한 번이면 정렬 전으로 돌아온다.
     /// </summary>
@@ -1718,10 +1719,25 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        _session!.Editor.MoveEpisodes(chapterId, ChapterBranchPlanner.Layout(model));
-        _session.SetStatus(
-            $"'{chapterId}'의 카드 {model.Episodes.Count}장을 흐름 순서로 다시 세웠습니다. " +
-            "되돌리기(Ctrl+Z)로 돌아옵니다.");
+        var board = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+
+        foreach (ChapterEpisode episode in model.Episodes)
+        {
+            if (EpisodeNaming.CardFor(_session!.Editor.Project, chapterId, episode.EpisodeId) is { } card)
+            {
+                board[episode.EpisodeId] = (card.Layout.X, card.Layout.Y);
+            }
+        }
+
+        _session!.Editor.MoveEpisodes(chapterId, ChapterBranchPlanner.LayoutLikeBoard(model, board));
+
+        int stray = model.Episodes.Count - board.Count;
+        _session.SetStatus(board.Count == 0
+            ? $"'{chapterId}'의 카드 {model.Episodes.Count}장을 흐름 순서로 다시 세웠습니다(연출 그래프에 카드가 없습니다). " +
+              "되돌리기(Ctrl+Z)로 돌아옵니다."
+            : $"'{chapterId}'의 카드 {model.Episodes.Count}장을 연출 그래프의 모양대로 다시 세웠습니다" +
+              (stray > 0 ? $"(연출 그래프에 카드가 없는 {stray}장은 맨 아래 줄에)" : string.Empty) +
+              ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
     /// <summary>
