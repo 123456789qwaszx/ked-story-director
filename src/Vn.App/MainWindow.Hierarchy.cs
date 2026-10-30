@@ -47,6 +47,13 @@ public partial class MainWindow
         ChapterGraph.HierarchyView.FoldChanged += () => Graph.HierarchyView.RefreshFolds();
         Graph.HierarchyView.FoldChanged += () => ChapterGraph.HierarchyView.RefreshFolds();
 
+        // 기둥째 접기(HC)도 두 탭이 함께 — 하나를 접으면 다른 탭도 접히고, 다음에 열 때도 접혀 있다.
+        bool folded = AppSettingsService.LoadHierarchyFolded();
+        ChapterGraph.HierarchyDock.Fold(folded);
+        Graph.HierarchyDock.Fold(folded);
+        ChapterGraph.HierarchyDock.Changed += value => OnHierarchyDockChanged(Graph.HierarchyDock, value);
+        Graph.HierarchyDock.Changed += value => OnHierarchyDockChanged(ChapterGraph.HierarchyDock, value);
+
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
 
         // 눈 기둥은 연출 그래프의 하이어아키에만 — 접을 판이 거기 있다(SF2 · docs/plans/hierarchy.md §3).
@@ -83,6 +90,13 @@ public partial class MainWindow
                 _syncingSelection = false;
             }
         });
+    }
+
+    /// <summary>한 탭에서 하이어아키 기둥을 접거나 폈다 — 다른 탭을 맞추고 기억한다.</summary>
+    private static void OnHierarchyDockChanged(HierarchyDock other, bool folded)
+    {
+        other.Fold(folded);
+        AppSettingsService.SaveHierarchyFolded(folded);
     }
 
     /// <summary>두 하이어아키를 다시 세운다 — 원천은 챕터 그래프가 읽은 챕터 목록 하나다.</summary>

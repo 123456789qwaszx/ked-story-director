@@ -214,8 +214,11 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     internal void SetSidePanel(Control content) => SideHost.Content = content;
 
-    /// <summary>우측 위 하이어아키 (2026-10-30 HY3) — 셸이 내용을 채우고 고른 줄을 받는다(챕터 그래프의 것과 같은 컨트롤).</summary>
+    /// <summary>판 왼쪽 하이어아키 (2026-10-30 HY3) — 셸이 내용을 채우고 고른 줄을 받는다(챕터 그래프의 것과 같은 컨트롤).</summary>
     internal StoryHierarchy HierarchyView => Hierarchy;
+
+    /// <summary>하이어아키 기둥 접기 (2026-10-30 HC) — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
+    internal HierarchyDock HierarchyDock { get; }
 
     /// <summary>인스펙터 머리글 — 무엇을 보는지. 내용(<see cref="SetSidePanel"/>)을 짓는 셸이 함께 맞춘다.</summary>
     internal void SetInspectorHeader(string title, string subtitle)
@@ -230,6 +233,12 @@ public partial class GraphEditorView : UserControl
     public GraphEditorView()
     {
         InitializeComponent();
+
+        // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
+        HierarchyDock = new HierarchyDock(
+            BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
+        FoldHierarchyButton.Click += (_, _) => HierarchyDock.Toggle(folded: true);
+        HierarchyStrip.Click += (_, _) => HierarchyDock.Toggle(folded: false);
 
         // 판 크기는 상수 한 곳이 정한다 (W41) — 미니맵 배율과 어긋날 길을 없앤다.
         GraphCanvas.Width = CanvasWidth;

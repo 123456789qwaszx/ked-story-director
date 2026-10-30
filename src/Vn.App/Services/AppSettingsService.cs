@@ -134,6 +134,16 @@ internal static class AppSettingsService
         Save(settings, settingsPath);
     }
 
+    /// <summary>하이어아키 기둥을 접어 두었는가 (2026-10-30 HC — 두 그래프가 함께 쓴다).</summary>
+    public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
+
+    public static void SaveHierarchyFolded(bool folded)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.HierarchyFolded = folded;
+        Save(settings);
+    }
+
     private static ExplorerState? FindExplorer(AppSettings settings, string key) =>
         settings.Explorers?.FirstOrDefault(entry =>
             string.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase)).Value;
@@ -242,6 +252,9 @@ internal static class AppSettingsService
 
         /// <summary>프로젝트 경로 → 하이어아키 접힘 (R6 S-4 · 2026-10-30 HY4b에 되살아남). null이면 기억한 것이 없다.</summary>
         public Dictionary<string, ExplorerState>? Explorers { get; set; }
+
+        /// <summary>하이어아키 기둥을 접어 두었는가 (2026-10-30 HC) — 프로젝트와 상관없는 화면 편의라 하나만 둔다.</summary>
+        public bool HierarchyFolded { get; set; }
     }
 
     /// <summary>

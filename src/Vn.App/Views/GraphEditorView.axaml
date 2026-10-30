@@ -38,7 +38,7 @@
              산다: 챕터 그래프에는 안 보인다.
              ⚠ 자리만 이 뷰가 내주고 <b>내용은 셸이 짓는다</b>(SetSidePanel) — 편집기의
              배선이 세션·선택 전환과 얽혀 있어 뷰로 옮기면 그 배선이 두 벌이 된다. -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" x:Name="BoardColumns">
             <!-- 하이어아키 · 판 · 인스펙터 — 유니티와 같은 차례 (2026-10-30 소유자: "하이어아키를 그래프 왼쪽 Column으로").
                  하이어아키 폭은 사람이 끈다(최소 140 — 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). -->
             <Grid.ColumnDefinitions>
@@ -53,18 +53,54 @@
             <Border Grid.Column="0"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                     BorderThickness="0,0,1,0">
-                <Grid RowDefinitions="Auto,*">
-                    <Border Grid.Row="0"
-                            Padding="10,6"
-                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
-                            BorderThickness="0,0,0,1">
-                        <TextBlock Text="하이어아키" FontWeight="SemiBold" />
-                    </Border>
-                    <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
-                </Grid>
+                <Panel>
+                    <Grid x:Name="HierarchyOpen" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0"
+                                Padding="10,6"
+                                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                BorderThickness="0,0,0,1">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="하이어아키" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button Grid.Column="1"
+                                    x:Name="FoldHierarchyButton"
+                                    Content="‹"
+                                    FontSize="12"
+                                    Padding="7,0"
+                                    Margin="4,0,0,0"
+                                    VerticalAlignment="Top"
+                                    Background="Transparent"
+                                    ToolTip.Tip="하이어아키를 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다." />
+                            </Grid>
+                        </Border>
+                        <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
+                    </Grid>
+
+                    <!-- 접힌 하이어아키 (2026-10-30 HC) — 세로 띠 하나. 누르면 편다(HierarchyDock). -->
+                    <Button x:Name="HierarchyStrip"
+                            IsVisible="False"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Top"
+                            Padding="0,6"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            ToolTip.Tip="하이어아키를 펼칩니다">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="›" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <LayoutTransformControl>
+                                <LayoutTransformControl.LayoutTransform>
+                                    <RotateTransform Angle="90" />
+                                </LayoutTransformControl.LayoutTransform>
+                                <TextBlock Text="하이어아키" FontSize="11" Opacity="0.7" />
+                            </LayoutTransformControl>
+                        </StackPanel>
+                    </Button>
+                </Panel>
             </Border>
 
             <GridSplitter Grid.Column="1"
+                          x:Name="HierarchySplitter"
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 

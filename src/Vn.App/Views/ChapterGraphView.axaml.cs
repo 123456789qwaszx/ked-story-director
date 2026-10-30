@@ -113,6 +113,9 @@ public partial class ChapterGraphView : UserControl
     /// <summary>하이어아키 — 셸이 내용을 채우고 챕터 줄 우클릭을 받는다.</summary>
     internal StoryHierarchy HierarchyView => Hierarchy;
 
+    /// <summary>하이어아키 기둥 접기 (2026-10-30 HC) — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
+    internal HierarchyDock HierarchyDock { get; }
+
     /// <summary>하이어아키에서 고른 것을 처리하는 중 — 그동안은 판의 선택을 트리에 되비추지 않는다(이미 고른 줄이다).</summary>
     private bool _fromHierarchy;
 
@@ -369,6 +372,12 @@ public partial class ChapterGraphView : UserControl
     public ChapterGraphView()
     {
         InitializeComponent();
+
+        // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
+        HierarchyDock = new HierarchyDock(
+            BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
+        FoldHierarchyButton.Click += (_, _) => HierarchyDock.Toggle(folded: true);
+        HierarchyStrip.Click += (_, _) => HierarchyDock.Toggle(folded: false);
 
         // ⛔ [다시 읽기] 단추는 2026-08-24에 없앴다 (소유자: 한 번도 안 썼다). 감시자가
         // 붙은 뒤로 화면이 스스로 따라오므로 손잡이가 할 일이 남지 않았다. <see cref="Reload"/>
