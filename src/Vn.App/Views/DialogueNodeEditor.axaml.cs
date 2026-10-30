@@ -199,6 +199,11 @@ public partial class DialogueNodeEditor : UserControl
             LineHost.Children.Clear();
             _lineCards.Clear();
 
+            // 분기 카드의 색은 연출 그래프 카드의 그 분기 포트 · 선과 같다 — 같은 포트 번호(PaletteIndex)로 칠한다.
+            Dictionary<string, int> detourPalette = NodeConnections.PortsOf(node, _session.Project, _session.Definition)
+                .Where(port => port.Kind == ExitPortKind.Detour && port.ExitKey is not null)
+                .ToDictionary(port => port.ExitKey!, port => port.PaletteIndex, StringComparer.Ordinal);
+
             if (_selectedLineId is null ||
                 flow.Lines.All(item => !string.Equals(item.Line.LineId, _selectedLineId, StringComparison.Ordinal)))
             {
@@ -258,7 +263,7 @@ public partial class DialogueNodeEditor : UserControl
                 // 「조건 분기」 카드는 <b>줄 사이에</b> 낀다 (R7 P-5 · 2026-09-17 소유자) —
                 // 그 줄에 붙은 것이 아니라 그 줄 <b>앞에서</b> 갈라진다는 표식이다. 여럿이면 다녀오는 차례로 쌓인다
                 // (2026-10-29 · multi-branch).
-                IReadOnlyList<Control> markers = BuildBranchMarkerCards(node, line.Line.LineId);
+                IReadOnlyList<Control> markers = BuildBranchMarkerCards(node, line.Line.LineId, detourPalette);
 
                 Control card = WrapForLineSelection(BuildCard(node, script, line), line.Line.LineId);
 
@@ -868,18 +873,31 @@ public partial class DialogueNodeEditor : UserControl
     ///
     /// [✕ 분기 지우기]는 「분기 추가」의 반대다 — 표식과, 그 분기가 다녀가던 카드를 함께 걷는다(다른 곳이 쓰는
     /// 카드면 남긴다 — <see cref="Vn.Authoring.Editing.ProjectEditor.RemoveBranchMarker"/>). 같은 단추가 그 줄의
-    /// ＋ 메뉴에도 선다.
+    /// ＋ 메뉴에도 서고, 카드를 <b>우클릭</b>해도 같다(2026-10-30 소유자: *"생성된 조건 분기를 우클릭해서, 분기를 제거할
+    /// 수 있게"* — 연출 그래프에서 분기 선을 우클릭하는 것과 같은 손놀림이다).
+    ///
+    /// 색은 연출 그래프 카드의 그 분기 포트 · 선의 색이다(2026-10-30 소유자: *"에피소드 노드에서 생기는 색상과 동일하게
+    /// 해서 구분을"*) — ⛔ 전에는 모두 보라였다.
     /// </summary>
-    private IReadOnlyList<Control> BuildBranchMarkerCards(DialogueNode node, string lineId)
+    /// <param name="detourPalette">분기 열쇠(<see cref="ExitPort.DetourKey"/>) → 그 포트의 색 번호.</param>
+    private IReadOnlyList<Control> BuildBranchMarkerCards(
+        DialogueNode node, string lineId, IReadOnlyDictionary<string, int> detourPalette)
     {
         IReadOnlyList<string> targets = node.FindExtension(lineId)?.DetourTargetNodeIds ?? [];
 
         return targets
-            .Select((targetId, order) => BuildBranchMarkerCard(node, lineId, targetId, order, targets.Count))
+            .Select((targetId, order) => BuildBranchMarkerCard(
+                node,
+                lineId,
+                targetId,
+                order,
+                targets.Count,
+                detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, targetId), -1)))
             .ToList();
     }
 
-    private Control BuildBranchMarkerCard(DialogueNode node, string lineId, string targetId, int order, int count)
+    private Control BuildBranchMarkerCard(
+        DialogueNode node, string lineId, string targetId, int order, int count, int palette)
     {
         string name = _session?.Project.FindNode(targetId)?.Name ?? "(사라진 노드)";
 
@@ -896,6 +914,7 @@ public partial class DialogueNodeEditor : UserControl
             Text = count > 1 ? $"⑂ 조건 분기 {order + 1}/{count}" : "⑂ 조건 분기",
             FontSize = 11,
             FontWeight = FontWeight.Bold,
+            Foreground = BranchPalette.Accent(palette),
             VerticalAlignment = VerticalAlignment.Center
         });
 
@@ -920,17 +939,31 @@ public partial class DialogueNodeEditor : UserControl
 
         row.Children.Add(RemoveBranchButton(node, lineId, targetId));
 
-        return new Border
+        var card = new Border
         {
             Tag = BranchMarkerTag(lineId, targetId),
             Margin = new Thickness(0, 2, 0, 2),
             Padding = new Thickness(8, 4),
             CornerRadius = new CornerRadius(8),
             BorderThickness = new Thickness(1.5),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(170, 124, 58, 237)),
-            Background = new SolidColorBrush(Color.FromArgb(20, 124, 58, 237)),
+            BorderBrush = BranchPalette.Accent(palette),
+            Background = BranchPalette.Background(palette),
             Child = row
         };
+        ToolTip.SetTip(card, "우클릭하면 이 분기를 지웁니다(✕ 분기 지우기와 같다). 되돌리기(Ctrl+Z)로 돌아옵니다.");
+
+        card.PointerPressed += (_, args) =>
+        {
+            if (!args.GetCurrentPoint(card).Properties.IsRightButtonPressed)
+            {
+                return;
+            }
+
+            args.Handled = true;
+            RemoveBranch(node, lineId, targetId);
+        };
+
+        return card;
     }
 
     /// <summary>그 줄의 「조건 분기」 카드 하나가 지는 표(줄과 다녀갈 카드) — 화면 테스트가 이것으로 찾는다.</summary>
@@ -943,20 +976,23 @@ public partial class DialogueNodeEditor : UserControl
     /// </summary>
     private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId, string label = "✕ 분기 지우기")
     {
-        Button remove = SmallButton(label, () =>
-            UiGuard.Run(_session!, "분기 지우기", () =>
-            {
-                if (_session!.Editor.RemoveBranchMarker(node.Id, lineId, targetId) is { } removal)
-                {
-                    _session.SetStatus(removal.Describe());
-                }
-            }));
+        Button remove = SmallButton(label, () => RemoveBranch(node, lineId, targetId));
         ToolTip.SetTip(
             remove,
             "분기와, 이 분기가 다녀가던 에피소드를 함께 지웁니다(다른 곳에서도 쓰는 에피소드면 남깁니다). " +
             "되돌리기(Ctrl+Z)로 돌아옵니다.");
         return remove;
     }
+
+    /// <summary>그 분기 하나를 지운다 — [✕ 분기 지우기] · 분기 카드 우클릭 · ＋ 메뉴가 같은 길이다.</summary>
+    private void RemoveBranch(DialogueNode node, string lineId, string targetId) =>
+        UiGuard.Run(_session!, "분기 지우기", () =>
+        {
+            if (_session!.Editor.RemoveBranchMarker(node.Id, lineId, targetId) is { } removal)
+            {
+                _session.SetStatus(removal.Describe());
+            }
+        });
 
     // ── ＋ (메타데이터 추가) ─────────────────────────────────────────────────
 

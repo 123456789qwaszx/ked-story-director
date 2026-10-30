@@ -1,4 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
@@ -136,6 +140,53 @@ public sealed class BranchMarkerCardTests : IDisposable
 
         Assert.Equal([second.Id], Node(session, nodeId).FindExtension(lineId)!.DetourTargetNodeIds);
         Assert.Null(session.Project.FindNode(first.Id));
+    });
+
+    [Fact]
+    public void 분기_카드를_우클릭하면_그_분기만_지워진다() => HeadlessUi.Run(() =>
+    {
+        // 2026-10-30 소유자: "그곳에서 생성된 조건 분기를 우클릭해서, 분기를 제거할 수 있게" — 연출 그래프에서 분기 선을
+        // 우클릭하는 것과 같은 손놀림이다. 진짜 마우스로 잰다.
+        (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
+        DialogueNode first = session.Editor.AddBranchMarker(nodeId, lineId);
+        DialogueNode second = session.Editor.AddBranchMarker(nodeId, lineId);
+        Rebuild(editor, nodeId);
+
+        var window = (Window)TopLevel.GetTopLevel(editor)!;
+        Control card = Card(editor, lineId, second.Id)!;
+        Point spot = card.TranslatePoint(new Point(12, card.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(spot, MouseButton.Right);
+        window.MouseUp(spot, MouseButton.Right);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal([first.Id], Node(session, nodeId).FindExtension(lineId)!.DetourTargetNodeIds);
+        Assert.Null(session.Project.FindNode(second.Id));
+        Assert.Contains(second.Name, session.StatusMessage, StringComparison.Ordinal);
+
+        // 되돌리기 한 번이면 돌아온다.
+        session.Editor.Undo();
+        Assert.Equal([first.Id, second.Id], Node(session, nodeId).FindExtension(lineId)!.DetourTargetNodeIds);
+    });
+
+    [Fact]
+    public void 분기_카드의_색은_연출_그래프의_그_분기_포트_색이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-10-30 소유자: "모두 보라색으로 표시되는데, 에피소드 노드에서 생기는 색상과 동일하게 해서 구분을".
+        (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
+        DialogueNode first = session.Editor.AddBranchMarker(nodeId, lineId);
+        DialogueNode second = session.Editor.AddBranchMarker(nodeId, lineId);
+        Rebuild(editor, nodeId);
+
+        IReadOnlyList<ExitPort> ports = NodeConnections.PortsOf(Node(session, nodeId), session.Project);
+        Color ColorOf(DialogueNode target) =>
+            ((Avalonia.Media.SolidColorBrush)BranchPalette.Accent(
+                ports.Single(port => port.Kind == ExitPortKind.Detour && port.TargetNodeId == target.Id).PaletteIndex)).Color;
+        Color Border(DialogueNode target) =>
+            ((Avalonia.Media.SolidColorBrush)((Border)Card(editor, lineId, target.Id)!).BorderBrush!).Color;
+
+        Assert.Equal(ColorOf(first), Border(first));
+        Assert.Equal(ColorOf(second), Border(second));
+        Assert.NotEqual(Border(first), Border(second));
     });
 
     [Fact]
