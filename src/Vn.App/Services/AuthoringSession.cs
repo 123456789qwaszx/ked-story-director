@@ -408,7 +408,10 @@ internal sealed class AuthoringSession
         return null;
     }
 
-    internal void SelectFile(string? fileId)
+    /// <param name="reveal">
+    /// 접혀 있으면 편다(기본). 하이어아키에서 고를 때는 false다 — 보이기는 눈이 정한다(2026-10-30 SF2).
+    /// </param>
+    internal void SelectFile(string? fileId, bool reveal = true)
     {
         if (fileId is not null && Project.FindFile(fileId) is null)
         {
@@ -425,7 +428,7 @@ internal sealed class AuthoringSession
         // 선택과 펼침은 독립이다 — W43의 "선택=그 파일만 펼침" 자동 접힘은 실사용에서
         // "여러 파일을 오가며 함께 본다"를 막아 헷갈린다는 소유자 판단으로 철회했다 (W49).
         // 활성 파일이 접혀 있으면 펴 주기만 한다(고른 파일이 안 보이는 일은 없어야 한다).
-        bool expandedChanged = fileId is not null && _expandedFileIds.Add(fileId);
+        bool expandedChanged = reveal && fileId is not null && _expandedFileIds.Add(fileId);
 
         RaiseFileGraphStateChanged(
             activeFileChanged: true,

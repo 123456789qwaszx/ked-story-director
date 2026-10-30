@@ -1,5 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
+using ShapePath = Avalonia.Controls.Shapes.Path;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Vn.App.Services;
@@ -14,6 +17,25 @@ internal enum HierarchyKind
     Chapter,
     Scene,
     Episode
+}
+
+/// <summary>
+/// 줄의 눈 — 판에서 보이는가 (2026-10-30 SF2 · <c>docs/plans/hierarchy.md</c> §3). 유니티 하이어아키의 보이기 기둥과 같은 자리다.
+/// 연출 그래프의 챕터 · 장면 줄에만 선다(챕터 그래프에는 접을 판이 없다).
+/// </summary>
+internal enum HierarchyEye
+{
+    /// <summary>눈이 없는 줄 — 프로젝트 · 에피소드, 또는 눈 기둥이 없는 하이어아키.</summary>
+    None,
+
+    /// <summary>펼쳐 보인다.</summary>
+    Open,
+
+    /// <summary>접었다 — 챕터는 판 상자, 장면은 줄 목록 상자로 간소화.</summary>
+    Folded,
+
+    /// <summary>제 상태와 상관없이 위(챕터)가 접혀 가려졌다 — 흐린 눈.</summary>
+    UnderFolded
 }
 
 /// <summary>
@@ -130,7 +152,8 @@ internal sealed record HierarchyRow(
     string? Detail,
     int Depth,
     bool IsSceneRoot,
-    bool HasWarning)
+    bool HasWarning,
+    HierarchyEye Eye = HierarchyEye.None)
 {
     public HierarchyPick Pick => new(Kind, ChapterId, SceneId, EpisodeId);
 }
@@ -163,6 +186,15 @@ public partial class StoryHierarchy : UserControl
 
     /// <summary>접힘 — 셸이 두 탭의 하이어아키에 같은 것을 준다(<see cref="HierarchyFolds"/>).</summary>
     internal HierarchyFolds Folds { get; set; } = new();
+
+    /// <summary>
+    /// 줄마다의 눈 — 셸이 준다(연출 그래프의 하이어아키만, 2026-10-30 SF2). null이면 눈 기둥이 없다. 눈의 상태는 판 쪽(세션)이
+    /// 들고 이 컨트롤은 그리기만 한다 — 줄을 세울 때마다 묻는다.
+    /// </summary>
+    internal Func<HierarchyRow, HierarchyEye>? EyeOf { get; set; }
+
+    /// <summary>눈을 눌렀다 — 셸이 그 판이나 장면을 접거나 편다.</summary>
+    internal event Action<HierarchyRow>? EyeToggled;
 
     private readonly List<HierarchyRow> _rows = [];
 
@@ -262,7 +294,23 @@ public partial class StoryHierarchy : UserControl
 
     // ── 줄 세우기 ───────────────────────────────────────────────────────────
 
+    /// <summary>보일 줄들 — 눈 기둥이 있으면 줄마다 눈을 물어 담는다(눈이 바뀌어도 줄이 다시 선다).</summary>
     private List<HierarchyRow> BuildRows()
+    {
+        List<HierarchyRow> rows = BuildTree();
+
+        if (EyeOf is { } eyeOf)
+        {
+            for (int index = 0; index < rows.Count; index++)
+            {
+                rows[index] = rows[index] with { Eye = eyeOf(rows[index]) };
+            }
+        }
+
+        return rows;
+    }
+
+    private List<HierarchyRow> BuildTree()
     {
         var rows = new List<HierarchyRow>();
 
@@ -553,13 +601,123 @@ public partial class StoryHierarchy : UserControl
             BeginRename(row.Key);
         });
 
-        var host = new DockPanel { Margin = new Thickness(row.Depth * 14, 0, 0, 0) };
+        var host = new DockPanel();
+
+        // 눈 기둥은 들여쓰기 <b>바깥</b> 맨 왼쪽이다 — 유니티처럼 깊이와 상관없이 한 줄로 선다.
+        if (EyeOf is not null)
+        {
+            Control eye = Eye(row);
+            DockPanel.SetDock(eye, Dock.Left);
+            host.Children.Add(eye);
+        }
+
+        var indent = new Border { Width = row.Depth * 14 };
+        DockPanel.SetDock(indent, Dock.Left);
+        host.Children.Add(indent);
+
         Control arrow = Arrow(row);
         DockPanel.SetDock(arrow, Dock.Left);
         host.Children.Add(arrow);
         host.Children.Add(button);
 
         return host;
+    }
+
+    // ── 눈 (2026-10-30 SF2 — 유니티 하이어아키의 보이기 기둥) ──────────────────────────────
+
+    /// <summary>그 줄의 눈 — 화면 시험이 누를 자리. 눈이 없는 줄이나 눈 기둥이 없으면 null.</summary>
+    internal Border? EyeButton(string key)
+    {
+        int index = _rows.FindIndex(row => string.Equals(row.Key, key, StringComparison.Ordinal));
+
+        return index >= 0 && index < RowHost.Children.Count && _rows[index].Eye != HierarchyEye.None &&
+               RowHost.Children[index] is DockPanel host
+            ? host.Children.OfType<Border>().FirstOrDefault(border => border.Tag as string == "eye:" + key)
+            : null;
+    }
+
+    /// <summary>
+    /// 눈 칸 — 누르면 접고 편다. 펼친 줄의 눈은 옅게(유니티처럼 보이는 것은 조용하다), 접은 줄의 감은 눈은 또렷하게, 챕터가
+    /// 접혀 가려진 장면은 흐리게 선다. 눈이 없는 줄도 같은 폭을 비운다(줄이 들쭉날쭉하지 않게).
+    /// </summary>
+    private Border Eye(HierarchyRow row)
+    {
+        var cell = new Border
+        {
+            Width = 20,
+            Background = Brushes.Transparent,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Tag = "eye:" + row.Key
+        };
+
+        if (row.Eye == HierarchyEye.None)
+        {
+            return cell;
+        }
+
+        cell.Child = EyeGlyph(row.Eye);
+        cell.Cursor = new Cursor(StandardCursorType.Hand);
+        cell[ToolTip.TipProperty] = (row.Kind, row.Eye) switch
+        {
+            (HierarchyKind.Chapter, HierarchyEye.Open) => "판에서 이 챕터를 접습니다 — 표 하나가 되고 간선은 그 줄에 붙습니다.",
+            (HierarchyKind.Chapter, _) => "판에서 이 챕터를 펼칩니다.",
+            (_, HierarchyEye.Open) => "판에서 이 장면만 접습니다 — 줄 목록으로 간소화되고 간선은 그 줄에 붙습니다.",
+            (_, HierarchyEye.Folded) => "판에서 이 장면을 펼칩니다.",
+            _ => "챕터가 접혀 있습니다 — 누르면 챕터를 펴고 이 장면을 보입니다."
+        };
+
+        cell.PointerPressed += (_, args) => UiGuard.Run(null, "보이기", () =>
+        {
+            args.Handled = true;
+            EyeToggled?.Invoke(row);
+        });
+
+        return cell;
+    }
+
+    /// <summary>눈 모양 — 뜬 눈(테두리 + 눈동자) 또는 감은 눈(아래로 굽은 눈꺼풀 + 속눈썹).</summary>
+    private static Control EyeGlyph(HierarchyEye eye)
+    {
+        IBrush ink = new SolidColorBrush(Color.FromRgb(0x4B, 0x55, 0x63));
+        var glyph = new Canvas
+        {
+            Width = 14,
+            Height = 10,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Opacity = eye switch
+            {
+                HierarchyEye.Open => 0.45,
+                HierarchyEye.Folded => 0.95,
+                _ => 0.25
+            }
+        };
+
+        if (eye == HierarchyEye.Folded)
+        {
+            glyph.Children.Add(new ShapePath
+            {
+                Data = StreamGeometry.Parse("M1,3 C3.5,7.5 10.5,7.5 13,3 M3.5,6 L2.5,8.5 M7,7 L7,9.5 M10.5,6 L11.5,8.5"),
+                Stroke = ink,
+                StrokeThickness = 1.3
+            });
+
+            return glyph;
+        }
+
+        glyph.Children.Add(new ShapePath
+        {
+            Data = StreamGeometry.Parse("M1,5 C3.5,0.5 10.5,0.5 13,5 C10.5,9.5 3.5,9.5 1,5 Z"),
+            Stroke = ink,
+            StrokeThickness = 1.2
+        });
+
+        var pupil = new Ellipse { Width = 4, Height = 4, Fill = ink };
+        Canvas.SetLeft(pupil, 5);
+        Canvas.SetTop(pupil, 3);
+        glyph.Children.Add(pupil);
+
+        return glyph;
     }
 
     // ── 우클릭 차림표 (2026-10-30 HY4 — 옛 탐색기의 규칙: 추가 셋은 어느 줄에서나 같은 자리에 선다) ──────────

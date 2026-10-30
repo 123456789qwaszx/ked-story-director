@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 
 namespace Vn.App;
@@ -47,6 +48,10 @@ public partial class MainWindow
         Graph.HierarchyView.FoldChanged += () => ChapterGraph.HierarchyView.RefreshFolds();
 
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
+
+        // 눈 기둥은 연출 그래프의 하이어아키에만 — 접을 판이 거기 있다(SF2 · docs/plans/hierarchy.md §3).
+        Graph.HierarchyView.EyeOf = DirectorEyeOf;
+        Graph.HierarchyView.EyeToggled += row => UiGuard.Run(_session, "보이기", () => OnDirectorEyeToggled(row));
 
         // 두 하이어아키의 차림표 · 이름 고치기는 같은 규칙 한 벌로 한다(HY4 — MainWindow.HierarchyEdit.cs).
         foreach (StoryHierarchy tree in new[] { ChapterGraph.HierarchyView, Graph.HierarchyView })
@@ -92,12 +97,15 @@ public partial class MainWindow
     /// <summary>
     /// 연출 그래프의 하이어아키에서 줄을 골랐다 — 그 챕터의 판을 열고, 에피소드면 그 카드를 고른다(대사 편집기). 프로젝트 ·
     /// 챕터 · 장면이면 인스펙터에 요약을 세운다.
+    ///
+    /// ⚠ <b>고르는 것으로는 접힘을 풀지 않는다</b>(SF2) — 유니티처럼 보이기는 눈이 정한다. 접힌 판의 에피소드를 고르면 그 표의
+    ///   줄이 칠해진다.
     /// </summary>
     private void OnDirectorHierarchyPicked(HierarchyPick pick)
     {
         if (pick.ChapterId is { } chapterId)
         {
-            _session.SelectFile(_session.EnsureChapterBoard(chapterId));
+            _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
         }
 
         if (pick.Kind == HierarchyKind.Episode &&
@@ -114,6 +122,66 @@ public partial class MainWindow
         _session.Select(null);
         _directorSummary = pick;
         ShowSelectedNode();
+    }
+
+    /// <summary>
+    /// 연출 그래프 하이어아키의 눈 (SF2) — 챕터 줄은 그 판이 펼쳐졌는가, 장면 줄은 그 장면을 접었는가. 판이 아직 없는 챕터는
+    /// 판에 보일 것이 없어 눈이 없다.
+    /// </summary>
+    private HierarchyEye DirectorEyeOf(HierarchyRow row)
+    {
+        if (row.Kind is not (HierarchyKind.Chapter or HierarchyKind.Scene) ||
+            row.ChapterId is not { } chapterId ||
+            EpisodeNaming.BoardOf(_session.Project, chapterId) is not { } board)
+        {
+            return HierarchyEye.None;
+        }
+
+        bool chapterOpen = _session.ExpandedFileIds.Contains(board.Id);
+
+        return row.Kind == HierarchyKind.Chapter
+            ? chapterOpen ? HierarchyEye.Open : HierarchyEye.Folded
+            : !chapterOpen
+                ? HierarchyEye.UnderFolded
+                : _session.CollapsedScenes.Contains(new GraphSceneKey(board.Id, row.SceneId!))
+                    ? HierarchyEye.Folded
+                    : HierarchyEye.Open;
+    }
+
+    /// <summary>
+    /// 눈을 눌렀다 — 챕터는 판째 접고 편다(판 이름표 · 판 상자와 같은 상태), 장면은 그 장면만 간소화한다. 챕터가 접혀 가려진
+    /// 장면의 눈을 누르면 챕터를 펴고 그 장면을 보인다(보이라고 누른 것이다).
+    /// </summary>
+    private void OnDirectorEyeToggled(HierarchyRow row)
+    {
+        if (row.ChapterId is not { } chapterId || EpisodeNaming.BoardOf(_session.Project, chapterId) is not { } board)
+        {
+            return;
+        }
+
+        switch (DirectorEyeOf(row))
+        {
+            case HierarchyEye.Open when row.Kind == HierarchyKind.Chapter:
+                _session.SetFileExpanded(board.Id, expanded: false);
+                break;
+
+            case HierarchyEye.Folded when row.Kind == HierarchyKind.Chapter:
+                _session.SetFileExpanded(board.Id, expanded: true);
+                break;
+
+            case HierarchyEye.Open:
+                _session.SetSceneCollapsed(board.Id, row.SceneId!, collapsed: true);
+                break;
+
+            case HierarchyEye.Folded:
+                _session.SetSceneCollapsed(board.Id, row.SceneId!, collapsed: false);
+                break;
+
+            case HierarchyEye.UnderFolded:
+                _session.SetSceneCollapsed(board.Id, row.SceneId!, collapsed: false);
+                _session.SetFileExpanded(board.Id, expanded: true);
+                break;
+        }
     }
 
     /// <summary>세션이 고른 카드를 하이어아키의 줄로 — 챕터 판의 에피소드 카드가 아니면 null.</summary>
