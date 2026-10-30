@@ -42,6 +42,60 @@ internal enum HierarchyCommand
 }
 
 /// <summary>
+/// 하이어아키의 접힘 — 사람이 편 마디와 접은 마디 (2026-10-30 HY4b). <b>두 탭의 하이어아키가 이 하나를 함께 쓴다</b> — 한
+/// 그루가 두 자리에 보이는 것이라 한쪽에서 접으면 다른 쪽도 접힌다. 프로젝트별로 사용자 설정에 기억한다(프로젝트 파일은 팀의
+/// 것이라 거기 안 쓴다 — 내가 접은 것이 남의 화면을 접으면 안 된다).
+/// </summary>
+internal sealed class HierarchyFolds
+{
+    /// <summary>사람이 편 마디들.</summary>
+    public HashSet<string> Expanded { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 사람이 접은 마디들 — 편 것과 따로 든다. 펼침만 기억하면 "고른 것이 든 마디는 저절로 펴진다"가 사람의 접기를
+    /// 이겨 접을 수가 없다(옛 탐색기가 테스트로 잡은 자리).
+    /// </summary>
+    public HashSet<string> Collapsed { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>접힘을 기억하는 프로젝트. 없으면 세션 안에서만 산다.</summary>
+    private string? _projectPath;
+
+    /// <summary>
+    /// 이 프로젝트의 접힘을 잇는다 — 프로젝트가 바뀌면 들고 있던 것을 놓고 새로 읽는다(앞 프로젝트의 열쇠가 이름이 같은
+    /// 다른 챕터를 접으면 안 된다). 같은 프로젝트면 아무것도 안 한다(다시 그릴 때마다 지나가는 자리다).
+    /// </summary>
+    public void Remember(string? projectPath)
+    {
+        if (string.Equals(_projectPath, projectPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _projectPath = projectPath;
+        Expanded.Clear();
+        Collapsed.Clear();
+
+        if (projectPath is null)
+        {
+            return;
+        }
+
+        (IReadOnlyList<string> expanded, IReadOnlyList<string> collapsed) = AppSettingsService.LoadExplorerState(projectPath);
+        Expanded.UnionWith(expanded);
+        Collapsed.UnionWith(collapsed);
+    }
+
+    /// <summary>사람이 접거나 폈다 — 기억한다(프로젝트가 저장된 적이 없으면 세션 안에서만).</summary>
+    public void Save()
+    {
+        if (_projectPath is not null)
+        {
+            AppSettingsService.SaveExplorerState(_projectPath, Expanded, Collapsed);
+        }
+    }
+}
+
+/// <summary>
 /// 하이어아키에서 고른 것 — 인스펙터가 이것을 보인다. 장면 · 에피소드는 제 챕터를 함께 든다(Id는 챕터 안에서만 유일하다).
 /// </summary>
 internal sealed record HierarchyPick(
@@ -93,8 +147,9 @@ internal sealed record HierarchyRow(
 /// ⚠ <b>고르는 것으로는 줄을 다시 세우지 않는다</b>(칠만 한다 — <see cref="Paint"/>). 다시 세우면 더블클릭의 둘째 누름이
 /// 새 컨트롤에 떨어진다. 보이는 줄이 바뀔 때(접기 · 펴기 · 밖에서 고른 것을 드러낼 때)만 다시 세운다.
 ///
-/// ⚠ <b>편집하지 않는다</b> — 우클릭 차림표(<see cref="CommandRequested"/>)와 두 번 눌러 이름 고치기(<see cref="RenameRequested"/>)는
-/// 알리기만 한다(만들기 · 지우기 · 개명 규칙은 셸 쪽 편집기 한 벌이다).
+/// ⚠ <b>편집하지 않는다</b> — 우클릭 차림표(<see cref="CommandRequested"/>) · 두 번 눌러 이름 고치기(<see cref="RenameRequested"/>) ·
+/// 끌어 다른 장면으로(<see cref="Dropped"/>)는 알리기만 한다(만들기 · 지우기 · 개명 규칙은 셸 쪽 편집기 한 벌이다). 접힘은 두
+/// 탭이 함께 쓰고 프로젝트별로 기억한다(<see cref="HierarchyFolds"/>). 키보드 ↑↓←→로 고르고 접는다.
 /// </summary>
 public partial class StoryHierarchy : UserControl
 {
@@ -106,14 +161,8 @@ public partial class StoryHierarchy : UserControl
 
     internal static string EpisodeKey(string chapterId, string episodeId) => "ep:" + chapterId + "/" + episodeId;
 
-    /// <summary>사람이 편 마디들.</summary>
-    private readonly HashSet<string> _expanded = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// 사람이 접은 마디들 — 편 것과 따로 든다. 펼침만 기억하면 "고른 것이 든 마디는 저절로 펴진다"가 사람의 접기를
-    /// 이겨 접을 수가 없다(옛 탐색기가 테스트로 잡은 자리).
-    /// </summary>
-    private readonly HashSet<string> _collapsed = new(StringComparer.Ordinal);
+    /// <summary>접힘 — 셸이 두 탭의 하이어아키에 같은 것을 준다(<see cref="HierarchyFolds"/>).</summary>
+    internal HierarchyFolds Folds { get; set; } = new();
 
     private readonly List<HierarchyRow> _rows = [];
 
@@ -200,9 +249,12 @@ public partial class StoryHierarchy : UserControl
 
         Selection = pick;
 
+        // 드러낸 길은 편 채로 남긴다 — 고른 것을 따라 저절로 펴진 마디가 고르기를 부모로 옮기는 순간 다시 접히면, 사람
+        // 눈에는 줄이 제멋대로 사라진다(유니티도 드러낸 길을 편 채로 둔다). 기억(Save)은 사람이 접고 펼 때만 한다.
         foreach (string key in PathOf(pick))
         {
-            _collapsed.Remove(key);
+            Folds.Collapsed.Remove(key);
+            Folds.Expanded.Add(key);
         }
 
         Refresh();
@@ -307,8 +359,8 @@ public partial class StoryHierarchy : UserControl
     /// 있다. 고른 마디 <b>자신</b>은 펴지 않는다 — 챕터를 골랐다고 그 챕터가 펼쳐지면 고르는 손짓이 줄을 다시 세운다.
     /// </summary>
     private bool IsExpanded(string key) =>
-        !_collapsed.Contains(key) &&
-        (key == ProjectKey || _expanded.Contains(key) || PathOf(Selection).Contains(key));
+        !Folds.Collapsed.Contains(key) &&
+        (key == ProjectKey || Folds.Expanded.Contains(key) || PathOf(Selection).Contains(key));
 
     /// <summary>고른 것까지 가는 길의 마디들(고른 것 자신은 빼고).</summary>
     private List<string> PathOf(HierarchyPick? pick)
@@ -492,6 +544,7 @@ public partial class StoryHierarchy : UserControl
 
         button.Click += (_, _) => UiGuard.Run(null, "하이어아키", () => Press(row));
         button.ContextMenu = Menu(row, button);
+        WireDrag(button, row);
 
         // 두 번 눌러 이름 고치기 — 고르기가 줄을 다시 세우지 않으므로(칠만 한다) 둘째 누름이 같은 단추에 떨어진다.
         button.DoubleTapped += (_, args) => UiGuard.Run(null, "이름 고치기", () =>
@@ -686,28 +739,209 @@ public partial class StoryHierarchy : UserControl
         return arrow;
     }
 
-    /// <summary>마디를 접거나 편다.</summary>
+    /// <summary>사람이 접거나 폈다 — 셸이 다른 탭의 하이어아키를 다시 그린다(접힘은 함께 쓴다).</summary>
+    internal event Action? FoldChanged;
+
+    /// <summary>마디를 접거나 편다 — 기억하고 알린다.</summary>
     internal void Fold(string key, bool collapse)
     {
         if (collapse)
         {
-            _collapsed.Add(key);
-            _expanded.Remove(key);
+            Folds.Collapsed.Add(key);
+            Folds.Expanded.Remove(key);
         }
         else
         {
-            _collapsed.Remove(key);
-            _expanded.Add(key);
+            Folds.Collapsed.Remove(key);
+            Folds.Expanded.Add(key);
         }
 
+        Folds.Save();
         Draw();
+        FoldChanged?.Invoke();
     }
+
+    /// <summary>접힘이 다른 자리에서 바뀌었다 — 보이는 줄을 맞춘다.</summary>
+    internal void RefreshFolds() => Refresh();
 
     private void Press(HierarchyRow row)
     {
+        Focus();   // 키보드(↑↓←→)가 하이어아키로 온다
         Selection = row.Pick;
         Paint();
         Picked?.Invoke(row.Pick);
+    }
+
+    // ── 키보드 (HY4b — 옛 탐색기 규격 §7) ───────────────────────────────────
+
+    /// <summary>
+    /// ↑↓ = 보이는 줄 사이로 고르기, ← = 접기 · 이미 접혔으면 부모로, → = 펴기 · 이미 폈으면 첫 자식으로. 유니티처럼 화살표가
+    /// 곧 고르기다 — 인스펙터가 따라온다.
+    /// </summary>
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+
+        if (e.Handled || _renamingKey is not null || _rows.Count == 0)
+        {
+            return;
+        }
+
+        int index = Selection is { } pick
+            ? _rows.FindIndex(row => string.Equals(row.Key, pick.Key, StringComparison.Ordinal))
+            : -1;
+        HierarchyRow? current = index >= 0 ? _rows[index] : null;
+        bool expandable = current is not null && current.Kind != HierarchyKind.Episode;
+
+        HierarchyRow? next = e.Key switch
+        {
+            Avalonia.Input.Key.Down => _rows[Math.Min(_rows.Count - 1, index + 1)],
+            Avalonia.Input.Key.Up => _rows[Math.Max(0, index - 1)],
+            Avalonia.Input.Key.Left when expandable && IsExpanded(current!.Key) => Folding(current, collapse: true),
+            Avalonia.Input.Key.Left when current is not null => ParentOf(index),
+            Avalonia.Input.Key.Right when expandable && !IsExpanded(current!.Key) => Folding(current, collapse: false),
+            Avalonia.Input.Key.Right when current is not null && index + 1 < _rows.Count &&
+                                          _rows[index + 1].Depth > current.Depth => _rows[index + 1],
+            _ => null
+        };
+
+        if (e.Key is Avalonia.Input.Key.Up or Avalonia.Input.Key.Down or Avalonia.Input.Key.Left or Avalonia.Input.Key.Right)
+        {
+            e.Handled = true;
+        }
+
+        if (next is not null && !ReferenceEquals(next, current))
+        {
+            UiGuard.Run(null, "하이어아키", () =>
+            {
+                Press(next);
+                RowButton(next.Key)?.BringIntoView();
+            });
+        }
+    }
+
+    /// <summary>접거나 펴고 그 줄에 머문다(고를 줄이 없다).</summary>
+    private HierarchyRow? Folding(HierarchyRow row, bool collapse)
+    {
+        Fold(row.Key, collapse);
+        return null;
+    }
+
+    /// <summary>그 줄의 부모 — 위로 올라가 처음 만나는 더 얕은 줄.</summary>
+    private HierarchyRow? ParentOf(int index)
+    {
+        for (int above = index - 1; above >= 0; above--)
+        {
+            if (_rows[above].Depth < _rows[index].Depth)
+            {
+                return _rows[above];
+            }
+        }
+
+        return null;
+    }
+
+    // ── 끌어 다른 장면으로 (HY4b) ───────────────────────────────────────────
+    //
+    // ⛔ Avalonia의 DragDrop을 안 쓴다 — 창 밖으로 나가는 끌기가 아니라 한 컨트롤 안에서 줄을 옮기는 일이고, 누름 · 놓임만으로
+    //    충분하다. 놓은 자리는 <b>좌표로</b> 찾는다 — 단추는 눌리는 순간 포인터를 잡아서 손을 어디서 떼든 놓임이 누른 단추로
+    //    온다(옛 탐색기가 "드래그가 안 돼"로 겪었다).
+
+    /// <summary>끌어다 놓았다 — 에피소드를 다른 장면에. 셸이 그 에피소드의 장면ID를 바꾼다.</summary>
+    internal event Action<HierarchyRow, HierarchyRow>? Dropped;
+
+    /// <summary>끌고 있는 줄.</summary>
+    private string? _dragKey;
+
+    /// <summary>끌고 지나가는 중인 줄 — 받아 줄 자리면 테두리가 뜬다.</summary>
+    private string? _hoverKey;
+
+    /// <summary>
+    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의 다른 장면</b>에(장면ID를 적은 장면만 — 미지정 장면은 그 에피소드
+    /// 하나의 것이라 들어갈 자리가 아니다).
+    /// </summary>
+    internal static bool Accepts(HierarchyRow source, HierarchyRow target) =>
+        source.Kind == HierarchyKind.Episode &&
+        target.Kind == HierarchyKind.Scene &&
+        string.Equals(source.ChapterId, target.ChapterId, StringComparison.Ordinal) &&
+        !string.Equals(source.SceneId, target.SceneId, StringComparison.Ordinal) &&
+        !IsDefaultScene(target.SceneId);
+
+    /// <summary>화면 없이 끌기를 재는 자리 — 누름 · 놓임 두 번을 대신한다.</summary>
+    internal void Drag(string sourceKey, string targetKey)
+    {
+        _dragKey = sourceKey;
+        Release(_rows.FirstOrDefault(row => string.Equals(row.Key, targetKey, StringComparison.Ordinal)));
+    }
+
+    private HierarchyRow? DragSource() =>
+        _dragKey is null ? null : _rows.FirstOrDefault(row => string.Equals(row.Key, _dragKey, StringComparison.Ordinal));
+
+    private void Release(HierarchyRow? target)
+    {
+        HierarchyRow? source = DragSource();
+        _dragKey = null;
+        _hoverKey = null;
+
+        if (source is null || target is null || !Accepts(source, target))
+        {
+            Paint();
+            return;
+        }
+
+        Dropped?.Invoke(source, target);
+    }
+
+    /// <summary>그 자리에 있는 줄 — 좌표는 <see cref="RowHost"/> 기준이다.</summary>
+    private HierarchyRow? RowAt(Point point)
+    {
+        for (int index = 0; index < RowHost.Children.Count && index < _rows.Count; index++)
+        {
+            if (RowHost.Children[index].Bounds.Contains(point))
+            {
+                return _rows[index];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>줄 단추에 끌기 손을 단다 — 누름 · 움직임 · 놓임(단추가 먼저 삼켜도 받는다).</summary>
+    private void WireDrag(Button button, HierarchyRow row)
+    {
+        var both = Avalonia.Interactivity.RoutingStrategies.Tunnel | Avalonia.Interactivity.RoutingStrategies.Bubble;
+
+        button.AddHandler(PointerPressedEvent, (_, args) =>
+        {
+            _dragKey = row.Kind == HierarchyKind.Episode && args.GetCurrentPoint(button).Properties.IsLeftButtonPressed
+                ? row.Key
+                : null;
+            _hoverKey = null;
+        }, both, handledEventsToo: true);
+
+        button.AddHandler(PointerMovedEvent, (_, args) => UiGuard.Run(null, "옮기기", () =>
+        {
+            if (_dragKey is null)
+            {
+                return;
+            }
+
+            string? wanted = RowAt(args.GetPosition(RowHost))?.Key;
+
+            if (!string.Equals(_hoverKey, wanted, StringComparison.Ordinal))
+            {
+                _hoverKey = wanted;
+                Paint();
+            }
+        }), both, handledEventsToo: true);
+
+        button.AddHandler(PointerReleasedEvent, (_, args) => UiGuard.Run(null, "옮기기", () =>
+        {
+            if (_dragKey is not null)
+            {
+                Release(RowAt(args.GetPosition(RowHost)) ?? row);
+            }
+        }), both, handledEventsToo: true);
     }
 
     /// <summary>고른 줄만 다시 칠한다 — 줄을 다시 세우지 않는다.</summary>
@@ -722,6 +956,12 @@ public partial class StoryHierarchy : UserControl
                 button.Background = string.Equals(_rows[index].Key, selected, StringComparison.Ordinal)
                     ? new SolidColorBrush(Color.FromArgb(48, 61, 123, 217))
                     : Brushes.Transparent;
+
+                // 끌고 지나가는 동안 받아 줄 자리에 테두리 — 아무 표시가 없으면 놓아도 되는지 모른 채 손을 놓는다.
+                bool landing = string.Equals(_rows[index].Key, _hoverKey, StringComparison.Ordinal) &&
+                               DragSource() is { } dragged && Accepts(dragged, _rows[index]);
+                button.BorderThickness = new Thickness(landing ? 1 : 0);
+                button.BorderBrush = landing ? new SolidColorBrush(Color.FromArgb(220, 61, 123, 217)) : Brushes.Transparent;
             }
         }
     }

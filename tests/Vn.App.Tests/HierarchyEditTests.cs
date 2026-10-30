@@ -160,7 +160,105 @@ public sealed class HierarchyEditTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 에피소드를_다른_장면_줄로_끌면_그_장면으로_옮겨진다() => HeadlessUi.Run(() =>
+    {
+        // HY4b — 장면은 장면ID로 묶이는 것이라, 에피소드를 다른 장면에 놓는 것이 곧 그 에피소드의 장면ID를 바꾸는 일이다.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+        Dispatcher.UIThread.RunJobs();   // 다시 세운 줄들이 자리를 잡는다
+
+        // 실제 손으로 — 누르고, 장면 줄 위로 옮기고, 놓는다(단추가 포인터를 잡아도 놓은 자리는 좌표로 찾는다).
+        Button source = tree.RowButton(StoryHierarchy.EpisodeKey("ch01", "a"))!;
+        Button target = tree.RowButton(StoryHierarchy.SceneKey("ch01", "hall"))!;
+        Point from = source.TranslatePoint(new Point(30, source.Bounds.Height / 2), window)!.Value;
+        Point to = target.TranslatePoint(new Point(30, target.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(from, MouseButton.Left);
+        window.MouseMove(to, RawInputModifiers.LeftMouseButton);
+        window.MouseUp(to, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("hall", Chapter(session).Episodes.Single(episode => episode.EpisodeId == "a").SceneId);
+
+        // 되돌리기 한 칸.
+        session.Editor.Undo();
+        Assert.Equal("opening", Chapter(session).Episodes.Single(episode => episode.EpisodeId == "a").SceneId);
+
+        // 받지 않는 자리 — 같은 장면 · 에피소드 줄 · 다른 챕터.
+        tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        Dispatcher.UIThread.RunJobs();
+        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.SceneKey("ch01", "opening"));
+        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.EpisodeKey("ch01", "root"));
+        tree.Drag(StoryHierarchy.EpisodeKey("ch02", "x"), StoryHierarchy.SceneKey("ch01", "hall"));
+        Assert.Equal("opening", Chapter(session).Episodes.Single(episode => episode.EpisodeId == "a").SceneId);
+        Assert.True(string.IsNullOrEmpty(Chapter(session, "ch02").Episodes.Single(episode => episode.EpisodeId == "x").SceneId));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 접힘은_두_탭이_함께_쓰고_프로젝트를_다시_열어도_남는다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, StoryHierarchy tree) = Open();
+        StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
+
+        tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(director.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch02", "x"));   // 연출 쪽도 펴졌다
+
+        director.Fold(StoryHierarchy.SceneKey("ch01", "hall"), collapse: false);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(tree.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch01", "b"));      // 챕터 쪽도 펴졌다
+        window.Close();
+
+        // 같은 프로젝트를 다시 연다 — 사람이 편 것이 그대로다(사용자 설정에 프로젝트별로).
+        (MainWindow again, StoryHierarchy reopened) = Open();
+        Assert.Contains(reopened.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch02", "x"));
+        Assert.Contains(reopened.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch01", "b"));
+        again.Close();
+    });
+
+    [Fact]
+    public void 화살표로_고르고_접고_편다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, StoryHierarchy tree) = Open();
+
+        // 시작하면 세션이 고른 첫 카드(root)가 골라져 있다.
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "root"), tree.Selection?.Key);
+
+        Press(tree, Key.Down);
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "a"), tree.Selection?.Key);
+        Assert.Equal("a", window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<TextBox>("IdBox")!.Text);
+
+        Press(tree, Key.Up);
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "root"), tree.Selection?.Key);
+
+        // ← 에피소드에서 = 부모(장면)로, 다시 ← = 그 장면을 접는다, → = 편다, 다시 → = 첫 자식으로.
+        Press(tree, Key.Left);
+        string opening = StoryHierarchy.SceneKey("ch01", "opening");
+        Assert.Equal(opening, tree.Selection?.Key);
+
+        Press(tree, Key.Left);
+        Assert.DoesNotContain(tree.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch01", "root"));
+
+        Press(tree, Key.Right);
+        Assert.Contains(tree.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch01", "root"));
+
+        Press(tree, Key.Right);
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "root"), tree.Selection?.Key);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    private static void Press(StoryHierarchy tree, Key key)
+    {
+        tree.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key });
+        Dispatcher.UIThread.RunJobs();
+    }
 
     private (MainWindow Window, StoryHierarchy Tree) Open()
     {

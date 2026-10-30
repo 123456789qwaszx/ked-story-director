@@ -33,9 +33,19 @@ public partial class MainWindow
     /// <summary>한 탭의 선택을 다른 쪽에 옮기는 중 — 되돌아오는 알림이 다시 옮기지 않게.</summary>
     private bool _syncingSelection;
 
+    /// <summary>두 탭의 하이어아키가 함께 쓰는 접힘 — 한 그루가 두 자리에 보인다(HY4b).</summary>
+    private readonly HierarchyFolds _folds = new();
+
     /// <summary>하이어아키 배선 — 생성자가 한 번 부른다.</summary>
     private void WireHierarchies()
     {
+        ChapterGraph.HierarchyView.Folds = _folds;
+        Graph.HierarchyView.Folds = _folds;
+
+        // 한쪽에서 접거나 펴면 다른 쪽도 맞춘다.
+        ChapterGraph.HierarchyView.FoldChanged += () => Graph.HierarchyView.RefreshFolds();
+        Graph.HierarchyView.FoldChanged += () => ChapterGraph.HierarchyView.RefreshFolds();
+
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
 
         // 두 하이어아키의 차림표 · 이름 고치기는 같은 규칙 한 벌로 한다(HY4 — MainWindow.HierarchyEdit.cs).
@@ -45,6 +55,8 @@ public partial class MainWindow
                 UiGuard.Run(_session, "하이어아키 차림표", () => OnHierarchyCommand(command, row, anchor));
             tree.RenameRequested += (row, name) =>
                 UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(row, name));
+            tree.Dropped += (source, target) =>
+                UiGuard.Run(_session, "장면 옮기기", () => OnHierarchyDropped(source, target));
         }
 
         // 챕터 그래프에서 고른 에피소드가 세션의 선택(그 카드)이 된다 — 연출 그래프로 넘어가도 같은 것을 본다.
@@ -71,6 +83,7 @@ public partial class MainWindow
     /// <summary>두 하이어아키를 다시 세운다 — 원천은 챕터 그래프가 읽은 챕터 목록 하나다.</summary>
     private void RebuildHierarchies()
     {
+        _folds.Remember(_session.ProjectPath);   // 프로젝트가 바뀌었으면 그 프로젝트의 접힘을 읽는다
         string title = ProjectDisplayTitle();
         ChapterGraph.HierarchyView.Rebuild(title, _chapters);
         Graph.HierarchyView.Rebuild(title, _chapters);

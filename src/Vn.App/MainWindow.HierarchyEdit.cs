@@ -135,6 +135,18 @@ public partial class MainWindow
         }
     }
 
+    /// <summary>에피소드를 다른 장면 줄로 끌어 놓았다 — 그 에피소드의 장면ID가 그 장면의 것이 된다(되돌리기 한 칸).</summary>
+    private void OnHierarchyDropped(HierarchyRow source, HierarchyRow target)
+    {
+        if (source.ChapterId is not { } chapterId || source.EpisodeId is not { } episodeId || target.SceneId is not { } sceneId)
+        {
+            return;
+        }
+
+        _session.Editor.UpdateEpisode(chapterId, episodeId, sceneId: sceneId);
+        _session.SetStatus($"'{episodeId}'를 장면 '{sceneId}'로 옮겼습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+    }
+
     /// <summary>
     /// 에피소드를 하나 더한다 — <paramref name="after"/>에서 간선을 달고(없으면 홀로), <paramref name="sceneId"/>가 있으면 그
     /// 장면에. 되돌리기 한 칸(<c>Batch</c>). 더한 에피소드를 두 탭에서 고른다.
