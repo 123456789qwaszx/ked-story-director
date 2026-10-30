@@ -102,6 +102,14 @@ public partial class MainWindow : Window
         _session.SelectionChanged += OnSelectionChanged;
         _session.FileGraphStateChanged += OnFileGraphStateChanged;
 
+        // 하이어아키의 챕터 줄 우클릭 — 챕터 목록 줄의 우클릭(이름 바꾸기 · 제거)을 잇는다.
+        ChapterGraph.HierarchyView.RowMenuRequested += (anchor, row) =>
+        {
+            if (row.Kind == HierarchyKind.Chapter && row.ChapterId is { } chapterId)
+            {
+                UiGuard.Run(_session, "챕터 메뉴", () => ShowChapterContextFlyout(anchor, chapterId));
+            }
+        };
         ChapterGraph.ChapterAddButton.Click += (_, _) =>
             UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(ChapterGraph.ChapterAddButton));
         // 챕터가 하나도 없을 때 판 한가운데 서는 [＋ 챕터] — 뜻이 같으니 배선도 같다.
@@ -311,88 +319,19 @@ public partial class MainWindow : Window
         });
 
     /// <summary>
-    /// 왼쪽 챕터 목록 (챕터 v2). 챕터 클릭 = 그 챕터의 판을 활성으로 + 챕터 그래프 선택.
-    /// 챕터가 없는 판은 목록에 없다 — 소유자 확정("완전 교체"). 기존 프로젝트는 챕터를
-    /// 만들어 옮긴다.
+    /// 하이어아키를 다시 세운다 (2026-10-30 — 챕터 목록 자리를 이었다, docs/plans/hierarchy.md). 원천은 챕터 그래프 뷰가 읽은
+    /// 챕터 목록 하나다. 고른 것은 하이어아키가 들고 있다가 다시 세운 뒤에도 잇는다. 챕터가 없는 판은 하이어아키에 없다 —
+    /// 소유자 확정("완전 교체").
     /// </summary>
     private void RebuildFileList()
     {
-        ChapterGraph.ChapterListHost.Children.Clear();
-
-        foreach (ChapterEntry entry in _chapters)
-        {
-            string chapterId = entry.ChapterId;
-            string? boardId = EpisodeNaming.BoardOf(_session.Project, chapterId)?.Id;
-            bool isActive = boardId is not null &&
-                string.Equals(_session.ActiveFileId, boardId, StringComparison.Ordinal);
-
-            string subtitle = $"에피소드 {entry.Model.Episodes.Count}개" +
-                (entry.HasErrors ? " · ⚠ 오류" : string.Empty);
-
-            var row = new Border
-            {
-                Padding = new Thickness(8, 6),
-                CornerRadius = new CornerRadius(5),
-                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
-                Background = isActive
-                    ? new SolidColorBrush(Color.FromArgb(24, 37, 99, 235))
-                    : Brushes.Transparent,
-                Child = new StackPanel
-                {
-                    Spacing = 1,
-                    Children =
-                    {
-                        new TextBlock
-                        {
-                            Text = chapterId,
-                            FontWeight = FontWeight.SemiBold,
-                            TextTrimming = TextTrimming.CharacterEllipsis
-                        },
-                        new TextBlock
-                        {
-                            Text = subtitle,
-                            FontSize = 10,
-                            Opacity = 0.55,
-                            Foreground = entry.HasErrors ? Brushes.IndianRed : null,
-                            TextTrimming = TextTrimming.CharacterEllipsis
-                        }
-                    }
-                }
-            };
-
-            row.PointerPressed += (_, args) =>
-            {
-                if (args.GetCurrentPoint(row).Properties.IsRightButtonPressed)
-                {
-                    ShowChapterContextFlyout(row, chapterId);
-                    args.Handled = true;
-                    return;
-                }
-
-                // 한 번 클릭 = 선택. (더블클릭이 챕터 엑셀을 열던 배선은 2026-10-29 · D2에
-                // 엑셀 연동과 함께 걷혔다.)
-                UiGuard.Run(_session, "챕터 선택", () =>
-                {
-                    _session.SelectFile(_session.EnsureChapterBoard(chapterId));
-                    ChapterGraph.SelectChapter(chapterId);
-                });
-            };
-
-            ChapterGraph.ChapterListHost.Children.Add(row);
-        }
-
-        if (_chapters.Count == 0)
-        {
-            ChapterGraph.ChapterListHost.Children.Add(new TextBlock
-            {
-                Text = "챕터가 없습니다. ＋로 만드세요.",
-                Margin = new Thickness(6, 10),
-                Opacity = 0.55,
-                FontSize = 11,
-                TextWrapping = TextWrapping.Wrap
-            });
-        }
+        ChapterGraph.HierarchyView.Rebuild(ProjectDisplayTitle(), _chapters);
     }
+
+    /// <summary>창 머리와 하이어아키 맨 위 줄이 같은 이름을 쓴다.</summary>
+    private string ProjectDisplayTitle() => _session.ProjectPath is null
+        ? _session.Project.Title
+        : ProjectDisplayName(_session.ProjectPath);
 
     /// <summary>
     /// 챕터 행 우클릭 — 이름 바꾸기와 <b>제거</b>. 둘 다 챕터·판·조건 배관을
@@ -726,9 +665,7 @@ public partial class MainWindow : Window
 
     private void RefreshShell()
     {
-        string name = _session.ProjectPath is null
-            ? _session.Project.Title
-            : ProjectDisplayName(_session.ProjectPath);
+        string name = ProjectDisplayTitle();
 
         ProjectNameText.Text = name;
         ProjectPathText.Text = _session.ProjectPath ?? "저장되지 않음";

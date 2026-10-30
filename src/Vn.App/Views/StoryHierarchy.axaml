@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Vn.App.Views.StoryHierarchy">
+
+    <!-- 하이어아키 (2026-10-30 · docs/plans/hierarchy.md) — 프로젝트 → 챕터 → 장면 → 에피소드.
+
+         ⛔ TreeView를 쓰지 않는다. 접기는 삼각형만 하고 이름 쪽은 고르기(뒤에 끌기 · 두 번 눌러 이름 고치기)를
+            받아야 하는데, TreeView는 줄을 누르면 접고 펴는 손짓과 고르는 손짓이 한 줄에 엉킨다. 줄을 직접
+            세운다 — 옛 [대본] 탭 탐색기(R6)와 같은 결이다. -->
+    <ScrollViewer x:Name="TreeScroll"
+                  HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel x:Name="RowHost" Margin="2,4" />
+    </ScrollViewer>
+</UserControl>

@@ -130,9 +130,9 @@ public sealed class MainChromeTests
         Assert.Null(window.FindControl<StackPanel>("FileListPanel"));
         Assert.Null(window.FindControl<Button>("AddFileButton"));
 
-        // 새 자리는 챕터 그래프 뷰 안이고, 셸이 그 손잡이로 목록을 짓는다.
+        // 새 자리는 챕터 그래프 뷰 안이고, 셸이 그 손잡이로 하이어아키(2026-10-30 — 챕터 목록을 이었다)를 짓는다.
         var chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
-        Assert.Contains(chapterGraph, chapterGraph.ChapterListHost.GetVisualAncestors());
+        Assert.Contains(chapterGraph, chapterGraph.HierarchyView.GetVisualAncestors());
         Assert.Contains(chapterGraph, chapterGraph.ChapterAddButton.GetVisualAncestors());
 
         window.Close();

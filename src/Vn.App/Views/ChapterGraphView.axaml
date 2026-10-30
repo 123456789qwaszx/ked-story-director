@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:Vn.App.Views"
              x:Class="Vn.App.Views.ChapterGraphView">
     <Grid RowDefinitions="Auto,*,Auto">
         <Border Grid.Row="0"
@@ -157,23 +158,23 @@
                     <RowDefinition Height="*" MinHeight="120" />
                 </Grid.RowDefinitions>
 
-                <!-- 챕터 목록이 여기로 이사했다 (2026-08-22 소유자) — 예전에는 창 맨 왼쪽에
-                     제 열 하나를 갖고 있었다. 챕터를 고르는 일과 그 챕터를 편집하는 일이
-                     한 기둥에 서고, 그래프는 그만큼 넓어진다. 목록이 차지하는 높이는
-                     아래 스플리터로 사람이 정한다.
-                     ⚠ 내용은 MainWindow가 짓는다(아래 세 손잡이) — 목록 클릭이 세션 전환·
-                     우클릭 메뉴와 얽혀 있어 뷰로 옮기면 배선이 두 벌이 된다. -->
+                <!-- 하이어아키 (2026-10-30 소유자 — docs/plans/hierarchy.md): 프로젝트 → 챕터 → 장면 → 에피소드를
+                     유니티 하이어아키처럼 접었다 편다. 챕터 목록(2026-08-22에 창 맨 왼쪽 열에서 이 기둥으로 이사)이
+                     섰던 자리다 — 그 목록이 하던 챕터 고르기 · 우클릭(이름 바꾸기 · 제거)을 챕터 줄이 잇는다.
+                     높이는 아래 스플리터로 사람이 정한다.
+                     ⚠ 줄을 고른 뒤의 일(챕터 · 에피소드 고르기, 아래 칸 바꾸기)은 이 뷰가, 내용(프로젝트 · 챕터 목록)과
+                     챕터 줄 우클릭은 셸(MainWindow)이 짓는다 — 세션 전환 · 개명 규칙이 셸에 한 벌이다. -->
                 <Border Grid.Row="0"
                         BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                         BorderThickness="0,0,0,1">
                     <Grid RowDefinitions="Auto,*">
                         <Border Grid.Row="0"
-                                Padding="10,8"
+                                Padding="10,6"
                                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                                 BorderThickness="0,0,0,1">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="챕터" FontWeight="SemiBold" />
+                                    <TextBlock Text="하이어아키" FontWeight="SemiBold" />
                                     <TextBlock x:Name="ChapterSummary"
                                                FontSize="11"
                                                Opacity="0.65"
@@ -189,11 +190,7 @@
                             </Grid>
                         </Border>
 
-                        <ScrollViewer Grid.Row="1"
-                                      HorizontalScrollBarVisibility="Disabled"
-                                      VerticalScrollBarVisibility="Auto">
-                            <StackPanel x:Name="ChapterListPanel" Margin="8,8,8,10" Spacing="4" />
-                        </ScrollViewer>
+                        <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
                     </Grid>
                 </Border>
 

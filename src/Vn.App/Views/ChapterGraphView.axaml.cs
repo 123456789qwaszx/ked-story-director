@@ -83,6 +83,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
         HideEdgeForm();
+        ShowInHierarchy(new HierarchyPick(HierarchyKind.Chapter, chapterId));
 
         Validate();
         Draw();
@@ -102,14 +103,55 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     internal event Action<string>? ChapterSelected;
 
-    // ── 챕터 목록 자리 (2026-08-22 소유자 — 창 맨 왼쪽 열에서 이 기둥 위로 이사) ──────
+    // ── 하이어아키 (2026-10-30 — docs/plans/hierarchy.md · 챕터 목록 자리를 이었다) ──────────
     //
-    // 자리만 이 뷰가 내주고 <b>내용은 셸(MainWindow)이 짓는다</b>. 목록의 클릭 하나가
-    // 세션 전환(EnsureChapterBoard)·우클릭 메뉴와 얽혀 있어 여기로 옮기면
-    // 같은 배선이 두 벌이 된다 — 그 사본이야말로 이 코드베이스가 가장 경계하는 것이다.
+    // 내용(프로젝트 · 챕터 목록)과 챕터 줄 우클릭은 <b>셸(MainWindow)이 짓는다</b> — 세션 전환(EnsureChapterBoard) ·
+    // 개명 · 제거 규칙이 셸에 한 벌이다. 줄을 고른 뒤 이 판에서 할 일(챕터 · 에피소드 고르기, 아래 칸 바꾸기)은
+    // 이 뷰가 한다(<see cref="OnHierarchyPicked"/>).
 
-    /// <summary>챕터 줄이 쌓이는 자리.</summary>
-    internal Panel ChapterListHost => ChapterListPanel;
+    /// <summary>하이어아키 — 셸이 내용을 채우고 챕터 줄 우클릭을 받는다.</summary>
+    internal StoryHierarchy HierarchyView => Hierarchy;
+
+    /// <summary>하이어아키에서 고른 것을 처리하는 중 — 그동안은 판의 선택을 트리에 되비추지 않는다(이미 고른 줄이다).</summary>
+    private bool _fromHierarchy;
+
+    /// <summary>
+    /// 하이어아키에서 줄을 골랐다 (2026-10-30) — 챕터 · 에피소드를 판에서 고르고 아래 칸을 그것에 맞춘다: 프로젝트 →
+    /// [화자], 챕터 → [챕터](조건 · 스탯), 장면 · 에피소드 → [편집].
+    /// </summary>
+    private void OnHierarchyPicked(HierarchyPick pick)
+    {
+        _fromHierarchy = true;
+
+        try
+        {
+            if (pick.ChapterId is { } chapterId)
+            {
+                SelectChapter(chapterId);
+                SelectEpisode(pick.Kind == HierarchyKind.Episode ? pick.EpisodeId : null);
+            }
+
+            RightTabs.SelectedItem = pick.Kind switch
+            {
+                HierarchyKind.Project => SpeakerTab,
+                HierarchyKind.Chapter => ConditionTab,
+                _ => EditTab
+            };
+        }
+        finally
+        {
+            _fromHierarchy = false;
+        }
+    }
+
+    /// <summary>판에서 고른 것을 하이어아키에 비춘다 — 하이어아키가 부른 선택이면 하지 않는다.</summary>
+    private void ShowInHierarchy(HierarchyPick? pick)
+    {
+        if (!_fromHierarchy)
+        {
+            Hierarchy.Show(pick);
+        }
+    }
 
     /// <summary>[＋] 새 챕터 — 셸이 클릭을 받고 플라이아웃의 과녁으로도 쓴다.</summary>
     internal Button ChapterAddButton => AddChapterButton;
@@ -184,6 +226,7 @@ public partial class ChapterGraphView : UserControl
         };
         ApplySceneGroupButton.Click += (_, _) =>
             UiGuard.Run(_session, "장면ID 일괄 저장", ApplySceneIdToGroup);
+        Hierarchy.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnHierarchyPicked(pick));
         // 판 다루기 — 휠 확대·축소, 가운데 단추 끌어 이동. 휠은 <b>터널</b>로 받는다:
         // 스크롤뷰가 먼저 먹어 버리면 휠이 배율이 아니라 그냥 스크롤이 된다.
         GraphScroll.AddHandler(
@@ -1842,6 +1885,9 @@ public partial class ChapterGraphView : UserControl
         HideEdgeForm(); // 다른 노드로 넘어가면 열려 있던 연결 폼은 닫는다
         ApplySelectionVisuals();
         RefreshPropertyPanel();
+        ShowInHierarchy(episodeId is not null && _selectedChapterId is { } chapterId
+            ? new HierarchyPick(HierarchyKind.Episode, chapterId, EpisodeId: episodeId)
+            : null);
     }
 
     internal void SelectEdgeKey(string fromEpisodeId, string toEpisodeId, string optionLabel = "")
@@ -1852,6 +1898,7 @@ public partial class ChapterGraphView : UserControl
         HideEdgeForm();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
+        ShowInHierarchy(null);   // 길은 하이어아키에 없다
     }
 
     /// <summary>
@@ -1866,6 +1913,7 @@ public partial class ChapterGraphView : UserControl
         HideEdgeForm();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
+        ShowInHierarchy(null);   // 분기는 하이어아키에 없다
     }
 
     /// <summary>모든 카드·간선을 기본 모습으로 되돌리고 선택된 것만 파랗게 강조한다.</summary>
