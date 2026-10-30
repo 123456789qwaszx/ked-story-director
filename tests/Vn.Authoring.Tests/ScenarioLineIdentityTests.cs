@@ -65,7 +65,7 @@ public sealed class ScenarioLineIdentityTests
     [Fact]
     public void 분기가_걸린_줄을_고쳐도_분기는_그_줄에_남는다()
     {
-        // 분기 자리 빈 줄(2026-10-30)이 끼어 있어도 같은 자리의 줄이 신원을 잇는다 — 분기 표식은 그 줄의 것이다.
+        // 분기 표식은 그 줄의 것이다 — 줄을 고쳐도(같은 자리의 줄이 신원을 잇는다) 표식이 따라간다.
         (ProjectEditor editor, DialogueNode node, string[] ids) = Card("첫 줄", "둘째 줄");
         DialogueNode branch = editor.AddBranchMarker(node.Id, ids[1]);
         string shown = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id, Definition).Text;

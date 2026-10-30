@@ -52,20 +52,17 @@ public static class WorkingDialoguePreview
     /// 그 프리셋의 표기를 그대로 쓰되 <b>진단은 뺀다</b> — <c>[주의]</c> 줄은 파서가 해석 못 한 줄로 올려,
     /// 넣을 때마다 제가 낸 글이 문제로 되돌아온다(머리글을 뺀 2026-09-18과 같은 이유).
     /// 끝의 줄바꿈은 걷는다 — 빈 줄 하나뿐인 새 카드는 빈 칸으로 보인다.
-    ///
-    /// ⭐ <b>「조건 분기」 자리는 빈 줄이다</b>(<see cref="ScenarioWriting"/>) — 되읽을 때 빈 줄은 건너뛰므로 대본은 그대로다.
     /// </summary>
     public static string ScenarioText(StoryProject project, string dialogueNodeId, GameDefinition? definition = null) =>
         ScenarioWriting(project, dialogueNodeId, definition).Text;
 
     /// <summary>
-    /// <see cref="ScenarioText"/>과 그 줄 짝 — 연출 그래프 카드가 분기 점을 글 칸에 세운다.
+    /// <see cref="ScenarioText"/>과 그 줄 짝 — 연출 그래프 카드가 분기 점을 글 칸의 그 대사 옆에 세우고, 글 칸이 고친 줄의
+    /// 신원을 잇는다(<see cref="Script.ScenarioLineIdentity"/>).
     ///
-    /// <b>분기 자리는 빈 줄이다</b> (2026-10-30 소유자: *"분기가 생성 되는 점 위치를, 그 생성한 텍스트 라인 위쪽에
-    /// 위치시키고, 조건 분기가 있다면, 그 분기의 공간만큼 텍스트 줄 간격을 늘려"* · *"같은 자리에 여러 분기가 있을 때, 점이
-    /// 겹쳐지지 않게"*). 분기가 걸린 대사 줄 바로 위에 분기 수만큼 빈 줄이 끼고, 분기 점은 저마다 제 빈 줄에 선다 — 다녀오는
-    /// 차례로 위에서 아래로. 되읽을 때(<see cref="Editing.ProjectEditor.ApplyScenarioText"/>) 빈 줄은 건너뛰므로 이 줄들은
-    /// 대본을 바꾸지 않는다.
+    /// ⛔ 분기마다 그 대사 위에 빈 줄을 끼우던 것(2026-10-30 오전)은 같은 날 걷혔다 — 한 줄의 분기들은 이제 그 대사 옆의 점
+    /// 하나로 접히고 누르면 카드 밖으로 펼쳐지므로(소유자: *"특정 글자 옆쪽에 분기점 표시 하나만 공통으로 남기고, 그걸
+    /// 클릭하면 … 펼쳐지면서"*) 줄 사이에 자리가 필요 없다.
     /// </summary>
     public static ScenarioWritingLayout ScenarioWriting(
         StoryProject project, string dialogueNodeId, GameDefinition? definition = null)
@@ -86,50 +83,7 @@ public static class WorkingDialoguePreview
             project, dialogueNodeId, definition, writing, OutputPresetId.ScenarioOnly);
 
         (string text, IReadOnlyDictionary<string, int> rowOfLine) = DocumentPreviewFormatter.FormatWithRows(document);
-        IReadOnlyList<DialogueLineExtension> extensions =
-            project.FindDialogue(dialogueNodeId)?.LineExtensions ?? (IReadOnlyList<DialogueLineExtension>)[];
-
-        return WithBranchRows(text, rowOfLine, extensions);
-    }
-
-    /// <summary>분기가 걸린 대사 줄 위에 분기 수만큼 빈 줄을 끼우고, 줄 짝을 그만큼 민다.</summary>
-    private static ScenarioWritingLayout WithBranchRows(
-        string text, IReadOnlyDictionary<string, int> rowOfLine, IReadOnlyList<DialogueLineExtension> extensions)
-    {
-        // 그 글 줄 앞에 낄 분기들 — 글 줄 번호로.
-        var branchesBefore = new Dictionary<int, (string LineId, IReadOnlyList<string> Targets)>();
-
-        foreach (DialogueLineExtension extension in extensions)
-        {
-            if (extension.DetourTargetNodeIds.Count > 0 && rowOfLine.TryGetValue(extension.LineId, out int at))
-            {
-                branchesBefore[at] = (extension.LineId, extension.DetourTargetNodeIds);
-            }
-        }
-
-        string[] rows = text.Split('\n');
-        var shown = new List<string>(rows.Length);
-        var shiftedRowOf = new Dictionary<int, int>();
-        var rowOfBranch = new Dictionary<string, int>(StringComparer.Ordinal);
-
-        for (int row = 0; row < rows.Length; row++)
-        {
-            if (branchesBefore.TryGetValue(row, out (string LineId, IReadOnlyList<string> Targets) branch))
-            {
-                foreach (string target in branch.Targets)
-                {
-                    rowOfBranch[Flow.ExitPort.DetourKey(branch.LineId, target)] = shown.Count;
-                    shown.Add(string.Empty);
-                }
-            }
-
-            shiftedRowOf[row] = shown.Count;
-            shown.Add(rows[row]);
-        }
-
-        var lines = rowOfLine.ToDictionary(pair => pair.Key, pair => shiftedRowOf[pair.Value], StringComparer.Ordinal);
-
-        return new ScenarioWritingLayout(string.Join('\n', shown).TrimEnd('\n'), lines, rowOfBranch);
+        return new ScenarioWritingLayout(text.TrimEnd('\n'), rowOfLine);
     }
 
     private static List<RenderedSegment> InsertProblems(RenderedDocument document, DialogueDraft draft)
@@ -160,10 +114,8 @@ public static class WorkingDialoguePreview
 }
 
 /// <summary>카드 글 칸의 글과 그 줄 짝 (<see cref="WorkingDialoguePreview.ScenarioWriting"/>).</summary>
-/// <param name="Text">글 칸에 보이는 글 — 분기 자리는 빈 줄이다.</param>
+/// <param name="Text">글 칸에 보이는 글.</param>
 /// <param name="RowOfLine">대본의 줄(LineId)마다 그 줄이 글의 몇 번째 줄인가(0부터). 대사 줄과 선택지 줄만 든다.</param>
-/// <param name="RowOfBranch">분기마다(<see cref="Flow.ExitPort.DetourKey"/>) 그 분기 자리 빈 줄이 몇 번째 줄인가.</param>
 public sealed record ScenarioWritingLayout(
     string Text,
-    IReadOnlyDictionary<string, int> RowOfLine,
-    IReadOnlyDictionary<string, int> RowOfBranch);
+    IReadOnlyDictionary<string, int> RowOfLine);

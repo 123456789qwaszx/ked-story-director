@@ -47,21 +47,22 @@ public partial class GraphEditorView : UserControl
     private const double SpineInset = 10;
 
     // 대사 카드 안의 글 칸 (D4) — 다섯 줄 남짓. 넘치면 칸이 스크롤한다(카드 높이가 글에 따라 출렁이면
-    // 아래 레일과 선택지 칸이 쓰는 동안 들썩인다). 「조건 분기」 자리 빈 줄만큼은 커진다(WritingBoxHeightOf) — 분기는
-    // 쓰는 동안 늘지 않고 판을 다시 그릴 때만 바뀐다.
+    // 아래 레일과 선택지 칸이 쓰는 동안 들썩인다).
     private const double WritingBoxHeight = 88;
     private const double WritingBoxGap = 6;
 
-    /// <summary>
-    /// 글 칸의 줄 높이 — 고정한다. 「조건 분기」 자리 빈 줄마다 칸이 이만큼 커지므로(2026-10-30 소유자: *"그 분기의 공간만큼
-    /// 텍스트 줄 간격을 늘려"*), 카드 높이가 그리기 전에 정해져야 아래 레일과 선택지 칸이 제자리에 선다.
-    /// </summary>
+    /// <summary>글 칸의 줄 높이 — 고정한다(분기 점이 그 대사 높이에 서고, 대사마다 점 하나라 줄 간격 15면 겹치지 않는다).</summary>
     private const double WritingLineHeight = 15;
-
-    /// <summary>그 글의 분기 자리 빈 줄만큼 키운 글 칸 높이 — 대사가 보이는 양은 분기가 없을 때와 같다.</summary>
-    private static double WritingBoxHeightOf(ScenarioWritingLayout layout) =>
-        WritingBoxHeight + (layout.RowOfBranch.Count * WritingLineHeight);
     private const string WritingTag = "writing:";
+
+    // 한 대사의 분기 점들을 접은 공통 점과, 누르면 카드 밖으로 펼쳐지는 개별 점들 (2026-10-30 — PlaceLineKnobs).
+    private const double BranchHubRadius = 8;
+
+    /// <summary>펼친 개별 점이 카드 가장자리에서 떨어진 거리(점의 가운데까지).</summary>
+    private const double BranchFanOut = 34;
+
+    /// <summary>펼친 개별 점끼리의 세로 간격 — 지름 12에 틈 6. 끌어 잇는 손잡이라 겹치면 안 된다.</summary>
+    private const double BranchFanStep = 18;
 
     private const double ProxyWidth = 250;
     private const double ProxyHeaderHeight = 50;
@@ -185,7 +186,7 @@ public partial class GraphEditorView : UserControl
     private readonly Dictionary<string, TextBox> _writingBoxes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _writingShown = new(StringComparer.Ordinal);
 
-    /// <summary>글 칸마다 그 글의 줄 짝 — 분기 점을 제 분기 자리(빈 줄)에 세운다(2026-10-30).</summary>
+    /// <summary>글 칸마다 그 글의 줄 짝 — 분기 점을 그 대사 옆에 세우고, 고친 줄의 신원을 잇는다(2026-10-30).</summary>
     private readonly Dictionary<string, ScenarioWritingLayout> _writingLayouts = new(StringComparer.Ordinal);
 
     // 끄는 동안의 자리 (D3 · 2026-10-29, docs/design/two-graphs.md §6-2) — 카드 · 무리 · 접힌 판
@@ -1560,6 +1561,25 @@ public partial class GraphEditorView : UserControl
             }
         }
 
+        // 한 대사(의 같은 쪽)에 분기가 둘 이상이면 그 점들을 공통 점 하나로 접는다 — 누르면 펼친다.
+        foreach ((string group, IReadOnlyList<int> members) in visual.LineGroups)
+        {
+            if (members.Count < 2)
+            {
+                continue;
+            }
+
+            if (_expandedBranchGroups.Contains(BranchGroupId(visual.NodeId, group)))
+            {
+                visual.ExpandedGroups.Add(group);
+            }
+
+            BranchHub hub = BuildBranchHub(visual, group, members.Count);
+            visual.LineHubs[group] = hub;
+            GraphCanvas.Children.Add(hub.Fan);
+            GraphCanvas.Children.Add(hub.Dot);
+        }
+
         PlaceLineKnobs(visual);
 
         card.PointerPressed += (_, args) => OnCardPressed(visual, args);
@@ -1593,8 +1613,7 @@ public partial class GraphEditorView : UserControl
             TextWrapping = TextWrapping.Wrap,
             FontSize = 11,
             LineHeight = WritingLineHeight,
-            Height = WritingBoxHeightOf(layout),
-            MinHeight = WritingBoxHeightOf(layout),
+            Height = WritingBoxHeight,
             Margin = new Thickness(0, WritingBoxGap, 0, 0),
             Padding = new Thickness(4, 3),
             PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄",
@@ -1729,7 +1748,7 @@ public partial class GraphEditorView : UserControl
                 return;
             }
 
-            // 다 쓰고 나왔다 — 칸을 도구의 표기(화자 띄어쓰기 · 분기 자리 빈 줄)로 다시 쓴다.
+            // 다 쓰고 나왔다 — 칸을 도구의 표기(화자 띄어쓰기 · 빈 줄 걷기)로 다시 쓴다.
             if (!current.IsFocused)
             {
                 current.Text = now.Text;
@@ -2615,13 +2634,22 @@ public partial class GraphEditorView : UserControl
 
         if (card.IsLinePort(portIndex))
         {
-            // 아직 재지 않았으면(첫 배치 전) 글 칸의 위 끝이다.
-            double fallback = CardBorder + CardPadding + HeaderHeight + (card.RowCount * PortRowHeight) +
-                              WritingBoxGap + PortRadius + 2;
+            Point line = LineAnchor(card, portIndex);
+            string group = card.GroupOf(portIndex);
+            IReadOnlyList<int> members = card.LineGroups[group];
+
+            // 접혀 있으면(또는 혼자면) 그 대사 옆 — 공통 점에서 나간다. 펼쳤으면 카드 밖으로 갈라진 제 점에서.
+            if (members.Count < 2 || !card.ExpandedGroups.Contains(group))
+            {
+                return line;
+            }
+
+            int order = members.ToList().IndexOf(portIndex);
+            double outward = card.Ports[portIndex].OnLeft ? -1 : 1;
 
             return new Point(
-                x,
-                Canvas.GetTop(card.Visual) + card.LineAnchorY.GetValueOrDefault(card.Ports[portIndex].Key, fallback));
+                line.X + (outward * BranchFanOut),
+                line.Y + ((order - ((members.Count - 1) / 2.0)) * BranchFanStep));
         }
 
         double y = Canvas.GetTop(card.Visual)
@@ -2659,7 +2687,25 @@ public partial class GraphEditorView : UserControl
     /// <summary>분기 점이 지는 표 — 화면 테스트가 이것으로 찾는다.</summary>
     internal const string LineKnobTag = "detour-knob:";
 
-    /// <summary>그 카드의 분기 점들을 지금 자리(<see cref="PortAnchor"/>)에 놓는다.</summary>
+    /// <summary>분기 점의 그 대사 옆 자리 — 카드 가장자리, 글 칸의 그 대사 높이(<see cref="MeasureLineAnchors"/>).</summary>
+    private static Point LineAnchor(NodeCard card, int portIndex)
+    {
+        double x = Canvas.GetLeft(card.Visual) + (card.Ports[portIndex].OnLeft ? 0 : CardWidth);
+
+        // 아직 재지 않았으면(첫 배치 전) 글 칸의 위 끝이다.
+        double fallback = CardBorder + CardPadding + HeaderHeight + (card.RowCount * PortRowHeight) +
+                          WritingBoxGap + PortRadius + 2;
+        string? lineId = card.Ports[portIndex].ExecutionPort?.BranchOpenLineId;
+
+        return new Point(
+            x,
+            Canvas.GetTop(card.Visual) + (lineId is null ? fallback : card.LineAnchorY.GetValueOrDefault(lineId, fallback)));
+    }
+
+    /// <summary>
+    /// 그 카드의 분기 점들을 지금 자리(<see cref="PortAnchor"/>)에 놓는다. 한 대사(의 같은 쪽)에 분기가 둘 이상이면 접힌
+    /// 동안은 공통 점 하나만 서고 개별 점은 숨는다. 펼치면 공통 점에서 가지가 갈라져 개별 점들이 카드 밖에 세로로 선다.
+    /// </summary>
     private static void PlaceLineKnobs(NodeCard card)
     {
         foreach ((string key, Ellipse knob) in card.LineKnobs)
@@ -2671,19 +2717,162 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
+            string group = card.GroupOf(index);
             Point at = PortAnchor(card, index);
             Canvas.SetLeft(knob, at.X - PortRadius);
             Canvas.SetTop(knob, at.Y - PortRadius);
-            knob.Opacity = card.LineOutOfView.Contains(key) ? 0.45 : 1;
+            knob.Opacity = LineOpacity(card, index);
+            knob.IsVisible = card.LineGroups[group].Count < 2 || card.ExpandedGroups.Contains(group);
+        }
+
+        foreach ((string group, BranchHub hub) in card.LineHubs)
+        {
+            IReadOnlyList<int> members = card.LineGroups[group];
+            Point at = LineAnchor(card, members[0]);
+            bool expanded = card.ExpandedGroups.Contains(group);
+
+            Canvas.SetLeft(hub.Dot, at.X - BranchHubRadius);
+            Canvas.SetTop(hub.Dot, at.Y - BranchHubRadius);
+            hub.Dot.Opacity = LineOpacity(card, members[0]);
+            hub.Dot.Background = expanded ? BranchHubOpenBrush : BranchHubBrush;
+
+            hub.Fan.IsVisible = expanded;
+
+            if (!expanded)
+            {
+                continue;
+            }
+
+            // 공통 점 → 가지 기둥 → 개별 점. 선택지 칸이 레일에서 갈라지는 모양 그대로.
+            double outward = card.Ports[members[0]].OnLeft ? -1 : 1;
+            double stem = at.X + (outward * (BranchHubRadius + ((BranchFanOut - BranchHubRadius - PortRadius) / 2)));
+            var figures = new PathFigures();
+
+            foreach (int member in members)
+            {
+                Point knob = PortAnchor(card, member);
+                figures.Add(new PathFigure
+                {
+                    StartPoint = new Point(at.X + (outward * BranchHubRadius), at.Y),
+                    IsClosed = false,
+                    IsFilled = false,
+                    Segments =
+                    [
+                        new LineSegment { Point = new Point(stem, at.Y) },
+                        new LineSegment { Point = new Point(stem, knob.Y) },
+                        new LineSegment { Point = new Point(knob.X - (outward * PortRadius), knob.Y) }
+                    ]
+                });
+            }
+
+            hub.Fan.Data = new PathGeometry { Figures = figures };
+            hub.Fan.Opacity = hub.Dot.Opacity;
+        }
+    }
+
+    /// <summary>그 대사가 글 칸 밖으로 스크롤돼 칸 끝에 붙었으면 흐리게.</summary>
+    private static double LineOpacity(NodeCard card, int portIndex) =>
+        card.Ports[portIndex].ExecutionPort?.BranchOpenLineId is { } lineId && card.LineOutOfView.Contains(lineId) ? 0.45 : 1;
+
+    private static readonly IBrush BranchHubBrush = new SolidColorBrush(Color.FromRgb(0x33, 0x41, 0x55));
+    private static readonly IBrush BranchHubOpenBrush = new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xB8));
+
+    /// <summary>접은 공통 점이 지는 표 — <c>{접두}{노드}:{대사 LineId}</c>(왼쪽으로 나가는 무리면 끝에 <c>:left</c>).</summary>
+    internal const string BranchHubTag = "detour-hub:";
+
+    /// <summary>
+    /// 펼쳐 둔 분기 무리 — 노드와 무리(<see cref="NodeCard.GroupOf"/>)로. 판을 다시 그려도 펼친 채로 남는다(화면의 일이라
+    /// 저장하지 않는다).
+    /// </summary>
+    private readonly HashSet<string> _expandedBranchGroups = new(StringComparer.Ordinal);
+
+    private static string BranchGroupId(string nodeId, string group) => $"{nodeId}:{group}";
+
+    /// <summary>한 대사의 분기들을 접은 공통 점과, 펼쳤을 때 개별 점으로 갈라지는 가지.</summary>
+    private sealed record BranchHub(Border Dot, ShapePath Fan);
+
+    /// <summary>
+    /// 공통 점 — 그 대사 옆에 서고 분기 수를 보인다(2026-10-30 소유자: *"특정 글자 옆쪽에 분기점 표시 하나만 공통으로
+    /// 남기고, 그걸 클릭하면, 선택지 분기를 갈라주는 것처럼 펼쳐지면서 개별 분기점을 끌어다 놓을 수 있게"*). 누르면 펼치고
+    /// 다시 누르면 접는다. 접힌 동안 그 분기 선들은 이 점에서 나간다.
+    /// </summary>
+    private BranchHub BuildBranchHub(NodeCard card, string group, int count)
+    {
+        var dot = new Border
+        {
+            Width = BranchHubRadius * 2,
+            Height = BranchHubRadius * 2,
+            CornerRadius = new CornerRadius(BranchHubRadius),
+            Background = BranchHubBrush,
+            BorderBrush = Brushes.White,
+            BorderThickness = new Thickness(1.5),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            ZIndex = 51,
+            Tag = BranchHubTag + card.NodeId + ":" + group,
+            Child = new TextBlock
+            {
+                Text = count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                FontSize = 9,
+                FontWeight = FontWeight.Bold,
+                Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
+        };
+        ToolTip.SetTip(dot, $"분기 {count}개 — 눌러 펼치고 접는다. 펼친 점을 끌어 다른 카드로 잇는다.");
+
+        var fan = new ShapePath
+        {
+            Stroke = BranchHubOpenBrush,
+            StrokeThickness = 1.5,
+            IsHitTestVisible = false,
+            IsVisible = false,
+            ZIndex = 49,
+            Tag = BranchHubTag + card.NodeId + ":" + group + ":fan"
+        };
+
+        dot.PointerPressed += (_, args) =>
+        {
+            if (!args.GetCurrentPoint(dot).Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
+            args.Handled = true;
+            ToggleBranchGroup(card, group);
+        };
+
+        return new BranchHub(dot, fan);
+    }
+
+    /// <summary>공통 점을 눌렀다 — 펼치거나 접고, 점과 그 카드에서 나가는 선을 다시 놓는다.</summary>
+    private void ToggleBranchGroup(NodeCard card, string group)
+    {
+        string id = BranchGroupId(card.NodeId, group);
+
+        if (!card.ExpandedGroups.Remove(group))
+        {
+            card.ExpandedGroups.Add(group);
+            _expandedBranchGroups.Add(id);
+        }
+        else
+        {
+            _expandedBranchGroups.Remove(id);
+        }
+
+        PlaceLineKnobs(card);
+
+        foreach (EdgeVisual edge in _edges.Where(edge =>
+                     string.Equals(edge.Connection.Source.NodeId, card.NodeId, StringComparison.Ordinal)))
+        {
+            PositionEdge(edge);
         }
     }
 
     /// <summary>
-    /// 분기 점의 높이를 잰다 — 글 칸에서 <b>그 분기 자리 빈 줄</b>의 가운데(줄이 접혀도 · 스크롤해도 실제 글자 배치로).
-    /// 분기 자리는 분기가 걸린 대사 줄 바로 위에 분기마다 하나씩 낀 빈 줄이라(<see cref="WorkingDialoguePreview.ScenarioWriting"/>
-    /// · 2026-10-30 소유자: *"그 생성한 텍스트 라인 위쪽에 … 분기의 공간만큼 텍스트 줄 간격을 늘려"*), 같은 자리의 분기들도
-    /// 점이 겹치지 않는다 — 끌어 잇는 손잡이다. 그 자리가 칸 밖으로 스크롤돼 있으면 칸의 위 · 아래 끝에 붙고 흐려진다.
-    /// 바뀌었으면 점과 그 카드에서 나가는 선을 다시 놓는다.
+    /// 분기 점의 높이를 잰다 — 글 칸에서 <b>그 대사</b>의 첫 화면 줄 가운데(줄이 접혀도 · 스크롤해도 실제 글자 배치로).
+    /// 대사마다 잰다 — 한 대사의 분기들은 그 높이의 공통 점 하나로 접힌다. 그 대사가 칸 밖으로 스크롤돼 있으면 칸의 위 ·
+    /// 아래 끝에 붙고 흐려진다. 바뀌었으면 점과 그 카드에서 나가는 선을 다시 놓는다.
     /// </summary>
     private void MeasureLineAnchors(NodeCard card)
     {
@@ -2697,23 +2886,16 @@ public partial class GraphEditorView : UserControl
 
         string text = box.Text ?? string.Empty;
         IReadOnlyDictionary<string, int> rows =
-            _writingLayouts.GetValueOrDefault(card.NodeId)?.RowOfBranch ?? new Dictionary<string, int>();
-        double top = boxTop.Y + PortRadius + 1;
-        double bottom = boxTop.Y + box.Bounds.Height - PortRadius - 1;
+            _writingLayouts.GetValueOrDefault(card.NodeId)?.RowOfLine ?? new Dictionary<string, int>();
+        double top = boxTop.Y + BranchHubRadius + 1;
+        double bottom = boxTop.Y + box.Bounds.Height - BranchHubRadius - 1;
         bool changed = false;
 
-        for (int index = 0; index < card.Ports.Count; index++)
+        foreach (string key in card.BranchLines)
         {
-            if (!card.IsLinePort(index))
-            {
-                continue;
-            }
-
-            string key = card.Ports[index].Key;
             double wanted = top;
 
-            if (card.Ports[index].ExecutionPort?.ExitKey is { } branch &&
-                rows.TryGetValue(branch, out int row) &&
+            if (rows.TryGetValue(key, out int row) &&
                 presenter.TranslatePoint(new Point(0, RowMiddle(presenter, text, row)), card.Visual) is { } at)
             {
                 wanted = at.Y;
@@ -3824,14 +4006,42 @@ public partial class GraphEditorView : UserControl
         /// <summary>카드의 글 칸. 대사 카드가 아니면 null.</summary>
         public TextBox? WritingBox { get; set; }
 
-        /// <summary>분기 점의 높이(카드 위 끝에서) — 포트 열쇠로. <see cref="MeasureLineAnchors"/>가 잰다.</summary>
+        /// <summary>분기 점의 높이(카드 위 끝에서) — 그 대사의 LineId로. <see cref="MeasureLineAnchors"/>가 잰다.</summary>
         public Dictionary<string, double> LineAnchorY { get; } = new(StringComparer.Ordinal);
 
-        /// <summary>그 대사가 글 칸 밖으로 스크롤돼 칸 끝에 붙은 분기 점들.</summary>
+        /// <summary>글 칸 밖으로 스크롤돼 분기 점이 칸 끝에 붙은 대사들(LineId).</summary>
         public HashSet<string> LineOutOfView { get; } = new(StringComparer.Ordinal);
 
-        /// <summary>분기 점들 — 판(캔버스)에 선다.</summary>
+        /// <summary>분기 점들 — 판(캔버스)에 선다. 포트 열쇠로.</summary>
         public Dictionary<string, Ellipse> LineKnobs { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>분기가 걸린 대사들(LineId) — 다녀오는 차례대로.</summary>
+        public IEnumerable<string> BranchLines => Enumerable.Range(0, Ports.Count)
+            .Where(IsLinePort)
+            .Select(index => Ports[index].ExecutionPort!.BranchOpenLineId)
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 그 분기 점이 드는 무리 — 대사(LineId)와 나가는 쪽. 한 대사의 분기도 저마다 도착 카드 쪽으로 나가므로(H1) 쪽마다
+        /// 따로 접는다.
+        /// </summary>
+        public string GroupOf(int index) =>
+            (Ports[index].ExecutionPort?.BranchOpenLineId ?? string.Empty) + (Ports[index].OnLeft ? ":left" : string.Empty);
+
+        /// <summary>무리마다 그 분기 점들의 포트 차례 — 다녀오는 차례대로(펼치면 위에서 아래로 선다).</summary>
+        public IReadOnlyDictionary<string, IReadOnlyList<int>> LineGroups => _lineGroups ??= Enumerable.Range(0, Ports.Count)
+            .Where(IsLinePort)
+            .GroupBy(GroupOf, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<int>)group.ToList(), StringComparer.Ordinal);
+
+        private Dictionary<string, IReadOnlyList<int>>? _lineGroups;
+
+        /// <summary>접은 공통 점들 — 분기가 둘 이상인 무리마다.</summary>
+        public Dictionary<string, BranchHub> LineHubs { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>펼친 무리들.</summary>
+        public HashSet<string> ExpandedGroups { get; } = new(StringComparer.Ordinal);
     }
 
     private sealed class FileProxyVisual

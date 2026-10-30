@@ -26,7 +26,7 @@ public sealed class CardWritingTests
         var sample = new Sample();
         (string l0, string l1, string l2, string l3, string l4, string l5, string l6) = sample.BuildSpecExample();
 
-        (string text, IReadOnlyDictionary<string, int> rows, _) =
+        (string text, IReadOnlyDictionary<string, int> rows) =
             WorkingDialoguePreview.ScenarioWriting(sample.Project, sample.Dialogue.Id);
         string[] shown = text.Split('\n');
 
@@ -40,10 +40,10 @@ public sealed class CardWritingTests
     }
 
     [Fact]
-    public void 분기_자리는_그_대사_위의_빈_줄이고_되읽어도_대본은_그대로다()
+    public void 분기는_글_칸의_줄을_더하지_않고_줄_짝은_대사의_자리다()
     {
-        // 2026-10-30 소유자: "분기가 생성 되는 점 위치를, 그 생성한 텍스트 라인 위쪽에 위치시키고, 조건 분기가 있다면,
-        // 그 분기의 공간만큼 텍스트 줄 간격을 늘려" · "같은 자리에 여러 분기가 있을 때, 점이 겹쳐지지 않게".
+        // 2026-10-30 — 한 줄의 분기들은 그 대사 옆의 점 하나로 접힌다(누르면 카드 밖으로 펼친다). 분기마다 대사 위에 끼던
+        // 빈 줄(같은 날 오전)은 걷혔다.
         (ProjectEditor editor, DialogueNode node) = NewCard();
         editor.ApplyScenarioText(node.Id, """
             라루: 첫 줄
@@ -51,21 +51,16 @@ public sealed class CardWritingTests
             라루: 셋째 줄
             """, Definition);
         string[] lines = node.Script.ActiveLines.Select(line => line.Id).ToArray();
-        DialogueNode a = editor.AddBranchMarker(node.Id, lines[1]);
-        DialogueNode b = editor.AddBranchMarker(node.Id, lines[1]);
-        DialogueNode c = editor.AddBranchMarker(node.Id, lines[2]);
+        editor.AddBranchMarker(node.Id, lines[1]);
+        editor.AddBranchMarker(node.Id, lines[1]);
+        editor.AddBranchMarker(node.Id, lines[2]);
 
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id, Definition);
-        string[] shown = layout.Text.Split('\n');
 
-        Assert.Equal(["라루: 첫 줄", "", "", "윌로: 둘째 줄", "", "라루: 셋째 줄"], shown);
-        Assert.Equal(1, layout.RowOfBranch[Vn.Authoring.Flow.ExitPort.DetourKey(lines[1], a.Id)]);
-        Assert.Equal(2, layout.RowOfBranch[Vn.Authoring.Flow.ExitPort.DetourKey(lines[1], b.Id)]);
-        Assert.Equal(4, layout.RowOfBranch[Vn.Authoring.Flow.ExitPort.DetourKey(lines[2], c.Id)]);
-        Assert.Equal(3, layout.RowOfLine[lines[1]]);
-        Assert.Equal(5, layout.RowOfLine[lines[2]]);
+        Assert.Equal(["라루: 첫 줄", "윌로: 둘째 줄", "라루: 셋째 줄"], layout.Text.Split('\n'));
+        Assert.Equal([0, 1, 2], lines.Select(line => layout.RowOfLine[line]));
 
-        // 보인 글을 그대로 넣으면(빈 줄째) 아무것도 바뀌지 않는다 — 빈 줄은 되읽을 때 건너뛴다.
+        // 보인 글을 그대로 넣으면 아무것도 바뀌지 않는다.
         long before = editor.Revision;
         editor.ApplyScenarioText(node.Id, layout.Text, Definition, confirmDeletes: true, strict: true);
         Assert.Equal(before, editor.Revision);
