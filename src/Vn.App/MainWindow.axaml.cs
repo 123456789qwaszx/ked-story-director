@@ -85,6 +85,7 @@ public partial class MainWindow : Window
         });
         ChapterGraph.Attach(_session);
         DialogueEditor.Attach(_session);
+        DialogueEditor.RenameEpisode = RenameEpisode;   // 인스펙터 이름 칸의 에피소드 개명 — 하이어아키와 같은 길
         _session.Changed += OnSessionChanged;
         // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 (2026-08-18) — 판을 다시 그리거나
         // 챕터를 다시 읽을 이유가 없다. 그 구분이 없어서 노드가 늘수록 느려졌다.

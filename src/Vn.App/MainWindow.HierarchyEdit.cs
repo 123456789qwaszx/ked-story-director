@@ -113,26 +113,35 @@ public partial class MainWindow
             }
 
             case HierarchyKind.Episode when row.ChapterId is { } chapterId && row.EpisodeId is { } oldId && name.Length > 0:
-            {
-                EpisodeRenamer.Result result = EpisodeRenamer.Rename(_session.Editor, chapterId, oldId, name);
-
-                if (!result.Renamed)
-                {
-                    _session.SetStatus(result.Failure!);
-                    return;
-                }
-
-                // 카드는 같은 카드다(신원표만 바뀌었다) — 그것을 고르고 있었으면 챕터 그래프도 새 이름으로 고른다.
-                if (EpisodeNaming.CardFor(_session.Project, chapterId, name) is { } card &&
-                    string.Equals(_session.SelectedNodeId, card.Id, StringComparison.Ordinal))
-                {
-                    ChapterGraph.ShowEpisode(chapterId, name);
-                }
-
-                _session.SetStatus($"'{oldId}' → '{name}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다.");
+                RenameEpisode(chapterId, oldId, name);
                 break;
-            }
         }
+    }
+
+    /// <summary>
+    /// 에피소드 개명 — 하이어아키(두 번 눌러)와 연출 그래프 인스펙터의 이름 칸이 함께 쓰는 한 길이다(규칙은
+    /// <see cref="EpisodeRenamer"/>: 간선 · 픽스처 · 카드가 함께 간다, 되돌리기 한 칸). 못 바꾸면 사유를 상태줄에 말하고 거짓을 낸다.
+    /// </summary>
+    private bool RenameEpisode(string chapterId, string oldId, string newId)
+    {
+        newId = newId.Trim();
+        EpisodeRenamer.Result result = EpisodeRenamer.Rename(_session.Editor, chapterId, oldId, newId);
+
+        if (!result.Renamed)
+        {
+            _session.SetStatus(result.Failure!);
+            return false;
+        }
+
+        // 카드는 같은 카드다(신원표만 바뀌었다) — 그것을 고르고 있었으면 챕터 그래프도 새 이름으로 고른다.
+        if (EpisodeNaming.CardFor(_session.Project, chapterId, newId) is { } card &&
+            string.Equals(_session.SelectedNodeId, card.Id, StringComparison.Ordinal))
+        {
+            ChapterGraph.ShowEpisode(chapterId, newId);
+        }
+
+        _session.SetStatus($"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        return true;
     }
 
     /// <summary>에피소드를 다른 장면 줄로 끌어 놓았다 — 그 에피소드의 장면ID가 그 장면의 것이 된다(되돌리기 한 칸).</summary>

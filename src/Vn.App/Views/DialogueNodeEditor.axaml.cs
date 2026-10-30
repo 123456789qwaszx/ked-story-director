@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Vn.App.Services;
+using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
@@ -42,7 +43,7 @@ public partial class DialogueNodeEditor : UserControl
     /// 철거됐다. 대본의 원본은 이제 프로젝트다. <b>그래서 대본은 전부 열렸다.</b>
     ///
     /// 남은 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 셋뿐이고, 셋 다 대본이 아니다:
-    /// ① 노드 이름(챕터 `대사엔트리`가 원천 — R-F에서 뒤집힌다)
+    /// ① 노드 이름 = 에피소드 Id — 잠그지 않고 <b>에피소드 개명</b>으로 보낸다(<see cref="RenameEpisode"/>, 2026-10-30)
     /// ② 스탯변화(챕터 간선의 것 — 2026-08-14 결정, 엑셀과 무관)
     /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 2026-08-23 결정, 문은 하나)
     /// </summary>
@@ -53,6 +54,21 @@ public partial class DialogueNodeEditor : UserControl
         InitializeComponent();
 
         NameBox.LostFocus += (_, _) => CommitName();
+
+        // Enter = 바꾸기, Esc = 그만두기 — 하이어아키의 이름 칸과 같은 손짓.
+        NameBox.KeyDown += (_, args) => UiGuard.Run(_session, "이름 바꾸기", () =>
+        {
+            if (args.Key == Avalonia.Input.Key.Enter)
+            {
+                args.Handled = true;
+                CommitName();
+            }
+            else if (args.Key == Avalonia.Input.Key.Escape && _session?.Project.FindDialogue(_nodeId) is { } shown)
+            {
+                args.Handled = true;
+                NameBox.Text = shown.Name;
+            }
+        });
         AddLineButton.Click += (_, _) => AddLine();
 
         // 목록 아래 빈 공간 우클릭 = 맨 아래 줄 추가 (W49). 카드 위 우클릭은 카드가
@@ -151,6 +167,12 @@ public partial class DialogueNodeEditor : UserControl
         _session = session;
     }
 
+    /// <summary>
+    /// 에피소드 카드의 이름 칸을 고쳤을 때 부르는 개명 (챕터 Id, 옛 Id, 새 Id → 바꿨는가) — 셸이 준다(하이어아키와 같은 한 길).
+    /// 에피소드 이름은 곧 에피소드 Id라 노드 이름만 바꾸면 간선 · 픽스처와 어긋난다.
+    /// </summary>
+    internal Func<string, string, string, bool>? RenameEpisode { get; set; }
+
     /// <summary>어떤 노드를 편집할지 정하고 화면을 만든다.</summary>
     internal void Show(string? nodeId)
     {
@@ -181,13 +203,10 @@ public partial class DialogueNodeEditor : UserControl
 
             NameBox.Text = node.Name;
 
-            // ⚠ 이름만은 잠긴다 — 원천이 챕터 에피소드의 `대사엔트리`다. 개명은 [챕터 그래프]의
-            // [이름] 칸에서 하고, 그쪽은 에피소드와 노드를 함께 간다(EpisodeRenamer). 여기서 갈면
-            // 둘이 어긋난다.
-            //
-            // ⛔ [줄 추가]·[텍스트 반영]을 함께 잠그던 두 줄은 2026-09-16에 사라졌다
-            //    (R-E · §6.4) — 대본의 원본이 프로젝트가 됐으므로 잠글 것이 없다.
-            NameBox.IsReadOnly = _chapterEpisode;
+            // ⛔ 에피소드 카드의 이름 칸을 잠그던 줄은 2026-10-30에 걷혔다 (소유자: "연출 그래프에서 에피소드의 이름을
+            //    바꾸려는데 안바뀌는 버그") — 칸은 고칠 수 있게 보이는데 아무것도 안 됐다. 이제 에피소드 개명(EpisodeRenamer
+            //    — 에피소드 · 간선 · 카드를 함께)으로 보낸다(CommitName). [줄 추가]·[텍스트 반영]을 잠그던 두 줄은
+            //    2026-09-16에 사라졌다(R-E · §6.4).
 
             DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
             DialogueFlow flow = ConditionFlowResolver.Resolve(
@@ -1413,14 +1432,40 @@ public partial class DialogueNodeEditor : UserControl
 
     private void CommitName()
     {
-        if (_chapterEpisode)
+        if (_building || _session?.Project.FindDialogue(_nodeId) is not { } node)
         {
-            return; // 이름의 원천은 챕터 `대사엔트리` — 개명은 챕터 그래프의 [이름] 칸에서(R-F까지).
+            return;
         }
 
-        if (!_building && _session is not null && _nodeId is not null)
+        if (!_chapterEpisode)
         {
-            _session.Editor.RenameNode(_nodeId, NameBox.Text ?? string.Empty);
+            _session.Editor.RenameNode(node.Id, NameBox.Text ?? string.Empty);
+            return;
+        }
+
+        // 에피소드 카드 — 이름이 곧 에피소드 Id다. 노드 이름만 바꾸면 간선 · 픽스처와 어긋나므로 에피소드 개명으로 보낸다.
+        // 못 바꿨으면(같은 Id가 있다 · 비었다) 칸을 원래 이름으로 돌린다 — 사유는 상태줄이 말한다.
+        string wanted = (NameBox.Text ?? string.Empty).Trim();
+        string oldId = EpisodeNaming.EpisodeIdOf(node);
+
+        if (string.Equals(wanted, oldId, StringComparison.Ordinal))
+        {
+            NameBox.Text = node.Name;
+            return;
+        }
+
+        bool renamed = wanted.Length > 0 &&
+                       EpisodeNaming.ChapterOf(_session.Project, node) is { } chapter &&
+                       RenameEpisode?.Invoke(chapter.ChapterId, oldId, wanted) == true;
+
+        if (!renamed)
+        {
+            if (wanted.Length == 0)
+            {
+                _session.SetStatus("에피소드 이름은 비울 수 없습니다.");
+            }
+
+            NameBox.Text = node.Name;
         }
     }
 

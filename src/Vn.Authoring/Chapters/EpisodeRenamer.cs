@@ -47,9 +47,17 @@ public static class EpisodeRenamer
             return Result.Fail("바뀐 이름이 없습니다.");
         }
 
+        bool nodeRenamed = false;
+
         try
         {
-            editor.RenameEpisode(chapterId, oldId, newId);
+            // ⚠ <b>되돌리기 한 칸이다</b> (2026-10-30) — 챕터 쪽 개명과 카드 따라가기가 둘로 나뉘어 있어서 Ctrl+Z 한 번은
+            //   카드 이름만 되돌리고 에피소드는 새 이름으로 남겼다(사람 눈에는 "반쯤 돌아갔다").
+            editor.Batch(() =>
+            {
+                editor.RenameEpisode(chapterId, oldId, newId);
+                nodeRenamed = RenameNode(editor, chapterId, oldId, newId);
+            });
         }
         catch (InvalidOperationException exception)
         {
@@ -57,7 +65,7 @@ public static class EpisodeRenamer
             return Result.Fail(exception.Message);
         }
 
-        return new Result(true, null, RenameNode(editor, chapterId, oldId, newId));
+        return new Result(true, null, nodeRenamed);
     }
 
     /// <summary>

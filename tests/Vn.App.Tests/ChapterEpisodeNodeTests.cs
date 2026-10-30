@@ -87,23 +87,36 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
-    public void 이름만은_아직_챕터의_것이다() => HeadlessUi.Run(() =>
+    public void 이름은_노드만_바꾸지_않고_에피소드_개명으로_간다() => HeadlessUi.Run(() =>
     {
-        // ⚠ 잠긴 이유가 바뀌었다 — 대본의 주인 때문이 아니라, <b>이름의 원천이 챕터의
-        //    에피소드</b>이기 때문이다. 개명은 [챕터 그래프]의 [이름] 칸에서 하고, 그쪽은
-        //    챕터와 카드를 함께 간다.
+        // ⛔ <b>이 테스트는 뒤집혔다</b> (2026-10-30 소유자: "연출 그래프에서 에피소드의 이름을 바꾸려는데 안바뀌는 버그").
+        //    옛 이름은 `이름만은_아직_챕터의_것이다`였고 칸이 읽기 전용이어야 했다 — 고칠 수 있게 보이는데 아무것도 안
+        //    되는 칸이었다. 지키던 뜻은 남는다: <b>노드 이름만 바뀌면 안 된다</b>(이름이 곧 에피소드 Id라 간선 · 픽스처와
+        //    어긋난다). 그래서 칸은 열리고, 고친 이름은 에피소드 개명(셸의 한 길 — EpisodeRenamer)으로 간다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId) = ShowEpisodeCard();
-
-        Assert.True(editor.FindControl<TextBox>("NameBox")!.IsReadOnly);
-
-        // 우회로도 안 바뀐다 — 문이 둘이면 빗장도 둘이어야 한다.
+        TextBox name = editor.FindControl<TextBox>("NameBox")!;
         string before = session.Project.FindDialogue(nodeId)!.Name;
+        var asked = new List<(string Chapter, string Old, string New)>();
+        editor.RenameEpisode = (chapterId, oldId, newId) =>
+        {
+            asked.Add((chapterId, oldId, newId));
+            return false; // 셸이 거절했다(같은 Id가 있다 등)
+        };
 
-        editor.FindControl<TextBox>("NameBox")!.Text = "손으로 고친 이름";
+        Assert.False(name.IsReadOnly);
+
+        // 사람이 하는 순서 그대로 — 칸을 눌러 초점을 받고, 고치고, 다른 데를 누른다(초점 이탈이 바꾸기다).
+        name.Focus();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        name.Text = "손으로 고친 이름";
         editor.FindControl<Button>("AddLineButton")!.Focus();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
+        Assert.Equal([(SampleChapters.Corridor, "main05.02", "손으로 고친 이름")], asked);
+
+        // 편집기는 노드 이름을 혼자 바꾸지 않고, 못 바꿨으면 칸을 원래 이름으로 돌린다.
         Assert.Equal(before, session.Project.FindDialogue(nodeId)!.Name);
+        Assert.Equal(before, name.Text);
     });
 
     [Fact]
