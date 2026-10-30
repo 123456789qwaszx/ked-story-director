@@ -102,14 +102,8 @@ public partial class MainWindow : Window
         _session.SelectionChanged += OnSelectionChanged;
         _session.FileGraphStateChanged += OnFileGraphStateChanged;
 
-        // 하이어아키의 챕터 줄 우클릭 — 챕터 목록 줄의 우클릭(이름 바꾸기 · 제거)을 잇는다.
-        ChapterGraph.HierarchyView.RowMenuRequested += (anchor, row) =>
-        {
-            if (row.Kind == HierarchyKind.Chapter && row.ChapterId is { } chapterId)
-            {
-                UiGuard.Run(_session, "챕터 메뉴", () => ShowChapterContextFlyout(anchor, chapterId));
-            }
-        };
+        // 두 하이어아키 · 탭 사이 선택 맞추기 (2026-10-30 HY3 — MainWindow.Hierarchy.cs).
+        WireHierarchies();
         ChapterGraph.ChapterAddButton.Click += (_, _) =>
             UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(ChapterGraph.ChapterAddButton));
         // 챕터가 하나도 없을 때 판 한가운데 서는 [＋ 챕터] — 뜻이 같으니 배선도 같다.
@@ -191,7 +185,7 @@ public partial class MainWindow : Window
     {
         return new Panel
         {
-            Children = { DialogueEditor, EmptyText }
+            Children = { DialogueEditor, DirectorSummary, EmptyText }
         };
     }
 
@@ -280,6 +274,7 @@ public partial class MainWindow : Window
 
     private void OnSelectionChanged(object? sender, EventArgs e)
     {
+        SyncSelection();
         ShowSelectedNode();
         Graph.HighlightSelection();
         RefreshShell();
@@ -325,7 +320,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void RebuildFileList()
     {
-        ChapterGraph.HierarchyView.Rebuild(ProjectDisplayTitle(), _chapters);
+        RebuildHierarchies();
     }
 
     /// <summary>창 머리와 하이어아키 맨 위 줄이 같은 이름을 쓴다.</summary>
@@ -635,15 +630,18 @@ public partial class MainWindow : Window
     private void ShowSelectedNode()
     {
         StoryNode? node = _session.SelectedNode;
+        bool summary = _directorSummary is not null && node is null;
 
-        DialogueEditor.IsVisible = node is DialogueNode;
-        EmptyText.IsVisible = node is null;
+        DialogueEditor.IsVisible = !summary && node is DialogueNode;
+        EmptyText.IsVisible = !summary && node is null;
         EmptyText.Text = "노드를 선택하면 여기서 편집합니다.";
 
-        if (node is DialogueNode)
+        if (!summary && node is DialogueNode)
         {
             DialogueEditor.Show(node.Id);
         }
+
+        ShowDirectorInspector(node);
     }
 
     /// <summary>

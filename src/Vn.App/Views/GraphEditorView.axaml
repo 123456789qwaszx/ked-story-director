@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:Vn.App.Views"
              x:Class="Vn.App.Views.GraphEditorView">
     <Grid RowDefinitions="Auto,*,Auto">
         <Border Grid.Row="0"
@@ -95,10 +96,42 @@
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
+            <!-- 우측 기둥 = 위 하이어아키 · 아래 인스펙터 (2026-10-30 HY3 — docs/plans/hierarchy.md). 하이어아키는 챕터
+                 그래프와 같은 컨트롤(StoryHierarchy)이고 내용은 셸이 채운다. 인스펙터의 내용(대사 편집기 · 요약)도 셸이 짓는다. -->
             <Border Grid.Column="2"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                     BorderThickness="1,0,0,0">
-                <ContentControl x:Name="SideHost" />
+                <Grid RowDefinitions="200,6,*">
+                    <Grid Grid.Row="0" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0"
+                                Padding="10,6"
+                                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                BorderThickness="0,0,0,1">
+                            <TextBlock Text="하이어아키" FontWeight="SemiBold" />
+                        </Border>
+                        <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
+                    </Grid>
+
+                    <GridSplitter Grid.Row="1"
+                                  ResizeDirection="Rows"
+                                  Background="{DynamicResource ThemeBorderLowBrush}" />
+
+                    <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                        <Border Grid.Row="0"
+                                Padding="10,6"
+                                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                BorderThickness="0,0,0,1">
+                            <StackPanel Spacing="1">
+                                <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
+                                <TextBlock x:Name="InspectorSubtitle"
+                                           FontSize="11"
+                                           Opacity="0.65"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <ContentControl Grid.Row="1" x:Name="SideHost" />
+                    </Grid>
+                </Grid>
             </Border>
         </Grid>
 

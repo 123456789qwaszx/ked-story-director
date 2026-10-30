@@ -304,6 +304,40 @@ public partial class ChapterGraphView : UserControl
         ApplyInspector();
     }
 
+    /// <summary>
+    /// 에피소드를 골랐다 (2026-10-30 HY3) — 셸이 그 카드를 세션의 선택으로 삼는다(연출 그래프로 넘어가도 같은 것을 본다).
+    /// 밖의 선택을 비출 때(<see cref="ShowEpisode"/>)는 알리지 않는다.
+    /// </summary>
+    internal event Action<string, string>? EpisodePicked;
+
+    /// <summary>밖에서 고른 에피소드를 비추는 중 — 그동안은 <see cref="EpisodePicked"/>를 알리지 않는다.</summary>
+    private bool _showingOutside;
+
+    /// <summary>
+    /// 밖(연출 그래프)에서 고른 에피소드를 이 판에도 고른다 — 그 챕터로 넘어가고 그 에피소드를 인스펙터에 세우며 하이어아키가
+    /// 비춘다. 알리지는 않는다.
+    /// </summary>
+    internal void ShowEpisode(string chapterId, string episodeId)
+    {
+        if (string.Equals(_selectedChapterId, chapterId, StringComparison.Ordinal) &&
+            string.Equals(_selectedEpisodeId, episodeId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _showingOutside = true;
+
+        try
+        {
+            SelectChapter(chapterId);
+            SelectEpisode(episodeId);
+        }
+        finally
+        {
+            _showingOutside = false;
+        }
+    }
+
     /// <summary>판에서 고른 것을 하이어아키에 비춘다 — 하이어아키가 부른 선택이면 하지 않는다.</summary>
     private void ShowInHierarchy(HierarchyPick? pick)
     {
@@ -2059,6 +2093,11 @@ public partial class ChapterGraphView : UserControl
         ShowInHierarchy(episodeId is not null && _selectedChapterId is { } chapterId
             ? new HierarchyPick(HierarchyKind.Episode, chapterId, EpisodeId: episodeId)
             : null);
+
+        if (!_showingOutside && episodeId is not null && _selectedChapterId is { } picked)
+        {
+            EpisodePicked?.Invoke(picked, episodeId);
+        }
     }
 
     internal void SelectEdgeKey(string fromEpisodeId, string toEpisodeId, string optionLabel = "")

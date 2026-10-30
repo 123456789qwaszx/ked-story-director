@@ -202,6 +202,19 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     internal void SetSidePanel(Control content) => SideHost.Content = content;
 
+    /// <summary>우측 위 하이어아키 (2026-10-30 HY3) — 셸이 내용을 채우고 고른 줄을 받는다(챕터 그래프의 것과 같은 컨트롤).</summary>
+    internal StoryHierarchy HierarchyView => Hierarchy;
+
+    /// <summary>인스펙터 머리글 — 무엇을 보는지. 내용(<see cref="SetSidePanel"/>)을 짓는 셸이 함께 맞춘다.</summary>
+    internal void SetInspectorHeader(string title, string subtitle)
+    {
+        InspectorTitle.Text = title;
+        InspectorSubtitle.Text = subtitle;
+    }
+
+    /// <summary>고른 카드가 화면 밖이면 그리로 옮긴다 — 하이어아키에서 고른 카드가 판에서 보이게.</summary>
+    internal void RevealSelected() => ScrollToSelected();
+
     public GraphEditorView()
     {
         InitializeComponent();

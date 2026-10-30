@@ -35,9 +35,12 @@ public sealed class StoryHierarchyTests : IDisposable
     {
         (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
 
-        // 처음에는 챕터들이 접혀 있다 — 챕터 수십 개가 다 펴져 있으면 하이어아키가 아니라 목록이다.
-        Assert.Equal([HierarchyKind.Project, HierarchyKind.Chapter, HierarchyKind.Chapter], tree.Rows.Select(row => row.Kind));
-        Assert.Equal(["ch01", "ch02"], tree.Rows.Skip(1).Select(row => row.ChapterId));
+        // 처음에는 고른 것(프로젝트를 열면 세션이 고르는 첫 카드 — 두 탭이 같은 것을 본다, HY3)이 든 챕터만 펴진다 —
+        // 챕터 수십 개가 다 펴져 있으면 하이어아키가 아니라 목록이다.
+        Assert.Equal(HierarchyKind.Project, tree.Rows[0].Kind);
+        Assert.Equal(["ch01", "ch02"], tree.Rows.Where(row => row.Kind == HierarchyKind.Chapter).Select(row => row.ChapterId));
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "root"), tree.Selection?.Key);
+        Assert.Equal(StoryHierarchy.ChapterKey("ch02"), tree.Rows[^1].Key);   // ch02는 접힌 채 맨 끝
 
         // 판에서 고르면 가는 길이 펴지고 그 줄이 골라진다. 다른 장면은 접힌 채다.
         graph.SelectChapter("ch01");
