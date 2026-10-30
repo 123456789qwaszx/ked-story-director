@@ -127,11 +127,36 @@ internal static class AppSettingsService
         settings.Explorers[key] = new ExplorerState
         {
             Expanded = [.. expanded],
-            Collapsed = [.. collapsed]
+            Collapsed = [.. collapsed],
+            FullChoices = settings.Explorers.TryGetValue(key, out ExplorerState? before) ? before.FullChoices : []
         };
 
         Prune(settings.Explorers);
         Save(settings, settingsPath);
+    }
+
+    /// <summary>
+    /// 선택지 칸을 셋 다 세우는 카드들 (2026-10-30 — 인스펙터의 「선택지 3칸」) — 프로젝트별. 없는 카드는 빈 칸을 하나만 세운다.
+    /// 하이어아키 접힘과 같은 까닭으로 프로젝트 파일이 아니라 여기다(내 화면 편의가 팀의 파일을 바꾸면 안 된다).
+    /// </summary>
+    public static IReadOnlyList<string> LoadFullChoices(string projectPath) =>
+        FindExplorer(Load(SettingsPath), NormalizeProjectKey(projectPath))?.FullChoices ?? [];
+
+    public static void SaveFullChoices(string projectPath, IEnumerable<string> nodeIds)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.Explorers ??= [];
+
+        string key = NormalizeProjectKey(projectPath);
+        key = settings.Explorers.Keys.FirstOrDefault(existing =>
+            string.Equals(existing, key, StringComparison.OrdinalIgnoreCase)) ?? key;
+
+        ExplorerState state = settings.Explorers.TryGetValue(key, out ExplorerState? found) ? found : new ExplorerState();
+        state.FullChoices = [.. nodeIds];
+        settings.Explorers[key] = state;
+
+        Prune(settings.Explorers);
+        Save(settings);
     }
 
     /// <summary>하이어아키 기둥을 접어 두었는가 (2026-10-30 HC — 두 그래프가 함께 쓴다).</summary>
@@ -258,13 +283,16 @@ internal static class AppSettingsService
     }
 
     /// <summary>
-    /// 한 프로젝트의 하이어아키 접힘. 마디 <b>열쇠</b>만 싣는다 — 트리 구조는 그릴 때마다 프로젝트에서 다시 나오므로, 여기 남은
-    /// 것이 실제 마디와 안 맞으면 그냥 안 쓰인다.
+    /// 한 프로젝트의 화면 기억 — 하이어아키 접힘(마디 <b>열쇠</b>만 싣는다 — 트리 구조는 그릴 때마다 프로젝트에서 다시 나오므로,
+    /// 여기 남은 것이 실제 마디와 안 맞으면 그냥 안 쓰인다)과 선택지 칸을 셋 다 세우는 카드들.
     /// </summary>
     internal sealed class ExplorerState
     {
         public List<string> Expanded { get; set; } = [];
 
         public List<string> Collapsed { get; set; } = [];
+
+        /// <summary>선택지 칸을 셋 다 세우는 카드(노드 Id) — 인스펙터의 「선택지 3칸」(2026-10-30).</summary>
+        public List<string> FullChoices { get; set; } = [];
     }
 }

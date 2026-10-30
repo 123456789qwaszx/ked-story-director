@@ -55,6 +55,14 @@ public partial class DialogueNodeEditor : UserControl
 
         NameBox.LostFocus += (_, _) => CommitName();
 
+        FullChoicesBox.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "선택지 칸", () =>
+        {
+            if (!_building && _nodeId is not null)
+            {
+                _session?.SetFullChoices(_nodeId, FullChoicesBox.IsChecked == true);
+            }
+        });
+
         // Enter = 바꾸기, Esc = 그만두기 — 하이어아키의 이름 칸과 같은 손짓.
         NameBox.KeyDown += (_, args) => UiGuard.Run(_session, "이름 바꾸기", () =>
         {
@@ -202,6 +210,10 @@ public partial class DialogueNodeEditor : UserControl
             _chapterEpisode = node.MarkedEpisodeId is not null;
 
             NameBox.Text = node.Name;
+
+            // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
+            FullChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
+            FullChoicesBox.IsChecked = _session.FullChoiceNodeIds.Contains(node.Id);
 
             // ⛔ 에피소드 카드의 이름 칸을 잠그던 줄은 2026-10-30에 걷혔다 (소유자: "연출 그래프에서 에피소드의 이름을
             //    바꾸려는데 안바뀌는 버그") — 칸은 고칠 수 있게 보이는데 아무것도 안 됐다. 이제 에피소드 개명(EpisodeRenamer

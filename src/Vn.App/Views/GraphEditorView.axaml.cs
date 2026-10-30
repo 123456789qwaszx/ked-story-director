@@ -245,7 +245,6 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Height = CanvasHeight;
 
         AddDialogueButton.Click += (_, _) => AddDialogueNode();
-        FoldChoicesButton.Click += (_, _) => UiGuard.Run(_session, "선택지 접기", ToggleAllChoices);
         DeleteNodeButton.Click += (_, _) => DeleteSelectedNode();
 
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 대사 노드]가 거기에 선다.
@@ -860,15 +859,6 @@ public partial class GraphEditorView : UserControl
         int leftLane = 0;
         int rightLane = 0;
 
-        // 접은 카드 (2026-10-30 CF) — 칸들 대신 요약 칩 하나, 이은 길은 그 칩에서 나간다.
-        if (ChoicesFolded(source.Id))
-        {
-            DrawFoldedChoices(chapterId, source, sourceRect, branches, lefts, trunkX, branchY, arrivals);
-            return;
-        }
-
-        _railVisuals.Add(ChoiceFoldHandle(source.Id, trunkX, sourceRect.Bottom));
-
         for (int index = 0; index < branches.Count; index++)
         {
             (ChapterEdge? edge, Rect? target, FoldedRow? row, GraphChoicePort slot) = branches[index];
@@ -896,172 +886,6 @@ public partial class GraphEditorView : UserControl
         }
 
         _railVisuals.Add(RailLine(trunkX, sourceRect.Bottom, trunkX, branchY - RailBranchGap));
-    }
-
-    // ── 선택지 칸 접기 (2026-10-30 CF — 소유자: "노드 아래 선택지 3개가 항상 떠있는데, 이걸 접었다 펼 수 있도록") ──────
-    //
-    // 카드마다 접고 편다(줄기 위 「▾」 · 접힌 칩). 도구줄의 「선택지 접기 / 펴기」는 모두를 한 번에 — 기본값을 뒤집고 카드마다
-    // 따로 바꾼 것은 걷는다. 화면 상태라 저장하지 않는다(판 접기와 같다).
-    //
-    // ⚠ 접어도 <b>이은 길은 남는다</b> — 칸(문구 · 빈 칸 · 끌 점)만 걷히고 레인은 칩에서 나가 제 도착으로 든다. 접힘이 연결을
-    //   숨기면 판이 거짓말을 한다.
-
-    /// <summary>도구줄의 선택지 접기 — 참이면 모든 카드가 접힌 채로 선다(<see cref="_choiceFoldOverrides"/>가 예외).</summary>
-    private bool _choicesFoldedByDefault;
-
-    /// <summary>기본값과 반대로 둔 카드들 — 카드마다 「▾」 · 칩으로 바꾼 것.</summary>
-    private readonly HashSet<string> _choiceFoldOverrides = new(StringComparer.Ordinal);
-
-    /// <summary>접힌 카드의 요약 칩 Tag 머리 — 뒤에 노드 Id. 누르면 편다.</summary>
-    internal const string ChoiceUnfoldTag = "choice-unfold:";
-
-    /// <summary>편 카드의 접기 손잡이 Tag 머리 — 뒤에 노드 Id.</summary>
-    internal const string ChoiceFoldTag = "choice-fold:";
-
-    /// <summary>그 카드의 선택지 칸이 접혀 있는가.</summary>
-    internal bool ChoicesFolded(string nodeId) => _choicesFoldedByDefault ^ _choiceFoldOverrides.Contains(nodeId);
-
-    /// <summary>카드 하나를 접거나 편다 — 레일 · 프레임만 다시 긋는다(카드는 그대로라 쓰던 글 칸이 안 끊긴다).</summary>
-    internal void ToggleChoices(string nodeId)
-    {
-        if (!_choiceFoldOverrides.Remove(nodeId))
-        {
-            _choiceFoldOverrides.Add(nodeId);
-        }
-
-        DrawChapterFrames();
-        RefreshMinimap();
-    }
-
-    /// <summary>도구줄 — 모든 카드를 접거나 편다.</summary>
-    private void ToggleAllChoices()
-    {
-        _choicesFoldedByDefault = !_choicesFoldedByDefault;
-        _choiceFoldOverrides.Clear();
-        FoldChoicesButton.Content = _choicesFoldedByDefault ? "선택지 펴기" : "선택지 접기";
-        DrawChapterFrames();
-        RefreshMinimap();
-    }
-
-    /// <summary>편 카드의 줄기 위 「▾」 — 누르면 그 카드의 칸들을 칩 하나로 접는다.</summary>
-    private Border ChoiceFoldHandle(string nodeId, double trunkX, double cardBottom)
-    {
-        var handle = new Border
-        {
-            Width = 14,
-            Height = 14,
-            CornerRadius = new CornerRadius(3),
-            Background = Brushes.Transparent,
-            Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = ChoiceFoldTag + nodeId,
-            Child = new TextBlock
-            {
-                Text = "▾",
-                FontSize = 10,
-                Foreground = RailChipBrush,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            },
-            [ToolTip.TipProperty] = "선택지 칸을 접습니다 — 이은 길은 그대로 보입니다."
-        };
-
-        handle.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지 접기", () =>
-        {
-            args.Handled = true;
-            ToggleChoices(nodeId);
-        });
-
-        Canvas.SetLeft(handle, trunkX - 18);
-        Canvas.SetTop(handle, cardBottom + 4);
-        return handle;
-    }
-
-    /// <summary>
-    /// 접은 카드의 레일 — 줄기 끝에 요약 칩(「▸ 선택지 N」, N = 이은 길 수) 하나가 서고, 이은 길마다 레인이 그 칩에서 나가
-    /// 펼쳤을 때와 같은 도착(카드 접점 · 접은 장면의 줄)으로 든다. 도착 카드가 판에 없는 길은 긋지 않는다(칩이 센다).
-    /// </summary>
-    private void DrawFoldedChoices(
-        string chapterId,
-        DialogueNode source,
-        Rect sourceRect,
-        IReadOnlyList<(ChapterEdge? Edge, Rect? Target, FoldedRow? Row, GraphChoicePort Slot)> branches,
-        IReadOnlyList<bool> lefts,
-        double trunkX,
-        double y,
-        Dictionary<string, List<(string From, string Label)>> arrivals)
-    {
-        int live = branches.Count(branch => branch.Edge is not null);
-        var chip = new Border
-        {
-            CornerRadius = new CornerRadius(3),
-            Padding = new Thickness(5, 1),
-            Background = new SolidColorBrush(Color.FromArgb(28, 192, 106, 20)),
-            Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = ChoiceUnfoldTag + source.Id,
-            Child = new TextBlock
-            {
-                Text = live > 0 ? $"▸ 선택지 {live}" : "▸ 선택지",
-                FontSize = 11,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = RailChipBrush
-            },
-            [ToolTip.TipProperty] = "선택지 칸을 폅니다 — 문구를 고치고 점을 끌어 잇는 자리입니다."
-        };
-
-        string nodeId = source.Id;
-        chip.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지 펴기", () =>
-        {
-            args.Handled = true;
-            ToggleChoices(nodeId);
-        });
-
-        chip.Measure(Size.Infinity);
-        Canvas.SetLeft(chip, trunkX + 8);
-        Canvas.SetTop(chip, y - (chip.DesiredSize.Height / 2));
-
-        _railVisuals.Add(RailLine(trunkX, sourceRect.Bottom, trunkX, y));
-        _railVisuals.Add(RailLine(trunkX, y, trunkX + 8, y));
-        _railVisuals.Add(chip);
-
-        double chipEnd = trunkX + 8 + chip.DesiredSize.Width + 4;
-        int leftLane = 0;
-        int rightLane = 0;
-
-        for (int index = 0; index < branches.Count; index++)
-        {
-            (ChapterEdge? edge, Rect? target, FoldedRow? row, _) = branches[index];
-
-            if (edge is null || (target is null && row is null))
-            {
-                continue;
-            }
-
-            // 왼쪽으로 가는 길은 줄기에서, 오른쪽은 칩 끝에서 나간다 — 펼쳤을 때와 같은 쪽 · 같은 레인 차례다.
-            bool mirrored = lefts[index];
-            double toward = mirrored ? -1 : 1;
-            var from = new GraphPosition(mirrored ? trunkX : chipEnd, y);
-            double laneX = mirrored
-                ? sourceRect.X - RailLaneOut - (leftLane++ * RailLaneGap)
-                : sourceRect.Right + RailLaneOut + (rightLane++ * RailLaneGap);
-            double dropX = mirrored ? Math.Min(from.X - RailLaneGap, laneX) : Math.Max(from.X + RailLaneGap, laneX);
-            var key = new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel);
-
-            if (row is not null)
-            {
-                DrawLaneIntoRow(key, edge.Shape, from, toward, dropX, row);
-                continue;
-            }
-
-            (double junctionX, double junctionY) = ArrivalJunction(target!.Value);
-            DrawLane(key, edge.Shape, from, toward, dropX, new GraphPosition(junctionX, junctionY));
-
-            if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label)>? list))
-            {
-                arrivals[edge.ToEpisodeId] = list = new List<(string, string)>();
-            }
-
-            list.Add((EpisodeNaming.EpisodeIdOf(source), edge.HasNoOptionLabel ? "(진행)" : edge.OptionLabel!));
-        }
     }
 
     /// <summary>
@@ -1200,8 +1024,7 @@ public partial class GraphEditorView : UserControl
     {
         int slots = SlotsOf(nodeId).Count;
 
-        // 접은 카드는 칩 한 줄뿐이다(CF).
-        return slots == 0 ? 0 : ChoicesFolded(nodeId) ? RailFirstDrop + 14 : RailFirstDrop + ((slots - 1) * RailBranchGap) + 14;
+        return slots == 0 ? 0 : RailFirstDrop + ((slots - 1) * RailBranchGap) + 14;
     }
 
     /// <summary>프레임이 감쌀 한 카드의 자리 — 카드와 그 아래 레일까지.</summary>
@@ -1415,8 +1238,11 @@ public partial class GraphEditorView : UserControl
             slots.Add(joined[next++] with { Slot = slots.Count });
         }
 
-        // 새로 낼 수 있는 칸은 늘 셋까지 선다(투영이 정한 수).
-        while (slots.Count < raw.Count)
+        // 새로 낼 빈 칸 — 인스펙터의 「선택지 3칸」을 켠 카드만 셋까지(투영이 정한 수), 나머지는 하나다 (2026-10-30 소유자:
+        // "연결되어 있지 않더라도 그게 보이다보니 너무 지저분"). 이은 칸 · 적어 둔 칸은 위에서 이미 섰다 — 어느 쪽이든 안 숨는다.
+        int wanted = _session?.FullChoiceNodeIds.Contains(nodeId) == true ? raw.Count : 1;
+
+        while (slots.Count < wanted)
         {
             slots.Add(Blank(slots.Count));
         }

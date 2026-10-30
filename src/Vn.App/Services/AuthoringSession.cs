@@ -19,6 +19,7 @@ internal sealed class AuthoringSession
     private readonly HashSet<string> _expandedFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<GraphSceneKey> _collapsedScenes = [];
+    private readonly HashSet<string> _fullChoiceNodeIds = new(StringComparer.Ordinal);
     private string _fileListSignature = string.Empty;
     private string _savedSnapshot;
 
@@ -70,6 +71,13 @@ internal sealed class AuthoringSession
     /// 상자로 간소화된다. <see cref="ExpandedFileIds"/>와 같은 작업 상태다 — 저장 · 되돌리기 대상이 아니다.
     /// </summary>
     public IReadOnlySet<GraphSceneKey> CollapsedScenes => _collapsedScenes;
+
+    /// <summary>
+    /// 선택지 칸을 셋 다 세우는 카드들 (2026-10-30 — 소유자: "연결되어 있지 않더라도 그게 보이다보니 너무 지저분" → 인스펙터의
+    /// 「선택지 3칸」). 여기 없는 카드는 <b>빈 칸을 하나만</b> 세운다 — 이은 선택지는 어느 쪽이든 언제나 선다. 화면 편의라
+    /// 프로젝트 파일이 아니라 사용자 설정에 프로젝트별로 기억한다.
+    /// </summary>
+    public IReadOnlySet<string> FullChoiceNodeIds => _fullChoiceNodeIds;
 
     public string? SelectedNodeId { get; private set; }
 
@@ -234,6 +242,12 @@ internal sealed class AuthoringSession
         _savedSnapshot = ProjectSnapshotCodec.Encode(Project);
         Definition = GameDefinition.LoadBeside(ProjectPath);
         AppSettingsService.SaveRecentProject(ProjectPath);
+
+        // 다른 이름으로 저장했으면 화면 기억(선택지 3칸)도 새 자리로 — 기억의 열쇠가 프로젝트 경로다.
+        if (_fullChoiceNodeIds.Count > 0 && !string.Equals(previousManifestPath, ProjectPath, StringComparison.OrdinalIgnoreCase))
+        {
+            AppSettingsService.SaveFullChoices(ProjectPath, _fullChoiceNodeIds);
+        }
 
         bool provisioned = EnsureProjectFolders();
 
@@ -456,6 +470,27 @@ internal sealed class AuthoringSession
         }
     }
 
+    /// <summary>그 카드의 선택지 칸을 셋 다 세우거나(참) 빈 칸 하나로 줄인다 — 기억하고 판을 다시 세운다.</summary>
+    internal void SetFullChoices(string nodeId, bool full)
+    {
+        bool changed = full ? _fullChoiceNodeIds.Add(nodeId) : _fullChoiceNodeIds.Remove(nodeId);
+
+        if (!changed)
+        {
+            return;
+        }
+
+        if (ProjectPath is not null)
+        {
+            AppSettingsService.SaveFullChoices(ProjectPath, _fullChoiceNodeIds);
+        }
+
+        RaiseFileGraphStateChanged(
+            activeFileChanged: false,
+            expandedFilesChanged: true,
+            fileListChanged: false);
+    }
+
     /// <summary>장면 하나를 접거나 편다 — 판 접기와 같은 알림으로 그래프 · 하이어아키가 다시 선다.</summary>
     internal void SetSceneCollapsed(string fileId, string sceneId, bool collapsed)
     {
@@ -536,6 +571,12 @@ internal sealed class AuthoringSession
         _expandedFileIds.Clear();
         _knownFileIds.Clear();
         _collapsedScenes.Clear();
+        _fullChoiceNodeIds.Clear();
+
+        if (ProjectPath is not null)
+        {
+            _fullChoiceNodeIds.UnionWith(AppSettingsService.LoadFullChoices(ProjectPath));
+        }
 
         foreach (StoryFile file in project.Files)
         {

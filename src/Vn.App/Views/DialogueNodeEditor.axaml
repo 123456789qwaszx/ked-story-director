@@ -7,7 +7,18 @@
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel Spacing="6">
-                <TextBox x:Name="NameBox" FontWeight="SemiBold" PlaceholderText="장면 이름" />
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBox x:Name="NameBox" FontWeight="SemiBold" PlaceholderText="장면 이름" />
+                    <!-- 선택지 3칸 (2026-10-30 소유자: "연결되어 있지 않더라도 그게 보이다보니 너무 지저분") — 에피소드 카드만. -->
+                    <CheckBox Grid.Column="1"
+                              x:Name="FullChoicesBox"
+                              Content="선택지 3칸"
+                              FontSize="11"
+                              Margin="8,0,0,0"
+                              VerticalAlignment="Center"
+                              IsVisible="False"
+                              ToolTip.Tip="켜면 연출 그래프의 이 카드 아래에 선택지 칸이 셋 섭니다. 끄면 빈 칸은 하나만 섭니다 — 이어진 선택지는 언제나 보입니다." />
+                </Grid>
 
                 <!-- ⛔ 「대본 · k줄 · ko-KR」 요약은 2026-10-29에 걷혔다 (소유자: 노드 종류 · 대본 이름 · 줄 수는
                      "필요없으니까 치워" — 카드 부제와 같은 정보다). 대사 잠금 토글([🔒 대사 잠김])은
