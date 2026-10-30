@@ -47,10 +47,10 @@ public sealed class GraphCardHeaderTests
         (MainWindow window, Canvas canvas, DialogueNode source, _) = Show();
         Border card = Card(window, source.Id);
 
-        // 분기 포트의 점 — 이어져 있어 칠해져 있다.
-        Ellipse knob = card.GetVisualDescendants().OfType<Ellipse>()
-            .Single(dot => dot.FindAncestorOfType<Grid>()?.Children.OfType<TextBlock>()
-                .Any(text => text.Text == "분기") == true);
+        // 분기의 점 — 이어져 있어 칠해져 있다. 글 칸의 그 대사 높이, 카드 오른쪽 가장자리에 판(캔버스)에 선다(2026-10-30).
+        Ellipse knob = canvas.Children.OfType<Ellipse>()
+            .Single(dot => (dot.Tag as string)?.StartsWith(GraphEditorView.LineKnobTag, StringComparison.Ordinal) == true);
+        Assert.Equal(Canvas.GetLeft(card) + card.Bounds.Width, Canvas.GetLeft(knob) + (knob.Width / 2), 1.5);
         Point center = knob.TranslatePoint(new Point(knob.Bounds.Width / 2, knob.Bounds.Height / 2), canvas)!.Value;
 
         // 실행 선(굵기 2)은 카드 오른쪽 가장자리에서 점의 높이로 가로로 나간다 — 머리 높이를 잘못 세면 몇 px 아래로

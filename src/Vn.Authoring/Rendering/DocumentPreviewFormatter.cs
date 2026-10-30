@@ -11,7 +11,13 @@ namespace Vn.Authoring.Rendering;
 /// </summary>
 public static class DocumentPreviewFormatter
 {
-    public static string Format(RenderedDocument document)
+    public static string Format(RenderedDocument document) => FormatWithRows(document).Text;
+
+    /// <summary>
+    /// 펼친 글과, 대본의 줄(LineId)마다 그 줄이 선 <b>글의 몇 번째 줄</b>인가(0부터) — 대사 줄과 선택지 줄만 든다.
+    /// 연출 그래프 카드가 분기 점을 그 대사의 높이에 세울 때 쓴다(2026-10-30).
+    /// </summary>
+    public static (string Text, IReadOnlyDictionary<string, int> RowOfLine) FormatWithRows(RenderedDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
 
@@ -23,12 +29,22 @@ public static class DocumentPreviewFormatter
                 "글로 펴는 문서는 시나리오 표기뿐입니다.");
     }
 
-    private static string FormatScenario(RenderedDocument document)
+    private static (string Text, IReadOnlyDictionary<string, int> RowOfLine) FormatScenario(RenderedDocument document)
     {
         var builder = new StringBuilder();
+        var rowOfLine = new Dictionary<string, int>(StringComparer.Ordinal);
+        int row = 0;
 
         foreach (RenderedSegment segment in document.Segments)
         {
+            if (segment.Kind is RenderedSegmentKind.DialogueLine or RenderedSegmentKind.ChoiceOption &&
+                segment.Source.LineId is { Length: > 0 } lineId)
+            {
+                rowOfLine.TryAdd(lineId, row);
+            }
+
+            int before = builder.Length;
+
             switch (segment.Kind)
             {
                 case RenderedSegmentKind.NodeHeader:
@@ -71,9 +87,17 @@ public static class DocumentPreviewFormatter
                 case RenderedSegmentKind.NodeFooter:
                     break;
             }
+
+            for (int at = before; at < builder.Length; at++)
+            {
+                if (builder[at] == '\n')
+                {
+                    row++;
+                }
+            }
         }
 
-        return builder.ToString();
+        return (builder.ToString(), rowOfLine);
     }
 
     private static void AppendDialogue(

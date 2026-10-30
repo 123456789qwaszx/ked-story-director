@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -106,7 +105,7 @@ public sealed class GraphChoiceSideTests : IDisposable
         // 시작 카드보다는 왼쪽이지만 출발 카드보다는 오른쪽 — 오른쪽 포트다.
         session.Editor.MoveNode(branch.Id, 1300, 300);
         Redraw(graph);
-        Assert.Equal(1, Grid.GetColumn(DetourKnob(graph, scene.Id)));
+        Assert.Equal(CardX(graph, session, "scene") + CardWidth, Center(graph, DetourKnob(graph, scene.Id)).X, tolerance: 1.5);
 
         session.Editor.MoveNode(branch.Id, 100, 300);
         graph.RefreshPositions();
@@ -116,7 +115,6 @@ public sealed class GraphChoiceSideTests : IDisposable
         double sceneLeft = CardX(graph, session, "scene");
 
         // 점이 카드 왼쪽 가장자리에 걸리고, 선은 그 왼쪽으로 나가 분기 카드의 오른쪽으로 든다.
-        Assert.Equal(0, Grid.GetColumn(knob));
         Assert.Equal(sceneLeft, Center(graph, knob).X, tolerance: 1.5);
         Assert.Contains(Edges(graph), path => path.Data!.Bounds.Right <= sceneLeft + 1);
     });
@@ -127,13 +125,11 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => EpisodeNaming.EpisodeIdOf(node) == episodeId);
 
-    /// <summary>그 카드의 「분기」 포트 점.</summary>
+    /// <summary>그 카드의 「분기」 점 — 글 칸의 그 대사 높이, 카드 가장자리에 판(캔버스)에 선다(2026-10-30).</summary>
     private static Ellipse DetourKnob(GraphEditorView graph, string nodeId) =>
-        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
-            .Single(card => card.Tag as string == nodeId)
-            .GetVisualDescendants().OfType<Grid>()
-            .Single(row => row.Children.OfType<TextBlock>().Any(text => text.Text == "분기"))
-            .Children.OfType<Ellipse>().Single();
+        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Ellipse>()
+            .Single(knob => (knob.Tag as string)?.StartsWith(
+                $"{GraphEditorView.LineKnobTag}execution:{nodeId}:detour:", StringComparison.Ordinal) == true);
 
     private static Point Center(GraphEditorView graph, Ellipse knob) =>
         knob.TranslatePoint(

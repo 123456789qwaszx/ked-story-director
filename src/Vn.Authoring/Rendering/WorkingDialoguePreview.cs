@@ -53,7 +53,16 @@ public static class WorkingDialoguePreview
     /// 넣을 때마다 제가 낸 글이 문제로 되돌아온다(머리글을 뺀 2026-09-18과 같은 이유).
     /// 끝의 줄바꿈은 걷는다 — 빈 줄 하나뿐인 새 카드는 빈 칸으로 보인다.
     /// </summary>
-    public static string ScenarioText(StoryProject project, string dialogueNodeId, GameDefinition? definition = null)
+    public static string ScenarioText(StoryProject project, string dialogueNodeId, GameDefinition? definition = null) =>
+        ScenarioWriting(project, dialogueNodeId, definition).Text;
+
+    /// <summary>
+    /// <see cref="ScenarioText"/>과, 대본의 줄(LineId)마다 그 줄이 글의 몇 번째 줄인가(0부터) — 연출 그래프 카드가
+    /// 분기 점을 그 대사의 높이에 세운다(2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에
+    /// 분기 점이 생성되도록"*).
+    /// </summary>
+    public static (string Text, IReadOnlyDictionary<string, int> RowOfLine) ScenarioWriting(
+        StoryProject project, string dialogueNodeId, GameDefinition? definition = null)
     {
         DocumentOutputOptions scenario = OutputPresetCatalog.ScenarioOnly.Options;
         var writing = new DocumentOutputOptions(
@@ -70,7 +79,8 @@ public static class WorkingDialoguePreview
         RenderedDocument document = Compose(
             project, dialogueNodeId, definition, writing, OutputPresetId.ScenarioOnly);
 
-        return DocumentPreviewFormatter.Format(document).TrimEnd('\n');
+        (string text, IReadOnlyDictionary<string, int> rowOfLine) = DocumentPreviewFormatter.FormatWithRows(document);
+        return (text.TrimEnd('\n'), rowOfLine);
     }
 
     private static List<RenderedSegment> InsertProblems(RenderedDocument document, DialogueDraft draft)

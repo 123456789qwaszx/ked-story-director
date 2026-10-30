@@ -173,6 +173,9 @@ public partial class GraphEditorView : UserControl
     private readonly Dictionary<string, TextBox> _writingBoxes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _writingShown = new(StringComparer.Ordinal);
 
+    /// <summary>글 칸마다, 대본의 줄(LineId)이 칸 글의 몇 번째 줄인가 — 분기 점을 그 대사 높이에 세운다(2026-10-30).</summary>
+    private readonly Dictionary<string, IReadOnlyDictionary<string, int>> _writingRows = new(StringComparer.Ordinal);
+
     // 끄는 동안의 자리 (D3 · 2026-10-29, docs/design/two-graphs.md §6-2) — 카드 · 무리 · 접힌 판
     // 어느 끌기든 프로젝트에는 <b>놓을 때 한 번</b> 적는다(되돌리기 한 칸). 그때까지 화면은 이 값을 따른다.
     private readonly Dictionary<string, Point> _dragPositions = new(StringComparer.Ordinal);
@@ -289,6 +292,7 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Children.Clear();
         _writingBoxes.Clear();
         _writingShown.Clear();
+        _writingRows.Clear();
         _cards.Clear();
         _proxies.Clear();
         _edges.Clear();
@@ -1323,6 +1327,7 @@ public partial class GraphEditorView : UserControl
             {
                 Canvas.SetLeft(card.Visual, node.Position.X);
                 Canvas.SetTop(card.Visual, node.Position.Y);
+                PlaceLineKnobs(card);
             }
         }
 
@@ -1501,20 +1506,45 @@ public partial class GraphEditorView : UserControl
 
         var visual = new NodeCard(node.NodeId, node.NodeKind, card, inCard, style);
 
+        // ⭐ 「조건 분기」 포트는 포트 줄에 서지 않는다 — 점이 글 칸의 <b>그 대사 높이</b>에 선다(아래 BuildLineKnob ·
+        //    2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에 분기 점이 생성되도록"*).
         for (int index = 0; index < inCard.Count; index++)
         {
-            body.Children.Add(BuildPortRow(inCard[index], visual, index));
+            if (!visual.IsLinePort(index))
+            {
+                body.Children.Add(BuildPortRow(inCard[index], visual, index));
+            }
         }
 
         // 글 칸은 포트 줄들 <b>아래</b>에 선다 — 포트의 자리 계산(PortAnchor)이 머리 바로 밑부터 센다.
         if (node.NodeKind == GraphNodeKind.Dialogue)
         {
-            body.Children.Add(BuildWritingBox(node.NodeId));
+            TextBox box = BuildWritingBox(node.NodeId);
+            visual.WritingBox = box;
+            body.Children.Add(box);
+
+            if (visual.HasLinePorts)
+            {
+                // 칸이 배치를 마칠 때마다(처음 · 크기 · 스크롤 · 글이 바뀔 때) 분기 점의 높이를 다시 잰다.
+                box.LayoutUpdated += (_, _) => MeasureLineAnchors(visual);
+            }
         }
 
         Canvas.SetLeft(card, node.Position.X);
         Canvas.SetTop(card, node.Position.Y);
         GraphCanvas.Children.Add(card);
+
+        for (int index = 0; index < inCard.Count; index++)
+        {
+            if (visual.IsLinePort(index))
+            {
+                Ellipse knob = BuildLineKnob(inCard[index], visual, index);
+                visual.LineKnobs[inCard[index].Key] = knob;
+                GraphCanvas.Children.Add(knob);
+            }
+        }
+
+        PlaceLineKnobs(visual);
 
         card.PointerPressed += (_, args) => OnCardPressed(visual, args);
 
@@ -1535,8 +1565,10 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private TextBox BuildWritingBox(string nodeId)
     {
-        string shown = WorkingDialoguePreview.ScenarioText(_session!.Project, nodeId, _session.Definition);
+        (string shown, IReadOnlyDictionary<string, int> rows) =
+            WorkingDialoguePreview.ScenarioWriting(_session!.Project, nodeId, _session.Definition);
         _writingShown[nodeId] = shown;
+        _writingRows[nodeId] = rows;
 
         var box = new TextBox
         {
@@ -1668,8 +1700,10 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        string shown = WorkingDialoguePreview.ScenarioText(_session.Project, nodeId, _session.Definition);
+        (string shown, IReadOnlyDictionary<string, int> rows) =
+            WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId, _session.Definition);
         _writingShown[nodeId] = shown;
+        _writingRows[nodeId] = rows;
         box.Text = shown;
     }
 
@@ -2478,15 +2512,171 @@ public partial class GraphEditorView : UserControl
         return false;
     }
 
-    /// <summary>펼쳐진 노드 카드의 출력 포트 좌표 — 왼쪽 포트(<see cref="GraphOutputPortProjection.OnLeft"/>)면 왼쪽 가장자리다.</summary>
+    /// <summary>
+    /// 펼쳐진 노드 카드의 출력 포트 좌표 — 왼쪽 포트(<see cref="GraphOutputPortProjection.OnLeft"/>)면 왼쪽 가장자리다.
+    /// 포트 줄의 포트는 그 줄의 가운데, 「조건 분기」는 글 칸의 그 대사 높이다(<see cref="MeasureLineAnchors"/>).
+    /// </summary>
     private static Point PortAnchor(NodeCard card, int portIndex)
     {
         double x = Canvas.GetLeft(card.Visual) + (card.Ports[portIndex].OnLeft ? 0 : CardWidth);
+
+        if (card.IsLinePort(portIndex))
+        {
+            // 아직 재지 않았으면(첫 배치 전) 글 칸의 위 끝이다.
+            double fallback = CardBorder + CardPadding + HeaderHeight + (card.RowCount * PortRowHeight) +
+                              WritingBoxGap + PortRadius + 2;
+
+            return new Point(
+                x,
+                Canvas.GetTop(card.Visual) + card.LineAnchorY.GetValueOrDefault(card.Ports[portIndex].Key, fallback));
+        }
+
         double y = Canvas.GetTop(card.Visual)
             + CardBorder + CardPadding + HeaderHeight
-            + (portIndex * PortRowHeight) + (PortRowHeight / 2);
+            + (card.RowOf(portIndex) * PortRowHeight) + (PortRowHeight / 2);
 
         return new Point(x, y);
+    }
+
+    /// <summary>
+    /// 「조건 분기」의 점 — 카드 가장자리, 글 칸의 그 대사 높이에 선다(<see cref="PlaceLineKnobs"/>). 카드 밖(판)에 서는
+    /// 까닭: 글 칸은 줄이 접히고 스크롤해서 높이가 배치를 마친 뒤에야 정해진다 — 포트 줄처럼 카드 안 줄로 지을 수 없다.
+    /// 누르면 포트 줄의 점과 같다(끌어 다른 카드로 잇는다).
+    /// </summary>
+    private Ellipse BuildLineKnob(GraphOutputPortProjection port, NodeCard card, int index)
+    {
+        IBrush brush = BranchPalette.Accent(port.PaletteIndex);
+        var knob = new Ellipse
+        {
+            Width = PortRadius * 2,
+            Height = PortRadius * 2,
+            Fill = port.IsConnected ? brush : Brushes.Transparent,
+            Stroke = brush,
+            StrokeThickness = 2,
+            Cursor = new Cursor(StandardCursorType.Hand),
+            ZIndex = 50,
+            Tag = LineKnobTag + port.Key
+        };
+        ToolTip.SetTip(knob, "분기 — 이 대사 앞에서 다녀온다. 끌어 다른 카드로 잇는다.");
+
+        knob.PointerPressed += (_, args) => OnPortPressed(port, card, index, args);
+        return knob;
+    }
+
+    /// <summary>분기 점이 지는 표 — 화면 테스트가 이것으로 찾는다.</summary>
+    internal const string LineKnobTag = "detour-knob:";
+
+    /// <summary>그 카드의 분기 점들을 지금 자리(<see cref="PortAnchor"/>)에 놓는다.</summary>
+    private static void PlaceLineKnobs(NodeCard card)
+    {
+        foreach ((string key, Ellipse knob) in card.LineKnobs)
+        {
+            int index = card.PortIndex(key);
+
+            if (index < 0)
+            {
+                continue;
+            }
+
+            Point at = PortAnchor(card, index);
+            Canvas.SetLeft(knob, at.X - PortRadius);
+            Canvas.SetTop(knob, at.Y - PortRadius);
+            knob.Opacity = card.LineOutOfView.Contains(key) ? 0.45 : 1;
+        }
+    }
+
+    /// <summary>
+    /// 분기 점의 높이를 잰다 — 글 칸에서 <b>그 대사가 선 줄</b>의 가운데(줄이 접혀도 · 스크롤해도 실제 글자 배치로).
+    /// 한 줄에 분기가 여럿이면 다녀오는 차례로 위에서 아래로 조금씩 비켜 선다. 그 줄이 칸 밖으로 스크롤돼 있으면 칸의 위 ·
+    /// 아래 끝에 붙고 흐려진다. 바뀌었으면 점과 그 카드에서 나가는 선을 다시 놓는다.
+    /// </summary>
+    private void MeasureLineAnchors(NodeCard card)
+    {
+        if (card.WritingBox is not { } box ||
+            box.FindDescendantOfType<Avalonia.Controls.Presenters.TextPresenter>() is not { } presenter ||
+            box.TranslatePoint(default, card.Visual) is not { } boxTop ||
+            box.Bounds.Height <= 0)
+        {
+            return;
+        }
+
+        string text = box.Text ?? string.Empty;
+        IReadOnlyDictionary<string, int> rows =
+            _writingRows.GetValueOrDefault(card.NodeId) ?? new Dictionary<string, int>();
+        double top = boxTop.Y + PortRadius + 1;
+        double bottom = boxTop.Y + box.Bounds.Height - PortRadius - 1;
+        bool changed = false;
+
+        var lines = Enumerable.Range(0, card.Ports.Count)
+            .Where(card.IsLinePort)
+            .GroupBy(index => card.Ports[index].ExecutionPort?.BranchOpenLineId ?? string.Empty);
+
+        foreach (IGrouping<string, int> line in lines)
+        {
+            double center = top;
+
+            if (rows.TryGetValue(line.Key, out int row) &&
+                presenter.TranslatePoint(new Point(0, RowMiddle(presenter, text, row)), card.Visual) is { } at)
+            {
+                center = at.Y;
+            }
+
+            List<int> ports = line.ToList();
+
+            for (int order = 0; order < ports.Count; order++)
+            {
+                string key = card.Ports[ports[order]].Key;
+                double wanted = center + ((order - ((ports.Count - 1) / 2.0)) * ((PortRadius * 2) + 1));
+                double y = Math.Clamp(wanted, top, Math.Max(top, bottom));
+                bool outOfView = Math.Abs(y - wanted) > 0.5;
+
+                if (!card.LineAnchorY.TryGetValue(key, out double was) || Math.Abs(was - y) > 0.5 ||
+                    card.LineOutOfView.Contains(key) != outOfView)
+                {
+                    card.LineAnchorY[key] = y;
+                    changed = true;
+
+                    if (outOfView)
+                    {
+                        card.LineOutOfView.Add(key);
+                    }
+                    else
+                    {
+                        card.LineOutOfView.Remove(key);
+                    }
+                }
+            }
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        PlaceLineKnobs(card);
+
+        foreach (EdgeVisual edge in _edges.Where(edge =>
+                     string.Equals(edge.Connection.Source.NodeId, card.NodeId, StringComparison.Ordinal)))
+        {
+            PositionEdge(edge);
+        }
+    }
+
+    /// <summary>글의 <paramref name="row"/>번째 줄(0부터)의 첫 글자가 선 화면 줄의 가운데 높이 — 글 칸 안 좌표.</summary>
+    private static double RowMiddle(Avalonia.Controls.Presenters.TextPresenter presenter, string text, int row)
+    {
+        int index = 0;
+
+        for (int seen = 0; seen < row && index < text.Length; index++)
+        {
+            if (text[index] == '\n')
+            {
+                seen++;
+            }
+        }
+
+        Rect caret = presenter.TextLayout.HitTestTextPosition(Math.Min(index, text.Length));
+        return caret.Y + (caret.Height / 2);
     }
 
     private static Point InputAnchor(NodeCard card)
@@ -2831,7 +3021,7 @@ public partial class GraphEditorView : UserControl
     {
         return card.Visual.Bounds.Height > 0
             ? card.Visual.Bounds.Height
-            : HeaderHeight + (card.Ports.Count * PortRowHeight) + ((CardPadding + CardBorder) * 2) +
+            : HeaderHeight + (card.RowCount * PortRowHeight) + ((CardPadding + CardBorder) * 2) +
               (card.NodeKind == GraphNodeKind.Dialogue ? WritingBoxGap + WritingBoxHeight : 0);
     }
 
@@ -3525,6 +3715,32 @@ public partial class GraphEditorView : UserControl
                 ? -1
                 : Ports.ToList().FindIndex(port => string.Equals(port.Key, key, StringComparison.Ordinal));
         }
+
+        /// <summary>
+        /// 글 칸 안 대사 높이에 서는 포트인가 — 대사 카드의 「조건 분기」다(2026-10-30). 포트 줄에 서지 않는다.
+        /// </summary>
+        public bool IsLinePort(int index) =>
+            NodeKind == GraphNodeKind.Dialogue && Ports[index].ExecutionPort?.Kind == ExitPortKind.Detour;
+
+        public bool HasLinePorts => Enumerable.Range(0, Ports.Count).Any(IsLinePort);
+
+        /// <summary>포트 줄의 수 — 분기 점은 줄을 차지하지 않는다.</summary>
+        public int RowCount => Enumerable.Range(0, Ports.Count).Count(index => !IsLinePort(index));
+
+        /// <summary>그 포트가 몇 번째 포트 줄인가.</summary>
+        public int RowOf(int index) => Enumerable.Range(0, index).Count(before => !IsLinePort(before));
+
+        /// <summary>카드의 글 칸. 대사 카드가 아니면 null.</summary>
+        public TextBox? WritingBox { get; set; }
+
+        /// <summary>분기 점의 높이(카드 위 끝에서) — 포트 열쇠로. <see cref="MeasureLineAnchors"/>가 잰다.</summary>
+        public Dictionary<string, double> LineAnchorY { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>그 대사가 글 칸 밖으로 스크롤돼 칸 끝에 붙은 분기 점들.</summary>
+        public HashSet<string> LineOutOfView { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>분기 점들 — 판(캔버스)에 선다.</summary>
+        public Dictionary<string, Ellipse> LineKnobs { get; } = new(StringComparer.Ordinal);
     }
 
     private sealed class FileProxyVisual

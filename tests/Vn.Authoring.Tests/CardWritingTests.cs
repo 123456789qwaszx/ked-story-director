@@ -20,6 +20,26 @@ public sealed class CardWritingTests
         """)!;
 
     [Fact]
+    public void 글_칸의_글은_대사마다_몇_번째_줄인가를_함께_낸다()
+    {
+        // 연출 그래프 카드가 분기 점을 그 대사의 높이에 세운다(2026-10-30) — 조건 줄(<<if>> · <<endif>>)이 끼어도 맞아야 한다.
+        var sample = new Sample();
+        (string l0, string l1, string l2, string l3, string l4, string l5, string l6) = sample.BuildSpecExample();
+
+        (string text, IReadOnlyDictionary<string, int> rows) =
+            WorkingDialoguePreview.ScenarioWriting(sample.Project, sample.Dialogue.Id);
+        string[] shown = text.Split('\n');
+
+        Assert.Equal(text, WorkingDialoguePreview.ScenarioText(sample.Project, sample.Dialogue.Id));
+        Assert.Contains(shown, row => row.StartsWith("<<", StringComparison.Ordinal));   // 조건 줄이 끼어 있다
+
+        foreach ((string lineId, string body) in new[] { (l0, "0"), (l1, "1"), (l2, "2"), (l3, "3"), (l4, "4"), (l5, "5"), (l6, "6") })
+        {
+            Assert.Equal(body, shown[rows[lineId]].Trim());
+        }
+    }
+
+    [Fact]
     public void 새_카드에_여러_줄을_넣으면_빈_첫_줄이_첫_줄이_된다()
     {
         // ⛔ 조사에서 찾은 함정 — 새 카드는 빈 줄 하나를 들고 태어나, 여러 줄을 처음 넣으면
