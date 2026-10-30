@@ -419,22 +419,19 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 탭_순서는_편집_화자_챕터다() => HeadlessUi.Run(() =>
+    public void 탭은_없고_인스펙터에는_칸_하나만_선다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 "편집/화자/챕터가 되도록 챕터를 가장 뒤에 보내" — [편집]은
-        // 고른 하나를 다루는 자리라 첫째이고, [챕터]는 판 전체의 읽기 전용 표라 가장 뒤다.
-        //
-        // ⚠ 첫 화면은 순서가 아니라 `SelectedItem`이 정한다 — 아래 짝 테스트가 그것을
-        //    따로 붙든다. 둘을 한 테스트에 묶으면 순서를 바꾸는 날 무엇이 깨졌는지 흐려진다.
+        // 2026-10-30 소유자 — 우측 기둥은 하이어아키 + 인스펙터다(HY2). [편집 | 화자 | 챕터] 탭(2026-08-24 순서)은
+        // 걷혔다: 고르는 것이 무엇을 보일지 정한다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
-        string[] headers = view.FindControl<TabControl>("RightTabs")!
-            .Items.OfType<TabItem>()
-            .Select(tab => (string)tab.Header!)
-            .ToArray();
+        Assert.Null(view.FindControl<TabControl>("RightTabs"));
+        Assert.Single(Sections(view), section => section.IsVisible);
 
-        Assert.Equal(["편집", "화자", "챕터"], headers);
+        // 처음 고른 것은 챕터다 — 하이어아키의 챕터 줄을 고른 것과 같아 조건 · 스탯이 선다.
+        Assert.True(view.FindControl<ScrollViewer>("ChapterSection")!.IsVisible);
+        Assert.Equal("챕터 · ch05", view.FindControl<TextBlock>("InspectorTitle")!.Text);
     });
 
     [Fact]
@@ -481,32 +478,36 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 처음_보이는_탭은_편집이고_선택이_탭을_끌고_다니지_않는다() => HeadlessUi.Run(() =>
+    public void 고른_것이_인스펙터를_정한다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-16 소유자 — 처음 열었을 때 손이 가는 곳은 지금 고른 하나(편집)이지
-        // 챕터 전체 표가 아니다. 그리고 무언가를 골라도 보던 탭이 유지된다.
+        // 2026-10-30 소유자: "하이어아키+ 인스펙터 방식" — 판에서 고른 에피소드 · 길은 그 편집을, 하이어아키의 프로젝트 ·
+        // 챕터 줄은 화자 · 조건과 스탯을 보인다. 머리글이 무엇을 보는지 말한다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
+        TextBlock title = view.FindControl<TextBlock>("InspectorTitle")!;
 
-        var tabs = view.FindControl<TabControl>("RightTabs")!;
-        var conditionTab = view.FindControl<TabItem>("ConditionTab")!;
-        var editTab = view.FindControl<TabItem>("EditTab")!;
-
-        Assert.Same(editTab, tabs.SelectedItem);
-
-        // 노드를 골라도 탭은 그대로다.
         view.SelectEpisode("main05.02");
-        Assert.Same(editTab, tabs.SelectedItem);
+        Assert.True(view.FindControl<ScrollViewer>("SelectionSection")!.IsVisible);
+        Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
+        Assert.Equal("에피소드 · main05.02", title.Text);
 
-        // 챕터 탭을 보며 다른 노드로 갈아타도 그대로다.
-        tabs.SelectedItem = conditionTab;
-        view.SelectEpisode("main05.01");
-        Assert.Same(conditionTab, tabs.SelectedItem);
+        view.Inspect(HierarchyPick.Project);
+        Assert.True(view.FindControl<ScrollViewer>("SpeakerSection")!.IsVisible);
+        Assert.Equal("화자", title.Text);
 
-        // 간선을 골라도 마찬가지다.
+        view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch05"));
+        Assert.True(view.FindControl<ScrollViewer>("ChapterSection")!.IsVisible);
+
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
-        Assert.Same(conditionTab, tabs.SelectedItem);
+        Assert.True(view.FindControl<ScrollViewer>("SelectionSection")!.IsVisible);
+        Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
+        Assert.StartsWith("선택지 · main05.02 → branch05.02A", title.Text, StringComparison.Ordinal);
+        Assert.Single(Sections(view), section => section.IsVisible);
     });
+
+    private static IEnumerable<ScrollViewer> Sections(ChapterGraphView view) =>
+        new[] { "SelectionSection", "SpeakerSection", "ChapterSection" }
+            .Select(name => view.FindControl<ScrollViewer>(name)!);
 
     [Fact]
     public void 대사는_선택지_아래에_펼쳐져_있다() => HeadlessUi.Run(() =>

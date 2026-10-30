@@ -180,7 +180,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     private static Control Prompt(ChapterGraphView view) =>
         (TopLevel.GetTopLevel(view) as Window)!.GetVisualDescendants()
             .OfType<StackPanel>()
-            .First(panel => panel.Children.OfType<TextBox>()
+            .First(panel => panel.IsEffectivelyVisible && panel.Children.OfType<TextBox>()
                 .Any(box => !string.IsNullOrEmpty(box.PlaceholderText)));
 
     private static StackPanel Row(ChapterGraphView view, string tag) =>
@@ -235,9 +235,8 @@ public sealed class ChapterSheetEditTests : IDisposable
         window.Show();
         view.Attach(session);
 
-        // ⚠ 탭을 열어야 그 안의 컨트롤이 시각 트리에 올라온다 — 안 열면 표는 만들어져
-        //    있는데 찾을 수가 없다.
-        view.FindControl<TabItem>("ConditionTab")!.IsSelected = true;
+        // 인스펙터에 챕터를 세운다(하이어아키의 챕터 줄을 고른 것과 같다 — 2026-10-30 HY2, 전에는 [챕터] 탭).
+        view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch01"));
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");

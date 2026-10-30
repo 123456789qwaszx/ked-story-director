@@ -84,6 +84,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = null;
         HideEdgeForm();
         ShowInHierarchy(new HierarchyPick(HierarchyKind.Chapter, chapterId));
+        _inspector = InspectorMode.Chapter;   // 챕터를 골랐다 — 하이어아키의 그 줄을 고른 것과 같다
 
         Validate();
         Draw();
@@ -116,8 +117,8 @@ public partial class ChapterGraphView : UserControl
     private bool _fromHierarchy;
 
     /// <summary>
-    /// 하이어아키에서 줄을 골랐다 (2026-10-30) — 챕터 · 에피소드를 판에서 고르고 아래 칸을 그것에 맞춘다: 프로젝트 →
-    /// [화자], 챕터 → [챕터](조건 · 스탯), 장면 · 에피소드 → [편집].
+    /// 하이어아키에서 줄을 골랐다 (2026-10-30) — 챕터 · 에피소드를 판에서 고르고 인스펙터를 그것에 맞춘다: 프로젝트 →
+    /// 화자, 챕터 → 조건 · 스탯, 장면 → 장면 이름, 에피소드 → 구조.
     /// </summary>
     private void OnHierarchyPicked(HierarchyPick pick)
     {
@@ -131,17 +132,176 @@ public partial class ChapterGraphView : UserControl
                 SelectEpisode(pick.Kind == HierarchyKind.Episode ? pick.EpisodeId : null);
             }
 
-            RightTabs.SelectedItem = pick.Kind switch
+            _inspector = pick.Kind switch
             {
-                HierarchyKind.Project => SpeakerTab,
-                HierarchyKind.Chapter => ConditionTab,
-                _ => EditTab
+                HierarchyKind.Project => InspectorMode.Project,
+                HierarchyKind.Chapter => InspectorMode.Chapter,
+                HierarchyKind.Scene => InspectorMode.Scene,
+                _ => InspectorMode.Selection
             };
+            _inspectedSceneId = pick.SceneId;
+            ApplyInspector();
         }
         finally
         {
             _fromHierarchy = false;
         }
+    }
+
+    /// <summary>
+    /// 하이어아키에서 고른 것처럼 인스펙터에 세운다 — 하이어아키 줄을 누른 것과 같은 길이다(트리도 그 줄을 비춘다).
+    /// 화면 시험과 장면 인스펙터의 에피소드 단추가 부른다.
+    /// </summary>
+    internal void Inspect(HierarchyPick pick)
+    {
+        OnHierarchyPicked(pick);
+        Hierarchy.Show(pick);
+    }
+
+    // ── 인스펙터 (2026-10-30 HY2 — docs/plans/hierarchy.md) ─────────────────────────────────
+
+    /// <summary>인스펙터가 무엇을 보이나 — 고른 하나(에피소드 · 길 · 분기)거나, 하이어아키의 프로젝트 · 챕터 · 장면 줄이다.</summary>
+    private enum InspectorMode
+    {
+        Selection,
+        Project,
+        Chapter,
+        Scene
+    }
+
+    private InspectorMode _inspector = InspectorMode.Selection;
+
+    /// <summary>장면 인스펙터가 보이는 장면(유효 장면ID).</summary>
+    private string? _inspectedSceneId;
+
+    /// <summary>장면 이름 칸을 마지막으로 채운 장면 — 같은 장면이면 다시 채우지 않는다(쓰던 글자가 사라지지 않게).</summary>
+    private string? _sceneFilledFor;
+
+    /// <summary>인스펙터의 칸 하나만 세우고 머리글을 맞춘다.</summary>
+    private void ApplyInspector()
+    {
+        SelectionSection.IsVisible = _inspector is InspectorMode.Selection or InspectorMode.Scene;
+        SpeakerSection.IsVisible = _inspector == InspectorMode.Project;
+        ChapterSection.IsVisible = _inspector == InspectorMode.Chapter;
+        ScenePanel.IsVisible = _inspector == InspectorMode.Scene;
+
+        if (_inspector == InspectorMode.Scene)
+        {
+            NoSelectionText.IsVisible = false;   // 장면을 보고 있다 — "아무것도 안 골랐다" 안내가 아니다
+        }
+
+        ChapterGraphModel? model = SelectedModel;
+
+        (string title, string subtitle) = _inspector switch
+        {
+            InspectorMode.Project => ("화자", "프로젝트 전체의 캐스트 — 모든 챕터가 같은 목록을 씁니다"),
+            InspectorMode.Chapter => ($"챕터 · {_selectedChapterId}", "조건 · 스탯"),
+            InspectorMode.Scene => SceneHeader(model),
+            _ when _selectedEpisodeId is { } episodeId => ($"에피소드 · {episodeId}", "이름 · 장면 · 선택지 · 대사 미리보기"),
+            _ when _selectedEdgeKey is { } edge => ($"선택지 · {edge.From} → {edge.To}", "문구 · 조건 · 스탯변화"),
+            _ when _selectedBranchKey is not null => ("분기", "다녀갈 에피소드에 들어갈 조건"),
+            _ => ("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다")
+        };
+
+        InspectorTitle.Text = title;
+        InspectorSubtitle.Text = subtitle;
+
+        if (_inspector == InspectorMode.Scene)
+        {
+            FillScenePanel(model);
+        }
+        else
+        {
+            _sceneFilledFor = null;
+        }
+    }
+
+    private (string Title, string Subtitle) SceneHeader(ChapterGraphModel? model) =>
+        InspectedScene(model) is { } scene
+            ? ($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}")
+            : ("장면", "이 장면이 사라졌습니다");
+
+    /// <summary>장면 인스펙터가 보이는 장면 — 이 챕터를 지금 묶어 본 것에서 찾는다(장면은 엔티티가 아니다).</summary>
+    private ChapterScene? InspectedScene(ChapterGraphModel? model) =>
+        model is null || _inspectedSceneId is null
+            ? null
+            : ChapterSceneGrouping.Of(model).FirstOrDefault(scene =>
+                string.Equals(scene.SceneId, _inspectedSceneId, StringComparison.Ordinal));
+
+    /// <summary>장면 인스펙터 — 이름 칸(장면이 바뀔 때만 채운다) · 안내 · 에피소드 단추들.</summary>
+    private void FillScenePanel(ChapterGraphModel? model)
+    {
+        SceneEpisodesPanel.Children.Clear();
+
+        if (InspectedScene(model) is not { } scene)
+        {
+            SceneHintText.Text = "이 장면이 사라졌습니다 — 하이어아키에서 다시 고르세요.";
+            return;
+        }
+
+        if (!string.Equals(_sceneFilledFor, scene.SceneId, StringComparison.Ordinal))
+        {
+            SceneNameBox.Text = scene.IsDefault ? string.Empty : scene.SceneId;
+            _sceneFilledFor = scene.SceneId;
+        }
+
+        SceneHintText.Text = scene.IsDefault
+            ? "장면ID를 안 적은 에피소드 — 에피소드 하나가 곧 장면 하나입니다. 이름을 적고 Enter를 누르면 장면이 됩니다."
+            : $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 고치고 Enter를 누르면 모두 함께 바뀝니다. " +
+              "장면 루트(⌂)는 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.";
+
+        foreach (ChapterEpisode episode in scene.Episodes)
+        {
+            string episodeId = episode.EpisodeId;
+            bool root = string.Equals(scene.RootEpisodeId, episodeId, StringComparison.Ordinal);
+            var link = new Button
+            {
+                Content = (root ? "⌂ " : "· ") + episodeId,
+                FontSize = 11,
+                Padding = new Thickness(6, 2),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Tag = "scene-episode:" + episodeId
+            };
+            link.Click += (_, _) => UiGuard.Run(_session, "에피소드 고르기", () =>
+                Inspect(new HierarchyPick(HierarchyKind.Episode, _selectedChapterId, scene.SceneId, episodeId)));
+            SceneEpisodesPanel.Children.Add(link);
+        }
+    }
+
+    /// <summary>
+    /// 장면 이름을 고친다 — 그 장면의 에피소드 모두의 장면ID를 한 번에(<c>UpdateEpisodeScenes</c>, 되돌리기 한 칸). 비우면
+    /// 에피소드마다 제 장면(미지정)이 된다. 같은 이름이 이미 다른 장면에 있으면 그 장면과 합쳐진다 — 장면은 장면ID로 묶이는
+    /// 것이라 그것이 곧 뜻이다.
+    /// </summary>
+    internal void RenameInspectedScene()
+    {
+        if (_selectedChapterId is not { } chapterId || InspectedScene(SelectedModel) is not { } scene)
+        {
+            _session?.SetStatus("장면을 하이어아키에서 다시 골라 주세요.");
+            return;
+        }
+
+        string sceneId = SceneNameBox.Text?.Trim() ?? string.Empty;
+        string[] episodeIds = scene.Episodes.Select(episode => episode.EpisodeId).ToArray();
+
+        if (string.Equals(sceneId, scene.IsDefault ? string.Empty : scene.SceneId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        ChapterEdit(
+            () => _session!.Editor.UpdateEpisodeScenes(chapterId, episodeIds, sceneId),
+            sceneId.Length == 0
+                ? $"장면 '{scene.DisplayName}'의 장면ID를 걷었습니다 — 에피소드 {episodeIds.Length}개가 저마다 제 장면입니다."
+                : $"장면 이름을 '{sceneId}'로 바꿨습니다 — 에피소드 {episodeIds.Length}개.");
+
+        // 바뀐 장면을 계속 본다 — 이름을 걷었으면(미지정) 첫 에피소드의 제 장면을 본다.
+        _inspectedSceneId = sceneId.Length > 0 ? sceneId : $"__scene_{episodeIds[0]}";
+        _sceneFilledFor = null;
+        HierarchyPick pick = new(HierarchyKind.Scene, chapterId, _inspectedSceneId);
+        Hierarchy.Show(pick);
+        ApplyInspector();
     }
 
     /// <summary>판에서 고른 것을 하이어아키에 비춘다 — 하이어아키가 부른 선택이면 하지 않는다.</summary>
@@ -226,6 +386,14 @@ public partial class ChapterGraphView : UserControl
         };
         ApplySceneGroupButton.Click += (_, _) =>
             UiGuard.Run(_session, "장면ID 일괄 저장", ApplySceneIdToGroup);
+        SceneNameBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter)
+            {
+                e.Handled = true;
+                UiGuard.Run(_session, "장면 이름", RenameInspectedScene);
+            }
+        };
         Hierarchy.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnHierarchyPicked(pick));
         // 판 다루기 — 휠 확대·축소, 가운데 단추 끌어 이동. 휠은 <b>터널</b>로 받는다:
         // 스크롤뷰가 먼저 먹어 버리면 휠이 배율이 아니라 그냥 스크롤이 된다.
@@ -289,9 +457,7 @@ public partial class ChapterGraphView : UserControl
         // 글자와 본문이 접힌 모양 그대로 남는다. 여기서 켜야 셋이 한 번에 맞는다.
         DialogueToggle.IsChecked = true;
 
-        // 처음 보이는 탭은 [편집]이다 (2026-08-16 소유자) — 손이 가는 곳은 지금 고른
-        // 하나이지 챕터 전체 표가 아니다. 그 뒤로는 사람이 고른 탭이 그대로 유지된다.
-        RightTabs.SelectedItem = EditTab;
+        // ⛔ 처음 보이는 탭을 [편집]으로 고르던 자리 — 탭은 2026-10-30(HY2)에 걷혔다. 인스펙터는 고른 것을 보인다.
 
         // 빈 판 클릭 = 선택 해제. 카드·간선·라벨 핸들러가 각자 누름을 소비하므로(e.Handled)
         // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다.
@@ -638,6 +804,10 @@ public partial class ChapterGraphView : UserControl
             _entries.All(entry => entry.ChapterId != _selectedChapterId))
         {
             _selectedChapterId = _entries.FirstOrDefault()?.ChapterId;
+
+            // 저절로 고른 챕터도 하이어아키의 그 줄을 고른 것과 같다 — 인스펙터에 그 챕터가 선다(HY2).
+            _inspector = InspectorMode.Chapter;
+            ShowInHierarchy(_selectedChapterId is { } picked ? new HierarchyPick(HierarchyKind.Chapter, picked) : null);
         }
 
         ChapterCombo.SelectedItem = _selectedChapterId;
@@ -1882,6 +2052,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEpisodeId = episodeId;
         _selectedEdgeKey = null;
         _selectedBranchKey = null;
+        _inspector = InspectorMode.Selection;
         HideEdgeForm(); // 다른 노드로 넘어가면 열려 있던 연결 폼은 닫는다
         ApplySelectionVisuals();
         RefreshPropertyPanel();
@@ -1895,6 +2066,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
         _selectedEpisodeId = null;
         _selectedBranchKey = null;
+        _inspector = InspectorMode.Selection;
         HideEdgeForm();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
@@ -1910,6 +2082,7 @@ public partial class ChapterGraphView : UserControl
         _selectedBranchKey = branchKey;
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
+        _inspector = InspectorMode.Selection;
         HideEdgeForm();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
@@ -1994,7 +2167,8 @@ public partial class ChapterGraphView : UserControl
         PropertyPanel.IsVisible = episode is not null;
         EdgePanel.IsVisible = edge is not null;
         BranchPanel.IsVisible = branch is not null;
-        NoSelectionText.IsVisible = episode is null && edge is null && branch is null;
+        NoSelectionText.IsVisible = episode is null && edge is null && branch is null && _inspector != InspectorMode.Scene;
+        ApplyInspector();
 
         if (branch is not null)
         {

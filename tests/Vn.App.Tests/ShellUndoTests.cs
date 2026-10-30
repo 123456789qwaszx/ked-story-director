@@ -64,10 +64,9 @@ public sealed class ShellUndoTests : IDisposable
 
         SeedProject(window, _directory);
 
-        // 첫 탭(챕터 그래프)의 [화자] 탭 이름 칸 — 늘 서 있는 글자 칸이다.
+        // 첫 탭(챕터 그래프) 인스펙터의 화자 이름 칸(하이어아키의 프로젝트 줄 — 2026-10-30 HY2) — 늘 서 있는 글자 칸이다.
         var chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
-        chapterGraph.FindControl<TabControl>("RightTabs")!.SelectedItem =
-            chapterGraph.FindControl<TabItem>("SpeakerTab")!;
+        chapterGraph.Inspect(HierarchyPick.Project);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var box = chapterGraph.FindControl<TextBox>("SpeakerNameBox")!;

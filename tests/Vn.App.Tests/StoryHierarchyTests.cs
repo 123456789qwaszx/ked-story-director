@@ -14,8 +14,8 @@ namespace Vn.App.Tests;
 /// <b>우측 기둥 위의 하이어아키</b> (2026-10-30 소유자: *"유니티 하이어아키처럼 챕터를 부모로 하는 장면이 있고, 이 장면에
 /// 포함된 에피소드들을 모으는 방식으로"* — <c>docs/plans/hierarchy.md</c> HY1).
 ///
-/// 프로젝트 → 챕터 → 장면 → 에피소드를 접었다 편다. 어느 줄이든 고르면 챕터 그래프가 그것을 고르고 아래 칸이 따라
-/// 바뀐다(프로젝트 → 화자, 챕터 → 챕터, 장면 · 에피소드 → 편집). 판에서 고른 것은 트리에 비친다.
+/// 프로젝트 → 챕터 → 장면 → 에피소드를 접었다 편다. 어느 줄이든 고르면 챕터 그래프가 그것을 고르고 인스펙터가 따라
+/// 바뀐다(프로젝트 → 화자, 챕터 → 조건 · 스탯, 장면 → 장면, 에피소드 → 구조 — HY2). 판에서 고른 것은 트리에 비친다.
 /// </summary>
 public sealed class StoryHierarchyTests : IDisposable
 {
@@ -72,11 +72,11 @@ public sealed class StoryHierarchyTests : IDisposable
     });
 
     [Fact]
-    public void 에피소드_줄을_누르면_챕터_그래프가_그것을_고르고_편집_칸이_선다_줄은_다시_세우지_않는다() => HeadlessUi.Run(() =>
+    public void 에피소드_줄을_누르면_챕터_그래프가_그것을_고르고_인스펙터가_그것을_보인다_줄은_다시_세우지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
-        graph.FindControl<TabControl>("RightTabs")!.SelectedItem = graph.FindControl<TabItem>("SpeakerTab");
+        graph.Inspect(HierarchyPick.Project);
 
         string key = StoryHierarchy.EpisodeKey("ch02", "y");
         Button row = tree.RowButton(key)!;
@@ -86,7 +86,7 @@ public sealed class StoryHierarchyTests : IDisposable
         Assert.Equal(key, tree.Selection?.Key);
         Assert.Equal("ch02", graph.FindControl<ComboBox>("ChapterCombo")!.SelectedItem);
         Assert.Equal("y", graph.FindControl<TextBox>("IdBox")!.Text);
-        Assert.Same(graph.FindControl<TabItem>("EditTab"), graph.FindControl<TabControl>("RightTabs")!.SelectedItem);
+        Assert.Equal("Selection", Shown(graph));
 
         // 고르는 것으로는 줄을 다시 세우지 않는다 — 다시 세우면 더블클릭의 둘째 누름이 새 컨트롤에 떨어진다.
         Assert.Same(row, tree.RowButton(key));
@@ -95,23 +95,22 @@ public sealed class StoryHierarchyTests : IDisposable
     });
 
     [Fact]
-    public void 챕터_줄은_그_챕터와_챕터_칸을_프로젝트_줄은_화자_칸을_연다() => HeadlessUi.Run(() =>
+    public void 챕터_줄은_그_챕터와_조건_스탯을_프로젝트_줄은_화자를_인스펙터에_세운다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
-        var tabs = graph.FindControl<TabControl>("RightTabs")!;
 
         tree.RowButton(StoryHierarchy.ChapterKey("ch02"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal("ch02", graph.FindControl<ComboBox>("ChapterCombo")!.SelectedItem);
         Assert.Equal("ch02", window.SessionProbe.ActiveFile?.Name);
-        Assert.Same(graph.FindControl<TabItem>("ConditionTab"), tabs.SelectedItem);
+        Assert.Equal("Chapter", Shown(graph));
         Assert.Equal(StoryHierarchy.ChapterKey("ch02"), tree.Selection?.Key);
 
         tree.RowButton(StoryHierarchy.ProjectKey)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Same(graph.FindControl<TabItem>("SpeakerTab"), tabs.SelectedItem);
+        Assert.Equal("Speaker", Shown(graph));
         Assert.Equal(StoryHierarchy.ProjectKey, tree.Selection?.Key);
 
         window.Close();
@@ -139,7 +138,70 @@ public sealed class StoryHierarchyTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 장면_줄을_고르면_장면_인스펙터가_서고_이름을_고치면_그_장면의_에피소드가_함께_바뀐다() => HeadlessUi.Run(() =>
+    {
+        // HY2 — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. 이름을 고치면 그 에피소드들의 장면ID가
+        // 한 번에 바뀌고(되돌리기 한 칸) 다른 장면은 그대로다.
+        (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+
+        tree.RowButton(StoryHierarchy.SceneKey("ch01", "opening"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("Selection", Shown(graph));
+        Assert.True(graph.FindControl<StackPanel>("ScenePanel")!.IsVisible);
+        Assert.False(graph.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
+        Assert.False(graph.FindControl<TextBlock>("NoSelectionText")!.IsVisible);
+        Assert.Equal("장면 · opening", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("opening", graph.FindControl<TextBox>("SceneNameBox")!.Text);
+        Assert.Equal(
+            ["scene-episode:root", "scene-episode:a"],
+            graph.FindControl<StackPanel>("SceneEpisodesPanel")!.Children.Select(child => (string?)child.Tag));
+
+        graph.FindControl<TextBox>("SceneNameBox")!.Text = "prologue";
+        graph.RenameInspectedScene();
+        Dispatcher.UIThread.RunJobs();
+
+        AuthoringSession session = window.SessionProbe;
+        Assert.Equal(["prologue", "prologue", "hall"], SceneIds(session));
+        Assert.Equal(StoryHierarchy.SceneKey("ch01", "prologue"), tree.Selection?.Key);
+        Assert.Equal("장면 · prologue", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+
+        session.Editor.Undo();
+        Assert.Equal(["opening", "opening", "hall"], SceneIds(session));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 장면_인스펙터의_에피소드를_누르면_그_에피소드를_본다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
+        graph.Inspect(new HierarchyPick(HierarchyKind.Scene, "ch01", "opening"));
+        Dispatcher.UIThread.RunJobs();
+
+        graph.FindControl<StackPanel>("SceneEpisodesPanel")!.Children.OfType<Button>()
+            .Single(button => (string?)button.Tag == "scene-episode:a")
+            .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("에피소드 · a", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("a", graph.FindControl<TextBox>("IdBox")!.Text);
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "a"), tree.Selection?.Key);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    private static string[] SceneIds(AuthoringSession session) =>
+        session.Editor.FindChapter("ch01")!.Episodes.Select(episode => episode.SceneId ?? string.Empty).ToArray();
+
+    /// <summary>인스펙터에 선 칸 — 하나만 선다.</summary>
+    private static string Shown(ChapterGraphView graph) =>
+        Assert.Single(new[] { "Selection", "Speaker", "Chapter" },
+            name => graph.FindControl<ScrollViewer>(name + "Section")!.IsVisible);
 
     /// <summary>
     /// 챕터 둘 — ch01은 장면 둘(opening: root · a, hall: b), ch02는 장면ID 없이 x · y.

@@ -198,18 +198,30 @@
                               ResizeDirection="Rows"
                               Background="{DynamicResource ThemeBorderLowBrush}" />
 
-                <!-- 탭은 격자 하나에 담긴다 — 스플리터의 상대가 이 격자(별 행) 하나여야 아래로도 끌린다.
-                     (엑셀 잠금 배너가 이 격자의 윗줄이었다 — 2026-10-29에 걷혔다.) -->
-                <Grid Grid.Row="2" RowDefinitions="*">
+                <!-- 인스펙터 (2026-10-30 HY2 — docs/plans/hierarchy.md): 하이어아키나 판에서 고른 것을 보인다. 프로젝트 →
+                     화자, 챕터 → 조건 · 스탯, 장면 → 장면 이름, 에피소드 · 선택지(길) · 분기 → 그 편집. 머리글이 무엇을
+                     보는지 말한다.
+                     ⛔ [편집 | 화자 | 챕터] 탭(2026-08-24 순서)은 걷혔다 — 고르는 것이 내용을 정한다(소유자: "하이어아키+
+                        인스펙터 방식").
+                     ⚠ 격자 하나에 담긴다 — 스플리터의 상대가 이 격자(별 행) 하나여야 아래로도 끌린다. -->
+                <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                            Padding="10,6"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderThickness="0,0,0,1">
+                        <StackPanel Spacing="1">
+                            <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
+                            <TextBlock x:Name="InspectorSubtitle"
+                                       FontSize="11"
+                                       Opacity="0.65"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
 
-            <!-- 탭 순서 = 손이 가는 순서다 (2026-08-24 소유자: "편집/화자/챕터가 되도록
-                 챕터를 가장 뒤에 보내"). [편집]은 고른 하나를 다루는 자리라 늘 첫째이고,
-                 [챕터]는 판 전체의 읽기 전용 표라 가장 뒤다.
-                 ⚠ 첫 화면은 `RightTabs.SelectedItem = EditTab`이 정한다 — 순서가 아니다.
-                 XAML의 첫 탭에 기대면 순서를 바꾸는 날 조용히 따라 바뀐다. -->
-            <TabControl Grid.Row="0" x:Name="RightTabs" Padding="0">
-                <TabItem x:Name="EditTab" Header="편집" FontSize="12">
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                    <Panel Grid.Row="1">
+                    <!-- 고른 하나 — 에피소드 · 선택지(길) · 분기, 그리고 장면. -->
+                    <ScrollViewer x:Name="SelectionSection"
+                                  HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="6">
                     <TextBlock x:Name="NoSelectionText"
@@ -217,6 +229,16 @@
                                FontSize="11"
                                Opacity="0.55"
                                TextWrapping="Wrap" />
+
+                    <!-- 장면 (2026-10-30 HY2) — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. 이름을
+                         고치면 그 에피소드들의 장면ID가 함께 바뀐다(되돌리기 한 칸). -->
+                    <StackPanel x:Name="ScenePanel" Spacing="6" IsVisible="False">
+                        <TextBox x:Name="SceneNameBox" FontSize="11" PlaceholderText="장면ID — 적고 Enter"
+                                 ToolTip.Tip="고치고 Enter를 누르면 이 장면의 에피소드 모두의 장면ID가 바뀝니다. 비우면 에피소드마다 제 장면(미지정)이 됩니다." />
+                        <TextBlock x:Name="SceneHintText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
+                        <TextBlock Text="에피소드" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0" />
+                        <StackPanel x:Name="SceneEpisodesPanel" Spacing="2" />
+                    </StackPanel>
 
                     <StackPanel x:Name="PropertyPanel" Spacing="6" IsVisible="False">
                         <!-- 개명 = Id를 고치고 Enter (2026-08-16 — 단추 대신 자동 반영).
@@ -445,22 +467,19 @@
                     </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
-                </TabItem>
 
-                <!-- [화자] — 프로젝트 전체의 캐스트 (2026-08-23 소유자: "이 화자탭에서 화자
+                <!-- 화자 — 하이어아키의 프로젝트 줄 (2026-10-30 HY2 · 전에는 [화자] 탭). 프로젝트 전체의 캐스트 (2026-08-23 소유자: "이 화자탭에서 화자
                      추가 삭제를 하는 것이 구조적으로 옳다. 여기서 추가한 화자는 게임
                      project에 저장되며, 모든 챕터가 공유해서 쓴다").
 
                      ⚠ 챕터 워크북의 `화자` 시트는 폐지됐다 — 챕터 엑셀의 어느 시트도 화자를
                      쓰지 않았으므로 애초에 거기 있을 이유가 없었다. 이 탭이 유일한 등록
                      창구이고, 값은 game.definition.json의 speakers에 산다. -->
-                <TabItem x:Name="SpeakerTab" Header="화자" FontSize="12">
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                    <ScrollViewer x:Name="SpeakerSection"
+                                  IsVisible="False"
+                                  HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="4">
-                            <TextBlock Text="화자 (캐스트)"
-                                       FontWeight="SemiBold"
-                                       FontSize="12" />
                             <TextBlock x:Name="SpeakerHintText"
                                        Text="모든 챕터가 같은 목록을 씁니다 — game.definition.json에 저장됩니다. 캐릭터키를 채우면 초상화·표정이 붙습니다(비워도 됩니다)."
                                        FontSize="10"
@@ -490,12 +509,12 @@
                             <StackPanel x:Name="SpeakerListPanel" Spacing="2" Margin="0,6,0,0" />
                         </StackPanel>
                     </ScrollViewer>
-                </TabItem>
-                <!-- [챕터] — 판 전체에 걸린 표들. 조건은 여기서 편집하고(원천은 조건 시트),
+                <!-- 챕터 — 하이어아키의 챕터 줄 (2026-10-30 HY2 · 전에는 [챕터] 탭). 판 전체에 걸린 표들. 조건은 여기서 편집하고(원천은 조건 시트),
                      스탯·픽스처는 어디에서도 값이 안 보이던 것들이라 읽기 전용으로 세운다.
                      에피소드·간선은 그래프가 이미 그리므로 여기 반복하지 않는다. -->
-                <TabItem x:Name="ConditionTab" Header="챕터" FontSize="12">
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                    <ScrollViewer x:Name="ChapterSection"
+                                  IsVisible="False"
+                                  HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConditionSection" Margin="10" Spacing="4">
                             <!-- ⭐ 2026-09-17부터 툴에서 편집한다 (소유자 — 계층을 하나로
@@ -532,8 +551,7 @@
                                  콤보입니다"가 가리킬 곳도 사라졌다. -->
                         </StackPanel>
                     </ScrollViewer>
-                </TabItem>
-            </TabControl>
+                    </Panel>
                 </Grid>
             </Grid>
         </Grid>
