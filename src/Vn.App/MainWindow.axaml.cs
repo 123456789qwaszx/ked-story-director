@@ -241,6 +241,15 @@ public partial class MainWindow : Window
             else if (plan.RefreshCardWriting && _session.SelectedNodeId is { } writtenNodeId)
             {
                 Graph.RefreshWriting(writtenNodeId);
+
+                // 카드 글 칸에서 고친 글이 곁기둥에도 바로 비친다(2026-10-30). 곁기둥에서 쓰는 중이면(초점이 그 안에 있다)
+                // 그대로 둔다 — 고친 곳이 거기다.
+                if (DialogueEditor.IsVisible &&
+                    string.Equals(DialogueEditor.NodeId, writtenNodeId, StringComparison.Ordinal) &&
+                    !DialogueEditor.IsKeyboardFocusWithin)
+                {
+                    DialogueEditor.Rebuild();
+                }
             }
 
             if (plan.RebuildInspector)

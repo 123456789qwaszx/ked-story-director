@@ -16,6 +16,7 @@ using Vn.Authoring.Flow;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
+using Vn.Authoring.Script;
 
 namespace Vn.App.Views;
 
@@ -245,6 +246,8 @@ public partial class GraphEditorView : UserControl
         Zoom50Button.Click += (_, _) => ApplyZoom(0.5, null);
         Zoom100Button.Click += (_, _) => ApplyZoom(1, null);
         Zoom150Button.Click += (_, _) => ApplyZoom(1.5, null);
+
+        _liveWriting.Tick += (_, _) => CommitLiveWriting();
     }
 
     internal void Attach(AuthoringSession session)
@@ -300,8 +303,10 @@ public partial class GraphEditorView : UserControl
         // 카드 안 글 칸에 초점이 있었으면 다시 그린 뒤 그 칸으로 돌려준다(D4) — 판을 비우기 전에 잰다.
         WritingFocus? writing = CaptureWritingFocus();
 
-        GraphCanvas.Children.Clear();
+        // 칸 목록을 먼저 비운다 — 판에서 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다
+        // (넣지 않은 글은 RestoreWritingFocus가 새 칸으로 옮긴다).
         _writingBoxes.Clear();
+        GraphCanvas.Children.Clear();
         _writingShown.Clear();
         _writingLayouts.Clear();
         _cards.Clear();
@@ -1611,9 +1616,29 @@ public partial class GraphEditorView : UserControl
         // 사라진다. 다시 그린 뒤에는 Rebuild가 그 칸으로 초점을 되돌린다.
         box.LostFocus += (_, _) =>
         {
+            if (!ReferenceEquals(_writingBoxes.GetValueOrDefault(nodeId), box))
+            {
+                return;   // 판을 다시 그리느라 떼어 낸 칸이다
+            }
+
+            _liveWriting.Stop();
+
             if (PendingWriting(nodeId, box) is { } text)
             {
-                Dispatcher.UIThread.Post(() => ApplyWriting(nodeId, box, text));
+                Dispatcher.UIThread.Post(() => ApplyWriting(nodeId, box, text, live: false));
+            }
+        };
+
+        // ⭐ <b>쓰는 대로 들어간다</b> (2026-10-30 소유자: *"에피소드 노드 속의 텍스트 편집하는 게 그대로 반영이 바로바로
+        //    되기를"*) — 사람이 치다가 잠깐 멈추면(LiveWritingDelay) 넣는다. 곁기둥이 곧바로 따라온다. 줄을 지우는 것만은
+        //    칸을 나올 때 넣는다 — 다 지우고 새로 쓰는 도중의 모습에서 줄을 은퇴시키면 그 줄의 분기 · 연출이 떨어져 나간다.
+        box.TextChanged += (_, _) =>
+        {
+            if (box.IsFocused)
+            {
+                _liveWritingNodeId = nodeId;
+                _liveWriting.Stop();
+                _liveWriting.Start();
             }
         };
 
@@ -1650,7 +1675,12 @@ public partial class GraphEditorView : UserControl
     /// 다시 넣는다. 엄격한 까닭: 넣은 뒤 칸은 모델의 모습으로 다시 그려지므로, 반쯤 넣으면 못 넣은 줄이
     /// 사람이 쓴 글에서 조용히 사라진다.
     /// </summary>
-    private void ApplyWriting(string nodeId, TextBox box, string text)
+    /// <param name="live">
+    /// 쓰는 도중에 넣는가(<see cref="CommitLiveWriting"/>). 그러면 줄을 지우는 글은 넣지 않고(칸을 나올 때 넣는다), 못
+    /// 넣어도 칸을 붉게 하지 않으며(아직 쓰는 중이다), 칸의 글을 고치지 않고, 잘 들어갔다는 말도 하지 않는다. 초점
+    /// 이탈 · 저장의 넣기는 넣은 뒤 칸을 도구의 표기로 다시 쓴다.
+    /// </param>
+    private void ApplyWriting(string nodeId, TextBox box, string text, bool live)
     {
         if (_session is not { } session || session.Project.FindDialogue(nodeId) is null)
         {
@@ -1659,8 +1689,20 @@ public partial class GraphEditorView : UserControl
 
         UiGuard.Run(session, "글 넣기", () =>
         {
+            // 처음 보인 글의 줄 신원을 잇는다(2026-10-30) — 같은 자리에서 고친 줄은 그 줄이다. 이게 없으면 동기화가 내용만
+            // 보고 짝을 맞추다 두 줄 이상 고친 구간에서 "확신할 수 없다"며 통째로 거절했다.
+            string withIds = _writingLayouts.TryGetValue(nodeId, out ScenarioWritingLayout? shownLayout)
+                ? ScenarioLineIdentity.CarryLineIds(shownLayout.Text, shownLayout.RowOfLine, text)
+                : text;
+
+            string? before = _writingShown.GetValueOrDefault(nodeId);
             ScenarioPasteOutcome outcome = session.Editor.ApplyScenarioText(
-                nodeId, text, session.Definition, confirmDeletes: true, strict: true);
+                nodeId, withIds, session.Definition, confirmDeletes: !live, strict: true);
+
+            if (!outcome.Applied && live)
+            {
+                return;
+            }
 
             if (!outcome.Applied)
             {
@@ -1673,16 +1715,56 @@ public partial class GraphEditorView : UserControl
                 return;
             }
 
-            // 판이 다시 그려지지 않았으면(바뀐 줄이 없다 — 글이 모양만 달랐다) 그 칸이 아직 살아 있다. 그때만
-            // 기준을 칸의 글로 옮긴다 — 다시 그렸으면 새 칸이 모델의 글을 기준으로 이미 들고 있다.
-            if (_writingBoxes.TryGetValue(nodeId, out TextBox? live) && ReferenceEquals(live, box))
+            // 기준(처음 보인 글과 그 줄 짝)을 지금 모델의 글로 옮긴다 — 다음 넣기가 이 줄 짝으로 신원을 잇는다. 판이 다시
+            // 그려졌으면 새 칸이 이미 그 기준을 들고 있다.
+            ScenarioWritingLayout now = WorkingDialoguePreview.ScenarioWriting(session.Project, nodeId, session.Definition);
+            _writingShown[nodeId] = now.Text;
+            _writingLayouts[nodeId] = now;
+
+            TextBox current = _writingBoxes.GetValueOrDefault(nodeId) ?? box;
+            MarkWriting(current, problem: null);
+
+            if (live)
             {
-                _writingShown[nodeId] = text;
+                return;
             }
 
-            MarkWriting(box, problem: null);
-            session.SetStatus($"글을 넣었습니다 — {outcome.Summary()}. 되돌리기 한 번이면 돌아갑니다.");
+            // 다 쓰고 나왔다 — 칸을 도구의 표기(화자 띄어쓰기 · 분기 자리 빈 줄)로 다시 쓴다.
+            if (!current.IsFocused)
+            {
+                current.Text = now.Text;
+            }
+
+            // 쓰는 동안 이미 다 들어갔으면(표기만 달랐다) 알릴 것이 없다.
+            if (!string.Equals(before, now.Text, StringComparison.Ordinal))
+            {
+                session.SetStatus($"글을 넣었습니다 — {outcome.Summary()}. 되돌리기 한 번이면 돌아갑니다.");
+            }
         });
+    }
+
+    /// <summary>쓰다가 이만큼 멈추면 넣는다.</summary>
+    private static readonly TimeSpan LiveWritingDelay = TimeSpan.FromMilliseconds(400);
+
+    private readonly DispatcherTimer _liveWriting = new() { Interval = LiveWritingDelay };
+
+    /// <summary>쓰는 중인 글 칸의 노드 — 멈추면 넣을 곳.</summary>
+    private string? _liveWritingNodeId;
+
+    /// <summary>
+    /// 쓰다가 멈춘 글 칸의 글을 넣는다(<see cref="LiveWritingDelay"/>가 지나면 저절로 — 화면 시험은 이것을 바로 부른다).
+    /// 넣지 않은 글이 없으면 아무것도 하지 않는다.
+    /// </summary>
+    internal void CommitLiveWriting()
+    {
+        _liveWriting.Stop();
+
+        if (_liveWritingNodeId is { } nodeId &&
+            _writingBoxes.TryGetValue(nodeId, out TextBox? box) &&
+            PendingWriting(nodeId, box) is { } text)
+        {
+            ApplyWriting(nodeId, box, text, live: true);
+        }
     }
 
     /// <summary>
@@ -1693,7 +1775,7 @@ public partial class GraphEditorView : UserControl
     {
         if (CaptureWritingFocus() is { Dirty: true } focus && _writingBoxes.TryGetValue(focus.NodeId, out TextBox? box))
         {
-            ApplyWriting(focus.NodeId, box, focus.Text);
+            ApplyWriting(focus.NodeId, box, focus.Text, live: false);
         }
     }
 

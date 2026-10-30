@@ -373,7 +373,17 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(() =>
+        // 글자만 바뀌었으면(줄이 생기거나 빠지거나 옮겨지지 않았다) 대사 내용의 변경이다 — 화면 구조는 그대로라 판을
+        // 통째로 다시 그리지 않는다. 카드 글 칸에서 바로바로 넣는 동안(2026-10-30) 쓰던 칸이 흔들리지 않는다.
+        bool textOnly =
+            plan.Entries.All(entry => entry.Kind is ScriptSyncKind.Unchanged or ScriptSyncKind.Modified) &&
+            plan.Entries
+                .Where(entry => entry.NewIndex is not null)
+                .OrderBy(entry => entry.NewIndex!.Value)
+                .Select(entry => entry.LineId)
+                .SequenceEqual(script.ActiveLines.Select(line => line.Id), StringComparer.Ordinal);
+
+        Mutate(textOnly ? ProjectChangeKind.DialogueContent : ProjectChangeKind.Structure, () =>
         {
             ScriptLocale locale = script.RequireLocale(plan.Locale);
             var byId = script.Lines.ToDictionary(line => line.Id, StringComparer.Ordinal);
