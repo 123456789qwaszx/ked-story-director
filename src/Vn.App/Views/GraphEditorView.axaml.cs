@@ -46,9 +46,20 @@ public partial class GraphEditorView : UserControl
     private const double SpineInset = 10;
 
     // 대사 카드 안의 글 칸 (D4) — 다섯 줄 남짓. 넘치면 칸이 스크롤한다(카드 높이가 글에 따라 출렁이면
-    // 아래 레일과 선택지 칸이 쓰는 동안 들썩인다).
+    // 아래 레일과 선택지 칸이 쓰는 동안 들썩인다). 「조건 분기」 자리 빈 줄만큼은 커진다(WritingBoxHeightOf) — 분기는
+    // 쓰는 동안 늘지 않고 판을 다시 그릴 때만 바뀐다.
     private const double WritingBoxHeight = 88;
     private const double WritingBoxGap = 6;
+
+    /// <summary>
+    /// 글 칸의 줄 높이 — 고정한다. 「조건 분기」 자리 빈 줄마다 칸이 이만큼 커지므로(2026-10-30 소유자: *"그 분기의 공간만큼
+    /// 텍스트 줄 간격을 늘려"*), 카드 높이가 그리기 전에 정해져야 아래 레일과 선택지 칸이 제자리에 선다.
+    /// </summary>
+    private const double WritingLineHeight = 15;
+
+    /// <summary>그 글의 분기 자리 빈 줄만큼 키운 글 칸 높이 — 대사가 보이는 양은 분기가 없을 때와 같다.</summary>
+    private static double WritingBoxHeightOf(ScenarioWritingLayout layout) =>
+        WritingBoxHeight + (layout.RowOfBranch.Count * WritingLineHeight);
     private const string WritingTag = "writing:";
 
     private const double ProxyWidth = 250;
@@ -173,8 +184,8 @@ public partial class GraphEditorView : UserControl
     private readonly Dictionary<string, TextBox> _writingBoxes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _writingShown = new(StringComparer.Ordinal);
 
-    /// <summary>글 칸마다, 대본의 줄(LineId)이 칸 글의 몇 번째 줄인가 — 분기 점을 그 대사 높이에 세운다(2026-10-30).</summary>
-    private readonly Dictionary<string, IReadOnlyDictionary<string, int>> _writingRows = new(StringComparer.Ordinal);
+    /// <summary>글 칸마다 그 글의 줄 짝 — 분기 점을 제 분기 자리(빈 줄)에 세운다(2026-10-30).</summary>
+    private readonly Dictionary<string, ScenarioWritingLayout> _writingLayouts = new(StringComparer.Ordinal);
 
     // 끄는 동안의 자리 (D3 · 2026-10-29, docs/design/two-graphs.md §6-2) — 카드 · 무리 · 접힌 판
     // 어느 끌기든 프로젝트에는 <b>놓을 때 한 번</b> 적는다(되돌리기 한 칸). 그때까지 화면은 이 값을 따른다.
@@ -292,7 +303,7 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Children.Clear();
         _writingBoxes.Clear();
         _writingShown.Clear();
-        _writingRows.Clear();
+        _writingLayouts.Clear();
         _cards.Clear();
         _proxies.Clear();
         _edges.Clear();
@@ -1565,10 +1576,10 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private TextBox BuildWritingBox(string nodeId)
     {
-        (string shown, IReadOnlyDictionary<string, int> rows) =
-            WorkingDialoguePreview.ScenarioWriting(_session!.Project, nodeId, _session.Definition);
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, nodeId, _session.Definition);
+        string shown = layout.Text;
         _writingShown[nodeId] = shown;
-        _writingRows[nodeId] = rows;
+        _writingLayouts[nodeId] = layout;
 
         var box = new TextBox
         {
@@ -1576,8 +1587,9 @@ public partial class GraphEditorView : UserControl
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
             FontSize = 11,
-            Height = WritingBoxHeight,
-            MinHeight = WritingBoxHeight,
+            LineHeight = WritingLineHeight,
+            Height = WritingBoxHeightOf(layout),
+            MinHeight = WritingBoxHeightOf(layout),
             Margin = new Thickness(0, WritingBoxGap, 0, 0),
             Padding = new Thickness(4, 3),
             PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄",
@@ -1700,11 +1712,10 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        (string shown, IReadOnlyDictionary<string, int> rows) =
-            WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId, _session.Definition);
-        _writingShown[nodeId] = shown;
-        _writingRows[nodeId] = rows;
-        box.Text = shown;
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId, _session.Definition);
+        _writingShown[nodeId] = layout.Text;
+        _writingLayouts[nodeId] = layout;
+        box.Text = layout.Text;
     }
 
     /// <summary>
@@ -2586,9 +2597,11 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 분기 점의 높이를 잰다 — 글 칸에서 <b>그 대사가 선 줄</b>의 가운데(줄이 접혀도 · 스크롤해도 실제 글자 배치로).
-    /// 한 줄에 분기가 여럿이면 다녀오는 차례로 위에서 아래로 조금씩 비켜 선다. 그 줄이 칸 밖으로 스크롤돼 있으면 칸의 위 ·
-    /// 아래 끝에 붙고 흐려진다. 바뀌었으면 점과 그 카드에서 나가는 선을 다시 놓는다.
+    /// 분기 점의 높이를 잰다 — 글 칸에서 <b>그 분기 자리 빈 줄</b>의 가운데(줄이 접혀도 · 스크롤해도 실제 글자 배치로).
+    /// 분기 자리는 분기가 걸린 대사 줄 바로 위에 분기마다 하나씩 낀 빈 줄이라(<see cref="WorkingDialoguePreview.ScenarioWriting"/>
+    /// · 2026-10-30 소유자: *"그 생성한 텍스트 라인 위쪽에 … 분기의 공간만큼 텍스트 줄 간격을 늘려"*), 같은 자리의 분기들도
+    /// 점이 겹치지 않는다 — 끌어 잇는 손잡이다. 그 자리가 칸 밖으로 스크롤돼 있으면 칸의 위 · 아래 끝에 붙고 흐려진다.
+    /// 바뀌었으면 점과 그 카드에서 나가는 선을 다시 놓는다.
     /// </summary>
     private void MeasureLineAnchors(NodeCard card)
     {
@@ -2602,48 +2615,44 @@ public partial class GraphEditorView : UserControl
 
         string text = box.Text ?? string.Empty;
         IReadOnlyDictionary<string, int> rows =
-            _writingRows.GetValueOrDefault(card.NodeId) ?? new Dictionary<string, int>();
+            _writingLayouts.GetValueOrDefault(card.NodeId)?.RowOfBranch ?? new Dictionary<string, int>();
         double top = boxTop.Y + PortRadius + 1;
         double bottom = boxTop.Y + box.Bounds.Height - PortRadius - 1;
         bool changed = false;
 
-        var lines = Enumerable.Range(0, card.Ports.Count)
-            .Where(card.IsLinePort)
-            .GroupBy(index => card.Ports[index].ExecutionPort?.BranchOpenLineId ?? string.Empty);
-
-        foreach (IGrouping<string, int> line in lines)
+        for (int index = 0; index < card.Ports.Count; index++)
         {
-            double center = top;
-
-            if (rows.TryGetValue(line.Key, out int row) &&
-                presenter.TranslatePoint(new Point(0, RowMiddle(presenter, text, row)), card.Visual) is { } at)
+            if (!card.IsLinePort(index))
             {
-                center = at.Y;
+                continue;
             }
 
-            List<int> ports = line.ToList();
+            string key = card.Ports[index].Key;
+            double wanted = top;
 
-            for (int order = 0; order < ports.Count; order++)
+            if (card.Ports[index].ExecutionPort?.ExitKey is { } branch &&
+                rows.TryGetValue(branch, out int row) &&
+                presenter.TranslatePoint(new Point(0, RowMiddle(presenter, text, row)), card.Visual) is { } at)
             {
-                string key = card.Ports[ports[order]].Key;
-                double wanted = center + ((order - ((ports.Count - 1) / 2.0)) * ((PortRadius * 2) + 1));
-                double y = Math.Clamp(wanted, top, Math.Max(top, bottom));
-                bool outOfView = Math.Abs(y - wanted) > 0.5;
+                wanted = at.Y;
+            }
 
-                if (!card.LineAnchorY.TryGetValue(key, out double was) || Math.Abs(was - y) > 0.5 ||
-                    card.LineOutOfView.Contains(key) != outOfView)
+            double y = Math.Clamp(wanted, top, Math.Max(top, bottom));
+            bool outOfView = Math.Abs(y - wanted) > 0.5;
+
+            if (!card.LineAnchorY.TryGetValue(key, out double was) || Math.Abs(was - y) > 0.5 ||
+                card.LineOutOfView.Contains(key) != outOfView)
+            {
+                card.LineAnchorY[key] = y;
+                changed = true;
+
+                if (outOfView)
                 {
-                    card.LineAnchorY[key] = y;
-                    changed = true;
-
-                    if (outOfView)
-                    {
-                        card.LineOutOfView.Add(key);
-                    }
-                    else
-                    {
-                        card.LineOutOfView.Remove(key);
-                    }
+                    card.LineOutOfView.Add(key);
+                }
+                else
+                {
+                    card.LineOutOfView.Remove(key);
                 }
             }
         }
@@ -2662,7 +2671,7 @@ public partial class GraphEditorView : UserControl
         }
     }
 
-    /// <summary>글의 <paramref name="row"/>번째 줄(0부터)의 첫 글자가 선 화면 줄의 가운데 높이 — 글 칸 안 좌표.</summary>
+    /// <summary>글의 <paramref name="row"/>번째 줄(0부터)이 선 화면 줄의 가운데 높이 — 글 칸 안 좌표.</summary>
     private static double RowMiddle(Avalonia.Controls.Presenters.TextPresenter presenter, string text, int row)
     {
         int index = 0;
@@ -3022,7 +3031,7 @@ public partial class GraphEditorView : UserControl
         return card.Visual.Bounds.Height > 0
             ? card.Visual.Bounds.Height
             : HeaderHeight + (card.RowCount * PortRowHeight) + ((CardPadding + CardBorder) * 2) +
-              (card.NodeKind == GraphNodeKind.Dialogue ? WritingBoxGap + WritingBoxHeight : 0);
+              (card.WritingBox is { } box ? WritingBoxGap + box.Height : 0);
     }
 
     // ── 조작 ────────────────────────────────────────────────────────────────

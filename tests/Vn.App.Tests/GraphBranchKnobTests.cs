@@ -15,19 +15,21 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>분기 점은 글 칸의 그 대사 높이에 선다</b> (2026-10-30 소유자: *"현재는 분기가 대사 적는 공간 위쪽에서 분기를 표시하는
-/// 데, 대신에 어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에 분기 점이 생성되도록"*).
+/// <b>분기 점은 글 칸에서 그 대사 바로 위, 분기 자리 빈 줄에 선다</b> (2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지,
+/// 대사의 정확한 위치에 분기 점이 생성되도록"* → *"그 생성한 텍스트 라인 위쪽에 위치시키고, 조건 분기가 있다면, 그 분기의
+/// 공간만큼 텍스트 줄 간격을 늘려"* · *"같은 자리에 여러 분기가 있을 때, 점이 겹쳐지지 않게 … 이 점을 끌어다가 노드에다가
+/// 연결하는 식으로 써야하니까"*).
 ///
-/// 전에는 「분기」 포트가 카드 머리 밑 포트 줄에 서서, 카드만 봐서는 어느 대사 앞에서 갈라지는지 알 수 없었다. 이제 점이
-/// 카드 가장자리, 글 칸에서 <b>그 대사가 선 줄</b>의 높이에 서고 선도 거기서 나간다. 줄이 접히고 스크롤해도 실제 글자
-/// 배치로 잰다.
+/// 전에는 「분기」 포트가 카드 머리 밑 포트 줄에 서서, 카드만 봐서는 어느 대사 앞에서 갈라지는지 알 수 없었다. 이제 분기가 걸린
+/// 대사 위에 분기마다 빈 줄이 하나씩 끼고(<c>WorkingDialoguePreview.ScenarioWriting</c>), 점이 카드 가장자리 그 빈 줄의 높이에
+/// 서고 선도 거기서 나간다. 줄이 접히고 스크롤해도 실제 글자 배치로 잰다.
 /// </summary>
 public sealed class GraphBranchKnobTests
 {
     private const int GraphTab = 1;
 
     [Fact]
-    public void 분기_점은_그_대사_줄의_높이_카드_가장자리에_서고_선도_거기서_나간다() => HeadlessUi.Run(() =>
+    public void 분기_점은_그_대사_위_빈_줄의_높이_카드_가장자리에_서고_선도_거기서_나간다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =
             Stage("첫 줄", "둘째 줄", "셋째 줄", "넷째 줄");
@@ -38,7 +40,9 @@ public sealed class GraphBranchKnobTests
         Ellipse knob = Assert.Single(Knobs(canvas, card.Id));
         Point center = Center(knob);
 
-        Assert.Equal(RowMiddle(window, card.Id, "셋째 줄"), center.Y, 1.5);
+        Assert.Equal(RowMiddle(window, card.Id, "셋째 줄", rowsAbove: 1), center.Y, 1.5);
+        Assert.True(center.Y < RowMiddle(window, card.Id, "셋째 줄") - 8, "점은 그 대사 위에 선다");
+        Assert.True(center.Y > RowMiddle(window, card.Id, "둘째 줄") + 8, "앞 대사와의 사이다");
         Assert.Equal(CardLeft(canvas, card.Id) + CardWidthOf(canvas, card.Id), center.X, 1.5);
 
         // 선은 점의 가운데에서 가로로 나간다.
@@ -51,7 +55,7 @@ public sealed class GraphBranchKnobTests
     });
 
     [Fact]
-    public void 같은_줄의_분기_둘은_그_줄을_가운데로_위아래에_선다() => HeadlessUi.Run(() =>
+    public void 같은_자리의_분기_둘은_저마다의_빈_줄에_서서_점이_겹치지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =
             Stage("첫 줄", "둘째 줄", "셋째 줄");
@@ -62,8 +66,12 @@ public sealed class GraphBranchKnobTests
         double[] ys = Knobs(Canvas(window), card.Id).Select(knob => Center(knob).Y).Order().ToArray();
 
         Assert.Equal(2, ys.Length);
-        Assert.True(ys[1] - ys[0] >= 10, "두 점이 겹치지 않게 비켜 선다");
-        Assert.Equal(RowMiddle(window, card.Id, "둘째 줄"), (ys[0] + ys[1]) / 2, 1.5);
+        Assert.True(ys[1] - ys[0] >= 12, "점(지름 12)이 겹치지 않는다 — 끌어 잇는 손잡이다");
+        Assert.Equal(RowMiddle(window, card.Id, "둘째 줄", rowsAbove: 2), ys[0], 1.5);
+        Assert.Equal(RowMiddle(window, card.Id, "둘째 줄", rowsAbove: 1), ys[1], 1.5);
+
+        // 글 칸은 분기 자리 빈 줄만큼 커진다 — 대사가 보이는 양은 분기가 없을 때와 같다(줄 높이 15).
+        Assert.Equal(88 + (2 * 15), WritingBox(window, card.Id).Bounds.Height, 0.5);
 
         window.Close();
     });
@@ -89,7 +97,7 @@ public sealed class GraphBranchKnobTests
         Dispatcher.UIThread.RunJobs();
 
         knob = Assert.Single(Knobs(canvas, card.Id));
-        Assert.Equal(RowMiddle(window, card.Id, "13번째 줄"), Center(knob).Y, 1.5);
+        Assert.Equal(RowMiddle(window, card.Id, "13번째 줄", rowsAbove: 1), Center(knob).Y, 1.5);
         Assert.Equal(1, knob.Opacity);
 
         window.Close();
@@ -174,12 +182,15 @@ public sealed class GraphBranchKnobTests
         Canvas(window).Children.OfType<Border>().Single(border => border.Tag as string == nodeId)
             .GetVisualDescendants().OfType<TextBox>().Single();
 
-    /// <summary>글 칸에서 그 글이 선 화면 줄의 가운데 높이 — 판 좌표.</summary>
-    private static double RowMiddle(MainWindow window, string nodeId, string text)
+    /// <summary>
+    /// 글 칸에서 그 글이 선 화면 줄(<paramref name="rowsAbove"/>면 그만큼 위의 빈 줄 — 분기 자리)의 가운데 높이 — 판 좌표.
+    /// </summary>
+    private static double RowMiddle(MainWindow window, string nodeId, string text, int rowsAbove = 0)
     {
         TextBox box = WritingBox(window, nodeId);
         TextPresenter presenter = box.FindDescendantOfType<TextPresenter>()!;
-        Rect caret = presenter.TextLayout.HitTestTextPosition(box.Text!.IndexOf(text, StringComparison.Ordinal));
+        int at = box.Text!.IndexOf(text, StringComparison.Ordinal) - rowsAbove;   // 빈 줄은 줄바꿈 한 글자다
+        Rect caret = presenter.TextLayout.HitTestTextPosition(at);
 
         return presenter.TranslatePoint(new Point(0, caret.Y + (caret.Height / 2)), Canvas(window))!.Value.Y;
     }
