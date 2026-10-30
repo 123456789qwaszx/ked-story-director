@@ -30,6 +30,11 @@
                 <Button x:Name="AddDialogueButton" Content="+ 대사 노드" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                 <Button x:Name="DeleteNodeButton" Content="노드 삭제" />
+                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                <!-- 선택지 칸 접기 (2026-10-30 CF) — 모든 카드를 한 번에. 카드마다는 줄기 위 「▾」 · 접힌 칩. -->
+                <Button x:Name="FoldChoicesButton"
+                        Content="선택지 접기"
+                        ToolTip.Tip="모든 카드의 선택지 칸을 접거나 폅니다 — 접어도 이은 길은 보입니다. 카드마다는 칸 위 ▾ · 접힌 칩을 누릅니다." />
             </StackPanel>
         </Border>
 
