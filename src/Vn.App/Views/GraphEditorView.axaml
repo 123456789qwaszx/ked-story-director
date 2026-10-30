@@ -38,8 +38,38 @@
              산다: 챕터 그래프에는 안 보인다.
              ⚠ 자리만 이 뷰가 내주고 <b>내용은 셸이 짓는다</b>(SetSidePanel) — 편집기의
              배선이 세션·선택 전환과 얽혀 있어 뷰로 옮기면 그 배선이 두 벌이 된다. -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,6,460">
-            <ScrollViewer x:Name="GraphScroll"
+        <Grid Grid.Row="1">
+            <!-- 하이어아키 · 판 · 인스펙터 — 유니티와 같은 차례 (2026-10-30 소유자: "하이어아키를 그래프 왼쪽 Column으로").
+                 하이어아키 폭은 사람이 끈다(최소 140 — 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" MinWidth="140" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="460" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 하이어아키 (2026-10-30 HY3 — 챕터 그래프와 같은 StoryHierarchy, 내용은 셸이 채운다). -->
+            <Border Grid.Column="0"
+                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                            Padding="10,6"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderThickness="0,0,0,1">
+                        <TextBlock Text="하이어아키" FontWeight="SemiBold" />
+                    </Border>
+                    <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          ResizeDirection="Columns"
+                          Background="{DynamicResource ThemeBorderLowBrush}" />
+
+            <ScrollViewer Grid.Column="2"
+                          x:Name="GraphScroll"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
                 <!-- 배율은 레이아웃 변환이다 — 스크롤 범위가 확대/축소를 그대로 따라온다 (W40). -->
@@ -54,8 +84,9 @@
                 </LayoutTransformControl>
             </ScrollViewer>
 
-            <!-- 미니맵 (W40) — 우측 하단에 전체 맵과 현재 배율. 클릭·드래그로 뷰포트 이동. -->
-            <Border HorizontalAlignment="Right"
+            <!-- 미니맵 (W40) — 우측 하단에 전체 맵과 현재 배율. 클릭·드래그로 뷰포트 이동. 판과 같은 칸에 겹쳐 선다. -->
+            <Border Grid.Column="2"
+                    HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
                     Margin="0,0,18,18"
                     CornerRadius="6"
@@ -92,45 +123,29 @@
                 </StackPanel>
             </Border>
 
-            <GridSplitter Grid.Column="1"
+            <GridSplitter Grid.Column="3"
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
-            <!-- 우측 기둥 = 위 하이어아키 · 아래 인스펙터 (2026-10-30 HY3 — docs/plans/hierarchy.md). 하이어아키는 챕터
-                 그래프와 같은 컨트롤(StoryHierarchy)이고 내용은 셸이 채운다. 인스펙터의 내용(대사 편집기 · 요약)도 셸이 짓는다. -->
-            <Border Grid.Column="2"
+            <!-- 우측 기둥 = 인스펙터 (2026-10-30 HY3 — docs/plans/hierarchy.md · 하이어아키는 같은 날 판 왼쪽 기둥으로 옮겼다).
+                 내용(대사 편집기 · 요약)은 셸이 짓는다. -->
+            <Border Grid.Column="4"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                     BorderThickness="1,0,0,0">
-                <Grid RowDefinitions="200,6,*">
-                    <Grid Grid.Row="0" RowDefinitions="Auto,*">
-                        <Border Grid.Row="0"
-                                Padding="10,6"
-                                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
-                                BorderThickness="0,0,0,1">
-                            <TextBlock Text="하이어아키" FontWeight="SemiBold" />
-                        </Border>
-                        <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
-                    </Grid>
-
-                    <GridSplitter Grid.Row="1"
-                                  ResizeDirection="Rows"
-                                  Background="{DynamicResource ThemeBorderLowBrush}" />
-
-                    <Grid Grid.Row="2" RowDefinitions="Auto,*">
-                        <Border Grid.Row="0"
-                                Padding="10,6"
-                                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
-                                BorderThickness="0,0,0,1">
-                            <StackPanel Spacing="1">
-                                <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
-                                <TextBlock x:Name="InspectorSubtitle"
-                                           FontSize="11"
-                                           Opacity="0.65"
-                                           TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </Border>
-                        <ContentControl Grid.Row="1" x:Name="SideHost" />
-                    </Grid>
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                            Padding="10,6"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderThickness="0,0,0,1">
+                        <StackPanel Spacing="1">
+                            <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
+                            <TextBlock x:Name="InspectorSubtitle"
+                                       FontSize="11"
+                                       Opacity="0.65"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                    <ContentControl Grid.Row="1" x:Name="SideHost" />
                 </Grid>
             </Border>
         </Grid>

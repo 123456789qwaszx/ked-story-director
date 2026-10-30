@@ -68,8 +68,59 @@
 
         <!-- 340 — 메인 우측 열이 챕터 모드에서 접히며 얻은 폭의 일부를 패널에 준다.
              조건 식·대사 미리보기가 300에서는 줄바꿈으로 부서졌다. -->
-        <Grid Grid.Row="1" ColumnDefinitions="*,6,340">
-            <Grid Grid.Column="0">
+        <Grid Grid.Row="1">
+            <!-- 하이어아키 · 판 · 인스펙터 — 유니티와 같은 차례(2026-10-30). 하이어아키 폭은 사람이 끈다(최소 140 —
+                 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" MinWidth="140" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="340" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 하이어아키 (2026-10-30 소유자 — docs/plans/hierarchy.md): 프로젝트 → 챕터 → 장면 → 에피소드를
+                 유니티 하이어아키처럼 접었다 편다. 챕터 목록(2026-08-22에 창 맨 왼쪽 열에서 이 기둥으로 이사)이
+                 섰던 자리다 — 그 목록이 하던 챕터 고르기 · 우클릭(이름 바꾸기 · 제거)을 챕터 줄이 잇는다.
+                 ⭐ 판 <b>왼쪽 기둥</b>이다 (2026-10-30 소유자: "하이어아키를 그래프 왼쪽 Column으로") — 유니티처럼
+                 하이어아키 · 판 · 인스펙터가 왼쪽에서 오른쪽으로 선다. 폭은 오른쪽 스플리터로 사람이 정한다.
+                 ⚠ 줄을 고른 뒤의 일(챕터 · 에피소드 고르기, 아래 칸 바꾸기)은 이 뷰가, 내용(프로젝트 · 챕터 목록)과
+                 챕터 줄 우클릭은 셸(MainWindow)이 짓는다 — 세션 전환 · 개명 규칙이 셸에 한 벌이다. -->
+            <Border Grid.Column="0"
+                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                            Padding="10,6"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="하이어아키" FontWeight="SemiBold" />
+                                <TextBlock x:Name="ChapterSummary"
+                                           FontSize="11"
+                                           Opacity="0.65"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    x:Name="AddChapterButton"
+                                    Content="＋"
+                                    FontSize="12"
+                                    Padding="7,2"
+                                    VerticalAlignment="Top"
+                                    ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
+                        </Grid>
+                    </Border>
+
+                    <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          ResizeDirection="Columns"
+                          Background="{DynamicResource ThemeBorderLowBrush}" />
+
+            <Grid Grid.Column="2">
                 <!-- 휠 확대·축소 / 가운데 단추 끌어 이동 (2026-08-17 소유자, Ctrl 요구는 2026-08-18 해제).
                      연출 그래프와 같은 손놀림이다 — 판이 둘인데 다루는 법이 다르면
                      손이 매번 헷갈린다. 배율은 ZoomHost의 LayoutTransform이 진다:
@@ -133,7 +184,7 @@
                 </StackPanel>
             </Grid>
 
-            <GridSplitter Grid.Column="1"
+            <GridSplitter Grid.Column="3"
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
@@ -143,68 +194,16 @@
                  두 탭으로 나눈 이유: 조건은 챕터 전체에 걸린 표(선택과 무관)이고,
                  편집은 지금 고른 하나에 걸린다. 섞여 있으면 조건을 보려고 매번 스크롤해야 했다.
                  조건이 앞 탭이다 — 흐름을 잇기 전에 조건부터 정의하는 순서라서. -->
-            <!-- ⚠ 스플리터 아래는 <b>별(*) 행 하나</b>여야 한다 (2026-08-22 소유자 보고:
-                 "위로만 움직이고 아래쪽으로는 동작을 안 하는"). 처음엔 `200,6,Auto,*`라
-                 스플리터 바로 아래가 잠금 배너(Auto)였다 — 아래로 끌면 목록을 늘리려고
-                 Auto 행을 줄여야 하는데 Auto는 이미 내용 높이라 더 줄 것이 없어 멈췄고,
-                 위로 끌 때만 그 행이 늘며 움직였다. 배너와 탭을 안쪽 격자로 묶어
-                 스플리터의 상대가 별 행이 되게 한다. -->
-            <Grid Grid.Column="2" x:Name="ChapterRightRows">
-                <Grid.RowDefinitions>
-                    <!-- 목록: 사람이 끄는 높이. 최소 90 — 0까지 끌어 사라지면 다시 잡을
-                         손잡이가 없다. -->
-                    <RowDefinition Height="200" MinHeight="90" />
-                    <RowDefinition Height="6" />
-                    <RowDefinition Height="*" MinHeight="120" />
-                </Grid.RowDefinitions>
-
-                <!-- 하이어아키 (2026-10-30 소유자 — docs/plans/hierarchy.md): 프로젝트 → 챕터 → 장면 → 에피소드를
-                     유니티 하이어아키처럼 접었다 편다. 챕터 목록(2026-08-22에 창 맨 왼쪽 열에서 이 기둥으로 이사)이
-                     섰던 자리다 — 그 목록이 하던 챕터 고르기 · 우클릭(이름 바꾸기 · 제거)을 챕터 줄이 잇는다.
-                     높이는 아래 스플리터로 사람이 정한다.
-                     ⚠ 줄을 고른 뒤의 일(챕터 · 에피소드 고르기, 아래 칸 바꾸기)은 이 뷰가, 내용(프로젝트 · 챕터 목록)과
-                     챕터 줄 우클릭은 셸(MainWindow)이 짓는다 — 세션 전환 · 개명 규칙이 셸에 한 벌이다. -->
-                <Border Grid.Row="0"
-                        BorderBrush="{DynamicResource ThemeBorderLowBrush}"
-                        BorderThickness="0,0,0,1">
-                    <Grid RowDefinitions="Auto,*">
-                        <Border Grid.Row="0"
-                                Padding="10,6"
-                                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
-                                BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="하이어아키" FontWeight="SemiBold" />
-                                    <TextBlock x:Name="ChapterSummary"
-                                               FontSize="11"
-                                               Opacity="0.65"
-                                               TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                                <Button Grid.Column="1"
-                                        x:Name="AddChapterButton"
-                                        Content="＋"
-                                        FontSize="12"
-                                        Padding="7,2"
-                                        VerticalAlignment="Top"
-                                        ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
-                            </Grid>
-                        </Border>
-
-                        <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
-                    </Grid>
-                </Border>
-
-                <GridSplitter Grid.Row="1"
-                              ResizeDirection="Rows"
-                              Background="{DynamicResource ThemeBorderLowBrush}" />
+            <!-- 오른쪽 기둥은 인스펙터 하나다 (2026-10-30 — 하이어아키는 판 왼쪽 기둥으로 옮겼다). -->
+            <Grid Grid.Column="4" x:Name="ChapterRightRows">
 
                 <!-- 인스펙터 (2026-10-30 HY2 — docs/plans/hierarchy.md): 하이어아키나 판에서 고른 것을 보인다. 프로젝트 →
                      화자, 챕터 → 조건 · 스탯, 장면 → 장면 이름, 에피소드 · 선택지(길) · 분기 → 그 편집. 머리글이 무엇을
                      보는지 말한다.
                      ⛔ [편집 | 화자 | 챕터] 탭(2026-08-24 순서)은 걷혔다 — 고르는 것이 내용을 정한다(소유자: "하이어아키+
                         인스펙터 방식").
-                     ⚠ 격자 하나에 담긴다 — 스플리터의 상대가 이 격자(별 행) 하나여야 아래로도 끌린다. -->
-                <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                     -->
+                <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"

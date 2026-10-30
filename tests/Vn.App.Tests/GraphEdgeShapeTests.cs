@@ -216,7 +216,7 @@ public sealed class GraphEdgeShapeTests : IDisposable
         session.SetFileExpanded(fileId, expanded: true);
 
         var graph = new GraphEditorView();
-        var window = new Window { Width = 1400, Height = 900, Content = graph };
+        var window = new Window { Width = 1640, Height = 900, Content = graph };   // 판 폭 ≈ 940 — 하이어아키(왼쪽 230)와 인스펙터(오른쪽 460) 사이
         window.Show();
         graph.Attach(session);
         graph.Rebuild();

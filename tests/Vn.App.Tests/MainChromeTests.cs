@@ -139,37 +139,43 @@ public sealed class MainChromeTests
     });
 
     /// <summary>
-    /// 2026-08-22 소유자 보고 — 챕터 목록 스플리터가 "위로만 움직이고 아래쪽으로는
-    /// 동작을 안 하는" 결함. 스플리터 <b>바로 아래가 잠금 배너(Auto)</b>였던 것이 정체다:
-    /// 아래로 끌려면 그 행을 줄여야 하는데 Auto는 이미 내용 높이라 줄 것이 없었고,
-    /// 위로 끌 때만 그 행이 늘며 움직였다. 배너와 탭을 안쪽 격자로 묶어 스플리터의
-    /// 상대를 <b>별(*) 행</b>으로 만들었다.
+    /// 하이어아키는 판 <b>왼쪽 기둥</b>에 선다 (2026-10-30 소유자: *"하이어아키를 그래프 왼쪽 Column으로"*) — 유니티처럼
+    /// 하이어아키 · 판 · 인스펙터가 왼쪽에서 오른쪽으로. 두 그래프가 같다. 하이어아키 폭은 사람이 끄는 절대 폭이고 하한이
+    /// 있다(0까지 접히면 다시 잡을 손잡이가 없다).
+    ///
+    /// (⛔ 전에 이 자리를 지키던 「챕터 목록 스플리터 아래는 별 행이다」(2026-08-22)는 하이어아키가 위 · 인스펙터가 아래로
+    /// 서던 때의 것이라 같은 날 걷혔다.)
     /// </summary>
     [Fact]
-    public void 챕터_목록_스플리터_아래는_별_행이다() => HeadlessUi.Run(() =>
+    public void 하이어아키는_두_그래프_모두_판_왼쪽_기둥에_선다() => HeadlessUi.Run(() =>
     {
         var window = new MainWindow();
         window.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        var chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
-        GridSplitter splitter = Assert.Single(
-            chapterGraph.GetVisualDescendants().OfType<GridSplitter>(),
-            item => item.ResizeDirection == GridResizeDirection.Rows);
-
-        var grid = (Grid)splitter.GetVisualParent()!;
-        int row = Grid.GetRow(splitter);
-
-        // 위: 사람이 끄는 절대 높이. 0까지 접히면 다시 잡을 손잡이가 없으므로 하한이 있다.
-        Assert.True(grid.RowDefinitions[row - 1].Height.IsAbsolute);
-        Assert.True(grid.RowDefinitions[row - 1].MinHeight > 0);
-
-        // 아래: ⚠ 여기가 Auto면 아래로 끌 때 줄일 것이 없어 스플리터가 한쪽으로만 움직인다.
-        Assert.True(
-            grid.RowDefinitions[row + 1].Height.IsStar,
-            "스플리터 아래는 별 행이어야 위아래로 다 끌린다");
-        Assert.Equal(row + 2, grid.RowDefinitions.Count);
+        AssertLeftOfGraph(window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView,
+            window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<ScrollViewer>("GraphScroll")!);
+        AssertLeftOfGraph(window.FindControl<GraphEditorView>("Graph")!.HierarchyView,
+            window.FindControl<GraphEditorView>("Graph")!.FindControl<ScrollViewer>("GraphScroll")!);
 
         window.Close();
     });
+
+    /// <summary>하이어아키가 든 칸이 그 격자의 0열이고, 판은 그 오른쪽(2열)이며, 0열은 하한 있는 절대 폭이다.</summary>
+    private static void AssertLeftOfGraph(StoryHierarchy hierarchy, ScrollViewer graphScroll)
+    {
+        Control column = hierarchy.GetVisualAncestors().OfType<Control>()
+            .First(ancestor => ancestor.GetVisualParent() is Grid { ColumnDefinitions.Count: 5 });
+        var grid = (Grid)column.GetVisualParent()!;
+
+        Assert.Equal(0, Grid.GetColumn(column));
+        Assert.True(grid.ColumnDefinitions[0].Width.IsAbsolute);
+        Assert.True(grid.ColumnDefinitions[0].MinWidth > 0);
+        Assert.Equal(GridResizeDirection.Columns,
+            grid.Children.OfType<GridSplitter>().Single(splitter => Grid.GetColumn(splitter) == 1).ResizeDirection);
+
+        Control graph = graphScroll.GetSelfAndVisualAncestors().OfType<Control>()
+            .First(ancestor => ancestor.GetVisualParent() == grid);
+        Assert.Equal(2, Grid.GetColumn(graph));
+    }
 }
