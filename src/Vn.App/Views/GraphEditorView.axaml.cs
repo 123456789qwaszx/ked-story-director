@@ -69,6 +69,15 @@ public partial class GraphEditorView : UserControl
     private const double ProxyRowHeight = 28;
     private const double ProxyPortRadius = 5;
 
+    /// <summary>접은 장면 상자의 Tag 머리 — 뒤에 <c>{판 Id}/{장면ID}</c>가 붙는다(2026-10-30 — 하이어아키의 눈).</summary>
+    internal const string SceneProxyTag = "scene-proxy:";
+
+    /// <summary>장면 이름표의 Tag 머리 — 뒤에 장면ID가 붙는다. 누르면 그 장면을 접는다.</summary>
+    internal const string SceneLabelTag = "scene-label:";
+
+    /// <summary>장면 색 — 장면 프레임 · 이름표 · 접은 장면 상자가 함께 쓴다.</summary>
+    private static readonly Color SceneColor = Color.FromRgb(217, 119, 6);
+
     private readonly List<NodeCard> _cards = new();
     private readonly List<FileProxyVisual> _proxies = new();
     private readonly List<EdgeVisual> _edges = new();
@@ -170,6 +179,9 @@ public partial class GraphEditorView : UserControl
     // 접힌 파일 드래그 (W52) — 프록시 위치는 안 노드들의 평균이므로,
     // 끌기는 파일 안 노드 전부를 같은 delta로 옮기는 것이다(펼치면 그 자리에 있다).
     private string? _draggingProxyFileId;
+
+    /// <summary>끄는 상자가 접은 장면이면 그 장면 — 판째 접힌 상자면 null이다.</summary>
+    private string? _draggingProxySceneId;
     private Point _proxyDragStart;
     private readonly Dictionary<string, Point> _proxyStartPositions = new(StringComparer.Ordinal);
 
@@ -312,7 +324,8 @@ public partial class GraphEditorView : UserControl
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
             _session.ExpandedFileIds,
-            _session.Definition);
+            _session.Definition,
+            _session.CollapsedScenes);
 
         // 카드 안 글 칸에 초점이 있었으면 다시 그린 뒤 그 칸으로 돌려준다(D4) — 판을 비우기 전에 잰다.
         WritingFocus? writing = CaptureWritingFocus();
@@ -350,6 +363,10 @@ public partial class GraphEditorView : UserControl
                 case CollapsedFileProjection file:
                     _proxies.Add(BuildFileProxy(file));
                     break;
+
+                case CollapsedSceneProjection scene:
+                    _proxies.Add(BuildSceneProxy(scene));
+                    break;
             }
         }
 
@@ -383,21 +400,27 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        foreach (IGrouping<string, ExpandedNodeProjection> group in _projection.Items
-                     .OfType<ExpandedNodeProjection>()
+        // 펼친 판의 카드와 그 판 안의 접은 장면 상자(2026-10-30)를 함께 감싼다 — 장면을 다 접어도 챕터 박스는 선다.
+        foreach (IGrouping<string, GraphItemProjection> group in _projection.Items
+                     .Where(item => item is ExpandedNodeProjection or CollapsedSceneProjection)
                      .GroupBy(item => item.FileId, StringComparer.Ordinal))
         {
             Rect? bounds = null;
 
-            foreach (ExpandedNodeProjection node in group)
+            foreach (GraphItemProjection item in group)
             {
-                if (FindCard(node.NodeId) is not { } card)
+                Rect? rect = item switch
                 {
-                    continue;
-                }
+                    ExpandedNodeProjection node when FindCard(node.NodeId) is { } card => FrameRectOf(node, card),
+                    CollapsedSceneProjection scene when FindSceneProxy(scene.FileId, scene.SceneId) is { } proxy =>
+                        ProxyRect(proxy),
+                    _ => null
+                };
 
-                Rect rect = FrameRectOf(node, card);
-                bounds = bounds is { } current ? current.Union(rect) : rect;
+                if (rect is { } found)
+                {
+                    bounds = bounds is { } current ? current.Union(found) : found;
+                }
             }
 
             if (bounds is not { } area)
@@ -461,7 +484,7 @@ public partial class GraphEditorView : UserControl
 
             // 챕터 안에 장면을 한 겹 더 (R6 S-3b) — 챕터 프레임 <b>뒤에</b> 더해야 그 위에
             // 깔린다(아래 Insert가 목록 순서대로 넣는다).
-            DrawSceneFrames(group.Key, group);
+            DrawSceneFrames(group.Key, group.OfType<ExpandedNodeProjection>());
         }
 
         // 카드·간선보다 뒤에 깔리도록 맨 앞 인덱스에 순서대로 끼운다.
@@ -541,7 +564,7 @@ public partial class GraphEditorView : UserControl
             area = area.Inflate(new Thickness(10, 26, 10, 10));
 
             _frames.Add(SceneFrame(area));
-            _frames.Add(SceneLabel(area, scene));
+            _frames.Add(SceneLabel(area, fileId, scene));
         }
     }
 
@@ -570,24 +593,37 @@ public partial class GraphEditorView : UserControl
         return frame;
     }
 
-    private static Border SceneLabel(Rect area, ChapterScene scene)
+    /// <summary>
+    /// 장면 이름표 — <b>누르면 그 장면을 접는다</b> (2026-10-30 — 챕터 이름표와 같은 손짓). 접은 장면은 줄 목록 상자로
+    /// 간소화되고(<see cref="BuildSceneProxy"/>), 그 상자를 두 번 누르면 다시 편다. 하이어아키의 눈과 같은 상태다.
+    /// </summary>
+    private Border SceneLabel(Rect area, string fileId, ChapterScene scene)
     {
         var label = new Border
         {
             CornerRadius = new CornerRadius(3),
             Padding = new Thickness(6, 1),
-            Background = new SolidColorBrush(Color.FromArgb(180, 217, 119, 6)),
-            IsHitTestVisible = false,
+            Background = new SolidColorBrush(Color.FromArgb(180, SceneColor.R, SceneColor.G, SceneColor.B)),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Tag = SceneLabelTag + scene.SceneId,
             Child = new TextBlock
             {
                 // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
                 Text = scene.HasSplitEntry
-                    ? $"장면 {scene.DisplayName} ⚠"
-                    : $"장면 {scene.DisplayName}",
+                    ? $"장면 {scene.DisplayName} ⚠ ⌄"
+                    : $"장면 {scene.DisplayName} ⌄",
                 FontSize = 10,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Brushes.White
             }
+        };
+        ToolTip.SetTip(label, "클릭하면 이 장면을 줄 목록으로 접습니다 — 간선은 접힌 줄에 붙습니다. 접힌 상자를 더블클릭하면 다시 펼칩니다.");
+
+        string sceneId = scene.SceneId;
+        label.PointerPressed += (_, args) =>
+        {
+            args.Handled = true;
+            _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true);
         };
 
         Canvas.SetLeft(label, area.X + 10);
@@ -629,8 +665,9 @@ public partial class GraphEditorView : UserControl
         // 고른 레인이 이번에 안 그려지면(판을 접었다 · 길이 사라졌다) 손잡이도 내린다 — 맨 끝에서 본다.
         _selectedRailDrawn = false;
 
-        foreach (IGrouping<string, ExpandedNodeProjection> group in _projection.Items
-                     .OfType<ExpandedNodeProjection>()
+        // 장면을 다 접은 판도 레일이 선다 — 상자의 줄끼리, 줄과 카드 사이를 잇는다(2026-10-30).
+        foreach (IGrouping<string, GraphItemProjection> group in _projection.Items
+                     .Where(item => item is ExpandedNodeProjection or CollapsedSceneProjection)
                      .GroupBy(item => item.FileId, StringComparer.Ordinal))
         {
             string boardName = _session.Project.Files
@@ -652,7 +689,7 @@ public partial class GraphEditorView : UserControl
             // 에피소드 Id → 그 카드 자리. 아직 카드가 없는 에피소드는 없는 것으로 둔다 — 없는 노드로 선을 그으면 거짓말이다.
             var spots = new Dictionary<string, (DialogueNode Node, Rect Rect)>(StringComparer.Ordinal);
 
-            foreach (ExpandedNodeProjection item in group)
+            foreach (ExpandedNodeProjection item in group.OfType<ExpandedNodeProjection>())
             {
                 if (FindCard(item.NodeId) is not { } card)
                 {
@@ -674,6 +711,9 @@ public partial class GraphEditorView : UserControl
                 }
             }
 
+            // 접은 장면의 에피소드 → 그 상자의 줄 (2026-10-30). 카드가 없어도 길은 그 줄에 붙는다.
+            Dictionary<string, FoldedRow> folded = FoldedRowsOf(group.Key);
+
             // 도착 포트 (2026-08-15 소유자) — 여러 선택지가 같은 에피소드로 이어지는 일이
             // 많으므로, 들어오는 가지들은 도착 카드 앞의 접점 하나로 모인다.
             var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
@@ -692,7 +732,15 @@ public partial class GraphEditorView : UserControl
                     .Where(edge => string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal))
                     .ToList();
 
-                DrawRailsFrom(boardName, node, rect, edges, spots, arrivals);
+                DrawRailsFrom(boardName, node, rect, edges, spots, folded, arrivals);
+            }
+
+            foreach ((string episodeId, FoldedRow row) in folded)
+            {
+                if (chapter.Episodes.Any(episode => string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
+                {
+                    DrawRailsFromRow(boardName, episodeId, row, chapter.Edges, spots, folded, arrivals);
+                }
             }
 
             foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
@@ -735,12 +783,13 @@ public partial class GraphEditorView : UserControl
         Rect sourceRect,
         IReadOnlyList<ChapterEdge> edges,
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
+        IReadOnlyDictionary<string, FoldedRow> folded,
         Dictionary<string, List<(string From, string Label)>> arrivals)
     {
         // 이 에피소드의 선택지 칸들 (R7) — 가지마다 제 칸을 얹어 <b>철도 위에서</b> 고치고 잇는다.
         IReadOnlyList<GraphChoicePort> slots = SlotsOf(source.Id);
 
-        var branches = new List<(ChapterEdge? Edge, Rect? Target, GraphChoicePort Slot)>();
+        var branches = new List<(ChapterEdge? Edge, Rect? Target, FoldedRow? Row, GraphChoicePort Slot)>();
 
         // 가지 순서 = <b>칸의 차례 그대로</b> (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해") — 이은 줄 · 적어 둔
         // 줄 · 빈 칸이 사람이 둔 자리에 선다(<see cref="SlotsOf"/>). 이은 줄끼리는 간선 시트 행 순서와 같다 — 잇는 순간
@@ -753,7 +802,7 @@ public partial class GraphEditorView : UserControl
         {
             if (slot.IsEmpty)
             {
-                branches.Add((null, null, slot));
+                branches.Add((null, null, null, slot));
             }
             else if (edges.FirstOrDefault(edge =>
                          string.Equals(edge.ToEpisodeId, slot.ToEpisodeId, StringComparison.Ordinal) &&
@@ -766,7 +815,12 @@ public partial class GraphEditorView : UserControl
                     ? spot.Rect
                     : null;
 
-                branches.Add((edge, target, slot));
+                // 도착이 접은 장면에 들었으면 그 상자의 줄로 간다 (2026-10-30) — 「카드 없음」이 아니다.
+                FoldedRow? row = target is null && folded.TryGetValue(edge.ToEpisodeId, out FoldedRow? foldedRow)
+                    ? foldedRow
+                    : null;
+
+                branches.Add((edge, target, row, slot));
             }
         }
 
@@ -780,7 +834,9 @@ public partial class GraphEditorView : UserControl
         // 내려가는 레인은 카드 <b>왼쪽</b>으로 빠진다. 아직 안 이은 칸은 오른쪽이다. 지금 그린 자리로 재므로 끄는 동안에도
         // 넘어가는 순간 뒤집힌다.
         List<bool> lefts = branches
-            .Select(branch => branch.Target is { } target && EdgeSide.GoesLeft(sourceRect.X, target.X))
+            .Select(branch => branch.Target is { } target
+                ? EdgeSide.GoesLeft(sourceRect.X, target.X)
+                : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, row.Left))
             .ToList();
 
         // 줄기는 <b>언제나 카드 가운데 아래</b>다 (2026-10-29 소유자: "항상 노드 중앙 아래쪽에 선택지가 있도록").
@@ -794,14 +850,14 @@ public partial class GraphEditorView : UserControl
 
         for (int index = 0; index < branches.Count; index++)
         {
-            (ChapterEdge? edge, Rect? target, GraphChoicePort slot) = branches[index];
+            (ChapterEdge? edge, Rect? target, FoldedRow? row, GraphChoicePort slot) = branches[index];
             bool mirrored = lefts[index];
 
             // 내려가는 레인은 카드 바깥에 가지마다 한 줄씩(쪽마다 따로 센다) — 같은 줄로 겹치면 어느 선이 어디로 가는지 안 보인다.
             double laneX = mirrored
                 ? sourceRect.X - RailLaneOut - (leftLane++ * RailLaneGap)
                 : sourceRect.Right + RailLaneOut + (rightLane++ * RailLaneGap);
-            DrawRailBranch(chapterId, source, edge, trunkX, branchY, laneX, target, slot, mirrored);
+            DrawRailBranch(chapterId, source, edge, trunkX, branchY, laneX, target, row, slot, mirrored);
 
             if (edge is not null && target is not null)
             {
@@ -819,6 +875,130 @@ public partial class GraphEditorView : UserControl
         }
 
         _railVisuals.Add(RailLine(trunkX, sourceRect.Bottom, trunkX, branchY - RailBranchGap));
+    }
+
+    /// <summary>
+    /// 접은 장면 상자의 줄에서 나가는 길 (2026-10-30 — 하이어아키의 눈). 상자는 간소화된 자리라 선택지 칸은 서지 않고, <b>이은
+    /// 길만</b> 줄의 가장자리에서 나간다 — 오른쪽(도착이 왼쪽이면 왼쪽)으로 빠져 레인을 타고 도착 카드의 접점이나 다른 상자의
+    /// 줄로 든다. 같은 상자 안끼리의 길은 긋지 않는다(상자 머리가 센다). 도착 카드가 판에 없는 길도 긋지 않는다.
+    /// </summary>
+    private void DrawRailsFromRow(
+        string chapterId,
+        string episodeId,
+        FoldedRow row,
+        IReadOnlyList<ChapterEdge> chapterEdges,
+        IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
+        IReadOnlyDictionary<string, FoldedRow> folded,
+        Dictionary<string, List<(string From, string Label)>> arrivals)
+    {
+        int leftLane = 0;
+        int rightLane = 0;
+
+        foreach (ChapterEdge edge in chapterEdges.Where(item =>
+                     string.Equals(item.FromEpisodeId, episodeId, StringComparison.Ordinal)))
+        {
+            FoldedRow? toRow = folded.TryGetValue(edge.ToEpisodeId, out FoldedRow? other) ? other : null;
+            Rect? toCard = toRow is null && spots.TryGetValue(edge.ToEpisodeId, out (DialogueNode Node, Rect Rect) spot)
+                ? spot.Rect
+                : null;
+
+            if ((toRow is null && toCard is null) || ReferenceEquals(toRow?.Proxy, row.Proxy))
+            {
+                continue;
+            }
+
+            bool left = EdgeSide.GoesLeft(row.Left, toRow?.Left ?? toCard!.Value.X);
+            double toward = left ? -1 : 1;
+            var from = new GraphPosition(left ? row.Left : row.Right, row.Y);
+            double laneX = from.X + (toward * (RailLaneOut + ((left ? leftLane++ : rightLane++) * RailLaneGap)));
+            var key = new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel);
+
+            if (toRow is not null)
+            {
+                DrawLaneIntoRow(key, edge.Shape, from, toward, laneX, toRow);
+                continue;
+            }
+
+            (double junctionX, double junctionY) = ArrivalJunction(toCard!.Value);
+            DrawLane(key, edge.Shape, from, toward, laneX, new GraphPosition(junctionX, junctionY));
+
+            if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label)>? list))
+            {
+                arrivals[edge.ToEpisodeId] = list = new List<(string, string)>();
+            }
+
+            list.Add((episodeId, edge.HasNoOptionLabel ? "(진행)" : edge.OptionLabel!));
+        }
+    }
+
+    /// <summary>
+    /// 레인을 접은 장면 상자의 줄로 들인다 — 레인이 상자 왼쪽에서 내려오면 줄의 왼쪽(들어오는 점)으로, 오른쪽에서 내려오면
+    /// 오른쪽으로 든다(왼쪽 포트의 선이 도착 카드의 오른쪽으로 드는 것과 같은 규칙).
+    ///
+    /// ⚠ <b>레인이 상자의 폭 안으로 내려오면 바깥으로 비킨다</b> — 위아래로 쌓인 판에서는 카드 오른쪽 레인이 바로 아래 상자의
+    ///   몸통을 지나 상자 뒤로 사라진다(상자가 레인 위에 그려진다). 나아가던 쪽으로 비킨다: 되돌아가면 칩을 가로지른다.
+    /// </summary>
+    private void DrawLaneIntoRow(
+        RailKey key, EdgeShape? stored, GraphPosition from, double toward, double laneX, FoldedRow row)
+    {
+        if (laneX > row.Left && laneX < row.Right)
+        {
+            laneX = toward > 0 ? row.Right + RailLaneOut : row.Left - RailLaneOut;
+        }
+
+        bool fromLeft = laneX <= row.Left;
+        var entry = new GraphPosition(fromLeft ? row.Left : row.Right, row.Y);
+
+        DrawLane(key, stored, from, toward, laneX, entry);
+        _railVisuals.Add(RailArrowInto(entry.X, entry.Y, fromLeft));
+    }
+
+    /// <summary>옆으로 드는 화살촉 — 접은 장면 상자의 줄 가장자리에 끝이 닿는다.</summary>
+    private static Polygon RailArrowInto(double x, double y, bool fromLeft)
+    {
+        double back = fromLeft ? -7 : 7;
+        var arrow = new Polygon
+        {
+            Fill = RailBrush,
+            IsHitTestVisible = false,
+            Points = [new Point(back, -4), new Point(0, 0), new Point(back, 4)]
+        };
+
+        Canvas.SetLeft(arrow, x);
+        Canvas.SetTop(arrow, y);
+        return arrow;
+    }
+
+    /// <summary>
+    /// 그 판의 접은 장면 상자들의 줄 — 에피소드 Id로 찾는다. 카드 자리(<c>spots</c>)와 같은 규칙으로 표식을 단 대사 노드만 든다.
+    /// </summary>
+    private Dictionary<string, FoldedRow> FoldedRowsOf(string fileId)
+    {
+        var rows = new Dictionary<string, FoldedRow>(StringComparer.Ordinal);
+
+        foreach (FileProxyVisual proxy in _proxies.Where(item =>
+                     item.SceneId is not null && string.Equals(item.FileId, fileId, StringComparison.Ordinal)))
+        {
+            foreach (ProxyNodeRow row in proxy.Rows)
+            {
+                if (_session?.Project.FindNode(row.NodeId) is DialogueNode { MarkedEpisodeId: { Length: > 0 } episodeId })
+                {
+                    rows[episodeId] = new FoldedRow(proxy, row);
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    /// <summary>접은 장면 상자의 한 줄 — 레인이 붙는 양쪽 가장자리와 줄의 가운데 높이.</summary>
+    private sealed record FoldedRow(FileProxyVisual Proxy, ProxyNodeRow Row)
+    {
+        public double Left => Canvas.GetLeft(Proxy.Visual);
+
+        public double Right => Left + ProxyWidth;
+
+        public double Y => ProxyRowAnchor(Proxy, Row.Index, output: false).Y;
     }
 
     /// <summary>도착 접점 — 카드의 위 가운데, 조금 위 (D3 · 2026-10-29).</summary>
@@ -1094,6 +1274,7 @@ public partial class GraphEditorView : UserControl
         double y,
         double laneX,
         Rect? target,
+        FoldedRow? row,
         GraphChoicePort slot,
         bool mirrored)
     {
@@ -1140,6 +1321,20 @@ public partial class GraphEditorView : UserControl
                 toward,
                 dropX,
                 new GraphPosition(junctionX, junctionY));
+
+            return;
+        }
+
+        if (row is not null)
+        {
+            // 도착이 접은 장면에 들었다 (2026-10-30) — 그 상자의 줄로 든다.
+            DrawLaneIntoRow(
+                new RailKey(chapterId, edge.FromEpisodeId, edge.ToEpisodeId, edge.OptionLabel),
+                edge.Shape,
+                new GraphPosition(cursorX, y),
+                toward,
+                mirrored ? Math.Min(cursorX - RailLaneGap, laneX) : Math.Max(cursorX + RailLaneGap, laneX),
+                row);
 
             return;
         }
@@ -1249,7 +1444,8 @@ public partial class GraphEditorView : UserControl
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
             _session.ExpandedFileIds,
-            _session.Definition);
+            _session.Definition,
+            _session.CollapsedScenes);
 
         // 카드를 옮겨 분기의 도착이 출발 카드를 넘었으면 포트가 반대쪽으로 선다 — 포트 줄은 카드 안에 지어지므로 카드부터 다시 짓는다.
         if (PortSidesChanged(_projection))
@@ -1289,8 +1485,17 @@ public partial class GraphEditorView : UserControl
                 {
                     ExpandedNodeProjection node when _dragPositions.TryGetValue(node.NodeId, out Point at) =>
                         node with { Position = new GraphPosition(at.X, at.Y) },
-                    CollapsedFileProjection file when string.Equals(file.FileId, _draggingProxyFileId, StringComparison.Ordinal) =>
+                    CollapsedFileProjection file when _draggingProxySceneId is null &&
+                                                      string.Equals(file.FileId, _draggingProxyFileId, StringComparison.Ordinal) =>
                         file with
+                        {
+                            Position = new GraphPosition(
+                                _proxyPositionStart.X + _proxyDragDelta.X,
+                                _proxyPositionStart.Y + _proxyDragDelta.Y)
+                        },
+                    CollapsedSceneProjection scene when string.Equals(scene.SceneId, _draggingProxySceneId, StringComparison.Ordinal) &&
+                                                        string.Equals(scene.FileId, _draggingProxyFileId, StringComparison.Ordinal) =>
+                        scene with
                         {
                             Position = new GraphPosition(
                                 _proxyPositionStart.X + _proxyDragDelta.X,
@@ -1313,6 +1518,7 @@ public partial class GraphEditorView : UserControl
         _draggingCard = null;
         _draggingGroup = false;
         _draggingProxyFileId = null;
+        _draggingProxySceneId = null;
 
         if (_dragPositions.Count == 0)
         {
@@ -1335,6 +1541,7 @@ public partial class GraphEditorView : UserControl
         _draggingCard = null;
         _draggingGroup = false;
         _draggingProxyFileId = null;
+        _draggingProxySceneId = null;
 
         if (_dragPositions.Count == 0)
         {
@@ -1369,6 +1576,15 @@ public partial class GraphEditorView : UserControl
             {
                 Canvas.SetLeft(proxy.Visual, file.Position.X);
                 Canvas.SetTop(proxy.Visual, file.Position.Y);
+            }
+        }
+
+        foreach (CollapsedSceneProjection scene in projection.Items.OfType<CollapsedSceneProjection>())
+        {
+            if (FindSceneProxy(scene.FileId, scene.SceneId) is { } proxy)
+            {
+                Canvas.SetLeft(proxy.Visual, scene.Position.X);
+                Canvas.SetTop(proxy.Visual, scene.Position.Y);
             }
         }
 
@@ -1912,48 +2128,10 @@ public partial class GraphEditorView : UserControl
         // 이 수를 쓴다(노드 행 수만 쓰면 머리글만큼 짧아진다).
         int visualRows = 0;
 
-        var headerDot = new Ellipse
-        {
-            Width = 11,
-            Height = 11,
-            Fill = new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80)),
-            VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(0, 0, 8, 0)
-        };
-
-        var headerText = new StackPanel
-        {
-            Spacing = 1,
-            Children =
-            {
-                new TextBlock
-                {
-                    Text = file.FileName,
-                    FontWeight = FontWeight.SemiBold,
-                    TextTrimming = TextTrimming.CharacterEllipsis
-                },
-                new TextBlock
-                {
-                    Text = $"접힘 · {file.Nodes.Count}개 노드 · {file.RelativePath}",
-                    FontSize = 9,
-                    Opacity = 0.6,
-                    TextTrimming = TextTrimming.CharacterEllipsis
-                }
-            }
-        };
-
-        var header = new Grid
-        {
-            Height = ProxyHeaderHeight,
-            Margin = new Thickness(10, 0),
-            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        Grid.SetColumn(headerDot, 0);
-        Grid.SetColumn(headerText, 1);
-        header.Children.Add(headerDot);
-        header.Children.Add(headerText);
-        content.Children.Add(header);
+        content.Children.Add(ProxyHeader(
+            file.FileName,
+            $"접힘 · {file.Nodes.Count}개 노드 · {file.RelativePath}",
+            new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80))));
 
         var rows = new List<ProxyNodeRow>();
 
@@ -2015,24 +2193,10 @@ public partial class GraphEditorView : UserControl
         visual.Cursor = new Cursor(StandardCursorType.SizeAll);
         visual.PointerPressed += (_, args) =>
         {
-            if (_session is null ||
-                !args.GetCurrentPoint(visual).Properties.IsLeftButtonPressed ||
-                _session.Project.FindFile(file.FileId) is not { Nodes.Count: > 0 } storyFile)
+            if (_session?.Project.FindFile(file.FileId) is { Nodes.Count: > 0 } storyFile)
             {
-                return;
+                BeginProxyDrag(visual, args, file.FileId, sceneId: null, storyFile.Nodes);
             }
-
-            _draggingProxyFileId = file.FileId;
-            _proxyDragStart = args.GetPosition(GraphCanvas);
-            _proxyPositionStart = new GraphPosition(Canvas.GetLeft(visual), Canvas.GetTop(visual));
-            _proxyStartPositions.Clear();
-
-            foreach (StoryNode node in storyFile.Nodes)
-            {
-                _proxyStartPositions[node.Id] = new Point(node.Layout.X, node.Layout.Y);
-            }
-
-            args.Handled = true;
         };
 
         // 접힌 표를 더블클릭 = 펼치기 — 이름표 클릭(접기)의 짝이다.
@@ -2045,6 +2209,143 @@ public partial class GraphEditorView : UserControl
         };
 
         return new FileProxyVisual(file.FileId, visual, rows, Math.Max(1, visualRows));
+    }
+
+    /// <summary>
+    /// 펼친 판 안의 <b>접은 장면</b> 상자 (2026-10-30 — 하이어아키의 눈 · <c>docs/plans/hierarchy.md</c> SF). 접힌 판의 상자와
+    /// 줄 · 치수가 같아 간선 끝 셈법(<see cref="ProxyRowAnchor"/>)이 하나다 — 다른 것은 머리(장면 색 · 이름 · 안쪽 길 수)뿐이고
+    /// 장면 머리글이 없다(상자 하나가 장면 하나다).
+    ///
+    /// 더블클릭하면 편다. 끌면 그 장면의 카드들이 함께 옮겨진다(펴면 그 자리에 있다).
+    /// </summary>
+    private FileProxyVisual BuildSceneProxy(CollapsedSceneProjection scene)
+    {
+        var content = new StackPanel { Spacing = 0 };
+        content.Children.Add(ProxyHeader(
+            $"장면 {scene.DisplayName}",
+            $"접힘 · {scene.Nodes.Count}개 노드" + (scene.InnerCount > 0 ? $" · 안쪽 길 {scene.InnerCount}개" : string.Empty),
+            new SolidColorBrush(SceneColor)));
+
+        var rows = new List<ProxyNodeRow>();
+
+        foreach (CollapsedNodeEntry entry in scene.Nodes)
+        {
+            ProxyNodeRow row = BuildProxyRow(entry, rows.Count);
+            rows.Add(row);
+            content.Children.Add(row.Visual);
+        }
+
+        var visual = new Border
+        {
+            Width = ProxyWidth,
+            CornerRadius = new CornerRadius(8),
+            Background = new SolidColorBrush(Color.FromRgb(0xFE, 0xF7, 0xEC)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(170, SceneColor.R, SceneColor.G, SceneColor.B)),
+            BorderThickness = new Thickness(1),
+            ClipToBounds = false,
+            Child = content,
+            Tag = SceneProxyTag + scene.FileId + "/" + scene.SceneId,
+            Cursor = new Cursor(StandardCursorType.SizeAll)
+        };
+
+        Canvas.SetLeft(visual, scene.Position.X);
+        Canvas.SetTop(visual, scene.Position.Y);
+        GraphCanvas.Children.Add(visual);
+
+        visual.PointerPressed += (_, args) =>
+        {
+            if (_session?.Project.FindFile(scene.FileId) is not { } storyFile)
+            {
+                return;
+            }
+
+            var inside = scene.Nodes.Select(entry => entry.NodeId).ToHashSet(StringComparer.Ordinal);
+            BeginProxyDrag(visual, args, scene.FileId, scene.SceneId, storyFile.Nodes.Where(node => inside.Contains(node.Id)));
+        };
+
+        ToolTip.SetTip(visual, "더블클릭하면 이 장면을 펼칩니다.");
+        visual.DoubleTapped += (_, args) =>
+        {
+            args.Handled = true;
+            CancelDrag(); // 둘째 누름이 시작한 끌기 상태를 걷는다
+            _session?.SetSceneCollapsed(scene.FileId, scene.SceneId, collapsed: false);
+        };
+
+        return new FileProxyVisual(scene.FileId, visual, rows, Math.Max(1, rows.Count), scene.SceneId);
+    }
+
+    /// <summary>상자 머리 — 색 점 · 이름 · 한 줄 설명. 접힌 판과 접은 장면이 함께 쓴다.</summary>
+    private static Grid ProxyHeader(string title, string subtitle, IBrush dot)
+    {
+        var headerDot = new Ellipse
+        {
+            Width = 11,
+            Height = 11,
+            Fill = dot,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+
+        var headerText = new StackPanel
+        {
+            Spacing = 1,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = title,
+                    FontWeight = FontWeight.SemiBold,
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                },
+                new TextBlock
+                {
+                    Text = subtitle,
+                    FontSize = 9,
+                    Opacity = 0.6,
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                }
+            }
+        };
+
+        var header = new Grid
+        {
+            Height = ProxyHeaderHeight,
+            Margin = new Thickness(10, 0),
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(headerDot, 0);
+        Grid.SetColumn(headerText, 1);
+        header.Children.Add(headerDot);
+        header.Children.Add(headerText);
+
+        return header;
+    }
+
+    /// <summary>
+    /// 상자 끌기를 시작한다 — 상자 자리는 안 노드들의 자리에서 나오므로(판은 평균, 장면은 왼쪽 위) 끌기는 그 노드들을
+    /// 같은 만큼 옮기는 것이다. 놓을 때 한 번 적는다(<see cref="CommitDrag"/>).
+    /// </summary>
+    private void BeginProxyDrag(
+        Border visual, PointerPressedEventArgs args, string fileId, string? sceneId, IEnumerable<StoryNode> nodes)
+    {
+        if (!args.GetCurrentPoint(visual).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        _draggingProxyFileId = fileId;
+        _draggingProxySceneId = sceneId;
+        _proxyDragStart = args.GetPosition(GraphCanvas);
+        _proxyPositionStart = new GraphPosition(Canvas.GetLeft(visual), Canvas.GetTop(visual));
+        _proxyStartPositions.Clear();
+
+        foreach (StoryNode node in nodes)
+        {
+            _proxyStartPositions[node.Id] = new Point(node.Layout.X, node.Layout.Y);
+        }
+
+        args.Handled = true;
     }
 
     /// <summary>
@@ -2626,6 +2927,21 @@ public partial class GraphEditorView : UserControl
                         proxy,
                         rowIndex,
                         output: endpoint.Kind == GraphEndpointKind.CollapsedFileNodeOutput);
+                    return true;
+                }
+
+                break;
+            }
+
+            case GraphEndpointKind.CollapsedSceneNodeOutput:
+            case GraphEndpointKind.CollapsedSceneNodeInput:
+            {
+                if (FindSceneProxy(endpoint.FileId, endpoint.SceneId) is { } proxy && endpoint.ProxyRowIndex is { } rowIndex)
+                {
+                    point = ProxyRowAnchor(
+                        proxy,
+                        rowIndex,
+                        output: endpoint.Kind == GraphEndpointKind.CollapsedSceneNodeOutput);
                     return true;
                 }
 
@@ -3941,8 +4257,21 @@ public partial class GraphEditorView : UserControl
 
     private FileProxyVisual? FindProxy(string fileId)
     {
-        return _proxies.FirstOrDefault(item => string.Equals(item.FileId, fileId, StringComparison.Ordinal));
+        return _proxies.FirstOrDefault(item =>
+            item.SceneId is null && string.Equals(item.FileId, fileId, StringComparison.Ordinal));
     }
+
+    /// <summary>펼친 판 안의 접은 장면 상자.</summary>
+    private FileProxyVisual? FindSceneProxy(string fileId, string? sceneId) =>
+        _proxies.FirstOrDefault(item =>
+            item.SceneId is not null &&
+            string.Equals(item.FileId, fileId, StringComparison.Ordinal) &&
+            string.Equals(item.SceneId, sceneId, StringComparison.Ordinal));
+
+    /// <summary>상자가 판에서 차지하는 자리 — 머리와 줄 전부.</summary>
+    private static Rect ProxyRect(FileProxyVisual proxy) =>
+        new(Canvas.GetLeft(proxy.Visual), Canvas.GetTop(proxy.Visual),
+            ProxyWidth, ProxyHeaderHeight + (proxy.VisualRowCount * ProxyRowHeight));
 
     private string? FindNodeName(string nodeId)
     {
@@ -3956,8 +4285,12 @@ public partial class GraphEditorView : UserControl
         }
 
         return _projection?.Items
-            .OfType<CollapsedFileProjection>()
-            .SelectMany(file => file.Nodes)
+            .SelectMany(item => item switch
+            {
+                CollapsedFileProjection file => file.Nodes,
+                CollapsedSceneProjection scene => scene.Nodes,
+                _ => []
+            })
             .FirstOrDefault(item => string.Equals(item.NodeId, nodeId, StringComparison.Ordinal))
             ?.NodeName;
     }
@@ -4060,15 +4393,19 @@ public partial class GraphEditorView : UserControl
     private sealed class FileProxyVisual
     {
         public FileProxyVisual(
-            string fileId, Border visual, IReadOnlyList<ProxyNodeRow> rows, int visualRowCount)
+            string fileId, Border visual, IReadOnlyList<ProxyNodeRow> rows, int visualRowCount, string? sceneId = null)
         {
             FileId = fileId;
             Visual = visual;
             Rows = rows;
             VisualRowCount = visualRowCount;
+            SceneId = sceneId;
         }
 
         public string FileId { get; }
+
+        /// <summary>펼친 판 안의 접은 장면 상자면 그 장면 — 판째 접힌 상자면 null이다 (2026-10-30).</summary>
+        public string? SceneId { get; }
         public Border Visual { get; }
         public IReadOnlyList<ProxyNodeRow> Rows { get; }
 

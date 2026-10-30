@@ -27,10 +27,16 @@ public static class GraphProjectionBuilder
     /// </summary>
     public static bool IsHiddenPlumbing(StoryNode node) => node is SetNode;
 
+    /// <param name="collapsedScenes">
+    /// 펼친 판 안에서 접어 둔 장면들 (2026-10-30 — 하이어아키의 눈). 그 장면의 노드는 카드 대신
+    /// <see cref="CollapsedSceneProjection"/>의 줄이 된다. 접힌 판 안의 장면 · 장면ID를 하나도 안 적은 챕터의 장면은 묻지 않는다
+    /// (앞은 판째 접혀 있고, 뒤는 하이어아키에 장면 단이 없다).
+    /// </param>
     public static GraphProjection Build(
         StoryProject project,
         IReadOnlySet<string> expandedFileIds,
-        GameDefinition? definition = null)
+        GameDefinition? definition = null,
+        IReadOnlySet<GraphSceneKey>? collapsedScenes = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(expandedFileIds);
@@ -67,16 +73,31 @@ public static class GraphProjectionBuilder
 
         var items = new List<GraphItemProjection>();
 
+        // 접은 장면에 든 노드 → 그 장면. 간선 끝을 정할 때 쓴다(상자 안의 줄 번호는 rowIndexByNodeId가 든다).
+        var foldedSceneByNodeId = new Dictionary<string, GraphSceneKey>(StringComparer.Ordinal);
+
         for (int fileIndex = 0; fileIndex < project.Files.Count; fileIndex++)
         {
             StoryFile file = project.Files[fileIndex];
 
             if (expandedFileIds.Contains(file.Id))
             {
+                SceneMap? folds = collapsedScenes is { Count: > 0 } && collapsedScenes.Any(key =>
+                    string.Equals(key.FileId, file.Id, StringComparison.Ordinal))
+                    ? ScenesOf(project, file)
+                    : null;
+
                 foreach (StoryNode node in file.Nodes)
                 {
                     if (hiddenPlumbingNodeIds.Contains(node.Id))
                     {
+                        continue;
+                    }
+
+                    if (folds?.SceneOf(project, node.Id, node.Name) is { } sceneId &&
+                        collapsedScenes!.Contains(new GraphSceneKey(file.Id, sceneId)))
+                    {
+                        foldedSceneByNodeId[node.Id] = new GraphSceneKey(file.Id, sceneId);
                         continue;
                     }
 
@@ -87,6 +108,11 @@ public static class GraphProjectionBuilder
                         KindOf(node),
                         new GraphPosition(node.Layout.X, node.Layout.Y),
                         portsByNodeId[node.Id]));
+                }
+
+                if (folds is not null)
+                {
+                    items.AddRange(FoldedScenes(file, folds, foldedSceneByNodeId, rawConnections, rowIndexByNodeId));
                 }
 
                 continue;
@@ -160,26 +186,47 @@ public static class GraphProjectionBuilder
                 continue;
             }
 
-            bool sourceExpanded = expandedFileIds.Contains(sourceFile.Id);
-            bool targetExpanded = expandedFileIds.Contains(targetFile.Id);
+            // 한 접은 장면 안끼리의 간선은 상자 안에 그리지 않는다 — 상자 머리가 센다(InnerCount).
+            if (foldedSceneByNodeId.TryGetValue(raw.SourceNodeId, out GraphSceneKey sourceScene) &&
+                foldedSceneByNodeId.TryGetValue(raw.TargetNodeId, out GraphSceneKey targetScene) &&
+                sourceScene == targetScene)
+            {
+                continue;
+            }
 
-            var source = new GraphEndpointProjection(
-                sourceFile.Id,
-                raw.SourceNodeId,
-                sourceExpanded
-                    ? GraphEndpointKind.ExpandedNodeOutput
-                    : GraphEndpointKind.CollapsedFileNodeOutput,
-                sourceExpanded ? raw.PortKey : null,
-                sourceExpanded ? null : rowIndexByNodeId[raw.SourceNodeId]);
+            GraphEndpointProjection Endpoint(StoryFile file, string nodeId, bool output)
+            {
+                if (!expandedFileIds.Contains(file.Id))
+                {
+                    return new GraphEndpointProjection(
+                        file.Id,
+                        nodeId,
+                        output ? GraphEndpointKind.CollapsedFileNodeOutput : GraphEndpointKind.CollapsedFileNodeInput,
+                        null,
+                        rowIndexByNodeId[nodeId]);
+                }
 
-            var target = new GraphEndpointProjection(
-                targetFile.Id,
-                raw.TargetNodeId,
-                targetExpanded
-                    ? GraphEndpointKind.ExpandedNodeInput
-                    : GraphEndpointKind.CollapsedFileNodeInput,
-                null,
-                targetExpanded ? null : rowIndexByNodeId[raw.TargetNodeId]);
+                if (foldedSceneByNodeId.TryGetValue(nodeId, out GraphSceneKey scene))
+                {
+                    return new GraphEndpointProjection(
+                        file.Id,
+                        nodeId,
+                        output ? GraphEndpointKind.CollapsedSceneNodeOutput : GraphEndpointKind.CollapsedSceneNodeInput,
+                        null,
+                        rowIndexByNodeId[nodeId],
+                        scene.SceneId);
+                }
+
+                return new GraphEndpointProjection(
+                    file.Id,
+                    nodeId,
+                    output ? GraphEndpointKind.ExpandedNodeOutput : GraphEndpointKind.ExpandedNodeInput,
+                    output ? raw.PortKey : null,
+                    null);
+            }
+
+            GraphEndpointProjection source = Endpoint(sourceFile, raw.SourceNodeId, output: true);
+            GraphEndpointProjection target = Endpoint(targetFile, raw.TargetNodeId, output: false);
 
             connections.Add(new GraphConnectionProjection(
                 raw.Key,
@@ -410,43 +457,16 @@ public static class GraphProjectionBuilder
     private static IReadOnlyList<CollapsedSceneGroup> SceneGroups(
         StoryProject project, StoryFile file, IReadOnlyList<CollapsedNodeEntry> entries)
     {
-        ChapterDocument? chapter = project.Chapters.FirstOrDefault(item =>
-            string.Equals(item.ChapterId, file.Name, StringComparison.Ordinal));
-
-        if (chapter is null)
+        if (ScenesOf(project, file) is not { } map)
         {
             return [Single(entries)];
         }
 
-        IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
-            chapter.ToGraphModel(chapter.ChapterId));
-
-        if (scenes.Count == 0 || scenes.All(scene => scene.IsDefault))
-        {
-            return [Single(entries)];
-        }
-
-        // 노드 → 에피소드는 표식이 먼저고 없으면 이름이다 — EpisodeNaming 한 벌과 같아야
-        // 한다(아니면 같은 에피소드를 화면마다 다르게 짚는다).
-        var sceneOf = new Dictionary<string, string>(StringComparer.Ordinal);
-
-        foreach (ChapterScene scene in scenes)
-        {
-            foreach (ChapterEpisode episode in scene.Episodes)
-            {
-                sceneOf[episode.EpisodeId] = scene.SceneId;
-            }
-        }
-
-        string? SceneFor(CollapsedNodeEntry entry) =>
-            project.FindNode(entry.NodeId) is DialogueNode { MarkedEpisodeId: { } episodeId } &&
-            sceneOf.TryGetValue(episodeId, out string? sceneId)
-                ? sceneId
-                : sceneOf.TryGetValue(entry.NodeName, out string? byName) ? byName : null;
+        string? SceneFor(CollapsedNodeEntry entry) => map.SceneOf(project, entry.NodeId, entry.NodeName);
 
         var groups = new List<CollapsedSceneGroup>();
 
-        foreach (ChapterScene scene in scenes)
+        foreach (ChapterScene scene in map.Scenes)
         {
             List<CollapsedNodeEntry> inScene = entries
                 .Where(entry => string.Equals(SceneFor(entry), scene.SceneId, StringComparison.Ordinal))
@@ -470,6 +490,128 @@ public static class GraphProjectionBuilder
 
     private static CollapsedSceneGroup Single(IReadOnlyList<CollapsedNodeEntry> entries) =>
         new(string.Empty, string.Empty, entries);
+
+    /// <summary>
+    /// 판의 노드를 장면으로 가르는 표 — 판이 챕터의 것이고 그 챕터가 장면ID를 하나라도 적었을 때만 있다(R6-explorer §2:
+    /// 장면ID를 하나도 안 적은 챕터는 장면 단이 없다).
+    /// </summary>
+    private static SceneMap? ScenesOf(StoryProject project, StoryFile file)
+    {
+        ChapterDocument? chapter = project.Chapters.FirstOrDefault(item =>
+            string.Equals(item.ChapterId, file.Name, StringComparison.Ordinal));
+
+        if (chapter is null)
+        {
+            return null;
+        }
+
+        IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
+            chapter.ToGraphModel(chapter.ChapterId));
+
+        if (scenes.Count == 0 || scenes.All(scene => scene.IsDefault))
+        {
+            return null;
+        }
+
+        var sceneOf = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (ChapterScene scene in scenes)
+        {
+            foreach (ChapterEpisode episode in scene.Episodes)
+            {
+                sceneOf[episode.EpisodeId] = scene.SceneId;
+            }
+        }
+
+        return new SceneMap(chapter, scenes, sceneOf);
+    }
+
+    /// <summary>
+    /// 펼친 판의 접은 장면들을 상자로 (2026-10-30). 장면 순서는 챕터의 장면 순서, 줄 순서는 판의 노드 순서다.
+    ///
+    /// ⚠ <b>들고 나는 수는 그려지는 것만 센다</b> — 밖과 잇는 실행 간선과 선택지 길. 장면 안끼리의 길은 줄에 선이 안 붙으므로
+    ///   점을 채우면 거짓말이고, 대신 상자 머리의 <see cref="CollapsedSceneProjection.InnerCount"/>가 된다.
+    /// </summary>
+    private static IEnumerable<CollapsedSceneProjection> FoldedScenes(
+        StoryFile file,
+        SceneMap map,
+        IReadOnlyDictionary<string, GraphSceneKey> foldedSceneByNodeId,
+        IReadOnlyList<RawConnection> rawConnections,
+        Dictionary<string, int> rowIndexByNodeId)
+    {
+        foreach (ChapterScene scene in map.Scenes)
+        {
+            var key = new GraphSceneKey(file.Id, scene.SceneId);
+            List<StoryNode> nodes = file.Nodes
+                .Where(node => foldedSceneByNodeId.TryGetValue(node.Id, out GraphSceneKey owner) && owner == key)
+                .ToList();
+
+            if (nodes.Count == 0)
+            {
+                continue;
+            }
+
+            var inside = nodes.Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+            bool Inside(string? episodeId) =>
+                episodeId is not null && map.SceneOfEpisode.TryGetValue(episodeId, out string? sceneId) &&
+                string.Equals(sceneId, scene.SceneId, StringComparison.Ordinal);
+
+            int inner =
+                rawConnections.Count(raw => inside.Contains(raw.SourceNodeId) && inside.Contains(raw.TargetNodeId)) +
+                map.Chapter.Edges.Count(edge => Inside(edge.FromEpisodeId) && Inside(edge.ToEpisodeId));
+
+            var entries = new List<CollapsedNodeEntry>();
+
+            foreach (StoryNode node in nodes)
+            {
+                string? episodeId = map.EpisodeOf(node);
+
+                int incoming =
+                    rawConnections.Count(raw => raw.TargetNodeId == node.Id && !inside.Contains(raw.SourceNodeId)) +
+                    (episodeId is null ? 0 : map.Chapter.Edges.Count(edge =>
+                        string.Equals(edge.ToEpisodeId, episodeId, StringComparison.Ordinal) && !Inside(edge.FromEpisodeId)));
+                int outgoing =
+                    rawConnections.Count(raw => raw.SourceNodeId == node.Id && !inside.Contains(raw.TargetNodeId)) +
+                    (episodeId is null ? 0 : map.Chapter.Edges.Count(edge =>
+                        string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal) && !Inside(edge.ToEpisodeId)));
+
+                rowIndexByNodeId[node.Id] = entries.Count;
+                entries.Add(new CollapsedNodeEntry(node.Id, node.Name, KindOf(node), incoming, outgoing));
+            }
+
+            yield return new CollapsedSceneProjection(
+                file.Id,
+                scene.SceneId,
+                scene.DisplayName,
+                new GraphPosition(nodes.Min(node => node.Layout.X), nodes.Min(node => node.Layout.Y)),
+                entries,
+                inner);
+        }
+    }
+
+    /// <summary>
+    /// 한 챕터 판의 장면 표 — 에피소드 → 장면ID.
+    ///
+    /// ⚠ 노드 → 에피소드는 <b>표식이 먼저고 없으면 이름이다</b> — EpisodeNaming 한 벌과 같아야 한다(아니면 같은 에피소드를
+    ///   화면마다 다르게 짚는다).
+    /// </summary>
+    private sealed record SceneMap(
+        ChapterDocument Chapter,
+        IReadOnlyList<ChapterScene> Scenes,
+        IReadOnlyDictionary<string, string> SceneOfEpisode)
+    {
+        public string? EpisodeOf(StoryNode node) => EpisodeOf(node as DialogueNode, node.Name);
+
+        public string? SceneOf(StoryProject project, string nodeId, string nodeName) =>
+            EpisodeOf(project.FindNode(nodeId) as DialogueNode, nodeName) is { } episodeId
+                ? SceneOfEpisode[episodeId]
+                : null;
+
+        private string? EpisodeOf(DialogueNode? dialogue, string nodeName) =>
+            dialogue is { MarkedEpisodeId: { } marked } && SceneOfEpisode.ContainsKey(marked)
+                ? marked
+                : SceneOfEpisode.ContainsKey(nodeName) ? nodeName : null;
+    }
 
     private static GraphPosition ProxyPosition(StoryFile file, int fileIndex)
     {

@@ -24,14 +24,16 @@ public sealed class SceneFrameTests
         Chapter(session, ("opening", "ep01"), ("opening", "ep02"), ("classroom", "ep03"));
         graph.Rebuild();
 
-        Assert.Contains("장면 opening", SceneLabels(graph));
-        Assert.Contains("장면 classroom", SceneLabels(graph));
+        // 「⌄」 — 누르면 그 장면을 접는다(2026-10-30 SF1 · 챕터 이름표와 같은 손짓).
+        Assert.Contains("장면 opening ⌄", SceneLabels(graph));
+        Assert.Contains("장면 classroom ⌄", SceneLabels(graph));
 
         // 챕터 프레임과 같은 규율 — 카드보다 앞 인덱스(= 뒤에 깔림)다.
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         Border label = canvas.Children.OfType<Border>().First(border =>
             (border.Child as TextBlock)?.Text?.StartsWith("장면 ", StringComparison.Ordinal) == true);
-        Border card = canvas.Children.OfType<Border>().First(border => border.Tag is string);
+        Border card = canvas.Children.OfType<Border>().First(border =>
+            border.Tag is string tag && session.Project.FindNode(tag) is not null);
 
         Assert.True(
             canvas.Children.IndexOf(label) < canvas.Children.IndexOf(card),
@@ -77,7 +79,7 @@ public sealed class SceneFrameTests
 
         graph.Rebuild();
 
-        Assert.Contains("장면 shared ⚠", SceneLabels(graph));
+        Assert.Contains("장면 shared ⚠ ⌄", SceneLabels(graph));
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────

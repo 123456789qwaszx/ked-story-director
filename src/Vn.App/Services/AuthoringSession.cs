@@ -1,6 +1,7 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 
@@ -17,6 +18,7 @@ internal sealed class AuthoringSession
 {
     private readonly HashSet<string> _expandedFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownFileIds = new(StringComparer.Ordinal);
+    private readonly HashSet<GraphSceneKey> _collapsedScenes = [];
     private string _fileListSignature = string.Empty;
     private string _savedSnapshot;
 
@@ -62,6 +64,12 @@ internal sealed class AuthoringSession
     /// 실행·Settings 연결은 전혀 바뀌지 않는다.
     /// </summary>
     public IReadOnlySet<string> ExpandedFileIds => _expandedFileIds;
+
+    /// <summary>
+    /// 펼친 판 안에서 접어 둔 장면들 (2026-10-30 — 하이어아키의 눈, <c>docs/plans/hierarchy.md</c> SF). 그 장면만 줄 목록
+    /// 상자로 간소화된다. <see cref="ExpandedFileIds"/>와 같은 작업 상태다 — 저장 · 되돌리기 대상이 아니다.
+    /// </summary>
+    public IReadOnlySet<GraphSceneKey> CollapsedScenes => _collapsedScenes;
 
     public string? SelectedNodeId { get; private set; }
 
@@ -445,6 +453,26 @@ internal sealed class AuthoringSession
         }
     }
 
+    /// <summary>장면 하나를 접거나 편다 — 판 접기와 같은 알림으로 그래프 · 하이어아키가 다시 선다.</summary>
+    internal void SetSceneCollapsed(string fileId, string sceneId, bool collapsed)
+    {
+        if (Project.FindFile(fileId) is null)
+        {
+            return;
+        }
+
+        var key = new GraphSceneKey(fileId, sceneId);
+        bool changed = collapsed ? _collapsedScenes.Add(key) : _collapsedScenes.Remove(key);
+
+        if (changed)
+        {
+            RaiseFileGraphStateChanged(
+                activeFileChanged: false,
+                expandedFilesChanged: true,
+                fileListChanged: false);
+        }
+    }
+
     private void OnEditorChanged(object? sender, ProjectChangedEventArgs e)
     {
         bool activeChanged = false;
@@ -462,6 +490,7 @@ internal sealed class AuthoringSession
         }
 
         expandedChanged |= _expandedFileIds.RemoveWhere(fileId => !validFileIds.Contains(fileId)) > 0;
+        expandedChanged |= _collapsedScenes.RemoveWhere(key => !validFileIds.Contains(key.FileId)) > 0;
         _knownFileIds.RemoveWhere(fileId => !validFileIds.Contains(fileId));
 
         // 새로 생긴 파일만 기본적으로 펼친다. 이미 존재하던 파일을 사용자가 접어 둔 상태는
@@ -503,6 +532,7 @@ internal sealed class AuthoringSession
 
         _expandedFileIds.Clear();
         _knownFileIds.Clear();
+        _collapsedScenes.Clear();
 
         foreach (StoryFile file in project.Files)
         {

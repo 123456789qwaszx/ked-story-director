@@ -60,6 +60,31 @@ public sealed record CollapsedFileProjection(
     : GraphItemProjection(FileId, Position);
 
 /// <summary>
+/// 펼친 판 안에서 <b>접은 장면</b> 하나를 대신하는 상자 (2026-10-30 — 하이어아키의 눈, <c>docs/plans/hierarchy.md</c> SF).
+///
+/// 판은 펼친 채라 다른 장면의 카드는 그대로 서고 <b>이 장면만 줄 목록으로 간소화된다</b>(소유자: "챕터 내의 일부 장면만
+/// 접었을 경우, 접은 장면을 간소화"). 밖과 잇는 간선 · 선택지 길은 그 줄에 붙는다 — 접혀도 어디로 이어지는지 보여야
+/// 한다. 장면 안끼리의 길은 상자 안에 그리지 않고 <see cref="InnerCount"/>로 센다.
+/// </summary>
+/// <param name="Position">장면의 카드들이 서던 자리의 <b>왼쪽 위</b> — 접어도 그 자리에 선다(다른 카드는 안 움직인다).</param>
+/// <param name="Nodes">줄 순서 = 판의 노드 순서. 들고 나는 수는 <b>그려지는 것</b>(밖과 잇는 간선 · 선택지 길)만 센다.</param>
+/// <param name="InnerCount">장면 안끼리 잇는 간선 · 선택지 길의 수 — 상자 머리에 적는다.</param>
+public sealed record CollapsedSceneProjection(
+    string FileId,
+    string SceneId,
+    string DisplayName,
+    GraphPosition Position,
+    IReadOnlyList<CollapsedNodeEntry> Nodes,
+    int InnerCount)
+    : GraphItemProjection(FileId, Position);
+
+/// <summary>
+/// 접은 장면의 열쇠 — 판(<c>StoryFile.Id</c>)과 장면ID(<c>ChapterEpisode.EffectiveSceneId</c>). 판 Id라 챕터 이름이
+/// 바뀌어도 따라간다. 저장 내용이 아니라 판 접기처럼 작업 상태다.
+/// </summary>
+public readonly record struct GraphSceneKey(string FileId, string SceneId);
+
+/// <summary>
 /// 접힌 판 안의 장면 묶음 하나.
 /// </summary>
 /// <param name="SceneId">
@@ -174,7 +199,11 @@ public enum GraphEndpointKind
     ExpandedNodeOutput,
     ExpandedNodeInput,
     CollapsedFileNodeOutput,
-    CollapsedFileNodeInput
+    CollapsedFileNodeInput,
+
+    /// <summary>펼친 판 안의 접은 장면 상자의 줄 — <see cref="GraphEndpointProjection.SceneId"/>가 그 장면이다.</summary>
+    CollapsedSceneNodeOutput,
+    CollapsedSceneNodeInput
 }
 
 /// <summary>
@@ -186,7 +215,8 @@ public sealed record GraphEndpointProjection(
     string NodeId,
     GraphEndpointKind Kind,
     string? PortKey,
-    int? ProxyRowIndex);
+    int? ProxyRowIndex,
+    string? SceneId = null);
 
 public sealed record GraphConnectionProjection(
     string Key,
