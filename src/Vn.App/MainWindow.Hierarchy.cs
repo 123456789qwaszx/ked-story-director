@@ -38,16 +38,13 @@ public partial class MainWindow
     {
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
 
-        // 두 하이어아키의 챕터 줄 우클릭은 같은 차림표다(이름 바꾸기 · 제거 — 규칙은 셸에 한 벌).
+        // 두 하이어아키의 차림표 · 이름 고치기는 같은 규칙 한 벌로 한다(HY4 — MainWindow.HierarchyEdit.cs).
         foreach (StoryHierarchy tree in new[] { ChapterGraph.HierarchyView, Graph.HierarchyView })
         {
-            tree.RowMenuRequested += (anchor, row) =>
-            {
-                if (row.Kind == HierarchyKind.Chapter && row.ChapterId is { } chapterId)
-                {
-                    UiGuard.Run(_session, "챕터 메뉴", () => ShowChapterContextFlyout(anchor, chapterId));
-                }
-            };
+            tree.CommandRequested += (command, row, anchor) =>
+                UiGuard.Run(_session, "하이어아키 차림표", () => OnHierarchyCommand(command, row, anchor));
+            tree.RenameRequested += (row, name) =>
+                UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(row, name));
         }
 
         // 챕터 그래프에서 고른 에피소드가 세션의 선택(그 카드)이 된다 — 연출 그래프로 넘어가도 같은 것을 본다.

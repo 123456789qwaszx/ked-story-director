@@ -6,9 +6,7 @@ using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
-using Vn.Authoring.Serialization;
 
 namespace Vn.App.Tests;
 
@@ -136,34 +134,6 @@ public sealed class DirectorHierarchyTests : IDisposable
         graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Button>()
             .Single(button => button.IsEffectivelyVisible && (string?)button.Tag == tag);
 
-    /// <summary>챕터 둘 — ch01은 장면 둘(opening: root · a, hall: b), ch02는 장면ID 없이 x · y. 연출 그래프 탭을 연다.</summary>
-    private (MainWindow Window, AuthoringSession Session) Show()
-    {
-        Directory.CreateDirectory(_directory);
-
-        var editor = new ProjectEditor(new StoryProject { Title = "연출 하이어아키" });
-        editor.EnsureChapter("ch01");
-        editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "opening");
-        editor.AddEpisode("ch01", "a", title: "a", 220, 0, sceneId: "opening");
-        editor.AddEpisode("ch01", "b", title: "b", 440, 0, sceneId: "hall");
-        editor.EnsureChapter("ch02");
-        editor.EnsureChapterBoard("ch02");
-        editor.AddEpisode("ch02", "x", title: "x", 0, 0);
-        editor.AddEpisode("ch02", "y", title: "y", 220, 0);
-
-        string manifest = Path.Combine(_directory, "p" + ProjectManifestJson.FileExtension);
-        ProjectStore.Save(manifest, editor.Project);
-
-        var window = new MainWindow { Width = 1400, Height = 900 };
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-
-        AuthoringSession session = window.SessionProbe;
-        session.Open(manifest);
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;
-        Dispatcher.UIThread.RunJobs();
-
-        return (window, session);
-    }
+    /// <summary>하이어아키 시험의 프로젝트(<see cref="HierarchyFixture"/>)를 연출 그래프 탭으로 연다.</summary>
+    private (MainWindow Window, AuthoringSession Session) Show() => HierarchyFixture.Open(_directory, GraphTab);
 }

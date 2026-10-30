@@ -350,34 +350,11 @@ public partial class MainWindow : Window
         {
             string newId = name.Text?.Trim() ?? string.Empty;
 
-            if (newId.Length == 0 || string.Equals(newId, chapterId, StringComparison.Ordinal))
+            if (newId.Length == 0 || string.Equals(newId, chapterId, StringComparison.Ordinal) ||
+                RenameChapter(chapterId, newId))
             {
                 flyout.Hide();
-                return;
             }
-
-            // ⚠ 개명은 <b>여러 자리를 함께</b> 옮기는 한 동작이다(챕터·판·조건 배관). 셸이 그중
-            // 일부만 알던 시절에 나머지가 뒤처졌다 — 그 주인은 이제 ChapterRenamer 하나다
-            // (2026-08-24 소유자 보고).
-            ChapterRenamer.Result result =
-                ChapterRenamer.Rename(_session.Editor, _session.ProjectPath, chapterId, newId);
-
-            if (!result.Renamed)
-            {
-                _session.SetStatus(result.Failure!);
-                return;
-            }
-
-            ChapterGraph.Refresh();
-            ChapterGraph.SelectChapter(newId);
-            flyout.Hide();
-
-            _session.SetStatus(
-                $"챕터 '{chapterId}' → '{newId}'로 바꿨습니다" +
-                (result.SupplyRenamed ? "(조건 노드도 함께)." : ".") +
-                (result.StaleExport is { } stale
-                    ? $" ⚠ 옛 이름의 내보내기 '{stale}'가 남아 있습니다 — 지우고 다시 내보내 주세요."
-                    : " 내보낸 JSON이 있었다면 다시 내보내 주세요."));
         });
         panel.Children.Add(rename);
         panel.Children.Add(MenuSeparator());
@@ -386,6 +363,35 @@ public partial class MainWindow : Window
         flyout.ShowAt(anchor);
         name.SelectAll();
         name.Focus();
+    }
+
+    /// <summary>
+    /// 챕터 이름을 바꾼다 — 챕터 줄 차림표와 하이어아키의 두 번 눌러 고치기가 같은 이 길을 지난다. 됐으면 참.
+    ///
+    /// ⚠ 개명은 <b>여러 자리를 함께</b> 옮기는 한 동작이다(챕터·판·조건 배관). 셸이 그중 일부만 알던 시절에 나머지가
+    /// 뒤처졌다 — 그 주인은 이제 ChapterRenamer 하나다(2026-08-24 소유자 보고).
+    /// </summary>
+    private bool RenameChapter(string chapterId, string newId)
+    {
+        ChapterRenamer.Result result =
+            ChapterRenamer.Rename(_session.Editor, _session.ProjectPath, chapterId, newId);
+
+        if (!result.Renamed)
+        {
+            _session.SetStatus(result.Failure!);
+            return false;
+        }
+
+        ChapterGraph.Refresh();
+        ChapterGraph.SelectChapter(newId);
+
+        _session.SetStatus(
+            $"챕터 '{chapterId}' → '{newId}'로 바꿨습니다" +
+            (result.SupplyRenamed ? "(조건 노드도 함께)." : ".") +
+            (result.StaleExport is { } stale
+                ? $" ⚠ 옛 이름의 내보내기 '{stale}'가 남아 있습니다 — 지우고 다시 내보내 주세요."
+                : " 내보낸 JSON이 있었다면 다시 내보내 주세요."));
+        return true;
     }
 
     /// <summary>

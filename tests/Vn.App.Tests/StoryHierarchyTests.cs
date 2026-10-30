@@ -4,9 +4,6 @@ using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
-using Vn.Authoring.Editing;
-using Vn.Authoring.Model;
-using Vn.Authoring.Serialization;
 
 namespace Vn.App.Tests;
 
@@ -206,35 +203,10 @@ public sealed class StoryHierarchyTests : IDisposable
         Assert.Single(new[] { "Selection", "Speaker", "Chapter" },
             name => graph.FindControl<ScrollViewer>(name + "Section")!.IsVisible);
 
-    /// <summary>
-    /// 챕터 둘 — ch01은 장면 둘(opening: root · a, hall: b), ch02는 장면ID 없이 x · y.
-    /// </summary>
+    /// <summary>하이어아키 시험의 프로젝트(<see cref="HierarchyFixture"/>)를 챕터 그래프 탭으로 연다.</summary>
     private (MainWindow Window, ChapterGraphView Graph, StoryHierarchy Tree) Show()
     {
-        Directory.CreateDirectory(_directory);
-
-        var editor = new ProjectEditor(new StoryProject { Title = "하이어아키" });
-        editor.EnsureChapter("ch01");
-        editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "opening");
-        editor.AddEpisode("ch01", "a", title: "a", 220, 0, sceneId: "opening");
-        editor.AddEpisode("ch01", "b", title: "b", 440, 0, sceneId: "hall");
-        editor.EnsureChapter("ch02");
-        editor.EnsureChapterBoard("ch02");
-        editor.AddEpisode("ch02", "x", title: "x", 0, 0);
-        editor.AddEpisode("ch02", "y", title: "y", 220, 0);
-
-        string manifest = Path.Combine(_directory, "p" + ProjectManifestJson.FileExtension);
-        ProjectStore.Save(manifest, editor.Project);
-
-        var window = new MainWindow { Width = 1400, Height = 900 };
-        window.Show();
-        Dispatcher.UIThread.RunJobs();
-
-        AuthoringSession session = window.SessionProbe;
-        session.Open(manifest);
-        Dispatcher.UIThread.RunJobs();
-
+        (MainWindow window, _) = HierarchyFixture.Open(_directory);
         ChapterGraphView graph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         return (window, graph, graph.HierarchyView);
     }
