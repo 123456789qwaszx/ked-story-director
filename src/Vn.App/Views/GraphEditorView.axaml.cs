@@ -362,6 +362,8 @@ public partial class GraphEditorView : UserControl
         // 여태 안 보였다).
         SetHint(null);
 
+        _sceneRootNodeIds = SceneRootCards();
+
         foreach (GraphItemProjection item in _projection.Items)
         {
             switch (item)
@@ -1849,8 +1851,15 @@ public partial class GraphEditorView : UserControl
     /// 본문이 실제로 읽기 전용이었지만 이제 대본은 어느 노드든 열린다 — 이 모양이 말하는
     /// 것은 <b>소속</b>뿐이다: 챕터의 에피소드인가, 아니면 자유 씬인가.
     /// </summary>
-    private static CardStyle CardStyleFor(GraphNodeKind kind, bool chapterEpisode) => kind switch
+    /// <param name="sceneRoot">
+    /// 장면의 루트 에피소드인가 (2026-10-30 SR — 소유자: "장면의 Root 노드는 색깔을 조금 다르게"). 같은 서류 모양에 등뼈 ·
+    /// 바탕만 챕터 그래프의 「SCENE ROOT」 표와 같은 파랑 쪽으로 바꾸고, 아이콘은 하이어아키의 ⌂다 — 세 화면이 한 말을 한다.
+    /// </param>
+    private static CardStyle CardStyleFor(GraphNodeKind kind, bool chapterEpisode, bool sceneRoot = false) => kind switch
     {
+        GraphNodeKind.Dialogue when chapterEpisode && sceneRoot => new CardStyle(
+            Color.FromRgb(0x3D, 0x7B, 0xD9), Color.FromRgb(0xEF, 0xF4, 0xFC),
+            Color.FromRgb(0xC3, 0xD5, 0xEF), 4, "⌂"),
         GraphNodeKind.Dialogue when chapterEpisode => new CardStyle(
             Color.FromRgb(0xD9, 0x77, 0x06), Color.FromRgb(0xFB, 0xF6, 0xEA),
             Color.FromRgb(0xE3, 0xD5, 0xB7), 4, "📄"),
@@ -1862,13 +1871,58 @@ public partial class GraphEditorView : UserControl
             Color.FromArgb(90, 128, 128, 128), 10, "⚙")
     };
 
+    /// <summary>장면의 루트 에피소드를 진 카드들 — 판을 다시 세울 때마다 묻는다(<see cref="SceneRootCards"/>).</summary>
+    private HashSet<string> _sceneRootNodeIds = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 장면의 루트 에피소드를 진 카드들 (2026-10-30 SR) — <b>하이어아키가 ⌂를 다는 그것</b>이다(<see cref="ChapterScene.RootEpisodeId"/>).
+    ///
+    /// ⚠ 장면ID를 하나도 안 적은 챕터는 칠하지 않는다 — 에피소드마다 제 장면이라 모든 카드가 루트이고, 모두 칠하면 표식이 아니라
+    ///   소음이다(하이어아키가 같은 까닭으로 ⌂를 뗀다).
+    /// </summary>
+    private HashSet<string> SceneRootCards()
+    {
+        var roots = new HashSet<string>(StringComparer.Ordinal);
+
+        if (_session is null)
+        {
+            return roots;
+        }
+
+        foreach (StoryFile file in _session.Project.Files)
+        {
+            if (_session.Editor.FindChapter(file.Name) is not { } chapter)
+            {
+                continue;
+            }
+
+            IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.ToGraphModel(chapter.ChapterId));
+
+            if (scenes.All(scene => scene.IsDefault))
+            {
+                continue;
+            }
+
+            foreach (ChapterScene scene in scenes)
+            {
+                if (EpisodeNaming.CardFor(_session.Project, chapter.ChapterId, scene.RootEpisodeId) is { } card)
+                {
+                    roots.Add(card.Id);
+                }
+            }
+        }
+
+        return roots;
+    }
+
     /// <summary>챕터의 에피소드인가 — 소속을 묻는 것이지 잠금을 묻는 것이 아니다.</summary>
     private bool IsChapterEpisode(string nodeId) =>
         _session?.Project.FindNode(nodeId) is DialogueNode { MarkedEpisodeId: not null };
 
     private NodeCard BuildCard(ExpandedNodeProjection node)
     {
-        CardStyle style = CardStyleFor(node.NodeKind, IsChapterEpisode(node.NodeId));
+        bool sceneRoot = _sceneRootNodeIds.Contains(node.NodeId);
+        CardStyle style = CardStyleFor(node.NodeKind, IsChapterEpisode(node.NodeId), sceneRoot);
 
         var body = new StackPanel { Spacing = 0 };
 
@@ -1878,7 +1932,10 @@ public partial class GraphEditorView : UserControl
             FontSize = 11,
             Foreground = new SolidColorBrush(style.Accent),
             Margin = new Thickness(0, 0, 5, 0),
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            [ToolTip.TipProperty] = sceneRoot
+                ? "장면 루트 — 장면이 시작하는 에피소드입니다. 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
+                : null
         };
 
         var titleName = new TextBlock
@@ -2577,7 +2634,7 @@ public partial class GraphEditorView : UserControl
         var name = new TextBlock
         {
             // 접힌 목록에도 종 아이콘 — 카드와 같은 시각 언어.
-            Text = $"{CardStyleFor(entry.NodeKind, IsChapterEpisode(entry.NodeId)).Icon} {entry.NodeName}",
+            Text = $"{CardStyleFor(entry.NodeKind, IsChapterEpisode(entry.NodeId), _sceneRootNodeIds.Contains(entry.NodeId)).Icon} {entry.NodeName}",
             FontSize = 10,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center
