@@ -905,9 +905,11 @@ public partial class ChapterGraphView : UserControl
     /// 것은 연출 그래프의 일이므로 여기서는 <b>읽기만</b> 한다. 점선인 것이 그 뜻이다:
     /// 사람이 고르는 길(실선)이 아니라 <b>반드시 한 번 다녀오는 통로</b>다.
     ///
-    /// ⚠ <b>오른쪽으로 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
-    /// 선택지처럼 우측으로 붙이되"*) — 연출 그래프와 같은 변이다. 선택지가 아래변의 칸을
-    /// 쓰므로 자리도 겹치지 않는다(포트 하나 = 선택지 하나, v9).
+    /// ⚠ <b>옆변으로 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
+    /// 선택지처럼 우측으로 붙이되"*) — 선택지가 아래변의 칸을 쓰므로 자리가 겹치지 않는다(포트 하나 =
+    /// 선택지 하나, v9). <b>다녀갈 카드가 왼쪽에 있으면 왼변으로</b> 나간다(2026-10-30 소유자: *"자기가 나온
+    /// 에피소드보다 왼쪽에 있어도 오른쪽으로만 나오는데, 그걸 연출그래프처럼 왼쪽에 있으면 왼쪽으로"*) —
+    /// 연출 그래프의 분기 포트와 같은 규칙 하나(<see cref="Vn.Authoring.Graph.EdgeSide.GoesLeft"/>)다.
     /// </summary>
     private void DrawBranchMarkers()
     {
@@ -929,17 +931,18 @@ public partial class ChapterGraphView : UserControl
                 continue;
             }
 
-            // 오른변 가운데에서 나가, 도착 카드의 <b>가까운 세로 변</b>으로 들어간다 —
-            // 되돌아가는 분기(도착이 왼쪽)도 선이 카드를 관통하지 않는다.
-            var start = new Point(from.X + CardWidth, from.Y + (CardHeight / 2));
-            bool targetIsRight = start.X <= to.X;
+            // 도착 쪽 옆변 가운데에서 나가(도착이 왼쪽이면 왼변), 도착 카드의 <b>가까운 세로 변</b>으로 들어간다 —
+            // 두 카드가 가로로 겹쳐 서도 선이 카드를 관통하지 않는다.
+            bool goesLeft = Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, to.X);
+            var start = new Point(goesLeft ? from.X : from.X + CardWidth, from.Y + (CardHeight / 2));
+            double entryX = goesLeft
+                ? to.X + CardWidth <= start.X ? to.X + CardWidth : to.X
+                : start.X <= to.X ? to.X : to.X + CardWidth;
 
             var line = new Line
             {
                 StartPoint = start,
-                EndPoint = new Point(
-                    targetIsRight ? to.X : to.X + CardWidth,
-                    to.Y + (CardHeight / 2)),
+                EndPoint = new Point(entryX, to.Y + (CardHeight / 2)),
                 Stroke = stroke,
                 StrokeThickness = 1.6,
                 StrokeDashArray = new AvaloniaList<double> { 5, 4 },

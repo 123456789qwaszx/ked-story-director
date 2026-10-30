@@ -36,9 +36,9 @@ public sealed class ChapterBranchPanelTests
         Assert.NotNull(drawn.StrokeDashArray);
         Assert.NotEmpty(drawn.StrokeDashArray!);
 
-        // ⭐ <b>오른변에서 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
-        //    선택지처럼 우측으로 붙이되"*) — 연출 그래프와 같은 변이다. 선택지는 아래변을
-        //    쓰므로 둘이 안 겹친다.
+        // ⭐ <b>옆변에서 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
+        //    선택지처럼 우측으로 붙이되"*) — 선택지는 아래변을 쓰므로 둘이 안 겹친다. 다녀갈 카드가
+        //    오른쪽이라 오른변이다(왼쪽이면 왼변 — 아래 시험).
         Border card = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == "root");
 
         Assert.Equal(Canvas.GetLeft(card) + CardWidth, drawn.StartPoint.X, 3);
@@ -47,6 +47,42 @@ public sealed class ChapterBranchPanelTests
 
     private const double CardWidth = 190;
     private const double CardHeight = 74;
+
+    [Fact]
+    public void 다녀갈_에피소드가_왼쪽에_있으면_분기는_왼변으로_나가_그_카드의_오른변으로_든다() => HeadlessUi.Run(() =>
+    {
+        // 2026-10-30 소유자: "자기가 나온 에피소드보다 왼쪽에 있어도 오른쪽으로만 나오는데, 그걸 연출그래프처럼
+        // 왼쪽에 있으면 왼쪽으로 나오도록". 연출 그래프의 분기 포트와 같은 규칙(EdgeSide.GoesLeft)이다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        session.Editor.MoveEpisode("ch01", project.BranchEpisodeId, -400, 120);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        Line drawn = Assert.Single(
+            canvas.Children.OfType<Line>(),
+            line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true);
+        Border root = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == "root");
+        Border target = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == project.BranchEpisodeId);
+
+        Assert.True(Canvas.GetLeft(target) < Canvas.GetLeft(root), "다녀갈 카드가 왼쪽에 섰다");
+        Assert.Equal(Canvas.GetLeft(root), drawn.StartPoint.X, 3);
+        Assert.Equal(Canvas.GetTop(root) + (CardHeight / 2), drawn.StartPoint.Y, 3);
+        Assert.Equal(Canvas.GetLeft(target) + CardWidth, drawn.EndPoint.X, 3);
+        Assert.Equal(Canvas.GetTop(target) + (CardHeight / 2), drawn.EndPoint.Y, 3);
+
+        // 다시 오른쪽으로 옮기면 오른변으로 나간다.
+        session.Editor.MoveEpisode("ch01", project.BranchEpisodeId, 600, 120);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        drawn = Assert.Single(
+            canvas.Children.OfType<Line>(),
+            line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true);
+        root = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == "root");   // 다시 그려 새 카드다
+        target = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == project.BranchEpisodeId);
+        Assert.Equal(Canvas.GetLeft(root) + CardWidth, drawn.StartPoint.X, 3);
+        Assert.Equal(Canvas.GetLeft(target), drawn.EndPoint.X, 3);
+    });
 
     [Fact]
     public void 분기를_고르면_조건_칸이_열린다() => HeadlessUi.Run(() =>
