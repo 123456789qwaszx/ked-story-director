@@ -41,10 +41,10 @@ public partial class MainWindow
 
             case HierarchyCommand.AddScene:
             {
-                // 장면은 에피소드가 들어야 있다 — 새 장면은 첫 에피소드와 함께 선다. 그 에피소드는 누른 에피소드(없으면
-                // 챕터의 마지막 에피소드)에서 잇는다: 떨어진 섬을 만들지 않는다(그 간선이 곧 장면의 들어오는 자리다).
-                string sceneId = NextSceneId(chapter.Model);
-                CreateEpisode(chapter, after: row.EpisodeId ?? LastEpisodeOf(chapter.Model), sceneId);
+                // 장면은 에피소드가 들어야 있다 — 새 장면은 첫 에피소드와 함께 선다.
+                // ⛔ 그 에피소드를 누른 에피소드(없으면 챕터의 마지막)에서 잇던 길은 2026-11-01에 걷혔다(소유자: "그렇게 새로
+                //    만들어 진 것에 바로 간선을 이을 필요는 없어") — 새 장면이 어디서 들어오는지는 사람이 잇는다.
+                CreateEpisode(chapter, after: null, NextSceneId(chapter.Model));
                 break;
             }
 

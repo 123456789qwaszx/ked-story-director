@@ -82,7 +82,8 @@ public sealed class HierarchyEditTests : IDisposable
 
         ChapterEpisode added = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "new01");
         Assert.Equal("scene01", added.SceneId);
-        Assert.Contains(Chapter(session).Edges, edge => edge.ToEpisodeId == "new01");   // 떨어진 섬을 만들지 않는다
+        // 간선은 잇지 않는다(2026-11-01 소유자: "새로 만들어 진 것에 바로 간선을 이을 필요는 없어").
+        Assert.DoesNotContain(Chapter(session).Edges, edge => edge.ToEpisodeId == "new01");
         Assert.Contains(tree.Rows, row => row.Key == StoryHierarchy.SceneKey("ch01", "scene01"));
 
         window.Close();

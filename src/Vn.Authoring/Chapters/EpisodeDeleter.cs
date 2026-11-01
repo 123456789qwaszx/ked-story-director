@@ -65,11 +65,21 @@ public static class EpisodeDeleter
             return Result.Fail($"챕터 '{chapterId}'를 찾지 못했습니다.");
         }
 
-        // ① 행과 그것을 쓰는 것들.
-        editor.RemoveEpisode(chapterId, episodeId);
+        string? cardRemoved = null;
 
-        // ② 카드.
-        return new Result(true, null, TakeCard(editor, chapterId, episodeId));
+        // ⚠ <b>되돌리기 한 칸이다</b> (2026-11-01 소유자 보고: "지우고 나서 ctrl+z로 복구를 하면 … 장면을 안 가진 에피소드라는
+        //   게 있었어"). ①과 ②가 따로 적혀서 Ctrl+Z 한 번은 카드만 돌려놓고 챕터의 에피소드 행은 지운 채로 두었다 — 챕터에
+        //   없는 카드가 판에 섰다가 둘째 Ctrl+Z에야 제자리를 찾았다.
+        editor.Batch(() =>
+        {
+            // ① 행과 그것을 쓰는 것들.
+            editor.RemoveEpisode(chapterId, episodeId);
+
+            // ② 카드.
+            cardRemoved = TakeCard(editor, chapterId, episodeId);
+        });
+
+        return new Result(true, null, cardRemoved);
     }
 
     /// <summary>
