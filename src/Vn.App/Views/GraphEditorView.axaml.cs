@@ -548,7 +548,8 @@ public partial class GraphEditorView : UserControl
 
         List<ExpandedNodeProjection> all = nodes.ToList();
 
-        foreach (ChapterScene scene in scenes)
+        // 장면ID를 적은 장면만 테두리를 받는다 — 장면ID가 없는 에피소드는 챕터 직속이다(2026-11-01 B안).
+        foreach (ChapterScene scene in scenes.Where(scene => !scene.IsDefault))
         {
             Rect? bounds = null;
 
@@ -1729,7 +1730,8 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
-            foreach (ChapterScene scene in scenes)
+            // 챕터 직속 에피소드(장면ID 없음)는 장면이 아니라 칠하지 않는다(2026-11-01 B안).
+            foreach (ChapterScene scene in scenes.Where(scene => !scene.IsDefault))
             {
                 if (EpisodeNaming.CardFor(_session.Project, chapter.ChapterId, scene.RootEpisodeId) is { } card)
                 {
@@ -2436,9 +2438,11 @@ public partial class GraphEditorView : UserControl
                 FontWeight = FontWeight.SemiBold,
                 Opacity = 0.7,
                 VerticalAlignment = VerticalAlignment.Center,
-                [ToolTip.TipProperty] = scene.SceneId.Length == 0
-                    ? "이 챕터의 진행에 안 실리는 노드들입니다 — 장면 경계가 없습니다."
-                    : $"장면 '{scene.DisplayName}' — 같은 장면끼리 저장·롤백 구간을 공유합니다."
+                [ToolTip.TipProperty] = scene.ChapterDirect
+                    ? "장면ID가 없는 에피소드들 — 장면에 묶이지 않고 챕터에 바로 속합니다(런타임에서는 에피소드 하나가 저장·롤백 구간)."
+                    : scene.SceneId.Length == 0
+                        ? "이 챕터의 진행에 안 실리는 노드들입니다 — 장면 경계가 없습니다."
+                        : $"장면 '{scene.DisplayName}' — 같은 장면끼리 저장·롤백 구간을 공유합니다."
             }
         };
 

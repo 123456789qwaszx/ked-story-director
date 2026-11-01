@@ -466,7 +466,7 @@ public static class GraphProjectionBuilder
 
         var groups = new List<CollapsedSceneGroup>();
 
-        foreach (ChapterScene scene in map.Scenes)
+        foreach (ChapterScene scene in map.Scenes.Where(scene => !scene.IsDefault))
         {
             List<CollapsedNodeEntry> inScene = entries
                 .Where(entry => string.Equals(SceneFor(entry), scene.SceneId, StringComparison.Ordinal))
@@ -476,6 +476,15 @@ public static class GraphProjectionBuilder
             {
                 groups.Add(new CollapsedSceneGroup(scene.SceneId, scene.DisplayName, inScene));
             }
+        }
+
+        // 장면ID가 없는 에피소드는 <b>챕터 직속</b> 한 묶음이다 (2026-11-01 B안) — 장면들 뒤에, 이야기 차례대로.
+        var defaults = map.Scenes.Where(scene => scene.IsDefault).Select(scene => scene.SceneId).ToHashSet(StringComparer.Ordinal);
+        List<CollapsedNodeEntry> direct = entries.Where(entry => SceneFor(entry) is { } sceneId && defaults.Contains(sceneId)).ToList();
+
+        if (direct.Count > 0)
+        {
+            groups.Add(new CollapsedSceneGroup(string.Empty, "챕터 직속", direct, ChapterDirect: true));
         }
 
         List<CollapsedNodeEntry> outside = entries.Where(entry => SceneFor(entry) is null).ToList();

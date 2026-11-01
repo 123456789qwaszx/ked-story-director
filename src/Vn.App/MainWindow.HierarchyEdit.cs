@@ -72,6 +72,10 @@ public partial class MainWindow
                 break;
             }
 
+            case HierarchyCommand.DetachFromScene when row.EpisodeId is { } episodeId:
+                DetachFromScene(chapterId, episodeId);
+                break;
+
             case HierarchyCommand.DeleteEpisode when row.EpisodeId is { } episodeId:
             {
                 EpisodeDeleter.Result result = EpisodeDeleter.Delete(_session.Editor, chapterId, episodeId);
@@ -144,16 +148,40 @@ public partial class MainWindow
         return true;
     }
 
-    /// <summary>에피소드를 다른 장면 줄로 끌어 놓았다 — 그 에피소드의 장면ID가 그 장면의 것이 된다(되돌리기 한 칸).</summary>
+    /// <summary>
+    /// 에피소드를 끌어 놓았다 — 다른 장면 줄이면 그 장면으로(장면ID가 그 장면의 것이 된다), 챕터 줄이면 장면에서 빼 챕터
+    /// 직속으로. 되돌리기 한 칸.
+    /// </summary>
     private void OnHierarchyDropped(HierarchyRow source, HierarchyRow target)
     {
-        if (source.ChapterId is not { } chapterId || source.EpisodeId is not { } episodeId || target.SceneId is not { } sceneId)
+        if (source.ChapterId is not { } chapterId || source.EpisodeId is not { } episodeId)
+        {
+            return;
+        }
+
+        if (target.Kind == HierarchyKind.Chapter)
+        {
+            DetachFromScene(chapterId, episodeId);
+            return;
+        }
+
+        if (target.SceneId is not { } sceneId)
         {
             return;
         }
 
         _session.Editor.UpdateEpisode(chapterId, episodeId, sceneId: sceneId);
         _session.SetStatus($"'{episodeId}'를 장면 '{sceneId}'로 옮겼습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+    }
+
+    /// <summary>
+    /// 에피소드를 장면에서 뺀다 — 장면ID를 걷어 <b>챕터 직속</b>으로(2026-11-01 B안). 런타임에서는 그 에피소드 하나가 저장 · 롤백
+    /// 구간이 된다(장면ID가 없는 에피소드의 규칙 그대로). 되돌리기 한 칸.
+    /// </summary>
+    private void DetachFromScene(string chapterId, string episodeId)
+    {
+        _session.Editor.UpdateEpisode(chapterId, episodeId, sceneId: string.Empty);
+        _session.SetStatus($"'{episodeId}'를 장면에서 뺐습니다 — 이제 챕터 직속입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
     /// <summary>

@@ -43,7 +43,13 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Equal(["챕터 추가"], Headers(tree, StoryHierarchy.ProjectKey));
         Assert.Equal([.. adds, "이름 바꾸기 · 제거…"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
         Assert.Equal([.. adds, "이름 바꾸기", "장면 풀기 (에피소드는 남는다)"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
-        Assert.Equal([.. adds, "이름 바꾸기", "에피소드 지우기"], Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
+        Assert.Equal(
+            [.. adds, "이름 바꾸기", "장면에서 빼기 (챕터 직속으로)", "에피소드 지우기"],
+            Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
+
+        // 챕터 직속 에피소드(장면ID 없음)에는 뺄 장면이 없다.
+        tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        Assert.Equal([.. adds, "이름 바꾸기", "에피소드 지우기"], Headers(tree, StoryHierarchy.EpisodeKey("ch02", "x")));
 
         window.Close();
     });
@@ -249,6 +255,61 @@ public sealed class HierarchyEditTests : IDisposable
 
         Press(tree, Key.Right);
         Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "root"), tree.Selection?.Key);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 장면ID가_없는_에피소드는_가짜_장면_줄_없이_장면들_뒤에_챕터_직속으로_선다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-01 소유자 결정 B — "그냥 바로 챕터 직속". 전에는 「미지정 · new01」 장면 줄이 에피소드마다 섰다.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        session.Editor.AddDialogueNode(EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, 0, 900);   // 연출 그래프 「+ 대사 노드」
+        Dispatcher.UIThread.RunJobs();
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+
+        Assert.DoesNotContain(tree.Rows, row => row.Kind == HierarchyKind.Scene && row.SceneId!.StartsWith("__scene_", StringComparison.Ordinal));
+
+        List<string> keys = tree.Rows.Select(row => row.Key).ToList();
+        HierarchyRow loose = tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "new01"));
+        Assert.Equal(2, loose.Depth);                     // 챕터 바로 아래
+        Assert.False(loose.IsSceneRoot);                  // 장면이 아니다 — ⌂ 없음
+        Assert.True(keys.IndexOf(loose.Key) > keys.IndexOf(StoryHierarchy.SceneKey("ch01", "hall")));   // 장면들 뒤
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 챕터_줄로_끌거나_차림표로_장면에서_빼고_장면_줄로_끌면_다시_들어간다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+
+        // 챕터 줄에 놓으면 — 장면ID를 걷어 챕터 직속으로.
+        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.ChapterKey("ch01"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(string.IsNullOrEmpty(Chapter(session).FindEpisode("a")!.SceneId));
+        Assert.Equal(2, tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "a")).Depth);
+
+        // 이미 챕터 직속이면 챕터 줄은 받지 않는다.
+        HierarchyRow a = tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "a"));
+        Assert.False(StoryHierarchy.Accepts(a, tree.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch01"))));
+
+        // 장면 줄에 놓으면 — 그 장면으로.
+        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.SceneKey("ch01", "hall"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("hall", Chapter(session).FindEpisode("a")!.SceneId);
+
+        // 차림표 「장면에서 빼기」도 같은 일이다 — 되돌리기 한 칸.
+        tree.Fold(StoryHierarchy.SceneKey("ch01", "hall"), collapse: false);
+        Click(tree, StoryHierarchy.EpisodeKey("ch01", "b"), "장면에서 빼기 (챕터 직속으로)");
+        Assert.True(string.IsNullOrEmpty(Chapter(session).FindEpisode("b")!.SceneId));
+
+        session.Editor.Undo();
+        Assert.Equal("hall", Chapter(session).FindEpisode("b")!.SceneId);
 
         window.Close();
     });

@@ -57,6 +57,26 @@ public sealed class SceneRootCardTests : IDisposable
         Assert.Equal(EpisodeBackground, Background(graph, Card(session, "ch01", "b")));
     });
 
+    [Fact]
+    public void 챕터_직속_에피소드는_장면_테두리도_루트_색도_없다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-01 B안 — 장면ID가 없는 에피소드는 장면이 아니다. 전에는 「장면 미지정 · new01」 테두리가 그 카드 하나를 감쌌다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        DialogueNode loose = session.Editor.AddDialogueNode(EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, 0, 1200);
+        session.Editor.AddEdge("ch01", "b", EpisodeNaming.EpisodeIdOf(loose), optionLabel: "더");
+        graph.Rebuild();
+
+        Assert.Equal(EpisodeBackground, Background(graph, loose));
+        Assert.DoesNotContain(
+            graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>(),
+            border => (border.Tag as string)?.StartsWith(GraphEditorView.SceneLabelTag + "__scene_", StringComparison.Ordinal) == true);
+
+        // 장면ID를 적은 장면은 그대로 테두리를 받는다.
+        Assert.Contains(
+            graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>(),
+            border => border.Tag as string == GraphEditorView.SceneLabelTag + "hall");
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private (GraphEditorView Graph, AuthoringSession Session) Show()

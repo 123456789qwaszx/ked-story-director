@@ -94,10 +94,15 @@ public readonly record struct GraphSceneKey(string FileId, string SceneId);
 /// <param name="DisplayName">
 /// 사람에게 보일 이름. 묶음이 하나뿐이면 <b>머리글을 안 그린다</b>(그릴 이유가 없다).
 /// </param>
+/// <param name="ChapterDirect">
+/// 장면ID가 없는 에피소드들의 묶음인가 (2026-11-01 B안) — 장면이 아니라 <b>챕터 직속</b>이다. 장면마다 머리글을 세우던 시절에는
+/// 「미지정 · x」 머리글이 에피소드 수만큼 섰다.
+/// </param>
 public sealed record CollapsedSceneGroup(
     string SceneId,
     string DisplayName,
-    IReadOnlyList<CollapsedNodeEntry> Entries)
+    IReadOnlyList<CollapsedNodeEntry> Entries,
+    bool ChapterDirect = false)
 {
     /// <summary>
     /// 머리글 줄을 그리는가 — 이름이 있을 때만.

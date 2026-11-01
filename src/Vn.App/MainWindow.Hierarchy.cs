@@ -276,14 +276,23 @@ public partial class MainWindow
             case HierarchyKind.Chapter when chapter is not null:
             {
                 IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
+                List<ChapterScene> named = scenes.Where(scene => !scene.IsDefault).ToList();
                 Graph.SetInspectorHeader(
-                    $"챕터 · {chapter.ChapterId}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {scenes.Count}");
+                    $"챕터 · {chapter.ChapterId}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
                 Note("조건 · 스탯은 챕터 그래프에서 고칩니다.");
 
-                foreach (ChapterScene scene in scenes)
+                foreach (ChapterScene scene in named)
                 {
                     Link($"{scene.DisplayName}  ({scene.Episodes.Count})", "summary-scene:" + scene.SceneId, () =>
                         PickInDirector(new HierarchyPick(HierarchyKind.Scene, chapter.ChapterId, scene.SceneId)));
+                }
+
+                // 장면ID가 없는 에피소드 — 챕터 직속(2026-11-01 B안). 하이어아키와 같은 차례로 장면들 뒤에.
+                foreach (ChapterEpisode episode in scenes.Where(scene => scene.IsDefault).SelectMany(scene => scene.Episodes))
+                {
+                    string episodeId = episode.EpisodeId;
+                    Link("· " + episodeId, "summary-episode:" + episodeId, () =>
+                        PickInDirector(new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, EpisodeId: episodeId)));
                 }
 
                 OpenInChapterGraph(pick, "챕터 그래프에서 조건 · 스탯 열기");

@@ -87,6 +87,25 @@ public sealed class CollapsedSceneGroupTests
         Assert.False(only.HasHeader);
     }
 
+    [Fact]
+    public void 장면ID가_없는_에피소드는_장면들_뒤에_챕터_직속_한_묶음이다()
+    {
+        // 2026-11-01 B안 — 전에는 장면ID가 없는 에피소드마다 「미지정 · x」 머리글이 섰다.
+        StoryProject project = Project(("opening", "ep01"), (null, "ep02"), ("classroom", "ep03"), (null, "ep04"));
+
+        CollapsedFileProjection proxy = Proxy(project);
+
+        Assert.Equal(["opening", "classroom", "챕터 직속"], proxy.Scenes.Select(scene => scene.DisplayName));
+        CollapsedSceneGroup direct = proxy.Scenes[^1];
+        Assert.True(direct.ChapterDirect);
+        Assert.Equal(["ep02", "ep04"], direct.Entries.Select(entry => entry.NodeName));
+
+        // 머리글도 한 행이다 — 머리글(0) ep01(1) 머리글(2) ep03(3) 머리글(4) ep02(5) ep04(6).
+        GraphProjection projection = GraphProjectionBuilder.Build(project, new HashSet<string>(StringComparer.Ordinal));
+        Assert.Equal(5, RowOf(projection, "ep02"));
+        Assert.Equal(6, RowOf(projection, "ep04"));
+    }
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>그 노드가 선 화면 행 번호 — 투영이 간선 끝에 쓰는 그 값이다.</summary>

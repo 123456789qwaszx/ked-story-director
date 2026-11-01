@@ -1472,7 +1472,12 @@ public partial class ChapterGraphView : UserControl
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
 
         // 시작 에피소드(첫 행)가 곧 Root다 — 도달성의 씨앗이자 분기 저작의 출발점.
-        if (model.IsSceneRoot(episode))
+        // ⚠ 장면ID가 없는 에피소드는 <b>챕터 직속</b>이라(2026-11-01 B안) 「SCENE ROOT」를 달지 않는다 — 장면이 아닌데 장면 루트라고
+        //   하면 거짓말이다. 챕터의 시작이면 「START」만 단다.
+        bool chapterDirect = string.IsNullOrWhiteSpace(episode.SceneId);
+        bool start = ReferenceEquals(model.StartEpisode, episode);
+
+        if (chapterDirect ? start : model.IsSceneRoot(episode))
         {
             var root = new Border
             {
@@ -1481,15 +1486,17 @@ public partial class ChapterGraphView : UserControl
                 Padding = new Thickness(4, 0),
                 Child = new TextBlock
                 {
-                    Text = "SCENE ROOT",
+                    Text = chapterDirect ? "START" : "SCENE ROOT",
                     FontSize = 9,
                     FontWeight = FontWeight.Bold,
                     Foreground = Brushes.White
                 }
             };
-            ToolTip.SetTip(root, ReferenceEquals(model.StartEpisode, episode)
-                ? "시작 에피소드이자 장면 루트입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
-                : "다른 장면에서 들어오는 장면 루트입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
+            ToolTip.SetTip(root, chapterDirect
+                ? "챕터의 시작 에피소드입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
+                : start
+                    ? "시작 에피소드이자 장면 루트입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
+                    : "다른 장면에서 들어오는 장면 루트입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
             header.Children.Add(root);
         }
 
@@ -1500,15 +1507,15 @@ public partial class ChapterGraphView : UserControl
             Padding = new Thickness(4, 0),
             Child = new TextBlock
             {
-                Text = string.IsNullOrWhiteSpace(episode.SceneId) ? "SCENE · 기본" : $"SCENE · {episode.SceneId.Trim()}",
+                Text = chapterDirect ? "챕터 직속" : $"SCENE · {episode.SceneId!.Trim()}",
                 FontSize = 9,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Brushes.White
             }
         };
-        ToolTip.SetTip(scene, string.IsNullOrWhiteSpace(episode.SceneId)
-            ? "장면: 에피소드별 기본 장면"
-            : $"장면: {episode.SceneId.Trim()} — 같은 장면ID끼리 저장·롤백 구간을 공유합니다.");
+        ToolTip.SetTip(scene, chapterDirect
+            ? "장면ID가 없습니다 — 장면에 묶이지 않고 챕터에 바로 속합니다. 런타임에서는 이 에피소드 하나가 저장·롤백 구간입니다."
+            : $"장면: {episode.SceneId!.Trim()} — 같은 장면ID끼리 저장·롤백 구간을 공유합니다.");
         header.Children.Add(scene);
 
         // 관문은 v8에서 길(간선)의 것이 됐다 — 카드는 "들어오는 길에 관문이 있다"를 표시한다.
