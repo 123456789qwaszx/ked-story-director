@@ -232,6 +232,9 @@ public sealed class ChapterGraphModel
     /// <summary>챕터 Id — 판 이름과 같다(챕터 = 판 1:1). 엑셀 시절에는 `chapters/{ChapterId}.xlsx`의 파일 이름이었다.</summary>
     public string ChapterId { get; }
 
+    /// <summary>사람이 읽는 챕터 이름 — <see cref="ChapterDocument.DisplayName"/>. 비면 null.</summary>
+    public string? DisplayName { get; init; }
+
     public string SourcePath { get; }
 
     public IReadOnlyList<ChapterEpisode> Episodes { get; }

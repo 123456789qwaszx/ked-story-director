@@ -427,6 +427,22 @@ public partial class ChapterGraphView : UserControl
                 UiGuard.Run(_session, "장면ID 저장", ApplyEpisodeFromPanel);
             }
         };
+        EpisodeTitleBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter)
+            {
+                e.Handled = true;
+                UiGuard.Run(_session, "에피소드 제목 저장", ApplyEpisodeTitleFromPanel);
+            }
+        };
+        ChapterDisplayNameBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter)
+            {
+                e.Handled = true;
+                UiGuard.Run(_session, "챕터 표시 이름 저장", ApplyChapterDisplayName);
+            }
+        };
         ApplySceneGroupButton.Click += (_, _) =>
             UiGuard.Run(_session, "장면ID 일괄 저장", ApplySceneIdToGroup);
         SceneNameBox.KeyDown += (_, e) =>
@@ -2271,6 +2287,7 @@ public partial class ChapterGraphView : UserControl
             if (fill)
             {
                 IdBox.Text = episode.EpisodeId;
+                EpisodeTitleBox.Text = episode.Title ?? string.Empty;
                 SceneIdBox.Text = episode.SceneId ?? string.Empty;
             }
 
@@ -2885,6 +2902,35 @@ public partial class ChapterGraphView : UserControl
             $"에피소드 '{episodeId}'의 장면ID를 저장했습니다.");
     }
 
+    /// <summary>에피소드 제목 저장 — 끝 카드의 "마지막 에피소드" 줄(2026-11-04). 비우면 내보내기가 이름을 쓴다.</summary>
+    internal void ApplyEpisodeTitleFromPanel()
+    {
+        if (_selectedEpisodeId is not { } episodeId || _selectedChapterId is not { } chapterId)
+        {
+            _session?.SetStatus("에피소드를 다시 골라 주세요. 선택이 풀렸거나 그 에피소드가 사라졌습니다.");
+            return;
+        }
+
+        ChapterEdit(
+            () => _session!.Editor.UpdateEpisode(
+                chapterId, episodeId, title: EpisodeTitleBox.Text?.Trim() ?? string.Empty),
+            $"에피소드 '{episodeId}'의 제목을 저장했습니다.");
+    }
+
+    /// <summary>챕터 표시 이름 저장 — 진행 JSON의 DisplayName(2026-11-04). 비우면 챕터 Id로 물러선다.</summary>
+    internal void ApplyChapterDisplayName()
+    {
+        if (_selectedChapterId is not { } chapterId)
+        {
+            _session?.SetStatus("챕터를 다시 골라 주세요.");
+            return;
+        }
+
+        ChapterEdit(
+            () => _session!.Editor.UpdateChapterDisplayName(chapterId, ChapterDisplayNameBox.Text),
+            $"챕터 '{chapterId}'의 표시 이름을 저장했습니다.");
+    }
+
     /// <summary>현재 장면을 이루는 모든 에피소드의 안정 ID를 한 저장으로 바꾼다.</summary>
     internal void ApplySceneIdToGroup()
     {
@@ -3037,6 +3083,12 @@ public partial class ChapterGraphView : UserControl
         RefreshChapterSheets(snapshot);
 
         ChapterGraphModel? model = LiveSheetModel ?? snapshot;
+
+        // 표시 이름은 챕터 값이라 이 표와 같은 자리에서 다시 채운다 — 손으로 적는 중이면 덮지 않는다.
+        if (!ChapterDisplayNameBox.IsFocused)
+        {
+            ChapterDisplayNameBox.Text = model?.DisplayName ?? string.Empty;
+        }
 
         ConditionListPanel.Children.Clear();
 

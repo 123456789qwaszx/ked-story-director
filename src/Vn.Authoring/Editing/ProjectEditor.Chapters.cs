@@ -599,6 +599,23 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// 챕터의 표시 이름(<see cref="ChapterDocument.DisplayName"/>)을 고친다. 비우면 Id로 물러선다.
+    /// 되돌리기 한 칸 — 구조가 아니라 글자라 그래프는 다시 서지 않는다.
+    /// </summary>
+    public void UpdateChapterDisplayName(string chapterId, string? displayName)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        string? wanted = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim();
+
+        if (string.Equals(chapter.DisplayName, wanted, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.DisplayName = wanted);
+    }
+
+    /// <summary>
     /// 챕터 조건 하나 — 간선의 표시조건·해금조건이 라벨로 가리킨다.
     ///
     /// ⚠ <b>이름에 "Chapter"가 붙은 이유</b>: <c>AddCondition</c>은 이미 <b>설정노드</b>의

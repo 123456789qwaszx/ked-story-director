@@ -90,7 +90,8 @@ public static class ChapterProgressionExporter
         var payload = new ChapterJson
         {
             ChapterId = chapter.ChapterId,
-            DisplayName = chapter.ChapterId,
+            // 비면 Id — 칸이 생기기 전(2026-11-04)의 출력 그대로다.
+            DisplayName = string.IsNullOrWhiteSpace(chapter.DisplayName) ? chapter.ChapterId : chapter.DisplayName.Trim(),
             StartEpisodeId = chapter.StartEpisode?.EpisodeId ?? string.Empty,
             // 순서는 챕터에 적힌 순서 그대로다 (2026-10-29 · D2). 예전에는 가져온 엑셀 행 번호
             // (`SourceRow`)로 정렬했는데, 툴에서 만든 것은 행이 0이라 가져온 것과 섞이면 순서가 뒤집혔다.
@@ -229,7 +230,8 @@ public static class ChapterProgressionExporter
         ChapterGraphModel chapter, ChapterEpisode episode, ChapterBoard via) => new()
     {
         EpisodeId = episode.EpisodeId,
-        Title = episode.Title,
+        // 끝 카드의 "마지막 에피소드" 줄이다. 비면 에피소드 이름(EpisodeId) — 빈 줄보다 낫다(2026-11-04).
+        Title = string.IsNullOrWhiteSpace(episode.Title) ? episode.EpisodeId : episode.Title.Trim(),
         IndexText = episode.Index,
         // ⚠ `Kind`(Main/Attachment)는 2026-08-25에 계약에서 사라졌다 — 코어가 `EpisodeKind`를
         // 통째로 지웠다. 저작의 `종류` 열은 남아 있지만 이제 <b>산출물에 실리지 않는다</b>.

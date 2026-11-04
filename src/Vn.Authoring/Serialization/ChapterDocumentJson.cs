@@ -33,6 +33,8 @@ internal static class ChapterDocumentJson
         {
             var json = new JsonObject { ["chapterId"] = chapter.ChapterId };
 
+            Text(json, "displayName", chapter.DisplayName);
+
             Put(json, "episodes", chapter.Episodes, WriteEpisode);
             Put(json, "edges", chapter.Edges, WriteEdge);
             Put(json, "conditions", chapter.Conditions, WriteCondition);
@@ -60,6 +62,7 @@ internal static class ChapterDocumentJson
             chapters.Add(new ChapterDocument
             {
                 ChapterId = Text(json["chapterId"]),
+                DisplayName = (string?)json["displayName"] is { Length: > 0 } displayName ? displayName : null,
                 Episodes = Take(json["episodes"], ReadEpisode),
                 Edges = Take(json["edges"], ReadEdge),
                 Conditions = Take(json["conditions"], ReadCondition),

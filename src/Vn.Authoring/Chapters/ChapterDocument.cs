@@ -32,6 +32,13 @@ public sealed class ChapterDocument
 {
     public required string ChapterId { get; set; }
 
+    /// <summary>
+    /// 사람이 읽는 챕터 이름(2026-11-04) — 런타임 진행 JSON의 <c>DisplayName</c>이고, 끝 카드 머리에 뜬다("축제 전날").
+    /// 비면 내보내기가 <see cref="ChapterId"/>를 쓴다(이 칸이 생기기 전 동작 그대로). Id와 달리 신원이 아니라 글자다 —
+    /// 바꿔도 저장 · 간선 · 판이 따라가지 않는다.
+    /// </summary>
+    public string? DisplayName { get; set; }
+
     public List<ChapterEpisode> Episodes { get; init; } = [];
 
     public List<ChapterEdge> Edges { get; init; } = [];
@@ -65,7 +72,10 @@ public sealed class ChapterDocument
         Stats,
         Fixtures,
         ModelDiagnostics(sourcePath, definition),
-        ChoiceOptions);
+        ChoiceOptions)
+    {
+        DisplayName = DisplayName,
+    };
 
     /// <summary>
     /// 저작한 값에 대한 검사 전부 — <b>값의 흠</b>이라 어디서 왔든(툴 · 옛 프로젝트 · 손으로 고친 파일) 봐야 하는 것들이다.

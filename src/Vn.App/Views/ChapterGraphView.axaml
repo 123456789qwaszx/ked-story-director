@@ -284,6 +284,11 @@
                         <TextBox x:Name="IdBox" FontSize="11" PlaceholderText="EpisodeId"
                                  ToolTip.Tip="이름을 고치고 Enter를 누르면 개명됩니다 — 간선·픽스처·대본 파일·대사 노드가 함께 따라갑니다. 조건식의 cleared: 참조가 있으면 거부됩니다." />
 
+                        <!-- 제목 (2026-11-04) — 런타임 끝 카드의 "마지막 에피소드" 줄. 2026-08-16에 뺐던 칸을
+                             툴로 예제를 다시 내기 위해 되살렸다. 비우면 내보내기가 이름을 쓴다. -->
+                        <TextBox x:Name="EpisodeTitleBox" FontSize="11" PlaceholderText="제목 (비우면 이름)"
+                                 ToolTip.Tip="게임의 끝 카드가 '마지막 에피소드'로 보여 주는 글자입니다. 고치고 Enter. 비우면 에피소드 이름이 나갑니다." />
+
                         <TextBox x:Name="SceneIdBox" FontSize="11" PlaceholderText="장면ID (비우면 기본 장면)"
                                  ToolTip.Tip="같은 장면ID의 에피소드는 하나의 저장·롤백 구간입니다. 비우면 기존 파일과 호환되게 각 에피소드가 독립 장면이 됩니다." />
                         <Button x:Name="ApplySceneGroupButton" Content="같은 장면 전체에 적용"
@@ -550,6 +555,10 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConditionSection" Margin="10" Spacing="4">
+                            <!-- 표시 이름 (2026-11-04) — 진행 JSON의 DisplayName, 게임 끝 카드의 머리. 비우면 챕터 Id. -->
+                            <TextBox x:Name="ChapterDisplayNameBox" FontSize="11" PlaceholderText="표시 이름 (비우면 챕터 Id)"
+                                     Margin="0,0,0,10"
+                                     ToolTip.Tip="게임의 끝 카드 머리에 뜨는 챕터 이름입니다. 고치고 Enter. 신원이 아니라 글자라 바꿔도 저장·간선이 따라가지 않습니다." />
                             <!-- ⭐ 2026-09-17부터 툴에서 편집한다 (소유자 — 계층을 하나로
                                  합치면서). 2026-08-16에 "읽기 전용, 편집은 엑셀에서"로 정했던
                                  것이 뒤집혔고, 실은 R-F(2026-09-16)가 워크북을 산출물로 만든
