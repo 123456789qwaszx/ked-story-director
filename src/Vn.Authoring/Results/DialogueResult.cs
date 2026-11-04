@@ -44,11 +44,10 @@ public sealed record DialogueResultLine(
 }
 
 /// <summary>
-/// 펼친 순간의 조건·선택 전환. 조건 Id만이 아니라 이름과 식까지 함께 싣는다.
+/// 펼친 순간의 조건 전환. 조건 Id만이 아니라 이름과 식까지 함께 싣는다.
 /// </summary>
-/// <param name="OptionId">옵션 라벨 전환에만 있다 — 선택지 옵션의 안정 정체성이다.</param>
 /// <param name="ExitTargetNodeId">
-/// 이 전환이 <b>여는</b> 갈래의 출구 (2026-08-24) — 조건 갈래면 detour, 옵션이면 jump.
+/// 이 전환이 <b>여는</b> 갈래의 출구 (2026-08-24) — detour로 나간다.
 ///
 /// ⚠ 줄에도 <see cref="DialogueResultLine.BranchExitTargetNodeId"/>가 있지만 그것은
 /// <b>줄당 하나</b>다. 줄 없는 갈래(대본 끝의 빈 블록)에는 실을 줄 자체가 없어서, 출구가
@@ -60,7 +59,6 @@ public sealed record DialogueResultTransition(
     string? ConditionId,
     string? ConditionName,
     string? Expression,
-    string? OptionId = null,
     string? ExitTargetNodeId = null);
 
 /// <summary>

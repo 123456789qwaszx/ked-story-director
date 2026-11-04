@@ -57,8 +57,7 @@ public class OutputPresetTests
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
         Assert.DoesNotContain(document.Segments, segment =>
-            segment.Kind is RenderedSegmentKind.BranchJump
-                or RenderedSegmentKind.BranchDetour
+            segment.Kind is RenderedSegmentKind.BranchDetour
                 or RenderedSegmentKind.DefaultJump);
 
         string text = DocumentPreviewFormatter.Format(document);

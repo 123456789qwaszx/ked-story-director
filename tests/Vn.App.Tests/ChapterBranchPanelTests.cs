@@ -160,8 +160,9 @@ public sealed class ChapterBranchPanelTests
         DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
         string firstLineId = branch.Script.ActiveLines.First().Id;
 
+        // 첫머리 조건 하나(BeginIf + 꼬리 EndIf)가 아닌 손 구조 — 첫 줄에 조건 종료가 얹혔다.
         session.Editor.SetLineTransitions(
-            branch.Id, firstLineId, [LineConditionTransition.BeginChoice()]);
+            branch.Id, firstLineId, [LineConditionTransition.EndIf()]);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.SelectBranch(project.BranchKey);

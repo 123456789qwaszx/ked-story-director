@@ -78,7 +78,7 @@ MyStory/
 | `StoryProject.cs` | 프로젝트 — 판 · 대본 · 챕터 · 링크 · 작가 화자(`WriterSpeakers`) |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
 | `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 선택지 출구(`ChoiceExits` — compositor가 읽는다) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
-| `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 · 선택 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다 |
+| `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
 | `EdgeShape.cs` | 사람이 고친 선 모양(꼴 · 굽이 — 자동 자리에서 옮긴 양) |
 | `NodeLink.cs` | 옛 공급 연결 데이터. 범위를 좁히지 않는다(조건 범위는 판이다 — `ConnectedSetNodeResolver`). 편집 API는 L2에 걷혔고 데이터는 남는다 |
 | `Identifier.cs` | 식별자 형식 |
@@ -110,7 +110,7 @@ MyStory/
 | `ConditionFlowResolver.cs` | **조건 모델 그 자체.** 줄의 전환만 보고 "지금 어느 갈래 안인가"를 앞에서부터 계산한다(§4.1) |
 | `DialogueFlow.cs` | 그 결과 — 갈래 · 줄 · 문제(`FlowProblemKind`) |
 | `DialogueScriptResolver.cs` | 대본 줄 + 줄 논리를 합친 읽기 전용 투영(고아 줄 포함) |
-| `BranchAnchor.cs` | 조건 · 선택 갈래의 신원을 짓는 유일한 자리 |
+| `BranchAnchor.cs` | 조건 갈래의 신원을 짓는 유일한 자리 |
 | `NodeConnections.cs` | 실행 출구 포트(`PortsOf`)와 간선 문구 |
 | `AvailableConditionResolver.cs` · `ConnectedSetNodeResolver.cs` · `ConditionChoices.cs` | 쓸 수 있는 조건(게임 전역 + 같은 판의 설정노드) · 드롭다운에 무엇을 보일지 |
 
@@ -202,7 +202,7 @@ Line 5  EndIf                           Line 5
 - `BeginIf` 줄은 자기가 연 갈래 **안**에 있고, `EndIf` 줄은 이미 **바깥**이다. `BeginElseIf`는 같은 체인의 형제다.
 - 한 줄 앞에 전환이 여럿일 수 있다(`Transitions` — 겹쳐 닫기 · 연달아 열기). 대사 없는 블록이 대본 끝이면 노드의
   `TrailingTransitions`가 닫는다.
-- 조건 갈래 안의 선택 블록은 정식 구성이다(W54). 그 밖의 중첩은 문제로 알린다.
+- 조건 안 조건(중첩)은 문제로 알린다. ⛔ 대사 안 선택 블록(조건 안 선택지 W54 · 결합 종료 W55 포함)은 2026-11-04에 걷혔다 — 선택지는 챕터 간선(에피소드 끝)에서만 선다. 옛 파일의 `beginChoice` 등은 리더가 알아보고 버리며 열 때 상태줄에 알린다.
 
 ### 4.2 조건 갈래 출구는 갈래를 *여는 줄*에 매단다
 
@@ -270,7 +270,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 
 | 하고 싶은 일 | 여는 곳 |
 |---|---|
-| if/elseif/endif · 선택 블록의 뜻 | `Flow/ConditionFlowResolver.cs` ← **이 파일이 조건 모델 그 자체다** |
+| if/elseif/endif의 뜻 | `Flow/ConditionFlowResolver.cs` ← **이 파일이 조건 모델 그 자체다** |
 | 전환 종류 추가 | `Model/DialogueLineExtension.cs`의 `ConditionTransitionKind` → 위 해석자 → `Flow/ConditionChoices.cs` |
 | 드롭다운에 무엇을 보일지 · 쓸 수 있는 조건 | `Flow/ConditionChoices.cs` · `Flow/AvailableConditionResolver.cs` |
 | 갈래 신원 | `Flow/BranchAnchor.cs` |
@@ -414,7 +414,7 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 | `ConditionFlowTests` · `ConditionChoiceTests` · `ConditionSupplyTests` | 조건 해석 · 드롭다운 · 조건 범위(판) |
 | `ExitTests` · `ConnectionTests` · `EmptyBranchTests` | 출구는 여는 줄에 · 고아로 남는다 · 포트 |
 | `EditingTests` · `RenameCarriesReferencesTests` | 화자 · 대사의 원본이 대본에만 · 되돌리기 · 개명이 참조를 끈다 |
-| `ResultDocumentComposerTests` · `OutputPresetTests` · `ChoiceTests` | 조각 순서와 원본 매핑 · 프리셋 · 선택 블록 |
+| `ResultDocumentComposerTests` · `OutputPresetTests` | 조각 순서와 원본 매핑 · 프리셋 |
 | `SerializationTests` · `StoryFileTests` · `SampleProjectTests` | 결정적 JSON · 원자적 저장 · 이전 형식 거부 · 손으로 쓴 견본(`samples/Authoring/`) |
 | `LegacyPresentationProjectTests` | 연출을 담은 옛 프로젝트 — 연출을 읽지 않고 백업한다 |
 | `GraphProjectionTests` · `EdgeSideTests` · `EdgeShapeTests` | 무엇이 그려지나 · 선의 쪽 · 선 모양 |

@@ -251,46 +251,10 @@ public partial class DialogueNodeEditor : UserControl
             //    고르고 나머지 카드를 흐리던 것이다. 프리뷰 · 재생이 먼저 걷혀, 남은 것은 이유 없이
             //    흐려지는 줄뿐이었다.
 
-            // 선택 블록은 조건과 달리 들여쓰기·색이 아니라 블록 전체를 감싸는 박스로 보여 준다.
-            // 옵션 라벨과 본문 카드가 같은 박스 안에 순서대로 쌓인다.
-            StackPanel? choiceBox = null;
-            int choiceChain = -1;
+            // ⛔ 대사 안 선택지의 주황 박스(옵션 라벨 + 본문)는 2026-11-04에 걷혔다 — 선택지는 챕터 간선에서만 선다.
 
             foreach (ResolvedLine line in flow.Lines)
             {
-                bool inChoice = line.Branch is { IsChoice: true };
-
-                if (inChoice && (choiceBox is null || line.Branch!.ChainIndex != choiceChain))
-                {
-                    choiceBox = new StackPanel { Spacing = 3 };
-                    choiceChain = line.Branch!.ChainIndex;
-
-                    choiceBox.Children.Add(new TextBlock
-                    {
-                        Text = "선택지",
-                        FontSize = 10,
-                        FontWeight = FontWeight.Bold,
-                        Opacity = 0.75
-                    });
-
-                    LineHost.Children.Add(new Border
-                    {
-                        // 조건 갈래 안 선택지(W54)는 박스째 조건 깊이만큼 들어간다.
-                        Margin = new Thickness((line.Depth - 1) * 20, 0, 0, 0),
-                        Padding = new Thickness(6, 4),
-                        CornerRadius = new CornerRadius(8),
-                        BorderThickness = new Thickness(2),
-                        BorderBrush = new SolidColorBrush(Color.FromArgb(150, 217, 119, 6)),
-                        Background = new SolidColorBrush(Color.FromArgb(14, 217, 119, 6)),
-                        Child = choiceBox
-                    });
-                }
-                else if (!inChoice)
-                {
-                    choiceBox = null;
-                    choiceChain = -1;
-                }
-
                 // 「조건 분기」 카드는 <b>줄 사이에</b> 낀다 (R7 P-5 · 2026-09-17 소유자) —
                 // 그 줄에 붙은 것이 아니라 그 줄 <b>앞에서</b> 갈라진다는 표식이다. 여럿이면 다녀오는 차례로 쌓인다
                 // (2026-10-29 · multi-branch).
@@ -298,16 +262,8 @@ public partial class DialogueNodeEditor : UserControl
 
                 Control card = WrapForLineSelection(BuildCard(node, script, line), line.Line.LineId);
 
-                if (inChoice && choiceBox is not null)
-                {
-                    choiceBox.Children.AddRange(markers);
-                    choiceBox.Children.Add(card);
-                }
-                else
-                {
-                    LineHost.Children.AddRange(markers);
-                    LineHost.Children.Add(card);
-                }
+                LineHost.Children.AddRange(markers);
+                LineHost.Children.Add(card);
             }
 
             if (flow.Lines.Count == 0)
@@ -512,7 +468,6 @@ public partial class DialogueNodeEditor : UserControl
     {
         ConditionBranch? branch = resolved.Branch;
         int palette = branch?.PaletteIndex ?? -1;
-        bool isLabel = resolved.Line.Transition?.OpensOption == true;
 
         var body = new StackPanel { Spacing = 1 };
 
@@ -526,36 +481,6 @@ public partial class DialogueNodeEditor : UserControl
         if (resolved.IsBranchExit && branch is not null)
         {
             body.Children.Add(BuildExitRail(node, branch));
-        }
-
-        if (isLabel)
-        {
-            // 라벨은 대사가 아니라 플레이어가 누르는 버튼이다 (X10) —
-            // 채워진 배경으로 분기 대사와 한눈에 갈린다.
-            return new Border
-            {
-                Padding = new Thickness(6, 3),
-                CornerRadius = new CornerRadius(6),
-                BorderThickness = new Thickness(2),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(170, 217, 119, 6)),
-                Background = new SolidColorBrush(Color.FromArgb(45, 217, 119, 6)),
-                Child = body
-            };
-        }
-
-        if (branch is { IsChoice: true })
-        {
-            // 선택 후 분기 대사는 일반 대사 줄과 똑같이 생겼다(화자 편집 포함).
-            // 라벨 아래로 들여쓰기만 되어 소속을 보여 준다.
-            return new Border
-            {
-                Margin = new Thickness(18, 0, 0, 0),
-                Padding = new Thickness(6, 3),
-                CornerRadius = new CornerRadius(4),
-                BorderThickness = new Thickness(1),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128)),
-                Child = body
-            };
         }
 
         return new Border
@@ -582,8 +507,6 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>Index | 화자 | 대사 | ＋ 의 메인 행. 높이는 한 줄로 고정이다.</summary>
     private Control BuildMainRow(DialogueNode node, DialogueScript script, ResolvedLine resolved)
     {
-        // 선택지 라벨은 화자가 없는 버튼 텍스트다 (X9) — 화자 칸에는 ▶만 놓는다.
-        bool isLabel = resolved.Line.Transition?.OpensOption == true;
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions(RowColumns) };
 
         var index = new TextBlock
@@ -600,7 +523,7 @@ public partial class DialogueNodeEditor : UserControl
         var text = new TextBox
         {
             Text = resolved.Line.Text,
-            PlaceholderText = isLabel ? "선택지 라벨 (버튼 텍스트)" : "대사",
+            PlaceholderText = "대사",
             AcceptsReturn = false,
             TextWrapping = TextWrapping.NoWrap,
             FontSize = 12,
@@ -650,21 +573,6 @@ public partial class DialogueNodeEditor : UserControl
             }
         }
 
-        if (isLabel)
-        {
-            var icon = new TextBlock
-            {
-                Text = "▶",
-                FontSize = 12,
-                Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6)),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            ToolTip.SetTip(icon, "선택지 버튼 텍스트 — 대사가 아닙니다.");
-            Grid.SetColumn(icon, 1);
-            row.Children.Add(icon);
-        }
-        else
         {
             // 화자는 등록 목록(game.definition speakers)의 드롭다운 + 자유 입력 겸용이다 (X5).
             speaker = new AutoCompleteBox
@@ -858,16 +766,12 @@ public partial class DialogueNodeEditor : UserControl
     private Control BuildTransitionTag(DialogueNode node, ResolvedLine resolved)
     {
         var neutral = new SolidColorBrush(Color.FromArgb(160, 107, 114, 128));
-        var amber = new SolidColorBrush(Color.FromArgb(220, 217, 119, 6));
 
         (string label, IBrush background) = resolved.Line.Transition!.Kind switch
         {
             ConditionTransitionKind.BeginIf or ConditionTransitionKind.BeginElseIf =>
                 (ConditionLabelOf(node, resolved.Branch?.ConditionId ?? string.Empty),
-                    resolved.Branch is { } branch ? BranchPalette.Accent(branch.PaletteIndex) : neutral),
-            ConditionTransitionKind.BeginChoice or ConditionTransitionKind.BeginNextOption =>
-                ($"선택 {(resolved.Branch?.BranchIndexInChain ?? 0) + 1}", (IBrush)amber),
-            ConditionTransitionKind.EndChoice => ("선택지 끝", neutral),
+                    resolved.Branch is { } branch ? BranchPalette.Accent(branch.PaletteIndex) : (IBrush)neutral),
             _ => ("조건 종료", neutral)
         };
 
@@ -875,14 +779,14 @@ public partial class DialogueNodeEditor : UserControl
         //    (R-E). 원본이 엑셀 E열이라 잠갔던 것인데, 대본 층의 조건은 R-C에서 규격
         //    자체가 은퇴했고(v15) 남은 것은 옛 프로젝트의 값이다 — 그 주인은 프로젝트다.
         Button tag = TagButton(label, background);
-        ToolTip.SetTip(tag, "누르면 이 줄의 조건·선택 전환을 고칩니다.");
+        ToolTip.SetTip(tag, "누르면 이 줄의 조건 전환을 고칩니다.");
 
         tag.Click += (_, _) =>
         {
             var panel = new StackPanel { Spacing = 4, MinWidth = 220 };
             panel.Children.Add(new TextBlock
             {
-                Text = "이 줄의 조건 / 선택 전환",
+                Text = "이 줄의 조건 전환",
                 FontSize = 10,
                 Opacity = 0.6
             });
@@ -1028,7 +932,7 @@ public partial class DialogueNodeEditor : UserControl
     // ── ＋ (메타데이터 추가) ─────────────────────────────────────────────────
 
     /// <summary>
-    /// 행 오른쪽의 ＋ — 줄 추가가 아니라 <b>이 줄에</b> 조건·선택지·Set·출구를 더하는
+    /// 행 오른쪽의 ＋ — 줄 추가가 아니라 <b>이 줄에</b> 조건·출구를 더하는
     /// 버튼이다. 항목은 전부 기존 데이터 구조와 기존 편집 컨트롤을 그대로 쓴다.
     /// </summary>
     private Button BuildPlusButton(DialogueNode node, ResolvedLine resolved)
@@ -1043,7 +947,7 @@ public partial class DialogueNodeEditor : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
-        ToolTip.SetTip(plus, "이 줄에 조건·선택지·Set·출구를 더하거나 고칩니다.");
+        ToolTip.SetTip(plus, "이 줄에 조건·분기·출구를 더하거나 고칩니다.");
         plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, resolved);
         return plus;
     }
@@ -1126,10 +1030,10 @@ public partial class DialogueNodeEditor : UserControl
 
         if (_chapterEpisode)
         {
-            // 조건·선택지는 열렸다(R-E). 남은 둘은 챕터의 것이다 — 간선의 스탯변화와 IF 포트.
+            // 조건은 열렸다(R-E). 남은 것은 챕터의 것이다 — 선택지와 스탯변화는 간선, 갈래 출구는 IF 포트.
             panel.Children.Add(new TextBlock
             {
-                Text = "📄 챕터 에피소드 — 스탯변화는 간선에서, 갈래 출구는 카드의 IF 포트에서 고칩니다.",
+                Text = "📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서, 갈래 출구는 카드의 IF 포트에서 고칩니다.",
                 FontSize = 10,
                 Opacity = 0.65,
                 TextWrapping = TextWrapping.Wrap,
@@ -1138,8 +1042,8 @@ public partial class DialogueNodeEditor : UserControl
         }
         else
         {
-            // 조건 추가/변경·선택지 시작 — 무엇이 가능한지는 기존 ConditionChoices가 정한다.
-            Section("조건 / 선택지");
+            // 조건 추가/변경 — 무엇이 가능한지는 기존 ConditionChoices가 정한다.
+            Section("조건");
             panel.Children.Add(BuildConditionBox(node, resolved));
 
             // ⛔ 「Set」 구역은 2026-09-17에 걷혔다 (소유자: *"작가 변수라는 개념 자체를
@@ -1317,9 +1221,7 @@ public partial class DialogueNodeEditor : UserControl
             node,
             _session!.Project,
             _session.Definition,
-            resolved.Line.Transition,
-            // 조건 안 선택지(깊이 2)면 "선택지 끝 + 조건 종료"도 제시한다 (W55).
-            choiceInsideCondition: resolved.PrecedingBranch is { IsChoice: true } && resolved.PrecedingDepth == 2);
+            resolved.Line.Transition);
 
         var box = new ComboBox
         {

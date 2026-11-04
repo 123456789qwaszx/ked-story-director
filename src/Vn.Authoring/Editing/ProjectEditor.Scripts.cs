@@ -51,8 +51,8 @@ public sealed partial class ProjectEditor
     /// 있으면 아무것도 바꾸지 않는다. 삭제는 <paramref name="confirmDeletes"/>로 확인받는다.
     ///
     /// 조건 구조(<c>&lt;&lt;if&gt;&gt;</c>…)는 diff 뒤 해당 라인의 전환으로 반영하되, 식은 이 노드가
-    /// 쓸 수 있는 조건과 <b>정확 일치</b>로만 역조회한다(보정 금지). 선택 전환은 파서
-    /// 비범위이므로 건드리지 않는다. 해석 못 한 것은 전부 Problems로 남는다(규칙 14).
+    /// 쓸 수 있는 조건과 <b>정확 일치</b>로만 역조회한다(보정 금지). 해석 못 한 것은 전부 Problems로
+    /// 남는다(규칙 14). <c>-&gt;</c> 줄은 2026-11-04부터 해석하지 않는다 — 선택지는 에피소드 끝 간선에서만.
     ///
     /// <b>넣기 한 번이 되돌리기 한 칸이다</b> (D4 · 2026-10-29) — 줄 동기화와 전환 맞추기를
     /// <see cref="Batch"/>로 묶는다. 예전에는 둘이 따로 Mutate라 한 번 물렀을 때 줄은 돌아오고 전환만
@@ -64,8 +64,7 @@ public sealed partial class ProjectEditor
     /// 아니므로 잇는 데 확신이 필요 없다.
     /// </summary>
     /// <param name="strict">
-    /// 참이면 <b>문제가 하나라도 있을 때 아무것도 넣지 않는다</b>(해석 못 한 줄 · 못 세운 조건 · 선택 전환과의
-    /// 충돌). 카드의 글 칸이 쓴다 — 넣은 뒤 칸은 모델의 모습으로 다시 그려지므로, 반쯤 넣으면 넣지 못한 줄이
+    /// 참이면 <b>문제가 하나라도 있을 때 아무것도 넣지 않는다</b>(해석 못 한 줄 · 못 세운 조건). 카드의 글 칸이 쓴다 — 넣은 뒤 칸은 모델의 모습으로 다시 그려지므로, 반쯤 넣으면 넣지 못한 줄이
     /// 사람이 쓴 글에서 조용히 사라진다. 거짓이면 예전처럼 넣을 수 있는 것은 넣고 나머지를 Problems로 보인다.
     /// </param>
     public ScenarioPasteOutcome ApplyScenarioText(
@@ -176,7 +175,7 @@ public sealed partial class ProjectEditor
         }
     }
 
-    /// <summary>diff가 확정한 LineId 위로 조건 전환을 맞출 계획. 선택 전환은 보호한다. 아무것도 바꾸지 않는다.</summary>
+    /// <summary>diff가 확정한 LineId 위로 조건 전환을 맞출 계획. 아무것도 바꾸지 않는다.</summary>
     private ScenarioTransitionPlan PlanScenarioTransitions(
         DialogueNode node,
         ScenarioParseResult parsed,
@@ -205,36 +204,15 @@ public sealed partial class ProjectEditor
             IReadOnlyList<LineConditionTransition> current =
                 node.FindExtension(lineId)?.Transitions ?? [];
 
-            bool intentIsChoice = intents.Any(item => item.Kind
-                is ConditionTransitionKind.BeginChoice
-                or ConditionTransitionKind.BeginNextOption
-                or ConditionTransitionKind.EndChoice);
-
-            // 텍스트에 선택 전환이 안 보였다고 기존 것을 지우지 않는다 — 손으로 쓴 대본
-            // 붙여넣기 한 번에 선택지 구조가 조용히 무너진다. 조건 전환을 얹으려는 것만 막는다.
-            if (current.Any(item => item.IsChoiceKind) && !intentIsChoice)
-            {
-                if (intents.Count > 0)
-                {
-                    problems.Add(
-                        $"'{parsed.Lines[index].Text}' 줄은 선택 전환을 갖고 있어 조건 전환을 얹을 수 없습니다.");
-                }
-
-                continue;
-            }
-
             if (Translate(intents, conditions, problems) is not { } desired)
             {
                 continue;
             }
 
-            // 선택 전환은 Kind만 비교한다 — 텍스트에는 옵션의 안정 식별자(op_)가 없으므로,
-            // 같은 종류면 기존 OptionId를 그대로 둔다. 지우면 순서 변경 감지(C3 경고)가 죽는다.
             bool same = current.Count == desired.Count &&
                 current.Zip(desired).All(pair =>
                     pair.First.Kind == pair.Second.Kind &&
-                    (pair.Second.IsChoiceKind ||
-                     string.Equals(pair.First.ConditionId, pair.Second.ConditionId, StringComparison.Ordinal)));
+                    string.Equals(pair.First.ConditionId, pair.Second.ConditionId, StringComparison.Ordinal));
 
             if (!same)
             {
@@ -262,20 +240,6 @@ public sealed partial class ProjectEditor
             {
                 case ConditionTransitionKind.EndIf:
                     desired.Add(LineConditionTransition.EndIf());
-                    break;
-
-                // 옵션 줄(->)이 파서를 지나 여기 온다 (G3-2). OptionId는 만들지 않는다 —
-                // 텍스트에는 옵션의 안정 식별자가 없고, 있던 것은 부르는 쪽 비교가 보존한다.
-                case ConditionTransitionKind.BeginChoice:
-                    desired.Add(LineConditionTransition.BeginChoice());
-                    break;
-
-                case ConditionTransitionKind.BeginNextOption:
-                    desired.Add(LineConditionTransition.BeginNextOption());
-                    break;
-
-                case ConditionTransitionKind.EndChoice:
-                    desired.Add(LineConditionTransition.EndChoice());
                     break;
 
                 default:
@@ -509,7 +473,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건·선택 전환, set, 갈래 출구)도
+    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건 전환, 갈래 출구)도
     /// 접는다 (W47) — 줄 카드가 없으면 편집 진입점이 없어 지울 수도 없는 유령이 된다.
     /// 연출 바인딩은 남긴다: 고아 연출은 지우지 않고 해석기가 알리는 기존 정책 그대로다.
     /// </summary>

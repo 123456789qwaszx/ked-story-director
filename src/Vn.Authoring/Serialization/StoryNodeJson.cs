@@ -244,11 +244,6 @@ internal static class StoryNodeJson
                     transitionJson["condition"] = transition.ConditionId;
                 }
 
-                if (transition.OptionId is not null)
-                {
-                    transitionJson["option"] = transition.OptionId;
-                }
-
                 // ⚠ 앵커를 <b>글자로 적어 둔다</b> — 규칙(몇 번째인가)이 나중에 바뀌어도
                 // 이미 매달린 출구가 제 갈래를 계속 찾는다. 읽는 쪽도 이 글자를 쓴다.
                 if (transition.OpensBranch)
@@ -361,10 +356,12 @@ internal static class StoryNodeJson
 
             foreach (JsonObject transitionJson in Transitions(lineJson))
             {
-                var transition = new LineConditionTransition(
-                    ParseKind((string?)transitionJson["kind"]),
-                    (string?)transitionJson["condition"],
-                    (string?)transitionJson["option"]);
+                if (ParseKind((string?)transitionJson["kind"]) is not { } kind)
+                {
+                    continue;   // 걷힌 종류(대사 안 선택지) — 알아보고 버린다. 출구도 함께 버린다.
+                }
+
+                var transition = new LineConditionTransition(kind, (string?)transitionJson["condition"]);
 
                 extension.Transitions.Add(transition);
 
@@ -388,10 +385,12 @@ internal static class StoryNodeJson
                 continue;
             }
 
-            var transition = new LineConditionTransition(
-                ParseKind((string?)transitionJson["kind"]),
-                (string?)transitionJson["condition"],
-                (string?)transitionJson["option"]);
+            if (ParseKind((string?)transitionJson["kind"]) is not { } kind)
+            {
+                continue;   // 걷힌 종류 — 버린다.
+            }
+
+            var transition = new LineConditionTransition(kind, (string?)transitionJson["condition"]);
 
             node.TrailingTransitions.Add(transition);
 
@@ -431,11 +430,6 @@ internal static class StoryNodeJson
             json["condition"] = transition.ConditionId;
         }
 
-        if (transition.OptionId is not null)
-        {
-            json["option"] = transition.OptionId;
-        }
-
         if (hasExit && transition.OpensBranch)
         {
             json["exit"] = node.BranchExits[extension.LineId];
@@ -462,19 +456,22 @@ internal static class StoryNodeJson
     {
         ConditionTransitionKind.BeginIf => "beginIf",
         ConditionTransitionKind.BeginElseIf => "beginElseIf",
-        ConditionTransitionKind.BeginChoice => "beginChoice",
-        ConditionTransitionKind.BeginNextOption => "beginNextOption",
-        ConditionTransitionKind.EndChoice => "endChoice",
         _ => "endIf"
     };
 
-    private static ConditionTransitionKind ParseKind(string? kind) => kind switch
+    /// <summary>
+    /// 걷힌 대사 안 선택지의 종류 이름 (2026-11-04). 리더는 이것을 <b>알아보고 버린다</b> — 모르는 이름처럼
+    /// <c>endIf</c>로 돌리면 옛 원고의 선택 블록이 "if 없는 endif"가 되어 발행이 막힌다.
+    /// <see cref="ProjectStore"/>가 열 때 이 이름이 보이면 알린다.
+    /// </summary>
+    public static readonly IReadOnlyList<string> RetiredChoiceKindNames = ["beginChoice", "beginNextOption", "endChoice"];
+
+    /// <summary>종류 이름 → 종류. 걷힌 선택지 종류는 null(버린다). 그 밖의 모르는 이름은 종전대로 <c>endIf</c>.</summary>
+    private static ConditionTransitionKind? ParseKind(string? kind) => kind switch
     {
         "beginIf" => ConditionTransitionKind.BeginIf,
         "beginElseIf" => ConditionTransitionKind.BeginElseIf,
-        "beginChoice" => ConditionTransitionKind.BeginChoice,
-        "beginNextOption" => ConditionTransitionKind.BeginNextOption,
-        "endChoice" => ConditionTransitionKind.EndChoice,
+        _ when kind is not null && RetiredChoiceKindNames.Contains(kind, StringComparer.Ordinal) => null,
         _ => ConditionTransitionKind.EndIf
     };
 }

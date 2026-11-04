@@ -187,7 +187,6 @@ public sealed class ChapterRailTests
 
         Assert.DoesNotContain(projected.OutputPorts,
             port => port.Kind == GraphOutputPortKind.ExecutionDefault);
-        Assert.DoesNotContain(projected.OutputPorts, port => port.ExecutionPort is { IsChoice: true });
 
         // ② 칸의 차례 — 선택지(간선 순서)가 위, 문구 없는 진행이 그 아래다.
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;

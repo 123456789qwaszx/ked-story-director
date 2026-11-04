@@ -21,9 +21,6 @@ public enum PublishProblemKind
     /// <summary>출구가 없는 노드를 가리킨다.</summary>
     MissingExitTarget,
 
-    /// <summary>옵션 라벨에 안정 Id가 없거나 선택 구조가 성립하지 않는다.</summary>
-    InvalidChoiceOption,
-
     /// <summary>대본에서 사라진 줄에 대사 논리가 남아 있다. 막지 않는다.</summary>
     OrphanData
 }
@@ -125,20 +122,6 @@ public static class DialoguePublisher
 
             node.BranchExits.TryGetValue(line.LineId, out string? branchExit);
 
-            if (line.Transition is { OpensOption: true } optionTransition)
-            {
-                if (string.IsNullOrWhiteSpace(optionTransition.OptionId))
-                {
-                    problems.Add(new PublishProblem(
-                        PublishProblemKind.InvalidChoiceOption,
-                        line.LineId,
-                        $"옵션 라벨 라인 '{line.LineId}'에 안정 OptionId가 없습니다. " +
-                        "전환을 다시 지정해 Id를 발급받으세요.",
-                        IsBlocking: true));
-                }
-
-            }
-
             lines.Add(new DialogueResultLine(
                 resolved.Index,
                 line.LineId,
@@ -160,33 +143,6 @@ public static class DialoguePublisher
 
         AddFlowProblems(flow, problems);
         AddScriptProblems(node, problems);
-
-        // 선택지로 끝나는 노드는 정상이다 (2단계 포트 규칙, 2026-08-14 소유자 승인) —
-        // 옵션들이 곧 노드의 끝이고, 이어진 옵션은 출구로 점프, 안 이은 옵션은 에피소드
-        // 종료다. 합성기가 문서 끝에서 블록을 닫는다. 다만 "잊고 안 닫은" 경우와 화면상
-        // 구분이 안 되므로, 막지 않고 알리기만 한다.
-        bool choiceOpen = false;
-
-        foreach (DialogueResultLine line in lines)
-        {
-            choiceOpen = line.Transition?.Kind switch
-            {
-                ConditionTransitionKind.BeginChoice or ConditionTransitionKind.BeginNextOption => true,
-                // 조건 종료는 열린 선택지도 함께 닫는다 (W55) — 합성기가 암묵 ChoiceEnd를 낸다.
-                ConditionTransitionKind.EndChoice or ConditionTransitionKind.EndIf => false,
-                _ => choiceOpen
-            };
-        }
-
-        if (choiceOpen)
-        {
-            problems.Add(new PublishProblem(
-                PublishProblemKind.InvalidChoiceOption,
-                null,
-                "선택 블록이 문서 끝까지 열려 있습니다 — 이 옵션들이 노드의 끝입니다. " +
-                "이어지는 줄을 두려면 블록 뒤 첫 일반 줄에 '선택지 끝'을 지정하세요.",
-                IsBlocking: false));
-        }
 
         // ⛔ 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지) — 설정노드는
         //    이제 <b>조건만</b> 공급한다. 결과의 배정 칸(`Assignments`)은 L5(2026-10-29)에 걷혔다.
@@ -268,12 +224,6 @@ public static class DialoguePublisher
             return null;
         }
 
-        if (transition.IsChoiceKind)
-        {
-            // 선택 전환은 조건 카탈로그와 무관하다. 옵션의 정체성만 얼린다.
-            return new DialogueResultTransition(transition.Kind, null, null, null, transition.OptionId);
-        }
-
         if (transition.Kind == ConditionTransitionKind.EndIf)
         {
             return new DialogueResultTransition(transition.Kind, null, null, null);
@@ -303,8 +253,6 @@ public static class DialoguePublisher
                 FlowProblemKind.EndIfWithoutIf => (PublishProblemKind.InvalidConditionStructure, true),
                 FlowProblemKind.NestedCondition => (PublishProblemKind.InvalidConditionStructure, true),
                 FlowProblemKind.MissingExitTarget => (PublishProblemKind.MissingExitTarget, true),
-                FlowProblemKind.MixedChain => (PublishProblemKind.InvalidChoiceOption, true),
-                FlowProblemKind.OptionWithoutChoice => (PublishProblemKind.InvalidChoiceOption, true),
                 FlowProblemKind.OrphanedBranchExit => (PublishProblemKind.OrphanData, false),
                 FlowProblemKind.OrphanedLineExtension => (PublishProblemKind.OrphanData, false),
                 _ => (PublishProblemKind.InvalidConditionStructure, true)

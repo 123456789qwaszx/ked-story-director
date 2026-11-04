@@ -261,8 +261,7 @@ public static class GraphProjectionBuilder
         if (node is DialogueNode { MarkedEpisodeId: not null })
         {
             exits = exits.Where(exit =>
-                exit.Kind == Vn.Authoring.Flow.ExitPortKind.Detour ||
-                (exit.Kind == Vn.Authoring.Flow.ExitPortKind.Branch && !exit.IsChoice));
+                exit.Kind is Vn.Authoring.Flow.ExitPortKind.Detour or Vn.Authoring.Flow.ExitPortKind.Branch);
         }
 
         var ports = exits

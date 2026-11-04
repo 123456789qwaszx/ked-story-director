@@ -100,7 +100,8 @@ public sealed class BranchEntryConditionTests
         (ProjectEditor editor, _, DialogueNode branch) = World();
 
         string firstLineId = branch.Script.ActiveLines.First().Id;
-        editor.SetLineTransitions(branch.Id, firstLineId, [LineConditionTransition.BeginChoice()]);
+        // 첫머리 조건 하나(BeginIf + 꼬리 EndIf)가 아닌 모양 — 첫 줄에 조건 종료가 얹힌 손 구조.
+        editor.SetLineTransitions(branch.Id, firstLineId, [LineConditionTransition.EndIf()]);
 
         BranchEntryCondition.State state = BranchEntryCondition.Read(editor.Project, branch.Id);
 

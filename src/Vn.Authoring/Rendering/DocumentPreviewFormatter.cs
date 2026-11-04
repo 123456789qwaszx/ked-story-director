@@ -37,7 +37,7 @@ public static class DocumentPreviewFormatter
 
         foreach (RenderedSegment segment in document.Segments)
         {
-            if (segment.Kind is RenderedSegmentKind.DialogueLine or RenderedSegmentKind.ChoiceOption &&
+            if (segment.Kind is RenderedSegmentKind.DialogueLine &&
                 segment.Source.LineId is { Length: > 0 } lineId)
             {
                 rowOfLine.TryAdd(lineId, row);
@@ -74,10 +74,6 @@ public static class DocumentPreviewFormatter
 
                 case RenderedSegmentKind.DialogueLine:
                     AppendDialogue(builder, document.Options, segment, lineIdPrefix: null);
-                    break;
-
-                case RenderedSegmentKind.ChoiceOption:
-                    builder.Append("-> ").Append(segment.Text ?? string.Empty).Append('\n');
                     break;
 
                 case RenderedSegmentKind.Warning:

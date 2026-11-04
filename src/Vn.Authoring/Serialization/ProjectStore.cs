@@ -46,13 +46,40 @@ public static class ProjectStore
         }
 
         ProjectManifest manifest = ProjectManifestJson.Read(json);
-        StoryProject project = LoadManifest(openedPath, manifest, out bool storyCarriesPresentation);
+        var notices = new List<string>();
+        StoryProject project = LoadManifest(openedPath, manifest, out bool storyCarriesPresentation, notices);
 
         string? backup = manifest.CarriesPresentation || storyCarriesPresentation
             ? BackUpPresentationOriginal(openedPath, root, manifest)
             : null;
 
-        return new ProjectLoadResult(project, openedPath, backup);
+        return new ProjectLoadResult(project, openedPath, backup, notices);
+    }
+
+    /// <summary>
+    /// 걷힌 대사 안 선택지(2026-11-04)가 파일에 남아 있으면 한 줄 알린다 — 리더는 그 전환을 버리므로(<see cref="StoryNodeJson"/>)
+    /// 라벨 줄은 화자 없는 보통 줄이 되고 본문은 이어 재생된다. 글을 손봐야 한다는 뜻이다. 저장하면 파일에서도 사라진다.
+    /// </summary>
+    private static void NoticeRetiredChoices(string storyJson, string fileName, List<string> notices)
+    {
+        int count = StoryNodeJson.RetiredChoiceKindNames.Sum(name => CountOccurrences(storyJson, "\"" + name + "\""));
+
+        if (count > 0)
+        {
+            notices.Add($"'{fileName}'에 대사 안 선택지 전환 {count}개가 남아 있어 버렸습니다 — 선택지는 에피소드 끝 간선에서만 섭니다. 라벨 줄과 본문을 손보고 저장하세요.");
+        }
+    }
+
+    private static int CountOccurrences(string text, string token)
+    {
+        int count = 0;
+
+        for (int at = text.IndexOf(token, StringComparison.Ordinal); at >= 0; at = text.IndexOf(token, at + token.Length, StringComparison.Ordinal))
+        {
+            count++;
+        }
+
+        return count;
     }
 
     /// <summary>연출을 담은 옛 프로젝트의 원본을 남기는 폴더 이름(manifest 옆). 겹치면 뒤에 <c>-2</c>, <c>-3</c>…</summary>
@@ -285,7 +312,8 @@ public static class ProjectStore
     private static StoryProject LoadManifest(
         string manifestPath,
         ProjectManifest manifest,
-        out bool storyCarriesPresentation)
+        out bool storyCarriesPresentation,
+        List<string>? notices = null)
     {
         string rootDirectory = Path.GetDirectoryName(manifestPath)
             ?? throw new InvalidDataException("프로젝트 manifest 디렉터리를 찾을 수 없습니다.");
@@ -334,10 +362,14 @@ public static class ProjectStore
                     storyPath);
             }
 
-            StoryFile file = StoryFileJson.Read(
-                File.ReadAllText(storyPath, new UTF8Encoding(false)),
-                out bool carried,
-                table);
+            string storyJson = File.ReadAllText(storyPath, new UTF8Encoding(false));
+
+            if (notices is not null)
+            {
+                NoticeRetiredChoices(storyJson, reference.RelativePath, notices);
+            }
+
+            StoryFile file = StoryFileJson.Read(storyJson, out bool carried, table);
             storyCarriesPresentation |= carried;
 
             if (!string.Equals(file.Id, reference.Id, StringComparison.Ordinal))
@@ -404,7 +436,12 @@ public static class ProjectStore
 /// <param name="PresentationBackupDirectory">
 /// 연출을 담은 옛 프로젝트였으면 원본을 남긴 폴더(<see cref="ProjectStore.PresentationBackupFolder"/>), 아니면 null.
 /// </param>
+/// <param name="Notices">열면서 알릴 것 — 파일에서 버린 옛 구조 등. 비어 있으면 조용히 열렸다.</param>
 public sealed record ProjectLoadResult(
     StoryProject Project,
     string ManifestPath,
-    string? PresentationBackupDirectory = null);
+    string? PresentationBackupDirectory = null,
+    IReadOnlyList<string>? Notices = null)
+{
+    public IReadOnlyList<string> LoadNotices => Notices ?? [];
+}

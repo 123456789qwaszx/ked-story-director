@@ -96,7 +96,7 @@ Avalonia 데스크톱 도구.** 원고(프로젝트 파일)는 연출 도구 [`k
 | 모델을 바꾸는 편집 명령 | `Editing/ProjectEditor*.cs` — **여기에만** |
 | 챕터 · 에피소드 · 간선 · 조건 · 스탯 편집 | `Editing/ProjectEditor.Chapters.cs` |
 | 화자 · 대사 바꾸기 | `Editing/ProjectEditor.Scripts.cs`(`SetScriptLineText` · `ApplyScenarioText`) |
-| if/elseif/endif · 선택 블록의 뜻 | `Flow/ConditionFlowResolver.cs` |
+| if/elseif/endif의 뜻 | `Flow/ConditionFlowResolver.cs` |
 | 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs` — 화면이 아니라 여기 |
 | 챕터 값의 검사 하나 더하기 | `Chapters/ChapterStructureCheck.cs`(값의 흠) · `ChapterValidator.cs`(판과 맞대는 검사) |
 | 진행 JSON의 모양 | `Chapters/ChapterProgressionExporter.cs` — 런타임 계약 [`docs/runtime-contract.md`](docs/runtime-contract.md) |

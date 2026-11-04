@@ -534,20 +534,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        // 옵션 라벨 전환은 안정 Id를 가져야 한다 — 아래 루프가 그 자리에서 잇는다.
-        var resolved = new List<LineConditionTransition>(transitions.Count);
-
-        foreach (LineConditionTransition item in transitions)
-        {
-            resolved.Add(item is { OpensOption: true, OptionId: null }
-                ? new LineConditionTransition(
-                    item.Kind,
-                    optionId: existing?.Transitions.FirstOrDefault(candidate => candidate.OpensOption)?.OptionId
-                        ?? Identifier.Option())
-                : item);
-        }
-
-        Mutate(() => WriteLineTransitions(node, lineId, existing, resolved));
+        Mutate(() => WriteLineTransitions(node, lineId, existing, transitions));
     }
 
     /// <summary>전환을 그 줄에 앉힌다. <b>스냅샷을 쌓지 않는다</b> — 부르는 쪽이 <c>Mutate</c> 안이다.</summary>

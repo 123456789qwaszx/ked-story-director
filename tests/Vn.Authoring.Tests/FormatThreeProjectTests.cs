@@ -170,6 +170,36 @@ public sealed class FormatThreeProjectTests : IDisposable
         Assert.Throws<FileNotFoundException>(() => ProjectStore.Load(Manifest));
     }
 
+    /// <summary>
+    /// 걷힌 대사 안 선택지(2026-11-04)가 든 옛 파일 — 리더가 <b>알아보고 버린다</b>. 모르는 이름처럼 <c>endIf</c>로
+    /// 돌리면 "if 없는 endif"가 되어 발행이 막힌다. 열면서 한 줄 알리고, 저장하면 파일에서도 사라진다.
+    /// </summary>
+    [Fact]
+    public void 옛_파일의_대사_안_선택_전환은_버리고_알린다()
+    {
+        JsonObject story = ReadJson(StoryPath);
+        JsonObject scene = story["nodes"]!.AsArray().OfType<JsonObject>().Single(node => (string?)node["id"] == "nd_scene");
+        JsonArray lines = scene["lines"]!.AsArray();
+        // ln_d1의 endIf 뒤에 선택 전환이 하나 더 실린 모양(한 줄에 전환 여럿 — conditions 배열).
+        JsonObject d1 = lines.OfType<JsonObject>().Single(line => (string?)line["lineId"] == "ln_d1");
+        d1["conditions"] = new JsonArray(
+            new JsonObject { ["kind"] = "endIf" },
+            new JsonObject { ["kind"] = "beginChoice", ["option"] = "op_1" });
+        d1.Remove("condition");
+        File.WriteAllText(StoryPath, story.ToJsonString());
+
+        ProjectLoadResult loaded = ProjectStore.Load(Manifest);
+
+        DialogueNode node = loaded.Project.FindDialogue("nd_scene")!;
+        Assert.All(node.LineExtensions.SelectMany(extension => extension.Transitions),
+            transition => Assert.True(transition.Kind is ConditionTransitionKind.BeginIf or ConditionTransitionKind.BeginElseIf or ConditionTransitionKind.EndIf));
+        Assert.DoesNotContain(node.LineExtensions, extension => extension.LineId == "ln_d1" && extension.Transitions.Count > 1);
+        Assert.Contains(loaded.LoadNotices, notice => notice.Contains("대사 안 선택지 전환 1개"));
+
+        ProjectStore.Save(Manifest, loaded.Project);
+        Assert.DoesNotContain("beginChoice", File.ReadAllText(StoryPath));
+    }
+
     private void EditScriptFile(string scriptId, Action<JsonObject> edit)
     {
         string path = Path.Combine(ScriptFolder, scriptId + ScriptDocumentJson.LegacyFileExtension);

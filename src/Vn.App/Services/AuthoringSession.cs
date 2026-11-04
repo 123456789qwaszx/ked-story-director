@@ -176,7 +176,9 @@ internal sealed class AuthoringSession
             $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
             alignment +
             PresentationBackupNote(loaded.PresentationBackupDirectory) +
-            (RuntimeTarget is null ? " · 게임 폴더 미지정" : $" · 게임 폴더 {RuntimeTarget.GameFolder}");
+            (RuntimeTarget is null ? " · 게임 폴더 미지정" : $" · 게임 폴더 {RuntimeTarget.GameFolder}") +
+            // 열면서 버린 옛 구조(대사 안 선택지 등, 2026-11-04)는 조용히 지나가지 않는다 — 글을 손봐야 한다.
+            (loaded.LoadNotices.Count == 0 ? string.Empty : " · ⚠ " + string.Join(" / ", loaded.LoadNotices));
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
