@@ -1032,7 +1032,7 @@ public partial class ChapterGraphView : UserControl
     /// 못 나간 사유는 어차피 그 보고에 이미 서 있는 오류들이다 — 결론을 그 옆에 둔다.
     /// </summary>
     private void AutoExport() =>
-        _exportRun = _export.ExportAll(_entries, _session?.ProjectPath, _session?.Project);
+        _exportRun = _export.ExportAll(_entries, _session?.ProjectPath, _session?.Project, _session?.GameFolder);
 
     /// <summary>검증 보고 맨 위에 세울 내보내기 결론 — 못 나갔을 때만 있다.</summary>
     private string? ExportNotice() => _exportRun.Notice;
@@ -3721,6 +3721,17 @@ public partial class ChapterGraphView : UserControl
         {
             DiagnosticsPanel.Children.Add(
                 DiagnosticLine(exportNotice, Brushes.IndianRed, dim: false, bold: true));
+        }
+
+        // 나간 자리 — 늘 보인다 (2026-11-04 소유자: "내보내기를 어떻게 하지?"). 자동이되 말한다.
+        if (_exportRun.WhereNotice is { } where)
+        {
+            DiagnosticsPanel.Children.Add(DiagnosticLine(where, null, dim: false));
+        }
+        else if (_session?.ProjectPath is not null && _exportRun.Notice is null)
+        {
+            DiagnosticsPanel.Children.Add(DiagnosticLine(
+                "진행 JSON — 아직 나간 챕터가 없습니다.", null, dim: true));
         }
 
         // 서버는 이 문자열이 아니라 **파일 바이트**를 해시한다. 내보내기와 같은

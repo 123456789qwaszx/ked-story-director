@@ -8,13 +8,37 @@ namespace Vn.Authoring.Chapters;
 /// </summary>
 /// <param name="Refused">검증 오류로 거부된 챕터. <b>파일은 손대지 않았다.</b></param>
 /// <param name="Failed">쓰기 자체가 실패한 챕터(잠김·권한).</param>
+/// <param name="Written">실제로 쓴(또는 같은 내용이라 둔) 파일 — 사람이 "어디로 나갔나"를 보는 자리(2026-11-04).</param>
+/// <param name="GameFolderNote">게임 폴더(<see cref="Serialization.RuntimeTarget"/>)로도 썼는지 한 마디. 설정이 없으면 null.</param>
 public sealed record ChapterExportRun(
     IReadOnlyList<string> Refused,
     IReadOnlyList<string> Failed,
     IReadOnlyList<string>? DeploymentBlocked = null,
-    IReadOnlyDictionary<string, string>? Checksums = null)
+    IReadOnlyDictionary<string, string>? Checksums = null,
+    IReadOnlyList<string>? Written = null,
+    string? GameFolderNote = null)
 {
     public static ChapterExportRun Empty { get; } = new([], [], [], new Dictionary<string, string>());
+
+    /// <summary>
+    /// 나간 자리 — <b>늘 있다</b>(나간 것이 있을 때). 2026-11-04 소유자: *"내보내기를 어떻게 하지?"* — 저절로
+    /// 나가는데 어디로 갔는지 화면이 말하지 않았다. 자동 + 보고.
+    /// </summary>
+    public string? WhereNotice
+    {
+        get
+        {
+            if (Written is not { Count: > 0 } written)
+            {
+                return null;
+            }
+
+            string folder = Path.GetFileName(Path.GetDirectoryName(written[0]) ?? string.Empty);
+            string files = string.Join(", ", written.Select(Path.GetFileName));
+
+            return $"진행 JSON → {folder}/ ({files})" + (GameFolderNote is null ? string.Empty : $" · {GameFolderNote}");
+        }
+    }
 
     public IReadOnlyList<string> Blocked => DeploymentBlocked ?? [];
 
@@ -78,7 +102,10 @@ public sealed class ChapterExportService
     public static string ExportPathFor(string projectPath, string chapterId) => Path.Combine(
         Path.GetDirectoryName(Path.GetFullPath(projectPath))!,
         ExportFolderName,
-        chapterId + ".progression.json");
+        chapterId + ExportFileSuffix);
+
+    /// <summary>진행 JSON 파일 이름 규칙 — 게임 폴더에서도 같다(런타임 예제도 이 이름을 쓴다, 2026-11-04).</summary>
+    public const string ExportFileSuffix = ".progression.json";
 
     /// <summary>
     /// 챕터 하나의 검증 결과 — <b>모델이 그대로면 지난 결과를 그대로 준다</b> (2026-08-18).
@@ -133,10 +160,15 @@ public sealed class ChapterExportService
     /// 그 비대칭이 저작 관문(`대사엔트리`가 대사노드와 맞는가)을 여기 걸지 못하는 이유다.
     /// 한 번도 안 연 챕터는 판에 노드가 없어서 전부 거부되기 때문이다.
     /// </summary>
+    /// <param name="gameFolder">
+    /// 게임 폴더(<see cref="Serialization.RuntimeTarget"/>가 푼 절대 경로). 주면 <c>exported/</c>와 함께 거기에도
+    /// <c>{챕터}.progression.json</c>을 쓴다 — 런타임 저장소로 손 복사하던 일(2026-11-04)을 없앤다. null이면 안 쓴다.
+    /// </param>
     public ChapterExportRun ExportAll(
         IReadOnlyList<ChapterEntry> entries,
         string? projectPath,
-        StoryProject? project = null)
+        StoryProject? project = null,
+        string? gameFolder = null)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
@@ -149,6 +181,9 @@ public sealed class ChapterExportService
         var failed = new List<string>();
         var blocked = new List<string>();
         var checksums = new Dictionary<string, string>(StringComparer.Ordinal);
+        var written = new List<string>();
+        var gameWritten = new List<string>();
+        var gameFailed = new List<string>();
 
         foreach (ChapterEntry entry in entries)
         {
@@ -197,17 +232,33 @@ public sealed class ChapterExportService
                 }
             }
 
-            if (!TryWrite(ExportPathFor(projectPath, entry.ChapterId), result.Json!))
+            string exportPath = ExportPathFor(projectPath, entry.ChapterId);
+
+            if (!TryWrite(exportPath, result.Json!))
             {
                 failed.Add(entry.ChapterId);
+                continue;
             }
-            else
+
+            checksums[entry.ChapterId] = result.Checksum!;
+            written.Add(exportPath);
+
+            if (gameFolder is not null)
             {
-                checksums[entry.ChapterId] = result.Checksum!;
+                string gamePath = Path.Combine(gameFolder, entry.ChapterId + ExportFileSuffix);
+                (TryWrite(gamePath, result.Json!) ? gameWritten : gameFailed).Add(entry.ChapterId);
             }
         }
 
-        return new ChapterExportRun(refused, failed, blocked, checksums);
+        string? gameNote = gameFolder is null
+            ? null
+            : gameFailed.Count > 0
+                ? $"게임 폴더에 쓰지 못함: {string.Join(", ", gameFailed)} ({gameFolder})"
+                : gameWritten.Count > 0
+                    ? $"게임 폴더 → {gameFolder}"
+                    : null;
+
+        return new ChapterExportRun(refused, failed, blocked, checksums, written, gameNote);
     }
 
     /// <summary>

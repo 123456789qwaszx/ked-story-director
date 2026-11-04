@@ -117,7 +117,7 @@ public partial class MainWindow : Window
         NewButton.Click += OnNewClick;
         OpenButton.Click += OnOpenClick;
         SaveButton.Click += OnSaveClick;
-        SaveAsButton.Click += OnSaveAsClick;
+        GameFolderButton.Click += OnGameFolderClick;
         UndoButton.Click += (_, _) => _session.Editor.Undo();
         RedoButton.Click += (_, _) => _session.Editor.Redo();
         OpenExportFolderButton.Click += (_, _) =>
@@ -463,20 +463,29 @@ public partial class MainWindow : Window
         return new StackPanel { Spacing = 2, Children = { remove, caution } };
     }
 
+    /// <summary>
+    /// 새 프로젝트 = <b>폴더 하나</b> (2026-11-04). 고른 폴더에 고정 이름(<see cref="ProjectFolder.DefaultManifestName"/>)으로
+    /// 깐다. 이미 프로젝트가 있는 폴더면 덮지 않고 연다.
+    /// </summary>
     private async void OnNewClick(object? sender, RoutedEventArgs e)
     {
         try
         {
-            _session.NewProject();
-
-            // 새 프로젝트는 곧장 한 번 저장한다 (W49) — 저장돼야 프로젝트 폴더가 확정되고
-            // 에셋 폴더·기본 튜닝 살림(W48)이 준비된다.
-            await SaveAsAsync();
-
-            if (_session.ProjectPath is null)
+            if (await PickFolderAsync("새 프로젝트를 깔 폴더") is not { } folder)
             {
-                _session.SetStatus("저장을 건너뛰었습니다 — 저장하면 에셋 폴더와 기본 튜닝이 준비됩니다.");
+                return;
             }
+
+            if (ProjectFolder.WhyCannotCreateIn(folder) is { } reason)
+            {
+                _session.SetStatus(reason);
+                OpenFolder(folder);
+                return;
+            }
+
+            _session.NewProject();
+            _session.Save(ProjectFolder.NewManifestPathIn(folder));
+            RefreshShell();
         }
         catch (Exception exception)
         {
@@ -484,29 +493,14 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>열기 = 폴더 고르기 (2026-11-04). 폴더 안의 유일한 manifest를 찾는다 — 없거나 둘이면 사유를 말한다.</summary>
     private async void OnOpenClick(object? sender, RoutedEventArgs e)
     {
         try
         {
-            IStorageProvider? storage = GetTopLevel(this)?.StorageProvider;
-
-            if (storage is null || !storage.CanOpen)
+            if (await PickFolderAsync("프로젝트 폴더 열기") is { } folder)
             {
-                _session.SetStatus("이 환경에서는 파일 선택 창을 열 수 없습니다.");
-                return;
-            }
-
-            IReadOnlyList<IStorageFile> files = await storage.OpenFilePickerAsync(
-                new FilePickerOpenOptions
-                {
-                    Title = "VnTool 프로젝트 열기",
-                    AllowMultiple = false,
-                    FileTypeFilter = new[] { ProjectFileType() }
-                });
-
-            if (files.Count > 0)
-            {
-                _session.Open(files[0].Path.LocalPath);
+                OpenFolder(folder);
             }
         }
         catch (Exception exception)
@@ -515,7 +509,67 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnSaveClick(object? sender, RoutedEventArgs e)
+    private void OpenFolder(string folder)
+    {
+        ProjectFolder.Found found = ProjectFolder.Find(folder);
+
+        if (!found.IsFound)
+        {
+            _session.SetStatus(found.Problem!);
+            return;
+        }
+
+        _session.Open(found.ManifestPath!);
+    }
+
+    /// <summary>
+    /// 게임 폴더 (2026-11-04) — 런타임의 <c>ChapterProgression</c> 폴더. 프로젝트 폴더의 <c>runtime.target.json</c>에
+    /// 상대 경로로 남고, 저장할 때마다 진행 JSON이 거기로도 나간다. compositor가 같은 파일을 읽어 Yarn을 쓴다.
+    /// </summary>
+    private async void OnGameFolderClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_session.ProjectPath is not { } projectPath)
+            {
+                _session.SetStatus("프로젝트를 먼저 열거나 만들어야 게임 폴더를 정할 수 있습니다.");
+                return;
+            }
+
+            if (await PickFolderAsync("게임 폴더 — 런타임의 ChapterProgression") is not { } folder)
+            {
+                return;
+            }
+
+            RuntimeTarget target = RuntimeTarget.FromAbsolute(projectPath, folder);
+            RuntimeTarget.SaveBeside(projectPath, target);
+            _session.ReloadRuntimeTarget();
+            ChapterGraph.Refresh();
+            _session.SetStatus($"게임 폴더: {target.GameFolder} — 저장할 때마다 진행 JSON을 여기로도 씁니다.");
+        }
+        catch (Exception exception)
+        {
+            Report("게임 폴더", exception);
+        }
+    }
+
+    private async Task<string?> PickFolderAsync(string title)
+    {
+        IStorageProvider? storage = GetTopLevel(this)?.StorageProvider;
+
+        if (storage is null || !storage.CanPickFolder)
+        {
+            _session.SetStatus("이 환경에서는 폴더 선택 창을 열 수 없습니다.");
+            return null;
+        }
+
+        IReadOnlyList<IStorageFolder> folders = await storage.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions { Title = title, AllowMultiple = false });
+
+        return folders.Count == 0 ? null : folders[0].Path.LocalPath;
+    }
+
+    private void OnSaveClick(object? sender, RoutedEventArgs e)
     {
         try
         {
@@ -524,7 +578,7 @@ public partial class MainWindow : Window
 
             if (_session.ProjectPath is null)
             {
-                await SaveAsAsync();
+                _session.SetStatus("프로젝트 폴더가 없습니다 — [새 프로젝트…]로 폴더를 고르세요.");
                 return;
             }
 
@@ -534,44 +588,6 @@ public partial class MainWindow : Window
         catch (Exception exception)
         {
             Report("저장", exception);
-        }
-    }
-
-    private async void OnSaveAsClick(object? sender, RoutedEventArgs e)
-    {
-        try
-        {
-            Graph.FlushWriting();
-            await SaveAsAsync();
-        }
-        catch (Exception exception)
-        {
-            Report("저장", exception);
-        }
-    }
-
-    private async Task SaveAsAsync()
-    {
-        IStorageProvider? storage = GetTopLevel(this)?.StorageProvider;
-
-        if (storage is null || !storage.CanSave)
-        {
-            _session.SetStatus("이 환경에서는 저장 창을 열 수 없습니다.");
-            return;
-        }
-
-        IStorageFile? file = await storage.SaveFilePickerAsync(
-            new FilePickerSaveOptions
-            {
-                Title = "VnTool 프로젝트 저장",
-                SuggestedFileName = "project" + ProjectManifestJson.FileExtension,
-                FileTypeChoices = new[] { ProjectFileType() }
-            });
-
-        if (file is not null)
-        {
-            _session.Save(file.Path.LocalPath);
-            RefreshShell();
         }
     }
 
@@ -608,15 +624,6 @@ public partial class MainWindow : Window
 
         System.Diagnostics.Process.Start(
             new System.Diagnostics.ProcessStartInfo(folder) { UseShellExecute = true });
-    }
-
-    private static FilePickerFileType ProjectFileType()
-    {
-        return new FilePickerFileType("VnTool 프로젝트")
-        {
-            // 판 파일(*.vnstory.json)은 열 수 없다 — 프로젝트는 매니페스트로 연다.
-            Patterns = new[] { "*.vnproject.json", "*.json" }
-        };
     }
 
     // ── 화면 ────────────────────────────────────────────────────────────────

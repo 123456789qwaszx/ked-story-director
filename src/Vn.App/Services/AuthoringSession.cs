@@ -123,12 +123,25 @@ internal sealed class AuthoringSession
 
     // 상태를 모두 맞춘 뒤에 알린다. 알린 다음에 상태를 바꾸면
     // 화면은 방금 지나간 값을 그린 채로 남는다.
+    /// <summary>
+    /// 게임 폴더 설정 (2026-11-04) — 프로젝트 폴더의 <c>runtime.target.json</c>. 없으면 null. 풀린 절대 경로가 실제로
+    /// 있을 때만 <see cref="GameFolder"/>가 있다 — 다른 PC에서 상대 경로가 빗나가면 아무것도 안 쓴다.
+    /// </summary>
+    public RuntimeTarget? RuntimeTarget { get; private set; }
+
+    public string? GameFolder =>
+        ProjectPath is { } path && RuntimeTarget is { } target ? target.ResolveExisting(path) : null;
+
+    public void ReloadRuntimeTarget() =>
+        RuntimeTarget = ProjectPath is { } path ? RuntimeTarget.LoadBeside(path) : null;
+
     public void NewProject()
     {
         StoryProject project = NewProjectInstance();
 
         ProjectPath = null;
         Definition = GameDefinition.Empty;
+        RuntimeTarget = null;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
 
@@ -157,11 +170,13 @@ internal sealed class AuthoringSession
 
         ProjectPath = loaded.ManifestPath;
         Definition = GameDefinition.LoadBeside(loaded.ManifestPath);
+        ReloadRuntimeTarget();
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
-            $"{Path.GetFileName(ProjectPath)} · 노드 {project.EnumerateNodes().Count()}개" +
+            $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
             alignment +
-            PresentationBackupNote(loaded.PresentationBackupDirectory);
+            PresentationBackupNote(loaded.PresentationBackupDirectory) +
+            (RuntimeTarget is null ? " · 게임 폴더 미지정" : $" · 게임 폴더 {RuntimeTarget.GameFolder}");
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
@@ -227,79 +242,27 @@ internal sealed class AuthoringSession
     {
         string target = path ?? ProjectPath
             ?? throw new InvalidOperationException("저장할 경로가 없습니다.");
-        string? previousManifestPath = ProjectPath;
-
         // ⛔ 첫 저장에 에셋 폴더 규약(배경 · 초상 · BGM · 효과음)을 심던 일(W48)은 2026-10-29에 무대와 함께
         //    ked-story-compositor로 갔다.
 
         ProjectStore.Save(target, Project);
 
         ProjectPath = Path.GetFullPath(target);
-        // 규약 데이터 이사는 정의 읽기보다 먼저다 — 이사해 온 game.definition.json을
-        // 바로 아래 LoadBeside가 읽어야 하고, EnsureProjectFolders가 빈 뼈대를 먼저
-        // 깔면 "있는 파일은 불가침"에 걸려 진짜 정의가 영영 못 들어온다.
-        int carried = CarryProjectData(previousManifestPath, ProjectPath);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Project);
         Definition = GameDefinition.LoadBeside(ProjectPath);
+        ReloadRuntimeTarget();
         AppSettingsService.SaveRecentProject(ProjectPath);
-
-        // 다른 이름으로 저장했으면 화면 기억(선택지 3칸)도 새 자리로 — 기억의 열쇠가 프로젝트 경로다.
-        if (_fullChoiceNodeIds.Count > 0 && !string.Equals(previousManifestPath, ProjectPath, StringComparison.OrdinalIgnoreCase))
-        {
-            AppSettingsService.SaveFullChoices(ProjectPath, _fullChoiceNodeIds);
-        }
 
         bool provisioned = EnsureProjectFolders();
 
         // ⛔ 2026-10-29(D2)까지는 저장이 챕터·대본 워크북까지 다시 냈다. 엑셀 연동이 걷혀 저장은
         //    프로젝트에 쓰는 일 하나다.
-        StatusMessage = $"{Path.GetFileName(ProjectPath)}에 저장했습니다." +
-            (carried > 0 ? $" 이전 폴더의 정의 파일을 함께 복사했습니다." : string.Empty) +
-            (provisioned ? " 없던 정의 파일의 뼈대를 깔았습니다." : string.Empty);
+        // ⛔ "다른 이름으로 저장"과 프로젝트 이사(CarryProjectData)는 2026-11-04에 걷혔다 — 프로젝트는 폴더이고,
+        //    복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
+        StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
+            (provisioned ? " 없던 정의 파일의 뼈대를 깔았습니다." : string.Empty) +
+            (RuntimeTarget is null ? " 게임 폴더가 없습니다 — [🎮 게임 폴더…]로 정하면 진행 JSON이 런타임으로도 나갑니다." : string.Empty);
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
-    }
-
-    /// <summary>
-    /// 다른 폴더로 저장 = 프로젝트 이사 (2026-08-21 소유자 보고). 매니페스트만 옮기면
-    /// 프로젝트가 찢어진다: 챕터·판(StoryFile)·대본·작가 화자는 매니페스트에 실려 따라오는데,
-    /// 정의 파일은 <b>폴더 규약</b>이라 옛 집에 남는다. (에셋 · 튜닝 폴더는 2026-10-29에 무대와 함께
-    /// ked-story-compositor로 갔다.)
-    ///
-    /// 복사이지 이동이 아니다(옛 매니페스트는 계속 그 폴더에서 산다). 새 자리에 이미 있는
-    /// 파일은 불가침이다. `exported/`는 산출물이라 안 옮긴다 — 다음 재읽기의 자동 내보내기가
-    /// 새로 만든다. (2026-10-29 · D2: 챕터 워크북·대본 폴더를 함께 옮기던 몫은 엑셀 연동과 함께 걷혔다.)
-    /// </summary>
-    /// <returns>실제로 복사한 파일 수. 같은 폴더 재저장·첫 저장은 0이다.</returns>
-    private int CarryProjectData(string? previousManifestPath, string targetManifestPath)
-    {
-        if (previousManifestPath is null)
-        {
-            return 0;
-        }
-
-        string? fromRoot = Path.GetDirectoryName(Path.GetFullPath(previousManifestPath));
-        string? toRoot = Path.GetDirectoryName(targetManifestPath);
-
-        if (fromRoot is null || toRoot is null ||
-            string.Equals(fromRoot, toRoot, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0;
-        }
-
-        return CopyMissingFile(
-            GameDefinition.PathFor(previousManifestPath), GameDefinition.PathFor(targetManifestPath));
-    }
-
-    private static int CopyMissingFile(string source, string destination)
-    {
-        if (!File.Exists(source) || File.Exists(destination))
-        {
-            return 0;
-        }
-
-        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        File.Copy(source, destination);
-        return 1;
     }
 
     /// <summary>

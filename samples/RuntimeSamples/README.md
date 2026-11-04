@@ -5,15 +5,16 @@
 
 | 폴더 | 챕터 | |
 |---|---|---|
-| `FestivalEve/` | `festival_eve` 축제 전날 | 장면 둘(교실 · 교무실 앞) · 에피소드 다섯 · 분기 카드 다섯 · 스탯 둘(성실 · 요령) · 간선 일곱(선택지 다섯 — 숨김 하나 · 잠금 하나 — 와 자동 둘) |
+| `FestivalEve/` | `festival_eve` 축제 전날 | 장면 둘(교실 · 교무실 앞) · 스탯 둘(성실 · 요령) · 런타임과 같은 에피소드 다섯 + 분기 카드 다섯 + 소유자가 툴에서 더한 에피소드 셋(`Festival_Add` · `Festival_Advance` · `Festival_Lazy`, 2026-11-04 왕복 시험) |
 | `PresentationDemo/` | `presentation_demo` 연출 데모 | 에피소드 하나 |
 
 - `*.vnproject.json` · `story/` · `game.definition.json` — 원고(챕터 · 에피소드 · 간선 · 조건 · 카드의 대사).
-- `exported/{챕터}.progression.json` — 이 툴이 낸 진행 JSON. 런타임의 `FestivalEve.progression.json` · `Demo_Presentation.progression.json`이 된다.
+- `exported/{챕터}.progression.json` — 이 툴이 낸 진행 JSON. 런타임 예제도 같은 이름(`festival_eve.progression.json` · `presentation_demo.progression.json`)을 쓴다.
+- `runtime.target.json` — 게임 폴더(2026-11-04). 저장소가 나란히 있으면(`GitHub/ked-story-director` · `GitHub/ked-presentation-runtime`) 상대 경로가 그대로 통해, 저장할 때마다 진행 JSON이 런타임의 `ChapterProgression/`으로도 나간다. compositor가 같은 파일을 읽어 Yarn을 거기로 쓴다. 폴더가 없으면 아무것도 안 쓴다.
 
 연출(무대 명령 · 줄 태그)과 게임용 Yarn은 **ked-story-compositor**가 이 원고의 사본 옆에서 짓고 낸다 —
-compositor `samples/RuntimeSamples/README.md`에 런타임에 넣는 법과 손 대본과 다른 점이 있다.
-원고를 고치면 compositor 쪽 사본도 같이 바꾼다.
+compositor `samples/RuntimeSamples/README.md`에 손 대본과 다른 점이 있다.
+원고를 고치면 compositor 쪽 사본도 같이 바꾼다. 앱에서는 두 툴이 **같은 폴더**를 연다 — 이 폴더를 compositor로 열면 연출 파일이 그 옆에 선다.
 
 ## 손 대본에서 바뀐 모양
 
