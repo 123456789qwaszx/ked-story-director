@@ -1,0 +1,233 @@
+{
+  "formatVersion": 4,
+  "title": "축제 전날",
+  "startNode": "nd_5ccte9k4",
+  "files": [
+    {
+      "id": "sf_tw95x0hn",
+      "name": "festival_eve",
+      "path": "story/sf_tw95x0hn.vnstory.json"
+    }
+  ],
+  "chapters": [
+    {
+      "chapterId": "festival_eve",
+      "displayName": "축제 전날",
+      "episodes": [
+        {
+          "episodeId": "Festival_Classroom",
+          "x": 0,
+          "y": 0,
+          "title": "교실 - 반쯤 빈 간판",
+          "dialogueEntry": "Festival_Classroom",
+          "sceneId": "교실"
+        },
+        {
+          "episodeId": "Festival_Remake",
+          "x": -200,
+          "y": 220,
+          "title": "교실 - 처음부터 다시",
+          "dialogueEntry": "Festival_Remake",
+          "sceneId": "교실"
+        },
+        {
+          "episodeId": "Festival_Shortcut",
+          "x": 200,
+          "y": 220,
+          "title": "교실 - 있는 걸로",
+          "dialogueEntry": "Festival_Shortcut",
+          "sceneId": "교실"
+        },
+        {
+          "episodeId": "Festival_Wrapup",
+          "x": 0,
+          "y": 440,
+          "title": "교실 - 간판 완성",
+          "dialogueEntry": "Festival_Wrapup",
+          "sceneId": "교실"
+        },
+        {
+          "episodeId": "Festival_Staffroom",
+          "x": 0,
+          "y": 700,
+          "title": "교무실 앞 - 간판 검사",
+          "dialogueEntry": "Festival_Staffroom",
+          "sceneId": "교무실 앞"
+        },
+        {
+          "episodeId": "Festival_Wrapup_Remade",
+          "x": 320,
+          "y": 1200,
+          "title": "Festival_Wrapup_Remade",
+          "dialogueEntry": "Festival_Wrapup_Remade",
+          "sceneId": "교실",
+          "allowUnreachable": true
+        },
+        {
+          "episodeId": "Festival_Wrapup_Sticker",
+          "x": 320,
+          "y": 1600,
+          "title": "Festival_Wrapup_Sticker",
+          "dialogueEntry": "Festival_Wrapup_Sticker",
+          "sceneId": "교실",
+          "allowUnreachable": true
+        },
+        {
+          "episodeId": "Festival_Staffroom_Kasmi",
+          "x": 320,
+          "y": 2000,
+          "title": "Festival_Staffroom_Kasmi",
+          "dialogueEntry": "Festival_Staffroom_Kasmi",
+          "sceneId": "교무실 앞",
+          "allowUnreachable": true
+        },
+        {
+          "episodeId": "Festival_Staffroom_Praise",
+          "x": 320,
+          "y": 2400,
+          "title": "Festival_Staffroom_Praise",
+          "dialogueEntry": "Festival_Staffroom_Praise",
+          "sceneId": "교무실 앞",
+          "allowUnreachable": true
+        },
+        {
+          "episodeId": "Festival_Staffroom_Pass",
+          "x": 320,
+          "y": 2800,
+          "title": "Festival_Staffroom_Pass",
+          "dialogueEntry": "Festival_Staffroom_Pass",
+          "sceneId": "교무실 앞",
+          "allowUnreachable": true
+        }
+      ],
+      "edges": [
+        {
+          "from": "Festival_Classroom",
+          "to": "Festival_Remake",
+          "optionLabel": "처음부터 다시 그린다",
+          "statChanges": [
+            {
+              "key": "성실",
+              "amount": 2
+            }
+          ]
+        },
+        {
+          "from": "Festival_Classroom",
+          "to": "Festival_Shortcut",
+          "optionLabel": "있는 걸로 빨리 끝낸다",
+          "statChanges": [
+            {
+              "key": "요령",
+              "amount": 2
+            }
+          ]
+        },
+        {
+          "from": "Festival_Remake",
+          "to": "Festival_Wrapup",
+          "auto": true
+        },
+        {
+          "from": "Festival_Shortcut",
+          "to": "Festival_Wrapup",
+          "auto": true
+        },
+        {
+          "from": "Festival_Wrapup",
+          "to": "Festival_Staffroom",
+          "optionLabel": "교무실로 간다"
+        },
+        {
+          "from": "Festival_Wrapup",
+          "to": "Festival_Staffroom",
+          "optionLabel": "선생님께 진행 상황도 보고한다",
+          "visibleConditionLabel": "성실 2 이상",
+          "statChanges": [
+            {
+              "key": "성실",
+              "amount": 1
+            }
+          ]
+        },
+        {
+          "from": "Festival_Wrapup",
+          "to": "Festival_Staffroom",
+          "optionLabel": "카스미에게 마무리를 부탁하고 간다",
+          "conditionLabel": "요령 2 이상",
+          "lockedMessage": "요령 2 이상",
+          "statChanges": [
+            {
+              "key": "요령",
+              "amount": 1
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "label": "성실 2 이상",
+          "expression": "성실 >= 2"
+        },
+        {
+          "label": "요령 2 이상",
+          "expression": "요령 >= 2"
+        },
+        {
+          "label": "성실 2 미만",
+          "expression": "성실 < 2"
+        },
+        {
+          "label": "요령 3 이상",
+          "expression": "요령 >= 3"
+        },
+        {
+          "label": "성실 3 이상 · 요령 3 미만",
+          "expression": "성실 >= 3; 요령 < 3"
+        },
+        {
+          "label": "성실 3 미만 · 요령 3 미만",
+          "expression": "성실 < 3; 요령 < 3"
+        }
+      ],
+      "stats": [
+        {
+          "key": "성실",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 5,
+          "displayName": "성실"
+        },
+        {
+          "key": "요령",
+          "initial": 0,
+          "minimum": 0,
+          "maximum": 5,
+          "displayName": "요령"
+        }
+      ],
+      "choiceOptions": [
+        {
+          "text": "처음부터 다시 그린다",
+          "index": "10"
+        },
+        {
+          "text": "있는 걸로 빨리 끝낸다",
+          "index": "20"
+        },
+        {
+          "text": "교무실로 간다",
+          "index": "30"
+        },
+        {
+          "text": "선생님께 진행 상황도 보고한다",
+          "index": "40"
+        },
+        {
+          "text": "카스미에게 마무리를 부탁하고 간다",
+          "index": "50"
+        }
+      ]
+    }
+  ]
+}

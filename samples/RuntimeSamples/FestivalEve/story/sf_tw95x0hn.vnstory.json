@@ -1,0 +1,662 @@
+{
+  "formatVersion": 2,
+  "fileId": "sf_tw95x0hn",
+  "name": "festival_eve",
+  "nodes": [
+    {
+      "id": "nd_5ccte9k4",
+      "kind": "set",
+      "name": "챕터 festival_eve 조건",
+      "layout": {
+        "x": 0,
+        "y": 0
+      },
+      "conditions": [
+        {
+          "id": "cd_mve2qtqv",
+          "name": "성실 2 이상",
+          "expression": "stat(\"성실\") >= 2"
+        },
+        {
+          "id": "cd_n4indpmw",
+          "name": "요령 2 이상",
+          "expression": "stat(\"요령\") >= 2"
+        },
+        {
+          "id": "cd_6k0ncjjb",
+          "name": "성실 2 미만",
+          "expression": "stat(\"성실\") < 2"
+        },
+        {
+          "id": "cd_ph2tezn2",
+          "name": "요령 3 이상",
+          "expression": "stat(\"요령\") >= 3"
+        },
+        {
+          "id": "cd_cte029np",
+          "name": "성실 3 이상 · 요령 3 미만",
+          "expression": "stat(\"성실\") >= 3 && stat(\"요령\") < 3"
+        },
+        {
+          "id": "cd_c07qymhp",
+          "name": "성실 3 미만 · 요령 3 미만",
+          "expression": "stat(\"성실\") < 3 && stat(\"요령\") < 3"
+        }
+      ]
+    },
+    {
+      "id": "nd_ushhar34",
+      "kind": "dialogue",
+      "name": "Festival_Classroom",
+      "layout": {
+        "x": 0,
+        "y": 0
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "5EE808645B5D3FA2F1ADD3F496C78C084850CB7E6EC111188F6D67E516FF56EC",
+        "lines": [
+          {
+            "id": "ln_b76q68hg",
+            "revision": 2
+          },
+          {
+            "id": "ln_rxvmhx0i",
+            "revision": 1
+          },
+          {
+            "id": "ln_y37h16s8",
+            "revision": 1
+          },
+          {
+            "id": "ln_v25zy8n9",
+            "revision": 1
+          },
+          {
+            "id": "ln_ksq322v0",
+            "revision": 1
+          },
+          {
+            "id": "ln_0881u5vn",
+            "revision": 1
+          },
+          {
+            "id": "ln_gathtysb",
+            "revision": 1
+          },
+          {
+            "id": "ln_q1me6jy8",
+            "revision": 1
+          },
+          {
+            "id": "ln_4i38h8b3",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_b76q68hg": {
+                "speaker": "하린",
+                "text": "축제가 내일인데, 우리 반 간판이 아직 반쯤 비어 있어."
+              },
+              "ln_rxvmhx0i": {
+                "speaker": "시구레",
+                "text": "칠도 반쯤 말랐네요. 이대로 걸기엔 좀 애매해요."
+              },
+              "ln_y37h16s8": {
+                "speaker": "시구레",
+                "text": "글씨는 무슨 색으로 할까요?"
+              },
+              "ln_v25zy8n9": {
+                "text": "하늘색"
+              },
+              "ln_ksq322v0": {
+                "speaker": "시구레",
+                "text": "하늘색이면 교실 벽이랑 잘 어울리겠어요."
+              },
+              "ln_0881u5vn": {
+                "text": "노란색"
+              },
+              "ln_gathtysb": {
+                "speaker": "시구레",
+                "text": "노란색이면 복도 끝에서도 보이겠네요."
+              },
+              "ln_q1me6jy8": {
+                "speaker": "하린",
+                "text": "문제는 시간이야. 처음부터 다시 그릴지, 있는 걸로 마무리할지."
+              },
+              "ln_4i38h8b3": {
+                "speaker": "하린",
+                "text": "이번엔 대사 안의 선택이 아니야. 에피소드가 끝나면 진행 쪽이 묻고, 고른 쪽 스탯이 올라."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Classroom",
+      "lines": [
+        {
+          "lineId": "ln_v25zy8n9",
+          "condition": {
+            "kind": "beginChoice",
+            "option": "op_4p04yf14"
+          }
+        },
+        {
+          "lineId": "ln_0881u5vn",
+          "condition": {
+            "kind": "beginNextOption",
+            "option": "op_9bwgf8g3"
+          }
+        },
+        {
+          "lineId": "ln_q1me6jy8",
+          "condition": {
+            "kind": "endChoice"
+          }
+        }
+      ]
+    },
+    {
+      "id": "nd_b3c35fxj",
+      "kind": "dialogue",
+      "name": "Festival_Remake",
+      "layout": {
+        "x": 0,
+        "y": 400
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "A431C549283F650E26177D97B44DBC74F454CB06849E6C12C5D92B5084A6F36E",
+        "lines": [
+          {
+            "id": "ln_kdy67tc8",
+            "revision": 2
+          },
+          {
+            "id": "ln_2ibajvnq",
+            "revision": 1
+          },
+          {
+            "id": "ln_prrx0d33",
+            "revision": 1
+          },
+          {
+            "id": "ln_068q2fi1",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_kdy67tc8": {
+                "speaker": "하린",
+                "text": "좋아, 처음부터 다시. 붓부터 새로 빨아 올게."
+              },
+              "ln_2ibajvnq": {
+                "speaker": "시구레",
+                "text": "지금 성실은 {stat(\"성실\")}점이에요. 방금 그 선택지가 올린 거예요."
+              },
+              "ln_prrx0d33": {
+                "speaker": "시구레",
+                "text": "대사는 스탯을 읽기만 해요. 바꾸는 건 진행 선택지뿐이고요."
+              },
+              "ln_068q2fi1": {
+                "speaker": "하린",
+                "text": "아직 같은 장면이라, 되감기(R)로 돌아가면 방금 선택도 다시 고를 수 있어."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Remake",
+      "lines": []
+    },
+    {
+      "id": "nd_8dn0igwy",
+      "kind": "dialogue",
+      "name": "Festival_Shortcut",
+      "layout": {
+        "x": 0,
+        "y": 800
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "5265695482CB75B7305072C17A79F20619871A80C300E005BCC84BA2E8B5EBD0",
+        "lines": [
+          {
+            "id": "ln_jfze1fzb",
+            "revision": 2
+          },
+          {
+            "id": "ln_rbxvmjp0",
+            "revision": 1
+          },
+          {
+            "id": "ln_j1v81kqe",
+            "revision": 1
+          },
+          {
+            "id": "ln_fih4v3qp",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_jfze1fzb": {
+                "speaker": "시구레",
+                "text": "마른 칸은 살리고, 빈 칸만 스티커로 채워요."
+              },
+              "ln_rbxvmjp0": {
+                "speaker": "하린",
+                "text": "지금 요령은 {stat(\"요령\")}점이야. 방금 그 선택지가 올린 거지."
+              },
+              "ln_j1v81kqe": {
+                "speaker": "하린",
+                "text": "대사는 스탯을 읽기만 해. 바꾸는 건 진행 선택지뿐이야."
+              },
+              "ln_fih4v3qp": {
+                "speaker": "시구레",
+                "text": "아직 같은 장면이라, 되감기(R)로 돌아가면 방금 선택도 다시 고를 수 있어요."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Shortcut",
+      "lines": []
+    },
+    {
+      "id": "nd_exq3wbfy",
+      "kind": "dialogue",
+      "name": "Festival_Wrapup",
+      "layout": {
+        "x": 0,
+        "y": 1200
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "66CCBC0823969FA5B6F7E686D7A1A3ACA21DF686C4D5F15B0BF3DC88F7C2C294",
+        "lines": [
+          {
+            "id": "ln_yfg43av8",
+            "revision": 2
+          },
+          {
+            "id": "ln_jb5v7as4",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_yfg43av8": {
+                "speaker": "시구레",
+                "text": "이제 교무실에 가서 간판 검사를 받아야 해요."
+              },
+              "ln_jb5v7as4": {
+                "speaker": "시구레",
+                "text": "이번 선택지에는 조건이 달려 있어요. 안 맞으면 숨거나, 잠긴 채로 이유가 보여요."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Wrapup",
+      "lines": [
+        {
+          "lineId": "ln_yfg43av8",
+          "detour": [
+            "nd_25h2x841",
+            "nd_xmki0c6d"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nd_xfp8pum4",
+      "kind": "dialogue",
+      "name": "Festival_Staffroom",
+      "layout": {
+        "x": 0,
+        "y": 1600
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "3F2B60F5A112EB49DD1CC91A7BFE0AFCA4899CA043CBF55EAC4138FAF0DE90C4",
+        "lines": [
+          {
+            "id": "ln_ngjwdzsb",
+            "revision": 2
+          },
+          {
+            "id": "ln_f70g3xzg",
+            "revision": 1
+          },
+          {
+            "id": "ln_hv7zzi8m",
+            "revision": 1
+          },
+          {
+            "id": "ln_hb0cdhkt",
+            "revision": 1
+          },
+          {
+            "id": "ln_mmj0m4fe",
+            "revision": 1
+          },
+          {
+            "id": "ln_g2hh953n",
+            "revision": 1
+          },
+          {
+            "id": "ln_9k3krs99",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_ngjwdzsb": {
+                "speaker": "하린",
+                "text": "저녁의 교무실 앞. 장면이 바뀌었어."
+              },
+              "ln_f70g3xzg": {
+                "speaker": "시구레",
+                "text": "교실 장면은 확정돼서 저장됐어요. 되감기로는 거기까지 돌아가지 않아요."
+              },
+              "ln_hv7zzi8m": {
+                "speaker": "하린",
+                "text": "대신 대사 기록에서 교실 장면의 대사를 누르면, 거기서 새 회차로 갈라져."
+              },
+              "ln_hb0cdhkt": {
+                "speaker": "시구레",
+                "text": "메뉴에서 저장하면 지금 이 자리를 슬롯에 남길 수 있어요."
+              },
+              "ln_mmj0m4fe": {
+                "speaker": "하린",
+                "text": "내일 축제, 잘 되겠지?"
+              },
+              "ln_g2hh953n": {
+                "speaker": "시구레",
+                "text": "그럼요. 오늘은 여기까지예요."
+              },
+              "ln_9k3krs99": {
+                "text": "캐릭터 퇴장"
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Staffroom",
+      "lines": [
+        {
+          "lineId": "ln_hb0cdhkt",
+          "detour": [
+            "nd_t2vv61n2",
+            "nd_8dxcia1w",
+            "nd_q1q036hx"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nd_25h2x841",
+      "kind": "dialogue",
+      "name": "Festival_Wrapup_Remade",
+      "layout": {
+        "x": 320,
+        "y": 1200
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "8EC976239675C8407CEE7A67E79530623BC05540B4B0F0A0C9010EF489086538",
+        "lines": [
+          {
+            "id": "ln_s7tk0up3",
+            "revision": 2
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_s7tk0up3": {
+                "speaker": "하린",
+                "text": "다시 그린 간판, 생각보다 훨씬 낫다."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Wrapup_Remade",
+      "lines": [
+        {
+          "lineId": "ln_s7tk0up3",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_mve2qtqv"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ]
+    },
+    {
+      "id": "nd_xmki0c6d",
+      "kind": "dialogue",
+      "name": "Festival_Wrapup_Sticker",
+      "layout": {
+        "x": 320,
+        "y": 1600
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "CA9E31DE4A59B8531DFFC0E6F09E173CC1982AB106F03BFC8810EE5D94453A16",
+        "lines": [
+          {
+            "id": "ln_v9rdek8z",
+            "revision": 2
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_v9rdek8z": {
+                "speaker": "하린",
+                "text": "스티커 간판도 나름 귀엽네."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Wrapup_Sticker",
+      "lines": [
+        {
+          "lineId": "ln_v9rdek8z",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_6k0ncjjb"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ]
+    },
+    {
+      "id": "nd_t2vv61n2",
+      "kind": "dialogue",
+      "name": "Festival_Staffroom_Kasmi",
+      "layout": {
+        "x": 320,
+        "y": 2000
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "345E245089730A69BE01A1855915C592B1C67B2C504C25C9F51FA3151EE27363",
+        "lines": [
+          {
+            "id": "ln_m208n5x2",
+            "revision": 2
+          },
+          {
+            "id": "ln_2wwvdc98",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_m208n5x2": {
+                "speaker": "카스미",
+                "text": "부탁한 마무리, 다 해서 갖다 놨어."
+              },
+              "ln_2wwvdc98": {
+                "speaker": "하린",
+                "text": "카스미가 여기 있는 건 아까 그 선택지를 골랐기 때문이야."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Staffroom_Kasmi",
+      "lines": [
+        {
+          "lineId": "ln_m208n5x2",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_ph2tezn2"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ]
+    },
+    {
+      "id": "nd_8dxcia1w",
+      "kind": "dialogue",
+      "name": "Festival_Staffroom_Praise",
+      "layout": {
+        "x": 320,
+        "y": 2400
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "E4891AB37B957D5242E147FB348E8C4603EFBBD96FB5E133E757221F578BF1CD",
+        "lines": [
+          {
+            "id": "ln_pq4uwryp",
+            "revision": 2
+          },
+          {
+            "id": "ln_i48ixbjx",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_pq4uwryp": {
+                "speaker": "시구레",
+                "text": "선생님이 보고 받으시고 간판 칭찬하셨어요."
+              },
+              "ln_i48ixbjx": {
+                "speaker": "하린",
+                "text": "보고하고 오길 잘했네. 아까 그 선택지 덕분이야."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Staffroom_Praise",
+      "lines": [
+        {
+          "lineId": "ln_pq4uwryp",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_cte029np"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ]
+    },
+    {
+      "id": "nd_q1q036hx",
+      "kind": "dialogue",
+      "name": "Festival_Staffroom_Pass",
+      "layout": {
+        "x": 320,
+        "y": 2800
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "24100638515AB79C5CBE4EABF38033255B0C8A3994BEF75D0D03942D6F702F8C",
+        "lines": [
+          {
+            "id": "ln_as37pa6a",
+            "revision": 2
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_as37pa6a": {
+                "speaker": "시구레",
+                "text": "검사는 통과예요. 이제 내일만 남았네요."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Staffroom_Pass",
+      "lines": [
+        {
+          "lineId": "ln_as37pa6a",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_c07qymhp"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ]
+    }
+  ]
+}

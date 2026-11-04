@@ -1,0 +1,28 @@
+{
+  "variables": [
+    {
+      "name": "성실",
+      "type": "number",
+      "description": "성실하게 해낸 정도"
+    },
+    {
+      "name": "요령",
+      "type": "number",
+      "description": "요령 있게 해낸 정도"
+    }
+  ],
+  "speakers": [
+    {
+      "name": "하린",
+      "characterId": "harin"
+    },
+    {
+      "name": "시구레",
+      "characterId": "sigure"
+    },
+    {
+      "name": "카스미",
+      "characterId": "kasmi"
+    }
+  ]
+}
