@@ -49,8 +49,8 @@
       "kind": "dialogue",
       "name": "Festival_Classroom",
       "layout": {
-        "x": 0,
-        "y": 0
+        "x": 454.03,
+        "y": 40.42
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -165,8 +165,8 @@
       "kind": "dialogue",
       "name": "Festival_Remake",
       "layout": {
-        "x": 0,
-        "y": 400
+        "x": 290.52,
+        "y": 519.25
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -222,8 +222,8 @@
       "kind": "dialogue",
       "name": "Festival_Shortcut",
       "layout": {
-        "x": 0,
-        "y": 800
+        "x": 13.38,
+        "y": 480.49
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -279,8 +279,8 @@
       "kind": "dialogue",
       "name": "Festival_Wrapup",
       "layout": {
-        "x": 0,
-        "y": 1200
+        "x": 207.32,
+        "y": 1026.12
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -328,8 +328,8 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom",
       "layout": {
-        "x": 0,
-        "y": 1600
+        "x": 493.21,
+        "y": 1792.27
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -417,8 +417,8 @@
       "kind": "dialogue",
       "name": "Festival_Wrapup_Remade",
       "layout": {
-        "x": 320,
-        "y": 1200
+        "x": 1038.64,
+        "y": 1063.77
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -463,8 +463,8 @@
       "kind": "dialogue",
       "name": "Festival_Wrapup_Sticker",
       "layout": {
-        "x": 320,
-        "y": 1600
+        "x": 995.38,
+        "y": 1317.48
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -509,8 +509,8 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom_Kasmi",
       "layout": {
-        "x": 320,
-        "y": 2000
+        "x": 1528.79,
+        "y": 2086.94
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -563,8 +563,8 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom_Praise",
       "layout": {
-        "x": 320,
-        "y": 2400
+        "x": 1281.34,
+        "y": 2291.33
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -617,8 +617,8 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom_Pass",
       "layout": {
-        "x": 320,
-        "y": 2800
+        "x": 1206.69,
+        "y": 2643.34
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -657,6 +657,150 @@
           "kind": "endIf"
         }
       ]
+    },
+    {
+      "id": "nd_nv2i7xsz",
+      "kind": "dialogue",
+      "name": "Festival_Add",
+      "layout": {
+        "x": 966.44,
+        "y": 442.98
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 13,
+        "sourceContentHash": "141BDEE9BABE5B3BE2260704BAD5A8BD2071991031D32BD53006F1066ED26830",
+        "lines": [
+          {
+            "id": "ln_3sf4wx2f",
+            "revision": 6
+          },
+          {
+            "id": "ln_mnevrp4j",
+            "revision": 9
+          },
+          {
+            "id": "ln_niwg4azy",
+            "revision": 11
+          },
+          {
+            "id": "ln_it2pqg4g",
+            "revision": 20
+          },
+          {
+            "id": "ln_pp7rjy4s",
+            "revision": 13
+          },
+          {
+            "id": "ln_hzqbkmr2",
+            "revision": 11
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_3sf4wx2f": {
+                "speaker": "하린",
+                "text": "그 동안 고민 해봤는데."
+              },
+              "ln_mnevrp4j": {
+                "speaker": "하린",
+                "text": "우리 모두 이런 축제가 얼마나 의미 없는지 알잖아?"
+              },
+              "ln_niwg4azy": {
+                "speaker": "카스미",
+                "text": "그렇긴 해..."
+              },
+              "ln_it2pqg4g": {
+                "speaker": "시구레",
+                "text": "응...?"
+              },
+              "ln_pp7rjy4s": {
+                "text": "(셋이서 고민을 한다)"
+              },
+              "ln_hzqbkmr2": {
+                "speaker": "시구레",
+                "text": "좋은 생각 같아!"
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Add",
+      "lines": []
+    },
+    {
+      "id": "nd_tc99vekq",
+      "kind": "dialogue",
+      "name": "Festival_Advance",
+      "layout": {
+        "x": 1332.56,
+        "y": 680.64
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 0,
+        "lines": [
+          {
+            "id": "ln_i3ek8f3d",
+            "revision": 21
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_i3ek8f3d": {
+                "speaker": "하린",
+                "text": "좋았어. 축제는 역시 이래야지."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Advance",
+      "lines": []
+    },
+    {
+      "id": "nd_7an9j2ci",
+      "kind": "dialogue",
+      "name": "Festival_Lazy",
+      "layout": {
+        "x": 933.66,
+        "y": 737.57
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 0,
+        "lines": [
+          {
+            "id": "ln_ekqua1mv",
+            "revision": 18
+          },
+          {
+            "id": "ln_viq0ue00",
+            "revision": 8
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_ekqua1mv": {
+                "speaker": "시구레",
+                "text": "처음부터 이럴 생각이였구나."
+              },
+              "ln_viq0ue00": {
+                "speaker": "시구레",
+                "text": "나는 좋아."
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Festival_Lazy",
+      "lines": []
     }
   ]
 }

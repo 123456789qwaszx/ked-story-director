@@ -58,13 +58,22 @@
               "Op": "Add"
             }
           ]
+        },
+        {
+          "TargetEpisodeId": "Festival_Add",
+          "ChoiceLabel": "축제의 의미를 새로 써보자",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
         }
       ],
       "EventKey": "",
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": 0,
+        "X": 148.93,
         "Y": 0
       }
     },
@@ -90,8 +99,8 @@
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": -200,
-        "Y": 220
+        "X": 376.74,
+        "Y": 91.95
       }
     },
     {
@@ -116,8 +125,8 @@
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": 200,
-        "Y": 220
+        "X": 0,
+        "Y": 166.43
       }
     },
     {
@@ -186,8 +195,8 @@
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": 0,
-        "Y": 440
+        "X": 208.05,
+        "Y": 427.45
       }
     },
     {
@@ -202,8 +211,8 @@
       "SceneId": "교무실 앞",
       "DesignerNote": "",
       "Position": {
-        "X": 0,
-        "Y": 700
+        "X": 339.08,
+        "Y": 753.06
       }
     },
     {
@@ -218,8 +227,8 @@
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": 320,
-        "Y": 1200
+        "X": 506.43,
+        "Y": 473.41
       }
     },
     {
@@ -234,8 +243,8 @@
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": 320,
-        "Y": 1600
+        "X": 541.73,
+        "Y": 554.73
       }
     },
     {
@@ -250,8 +259,8 @@
       "SceneId": "교무실 앞",
       "DesignerNote": "",
       "Position": {
-        "X": 320,
-        "Y": 2000
+        "X": 1100.92,
+        "Y": 878.3
       }
     },
     {
@@ -266,8 +275,8 @@
       "SceneId": "교무실 앞",
       "DesignerNote": "",
       "Position": {
-        "X": 320,
-        "Y": 2400
+        "X": 880.92,
+        "Y": 965.16
       }
     },
     {
@@ -282,8 +291,84 @@
       "SceneId": "교무실 앞",
       "DesignerNote": "",
       "Position": {
-        "X": 320,
-        "Y": 2800
+        "X": 829.6,
+        "Y": 1114.77
+      }
+    },
+    {
+      "EpisodeId": "Festival_Add",
+      "Title": "Festival_Add",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Add",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [
+        {
+          "TargetEpisodeId": "Festival_Advance",
+          "ChoiceLabel": "귀신의 집",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        },
+        {
+          "TargetEpisodeId": "Festival_Advance",
+          "ChoiceLabel": "메이드 카페",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        },
+        {
+          "TargetEpisodeId": "Festival_Lazy",
+          "ChoiceLabel": "다 때려쳐",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        }
+      ],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 526.5,
+        "Y": 241.44
+      }
+    },
+    {
+      "EpisodeId": "Festival_Advance",
+      "Title": "Festival_Advance",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Advance",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 781.04,
+        "Y": 537.77
+      }
+    },
+    {
+      "EpisodeId": "Festival_Lazy",
+      "Title": "Festival_Lazy",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Lazy",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 1019.12,
+        "Y": 391.26
       }
     }
   ]

@@ -16,7 +16,7 @@
       "episodes": [
         {
           "episodeId": "Festival_Classroom",
-          "x": 0,
+          "x": 148.93,
           "y": 0,
           "title": "교실 - 반쯤 빈 간판",
           "dialogueEntry": "Festival_Classroom",
@@ -24,40 +24,40 @@
         },
         {
           "episodeId": "Festival_Remake",
-          "x": -200,
-          "y": 220,
+          "x": 376.74,
+          "y": 91.95,
           "title": "교실 - 처음부터 다시",
           "dialogueEntry": "Festival_Remake",
           "sceneId": "교실"
         },
         {
           "episodeId": "Festival_Shortcut",
-          "x": 200,
-          "y": 220,
+          "x": 0,
+          "y": 166.43,
           "title": "교실 - 있는 걸로",
           "dialogueEntry": "Festival_Shortcut",
           "sceneId": "교실"
         },
         {
           "episodeId": "Festival_Wrapup",
-          "x": 0,
-          "y": 440,
+          "x": 208.05,
+          "y": 427.45,
           "title": "교실 - 간판 완성",
           "dialogueEntry": "Festival_Wrapup",
           "sceneId": "교실"
         },
         {
           "episodeId": "Festival_Staffroom",
-          "x": 0,
-          "y": 700,
+          "x": 339.08,
+          "y": 753.06,
           "title": "교무실 앞 - 간판 검사",
           "dialogueEntry": "Festival_Staffroom",
           "sceneId": "교무실 앞"
         },
         {
           "episodeId": "Festival_Wrapup_Remade",
-          "x": 320,
-          "y": 1200,
+          "x": 506.43,
+          "y": 473.41,
           "title": "Festival_Wrapup_Remade",
           "dialogueEntry": "Festival_Wrapup_Remade",
           "sceneId": "교실",
@@ -65,8 +65,8 @@
         },
         {
           "episodeId": "Festival_Wrapup_Sticker",
-          "x": 320,
-          "y": 1600,
+          "x": 541.73,
+          "y": 554.73,
           "title": "Festival_Wrapup_Sticker",
           "dialogueEntry": "Festival_Wrapup_Sticker",
           "sceneId": "교실",
@@ -74,8 +74,8 @@
         },
         {
           "episodeId": "Festival_Staffroom_Kasmi",
-          "x": 320,
-          "y": 2000,
+          "x": 1100.92,
+          "y": 878.3,
           "title": "Festival_Staffroom_Kasmi",
           "dialogueEntry": "Festival_Staffroom_Kasmi",
           "sceneId": "교무실 앞",
@@ -83,8 +83,8 @@
         },
         {
           "episodeId": "Festival_Staffroom_Praise",
-          "x": 320,
-          "y": 2400,
+          "x": 880.92,
+          "y": 965.16,
           "title": "Festival_Staffroom_Praise",
           "dialogueEntry": "Festival_Staffroom_Praise",
           "sceneId": "교무실 앞",
@@ -92,12 +92,36 @@
         },
         {
           "episodeId": "Festival_Staffroom_Pass",
-          "x": 320,
-          "y": 2800,
+          "x": 829.6,
+          "y": 1114.77,
           "title": "Festival_Staffroom_Pass",
           "dialogueEntry": "Festival_Staffroom_Pass",
           "sceneId": "교무실 앞",
           "allowUnreachable": true
+        },
+        {
+          "episodeId": "Festival_Add",
+          "x": 526.5,
+          "y": 241.44,
+          "title": "Festival_Add",
+          "dialogueEntry": "Festival_Add",
+          "sceneId": "교실"
+        },
+        {
+          "episodeId": "Festival_Advance",
+          "x": 781.04,
+          "y": 537.77,
+          "title": "Festival_Advance",
+          "dialogueEntry": "Festival_Advance",
+          "sceneId": "교실"
+        },
+        {
+          "episodeId": "Festival_Lazy",
+          "x": 1019.12,
+          "y": 391.26,
+          "title": "Festival_Lazy",
+          "dialogueEntry": "Festival_Lazy",
+          "sceneId": "교실"
         }
       ],
       "edges": [
@@ -162,6 +186,34 @@
               "amount": 1
             }
           ]
+        },
+        {
+          "from": "Festival_Classroom",
+          "to": "Festival_Add",
+          "optionLabel": "축제의 의미를 새로 써보자"
+        },
+        {
+          "from": "Festival_Add",
+          "to": "Festival_Advance",
+          "optionLabel": "귀신의 집",
+          "shape": {
+            "bendX": 199,
+            "bendY": -42
+          }
+        },
+        {
+          "from": "Festival_Add",
+          "to": "Festival_Advance",
+          "optionLabel": "메이드 카페",
+          "shape": {
+            "bendX": 124,
+            "bendY": -7
+          }
+        },
+        {
+          "from": "Festival_Add",
+          "to": "Festival_Lazy",
+          "optionLabel": "다 때려쳐"
         }
       ],
       "conditions": [
@@ -226,6 +278,22 @@
         {
           "text": "카스미에게 마무리를 부탁하고 간다",
           "index": "50"
+        },
+        {
+          "text": "축제의 의미를 새로 써보자",
+          "index": "60"
+        },
+        {
+          "text": "귀신의 집",
+          "index": "70"
+        },
+        {
+          "text": "메이드 카페",
+          "index": "80"
+        },
+        {
+          "text": "다 때려쳐",
+          "index": "90"
         }
       ]
     }
