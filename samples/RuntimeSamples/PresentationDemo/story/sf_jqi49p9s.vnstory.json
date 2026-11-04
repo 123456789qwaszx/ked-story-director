@@ -114,23 +114,27 @@
           },
           {
             "id": "ln_6mq0fm7a",
-            "revision": 1
+            "revision": 2
           },
           {
             "id": "ln_nrhqqani",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_yy4tnzdq",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_awcnxgku",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_tzwkezwd",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_bvxtdk3u",
@@ -236,7 +240,7 @@
               },
               "ln_6mq0fm7a": {
                 "speaker": "시구레",
-                "text": "마지막으로, 하나 골라 볼래요?"
+                "text": "여기까지예요. 되감기(R)로 아무 줄이나 돌아갈 수 있고, 타이틀의 ‘이어하기’로 다시 올 수 있어요."
               },
               "ln_nrhqqani": {
                 "text": "조금 더 보고 갈래"
@@ -260,28 +264,7 @@
         ]
       },
       "episodeMark": "Demo_Presentation",
-      "lines": [
-        {
-          "lineId": "ln_nrhqqani",
-          "condition": {
-            "kind": "beginChoice",
-            "option": "op_rdhsissz"
-          }
-        },
-        {
-          "lineId": "ln_awcnxgku",
-          "condition": {
-            "kind": "beginNextOption",
-            "option": "op_0fnfwvtk"
-          }
-        },
-        {
-          "lineId": "ln_bvxtdk3u",
-          "condition": {
-            "kind": "endChoice"
-          }
-        }
-      ]
+      "lines": []
     }
   ]
 }

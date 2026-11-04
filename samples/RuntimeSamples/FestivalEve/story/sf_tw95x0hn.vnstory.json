@@ -67,23 +67,28 @@
           },
           {
             "id": "ln_y37h16s8",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_v25zy8n9",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_ksq322v0",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_0881u5vn",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_gathtysb",
-            "revision": 1
+            "revision": 1,
+            "retired": true
           },
           {
             "id": "ln_q1me6jy8",
@@ -91,7 +96,7 @@
           },
           {
             "id": "ln_4i38h8b3",
-            "revision": 1
+            "revision": 2
           }
         ],
         "locales": [
@@ -130,35 +135,14 @@
               },
               "ln_4i38h8b3": {
                 "speaker": "하린",
-                "text": "이번엔 대사 안의 선택이 아니야. 에피소드가 끝나면 진행 쪽이 묻고, 고른 쪽 스탯이 올라."
+                "text": "선택은 대사 안에 없어. 에피소드가 끝나면 진행 쪽이 묻고, 고른 쪽 스탯이 올라."
               }
             }
           }
         ]
       },
       "episodeMark": "Festival_Classroom",
-      "lines": [
-        {
-          "lineId": "ln_v25zy8n9",
-          "condition": {
-            "kind": "beginChoice",
-            "option": "op_4p04yf14"
-          }
-        },
-        {
-          "lineId": "ln_0881u5vn",
-          "condition": {
-            "kind": "beginNextOption",
-            "option": "op_9bwgf8g3"
-          }
-        },
-        {
-          "lineId": "ln_q1me6jy8",
-          "condition": {
-            "kind": "endChoice"
-          }
-        }
-      ]
+      "lines": []
     },
     {
       "id": "nd_b3c35fxj",
