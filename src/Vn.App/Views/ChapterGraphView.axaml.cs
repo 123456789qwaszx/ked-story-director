@@ -2980,69 +2980,135 @@ public partial class ChapterGraphView : UserControl
             "＋ 스탯", "스탯 추가", StatAddFlyout, StatListPanel));
     }
 
-    /// <summary>스탯 한 줄 — 키(고정) · 표시이름 · 초기 · 최소 · 최대 · 타입 · 개명 · 삭제.</summary>
+    /// <summary>스탯 종류의 이름 — 작가가 읽는 말이다. 차례는 <see cref="ChapterStatType"/>의 Int · Bool과 같다.</summary>
+    internal static readonly string[] StatTypeNames = ["숫자", "예/아니오"];
+
+    /// <summary>
+    /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 · 표시 이름 · 종류 · 개명 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
+    /// 처음 값 하나). 값 칸마다 이름을 붙인다 — 이름 없는 숫자 칸 셋은 처음 보는 사람이 무엇인지 모른다. 한 줄에 다 세우면
+    /// 인스펙터 폭을 넘어 뒤쪽 칸이 밀린다. 아래 줄의 숫자 칸은 남은 폭을 셋이 나눠 가진다 — 고정 폭이면 좁은 인스펙터에서
+    /// 마지막 칸이 잘린다.
+    /// </summary>
     private Control StatRow(ChapterStat stat)
     {
-        var row = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 3,
-            Tag = $"stat:{stat.Key}"
-        };
+        bool isBool = stat.Type == ChapterStatType.Bool;
+        var row = new StackPanel { Spacing = 3, Margin = new Thickness(0, 0, 0, 6), Tag = $"stat:{stat.Key}" };
 
-        row.Children.Add(new SelectableTextBlock
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("88,*,Auto,Auto,Auto") };
+
+        var key = new SelectableTextBlock
         {
             Text = stat.Key,
             FontSize = 10,
             FontWeight = FontWeight.SemiBold,
-            Width = 96,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
-        });
+        };
+        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식에 쓰는 이름입니다. 바꾸려면 [✎].");
+        head.Children.Add(key);
 
-        row.Children.Add(SheetBox(
-            stat.DisplayName, 88, "표시이름 — 화면에만 쓴다. 세이브 열쇠는 왼쪽의 키다",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, displayName: value)));
-
-        row.Children.Add(NumberBox(stat.Initial, "초기",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: value)));
-        row.Children.Add(NumberBox(stat.Minimum, "최소",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, minimum: value)));
-        row.Children.Add(NumberBox(stat.Maximum, "최대",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, maximum: value)));
+        TextBox name = SheetBox(
+            stat.DisplayName, double.NaN, "표시 이름 — 화면에 보이는 이름입니다. 세이브 열쇠는 왼쪽의 키입니다",
+            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, displayName: value));
+        name.PlaceholderText = "표시 이름";
+        Grid.SetColumn(name, 1);
+        head.Children.Add(name);
 
         var type = new ComboBox
         {
             FontSize = 10,
-            Width = 62,
-            ItemsSource = new[] { "정수", "깃발" },
-            SelectedIndex = stat.Type == ChapterStatType.Bool ? 1 : 0,
-            VerticalAlignment = VerticalAlignment.Center
+            MinHeight = 0,
+            Padding = new Thickness(8, 2, 4, 2),
+            Margin = new Thickness(4, 0, 0, 0),
+            ItemsSource = StatTypeNames,
+            SelectedIndex = isBool ? 1 : 0,
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = "stat-type"
         };
-
-        type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 타입", () =>
+        ToolTip.SetTip(
+            type,
+            "종류 — 숫자: 호감도 · 점수처럼 오르내리는 값(처음 값 · 최소 · 최대). " +
+            "예/아니오: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
+        type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 종류", () =>
             _session!.Editor.UpdateChapterStat(
                 _selectedChapterId!,
                 stat.Key,
                 type: type.SelectedIndex == 1 ? ChapterStatType.Bool : ChapterStatType.Int));
+        Grid.SetColumn(type, 2);
+        head.Children.Add(type);
 
-        row.Children.Add(type);
-
-        var rename = new Button { Content = "✎", FontSize = 10, Padding = new Thickness(5, 1) };
+        var rename = new Button { Content = "✎", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(4, 0, 0, 0) };
         ToolTip.SetTip(
             rename,
             "키(세이브 열쇠)를 바꿉니다 — 간선·조건·픽스처의 참조가 함께 따라가지만, " +
-            "이미 저장된 세이브는 못 따라옵니다. 표시 이름만 고치려면 [표시이름] 칸을 쓰세요.");
+            "이미 저장된 세이브는 못 따라옵니다. 표시 이름만 고치려면 [표시 이름] 칸을 쓰세요.");
         rename.Click += (_, _) => ShowStatRenameFlyout(rename, stat.Key);
-        row.Children.Add(rename);
+        Grid.SetColumn(rename, 3);
+        head.Children.Add(rename);
 
-        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1) };
+        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
         ToolTip.SetTip(remove, "지웁니다 — 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.");
         remove.Click += (_, _) => UiGuard.Run(_session, "스탯 삭제", () => RemoveStat(remove, stat.Key));
-        row.Children.Add(remove);
+        Grid.SetColumn(remove, 4);
+        head.Children.Add(remove);
 
+        row.Children.Add(head);
+
+        var values = new Grid { Margin = new Thickness(88, 0, 0, 0) };
+
+        void Add(Control cell)
+        {
+            Grid.SetColumn(cell, values.Children.Count);
+            values.Children.Add(cell);
+        }
+
+        if (isBool)
+        {
+            values.ColumnDefinitions = new ColumnDefinitions("Auto,Auto");
+            Add(ValueLabel("처음 값"));
+
+            var initial = new ComboBox
+            {
+                FontSize = 10,
+                MinHeight = 0,
+                Padding = new Thickness(8, 2, 4, 2),
+                ItemsSource = new[] { "아니오", "예" },
+                SelectedIndex = stat.Initial == 0 ? 0 : 1,
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = "stat-initial"
+            };
+            ToolTip.SetTip(initial, "처음 값 — 챕터를 시작할 때 이 스탯이 켜져(예) 있는지 꺼져(아니오) 있는지입니다.");
+            initial.SelectionChanged += (_, _) => UiGuard.Run(_session, "처음 값", () =>
+                _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: initial.SelectedIndex));
+            Add(initial);
+        }
+        else
+        {
+            values.ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,*,Auto,*");
+            Add(ValueLabel("처음 값"));
+            Add(NumberBox(stat.Initial, "처음 값", "처음 값 — 챕터를 시작할 때 이 스탯의 값입니다.",
+                value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: value)));
+            Add(ValueLabel("최소"));
+            Add(NumberBox(stat.Minimum, "최소", "최소 — 이 스탯은 이보다 작아지지 않습니다.",
+                value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, minimum: value)));
+            Add(ValueLabel("최대"));
+            Add(NumberBox(stat.Maximum, "최대", "최대 — 이 스탯은 이보다 커지지 않습니다.",
+                value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, maximum: value)));
+        }
+
+        row.Children.Add(values);
         return row;
     }
+
+    /// <summary>값 칸 앞의 이름.</summary>
+    private static TextBlock ValueLabel(string text) => new()
+    {
+        Text = text,
+        FontSize = 10,
+        Opacity = 0.7,
+        Margin = new Thickness(6, 0, 3, 0),
+        VerticalAlignment = VerticalAlignment.Center
+    };
 
     /// <summary>
     /// [챕터] 탭의 <b>조건 표</b> — 스탯 표와 같은 날 편집 가능해졌다.
@@ -3102,7 +3168,7 @@ public partial class ChapterGraphView : UserControl
         });
 
         row.Children.Add(SheetBox(
-            condition.Expression, 232, "식 (예: trust >= 3; 깃발 == true)",
+            condition.Expression, 232, "식 (예: trust >= 3; 열쇠 == true)",
             value => _session!.Editor.UpdateChapterCondition(_selectedChapterId!, condition.Label, value)));
 
         var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1) };
@@ -3150,21 +3216,28 @@ public partial class ChapterGraphView : UserControl
         return box;
     }
 
-    /// <summary>숫자 칸 — 못 읽는 글자는 <b>조용히 버리지 않고</b> 옛 값으로 되돌린다.</summary>
-    private TextBox NumberBox(int value, string hint, Action<int> commit)
+    /// <summary>
+    /// 숫자 칸 — 못 읽는 글자는 <b>조용히 버리지 않고</b> 옛 값으로 되돌린다. 폭은 놓인 칸을 채운다 — 테마의 글자 칸 최소 폭이
+    /// 셋이 나란히 서기에는 넓어 걷는다.
+    /// </summary>
+    /// <param name="hint">칸의 이름 — 못 읽을 때 말머리가 된다.</param>
+    /// <param name="tip">칸에 마우스를 올렸을 때의 풀이.</param>
+    private TextBox NumberBox(int value, string hint, string tip, Action<int> commit)
     {
         TextBox box = SheetBox(
-            value.ToString(System.Globalization.CultureInfo.InvariantCulture), 46, hint,
+            value.ToString(System.Globalization.CultureInfo.InvariantCulture), double.NaN, hint,
             text =>
             {
                 if (!int.TryParse(text.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int parsed))
                 {
-                    throw new InvalidOperationException($"{hint}에는 정수를 적습니다 — '{text}'는 못 읽습니다.");
+                    throw new InvalidOperationException($"{hint}에는 숫자(정수)를 적습니다 — '{text}'는 못 읽습니다.");
                 }
 
                 commit(parsed);
             });
 
+        box.MinWidth = 0;
+        ToolTip.SetTip(box, tip);
         return box;
     }
 
@@ -3239,14 +3312,14 @@ public partial class ChapterGraphView : UserControl
                 _session.SetStatus(
                     $"'{key}' → '{to}' — 간선 {outcome.Edges} · 조건 {outcome.Conditions} · " +
                     $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳이 " +
-                    "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 초기값으로 떨어집니다.");
+                    "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.");
 
                 Draw();
             }),
             caution:
                 "⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 " +
-                "초기값으로 떨어집니다(경고 없이). 표시 이름만 고치려면 닫고 옆의 " +
-                "[표시이름] 칸을 쓰세요.");
+                "처음 값으로 떨어집니다(경고 없이). 표시 이름만 고치려면 닫고 옆의 " +
+                "[표시 이름] 칸을 쓰세요.");
     }
 
     /// <summary>글자 하나를 받는 작은 플라이아웃 — [챕터 추가]와 같은 손버릇이다.</summary>

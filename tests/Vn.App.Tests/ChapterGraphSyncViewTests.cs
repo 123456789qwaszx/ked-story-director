@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.Authoring.Editing;
@@ -74,9 +75,9 @@ public sealed class ChapterGraphSyncViewTests
             .Children.OfType<StackPanel>()
             .Single(panel => Equals(panel.Tag, "stat:trust"));
 
-        // 값 칸 넷(표시이름·초기·최소·최대) + 개명 · 삭제.
-        Assert.Equal(4, row.Children.OfType<TextBox>().Count());
-        Assert.Equal(2, row.Children.OfType<Button>().Count());
+        // 값 칸 넷(표시 이름 · 처음 값 · 최소 · 최대) + 개명 · 삭제.
+        Assert.Equal(4, row.GetLogicalDescendants().OfType<TextBox>().Count());
+        Assert.Equal(2, row.GetLogicalDescendants().OfType<Button>().Count());
 
         Assert.Null(view.FindControl<StackPanel>("FixtureListPanel"));
     });

@@ -143,8 +143,8 @@ public static class ConditionExpressionParser
                     ConditionProblemKind.ClearedRetired,
                     term,
                     $"'{term}' — cleared: 는 폐지됐습니다(2026-08-25). 진행 코어가 클리어 " +
-                    "이력을 더 이상 기억하지 않습니다. Bool 스탯으로 바꾸세요: `스탯` 시트에 " +
-                    $"깃발을 하나 만들고(예: `{Flag(episodeId)}`), " +
+                    "이력을 더 이상 기억하지 않습니다. 예/아니오 스탯으로 바꾸세요: 챕터의 스탯에 " +
+                    $"예/아니오 스탯을 하나 만들고(예: `{Flag(episodeId)}`), " +
                     $"'{(episodeId.Length == 0 ? "그 에피소드" : episodeId)}'에서 나가는 " +
                     $"간선의 `스탯변화`에 `{Flag(episodeId)} = 1`을 적은 뒤, 여기에는 " +
                     $"`{Flag(episodeId)} == 1`을 적습니다."));

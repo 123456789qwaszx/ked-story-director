@@ -179,8 +179,8 @@ public static class ChapterStructureCheck
             diagnostics.Add(new ChapterDiagnostic(
                 ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
                 ChapterSheetNames.Stats, null,
-                $"'{stat.Key}'는 bool 스탯이라 범위가 0~1이고 처음값은 0이나 1이어야 합니다 " +
-                $"(지금 {stat.Minimum}~{stat.Maximum}, 처음값 {stat.Initial})."));
+                $"'{stat.Key}'는 예/아니오 스탯이라 범위가 0~1이고 처음 값은 0(아니오)이나 1(예)이어야 합니다 " +
+                $"(지금 {stat.Minimum}~{stat.Maximum}, 처음 값 {stat.Initial})."));
         }
 
         HashSet<string> boolKeys = stats
@@ -198,7 +198,7 @@ public static class ChapterStructureCheck
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.ConditionExpressionMalformed, path,
                     ChapterSheetNames.Conditions, null,
-                    $"조건 '{condition.Label}': '{term.Key}'는 bool 스탯입니다 — " +
+                    $"조건 '{condition.Label}': '{term.Key}'는 예/아니오 스탯입니다 — " +
                     $"'{term.Key} == true' 또는 '{term.Key} == false'로만 적을 수 있습니다."));
             }
         }
@@ -212,7 +212,7 @@ public static class ChapterStructureCheck
                 if (isBool && !delta.IsSet)
                 {
                     diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatValueNotInteger,
-                        path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길: '{delta.Key}'는 bool 스탯이라 증감을 쓸 수 없습니다 — " +
+                        path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길: '{delta.Key}'는 예/아니오 스탯이라 증감을 쓸 수 없습니다 — " +
                         $"켜고 끄려면 '{delta.Key} true' 또는 '{delta.Key} false'로 적어 주세요."));
                 }
 
