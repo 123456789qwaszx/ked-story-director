@@ -56,6 +56,12 @@ public partial class MainWindow
 
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
 
+        // 분기 조건은 챕터 그래프에서 정한다 — 연출 그래프의 표 · 인스펙터 단추가 그리로 데려간다.
+        Graph.BranchConditionRequested += (chapterId, branchKey) =>
+            UiGuard.Run(_session, "분기 조건", () => OpenBranchCondition(chapterId, branchKey));
+        DialogueEditor.BranchConditionRequested += (chapterId, branchKey) =>
+            UiGuard.Run(_session, "분기 조건", () => OpenBranchCondition(chapterId, branchKey));
+
         // 눈 기둥은 연출 그래프의 하이어아키에만 — 접을 판이 거기 있다(SF2 · docs/plans/hierarchy.md §3).
         Graph.HierarchyView.EyeOf = DirectorEyeOf;
         Graph.HierarchyView.EyeToggled += row => UiGuard.Run(_session, "보이기", () => OnDirectorEyeToggled(row));
@@ -90,6 +96,17 @@ public partial class MainWindow
                 _syncingSelection = false;
             }
         });
+    }
+
+    /// <summary>
+    /// 분기의 조건을 정하러 간다 — 챕터 그래프 탭으로 넘어가 그 챕터를 고르고 그 분기를 고른다(오른쪽에 조건 칸이 열린다).
+    /// 연출 그래프 카드의 조건 표와 인스펙터의 분기 카드가 부른다.
+    /// </summary>
+    private void OpenBranchCondition(string chapterId, string branchKey)
+    {
+        MainTabs.SelectedItem = ChapterTabItem;
+        ChapterGraph.SelectChapter(chapterId);
+        ChapterGraph.SelectBranch(branchKey);
     }
 
     /// <summary>한 탭에서 하이어아키 기둥을 접거나 폈다 — 다른 탭을 맞추고 기억한다.</summary>

@@ -800,12 +800,16 @@ public partial class DialogueNodeEditor : UserControl
     {
         string name = _session?.Project.FindNode(targetId)?.Name ?? "(사라진 노드)";
 
+        // 두 줄이다 — 위는 무엇으로 갈라지는가(와 지우기), 아래는 지금 조건과 정하러 가는 단추. 한 줄에 다 세우면 인스펙터 폭을
+        // 넘어 단추가 밖으로 밀린다.
         var row = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 6,
             VerticalAlignment = VerticalAlignment.Center
         };
+        var head = new DockPanel { LastChildFill = true };
+        var detail = new StackPanel { Spacing = 3, Margin = new Thickness(0, 2, 0, 0) };
 
         row.Children.Add(new TextBlock
         {
@@ -825,18 +829,40 @@ public partial class DialogueNodeEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center
         });
 
-        row.Children.Add(new TextBlock
+        // 지금 걸린 조건 — 연출 그래프에서는 고치지 않지만 보여야 한다. 조건 없는 분기와 조건 걸린 분기가 똑같아 보이면 헷갈린다.
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, targetId, _session.Definition);
+        string? chapterId = EpisodeNaming.ChapterOf(_session.Project, node)?.ChapterId;
+
+        detail.Children.Add(new TextBlock
         {
-            Text = order < count - 1
-                ? "다녀왔다가 다음 분기로 갑니다 — 조건은 다녀오는 곳의 첫머리에서 겁니다."
-                : "다녀왔다가 이 줄부터 이어집니다 — 조건은 다녀오는 곳의 첫머리에서 겁니다.",
+            Text = BranchConditionNote.Sentence(state) + " " + (order < count - 1
+                ? "다녀왔다가 다음 분기로 갑니다."
+                : "다녀왔다가 이 줄부터 이어집니다."),
             FontSize = 10,
-            Opacity = 0.55,
-            TextWrapping = TextWrapping.Wrap,
-            VerticalAlignment = VerticalAlignment.Center
+            Opacity = 0.7,
+            TextWrapping = TextWrapping.Wrap
         });
 
-        row.Children.Add(RemoveBranchButton(node, lineId, targetId));
+        if (chapterId is not null)
+        {
+            var open = new Button
+            {
+                Content = state.Label is null ? "챕터 그래프에서 조건 정하기" : "챕터 그래프에서 조건 바꾸기",
+                FontSize = 10,
+                Padding = new Thickness(6, 1),
+                Tag = BranchConditionTag(lineId, targetId),
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            ToolTip.SetTip(open, BranchConditionNote.Where + " 누르면 그 분기를 고른 채로 챕터 그래프가 열립니다.");
+            string branchKey = ExitPort.DetourKey(lineId, targetId);
+            open.Click += (_, _) => UiGuard.Run(_session, "분기 조건", () => BranchConditionRequested?.Invoke(chapterId, branchKey));
+            detail.Children.Add(open);
+        }
+
+        Button remove = RemoveBranchButton(node, lineId, targetId);
+        DockPanel.SetDock(remove, Dock.Right);
+        head.Children.Add(remove);
+        head.Children.Add(row);
 
         var card = new Border
         {
@@ -847,7 +873,7 @@ public partial class DialogueNodeEditor : UserControl
             BorderThickness = new Thickness(1.5),
             BorderBrush = BranchPalette.Accent(palette),
             Background = BranchPalette.Background(palette),
-            Child = row
+            Child = new StackPanel { Children = { head, detail } }
         };
         ToolTip.SetTip(card, "우클릭하면 이 분기를 지웁니다(✕ 분기 지우기와 같다). 되돌리기(Ctrl+Z)로 돌아옵니다.");
 
@@ -864,6 +890,15 @@ public partial class DialogueNodeEditor : UserControl
 
         return card;
     }
+
+    /// <summary>분기 카드의 「챕터 그래프에서 조건 정하기」 단추가 지는 표.</summary>
+    internal static string BranchConditionTag(string lineId, string targetId) =>
+        $"branch-condition:{ExitPort.DetourKey(lineId, targetId)}";
+
+    /// <summary>
+    /// 분기의 조건을 정하러 가자고 했다 (챕터 Id, 분기 열쇠 <see cref="ExitPort.DetourKey"/>) — 셸이 챕터 그래프를 열고 그 분기를 고른다.
+    /// </summary>
+    internal event Action<string, string>? BranchConditionRequested;
 
     /// <summary>그 줄의 「조건 분기」 카드 하나가 지는 표(줄과 다녀갈 카드) — 화면 테스트가 이것으로 찾는다.</summary>
     internal static string BranchMarkerTag(string lineId, string targetId) =>
@@ -975,8 +1010,8 @@ public partial class DialogueNodeEditor : UserControl
         };
         ToolTip.SetTip(
             addBranch,
-            "이 줄 앞에서 갈라집니다. 다녀올 에피소드가 함께 서고 이미 이어진 상태입니다 — " +
-            "조건은 그 에피소드의 첫머리에서 겁니다. 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
+            "이 줄 앞에서 갈라집니다. 다녀올 에피소드가 함께 서고 이미 이어진 상태입니다 — 처음에는 조건 없이 늘 다녀옵니다. " +
+            BranchConditionNote.Where + " 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
 
         addBranch.Click += (_, _) =>
         {
@@ -985,8 +1020,12 @@ public partial class DialogueNodeEditor : UserControl
                 return;
             }
 
+            // 새 분기에는 조건이 없다 — 만든 순간에 그 사실과 정하는 자리를 말한다.
             UiGuard.Run(_session!, "분기 추가", () =>
-                _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId));
+            {
+                DialogueNode created = _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId);
+                _session.SetStatus($"분기 '{created.Name}'을(를) 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
+            });
         };
 
         panel.Children.Add(addBranch);
@@ -1057,8 +1096,12 @@ public partial class DialogueNodeEditor : UserControl
         lineRow.Children.Add(remove);
         panel.Children.Add(lineRow);
 
+        LineMetaPanel = panel;
         new Flyout { Content = panel }.ShowAt(anchor);
     }
+
+    /// <summary>마지막으로 연 줄의 ＋ 차림 — 화면 시험이 그 안의 단추를 누르는 손잡이다(차림은 따로 뜨는 창이라 판에서 안 찾인다).</summary>
+    internal StackPanel? LineMetaPanel { get; private set; }
 
     // ── 출구 레일 ───────────────────────────────────────────────────────────
 
