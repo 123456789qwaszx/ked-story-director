@@ -172,7 +172,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     {
         // 처음 보는 사람이 숫자 칸 셋이 무엇인지 알아야 한다 — 칸마다 「처음 값 · 최소 · 최대」가 붙는다.
         (ChapterGraphView view, _) = Show();
-        StackPanel row = Row(view, "stat:trust");
+        Panel row = Row(view, "stat:trust");
 
         List<string> labels = row.GetLogicalDescendants().OfType<TextBlock>().Select(text => text.Text ?? string.Empty).ToList();
         Assert.Contains("처음 값", labels);
@@ -186,15 +186,30 @@ public sealed class ChapterSheetEditTests : IDisposable
         // 잘리지 않는다 — 종류 칸이 제 내용만큼 넓고, 두 줄의 끝([✕] · [최대] 칸)이 표 폭 안에 선다(인스펙터 기본 폭).
         double wanted = type.DesiredSize.Width - type.Margin.Left - type.Margin.Right;
         Assert.True(type.Bounds.Width >= wanted - 0.5, $"종류 칸이 눌렸다: {type.Bounds.Width} < {wanted}");
-        Button remove = Buttons(row).Last();
         StackPanel table = view.FindControl<StackPanel>("StatListPanel")!;
-        Point right = remove.TranslatePoint(new Point(remove.Bounds.Width, 0), table)!.Value;
-        Assert.True(right.X <= table.Bounds.Width + 0.5, $"[✕]가 표 밖으로 밀렸다: {right.X} > {table.Bounds.Width}");
+        AssertInside(Buttons(row).Last(), table, "[✕]");
 
         TextBox maximum = Boxes(row).Last();
-        Point end = maximum.TranslatePoint(new Point(maximum.Bounds.Width, 0), table)!.Value;
-        Assert.True(end.X <= table.Bounds.Width + 0.5, $"[최대] 칸이 표 밖으로 밀렸다: {end.X} > {table.Bounds.Width}");
+        AssertInside(maximum, table, "[최대] 칸");
         Assert.True(maximum.Bounds.Width >= 30, $"[최대] 칸이 너무 좁다: {maximum.Bounds.Width}");
+    });
+
+    [Fact]
+    public void 조건_줄의_식_칸은_남은_폭을_채우고_지우기가_표_폭_안에_선다() => HeadlessUi.Run(() =>
+    {
+        // 식 칸이 고정 폭이면 인스펙터 기본 폭에서 줄 끝의 [✕]가 밖으로 밀려 조건을 지울 수 없다.
+        (ChapterGraphView view, _) = Show();
+        Panel row = Row(view, "condition:신뢰높음");
+        StackPanel table = view.FindControl<StackPanel>("ConditionListPanel")!;
+
+        AssertInside(Buttons(row).Single(), table, "[✕]");
+        TextBox expression = Boxes(row).Single();
+        AssertInside(expression, table, "식 칸");
+        Assert.True(expression.Bounds.Width >= 120, $"식 칸이 너무 좁다: {expression.Bounds.Width}");
+
+        // 잘린 라벨은 마우스를 올리면 다 보인다.
+        SelectableTextBlock label = row.GetLogicalDescendants().OfType<SelectableTextBlock>().Single();
+        Assert.Equal("신뢰높음", ToolTip.GetTip(label));
     });
 
     [Fact]
@@ -205,7 +220,7 @@ public sealed class ChapterSheetEditTests : IDisposable
         TypeCombo(Row(view, "stat:trust")).SelectedIndex = 1;
         Redraw(view);
 
-        StackPanel row = Row(view, "stat:trust");
+        Panel row = Row(view, "stat:trust");
         Assert.Equal(ChapterStatType.Bool, Stat(session).Type);
         Assert.Single(Boxes(row));                                   // 표시 이름만 — 최소 · 최대가 없다
         ComboBox initial = row.GetLogicalDescendants().OfType<ComboBox>().Single(combo => Equals(combo.Tag, "stat-initial"));
@@ -222,15 +237,9 @@ public sealed class ChapterSheetEditTests : IDisposable
     private static ChapterStat Stat(AuthoringSession session) =>
         session.Editor.FindChapter("ch01")!.Stats.Single(stat => stat.Key == "trust");
 
-    private static ComboBox TypeCombo(StackPanel row) =>
+    private static ComboBox TypeCombo(Panel row) =>
         row.GetLogicalDescendants().OfType<ComboBox>().Single(combo => Equals(combo.Tag, "stat-type"));
 
-    /// <summary>
-    /// 열려 있는 입력 플라이아웃의 내용 — 경고와 칸이 함께 산다.
-    ///
-    /// <b>자리표시 글자</b>로 찾는다. 표의 줄도 `TextBox`+`TextBlock`을 들고 있어서
-    /// 그것만으로 고르면 <b>조건 줄이 먼저 잡힌다</b>.
-    /// </summary>
     /// <summary>
     /// 열린 플라이아웃의 칸 묶음 — 플라이아웃 틀(<see cref="FlyoutPresenter"/>) 안에서만 찾는다. 인스펙터의 안내문도 같은
     /// 낱말을 쓰므로 창 전체에서 찾으면 플라이아웃이 안 떠도 통과한다.
@@ -242,16 +251,24 @@ public sealed class ChapterSheetEditTests : IDisposable
                 && panel.FindAncestorOfType<FlyoutPresenter>() is not null
                 && panel.Children.OfType<TextBox>().Any(box => !string.IsNullOrEmpty(box.PlaceholderText)));
 
-    private static StackPanel Row(ChapterGraphView view, string tag) =>
-        view.GetVisualDescendants().OfType<StackPanel>().Single(panel => Equals(panel.Tag, tag));
+    /// <summary>표의 한 줄 — Tag가 「stat:키」나 「condition:라벨」이다.</summary>
+    private static Panel Row(ChapterGraphView view, string tag) =>
+        view.GetVisualDescendants().OfType<Panel>().Single(panel => Equals(panel.Tag, tag));
 
-    /// <summary>그 스탯 줄의 글자 칸들 — 표시 이름 · 처음 값 · 최소 · 최대 차례(두 줄에 걸쳐 선다).</summary>
-    private static IReadOnlyList<TextBox> Boxes(StackPanel row) =>
+    /// <summary>그 줄의 글자 칸들 — 스탯이면 표시 이름 · 처음 값 · 최소 · 최대 차례(두 줄에 걸쳐 선다), 조건이면 식 하나.</summary>
+    private static IReadOnlyList<TextBox> Boxes(Panel row) =>
         row.GetLogicalDescendants().OfType<TextBox>().ToList();
 
-    /// <summary>그 스탯 줄의 단추들 — [✎] · [✕] 차례.</summary>
-    private static IReadOnlyList<Button> Buttons(StackPanel row) =>
+    /// <summary>그 줄의 단추들 — 스탯이면 [✎] · [✕] 차례, 조건이면 [✕] 하나.</summary>
+    private static IReadOnlyList<Button> Buttons(Panel row) =>
         row.GetLogicalDescendants().OfType<Button>().ToList();
+
+    /// <summary>칸의 오른쪽 끝이 표 폭 안에 서는가 — 넘으면 인스펙터가 그 끝을 잘라 먹는다.</summary>
+    private static void AssertInside(Control cell, StackPanel table, string name)
+    {
+        Point end = cell.TranslatePoint(new Point(cell.Bounds.Width, 0), table)!.Value;
+        Assert.True(end.X <= table.Bounds.Width + 0.5, $"{name}이(가) 표 밖으로 밀렸다: {end.X} > {table.Bounds.Width}");
+    }
 
     /// <summary>Enter로 확정한다 — 초점을 잃는 길과 같은 자리로 간다.</summary>
     private static void Commit(TextBox box, string text)

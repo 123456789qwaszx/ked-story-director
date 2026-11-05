@@ -3147,34 +3147,41 @@ public partial class ChapterGraphView : UserControl
             "＋ 조건", "조건 추가", ConditionAddFlyout, ConditionListPanel));
     }
 
-    /// <summary>조건 한 줄 — 라벨(고정) · 식 · 삭제.</summary>
+    /// <summary>
+    /// 조건 한 줄 — 라벨(고정) · 식 · 삭제. 식 칸은 남은 폭을 채운다 — 고정 폭이면 좁은 인스펙터에서 줄 끝의 [✕]가 밖으로
+    /// 밀려 지울 수 없다. 잘린 라벨은 마우스를 올리면 다 보인다.
+    /// </summary>
     private Control ConditionRow(ChapterCondition condition)
     {
-        var row = new StackPanel
+        var row = new Grid
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = 3,
+            ColumnDefinitions = new ColumnDefinitions("96,*,Auto"),
             Tag = $"condition:{condition.Label}"
         };
 
-        row.Children.Add(new SelectableTextBlock
+        var label = new SelectableTextBlock
         {
             Text = condition.Label,
             FontSize = 10,
             FontWeight = FontWeight.SemiBold,
-            Width = 96,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
-        });
+        };
+        ToolTip.SetTip(label, condition.Label);
+        row.Children.Add(label);
 
-        row.Children.Add(SheetBox(
-            condition.Expression, 232, "식 (예: trust >= 3; 열쇠 == true)",
-            value => _session!.Editor.UpdateChapterCondition(_selectedChapterId!, condition.Label, value)));
+        TextBox expression = SheetBox(
+            condition.Expression, double.NaN, "식 (예: trust >= 3; 열쇠 == true)",
+            value => _session!.Editor.UpdateChapterCondition(_selectedChapterId!, condition.Label, value));
+        expression.Margin = new Thickness(3, 0, 0, 0);
+        Grid.SetColumn(expression, 1);
+        row.Children.Add(expression);
 
-        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1) };
+        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
         ToolTip.SetTip(remove, "지웁니다 — 쓰는 곳이 있으면 어디인지 말하고 거절합니다.");
         remove.Click += (_, _) =>
             UiGuard.Run(_session, "조건 삭제", () => RemoveCondition(condition.Label));
+        Grid.SetColumn(remove, 2);
         row.Children.Add(remove);
 
         return row;
