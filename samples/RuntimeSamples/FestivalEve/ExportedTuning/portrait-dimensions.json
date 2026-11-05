@@ -1,0 +1,152 @@
+{
+    "sourceAsset": "Assets/Samples/Data/PortraitGeneratedDB.asset",
+    "entries": [
+        {
+            "character": "harin",
+            "variant": "a",
+            "emotion": "01",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "a",
+            "emotion": "02",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "a",
+            "emotion": "03",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "a",
+            "emotion": "04",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "a",
+            "emotion": "05",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "b",
+            "emotion": "01",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "b",
+            "emotion": "02",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "b",
+            "emotion": "03",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "b",
+            "emotion": "04",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "harin",
+            "variant": "b",
+            "emotion": "05",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "kasmi",
+            "variant": "a",
+            "emotion": "01",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "a",
+            "emotion": "01",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "a",
+            "emotion": "02",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "a",
+            "emotion": "03",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "a",
+            "emotion": "04",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "a",
+            "emotion": "05",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "b",
+            "emotion": "01",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "b",
+            "emotion": "02",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "b",
+            "emotion": "03",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "b",
+            "emotion": "04",
+            "width": 1647.0,
+            "height": 2048.0
+        },
+        {
+            "character": "sigure",
+            "variant": "b",
+            "emotion": "05",
+            "width": 1647.0,
+            "height": 2048.0
+        }
+    ]
+}

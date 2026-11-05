@@ -149,8 +149,8 @@
       "kind": "dialogue",
       "name": "Festival_Remake",
       "layout": {
-        "x": 290.52,
-        "y": 519.25
+        "x": 405.17,
+        "y": 581.6
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -401,7 +401,7 @@
       "kind": "dialogue",
       "name": "Festival_Wrapup_Remade",
       "layout": {
-        "x": 1038.64,
+        "x": 1024.56,
         "y": 1063.77
       },
       "script": {
@@ -719,8 +719,8 @@
       "kind": "dialogue",
       "name": "Festival_Advance",
       "layout": {
-        "x": 1332.56,
-        "y": 680.64
+        "x": 1310.08,
+        "y": 789.08
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -751,8 +751,8 @@
       "kind": "dialogue",
       "name": "Festival_Lazy",
       "layout": {
-        "x": 933.66,
-        "y": 737.57
+        "x": 860.2,
+        "y": 832.02
       },
       "script": {
         "primaryLocale": "ko-KR",

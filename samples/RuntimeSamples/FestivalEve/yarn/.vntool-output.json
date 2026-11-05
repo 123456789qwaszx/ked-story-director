@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "files": [
+    "festival_eve_Festival_Add.yarn",
+    "festival_eve_Festival_Advance.yarn",
+    "festival_eve_Festival_Classroom.yarn",
+    "festival_eve_Festival_Lazy.yarn",
+    "festival_eve_Festival_Remake.yarn",
+    "festival_eve_Festival_Shortcut.yarn",
+    "festival_eve_Festival_Staffroom.yarn",
+    "festival_eve_Festival_Staffroom_Kasmi.yarn",
+    "festival_eve_Festival_Staffroom_Pass.yarn",
+    "festival_eve_Festival_Staffroom_Praise.yarn",
+    "festival_eve_Festival_Wrapup.yarn",
+    "festival_eve_Festival_Wrapup_Remade.yarn",
+    "festival_eve_Festival_Wrapup_Sticker.yarn"
+  ]
+}

@@ -1,0 +1,15 @@
+title: Festival_Remake
+---
+
+<<face s1 2>>
+<<gesture s1 0u 0.3u 12fr>>
+하린: 좋아, 처음부터 다시. 붓부터 새로 빨아 올게. #line:ln_kdy67tc8
+
+<<face s2 1>>
+시구레: 지금 성실은 {stat("성실")}점이에요. 방금 그 선택지가 올린 거예요. #line:ln_2ibajvnq
+
+시구레: 대사는 스탯을 읽기만 해요. 바꾸는 건 진행 선택지뿐이고요. #line:ln_prrx0d33
+
+하린: 아직 같은 장면이라, 되감기(R)로 돌아가면 방금 선택도 다시 고를 수 있어. #line:ln_068q2fi1
+
+===

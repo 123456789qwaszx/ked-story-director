@@ -1,0 +1,8 @@
+title: Festival_Staffroom_Pass
+---
+
+<<if stat("성실") < 3 && stat("요령") < 3>>
+    <<face s2 1>>
+    시구레: 검사는 통과예요. 이제 내일만 남았네요. #line:ln_as37pa6a
+<<endif>>
+===

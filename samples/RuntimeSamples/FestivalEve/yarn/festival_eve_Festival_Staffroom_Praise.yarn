@@ -1,0 +1,9 @@
+title: Festival_Staffroom_Praise
+---
+
+<<if stat("성실") >= 3 && stat("요령") < 3>>
+    <<face s2 2>>
+    시구레: 선생님이 보고 받으시고 간판 칭찬하셨어요. #line:ln_pq4uwryp
+    하린: 보고하고 오길 잘했네. 아까 그 선택지 덕분이야. #line:ln_i48ixbjx
+<<endif>>
+===

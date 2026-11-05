@@ -99,8 +99,8 @@
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": 376.74,
-        "Y": 91.95
+        "X": 0,
+        "Y": 212.25
       }
     },
     {
@@ -125,8 +125,8 @@
       "SceneId": "교실",
       "DesignerNote": "",
       "Position": {
-        "X": 0,
-        "Y": 166.43
+        "X": 254.38,
+        "Y": 211.54
       }
     },
     {
@@ -369,6 +369,22 @@
       "Position": {
         "X": 1019.12,
         "Y": 391.26
+      }
+    },
+    {
+      "EpisodeId": "분기 1",
+      "Title": "분기 1",
+      "IndexText": "",
+      "DialogueEntryId": "분기_1",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교무실 앞",
+      "DesignerNote": "",
+      "Position": {
+        "X": 813.21,
+        "Y": 1792.27
       }
     }
   ]

@@ -1,0 +1,8 @@
+title: Festival_Wrapup_Sticker
+---
+
+<<if stat("성실") < 2>>
+    <<face s1 2>>
+    하린: 스티커 간판도 나름 귀엽네. #line:ln_v9rdek8z
+<<endif>>
+===

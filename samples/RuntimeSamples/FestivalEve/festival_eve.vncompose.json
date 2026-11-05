@@ -1,0 +1,920 @@
+{
+  "formatVersion": 1,
+  "manuscript": "festival_eve.vnproject.json",
+  "nodes": [
+    {
+      "id": "nd_5pkyaert",
+      "kind": "presentation",
+      "name": "Festival_Classroom 연출",
+      "layout": {
+        "x": 0,
+        "y": 240
+      },
+      "source": {
+        "resultId": "rs_v83rt8ht",
+        "version": 1,
+        "contentHash": "sha256:82fc87cb33ebf9d04d4b1a1389c7f7aaf1f00f211d8faab1910611ba6958f73f"
+      },
+      "setup": [
+        {
+          "id": "pc_z4cd6x8s",
+          "definitionId": "shot.shot_reset",
+          "arguments": {
+            "duration": "0fr"
+          }
+        },
+        {
+          "id": "pc_16k8imhz",
+          "definitionId": "background.bg_spawn",
+          "arguments": {
+            "rigKey": "bg_main",
+            "spriteKey": "class_lunch"
+          }
+        },
+        {
+          "id": "pc_ue0ka622",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s1",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_15cmm4af",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "harin",
+            "emotionKey": "1",
+            "slot": "s1",
+            "variantKey": "a"
+          }
+        },
+        {
+          "id": "pc_70nvm64y",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s2",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_gfgjmart",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "sigure",
+            "emotionKey": "1",
+            "slot": "s2",
+            "variantKey": "a"
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "lineId": "ln_b76q68hg",
+          "commands": [
+            {
+              "id": "pc_t6m21g3p",
+              "definitionId": "background.bg_fade_in",
+              "arguments": {
+                "duration": "24fr",
+                "rigKey": "bg_main"
+              }
+            },
+            {
+              "id": "pc_7zza5rx9",
+              "definitionId": "audio.bgm",
+              "arguments": {
+                "clipKey": "audio/bgm_idoberg-relaxing-guitar-loop-v5-245859",
+                "fadeDuration": "2s"
+              }
+            },
+            {
+              "id": "pc_g44d2czr",
+              "definitionId": "char_rig_placement.place_right",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_ft9gyvmj",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_c5hk71u0",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "18fr",
+                "slot": "s1"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_rxvmhx0i",
+          "commands": [
+            {
+              "id": "pc_pr77qpc6",
+              "definitionId": "char_rig_placement.place_left",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_r8d6me38",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_6gh60ckr",
+              "definitionId": "char_rig_presentation.slide_in",
+              "arguments": {
+                "direction": "left",
+                "distance": "2u",
+                "duration": "14fr",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_uax4e2dr",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "14fr",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_ksq322v0",
+          "commands": [
+            {
+              "id": "pc_qej6dgb0",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_gathtysb",
+          "commands": [
+            {
+              "id": "pc_b5v9fjpm",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "3",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_q1me6jy8",
+          "commands": [
+            {
+              "id": "pc_nhfjkyuj",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "3",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_5gpnu5z7",
+      "kind": "presentation",
+      "name": "Festival_Remake 연출",
+      "layout": {
+        "x": 0,
+        "y": 640
+      },
+      "source": {
+        "resultId": "rs_4rd0x2mw",
+        "version": 1,
+        "contentHash": "sha256:dd2cf448ceb0ecb46d97afda1456b5179cdecf079013b985475e51863fca4bbd"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_kdy67tc8",
+          "commands": [
+            {
+              "id": "pc_5q3n2gq8",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_xu9n1z6k",
+              "definitionId": "char_rig_staging.gesture",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s1",
+                "xAmp": "0u",
+                "yAmp": "0.3u"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_2ibajvnq",
+          "commands": [
+            {
+              "id": "pc_5s0ptear",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "1",
+                "slot": "s2"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_9s8a0q4p",
+      "kind": "presentation",
+      "name": "Festival_Shortcut 연출",
+      "layout": {
+        "x": 0,
+        "y": 1040
+      },
+      "source": {
+        "resultId": "rs_de9kw5ns",
+        "version": 1,
+        "contentHash": "sha256:c1c526a2c17ac1973f922133b6fb9a2e01440f91827b3faf4f4daf5d9056cbe4"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_jfze1fzb",
+          "commands": [
+            {
+              "id": "pc_cg2q0e33",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "4",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_xb7m2iby",
+              "definitionId": "char_rig_staging.gesture",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s2",
+                "xAmp": "0u",
+                "yAmp": "0.3u"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_rbxvmjp0",
+          "commands": [
+            {
+              "id": "pc_y0etjae0",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "4",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_5xg1uw7t",
+      "kind": "presentation",
+      "name": "Festival_Wrapup 연출",
+      "layout": {
+        "x": 0,
+        "y": 1440
+      },
+      "source": {
+        "resultId": "rs_enedbyxi",
+        "version": 1,
+        "contentHash": "sha256:c92ccd0394723ee527298d786556f4a6410ea12ef61c6e35798503d53b2e3265"
+      },
+      "bindings": [],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_j9cnhmz9",
+      "kind": "presentation",
+      "name": "Festival_Wrapup_Remade 연출",
+      "layout": {
+        "x": 320,
+        "y": 1440
+      },
+      "source": {
+        "resultId": "rs_mdvcpehb",
+        "version": 1,
+        "contentHash": "sha256:2130d2806c465beb973e4b791813b6ac7c30df83734e41a9b91b7d83c08b9f76"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_s7tk0up3",
+          "commands": [
+            {
+              "id": "pc_h4r5cfkn",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "3",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_653fu236",
+      "kind": "presentation",
+      "name": "Festival_Wrapup_Sticker 연출",
+      "layout": {
+        "x": 320,
+        "y": 1840
+      },
+      "source": {
+        "resultId": "rs_u9eb8nz2",
+        "version": 1,
+        "contentHash": "sha256:03399a41ec34327ec9c8d14d52dc5d94829662c35817cb17cefb321328b00423"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_v9rdek8z",
+          "commands": [
+            {
+              "id": "pc_g12gzhhy",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_5y6rvdz0",
+      "kind": "presentation",
+      "name": "Festival_Staffroom 연출",
+      "layout": {
+        "x": 0,
+        "y": 1840
+      },
+      "source": {
+        "resultId": "rs_yi0am6hi",
+        "version": 1,
+        "contentHash": "sha256:a54649db79e4ce8093ca0d29f3586f96f2ae8af1ee0467418a8886ed60d80471"
+      },
+      "setup": [
+        {
+          "id": "pc_ddgn82yc",
+          "definitionId": "shot.shot_reset",
+          "arguments": {
+            "duration": "0fr"
+          }
+        },
+        {
+          "id": "pc_53t81k6s",
+          "definitionId": "background.bg_spawn",
+          "arguments": {
+            "rigKey": "bg_main",
+            "spriteKey": "staffroom_evening"
+          }
+        },
+        {
+          "id": "pc_qwb587v1",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s1",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_e99vjczv",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "harin",
+            "emotionKey": "1",
+            "slot": "s1",
+            "variantKey": "a"
+          }
+        },
+        {
+          "id": "pc_he93bsez",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s2",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_qgkh16yq",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "sigure",
+            "emotionKey": "1",
+            "slot": "s2",
+            "variantKey": "a"
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "lineId": "ln_ngjwdzsb",
+          "commands": [
+            {
+              "id": "pc_hdrhb5f0",
+              "definitionId": "background.bg_fade_in",
+              "arguments": {
+                "duration": "24fr",
+                "rigKey": "bg_main"
+              }
+            },
+            {
+              "id": "pc_tq7bzhk2",
+              "definitionId": "audio.bgm",
+              "arguments": {
+                "clipKey": "audio/voice_bgm_uhhknoxpro-piano-loop-432112",
+                "fadeDuration": "2s"
+              }
+            },
+            {
+              "id": "pc_2wiaxzfm",
+              "definitionId": "char_rig_placement.place_right",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_d807pwu7",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_6r90bh6h",
+              "definitionId": "char_rig_placement.place_left",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_zrzkps7n",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_1buu6y71",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "18fr",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_9uyy3zc6",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "18fr",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_mmj0m4fe",
+          "commands": [
+            {
+              "id": "pc_wxhv270i",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s1"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_9k3krs99",
+          "commands": [
+            {
+              "id": "pc_nzcvj44c",
+              "definitionId": "char_rig_presentation.fade_out",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_1qextim6",
+              "definitionId": "char_rig_presentation.fade_out",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_2gr5j3p9",
+              "definitionId": "audio.stop_bgm",
+              "arguments": {
+                "fadeDuration": "2s"
+              }
+            },
+            {
+              "id": "pc_rxxx94qb",
+              "definitionId": "background.bg_fade_out",
+              "arguments": {
+                "duration": "20fr",
+                "rigKey": "bg_main"
+              }
+            },
+            {
+              "id": "pc_s575znyd",
+              "definitionId": "control.frame_wait",
+              "arguments": {
+                "n": "24"
+              }
+            },
+            {
+              "id": "pc_uzayv92g",
+              "definitionId": "line_tag.box_hide"
+            },
+            {
+              "id": "pc_mx74x9g5",
+              "definitionId": "line_tag.auto"
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_qc5cwr00",
+      "kind": "presentation",
+      "name": "Festival_Staffroom_Kasmi 연출",
+      "layout": {
+        "x": 320,
+        "y": 2240
+      },
+      "source": {
+        "resultId": "rs_8gmrmzci",
+        "version": 1,
+        "contentHash": "sha256:ee66dd4e88edc1a8dc74a0106f6c55535f30512a17600e28e2bb90ea07175067"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_m208n5x2",
+          "commands": [
+            {
+              "id": "pc_umv99mc5",
+              "definitionId": "char_rig_cast.slot",
+              "arguments": {
+                "layer": "mid",
+                "slotKey": "s3",
+                "stage": "stage00"
+              }
+            },
+            {
+              "id": "pc_8rc8eazu",
+              "definitionId": "char_rig_cast.cast",
+              "arguments": {
+                "characterKey": "kasmi",
+                "emotionKey": "1",
+                "slot": "s3",
+                "variantKey": "a"
+              }
+            },
+            {
+              "id": "pc_7zif3q4c",
+              "definitionId": "char_rig_placement.place_center",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s3"
+              }
+            },
+            {
+              "id": "pc_pca4ffce",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s3"
+              }
+            },
+            {
+              "id": "pc_5nygrvaa",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "14fr",
+                "slot": "s3"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_2wwvdc98",
+          "commands": [
+            {
+              "id": "pc_1sviih8u",
+              "definitionId": "char_rig_presentation.fade_out",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s3"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_p1egh7c8",
+      "kind": "presentation",
+      "name": "Festival_Staffroom_Praise 연출",
+      "layout": {
+        "x": 320,
+        "y": 2640
+      },
+      "source": {
+        "resultId": "rs_z7sepk58",
+        "version": 1,
+        "contentHash": "sha256:c872b81961b6a48548978e0df6e7444ff3a810e3e81c0f50acf6db0e5dff8e47"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_pq4uwryp",
+          "commands": [
+            {
+              "id": "pc_jrgx6f4u",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s2"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_4hgc8zms",
+      "kind": "presentation",
+      "name": "Festival_Staffroom_Pass 연출",
+      "layout": {
+        "x": 320,
+        "y": 3040
+      },
+      "source": {
+        "resultId": "rs_tc3vpr6f",
+        "version": 1,
+        "contentHash": "sha256:716ddf1d0d843a6414fafad3694e936932ce20a5375ade6209a548c6da5c71ee"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_as37pa6a",
+          "commands": [
+            {
+              "id": "pc_9qwkwiei",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "1",
+                "slot": "s2"
+              }
+            }
+          ]
+        }
+      ],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_5g3g2w8a",
+      "kind": "presentation",
+      "name": "Festival_Advance 연출",
+      "layout": {
+        "x": 1332.56,
+        "y": 920.64
+      },
+      "source": {
+        "resultId": "rs_iur1365j",
+        "version": 1,
+        "contentHash": "sha256:2523077914c0fb0e92c8420cbbd1a5c6acd4ddfd232e9051fc4943b476fe5fed"
+      },
+      "bindings": [],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_mvs6s8g6",
+      "kind": "presentation",
+      "name": "Festival_Add 연출",
+      "layout": {
+        "x": 966.44,
+        "y": 682.98
+      },
+      "source": {
+        "resultId": "rs_0h0pbp8i",
+        "version": 1,
+        "contentHash": "sha256:a02b09b5719efa472c0caed3f43c3c7d95f4ccc31bdd3fa5fc4a7dd3ceffc97e"
+      },
+      "bindings": [],
+      "board": "sf_tw95x0hn"
+    },
+    {
+      "id": "nd_2e2jqbrz",
+      "kind": "presentation",
+      "name": "Festival_Lazy 연출",
+      "layout": {
+        "x": 933.66,
+        "y": 977.57
+      },
+      "source": {
+        "resultId": "rs_5xu2b1k0",
+        "version": 1,
+        "contentHash": "sha256:70c4816a513d6e3a713c32c75e3eb20846b257d546642afd153bfd64405ed6ec"
+      },
+      "bindings": [],
+      "board": "sf_tw95x0hn"
+    }
+  ],
+  "links": [
+    {
+      "id": "lk_vj9v01u5",
+      "kind": "presentationSupply",
+      "source": "nd_5pkyaert",
+      "target": "nd_ushhar34",
+      "order": 0
+    },
+    {
+      "id": "lk_38e1s8e5",
+      "kind": "presentationSupply",
+      "source": "nd_5gpnu5z7",
+      "target": "nd_b3c35fxj",
+      "order": 0
+    },
+    {
+      "id": "lk_yx5s2vrs",
+      "kind": "presentationSupply",
+      "source": "nd_9s8a0q4p",
+      "target": "nd_8dn0igwy",
+      "order": 0
+    },
+    {
+      "id": "lk_cqmn573s",
+      "kind": "presentationSupply",
+      "source": "nd_5xg1uw7t",
+      "target": "nd_exq3wbfy",
+      "order": 0
+    },
+    {
+      "id": "lk_z883m4v9",
+      "kind": "presentationSupply",
+      "source": "nd_j9cnhmz9",
+      "target": "nd_25h2x841",
+      "order": 0
+    },
+    {
+      "id": "lk_hqne2w5n",
+      "kind": "presentationSupply",
+      "source": "nd_653fu236",
+      "target": "nd_xmki0c6d",
+      "order": 0
+    },
+    {
+      "id": "lk_4d8nd7un",
+      "kind": "presentationSupply",
+      "source": "nd_5y6rvdz0",
+      "target": "nd_xfp8pum4",
+      "order": 0
+    },
+    {
+      "id": "lk_8krk9xd3",
+      "kind": "presentationSupply",
+      "source": "nd_qc5cwr00",
+      "target": "nd_t2vv61n2",
+      "order": 0
+    },
+    {
+      "id": "lk_26cv7xc8",
+      "kind": "presentationSupply",
+      "source": "nd_p1egh7c8",
+      "target": "nd_8dxcia1w",
+      "order": 0
+    },
+    {
+      "id": "lk_uat9mku6",
+      "kind": "presentationSupply",
+      "source": "nd_4hgc8zms",
+      "target": "nd_q1q036hx",
+      "order": 0
+    },
+    {
+      "id": "lk_ttg6h9i1",
+      "kind": "presentationSupply",
+      "source": "nd_5g3g2w8a",
+      "target": "nd_tc99vekq",
+      "order": 0
+    },
+    {
+      "id": "lk_v1a2y29u",
+      "kind": "presentationSupply",
+      "source": "nd_mvs6s8g6",
+      "target": "nd_nv2i7xsz",
+      "order": 0
+    },
+    {
+      "id": "lk_xxpubsm9",
+      "kind": "presentationSupply",
+      "source": "nd_2e2jqbrz",
+      "target": "nd_7an9j2ci",
+      "order": 0
+    }
+  ],
+  "recentCommands": [
+    "char_rig_cast.face",
+    "char_rig_presentation.fade_out",
+    "char_rig_presentation.fade_in",
+    "char_rig_depth.size",
+    "char_rig_placement.place_center",
+    "char_rig_cast.cast",
+    "char_rig_cast.slot",
+    "line_tag.auto"
+  ],
+  "previewRoutes": [
+    {
+      "id": "rt_3vehii6w",
+      "name": "루트 1",
+      "chapterId": "festival_eve",
+      "active": true,
+      "choices": [
+        {
+          "from": "Festival_Wrapup",
+          "option": "교무실로 간다"
+        },
+        {
+          "from": "Festival_Add",
+          "option": "귀신의 집"
+        },
+        {
+          "from": "Festival_Classroom",
+          "option": "있는 걸로 빨리 끝낸다"
+        }
+      ]
+    }
+  ],
+  "assetRoots": {
+    "backgrounds": "../../../../ked-presentation-runtime/Assets/Samples/Resources/Backgrounds",
+    "portraits": "../../../../ked-presentation-runtime/Assets/Samples/Portraits"
+  },
+  "outputPath": "yarn",
+  "results": "results.vnresults.json"
+}

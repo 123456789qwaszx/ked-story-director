@@ -1,0 +1,36 @@
+title: Festival_Classroom
+---
+<<shot_reset 0fr>>
+<<bg_spawn bg_main class_lunch>>
+<<slot s1 stage00 mid>>
+<<cast s1 harin a 1>>
+<<slot s2 stage00 mid>>
+<<cast s2 sigure a 1>>
+
+<<bg_fade_in bg_main 24fr>>
+<<bgm audio/bgm_idoberg-relaxing-guitar-loop-v5-245859 2s>>
+<<place_right s1 bust 0fr>>
+<<size s1 mid bust 0fr>>
+<<fade_in s1 18fr>>
+하린: 축제가 내일인데, 우리 반 간판이 아직 반쯤 비어 있어. #line:ln_b76q68hg
+
+<<place_left s2 bust 0fr>>
+<<size s2 mid bust 0fr>>
+<<slide_in s2 left 2u 14fr>>
+<<fade_in s2 14fr>>
+시구레: 칠도 반쯤 말랐네요. 이대로 걸기엔 좀 애매해요. #line:ln_rxvmhx0i
+
+시구레: 글씨는 무슨 색으로 할까요? #line:ln_y37h16s8
+
+-> 하늘색 #line:ln_v25zy8n9
+    <<face s2 2>>
+    시구레: 하늘색이면 교실 벽이랑 잘 어울리겠어요. #line:ln_ksq322v0
+-> 노란색 #line:ln_0881u5vn
+    <<face s2 3>>
+    시구레: 노란색이면 복도 끝에서도 보이겠네요. #line:ln_gathtysb
+<<face s1 3>>
+하린: 문제는 시간이야. 처음부터 다시 그릴지, 있는 걸로 마무리할지. #line:ln_q1me6jy8
+
+하린: 이번엔 대사 안의 선택이 아니야. 에피소드가 끝나면 진행 쪽이 묻고, 고른 쪽 스탯이 올라. #line:ln_4i38h8b3
+
+===

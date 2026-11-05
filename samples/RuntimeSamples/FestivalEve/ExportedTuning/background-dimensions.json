@@ -1,0 +1,40 @@
+{
+    "sourceFolder": "Resources/Backgrounds",
+    "entries": [
+        {
+            "key": "1_골동품상점_에피1용오픈",
+            "width": 2048.0,
+            "height": 1152.0
+        },
+        {
+            "key": "3_한옥_에피소드시작",
+            "width": 1920.0,
+            "height": 1080.0
+        },
+        {
+            "key": "class_day",
+            "width": 1026.0,
+            "height": 580.0
+        },
+        {
+            "key": "class_lunch",
+            "width": 1027.0,
+            "height": 579.0
+        },
+        {
+            "key": "festival_last_year",
+            "width": 1028.0,
+            "height": 577.0
+        },
+        {
+            "key": "staffroom_evening",
+            "width": 1026.0,
+            "height": 580.0
+        },
+        {
+            "key": "studio_evening",
+            "width": 1026.0,
+            "height": 580.0
+        }
+    ]
+}

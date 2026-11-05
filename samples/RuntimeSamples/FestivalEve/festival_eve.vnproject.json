@@ -24,16 +24,16 @@
         },
         {
           "episodeId": "Festival_Remake",
-          "x": 376.74,
-          "y": 91.95,
+          "x": 0,
+          "y": 212.25,
           "title": "교실 - 처음부터 다시",
           "dialogueEntry": "Festival_Remake",
           "sceneId": "교실"
         },
         {
           "episodeId": "Festival_Shortcut",
-          "x": 0,
-          "y": 166.43,
+          "x": 254.38,
+          "y": 211.54,
           "title": "교실 - 있는 걸로",
           "dialogueEntry": "Festival_Shortcut",
           "sceneId": "교실"
@@ -197,8 +197,7 @@
           "to": "Festival_Advance",
           "optionLabel": "귀신의 집",
           "shape": {
-            "bendX": 199,
-            "bendY": -42
+            "kind": "curve"
           }
         },
         {
@@ -206,14 +205,18 @@
           "to": "Festival_Advance",
           "optionLabel": "메이드 카페",
           "shape": {
-            "bendX": 124,
-            "bendY": -7
+            "kind": "curve",
+            "bendX": -44,
+            "bendY": 44
           }
         },
         {
           "from": "Festival_Add",
           "to": "Festival_Lazy",
-          "optionLabel": "다 때려쳐"
+          "optionLabel": "다 때려쳐",
+          "shape": {
+            "kind": "curve"
+          }
         }
       ],
       "conditions": [

@@ -1,0 +1,8 @@
+title: Festival_Wrapup_Remade
+---
+
+<<if stat("성실") >= 2>>
+    <<face s1 3>>
+    하린: 다시 그린 간판, 생각보다 훨씬 낫다. #line:ln_s7tk0up3
+<<endif>>
+===
