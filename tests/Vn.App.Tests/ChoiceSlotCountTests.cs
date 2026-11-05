@@ -11,10 +11,9 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>카드 아래 빈 선택지 칸은 하나다 — 인스펙터의 「선택지 3칸」을 켜면 셋</b> — 잇지 않은 빈 칸이 다 보이면
-/// 판이 지저분하다.
-///
-/// <b>이은 선택지는 어느 쪽이든 언제나 선다</b> — 줄이는 것은 빈 칸뿐이다. 이은 길을 숨기면 판이 거짓말을 한다.
+/// <b>카드 아래 선택지 칸은 셋이다 — 인스펙터의 「빈 선택지 숨기기」를 켜면 이은 선택지만</b> 선다. 다 이은 카드의
+/// 안 이은 칸은 판만 어지럽힌다. 감추는 것은 안 이은 칸뿐이고(자동 길 자리도 이은 것이 없으면 감춘다), 이은 길은
+/// 언제나 선다 — 이은 길을 숨기면 판이 거짓말을 한다.
 /// 켠 카드는 사용자 설정에 프로젝트별로 기억한다(화면 편의라 프로젝트 파일이 아니다).
 /// </summary>
 public sealed class ChoiceSlotCountTests : IDisposable
@@ -31,30 +30,41 @@ public sealed class ChoiceSlotCountTests : IDisposable
     }
 
     [Fact]
-    public void 끈_카드는_빈_칸이_하나고_켜면_셋이며_이은_선택지는_언제나_선다() => HeadlessUi.Run(() =>
+    public void 기본은_칸이_셋이고_숨기면_이은_선택지만_서며_자동_칸도_이은_것이_없으면_감춘다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = Card(session, "root").Id;
 
-        // 아무것도 안 이었다 — 빈 칸 하나(자동 길 자리).
-        Assert.Single(SlotRows(graph, "root"));
-
-        session.SetFullChoices(root, full: true);
-        graph.Rebuild();
+        // 기본 — 아무것도 안 이었어도 칸이 셋이다(첫 칸이 자동 길 자리).
         Assert.Equal(3, SlotRows(graph, "root").Count);
 
-        // 끄고 둘을 이으면 — 이은 둘이 다 서고 빈 칸은 붙지 않는다(1은 빈 칸을 채우는 수이지 상한이 아니다).
-        session.SetFullChoices(root, full: false);
+        // 숨기면 — 이은 것이 없으니 자동 칸까지 아무것도 안 선다. 레일이 없으니 카드 아래 깊이도 없다.
+        session.SetHideEmptyChoices(root, hide: true);
+        graph.Rebuild();
+        Assert.Empty(SlotRows(graph, "root"));
+
+        // 둘을 이으면 — 이은 둘만 선다. 빈 칸은 안 붙는다.
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "옆");
         graph.Rebuild();
+        Assert.Equal(["가자", "옆"], Labels(graph, "root"));
 
-        Assert.Equal(2, SlotRows(graph, "root").Count);
-
-        // 다시 켜면 셋까지 빈 칸이 채워진다 — 이은 둘 + 빈 칸 하나.
-        session.SetFullChoices(root, full: true);
+        // 다시 끄면 셋까지 빈 칸이 채워진다 — 이은 둘 + 빈 칸 하나.
+        session.SetHideEmptyChoices(root, hide: false);
         graph.Rebuild();
         Assert.Equal(3, SlotRows(graph, "root").Count);
+    });
+
+    [Fact]
+    public void 숨겨도_자동_길이_이어져_있으면_그_길은_선다() => HeadlessUi.Run(() =>
+    {
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = Card(session, "root").Id;
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: null, auto: true);
+        session.SetHideEmptyChoices(root, hide: true);
+        graph.Rebuild();
+
+        Assert.Single(SlotRows(graph, "root"));
     });
 
     [Fact]
@@ -65,28 +75,29 @@ public sealed class ChoiceSlotCountTests : IDisposable
         session.Select(card.Id);
         Dispatcher.UIThread.RunJobs();
 
-        CheckBox box = FullChoicesBox(window);
+        CheckBox box = HideEmptyChoicesBox(window);
         Assert.True(box.IsVisible);
         Assert.False(box.IsChecked);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
-        Assert.Single(SlotRows(graph, "b"));
+        Assert.Equal(3, SlotRows(graph, "b").Count);
 
+        // b는 아무 데도 안 이었다 — 켜면 칸이 하나도 안 선다.
         box.IsChecked = true;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Contains(card.Id, session.FullChoiceNodeIds);
-        Assert.Equal(3, SlotRows(graph, "b").Count);
+        Assert.Contains(card.Id, session.HiddenChoiceNodeIds);
+        Assert.Empty(SlotRows(graph, "b"));
 
         // 다음에 열어도 — 같은 프로젝트를 다시 열면 켠 카드가 그대로다.
         var again = new AuthoringSession();
         again.Open(session.ProjectPath!);
-        Assert.Contains(card.Id, again.FullChoiceNodeIds);
+        Assert.Contains(card.Id, again.HiddenChoiceNodeIds);
 
         box.IsChecked = false;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.DoesNotContain(card.Id, session.FullChoiceNodeIds);
-        Assert.Single(SlotRows(graph, "b"));
+        Assert.DoesNotContain(card.Id, session.HiddenChoiceNodeIds);
+        Assert.Equal(3, SlotRows(graph, "b").Count);
 
         window.Close();
     });
@@ -127,7 +138,14 @@ public sealed class ChoiceSlotCountTests : IDisposable
             .Where(row => row.Tag is string tag && tag.StartsWith(episodeId + "#", StringComparison.Ordinal))
             .ToList();
 
-    private static CheckBox FullChoicesBox(MainWindow window) =>
+    /// <summary>그 에피소드의 선택지 칸에 선 문구들 — 위에서 아래 차례.</summary>
+    private static List<string> Labels(GraphEditorView graph, string episodeId) =>
+        SlotRows(graph, episodeId)
+            .OrderBy(Canvas.GetTop)
+            .Select(row => row.Children.OfType<TextBlock>().First().Text ?? string.Empty)
+            .ToList();
+
+    private static CheckBox HideEmptyChoicesBox(MainWindow window) =>
         window.GetLogicalDescendants().OfType<DialogueNodeEditor>().Distinct().Single()
-            .FindControl<CheckBox>("FullChoicesBox")!;
+            .FindControl<CheckBox>("HideEmptyChoicesBox")!;
 }

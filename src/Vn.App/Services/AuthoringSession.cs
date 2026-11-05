@@ -19,7 +19,7 @@ internal sealed class AuthoringSession
     private readonly HashSet<string> _expandedFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<GraphSceneKey> _collapsedScenes = [];
-    private readonly HashSet<string> _fullChoiceNodeIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _hiddenChoiceNodeIds = new(StringComparer.Ordinal);
     private string _fileListSignature = string.Empty;
     private string _savedSnapshot;
 
@@ -70,11 +70,11 @@ internal sealed class AuthoringSession
     public IReadOnlySet<GraphSceneKey> CollapsedScenes => _collapsedScenes;
 
     /// <summary>
-    /// 선택지 칸을 셋 다 세우는 카드들 (인스펙터의 「선택지 3칸」). 여기 없는 카드는 <b>빈 칸을 하나만</b> 세운다 —
-    /// 잇지 않은 칸이 늘 보이면 판이 지저분하다. 이은 선택지는 어느 쪽이든 언제나 선다. 화면 편의라
-    /// 프로젝트 파일이 아니라 사용자 설정에 프로젝트별로 기억한다.
+    /// 빈 선택지 칸을 감춘 카드들 (인스펙터의 「빈 선택지 숨기기」). 여기 든 카드는 <b>이은 선택지만</b> 세운다 — 안 이은 칸은
+    /// 자동 길 자리까지 감춘다. 여기 없는 카드는 칸이 셋 선다. 화면 편의라 프로젝트 파일이 아니라 사용자 설정에
+    /// 프로젝트별로 기억한다.
     /// </summary>
-    public IReadOnlySet<string> FullChoiceNodeIds => _fullChoiceNodeIds;
+    public IReadOnlySet<string> HiddenChoiceNodeIds => _hiddenChoiceNodeIds;
 
     public string? SelectedNodeId { get; private set; }
 
@@ -423,10 +423,10 @@ internal sealed class AuthoringSession
         }
     }
 
-    /// <summary>그 카드의 선택지 칸을 셋 다 세우거나(참) 빈 칸 하나로 줄인다 — 기억하고 판을 다시 세운다.</summary>
-    internal void SetFullChoices(string nodeId, bool full)
+    /// <summary>그 카드의 빈 선택지 칸을 감추거나(참) 다시 세운다 — 기억하고 판을 다시 세운다.</summary>
+    internal void SetHideEmptyChoices(string nodeId, bool hide)
     {
-        bool changed = full ? _fullChoiceNodeIds.Add(nodeId) : _fullChoiceNodeIds.Remove(nodeId);
+        bool changed = hide ? _hiddenChoiceNodeIds.Add(nodeId) : _hiddenChoiceNodeIds.Remove(nodeId);
 
         if (!changed)
         {
@@ -435,7 +435,7 @@ internal sealed class AuthoringSession
 
         if (ProjectPath is not null)
         {
-            AppSettingsService.SaveFullChoices(ProjectPath, _fullChoiceNodeIds);
+            AppSettingsService.SaveHiddenChoices(ProjectPath, _hiddenChoiceNodeIds);
         }
 
         RaiseFileGraphStateChanged(
@@ -524,11 +524,11 @@ internal sealed class AuthoringSession
         _expandedFileIds.Clear();
         _knownFileIds.Clear();
         _collapsedScenes.Clear();
-        _fullChoiceNodeIds.Clear();
+        _hiddenChoiceNodeIds.Clear();
 
         if (ProjectPath is not null)
         {
-            _fullChoiceNodeIds.UnionWith(AppSettingsService.LoadFullChoices(ProjectPath));
+            _hiddenChoiceNodeIds.UnionWith(AppSettingsService.LoadHiddenChoices(ProjectPath));
         }
 
         foreach (StoryFile file in project.Files)

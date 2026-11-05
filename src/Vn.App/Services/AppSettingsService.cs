@@ -127,7 +127,7 @@ internal static class AppSettingsService
         {
             Expanded = [.. expanded],
             Collapsed = [.. collapsed],
-            FullChoices = settings.Explorers.TryGetValue(key, out ExplorerState? before) ? before.FullChoices : []
+            HiddenChoices = settings.Explorers.TryGetValue(key, out ExplorerState? before) ? before.HiddenChoices : []
         };
 
         Prune(settings.Explorers);
@@ -135,13 +135,13 @@ internal static class AppSettingsService
     }
 
     /// <summary>
-    /// 선택지 칸을 셋 다 세우는 카드들 (인스펙터의 「선택지 3칸」) — 프로젝트별. 없는 카드는 빈 칸을 하나만 세운다.
+    /// 빈 선택지 칸을 감춘 카드들 (인스펙터의 「빈 선택지 숨기기」) — 프로젝트별. 없는 카드는 칸이 셋 선다.
     /// 하이어아키 접힘과 같은 까닭으로 프로젝트 파일이 아니라 여기다(내 화면 편의가 팀의 파일을 바꾸면 안 된다).
     /// </summary>
-    public static IReadOnlyList<string> LoadFullChoices(string projectPath) =>
-        FindExplorer(Load(SettingsPath), NormalizeProjectKey(projectPath))?.FullChoices ?? [];
+    public static IReadOnlyList<string> LoadHiddenChoices(string projectPath) =>
+        FindExplorer(Load(SettingsPath), NormalizeProjectKey(projectPath))?.HiddenChoices ?? [];
 
-    public static void SaveFullChoices(string projectPath, IEnumerable<string> nodeIds)
+    public static void SaveHiddenChoices(string projectPath, IEnumerable<string> nodeIds)
     {
         AppSettings settings = Load(SettingsPath);
         settings.Explorers ??= [];
@@ -151,7 +151,7 @@ internal static class AppSettingsService
             string.Equals(existing, key, StringComparison.OrdinalIgnoreCase)) ?? key;
 
         ExplorerState state = settings.Explorers.TryGetValue(key, out ExplorerState? found) ? found : new ExplorerState();
-        state.FullChoices = [.. nodeIds];
+        state.HiddenChoices = [.. nodeIds];
         settings.Explorers[key] = state;
 
         Prune(settings.Explorers);
@@ -283,7 +283,7 @@ internal static class AppSettingsService
 
     /// <summary>
     /// 한 프로젝트의 화면 기억 — 하이어아키 접힘(마디 <b>열쇠</b>만 싣는다 — 트리 구조는 그릴 때마다 프로젝트에서 다시 나오므로,
-    /// 여기 남은 것이 실제 마디와 안 맞으면 그냥 안 쓰인다)과 선택지 칸을 셋 다 세우는 카드들.
+    /// 여기 남은 것이 실제 마디와 안 맞으면 그냥 안 쓰인다)과 빈 선택지 칸을 감춘 카드들.
     /// </summary>
     internal sealed class ExplorerState
     {
@@ -291,7 +291,7 @@ internal static class AppSettingsService
 
         public List<string> Collapsed { get; set; } = [];
 
-        /// <summary>선택지 칸을 셋 다 세우는 카드(노드 Id) — 인스펙터의 「선택지 3칸」.</summary>
-        public List<string> FullChoices { get; set; } = [];
+        /// <summary>빈 선택지 칸을 감춘 카드(노드 Id) — 인스펙터의 「빈 선택지 숨기기」.</summary>
+        public List<string> HiddenChoices { get; set; } = [];
     }
 }

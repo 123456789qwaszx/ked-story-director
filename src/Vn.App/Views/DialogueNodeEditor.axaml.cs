@@ -52,11 +52,11 @@ public partial class DialogueNodeEditor : UserControl
 
         NameBox.LostFocus += (_, _) => CommitName();
 
-        FullChoicesBox.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "선택지 칸", () =>
+        HideEmptyChoicesBox.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "선택지 칸", () =>
         {
             if (!_building && _nodeId is not null)
             {
-                _session?.SetFullChoices(_nodeId, FullChoicesBox.IsChecked == true);
+                _session?.SetHideEmptyChoices(_nodeId, HideEmptyChoicesBox.IsChecked == true);
             }
         });
 
@@ -205,8 +205,8 @@ public partial class DialogueNodeEditor : UserControl
             NameBox.Text = node.Name;
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
-            FullChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
-            FullChoicesBox.IsChecked = _session.FullChoiceNodeIds.Contains(node.Id);
+            HideEmptyChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
+            HideEmptyChoicesBox.IsChecked = _session.HiddenChoiceNodeIds.Contains(node.Id);
 
             // 에피소드 카드의 이름 칸은 잠그지 않는다 — 고친 이름은 에피소드 개명(EpisodeRenamer
             //    — 에피소드 · 간선 · 카드를 함께)으로 보낸다(CommitName).

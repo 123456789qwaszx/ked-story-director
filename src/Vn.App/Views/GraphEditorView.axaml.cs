@@ -800,7 +800,7 @@ public partial class GraphEditorView : UserControl
         Dictionary<string, List<(string From, string Label)>> arrivals)
     {
         // 이 에피소드의 선택지 칸들 (R7) — 가지마다 제 칸을 얹어 <b>철도 위에서</b> 고치고 잇는다.
-        IReadOnlyList<GraphChoicePort> slots = SlotsOf(source.Id);
+        IReadOnlyList<GraphChoicePort> slots = ShownSlotsOf(source.Id);
 
         var branches = new List<(ChapterEdge? Edge, Rect? Target, FoldedRow? Row, GraphChoicePort Slot)>();
 
@@ -1024,7 +1024,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private double RailDepthOf(string nodeId)
     {
-        int slots = SlotsOf(nodeId).Count;
+        int slots = ShownSlotsOf(nodeId).Count;
 
         return slots == 0 ? 0 : RailFirstDrop + ((slots - 1) * RailBranchGap) + 14;
     }
@@ -1240,16 +1240,27 @@ public partial class GraphEditorView : UserControl
             slots.Add(joined[next++] with { Slot = slots.Count });
         }
 
-        // 새로 낼 빈 칸 — 인스펙터의 「선택지 3칸」을 켠 카드만 셋까지(투영이 정한 수), 나머지는 하나다 (2026-10-30 소유자:
-        // "연결되어 있지 않더라도 그게 보이다보니 너무 지저분"). 이은 칸 · 적어 둔 칸은 위에서 이미 섰다 — 어느 쪽이든 안 숨는다.
-        int wanted = _session?.FullChoiceNodeIds.Contains(nodeId) == true ? raw.Count : 1;
-
-        while (slots.Count < wanted)
+        // 빈 칸을 투영이 정한 수까지 채운다. 감추기는 그리는 쪽(<see cref="ShownSlotsOf"/>)이 한다 — 잇기 · 문구 적기는
+        // 감춘 칸까지 든 이 차례로 칸 번호를 맞춘다.
+        while (slots.Count < raw.Count)
         {
             slots.Add(Blank(slots.Count));
         }
 
         return slots;
+    }
+
+    /// <summary>
+    /// 판에 그릴 칸 — 인스펙터의 「빈 선택지 숨기기」를 켠 카드는 이은 칸만이다. 안 이은 칸은 자동 길 자리 · 적어 둔 칸까지
+    /// 감춘다(적어 둔 문구는 끄면 그 자리에 돌아온다). 칸 번호는 <see cref="SlotsOf"/>의 것을 그대로 지닌다.
+    /// </summary>
+    private IReadOnlyList<GraphChoicePort> ShownSlotsOf(string nodeId)
+    {
+        IReadOnlyList<GraphChoicePort> slots = SlotsOf(nodeId);
+
+        return _session?.HiddenChoiceNodeIds.Contains(nodeId) == true
+            ? slots.Where(slot => !slot.IsEmpty).ToList()
+            : slots;
     }
 
     /// <summary>이은 칸의 간선 — 신원은 (출발, 도착, 문구)다.</summary>

@@ -22,8 +22,8 @@ namespace Vn.App.Tests;
 /// 예외가 하나 — 세 칸이 전부 비어 있으면 <b>첫 칸은 문구 없이도 살아 있다</b>.
 /// 그것이 자동 길이고, 묻지 않고 지나가는 길에는 고를 것이 없으니 문구도 없는 것이 맞다.
 ///
-/// 주의: 이 묶음의 카드는 인스펙터의 「선택지 3칸」을 켠 카드다(끈 카드는 빈 칸이 하나뿐이다:
-/// <see cref="ChoiceSlotCountTests"/>). 칸 셋의 손짓을 재는 자리라 셋이 서 있어야 한다.
+/// 이 묶음의 카드는 칸이 셋 선 기본 상태다 — 인스펙터의 「빈 선택지 숨기기」로 안 이은 칸을 감추는 쪽은
+/// <see cref="ChoiceSlotCountTests"/>가 잰다.
 /// </summary>
 public sealed class ChoiceSlotTests : IDisposable
 {
@@ -403,11 +403,7 @@ public sealed class ChoiceSlotTests : IDisposable
             session.Editor.FindChapter("ch01")!.Edges,
             edge => string.Equals(edge.ToEpisodeId, "곁가지", StringComparison.Ordinal));
 
-        // 「선택지 3칸」을 안 켠 카드도 칸이 선다(빈 칸 하나) — 켜면 셋.
-        Assert.Single(Rows(graph, "곁가지"));
-
-        session.SetFullChoices(aside.Id, full: true);
-        graph.Rebuild();
+        // 아무 데도 안 이은 카드도 칸이 셋 선다 — 이어 갈 자리가 거기다.
         Assert.Equal(3, Rows(graph, "곁가지").Count);
     });
 
@@ -563,9 +559,6 @@ public sealed class ChoiceSlotTests : IDisposable
 
             // 자리는 이 테스트가 정한다 — 카드를 맞히려면 좌표를 알아야 한다.
             session.Editor.MoveNode(card.Id, x + (index * 320), 0);
-
-            // 칸 셋을 세운다 — 인스펙터의 「선택지 3칸」을 켠 것과 같다.
-            session.SetFullChoices(card.Id, full: true);
         }
     }
 }

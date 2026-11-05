@@ -9,15 +9,15 @@
             <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBox x:Name="NameBox" FontWeight="SemiBold" PlaceholderText="장면 이름" />
-                    <!-- 선택지 3칸 — 에피소드 카드만. 이어지지 않은 칸까지 늘 셋 서면 판이 지저분하다. -->
+                    <!-- 빈 선택지 숨기기 — 에피소드 카드만. 다 이은 카드는 안 이은 칸이 판만 어지럽힌다. -->
                     <CheckBox Grid.Column="1"
-                              x:Name="FullChoicesBox"
-                              Content="선택지 3칸"
+                              x:Name="HideEmptyChoicesBox"
+                              Content="빈 선택지 숨기기"
                               FontSize="11"
                               Margin="8,0,0,0"
                               VerticalAlignment="Center"
                               IsVisible="False"
-                              ToolTip.Tip="켜면 연출 그래프의 이 카드 아래에 선택지 칸이 셋 섭니다. 끄면 빈 칸은 하나만 섭니다 — 이어진 선택지는 언제나 보입니다." />
+                              ToolTip.Tip="켜면 연출 그래프의 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요." />
                 </Grid>
 
                 <Button x:Name="AddLineButton"
