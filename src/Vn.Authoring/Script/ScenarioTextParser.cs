@@ -95,7 +95,7 @@ public static class ScenarioTextParser
             if (line.StartsWith(OptionMarker, StringComparison.Ordinal))
             {
                 // 대사 안 선택지는 걷혔다 (2026-11-04) — 선택지는 챕터 간선(에피소드 끝)에서 만든다.
-                unparsed.Add($"{line} — 대사 안 선택지는 쓰지 않습니다. 선택지는 챕터 그래프의 간선에서 만드세요.");
+                unparsed.Add($"{line} — 대사 안 선택지는 쓰지 않습니다. 선택지는 [구성] 탭의 간선에서 만드세요.");
                 continue;
             }
 

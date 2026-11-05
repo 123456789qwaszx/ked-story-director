@@ -11,13 +11,14 @@ namespace Vn.App.Tests;
 /// 내보내기 단추들만 남았다(챕터 툴바의 [내보내기]와 한 화면에 둘이면 헷갈린다).
 /// ⛔ [무대 프리뷰] 탭 · 연출 노드 편집기 · 에셋 탐색기는 2026-10-29에 ked-story-compositor로 갔다.
 ///
-/// 탭 순서·이름은 2026-08-18 팀장 미팅에서 정해졌다: **챕터 그래프가 첫 탭**이고 그다음이
-/// **연출 그래프**(옛 "시나리오 그래프")다. 왼쪽에서 오른쪽으로 밟으면 챕터가 완성된다.
+/// 탭 순서가 작업 순서다: **[구성]이 첫 탭**(챕터 그래프 — 에피소드 · 분기 조건 · 스탯 · 선택지로 뼈대를 짠다)이고 그다음이
+/// **[대본]**(연출 그래프 — 카드에 대사를 쓰고 선택지 · 분기를 잇는다)이다. 왼쪽에서 오른쪽으로 밟으면 챕터가 완성된다.
+/// 창을 열면 [구성]이 서고, 새 프로젝트도 [구성]에서 시작한다.
 /// </summary>
 public sealed class MainChromeTests
 {
     [Fact]
-    public void 챕터_그래프가_첫_탭이고_그다음이_연출_그래프다() => HeadlessUi.Run(() =>
+    public void 구성이_첫_탭이고_그다음이_대본이며_창을_열면_구성이_선다() => HeadlessUi.Run(() =>
     {
         var window = new MainWindow();
         window.Show();
@@ -25,11 +26,39 @@ public sealed class MainChromeTests
 
         var tabs = window.FindControl<TabControl>("MainTabs")!;
 
-        Assert.Equal("챕터 그래프", ((TabItem)tabs.Items[0]!).Header);
-        Assert.Equal("연출 그래프", ((TabItem)tabs.Items[1]!).Header);
-        Assert.Equal(2, tabs.Items.Count);   // [무대 프리뷰]는 compositor로 갔다(2026-10-29)
+        Assert.Equal("구성", ((TabItem)tabs.Items[0]!).Header);
+        Assert.Equal("대본", ((TabItem)tabs.Items[1]!).Header);
+        Assert.Equal(2, tabs.Items.Count);
+        Assert.Same(window.FindControl<TabItem>("ChapterTabItem"), tabs.SelectedItem);
 
         window.Close();
+    });
+
+    [Fact]
+    public void 새_프로젝트는_대본_탭에_있다가_만들어도_구성에서_시작한다() => HeadlessUi.Run(() =>
+    {
+        string folder = Path.Combine(Path.GetTempPath(), "vn-new-project-tab", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+
+        try
+        {
+            var window = new MainWindow();
+            window.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            SelectTab(window, "GraphTabItem");
+
+            window.CreateProjectIn(folder);
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            Assert.NotNull(window.SessionProbe.ProjectPath);
+            Assert.Same(window.FindControl<TabItem>("ChapterTabItem"), window.FindControl<TabControl>("MainTabs")!.SelectedItem);
+
+            window.Close();
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
     });
 
     [Fact]

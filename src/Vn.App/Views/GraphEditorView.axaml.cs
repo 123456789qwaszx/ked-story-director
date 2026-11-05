@@ -1082,7 +1082,7 @@ public partial class GraphEditorView : UserControl
 
             panel.Children.Add(new TextBlock
             {
-                Text = "잇고 끊는 곳은 출발 쪽 칩과 챕터 그래프입니다.",
+                Text = "잇고 끊는 곳은 출발 쪽 칩과 [구성] 탭입니다.",
                 FontSize = 10,
                 Opacity = 0.5,
                 TextWrapping = TextWrapping.Wrap,
@@ -1781,7 +1781,7 @@ public partial class GraphEditorView : UserControl
                 TextTrimming = TextTrimming.CharacterEllipsis
             },
             [ToolTip.TipProperty] = $"분기로 다녀오는 에피소드입니다. {BranchConditionNote.Sentence(state)} " +
-                                    $"{BranchConditionNote.Where} 누르면 챕터 그래프의 그 분기로 갑니다."
+                                    $"{BranchConditionNote.Where} 누르면 [구성] 탭의 그 분기로 갑니다."
         };
 
         chip.PointerPressed += (_, args) => UiGuard.Run(_session, "분기 조건", () =>

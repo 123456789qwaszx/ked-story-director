@@ -52,7 +52,7 @@ public sealed class ChapterDialogueEntryTests
         Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);
         Assert.Equal(ChapterSheetNames.Episodes, problem.Sheet);
         Assert.DoesNotContain("YarnProject", problem.Message);   // 사정은 코드 주석의 것이다
-        Assert.Contains("연출 그래프의 그 카드", problem.Message);   // 고치는 법을 말한다
+        Assert.Contains("[대본] 탭의 그 카드", problem.Message);   // 고치는 법을 말한다
     }
 
     [Fact]

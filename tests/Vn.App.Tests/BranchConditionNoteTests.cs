@@ -41,7 +41,7 @@ public sealed class BranchConditionNoteTests : IDisposable
         DialogueNode branch = AddBranchThroughMenu(window, session, root);
 
         Assert.Contains("조건 없이 늘 다녀옵니다", session.StatusMessage, StringComparison.Ordinal);
-        Assert.Contains("챕터 그래프", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("[구성] 탭", session.StatusMessage, StringComparison.Ordinal);
 
         Assert.Equal("⑂ 조건 없음", ChipText(window, branch));
         Assert.Contains(Texts(BranchCard(window, root, branch)), text => text.StartsWith("지금은 조건 없이 늘 다녀옵니다", StringComparison.Ordinal));
@@ -64,7 +64,7 @@ public sealed class BranchConditionNoteTests : IDisposable
 
         Assert.Equal("⑂ 조건: 신뢰높음", ChipText(window, branch));
         Assert.Contains(Texts(BranchCard(window, root, branch)), text => text.StartsWith("조건 「신뢰높음」일 때만 재생합니다", StringComparison.Ordinal));
-        Assert.Equal("챕터 그래프에서 조건 바꾸기", OpenButton(window, root, branch)!.Content);
+        Assert.Equal("[구성] 탭에서 조건 바꾸기", OpenButton(window, root, branch)!.Content);
 
         window.Close();
     });

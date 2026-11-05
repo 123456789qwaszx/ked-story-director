@@ -12,7 +12,7 @@ namespace Vn.App.Views;
 internal static class BranchConditionNote
 {
     /// <summary>어디서 정하는가.</summary>
-    internal const string Where = "조건은 챕터 그래프에서 이 분기 선(점선)을 눌러 정합니다.";
+    internal const string Where = "조건은 [구성] 탭에서 이 분기 선(점선)을 눌러 정합니다.";
 
     /// <summary>카드 머리에 다는 짧은 표.</summary>
     internal static string Chip(BranchEntryCondition.State state) =>
@@ -25,6 +25,6 @@ internal static class BranchConditionNote
         state.Label is { } label
             ? $"조건 「{label}」일 때만 재생합니다 — 아니면 들렀다가 바로 돌아옵니다."
             : state.Blocked is not null
-                ? "대사 편집기에서 직접 지은 조건이 있습니다 — 챕터 그래프에서는 읽기만 합니다."
+                ? "대사 편집기에서 직접 지은 조건이 있습니다 — [구성] 탭에서는 읽기만 합니다."
                 : "지금은 조건 없이 늘 다녀옵니다.";
 }

@@ -1641,7 +1641,7 @@ public partial class ChapterGraphView : UserControl
                 colour,
                 filled: wired is not null,
                 tip: wired is null
-                    ? "빈 선택지 칸입니다 — [연출 그래프]에서 문구를 적으면 살아납니다."
+                    ? "빈 선택지 칸입니다 — [대본] 탭에서 문구를 적으면 살아납니다."
                     : PortTip(wired));
 
             if (wired is { } edge)
@@ -1982,10 +1982,10 @@ public partial class ChapterGraphView : UserControl
 
         int stray = model.Episodes.Count - board.Count;
         _session.SetStatus(board.Count == 0
-            ? $"'{chapterId}'의 카드 {model.Episodes.Count}장을 흐름 순서로 다시 세웠습니다(연출 그래프에 카드가 없습니다). " +
+            ? $"'{chapterId}'의 카드 {model.Episodes.Count}장을 흐름 순서로 다시 세웠습니다([대본] 탭에 카드가 없습니다). " +
               "되돌리기(Ctrl+Z)로 돌아옵니다."
-            : $"'{chapterId}'의 카드 {model.Episodes.Count}장을 연출 그래프의 모양대로 다시 세웠습니다" +
-              (stray > 0 ? $"(연출 그래프에 카드가 없는 {stray}장은 맨 아래 줄에)" : string.Empty) +
+            : $"'{chapterId}'의 카드 {model.Episodes.Count}장을 [대본] 탭의 모양대로 다시 세웠습니다" +
+              (stray > 0 ? $"([대본] 탭에 카드가 없는 {stray}장은 맨 아래 줄에)" : string.Empty) +
               ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
@@ -2325,8 +2325,8 @@ public partial class ChapterGraphView : UserControl
         string preview = DialogueOf(episodeId);
 
         DialoguePreviewHeader.Text = preview.Length > 0
-            ? "읽기 전용 · 고치는 곳은 연출 그래프의 카드"
-            : "아직 적힌 대사가 없습니다 — 연출 그래프의 카드에서 쓰세요";
+            ? "읽기 전용 · 고치는 곳은 [대본] 탭의 카드"
+            : "아직 적힌 대사가 없습니다 — [대본] 탭의 카드에서 쓰세요";
         DialoguePreviewText.Text = preview;
     }
 

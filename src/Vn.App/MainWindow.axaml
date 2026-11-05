@@ -61,16 +61,18 @@
         </Border>
 
         <!-- 탭 둘 — 곁기둥은 제 화면 안에 있다: <b>챕터 목록</b>은
-             챕터 그래프에, <b>노드 편집기</b>는 연출 그래프에. 자리가 곧 소속이다.
-             탭 순서가 곧 작업 순서다: ① 챕터 그래프에서 구조를 짜고, ② 연출 그래프에서 카드를
-             잇고 대사를 쓴다. 두 그래프는 데이터도 편집 경로도 공유하지 않는다 (G-1).
+             [구성](챕터 그래프)에, <b>노드 편집기</b>는 [대본](연출 그래프)에. 자리가 곧 소속이다.
+             탭 순서가 곧 작업 순서다: ① [구성]에서 이야기 뼈대(에피소드 · 분기 조건 · 스탯 · 선택지)를 짜고,
+             ② [대본]에서 카드를 잇고 대사를 쓴다. 왼쪽에서 오른쪽으로 밟으면 챕터가 완성된다.
+             창을 열면 [구성]이 서고, 새 프로젝트를 만들어도 [구성]으로 온다.
+             두 그래프는 데이터도 편집 경로도 공유하지 않는다 (G-1).
              무대 프리뷰는 연출 층과 함께 ked-story-compositor의 몫이다.
              주의: 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
         <TabControl x:Name="MainTabs" Padding="0">
-            <TabItem x:Name="ChapterTabItem" Header="챕터 그래프">
+            <TabItem x:Name="ChapterTabItem" Header="구성">
                 <views:ChapterGraphView x:Name="ChapterGraph" />
             </TabItem>
-            <TabItem x:Name="GraphTabItem" Header="연출 그래프">
+            <TabItem x:Name="GraphTabItem" Header="대본">
                 <views:GraphEditorView x:Name="Graph" />
             </TabItem>
         </TabControl>

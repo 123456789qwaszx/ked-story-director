@@ -286,7 +286,7 @@ public partial class MainWindow
                 IReadOnlyList<Vn.Authoring.Definition.SpeakerSpec> speakers = _session.Definition.Speakers;
                 Graph.SetInspectorHeader("화자", $"프로젝트 전체의 캐스트 — {speakers.Count}명");
                 Note(speakers.Count == 0 ? "아직 화자가 없습니다." : string.Join(" · ", speakers.Select(speaker => speaker.Name)));
-                OpenInChapterGraph(pick, "챕터 그래프에서 화자 고치기");
+                OpenInChapterGraph(pick, "[구성] 탭에서 화자 고치기");
                 break;
             }
 
@@ -296,7 +296,7 @@ public partial class MainWindow
                 List<ChapterScene> named = scenes.Where(scene => !scene.IsDefault).ToList();
                 Graph.SetInspectorHeader(
                     $"챕터 · {chapter.ChapterId}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
-                Note("조건 · 스탯은 챕터 그래프에서 고칩니다.");
+                Note("조건 · 스탯은 [구성] 탭에서 고칩니다.");
 
                 foreach (ChapterScene scene in named)
                 {
@@ -312,7 +312,7 @@ public partial class MainWindow
                         PickInDirector(new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, EpisodeId: episodeId)));
                 }
 
-                OpenInChapterGraph(pick, "챕터 그래프에서 조건 · 스탯 열기");
+                OpenInChapterGraph(pick, "[구성] 탭에서 조건 · 스탯 열기");
                 break;
             }
 
@@ -321,7 +321,7 @@ public partial class MainWindow
                                              string.Equals(item.SceneId, pick.SceneId, StringComparison.Ordinal)) is { } scene:
             {
                 Graph.SetInspectorHeader($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}");
-                Note("에피소드를 누르면 그 카드의 대사를 씁니다. 장면 이름은 챕터 그래프에서 고칩니다.");
+                Note("에피소드를 누르면 그 카드의 대사를 씁니다. 장면 이름은 [구성] 탭에서 고칩니다.");
 
                 foreach (ChapterEpisode episode in scene.Episodes)
                 {
@@ -331,7 +331,7 @@ public partial class MainWindow
                         PickInDirector(new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, scene.SceneId, episodeId)));
                 }
 
-                OpenInChapterGraph(pick, "챕터 그래프에서 장면 열기");
+                OpenInChapterGraph(pick, "[구성] 탭에서 장면 열기");
                 break;
             }
 
@@ -381,7 +381,7 @@ public partial class MainWindow
             Margin = new Thickness(0, 8, 0, 0),
             Tag = "summary-open"
         };
-        button.Click += (_, _) => UiGuard.Run(_session, "챕터 그래프에서 열기", () =>
+        button.Click += (_, _) => UiGuard.Run(_session, "[구성] 탭에서 열기", () =>
         {
             MainTabs.SelectedItem = ChapterTabItem;
             ChapterGraph.Inspect(pick);

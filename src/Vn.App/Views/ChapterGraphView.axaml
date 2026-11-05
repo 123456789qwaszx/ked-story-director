@@ -35,7 +35,7 @@
                          주의: 한 번의 변경이라 Ctrl+Z 한 번이면 옮기기 전으로 돌아온다. -->
                     <Button x:Name="AutoArrangeButton"
                             Content="자동 정렬"
-                            ToolTip.Tip="모든 카드를 연출 그래프에 놓인 모양대로 다시 세웁니다. 손으로 옮긴 자리는 사라집니다 — 되돌리기(Ctrl+Z) 한 번으로 돌아옵니다." />
+                            ToolTip.Tip="모든 카드를 [대본] 탭에 놓인 모양대로 다시 세웁니다. 손으로 옮긴 자리는 사라집니다 — 되돌리기(Ctrl+Z) 한 번으로 돌아옵니다." />
                 </StackPanel>
 
                 <!-- 픽스처(재생루트 하이라이트)는 화면에 세우지 않는다.
@@ -52,7 +52,7 @@
                             VerticalAlignment="Center"
                             Background="#C0392B"
                             Foreground="White"
-                            ToolTip.Tip="선택한 에피소드와 그 에피소드를 오가는 간선, 연출 그래프의 카드를 함께 지웁니다. 챕터의 선택지 문구는 그대로 둡니다. 되돌리기(Ctrl+Z)로 돌아옵니다." />
+                            ToolTip.Tip="선택한 에피소드와 그 에피소드를 오가는 간선, [대본] 탭의 카드를 함께 지웁니다. 챕터의 선택지 문구는 그대로 둡니다. 되돌리기(Ctrl+Z)로 돌아옵니다." />
                 </StackPanel>
             </Grid>
         </Border>

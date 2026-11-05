@@ -40,7 +40,7 @@ public sealed class ChapterAutoArrangeTests
         Assert.Equal((220, 0), after["root"]);
         Assert.Equal((0, 170), after["a"]);
         Assert.Equal((440, 170), after["b"]);
-        Assert.Contains("연출 그래프의 모양대로", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("[대본] 탭의 모양대로", session.StatusMessage, StringComparison.Ordinal);
 
         // 한 번의 변경이라 한 번에 물러난다.
         session.Editor.Undo();

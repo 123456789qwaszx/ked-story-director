@@ -17,7 +17,7 @@
                               Margin="8,0,0,0"
                               VerticalAlignment="Center"
                               IsVisible="False"
-                              ToolTip.Tip="켜면 연출 그래프의 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요." />
+                              ToolTip.Tip="켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요." />
                 </Grid>
 
                 <Button x:Name="AddLineButton"

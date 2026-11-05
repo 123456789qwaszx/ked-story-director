@@ -408,7 +408,7 @@ public partial class MainWindow : Window
 
         var caution = new TextBlock
         {
-            Text = $"'{chapterId}'의 에피소드와 연출 그래프의 노드가 함께 사라집니다. " +
+            Text = $"'{chapterId}'의 에피소드와 [대본] 탭의 카드가 함께 사라집니다. " +
                    "되돌리기(Ctrl+Z)로 돌아옵니다.",
             FontSize = 10,
             Opacity = 0.75,
@@ -445,7 +445,7 @@ public partial class MainWindow : Window
                 flyout.Hide();
 
                 _session.SetStatus(
-                    $"챕터 '{chapterId}'를 지웠습니다(연출 노드 {result.NodesRemoved}개도 함께). " +
+                    $"챕터 '{chapterId}'를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). " +
                     "되돌리기(Ctrl+Z)로 돌아옵니다." +
                     (result.StaleExport is { } stale
                         ? $" ⚠ 내보낸 '{stale}'가 남아 있습니다 — 지우지 않으면 게임이 " +
@@ -470,21 +470,31 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (ProjectFolder.WhyCannotCreateIn(folder) is { } reason)
-            {
-                _session.SetStatus(reason);
-                OpenFolder(folder);
-                return;
-            }
-
-            _session.NewProject();
-            _session.Save(ProjectFolder.NewManifestPathIn(folder));
-            RefreshShell();
+            CreateProjectIn(folder);
         }
         catch (Exception exception)
         {
             Report("새 프로젝트", exception);
         }
+    }
+
+    /// <summary>
+    /// 그 폴더에 새 프로젝트를 깐다 — 이미 프로젝트가 있는 폴더면 그것을 연다. 새 프로젝트는 [구성] 탭에서 시작한다: 탭 순서가
+    /// 작업 순서라(구성 → 대본) 뼈대를 짜는 자리가 첫걸음이다.
+    /// </summary>
+    internal void CreateProjectIn(string folder)
+    {
+        if (ProjectFolder.WhyCannotCreateIn(folder) is { } reason)
+        {
+            _session.SetStatus(reason);
+            OpenFolder(folder);
+            return;
+        }
+
+        _session.NewProject();
+        _session.Save(ProjectFolder.NewManifestPathIn(folder));
+        RefreshShell();
+        MainTabs.SelectedItem = ChapterTabItem;
     }
 
     /// <summary>열기 = 폴더 고르기.폴더 안의 유일한 manifest를 찾는다 — 없거나 둘이면 사유를 말한다.</summary>

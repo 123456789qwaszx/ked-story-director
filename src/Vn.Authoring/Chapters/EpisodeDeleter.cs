@@ -36,7 +36,7 @@ public static class EpisodeDeleter
 
             if (CardRemoved is { } removed)
             {
-                text += $" 연출 그래프의 노드 '{removed}'도 함께 지웠습니다.";
+                text += $" [대본] 탭의 카드 '{removed}'도 함께 지웠습니다.";
             }
 
             return text + " 되돌리기(Ctrl+Z)로 돌아옵니다.";

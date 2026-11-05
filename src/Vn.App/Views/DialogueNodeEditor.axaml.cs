@@ -105,7 +105,7 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         _session?.SetStatus(
-            $"{what}은(는) 연출 그래프 카드의 IF 갈래 포트에서 합니다 — 잇고 떼는 문은 하나입니다.");
+            $"{what}은(는) [대본] 탭 카드의 IF 갈래 포트에서 합니다 — 잇고 떼는 문은 하나입니다.");
         return true;
     }
 
@@ -621,7 +621,7 @@ public partial class DialogueNodeEditor : UserControl
         if (candidates.Count == 0)
         {
             _session!.SetStatus(
-                "등록된 화자가 없습니다 — 챕터 그래프의 [화자] 탭에서 더하면 여기 목록에 옵니다. " +
+                "등록된 화자가 없습니다 — [구성] 탭에서 하이어아키 맨 위의 프로젝트 줄을 눌러 화자를 더하면 여기 목록에 옵니다. " +
                 "그때까지는 화자 칸에 직접 입력하세요.");
             return;
         }
@@ -847,13 +847,13 @@ public partial class DialogueNodeEditor : UserControl
         {
             var open = new Button
             {
-                Content = state.Label is null ? "챕터 그래프에서 조건 정하기" : "챕터 그래프에서 조건 바꾸기",
+                Content = state.Label is null ? "[구성] 탭에서 조건 정하기" : "[구성] 탭에서 조건 바꾸기",
                 FontSize = 10,
                 Padding = new Thickness(6, 1),
                 Tag = BranchConditionTag(lineId, targetId),
                 HorizontalAlignment = HorizontalAlignment.Left
             };
-            ToolTip.SetTip(open, BranchConditionNote.Where + " 누르면 그 분기를 고른 채로 챕터 그래프가 열립니다.");
+            ToolTip.SetTip(open, BranchConditionNote.Where + " 누르면 그 분기를 고른 채로 [구성] 탭이 열립니다.");
             string branchKey = ExitPort.DetourKey(lineId, targetId);
             open.Click += (_, _) => UiGuard.Run(_session, "분기 조건", () => BranchConditionRequested?.Invoke(chapterId, branchKey));
             detail.Children.Add(open);
@@ -1067,8 +1067,8 @@ public partial class DialogueNodeEditor : UserControl
                 panel.Children.Add(new TextBlock
                 {
                     Text = wired is null
-                        ? "달린 씬이 없습니다 — 연출 그래프 카드의 IF 갈래 포트에서 답니다."
-                        : $"'{wired.Name}' — 잇고 떼는 것은 연출 그래프 카드의 IF 갈래 포트에서 합니다.",
+                        ? "달린 씬이 없습니다 — [대본] 탭 카드의 IF 갈래 포트에서 답니다."
+                        : $"'{wired.Name}' — 잇고 떼는 것은 [대본] 탭 카드의 IF 갈래 포트에서 합니다.",
                     FontSize = 10,
                     Opacity = 0.7,
                     TextWrapping = TextWrapping.Wrap
@@ -1132,7 +1132,7 @@ public partial class DialogueNodeEditor : UserControl
             caption.Margin = new Thickness(30, 0, 0, 0);
             caption.Opacity = 0.8;
             ToolTip.SetTip(caption,
-                "이 갈래의 출구는 연출 그래프 카드의 IF 갈래 포트에서 잇고 뗍니다.");
+                "이 갈래의 출구는 [대본] 탭 카드의 IF 갈래 포트에서 잇고 뗍니다.");
 
             return caption;
         }
