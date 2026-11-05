@@ -8,21 +8,17 @@
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <!-- [+ 설정 노드]는 폐지됐다 (2026-08-17 소유자) — 설정노드는 챕터마다
+                <!-- [+ 설정 노드]는 두지 않는다 — 설정노드는 챕터마다
                      하나가 자동으로 서는 컨트롤러라, 만들고 지우는 것이 아니다. -->
-                <!-- [+ 연출 노드] · [+ 연출 공급]도 폐지됐다 (2026-08-21 소유자) — 연출 노드는
-                     2026-10-29에 연출 층째 ked-story-compositor로 갔다.
-                     [자동 정렬]과 필터(대사·설정)도 2026-10-29에 걷혔다 (소유자: "둘다 필요없으니
-                     지워주십시오") — 카드는 처음부터 제자리에 서고, 숨길 노드 종류가 남지 않았다. -->
                 <!--
-                  챕터 고르기 (2026-08-25 소유자) — 챕터 그래프의 그 드롭다운을 여기서도
+                  챕터 고르기 — 챕터 그래프의 그 드롭다운을 여기서도
                   든다. 새 노드는 <b>지금 활성인 판</b>에 서는데, 그 판이 무엇인지 이 화면에
-                  보이지 않아 "어느 챕터에 만들어졌는지" 알 수 없었다. 여기서 고르면 그 판이
+                  보이지 않으면 "어느 챕터에 만들어졌는지" 알 수 없다. 여기서 고르면 그 판이
                   활성이 되고, 그 뒤의 [+ 대사 노드]가 거기에 선다.
                 -->
                 <TextBlock Text="챕터" FontSize="11" Opacity="0.6" VerticalAlignment="Center"
                            Margin="0,0,4,0" />
-                <!-- ⚠ 치수는 챕터 그래프의 콤보와 <b>한 쌍</b>이다 (2026-08-26 소유자) —
+                <!-- 주의: 치수는 챕터 그래프의 콤보와 <b>한 쌍</b>이다 —
                      짝: `ChapterGraphView.axaml`의 ChapterCombo. -->
                 <ComboBox x:Name="ChapterCombo" MinWidth="180" FontSize="11"
                           ToolTip.Tip="새 노드가 설 판입니다. 챕터 그래프의 선택과 같은 값을 봅니다." />
@@ -33,13 +29,12 @@
             </StackPanel>
         </Border>
 
-        <!-- 우측 곁기둥(대사 노드 편집기)이 2026-08-22에 이 판 안으로 들어왔다 (소유자) —
-             예전에는 창이 들고 있어 탭마다 접었다 폈다 했다. 쓰는 화면이 여기뿐이므로 여기
-             산다: 챕터 그래프에는 안 보인다.
-             ⚠ 자리만 이 뷰가 내주고 <b>내용은 셸이 짓는다</b>(SetSidePanel) — 편집기의
+        <!-- 우측 곁기둥(대사 노드 편집기)은 이 판 안에 산다 — 쓰는 화면이 여기뿐이므로
+             챕터 그래프에는 안 보인다.
+             주의: 자리만 이 뷰가 내주고 <b>내용은 셸이 짓는다</b>(SetSidePanel) — 편집기의
              배선이 세션·선택 전환과 얽혀 있어 뷰로 옮기면 그 배선이 두 벌이 된다. -->
         <Grid Grid.Row="1" x:Name="BoardColumns">
-            <!-- 하이어아키 · 판 · 인스펙터 — 유니티와 같은 차례 (2026-10-30 소유자: "하이어아키를 그래프 왼쪽 Column으로").
+            <!-- 하이어아키 · 판 · 인스펙터 — 유니티와 같은 차례.
                  하이어아키 폭은 사람이 끈다(최소 140 — 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). -->
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="230" MinWidth="140" />
@@ -49,7 +44,7 @@
                 <ColumnDefinition Width="460" />
             </Grid.ColumnDefinitions>
 
-            <!-- 하이어아키 (2026-10-30 HY3 — 챕터 그래프와 같은 StoryHierarchy, 내용은 셸이 채운다). -->
+            <!-- 하이어아키 — 챕터 그래프와 같은 StoryHierarchy, 내용은 셸이 채운다. -->
             <Border Grid.Column="0"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                     BorderThickness="0,0,1,0">
@@ -75,7 +70,7 @@
                         <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
                     </Grid>
 
-                    <!-- 접힌 하이어아키 (2026-10-30 HC) — 세로 띠 하나. 누르면 편다(HierarchyDock). -->
+                    <!-- 접힌 하이어아키 — 세로 띠 하나. 누르면 편다(HierarchyDock). -->
                     <Button x:Name="HierarchyStrip"
                             IsVisible="False"
                             HorizontalAlignment="Stretch"
@@ -108,8 +103,8 @@
                           x:Name="GraphScroll"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
-                <!-- 배율은 레이아웃 변환이다 — 스크롤 범위가 확대/축소를 그대로 따라온다 (W40). -->
-                <!-- 크기는 코드비하인드의 CanvasWidth/Height가 정한다 (W41) — 미니맵 배율과
+                <!-- 배율은 레이아웃 변환이다 — 스크롤 범위가 확대/축소를 그대로 따라온다. -->
+                <!-- 크기는 코드비하인드의 CanvasWidth/Height가 정한다 — 미니맵 배율과
                      한 곳에서 맞아야 하므로 여기에 숫자를 적지 않는다. -->
                 <!-- 배경은 반드시 실제 브러시여야 한다: FluentTheme에는 ThemeBackgroundBrush가
                      없어 null이 되고, 배경 없는 Canvas는 빈 곳 클릭이 히트되지 않아
@@ -120,7 +115,7 @@
                 </LayoutTransformControl>
             </ScrollViewer>
 
-            <!-- 미니맵 (W40) — 우측 하단에 전체 맵과 현재 배율. 클릭·드래그로 뷰포트 이동. 판과 같은 칸에 겹쳐 선다. -->
+            <!-- 미니맵 — 우측 하단에 전체 맵과 현재 배율. 클릭·드래그로 뷰포트 이동. 판과 같은 칸에 겹쳐 선다. -->
             <Border Grid.Column="2"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
@@ -136,7 +131,7 @@
                             ClipToBounds="True"
                             Background="Transparent"
                             Cursor="Hand" />
-                    <!-- 전체 보기·배율 프리셋 (GB-4) — 큰 판의 길찾기. -->
+                    <!-- 전체 보기·배율 프리셋 — 큰 판의 길찾기. -->
                     <Border BorderBrush="#33808080" BorderThickness="0,1,0,0" Padding="4,2">
                         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
                             <Button Grid.Column="0" x:Name="FitAllButton" Content="전체"
@@ -163,7 +158,7 @@
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
-            <!-- 우측 기둥 = 인스펙터 (2026-10-30 HY3 — docs/plans/hierarchy.md · 하이어아키는 같은 날 판 왼쪽 기둥으로 옮겼다).
+            <!-- 우측 기둥 = 인스펙터.
                  내용(대사 편집기 · 요약)은 셸이 짓는다. -->
             <Border Grid.Column="4"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
@@ -186,12 +181,11 @@
             </Border>
         </Grid>
 
-        <!-- 아래 띠는 <b>지금 무슨 일이 벌어지는지</b>만 말한다 (2026-08-24 소유자:
-             "포트를 끌어 놓으면 연결, 빈곳좌클릭 드래그 범위선택 이런 설명문구도 제거").
-             늘 서 있던 조작법 설명은 사라졌다 — 손이 이미 아는 것을 화면이 매번 다시
+        <!-- 아래 띠는 <b>지금 무슨 일이 벌어지는지</b>만 말한다.
+             늘 서 있는 조작법 설명은 두지 않는다 — 손이 이미 아는 것을 화면이 매번 다시
              일러 주면 정작 무언가를 말해야 할 때 눈에 안 띈다.
 
-             남은 것은 둘: 포트를 끄는 중의 안내(어디에 놓으면 되는가·빈 곳은 끊기)와
+             말하는 것은 둘: 포트를 끄는 중의 안내(어디에 놓으면 되는가·빈 곳은 끊기)와
              고른 간선의 정체다. 할 말이 없으면 띠 자체가 접힌다 — 빈 칸이 서 있으면
              그것도 소음이다. 여닫는 문은 SetHint 하나다. -->
         <Border Grid.Row="2"
@@ -205,7 +199,7 @@
                        Opacity="0.7"
                        TextWrapping="Wrap" />
         </Border>
-        <!-- 초점 받이 (D4) — 카드 머리나 빈 판을 누르면 카드 글 칸의 초점을 여기로 옮긴다. 카드와 판은
+        <!-- 초점 받이 — 카드 머리나 빈 판을 누르면 카드 글 칸의 초점을 여기로 옮긴다. 카드와 판은
              초점을 받지 않아서, 옮기지 않으면 글 칸이 초점을 쥔 채 다른 노드가 골라지고 쓴 글이 안 들어간다.
              판 자체를 초점 받는 것으로 만들면 누를 때마다 초점이 옮겨 선택지 문구 칸까지 닫히므로 따로 둔다. -->
         <Border x:Name="WritingFocusSink" Grid.Row="0" Width="0" Height="0" Focusable="True"

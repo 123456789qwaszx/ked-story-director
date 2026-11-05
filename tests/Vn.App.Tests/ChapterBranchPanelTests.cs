@@ -11,11 +11,10 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// 챕터 그래프가 <b>분기를 보여 주고 그 조건을 받는다</b> (2026-09-18 소유자: *"챕터 그래프가
-/// 보면, 분기는 선택지로 안 이어 주고 있거든?"* · *"어떤 조건일 때 그 분기를 탈 수 있는지는
-/// 기존 챕터그래프의 우측탭에서 하던것과 비슷하게"*).
+/// 챕터 그래프가 <b>분기를 보여 주고 그 조건을 받는다</b> — 분기도 선으로 이어 보이고,
+/// 어떤 조건일 때 그 분기를 탈 수 있는지는 오른쪽 탭에서 받는다.
 ///
-/// ⛔ <b>선택지가 아니다.</b> 문구도 스탯변화도 없고, 표식을 만들거나 떼지도 않는다 —
+/// <b>선택지가 아니다.</b> 문구도 스탯변화도 없고, 표식을 만들거나 떼지도 않는다 —
 /// 그것은 연출 그래프의 일이다.
 /// </summary>
 public sealed class ChapterBranchPanelTests
@@ -36,8 +35,7 @@ public sealed class ChapterBranchPanelTests
         Assert.NotNull(drawn.StrokeDashArray);
         Assert.NotEmpty(drawn.StrokeDashArray!);
 
-        // ⭐ <b>옆변에서 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
-        //    선택지처럼 우측으로 붙이되"*) — 선택지는 아래변을 쓰므로 둘이 안 겹친다. 다녀갈 카드가
+        // <b>옆변에서 나간다</b>(점선) — 선택지는 아래변을 쓰므로 둘이 안 겹친다. 다녀갈 카드가
         //    오른쪽이라 오른변이다(왼쪽이면 왼변 — 아래 시험).
         Border card = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == "root");
 
@@ -51,8 +49,8 @@ public sealed class ChapterBranchPanelTests
     [Fact]
     public void 다녀갈_에피소드가_왼쪽에_있으면_분기는_왼변으로_나가_그_카드의_오른변으로_든다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-30 소유자: "자기가 나온 에피소드보다 왼쪽에 있어도 오른쪽으로만 나오는데, 그걸 연출그래프처럼
-        // 왼쪽에 있으면 왼쪽으로 나오도록". 연출 그래프의 분기 포트와 같은 규칙(EdgeSide.GoesLeft)이다.
+        // 다녀갈 카드가 자기가 나온 에피소드보다 왼쪽에 있으면 왼쪽으로 나온다.
+        // 연출 그래프의 분기 포트와 같은 규칙(EdgeSide.GoesLeft)이다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
         session.Editor.MoveEpisode("ch01", project.BranchEpisodeId, -400, 120);
@@ -125,7 +123,7 @@ public sealed class ChapterBranchPanelTests
         Assert.Equal("신뢰높음",
             BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
 
-        // ⛔ 부르는 쪽은 안 바뀐다 — 조건은 다녀간 쪽에만 산다.
+        // 부르는 쪽은 안 바뀐다 — 조건은 다녀간 쪽에만 산다.
         DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
         Assert.Empty(caller.TrailingTransitions);
     });
@@ -153,7 +151,7 @@ public sealed class ChapterBranchPanelTests
     [Fact]
     public void 손으로_지은_구조는_칸이_잠기고_사유가_선다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 작가가 대사 편집기에서 갈래를 얹었다면 덮는 순간 짝이 어긋난 대본이 된다.
+        // 작가가 대사 편집기에서 갈래를 얹었다면 덮는 순간 짝이 어긋난 대본이 된다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -179,7 +177,7 @@ public sealed class ChapterBranchPanelTests
     [Fact]
     public void 같은_줄의_분기_둘은_따로_고르고_조건도_따로_건다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-29 — 한 줄에 분기가 여럿일 수 있다. 줄만으로 고르면 둘째가 첫째를 덮어 점선 하나만 고를 수 있었다.
+        // 한 줄에 분기가 여럿일 수 있다. 줄만으로 고르면 둘째가 첫째를 덮어 점선 하나만 고를 수 있게 된다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 

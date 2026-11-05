@@ -8,9 +8,7 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>카드 글 칸은 쓰는 대로 들어간다</b> (2026-10-30 소유자: *"현재 텍스트 박스의 내용을 수정하는데, 기존 내용을
-/// 지워버릴 경우 그게 찾을 수 없다고 표시되는 버그"* · *"굳이 꼭 오른쪽 텍스트편집만이 아니라, 에피소드 노드 속의
-/// 텍스트 편집하는 게 그대로 반영이 바로바로 되기를"*).
+/// <b>카드 글 칸은 쓰는 대로 들어간다</b> — 오른쪽 편집기만이 아니라 에피소드 노드 속 글 칸에서 고친 것도 바로 반영된다.
 ///
 /// 치다가 잠깐 멈추면 칸을 나오지 않아도 넣는다(시험은 <see cref="GraphEditorView.CommitLiveWriting"/>로 그 멈춤을 대신한다).
 /// 고친 줄은 처음 보인 줄의 신원을 이어서, 줄을 다 고쳐 써도 "확신할 수 없다"며 거절하지 않는다. 줄을 지우는 것만은
@@ -23,7 +21,7 @@ public sealed class CardLiveWritingTests
     [Fact]
     public void 줄을_모두_고쳐_쓰고_멈추면_칸을_나오지_않아도_들어가고_곁기둥에_비친다() => HeadlessUi.Run(() =>
     {
-        // 소유자 화면 그대로 — 네 줄을 다 지우고 새 글로 채웠다.
+        // 네 줄을 다 지우고 새 글로 채웠다.
         (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) =
             Stage("asdas", "qweqwe", "rrrrr", "asd");
 
@@ -53,7 +51,7 @@ public sealed class CardLiveWritingTests
     [Fact]
     public void 줄을_모두_고쳐_쓰고_칸을_나와도_거절하지_않는다() => HeadlessUi.Run(() =>
     {
-        // 예전에는 "사라진 것인지 고쳐진 것인지 확신할 수 없습니다"로 통째로 거절했다.
+        // "사라진 것인지 고쳐진 것인지 확신할 수 없습니다"로 통째로 거절하면 안 된다.
         (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) =
             Stage("asdas", "qweqwe", "rrrrr", "asd");
 

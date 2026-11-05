@@ -4,21 +4,17 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// 챕터 제거의 <b>유일한 자리</b> (2026-08-25 소유자: "챕터를 만들 수는 있는데, 삭제할
-/// 방법이 없어 … 당연하지만, 그렇게 하면 연출그래프에 있던 것도 모두 자동으로 제거되도록").
+/// 챕터 제거의 <b>유일한 자리</b>. 챕터를 지우면 연출 그래프에 있던 것도 모두 함께 지워진다.
 ///
 /// 걷는 것은 둘이고 <b>한 변경</b>이다(<see cref="ProjectEditor.RemoveChapterWithBoard"/>):
 ///
 /// <list type="number">
 ///   <item>챕터 자체 — <c>Project.Chapters</c>의 그 항목</item>
 ///   <item>판(<c>StoryFile</c>)과 그 위의 노드 전부 — 에피소드 카드도, 조건 공급 노드(<c>챕터 {Id} 조건</c>)도
-///     이 판에 서 있다. 그것이 소유자가 말한 "연출그래프에 있던 것도 모두 자동으로 제거"다.</item>
+///     이 판에 서 있다.</item>
 /// </list>
 ///
 /// 되돌리기 한 번에 둘이 함께 돌아온다.
-///
-/// (2026-10-29 · D2: 그 앞에 하던 <c>chapters/{Id}.xlsx</c>·<c>episodes/{Id}/</c>를 <c>.bak</c>으로 밀기는
-/// 엑셀 연동과 함께 걷혔다.)
 /// </summary>
 public static class ChapterDeleter
 {

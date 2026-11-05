@@ -9,7 +9,7 @@ namespace Vn.Authoring.Rendering;
 /// 이미터와 이 함수가 갈리면 진행 JSON이 없는 노드를 부른다 — 2026-08-23에 진행 JSON은 `new01`,
 /// yarn은 `Story_new01`로 갈렸던 것이 그 모양이다(`docs/work-orders/dialogue-entry-naming-orders.md`).
 ///
-/// ⚠ <b>규칙은 접두가 아니라 정규화다</b> — <see cref="YarnSyntax.SanitizeNodeName"/>가
+/// <b>규칙은 접두가 아니라 정규화다</b> — <see cref="YarnSyntax.SanitizeNodeName"/>가
 /// 공백·점·하이픈을 바꾼다(`장면 1` → `장면_1`). 바깥에서 이름을 그대로 쓰면 그런 이름에서 갈린다.
 /// <c>Story_</c> 접두는 2026-08-24에 폐지됐다(기획자가 대사엔트리에 이미 적어 두 번 붙고 있었다).
 /// </summary>

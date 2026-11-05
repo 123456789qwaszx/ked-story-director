@@ -3,7 +3,7 @@
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// 간선이 스탯에 하는 일이 <b>더하기인가 정하기인가</b> (2026-08-19).
+/// 간선이 스탯에 하는 일이 <b>더하기인가 정하기인가</b>.
 ///
 /// 깃발에는 증감이 맞는 낱말이 아니다. `met_willow +1`은 "만난 횟수를 하나 늘린다"로 읽히고,
 /// `+2`를 적으면 뜻이 없는데도 조용히 같은 결과가 된다. 켜고 끄는 것은 <b>지정</b>이다.
@@ -31,9 +31,9 @@ public sealed record StatDelta(string Key, int Amount, StatChangeKind Kind = Sta
 /// <summary>
 /// `스탯변화` 문법(`trust +1; anger -1`)을 읽는다 — <b>이 문법을 읽는 유일한 자리다.</b>
 ///
-/// 사는 곳은 챕터 <b>간선</b> 시트다 (2026-08-14 소유자 결정 — 대본 J열 폐지 후 부활).
+/// 사는 곳은 챕터 <b>간선</b> 시트다.
 /// 스탯은 에피소드 <b>사이</b>를 건너는 순간에만 변한다: 간선을 타는 순간 1회 커밋이라
-/// 세이브/로드 복귀가 언제나 일관되고, 도달성 증명(G7)이 근사 없이 정확값으로 전이한다.
+/// 세이브/로드 복귀가 언제나 일관되고, 도달성 증명이 근사 없이 정확값으로 전이한다.
 ///
 /// <see cref="ConditionExpressionParser"/>와 같은 규칙을 따른다 — 시트·행·열을 모르고,
 /// 정수만 받고, 미등록 키를 고쳐 주지 않는다.
@@ -80,7 +80,7 @@ public static class StatDeltaParser
             string key = entry[..split].TrimEnd().TrimEnd('=').Trim();
             string amount = entry[(split + 1)..].Trim();
 
-            // 깃발을 켜고 끈다 (2026-08-19). `조건` 시트에서 bool을 true/false 낱말로
+            // 깃발을 켜고 끈다. `조건` 시트에서 bool을 true/false 낱말로
             // 쓰는 것과 같은 표기라, 기획자가 한 낱말만 알면 두 자리에서 통한다.
             if (Flag(amount) is { } flag)
             {
@@ -133,8 +133,8 @@ public static class StatDeltaParser
     /// <summary>
     /// 해석한 것을 <b>`스탯변화` 문법으로 되돌린다</b> — 이 파서가 읽는 그 모양이다.
     ///
-    /// ⚠ 읽는 쪽과 <b>같은 파일에</b> 둔다 (2026-09-17에 이미터에서 옮겨 왔다). 문법을 아는
-    /// 곳이 하나라야 읽기와 쓰기가 안 갈린다 — 워크북 이미터도, 삭제 거절이 *"여기서
+    /// 읽는 쪽과 <b>같은 파일에</b> 둔다. 문법을 아는
+    /// 곳이 하나라야 읽기와 쓰기가 안 갈린다 — 삭제 거절이 *"여기서
     /// 씁니다"*라고 보여 주는 글월도 이 함수를 지난다.
     /// </summary>
     public static string Format(IReadOnlyList<StatDelta> deltas)

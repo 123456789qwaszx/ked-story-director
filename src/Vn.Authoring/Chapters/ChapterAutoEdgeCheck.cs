@@ -2,24 +2,23 @@
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// <b>자동 길의 규칙</b> — 다섯 가지 (V1 · 2026-09-16, <c>docs/plans/R6.md</c> §9).
+/// <b>자동 길의 규칙</b> — 다섯 가지.
 ///
 /// 자동 진행(<see cref="ChapterEdge.Auto"/>)은 플레이어 입력 없이 <b>같은 장면의</b> 다음
 /// 에피소드로 잇는 길이다. 그러려면 갈릴 데가 없어야 한다: 유일한 간선 · 조건 없음 ·
 /// 스탯변화 없음 · 같은 장면 · 문구 없음.
 ///
-/// ⛔ <b>왜 따로 떼어 냈나</b>: 이 다섯이 <c>ChapterWorkbookReader</c> 안에만 있었다.
-/// R-F로 판의 주인이 워크북에서 프로젝트로 넘어가자 읽는 길이 사라졌고, 그와 함께
-/// <b>툴이 소유한 챕터에서는 이 검사가 조용히 안 돌게 됐다</b>. 내보내기 관문은 코어가
-/// 여전히 거부하므로 잘못된 것이 나가지는 않지만, 기획자는 <b>고치는 중에</b> 못 본다 —
+/// <b>왜 따로 떼어 냈나</b>: 판의 주인은 워크북이 아니라 프로젝트다. 이 검사가 워크북을
+/// 읽는 길에만 있으면 <b>툴이 소유한 챕터에서는 조용히 안 돈다</b>. 내보내기 관문은 코어가
+/// 거부하므로 잘못된 것이 나가지는 않지만, 기획자는 <b>고치는 중에</b> 못 본다 —
 /// 관문에서야 알면 어디를 고칠지 되짚어야 한다.
 ///
-/// ⚠ <b>새 규칙을 만들지 않는다.</b> 다섯 가지는 코어의 <c>ChapterInvariants.VerifyAuto</c>와
+/// <b>새 규칙을 만들지 않는다.</b> 다섯 가지는 코어의 <c>ChapterInvariants.VerifyAuto</c>와
 /// 같은 것이고, 여기서 하는 일은 그것을 <b>더 일찍, 셀을 짚어</b> 말해 주는 것뿐이다.
 ///
-/// ⚠ <see cref="ChapterDocument.StatDiagnostics"/>와 같은 부류다 — <b>파일의 흠이 아니라
+/// <see cref="ChapterDocument.StatDiagnostics"/>와 같은 부류다 — <b>파일의 흠이 아니라
 /// 값의 흠</b>이라 주인이 바뀌어도 남는다. 다만 그쪽은 두 벌로 갈라져 있고 이쪽은 한 벌이다:
-/// 검사가 두 자리에 있으면 언젠가 한쪽만 고쳐진다(V1이 정확히 그 사고였다).
+/// 검사가 두 자리에 있으면 언젠가 한쪽만 고쳐진다.
 /// </summary>
 public static class ChapterAutoEdgeCheck
 {
@@ -37,7 +36,7 @@ public static class ChapterAutoEdgeCheck
 
         var diagnostics = new List<ChapterDiagnostic>();
 
-        // ⚠ Id가 겹친 챕터에서도 터지지 않아야 한다 — 그 흠은 다른 진단이 따로 짚는다.
+        // Id가 겹친 챕터에서도 터지지 않아야 한다 — 그 흠은 다른 진단이 따로 짚는다.
         var episodeById = new Dictionary<string, ChapterEpisode>(StringComparer.Ordinal);
 
         foreach (ChapterEpisode episode in episodes)

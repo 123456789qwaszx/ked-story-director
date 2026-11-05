@@ -9,8 +9,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>대사 편집기는 LineId를 보이지 않는다</b> (2026-10-29 소유자: *"LineId는 필요없으니 화면에 노출되지 않도록
-/// 해주십시오."*). 줄 신원은 데이터에 그대로 산다 — 쓰는 사람에게 보일 이유가 없을 뿐이다.
+/// <b>대사 편집기는 LineId를 보이지 않는다</b>. 줄 신원은 데이터에 그대로 산다 — 쓰는 사람에게 보일 이유가 없을 뿐이다.
 /// </summary>
 public sealed class DialogueEditorLineIdTests : IDisposable
 {

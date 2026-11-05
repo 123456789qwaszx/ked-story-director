@@ -329,7 +329,7 @@ public sealed class BranchMarkerTests
     [Fact]
     public void 하나면_문자열로_여럿이면_배열로_적는다()
     {
-        // 하나뿐이면 2026-10-29 전과 같은 바이트다 — 분기가 하나인 판은 다시 써도 그대로다. 여럿이면 배열이다.
+        // 하나뿐이면 단일 분기 형식(문자열)과 같은 바이트다 — 분기가 하나인 판은 다시 써도 그대로다. 여럿이면 배열이다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
 

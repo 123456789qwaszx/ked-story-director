@@ -12,7 +12,7 @@ namespace Vn.Authoring.Rendering;
 ///
 /// 이 클래스는 조건 의미를 다시 계산하지 않는다. 결과가 이미 펼친 구조를 들고 있다.
 /// 문자열 문법도 모른다. 실제 표기는 Formatter가 맡는다.
-/// ⛔ 연출 명령 조각(연출 결과와의 합성)은 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔다.
+/// 연출 명령 조각(연출 결과와의 합성)은 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔다.
 /// </summary>
 public static class ResultDocumentComposer
 {
@@ -40,7 +40,7 @@ public static class ResultDocumentComposer
                 Text: dialogue.SourceNodeName));
         }
 
-        // ⛔ <b>설정노드의 할당은 노드 머리의 `set`으로 내지 않는다</b> (2026-08-24,
+        // <b>설정노드의 할당은 노드 머리의 `set`으로 내지 않는다</b> (2026-08-24,
         // `docs/work-orders/chapter-scope-variables-orders.md` §4). 그 할당은 챕터의 <b>선언</b>이라
         // 노드마다 되밟으면 초기화의 수명이 에피소드가 된다. 작가가 대본 <b>줄에</b> 단 set은
         // 그대로 낸다(아래 line.Sets) — 그건 이야기 도중의 변화다.
@@ -55,13 +55,13 @@ public static class ResultDocumentComposer
         // 여는 줄 바로 뒤에 출구를 두면 갈래 본문이 그 아래 묻혀 실행되지 않는다.
         // 그래서 다음 전환이 갈래를 닫는 순간에 내보낸다. 조건 갈래의 출구는 jump가 아니라
         // detour다 — 커스텀 씬을 재생하고 갈래로 돌아와 나머지 대본을 계속한다.
-        // (⛔ 선택지 출구의 jump는 대사 안 선택지와 함께 2026-11-04에 걷혔다.)
+        // (선택지 출구의 jump는 대사 안 선택지와 함께 2026-11-04에 걷혔다.)
         (RenderSourceReference Source, string Target)? pendingBranchJump = null;
 
         // 지금 몇 겹의 조건 안인가 (2026-08-17에 불리언에서 늘렸다).
         int conditionDepth = 0;
 
-        // ⚠ 줄들을 돈 <b>뒤에 한 번 더</b> 돈다 — 마지막이 <b>꼬리</b>다(줄 없는 자리).
+        // 줄들을 돈 <b>뒤에 한 번 더</b> 돈다 — 마지막이 <b>꼬리</b>다(줄 없는 자리).
         // 대사 없는 조건 블록이 대본의 끝이면 전환을 실을 줄이 없어서, 그 전환들은 결과의
         // `TrailingTransitions`에 산다. 여기서 <b>베끼지 않고 같은 루프로</b> 지나야 한다:
         // 전환→세그먼트 규칙(깊이·들여쓰기·대기 중 출구)이 한 벌이어야
@@ -130,7 +130,7 @@ public static class ResultDocumentComposer
                 // 줄에 매달린 출구는 아래(줄 단위)에서 대기시키므로 여기서 겹치지 않는다:
                 // 이 칸은 꼬리 전환에만 채워진다.
                 //
-                // ⚠ 여는 전환에서 대기시켜야 <b>닫는 전환이 흘려보낸다</b> — 그래야
+                // 여는 전환에서 대기시켜야 <b>닫는 전환이 흘려보낸다</b> — 그래야
                 // `<<if>>` → `<<detour>>` → `<<endif>>` 순서가 나온다. 여는 자리에 바로
                 // 내면 갈래 본문보다 앞서 뛴다(같은 이유로 줄 쪽도 대기시킨다).
                 if (transition.ExitTargetNodeId is { } trailingTarget)
@@ -151,7 +151,7 @@ public static class ResultDocumentComposer
 
             // 「조건 분기」 표식 (R7 P-5) — 이 줄 <b>앞에서</b> 다녀온다. 전환과 같은 규약이다.
             //
-            // ⚠ 조건이 없다: `<<if>>`로 감싸지 않고 `<<detour>>` 한 줄만 나간다. 성립하든
+            // 조건이 없다: `<<if>>`로 감싸지 않고 `<<detour>>` 한 줄만 나간다. 성립하든
             //   말든 다녀오고, 다녀온 자유 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다.
             //   여럿이면(2026-10-29) 적힌 차례로 한 줄씩 — 첫째의 Id는 그전과 같다.
             for (int detour = 0; detour < line.DetourTargetNodeIds.Count; detour++)

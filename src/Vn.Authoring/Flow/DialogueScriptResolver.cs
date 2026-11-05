@@ -53,7 +53,7 @@ public sealed class DialogueScript
         Orphans = orphans;
     }
 
-    // ⛔ 읽겠다고 적어 둔 대본 Id(`ScriptId`)와 그것을 찾았는지(`IsResolved`)는 대본이 카드 안으로 들어오며
+    // 읽겠다고 적어 둔 대본 Id(`ScriptId`)와 그것을 찾았는지(`IsResolved`)는 대본이 카드 안으로 들어오며
     //    걷혔다(S2) — 카드는 언제나 제 대본을 든다.
 
     public string Locale { get; }

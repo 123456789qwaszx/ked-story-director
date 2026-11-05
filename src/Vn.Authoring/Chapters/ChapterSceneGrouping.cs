@@ -16,7 +16,7 @@ namespace Vn.Authoring.Chapters;
 /// 밖에서 들어오는 자리. 롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 여기다.
 /// </param>
 /// <param name="ExtraEntries">
-/// ⛔ <b>규칙 위반의 증거</b> — 루트 말고 밖에서 또 들어오는 자리들. 비어 있어야 정상이다
+/// <b>규칙 위반의 증거</b> — 루트 말고 밖에서 또 들어오는 자리들. 비어 있어야 정상이다
 /// (<c>ChapterInvariants.VerifySceneEntries</c>). 비어 있지 않아도 <b>묶음은 나온다</b> —
 /// 화면이 짚어 줘야 사람이 고칠 자리를 안다.
 /// </param>
@@ -33,18 +33,18 @@ public sealed record ChapterScene(
 }
 
 /// <summary>
-/// <b>챕터를 장면으로 묶어 본다</b> (R6 · 2026-09-16, <c>docs/plans/R6.md</c>).
+/// <b>챕터를 장면으로 묶어 본다</b>.
 ///
-/// ⛔ <b>장면은 엔티티가 아니다.</b> 정본은 <see cref="ChapterEpisode.SceneId"/> 하나이고,
+/// <b>장면은 엔티티가 아니다.</b> 정본은 <see cref="ChapterEpisode.SceneId"/> 하나이고,
 /// 런타임에도 저장되는 장면 표가 없다 — <c>SceneProgression</c>은 <b>실행할 때</b> 현재
 /// 에피소드의 장면ID로 만들어진다. 이 클래스가 내는 것은 <b>투영</b>이라, 들고 있다가
 /// 나중에 쓰면 안 된다(그 순간 정본이 둘이 된다). 화면이 그릴 때마다 부른다.
 ///
-/// ⚠ <b>새 불변식을 만들지 않는다.</b> 루트 판정은 <see cref="ChapterGraphModel.IsSceneRoot"/>
+/// <b>새 불변식을 만들지 않는다.</b> 루트 판정은 <see cref="ChapterGraphModel.IsSceneRoot"/>
 /// 그대로이고, 그것은 코어의 <c>VerifySceneEntries</c>와 같은 규칙이다 — 챕터 시작도 밖에서
 /// 들어오는 길로 세고, 장면 안 간선은 안 센다.
 ///
-/// ⚠ <b>깨진 챕터에서도 묶음이 나온다.</b> 리더의 규율 그대로다 — <i>"오류가 있어도 모델은
+/// <b>깨진 챕터에서도 묶음이 나온다.</b> 리더의 규율 그대로다 — <i>"오류가 있어도 모델은
 /// 만든다, 조용히 빈 화면을 주지 않는다"</i>(규칙 14). 루트가 둘이면 첫 자리를 루트로 삼고
 /// 나머지를 <see cref="ChapterScene.ExtraEntries"/>에 실어 화면이 짚게 한다.
 /// </summary>
@@ -53,12 +53,12 @@ public static class ChapterSceneGrouping
     /// <summary>
     /// 장면ID를 안 적은 장면의 이름 — 내부 발급값(<c>__scene_*</c>)을 사람에게 보이지 않는다.
     ///
-    /// ⛔ <b>에피소드 Id를 붙이는 이유</b>: 장면ID가 섞인 챕터에서는 미지정 장면이 여럿일 수
+    /// <b>에피소드 Id를 붙이는 이유</b>: 장면ID가 섞인 챕터에서는 미지정 장면이 여럿일 수
     /// 있고, 전부 같은 이름이면 <b>똑같은 줄이 여럿 서서</b> 어느 것이 어느 에피소드인지 알 수
     /// 없다. 미지정 장면에는 에피소드가 하나뿐이므로 그 Id가 곧 구분이다.
     ///
-    /// ⚠ 장면ID를 <b>하나도</b> 안 적은 챕터에서는 화면이 장면 단을 통째로 생략하므로
-    /// 이 이름이 안 보인다 (<c>docs/plans/R6-explorer.md</c> §2).
+    /// 장면ID를 <b>하나도</b> 안 적은 챕터에서는 화면이 장면 단을 통째로 생략하므로
+    /// 이 이름이 안 보인다.
     /// </summary>
     public static string DefaultSceneName(string episodeId) => $"미지정 · {episodeId}";
 

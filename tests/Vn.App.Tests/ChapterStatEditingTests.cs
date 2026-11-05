@@ -9,10 +9,9 @@ using Vn.Authoring.Tests.Fixtures;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// 스탯 수치를 툴에서 만진다 (2026-08-17 소유자: "챕터그래프에서도 에피소드 노드에서도
-/// 스탯 변화를 할 수 있도록 해줄래? 이건 엑셀에서 하는 것이긴 한데, 그 수치를 툴에서도").
+/// 스탯 수치를 툴에서 만진다 — 챕터 그래프에서도 에피소드 노드에서도 스탯 변화를 적는다.
 ///
-/// 값이 사는 곳은 프로젝트의 챕터 간선이다(2026-10-29 · D2 — 그 전에는 챕터 엑셀이었다).
+/// 값이 사는 곳은 프로젝트의 챕터 간선이다.
 /// 그래서 확인은 언제나 화면이 아니라 <b>프로젝트의 챕터를 다시 읽어</b> 한다.
 /// </summary>
 public sealed class ChapterStatEditingTests
@@ -34,8 +33,7 @@ public sealed class ChapterStatEditingTests
 
         StatChangeEditor editor = Editor(view, "EdgeFormStatsHost");
 
-        // ⚠ 이 길에는 이미 변화가 걸려 있다 — 견본이 2026-08-25에 폐지된 `cleared:`를
-        // 대신해 심어 둔 `복도지남 true`다. 폼은 기존 줄을 싣고 서므로 새 줄은 뒤에 선다.
+        // 이 길에는 이미 변화가 걸려 있다 — 견본이 심어 둔 `복도지남 true`다. 폼은 기존 줄을 싣고 서므로 새 줄은 뒤에 선다.
         int added = Rows(editor);
         Add(editor);
 
@@ -127,7 +125,7 @@ public sealed class ChapterStatEditingTests
     [Fact]
     public void 툴에서_적은_수치가_그_자리에서_도착_스탯으로_보인다() => HeadlessUi.Run(() =>
     {
-        // 소유자의 두 요청이 만나는 자리다 — 여기서 수치를 적으면 저기 카드에 폭이 뜬다.
+        // 두 편집 자리가 만나는 곳이다 — 여기서 수치를 적으면 저기 카드에 폭이 뜬다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -150,8 +148,8 @@ public sealed class ChapterStatEditingTests
         view.SubmitEdgeForm();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // ⚠ 줄에는 챕터의 스탯이 전부 선다 — 견본에 `복도지남` 깃발이 늘어난 뒤로
-        // 뒤가 따라붙는다(2026-08-25). 여기서 재는 것은 맨 앞의 그 수치다.
+        // 줄에는 챕터의 스탯이 전부 선다 — 견본에는 `복도지남` 깃발도 있어
+        // 뒤가 따라붙는다. 여기서 재는 것은 맨 앞의 그 수치다.
         Assert.StartsWith($"{stat.DisplayName} 2", StatLine(view, "main05.02"));
 
         // 그 길을 지나지 않은 시작 노드는 초기값 그대로다.

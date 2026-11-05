@@ -64,7 +64,7 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 판 하나를 걷는 <b>알맹이</b> — <see cref="Mutate"/> 밖이다.
     ///
-    /// ⚠ 챕터를 지울 때 판과 챕터가 <b>한 번의 변경</b>이어야 해서 갈라 뒀다
+    /// 챕터를 지울 때 판과 챕터가 <b>한 번의 변경</b>이어야 해서 갈라 뒀다
     /// (<see cref="RemoveChapterWithBoard"/>). 되돌리기 한 번에 둘 중 하나만 돌아오면
     /// 챕터는 있는데 판이 없는(또는 그 반대) 상태가 남는다.
     /// </summary>
@@ -107,9 +107,9 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 대사 노드를 만든다 — <b>제 대본과 첫 빈 줄까지</b> 함께 선다 (X4, D-3). 노드는 생성 즉시 편집 대상이라
+    /// 대사 노드를 만든다 — <b>제 대본과 첫 빈 줄까지</b> 함께 선다. 노드는 생성 즉시 편집 대상이라
     /// 바로 타이핑할 수 있다. 노드 · 대본 · 첫 줄이 한 번의 편집이라 되돌리기 한 번에 함께 사라진다.
-    /// (⛔ 이미 있는 대본을 주어 잇던 <c>scriptId</c>는 대본이 카드 안으로 들어오며 걷혔다 — S2.)
+    /// 대본은 카드 안에 있으므로 이미 있는 대본을 주어 잇지 않는다.
     /// </summary>
     public DialogueNode AddDialogueNode(
         string fileId,
@@ -127,13 +127,13 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 대사 노드와 그 전용 대본을 <b>짓기만</b> 한다 — <see cref="Mutate"/> 밖이다.
     ///
-    /// ⚠ 다른 변경과 <b>한 번에</b> 묶어야 할 때 쓴다(「분기 추가」는 노드·대본·표식이 한
+    /// 다른 변경과 <b>한 번에</b> 묶어야 할 때 쓴다(「분기 추가」는 노드·대본·표식이 한
     /// 동작이라 되돌리기 한 번에 셋이 함께 돌아와야 한다). <c>Mutate</c> 안에서 다른 명령을
     /// 부르면 변경이 겹쳐 쌓여 되돌리기가 반쪽이 된다 — 그래서 <b>짓는 것</b>과 <b>붙이는
     /// 것</b>을 갈라 둔다.
     ///
-    /// ⭐ <b>챕터 판에 세우면 에피소드도 함께 선다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17).
-    /// 자유 씬이라는 종류가 없어졌으므로 <b>판의 대사 노드는 전부 에피소드</b>다 — 카드를
+    /// <b>챕터 판에 세우면 에피소드도 함께 선다</b>.
+    /// 자유 씬이라는 종류가 없으므로 <b>판의 대사 노드는 전부 에피소드</b>다 — 카드를
     /// 세우는 것이 곧 에피소드를 만드는 일이고, 그래서 어긋난 이름이 애초에 안 생긴다.
     /// </summary>
     private (DialogueNode Created, ChapterEpisode? Episode, Action Attach) NewDialogueNodeCore(
@@ -148,10 +148,9 @@ public sealed partial class ProjectEditor
     {
         StoryFile file = RequireFile(fileId);
 
-        // ⭐ <b>이름을 고르는 규칙도 여기 하나다</b> (2026-09-18). 챕터 판에서는 이 이름이
+        // <b>이름을 고르는 규칙도 여기 하나다</b>. 챕터 판에서는 이 이름이
         //    곧 EpisodeId가 되므로 <c>장면 3</c> 같은 <b>공백 든 Id</b>가 나오면 안 된다 —
-        //    그 Id는 진행 JSON과 산출물의 열쇠로 나간다(엑셀 시절에는 대본 워크북의 파일 이름이기도
-        //    했다). 다른 창구가 이미 쓰던 `new01`
+        //    그 Id는 진행 JSON과 산출물의 열쇠로 나간다. 다른 창구와 같은 `new01`
         //    규약으로 맞춘다.
         var created = new DialogueNode(
             name: name ?? (ChapterOfBoard(file) is { } board
@@ -199,20 +198,20 @@ public sealed partial class ProjectEditor
         EpisodeNaming.ChapterOfBoard(Project, file);
 
     /// <summary>
-    /// 이 노드가 질 <b>에피소드</b>를 짓는다 (R7 P-6). 챕터 판이 아니면 둘 다 <c>null</c>이다 —
+    /// 이 노드가 질 <b>에피소드</b>를 짓는다. 챕터 판이 아니면 둘 다 <c>null</c>이다 —
     /// 작가의 낙서판에는 챕터가 없고, 거기 세운 노드는 진행에 안 실린다.
     ///
-    /// ⚠ <b>이미 있는 에피소드면 짓지 않고 표식만 붙인다.</b> 챕터 그래프에서 먼저 만든
+    /// <b>이미 있는 에피소드면 짓지 않고 표식만 붙인다.</b> 챕터 그래프에서 먼저 만든
     /// 에피소드에 대본을 다는 것이(그리고 열 때 카드 없는 에피소드에 빈 카드를 세우는 것이 —
     /// <see cref="AlignBoardsWithChapters"/>) 정확히 그
     /// 자리다 — 거기서 또 지으면 에피소드 하나에 카드가 둘 선다.
     ///
-    /// ⚠ 임포터는 노드를 <b>EpisodeId가 아니라 `대사엔트리`로</b> 짓는다. 그래서 찾는 일은
+    /// 임포터는 노드를 <b>EpisodeId가 아니라 `대사엔트리`로</b> 짓는다. 그래서 찾는 일은
     /// <see cref="EpisodeNaming.EpisodeFor"/>에 맡긴다 — 여기서 이름만 맞춰 보면 `대사엔트리`가
-    /// 따로 적힌 챕터마다 에피소드가 <b>두 배로 불어난다</b>(2026-09-17에 겪었다).
+    /// 따로 적힌 챕터마다 에피소드가 <b>두 배로 불어난다</b>.
     /// </summary>
     /// <param name="episodePosition">
-    /// 챕터 그래프에서의 자리. ⚠ <b>카드의 자리와 다른 판이다</b> — 연출 판의 좌표를 그대로
+    /// 챕터 그래프에서의 자리. <b>카드의 자리와 다른 판이다</b> — 연출 판의 좌표를 그대로
     /// 챕터 그래프에 넣으면 사람이 맞춰 둔 배치가 흐트러진다. 안 주면 카드 자리를 따른다
     /// (연출 그래프에서 카드부터 세우는 길이 그렇다 — 거기서는 그 자리가 유일한 정보다).
     /// </param>
@@ -250,26 +249,25 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// <b>「분기 추가」</b> (R7 P-5 · 2026-09-17 소유자) — 그 줄 <b>앞</b>에 분기 표식을 두고,
-    /// 다녀올 <b>자유 씬</b>을 함께 세워 잇는다.
+    /// <b>「분기 추가」</b> — 그 줄 <b>앞</b>에 분기 표식을 두고,
+    /// 다녀올 <b>카드</b>를 함께 세워 잇는다.
     ///
-    /// ⛔ <b>조건을 걸지 않는다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든
+    /// <b>조건을 걸지 않는다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든
     /// 말든 다녀오고, 다녀온 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다.
     ///
-    /// ⭐ <b>조건을 채우는 창구는 챕터 그래프다</b> (2026-09-18에 섰다 — 그전에는 "이후의
-    /// 다른 탭"이라고만 적혀 있었다). 판의 점선을 누르면 오른쪽에 조건 한 칸이 열리고,
+    /// <b>조건을 채우는 창구는 챕터 그래프다</b>. 판의 점선을 누르면 오른쪽에 조건 한 칸이 열리고,
     /// 그 값은 <b>다녀갈 에피소드의 첫머리</b>에 적힌다
     /// (<see cref="Chapters.BranchEntryCondition"/>). 부르는 쪽 대본은 그대로다.
     ///
-    /// ⚠ <b>그냥 에피소드다</b> (R7 P-6 · 결정 ⑤가 2026-09-17에 뒤집었다 — 전에는 자유 씬).
+    /// 다녀올 카드는 <b>그냥 에피소드다</b>.
     /// 진행에 실리며, 아래에 선택지 3칸이 뚫린다. <b>출발과 같은
     /// 장면</b>에 둔다 — 곁가지는 제 본줄 옆에 있어야 판에서 읽힌다.
     ///
-    /// ⚠ 노드·대본·표식이 <b>한 번의 변경</b>이다. 갈라 두면 되돌리기 한 번에 표식만 사라져
+    /// 노드·대본·표식이 <b>한 번의 변경</b>이다. 갈라 두면 되돌리기 한 번에 표식만 사라져
     /// <b>아무도 안 부르는 씬</b>이 판에 남는다.
     /// </summary>
-    /// <param name="beforeLineId">이 줄 앞에서 갈라진다. 그 줄에 이미 분기가 있으면 그 뒤에 하나 더 선다(2026-10-29 —
-    /// 전에는 거절했다 · <c>docs/plans/multi-branch.md</c>). 차례로 다녀온다.</param>
+    /// <param name="beforeLineId">이 줄 앞에서 갈라진다. 그 줄에 이미 분기가 있으면 그 뒤에 하나 더 선다.
+    /// 차례로 다녀온다.</param>
     public DialogueNode AddBranchMarker(string nodeId, string beforeLineId, string? name = null)
     {
         if (Project.FindNode(nodeId) is not DialogueNode source)
@@ -288,8 +286,7 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("그 줄이 이 노드의 대본에 없습니다.");
         }
 
-        // 분기로 다녀갈 카드는 원본의 <b>오른쪽</b>에 선다 (D3 · 2026-10-29 소유자: "분기는 기존처럼
-        // 오른쪽으로 빠지도록"). 아래는 선택지로 가는 다음 에피소드의 자리다.
+        // 분기로 다녀갈 카드는 원본의 <b>오른쪽</b>에 선다. 아래는 선택지로 가는 다음 에피소드의 자리다.
         (double x, double y) = Graph.NodePlacement.BesideOf(file, source);
 
         (DialogueNode created, _, Action attach) = NewDialogueNodeCore(
@@ -298,7 +295,7 @@ public sealed partial class ProjectEditor
             y,
             name ?? NextName("분기"),
             SceneOfNode(file, source),
-            // ⛔ 들어오는 간선이 없다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다.
+            // 들어오는 간선이 없다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다.
             //    그래서 도달성 증명은 이것을 <b>정확히 도달 불가로</b> 판정하고, 그 판정이
             //    맞다. 증명기를 고치지 않는 이유는 그것이 저쪽 런타임의 <b>오라클</b>이기
             //    때문이다(코퍼스로 고정돼 있어 여기서 답을 바꾸면 둘이 조용히 갈린다).
@@ -316,16 +313,14 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// <b>「분기 지우기」</b> (2026-10-29 소유자: *"조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다.
-    /// 지울 수 있도록 해주시고"*) — <see cref="AddBranchMarker"/>의 반대다. 그 줄 앞의 분기 하나(줄과 다녀갈 카드 —
+    /// <b>「분기 지우기」</b> — <see cref="AddBranchMarker"/>의 반대다. 그 줄 앞의 분기 하나(줄과 다녀갈 카드 —
     /// 한 줄에 여럿일 수 있다)를 걷고,
     /// 그 분기가 다녀가던 카드(분기를 추가할 때 함께 선 에피소드)도 <b>다른 곳이 쓰지 않으면</b> 함께 걷는다.
     ///
-    /// ⛔ 2026-10-29까지는 표식만 지우고 카드는 판에 남겼다 — "거기 써 둔 대사가 한 번의 실수로 사라진다"가
-    /// 근거였는데, 그러면 아무도 안 부르는 카드가 판에 남아 사람은 분기가 지워지지 않았다고 본다. 되돌리기 한 번에
-    /// 표식 · 카드 · 대본이 함께 돌아오므로 그 근거가 없어졌다.
+    /// 표식만 지우고 카드를 남기면 아무도 안 부르는 카드가 판에 남아 사람은 분기가 지워지지 않았다고 본다.
+    /// 써 둔 대사는 되돌리기 한 번에 표식 · 카드 · 대본과 함께 돌아온다.
     ///
-    /// ⚠ <b>남기는 경우</b> — 그 카드를 다른 곳이 쓰고 있으면 표식만 걷는다: 다른 표식 · 출구가 그리로 가거나,
+    /// <b>남기는 경우</b> — 그 카드를 다른 곳이 쓰고 있으면 표식만 걷는다: 다른 표식 · 출구가 그리로 가거나,
     /// 챕터의 길(간선)이 그리로 들어오거나, 챕터의 시작 에피소드이거나, 다른 판에 서 있을 때. 다른 데서 이어 쓰는
     /// 에피소드를 분기 하나 지우다 함께 걷으면 안 된다.
     /// </summary>
@@ -441,7 +436,7 @@ public sealed partial class ProjectEditor
         Mutate(() =>
         {
             owner.Nodes.Remove(node);
-            RemoveReferencesToNode(nodeId);   // 카드의 대본은 카드 안이라 함께 간다(S1 · S2)
+            RemoveReferencesToNode(nodeId);   // 카드의 대본은 카드 안이라 함께 간다
 
             if (string.Equals(Project.StartNodeId, nodeId, StringComparison.Ordinal))
             {
@@ -464,10 +459,10 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 여러 노드의 자리를 <b>한 번의 변경으로</b> 옮긴다 — 끌기를 놓을 때 쓴다
-    /// (2026-10-29 · D3, <c>docs/design/two-graphs.md</c> §6-2).
+    /// (<c>docs/design/two-graphs.md</c> §6-2).
     ///
-    /// <b>되돌리기 한 칸이다.</b> 예전에는 그래프가 포인터가 움직일 때마다 기록 없이 적었다 —
-    /// 끈 자리는 되돌릴 수 없었고, 앞선 편집을 되돌리면 끈 자리까지 조용히 돌아갔다. 이제 그래프는
+    /// <b>되돌리기 한 칸이다.</b> 포인터가 움직일 때마다 기록 없이 적으면 끈 자리는 되돌릴 수 없고,
+    /// 앞선 편집을 되돌리면 끈 자리까지 조용히 돌아간다. 그래서 그래프는
     /// 끄는 동안 화면만 옮기고 놓을 때 여기를 한 번 부른다(챕터 그래프의 <c>MoveEpisodes</c>와 같다).
     ///
     /// 없는 노드는 건너뛰고, 실제로 달라진 자리가 없으면 아무것도 적지 않는다(§5-8).
@@ -512,7 +507,7 @@ public sealed partial class ProjectEditor
         SetLineTransitions(nodeId, lineId, transition is null ? [] : [transition]);
 
     /// <summary>
-    /// 이 줄 앞의 전환들을 통째로 바꾼다 (2026-08-17) — 목록 순서가 곧 일어나는 순서다.
+    /// 이 줄 앞의 전환들을 통째로 바꾼다 — 목록 순서가 곧 일어나는 순서다.
     /// 빈 목록이면 전환이 없는 줄이다. 대본에 없는 LineId를 주면 아무것도 하지 않는다.
     /// </summary>
     public void SetLineTransitions(
@@ -562,22 +557,20 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// <b>이 노드가 통째로 도는 조건</b>을 건다 — 첫 줄에 <c>BeginIf</c>, 마지막 줄 뒤에
-    /// <c>EndIf</c> (2026-09-18). <c>null</c>이면 걷는다.
+    /// <c>EndIf</c>. <c>null</c>이면 걷는다.
     ///
-    /// <b>분기 에피소드의 첫머리 조건</b>이 사는 자리다 (R7 P-5 · 2026-09-18 소유자:
-    /// *"Detour로 조건 분기가 일어나는 마커를 끼워두고 그곳에서 조건과 내용을 추가한다는게
-    /// 유지보수 측면에서 얼마나 유리한지"*). 부르는 쪽 대본에는 <c>&lt;&lt;detour&gt;&gt;</c>
+    /// <b>분기 에피소드의 첫머리 조건</b>이 사는 자리다. 부르는 쪽 대본에는 <c>&lt;&lt;detour&gt;&gt;</c>
     /// 한 줄뿐이고 <b>조건과 내용이 다녀올 곳에 함께</b> 있다 — 짝 맞출 <c>If</c>/<c>EndIf</c>가
     /// 남의 대본에 흩어지지 않는다.
     ///
-    /// ⭐ <b>성립하면 돈다</b>(허가). 조건이 거짓이면 본문이 통째로 건너뛰이고, 노드 끝이
+    /// <b>성립하면 돈다</b>(허가). 조건이 거짓이면 본문이 통째로 건너뛰이고, 노드 끝이
     /// 곧 <c>&lt;&lt;return&gt;&gt;</c>이라 곧바로 돌아간다. 모델에 부정(<c>not</c>)이 없으므로
     /// 이 극성이 곧 저장 형태다.
     ///
-    /// ⚠ <b>한 번의 변경이다.</b> 줄과 꼬리를 따로 쓰면 되돌리기가 둘로 쪼개져, 한 번 물렀을 때
+    /// <b>한 번의 변경이다.</b> 줄과 꼬리를 따로 쓰면 되돌리기가 둘로 쪼개져, 한 번 물렀을 때
     /// <c>BeginIf</c>만 남은 <b>짝 없는 상태</b>가 판에 선다.
     ///
-    /// ⚠ 첫 줄의 기존 전환은 <b>덮는다</b>. 덮어도 되는 모양인지는 부르는 쪽
+    /// 첫 줄의 기존 전환은 <b>덮는다</b>. 덮어도 되는 모양인지는 부르는 쪽
     /// (<see cref="Chapters.BranchEntryCondition"/>)이 먼저 재고 온다.
     /// </summary>
     public void SetEntryCondition(string nodeId, string? conditionId)
@@ -655,10 +648,6 @@ public sealed partial class ProjectEditor
 
         if (kind == ExitPortKind.Default)
         {
-            // ⛔ ~~커스텀(자유) 노드의 기본 출구 쓰기는 조용히 거절한다~~ (2026-08-21) —
-            //    <b>걷혔다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 그 거절이 곧 엑셀노드/자유노드의
-            //    구분이었고, 같은 규칙이 `NodeConnections`와 `EffectiveDefaultExit`에도
-            //    한 벌씩 더 있었다 — 셋을 함께 걷었다.
             if (!string.Equals(node.DefaultExitTargetNodeId, targetNodeId, StringComparison.Ordinal))
             {
                 Mutate(() =>
@@ -676,10 +665,10 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        // 「조건 분기」 표식의 목표는 <b>그 줄</b>이 진다 (R7 P-5) — 갈래 출구 장부에 적으면
+        // 「조건 분기」 표식의 목표는 <b>그 줄</b>이 진다 — 갈래 출구 장부에 적으면
         // 여는 전환이 없는 고아가 되고, 저장할 때 그 칸이 전환 안에 있어 통째로 사라진다.
         //
-        // 줄만 주면(2026-10-29 — 한 줄에 분기가 여럿) 대상이 있으면 그 줄의 분기 끝에 하나를 <b>더하고</b>(이미 있으면
+        // 한 줄에 분기가 여럿일 수 있다. 줄만 주면 대상이 있으면 그 줄의 분기 끝에 하나를 <b>더하고</b>(이미 있으면
         // 그대로), 대상이 없으면 그 줄의 분기를 <b>모두</b> 끊는다. 분기 하나만 바꾸려면 포트(<see cref="ExitPort"/>)로 부른다.
         if (kind == ExitPortKind.Detour)
         {
@@ -687,7 +676,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        // 선택지 출구(v9)는 문구가 열쇠다 — 대본의 줄에 매이지 않는다.
+        // 선택지 출구는 문구가 열쇠다 — 대본의 줄에 매이지 않는다.
         Dictionary<string, string> exits =
             kind == ExitPortKind.Choice ? dialogue.ChoiceExits : dialogue.BranchExits;
 
@@ -716,7 +705,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 그 줄의 분기 하나를 바꾼다 (2026-10-29 — 한 줄에 분기가 여럿). <paramref name="from"/>은 지금 가는 곳이다.
+    /// 그 줄의 분기 하나를 바꾼다(한 줄에 분기가 여럿일 수 있다). <paramref name="from"/>은 지금 가는 곳이다.
     /// <list type="bullet">
     /// <item><c>from</c> 없음 · <c>to</c> 있음 — 그 줄 분기 끝에 더한다(이미 있으면 그대로).</item>
     /// <item><c>from</c> 없음 · <c>to</c> 없음 — 그 줄의 분기를 모두 끊는다.</item>
@@ -800,7 +789,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// <b>실행 선의 모양을 정한다</b> (G3 · 2026-10-29 소유자: "곡선이나 그런 걸 조절할 수 있도록 해줘. 피그잼처럼").
+    /// <b>실행 선의 모양을 정한다</b>.
     /// 꼴을 바꾸거나 손잡이를 끌어 놓을 때 한 번 — 되돌리기 한 칸이다. null이나 기본 모양이면 자동으로 돌아간다.
     /// 이어지지 않은 출구는 그을 선이 없어 아무것도 적지 않고, 바뀌는 것이 없어도 적지 않는다.
     /// </summary>
@@ -836,8 +825,7 @@ public sealed partial class ProjectEditor
 
     // ── 설정 공급 연결 ──────────────────────────────────────────────────────
     //
-    // ⛔ 링크를 만들고 끊고 켜던 편집(AddSettingsLink · RemoveLink · SetLinkEnabled)은 2026-10-29에 걷혔다
-    //    (legacy-cleanup.md L-D2). 조건 공급은 2026-08-17부터 판 전체라 링크를 아무도 읽지 않는다. 옛 파일의 링크
+    // 링크를 만들고 끊고 켜는 편집은 없다. 조건 공급은 판 전체라 링크를 아무도 읽지 않는다. 옛 파일의 링크
     //    데이터는 그대로 읽고 쓰고, 노드를 지우면 그 노드를 가리키던 링크도 함께 걷힌다(RemoveReferencesToNode).
 
     // ── 조건 ────────────────────────────────────────────────────────────────
@@ -896,11 +884,9 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 그 챕터의 <b>판</b>을 보장한다 — 없으면 만들어 돌려준다 (챕터 = 판 1:1, G-1 v2).
     ///
-    /// <b>왜 여기 있나 (2026-08-23)</b> — 이 함수는 오래 `AuthoringSession`에 살았는데,
-    /// <b>세션 상태를 하나도 안 본다.</b> 열려 있는 파일도, 선택도, 저장 여부도 안 묻고
-    /// <see cref="Project"/>와 자기 자신만 쓴다. 세션에 주차돼 있던 순수한 편집 작업이라,
-    /// 에피소드 동기화를 화면 밖으로 꺼내려던 시도가 여기서 막혔다 — 도메인이 셸의
-    /// 메서드를 불러야 했기 때문이다.
+    /// <b>왜 여기 있나</b> — 이 함수는 <b>세션 상태를 하나도 안 본다.</b> 열려 있는 파일도,
+    /// 선택도, 저장 여부도 안 묻고 <see cref="Project"/>와 자기 자신만 쓰는 순수한 편집 작업이다.
+    /// 세션에 두면 도메인이 셸의 메서드를 불러야 한다.
     ///
     /// 왼쪽 챕터 목록 클릭과 에피소드 동기화가 <b>같은 규칙 하나</b>를 쓴다.
     /// </summary>
@@ -910,13 +896,11 @@ public sealed partial class ProjectEditor
         StoryFile? standing = Chapters.EpisodeNaming.BoardOf(Project, chapterId);
         StoryFile board = standing ?? AddStoryFile(chapterId);
 
-        // ⛔ 챕터마다 상시로 세우던 「X 설정」 노드(2026-08-17 소유자 — 작가 조건 · 변수를 담던
-        //    자리)는 2026-10-29(L6)부터 세우지 않는다. 그 안을 채우던 편집기가 걷혀 눌러도 빈
-        //    칸이었다. 옛 판에 남은 것은 데이터째 두고 연출 그래프에서만 숨긴다
+        // 챕터마다 「X 설정」 노드(작가 조건 · 변수를 담는 자리)를 세우지 않는다 — 그 안을 채울
+        //    편집기가 없어 눌러도 빈 칸이다. 옛 판에 남은 것은 데이터째 두고 연출 그래프에서만 숨긴다
         //    (`GraphProjectionBuilder.IsHiddenPlumbing`) — 그 안의 조건은 그대로 고를 수 있다.
 
-        // 판이 <b>막 섰으면</b> 챕터 조건이 함께 공급된다 (2026-10-29 · D2). 예전에는 이 일을
-        // 엑셀 [대본 가져오기]가 했다 — 그 단추가 사라진 지금, 조건을 먼저 적고 에피소드를
+        // 판이 <b>막 섰으면</b> 챕터 조건이 함께 공급된다 — 조건을 먼저 적고 에피소드를
         // 나중에 만든 챕터는 여기서 받지 않으면 대사 노드의 조건 목록이 비어 있게 된다.
         if (standing is null)
         {
@@ -1001,18 +985,17 @@ public sealed partial class ProjectEditor
     private ProjectChangeKind? _batchKind;
 
     /// <summary>
-    /// 여러 명령을 <b>되돌리기 한 칸 · 알림 한 번</b>으로 묶는다 (2026-10-29 · D2).
+    /// 여러 명령을 <b>되돌리기 한 칸 · 알림 한 번</b>으로 묶는다.
     ///
-    /// <b>왜 필요해졌나</b> — 엑셀 [대본 가져오기]가 걷히며 그 안에 숨어 있던 일(챕터 조건을 판에
-    /// 공급하는 일)이 <b>조건을 고치는 그 명령</b>으로 옮겨 왔다. 조건 하나를 고쳤는데 되돌리기가
-    /// 두 번이어야 하면 사람은 첫 번째에서 "안 돌아갔다"고 본다. 공급은 남의 명령
-    /// (<see cref="AddSetNode"/>·<see cref="AddCondition"/>)을 부르므로, 짓기와 붙이기를 가르는
-    /// 예전 방식(<c>NewDialogueNodeCore</c>)으로는 감당이 안 된다.
+    /// <b>왜 필요한가</b> — 챕터 조건을 판에 공급하는 일은 <b>조건을 고치는 그 명령</b> 안에서
+    /// 일어난다. 조건 하나를 고쳤는데 되돌리기가 두 번이어야 하면 사람은 첫 번째에서
+    /// "안 돌아갔다"고 본다. 공급은 남의 명령(<see cref="AddSetNode"/>·<see cref="AddCondition"/>)을
+    /// 부르므로, 짓기와 붙이기를 가르는 방식(<c>NewDialogueNodeCore</c>)으로는 감당이 안 된다.
     ///
-    /// ⚠ 안에서 예외가 나면 <b>묶음 전 상태로 되돌리고</b> 다시 던진다 — 반쯤 된 묶음이 남으면
+    /// 안에서 예외가 나면 <b>묶음 전 상태로 되돌리고</b> 다시 던진다 — 반쯤 된 묶음이 남으면
     /// 되돌리기 한 칸이 무엇을 되돌리는지 아무도 모른다.
     ///
-    /// ⚠ 묶음 안에서 아무것도 안 바뀌었으면 되돌리기 칸도 알림도 없다.
+    /// 묶음 안에서 아무것도 안 바뀌었으면 되돌리기 칸도 알림도 없다.
     /// </summary>
     public void Batch(Action change)
     {
@@ -1056,15 +1039,12 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 프로젝트가 <b>실제로 바뀐 횟수</b> (2026-08-24 성능). 두 시점의 값이 같으면 그
+    /// 프로젝트가 <b>실제로 바뀐 횟수</b> (성능). 두 시점의 값이 같으면 그
     /// 사이에 아무 일도 없었다 — 무슨 일이 있었는지는 몰라도 <em>없었다</em>는 것은 안다.
     ///
-    /// <b>왜 필요했나</b> — 에피소드 동기화는 워크북을 반영할 때마다 셸에 "다시 그려라"고
-    /// 알렸는데, 그 근거로 쓰던 <c>EpisodeSyncReport.Applied</c>는 <b>"반영을 돌렸다"</b>는
-    /// 뜻이지 <b>"뭔가 달라졌다"</b>는 뜻이 아니다(`ChapterBoardSupplyTests`의
-    /// `같은_워크북을_두_번_동기화하면_두_번째는_변경이_없다`가 그 사실을 이미 못 박아
-    /// 두었다 — 두 번째도 <c>Applied</c>가 참이다). 그래서 아무것도 안 바뀐 동기화가
-    /// 매번 전체 다시 그리기를 방송했고, 그 순간 사람이 <b>타이핑하던 칸이 파괴됐다.</b>
+    /// <b>왜 필요한가</b> — "반영을 돌렸다"는 <b>"뭔가 달라졌다"</b>는 뜻이 아니다. 그것을
+    /// 근거로 다시 그리기를 방송하면 아무것도 안 바뀐 동기화가 매번 전체 다시 그리기를 일으키고,
+    /// 그 순간 사람이 <b>타이핑하던 칸이 파괴된다.</b>
     ///
     /// 각 변경을 일일이 세는 대신 여기 하나를 둔다: 새 편집 명령이 생겨도 <c>Mutate</c>를
     /// 지나는 한 저절로 세어진다. 빠뜨릴 수 있는 목록을 만들지 않는다.
@@ -1092,10 +1072,9 @@ public sealed partial class ProjectEditor
     /// 대본에서 사라진 줄의 출구는 여기서 지우지 않는다. 그것은 <b>고아</b>이지 쓰레기가 아니다.
     /// 대본을 되돌리면 살아나야 하고, 그때까지는 진단으로 보인다.
     ///
-    /// ⚠ <b>신원을 흐름 해석과 같은 규칙으로 짓는다</b>(<see cref="Flow.BranchAnchor"/>).
-    /// 예전에는 여기가 <c>extension.Transition</c>(첫 전환) 하나만 보고 <b>맨 줄 Id</b>만
-    /// 살렸다. 그래서 (ㄱ) 첫 전환이 여는 것이 아닌 줄의 출구가 통째로 지워졌고,
-    /// (ㄴ) 한 줄이 갈래를 여럿 열 때 둘째부터의 출구가 매달자마자 사라졌다.
+    /// <b>신원을 흐름 해석과 같은 규칙으로 짓는다</b>(<see cref="Flow.BranchAnchor"/>).
+    /// 첫 전환 하나만 보고 <b>맨 줄 Id</b>만 살리면 (ㄱ) 첫 전환이 여는 것이 아닌 줄의 출구가
+    /// 통째로 지워지고, (ㄴ) 한 줄이 갈래를 여럿 열 때 둘째부터의 출구가 매달자마자 사라진다.
     /// </summary>
     private static void PruneBranchExits(DialogueNode node)
     {
@@ -1114,7 +1093,7 @@ public sealed partial class ProjectEditor
             }
         }
 
-        // 대본 끝의 줄 없는 갈래들 (2026-08-24).
+        // 대본 끝의 줄 없는 갈래들.
         int trailing = 0;
 
         foreach (LineConditionTransition transition in node.TrailingTransitions)
@@ -1210,12 +1189,11 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 그 챕터에서 <b>아직 안 쓰인 자리표시 EpisodeId</b> — <c>new01</c>, <c>new02</c>…
     ///
-    /// ⛔ 이 규약은 2026-09-18까지 <b>화면 둘에 손으로 복사돼</b> 있었고(챕터 그래프·대본 탭),
-    /// 연출 그래프는 아예 다른 규약(<c>장면 3</c>)을 썼다 — 같은 행동이 창구마다 다른 Id를
-    /// 만들었다. EpisodeId는 진행 JSON과 산출물의 <b>열쇠</b>로 나가므로(엑셀 시절에는 대본 워크북의
-    /// 파일 이름이었다) 공백이 든 Id는 특히 나쁘다.
+    /// 챕터 그래프·대본 탭·연출 그래프가 모두 이 규약 하나를 쓴다 — 창구마다 규약이 다르면
+    /// 같은 행동이 다른 Id를 만든다. EpisodeId는 진행 JSON과 산출물의 <b>열쇠</b>로 나가므로
+    /// 공백이 든 Id(<c>장면 3</c>)는 특히 나쁘다.
     ///
-    /// ⚠ 사람이 고칠 것을 전제한 이름이다 — 이름을 정하는 것은 기획자의 일이고, 여기서는
+    /// 사람이 고칠 것을 전제한 이름이다 — 이름을 정하는 것은 기획자의 일이고, 여기서는
     /// <b>겹치지 않는 자리</b>만 준다.
     /// </summary>
     private static string NextEpisodeId(Chapters.ChapterDocument chapter)

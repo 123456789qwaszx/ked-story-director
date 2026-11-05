@@ -14,15 +14,15 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>노드 아래 선택지 칸 — 문구를 적어야 살아난다</b> (R7 P-2 · `docs/plans/R7.md` §2 ③).
+/// <b>노드 아래 선택지 칸 — 문구를 적어야 살아난다</b>.
 ///
 /// 칸은 세 자리를 색으로 가른다: <b>텅 빈 회색</b>(아직 못 끈다) · <b>붉은색</b>(살아났다) ·
 /// <b>초록색</b>(이어졌다).
 ///
-/// ⭐ 예외가 하나 — 세 칸이 전부 비어 있으면 <b>첫 칸은 문구 없이도 살아 있다</b>.
+/// 예외가 하나 — 세 칸이 전부 비어 있으면 <b>첫 칸은 문구 없이도 살아 있다</b>.
 /// 그것이 자동 길이고, 묻지 않고 지나가는 길에는 고를 것이 없으니 문구도 없는 것이 맞다.
 ///
-/// ⚠ 이 묶음의 카드는 인스펙터의 「선택지 3칸」을 켠 카드다(2026-10-30 — 끈 카드는 빈 칸이 하나뿐이다:
+/// 주의: 이 묶음의 카드는 인스펙터의 「선택지 3칸」을 켠 카드다(끈 카드는 빈 칸이 하나뿐이다:
 /// <see cref="ChoiceSlotCountTests"/>). 칸 셋의 손짓을 재는 자리라 셋이 서 있어야 한다.
 /// </summary>
 public sealed class ChoiceSlotTests : IDisposable
@@ -49,7 +49,7 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 아무_문구도_없으면_첫_칸만_살아_있다() => HeadlessUi.Run(() =>
     {
-        // ⭐ 그 하나가 자동 길 자리다 — 가장 흔한 "그냥 다음" 잇기에 타이핑이 필요 없다.
+        // 그 하나가 자동 길 자리다 — 가장 흔한 "그냥 다음" 잇기에 타이핑이 필요 없다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         IReadOnlyList<IBrush> dots = Dots(graph, "root");
@@ -63,7 +63,7 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 문구를_적으면_그_칸이_붉어지고_자동_자리는_닫힌다() => HeadlessUi.Run(() =>
     {
-        // ⚠ 자동 길은 그 에피소드의 <b>유일한 간선</b>이어야 한다(`AutoEdgeHasSiblings`) —
+        // 자동 길은 그 에피소드의 <b>유일한 간선</b>이어야 한다(`AutoEdgeHasSiblings`) —
         //    선택지가 하나라도 서면 자동일 수가 없으므로 화면이 먼저 그 문을 닫는다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
@@ -103,8 +103,8 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 이어진_길의_문구를_고치면_간선이_고쳐진다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 여기가 이 조각의 관문이다 — 화면이 고치는 것은 <b>챕터 간선</b>이지 연출 층의
-        //    사본이 아니다(§2 ①). 정본이 하나여야 내보내기·검증이 그대로 돈다.
+        // 여기가 이 조각의 관문이다 — 화면이 고치는 것은 <b>챕터 간선</b>이지 연출 층의
+        //    사본이 아니다. 정본이 하나여야 내보내기·검증이 그대로 돈다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "왼쪽으로");
@@ -132,8 +132,8 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 꺼진_점을_눌러도_켜지지_않고_문구_칸만_열린다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>살리는 것은 적는 행위다</b> (2026-09-17 소유자). 점을 눌러 켜는 길을 잠깐
-        //    뒀다가 물렸다 — 켜기와 적기가 갈라지면 손짓이 둘이 되고, 켜 두고 안 적은 칸이
+        // <b>살리는 것은 적는 행위다</b>. 점을 눌러 켜는 길은 두지 않는다 —
+        //    켜기와 적기가 갈라지면 손짓이 둘이 되고, 켜 두고 안 적은 칸이
         //    뜻 없이 붉게 남는다. 점은 <b>적을 자리로 데려가기만</b> 한다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
@@ -174,8 +174,8 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 아래_칸을_먼저_이어도_적은_순서가_그대로다() => HeadlessUi.Run(() =>
     {
-        // H2 · 2026-10-29 소유자 — "선택지 문구를 적어둔 순서가 자꾸 뒤바뀌는데 … 선택지 문구의 순서를 유지해".
-        // ⛔ 예전에는 이은 줄이 늘 위로 모여, 둘째 칸을 먼저 이으면 그 줄이 첫째로 올라갔다.
+        // 선택지 문구는 적어 둔 순서를 지킨다. 이은 줄이 위로 모이면 둘째 칸을 먼저 이을 때
+        // 그 줄이 첫째로 올라간다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         Write(graph, "root", slot: 0, "asdsad");
@@ -198,7 +198,7 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 길을_끊어도_그_줄은_제자리다() => HeadlessUi.Run(() =>
     {
-        // H2 — 예전에는 끊은 문구가 적어 둔 칸들의 맨 앞(= 이은 줄들 아래)으로 가서 순서가 뒤집혔다.
+        // 끊은 문구가 적어 둔 칸들의 맨 앞(= 이은 줄들 아래)으로 가면 순서가 뒤집힌다.
         (GraphEditorView graph, AuthoringSession session) = Show();
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "하나");
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "둘");
@@ -219,8 +219,8 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 사람이_안_만든_점은_안_선다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 대본에서 파생되던 "진행"·구판 OPTION 스텁을 걷었다 (결정 ②) — 선택지를 긋는
-        //    자리가 이 화면이 된 지금은 사람이 만들지 않은 점이 섞여 혼란스럽다.
+        // 대본에서 파생된 "진행"·구판 OPTION 스텁은 두지 않는다 — 선택지를 긋는
+        //    자리가 이 화면이라 사람이 만들지 않은 점이 섞이면 혼란스럽다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         Assert.Equal(3, Rows(graph, "root").Count);
@@ -236,12 +236,12 @@ public sealed class ChoiceSlotTests : IDisposable
         Assert.DoesNotContain(Texts(graph), text => text.Contains("종료", StringComparison.Ordinal));
     });
 
-    // ── 끌어 잇기 (R7 P-3) ─────────────────────────────────────────────────
+    // ── 끌어 잇기 ──────────────────────────────────────────────────────────
 
     [Fact]
     public void 문구를_적고_끌어다_놓으면_챕터_간선이_생긴다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 이 조각의 관문 — 화면이 만드는 것은 <b>챕터 간선</b>이다(§2 ①). 그래야
+        // 이 조각의 관문 — 화면이 만드는 것은 <b>챕터 간선</b>이다. 그래야
         //    [챕터 그래프]에도 같은 길이 보이고 내보내기가 그대로 돈다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
@@ -262,7 +262,7 @@ public sealed class ChoiceSlotTests : IDisposable
         // §2 ③-a — 묻지 않고 지나가는 길에는 고를 것이 없으니 문구도 없다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        // ⚠ 자동 길은 장면을 못 넘으므로 둘을 같은 장면에 둔다 — 안 그러면 규격 위반이고,
+        // 자동 길은 장면을 못 넘으므로 둘을 같은 장면에 둔다 — 안 그러면 규격 위반이고,
         //    화면이 그것을 먼저 막는다(아래 테스트).
         session.Editor.UpdateEpisodeScenes("ch01", ["root", "a"], "opening");
         graph.Rebuild();
@@ -283,10 +283,10 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 장면을_넘는_자동_길은_먼저_막고_대안을_말한다() => HeadlessUi.Run(() =>
     {
-        // ⚠ 장면 경계는 실제로 `Commit → Exit → Enter`다 — 묻지 않고 넘어가면 안 된다
+        // 장면 경계는 실제로 `Commit → Exit → Enter`다 — 묻지 않고 넘어가면 안 된다
         //    (`AutoEdgeCrossesScene`). 관문에서야 알면 되돌려야 하니 여기서 먼저 말한다.
         //
-        // ⚠ 장면ID를 아무 데도 안 적은 챕터가 바로 이 경우다 — 에피소드마다 제 장면이라
+        // 장면ID를 아무 데도 안 적은 챕터가 바로 이 경우다 — 에피소드마다 제 장면이라
         //    (`__scene_*`) 자동 길이 아예 설 수 없다. 숨기지 않고 말한다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
@@ -313,8 +313,8 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 이어진_칸을_다른_카드로_옮겨도_순서와_스탯_변화가_남고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
     {
-        // D3 · two-graphs.md §6-3 — 예전에는 옛 길을 걷고 새로 그어서, 옮긴 선택지가 목록 끝으로
-        //    가고(= 런타임 OptionIndex가 바뀐다) 스탯 변화를 잃고 되돌리기도 두 칸이었다.
+        // two-graphs.md §6-3 — 옛 길을 걷고 새로 그으면 옮긴 선택지가 목록 끝으로
+        //    가고(= 런타임 OptionIndex가 바뀐다) 스탯 변화를 잃고 되돌리기도 두 칸이 된다.
         (GraphEditorView graph, AuthoringSession session) = Show();
         session.Editor.AddEpisode("ch01", "b", title: "b", 0, 0);
         session.Editor.MoveNode(
@@ -342,7 +342,7 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 다른_챕터의_노드에는_못_놓고_이유를_말한다() => HeadlessUi.Run(() =>
     {
-        // ⚠ 간선은 챕터 안의 길이다. 조용히 무시하면 사람은 손이 미끄러진 줄 안다.
+        // 간선은 챕터 안의 길이다. 조용히 무시하면 사람은 손이 미끄러진 줄 안다.
         (GraphEditorView graph, AuthoringSession session) = Show(secondChapter: true);
 
         Write(graph, "root", slot: 1, "저쪽으로");
@@ -371,9 +371,9 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 이미_사전에_있는_문구를_다시_써도_된다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 사전은 어휘집이다 — 같은 말을 다른 자리에서 다시 쓰는 것이 그 존재 이유다.
+        // 사전은 어휘집이다 — 같은 말을 다른 자리에서 다시 쓰는 것이 그 존재 이유다.
         //    [선택지 사전] 화면의 중복 거절을 그대로 부르면 <b>흔한 문구를 두 번째 노드에서
-        //    못 쓴다</b>(2026-09-16에 이 테스트가 잡았다).
+        //    못 쓴다</b>.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         Write(graph, "root", slot: 1, "돌아간다");
@@ -387,8 +387,7 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 진행이_착지하지_않는_카드에도_칸_셋이_선다() => HeadlessUi.Run(() =>
     {
-        // ⭐ R7 P-6 · 결정 ⑤. 전에는 척추 카드(진행이 착지하는 에피소드)만 레일 가지와
-        //    칸을 받았고, 그 갈래가 곧 엑셀노드/자유노드의 구분이었다.
+        // 척추 카드(진행이 착지하는 에피소드)만이 아니라 어느 카드든 레일 가지와 칸을 받는다.
         //
         // 「분기 추가」가 세우는 카드가 정확히 이 부류다 — 들어오는 간선이 없고
         // `<<detour>>`로만 불려 간다. 거기서 <b>진짜 분기를 뚫는</b> 것이 그 기능의 요점이라,
@@ -433,8 +432,8 @@ public sealed class ChoiceSlotTests : IDisposable
                 ? new Point(Canvas.GetLeft(card) + 20, Canvas.GetTop(card) + 10)
                 : default;
 
-        // ⚠ 포인터 이벤트의 자리는 <b>최상위 기준</b>이다 — 넘긴 rootVisual과 무관하게 그렇게
-        //   풀린다(2026-09-16에 탐색기에서 한 번, 여기서 또 한 번 밟았다). 판 좌표를 그대로
+        // 주의: 포인터 이벤트의 자리는 <b>최상위 기준</b>이다 — 넘긴 rootVisual과 무관하게 그렇게
+        //   풀린다. 판 좌표를 그대로
         //   주면 엉뚱한 데에 놓여 <b>조용히 아무 일도 안 일어난다</b>.
         var root = (Visual)TopLevel.GetTopLevel(canvas)!;
         Point at = canvas.TranslatePoint(on, root)!.Value;
@@ -466,7 +465,7 @@ public sealed class ChoiceSlotTests : IDisposable
             .ToList();
 
     /// <summary>
-    /// 선택지 칸들 — <b>카드 아래 철도 위</b>에 선다 (2026-09-16 소유자: "아래쪽으로 3개").
+    /// 선택지 칸들 — <b>카드 아래 철도 위</b>에 선다.
     /// 줄은 Tag에 <c>{에피소드}#{칸}</c>을 진다.
     /// </summary>
     private static IReadOnlyList<StackPanel> Rows(
@@ -534,7 +533,7 @@ public sealed class ChoiceSlotTests : IDisposable
             session.SetFileExpanded(second, expanded: true);
         }
 
-        // ⚠ 판을 펴야 카드가 선다 — 접힌 판은 표 프록시 하나로 온다.
+        // 판을 펴야 카드가 선다 — 접힌 판은 표 프록시 하나로 온다.
         session.SetFileExpanded(fileId, expanded: true);
 
         var graph = new GraphEditorView();
@@ -554,9 +553,9 @@ public sealed class ChoiceSlotTests : IDisposable
 
         for (int index = 0; index < episodeIds.Length; index++)
         {
-            // ⚠ <b>카드를 따로 세우지 않는다</b> (2026-09-18) — `AddEpisode`가 함께 만든다.
-            //    전에는 여기서 한 장 더 만들었고, 그러면 이름이 같은 카드가 둘 서서 끌어
-            //    놓기가 <b>엉뚱한 카드</b>를 맞힌다(이 테스트가 `root → root` 간선으로 깨졌다).
+            // 주의: <b>카드를 따로 세우지 않는다</b> — `AddEpisode`가 함께 만든다.
+            //    여기서 한 장 더 만들면 이름이 같은 카드가 둘 서서 끌어
+            //    놓기가 <b>엉뚱한 카드</b>를 맞힌다(`root → root` 간선이 생긴다).
             session.Editor.AddEpisode(chapterId, episodeIds[index], title: episodeIds[index], 0, 0);
 
             DialogueNode card = session.Project.EnumerateNodes().OfType<DialogueNode>()

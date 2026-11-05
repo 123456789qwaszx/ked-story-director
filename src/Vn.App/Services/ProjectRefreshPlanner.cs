@@ -30,7 +30,7 @@ internal static class ProjectRefreshPlanner
                 RebuildGraph: false,
                 RefreshGraphPositions: false,
                 RebuildInspector: false,
-                // 곁기둥에서 고친 글이 카드의 글 칸에도 비친다(D4) — 안 그러면 낡은 칸의 글이
+                // 곁기둥에서 고친 글이 카드의 글 칸에도 비친다 — 안 그러면 낡은 칸의 글이
                 // 다음 넣기에서 방금 고친 줄을 도로 덮는다.
                 RefreshCardWriting: selectedNode is DialogueNode),
 
@@ -46,8 +46,7 @@ internal static class ProjectRefreshPlanner
                 RefreshGraphPositions: false,
                 RebuildInspector: false),
 
-            // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다. (⛔ Script Preview를 다시 합성하던 몫은
-            // 2026-10-29에 그 탭과 함께 걷혔다.)
+            // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
 
             _ => default

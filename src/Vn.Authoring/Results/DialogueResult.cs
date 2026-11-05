@@ -26,7 +26,7 @@ public sealed record DialogueResultLine(
     /// <summary>이 줄 앞에서 차례로 다녀올 노드들 (2026-10-29부터 여럿일 수 있다). 없으면 빈 목록이다.</summary>
     public IReadOnlyList<string> DetourTargetNodeIds => Detours ?? Array.Empty<string>();
 
-    // ⛔ 줄의 변수 변경(`SetOperations` · `<<set>>`)은 작가 변수와 함께 2026-09-17에 비었고
+    // 줄의 변수 변경(`SetOperations` · `<<set>>`)은 작가 변수와 함께 2026-09-17에 비었고
     //    2026-10-29(L5)에 칸째 걷혔다. 값이 변하는 자리는 챕터 간선의 스탯 변화다.
 
     /// <summary>
@@ -49,7 +49,7 @@ public sealed record DialogueResultLine(
 /// <param name="ExitTargetNodeId">
 /// 이 전환이 <b>여는</b> 갈래의 출구 (2026-08-24) — detour로 나간다.
 ///
-/// ⚠ 줄에도 <see cref="DialogueResultLine.BranchExitTargetNodeId"/>가 있지만 그것은
+/// 줄에도 <see cref="DialogueResultLine.BranchExitTargetNodeId"/>가 있지만 그것은
 /// <b>줄당 하나</b>다. 줄 없는 갈래(대본 끝의 빈 블록)에는 실을 줄 자체가 없어서, 출구가
 /// <b>전환에</b> 붙어야 결과 문서가 자기 완결이 된다. 줄에 실린 쪽은 그대로 두었다 —
 /// 옛 결과 파일이 그 칸으로 읽히기 때문이다.
@@ -63,10 +63,10 @@ public sealed record DialogueResultTransition(
 
 /// <summary>
 /// DialogueNode의 작업 상태를 펼친 <b>불변</b> 결과 — 합성기(<c>ResultDocumentComposer</c>)가 읽는
-/// 모양이다(카드 글 칸 · 흐름 조각). 저장하지 않는다. (⛔ 이것을 함께 읽던 갈래 고르기 —
+/// 모양이다(카드 글 칸 · 흐름 조각). 저장하지 않는다. (이것을 함께 읽던 갈래 고르기 —
 /// <c>BranchFlow</c> · 조건 시뮬레이션 — 는 2026-10-29 L5에 걷혔다.)
 ///
-/// ⛔ 발행(<c>vN</c> 고정본 · 내용 해시 · 결과 저장소)은 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로
+/// 발행(<c>vN</c> 고정본 · 내용 해시 · 결과 저장소)은 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로
 /// 갔다. "결과"라는 이름은 그 시절의 것이 남았다.
 /// </summary>
 public sealed class DialogueResult

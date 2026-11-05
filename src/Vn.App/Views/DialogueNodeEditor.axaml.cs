@@ -37,15 +37,12 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>
     /// 지금 보는 노드가 <b>챕터의 에피소드</b>인가 (<see cref="DialogueNode.MarkedEpisodeId"/>).
     ///
-    /// ⛔ <b>이것은 더 이상 "엑셀이 소유한다"는 뜻이 아니다</b> (2026-09-16 · R-E · §6.4).
-    /// 옛 이름은 <c>_excelOwned</c>였고 참이면 본문·화자·줄 구성이 통째로 읽기 전용이었다 —
-    /// 여기서 고쳐도 <b>다음 동기화가 되돌린다</b>는 것이 이유였는데, 그 동기화가 R-D에서
-    /// 철거됐다. 대본의 원본은 이제 프로젝트다. <b>그래서 대본은 전부 열렸다.</b>
+    /// 참이어도 대본(본문·화자·줄 구성)은 잠그지 않는다 — 대본의 원본은 프로젝트다.
     ///
-    /// 남은 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 셋뿐이고, 셋 다 대본이 아니다:
-    /// ① 노드 이름 = 에피소드 Id — 잠그지 않고 <b>에피소드 개명</b>으로 보낸다(<see cref="RenameEpisode"/>, 2026-10-30)
-    /// ② 스탯변화(챕터 간선의 것 — 2026-08-14 결정, 엑셀과 무관)
-    /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 2026-08-23 결정, 문은 하나)
+    /// 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 셋뿐이고, 셋 다 대본이 아니다:
+    /// ① 노드 이름 = 에피소드 Id — 잠그지 않고 <b>에피소드 개명</b>으로 보낸다(<see cref="RenameEpisode"/>)
+    /// ② 스탯변화(챕터 간선의 것)
+    /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 문은 하나)
     /// </summary>
     private bool _chapterEpisode;
 
@@ -79,7 +76,7 @@ public partial class DialogueNodeEditor : UserControl
         });
         AddLineButton.Click += (_, _) => AddLine();
 
-        // 목록 아래 빈 공간 우클릭 = 맨 아래 줄 추가 (W49). 카드 위 우클릭은 카드가
+        // 목록 아래 빈 공간 우클릭 = 맨 아래 줄 추가.카드 위 우클릭은 카드가
         // 먼저 받아 Handled로 막고, 텍스트 칸은 기본 편집 메뉴의 자리다.
         LineScroll.PointerPressed += (_, args) =>
         {
@@ -95,10 +92,10 @@ public partial class DialogueNodeEditor : UserControl
     /// <b>챕터가 쥔</b> 것을 여기서 고치려는 시도를 막고, 어디서 고치는지 말한다. 참이면
     /// 호출자는 그냥 돌아간다.
     ///
-    /// ⛔ 옛 <c>BlockIfExcelOwned</c>가 막던 것 중 <b>대본에 속한 것은 전부 열렸다</b>
-    /// (줄 추가·삭제·이동, 화자·내용, 텍스트 반영, 조건 태그 — R-E · §6.4). 남은 문은
-    /// 챕터 흐름 하나뿐이고, 그것이 닫혀 있는 이유는 엑셀이 아니라 <b>문이 둘이면 안 되기</b>
-    /// 때문이다: 갈래 출구는 연출 그래프 카드의 IF 포트에서만 잇고 뗀다(2026-08-23 소유자).
+    /// <b>대본에 속한 것은 막지 않는다</b>
+    /// (줄 추가·삭제·이동, 화자·내용, 텍스트 반영, 조건 태그). 막는 문은
+    /// 챕터 흐름 하나뿐이고, 그것이 닫혀 있는 이유는 <b>문이 둘이면 안 되기</b>
+    /// 때문이다: 갈래 출구는 연출 그래프 카드의 IF 포트에서만 잇고 뗀다.
     /// </summary>
     private bool BlockIfChapterFlow(string what)
     {
@@ -112,11 +109,7 @@ public partial class DialogueNodeEditor : UserControl
         return true;
     }
 
-    // 엑셀노드 안내 띠("📄 엑셀노드 — 원본: 에피소드 …")는 2026-08-22에 사라졌다 (소유자).
-    // 그 시절 카드는 잠겨 있었고 띠는 그 사실을 매번 다시 알리는 소음이었다 — 2026-09-16에
-    // 잠금 자체가 사라지면서 띠가 말하던 사실도 함께 사라졌다.
-
-    /// <summary>빈 공간의 줄 메뉴 (W49) — 여기서의 추가는 언제나 맨 아래, 삭제는 대상이 없어 잠긴다.</summary>
+    /// <summary>빈 공간의 줄 메뉴 —여기서의 추가는 언제나 맨 아래, 삭제는 대상이 없어 잠긴다.</summary>
     private void ShowEmptyAreaFlyout()
     {
         if (_session?.Project.FindDialogue(_nodeId) is null)
@@ -215,10 +208,8 @@ public partial class DialogueNodeEditor : UserControl
             FullChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
             FullChoicesBox.IsChecked = _session.FullChoiceNodeIds.Contains(node.Id);
 
-            // ⛔ 에피소드 카드의 이름 칸을 잠그던 줄은 2026-10-30에 걷혔다 (소유자: "연출 그래프에서 에피소드의 이름을
-            //    바꾸려는데 안바뀌는 버그") — 칸은 고칠 수 있게 보이는데 아무것도 안 됐다. 이제 에피소드 개명(EpisodeRenamer
-            //    — 에피소드 · 간선 · 카드를 함께)으로 보낸다(CommitName). [줄 추가]·[텍스트 반영]을 잠그던 두 줄은
-            //    2026-09-16에 사라졌다(R-E · §6.4).
+            // 에피소드 카드의 이름 칸은 잠그지 않는다 — 고친 이름은 에피소드 개명(EpisodeRenamer
+            //    — 에피소드 · 간선 · 카드를 함께)으로 보낸다(CommitName).
 
             DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
             DialogueFlow flow = ConditionFlowResolver.Resolve(
@@ -247,17 +238,12 @@ public partial class DialogueNodeEditor : UserControl
                 LineHost.Children.Add(BuildColumnHeader());
             }
 
-            // ⛔ 갈래 고르기(W35 · W36)는 2026-10-29(L5)에 걷혔다 — 프리뷰가 어느 갈래를 접는지
-            //    고르고 나머지 카드를 흐리던 것이다. 프리뷰 · 재생이 먼저 걷혀, 남은 것은 이유 없이
-            //    흐려지는 줄뿐이었다.
-
-            // ⛔ 대사 안 선택지의 주황 박스(옵션 라벨 + 본문)는 2026-11-04에 걷혔다 — 선택지는 챕터 간선에서만 선다.
+            // 선택지는 대사 안에 서지 않는다 — 챕터 간선에서만 선다.
 
             foreach (ResolvedLine line in flow.Lines)
             {
-                // 「조건 분기」 카드는 <b>줄 사이에</b> 낀다 (R7 P-5 · 2026-09-17 소유자) —
-                // 그 줄에 붙은 것이 아니라 그 줄 <b>앞에서</b> 갈라진다는 표식이다. 여럿이면 다녀오는 차례로 쌓인다
-                // (2026-10-29 · multi-branch).
+                // 「조건 분기」 카드는 <b>줄 사이에</b> 낀다 —
+                // 그 줄에 붙은 것이 아니라 그 줄 <b>앞에서</b> 갈라진다는 표식이다. 여럿이면 다녀오는 차례로 쌓인다.
                 IReadOnlyList<Control> markers = BuildBranchMarkerCards(node, line.Line.LineId, detourPalette);
 
                 Control card = WrapForLineSelection(BuildCard(node, script, line), line.Line.LineId);
@@ -291,7 +277,7 @@ public partial class DialogueNodeEditor : UserControl
         var wrapper = new Border
         {
             // Transparent는 보이지 않지만 히트테스트는 된다 — 배경 없는 일반 대사 카드의
-            // 빈 부분을 클릭해도 선택이 되게 한다(글자 위만 반응하던 문제 수정, W53).
+            // 빈 부분을 클릭해도 선택이 되게 한다(글자 위만 반응하지 않도록).
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(3, 0, 0, 0),
             BorderBrush = string.Equals(lineId, _selectedLineId, StringComparison.Ordinal)
@@ -307,14 +293,14 @@ public partial class DialogueNodeEditor : UserControl
             {
                 SelectLine(lineId);
 
-                // 우클릭 = 줄 추가/삭제 바로가기 (W47) — ＋ 플라이아웃을 거치지 않는 짧은 길.
-                // 텍스트 입력 칸 위에서는 비켜선다 (W49) — 잘라내기/복사/붙여넣기 기본
+                // 우클릭 = 줄 추가/삭제 바로가기 — ＋ 플라이아웃을 거치지 않는 짧은 길.
+                // 텍스트 입력 칸 위에서는 비켜선다 —잘라내기/복사/붙여넣기 기본
                 // 메뉴가 그 자리의 주인이다.
                 if (args.GetCurrentPoint(wrapper).Properties.IsRightButtonPressed &&
                     (args.Source as Visual)?.FindAncestorOfType<TextBox>(includeSelf: true) is null)
                 {
                     ShowLineContextFlyout(wrapper, lineId);
-                    args.Handled = true; // 아래 빈 공간 메뉴(W49)가 겹쳐 뜨지 않게
+                    args.Handled = true; // 아래 빈 공간 메뉴가 겹쳐 뜨지 않게
                 }
             },
             RoutingStrategies.Bubble,
@@ -331,7 +317,7 @@ public partial class DialogueNodeEditor : UserControl
         Background = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
     };
 
-    /// <summary>줄 카드 우클릭 메뉴 (W47) — 추가·삭제는 ＋ 플라이아웃과 같은 편집 경로 하나를 쓴다.</summary>
+    /// <summary>줄 카드 우클릭 메뉴 —추가·삭제는 ＋ 플라이아웃과 같은 편집 경로 하나를 쓴다.</summary>
     private void ShowLineContextFlyout(Control anchor, string lineId)
     {
         if (_session?.Project.FindDialogue(_nodeId) is not { } node)
@@ -368,7 +354,7 @@ public partial class DialogueNodeEditor : UserControl
             UiGuard.Run(_session, "줄 추가", AddLine); // 선택된 줄 아래에 — 위의 SelectLine이 이미 골랐다
         };
 
-        // 추가와 삭제 사이에 구분선 (소유자 지시) — 성격이 반대인 두 동작이 붙어 있으면 헷갈린다.
+        // 추가와 삭제 사이에 구분선 —성격이 반대인 두 동작이 붙어 있으면 헷갈린다.
         panel.Children.Add(MenuSeparator());
 
         Button remove = Item("삭제", "대본에서 이 줄을 뺍니다.");
@@ -378,7 +364,7 @@ public partial class DialogueNodeEditor : UserControl
             UiGuard.Run(_session, "줄 삭제", () => _session!.Editor.RetireScriptLine(nodeId, lineId));
         };
 
-        // 마우스 지점에서 연다 (소유자 지시) — 카드 기준으로 뜨면 클릭한 곳과 멀어 헷갈린다.
+        // 마우스 지점에서 연다 —카드 기준으로 뜨면 클릭한 곳과 멀어 헷갈린다.
         flyout.ShowAt(anchor, showAtPointer: true);
     }
 
@@ -430,14 +416,13 @@ public partial class DialogueNodeEditor : UserControl
 
     // ── 카드 ────────────────────────────────────────────────────────────────
     //
-    // 고밀도 개편: 평범한 대사는 딱 한 줄(34~42px)이다. 조건·선택·Set은 메인 행 위의
+    // 고밀도 배치: 평범한 대사는 딱 한 줄(34~42px)이다. 조건·선택·Set은 메인 행 위의
     // 태그 레일, 출구는 아래의 출구 레일로만 나타난다 — 태그가 없으면 레일도 없다.
     // 태그는 표시가 아니라 편집 진입점이다: 누르면 기존 편집 컨트롤이 Flyout으로 열린다.
 
     /// <summary>
     /// 헤더와 모든 카드가 공유하는 열 구성 — Index | 화자 | 대사 | ＋. 태그 · 출구 레일은 화자 열(30)에서 시작한다.
-    /// (⛔ LineId 열은 2026-10-29에 걷혔다 — 소유자: "LineId는 필요없으니 화면에 노출되지 않도록". 줄 신원은
-    /// 데이터에 그대로 산다.)
+    /// LineId는 화면에 열로 내지 않는다 — 줄 신원은 데이터에만 산다.
     /// </summary>
     private const string RowColumns = "30,96,*,28";
 
@@ -531,8 +516,6 @@ public partial class DialogueNodeEditor : UserControl
             Padding = new Thickness(6, 3),
             VerticalContentAlignment = VerticalAlignment.Center,
             Margin = new Thickness(4, 0, 0, 0),
-            // ⛔ 본문을 읽기 전용으로 잠그던 자리다 (2026-08-24 ~ 2026-09-16). 원본이
-            //    엑셀이던 시절의 규율이고, 이제 원본은 프로젝트다 — 늘 열려 있다.
         };
 
         AutoCompleteBox? speaker = null;
@@ -550,17 +533,11 @@ public partial class DialogueNodeEditor : UserControl
             string nextSpeaker = speaker?.Text ?? resolved.Line.Speaker;
             string nextText = text.Text ?? string.Empty;
 
-            // ⛔ 여기 있던 "엑셀이 먼저다"는 2026-09-16에 걷혔다 (R-D). 고친 글을 <b>엑셀
-            //    셀에 먼저 쓰고</b> 성공했을 때만 노드를 고치던 순서였는데, 그 순서의 이유가
-            //    <i>"안 그러면 다음 동기화가 사람의 글을 지운다"</i>였다. 다시 읽는 동기화가
-            //    없어졌으므로 지울 것도 없다 — 원본은 프로젝트다.
             _session!.Editor.SetScriptLineText(
                 nodeId, resolved.Line.LineId, nextSpeaker, nextText, script.Locale);
         }
 
-        // ⛔ 엑셀노드만 초점을 잃을 때 내던 갈래는 2026-09-16에 사라졌다 (R-E). 이유는
-        //    "자판 하나마다 워크북 파일을 두드린다"였는데, 이제 글자는 프로젝트로 간다
-        //    (워크북 재출력 자체가 2026-10-29에 엑셀 연동과 함께 걷혔다).
+        // 글자가 바뀔 때마다 낸다 — 글자는 프로젝트로 간다.
         void Wire(Control field)
         {
             if (field is TextBox box)
@@ -574,7 +551,7 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         {
-            // 화자는 등록 목록(game.definition speakers)의 드롭다운 + 자유 입력 겸용이다 (X5).
+            // 화자는 등록 목록(game.definition speakers)의 드롭다운 + 자유 입력 겸용이다.
             speaker = new AutoCompleteBox
             {
                 Text = resolved.Line.Speaker,
@@ -584,18 +561,14 @@ public partial class DialogueNodeEditor : UserControl
                 ItemsSource = SpeakerNames(),
                 FilterMode = AutoCompleteFilterMode.Contains,
                 MinimumPrefixLength = 0,
-                // 화자도 본문과 함께 열렸다 (R-E · §6.4).
             };
             Wire(speaker);
 
-            // 후보는 포커스 때마다 다시 읽는다 (W56) — 방금 등록한 화자가 카드 재생성
+            // 후보는 포커스 때마다 다시 읽는다 —방금 등록한 화자가 카드 재생성
             // 없이도 자동완성에 바로 나온다.
             speaker.GotFocus += (_, _) => speaker.ItemsSource = SpeakerNames();
 
-            // ▾ = 등록 화자 전체 목록 (W40) — 자동완성은 타이핑해야 열리니 클릭 한 번 길을 따로 둔다.
-            //
-            // ⛔ 엑셀노드에서 이 단추까지 잠그던 규율은 2026-09-16에 사라졌다 (R-E) —
-            //    잠긴 칸이 없으니 "잠긴 칸에 값이 써지는" 사고도 없다.
+            // ▾ = 등록 화자 전체 목록 — 자동완성은 타이핑해야 열리니 클릭 한 번 길을 따로 둔다.
             AutoCompleteBox speakerBox = speaker;
             var pick = new Button
             {
@@ -634,13 +607,12 @@ public partial class DialogueNodeEditor : UserControl
     }
 
     /// <summary>
-    /// 등록 화자 드롭다운 (W40). 항목 클릭 = 그 이름이 화자 칸에 들어간다 —
+    /// 등록 화자 드롭다운. 항목 클릭 = 그 이름이 화자 칸에 들어간다 —
     /// TextChanged가 대본에 반영하므로 자유 입력과 같은 길 하나를 쓴다.
     /// </summary>
     /// <param name="commit">
-    /// 고른 이름을 실제로 내는 손 (2026-08-24). <b>있어야 한다</b> — 엑셀노드에서는 칸이
-    /// 초점을 잃을 때만 저장하는데, ▾로 고르는 길에는 초점이 오간 적이 없어서 고른 이름이
-    /// 칸에만 앉아 있다가 다음 다시 그리기에 지워진다.
+    /// 고른 이름을 실제로 내는 손. <b>있어야 한다</b> — ▾로 고르는 길에는 초점이 오간 적이 없어서,
+    /// 초점에 기대는 저장만으로는 고른 이름이 칸에만 앉아 있다가 다음 다시 그리기에 지워진다.
     /// </param>
     private void ShowSpeakerFlyout(Button anchor, AutoCompleteBox speaker, Action commit)
     {
@@ -661,9 +633,8 @@ public partial class DialogueNodeEditor : UserControl
             Placement = PlacementMode.Bottom
         };
 
-        // 머리글이 없다 (2026-08-23 소유자: "기획등록 화자라고 표시되는 것도 치워줘").
-        // 구역을 가르던 두 줄은 원천이 둘이던 시절의 것이고, 원천이 하나가 된 지금은
-        // 이름 목록 위에 붙는 상표일 뿐이었다.
+        // 머리글이 없다 — 원천이 하나라 구역을 가를 것이 없고, 머리글은 이름 목록 위에 붙는
+        // 상표일 뿐이다.
         foreach (string name in candidates)
         {
             var item = new Button
@@ -689,12 +660,10 @@ public partial class DialogueNodeEditor : UserControl
     }
 
     /// <summary>
-    /// 화자 후보 — <b>`game.definition.json`의 speakers 하나</b>가 원천이다 (2026-08-23
-    /// 소유자: "화자는 툴 내부에서, 직접 정의해서 쓰는 게 맞는 것이였다"). 기획자가 챕터
+    /// 화자 후보 — <b>`game.definition.json`의 speakers 하나</b>가 원천이다. 기획자가 챕터
     /// 그래프의 [화자] 탭에서 적고, 모든 챕터가 같은 목록을 본다.
     ///
-    /// 출처를 갈라 세우던 두 구역(챕터 `화자` 시트 / 정의 파일)은 시트가 폐지되며 하나가
-    /// 됐다. 여기 없는 이름도 화자 칸에 직접 적으면 그만이다 — 이 목록은 편의일 뿐이다.
+    /// 여기 없는 이름도 화자 칸에 직접 적으면 그만이다 — 이 목록은 편의일 뿐이다.
     /// </summary>
     private List<string> SpeakerNames() =>
         _session?.Definition.Speakers
@@ -721,8 +690,6 @@ public partial class DialogueNodeEditor : UserControl
         {
             rail.Children.Add(BuildTransitionTag(node, resolved));
         }
-
-        // ⛔ set 태그는 2026-09-17에 걷혔다 — 작가 변수가 없어져 줄에 달 값이 없다.
 
         return rail.Children.Count > 0 ? rail : null;
     }
@@ -775,9 +742,7 @@ public partial class DialogueNodeEditor : UserControl
             _ => ("조건 종료", neutral)
         };
 
-        // ⛔ 엑셀노드에서 이 태그를 표시 전용 칩으로 내놓던 갈래는 2026-09-16에 사라졌다
-        //    (R-E). 원본이 엑셀 E열이라 잠갔던 것인데, 대본 층의 조건은 R-C에서 규격
-        //    자체가 은퇴했고(v15) 남은 것은 옛 프로젝트의 값이다 — 그 주인은 프로젝트다.
+        // 대본 층의 조건은 옛 프로젝트에서 온 값이다 — 그 주인은 프로젝트라 여기서 고친다.
         Button tag = TagButton(label, background);
         ToolTip.SetTip(tag, "누르면 이 줄의 조건 전환을 고칩니다.");
 
@@ -797,22 +762,21 @@ public partial class DialogueNodeEditor : UserControl
         return tag;
     }
 
-    // ── 「조건 분기」 카드 (R7 P-5) ──────────────────────────────────────────
+    // ── 「조건 분기」 카드 ──────────────────────────────────────────
 
     /// <summary>
-    /// 그 줄 <b>앞</b>에 낀 「조건 분기」 카드들 — 분기마다 한 장, 다녀오는 차례로(2026-10-29 · 한 줄에 여럿). 표식이 없으면 빈 목록이다.
+    /// 그 줄 <b>앞</b>에 낀 「조건 분기」 카드들 — 분기마다 한 장, 다녀오는 차례로(한 줄에 여럿). 표식이 없으면 빈 목록이다.
     ///
-    /// ⛔ <b>내용이 없다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 (2026-09-17 소유자) —
+    /// <b>내용이 없다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 —
     /// 구체적인 조건식도 선택지 문구도 여기서 정하지 않는다. 대본에는 <c>&lt;&lt;detour {노드}&gt;&gt;</c>
     /// 한 줄로 나가고, <c>&lt;&lt;if&gt;&gt;</c>가 없다.
     ///
     /// [✕ 분기 지우기]는 「분기 추가」의 반대다 — 표식과, 그 분기가 다녀가던 카드를 함께 걷는다(다른 곳이 쓰는
     /// 카드면 남긴다 — <see cref="Vn.Authoring.Editing.ProjectEditor.RemoveBranchMarker"/>). 같은 단추가 그 줄의
-    /// ＋ 메뉴에도 서고, 카드를 <b>우클릭</b>해도 같다(2026-10-30 소유자: *"생성된 조건 분기를 우클릭해서, 분기를 제거할
-    /// 수 있게"* — 연출 그래프에서 분기 선을 우클릭하는 것과 같은 손놀림이다).
+    /// ＋ 메뉴에도 서고, 카드를 <b>우클릭</b>해도 같다(연출 그래프에서 분기 선을
+    /// 우클릭하는 것과 같은 손놀림이다).
     ///
-    /// 색은 연출 그래프 카드의 그 분기 포트 · 선의 색이다(2026-10-30 소유자: *"에피소드 노드에서 생기는 색상과 동일하게
-    /// 해서 구분을"*) — ⛔ 전에는 모두 보라였다.
+    /// 색은 연출 그래프 카드의 그 분기 포트 · 선의 색이다 — 분기끼리 색으로 구분된다.
     /// </summary>
     /// <param name="detourPalette">분기 열쇠(<see cref="ExitPort.DetourKey"/>) → 그 포트의 색 번호.</param>
     private IReadOnlyList<Control> BuildBranchMarkerCards(
@@ -906,8 +870,7 @@ public partial class DialogueNodeEditor : UserControl
         $"branch:{Vn.Authoring.Flow.ExitPort.DetourKey(lineId, targetId)}";
 
     /// <summary>
-    /// [✕ 분기 지우기] (2026-10-29 소유자: *"조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다"*) —
-    /// 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다.
+    /// [✕ 분기 지우기] — 「분기 추가」의 짝이다. 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다.
     /// </summary>
     private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId, string label = "✕ 분기 지우기")
     {
@@ -970,16 +933,16 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
 
-        // ⭐ 「분기 추가」 (R7 P-5 · 2026-09-17 소유자) — <b>모든 노드에서</b> 선다.
+        // 「분기 추가」 — <b>모든 노드에서</b> 선다.
         //
-        // ⛔ 조건을 걸지 않는다. 이 줄 <b>앞</b>에 아무것도 없는 카드가 끼고, 연출 그래프의
+        // 조건을 걸지 않는다. 이 줄 <b>앞</b>에 아무것도 없는 카드가 끼고, 연출 그래프의
         //    카드에 포트가 하나 뚫리며, 다녀올 에피소드가 함께 서서 이미 이어진 상태가 된다.
         //    조건이 성립하든 말든 다녀오고, 다녀온 곳이 제 첫머리에서 보고 아니면 곧바로
         //    돌아온다 — "어디서 갈라지는가"만 짚는 것이 연출 그래프의 몫이기 때문이다.
         Section("분기");
 
-        // ⭐ 이미 분기가 있어도 「＋ 분기 추가」가 선다 (2026-10-29 소유자: *"하나의 줄에 여러개의 분기가 있을 수 있게"*)
-        //    — 새 분기는 그 뒤에 서고 차례로 다녀온다. 있는 분기는 하나씩 지운다.
+        // 이미 분기가 있어도 「＋ 분기 추가」가 선다 — 한 줄에 분기가 여럿일 수 있다.
+        //    새 분기는 그 뒤에 서고 차례로 다녀온다. 있는 분기는 하나씩 지운다.
         IReadOnlyList<string> existing = resolved.Line.LineId is { Length: > 0 } markerLineId
             ? node.FindExtension(markerLineId)?.DetourTargetNodeIds ?? []
             : [];
@@ -1030,7 +993,7 @@ public partial class DialogueNodeEditor : UserControl
 
         if (_chapterEpisode)
         {
-            // 조건은 열렸다(R-E). 남은 것은 챕터의 것이다 — 선택지와 스탯변화는 간선, 갈래 출구는 IF 포트.
+            // 여기서 막는 것은 챕터의 것이다 —선택지와 스탯변화는 간선, 갈래 출구는 IF 포트.
             panel.Children.Add(new TextBlock
             {
                 Text = "📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서, 갈래 출구는 카드의 IF 포트에서 고칩니다.",
@@ -1046,15 +1009,14 @@ public partial class DialogueNodeEditor : UserControl
             Section("조건");
             panel.Children.Add(BuildConditionBox(node, resolved));
 
-            // ⛔ 「Set」 구역은 2026-09-17에 걷혔다 (소유자: *"작가 변수라는 개념 자체를
-            //    지웁시다"*). 값이 변하는 자리는 이제 <b>챕터 간선의 `스탯변화`</b> 하나다.
+            // 작가 변수는 없다 — 값이 변하는 자리는 <b>챕터 간선의 `스탯변화`</b> 하나다.
         }
 
         // 출구는 선택·조건 갈래의 마지막 줄에서만 매달 수 있다.
         //
-        // ⚠ 엑셀노드에서는 <b>어디로 가는지만</b> 말한다 (2026-08-23 소유자) — 잇고 떼는
-        // 자리는 연출 그래프 카드의 IF 갈래 포트 하나다. 레일(→ 분기 이후)과 여기가 같은
-        // `SetExitTarget`을 부르는 둘째·셋째 문이었다.
+        // 주의: 챕터 에피소드에서는 <b>어디로 가는지만</b> 말한다 — 잇고 떼는
+        // 자리는 연출 그래프 카드의 IF 갈래 포트 하나다. 레일(→ 분기 이후)과 여기까지 열면 같은
+        // `SetExitTarget`을 부르는 문이 셋이 된다.
         if (resolved.Branch is { } branch && resolved.Index == branch.LastLineIndex)
         {
             Section("출구 (이 갈래 끝에서 점프)");
@@ -1079,9 +1041,8 @@ public partial class DialogueNodeEditor : UserControl
             }
         }
 
-        // ▲▼✕ 행 버튼이 사라진 자리의 대체 진입점 — 행에서는 치웠지만 기능은 남긴다.
-        // ⛔ 엑셀노드에서 이 구역을 통째로 안 내놓던 갈래는 2026-09-16에 사라졌다 (R-E) —
-        //    줄 구성의 주인이 프로젝트가 됐으므로 모든 노드에서 선다.
+        // ▲▼✕ 줄 이동 · 삭제의 진입점 — 행에는 단추를 두지 않고 여기서 한다.
+        // 줄 구성의 주인은 프로젝트라 모든 노드에서 선다.
         Section("줄");
         string nodeId = _nodeId ?? string.Empty;
         string lineId = resolved.Line.LineId;
@@ -1105,8 +1066,7 @@ public partial class DialogueNodeEditor : UserControl
     /// 갈래 출구가 있는 줄 아래의 출구 레일. 표시만 하면 기능이 퇴보한다 —
     /// 누르면 출구 편집이 열린다.
     ///
-    /// ⚠ <b>엑셀노드에서는 표시뿐이다</b> (2026-08-23 소유자: "이걸 클릭해서도 연결이 끊고
-    /// 이어지는 기능이 있는데, 이 기능도 엑셀노드에서는 사용이 안되게 막아줘"). 배선을 잇고
+    /// 주의: <b>챕터 에피소드에서는 표시뿐이다</b>. 배선을 잇고
     /// 떼는 자리는 <b>연출 그래프 카드의 IF 갈래 포트</b> 하나로 모은다 — 같은
     /// <c>SetExitTarget</c>을 부르는 문이 둘이면 어느 쪽이 정본인지 화면이 말하지 못한다.
     /// 어디로 가는지는 계속 보인다: 잠근 것은 고치는 길이지 정보가 아니다.
@@ -1170,7 +1130,7 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>갈래 출구 편집 — 그래프의 분기 간선과 같은 SetExitTarget 하나를 부른다.</summary>
     private Control BuildExitEditor(DialogueNode node, ConditionBranch branch)
     {
-        List<StoryNode> targets = ExitTargets(node); // 엑셀노드 제외 — 기본 출구와 같은 규칙
+        List<StoryNode> targets = ExitTargets(node); // 챕터 에피소드 제외
 
         var combo = new ComboBox
         {
@@ -1302,22 +1262,12 @@ public partial class DialogueNodeEditor : UserControl
         }
     }
 
-    // ⛔ [발행] 탭과 BuildResults()는 2026-09-15에 사라졌다 (소유자: "저거 솔직히
-    //    필요없어 보이는데"). 그 탭이 보여 주던 것은 발행 상태 문구와 발행 이력
-    //    목록뿐이었고, 둘 다 [이 상태를 발행]이 2026-08-21에 자동이 된 뒤로는
-    //    읽기 전용 현황판이었다 — 현황판은 볼 이유가 사라지면 지운다([편집 자료]
-    //    현황판과 같은 결). (수동 발행 Publish()는 그보다 앞선 2026-08-21에 이미 없어졌다.)
-    //    ⛔ 발행 자체(자동 발행 · Results 층 · 연출 바인딩 · 출력)는 2026-10-29에 연출과 함께
-    //    ked-story-compositor로 갔다.
-
     // ── 출구 후보 ───────────────────────────────────────────────────────────
     //
-    // ⚠ [기본 출구] 편집 구역은 2026-08-22에 사라졌다 (소유자: "연출그래프에서 만질 일이
-    // 없을 테니 그냥 없애도 될 것 같아") — 같은 값을 판의 레일 칩(`○ 진행`)이 이미
+    // 주의: [기본 출구]는 여기서 편집하지 않는다 — 같은 값을 판의 레일 칩(`○ 진행`)이
     // 편집한다(`GraphEditorView.ShowRailChip`). 한 값에 편집 창구가 둘이면 어느 쪽이
-    // 최신인지 화면이 대답하지 못한다. <b>데이터·포트·출력은 그대로다</b> —
-    // `DefaultExitTargetNodeId`·발행 점프 모두 손대지 않았다.
-    // 남은 후보 계산은 갈래(detour) 출구가 쓴다.
+    // 최신인지 화면이 대답하지 못한다.
+    // 후보 계산은 갈래(detour) 출구가 쓴다.
 
     /// <summary>검증용 손잡이 — 갈래 출구 콤보가 받는 후보 그대로.</summary>
     internal List<StoryNode> ExitTargetsProbe(string nodeId) =>
@@ -1395,9 +1345,6 @@ public partial class DialogueNodeEditor : UserControl
 
         return 0;
     }
-
-    // ⛔ 노드 단위 내보내기([이 노드 내보내기…]·[이 노드 CSV…])는 2026-09-15에 [발행] 탭과 함께
-    //    사라졌고, 툴바의 Yarn · CSV 내보내기도 2026-10-29에 ked-story-compositor로 갔다.
 
     private static Button SmallButton(string glyph, Action action)
     {

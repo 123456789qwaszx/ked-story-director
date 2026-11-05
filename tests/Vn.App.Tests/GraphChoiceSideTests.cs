@@ -11,13 +11,13 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>선택지 줄 하나하나가 제 도착을 보고 쪽을 고른다</b> (H1 · 2026-10-29 소유자: *"선택지는 원래 것보다 왼쪽에 두더라도,
-/// 여전히 오른쪽으로 점과 글자가 유지 돼 … 연결되어 있는 하나의 루트의 선택지 방향이 바뀌길 원한거야"*).
+/// <b>선택지 줄 하나하나가 제 도착을 보고 쪽을 고른다</b> — 카드째가 아니라 이어진 루트
+/// 하나하나의 방향이 바뀐다.
 ///
 /// 도착 카드가 출발 카드보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다 — 점이 줄기 쪽 · 문구가 그 왼쪽에 서고 레인은 카드
-/// 왼쪽으로 빠진다. 줄기는 언제나 카드 가운데 아래다(2026-10-29 소유자). 분기 포트도 같은 쪽 규칙이다.
+/// 왼쪽으로 빠진다. 줄기는 언제나 카드 가운데 아래다. 분기 포트도 같은 쪽 규칙이다.
 ///
-/// 시험마다 챕터 시작 카드(start)를 멀리 오른쪽에 둔다 — 예전 규칙(시작 카드 기준으로 카드째 뒤집기)이면 결과가 달랐다.
+/// 시험마다 챕터 시작 카드(start)를 멀리 오른쪽에 둔다 — 시작 카드 기준으로 카드째 뒤집는 규칙이면 결과가 달라진다.
 /// </summary>
 public sealed class GraphChoiceSideTests : IDisposable
 {
@@ -37,7 +37,7 @@ public sealed class GraphChoiceSideTests : IDisposable
     [Fact]
     public void 도착이_왼쪽인_선택지만_왼쪽으로_나간다() => HeadlessUi.Run(() =>
     {
-        // 소유자 화면 그대로 — 한 카드의 두 선택지가 왼쪽 카드와 오른쪽 카드로 간다.
+        // 한 카드의 두 선택지가 왼쪽 카드와 오른쪽 카드로 간다.
         (GraphEditorView graph, AuthoringSession session) = Show(
             ("start", 2400, 0), ("scene", 800, 0), ("left", 100, 700), ("right", 1500, 700));
         session.Editor.AddEdge("ch01", "scene", "left", optionLabel: "왼쪽 길");
@@ -72,8 +72,7 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Editor.AddEdge("ch01", "west", "d", optionLabel: "서쪽 셋");
         Redraw(graph);
 
-        // 2026-10-29 소유자: "선택지의 위치가 어떤 때는 노드 중앙이였다가, 어떤 때는 왼쪽으로 치우쳐지는데, 이게 항상
-        // 노드 중앙 아래쪽에 선택지가 있도록 해줘." — 예전(H1)에는 오른쪽뿐이면 카드 왼쪽 안, 왼쪽뿐이면 오른쪽 안이었다.
+        // 선택지는 쪽과 상관없이 언제나 노드 가운데 아래에서 나온다 — 한쪽으로 치우치지 않는다.
 
         // 오른쪽뿐(빈 칸도 오른쪽) — 줄기는 가운데, 줄은 그 오른쪽에 선다.
         StackPanel east = Row(graph, "east", "동쪽");
@@ -96,7 +95,7 @@ public sealed class GraphChoiceSideTests : IDisposable
     [Fact]
     public void 분기_포트도_출발_카드를_기준으로_쪽을_고른다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-29 소유자 — "분기가 … 왼쪽에 위치하면 박스 왼쪽에 생성되도록 해줘".
+        // 분기가 다녀갈 카드가 왼쪽에 있으면 포트는 카드 왼쪽에 선다.
         (GraphEditorView graph, AuthoringSession session) = Show(("start", 2400, 0), ("scene", 800, 0));
         DialogueNode scene = Card(session, "scene");
         string lineId = scene.Script.ActiveLines.First().Id;
@@ -125,7 +124,7 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => EpisodeNaming.EpisodeIdOf(node) == episodeId);
 
-    /// <summary>그 카드의 「분기」 점 — 글 칸의 그 대사 높이, 카드 가장자리에 판(캔버스)에 선다(2026-10-30).</summary>
+    /// <summary>그 카드의 「분기」 점 — 글 칸의 그 대사 높이, 카드 가장자리에 판(캔버스)에 선다.</summary>
     private static Ellipse DetourKnob(GraphEditorView graph, string nodeId) =>
         graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Ellipse>()
             .Single(knob => (knob.Tag as string)?.StartsWith(

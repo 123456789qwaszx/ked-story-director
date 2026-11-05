@@ -3,15 +3,13 @@ using Vn.Authoring.Editing;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// 챕터 개명의 <b>유일한 자리</b> (2026-08-24 소유자 보고: "챕터의 이름을 바꾸니까,
-/// 에피소드들의 대화가 없다고 나오고, 엑셀도 새로운게 열리네. 또 연출그래프에서도
-/// 조건노드가 이전의 챕터를 받고 있어").
+/// 챕터 개명의 <b>유일한 자리</b>. 이름이 한 곳만 바뀌면 에피소드들의 대화가 없다고 나오거나
+/// 연출 그래프의 조건 노드가 옛 챕터를 받는다.
 ///
 /// 개명은 <see cref="ProjectEditor.RenameChapter"/> 한 번이다: <c>Project.Chapters</c>의 Id · 판 이름 ·
 /// 조건 공급 노드 이름이 한 변경으로 바뀌고 되돌리기 한 번에 돌아온다.
 ///
-/// (2026-10-29 · D2: 그 뒤에 따라 하던 <c>chapters/{Id}.xlsx</c>·<c>episodes/{Id}/</c> 옮기기는 엑셀
-/// 연동과 함께 걷혔다. 남은 파일은 진행 JSON 하나이고, 그것은 옮기지 않고 이름만 말한다.)
+/// 따라 바뀌어야 할 파일은 진행 JSON 하나이고, 그것은 옮기지 않고 이름만 말한다.
 /// </summary>
 public static class ChapterRenamer
 {

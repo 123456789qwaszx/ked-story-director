@@ -13,7 +13,7 @@
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,16,Auto,Auto,16,Auto,Auto,Auto,Auto,16,*,Auto">
-                <!-- 프로젝트는 폴더다 (2026-11-04 소유자) — 새로/열기는 폴더를 고른다. [다른 이름으로…]는 걷었다:
+                <!-- 프로젝트는 폴더다 — 새로/열기는 폴더를 고른다. [다른 이름으로…]는 두지 않는다:
                      복제는 탐색기, 버전은 git. manifest 이름은 사람이 짓지 않는다(ProjectFolder). -->
                 <Button Grid.Column="0" x:Name="NewButton" Content="새 프로젝트…"
                         ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/ · game.definition.json)." />
@@ -27,11 +27,9 @@
                 <Button Grid.Column="6" x:Name="RedoButton" Content="다시 실행" Margin="6,0,0,0" />
 
                 <!--
-                  진행 JSON은 사람 손을 안 기다리고 저절로 나가므로(2026-08-17), 사람이 할
-                  일은 "가서 꺼내 오는 것"뿐이다. 그 자리를 몰라 못 꺼내 가던 것을 연다
-                  (2026-08-25 소유자 — 비개발자 작가에게 건네는 준비의 일부).
-                  ⛔ 옆에 있던 [내보내기…](Yarn) · [CSV 내보내기…] · [양식…]은 2026-10-29에 무대와 함께
-                  ked-story-compositor로 갔다 — 게임용 Yarn과 문서는 그 툴만 낸다.
+                  진행 JSON은 사람 손을 안 기다리고 저절로 나가므로, 사람이 할
+                  일은 "가서 꺼내 오는 것"뿐이다. 그 자리를 모르면 꺼내 갈 수 없으니 폴더를 연다.
+                  게임용 Yarn과 문서는 ked-story-compositor만 낸다.
                 -->
                 <Button Grid.Column="8" x:Name="OpenExportFolderButton" Content="📂 챕터진행"
                         ToolTip.Tip="exported/ 폴더를 엽니다 — 챕터별 진행 JSON이 여기 있습니다." />
@@ -41,11 +39,10 @@
                     <TextBlock x:Name="ProjectPathText" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <!-- ⚠ <b>맨 끝 열(마지막 Auto)이 이 표시의 자리다.</b> 앞에 단추를 하나
+                <!-- 주의: <b>맨 끝 열(마지막 Auto)이 이 표시의 자리다.</b> 앞에 단추를 하나
                      더하면 열이 늘고, 그때 <c>*</c>(프로젝트 이름)와 이 칸이 <b>함께</b>
-                     밀려야 한다. `📂 챕터진행`을 더할 때 이름 칸만 12→13으로 옮기고 이쪽을
-                     안 옮겨서, 이 글이 <b>이름 위에 겹쳐</b> 섰다(2026-08-26 소유자 보고:
-                     "원래 우측상단 끝이였는데"). 열 번호는 둘이 한 쌍이다. -->
+                     밀려야 한다. 이름 칸만 옮기면 이 글이 <b>이름 위에 겹쳐</b> 선다.
+                     열 번호는 둘이 한 쌍이다. -->
                 <TextBlock Grid.Column="14"
                            x:Name="DirtyText"
                            VerticalAlignment="Center"
@@ -53,8 +50,7 @@
             </Grid>
         </Border>
 
-        <!-- 상태줄은 <b>곁눈으로 읽는 줄</b>이다 (2026-08-24 소유자: "저장했습니다,
-             로드했습니다 이런 문구의 크기를 줄여줘"). 기본 글자크기(14)에 위아래 8씩
+        <!-- 상태줄은 <b>곁눈으로 읽는 줄</b>이다. 기본 글자크기(14)에 위아래 8씩
              주면 36px을 늘 차지하는데, 여기 뜨는 말은 대부분 "됐다"이고 그것은 크게
              볼 것이 아니다. 이 저장소가 곁정보에 쓰는 11로 맞춘다. -->
         <Border DockPanel.Dock="Bottom"
@@ -64,13 +60,12 @@
             <TextBlock x:Name="StatusText" FontSize="11" TextWrapping="Wrap" />
         </Border>
 
-        <!-- 탭 둘 — 곁기둥이 제 화면 안으로 들어갔다 (2026-08-22 소유자): <b>챕터 목록</b>은
-             챕터 그래프로, <b>노드 편집기</b>는 연출 그래프로. 자리가 곧 소속이다.
+        <!-- 탭 둘 — 곁기둥은 제 화면 안에 있다: <b>챕터 목록</b>은
+             챕터 그래프에, <b>노드 편집기</b>는 연출 그래프에. 자리가 곧 소속이다.
              탭 순서가 곧 작업 순서다: ① 챕터 그래프에서 구조를 짜고, ② 연출 그래프에서 카드를
              잇고 대사를 쓴다. 두 그래프는 데이터도 편집 경로도 공유하지 않는다 (G-1).
-             ⛔ [무대 프리뷰] 탭은 2026-10-29에 연출 층과 함께 ked-story-compositor로 옮겨 갔다
-             (docs/plans/presentation-removal.md). [대본] 탭은 같은 날 먼저 걷혔다(D2).
-             ⚠ 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
+             무대 프리뷰는 연출 층과 함께 ked-story-compositor의 몫이다.
+             주의: 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
         <TabControl x:Name="MainTabs" Padding="0">
             <TabItem x:Name="ChapterTabItem" Header="챕터 그래프">
                 <views:ChapterGraphView x:Name="ChapterGraph" />

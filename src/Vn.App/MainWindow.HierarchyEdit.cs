@@ -5,10 +5,10 @@ using Vn.Authoring.Chapters;
 namespace Vn.App;
 
 /// <summary>
-/// <b>하이어아키에서 고치기</b> (2026-10-30 HY4 — <c>docs/plans/hierarchy.md</c>) — 우클릭 차림표(챕터 · 장면 · 에피소드
+/// <b>하이어아키에서 고치기</b> — 우클릭 차림표(챕터 · 장면 · 에피소드
 /// 추가, 장면 풀기, 에피소드 지우기)와 두 번 눌러 이름 바꾸기. 두 탭의 하이어아키가 이 한 벌을 쓴다.
 ///
-/// ⚠ 규칙은 여기 없다 — 만들기는 <c>ProjectEditor</c>, 지우기는 <see cref="EpisodeDeleter"/>, 개명은
+/// 주의: 규칙은 여기 없다 — 만들기는 <c>ProjectEditor</c>, 지우기는 <see cref="EpisodeDeleter"/>, 개명은
 /// <see cref="EpisodeRenamer"/> · <see cref="ChapterRenamer"/>. 이 자리는 <b>누른 줄이 무엇을 어디에 하자는지</b>를 풀고
 /// 결과를 말한다.
 /// </summary>
@@ -42,8 +42,7 @@ public partial class MainWindow
             case HierarchyCommand.AddScene:
             {
                 // 장면은 에피소드가 들어야 있다 — 새 장면은 첫 에피소드와 함께 선다.
-                // ⛔ 그 에피소드를 누른 에피소드(없으면 챕터의 마지막)에서 잇던 길은 2026-11-01에 걷혔다(소유자: "그렇게 새로
-                //    만들어 진 것에 바로 간선을 이을 필요는 없어") — 새 장면이 어디서 들어오는지는 사람이 잇는다.
+                // 그 에피소드에 간선을 저절로 잇지 않는다 — 새 장면이 어디서 들어오는지는 사람이 잇는다.
                 CreateEpisode(chapter, after: null, NextSceneId(chapter.Model));
                 break;
             }
@@ -175,7 +174,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 에피소드를 장면에서 뺀다 — 장면ID를 걷어 <b>챕터 직속</b>으로(2026-11-01 B안). 런타임에서는 그 에피소드 하나가 저장 · 롤백
+    /// 에피소드를 장면에서 뺀다 — 장면ID를 걷어 <b>챕터 직속</b>으로.런타임에서는 그 에피소드 하나가 저장 · 롤백
     /// 구간이 된다(장면ID가 없는 에피소드의 규칙 그대로). 되돌리기 한 칸.
     /// </summary>
     private void DetachFromScene(string chapterId, string episodeId)

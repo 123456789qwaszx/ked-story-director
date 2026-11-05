@@ -11,18 +11,14 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// 챕터 그래프가 읽어 보여 주는 것 — 고른 에피소드의 대사 미리보기, [챕터] 탭의 스탯 표, 그리고
-/// 검증 보고와 진행 JSON 자동 내보내기(G8).
-///
-/// ⛔ 이 파일의 앞 절(노드 클릭이 대본 워크북을 만들어 열고, [대본 가져오기]가 대사 노드·보고 패널·배지로
-/// 이어지던 것)은 2026-10-29에 엑셀 연동과 함께 걷혔다(docs/design/two-graphs.md §7 D2). 이름의
-/// "동기화"는 그 흔적이다.
+/// 검증 보고와 진행 JSON 자동 내보내기.
 /// </summary>
 public sealed class ChapterGraphSyncViewTests
 {
     [Fact]
     public void 에피소드를_고르면_대사_탭에서_대사가_읽힌다() => HeadlessUi.Run(() =>
     {
-        // 소유자 요청 — 시나리오 그래프까지 안 가도, 챕터 그래프의 [대사] 탭에서
+        // 시나리오 그래프까지 안 가도, 챕터 그래프의 [대사] 탭에서
         // 고른 에피소드의 대사가 (읽기 전용으로) 보여야 한다. 원천은 그 에피소드 카드의 대본이다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -65,15 +61,12 @@ public sealed class ChapterGraphSyncViewTests
     [Fact]
     public void 챕터_탭이_스탯을_고칠_수_있게_세운다() => HeadlessUi.Run(() =>
     {
-        // 소유자 점검 — 스탯은 어디에서도 값이 안 보이던 표다. [챕터] 탭이 조건 아래에 세운다.
+        // 스탯 표는 [챕터] 탭이 조건 아래에 세운다.
         // 에피소드·간선은 그래프가 이미 그린다.
         //
-        // ⚠ <b>2026-09-17에 읽기 전용이 아니게 됐다</b> (소유자 — 계층을 하나로 합치면서):
-        //    *"이제 엑셀이 아닌 챕터그래프에서 직접 조건과 스탯을 정의하려고 합니다"*.
-        //    R-F가 워크북을 산출물로 만든 뒤로 *"편집은 엑셀에서"*는 이미 낡은 안내였다.
+        // <b>읽기 전용이 아니다</b> — 조건과 스탯은 엑셀이 아니라 챕터 그래프에서 직접 정의한다.
         //
-        // 2026-08-24 소유자 — 나란히 서 있던 픽스처 표는 걷었다("한 번도 안 썼어").
-        // 챕터의 픽스처는 그대로다: 화면만 없앴다.
+        // 픽스처 표는 세우지 않는다. 챕터의 픽스처는 그대로다: 화면만 없다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
@@ -88,7 +81,7 @@ public sealed class ChapterGraphSyncViewTests
         Assert.Null(view.FindControl<StackPanel>("FixtureListPanel"));
     });
 
-    // ── G8 내보내기 — 사람 손을 기다리지 않는다 (2026-08-17) ────────────────
+    // ── 내보내기 — 사람 손을 기다리지 않는다 ────────────────
 
     [Fact]
     public void 검증_오류가_있으면_JSON이_안_나가고_사유를_말한다() => HeadlessUi.Run(() =>
@@ -101,7 +94,7 @@ public sealed class ChapterGraphSyncViewTests
         Assert.False(Directory.Exists(project.ExportFolder));
 
         // 사유는 상태줄이 아니라 검증 보고에 선다 — 상태줄은 다음 동작의 보고가 곧 덮는다.
-        // ⚠ 접힌 채로도 <b>머리글이 말한다</b> — 런타임으로 나갈 것이 안 나간 상태다.
+        // 접힌 채로도 <b>머리글이 말한다</b> — 런타임으로 나갈 것이 안 나간 상태다.
         var expander = view.FindControl<Expander>("DiagnosticsExpander")!;
         Assert.Contains("진행 JSON 미출력", (string)expander.Header!);
         Assert.Contains("🔴", (string)expander.Header!);   // 안 나간 것은 오류 급 = 빨강
@@ -137,8 +130,7 @@ public sealed class ChapterGraphSyncViewTests
     [Fact]
     public void 툴에서_고치면_JSON도_따라_갱신된다() => HeadlessUi.Run(() =>
     {
-        // 툴에서 고친 것이 JSON까지 간다 — 자동 내보내기(2026-08-17)는 사람 손을 기다리지 않는다.
-        // (2026-09-16 R-F 전에는 `엑셀을_고치면_JSON도_따라_갱신된다`였다 — 워크북을 고쳐 다시 읽혔다.)
+        // 툴에서 고친 것이 JSON까지 간다 — 자동 내보내기는 사람 손을 기다리지 않는다.
         using var project = new TempProject(allowUnreachable: true);
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -146,7 +138,7 @@ public sealed class ChapterGraphSyncViewTests
         string path = Path.Combine(project.ExportFolder, "ch05.progression.json");
         Assert.DoesNotContain("새로판길", File.ReadAllText(path));
 
-        // ⚠ 문구를 준다 (2026-08-23). 문구 없는 간선은 에피소드당 하나뿐인데 main05.01에
+        // 문구를 준다. 문구 없는 간선은 에피소드당 하나뿐인데 main05.01에
         //    이미 있다. 둘이 되면 진행 코어가 그 챕터를 못 싣고 내보내기가 옳게 거부한다 —
         //    이 테스트가 재려는 것은 "고치면 JSON이 따라오는가"이지 그쪽이 아니다.
         //
@@ -166,7 +158,7 @@ public sealed class ChapterGraphSyncViewTests
         //
         // 둘째 챕터도 판과 카드가 서 있어야 검증이 그 챕터의 카드를 찾는다 — 열 때 맞추기
         // (<c>AlignBoardsWithChapters</c>)가 두 챕터 모두에 세운다. 판 없는 챕터는 거부가 맞다
-        // (전에는 검증이 ch05 판의 같은 EpisodeId 노드를 집어 통과시켰다 — excel-boundary C1).
+        // (검증이 다른 챕터(ch05) 판의 같은 EpisodeId 노드를 집어 통과시키면 안 된다).
         using var project = new TempProject(allowUnreachable: true, "ch05", "ch99");
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -184,7 +176,7 @@ public sealed class ChapterGraphSyncViewTests
             .Single(chapter => chapter.ChapterId == chapterId)
             .ToGraphModel(chapterId);
 
-        // ⚠ 내보내기까지 돌린다 — 검증만 보면 코어 관문(CoreRefusals)이 낸 거부가 안 보인다.
+        // 내보내기까지 돌린다 — 검증만 보면 코어 관문(CoreRefusals)이 낸 거부가 안 보인다.
         ChapterExportResult result = ChapterProgressionExporter.Export(model, board);
 
         string errors = string.Join(" || ", result.Validation.All
@@ -204,7 +196,7 @@ public sealed class ChapterGraphSyncViewTests
     /// 그 에피소드 카드에 대사를 줄마다 적는다 — 작가가 카드에서 하는 일. 첫 줄은 카드가 설 때
     /// 함께 선 빈 줄이다.
     ///
-    /// ⚠ 붙여넣기(<c>ApplyScenarioText</c>)로 한 번에 넣지 않는다 — 그 빈 줄이 고쳐진 것인지
+    /// 붙여넣기(<c>ApplyScenarioText</c>)로 한 번에 넣지 않는다 — 그 빈 줄이 고쳐진 것인지
     /// 사라진 것인지 판정이 서지 않아 붙여넣기가 통째로 멈춘다.
     /// </summary>
     private static void WriteLines(

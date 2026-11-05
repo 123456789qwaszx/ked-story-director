@@ -2,7 +2,7 @@ namespace Vn.Authoring.Rendering;
 
 /// <summary>
 /// 문서의 표현 목적. 공식 저작 모델에는 저장되지 않는다.
-/// (⛔ 녹음 · 번역 대본은 2026-10-29에 Script Preview 탭과 함께 걷혔다 — 그 탭이 유일한 독자였다.)
+/// (녹음 · 번역 대본은 2026-10-29에 Script Preview 탭과 함께 걷혔다 — 그 탭이 유일한 독자였다.)
 /// </summary>
 public enum DocumentOutputFormat
 {
@@ -78,7 +78,7 @@ public sealed record OutputPreset(
 ///
 /// 1) Runtime Full = 재생 순서 그대로(조건 · LineId · 실행 출구) — 합성의 기본값이고 흐름 조각을 재는 자리,
 /// 2) Scenario Only = 대본+조건 — 카드 글 칸이 쓰는 면.
-/// ⛔ Direction Sheet(LineId+연출 테이블)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔고,
+/// Direction Sheet(LineId+연출 테이블)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔고,
 /// Recording/Localization Script(LineId+대본)는 같은 날 그것을 고르던 Script Preview 탭과 함께 걷혔다.
 ///
 /// 프리셋 선택은 문서 합성 방법만 바꾸며 StoryProject를 수정하지 않는다.
@@ -107,7 +107,7 @@ public static class OutputPresetCatalog
         new DocumentOutputOptions(
             DocumentOutputFormat.Scenario,
 
-            // ⛔ <b>머리글(`[장면] 이름`)을 안 낸다</b> (2026-09-18 소유자: *"이런 쓸모없는
+            // <b>머리글(`[장면] 이름`)을 안 낸다</b> (2026-09-18 소유자: *"이런 쓸모없는
             //    글자 치워줘"*). 이 프리셋은 보는 면이 아니라 <b>쓰는 면</b>이고, 쓴 글은
             //    그대로 파서로 되돌아간다 — 그런데 파서는 <c>[</c>로 시작하는 줄을
             //    <b>해석 못 한 줄</b>로 올린다. 그래서 저장할 때마다 자기가 낸 머리글이

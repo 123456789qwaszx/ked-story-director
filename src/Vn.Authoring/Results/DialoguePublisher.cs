@@ -35,7 +35,7 @@ public sealed record PublishProblem(
 /// <summary>
 /// 대사 노드 하나를 펼친 본문과 그 검증 결과.
 ///
-/// ⛔ 이름의 "발행"은 남은 이름이다 — 발행(고정본 <c>vN</c>)은 2026-10-29에 연출과 함께
+/// 이름의 "발행"은 남은 이름이다 — 발행(고정본 <c>vN</c>)은 2026-10-29에 연출과 함께
 /// <c>ked-story-compositor</c>로 갔다. 여기서는 미리보기 · 카드 글 칸 · 흐름 해석이 같은 펼침을 읽는다.
 /// </summary>
 public sealed class DialogueDraft
@@ -144,7 +144,7 @@ public static class DialoguePublisher
         AddFlowProblems(flow, problems);
         AddScriptProblems(node, problems);
 
-        // ⛔ 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지) — 설정노드는
+        // 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지) — 설정노드는
         //    이제 <b>조건만</b> 공급한다. 결과의 배정 칸(`Assignments`)은 L5(2026-10-29)에 걷혔다.
         return new DialogueDraft(
             node.Id,
@@ -245,7 +245,7 @@ public static class DialoguePublisher
         {
             (PublishProblemKind kind, bool blocking) = problem.Kind switch
             {
-                // ⚠ 여기서는 <b>막는 문제</b>로 짚는다 — 미리보기가 [주의]로 보여 준다. 게임으로
+                // 여기서는 <b>막는 문제</b>로 짚는다 — 미리보기가 [주의]로 보여 준다. 게임으로
                 //    내보낼 때 빈 씬을 완화하는 것은 compositor의 몫이다(지금 상태를 그대로 보낸다).
                 FlowProblemKind.UnknownCondition => (PublishProblemKind.UnknownCondition, true),
                 FlowProblemKind.UnavailableCondition => (PublishProblemKind.UnknownCondition, true),

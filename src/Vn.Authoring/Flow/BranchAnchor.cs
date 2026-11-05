@@ -17,7 +17,7 @@ namespace Vn.Authoring.Flow;
 ///   </item>
 /// </list>
 ///
-/// ⛔ <b>첫째 갈래는 맨 줄 Id 그대로다.</b> 그 글자가 지금까지의 신원이고
+/// <b>첫째 갈래는 맨 줄 Id 그대로다.</b> 그 글자가 지금까지의 신원이고
 /// <see cref="Model.DialogueNode.BranchExits"/>가 그것으로 출구를 붙들고 있다 — 규칙을
 /// 바꾸면서 접미를 붙이면 <b>이미 매달린 출구가 전부 고아가 된다.</b> 새 모양은 둘째부터다.
 /// </summary>

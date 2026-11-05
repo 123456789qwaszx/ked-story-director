@@ -10,8 +10,8 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// 노드 카드의 스탯 줄 (2026-08-17 소유자: "각각의 에피소드 노드에서, 간선을 따라 왔을 때
-/// 스탯의 변화량이 노드에 표시되도록. 여러 루트가 있을 때는 최소최대량을 표기").
+/// 노드 카드의 스탯 줄 — 간선을 따라 왔을 때의 스탯 변화량을 에피소드 노드에 보이고,
+/// 여러 루트가 있으면 최소·최대를 적는다.
 ///
 /// 증명이 낸 폭이 정말 카드 글자가 되는지를 본다 — 프루버 단위 테스트만으로는 화면에
 /// 안 붙는 배선을 못 잡는다.
@@ -92,7 +92,7 @@ public sealed class ChapterStatSpanViewTests : IDisposable
     [Fact]
     public void 증감이_하나도_없는_챕터는_거르지_않고_초기값을_보여_준다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-17 소유자 보고 — 증감을 아직 안 적은 판에서 카드가 비어 있으면 기능이
+        // 증감을 아직 안 적은 판에서 카드가 비어 있으면 기능이
         // 없는 것처럼 읽힌다. 거를 것이 없을 때는 거르지 않는다.
         _editor.UpdateEdge("ch01", "ep1", "싼길", statChanges: string.Empty);
         _editor.UpdateEdge("ch01", "ep1", "비싼길", statChanges: string.Empty);

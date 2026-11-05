@@ -12,12 +12,8 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[챕터] 탭의 스탯·조건 표가 편집 가능하다</b> (2026-09-17 소유자: *"이제 엑셀이 아닌
-/// 챕터그래프에서 직접 조건과 스탯을 정의"*).
-///
-/// ⚠ 전에는 읽기 전용이었고 *"편집은 챕터 엑셀의 시트에서"*라고 적혀 있었다. 그 안내는
-/// <b>R-F(2026-09-16)가 이미 낡게 만들었다</b> — 그날 워크북이 산출물이 되고 값의 주인이
-/// <c>ChapterDocument</c>로 넘어왔는데 글자만 남아 있었다.
+/// <b>[챕터] 탭의 스탯·조건 표가 편집 가능하다</b> — 조건과 스탯은 엑셀이 아니라
+/// 챕터 그래프에서 직접 정의한다. 값의 주인은 <c>ChapterDocument</c>다.
 /// </summary>
 public sealed class ChapterSheetEditTests : IDisposable
 {
@@ -49,7 +45,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     [Fact]
     public void 스탯_표에_값_칸이_선다() => HeadlessUi.Run(() =>
     {
-        // 전에는 한 줄짜리 글자였다 — 이제 고칠 수 있는 칸이어야 한다.
+        // 한 줄짜리 글자가 아니라 고칠 수 있는 칸이어야 한다.
         (ChapterGraphView view, _) = Show();
 
         // 표시이름 · 초기 · 최소 · 최대 — 키는 라벨(개명은 [✎]), 타입은 콤보다.
@@ -71,7 +67,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     [Fact]
     public void 숫자_칸에_글자를_적으면_조용히_안_버리고_말한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 조용히 버리면 사람은 적은 줄 알고 넘어간다.
+        // 조용히 버리면 사람은 적은 줄 알고 넘어간다.
         (ChapterGraphView view, AuthoringSession session) = Show();
 
         Commit(Boxes(Row(view, "stat:trust"))[1], "많이");
@@ -98,7 +94,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     [Fact]
     public void 쓰는_곳이_있는_스탯을_지우려_하면_어디인지_말한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ *"쓰이고 있습니다"*로 끝내면 사람이 챕터를 뒤져야 한다 — 거절이 곧 정리 안내다.
+        // *"쓰이고 있습니다"*로 끝내면 사람이 챕터를 뒤져야 한다 — 거절이 곧 정리 안내다.
         (ChapterGraphView view, AuthoringSession session) = Show();
 
         Press(Buttons(Row(view, "stat:trust")).Last());
@@ -152,7 +148,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     [Fact]
     public void 키_바꾸기는_세이브가_안_따라온다고_먼저_말한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>키는 세이브의 열쇠다</b> (런타임 회신 §6.2). 저쪽 `LocalSaveFile.Stats`가 이
+        // <b>키는 세이브의 열쇠다</b> (런타임 회신 §6.2). 저쪽 `LocalSaveFile.Stats`가 이
         //    글자로 저장하고, 복원은 키가 없으면 <b>초기값</b>으로 떨어진다 — 경고도 없다.
         //    개명이 끌고 가는 다섯 자리는 프로젝트 안이고 <b>디스크의 세이브는 그 다섯에
         //    없다</b>. 표시 이름만 고치려던 사람이 이 문을 열 수 있으므로, 경고가
@@ -174,8 +170,8 @@ public sealed class ChapterSheetEditTests : IDisposable
     /// <summary>
     /// 열려 있는 입력 플라이아웃의 내용 — 경고와 칸이 함께 산다.
     ///
-    /// ⚠ <b>자리표시 글자</b>로 찾는다. 표의 줄도 `TextBox`+`TextBlock`을 들고 있어서
-    /// 그것만으로 고르면 <b>조건 줄이 먼저 잡힌다</b>(한 번 잡혔다).
+    /// <b>자리표시 글자</b>로 찾는다. 표의 줄도 `TextBox`+`TextBlock`을 들고 있어서
+    /// 그것만으로 고르면 <b>조건 줄이 먼저 잡힌다</b>.
     /// </summary>
     private static Control Prompt(ChapterGraphView view) =>
         (TopLevel.GetTopLevel(view) as Window)!.GetVisualDescendants()
@@ -235,7 +231,7 @@ public sealed class ChapterSheetEditTests : IDisposable
         window.Show();
         view.Attach(session);
 
-        // 인스펙터에 챕터를 세운다(하이어아키의 챕터 줄을 고른 것과 같다 — 2026-10-30 HY2, 전에는 [챕터] 탭).
+        // 인스펙터에 챕터를 세운다(하이어아키의 챕터 줄을 고른 것과 같다).
         view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch01"));
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 

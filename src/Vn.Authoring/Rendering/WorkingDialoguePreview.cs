@@ -6,7 +6,7 @@ namespace Vn.Authoring.Rendering;
 
 /// <summary>
 /// DialogueNode의 작업 상태를 그대로 펼쳐 보여 준다 — 카드의 글 칸이 여기를 지난다.
-/// (⛔ 곁기둥의 Script Preview는 2026-10-29에 걷혔다.)
+/// (곁기둥의 Script Preview는 2026-10-29에 걷혔다.)
 ///
 /// 초안(<see cref="DialoguePublisher.Draft"/>)을 결과 모양으로 감싸 합성기에 넘기고, 초안의 문제는
 /// 진단 조각으로 끼운다.
@@ -60,7 +60,7 @@ public static class WorkingDialoguePreview
     /// <see cref="ScenarioText"/>과 그 줄 짝 — 연출 그래프 카드가 분기 점을 글 칸의 그 대사 옆에 세우고, 글 칸이 고친 줄의
     /// 신원을 잇는다(<see cref="Script.ScenarioLineIdentity"/>).
     ///
-    /// ⛔ 분기마다 그 대사 위에 빈 줄을 끼우던 것(2026-10-30 오전)은 같은 날 걷혔다 — 한 줄의 분기들은 이제 그 대사 옆의 점
+    /// 분기마다 그 대사 위에 빈 줄을 끼우던 것(2026-10-30 오전)은 같은 날 걷혔다 — 한 줄의 분기들은 이제 그 대사 옆의 점
     /// 하나로 접히고 누르면 카드 밖으로 펼쳐지므로(소유자: *"특정 글자 옆쪽에 분기점 표시 하나만 공통으로 남기고, 그걸
     /// 클릭하면 … 펼쳐지면서"*) 줄 사이에 자리가 필요 없다.
     /// </summary>

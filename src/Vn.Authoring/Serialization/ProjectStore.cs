@@ -15,10 +15,10 @@ namespace Vn.Authoring.Serialization;
 /// story/&lt;fileId&gt;.vnstory.json       판 — 카드와 그 대본(줄 정체성 + locale별 본문)
 /// </code>
 ///
-/// ⛔ 형식 3까지는 대본이 <c>script/&lt;scriptId&gt;.vnscript.json</c>에 따로 있었다. 그런 프로젝트는 <b>읽어서 옮기고</b>,
+/// 형식 3까지는 대본이 <c>script/&lt;scriptId&gt;.vnscript.json</c>에 따로 있었다. 그런 프로젝트는 <b>읽어서 옮기고</b>,
 /// 저장할 때 옛 매니페스트가 가리키던 대본 파일을 지운다(<see cref="Save"/> · <c>docs/plans/script-merge.md</c>).
 ///
-/// ⛔ <b>연출은 읽지 않는다</b> (2026-10-29 — 연출은 <c>ked-story-compositor</c>의 것이다). 연출을 담은 옛
+/// <b>연출은 읽지 않는다</b> (2026-10-29 — 연출은 <c>ked-story-compositor</c>의 것이다). 연출을 담은 옛
 /// 프로젝트를 열면 연출 데이터는 모델에 들어오지 않고, 그대로 저장하면 사라진다. 그래서 <b>열 때 원본을 한 번
 /// 남긴다</b> — <see cref="PresentationBackupFolder"/>에 manifest · 대본 · StoryFile · 발행 결과 파일 · 게임 정의를
 /// 같은 상대 경로로 복사한다. compositor는 그 폴더에서 연출을 가져간다.
@@ -91,7 +91,7 @@ public static class ProjectStore
     /// <summary>
     /// manifest가 가리키는 파일 전부(대본 · StoryFile · 발행 결과)와 manifest · 게임 정의를 같은 상대 경로로 복사한다.
     ///
-    /// ⚠ <b>같은 원본을 두 번 남기지 않는다</b> — 열기만 하고 저장하지 않으면 다음에 또 연출을 만난다. 이미 있는
+    /// <b>같은 원본을 두 번 남기지 않는다</b> — 열기만 하고 저장하지 않으면 다음에 또 연출을 만난다. 이미 있는
     /// 폴더의 내용이 지금 원본과 바이트까지 같으면 그 폴더를 그대로 쓰고, 다르면(옛 툴에서 그 사이 고쳤다) 새 번호를 단다.
     /// </summary>
     private static string BackUpPresentationOriginal(string manifestPath, JsonObject root, ProjectManifest manifest)
@@ -390,7 +390,7 @@ public static class ProjectStore
 
         project.Links.AddRange(manifest.Links.Select(link => link.Clone()));
 
-        // ⚠ 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지
+        // 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지
         //    않는다(WriterSpeaker는 가변이라 복제한다).
         project.Chapters.AddRange(manifest.Chapters);
         project.WriterSpeakers.AddRange(manifest.WriterSpeakers.Select(speaker => speaker.Clone()));

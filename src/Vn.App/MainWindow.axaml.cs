@@ -29,12 +29,11 @@ public partial class MainWindow : Window
     /// <summary>검증용 손잡이 — 창이 쓰는 세션 하나. 테스트가 판을 짓고 선택을 옮긴다.</summary>
     internal AuthoringSession SessionProbe => _session;
 
-    // ── 연출 그래프의 곁기둥 (2026-08-22 소유자 — 창의 우측 열에서 그 판 안으로 이사) ──
+    // ── 연출 그래프의 곁기둥 ──
     //
-    // ⚠ XAML이 아니라 여기서 만든다. 자리는 연출 그래프의 것이지만(SetSidePanel) 배선은
+    // 주의: XAML이 아니라 여기서 만든다. 자리는 연출 그래프의 것이지만(SetSidePanel) 배선은
     // 셸의 것이다 — 이 편집기는 세션·선택 전환과 얽혀 있어 뷰로 옮기면 그 배선이 두 벌이
-    // 된다. 이름을 XAML 시절 그대로 둔 것은 의도다.
-    // ⛔ 연출 노드 편집기 · 에셋 탐색기는 2026-10-29에 무대와 함께 ked-story-compositor로 갔다.
+    // 된다. 필드 이름을 XAML 컨트롤처럼 지은 것은 의도다.
     private readonly DialogueNodeEditor DialogueEditor = new();
 
     private readonly TextBlock EmptyText = new()
@@ -73,10 +72,10 @@ public partial class MainWindow : Window
         {
             _chapters = entries;
             RebuildFileList();
-            // 연출 그래프의 철도 배선(T1)도 같은 목록 하나를 본다 — 두 곳이 따로 읽지 않는다.
+            // 연출 그래프의 철도 배선도 같은 목록 하나를 본다 — 두 곳이 따로 읽지 않는다.
             Graph.SupplyChapters(entries);
         };
-        // 위 드롭다운으로 골라도 왼쪽 목록의 강조가 따라온다 (2026-08-17 소유자 보고) —
+        // 위 드롭다운으로 골라도 왼쪽 목록의 강조가 따라온다 —
         // 목록 클릭이 하던 일(판 활성 + 목록 다시 그리기)을 여기서도 똑같이 한다.
         ChapterGraph.ChapterSelected += chapterId => UiGuard.Run(_session, "챕터 선택", () =>
         {
@@ -87,8 +86,8 @@ public partial class MainWindow : Window
         DialogueEditor.Attach(_session);
         DialogueEditor.RenameEpisode = RenameEpisode;   // 인스펙터 이름 칸의 에피소드 개명 — 하이어아키와 같은 길
         _session.Changed += OnSessionChanged;
-        // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 (2026-08-18) — 판을 다시 그리거나
-        // 챕터를 다시 읽을 이유가 없다. 그 구분이 없어서 노드가 늘수록 느려졌다.
+        // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 — 판을 다시 그리거나
+        // 챕터를 다시 읽을 이유가 없다. 그 구분이 없으면 노드가 늘수록 느려진다.
         _session.StatusChanged += (_, _) =>
         {
             if (Dispatcher.UIThread.CheckAccess())
@@ -103,7 +102,7 @@ public partial class MainWindow : Window
         _session.SelectionChanged += OnSelectionChanged;
         _session.FileGraphStateChanged += OnFileGraphStateChanged;
 
-        // 두 하이어아키 · 탭 사이 선택 맞추기 (2026-10-30 HY3 — MainWindow.Hierarchy.cs).
+        // 두 하이어아키 · 탭 사이 선택 맞추기 (MainWindow.Hierarchy.cs).
         WireHierarchies();
         ChapterGraph.ChapterAddButton.Click += (_, _) =>
             UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(ChapterGraph.ChapterAddButton));
@@ -111,7 +110,7 @@ public partial class MainWindow : Window
         // 플라이아웃만 누른 그 단추에 붙는다(화면 반대편에서 열리면 눈이 길을 잃는다).
         ChapterGraph.ChapterAddCenterButton.Click += (_, _) =>
             UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(ChapterGraph.ChapterAddCenterButton));
-        // 프로젝트가 아직 없을 때는 [새 프로젝트]가 먼저다 (2026-08-26 소유자) —
+        // 프로젝트가 아직 없을 때는 [새 프로젝트]가 먼저다 —
         // 툴바의 [새로 만들기]와 같은 길 하나를 지난다.
         ChapterGraph.ProjectNewCenterButton.Click += OnNewClick;
         NewButton.Click += OnNewClick;
@@ -125,12 +124,11 @@ public partial class MainWindow : Window
 
         Opened += OnOpened;
 
-        // 저장 단축키 (W49) — 어디에 포커스가 있어도 Ctrl+S가 저장이다.
+        // 저장 단축키 — 어디에 포커스가 있어도 Ctrl+S가 저장이다.
         //
-        // ⛔ <b>Ctrl+Z가 없었다</b> (2026-09-18에 알았다). 되돌리기는 <b>단추로만</b> 됐는데,
-        //    그 단추는 창 위쪽 띠에 있어서 트리에서 실수로 지운 사람이 찾아 올라가야 했다.
-        //    지우는 단추를 세우면서 소유자가 짚은 조건이 *"ctrl+z로 롤백이 가능해야"*이고,
-        //    그것이 이미 되는 줄 알았던 것이 문제였다.
+        // Ctrl+Z · Ctrl+Y도 창 전체에서 받는다. 되돌리기 단추는 창 위쪽 띠에 있어서, 트리에서
+        //    실수로 지운 사람이 찾아 올라가게 해서는 안 된다 — 지우는 단추는 Ctrl+Z로 되돌릴 수
+        //    있어야 한다.
         AddHandler(KeyDownEvent, (_, args) =>
         {
             if (!args.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control))
@@ -145,7 +143,7 @@ public partial class MainWindow : Window
                     OnSaveClick(this, new RoutedEventArgs());
                     break;
 
-                // ⚠ 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
+                // 주의: 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
                 //    되돌리는 것이고, 그것을 프로젝트 되돌리기로 바꾸면 쓰던 문장이 통째로
                 //    날아간다. TextBox가 제 되돌리기를 먼저 하도록 둔다.
                 case Avalonia.Input.Key.Z when FocusManager?.GetFocusedElement() is not TextBox:
@@ -160,7 +158,7 @@ public partial class MainWindow : Window
             }
         }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
-        // 10분 자동 저장 (W49) — 저장 경로가 있고 바뀐 것이 있을 때만, 상태줄로 알린다.
+        // 10분 자동 저장 —저장 경로가 있고 바뀐 것이 있을 때만, 상태줄로 알린다.
         _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
         _autoSaveTimer.Tick += (_, _) => UiGuard.Run(_session, "자동 저장", () =>
         {
@@ -180,7 +178,6 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// 연출 그래프의 곁기둥 한 판 — 대사 노드 편집기와 빈 안내가 겹쳐 선 자리(하나만 보인다).
-    /// (⛔ 연출 노드 편집기 · 에셋 탐색기는 2026-10-29에 무대와 함께 ked-story-compositor로 갔다.)
     /// </summary>
     private Control BuildSidePanel()
     {
@@ -194,7 +191,7 @@ public partial class MainWindow : Window
     /// 검증용 손잡이 — 최근 프로젝트 복원을 끈다. 헤드리스 테스트의 창은 "이 컴퓨터가
     /// 마지막에 연 프로젝트"를 물려받으면 안 된다: 복원된 챕터의 감시자가 부르는 에피소드
     /// 동기화가 테스트가 세운 노드를 솎아 내고 판을 다시 그려, 부하에 따라 매번 다른
-    /// 테스트가 흔들렸다(2026-08-26 — 더블클릭 넷 사이에 판이 재건되면 제스처도 끊긴다).
+    /// 테스트가 흔들린다(더블클릭 넷 사이에 판이 재건되면 제스처도 끊긴다).
     /// </summary>
     internal static bool RestoreRecentProjectOnOpen { get; set; } = true;
 
@@ -245,7 +242,7 @@ public partial class MainWindow : Window
             {
                 Graph.RefreshWriting(writtenNodeId);
 
-                // 카드 글 칸에서 고친 글이 곁기둥에도 바로 비친다(2026-10-30). 곁기둥에서 쓰는 중이면(초점이 그 안에 있다)
+                // 카드 글 칸에서 고친 글이 곁기둥에도 바로 비친다.곁기둥에서 쓰는 중이면(초점이 그 안에 있다)
                 // 그대로 둔다 — 고친 곳이 거기다.
                 if (DialogueEditor.IsVisible &&
                     string.Equals(DialogueEditor.NodeId, writtenNodeId, StringComparison.Ordinal) &&
@@ -303,9 +300,8 @@ public partial class MainWindow : Window
     // ── 파일 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// [＋ 챕터]. ⛔ <b>창구도 규칙도 여기 없다</b> — <see cref="ChapterAddFlyout"/>와
-    /// <see cref="AuthoringSession.CreateChapter"/>가 갖는다 (2026-09-16에 [대본] 탭에도
-    /// 같은 단추가 서면서 한 벌로 모았다). 여기 남은 것은 <b>만든 뒤 이 화면이 할 일</b>뿐이다.
+    /// [＋ 챕터]. <b>창구도 규칙도 여기 없다</b> — <see cref="ChapterAddFlyout"/>와
+    /// <see cref="AuthoringSession.CreateChapter"/>가 한 벌로 갖는다. 여기 있는 것은 <b>만든 뒤 이 화면이 할 일</b>뿐이다.
     /// </summary>
     private void ShowAddChapterFlyout(Control anchor) =>
         ChapterAddFlyout.ShowAt(anchor, _session, chapterId =>
@@ -315,9 +311,8 @@ public partial class MainWindow : Window
         });
 
     /// <summary>
-    /// 하이어아키를 다시 세운다 (2026-10-30 — 챕터 목록 자리를 이었다, docs/plans/hierarchy.md). 원천은 챕터 그래프 뷰가 읽은
-    /// 챕터 목록 하나다. 고른 것은 하이어아키가 들고 있다가 다시 세운 뒤에도 잇는다. 챕터가 없는 판은 하이어아키에 없다 —
-    /// 소유자 확정("완전 교체").
+    /// 하이어아키를 다시 세운다 (docs/plans/hierarchy.md). 원천은 챕터 그래프 뷰가 읽은
+    /// 챕터 목록 하나다. 고른 것은 하이어아키가 들고 있다가 다시 세운 뒤에도 잇는다. 챕터가 없는 판은 하이어아키에 없다.
     /// </summary>
     private void RebuildFileList()
     {
@@ -333,9 +328,8 @@ public partial class MainWindow : Window
     /// 챕터 행 우클릭 — 이름 바꾸기와 <b>제거</b>. 둘 다 챕터·판·조건 배관을
     /// 함께 옮기거나 걷는다(<see cref="ChapterRenamer"/> · <see cref="ChapterDeleter"/>).
     ///
-    /// ⛔ 제거는 2026-08-25에 생겼다. 그전에는 "폴더에서 사람이 지우세요"였는데, 그 길은
-    /// <b>절반만 지운다</b> — 파일은 사라져도 판과 노드가 프로젝트에 남아 이름이 겹치는
-    /// 번들로 뒤늦게 터졌다. 사람이 손으로 못 지우는 쪽이 남는 것이 문제였다.
+    /// 제거가 툴에 있는 이유: 사람이 폴더에서 손으로 지우면 <b>절반만 지워진다</b> — 파일은
+    /// 사라져도 판과 노드가 프로젝트에 남아 이름이 겹치는 번들로 뒤늦게 터진다.
     /// </summary>
     private void ShowChapterContextFlyout(Control anchor, string chapterId)
     {
@@ -369,8 +363,8 @@ public partial class MainWindow : Window
     /// <summary>
     /// 챕터 이름을 바꾼다 — 챕터 줄 차림표와 하이어아키의 두 번 눌러 고치기가 같은 이 길을 지난다. 됐으면 참.
     ///
-    /// ⚠ 개명은 <b>여러 자리를 함께</b> 옮기는 한 동작이다(챕터·판·조건 배관). 셸이 그중 일부만 알던 시절에 나머지가
-    /// 뒤처졌다 — 그 주인은 이제 ChapterRenamer 하나다(2026-08-24 소유자 보고).
+    /// 주의: 개명은 <b>여러 자리를 함께</b> 옮기는 한 동작이다(챕터·판·조건 배관). 셸이 그중 일부만 알면 나머지가
+    /// 뒤처진다 — 그 주인은 ChapterRenamer 하나다.
     /// </summary>
     private bool RenameChapter(string chapterId, string newId)
     {
@@ -464,7 +458,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 새 프로젝트 = <b>폴더 하나</b> (2026-11-04). 고른 폴더에 고정 이름(<see cref="ProjectFolder.DefaultManifestName"/>)으로
+    /// 새 프로젝트 = <b>폴더 하나</b>.고른 폴더에 고정 이름(<see cref="ProjectFolder.DefaultManifestName"/>)으로
     /// 깐다. 이미 프로젝트가 있는 폴더면 덮지 않고 연다.
     /// </summary>
     private async void OnNewClick(object? sender, RoutedEventArgs e)
@@ -493,7 +487,7 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>열기 = 폴더 고르기 (2026-11-04). 폴더 안의 유일한 manifest를 찾는다 — 없거나 둘이면 사유를 말한다.</summary>
+    /// <summary>열기 = 폴더 고르기.폴더 안의 유일한 manifest를 찾는다 — 없거나 둘이면 사유를 말한다.</summary>
     private async void OnOpenClick(object? sender, RoutedEventArgs e)
     {
         try
@@ -523,7 +517,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 게임 폴더 (2026-11-04) — 런타임의 <c>ChapterProgression</c> 폴더. 프로젝트 폴더의 <c>runtime.target.json</c>에
+    /// 게임 폴더 —런타임의 <c>ChapterProgression</c> 폴더. 프로젝트 폴더의 <c>runtime.target.json</c>에
     /// 상대 경로로 남고, 저장할 때마다 진행 JSON이 거기로도 나간다. compositor가 같은 파일을 읽어 Yarn을 쓴다.
     /// </summary>
     private async void OnGameFolderClick(object? sender, RoutedEventArgs e)
@@ -573,7 +567,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            // 카드 글 칸에 넣지 않은 글이 있으면 먼저 넣는다 — Ctrl+S도 넣는 때다(D4).
+            // 카드 글 칸에 넣지 않은 글이 있으면 먼저 넣는다 — Ctrl+S도 넣는 때다.
             Graph.FlushWriting();
 
             if (_session.ProjectPath is null)
@@ -594,13 +588,13 @@ public partial class MainWindow : Window
     // ── 내보내기 ────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 진행 JSON이 나가는 <c>exported/</c>를 연다 (2026-08-25).
+    /// 진행 JSON이 나가는 <c>exported/</c>를 연다.
     ///
-    /// 이 파일들은 <b>사람 손을 안 기다리고 저절로 나간다</b>(2026-08-17). 그래서 사람이
+    /// 이 파일들은 <b>사람 손을 안 기다리고 저절로 나간다</b>. 그래서 사람이
     /// 할 일은 만드는 것이 아니라 <b>가서 꺼내 오는 것</b>뿐인데, 그 자리를 몰라 못 꺼내
-    /// 가는 것이 실제 걸림돌이었다 — 비개발자 작가에게 건네는 준비의 일부다.
+    /// 가면 안 된다 — 비개발자 작가에게 건네는 준비의 일부다.
     ///
-    /// ⚠ 폴더를 <b>대신 만들지 않는다.</b> 없다는 것은 아직 한 챕터도 안 나갔다는 뜻이고,
+    /// 주의: 폴더를 <b>대신 만들지 않는다.</b> 없다는 것은 아직 한 챕터도 안 나갔다는 뜻이고,
     /// 빈 폴더를 열어 주면 "나갔는데 비었다"로 읽힌다 — 사유를 말하는 편이 낫다.
     /// </summary>
     private void OpenExportFolder()
@@ -636,10 +630,6 @@ public partial class MainWindow : Window
         Margin = new Thickness(4, 2),
         Background = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
     };
-
-    // [편집 자료] 현황판(RebuildResourcePanel)은 2026-08-21에 사라졌다 (소유자) —
-    // 대본·발행 결과·연출 공급을 읽기 전용으로 나열하던 판인데, 발행·배선이 자동이
-    // 된 뒤로는 볼 이유가 없다. 대본은 노드 카드가, 짝은 내보내기가 말한다.
 
     private void ShowSelectedNode()
     {

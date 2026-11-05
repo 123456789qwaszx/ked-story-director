@@ -16,7 +16,7 @@ public sealed record ParsedScriptLine(
 /// 동기화(<see cref="ScriptSynchronizer"/>)에 넣을 줄 목록 — 카드 글 칸의 글을 읽은 것이다
 /// (<c>ProjectEditor.ApplyScenarioText</c>).
 ///
-/// ⛔ 작가의 평평한 대본 파일을 읽던 <c>ScriptParser</c>(<c>캐릭터이름: 대사</c>)와 그 문제 목록은
+/// 작가의 평평한 대본 파일을 읽던 <c>ScriptParser</c>(<c>캐릭터이름: 대사</c>)와 그 문제 목록은
 /// 대본 가져오기와 함께 걷혔다 (2026-10-29 · L5). 글은 이제 카드에서만 들어온다.
 /// </summary>
 public sealed class ParsedScript

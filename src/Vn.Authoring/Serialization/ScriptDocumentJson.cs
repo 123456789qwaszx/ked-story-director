@@ -14,7 +14,7 @@ namespace Vn.Authoring.Serialization;
 /// 나누어 저장하면 둘의 버전이 어긋날 수 있고, 어긋난 순간 LineId가 어느 문장을 가리키는지
 /// 알 수 없게 된다. 하나의 덩이로 함께 움직이게 한다.
 ///
-/// ⛔ 형식 3까지는 대본마다 따로 선 파일(<c>script/{Id}.vnscript.json</c>)이었다 — Id · 이름을 든. 그 파일은
+/// 형식 3까지는 대본마다 따로 선 파일(<c>script/{Id}.vnscript.json</c>)이었다 — Id · 이름을 든. 그 파일은
 /// <see cref="ReadLegacyFile"/>로만 읽는다(옮기기 · <c>docs/plans/script-merge.md</c>).
 /// </summary>
 public static class ScriptDocumentJson
@@ -104,7 +104,7 @@ public static class ScriptDocumentJson
         {
             PrimaryLocale = (string?)root["primaryLocale"] ?? ScriptDocument.DefaultLocale,
 
-            // ⛔ `sourcePath`(가져온 작가 파일의 경로)는 대본 가져오기와 함께 걷혔다
+            // `sourcePath`(가져온 작가 파일의 경로)는 대본 가져오기와 함께 걷혔다
             //    (2026-10-29 · L5). 옛 파일의 그 키는 읽지 않고 지나간다.
             SourceRevision = (int?)root["sourceRevision"] ?? 0,
             SourceContentHash = (string?)root["sourceContentHash"]

@@ -9,14 +9,12 @@ using Path = System.IO.Path;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[연출 그래프]에서 카드를 지우는 일</b> (2026-09-18 소유자: *"난 그 둘이 같다고
-/// 생각하고 있었는데"*).
+/// <b>[연출 그래프]에서 카드를 지우는 일</b> — 카드 지우기는 에피소드 지우기와 같다.
 ///
-/// ⛔ <b>만들기는 합쳤는데 지우기는 안 합쳐져 있었다.</b> 챕터 판의 카드는 에피소드인데
-/// (R7 P-6 · 결정 ⑤) 여기서 지우면 <b>카드만</b> 걷혀, 대본 탭의 트리에는 줄이 남고 글만
-/// 빠진 반쪽이 됐다.
+/// 챕터 판의 카드는 에피소드라, 여기서 <b>카드만</b> 걷으면 대본 탭의 트리에는 줄이 남고 글만
+/// 빠진 반쪽이 된다. 만들기와 지우기는 한 길이다.
 ///
-/// ⚠ 대신 <b>되돌릴 수 있던 단추가 아니게 된다</b> — 에피소드 삭제는 원고를 <c>.bak</c>으로
+/// 주의: 그래서 <b>되돌릴 수 있는 단추가 아니다</b> — 에피소드 삭제는 원고를 <c>.bak</c>으로
 /// 민다. 그래서 여기서만 한 번 더 묻고, 단추 이름이 누르기 전에 무엇이 사라지는지 말한다.
 /// </summary>
 public sealed class GraphNodeDeleteTests : IDisposable
@@ -64,7 +62,7 @@ public sealed class GraphNodeDeleteTests : IDisposable
     [Fact]
     public void 챕터_판의_카드를_골랐으면_단추가_에피소드_삭제라고_말한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 「노드 삭제」라고 적힌 단추가 에피소드를 지우면 그것은 <b>단추가 거짓말</b>이다.
+        // 「노드 삭제」라고 적힌 단추가 에피소드를 지우면 그것은 <b>단추가 거짓말</b>이다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         session.Select(Card(session, "ep01").Id);

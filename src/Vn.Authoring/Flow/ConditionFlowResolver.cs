@@ -60,11 +60,11 @@ public static class ConditionFlowResolver
         var perLine = new (BranchBuilder? Current, BranchBuilder? Preceding, int Depth, int PrecedingDepth)[script.Lines.Count];
 
         // 열린 조건 갈래는 하나뿐이다 — 조건 안 조건(중첩)은 문제로 알리고 같은 깊이로 다룬다.
-        // ⛔ 대사 안 선택지(조건 안 선택지까지, W54·W55)는 2026-11-04에 걷혔다 — 두 칸 스택이 한 칸이 됐다.
+        // 대사 안 선택지(조건 안 선택지까지, W54·W55)는 2026-11-04에 걷혔다 — 두 칸 스택이 한 칸이 됐다.
         BranchBuilder? conditionActive = null;
         int chainIndex = -1;
 
-        // ⚠ 줄들을 돈 <b>뒤에 한 번 더</b> 돈다 — 마지막이 <b>꼬리</b>다(줄 없는 자리).
+        // 줄들을 돈 <b>뒤에 한 번 더</b> 돈다 — 마지막이 <b>꼬리</b>다(줄 없는 자리).
         // 대사 없는 조건 블록이 대본의 끝에 있으면 전환을 실을 줄이 없어서, 그 전환들은
         // 노드의 `TrailingTransitions`에 산다. 같은 기계에 먹여야 갈래가 같은 뜻이 된다 —
         // 여기서 갈라 따로 세면 그때부터 두 벌이 어긋나기 시작한다.
@@ -79,7 +79,7 @@ public static class ConditionFlowResolver
             BranchBuilder? preceding = conditionActive;
             int precedingDepth = conditionActive is null ? 0 : 1;
 
-            // ⚠ <b>전환은 여럿일 수 있다</b> (2026-08-24 고침). 여기가 `line.Transition`
+            // <b>전환은 여럿일 수 있다</b> (2026-08-24 고침). 여기가 `line.Transition`
             // 하나만 보고 있었다 — 슬롯이 하나이던 시절의 이름이고, 2026-08-17에 목록이
             // 된 뒤로도 <b>이 자리만</b> 안 따라왔다. 그래서 한 줄에 실린 둘째·셋째 전환이
             // 조용히 사라졌다.
@@ -277,7 +277,7 @@ public static class ConditionFlowResolver
     /// 실리므로, 빈 블록 뒤에 또 블록이 열리면 <b>같은 줄이 갈래 둘을 연다</b>. 신원이
     /// 겹치면 <see cref="Complete"/>의 사전이 터져 판이 아예 안 그려진다.
     ///
-    /// ⚠ <b>첫째는 맨 이름 그대로 둔다.</b> 그 자리가 지금까지의 신원이고
+    /// <b>첫째는 맨 이름 그대로 둔다.</b> 그 자리가 지금까지의 신원이고
     /// <see cref="DialogueNode.BranchExits"/>가 그 글자로 출구를 붙들고 있다 — 접미를
     /// 붙이면 이미 매달린 출구가 전부 고아가 된다. 둘째부터가 새 땅이다.
     /// </summary>

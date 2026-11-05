@@ -12,13 +12,11 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// T1 — 시나리오 그래프의 철도 배선 (소유자 그림). 챕터 간선이 챕터 판에 미러되고,
-/// 선택지 칸은 문구만 보인다(T-D4 — 수치는 챕터 그래프의 책임). 선택은 항상 에피소드 끝이므로
+/// 시나리오 그래프의 철도 배선. 챕터 간선이 챕터 판에 미러되고,
+/// 선택지 칸은 문구만 보인다(수치는 챕터 그래프의 책임). 선택은 항상 에피소드 끝이므로
 /// 분기점은 출발 카드당 하나다.
 ///
-/// 챕터는 프로젝트에 둔다 — 연출 그래프는 살아 있는 프로젝트의 챕터만 본다. ⛔ 전에는 셸이 공급한 챕터
-/// 목록을 가짜로 넣어 시험했고, 그 길(스냅샷 대체)과 그 길에서만 서던 옛 칩은 2026-10-29에 걷혔다
-/// (legacy-cleanup.md L3).
+/// 챕터는 프로젝트에 둔다 — 연출 그래프는 살아 있는 프로젝트의 챕터만 본다.
 /// </summary>
 public sealed class ChapterRailTests
 {
@@ -61,8 +59,8 @@ public sealed class ChapterRailTests
         // 같은 출발의 가지들은 같은 분기점 X(줄기)를 공유한다 — 단일 분기점.
         Assert.Single(Rows(canvas, "EP00").Select(Canvas.GetLeft).Distinct());
 
-        // 도착 포트 — 들어오는 가지가 있는 카드(EP01·EP02)의 위 가운데에 접점이 서고(D3),
-        // 가지들은 카드에 직접 붙지 않고 그 접점으로 모인다 (소유자 보고로 고정).
+        // 도착 포트 — 들어오는 가지가 있는 카드(EP01·EP02)의 위 가운데에 접점이 서고,
+        // 가지들은 카드에 직접 붙지 않고 그 접점으로 모인다.
         List<Ellipse> ports = canvas.Children.OfType<Ellipse>()
             .Where(port => port.Width == 10)
             .ToList();
@@ -96,7 +94,7 @@ public sealed class ChapterRailTests
     public void 카드가_없는_도착은_스텁으로_보인다() => HeadlessUi.Run(() =>
     {
         // 없는 노드로 선을 그으면 거짓말이지만, 가지를 통째로 숨기면 선택지가 사라져
-        // 고장으로 보인다(소유자 보고 2026-08-15). 가지는 "카드 없음" 스텁에서 멈춘다.
+        // 고장으로 보인다. 가지는 "카드 없음" 스텁에서 멈춘다.
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
 
         AddEpisodeCard(session, fileId, "EP00"); // EP01은 아직 없다
@@ -115,13 +113,11 @@ public sealed class ChapterRailTests
     [Fact]
     public void 챕터_밖의_카드는_한눈에_갈린다() => HeadlessUi.Run(() =>
     {
-        // 소유자 보고 (2026-08-15) — "대본노드와 엑셀노드가 똑같이 생겨서 구분이 어렵다."
         // 종별 시각 언어: 에피소드 = 각진 미색 서류(📄), 그 밖 = 둥근 흰 원고(✎).
         //
-        // ⚠ 뜻이 좁아졌다 (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는 <b>엑셀노드/자유 씬</b>을
-        //    갈랐는데 챕터 판의 카드가 전부 에피소드가 됐다 — 그래서 남는 구분은
-        //    <b>챕터에 실린 카드인가</b> 하나뿐이고, 판 위 카드끼리는 이제 다 같아 보인다
-        //    (소유자: 조건 노드 카드도 "종류가 하나뿐이니 가를 것이 없다").
+        // 챕터 판의 카드는 전부 에피소드다 — 그래서 가르는 것은
+        //    <b>챕터에 실린 카드인가</b> 하나뿐이고, 판 위 카드끼리는 다 같아 보인다
+        //    (조건 노드 카드도 종류가 하나뿐이니 가를 것이 없다).
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
 
         DialogueNode episode = AddEpisodeCard(session, fileId, "EP00");
@@ -159,7 +155,7 @@ public sealed class ChapterRailTests
     [Fact]
     public void 에피소드_카드의_선택지는_칸으로_서고_진행은_맨_아래다() => HeadlessUi.Run(() =>
     {
-        // T2 — 에피소드 카드의 선택지 · 기본 출구 포트는 카드 아래 칸으로 이사했다. 칸의 주인은 챕터 간선이다.
+        // 에피소드 카드의 선택지 · 기본 출구 포트는 카드 아래 칸에 선다. 칸의 주인은 챕터 간선이다.
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
 
         DialogueNode ep00 = AddEpisodeCard(session, fileId, "EP00");
@@ -167,7 +163,7 @@ public sealed class ChapterRailTests
         session.Editor.SetScriptLineText(ep00.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
         AddEpisodeCard(session, fileId, "EP01").Layout.X = 1200;
 
-        // 진행 간선을 일부러 먼저 둔다 — 그래도 화면은 선택지가 위여야 한다(소유자 보고: 반대면 헷갈린다).
+        // 진행 간선을 일부러 먼저 둔다 — 그래도 화면은 선택지가 위여야 한다(반대면 헷갈린다).
         Chapter(session, "ch01",
             episodes: ["EP00", "EP01"],
             edges:

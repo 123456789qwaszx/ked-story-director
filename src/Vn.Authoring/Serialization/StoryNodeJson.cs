@@ -10,7 +10,7 @@ internal static class StoryNodeJson
     /// <see cref="DialogueNode.MarkedEpisodeId"/>가 앉는 칸. 2026-09-17에 <c>excelEpisode</c>에서
     /// 바뀌었다 — 엑셀은 이 값의 주인이 아니게 된 지 오래다(R-F).
     ///
-    /// ⛔ 옛 이름 <c>excelEpisode</c>도 한동안 계속 읽었다(저장된 신원이라 못 읽으면 되살릴 길이 없다).
+    /// 옛 이름 <c>excelEpisode</c>도 한동안 계속 읽었다(저장된 신원이라 못 읽으면 되살릴 길이 없다).
     /// 2026-10-29(L6)에 그 갈래를 걷었다 — 2026-09-17 소유자: *"이전의 프로젝트들은 모두 버리고"*.
     /// 그 뒤로 한 번이라도 저장한 프로젝트는 이미 새 이름으로 옮겨 앉아 있다.
     /// </summary>
@@ -48,7 +48,7 @@ internal static class StoryNodeJson
             json["defaultExit"] = node.DefaultExitTargetNodeId;
         }
 
-        // 선 모양(G3) — ⚠ "lines"는 대사 노드의 LineId별 논리가 이미 쓰는 칸이라 이름이 다르다.
+        // 선 모양(G3) — "lines"는 대사 노드의 LineId별 논리가 이미 쓰는 칸이라 이름이 다르다.
         var shapes = new JsonObject();
 
         foreach ((string key, EdgeShape shape) in node.EdgeShapes.OrderBy(pair => pair.Key, StringComparer.Ordinal))
@@ -165,7 +165,7 @@ internal static class StoryNodeJson
 
     /// <summary>
     /// 대사 노드는 <b>제 대본</b>(<c>script</c> — 줄 신원 · locale별 화자 · 대사)과 <b>LineId별 논리</b>를 쓴다(형식 4 ·
-    /// 2026-10-29). ⛔ 형식 3까지는 대본을 따로 선 파일에 두고 여기에는 그 Id만 적었다.
+    /// 2026-10-29). 형식 3까지는 대본을 따로 선 파일에 두고 여기에는 그 Id만 적었다.
     /// 조건 갈래 출구는 갈래를 여는 줄의 항목 안에 함께 적어 둔다. 별도 배열로 나누면
     /// 줄이 사라졌을 때 짝 없는 출구가 파일에 남는다.
     /// </summary>
@@ -244,7 +244,7 @@ internal static class StoryNodeJson
                     transitionJson["condition"] = transition.ConditionId;
                 }
 
-                // ⚠ 앵커를 <b>글자로 적어 둔다</b> — 규칙(몇 번째인가)이 나중에 바뀌어도
+                // 앵커를 <b>글자로 적어 둔다</b> — 규칙(몇 번째인가)이 나중에 바뀌어도
                 // 이미 매달린 출구가 제 갈래를 계속 찾는다. 읽는 쪽도 이 글자를 쓴다.
                 if (transition.OpensBranch)
                 {
@@ -277,7 +277,7 @@ internal static class StoryNodeJson
             json["choiceExits"] = choiceExits;
         }
 
-        // ⛔ `excelLines`(인덱스 → LineId)는 2026-09-16에 더 내보내지 않는다 (R-D).
+        // `excelLines`(인덱스 → LineId)는 2026-09-16에 더 내보내지 않는다 (R-D).
         //    구판 파일에 남아 있어도 읽지 않고 지나간다 — 뜻이 없는 값이다.
     }
 
@@ -285,7 +285,7 @@ internal static class StoryNodeJson
     {
         var node = new SetNode(id, name);
 
-        // ⛔ `assignments`는 2026-09-17에 폐지됐다 (작가 변수 폐지) — 옛 프로젝트 파일에
+        // `assignments`는 2026-09-17에 폐지됐다 (작가 변수 폐지) — 옛 프로젝트 파일에
         //    남아 있어도 <b>안 읽는다</b>. 소유자가 옛 프로젝트를 버리기로 했으므로
         //    되살릴 자리가 없다.
 
@@ -371,7 +371,7 @@ internal static class StoryNodeJson
                 }
             }
 
-            // ⛔ 줄의 `set`도 2026-09-17에 폐지됐다 — 옛 파일에 남아 있어도 안 읽는다.
+            // 줄의 `set`도 2026-09-17에 폐지됐다 — 옛 파일에 남아 있어도 안 읽는다.
 
             extension.DetourTargetNodeIds.AddRange(DetourJson.Read(lineJson["detour"]));
 

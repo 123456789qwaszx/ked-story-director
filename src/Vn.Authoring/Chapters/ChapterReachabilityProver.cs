@@ -1,9 +1,8 @@
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// 그 에피소드에 <b>도착했을 때</b> 스탯 하나가 가질 수 있는 폭 (2026-08-17 소유자:
-/// "간선을 따라 왔을 때 스탯의 변화량이 노드에 표시되도록. 여러 루트가 있을 때는 스탯의
-/// 최소최대량을 표기").
+/// 그 에피소드에 <b>도착했을 때</b> 스탯 하나가 가질 수 있는 폭. 노드에 표시되며,
+/// 여러 루트가 있을 때는 스탯의 최소·최대를 보인다.
 ///
 /// 값은 <b>도착 직후</b>다 — 그 노드로 들어오는 간선의 증감까지 커밋한 뒤. 루트가 하나면
 /// 최소·최대가 같고, 갈래가 여럿이면 벌어진다. 증명이 이미 (에피소드, 스탯 벡터)로 걷고
@@ -24,9 +23,9 @@ public sealed record ChapterStatSpan(string Key, string DisplayName, int Minimum
 /// 훑은 <b>(에피소드, 스탯 벡터)</b> 상태의 수. <see cref="ChapterReachabilityProver.StateLimit"/>
 /// 까지 센다.
 ///
-/// ⭐ <b>이 숫자가 축소를 할지 말지를 정한다</b> (2026-09-17). 깃발은 0/1 정수라 <b>갈래마다
+/// <b>이 숫자가 축소를 할지 말지를 정한다</b>. 깃발은 0/1 정수라 <b>갈래마다
 /// 다르게 켜지면 상태공간을 두 배로</b> 만든다 — 그리고 깃발은 바로 그러려고 만든다. 작가
-/// 변수가 없어져 그런 기억이 전부 챕터 스탯으로 들어오므로, 언젠가 상한에 닿는다.
+/// 변수가 없어 그런 기억이 전부 챕터 스탯으로 들어오므로, 언젠가 상한에 닿는다.
 /// <b>언제인지는 실제 대본을 돌려 봐야 안다.</b> 그래서 센다.
 /// </param>
 public sealed record ChapterReachabilityResult(
@@ -47,7 +46,7 @@ public sealed record ChapterReachabilityResult(
 }
 
 /// <summary>
-/// 정적 도달성 증명 (G7, §0.5 보증 2) — "작가가 무엇을 저장하든, 특정 에피소드로 절대 못 가는
+/// 정적 도달성 증명 (§0.5 보증 2) — "작가가 무엇을 저장하든, 특정 에피소드로 절대 못 가는
 /// 상태를 만들 수 없다"의 장치.
 ///
 /// 상태 = (에피소드, 스탯 정수 벡터). 스탯이 2~5개·정수·`최소~최대` 유한 범위라 상태공간이
@@ -55,40 +54,27 @@ public sealed record ChapterReachabilityResult(
 /// 가능하게 만들었다. float이면 여기서 결정 불가능이다.
 ///
 /// 스탯은 <b>간선을 탈 때</b> 그 간선의 증감(<see cref="ChapterEdge.StatChanges"/>)만큼 변한다 —
-/// 근사 없는 정확 전이다(<see cref="ApplyDeltas"/>). 에피소드마다 증감 범위를 과대근사하던 옛
-/// 계산기는 증감이 간선으로 옮겨 오며 쓸 데가 없어졌다.
+/// 근사 없는 정확 전이다(<see cref="ApplyDeltas"/>).
 ///
 /// 조건이 묻는 것은 <b>스탯뿐이고</b>, 스탯은 걷는 도중에 정해진다 — 그래서 한 번만 걷는다.
-/// 2026-08-25까지는 고정점 반복이 있었는데, 도달 가능 집합 자체를 참조하는 <c>cleared:</c>
-/// 조건 때문이었다. 그 조건이 폐지되면서 두 번째 바퀴가 새로 찾을 것이 없어졌다.
+/// 도달 가능 집합 자체를 참조하는 조건이 없으므로 고정점 반복이 필요 없다.
 ///
 /// <para>
-/// ⛔ ~~⚠⚠ 이 구현은 2026-08-18부터 남의 오라클이다. 고치기 전에 알려야 한다.~~ —
-/// <b>2026-09-17에 풀렸다</b> (런타임 회신 §D).
+/// 도달성은 저작 시각의 일이라 이 증명기가 정본이고, 맞출 외부 구현이 없으므로 자유롭게 고친다.
 /// </para>
 /// <para>
-/// `ked-progression`이 이 증명기를 자기 쪽으로 옮기면서 등가성을 <b>코퍼스</b>로 고정해
-/// 두었고(저쪽 <c>Tests/Fixtures/reachability-oracle.json</c>), 그래서 여기 동작을 바꾸면
-/// — 버그 수정이라도 — 두 구현이 <b>조용히</b> 갈렸다. 런타임이 사본에서 도달성 전체를
-/// 걷었다: 어디서도 안 불렀고, 새 원본에는 들어오지도 않았으며, <i>도달성은 저작 시각의
-/// 일</i>이기 때문이다. <b>맞출 상대가 없으므로 이제 자유롭게 고친다.</b>
-/// </para>
-/// <para>
-/// ⭐ <b>그래서 사본을 일부러 안 고친다</b> (2026-09-17). 이 저장소의
-/// <c>src/Ked.Progression/Reachability/ChapterReachability.cs</c>는 아직 서 있고
-/// <c>ChapterReachabilityEquivalenceTests</c>가 둘을 대조한다 — 지문
-/// (<c>runtime-sync.txt</c>)에는 없으므로 <b>고칠 수는 있지만 안 고친다</b>. 다가오는
+/// <b>사본은 일부러 안 고친다.</b> 이 저장소의
+/// <c>src/Ked.Progression/Reachability/ChapterReachability.cs</c>는
+/// <c>ChapterReachabilityEquivalenceTests</c>로 이쪽과 대조된다 — 지문
+/// (<c>runtime-sync.txt</c>)에는 없으므로 <b>고칠 수는 있지만 안 고친다</b>.
 /// <b>상태 벡터 축소</b>는 도달 가능 집합을 한 글자도 바꾸면 안 되는 변경이고, 그러면
 /// <b>안 건드린 사본이 정확히 옳은 기준</b>이다: 이쪽만 고쳐서 대조가 초록이면 그것이
 /// 기계적 증거다. 양쪽을 함께 고치면 같은 실수를 두 번 쓰고 테스트는 초록이 된다.
-/// (아래 인접 색인도 같은 이유로 이쪽에만 넣었다.)
+/// (아래 인접 색인도 같은 이유로 이쪽에만 둔다.)
 ///
-/// ⚠ <b>잃은 것은 적어 둔다</b>(저쪽이 짚었다): 이 증명기는 <b>독립된</b> 증인을 잃었다.
-/// 지금까지는 남이 유지하는 구현이 같은 답을 내는지로 스스로를 검증했다. 사본은 아직
-/// 여기 서 있지만 이제 <b>같은 사람이 함께 고칠 사본</b>이므로, 같은 오해는 두 곳에 똑같이
-/// 들어간다 — 잡는 것은 <b>한쪽만 고친 실수</b>뿐이다. 그래도 그것이 이번 축소에서 제일
-/// 있을 법한 실수라 값을 한다. 두 구현을 사람이 지키는 비용과 맞바꾼 것이고,
-/// *"두 곳에 있으면 갈린다"*가 그 교환을 지지한다.
+/// <b>한계</b>: 사본은 <b>같은 사람이 함께 고칠 사본</b>이라 <b>독립된</b> 증인이 아니다.
+/// 같은 오해는 두 곳에 똑같이 들어가고, 잡는 것은 <b>한쪽만 고친 실수</b>뿐이다. 그래도
+/// 그것이 축소에서 제일 있을 법한 실수라 값을 한다.
 /// </para>
 /// <para>
 /// 화면이 이 결과를 (내용해시 → 결과) 캐시 뒤에서 부르는 것은 <b>상관없다</b> — 캐시는
@@ -100,15 +86,14 @@ public static class ChapterReachabilityProver
     /// <summary>
     /// 완전 탐색 상한. 스탯 5개 × 범위 0~10이라도 이 안에 넉넉히 든다.
     ///
-    /// ⚠ <b>전체 곱이 아니라 실제로 닿는 조합만 센다</b> — 간선을 타야 상태가 생긴다.
+    /// <b>전체 곱이 아니라 실제로 닿는 조합만 센다</b> — 간선을 타야 상태가 생긴다.
     /// 그래서 값의 범위가 넓어도 대개 남는데, <b>깃발이 합류 지점에서 만나면</b> 곱해진다.
     /// </summary>
     internal const int StateLimit = 250_000;
 
     /// <summary>
-    /// 스탯 증감의 원천은 <b>간선</b> 하나다 (2026-08-14 소유자 결정). 에피소드 안에서는
-    /// 스탯이 변하지 않으므로, 옛 "에피소드별 증감 범위" 과대근사 없이 간선의 정확값으로
-    /// 전이한다 — 증명이 근사가 아니게 됐다.
+    /// 스탯 증감의 원천은 <b>간선</b> 하나다. 에피소드 안에서는 스탯이 변하지 않으므로,
+    /// 과대근사 없이 간선의 정확값으로 전이한다 — 증명이 근사가 아니다.
     /// </summary>
     public static ChapterReachabilityResult Prove(ChapterGraphModel chapter)
     {
@@ -122,21 +107,20 @@ public static class ChapterReachabilityProver
                 new HashSet<string>(StringComparer.Ordinal), diagnostics, ExplorationComplete: true);
         }
 
-        // 시작 규칙은 모델의 것 하나를 쓴다 — G8의 StartEpisodeId와 갈리면 안 된다.
+        // 시작 규칙은 모델의 것 하나를 쓴다 — 내보내기의 StartEpisodeId와 갈리면 안 된다.
         ChapterEpisode start = chapter.StartEpisode!;
 
         int[] maxSeen = chapter.Stats.Select(stat => stat.Initial).ToArray();
         int[] minSeen = chapter.Stats.Select(stat => stat.Initial).ToArray();
 
-        // 에피소드별 도착 시점 폭 (2026-08-17) — 걷는 김에 적는다.
+        // 에피소드별 도착 시점 폭 — 걷는 김에 적는다.
         var spans = new Dictionary<string, (int[] Min, int[] Max)>(StringComparer.Ordinal);
 
         HashSet<string> reachable;
         bool complete;
 
-        // 한 번만 걷는다 (2026-08-25). 고정점 반복이 있던 이유는 `cleared:`가 도달 가능
-        // 집합 자체를 참조해서였는데, 그 조건이 폐지되면서 조건이 참조하는 것은 스탯뿐이
-        // 됐다 — 스탯은 걷는 도중에 정해지므로 두 번째 바퀴가 새로 찾을 것이 없다.
+        // 한 번만 걷는다. 조건이 참조하는 것은 스탯뿐이고, 스탯은 걷는 도중에 정해지므로
+        // 두 번째 바퀴가 새로 찾을 것이 없다.
         int visited;
         (reachable, complete, visited) = Explore(chapter, start, maxSeen, minSeen, spans);
 
@@ -148,15 +132,14 @@ public static class ChapterReachabilityProver
     }
 
     /// <summary>
-    /// 상한에 걸렸다는 것을 <b>챕터 단위로 한 번 크게</b> 말한다 (2026-09-17).
+    /// 상한에 걸렸다는 것을 <b>챕터 단위로 한 번 크게</b> 말한다.
     ///
-    /// ⛔ <b>전에는 이 말을 할 자리가 없었다.</b> 상한에 걸리면 에피소드마다 붙는 문장이
-    /// <i>"경로가 없습니다"</i>(오류)에서 <i>"경로를 찾지 못했습니다(탐색이 상한에서 중단됨)"</i>
-    /// (경고)로 바뀌는 것이 전부였다. <b>뜻은 정반대인데 화면은 거의 같아 보인다</b> —
-    /// 「없음을 증명했다」와 「못 찾았다」다. 게다가 도달 불가가 하나도 없으면 상한에 걸린
-    /// 사실을 <b>아무도 말하지 않았다</b>.
+    /// 상한에 걸리면 에피소드마다 붙는 문장이 <i>"경로가 없습니다"</i>(오류)에서
+    /// <i>"경로를 찾지 못했습니다(탐색이 상한에서 중단됨)"</i>(경고)로 바뀐다.
+    /// <b>뜻은 정반대인데 화면은 거의 같아 보인다</b> — 「없음을 증명했다」와 「못 찾았다」다.
+    /// 게다가 도달 불가가 하나도 없으면 그 문장마저 없어, 상한에 걸린 사실을 <b>아무도 말하지 않는다</b>.
     ///
-    /// ⚠ <b>오류가 아니라 알림이다.</b> 챕터가 틀린 것이 아니라 <b>이 증명기가 답을 못
+    /// <b>오류가 아니라 알림이다.</b> 챕터가 틀린 것이 아니라 <b>이 증명기가 답을 못
     /// 낸 것</b>이므로, 오류로 올려 내보내기를 막으면 멀쩡한 챕터가 커진 죄로 출시를 못 한다.
     /// 그러나 <b>조용히 넘기지도 않는다</b>(규칙 14 — 판정을 못 한 사실을 삼키지 않는다).
     /// </summary>
@@ -196,9 +179,9 @@ public static class ChapterReachabilityProver
         var visited = new HashSet<string>(StringComparer.Ordinal);
         var queue = new Queue<(string EpisodeId, int[] Stats)>();
 
-        // ⚠ 출발지별 간선 목록을 <b>한 번</b> 만든다 (2026-09-17). 전에는 상태를 하나 꺼낼
-        //    때마다 `chapter.Edges` 전체를 문자열 비교로 훑었다 — 상태 25만 × 간선 수만큼의
-        //    비교였다. 답은 한 글자도 안 바뀐다(같은 간선을 같은 순서로 본다).
+        // 출발지별 간선 목록을 <b>한 번</b> 만든다. 상태를 하나 꺼낼 때마다 `chapter.Edges`
+        //    전체를 문자열 비교로 훑으면 상태 25만 × 간선 수만큼의 비교가 된다.
+        //    같은 간선을 같은 순서로 보므로 답은 같다.
         var outgoing = new Dictionary<string, List<ChapterEdge>>(StringComparer.Ordinal);
 
         foreach (ChapterEdge edge in chapter.Edges)
@@ -238,7 +221,7 @@ public static class ChapterReachabilityProver
                 }
 
                 // 관문 판정은 커밋 전 값으로 — 플레이어가 선택지를 보는 시점의 값이다.
-                // 관문은 전부 간선이 갖는다 (v8) — 표시조건과 해금조건 둘 다 서야 탄다.
+                // 관문은 전부 간선이 갖는다 — 표시조건과 해금조건 둘 다 서야 탄다.
                 if (!Satisfied(chapter, edge.VisibleConditionLabel, stats) ||
                     !Satisfied(chapter, edge.ConditionLabel, stats))
                 {
@@ -266,13 +249,8 @@ public static class ChapterReachabilityProver
     /// <summary>
     /// 간선의 스탯 변화 커밋. `최소~최대`는 탐색 경계라 밖은 잘라낸다.
     ///
-    /// <b>지정(Set)은 지금 값을 보지 않는다</b> (2026-08-19) — 깃발을 켜는 것이 "이전에
-    /// 켜져 있었는가"에 따라 달라지면 그건 켜는 게 아니다. 증감만 있던 시절에는 이 함수가
-    /// 언제나 단조로웠지만, 이제는 아니다.
-    ///
-    /// ⚠ 이 함수는 `ked-progression`의 <b>고정된 오라클</b>이다(파일 맨 위 참조). 지정을
-    /// 더한 것은 동작 변경이므로 저쪽에 알렸다 — 다만 코퍼스 일곱 케이스에는 지정이 하나도
-    /// 없어 <b>기존 답은 한 줄도 바뀌지 않는다.</b>
+    /// <b>지정(Set)은 지금 값을 보지 않는다</b> — 깃발을 켜는 것이 "이전에
+    /// 켜져 있었는가"에 따라 달라지면 그건 켜는 게 아니다. 그래서 이 함수는 단조롭지 않다.
     /// </summary>
     internal static int[] ApplyDeltas(
         ChapterGraphModel chapter, int[] stats, IReadOnlyList<StatDelta> deltas)
@@ -304,7 +282,7 @@ public static class ChapterReachabilityProver
         return next;
     }
 
-    // 판정의 단일 구현은 ChapterGateJudge다 (2026-08-27) — 워커와 한 벌(compositor의 무대 프리뷰도 같은 것을 쓴다).
+    // 판정의 단일 구현은 ChapterGateJudge다 — 워커와 한 벌(compositor의 무대 프리뷰도 같은 것을 쓴다).
     // 미정의·깨진 라벨(Broken)도 "지나갈 수 없음"이다: 깨진 조건을 통과시켜 도달 가능을
     // 부풀리지 않는다.
     private static bool Satisfied(
@@ -313,18 +291,15 @@ public static class ChapterReachabilityProver
         int[] stats) =>
         ChapterGateJudge.Judge(chapter, conditionLabel, stats) == ChapterGateVerdict.Open;
 
-    // ⛔ `AddReachableAttachments`·`SatisfiableWithinEnvelope`는 2026-08-25에 사라졌다.
-    //    부착(Attachment) 에피소드를 "간선이 아니라 관문 만족 가능성으로" 따로 판정하던
-    //    자리인데, 코어가 `EpisodeKind`를 통째로 지우면서 부착이라는 종류 자체가 계약에서
-    //    없어졌다. 남겨 두면 툴만 부착을 도달 가능으로 세어 <b>증명과 플레이가 갈린다</b> —
-    //    이 증명기가 있는 이유가 정확히 그것을 없애는 것이다(G7).
-    //    저쪽 오라클(`reachability-oracle.json`)에서도 `부착` 케이스가 함께 빠졌다.
+    // 간선 없이 관문 만족 가능성만으로 도달 가능하다고 세는 에피소드 종류는 없다 — 계약에
+    //    그런 종류가 없으므로, 툴만 그렇게 세면 <b>증명과 플레이가 갈린다</b>.
+    //    이 증명기가 있는 이유가 정확히 그것을 없애는 것이다.
 
     // ── 보고 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 도달 불가를 <b>원인 조건까지 지목해</b> 보고한다 (Gate C 1번). 기본은 오류이고,
-    /// `도달불가 허용`이 켜진 에피소드는 알림으로 낮춘다 — 의도임이 표시된 것이므로(D3).
+    /// 도달 불가를 <b>원인 조건까지 지목해</b> 보고한다. 기본은 오류이고,
+    /// `도달불가 허용`이 켜진 에피소드는 알림으로 낮춘다 — 의도임이 표시된 것이므로.
     /// </summary>
     private static void ReportUnreachable(
         ChapterGraphModel chapter,
@@ -383,7 +358,7 @@ public static class ChapterReachabilityProver
                 "도달 불가입니다.";
         }
 
-        // 관문이 되는 조건들에서 만족 불가능한 항을 찾는다 (v8 — 전부 간선의 것).
+        // 관문이 되는 조건들에서 만족 불가능한 항을 찾는다 (전부 간선의 것).
         var labels = incoming.Select(edge => edge.ConditionLabel)
             .Concat(incoming.Select(edge => edge.VisibleConditionLabel))
             .Where(label => !string.IsNullOrEmpty(label))

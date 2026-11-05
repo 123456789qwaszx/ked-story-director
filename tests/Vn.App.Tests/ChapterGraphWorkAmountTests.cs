@@ -11,11 +11,10 @@ using Path = System.IO.Path;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// 챕터 화면이 <b>얼마나 일하는가</b> (2026-08-18 성능).
+/// 챕터 화면이 <b>얼마나 일하는가</b> (성능).
 ///
-/// 소유자 보고 — "노드가 조금만 많아져도 엄청 렉이 심하고". 재 보니 노드 60개에서 첫
-/// 화면이 58초였고, 그중 판을 그리는 값은 2.6ms였다. 나머지는 전부 <b>같은 일을 여러 번</b>
-/// 한 값이었다. 시간(ms)은 기계마다 달라 고정할 수 없으므로, 여기서는 <b>일의 횟수</b>를
+/// 노드가 늘 때 느려지는 값은 판을 그리는 값이 아니라 <b>같은 일을 여러 번</b> 하는 값이다
+/// (노드 60개에서 판 그리기는 몇 ms인데, 반복이 첫 화면을 수십 초로 늘릴 수 있다). 시간(ms)은 기계마다 달라 고정할 수 없으므로, 여기서는 <b>일의 횟수</b>를
 /// 건다 — 느려지는 회귀는 언제나 "몇 번 하는가"가 먼저 늘어난다.
 /// </summary>
 public sealed class ChapterGraphWorkAmountTests : IDisposable
@@ -86,8 +85,8 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
     [Fact]
     public void 몰려_오는_변경은_재읽기_한_번으로_합쳐진다() => HeadlessUi.Run(() =>
     {
-        // 일 한 번이 프로젝트 변경을 수십 개 낸다(옛 엑셀 동기화가 그랬다). 예전에는 그
-        // 하나하나가 전체 재읽기를 예약해서, 마지막 한 번 말고는 전부 버려질 그림을 그렸다.
+        // 일 한 번이 프로젝트 변경을 수십 개 낼 수 있다. 그 하나하나가 전체 재읽기를
+        // 예약하면, 마지막 한 번 말고는 전부 버려질 그림을 그린다.
         (ChapterGraphView view, AuthoringSession session, Window window) = Show();
 
         int reloads = 0;
@@ -151,18 +150,17 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
     [Fact]
     public void 같은_대사를_다시_반영하면_다시_그리라고_방송하지_않는다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 이 방송이 열려 있는 편집 화면을 통째로 다시 만든다 — 그 순간 사람이 타이핑
+        // 이 방송이 열려 있는 편집 화면을 통째로 다시 만든다 — 그 순간 사람이 타이핑
         // 하던 칸이 파괴된다. 바꿀 것이 없는 반영은 손대지 않아야 한다
         // (ProjectEditor.ApplyScriptSync의 "바꿀 것이 없으면 손대지 않는다").
         //
-        // (2026-10-29 · D2: 예전에는 엑셀 대본 동기화가 감시자가 깰 때마다 이 길을 지났다.
-        // 동기화는 걷혔고, 같은 길을 카드 안 글 칸의 넣기가 지난다.)
+        // 카드 안 글 칸의 넣기가 이 길을 지난다.
         (ChapterGraphView view, AuthoringSession session, Window window) = Show();
 
         DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch01", "ep0")!;
         const string text = "라루: 이미 쓰여 있던 대사";
 
-        // ⚠ <b>대본에 글이 있어야 이 자리에 닿는다.</b> 빈 대본에 처음 넣는 한 번은 진짜로
+        // <b>대본에 글이 있어야 이 자리에 닿는다.</b> 빈 대본에 처음 넣는 한 번은 진짜로
         // 바뀌므로 방송이 맞다 — 그 뒤부터가 고정점이다. 빈 판으로 재면 아무것도 안 재는 것이다.
         session.Editor.ApplyScenarioText(card.Id, text, session.Definition, confirmDeletes: true);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -207,11 +205,10 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
     [Fact]
     public void 손을_뗀_뷰는_더_이상_일하지_않는다() => HeadlessUi.Run(() =>
     {
-        // 흔들리던 `ChapterGraphEditingTests`의 뿌리 (2026-08-18). 어셈블리 하나가
-        // <b>디스패처 하나</b>를 나눠 쓰는데, 창을 안 닫고 끝낸 테스트의 뷰가 그대로 살아
-        // 있었다. 그 뷰의 감시자는 이미 지워진 임시 폴더를 보고 있고, 거기서 난 사건이
-        // <b>다음 테스트의</b> RunJobs()에서 깨어나 없는 프로젝트를 다시 읽었다.
-        // 그래서 매번 다른 테스트가 깨졌고, 혼자 돌리면 통과했다.
+        // 어셈블리 하나가 <b>디스패처 하나</b>를 나눠 쓴다. 창을 안 닫고 끝낸 테스트의 뷰가
+        // 그대로 살아 있으면, 그 뷰의 감시자는 이미 지워진 임시 폴더를 보고 있고, 거기서 난 사건이
+        // <b>다음 테스트의</b> RunJobs()에서 깨어나 없는 프로젝트를 다시 읽는다.
+        // 그러면 매번 다른 테스트가 깨지고, 혼자 돌리면 통과한다.
         (ChapterGraphView view, AuthoringSession session, Window window) = Show();
 
         view.DetachSession();
@@ -237,10 +234,10 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
     [Fact]
     public void 두_번_붙였어도_한_번_떼면_완전히_떨어진다() => HeadlessUi.Run(() =>
     {
-        // 붙기만 하고 뗄 줄 모르던 뷰라, 두 번 붙으면 구독이 두 벌 쌓였다. 한 벌만
+        // 뗄 줄 모르는 뷰가 두 번 붙으면 구독이 두 벌 쌓인다. 한 벌만
         // 떼어지면 <b>뗐다고 믿는 뷰가 계속 듣는다</b> — 이 테스트가 막는 것이 그것이다.
         //
-        // ⚠ "재읽기가 한 번만 돈다"로는 이걸 못 잡는다. QueueReload가 한 차례에 하나로
+        // 주의: "재읽기가 한 번만 돈다"로는 이걸 못 잡는다. QueueReload가 한 차례에 하나로
         // 합치기 때문에 구독이 둘이어도 재읽기는 하나다 — 합치기가 이중 구독을 가려 준다.
         // 그래서 <b>뗀 뒤에</b> 본다.
         (ChapterGraphView view, AuthoringSession session, Window window) = Show();

@@ -13,8 +13,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>대사 카드 안의 글 칸</b> (D4 · 2026-10-29, <c>docs/design/two-graphs.md</c> §7 D4 — 소유자: *"노드 안에 텍스트
-/// 공간이 있고 그곳에 직접 글을 작성하는 것까지"*).
+/// <b>대사 카드 안의 글 칸</b> (<c>docs/design/two-graphs.md</c> §7) — 노드 안의 글 칸에 직접 글을 쓴다.
 ///
 /// 한 줄이 대사 한 줄(<c>화자: 대사</c>)이고, 넣는 때는 초점을 잃을 때와 Ctrl+S다. 칸 안의 손짓(누르기 · 휠)은
 /// 카드의 끌기와 판의 확대가 가로채지 않는다. 편집기 쪽 규칙(빈 첫 줄 · 되돌리기 한 칸 · 엄격한 넣기)은

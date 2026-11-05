@@ -12,13 +12,13 @@ using Vn.Authoring.Model;
 namespace Vn.App;
 
 /// <summary>
-/// <b>두 그래프의 하이어아키와 연출 그래프의 인스펙터</b> (2026-10-30 HY3 — <c>docs/plans/hierarchy.md</c>).
+/// <b>두 그래프의 하이어아키와 연출 그래프의 인스펙터</b>.
 ///
 /// 하이어아키는 탭마다 하나씩 서고(컨트롤 하나는 부모가 하나다) 내용은 이 셸이 한 원천(챕터 그래프가 읽은 챕터 목록)에서
 /// 채운다. <b>선택은 함께 움직인다</b>: 어느 탭에서 에피소드를 고르든 세션의 선택(그 카드)이 되고, 두 하이어아키와 챕터
 /// 그래프가 그것을 비춘다.
 ///
-/// 연출 그래프의 인스펙터는 <b>제 일</b>을 한다(HY-D2): 카드를 고르면 대사 편집기. 하이어아키의 프로젝트 · 챕터 · 장면
+/// 연출 그래프의 인스펙터는 <b>제 일</b>을 한다:카드를 고르면 대사 편집기. 하이어아키의 프로젝트 · 챕터 · 장면
 /// 줄은 요약과 「챕터 그래프에서 열기」를 보인다 — 화자 · 조건 · 스탯 · 장면 이름을 고치는 자리는 챕터 그래프에 한 벌이다.
 /// </summary>
 public partial class MainWindow
@@ -112,7 +112,7 @@ public partial class MainWindow
     /// 연출 그래프의 하이어아키에서 줄을 골랐다 — 그 챕터의 판을 열고, 에피소드면 그 카드를 고른다(대사 편집기). 프로젝트 ·
     /// 챕터 · 장면이면 인스펙터에 요약을 세운다.
     ///
-    /// ⚠ <b>고르는 것으로는 접힘을 풀지 않는다</b>(SF2) — 유니티처럼 보이기는 눈이 정한다. 접힌 판의 에피소드를 고르면 그 표의
+    /// 주의: <b>고르는 것으로는 접힘을 풀지 않는다</b> —유니티처럼 보이기는 눈이 정한다. 접힌 판의 에피소드를 고르면 그 표의
     ///   줄이 칠해진다.
     /// </summary>
     private void OnDirectorHierarchyPicked(HierarchyPick pick)
@@ -287,7 +287,7 @@ public partial class MainWindow
                         PickInDirector(new HierarchyPick(HierarchyKind.Scene, chapter.ChapterId, scene.SceneId)));
                 }
 
-                // 장면ID가 없는 에피소드 — 챕터 직속(2026-11-01 B안). 하이어아키와 같은 차례로 장면들 뒤에.
+                // 장면ID가 없는 에피소드 — 챕터 직속.하이어아키와 같은 차례로 장면들 뒤에.
                 foreach (ChapterEpisode episode in scenes.Where(scene => scene.IsDefault).SelectMany(scene => scene.Episodes))
                 {
                     string episodeId = episode.EpisodeId;

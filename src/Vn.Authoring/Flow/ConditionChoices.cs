@@ -46,7 +46,7 @@ public sealed record ConditionChoice(
 /// 바로 앞 줄까지의 상태에 따라 달라진다. 프로젝트의 모든 SetNode 조건을 전역 노출하지 않고,
 /// 현재 DialogueNode에 Settings link로 연결된 SetNode와 게임 전역 조건만 사용한다.
 ///
-/// ⛔ "선택지 시작 / 다음 옵션 / 선택지 끝" 항목은 2026-11-04에 걷혔다 — 선택지는 에피소드 끝 간선에서만 선다.
+/// "선택지 시작 / 다음 옵션 / 선택지 끝" 항목은 2026-11-04에 걷혔다 — 선택지는 에피소드 끝 간선에서만 선다.
 /// 이 드롭다운은 조건만 다룬다.
 /// </summary>
 public static class ConditionChoices

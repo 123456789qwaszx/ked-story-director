@@ -3,15 +3,13 @@ namespace Vn.Authoring.Chapters;
 /// <summary>
 /// 에피소드 하나.
 ///
-/// ⚠ 옛 주석은 <i>"위치는 엑셀이 소유하고 뷰는 읽기만 한다 (G-2)"</i>였다. 2026-09-16에
-/// 그 전제가 뒤집혔다(R-F) — 자리의 주인은 이제 프로젝트이고
-/// <c>ProjectEditor.MoveEpisode</c>가 고친다. <see cref="X"/>·<see cref="Y"/>에 setter가
-/// 없는 것은 그대로지만, 이유가 "남의 값이라서"가 아니라 <b>레코드라서</b>다(<c>with</c>로 바꾼다).
+/// 자리의 주인은 프로젝트이고 <c>ProjectEditor.MoveEpisode</c>가 고친다.
+/// <see cref="X"/>·<see cref="Y"/>에 setter가 없는 것은 <b>레코드라서</b>다(<c>with</c>로 바꾼다).
 /// </summary>
 /// <param name="Index">"05"·"05A"·"★"처럼 사람이 붙이는 표시용 순번. 숫자가 아니어도 된다.</param>
 /// <param name="DialogueEntry">런타임이 재생할 대사 엔트리 이름. 비면 오류다.</param>
 /// <param name="AllowUnreachable">
-/// `도달불가 허용` 열(선택)이 켜져 있는가 (D3). 도달성 증명이 이 에피소드의 도달 불가를
+/// `도달불가 허용` 열(선택)이 켜져 있는가. 도달성 증명이 이 에피소드의 도달 불가를
 /// 오류가 아니라 알림으로 낮추되, 그 사실은 그래프에 표시된다 — 조용히 넘기지 않는다.
 /// </param>
 public sealed record ChapterEpisode(
@@ -24,21 +22,18 @@ public sealed record ChapterEpisode(
     string? Memo,
     bool AllowUnreachable = false)
 {
-    // v9 (2026-08-17 소유자) — `선택지수` 열 폐지. 칸이라는 개념이 사라졌으니 셀 것도
-    // 없다: 이 에피소드에서 나가는 간선 하나가 곧 선택지 하나다.
+    // 선택지 수를 따로 세지 않는다: 이 에피소드에서 나가는 간선 하나가 곧 선택지 하나다.
 
     /// <summary>
-    /// `이벤트키` 열(G, v14) — <b>유니티 전용 패스스루 인덱스</b>다 (2026-08-26 소유자:
-    /// "툴이 직접 활용하기 보다는, 특정 에피소드를 다 시청했을 때 유니티에서 자체적으로
-    /// 이벤트라던지 보상을 발생시키기 위해서 이어주는 일종의 인덱스 같은 느낌" · "엔딩키보다도
-    /// 이벤트키가 맞겠다" — 챕터의 끝이 아니라 <b>시청 완료 트리거</b>라 이름을 갈았다).
+    /// `이벤트키` — <b>유니티 전용 패스스루 인덱스</b>다. 특정 에피소드를 다 시청했을 때
+    /// 유니티가 자체적으로 이벤트나 보상을 일으키도록 잇는 값이라, 챕터의 끝이 아니라
+    /// <b>시청 완료 트리거</b>다.
     ///
-    /// 툴은 이 값을 <b>해석하지 않는다</b> — 배지도 검증도 전이 의미도 없다. 엑셀에서 적었고(그 길은
-    /// 2026-10-29에 걷혀 지금은 툴 안에 고칠 칸이 없다),
-    /// 내보내기가 노드의 <c>EventKey</c>로 그대로 싣는 것이 전부다. 옛 `엔딩키`(v11~v13,
-    /// 간선)와 달리 에피소드에 사니 "같은 도착의 키 충돌"이라는 오류 부류 자체가 없다.
-    /// 계약의 `EndingKey`/`EndingRules`(시나리오 층)와는 <b>다른 것</b>이다 — 그쪽은 v14에서
-    /// 안 싣게 된 채로 남아 있고, 시나리오 층을 지을 때 그쪽 규격으로 다시 정한다.
+    /// 툴은 이 값을 <b>해석하지 않는다</b> — 배지도 검증도 전이 의미도 없다. 툴 안에 고칠 칸은 없고,
+    /// 내보내기가 노드의 <c>EventKey</c>로 그대로 싣는 것이 전부다. 간선이 아니라
+    /// 에피소드에 사니 "같은 도착의 키 충돌"이라는 오류 부류 자체가 없다.
+    /// 계약의 `EndingKey`/`EndingRules`(시나리오 층)와는 <b>다른 것</b>이다 — 그쪽은
+    /// 싣지 않으며, 시나리오 층을 지을 때 그쪽 규격으로 정한다.
     /// </summary>
     public string? EventKey { get; init; }
 
@@ -52,18 +47,17 @@ public sealed record ChapterEpisode(
 
 /// <summary>
 /// `간선` 시트 한 행 = 다음 에피소드로 가는 길 하나. <b>길 하나가 곧 선택지 하나</b>이고,
-/// `선택지` 열(D)은 그 길에 붙는 <b>문구 그 자체</b>다 (v9, 2026-08-17 소유자: "인덱스를
-/// 가져오는 게 아니라 그냥 깡으로 대사만"). 문구는 `선택지` 시트의 전역 사전에서 고르지만
+/// `선택지` 열(D)은 그 길에 붙는 <b>문구 그 자체</b>다(인덱스가 아니라 대사 글자).
+/// 문구는 `선택지` 시트의 전역 사전에서 고르지만
 /// 셀에 들어가는 값은 문구이고, 사전은 <b>고르기 편하라고 있는 어휘집</b>이다.
 ///
 /// <b>신원은 (출발, 도착, 문구)</b> — 같은 곳으로 가되 스탯변화·관문이 다른 선택지 둘을
 /// 여럿 둘 수 있다(흔한 패턴). 관문·잠금·스탯변화·도착은 전부 간선 소유.
 /// </summary>
 /// <param name="ConditionLabel">
-/// <b>해금조건</b> — 이 선택지를 고를 수 있으려면 (v8에서 열 이름이 `조건`→`해금조건`).
+/// <b>해금조건</b> — 이 선택지를 고를 수 있으려면.
 /// 미달이면 <b>잠긴 채 보인다</b>. 아예 숨기려면 그 식을 <see cref="VisibleConditionLabel"/>에
-/// 적는다 — 숨김을 따로 켜는 칸(`잠금시 숨김`)은 2026-08-24에 폐지됐다(같은 말을 두 번
-/// 하는 칸이었다).
+/// 적는다 — 숨김을 따로 켜는 칸을 두지 않는다(같은 말을 두 번 하는 칸이 된다).
 /// </param>
 public sealed record ChapterEdge(
     string FromEpisodeId,
@@ -81,18 +75,14 @@ public sealed record ChapterEdge(
     public bool Auto { get; init; }
 
     /// <summary>
-    /// <b>표시조건</b> — 이 선택지가 목록에 보이려면 (v8, 2026-08-16 소유자: "보일지 말지는
-    /// 이제 간선이 정한다"). 에피소드 시트에 있던 관문 둘이 간선으로 옮겨 온 것이고, 비면
+    /// <b>표시조건</b> — 이 선택지가 목록에 보이려면. 보일지 말지는 간선이 정하고, 비면
     /// 언제나 보인다. 해금조건(<see cref="ConditionLabel"/>)과는 축이 다르다.
     /// </summary>
     public string? VisibleConditionLabel { get; init; }
 
     /// <summary>
     /// 문구가 없다. <see cref="Auto"/>이면 의도한 자동 진행이고, 아니면 규격 위반이다.
-    ///
-    /// 예전 이름은 <c>IsPlainAdvance</c>였고 "보이지 않는 기본"(문구 없이 자동으로 넘어가는
-    /// 길)이라는 <b>정당한 종류</b>를 뜻했다. 그 개념이 폐지됐으므로 이름도 바꾼다 —
-    /// 이제 이것이 참이면 <b>고칠 것이 있다는 뜻</b>이지 길의 종류가 아니다.
+    /// 이것이 참이면 <b>고칠 것이 있다는 뜻</b>이지 길의 종류가 아니다.
     ///
     /// 모델이 이 상태를 담는 이유: 리더는 오류가 있어도 모델을 만든다(그래야 화면이
     /// 무엇이 잘못됐는지 짚어 준다). 담지 않으면 기획자는 빈 칸을 볼 수 없다.
@@ -100,8 +90,7 @@ public sealed record ChapterEdge(
     public bool HasNoOptionLabel => string.IsNullOrWhiteSpace(OptionLabel);
 
     /// <summary>
-    /// 사람이 판에서 찾아갈 수 있게 적는 이 간선 — <c>간선 a → b "문구"</c>. 진단 · 거절 목록이 쓴다
-    /// (2026-10-29 L8 — 엑셀 행 번호로 짚던 자리를 대신한다).
+    /// 사람이 판에서 찾아갈 수 있게 적는 이 간선 — <c>간선 a → b "문구"</c>. 진단 · 거절 목록이 쓴다.
     /// </summary>
     public string Where =>
         $"간선 {FromEpisodeId} → {ToEpisodeId}" +
@@ -112,15 +101,14 @@ public sealed record ChapterEdge(
         !string.IsNullOrWhiteSpace(VisibleConditionLabel) ||
         !string.IsNullOrWhiteSpace(ConditionLabel);
 
-    // OptionLabel = `선택지` 열(D)의 값 그대로다 (v9). 파생도 참조도 아니다 —
+    // OptionLabel = `선택지` 열(D)의 값 그대로다. 파생도 참조도 아니다 —
     // 문구를 고쳐도 배선이 안 깨지는 대신, 같은 문구를 어느 에피소드에서든 쓸 수 있다.
 
-    // `엔딩키`(v11~v13)는 v14(2026-08-26)에서 개념째 폐지됐다 — 시나리오 층으로 나가는
-    // 통로(EndingRules)가 이 툴에 없어 아무 데도 실리지 않는 칸이었다(소유자: "어차피
-    // EndingKey는 내보낼 방법이 없었어"). 툴의 보장은 챕터 안의 분기·그래프 구조까지다.
+    // 간선에 엔딩키를 두지 않는다 — 시나리오 층으로 나가는 통로(EndingRules)가 이 툴에 없어
+    // 아무 데도 실리지 않는 칸이 된다. 툴의 보장은 챕터 안의 분기·그래프 구조까지다.
 
     /// <summary>
-    /// `스탯변화` 열 (2026-08-14) — 이 간선을 타는 순간 1회 커밋되는 증감. 스탯이 변하는
+    /// `스탯변화` 열 — 이 간선을 타는 순간 1회 커밋되는 증감. 스탯이 변하는
     /// 유일한 자리다: 에피소드 안에서는 변하지 않으므로 세이브/로드 복귀가 일관되고,
     /// 도달성 증명이 근사 없이 정확값으로 전이한다. 조건 판정은 커밋 <b>전</b> 값으로 한다
     /// (플레이어가 선택지를 보는 시점의 값).
@@ -128,7 +116,7 @@ public sealed record ChapterEdge(
     public IReadOnlyList<StatDelta> StatChanges { get; init; } = [];
 
     /// <summary>
-    /// 연출 그래프에서 이 길(선택지 레인)을 사람이 고친 모양 (G3 · 2026-10-29 소유자: "피그잼처럼"). null이면 자동이다.
+    /// 연출 그래프에서 이 길(선택지 레인)을 사람이 고친 모양. null이면 자동이다.
     /// 간선이 들고 있어야 도착 · 문구를 고치거나 에피소드 이름을 바꿔도(<c>with</c>) 모양이 함께 간다.
     /// 흐름과 산출물에는 아무 뜻이 없다 — 에피소드의 <see cref="ChapterEpisode.X"/>처럼 화면의 값이다.
     /// </summary>
@@ -147,7 +135,7 @@ public sealed record ChapterCondition(
     IReadOnlyList<ConditionTerm> Parsed,
     bool IsValid);
 
-/// <summary>스탯의 타입 (2026-08-16 소유자) — `타입` 열(선택, 비면 int)이 정한다.</summary>
+/// <summary>스탯의 타입 — `타입` 열(선택, 비면 int)이 정한다.</summary>
 public enum ChapterStatType
 {
     /// <summary>정수. 조건은 &lt; &gt; == &gt;= &lt;= 비교, 스탯변화는 증감.</summary>
@@ -159,7 +147,7 @@ public enum ChapterStatType
 
 /// <summary>
 /// `스탯` 시트 한 행 = Tier 2 키 하나. <see cref="Minimum"/>·<see cref="Maximum"/>는 장식이 아니라
-/// G7 도달성 증명의 <b>탐색 경계</b>다 (§7-5). bool 스탯은 편집기가 경계를 0·1로 고정하고 모델 검사가 어긋남을 짚는다(ChapterStructureCheck) —
+/// 도달성 증명의 <b>탐색 경계</b>다 (§7-5). bool 스탯은 편집기가 경계를 0·1로 고정하고 모델 검사가 어긋남을 짚는다(ChapterStructureCheck) —
 /// 프루버·픽스처 워커는 타입을 몰라도 그대로 옳게 돈다.
 /// </summary>
 public sealed record ChapterStat(
@@ -171,7 +159,7 @@ public sealed record ChapterStat(
     ChapterStatType Type = ChapterStatType.Int);
 
 /// <summary>
-/// `선택지` 시트 한 행 = <b>선택지 문구 하나</b> (v9, 2026-08-17 소유자). 이 시트는 어느
+/// `선택지` 시트 한 행 = <b>선택지 문구 하나</b>. 이 시트는 어느
 /// 에피소드의 소유물이 아니라 <b>챕터 전체가 함께 쓰는 문구 사전</b>이다 — `조건` 시트가
 /// 라벨↔식의 사전인 것과 같은 자리다. 여기서 한 번 적어 두면 <b>어떤 에피소드의 어떤
 /// 간선에서든 가져다 쓴다.</b>
@@ -191,7 +179,7 @@ public sealed record ChapterFixtureChoice(string From, string To);
 
 /// <summary>
 /// `픽스처` 시트 한 행. <b>내보내기에 섞이지 않는다</b> (§3.1) — 재생루트를 눈으로 보기 위한
-/// 테스트 데이터다. G6가 이걸로 경로를 하이라이트한다.
+/// 테스트 데이터다. 픽스처 워커가 이걸로 경로를 하이라이트한다.
 /// </summary>
 public sealed record ChapterFixture(
     string Name,
@@ -203,7 +191,7 @@ public sealed record ChapterFixture(
 /// 챕터 하나를 편 모양 — 검증·증명·내보내기·화면이 읽는다(<see cref="ChapterDocument.ToGraphModel"/>).
 /// <b>오류가 있어도 모델은 만들어진다</b> — 그릴 수 있는 데까지 그려 놓고
 /// 무엇이 잘못됐는지 옆에 세워야 기획자가 고칠 자리를 찾는다. 조용히 빈 화면을 주지 않는다(규칙 14).
-/// 내보내기(G8)는 <see cref="HasErrors"/>를 보고 거부한다.
+/// 내보내기는 <see cref="HasErrors"/>를 보고 거부한다.
 /// </summary>
 public sealed class ChapterGraphModel
 {
@@ -229,7 +217,7 @@ public sealed class ChapterGraphModel
         ChoiceOptions = choiceOptions ?? [];
     }
 
-    /// <summary>챕터 Id — 판 이름과 같다(챕터 = 판 1:1). 엑셀 시절에는 `chapters/{ChapterId}.xlsx`의 파일 이름이었다.</summary>
+    /// <summary>챕터 Id — 판 이름과 같다(챕터 = 판 1:1).</summary>
     public string ChapterId { get; }
 
     /// <summary>사람이 읽는 챕터 이름 — <see cref="ChapterDocument.DisplayName"/>. 비면 null.</summary>
@@ -242,8 +230,8 @@ public sealed class ChapterGraphModel
     /// <summary>
     /// 챕터 시작점 또는 다른 장면에서 처음 들어오는 에피소드는 장면 루트다.
     ///
-    /// ⛔ <b>판정은 여기 없다</b> — <see cref="ChapterSceneEntryCheck.IsEntry"/>가 갖는다
-    /// (V2 · 2026-09-16). 화면의 ⌂ 표식과 진단이 <b>같은 것</b>을 불러야 사람이 어느 쪽을
+    /// <b>판정은 여기 없다</b> — <see cref="ChapterSceneEntryCheck.IsEntry"/>가 갖는다.
+    /// 화면의 ⌂ 표식과 진단이 <b>같은 것</b>을 불러야 사람이 어느 쪽을
     /// 믿을지 묻지 않는다.
     /// </summary>
     public bool IsSceneRoot(ChapterEpisode episode) =>
@@ -257,7 +245,7 @@ public sealed class ChapterGraphModel
 
     public IReadOnlyList<ChapterFixture> Fixtures { get; }
 
-    /// <summary>`선택지` 시트 — 챕터가 함께 쓰는 문구 사전 (v9). 인덱스 순으로 선다.</summary>
+    /// <summary>`선택지` 시트 — 챕터가 함께 쓰는 문구 사전. 인덱스 순으로 선다.</summary>
     public IReadOnlyList<ChapterChoiceOption> ChoiceOptions { get; }
 
     /// <summary>
@@ -281,7 +269,7 @@ public sealed class ChapterGraphModel
 
     /// <summary>
     /// 시작 에피소드 = `에피소드` 시트의 첫 행. 규격에 시작 열이 없어 <b>읽는 순서가 곧 정의</b>다.
-    /// 도달성 증명(G7)과 내보내기(G8)의 `StartEpisodeId`가 같은 이 규칙 하나를 쓴다 —
+    /// 도달성 증명과 내보내기의 `StartEpisodeId`가 같은 이 규칙 하나를 쓴다 —
     /// 런타임은 이 값이 비면 도달 제한을 아예 걸지 않으므로, 두 곳이 갈리면 안 된다.
     /// </summary>
     public ChapterEpisode? StartEpisode => Episodes.Count > 0 ? Episodes[0] : null;
@@ -294,7 +282,7 @@ public sealed class ChapterGraphModel
 
     /// <summary>
     /// 그 에피소드에 오류 진단이 붙어 있는가. 뷰가 노드에 표식을 다는 근거다 — 진단이 짚는
-    /// 에피소드 Id로 찾는다(<see cref="ChapterDiagnostic.EpisodeId"/> · 2026-10-29 L8).
+    /// 에피소드 Id로 찾는다(<see cref="ChapterDiagnostic.EpisodeId"/>).
     /// </summary>
     public bool EpisodeHasError(ChapterEpisode episode) =>
         Diagnostics.Any(item =>

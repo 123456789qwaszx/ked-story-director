@@ -51,7 +51,7 @@ public sealed record ResolvedLine(
 
 public enum FlowProblemKind
 {
-    // ⛔ `MissingScript`(읽을 대본을 아직 고르지 않았거나 대본이 사라졌다)는 대본이 카드 안으로 들어오며
+    // `MissingScript`(읽을 대본을 아직 고르지 않았거나 대본이 사라졌다)는 대본이 카드 안으로 들어오며
     //    걷혔다(S2) — 카드는 언제나 제 대본을 든다.
 
     /// <summary>대본에 없는 LineId에 조건 전환이 남아 있다. 지우지 않고 알린다.</summary>
