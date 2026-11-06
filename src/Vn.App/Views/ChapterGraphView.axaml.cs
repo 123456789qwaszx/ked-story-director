@@ -77,6 +77,7 @@ public partial class ChapterGraphView : UserControl
         // 고른 챕터의 선택은 이전 챕터의 것이 아니다 — 들고 있으면 없는 간선을 가리킨다.
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
+        _grouped.Clear();
         HideEdgeForm();
         ShowInHierarchy(new HierarchyPick(HierarchyKind.Chapter, chapterId));
         _inspector = InspectorMode.Chapter;   // 챕터를 골랐다 — 하이어아키의 그 줄을 고른 것과 같다
@@ -520,13 +521,14 @@ public partial class ChapterGraphView : UserControl
         // 글자와 본문이 접힌 모양 그대로 남는다. 여기서 켜야 셋이 한 번에 맞는다.
         DialogueToggle.IsChecked = true;
 
-        // 빈 판 클릭 = 선택 해제. 카드·간선·라벨 핸들러가 각자 누름을 소비하므로(e.Handled)
+        // 빈 판 클릭 = 선택 해제, 끌면 범위 선택. 카드·간선·라벨 핸들러가 각자 누름을 소비하므로(e.Handled)
         // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다.
         GraphCanvas.PointerPressed += (_, e) =>
         {
             if (e.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
             {
                 SelectEpisode(null);
+                StartRubberBand(e);
             }
         };
 
@@ -1119,10 +1121,7 @@ public partial class ChapterGraphView : UserControl
         //   안 적은 자리다. 놓을 때 한 번 적는다(되돌리기 한 번 = 드래그 한 번).
         _placed = DisplayPlacement(model).ToDictionary(
             pair => pair.Key,
-            pair => string.Equals(pair.Key, _draggingEpisodeId, StringComparison.Ordinal) &&
-                    _dragPosition is { } dragged
-                ? (X: dragged.X + CanvasMargin, Y: dragged.Y + CanvasMargin)
-                : (X: pair.Value.X + CanvasMargin, Y: pair.Value.Y + CanvasMargin),
+            pair => DrawnAt(pair.Key, pair.Value),
             StringComparer.Ordinal);
 
         GraphCanvas.Width = _placed.Count == 0
@@ -1158,6 +1157,28 @@ public partial class ChapterGraphView : UserControl
         }
 
         ApplySelectionVisuals();
+
+        // 범위를 긋는 중에 판이 다시 서도 사각형은 남는다.
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Add(_rubberBand);
+        }
+    }
+
+    /// <summary>카드를 그릴 자리(여백 포함) — 끄는 중인 카드와 무리는 아직 프로젝트에 적지 않은 임시 자리다.</summary>
+    private (double X, double Y) DrawnAt(string episodeId, (double X, double Y) stored)
+    {
+        if (_groupStart is { } group && group.TryGetValue(episodeId, out (double X, double Y) start))
+        {
+            return (start.X + _groupDelta.X + CanvasMargin, start.Y + _groupDelta.Y + CanvasMargin);
+        }
+
+        if (string.Equals(episodeId, _draggingEpisodeId, StringComparison.Ordinal) && _dragPosition is { } dragged)
+        {
+            return (dragged.X + CanvasMargin, dragged.Y + CanvasMargin);
+        }
+
+        return (stored.X + CanvasMargin, stored.Y + CanvasMargin);
     }
 
     /// <summary>
@@ -2082,6 +2103,20 @@ public partial class ChapterGraphView : UserControl
     /// <summary>지금 끌고 있는 카드. 없으면 <c>null</c>.</summary>
     private string? _draggingEpisodeId;
 
+    /// <summary>범위 선택 사각형 — 빈 판을 왼쪽 단추로 끄는 동안만 선다(<see cref="RubberBand"/>).</summary>
+    private Rectangle? _rubberBand;
+    private Point _rubberStart;
+
+    /// <summary>범위 선택으로 묶은 카드 — 그 가운데 하나를 끌면 함께 움직인다. 무리 밖을 고르면 풀린다.</summary>
+    private readonly HashSet<string> _grouped = new(StringComparer.Ordinal);
+
+    /// <summary>무리째 끄는 중이면 무리의 처음 자리(여백 뺀 값 = 에피소드에 적힐 값). 아니면 <c>null</c>.</summary>
+    private Dictionary<string, (double X, double Y)>? _groupStart;
+
+    /// <summary>무리를 잡은 자리와 지금까지 옮긴 양 — 놓을 때 한 번 적는다.</summary>
+    private Point _groupGrab;
+    private Vector _groupDelta;
+
     /// <summary>잡은 지점과 카드 왼위 모서리의 차 — 카드가 커서 아래에서 튀지 않게 한다.</summary>
     private Point _dragOffset;
 
@@ -2145,6 +2180,16 @@ public partial class ChapterGraphView : UserControl
                 position.X - Canvas.GetLeft(card), position.Y - Canvas.GetTop(card));
             _dragPosition = null;
             _dragMoved = false;
+
+            // 범위 선택한 무리의 카드를 잡으면 무리가 함께 움직인다.
+            _groupStart = _grouped.Count > 1 && _grouped.Contains(episode.EpisodeId)
+                ? _grouped.Where(_placed.ContainsKey).ToDictionary(
+                    id => id,
+                    id => (X: _placed[id].X - CanvasMargin, Y: _placed[id].Y - CanvasMargin),
+                    StringComparer.Ordinal)
+                : null;
+            _groupGrab = position;
+            _groupDelta = default;
         };
 
         // ⛔ 카드 더블클릭이 대본 엑셀을 열던 배선은 2026-10-29(D2)에 엑셀 연동과 함께 걷혔다.
@@ -2158,6 +2203,12 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void OnCanvasPointerMoved(object? sender, Avalonia.Input.PointerEventArgs args)
     {
+        if (_rubberBand is not null)
+        {
+            RubberBand.Stretch(_rubberBand, _rubberStart, args.GetPosition(GraphCanvas));
+            return;
+        }
+
         if (_draggingEpisodeId is null)
         {
             return;
@@ -2172,6 +2223,17 @@ public partial class ChapterGraphView : UserControl
 
         Point position = args.GetPosition(GraphCanvas);
 
+        // 무리는 모양을 지킨 채 함께 민다 — 맨 왼쪽 · 맨 위 카드가 여백 안쪽(음수)으로 못 나간다.
+        if (_groupStart is { } group)
+        {
+            _groupDelta = new Vector(
+                Math.Max(position.X - _groupGrab.X, -group.Values.Min(start => start.X)),
+                Math.Max(position.Y - _groupGrab.Y, -group.Values.Min(start => start.Y)));
+            _dragMoved = true;
+            QueueDragRedraw();
+            return;
+        }
+
         // 여백 안쪽(음수)으로는 못 나간다 — 스크롤이 닿지 않는 자리에 카드를 두면 못 찾는다.
         _dragPosition = (
             X: Math.Max(0, position.X - _dragOffset.X - CanvasMargin),
@@ -2181,8 +2243,82 @@ public partial class ChapterGraphView : UserControl
         QueueDragRedraw();
     }
 
-    private void OnCanvasPointerReleased(
-        object? sender, Avalonia.Input.PointerReleasedEventArgs args) => CommitDrag();
+    private void OnCanvasPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs args)
+    {
+        if (_rubberBand is not null)
+        {
+            Point end = args.GetPosition(GraphCanvas);
+            Rect rect = RubberBand.Between(_rubberStart, end);
+            GraphCanvas.Children.Remove(_rubberBand);
+            _rubberBand = null;
+            args.Pointer.Capture(null);
+            UiGuard.Run(_session, "범위 선택", () => FinishRubberBand(rect, end));
+            return;
+        }
+
+        CommitDrag();
+    }
+
+    /// <summary>빈 판을 눌렀다 — 끄는 동안 범위 사각형이 선다.</summary>
+    private void StartRubberBand(Avalonia.Input.PointerPressedEventArgs args)
+    {
+        _rubberStart = args.GetPosition(GraphCanvas);
+        _rubberBand = RubberBand.Create(_rubberStart);
+        GraphCanvas.Children.Add(_rubberBand);
+        args.Pointer.Capture(GraphCanvas);
+    }
+
+    /// <summary>
+    /// 범위 선택을 놓았다 — [대본] 탭과 같은 규칙이다. 카드가 걸렸으면 <b>카드만</b> 무리가 되고(함께 끌린다) 끌기 시작한
+    /// 자리에서 가장 가까운 카드를 고른다. 카드 없이 선(선택지 선 · 분기 점선)만 걸렸으면 <b>놓은 자리(포인터)에서 가장
+    /// 가까운 선 하나</b>를 고른다. 인스펙터는 고른 것을 보인다.
+    /// </summary>
+    private void FinishRubberBand(Rect rect, Point end)
+    {
+        var cards = new List<(double Distance, string EpisodeId)>();
+
+        foreach ((string episodeId, Border card) in _cardById)
+        {
+            var bounds = new Rect(Canvas.GetLeft(card), Canvas.GetTop(card), CardWidth, CardHeight);
+
+            if (rect.Intersects(bounds))
+            {
+                cards.Add((RubberBand.DistanceTo(rect.Intersect(bounds), _rubberStart), episodeId));
+            }
+        }
+
+        if (cards.Count > 0)
+        {
+            _grouped.Clear();
+            _grouped.UnionWith(cards.Select(item => item.EpisodeId));
+            SelectEpisode(cards.MinBy(item => item.Distance).EpisodeId);
+            return;
+        }
+
+        var lines = new List<(double Distance, Action Pick)>();
+
+        foreach (((string from, string to, string label), List<Line> segments) in _lineByEdge)
+        {
+            if (segments.Select(segment => RubberBand.CaughtDistance(
+                    new LineGeometry(segment.StartPoint, segment.EndPoint), rect, end)).Min() is { } distance)
+            {
+                lines.Add((distance, () => SelectEdgeKey(from, to, label)));
+            }
+        }
+
+        foreach ((string branchKey, (ChapterBranchMarkers.Marker _, Line line)) in _branchByKey)
+        {
+            if (RubberBand.CaughtDistance(new LineGeometry(line.StartPoint, line.EndPoint), rect, end) is { } distance)
+            {
+                lines.Add((distance, () => SelectBranch(branchKey)));
+            }
+        }
+
+        if (lines.Count > 0)
+        {
+            lines.MinBy(item => item.Distance).Pick();
+        }
+    }
 
     /// <summary>
     /// 끌던 자리를 <b>한 번</b> 적는다. 안 움직였으면(그냥 누른 것) 아무것도 안 적는다 —
@@ -2202,13 +2338,16 @@ public partial class ChapterGraphView : UserControl
 
         (double X, double Y)? position = _dragPosition;
         bool moved = _dragMoved;
+        Dictionary<string, (double X, double Y)>? group = _groupStart;
+        Vector delta = _groupDelta;
 
         _draggingEpisodeId = null;
         _dragPosition = null;
         _dragMoved = false;
+        _groupStart = null;
+        _groupDelta = default;
 
-        if (!moved || position is not { } dropped ||
-            _selectedChapterId is not { } chapterId || SelectedModel is not { } model)
+        if (!moved || _selectedChapterId is not { } chapterId || SelectedModel is not { } model)
         {
             return;
         }
@@ -2217,7 +2356,22 @@ public partial class ChapterGraphView : UserControl
             DisplayPlacement(model).ToDictionary(pair => pair.Key, pair => pair.Value,
                 StringComparer.Ordinal);
 
-        places[episodeId] = dropped;
+        if (group is not null)
+        {
+            // 무리째 — 모두 같은 만큼, 한 번의 변경으로(되돌리기 한 칸).
+            foreach ((string member, (double X, double Y) start) in group)
+            {
+                places[member] = (start.X + delta.X, start.Y + delta.Y);
+            }
+        }
+        else if (position is { } dropped)
+        {
+            places[episodeId] = dropped;
+        }
+        else
+        {
+            return;
+        }
 
         UiGuard.Run(_session, "에피소드 자리", () =>
             _session!.Editor.MoveEpisodes(chapterId, places));
@@ -2358,6 +2512,13 @@ public partial class ChapterGraphView : UserControl
     internal void SelectEpisode(string? episodeId)
     {
         FlushEdgeTyping();
+
+        // 범위 선택 무리는 그 안의 카드를 고르는 동안만 남는다.
+        if (episodeId is null || !_grouped.Contains(episodeId))
+        {
+            _grouped.Clear();
+        }
+
         _selectedEpisodeId = episodeId;
         _selectedEdgeKey = null;
         _selectedBranchKey = null;
@@ -2379,6 +2540,7 @@ public partial class ChapterGraphView : UserControl
     internal void SelectEdgeKey(string fromEpisodeId, string toEpisodeId, string optionLabel = "")
     {
         FlushEdgeTyping();
+        _grouped.Clear();
         _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
         _selectedEpisodeId = null;
         _selectedBranchKey = null;
@@ -2397,6 +2559,7 @@ public partial class ChapterGraphView : UserControl
     internal void SelectBranch(string? branchKey)
     {
         FlushEdgeTyping();
+        _grouped.Clear();
         _selectedBranchKey = branchKey;
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
@@ -2415,6 +2578,7 @@ public partial class ChapterGraphView : UserControl
     internal void SelectEmptySlot(string episodeId, int index)
     {
         FlushEdgeTyping();
+        _grouped.Clear();
         _selectedSlot = (episodeId, index);
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
@@ -2470,6 +2634,16 @@ public partial class ChapterGraphView : UserControl
         {
             selectedDot.Stroke = new SolidColorBrush(Color.Parse("#3D7BD9"));
             selectedDot.StrokeThickness = 3;
+        }
+
+        // 범위 선택 무리 — 고른 카드보다 한 단계 가늘다.
+        foreach (string member in _grouped)
+        {
+            if (_cardById.TryGetValue(member, out Border? grouped))
+            {
+                grouped.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
+                grouped.BorderThickness = new Thickness(2);
+            }
         }
 
         if (_selectedEpisodeId is { } episodeId && _cardById.TryGetValue(episodeId, out Border? selected))

@@ -4108,26 +4108,10 @@ public partial class GraphEditorView : UserControl
             HighlightSelection();
 
             _rubberStart = args.GetPosition(GraphCanvas);
-            _rubberBand = new Rectangle
-            {
-                Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
-                StrokeThickness = 1,
-                StrokeDashArray = new AvaloniaList<double> { 4, 3 },
-                Fill = new SolidColorBrush(Color.FromArgb(28, 37, 99, 235)),
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(_rubberBand, _rubberStart.X);
-            Canvas.SetTop(_rubberBand, _rubberStart.Y);
+            _rubberBand = RubberBand.Create(_rubberStart);
             GraphCanvas.Children.Add(_rubberBand);
             args.Pointer.Capture(GraphCanvas);
         }
-    }
-
-    private Rect RubberRect(Point current)
-    {
-        return new Rect(
-            new Point(Math.Min(_rubberStart.X, current.X), Math.Min(_rubberStart.Y, current.Y)),
-            new Point(Math.Max(_rubberStart.X, current.X), Math.Max(_rubberStart.Y, current.Y)));
     }
 
     /// <summary>
@@ -4151,7 +4135,7 @@ public partial class GraphEditorView : UserControl
             if (rect.Intersects(bounds))
             {
                 _multiSelected.Add(card.NodeId);
-                cards.Add((DistanceTo(rect.Intersect(bounds), _rubberStart), card.NodeId));
+                cards.Add((RubberBand.DistanceTo(rect.Intersect(bounds), _rubberStart), card.NodeId));
             }
         }
 
@@ -4167,7 +4151,8 @@ public partial class GraphEditorView : UserControl
 
         foreach (EdgeVisual edge in _edges)
         {
-            if (edge.Path.IsVisible && edge.Path.Data is { } shape && CaughtDistance(shape, rect, end) is { } distance)
+            if (edge.Path.IsVisible && edge.Path.Data is { } shape &&
+                RubberBand.CaughtDistance(shape, rect, end) is { } distance)
             {
                 lines.Add((distance, () => SelectEdge(edge)));
             }
@@ -4176,7 +4161,8 @@ public partial class GraphEditorView : UserControl
         // 레인은 누르는 자리(넓고 투명한 같은 선)가 신원을 든다.
         foreach (ShapePath hit in _railVisuals.OfType<ShapePath>())
         {
-            if (hit.Tag is RailKey key && hit.Data is { } shape && CaughtDistance(shape, rect, end) is { } distance)
+            if (hit.Tag is RailKey key && hit.Data is { } shape &&
+                RubberBand.CaughtDistance(shape, rect, end) is { } distance)
             {
                 lines.Add((distance, () => SelectRail(key)));
             }
@@ -4186,47 +4172,6 @@ public partial class GraphEditorView : UserControl
         {
             lines.MinBy(item => item.Distance).Pick();
         }
-    }
-
-    /// <summary>선 위를 짚어 보는 간격(px) — 범위 사각형이 선을 건너뛰지 않을 만큼 촘촘하다.</summary>
-    private const double LineSampleStep = 4;
-
-    /// <summary>
-    /// 선이 사각형에 걸쳤으면 걸친 부분에서 <paramref name="from"/>까지의 거리, 안 걸쳤으면 null — 선 위를
-    /// <see cref="LineSampleStep"/>마다 짚어 잰다.
-    /// </summary>
-    internal static double? CaughtDistance(Geometry shape, Rect rect, Point from)
-    {
-        // 곧은 세로 · 가로 선은 테두리 상자의 폭이나 높이가 0이다 — 1px 넓혀 견준다.
-        if (!shape.Bounds.Inflate(1).Intersects(rect))
-        {
-            return null;
-        }
-
-        double length = shape.ContourLength;
-        double? nearest = null;
-
-        for (double at = 0; ; at += LineSampleStep)
-        {
-            if (shape.TryGetPointAtDistance(Math.Min(at, length), out Point point) && rect.Contains(point))
-            {
-                double distance = Point.Distance(point, from);
-                nearest = nearest is { } found ? Math.Min(found, distance) : distance;
-            }
-
-            if (at >= length)
-            {
-                return nearest;
-            }
-        }
-    }
-
-    /// <summary>점에서 사각형까지의 거리 — 안에 있으면 0.</summary>
-    internal static double DistanceTo(Rect rect, Point point)
-    {
-        double dx = Math.Max(Math.Max(rect.Left - point.X, 0), point.X - rect.Right);
-        double dy = Math.Max(Math.Max(rect.Top - point.Y, 0), point.Y - rect.Bottom);
-        return Math.Sqrt((dx * dx) + (dy * dy));
     }
 
     /// <summary>실행 선의 굵기 — 고른 선만 굵다.</summary>
@@ -4264,11 +4209,7 @@ public partial class GraphEditorView : UserControl
 
         if (_rubberBand is not null)
         {
-            Rect rect = RubberRect(position);
-            Canvas.SetLeft(_rubberBand, rect.X);
-            Canvas.SetTop(_rubberBand, rect.Y);
-            _rubberBand.Width = rect.Width;
-            _rubberBand.Height = rect.Height;
+            RubberBand.Stretch(_rubberBand, _rubberStart, position);
             return;
         }
 
@@ -4366,7 +4307,7 @@ public partial class GraphEditorView : UserControl
         // 범위 선택 확정 (W40)
         if (_rubberBand is not null)
         {
-            Rect rect = RubberRect(args.GetPosition(GraphCanvas));
+            Rect rect = RubberBand.Between(_rubberStart, args.GetPosition(GraphCanvas));
             GraphCanvas.Children.Remove(_rubberBand);
             _rubberBand = null;
             args.Pointer.Capture(null);
