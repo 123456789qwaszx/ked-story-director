@@ -14,9 +14,9 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[대본] 판의 범위 선택(러버밴드)은 카드와 선을 함께 잡고, 인스펙터가 따라온다</b> — 사각형에 걸친 카드 · 선택지 레인 ·
-/// 분기 선이 다 무리가 되고, 그 가운데 끌기 시작한 자리에서 가장 가까운 것을 고른다. 카드면 대사 편집기, 선이면 그 선의 설명
-/// (선택지: 문구 · 조건 · 스탯변화, 분기: 조건)이 인스펙터에 선다. 선을 바로 눌러도 같다.
+/// <b>[대본] 판의 범위 선택(러버밴드)과 인스펙터</b> — 사각형에 카드가 걸리면 카드만 무리가 되고(함께 걸친 선은 고르지 않는다)
+/// 끌기 시작한 자리에서 가장 가까운 카드의 대사 편집기가 인스펙터에 선다. 선만 걸리면 놓은 자리(포인터)에서 가장 가까운 선
+/// 하나를 고르고, 인스펙터가 그 선을 설명한다(선택지: 문구 · 조건 · 스탯변화, 분기: 조건). 선을 바로 눌러도 같다.
 /// </summary>
 public sealed class GraphRubberBandTests : IDisposable
 {
@@ -32,26 +32,33 @@ public sealed class GraphRubberBandTests : IDisposable
     }
 
     [Fact]
-    public void 시작점에_선택지_레인이_가까우면_레인을_고르고_인스펙터가_그_선택지를_설명한다() => HeadlessUi.Run(() =>
+    public void 선만_걸리면_놓은_자리에서_가장_가까운_선_하나만_고르고_인스펙터가_그_선택지를_설명한다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "도서관으로 간다");
+        Dispatcher.UIThread.RunJobs();
         session.Select(CardId(session, "a"));
         Dispatcher.UIThread.RunJobs();
 
-        // 레인(x=222, root 칩 → b 앞 접점) 오른쪽 18px에서 b 카드 안까지 — 레인이 가깝고 b 카드도 걸친다.
-        Band(graph, new Point(240, 700), new Point(100, 850));
+        // 두 레인(root→b는 x=222, root→a는 x=232)을 가로지른다 — 카드는 안 걸린다. 놓은 자리(x=300)에 root→a가 가깝다.
+        // 시작한 자리(x=215)에는 root→b가 가깝지만 그것은 보지 않는다.
+        Band(graph, new Point(215, 300), new Point(300, 330));
 
         Assert.Null(session.SelectedNodeId);
+        Assert.Equal("선택지 · root → a", Title(graph));
+        Assert.Equal(2.4, Lane(graph, "a").StrokeThickness);
+        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.False(Editor(window).IsVisible);
+
+        // 거꾸로 그으면 놓은 자리(x=215)에 root→b가 가깝다.
+        Band(graph, new Point(300, 300), new Point(215, 330));
+
         Assert.Equal("선택지 · root → b", Title(graph));
         Assert.Contains("문구: 「교무실로 간다」", Facts(graph));
         Assert.Contains("해금조건: 용기 — 아니면 잠긴 채 보입니다", Facts(graph));
         Assert.Contains("스탯변화: 신뢰 +2", Facts(graph));
-        Assert.False(Editor(window).IsVisible);
-
-        // 고른 레인이 가장 굵고, 함께 걸친 b 카드는 무리로 칠해진다.
-        Assert.Equal(2.4, Lane(graph).StrokeThickness);
-        Assert.Equal(2, Card(graph, CardId(session, "b")).BorderThickness.Left);
-        Assert.Equal(1, Card(graph, CardId(session, "a")).BorderThickness.Left);
+        Assert.Equal(1.4, Lane(graph, "a").StrokeThickness);
+        Assert.Equal(2.4, Lane(graph, "b").StrokeThickness);
 
         // 고치는 곳은 [구성] 탭 — 단추가 그 선택지를 고른 채로 데려간다.
         Summary(graph, "summary-open").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -65,22 +72,27 @@ public sealed class GraphRubberBandTests : IDisposable
     });
 
     [Fact]
-    public void 시작점에_카드가_가까우면_카드를_고르고_걸친_레인은_무리로_칠해진다() => HeadlessUi.Run(() =>
+    public void 카드와_선이_함께_걸리면_카드만_잡히고_시작점에서_가까운_카드가_인스펙터에_선다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
 
-        // a 카드 바로 아래에서 레인 너머까지 — a 카드(7px)가 레인(160px 남짓)보다 가깝다.
-        Band(graph, new Point(60, 545), new Point(240, 520));
+        // b 카드 오른쪽 위 빈 곳에서 a 카드 아래쪽까지 — 두 카드와 레인이 함께 걸친다. 시작점에는 b가 가깝다.
+        Band(graph, new Point(230, 810), new Point(100, 520));
 
-        Assert.Equal(CardId(session, "a"), session.SelectedNodeId);
+        Assert.Equal(CardId(session, "b"), session.SelectedNodeId);
         Assert.True(Editor(window).IsVisible);
-        Assert.Equal("에피소드 · a", Title(graph));
-        Assert.Equal(2, Lane(graph).StrokeThickness);
+        Assert.Equal("에피소드 · b", Title(graph));
+        Assert.Equal(2, Card(graph, CardId(session, "a")).BorderThickness.Left);
+        Assert.Equal(2, Card(graph, CardId(session, "b")).BorderThickness.Left);
+        Assert.Equal(1, Card(graph, CardId(session, "root")).BorderThickness.Left);
+
+        // 함께 걸친 레인은 고르지도 칠하지도 않는다.
+        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
 
         // 빈 판을 다시 누르면 무리가 풀린다.
         Press(Canvas(graph), At(graph, new Point(400, 300)));
         Release(Canvas(graph), At(graph, new Point(400, 300)));
-        Assert.Equal(1.4, Lane(graph).StrokeThickness);
+        Assert.Equal(1, Card(graph, CardId(session, "a")).BorderThickness.Left);
 
         window.Close();
     });
@@ -104,7 +116,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal(CardId(session, "b"), session.SelectedNodeId);
         Assert.True(Editor(window).IsVisible);
         Assert.Equal("에피소드 · b", Title(graph));
-        Assert.Equal(1.4, Lane(graph).StrokeThickness);
+        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
 
         // 다시 레인을 고른 뒤 빈 판을 누르면 설명이 내려간다.
         Press(LaneHit(graph), At(graph, new Point(222, 400)));
@@ -113,7 +125,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Release(Canvas(graph), At(graph, new Point(400, 300)));
 
         Assert.Equal("인스펙터", Title(graph));
-        Assert.Equal(1.4, Lane(graph).StrokeThickness);
+        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
 
         window.Close();
     });
@@ -173,9 +185,9 @@ public sealed class GraphRubberBandTests : IDisposable
     private static Border Card(GraphEditorView graph, string nodeId) =>
         Canvas(graph).Children.OfType<Border>().Single(card => card.Tag as string == nodeId);
 
-    /// <summary>보이는 레인 — 고른 것 · 무리 · 보통이 굵기로 갈린다.</summary>
-    private static ShapePath Lane(GraphEditorView graph) =>
-        Canvas(graph).Children.OfType<ShapePath>().Single(path => path.Tag as string == "레인:root>b");
+    /// <summary>root에서 그 에피소드로 가는 보이는 레인 — 고른 것만 굵다.</summary>
+    private static ShapePath Lane(GraphEditorView graph, string to) =>
+        Canvas(graph).Children.OfType<ShapePath>().Single(path => path.Tag as string == "레인:root>" + to);
 
     /// <summary>레인을 누르는 자리 — 넓고 투명한 같은 선이다.</summary>
     private static ShapePath LaneHit(GraphEditorView graph) =>

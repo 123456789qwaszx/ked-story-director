@@ -217,16 +217,10 @@ public partial class GraphEditorView : UserControl
     private Point _proxyDragStart;
     private readonly Dictionary<string, Point> _proxyStartPositions = new(StringComparer.Ordinal);
 
-    // 범위 선택 (W40) — 좌클릭 드래그로 잡은 노드 무리는 한 번에 움직인다. 사각형에 걸친 선도 무리에 든다.
+    // 범위 선택 (W40) — 좌클릭 드래그로 잡은 노드 무리는 한 번에 움직인다.
     private Rectangle? _rubberBand;
     private Point _rubberStart;
     private readonly HashSet<string> _multiSelected = new(StringComparer.Ordinal);
-
-    /// <summary>범위 선택에 걸친 실행 선 — 투영의 연결 열쇠(<see cref="GraphConnectionProjection.Key"/>)라 다시 그려도 남는다.</summary>
-    private readonly HashSet<string> _groupEdgeKeys = new(StringComparer.Ordinal);
-
-    /// <summary>범위 선택에 걸친 선택지 레인.</summary>
-    private readonly HashSet<RailKey> _groupRails = new();
     private bool _draggingGroup;
     private Point _groupDragStart;
     private readonly Dictionary<string, Point> _groupStartPositions = new(StringComparer.Ordinal);
@@ -3183,7 +3177,7 @@ public partial class GraphEditorView : UserControl
         var path = new ShapePath
         {
             Stroke = stroke,
-            StrokeThickness = EdgeThickness(connection.Key, selected: false)
+            StrokeThickness = 2
         };
 
         bool showLabel = connection.Kind == GraphConnectionKind.ExecutionBranch;
@@ -3207,7 +3201,7 @@ public partial class GraphEditorView : UserControl
         // 좌클릭 = 선택(하단에 정보), 우클릭 = 삭제 (W47 — 툴바의 간선 삭제 버튼을 대신한다).
         void OnEdgePressed(PointerPressedEventArgs args, Control source)
         {
-            ClearGroup();
+            _multiSelected.Clear(); // 선 하나를 고르면 카드 무리는 풀린다
             HighlightSelection();
             SelectEdge(edge);
 
@@ -4059,7 +4053,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        ClearGroup(); // 무리 밖 카드를 잡으면 단일 선택으로 돌아간다
+        _multiSelected.Clear(); // 무리 밖 카드를 잡으면 단일 선택으로 돌아간다
         HighlightSelection();
 
         _draggingCard = card;
@@ -4110,7 +4104,7 @@ public partial class GraphEditorView : UserControl
         // 빈 곳 좌클릭 = 범위 선택 시작 (W40). 이전 무리는 새 범위가 대신한다.
         if (args.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
         {
-            ClearGroup();
+            _multiSelected.Clear();
             HighlightSelection();
 
             _rubberStart = args.GetPosition(GraphCanvas);
@@ -4137,13 +4131,14 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 범위 선택을 놓았다 — 사각형에 걸친 카드 · 실행 선 · 선택지 레인이 다 무리가 되고, 그 가운데 <b>끌기 시작한 자리에서
-    /// 가장 가까운 것</b>을 고른다(인스펙터가 그것을 보인다). 카드 무리는 함께 끌린다.
+    /// 범위 선택을 놓았다. 카드가 걸렸으면 <b>카드만</b> 무리가 되고(함께 끌린다) 끌기 시작한 자리에서 가장 가까운 카드를
+    /// 고른다 — 함께 걸친 선은 고르지 않는다. 카드 없이 선만 걸렸으면 <b>놓은 자리(포인터)에서 가장 가까운 선 하나</b>를
+    /// 고른다. 인스펙터는 고른 것을 보인다.
     /// </summary>
-    private void FinishRubberBand(Rect rect)
+    private void FinishRubberBand(Rect rect, Point end)
     {
-        ClearGroup();
-        var caught = new List<(double Distance, Action Pick)>();
+        _multiSelected.Clear();
+        var cards = new List<(double Distance, string NodeId)>();
 
         foreach (NodeCard card in _cards)
         {
@@ -4155,42 +4150,41 @@ public partial class GraphEditorView : UserControl
 
             if (rect.Intersects(bounds))
             {
-                string nodeId = card.NodeId;
-                _multiSelected.Add(nodeId);
-                caught.Add((DistanceTo(rect.Intersect(bounds), _rubberStart), () => _session?.Select(nodeId)));
+                _multiSelected.Add(card.NodeId);
+                cards.Add((DistanceTo(rect.Intersect(bounds), _rubberStart), card.NodeId));
             }
         }
 
+        HighlightSelection();
+
+        if (cards.Count > 0)
+        {
+            _session?.Select(cards.MinBy(item => item.Distance).NodeId);
+            return;
+        }
+
+        var lines = new List<(double Distance, Action Pick)>();
+
         foreach (EdgeVisual edge in _edges)
         {
-            if (edge.Path.IsVisible && edge.Path.Data is { } shape && CaughtDistance(shape, rect) is { } distance)
+            if (edge.Path.IsVisible && edge.Path.Data is { } shape && CaughtDistance(shape, rect, end) is { } distance)
             {
-                _groupEdgeKeys.Add(edge.Connection.Key);
-                caught.Add((distance, () => SelectEdge(edge)));
+                lines.Add((distance, () => SelectEdge(edge)));
             }
         }
 
         // 레인은 누르는 자리(넓고 투명한 같은 선)가 신원을 든다.
         foreach (ShapePath hit in _railVisuals.OfType<ShapePath>())
         {
-            if (hit.Tag is RailKey key && hit.Data is { } shape && CaughtDistance(shape, rect) is { } distance)
+            if (hit.Tag is RailKey key && hit.Data is { } shape && CaughtDistance(shape, rect, end) is { } distance)
             {
-                _groupRails.Add(key);
-                caught.Add((distance, () => SelectRail(key)));
+                lines.Add((distance, () => SelectRail(key)));
             }
         }
 
-        HighlightSelection();
-        PaintEdges();
-
-        if (_groupRails.Count > 0)
+        if (lines.Count > 0)
         {
-            DrawChapterRails();
-        }
-
-        if (caught.Count > 0)
-        {
-            caught.MinBy(item => item.Distance).Pick();
+            lines.MinBy(item => item.Distance).Pick();
         }
     }
 
@@ -4198,10 +4192,10 @@ public partial class GraphEditorView : UserControl
     private const double LineSampleStep = 4;
 
     /// <summary>
-    /// 선이 사각형에 걸쳤으면 걸친 부분에서 끌기 시작한 자리까지의 거리, 안 걸쳤으면 null — 선 위를
+    /// 선이 사각형에 걸쳤으면 걸친 부분에서 <paramref name="from"/>까지의 거리, 안 걸쳤으면 null — 선 위를
     /// <see cref="LineSampleStep"/>마다 짚어 잰다.
     /// </summary>
-    private double? CaughtDistance(Geometry shape, Rect rect)
+    internal static double? CaughtDistance(Geometry shape, Rect rect, Point from)
     {
         // 곧은 세로 · 가로 선은 테두리 상자의 폭이나 높이가 0이다 — 1px 넓혀 견준다.
         if (!shape.Bounds.Inflate(1).Intersects(rect))
@@ -4216,7 +4210,7 @@ public partial class GraphEditorView : UserControl
         {
             if (shape.TryGetPointAtDistance(Math.Min(at, length), out Point point) && rect.Contains(point))
             {
-                double distance = Point.Distance(point, _rubberStart);
+                double distance = Point.Distance(point, from);
                 nearest = nearest is { } found ? Math.Min(found, distance) : distance;
             }
 
@@ -4228,36 +4222,19 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>점에서 사각형까지의 거리 — 안에 있으면 0.</summary>
-    private static double DistanceTo(Rect rect, Point point)
+    internal static double DistanceTo(Rect rect, Point point)
     {
         double dx = Math.Max(Math.Max(rect.Left - point.X, 0), point.X - rect.Right);
         double dy = Math.Max(Math.Max(rect.Top - point.Y, 0), point.Y - rect.Bottom);
         return Math.Sqrt((dx * dx) + (dy * dy));
     }
 
-    /// <summary>범위 선택 무리를 푼다 — 카드 · 실행 선 · 선택지 레인.</summary>
-    private void ClearGroup()
-    {
-        _multiSelected.Clear();
-        _groupEdgeKeys.Clear();
-        PaintEdges();
-
-        if (_groupRails.Count > 0)
-        {
-            _groupRails.Clear();
-            DrawChapterRails();
-        }
-    }
-
-    /// <summary>실행 선의 굵기 — 고른 선이 가장 굵고, 범위 선택 무리의 선이 그다음이다.</summary>
-    private double EdgeThickness(string connectionKey, bool selected) =>
-        selected ? 4 : _groupEdgeKeys.Contains(connectionKey) ? 3 : 2;
-
+    /// <summary>실행 선의 굵기 — 고른 선만 굵다.</summary>
     private void PaintEdges()
     {
         foreach (EdgeVisual item in _edges)
         {
-            item.Path.StrokeThickness = EdgeThickness(item.Connection.Key, ReferenceEquals(item, _selectedEdge));
+            item.Path.StrokeThickness = ReferenceEquals(item, _selectedEdge) ? 4 : 2;
         }
     }
 
@@ -4393,7 +4370,7 @@ public partial class GraphEditorView : UserControl
             GraphCanvas.Children.Remove(_rubberBand);
             _rubberBand = null;
             args.Pointer.Capture(null);
-            FinishRubberBand(rect);
+            FinishRubberBand(rect, args.GetPosition(GraphCanvas));
             return;
         }
 
@@ -5037,15 +5014,14 @@ public partial class GraphEditorView : UserControl
         RailKey key, EdgeShape? stored, GraphPosition from, double toward, double laneX, GraphPosition junction)
     {
         bool selected = key.Equals(_selectedRail);
-        bool grouped = !selected && _groupRails.Contains(key);
         ShapedEdge lane = EdgeShapeRouter.Lane(
             from, toward, laneX, junction, selected && _shapePreview is { } preview ? preview : stored);
 
         _railVisuals.Add(new ShapePath
         {
             Data = ShapedGeometry(lane),
-            Stroke = selected || grouped ? SelectedLineBrush : RailBrush,
-            StrokeThickness = selected ? 2.4 : grouped ? 2 : 1.4,
+            Stroke = selected ? SelectedLineBrush : RailBrush,
+            StrokeThickness = selected ? 2.4 : 1.4,
             IsHitTestVisible = false,
             Tag = $"레인:{key.From}>{key.To}"
         });
@@ -5062,7 +5038,7 @@ public partial class GraphEditorView : UserControl
         hit.PointerPressed += (_, args) =>
         {
             args.Handled = true;
-            ClearGroup();
+            _multiSelected.Clear(); // 선 하나를 고르면 카드 무리는 풀린다
             HighlightSelection();
             SelectRail(key);
         };
