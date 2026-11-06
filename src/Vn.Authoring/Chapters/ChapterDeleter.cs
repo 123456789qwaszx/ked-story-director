@@ -20,9 +20,9 @@ public static class ChapterDeleter
 {
     /// <param name="NodesRemoved">판과 함께 걷힌 노드 수 — 연출 그래프에서 사라지는 것이다.</param>
     /// <param name="StaleExport">
-    /// 그 챕터로 내보낸 진행 JSON이 남아 있으면 그 파일 이름. <b>지우지 않는다</b> —
-    /// 산출물이라도 남의 폴더(개발자가 가져가는 자리)에 있는 파일이다. 대신 <b>이름을 말해</b>
-    /// 사람이 지우게 한다: 그냥 두면 런타임이 <b>없는 챕터를 계속 싣는다</b>.
+    /// 그 챕터로 내보낸 진행 JSON이 남아 있으면 그 파일 이름. 여기서는 지우지 않는다 — 제거는 모델만 바꾸고(되돌리기
+    /// 한 칸), 파일은 바로 뒤의 내보내기가 걷는다(<see cref="ChapterExportService"/>: 프로젝트에 없는 챕터의 진행 JSON).
+    /// 화면은 이 이름으로 걷혔는지 말한다.
     /// </param>
     public sealed record Result(
         bool Deleted,

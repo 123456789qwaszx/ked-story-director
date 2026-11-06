@@ -379,10 +379,24 @@ public partial class MainWindow : Window
         _session.SetStatus(
             $"챕터 '{chapterId}' → '{newId}'로 바꿨습니다" +
             (result.SupplyRenamed ? "(조건 노드도 함께)." : ".") +
-            (result.StaleExport is { } stale
-                ? $" ⚠ 옛 이름의 내보내기 '{stale}'가 남아 있습니다 — 지우고 다시 내보내 주세요."
-                : " 내보낸 JSON이 있었다면 다시 내보내 주세요."));
+            StaleExportNote(result.StaleExport, chapterId));
         return true;
+    }
+
+    /// <summary>
+    /// 지우거나 이름을 바꾼 챕터의 옛 진행 JSON이 어떻게 됐는지 한 마디 — 바로 앞의 다시 읽기가 내보내며 걷는다
+    /// (<see cref="ChapterExportService"/>). 못 걷었으면 그렇다고 말한다: 그냥 두면 게임이 없는 챕터를 계속 싣는다.
+    /// </summary>
+    private string StaleExportNote(string? stale, string chapterId)
+    {
+        if (stale is null || _session.ProjectPath is not { } projectPath)
+        {
+            return string.Empty;
+        }
+
+        return File.Exists(ChapterExportService.ExportPathFor(projectPath, chapterId))
+            ? $" ⚠ 옛 진행 JSON '{stale}'을 걷지 못했습니다 — 다른 프로그램에 잡혀 있는지 확인하세요."
+            : $" 옛 진행 JSON '{stale}'은 걷었습니다(게임 폴더의 같은 파일도).";
     }
 
     /// <summary>
@@ -443,10 +457,7 @@ public partial class MainWindow : Window
                 _session.SetStatus(
                     $"챕터 '{chapterId}'를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). " +
                     "되돌리기(Ctrl+Z)로 돌아옵니다." +
-                    (result.StaleExport is { } stale
-                        ? $" ⚠ 내보낸 '{stale}'가 남아 있습니다 — 지우지 않으면 게임이 " +
-                          "없는 챕터를 계속 싣습니다."
-                        : string.Empty));
+                    StaleExportNote(result.StaleExport, chapterId));
             });
         };
 
