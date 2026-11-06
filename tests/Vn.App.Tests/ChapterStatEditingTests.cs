@@ -61,36 +61,6 @@ public sealed class ChapterStatEditingTests
     });
 
     [Fact]
-    public void 새로_잇는_길에도_스탯변화가_같은_저장에_실린다() => HeadlessUi.Run(() =>
-    {
-        // 두 번 고치면 되돌리기가 두 걸음이 되고, 그 사이 반쪽만 적힌 길이 잠깐 진짜가 된다.
-        using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        ChapterStat stat = Reread(session).Stats[0];
-
-        view.SelectEpisode("main05.01");
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        view.FindControl<Button>("AddNextEdgeButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        StatChangeEditor editor = Editor(view, "EdgeFormStatsHost");
-        Add(editor);
-        StatCombo(editor, 0).SelectedItem = Display(stat);
-        SignCombo(editor, 0).SelectedIndex = 1;  // －
-        AmountBox(editor, 0).Text = "3";
-
-        view.FindControl<ComboBox>("EdgeTargetCombo")!.SelectedItem = "main05.end";
-        view.SubmitEdgeForm();
-
-        ChapterEdge wired = Reread(session).Edges
-            .Single(edge => edge.FromEpisodeId == "main05.01" && edge.ToEpisodeId == "main05.end");
-
-        Assert.Equal(new StatDelta(stat.Key, -3), Assert.Single(wired.StatChanges));
-    });
-
-    [Fact]
     public void 간선_패널에서도_같은_줄_편집기로_적는다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
@@ -183,9 +153,6 @@ public sealed class ChapterStatEditingTests
 
     private static ComboBox StatCombo(StatChangeEditor editor, int index) =>
         Row(editor, index).Children.OfType<ComboBox>().First();
-
-    private static ComboBox SignCombo(StatChangeEditor editor, int index) =>
-        Row(editor, index).Children.OfType<ComboBox>().Last();
 
     private static TextBox AmountBox(StatChangeEditor editor, int index) =>
         Row(editor, index).Children.OfType<TextBox>().Single();

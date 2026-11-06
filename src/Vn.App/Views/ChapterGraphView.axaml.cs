@@ -448,17 +448,6 @@ public partial class ChapterGraphView : UserControl
         EdgeStatsHost.Children.Add(_edgeStats);
         EdgeFormStatsHost.Children.Add(_formStats);
 
-        AddNextEdgeButton.Click += (_, _) => UiGuard.Run(_session, "선택지 추가", AddChoiceSlotFromPanel);
-
-        // 빈 선택지 칸 패널의 [＋] — 그 에피소드를 고르고 선택지 폼을 연다.
-        SlotAddChoiceButton.Click += (_, _) => UiGuard.Run(_session, "선택지 추가", () =>
-        {
-            if (_selectedSlot is { } slot)
-            {
-                SelectEpisode(slot.Episode);
-                AddChoiceSlotFromPanel();
-            }
-        });
         AddEdgeButton.Click += (_, _) => UiGuard.Run(_session, "간선 연결·수정", SubmitEdgeForm);
         DeleteEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 삭제", DeleteSelectedEpisode);
         AddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
@@ -2908,7 +2897,7 @@ public partial class ChapterGraphView : UserControl
     // 목록의 줄 = 이 에피소드에서 나가는 길 하나이고, 길 하나가 곧 선택지 하나다.
     // 문구는 글자 칸에 직접 적는다 — 비우면 문구 없는 길이다.
 
-    /// <summary>폼이 붙은 간선의 신원 (도착, 문구). null이면 <b>새 선택지</b>를 여는 중이다.</summary>
+    /// <summary>폼이 붙은 간선의 신원 (도착, 문구). 폼이 닫혀 있으면 null이다.</summary>
     private (string To, string Label)? _edgeFormEdge;
 
     /// <summary>목록 안에서 폼이 설 자리. -1 = 닫힘.</summary>
@@ -2922,33 +2911,12 @@ public partial class ChapterGraphView : UserControl
         EdgeFormPanel.IsVisible = false;
     }
 
-    /// <summary>[＋] — 빈 폼을 목록 끝에 연다. 문구와 도착을 고르면 그때 길이 생긴다.</summary>
-    private void AddChoiceSlotFromPanel()
-    {
-        if (_selectedEpisodeId is null || SelectedModel is null)
-        {
-            _session?.SetStatus("에피소드를 먼저 골라 주세요.");
-            return;
-        }
-
-        // 이미 새 선택지 폼이 열려 있으면 접는다 — 여는 손과 닫는 손이 같다.
-        if (_edgeFormIndex >= 0 && _edgeFormEdge is null)
-        {
-            HideEdgeForm();
-            RefreshPropertyPanel(preserveTyping: true);
-            return;
-        }
-
-        OpenEdgeForm(edge: null, rowIndex: int.MaxValue - 1);
-    }
-
     /// <summary>
     /// 줄 클릭 — 그 길의 문구·도착을 고치는 폼이 줄 바로 아래에 열린다. 문구는 글자 칸에 지금 문구가 그대로 적혀 선다.
-    /// <paramref name="edge"/>가 null이면 새 선택지다.
     /// </summary>
-    internal void OpenEdgeForm(ChapterEdge? edge, int rowIndex)
+    internal void OpenEdgeForm(ChapterEdge edge, int rowIndex)
     {
-        _edgeFormEdge = edge is null ? null : (edge.ToEpisodeId, EdgeLabelKey(edge));
+        _edgeFormEdge = (edge.ToEpisodeId, EdgeLabelKey(edge));
         _edgeFormIndex = rowIndex + 1;
         RefreshPropertyPanel(preserveTyping: true);
 
@@ -2956,12 +2924,12 @@ public partial class ChapterGraphView : UserControl
 
         try
         {
-            EdgeTargetCombo.SelectedItem = edge?.ToEpisodeId;
-            EdgeLabelBox.Text = edge?.OptionLabel ?? string.Empty;
-            EdgeFormAutoCheck.IsChecked = edge?.Auto == true;
+            EdgeTargetCombo.SelectedItem = edge.ToEpisodeId;
+            EdgeLabelBox.Text = edge.OptionLabel ?? string.Empty;
+            EdgeFormAutoCheck.IsChecked = edge.Auto;
 
-            // 스탯변화도 여기서 만진다 (2026-08-17) — 새 길이면 빈 목록에서 시작한다.
-            _formStats.Load(SelectedModel?.Stats ?? [], edge?.StatChanges ?? []);
+            // 스탯변화도 여기서 만진다 (2026-08-17).
+            _formStats.Load(SelectedModel?.Stats ?? [], edge.StatChanges);
         }
         finally
         {
@@ -2969,10 +2937,11 @@ public partial class ChapterGraphView : UserControl
         }
     }
 
-    /// <summary>폼의 [잇기]/[수정] — 이 길의 문구와 도착을 한 저장으로 정한다.</summary>
+    /// <summary>폼의 [수정] — 이 길의 문구와 도착을 한 저장으로 정한다.</summary>
     internal void SubmitEdgeForm()
     {
         if (_edgeFormIndex < 0 ||
+            _edgeFormEdge is not { } current ||
             _selectedEpisodeId is not { } from ||
             _selectedChapterId is not { } chapterId)
         {
@@ -3002,17 +2971,7 @@ public partial class ChapterGraphView : UserControl
         ChapterEdit(
             () =>
             {
-                if (_edgeFormEdge is { } current)
-                {
-                    _session!.Editor.SetEdgeRoute(
-                        chapterId, from, current.To, current.Label, to, label, stats, auto);
-                }
-                else
-                {
-                    _session!.Editor.AddEdge(
-                        chapterId, from, to, optionLabel: label, statChanges: stats, auto: auto);
-                }
-
+                _session!.Editor.SetEdgeRoute(chapterId, from, current.To, current.Label, to, label, stats, auto);
                 HideEdgeForm();
             },
             label.Length > 0
@@ -3043,22 +3002,21 @@ public partial class ChapterGraphView : UserControl
         {
             EdgeListPanel.Children.Add(new TextBlock
             {
-                Text = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다. [＋]로 선택지를 엽니다.",
+                Text = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 잇습니다.",
                 FontSize = 10,
                 Opacity = 0.5,
                 TextWrapping = TextWrapping.Wrap
             });
         }
 
-        // 폼을 제자리에 꽂는다 — 누른 줄 바로 아래(새 선택지면 목록 끝).
+        // 폼을 제자리에 꽂는다 — 누른 줄 바로 아래.
         bool formOpen = _edgeFormIndex >= 0;
         EdgeFormHost.IsVisible = formOpen;
         EdgeFormPanel.IsVisible = formOpen;
 
         if (formOpen)
         {
-            // 라벨은 둘뿐이다 — 있는 길은 [수정], 새로 여는 길은 [잇기].
-            AddEdgeButton.Content = _edgeFormEdge is null ? "잇기" : "수정";
+            AddEdgeButton.Content = "수정";
             EdgeTargetCombo.IsEnabled = true;
 
             EdgeListPanel.Children.Insert(
@@ -3076,7 +3034,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private Control BuildEdgeRow(ChapterEdge edge, int rowIndex)
     {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
 
         // 순번 — 화면에 뜨는 차례다(간선 시트의 행 순서). 신원이 아니라 자리 표시다.
         row.Children.Add(new Border
@@ -3130,25 +3088,8 @@ public partial class ChapterGraphView : UserControl
                 });
         }
 
+        // ✕(길 끊기)는 두지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다.
         row.Children.Add(text);
-
-        {
-            string from = edge.FromEpisodeId;
-            string to = edge.ToEpisodeId;
-            string optionLabel = EdgeLabelKey(edge);
-            var remove = new Button
-            {
-                Content = "✕",
-                FontSize = 10,
-                Padding = new Thickness(5, 1),
-                [ToolTip.TipProperty] = "이 길을 지웁니다. 선택지 문구는 사전에 남습니다."
-            };
-            Grid.SetColumn(remove, 2);
-            remove.Click += (_, _) => UiGuard.Run(_session, "선택지 삭제", () => ChapterEdit(
-                () => _session!.Editor.RemoveEdge(_selectedChapterId!, from, to, optionLabel),
-                $"{from} → {to} 를 지웠습니다."));
-            row.Children.Add(remove);
-        }
 
         return row;
     }
@@ -3302,7 +3243,7 @@ public partial class ChapterGraphView : UserControl
         SlotDetailText.Text = (options == 0
                 ? "이 에피소드에서 나가는 길이 아직 없습니다."
                 : $"이 에피소드에서 나가는 길은 {options}개이고, 이 칸은 비어 있습니다.") +
-            " 아래 [＋]로 선택지를 열어 문구와 도착을 고르면 이 칸이 길이 됩니다. [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이어도 됩니다.";
+            " [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이으면 이 칸이 길이 됩니다.";
     }
 
     /// <summary>조건을 안 건 분기 — 언제나 재생된다. 「안 고름」과 같은 뜻이다.</summary>

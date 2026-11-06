@@ -197,7 +197,6 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<TextBox>("IdBox")!.IsEnabled);
-        Assert.True(view.FindControl<Button>("AddNextEdgeButton")!.IsVisible);
 
         var delete = view.FindControl<Button>("DeleteEpisodeButton")!;
         Assert.True(delete.IsVisible);
@@ -275,35 +274,46 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
+    public void 선택지_목록에는_길을_더하거나_끊는_단추가_없다() => HeadlessUi.Run(() =>
+    {
+        // 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다 — 에피소드 칸의 [＋]와 줄마다의 ✕, 빈 칸 패널의 [＋]는 없다.
+        using var project = new TempProject();
+        (ChapterGraphView view, _) = Show(project);
+
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(view.FindControl<Button>("AddNextEdgeButton"));
+        Assert.Null(view.FindControl<Button>("SlotAddChoiceButton"));
+        Assert.DoesNotContain(
+            view.FindControl<StackPanel>("EdgeListPanel")!.GetVisualDescendants().OfType<Button>(),
+            button => button.IsEffectivelyVisible && button.Content as string == "✕");
+    });
+
+    [Fact]
     public void 선택지는_챕터의_모든_문구_중에서_고른다() => HeadlessUi.Run(() =>
     {
         // 제 것만이 아니라 챕터의 모든 선택지 문구 중에서 고른다.
-        // 견본의 사전에는 main05.02가 쓰는 문구 둘이 있고, main05.01에서도 그것을 고른다.
+        // 견본의 사전에는 main05.02가 쓰는 문구 둘이 있고, main05.01의 길(「계속」)에도 그것을 적는다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEpisode("main05.01");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // [＋] — 빈 폼이 열린다. 아직 아무것도 안 쓴다.
-        view.FindControl<Button>("AddNextEdgeButton")!.RaiseEvent(
-            new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        view.OpenEdgeForm(Edge(session, "main05.01", "main05.02"), rowIndex: 0);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.True(view.FindControl<Grid>("EdgeFormPanel")!.IsVisible);
-        Assert.Equal("잇기", view.FindControl<Button>("AddEdgeButton")!.Content);
 
         // 문구는 글자 칸에 적는다 — 다른 에피소드가 쓰는 문구를 그대로 적어도 된다.
         var labels = view.FindControl<TextBox>("EdgeLabelBox")!;
-        Assert.Equal(string.Empty, labels.Text ?? string.Empty);   // 새 선택지는 빈 칸이다
+        Assert.Equal("계속", labels.Text);
 
         labels.Text = "라루의 제안을 듣는다";
-        view.FindControl<ComboBox>("EdgeTargetCombo")!.SelectedItem = "main05.end";
         view.SubmitEdgeForm();
 
         ChapterGraphModel reread = Chapter(session);
         ChapterEdge wired = reread.Edges.Single(candidate =>
-            candidate.FromEpisodeId == "main05.01" && candidate.ToEpisodeId == "main05.end");
+            candidate.FromEpisodeId == "main05.01" && candidate.ToEpisodeId == "main05.02");
         Assert.Equal("라루의 제안을 듣는다", wired.OptionLabel);
 
         // 같은 문구를 두 에피소드가 쓰고 있어도 사전에는 한 줄뿐이다.

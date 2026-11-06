@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
@@ -12,8 +11,8 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>[구성] 탭의 빈 선택지 칸도 누르면 정보가 선다</b> — 카드 아래의 빈 점은 아직 이 칸에서 나가는 길이 없다는 뜻이다. 누르면
-/// 그 칸을 고르고 어느 에피소드의 몇째 칸인지, 길을 더하는 곳을 말한다. [＋]를 누르면 그 에피소드의 선택지 폼이 열린다.
-/// 이어진 선택지 점은 전처럼 그 간선을 고른다.
+/// 그 칸을 고르고 어느 에피소드의 몇째 칸인지, 길을 더하는 곳([대본] 탭의 카드 아래 칸)을 말한다. 이어진 선택지 점은 전처럼
+/// 그 간선을 고른다.
 /// </summary>
 public sealed class ChapterEmptySlotTests : IDisposable
 {
@@ -29,7 +28,7 @@ public sealed class ChapterEmptySlotTests : IDisposable
     }
 
     [Fact]
-    public void 빈_선택지_칸을_누르면_칸_정보가_서고_더하기로_그_에피소드의_선택지_폼이_열린다() => HeadlessUi.Run(() =>
+    public void 빈_선택지_칸을_누르면_칸_정보가_서고_길을_더하는_곳을_말한다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
@@ -42,16 +41,10 @@ public sealed class ChapterEmptySlotTests : IDisposable
         Assert.True(view.FindControl<StackPanel>("SlotPanel")!.IsVisible);
         Assert.Equal("선택지 칸 2/3 — 비어 있음", view.FindControl<TextBlock>("SlotTitleText")!.Text);
         Assert.Contains("아직 없습니다", view.FindControl<TextBlock>("SlotDetailText")!.Text, StringComparison.Ordinal);
+        Assert.Contains("[대본] 탭", view.FindControl<TextBlock>("SlotDetailText")!.Text, StringComparison.Ordinal);
         Assert.True(slot.StrokeThickness > 2, "고른 칸이 강조된다");
         Assert.False(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-
-        // [＋] — 그 에피소드를 고르고 선택지 폼을 연다.
-        view.FindControl<Button>("SlotAddChoiceButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-        Assert.True(view.FindControl<StackPanel>("EdgeFormHost")!.IsVisible);
-        Assert.False(view.FindControl<StackPanel>("SlotPanel")!.IsVisible);
+        Assert.Null(view.FindControl<Button>("SlotAddChoiceButton"));
 
         window.Close();
     });
