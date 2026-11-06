@@ -19,7 +19,7 @@ internal sealed class AuthoringSession
     private readonly HashSet<string> _expandedFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<GraphSceneKey> _collapsedScenes = [];
-    private readonly HashSet<string> _fullChoiceNodeIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _hiddenChoiceNodeIds = new(StringComparer.Ordinal);
     private string _fileListSignature = string.Empty;
     private string _savedSnapshot;
 
@@ -43,10 +43,7 @@ internal sealed class AuthoringSession
     /// </summary>
     public GameDefinition Definition { get; private set; } = GameDefinition.Empty;
 
-    // ⚠ `ChapterSpeakerNames`·`ChapterSpeakerCharacterIds`는 2026-08-23에 사라졌다
-    // (소유자: "엑셀 내 어떤 것에서도 화자를 사용하지 않는다 … 화자는 툴 내부에서 직접
-    // 정의해서 쓰는 게 맞는 것이였다"). 챕터 `화자` 시트가 폐지되면서 챕터에서 오는 화자
-    // 어휘라는 것 자체가 없어졌다 — 화자의 유일한 원천은 <see cref="Definition"/>이다.
+    // 주의: 챕터에서 오는 화자 어휘는 없다 — 화자의 유일한 원천은 <see cref="Definition"/>이다.
 
     /// <summary>
     /// 새 노드가 추가될 현재 작업 파일.
@@ -67,17 +64,17 @@ internal sealed class AuthoringSession
     public IReadOnlySet<string> ExpandedFileIds => _expandedFileIds;
 
     /// <summary>
-    /// 펼친 판 안에서 접어 둔 장면들 (2026-10-30 — 하이어아키의 눈, <c>docs/plans/hierarchy.md</c> SF). 그 장면만 줄 목록
+    /// 펼친 판 안에서 접어 둔 장면들 (하이어아키의 눈, <c>docs/plans/hierarchy.md</c>). 그 장면만 줄 목록
     /// 상자로 간소화된다. <see cref="ExpandedFileIds"/>와 같은 작업 상태다 — 저장 · 되돌리기 대상이 아니다.
     /// </summary>
     public IReadOnlySet<GraphSceneKey> CollapsedScenes => _collapsedScenes;
 
     /// <summary>
-    /// 선택지 칸을 셋 다 세우는 카드들 (2026-10-30 — 소유자: "연결되어 있지 않더라도 그게 보이다보니 너무 지저분" → 인스펙터의
-    /// 「선택지 3칸」). 여기 없는 카드는 <b>빈 칸을 하나만</b> 세운다 — 이은 선택지는 어느 쪽이든 언제나 선다. 화면 편의라
-    /// 프로젝트 파일이 아니라 사용자 설정에 프로젝트별로 기억한다.
+    /// 빈 선택지 칸을 감춘 카드들 (인스펙터의 「빈 선택지 숨기기」). 여기 든 카드는 <b>이은 선택지만</b> 세운다 — 안 이은 칸은
+    /// 자동 길 자리까지 감춘다. 여기 없는 카드는 칸이 셋 선다. 화면 편의라 프로젝트 파일이 아니라 사용자 설정에
+    /// 프로젝트별로 기억한다.
     /// </summary>
-    public IReadOnlySet<string> FullChoiceNodeIds => _fullChoiceNodeIds;
+    public IReadOnlySet<string> HiddenChoiceNodeIds => _hiddenChoiceNodeIds;
 
     public string? SelectedNodeId { get; private set; }
 
@@ -92,11 +89,11 @@ internal sealed class AuthoringSession
     public event EventHandler<ProjectChangedEventArgs>? Changed;
 
     /// <summary>
-    /// 상태줄 글자가 바뀌었을 때. <b><see cref="Changed"/>와 갈라 둔 이유가 성능이다</b>
-    /// (2026-08-18): 예전에는 <see cref="SetStatus"/>가 프로젝트 변경으로 방송돼서,
+    /// 상태줄 글자가 바뀌었을 때. <b><see cref="Changed"/>와 갈라 둔 이유가 성능이다</b>:
+    /// <see cref="SetStatus"/>가 프로젝트 변경으로 방송되면,
     /// "에피소드 3개를 반영했습니다" 한 줄이 챕터 전체 재읽기 + 판 재구성을
-    /// 불렀다. 동기화가 상태를 여러 번 적으면 그만큼 되풀이됐고, 그 되풀이가 다시
-    /// 상태를 적어 스스로를 먹였다 — 노드 60개에서 첫 화면이 58초 걸리던 정체다.
+    /// 부른다. 동기화가 상태를 여러 번 적으면 그만큼 되풀이되고, 그 되풀이가 다시
+    /// 상태를 적어 스스로를 먹인다 — 노드 60개에서 첫 화면이 58초 걸린다.
     ///
     /// 상태줄은 프로젝트가 아니다. 듣는 쪽은 글자만 갈아 끼운다.
     /// </summary>
@@ -123,12 +120,25 @@ internal sealed class AuthoringSession
 
     // 상태를 모두 맞춘 뒤에 알린다. 알린 다음에 상태를 바꾸면
     // 화면은 방금 지나간 값을 그린 채로 남는다.
+    /// <summary>
+    /// 게임 폴더 설정 —프로젝트 폴더의 <c>runtime.target.json</c>. 없으면 null. 풀린 절대 경로가 실제로
+    /// 있을 때만 <see cref="GameFolder"/>가 있다 — 다른 PC에서 상대 경로가 빗나가면 아무것도 안 쓴다.
+    /// </summary>
+    public RuntimeTarget? RuntimeTarget { get; private set; }
+
+    public string? GameFolder =>
+        ProjectPath is { } path && RuntimeTarget is { } target ? target.ResolveExisting(path) : null;
+
+    public void ReloadRuntimeTarget() =>
+        RuntimeTarget = ProjectPath is { } path ? RuntimeTarget.LoadBeside(path) : null;
+
     public void NewProject()
     {
         StoryProject project = NewProjectInstance();
 
         ProjectPath = null;
         Definition = GameDefinition.Empty;
+        RuntimeTarget = null;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
 
@@ -143,7 +153,7 @@ internal sealed class AuthoringSession
 
     /// <summary>
     /// 연출을 담은 옛 프로젝트를 열었을 때 한 줄 — 연출은 이 툴이 읽지 않고(저장하면 사라진다) 원본은 남겼다.
-    /// 연출은 ked-story-compositor가 그 원본에서 가져간다(2026-10-29).
+    /// 연출은 ked-story-compositor가 그 원본에서 가져간다.
     /// </summary>
     private static string PresentationBackupNote(string? backupDirectory) =>
         backupDirectory is null
@@ -157,11 +167,15 @@ internal sealed class AuthoringSession
 
         ProjectPath = loaded.ManifestPath;
         Definition = GameDefinition.LoadBeside(loaded.ManifestPath);
+        ReloadRuntimeTarget();
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
-            $"{Path.GetFileName(ProjectPath)} · 노드 {project.EnumerateNodes().Count()}개" +
+            $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
             alignment +
-            PresentationBackupNote(loaded.PresentationBackupDirectory);
+            PresentationBackupNote(loaded.PresentationBackupDirectory) +
+            (RuntimeTarget is null ? " · 게임 폴더 미지정" : $" · 게임 폴더 {RuntimeTarget.GameFolder}") +
+            // 열면서 버린 옛 구조(대사 안 선택지 등)는 조용히 지나가지 않는다 — 글을 손봐야 한다.
+            (loaded.LoadNotices.Count == 0 ? string.Empty : " · ⚠ " + string.Join(" / ", loaded.LoadNotices));
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
@@ -178,16 +192,16 @@ internal sealed class AuthoringSession
     }
 
     /// <summary>
-    /// 열 때 판을 챕터에 맞춘다 — <b>저장본 스냅샷을 뜨기 전에</b> (2026-10-29 · D2).
+    /// 열 때 판을 챕터에 맞춘다 — <b>저장본 스냅샷을 뜨기 전에</b>.
     ///
-    /// 엑셀 [대본 가져오기]가 걷히며 그 안의 엑셀 아닌 몫(카드 없는 에피소드에 빈 카드,
-    /// 조건 공급)이 여기로 왔다. 규칙은 <see cref="ProjectEditor.AlignBoardsWithChapters"/>에 있다.
+    /// 맞추는 것은 카드 없는 에피소드에 빈 카드를 세우는 일과 조건 공급이다.
+    /// 규칙은 <see cref="ProjectEditor.AlignBoardsWithChapters"/>에 있다.
     ///
-    /// ⚠ 스냅샷 전이라 <b>맞춘 것만으로는 저장할 것이 생기지 않는다</b> — 열자마자 "고쳤다"는 표시가
+    /// 주의: 스냅샷 전이라 <b>맞춘 것만으로는 저장할 것이 생기지 않는다</b> — 열자마자 "고쳤다"는 표시가
     /// 뜨면 사람은 자기가 무엇을 건드렸는지 찾는다. 맞춘 결과는 다음 저장에 함께 실리고, 저장 전에
     /// 닫으면 다음에 열 때 다시 맞춘다(멱등이다).
     ///
-    /// ⚠ 맞추다 실패해도 <b>여는 일은 막지 않는다</b> — 맞추기는 묶음이라 실패하면 연 그대로 돌아온다.
+    /// 주의: 맞추다 실패해도 <b>여는 일은 막지 않는다</b> — 맞추기는 묶음이라 실패하면 연 그대로 돌아온다.
     /// </summary>
     /// <returns>맞춘 프로젝트와, 상태줄에 덧붙일 한 마디(맞춘 것이 없으면 빈 글).</returns>
     private static (StoryProject Project, string Note) AlignBoards(StoryProject loaded)
@@ -227,86 +241,29 @@ internal sealed class AuthoringSession
     {
         string target = path ?? ProjectPath
             ?? throw new InvalidOperationException("저장할 경로가 없습니다.");
-        string? previousManifestPath = ProjectPath;
-
-        // ⛔ 첫 저장에 에셋 폴더 규약(배경 · 초상 · BGM · 효과음)을 심던 일(W48)은 2026-10-29에 무대와 함께
-        //    ked-story-compositor로 갔다.
 
         ProjectStore.Save(target, Project);
 
         ProjectPath = Path.GetFullPath(target);
-        // 규약 데이터 이사는 정의 읽기보다 먼저다 — 이사해 온 game.definition.json을
-        // 바로 아래 LoadBeside가 읽어야 하고, EnsureProjectFolders가 빈 뼈대를 먼저
-        // 깔면 "있는 파일은 불가침"에 걸려 진짜 정의가 영영 못 들어온다.
-        int carried = CarryProjectData(previousManifestPath, ProjectPath);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Project);
         Definition = GameDefinition.LoadBeside(ProjectPath);
+        ReloadRuntimeTarget();
         AppSettingsService.SaveRecentProject(ProjectPath);
-
-        // 다른 이름으로 저장했으면 화면 기억(선택지 3칸)도 새 자리로 — 기억의 열쇠가 프로젝트 경로다.
-        if (_fullChoiceNodeIds.Count > 0 && !string.Equals(previousManifestPath, ProjectPath, StringComparison.OrdinalIgnoreCase))
-        {
-            AppSettingsService.SaveFullChoices(ProjectPath, _fullChoiceNodeIds);
-        }
 
         bool provisioned = EnsureProjectFolders();
 
-        // ⛔ 2026-10-29(D2)까지는 저장이 챕터·대본 워크북까지 다시 냈다. 엑셀 연동이 걷혀 저장은
-        //    프로젝트에 쓰는 일 하나다.
-        StatusMessage = $"{Path.GetFileName(ProjectPath)}에 저장했습니다." +
-            (carried > 0 ? $" 이전 폴더의 정의 파일을 함께 복사했습니다." : string.Empty) +
-            (provisioned ? " 없던 정의 파일의 뼈대를 깔았습니다." : string.Empty);
+        // 저장은 프로젝트에 쓰는 일 하나다. "다른 이름으로 저장"은 없다 — 프로젝트는 폴더이고,
+        // 복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
+        StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
+            (provisioned ? " 없던 정의 파일의 뼈대를 깔았습니다." : string.Empty) +
+            (RuntimeTarget is null ? " 게임 폴더가 없습니다 — [🎮 게임 폴더…]로 정하면 진행 JSON이 런타임으로도 나갑니다." : string.Empty);
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
     }
 
     /// <summary>
-    /// 다른 폴더로 저장 = 프로젝트 이사 (2026-08-21 소유자 보고). 매니페스트만 옮기면
-    /// 프로젝트가 찢어진다: 챕터·판(StoryFile)·대본·작가 화자는 매니페스트에 실려 따라오는데,
-    /// 정의 파일은 <b>폴더 규약</b>이라 옛 집에 남는다. (에셋 · 튜닝 폴더는 2026-10-29에 무대와 함께
-    /// ked-story-compositor로 갔다.)
-    ///
-    /// 복사이지 이동이 아니다(옛 매니페스트는 계속 그 폴더에서 산다). 새 자리에 이미 있는
-    /// 파일은 불가침이다. `exported/`는 산출물이라 안 옮긴다 — 다음 재읽기의 자동 내보내기가
-    /// 새로 만든다. (2026-10-29 · D2: 챕터 워크북·대본 폴더를 함께 옮기던 몫은 엑셀 연동과 함께 걷혔다.)
-    /// </summary>
-    /// <returns>실제로 복사한 파일 수. 같은 폴더 재저장·첫 저장은 0이다.</returns>
-    private int CarryProjectData(string? previousManifestPath, string targetManifestPath)
-    {
-        if (previousManifestPath is null)
-        {
-            return 0;
-        }
-
-        string? fromRoot = Path.GetDirectoryName(Path.GetFullPath(previousManifestPath));
-        string? toRoot = Path.GetDirectoryName(targetManifestPath);
-
-        if (fromRoot is null || toRoot is null ||
-            string.Equals(fromRoot, toRoot, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0;
-        }
-
-        return CopyMissingFile(
-            GameDefinition.PathFor(previousManifestPath), GameDefinition.PathFor(targetManifestPath));
-    }
-
-    private static int CopyMissingFile(string source, string destination)
-    {
-        if (!File.Exists(source) || File.Exists(destination))
-        {
-            return 0;
-        }
-
-        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        File.Copy(source, destination);
-        return 1;
-    }
-
-    /// <summary>
     /// 프로젝트 폴더의 기본 살림 — <b>매 저장마다</b> 정의 파일이 없으면 뼈대를 깐다. 손으로 만들어야
-    /// 하는 파일이면 새 프로젝트마다 스탯 경고부터 맞는다(실사례). 있는 파일은 불가침이다. 무언가
+    /// 하는 파일이면 새 프로젝트마다 스탯 경고부터 맞는다. 있는 파일은 불가침이다. 무언가
     /// 실제로 만들었을 때만 true — 조용한 저장이 시끄러워지지 않는다.
-    /// (⛔ 에셋 폴더 · 기본 튜닝을 깔던 몫(W48·W60)은 2026-10-29에 무대와 함께 ked-story-compositor로 갔다.)
     /// </summary>
     private bool EnsureProjectFolders() =>
         ProjectPath is not null && GameDefinitionStore.EnsureBeside(ProjectPath);
@@ -317,17 +274,14 @@ internal sealed class AuthoringSession
         StatusChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // 작가 화면에서 `game.definition.json`의 speakers를 갈아 끼우던 길은 폐지됐다
-    // (2026-08-17 소유자 — "이게 기획자가 쓰는 전용으로 되어야 하는데, 현재는 시나리오
-    // 작가가 한것까지 저기에 들어간다"). 작가가 더한 화자는 프로젝트에 산다
-    // (`StoryProject.WriterSpeakers`). 정의 파일에 쓰는 창구는 아래 둘 — 화자 탭의
+    // `game.definition.json`은 기획자 전용이다 — 작가 화면은 거기 쓰지 않는다. 작가가 더한
+    // 화자는 프로젝트에 산다 (`StoryProject.WriterSpeakers`). 정의 파일에 쓰는 창구는 아래 둘 — 화자 탭의
     // [저장](`SaveSpeakers`)과 검증 보고의 [등록](`RegisterVariables`) — 뿐이고, 둘 다
     // 기획자 화면(챕터 그래프)에서만 불린다.
 
     /// <summary>
-    /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 챕터 그래프 [화자] 탭 전용
-    /// (2026-08-23 소유자: "이 화자탭에서 화자 추가 삭제를 하는 것이 구조적으로 옳다.
-    /// 여기서 추가한 화자는 게임 project에 저장되며, 모든 챕터가 공유해서 쓴다").
+    /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 챕터 그래프 [화자] 탭 전용.
+    /// 여기서 더한 화자는 게임 정의에 저장되며, 모든 챕터가 공유해서 쓴다.
     ///
     /// <b>통째로 쓰는 것이 규격이다</b> — 더하기만 하는 <see cref="RegisterVariables"/>와
     /// 다르다. 탭에서 지운 이름이 파일에 남으면 목록이 화면과 갈리고, 그 순간부터 어느 쪽이
@@ -375,18 +329,18 @@ internal sealed class AuthoringSession
 
     /// <summary>
     /// 그 챕터의 판을 보장한다. <b>규칙은 <see cref="ProjectEditor.EnsureChapterBoard"/>가
-    /// 갖는다</b> (2026-08-23에 내려갔다 — 세션 상태를 하나도 안 보는 순수 편집 작업이었다).
-    /// 여기 남은 것은 부르는 자리 스물여덟을 안 건드리기 위한 이름 하나뿐이다.
+    /// 갖는다</b> — 세션 상태를 하나도 안 보는 순수 편집 작업이다.
+    /// 여기 있는 것은 부르는 자리 스물여덟을 안 건드리기 위한 이름 하나뿐이다.
     /// </summary>
     internal string EnsureChapterBoard(string chapterId) => Editor.EnsureChapterBoard(chapterId);
 
     /// <summary>
     /// <b>챕터 하나를 세운다</b> — 이름을 받고, 스탯을 정의 파일에서 깔고, 판을 만들어 고른다.
     ///
-    /// ⛔ <b>챕터를 세우는 규칙은 여기 한 벌이다.</b> 두 벌이면 어느 창구로 만들었느냐에 따라 챕터가
+    /// <b>챕터를 세우는 규칙은 여기 한 벌이다.</b> 두 벌이면 어느 창구로 만들었느냐에 따라 챕터가
     /// 달라진다 — 실제로 스탯을 한쪽만 깔면 그 챕터는 도달성 증명의 탐색 경계가 없다.
     ///
-    /// ⚠ 챕터는 프로젝트가 든다 — 만드는 파일은 없다.
+    /// 주의: 챕터는 프로젝트가 든다 — 만드는 파일은 없다.
     /// </summary>
     /// <returns>못 만든 이유. null이면 만들었다.</returns>
     internal string? CreateChapter(string chapterId)
@@ -423,7 +377,7 @@ internal sealed class AuthoringSession
     }
 
     /// <param name="reveal">
-    /// 접혀 있으면 편다(기본). 하이어아키에서 고를 때는 false다 — 보이기는 눈이 정한다(2026-10-30 SF2).
+    /// 접혀 있으면 편다(기본). 하이어아키에서 고를 때는 false다 — 보이기는 눈이 정한다.
     /// </param>
     internal void SelectFile(string? fileId, bool reveal = true)
     {
@@ -439,9 +393,8 @@ internal sealed class AuthoringSession
 
         ActiveFileId = fileId;
 
-        // 선택과 펼침은 독립이다 — W43의 "선택=그 파일만 펼침" 자동 접힘은 실사용에서
-        // "여러 파일을 오가며 함께 본다"를 막아 헷갈린다는 소유자 판단으로 철회했다 (W49).
-        // 활성 파일이 접혀 있으면 펴 주기만 한다(고른 파일이 안 보이는 일은 없어야 한다).
+        // 선택과 펼침은 독립이다 — 고를 때 다른 파일을 저절로 접으면 "여러 파일을 오가며
+        // 함께 본다"가 막힌다. 활성 파일이 접혀 있으면 펴 주기만 한다(고른 파일이 안 보이는 일은 없어야 한다).
         bool expandedChanged = reveal && fileId is not null && _expandedFileIds.Add(fileId);
 
         RaiseFileGraphStateChanged(
@@ -470,10 +423,10 @@ internal sealed class AuthoringSession
         }
     }
 
-    /// <summary>그 카드의 선택지 칸을 셋 다 세우거나(참) 빈 칸 하나로 줄인다 — 기억하고 판을 다시 세운다.</summary>
-    internal void SetFullChoices(string nodeId, bool full)
+    /// <summary>그 카드의 빈 선택지 칸을 감추거나(참) 다시 세운다 — 기억하고 판을 다시 세운다.</summary>
+    internal void SetHideEmptyChoices(string nodeId, bool hide)
     {
-        bool changed = full ? _fullChoiceNodeIds.Add(nodeId) : _fullChoiceNodeIds.Remove(nodeId);
+        bool changed = hide ? _hiddenChoiceNodeIds.Add(nodeId) : _hiddenChoiceNodeIds.Remove(nodeId);
 
         if (!changed)
         {
@@ -482,7 +435,7 @@ internal sealed class AuthoringSession
 
         if (ProjectPath is not null)
         {
-            AppSettingsService.SaveFullChoices(ProjectPath, _fullChoiceNodeIds);
+            AppSettingsService.SaveHiddenChoices(ProjectPath, _hiddenChoiceNodeIds);
         }
 
         RaiseFileGraphStateChanged(
@@ -571,11 +524,11 @@ internal sealed class AuthoringSession
         _expandedFileIds.Clear();
         _knownFileIds.Clear();
         _collapsedScenes.Clear();
-        _fullChoiceNodeIds.Clear();
+        _hiddenChoiceNodeIds.Clear();
 
         if (ProjectPath is not null)
         {
-            _fullChoiceNodeIds.UnionWith(AppSettingsService.LoadFullChoices(ProjectPath));
+            _hiddenChoiceNodeIds.UnionWith(AppSettingsService.LoadHiddenChoices(ProjectPath));
         }
 
         foreach (StoryFile file in project.Files)
@@ -610,7 +563,7 @@ internal sealed class AuthoringSession
 
     private static StoryProject NewProjectInstance()
     {
-        // 대본을 미리 만들지 않는다 (X4, D-3) — 대사 노드가 생성될 때 전용 대본이
+        // 대본을 미리 만들지 않는다 —대사 노드가 생성될 때 전용 대본이
         // 함께 태어나므로, 미리 둔 대본은 아무도 안 읽는 빈 파일로 남을 뿐이다.
         var project = new StoryProject { Title = "새 프로젝트" };
         project.Files.Add(new StoryFile(name: "기본 파일"));

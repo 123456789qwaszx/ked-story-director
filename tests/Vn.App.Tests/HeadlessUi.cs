@@ -17,7 +17,7 @@ internal static class HeadlessUi
 {
     // 이 컴퓨터의 상태(설정 파일·최근 프로젝트 복원)에서 떼어 놓는 일은 여기 있지 않다 —
     // 주인은 TestProcessIsolation 하나다(ModuleInitializer라 어떤 테스트보다 먼저 돈다).
-    // 예전에는 이 정적 생성자가 설정 경로만 따로 돌려세웠는데, 그러면 창을 띄우되
+    // 이 정적 생성자가 설정 경로만 따로 돌려세우면, 창을 띄우되
     // HeadlessUi를 안 지나는 길이 생기는 순간 격리가 새고 손잡이도 두 벌이 된다.
 
     private static readonly Lazy<HeadlessUnitTestSession> SessionHandle =
@@ -26,7 +26,7 @@ internal static class HeadlessUi
     /// <summary>
     /// 지금 이 스레드가 <see cref="Run"/> 안인가.
     ///
-    /// ⚠ <c>Dispatcher.UIThread.CheckAccess()</c>로는 알 수 없다 — 세션 밖(xUnit 스레드)에서
+    /// 주의: <c>Dispatcher.UIThread.CheckAccess()</c>로는 알 수 없다 — 세션 밖(xUnit 스레드)에서
     /// 물으면 <b>참을 돌려준다</b>(그쪽은 세션의 디스패처가 아니다). 그 대답을 믿고 창을
     /// 만지면 "다른 스레드가 소유한 객체"로 터진다. 그래서 우리가 직접 표시해 둔다.
     /// </summary>
@@ -64,7 +64,7 @@ public static class TestAppBuilder
     public static AppBuilder BuildAvaloniaApp() => AppBuilder
         .Configure<App>()
 
-        // ⛔ <b>글자는 진짜로 잰다</b> (2026-09-16). 헤드리스 기본값(`UseHeadlessDrawing = true`)의
+        // <b>글자는 진짜로 잰다</b>. 헤드리스 기본값(`UseHeadlessDrawing = true`)의
         //    글자 대역이 <b>메모리를 무한히 먹는다</b> — 감싸기(`TextWrapping="Wrap"`)를 켠
         //    TextBox에 <b>맨 끝이 아닌 빈 줄</b>이 하나라도 있으면 그렇다.
         //
@@ -73,13 +73,10 @@ public static class TestAppBuilder
         //    "\n" · "\n\n" · "\n가" · "가\n\n" · "가\n\n가"이고, "" · "가\n" · " \n"은 멀쩡하다
         //    (= <b>마지막 줄이 아닌 빈 줄</b>). `NoWrap`이면 안 터진다.
         //
-        //    ⚠ <b>제품은 멀쩡하다.</b> Skia(실제 앱)로 돌리면 같은 글이 전부 통과한다 —
+        //    <b>제품은 멀쩡하다.</b> Skia(실제 앱)로 돌리면 같은 글이 전부 통과한다 —
         //    헤드리스 그리기 대역만의 문제다. 대신 그 대역을 쓰면 <b>스위트가 기계를 먹는다</b>
-        //    (2026-09-16 소유자: 32GB · 90%에서 두 번 직접 껐다). 대본 한 편에 빈 줄이 없을
+        //    (32GB 메모리의 90%까지 찬다). 대본 한 편에 빈 줄이 없을
         //    수는 없으니 언젠가 반드시 밟는다.
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
         .UseSkia();
-    // ⛔ 더블탭 시간 창을 테스트가 쥐던 TestPlatformSettings는 2026-10-29에 걷혔다 — 그것을 쓰던 합성
-    //    더블클릭 테스트(카드 더블클릭 → 무대)는 무대가 ked-story-compositor로 가며 사라졌다. 그쪽에는
-    //    그래프가 없어(무대가 제 챕터 · 씬 선택기로 길을 찾는다) 이 몸짓 자체가 두 툴 어디에도 없다.
 }

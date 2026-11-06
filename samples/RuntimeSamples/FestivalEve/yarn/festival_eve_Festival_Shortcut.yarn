@@ -1,0 +1,15 @@
+title: Festival_Shortcut
+---
+
+<<face s2 4>>
+<<gesture s2 0u 0.3u 12fr>>
+시구레: 마른 칸은 살리고, 빈 칸만 스티커로 채워요. #line:ln_jfze1fzb
+
+<<face s1 4>>
+하린: 지금 요령은 {stat("요령")}점이야. 방금 그 선택지가 올린 거지. #line:ln_rbxvmjp0
+
+하린: 대사는 스탯을 읽기만 해. 바꾸는 건 진행 선택지뿐이야. #line:ln_j1v81kqe
+
+시구레: 아직 같은 장면이라, 되감기(R)로 돌아가면 방금 선택도 다시 고를 수 있어요. #line:ln_fih4v3qp
+
+===

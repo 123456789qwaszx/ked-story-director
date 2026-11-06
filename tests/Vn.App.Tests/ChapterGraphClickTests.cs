@@ -43,18 +43,15 @@ public sealed class ChapterGraphClickTests
         Assert.Equal(new Avalonia.Thickness(2.4), before.BorderThickness);
     });
 
-    // ⛔ `카드_더블클릭이_에피소드_워크북을_연다` · `기본_앱이_스프레드시트가_아니면_열지_않고_폴더를_보여준다`는
-    //    2026-10-29(D2)에 걷혔다 — 엑셀 연동이 사라져 카드 더블클릭이 열 워크북이 없다.
-
     [Fact]
     public void 간선_라벨_클릭이_간선을_선택한다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
         (Window window, Canvas canvas, ChapterGraphView view, _) = Show(project);
 
-        // ⛔ v4까지 이 문구는 <b>카드 오른변 안쪽</b>의 포트 문구였다. v5에서 포트가 아래변으로
-        //    내려가며 한 칸에 남는 폭이 카드의 1/4이 됐고(한글 몇 자에서 잘린다), 문구는
-        //    간선 한가운데로 옮겼다 — 사람이 간선을 누르려고 겨누는 바로 그 자리다.
+        // 문구는 포트가 아니라 간선 한가운데에 선다 — 사람이 간선을 누르려고 겨누는 바로
+        //    그 자리다. 포트는 아래변에 있어 한 칸에 남는 폭이 카드의 1/4뿐이다(한글 몇 자에서
+        //    잘린다).
         Border label = canvas.Children.OfType<Border>().Single(border =>
             border.Child is TextBlock text && text.Text?.Contains("라루의 제안") == true);
 
@@ -86,7 +83,7 @@ public sealed class ChapterGraphClickTests
     [Fact]
     public void 카드를_끌면_그_자리가_적히고_되돌리기_한_번으로_돌아온다() => HeadlessUi.Run(() =>
     {
-        // v4 (2026-09-18 소유자) — 자리의 주인이 깊이 배치에서 사람으로 넘어왔다.
+        // 자리의 주인은 깊이 배치가 아니라 사람이다.
         using var project = new TempProject();
         (Window window, Canvas canvas, ChapterGraphView view, AuthoringSession session) =
             Show(project);
@@ -94,7 +91,7 @@ public sealed class ChapterGraphClickTests
         ChapterEpisode Episode(string id) =>
             session.Editor.FindChapter("ch05")!.Episodes.Single(e => e.EpisodeId == id);
 
-        // ⚠ 절대값이 아니라 <b>카드 사이의 거리</b>로 잰다. 견본에는 음수 자리가 있어
+        // 절대값이 아니라 <b>카드 사이의 거리</b>로 잰다. 견본에는 음수 자리가 있어
         //   (branch05.02A의 Y=-120) 처음 옮길 때 판 전체가 안쪽으로 밀리기 때문이다 —
         //   모양은 그대로이고 원점만 바뀐다.
         (double X, double Y) Gap() =>
@@ -200,9 +197,9 @@ public sealed class ChapterGraphClickTests
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 카드 끌기 — 누르고, 왼쪽 단추를 누른 채 한 번 움직이고, 놓는다 (v4).
+    /// 카드 끌기 — 누르고, 왼쪽 단추를 누른 채 한 번 움직이고, 놓는다.
     ///
-    /// ⚠ <b>움직임에 단추 상태를 실어야 한다.</b> 안 실으면 화면은 "놓았다"로 읽고 첫
+    /// <b>움직임에 단추 상태를 실어야 한다.</b> 안 실으면 화면은 "놓았다"로 읽고 첫
     /// 움직임에서 드래그를 끝낸다 — 실제 마우스가 보내는 것과 같은 모양이어야 한다.
     /// </summary>
     private static void Drag(Window window, Avalonia.Point from, Vector delta)

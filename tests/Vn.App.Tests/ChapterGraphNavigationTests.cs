@@ -13,11 +13,9 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// 판 다루기 (2026-08-17 소유자: "챕터그래프에서도 컨트롤휠로 확대 축소 / 마우스 중간으로
-/// 이동은 할 수 있게") — 연출 그래프와 같은 손놀림이어야 한다.
+/// 판 다루기 — 휠로 확대 축소, 마우스 가운데 단추로 이동. 연출 그래프와 같은 손놀림이어야 한다.
 ///
-/// 2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다: "그냥 휠만으로 확대축소가 가능해야하고".
-/// 판 위에서 휠은 곧 배율이고, 세로로 훑는 일은 가운데 단추 끌기가 맡는다.
+/// Ctrl 없이 휠만으로 확대 축소한다. 판 위에서 휠은 곧 배율이고, 세로로 훑는 일은 가운데 단추 끌기가 맡는다.
 /// </summary>
 public sealed class ChapterGraphNavigationTests : IDisposable
 {
@@ -35,7 +33,7 @@ public sealed class ChapterGraphNavigationTests : IDisposable
         chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
 
         // 뷰포트보다 넓은 판 — 이동이 실제로 일어날 자리가 있어야 한다.
-        // ⚠ v4부터 판은 에피소드가 <b>제 X·Y로</b> 그려진다(깊이 배치가 매번 벌려 주지
+        // 판은 에피소드가 <b>제 X·Y로</b> 그려진다(깊이 배치가 매번 벌려 주지
         //   않는다). 자리를 한 열씩 벌려 두어야 실제 판만큼 넓다.
         string previous = string.Empty;
 
@@ -80,7 +78,7 @@ public sealed class ChapterGraphNavigationTests : IDisposable
     [Fact]
     public void 그냥_휠을_내리면_축소된다() => HeadlessUi.Run(() =>
     {
-        // 예전에는 이 손놀림이 세로 스크롤이었다 — 이제는 반대 방향의 배율이다.
+        // 이 손놀림은 세로 스크롤이 아니라 배율이다 — 내리면 축소된다.
         (ChapterGraphView view, ScrollViewer scroll) = Show();
 
         Wheel(scroll, delta: -1, KeyModifiers.None);
@@ -91,7 +89,7 @@ public sealed class ChapterGraphNavigationTests : IDisposable
     [Fact]
     public void 컨트롤을_눌러도_같은_배율이다() => HeadlessUi.Run(() =>
     {
-        // Ctrl 요구는 빠졌지만 Ctrl+휠이 갑자기 다른 일을 해서는 안 된다 —
+        // Ctrl은 필요 없지만 Ctrl+휠이 갑자기 다른 일을 해서는 안 된다 —
         // 손에 익은 사람이 그대로 써도 같은 결과여야 한다.
         (ChapterGraphView view, ScrollViewer scroll) = Show();
 
@@ -146,9 +144,8 @@ public sealed class ChapterGraphNavigationTests : IDisposable
         // 왼쪽으로 끌면 판은 오른쪽으로 — 오프셋이 끈 만큼 는다.
         Assert.Equal(50, scroll.Offset.X, 1);
 
-        // ⚠ 세로는 **끈 만큼(30) 다 가지 못하고 판의 끝에서 멈춘다.** v12 전에는 아예 0에
-        // 머물렀다(챕터 판이 한 줄로 뻗어 뷰포트보다 낮았다). 모든 길이 포트를 받으면서
-        // 카드가 포트 줄만큼 아래로 자랐고, 그만큼 갈 곳이 생겼다.
+        // 세로는 **끈 만큼(30) 다 가지 못하고 판의 끝에서 멈춘다.** 모든 길이 포트를 받아
+        // 카드가 포트 줄만큼 아래로 자라 있고, 그만큼만 갈 곳이 있다.
         Assert.InRange(scroll.Offset.Y, 0, 30);
 
         // 단추를 떼면 더 움직여도 따라오지 않는다.

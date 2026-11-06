@@ -41,8 +41,8 @@ public sealed class ChapterEdgeLabelTests
     [Fact]
     public void 간선_패널의_에피소드를_누르면_그_에피소드_편집으로_간다() => HeadlessUi.Run(() =>
     {
-        // 소유자 보고 — 간선을 클릭한 뒤 거기 보이는 에피소드 이름을 직접 고치려 했다.
-        // 그 자리는 읽기 전용이었다. 이제 누르면 그 에피소드의 속성 패널(Id [개명])로 간다.
+        // 간선을 클릭한 뒤 거기 보이는 에피소드 이름도 고칠 수 있어야 한다.
+        // 누르면 그 에피소드의 속성 패널(Id [개명])로 간다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 

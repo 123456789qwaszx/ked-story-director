@@ -16,28 +16,25 @@ public sealed record ConditionYarnTranslation(string? Yarn, string? Problem)
 /// Yarn VM이 평가하므로 Yarn이 아는 표기여야 한다 — <c>&lt;&lt;if trust &gt;= 3&gt;&gt;</c>은
 /// Yarn에서 문법 오류다(실컴파일이 이 간극을 잡았다).
 ///
-/// ⭐ <b>2026-09-17에 표기가 바뀌었다</b>: <c>$trust</c>(변수) → <c>stat("trust")</c>
-/// (<b>읽기 전용 함수</b> · <see cref="YarnSyntax.StatFunction"/>).
+/// 스탯은 <c>$trust</c>(변수)가 아니라 <c>stat("trust")</c>
+/// (<b>읽기 전용 함수</b> · <see cref="YarnSyntax.StatFunction"/>)로 읽는다.
 ///
 /// <list type="bullet">
-/// <item>계층을 하나로 합치기로 정해지면서(소유자) <b>작가 전용 스탯이라는 개념이
-/// 없어졌다</b> — 대사가 물을 낱말은 챕터 스탯 하나뿐이다.</item>
+/// <item><b>작가 전용 스탯이라는 개념이 없다</b> — 계층이 하나라 대사가 물을 낱말은
+/// 챕터 스탯 하나뿐이다.</item>
 /// <item>변수로 심으면 <c>&lt;&lt;set $trust = 5&gt;&gt;</c>가 문법적으로 유효해지고, 그
 /// 쓰기는 세이브/로드 복귀와 도달성 증명이 <b>못 보는 뒷길</b>이다. 함수에는 왼쪽 변이 없다.</item>
-/// <item>⚠ 2026-09-01(G0)에 저쪽의 <c>PublishStats</c> 다리가 걷혔는데 이 번역기는 계속
-/// <c>$trust</c>를 냈다. <b>조용히 틀리지는 않았다</b> —
-/// 이미터의 진행 스탯 검증(<c>ValidateProgressionStatReferences</c> — 지금은 compositor에 있다)이 <b>차단</b>으로 잡아
-/// 내보내기 자체가 거절됐다. 대신 그날부터 <b>이 기능이 죽어 있었다</b>: 대사 카드에서
-/// 챕터 조건을 고를 수는 있는데 고르면 산출이 막혔다. 이 변경이 그 길을 다시 연다.</item>
+/// <item>런타임은 스탯을 Yarn 변수로 내보내지 않으므로 <c>$trust</c>를 내면
+/// 진행 스탯 검증(<c>ValidateProgressionStatReferences</c> — compositor에 있다)이 <b>차단</b>으로 잡아
+/// 내보내기 자체가 거절된다.</item>
 /// </list>
 ///
 /// 원문 해석은 <see cref="ConditionExpressionParser"/>가 이미 했다(챕터 리더). 여기서는 그
 /// 해석 결과(<see cref="ConditionTerm"/>)를 조립만 한다 — 식을 두 번 해석하는 곳을 만들지 않는다.
 ///
 /// <b>남은 어휘는 스탯 비교 하나뿐이다</b> — 그래서 여기서 못 옮기는 항이 없다.
-/// <c>cleared:</c>는 2026-08-25에 폐지됐고(파서가 오류로 막는다), 그 자리는 Bool 스탯이
-/// 대신한다. 깃발도 결국 스탯이라 이 번역기가 그대로 옮긴다 — 예전에는 대사가 물을 수
-/// 없는 질문이었던 것이 이제 물을 수 있는 질문이 됐다.
+/// <c>cleared:</c>는 파서가 오류로 막고, 그 자리는 Bool 스탯이
+/// 대신한다. 깃발도 결국 스탯이라 이 번역기가 그대로 옮긴다.
 /// </summary>
 public static class ConditionYarnTranslator
 {
@@ -55,7 +52,7 @@ public static class ConditionYarnTranslator
 
         foreach (ConditionTerm term in condition.Parsed)
         {
-            // ⭐ <b>읽기 전용 함수</b>로 나간다 (2026-09-17 소유자). 표기는 조립기의 것
+            // <b>읽기 전용 함수</b>로 나간다. 표기는 조립기의 것
             //    하나를 쓴다 — 여기서 문자열로 덧붙이면 규약 사본이다.
             string variable = YarnSyntax.StatRead(term.Key);
             string comparison = term.Comparison switch

@@ -237,8 +237,8 @@ public class ScenarioPasteTests
     {
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
 
-        // 규칙 개정(G3-2): 옵션 줄(`->`)은 이제 이 파서의 범위다 — 엑셀 평평화 산출물이
-        // 옵션을 담고 오기 때문이다. 남은 미해석은 연출 커맨드와 장식 줄 둘이다.
+        // 미해석은 연출 커맨드와 장식 줄 둘이다. (옵션 줄 `->`도 2026-11-04부터 다시 미해석이다 —
+        // 대사 안 선택지가 걷혔다. LineIdRoundTripTests가 그쪽을 본다.)
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, """
             라루: 첫 줄
             <<camera_shake>>
@@ -249,26 +249,5 @@ public class ScenarioPasteTests
         Assert.True(outcome.Applied);
         Assert.Equal(2, outcome.Parsed.UnparsedLines.Count);
         Assert.Equal(2, node.Script.ActiveLines.Count());
-    }
-
-    [Fact]
-    public void 선택_전환은_붙여넣기가_건드리지_않는다()
-    {
-        (ProjectEditor editor, DialogueNode node) = BuildEditor();
-        editor.ApplyScenarioText(node.Id, "라루: 첫 줄\n선택 라벨\n윌로: 갈래 줄", Definition, confirmDeletes: true);
-
-        ScriptDocument script = node.Script;
-        string labelId = script.ActiveLines.Skip(1).First().Id;
-        editor.SetLineTransition(node.Id, labelId, LineConditionTransition.BeginChoice("op_test"));
-
-        // 같은 본문을 다시 붙여넣어도(텍스트에는 선택 구조가 없다) 선택 전환은 남는다.
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(
-            node.Id, "라루: 첫 줄\n선택 라벨\n윌로: 갈래 줄", Definition, confirmDeletes: true);
-
-        Assert.True(outcome.Applied);
-        Assert.Equal(
-            ConditionTransitionKind.BeginChoice,
-            node.FindExtension(labelId)!.Transition!.Kind);
-        Assert.Equal("op_test", node.FindExtension(labelId)!.Transition!.OptionId);
     }
 }

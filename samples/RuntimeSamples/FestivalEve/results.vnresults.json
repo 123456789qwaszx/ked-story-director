@@ -1,0 +1,1446 @@
+{
+  "formatVersion": 1,
+  "dialogueResults": [
+    {
+      "sourceNode": "nd_ushhar34",
+      "sourceNodeName": "Festival_Classroom",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_b76q68hg",
+          "revision": 2,
+          "speaker": "하린",
+          "text": "축제가 내일인데, 우리 반 간판이 아직 반쯤 비어 있어."
+        },
+        {
+          "index": 1,
+          "lineId": "ln_rxvmhx0i",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "칠도 반쯤 말랐네요. 이대로 걸기엔 좀 애매해요."
+        },
+        {
+          "index": 2,
+          "lineId": "ln_y37h16s8",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "글씨는 무슨 색으로 할까요?"
+        },
+        {
+          "index": 3,
+          "lineId": "ln_v25zy8n9",
+          "revision": 1,
+          "text": "하늘색",
+          "condition": {
+            "kind": "beginChoice",
+            "option": "op_4p04yf14"
+          }
+        },
+        {
+          "index": 4,
+          "lineId": "ln_ksq322v0",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "하늘색이면 교실 벽이랑 잘 어울리겠어요."
+        },
+        {
+          "index": 5,
+          "lineId": "ln_0881u5vn",
+          "revision": 1,
+          "text": "노란색",
+          "condition": {
+            "kind": "beginNextOption",
+            "option": "op_9bwgf8g3"
+          }
+        },
+        {
+          "index": 6,
+          "lineId": "ln_gathtysb",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "노란색이면 복도 끝에서도 보이겠네요."
+        },
+        {
+          "index": 7,
+          "lineId": "ln_q1me6jy8",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "문제는 시간이야. 처음부터 다시 그릴지, 있는 걸로 마무리할지.",
+          "condition": {
+            "kind": "endChoice"
+          }
+        },
+        {
+          "index": 8,
+          "lineId": "ln_4i38h8b3",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "이번엔 대사 안의 선택이 아니야. 에피소드가 끝나면 진행 쪽이 묻고, 고른 쪽 스탯이 올라."
+        }
+      ],
+      "resultId": "rs_v83rt8ht",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:82fc87cb33ebf9d04d4b1a1389c7f7aaf1f00f211d8faab1910611ba6958f73f",
+      "publishedAt": "2026-11-04T08:02:43.5391292+00:00"
+    },
+    {
+      "sourceNode": "nd_b3c35fxj",
+      "sourceNodeName": "Festival_Remake",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_kdy67tc8",
+          "revision": 2,
+          "speaker": "하린",
+          "text": "좋아, 처음부터 다시. 붓부터 새로 빨아 올게."
+        },
+        {
+          "index": 1,
+          "lineId": "ln_2ibajvnq",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "지금 성실은 {stat(\"성실\")}점이에요. 방금 그 선택지가 올린 거예요."
+        },
+        {
+          "index": 2,
+          "lineId": "ln_prrx0d33",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "대사는 스탯을 읽기만 해요. 바꾸는 건 진행 선택지뿐이고요."
+        },
+        {
+          "index": 3,
+          "lineId": "ln_068q2fi1",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "아직 같은 장면이라, 되감기(R)로 돌아가면 방금 선택도 다시 고를 수 있어."
+        }
+      ],
+      "resultId": "rs_4rd0x2mw",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:dd2cf448ceb0ecb46d97afda1456b5179cdecf079013b985475e51863fca4bbd",
+      "publishedAt": "2026-11-04T08:02:43.5941374+00:00"
+    },
+    {
+      "sourceNode": "nd_8dn0igwy",
+      "sourceNodeName": "Festival_Shortcut",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_jfze1fzb",
+          "revision": 2,
+          "speaker": "시구레",
+          "text": "마른 칸은 살리고, 빈 칸만 스티커로 채워요."
+        },
+        {
+          "index": 1,
+          "lineId": "ln_rbxvmjp0",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "지금 요령은 {stat(\"요령\")}점이야. 방금 그 선택지가 올린 거지."
+        },
+        {
+          "index": 2,
+          "lineId": "ln_j1v81kqe",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "대사는 스탯을 읽기만 해. 바꾸는 건 진행 선택지뿐이야."
+        },
+        {
+          "index": 3,
+          "lineId": "ln_fih4v3qp",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "아직 같은 장면이라, 되감기(R)로 돌아가면 방금 선택도 다시 고를 수 있어요."
+        }
+      ],
+      "resultId": "rs_de9kw5ns",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:c1c526a2c17ac1973f922133b6fb9a2e01440f91827b3faf4f4daf5d9056cbe4",
+      "publishedAt": "2026-11-04T08:02:43.6031643+00:00"
+    },
+    {
+      "sourceNode": "nd_exq3wbfy",
+      "sourceNodeName": "Festival_Wrapup",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_yfg43av8",
+          "revision": 2,
+          "speaker": "시구레",
+          "text": "이제 교무실에 가서 간판 검사를 받아야 해요.",
+          "detour": [
+            "nd_25h2x841",
+            "nd_xmki0c6d"
+          ]
+        },
+        {
+          "index": 1,
+          "lineId": "ln_jb5v7as4",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "이번 선택지에는 조건이 달려 있어요. 안 맞으면 숨거나, 잠긴 채로 이유가 보여요."
+        }
+      ],
+      "resultId": "rs_enedbyxi",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:c92ccd0394723ee527298d786556f4a6410ea12ef61c6e35798503d53b2e3265",
+      "publishedAt": "2026-11-04T08:02:43.6148325+00:00"
+    },
+    {
+      "sourceNode": "nd_25h2x841",
+      "sourceNodeName": "Festival_Wrapup_Remade",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_s7tk0up3",
+          "revision": 2,
+          "speaker": "하린",
+          "text": "다시 그린 간판, 생각보다 훨씬 낫다.",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_mve2qtqv",
+            "name": "성실 2 이상",
+            "expression": "stat(\"성실\") >= 2"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ],
+      "resultId": "rs_mdvcpehb",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:2130d2806c465beb973e4b791813b6ac7c30df83734e41a9b91b7d83c08b9f76",
+      "publishedAt": "2026-11-04T08:02:43.6258860+00:00"
+    },
+    {
+      "sourceNode": "nd_xmki0c6d",
+      "sourceNodeName": "Festival_Wrapup_Sticker",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_v9rdek8z",
+          "revision": 2,
+          "speaker": "하린",
+          "text": "스티커 간판도 나름 귀엽네.",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_6k0ncjjb",
+            "name": "성실 2 미만",
+            "expression": "stat(\"성실\") < 2"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ],
+      "resultId": "rs_u9eb8nz2",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:03399a41ec34327ec9c8d14d52dc5d94829662c35817cb17cefb321328b00423",
+      "publishedAt": "2026-11-04T08:02:43.6364935+00:00"
+    },
+    {
+      "sourceNode": "nd_xfp8pum4",
+      "sourceNodeName": "Festival_Staffroom",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_ngjwdzsb",
+          "revision": 2,
+          "speaker": "하린",
+          "text": "저녁의 교무실 앞. 장면이 바뀌었어."
+        },
+        {
+          "index": 1,
+          "lineId": "ln_f70g3xzg",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "교실 장면은 확정돼서 저장됐어요. 되감기로는 거기까지 돌아가지 않아요."
+        },
+        {
+          "index": 2,
+          "lineId": "ln_hv7zzi8m",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "대신 대사 기록에서 교실 장면의 대사를 누르면, 거기서 새 회차로 갈라져."
+        },
+        {
+          "index": 3,
+          "lineId": "ln_hb0cdhkt",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "메뉴에서 저장하면 지금 이 자리를 슬롯에 남길 수 있어요.",
+          "detour": [
+            "nd_t2vv61n2",
+            "nd_8dxcia1w",
+            "nd_q1q036hx"
+          ]
+        },
+        {
+          "index": 4,
+          "lineId": "ln_mmj0m4fe",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "내일 축제, 잘 되겠지?"
+        },
+        {
+          "index": 5,
+          "lineId": "ln_g2hh953n",
+          "revision": 1,
+          "speaker": "시구레",
+          "text": "그럼요. 오늘은 여기까지예요."
+        },
+        {
+          "index": 6,
+          "lineId": "ln_9k3krs99",
+          "revision": 1,
+          "text": "캐릭터 퇴장"
+        }
+      ],
+      "resultId": "rs_yi0am6hi",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:a54649db79e4ce8093ca0d29f3586f96f2ae8af1ee0467418a8886ed60d80471",
+      "publishedAt": "2026-11-04T08:02:43.6543192+00:00"
+    },
+    {
+      "sourceNode": "nd_t2vv61n2",
+      "sourceNodeName": "Festival_Staffroom_Kasmi",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_m208n5x2",
+          "revision": 2,
+          "speaker": "카스미",
+          "text": "부탁한 마무리, 다 해서 갖다 놨어.",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_ph2tezn2",
+            "name": "요령 3 이상",
+            "expression": "stat(\"요령\") >= 3"
+          }
+        },
+        {
+          "index": 1,
+          "lineId": "ln_2wwvdc98",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "카스미가 여기 있는 건 아까 그 선택지를 골랐기 때문이야."
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ],
+      "resultId": "rs_8gmrmzci",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:ee66dd4e88edc1a8dc74a0106f6c55535f30512a17600e28e2bb90ea07175067",
+      "publishedAt": "2026-11-04T08:02:43.6936226+00:00"
+    },
+    {
+      "sourceNode": "nd_8dxcia1w",
+      "sourceNodeName": "Festival_Staffroom_Praise",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_pq4uwryp",
+          "revision": 2,
+          "speaker": "시구레",
+          "text": "선생님이 보고 받으시고 간판 칭찬하셨어요.",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_cte029np",
+            "name": "성실 3 이상 · 요령 3 미만",
+            "expression": "stat(\"성실\") >= 3 && stat(\"요령\") < 3"
+          }
+        },
+        {
+          "index": 1,
+          "lineId": "ln_i48ixbjx",
+          "revision": 1,
+          "speaker": "하린",
+          "text": "보고하고 오길 잘했네. 아까 그 선택지 덕분이야."
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ],
+      "resultId": "rs_z7sepk58",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:c872b81961b6a48548978e0df6e7444ff3a810e3e81c0f50acf6db0e5dff8e47",
+      "publishedAt": "2026-11-04T08:02:43.7206435+00:00"
+    },
+    {
+      "sourceNode": "nd_q1q036hx",
+      "sourceNodeName": "Festival_Staffroom_Pass",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 1,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_as37pa6a",
+          "revision": 2,
+          "speaker": "시구레",
+          "text": "검사는 통과예요. 이제 내일만 남았네요.",
+          "condition": {
+            "kind": "beginIf",
+            "condition": "cd_c07qymhp",
+            "name": "성실 3 미만 · 요령 3 미만",
+            "expression": "stat(\"성실\") < 3 && stat(\"요령\") < 3"
+          }
+        }
+      ],
+      "trailing": [
+        {
+          "kind": "endIf"
+        }
+      ],
+      "resultId": "rs_tc3vpr6f",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:716ddf1d0d843a6414fafad3694e936932ce20a5375ade6209a548c6da5c71ee",
+      "publishedAt": "2026-11-04T08:02:43.7618201+00:00"
+    },
+    {
+      "sourceNode": "nd_tc99vekq",
+      "sourceNodeName": "Festival_Advance",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 0,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_i3ek8f3d",
+          "revision": 21,
+          "speaker": "하린",
+          "text": "좋았어. 축제는 역시 이래야지."
+        }
+      ],
+      "resultId": "rs_iur1365j",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:2523077914c0fb0e92c8420cbbd1a5c6acd4ddfd232e9051fc4943b476fe5fed",
+      "publishedAt": "2026-11-04T10:32:36.8578063+00:00"
+    },
+    {
+      "sourceNode": "nd_nv2i7xsz",
+      "sourceNodeName": "Festival_Add",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 13,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_3sf4wx2f",
+          "revision": 6,
+          "speaker": "하린",
+          "text": "그 동안 고민 해봤는데."
+        },
+        {
+          "index": 1,
+          "lineId": "ln_mnevrp4j",
+          "revision": 9,
+          "speaker": "하린",
+          "text": "우리 모두 이런 축제가 얼마나 의미 없는지 알잖아?"
+        },
+        {
+          "index": 2,
+          "lineId": "ln_niwg4azy",
+          "revision": 11,
+          "speaker": "카스미",
+          "text": "그렇긴 해..."
+        },
+        {
+          "index": 3,
+          "lineId": "ln_it2pqg4g",
+          "revision": 20,
+          "speaker": "시구레",
+          "text": "응...?"
+        },
+        {
+          "index": 4,
+          "lineId": "ln_pp7rjy4s",
+          "revision": 13,
+          "text": "(셋이서 고민을 한다)"
+        },
+        {
+          "index": 5,
+          "lineId": "ln_hzqbkmr2",
+          "revision": 11,
+          "speaker": "시구레",
+          "text": "좋은 생각 같아!"
+        }
+      ],
+      "resultId": "rs_0h0pbp8i",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:a02b09b5719efa472c0caed3f43c3c7d95f4ccc31bdd3fa5fc4a7dd3ceffc97e",
+      "publishedAt": "2026-11-04T10:32:38.1402703+00:00"
+    },
+    {
+      "sourceNode": "nd_7an9j2ci",
+      "sourceNodeName": "Festival_Lazy",
+      "locale": "ko-KR",
+      "sourceScriptRevision": 0,
+      "lines": [
+        {
+          "index": 0,
+          "lineId": "ln_ekqua1mv",
+          "revision": 18,
+          "speaker": "시구레",
+          "text": "처음부터 이럴 생각이였구나."
+        },
+        {
+          "index": 1,
+          "lineId": "ln_viq0ue00",
+          "revision": 8,
+          "speaker": "시구레",
+          "text": "나는 좋아."
+        }
+      ],
+      "resultId": "rs_5xu2b1k0",
+      "version": 1,
+      "schemaVersion": 4,
+      "contentHash": "sha256:70c4816a513d6e3a713c32c75e3eb20846b257d546642afd153bfd64405ed6ec",
+      "publishedAt": "2026-11-04T10:32:47.3312957+00:00"
+    }
+  ],
+  "presentationResults": [
+    {
+      "sourceNode": "nd_5pkyaert",
+      "sourceNodeName": "Festival_Classroom 연출",
+      "source": {
+        "resultId": "rs_v83rt8ht",
+        "version": 1,
+        "contentHash": "sha256:82fc87cb33ebf9d04d4b1a1389c7f7aaf1f00f211d8faab1910611ba6958f73f"
+      },
+      "bindings": [],
+      "resultId": "rs_42th34b0",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:2ff423ce4f355bc38e8723129b06c2ca2282361d1916f2e6c165166c32a8f1c2",
+      "publishedAt": "2026-11-04T08:02:43.5676635+00:00"
+    },
+    {
+      "sourceNode": "nd_5pkyaert",
+      "sourceNodeName": "Festival_Classroom 연출",
+      "source": {
+        "resultId": "rs_v83rt8ht",
+        "version": 1,
+        "contentHash": "sha256:82fc87cb33ebf9d04d4b1a1389c7f7aaf1f00f211d8faab1910611ba6958f73f"
+      },
+      "setup": [
+        {
+          "id": "pc_z4cd6x8s",
+          "definitionId": "shot.shot_reset",
+          "arguments": {
+            "duration": "0fr"
+          }
+        },
+        {
+          "id": "pc_16k8imhz",
+          "definitionId": "background.bg_spawn",
+          "arguments": {
+            "rigKey": "bg_main",
+            "spriteKey": "class_lunch"
+          }
+        },
+        {
+          "id": "pc_ue0ka622",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s1",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_15cmm4af",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "harin",
+            "emotionKey": "1",
+            "slot": "s1",
+            "variantKey": "a"
+          }
+        },
+        {
+          "id": "pc_70nvm64y",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s2",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_gfgjmart",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "sigure",
+            "emotionKey": "1",
+            "slot": "s2",
+            "variantKey": "a"
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "lineId": "ln_b76q68hg",
+          "commands": [
+            {
+              "id": "pc_t6m21g3p",
+              "definitionId": "background.bg_fade_in",
+              "arguments": {
+                "duration": "24fr",
+                "rigKey": "bg_main"
+              }
+            },
+            {
+              "id": "pc_7zza5rx9",
+              "definitionId": "audio.bgm",
+              "arguments": {
+                "clipKey": "audio/bgm_idoberg-relaxing-guitar-loop-v5-245859",
+                "fadeDuration": "2s"
+              }
+            },
+            {
+              "id": "pc_g44d2czr",
+              "definitionId": "char_rig_placement.place_right",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_ft9gyvmj",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_c5hk71u0",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "18fr",
+                "slot": "s1"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_rxvmhx0i",
+          "commands": [
+            {
+              "id": "pc_pr77qpc6",
+              "definitionId": "char_rig_placement.place_left",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_r8d6me38",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_6gh60ckr",
+              "definitionId": "char_rig_presentation.slide_in",
+              "arguments": {
+                "direction": "left",
+                "distance": "2u",
+                "duration": "14fr",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_uax4e2dr",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "14fr",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_ksq322v0",
+          "commands": [
+            {
+              "id": "pc_qej6dgb0",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_gathtysb",
+          "commands": [
+            {
+              "id": "pc_b5v9fjpm",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "3",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_q1me6jy8",
+          "commands": [
+            {
+              "id": "pc_nhfjkyuj",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "3",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_42th34b0",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:f6831ecdef81a45abc065809141e2af039b532fcc60db6b04c6deaff043351ba",
+      "publishedAt": "2026-11-04T08:02:43.5918974+00:00"
+    },
+    {
+      "sourceNode": "nd_5gpnu5z7",
+      "sourceNodeName": "Festival_Remake 연출",
+      "source": {
+        "resultId": "rs_4rd0x2mw",
+        "version": 1,
+        "contentHash": "sha256:dd2cf448ceb0ecb46d97afda1456b5179cdecf079013b985475e51863fca4bbd"
+      },
+      "bindings": [],
+      "resultId": "rs_y3dnhn78",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:bc7b8073df3d70175fdc87ec7d32f165d75ae4196cea1f5984b1cb2ccadefb1b",
+      "publishedAt": "2026-11-04T08:02:43.5984465+00:00"
+    },
+    {
+      "sourceNode": "nd_5gpnu5z7",
+      "sourceNodeName": "Festival_Remake 연출",
+      "source": {
+        "resultId": "rs_4rd0x2mw",
+        "version": 1,
+        "contentHash": "sha256:dd2cf448ceb0ecb46d97afda1456b5179cdecf079013b985475e51863fca4bbd"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_kdy67tc8",
+          "commands": [
+            {
+              "id": "pc_5q3n2gq8",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_xu9n1z6k",
+              "definitionId": "char_rig_staging.gesture",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s1",
+                "xAmp": "0u",
+                "yAmp": "0.3u"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_2ibajvnq",
+          "commands": [
+            {
+              "id": "pc_5s0ptear",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "1",
+                "slot": "s2"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_y3dnhn78",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:43c163132aca471ec9f84e6832fa8f799dd0fc9df8dd58190eeeda11f16139ef",
+      "publishedAt": "2026-11-04T08:02:43.6023266+00:00"
+    },
+    {
+      "sourceNode": "nd_9s8a0q4p",
+      "sourceNodeName": "Festival_Shortcut 연출",
+      "source": {
+        "resultId": "rs_de9kw5ns",
+        "version": 1,
+        "contentHash": "sha256:c1c526a2c17ac1973f922133b6fb9a2e01440f91827b3faf4f4daf5d9056cbe4"
+      },
+      "bindings": [],
+      "resultId": "rs_hp36y087",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:863df9417bf887b36d0742cf7b48729ed504b35cc965b18625cf20c08b5d6895",
+      "publishedAt": "2026-11-04T08:02:43.6077624+00:00"
+    },
+    {
+      "sourceNode": "nd_9s8a0q4p",
+      "sourceNodeName": "Festival_Shortcut 연출",
+      "source": {
+        "resultId": "rs_de9kw5ns",
+        "version": 1,
+        "contentHash": "sha256:c1c526a2c17ac1973f922133b6fb9a2e01440f91827b3faf4f4daf5d9056cbe4"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_jfze1fzb",
+          "commands": [
+            {
+              "id": "pc_cg2q0e33",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "4",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_xb7m2iby",
+              "definitionId": "char_rig_staging.gesture",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s2",
+                "xAmp": "0u",
+                "yAmp": "0.3u"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_rbxvmjp0",
+          "commands": [
+            {
+              "id": "pc_y0etjae0",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "4",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_hp36y087",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:d13c49e4c0dd4d66d74fc84ab7f71bc402a1e3c3078c0055afc761b1f4272a07",
+      "publishedAt": "2026-11-04T08:02:43.6134270+00:00"
+    },
+    {
+      "sourceNode": "nd_5xg1uw7t",
+      "sourceNodeName": "Festival_Wrapup 연출",
+      "source": {
+        "resultId": "rs_enedbyxi",
+        "version": 1,
+        "contentHash": "sha256:c92ccd0394723ee527298d786556f4a6410ea12ef61c6e35798503d53b2e3265"
+      },
+      "bindings": [],
+      "resultId": "rs_exah58ff",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:00863c40e884d1d37186b80fb0f792b89cd05f0a649a6e2d7cb3bb60fd322c7d",
+      "publishedAt": "2026-11-04T08:02:43.6205232+00:00"
+    },
+    {
+      "sourceNode": "nd_j9cnhmz9",
+      "sourceNodeName": "Festival_Wrapup_Remade 연출",
+      "source": {
+        "resultId": "rs_mdvcpehb",
+        "version": 1,
+        "contentHash": "sha256:2130d2806c465beb973e4b791813b6ac7c30df83734e41a9b91b7d83c08b9f76"
+      },
+      "bindings": [],
+      "resultId": "rs_gtir97ia",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:240744a4412b399061820f0f7702359916d1457f091708fbccf0c09195314636",
+      "publishedAt": "2026-11-04T08:02:43.6313439+00:00"
+    },
+    {
+      "sourceNode": "nd_j9cnhmz9",
+      "sourceNodeName": "Festival_Wrapup_Remade 연출",
+      "source": {
+        "resultId": "rs_mdvcpehb",
+        "version": 1,
+        "contentHash": "sha256:2130d2806c465beb973e4b791813b6ac7c30df83734e41a9b91b7d83c08b9f76"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_s7tk0up3",
+          "commands": [
+            {
+              "id": "pc_h4r5cfkn",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "3",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_gtir97ia",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:16cb5a57a3cad926efa59d1317ebb42c4127381f2146b77724fe487175d4cecb",
+      "publishedAt": "2026-11-04T08:02:43.6352013+00:00"
+    },
+    {
+      "sourceNode": "nd_653fu236",
+      "sourceNodeName": "Festival_Wrapup_Sticker 연출",
+      "source": {
+        "resultId": "rs_u9eb8nz2",
+        "version": 1,
+        "contentHash": "sha256:03399a41ec34327ec9c8d14d52dc5d94829662c35817cb17cefb321328b00423"
+      },
+      "bindings": [],
+      "resultId": "rs_puciv8sp",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:4e76a5c760173a409f28c8c3e7d06ef1f5513e377daf2fa421ea36463fbf8f84",
+      "publishedAt": "2026-11-04T08:02:43.6494533+00:00"
+    },
+    {
+      "sourceNode": "nd_653fu236",
+      "sourceNodeName": "Festival_Wrapup_Sticker 연출",
+      "source": {
+        "resultId": "rs_u9eb8nz2",
+        "version": 1,
+        "contentHash": "sha256:03399a41ec34327ec9c8d14d52dc5d94829662c35817cb17cefb321328b00423"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_v9rdek8z",
+          "commands": [
+            {
+              "id": "pc_g12gzhhy",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s1"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_puciv8sp",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:af962ac2b771aa1fdeac31a452db44939d4f6bb991f1110c0ac4233b1f4599fc",
+      "publishedAt": "2026-11-04T08:02:43.6529998+00:00"
+    },
+    {
+      "sourceNode": "nd_5y6rvdz0",
+      "sourceNodeName": "Festival_Staffroom 연출",
+      "source": {
+        "resultId": "rs_yi0am6hi",
+        "version": 1,
+        "contentHash": "sha256:a54649db79e4ce8093ca0d29f3586f96f2ae8af1ee0467418a8886ed60d80471"
+      },
+      "bindings": [],
+      "resultId": "rs_zz9at9m7",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:d0d5f69f780836467d5ae04501521e2f608cd48b886023760a801d6e59de8ec5",
+      "publishedAt": "2026-11-04T08:02:43.6595483+00:00"
+    },
+    {
+      "sourceNode": "nd_5y6rvdz0",
+      "sourceNodeName": "Festival_Staffroom 연출",
+      "source": {
+        "resultId": "rs_yi0am6hi",
+        "version": 1,
+        "contentHash": "sha256:a54649db79e4ce8093ca0d29f3586f96f2ae8af1ee0467418a8886ed60d80471"
+      },
+      "setup": [
+        {
+          "id": "pc_ddgn82yc",
+          "definitionId": "shot.shot_reset",
+          "arguments": {
+            "duration": "0fr"
+          }
+        },
+        {
+          "id": "pc_53t81k6s",
+          "definitionId": "background.bg_spawn",
+          "arguments": {
+            "rigKey": "bg_main",
+            "spriteKey": "staffroom_evening"
+          }
+        },
+        {
+          "id": "pc_qwb587v1",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s1",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_e99vjczv",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "harin",
+            "emotionKey": "1",
+            "slot": "s1",
+            "variantKey": "a"
+          }
+        },
+        {
+          "id": "pc_he93bsez",
+          "definitionId": "char_rig_cast.slot",
+          "arguments": {
+            "layer": "mid",
+            "slotKey": "s2",
+            "stage": "stage00"
+          }
+        },
+        {
+          "id": "pc_qgkh16yq",
+          "definitionId": "char_rig_cast.cast",
+          "arguments": {
+            "characterKey": "sigure",
+            "emotionKey": "1",
+            "slot": "s2",
+            "variantKey": "a"
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "lineId": "ln_ngjwdzsb",
+          "commands": [
+            {
+              "id": "pc_hdrhb5f0",
+              "definitionId": "background.bg_fade_in",
+              "arguments": {
+                "duration": "24fr",
+                "rigKey": "bg_main"
+              }
+            },
+            {
+              "id": "pc_tq7bzhk2",
+              "definitionId": "audio.bgm",
+              "arguments": {
+                "clipKey": "audio/voice_bgm_uhhknoxpro-piano-loop-432112",
+                "fadeDuration": "2s"
+              }
+            },
+            {
+              "id": "pc_2wiaxzfm",
+              "definitionId": "char_rig_placement.place_right",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_d807pwu7",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_6r90bh6h",
+              "definitionId": "char_rig_placement.place_left",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_zrzkps7n",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_1buu6y71",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "18fr",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_9uyy3zc6",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "18fr",
+                "slot": "s2"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_mmj0m4fe",
+          "commands": [
+            {
+              "id": "pc_wxhv270i",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s1"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_9k3krs99",
+          "commands": [
+            {
+              "id": "pc_nzcvj44c",
+              "definitionId": "char_rig_presentation.fade_out",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s2"
+              }
+            },
+            {
+              "id": "pc_1qextim6",
+              "definitionId": "char_rig_presentation.fade_out",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s1"
+              }
+            },
+            {
+              "id": "pc_2gr5j3p9",
+              "definitionId": "audio.stop_bgm",
+              "arguments": {
+                "fadeDuration": "2s"
+              }
+            },
+            {
+              "id": "pc_rxxx94qb",
+              "definitionId": "background.bg_fade_out",
+              "arguments": {
+                "duration": "20fr",
+                "rigKey": "bg_main"
+              }
+            },
+            {
+              "id": "pc_s575znyd",
+              "definitionId": "control.frame_wait",
+              "arguments": {
+                "n": "24"
+              }
+            },
+            {
+              "id": "pc_uzayv92g",
+              "definitionId": "line_tag.box_hide"
+            },
+            {
+              "id": "pc_mx74x9g5",
+              "definitionId": "line_tag.auto"
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_zz9at9m7",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:a83623ab88400aa11bfaa12723d0ea67c84ee330ea1293307266aadea3faf33b",
+      "publishedAt": "2026-11-04T08:02:43.6919725+00:00"
+    },
+    {
+      "sourceNode": "nd_qc5cwr00",
+      "sourceNodeName": "Festival_Staffroom_Kasmi 연출",
+      "source": {
+        "resultId": "rs_8gmrmzci",
+        "version": 1,
+        "contentHash": "sha256:ee66dd4e88edc1a8dc74a0106f6c55535f30512a17600e28e2bb90ea07175067"
+      },
+      "bindings": [],
+      "resultId": "rs_tkuivdzj",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:15e129f455d0f81fa240b8e88873d618955cf53fb03fa1f35781a78902862500",
+      "publishedAt": "2026-11-04T08:02:43.7008149+00:00"
+    },
+    {
+      "sourceNode": "nd_qc5cwr00",
+      "sourceNodeName": "Festival_Staffroom_Kasmi 연출",
+      "source": {
+        "resultId": "rs_8gmrmzci",
+        "version": 1,
+        "contentHash": "sha256:ee66dd4e88edc1a8dc74a0106f6c55535f30512a17600e28e2bb90ea07175067"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_m208n5x2",
+          "commands": [
+            {
+              "id": "pc_umv99mc5",
+              "definitionId": "char_rig_cast.slot",
+              "arguments": {
+                "layer": "mid",
+                "slotKey": "s3",
+                "stage": "stage00"
+              }
+            },
+            {
+              "id": "pc_8rc8eazu",
+              "definitionId": "char_rig_cast.cast",
+              "arguments": {
+                "characterKey": "kasmi",
+                "emotionKey": "1",
+                "slot": "s3",
+                "variantKey": "a"
+              }
+            },
+            {
+              "id": "pc_7zif3q4c",
+              "definitionId": "char_rig_placement.place_center",
+              "arguments": {
+                "duration": "0fr",
+                "focus": "bust",
+                "slot": "s3"
+              }
+            },
+            {
+              "id": "pc_pca4ffce",
+              "definitionId": "char_rig_depth.size",
+              "arguments": {
+                "depth": "mid",
+                "duration": "0fr",
+                "preserveFocus": "bust",
+                "slot": "s3"
+              }
+            },
+            {
+              "id": "pc_5nygrvaa",
+              "definitionId": "char_rig_presentation.fade_in",
+              "arguments": {
+                "duration": "14fr",
+                "slot": "s3"
+              }
+            }
+          ]
+        },
+        {
+          "lineId": "ln_2wwvdc98",
+          "commands": [
+            {
+              "id": "pc_1sviih8u",
+              "definitionId": "char_rig_presentation.fade_out",
+              "arguments": {
+                "duration": "12fr",
+                "slot": "s3"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_tkuivdzj",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:fa1f1d86e46c0a9bf416191432b4e8f2d1c9c0661c83c6fb57751d6982f98a0b",
+      "publishedAt": "2026-11-04T08:02:43.7174202+00:00"
+    },
+    {
+      "sourceNode": "nd_p1egh7c8",
+      "sourceNodeName": "Festival_Staffroom_Praise 연출",
+      "source": {
+        "resultId": "rs_z7sepk58",
+        "version": 1,
+        "contentHash": "sha256:c872b81961b6a48548978e0df6e7444ff3a810e3e81c0f50acf6db0e5dff8e47"
+      },
+      "bindings": [],
+      "resultId": "rs_3wsi8v64",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:3e7817ac43637a5b05febdd7bf50a35129d234f8679850bc6896a4f8b0539558",
+      "publishedAt": "2026-11-04T08:02:43.7377924+00:00"
+    },
+    {
+      "sourceNode": "nd_p1egh7c8",
+      "sourceNodeName": "Festival_Staffroom_Praise 연출",
+      "source": {
+        "resultId": "rs_z7sepk58",
+        "version": 1,
+        "contentHash": "sha256:c872b81961b6a48548978e0df6e7444ff3a810e3e81c0f50acf6db0e5dff8e47"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_pq4uwryp",
+          "commands": [
+            {
+              "id": "pc_jrgx6f4u",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "2",
+                "slot": "s2"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_3wsi8v64",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:d914197a53519a720e3a885b0b7715767b0f6c532bc1ef9dc30da639f3c94e48",
+      "publishedAt": "2026-11-04T08:02:43.7556533+00:00"
+    },
+    {
+      "sourceNode": "nd_4hgc8zms",
+      "sourceNodeName": "Festival_Staffroom_Pass 연출",
+      "source": {
+        "resultId": "rs_tc3vpr6f",
+        "version": 1,
+        "contentHash": "sha256:716ddf1d0d843a6414fafad3694e936932ce20a5375ade6209a548c6da5c71ee"
+      },
+      "bindings": [],
+      "resultId": "rs_2h0nbwe9",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:b5e9d7379fce1e00a01c3018897925e7bcf3a870462a116a9301bf2d677486df",
+      "publishedAt": "2026-11-04T08:02:43.7851024+00:00"
+    },
+    {
+      "sourceNode": "nd_4hgc8zms",
+      "sourceNodeName": "Festival_Staffroom_Pass 연출",
+      "source": {
+        "resultId": "rs_tc3vpr6f",
+        "version": 1,
+        "contentHash": "sha256:716ddf1d0d843a6414fafad3694e936932ce20a5375ade6209a548c6da5c71ee"
+      },
+      "bindings": [
+        {
+          "lineId": "ln_as37pa6a",
+          "commands": [
+            {
+              "id": "pc_9qwkwiei",
+              "definitionId": "char_rig_cast.face",
+              "arguments": {
+                "emotionKey": "1",
+                "slot": "s2"
+              }
+            }
+          ]
+        }
+      ],
+      "resultId": "rs_2h0nbwe9",
+      "version": 2,
+      "schemaVersion": 3,
+      "contentHash": "sha256:f3181ac0dc3328c9369653a1323def72b7e2fdeddc3f00e06c8797d75731e668",
+      "publishedAt": "2026-11-04T08:02:43.8039923+00:00"
+    },
+    {
+      "sourceNode": "nd_5g3g2w8a",
+      "sourceNodeName": "Festival_Advance 연출",
+      "source": {
+        "resultId": "rs_iur1365j",
+        "version": 1,
+        "contentHash": "sha256:2523077914c0fb0e92c8420cbbd1a5c6acd4ddfd232e9051fc4943b476fe5fed"
+      },
+      "bindings": [],
+      "resultId": "rs_nmbun3z8",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:864f070ee3e63675bb600b9f1ec192b53c7fa2148cf8e9c342b68e920f352a89",
+      "publishedAt": "2026-11-04T10:32:36.8660417+00:00"
+    },
+    {
+      "sourceNode": "nd_mvs6s8g6",
+      "sourceNodeName": "Festival_Add 연출",
+      "source": {
+        "resultId": "rs_0h0pbp8i",
+        "version": 1,
+        "contentHash": "sha256:a02b09b5719efa472c0caed3f43c3c7d95f4ccc31bdd3fa5fc4a7dd3ceffc97e"
+      },
+      "bindings": [],
+      "resultId": "rs_wrxv0b5x",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:188ff92d71ca5b2ac5cf27cb6bd70f726c77baea0dc7e1b6826505aae59190e0",
+      "publishedAt": "2026-11-04T10:32:38.1581566+00:00"
+    },
+    {
+      "sourceNode": "nd_2e2jqbrz",
+      "sourceNodeName": "Festival_Lazy 연출",
+      "source": {
+        "resultId": "rs_5xu2b1k0",
+        "version": 1,
+        "contentHash": "sha256:70c4816a513d6e3a713c32c75e3eb20846b257d546642afd153bfd64405ed6ec"
+      },
+      "bindings": [],
+      "resultId": "rs_053j30gd",
+      "version": 1,
+      "schemaVersion": 3,
+      "contentHash": "sha256:4fe4dd9d797dc81a2513ed05f9ea3f8a314490bbfe95e08154a627bcd85a5c77",
+      "publishedAt": "2026-11-04T10:32:47.3704653+00:00"
+    }
+  ]
+}

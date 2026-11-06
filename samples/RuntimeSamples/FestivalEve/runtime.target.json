@@ -1,0 +1,4 @@
+{
+  "_안내": "게임 폴더 — 두 툴(director 진행 JSON · compositor Yarn)이 저장할 때마다 산출물을 여기로도 씁니다. 프로젝트 폴더 기준 상대 경로 또는 절대 경로.",
+  "gameFolder": "../../../../ked-presentation-runtime/Assets/Samples/Dialogue/ChapterProgression"
+}

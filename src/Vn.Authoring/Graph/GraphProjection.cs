@@ -29,7 +29,7 @@ public abstract record GraphItemProjection(string FileId, GraphPosition Position
 
 /// <summary>
 /// 펼쳐진 StoryFile 안에서 실제 노드 카드로 표시할 항목.
-/// (⛔ 카드 부제로 나가던 <c>Badge</c> — 대본 이름 · 에피소드면 줄 수 — 는 2026-10-29에 걷혔다. 소유자: "이 정보는 필요없으니까 치워".)
+/// (카드 부제로 나가던 <c>Badge</c> — 대본 이름 · 에피소드면 줄 수 — 는 2026-10-29에 걷혔다. 소유자: "이 정보는 필요없으니까 치워".)
 /// </summary>
 public sealed record ExpandedNodeProjection(
     string FileId,
@@ -107,7 +107,7 @@ public sealed record CollapsedSceneGroup(
     /// <summary>
     /// 머리글 줄을 그리는가 — 이름이 있을 때만.
     ///
-    /// ⛔ <b>이 규칙이 한 자리에 있어야 한다.</b> 머리글은 프록시에서 <b>한 행을 차지</b>하고,
+    /// <b>이 규칙이 한 자리에 있어야 한다.</b> 머리글은 프록시에서 <b>한 행을 차지</b>하고,
     /// 간선 끝점의 Y는 <c>머리글높이 + 행번호 × 행높이</c>로 계산된다 — 그리는 쪽과 행 번호를
     /// 매기는 쪽이 이 판단을 따로 하면 <b>간선이 허공에 붙는다</b>.
     /// </summary>
@@ -138,7 +138,7 @@ public enum GraphOutputPortKind
     /// <summary>
     /// <b>챕터 간선 슬롯</b> — 이 에피소드에서 나가는 선택지 하나 (R7 P-1 · 2026-09-16).
     ///
-    /// ⛔ 다른 포트와 달리 <b>이 노드의 것이 아니다.</b> 이어 붙는 순간 고쳐지는 것은
+    /// 다른 포트와 달리 <b>이 노드의 것이 아니다.</b> 이어 붙는 순간 고쳐지는 것은
     /// <c>ChapterDocument.Edges</c>이고, 그것이 내보내기·도달성 증명·런타임이 보는 그 값이다
     /// (<c>docs/plans/R7.md</c> §2 ①ᅳ 정본을 늘리지 않는다).
     /// </summary>

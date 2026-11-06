@@ -51,21 +51,20 @@ public sealed partial class ProjectEditor
     /// 있으면 아무것도 바꾸지 않는다. 삭제는 <paramref name="confirmDeletes"/>로 확인받는다.
     ///
     /// 조건 구조(<c>&lt;&lt;if&gt;&gt;</c>…)는 diff 뒤 해당 라인의 전환으로 반영하되, 식은 이 노드가
-    /// 쓸 수 있는 조건과 <b>정확 일치</b>로만 역조회한다(보정 금지). 선택 전환은 파서
-    /// 비범위이므로 건드리지 않는다. 해석 못 한 것은 전부 Problems로 남는다(규칙 14).
+    /// 쓸 수 있는 조건과 <b>정확 일치</b>로만 역조회한다(보정 금지). 해석 못 한 것은 전부 Problems로
+    /// 남는다(규칙 14). <c>-&gt;</c> 줄은 해석하지 않는다 — 선택지는 에피소드 끝 간선에서만.
     ///
-    /// <b>넣기 한 번이 되돌리기 한 칸이다</b> (D4 · 2026-10-29) — 줄 동기화와 전환 맞추기를
-    /// <see cref="Batch"/>로 묶는다. 예전에는 둘이 따로 Mutate라 한 번 물렀을 때 줄은 돌아오고 전환만
-    /// 남거나 그 반대가 됐다(two-graphs.md §5-7).
+    /// <b>넣기 한 번이 되돌리기 한 칸이다</b> — 줄 동기화와 전환 맞추기를
+    /// <see cref="Batch"/>로 묶는다. 둘이 따로 Mutate면 한 번 물렀을 때 줄은 돌아오고 전환만
+    /// 남거나 그 반대가 된다(two-graphs.md §5-7).
     ///
     /// <b>새 카드의 빈 첫 줄</b> — 대사 노드는 빈 줄 하나를 들고 태어난다. 그 줄과 새 글의 줄들은
-    /// 서로 다른 문장이 한 구간에 남는 꼴이라 동기화가 "확인 필요"로 거절했다(여러 줄을 처음 넣을 때
-    /// 늘). 살아 있는 줄이 빈 줄 하나뿐이면 그 줄이 새 글의 첫 줄이 된다 — 빈 줄은 아직 아무것도
+    /// 서로 다른 문장이 한 구간에 남는 꼴이라 그대로 두면 동기화가 "확인 필요"로 거절한다(여러 줄을
+    /// 처음 넣을 때 늘). 살아 있는 줄이 빈 줄 하나뿐이면 그 줄이 새 글의 첫 줄이 된다 — 빈 줄은 아직 아무것도
     /// 아니므로 잇는 데 확신이 필요 없다.
     /// </summary>
     /// <param name="strict">
-    /// 참이면 <b>문제가 하나라도 있을 때 아무것도 넣지 않는다</b>(해석 못 한 줄 · 못 세운 조건 · 선택 전환과의
-    /// 충돌). 카드의 글 칸이 쓴다 — 넣은 뒤 칸은 모델의 모습으로 다시 그려지므로, 반쯤 넣으면 넣지 못한 줄이
+    /// 참이면 <b>문제가 하나라도 있을 때 아무것도 넣지 않는다</b>(해석 못 한 줄 · 못 세운 조건). 카드의 글 칸이 쓴다 — 넣은 뒤 칸은 모델의 모습으로 다시 그려지므로, 반쯤 넣으면 넣지 못한 줄이
     /// 사람이 쓴 글에서 조용히 사라진다. 거짓이면 예전처럼 넣을 수 있는 것은 넣고 나머지를 Problems로 보인다.
     /// </param>
     public ScenarioPasteOutcome ApplyScenarioText(
@@ -176,7 +175,7 @@ public sealed partial class ProjectEditor
         }
     }
 
-    /// <summary>diff가 확정한 LineId 위로 조건 전환을 맞출 계획. 선택 전환은 보호한다. 아무것도 바꾸지 않는다.</summary>
+    /// <summary>diff가 확정한 LineId 위로 조건 전환을 맞출 계획. 아무것도 바꾸지 않는다.</summary>
     private ScenarioTransitionPlan PlanScenarioTransitions(
         DialogueNode node,
         ScenarioParseResult parsed,
@@ -200,41 +199,20 @@ public sealed partial class ProjectEditor
                 continue;
             }
 
-            // 한 줄에 전환이 여럿일 수 있다 (2026-08-17) — 겹쳐 닫기·연달아 열기.
+            // 한 줄에 전환이 여럿일 수 있다 — 겹쳐 닫기·연달아 열기.
             IReadOnlyList<ScenarioStructureIntent> intents = parsed.Lines[index].Transitions;
             IReadOnlyList<LineConditionTransition> current =
                 node.FindExtension(lineId)?.Transitions ?? [];
-
-            bool intentIsChoice = intents.Any(item => item.Kind
-                is ConditionTransitionKind.BeginChoice
-                or ConditionTransitionKind.BeginNextOption
-                or ConditionTransitionKind.EndChoice);
-
-            // 텍스트에 선택 전환이 안 보였다고 기존 것을 지우지 않는다 — 손으로 쓴 대본
-            // 붙여넣기 한 번에 선택지 구조가 조용히 무너진다. 조건 전환을 얹으려는 것만 막는다.
-            if (current.Any(item => item.IsChoiceKind) && !intentIsChoice)
-            {
-                if (intents.Count > 0)
-                {
-                    problems.Add(
-                        $"'{parsed.Lines[index].Text}' 줄은 선택 전환을 갖고 있어 조건 전환을 얹을 수 없습니다.");
-                }
-
-                continue;
-            }
 
             if (Translate(intents, conditions, problems) is not { } desired)
             {
                 continue;
             }
 
-            // 선택 전환은 Kind만 비교한다 — 텍스트에는 옵션의 안정 식별자(op_)가 없으므로,
-            // 같은 종류면 기존 OptionId를 그대로 둔다. 지우면 순서 변경 감지(C3 경고)가 죽는다.
             bool same = current.Count == desired.Count &&
                 current.Zip(desired).All(pair =>
                     pair.First.Kind == pair.Second.Kind &&
-                    (pair.Second.IsChoiceKind ||
-                     string.Equals(pair.First.ConditionId, pair.Second.ConditionId, StringComparison.Ordinal)));
+                    string.Equals(pair.First.ConditionId, pair.Second.ConditionId, StringComparison.Ordinal));
 
             if (!same)
             {
@@ -264,20 +242,6 @@ public sealed partial class ProjectEditor
                     desired.Add(LineConditionTransition.EndIf());
                     break;
 
-                // 옵션 줄(->)이 파서를 지나 여기 온다 (G3-2). OptionId는 만들지 않는다 —
-                // 텍스트에는 옵션의 안정 식별자가 없고, 있던 것은 부르는 쪽 비교가 보존한다.
-                case ConditionTransitionKind.BeginChoice:
-                    desired.Add(LineConditionTransition.BeginChoice());
-                    break;
-
-                case ConditionTransitionKind.BeginNextOption:
-                    desired.Add(LineConditionTransition.BeginNextOption());
-                    break;
-
-                case ConditionTransitionKind.EndChoice:
-                    desired.Add(LineConditionTransition.EndChoice());
-                    break;
-
                 default:
                 {
                     AvailableCondition? condition = conditions.Conditions.FirstOrDefault(item =>
@@ -305,10 +269,10 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 마지막 줄 <b>뒤에</b> 남은 전환을 노드에 얹는다 (2026-08-24) — 대사 없는 조건 블록이
+    /// 마지막 줄 <b>뒤에</b> 남은 전환을 노드에 얹는다 — 대사 없는 조건 블록이
     /// 대본의 끝일 때 사는 자리다.
     ///
-    /// ⚠ 텍스트에 꼬리가 없으면 <b>비운다</b>. 줄에 실린 전환과 달리 이쪽은 대본이 유일한
+    /// 텍스트에 꼬리가 없으면 <b>비운다</b>. 줄에 실린 전환과 달리 이쪽은 대본이 유일한
     /// 원천이라, 안 지우면 지운 블록이 산출물에 계속 남는다.
     /// </summary>
     private static List<LineConditionTransition>? PlanTrailingTransitions(
@@ -354,18 +318,17 @@ public sealed partial class ProjectEditor
                     plan.Conflicts.Select(entry => "• " + (entry.Message ?? entry.LineId))));
         }
 
-        // 바꿀 것이 하나도 없으면 <b>손대지 않는다</b> (2026-08-24 성능).
+        // 바꿀 것이 하나도 없으면 <b>손대지 않는다</b> (성능).
         //
-        // 예전에는 계획이 전부 "그대로"여도 아래 Mutate가 돌았다. Mutate 한 번은
-        // <b>프로젝트 전체를 되돌리기용으로 직렬화</b>하고 변경을 방송한다 — 그 방송이
-        // 열려 있는 편집 화면을 통째로 다시 만들어서, 감시자가 250ms 뒤 깨어날 때마다
-        // 사람이 <b>타이핑하던 칸이 파괴됐다.</b>
+        // Mutate 한 번은 <b>프로젝트 전체를 되돌리기용으로 직렬화</b>하고 변경을 방송한다 —
+        // 그 방송이 열려 있는 편집 화면을 통째로 다시 만들어서, 계획이 전부 "그대로"여도
+        // 돌리면 사람이 <b>타이핑하던 칸이 파괴된다.</b>
         //
-        // 값도 작지 않다: 에피소드 동기화는 워크북 하나마다 이 길을 지나므로, 대본 64개
+        // 값도 작지 않다: 에피소드 동기화는 대본 하나마다 이 길을 지나므로, 대본 64개
         // 프로젝트에서 아무것도 안 바뀐 저장 한 번이 전체 직렬화를 64번 시킨다.
         //
-        // ⚠ <b>동기화가 대본을 되돌리는 힘은 그대로다.</b> 여기서 거르는 것은 "결과가
-        // 이미 그 모습인 경우"뿐이다 — 노드가 워크북과 다르면 아래 항목들이 그것을
+        // <b>동기화가 대본을 되돌리는 힘은 그대로다.</b> 여기서 거르는 것은 "결과가
+        // 이미 그 모습인 경우"뿐이다 — 노드가 원본 글과 다르면 아래 항목들이 그것을
         // Modified·Deleted로 들고 오고, 그러면 이 관문을 지나간다
         // (`EpisodeLineEditorTests.노드만_고치면_다음_동기화가_지운다`가 그 힘을 붙든다).
         if (ChangesNothing(script, plan))
@@ -374,7 +337,7 @@ public sealed partial class ProjectEditor
         }
 
         // 글자만 바뀌었으면(줄이 생기거나 빠지거나 옮겨지지 않았다) 대사 내용의 변경이다 — 화면 구조는 그대로라 판을
-        // 통째로 다시 그리지 않는다. 카드 글 칸에서 바로바로 넣는 동안(2026-10-30) 쓰던 칸이 흔들리지 않는다.
+        // 통째로 다시 그리지 않는다. 카드 글 칸에서 바로바로 넣는 동안 쓰던 칸이 흔들리지 않는다.
         bool textOnly =
             plan.Entries.All(entry => entry.Kind is ScriptSyncKind.Unchanged or ScriptSyncKind.Modified) &&
             plan.Entries
@@ -419,7 +382,7 @@ public sealed partial class ProjectEditor
                 ordered.Add(line);
             }
 
-            // 은퇴한 줄이 소유하던 대사 논리는 함께 접는다 (W47) — 카드가 없는 줄의
+            // 은퇴한 줄이 소유하던 대사 논리는 함께 접는다 — 카드가 없는 줄의
             // 조건은 지울 진입점조차 없는 유령이 된다.
             PruneRetiredLineLogic(node, lineId => !kept.Contains(lineId));
 
@@ -431,9 +394,9 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 이 계획을 적용해도 <b>대본이 지금 모습 그대로인가</b> (2026-08-24 성능).
+    /// 이 계획을 적용해도 <b>대본이 지금 모습 그대로인가</b> (성능).
     ///
-    /// ⛔ <b>여기서 틀리면 조용히 틀린다</b> — 반영이 안 됐는데 됐다고 넘어가면 "엑셀에서
+    /// <b>여기서 틀리면 조용히 틀린다</b> — 반영이 안 됐는데 됐다고 넘어가면 "대본을
     /// 고쳤는데 툴이 그대로"가 된다. 그래서 <b>바꿀 것이 없음이 확실할 때만</b> 참이고,
     /// 조금이라도 애매하면 거짓이다(그러면 평소대로 적용할 뿐 손해가 없다).
     ///
@@ -509,8 +472,8 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건·선택 전환, set, 갈래 출구)도
-    /// 접는다 (W47) — 줄 카드가 없으면 편집 진입점이 없어 지울 수도 없는 유령이 된다.
+    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건 전환, 갈래 출구)도
+    /// 접는다 — 줄 카드가 없으면 편집 진입점이 없어 지울 수도 없는 유령이 된다.
     /// 연출 바인딩은 남긴다: 고아 연출은 지우지 않고 해석기가 알리는 기존 정책 그대로다.
     /// </summary>
     private static void PruneRetiredLineLogic(DialogueNode node, Func<string, bool> retired)
@@ -594,20 +557,19 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 화자 개명을 <b>이미 쓰인 대사 줄까지</b> 끌고 간다 (2026-08-24 소유자 — "화자의 이름을
-    /// 편집한 경우도 연결이 이어지도록").
+    /// 화자 개명을 <b>이미 쓰인 대사 줄까지</b> 끌고 간다 — 화자의 이름을 고쳐도 연결이 이어진다.
     ///
     /// 화자의 신원은 <b>[화자] 탭 목록의 그 줄</b>이고 이름은 그것의 표시다. 그런데 대사 줄이
-    /// 붙드는 것은 이름 문자열 하나뿐이라(대본 엑셀 E열과 같은 값), 등록부에서만 이름을 갈면
+    /// 붙드는 것은 이름 문자열 하나뿐이라, 등록부에서만 이름을 갈면
     /// 그 줄들이 전부 <b>미등록 화자</b>가 된다 — 초상화 매핑이 끊기고, 공백 있는 이름은
     /// 파서가 산문으로 읽어 대사와 합쳐지기까지 한다.
     ///
-    /// <b>⚠ locale마다 따로 본다</b> (로컬라이징 대비). <see cref="LocalizedLine.Speaker"/>는
+    /// <b>locale마다 따로 본다</b> (로컬라이징 대비). <see cref="LocalizedLine.Speaker"/>는
     /// locale별 값이라, 일본어 판이 이미 <c>ウィロー</c>로 번역돼 있으면 그것은 이 개명의
     /// 대상이 아니다 — <b>옛 이름과 글자가 같은 항목만</b> 갈아 끼운다. 아직 번역 전이라
     /// 한국어 이름을 그대로 들고 있는 locale은 자연히 함께 따라온다.
     ///
-    /// <b>⚠ <see cref="ScriptLine.Revision"/>은 올리지 않는다.</b> 그것은 "이 줄의 문구가
+    /// <b><see cref="ScriptLine.Revision"/>은 올리지 않는다.</b> 그것은 "이 줄의 문구가
     /// 바뀌었으니 번역·녹음이 다시 보라"는 신호인데, 등록부의 개명은 줄이 <em>말하는 내용</em>을
     /// 바꾸지 않는다. 올리면 화자 하나 고칠 때마다 그 화자의 모든 줄이 재작업 대상이 된다.
     /// </summary>

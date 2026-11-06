@@ -135,7 +135,7 @@ public static class GraphProjectionBuilder
                 file.Name,
                 file.RelativePath,
                 ProxyPosition(file, fileIndex),
-                // ⚠ 묶음을 평평하게 편 것이 곧 행 순서다 — 묶으면서 순서가 바뀌므로
+                // 묶음을 평평하게 편 것이 곧 행 순서다 — 묶으면서 순서가 바뀌므로
                 //   `entries`를 그대로 두면 행 번호와 화면이 어긋난다.
                 scenes.SelectMany(scene => scene.Entries).ToList(),
                 scenes));
@@ -144,7 +144,7 @@ public static class GraphProjectionBuilder
         // 접힌 파일의 행 번호는 배관을 빼고 남은 항목 기준이다. 원본 인덱스를 쓰면 간선 끝이
         // 숨은 행을 가리켜 허공에 붙는다.
         //
-        // ⚠ <b>장면 머리글도 한 행을 차지한다</b> (R6 S-3). 머리글을 안 세면 그 아래 노드의
+        // <b>장면 머리글도 한 행을 차지한다</b> (R6 S-3). 머리글을 안 세면 그 아래 노드의
         //    간선이 한 칸씩 위로 붙는다 — 화면과 기하가 같은 셈법을 써야 한다.
         foreach (GraphItemProjection item in items)
         {
@@ -254,15 +254,14 @@ public static class GraphProjectionBuilder
         // T2 (철도 배선) — 에피소드 카드의 선택지 옵션 포트와 기본 출구는 카드가 아니라
         // 짝 간선의 칩에 산다. IF 갈래 출구는 카드에 남는다(내부 곁가지는 간선과 무관).
         //
-        // ⚠ <b>「조건 분기」 표식도 카드에 남는다</b> (R7 P-5 · 2026-09-17). 이것을 안 넣어
+        // <b>「조건 분기」 표식도 카드에 남는다</b> (R7 P-5 · 2026-09-17). 이것을 안 넣어
         //    두면 「분기 추가」가 <b>안 보이는 포트를 뚫는다</b> — 소유자가 그린 그림의
         //    핵심("연출그래프의 카드에 포트만 뚫리는데")이 통째로 빠진다. P-6 뒤로는 판의
         //    카드가 전부 에피소드라 이 갈래에 <b>모두</b> 걸리므로 더 그렇다.
         if (node is DialogueNode { MarkedEpisodeId: not null })
         {
             exits = exits.Where(exit =>
-                exit.Kind == Vn.Authoring.Flow.ExitPortKind.Detour ||
-                (exit.Kind == Vn.Authoring.Flow.ExitPortKind.Branch && !exit.IsChoice));
+                exit.Kind is Vn.Authoring.Flow.ExitPortKind.Detour or Vn.Authoring.Flow.ExitPortKind.Branch);
         }
 
         var ports = exits
@@ -301,11 +300,11 @@ public static class GraphProjectionBuilder
     /// 앞칸부터 <b>이미 있는 간선</b>, 남은 칸은 빈 슬롯이다. 라벨을 적어야 살아나고
     /// (§2 ③), 이어 붙는 순간 고쳐지는 것은 <c>ChapterDocument.Edges</c>다(§2 ①).
     ///
-    /// ⚠ <b>간선이 셋을 넘으면 넘는 대로 전부 낸다.</b> 3은 <b>새로 만드는 칸</b>의 수이지
+    /// <b>간선이 셋을 넘으면 넘는 대로 전부 낸다.</b> 3은 <b>새로 만드는 칸</b>의 수이지
     /// 상한이 아니다 — 선택지를 넷 만든 챕터의 넷째를 화면이 숨기면 사람은 <b>사라진 줄</b>
     /// 안다. 상한을 모델에 박는 것은 v9가 없앤 `선택지수` 칸을 되살리는 일이다.
     ///
-    /// ⚠ <b>챕터 판의 대사 노드는 전부 낸다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는
+    /// <b>챕터 판의 대사 노드는 전부 낸다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는
     /// 에피소드 노드만 냈지만 자유 씬이라는 종류가 없어졌다 — 카드를 세우는 것이 곧
     /// 에피소드를 만드는 일이라 칸을 못 낼 노드가 없다. 챕터가 아닌 판(작가의 낙서판)에는
     /// 여전히 칸이 없다.
@@ -365,7 +364,7 @@ public static class GraphProjectionBuilder
     /// <summary>
     /// 그 에피소드의 대사 노드 — <b>같은 판에서만</b> 찾는다.
     ///
-    /// ⚠ 프로젝트 전체를 이름으로 훑으면 다른 챕터의 같은 Id가 걸린다(개명이 그 함정을
+    /// 프로젝트 전체를 이름으로 훑으면 다른 챕터의 같은 Id가 걸린다(개명이 그 함정을
     /// 이미 한 번 밟았다 — 2026-08-25). 못 찾아도 간선은 있다: <b>대본이 없는 것과 길이
     /// 없는 것은 다르다.</b>
     /// </summary>
@@ -395,7 +394,7 @@ public static class GraphProjectionBuilder
                 }
 
                 result.Add(new RawConnection(
-                    // ⚠ 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
+                    // 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
                     //   줄만 쓰면 같은 줄의 분기 선들이 한 열쇠를 나눠 가져, 끄는 동안 선을 열쇠로 다시 찾는 화면이
                     //   모두 첫 선의 경로를 받는다 — 나머지 분기가 끊긴 것처럼 보였다.
                     $"execution:{exit.NodeId}:{exit.Kind}:{(exit.Kind == ExitPortKind.Detour ? exit.ExitKey : exit.BranchOpenLineId) ?? "default"}",
@@ -443,15 +442,15 @@ public static class GraphProjectionBuilder
     /// <summary>
     /// 접힌 판의 행들을 <b>장면으로 묶는다</b> (R6 S-3 · 2026-09-16).
     ///
-    /// ⛔ <b>장면은 여기서도 엔티티가 아니다</b> — 노드에서 에피소드로, 에피소드에서
+    /// <b>장면은 여기서도 엔티티가 아니다</b> — 노드에서 에피소드로, 에피소드에서
     /// <c>SceneId</c>로 가는 투영이다. 판 이름이 챕터 Id와 같은 것이 그 다리이고, 그것이
     /// <c>EnsureChapterBoard</c>가 세우는 규약이다.
     ///
-    /// ⚠ <b>묶지 않는 경우 둘</b>: ① 챕터를 못 찾는 판(작가의 자유 판) ② 장면ID를 하나도
+    /// <b>묶지 않는 경우 둘</b>: ① 챕터를 못 찾는 판(작가의 자유 판) ② 장면ID를 하나도
     /// 안 적은 챕터. ②를 그대로 묶으면 에피소드 수만큼
     /// 장면 머리글이 생겨 프록시가 통째로 노이즈가 된다(<c>docs/plans/R6-explorer.md</c> §2).
     ///
-    /// ⚠ <b>자유 씬은 장면 밖이다.</b> 에피소드가 아닌 대사노드·설정 노드는 챕터의
+    /// <b>자유 씬은 장면 밖이다.</b> 에피소드가 아닌 대사노드·설정 노드는 챕터의
     /// 진행에 안 실리므로 장면 경계도 없다 — 맨 뒤 묶음으로 모은다.
     /// </summary>
     private static IReadOnlyList<CollapsedSceneGroup> SceneGroups(
@@ -538,7 +537,7 @@ public static class GraphProjectionBuilder
     /// <summary>
     /// 펼친 판의 접은 장면들을 상자로 (2026-10-30). 장면 순서는 챕터의 장면 순서, 줄 순서는 판의 노드 순서다.
     ///
-    /// ⚠ <b>들고 나는 수는 그려지는 것만 센다</b> — 밖과 잇는 실행 간선과 선택지 길. 장면 안끼리의 길은 줄에 선이 안 붙으므로
+    /// <b>들고 나는 수는 그려지는 것만 센다</b> — 밖과 잇는 실행 간선과 선택지 길. 장면 안끼리의 길은 줄에 선이 안 붙으므로
     ///   점을 채우면 거짓말이고, 대신 상자 머리의 <see cref="CollapsedSceneProjection.InnerCount"/>가 된다.
     /// </summary>
     private static IEnumerable<CollapsedSceneProjection> FoldedScenes(
@@ -601,7 +600,7 @@ public static class GraphProjectionBuilder
     /// <summary>
     /// 한 챕터 판의 장면 표 — 에피소드 → 장면ID.
     ///
-    /// ⚠ 노드 → 에피소드는 <b>표식이 먼저고 없으면 이름이다</b> — EpisodeNaming 한 벌과 같아야 한다(아니면 같은 에피소드를
+    /// 노드 → 에피소드는 <b>표식이 먼저고 없으면 이름이다</b> — EpisodeNaming 한 벌과 같아야 한다(아니면 같은 에피소드를
     ///   화면마다 다르게 짚는다).
     /// </summary>
     private sealed record SceneMap(
@@ -639,7 +638,7 @@ public static class GraphProjectionBuilder
 
     private static string PortKey(ExitPort exit)
     {
-        // ⚠ <b>「조건 분기」는 제 접두를 진다</b> (R7 P-5). 갈래와 표식은 열쇠가 둘 다 LineId라,
+        // <b>「조건 분기」는 제 접두를 진다</b> (R7 P-5). 갈래와 표식은 열쇠가 둘 다 LineId라,
         //    한 줄이 갈래도 열고 표식도 지면 열쇠가 겹쳐 <b>두 포트가 한 자리를 다툰다</b>.
         return exit.Kind switch
         {

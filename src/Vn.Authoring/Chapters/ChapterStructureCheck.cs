@@ -1,18 +1,14 @@
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// <b>에피소드 · 간선 · 깃발 스탯의 값 검사</b> (2026-10-29 · D2).
+/// <b>에피소드 · 간선 · 깃발 스탯의 값 검사</b> — Id가 비었는지 · 겹치는지, 간선 끝점이 있는
+/// 에피소드인지, 관문 라벨이 있는 조건인지, 문구가 비었는지, bool 스탯을 증감했는지를 짚는다.
+/// 자동 간선 규칙은 <see cref="ChapterAutoEdgeCheck"/>가 따로 본다.
 ///
-/// ⛔ <b>이 검사들은 옛 워크북 리더 안에만 있었다.</b> 리더가 시트를 읽으며 Id가 비었는지 · 겹치는지,
-/// 간선 끝점이 있는 에피소드인지, 관문 라벨이 있는 조건인지, 문구가 비었는지, bool 스탯을 증감했는지를
-/// 짚었다. R-F 뒤로 판의 주인이 프로젝트가 되자 그 검사는 <b>들여오는 순간에만</b> 돌았고, 엑셀 연동을
-/// 걷으며 리더째 사라졌다 — <see cref="ChapterAutoEdgeCheck"/>(V1)와 조건 검사가 이미 겪은 그 사고다.
-///
-/// ⚠ 대부분은 편집기가 애초에 막는다(같은 Id · 없는 끝점 · 모르는 스탯키는 명령이 거절한다). 그래도
+/// 대부분은 편집기가 애초에 막는다(같은 Id · 없는 끝점 · 모르는 스탯키는 명령이 거절한다). 그래도
 /// 여기 두는 이유는 <b>값의 흠</b>이기 때문이다 — 들여온 옛 프로젝트 · 손으로 고친 파일 · 앞으로 생길
 /// 새 창구는 편집기의 문을 지나지 않는다. 문구가 비었거나 같은 문구가 갈리는 것은 편집기가 막지 않는다.
 ///
-/// ⚠ <b>새 규칙을 만들지 않는다.</b> 옛 리더의 규칙과 문구를 그대로 옮기되, 엑셀 좌표(시트 열)는 뺐다.
 /// 깃발 스탯 규칙 넷은 코어의 내보내기 관문도 막는다 — 여기서는 그것을 <b>고치는 중에</b> 말한다.
 /// </summary>
 public static class ChapterStructureCheck
@@ -106,7 +102,7 @@ public static class ChapterStructureCheck
                     "이 챕터의 스탯이 아닙니다."));
             }
 
-            // ⛔ 문구는 반드시 있다 (2026-08-24 소유자 결정) — "보이지 않는 기본"은 폐지됐다.
+            // 문구는 반드시 있다 — "보이지 않는 기본"은 없다.
             //    문구 없는 길은 명시한 자동 진행뿐이다(그 규칙은 ChapterAutoEdgeCheck가 본다).
             if (edge.HasNoOptionLabel && !edge.Auto)
             {
@@ -166,8 +162,8 @@ public static class ChapterStructureCheck
     // ── 깃발(bool) 스탯 ─────────────────────────────────────────────────────
 
     /// <summary>
-    /// bool 스탯(2026-08-16)의 어휘 — 값 공간이 0/1 하나이므로 범위는 0~1, 조건은 <c>== true/false</c>
-    /// 뿐이고, 간선의 증감은 뜻이 없다. 지정(true/false)은 bool에만 열린다(2026-08-19 소유자).
+    /// bool 스탯의 어휘 — 값 공간이 0/1 하나이므로 범위는 0~1, 조건은 <c>== true/false</c>
+    /// 뿐이고, 간선의 증감은 뜻이 없다. 지정(true/false)은 bool에만 열린다.
     /// </summary>
     private static void CheckBoolStats(
         IReadOnlyList<ChapterEdge> edges,
@@ -183,8 +179,8 @@ public static class ChapterStructureCheck
             diagnostics.Add(new ChapterDiagnostic(
                 ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
                 ChapterSheetNames.Stats, null,
-                $"'{stat.Key}'는 bool 스탯이라 범위가 0~1이고 처음값은 0이나 1이어야 합니다 " +
-                $"(지금 {stat.Minimum}~{stat.Maximum}, 처음값 {stat.Initial})."));
+                $"'{stat.Key}'는 예/아니오 스탯이라 범위가 0~1이고 처음 값은 0(아니오)이나 1(예)이어야 합니다 " +
+                $"(지금 {stat.Minimum}~{stat.Maximum}, 처음 값 {stat.Initial})."));
         }
 
         HashSet<string> boolKeys = stats
@@ -202,7 +198,7 @@ public static class ChapterStructureCheck
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.ConditionExpressionMalformed, path,
                     ChapterSheetNames.Conditions, null,
-                    $"조건 '{condition.Label}': '{term.Key}'는 bool 스탯입니다 — " +
+                    $"조건 '{condition.Label}': '{term.Key}'는 예/아니오 스탯입니다 — " +
                     $"'{term.Key} == true' 또는 '{term.Key} == false'로만 적을 수 있습니다."));
             }
         }
@@ -216,7 +212,7 @@ public static class ChapterStructureCheck
                 if (isBool && !delta.IsSet)
                 {
                     diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatValueNotInteger,
-                        path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길: '{delta.Key}'는 bool 스탯이라 증감을 쓸 수 없습니다 — " +
+                        path, $"'{edge.FromEpisodeId}'→'{edge.ToEpisodeId}' 길: '{delta.Key}'는 예/아니오 스탯이라 증감을 쓸 수 없습니다 — " +
                         $"켜고 끄려면 '{delta.Key} true' 또는 '{delta.Key} false'로 적어 주세요."));
                 }
 

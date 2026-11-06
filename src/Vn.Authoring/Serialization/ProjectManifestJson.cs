@@ -11,7 +11,7 @@ namespace Vn.Authoring.Serialization;
 /// 따로 선 파일이었고 <c>scripts</c>가 가리켰다. 그 목록은 옮길 때만 읽는다).
 /// manifest가 커지지 않아야 파일을 나눈 이유가 남는다. 조건 공급 link는 파일을 넘나드는 관계라서 여기에 둔다.
 ///
-/// ⛔ <b>연출 키는 쓰지 않고 읽지도 않는다</b> (2026-10-29) — <see cref="PresentationKeys"/>의 키와 연출 배선은
+/// <b>연출 키는 쓰지 않고 읽지도 않는다</b> (2026-10-29) — <see cref="PresentationKeys"/>의 키와 연출 배선은
 /// <c>ked-story-compositor</c>의 것이다. 옛 파일에 있으면 <see cref="ProjectManifest.CarriesPresentation"/>만
 /// 켠다 — 저장하면 사라지므로 <see cref="ProjectStore"/>가 그 전에 원본을 남긴다.
 /// </summary>
@@ -65,7 +65,7 @@ public static class ProjectManifestJson
             root["startNode"] = project.StartNodeId;
         }
 
-        // ⛔ exportFormats(내보내기 양식) · outputPath(라이브 Yarn 출력 폴더)는 2026-10-29에 걷혔다 — Yarn과
+        // exportFormats(내보내기 양식) · outputPath(라이브 Yarn 출력 폴더)는 2026-10-29에 걷혔다 — Yarn과
         //    문서는 ked-story-compositor가 낸다. 옛 파일의 두 키는 읽지 않고 지나간다.
 
         root["files"] = files;

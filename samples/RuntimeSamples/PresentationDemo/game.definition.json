@@ -1,0 +1,17 @@
+{
+  "variables": [],
+  "speakers": [
+    {
+      "name": "하린",
+      "characterId": "harin"
+    },
+    {
+      "name": "시구레",
+      "characterId": "sigure"
+    },
+    {
+      "name": "카스미",
+      "characterId": "kasmi"
+    }
+  ]
+}

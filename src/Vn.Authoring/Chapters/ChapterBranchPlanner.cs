@@ -6,15 +6,12 @@ namespace Vn.Authoring.Chapters;
 /// 정한다. 합류 노드(두 분기가 다시 만나는 곳)는 가장 깊은 부모보다 한 줄 아래에 서서
 /// 간선이 위로 꺾이지 않는다.
 ///
-/// ⛔ <b>2026-10-29(D3)까지는 깊이가 X축이었다</b>(왼→오). 포트는 v5부터 "선택지는 아래 · 들어오는 길은
-/// 위 가운데"였는데 자동 배치만 옆으로 펴서, 소유자의 위→아래 판은 사람이 끌어 놓은 것이었다. 연출
-/// 그래프를 위→아래로 돌리면서 두 판의 방향을 맞췄다.
+/// 포트도 "선택지는 아래 · 들어오는 길은 위 가운데"이고, 연출 그래프도 위→아래로 흐르므로
+/// 두 판의 방향이 같다.
 ///
-/// ⛔ <b>~~배치는 툴이 소유한다 (v3)~~ — 걷혔다 (v4, 2026-09-18 소유자:</b> *"챕터그래프도
-/// 연출그래프와 동일하게 자유롭게 노드의 위치를 조절할 수 있게"*). v3의 근거는 <i>"드래그가
-/// 없으므로 사람이 지킬 배치도 없다"</i>였는데, 그 <b>전제가 뒤집혔다</b> — 드래그가 생겼다.
-/// 자리의 주인은 이제 <see cref="ChapterEpisode.X"/>·<see cref="ChapterEpisode.Y"/>이고
-/// <c>ProjectEditor.MoveEpisode</c>가 고친다(R-F가 2026-09-16에 엑셀에게서 가져온 그 값이다).
+/// <b>배치는 사람이 소유한다.</b> 챕터 그래프도 연출 그래프처럼 노드를 끌어 옮길 수 있다.
+/// 자리의 주인은 <see cref="ChapterEpisode.X"/>·<see cref="ChapterEpisode.Y"/>이고
+/// <c>ProjectEditor.MoveEpisode</c>가 고친다.
 ///
 /// <b>그래서 이 계산은 「그리는 자리」가 아니라 「첫 자리」다.</b> 세 곳이 쓴다:
 ///
@@ -25,7 +22,7 @@ namespace Vn.Authoring.Chapters;
 ///   <item>[자동 정렬] — 연출 그래프에 카드가 하나도 없을 때(있으면 그 모양을 본뜬다 — <see cref="LayoutLikeBoard"/>)</item>
 /// </list>
 ///
-/// ⚠ 자동으로 <b>다시</b> 계산하지 않는다. 사람이 옮긴 자리를 그리기가 덮으면, 옮긴 일이
+/// 자동으로 <b>다시</b> 계산하지 않는다. 사람이 옮긴 자리를 그리기가 덮으면, 옮긴 일이
 /// 아무 일도 아니게 된다.
 /// </summary>
 public static class ChapterBranchPlanner
@@ -124,7 +121,7 @@ public static class ChapterBranchPlanner
 
     /// <summary>
     /// 화면 배치 전체 — 원점 (0,0) 기준. 줄 = 깊이, 줄 안 순서 = 에피소드를 적은 순서(사람이 정한
-    /// 유일한 순서). 간선이 없어 깊이가 없는 노드는 맨 아래 줄에 따로 세운다 — 이미 ⚠로
+    /// 유일한 순서). 간선이 없어 깊이가 없는 노드는 맨 아래 줄에 따로 세운다 — 이미 로
     /// 보고되는 것을 겹쳐 숨기지 않는다.
     /// </summary>
     public static IReadOnlyDictionary<string, (double X, double Y)> Layout(ChapterGraphModel model)
@@ -165,8 +162,7 @@ public static class ChapterBranchPlanner
     }
 
     /// <summary>
-    /// <b>연출 그래프의 모양을 본뜬 배치</b> — 챕터 그래프의 [자동 정렬] (2026-10-30 소유자: *"자동 정렬 버튼을 눌렀을 때,
-    /// 연출 그래프에 배치된 노드들을 참고해서 그와 거의 같은 형태로 노드가 자동으로 배치되도록"*).
+    /// <b>연출 그래프의 모양을 본뜬 배치</b> — 챕터 그래프의 [자동 정렬].
     ///
     /// 에피소드마다 그 카드가 연출 그래프(챕터의 판)에 선 자리를 챕터 그래프의 간격으로 줄인다 — 가로는 열 간격(연출
     /// <see cref="Graph.NodePlacement.Column"/> → 챕터 <see cref="SiblingSpacing"/>), 세로는 줄 간격(<see cref="Graph.NodePlacement.Row"/>
@@ -259,10 +255,10 @@ public static class ChapterBranchPlanner
     /// 전부 0이라, 그냥 제 값대로 그리면 <b>한 점에 전부 포개진다</b>. 그때 한 번
     /// <see cref="Layout"/>으로 심어 준다.
     ///
-    /// ⚠ <b>"전부 0"이 아니라 "겹친다"로 묻는다.</b> 에피소드 하나짜리 챕터는 (0,0)이어도
+    /// <b>"전부 0"이 아니라 "겹친다"로 묻는다.</b> 에피소드 하나짜리 챕터는 (0,0)이어도
     /// 아무 문제가 없고, 반대로 사람이 둘을 정확히 포개 놓았다면 그것도 고쳐 줄 자리다.
     ///
-    /// ⚠ 이 판정은 <b>한 번만</b> 참이다 — 심고 나면 자리가 서로 달라지므로 다시 심지 않는다.
+    /// 이 판정은 <b>한 번만</b> 참이다 — 심고 나면 자리가 서로 달라지므로 다시 심지 않는다.
     /// 그래야 그리기가 사람이 옮긴 자리를 덮는 일이 없다.
     /// </summary>
     public static bool NeedsSeeding(ChapterGraphModel model)

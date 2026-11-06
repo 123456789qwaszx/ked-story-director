@@ -127,8 +127,8 @@ public class AuthoringSessionTests
     [Fact]
     public void 파일_선택은_펼침을_접지_않는다_여러_파일을_함께_본다()
     {
-        // W49 (소유자 판단): W43의 "선택=그 파일만 펼침"은 여러 파일을 오가며 함께
-        // 보는 것을 막아 철회. 선택과 펼침은 독립이고, 접힌 파일을 고르면 펴 주기만 한다.
+        // 선택과 펼침은 독립이다 — "선택=그 파일만 펼침"이면 여러 파일을 오가며 함께
+        // 볼 수 없다. 접힌 파일을 고르면 펴 주기만 한다.
         var session = new AuthoringSession();
         StoryFile first = session.ActiveFile!;
         StoryFile second = session.Editor.AddStoryFile("두 번째");
@@ -193,7 +193,7 @@ public class AuthoringSessionTests
             changes,
             active =>
             {
-                // 이미 펼쳐진 파일의 선택은 펼침을 건드리지 않는다 (W49 — 독립 복원).
+                // 이미 펼쳐진 파일의 선택은 펼침을 건드리지 않는다 (선택과 펼침은 독립이다).
                 Assert.True(active.ActiveFileChanged);
                 Assert.False(active.ExpandedFilesChanged);
                 Assert.False(active.FileListChanged);
@@ -257,12 +257,11 @@ public class AuthoringSessionTests
         Assert.Contains(added.Id, session.ExpandedFileIds);
     }
 
-    // ── 튜닝 관리 (W46) ───────────────────────────────────────────────────
+    // ── 튜닝 관리 ───────────────────────────────────────────────────
 
     /// <summary>
-    /// "작가가 더한 화자"는 2026-08-23에 폐지됐다 (소유자: 캐릭터는 컨셉·배경이 꼼꼼히
-    /// 정해져야 하는 것이라 작가가 임의로 더할 자리가 아니다). 더하는 화면도 고르는
-    /// 목록도 사라졌지만, <b>구판 프로젝트의 값은 조용히 날리지 않는다</b> — 이 저장소의
+    /// 작가는 화자를 더하지 않는다 — 캐릭터는 컨셉·배경이 꼼꼼히 정해져야 하는 것이라
+    /// 작가가 임의로 더할 자리가 아니다. 더하는 화면도 고르는 목록도 없지만, <b>구판 프로젝트의 값은 조용히 날리지 않는다</b> — 이 저장소의
     /// "구판 데이터는 지우지 않고 무시한다" 규칙이다.
     /// </summary>
     [Fact]
@@ -284,7 +283,7 @@ public class AuthoringSessionTests
             reopened.Open(path);
             Assert.Equal("구판화자", Assert.Single(reopened.Project.WriterSpeakers).Name);
 
-            // 정의 파일은 예나 지금이나 손대지 않는다 (2026-08-17 — 기획자 전용).
+            // 정의 파일은 손대지 않는다 (기획자 전용).
             Assert.DoesNotContain(reopened.Definition.Speakers, speaker =>
                 string.Equals(speaker.Name, "구판화자", StringComparison.Ordinal));
         }
@@ -295,8 +294,8 @@ public class AuthoringSessionTests
     }
 
     /// <summary>
-    /// 화자를 지우면 세션의 정의가 <b>곧바로</b> 바뀐다 (2026-08-26 소유자 보고: 챕터 그래프에서 화자를 지웠는데
-    /// 연출 그래프가 옛 목록을 계속 보였다 — "바로바로 반영이 됐으면 해"). 화면은 그릴 때마다 정의를 읽는다.
+    /// 화자를 지우면 세션의 정의가 <b>곧바로</b> 바뀐다 — 챕터 그래프에서 화자를 지우면
+    /// 연출 그래프도 옛 목록을 보이면 안 된다. 화면은 그릴 때마다 정의를 읽는다.
     /// </summary>
     [Fact]
     public void 화자를_지우면_정의가_곧바로_바뀐다()
@@ -324,52 +323,38 @@ public class AuthoringSessionTests
         }
     }
 
-    // ── 새 프로젝트 자동 준비 + PNG 가져오기 (W48) ────────────────────────
+    // ── 새 프로젝트 자동 준비 + PNG 가져오기 ────────────────────────
 
     [Fact]
-    public void 다른_폴더로_저장하면_정의가_함께_이사하고_챕터는_매니페스트에_실려_간다()
+    public void 게임_폴더를_정하면_저장이_진행_JSON을_거기로도_낸다()
     {
-        // 2026-08-21 소유자 보고: [다른 이름으로…]로 새 폴더에 저장해 "새 프로젝트"를
-        // 만들면, 판·작가 화자는 매니페스트에 실려 따라오는데 정의는 옛 폴더에 남아
-        // 프로젝트가 찢어졌다. 이제 폴더 규약 데이터(정의)가 함께 복사된다.
-        // (2026-10-29: 챕터 워크북·대본 폴더를 함께 옮기던 몫은 엑셀 연동과 함께(D2), 에셋 · 튜닝
-        // 폴더를 옮기던 몫은 무대와 함께 ked-story-compositor로 갔다.)
-        string first = TempDirectory();
-        string second = TempDirectory();
+        // 프로젝트는 폴더다 — 복제는 탐색기, 버전은 git이 맡는다.
+        // 폴더의 runtime.target.json이 게임 폴더를 가리키고, 두 툴이 각자 산출물을 거기로 쓴다.
+        string project = TempDirectory();
+        string game = TempDirectory();
 
         try
         {
             var session = new AuthoringSession();
-            session.Save(Path.Combine(first, "project.vnproject.json"));
-            session.Editor.EnsureChapter("ch01");
+            session.Save(Path.Combine(project, "project.vnproject.json"));
+            Assert.Null(session.GameFolder);
+            Assert.Contains("게임 폴더가 없습니다", session.StatusMessage);
 
-            File.WriteAllText(Path.Combine(first, "game.definition.json"),
-                """{"variables":[{"name":"trust","type":"number"}],"speakers":[]}""");
+            RuntimeTarget.SaveBeside(session.ProjectPath!, RuntimeTarget.FromAbsolute(session.ProjectPath!, game));
+            session.ReloadRuntimeTarget();
 
-            string moved = Path.Combine(second, "moved.vnproject.json");
-            session.Save(moved);
+            Assert.Equal(Path.GetFullPath(game), session.GameFolder);
 
-            // 이사해 온 정의를 곧바로 읽는다 — 빈 뼈대가 먼저 깔려 진짜 정의를 막으면 안 된다.
-            Assert.Contains(session.Definition.Variables, variable =>
-                string.Equals(variable.Name, "trust", StringComparison.Ordinal));
-            Assert.Contains("함께 복사했습니다", session.StatusMessage);
-
-            // 챕터는 폴더가 아니라 매니페스트에 실려 따라온다.
+            // 다시 열어도 설정이 따라온다 — 파일이 프로젝트 폴더에 산다.
             var reopened = new AuthoringSession();
-            reopened.Open(moved);
-            Assert.NotNull(reopened.Editor.FindChapter("ch01"));
-
-            // 복사이지 이동이 아니다 — 옛 매니페스트는 계속 그 폴더에서 산다.
-            Assert.True(File.Exists(Path.Combine(first, "game.definition.json")));
-
-            // 같은 폴더 재저장은 이사가 아니다.
-            session.Save();
-            Assert.DoesNotContain("함께 복사했습니다", session.StatusMessage);
+            reopened.Open(session.ProjectPath!);
+            Assert.Equal(Path.GetFullPath(game), reopened.GameFolder);
+            Assert.Contains("게임 폴더", reopened.StatusMessage);
         }
         finally
         {
-            Directory.Delete(first, recursive: true);
-            Directory.Delete(second, recursive: true);
+            Directory.Delete(project, recursive: true);
+            Directory.Delete(game, recursive: true);
         }
     }
 

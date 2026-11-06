@@ -1,0 +1,375 @@
+{
+  "ChapterId": "festival_eve",
+  "DisplayName": "축제 전날",
+  "StartEpisodeId": "Festival_Classroom",
+  "Stats": [
+    {
+      "Key": "성실",
+      "DisplayName": "성실",
+      "Type": "Number",
+      "Initial": 0,
+      "Minimum": 0,
+      "Maximum": 5
+    },
+    {
+      "Key": "요령",
+      "DisplayName": "요령",
+      "Type": "Number",
+      "Initial": 0,
+      "Minimum": 0,
+      "Maximum": 5
+    }
+  ],
+  "Nodes": [
+    {
+      "EpisodeId": "Festival_Classroom",
+      "Title": "교실 - 반쯤 빈 간판",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Classroom",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [
+        {
+          "TargetEpisodeId": "Festival_Remake",
+          "ChoiceLabel": "처음부터 다시 그린다",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": [
+            {
+              "Key": "성실",
+              "Amount": 2,
+              "Op": "Add"
+            }
+          ]
+        },
+        {
+          "TargetEpisodeId": "Festival_Shortcut",
+          "ChoiceLabel": "있는 걸로 빨리 끝낸다",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": [
+            {
+              "Key": "요령",
+              "Amount": 2,
+              "Op": "Add"
+            }
+          ]
+        },
+        {
+          "TargetEpisodeId": "Festival_Add",
+          "ChoiceLabel": "축제의 의미를 새로 써보자",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        }
+      ],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 148.93,
+        "Y": 0
+      }
+    },
+    {
+      "EpisodeId": "Festival_Remake",
+      "Title": "교실 - 처음부터 다시",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Remake",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [
+        {
+          "TargetEpisodeId": "Festival_Wrapup",
+          "ChoiceLabel": "",
+          "Auto": true,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        }
+      ],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 0,
+        "Y": 212.25
+      }
+    },
+    {
+      "EpisodeId": "Festival_Shortcut",
+      "Title": "교실 - 있는 걸로",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Shortcut",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [
+        {
+          "TargetEpisodeId": "Festival_Wrapup",
+          "ChoiceLabel": "",
+          "Auto": true,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        }
+      ],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 254.38,
+        "Y": 211.54
+      }
+    },
+    {
+      "EpisodeId": "Festival_Wrapup",
+      "Title": "교실 - 간판 완성",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Wrapup",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [
+        {
+          "TargetEpisodeId": "Festival_Staffroom",
+          "ChoiceLabel": "교무실로 간다",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        },
+        {
+          "TargetEpisodeId": "Festival_Staffroom",
+          "ChoiceLabel": "선생님께 진행 상황도 보고한다",
+          "Auto": false,
+          "VisibleConditions": [
+            {
+              "Kind": "Stat",
+              "Key": "성실",
+              "Op": "GreaterOrEqual",
+              "IntValue": 2
+            }
+          ],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": [
+            {
+              "Key": "성실",
+              "Amount": 1,
+              "Op": "Add"
+            }
+          ]
+        },
+        {
+          "TargetEpisodeId": "Festival_Staffroom",
+          "ChoiceLabel": "카스미에게 마무리를 부탁하고 간다",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [
+            {
+              "Kind": "Stat",
+              "Key": "요령",
+              "Op": "GreaterOrEqual",
+              "IntValue": 2
+            }
+          ],
+          "LockedReasonText": "요령 2 이상",
+          "StatChanges": [
+            {
+              "Key": "요령",
+              "Amount": 1,
+              "Op": "Add"
+            }
+          ]
+        }
+      ],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 208.05,
+        "Y": 427.45
+      }
+    },
+    {
+      "EpisodeId": "Festival_Staffroom",
+      "Title": "교무실 앞 - 간판 검사",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Staffroom",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교무실 앞",
+      "DesignerNote": "",
+      "Position": {
+        "X": 339.08,
+        "Y": 753.06
+      }
+    },
+    {
+      "EpisodeId": "Festival_Wrapup_Remade",
+      "Title": "Festival_Wrapup_Remade",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Wrapup_Remade",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 506.43,
+        "Y": 473.41
+      }
+    },
+    {
+      "EpisodeId": "Festival_Wrapup_Sticker",
+      "Title": "Festival_Wrapup_Sticker",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Wrapup_Sticker",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 541.73,
+        "Y": 554.73
+      }
+    },
+    {
+      "EpisodeId": "Festival_Staffroom_Kasmi",
+      "Title": "Festival_Staffroom_Kasmi",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Staffroom_Kasmi",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교무실 앞",
+      "DesignerNote": "",
+      "Position": {
+        "X": 1100.92,
+        "Y": 878.3
+      }
+    },
+    {
+      "EpisodeId": "Festival_Staffroom_Praise",
+      "Title": "Festival_Staffroom_Praise",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Staffroom_Praise",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교무실 앞",
+      "DesignerNote": "",
+      "Position": {
+        "X": 880.92,
+        "Y": 965.16
+      }
+    },
+    {
+      "EpisodeId": "Festival_Staffroom_Pass",
+      "Title": "Festival_Staffroom_Pass",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Staffroom_Pass",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교무실 앞",
+      "DesignerNote": "",
+      "Position": {
+        "X": 829.6,
+        "Y": 1114.77
+      }
+    },
+    {
+      "EpisodeId": "Festival_Add",
+      "Title": "Festival_Add",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Add",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [
+        {
+          "TargetEpisodeId": "Festival_Advance",
+          "ChoiceLabel": "귀신의 집",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        },
+        {
+          "TargetEpisodeId": "Festival_Advance",
+          "ChoiceLabel": "메이드 카페",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        },
+        {
+          "TargetEpisodeId": "Festival_Lazy",
+          "ChoiceLabel": "다 때려쳐",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        }
+      ],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 526.5,
+        "Y": 241.44
+      }
+    },
+    {
+      "EpisodeId": "Festival_Advance",
+      "Title": "Festival_Advance",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Advance",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 781.04,
+        "Y": 537.77
+      }
+    },
+    {
+      "EpisodeId": "Festival_Lazy",
+      "Title": "Festival_Lazy",
+      "IndexText": "",
+      "DialogueEntryId": "Festival_Lazy",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "교실",
+      "DesignerNote": "",
+      "Position": {
+        "X": 1019.12,
+        "Y": 391.26
+      }
+    }
+  ]
+}

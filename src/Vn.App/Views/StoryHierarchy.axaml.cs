@@ -20,7 +20,7 @@ internal enum HierarchyKind
 }
 
 /// <summary>
-/// 줄의 눈 — 판에서 보이는가 (2026-10-30 SF2 · <c>docs/plans/hierarchy.md</c> §3). 유니티 하이어아키의 보이기 기둥과 같은 자리다.
+/// 줄의 눈 — 판에서 보이는가 (<c>docs/plans/hierarchy.md</c> §3). 유니티 하이어아키의 보이기 기둥과 같은 자리다.
 /// 연출 그래프의 챕터 · 장면 줄에만 선다(챕터 그래프에는 접을 판이 없다).
 /// </summary>
 internal enum HierarchyEye
@@ -39,7 +39,7 @@ internal enum HierarchyEye
 }
 
 /// <summary>
-/// 하이어아키 줄의 우클릭 차림표에서 하자고 한 일 (2026-10-30 HY4) — <b>하는 것은 이 컨트롤이 아니다</b>(셸이 편집기 규칙
+/// 하이어아키 줄의 우클릭 차림표에서 하자고 한 일 —<b>하는 것은 이 컨트롤이 아니다</b>(셸이 편집기 규칙
 /// 한 벌로 한다).
 /// </summary>
 internal enum HierarchyCommand
@@ -62,12 +62,12 @@ internal enum HierarchyCommand
     /// <summary>에피소드 줄 — 그 에피소드를 지운다.</summary>
     DeleteEpisode,
 
-    /// <summary>에피소드 줄 — 장면에서 뺀다(장면ID를 걷는다 → 챕터 직속, 2026-11-01).</summary>
+    /// <summary>에피소드 줄 — 장면에서 뺀다(장면ID를 걷는다 → 챕터 직속).</summary>
     DetachFromScene
 }
 
 /// <summary>
-/// 하이어아키의 접힘 — 사람이 편 마디와 접은 마디 (2026-10-30 HY4b). <b>두 탭의 하이어아키가 이 하나를 함께 쓴다</b> — 한
+/// 하이어아키의 접힘 — 사람이 편 마디와 접은 마디.<b>두 탭의 하이어아키가 이 하나를 함께 쓴다</b> — 한
 /// 그루가 두 자리에 보이는 것이라 한쪽에서 접으면 다른 쪽도 접힌다. 프로젝트별로 사용자 설정에 기억한다(프로젝트 파일은 팀의
 /// 것이라 거기 안 쓴다 — 내가 접은 것이 남의 화면을 접으면 안 된다).
 /// </summary>
@@ -78,7 +78,7 @@ internal sealed class HierarchyFolds
 
     /// <summary>
     /// 사람이 접은 마디들 — 편 것과 따로 든다. 펼침만 기억하면 "고른 것이 든 마디는 저절로 펴진다"가 사람의 접기를
-    /// 이겨 접을 수가 없다(옛 탐색기가 테스트로 잡은 자리).
+    /// 이겨 접을 수가 없다.
     /// </summary>
     public HashSet<string> Collapsed { get; } = new(StringComparer.Ordinal);
 
@@ -162,18 +162,18 @@ internal sealed record HierarchyRow(
 }
 
 /// <summary>
-/// <b>하이어아키</b> (2026-10-30 소유자: *"유니티 하이어아키처럼 챕터를 부모로 하는 장면이 있고, 이 장면에 포함된
-/// 에피소드들을 모으는 방식으로"* — <c>docs/plans/hierarchy.md</c>). 프로젝트 → 챕터 → 장면 → 에피소드를 접었다 펴는
+/// <b>하이어아키</b> — 유니티 하이어아키처럼 챕터 아래 장면, 장면 아래 그 장면의 에피소드들을 모은다
+/// (<c>docs/plans/hierarchy.md</c>). 프로젝트 → 챕터 → 장면 → 에피소드를 접었다 펴는
 /// 한 그루이고, 어느 줄이든 고르면 <see cref="Picked"/>가 알린다 — 인스펙터가 그것을 보인다.
 ///
-/// ⛔ <b>장면은 여기서도 엔티티가 아니다</b> — 장면 줄은 <see cref="ChapterSceneGrouping"/>이 그릴 때마다 묶는 투영이고,
+/// <b>장면은 여기서도 엔티티가 아니다</b> — 장면 줄은 <see cref="ChapterSceneGrouping"/>이 그릴 때마다 묶는 투영이고,
 /// 이 컨트롤이 든 상태는 <b>접힘과 선택 둘뿐</b>이다. 장면ID를 하나도 안 적은 챕터는 장면 단을 생략한다(에피소드마다 제
 /// 장면이라 줄이 에피소드 수만큼 서면 노이즈다).
 ///
-/// ⚠ <b>고르는 것으로는 줄을 다시 세우지 않는다</b>(칠만 한다 — <see cref="Paint"/>). 다시 세우면 더블클릭의 둘째 누름이
+/// 주의: <b>고르는 것으로는 줄을 다시 세우지 않는다</b>(칠만 한다 — <see cref="Paint"/>). 다시 세우면 더블클릭의 둘째 누름이
 /// 새 컨트롤에 떨어진다. 보이는 줄이 바뀔 때(접기 · 펴기 · 밖에서 고른 것을 드러낼 때)만 다시 세운다.
 ///
-/// ⚠ <b>편집하지 않는다</b> — 우클릭 차림표(<see cref="CommandRequested"/>) · 두 번 눌러 이름 고치기(<see cref="RenameRequested"/>) ·
+/// 주의: <b>편집하지 않는다</b> — 우클릭 차림표(<see cref="CommandRequested"/>) · 두 번 눌러 이름 고치기(<see cref="RenameRequested"/>) ·
 /// 끌어 다른 장면으로(<see cref="Dropped"/>)는 알리기만 한다(만들기 · 지우기 · 개명 규칙은 셸 쪽 편집기 한 벌이다). 접힘은 두
 /// 탭이 함께 쓰고 프로젝트별로 기억한다(<see cref="HierarchyFolds"/>). 키보드 ↑↓←→로 고르고 접는다.
 /// </summary>
@@ -191,7 +191,7 @@ public partial class StoryHierarchy : UserControl
     internal HierarchyFolds Folds { get; set; } = new();
 
     /// <summary>
-    /// 줄마다의 눈 — 셸이 준다(연출 그래프의 하이어아키만, 2026-10-30 SF2). null이면 눈 기둥이 없다. 눈의 상태는 판 쪽(세션)이
+    /// 줄마다의 눈 — 셸이 준다(연출 그래프의 하이어아키만). null이면 눈 기둥이 없다. 눈의 상태는 판 쪽(세션)이
     /// 들고 이 컨트롤은 그리기만 한다 — 줄을 세울 때마다 묻는다.
     /// </summary>
     internal Func<HierarchyRow, HierarchyEye>? EyeOf { get; set; }
@@ -357,9 +357,9 @@ public partial class StoryHierarchy : UserControl
             return;
         }
 
-        // ⭐ <b>장면ID를 적은 장면만 장면 줄이 된다</b> (2026-11-01 소유자 결정 B — "그냥 바로 챕터 직속"). 장면ID가 없는
-        //    에피소드는 장면들 뒤에 <b>챕터 직속</b>으로 선다. ⛔ 전에는 「미지정 · x」 가짜 장면 줄이 에피소드마다 서서, 에피소드
-        //    하나를 만들 때마다 장면도 하나 생긴 것처럼 보였다. 데이터는 그대로다 — 런타임에서는 그 에피소드 하나가 저장 · 롤백
+        // <b>장면ID를 적은 장면만 장면 줄이 된다</b>. 장면ID가 없는
+        //    에피소드는 장면들 뒤에 <b>챕터 직속</b>으로 선다 — 에피소드마다 가짜 장면 줄을 세우면 에피소드
+        //    하나를 만들 때마다 장면도 하나 생긴 것처럼 보인다. 데이터는 그대로다 — 런타임에서는 그 에피소드 하나가 저장 · 롤백
         //    구간이다(EffectiveSceneId). 장면ID를 하나도 안 적은 챕터도 같은 규칙이라 전부 챕터 직속이다.
         foreach (ChapterScene scene in scenes.Where(scene => !scene.IsDefault))
         {
@@ -616,7 +616,7 @@ public partial class StoryHierarchy : UserControl
         return host;
     }
 
-    // ── 눈 (2026-10-30 SF2 — 유니티 하이어아키의 보이기 기둥) ──────────────────────────────
+    // ── 눈 (유니티 하이어아키의 보이기 기둥) ──────────────────────────────
 
     /// <summary>그 줄의 눈 — 화면 시험이 누를 자리. 눈이 없는 줄이나 눈 기둥이 없으면 null.</summary>
     internal Border? EyeButton(string key)
@@ -713,11 +713,11 @@ public partial class StoryHierarchy : UserControl
         return glyph;
     }
 
-    // ── 우클릭 차림표 (2026-10-30 HY4 — 옛 탐색기의 규칙: 추가 셋은 어느 줄에서나 같은 자리에 선다) ──────────
+    // ── 우클릭 차림표 (추가 셋은 어느 줄에서나 같은 자리에 선다) ──────────
 
     /// <summary>
-    /// 줄의 차림표 — 「챕터 추가 · 장면 추가 · 에피소드 추가」는 어느 줄에서나 같다(2026-09-18 소유자: *"챕터, 장면, 에피소드
-    /// 추가 모두 그냥 같이 표시가 되도록"* — 어디서 눌러야 무엇이 나오는지 외울 것이 없게). 어디에 붙일지는 누른 줄이
+    /// 줄의 차림표 — 「챕터 추가 · 장면 추가 · 에피소드 추가」는 어느 줄에서나 같다(어디서 눌러야 무엇이 나오는지
+    /// 외울 것이 없게). 어디에 붙일지는 누른 줄이
     /// 정한다. 그 아래에 그 줄만의 일(이름 바꾸기 · 지우기)이 선다.
     /// </summary>
     private ContextMenu Menu(HierarchyRow row, Control anchor)
@@ -863,8 +863,8 @@ public partial class StoryHierarchy : UserControl
 
     /// <summary>
     /// 접기 손잡이. 에피소드는 펼 자식이 없어 그 자리에 표식(장면 루트 ⌂ · 그 밖 ·)을 세운다 — 그래서 <b>같은 깊이의 이름이 한 줄로
-    /// 선다</b>(2026-11-01). ⛔ 전에는 빈 손잡이 칸 옆에 표식이 따로 붙어 에피소드 이름이 한 칸 더 들어갔고, 장면들 뒤의 챕터 직속
-    /// 에피소드가 마지막 장면의 자식처럼 보였다.
+    /// 선다</b>. 빈 손잡이 칸 옆에 표식을 따로 붙이면 에피소드 이름이 한 칸 더 들어가, 장면들 뒤의 챕터 직속
+    /// 에피소드가 마지막 장면의 자식처럼 보인다.
     /// </summary>
     private Border Arrow(HierarchyRow row)
     {
@@ -937,7 +937,7 @@ public partial class StoryHierarchy : UserControl
         Picked?.Invoke(row.Pick);
     }
 
-    // ── 키보드 (HY4b — 옛 탐색기 규격 §7) ───────────────────────────────────
+    // ── 키보드 ───────────────────────────────────
 
     /// <summary>
     /// ↑↓ = 보이는 줄 사이로 고르기, ← = 접기 · 이미 접혔으면 부모로, → = 펴기 · 이미 폈으면 첫 자식으로. 유니티처럼 화살표가
@@ -1006,11 +1006,11 @@ public partial class StoryHierarchy : UserControl
         return null;
     }
 
-    // ── 끌어 다른 장면으로 (HY4b) ───────────────────────────────────────────
+    // ── 끌어 다른 장면으로 ───────────────────────────────────────────
     //
-    // ⛔ Avalonia의 DragDrop을 안 쓴다 — 창 밖으로 나가는 끌기가 아니라 한 컨트롤 안에서 줄을 옮기는 일이고, 누름 · 놓임만으로
+    // Avalonia의 DragDrop을 안 쓴다 — 창 밖으로 나가는 끌기가 아니라 한 컨트롤 안에서 줄을 옮기는 일이고, 누름 · 놓임만으로
     //    충분하다. 놓은 자리는 <b>좌표로</b> 찾는다 — 단추는 눌리는 순간 포인터를 잡아서 손을 어디서 떼든 놓임이 누른 단추로
-    //    온다(옛 탐색기가 "드래그가 안 돼"로 겪었다).
+    //    온다.
 
     /// <summary>끌어다 놓았다 — 에피소드를 다른 장면에. 셸이 그 에피소드의 장면ID를 바꾼다.</summary>
     internal event Action<HierarchyRow, HierarchyRow>? Dropped;
@@ -1022,8 +1022,8 @@ public partial class StoryHierarchy : UserControl
     private string? _hoverKey;
 
     /// <summary>
-    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의</b> 다른 장면 줄에(그 장면으로) 또는 챕터 줄에(장면에서 빼 챕터 직속으로,
-    /// 2026-11-01). 이미 챕터 직속인 에피소드를 챕터 줄에 놓는 것은 할 일이 없다.
+    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의</b> 다른 장면 줄에(그 장면으로) 또는 챕터 줄에(장면에서 빼 챕터 직속으로).
+    /// 이미 챕터 직속인 에피소드를 챕터 줄에 놓는 것은 할 일이 없다.
     /// </summary>
     internal static bool Accepts(HierarchyRow source, HierarchyRow target) =>
         source.Kind == HierarchyKind.Episode &&

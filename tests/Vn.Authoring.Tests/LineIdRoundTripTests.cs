@@ -184,11 +184,12 @@ public class LineIdRoundTripTests
             node.Script.ActiveLines.Select(line => line.Id));
     }
 
-    // ── 옵션 (G3-2) ─────────────────────────────────────────────────────────
+    // ── 옵션 줄 (2026-11-04 — 대사 안 선택지가 걷혔다) ──────────────────────────
 
     [Fact]
-    public void 옵션_줄이_선택_전환으로_해석된다()
+    public void 옵션_줄은_해석하지_않고_이유와_함께_보인다()
     {
+        // 선택지는 에피소드 끝 간선에서만 선다 — `->` 줄은 조용히 대사가 되지도, 선택 블록이 되지도 않는다.
         ScenarioParseResult parsed = ScenarioTextParser.Parse("""
             라루: 그럼, 어떻게 할래? #line:ln_0005
             -> 라루의 제안을 듣는다 #line:ln_0007
@@ -196,33 +197,10 @@ public class LineIdRoundTripTests
             -> 혼자 문을 연다 #line:ln_0008
             """, Definition);
 
-        Assert.Empty(parsed.UnparsedLines);
-        Assert.Equal(4, parsed.Lines.Count);
-
-        // 첫 옵션이 블록을 열고, 두 번째는 같은 블록의 다음 갈래다.
-        Assert.Equal(ConditionTransitionKind.BeginChoice, parsed.Lines[1].Transition!.Kind);
-        Assert.Equal("라루의 제안을 듣는다", parsed.Lines[1].Text);
-        Assert.Equal("ln_0007", parsed.Lines[1].LineId);
-
-        Assert.Equal(ConditionTransitionKind.BeginNextOption, parsed.Lines[3].Transition!.Kind);
-
-        // 들여쓴 줄은 옵션 본문이다 — 전환이 붙지 않는다.
-        Assert.Null(parsed.Lines[2].Transition);
-        Assert.Equal("ln_0110", parsed.Lines[2].LineId);
-    }
-
-    [Fact]
-    public void 들여쓰기가_풀리면_선택_블록이_닫힌다()
-    {
-        ScenarioParseResult parsed = ScenarioTextParser.Parse("""
-            -> 첫 선택 #line:ln_0007
-                라루: 옵션 본문 #line:ln_0110
-            윌로: 블록 다음 줄 #line:ln_0009
-            """, Definition);
-
-        Assert.Empty(parsed.UnparsedLines);
-        Assert.Equal(ConditionTransitionKind.EndChoice, parsed.Lines[2].Transition!.Kind);
-        Assert.Equal("블록 다음 줄", parsed.Lines[2].Text);
+        Assert.Equal(2, parsed.UnparsedLines.Count);
+        Assert.All(parsed.UnparsedLines, line => Assert.Contains("간선", line));
+        Assert.Equal(["ln_0005", "ln_0110"], parsed.Lines.Select(line => line.LineId));
+        Assert.All(parsed.Lines, line => Assert.Null(line.Transition));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

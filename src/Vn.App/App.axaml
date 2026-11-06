@@ -9,7 +9,7 @@
     </Application.Styles>
 
     <!-- ThemeBorderLowBrush는 Simple 테마의 키라 FluentTheme에는 없다 — 참조가 전부
-         null로 풀려 구분선이 조용히 사라졌다(그래프 캔버스 히트테스트 불능과 같은 뿌리).
+         null로 풀려 구분선이 조용히 사라진다(그래프 캔버스 히트테스트 불능과 같은 뿌리).
          화면 18곳이 이 키 하나를 참조하므로 여기 한 번만 정의해 전부 살린다. -->
     <Application.Resources>
         <ResourceDictionary>

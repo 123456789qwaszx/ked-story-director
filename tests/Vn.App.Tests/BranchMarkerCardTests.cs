@@ -14,9 +14,9 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>「조건 분기」 카드 — 줄 사이에 낀다</b> (R7 P-5 · `docs/plans/R7.md`).
+/// <b>「조건 분기」 카드 — 줄 사이에 낀다</b>.
 ///
-/// ⛔ <b>내용이 없다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 (2026-09-17 소유자) —
+/// <b>내용이 없다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 —
 /// 조건식도 선택지 문구도 여기서 정하지 않는다. 조건이 성립하든 말든 다녀오고, 다녀온
 /// 에피소드가 제 첫머리에서 보고 아니면 곧바로 돌아온다.
 /// </summary>
@@ -52,7 +52,7 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 표식을_두면_그_줄_앞에_카드가_낀다() => HeadlessUi.Run(() =>
     {
-        // ⚠ <b>앞</b>이다 — 그 줄에 붙은 것이 아니라 그 줄 앞에서 갈라진다는 표식이다.
+        // <b>앞</b>이다 — 그 줄에 붙은 것이 아니라 그 줄 앞에서 갈라진다는 표식이다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
         DialogueNode made = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -70,8 +70,8 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 카드에는_조건이_없다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 조건식을 여기서 적게 하면 연출 그래프가 "갈지 말지"까지 정하게 된다 —
-        //    소유자가 명시적으로 뒤로 미룬 일이다.
+        // 조건식을 여기서 적게 하면 연출 그래프가 "갈지 말지"까지 정하게 된다 —
+        //    일부러 뒤로 미룬 일이다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
         session.Editor.AddBranchMarker(nodeId, lineId);
@@ -86,8 +86,8 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 분기_지우기는_표식과_그_에피소드를_함께_걷는다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-29 소유자 — "조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다." 예전 단추는 표식만 걷고
-        // 「분기 추가」가 세운 에피소드를 판에 남겼다. 이제 「분기 추가」의 반대다(되돌리기 한 번에 돌아온다).
+        // 「분기 추가」의 반대다 — 표식만 걷지 않고 「분기 추가」가 세운 에피소드도 판에서 걷는다
+        // (되돌리기 한 번에 돌아온다).
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
         DialogueNode made = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -111,7 +111,7 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 한_줄에_분기가_둘이면_카드_둘이_다녀오는_차례로_낀다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-29 소유자: "하나의 줄에 여러개의 분기가 있을 수 있게" — 위에서부터 차례로 다녀온다.
+        // 한 줄에 분기가 여럿 있을 수 있다 — 위에서부터 차례로 다녀온다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
         DialogueNode first = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -145,7 +145,7 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 분기_카드를_우클릭하면_그_분기만_지워진다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-30 소유자: "그곳에서 생성된 조건 분기를 우클릭해서, 분기를 제거할 수 있게" — 연출 그래프에서 분기 선을
+        // 대사 편집기의 분기 카드를 우클릭해 그 분기를 지운다 — 연출 그래프에서 분기 선을
         // 우클릭하는 것과 같은 손놀림이다. 진짜 마우스로 잰다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
         DialogueNode first = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -171,7 +171,7 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 분기_카드의_색은_연출_그래프의_그_분기_포트_색이다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-30 소유자: "모두 보라색으로 표시되는데, 에피소드 노드에서 생기는 색상과 동일하게 해서 구분을".
+        // 카드마다 한 색으로 칠하지 않고, 에피소드 노드에 생기는 그 분기 포트의 색과 같게 칠해 구분한다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
         DialogueNode first = session.Editor.AddBranchMarker(nodeId, lineId);
         DialogueNode second = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -207,10 +207,9 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 뚫린_포트가_그래프_카드에_실제로_선다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 여기가 소유자 그림의 핵심이다 — "연출그래프의 카드에 포트만 뚫리는데".
-        //    판 투영이 에피소드 노드의 포트를 걸러 내면서 표식을 함께 떨어뜨리고 있었다
-        //    (2026-09-17에 잡았다): 카드는 보이는데 이을 자리가 <b>없는</b> 상태였고,
-        //    P-6 뒤로는 판의 카드가 전부 에피소드라 <b>한 자리도 안 보였다</b>.
+        // 여기가 핵심이다 — 연출 그래프의 카드에는 분기 포트가 뚫려야 한다.
+        //    판 투영이 에피소드 노드의 포트를 걸러 낼 때 표식까지 떨어뜨리면 카드는 보이는데
+        //    이을 자리가 <b>없다</b>. 판의 카드는 전부 에피소드라 <b>한 자리도 안 보이게 된다</b>.
         (_, AuthoringSession session, string nodeId, string lineId) = Show();
 
         DialogueNode made = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -232,7 +231,7 @@ public sealed class BranchMarkerCardTests : IDisposable
     [Fact]
     public void 포트_열쇠는_서로_겹치지_않는다() => HeadlessUi.Run(() =>
     {
-        // ⚠ 표식과 IF 갈래는 <b>둘 다 열쇠가 LineId다</b>. 한 줄이 갈래도 열고 표식도 지면
+        // 주의: 표식과 IF 갈래는 <b>둘 다 열쇠가 LineId다</b>. 한 줄이 갈래도 열고 표식도 지면
         //    열쇠가 겹쳐 두 포트가 한 자리를 다투고 하나가 조용히 사라진다 — 그래서 표식은
         //    제 접두(`:detour:`)를 진다.
         (_, AuthoringSession session, string nodeId, string lineId) = Show();

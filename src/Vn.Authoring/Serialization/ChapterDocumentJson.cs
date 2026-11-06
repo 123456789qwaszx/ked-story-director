@@ -7,14 +7,14 @@ namespace Vn.Authoring.Serialization;
 /// <see cref="ChapterDocument"/> ↔ 프로젝트 매니페스트의 <c>chapters</c> 배열
 /// (R-F · 2026-09-16, 지시서 §1.1).
 ///
-/// ⚠ <b>비어 있는 값은 안 쓴다.</b> 이 저장소의 매니페스트 작법 그대로다 — 기본값을 전부
+/// <b>비어 있는 값은 안 쓴다.</b> 이 저장소의 매니페스트 작법 그대로다 — 기본값을 전부
 /// 적으면 사람이 파일을 열었을 때 무엇이 <i>실제로 정해진 값</i>인지 안 보이고, 기본값이
 /// 바뀔 때 옛 파일이 옛 기본값을 굳혀 버린다.
 ///
-/// ⚠ <b>파생값은 안 쓴다.</b> 조건의 <c>Parsed</c>·<c>IsValid</c>는 식 원문에서 다시 나온다
+/// <b>파생값은 안 쓴다.</b> 조건의 <c>Parsed</c>·<c>IsValid</c>는 식 원문에서 다시 나온다
 /// (<see cref="ChapterDocument.ToGraphModel"/>) — 담아 두면 식을 고쳤을 때 둘이 갈린다.
 ///
-/// ⛔ 행마다 붙던 <c>sourceRow</c>(엑셀에서 들여온 값의 원래 행 번호)는 2026-10-29(L8)에 걷혔다.
+/// 행마다 붙던 <c>sourceRow</c>(엑셀에서 들여온 값의 원래 행 번호)는 2026-10-29(L8)에 걷혔다.
 /// 진단이 에피소드를 행으로 짚던 마지막 쓰임이 Id로 바뀌어 읽을 곳이 없다. 옛 파일의 그 키는
 /// 읽지 않고 지나간다.
 /// </summary>
@@ -32,6 +32,8 @@ internal static class ChapterDocumentJson
         foreach (ChapterDocument chapter in chapters)
         {
             var json = new JsonObject { ["chapterId"] = chapter.ChapterId };
+
+            Text(json, "displayName", chapter.DisplayName);
 
             Put(json, "episodes", chapter.Episodes, WriteEpisode);
             Put(json, "edges", chapter.Edges, WriteEdge);
@@ -60,6 +62,7 @@ internal static class ChapterDocumentJson
             chapters.Add(new ChapterDocument
             {
                 ChapterId = Text(json["chapterId"]),
+                DisplayName = (string?)json["displayName"] is { Length: > 0 } displayName ? displayName : null,
                 Episodes = Take(json["episodes"], ReadEpisode),
                 Edges = Take(json["edges"], ReadEdge),
                 Conditions = Take(json["conditions"], ReadCondition),
@@ -195,7 +198,7 @@ internal static class ChapterDocumentJson
         return json;
     }
 
-    /// <summary>⚠ <c>Parsed</c>·<c>IsValid</c>는 안 읽는다 — 식에서 다시 나온다.</summary>
+    /// <summary><c>Parsed</c>·<c>IsValid</c>는 안 읽는다 — 식에서 다시 나온다.</summary>
     private static ChapterCondition ReadCondition(JsonObject json) => new(
         Text(json["label"]),
         Text(json["expression"]),

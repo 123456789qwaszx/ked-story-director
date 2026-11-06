@@ -15,10 +15,10 @@ namespace Vn.Authoring.Serialization;
 /// story/&lt;fileId&gt;.vnstory.json       판 — 카드와 그 대본(줄 정체성 + locale별 본문)
 /// </code>
 ///
-/// ⛔ 형식 3까지는 대본이 <c>script/&lt;scriptId&gt;.vnscript.json</c>에 따로 있었다. 그런 프로젝트는 <b>읽어서 옮기고</b>,
+/// 형식 3까지는 대본이 <c>script/&lt;scriptId&gt;.vnscript.json</c>에 따로 있었다. 그런 프로젝트는 <b>읽어서 옮기고</b>,
 /// 저장할 때 옛 매니페스트가 가리키던 대본 파일을 지운다(<see cref="Save"/> · <c>docs/plans/script-merge.md</c>).
 ///
-/// ⛔ <b>연출은 읽지 않는다</b> (2026-10-29 — 연출은 <c>ked-story-compositor</c>의 것이다). 연출을 담은 옛
+/// <b>연출은 읽지 않는다</b> (2026-10-29 — 연출은 <c>ked-story-compositor</c>의 것이다). 연출을 담은 옛
 /// 프로젝트를 열면 연출 데이터는 모델에 들어오지 않고, 그대로 저장하면 사라진다. 그래서 <b>열 때 원본을 한 번
 /// 남긴다</b> — <see cref="PresentationBackupFolder"/>에 manifest · 대본 · StoryFile · 발행 결과 파일 · 게임 정의를
 /// 같은 상대 경로로 복사한다. compositor는 그 폴더에서 연출을 가져간다.
@@ -46,13 +46,40 @@ public static class ProjectStore
         }
 
         ProjectManifest manifest = ProjectManifestJson.Read(json);
-        StoryProject project = LoadManifest(openedPath, manifest, out bool storyCarriesPresentation);
+        var notices = new List<string>();
+        StoryProject project = LoadManifest(openedPath, manifest, out bool storyCarriesPresentation, notices);
 
         string? backup = manifest.CarriesPresentation || storyCarriesPresentation
             ? BackUpPresentationOriginal(openedPath, root, manifest)
             : null;
 
-        return new ProjectLoadResult(project, openedPath, backup);
+        return new ProjectLoadResult(project, openedPath, backup, notices);
+    }
+
+    /// <summary>
+    /// 걷힌 대사 안 선택지(2026-11-04)가 파일에 남아 있으면 한 줄 알린다 — 리더는 그 전환을 버리므로(<see cref="StoryNodeJson"/>)
+    /// 라벨 줄은 화자 없는 보통 줄이 되고 본문은 이어 재생된다. 글을 손봐야 한다는 뜻이다. 저장하면 파일에서도 사라진다.
+    /// </summary>
+    private static void NoticeRetiredChoices(string storyJson, string fileName, List<string> notices)
+    {
+        int count = StoryNodeJson.RetiredChoiceKindNames.Sum(name => CountOccurrences(storyJson, "\"" + name + "\""));
+
+        if (count > 0)
+        {
+            notices.Add($"'{fileName}'에 대사 안 선택지 전환 {count}개가 남아 있어 버렸습니다 — 선택지는 에피소드 끝 간선에서만 섭니다. 라벨 줄과 본문을 손보고 저장하세요.");
+        }
+    }
+
+    private static int CountOccurrences(string text, string token)
+    {
+        int count = 0;
+
+        for (int at = text.IndexOf(token, StringComparison.Ordinal); at >= 0; at = text.IndexOf(token, at + token.Length, StringComparison.Ordinal))
+        {
+            count++;
+        }
+
+        return count;
     }
 
     /// <summary>연출을 담은 옛 프로젝트의 원본을 남기는 폴더 이름(manifest 옆). 겹치면 뒤에 <c>-2</c>, <c>-3</c>…</summary>
@@ -64,7 +91,7 @@ public static class ProjectStore
     /// <summary>
     /// manifest가 가리키는 파일 전부(대본 · StoryFile · 발행 결과)와 manifest · 게임 정의를 같은 상대 경로로 복사한다.
     ///
-    /// ⚠ <b>같은 원본을 두 번 남기지 않는다</b> — 열기만 하고 저장하지 않으면 다음에 또 연출을 만난다. 이미 있는
+    /// <b>같은 원본을 두 번 남기지 않는다</b> — 열기만 하고 저장하지 않으면 다음에 또 연출을 만난다. 이미 있는
     /// 폴더의 내용이 지금 원본과 바이트까지 같으면 그 폴더를 그대로 쓰고, 다르면(옛 툴에서 그 사이 고쳤다) 새 번호를 단다.
     /// </summary>
     private static string BackUpPresentationOriginal(string manifestPath, JsonObject root, ProjectManifest manifest)
@@ -285,7 +312,8 @@ public static class ProjectStore
     private static StoryProject LoadManifest(
         string manifestPath,
         ProjectManifest manifest,
-        out bool storyCarriesPresentation)
+        out bool storyCarriesPresentation,
+        List<string>? notices = null)
     {
         string rootDirectory = Path.GetDirectoryName(manifestPath)
             ?? throw new InvalidDataException("프로젝트 manifest 디렉터리를 찾을 수 없습니다.");
@@ -334,10 +362,14 @@ public static class ProjectStore
                     storyPath);
             }
 
-            StoryFile file = StoryFileJson.Read(
-                File.ReadAllText(storyPath, new UTF8Encoding(false)),
-                out bool carried,
-                table);
+            string storyJson = File.ReadAllText(storyPath, new UTF8Encoding(false));
+
+            if (notices is not null)
+            {
+                NoticeRetiredChoices(storyJson, reference.RelativePath, notices);
+            }
+
+            StoryFile file = StoryFileJson.Read(storyJson, out bool carried, table);
             storyCarriesPresentation |= carried;
 
             if (!string.Equals(file.Id, reference.Id, StringComparison.Ordinal))
@@ -358,7 +390,7 @@ public static class ProjectStore
 
         project.Links.AddRange(manifest.Links.Select(link => link.Clone()));
 
-        // ⚠ 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지
+        // 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지
         //    않는다(WriterSpeaker는 가변이라 복제한다).
         project.Chapters.AddRange(manifest.Chapters);
         project.WriterSpeakers.AddRange(manifest.WriterSpeakers.Select(speaker => speaker.Clone()));
@@ -404,7 +436,12 @@ public static class ProjectStore
 /// <param name="PresentationBackupDirectory">
 /// 연출을 담은 옛 프로젝트였으면 원본을 남긴 폴더(<see cref="ProjectStore.PresentationBackupFolder"/>), 아니면 null.
 /// </param>
+/// <param name="Notices">열면서 알릴 것 — 파일에서 버린 옛 구조 등. 비어 있으면 조용히 열렸다.</param>
 public sealed record ProjectLoadResult(
     StoryProject Project,
     string ManifestPath,
-    string? PresentationBackupDirectory = null);
+    string? PresentationBackupDirectory = null,
+    IReadOnlyList<string>? Notices = null)
+{
+    public IReadOnlyList<string> LoadNotices => Notices ?? [];
+}

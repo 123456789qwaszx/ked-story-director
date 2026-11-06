@@ -23,7 +23,7 @@ public enum ExitPortKind
     /// <b>「조건 분기」 표식</b>이 뚫은 출구 (R7 P-5 · 2026-09-17). 열쇠는 그 줄의 LineId와 다녀갈 노드다 — 한 줄에
     /// 분기가 여럿일 수 있다(2026-10-29, <see cref="ExitPort.DetourKey"/>).
     ///
-    /// ⛔ <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든 말든
+    /// <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든 말든
     /// 다녀오고, 다녀온 자유 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다. 그래서 갈래와
     /// 달리 여는 전환도 닫는 전환도 없다: <b>분기 하나가 곧 포트 하나</b>다.
     /// </summary>
@@ -36,8 +36,7 @@ public enum ExitPortKind
 /// Settings link는 실행 포트가 아니며 <see cref="StoryProject.Links"/>에 별도로 저장된다.
 /// 이 타입은 오직 다음 실행 노드를 결정하는 기본/조건 출구만 표현한다.
 /// </summary>
-/// <param name="IsChoice">선택지 옵션의 갈래인가 (IF 갈래와 구분 — 철도 배선 T2가 쓴다).</param>
-/// <param name="ChoiceText">옵션의 원문 라벨. 챕터 간선과 라벨 짝을 맞추는 열쇠다.</param>
+/// <param name="ChoiceText">챕터 간선 선택지(<see cref="ExitPortKind.Choice"/>)의 원문 라벨. 간선과 라벨 짝을 맞추는 열쇠다.</param>
 public sealed record ExitPort(
     ExitPortKind Kind,
     string NodeId,
@@ -45,7 +44,6 @@ public sealed record ExitPort(
     string Label,
     string? TargetNodeId,
     int PaletteIndex,
-    bool IsChoice = false,
     string? ChoiceText = null)
 {
     public bool IsConnected => TargetNodeId is not null;
@@ -106,13 +104,9 @@ public static class NodeConnections
                     ExitPortKind.Branch,
                     dialogue.Id,
                     branch.OpenLineId,
-                    branch.IsChoice
-                        ? ChoiceLabelFor(branch, flow)
-                        : LabelFor(branch, project, definition, available),
+                    LabelFor(branch, project, definition, available),
                     branch.ExitTargetNodeId,
-                    branch.PaletteIndex,
-                    IsChoice: branch.IsChoice,
-                    ChoiceText: branch.IsChoice ? flow.Script.Find(branch.OpenLineId)?.Text : null));
+                    branch.PaletteIndex));
             }
 
             // 「조건 분기」 표식 — 분기 하나가 곧 포트 하나다 (R7 P-5). 대본에 적힌 순서, 한 줄 안에서는 다녀오는
@@ -126,11 +120,11 @@ public static class NodeConnections
                 }
             }
 
-            // ⛔ ~~기본 출구는 엑셀노드만 가진다~~ (2026-08-21) — <b>걷혔다</b>
+            // ~~기본 출구는 엑셀노드만 가진다~~ (2026-08-21) — <b>걷혔다</b>
             //    (R7 P-6 · 결정 ⑤ · 2026-09-17). 그 관문이 곧 엑셀노드/자유노드의 구분이었고,
             //    구분이 없어졌으므로 <b>대사 노드는 전부 기본 출구를 가진다</b>.
             //
-            // ⚠ 이 규칙은 `StoryNode.EffectiveDefaultExit`에도 <b>따로 한 벌</b> 있었다 —
+            // 이 규칙은 `StoryNode.EffectiveDefaultExit`에도 <b>따로 한 벌</b> 있었다 —
             //    같은 규칙이 두 곳에 살면 갈린다. 그쪽도 함께 걷었다.
             ports.Add(new ExitPort(
                 ExitPortKind.Default,
@@ -155,16 +149,6 @@ public static class NodeConnections
             .SelectMany(node => PortsOf(node, project, definition))
             .Where(port => port.IsConnected)
             .ToList();
-    }
-
-    /// <summary>옵션 포트의 라벨은 버튼 문구다. 문구가 비어 있으면 옵션 순번으로 보여 준다.</summary>
-    private static string ChoiceLabelFor(ConditionBranch branch, DialogueFlow flow)
-    {
-        string? text = flow.Script.Find(branch.OpenLineId)?.Text;
-
-        return string.IsNullOrWhiteSpace(text)
-            ? $"옵션 {branch.BranchIndexInChain + 1}"
-            : $"→ {text}";
     }
 
     private static string LabelFor(

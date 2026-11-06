@@ -6,7 +6,7 @@ namespace Vn.Authoring.Rendering;
 /// 문서를 사람이 읽고 쓰는 글로 편다 — <b>시나리오 표기</b>(카드 안 글 칸, D4) 하나다.
 /// Segment 목록과 원본 매핑은 그대로 두고, 사람이 보는 표기만 바꾼다.
 ///
-/// ⛔ Yarn · 녹음 대본 · 번역 대본 표기는 2026-10-29에 걷혔다 — 그것을 고르던 Script Preview 탭이
+/// Yarn · 녹음 대본 · 번역 대본 표기는 2026-10-29에 걷혔다 — 그것을 고르던 Script Preview 탭이
 /// 유일한 독자였다(소유자: "더 이상 필요없으니 완전히 제거하십시오"). 게임용 Yarn은 ked-story-compositor가 낸다.
 /// </summary>
 public static class DocumentPreviewFormatter
@@ -37,7 +37,7 @@ public static class DocumentPreviewFormatter
 
         foreach (RenderedSegment segment in document.Segments)
         {
-            if (segment.Kind is RenderedSegmentKind.DialogueLine or RenderedSegmentKind.ChoiceOption &&
+            if (segment.Kind is RenderedSegmentKind.DialogueLine &&
                 segment.Source.LineId is { Length: > 0 } lineId)
             {
                 rowOfLine.TryAdd(lineId, row);
@@ -74,10 +74,6 @@ public static class DocumentPreviewFormatter
 
                 case RenderedSegmentKind.DialogueLine:
                     AppendDialogue(builder, document.Options, segment, lineIdPrefix: null);
-                    break;
-
-                case RenderedSegmentKind.ChoiceOption:
-                    builder.Append("-> ").Append(segment.Text ?? string.Empty).Append('\n');
                     break;
 
                 case RenderedSegmentKind.Warning:

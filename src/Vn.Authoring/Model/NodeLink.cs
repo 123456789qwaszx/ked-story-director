@@ -7,7 +7,7 @@ namespace Vn.Authoring.Model;
 /// <see cref="DialogueNode.BranchExits"/>가 소유한다. 이 목록에는 다음 노드를 정하지 않고
 /// 다른 노드의 저작 데이터를 공급하는 관계만 둔다.
 ///
-/// ⛔ 연출 쪽 두 종류(명령 공급 · 연출 공급)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로
+/// 연출 쪽 두 종류(명령 공급 · 연출 공급)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로
 /// 갔다. 그 배선이 든 옛 파일은 읽을 때 빠진다(원본은 <c>ProjectStore</c>가 남긴다).
 /// </summary>
 public enum NodeLinkKind

@@ -9,12 +9,9 @@
     <InternalsVisibleTo Include="Vn.App.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <!-- ⛔ 연출 코어(Ked.Presentation.Core) 참조는 2026-10-29에 걷혔다 — 무대 상태 계산이 연출 층과 함께
-         ked-story-compositor로 갔다. -->
-
-    <!-- 진행 규칙 코어 (2026-08-23 반입 · 로드맵 T1). 툴과 런타임이 **같은 static 함수**로
+    <!-- 진행 규칙 코어. 툴과 런타임이 **같은 static 함수**로
          판정하게 하려고 있는 것이다 — 조건 평가·전이·도달성 증명이 양쪽에 각자 있으면
-         갈리고, 실제로 갈렸었다(계약서 §G7). 지금은 진행 JSON을 낸 뒤 코어 로더에 다시 실어
+         갈린다(계약서 §G7). 여기서는 진행 JSON을 낸 뒤 코어 로더에 다시 실어
          거부 사유를 챕터 자리로 옮기는 데 쓴다(ChapterProgressionExporter.CoreRefusals). -->
     <ProjectReference Include="..\Ked.Progression\Ked.Progression.csproj" />
   </ItemGroup>

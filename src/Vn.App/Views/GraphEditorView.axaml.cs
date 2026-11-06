@@ -362,6 +362,7 @@ public partial class GraphEditorView : UserControl
         SetHint(null);
 
         _sceneRootNodeIds = SceneRootCards();
+        _branchEntries = BranchEntries(_projection);
 
         foreach (GraphItemProjection item in _projection.Items)
         {
@@ -799,7 +800,7 @@ public partial class GraphEditorView : UserControl
         Dictionary<string, List<(string From, string Label)>> arrivals)
     {
         // 이 에피소드의 선택지 칸들 (R7) — 가지마다 제 칸을 얹어 <b>철도 위에서</b> 고치고 잇는다.
-        IReadOnlyList<GraphChoicePort> slots = SlotsOf(source.Id);
+        IReadOnlyList<GraphChoicePort> slots = ShownSlotsOf(source.Id);
 
         var branches = new List<(ChapterEdge? Edge, Rect? Target, FoldedRow? Row, GraphChoicePort Slot)>();
 
@@ -1023,7 +1024,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private double RailDepthOf(string nodeId)
     {
-        int slots = SlotsOf(nodeId).Count;
+        int slots = ShownSlotsOf(nodeId).Count;
 
         return slots == 0 ? 0 : RailFirstDrop + ((slots - 1) * RailBranchGap) + 14;
     }
@@ -1081,7 +1082,7 @@ public partial class GraphEditorView : UserControl
 
             panel.Children.Add(new TextBlock
             {
-                Text = "잇고 끊는 곳은 출발 쪽 칩과 챕터 그래프입니다.",
+                Text = "잇고 끊는 곳은 출발 쪽 칩과 [구성] 탭입니다.",
                 FontSize = 10,
                 Opacity = 0.5,
                 TextWrapping = TextWrapping.Wrap,
@@ -1239,16 +1240,27 @@ public partial class GraphEditorView : UserControl
             slots.Add(joined[next++] with { Slot = slots.Count });
         }
 
-        // 새로 낼 빈 칸 — 인스펙터의 「선택지 3칸」을 켠 카드만 셋까지(투영이 정한 수), 나머지는 하나다 (2026-10-30 소유자:
-        // "연결되어 있지 않더라도 그게 보이다보니 너무 지저분"). 이은 칸 · 적어 둔 칸은 위에서 이미 섰다 — 어느 쪽이든 안 숨는다.
-        int wanted = _session?.FullChoiceNodeIds.Contains(nodeId) == true ? raw.Count : 1;
-
-        while (slots.Count < wanted)
+        // 빈 칸을 투영이 정한 수까지 채운다. 감추기는 그리는 쪽(<see cref="ShownSlotsOf"/>)이 한다 — 잇기 · 문구 적기는
+        // 감춘 칸까지 든 이 차례로 칸 번호를 맞춘다.
+        while (slots.Count < raw.Count)
         {
             slots.Add(Blank(slots.Count));
         }
 
         return slots;
+    }
+
+    /// <summary>
+    /// 판에 그릴 칸 — 인스펙터의 「빈 선택지 숨기기」를 켠 카드는 이은 칸만이다. 안 이은 칸은 자동 길 자리 · 적어 둔 칸까지
+    /// 감춘다(적어 둔 문구는 끄면 그 자리에 돌아온다). 칸 번호는 <see cref="SlotsOf"/>의 것을 그대로 지닌다.
+    /// </summary>
+    private IReadOnlyList<GraphChoicePort> ShownSlotsOf(string nodeId)
+    {
+        IReadOnlyList<GraphChoicePort> slots = SlotsOf(nodeId);
+
+        return _session?.HiddenChoiceNodeIds.Contains(nodeId) == true
+            ? slots.Where(slot => !slot.IsEmpty).ToList()
+            : slots;
     }
 
     /// <summary>이은 칸의 간선 — 신원은 (출발, 도착, 문구)다.</summary>
@@ -1698,6 +1710,89 @@ public partial class GraphEditorView : UserControl
             Color.FromArgb(90, 128, 128, 128), 10, "⚙")
     };
 
+    /// <summary>분기로 다녀오는 카드 → 그 분기(챕터 · 열쇠 · 색). 판을 다시 세울 때마다 묻는다(<see cref="BranchEntries"/>).</summary>
+    private Dictionary<string, BranchEntry> _branchEntries = new(StringComparer.Ordinal);
+
+    /// <summary>분기 하나 — 조건을 정하러 갈 챕터와 분기 열쇠(<see cref="ExitPort.DetourKey"/>), 그 분기 선의 색 번호.</summary>
+    private readonly record struct BranchEntry(string ChapterId, string BranchKey, int PaletteIndex);
+
+    /// <summary>
+    /// 분기 선이 들어오는 카드들 — 챕터 판의 분기만 든다(조건을 정하는 자리가 챕터 그래프다). 한 카드에 분기 선이 여럿 들어오면
+    /// 처음 것을 쓴다 — 조건은 카드의 첫머리 하나라 어느 선으로 가도 같은 조건이다.
+    /// </summary>
+    private Dictionary<string, BranchEntry> BranchEntries(GraphProjection projection)
+    {
+        var entries = new Dictionary<string, BranchEntry>(StringComparer.Ordinal);
+
+        if (_session is null)
+        {
+            return entries;
+        }
+
+        foreach (GraphConnectionProjection connection in projection.Connections)
+        {
+            if (connection.ExecutionPort is not { Kind: ExitPortKind.Detour, ExitKey: { } branchKey } ||
+                entries.ContainsKey(connection.TargetNodeId) ||
+                _session.Project.FindNode(connection.SourceNodeId) is not DialogueNode caller ||
+                EpisodeNaming.ChapterOf(_session.Project, caller) is not { } chapter)
+            {
+                continue;
+            }
+
+            entries[connection.TargetNodeId] = new BranchEntry(chapter.ChapterId, branchKey, connection.PaletteIndex);
+        }
+
+        return entries;
+    }
+
+    /// <summary>분기 조건 표의 Tag 머리 — 뒤에 카드(노드) Id.</summary>
+    internal const string BranchConditionChipTag = "branch-condition-chip:";
+
+    /// <summary>분기의 조건을 정하러 가자고 했다 (챕터 Id, 분기 열쇠) — 셸이 챕터 그래프를 열고 그 분기를 고른다.</summary>
+    internal event Action<string, string>? BranchConditionRequested;
+
+    /// <summary>
+    /// 분기로 다녀오는 카드 머리의 조건 표 — 「⑂ 조건 없음」 · 「⑂ 조건: X」. 연출 그래프는 조건을 고치지 않지만 보여야 한다: 조건 없는
+    /// 분기와 조건 걸린 분기가 판에서 똑같아 보이면 헷갈린다. 색은 그 분기 선의 색이고, 누르면 챕터 그래프의 그 분기로 간다.
+    /// </summary>
+    private Border BranchConditionChip(string nodeId, BranchEntry entry)
+    {
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId, _session.Definition);
+        IBrush accent = BranchPalette.Accent(entry.PaletteIndex);
+
+        var chip = new Border
+        {
+            CornerRadius = new CornerRadius(3),
+            Padding = new Thickness(4, 0),
+            Margin = new Thickness(4, 0, 0, 0),
+            BorderThickness = new Thickness(1),
+            BorderBrush = accent,
+            Background = state.Label is null ? Brushes.Transparent : BranchPalette.Background(entry.PaletteIndex),
+            VerticalAlignment = VerticalAlignment.Center,
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Tag = BranchConditionChipTag + nodeId,
+            Child = new TextBlock
+            {
+                Text = BranchConditionNote.Chip(state),
+                FontSize = 9,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = accent,
+                MaxWidth = 110,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            },
+            [ToolTip.TipProperty] = $"분기로 다녀오는 에피소드입니다. {BranchConditionNote.Sentence(state)} " +
+                                    $"{BranchConditionNote.Where} 누르면 [구성] 탭의 그 분기로 갑니다."
+        };
+
+        chip.PointerPressed += (_, args) => UiGuard.Run(_session, "분기 조건", () =>
+        {
+            args.Handled = true;
+            BranchConditionRequested?.Invoke(entry.ChapterId, entry.BranchKey);
+        });
+
+        return chip;
+    }
+
     /// <summary>장면의 루트 에피소드를 진 카드들 — 판을 다시 세울 때마다 묻는다(<see cref="SceneRootCards"/>).</summary>
     private HashSet<string> _sceneRootNodeIds = new(StringComparer.Ordinal);
 
@@ -1776,7 +1871,7 @@ public partial class GraphEditorView : UserControl
 
         var title = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
             Height = TitleHeight,
             Margin = new Thickness(0, 0, 0, HeaderGap)
         };
@@ -1784,6 +1879,14 @@ public partial class GraphEditorView : UserControl
         Grid.SetColumn(titleName, 1);
         title.Children.Add(titleIcon);
         title.Children.Add(titleName);
+
+        if (_branchEntries.TryGetValue(node.NodeId, out BranchEntry entry))
+        {
+            Control chip = BranchConditionChip(node.NodeId, entry);
+            Grid.SetColumn(chip, 2);
+            title.Children.Add(chip);
+        }
+
         body.Children.Add(title);
 
         // 등뼈 — 카드 왼쪽의 종 색 막대. 선택 테두리(파랑 2px)와 채널이 겹치지 않는다.

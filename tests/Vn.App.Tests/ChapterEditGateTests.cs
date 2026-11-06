@@ -8,11 +8,8 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>간선 패널의 자동 저장</b> — 2026-08-17 소유자: "간선을 편집할 때 굳이 적용을 누르지 않아도
-/// 바로 변화가 반영되도록".
-///
-/// ⛔ 이 파일의 앞 절(엑셀 잠금 — 2026-08-17 "엑셀이 열려있으면 … 잠그고", 2026-10-29 C6 "잠금은 편집을
-/// 막지 않는다")은 2026-10-29에 엑셀 잠금 감시 · 배너와 함께 걷혔다(docs/design/two-graphs.md §7 D2).
+/// <b>간선 패널의 자동 저장</b> — 간선을 편집할 때 [적용]을 누르지 않아도
+/// 바로 변화가 반영된다.
 /// </summary>
 public sealed class ChapterEditGateTests
 {

@@ -9,20 +9,17 @@
             <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="*,Auto">
                     <TextBox x:Name="NameBox" FontWeight="SemiBold" PlaceholderText="장면 이름" />
-                    <!-- 선택지 3칸 (2026-10-30 소유자: "연결되어 있지 않더라도 그게 보이다보니 너무 지저분") — 에피소드 카드만. -->
+                    <!-- 빈 선택지 숨기기 — 에피소드 카드만. 다 이은 카드는 안 이은 칸이 판만 어지럽힌다. -->
                     <CheckBox Grid.Column="1"
-                              x:Name="FullChoicesBox"
-                              Content="선택지 3칸"
+                              x:Name="HideEmptyChoicesBox"
+                              Content="빈 선택지 숨기기"
                               FontSize="11"
                               Margin="8,0,0,0"
                               VerticalAlignment="Center"
                               IsVisible="False"
-                              ToolTip.Tip="켜면 연출 그래프의 이 카드 아래에 선택지 칸이 셋 섭니다. 끄면 빈 칸은 하나만 섭니다 — 이어진 선택지는 언제나 보입니다." />
+                              ToolTip.Tip="켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요." />
                 </Grid>
 
-                <!-- ⛔ 「대본 · k줄 · ko-KR」 요약은 2026-10-29에 걷혔다 (소유자: 노드 종류 · 대본 이름 · 줄 수는
-                     "필요없으니까 치워" — 카드 부제와 같은 정보다). 대사 잠금 토글([🔒 대사 잠김])은
-                     2026-09-16에 사라졌다(R-E — 모든 노드의 대본은 툴 소유이고 잠글 원본이 없다). -->
                 <Button x:Name="AddLineButton"
                         HorizontalAlignment="Right"
                         Content="줄 추가"
@@ -36,13 +33,11 @@
             </StackPanel>
         </Border>
 
-        <!-- ⚠ [기본 출구] 편집 구역은 2026-08-22에 사라졌다 (소유자: "연출그래프에서
-             만질 일이 없을 테니 그냥 없애도 될 것 같아") — 같은 값을 판의 레일
-             칩(`○ 진행`)이 이미 편집한다. 한 값에 편집 창구가 둘이면 어느 쪽이
-             최신인지 화면이 대답하지 못한다. 데이터·포트·출력은 그대로다.
-             ⛔ 탭은 2026-10-29에 걷혔다 — [발행] 탭(2026-09-15)에 이어 [Script Preview] 탭도 걷혀(소유자:
-             "더 이상 필요없으니 완전히 제거") 남는 것이 대사 편집 하나다. 긴 대본은 카드 안 글 칸(D4)에 붙여 넣는다. -->
-        <!-- Background이 있어야 카드 아래 빈 공간이 우클릭을 받는다 (W49). -->
+        <!-- 주의: [기본 출구]는 여기서 편집하지 않는다 — 같은 값을 판의 레일
+             칩(`○ 진행`)이 편집한다. 한 값에 편집 창구가 둘이면 어느 쪽이
+             최신인지 화면이 대답하지 못한다.
+             이 편집기는 대사 편집 하나다. 긴 대본은 카드 안 글 칸에 붙여 넣는다. -->
+        <!-- Background이 있어야 카드 아래 빈 공간이 우클릭을 받는다. -->
         <ScrollViewer Grid.Row="1"
                       x:Name="LineScroll"
                       Background="Transparent"

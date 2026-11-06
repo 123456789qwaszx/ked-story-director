@@ -10,17 +10,16 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// G-2 v2 — 그래프 편집이 프로젝트의 챕터에 써진다. 패널의 [적용]·[개명]·간선·조건·＋에피소드가
+/// 그래프 편집이 프로젝트의 챕터에 써진다. 패널의 [적용]·[개명]·간선·조건·＋에피소드가
 /// 전부 <c>ChapterDocument</c>에 남고, 모델을 다시 읽으면 그대로 나온다.
-/// (2026-10-29 · D2: 전에는 챕터 워크북으로 왕복했다.)
 /// </summary>
 public sealed class ChapterGraphEditingTests
 {
     [Fact]
     public void 길의_관문_콤보가_간선에_써진다() => HeadlessUi.Run(() =>
     {
-        // v8 (2026-08-16 소유자) — "보일지 말지는 이제 간선이 정한다". 표시·해금조건이
-        // 에피소드에서 길(간선)로 옮겨 왔고, 편집도 간선 패널에서 한다.
+        // 보일지 말지는 간선이 정한다. 표시·해금조건은 에피소드가 아니라 길(간선)에 있고,
+        // 편집도 간선 패널에서 한다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -49,7 +48,7 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 간선_패널의_선택지도_챕터의_모든_문구에서_고른다() => HeadlessUi.Run(() =>
     {
-        // v9 (2026-08-17 소유자) — "간선에서도 선택지 드롭다운이 되도록." 그래프에서 길을
+        // 간선에서도 선택지를 드롭다운으로 고른다. 그래프에서 길을
         // 눌러 연 패널에서도 문구를 고르고, [적용] 한 번에 관문과 함께 저장된다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -100,9 +99,9 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 에피소드를_지우면_연출_그래프의_빈_노드도_함께_지운다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 이것이 "번들 이름이 겹칩니다"의 뿌리였다 (2026-08-25). 챕터에서만 지우면
-        //    판에 <b>사라진 에피소드를 자기라고 주장하는 유령</b>이 남고, 같은 Id로 다시
-        //    만들면 같은 이름의 노드가 둘이 되어 내보내기가 통째로 막힌다.
+        // 챕터에서만 지우면 판에 <b>사라진 에피소드를 자기라고 주장하는 유령</b>이 남고,
+        //    같은 Id로 다시 만들면 같은 이름의 노드가 둘이 되어 내보내기가 통째로 막힌다
+        //    ("번들 이름이 겹칩니다").
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -124,12 +123,10 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 글이_든_노드도_함께_지우고_되돌리기로_돌아온다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>2026-09-18에 뒤집혔다</b> (소유자: *"노드가 지워지는게 아니라 떼어냄으로
-        //    변하는데?"*). 전에는 글이 든 카드를 지우지 않고 <c>(떼어냄)</c>으로 이름만
-        //    바꿔 판에 남겼다. 근거는 *"툴이 임의로 지우면 되돌릴 자리가 없다(판 편집에는
-        //    Ctrl+Z가 없다)"*였는데, <b>같은 날 Ctrl+Z가 붙어 그 전제가 없어졌다</b>.
+        // 글이 든 카드도 <c>(떼어냄)</c>으로 이름만 바꿔 판에 남기지 않고 지운다 — 판 편집에도
+        //    Ctrl+Z가 있어 되돌릴 자리가 있다.
         //
-        // ⚠ 글은 그래도 안 사라진다 — 카드가 대본을 들고 있어(2026-10-29) 되돌리면 카드와 함께 돌아온다.
+        // 글은 그래도 안 사라진다 — 카드가 대본을 들고 있어 되돌리면 카드와 함께 돌아온다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -162,8 +159,7 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 편집이_열려_있다() => HeadlessUi.Run(() =>
     {
-        // ⚠ 이것이 2026-08-24에 뒤집힌 기본값이다 — 전에는 닫힌 채로 시작했다. 2026-10-29부터는
-        //    닫을 길(엑셀 잠금) 자체가 없다.
+        // 편집은 열린 채로 시작한다 — 닫을 길(잠금) 자체가 없다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
@@ -181,9 +177,8 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 편집_폼은_선택지를_먼저_묻는다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 재지시 — 같은 날 오전의 "도착이 먼저" 결정을 되돌렸다.
         // 목록의 줄이 `문구 → 도착`으로 읽히므로, 그 줄을 눌러 열리는 폼도 같은 순서여야
-        // 눈이 자리를 다시 찾지 않는다. 화살표도 →로 돌아온다.
+        // 눈이 자리를 다시 찾지 않는다. 화살표도 →다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
@@ -198,9 +193,8 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 열려_있을_때는_이름_칸이_아무_말도_안_한다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 "이런 쓸모없는 설명들을 제거해줘" — 하루 전 이 자리에 붙였던
-        // "이름 — 고치고 Enter"를 걷었다. 개명 자리인 줄 알리는 몫은 툴팁이 진다.
-        // (잠겼을 때 사유를 적던 칸도 2026-10-29에 엑셀 잠금 관문과 함께 사라졌다.)
+        // 이름 칸 곁에 "이름 — 고치고 Enter" 같은 상시 설명을 두지 않는다. 개명 자리인 줄
+        // 알리는 몫은 툴팁이 진다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
         view.SelectEpisode("main05.01");
@@ -215,8 +209,8 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 상시_안내들이_편집_패널에서_사라졌다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 — 머리글 "에피소드", 읽기 전용 값 줄(`대사엔트리: … · 엑셀 N행`),
-        // "길 하나 = 선택지 하나…" 셋을 걷었다. 고칠 수도 없는 글이 상시로 자리를 먹었다.
+        // 머리글 "에피소드", 읽기 전용 값 줄(`대사엔트리: … · 엑셀 N행`), "길 하나 = 선택지
+        // 하나…" 셋은 두지 않는다. 고칠 수도 없는 글이 상시로 자리를 먹는다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
         view.SelectEpisode("main05.01");
@@ -250,7 +244,7 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 선택지는_챕터의_모든_문구_중에서_고른다() => HeadlessUi.Run(() =>
     {
-        // v9 (2026-08-17 소유자) — "자기 것만 고르는 게 아니라 모든 선택지 중에서 자유자재로."
+        // 제 것만이 아니라 챕터의 모든 선택지 문구 중에서 고른다.
         // 견본의 사전에는 main05.02가 쓰는 문구 둘이 있고, main05.01에서도 그것을 고른다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -335,8 +329,7 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 개명하면_대사_노드가_함께_따라간다() => HeadlessUi.Run(() =>
     {
-        // 개명이 챕터만 따라가면 카드가 옛 이름에 남아 원고가 에피소드와 끊긴다
-        // (실사례는 2026-08-15 — 그때는 옛 이름의 대본 워크북이 원고를 든 채 남았다).
+        // 개명이 챕터만 따라가면 카드가 옛 이름에 남아 원고가 에피소드와 끊긴다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -362,11 +355,7 @@ public sealed class ChapterGraphEditingTests
     });
 
     /// <summary>
-    /// 2026-08-22 소유자 보고 — *"챕터그래프에서 에피소드를 추가했는데 그게 즉각적으로
-    /// 연출그래프에 반영이 안 돼. 노드를 더블클릭해서 엑셀을 열어서 엑셀파일을
-    /// 생성시켜야지 그제야 노드가 추가되는 버그."*
-    ///
-    /// 그때는 노드를 세우는 것이 대본 동기화뿐이었다. 2026-09-18부터는 에피소드를 만드는
+    /// 챕터 그래프에서 더한 에피소드는 곧바로 연출 그래프에 선다. 에피소드를 만드는
     /// 명령(<c>AddEpisode</c>·<c>AddNextEpisode</c>)이 <b>카드까지 함께</b> 만든다 — 기다릴 것이 없다.
     /// </summary>
     [Fact]
@@ -386,7 +375,7 @@ public sealed class ChapterGraphEditingTests
             session.Project.EnumerateNodes().OfType<DialogueNode>(),
             item => item.MarkedEpisodeId == "new01");
 
-        // 첫 대사도 함께 심어져 있다 (2026-08-26 소유자) — 빈 대본은 검증이 오류로
+        // 첫 대사도 함께 심어져 있다 — 빈 대본은 검증이 오류로
         // 막으므로, 방금 더한 에피소드가 그 오류부터 들고 시작하지 않는다.
         Assert.True(
             node.Script is { } document &&
@@ -421,8 +410,8 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 탭은_없고_인스펙터에는_칸_하나만_선다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-30 소유자 — 우측 기둥은 하이어아키 + 인스펙터다(HY2). [편집 | 화자 | 챕터] 탭(2026-08-24 순서)은
-        // 걷혔다: 고르는 것이 무엇을 보일지 정한다.
+        // 우측 기둥은 하이어아키 + 인스펙터다. [편집 | 화자 | 챕터] 같은 탭은 두지 않는다:
+        // 고르는 것이 무엇을 보일지 정한다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
@@ -437,18 +426,16 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 툴바에서_다시_읽기와_픽스처가_사라졌다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 "꽤 오래 다뤘는데, 단 한 번도 안 썼어."
-        //
-        // [다시 읽기]는 감시자가 선 뒤로 할 일이 없었고(화면이 스스로 따라온다), 픽스처
-        // 콤보는 2026-08-16부터 숨어 있기만 했다. ⚠ 챕터의 픽스처(<c>ChapterDocument.Fixtures</c>)와
-        // `ChapterFixtureWalker`는 안 지웠다 — 화면만 걷었다.
+        // [다시 읽기]는 감시자가 있어 할 일이 없다(화면이 스스로 따라온다). 픽스처 콤보도
+        // 툴바에 두지 않는다. 주의: 챕터의 픽스처(<c>ChapterDocument.Fixtures</c>)와
+        // `ChapterFixtureWalker`는 남아 있다 — 화면에만 없다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         Assert.Null(view.FindControl<Button>("ReloadButton"));
         Assert.Null(view.FindControl<ComboBox>("FixtureCombo"));
         Assert.Null(view.FindControl<TextBlock>("FixtureStopText"));
-        // [폴더 열기]도 2026-08-26에 사라졌다 (소유자).
+        // [폴더 열기]도 없다.
         Assert.Null(view.FindControl<Button>("OpenFolderButton"));
 
         // 남아야 하는 이웃 — 지우다 같이 쓸려 나가면 여기서 걸린다.
@@ -460,10 +447,7 @@ public sealed class ChapterGraphEditingTests
     public void 스탯_안내는_조건과_같은_말투로_어디서_고치는지_말한다() => HeadlessUi.Run(() =>
     {
         // 두 표가 같은 탭에 나란히 서 있으니 "어디서 고치나"의 대답도 같은 모양이어야
-        // 눈이 한 번에 읽는다 (2026-08-24 소유자).
-        //
-        // ⚠ <b>대답이 2026-09-17에 바뀌었다</b>: *"챕터 엑셀의 시트에서"* → <b>여기서</b>.
-        //    같은 말투여야 한다는 규칙은 그대로고, 가리키는 곳만 옮겨 왔다.
+        // 눈이 한 번에 읽는다. 대답은 <b>여기서</b>다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
@@ -480,7 +464,7 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 고른_것이_인스펙터를_정한다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-30 소유자: "하이어아키+ 인스펙터 방식" — 판에서 고른 에피소드 · 길은 그 편집을, 하이어아키의 프로젝트 ·
+        // 하이어아키 + 인스펙터 방식 — 판에서 고른 에피소드 · 길은 그 편집을, 하이어아키의 프로젝트 ·
         // 챕터 줄은 화자 · 조건과 스탯을 보인다. 머리글이 무엇을 보는지 말한다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
@@ -512,12 +496,10 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 대사는_선택지_아래에_펼쳐져_있다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-16 소유자 — 별도 탭이던 대사를 편집 탭의 선택지 아래로 합쳤다
-        // ("에피소드 노드의 정보량이 부족하다"). 접었다 펼 수 있다.
+        // 대사는 별도 탭이 아니라 편집 탭의 선택지 아래에 있다. 접었다 펼 수 있다.
         //
-        // 2026-08-24 소유자 "대사 미리보기는, 펼쳐둔 걸 디폴트로 보이도록 해줘" — 시작이
-        // 뒤집혔다. ⚠ 삼각형·본문·체크 셋이 <b>함께</b> 맞아야 한다. XAML에서 체크만 켜면
-        // 핸들러가 붙기 전이라 삼각형이 ▸로 남는다.
+        // 대사 미리보기는 펼친 채로 시작한다. 주의: 삼각형·본문·체크 셋이 <b>함께</b> 맞아야
+        // 한다. XAML에서 체크만 켜면 핸들러가 붙기 전이라 삼각형이 ▸로 남는다.
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
@@ -545,9 +527,9 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 대사는_한_덩어리로_흐르고_상자를_겹치지_않는다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-16 소유자 재지시 — 줄마다 카드로 가르니 읽기가 더 나빠졌다(철회).
+        // 줄마다 카드로 가르면 읽기가 나빠진다.
         // 대사는 한 덩어리 글이고 화자는 줄 앞에 붙는다. 겹친 상자(탭 속 Expander·
-        // 테두리·안쪽 스크롤)도 걷어냈다 — 접기는 제목 토글 하나가 맡는다.
+        // 테두리·안쪽 스크롤)도 두지 않는다 — 접기는 제목 토글 하나가 맡는다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -563,7 +545,7 @@ public sealed class ChapterGraphEditingTests
         var text = view.FindControl<SelectableTextBlock>("DialoguePreviewText")!;
         Assert.Contains("윌로: 첫 줄", text.Text!);
 
-        // 접기 토글 하나가 제목이자 스위치다 — 펼친 채로 시작한다(2026-08-24).
+        // 접기 토글 하나가 제목이자 스위치다 — 펼친 채로 시작한다.
         var toggle = view.FindControl<ToggleButton>("DialogueToggle")!;
         Assert.True(toggle.IsChecked);
         Assert.True(text.IsVisible);
@@ -590,8 +572,8 @@ public sealed class ChapterGraphEditingTests
 
         // 안내문을 고쳐 적용 → 간선에 써진다.
         //
-        // ⛔ [해금 미달이면 숨김] 체크는 2026-08-24에 없앴다 (소유자) — 해금조건에 숨김을
-        //    더한 것은 그 식을 **표시조건**에 적은 것과 결과가 같다. 같은 말이 두 번 있었다.
+        // [해금 미달이면 숨김] 체크는 없다 — 해금조건에 숨김을
+        //    더한 것은 그 식을 **표시조건**에 적은 것과 결과가 같다. 같은 말이 두 번 있게 된다.
         Assert.Null(view.FindControl<CheckBox>("EdgeHideCheck"));
 
         view.FindControl<TextBox>("EdgeLockedMsgBox")!.Text = "신뢰를 더 쌓아야 한다";
@@ -606,9 +588,8 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 선택지_포트는_카드_아래에_가로로_선다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>v4까지 포트는 카드 오른변이었다</b>. 연출 그래프는 반대(선택지가 아래, 분기가
-        //    오른쪽)였고, 소유자가 2026-09-18에 그것을 짚었다: *"아래쪽으로 고정된 점 3개를
-        //    가로로 두고, 그 포트가 노드위쪽의 점 하나로 출입이 되도록."*
+        // 연출 그래프와 같이 선택지 포트는 카드 아래쪽에 고정된 점 3개를 가로로 두고,
+        //    들어오는 길은 카드 위쪽의 점 하나로 드나든다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -631,7 +612,7 @@ public sealed class ChapterGraphEditingTests
         // 길이 모이는 위변의 점 하나가 카드마다 더 붙는다.
         //
         // 견본 `ch05`는 에피소드 6장이고 어느 것도 나가는 길이 셋을 넘지 않는다 →
-        // 칸 6×3 = 18, 입구 6 = 24. ⚠ 넷을 넘기면 넷을 다 그린다(3은 상한이 아니다).
+        // 칸 6×3 = 18, 입구 6 = 24. 주의: 넷을 넘기면 넷을 다 그린다(3은 상한이 아니다).
         Assert.Equal(
             24, canvas.Children.OfType<Avalonia.Controls.Shapes.Ellipse>().Count(port => port.Width == 9));
 
@@ -664,7 +645,7 @@ public sealed class ChapterGraphEditingTests
     /// 그 에피소드 카드에 대사를 줄마다 적는다 — 작가가 카드에서 하는 일. 첫 줄은 카드가 설 때
     /// 함께 선 빈 줄이다.
     ///
-    /// ⚠ 붙여넣기(<c>ApplyScenarioText</c>)로 한 번에 넣지 않는다 — 그 빈 줄이 고쳐진 것인지
+    /// 주의: 붙여넣기(<c>ApplyScenarioText</c>)로 한 번에 넣지 않는다 — 그 빈 줄이 고쳐진 것인지
     /// 사라진 것인지 판정이 서지 않아 붙여넣기가 통째로 멈춘다.
     /// </summary>
     private static void WriteLines(

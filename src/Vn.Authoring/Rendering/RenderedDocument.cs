@@ -9,14 +9,7 @@ public enum RenderedSegmentKind
     ConditionEnd,
     DialogueLine,
 
-    /// <summary>선택 블록의 옵션 라벨 하나. Text가 버튼 문구이고, 뒤따르는 조각들이 본문이다.</summary>
-    ChoiceOption,
-
-    /// <summary>선택 블록의 끝. 이 조각 자체는 아무 문구도 만들지 않을 수 있다.</summary>
-    ChoiceEnd,
-
-    /// <summary>선택지 옵션의 출구. <c>&lt;&lt;jump&gt;&gt;</c> — 고르면 그 씬으로 이동한다.</summary>
-    BranchJump,
+    // ChoiceOption · ChoiceEnd · BranchJump(선택지 옵션의 <<jump>> 출구)는 대사 안 선택지와 함께 2026-11-04에 걷혔다.
 
     /// <summary>
     /// 조건 갈래(IF)의 커스텀 씬 출구. <c>&lt;&lt;detour&gt;&gt;</c> — 씬을 재생하고
@@ -69,10 +62,7 @@ public sealed record RenderedSegment(
     string? Speaker = null,
     string? Expression = null,
     string? TargetNodeId = null,
-    string? TargetNodeName = null,
-    string? OptionId = null,
-    int? ChoiceBlockOrdinal = null,
-    int? ChoiceOptionIndex = null);
+    string? TargetNodeName = null);
 
 /// <summary>
 /// 대사 결과 하나를 평평하게 합성한 결과.

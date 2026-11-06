@@ -15,16 +15,7 @@ public enum ConditionChoiceKind
     BeginElseIf,
 
     /// <summary>조건 체인을 닫는다.</summary>
-    EndIf,
-
-    /// <summary>이 줄을 첫 옵션 라벨로 삼아 선택 블록을 연다.</summary>
-    BeginChoice,
-
-    /// <summary>이 줄을 같은 블록의 다음 옵션 라벨로 삼는다.</summary>
-    BeginNextOption,
-
-    /// <summary>선택 블록을 닫는다.</summary>
-    EndChoice
+    EndIf
 }
 
 /// <param name="Label">드롭다운에 그대로 보이는 문구.</param>
@@ -35,11 +26,6 @@ public sealed record ConditionChoice(
     string Label,
     bool IsAvailable = true)
 {
-    /// <summary>
-    /// 선택 전환의 OptionId는 여기서 만들지 않는다 — 드롭다운 항목은 여러 줄이 공유하는
-    /// 정적 목록이라, 여기서 발급하면 서로 다른 줄이 같은 Id를 받는다.
-    /// null로 두면 <c>ProjectEditor.SetLineTransition</c>이 기존 Id를 잇거나 새로 발급한다.
-    /// </summary>
     public LineConditionTransition? ToTransition()
     {
         return Kind switch
@@ -47,9 +33,6 @@ public sealed record ConditionChoice(
             ConditionChoiceKind.BeginIf => LineConditionTransition.BeginIf(ConditionId!),
             ConditionChoiceKind.BeginElseIf => LineConditionTransition.BeginElseIf(ConditionId!),
             ConditionChoiceKind.EndIf => LineConditionTransition.EndIf(),
-            ConditionChoiceKind.BeginChoice => LineConditionTransition.BeginChoice(),
-            ConditionChoiceKind.BeginNextOption => LineConditionTransition.BeginNextOption(),
-            ConditionChoiceKind.EndChoice => LineConditionTransition.EndChoice(),
             _ => null
         };
     }
@@ -59,35 +42,30 @@ public sealed record ConditionChoice(
 /// 줄 하나의 조건 드롭다운에 무엇을 보여 줄지 정한다.
 ///
 /// 이 드롭다운은 "이 줄이 조건에 포함되는가"를 표시하는 것이 아니다.
-/// <b>이 줄에서 조건 흐름을 바꿀 것인지</b>를 고르는 자리다. 그래서 선택지의 의미가
+/// <b>이 줄에서 조건 흐름을 바꿀 것인지</b>를 고르는 자리다. 그래서 항목의 의미가
 /// 바로 앞 줄까지의 상태에 따라 달라진다. 프로젝트의 모든 SetNode 조건을 전역 노출하지 않고,
 /// 현재 DialogueNode에 Settings link로 연결된 SetNode와 게임 전역 조건만 사용한다.
+///
+/// "선택지 시작 / 다음 옵션 / 선택지 끝" 항목은 2026-11-04에 걷혔다 — 선택지는 에피소드 끝 간선에서만 선다.
+/// 이 드롭다운은 조건만 다룬다.
 /// </summary>
 public static class ConditionChoices
 {
     public const string InheritOutsideLabel = "조건 없음";
     public const string InheritInsideLabel = "현재 조건 유지";
     public const string EndIfLabel = "조건 종료";
-    public const string BeginChoiceLabel = "선택지 시작 (이 줄이 첫 옵션)";
-    public const string InheritInsideChoiceLabel = "현재 옵션 유지";
-    public const string NextOptionLabel = "다음 옵션 (이 줄이 라벨)";
-    public const string EndChoiceLabel = "선택지 끝";
-    public const string EndChoiceAndIfLabel = "선택지 끝 + 조건 종료";
 
     /// <summary>
     /// <paramref name="preceding"/>는 이 줄의 전환을 적용하기 전의 갈래다.
     /// null이면 조건 바깥이다. 현재 전환이 연결 해제로 인해 사용할 수 없게 되었더라도
     /// <paramref name="currentTransition"/>을 그대로 선택할 수 있도록 목록에 보존한다.
     /// </summary>
-    /// <param name="choiceInsideCondition">이 줄의 선택 블록이 조건 갈래 안에 있는가 (W54) —
-    /// 참이면 "선택지 끝 + 조건 종료"(한 줄 결합 종료, W55)를 함께 제시한다.</param>
     public static IReadOnlyList<ConditionChoice> For(
         ConditionBranch? preceding,
         DialogueNode dialogue,
         StoryProject project,
         GameDefinition? definition = null,
-        LineConditionTransition? currentTransition = null,
-        bool choiceInsideCondition = false)
+        LineConditionTransition? currentTransition = null)
     {
         ArgumentNullException.ThrowIfNull(dialogue);
         ArgumentNullException.ThrowIfNull(project);
@@ -100,7 +78,7 @@ public static class ConditionChoices
 
         if (preceding is null)
         {
-            // 바깥이다. 조건을 고르면 새 갈래가 열리고, 선택지 시작을 고르면 블록이 열린다.
+            // 바깥이다. 조건을 고르면 새 갈래가 열린다.
             choices.Add(new ConditionChoice(ConditionChoiceKind.Inherit, null, InheritOutsideLabel));
 
             foreach (AvailableCondition condition in catalog.Selectable)
@@ -110,25 +88,10 @@ public static class ConditionChoices
                     condition.Id,
                     condition.DisplayName));
             }
-
-            choices.Add(new ConditionChoice(ConditionChoiceKind.BeginChoice, null, BeginChoiceLabel));
-        }
-        else if (preceding.IsChoice)
-        {
-            // 선택 블록 안이다. 새 조건을 여는 항목은 제시하지 않는다(선택지 안 조건 비지원).
-            choices.Add(new ConditionChoice(ConditionChoiceKind.Inherit, null, InheritInsideChoiceLabel));
-            choices.Add(new ConditionChoice(ConditionChoiceKind.BeginNextOption, null, NextOptionLabel));
-            choices.Add(new ConditionChoice(ConditionChoiceKind.EndChoice, null, EndChoiceLabel));
-
-            if (choiceInsideCondition)
-            {
-                // 조건 안 선택지(W54)의 끝은 조건 종료와 한 줄로 겹칠 수 있다 (W55).
-                choices.Add(new ConditionChoice(ConditionChoiceKind.EndIf, null, EndChoiceAndIfLabel));
-            }
         }
         else
         {
-            // 조건 안이다. 유지 / 다른 조건으로 전환 / 선택지 시작(W54) / 종료.
+            // 조건 안이다. 유지 / 다른 조건으로 전환 / 종료.
             choices.Add(new ConditionChoice(ConditionChoiceKind.Inherit, null, InheritInsideLabel));
 
             foreach (AvailableCondition condition in catalog.Selectable)
@@ -145,8 +108,6 @@ public static class ConditionChoices
                     condition.DisplayName));
             }
 
-            // 조건 갈래 안에서 선택지를 제시한다 (W54) — 선택은 이 갈래 안에서 닫힌다.
-            choices.Add(new ConditionChoice(ConditionChoiceKind.BeginChoice, null, BeginChoiceLabel));
             choices.Add(new ConditionChoice(ConditionChoiceKind.EndIf, null, EndIfLabel));
         }
 
@@ -232,9 +193,6 @@ public static class ConditionChoices
         {
             ConditionTransitionKind.BeginIf => ConditionChoiceKind.BeginIf,
             ConditionTransitionKind.BeginElseIf => ConditionChoiceKind.BeginElseIf,
-            ConditionTransitionKind.BeginChoice => ConditionChoiceKind.BeginChoice,
-            ConditionTransitionKind.BeginNextOption => ConditionChoiceKind.BeginNextOption,
-            ConditionTransitionKind.EndChoice => ConditionChoiceKind.EndChoice,
             _ => ConditionChoiceKind.EndIf
         };
     }

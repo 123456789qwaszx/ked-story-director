@@ -3,7 +3,7 @@ using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Script;
 
-/// <summary>다음 대사 줄에 붙을 조건 구조 (X11 문법). 선택 전환은 이 파서의 비범위다.</summary>
+/// <summary>다음 대사 줄에 붙을 조건 구조 (X11 문법).</summary>
 public sealed record ScenarioStructureIntent(ConditionTransitionKind Kind, string? Expression);
 
 /// <summary>파싱된 대본 한 줄. <see cref="Transitions"/>는 바로 앞의 조건 토큰들이다(순서대로).</summary>
@@ -60,7 +60,8 @@ public sealed record ScenarioParseResult(
 /// <item><c>&lt;&lt;if&gt;&gt;</c>·<c>&lt;&lt;elseif&gt;&gt;</c>·<c>&lt;&lt;endif&gt;&gt;</c>는 다음 대사 줄의 조건 구조.</item>
 /// <item>해석 못 한 줄(선택지 라벨 <c>-&gt;</c>, 기타 <c>&lt;&lt;…&gt;&gt;</c>, 대괄호 장식)은
 ///   조용히 버리지 않고 <see cref="ScenarioParseResult.UnparsedLines"/>로 보인다(규칙 14).
-///   지문으로 삼키면 장식이 대사가 되는 더 나쁜 침묵이 된다.</item>
+///   지문으로 삼키면 장식이 대사가 되는 더 나쁜 침묵이 된다. <c>-&gt;</c>는 2026-11-04부터 다시 비범위다 —
+///   선택지는 에피소드 끝 간선에서만 서므로 대사 안 선택 블록을 만들지 않는다. 그 줄은 이유와 함께 보인다.</item>
 /// </list>
 /// </summary>
 public static class ScenarioTextParser
@@ -72,7 +73,6 @@ public static class ScenarioTextParser
         var lines = new List<ScenarioLine>();
         var unparsed = new List<string>();
         var pending = new List<ScenarioStructureIntent>();
-        bool inChoice = false;
 
         foreach (string raw in (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
         {
@@ -94,28 +94,8 @@ public static class ScenarioTextParser
 
             if (line.StartsWith(OptionMarker, StringComparison.Ordinal))
             {
-                if (pending.Count > 0)
-                {
-                    unparsed.Add($"{line} — 옵션 줄에는 조건 전환을 함께 붙일 수 없습니다. " +
-                        $"앞의 '{Describe(pending[0])}'가 붙을 곳이 없습니다.");
-                    pending.Clear();
-                    continue;
-                }
-
-                (string optionText, string? optionId) =
-                    SplitLineTag(line[OptionMarker.Length..].Trim());
-
-                // 첫 옵션이 블록을 열고, 뒤따르는 옵션은 같은 블록의 다음 갈래다(깊이는 늘지 않는다).
-                lines.Add(new ScenarioLine(
-                    string.Empty,
-                    optionText,
-                    SpeakerUnregistered: false,
-                    [new ScenarioStructureIntent(
-                        inChoice ? ConditionTransitionKind.BeginNextOption : ConditionTransitionKind.BeginChoice,
-                        null)],
-                    optionId));
-
-                inChoice = true;
+                // 대사 안 선택지는 걷혔다 (2026-11-04) — 선택지는 챕터 간선(에피소드 끝)에서 만든다.
+                unparsed.Add($"{line} — 대사 안 선택지는 쓰지 않습니다. 선택지는 [구성] 탭의 간선에서 만드세요.");
                 continue;
             }
 
@@ -124,16 +104,6 @@ public static class ScenarioTextParser
             {
                 unparsed.Add(line);
                 continue;
-            }
-
-            // 선택 블록 안에서는 들여쓰기가 소속을 정한다 — 들여쓴 줄은 옵션 본문이고,
-            // 들여쓰기가 풀린 줄은 블록을 닫는다. Yarn이 옵션 소속을 표기하는 방식 그대로다.
-            if (inChoice && !IsIndented(raw))
-            {
-                inChoice = false;
-
-                // 선택 블록의 닫힘은 맨 앞에 선다 — 조건 전환보다 먼저 일어난 일이다.
-                pending.Insert(0, new ScenarioStructureIntent(ConditionTransitionKind.EndChoice, null));
             }
 
             (string tagless, string? lineId) = SplitLineTag(line);
@@ -166,7 +136,7 @@ public static class ScenarioTextParser
     /// 대사 없는 블록이므로 잘못이 아니다.
     ///
     /// 깊이를 세는 것으로 충분하다 — 이 목록은 <b>한 자리</b>에 몰린 전환들이라 순서가 곧
-    /// 일어나는 순서이고, 조건과 선택이 섞여도 각자 제 짝만 본다.
+    /// 일어나는 순서다.
     /// </summary>
     private static List<ScenarioStructureIntent> Unbalanced(List<ScenarioStructureIntent> pending)
     {
@@ -177,13 +147,11 @@ public static class ScenarioTextParser
             switch (intent.Kind)
             {
                 case ConditionTransitionKind.BeginIf:
-                case ConditionTransitionKind.BeginChoice:
                     open.Add(intent);
                     break;
 
-                // elseif·다음 옵션은 열려 있는 것의 갈래를 바꿀 뿐 깊이를 안 바꾼다.
+                // elseif는 열려 있는 것의 갈래를 바꿀 뿐 깊이를 안 바꾼다.
                 case ConditionTransitionKind.BeginElseIf:
-                case ConditionTransitionKind.BeginNextOption:
                     if (open.Count == 0)
                     {
                         open.Add(intent);
@@ -192,7 +160,6 @@ public static class ScenarioTextParser
                     break;
 
                 case ConditionTransitionKind.EndIf:
-                case ConditionTransitionKind.EndChoice:
                     if (open.Count > 0)
                     {
                         open.RemoveAt(open.Count - 1);
@@ -206,17 +173,6 @@ public static class ScenarioTextParser
     }
 
     private const string OptionMarker = "->";
-
-    /// <summary>
-    /// 선택 블록 안에서 옵션 본문임을 나타내는 들여쓰기가 있는가.
-    ///
-    /// <b>이 파서에서 들여쓰기가 의미를 갖는 유일한 자리다.</b> 블록 밖에서는 지금까지대로
-    /// 모두 다듬어 읽는다 — 사람이 붙여넣는 텍스트의 들여쓰기는 대개 뜻이 없기 때문이다.
-    /// 선택 블록 안에서만은 뜻이 있다: Yarn이 옵션 소속을 들여쓰기로 표기하므로,
-    /// 그것을 버리면 "옵션 본문"과 "블록 다음 줄"을 구별할 방법이 사라진다.
-    /// </summary>
-    private static bool IsIndented(string raw) =>
-        raw.Length > 0 && char.IsWhiteSpace(raw[0]);
 
     /// <summary>
     /// 줄 끝의 <c>#line:ln_0001</c>을 떼어낸다 (계약서 C1의 표기 그대로).

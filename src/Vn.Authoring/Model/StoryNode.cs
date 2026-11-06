@@ -115,7 +115,7 @@ public sealed class DialogueNode : StoryNode
     /// <summary>
     /// 이 카드의 대본 — 줄 신원(LineId) · 줄 개정 번호 · 은퇴한 줄 · locale별 화자 · 대사. 카드마다 하나다.
     ///
-    /// ⛔ 2026-10-29까지는 대본이 프로젝트에 따로 서고(<c>StoryProject.Scripts</c>) 카드는 <c>ScriptId</c>로 가리켰다.
+    /// 2026-10-29까지는 대본이 프로젝트에 따로 서고(<c>StoryProject.Scripts</c>) 카드는 <c>ScriptId</c>로 가리켰다.
     /// 따로 둔 까닭(작가 대본 가져오기 · 대본 나눠 쓰기 · 엑셀 대본 워크북)이 모두 걷혀 카드가 직접 든다
     /// (<c>docs/plans/script-merge.md</c> S2).
     /// </summary>
@@ -124,7 +124,7 @@ public sealed class DialogueNode : StoryNode
     /// <summary>
     /// 이 노드가 <b>어느 에피소드인가</b>를 적어 둔 표식.
     ///
-    /// ⛔ <b>2026-09-17까지 이름이 <c>ExcelEpisodeId</c>였고, 그 이름이 두 번 거짓이 됐다.</b>
+    /// <b>2026-09-17까지 이름이 <c>ExcelEpisodeId</c>였고, 그 이름이 두 번 거짓이 됐다.</b>
     /// <list type="number">
     /// <item><b>엑셀은 주인이 아니다</b> (R-D·R-F, 2026-09-16). 옛 머리글은 <i>"본문·화자·줄
     ///   구성은 엑셀이 소유하고 툴에서는 읽기 전용 — 여기서 고쳐도 다음 동기화가 되돌린다"</i>
@@ -137,7 +137,7 @@ public sealed class DialogueNode : StoryNode
     /// 같으면 비어 있어도 된다 — 그래서 <b>이 값을 직접 읽으면 안 된다</b>. 답을 내는 자리는
     /// <see cref="Chapters.EpisodeNaming"/> 하나다(표식이 있으면 표식, 없으면 이름).
     ///
-    /// ⚠ <b>파생값이 아니라 저장된 신원이다.</b> 이름을 바꿔도 끊기지 않으라고 두는 것이므로
+    /// <b>파생값이 아니라 저장된 신원이다.</b> 이름을 바꿔도 끊기지 않으라고 두는 것이므로
     /// 잃으면 어느 카드가 어느 에피소드였는지 <b>복원할 수 없다</b>.
     /// </summary>
     public string? MarkedEpisodeId { get; set; }
@@ -159,7 +159,7 @@ public sealed class DialogueNode : StoryNode
     /// 대본의 전부</b>일 수도 있다(조건이 서면 커스텀 씬으로 detour만 하는 에피소드).
     /// 그 블록이 살 자리가 여기다.
     ///
-    /// ⚠ 줄에 실린 전환과 <b>같은 종류의 목록</b>이고 순서도 같은 뜻이다 — 다른 것은
+    /// 줄에 실린 전환과 <b>같은 종류의 목록</b>이고 순서도 같은 뜻이다 — 다른 것은
     /// "어느 줄 앞"이 아니라 "모든 줄 뒤"라는 자리뿐이다. 그래서 흐름 해석은 줄을 다 돈
     /// 뒤 이 목록을 같은 기계에 한 번 더 먹인다.
     /// </summary>
@@ -174,12 +174,12 @@ public sealed class DialogueNode : StoryNode
     /// 간선이 사라지면 배선은 고아로 남는다(쓰레기가 아니라 되돌릴 수 있는 상태다).
     /// </summary>
     public Dictionary<string, string> ChoiceExits { get; init; } = new(StringComparer.Ordinal);
-    // ⛔ `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:
+    // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:
     //    "툴이 LineId의 주인"). 워크북을 <b>다시 읽을 때</b> 어느 줄이 어느 줄인지
     //    맞추려고 들고 있던 표다 — 다시 읽지 않으면 맞출 상대가 없고, 신원은 이제
     //    프로젝트가 그냥 갖는다. 구판 프로젝트 파일의 `excelLines`는 읽지 않고 지나간다.
 
-    // ⛔ `EffectiveDefaultExit`(커스텀 노드에는 기본 출구가 없다 — 2026-08-21)는 R7 P-6
+    // `EffectiveDefaultExit`(커스텀 노드에는 기본 출구가 없다 — 2026-08-21)는 R7 P-6
     //    (결정 ⑤ · 2026-09-17)에 뜻을 잃고 `[Obsolete]` 껍데기로 남았다가 L4(2026-10-29)에
     //    걷혔다. 엑셀노드/자유노드 구분이 없어져 `DefaultExitTargetNodeId`와 같았다.
 

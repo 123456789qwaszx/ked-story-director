@@ -12,11 +12,11 @@ using Vn.Authoring.Script;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>연출 그래프 카드의 머리는 제목 한 줄이다</b> (2026-10-29 소유자: *"노드 종류, 대본 이름, 줄 수가 표시되는데 이 정보는
-/// 필요없으니까 치워"*).
+/// <b>연출 그래프 카드의 머리는 제목 한 줄이다</b> — 노드 종류 · 대본 이름 · 줄 수 부제는
+/// 두지 않는다.
 ///
-/// 제목 아래에 「대사 · 📄 에피소드 · {대본} · k줄」 부제가 있었다. 걷으면서 머리 높이를 고정했다 — 포트 줄의 자리를 그 값으로
-/// 세므로, 글꼴에 맡겨 두면 선 끝이 점에서 비껴 닿는다(실제로 부제가 있던 머리는 5px 어긋나 있었다).
+/// 머리 높이는 고정이다 — 포트 줄의 자리를 그 값으로
+/// 세므로, 글꼴에 맡겨 두면 선 끝이 점에서 비껴 닿는다.
 /// </summary>
 public sealed class GraphCardHeaderTests
 {
@@ -47,7 +47,7 @@ public sealed class GraphCardHeaderTests
         (MainWindow window, Canvas canvas, DialogueNode source, _) = Show();
         Border card = Card(window, source.Id);
 
-        // 분기의 점 — 이어져 있어 칠해져 있다. 글 칸의 그 대사 높이, 카드 오른쪽 가장자리에 판(캔버스)에 선다(2026-10-30).
+        // 분기의 점 — 이어져 있어 칠해져 있다. 글 칸의 그 대사 높이, 카드 오른쪽 가장자리에 판(캔버스)에 선다.
         Ellipse knob = canvas.Children.OfType<Ellipse>()
             .Single(dot => (dot.Tag as string)?.StartsWith(GraphEditorView.LineKnobTag, StringComparison.Ordinal) == true);
         Assert.Equal(Canvas.GetLeft(card) + card.Bounds.Width, Canvas.GetLeft(knob) + (knob.Width / 2), 1.5);

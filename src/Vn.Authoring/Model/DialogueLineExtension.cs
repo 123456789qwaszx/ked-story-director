@@ -1,8 +1,12 @@
 namespace Vn.Authoring.Model;
 
 /// <summary>
-/// 조건·선택 흐름을 바꾸는 지점의 종류. 두 체인은 같은 기계로 계산되지만 섞이지 않는다
-/// (중첩은 흐름 검증에서 거부 — 계약서 D7의 가용 배열 인덱스 문제를 아예 만들지 않는다).
+/// 조건 흐름을 바꾸는 지점의 종류.
+///
+/// <b>대사 안 선택지(<c>BeginChoice/BeginNextOption/EndChoice</c>)는 2026-11-04에 걷혔다</b> (소유자: *"선택지는
+/// 에피소드 끝에서만 있는 것으로 규칙을 정했는데 … 앞으로 이런 착각을 못 하게 기능 자체도 완전히 제거"*).
+/// 선택지는 챕터 <b>간선</b>(에피소드 끝)에서만 선다. 옛 원고의 그 전환은 리더가 알아보고 버린다
+/// (<see cref="Serialization.StoryNodeJson"/>).
 /// </summary>
 public enum ConditionTransitionKind
 {
@@ -13,42 +17,24 @@ public enum ConditionTransitionKind
     BeginElseIf,
 
     /// <summary>조건 체인을 닫는다. 이 줄부터 다시 일반 흐름이다.</summary>
-    EndIf,
-
-    /// <summary>이 줄이 선택 블록의 첫 옵션 라벨이다. 줄 본문이 곧 버튼 텍스트다.</summary>
-    BeginChoice,
-
-    /// <summary>같은 선택 블록의 다음 옵션 라벨. elseif와 동형이라 깊이는 늘지 않는다.</summary>
-    BeginNextOption,
-
-    /// <summary>선택 블록을 닫는다. 이 줄부터 다시 일반 흐름이다.</summary>
-    EndChoice
+    EndIf
 }
 
 /// <summary>
-/// 이 줄에서 조건·선택 흐름이 어떻게 바뀌는지.
+/// 이 줄에서 조건 흐름이 어떻게 바뀌는지.
 ///
 /// 줄마다 "지금 어떤 갈래 안에 있는지"를 반복 저장하지 않는다.
 /// 반복 저장하면 같은 사실이 여러 줄에 흩어져 한 줄만 고쳤을 때 서로 어긋난다.
 /// 대신 <b>바뀌는 지점만</b> 기록하고, 나머지는 앞에서부터 계산한다.
 /// 계산하는 쪽은 <see cref="Flow.ConditionFlowResolver"/>다.
-///
-/// 전환 슬롯이 하나뿐이므로 "옵션 라벨 라인에 조건 전환이 겹치는" 상태는
-/// 구조적으로 존재할 수 없다 (계약서 D7의 Phase 1 결정).
 /// </summary>
 public sealed class LineConditionTransition
 {
-    public LineConditionTransition(
-        ConditionTransitionKind kind,
-        string? conditionId = null,
-        string? optionId = null)
+    public LineConditionTransition(ConditionTransitionKind kind, string? conditionId = null)
     {
         Kind = kind;
         ConditionId = kind is ConditionTransitionKind.BeginIf or ConditionTransitionKind.BeginElseIf
             ? conditionId
-            : null;
-        OptionId = kind is ConditionTransitionKind.BeginChoice or ConditionTransitionKind.BeginNextOption
-            ? optionId
             : null;
     }
 
@@ -56,12 +42,6 @@ public sealed class LineConditionTransition
 
     /// <summary>조건을 여는 전환에만 있다. 그 외에는 언제나 null이다.</summary>
     public string? ConditionId { get; }
-
-    /// <summary>
-    /// 옵션 라벨 전환에만 있는 안정 식별자(<c>op_</c>). 라벨 문구를 고쳐도 변하지 않는다.
-    /// 선택지 리플레이는 위치 기반이므로(계약서 C3) 이 Id로 순서 변경을 감지해 경고한다.
-    /// </summary>
-    public string? OptionId { get; }
 
     public static LineConditionTransition BeginIf(string conditionId) =>
         new(ConditionTransitionKind.BeginIf, conditionId);
@@ -72,31 +52,9 @@ public sealed class LineConditionTransition
     public static LineConditionTransition EndIf() =>
         new(ConditionTransitionKind.EndIf);
 
-    public static LineConditionTransition BeginChoice(string? optionId = null) =>
-        new(ConditionTransitionKind.BeginChoice, optionId: optionId);
-
-    public static LineConditionTransition BeginNextOption(string? optionId = null) =>
-        new(ConditionTransitionKind.BeginNextOption, optionId: optionId);
-
-    public static LineConditionTransition EndChoice() =>
-        new(ConditionTransitionKind.EndChoice);
-
     /// <summary>갈래를 여는 전환인지. 여는 전환만 갈래 출구를 가질 수 있다.</summary>
     public bool OpensBranch =>
-        Kind is ConditionTransitionKind.BeginIf
-            or ConditionTransitionKind.BeginElseIf
-            or ConditionTransitionKind.BeginChoice
-            or ConditionTransitionKind.BeginNextOption;
-
-    /// <summary>선택 체인에 속한 전환인지.</summary>
-    public bool IsChoiceKind =>
-        Kind is ConditionTransitionKind.BeginChoice
-            or ConditionTransitionKind.BeginNextOption
-            or ConditionTransitionKind.EndChoice;
-
-    /// <summary>옵션 라벨 전환인지. 라벨 라인의 본문이 버튼 텍스트가 된다.</summary>
-    public bool OpensOption =>
-        Kind is ConditionTransitionKind.BeginChoice or ConditionTransitionKind.BeginNextOption;
+        Kind is ConditionTransitionKind.BeginIf or ConditionTransitionKind.BeginElseIf;
 }
 
 /// <summary>
@@ -110,7 +68,7 @@ public sealed class LineConditionTransition
 /// 대본에서 사라진 LineId의 확장 데이터도 자동으로 지우지 않는다. 작가가 만든 조건 구조가
 /// 말없이 사라지는 것보다 고아로 남아 눈에 띄는 편이 낫다.
 ///
-/// ⛔ 줄의 변수 변경(<c>&lt;&lt;set&gt;&gt;</c> · <c>SetOperatorKind</c>)은 작가 변수와 함께 2026-09-17에
+/// 줄의 변수 변경(<c>&lt;&lt;set&gt;&gt;</c> · <c>SetOperatorKind</c>)은 작가 변수와 함께 2026-09-17에
 /// 폐지됐고, 남은 연산자 표기도 2026-10-29(L5)에 걷혔다.
 /// </summary>
 public sealed class DialogueLineExtension
@@ -124,13 +82,12 @@ public sealed class DialogueLineExtension
     public string LineId { get; }
 
     /// <summary>
-    /// 이 줄 <b>앞에서</b> 일어나는 조건·선택 전환들 — 목록 순서가 곧 일어나는 순서다.
+    /// 이 줄 <b>앞에서</b> 일어나는 조건 전환들 — 목록 순서가 곧 일어나는 순서다.
     /// 비어 있으면 앞 줄의 상태를 그대로 물려받는다.
     ///
     /// <b>왜 목록인가</b> (2026-08-17 소유자 결정으로 슬롯 하나에서 늘렸다). Yarn에는 전환만
-    /// 있는 줄이 없다 — <c>&lt;&lt;endif&gt;&gt;</c>는 대사가 아니다. 그래서 블록이 겹쳐
-    /// 닫히거나(중첩) 한 블록이 닫히자마자 다음이 열리면, 그 전환들이 전부 <b>다음 대사 줄</b>
-    /// 앞에 몰린다. 슬롯이 하나면 그 상황을 표현할 수 없어 중첩도 인접도 못 썼다.
+    /// 있는 줄이 없다 — <c>&lt;&lt;endif&gt;&gt;</c>는 대사가 아니다. 그래서 한 블록이 닫히자마자 다음이
+    /// 열리면 그 전환들이 전부 <b>다음 대사 줄</b> 앞에 몰린다. 슬롯이 하나면 그 상황을 표현할 수 없다.
     ///
     /// 여전히 "지금 어떤 갈래 안인지"를 줄마다 반복 저장하지는 않는다 — <b>바뀌는 지점만</b>
     /// 적고 나머지는 앞에서부터 계산한다(<see cref="Flow.ConditionFlowResolver"/>).
@@ -147,23 +104,23 @@ public sealed class DialogueLineExtension
     /// <summary>
     /// <b>여기서 갈라진다</b> — 이 줄 앞에서 다녀올 노드들, <b>목록 순서대로</b> (R7 P-5 · 2026-09-17 소유자).
     ///
-    /// ⛔ <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚고, 갈지 말지는
+    /// <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚고, 갈지 말지는
     /// <b>다녀온 곳</b>이 정한다. 그래서 이 표식은 아무 조건 없이
     /// <c>&lt;&lt;detour {노드}&gt;&gt;</c> 한 줄로 나간다 — 성립하든 말든 다녀오고, 다녀온
     /// 에피소드가 제 첫머리에서 보고 아니면 곧바로 돌아온다.
     ///
-    /// ⭐ <b>이 모양을 고른 이유</b> (2026-09-18 소유자): *"If, ElseIf, EndIf를 달아두는 것
+    /// <b>이 모양을 고른 이유</b> (2026-09-18 소유자): *"If, ElseIf, EndIf를 달아두는 것
     /// 보다는 Detour로 조건 분기가 일어나는 마커를 끼워두고 그곳에서 조건과 내용을
     /// 추가한다는게 유지보수 측면에서 얼마나 유리한지 알것입니다."* 짝을 맞춰야 하는 구역이
     /// <b>부르는 쪽 대본에 흩어지지 않는다</b> — 조건과 내용이 다녀갈 곳에 함께 산다.
     /// 그 조건을 채우는 창구는 챕터 그래프의 분기 패널이다
     /// (<see cref="Chapters.BranchEntryCondition"/>).
     ///
-    /// ⚠ <b>전환(<see cref="Transitions"/>)이 아니다.</b> 전환은 전부 <b>구역</b>이고
+    /// <b>전환(<see cref="Transitions"/>)이 아니다.</b> 전환은 전부 <b>구역</b>이고
     /// (<c>Begin…</c>/<c>End…</c> 쌍이 줄들을 감싼다), 이것은 <b>줄 사이에 끼는 카드 한 장</b>
     /// 이다. 구역이 아닌 것을 구역으로 적으면 닫는 자리가 없다.
     ///
-    /// ⭐ <b>한 줄에 여럿</b> (2026-10-29 소유자: *"하나의 줄에 여러개의 분기가 있을 수 있게"* ·
+    /// <b>한 줄에 여럿</b> (2026-10-29 소유자: *"하나의 줄에 여러개의 분기가 있을 수 있게"* ·
     /// <c>docs/plans/multi-branch.md</c>). 전에는 칸이 하나였다. 여럿이면 <b>차례로 다녀온다</b> —
     /// <c>&lt;&lt;detour A&gt;&gt;</c> · <c>&lt;&lt;detour B&gt;&gt;</c> · 그 줄. 각자 제 첫머리 조건으로 들어갈지 정한다(그중
     /// 하나만 가게 하려면 조건을 서로 겹치지 않게 건다). 분기 하나의 신원은 <b>줄과 다녀갈 노드</b>다 — 같은 줄에 같은

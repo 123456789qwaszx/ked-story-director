@@ -44,7 +44,4 @@ public static class Identifier
     public static string Line() => Create("ln");
 
     public static string Condition() => Create("cd");
-
-    /// <summary>선택지 옵션 하나. 라벨 문구가 바뀌어도 유지되는 정체성이다.</summary>
-    public static string Option() => Create("op");
 }

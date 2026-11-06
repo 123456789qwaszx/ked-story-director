@@ -12,7 +12,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>하이어아키에서 고치기</b> (2026-10-30 HY4a — <c>docs/plans/hierarchy.md</c>) — 우클릭 차림표와 두 번 눌러 이름 바꾸기.
+/// <b>하이어아키에서 고치기</b> — 우클릭 차림표와 두 번 눌러 이름 바꾸기.
 ///
 /// 「챕터 · 장면 · 에피소드 추가」는 어느 줄에서나 같은 자리에 서고(어디서 눌러야 무엇이 나오는지 외울 것이 없게) 어디에
 /// 붙일지는 누른 줄이 정한다. 그 아래에 그 줄만의 일이 선다. 새 장면은 첫 에피소드와 함께 선다 — 장면은 에피소드가
@@ -88,7 +88,7 @@ public sealed class HierarchyEditTests : IDisposable
 
         ChapterEpisode added = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "new01");
         Assert.Equal("scene01", added.SceneId);
-        // 간선은 잇지 않는다(2026-11-01 소유자: "새로 만들어 진 것에 바로 간선을 이을 필요는 없어").
+        // 새로 만든 것에 간선을 바로 잇지는 않는다.
         Assert.DoesNotContain(Chapter(session).Edges, edge => edge.ToEpisodeId == "new01");
         Assert.Contains(tree.Rows, row => row.Key == StoryHierarchy.SceneKey("ch01", "scene01"));
 
@@ -141,8 +141,8 @@ public sealed class HierarchyEditTests : IDisposable
     public void 첫_누름은_줄을_다시_세우지_않아_둘째_누름이_같은_줄에_떨어진다() => HeadlessUi.Run(() =>
     {
         // 두 번 눌러 이름 고치기가 서는 조건 — 첫 누름(고르기)이 판 전환 · 탭 맞추기 · 하이어아키 다시 그리기를 부르는데,
-        // 그때 줄이 새 컨트롤로 갈리면 둘째 누름이 새 단추에 떨어져 두 번 누름이 성립하지 않는다(옛 탐색기가 실제로 겪었다).
-        // ⚠ 헤드리스는 두 번 누름의 시간 창이 없어 합성 더블클릭을 못 만든다 — 그래서 같은 단추에 떨어지는지를 잰다.
+        // 그때 줄이 새 컨트롤로 갈리면 둘째 누름이 새 단추에 떨어져 두 번 누름이 성립하지 않는다.
+        // 헤드리스는 두 번 누름의 시간 창이 없어 합성 더블클릭을 못 만든다 — 그래서 같은 단추에 떨어지는지를 잰다.
         (MainWindow window, StoryHierarchy tree) = Open();
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
         string key = StoryHierarchy.EpisodeKey("ch02", "x");
@@ -262,7 +262,7 @@ public sealed class HierarchyEditTests : IDisposable
     [Fact]
     public void 장면ID가_없는_에피소드는_가짜_장면_줄_없이_장면들_뒤에_챕터_직속으로_선다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-01 소유자 결정 B — "그냥 바로 챕터 직속". 전에는 「미지정 · new01」 장면 줄이 에피소드마다 섰다.
+        // 장면ID가 없는 에피소드는 챕터 직속이다 — 「미지정 · new01」 같은 장면 줄을 에피소드마다 세우지 않는다.
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         session.Editor.AddDialogueNode(EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, 0, 900);   // 연출 그래프 「+ 대사 노드」

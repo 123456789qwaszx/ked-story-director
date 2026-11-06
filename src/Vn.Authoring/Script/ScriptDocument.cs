@@ -73,7 +73,7 @@ public sealed class ScriptLocale
 ///
 /// 글을 다시 넣는 것은 <see cref="ScriptSynchronizer"/>를 지나는 명시적인 동작이다(LineId를 잇는다).
 ///
-/// ⛔ 2026-10-29까지는 카드와 따로 선 문서였다 — 제 Id · 이름을 들고 <c>script/*.vnscript.json</c>에 따로 저장됐고 카드는
+/// 2026-10-29까지는 카드와 따로 선 문서였다 — 제 Id · 이름을 들고 <c>script/*.vnscript.json</c>에 따로 저장됐고 카드는
 /// Id로 가리켰다. 카드와 늘 1:1이 된 뒤로 카드가 직접 들고 카드와 함께 저장된다(<c>docs/plans/script-merge.md</c>).
 /// </summary>
 public sealed class ScriptDocument

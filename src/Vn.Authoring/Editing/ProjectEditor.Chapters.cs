@@ -4,20 +4,19 @@ using Vn.Authoring.Chapters;
 namespace Vn.Authoring.Editing;
 
 /// <summary>
-/// <b>챕터를 바꾸는 코드는 이 파일 안에만 있다</b> (R-F · 2026-09-16, 지시서 §1.1·§4.1).
+/// <b>챕터를 바꾸는 코드는 이 파일 안에만 있다</b>.
 ///
 /// <c>ProjectEditor.Scripts.cs</c>가 대사에 대해 하는 일을 챕터 구조에 대해 한다 — 그래야
 /// <i>"한 값을 고쳤을 때 권위 있는 데이터가 하나만 바뀐다"</i>가 코드 구조로 보장된다.
 ///
-/// ⛔ <b>여기는 파일을 모른다.</b> 옛 <c>ChapterWorkbookWriter</c>는 셀 하나를 고치는
-/// 외과수술이었고 그래서 열 번호·시트 이름·행 삭제가 부르는 쪽까지 스며 있었다. 이제 고치는
-/// 것은 <b>모델</b>뿐이다(엑셀 출력은 2026-10-29 · D2에 걷혔다).
+/// <b>여기는 파일을 모른다.</b> 고치는 것은 <b>모델</b>뿐이라 열 번호·시트 이름·행 삭제 같은
+/// 파일 사정이 부르는 쪽까지 스미지 않는다.
 ///
-/// ⚠ <b>규칙은 옛 창구에서 그대로 옮겨 왔다.</b> 간선의 신원은 (출발, 도착, 문구)이고(v9),
+/// 간선의 신원은 (출발, 도착, 문구)이고,
 /// 개명은 간선·픽스처를 함께 끌고 가며, 삭제는 끝점 간선을 함께 걷고, <b>선택지 사전은
-/// 건드리지 않는다</b>(어휘집이지 배선이 아니다). 바뀐 것은 <b>어디에 쓰는가</b>뿐이다.
+/// 건드리지 않는다</b>(어휘집이지 배선이 아니다).
 ///
-/// ⚠ 실패는 <see cref="InvalidOperationException"/>이다 — 옛 창구와 같다. 부르는 쪽이
+/// 실패는 <see cref="InvalidOperationException"/>이다. 부르는 쪽이
 /// <c>UiGuard</c>로 받아 상태줄에 말한다.
 /// </summary>
 public sealed partial class ProjectEditor
@@ -50,9 +49,8 @@ public sealed partial class ProjectEditor
     /// </summary>
     /// <returns>판과 함께 걷힌 노드 수. 지울 것이 없었으면 0.</returns>
     /// <remarks>
-    /// ⛔ <b>R-F가 남긴 구멍을 메운다</b> (2026-09-16). 뒤집기 전에는 챕터가 곧 워크북이라
-    /// 판만 걷으면 됐는데, 이제 챕터는 <c>Project.Chapters</c>에 산다 — 판만 걷으면
-    /// <b>목록·트리·검증에 그대로 남고 다음 저장이 워크북을 되살린다</b>.
+    /// 챕터는 <c>Project.Chapters</c>에 산다 — 판만 걷으면
+    /// <b>목록·트리·검증에 그대로 남는다</b>.
     /// </remarks>
     public int RemoveChapterWithBoard(string chapterId)
     {
@@ -93,12 +91,10 @@ public sealed partial class ProjectEditor
     /// 조건 공급 설정노드(<c>챕터 {Id} 조건</c>) — 를 <b>한 번의 변경</b>으로 함께 바꾼다.
     /// 되돌리기 한 번에 셋이 돌아온다.
     ///
-    /// ⛔ <b>개명의 주인은 모델이다</b> (2026-10-29 · `docs/plans/excel-boundary.md` C2). 그 전에는
-    /// <see cref="Chapters.ChapterRenamer"/>가 워크북 파일·대본 폴더·판·배관을 옮기면서 정작
-    /// <c>Project.Chapters</c>의 Id는 안 바꿨다(이 메서드는 있었는데 아무도 안 불렀다) — 저장하고
-    /// 다시 열면 챕터는 옛 이름, 판은 새 이름이었다. 파일 이름 바꾸기는 후속 출력의 일이다.
+    /// <b>개명의 주인은 모델이다</b>. <c>Project.Chapters</c>의 Id와 판·배관이 함께 바뀌어야
+    /// 저장하고 다시 열었을 때 챕터와 판의 이름이 갈리지 않는다. 파일 이름 바꾸기는 후속 출력의 일이다.
     ///
-    /// ⚠ 새 이름의 배관이 이미 있으면 배관은 <b>손대지 않는다</b> — 이름이 겹치면 어느 쪽이 그
+    /// 새 이름의 배관이 이미 있으면 배관은 <b>손대지 않는다</b> — 이름이 겹치면 어느 쪽이 그
     /// 챕터의 배관인지 정해지지 않는다. 합치는 것은 조건을 옮기는 일이라 개명의 몫이 아니고,
     /// 그 상태에서도 동기화가 새 이름 쪽에 마저 공급하므로 조용히 깨지지는 않는다.
     /// </summary>
@@ -145,12 +141,12 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 에피소드 하나를 세운다.
     ///
-    /// ⚠ <b>대사엔트리 = EpisodeId</b>가 기본이다(v3 규약) — 옛 창구가 B열에 같은 값을 적던
+    /// <b>대사엔트리 = EpisodeId</b>가 기본이다(v3 규약) — 옛 창구가 B열에 같은 값을 적던
     /// 그 규칙이고, 임포터의 노드 이름 규칙도 같은 값을 본다. 어긋나면 같은
     /// 에피소드에 대사노드가 둘이 된다.
     /// </summary>
     /// <param name="sceneId">
-    /// 어느 장면에 놓을지. ⚠ <b>만들면서 함께 정한다</b> — 만든 뒤에 <see cref="UpdateEpisode"/>로
+    /// 어느 장면에 놓을지. <b>만들면서 함께 정한다</b> — 만든 뒤에 <see cref="UpdateEpisode"/>로
     /// 옮기면 되돌리기가 두 걸음이 되고, 그 사이 상태(장면 없는 에피소드)가 잠깐 진짜가 된다.
     /// </param>
     public ChapterEpisode AddEpisode(
@@ -173,15 +169,13 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// <b>에피소드 하나를 짓기만 한다</b> — 카드·대본까지 함께, <see cref="Mutate"/> 밖에서.
     ///
-    /// ⭐ <b>2026-09-18에 창구가 하나로 합쳐졌다.</b> 그 전에는 「에피소드에는 대사노드가
-    /// 있다」가 <b>편집기 명령이 아니라 화면에</b> 살았다: 챕터 그래프는 <c>AddEpisode</c> 뒤에
-    /// 노드 만들기를 한 줄 더 불렀고, 대본 탭은 <b>그 한 줄이 없었다</b>. 그래서 작가의 탭에서
-    /// 만든 에피소드만 쓸 자리가 없었다.
+    /// 「에피소드에는 대사노드가 있다」는 <b>화면이 아니라 편집기 명령</b>이 지킨다. 화면마다
+    /// 노드 만들기를 한 줄 더 부르게 하면 그 한 줄을 잊은 화면에서 만든 에피소드만 쓸 자리가 없다.
     ///
-    /// ⚠ <b>창구를 늘릴 때 잊을 수 있는 자리를 없앤 것</b>이 요점이다. 이제 에피소드를 만드는
+    /// <b>창구를 늘릴 때 잊을 수 있는 자리를 없앤 것</b>이 요점이다. 에피소드를 만드는
     /// 길은 전부 여기를 지나므로, 어디서 만들었느냐가 결과를 바꾸지 않는다.
     ///
-    /// ⚠ <see cref="EnsureChapterBoard"/>가 판을 <b>먼저</b> 세운다(없을 때만). 판이 없는
+    /// <see cref="EnsureChapterBoard"/>가 판을 <b>먼저</b> 세운다(없을 때만). 판이 없는
     /// 챕터에 에피소드를 넣는 것은 카드를 놓을 자리가 없다는 뜻이다.
     /// </summary>
     private (DialogueNode Node, ChapterEpisode? Episode, Action Attach) NewEpisodeCore(
@@ -190,12 +184,12 @@ public sealed partial class ProjectEditor
     {
         string fileId = EnsureChapterBoard(chapterId);
 
-        // ⚠ <b>자리가 둘이다.</b> 주어진 (x, y)는 <b>챕터 그래프</b>의 자리이고, 연출 판의
+        // <b>자리가 둘이다.</b> 주어진 (x, y)는 <b>챕터 그래프</b>의 자리이고, 연출 판의
         //    카드는 제 판의 규칙(<see cref="Graph.NodePlacement"/>)으로 선다 — 부모 카드의 아래에.
         //    한쪽 좌표를 다른 판에 그대로 넣으면 사람이 맞춰 둔 배치가 흐트러진다.
         //
-        // ⚠ 부모를 <b>직접</b> 준다 (D3 · 2026-10-29). 이 자리를 묻는 순간에는 에피소드도 간선도 아직
-        //    챕터에 없다 — 예전에는 그래서 언제나 "챕터에 없는 이름"으로 빠져 판 오른쪽 끝에 섰다(§6-1).
+        // 부모를 <b>직접</b> 준다. 이 자리를 묻는 순간에는 에피소드도 간선도 아직
+        //    챕터에 없다 — 챕터에서 찾으면 언제나 "챕터에 없는 이름"으로 빠져 판 오른쪽 끝에 선다.
         (double cardX, double cardY) = Graph.NodePlacement.For(Project, chapterId, episodeId, parentEpisodeId);
 
         return NewDialogueNodeCore(
@@ -298,10 +292,10 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 에피소드의 자리 — 그래프에서 끌어 옮긴 결과.
     ///
-    /// ⚠ 자리는 <b>구조가 아니다</b> — 파생 그래프도 편집 행도 안 달라지므로
+    /// 자리는 <b>구조가 아니다</b> — 파생 그래프도 편집 행도 안 달라지므로
     /// <c>NodeMetadata</c>로 알린다. 화면이 통째로 다시 서지 않는다.
     ///
-    /// ⛔ <b>되돌리기 목록은 종류를 안 본다</b> (2026-09-18에 확인). <c>Mutate</c>는 종류와
+    /// <b>되돌리기 목록은 종류를 안 본다</b>. <c>Mutate</c>는 종류와
     /// 무관하게 스냅샷을 하나씩 쌓으므로, <b>포인터가 움직일 때마다 이것을 부르면</b>
     /// 되돌리기 목록이 픽셀 단위로 차 사람이 진짜 되돌리고 싶은 편집을 밀어낸다.
     /// (연출 그래프가 지금 그렇게 부르고 있다 — 그쪽은 따로 볼 일이다.)
@@ -322,13 +316,13 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 여러 에피소드의 자리를 <b>한 번의 변경으로</b> 옮긴다 — 첫 자리 심기와 [자동 정렬]이
-    /// 쓴다 (2026-09-18).
+    /// 쓴다.
     ///
-    /// ⭐ <b>한 번인 것이 요점이다.</b> <see cref="MoveEpisode"/>를 스무 번 부르면 되돌리기도
+    /// <b>한 번인 것이 요점이다.</b> <see cref="MoveEpisode"/>를 스무 번 부르면 되돌리기도
     /// 스무 번이라, 정렬 한 번을 무르려고 Ctrl+Z를 스무 번 눌러야 한다. 사람이 한 동작으로
     /// 한 일은 한 번에 돌아와야 한다.
     ///
-    /// ⚠ 모르는 EpisodeId가 있으면 <b>던진다</b>. 조용히 건너뛰면 "정렬했는데 하나가 제자리"를
+    /// 모르는 EpisodeId가 있으면 <b>던진다</b>. 조용히 건너뛰면 "정렬했는데 하나가 제자리"를
     /// 사람이 버그로 읽고, 그 자리를 찾을 단서가 없다.
     /// </summary>
     public void MoveEpisodes(
@@ -364,7 +358,7 @@ public sealed partial class ProjectEditor
     /// EpisodeId 개명. <b>간선의 출발·도착과 픽스처 고정 선택이 함께 따라간다</b> — 신원이
     /// 바뀌었는데 참조가 남으면 유령 간선이 된다.
     ///
-    /// ⛔ 폐지된 <c>cleared:</c>를 참조하는 조건식이 있으면 <b>막는다</b>. 식은 사람 소유라
+    /// 폐지된 <c>cleared:</c>를 참조하는 조건식이 있으면 <b>막는다</b>. 식은 사람 소유라
     /// 툴이 고쳐 주지 않고(자동 추측 금지), 개명으로 참조만 더 낡게 만들 이유가 없다.
     /// </summary>
     public void RenameEpisode(string chapterId, string oldId, string newId)
@@ -410,7 +404,7 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 에피소드 삭제 — 그 에피소드를 끝점으로 하는 간선과 픽스처 고정 선택도 함께 걷는다.
     ///
-    /// ⚠ <b>선택지 사전은 건드리지 않는다</b>(v9). 챕터 전체의 어휘라, 에피소드 하나가
+    /// <b>선택지 사전은 건드리지 않는다</b>(v9). 챕터 전체의 어휘라, 에피소드 하나가
     /// 사라졌다고 낱말을 지우면 다른 에피소드의 드롭다운에서도 사라진다.
     /// </summary>
     public void RemoveEpisode(string chapterId, string episodeId)
@@ -431,10 +425,10 @@ public sealed partial class ProjectEditor
     }
 
     // ── 간선 ────────────────────────────────────────────────────────────────
-    // v9 — 길 하나가 곧 선택지 하나이고, 신원은 (출발, 도착, 문구)다.
+    // 길 하나가 곧 선택지 하나이고, 신원은 (출발, 도착, 문구)다.
 
     /// <param name="before">
-    /// 이 간선 <b>앞에</b> 끼워 넣는다 — 없으면 끝에 붙는다 (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해").
+    /// 이 간선 <b>앞에</b> 끼워 넣는다 — 없으면 끝에 붙는다.
     /// 한 에피소드에서 나가는 간선의 순서가 곧 화면의 선택지 순서이자 런타임 <c>OptionIndex</c>라(§5-3), 연출 그래프는
     /// 사람이 적어 둔 줄 자리에 맞춰 넣는다.
     /// </param>
@@ -467,10 +461,10 @@ public sealed partial class ProjectEditor
     /// 선택지 한 줄의 배선을 고친다 — 문구와 도착을 한 변경으로.
     /// 찾을 때는 고치기 <b>전</b>의 신원을 쓴다.
     ///
-    /// ⭐ <b>목록의 자리를 지킨다</b> — 간선 순서가 곧 화면 순서이고 런타임 <c>OptionIndex</c>다(two-graphs.md §5-3).
+    /// <b>목록의 자리를 지킨다</b> — 간선 순서가 곧 화면 순서이고 런타임 <c>OptionIndex</c>다(two-graphs.md §5-3).
     /// 관문 · 잠금 안내 · (주지 않으면) 스탯 변화도 그대로 남는다. 걷고 새로 그으면 셋 다 잃는다.
     ///
-    /// ⚠ 고친 신원이 다른 간선과 겹치면 던진다(<see cref="AddEdge"/>와 같은 규칙). 바뀌는 것이 없으면 아무것도
+    /// 고친 신원이 다른 간선과 겹치면 던진다(<see cref="AddEdge"/>와 같은 규칙). 바뀌는 것이 없으면 아무것도
     /// 적지 않는다(§5-8).
     /// </summary>
     public void SetEdgeRoute(
@@ -548,7 +542,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// <b>선택지 레인의 모양을 정한다</b> (G3 · 2026-10-29 소유자: "피그잼처럼") — 간선이 모양을 진다
+    /// <b>선택지 레인의 모양을 정한다</b> — 간선이 모양을 진다
     /// (<see cref="ChapterEdge.Shape"/>). 되돌리기 한 칸이고, 자리만 바뀐 변경(<see cref="ProjectChangeKind.Layout"/>)이라
     /// 판은 카드를 다시 짓지 않고 선만 다시 긋는다.
     /// null이나 기본 모양이면 자동으로 돌아간다. 바뀌는 것이 없으면 아무것도 적지 않는다.
@@ -599,9 +593,26 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// 챕터의 표시 이름(<see cref="ChapterDocument.DisplayName"/>)을 고친다. 비우면 Id로 물러선다.
+    /// 되돌리기 한 칸 — 구조가 아니라 글자라 그래프는 다시 서지 않는다.
+    /// </summary>
+    public void UpdateChapterDisplayName(string chapterId, string? displayName)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        string? wanted = string.IsNullOrWhiteSpace(displayName) ? null : displayName.Trim();
+
+        if (string.Equals(chapter.DisplayName, wanted, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.DisplayName = wanted);
+    }
+
+    /// <summary>
     /// 챕터 조건 하나 — 간선의 표시조건·해금조건이 라벨로 가리킨다.
     ///
-    /// ⚠ <b>이름에 "Chapter"가 붙은 이유</b>: <c>AddCondition</c>은 이미 <b>설정노드</b>의
+    /// <b>이름에 "Chapter"가 붙은 이유</b>: <c>AddCondition</c>은 이미 <b>설정노드</b>의
     /// 창구다. 둘은 다른 것이다 — 저쪽은 대사 안의 [3] 조건이 태어나는 자리이고, 이쪽은
     /// 챕터 간선이 보는 [2] 진행 스탯이다(지시서 §3.2). 같은 이름으로 두면 인자 개수만
     /// 다른 호출이 <b>조용히 저쪽으로 간다</b> — 실제로 이 테스트를 쓰다 한 번 물렸다.
@@ -615,7 +626,7 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"조건 라벨 '{label}'이 이미 있습니다.");
         }
 
-        // 조건과 그 조건의 공급이 <b>한 변경</b>이다 (2026-10-29 · D2) — 되돌리기 한 번에 함께 간다.
+        // 조건과 그 조건의 공급이 <b>한 변경</b>이다 — 되돌리기 한 번에 함께 간다.
         Batch(() =>
         {
             Mutate(() => chapter.Conditions.Add(
@@ -643,7 +654,7 @@ public sealed partial class ProjectEditor
                 Expression = expression,
                 Description = description ?? condition.Description,
 
-                // ⚠ 해석은 담지 않는다 — ToGraphModel이 식에서 다시 푼다. 여기서 옛 해석을
+                // 해석은 담지 않는다 — ToGraphModel이 식에서 다시 푼다. 여기서 옛 해석을
                 //    들고 있으면 검증이 고치기 전 값으로 참을 말한다.
                 Parsed = [],
                 IsValid = false
@@ -654,11 +665,10 @@ public sealed partial class ProjectEditor
         });
     }
 
-    // ── 판에 공급하는 챕터 조건 (2026-10-29 · D2) ───────────────────────────
+    // ── 판에 공급하는 챕터 조건 ─────────────────────────────────────────────
     //
-    // ⛔ 예전에는 이 공급이 <b>엑셀 [대본 가져오기]</b> 안에 숨어 있었다. 그 단추를 누를 때마다
-    //    챕터 조건이 판의 공급 노드(`챕터 {Id} 조건`)로 건너갔고, 그래서 툴에서 조건을 고친 뒤
-    //    가져오기를 안 누르면 대사 노드의 조건 목록이 옛것이었다. 엑셀 연동이 걷힌 지금은
+    // 챕터 조건은 판의 공급 노드(`챕터 {Id} 조건`)로 건너간다. 따로 누르는 단추가 있으면
+    //    그것을 안 누른 동안 대사 노드의 조건 목록이 옛것이 되므로,
     //    <b>조건이 바뀌는 그 명령</b>(<see cref="AddChapterCondition"/>·<see cref="UpdateChapterCondition"/>)과
     //    <b>판이 서는 순간</b>(<see cref="EnsureChapterBoard"/>)이 공급을 부른다.
 
@@ -685,7 +695,7 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 식이 바뀐 조건은 공급 노드에서 <b>Id를 지킨 채</b> 식만 간다.
     ///
-    /// ⚠ 공급은 식으로 짝을 찾는다(<c>ChapterBoardSupply.RenameSuppliedCondition</c>). 그대로 두면
+    /// 공급은 식으로 짝을 찾는다(<c>ChapterBoardSupply.RenameSuppliedCondition</c>). 그대로 두면
     /// 식을 고칠 때마다 <b>새 Id로 하나 더</b> 생기고, 줄에 매달린 전환은 옛 Id를 붙든 채
     /// 옛 식으로 남는다. 가져오기 단추 시절에는 마지막 모양만 건너가서 덜 보였지만, 이제는
     /// 고칠 때마다 공급되므로 여기서 막아야 한다.
@@ -717,22 +727,20 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// <b>판을 챕터에 맞춘다</b> — 프로젝트를 열 때 한 번 (2026-10-29 · D2).
-    ///
-    /// 엑셀 [대본 가져오기]가 하던 일 중 <b>엑셀이 아니던 몫</b>이 여기 남았다:
+    /// <b>판을 챕터에 맞춘다</b> — 프로젝트를 열 때 한 번.
     ///
     /// <list type="number">
-    /// <item><b>에피소드마다 카드가 선다.</b> 대본이 아직 없는 에피소드에도 빈 카드가 섰다
-    ///   (2026-08-17 소유자: "빈 노드라도 서 있으면 여기에 쓰면 된다가 보인다"). 이제 대사는 카드
-    ///   안에 직접 쓰므로(D4), 카드가 없는 에피소드는 <b>글을 쓸 자리가 없는</b> 에피소드다.</item>
+    /// <item><b>에피소드마다 카드가 선다.</b> 대본이 아직 없는 에피소드에도 빈 카드가 선다 —
+    ///   빈 노드라도 서 있어야 여기에 쓰면 된다는 것이 보인다. 대사는 카드
+    ///   안에 직접 쓰므로, 카드가 없는 에피소드는 <b>글을 쓸 자리가 없는</b> 에피소드다.</item>
     /// <item><b>판의 대사 노드는 전부 에피소드다</b> — 어긋난 옛 자유 씬을 올린다(<see cref="LiftFreeScenes"/>).</item>
     /// <item><b>판이 있는 챕터는 조건을 공급받는다</b>(<see cref="SupplyChapterConditions"/>).</item>
     /// </list>
     ///
     /// 툴 안에서 만든 에피소드는 늘 카드와 함께 서므로(<see cref="AddEpisode"/>) 정상적인 프로젝트에서는
-    /// 할 일이 없다. 어긋남은 엑셀에서 들여온 옛 프로젝트에서 온다.
+    /// 할 일이 없다. 어긋남은 밖에서 들여온 옛 프로젝트에서 온다.
     ///
-    /// ⚠ 한 번의 변경이다 — 세션이 아닌 곳에서 불러도 되돌리기 한 번에 돌아간다.
+    /// 한 번의 변경이다 — 세션이 아닌 곳에서 불러도 되돌리기 한 번에 돌아간다.
     /// </summary>
     public BoardAlignment AlignBoardsWithChapters()
     {
@@ -780,10 +788,9 @@ public sealed partial class ProjectEditor
 
 
     /// <summary>
-    /// <b>스탯 개명이 참조를 끌고 간다</b> (R7 후속 · 2026-09-17 소유자 — 계층을 하나로).
+    /// <b>스탯 개명이 참조를 끌고 간다</b>.
     ///
-    /// ⛔ <b>개명이 쉬워지는 것이 곧 위험이다.</b> 지금까지 스탯 키는 엑셀에 살아서 고치기가
-    /// 무서웠고, 그래서 아무도 안 고쳤다. 툴이 정의를 쥐면 한 번에 쉬워지는데 —
+    /// <b>개명이 쉬운 것이 곧 위험이다.</b> 툴이 정의를 쥐면 개명은 한 번에 쉬워지는데 —
     /// <b>쉬운데 안전하지 않은 것이 어려운데 안전하지 않은 것보다 나쁘다.</b>
     ///
     /// 키가 사는 자리는 넷이고 <b>한 번의 변경</b>으로 함께 간다:
@@ -792,19 +799,19 @@ public sealed partial class ProjectEditor
     /// <item><c>스탯</c> 정의 행 — 표시이름이 키와 같았으면 그것도 따라간다(안 정한 이름이다).</item>
     /// <item>간선의 <c>스탯변화</c> — 해석된 채로 살아서 키만 갈면 된다.</item>
     /// <item>챕터 <c>조건</c> 식 — 원문이라 문법을 아는 <see cref="ConditionExpressionParser.ReplaceStatKey"/>가 간다.</item>
-    /// <item>⭐ <b>판에 공급된 조건</b> — 아래.</item>
+    /// <item><b>판에 공급된 조건</b> — 아래.</item>
     /// <item><c>픽스처</c>의 시작값 — 키로 든 사전이라 안 갈면 그 값이 <b>조용히 사라지고</b>
-    /// 워커가 초기값으로 되돌아간다(2026-09-17에 한 번 빠뜨렸다).</item>
+    /// 워커가 초기값으로 되돌아간다.</item>
     /// </list>
     ///
-    /// ⚠ <b>넷째를 빠뜨리면 대사 갈래가 통째로 고아가 된다.</b> 판의 공급 노드는 챕터 조건을
+    /// <b>넷째를 빠뜨리면 대사 갈래가 통째로 고아가 된다.</b> 판의 공급 노드는 챕터 조건을
     /// 번역해 들고 있고(<c>stat("trust") &gt;= 3</c>), 줄에 매달린 전환은 그 조건의 <b>Id</b>로
     /// 잇는다. 그런데 <c>ChapterBoardSupply.RenameSuppliedCondition</c>은 <b>식으로 짝을
     /// 찾는다</b> — 스탯을 갈면 식이 달라져 짝을 못 찾고, 다음 동기화가 <b>새 Id로 다시
     /// 만든다</b>. 그 자리 주석이 경고하는 바로 그 고아다. 그래서 여기서 <b>Id를 지킨 채</b>
     /// 식만 갈아 끼운다.
     ///
-    /// ⚠ <c>game.definition.json</c>의 변수는 <b>안 건드린다</b>. 그쪽은 게임 전역 어휘이고
+    /// <c>game.definition.json</c>의 변수는 <b>안 건드린다</b>. 그쪽은 게임 전역 어휘이고
     /// 챕터 스탯은 만들 때 거기서 씨앗만 받는다 — 남의 이름이다.
     /// </summary>
     /// <returns>바꾼 자리의 수. 거절되면 <c>Applied</c>가 false이고 아무것도 안 건드렸다.</returns>
@@ -838,10 +845,9 @@ public sealed partial class ProjectEditor
             return StatRenameOutcome.Refuse($"스탯 '{to}'가 이미 있습니다 — 둘을 합치려면 먼저 하나를 지우세요.");
         }
 
-        // ⛔ ~~정규화 뒤에 겹치면 막는다~~ — <b>걷혔다</b> (2026-09-17, 런타임 회신 §6.1).
-        //    내보낼 때 Yarn 식별자로 정규화되던 것이 근거였는데, `stat("키")`의 인자는
-        //    식별자가 아니라 <b>문자열 리터럴</b>이라 정규화 자체가 없어졌다. `호감 도`와
-        //    `호감_도`는 이제 게임에서도 서로 다른 스탯이다 — 막을 이유가 사라졌다.
+        // 정규화 뒤에 겹치는 것은 막지 않는다 — `stat("키")`의 인자는
+        //    식별자가 아니라 <b>문자열 리터럴</b>이라 정규화가 없다. `호감 도`와
+        //    `호감_도`는 게임에서도 서로 다른 스탯이다.
 
         ChapterStat renamed = chapter.Stats[index] with
         {
@@ -889,7 +895,7 @@ public sealed partial class ProjectEditor
             {
                 Expression = rewritten,
 
-                // ⚠ 옛 해석을 들고 있으면 검증이 고치기 전 값으로 참을 말한다 —
+                // 옛 해석을 들고 있으면 검증이 고치기 전 값으로 참을 말한다 —
                 //    `UpdateChapterCondition`과 같은 규율이다. ToGraphModel이 다시 푼다.
                 Parsed = [],
                 IsValid = false
@@ -965,29 +971,29 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// <b>스탯 하나를 지운다 — 쓰는 곳이 있으면 거절하고 어디인지 말한다</b> (2026-09-17 소유자).
+    /// <b>스탯 하나를 지운다 — 쓰는 곳이 있으면 거절하고 어디인지 말한다</b>.
     ///
-    /// ⛔ <b>개명과 달리 답이 없다.</b> 개명은 모든 참조가 새 이름을 따라가면 끝이지만, 삭제는
+    /// <b>개명과 달리 답이 없다.</b> 개명은 모든 참조가 새 이름을 따라가면 끝이지만, 삭제는
     /// <c>trust +1</c>이 적힌 간선을 만났을 때 툴이 정할 수 없다 — 그 항만 뺄지(작가가 적은
     /// 의도가 사라진다), 간선을 걷을지(이야기 구조가 바뀐다). 조건식 <c>trust &gt;= 3</c>은
     /// 아예 <b>뺄 수가 없다</b>(식이 통째로 깨진다).
     ///
-    /// ⚠ <b>나중에 진단이 잡아 준다는 것으로는 부족하다.</b> 파서가 <c>UnknownStatKey</c>로
+    /// <b>나중에 진단이 잡아 준다는 것으로는 부족하다.</b> 파서가 <c>UnknownStatKey</c>로
     /// 잡기는 하는데 문구가 *"`스탯` 시트에 없는 스탯키입니다"* — <b>오타를 가정한 안내</b>다.
     /// 방금 일부러 지운 사람에게는 틀린 말이고, 진단은 검증할 때나 보인다.
     /// <b>의도가 머릿속에 있는 순간은 지우는 그 순간</b>이라 그 자리에서 말한다.
     ///
-    /// ⚠ <b>픽스처의 시작값은 막지 않고 함께 지운다.</b> 키로 든 사전이고 없으면 초기값으로
+    /// <b>픽스처의 시작값은 막지 않고 함께 지운다.</b> 키로 든 사전이고 없으면 초기값으로
     /// 읽히며(<c>ChapterFixtureWalker</c>) 내보내기에도 안 섞인다 — 잃을 저작이 없다.
     ///
-    /// ⭐ <b><paramref name="clearUses"/> — 「쓰는 곳을 전부 비우고 지우기」</b> (2026-09-17 소유자).
+    /// <b><paramref name="clearUses"/> — 「쓰는 곳을 전부 비우고 지우기」</b>.
     /// 화면이 <see cref="FindStatUses"/>로 목록을 먼저 보여 주고, 사람이 한 번 더 누르면
     /// 그 목록을 비운 뒤 지운다. <b>한 번의 변경</b>이라 되돌리기 한 번에 전부 돌아온다.
     ///
     /// <list type="bullet">
     /// <item>간선 — <c>스탯변화</c>에서 <b>그 항만</b> 뺀다. 길 자체를 걷으면 이야기 구조가 바뀐다.</item>
     /// <item>조건 — <b>식만 비우고 조건 자체는 남긴다.</b> 검증이 *"조건식이 비어 있습니다"*로
-    /// 울어서 사람이 채운다. ⛔ 조건을 통째로 지우면 그것을 쓰는 간선의 표시/해금이 함께
+    /// 울어서 사람이 채운다. 조건을 통째로 지우면 그것을 쓰는 간선의 표시/해금이 함께
     /// 풀려 <b>연쇄가 한 단계 더</b> 간다 — 지우는 사람이 안 본 자리까지 바뀐다.</item>
     /// <item>판에 공급된 사본도 <b>식만 비운다</b>(Id는 지킨다). 이미터가 빈 식을
     /// <c>&lt;&lt;if false&gt;&gt;</c>로 내므로 매달린 갈래는 <b>서 있되 안 탄다</b> —
@@ -1049,7 +1055,7 @@ public sealed partial class ProjectEditor
                     continue;
                 }
 
-                // ⛔ <b>식만 비우고 조건은 남긴다</b> (2026-09-17 소유자). 조건을 통째로 지우면
+                // <b>식만 비우고 조건은 남긴다</b>. 조건을 통째로 지우면
                 //    그것을 쓰는 간선의 표시/해금이 함께 풀려 <b>연쇄가 한 단계 더</b> 간다 —
                 //    지우는 사람이 안 본 자리까지 바뀐다. 빈 식은 검증이 짚어 사람이 채운다.
                 conditions.Add((i, chapter.Conditions[i] with
@@ -1097,7 +1103,7 @@ public sealed partial class ProjectEditor
 
             foreach (ConditionDefinition supplied in emptied)
             {
-                // ⚠ <b>Id는 지킨다</b> — 줄에 매달린 갈래가 이 Id로 잇는다. 식을 비우면
+                // <b>Id는 지킨다</b> — 줄에 매달린 갈래가 이 Id로 잇는다. 식을 비우면
                 //    이미터가 `<<if false>>`로 내므로 갈래는 <b>서 있되 안 탄다</b>:
                 //    사람이 조건을 채울 때까지 조용히 꺼져 있는 것이 사라지는 것보다 낫다.
                 supplied.Expression = string.Empty;
@@ -1116,9 +1122,9 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 이 스탯을 <b>쓰는 곳</b>을 전부 찾는다 — 간선의 <c>스탯변화</c>와 챕터 <c>조건</c>의 식.
     ///
-    /// ⚠ <b>사람이 찾아갈 수 있게</b> 적는다. *"쓰이고 있습니다"*로 끝내면 챕터를 뒤져야 한다.
+    /// <b>사람이 찾아갈 수 있게</b> 적는다. *"쓰이고 있습니다"*로 끝내면 챕터를 뒤져야 한다.
     ///
-    /// ⚠ 픽스처는 세지 않는다 — 막을 이유가 없어 삭제가 함께 치운다(위).
+    /// 픽스처는 세지 않는다 — 막을 이유가 없어 삭제가 함께 치운다(위).
     /// 판에 공급된 조건도 세지 않는다 — 챕터 조건에서 <b>파생</b>된 것이라, 원본 조건이
     /// 막고 있으면 여기까지 올 일이 없다.
     /// </summary>
@@ -1168,18 +1174,18 @@ public sealed partial class ProjectEditor
         return uses;
     }
 
-    // ── 스탯 정의 (2026-09-17 — 저작 자리가 엑셀에서 챕터 그래프로) ──────────
+    // ── 스탯 정의 ───────────────────────────────────────────────────────────
 
     /// <summary>
     /// 스탯 하나를 세운다.
     ///
-    /// ⚠ <b>경계(최소·최대·초기)는 여기서 안 막는다.</b> <see cref="ChapterDocument"/>가 이미
+    /// <b>경계(최소·최대·초기)는 여기서 안 막는다.</b> <see cref="ChapterDocument"/>가 이미
     /// 진단으로 짚고(<c>최소 &gt; 최대</c>, 초기값이 범위 밖), <b>읽기는 오류가 있어도 모델을
     /// 만든다</b>(규칙 14) — 여기서만 막으면 툴로 만든 것과 파일에서 읽은 것(옛 프로젝트 · 손으로
     /// 고친 파일)이 서로 다른
     /// 규칙을 살게 된다. 값을 채워 가는 중에 막히지도 않는다.
     ///
-    /// ⛔ 막는 것은 <b>키 중복</b>뿐이다. 같은 키가 둘이면 어느 행이 이기는지 말할 수 없어
+    /// 막는 것은 <b>키 중복</b>뿐이다. 같은 키가 둘이면 어느 행이 이기는지 말할 수 없어
     /// 진단으로 넘길 수 있는 상태가 아니다 — 정규화 뒤에 겹치는 것도 같다(화면에서는 달라
     /// 보이는데 <b>게임에서 하나가 된다</b>).
     /// </summary>
@@ -1219,7 +1225,7 @@ public sealed partial class ProjectEditor
     /// 스탯의 값·표시이름·타입을 고친다 — null이 아닌 것만 바꾼다
     /// (<see cref="UpdateEpisode"/>와 같은 손버릇).
     ///
-    /// ⚠ <b>키는 여기서 못 바꾼다.</b> 키를 바꾸는 것은 참조를 끌고 가는 일이라
+    /// <b>키는 여기서 못 바꾼다.</b> 키를 바꾸는 것은 참조를 끌고 가는 일이라
     /// <see cref="RenameChapterStat"/>의 몫이다 — 여기서 슬쩍 바꾸면 간선·조건·픽스처가
     /// 옛 이름을 가리킨 채 남는다.
     /// </summary>
@@ -1256,7 +1262,7 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// bool 스탯은 값 공간이 0/1 하나다 — 범위를 0~1로 고정하고 처음값은 0이 아니면 1이다.
     ///
-    /// ⚠ 옛 워크북 리더가 하던 일이다(최소·최대 칸을 읽지 않고 고정했다). 리더가 걷힌 뒤 편집기가
+    /// 옛 워크북 리더가 하던 일이다(최소·최대 칸을 읽지 않고 고정했다). 리더가 걷힌 뒤 편집기가
     /// 경계를 받는 그대로 두면 깃발에 0~100 같은 범위가 붙고, 도달성 증명이 없는 값까지 훑는다.
     /// </summary>
     private static ChapterStat BoolBounded(ChapterStat stat) =>
@@ -1279,20 +1285,19 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"스탯 '{key}'가 이미 있습니다.");
         }
 
-        // ⛔ ~~정규화 뒤 겹침도 막는다~~ — <b>걷혔다</b> (2026-09-17, 런타임 회신 §6.1).
-        //    `stat("키")`의 인자가 문자열 리터럴이라 정규화가 없어졌고, 근거도 함께 사라졌다.
+        // 정규화 뒤 겹침은 막지 않는다 — `stat("키")`의 인자가 문자열 리터럴이라 정규화가 없다.
     }
 
     /// <summary>
     /// <b>챕터 조건 하나를 지운다 — 쓰는 곳이 있으면 거절하고 어디인지 말한다</b>
-    /// (스탯 삭제와 같은 규율 · 2026-09-17).
+    /// (스탯 삭제와 같은 규율).
     ///
     /// 조건을 부르는 곳은 둘이다:
     ///
     /// <list type="bullet">
     /// <item><b>간선</b> — 표시조건·해금조건에 라벨로 적는다. 지우면
     /// <c>ConditionLabelUndefined</c>로 울지만 그 문구는 <b>오타를 가정</b>한다.</item>
-    /// <item>⭐ <b>대사 줄의 갈래</b> — 판에 공급된 조건을 <b>Id</b>로 붙든다. 챕터 조건이
+    /// <item><b>대사 줄의 갈래</b> — 판에 공급된 조건을 <b>Id</b>로 붙든다. 챕터 조건이
     /// 사라지면 동기화가 그 공급 조건을 <b>지우지도 갱신하지도 않아</b> 옛 식을 든 채 남는다.
     /// 갈래는 계속 살아 있고, 무엇을 묻는지는 아무 데도 없다.</item>
     /// </list>
@@ -1382,7 +1387,7 @@ public sealed partial class ProjectEditor
                     continue;
                 }
 
-                // 줄은 차례로 가리킨다 — 화면에 LineId를 보이지 않는다(2026-10-29 소유자).
+                // 줄은 차례로 가리킨다 — 화면에 LineId를 보이지 않는다.
                 int order = node.Script.ActiveLines
                     .Select(line => line.Id)
                     .ToList()
@@ -1409,9 +1414,9 @@ public sealed partial class ProjectEditor
     /// <b>그 챕터의</b> 공급 노드 — 공급(<see cref="ChapterBoardSupply.SupplyChapterConditionsToBoard"/>)이
     /// 찾는 것과 같은 이름 규약이다.
     ///
-    /// ⚠ 2026-10-29(L4)까지는 이름 모양(<c>챕터 … 조건</c>)만 보고 <b>모든 챕터의</b> 공급 노드를
-    /// 훑었다. 스탯·조건은 챕터마다 따로라서, ch01의 <c>trust</c>를 고치거나 조건을 지우면
-    /// 같은 이름을 쓰는 ch02의 공급 사본까지 바뀌거나 걷혔다.
+    /// 이름 모양(<c>챕터 … 조건</c>)만 보고 <b>모든 챕터의</b> 공급 노드를 훑으면 안 된다.
+    /// 스탯·조건은 챕터마다 따로라서, ch01의 <c>trust</c>를 고치거나 조건을 지우면
+    /// 같은 이름을 쓰는 ch02의 공급 사본까지 바뀌거나 걷힌다.
     /// </summary>
     private IEnumerable<SetNode> SupplyNodesOf(string chapterId)
     {
@@ -1493,7 +1498,7 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 사전에 없는 낱말이면 올려 둔다 — 다음부터 드롭다운에서 고른다(옛 <c>EnsureChoiceLabel</c>).
     ///
-    /// ⚠ <c>Mutate</c> 안에서만 부른다 — 이것만으로 되돌리기 항목을 따로 만들지 않는다.
+    /// <c>Mutate</c> 안에서만 부른다 — 이것만으로 되돌리기 항목을 따로 만들지 않는다.
     /// </summary>
     private static void LearnChoiceLabel(ChapterDocument chapter, string? text)
     {
@@ -1564,7 +1569,7 @@ public sealed partial class ProjectEditor
     /// `스탯변화` 문법(`trust +1; anger -1`)을 푼다 — 문법을 읽는 자리는
     /// <see cref="StatDeltaParser"/> 하나다.
     ///
-    /// ⚠ <b>못 읽은 것은 조용히 버리지 않는다.</b> 옛 경로에서는 셀에 원문이 남아 리더가
+    /// <b>못 읽은 것은 조용히 버리지 않는다.</b> 옛 경로에서는 셀에 원문이 남아 리더가
     /// 다음 읽기에 짚어 줬는데, 이제 다시 읽는 일이 없어 여기서 안 막으면 영영 사라진다.
     /// </summary>
     private static IReadOnlyList<StatDelta> ParseDeltas(ChapterDocument chapter, string text)
@@ -1585,18 +1590,18 @@ public sealed partial class ProjectEditor
 
 
     /// <summary>
-    /// <b>판에 남은 옛 자유 씬을 에피소드로 올린다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17).
+    /// <b>판에 남은 옛 자유 씬을 에피소드로 올린다</b>.
     ///
-    /// ⛔ 자유 씬은 <b>종류가 아니라 빈자리</b>였다 — 에피소드가 없는 대사 노드. 종류가
-    /// 없어졌으므로 그 빈자리도 없어진다: 챕터 판의 대사 노드는 전부 에피소드다.
+    /// 자유 씬은 <b>종류가 아니라 빈자리</b>다 — 에피소드가 없는 대사 노드. 챕터 판의
+    /// 대사 노드는 전부 에피소드여야 하므로 그 빈자리를 채운다.
     ///
-    /// ⚠ <b>들어오는 간선이 없다.</b> 이것들은 대본의 갈래가 <c>&lt;&lt;detour&gt;&gt;</c>로
-    /// 부르던 곁가지라 챕터 진행에는 안 실려 있었다. 그래서 <c>도달불가 허용</c>을 켜서
-    /// 올린다 — 도달성 증명은 <b>한 줄도 안 건드린다</b>(저쪽 런타임의 오라클이다).
+    /// <b>들어오는 간선이 없다.</b> 이것들은 대본의 갈래가 <c>&lt;&lt;detour&gt;&gt;</c>로
+    /// 부르는 곁가지라 챕터 진행에는 안 실려 있다. 그래서 <c>도달불가 허용</c>을 켜서
+    /// 올린다 — 도달성 증명은 <b>한 줄도 안 건드린다</b>.
     ///
-    /// ⚠ <b>부른 쪽의 장면</b>에 둔다. 곁가지는 제 본줄 옆에 있어야 판에서 읽힌다.
+    /// <b>부른 쪽의 장면</b>에 둔다. 곁가지는 제 본줄 옆에 있어야 판에서 읽힌다.
     ///
-    /// ⚠ <b>이제는 안전망이다</b> — 판에 세운 카드가 언제나 에피소드를 받으므로(2026-09-17)
+    /// <b>안전망이다</b> — 판에 세운 카드가 언제나 에피소드를 받으므로
     /// 올릴 것이 정상적으로는 없다. 어긋난 상태를 만나면 조용히 고친다.
     /// </summary>
     /// <returns>올린 에피소드Id들. 올릴 것이 없으면 빈 목록이고 프로젝트를 안 건드린다.</returns>
@@ -1616,7 +1621,7 @@ public sealed partial class ProjectEditor
 
         foreach (DialogueNode node in board.Nodes.OfType<DialogueNode>())
         {
-            // ⚠ 설정노드(A계층 조건 배관)는 애초에 `DialogueNode`가 아니라 여기 안 걸린다.
+            // 설정노드(A계층 조건 배관)는 애초에 `DialogueNode`가 아니라 여기 안 걸린다.
             if (EpisodeNaming.EpisodeFor(chapter, node) is not null || !taken.Add(node.Name))
             {
                 // 이름이 겹치면 건드리지 않는다 — 조용히 개명하면 어느 씬이 어디로 갔는지
@@ -1684,7 +1689,7 @@ public sealed partial class ProjectEditor
 
 
 /// <summary>
-/// 스탯 개명 한 판의 결과 (2026-09-17).
+/// 스탯 개명 한 판의 결과.
 /// </summary>
 /// <param name="Applied">개명했는가. false면 <b>아무것도 안 건드렸다</b>.</param>
 /// <param name="Edges">`스탯변화`가 바뀐 간선 수.</param>
@@ -1709,7 +1714,7 @@ public sealed record StatRenameOutcome(
 /// <summary>
 /// <b>무언가를 쓰고 있는 자리 하나</b> — 사람이 <b>찾아갈 수 있게</b> 적는다.
 ///
-/// ⛔ *"쓰이고 있습니다"*로 끝내면 챕터를 뒤져야 한다. 지우기를 거절하는 쪽이 이 목록을
+/// *"쓰이고 있습니다"*로 끝내면 챕터를 뒤져야 한다. 지우기를 거절하는 쪽이 이 목록을
 /// 들고 와야 <b>거절이 곧 정리 안내</b>가 된다.
 /// </summary>
 /// <param name="Where">어디인가 — `간선 root → a "믿는다"` · `조건 '신뢰높음'`.</param>
@@ -1729,7 +1734,7 @@ public enum ChapterUseKind
 }
 
 /// <summary>
-/// 스탯 삭제 한 판의 결과 (2026-09-17).
+/// 스탯 삭제 한 판의 결과.
 /// </summary>
 /// <param name="Applied">지웠는가. false면 <b>아무것도 안 건드렸다</b>.</param>
 /// <param name="Fixtures">시작값을 함께 치운 픽스처 수 — 막을 이유가 없는 자리다.</param>
@@ -1751,7 +1756,7 @@ public sealed record StatRemoveOutcome(
         new(false, 0, 0, 0, uses, reason);
 }
 
-/// <summary>챕터 조건 삭제 한 판의 결과 (2026-09-17).</summary>
+/// <summary>챕터 조건 삭제 한 판의 결과.</summary>
 /// <param name="Applied">지웠는가. false면 <b>아무것도 안 건드렸다</b>.</param>
 /// <param name="SuppliedRemoved">판에서 함께 걷은 공급 조건 수.</param>
 /// <param name="Uses">거절의 <b>근거</b> — 먼저 비워야 할 자리들.</param>
@@ -1773,7 +1778,7 @@ public sealed record ChapterRenameEffect(bool BoardRenamed, bool SupplyRenamed);
 
 
 /// <summary>
-/// 판 맞추기 한 판의 결과 (2026-10-29 · D2). 둘 다 <c>챕터/에피소드</c> 꼴이다.
+/// 판 맞추기 한 판의 결과. 둘 다 <c>챕터/에피소드</c> 꼴이다.
 /// </summary>
 /// <param name="CardsStood">카드가 없어서 빈 카드를 세운 에피소드.</param>
 /// <param name="ScenesLifted">에피소드가 없어서 에피소드로 올린 옛 자유 씬.</param>

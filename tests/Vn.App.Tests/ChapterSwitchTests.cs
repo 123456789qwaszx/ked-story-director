@@ -10,11 +10,10 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// 챕터를 바꿔도 화면이 이전 챕터의 결과를 들고 있지 않다 (2026-08-17 소유자 보고:
-/// "Ctrl+S를 눌러야 노드를 감싼 빨간 경고가 사라지면서 스탯이 그제서야 보여" ·
-/// "드롭다운으로 챕터를 선택할 때 왼쪽 챕터목록이 실시간으로 반영이 안 된다").
+/// 챕터를 바꿔도 화면이 이전 챕터의 결과를 들고 있지 않다 — 저장하지 않아도 경고와 스탯이
+/// 새 챕터의 것으로 서고, 드롭다운으로 고른 챕터가 왼쪽 챕터 목록에도 곧바로 반영된다.
 ///
-/// 뿌리는 하나였다 — 드롭다운이 왼쪽 목록 클릭과 <b>다른 길</b>을 갔다.
+/// 드롭다운은 왼쪽 목록 클릭과 <b>같은 길</b>을 간다.
 /// </summary>
 public sealed class ChapterSwitchTests : IDisposable
 {
@@ -55,8 +54,8 @@ public sealed class ChapterSwitchTests : IDisposable
     [Fact]
     public void 드롭다운으로_바꾸면_그_챕터로_검증도_다시_돈다() => HeadlessUi.Run(() =>
     {
-        // 전에는 드롭다운이 Draw()만 불렀다 — 이전 챕터(ch01)의 도달성 결과로 ch02를
-        // 그려서, ch02의 에피소드가 전부 "도달 불가"로 붉게 섰다.
+        // 드롭다운이 Draw()만 부르면 이전 챕터(ch01)의 도달성 결과로 ch02를
+        // 그려서, ch02의 에피소드가 전부 "도달 불가"로 붉게 선다.
         (ChapterGraphView view, Canvas canvas) = Show();
 
         Assert.Equal("ch01", view.FindControl<ComboBox>("ChapterCombo")!.SelectedItem);

@@ -20,14 +20,13 @@ public class ConditionChoiceTests
         Assert.Equal(ConditionChoiceKind.Inherit, choices[0].Kind);
         Assert.Equal(ConditionChoices.InheritOutsideLabel, choices[0].Label);
 
-        // 준비된 조건이 전부 보이고, 고르면 BeginIf다. 마지막은 선택지 시작이다.
+        // 준비된 조건이 전부 보이고, 고르면 BeginIf다. (⛔ "선택지 시작" 항목은 2026-11-04에 걷혔다 — 선택지는 간선에서만.)
         Assert.Equal(
-            new[] { "호감 높음", "신뢰 높음", ConditionChoices.BeginChoiceLabel },
+            new[] { "호감 높음", "신뢰 높음" },
             choices.Skip(1).Select(choice => choice.Label));
         Assert.All(
-            choices.Skip(1).SkipLast(1),
+            choices.Skip(1),
             choice => Assert.Equal(ConditionChoiceKind.BeginIf, choice.Kind));
-        Assert.Equal(ConditionChoiceKind.BeginChoice, choices[^1].Kind);
 
         // 바깥에는 "조건 종료"가 없다. 닫을 것이 없기 때문이다.
         Assert.DoesNotContain(choices, choice => choice.Kind == ConditionChoiceKind.EndIf);
