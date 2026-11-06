@@ -275,6 +275,35 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
+    public void 간선_패널에는_길_끊기와_자동_진행_체크가_없고_자동_길이면_그렇다고_말하고_칸을_잠근다() => HeadlessUi.Run(() =>
+    {
+        // 길을 잇고 끊고 자동으로 바꾸는 것은 [대본] 탭의 일이다 — [구성] 탭 간선 패널은 문구 · 조건 · 스탯변화만 고친다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(view.FindControl<Button>("EdgeDeleteButton"));
+        Assert.Null(view.FindControl<CheckBox>("EdgeAutoCheck"));
+        Assert.False(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
+        Assert.True(view.FindControl<TextBox>("EdgeLabelEditBox")!.IsEnabled);
+
+        // 자동 진행 길 — 안내가 서고 문구 · 조건 칸이 잠긴다. 저장해도 자동 그대로다.
+        session.Editor.UpdateEdge("ch05", "main05.01", "main05.02", matchOptionLabel: "계속", optionLabel: string.Empty, auto: true);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        view.SelectEdgeKey("main05.01", "main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.True(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
+        Assert.False(view.FindControl<TextBox>("EdgeLabelEditBox")!.IsEnabled);
+        Assert.False(view.FindControl<ComboBox>("EdgeConditionCombo")!.IsEnabled);
+
+        view.ApplyEdgeFromPanel();
+        Assert.True(Edge(session, "main05.01", "main05.02").Auto);
+    });
+
+    [Fact]
     public void 선택지는_챕터의_모든_문구_중에서_고른다() => HeadlessUi.Run(() =>
     {
         // 제 것만이 아니라 챕터의 모든 선택지 문구 중에서 고른다.

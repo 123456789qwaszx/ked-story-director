@@ -451,7 +451,6 @@ public partial class ChapterGraphView : UserControl
         AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
         // 빈 판 한가운데의 [＋ 에피소드]도 같은 길이다 — 선택이 없으니 홀로 선다.
         EmptyAddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
-        EdgeDeleteButton.Click += (_, _) => UiGuard.Run(_session, "간선 삭제", DeleteSelectedEdge);
 
         // 간선 패널은 고르는 순간 저장된다. 에피소드 패널의 개명이 Enter로 확정되는 것과 같은 감각이다 —
         // [적용]이라는 문턱이 하나 더 있으면 "고쳤는데 왜 그대로지"가 생긴다.
@@ -462,7 +461,6 @@ public partial class ChapterGraphView : UserControl
         EdgeLabelEditBox.LostFocus += (_, _) => AutoSaveEdge();
         EdgeLabelEditBox.KeyDown += (_, e) => CommitOnEnter(e, AutoSaveEdge);
 
-        EdgeAutoCheck.IsCheckedChanged += (_, _) => AutoSaveEdge();
         EdgeVisibleCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         EdgeConditionCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         BranchConditionCombo.SelectionChanged += (_, _) =>
@@ -3053,10 +3051,17 @@ public partial class ChapterGraphView : UserControl
 
         if (fill)
         {
-            EdgeAutoCheck.IsChecked = edge.Auto;
             EdgeLockedMsgBox.Text = edge.LockedMessage ?? string.Empty;
             _edgeStats.Load(model.Stats, edge.StatChanges);
         }
+
+        // 자동 진행 길은 문구 · 조건 · 스탯변화를 갖지 않는다 — 그렇다고 말하고 칸을 잠근다(적어도 저장되지 않는다).
+        EdgeAutoNote.IsVisible = edge.Auto;
+        EdgeLabelEditBox.IsEnabled = !edge.Auto;
+        EdgeVisibleCombo.IsEnabled = !edge.Auto;
+        EdgeConditionCombo.IsEnabled = !edge.Auto;
+        EdgeLockedMsgBox.IsEnabled = !edge.Auto;
+        _edgeStats.IsEnabled = !edge.Auto;
 
         // 이 길의 문구 (v9) — 글자 칸에 지금 문구가 그대로 선다. 비우면 문구 없는 길이다.
         if (fill)
@@ -3267,8 +3272,8 @@ public partial class ChapterGraphView : UserControl
         string? Gate(ComboBox combo) =>
             combo.SelectedItem as string == "(없음)" ? string.Empty : combo.SelectedItem as string;
 
-        // 문구도 이 저장에 실린다 (v9) — 신원의 일부라, 찾을 때는 고치기 전 값을 쓴다.
-        bool auto = EdgeAutoCheck.IsChecked == true;
+        // 문구도 이 저장에 실린다 (v9) — 신원의 일부라, 찾을 때는 고치기 전 값을 쓴다. 자동인지는 여기서 바꾸지 않는다.
+        bool auto = edge.Auto;
         string pickedLabel = EdgeLabelEditBox.Text?.Trim() ?? string.Empty;
         if (auto)
         {
@@ -3285,8 +3290,7 @@ public partial class ChapterGraphView : UserControl
                     lockedMessage: Changed(auto ? string.Empty : EdgeLockedMsgBox.Text, edge.LockedMessage ?? string.Empty),
                     statChanges: Changed(auto ? string.Empty : _edgeStats.ToSheetText(), StatChangesText(edge)),
                     matchOptionLabel: EdgeLabelKey(edge),
-                    optionLabel: Changed(pickedLabel, EdgeLabelKey(edge)),
-                    auto: auto == edge.Auto ? null : auto);
+                    optionLabel: Changed(pickedLabel, EdgeLabelKey(edge)));
 
                 // 문구를 바꿨으면 신원도 바뀌었다 — 선택이 풀리지 않게 열쇠를 따라 옮긴다.
                 _selectedEdgeKey = (key.From, key.To, pickedLabel);
@@ -3329,22 +3333,6 @@ public partial class ChapterGraphView : UserControl
         ChapterEdit(
             () => _session!.Editor.UpdateChapterDisplayName(chapterId, ChapterDisplayNameBox.Text),
             $"챕터 '{chapterId}'의 표시 이름을 저장했습니다.");
-    }
-
-    internal void DeleteSelectedEdge()
-    {
-        if (_selectedEdgeKey is not { } deleteKey || _selectedChapterId is not { } chapterId)
-        {
-            return;
-        }
-
-        ChapterEdit(
-            () =>
-            {
-                _session!.Editor.RemoveEdge(chapterId, deleteKey.From, deleteKey.To, deleteKey.Label);
-                _selectedEdgeKey = null;
-            },
-            $"간선 {deleteKey.From}→{deleteKey.To}을 지웠습니다.");
     }
 
 

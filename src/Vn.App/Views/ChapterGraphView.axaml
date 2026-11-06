@@ -366,10 +366,12 @@
                         <TextBlock Text="선택지 — 이 길에 붙는 문구" FontSize="10" Opacity="0.6" />
                         <TextBox x:Name="EdgeLabelEditBox" FontSize="11" HorizontalAlignment="Stretch"
                                  PlaceholderText="선택지 문구"
-                                 ToolTip.Tip="문구를 직접 적습니다 — Enter나 다른 곳을 누르면 저장됩니다. 일반 선택지는 문구가 필수이며, 자동 진행은 아래 체크로 명시합니다." />
+                                 ToolTip.Tip="문구를 직접 적습니다 — Enter나 다른 곳을 누르면 저장됩니다. 일반 선택지는 문구가 필수입니다." />
 
-                        <CheckBox x:Name="EdgeAutoCheck" Content="자동 진행" FontSize="11"
-                                  ToolTip.Tip="플레이어 입력 없이 같은 장면의 다음 에피소드로 진행합니다. 자동 길은 유일해야 하며 문구·조건·스탯변화를 가질 수 없습니다." />
+                        <!-- 자동 진행 길이면 그렇다고 말하고 칸을 잠근다 — 자동 길은 문구 · 조건 · 스탯변화를 갖지 않는다.
+                             자동인지는 여기서 정하지 않는다([대본] 탭에서 문구 없이 이은 길이다). -->
+                        <TextBlock x:Name="EdgeAutoNote" FontSize="10" Opacity="0.7" TextWrapping="Wrap" IsVisible="False"
+                                   Text="자동 진행 길입니다 — 플레이어 입력 없이 넘어갑니다. 문구 · 조건 · 스탯변화를 갖지 않습니다." />
 
                         <TextBlock Text="표시조건 — 이 선택지가 보이려면" FontSize="10" Opacity="0.6" />
                         <ComboBox x:Name="EdgeVisibleCombo" FontSize="11" HorizontalAlignment="Stretch"
@@ -394,10 +396,9 @@
 
                         <!-- [적용] 단추는 없다 — 누르지 않아도 바로 반영된다. 고르는 순간 그 셀이 써진다 — 글자 칸만
                              초점을 잃거나 Enter일 때 낸다. -->
+                        <!-- 길을 끊거나 자동으로 바꾸는 것은 여기서 하지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭이다. -->
                         <TextBlock Text="고치면 그 자리에서 저장됩니다."
                                    FontSize="10" Opacity="0.5" Margin="0,2,0,0" />
-                        <Button x:Name="EdgeDeleteButton" Content="이 길 끊기" HorizontalAlignment="Stretch"
-                                ToolTip.Tip="간선 행을 지웁니다. 문구는 챕터 사전에 남습니다 — 다른 길에서 다시 씁니다." />
                     </StackPanel>
 
                     <!-- 분기 — 선택지와 <b>다른 종류</b>다. 조작을 단순하게 두려고 문구도
