@@ -110,6 +110,29 @@ public static class BranchEntryCondition
                Read(project, nodeId, definition) is { Label: not null, Editable: true };
     }
 
+    /// <summary>
+    /// 첫머리 조건을 지키는 분기 카드(<see cref="IsGuarded"/>)의 분기 색 번호 — 부르는 카드의 그 분기 포트 번호다. 연출 그래프의
+    /// 분기 선 · 카드 표가 이 번호로 칠하므로, 대사 편집기의 첫머리 조건 묶음도 이 번호로 칠하면 같은 색이 된다. 아니면 <c>null</c>.
+    /// </summary>
+    public static int? EntryPalette(StoryProject project, string nodeId, GameDefinition? definition = null)
+    {
+        if (!IsGuarded(project, nodeId, definition))
+        {
+            return null;
+        }
+
+        foreach (DialogueNode caller in project.EnumerateNodes().OfType<DialogueNode>())
+        {
+            if (NodeConnections.PortsOf(caller, project, definition).FirstOrDefault(port =>
+                    port.Kind == ExitPortKind.Detour && string.Equals(port.TargetNodeId, nodeId, StringComparison.Ordinal)) is { } detour)
+            {
+                return detour.PaletteIndex;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>툴이 아는 조건 모양 — 첫 줄에 <c>BeginIf</c> 하나, 꼬리에 <c>EndIf</c> 하나.</summary>
     private static bool HasEntryShape(DialogueNode node, ScriptLine first) =>
         node.FindExtension(first.Id)?.Transitions is [{ Kind: ConditionTransitionKind.BeginIf, ConditionId: not null }] &&

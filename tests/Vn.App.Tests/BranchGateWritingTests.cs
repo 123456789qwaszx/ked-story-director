@@ -175,6 +175,36 @@ public sealed class BranchGateWritingTests : IDisposable
     });
 
     [Fact]
+    public void 대사_편집기의_첫머리_조건_묶음은_판의_그_분기와_같은_색이다() => HeadlessUi.Run(() =>
+    {
+        // 전에는 카드 안 첫 갈래라 늘 파랑이었다 — 판의 분기 선 · 카드 표는 분기마다 색이 달라 헷갈렸다.
+        // 그래서 두 번째 분기(판에서는 파랑이 아닌 색)를 본다.
+        (MainWindow window, AuthoringSession session, DialogueNode first, _) = Stage();
+        DialogueNode root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        DialogueNode branch = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);
+        session.Editor.SetScriptLineText(branch.Id, branch.Script.ActiveLines.First().Id, "하린", "두 번째 분기.");
+        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음", session.Definition));
+        session.Select(branch.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Border chip = window.FindControl<GraphEditorView>("Graph")!.FindControl<Canvas>("GraphCanvas")!
+            .GetVisualDescendants().OfType<Border>()
+            .Single(border => border.Tag as string == GraphEditorView.BranchConditionChipTag + branch.Id);
+        Avalonia.Media.Color branchColor = ((Avalonia.Media.ISolidColorBrush)((TextBlock)chip.Child!).Foreground!).Color;
+        Avalonia.Media.Color firstColor = ((Avalonia.Media.ISolidColorBrush)((TextBlock)window.FindControl<GraphEditorView>("Graph")!
+            .FindControl<Canvas>("GraphCanvas")!.GetVisualDescendants().OfType<Border>()
+            .Single(border => border.Tag as string == GraphEditorView.BranchConditionChipTag + first.Id).Child!).Foreground!).Color;
+        Assert.NotEqual(firstColor, branchColor);
+
+        DialogueNodeEditor editor = window.GetLogicalDescendants().OfType<DialogueNodeEditor>().Distinct().Single();
+        Border group = editor.LineHost.GetVisualDescendants().OfType<Border>()
+            .First(border => border.BorderThickness == new Avalonia.Thickness(3, 1, 1, 1));   // 조건 안의 줄 카드 — 왼쪽 굵은 띠
+        Assert.Equal(branchColor, ((Avalonia.Media.ISolidColorBrush)group.BorderBrush!).Color);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 조건_줄을_그대로_두고_대사만_고치면_알리지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode branch, TextBox box) = Stage();

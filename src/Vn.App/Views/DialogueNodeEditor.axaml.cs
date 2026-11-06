@@ -218,6 +218,12 @@ public partial class DialogueNodeEditor : UserControl
             LineHost.Children.Clear();
             _lineCards.Clear();
 
+            // 분기로 다녀오는 카드의 첫머리 조건 묶음도 그 분기의 색이다 — 판의 분기 선 · 카드 표와 같은 번호로 칠한다.
+            _entryGate = BranchEntryCondition.EntryPalette(_session.Project, node.Id, _session.Definition) is { } gatePalette &&
+                         node.Script.ActiveLines.FirstOrDefault() is { } gateLine
+                ? (gateLine.Id, gatePalette)
+                : null;
+
             // 분기 카드의 색은 연출 그래프 카드의 그 분기 포트 · 선과 같다 — 같은 포트 번호(PaletteIndex)로 칠한다.
             Dictionary<string, int> detourPalette = NodeConnections.PortsOf(node, _session.Project, _session.Definition)
                 .Where(port => port.Kind == ExitPortKind.Detour && port.ExitKey is not null)
@@ -457,7 +463,7 @@ public partial class DialogueNodeEditor : UserControl
     private Control BuildCard(DialogueNode node, DialogueScript script, ResolvedLine resolved)
     {
         ConditionBranch? branch = resolved.Branch;
-        int palette = branch?.PaletteIndex ?? -1;
+        int palette = branch is null ? -1 : PaletteOf(branch);
 
         var body = new StackPanel { Spacing = 1 };
 
@@ -743,7 +749,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             ConditionTransitionKind.BeginIf or ConditionTransitionKind.BeginElseIf =>
                 (ConditionLabelOf(node, resolved.Branch?.ConditionId ?? string.Empty),
-                    resolved.Branch is { } branch ? BranchPalette.Accent(branch.PaletteIndex) : (IBrush)neutral),
+                    resolved.Branch is { } branch ? BranchPalette.Accent(PaletteOf(branch)) : (IBrush)neutral),
             _ => ("조건 종료", neutral)
         };
 
@@ -1245,7 +1251,7 @@ public partial class DialogueNodeEditor : UserControl
             Text = $"→ 분기 이후: {target?.Name ?? "(사라진 노드)"}",
             FontSize = 10,
             FontWeight = FontWeight.SemiBold,
-            Foreground = BranchPalette.Accent(branch.PaletteIndex)
+            Foreground = BranchPalette.Accent(PaletteOf(branch))
         };
 
         if (_chapterEpisode)
@@ -1500,6 +1506,18 @@ public partial class DialogueNodeEditor : UserControl
 
         return 0;
     }
+
+    /// <summary>분기로 다녀오는 카드의 첫머리 조건 — 그 갈래를 여는 줄(첫 줄)과 그 분기의 색 번호. 아니면 null.</summary>
+    private (string OpenLineId, int Palette)? _entryGate;
+
+    /// <summary>
+    /// 조건 갈래를 칠할 색 번호 — 분기 카드의 첫머리 조건이면 그 분기의 색(판의 분기 선 · 카드 표와 같다), 아니면 카드 안
+    /// 갈래 차례의 색이다.
+    /// </summary>
+    private int PaletteOf(ConditionBranch branch) =>
+        _entryGate is { } gate && string.Equals(branch.OpenLineId, gate.OpenLineId, StringComparison.Ordinal)
+            ? gate.Palette
+            : branch.PaletteIndex;
 
     /// <summary>분기 조건이 걸린 첫 줄의 막힌 손짓이 하는 말.</summary>
     private const string EntryGuardTip =
