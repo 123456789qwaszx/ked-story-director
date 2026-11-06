@@ -196,6 +196,7 @@ public partial class ChapterGraphView : UserControl
             _ when _selectedEpisodeId is { } episodeId => ($"에피소드 · {episodeId}", "이름 · 장면 · 선택지 · 대사 미리보기"),
             _ when _selectedEdgeKey is { } edge => ($"선택지 · {edge.From} → {edge.To}", "문구 · 조건 · 스탯변화"),
             _ when _selectedBranchKey is not null => ("분기", "다녀갈 에피소드에 들어갈 조건"),
+            _ when _selectedSlot is { } slot => ($"선택지 칸 · {slot.Episode}", "아직 길이 없는 칸"),
             _ => ("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다")
         };
 
@@ -457,6 +458,16 @@ public partial class ChapterGraphView : UserControl
         EdgeFormStatsHost.Children.Add(_formStats);
 
         AddNextEdgeButton.Click += (_, _) => UiGuard.Run(_session, "선택지 추가", AddChoiceSlotFromPanel);
+
+        // 빈 선택지 칸 패널의 [＋] — 그 에피소드를 고르고 선택지 폼을 연다.
+        SlotAddChoiceButton.Click += (_, _) => UiGuard.Run(_session, "선택지 추가", () =>
+        {
+            if (_selectedSlot is { } slot)
+            {
+                SelectEpisode(slot.Episode);
+                AddChoiceSlotFromPanel();
+            }
+        });
         AddEdgeButton.Click += (_, _) => UiGuard.Run(_session, "간선 연결·수정", SubmitEdgeForm);
         DeleteEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 삭제", DeleteSelectedEpisode);
         AddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
@@ -1021,6 +1032,7 @@ public partial class ChapterGraphView : UserControl
         DiagnosticsPanel.Children.Clear();
         _cardById.Clear();
         _cardBase.Clear();
+        _emptySlotDots.Clear();
         _lineByEdge.Clear();
         _lineBase.Clear();
 
@@ -1089,6 +1101,7 @@ public partial class ChapterGraphView : UserControl
         GraphCanvas.Children.Clear();
         _cardById.Clear();
         _cardBase.Clear();
+        _emptySlotDots.Clear();
         _lineByEdge.Clear();
         _lineBase.Clear();
 
@@ -1316,6 +1329,18 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>포트 점의 반지름 — 카드 변 위에 걸터앉는다.</summary>
     private const double PortRadius = 4.5;
+
+    /// <summary>빈 선택지 칸 점이 지는 표 — 화면 테스트가 이것으로 찾는다. 뒤에 「{에피소드}#{칸}」이 붙는다.</summary>
+    internal const string EmptySlotTag = "empty-slot:";
+
+    /// <summary>빈 선택지 칸 점의 테두리 — 고르면 파랗게 굵어지고 풀리면 이리 돌아온다.</summary>
+    private static readonly IBrush EmptySlotBrush = new SolidColorBrush(Color.Parse("#7F8A96"));
+
+    /// <summary>판에 선 빈 선택지 칸 점들 — (에피소드, 칸).</summary>
+    private readonly Dictionary<(string Episode, int Index), Ellipse> _emptySlotDots = new();
+
+    /// <summary>고른 빈 선택지 칸. 없으면 <c>null</c>.</summary>
+    private (string Episode, int Index)? _selectedSlot;
 
     /// <summary>에피소드 → 보이는 선택지(문구 붙은 나가는 간선). Draw가 채우고 카드·간선이 함께 본다.</summary>
     private readonly Dictionary<string, List<ChapterEdge>> _optionsByEpisode = new(StringComparer.Ordinal);
@@ -1681,14 +1706,14 @@ public partial class ChapterGraphView : UserControl
         Canvas.SetTop(card, y);
         GraphCanvas.Children.Add(card);
 
-        DrawOptionPorts(options, x, y);
+        DrawOptionPorts(episode.EpisodeId, options, x, y);
     }
 
     /// <summary>
     /// 카드 오른변의 선택지 포트들 — 문구(카드 안 오른쪽 정렬) + 테두리 위의 원.
     /// v9에서는 포트 하나가 곧 간선 하나다(문구가 붙은 길). 클릭하면 그 간선이 선택된다.
     /// </summary>
-    private void DrawOptionPorts(IReadOnlyList<ChapterEdge> options, double x, double y)
+    private void DrawOptionPorts(string episodeId, IReadOnlyList<ChapterEdge> options, double x, double y)
     {
         // 들어오는 길이 모이는 점 하나 — 아래로 나가서 위로 들어온다.
         GraphCanvas.Children.Add(Dot(
@@ -1717,7 +1742,7 @@ public partial class ChapterGraphView : UserControl
                 colour,
                 filled: wired is not null,
                 tip: wired is null
-                    ? "빈 선택지 칸입니다 — [대본] 탭에서 문구를 적으면 살아납니다."
+                    ? "빈 선택지 칸입니다 — 누르면 이 칸의 정보와 길을 더하는 곳이 보입니다."
                     : PortTip(wired));
 
             if (wired is { } edge)
@@ -1727,6 +1752,18 @@ public partial class ChapterGraphView : UserControl
                     e.Handled = true;
                     UiGuard.Run(_session, "선택지 포트", () =>
                         SelectEdgeKey(edge.FromEpisodeId, edge.ToEpisodeId, EdgeLabelKey(edge)));
+                };
+            }
+            else
+            {
+                // 빈 칸도 누르면 정보가 선다 — 아직 길이 없다는 것과 길을 더하는 곳.
+                int slotIndex = index;
+                port.Tag = EmptySlotTag + episodeId + "#" + slotIndex;
+                _emptySlotDots[(episodeId, slotIndex)] = port;
+                port.PointerPressed += (_, e) =>
+                {
+                    e.Handled = true;
+                    UiGuard.Run(_session, "선택지 칸", () => SelectEmptySlot(episodeId, slotIndex));
                 };
             }
 
@@ -2184,6 +2221,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEpisodeId = episodeId;
         _selectedEdgeKey = null;
         _selectedBranchKey = null;
+        _selectedSlot = null;
         _inspector = InspectorMode.Selection;
         HideEdgeForm(); // 다른 노드로 넘어가면 열려 있던 연결 폼은 닫는다
         ApplySelectionVisuals();
@@ -2203,6 +2241,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
         _selectedEpisodeId = null;
         _selectedBranchKey = null;
+        _selectedSlot = null;
         _inspector = InspectorMode.Selection;
         HideEdgeForm();
         ApplySelectionVisuals();
@@ -2219,11 +2258,29 @@ public partial class ChapterGraphView : UserControl
         _selectedBranchKey = branchKey;
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
+        _selectedSlot = null;
         _inspector = InspectorMode.Selection;
         HideEdgeForm();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
         ShowInHierarchy(null);   // 분기는 하이어아키에 없다
+    }
+
+    /// <summary>
+    /// 빈 선택지 칸 하나를 고른다 — 카드 아래의 빈 점이다. 아직 이 칸에서 나가는 길이 없다는 것과 길을 더하는 곳을 보인다.
+    /// </summary>
+    /// <param name="index">카드 아래 칸의 차례(0부터) — 이어진 선택지들 뒤의 빈 칸이다.</param>
+    internal void SelectEmptySlot(string episodeId, int index)
+    {
+        _selectedSlot = (episodeId, index);
+        _selectedEpisodeId = null;
+        _selectedEdgeKey = null;
+        _selectedBranchKey = null;
+        _inspector = InspectorMode.Selection;
+        HideEdgeForm();
+        ApplySelectionVisuals();
+        RefreshPropertyPanel();
+        ShowInHierarchy(null);   // 칸은 하이어아키에 없다
     }
 
     /// <summary>모든 카드·간선을 기본 모습으로 되돌리고 선택된 것만 파랗게 강조한다.</summary>
@@ -2258,6 +2315,18 @@ public partial class ChapterGraphView : UserControl
         {
             knob.Stroke = BranchPalette.Accent(point.Port.PaletteIndex);
             knob.StrokeThickness = 2;
+        }
+
+        foreach (Ellipse dot in _emptySlotDots.Values)
+        {
+            dot.Stroke = EmptySlotBrush;
+            dot.StrokeThickness = 1.6;
+        }
+
+        if (_selectedSlot is { } slot && _emptySlotDots.TryGetValue(slot, out Ellipse? selectedDot))
+        {
+            selectedDot.Stroke = new SolidColorBrush(Color.Parse("#3D7BD9"));
+            selectedDot.StrokeThickness = 3;
         }
 
         if (_selectedEpisodeId is { } episodeId && _cardById.TryGetValue(episodeId, out Border? selected))
@@ -2330,12 +2399,22 @@ public partial class ChapterGraphView : UserControl
                 ? knob.Point
                 : null;
 
+        (string Episode, int Index)? slot = _selectedSlot is { } picked && model?.FindEpisode(picked.Episode) is not null
+            ? picked
+            : null;
+
         PropertyPanel.IsVisible = episode is not null;
         EdgePanel.IsVisible = edge is not null;
         BranchPanel.IsVisible = branch is not null || openPoint is not null;
-        NoSelectionText.IsVisible = episode is null && edge is null && branch is null && openPoint is null &&
+        SlotPanel.IsVisible = slot is not null;
+        NoSelectionText.IsVisible = episode is null && edge is null && branch is null && openPoint is null && slot is null &&
                                     _inspector != InspectorMode.Scene;
         ApplyInspector();
+
+        if (slot is { } shownSlot && model is not null)
+        {
+            RefreshSlotPanel(model, shownSlot.Episode, shownSlot.Index);
+        }
 
         if (branch is not null)
         {
@@ -2900,6 +2979,30 @@ public partial class ChapterGraphView : UserControl
         {
             _fillingPanel = false;
         }
+    }
+
+    /// <summary>
+    /// 빈 선택지 칸의 패널 — 어느 에피소드의 몇째 칸인지, 아직 길이 없다는 것, 길을 더하는 곳을 말한다.
+    /// </summary>
+    private void RefreshSlotPanel(ChapterGraphModel model, string episodeId, int index)
+    {
+        int options = _optionsByEpisode.TryGetValue(episodeId, out List<ChapterEdge>? edges) ? edges.Count : 0;
+        int slots = SlotsFor(options);
+
+        SlotTitleText.Text = $"선택지 칸 {index + 1}/{slots} — 비어 있음";
+        SlotFromPanel.Children.Clear();
+        SlotFromPanel.Children.Add(EpisodeLink(model, episodeId));
+        SlotFromPanel.Children.Add(new TextBlock
+        {
+            Text = "→ (아직 길 없음)",
+            FontSize = 11,
+            Opacity = 0.6,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        });
+        SlotDetailText.Text = (options == 0
+                ? "이 에피소드에서 나가는 길이 아직 없습니다."
+                : $"이 에피소드에서 나가는 길은 {options}개이고, 이 칸은 비어 있습니다.") +
+            " 아래 [＋]로 선택지를 열어 문구와 도착을 고르면 이 칸이 길이 됩니다. [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이어도 됩니다.";
     }
 
     /// <summary>조건을 안 건 분기 — 언제나 재생된다. 「안 고름」과 같은 뜻이다.</summary>

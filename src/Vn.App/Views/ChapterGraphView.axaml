@@ -468,6 +468,16 @@
                         <TextBlock Text="조건은 다녀갈 에피소드의 첫머리에 적힙니다 — 부르는 쪽 대본은 그대로입니다."
                                    FontSize="10" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
                     </StackPanel>
+
+                    <!-- 빈 선택지 칸 — 카드 아래의 빈 점을 누르면 선다. 아직 이 칸에서 나가는 길이 없다. -->
+                    <StackPanel x:Name="SlotPanel" Spacing="6" IsVisible="False">
+                        <TextBlock x:Name="SlotTitleText" FontWeight="SemiBold" FontSize="12" />
+                        <StackPanel x:Name="SlotFromPanel" Orientation="Horizontal" Spacing="4" />
+                        <TextBlock x:Name="SlotDetailText" FontSize="10" Opacity="0.7" TextWrapping="Wrap" />
+                        <Button x:Name="SlotAddChoiceButton" Content="＋ 이 에피소드에 선택지 열기"
+                                FontSize="11" Padding="8,2" HorizontalAlignment="Left"
+                                ToolTip.Tip="이 에피소드를 고르고 선택지 폼을 엽니다 — 문구와 도착을 고르면 이 칸이 길이 됩니다." />
+                    </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
 
