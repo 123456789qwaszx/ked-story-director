@@ -324,20 +324,21 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 선택지_줄을_누르면_그_아래에_설명이_읽기_전용으로_펼쳐지고_다시_누르면_접힌다() => HeadlessUi.Run(() =>
+    public void 선택지_설명은_기본으로_펼쳐져_있고_읽기_전용이며_누르면_접힌다() => HeadlessUi.Run(() =>
     {
-        // 에피소드 칸은 확인하는 자리다 — 펼친 설명에는 고칠 칸이 없다.
+        // 에피소드 칸은 확인하는 자리다 — 설명은 처음부터 펼쳐져 있고, 펼친 설명에는 고칠 칸이 없다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEpisode("main05.02");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
+        List<ChapterEdge> edges = Chapter(session).Edges.Where(edge => edge.FromEpisodeId == "main05.02").ToList();
         ChapterEdge target = Edge(session, "main05.02", "branch05.02A");
-        view.ToggleChoice(target);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        int row = edges.FindIndex(edge => edge.ToEpisodeId == target.ToEpisodeId && edge.OptionLabel == target.OptionLabel);
+        Assert.Equal(edges.Count, Details(view).Count);
 
-        Border detail = Detail(view)!;
+        Border detail = DetailOf(view, row)!;
         List<string?> lines = detail.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToList();
         Assert.Contains("해금조건: 신뢰높음", lines);
         Assert.Contains(lines, line => line!.StartsWith("스탯변화: ", StringComparison.Ordinal));
@@ -352,14 +353,19 @@ public sealed class ChapterGraphEditingTests
         Assert.Null(view.FindControl<TextBox>("EdgeLabelBox"));
         Assert.Null(view.FindControl<ComboBox>("EdgeTargetCombo"));
 
-        // 다시 누르면 접힌다.
+        // 누르면 그 줄만 접히고, 다시 누르면 펼쳐진다.
         view.ToggleChoice(target);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Null(Detail(view));
+        Assert.Null(DetailOf(view, row));
+        Assert.Equal(edges.Count - 1, Details(view).Count);
+
+        view.ToggleChoice(target);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(DetailOf(view, row));
     });
 
     [Fact]
-    public void 다른_선택지를_펴도_이미_펼친_선택지는_접히지_않는다() => HeadlessUi.Run(() =>
+    public void 선택지를_접어도_다른_선택지는_그대로고_다른_에피소드로_넘어가면_다시_펼쳐진다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -370,22 +376,25 @@ public sealed class ChapterGraphEditingTests
         List<ChapterEdge> edges = Chapter(session).Edges.Where(edge => edge.FromEpisodeId == "main05.02").ToList();
         Assert.True(edges.Count >= 2);
 
-        // 둘을 차례로 편다 — 둘 다 펼쳐져 있다.
+        // 처음부터 모두 펼쳐져 있다.
+        Assert.Equal(edges.Count, Details(view).Count);
+
+        // 첫째를 접으면 첫째만 접히고 둘째는 그대로다.
         view.ToggleChoice(edges[0]);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Null(DetailOf(view, 0));
+        Assert.NotNull(DetailOf(view, 1));
+
+        // 둘째도 접는다.
         view.ToggleChoice(edges[1]);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Equal(2, Details(view).Count);
+        Assert.Equal(edges.Count - 2, Details(view).Count);
 
-        // 첫째를 다시 누르면 첫째만 접힌다.
-        view.ToggleChoice(edges[0]);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Single(Details(view));
-
-        // 다른 에피소드로 넘어가면 모두 접힌다.
+        // 다른 에피소드로 넘어가면 다시 모두 펼쳐진다.
         view.SelectEpisode("main05.01");
         view.SelectEpisode("main05.02");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Empty(Details(view));
+        Assert.Equal(edges.Count, Details(view).Count);
     });
 
     [Fact]
@@ -766,9 +775,18 @@ public sealed class ChapterGraphEditingTests
     }
 
     /// <summary>견본 챕터(ch05 복도)를 든 프로젝트. 판과 카드는 열 때 선다.</summary>
-    /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명 — 없으면 null.</summary>
-    private static Border? Detail(ChapterGraphView view) =>
-        Details(view).SingleOrDefault();
+    /// <summary>그 차례(0부터)의 선택지 줄 바로 아래에 펼쳐진 설명 — 접혀 있으면 null.</summary>
+    private static Border? DetailOf(ChapterGraphView view, int row)
+    {
+        List<Control> children = view.FindControl<StackPanel>("EdgeListPanel")!.Children.ToList();
+        List<int> rows = children.Select((child, index) => (child, index))
+            .Where(pair => pair.child is Grid)
+            .Select(pair => pair.index)
+            .ToList();
+        int next = rows[row] + 1;
+
+        return next < children.Count && children[next] is Border { Tag: ChapterGraphView.ChoiceDetailTag } detail ? detail : null;
+    }
 
     /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명들 — 위에서 아래 차례.</summary>
     private static List<Border> Details(ChapterGraphView view) =>

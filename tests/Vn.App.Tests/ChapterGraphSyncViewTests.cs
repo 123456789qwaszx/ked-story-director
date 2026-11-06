@@ -51,6 +51,9 @@ public sealed class ChapterGraphSyncViewTests
             """.ReplaceLineEndings("\n"),
             preview.Text!.ReplaceLineEndings("\n"));
 
+        // 대사가 있으면 머리 옆에 안내문을 달지 않는다(「읽기 전용 · 고치는 곳은 …」은 걷혔다).
+        Assert.Equal(string.Empty, view.FindControl<TextBlock>("DialoguePreviewHeader")!.Text);
+
         // 아직 대사를 안 적은 에피소드는 빈 화면 대신 그 사실을 말한다.
         view.SelectEpisode("main05.01");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

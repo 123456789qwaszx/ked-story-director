@@ -77,7 +77,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
         _grouped.Clear();
-        CollapseChoice();
+        UnfoldChoices();
         ShowInHierarchy(new HierarchyPick(HierarchyKind.Chapter, chapterId));
         _inspector = InspectorMode.Chapter;   // 챕터를 골랐다 — 하이어아키의 그 줄을 고른 것과 같다
 
@@ -2524,7 +2524,7 @@ public partial class ChapterGraphView : UserControl
         _selectedBranchKey = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
-        CollapseChoice(); // 다른 노드로 넘어가면 펼친 선택지는 접는다
+        UnfoldChoices(); // 다른 노드로 넘어가면 선택지는 다시 모두 펼쳐진다
         ApplySelectionVisuals();
         RefreshPropertyPanel();
         ShowInHierarchy(episodeId is not null && _selectedChapterId is { } chapterId
@@ -2546,7 +2546,7 @@ public partial class ChapterGraphView : UserControl
         _selectedBranchKey = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
-        CollapseChoice();
+        UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
         ShowInHierarchy(null);   // 길은 하이어아키에 없다
@@ -2565,7 +2565,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
-        CollapseChoice();
+        UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
         ShowInHierarchy(null);   // 분기는 하이어아키에 없다
@@ -2584,7 +2584,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = null;
         _selectedBranchKey = null;
         _inspector = InspectorMode.Selection;
-        CollapseChoice();
+        UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
         ShowInHierarchy(null);   // 칸은 하이어아키에 없다
@@ -2865,7 +2865,7 @@ public partial class ChapterGraphView : UserControl
         string preview = DialogueOf(episodeId);
 
         DialoguePreviewHeader.Text = preview.Length > 0
-            ? "읽기 전용 · 고치는 곳은 [대본] 탭의 카드"
+            ? string.Empty
             : "아직 적힌 대사가 없습니다 — [대본] 탭의 카드에서 쓰세요";
         DialoguePreviewText.Text = preview;
     }
@@ -2909,25 +2909,28 @@ public partial class ChapterGraphView : UserControl
     // 목록의 줄 = 이 에피소드에서 나가는 길 하나이고, 길 하나가 곧 선택지 하나다. 여기서는 확인만 한다 — 선택지를 잇고 끊는 것은
     // [대본] 탭(카드 아래 칸), 문구 · 조건 · 스탯변화는 판에서 그 선을 눌러 여는 간선 패널이다.
 
-    /// <summary>펼친 선택지 줄들의 신원 (도착, 문구) — 줄마다 따로 펴고 접으므로 여럿이 함께 펼쳐져 있을 수 있다.</summary>
-    private readonly HashSet<(string To, string Label)> _openedChoices = [];
+    /// <summary>
+    /// 접은 선택지 줄들의 신원 (도착, 문구). 선택지 설명은 <b>기본으로 펼쳐져</b> 있고, 사람이 접은 줄만 여기 든다 — 줄마다
+    /// 따로 접고 편다.
+    /// </summary>
+    private readonly HashSet<(string To, string Label)> _foldedChoices = [];
 
     /// <summary>펼친 선택지 설명이 지는 표 — 화면 시험이 이것으로 찾는다.</summary>
     internal const string ChoiceDetailTag = "choice-detail";
 
-    /// <summary>펼친 선택지를 모두 접는다 — 다른 것을 고르면 부른다.</summary>
-    private void CollapseChoice() => _openedChoices.Clear();
+    /// <summary>선택지를 다시 모두 펼친다 — 다른 것을 고르면 부른다(접은 것은 그 에피소드를 보는 동안만이다).</summary>
+    private void UnfoldChoices() => _foldedChoices.Clear();
 
     /// <summary>
-    /// 선택지 줄 클릭 — 그 줄 아래에 설명을 펼치고, 펼친 줄을 다시 누르면 접는다. 다른 줄을 펴도 이미 펼친 줄은 그대로다.
+    /// 선택지 줄 클릭 — 펼쳐진 줄이면 그 설명을 접고, 접힌 줄이면 다시 편다. 다른 줄은 그대로다.
     /// </summary>
     internal void ToggleChoice(ChapterEdge edge)
     {
         (string To, string Label) key = (edge.ToEpisodeId, EdgeLabelKey(edge));
 
-        if (!_openedChoices.Remove(key))
+        if (!_foldedChoices.Remove(key))
         {
-            _openedChoices.Add(key);
+            _foldedChoices.Add(key);
         }
 
         RefreshPropertyPanel(preserveTyping: true);
@@ -2994,7 +2997,7 @@ public partial class ChapterGraphView : UserControl
             EdgeListPanel.Children.Add(BuildEdgeRow(edge, rowIndex));
 
             // 펼친 줄이면 바로 아래에 설명이 선다.
-            if (_openedChoices.Contains((edge.ToEpisodeId, EdgeLabelKey(edge))))
+            if (!_foldedChoices.Contains((edge.ToEpisodeId, EdgeLabelKey(edge))))
             {
                 EdgeListPanel.Children.Add(BuildChoiceDetail(model, edge));
             }
