@@ -449,6 +449,8 @@ public partial class ChapterGraphView : UserControl
         DeleteEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 삭제", DeleteSelectedEpisode);
         AddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
         AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
+        HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+            _session?.SetHideEmptyChoices(HideEmptyChoicesCheck.IsChecked == true));
         // 빈 판 한가운데의 [＋ 에피소드]도 같은 길이다 — 선택이 없으니 홀로 선다.
         EmptyAddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
 
@@ -517,11 +519,21 @@ public partial class ChapterGraphView : UserControl
         _session = session;
         _sessionChanged = (_, _) => QueueReload();
         session.Changed += _sessionChanged;
+
+        // 「빈 선택지 숨기기」 — [대본] 탭과 같은 설정이다. 어느 탭에서 바꾸든 체크를 맞추고 판을 다시 그린다.
+        HideEmptyChoicesCheck.IsChecked = session.HideEmptyChoices;
+        _hideEmptyChanged = (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+        {
+            HideEmptyChoicesCheck.IsChecked = _session?.HideEmptyChoices == true;
+            Draw();
+        });
+        session.HideEmptyChoicesChanged += _hideEmptyChanged;
         Reload();
     }
 
     /// <summary>세션 구독을 끊을 수 있도록 들고 있는다 — 람다를 바로 걸면 뗄 수가 없다.</summary>
     private EventHandler<Vn.Authoring.Editing.ProjectChangedEventArgs>? _sessionChanged;
+    private EventHandler? _hideEmptyChanged;
 
     /// <summary>
     /// 세션에서 손을 뗀다 — 구독을 끊는다.
@@ -546,7 +558,13 @@ public partial class ChapterGraphView : UserControl
             _session.Changed -= _sessionChanged;
         }
 
+        if (_session is not null && _hideEmptyChanged is not null)
+        {
+            _session.HideEmptyChoicesChanged -= _hideEmptyChanged;
+        }
+
         _sessionChanged = null;
+        _hideEmptyChanged = null;
         _session = null;
     }
 
@@ -1361,6 +1379,11 @@ public partial class ChapterGraphView : UserControl
     private static int SlotsFor(int optionCount) => Math.Max(ChoiceSlots, optionCount);
 
     /// <summary>
+    /// 판에 세울 칸 수 — 툴바의 「빈 선택지 숨기기」를 켜면 이은 칸만이다(빈 칸을 세지 않으니 이은 선택지가 카드 아래에 고르게 선다).
+    /// </summary>
+    private int ShownSlotsFor(int optionCount) => _session?.HideEmptyChoices == true ? optionCount : SlotsFor(optionCount);
+
+    /// <summary>
     /// 선택지 포트의 가로 자리 — <b>카드 아래변</b>에 고르게 선다 (v5, 2026-09-18).
     /// 카드 그리기와 간선 그리기가 같은 산식 하나를 본다.
     /// </summary>
@@ -1396,7 +1419,7 @@ public partial class ChapterGraphView : UserControl
             // 자리는 늘 있다 — 자리를 정하는 쪽(DisplayPlacement)이 에피소드마다 하나씩 낸다.
             (double X, double Y) position = _placed[episode.EpisodeId];
 
-            int slots = SlotsFor(options.Count);
+            int slots = ShownSlotsFor(options.Count);
 
             for (int index = 0; index < options.Count; index++)
             {
@@ -1838,23 +1861,27 @@ public partial class ChapterGraphView : UserControl
         Canvas.SetTop(card, y);
         GraphCanvas.Children.Add(card);
 
-        DrawOptionPorts(episode.EpisodeId, options, x, y);
+        DrawOptionPorts(episode.EpisodeId, options, x, y,
+            hasIncoming: model.Edges.Any(edge => string.Equals(edge.ToEpisodeId, episode.EpisodeId, StringComparison.Ordinal)));
     }
 
     /// <summary>
     /// 카드 오른변의 선택지 포트들 — 문구(카드 안 오른쪽 정렬) + 테두리 위의 원.
     /// v9에서는 포트 하나가 곧 간선 하나다(문구가 붙은 길). 클릭하면 그 간선이 선택된다.
     /// </summary>
-    private void DrawOptionPorts(string episodeId, IReadOnlyList<ChapterEdge> options, double x, double y)
+    private void DrawOptionPorts(string episodeId, IReadOnlyList<ChapterEdge> options, double x, double y, bool hasIncoming)
     {
-        // 들어오는 길이 모이는 점 하나 — 아래로 나가서 위로 들어온다.
-        GraphCanvas.Children.Add(Dot(
-            EntryDot(x, y),
-            new SolidColorBrush(Color.Parse("#7F8A96")),
-            filled: false,
-            tip: "이 에피소드로 들어오는 길이 여기로 모입니다."));
+        // 들어오는 길이 모이는 점 하나 — 아래로 나가서 위로 들어온다. 「빈 선택지 숨기기」를 켜면 들어오는 길이 없을 때 감춘다.
+        if (hasIncoming || _session?.HideEmptyChoices != true)
+        {
+            GraphCanvas.Children.Add(Dot(
+                EntryDot(x, y),
+                new SolidColorBrush(Color.Parse("#7F8A96")),
+                filled: false,
+                tip: "이 에피소드로 들어오는 길이 여기로 모입니다."));
+        }
 
-        int slots = SlotsFor(options.Count);
+        int slots = ShownSlotsFor(options.Count);
 
         for (int index = 0; index < slots; index++)
         {

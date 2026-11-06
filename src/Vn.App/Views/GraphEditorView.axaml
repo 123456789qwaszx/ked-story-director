@@ -26,6 +26,10 @@
                 <Button x:Name="AddDialogueButton" Content="+ 대사 노드" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                 <Button x:Name="DeleteNodeButton" Content="노드 삭제" />
+                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                <!-- 빈 선택지 숨기기 — 두 탭이 같은 설정을 쓴다(짝: `ChapterGraphView.axaml`의 HideEmptyChoicesCheck). -->
+                <CheckBox x:Name="HideEmptyChoicesCheck" Content="빈 선택지 숨기기" FontSize="11" VerticalAlignment="Center"
+                          ToolTip.Tip="켜면 이어지지 않은 빈 선택지 칸을 감춥니다 — [대본] 탭은 모든 카드 아래에 이은 선택지만, [구성] 탭은 빈 선택지 점과 들어오는 길 없는 입구 점을 감춥니다. 두 탭이 같은 설정을 씁니다. 새로 잇거나 문구를 적으려면 끄세요." />
             </StackPanel>
         </Border>
 

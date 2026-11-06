@@ -278,6 +278,8 @@ public partial class GraphEditorView : UserControl
 
         AddDialogueButton.Click += (_, _) => AddDialogueNode();
         DeleteNodeButton.Click += (_, _) => DeleteSelectedNode();
+        HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+            _session?.SetHideEmptyChoices(HideEmptyChoicesCheck.IsChecked == true));
 
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 대사 노드]가 거기에 선다.
         // ⚠ 다시 그리기가 콤보를 맞출 때는 안 돈다(_syncingChapter) — 안 그러면
@@ -324,6 +326,14 @@ public partial class GraphEditorView : UserControl
         // 단추가 <b>무엇을 지울지</b>는 고른 것에 달렸다 — 고를 때마다 이름을 맞춘다.
         session.SelectionChanged += (_, _) =>
             UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
+
+        // 「빈 선택지 숨기기」 — [구성] 탭과 같은 설정이다. 어느 탭에서 바꾸든 체크를 맞추고 판을 다시 세운다.
+        HideEmptyChoicesCheck.IsChecked = session.HideEmptyChoices;
+        session.HideEmptyChoicesChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+        {
+            HideEmptyChoicesCheck.IsChecked = session.HideEmptyChoices;
+            Rebuild();
+        });
 
         // 카드를 고르면 고른 선은 놓는다 — 인스펙터는 그 카드를 보인다(셸이 선택을 보고 맞춘다).
         session.SelectionChanged += (_, _) => UiGuard.Run(_session, "선 놓기", () =>
@@ -1300,14 +1310,14 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 판에 그릴 칸 — 인스펙터의 「빈 선택지 숨기기」를 켠 카드는 이은 칸만이다. 안 이은 칸은 자동 길 자리 · 적어 둔 칸까지
-    /// 감춘다(적어 둔 문구는 끄면 그 자리에 돌아온다). 칸 번호는 <see cref="SlotsOf"/>의 것을 그대로 지닌다.
+    /// 판에 그릴 칸 — 툴바의 「빈 선택지 숨기기」를 켜면 이은 칸만이다. 안 이은 칸은 자동 길 자리 · 적어 둔 칸까지 감춘다(적어 둔
+    /// 문구는 끄면 그 자리에 돌아온다). 칸 번호는 <see cref="SlotsOf"/>의 것을 그대로 지닌다.
     /// </summary>
     private IReadOnlyList<GraphChoicePort> ShownSlotsOf(string nodeId)
     {
         IReadOnlyList<GraphChoicePort> slots = SlotsOf(nodeId);
 
-        return _session?.HiddenChoiceNodeIds.Contains(nodeId) == true
+        return _session?.HideEmptyChoices == true
             ? slots.Where(slot => !slot.IsEmpty).ToList()
             : slots;
     }
