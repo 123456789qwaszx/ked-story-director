@@ -3016,7 +3016,8 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 선택지 한 줄 — `문구 → 도착 [조건]`. 자동 길이면 「AUTO · 자동 진행」, 문구가 없으면 「⚠ 문구 없음」이다.
+    /// 선택지 한 줄 — `문구 → 도착`. 자동 길이면 「AUTO · 자동 진행」, 문구가 없으면 「⚠ 문구 없음」이다. 조건은 줄에 붙이지
+    /// 않는다 — 바로 아래 펼친 설명이 표시조건 · 해금조건을 보인다.
     /// 클릭 = 그 줄 아래에 조건 · 스탯변화를 펼치기, 다시 클릭 = 접기.
     /// </summary>
     private Control BuildEdgeRow(ChapterEdge edge, int rowIndex)
@@ -3040,11 +3041,9 @@ public partial class ChapterGraphView : UserControl
         });
 
         string label = edge.Auto ? "AUTO · 자동 진행" : edge.HasNoOptionLabel ? "⚠ 문구 없음" : edge.OptionLabel!;
-        string condition = edge.ConditionLabel is { } gate ? $"  [{gate}]" : string.Empty;
-
         var text = new TextBlock
         {
-            Text = $"{label}   → {edge.ToEpisodeId}{condition}",
+            Text = $"{label}   → {edge.ToEpisodeId}",
             FontSize = 11,
             Opacity = edge.HasNoOptionLabel ? 0.7 : 1,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,

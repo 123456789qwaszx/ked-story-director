@@ -338,6 +338,12 @@ public sealed class ChapterGraphEditingTests
         int row = edges.FindIndex(edge => edge.ToEpisodeId == target.ToEpisodeId && edge.OptionLabel == target.OptionLabel);
         Assert.Equal(edges.Count, Details(view).Count);
 
+        // 줄은 「문구 → 도착」뿐이다 — 해금조건은 줄에 붙이지 않고 아래 설명이 보인다.
+        TextBlock line = view.FindControl<StackPanel>("EdgeListPanel")!.Children.OfType<Grid>().ElementAt(row)
+            .Children.OfType<TextBlock>().Last();
+        Assert.Equal($"{target.OptionLabel}   → {target.ToEpisodeId}", line.Text);
+        Assert.DoesNotContain("[", line.Text, StringComparison.Ordinal);
+
         Border detail = DetailOf(view, row)!;
         List<string?> lines = detail.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToList();
         Assert.Contains("해금조건: 신뢰높음", lines);
