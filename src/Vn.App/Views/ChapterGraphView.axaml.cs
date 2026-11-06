@@ -1141,11 +1141,11 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// <b>분기 표식</b>을 점선으로 그린다.
+    /// <b>분기점</b>을 카드 옆변에 세우고, 이어진 분기는 그 점에서 점선을 긋는다.
     ///
-    /// <b>선택지와 다른 종류의 선이다.</b> 문구도 스탯변화도 없고, 누를 수도 없다 — 뚫고 떼는
-    /// 것은 연출 그래프의 일이므로 여기서는 <b>읽기만</b> 한다. 점선인 것이 그 뜻이다:
-    /// 사람이 고르는 길(실선)이 아니라 <b>반드시 한 번 다녀오는 통로</b>다.
+    /// <b>선택지와 다른 종류의 선이다.</b> 문구도 스탯변화도 없다. 점선인 것이 그 뜻이다: 사람이 고르는 길(실선)이
+    /// 아니라 <b>반드시 한 번 다녀오는 통로</b>다. 분기점을 만들고 지우는 것은 [대본] 탭의 일이고, 여기서는 이미 선
+    /// 분기점을 끌어 잇거나 눌러 연결만 끊는다 — 연결만 끊은 분기점도 속 빈 점으로 남아 보인다.
     ///
     /// ⚠ <b>옆변으로 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
     /// 선택지처럼 우측으로 붙이되"*) — 선택지가 아래변의 칸을 쓰므로 자리가 겹치지 않는다(포트 하나 =
@@ -1161,58 +1161,192 @@ public partial class ChapterGraphView : UserControl
         }
 
         _branchByKey.Clear();
+        _branchBase.Clear();
+        _branchKnobs.Clear();
 
-        foreach (ChapterBranchMarkers.Marker marker in
-                 ChapterBranchMarkers.For(_session.Editor.Project, chapterId))
+        // 분기점은 카드 옆변에 선다 — 다녀갈 카드가 왼쪽이면 왼변, 아니면(이어지지 않은 분기점도) 오른변이다. 한 변에
+        // 여럿이면 옆변 가운데를 중심으로 세로로 늘어선다(대본의 분기점처럼 점에서 선이 나간다).
+        IReadOnlyList<ChapterBranchMarkers.BranchPoint> points =
+            ChapterBranchMarkers.PointsFor(_session.Editor.Project, chapterId);
+
+        foreach (IGrouping<(string From, bool Left), ChapterBranchMarkers.BranchPoint> side in points
+                     .Where(point => _placed.ContainsKey(point.FromEpisodeId))
+                     .GroupBy(point => (point.FromEpisodeId, GoesLeft(point))))
         {
-            if (!_placed.TryGetValue(marker.FromEpisodeId, out (double X, double Y) from) ||
-                !_placed.TryGetValue(marker.ToEpisodeId, out (double X, double Y) to))
+            (double X, double Y) from = _placed[side.Key.From];
+            List<ChapterBranchMarkers.BranchPoint> stacked = side.ToList();
+
+            for (int index = 0; index < stacked.Count; index++)
             {
-                continue;
+                ChapterBranchMarkers.BranchPoint point = stacked[index];
+                var at = new Point(
+                    side.Key.Left ? from.X : from.X + CardWidth,
+                    from.Y + (CardHeight / 2) + ((index - ((stacked.Count - 1) / 2.0)) * BranchPointGap));
+
+                IBrush accent = BranchPalette.Accent(point.Port.PaletteIndex);
+
+                if (point.ToEpisodeId is { } toEpisode && _placed.TryGetValue(toEpisode, out (double X, double Y) to) &&
+                    point.Marker is { } marker)
+                {
+                    DrawBranchLine(point, marker, at, to, accent);
+                }
+
+                Ellipse knob = BranchKnob(point, at, accent);
+                _branchKnobs[point.Key] = (point, knob);
+                GraphCanvas.Children.Add(knob);
+            }
+        }
+    }
+
+    /// <summary>분기점이 설 변 — 다녀갈 카드가 이 카드보다 왼쪽이면 왼변이다. 이어지지 않은 분기점은 오른변이다.</summary>
+    private bool GoesLeft(ChapterBranchMarkers.BranchPoint point) =>
+        point.ToEpisodeId is { } to &&
+        _placed.TryGetValue(point.FromEpisodeId, out (double X, double Y) from) &&
+        _placed.TryGetValue(to, out (double X, double Y) target) &&
+        Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, target.X);
+
+    /// <summary>
+    /// 이어진 분기의 점선 — 분기점에서 나가 도착 카드의 <b>가까운 세로 변</b> 가운데로 든다(두 카드가 가로로 겹쳐 서도 선이
+    /// 카드를 관통하지 않는다). 1.6px 점선은 사람이 못 누르므로 굵은 누름 선을 겹친다 — 누르면 그 분기를 고른다(조건 칸).
+    /// </summary>
+    private void DrawBranchLine(
+        ChapterBranchMarkers.BranchPoint point, ChapterBranchMarkers.Marker marker, Point start, (double X, double Y) to,
+        IBrush accent)
+    {
+        bool goesLeft = GoesLeft(point);
+        double entryX = goesLeft
+            ? to.X + CardWidth <= start.X ? to.X + CardWidth : to.X
+            : start.X <= to.X ? to.X : to.X + CardWidth;
+
+        var line = new Line
+        {
+            StartPoint = start,
+            EndPoint = new Point(entryX, to.Y + (CardHeight / 2)),
+            Stroke = accent,
+            StrokeThickness = BranchThickness,
+            StrokeDashArray = new AvaloniaList<double> { 5, 4 },
+            IsHitTestVisible = false,
+            // 화면 없는 검증이 "무엇이 그려졌는지"를 색·좌표로 역추론하지 않게 한다.
+            Tag = $"분기:{marker.FromEpisodeId}->{marker.ToEpisodeId}"
+        };
+
+        GraphCanvas.Children.Add(line);
+        string branchKey = point.Key;
+        _branchByKey[branchKey] = (marker, line);
+        _branchBase[branchKey] = accent;
+
+        var hit = new Line
+        {
+            StartPoint = line.StartPoint,
+            EndPoint = line.EndPoint,
+            Stroke = Brushes.Transparent,
+            StrokeThickness = 14,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
+        };
+
+        hit.PointerPressed += (_, e) =>
+        {
+            e.Handled = true; // 캔버스(빈 공간 = 선택 해제)까지 흘러가면 곧바로 풀린다
+            UiGuard.Run(_session, "분기 선택", () => SelectBranch(branchKey));
+        };
+
+        GraphCanvas.Children.Add(hit);
+    }
+
+    /// <summary>
+    /// 분기점 — 이어진 분기는 속이 찬 점, 연결만 끊은 분기점은 속 빈 점이다. 끌어 에피소드 카드에 놓으면 그리로 잇고,
+    /// 그냥 누르면(빈 곳에 놓으면) 연결만 끊는다 — 분기점은 남는다. [대본] 탭의 분기점과 같은 손짓이다.
+    /// </summary>
+    private Ellipse BranchKnob(ChapterBranchMarkers.BranchPoint point, Point at, IBrush accent)
+    {
+        var knob = new Ellipse
+        {
+            Width = BranchKnobRadius * 2,
+            Height = BranchKnobRadius * 2,
+            Fill = point.ToEpisodeId is null ? Brushes.Transparent : accent,
+            Stroke = accent,
+            StrokeThickness = 2,
+            ZIndex = 50,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+            Tag = BranchKnobTag + point.Key
+        };
+        Canvas.SetLeft(knob, at.X - BranchKnobRadius);
+        Canvas.SetTop(knob, at.Y - BranchKnobRadius);
+        ToolTip.SetTip(knob, point.ToEpisodeId is { } to
+            ? $"분기 → {to} — 끌어 다른 에피소드로 옮겨 잇고, 누르면 연결만 끊긴다(분기점은 남는다). 조건은 점선을 눌러 정한다."
+            : "이어지지 않은 분기점 — 끌어 에피소드에 놓으면 분기가 된다. 지우려면 [대본] 탭 곁기둥의 분기점 카드에서 [✕].");
+
+        knob.PointerPressed += (_, e) =>
+        {
+            if (!e.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
+            {
+                return;
             }
 
-            // 도착 쪽 옆변 가운데에서 나가(도착이 왼쪽이면 왼변), 도착 카드의 <b>가까운 세로 변</b>으로 들어간다 —
-            // 두 카드가 가로로 겹쳐 서도 선이 카드를 관통하지 않는다.
-            bool goesLeft = Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, to.X);
-            var start = new Point(goesLeft ? from.X : from.X + CardWidth, from.Y + (CardHeight / 2));
-            double entryX = goesLeft
-                ? to.X + CardWidth <= start.X ? to.X + CardWidth : to.X
-                : start.X <= to.X ? to.X : to.X + CardWidth;
+            e.Handled = true; // 캔버스(빈 공간 = 선택 해제)로 흘러가지 않게
+            BeginBranchDrag(point, at);
+        };
 
-            var line = new Line
-            {
-                StartPoint = start,
-                EndPoint = new Point(entryX, to.Y + (CardHeight / 2)),
-                Stroke = BranchStroke,
-                StrokeThickness = BranchThickness,
-                StrokeDashArray = new AvaloniaList<double> { 5, 4 },
-                IsHitTestVisible = false,
-                // 화면 없는 검증이 "무엇이 그려졌는지"를 색·좌표로 역추론하지 않게 한다.
-                Tag = $"분기:{marker.FromEpisodeId}->{marker.ToEpisodeId}"
-            };
+        return knob;
+    }
 
-            GraphCanvas.Children.Add(line);
-            string branchKey = Vn.Authoring.Flow.ExitPort.DetourKey(marker.LineId, marker.ToNodeId);
-            _branchByKey[branchKey] = (marker, line);
+    /// <summary>분기점을 끌기 시작한다 — 점에서 포인터까지 미리보기 점선을 긋는다.</summary>
+    private void BeginBranchDrag(ChapterBranchMarkers.BranchPoint point, Point at)
+    {
+        var preview = new Line
+        {
+            StartPoint = at,
+            EndPoint = at,
+            Stroke = new SolidColorBrush(Color.Parse("#3D7BD9")),
+            StrokeThickness = 2,
+            StrokeDashArray = new AvaloniaList<double> { 4, 3 },
+            IsHitTestVisible = false
+        };
 
-            // 1.6px 점선은 사람이 못 누른다 — 간선과 같은 수법으로 굵은 히트 선을 겹친다.
-            var hit = new Line
-            {
-                StartPoint = line.StartPoint,
-                EndPoint = line.EndPoint,
-                Stroke = Brushes.Transparent,
-                StrokeThickness = 14,
-                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
-            };
+        GraphCanvas.Children.Add(preview);
+        _branchDrag = (point, preview);
+    }
 
-            hit.PointerPressed += (_, e) =>
-            {
-                e.Handled = true; // 캔버스(빈 공간 = 선택 해제)까지 흘러가면 곧바로 풀린다
-                UiGuard.Run(_session, "분기 선택", () => SelectBranch(branchKey));
-            };
-
-            GraphCanvas.Children.Add(hit);
+    /// <summary>
+    /// 분기점 끌기를 놓는다 — 에피소드 카드 위면 그리로 잇고, 아니면(제 카드 · 빈 곳) 연결만 끊는다. 이어지지 않은 분기점을
+    /// 빈 곳에 놓으면 할 일이 없다.
+    /// </summary>
+    private void CommitBranchDrag(Point dropped)
+    {
+        if (_branchDrag is not { } drag)
+        {
+            return;
         }
+
+        _branchDrag = null;
+        GraphCanvas.Children.Remove(drag.Preview);
+
+        if (_session is null || _selectedChapterId is not { } chapterId)
+        {
+            return;
+        }
+
+        string? targetEpisode = _cardById
+            .Where(pair => !string.Equals(pair.Key, drag.Point.FromEpisodeId, StringComparison.Ordinal))
+            .Where(pair => new Rect(Canvas.GetLeft(pair.Value), Canvas.GetTop(pair.Value), CardWidth, CardHeight).Contains(dropped))
+            .Select(pair => pair.Key)
+            .FirstOrDefault();
+        string? targetNode = targetEpisode is null
+            ? null
+            : EpisodeNaming.CardFor(_session.Editor.Project, chapterId, targetEpisode)?.Id;
+
+        if (targetNode is null && drag.Point.ToEpisodeId is null)
+        {
+            return;
+        }
+
+        UiGuard.Run(_session, "분기 잇기", () =>
+        {
+            _session.Editor.SetExitTarget(drag.Point.Port, targetNode);
+            _session.SetStatus(targetEpisode is null
+                ? $"'{drag.Point.FromEpisodeId}'의 분기 연결을 끊었습니다 — 분기점은 남습니다. 끌어 에피소드에 놓으면 다시 잇습니다."
+                : $"'{drag.Point.FromEpisodeId}'의 분기를 '{targetEpisode}'에 이었습니다.");
+        });
     }
 
     // ⛔ 픽스처 (G6) — 2026-08-24에 화면에서 걷었다 (소유자: "꽤 오래 다뤘는데 단 한 번도
@@ -1802,13 +1936,30 @@ public partial class ChapterGraphView : UserControl
     private string? _selectedBranchKey;
 
     /// <summary>이번 그리기의 분기 선들 — 분기 열쇠로 찾는다(선택 강조와 패널이 같은 것을 본다).</summary>
-    /// <summary>분기 점선의 기본 모습 — 고르면 파랗고 굵어지고(<see cref="ApplySelectionVisuals"/>) 풀리면 이리 돌아온다.</summary>
-    private static readonly IBrush BranchStroke = new SolidColorBrush(Color.Parse("#7A6FB0"));
-
+    /// <summary>분기 점선의 기본 굵기 — 고르면 파랗고 굵어지고(<see cref="ApplySelectionVisuals"/>) 풀리면 이리 돌아온다.</summary>
     private const double BranchThickness = 1.6;
 
+    private const double BranchKnobRadius = 5;
+
+    /// <summary>한 변에 분기점이 여럿일 때 점 사이의 세로 간격.</summary>
+    private const double BranchPointGap = 14;
+
+    /// <summary>분기점이 지는 표 — 화면 테스트가 이것으로 찾는다. 뒤에 분기점의 열쇠(<see cref="ChapterBranchMarkers.BranchPoint.Key"/>)가 붙는다.</summary>
+    internal const string BranchKnobTag = "branch-knob:";
+
+    /// <summary>이어진 분기의 점선 — 열쇠는 분기점의 열쇠다.</summary>
     private readonly Dictionary<string, (ChapterBranchMarkers.Marker Marker, Line Line)> _branchByKey =
         new(StringComparer.Ordinal);
+
+    /// <summary>점선의 기본 색 — 분기마다 [대본] 탭의 그 분기 포트 · 선과 같은 색이다(<see cref="BranchPalette"/>).</summary>
+    private readonly Dictionary<string, IBrush> _branchBase = new(StringComparer.Ordinal);
+
+    /// <summary>카드 옆변의 분기점들 — 이어지지 않은 분기점까지.</summary>
+    private readonly Dictionary<string, (ChapterBranchMarkers.BranchPoint Point, Ellipse Knob)> _branchKnobs =
+        new(StringComparer.Ordinal);
+
+    /// <summary>끌고 있는 분기점과 미리보기 점선. 없으면 <c>null</c>.</summary>
+    private (ChapterBranchMarkers.BranchPoint Point, Line Preview)? _branchDrag;
 
     /// <summary>지금 끌고 있는 카드. 없으면 <c>null</c>.</summary>
     private string? _draggingEpisodeId;
@@ -1889,6 +2040,12 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void OnCanvasPointerMoved(object? sender, Avalonia.Input.PointerEventArgs args)
     {
+        if (_branchDrag is { } branchDrag)
+        {
+            branchDrag.Preview.EndPoint = args.GetPosition(GraphCanvas);
+            return;
+        }
+
         if (_draggingEpisodeId is null)
         {
             return;
@@ -1912,8 +2069,11 @@ public partial class ChapterGraphView : UserControl
         QueueDragRedraw();
     }
 
-    private void OnCanvasPointerReleased(
-        object? sender, Avalonia.Input.PointerReleasedEventArgs args) => CommitDrag();
+    private void OnCanvasPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs args)
+    {
+        CommitBranchDrag(args.GetPosition(GraphCanvas));
+        CommitDrag();
+    }
 
     /// <summary>
     /// 끌던 자리를 <b>한 번</b> 적는다. 안 움직였으면(그냥 누른 것) 아무것도 안 적는다 —
@@ -2155,9 +2315,9 @@ public partial class ChapterGraphView : UserControl
         }
 
         // 분기 점선도 기본 모습으로 — 안 그러면 다른 것을 골라도 앞서 고른 분기가 파랗게 남는다.
-        foreach ((ChapterBranchMarkers.Marker _, Line line) in _branchByKey.Values)
+        foreach ((string key, (ChapterBranchMarkers.Marker _, Line line)) in _branchByKey)
         {
-            line.Stroke = BranchStroke;
+            line.Stroke = _branchBase[key];
             line.StrokeThickness = BranchThickness;
         }
 
