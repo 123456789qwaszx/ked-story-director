@@ -22,12 +22,12 @@ public sealed class ChapterEdgeLabelTests
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         // 사람이 하는 그대로: 노드 하나 → 그 자식 하나 (간선이 함께 생긴다).
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.SelectEpisode("new01");
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -46,11 +46,11 @@ public sealed class ChapterEdgeLabelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         view.SelectEpisode("new01");
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -91,11 +91,11 @@ public sealed class ChapterEdgeLabelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         view.SelectEpisode("new01");
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 

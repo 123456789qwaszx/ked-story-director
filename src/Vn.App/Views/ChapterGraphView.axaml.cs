@@ -448,12 +448,11 @@ public partial class ChapterGraphView : UserControl
         // 스탯변화 줄 편집기 — 간선 패널.
         EdgeStatsHost.Children.Add(_edgeStats);
 
-        AddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
         AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
         HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
             _session?.SetHideEmptyChoices(HideEmptyChoicesCheck.IsChecked == true));
-        // 빈 판 한가운데의 [＋ 에피소드]도 같은 길이다 — 선택이 없으니 홀로 선다.
-        EmptyAddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
+        // 빈 판 한가운데의 [＋ 에피소드] — 선택이 없으니 첫 에피소드가 홀로 선다.
+        EmptyAddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeAfterSelection);
 
         // 간선 패널은 고르는 순간 저장된다. 에피소드 패널의 개명이 Enter로 확정되는 것과 같은 감각이다 —
         // [적용]이라는 문턱이 하나 더 있으면 "고쳤는데 왜 그대로지"가 생긴다.
@@ -3951,12 +3950,12 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// [＋ 에피소드] — 에피소드가 선택돼 있으면 <b>그 자식으로</b> 만들어 간선까지 잇는다
-    /// (자리 = 부모 깊이 + 1 열, v3 소유자 지시). 선택이 없으면 홀로 선 노드다.
+    /// 에피소드 추가 — 빈 챕터의 [＋ 에피소드]가 부른다. 에피소드가 선택돼 있으면 <b>그 자식으로</b> 만들어 간선까지 잇는다
+    /// (자리 = 부모 깊이 + 1 열, v3 소유자 지시). 선택이 없으면 마지막 에피소드에서, 챕터가 비었으면 홀로 선 노드다.
     /// Id는 자동 발명하지 않되 빈 이름으로 둘 수는 없으니, 겹치지 않는 자리표시 Id를 주고
-    /// 사람이 패널의 [이름] 칸에서 고쳐 정하게 한다(Enter로 확정).
+    /// 사람이 패널의 에피소드ID 칸에서 고쳐 정하게 한다(Enter로 확정).
     /// </summary>
-    internal void AddEpisodeFromToolbar()
+    internal void AddEpisodeAfterSelection()
     {
         if (_selectedChapterId is not { } chapterId || SelectedModel is not { } model)
         {

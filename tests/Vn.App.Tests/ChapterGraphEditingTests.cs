@@ -364,7 +364,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
 
         ChapterGraphModel afterAdd = Chapter(session);
         Assert.NotNull(afterAdd.FindEpisode("new01"));
@@ -387,7 +387,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar(); // new01 + 카드
+        view.AddEpisodeAfterSelection(); // new01 + 카드
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -421,7 +421,7 @@ public sealed class ChapterGraphEditingTests
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => node.MarkedEpisodeId == "new01");
 
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs(); // QueueReload 한 차례
 
         // 더한 그 자리에서 노드가 서 있다 — 에피소드와 카드가 한 변경이다.
@@ -445,7 +445,7 @@ public sealed class ChapterGraphEditingTests
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEpisode("main05.end");
-        view.AddEpisodeFromToolbar();
+        view.AddEpisodeAfterSelection();
 
         ChapterGraphModel reread = Chapter(session);
         ChapterEpisode added = reread.FindEpisode("new01")!;
@@ -495,8 +495,11 @@ public sealed class ChapterGraphEditingTests
         // [에피소드 삭제]도 없다 — 지우기는 하이어아키의 우클릭 「지우기」 하나다.
         Assert.Null(view.FindControl<Button>("DeleteEpisodeButton"));
 
+        // [＋ 에피소드]도 없다 — 에피소드는 하이어아키의 우클릭 「에피소드 추가」로 더한다.
+        Assert.Null(view.FindControl<Button>("AddEpisodeButton"));
+
         // 남아야 하는 이웃 — 지우다 같이 쓸려 나가면 여기서 걸린다.
-        Assert.NotNull(view.FindControl<Button>("AddEpisodeButton"));
+        Assert.NotNull(view.FindControl<Button>("AutoArrangeButton"));
     });
 
     [Fact]

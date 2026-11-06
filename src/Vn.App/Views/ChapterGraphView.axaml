@@ -25,9 +25,7 @@
                          챕터 진행 JSON이 사람 손을 기다리면 누른 순간의 낡은 파일이 디스크에
                          남는다. 다시 읽을 때마다 저절로 나간다 — 내보내기의 거부 규칙은 그대로 적용된다. -->
                     <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
-                    <Button x:Name="AddEpisodeButton"
-                            Content="＋ 에피소드"
-                            ToolTip.Tip="선택된 에피소드의 다음으로 새 에피소드를 만들어 잇습니다. 선택이 없으면 홀로 섭니다. 이름은 우측 [이름] 칸에서 고치고 Enter." />
+                    <!-- [＋ 에피소드] 단추는 두지 않는다 — 에피소드는 하이어아키의 우클릭 「에피소드 추가」로 더한다. -->
 
                     <!-- 자동 정렬 — 자리의 주인이 사람이라서
                          필요한 짝이다. 손으로 옮기다 판이 엉키면 되돌릴 길이 있어야 한다.
@@ -187,14 +185,13 @@
                             IsVisible="False"
                             ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
                     <!-- 셋째 걸음 — 챕터는 열렸는데 에피소드가 하나도 없을 때. 앞의 둘과
-                         달리 배선까지 이 뷰의 것이다: 툴바의 [＋ 에피소드]와 같은 길을 탄다
-                         (선택이 없으니 홀로 선다). -->
+                         달리 배선까지 이 뷰의 것이다(선택이 없으니 첫 에피소드가 홀로 선다). -->
                     <Button x:Name="EmptyAddEpisodeButton"
                             Content="＋ 에피소드"
                             HorizontalAlignment="Center"
                             Padding="16,6"
                             IsVisible="False"
-                            ToolTip.Tip="첫 에피소드를 만듭니다 — 이름은 우측 [이름] 칸에서 고치고 Enter." />
+                            ToolTip.Tip="첫 에피소드를 만듭니다 — 에피소드ID는 우측 칸에서 고치고 Enter." />
                 </StackPanel>
             </Grid>
 
@@ -232,7 +229,7 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="6">
                     <TextBlock x:Name="NoSelectionText"
-                               Text="노드 클릭 = 선택&#x0A;선택한 뒤 [＋ 에피소드] = 다음 에피소드로 잇기&#x0A;선(길) 클릭 = 표시·해금조건과 스탯변화 편집"
+                               Text="노드 클릭 = 선택&#x0A;하이어아키 우클릭 = 에피소드 추가&#x0A;선(길) 클릭 = 표시·해금조건과 스탯변화 편집"
                                FontSize="11"
                                Opacity="0.55"
                                TextWrapping="Wrap" />
