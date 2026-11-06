@@ -19,6 +19,7 @@ internal sealed class AuthoringSession
     private readonly HashSet<string> _expandedFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<GraphSceneKey> _collapsedScenes = [];
+    private readonly HashSet<string> _hiddenChoiceNodeIds = new(StringComparer.Ordinal);
     private string _fileListSignature = string.Empty;
     private string _savedSnapshot;
 
@@ -69,13 +70,20 @@ internal sealed class AuthoringSession
     public IReadOnlySet<GraphSceneKey> CollapsedScenes => _collapsedScenes;
 
     /// <summary>
-    /// 빈 선택지를 감추는가 — 두 탭 툴바의 「빈 선택지 숨기기」(하나다). 켜면 [대본] 카드는 <b>이은 선택지만</b> 세우고(안 이은
-    /// 칸은 자동 길 자리까지 감춘다), [구성] 카드는 빈 선택지 점과 들어오는 길 없는 입구 점을 감춘다. 화면 편의라 프로젝트
-    /// 파일이 아니라 사용자 설정에 기억한다(앱 전체).
+    /// [대본] 탭에서 빈 선택지 칸을 감춘 카드들 (인스펙터의 「빈 선택지 숨기기」). 여기 든 카드는 <b>이은 선택지만</b> 세운다 —
+    /// 안 이은 칸은 자동 길 자리까지 감춘다. 여기 없는 카드는 칸이 셋 선다. 화면 편의라 프로젝트 파일이 아니라 사용자 설정에
+    /// 프로젝트별로 기억한다.
+    /// </summary>
+    public IReadOnlySet<string> HiddenChoiceNodeIds => _hiddenChoiceNodeIds;
+
+    /// <summary>
+    /// [구성] 탭에서 빈 선택지를 감추는가 — 그 탭 툴바의 「빈 선택지 숨기기」(하나다). 켜면 [구성] 카드는 빈 선택지 점과 들어오는
+    /// 길 없는 입구 점을 감춘다. [대본] 탭은 카드마다 정한다(<see cref="HiddenChoiceNodeIds"/>). 화면 편의라 프로젝트 파일이
+    /// 아니라 사용자 설정에 기억한다(앱 전체).
     /// </summary>
     public bool HideEmptyChoices { get; private set; } = AppSettingsService.LoadHideEmptyChoices();
 
-    /// <summary>「빈 선택지 숨기기」가 바뀌었다 — 두 판이 다시 그리고 툴바의 체크를 맞춘다.</summary>
+    /// <summary>[구성] 탭의 「빈 선택지 숨기기」가 바뀌었다 — [구성] 판이 다시 그린다.</summary>
     public event EventHandler? HideEmptyChoicesChanged;
 
     public string? SelectedNodeId { get; private set; }
@@ -425,7 +433,28 @@ internal sealed class AuthoringSession
         }
     }
 
-    /// <summary>빈 선택지를 감추거나(참) 다시 세운다 — 기억하고 두 판에 알린다.</summary>
+    /// <summary>[대본] 탭에서 그 카드의 빈 선택지 칸을 감추거나(참) 다시 세운다 — 기억하고 판을 다시 세운다.</summary>
+    internal void SetHideEmptyChoices(string nodeId, bool hide)
+    {
+        bool changed = hide ? _hiddenChoiceNodeIds.Add(nodeId) : _hiddenChoiceNodeIds.Remove(nodeId);
+
+        if (!changed)
+        {
+            return;
+        }
+
+        if (ProjectPath is not null)
+        {
+            AppSettingsService.SaveHiddenChoices(ProjectPath, _hiddenChoiceNodeIds);
+        }
+
+        RaiseFileGraphStateChanged(
+            activeFileChanged: false,
+            expandedFilesChanged: true,
+            fileListChanged: false);
+    }
+
+    /// <summary>[구성] 탭에서 빈 선택지를 감추거나(참) 다시 세운다 — 기억하고 [구성] 판에 알린다.</summary>
     internal void SetHideEmptyChoices(bool hide)
     {
         if (HideEmptyChoices == hide)
@@ -518,6 +547,12 @@ internal sealed class AuthoringSession
         _expandedFileIds.Clear();
         _knownFileIds.Clear();
         _collapsedScenes.Clear();
+        _hiddenChoiceNodeIds.Clear();
+
+        if (ProjectPath is not null)
+        {
+            _hiddenChoiceNodeIds.UnionWith(AppSettingsService.LoadHiddenChoices(ProjectPath));
+        }
 
         foreach (StoryFile file in project.Files)
         {

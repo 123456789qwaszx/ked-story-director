@@ -52,6 +52,14 @@ public partial class DialogueNodeEditor : UserControl
 
         NameBox.LostFocus += (_, _) => CommitName();
 
+        HideEmptyChoicesBox.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "선택지 칸", () =>
+        {
+            if (!_building && _nodeId is not null)
+            {
+                _session?.SetHideEmptyChoices(_nodeId, HideEmptyChoicesBox.IsChecked == true);
+            }
+        });
+
         // Enter = 바꾸기, Esc = 그만두기 — 하이어아키의 이름 칸과 같은 손짓.
         NameBox.KeyDown += (_, args) => UiGuard.Run(_session, "이름 바꾸기", () =>
         {
@@ -196,6 +204,9 @@ public partial class DialogueNodeEditor : UserControl
                   "에피소드ID는 [구성] 탭에서 정합니다."
                 : null);
 
+            // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
+            HideEmptyChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
+            HideEmptyChoicesBox.IsChecked = _session.HiddenChoiceNodeIds.Contains(node.Id);
 
             DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
             DialogueFlow flow = ConditionFlowResolver.Resolve(

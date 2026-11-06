@@ -521,7 +521,7 @@ public partial class ChapterGraphView : UserControl
         _sessionChanged = (_, _) => QueueReload();
         session.Changed += _sessionChanged;
 
-        // 「빈 선택지 숨기기」 — [대본] 탭과 같은 설정이다. 어느 탭에서 바꾸든 체크를 맞추고 판을 다시 그린다.
+        // 「빈 선택지 숨기기」 — [구성] 판의 설정이다(앱 설정에 기억한다). 체크를 맞추고 판을 다시 그린다.
         HideEmptyChoicesCheck.IsChecked = session.HideEmptyChoices;
         _hideEmptyChanged = (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
         {
