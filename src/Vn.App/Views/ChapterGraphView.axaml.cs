@@ -1162,8 +1162,6 @@ public partial class ChapterGraphView : UserControl
 
         _branchByKey.Clear();
 
-        var stroke = new SolidColorBrush(Color.Parse("#7A6FB0"));
-
         foreach (ChapterBranchMarkers.Marker marker in
                  ChapterBranchMarkers.For(_session.Editor.Project, chapterId))
         {
@@ -1185,8 +1183,8 @@ public partial class ChapterGraphView : UserControl
             {
                 StartPoint = start,
                 EndPoint = new Point(entryX, to.Y + (CardHeight / 2)),
-                Stroke = stroke,
-                StrokeThickness = 1.6,
+                Stroke = BranchStroke,
+                StrokeThickness = BranchThickness,
                 StrokeDashArray = new AvaloniaList<double> { 5, 4 },
                 IsHitTestVisible = false,
                 // 화면 없는 검증이 "무엇이 그려졌는지"를 색·좌표로 역추론하지 않게 한다.
@@ -1804,6 +1802,11 @@ public partial class ChapterGraphView : UserControl
     private string? _selectedBranchKey;
 
     /// <summary>이번 그리기의 분기 선들 — 분기 열쇠로 찾는다(선택 강조와 패널이 같은 것을 본다).</summary>
+    /// <summary>분기 점선의 기본 모습 — 고르면 파랗고 굵어지고(<see cref="ApplySelectionVisuals"/>) 풀리면 이리 돌아온다.</summary>
+    private static readonly IBrush BranchStroke = new SolidColorBrush(Color.Parse("#7A6FB0"));
+
+    private const double BranchThickness = 1.6;
+
     private readonly Dictionary<string, (ChapterBranchMarkers.Marker Marker, Line Line)> _branchByKey =
         new(StringComparer.Ordinal);
 
@@ -2149,6 +2152,13 @@ public partial class ChapterGraphView : UserControl
                 line.Stroke = stroke;
                 line.StrokeThickness = thickness;
             }
+        }
+
+        // 분기 점선도 기본 모습으로 — 안 그러면 다른 것을 골라도 앞서 고른 분기가 파랗게 남는다.
+        foreach ((ChapterBranchMarkers.Marker _, Line line) in _branchByKey.Values)
+        {
+            line.Stroke = BranchStroke;
+            line.StrokeThickness = BranchThickness;
         }
 
         if (_selectedEpisodeId is { } episodeId && _cardById.TryGetValue(episodeId, out Border? selected))

@@ -1,5 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
+using Avalonia.Media;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -199,6 +202,63 @@ public sealed class ChapterBranchPanelTests
         Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, second.Id, session.Definition).Label);
         Assert.Null(BranchEntryCondition.Read(session.Project, first.Id, session.Definition).Label);
     });
+
+    [Fact]
+    public void 분기_강조는_다른_분기나_빈_판이나_카드를_고르면_풀린다() => HeadlessUi.Run(() =>
+    {
+        // 분기 점선을 고르면 굵고 파래진다 — 그 강조가 선택을 옮겨도 남아 있으면 무엇을 고른 것인지 판이 거짓말을 한다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        session.Editor.AddBranchMarker(caller.Id, project.BranchLineId);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        List<Line> branches = BranchLines(canvas);
+        Assert.Equal(2, branches.Count);
+        double plain = branches[0].StrokeThickness;
+
+        // 첫째를 누른다 — 그것만 굵다.
+        Press(HitOf(canvas, branches[0]));
+        Assert.True(branches[0].StrokeThickness > plain);
+        Assert.Equal(plain, branches[1].StrokeThickness);
+
+        // 둘째를 누른다 — 첫째는 풀린다.
+        Press(HitOf(canvas, branches[1]));
+        Assert.Equal(plain, branches[0].StrokeThickness);
+        Assert.True(branches[1].StrokeThickness > plain);
+
+        // 빈 판을 누른다 — 둘 다 풀린다.
+        Press(canvas);
+        Assert.All(branches, line => Assert.Equal(plain, line.StrokeThickness));
+        Assert.All(branches, line => Assert.Equal(((ISolidColorBrush)branches[0].Stroke!).Color, ((ISolidColorBrush)line.Stroke!).Color));
+
+        // 다시 고르고 카드를 고른다 — 풀린다.
+        Press(HitOf(canvas, branches[0]));
+        view.SelectEpisode("root");
+        Assert.Equal(plain, branches[0].StrokeThickness);
+    });
+
+    private static List<Line> BranchLines(Canvas canvas) =>
+        canvas.Children.OfType<Line>()
+            .Where(line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true)
+            .ToList();
+
+    /// <summary>점선에 겹친 굵은 누름 선 — 사람이 실제로 누르는 것이다.</summary>
+    private static Line HitOf(Canvas canvas, Line branch) =>
+        canvas.Children.OfType<Line>().Single(line =>
+            line != branch && line.StartPoint == branch.StartPoint && line.EndPoint == branch.EndPoint &&
+            line.Stroke == Brushes.Transparent);
+
+    private static void Press(Control control)
+    {
+        var root = (Visual)TopLevel.GetTopLevel(control)!;
+        control.RaiseEvent(new PointerPressedEventArgs(
+            control, new Pointer(0, PointerType.Mouse, true), root, default, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
+            KeyModifiers.None));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
 
     private static (ChapterGraphView View, AuthoringSession Session) Show(TempProject project)
     {
