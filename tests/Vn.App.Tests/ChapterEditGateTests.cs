@@ -40,7 +40,14 @@ public sealed class ChapterEditGateTests
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        view.FindControl<ComboBox>("EdgeLabelEditBox")!.SelectedItem = "혼자 문을 연다";
+        // 문구를 고쳐 Enter로 저장한다 — 문구는 간선의 신원이라 다음 저장이 그 간선을 새 열쇠로 찾아야 한다.
+        var label = view.FindControl<TextBox>("EdgeLabelEditBox")!;
+        label.Text = "혼자 문을 연다";
+        label.RaiseEvent(new Avalonia.Input.KeyEventArgs
+        {
+            RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+            Key = Avalonia.Input.Key.Enter
+        });
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.FindControl<ComboBox>("EdgeVisibleCombo")!.SelectedItem = "지쳐있음";

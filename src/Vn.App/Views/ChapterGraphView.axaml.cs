@@ -481,7 +481,12 @@ public partial class ChapterGraphView : UserControl
         //
         // 글자 칸만 초점을 잃을 때 낸다. 자판 하나마다 저장하면 되돌리기가 글자 수만큼 쪼개지고,
         // 그 사이의 다시 그리기가 칸을 다시 채워 쓰던 글을 끊는다.
-        EdgeLabelEditBox.SelectionChanged += (_, _) => AutoSaveEdge();
+        // 문구는 글자 칸이다 — 다른 글자 칸처럼 Enter나 초점을 잃을 때 낸다.
+        EdgeLabelEditBox.LostFocus += (_, _) => AutoSaveEdge();
+        EdgeLabelEditBox.KeyDown += (_, e) => CommitOnEnter(e, AutoSaveEdge);
+
+        // 선택지 폼의 문구 칸 — Enter가 [수정]과 같다.
+        EdgeLabelBox.KeyDown += (_, e) => CommitOnEnter(e, () => UiGuard.Run(_session, "간선 연결·수정", SubmitEdgeForm));
         EdgeAutoCheck.IsCheckedChanged += (_, _) => AutoSaveEdge();
         EdgeVisibleCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         EdgeConditionCombo.SelectionChanged += (_, _) => AutoSaveEdge();
@@ -2350,6 +2355,7 @@ public partial class ChapterGraphView : UserControl
     // 편집이 필요하면 사람이 편집 탭을 누른다.
     internal void SelectEpisode(string? episodeId)
     {
+        FlushEdgeTyping();
         _selectedEpisodeId = episodeId;
         _selectedEdgeKey = null;
         _selectedBranchKey = null;
@@ -2370,6 +2376,7 @@ public partial class ChapterGraphView : UserControl
 
     internal void SelectEdgeKey(string fromEpisodeId, string toEpisodeId, string optionLabel = "")
     {
+        FlushEdgeTyping();
         _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
         _selectedEpisodeId = null;
         _selectedBranchKey = null;
@@ -2387,6 +2394,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     internal void SelectBranch(string? branchKey)
     {
+        FlushEdgeTyping();
         _selectedBranchKey = branchKey;
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
@@ -2404,6 +2412,7 @@ public partial class ChapterGraphView : UserControl
     /// <param name="index">카드 아래 칸의 차례(0부터) — 이어진 선택지들 뒤의 빈 칸이다.</param>
     internal void SelectEmptySlot(string episodeId, int index)
     {
+        FlushEdgeTyping();
         _selectedSlot = (episodeId, index);
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
@@ -2610,9 +2619,6 @@ public partial class ChapterGraphView : UserControl
                     .ToList(),
                 EdgeTargetCombo.SelectedItem as string); // 도착 고르기는 언제나 사람 소유
 
-            // 문구 목록은 챕터 전체 사전이다 (v9) — 어느 에피소드에서든 다 고를 수 있다.
-            SetItems(EdgeLabelBox, ChoiceLabelItems(model), EdgeLabelBox.SelectedItem as string);
-
             RefreshEdgeList(model, episode);
         }
         finally
@@ -2646,6 +2652,33 @@ public partial class ChapterGraphView : UserControl
         }
 
         UiGuard.Run(_session, "간선 저장", ApplyEdgeFromPanel);
+    }
+
+    /// <summary>
+    /// 선택을 옮기기 전에 간선 패널의 글자 칸에 적던 것을 그 간선에 낸다 — 판의 선 · 점은 초점을 가져가지 않아, 적던 칸이
+    /// 초점을 잃지 않은 채 다른 것이 골라지면 적던 글이 사라지거나(칸을 새 선택의 값으로 채운다) 엉뚱한 간선에 들어간다.
+    /// </summary>
+    private void FlushEdgeTyping()
+    {
+        if (!EdgePanel.IsVisible ||
+            _selectedEdgeKey is not { } key ||
+            SelectedModel?.Edges.FirstOrDefault(candidate =>
+                candidate.FromEpisodeId == key.From &&
+                candidate.ToEpisodeId == key.To &&
+                EdgeLabelKey(candidate) == key.Label) is not { } edge)
+        {
+            return;
+        }
+
+        bool labelTyped = !string.Equals(
+            EdgeLabelEditBox.Text?.Trim() ?? string.Empty, edge.OptionLabel ?? string.Empty, StringComparison.Ordinal);
+        bool messageTyped = !string.Equals(
+            EdgeLockedMsgBox.Text ?? string.Empty, edge.LockedMessage ?? string.Empty, StringComparison.Ordinal);
+
+        if ((labelTyped && !edge.Auto) || messageTyped)
+        {
+            AutoSaveEdge();
+        }
     }
 
     /// <summary>
@@ -2708,10 +2741,7 @@ public partial class ChapterGraphView : UserControl
 
     // ── 선택지 목록 + 잇기 폼 (v9, 2026-08-17 소유자) ────────────────────────
     // 목록의 줄 = 이 에피소드에서 나가는 길 하나이고, 길 하나가 곧 선택지 하나다.
-    // 문구는 챕터 전체의 사전에서 고른다 — "모든 선택지 중에서 자유자재로."
-
-    /// <summary>문구 없는 길(보이지 않는 기본)을 드롭다운에서 가리키는 이름.</summary>
-    private const string PlainAdvanceItem = "(문구 없음)";
+    // 문구는 글자 칸에 직접 적는다 — 비우면 문구 없는 길이다.
 
     /// <summary>폼이 붙은 간선의 신원 (도착, 문구). null이면 <b>새 선택지</b>를 여는 중이다.</summary>
     private (string To, string Label)? _edgeFormEdge;
@@ -2748,9 +2778,8 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 줄 클릭 — 그 길의 문구·도착을 고치는 폼이 줄 바로 아래에 열린다. 문구 드롭다운은
-    /// <b>챕터의 모든 문구</b>를 담는다 (2026-08-17 소유자: "자기 것만 고르는 게 아니라
-    /// 모든 선택지 중에서 자유자재로"). <paramref name="edge"/>가 null이면 새 선택지다.
+    /// 줄 클릭 — 그 길의 문구·도착을 고치는 폼이 줄 바로 아래에 열린다. 문구는 글자 칸에 지금 문구가 그대로 적혀 선다.
+    /// <paramref name="edge"/>가 null이면 새 선택지다.
     /// </summary>
     internal void OpenEdgeForm(ChapterEdge? edge, int rowIndex)
     {
@@ -2763,9 +2792,7 @@ public partial class ChapterGraphView : UserControl
         try
         {
             EdgeTargetCombo.SelectedItem = edge?.ToEpisodeId;
-            EdgeLabelBox.SelectedItem = edge is null
-                ? null
-                : edge.HasNoOptionLabel ? PlainAdvanceItem : edge.OptionLabel;
+            EdgeLabelBox.Text = edge?.OptionLabel ?? string.Empty;
             EdgeFormAutoCheck.IsChecked = edge?.Auto == true;
 
             // 스탯변화도 여기서 만진다 (2026-08-17) — 새 길이면 빈 목록에서 시작한다.
@@ -2775,14 +2802,6 @@ public partial class ChapterGraphView : UserControl
         {
             _fillingPanel = false;
         }
-    }
-
-    /// <summary>문구 드롭다운의 목록 — 챕터 사전 전체 + 보이지 않는 기본.</summary>
-    private static List<string> ChoiceLabelItems(ChapterGraphModel model)
-    {
-        var items = new List<string> { PlainAdvanceItem };
-        items.AddRange(model.ChoiceLabels);
-        return items;
     }
 
     /// <summary>폼의 [잇기]/[수정] — 이 길의 문구와 도착을 한 저장으로 정한다.</summary>
@@ -2805,9 +2824,7 @@ public partial class ChapterGraphView : UserControl
         bool auto = EdgeFormAutoCheck.IsChecked == true;
 
         // 공백만으로 자동을 추측하지 않는다. 자동 체크가 명시된 경우에만 문구를 비운다.
-        string label = EdgeLabelBox.SelectedItem as string is { } picked && picked != PlainAdvanceItem
-            ? picked
-            : string.Empty;
+        string label = EdgeLabelBox.Text?.Trim() ?? string.Empty;
 
         // 배선과 증감이 한 변경으로 간다 — 두 번 쓰면 되돌리기가 둘로 쪼개져, 한 번 물렀을 때
         // 반쪽만 적힌 길이 남는다(two-graphs.md §5-7).
@@ -2878,19 +2895,6 @@ public partial class ChapterGraphView : UserControl
             // 라벨은 둘뿐이다 — 있는 길은 [수정], 새로 여는 길은 [잇기].
             AddEdgeButton.Content = _edgeFormEdge is null ? "잇기" : "수정";
             EdgeTargetCombo.IsEnabled = true;
-
-            _fillingPanel = true;
-
-            try
-            {
-                // 문구 목록은 폼이 열릴 때마다 새로 깐다 — 다른 곳(선택지 사전 · 연출 그래프의
-                // 선택지 칸)에서 낱말을 더하면 다시 읽기 한 번으로 여기에 나타난다.
-                SetItems(EdgeLabelBox, ChoiceLabelItems(model), EdgeLabelBox.SelectedItem as string);
-            }
-            finally
-            {
-                _fillingPanel = false;
-            }
 
             EdgeListPanel.Children.Insert(
                 Math.Min(_edgeFormIndex, EdgeListPanel.Children.Count), EdgeFormHost);
@@ -3008,12 +3012,11 @@ public partial class ChapterGraphView : UserControl
             _edgeStats.Load(model.Stats, edge.StatChanges);
         }
 
-        // 이 길의 문구 (v9) — 챕터의 모든 문구 중에서 고른다. 목록·저장이 선택지 목록의
-        // 폼과 같은 규칙 하나를 쓴다(사본 금지): 안 고른 것과 "문구 없음"은 같은 뜻이다.
-        SetItems(EdgeLabelEditBox, ChoiceLabelItems(model),
-            fill
-                ? edge.HasNoOptionLabel ? PlainAdvanceItem : edge.OptionLabel
-                : EdgeLabelEditBox.SelectedItem as string);
+        // 이 길의 문구 (v9) — 글자 칸에 지금 문구가 그대로 선다. 비우면 문구 없는 길이다.
+        if (fill)
+        {
+            EdgeLabelEditBox.Text = edge.OptionLabel ?? string.Empty;
+        }
 
         var labels = new List<string> { "(없음)" };
         labels.AddRange(model.Conditions.Select(condition => condition.Label));
@@ -3220,9 +3223,7 @@ public partial class ChapterGraphView : UserControl
 
         // 문구도 이 저장에 실린다 (v9) — 신원의 일부라, 찾을 때는 고치기 전 값을 쓴다.
         bool auto = EdgeAutoCheck.IsChecked == true;
-        string pickedLabel = EdgeLabelEditBox.SelectedItem as string is { } picked && picked != PlainAdvanceItem
-            ? picked
-            : string.Empty;
+        string pickedLabel = EdgeLabelEditBox.Text?.Trim() ?? string.Empty;
         if (auto)
         {
             pickedLabel = string.Empty;
