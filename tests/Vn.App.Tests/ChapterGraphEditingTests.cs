@@ -339,10 +339,12 @@ public sealed class ChapterGraphEditingTests
 
         Border detail = Detail(view)!;
         List<string?> lines = detail.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToList();
-        Assert.Contains("문구: 「라루의 제안을 듣는다」", lines);
-        Assert.Contains("도착: branch05.02A", lines);
         Assert.Contains("해금조건: 신뢰높음", lines);
         Assert.Contains(lines, line => line!.StartsWith("스탯변화: ", StringComparison.Ordinal));
+
+        // 문구와 도착은 바로 위 줄이 보인다 — 설명이 되풀이하지 않는다.
+        Assert.DoesNotContain(lines, line => line!.StartsWith("문구: ", StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, line => line!.StartsWith("도착: ", StringComparison.Ordinal));
 
         // 고칠 칸이 없다 — 글자 칸 · 고르기 · 체크 · 단추 모두.
         Assert.DoesNotContain(view.FindControl<StackPanel>("EdgeListPanel")!.GetVisualDescendants(),

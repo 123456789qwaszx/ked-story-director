@@ -2927,7 +2927,8 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 펼친 선택지의 설명 — 문구 · 도착 · 표시조건 · 해금조건(+잠금 안내문) · 스탯변화. <b>읽기 전용</b>이다.
+    /// 펼친 선택지의 설명 — 표시조건 · 해금조건(+잠금 안내문) · 스탯변화. <b>읽기 전용</b>이다. 문구와 도착은 바로 위
+    /// 줄이 보이므로 되풀이하지 않는다.
     /// </summary>
     private static Border BuildChoiceDetail(ChapterGraphModel model, ChapterEdge edge)
     {
@@ -2939,11 +2940,6 @@ public partial class ChapterGraphView : UserControl
             FontSize = 11,
             TextWrapping = TextWrapping.Wrap
         });
-
-        Line(edge.Auto ? "문구: AUTO — 플레이어 입력 없이 넘어갑니다"
-            : edge.HasNoOptionLabel ? "문구: ⚠ 문구 없음"
-            : $"문구: 「{edge.OptionLabel}」");
-        Line($"도착: {edge.ToEpisodeId}");
 
         if (edge.VisibleConditionLabel is { } visible)
         {
@@ -3010,8 +3006,8 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 선택지 한 줄 — `문구 → 도착 [조건]`. 문구가 없으면 "(기본 · 보이지 않음)"이다.
-    /// 클릭 = 그 줄 아래에서 문구·도착 고치기, 다시 클릭 = 접기.
+    /// 선택지 한 줄 — `문구 → 도착 [조건]`. 자동 길이면 「AUTO · 자동 진행」, 문구가 없으면 「⚠ 문구 없음」이다.
+    /// 클릭 = 그 줄 아래에 조건 · 스탯변화를 펼치기, 다시 클릭 = 접기.
     /// </summary>
     private Control BuildEdgeRow(ChapterEdge edge, int rowIndex)
     {
