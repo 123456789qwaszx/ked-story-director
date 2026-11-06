@@ -246,7 +246,7 @@ public partial class ChapterGraphView : UserControl
         SceneHintText.Text = scene.IsDefault
             ? "장면ID를 안 적은 에피소드 — 에피소드 하나가 곧 장면 하나입니다. 이름을 적고 Enter를 누르면 장면이 됩니다."
             : $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 고치고 Enter를 누르면 모두 함께 바뀝니다. " +
-              "장면 루트(⌂)는 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.";
+              "장면 시작점(⌂)은 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.";
 
         foreach (ChapterEpisode episode in scene.Episodes)
         {
@@ -1719,8 +1719,8 @@ public partial class ChapterGraphView : UserControl
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
 
         // 시작 에피소드(첫 행)가 곧 Root다 — 도달성의 씨앗이자 분기 저작의 출발점.
-        // ⚠ 장면ID가 없는 에피소드는 <b>챕터 직속</b>이라(2026-11-01 B안) 「SCENE ROOT」를 달지 않는다 — 장면이 아닌데 장면 루트라고
-        //   하면 거짓말이다. 챕터의 시작이면 「START」만 단다.
+        // ⚠ 장면ID가 없는 에피소드는 <b>챕터 직속</b>이라(2026-11-01 B안) 「장면 시작점」을 달지 않는다 — 장면이 아닌데 장면
+        //   시작점이라고 하면 거짓말이다. 챕터의 시작이면 「START」만 단다.
         bool chapterDirect = string.IsNullOrWhiteSpace(episode.SceneId);
         bool start = ReferenceEquals(model.StartEpisode, episode);
 
@@ -1733,7 +1733,7 @@ public partial class ChapterGraphView : UserControl
                 Padding = new Thickness(4, 0),
                 Child = new TextBlock
                 {
-                    Text = chapterDirect ? "START" : "SCENE ROOT",
+                    Text = chapterDirect ? "START" : "장면 시작점",
                     FontSize = 9,
                     FontWeight = FontWeight.Bold,
                     Foreground = Brushes.White
@@ -1742,8 +1742,8 @@ public partial class ChapterGraphView : UserControl
             ToolTip.SetTip(root, chapterDirect
                 ? "챕터의 시작 에피소드입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
                 : start
-                    ? "시작 에피소드이자 장면 루트입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
-                    : "다른 장면에서 들어오는 장면 루트입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
+                    ? "시작 에피소드이자 장면 시작점입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
+                    : "다른 장면에서 들어오는 장면 시작점입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
             header.Children.Add(root);
         }
 
@@ -1754,7 +1754,7 @@ public partial class ChapterGraphView : UserControl
             Padding = new Thickness(4, 0),
             Child = new TextBlock
             {
-                Text = chapterDirect ? "챕터 직속" : $"SCENE · {episode.SceneId!.Trim()}",
+                Text = chapterDirect ? "챕터 직속" : $"장면 · {episode.SceneId!.Trim()}",
                 FontSize = 9,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Brushes.White

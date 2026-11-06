@@ -2061,7 +2061,7 @@ public partial class GraphEditorView : UserControl
             Margin = new Thickness(0, 0, 5, 0),
             VerticalAlignment = VerticalAlignment.Center,
             [ToolTip.TipProperty] = sceneRoot
-                ? "장면 루트 — 장면이 시작하는 에피소드입니다. 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
+                ? "장면 시작점 — 장면이 시작하는 에피소드입니다. 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
                 : null
         };
 

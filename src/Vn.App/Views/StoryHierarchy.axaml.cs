@@ -888,7 +888,7 @@ public partial class StoryHierarchy : UserControl
         if (leaf)
         {
             arrow[ToolTip.TipProperty] = row.IsSceneRoot
-                ? "장면 루트 — 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
+                ? "장면 시작점 — 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
                 : null;
 
             return arrow;
