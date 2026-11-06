@@ -2,6 +2,7 @@ using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
+using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Chapters;
 
@@ -61,8 +62,8 @@ public static class BranchEntryCondition
             return new State(null, true, null);
         }
 
-        if (head is not [{ Kind: ConditionTransitionKind.BeginIf, ConditionId: { } conditionId }] ||
-            node.TrailingTransitions is not [{ Kind: ConditionTransitionKind.EndIf }])
+        if (!HasEntryShape(node, first) ||
+            head is not [{ ConditionId: { } conditionId }])
         {
             return State.Refuse(
                 "이 대본의 조건 구조는 대사 편집기에서 지은 것이라 여기서 고칠 수 없습니다. " +
@@ -76,6 +77,30 @@ public static class BranchEntryCondition
             true,
             null);
     }
+
+    /// <summary>
+    /// 그 출구 포트가 분기 에피소드의 <b>첫머리 조건</b>인가 — 다른 카드가 분기로 부르는 카드에서, 첫 줄에서 열려 꼬리에서 닫히는
+    /// 그 IF의 갈래 포트이고 아무 데도 잇지 않았다. 판은 이것을 출구로 그리지 않는다: 조건이 미달이면 곧바로 돌아올 뿐 다른
+    /// 곳으로 가는 길이 아니고, 걸린 조건은 카드 머리의 표가 말한다.
+    /// </summary>
+    public static bool IsEntryGatePort(StoryProject project, DialogueNode node, ExitPort port)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(node);
+        ArgumentNullException.ThrowIfNull(port);
+
+        return port is { Kind: ExitPortKind.Branch, IsConnected: false } &&
+               node.Script.ActiveLines.FirstOrDefault() is { } first &&
+               string.Equals(port.BranchOpenLineId, first.Id, StringComparison.Ordinal) &&
+               HasEntryShape(node, first) &&
+               project.EnumerateNodes().OfType<DialogueNode>().Any(caller =>
+                   caller.LineExtensions.Any(extension => extension.DetourTargetNodeIds.Contains(node.Id)));
+    }
+
+    /// <summary>툴이 아는 조건 모양 — 첫 줄에 <c>BeginIf</c> 하나, 꼬리에 <c>EndIf</c> 하나.</summary>
+    private static bool HasEntryShape(DialogueNode node, ScriptLine first) =>
+        node.FindExtension(first.Id)?.Transitions is [{ Kind: ConditionTransitionKind.BeginIf, ConditionId: not null }] &&
+        node.TrailingTransitions is [{ Kind: ConditionTransitionKind.EndIf }];
 
     /// <summary>
     /// 조건을 건다(<c>null</c>이면 걷는다). 못 걸면 <b>사유</b>를 돌려주고 아무것도 안 바꾼다.

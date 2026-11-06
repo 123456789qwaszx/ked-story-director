@@ -1,5 +1,7 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
+using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 
@@ -153,6 +155,43 @@ public sealed class BranchEntryConditionTests
     /// (2026-09-18에 두 길이 하나로 합쳐졌다). 또 만들면 이름이 같은 카드가 두 장 서고,
     /// 이름으로 찾는 코드가 <b>다른 장</b>을 집는다.
     /// </summary>
+    [Fact]
+    public void 걸린_조건은_판에서_분기_카드의_출구_포트로_서지_않는다()
+    {
+        // 조건이 미달이면 곧바로 돌아올 뿐 다른 곳으로 가는 길이 아니다 — 카드 오른쪽에 갈래 포트가 서면 분기점처럼 보인다.
+        (ProjectEditor editor, _, DialogueNode branch) = World();
+        BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
+
+        // 흐름에는 그 갈래가 그대로 있다 — 판이 그리지 않을 뿐이다.
+        ExitPort gate = Assert.Single(NodeConnections.PortsOf(branch, editor.Project), port => port.Kind == ExitPortKind.Branch);
+        Assert.True(BranchEntryCondition.IsEntryGatePort(editor.Project, branch, gate));
+
+        Assert.DoesNotContain(PortsOnBoard(editor, branch.Id), port => port.ExecutionPort?.Kind == ExitPortKind.Branch);
+    }
+
+    [Fact]
+    public void 분기로_부르지_않는_카드의_같은_모양_갈래는_그대로_선다()
+    {
+        // 다녀오는 카드가 아니면 첫머리 조건이 아니다 — 작가가 지은 갈래 출구는 판에 남는다.
+        (ProjectEditor editor, DialogueNode caller, DialogueNode branch) = World();
+        string branchId = branch.Id;
+        BranchEntryCondition.Set(editor, branchId, "신뢰높음");
+
+        // 부르던 분기점의 연결만 끊는다 — 카드는 남고, 더는 다녀오는 카드가 아니다.
+        ExitPort detour = NodeConnections.PortsOf(editor.Project.FindDialogue(caller.Id)!, editor.Project)
+            .Single(port => port.Kind == ExitPortKind.Detour);
+        editor.SetExitTarget(detour, null);
+
+        Assert.Contains(PortsOnBoard(editor, branchId), port => port.ExecutionPort?.Kind == ExitPortKind.Branch);
+    }
+
+    /// <summary>[대본] 판이 그 카드에 세우는 출구 포트들.</summary>
+    private static IReadOnlyList<GraphOutputPortProjection> PortsOnBoard(ProjectEditor editor, string nodeId) =>
+        GraphProjectionBuilder.Build(editor.Project, editor.Project.Files.Select(file => file.Id).ToHashSet())
+            .Items.OfType<ExpandedNodeProjection>()
+            .Single(item => item.NodeId == nodeId)
+            .OutputPorts;
+
     private static (ProjectEditor Editor, DialogueNode Caller, DialogueNode Branch) World()
     {
         var editor = new ProjectEditor(new StoryProject());

@@ -264,6 +264,13 @@ public static class GraphProjectionBuilder
                 exit.Kind is Vn.Authoring.Flow.ExitPortKind.Detour or Vn.Authoring.Flow.ExitPortKind.Branch);
         }
 
+        // 분기 에피소드의 첫머리 조건은 출구가 아니다 — 미달이면 곧바로 돌아올 뿐이다(BranchEntryCondition). 이어 둔 것이 없으면
+        // 카드에 포트 줄을 세우지 않는다.
+        if (node is DialogueNode dialogue)
+        {
+            exits = exits.Where(exit => !BranchEntryCondition.IsEntryGatePort(project, dialogue, exit));
+        }
+
         var ports = exits
             .Select(exit => new GraphOutputPortProjection(
                 PortKey(exit),
