@@ -228,6 +228,12 @@ public partial class StoryHierarchy : UserControl
     /// </summary>
     internal event Action<HierarchyRow, string>? RenameRequested;
 
+    /// <summary>
+    /// 에피소드 줄을 보이는 제목(<see cref="ChapterEpisode.ShownTitle"/>)으로 세우고, 이름 고치기도 제목을 고친다 — [대본] 탭의
+    /// 하이어아키다. 끄면 EpisodeId로 세우고 제목은 곁글로 붙는다([구성] 탭).
+    /// </summary>
+    internal bool ShowEpisodeTitles { get; set; }
+
     /// <summary>이름을 고치는 중인 칸 — 화면 시험의 손잡이이자 실제 입력칸이다. 없으면 null.</summary>
     internal TextBox? RenameBox { get; private set; }
 
@@ -390,15 +396,16 @@ public partial class StoryHierarchy : UserControl
         }
     }
 
-    private static HierarchyRow EpisodeRow(string chapterId, ChapterScene scene, ChapterEpisode episode, int depth) =>
+    private HierarchyRow EpisodeRow(string chapterId, ChapterScene scene, ChapterEpisode episode, int depth) =>
         new(
             HierarchyKind.Episode,
             EpisodeKey(chapterId, episode.EpisodeId),
             chapterId,
             scene.SceneId,
             episode.EpisodeId,
-            episode.EpisodeId,
-            Detail: string.IsNullOrWhiteSpace(episode.Title) ||
+            ShowEpisodeTitles ? episode.ShownTitle : episode.EpisodeId,
+            Detail: ShowEpisodeTitles ||
+                    string.IsNullOrWhiteSpace(episode.Title) ||
                     string.Equals(episode.Title.Trim(), episode.EpisodeId, StringComparison.Ordinal)
                 ? null
                 : episode.Title.Trim(),
@@ -800,6 +807,12 @@ public partial class StoryHierarchy : UserControl
         _ => row.Text
     };
 
+    /// <summary>이름 칸에 처음 적힐 이름 — 제목으로 세운 에피소드 줄이면 그 제목, 아니면 <see cref="NameOf"/>.</summary>
+    private string CurrentNameOf(HierarchyRow row) => TitleRow(row) ? row.Text : NameOf(row);
+
+    /// <summary>제목으로 세운 에피소드 줄인가.</summary>
+    private bool TitleRow(HierarchyRow row) => ShowEpisodeTitles && row.Kind == HierarchyKind.Episode;
+
     /// <summary>그 줄의 이름 칸을 연다(프로젝트 줄은 이름을 여기서 고치지 않는다).</summary>
     internal void BeginRename(string key)
     {
@@ -816,9 +829,10 @@ public partial class StoryHierarchy : UserControl
     /// <summary>이름 칸 — Enter는 넣고, Esc나 딴 데를 누르면 없던 일로(고치다 만 이름이 남으면 무엇이 진짜인지 흐려진다).</summary>
     private TextBox RenameRow(HierarchyRow row)
     {
+        string current = CurrentNameOf(row);
         var box = new TextBox
         {
-            Text = NameOf(row),
+            Text = current,
             FontSize = 11,
             Padding = new Thickness(4, 1),
             Margin = new Thickness((row.Depth * 14) + 16, 0, 0, 0),
@@ -833,8 +847,9 @@ public partial class StoryHierarchy : UserControl
 
             Draw();
 
-            if (keep && !string.Equals(wanted, NameOf(row), StringComparison.Ordinal) &&
-                (wanted.Length > 0 || row.Kind == HierarchyKind.Scene))
+            // 장면 이름과 제목은 비울 수 있다(장면은 풀리고, 제목은 EpisodeId로 물러선다).
+            if (keep && !string.Equals(wanted, current, StringComparison.Ordinal) &&
+                (wanted.Length > 0 || row.Kind == HierarchyKind.Scene || TitleRow(row)))
             {
                 RenameRequested?.Invoke(row, wanted);
             }
@@ -888,7 +903,7 @@ public partial class StoryHierarchy : UserControl
         if (leaf)
         {
             arrow[ToolTip.TipProperty] = row.IsSceneRoot
-                ? "장면 루트 — 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
+                ? "장면 시작점 — 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
                 : null;
 
             return arrow;

@@ -84,7 +84,6 @@ public partial class MainWindow : Window
         });
         ChapterGraph.Attach(_session);
         DialogueEditor.Attach(_session);
-        DialogueEditor.RenameEpisode = RenameEpisode;   // 인스펙터 이름 칸의 에피소드 개명 — 하이어아키와 같은 길
         _session.Changed += OnSessionChanged;
         // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 — 판을 다시 그리거나
         // 챕터를 다시 읽을 이유가 없다. 그 구분이 없으면 노드가 늘수록 느려진다.
@@ -644,7 +643,7 @@ public partial class MainWindow : Window
     private void ShowSelectedNode()
     {
         StoryNode? node = _session.SelectedNode;
-        bool summary = _directorSummary is not null && node is null;
+        bool summary = (_directorSummary is not null || _directorLine is not null) && node is null;
 
         DialogueEditor.IsVisible = !summary && node is DialogueNode;
         EmptyText.IsVisible = !summary && node is null;
@@ -669,6 +668,7 @@ public partial class MainWindow : Window
         if (node is DialogueNode && DialogueEditor.NodeId == node.Id)
         {
             DialogueEditor.Rebuild();
+            ShowDirectorInspector(node);   // 머리글의 제목도 바뀌었을 수 있다
             return;
         }
 

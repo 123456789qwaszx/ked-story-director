@@ -311,7 +311,10 @@ public sealed class ChapterExportService
         }
 
         Append("에피소드", chapter.Episodes);
-        Append("간선", chapter.Edges);
+
+        // 레코드의 글은 목록을 「List`1」로만 적는다 — 스탯변화는 내용을 따로 싣는다. 안 그러면 스탯변화만 고친 간선이 같은
+        // 지문을 내어 옛 증명(도착 스탯 · 도달성)을 되쓴다.
+        Append("간선", chapter.Edges.Select(edge => (object)$"{edge}|{string.Join(",", edge.StatChanges)}"));
         Append("조건", chapter.Conditions);
         Append("스탯", chapter.Stats);
         Append("픽스처", chapter.Fixtures);

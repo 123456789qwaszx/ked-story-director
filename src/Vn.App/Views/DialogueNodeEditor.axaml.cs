@@ -40,7 +40,7 @@ public partial class DialogueNodeEditor : UserControl
     /// 참이어도 대본(본문·화자·줄 구성)은 잠그지 않는다 — 대본의 원본은 프로젝트다.
     ///
     /// 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 셋뿐이고, 셋 다 대본이 아니다:
-    /// ① 노드 이름 = 에피소드 Id — 잠그지 않고 <b>에피소드 개명</b>으로 보낸다(<see cref="RenameEpisode"/>)
+    /// ① 이름 칸 = 에피소드의 <b>보이는 제목</b> — EpisodeId는 [구성] 탭에서 정한다(<see cref="CommitName"/>)
     /// ② 스탯변화(챕터 간선의 것)
     /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 문은 하나)
     /// </summary>
@@ -71,7 +71,7 @@ public partial class DialogueNodeEditor : UserControl
             else if (args.Key == Avalonia.Input.Key.Escape && _session?.Project.FindDialogue(_nodeId) is { } shown)
             {
                 args.Handled = true;
-                NameBox.Text = shown.Name;
+                NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, shown);
             }
         });
         AddLineButton.Click += (_, _) => AddLine();
@@ -168,12 +168,6 @@ public partial class DialogueNodeEditor : UserControl
         _session = session;
     }
 
-    /// <summary>
-    /// 에피소드 카드의 이름 칸을 고쳤을 때 부르는 개명 (챕터 Id, 옛 Id, 새 Id → 바꿨는가) — 셸이 준다(하이어아키와 같은 한 길).
-    /// 에피소드 이름은 곧 에피소드 Id라 노드 이름만 바꾸면 간선 · 픽스처와 어긋난다.
-    /// </summary>
-    internal Func<string, string, string, bool>? RenameEpisode { get; set; }
-
     /// <summary>어떤 노드를 편집할지 정하고 화면을 만든다.</summary>
     internal void Show(string? nodeId)
     {
@@ -202,14 +196,17 @@ public partial class DialogueNodeEditor : UserControl
         {
             _chapterEpisode = node.MarkedEpisodeId is not null;
 
-            NameBox.Text = node.Name;
+            // 에피소드 카드의 이름 칸은 보이는 제목이다(비면 EpisodeId가 보인다). EpisodeId는 [구성] 탭에서 정한다.
+            NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, node);
+            NameBox.PlaceholderText = _chapterEpisode ? "제목 (비우면 에피소드ID)" : "장면 이름";
+            ToolTip.SetTip(NameBox, _chapterEpisode
+                ? $"게임에 보이는 제목입니다. 고치고 Enter. 비우면 에피소드ID({EpisodeNaming.EpisodeIdOf(node)})가 보입니다. " +
+                  "에피소드ID는 [구성] 탭에서 정합니다."
+                : null);
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
             HideEmptyChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
             HideEmptyChoicesBox.IsChecked = _session.HiddenChoiceNodeIds.Contains(node.Id);
-
-            // 에피소드 카드의 이름 칸은 잠그지 않는다 — 고친 이름은 에피소드 개명(EpisodeRenamer
-            //    — 에피소드 · 간선 · 카드를 함께)으로 보낸다(CommitName).
 
             DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
             DialogueFlow flow = ConditionFlowResolver.Resolve(
@@ -782,23 +779,110 @@ public partial class DialogueNodeEditor : UserControl
     private IReadOnlyList<Control> BuildBranchMarkerCards(
         DialogueNode node, string lineId, IReadOnlyDictionary<string, int> detourPalette)
     {
-        IReadOnlyList<string> targets = node.FindExtension(lineId)?.DetourTargetNodeIds ?? [];
+        // 분기점 전부를 차례대로 — 연결만 끊은 분기점은 제자리에 선다.
+        List<string?> slots = node.FindExtension(lineId)?.DetourSlots() ?? [];
+        int lastConnected = slots.FindLastIndex(slot => slot is not null);
+        var cards = new List<Control>();
 
-        return targets
-            .Select((targetId, order) => BuildBranchMarkerCard(
-                node,
-                lineId,
-                targetId,
-                order,
-                targets.Count,
-                detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, targetId), -1)))
-            .ToList();
+        for (int order = 0; order < slots.Count; order++)
+        {
+            cards.Add(slots[order] is { } targetId
+                ? BuildBranchMarkerCard(
+                    node,
+                    lineId,
+                    targetId,
+                    order,
+                    slots.Count,
+                    lastConnected: order == lastConnected,
+                    detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, targetId), -1))
+                : BuildOpenDetourCard(
+                    node,
+                    lineId,
+                    order,
+                    slots.Count,
+                    detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, ExitPort.OpenSlot(order)), -1)));
+        }
+
+        return cards;
     }
 
-    private Control BuildBranchMarkerCard(
-        DialogueNode node, string lineId, string targetId, int order, int count, int palette)
+    /// <summary>
+    /// 이어지지 않은 분기점 하나 — 다녀갈 곳과의 연결만 끊은 분기다. 다녀가지 않고 지나간다. [대본] 판에서 그 점을 끌어
+    /// 카드에 이으면 다시 분기가 된다. [✕ 분기점 지우기] · 우클릭이 분기점째 걷는다.
+    /// </summary>
+    /// <param name="order">그 줄의 분기점 전체 가운데 몇째 자리인가 — 그 분기점의 신원이다(<see cref="ExitPort.OpenSlot"/>).</param>
+    private Control BuildOpenDetourCard(DialogueNode node, string lineId, int order, int count, int palette)
     {
-        string name = _session?.Project.FindNode(targetId)?.Name ?? "(사라진 노드)";
+        var head = new DockPanel { LastChildFill = true };
+        head.Children.Add(new TextBlock
+        {
+            Text = (count > 1 ? $"⑂ 분기점 {order + 1}/{count}" : "⑂ 분기점") + " — 이어지지 않음",
+            FontSize = 11,
+            FontWeight = FontWeight.Bold,
+            Foreground = BranchPalette.Accent(palette),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+
+        Button remove = SmallButton("✕ 분기점 지우기", () => RemoveOpenDetour(node, lineId, order));
+        ToolTip.SetTip(remove, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        DockPanel.SetDock(remove, Dock.Right);
+        head.Children.Insert(0, remove);
+
+        var card = new Border
+        {
+            Tag = BranchMarkerTag(lineId, ExitPort.OpenSlot(order)),
+            Margin = new Thickness(0, 2, 0, 2),
+            Padding = new Thickness(8, 4),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1.5),
+            BorderBrush = BranchPalette.Accent(palette),
+            Background = Brushes.Transparent,
+            Child = new StackPanel
+            {
+                Children =
+                {
+                    head,
+                    new TextBlock
+                    {
+                        Text = "다녀갈 곳이 없어 지나갑니다 — [대본] 판에서 이 분기점을 끌어 카드에 이으면 다시 분기가 됩니다.",
+                        FontSize = 10,
+                        Opacity = 0.7,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 2, 0, 0)
+                    }
+                }
+            }
+        };
+        ToolTip.SetTip(card, "우클릭하면 이 분기점을 지웁니다(✕ 분기점 지우기와 같다). 되돌리기(Ctrl+Z)로 돌아옵니다.");
+
+        card.PointerPressed += (_, args) =>
+        {
+            if (!args.GetCurrentPoint(card).Properties.IsRightButtonPressed)
+            {
+                return;
+            }
+
+            args.Handled = true;
+            RemoveOpenDetour(node, lineId, order);
+        };
+
+        return card;
+    }
+
+    /// <summary>이어지지 않은 분기점 하나를 지운다 — 분기점 카드의 [✕] · 우클릭 · ＋ 메뉴가 같은 길이다.</summary>
+    private void RemoveOpenDetour(DialogueNode node, string lineId, int position) =>
+        UiGuard.Run(_session!, "분기점 지우기", () =>
+        {
+            _session!.Editor.RemoveOpenDetour(node.Id, lineId, position);
+            _session.SetStatus("이어지지 않은 분기점을 지웠습니다.");
+        });
+
+    private Control BuildBranchMarkerCard(
+        DialogueNode node, string lineId, string targetId, int order, int count, bool lastConnected, int palette)
+    {
+        string name = _session?.Project.FindNode(targetId) is { } target
+            ? EpisodeNaming.ShownNameOf(_session.Project, target)
+            : "(사라진 노드)";
 
         // 두 줄이다 — 위는 무엇으로 갈라지는가(와 지우기), 아래는 지금 조건과 정하러 가는 단추. 한 줄에 다 세우면 인스펙터 폭을
         // 넘어 단추가 밖으로 밀린다.
@@ -835,9 +919,9 @@ public partial class DialogueNodeEditor : UserControl
 
         detail.Children.Add(new TextBlock
         {
-            Text = BranchConditionNote.Sentence(state) + " " + (order < count - 1
-                ? "다녀왔다가 다음 분기로 갑니다."
-                : "다녀왔다가 이 줄부터 이어집니다."),
+            Text = BranchConditionNote.Sentence(state) + " " + (lastConnected
+                ? "다녀왔다가 이 줄부터 이어집니다."
+                : "다녀왔다가 다음 분기로 갑니다."),
             FontSize = 10,
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
@@ -981,6 +1065,9 @@ public partial class DialogueNodeEditor : UserControl
         IReadOnlyList<string> existing = resolved.Line.LineId is { Length: > 0 } markerLineId
             ? node.FindExtension(markerLineId)?.DetourTargetNodeIds ?? []
             : [];
+        List<int> openPoints = resolved.Line.LineId is { Length: > 0 } openLineId
+            ? [.. node.FindExtension(openLineId)?.OpenDetourPositions ?? []]
+            : [];
 
         if (existing.Count > 0)
         {
@@ -997,9 +1084,20 @@ public partial class DialogueNodeEditor : UserControl
 
             foreach (string target in existing)
             {
-                string name = _session?.Project.FindNode(target)?.Name ?? "(사라진 노드)";
+                string name = _session?.Project.FindNode(target) is { } found
+                    ? EpisodeNaming.ShownNameOf(_session.Project, found)
+                    : "(사라진 노드)";
                 panel.Children.Add(RemoveBranchButton(node, resolved.Line.LineId, target, $"✕ '{name}' 분기 지우기"));
             }
+        }
+
+        // 연결만 끊은 분기점 — 하나씩 지운다.
+        foreach (int position in openPoints)
+        {
+            Button removeOpen = SmallButton(
+                $"✕ 이어지지 않은 분기점({position + 1}번째) 지우기", () => RemoveOpenDetour(node, resolved.Line.LineId, position));
+            ToolTip.SetTip(removeOpen, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            panel.Children.Add(removeOpen);
         }
 
         var addBranch = new Button
@@ -1344,36 +1442,26 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        if (!_chapterEpisode)
+        // 챕터 판의 에피소드가 아니면(낙서판 카드) 노드 이름을 고친다.
+        if (!_chapterEpisode || EpisodeNaming.ChapterOf(_session.Project, node) is not { } chapter)
         {
             _session.Editor.RenameNode(node.Id, NameBox.Text ?? string.Empty);
             return;
         }
 
-        // 에피소드 카드 — 이름이 곧 에피소드 Id다. 노드 이름만 바꾸면 간선 · 픽스처와 어긋나므로 에피소드 개명으로 보낸다.
-        // 못 바꿨으면(같은 Id가 있다 · 비었다) 칸을 원래 이름으로 돌린다 — 사유는 상태줄이 말한다.
+        // 에피소드 카드 — 이름 칸은 보이는 제목이다. EpisodeId는 그대로 두고 제목만 고친다(비우면 EpisodeId가 보인다).
         string wanted = (NameBox.Text ?? string.Empty).Trim();
-        string oldId = EpisodeNaming.EpisodeIdOf(node);
+        string episodeId = EpisodeNaming.EpisodeIdOf(node);
 
-        if (string.Equals(wanted, oldId, StringComparison.Ordinal))
+        if (string.Equals(wanted, EpisodeNaming.ShownNameOf(_session.Project, node), StringComparison.Ordinal))
         {
-            NameBox.Text = node.Name;
             return;
         }
 
-        bool renamed = wanted.Length > 0 &&
-                       EpisodeNaming.ChapterOf(_session.Project, node) is { } chapter &&
-                       RenameEpisode?.Invoke(chapter.ChapterId, oldId, wanted) == true;
-
-        if (!renamed)
-        {
-            if (wanted.Length == 0)
-            {
-                _session.SetStatus("에피소드 이름은 비울 수 없습니다.");
-            }
-
-            NameBox.Text = node.Name;
-        }
+        _session.Editor.UpdateEpisode(chapter.ChapterId, episodeId, title: wanted);
+        _session.SetStatus(wanted.Length == 0
+            ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'가 보입니다."
+            : $"제목을 '{wanted}'(으)로 바꿨습니다. 에피소드ID '{episodeId}'는 그대로입니다.");
     }
 
     private static int IndexOfChoice(IReadOnlyList<ConditionChoice> choices, ConditionChoice choice)

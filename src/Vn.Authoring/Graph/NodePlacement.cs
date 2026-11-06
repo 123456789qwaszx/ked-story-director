@@ -26,8 +26,14 @@ namespace Vn.Authoring.Graph;
 /// </summary>
 public static class NodePlacement
 {
-    /// <summary>옆 카드까지의 거리 — 카드 너비(210)에, 칩 오른쪽으로 내려가는 레인의 자리를 더한 값.</summary>
+    /// <summary>옆 카드까지의 거리 — 카드 너비(<see cref="CardWidth"/>)에, 칩 오른쪽으로 내려가는 레인의 자리를 더한 값.</summary>
     public const double Column = 320;
+
+    /// <summary>[대본] 판 카드의 기본 폭. 사람이 넓힌 카드(<see cref="NodeLayout.Width"/>)는 그만큼 옆 자리를 더 차지한다.</summary>
+    public const double CardWidth = 210;
+
+    /// <summary>[대본] 판 카드 글 칸의 기본 높이. 사람이 늘린 카드(<see cref="NodeLayout.WritingHeight"/>)는 그만큼 아래 자리를 더 차지한다.</summary>
+    public const double WritingHeight = 88;
 
     /// <summary>
     /// 아래 카드까지의 거리 — 카드(글 칸을 품어 대개 150~220, D4) + 그 아래 선택지 칩 셋(약 140) + 도착 접점과 여백.
@@ -54,14 +60,14 @@ public static class NodePlacement
 
         if (ParentCard(project, chapterId, episodeId, parentEpisodeId) is { } parent)
         {
-            return FirstFree(board, parent.Layout.X, parent.Layout.Y + Row);
+            return FirstFree(board, parent.Layout.X, parent.Layout.Y + Row + ExtraHeight(parent));
         }
 
         List<DialogueNode> cards = board.Nodes.OfType<DialogueNode>().ToList();
 
         return cards.Count == 0
             ? (0, 0)
-            : FirstFree(board, cards.Min(card => card.Layout.X), cards.Max(card => card.Layout.Y) + Row);
+            : FirstFree(board, cards.Min(card => card.Layout.X), cards.Max(card => card.Layout.Y + ExtraHeight(card)) + Row);
     }
 
     /// <summary>
@@ -75,7 +81,7 @@ public static class NodePlacement
         ArgumentNullException.ThrowIfNull(board);
         ArgumentNullException.ThrowIfNull(source);
 
-        double x = source.Layout.X + Column;
+        double x = source.Layout.X + Column + ExtraWidth(source);
         double y = source.Layout.Y;
 
         while (Occupied(board, x, y))
@@ -121,9 +127,19 @@ public static class NodePlacement
         return (x, y);
     }
 
-    /// <summary>그 자리(한 칸 반경)에 이미 카드가 섰는가.</summary>
+    /// <summary>그 자리(한 칸 반경)에 이미 카드가 섰는가 — 넓히거나 늘린 카드는 그만큼 오른쪽 · 아래 자리도 차지한다.</summary>
     private static bool Occupied(StoryFile board, double x, double y) =>
         board.Nodes.OfType<DialogueNode>().Any(card =>
-            Math.Abs(card.Layout.X - x) < Column / 2 &&
-            Math.Abs(card.Layout.Y - y) < Row / 2);
+            x > card.Layout.X - (Column / 2) &&
+            x < card.Layout.X + ExtraWidth(card) + (Column / 2) &&
+            y > card.Layout.Y - (Row / 2) &&
+            y < card.Layout.Y + ExtraHeight(card) + (Row / 2));
+
+    /// <summary>기본 폭보다 넓힌 만큼.</summary>
+    private static double ExtraWidth(StoryNode card) =>
+        card.Layout.Width is { } width ? Math.Max(0, width - CardWidth) : 0;
+
+    /// <summary>글 칸을 기본 높이보다 늘린 만큼.</summary>
+    private static double ExtraHeight(StoryNode card) =>
+        card.Layout.WritingHeight is { } height ? Math.Max(0, height - WritingHeight) : 0;
 }

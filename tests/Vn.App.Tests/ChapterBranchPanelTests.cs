@@ -1,5 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Input;
+using Avalonia.Media;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -199,6 +202,219 @@ public sealed class ChapterBranchPanelTests
         Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, second.Id, session.Definition).Label);
         Assert.Null(BranchEntryCondition.Read(session.Project, first.Id, session.Definition).Label);
     });
+
+    [Fact]
+    public void 분기_강조는_다른_분기나_빈_판이나_카드를_고르면_풀린다() => HeadlessUi.Run(() =>
+    {
+        // 분기 점선을 고르면 굵고 파래진다 — 그 강조가 선택을 옮겨도 남아 있으면 무엇을 고른 것인지 판이 거짓말을 한다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        session.Editor.AddBranchMarker(caller.Id, project.BranchLineId);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        List<Line> branches = BranchLines(canvas);
+        Assert.Equal(2, branches.Count);
+        double plain = branches[0].StrokeThickness;
+        List<Color> colors = branches.Select(line => ((ISolidColorBrush)line.Stroke!).Color).ToList();
+
+        // 첫째를 누른다 — 그것만 굵다.
+        Press(HitOf(canvas, branches[0]));
+        Assert.True(branches[0].StrokeThickness > plain);
+        Assert.Equal(plain, branches[1].StrokeThickness);
+
+        // 둘째를 누른다 — 첫째는 풀린다.
+        Press(HitOf(canvas, branches[1]));
+        Assert.Equal(plain, branches[0].StrokeThickness);
+        Assert.True(branches[1].StrokeThickness > plain);
+
+        // 빈 판을 누른다 — 둘 다 풀린다.
+        Press(canvas);
+        Assert.All(branches, line => Assert.Equal(plain, line.StrokeThickness));
+        Assert.Equal(colors, branches.Select(line => ((ISolidColorBrush)line.Stroke!).Color));   // 저마다 제 색으로
+
+        // 다시 고르고 카드를 고른다 — 풀린다.
+        Press(HitOf(canvas, branches[0]));
+        view.SelectEpisode("root");
+        Assert.Equal(plain, branches[0].StrokeThickness);
+    });
+
+    [Fact]
+    public void 분기점은_카드_옆변에_서고_점선은_그_점에서_나간다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, _) = Show(project);
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        Border root = Card(canvas, "root");
+
+        Ellipse knob = Assert.Single(Knobs(canvas));
+        Point center = KnobCenter(knob);
+        Assert.Equal(Canvas.GetLeft(root) + CardWidth, center.X, 3);
+        Assert.Equal(Canvas.GetTop(root) + (CardHeight / 2), center.Y, 3);
+        Assert.NotEqual(Brushes.Transparent, knob.Fill);   // 이어진 분기 — 속이 찼다
+
+        Line line = Assert.Single(BranchLines(canvas));
+        Assert.Equal(center, line.StartPoint);
+    });
+
+    [Fact]
+    public void 연결만_끊은_분기점도_속_빈_점으로_남아_보인다() => HeadlessUi.Run(() =>
+    {
+        // [대본] 탭에서 연결을 끊어도 분기점이 판에서 사라지지 않는다 — 그 자리에 분기점이 있다는 것이 보여야 한다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        session.Editor.SetExitTarget(Detour(session, caller), null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        Assert.Empty(BranchLines(canvas));
+        Ellipse knob = Assert.Single(Knobs(canvas));
+        Assert.Equal(Brushes.Transparent, knob.Fill);
+    });
+
+    [Fact]
+    public void 분기점을_누르면_점선을_누른_것과_같은_분기_정보가_나오고_끊기지_않는다() => HeadlessUi.Run(() =>
+    {
+        // [구성] 탭에서는 분기점으로 잇고 끊지 않는다 — 누르면 그 분기를 고른다(점선을 누른 것과 같다).
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
+
+        Ellipse knob = Assert.Single(Knobs(canvas));
+        Press(knob);
+        Release(canvas, KnobCenter(knob));
+
+        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.True(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
+        Assert.Contains(
+            view.FindControl<StackPanel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
+            text => text.Text?.StartsWith(project.BranchEpisodeId, StringComparison.Ordinal) == true);
+
+        // 끊기지 않았다 — 분기도 점선도 그대로다.
+        Assert.Equal([branch.Id], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
+        Assert.Single(BranchLines(canvas));
+
+        // 점선을 누른 것과 같은 분기를 고른다 — 그 점선이 강조된다.
+        Assert.True(Assert.Single(BranchLines(canvas)).StrokeThickness > 2);
+
+        // 끌어 다른 에피소드에 놓아도 잇지 않는다.
+        Border target = Card(canvas, "root");
+        Press(Assert.Single(Knobs(canvas)));
+        var onCard = new Point(Canvas.GetLeft(target) + 20, Canvas.GetTop(target) + 20);
+        Move(canvas, onCard);
+        Release(canvas, onCard);
+        Assert.Equal([branch.Id], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
+    });
+
+    [Fact]
+    public void 이어지지_않은_분기점을_누르면_이어지지_않았다고_말하고_조건_칸은_잠긴다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        session.Editor.SetExitTarget(Detour(session, caller), null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        Press(Assert.Single(Knobs(canvas)));
+
+        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.False(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
+        Assert.Contains(
+            view.FindControl<StackPanel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
+            text => text.Text?.Contains("이어지지 않음", StringComparison.Ordinal) == true);
+        Assert.Contains("[대본] 탭", view.FindControl<TextBlock>("BranchBlockedText")!.Text, StringComparison.Ordinal);
+
+        // 빈 판을 누르면 풀린다.
+        Press(canvas);
+        Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+    });
+
+    [Fact]
+    public void 한_변의_분기점_여럿은_겹치지_않게_세로로_선다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        session.Editor.AddBranchMarker(caller.Id, project.BranchLineId);
+        session.Editor.SetExitTarget(Detour(session, caller), null);   // 하나는 연결만 끊는다
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        List<Ellipse> knobs = Knobs(canvas).OrderBy(knob => KnobCenter(knob).Y).ToList();
+        List<Point> centers = knobs.Select(KnobCenter).ToList();
+
+        Assert.Equal(2, centers.Count);
+        Assert.Equal(centers[0].X, centers[1].X, 3);
+        Assert.True(centers[1].Y - centers[0].Y >= 10, "점이 겹친다");
+
+        // 끊은 것(첫째)은 제자리 — 위가 속 빈 점이고 아래는 이어진 둘째다.
+        Assert.Equal(Brushes.Transparent, knobs[0].Fill);
+        Assert.NotEqual(Brushes.Transparent, knobs[1].Fill);
+    });
+
+    private static Border Card(Canvas canvas, string episodeId) =>
+        canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == episodeId);
+
+    private static List<Ellipse> Knobs(Canvas canvas) =>
+        canvas.Children.OfType<Ellipse>()
+            .Where(knob => (knob.Tag as string)?.StartsWith(ChapterGraphView.BranchKnobTag, StringComparison.Ordinal) == true)
+            .ToList();
+
+    private static Point KnobCenter(Ellipse knob) =>
+        new(Canvas.GetLeft(knob) + (knob.Width / 2), Canvas.GetTop(knob) + (knob.Height / 2));
+
+    /// <summary>그 카드의 첫 분기 포트.</summary>
+    private static Vn.Authoring.Flow.ExitPort Detour(AuthoringSession session, DialogueNode caller) =>
+        Vn.Authoring.Flow.NodeConnections.PortsOf(session.Project.FindDialogue(caller.Id)!, session.Project)
+            .First(port => port.Kind == Vn.Authoring.Flow.ExitPortKind.Detour && port.IsConnected);
+
+    /// <summary>판 좌표의 자리로 포인터를 옮긴다 — 포인터 이벤트의 자리는 최상위 기준으로 풀린다.</summary>
+    private static void Move(Canvas canvas, Point onCanvas)
+    {
+        var root = (Visual)TopLevel.GetTopLevel(canvas)!;
+        canvas.RaiseEvent(new PointerEventArgs(
+            InputElement.PointerMovedEvent, canvas, new Pointer(0, PointerType.Mouse, true), root,
+            canvas.TranslatePoint(onCanvas, root)!.Value, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other),
+            KeyModifiers.None));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Release(Canvas canvas, Point onCanvas)
+    {
+        var root = (Visual)TopLevel.GetTopLevel(canvas)!;
+        canvas.RaiseEvent(new PointerReleasedEventArgs(
+            canvas, new Pointer(0, PointerType.Mouse, true), root, canvas.TranslatePoint(onCanvas, root)!.Value, 0,
+            new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
+            KeyModifiers.None, MouseButton.Left));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    private static List<Line> BranchLines(Canvas canvas) =>
+        canvas.Children.OfType<Line>()
+            .Where(line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true)
+            .ToList();
+
+    /// <summary>점선에 겹친 굵은 누름 선 — 사람이 실제로 누르는 것이다.</summary>
+    private static Line HitOf(Canvas canvas, Line branch) =>
+        canvas.Children.OfType<Line>().Single(line =>
+            line != branch && line.StartPoint == branch.StartPoint && line.EndPoint == branch.EndPoint &&
+            line.Stroke == Brushes.Transparent);
+
+    private static void Press(Control control)
+    {
+        var root = (Visual)TopLevel.GetTopLevel(control)!;
+        control.RaiseEvent(new PointerPressedEventArgs(
+            control, new Pointer(0, PointerType.Mouse, true), root, default, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
+            KeyModifiers.None));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
 
     private static (ChapterGraphView View, AuthoringSession Session) Show(TempProject project)
     {

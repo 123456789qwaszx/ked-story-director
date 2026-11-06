@@ -37,6 +37,10 @@ public enum ExitPortKind
 /// 이 타입은 오직 다음 실행 노드를 결정하는 기본/조건 출구만 표현한다.
 /// </summary>
 /// <param name="ChoiceText">챕터 간선 선택지(<see cref="ExitPortKind.Choice"/>)의 원문 라벨. 간선과 라벨 짝을 맞추는 열쇠다.</param>
+/// <param name="OpenOrdinal">
+/// 이어지지 않은 분기점(<see cref="Model.DialogueLineExtension.OpenDetourPositions"/>)이면 그 줄의 분기점 전체에서 몇째
+/// 자리인가. 다녀갈 곳이 없어 신원을 이 자리로 가린다 — 다른 분기를 끊어도 자리가 안 바뀐다.
+/// </param>
 public sealed record ExitPort(
     ExitPortKind Kind,
     string NodeId,
@@ -44,9 +48,13 @@ public sealed record ExitPort(
     string Label,
     string? TargetNodeId,
     int PaletteIndex,
-    string? ChoiceText = null)
+    string? ChoiceText = null,
+    int? OpenOrdinal = null)
 {
     public bool IsConnected => TargetNodeId is not null;
+
+    /// <summary>이어지지 않은 분기점인가 — 분기점은 섰지만 다녀갈 곳이 없다.</summary>
+    public bool IsOpenDetour => Kind == ExitPortKind.Detour && TargetNodeId is null && OpenOrdinal is not null;
 
     /// <summary>
     /// 이 포트를 저장할 때의 열쇠. 갈래는 여는 줄의 LineId, 선택지는 <b>문구</b>다(v9), 분기는 줄과 다녀갈 노드다
@@ -56,6 +64,7 @@ public sealed record ExitPort(
     {
         ExitPortKind.Choice => ChoiceText,
         ExitPortKind.Detour when BranchOpenLineId is { } lineId && TargetNodeId is { } target => DetourKey(lineId, target),
+        ExitPortKind.Detour when BranchOpenLineId is { } lineId && OpenOrdinal is { } open => DetourKey(lineId, OpenSlot(open)),
         _ => BranchOpenLineId
     };
 
@@ -65,6 +74,9 @@ public sealed record ExitPort(
     /// 열쇠도 이것이다.
     /// </summary>
     public static string DetourKey(string lineId, string targetNodeId) => $"{lineId}>{targetNodeId}";
+
+    /// <summary>이어지지 않은 분기점의 자리 이름 — 분기 열쇠(<see cref="DetourKey"/>)에서 다녀갈 노드 자리에 든다. 노드 Id와 겹치지 않는다.</summary>
+    public static string OpenSlot(int ordinal) => $"open:{ordinal}";
 }
 
 /// <summary>
@@ -113,10 +125,12 @@ public static class NodeConnections
             // 차례 그대로 선다: 판에서 읽는 차례와 카드에서 보는 차례가 같아야 한다.
             foreach (DialogueLine line in flow.Script.Lines)
             {
-                foreach (string detour in line.DetourTargetNodeIds)
+                // 연결만 끊은 분기점은 제자리에 선다(다녀갈 곳 없는 포트) — 끌어 카드에 이으면 그 자리에서 분기가 된다.
+                for (int slot = 0; slot < line.DetourSlots.Count; slot++)
                 {
-                    ports.Add(new ExitPort(
-                        ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", detour, ports.Count));
+                    ports.Add(line.DetourSlots[slot] is { } detour
+                        ? new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", detour, ports.Count)
+                        : new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", null, ports.Count, OpenOrdinal: slot));
                 }
             }
 

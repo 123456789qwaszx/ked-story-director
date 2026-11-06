@@ -128,7 +128,67 @@ public sealed class DialogueLineExtension
     /// </summary>
     public List<string> DetourTargetNodeIds { get; init; } = new();
 
+    /// <summary>
+    /// <b>이어지지 않은 분기점</b>의 자리 — 다녀갈 곳과의 연결만 끊은 분기가 남긴 자리다. 그 줄의 분기점 전체
+    /// (<see cref="DetourSlots"/>)에서 몇째인가를 오름차순으로 든다 — 끊은 분기점이 <b>제자리에</b> 남아야 다른 분기의 자리와
+    /// 색이 그대로다. 다시 끌어 카드에 이으면 그 자리에서 분기가 된다. 다녀갈 곳이 없으므로 내보내지 않는다
+    /// (<c>&lt;&lt;detour&gt;&gt;</c>가 나가지 않는다). 분기점째 걷는 것은 따로다(<see cref="Editing.ProjectEditor.RemoveOpenDetour"/>).
+    /// </summary>
+    public List<int> OpenDetourPositions { get; init; } = new();
+
+    /// <summary>이어지지 않은 분기점의 수.</summary>
+    public int OpenDetours => OpenDetourPositions.Count;
+
+    /// <summary>
+    /// 그 줄의 분기점 전부 — 차례대로. 이어진 것은 다녀갈 노드, 이어지지 않은 것은 <c>null</c>이다.
+    /// </summary>
+    public List<string?> DetourSlots()
+    {
+        var slots = new List<string?>();
+        int total = DetourTargetNodeIds.Count + OpenDetourPositions.Count;
+        int target = 0;
+
+        for (int index = 0; index < total; index++)
+        {
+            slots.Add(OpenDetourPositions.Contains(index) || target >= DetourTargetNodeIds.Count
+                ? null
+                : DetourTargetNodeIds[target++]);
+        }
+
+        // 자리가 어긋난 파일(이어진 분기가 자리보다 많다)이어도 분기를 잃지 않는다 — 남은 것을 뒤에 붙인다.
+        while (target < DetourTargetNodeIds.Count)
+        {
+            slots.Add(DetourTargetNodeIds[target++]);
+        }
+
+        return slots;
+    }
+
+    /// <summary>분기점 전부를 차례대로 다시 적는다 — <see cref="DetourSlots"/>의 반대다.</summary>
+    public void SetDetourSlots(IEnumerable<string?> slots)
+    {
+        ArgumentNullException.ThrowIfNull(slots);
+
+        DetourTargetNodeIds.Clear();
+        OpenDetourPositions.Clear();
+        int index = 0;
+
+        foreach (string? slot in slots)
+        {
+            if (slot is null)
+            {
+                OpenDetourPositions.Add(index);
+            }
+            else
+            {
+                DetourTargetNodeIds.Add(slot);
+            }
+
+            index++;
+        }
+    }
+
     /// <summary>이 확장이 아무것도 담고 있지 않은지. 빈 확장은 저장하지 않는다.</summary>
     public bool IsEmpty =>
-        Transitions.Count == 0 && DetourTargetNodeIds.Count == 0;
+        Transitions.Count == 0 && DetourTargetNodeIds.Count == 0 && OpenDetourPositions.Count == 0;
 }

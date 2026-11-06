@@ -19,10 +19,19 @@ public sealed record DialogueLine(
     IReadOnlyList<LineConditionTransition>? ExtraTransitions = null,
 
     /// <summary>「조건 분기」 표식이 가리키는 노드들 (R7 P-5) — 이 줄 앞에서 차례로 다녀온다.</summary>
-    IReadOnlyList<string>? Detours = null)
+    IReadOnlyList<string>? Detours = null,
+
+    /// <summary>
+    /// 이어지지 않은 분기점까지 든 분기점 전부(<see cref="DialogueLineExtension.DetourSlots"/>) — 이어지지 않은 것은 <c>null</c>.
+    /// 없으면 <see cref="DetourTargetNodeIds"/>가 곧 분기점 전부다.
+    /// </summary>
+    IReadOnlyList<string?>? Slots = null)
 {
     /// <summary>이 줄 앞에서 차례로 다녀올 노드들. 없으면 빈 목록이다.</summary>
     public IReadOnlyList<string> DetourTargetNodeIds => Detours ?? Array.Empty<string>();
+
+    /// <summary>이 줄의 분기점 전부 — 차례대로, 이어지지 않은 것은 <c>null</c>이다. 다녀가는 것은 <see cref="DetourTargetNodeIds"/>뿐이다.</summary>
+    public IReadOnlyList<string?> DetourSlots => Slots ?? DetourTargetNodeIds;
 
     /// <summary>이 줄 앞의 전환들 — 순서가 곧 일어나는 순서다 (2026-08-17).</summary>
     public IReadOnlyList<LineConditionTransition> Transitions =>
@@ -115,7 +124,8 @@ public static class DialogueScriptResolver
                 text.Text,
                 extension?.Transition,
                 extension is { Transitions.Count: > 1 } ? extension.Transitions.Skip(1).ToList() : null,
-                extension is { DetourTargetNodeIds.Count: > 0 } ? [.. extension.DetourTargetNodeIds] : null));
+                extension is { DetourTargetNodeIds.Count: > 0 } ? [.. extension.DetourTargetNodeIds] : null,
+                extension is { OpenDetours: > 0 } ? extension.DetourSlots() : null));
         }
 
         var orphans = new List<OrphanLineExtension>();

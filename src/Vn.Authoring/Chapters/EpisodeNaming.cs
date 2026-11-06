@@ -83,6 +83,22 @@ public static class EpisodeNaming
             : null;
     }
 
+    /// <summary>
+    /// 그 카드가 화면에 보이는 이름 — 챕터의 에피소드면 그 제목(<see cref="ChapterEpisode.ShownTitle"/>), 아니면 노드 이름이다.
+    /// [대본] 탭은 이 이름을 보이고 고친다. EpisodeId는 [구성] 탭에서 정한다.
+    /// </summary>
+    public static string ShownNameOf(StoryProject project, StoryNode node)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(node);
+
+        return node is DialogueNode dialogue &&
+               ChapterOf(project, dialogue)?.Episodes.FirstOrDefault(episode =>
+                   string.Equals(episode.EpisodeId, EpisodeIdOf(dialogue), StringComparison.Ordinal)) is { } found
+            ? found.ShownTitle
+            : node.Name;
+    }
+
     /// <summary>그 노드가 대신하는 에피소드 Id — 표식이 먼저고, 없으면 이름이다.</summary>
     public static string EpisodeIdOf(DialogueNode node)
     {

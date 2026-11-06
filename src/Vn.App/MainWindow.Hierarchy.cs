@@ -43,6 +43,9 @@ public partial class MainWindow
         ChapterGraph.HierarchyView.Folds = _folds;
         Graph.HierarchyView.Folds = _folds;
 
+        // [대본] 탭은 에피소드를 보이는 제목으로 보이고 고친다 — EpisodeId는 [구성] 탭의 하이어아키 · 인스펙터에서 정한다.
+        Graph.HierarchyView.ShowEpisodeTitles = true;
+
         // 한쪽에서 접거나 펴면 다른 쪽도 맞춘다.
         ChapterGraph.HierarchyView.FoldChanged += () => Graph.HierarchyView.RefreshFolds();
         Graph.HierarchyView.FoldChanged += () => ChapterGraph.HierarchyView.RefreshFolds();
@@ -55,6 +58,9 @@ public partial class MainWindow
         Graph.HierarchyDock.Changed += value => OnHierarchyDockChanged(ChapterGraph.HierarchyDock, value);
 
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
+
+        // 판에서 고른 선 — 인스펙터가 그 선을 설명한다(MainWindow.LineInspector.cs).
+        Graph.LineSelected += line => UiGuard.Run(_session, "선 고르기", () => OnDirectorLinePicked(line));
 
         // 분기 조건은 챕터 그래프에서 정한다 — 연출 그래프의 표 · 인스펙터 단추가 그리로 데려간다.
         Graph.BranchConditionRequested += (chapterId, branchKey) =>
@@ -72,7 +78,7 @@ public partial class MainWindow
             tree.CommandRequested += (command, row, anchor) =>
                 UiGuard.Run(_session, "하이어아키 차림표", () => OnHierarchyCommand(command, row, anchor));
             tree.RenameRequested += (row, name) =>
-                UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(row, name));
+                UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(tree, row, name));
             tree.Dropped += (source, target) =>
                 UiGuard.Run(_session, "장면 옮기기", () => OnHierarchyDropped(source, target));
         }
@@ -134,6 +140,9 @@ public partial class MainWindow
     /// </summary>
     private void OnDirectorHierarchyPicked(HierarchyPick pick)
     {
+        _directorLine = null;
+        Graph.ReleaseLine();
+
         if (pick.ChapterId is { } chapterId)
         {
             _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
@@ -229,6 +238,7 @@ public partial class MainWindow
         if (_session.SelectedNodeId is not null)
         {
             _directorSummary = null;
+            _directorLine = null;
         }
 
         if (_syncingSelection || PickOf(_session.SelectedNode) is not { } pick)
@@ -251,17 +261,23 @@ public partial class MainWindow
     /// <summary>연출 그래프 인스펙터의 머리글과 요약 칸 — <see cref="ShowSelectedNode"/>가 부른다.</summary>
     private void ShowDirectorInspector(StoryNode? node)
     {
-        bool summary = _directorSummary is not null && node is null;
+        bool summary = (_directorSummary is not null || _directorLine is not null) && node is null;
         DirectorSummary.IsVisible = summary;
 
-        if (summary)
+        if (summary && _directorLine is { } line)
+        {
+            FillLineSummary(line);
+        }
+        else if (summary)
         {
             FillDirectorSummary(_directorSummary!);
         }
         else if (node is DialogueNode dialogue)
         {
             Graph.SetInspectorHeader(
-                PickOf(dialogue) is { } pick ? $"에피소드 · {pick.EpisodeId}" : $"대사 노드 · {dialogue.Name}",
+                PickOf(dialogue) is not null
+                    ? $"에피소드 · {EpisodeNaming.ShownNameOf(_session.Project, dialogue)}"
+                    : $"대사 노드 · {dialogue.Name}",
                 "대사 줄 — 화자 · 대사 · 분기");
         }
         else
@@ -372,20 +388,9 @@ public partial class MainWindow
     }
 
     /// <summary>「챕터 그래프에서 열기」 — 챕터 그래프 탭으로 넘어가 그 인스펙터에 같은 줄을 세운다.</summary>
-    private void OpenInChapterGraph(HierarchyPick pick, string text)
+    private void OpenInChapterGraph(HierarchyPick pick, string text) => ChapterTabButton(text, () =>
     {
-        var button = new Button
-        {
-            Content = text,
-            FontSize = 11,
-            Margin = new Thickness(0, 8, 0, 0),
-            Tag = "summary-open"
-        };
-        button.Click += (_, _) => UiGuard.Run(_session, "[구성] 탭에서 열기", () =>
-        {
-            MainTabs.SelectedItem = ChapterTabItem;
-            ChapterGraph.Inspect(pick);
-        });
-        DirectorSummary.Children.Add(button);
-    }
+        MainTabs.SelectedItem = ChapterTabItem;
+        ChapterGraph.Inspect(pick);
+    });
 }

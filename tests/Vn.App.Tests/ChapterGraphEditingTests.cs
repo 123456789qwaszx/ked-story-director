@@ -46,23 +46,20 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 간선_패널의_선택지도_챕터의_모든_문구에서_고른다() => HeadlessUi.Run(() =>
+    public void 간선_패널의_선택지_문구는_글자_칸에_적혀_있고_거기서_고친다() => HeadlessUi.Run(() =>
     {
-        // 간선에서도 선택지를 드롭다운으로 고른다. 그래프에서 길을
-        // 눌러 연 패널에서도 문구를 고르고, [적용] 한 번에 관문과 함께 저장된다.
+        // 문구는 드롭다운으로 고르지 않는다 — 글자 칸에 지금 문구가 적혀 있고 그 자리에서 고친다. 저장은 관문과 함께 한 번이다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        var labels = view.FindControl<ComboBox>("EdgeLabelEditBox")!;
+        var labels = view.FindControl<TextBox>("EdgeLabelEditBox")!;
         Assert.True(labels.IsEnabled); // 읽기 전용이 아니다 — 여기서 고친다
-        Assert.Equal("라루의 제안을 듣는다", labels.SelectedItem);
-        // 목록은 챕터 전체 사전이다 — 다른 에피소드가 쓰는 문구까지 담긴다.
-        Assert.Contains("혼자 문을 연다", (IEnumerable<string>)labels.ItemsSource!);
+        Assert.Equal("라루의 제안을 듣는다", labels.Text);
 
-        labels.SelectedItem = "혼자 문을 연다";
+        labels.Text = "혼자 문을 연다";
         view.FindControl<ComboBox>("EdgeVisibleCombo")!.SelectedItem = "지쳐있음";
         view.ApplyEdgeFromPanel();
 
@@ -75,7 +72,40 @@ public sealed class ChapterGraphEditingTests
         // 문구는 신원의 일부다 — 바꿔도 선택이 풀리지 않고 그 길이 계속 열려 있다.
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-        Assert.Equal("혼자 문을 연다", view.FindControl<ComboBox>("EdgeLabelEditBox")!.SelectedItem);
+        Assert.Equal("혼자 문을 연다", view.FindControl<TextBox>("EdgeLabelEditBox")!.Text);
+    });
+
+    [Fact]
+    public void 간선_패널의_문구는_Enter로_저장되고_다른_것을_고르면_적던_문구가_그_간선에_저장된다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // Enter — 그 자리에서 저장된다(사전에 없던 새 문구도 된다).
+        var labels = view.FindControl<TextBox>("EdgeLabelEditBox")!;
+        labels.Text = "새로 적은 문구";
+        labels.RaiseEvent(new Avalonia.Input.KeyEventArgs
+        {
+            RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+            Key = Avalonia.Input.Key.Enter
+        });
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("새로 적은 문구", Edge(session, "main05.02", "branch05.02A").OptionLabel);
+
+        // 적다가(초점이 칸에 있다) 판에서 다른 간선을 고르면 — 적던 문구는 원래 간선에 들어가고 새 간선은 그대로다.
+        labels.Focus();
+        labels.Text = "고르기 전에 적은 문구";
+        ChapterEdge other = Chapter(session).Edges.First(edge =>
+            edge.FromEpisodeId != "main05.02" && !edge.HasNoOptionLabel);
+        view.SelectEdgeKey(other.FromEpisodeId, other.ToEpisodeId, other.OptionLabel!);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("고르기 전에 적은 문구", Edge(session, "main05.02", "branch05.02A").OptionLabel);
+        Assert.Equal(other.OptionLabel, Edge(session, other.FromEpisodeId, other.ToEpisodeId).OptionLabel);
+        Assert.Equal(other.OptionLabel, labels.Text);   // 칸은 새로 고른 간선의 문구다
     });
 
     [Fact]
@@ -167,27 +197,10 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<TextBox>("IdBox")!.IsEnabled);
-        Assert.True(view.FindControl<Button>("AddNextEdgeButton")!.IsVisible);
 
         var delete = view.FindControl<Button>("DeleteEpisodeButton")!;
         Assert.True(delete.IsVisible);
         Assert.True(delete.IsEnabled);
-    });
-
-    [Fact]
-    public void 편집_폼은_선택지를_먼저_묻는다() => HeadlessUi.Run(() =>
-    {
-        // 목록의 줄이 `문구 → 도착`으로 읽히므로, 그 줄을 눌러 열리는 폼도 같은 순서여야
-        // 눈이 자리를 다시 찾지 않는다. 화살표도 →다.
-        using var project = new TempProject();
-        (ChapterGraphView view, _) = Show(project);
-
-        Assert.Equal(0, Grid.GetColumn(view.FindControl<ComboBox>("EdgeLabelBox")!));
-        Assert.Equal(2, Grid.GetColumn(view.FindControl<ComboBox>("EdgeTargetCombo")!));
-
-        // 화살표가 관계를 말한다 — 칸만 바꾸고 ←를 남겨 두면 뜻이 거꾸로 읽힌다.
-        Assert.Equal("→", view.FindControl<Grid>("EdgeFormPanel")!
-            .Children.OfType<TextBlock>().Single().Text);
     });
 
     [Fact]
@@ -220,7 +233,6 @@ public sealed class ChapterGraphEditingTests
 
         string[] gone =
         [
-            "에피소드",
             "길 하나 = 선택지 하나",
             "대사엔트리"
         ];
@@ -237,40 +249,81 @@ public sealed class ChapterGraphEditingTests
             Assert.DoesNotContain(standing, text => text.Contains(phrase, StringComparison.Ordinal));
         }
 
-        // 남아야 하는 것 — 선택지 머리글은 표의 이름표라 안내가 아니다.
+        // 머리글 「에피소드」 — 칸 이름표 「에피소드ID」는 머리글이 아니라 무슨 칸인지 말하는 이름표다.
+        Assert.DoesNotContain("에피소드", standing);
+
+        // 남아야 하는 것 — 선택지 머리글과 칸 이름표는 표의 이름표라 안내가 아니다.
         Assert.Contains(standing, text => text.Contains("선택지", StringComparison.Ordinal));
+        Assert.Contains("에피소드ID", standing);
+    });
+
+    [Fact]
+    public void 선택지_목록에는_길을_더하거나_끊는_단추가_없다() => HeadlessUi.Run(() =>
+    {
+        // 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다 — 에피소드 칸의 [＋]와 줄마다의 ✕, 빈 칸 패널의 [＋]는 없다.
+        using var project = new TempProject();
+        (ChapterGraphView view, _) = Show(project);
+
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(view.FindControl<Button>("AddNextEdgeButton"));
+        Assert.Null(view.FindControl<Button>("SlotAddChoiceButton"));
+        Assert.DoesNotContain(
+            view.FindControl<StackPanel>("EdgeListPanel")!.GetVisualDescendants().OfType<Button>(),
+            button => button.IsEffectivelyVisible && button.Content as string == "✕");
+    });
+
+    [Fact]
+    public void 간선_패널에는_길_끊기와_자동_진행_체크가_없고_자동_길이면_그렇다고_말하고_칸을_잠근다() => HeadlessUi.Run(() =>
+    {
+        // 길을 잇고 끊고 자동으로 바꾸는 것은 [대본] 탭의 일이다 — [구성] 탭 간선 패널은 문구 · 조건 · 스탯변화만 고친다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(view.FindControl<Button>("EdgeDeleteButton"));
+        Assert.Null(view.FindControl<CheckBox>("EdgeAutoCheck"));
+        Assert.False(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
+        Assert.True(view.FindControl<TextBox>("EdgeLabelEditBox")!.IsEnabled);
+
+        // 자동 진행 길 — 안내가 서고 문구 · 조건 칸이 잠긴다. 저장해도 자동 그대로다.
+        session.Editor.UpdateEdge("ch05", "main05.01", "main05.02", matchOptionLabel: "계속", optionLabel: string.Empty, auto: true);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        view.SelectEdgeKey("main05.01", "main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.True(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
+        Assert.False(view.FindControl<TextBox>("EdgeLabelEditBox")!.IsEnabled);
+        Assert.False(view.FindControl<ComboBox>("EdgeConditionCombo")!.IsEnabled);
+
+        view.ApplyEdgeFromPanel();
+        Assert.True(Edge(session, "main05.01", "main05.02").Auto);
     });
 
     [Fact]
     public void 선택지는_챕터의_모든_문구_중에서_고른다() => HeadlessUi.Run(() =>
     {
         // 제 것만이 아니라 챕터의 모든 선택지 문구 중에서 고른다.
-        // 견본의 사전에는 main05.02가 쓰는 문구 둘이 있고, main05.01에서도 그것을 고른다.
+        // 견본의 사전에는 main05.02가 쓰는 문구 둘이 있고, main05.01의 길(「계속」)에도 그것을 적는다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.SelectEpisode("main05.01");
+        view.SelectEdgeKey("main05.01", "main05.02", "계속");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // [＋] — 빈 폼이 열린다. 아직 아무것도 안 쓴다.
-        view.FindControl<Button>("AddNextEdgeButton")!.RaiseEvent(
-            new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        // 문구는 간선 패널의 글자 칸에 적는다 — 다른 에피소드가 쓰는 문구를 그대로 적어도 된다.
+        var labels = view.FindControl<TextBox>("EdgeLabelEditBox")!;
+        Assert.Equal("계속", labels.Text);
 
-        Assert.True(view.FindControl<Grid>("EdgeFormPanel")!.IsVisible);
-        Assert.Equal("잇기", view.FindControl<Button>("AddEdgeButton")!.Content);
-
-        // 문구 드롭다운은 다른 에피소드가 쓰는 문구까지 전부 담는다.
-        var labels = view.FindControl<ComboBox>("EdgeLabelBox")!;
-        Assert.Contains("라루의 제안을 듣는다", (IEnumerable<string>)labels.ItemsSource!);
-
-        labels.SelectedItem = "라루의 제안을 듣는다";
-        view.FindControl<ComboBox>("EdgeTargetCombo")!.SelectedItem = "main05.end";
-        view.SubmitEdgeForm();
+        labels.Text = "라루의 제안을 듣는다";
+        view.ApplyEdgeFromPanel();
 
         ChapterGraphModel reread = Chapter(session);
         ChapterEdge wired = reread.Edges.Single(candidate =>
-            candidate.FromEpisodeId == "main05.01" && candidate.ToEpisodeId == "main05.end");
+            candidate.FromEpisodeId == "main05.01" && candidate.ToEpisodeId == "main05.02");
         Assert.Equal("라루의 제안을 듣는다", wired.OptionLabel);
 
         // 같은 문구를 두 에피소드가 쓰고 있어도 사전에는 한 줄뿐이다.
@@ -278,8 +331,9 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 선택지_줄을_클릭하면_그_아래에서_문구와_도착을_고친다() => HeadlessUi.Run(() =>
+    public void 선택지_줄을_누르면_그_아래에_설명이_읽기_전용으로_펼쳐지고_다시_누르면_접힌다() => HeadlessUi.Run(() =>
     {
+        // 에피소드 칸은 확인하는 자리다 — 펼친 설명에는 고칠 칸이 없다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -287,21 +341,26 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         ChapterEdge target = Edge(session, "main05.02", "branch05.02A");
-
-        view.OpenEdgeForm(target, rowIndex: 0);
+        view.ToggleChoice(target);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.True(view.FindControl<Grid>("EdgeFormPanel")!.IsVisible);
-        Assert.Equal("수정", view.FindControl<Button>("AddEdgeButton")!.Content);
-        Assert.Equal("라루의 제안을 듣는다", view.FindControl<ComboBox>("EdgeLabelBox")!.SelectedItem);
+        Border detail = Detail(view)!;
+        List<string?> lines = detail.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToList();
+        Assert.Contains("문구: 「라루의 제안을 듣는다」", lines);
+        Assert.Contains("도착: branch05.02A", lines);
+        Assert.Contains("해금조건: 신뢰높음", lines);
+        Assert.Contains(lines, line => line!.StartsWith("스탯변화: ", StringComparison.Ordinal));
 
-        // 문구를 바꿔 저장 — 도착은 그대로다.
-        view.FindControl<ComboBox>("EdgeLabelBox")!.SelectedItem = "혼자 문을 연다";
-        view.SubmitEdgeForm();
+        // 고칠 칸이 없다 — 글자 칸 · 고르기 · 체크 · 단추 모두.
+        Assert.DoesNotContain(view.FindControl<StackPanel>("EdgeListPanel")!.GetVisualDescendants(),
+            control => control is TextBox or ComboBox or CheckBox or Button);
+        Assert.Null(view.FindControl<TextBox>("EdgeLabelBox"));
+        Assert.Null(view.FindControl<ComboBox>("EdgeTargetCombo"));
 
-        ChapterEdge moved = Chapter(session).Edges.Single(edge => edge.ToEpisodeId == "branch05.02A");
-        Assert.Equal("혼자 문을 연다", moved.OptionLabel);
-        Assert.Equal("신뢰높음", moved.ConditionLabel); // 관문은 길에 붙어 따라온다
+        // 다시 누르면 접힌다.
+        view.ToggleChoice(target);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Null(Detail(view));
     });
 
     [Fact]
@@ -566,8 +625,7 @@ public sealed class ChapterGraphEditingTests
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
         Assert.False(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
         // 문구 칸에 그 길의 문구가 선다.
-        Assert.Contains("라루의 제안을 듣는다",
-            (string)view.FindControl<ComboBox>("EdgeLabelEditBox")!.SelectedItem!);
+        Assert.Contains("라루의 제안을 듣는다", view.FindControl<TextBox>("EdgeLabelEditBox")!.Text);
         Assert.Equal("신뢰높음", view.FindControl<ComboBox>("EdgeConditionCombo")!.SelectedItem);
 
         // 안내문을 고쳐 적용 → 간선에 써진다.
@@ -601,9 +659,9 @@ public sealed class ChapterGraphEditingTests
 
         // 문구는 간선 한가운데로 옮겼다 — 아래변의 한 칸에 남는 폭이 카드의 1/4뿐이다.
         List<Border> labels = canvas.Children.OfType<Border>()
-            .Where(border => border.Child is TextBlock text &&
-                             (text.Text ?? "").StartsWith("라루의 제안을 듣는다") ||
-                             (border.Child as TextBlock)?.Text is "혼자 문을 연다" or "셋째 길")
+            .Where(border => border.Tag is ChapterGraphView.EdgeLabelMark mark &&
+                             (mark.Label.StartsWith("라루의 제안을 듣는다", StringComparison.Ordinal) ||
+                              mark.Label is "혼자 문을 연다" or "셋째 길"))
             .ToList();
 
         Assert.Equal(3, labels.Count);
@@ -617,10 +675,10 @@ public sealed class ChapterGraphEditingTests
             24, canvas.Children.OfType<Avalonia.Controls.Shapes.Ellipse>().Count(port => port.Width == 9));
 
         // 라벨 클릭 = 그 길 선택 (포트 점도 같은 길로 간다).
-        Press(labels.Single(border => ((TextBlock)border.Child!).Text!.StartsWith("라루의 제안을 듣는다")));
+        Press(labels.Single(border => ((ChapterGraphView.EdgeLabelMark)border.Tag!).Label.StartsWith("라루의 제안을 듣는다", StringComparison.Ordinal)));
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 
-        Press(labels.Single(border => ((TextBlock)border.Child!).Text == "셋째 길"));
+        Press(labels.Single(border => ((ChapterGraphView.EdgeLabelMark)border.Tag!).Label == "셋째 길"));
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 
         static void Press(Control control) => control.RaiseEvent(new Avalonia.Input.PointerPressedEventArgs(
@@ -684,6 +742,11 @@ public sealed class ChapterGraphEditingTests
     }
 
     /// <summary>견본 챕터(ch05 복도)를 든 프로젝트. 판과 카드는 열 때 선다.</summary>
+    /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명 — 없으면 null.</summary>
+    private static Border? Detail(ChapterGraphView view) =>
+        view.FindControl<StackPanel>("EdgeListPanel")!.Children.OfType<Border>()
+            .SingleOrDefault(border => border.Tag as string == ChapterGraphView.ChoiceDetailTag);
+
     private sealed class TempProject : IDisposable
     {
         private readonly string _directory = Path.Combine(

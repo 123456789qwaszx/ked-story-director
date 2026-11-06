@@ -53,15 +53,14 @@ public sealed class ChapterGraphClickTests
         //    그 자리다. 포트는 아래변에 있어 한 칸에 남는 폭이 카드의 1/4뿐이다(한글 몇 자에서
         //    잘린다).
         Border label = canvas.Children.OfType<Border>().Single(border =>
-            border.Child is TextBlock text && text.Text?.Contains("라루의 제안") == true);
+            border.Tag is ChapterGraphView.EdgeLabelMark mark && mark.Label.Contains("라루의 제안", StringComparison.Ordinal));
 
         Avalonia.Point center = label.TranslatePoint(
             new Avalonia.Point(label.Bounds.Width / 2, label.Bounds.Height / 2), window)!.Value;
         Click(window, center);
 
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-        Assert.Contains("라루의 제안을 듣는다",
-            (string)view.FindControl<ComboBox>("EdgeLabelEditBox")!.SelectedItem!); // 짝 칸 표시
+        Assert.Contains("라루의 제안을 듣는다", view.FindControl<TextBox>("EdgeLabelEditBox")!.Text); // 짝 칸 표시
     });
 
     [Fact]

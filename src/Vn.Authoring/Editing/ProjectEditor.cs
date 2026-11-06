@@ -339,7 +339,7 @@ public sealed partial class ProjectEditor
 
         Batch(() =>
         {
-            SetDetourTarget(nodeId, beforeLineId, from: targetNodeId, to: null);
+            SetDetourTarget(nodeId, beforeLineId, from: targetNodeId, to: null, keepPoint: false);
 
             if (!take)
             {
@@ -492,6 +492,25 @@ public sealed partial class ProjectEditor
         });
     }
 
+    /// <summary>
+    /// 카드 크기를 바꾼다 — 폭과 글 칸 높이(<see cref="NodeLayout.WritingHeight"/>)를 함께 받고, <c>null</c>이면 판의 기본값으로
+    /// 돌아간다. 끌기를 놓을 때 한 번 부르므로 되돌리기 한 칸이다. 없는 노드거나 크기가 그대로면 아무것도 적지 않는다.
+    /// </summary>
+    public void ResizeNode(string nodeId, double? width, double? writingHeight)
+    {
+        if (Project.FindNode(nodeId) is not { } node ||
+            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            node.Layout.Width = width;
+            node.Layout.WritingHeight = writingHeight;
+        });
+    }
+
     // ── 줄에 얹는 대사 논리 ────────────────────────────────────────────────
     //
     // 줄 자체를 만들고 지우고 옮기는 명령은 여기 없다. 그것은 대본의 일이고
@@ -607,6 +626,10 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 포트 하나의 대상 노드를 정한다. null이면 연결을 끊는다.
     /// 그래프에서 간선을 끌든 노드 화면에서 드롭다운을 고르든 결국 이 하나를 부른다.
+    ///
+    /// 분기 포트를 끊으면 <b>연결만</b> 끊긴다 — 분기점은 이어지지 않은 채 그 자리에 남는다
+    /// (<see cref="DialogueLineExtension.OpenDetourPositions"/>). 이어지지 않은 분기점을 카드에 이으면 그 자리에서 분기가 된다.
+    /// 분기점째 걷는 것은 <see cref="RemoveBranchMarker"/> · <see cref="RemoveOpenDetour"/>다.
     /// </summary>
     public void SetExitTarget(ExitPort port, string? targetNodeId)
     {
@@ -615,7 +638,13 @@ public sealed partial class ProjectEditor
         // 분기는 줄 하나에 여럿이라 <b>그 분기</b>(지금 가는 곳)를 바꾼다 — 줄만 주면 어느 것인지 모른다.
         if (port.Kind == ExitPortKind.Detour && port.BranchOpenLineId is { } lineId)
         {
-            SetDetourTarget(port.NodeId, lineId, port.TargetNodeId, targetNodeId);
+            if (port.IsOpenDetour)
+            {
+                ConnectOpenDetour(port.NodeId, lineId, port.OpenOrdinal!.Value, targetNodeId);
+                return;
+            }
+
+            SetDetourTarget(port.NodeId, lineId, port.TargetNodeId, targetNodeId, keepPoint: true);
             return;
         }
 
@@ -669,10 +698,11 @@ public sealed partial class ProjectEditor
         // 여는 전환이 없는 고아가 되고, 저장할 때 그 칸이 전환 안에 있어 통째로 사라진다.
         //
         // 한 줄에 분기가 여럿일 수 있다. 줄만 주면 대상이 있으면 그 줄의 분기 끝에 하나를 <b>더하고</b>(이미 있으면
-        // 그대로), 대상이 없으면 그 줄의 분기를 <b>모두</b> 끊는다. 분기 하나만 바꾸려면 포트(<see cref="ExitPort"/>)로 부른다.
+        // 그대로), 대상이 없으면 그 줄의 분기를 이어지지 않은 분기점까지 <b>모두</b> 걷는다. 분기 하나만 바꾸려면
+        // 포트(<see cref="ExitPort"/>)로 부른다.
         if (kind == ExitPortKind.Detour)
         {
-            SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId);
+            SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
             return;
         }
 
@@ -708,14 +738,15 @@ public sealed partial class ProjectEditor
     /// 그 줄의 분기 하나를 바꾼다(한 줄에 분기가 여럿일 수 있다). <paramref name="from"/>은 지금 가는 곳이다.
     /// <list type="bullet">
     /// <item><c>from</c> 없음 · <c>to</c> 있음 — 그 줄 분기 끝에 더한다(이미 있으면 그대로).</item>
-    /// <item><c>from</c> 없음 · <c>to</c> 없음 — 그 줄의 분기를 모두 끊는다.</item>
-    /// <item><c>from</c> 있음 · <c>to</c> 없음 — 그 분기 하나를 끊는다.</item>
+    /// <item><c>from</c> 없음 · <c>to</c> 없음 — 그 줄의 분기를 이어지지 않은 분기점까지 모두 걷는다.</item>
+    /// <item><c>from</c> 있음 · <c>to</c> 없음 — 그 분기 하나를 끊는다. <paramref name="keepPoint"/>면 분기점은 이어지지 않은
+    ///   채 제자리에 남고(<see cref="DialogueLineExtension.OpenDetourPositions"/>), 아니면 분기점째 걷힌다.</item>
     /// <item><c>from</c> 있음 · <c>to</c> 있음 — 그 분기를 제자리에서 다른 곳으로 잇는다(선 모양도 따라간다). <c>to</c>가
     ///   그 줄에 이미 있으면 둘이 같은 곳이 되므로 <c>from</c>을 걷는다.</item>
     /// </list>
     /// 끊긴 분기의 선 모양은 걷는다(<see cref="ForgetShapeIfCut"/>와 같은 까닭).
     /// </summary>
-    private void SetDetourTarget(string nodeId, string lineId, string? from, string? to)
+    private void SetDetourTarget(string nodeId, string lineId, string? from, string? to, bool keepPoint)
     {
         if (Project.FindNode(nodeId) is not DialogueNode dialogue ||
             (to is not null && Project.FindNode(to) is null))
@@ -723,8 +754,10 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        List<string> current = dialogue.FindExtension(lineId)?.DetourTargetNodeIds ?? [];
-        List<string> next = [.. current];
+        // 분기점 전부(이어지지 않은 것은 null)를 차례대로 다룬다 — 끊은 분기점이 제자리에 남아야 다른 분기의 자리와 색이
+        // 그대로다.
+        List<string?> current = dialogue.FindExtension(lineId)?.DetourSlots() ?? [];
+        List<string?> next = [.. current];
         int at = from is null ? -1 : next.IndexOf(from);
         string? movedTo = null;
 
@@ -737,7 +770,11 @@ public sealed partial class ProjectEditor
         {
             if (from is null)
             {
-                next.Clear();
+                next.Clear();                // 줄째 걷기 — 이어지지 않은 분기점도 함께
+            }
+            else if (keepPoint)
+            {
+                next[at] = null;             // 연결만 끊는다 — 분기점은 제자리에
             }
             else
             {
@@ -768,7 +805,7 @@ public sealed partial class ProjectEditor
 
         Mutate(() =>
         {
-            foreach (string gone in current.Where(target => !next.Contains(target)))
+            foreach (string gone in current.OfType<string>().Where(target => !next.Contains(target)))
             {
                 string goneKey = EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, gone));
 
@@ -782,10 +819,59 @@ public sealed partial class ProjectEditor
                 }
             }
 
-            DialogueLineExtension extension = dialogue.RequireExtension(lineId);
-            extension.DetourTargetNodeIds.Clear();
-            extension.DetourTargetNodeIds.AddRange(next);
+            dialogue.RequireExtension(lineId).SetDetourSlots(next);
         });
+    }
+
+    /// <summary>
+    /// 이어지지 않은 분기점 하나를 카드에 잇는다 — 그 점이 <b>그 자리에서</b> 분기가 된다. 그 줄이 이미 그 카드로 가면
+    /// (같은 줄에 같은 곳은 두 번 들지 않는다) 아무것도 바꾸지 않는다. 대상이 없으면 이미 끊긴 점이라 할 일이 없다.
+    /// </summary>
+    /// <param name="position">그 분기점의 자리 — 그 줄 분기점 전체에서 몇째인가(<see cref="ExitPort.OpenOrdinal"/>).</param>
+    private void ConnectOpenDetour(string nodeId, string lineId, int position, string? to)
+    {
+        if (to is null ||
+            Project.FindNode(to) is null ||
+            Project.FindNode(nodeId) is not DialogueNode dialogue ||
+            dialogue.FindExtension(lineId) is not { } extension)
+        {
+            return;
+        }
+
+        List<string?> slots = extension.DetourSlots();
+
+        if (position < 0 || position >= slots.Count || slots[position] is not null || slots.Contains(to))
+        {
+            return;
+        }
+
+        slots[position] = to;
+        Mutate(() => extension.SetDetourSlots(slots));
+    }
+
+    /// <summary>
+    /// 이어지지 않은 분기점 하나를 걷는다 — 분기점째 지운다. 자리를 안 주면 그 줄의 마지막 것이다. 이어진 분기를 지우는 것은
+    /// <see cref="RemoveBranchMarker"/>다. 그 자리에 이어지지 않은 분기점이 없으면 아무것도 하지 않는다.
+    /// </summary>
+    /// <param name="position">그 분기점의 자리 — 그 줄 분기점 전체에서 몇째인가(<see cref="ExitPort.OpenOrdinal"/>).</param>
+    public void RemoveOpenDetour(string nodeId, string lineId, int? position = null)
+    {
+        if (Project.FindNode(nodeId) is not DialogueNode dialogue ||
+            dialogue.FindExtension(lineId) is not { OpenDetours: > 0 } extension)
+        {
+            return;
+        }
+
+        List<string?> slots = extension.DetourSlots();
+        int at = position ?? slots.FindLastIndex(slot => slot is null);
+
+        if (at < 0 || at >= slots.Count || slots[at] is not null)
+        {
+            return;
+        }
+
+        slots.RemoveAt(at);
+        Mutate(() => extension.SetDetourSlots(slots));
     }
 
     /// <summary>
@@ -1150,6 +1236,21 @@ public sealed partial class ProjectEditor
                          .ToList())
             {
                 dialogue.ChoiceExits.Remove(key);
+            }
+
+            // 분기가 다녀가던 카드가 사라졌다 — 분기점은 이어지지 않은 채 제자리에 남는다(연결만 끊은 것과 같다).
+            foreach (DialogueLineExtension extension in dialogue.LineExtensions)
+            {
+                List<string?> slots = extension.DetourSlots();
+                int at = slots.IndexOf(nodeId);
+
+                if (at >= 0)
+                {
+                    slots[at] = null;
+                    extension.SetDetourSlots(slots);
+                    dialogue.EdgeShapes.Remove(
+                        EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(extension.LineId, nodeId)));
+                }
             }
         }
     }

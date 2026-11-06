@@ -200,6 +200,117 @@ public sealed class GraphBranchKnobTests
         window.Close();
     });
 
+    [Fact]
+    public void 분기_점을_누르면_연결만_끊기고_분기점은_속_빈_점으로_남는다() => HeadlessUi.Run(() =>
+    {
+        // 분기점을 누르면 분기가 통째로 사라지던 것 — 이제는 다녀갈 카드와의 연결만 끊긴다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =
+            Stage("첫 줄", "둘째 줄");
+        DialogueNode made = session.Editor.AddBranchMarker(card.Id, lines[1]);
+        ShowGraph(window);
+
+        Canvas canvas = Canvas(window);
+        Click(window, canvas, Center(Assert.Single(Knobs(canvas, card.Id))));
+
+        DialogueNode caller = session.Project.FindDialogue(card.Id)!;
+        Assert.Empty(caller.FindExtension(lines[1])!.DetourTargetNodeIds);
+        Assert.Equal(1, caller.FindExtension(lines[1])!.OpenDetours);
+        Assert.NotNull(session.Project.FindNode(made.Id));   // 분기 카드도 그대로다
+
+        // 점은 남는다 — 속이 빈 점이고, 거기서 나가는 선이 없다.
+        Ellipse knob = Assert.Single(Knobs(canvas, card.Id));
+        Assert.Equal(Brushes.Transparent, knob.Fill);
+        Assert.DoesNotContain(ExecutionEdges(canvas), path => Leaves(path, Center(knob), PortRadius));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 누른_분기점이_끊기고_제자리에_남는다_다른_분기는_자리와_색이_그대로다() => HeadlessUi.Run(() =>
+    {
+        // 위쪽 분기점을 눌렀는데 맨 아래 분기점이 속 빈 점이 되면 — 아래 분기가 끊긴 것으로 보인다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =
+            Stage("첫 줄", "둘째 줄");
+        DialogueNode first = session.Editor.AddBranchMarker(card.Id, lines[1]);
+        DialogueNode second = session.Editor.AddBranchMarker(card.Id, lines[1]);
+        ShowGraph(window);
+
+        Canvas canvas = Canvas(window);
+        Click(window, canvas, Center(Assert.Single(Hubs(canvas, card.Id))));
+        List<Ellipse> before = Knobs(canvas, card.Id).OrderBy(knob => Center(knob).Y).ToList();
+        Assert.EndsWith(first.Id, (string)before[0].Tag!, StringComparison.Ordinal);
+        IBrush lowerColor = before[1].Stroke!;
+
+        Click(window, canvas, Center(before[0]));
+
+        List<Ellipse> after = Knobs(canvas, card.Id).OrderBy(knob => Center(knob).Y).ToList();
+        Assert.Equal(2, after.Count);
+        Assert.Equal(Brushes.Transparent, after[0].Fill);                          // 누른 위쪽이 속 빈 점이다
+        Assert.EndsWith(second.Id, (string)after[1].Tag!, StringComparison.Ordinal); // 아래는 여전히 둘째 분기
+        Assert.NotEqual(Brushes.Transparent, after[1].Fill);
+        Assert.Equal(((ISolidColorBrush)lowerColor).Color, ((ISolidColorBrush)after[1].Stroke!).Color);
+        Assert.Equal([second.Id], session.Project.FindDialogue(card.Id)!.FindExtension(lines[1])!.DetourTargetNodeIds);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 이어지지_않은_분기점을_끌어_카드에_놓으면_다시_분기가_된다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =
+            Stage("첫 줄", "둘째 줄");
+        DialogueNode made = session.Editor.AddBranchMarker(card.Id, lines[1]);
+        ShowGraph(window);
+
+        Canvas canvas = Canvas(window);
+        Click(window, canvas, Center(Assert.Single(Knobs(canvas, card.Id))));
+
+        Point from = canvas.TranslatePoint(Center(Assert.Single(Knobs(canvas, card.Id))), window)!.Value;
+        Border target = canvas.Children.OfType<Border>().Single(border => border.Tag as string == made.Id);
+        Point to = target.TranslatePoint(new Point(target.Bounds.Width / 2, 12), window)!.Value;
+
+        window.MouseDown(from, MouseButton.Left);
+        window.MouseMove(to, RawInputModifiers.LeftMouseButton);
+        window.MouseUp(to, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        DialogueNode caller = session.Project.FindDialogue(card.Id)!;
+        Assert.Equal([made.Id], caller.FindExtension(lines[1])!.DetourTargetNodeIds);
+        Assert.Equal(0, caller.FindExtension(lines[1])!.OpenDetours);
+        AssertEdgeLeaves(canvas, Center(Assert.Single(Knobs(canvas, card.Id))), PortRadius);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 이어지지_않은_분기점은_곁기둥에_서고_거기서_지운다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =
+            Stage("첫 줄", "둘째 줄");
+        session.Editor.AddBranchMarker(card.Id, lines[1]);
+        ShowGraph(window);
+
+        Canvas canvas = Canvas(window);
+        Click(window, canvas, Center(Assert.Single(Knobs(canvas, card.Id))));
+        session.Select(card.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Border openCard = window.GetVisualDescendants().OfType<Border>().Single(border =>
+            border.Tag as string == DialogueNodeEditor.BranchMarkerTag(lines[1], Vn.Authoring.Flow.ExitPort.OpenSlot(0)));
+        Assert.Contains(openCard.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text?.Contains("이어지지 않음", StringComparison.Ordinal) == true);
+
+        Button remove = openCard.GetVisualDescendants().OfType<Button>()
+            .Single(button => button.Content as string == "✕ 분기점 지우기");
+        remove.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(0, session.Project.FindDialogue(card.Id)!.FindExtension(lines[1])?.OpenDetours ?? 0);
+        Assert.Empty(Knobs(canvas, card.Id));
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>연출 그래프에 대사 카드 하나 — 줄마다 글을 채운다.</summary>
