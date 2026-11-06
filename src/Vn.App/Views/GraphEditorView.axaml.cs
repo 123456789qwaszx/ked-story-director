@@ -9,6 +9,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using System.Text.RegularExpressions;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
@@ -2487,8 +2488,9 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 첫머리 조건 줄을 지킨 글 — 조건 줄이 맨 처음과 맨 끝에 보인 그대로 있으면 <c>null</c>(손댈 것이 없다). 아니면:
+    /// 첫머리 조건 줄을 지킨 글 — 조건 줄이 맨 처음과 맨 끝에 보인 그대로 제 줄로 있으면 <c>null</c>(손댈 것이 없다). 아니면:
     /// <list type="bullet">
+    /// <item>조건 줄과 같은 줄에 붙여 쓴 글(「&lt;&lt;if …&gt;&gt;ASD」 · 「SAD&lt;&lt;endif&gt;&gt;」)은 떼어 제 줄로 세운다.</item>
     /// <item>지우거나 고친 조건 줄은 보인 그대로 되살린다.</item>
     /// <item>조건 줄 위 · 아래(바깥)에 쓴 줄은 조건 안쪽으로 모은다 — 위에 쓴 줄은 안쪽 맨 위, 아래에 쓴 줄은 안쪽 맨 아래다.</item>
     /// </list>
@@ -2496,14 +2498,8 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private static string? KeepEntryGate(string text, (string Head, string Tail) gate)
     {
-        List<string> lines = WritingLines(text);
-
-        if (lines.Count >= 2 &&
-            string.Equals(lines[0].Trim(), gate.Head, StringComparison.Ordinal) &&
-            string.Equals(lines[^1].Trim(), gate.Tail, StringComparison.Ordinal))
-        {
-            return null;
-        }
+        List<string> original = WritingLines(text);
+        List<string> lines = SplitGateTokens(original);
 
         // 바깥 if — 보인 그대로면 어디에 있든 그 줄이고, 고쳤으면 맨 첫 줄의 if다(지웠으면 없다).
         int head = lines.FindIndex(line => string.Equals(line.Trim(), gate.Head, StringComparison.Ordinal));
@@ -2524,8 +2520,30 @@ public partial class GraphEditorView : UserControl
             lines.RemoveAt(lines.FindLastIndex(IsEndIfLine));
         }
 
-        return lines.All(string.IsNullOrWhiteSpace) ? null : string.Join('\n', [gate.Head, .. lines, gate.Tail]);
+        if (lines.All(string.IsNullOrWhiteSpace))
+        {
+            return null;
+        }
+
+        List<string> kept = [gate.Head, .. lines, gate.Tail];
+
+        return kept.Select(line => line.Trim()).SequenceEqual(original.Select(line => line.Trim()), StringComparer.Ordinal)
+            ? null
+            : string.Join('\n', kept);
     }
+
+    /// <summary>조건 줄의 꼴 — 같은 줄에 붙은 글과 떼어 낼 때 쓴다(조건식의 <c>&gt;=</c>는 <c>&gt;&gt;</c>가 아니라 걸리지 않는다).</summary>
+    [GeneratedRegex("(<<if\\b.*?>>|<<endif>>)")]
+    private static partial Regex GateToken();
+
+    /// <summary>
+    /// 조건 줄(<c>&lt;&lt;if …&gt;&gt;</c> · <c>&lt;&lt;endif&gt;&gt;</c>)에 같은 줄로 붙여 쓴 글을 떼어 제 줄로 세운다 —
+    /// 「&lt;&lt;if …&gt;&gt;ASD」는 「&lt;&lt;if …&gt;&gt;」와 「ASD」 두 줄이다. 조건 줄이 없는 줄은 그대로다.
+    /// </summary>
+    private static List<string> SplitGateTokens(List<string> lines) =>
+        [.. lines.SelectMany(line => GateToken().IsMatch(line)
+            ? GateToken().Split(line).Where(part => !string.IsNullOrWhiteSpace(part)).Select(part => part.Trim())
+            : [line])];
 
     /// <summary>글 칸의 줄들 — 앞뒤의 빈 줄은 뺀다.</summary>
     private static List<string> WritingLines(string text)

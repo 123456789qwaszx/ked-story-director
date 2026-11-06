@@ -90,6 +90,37 @@ public sealed class BranchGateWritingTests : IDisposable
         window.Close();
     });
 
+    [Theory]
+    [InlineData("{H}ASD\n{B}\n{T}", new[] { "ASD", Body })]             // if 줄 뒤에 붙였다
+    [InlineData("ASD{H}\n{B}\n{T}", new[] { "ASD", Body })]             // if 줄 앞에 붙였다
+    [InlineData("{H}\n{B}\n{T}SAD", new[] { Body, "SAD" })]             // endif 줄 뒤에 붙였다
+    [InlineData("{H}ASD\n하린: s\n{T}SAD", new[] { "ASD", "s", "SAD" })] // 둘 다 — 보고된 모양
+    public void 조건_줄과_같은_줄에_붙여_쓴_글은_떼어_조건_안쪽으로_들어간다(string typed, string[] expected) => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode branch, TextBox box) = Stage();
+        string[] shown = box.Text!.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        string head = shown[0];
+        string tail = shown[^1];
+
+        box.Focus();
+        box.Text = typed.Replace("{H}", head, StringComparison.Ordinal)
+            .Replace("{B}", shown[1], StringComparison.Ordinal)
+            .Replace("{T}", tail, StringComparison.Ordinal);
+        Release(window);
+
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, branch.Id, session.Definition);
+        Assert.Equal(("신뢰높음", true), (state.Label, state.Editable));
+        Assert.Equal(expected, branch.Script.ActiveLines.Select(line => branch.Script.Text(line.Id).Text));
+
+        // 칸도 조건 줄이 제 줄로 선 모양이다.
+        string[] now = Box(window, branch).Text!.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        Assert.Equal((head, tail), (now[0], now[^1]));
+
+        window.Close();
+    });
+
+    private const string Body = "다시 그린 간판, 생각보다 훨씬 낫다.";
+
     [Fact]
     public void 이미_잠긴_카드도_글_칸을_한_번_고치면_바로잡힌다() => HeadlessUi.Run(() =>
     {
