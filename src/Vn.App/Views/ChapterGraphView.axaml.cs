@@ -2903,20 +2903,27 @@ public partial class ChapterGraphView : UserControl
     // 목록의 줄 = 이 에피소드에서 나가는 길 하나이고, 길 하나가 곧 선택지 하나다. 여기서는 확인만 한다 — 선택지를 잇고 끊는 것은
     // [대본] 탭(카드 아래 칸), 문구 · 조건 · 스탯변화는 판에서 그 선을 눌러 여는 간선 패널이다.
 
-    /// <summary>펼친 선택지 줄의 신원 (도착, 문구). 접혀 있으면 null이다.</summary>
-    private (string To, string Label)? _openedChoice;
+    /// <summary>펼친 선택지 줄들의 신원 (도착, 문구) — 줄마다 따로 펴고 접으므로 여럿이 함께 펼쳐져 있을 수 있다.</summary>
+    private readonly HashSet<(string To, string Label)> _openedChoices = [];
 
     /// <summary>펼친 선택지 설명이 지는 표 — 화면 시험이 이것으로 찾는다.</summary>
     internal const string ChoiceDetailTag = "choice-detail";
 
-    /// <summary>펼친 선택지를 접는다 — 다른 것을 고르면 부른다.</summary>
-    private void CollapseChoice() => _openedChoice = null;
+    /// <summary>펼친 선택지를 모두 접는다 — 다른 것을 고르면 부른다.</summary>
+    private void CollapseChoice() => _openedChoices.Clear();
 
-    /// <summary>선택지 줄 클릭 — 그 줄 아래에 설명을 펼치고, 펼친 줄을 다시 누르면 접는다.</summary>
+    /// <summary>
+    /// 선택지 줄 클릭 — 그 줄 아래에 설명을 펼치고, 펼친 줄을 다시 누르면 접는다. 다른 줄을 펴도 이미 펼친 줄은 그대로다.
+    /// </summary>
     internal void ToggleChoice(ChapterEdge edge)
     {
         (string To, string Label) key = (edge.ToEpisodeId, EdgeLabelKey(edge));
-        _openedChoice = _openedChoice == key ? null : key;
+
+        if (!_openedChoices.Remove(key))
+        {
+            _openedChoices.Add(key);
+        }
+
         RefreshPropertyPanel(preserveTyping: true);
     }
 
@@ -2981,7 +2988,7 @@ public partial class ChapterGraphView : UserControl
             EdgeListPanel.Children.Add(BuildEdgeRow(edge, rowIndex));
 
             // 펼친 줄이면 바로 아래에 설명이 선다.
-            if (_openedChoice == (edge.ToEpisodeId, EdgeLabelKey(edge)))
+            if (_openedChoices.Contains((edge.ToEpisodeId, EdgeLabelKey(edge))))
             {
                 EdgeListPanel.Children.Add(BuildChoiceDetail(model, edge));
             }

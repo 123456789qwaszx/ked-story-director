@@ -359,6 +359,36 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
+    public void 다른_선택지를_펴도_이미_펼친_선택지는_접히지_않는다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        List<ChapterEdge> edges = Chapter(session).Edges.Where(edge => edge.FromEpisodeId == "main05.02").ToList();
+        Assert.True(edges.Count >= 2);
+
+        // 둘을 차례로 편다 — 둘 다 펼쳐져 있다.
+        view.ToggleChoice(edges[0]);
+        view.ToggleChoice(edges[1]);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, Details(view).Count);
+
+        // 첫째를 다시 누르면 첫째만 접힌다.
+        view.ToggleChoice(edges[0]);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Single(Details(view));
+
+        // 다른 에피소드로 넘어가면 모두 접힌다.
+        view.SelectEpisode("main05.01");
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Empty(Details(view));
+    });
+
+    [Fact]
     public void 에피소드를_더하고_개명하면_챕터에_남는다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
@@ -744,8 +774,13 @@ public sealed class ChapterGraphEditingTests
     /// <summary>견본 챕터(ch05 복도)를 든 프로젝트. 판과 카드는 열 때 선다.</summary>
     /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명 — 없으면 null.</summary>
     private static Border? Detail(ChapterGraphView view) =>
+        Details(view).SingleOrDefault();
+
+    /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명들 — 위에서 아래 차례.</summary>
+    private static List<Border> Details(ChapterGraphView view) =>
         view.FindControl<StackPanel>("EdgeListPanel")!.Children.OfType<Border>()
-            .SingleOrDefault(border => border.Tag as string == ChapterGraphView.ChoiceDetailTag);
+            .Where(border => border.Tag as string == ChapterGraphView.ChoiceDetailTag)
+            .ToList();
 
     private sealed class TempProject : IDisposable
     {
