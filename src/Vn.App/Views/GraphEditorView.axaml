@@ -103,8 +103,12 @@
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
+            <!-- 초점이 바뀌어도 판을 스크롤하지 않는다 — 글 칸을 반영하면 판을 다시 그리고 새 칸에 초점을 돌려주는데,
+                 그 칸은 아직 자리가 잡히기 전이라 판이 엉뚱한 자리로 튄다. 판 안에서 초점을 받는 칸은 사람이 지금
+                 보고 누른 칸이라 따로 데려올 까닭이 없다. 쓰는 커서를 따라가는 스크롤은 그대로다. -->
             <ScrollViewer Grid.Column="2"
                           x:Name="GraphScroll"
+                          BringIntoViewOnFocusChange="False"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
                 <!-- 배율은 레이아웃 변환이다 — 스크롤 범위가 확대/축소를 그대로 따라온다. -->

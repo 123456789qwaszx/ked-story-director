@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
@@ -145,6 +146,36 @@ public sealed class CardLiveWritingTests
         Pause(window);
 
         Assert.Equal(["첫 줄", "둘째 줄", "새로 쓰는 줄이다"], Said(card));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 새_줄을_넣어_판이_다시_그려져도_판의_스크롤_자리는_그대로다() => HeadlessUi.Run(() =>
+    {
+        // 판 가운데쯤의 카드를 보며 쓴다 — 판이 왼쪽 위 구석에 있지 않아야 튐이 보인다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] _) =
+            Stage("첫 줄", "둘째 줄");
+        session.Editor.MoveNode(card.Id, 1500, 1200);
+        Dispatcher.UIThread.RunJobs();
+
+        ScrollViewer scroll = Graph(window).FindControl<ScrollViewer>("GraphScroll")!;
+        var seen = new Vector(1300, 1000);
+        scroll.Offset = seen;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(seen, scroll.Offset);
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄\n둘째 줄\n셋째 줄";
+        box.CaretIndex = box.Text.Length;
+        Pause(window);
+
+        // 줄이 늘어 판을 다시 그렸고, 새 칸이 초점을 받았다 — 그래도 판은 보던 자리 그대로다.
+        TextBox now = Box(window, card.Id);
+        Assert.NotSame(box, now);
+        Assert.True(now.IsFocused);
+        Assert.Equal(seen, scroll.Offset);
 
         window.Close();
     });
