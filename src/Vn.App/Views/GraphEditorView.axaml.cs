@@ -2065,12 +2065,16 @@ public partial class GraphEditorView : UserControl
                 : null
         };
 
+        // 에피소드 카드는 보이는 제목이다 — EpisodeId는 [구성] 탭에서 정하고, 여기서는 툴팁으로만 보인다.
         var titleName = new TextBlock
         {
-            Text = node.NodeName,
+            Text = ShownName(node.NodeId, node.NodeName),
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            [ToolTip.TipProperty] = _session?.Project.FindNode(node.NodeId) is DialogueNode { MarkedEpisodeId: not null } episode
+                ? $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다."
+                : null
         };
 
         var title = new Grid
@@ -2785,7 +2789,7 @@ public partial class GraphEditorView : UserControl
         var name = new TextBlock
         {
             // 접힌 목록에도 종 아이콘 — 카드와 같은 시각 언어.
-            Text = $"{CardStyleFor(entry.NodeKind, IsChapterEpisode(entry.NodeId), _sceneRootNodeIds.Contains(entry.NodeId)).Icon} {entry.NodeName}",
+            Text = $"{CardStyleFor(entry.NodeKind, IsChapterEpisode(entry.NodeId), _sceneRootNodeIds.Contains(entry.NodeId)).Icon} {ShownName(entry.NodeId, entry.NodeName)}",
             FontSize = 10,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center
@@ -4778,7 +4782,7 @@ public partial class GraphEditorView : UserControl
 
         if (expanded is not null)
         {
-            return expanded.NodeName;
+            return ShownName(nodeId, expanded.NodeName);
         }
 
         return _projection?.Items
@@ -4789,8 +4793,19 @@ public partial class GraphEditorView : UserControl
                 _ => []
             })
             .FirstOrDefault(item => string.Equals(item.NodeId, nodeId, StringComparison.Ordinal))
-            ?.NodeName;
+            ?.NodeName is { } name
+            ? ShownName(nodeId, name)
+            : null;
     }
+
+    /// <summary>카드가 [대본] 판에 보이는 이름 — 에피소드면 제목(비면 EpisodeId), 아니면 노드 이름(<see cref="EpisodeNaming.ShownNameOf"/>).</summary>
+    private string ShownName(string nodeId, string fallback) =>
+        _session?.Project.FindNode(nodeId) is { } found ? EpisodeNaming.ShownNameOf(_session.Project, found) : fallback;
+
+    /// <summary>그 챕터 에피소드의 보이는 제목 — 없으면 Id 그대로.</summary>
+    private string EpisodeTitle(string chapterId, string episodeId) =>
+        _session?.Editor.FindChapter(chapterId)?.Episodes.FirstOrDefault(episode =>
+            string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))?.ShownTitle ?? episodeId;
 
     private static IBrush ConnectionBrush(GraphConnectionProjection connection)
     {
@@ -4997,7 +5012,8 @@ public partial class GraphEditorView : UserControl
         MarkEdge(null);
         _selectedRail = key;
         DrawChapterRails();
-        SetHint(key.Label is { Length: > 0 } label ? $"{key.From} → {key.To} · 「{label}」" : $"{key.From} → {key.To}");
+        string route = $"{EpisodeTitle(key.ChapterId, key.From)} → {EpisodeTitle(key.ChapterId, key.To)}";
+        SetHint(key.Label is { Length: > 0 } label ? $"{route} · 「{label}」" : route);
         LineSelected?.Invoke(new PickedLine.Choice(key.ChapterId, key.From, key.To, key.Label));
     }
 

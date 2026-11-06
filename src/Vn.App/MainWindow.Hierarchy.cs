@@ -43,6 +43,9 @@ public partial class MainWindow
         ChapterGraph.HierarchyView.Folds = _folds;
         Graph.HierarchyView.Folds = _folds;
 
+        // [대본] 탭은 에피소드를 보이는 제목으로 보이고 고친다 — EpisodeId는 [구성] 탭의 하이어아키 · 인스펙터에서 정한다.
+        Graph.HierarchyView.ShowEpisodeTitles = true;
+
         // 한쪽에서 접거나 펴면 다른 쪽도 맞춘다.
         ChapterGraph.HierarchyView.FoldChanged += () => Graph.HierarchyView.RefreshFolds();
         Graph.HierarchyView.FoldChanged += () => ChapterGraph.HierarchyView.RefreshFolds();
@@ -75,7 +78,7 @@ public partial class MainWindow
             tree.CommandRequested += (command, row, anchor) =>
                 UiGuard.Run(_session, "하이어아키 차림표", () => OnHierarchyCommand(command, row, anchor));
             tree.RenameRequested += (row, name) =>
-                UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(row, name));
+                UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(tree, row, name));
             tree.Dropped += (source, target) =>
                 UiGuard.Run(_session, "장면 옮기기", () => OnHierarchyDropped(source, target));
         }
@@ -272,7 +275,9 @@ public partial class MainWindow
         else if (node is DialogueNode dialogue)
         {
             Graph.SetInspectorHeader(
-                PickOf(dialogue) is { } pick ? $"에피소드 · {pick.EpisodeId}" : $"대사 노드 · {dialogue.Name}",
+                PickOf(dialogue) is not null
+                    ? $"에피소드 · {EpisodeNaming.ShownNameOf(_session.Project, dialogue)}"
+                    : $"대사 노드 · {dialogue.Name}",
                 "대사 줄 — 화자 · 대사 · 분기");
         }
         else

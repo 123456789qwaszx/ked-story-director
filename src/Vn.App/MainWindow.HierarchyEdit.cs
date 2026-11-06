@@ -84,10 +84,18 @@ public partial class MainWindow
         }
     }
 
-    private void OnHierarchyRename(HierarchyRow row, string name)
+    private void OnHierarchyRename(StoryHierarchy tree, HierarchyRow row, string name)
     {
         switch (row.Kind)
         {
+            // [대본] 하이어아키의 에피소드 줄은 보이는 제목이다 — EpisodeId는 그대로 두고 제목만 고친다.
+            case HierarchyKind.Episode when tree.ShowEpisodeTitles && row.ChapterId is { } chapterId && row.EpisodeId is { } episodeId:
+                _session.Editor.UpdateEpisode(chapterId, episodeId, title: name);
+                _session.SetStatus(name.Length == 0
+                    ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'가 보입니다."
+                    : $"제목을 '{name}'(으)로 바꿨습니다. 에피소드ID '{episodeId}'는 그대로입니다.");
+                break;
+
             case HierarchyKind.Chapter when row.ChapterId is { } chapterId && name.Length > 0:
                 RenameChapter(chapterId, name);
                 break;
@@ -122,7 +130,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 에피소드 개명 — 하이어아키(두 번 눌러)와 연출 그래프 인스펙터의 이름 칸이 함께 쓰는 한 길이다(규칙은
+    /// 에피소드 개명 — [구성] 탭 하이어아키(두 번 눌러)의 길이다(규칙은
     /// <see cref="EpisodeRenamer"/>: 간선 · 픽스처 · 카드가 함께 간다, 되돌리기 한 칸). 못 바꾸면 사유를 상태줄에 말하고 거짓을 낸다.
     /// </summary>
     private bool RenameEpisode(string chapterId, string oldId, string newId)

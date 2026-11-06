@@ -6,7 +6,6 @@ using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Graph;
-using Vn.Authoring.Model;
 
 namespace Vn.App;
 
@@ -78,7 +77,8 @@ public partial class MainWindow
             return;
         }
 
-        Graph.SetInspectorHeader($"선택지 · {edge.FromEpisodeId} → {edge.ToEpisodeId}", "고치는 곳은 [구성] 탭입니다");
+        Graph.SetInspectorHeader(
+            $"선택지 · {TitleOf(chapter, edge.FromEpisodeId)} → {TitleOf(chapter, edge.ToEpisodeId)}", "고치는 곳은 [구성] 탭입니다");
 
         Fact("문구", edge.Auto ? "AUTO — 플레이어 입력 없이 넘어갑니다"
             : edge.HasNoOptionLabel ? "⚠ 문구 없음"
@@ -109,8 +109,8 @@ public partial class MainWindow
             Note("조건과 스탯변화가 없습니다.");
         }
 
-        EpisodeLink("출발", choice.ChapterId, edge.FromEpisodeId);
-        EpisodeLink("도착", choice.ChapterId, edge.ToEpisodeId);
+        EpisodeLink("출발", chapter, edge.FromEpisodeId);
+        EpisodeLink("도착", chapter, edge.ToEpisodeId);
 
         string from = edge.FromEpisodeId;
         string to = edge.ToEpisodeId;
@@ -165,14 +165,13 @@ public partial class MainWindow
         NodeLink("도착", connection.TargetNodeId, to);
     }
 
-    /// <summary>카드의 이름 — 에피소드 카드면 에피소드 Id, 아니면 노드 이름.</summary>
-    private string CardName(string nodeId) => _session.Project.FindNode(nodeId) switch
-    {
-        DialogueNode dialogue when EpisodeNaming.ChapterOf(_session.Project, dialogue) is not null =>
-            EpisodeNaming.EpisodeIdOf(dialogue),
-        { } node => node.Name,
-        null => nodeId
-    };
+    /// <summary>카드의 이름 — [대본] 탭에 보이는 그대로(에피소드는 제목, 비면 EpisodeId · 아니면 노드 이름).</summary>
+    private string CardName(string nodeId) =>
+        _session.Project.FindNode(nodeId) is { } node ? EpisodeNaming.ShownNameOf(_session.Project, node) : nodeId;
+
+    /// <summary>그 챕터 에피소드의 보이는 제목 — 없으면 Id 그대로.</summary>
+    private static string TitleOf(ChapterGraphModel chapter, string episodeId) =>
+        chapter.FindEpisode(episodeId)?.ShownTitle ?? episodeId;
 
     /// <summary>선 설명의 한 줄 — 「이름: 값」.</summary>
     private void Fact(string name, string value) => DirectorSummary.Children.Add(new TextBlock
@@ -184,15 +183,15 @@ public partial class MainWindow
     });
 
     /// <summary>그 에피소드의 카드로 가는 고리 — 카드가 없으면 이름만 적는다.</summary>
-    private void EpisodeLink(string role, string chapterId, string episodeId)
+    private void EpisodeLink(string role, ChapterGraphModel chapter, string episodeId)
     {
-        if (EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is { } card)
+        if (EpisodeNaming.CardFor(_session.Project, chapter.ChapterId, episodeId) is { } card)
         {
-            NodeLink(role, card.Id, episodeId);
+            NodeLink(role, card.Id, TitleOf(chapter, episodeId));
         }
         else
         {
-            Fact(role, episodeId);
+            Fact(role, TitleOf(chapter, episodeId));
         }
     }
 

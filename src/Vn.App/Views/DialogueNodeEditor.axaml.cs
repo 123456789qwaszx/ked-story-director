@@ -40,7 +40,7 @@ public partial class DialogueNodeEditor : UserControl
     /// 참이어도 대본(본문·화자·줄 구성)은 잠그지 않는다 — 대본의 원본은 프로젝트다.
     ///
     /// 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 셋뿐이고, 셋 다 대본이 아니다:
-    /// ① 노드 이름 = 에피소드 Id — 잠그지 않고 <b>에피소드 개명</b>으로 보낸다(<see cref="RenameEpisode"/>)
+    /// ① 이름 칸 = 에피소드의 <b>보이는 제목</b> — EpisodeId는 [구성] 탭에서 정한다(<see cref="CommitName"/>)
     /// ② 스탯변화(챕터 간선의 것)
     /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 문은 하나)
     /// </summary>
@@ -71,7 +71,7 @@ public partial class DialogueNodeEditor : UserControl
             else if (args.Key == Avalonia.Input.Key.Escape && _session?.Project.FindDialogue(_nodeId) is { } shown)
             {
                 args.Handled = true;
-                NameBox.Text = shown.Name;
+                NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, shown);
             }
         });
         AddLineButton.Click += (_, _) => AddLine();
@@ -168,12 +168,6 @@ public partial class DialogueNodeEditor : UserControl
         _session = session;
     }
 
-    /// <summary>
-    /// 에피소드 카드의 이름 칸을 고쳤을 때 부르는 개명 (챕터 Id, 옛 Id, 새 Id → 바꿨는가) — 셸이 준다(하이어아키와 같은 한 길).
-    /// 에피소드 이름은 곧 에피소드 Id라 노드 이름만 바꾸면 간선 · 픽스처와 어긋난다.
-    /// </summary>
-    internal Func<string, string, string, bool>? RenameEpisode { get; set; }
-
     /// <summary>어떤 노드를 편집할지 정하고 화면을 만든다.</summary>
     internal void Show(string? nodeId)
     {
@@ -202,14 +196,17 @@ public partial class DialogueNodeEditor : UserControl
         {
             _chapterEpisode = node.MarkedEpisodeId is not null;
 
-            NameBox.Text = node.Name;
+            // 에피소드 카드의 이름 칸은 보이는 제목이다(비면 EpisodeId가 보인다). EpisodeId는 [구성] 탭에서 정한다.
+            NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, node);
+            NameBox.PlaceholderText = _chapterEpisode ? "제목 (비우면 에피소드ID)" : "장면 이름";
+            ToolTip.SetTip(NameBox, _chapterEpisode
+                ? $"게임에 보이는 제목입니다. 고치고 Enter. 비우면 에피소드ID({EpisodeNaming.EpisodeIdOf(node)})가 보입니다. " +
+                  "에피소드ID는 [구성] 탭에서 정합니다."
+                : null);
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
             HideEmptyChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
             HideEmptyChoicesBox.IsChecked = _session.HiddenChoiceNodeIds.Contains(node.Id);
-
-            // 에피소드 카드의 이름 칸은 잠그지 않는다 — 고친 이름은 에피소드 개명(EpisodeRenamer
-            //    — 에피소드 · 간선 · 카드를 함께)으로 보낸다(CommitName).
 
             DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
             DialogueFlow flow = ConditionFlowResolver.Resolve(
@@ -883,7 +880,9 @@ public partial class DialogueNodeEditor : UserControl
     private Control BuildBranchMarkerCard(
         DialogueNode node, string lineId, string targetId, int order, int count, bool lastConnected, int palette)
     {
-        string name = _session?.Project.FindNode(targetId)?.Name ?? "(사라진 노드)";
+        string name = _session?.Project.FindNode(targetId) is { } target
+            ? EpisodeNaming.ShownNameOf(_session.Project, target)
+            : "(사라진 노드)";
 
         // 두 줄이다 — 위는 무엇으로 갈라지는가(와 지우기), 아래는 지금 조건과 정하러 가는 단추. 한 줄에 다 세우면 인스펙터 폭을
         // 넘어 단추가 밖으로 밀린다.
@@ -1085,7 +1084,9 @@ public partial class DialogueNodeEditor : UserControl
 
             foreach (string target in existing)
             {
-                string name = _session?.Project.FindNode(target)?.Name ?? "(사라진 노드)";
+                string name = _session?.Project.FindNode(target) is { } found
+                    ? EpisodeNaming.ShownNameOf(_session.Project, found)
+                    : "(사라진 노드)";
                 panel.Children.Add(RemoveBranchButton(node, resolved.Line.LineId, target, $"✕ '{name}' 분기 지우기"));
             }
         }
@@ -1441,36 +1442,26 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        if (!_chapterEpisode)
+        // 챕터 판의 에피소드가 아니면(낙서판 카드) 노드 이름을 고친다.
+        if (!_chapterEpisode || EpisodeNaming.ChapterOf(_session.Project, node) is not { } chapter)
         {
             _session.Editor.RenameNode(node.Id, NameBox.Text ?? string.Empty);
             return;
         }
 
-        // 에피소드 카드 — 이름이 곧 에피소드 Id다. 노드 이름만 바꾸면 간선 · 픽스처와 어긋나므로 에피소드 개명으로 보낸다.
-        // 못 바꿨으면(같은 Id가 있다 · 비었다) 칸을 원래 이름으로 돌린다 — 사유는 상태줄이 말한다.
+        // 에피소드 카드 — 이름 칸은 보이는 제목이다. EpisodeId는 그대로 두고 제목만 고친다(비우면 EpisodeId가 보인다).
         string wanted = (NameBox.Text ?? string.Empty).Trim();
-        string oldId = EpisodeNaming.EpisodeIdOf(node);
+        string episodeId = EpisodeNaming.EpisodeIdOf(node);
 
-        if (string.Equals(wanted, oldId, StringComparison.Ordinal))
+        if (string.Equals(wanted, EpisodeNaming.ShownNameOf(_session.Project, node), StringComparison.Ordinal))
         {
-            NameBox.Text = node.Name;
             return;
         }
 
-        bool renamed = wanted.Length > 0 &&
-                       EpisodeNaming.ChapterOf(_session.Project, node) is { } chapter &&
-                       RenameEpisode?.Invoke(chapter.ChapterId, oldId, wanted) == true;
-
-        if (!renamed)
-        {
-            if (wanted.Length == 0)
-            {
-                _session.SetStatus("에피소드 이름은 비울 수 없습니다.");
-            }
-
-            NameBox.Text = node.Name;
-        }
+        _session.Editor.UpdateEpisode(chapter.ChapterId, episodeId, title: wanted);
+        _session.SetStatus(wanted.Length == 0
+            ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'가 보입니다."
+            : $"제목을 '{wanted}'(으)로 바꿨습니다. 에피소드ID '{episodeId}'는 그대로입니다.");
     }
 
     private static int IndexOfChoice(IReadOnlyList<ConditionChoice> choices, ConditionChoice choice)

@@ -83,34 +83,26 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
-    public void 이름은_노드만_바꾸지_않고_에피소드_개명으로_간다() => HeadlessUi.Run(() =>
+    public void 이름_칸은_보이는_제목을_고치고_EpisodeId와_노드_이름은_그대로다() => HeadlessUi.Run(() =>
     {
-        // 이름 칸은 열려 있다. 다만 <b>노드 이름만 바뀌면 안 된다</b>(이름이 곧 에피소드 Id라 간선 · 픽스처와
-        //    어긋난다). 그래서 고친 이름은 에피소드 개명(셸의 한 길 — EpisodeRenamer)으로 간다.
+        // [대본] 탭의 이름 칸은 에피소드의 보이는 제목이다 — EpisodeId는 [구성] 탭에서 정한다. 노드 이름(= EpisodeId)도 그대로다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId) = ShowEpisodeCard();
         TextBox name = editor.FindControl<TextBox>("NameBox")!;
         string before = session.Project.FindDialogue(nodeId)!.Name;
-        var asked = new List<(string Chapter, string Old, string New)>();
-        editor.RenameEpisode = (chapterId, oldId, newId) =>
-        {
-            asked.Add((chapterId, oldId, newId));
-            return false; // 셸이 거절했다(같은 Id가 있다 등)
-        };
 
         Assert.False(name.IsReadOnly);
+        Assert.Equal(Chapter(session).FindEpisode("main05.02")!.ShownTitle, name.Text);
 
         // 사람이 하는 순서 그대로 — 칸을 눌러 초점을 받고, 고치고, 다른 데를 누른다(초점 이탈이 바꾸기다).
         name.Focus();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        name.Text = "손으로 고친 이름";
+        name.Text = "손으로 고친 제목";
         editor.FindControl<Button>("AddLineButton")!.Focus();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal([(SampleChapters.Corridor, "main05.02", "손으로 고친 이름")], asked);
-
-        // 편집기는 노드 이름을 혼자 바꾸지 않고, 못 바꿨으면 칸을 원래 이름으로 돌린다.
+        ChapterEpisode episode = Chapter(session).FindEpisode("main05.02")!;
+        Assert.Equal("손으로 고친 제목", episode.Title);
         Assert.Equal(before, session.Project.FindDialogue(nodeId)!.Name);
-        Assert.Equal(before, name.Text);
     });
 
     [Fact]

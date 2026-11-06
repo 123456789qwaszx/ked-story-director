@@ -228,7 +228,7 @@ public static class ChapterProgressionExporter
     {
         EpisodeId = episode.EpisodeId,
         // 끝 카드의 "마지막 에피소드" 줄이다. 비면 에피소드 이름(EpisodeId) — 빈 줄보다 낫다.
-        Title = string.IsNullOrWhiteSpace(episode.Title) ? episode.EpisodeId : episode.Title.Trim(),
+        Title = episode.ShownTitle,
         IndexText = episode.Index,
         // 에피소드의 종류는 계약에 없다 — 저작의 `종류` 열은 <b>산출물에 실리지 않는다</b>.
         // <b>이름의 주인은 판의 노드다</b>. 에피소드의 `대사엔트리` 글자로 지으면
