@@ -232,6 +232,12 @@ internal static class StoryNodeJson
                 lineJson["detour"] = detours;
             }
 
+            // 연결만 끊은 분기점의 수 — 있을 때만 적는다. 다녀갈 곳이 없으니 `detour`와 따로 둔다(읽는 쪽이 모르면 그냥 건너뛴다).
+            if (extension.OpenDetours > 0)
+            {
+                lineJson["openDetours"] = extension.OpenDetours;
+            }
+
             lines.Add(lineJson);
         }
 
@@ -387,6 +393,7 @@ internal static class StoryNodeJson
             // 줄의 `set`도 2026-09-17에 폐지됐다 — 옛 파일에 남아 있어도 안 읽는다.
 
             extension.DetourTargetNodeIds.AddRange(DetourJson.Read(lineJson["detour"]));
+            extension.OpenDetours = Math.Max(0, (int?)lineJson["openDetours"] ?? 0);
 
             node.LineExtensions.Add(extension);
         }

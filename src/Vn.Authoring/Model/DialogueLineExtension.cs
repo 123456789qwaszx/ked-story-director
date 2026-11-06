@@ -128,7 +128,14 @@ public sealed class DialogueLineExtension
     /// </summary>
     public List<string> DetourTargetNodeIds { get; init; } = new();
 
+    /// <summary>
+    /// <b>이어지지 않은 분기점</b>의 수 — 다녀갈 곳과의 연결만 끊은 분기가 남긴 자리다. 분기점은 그대로 서 있고(그 줄의
+    /// 분기들 뒤), 다시 끌어 카드에 이으면 분기가 된다. 다녀갈 곳이 없으므로 내보내지 않는다(<c>&lt;&lt;detour&gt;&gt;</c>가
+    /// 나가지 않는다). 분기점째 걷는 것은 따로다(<see cref="Editing.ProjectEditor.RemoveOpenDetour"/>).
+    /// </summary>
+    public int OpenDetours { get; set; }
+
     /// <summary>이 확장이 아무것도 담고 있지 않은지. 빈 확장은 저장하지 않는다.</summary>
     public bool IsEmpty =>
-        Transitions.Count == 0 && DetourTargetNodeIds.Count == 0;
+        Transitions.Count == 0 && DetourTargetNodeIds.Count == 0 && OpenDetours == 0;
 }

@@ -19,7 +19,10 @@ public sealed record DialogueLine(
     IReadOnlyList<LineConditionTransition>? ExtraTransitions = null,
 
     /// <summary>「조건 분기」 표식이 가리키는 노드들 (R7 P-5) — 이 줄 앞에서 차례로 다녀온다.</summary>
-    IReadOnlyList<string>? Detours = null)
+    IReadOnlyList<string>? Detours = null,
+
+    /// <summary>이어지지 않은 분기점의 수(<see cref="DialogueLineExtension.OpenDetours"/>) — 다녀가지 않는다.</summary>
+    int OpenDetours = 0)
 {
     /// <summary>이 줄 앞에서 차례로 다녀올 노드들. 없으면 빈 목록이다.</summary>
     public IReadOnlyList<string> DetourTargetNodeIds => Detours ?? Array.Empty<string>();
@@ -115,7 +118,8 @@ public static class DialogueScriptResolver
                 text.Text,
                 extension?.Transition,
                 extension is { Transitions.Count: > 1 } ? extension.Transitions.Skip(1).ToList() : null,
-                extension is { DetourTargetNodeIds.Count: > 0 } ? [.. extension.DetourTargetNodeIds] : null));
+                extension is { DetourTargetNodeIds.Count: > 0 } ? [.. extension.DetourTargetNodeIds] : null,
+                extension?.OpenDetours ?? 0));
         }
 
         var orphans = new List<OrphanLineExtension>();
