@@ -2,12 +2,17 @@ using Vn.Authoring.Flow;
 
 namespace Vn.Authoring.Model;
 
-/// <summary>그래프에 배치된 좌표. 파일 순서와는 아무 관계가 없다.</summary>
+/// <summary>그래프에 배치된 좌표와 폭. 파일 순서와는 아무 관계가 없다.</summary>
 public sealed class NodeLayout
 {
     public double X { get; set; }
 
     public double Y { get; set; }
+
+    /// <summary>
+    /// 사람이 [대본] 판에서 끌어 넓힌 카드 폭. <c>null</c>이면 판의 기본 폭이다 — 자리처럼 판의 모양이라 프로젝트에 싣는다.
+    /// </summary>
+    public double? Width { get; set; }
 }
 
 /// <summary>

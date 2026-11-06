@@ -492,6 +492,20 @@ public sealed partial class ProjectEditor
         });
     }
 
+    /// <summary>
+    /// 카드 폭을 바꾼다 — <c>null</c>이면 판의 기본 폭으로 돌아간다. 끌기를 놓을 때 한 번 부르므로 되돌리기 한 칸이다.
+    /// 없는 노드거나 폭이 그대로면 아무것도 적지 않는다.
+    /// </summary>
+    public void ResizeNode(string nodeId, double? width)
+    {
+        if (Project.FindNode(nodeId) is not { } node || node.Layout.Width == width)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () => node.Layout.Width = width);
+    }
+
     // ── 줄에 얹는 대사 논리 ────────────────────────────────────────────────
     //
     // 줄 자체를 만들고 지우고 옮기는 명령은 여기 없다. 그것은 대본의 일이고
