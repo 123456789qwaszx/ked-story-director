@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -401,6 +402,12 @@ public partial class MainWindow
                 Graph.SetInspectorHeader(
                     $"챕터 · {chapter.ChapterId}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
                 Note("조건 · 스탯은 [구성] 탭에서 고칩니다.");
+                StatTable(chapter.Model.Stats);
+
+                if (named.Count > 0 || scenes.Any(scene => scene.IsDefault && scene.Episodes.Count > 0))
+                {
+                    Heading("장면");
+                }
 
                 foreach (ChapterScene scene in named)
                 {
@@ -443,6 +450,104 @@ public partial class MainWindow
                 Graph.SetInspectorHeader("인스펙터", "고른 것이 사라졌습니다 — 하이어아키에서 다시 고르세요");
                 break;
         }
+    }
+
+    /// <summary>요약 칸의 작은 제목 — 챕터 요약의 「스탯」 · 「장면」.</summary>
+    private void Heading(string text) => DirectorSummary.Children.Add(new TextBlock
+    {
+        Text = text,
+        FontSize = 12,
+        FontWeight = FontWeight.SemiBold,
+        Margin = new Thickness(0, 8, 0, 0)
+    });
+
+    /// <summary>
+    /// 챕터의 스탯 표 — 스탯 · 범위(처음 값) · 대본에 쓰는 글(<see cref="ChapterStatScript.InlineRead"/>) · [복사]. 작가가 대사에
+    /// 스탯의 지금 값을 넣을 때 키를 외우거나 문법을 칠 필요 없이 그대로 붙여 쓴다. 글은 끌어 골라도 된다.
+    /// </summary>
+    private void StatTable(IReadOnlyList<ChapterStat> stats)
+    {
+        Heading("스탯 — 대사에 붙여 쓰기");
+
+        if (stats.Count == 0)
+        {
+            Note("이 챕터에는 아직 스탯이 없습니다 — [구성] 탭에서 더합니다.");
+            return;
+        }
+
+        var table = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,Auto"),
+            ColumnSpacing = 8,
+            RowSpacing = 3
+        };
+
+        void Cell(Control cell, int row, int column)
+        {
+            Grid.SetRow(cell, row);
+            Grid.SetColumn(cell, column);
+            table.Children.Add(cell);
+        }
+
+        TextBlock Head(string text) => new() { Text = text, FontSize = 10, Opacity = 0.6 };
+
+        table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        Cell(Head("스탯"), 0, 0);
+        Cell(Head("범위"), 0, 1);
+        Cell(Head("대본에 쓰는 글"), 0, 2);
+
+        int row = 1;
+
+        foreach (ChapterStat stat in stats)
+        {
+            string snippet = ChapterStatScript.InlineRead(stat);
+            string name = string.IsNullOrWhiteSpace(stat.DisplayName) || stat.DisplayName == stat.Key
+                ? stat.Key
+                : $"{stat.DisplayName} ({stat.Key})";
+            string range = stat.Type == ChapterStatType.Bool
+                ? "참/거짓(1/0) · 처음 " + (stat.Initial != 0 ? "참" : "거짓")
+                : $"{stat.Minimum}~{stat.Maximum} · 처음 {stat.Initial}";
+
+            table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            Cell(new TextBlock { Text = name, FontSize = 11, VerticalAlignment = VerticalAlignment.Center }, row, 0);
+            Cell(new TextBlock { Text = range, FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center }, row, 1);
+            Cell(new SelectableTextBlock
+            {
+                Text = snippet,
+                FontSize = 11,
+                FontFamily = new FontFamily("Consolas, Menlo, monospace"),
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Tag = "stat-snippet:" + stat.Key
+            }, row, 2);
+
+            var copy = new Button
+            {
+                Content = "복사",
+                FontSize = 10,
+                Padding = new Thickness(6, 1),
+                Tag = "stat-copy:" + stat.Key
+            };
+            ToolTip.SetTip(copy, $"{snippet}를 복사합니다 — 대사에 붙이면 그 자리에 {name}의 지금 값이 나옵니다.");
+            copy.Click += async (_, _) => await UiGuard.RunAsync(_session, "스탯 복사", () => CopySnippetAsync(snippet, name));
+            Cell(copy, row, 3);
+
+            row++;
+        }
+
+        DirectorSummary.Children.Add(table);
+    }
+
+    private async Task CopySnippetAsync(string snippet, string name)
+    {
+        if (Clipboard is not { } clipboard)
+        {
+            _session.SetStatus("클립보드에 접근할 수 없습니다 — 글을 끌어 골라 복사하세요.");
+            return;
+        }
+
+        await clipboard.SetTextAsync(snippet);
+        _session.SetStatus($"{snippet}를 복사했습니다 — 대사에 붙이면 그 자리에 {name}의 지금 값이 나옵니다.");
     }
 
     /// <summary>요약 칸에서 고른 것 — 연출 그래프 하이어아키의 그 줄을 누른 것과 같다.</summary>
