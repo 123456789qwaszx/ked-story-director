@@ -34,6 +34,10 @@
                     <Button x:Name="AutoArrangeButton"
                             Content="자동 정렬"
                             ToolTip.Tip="모든 카드를 [대본] 탭에 놓인 모양대로 다시 세웁니다. 손으로 옮긴 자리는 사라집니다 — 되돌리기(Ctrl+Z) 한 번으로 돌아옵니다." />
+                    <!-- 전체 보기 — 화면(배율 · 스크롤)만 맞춘다. 카드 자리는 그대로다. -->
+                    <Button x:Name="FitChapterButton"
+                            Content="전체 보기"
+                            ToolTip.Tip="이 챕터의 카드가 모두 한 화면에 들어오게 배율과 위치를 맞춥니다. 카드가 적으면 100%보다 키우지는 않습니다." />
                     <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                     <!-- 빈 선택지 숨기기 — [구성] 판 전체에 하나다. [대본] 탭은 카드마다 인스펙터의 체크로 정한다. -->
                     <CheckBox x:Name="HideEmptyChoicesCheck" Content="빈 선택지 숨기기" FontSize="11" VerticalAlignment="Center"

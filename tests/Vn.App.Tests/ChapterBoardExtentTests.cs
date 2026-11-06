@@ -77,6 +77,48 @@ public sealed class ChapterBoardExtentTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 전체_보기는_큰_챕터를_한_화면에_넣고_작은_챕터는_키우지_않는다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        session.Editor.MoveEpisodes("ch02", new Dictionary<string, (double X, double Y)>
+        {
+            ["x"] = (0, 0),
+            ["y"] = (4000, 2600)
+        });
+        Dispatcher.UIThread.RunJobs();
+
+        ChapterGraphView view = Show(window, "ch02");
+        ScrollViewer scroll = view.FindControl<ScrollViewer>("GraphScroll")!;
+        Canvas canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        Button fit = view.FindControl<Button>("FitChapterButton")!;
+        Assert.Equal("전체 보기", fit.Content);
+
+        // 큰 챕터 — 판 전체(두 카드 + 여백)가 화면 안에 들어오고, 한쪽은 화면에 꼭 맞는다.
+        fit.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        double scale = Scale(view);
+        Assert.True(scale < 1);
+        Assert.True(canvas.Width * scale <= scroll.Viewport.Width + 0.5);
+        Assert.True(canvas.Height * scale <= scroll.Viewport.Height + 0.5);
+        Assert.True(Math.Abs((canvas.Width * scale) - scroll.Viewport.Width) < 0.5 ||
+                    Math.Abs((canvas.Height * scale) - scroll.Viewport.Height) < 0.5);
+        Assert.Equal(default, scroll.Offset);
+
+        // 작은 챕터 — 100%보다 키우지 않는다.
+        view = Show(window, "ch01");
+        fit.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, Scale(view), 3);
+
+        window.Close();
+    });
+
+    /// <summary>판의 배율 — 배율은 ZoomHost의 LayoutTransform이 진다.</summary>
+    private static double Scale(ChapterGraphView view) =>
+        ((Avalonia.Media.ScaleTransform)view.FindControl<LayoutTransformControl>("ZoomHost")!.LayoutTransform!).ScaleX;
+
     private static ChapterGraphView Show(MainWindow window, string chapterId)
     {
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;

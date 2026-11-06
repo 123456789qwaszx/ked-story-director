@@ -378,6 +378,7 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.PointerMoved += OnGraphPanMoved;
         GraphScroll.PointerReleased += OnGraphPanReleased;
         ZoomResetButton.Click += (_, _) => ApplyZoom(1, null);
+        FitChapterButton.Click += (_, _) => UiGuard.Run(_session, "전체 보기", FitChapter);
 
         // 스탯변화 줄 편집기 — 간선 패널.
         EdgeStatsHost.Children.Add(_edgeStats);
@@ -855,7 +856,7 @@ public partial class ChapterGraphView : UserControl
     // Ctrl을 요구하지 않는다 — 판 위에서 휠은 곧 배율이다.
     // 세로로 훑는 일은 가운데 단추 끌기가 맡는다.
 
-    private const double MinZoom = 0.3;
+    private const double MinZoom = 0.1;  // 큰 챕터도 [전체 보기]로 한 화면에 들어오게
     private const double MaxZoom = 2.5;
 
     private double _zoom = 1;
@@ -890,6 +891,30 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.Offset = new Vector(
             Math.Max(0, (content.X * _zoom) - pivot.X),
             Math.Max(0, (content.Y * _zoom) - pivot.Y));
+    }
+
+    /// <summary>
+    /// [전체 보기] — 이 챕터의 카드가 모두 한 화면에 들어오는 배율과 자리. 판은 이 챕터의 카드만 여백째 감싸므로
+    /// (<see cref="DisplayPlacement"/>) 판 전체를 화면에 맞춘다. 카드가 적다고 100%보다 키우지는 않는다.
+    /// </summary>
+    internal void FitChapter()
+    {
+        double width = GraphCanvas.Width;
+        double height = GraphCanvas.Height;
+
+        if (GraphScroll.Viewport.Width <= 0 || GraphScroll.Viewport.Height <= 0 ||
+            double.IsNaN(width) || double.IsNaN(height) || width <= 0 || height <= 0)
+        {
+            return;   // 레이아웃 전이거나 그릴 판이 없다
+        }
+
+        ApplyZoom(
+            Math.Min(1.0, Math.Min(GraphScroll.Viewport.Width / width, GraphScroll.Viewport.Height / height)),
+            anchor: null);
+
+        GraphScroll.Offset = new Vector(
+            Math.Max(0, ((width * _zoom) - GraphScroll.Viewport.Width) / 2),
+            Math.Max(0, ((height * _zoom) - GraphScroll.Viewport.Height) / 2));
     }
 
     private void OnGraphPanPressed(object? sender, Avalonia.Input.PointerPressedEventArgs args)
