@@ -3384,7 +3384,9 @@ public partial class GraphEditorView : UserControl
             ZIndex = 50,
             Tag = LineKnobTag + port.Key
         };
-        ToolTip.SetTip(knob, "분기 — 이 대사 앞에서 다녀온다. 끌어 다른 카드로 잇는다.");
+        ToolTip.SetTip(knob, port.IsConnected
+            ? "분기 — 이 대사 앞에서 다녀온다. 끌어 다른 카드로 옮겨 잇고, 누르면 연결만 끊긴다(분기점은 남는다)."
+            : "이어지지 않은 분기점 — 끌어 카드에 놓으면 분기가 된다. 지우려면 곁기둥의 분기점 카드에서 [✕].");
 
         knob.PointerPressed += (_, args) => OnPortPressed(port, card, index, args);
         return knob;

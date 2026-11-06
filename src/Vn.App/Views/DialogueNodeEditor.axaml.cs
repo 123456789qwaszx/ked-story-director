@@ -783,20 +783,109 @@ public partial class DialogueNodeEditor : UserControl
         DialogueNode node, string lineId, IReadOnlyDictionary<string, int> detourPalette)
     {
         IReadOnlyList<string> targets = node.FindExtension(lineId)?.DetourTargetNodeIds ?? [];
+        int open = node.FindExtension(lineId)?.OpenDetours ?? 0;
+        int count = targets.Count + open;
 
-        return targets
+        var cards = targets
             .Select((targetId, order) => BuildBranchMarkerCard(
                 node,
                 lineId,
                 targetId,
                 order,
-                targets.Count,
+                count,
+                lastConnected: order == targets.Count - 1,
                 detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, targetId), -1)))
             .ToList();
+
+        // 연결만 끊은 분기점 — 이어진 분기들 뒤에 선다.
+        for (int index = 0; index < open; index++)
+        {
+            cards.Add(BuildOpenDetourCard(
+                node,
+                lineId,
+                index,
+                targets.Count + index,
+                count,
+                detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, ExitPort.OpenSlot(index)), -1)));
+        }
+
+        return cards;
     }
 
+    /// <summary>
+    /// 이어지지 않은 분기점 하나 — 다녀갈 곳과의 연결만 끊은 분기다. 다녀가지 않고 지나간다. [대본] 판에서 그 점을 끌어
+    /// 카드에 이으면 다시 분기가 된다. [✕ 분기점 지우기] · 우클릭이 분기점째 걷는다.
+    /// </summary>
+    /// <param name="openIndex">그 줄의 이어지지 않은 분기점 가운데 몇째인가(<see cref="ExitPort.OpenSlot"/>).</param>
+    /// <param name="order">그 줄의 분기점 전체 가운데 몇째인가 — 이어진 분기들 뒤다.</param>
+    private Control BuildOpenDetourCard(DialogueNode node, string lineId, int openIndex, int order, int count, int palette)
+    {
+        var head = new DockPanel { LastChildFill = true };
+        head.Children.Add(new TextBlock
+        {
+            Text = (count > 1 ? $"⑂ 분기점 {order + 1}/{count}" : "⑂ 분기점") + " — 이어지지 않음",
+            FontSize = 11,
+            FontWeight = FontWeight.Bold,
+            Foreground = BranchPalette.Accent(palette),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+
+        Button remove = SmallButton("✕ 분기점 지우기", () => RemoveOpenDetour(node, lineId));
+        ToolTip.SetTip(remove, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        DockPanel.SetDock(remove, Dock.Right);
+        head.Children.Insert(0, remove);
+
+        var card = new Border
+        {
+            Tag = BranchMarkerTag(lineId, ExitPort.OpenSlot(openIndex)),
+            Margin = new Thickness(0, 2, 0, 2),
+            Padding = new Thickness(8, 4),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1.5),
+            BorderBrush = BranchPalette.Accent(palette),
+            Background = Brushes.Transparent,
+            Child = new StackPanel
+            {
+                Children =
+                {
+                    head,
+                    new TextBlock
+                    {
+                        Text = "다녀갈 곳이 없어 지나갑니다 — [대본] 판에서 이 분기점을 끌어 카드에 이으면 다시 분기가 됩니다.",
+                        FontSize = 10,
+                        Opacity = 0.7,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 2, 0, 0)
+                    }
+                }
+            }
+        };
+        ToolTip.SetTip(card, "우클릭하면 이 분기점을 지웁니다(✕ 분기점 지우기와 같다). 되돌리기(Ctrl+Z)로 돌아옵니다.");
+
+        card.PointerPressed += (_, args) =>
+        {
+            if (!args.GetCurrentPoint(card).Properties.IsRightButtonPressed)
+            {
+                return;
+            }
+
+            args.Handled = true;
+            RemoveOpenDetour(node, lineId);
+        };
+
+        return card;
+    }
+
+    /// <summary>이어지지 않은 분기점 하나를 지운다 — 분기점 카드의 [✕] · 우클릭 · ＋ 메뉴가 같은 길이다.</summary>
+    private void RemoveOpenDetour(DialogueNode node, string lineId) =>
+        UiGuard.Run(_session!, "분기점 지우기", () =>
+        {
+            _session!.Editor.RemoveOpenDetour(node.Id, lineId);
+            _session.SetStatus("이어지지 않은 분기점을 지웠습니다.");
+        });
+
     private Control BuildBranchMarkerCard(
-        DialogueNode node, string lineId, string targetId, int order, int count, int palette)
+        DialogueNode node, string lineId, string targetId, int order, int count, bool lastConnected, int palette)
     {
         string name = _session?.Project.FindNode(targetId)?.Name ?? "(사라진 노드)";
 
@@ -835,9 +924,9 @@ public partial class DialogueNodeEditor : UserControl
 
         detail.Children.Add(new TextBlock
         {
-            Text = BranchConditionNote.Sentence(state) + " " + (order < count - 1
-                ? "다녀왔다가 다음 분기로 갑니다."
-                : "다녀왔다가 이 줄부터 이어집니다."),
+            Text = BranchConditionNote.Sentence(state) + " " + (lastConnected
+                ? "다녀왔다가 이 줄부터 이어집니다."
+                : "다녀왔다가 다음 분기로 갑니다."),
             FontSize = 10,
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
@@ -981,6 +1070,9 @@ public partial class DialogueNodeEditor : UserControl
         IReadOnlyList<string> existing = resolved.Line.LineId is { Length: > 0 } markerLineId
             ? node.FindExtension(markerLineId)?.DetourTargetNodeIds ?? []
             : [];
+        int openPoints = resolved.Line.LineId is { Length: > 0 } openLineId
+            ? node.FindExtension(openLineId)?.OpenDetours ?? 0
+            : 0;
 
         if (existing.Count > 0)
         {
@@ -1000,6 +1092,14 @@ public partial class DialogueNodeEditor : UserControl
                 string name = _session?.Project.FindNode(target)?.Name ?? "(사라진 노드)";
                 panel.Children.Add(RemoveBranchButton(node, resolved.Line.LineId, target, $"✕ '{name}' 분기 지우기"));
             }
+        }
+
+        // 연결만 끊은 분기점 — 하나씩 지운다.
+        for (int index = 0; index < openPoints; index++)
+        {
+            Button removeOpen = SmallButton("✕ 이어지지 않은 분기점 지우기", () => RemoveOpenDetour(node, resolved.Line.LineId));
+            ToolTip.SetTip(removeOpen, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            panel.Children.Add(removeOpen);
         }
 
         var addBranch = new Button
