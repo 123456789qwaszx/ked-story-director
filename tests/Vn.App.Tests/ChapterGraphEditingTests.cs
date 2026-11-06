@@ -601,9 +601,9 @@ public sealed class ChapterGraphEditingTests
 
         // 문구는 간선 한가운데로 옮겼다 — 아래변의 한 칸에 남는 폭이 카드의 1/4뿐이다.
         List<Border> labels = canvas.Children.OfType<Border>()
-            .Where(border => border.Child is TextBlock text &&
-                             (text.Text ?? "").StartsWith("라루의 제안을 듣는다") ||
-                             (border.Child as TextBlock)?.Text is "혼자 문을 연다" or "셋째 길")
+            .Where(border => border.Tag is ChapterGraphView.EdgeLabelMark mark &&
+                             (mark.Label.StartsWith("라루의 제안을 듣는다", StringComparison.Ordinal) ||
+                              mark.Label is "혼자 문을 연다" or "셋째 길"))
             .ToList();
 
         Assert.Equal(3, labels.Count);
@@ -617,10 +617,10 @@ public sealed class ChapterGraphEditingTests
             24, canvas.Children.OfType<Avalonia.Controls.Shapes.Ellipse>().Count(port => port.Width == 9));
 
         // 라벨 클릭 = 그 길 선택 (포트 점도 같은 길로 간다).
-        Press(labels.Single(border => ((TextBlock)border.Child!).Text!.StartsWith("라루의 제안을 듣는다")));
+        Press(labels.Single(border => ((ChapterGraphView.EdgeLabelMark)border.Tag!).Label.StartsWith("라루의 제안을 듣는다", StringComparison.Ordinal)));
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 
-        Press(labels.Single(border => ((TextBlock)border.Child!).Text == "셋째 길"));
+        Press(labels.Single(border => ((ChapterGraphView.EdgeLabelMark)border.Tag!).Label == "셋째 길"));
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 
         static void Press(Control control) => control.RaiseEvent(new Avalonia.Input.PointerPressedEventArgs(

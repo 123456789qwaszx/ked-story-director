@@ -1035,6 +1035,7 @@ public partial class ChapterGraphView : UserControl
         _emptySlotDots.Clear();
         _lineByEdge.Clear();
         _lineBase.Clear();
+        _labelRects.Clear();
 
         // 그릴 것이 없으면 판도 없다. 이걸 지우지 않으면 큰 챕터를 보다가 못 읽는 챕터로
         // 넘어갔을 때 텅 빈 캔버스가 이전 크기 그대로 남아 스크롤만 넓어진다.
@@ -1104,6 +1105,7 @@ public partial class ChapterGraphView : UserControl
         _emptySlotDots.Clear();
         _lineByEdge.Clear();
         _lineBase.Clear();
+        _labelRects.Clear();
 
         // 자리는 사람이 소유한다 — 에피소드가 제 X·Y를 지고 있고 드래그가 그것을
         // 고친다. 그리기는 <b>덮지 않는다</b>: 덮으면 옮긴 일이 아무 일도 아니게 된다.
@@ -1330,6 +1332,18 @@ public partial class ChapterGraphView : UserControl
     /// <summary>포트 점의 반지름 — 카드 변 위에 걸터앉는다.</summary>
     private const double PortRadius = 4.5;
 
+    /// <summary>선택지 문구의 가장 넓은 폭 — 넘으면 「…」로 줄이고 마우스를 올리면 전체가 보인다.</summary>
+    private const double LabelMaxWidth = 160;
+
+    /// <summary>
+    /// 선택지 문구가 지는 표 — 화면 테스트가 이것으로 찾는다. 글자 표(string)가 아닌 것은 판의 카드가 글자 표(에피소드 Id)를
+    /// 지기 때문이다 — 「글자 표를 진 Border = 카드」를 깨지 않는다.
+    /// </summary>
+    internal sealed record EdgeLabelMark(string FromEpisodeId, string ToEpisodeId, string Label);
+
+    /// <summary>이번 그리기에서 이미 놓인 선택지 문구의 자리 — 다음 문구가 이것을 비켜 선다.</summary>
+    private readonly List<Rect> _labelRects = new();
+
     /// <summary>빈 선택지 칸 점이 지는 표 — 화면 테스트가 이것으로 찾는다. 뒤에 「{에피소드}#{칸}」이 붙는다.</summary>
     internal const string EmptySlotTag = "empty-slot:";
 
@@ -1493,8 +1507,13 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 간선의 <b>문구</b>를 그 선 한가운데에 놓는다 — 사람이 간선을 누르려고 겨누는 바로
+    /// 간선의 <b>문구</b>를 그 선 위에 놓는다 — 사람이 간선을 누르려고 겨누는 바로
     /// 그 자리다. 누르면 그 간선이 선택된다.
+    ///
+    /// 자리는 선 한가운데가 먼저다. 이미 놓인 문구와 겹치면 <b>제 선을 따라</b> 위아래로 번갈아 비켜 빈자리를 찾는다
+    /// (<see cref="LabelSpots"/>) — 한 카드에서 나간 선택지 여럿이 같은 카드로 모이면 선 가운데가 거의 한 점이라 문구가
+    /// 하나로 포개졌다. 제 선 위에 있어야 어느 문구가 어느 선인지 헷갈리지 않는다. 빈자리가 없으면 가장 덜 겹치는 자리다.
+    /// 문구가 길면 <see cref="LabelMaxWidth"/>에서 줄이고(…) 마우스를 올리면 전체가 보인다. 해금조건(<c>[…]</c>)은 줄이지 않는다.
     ///
     /// ⭐ <b>v5에서 문구가 여기로 왔다</b> (2026-09-18). 전에는 카드 오른변 안쪽에 포트마다
     /// 한 줄씩 적었는데, 포트가 아래변으로 내려가면서 한 칸에 남는 폭이 카드의 1/4이 됐다 —
@@ -1512,20 +1531,35 @@ public partial class ChapterGraphView : UserControl
 
         string label = edge.ConditionLabel is { } gate ? $"{option} [{gate}]" : option;
 
+        IBrush ink = new SolidColorBrush(Color.Parse(
+            edge.Auto ? "#3D7BD9" : edge.HasNoOptionLabel ? "#C0392B" : "#5A646E"));
+
+        // 줄이는 것은 문구뿐이다 — 해금조건은 고칠 것을 알리는 정보라 늘 다 보인다.
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3 };
+        line.Children.Add(new TextBlock
+        {
+            Text = option,
+            FontSize = 10,
+            MaxWidth = LabelMaxWidth,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Foreground = ink
+        });
+
+        if (edge.ConditionLabel is { } shownGate)
+        {
+            line.Children.Add(new TextBlock { Text = $"[{shownGate}]", FontSize = 10, Foreground = ink });
+        }
+
         var text = new Border
         {
             Background = new SolidColorBrush(Color.Parse("#F0F4F6F8")),
             CornerRadius = new CornerRadius(3),
             Padding = new Thickness(4, 1),
-            Child = new TextBlock
-            {
-                Text = label,
-                FontSize = 10,
-                Foreground = new SolidColorBrush(Color.Parse(
-                    edge.Auto ? "#3D7BD9" : edge.HasNoOptionLabel ? "#C0392B" : "#5A646E"))
-            },
-            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
+            Child = line,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+            Tag = new EdgeLabelMark(edge.FromEpisodeId, edge.ToEpisodeId, EdgeLabelKey(edge))
         };
+        ToolTip.SetTip(text, label);
 
         string fromId = edge.FromEpisodeId;
         string toId = edge.ToEpisodeId;
@@ -1539,9 +1573,38 @@ public partial class ChapterGraphView : UserControl
         };
 
         text.Measure(Size.Infinity);
-        Canvas.SetLeft(text, ((from.X + to.X) / 2) - (text.DesiredSize.Width / 2));
-        Canvas.SetTop(text, ((from.Y + to.Y) / 2) - (text.DesiredSize.Height / 2));
+        Size size = text.DesiredSize;
+        Rect spot = LabelSpots(from, to, size)
+            .Select(rect => (Rect: rect, Overlap: _labelRects.Sum(placed => OverlapArea(placed, rect))))
+            .Aggregate((best, next) => best.Overlap <= 0 || next.Overlap >= best.Overlap ? best : next)
+            .Rect;
+
+        _labelRects.Add(spot);
+        Canvas.SetLeft(text, spot.X);
+        Canvas.SetTop(text, spot.Y);
         GraphCanvas.Children.Add(text);
+    }
+
+    /// <summary>문구가 설 만한 자리들 — 선 한가운데부터 제 선을 따라 위아래로 번갈아 멀어진다(선의 15%~85%).</summary>
+    private static IEnumerable<Rect> LabelSpots(Point from, Point to, Size size)
+    {
+        foreach (double t in LabelStops)
+        {
+            var center = new Point(from.X + ((to.X - from.X) * t), from.Y + ((to.Y - from.Y) * t));
+            yield return new Rect(center.X - (size.Width / 2), center.Y - (size.Height / 2), size.Width, size.Height);
+        }
+    }
+
+    /// <summary>선 위에서 문구를 놓아 보는 차례 — 한가운데가 먼저, 겹치면 위(출발 쪽) · 아래(도착 쪽)로 번갈아.</summary>
+    private static readonly double[] LabelStops = [0.5, 0.38, 0.62, 0.26, 0.74, 0.15, 0.85];
+
+    /// <summary>두 문구가 겹친 넓이 — 사이에 2px 틈을 두어 붙어 서는 것도 겹친 것으로 친다.</summary>
+    private static double OverlapArea(Rect a, Rect b)
+    {
+        Rect widened = a.Inflate(2);
+        double width = Math.Min(widened.Right, b.Right) - Math.Max(widened.Left, b.Left);
+        double height = Math.Min(widened.Bottom, b.Bottom) - Math.Max(widened.Top, b.Top);
+        return width > 0 && height > 0 ? width * height : 0;
     }
 
     private void RegisterEdgeLines(ChapterEdge edge, List<Line> segments, IBrush stroke, double thickness)
