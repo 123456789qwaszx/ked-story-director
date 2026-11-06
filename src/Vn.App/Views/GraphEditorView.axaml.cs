@@ -2603,6 +2603,78 @@ public partial class GraphEditorView : UserControl
         }
     }
 
+    /// <summary>카드 글 칸에 초점이 있는가 — 셸의 Ctrl+Z · Ctrl+Y가 칸 대신 <see cref="UndoInWriting"/>으로 가는 때.</summary>
+    internal bool IsWritingFocused => CaptureWritingFocus() is not null;
+
+    /// <summary>
+    /// 카드 글 칸의 Ctrl+Z · Ctrl+Y — 프로젝트 되돌리기 · 다시 실행이다. 칸은 쓰다 멈출 때마다 글을 넣고(넣을 때마다 되돌리기
+    /// 한 칸), 줄이 늘고 줄면 판을 다시 그려 새 칸이 되므로 칸 자체의 되돌리기 기록은 비어 있다.
+    /// <list type="bullet">
+    /// <item>아직 넣지 않은 글이 있으면 Ctrl+Z는 그것부터 걷는다 — 마지막으로 넣은 글로(Esc와 같다). Ctrl+Y는 하지 않는다.</item>
+    /// <item>되돌린 뒤 판을 다시 그리지 않아 칸이 그대로면 칸을 모델의 글로 다시 채운다 — 쓰는 중인 칸은 다시 채우지 않는
+    /// 규칙(<see cref="RefreshWriting"/>)이 있어, 그냥 두면 되돌린 글이 칸에 보이지 않는다. 커서는 그 자리(글 끝을 넘지 않게)다.</item>
+    /// </list>
+    /// </summary>
+    internal void UndoInWriting(bool redo)
+    {
+        if (_session is not { } session ||
+            CaptureWritingFocus() is not { } focus ||
+            !_writingBoxes.TryGetValue(focus.NodeId, out TextBox? box))
+        {
+            return;
+        }
+
+        _liveWriting.Stop();
+
+        if (focus.Dirty)
+        {
+            if (!redo)
+            {
+                box.Text = _writingShown.GetValueOrDefault(focus.NodeId, box.Text ?? string.Empty);
+                MarkWriting(box, problem: null);
+                PlaceCaret(box, focus);
+            }
+
+            return;
+        }
+
+        if (redo)
+        {
+            session.Editor.Redo();
+        }
+        else
+        {
+            session.Editor.Undo();
+        }
+
+        // 판을 다시 그렸으면 Rebuild가 새 칸에 모델의 글과 초점을 이미 줬다.
+        if (!ReferenceEquals(_writingBoxes.GetValueOrDefault(focus.NodeId), box) ||
+            session.Project.FindDialogue(focus.NodeId) is null)
+        {
+            return;
+        }
+
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(session.Project, focus.NodeId, session.Definition);
+
+        if (string.Equals(layout.Text, box.Text, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _writingShown[focus.NodeId] = layout.Text;
+        _writingLayouts[focus.NodeId] = layout;
+        box.Text = layout.Text;
+        _liveWriting.Stop();
+        PlaceCaret(box, focus);
+    }
+
+    private static void PlaceCaret(TextBox box, WritingFocus focus)
+    {
+        int length = box.Text?.Length ?? 0;
+        box.SelectionStart = Math.Clamp(focus.SelectionStart, 0, length);
+        box.SelectionEnd = Math.Clamp(focus.SelectionStart, 0, length);
+    }
+
     /// <summary>
     /// 그 노드의 글 칸을 모델의 글로 다시 채운다 — 곁기둥이 줄을 고쳤을 때(판은 다시 안 그린다). 사람이 그 칸에서
     /// 쓰는 중이거나(초점) 넣지 않은 글이 있으면 건드리지 않는다 — 쓰던 글이 사라지면 안 된다.

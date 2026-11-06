@@ -180,7 +180,99 @@ public sealed class CardLiveWritingTests
         window.Close();
     });
 
+    [Fact]
+    public void 새_줄을_쓴_뒤_글_칸에서_Ctrl_Z는_그_줄을_되돌리고_Ctrl_Y는_다시_넣는다() => HeadlessUi.Run(() =>
+    {
+        // 줄이 늘면 판을 다시 그려 칸이 새로 선다 — 칸 자체의 되돌리기 기록이 비어, 전에는 Ctrl+Z가 아무것도 안 했다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] _) =
+            Stage("첫 줄", "둘째 줄");
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄\n둘째 줄\n새로 쓰는 줄";
+        box.CaretIndex = box.Text.Length;
+        Pause(window);
+        Assert.NotSame(box, Box(window, card.Id));
+        Assert.Equal(["첫 줄", "둘째 줄", "새로 쓰는 줄"], Said(card));
+
+        Press(window, Avalonia.Input.Key.Z);
+
+        Assert.Equal(["첫 줄", "둘째 줄"], Said(Now(session, card)));
+        TextBox now = Box(window, card.Id);
+        Assert.True(now.IsFocused);
+        Assert.Equal("첫 줄\n둘째 줄", now.Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+
+        Press(window, Avalonia.Input.Key.Y);
+
+        Assert.Equal(["첫 줄", "둘째 줄", "새로 쓰는 줄"], Said(Now(session, card)));
+        Assert.Equal("첫 줄\n둘째 줄\n새로 쓰는 줄", Box(window, card.Id).Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 줄_안을_고친_뒤_글_칸에서_Ctrl_Z는_칸과_모델을_함께_되돌린다() => HeadlessUi.Run(() =>
+    {
+        // 줄 수가 그대로면 판을 다시 그리지 않아 칸이 그대로다 — 되돌린 글이 그 칸에도 보여야 한다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] _) =
+            Stage("첫 줄", "둘째 줄");
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄\n둘째 줄이다";
+        box.CaretIndex = box.Text.Length;
+        Pause(window);
+        Assert.Equal(["첫 줄", "둘째 줄이다"], Said(card));
+
+        Press(window, Avalonia.Input.Key.Z);
+
+        Assert.Equal(["첫 줄", "둘째 줄"], Said(Now(session, card)));
+        TextBox now = Box(window, card.Id);
+        Assert.True(now.IsFocused);
+        Assert.Equal("첫 줄\n둘째 줄", now.Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.True(now.CaretIndex <= now.Text!.Length);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 아직_넣지_않은_글은_Ctrl_Z가_그것부터_걷는다() => HeadlessUi.Run(() =>
+    {
+        // 멈추기 전(넣기 전)에 누른 Ctrl+Z는 쓰던 글을 마지막으로 넣은 글로 돌린다 — 모델은 그대로다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] _) =
+            Stage("첫 줄", "둘째 줄");
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄\n둘째 줄 쓰는 중";
+        Dispatcher.UIThread.RunJobs();
+
+        Press(window, Avalonia.Input.Key.Z);
+
+        Assert.Equal(["첫 줄", "둘째 줄"], Said(Now(session, card)));
+        Assert.Equal("첫 줄\n둘째 줄", Box(window, card.Id).Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    /// <summary>되돌리기는 프로젝트를 스냅샷에서 새로 세운다 — 카드는 지금 프로젝트에서 다시 찾는다.</summary>
+    private static DialogueNode Now(AuthoringSession session, DialogueNode card) => session.Project.FindDialogue(card.Id)!;
+
+    /// <summary>초점이 있는 곳에서 Ctrl+그 글쇠를 누른다 — 창의 터널 처리기부터 지난다.</summary>
+    private static void Press(MainWindow window, Avalonia.Input.Key key)
+    {
+        Control target = (Control)window.FocusManager!.GetFocusedElement()!;
+        target.RaiseEvent(new Avalonia.Input.KeyEventArgs
+        {
+            RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+            Key = key,
+            KeyModifiers = Avalonia.Input.KeyModifiers.Control,
+            Source = target
+        });
+        Dispatcher.UIThread.RunJobs();
+    }
 
     private static List<string> Said(DialogueNode card) =>
         card.Script.ActiveLines.Select(line => card.Script.Text(line.Id).Text).ToList();

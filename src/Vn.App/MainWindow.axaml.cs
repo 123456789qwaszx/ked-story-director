@@ -139,7 +139,16 @@ public partial class MainWindow : Window
                     OnSaveClick(this, new RoutedEventArgs());
                     break;
 
-                // 주의: 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
+                // [대본] 카드 글 칸은 예외다 — 칸은 쓰다 멈출 때마다 글을 넣고(되돌리기 한 칸) 줄이 늘고 줄면 새 칸이 되어
+                //    칸 자체의 되돌리기 기록이 비어 있다. 그래서 거기서는 프로젝트 되돌리기 · 다시 실행이다(넣지 않은 글이
+                //    있으면 그것부터 걷는다).
+                case Avalonia.Input.Key.Z or Avalonia.Input.Key.Y when Graph.IsWritingFocused:
+                    args.Handled = true;
+                    bool redo = args.Key == Avalonia.Input.Key.Y;
+                    UiGuard.Run(_session, redo ? "다시 실행" : "되돌리기", () => Graph.UndoInWriting(redo));
+                    break;
+
+                // 주의: 다른 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
                 //    되돌리는 것이고, 그것을 프로젝트 되돌리기로 바꾸면 쓰던 문장이 통째로
                 //    날아간다. TextBox가 제 되돌리기를 먼저 하도록 둔다.
                 case Avalonia.Input.Key.Z when FocusManager?.GetFocusedElement() is not TextBox:
