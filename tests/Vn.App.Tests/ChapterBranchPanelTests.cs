@@ -275,36 +275,63 @@ public sealed class ChapterBranchPanelTests
     });
 
     [Fact]
-    public void 분기점을_끌어_에피소드에_놓으면_잇고_누르기만_하면_연결만_끊긴다() => HeadlessUi.Run(() =>
+    public void 분기점을_누르면_점선을_누른_것과_같은_분기_정보가_나오고_끊기지_않는다() => HeadlessUi.Run(() =>
     {
+        // [구성] 탭에서는 분기점으로 잇고 끊지 않는다 — 누르면 그 분기를 고른다(점선을 누른 것과 같다).
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
         DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
         DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
 
-        // 누르기만 한다 — 연결만 끊기고 분기점은 남는다.
         Ellipse knob = Assert.Single(Knobs(canvas));
         Press(knob);
         Release(canvas, KnobCenter(knob));
 
-        DialogueLineExtension cut = session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!;
-        Assert.Empty(cut.DetourTargetNodeIds);
-        Assert.Equal(1, cut.OpenDetours);
-        Assert.Empty(BranchLines(canvas));
+        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.True(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
+        Assert.Contains(
+            view.FindControl<StackPanel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
+            text => text.Text?.StartsWith(project.BranchEpisodeId, StringComparison.Ordinal) == true);
 
-        // 속 빈 점을 끌어 그 에피소드 카드에 놓는다 — 다시 이어진다.
-        knob = Assert.Single(Knobs(canvas));
-        Border target = Card(canvas, project.BranchEpisodeId);
-        Press(knob);
-        var onTarget = new Point(Canvas.GetLeft(target) + 20, Canvas.GetTop(target) + 20);
-        Move(canvas, onTarget);
-        Release(canvas, onTarget);
-
-        DialogueLineExtension joined = session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!;
-        Assert.Equal([branch.Id], joined.DetourTargetNodeIds);
-        Assert.Equal(0, joined.OpenDetours);
+        // 끊기지 않았다 — 분기도 점선도 그대로다.
+        Assert.Equal([branch.Id], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
         Assert.Single(BranchLines(canvas));
+
+        // 점선을 누른 것과 같은 분기를 고른다 — 그 점선이 강조된다.
+        Assert.True(Assert.Single(BranchLines(canvas)).StrokeThickness > 2);
+
+        // 끌어 다른 에피소드에 놓아도 잇지 않는다.
+        Border target = Card(canvas, "root");
+        Press(Assert.Single(Knobs(canvas)));
+        var onCard = new Point(Canvas.GetLeft(target) + 20, Canvas.GetTop(target) + 20);
+        Move(canvas, onCard);
+        Release(canvas, onCard);
+        Assert.Equal([branch.Id], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
+    });
+
+    [Fact]
+    public void 이어지지_않은_분기점을_누르면_이어지지_않았다고_말하고_조건_칸은_잠긴다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        session.Editor.SetExitTarget(Detour(session, caller), null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        Press(Assert.Single(Knobs(canvas)));
+
+        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.False(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
+        Assert.Contains(
+            view.FindControl<StackPanel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
+            text => text.Text?.Contains("이어지지 않음", StringComparison.Ordinal) == true);
+        Assert.Contains("[대본] 탭", view.FindControl<TextBlock>("BranchBlockedText")!.Text, StringComparison.Ordinal);
+
+        // 빈 판을 누르면 풀린다.
+        Press(canvas);
+        Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
     });
 
     [Fact]

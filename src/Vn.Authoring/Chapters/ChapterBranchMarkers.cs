@@ -10,8 +10,8 @@ namespace Vn.Authoring.Chapters;
 /// 표식은 <see cref="DialogueLineExtension.DetourTargetNodeIds"/> — <b>대사 줄</b>에 산다(한 줄에 여럿일 수 있다).
 /// 연출 그래프가 [＋ 분기]로 뚫고, 챕터 그래프는 그것을 <b>읽어서 그린다</b>.
 ///
-/// <b>챕터 그래프는 분기점을 만들지도 지우지도 않는다.</b> 그것은 연출 그래프의 일이다 — 같은 것의 주인이 둘이 되면
-/// 갈린다. 챕터 그래프가 하는 것은 이미 선 분기점을 에피소드에 잇고 끊는 것뿐이다(<see cref="PointsFor"/>).
+/// <b>챕터 그래프는 분기점을 만들지도 지우지도 잇고 끊지도 않는다.</b> 그것은 연출 그래프의 일이다 — 같은 것의 주인이
+/// 둘이 되면 갈린다. 챕터 그래프는 분기점을 보이고(<see cref="PointsFor"/>) 그 분기의 조건을 정한다.
 ///
 /// <b>간선이 아니다.</b> 챕터의 <see cref="ChapterEdge"/>는 <i>선택지</i>이고 문구·스탯변화·
 /// 관문을 진다. 분기는 조작을 단순하게 하려고 그중 아무것도 지지 않는다 —
@@ -80,7 +80,7 @@ public static class ChapterBranchMarkers
     /// 카드 하나의 분기점 — 이어진 분기든 연결만 끊은 분기점이든.
     /// </summary>
     /// <param name="FromEpisodeId">분기점이 선 에피소드.</param>
-    /// <param name="Port">그 분기점의 포트 — 잇고 끊는 것은 이것으로 한다(<see cref="Editing.ProjectEditor.SetExitTarget(ExitPort, string?)"/>).</param>
+    /// <param name="Port">그 분기점의 포트 — 차례 · 색 번호 · 신원(<see cref="Key"/>)이 여기서 나온다.</param>
     /// <param name="ToEpisodeId">다녀올 에피소드. 이어지지 않은 분기점이면 <c>null</c>이다.</param>
     public sealed record BranchPoint(string FromEpisodeId, ExitPort Port, string? ToEpisodeId)
     {
