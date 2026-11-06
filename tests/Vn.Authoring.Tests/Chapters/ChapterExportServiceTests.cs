@@ -68,6 +68,31 @@ public sealed class ChapterExportServiceTests : IDisposable
     }
 
     [Fact]
+    public void 간선의_스탯변화만_바뀌어도_다시_증명한다()
+    {
+        // 레코드의 글은 목록 내용을 싣지 않는다 — 스탯변화만 고친 간선이 같은 지문을 내면 옛 도착 스탯 · 도달성을 되쓴다.
+        // 편집기는 스탯변화를 늘 같은 꼴의 목록으로 적는다 — 그 안의 값만 다르다.
+        var service = new ChapterExportService();
+        ChapterEntry entry = Entry("ch01", Sound);
+
+        ChapterEntry WithTrust(int amount) => entry with
+        {
+            Model = new ChapterGraphModel(
+                entry.ChapterId, string.Empty,
+                entry.Model!.Episodes,
+                [entry.Model.Edges.Single() with { StatChanges = new List<StatDelta> { new("trust", amount) } }],
+                [], entry.Model.Stats, [], [])
+        };
+
+        ChapterValidationResult before = service.ValidationFor(WithTrust(1));
+        ChapterValidationResult after = service.ValidationFor(WithTrust(2));
+
+        Assert.Equal(2, service.ValidationComputeCount);
+        Assert.Equal(2, before.Reachability.SpansFor("ep2").Single(span => span.Key == "trust").Minimum);
+        Assert.Equal(3, after.Reachability.SpansFor("ep2").Single(span => span.Key == "trust").Minimum);
+    }
+
+    [Fact]
     public void 챕터마다_따로_기억한다()
     {
         var service = new ChapterExportService();
