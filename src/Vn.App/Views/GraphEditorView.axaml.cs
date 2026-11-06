@@ -249,6 +249,9 @@ public partial class GraphEditorView : UserControl
     /// <summary>판 왼쪽 하이어아키 (2026-10-30 HY3) — 셸이 내용을 채우고 고른 줄을 받는다(챕터 그래프의 것과 같은 컨트롤).</summary>
     internal StoryHierarchy HierarchyView => Hierarchy;
 
+    /// <summary>하이어아키 머리의 [＋] 새 챕터 — 셸이 클릭을 받고 플라이아웃의 과녁으로도 쓴다.</summary>
+    internal Button ChapterAddButton => AddChapterButton;
+
     /// <summary>하이어아키 기둥 접기 (2026-10-30 HC) — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
     internal HierarchyDock HierarchyDock { get; }
 

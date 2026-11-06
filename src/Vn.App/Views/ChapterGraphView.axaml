@@ -75,7 +75,8 @@
                             Padding="10,6"
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                             BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="*,Auto,Auto">
+                        <!-- 새 챕터 [＋]는 여기 두지 않는다 — [대본] 탭 하이어아키의 [＋]와 하이어아키 우클릭 「챕터 추가」로 만든다. -->
+                        <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="하이어아키" FontWeight="SemiBold" />
                                 <TextBlock x:Name="ChapterSummary"
@@ -84,13 +85,6 @@
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                             <Button Grid.Column="1"
-                                    x:Name="AddChapterButton"
-                                    Content="＋"
-                                    FontSize="12"
-                                    Padding="7,2"
-                                    VerticalAlignment="Top"
-                                    ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
-                            <Button Grid.Column="2"
                                     x:Name="FoldHierarchyButton"
                                     Content="‹"
                                     FontSize="12"
@@ -171,7 +165,7 @@
                     <!-- 빈 판의 첫걸음은 <b>둘 중 하나만</b> 선다. 프로젝트가 아직 없으면 [새 프로젝트]가, 프로젝트는
                          있는데 챕터가 하나도 없으면 [＋ 챕터]가 선다 — 안내문만 있으면
                          다음 할 일이 글로만 서 있으니, 누를 자리가 판 한가운데 함께 선다.
-                         배선은 셸: 각각 툴바의 [새로 만들기]·우측 기둥의 [＋]와 같은 길이다. -->
+                         배선은 셸: 각각 툴바의 [새로 만들기]·[대본] 탭 하이어아키의 [＋]와 같은 길이다. -->
                     <Button x:Name="EmptyNewProjectButton"
                             Content="새 프로젝트"
                             HorizontalAlignment="Center"

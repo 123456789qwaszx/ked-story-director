@@ -517,7 +517,7 @@ public partial class StoryHierarchy : UserControl
         {
             RowHost.Children.Add(new TextBlock
             {
-                Text = "챕터가 없습니다. ＋로 만드세요.",
+                Text = "챕터가 없습니다. 우클릭 「챕터 추가」로 만드세요.",
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
                 FontSize = 11,

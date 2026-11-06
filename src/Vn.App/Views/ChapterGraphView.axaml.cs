@@ -354,12 +354,9 @@ public partial class ChapterGraphView : UserControl
         }
     }
 
-    /// <summary>[＋] 새 챕터 — 셸이 클릭을 받고 플라이아웃의 과녁으로도 쓴다.</summary>
-    internal Button ChapterAddButton => AddChapterButton;
-
     /// <summary>
     /// 판 한가운데의 [＋ 챕터] — 프로젝트는 있는데 챕터가 하나도 없을 때만 보인다.
-    /// 클릭의 뜻은 우측 기둥의 [＋]와 같으므로 배선도 같은 셸이 짓는다.
+    /// 클릭의 뜻은 [대본] 탭 하이어아키의 [＋]와 같으므로 배선도 같은 셸이 짓는다.
     /// </summary>
     internal Button ChapterAddCenterButton => EmptyAddChapterButton;
 

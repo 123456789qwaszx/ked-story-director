@@ -162,7 +162,8 @@ public sealed class MainChromeTests
         // 새 자리는 챕터 그래프 뷰 안이고, 셸이 그 손잡이로 하이어아키(2026-10-30 — 챕터 목록을 이었다)를 짓는다.
         var chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Assert.Contains(chapterGraph, chapterGraph.HierarchyView.GetVisualAncestors());
-        Assert.Contains(chapterGraph, chapterGraph.ChapterAddButton.GetVisualAncestors());
+        // 새 챕터 [＋]는 [대본] 탭 하이어아키에 선다(ChapterAddButtonTests).
+        Assert.Null(chapterGraph.FindControl<Button>("AddChapterButton"));
 
         window.Close();
     });

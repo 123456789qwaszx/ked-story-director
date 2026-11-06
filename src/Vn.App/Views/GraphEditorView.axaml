@@ -55,9 +55,17 @@
                                 Padding="10,6"
                                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                                 BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto,Auto">
                                 <TextBlock Text="하이어아키" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <!-- 새 챕터 — 챕터는 이 탭에서 만든다([구성] 탭 하이어아키에는 이 단추가 없다). 배선은 셸이다. -->
                                 <Button Grid.Column="1"
+                                    x:Name="AddChapterButton"
+                                    Content="＋"
+                                    FontSize="12"
+                                    Padding="7,2"
+                                    VerticalAlignment="Top"
+                                    ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
+                                <Button Grid.Column="2"
                                     x:Name="FoldHierarchyButton"
                                     Content="‹"
                                     FontSize="12"
