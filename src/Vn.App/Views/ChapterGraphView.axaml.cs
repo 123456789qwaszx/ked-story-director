@@ -3561,14 +3561,15 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 조건 한 줄 — 라벨(고정) · 식 · 삭제. 식 칸은 남은 폭을 채운다 — 고정 폭이면 좁은 인스펙터에서 줄 끝의 [✕]가 밖으로
-    /// 밀려 지울 수 없다. 잘린 라벨은 마우스를 올리면 다 보인다.
+    /// 조건 한 줄 — 라벨(고정 폭 <see cref="ConditionLabelWidth"/>) · 식 · 삭제. 식 칸은 남은 폭을 채운다 — 고정 폭이면 좁은
+    /// 인스펙터에서 줄 끝의 [✕]가 밖으로 밀려 지울 수 없다. 잘린 라벨(…)은 마우스를 올리면 다 보인다 — 라벨 칸 전체가 손을
+    /// 받도록 투명한 바탕을 깐다(바탕 없는 글은 글자 획 위만 손을 받아, 「…」 근처에서는 풍선이 안 뜬다).
     /// </summary>
     private Control ConditionRow(ChapterCondition condition)
     {
         var row = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("96,*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*,Auto"),
             Tag = $"condition:{condition.Label}"
         };
 
@@ -3578,7 +3579,8 @@ public partial class ChapterGraphView : UserControl
             FontSize = 10,
             FontWeight = FontWeight.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Background = Brushes.Transparent
         };
         ToolTip.SetTip(label, condition.Label);
         row.Children.Add(label);
@@ -3599,6 +3601,9 @@ public partial class ChapterGraphView : UserControl
 
         return row;
     }
+
+    /// <summary>조건 표의 라벨 칸 폭 — 「성실 3 이상 · 요령 3 미만」쯤은 잘리지 않는다. 더 길면 「…」이고 손을 올리면 다 보인다.</summary>
+    internal const double ConditionLabelWidth = 150;
 
     // ── 스탯·조건 편집의 잔손 ───────────────────────────────────────────────
 
