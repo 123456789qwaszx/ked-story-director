@@ -410,6 +410,7 @@ public partial class GraphEditorView : UserControl
         _shapePreview = null;
         HideShapeOverlay();
         SlotLabelBox = null;
+        _finishSlot = null;   // 아직 적고 있으면 아래에서 칸을 새로 지으며 다시 잡는다
 
         // 고른 간선이 사라졌으면 그 간선을 설명하던 줄도 사라져야 한다 — 안 그러면
         // 방금 지운 간선의 이름이 띠에 남는다(늘 서 있던 설명이 그 자리를 덮고 있어서
@@ -2467,6 +2468,29 @@ public partial class GraphEditorView : UserControl
         {
             WritingFocusSink.Focus();
         }
+
+        // 열린 선택지 문구 칸도 딴 데를 누르면 닫는다 — 빈 판 · 카드는 초점을 받지 않아 칸이 초점을 쥔 채 남는다.
+        FinishSlotLater();
+    }
+
+    /// <summary>
+    /// 열린 선택지 문구 칸을 Enter처럼 닫는다 — 적은 문구는 넣고, 아무것도 안 적었으면 그냥 닫힌다. 닫기는 판을 다시 그리므로
+    /// 지금 도는 누르기 · 초점 처리가 끝난 뒤로 미룬다(§5-13). 그 사이에 칸이 이미 닫혔거나 새로 열렸으면 하지 않는다.
+    /// </summary>
+    private void FinishSlotLater()
+    {
+        if (_finishSlot is not { } finish)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "선택지 문구", () =>
+        {
+            if (ReferenceEquals(_finishSlot, finish))
+            {
+                finish();
+            }
+        }));
     }
 
     /// <summary>못 넣은 칸은 붉게, 사유는 풍선으로. <paramref name="problem"/>이 null이면 걷는다.</summary>
@@ -3080,8 +3104,12 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 문구를 적고 있는 칸. 없으면 null.</summary>
     private string? _editingSlot;
 
+    /// <summary>열린 문구 입력칸을 Enter처럼 닫는 일 — 칸이 열려 있을 때만 있다.</summary>
+    private Action? _finishSlot;
+
     /// <summary>
-    /// 문구 입력칸 — Enter 확정 · Esc 취소 · 딴 데를 누르면 취소.
+    /// 문구 입력칸 — Enter 확정 · Esc 취소. 딴 데(빈 판 · 카드)를 누르거나 초점이 떠나면 <b>Enter처럼</b> 닫는다 — 적은
+    /// 문구는 넣고, 아무것도 안 적었으면 그냥 닫힌다(<see cref="FinishSlotLater"/>).
     ///
     /// 이미 이어진 길이면 <b>그 간선의 문구를 고치고</b>, 아직 안 이었으면 적어만 둔다.
     /// 어느 쪽이든 <b>챕터의 선택지 사전에 배운다</b> — 문구의 주인은 챕터다(v9).
@@ -3101,6 +3129,7 @@ public partial class GraphEditorView : UserControl
         {
             _editingSlot = null;
             SlotLabelBox = null;
+            _finishSlot = null;
 
             string wanted = box.Text?.Trim() ?? string.Empty;
 
@@ -3125,11 +3154,12 @@ public partial class GraphEditorView : UserControl
         {
             if (string.Equals(_editingSlot, SlotKey(choice), StringComparison.Ordinal))
             {
-                Commit(keep: false);
+                FinishSlotLater();
             }
         });
 
         SlotLabelBox = box;
+        _finishSlot = () => Commit(keep: true);
         return box;
     }
 
