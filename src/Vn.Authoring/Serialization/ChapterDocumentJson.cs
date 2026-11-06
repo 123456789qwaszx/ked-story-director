@@ -171,11 +171,11 @@ internal static class ChapterDocumentJson
         Text(json["from"]),
         Text(json["to"]),
         Optional(json["optionLabel"]),
-        Optional(json["conditionLabel"]),
-        Optional(json["lockedMessage"]))
+        OptionalText(json["conditionLabel"]),
+        OptionalText(json["lockedMessage"]))
     {
         Auto = (bool?)json["auto"] ?? false,
-        VisibleConditionLabel = Optional(json["visibleConditionLabel"]),
+        VisibleConditionLabel = OptionalText(json["visibleConditionLabel"]),
         StatChanges = Take(json["statChanges"], change => new StatDelta(
             Text(change["key"]),
             (int?)change["amount"] ?? 0,
@@ -350,4 +350,7 @@ internal static class ChapterDocumentJson
     private static string Text(JsonNode? node) => (string?)node ?? string.Empty;
 
     private static string? Optional(JsonNode? node) => (string?)node;
+
+    /// <summary>비었으면 없는 것 — 간선의 조건 · 잠금 안내문은 빈 글자를 「없음」으로 읽는다.</summary>
+    private static string? OptionalText(JsonNode? node) => (string?)node is { } text && !string.IsNullOrWhiteSpace(text) ? text : null;
 }

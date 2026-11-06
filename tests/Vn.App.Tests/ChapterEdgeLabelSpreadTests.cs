@@ -128,6 +128,37 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
         Assert.Equal("그냥 간다", ToolTip.GetTip(label));
     });
 
+    [Fact]
+    public void 간선_패널에서_해금조건을_없음으로_돌리면_문구_위_조건_줄이_사라진다() => HeadlessUi.Run(() =>
+    {
+        // 「(없음)」이 빈 글자로 남으면 화면이 조건이 있는 것으로 읽어 「해금: 」이 남았다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        session.Editor.AddChapterStat("ch01", "trust");
+        session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
+        session.Editor.AddEdge("ch01", "root", "b", optionLabel: "간다");
+        Dispatcher.UIThread.RunJobs();
+
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        Canvas canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        view.SelectChapter("ch01");
+        view.SelectEdgeKey("root", "b", "간다");
+        Dispatcher.UIThread.RunJobs();
+
+        ComboBox unlock = view.FindControl<ComboBox>("EdgeConditionCombo")!;
+        unlock.SelectedItem = "신뢰높음";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(["해금: 신뢰높음"], Texts(((StackPanel)Assert.Single(Labels(canvas, "root", "b")).Child!).Children[0]));
+
+        unlock.SelectedItem = "(없음)";
+        Dispatcher.UIThread.RunJobs();
+
+        Border label = Assert.Single(Labels(canvas, "root", "b"));
+        Control row = Assert.Single(((StackPanel)label.Child!).Children);
+        Assert.Equal(ChapterGraphView.EdgeLabelRow.Option, row.Tag);
+        Assert.Null(session.Editor.FindChapter("ch01")!.Edges.Single().ConditionLabel);
+        Assert.Equal("(없음)", unlock.SelectedItem);
+    });
+
     private static List<string> Texts(Control row) =>
         ((StackPanel)row).Children.OfType<TextBlock>().Select(text => text.Text ?? string.Empty).ToList();
 

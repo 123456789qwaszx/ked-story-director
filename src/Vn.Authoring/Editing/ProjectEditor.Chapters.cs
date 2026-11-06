@@ -529,9 +529,9 @@ public sealed partial class ProjectEditor
 
             chapter.Edges[index] = edge with
             {
-                ConditionLabel = conditionLabel ?? edge.ConditionLabel,
-                VisibleConditionLabel = visibleConditionLabel ?? edge.VisibleConditionLabel,
-                LockedMessage = lockedMessage ?? edge.LockedMessage,
+                ConditionLabel = NoneIfBlank(conditionLabel ?? edge.ConditionLabel),
+                VisibleConditionLabel = NoneIfBlank(visibleConditionLabel ?? edge.VisibleConditionLabel),
+                LockedMessage = NoneIfBlank(lockedMessage ?? edge.LockedMessage),
                 StatChanges = statChanges is null ? edge.StatChanges : ParseDeltas(chapter, statChanges),
                 OptionLabel = optionLabel ?? edge.OptionLabel,
                 Auto = auto ?? edge.Auto
@@ -1475,12 +1475,18 @@ public sealed partial class ProjectEditor
                 $"간선 {fromEpisodeId}→{toEpisodeId}이 같은 선택지 문구로 이미 있습니다.");
         }
 
-        return new ChapterEdge(fromEpisodeId, toEpisodeId, optionLabel, conditionLabel, LockedMessage: null)
+        return new ChapterEdge(fromEpisodeId, toEpisodeId, optionLabel, NoneIfBlank(conditionLabel), LockedMessage: null)
         {
             Auto = auto,
             StatChanges = statChanges is null ? [] : ParseDeltas(chapter, statChanges)
         };
     }
+
+    /// <summary>
+    /// 빈 조건 · 잠금 안내문은 「없음」(null)이다 — 패널은 「(없음)」을 빈 글자로 보내는데, 빈 글자로 남기면 화면이 조건이 있는
+    /// 것으로 읽어 「해금: 」이 선다.
+    /// </summary>
+    private static string? NoneIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     /// <summary>간선의 신원 (출발, 도착, 문구)가 이미 있는가(v9). <paramref name="exceptIndex"/>의 간선은 빼고 본다.</summary>
     private static bool HasEdge(
