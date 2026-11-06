@@ -269,6 +269,12 @@ public partial class GraphEditorView : UserControl
     /// <summary>고른 카드가 화면 밖이면 그리로 옮긴다 — 하이어아키에서 고른 카드가 판에서 보이게.</summary>
     internal void RevealSelected() => ScrollToSelected();
 
+    /// <summary>
+    /// 카드를 두 번 눌렀다(글 칸 · 포트 · 선택지 칸 밖 — 글 칸의 두 번 누르기는 낱말 고르기다). 셸이 [구성] 탭의 그 에피소드로
+    /// 데려간다.
+    /// </summary>
+    internal event Action<string>? CardOpened;
+
     public GraphEditorView()
     {
         InitializeComponent();
@@ -2216,9 +2222,8 @@ public partial class GraphEditorView : UserControl
 
         card.PointerPressed += (_, args) => OnCardPressed(visual, args);
 
-        // ⛔ 카드 더블클릭 = "무대에서 본다"는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다
-        //    (그쪽에는 그래프가 없다 — 무대가 제 챕터 · 씬 선택기로 씬을 고른다).
-        //    더블클릭은 이제 두 번 누른 것일 뿐이다(첫 누름이 시작한 끌기는 놓을 때 끝난다).
+        // 카드 더블클릭 = [구성] 탭의 그 에피소드로 간다(OnCardPressed → CardOpened — 첫 누름이 시작한 끌기는 놓을 때 끝난다).
+        // ⛔ 옛 「무대에서 본다」는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다.
 
         return visual;
     }
@@ -4042,6 +4047,14 @@ public partial class GraphEditorView : UserControl
     {
         ReleaseWritingFocus();
         _session?.Select(card.NodeId);
+
+        // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다).
+        if (args.ClickCount >= 2 && args.GetCurrentPoint(card.Visual).Properties.IsLeftButtonPressed)
+        {
+            args.Handled = true;
+            CardOpened?.Invoke(card.NodeId);
+            return;
+        }
 
         // 범위 선택된 카드를 잡으면 무리가 함께 움직인다 (W40).
         if (_multiSelected.Contains(card.NodeId) && _multiSelected.Count > 1)

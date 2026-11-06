@@ -268,6 +268,9 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     internal event Action<string, string>? EpisodePicked;
 
+    /// <summary>에피소드 카드를 두 번 눌렀다(챕터, 에피소드) — 셸이 [대본] 탭의 그 카드로 데려간다.</summary>
+    internal event Action<string, string>? EpisodeOpened;
+
     /// <summary>밖에서 고른 에피소드를 비추는 중 — 그동안은 <see cref="EpisodePicked"/>를 알리지 않는다.</summary>
     private bool _showingOutside;
 
@@ -2116,6 +2119,17 @@ public partial class ChapterGraphView : UserControl
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제)로 흘러가면 방금 한 선택이 풀린다
             SelectEpisode(episode.EpisodeId);
 
+            // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다).
+            if (e.ClickCount >= 2)
+            {
+                if (_selectedChapterId is { } chapterId)
+                {
+                    EpisodeOpened?.Invoke(chapterId, episode.EpisodeId);
+                }
+
+                return;
+            }
+
             // 끌 채비 (v4). 아직 아무것도 안 적는다 — 움직여야 드래그다.
             Point position = e.GetPosition(GraphCanvas);
 
@@ -2136,7 +2150,36 @@ public partial class ChapterGraphView : UserControl
             _groupDelta = default;
         };
 
-        // ⛔ 카드 더블클릭이 대본 엑셀을 열던 배선은 2026-10-29(D2)에 엑셀 연동과 함께 걷혔다.
+        // 카드를 두 번 누르면 [대본] 탭의 그 카드로 간다(EpisodeOpened — 셸이 데려간다). ⛔ 대본 엑셀을 열던 옛 배선은
+        // 2026-10-29(D2)에 엑셀 연동과 함께 걷혔다.
+    }
+
+    /// <summary>
+    /// 고른 카드가 화면 밖이면 그 카드가 가운데 오게 스크롤한다 — [대본] 탭에서 두 번 눌러 넘어왔을 때 그 카드가 보이게.
+    /// </summary>
+    internal void RevealEpisode(string episodeId)
+    {
+        if (!_cardById.TryGetValue(episodeId, out Border? card))
+        {
+            return;
+        }
+
+        var cardRect = new Rect(
+            Canvas.GetLeft(card), Canvas.GetTop(card),
+            card.Bounds.Width > 0 ? card.Bounds.Width : CardWidth,
+            card.Bounds.Height > 0 ? card.Bounds.Height : CardHeight);
+        var viewRect = new Rect(
+            GraphScroll.Offset.X / _zoom, GraphScroll.Offset.Y / _zoom,
+            GraphScroll.Viewport.Width / _zoom, GraphScroll.Viewport.Height / _zoom);
+
+        if (viewRect.Contains(cardRect))
+        {
+            return;
+        }
+
+        GraphScroll.Offset = new Vector(
+            Math.Max(0, (cardRect.Center.X * _zoom) - (GraphScroll.Viewport.Width / 2)),
+            Math.Max(0, (cardRect.Center.Y * _zoom) - (GraphScroll.Viewport.Height / 2)));
     }
 
     /// <summary>

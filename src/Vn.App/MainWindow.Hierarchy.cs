@@ -86,6 +86,11 @@ public partial class MainWindow
                 UiGuard.Run(_session, "장면 옮기기", () => OnHierarchyDropped(source, target));
         }
 
+        // 카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다.
+        ChapterGraph.EpisodeOpened += (chapterId, episodeId) =>
+            UiGuard.Run(_session, "[대본] 탭으로", () => OpenInDirector(chapterId, episodeId));
+        Graph.CardOpened += nodeId => UiGuard.Run(_session, "[구성] 탭으로", () => OpenInChapterGraph(nodeId));
+
         // 챕터 그래프에서 고른 에피소드가 세션의 선택(그 카드)이 된다 — 연출 그래프로 넘어가도 같은 것을 본다.
         ChapterGraph.EpisodePicked += (chapterId, episodeId) => UiGuard.Run(_session, "선택 맞추기", () =>
         {
@@ -105,6 +110,38 @@ public partial class MainWindow
                 _syncingSelection = false;
             }
         });
+    }
+
+    /// <summary>
+    /// [구성] 판에서 에피소드 카드를 두 번 눌렀다 — [대본] 탭으로 넘어가 그 챕터의 판을 열고 그 카드를 고르고 보이게 한다.
+    /// </summary>
+    private void OpenInDirector(string chapterId, string episodeId)
+    {
+        if (EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is not { } card)
+        {
+            return;
+        }
+
+        MainTabs.SelectedItem = GraphTabItem;
+        OnDirectorHierarchyPicked(new HierarchyPick(HierarchyKind.Episode, chapterId, EpisodeId: episodeId));
+        _session.Select(card.Id);
+    }
+
+    /// <summary>
+    /// [대본] 판에서 카드를 두 번 눌렀다 — 에피소드 카드면 [구성] 탭으로 넘어가 그 챕터와 에피소드를 고르고 보이게 한다. 챕터
+    /// 판의 카드가 아니면(낙서판) 갈 곳이 없어 아무 일도 없다.
+    /// </summary>
+    private void OpenInChapterGraph(string nodeId)
+    {
+        if (PickOf(_session.Project.FindNode(nodeId)) is not { ChapterId: { } chapterId, EpisodeId: { } episodeId })
+        {
+            return;
+        }
+
+        MainTabs.SelectedItem = ChapterTabItem;
+        ChapterGraph.SelectChapter(chapterId);
+        ChapterGraph.SelectEpisode(episodeId);
+        Dispatcher.UIThread.Post(() => ChapterGraph.RevealEpisode(episodeId), DispatcherPriority.Background);
     }
 
     /// <summary>
