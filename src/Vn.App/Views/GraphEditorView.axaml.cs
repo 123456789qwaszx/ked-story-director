@@ -2383,6 +2383,16 @@ public partial class GraphEditorView : UserControl
 
         UiGuard.Run(session, "글 넣기", () =>
         {
+            // 분기로 다녀오는 카드의 첫머리 조건 줄은 [구성] 탭이 정한다 — 글 칸에서 지우거나 고쳤으면 그 줄을 되살리고, 조건
+            // 줄 바깥(위 · 아래)에 쓴 줄은 조건 안쪽으로 모은다.
+            bool gateRestored = false;
+
+            if (EntryGateOf(nodeId) is { } gate && KeepEntryGate(text, gate) is { } kept)
+            {
+                text = kept;
+                gateRestored = true;
+            }
+
             // 처음 보인 글의 줄 신원을 잇는다(2026-10-30) — 같은 자리에서 고친 줄은 그 줄이다. 이게 없으면 동기화가 내용만
             // 보고 짝을 맞추다 두 줄 이상 고친 구간에서 "확신할 수 없다"며 통째로 거절했다.
             string withIds = _writingLayouts.TryGetValue(nodeId, out ScenarioWritingLayout? shownLayout)
@@ -2434,8 +2444,110 @@ public partial class GraphEditorView : UserControl
             {
                 session.SetStatus($"글을 넣었습니다 — {outcome.Summary()}. 되돌리기 한 번이면 돌아갑니다.");
             }
+
+            if (gateRestored)
+            {
+                session.SetStatus("분기 조건 줄을 지켰습니다 — 조건 줄은 되살리고 바깥에 쓴 줄은 조건 안쪽으로 모았습니다. " +
+                                  "이 카드에 들어갈 조건은 [구성] 탭의 분기 칸에서 바꿉니다.");
+            }
         });
     }
+
+    /// <summary>
+    /// 그 카드의 첫머리 조건 줄 — 분기로 다녀오는 카드에 조건이 걸려 있을 때만이다. 글 칸에 보인 그대로의 두 줄(바깥쪽
+    /// <c>&lt;&lt;if …&gt;&gt;</c>과 그 짝 <c>&lt;&lt;endif&gt;&gt;</c>)이다.
+    /// <list type="bullet">
+    /// <item>[구성] 탭이 아는 모양(첫 줄 <c>if</c> 하나 + 꼬리 <c>endif</c> 하나)이면 그 두 줄이다.</item>
+    /// <item>그 모양이 이미 깨졌으면(조건 줄 바깥에 줄이 있다 — [구성] 탭이 「여기서 고칠 수 없습니다」를 말한다) 글 칸의 처음
+    /// <c>if</c> 줄과 마지막 <c>endif</c> 줄이다 — 다음에 넣을 때 바깥 줄을 안쪽으로 모아 바로잡는다.</item>
+    /// </list>
+    /// 조건이 없는 분기 카드에 작가가 중간에 쓴 조건은 건드리지 않는다(그때는 [구성] 탭이 「언제나」로 읽는다).
+    /// </summary>
+    private (string Head, string Tail)? EntryGateOf(string nodeId)
+    {
+        if (_session is not { } session ||
+            !_branchEntries.ContainsKey(nodeId) ||
+            _writingShown.GetValueOrDefault(nodeId) is not { } shown)
+        {
+            return null;
+        }
+
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, nodeId, session.Definition);
+
+        if (state is not { Label: not null, Editable: true } and not { Editable: false })
+        {
+            return null;
+        }
+
+        List<string> lines = WritingLines(shown);
+        int head = lines.FindIndex(IsIfLine);
+        int tail = lines.FindLastIndex(IsEndIfLine);
+
+        return head >= 0 && tail > head ? (lines[head].Trim(), lines[tail].Trim()) : null;
+    }
+
+    /// <summary>
+    /// 첫머리 조건 줄을 지킨 글 — 조건 줄이 맨 처음과 맨 끝에 보인 그대로 있으면 <c>null</c>(손댈 것이 없다). 아니면:
+    /// <list type="bullet">
+    /// <item>지우거나 고친 조건 줄은 보인 그대로 되살린다.</item>
+    /// <item>조건 줄 위 · 아래(바깥)에 쓴 줄은 조건 안쪽으로 모은다 — 위에 쓴 줄은 안쪽 맨 위, 아래에 쓴 줄은 안쪽 맨 아래다.</item>
+    /// </list>
+    /// 사이의 대사는 사람이 쓴 그대로다. 대사를 다 지웠으면 손대지 않는다 — 빈 글은 넣지 않는 규칙이 그대로 받는다.
+    /// </summary>
+    private static string? KeepEntryGate(string text, (string Head, string Tail) gate)
+    {
+        List<string> lines = WritingLines(text);
+
+        if (lines.Count >= 2 &&
+            string.Equals(lines[0].Trim(), gate.Head, StringComparison.Ordinal) &&
+            string.Equals(lines[^1].Trim(), gate.Tail, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        // 바깥 if — 보인 그대로면 어디에 있든 그 줄이고, 고쳤으면 맨 첫 줄의 if다(지웠으면 없다).
+        int head = lines.FindIndex(line => string.Equals(line.Trim(), gate.Head, StringComparison.Ordinal));
+
+        if (head < 0 && lines.Count > 0 && IsIfLine(lines[0]))
+        {
+            head = 0;
+        }
+
+        if (head >= 0)
+        {
+            lines.RemoveAt(head);
+        }
+
+        // 바깥 endif — 안쪽 if보다 endif가 하나 더 많으면 마지막 endif가 바깥 것이다(지웠으면 수가 같다).
+        if (lines.Count(IsEndIfLine) > lines.Count(IsIfLine))
+        {
+            lines.RemoveAt(lines.FindLastIndex(IsEndIfLine));
+        }
+
+        return lines.All(string.IsNullOrWhiteSpace) ? null : string.Join('\n', [gate.Head, .. lines, gate.Tail]);
+    }
+
+    /// <summary>글 칸의 줄들 — 앞뒤의 빈 줄은 뺀다.</summary>
+    private static List<string> WritingLines(string text)
+    {
+        List<string> lines = [.. text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')];
+
+        while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[0]))
+        {
+            lines.RemoveAt(0);
+        }
+
+        while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+        {
+            lines.RemoveAt(lines.Count - 1);
+        }
+
+        return lines;
+    }
+
+    private static bool IsIfLine(string line) => line.TrimStart().StartsWith("<<if", StringComparison.Ordinal);
+
+    private static bool IsEndIfLine(string line) => string.Equals(line.Trim(), "<<endif>>", StringComparison.Ordinal);
 
     /// <summary>쓰다가 이만큼 멈추면 넣는다.</summary>
     private static readonly TimeSpan LiveWritingDelay = TimeSpan.FromMilliseconds(400);

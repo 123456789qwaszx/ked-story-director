@@ -361,6 +361,14 @@ public partial class DialogueNodeEditor : UserControl
             UiGuard.Run(_session, "줄 삭제", () => _session!.Editor.RetireScriptLine(nodeId, lineId));
         };
 
+        // 분기 조건이 걸린 첫 줄은 지우지 않는다(줄 칸의 [✕ 삭제]와 같은 까닭).
+        if (GuardsEntry(node) && string.Equals(node.Script.ActiveLines.FirstOrDefault()?.Id, lineId, StringComparison.Ordinal))
+        {
+            remove.IsEnabled = false;
+            ToolTip.SetTip(remove, EntryGuardTip);
+            ToolTip.SetShowOnDisabled(remove, true);
+        }
+
         // 마우스 지점에서 연다 —카드 기준으로 뜨면 클릭한 곳과 멀어 헷갈린다.
         flyout.ShowAt(anchor, showAtPointer: true);
     }
@@ -1184,15 +1192,31 @@ public partial class DialogueNodeEditor : UserControl
         string nodeId = _nodeId ?? string.Empty;
         string lineId = resolved.Line.LineId;
         var lineRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        lineRow.Children.Add(SmallButton("▲ 위로", () =>
-            _session!.Editor.MoveScriptLine(nodeId, lineId, -1)));
-        lineRow.Children.Add(SmallButton("▼ 아래로", () =>
-            _session!.Editor.MoveScriptLine(nodeId, lineId, 1)));
+        Button up = SmallButton("▲ 위로", () =>
+            _session!.Editor.MoveScriptLine(nodeId, lineId, -1));
+        Button down = SmallButton("▼ 아래로", () =>
+            _session!.Editor.MoveScriptLine(nodeId, lineId, 1));
         Button remove = SmallButton("✕ 삭제", () =>
             _session!.Editor.RetireScriptLine(nodeId, lineId));
         ToolTip.SetTip(remove, "대본에서 이 줄을 뺍니다.");
+        lineRow.Children.Add(up);
+        lineRow.Children.Add(down);
         lineRow.Children.Add(remove);
         panel.Children.Add(lineRow);
+
+        // 분기 조건이 걸린 첫 줄은 지우거나 옮기지 않는다 — 첫 줄의 조건이 함께 사라지거나 따라 내려가 조건 구조가 깨진다.
+        // 둘째 줄을 위로 올리는 것도 같다(조건 위로 올라선다). 글은 카드 글 칸에서 고친다 — 거기서는 조건 줄이 지켜진다.
+        int row = node.Script.ActiveLines.ToList().FindIndex(line => string.Equals(line.Id, lineId, StringComparison.Ordinal));
+
+        if (GuardsEntry(node) && row is 0 or 1)
+        {
+            foreach (Button guarded in row == 0 ? [down, remove] : new[] { up })
+            {
+                guarded.IsEnabled = false;
+                ToolTip.SetTip(guarded, EntryGuardTip);
+                ToolTip.SetShowOnDisabled(guarded, true);
+            }
+        }
 
         LineMetaPanel = panel;
         new Flyout { Content = panel }.ShowAt(anchor);
@@ -1476,6 +1500,15 @@ public partial class DialogueNodeEditor : UserControl
 
         return 0;
     }
+
+    /// <summary>분기 조건이 걸린 첫 줄의 막힌 손짓이 하는 말.</summary>
+    private const string EntryGuardTip =
+        "분기 조건이 걸린 첫 줄이라 지우거나 옮길 수 없습니다 — 조건 구조가 깨집니다. 글은 카드의 글 칸에서 고치세요(조건 줄은 지켜집니다). " +
+        "조건은 [구성] 탭의 분기 칸에서 바꿉니다.";
+
+    /// <summary>첫머리 조건을 지켜야 하는 분기 카드인가(<see cref="BranchEntryCondition.IsGuarded"/>).</summary>
+    private bool GuardsEntry(DialogueNode node) =>
+        _session is { } session && BranchEntryCondition.IsGuarded(session.Project, node.Id, session.Definition);
 
     private static Button SmallButton(string glyph, Action action)
     {

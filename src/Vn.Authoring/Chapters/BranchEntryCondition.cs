@@ -66,8 +66,8 @@ public static class BranchEntryCondition
             head is not [{ ConditionId: { } conditionId }])
         {
             return State.Refuse(
-                "이 대본의 조건 구조는 대사 편집기에서 지은 것이라 여기서 고칠 수 없습니다. " +
-                "그 노드를 열어서 고치세요.");
+                "조건 줄(<<if>> · <<endif>>) 바깥에 쓴 줄이 있거나 조건이 여럿이라 여기서 고칠 수 없습니다. " +
+                "[대본] 탭에서 이 카드의 글 칸을 고치면 바깥 줄이 조건 안쪽으로 모여 다시 고칠 수 있습니다.");
         }
 
         // 공급된 조건의 `이름`이 곧 챕터 조건의 라벨이다 (ChapterBoardSupply).
@@ -95,6 +95,19 @@ public static class BranchEntryCondition
                HasEntryShape(node, first) &&
                project.EnumerateNodes().OfType<DialogueNode>().Any(caller =>
                    caller.LineExtensions.Any(extension => extension.DetourTargetNodeIds.Contains(node.Id)));
+    }
+
+    /// <summary>
+    /// 첫머리 조건을 지켜야 하는 카드인가 — 분기로 다녀오는 카드이고 툴이 아는 모양의 조건이 걸려 있다. 이런 카드의 첫 줄을
+    /// 지우거나 옮기면 조건 구조가 깨지므로(첫 줄의 <c>BeginIf</c>가 함께 사라지거나 따라 내려간다) 화면이 그 손짓을 막는다.
+    /// </summary>
+    public static bool IsGuarded(StoryProject project, string nodeId, GameDefinition? definition = null)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        return project.EnumerateNodes().OfType<DialogueNode>().Any(caller => caller.LineExtensions.Any(extension =>
+                   extension.DetourTargetNodeIds.Contains(nodeId, StringComparer.Ordinal))) &&
+               Read(project, nodeId, definition) is { Label: not null, Editable: true };
     }
 
     /// <summary>툴이 아는 조건 모양 — 첫 줄에 <c>BeginIf</c> 하나, 꼬리에 <c>EndIf</c> 하나.</summary>
