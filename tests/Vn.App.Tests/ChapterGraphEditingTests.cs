@@ -250,7 +250,6 @@ public sealed class ChapterGraphEditingTests
 
         string[] gone =
         [
-            "에피소드",
             "길 하나 = 선택지 하나",
             "대사엔트리"
         ];
@@ -267,8 +266,12 @@ public sealed class ChapterGraphEditingTests
             Assert.DoesNotContain(standing, text => text.Contains(phrase, StringComparison.Ordinal));
         }
 
-        // 남아야 하는 것 — 선택지 머리글은 표의 이름표라 안내가 아니다.
+        // 머리글 「에피소드」 — 칸 이름표 「에피소드ID」는 머리글이 아니라 무슨 칸인지 말하는 이름표다.
+        Assert.DoesNotContain("에피소드", standing);
+
+        // 남아야 하는 것 — 선택지 머리글과 칸 이름표는 표의 이름표라 안내가 아니다.
         Assert.Contains(standing, text => text.Contains("선택지", StringComparison.Ordinal));
+        Assert.Contains("에피소드ID", standing);
     });
 
     [Fact]

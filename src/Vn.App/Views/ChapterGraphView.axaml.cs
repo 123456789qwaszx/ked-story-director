@@ -434,8 +434,6 @@ public partial class ChapterGraphView : UserControl
                 UiGuard.Run(_session, "챕터 표시 이름 저장", ApplyChapterDisplayName);
             }
         };
-        ApplySceneGroupButton.Click += (_, _) =>
-            UiGuard.Run(_session, "장면ID 일괄 저장", ApplySceneIdToGroup);
         SceneNameBox.KeyDown += (_, e) =>
         {
             if (e.Key == Avalonia.Input.Key.Enter)
@@ -3478,28 +3476,6 @@ public partial class ChapterGraphView : UserControl
         ChapterEdit(
             () => _session!.Editor.UpdateChapterDisplayName(chapterId, ChapterDisplayNameBox.Text),
             $"챕터 '{chapterId}'의 표시 이름을 저장했습니다.");
-    }
-
-    /// <summary>현재 장면을 이루는 모든 에피소드의 안정 ID를 한 저장으로 바꾼다.</summary>
-    internal void ApplySceneIdToGroup()
-    {
-        if (_selectedEpisodeId is null || _selectedChapterId is not { } chapterId ||
-            SelectedModel?.FindEpisode(_selectedEpisodeId) is not { } selected)
-        {
-            _session?.SetStatus("일괄 변경할 장면의 에피소드를 다시 골라 주세요.");
-            return;
-        }
-
-        string sceneId = SceneIdBox.Text?.Trim() ?? string.Empty;
-        string[] episodeIds = SelectedModel.Episodes
-            .Where(episode => string.Equals(
-                episode.EffectiveSceneId, selected.EffectiveSceneId, StringComparison.Ordinal))
-            .Select(episode => episode.EpisodeId)
-            .ToArray();
-
-        ChapterEdit(
-            () => _session!.Editor.UpdateEpisodeScenes(chapterId, episodeIds, sceneId),
-            $"장면 에피소드 {episodeIds.Length}개의 장면ID를 저장했습니다.");
     }
 
     internal void DeleteSelectedEdge()
