@@ -54,7 +54,8 @@ public sealed class GraphRubberBandTests : IDisposable
         Band(graph, new Point(300, 300), new Point(215, 330));
 
         Assert.Equal("선택지 · root → b", Title(graph));
-        Assert.Contains("문구: 「교무실로 간다」", Facts(graph));
+        Assert.Equal("교무실로 간다", graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<TextBox>()
+            .First(box => box.IsEffectivelyVisible && box.Tag as string == "summary-label").Text);   // 문구는 고치는 칸에 선다
         Assert.Contains("해금조건: 용기 — 아니면 잠긴 채 보입니다", Facts(graph));
         Assert.Contains("스탯변화: 신뢰 +2", Facts(graph));
         Assert.Equal(1.4, Lane(graph, "a").StrokeThickness);

@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
@@ -11,8 +13,8 @@ namespace Vn.App;
 
 /// <summary>
 /// <b>[대본] 탭 인스펙터의 선 설명</b> — 판에서 선(선택지 레인 · 분기 선)을 누르거나 범위 선택으로 고르면 인스펙터가 그
-/// 선을 설명한다. 선택지는 문구 · 표시조건 · 해금조건 · 스탯변화를, 분기는 그 조건을 보인다. 고치는 자리는 [구성] 탭이라
-/// 「[구성] 탭에서 …」 단추가 그리로 데려간다.
+/// 선을 설명한다. 선택지는 문구 · 표시조건 · 해금조건 · 스탯변화를, 분기는 그 조건을 보인다. 선택지 문구는 여기서 고치고
+/// (자동 길 ↔ 선택지도 여기서 바뀐다), 조건 · 스탯변화를 고치는 자리는 [구성] 탭이라 「[구성] 탭에서 …」 단추가 그리로 데려간다.
 /// </summary>
 public partial class MainWindow
 {
@@ -78,11 +80,10 @@ public partial class MainWindow
         }
 
         Graph.SetInspectorHeader(
-            $"선택지 · {TitleOf(chapter, edge.FromEpisodeId)} → {TitleOf(chapter, edge.ToEpisodeId)}", "고치는 곳은 [구성] 탭입니다");
+            $"선택지 · {TitleOf(chapter, edge.FromEpisodeId)} → {TitleOf(chapter, edge.ToEpisodeId)}",
+            "문구는 여기서, 조건 · 스탯변화는 [구성] 탭에서 고칩니다");
 
-        Fact("문구", edge.Auto ? "AUTO — 플레이어 입력 없이 넘어갑니다"
-            : edge.HasNoOptionLabel ? "⚠ 문구 없음"
-            : $"「{edge.OptionLabel}」");
+        ChoiceLabelEditor(choice, chapter, edge);
 
         if (edge.VisibleConditionLabel is { } visible)
         {
@@ -121,6 +122,135 @@ public partial class MainWindow
             ChapterGraph.SelectChapter(choice.ChapterId);
             ChapterGraph.SelectEdgeKey(from, to, label);
         });
+    }
+
+    /// <summary>
+    /// 「문구」 칸 — 고치고 Enter(또는 딴 데를 누르면) 넣고, Esc는 되돌린다. 자동 길(AUTO)에 문구를 적으면 선택지가 되고, 그
+    /// 에피소드의 하나뿐인 선택지 문구를 지우면 자동 길이 된다(<see cref="ApplyChoiceLabel"/>).
+    /// </summary>
+    private void ChoiceLabelEditor(GraphEditorView.PickedLine.Choice choice, ChapterGraphModel chapter, ChapterEdge edge)
+    {
+        string shown = edge.Auto ? string.Empty : edge.OptionLabel?.Trim() ?? string.Empty;
+        var box = new TextBox
+        {
+            Text = shown,
+            FontSize = 12,
+            PlaceholderText = "비우면 AUTO — 플레이어 입력 없이 넘어갑니다",
+            Tag = "summary-label"
+        };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+        row.Children.Add(new TextBlock
+        {
+            Text = "문구",
+            FontSize = 12,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
+        });
+        Grid.SetColumn(box, 1);
+        row.Children.Add(box);
+        DirectorSummary.Children.Add(row);
+
+        if (edge.Auto)
+        {
+            Note("AUTO — 플레이어 입력 없이 넘어갑니다. 문구를 적으면 선택지가 됩니다.");
+        }
+        else if (edge.HasNoOptionLabel)
+        {
+            Note("⚠ 문구 없음 — 선택지에는 문구가 있어야 합니다.");
+        }
+
+        bool applied = false;
+
+        void Apply()
+        {
+            if (applied)
+            {
+                return;
+            }
+
+            applied = true;
+            ApplyChoiceLabel(choice, chapter, edge, box.Text?.Trim() ?? string.Empty);
+        }
+
+        box.KeyDown += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = true;
+                Apply();
+            }
+            else if (args.Key == Key.Escape)
+            {
+                args.Handled = true;
+                box.Text = shown;
+            }
+        });
+
+        // 딴 데를 누르면 Enter처럼 넣는다 — 넣기는 판 · 인스펙터를 다시 세우므로 초점 처리가 끝난 뒤로 미룬다.
+        box.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "선택지 문구", Apply));
+    }
+
+    /// <summary>
+    /// 선택지 문구를 넣는다. 같으면 아무것도 안 한다.
+    /// <list type="bullet">
+    /// <item>문구를 적었다 — 그 문구의 선택지다. 자동 길이었으면 선택지가 된다.</item>
+    /// <item>문구를 지웠다 — 그 에피소드의 길이 이것 하나면 자동 길이 된다(자동 길은 같은 장면 안에서만 — 장면을 넘으면 넣지
+    /// 않고 말한다). 길이 둘 이상이면 넣지 않는다 — 문구 없는 선택지는 오류다.</item>
+    /// </list>
+    /// 넣은 뒤에는 바뀐 신원(출발 · 도착 · 문구)으로 그 레인을 다시 고른다 — 판이 다시 그려지며 고른 선이 풀리기 때문이다.
+    /// </summary>
+    private void ApplyChoiceLabel(
+        GraphEditorView.PickedLine.Choice choice, ChapterGraphModel chapter, ChapterEdge edge, string wanted)
+    {
+        string current = edge.Auto ? string.Empty : edge.OptionLabel?.Trim() ?? string.Empty;
+
+        if (string.Equals(wanted, current, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        bool toAuto = wanted.Length == 0;
+
+        if (toAuto)
+        {
+            int ways = chapter.Edges.Count(item => string.Equals(item.FromEpisodeId, edge.FromEpisodeId, StringComparison.Ordinal));
+
+            if (ways > 1)
+            {
+                _session.SetStatus("문구를 비우지 않았습니다 — 길이 둘 이상인 에피소드의 선택지에는 문구가 있어야 합니다. " +
+                                   "자동 길(AUTO)은 하나뿐인 길만 될 수 있습니다.");
+                ShowSelectedNode();
+                return;
+            }
+
+            if (chapter.FindEpisode(edge.FromEpisodeId) is { } from && chapter.FindEpisode(edge.ToEpisodeId) is { } to &&
+                !string.Equals(from.EffectiveSceneId, to.EffectiveSceneId, StringComparison.Ordinal))
+            {
+                _session.SetStatus("문구를 비우지 않았습니다 — 자동 길(AUTO)은 같은 장면 안에서만 이어집니다. " +
+                                   "두 에피소드를 같은 장면에 두거나 문구를 남겨 주세요.");
+                ShowSelectedNode();
+                return;
+            }
+        }
+
+        _session.Editor.UpdateEdge(
+            choice.ChapterId, edge.FromEpisodeId, edge.ToEpisodeId,
+            matchOptionLabel: edge.OptionLabel ?? string.Empty,
+            optionLabel: wanted,
+            auto: toAuto);
+
+        _session.SetStatus(toAuto
+            ? "문구를 지워 자동 길(AUTO)이 됐습니다 — 플레이어 입력 없이 넘어갑니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
+            : edge.Auto
+                ? $"자동 길이 선택지 「{wanted}」가 됐습니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
+                : $"선택지 문구를 「{wanted}」로 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+
+        string chapterId = choice.ChapterId;
+        string fromId = edge.FromEpisodeId;
+        string toId = edge.ToEpisodeId;
+        Dispatcher.UIThread.Post(
+            () => UiGuard.Run(_session, "선택지 다시 고르기", () => Graph.SelectChoiceRail(chapterId, fromId, toId, wanted)),
+            DispatcherPriority.Background);
     }
 
     private void FillExitSummary(GraphConnectionProjection connection)
