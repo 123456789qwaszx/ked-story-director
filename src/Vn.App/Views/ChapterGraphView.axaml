@@ -276,45 +276,8 @@
                              [대본] 탭(카드 아래 칸)에서 한다. -->
                         <TextBlock x:Name="ChoiceHeaderText" Text="선택지" FontWeight="SemiBold" FontSize="12"
                                    Margin="0,10,0,0" />
-                        <StackPanel x:Name="EdgeListPanel" Spacing="3">
-                            <!-- 잇기 폼 — 코드가 목록 안에서 자리를 옮긴다(클릭한 줄 바로 아래).
-                                 문구는 글자 칸에 지금 문구가 그대로 적혀 서고, 거기서 고친다. Enter가 [수정]과 같다. -->
-                            <!-- 한 줄 폼 — 선택지 · 도착 · 수정을 한 줄에
-                                 둔다. 두 줄로 접히면 목록의 흐름이 끊긴다. -->
-                            <!-- 툴팁 없음 — 목록 위에 뜨는 설명 상자가
-                                 화면을 가린다. 자리표시 글(선택지·도착)로 충분하다. -->
-                            <!-- 읽는 순서가 곧 뜻이다:
-                                 [이 선택지를 고르면] → [여기로 간다]. 화살표가 그 관계다. -->
-                            <!-- 폼 = 배선 한 줄 + 스탯변화 줄들. 스탯 수치를
-                                 에피소드 노드에서 바로 만질 수 있어야 한다. 값이 사는 곳은
-                                 그대로 그 길(간선)이다 — 손만 여기로 왔다. -->
-                            <StackPanel x:Name="EdgeFormHost" Spacing="4" IsVisible="False">
-                            <Grid x:Name="EdgeFormPanel" ColumnDefinitions="*,Auto,*,Auto" IsVisible="False">
-                                <!-- 선택지가 먼저다. 목록의 줄이
-                                     `문구 → 도착`으로 읽히므로, 그 줄을 눌러 열리는 폼도
-                                     같은 순서여야 눈이 자리를 다시 찾지 않는다.
-                                     화살표는 →이고 관계가 그대로 읽힌다:
-                                     "이 선택지를 고르면 → 여기로 간다". -->
-                                <TextBox Grid.Column="0" x:Name="EdgeLabelBox" FontSize="11"
-                                         HorizontalAlignment="Stretch"
-                                         PlaceholderText="선택지 문구" />
-                                <TextBlock Grid.Column="1"
-                                           Text="→"
-                                           FontSize="12"
-                                           Opacity="0.55"
-                                           Margin="6,0"
-                                           VerticalAlignment="Center" />
-                                <ComboBox Grid.Column="2" x:Name="EdgeTargetCombo" FontSize="11"
-                                          HorizontalAlignment="Stretch"
-                                          PlaceholderText="도착" />
-                                <Button Grid.Column="3" x:Name="AddEdgeButton" Content="수정" FontSize="11" Margin="4,0,0,0" />
-                            </Grid>
-                            <CheckBox x:Name="EdgeFormAutoCheck" Content="자동 진행" FontSize="11"
-                                      ToolTip.Tip="플레이어 입력 없이 같은 장면의 다음 에피소드로 진행합니다. 자동 길은 유일해야 하며 문구·조건·스탯변화를 가질 수 없습니다." />
-                            <TextBlock Text="스탯변화 — 이 길을 건너면" FontSize="10" Opacity="0.6" />
-                            <StackPanel x:Name="EdgeFormStatsHost" Spacing="3" />
-                            </StackPanel>
-                        </StackPanel>
+                        <!-- 선택지 줄 — 누르면 그 줄 아래에 문구 · 도착 · 조건 · 스탯변화가 펼쳐진다(읽기 전용). 다시 누르면 접힌다. -->
+                        <StackPanel x:Name="EdgeListPanel" Spacing="3" />
 
                         <!-- 대사 미리보기 — 선택지 아래에 접어 둔다. 에피소드 노드만으로는 정보가
                              모자라서다. 원천은 그 에피소드 카드의 대본이고,
