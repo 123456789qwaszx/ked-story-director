@@ -186,7 +186,7 @@ public sealed class StoryHierarchyTests : IDisposable
             .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("에피소드 · a", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("opening - a", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
         Assert.Equal("a", graph.FindControl<TextBox>("IdBox")!.Text);
         Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "a"), tree.Selection?.Key);
 

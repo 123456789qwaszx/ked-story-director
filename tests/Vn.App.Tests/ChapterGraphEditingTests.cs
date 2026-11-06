@@ -527,7 +527,7 @@ public sealed class ChapterGraphEditingTests
         view.SelectEpisode("main05.02");
         Assert.True(view.FindControl<ScrollViewer>("SelectionSection")!.IsVisible);
         Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-        Assert.Equal("에피소드 · main05.02", title.Text);
+        Assert.Equal("조용한 복도", title.Text);   // 「장면 - 제목」 — 장면ID가 없으면 제목만
 
         view.Inspect(HierarchyPick.Project);
         Assert.True(view.FindControl<ScrollViewer>("SpeakerSection")!.IsVisible);

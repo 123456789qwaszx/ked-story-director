@@ -193,7 +193,7 @@ public partial class ChapterGraphView : UserControl
             InspectorMode.Project => ("화자", "프로젝트 전체의 캐스트 — 모든 챕터가 같은 목록을 씁니다"),
             InspectorMode.Chapter => ($"챕터 · {_selectedChapterId}", "조건 · 스탯"),
             InspectorMode.Scene => SceneHeader(model),
-            _ when _selectedEpisodeId is { } episodeId => ($"에피소드 · {episodeId}", "이름 · 장면 · 선택지 · 대사 미리보기"),
+            _ when _selectedEpisodeId is { } episodeId => (EpisodeHeader(model, episodeId), string.Empty),
             _ when _selectedEdgeKey is { } edge => ($"선택지 · {edge.From} → {edge.To}", "문구 · 조건 · 스탯변화"),
             _ when _selectedBranchKey is not null => ("분기", "다녀갈 에피소드에 들어갈 조건"),
             _ when _selectedSlot is { } slot => ($"선택지 칸 · {slot.Episode}", "아직 길이 없는 칸"),
@@ -202,6 +202,7 @@ public partial class ChapterGraphView : UserControl
 
         InspectorTitle.Text = title;
         InspectorSubtitle.Text = subtitle;
+        InspectorSubtitle.IsVisible = subtitle.Length > 0;
 
         if (_inspector == InspectorMode.Scene)
         {
@@ -212,6 +213,15 @@ public partial class ChapterGraphView : UserControl
             _sceneFilledFor = null;
         }
     }
+
+    /// <summary>
+    /// 에피소드 인스펙터의 머리글 — 「장면 - 제목」. 장면ID가 없으면 제목만, 제목이 비면 EpisodeId다. EpisodeId는 바로
+    /// 아래 칸이 보인다.
+    /// </summary>
+    private static string EpisodeHeader(ChapterGraphModel? model, string episodeId) =>
+        model?.FindEpisode(episodeId) is not { } episode ? episodeId
+        : string.IsNullOrWhiteSpace(episode.SceneId) ? episode.ShownTitle
+        : $"{episode.SceneId.Trim()} - {episode.ShownTitle}";
 
     private (string Title, string Subtitle) SceneHeader(ChapterGraphModel? model) =>
         InspectedScene(model) is { } scene
@@ -407,14 +417,6 @@ public partial class ChapterGraphView : UserControl
             {
                 e.Handled = true;
                 UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
-            }
-        };
-        EpisodeTitleBox.KeyDown += (_, e) =>
-        {
-            if (e.Key == Avalonia.Input.Key.Enter)
-            {
-                e.Handled = true;
-                UiGuard.Run(_session, "에피소드 제목 저장", ApplyEpisodeTitleFromPanel);
             }
         };
         ChapterDisplayNameBox.KeyDown += (_, e) =>
@@ -2781,7 +2783,6 @@ public partial class ChapterGraphView : UserControl
             if (fill)
             {
                 IdBox.Text = episode.EpisodeId;
-                EpisodeTitleBox.Text = episode.Title ?? string.Empty;
             }
 
             RefreshEdgeList(model, episode);
@@ -3331,21 +3332,6 @@ public partial class ChapterGraphView : UserControl
     /// <summary>간선 스탯변화를 시트 문법 그대로 — 패널 칸과 셀이 같은 글을 쓴다.</summary>
     private static string StatChangesText(ChapterEdge edge) => string.Join("; ", edge.StatChanges
         .Select(delta => $"{delta.Key} {(delta.Amount >= 0 ? "+" : "")}{delta.Amount}"));
-
-    /// <summary>에피소드 제목 저장 — 끝 카드의 "마지막 에피소드" 줄(2026-11-04). 비우면 내보내기가 이름을 쓴다.</summary>
-    internal void ApplyEpisodeTitleFromPanel()
-    {
-        if (_selectedEpisodeId is not { } episodeId || _selectedChapterId is not { } chapterId)
-        {
-            _session?.SetStatus("에피소드를 다시 골라 주세요. 선택이 풀렸거나 그 에피소드가 사라졌습니다.");
-            return;
-        }
-
-        ChapterEdit(
-            () => _session!.Editor.UpdateEpisode(
-                chapterId, episodeId, title: EpisodeTitleBox.Text?.Trim() ?? string.Empty),
-            $"에피소드 '{episodeId}'의 제목을 저장했습니다.");
-    }
 
     /// <summary>챕터 표시 이름 저장 — 진행 JSON의 DisplayName(2026-11-04). 비우면 챕터 Id로 물러선다.</summary>
     internal void ApplyChapterDisplayName()
