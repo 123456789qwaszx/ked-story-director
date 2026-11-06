@@ -32,12 +32,21 @@ public partial class GraphEditorView : UserControl
 {
     private const double CardWidth = 210;
 
-    // 카드 폭은 사람이 오른쪽 가장자리를 끌어 넓힌다 — 기본 폭보다 좁히지는 않는다(머리 · 포트 줄이 기본 폭에 맞춰 섰다).
+    // 카드 크기는 사람이 가장자리를 끌어 키운다 — 오른쪽은 폭, 아래는 글 칸 높이, 오른쪽 아래 모서리는 둘 다. 기본보다 작게는
+    // 줄이지 않는다(머리 · 포트 줄이 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다).
     private const double MaxCardWidth = 720;
+    private const double MaxWritingHeight = 900;
     private const double ResizeGripWidth = 8;
+    private const double ResizeCornerSize = 14;
 
-    /// <summary>카드 폭 손잡이가 지는 표 — 화면 테스트가 이것으로 찾는다.</summary>
+    /// <summary>카드 크기 손잡이가 지는 표 — 화면 테스트가 이것으로 찾는다. 오른쪽 가장자리(폭).</summary>
     internal const string ResizeGripTag = "card-resize:";
+
+    /// <summary>아래 가장자리(글 칸 높이) 손잡이의 표.</summary>
+    internal const string ResizeHeightGripTag = "card-resize-height:";
+
+    /// <summary>오른쪽 아래 모서리(폭과 높이) 손잡이의 표.</summary>
+    internal const string ResizeCornerGripTag = "card-resize-corner:";
 
     // 카드 머리 = 제목 한 줄과 그 아래 틈. 포트 줄의 자리(PortAnchor)가 이 값으로 세므로 머리는 높이를 고정한다 —
     // 글꼴에 맡기면 선 끝이 점에서 비껴 닿는다(2026-10-29까지 부제를 둔 머리가 41px인데 46으로 세어 5px 아래에 닿았다).
@@ -153,10 +162,21 @@ public partial class GraphEditorView : UserControl
     private NodeCard? _draggingCard;
     private Point _dragOffset;
 
-    // 폭 끌기 — 끄는 동안 화면의 카드만 넓히고 놓을 때 한 번 적는다(CommitResize).
+    // 크기 끌기 — 끄는 동안 화면의 카드만 키우고 놓을 때 한 번 적는다(CommitResize).
     private NodeCard? _resizingCard;
-    private double _resizeStartX;
+    private ResizeEdges _resizeEdges;
+    private Point _resizeStart;
     private double _resizeStartWidth;
+    private double _resizeStartHeight;
+
+    /// <summary>끄는 가장자리 — 모서리는 둘 다다.</summary>
+    [Flags]
+    private enum ResizeEdges
+    {
+        None = 0,
+        Right = 1,
+        Bottom = 2
+    }
 
     private GraphOutputPortProjection? _connectingFrom;
     private Line? _connectingLine;
@@ -1487,7 +1507,9 @@ public partial class GraphEditorView : UserControl
             _session.CollapsedScenes);
 
         // 카드를 옮겨 분기의 도착이 출발 카드를 넘었으면 포트가 반대쪽으로 선다 — 포트 줄은 카드 안에 지어지므로 카드부터 다시 짓는다.
-        if (PortSidesChanged(_projection))
+        // 끌기 없이 크기만 바뀐 것(되돌리기 · 두 번 눌러 기본 크기)도 다시 짓는다 — 카드 높이는 배치가 끝나야 재므로 자리만
+        // 고치면 레일이 옛 높이에 선다.
+        if (PortSidesChanged(_projection) || SizesChanged())
         {
             Rebuild();
             return;
@@ -1495,6 +1517,12 @@ public partial class GraphEditorView : UserControl
 
         PlaceVisuals(_projection);
     }
+
+    /// <summary>지금 선 카드들의 크기가 프로젝트의 것과 다른가 — 폭과 글 칸 높이.</summary>
+    private bool SizesChanged() =>
+        _cards.Any(card =>
+            Math.Abs(card.Visual.Width - WidthFor(card.NodeId)) > 0.5 ||
+            (card.WritingBox is { } box && Math.Abs(box.Height - WritingHeightFor(card.NodeId)) > 0.5));
 
     /// <summary>지금 선 카드들의 포트 쪽(<see cref="GraphOutputPortProjection.OnLeft"/>)이 새 투영과 다른가.</summary>
     private bool PortSidesChanged(GraphProjection projection) =>
@@ -1578,25 +1606,57 @@ public partial class GraphEditorView : UserControl
             ? Math.Clamp(width, CardWidth, MaxCardWidth)
             : CardWidth;
 
+    /// <summary>그 노드의 글 칸 높이 — 사람이 늘린 높이가 있으면 그것, 없으면 기본 높이다.</summary>
+    private double WritingHeightFor(string nodeId) =>
+        _session?.Project.FindNode(nodeId)?.Layout.WritingHeight is { } height
+            ? Math.Clamp(height, WritingBoxHeight, MaxWritingHeight)
+            : WritingBoxHeight;
+
     /// <summary>
-    /// 카드 오른쪽 가장자리의 폭 손잡이 — 끌면 카드와 그 안의 글 칸이 함께 넓어진다(기본 폭 ~ <see cref="MaxCardWidth"/>).
-    /// 두 번 누르면 기본 폭으로 돌아간다. 폭은 자리처럼 판의 모양이라 프로젝트에 싣고, 놓을 때 한 번 적는다(되돌리기 한 칸).
+    /// 카드 가장자리의 크기 손잡이 — 오른쪽은 폭(기본 ~ <see cref="MaxCardWidth"/>, 글 칸이 함께 넓어진다), 아래는 글 칸 높이(기본 ~
+    /// <see cref="MaxWritingHeight"/>), 오른쪽 아래 모서리는 둘 다다. 손잡이는 카드 여백(<see cref="CardPadding"/>) 안에 서서 글 칸을
+    /// 가리지 않는다. 두 번 누르면 그 손잡이가 맡은 크기가 기본으로 돌아간다. 크기는 자리처럼 판의 모양이라 프로젝트에 싣고,
+    /// 놓을 때 한 번 적는다(되돌리기 한 칸).
     /// </summary>
-    private Border BuildResizeGrip(NodeCard card)
+    private Border BuildResizeGrip(NodeCard card, ResizeEdges edges)
     {
         IBrush hover = new SolidColorBrush(Color.FromArgb(70, card.Style.Accent.R, card.Style.Accent.G, card.Style.Accent.B));
 
-        var grip = new Border
+        var grip = new Border { Background = Brushes.Transparent };
+
+        switch (edges)
         {
-            Width = ResizeGripWidth,
-            Margin = new Thickness(0, -CardPadding, -CardPadding, -CardPadding),
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Stretch,
-            Background = Brushes.Transparent,
-            Cursor = new Cursor(StandardCursorType.SizeWestEast),
-            Tag = ResizeGripTag + card.NodeId,
-            [ToolTip.TipProperty] = "끌어서 카드 폭을 바꿉니다 — 글 칸이 함께 넓어집니다. 두 번 누르면 처음 폭으로 돌아갑니다."
-        };
+            case ResizeEdges.Right:
+                grip.Width = ResizeGripWidth;
+                grip.Margin = new Thickness(0, -CardPadding, -CardPadding, -CardPadding);
+                grip.HorizontalAlignment = HorizontalAlignment.Right;
+                grip.VerticalAlignment = VerticalAlignment.Stretch;
+                grip.Cursor = new Cursor(StandardCursorType.SizeWestEast);
+                grip.Tag = ResizeGripTag + card.NodeId;
+                ToolTip.SetTip(grip, "끌어서 카드 폭을 바꿉니다 — 글 칸이 함께 넓어집니다. 두 번 누르면 처음 폭으로 돌아갑니다.");
+                break;
+
+            case ResizeEdges.Bottom:
+                grip.Height = ResizeGripWidth;
+                grip.Margin = new Thickness(-CardPadding, 0, -CardPadding, -CardPadding);
+                grip.HorizontalAlignment = HorizontalAlignment.Stretch;
+                grip.VerticalAlignment = VerticalAlignment.Bottom;
+                grip.Cursor = new Cursor(StandardCursorType.SizeNorthSouth);
+                grip.Tag = ResizeHeightGripTag + card.NodeId;
+                ToolTip.SetTip(grip, "끌어서 글 칸 높이를 바꿉니다. 두 번 누르면 처음 높이로 돌아갑니다.");
+                break;
+
+            default:
+                grip.Width = ResizeCornerSize;
+                grip.Height = ResizeCornerSize;
+                grip.Margin = new Thickness(0, 0, -CardPadding, -CardPadding);
+                grip.HorizontalAlignment = HorizontalAlignment.Right;
+                grip.VerticalAlignment = VerticalAlignment.Bottom;
+                grip.Cursor = new Cursor(StandardCursorType.BottomRightCorner);
+                grip.Tag = ResizeCornerGripTag + card.NodeId;
+                ToolTip.SetTip(grip, "끌어서 카드 폭과 글 칸 높이를 함께 바꿉니다. 두 번 누르면 처음 크기로 돌아갑니다.");
+                break;
+        }
 
         grip.PointerEntered += (_, _) => grip.Background = hover;
         grip.PointerExited += (_, _) =>
@@ -1621,22 +1681,34 @@ public partial class GraphEditorView : UserControl
 
             if (args.ClickCount >= 2)
             {
+                // 그 손잡이가 맡은 크기만 기본으로 — 다른 쪽 크기는 그대로 둔다.
                 _resizingCard = null;
-                UiGuard.Run(_session, "카드 폭", () => _session?.Editor.ResizeNode(card.NodeId, null));
+                UiGuard.Run(_session, "카드 크기", () =>
+                {
+                    if (_session?.Project.FindNode(card.NodeId)?.Layout is { } layout)
+                    {
+                        _session.Editor.ResizeNode(
+                            card.NodeId,
+                            edges.HasFlag(ResizeEdges.Right) ? null : layout.Width,
+                            edges.HasFlag(ResizeEdges.Bottom) ? null : layout.WritingHeight);
+                    }
+                });
                 return;
             }
 
             _resizingCard = card;
-            _resizeStartX = args.GetPosition(GraphCanvas).X;
+            _resizeEdges = edges;
+            _resizeStart = args.GetPosition(GraphCanvas);
             _resizeStartWidth = card.Visual.Width;
+            _resizeStartHeight = card.WritingBox?.Height ?? 0;
         };
 
         return grip;
     }
 
     /// <summary>
-    /// 폭 끌기를 놓는다 — 화면에서만 넓히던 폭을 한 번 적는다. 기본 폭까지 줄였으면 적어 둔 폭을 걷는다. 눌렀다 놓기만 했으면
-    /// 적을 것이 없다.
+    /// 크기 끌기를 놓는다 — 화면에서만 키우던 폭 · 글 칸 높이를 한 번 적는다. 기본까지 줄였으면 적어 둔 값을 걷는다. 눌렀다
+    /// 놓기만 했으면 적을 것이 없다.
     /// </summary>
     private void CommitResize()
     {
@@ -1647,15 +1719,32 @@ public partial class GraphEditorView : UserControl
 
         _resizingCard = null;
         double width = Math.Round(card.Visual.Width);
+        double height = Math.Round(card.WritingBox?.Height ?? 0);
 
-        if (Math.Abs(width - _resizeStartWidth) < 0.5)
+        if (Math.Abs(width - _resizeStartWidth) < 0.5 && Math.Abs(height - _resizeStartHeight) < 0.5)
         {
             card.Visual.Width = _resizeStartWidth;
+
+            if (card.WritingBox is { } box)
+            {
+                box.Height = _resizeStartHeight;
+            }
+
             return;
         }
 
-        UiGuard.Run(_session, "카드 폭", () =>
-            _session?.Editor.ResizeNode(card.NodeId, width <= CardWidth ? null : width));
+        // 화면의 크기를 적는 값(정수)에 맞춘다 — 끄는 동안의 소수 꼬리가 남으면 화면과 프로젝트가 어긋난다.
+        card.Visual.Width = width;
+
+        if (card.WritingBox is { } writing)
+        {
+            writing.Height = height;
+        }
+
+        UiGuard.Run(_session, "카드 크기", () => _session?.Editor.ResizeNode(
+            card.NodeId,
+            width <= CardWidth ? null : width,
+            card.WritingBox is null || height <= WritingBoxHeight ? null : height));
     }
 
     /// <summary>
@@ -1689,9 +1778,6 @@ public partial class GraphEditorView : UserControl
             {
                 Canvas.SetLeft(card.Visual, node.Position.X);
                 Canvas.SetTop(card.Visual, node.Position.Y);
-
-                // 폭도 자리처럼 판의 모양이다 — 놓은 폭 · 두 번 눌러 돌아온 폭 · 다른 화면의 되돌리기가 여기서 카드에 선다.
-                card.Visual.Width = WidthFor(node.NodeId);
                 PlaceLineKnobs(card);
             }
         }
@@ -2030,7 +2116,6 @@ public partial class GraphEditorView : UserControl
             .ToList();
 
         var visual = new NodeCard(node.NodeId, node.NodeKind, card, inCard, style);
-        frame.Children.Add(BuildResizeGrip(visual));
 
         // ⭐ 「조건 분기」 포트는 포트 줄에 서지 않는다 — 점이 글 칸의 <b>그 대사 높이</b>에 선다(아래 BuildLineKnob ·
         //    2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에 분기 점이 생성되도록"*).
@@ -2049,11 +2134,21 @@ public partial class GraphEditorView : UserControl
             visual.WritingBox = box;
             body.Children.Add(box);
 
+            // 글 칸이 있는 카드만 아래로 늘린다 — 모서리가 맨 위에 얹혀 두 가장자리가 만나는 자리를 받는다.
+            frame.Children.Add(BuildResizeGrip(visual, ResizeEdges.Bottom));
+
             if (visual.HasLinePorts)
             {
                 // 칸이 배치를 마칠 때마다(처음 · 크기 · 스크롤 · 글이 바뀔 때) 분기 점의 높이를 다시 잰다.
                 box.LayoutUpdated += (_, _) => MeasureLineAnchors(visual);
             }
+        }
+
+        frame.Children.Add(BuildResizeGrip(visual, ResizeEdges.Right));
+
+        if (visual.WritingBox is not null)
+        {
+            frame.Children.Add(BuildResizeGrip(visual, ResizeEdges.Right | ResizeEdges.Bottom));
         }
 
         Canvas.SetLeft(card, node.Position.X);
@@ -2122,7 +2217,7 @@ public partial class GraphEditorView : UserControl
             TextWrapping = TextWrapping.Wrap,
             FontSize = 11,
             LineHeight = WritingLineHeight,
-            Height = WritingBoxHeight,
+            Height = WritingHeightFor(nodeId),
             Margin = new Thickness(0, WritingBoxGap, 0, 0),
             Padding = new Thickness(4, 3),
             PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄",
@@ -4048,9 +4143,19 @@ public partial class GraphEditorView : UserControl
                 return;
             }
 
-            // 끄는 동안은 화면의 카드만 넓힌다 — 대사 옆 분기 점은 가장자리를 따라 함께 간다. 레일은 놓은 뒤 다시 선다.
-            _resizingCard.Visual.Width = Math.Clamp(
-                _resizeStartWidth + (position.X - _resizeStartX), CardWidth, MaxCardWidth);
+            // 끄는 동안은 화면의 카드만 키운다 — 대사 옆 분기 점은 가장자리를 따라 함께 간다. 레일은 놓은 뒤 다시 선다.
+            if (_resizeEdges.HasFlag(ResizeEdges.Right))
+            {
+                _resizingCard.Visual.Width = Math.Clamp(
+                    _resizeStartWidth + (position.X - _resizeStart.X), CardWidth, MaxCardWidth);
+            }
+
+            if (_resizeEdges.HasFlag(ResizeEdges.Bottom) && _resizingCard.WritingBox is { } writing)
+            {
+                writing.Height = Math.Clamp(
+                    _resizeStartHeight + (position.Y - _resizeStart.Y), WritingBoxHeight, MaxWritingHeight);
+            }
+
             PlaceLineKnobs(_resizingCard);
             return;
         }

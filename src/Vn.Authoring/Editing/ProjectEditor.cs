@@ -493,17 +493,22 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 카드 폭을 바꾼다 — <c>null</c>이면 판의 기본 폭으로 돌아간다. 끌기를 놓을 때 한 번 부르므로 되돌리기 한 칸이다.
-    /// 없는 노드거나 폭이 그대로면 아무것도 적지 않는다.
+    /// 카드 크기를 바꾼다 — 폭과 글 칸 높이(<see cref="NodeLayout.WritingHeight"/>)를 함께 받고, <c>null</c>이면 판의 기본값으로
+    /// 돌아간다. 끌기를 놓을 때 한 번 부르므로 되돌리기 한 칸이다. 없는 노드거나 크기가 그대로면 아무것도 적지 않는다.
     /// </summary>
-    public void ResizeNode(string nodeId, double? width)
+    public void ResizeNode(string nodeId, double? width, double? writingHeight)
     {
-        if (Project.FindNode(nodeId) is not { } node || node.Layout.Width == width)
+        if (Project.FindNode(nodeId) is not { } node ||
+            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
         {
             return;
         }
 
-        Mutate(ProjectChangeKind.Layout, () => node.Layout.Width = width);
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            node.Layout.Width = width;
+            node.Layout.WritingHeight = writingHeight;
+        });
     }
 
     // ── 줄에 얹는 대사 논리 ────────────────────────────────────────────────

@@ -13,6 +13,12 @@ public sealed class NodeLayout
     /// 사람이 [대본] 판에서 끌어 넓힌 카드 폭. <c>null</c>이면 판의 기본 폭이다 — 자리처럼 판의 모양이라 프로젝트에 싣는다.
     /// </summary>
     public double? Width { get; set; }
+
+    /// <summary>
+    /// 사람이 [대본] 판에서 끌어 늘린 카드 글 칸의 높이. <c>null</c>이면 판의 기본 높이다. 카드 전체가 아니라 글 칸의 높이인
+    /// 까닭은 카드의 나머지(머리 · 포트 줄)가 내용 따라 늘고 줄기 때문이다 — 글 칸은 사람이 정한 높이를 지킨다.
+    /// </summary>
+    public double? WritingHeight { get; set; }
 }
 
 /// <summary>

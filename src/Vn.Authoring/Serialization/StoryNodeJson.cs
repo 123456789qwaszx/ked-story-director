@@ -43,10 +43,15 @@ internal static class StoryNodeJson
             }
         };
 
-        // 폭은 사람이 넓힌 카드에만 적는다 — 기본 폭 카드의 파일은 그대로다.
+        // 폭 · 글 칸 높이는 사람이 바꾼 카드에만 적는다 — 기본 크기 카드의 파일은 그대로다.
         if (node.Layout.Width is { } width)
         {
             ((JsonObject)json["layout"]!)["width"] = Math.Round(width, 2);
+        }
+
+        if (node.Layout.WritingHeight is { } writingHeight)
+        {
+            ((JsonObject)json["layout"]!)["writingHeight"] = Math.Round(writingHeight, 2);
         }
 
         if (node.DefaultExitTargetNodeId is not null)
@@ -110,7 +115,8 @@ internal static class StoryNodeJson
             {
                 X = (double?)layout["x"] ?? 0,
                 Y = (double?)layout["y"] ?? 0,
-                Width = (double?)layout["width"]
+                Width = (double?)layout["width"],
+                WritingHeight = (double?)layout["writingHeight"]
             };
         }
 
