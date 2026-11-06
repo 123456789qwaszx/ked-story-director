@@ -1,12 +1,12 @@
 {
   "formatVersion": 2,
   "fileId": "sf_tw95x0hn",
-  "name": "festival_eveNING",
+  "name": "festival_eve",
   "nodes": [
     {
       "id": "nd_5ccte9k4",
       "kind": "set",
-      "name": "챕터 festival_eveNING 조건",
+      "name": "챕터 festival_eve 조건",
       "layout": {
         "x": 0,
         "y": 0
@@ -49,10 +49,8 @@
       "kind": "dialogue",
       "name": "Festival_Classroom",
       "layout": {
-        "x": 1761.12,
-        "y": 604.12,
-        "width": 295,
-        "writingHeight": 169
+        "x": 454.03,
+        "y": 40.42
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -151,15 +149,13 @@
       "kind": "dialogue",
       "name": "Festival_Remake",
       "layout": {
-        "x": 1079.37,
-        "y": 909.63,
-        "width": 294,
-        "writingHeight": 204
+        "x": 405.17,
+        "y": 581.6
       },
       "script": {
         "primaryLocale": "ko-KR",
-        "sourceRevision": 14,
-        "sourceContentHash": "B097928B036EA7754A66B99EBD98A2D2E47CD14E6F9F2D74F974DD4017D41650",
+        "sourceRevision": 1,
+        "sourceContentHash": "A431C549283F650E26177D97B44DBC74F454CB06849E6C12C5D92B5084A6F36E",
         "lines": [
           {
             "id": "ln_kdy67tc8",
@@ -176,41 +172,6 @@
           {
             "id": "ln_068q2fi1",
             "revision": 1
-          },
-          {
-            "id": "ln_hebn9452",
-            "revision": 1,
-            "retired": true
-          },
-          {
-            "id": "ln_cx9af36k",
-            "revision": 1,
-            "retired": true
-          },
-          {
-            "id": "ln_tgcnm3hu",
-            "revision": 1,
-            "retired": true
-          },
-          {
-            "id": "ln_upe9pfwb",
-            "revision": 3,
-            "retired": true
-          },
-          {
-            "id": "ln_pi8vat7c",
-            "revision": 1,
-            "retired": true
-          },
-          {
-            "id": "ln_pbpqpvrj",
-            "revision": 1,
-            "retired": true
-          },
-          {
-            "id": "ln_gq2p56yp",
-            "revision": 2,
-            "retired": true
           }
         ],
         "locales": [
@@ -232,27 +193,6 @@
               "ln_068q2fi1": {
                 "speaker": "하린",
                 "text": "아직 같은 장면이라, 되감기(R)로 돌아가면 방금 선택도 다시 고를 수 있어."
-              },
-              "ln_hebn9452": {
-                "text": "{stat(\"성실\")}"
-              },
-              "ln_cx9af36k": {
-                "text": "{stat(\"성실\")}"
-              },
-              "ln_tgcnm3hu": {
-                "text": "정말이야?"
-              },
-              "ln_upe9pfwb": {
-                "text": "안 믿겨"
-              },
-              "ln_pi8vat7c": {
-                "text": "거짓말"
-              },
-              "ln_pbpqpvrj": {
-                "text": "ㅂ123"
-              },
-              "ln_gq2p56yp": {
-                "text": "ㄱㄱ"
               }
             }
           }
@@ -266,8 +206,8 @@
       "kind": "dialogue",
       "name": "Festival_Shortcut",
       "layout": {
-        "x": 1471.85,
-        "y": 917.23
+        "x": 13.38,
+        "y": 480.49
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -323,18 +263,8 @@
       "kind": "dialogue",
       "name": "Festival_Wrapup",
       "layout": {
-        "x": 1340.21,
-        "y": 1556.13
-      },
-      "edgeShapes": {
-        "detour:ln_yfg43av8>nd_25h2x841": {
-          "kind": "curve"
-        },
-        "detour:ln_yfg43av8>nd_xmki0c6d": {
-          "kind": "curve",
-          "bendX": 5,
-          "bendY": 38
-        }
+        "x": 207.32,
+        "y": 1026.12
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -382,10 +312,8 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom",
       "layout": {
-        "x": 1768.77,
-        "y": 2475.22,
-        "width": 350,
-        "writingHeight": 280
+        "x": 493.21,
+        "y": 1792.27
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -473,8 +401,8 @@
       "kind": "dialogue",
       "name": "Festival_Wrapup_Remade",
       "layout": {
-        "x": 2048.23,
-        "y": 1699.09
+        "x": 1024.56,
+        "y": 1063.77
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -519,29 +447,17 @@
       "kind": "dialogue",
       "name": "Festival_Wrapup_Sticker",
       "layout": {
-        "x": 2048.62,
-        "y": 1892.67
+        "x": 995.38,
+        "y": 1317.48
       },
       "script": {
         "primaryLocale": "ko-KR",
-        "sourceRevision": 4,
-        "sourceContentHash": "2BC474DE41413C1D26E9E14C007A208562D70E51E1D6F4FE01FD10E9AE592A1D",
+        "sourceRevision": 1,
+        "sourceContentHash": "CA9E31DE4A59B8531DFFC0E6F09E173CC1982AB106F03BFC8810EE5D94453A16",
         "lines": [
           {
             "id": "ln_v9rdek8z",
             "revision": 2
-          },
-          {
-            "id": "ln_xe9qcbdf",
-            "revision": 1
-          },
-          {
-            "id": "ln_49wzften",
-            "revision": 1
-          },
-          {
-            "id": "ln_i3qvks05",
-            "revision": 1
           }
         ],
         "locales": [
@@ -551,15 +467,6 @@
               "ln_v9rdek8z": {
                 "speaker": "하린",
                 "text": "스티커 간판도 나름 귀엽네."
-              },
-              "ln_xe9qcbdf": {
-                "text": "뭐라는거야?"
-              },
-              "ln_49wzften": {
-                "text": "바보"
-              },
-              "ln_i3qvks05": {
-                "text": "응응."
               }
             }
           }
@@ -573,12 +480,11 @@
             "kind": "beginIf",
             "condition": "cd_6k0ncjjb"
           }
-        },
+        }
+      ],
+      "trailing": [
         {
-          "lineId": "ln_xe9qcbdf",
-          "condition": {
-            "kind": "endIf"
-          }
+          "kind": "endIf"
         }
       ]
     },
@@ -587,8 +493,8 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom_Kasmi",
       "layout": {
-        "x": 2840.86,
-        "y": 2634.54
+        "x": 1528.79,
+        "y": 2086.94
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -641,10 +547,8 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom_Praise",
       "layout": {
-        "x": 2472.19,
-        "y": 2779.58,
-        "width": 356,
-        "writingHeight": 206
+        "x": 1281.34,
+        "y": 2291.33
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -697,22 +601,17 @@
       "kind": "dialogue",
       "name": "Festival_Staffroom_Pass",
       "layout": {
-        "x": 2517.23,
-        "y": 3190.94
+        "x": 1206.69,
+        "y": 2643.34
       },
       "script": {
         "primaryLocale": "ko-KR",
-        "sourceRevision": 4,
-        "sourceContentHash": "FAD66CC1D4258294783899A580E4065B6050C5F6CA8271B9747FBDE43361A7B2",
+        "sourceRevision": 1,
+        "sourceContentHash": "24100638515AB79C5CBE4EABF38033255B0C8A3994BEF75D0D03942D6F702F8C",
         "lines": [
           {
             "id": "ln_as37pa6a",
             "revision": 2
-          },
-          {
-            "id": "ln_dy5g2j8h",
-            "revision": 1,
-            "retired": true
           }
         ],
         "locales": [
@@ -720,10 +619,6 @@
             "locale": "ko-KR",
             "entries": {
               "ln_as37pa6a": {
-                "speaker": "시구레",
-                "text": "검사는 통과예요. 이제 내일만 남았네요."
-              },
-              "ln_dy5g2j8h": {
                 "speaker": "시구레",
                 "text": "검사는 통과예요. 이제 내일만 남았네요."
               }
@@ -752,9 +647,8 @@
       "kind": "dialogue",
       "name": "Festival_Add",
       "layout": {
-        "x": 2151.96,
-        "y": 920.99,
-        "width": 294
+        "x": 966.44,
+        "y": 442.98
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -825,8 +719,8 @@
       "kind": "dialogue",
       "name": "Festival_Advance",
       "layout": {
-        "x": 2151.58,
-        "y": 1468.23
+        "x": 1310.08,
+        "y": 789.08
       },
       "script": {
         "primaryLocale": "ko-KR",
@@ -857,8 +751,8 @@
       "kind": "dialogue",
       "name": "Festival_Lazy",
       "layout": {
-        "x": 2678.26,
-        "y": 1426.09
+        "x": 860.2,
+        "y": 832.02
       },
       "script": {
         "primaryLocale": "ko-KR",
