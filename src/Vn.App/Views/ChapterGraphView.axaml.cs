@@ -216,7 +216,7 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>
     /// 에피소드 인스펙터의 머리글 — 「장면 - 제목」(<see cref="ChapterEpisode.SceneAndTitle"/>). EpisodeId는 바로 아래 칸이
-    /// 보인다.
+    /// 보인다. [대본] 탭의 머리글은 「{챕터}챕터 - {장면}」이다(제목은 그쪽 이름 칸이 보인다).
     /// </summary>
     private static string EpisodeHeader(ChapterGraphModel? model, string episodeId) =>
         model?.FindEpisode(episodeId)?.SceneAndTitle ?? episodeId;

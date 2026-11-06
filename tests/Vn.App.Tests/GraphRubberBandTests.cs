@@ -81,7 +81,7 @@ public sealed class GraphRubberBandTests : IDisposable
 
         Assert.Equal(CardId(session, "b"), session.SelectedNodeId);
         Assert.True(Editor(window).IsVisible);
-        Assert.Equal("hall - b", Title(graph));
+        Assert.Equal("ch01챕터 - hall", Title(graph));
         Assert.Equal(2, Card(graph, CardId(session, "a")).BorderThickness.Left);
         Assert.Equal(2, Card(graph, CardId(session, "b")).BorderThickness.Left);
         Assert.Equal(1, Card(graph, CardId(session, "root")).BorderThickness.Left);
@@ -115,7 +115,7 @@ public sealed class GraphRubberBandTests : IDisposable
 
         Assert.Equal(CardId(session, "b"), session.SelectedNodeId);
         Assert.True(Editor(window).IsVisible);
-        Assert.Equal("hall - b", Title(graph));
+        Assert.Equal("ch01챕터 - hall", Title(graph));
         Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
 
         // 다시 레인을 고른 뒤 빈 판을 누르면 설명이 내려간다.

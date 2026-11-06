@@ -30,7 +30,7 @@ public sealed record ChapterEpisode(
     public string ShownTitle => string.IsNullOrWhiteSpace(Title) ? EpisodeId : Title.Trim();
 
     /// <summary>
-    /// 인스펙터 머리글 — 「장면 - 제목」. 장면ID가 없으면 <see cref="ShownTitle"/>만이다. 두 탭의 인스펙터가 같은 글을 쓴다.
+    /// [구성] 탭 인스펙터 머리글 — 「장면 - 제목」. 장면ID가 없으면 <see cref="ShownTitle"/>만이다.
     /// </summary>
     public string SceneAndTitle => string.IsNullOrWhiteSpace(SceneId) ? ShownTitle : $"{SceneId.Trim()} - {ShownTitle}";
 

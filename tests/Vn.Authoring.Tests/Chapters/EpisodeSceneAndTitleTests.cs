@@ -3,7 +3,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>인스펙터 머리글 「장면 - 제목」</b> — 두 탭의 인스펙터가 같은 글을 쓴다. 장면ID가 없으면 제목만, 제목이 비면 EpisodeId다.
+/// <b>[구성] 탭 인스펙터 머리글 「장면 - 제목」</b> — 장면ID가 없으면 제목만, 제목이 비면 EpisodeId다.
 /// </summary>
 public sealed class EpisodeSceneAndTitleTests
 {
