@@ -8,8 +8,8 @@ using Vn.App.Views;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[구성] 에피소드 칸</b> — 에피소드ID · 제목 · 장면ID 칸 왼쪽에 이름표가 서서 무슨 칸인지 말한다. 장면 전체의 이름은
-/// 「같은 장면 전체에 적용」 단추 대신 하이어아키의 장면 줄에서 바꾼다 — 그 장면의 에피소드가 모두 따라가고 되돌리기 한 칸이다.
+/// <b>[구성] 에피소드 칸</b> — 에피소드ID · 제목 칸 왼쪽에 이름표가 서서 무슨 칸인지 말한다. 장면은 여기서 정하지 않는다 —
+/// 하이어아키의 장면 줄에서 이름을 바꾸면 그 장면의 에피소드가 모두 따라가고 되돌리기 한 칸이다.
 /// </summary>
 public sealed class ChapterEpisodeFieldsTests : IDisposable
 {
@@ -25,7 +25,7 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     }
 
     [Fact]
-    public void 세_칸_왼쪽에_이름표가_서고_장면_일괄_단추는_없다() => HeadlessUi.Run(() =>
+    public void 두_칸_왼쪽에_이름표가_서고_장면ID_칸과_장면_일괄_단추는_없다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
@@ -35,10 +35,9 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
 
         Assert.Equal("에피소드ID", LabelOf(view, "IdBox"));
         Assert.Equal("제목", LabelOf(view, "EpisodeTitleBox"));
-        Assert.Equal("장면ID", LabelOf(view, "SceneIdBox"));
         Assert.Equal("a", view.FindControl<TextBox>("IdBox")!.Text);
-        Assert.Equal("opening", view.FindControl<TextBox>("SceneIdBox")!.Text);
 
+        Assert.Null(view.FindControl<TextBox>("SceneIdBox"));
         Assert.Null(view.FindControl<Button>("ApplySceneGroupButton"));
 
         window.Close();

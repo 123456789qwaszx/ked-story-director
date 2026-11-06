@@ -255,10 +255,10 @@
                     </StackPanel>
 
                     <StackPanel x:Name="PropertyPanel" Spacing="6" IsVisible="False">
-                        <!-- 에피소드의 세 칸 — 왼쪽 기둥의 이름표가 무슨 칸인지 말한다. 셋 다 고치고 Enter.
-                             개명 = Id를 고치고 Enter(간선 · 픽스처 · 카드가 함께 따라간다). 장면 전체의 이름은 하이어아키의
-                             장면 줄에서 바꾼다 — 그 장면의 에피소드가 모두 따라간다. -->
-                        <Grid x:Name="EpisodeFieldsGrid" ColumnDefinitions="70,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                        <!-- 에피소드의 두 칸 — 왼쪽 기둥의 이름표가 무슨 칸인지 말한다. 둘 다 고치고 Enter.
+                             개명 = Id를 고치고 Enter(간선 · 픽스처 · 카드가 함께 따라간다). 장면은 여기서 정하지 않는다 —
+                             하이어아키에서 에피소드를 장면 줄로 끌고, 장면 줄에서 이름을 바꾼다. -->
+                        <Grid x:Name="EpisodeFieldsGrid" ColumnDefinitions="70,*" RowDefinitions="Auto,Auto" RowSpacing="6">
                             <TextBlock Grid.Row="0" Text="에피소드ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                             <TextBox Grid.Row="0" Grid.Column="1" x:Name="IdBox" FontSize="11"
                                      ToolTip.Tip="이름을 고치고 Enter를 누르면 개명됩니다 — 간선·픽스처·대본 파일·대사 노드가 함께 따라갑니다. 조건식의 cleared: 참조가 있으면 거부됩니다." />
@@ -268,9 +268,6 @@
                             <TextBox Grid.Row="1" Grid.Column="1" x:Name="EpisodeTitleBox" FontSize="11" PlaceholderText="비우면 에피소드ID"
                                      ToolTip.Tip="게임의 끝 카드가 '마지막 에피소드'로 보여 주는 글자입니다. 고치고 Enter. 비우면 에피소드 이름이 나갑니다." />
 
-                            <TextBlock Grid.Row="2" Text="장면ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
-                            <TextBox Grid.Row="2" Grid.Column="1" x:Name="SceneIdBox" FontSize="11" PlaceholderText="비우면 챕터 직속"
-                                     ToolTip.Tip="이 에피소드가 속한 장면입니다. 같은 장면ID의 에피소드는 하나의 저장·롤백 구간입니다. 고치고 Enter — 이 에피소드만 옮깁니다. 장면 전체의 이름은 하이어아키에서 장면 줄의 이름을 바꾸면 그 장면의 에피소드가 모두 따라갑니다." />
                         </Grid>
 
                         <!-- 선택지 — 이 에피소드에서 나가는 길들. 길 하나 = 선택지 하나.

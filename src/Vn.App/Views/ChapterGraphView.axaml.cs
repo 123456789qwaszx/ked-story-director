@@ -410,14 +410,6 @@ public partial class ChapterGraphView : UserControl
                 UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
             }
         };
-        SceneIdBox.KeyDown += (_, e) =>
-        {
-            if (e.Key == Avalonia.Input.Key.Enter)
-            {
-                e.Handled = true;
-                UiGuard.Run(_session, "장면ID 저장", ApplyEpisodeFromPanel);
-            }
-        };
         EpisodeTitleBox.KeyDown += (_, e) =>
         {
             if (e.Key == Avalonia.Input.Key.Enter)
@@ -2782,7 +2774,6 @@ public partial class ChapterGraphView : UserControl
             {
                 IdBox.Text = episode.EpisodeId;
                 EpisodeTitleBox.Text = episode.Title ?? string.Empty;
-                SceneIdBox.Text = episode.SceneId ?? string.Empty;
             }
 
 
@@ -3429,25 +3420,6 @@ public partial class ChapterGraphView : UserControl
     /// <summary>간선 스탯변화를 시트 문법 그대로 — 패널 칸과 셀이 같은 글을 쓴다.</summary>
     private static string StatChangesText(ChapterEdge edge) => string.Join("; ", edge.StatChanges
         .Select(delta => $"{delta.Key} {(delta.Amount >= 0 ? "+" : "")}{delta.Amount}"));
-
-    /// <summary>
-    /// 에피소드 값 저장 — 지금 이 패널에서 툴이 쓰는 값은 없다. 제목·엔딩키·메모는 칸을
-    /// 뺐고(2026-08-16), 표시·해금조건은 v8에서 길(간선)로 옮겨 갔다. 개명은 Enter가,
-    /// 선택지는 목록이 맡는다. 라이터 경로는 살아 있으므로 필요하면 여기로 되돌아온다.
-    /// </summary>
-    internal void ApplyEpisodeFromPanel()
-    {
-        if (_selectedEpisodeId is not { } episodeId || _selectedChapterId is not { } chapterId)
-        {
-            _session?.SetStatus("에피소드를 다시 골라 주세요. 선택이 풀렸거나 그 에피소드가 사라졌습니다.");
-            return;
-        }
-
-        ChapterEdit(
-            () => _session!.Editor.UpdateEpisode(
-                chapterId, episodeId, sceneId: SceneIdBox.Text?.Trim() ?? string.Empty),
-            $"에피소드 '{episodeId}'의 장면ID를 저장했습니다.");
-    }
 
     /// <summary>에피소드 제목 저장 — 끝 카드의 "마지막 에피소드" 줄(2026-11-04). 비우면 내보내기가 이름을 쓴다.</summary>
     internal void ApplyEpisodeTitleFromPanel()
