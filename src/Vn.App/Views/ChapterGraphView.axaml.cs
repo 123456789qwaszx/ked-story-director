@@ -1513,7 +1513,8 @@ public partial class ChapterGraphView : UserControl
     /// 자리는 선 한가운데가 먼저다. 이미 놓인 문구와 겹치면 <b>제 선을 따라</b> 위아래로 번갈아 비켜 빈자리를 찾는다
     /// (<see cref="LabelSpots"/>) — 한 카드에서 나간 선택지 여럿이 같은 카드로 모이면 선 가운데가 거의 한 점이라 문구가
     /// 하나로 포개졌다. 제 선 위에 있어야 어느 문구가 어느 선인지 헷갈리지 않는다. 빈자리가 없으면 가장 덜 겹치는 자리다.
-    /// 문구가 길면 <see cref="LabelMaxWidth"/>에서 줄이고(…) 마우스를 올리면 전체가 보인다. 해금조건(<c>[…]</c>)은 줄이지 않는다.
+    /// 문구가 길면 <see cref="LabelMaxWidth"/>에서 줄이고(…) 마우스를 올리면 전체가 보인다. 문구 위에는 표시조건 · 해금조건이,
+    /// 아래에는 스탯변화가 선다(있을 때만) — 조건과 스탯은 줄이지 않는다.
     ///
     /// ⭐ <b>v5에서 문구가 여기로 왔다</b> (2026-09-18). 전에는 카드 오른변 안쪽에 포트마다
     /// 한 줄씩 적었는데, 포트가 아래변으로 내려가면서 한 칸에 남는 폭이 카드의 1/4이 됐다 —
@@ -1529,25 +1530,59 @@ public partial class ChapterGraphView : UserControl
             : edge.HasNoOptionLabel ? "⚠ 문구 없음"
             : edge.OptionLabel!;
 
-        string label = edge.ConditionLabel is { } gate ? $"{option} [{gate}]" : option;
-
         IBrush ink = new SolidColorBrush(Color.Parse(
             edge.Auto ? "#3D7BD9" : edge.HasNoOptionLabel ? "#C0392B" : "#5A646E"));
 
-        // 줄이는 것은 문구뿐이다 — 해금조건은 고칠 것을 알리는 정보라 늘 다 보인다.
-        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3 };
-        line.Children.Add(new TextBlock
-        {
-            Text = option,
-            FontSize = 10,
-            MaxWidth = LabelMaxWidth,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = ink
-        });
+        // 세 줄이다 — 위는 이 선택지가 언제 보이고(표시조건) 언제 고를 수 있는지(해금조건), 가운데는 문구, 아래는 이 길을
+        // 건너면 바뀌는 스탯. 없는 줄은 서지 않는다. 줄이는 것은 문구뿐이다 — 조건과 스탯은 늘 다 보인다.
+        var rows = new StackPanel { Spacing = 1 };
+        List<string> tip = [option];
 
-        if (edge.ConditionLabel is { } shownGate)
+        var gates = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center };
+
+        if (edge.VisibleConditionLabel is { } visible)
         {
-            line.Children.Add(new TextBlock { Text = $"[{shownGate}]", FontSize = 10, Foreground = ink });
+            gates.Children.Add(LabelPart($"표시: {visible}", 9, VisibleConditionInk));
+            tip.Add($"표시조건: {visible} — 아니면 목록에 안 보인다");
+        }
+
+        if (edge.ConditionLabel is { } unlock)
+        {
+            gates.Children.Add(LabelPart($"해금: {unlock}", 9, UnlockConditionInk));
+            tip.Add($"해금조건: {unlock} — 아니면 잠긴 채 보인다");
+        }
+
+        if (gates.Children.Count > 0)
+        {
+            gates.Tag = EdgeLabelRow.Conditions;
+            rows.Children.Add(gates);
+        }
+
+        TextBlock optionText = LabelPart(option, 10, ink);
+        optionText.MaxWidth = LabelMaxWidth;
+        optionText.TextTrimming = TextTrimming.CharacterEllipsis;
+        optionText.HorizontalAlignment = HorizontalAlignment.Center;
+        optionText.Tag = EdgeLabelRow.Option;
+        rows.Children.Add(optionText);
+
+        if (edge.StatChanges.Count > 0)
+        {
+            var stats = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 6,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Tag = EdgeLabelRow.Stats
+            };
+
+            foreach (StatDelta delta in edge.StatChanges)
+            {
+                (string shown, IBrush colour) = DescribeDelta(delta);
+                stats.Children.Add(LabelPart(shown, 9, colour));
+            }
+
+            rows.Children.Add(stats);
+            tip.Add("스탯변화: " + string.Join(" · ", edge.StatChanges.Select(delta => DescribeDelta(delta).Text)));
         }
 
         var text = new Border
@@ -1555,11 +1590,11 @@ public partial class ChapterGraphView : UserControl
             Background = new SolidColorBrush(Color.Parse("#F0F4F6F8")),
             CornerRadius = new CornerRadius(3),
             Padding = new Thickness(4, 1),
-            Child = line,
+            Child = rows,
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
             Tag = new EdgeLabelMark(edge.FromEpisodeId, edge.ToEpisodeId, EdgeLabelKey(edge))
         };
-        ToolTip.SetTip(text, label);
+        ToolTip.SetTip(text, string.Join("\n", tip));
 
         string fromId = edge.FromEpisodeId;
         string toId = edge.ToEpisodeId;
@@ -1583,6 +1618,40 @@ public partial class ChapterGraphView : UserControl
         Canvas.SetLeft(text, spot.X);
         Canvas.SetTop(text, spot.Y);
         GraphCanvas.Children.Add(text);
+    }
+
+    /// <summary>선택지 문구 상자의 줄 — 위(조건) · 가운데(문구) · 아래(스탯변화). 화면 테스트가 이것으로 줄을 가린다.</summary>
+    internal enum EdgeLabelRow
+    {
+        Conditions,
+        Option,
+        Stats
+    }
+
+    private static readonly IBrush VisibleConditionInk = new SolidColorBrush(Color.Parse("#7A6FB0"));
+    private static readonly IBrush UnlockConditionInk = new SolidColorBrush(Color.Parse("#B06A14"));
+
+    private static TextBlock LabelPart(string text, double size, IBrush ink) =>
+        new() { Text = text, FontSize = size, Foreground = ink };
+
+    /// <summary>
+    /// 스탯 변화 하나를 작가의 말로 — 표시 이름으로 「성실 +1」, 예/아니오 스탯은 「열쇠 → 예」. 오르면 초록, 내리면 빨강이다.
+    /// </summary>
+    private (string Text, IBrush Ink) DescribeDelta(StatDelta delta)
+    {
+        string name = SelectedModel?.Stats.FirstOrDefault(stat =>
+                          string.Equals(stat.Key, delta.Key, StringComparison.Ordinal))?.DisplayName is { Length: > 0 } display
+            ? display
+            : delta.Key;
+
+        if (delta.IsSet)
+        {
+            return ($"{name} → {(delta.Amount != 0 ? "예" : "아니오")}", new SolidColorBrush(Color.Parse("#3D7BD9")));
+        }
+
+        return (
+            $"{name} {delta.Amount.ToString("+0;-0;+0", System.Globalization.CultureInfo.InvariantCulture)}",
+            new SolidColorBrush(Color.Parse(delta.Amount < 0 ? "#C0392B" : "#1F9D55")));
     }
 
     /// <summary>문구가 설 만한 자리들 — 선 한가운데부터 제 선을 따라 위아래로 번갈아 멀어진다(선의 15%~85%).</summary>

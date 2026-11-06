@@ -77,23 +77,59 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
     });
 
     [Fact]
-    public void 문구를_줄여도_해금조건은_다_보인다() => HeadlessUi.Run(() =>
+    public void 문구_위에는_표시조건과_해금조건이_아래에는_스탯변화가_선다() => HeadlessUi.Run(() =>
     {
+        // 판에서 선택지 문구만 보이면 그 길이 언제 보이고 언제 고를 수 있는지, 건너면 무엇이 바뀌는지 패널을 열어야 안다.
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
         const string Long = "아주 길고 긴 선택지 문구가 여기 있어서 한 줄에 다 들어가지 않는다";
         session.Editor.AddChapterStat("ch01", "trust");
+        session.Editor.AddChapterStat("ch01", "anger");
+        session.Editor.UpdateChapterStat("ch01", "trust", displayName: "신뢰");
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
-        session.Editor.AddEdge("ch01", "root", "b", conditionLabel: "신뢰높음", optionLabel: Long);
+        session.Editor.AddChapterCondition("ch01", "신뢰있음", "trust >= 1");
+        session.Editor.AddEdge("ch01", "root", "b", conditionLabel: "신뢰높음", optionLabel: Long, statChanges: "trust +2; anger -1");
+        session.Editor.UpdateEdge("ch01", "root", "b", matchOptionLabel: Long, visibleConditionLabel: "신뢰있음");
+        Dispatcher.UIThread.RunJobs();
+
+        Canvas canvas = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<Canvas>("GraphCanvas")!;
+        Border label = Assert.Single(Labels(canvas, "root", "b"));
+        List<Control> rows = ((StackPanel)label.Child!).Children.ToList();
+
+        Assert.Equal(
+            [ChapterGraphView.EdgeLabelRow.Conditions, ChapterGraphView.EdgeLabelRow.Option, ChapterGraphView.EdgeLabelRow.Stats],
+            rows.Select(row => (ChapterGraphView.EdgeLabelRow)row.Tag!));
+        Assert.Equal(["표시: 신뢰있음", "해금: 신뢰높음"], Texts(rows[0]));
+        Assert.Equal(["신뢰 +2", "anger -1"], Texts(rows[2]));   // 표시 이름이 있으면 그것으로
+
+        // 줄이는 것은 문구뿐이다 — 조건과 스탯은 다 보인다.
+        var option = (TextBlock)rows[1];
+        Assert.Equal(Long, option.Text);
+        Assert.Equal(TextTrimming.CharacterEllipsis, option.TextTrimming);
+        Assert.Equal(160, option.MaxWidth);
+
+        string tip = (string)ToolTip.GetTip(label)!;
+        Assert.Contains("표시조건: 신뢰있음", tip, StringComparison.Ordinal);
+        Assert.Contains("해금조건: 신뢰높음", tip, StringComparison.Ordinal);
+        Assert.Contains("스탯변화: 신뢰 +2 · anger -1", tip, StringComparison.Ordinal);
+    });
+
+    [Fact]
+    public void 조건도_스탯도_없으면_문구_한_줄이다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        session.Editor.AddEdge("ch01", "root", "b", optionLabel: "그냥 간다");
         Dispatcher.UIThread.RunJobs();
 
         Canvas canvas = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<Canvas>("GraphCanvas")!;
         Border label = Assert.Single(Labels(canvas, "root", "b"));
 
-        List<TextBlock> parts = ((StackPanel)label.Child!).Children.OfType<TextBlock>().ToList();
-        Assert.Equal(TextTrimming.CharacterEllipsis, parts[0].TextTrimming);
-        Assert.Equal("[신뢰높음]", parts[1].Text);
-        Assert.Equal($"{Long} [신뢰높음]", ToolTip.GetTip(label));
+        Control row = Assert.Single(((StackPanel)label.Child!).Children);
+        Assert.Equal(ChapterGraphView.EdgeLabelRow.Option, row.Tag);
+        Assert.Equal("그냥 간다", ToolTip.GetTip(label));
     });
+
+    private static List<string> Texts(Control row) =>
+        ((StackPanel)row).Children.OfType<TextBlock>().Select(text => text.Text ?? string.Empty).ToList();
 
     private static List<Border> Labels(Canvas canvas, string from, string to) =>
         canvas.Children.OfType<Border>()
