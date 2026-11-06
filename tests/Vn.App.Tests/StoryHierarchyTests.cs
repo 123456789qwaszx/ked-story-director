@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Path = System.IO.Path;
-using Vn.App.Services;
 using Vn.App.Views;
 
 namespace Vn.App.Tests;
@@ -139,10 +138,10 @@ public sealed class StoryHierarchyTests : IDisposable
     });
 
     [Fact]
-    public void 장면_줄을_고르면_장면_인스펙터가_서고_이름을_고치면_그_장면의_에피소드가_함께_바뀐다() => HeadlessUi.Run(() =>
+    public void 장면_줄을_고르면_장면_인스펙터가_서고_이름_칸은_없다() => HeadlessUi.Run(() =>
     {
-        // HY2 — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. 이름을 고치면 그 에피소드들의 장면ID가
-        // 한 번에 바뀌고(되돌리기 한 칸) 다른 장면은 그대로다.
+        // HY2 — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. [구성] 탭은 보이기만 한다 — 장면 이름은
+        // [대본] 탭 하이어아키의 장면 줄에서 고친다(ChapterEpisodeFieldsTests).
         (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
 
@@ -154,22 +153,10 @@ public sealed class StoryHierarchyTests : IDisposable
         Assert.False(graph.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
         Assert.False(graph.FindControl<TextBlock>("NoSelectionText")!.IsVisible);
         Assert.Equal("장면 · opening", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
-        Assert.Equal("opening", graph.FindControl<TextBox>("SceneNameBox")!.Text);
+        Assert.Null(graph.FindControl<TextBox>("SceneNameBox"));
         Assert.Equal(
             ["scene-episode:root", "scene-episode:a"],
             graph.FindControl<StackPanel>("SceneEpisodesPanel")!.Children.Select(child => (string?)child.Tag));
-
-        graph.FindControl<TextBox>("SceneNameBox")!.Text = "prologue";
-        graph.RenameInspectedScene();
-        Dispatcher.UIThread.RunJobs();
-
-        AuthoringSession session = window.SessionProbe;
-        Assert.Equal(["prologue", "prologue", "hall"], SceneIds(session));
-        Assert.Equal(StoryHierarchy.SceneKey("ch01", "prologue"), tree.Selection?.Key);
-        Assert.Equal("장면 · prologue", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
-
-        session.Editor.Undo();
-        Assert.Equal(["opening", "opening", "hall"], SceneIds(session));
 
         window.Close();
     });
@@ -194,9 +181,6 @@ public sealed class StoryHierarchyTests : IDisposable
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
-
-    private static string[] SceneIds(AuthoringSession session) =>
-        session.Editor.FindChapter("ch01")!.Episodes.Select(episode => episode.SceneId ?? string.Empty).ToArray();
 
     /// <summary>인스펙터에 선 칸 — 하나만 선다.</summary>
     private static string Shown(ChapterGraphView graph) =>

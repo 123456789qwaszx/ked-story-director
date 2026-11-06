@@ -249,11 +249,11 @@ public sealed class ChapterGraphViewRenderTests
 
         Assert.Empty(canvas.Children);
         Assert.True(empty.IsVisible);
-        Assert.Contains("＋ 챕터", empty.Text);
 
-        // 프로젝트는 있는데 챕터가 없는 첫 화면 — 안내문 아래 판 한가운데에 [＋ 챕터]가
-        // 함께 선다. [새 프로젝트]는 아니다: 프로젝트는 이미 있다.
-        Assert.True(view.ChapterAddCenterButton.IsVisible);
+        // 프로젝트는 있는데 챕터가 없는 첫 화면 — 챕터는 이 탭에서 만들지 않으므로 안내문이 [대본] 탭 하이어아키의 [＋]로
+        // 데려간다. [새 프로젝트]는 아니다: 프로젝트는 이미 있다.
+        Assert.Contains("[대본] 탭 하이어아키의 [＋]", empty.Text);
+        Assert.Null(view.FindControl<Button>("EmptyAddChapterButton"));
         Assert.False(view.ProjectNewCenterButton.IsVisible);
     });
 
@@ -275,7 +275,6 @@ public sealed class ChapterGraphViewRenderTests
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
             Assert.True(view.ProjectNewCenterButton.IsVisible);
-            Assert.False(view.ChapterAddCenterButton.IsVisible);
         }
         finally
         {
@@ -285,33 +284,31 @@ public sealed class ChapterGraphViewRenderTests
     });
 
     [Fact]
-    public void 빈_챕터를_열면_가운데_에피소드_추가_단추가_선다() => HeadlessUi.Run(() =>
+    public void 빈_챕터를_열면_대본_탭에서_더하라고_알려_준다() => HeadlessUi.Run(() =>
     {
-        // 셋째 걸음 — 에피소드가 하나도 없는 챕터를 열면 + 에피소드 단추가 나온다.
-        // 새 챕터에는 에피소드가 하나도 없다.
+        // 에피소드가 하나도 없는 챕터를 열면 — 이 탭에서는 더하지 않으므로 단추 없이 [대본] 탭으로 데려가는 안내문만 선다.
         using var project = new TempProject(
             withSample: false,
             configure: story => story.Chapters.Add(new ChapterDocument { ChapterId = "ch01" }));
 
         (_, ChapterGraphView view) = Render(project);
 
-        Assert.True(view.FindControl<Button>("EmptyAddEpisodeButton")!.IsVisible);
-        // 앞의 두 걸음은 이미 지났다 — 프로젝트도 챕터도 있다.
+        TextBlock empty = view.FindControl<TextBlock>("EmptyText")!;
+        Assert.True(empty.IsVisible);
+        Assert.Contains("[대본] 탭", empty.Text);
+        Assert.Null(view.FindControl<Button>("EmptyAddEpisodeButton"));
         Assert.False(view.ProjectNewCenterButton.IsVisible);
-        Assert.False(view.ChapterAddCenterButton.IsVisible);
     });
 
     [Fact]
     public void 챕터가_서면_가운데_첫걸음_단추는_사라진다() => HeadlessUi.Run(() =>
     {
-        // 이 단추들은 "아무것도 없을 때의 첫걸음"이다 — 판이 그려지는 순간 할 일은
-        // 만들기가 아니라 그리기·잇기이고, 만들기는 우측 기둥의 [＋]가 계속 진다.
+        // [새 프로젝트]는 "아무것도 없을 때의 첫걸음"이다 — 판이 그려지는 순간 할 일은 만들기가 아니다.
         using var project = new TempProject();
         (_, ChapterGraphView view) = Render(project);
 
-        Assert.False(view.ChapterAddCenterButton.IsVisible);
         Assert.False(view.ProjectNewCenterButton.IsVisible);
-        Assert.False(view.FindControl<Button>("EmptyAddEpisodeButton")!.IsVisible);
+        Assert.False(view.FindControl<TextBlock>("EmptyText")!.IsVisible);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────

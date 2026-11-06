@@ -12,7 +12,8 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>하이어아키에서 고치기</b> — 우클릭 차림표와 두 번 눌러 이름 바꾸기.
+/// <b>하이어아키에서 고치기</b> — 우클릭 차림표와 두 번 눌러 이름 바꾸기. 고치는 하이어아키는 [대본] 탭의 것이다 — [구성] 탭
+/// 하이어아키는 고르기 · 접기만 한다(읽기 전용).
 ///
 /// 「챕터 · 장면 · 에피소드 추가」는 어느 줄에서나 같은 자리에 서고(어디서 눌러야 무엇이 나오는지 외울 것이 없게) 어디에
 /// 붙일지는 누른 줄이 정한다. 그 아래에 그 줄만의 일이 선다. 새 장면은 첫 에피소드와 함께 선다 — 장면은 에피소드가
@@ -113,6 +114,41 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
+    public void 구성_탭_하이어아키는_고르기만_하고_우클릭_이름_고치기_끌기가_없다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        StoryHierarchy tree = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+        string a = StoryHierarchy.EpisodeKey("ch01", "a");
+
+        // 우클릭 차림표가 없다 — 빈 자리에도, 줄마다에도.
+        Assert.True(tree.ReadOnly);
+        Assert.Null(tree.FindControl<ScrollViewer>("TreeScroll")!.ContextMenu);
+        Assert.All(
+            [StoryHierarchy.ChapterKey("ch01"), StoryHierarchy.SceneKey("ch01", "opening"), a],
+            key => Assert.Null(tree.RowButton(key)!.ContextMenu));
+
+        // 이름 칸이 열리지 않고, 끌어도 장면이 바뀌지 않는다.
+        tree.BeginRename(a);
+        Assert.Null(tree.RenameBox);
+        tree.Drag(a, StoryHierarchy.SceneKey("ch01", "hall"));
+        Assert.Equal("opening", Chapter(session).FindEpisode("a")!.SceneId);
+
+        // 고르기는 된다.
+        tree.RowButton(a)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(a, tree.Selection?.Key);
+
+        // [대본] 탭 하이어아키는 그대로 고친다.
+        StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
+        Assert.False(director.ReadOnly);
+        Assert.NotNull(director.RowButton(a)!.ContextMenu);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 두_번_눌러_이름을_바꾸고_Esc는_없던_일로_한다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, StoryHierarchy tree) = Open();
@@ -120,10 +156,10 @@ public sealed class HierarchyEditTests : IDisposable
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
 
-        // 에피소드 — 간선 · 카드가 함께 따라가는 개명(EpisodeRenamer).
+        // 에피소드 — [대본] 탭은 보이는 제목을 고친다(EpisodeId는 [구성] 탭 인스펙터에서).
         Rename(tree, StoryHierarchy.EpisodeKey("ch02", "x"), "x2", Key.Enter);
-        Assert.NotNull(Chapter(session, "ch02").FindEpisode("x2"));
-        Assert.Contains(tree.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch02", "x2"));
+        Assert.Equal("x2", Chapter(session, "ch02").FindEpisode("x")!.Title);
+        Assert.Equal("x2", tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch02", "x")).Text);
 
         // 장면 — 그 장면의 에피소드 모두의 장면ID.
         Rename(tree, StoryHierarchy.SceneKey("ch01", "hall"), "lobby", Key.Enter);
@@ -208,8 +244,8 @@ public sealed class HierarchyEditTests : IDisposable
     [Fact]
     public void 접힘은_두_탭이_함께_쓰고_프로젝트를_다시_열어도_남는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, StoryHierarchy tree) = Open();
-        StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
+        (MainWindow window, StoryHierarchy director) = Open();
+        StoryHierarchy tree = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
 
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
         Dispatcher.UIThread.RunJobs();
@@ -322,10 +358,11 @@ public sealed class HierarchyEditTests : IDisposable
         Dispatcher.UIThread.RunJobs();
     }
 
+    /// <summary>[대본] 탭을 연 창과 그 탭의 하이어아키 — 고치는 하이어아키다.</summary>
     private (MainWindow Window, StoryHierarchy Tree) Open()
     {
-        (MainWindow window, _) = HierarchyFixture.Open(_directory);
-        return (window, window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView);
+        (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: 1);
+        return (window, window.FindControl<GraphEditorView>("Graph")!.HierarchyView);
     }
 
     private static ChapterGraphModel Chapter(AuthoringSession session, string chapterId = "ch01") =>

@@ -106,10 +106,6 @@ public partial class MainWindow : Window
         // 새 챕터는 [대본] 탭 하이어아키의 [＋]에서 만든다.
         Graph.ChapterAddButton.Click += (_, _) =>
             UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(Graph.ChapterAddButton));
-        // 챕터가 하나도 없을 때 판 한가운데 서는 [＋ 챕터] — 뜻이 같으니 배선도 같다.
-        // 플라이아웃만 누른 그 단추에 붙는다(화면 반대편에서 열리면 눈이 길을 잃는다).
-        ChapterGraph.ChapterAddCenterButton.Click += (_, _) =>
-            UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(ChapterGraph.ChapterAddCenterButton));
         // 프로젝트가 아직 없을 때는 [새 프로젝트]가 먼저다 —
         // 툴바의 [새로 만들기]와 같은 길 하나를 지난다.
         ChapterGraph.ProjectNewCenterButton.Click += OnNewClick;

@@ -43,8 +43,11 @@ public partial class MainWindow
         ChapterGraph.HierarchyView.Folds = _folds;
         Graph.HierarchyView.Folds = _folds;
 
-        // [대본] 탭은 에피소드를 보이는 제목으로 보이고 고친다 — EpisodeId는 [구성] 탭의 하이어아키 · 인스펙터에서 정한다.
+        // [대본] 탭은 에피소드를 보이는 제목으로 보이고 고친다 — EpisodeId는 [구성] 탭의 인스펙터에서 정한다.
         Graph.HierarchyView.ShowEpisodeTitles = true;
+
+        // [구성] 탭 하이어아키는 고르기만 한다 — 챕터 · 장면 · 에피소드는 [대본] 탭에서 더하고 지우고 고친다.
+        ChapterGraph.HierarchyView.ReadOnly = true;
 
         // 한쪽에서 접거나 펴면 다른 쪽도 맞춘다.
         ChapterGraph.HierarchyView.FoldChanged += () => Graph.HierarchyView.RefreshFolds();

@@ -204,16 +204,35 @@ public partial class StoryHierarchy : UserControl
     private string _projectTitle = string.Empty;
     private IReadOnlyList<ChapterEntry> _chapters = [];
     private bool _hasProject;
+    private readonly ContextMenu _emptyAreaMenu;
+    private bool _readOnly;
 
     public StoryHierarchy()
     {
         InitializeComponent();
 
         // 빈 자리의 차림표 — 줄 위에서 우클릭하면 그 줄의 차림표가 먼저 뜨고, 빈 데서 눌렀을 때만 여기까지 온다.
-        TreeScroll.ContextMenu = new ContextMenu
+        _emptyAreaMenu = new ContextMenu
         {
             ItemsSource = new[] { MenuItemFor("챕터 추가", HierarchyCommand.AddChapter, row: null, anchor: TreeScroll) }
         };
+        TreeScroll.ContextMenu = _emptyAreaMenu;
+    }
+
+    /// <summary>
+    /// 고르기 · 접기 · 눈만 되는 하이어아키 — 우클릭 차림표(추가 · 지우기 · 이름 바꾸기) · 두 번 눌러 이름 고치기 · 끌어 장면
+    /// 옮기기가 없다. [구성] 탭의 하이어아키다(챕터 · 장면 · 에피소드는 [대본] 탭에서 더하고 지우고 고친다).
+    /// </summary>
+    internal bool ReadOnly
+    {
+        get => _readOnly;
+        set
+        {
+            _readOnly = value;
+            TreeScroll.ContextMenu = value ? null : _emptyAreaMenu;
+            _renamingKey = null;
+            Draw();
+        }
     }
 
     /// <summary>어느 줄을 골랐다(사람이 눌렀을 때만 — <see cref="Show"/>로 밖에서 고른 것은 알리지 않는다).</summary>
@@ -517,7 +536,9 @@ public partial class StoryHierarchy : UserControl
         {
             RowHost.Children.Add(new TextBlock
             {
-                Text = "챕터가 없습니다. 우클릭 「챕터 추가」로 만드세요.",
+                Text = ReadOnly
+                    ? "챕터가 없습니다. [대본] 탭 하이어아키의 ＋로 만드세요."
+                    : "챕터가 없습니다. ＋나 우클릭 「챕터 추가」로 만드세요.",
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
                 FontSize = 11,
@@ -591,15 +612,19 @@ public partial class StoryHierarchy : UserControl
         };
 
         button.Click += (_, _) => UiGuard.Run(null, "하이어아키", () => Press(row));
-        button.ContextMenu = Menu(row, button);
-        WireDrag(button, row);
 
-        // 두 번 눌러 이름 고치기 — 고르기가 줄을 다시 세우지 않으므로(칠만 한다) 둘째 누름이 같은 단추에 떨어진다.
-        button.DoubleTapped += (_, args) => UiGuard.Run(null, "이름 고치기", () =>
+        if (!ReadOnly)
         {
-            args.Handled = true;
-            BeginRename(row.Key);
-        });
+            button.ContextMenu = Menu(row, button);
+            WireDrag(button, row);
+
+            // 두 번 눌러 이름 고치기 — 고르기가 줄을 다시 세우지 않으므로(칠만 한다) 둘째 누름이 같은 단추에 떨어진다.
+            button.DoubleTapped += (_, args) => UiGuard.Run(null, "이름 고치기", () =>
+            {
+                args.Handled = true;
+                BeginRename(row.Key);
+            });
+        }
 
         var host = new DockPanel();
 
@@ -816,7 +841,8 @@ public partial class StoryHierarchy : UserControl
     /// <summary>그 줄의 이름 칸을 연다(프로젝트 줄은 이름을 여기서 고치지 않는다).</summary>
     internal void BeginRename(string key)
     {
-        if (_rows.FirstOrDefault(row => string.Equals(row.Key, key, StringComparison.Ordinal)) is not { } row ||
+        if (ReadOnly ||
+            _rows.FirstOrDefault(row => string.Equals(row.Key, key, StringComparison.Ordinal)) is not { } row ||
             row.Kind == HierarchyKind.Project)
         {
             return;
@@ -1054,6 +1080,11 @@ public partial class StoryHierarchy : UserControl
     /// <summary>화면 없이 끌기를 재는 자리 — 누름 · 놓임 두 번을 대신한다.</summary>
     internal void Drag(string sourceKey, string targetKey)
     {
+        if (ReadOnly)
+        {
+            return;
+        }
+
         _dragKey = sourceKey;
         Release(_rows.FirstOrDefault(row => string.Equals(row.Key, targetKey, StringComparison.Ordinal)));
     }

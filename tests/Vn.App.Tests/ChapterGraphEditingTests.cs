@@ -394,7 +394,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeAfterSelection();
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null);
 
         ChapterGraphModel afterAdd = Chapter(session);
         Assert.NotNull(afterAdd.FindEpisode("new01"));
@@ -417,7 +417,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeAfterSelection(); // new01 + 카드
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null); // new01 + 카드
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -446,12 +446,12 @@ public sealed class ChapterGraphEditingTests
     public void 에피소드를_더하면_그_자리에서_대사_노드가_선다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => node.MarkedEpisodeId == "new01");
 
-        view.AddEpisodeAfterSelection();
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs(); // QueueReload 한 차례
 
         // 더한 그 자리에서 노드가 서 있다 — 에피소드와 카드가 한 변경이다.
@@ -468,27 +468,21 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 선택한_노드의_자식으로_에피소드가_생기고_간선이_이어진다() => HeadlessUi.Run(() =>
+    public void 고른_에피소드의_다음으로_더하면_간선이_이어진다() => HeadlessUi.Run(() =>
     {
-        // v3 — [＋ 에피소드]는 선택된 노드의 다음으로 만든다. 흐름 연결이 기본값이다.
+        // 「에피소드 추가」는 누른 줄의 에피소드 다음으로 만든다. 흐름 연결이 기본값이다.
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
-        view.SelectEpisode("main05.end");
-        view.AddEpisodeAfterSelection();
+        EpisodeAdder.Add(session, "ch05", after: "main05.end", sceneId: null);
 
         ChapterGraphModel reread = Chapter(session);
         ChapterEpisode added = reread.FindEpisode("new01")!;
 
-        // 간선이 함께 이어졌고, 대사엔트리는 EpisodeId로 자동이다.
+        // 간선이 함께 이어졌고(문구 「계속」), 대사엔트리는 EpisodeId로 자동이다.
         Assert.Contains(reread.Edges, edge =>
-            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "new01");
+            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "new01" && edge.OptionLabel == "계속");
         Assert.Equal("new01", added.DialogueEntry);
-
-        // 새 노드가 선택되어 바로 [개명]할 수 있다 — 판을 다시 세워도 선택이 남는다.
-        view.Refresh();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Equal("new01", view.FindControl<TextBox>("IdBox")!.Text);
     });
 
     [Fact]

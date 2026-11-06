@@ -9,8 +9,8 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>[구성] 에피소드 칸</b> — 머리글이 「장면 - 제목」을 말하고(부제 없음), 칸은 에피소드ID 하나다. 그 왼쪽에 이름표가
-/// 선다. 제목은 [대본] 탭에서 고친다. 장면은 여기서 정하지 않는다 — 하이어아키의 장면 줄에서 이름을 바꾸면 그 장면의
-/// 에피소드가 모두 따라가고 되돌리기 한 칸이다.
+/// 선다. 제목은 [대본] 탭에서 고친다. 장면은 여기서 정하지 않는다 — [대본] 탭 하이어아키의 장면 줄에서 이름을 바꾸면 그
+/// 장면의 에피소드가 모두 따라가고 되돌리기 한 칸이다.
 /// </summary>
 public sealed class ChapterEpisodeFieldsTests : IDisposable
 {
@@ -85,8 +85,9 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     [Fact]
     public void 하이어아키에서_장면_이름을_바꾸면_그_장면의_에피소드가_모두_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
-        StoryHierarchy tree = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
+        // 장면 이름은 [대본] 탭 하이어아키에서 고친다 — [구성] 탭 하이어아키는 고치지 않는다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        StoryHierarchy tree = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
 
         // opening — root · a 둘이 든 장면.
