@@ -49,6 +49,9 @@ public partial class MainWindow
         // [구성] 탭 하이어아키는 고르기만 한다 — 챕터 · 장면 · 에피소드는 [대본] 탭에서 더하고 지우고 고친다.
         ChapterGraph.HierarchyView.ReadOnly = true;
 
+        // [구성] 탭의 챕터 줄은 누르면 그 챕터의 조건 · 스탯 표가 선다 — 곁글이 그것을 말한다(에피소드 수 대신).
+        ChapterGraph.HierarchyView.ChapterDetail = "챕터 조건 스탯";
+
         // 한쪽에서 접거나 펴면 다른 쪽도 맞춘다.
         ChapterGraph.HierarchyView.FoldChanged += () => Graph.HierarchyView.RefreshFolds();
         Graph.HierarchyView.FoldChanged += () => ChapterGraph.HierarchyView.RefreshFolds();

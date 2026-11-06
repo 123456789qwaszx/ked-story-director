@@ -64,8 +64,12 @@ public sealed class StoryHierarchyTests : IDisposable
         Assert.Equal([HierarchyKind.Episode, HierarchyKind.Episode], under.Select(row => row.Kind));
         Assert.All(under, row => Assert.Equal(2, row.Depth));
         Assert.All(under, row => Assert.False(row.IsSceneRoot));   // 모두가 제 장면의 루트라 표식이 뜻이 없다
-        Assert.Contains("장면 미지정", tree.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch02")).Detail, StringComparison.Ordinal);
         Assert.DoesNotContain(tree.Rows, row => row.Text.StartsWith("__scene_", StringComparison.Ordinal));
+
+        // 챕터 줄의 곁글 — [구성] 탭은 「챕터 조건 스탯」(누르면 서는 것), [대본] 탭은 에피소드 수와 「장면 미지정」이다.
+        Assert.Equal("챕터 조건 스탯", tree.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch02")).Detail);
+        StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
+        Assert.Equal("에피소드 2 · 장면 미지정", director.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch02")).Detail);
 
         window.Close();
     });
