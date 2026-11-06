@@ -48,7 +48,7 @@ public sealed class DirectorHierarchyTests : IDisposable
         Assert.Equal("ch02", session.ActiveFile?.Name);
         Assert.Equal(card.Id, Editor(window).NodeId);
         Assert.True(Editor(window).IsVisible);
-        Assert.Equal("에피소드 · y", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("y", graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 장면ID가 없으면 제목만
 
         window.Close();
     });

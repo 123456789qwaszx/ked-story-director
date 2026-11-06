@@ -255,11 +255,15 @@ public partial class GraphEditorView : UserControl
     /// <summary>하이어아키 기둥 접기 (2026-10-30 HC) — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
     internal HierarchyDock HierarchyDock { get; }
 
-    /// <summary>인스펙터 머리글 — 무엇을 보는지. 내용(<see cref="SetSidePanel"/>)을 짓는 셸이 함께 맞춘다.</summary>
+    /// <summary>
+    /// 인스펙터 머리글 — 무엇을 보는지. 내용(<see cref="SetSidePanel"/>)을 짓는 셸이 함께 맞춘다. 부제가 비면 그 줄이 서지
+    /// 않는다.
+    /// </summary>
     internal void SetInspectorHeader(string title, string subtitle)
     {
         InspectorTitle.Text = title;
         InspectorSubtitle.Text = subtitle;
+        InspectorSubtitle.IsVisible = subtitle.Length > 0;
     }
 
     /// <summary>고른 카드가 화면 밖이면 그리로 옮긴다 — 하이어아키에서 고른 카드가 판에서 보이게.</summary>

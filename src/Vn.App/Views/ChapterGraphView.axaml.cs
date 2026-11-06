@@ -215,13 +215,11 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 에피소드 인스펙터의 머리글 — 「장면 - 제목」. 장면ID가 없으면 제목만, 제목이 비면 EpisodeId다. EpisodeId는 바로
-    /// 아래 칸이 보인다.
+    /// 에피소드 인스펙터의 머리글 — 「장면 - 제목」(<see cref="ChapterEpisode.SceneAndTitle"/>). EpisodeId는 바로 아래 칸이
+    /// 보인다.
     /// </summary>
     private static string EpisodeHeader(ChapterGraphModel? model, string episodeId) =>
-        model?.FindEpisode(episodeId) is not { } episode ? episodeId
-        : string.IsNullOrWhiteSpace(episode.SceneId) ? episode.ShownTitle
-        : $"{episode.SceneId.Trim()} - {episode.ShownTitle}";
+        model?.FindEpisode(episodeId)?.SceneAndTitle ?? episodeId;
 
     private (string Title, string Subtitle) SceneHeader(ChapterGraphModel? model) =>
         InspectedScene(model) is { } scene

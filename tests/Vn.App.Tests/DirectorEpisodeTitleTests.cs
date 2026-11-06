@@ -54,7 +54,8 @@ public sealed class DirectorEpisodeTitleTests : IDisposable
         // [대본] — 이름 칸 · 머리글 · 카드 머리 · 하이어아키가 제목이다.
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         Assert.Equal("교무실", NameBox(window).Text);
-        Assert.Equal("에피소드 · 교무실", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("hall - 교무실", graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 「장면 - 제목」
+        Assert.False(graph.FindControl<TextBlock>("InspectorSubtitle")!.IsVisible);   // 부제(대사 줄 — 화자 · 대사 · 분기)는 없다
         Assert.Contains("교무실", CardTexts(graph, card.Id));
         Assert.Equal("교무실", Row(graph.HierarchyView, "b").Text);
 

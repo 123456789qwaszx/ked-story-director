@@ -30,6 +30,11 @@ public sealed record ChapterEpisode(
     public string ShownTitle => string.IsNullOrWhiteSpace(Title) ? EpisodeId : Title.Trim();
 
     /// <summary>
+    /// 인스펙터 머리글 — 「장면 - 제목」. 장면ID가 없으면 <see cref="ShownTitle"/>만이다. 두 탭의 인스펙터가 같은 글을 쓴다.
+    /// </summary>
+    public string SceneAndTitle => string.IsNullOrWhiteSpace(SceneId) ? ShownTitle : $"{SceneId.Trim()} - {ShownTitle}";
+
+    /// <summary>
     /// `이벤트키` — <b>유니티 전용 패스스루 인덱스</b>다. 특정 에피소드를 다 시청했을 때
     /// 유니티가 자체적으로 이벤트나 보상을 일으키도록 잇는 값이라, 챕터의 끝이 아니라
     /// <b>시청 완료 트리거</b>다.

@@ -230,6 +230,12 @@ public partial class MainWindow
             ? new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, EpisodeId: EpisodeNaming.EpisodeIdOf(dialogue))
             : null;
 
+    /// <summary>에피소드 카드의 인스펙터 머리글 — 「장면 - 제목」(<see cref="ChapterEpisode.SceneAndTitle"/>).</summary>
+    private string EpisodeHeader(DialogueNode card) =>
+        EpisodeNaming.ChapterOf(_session.Project, card) is { } chapter && EpisodeNaming.EpisodeFor(chapter, card) is { } episode
+            ? episode.SceneAndTitle
+            : EpisodeNaming.ShownNameOf(_session.Project, card);
+
     /// <summary>
     /// 세션의 선택이 바뀌었다 — 카드를 고르면 요약이 풀리고, 연출 그래프의 하이어아키와 챕터 그래프가 그 에피소드를 비춘다.
     /// </summary>
@@ -274,11 +280,10 @@ public partial class MainWindow
         }
         else if (node is DialogueNode dialogue)
         {
+            // 에피소드 카드는 [구성] 탭과 같은 「장면 - 제목」이다. 부제는 두지 않는다.
             Graph.SetInspectorHeader(
-                PickOf(dialogue) is not null
-                    ? $"에피소드 · {EpisodeNaming.ShownNameOf(_session.Project, dialogue)}"
-                    : $"대사 노드 · {dialogue.Name}",
-                "대사 줄 — 화자 · 대사 · 분기");
+                PickOf(dialogue) is not null ? EpisodeHeader(dialogue) : $"대사 노드 · {dialogue.Name}",
+                string.Empty);
         }
         else
         {
