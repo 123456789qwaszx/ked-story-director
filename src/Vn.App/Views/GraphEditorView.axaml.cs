@@ -3141,6 +3141,12 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 문구를 적고 있는 칸. 없으면 null.</summary>
     private string? _editingSlot;
 
+    /// <summary>문구 입력칸의 가장 좁은 폭 — 빈 칸에도 적을 자리가 보이게.</summary>
+    private const double SlotEditorMinWidth = 90;
+
+    /// <summary>문구 입력칸의 여유 — 테두리 · 안쪽 여백 · 커서 자리.</summary>
+    private const double SlotEditorSlack = 24;
+
     /// <summary>열린 문구 입력칸을 Enter처럼 닫는 일 — 칸이 열려 있을 때만 있다.</summary>
     private Action? _finishSlot;
 
@@ -3153,12 +3159,19 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private Control SlotEditor(GraphChoicePort choice)
     {
+        // 폭을 정해 둔다 — 판은 칸 줄의 폭을 재서 레인이 나갈 자리를 정하는데(DrawRailBranch), 판에 붙기 전의 글자 칸은 틀이
+        // 아직 없어 제 폭을 작게 잰다. 그러면 레인이 글자 칸 위를 지나간다. 지금 문구의 폭에 여유를 더한다(적는 동안 넘치면
+        // 칸 안에서 밀린다).
+        var probe = new TextBlock { Text = LabelOf(choice), FontSize = 10 };
+        probe.Measure(Size.Infinity);
+
         var box = new TextBox
         {
             Text = LabelOf(choice),
             FontSize = 10,
             Padding = new Thickness(3, 0),
             MinHeight = 0,
+            Width = Math.Max(SlotEditorMinWidth, Math.Ceiling(probe.DesiredSize.Width) + SlotEditorSlack),
             VerticalAlignment = VerticalAlignment.Center
         };
 

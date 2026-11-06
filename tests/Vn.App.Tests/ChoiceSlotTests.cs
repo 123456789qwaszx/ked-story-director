@@ -130,6 +130,26 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
+    public void 이은_선택지의_문구_칸을_열어도_레인이_글자_칸을_지나지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 판은 칸 줄의 폭을 재서 레인이 나갈 자리를 정한다 — 판에 붙기 전의 글자 칸이 제 폭을 작게 재면 레인이 그 위를 지나간다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "선생님께 진행 상황도 보고한다");
+        graph.Rebuild();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Press(Labels(graph, "root")[0]);
+        TextBox box = graph.SlotLabelBox!;
+        Canvas canvas = graph.FindControl<Canvas>("GraphCanvas")!;
+        var boxRect = new Rect(box.TranslatePoint(default, canvas)!.Value, box.Bounds.Size);
+        Avalonia.Controls.Shapes.Path lane = canvas.Children.OfType<Avalonia.Controls.Shapes.Path>()
+            .Single(path => path.Tag as string == "레인:root>a");
+
+        Assert.True(boxRect.Width > 0);
+        Assert.Null(RubberBand.CaughtDistance(lane.Data!, boxRect.Deflate(1), default));
+    });
+
+    [Fact]
     public void 적고_빈_곳을_누르면_Enter처럼_넣는다() => HeadlessUi.Run(() =>
     {
         // 빈 판은 초점을 받지 않는다 — 누르는 것만으로 칸이 닫히고 적은 문구가 들어가야 한다.
