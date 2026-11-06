@@ -644,7 +644,7 @@ public partial class MainWindow : Window
     private void ShowSelectedNode()
     {
         StoryNode? node = _session.SelectedNode;
-        bool summary = _directorSummary is not null && node is null;
+        bool summary = (_directorSummary is not null || _directorLine is not null) && node is null;
 
         DialogueEditor.IsVisible = !summary && node is DialogueNode;
         EmptyText.IsVisible = !summary && node is null;

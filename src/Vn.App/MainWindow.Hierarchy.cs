@@ -56,6 +56,9 @@ public partial class MainWindow
 
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
 
+        // 판에서 고른 선 — 인스펙터가 그 선을 설명한다(MainWindow.LineInspector.cs).
+        Graph.LineSelected += line => UiGuard.Run(_session, "선 고르기", () => OnDirectorLinePicked(line));
+
         // 분기 조건은 챕터 그래프에서 정한다 — 연출 그래프의 표 · 인스펙터 단추가 그리로 데려간다.
         Graph.BranchConditionRequested += (chapterId, branchKey) =>
             UiGuard.Run(_session, "분기 조건", () => OpenBranchCondition(chapterId, branchKey));
@@ -134,6 +137,9 @@ public partial class MainWindow
     /// </summary>
     private void OnDirectorHierarchyPicked(HierarchyPick pick)
     {
+        _directorLine = null;
+        Graph.ReleaseLine();
+
         if (pick.ChapterId is { } chapterId)
         {
             _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
@@ -229,6 +235,7 @@ public partial class MainWindow
         if (_session.SelectedNodeId is not null)
         {
             _directorSummary = null;
+            _directorLine = null;
         }
 
         if (_syncingSelection || PickOf(_session.SelectedNode) is not { } pick)
@@ -251,10 +258,14 @@ public partial class MainWindow
     /// <summary>연출 그래프 인스펙터의 머리글과 요약 칸 — <see cref="ShowSelectedNode"/>가 부른다.</summary>
     private void ShowDirectorInspector(StoryNode? node)
     {
-        bool summary = _directorSummary is not null && node is null;
+        bool summary = (_directorSummary is not null || _directorLine is not null) && node is null;
         DirectorSummary.IsVisible = summary;
 
-        if (summary)
+        if (summary && _directorLine is { } line)
+        {
+            FillLineSummary(line);
+        }
+        else if (summary)
         {
             FillDirectorSummary(_directorSummary!);
         }
@@ -372,20 +383,9 @@ public partial class MainWindow
     }
 
     /// <summary>「챕터 그래프에서 열기」 — 챕터 그래프 탭으로 넘어가 그 인스펙터에 같은 줄을 세운다.</summary>
-    private void OpenInChapterGraph(HierarchyPick pick, string text)
+    private void OpenInChapterGraph(HierarchyPick pick, string text) => ChapterTabButton(text, () =>
     {
-        var button = new Button
-        {
-            Content = text,
-            FontSize = 11,
-            Margin = new Thickness(0, 8, 0, 0),
-            Tag = "summary-open"
-        };
-        button.Click += (_, _) => UiGuard.Run(_session, "[구성] 탭에서 열기", () =>
-        {
-            MainTabs.SelectedItem = ChapterTabItem;
-            ChapterGraph.Inspect(pick);
-        });
-        DirectorSummary.Children.Add(button);
-    }
+        MainTabs.SelectedItem = ChapterTabItem;
+        ChapterGraph.Inspect(pick);
+    });
 }

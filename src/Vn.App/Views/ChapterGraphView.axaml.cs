@@ -1642,21 +1642,23 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 스탯 변화 하나를 작가의 말로 — 표시 이름으로 「성실 +1」, 예/아니오 스탯은 「열쇠 → 예」. 오르면 초록, 내리면 빨강이다.
     /// </summary>
-    private (string Text, IBrush Ink) DescribeDelta(StatDelta delta)
+    private (string Text, IBrush Ink) DescribeDelta(StatDelta delta) =>
+    (
+        DeltaText(SelectedModel?.Stats, delta),
+        new SolidColorBrush(Color.Parse(delta.IsSet ? "#3D7BD9" : delta.Amount < 0 ? "#C0392B" : "#1F9D55"))
+    );
+
+    /// <summary>스탯 변화 하나의 글 — 스탯 표에 표시 이름이 있으면 그 이름으로. [대본] 탭 인스펙터도 같은 말을 쓴다.</summary>
+    internal static string DeltaText(IReadOnlyList<ChapterStat>? stats, StatDelta delta)
     {
-        string name = SelectedModel?.Stats.FirstOrDefault(stat =>
+        string name = stats?.FirstOrDefault(stat =>
                           string.Equals(stat.Key, delta.Key, StringComparison.Ordinal))?.DisplayName is { Length: > 0 } display
             ? display
             : delta.Key;
 
-        if (delta.IsSet)
-        {
-            return ($"{name} → {(delta.Amount != 0 ? "예" : "아니오")}", new SolidColorBrush(Color.Parse("#3D7BD9")));
-        }
-
-        return (
-            $"{name} {delta.Amount.ToString("+0;-0;+0", System.Globalization.CultureInfo.InvariantCulture)}",
-            new SolidColorBrush(Color.Parse(delta.Amount < 0 ? "#C0392B" : "#1F9D55")));
+        return delta.IsSet
+            ? $"{name} → {(delta.Amount != 0 ? "예" : "아니오")}"
+            : $"{name} {delta.Amount.ToString("+0;-0;+0", System.Globalization.CultureInfo.InvariantCulture)}";
     }
 
     /// <summary>문구가 설 만한 자리들 — 선 한가운데부터 제 선을 따라 위아래로 번갈아 멀어진다(선의 15%~85%).</summary>
