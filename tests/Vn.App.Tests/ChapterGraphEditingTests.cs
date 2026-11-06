@@ -114,10 +114,9 @@ public sealed class ChapterGraphEditingTests
         // v9 — 사전은 챕터 전체의 어휘다. 에피소드 하나가 사라졌다고 낱말을 지우면
         // 다른 에피소드의 드롭다운에서도 사라진다.
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         ChapterGraphModel reread = Chapter(session);
 
@@ -133,7 +132,7 @@ public sealed class ChapterGraphEditingTests
         //    같은 Id로 다시 만들면 같은 이름의 노드가 둘이 되어 내보내기가 통째로 막힌다
         //    ("번들 이름이 겹칩니다").
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         // 판과 카드는 프로젝트를 열 때 이미 섰다(AlignBoardsWithChapters) — 여기서 또 만들면
         // 같은 이름이 둘이 되어 실물이 아니라 사본을 재게 된다.
@@ -144,8 +143,7 @@ public sealed class ChapterGraphEditingTests
         Vn.Authoring.Script.ScriptDocument blank = ghost.Script;
         Assert.DoesNotContain(blank.ActiveLines, line => blank.Text(line.Id).Text.Length > 0);
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         Assert.Null(session.Project.FindNode(ghost.Id));
     });
@@ -158,7 +156,7 @@ public sealed class ChapterGraphEditingTests
         //
         // 글은 그래도 안 사라진다 — 카드가 대본을 들고 있어 되돌리면 카드와 함께 돌아온다.
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         DialogueNode written = session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => node.MarkedEpisodeId == "branch05.02A");
@@ -169,8 +167,7 @@ public sealed class ChapterGraphEditingTests
             new Vn.Authoring.Script.LocalizedLine("윌로", "잃으면 안 되는 줄");
         written.Script = script;
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         // 카드가 <b>사라진다</b> — `(떼어냄)`이 판에 남지 않는다.
         Assert.Null(session.Project.FindNode(written.Id));
@@ -197,10 +194,6 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<TextBox>("IdBox")!.IsEnabled);
-
-        var delete = view.FindControl<Button>("DeleteEpisodeButton")!;
-        Assert.True(delete.IsVisible);
-        Assert.True(delete.IsEnabled);
     });
 
     [Fact]
@@ -497,9 +490,11 @@ public sealed class ChapterGraphEditingTests
         // [폴더 열기]도 없다.
         Assert.Null(view.FindControl<Button>("OpenFolderButton"));
 
+        // [에피소드 삭제]도 없다 — 지우기는 하이어아키의 우클릭 「지우기」 하나다.
+        Assert.Null(view.FindControl<Button>("DeleteEpisodeButton"));
+
         // 남아야 하는 이웃 — 지우다 같이 쓸려 나가면 여기서 걸린다.
         Assert.NotNull(view.FindControl<Button>("AddEpisodeButton"));
-        Assert.NotNull(view.FindControl<Button>("DeleteEpisodeButton"));
     });
 
     [Fact]

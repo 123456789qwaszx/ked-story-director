@@ -446,7 +446,6 @@ public partial class ChapterGraphView : UserControl
         // 스탯변화 줄 편집기 — 간선 패널.
         EdgeStatsHost.Children.Add(_edgeStats);
 
-        DeleteEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 삭제", DeleteSelectedEpisode);
         AddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
         AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
         HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
@@ -3967,36 +3966,6 @@ public partial class ChapterGraphView : UserControl
 
         _session.SetStatus(
             $"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다.");
-    }
-
-    /// <summary>
-    /// [에피소드 삭제] — 규율은 <see cref="EpisodeDeleter"/> 하나다.
-    ///
-    /// ⛔ <b>2026-09-18까지 그 규율이 여기 살았다</b>(원고 밀기·행 지우기·카드 거두기
-    /// 100여 줄). 다른 화면에 같은 기능을 붙이려면 사본을 뜨는 수밖에 없었고, 사본은
-    /// 갈린다 — 바로 앞의 「에피소드 만들기」가 그렇게 갈려 있었다. 화면에 남는 것은
-    /// <b>무엇을 골랐는가</b>와 <b>결과를 어떻게 말하는가</b>뿐이다.
-    /// </summary>
-    internal void DeleteSelectedEpisode()
-    {
-        if (_selectedEpisodeId is not { } episodeId || _selectedChapterId is not { } chapterId)
-        {
-            // 조용한 무동작 금지 — 단추가 늘 떠 있으므로(2026-08-16) 대상이 없다는 것을 말한다.
-            _session?.SetStatus("지울 에피소드를 판에서 먼저 골라 주세요.");
-            return;
-        }
-
-        EpisodeDeleter.Result result = EpisodeDeleter.Delete(_session!.Editor, chapterId, episodeId);
-
-        if (!result.Ok)
-        {
-            _session.SetStatus(result.Failure!);
-            return;
-        }
-
-        _selectedEpisodeId = null;
-
-        _session.SetStatus(result.Describe(episodeId));
     }
 
     /// <summary>
