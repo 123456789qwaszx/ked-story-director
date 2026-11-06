@@ -231,6 +231,13 @@ public static class ChapterBranchPlanner
     /// <summary>세로로 이만큼 안이면 같은 줄로 보고 가로로 비킨다 — 카드 높이(74)에 틈을 둔 값.</summary>
     private const double CollisionBand = 120;
 
+    /// <summary>
+    /// 간격이 이만큼 모자란 것까지는 부딪친 것으로 치지 않는다. 비킨 자리(이웃 X + 간격)를 다시 재면 소수점 오차로 간격이 아주 조금
+    /// 모자라게 나오는데, 그것을 부딪침으로 치면 같은 이웃에 다시 부딪쳐 같은 자리로 비키기를 끝없이 되풀이한다. 이만큼을 남기면
+    /// 비킬 때마다 X가 적어도 이만큼 커지므로 반드시 끝난다.
+    /// </summary>
+    private const double CollisionSlack = 0.01;
+
     /// <summary>(x, y)에 앉으면 부딪치는 카드가 있으면 그 카드의 X(가장 오른쪽 것), 없으면 null.</summary>
     private static double? CollisionAt(IEnumerable<(double X, double Y)> placed, double x, double y)
     {
@@ -238,7 +245,7 @@ public static class ChapterBranchPlanner
 
         foreach ((double otherX, double otherY) in placed)
         {
-            if (Math.Abs(otherX - x) < SiblingSpacing && Math.Abs(otherY - y) < CollisionBand &&
+            if (Math.Abs(otherX - x) < SiblingSpacing - CollisionSlack && Math.Abs(otherY - y) < CollisionBand &&
                 (hit is null || otherX > hit))
             {
                 hit = otherX;
