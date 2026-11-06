@@ -212,8 +212,8 @@ public sealed partial class ProjectEditor
     /// </summary>
     /// <param name="episodePosition">
     /// 챕터 그래프에서의 자리. <b>카드의 자리와 다른 판이다</b> — 연출 판의 좌표를 그대로
-    /// 챕터 그래프에 넣으면 사람이 맞춰 둔 배치가 흐트러진다. 안 주면 카드 자리를 따른다
-    /// (연출 그래프에서 카드부터 세우는 길이 그렇다 — 거기서는 그 자리가 유일한 정보다).
+    /// 챕터 그래프에 넣으면 사람이 맞춰 둔 배치가 흐트러진다. 안 주면(연출 그래프에서 카드부터 세우는 길) 같은 챕터의
+    /// 가장 가까운 카드를 기준으로 그 에피소드 곁에 놓는다(<see cref="ChapterBranchPlanner.PlaceLikeBoard"/>).
     /// </param>
     private (ChapterDocument? Chapter, ChapterEpisode? Episode) NewEpisodeFor(
         StoryFile file, DialogueNode created, string? sceneId, bool allowUnreachable,
@@ -234,19 +234,30 @@ public sealed partial class ProjectEditor
 
         created.MarkedEpisodeId = created.Name;
 
+        (double X, double Y) position = episodePosition ?? ChapterBranchPlanner.PlaceLikeBoard(
+            (created.Layout.X, created.Layout.Y), BoardNeighbors(file, chapter));
+
         return (chapter, new ChapterEpisode(
             created.Name,
             title ?? created.Name,
             Index: string.Empty,
             DialogueEntry: created.Name,
-            Math.Round(episodePosition?.X ?? created.Layout.X, 2),
-            Math.Round(episodePosition?.Y ?? created.Layout.Y, 2),
+            Math.Round(position.X, 2),
+            Math.Round(position.Y, 2),
             Memo: null,
             AllowUnreachable: allowUnreachable)
         {
             SceneId = sceneId
         });
     }
+
+    /// <summary>그 판에 이미 선 카드들 — 판 자리와 그 에피소드의 챕터 그래프 자리(에피소드가 있는 카드만).</summary>
+    private static List<((double X, double Y) Card, (double X, double Y) Episode)> BoardNeighbors(
+        StoryFile file, ChapterDocument chapter) =>
+        [.. file.Nodes.OfType<DialogueNode>()
+            .Select(node => (Node: node, Episode: EpisodeNaming.EpisodeFor(chapter, node)))
+            .Where(pair => pair.Episode is not null)
+            .Select(pair => ((pair.Node.Layout.X, pair.Node.Layout.Y), (pair.Episode!.X, pair.Episode.Y)))];
 
     /// <summary>
     /// <b>「분기 추가」</b> — 그 줄 <b>앞</b>에 분기 표식을 두고,

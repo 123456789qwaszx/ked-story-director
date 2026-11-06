@@ -2426,10 +2426,14 @@ public partial class ChapterGraphView : UserControl
     /// 빌린 배치로 보인다. 소수점 둘째 자리까지 맞아떨어져야 하니 손으로는 거의 안 일어나고,
     /// 일어나도 다음 옮기기 한 번으로 풀린다.
     ///
-    /// ⛔ <b>음수 자리도 여기서 걷는다.</b> v3의 깊이 배치는 언제나 0 이상을 냈지만, 손으로
-    /// 적은 워크북은 아니다 — 견본 챕터의 <c>branch05.02A</c>가 Y=−120이다. 그대로 그리면
-    /// 카드가 캔버스 위쪽 바깥에 서고 <b>스크롤이 닿지 않아 아예 못 만진다</b>. 왼위가
-    /// (0,0)이 되게 통째로 민다 — 서로의 거리는 그대로이므로 사람이 짠 모양은 안 바뀐다.
+    /// ⭐ <b>판은 이 챕터의 에피소드만 감싼다</b> — 왼위 에피소드가 (0,0)에 오게 통째로 민다. 서로의 거리는 그대로이므로
+    /// 사람이 짠 모양은 안 바뀐다. 민 자리는 판의 크기도 정한다(<see cref="DrawCanvas"/>).
+    /// <list type="bullet">
+    /// <item>음수 자리 — 손으로 적은 워크북의 견본 챕터 <c>branch05.02A</c>가 Y=−120이다. 그대로 그리면 카드가 캔버스 위쪽
+    /// 바깥에 서고 스크롤이 닿지 않아 못 만진다.</item>
+    /// <item>먼 양수 자리 — [대본] 탭에서 세운 카드의 에피소드는 그 카드 자리(그때 보던 화면 한가운데)를 받을 수 있다.
+    /// 그대로 그리면 판이 원점부터 그 자리까지를 다 잡아, 텅 빈 왼위가 다른 챕터의 자리처럼 보인다.</item>
+    /// </list>
     ///
     /// ⚠ 미는 양은 <b>모델</b>에서 나온다(끄는 중의 임시 자리가 아니라). 그래야 끄는 동안
     /// 기준이 안 흔들려 판 전체가 출렁이지 않는다.
@@ -2445,14 +2449,9 @@ public partial class ChapterGraphView : UserControl
         double left = model.Episodes.Count == 0 ? 0 : model.Episodes.Min(episode => episode.X);
         double top = model.Episodes.Count == 0 ? 0 : model.Episodes.Min(episode => episode.Y);
 
-        // 왼위가 이미 안쪽이면 그대로 둔다 — 까닭 없이 판을 붙여 세우면 사람이 비워 둔
-        // 여백이 사라진다. 미는 것은 바깥으로 나간 만큼뿐이다.
-        double shiftX = Math.Min(0, left);
-        double shiftY = Math.Min(0, top);
-
         return model.Episodes.ToDictionary(
             episode => episode.EpisodeId,
-            episode => (X: episode.X - shiftX, Y: episode.Y - shiftY),
+            episode => (X: episode.X - left, Y: episode.Y - top),
             StringComparer.Ordinal);
     }
 
