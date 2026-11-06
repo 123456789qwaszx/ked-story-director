@@ -226,6 +226,35 @@ public sealed class GraphBranchKnobTests
     });
 
     [Fact]
+    public void 누른_분기점이_끊기고_제자리에_남는다_다른_분기는_자리와_색이_그대로다() => HeadlessUi.Run(() =>
+    {
+        // 위쪽 분기점을 눌렀는데 맨 아래 분기점이 속 빈 점이 되면 — 아래 분기가 끊긴 것으로 보인다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =
+            Stage("첫 줄", "둘째 줄");
+        DialogueNode first = session.Editor.AddBranchMarker(card.Id, lines[1]);
+        DialogueNode second = session.Editor.AddBranchMarker(card.Id, lines[1]);
+        ShowGraph(window);
+
+        Canvas canvas = Canvas(window);
+        Click(window, canvas, Center(Assert.Single(Hubs(canvas, card.Id))));
+        List<Ellipse> before = Knobs(canvas, card.Id).OrderBy(knob => Center(knob).Y).ToList();
+        Assert.EndsWith(first.Id, (string)before[0].Tag!, StringComparison.Ordinal);
+        IBrush lowerColor = before[1].Stroke!;
+
+        Click(window, canvas, Center(before[0]));
+
+        List<Ellipse> after = Knobs(canvas, card.Id).OrderBy(knob => Center(knob).Y).ToList();
+        Assert.Equal(2, after.Count);
+        Assert.Equal(Brushes.Transparent, after[0].Fill);                          // 누른 위쪽이 속 빈 점이다
+        Assert.EndsWith(second.Id, (string)after[1].Tag!, StringComparison.Ordinal); // 아래는 여전히 둘째 분기
+        Assert.NotEqual(Brushes.Transparent, after[1].Fill);
+        Assert.Equal(((ISolidColorBrush)lowerColor).Color, ((ISolidColorBrush)after[1].Stroke!).Color);
+        Assert.Equal([second.Id], session.Project.FindDialogue(card.Id)!.FindExtension(lines[1])!.DetourTargetNodeIds);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 이어지지_않은_분기점을_끌어_카드에_놓으면_다시_분기가_된다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, List<string> lines) =

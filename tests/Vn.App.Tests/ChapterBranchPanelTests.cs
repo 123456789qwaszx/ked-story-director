@@ -318,11 +318,16 @@ public sealed class ChapterBranchPanelTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
-        List<Point> centers = Knobs(canvas).Select(KnobCenter).OrderBy(point => point.Y).ToList();
+        List<Ellipse> knobs = Knobs(canvas).OrderBy(knob => KnobCenter(knob).Y).ToList();
+        List<Point> centers = knobs.Select(KnobCenter).ToList();
 
         Assert.Equal(2, centers.Count);
         Assert.Equal(centers[0].X, centers[1].X, 3);
         Assert.True(centers[1].Y - centers[0].Y >= 10, "점이 겹친다");
+
+        // 끊은 것(첫째)은 제자리 — 위가 속 빈 점이고 아래는 이어진 둘째다.
+        Assert.Equal(Brushes.Transparent, knobs[0].Fill);
+        Assert.NotEqual(Brushes.Transparent, knobs[1].Fill);
     });
 
     private static Border Card(Canvas canvas, string episodeId) =>

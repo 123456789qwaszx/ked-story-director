@@ -61,17 +61,27 @@ public sealed class OpenDetourTests
     }
 
     [Fact]
-    public void 한_줄에_여럿이면_끊은_것만_분기점으로_남고_나머지는_그대로_다녀온다()
+    public void 한_줄에_여럿이면_끊은_것만_제자리에서_분기점으로_남고_나머지는_자리와_색이_그대로다()
     {
+        // 끊은 분기점이 줄 끝으로 옮겨 가면 다른 분기가 한 칸씩 당겨져 — 위를 눌렀는데 아래가 끊긴 것처럼 보인다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
         DialogueNode second = editor.AddBranchMarker(node.Id, lineId);
+        DialogueNode third = editor.AddBranchMarker(node.Id, lineId);
+        int thirdColor = Detours(editor, node).Single(port => port.TargetNodeId == third.Id).PaletteIndex;
 
+        editor.SetExitTarget(Detours(editor, node).Single(port => port.TargetNodeId == second.Id), null);
+
+        Assert.Equal([first.Id, null, third.Id], Detours(editor, node).Select(port => port.TargetNodeId));
+        Assert.Equal(1, Detours(editor, node)[1].OpenOrdinal);
+        Assert.Equal(thirdColor, Detours(editor, node).Single(port => port.TargetNodeId == third.Id).PaletteIndex);
+
+        // 그 자리에서 다시 이으면 그 자리의 분기가 된다.
+        editor.SetExitTarget(Detours(editor, node)[1], second.Id);
+        Assert.Equal([first.Id, second.Id, third.Id], Detours(editor, node).Select(port => port.TargetNodeId));
         editor.SetExitTarget(Detours(editor, node).Single(port => port.TargetNodeId == first.Id), null);
-
-        Assert.Equal([second.Id, null], Detours(editor, node).Select(port => port.TargetNodeId));
         Assert.Equal(
-            [second.Id],
+            [second.Id, third.Id],
             WorkingDialoguePreview.Compose(editor.Project, node.Id).Segments
                 .Where(segment => segment.Kind == RenderedSegmentKind.BranchDetour)
                 .Select(segment => segment.TargetNodeId));
@@ -79,6 +89,30 @@ public sealed class OpenDetourTests
         // 같은 줄이 이미 가는 곳에는 잇지 않는다 — 분기점은 그대로 남는다.
         editor.SetExitTarget(Detours(editor, node).Single(port => port.IsOpenDetour), second.Id);
         Assert.Equal(1, Node(editor, node.Id).FindExtension(lineId)!.OpenDetours);
+
+        // 분기점째 지우면 뒤의 것들이 한 칸씩 당겨진다.
+        editor.RemoveOpenDetour(node.Id, lineId, 0);
+        Assert.Equal([second.Id, third.Id], Detours(editor, node).Select(port => port.TargetNodeId));
+    }
+
+    [Fact]
+    public void 분기점의_자리를_저장하고_수만_적힌_줄은_이어진_분기들_뒤에_둔다()
+    {
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
+        DialogueNode second = editor.AddBranchMarker(node.Id, lineId);
+        editor.SetExitTarget(Detours(editor, node).Single(port => port.TargetNodeId == first.Id), null);
+
+        StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project));
+        Assert.Equal([null, second.Id], reloaded.FindDialogue(node.Id)!.FindExtension(lineId)!.DetourSlots());
+
+        // 자리 대신 수만 적힌 줄(`"openDetours": 1`) — 이어진 분기들 뒤에 선다.
+        string legacy = ProjectSnapshotCodec.Encode(editor.Project)
+            .Replace("\"openDetours\": [\n", "\"openDetours\": 1, \"_\": [\n", StringComparison.Ordinal);
+        Assert.Contains("\"openDetours\": 1", legacy, StringComparison.Ordinal);
+        Assert.Equal(
+            [second.Id, null],
+            ProjectSnapshotCodec.Decode(legacy).FindDialogue(node.Id)!.FindExtension(lineId)!.DetourSlots());
     }
 
     [Fact]

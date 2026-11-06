@@ -182,6 +182,32 @@ internal static class StoryNodeJson
     /// 조건 갈래 출구는 갈래를 여는 줄의 항목 안에 함께 적어 둔다. 별도 배열로 나누면
     /// 줄이 사라졌을 때 짝 없는 출구가 파일에 남는다.
     /// </summary>
+    /// <summary>
+    /// 분기점 전부를 차례대로 편다 — 이어진 분기(<c>detour</c>)에 이어지지 않은 분기점의 자리(<c>openDetours</c>)를 끼운다.
+    /// 자리 대신 수만 적힌 줄(숫자 하나)은 그만큼을 이어진 분기들 뒤에 둔다. 범위를 벗어난 자리는 뒤로 물린다.
+    /// </summary>
+    private static List<string?> ReadDetourSlots(IReadOnlyList<string> targets, JsonNode? openJson)
+    {
+        List<int> positions = openJson switch
+        {
+            JsonArray array => array.Select(item => (int?)item ?? -1).Where(position => position >= 0).Distinct().Order().ToList(),
+            JsonValue value when (int?)value is int count and > 0 => Enumerable.Range(targets.Count, count).ToList(),
+            _ => []
+        };
+
+        int total = targets.Count + positions.Count;
+        var slots = new List<string?>(total);
+        int target = 0;
+
+        for (int index = 0; index < total; index++)
+        {
+            bool open = positions.Contains(index) || target >= targets.Count;
+            slots.Add(open ? null : targets[target++]);
+        }
+
+        return slots;
+    }
+
     private static void WriteDialogueNode(DialogueNode node, JsonObject json)
     {
         json["script"] = ScriptDocumentJson.WriteBody(node.Script);
@@ -232,10 +258,12 @@ internal static class StoryNodeJson
                 lineJson["detour"] = detours;
             }
 
-            // 연결만 끊은 분기점의 수 — 있을 때만 적는다. 다녀갈 곳이 없으니 `detour`와 따로 둔다(읽는 쪽이 모르면 그냥 건너뛴다).
-            if (extension.OpenDetours > 0)
+            // 연결만 끊은 분기점의 자리(그 줄 분기점 전체에서 몇째) — 있을 때만 적는다. 다녀갈 곳이 없으니 `detour`와 따로
+            // 둔다(읽는 쪽이 모르면 그냥 건너뛴다).
+            if (extension.OpenDetourPositions.Count > 0)
             {
-                lineJson["openDetours"] = extension.OpenDetours;
+                lineJson["openDetours"] = new JsonArray(
+                    extension.OpenDetourPositions.Select(position => (JsonNode?)JsonValue.Create(position)).ToArray());
             }
 
             lines.Add(lineJson);
@@ -393,7 +421,7 @@ internal static class StoryNodeJson
             // 줄의 `set`도 2026-09-17에 폐지됐다 — 옛 파일에 남아 있어도 안 읽는다.
 
             extension.DetourTargetNodeIds.AddRange(DetourJson.Read(lineJson["detour"]));
-            extension.OpenDetours = Math.Max(0, (int?)lineJson["openDetours"] ?? 0);
+            extension.SetDetourSlots(ReadDetourSlots(extension.DetourTargetNodeIds, lineJson["openDetours"]));
 
             node.LineExtensions.Add(extension);
         }

@@ -782,31 +782,28 @@ public partial class DialogueNodeEditor : UserControl
     private IReadOnlyList<Control> BuildBranchMarkerCards(
         DialogueNode node, string lineId, IReadOnlyDictionary<string, int> detourPalette)
     {
-        IReadOnlyList<string> targets = node.FindExtension(lineId)?.DetourTargetNodeIds ?? [];
-        int open = node.FindExtension(lineId)?.OpenDetours ?? 0;
-        int count = targets.Count + open;
+        // 분기점 전부를 차례대로 — 연결만 끊은 분기점은 제자리에 선다.
+        List<string?> slots = node.FindExtension(lineId)?.DetourSlots() ?? [];
+        int lastConnected = slots.FindLastIndex(slot => slot is not null);
+        var cards = new List<Control>();
 
-        var cards = targets
-            .Select((targetId, order) => BuildBranchMarkerCard(
-                node,
-                lineId,
-                targetId,
-                order,
-                count,
-                lastConnected: order == targets.Count - 1,
-                detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, targetId), -1)))
-            .ToList();
-
-        // 연결만 끊은 분기점 — 이어진 분기들 뒤에 선다.
-        for (int index = 0; index < open; index++)
+        for (int order = 0; order < slots.Count; order++)
         {
-            cards.Add(BuildOpenDetourCard(
-                node,
-                lineId,
-                index,
-                targets.Count + index,
-                count,
-                detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, ExitPort.OpenSlot(index)), -1)));
+            cards.Add(slots[order] is { } targetId
+                ? BuildBranchMarkerCard(
+                    node,
+                    lineId,
+                    targetId,
+                    order,
+                    slots.Count,
+                    lastConnected: order == lastConnected,
+                    detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, targetId), -1))
+                : BuildOpenDetourCard(
+                    node,
+                    lineId,
+                    order,
+                    slots.Count,
+                    detourPalette.GetValueOrDefault(ExitPort.DetourKey(lineId, ExitPort.OpenSlot(order)), -1)));
         }
 
         return cards;
@@ -816,9 +813,8 @@ public partial class DialogueNodeEditor : UserControl
     /// 이어지지 않은 분기점 하나 — 다녀갈 곳과의 연결만 끊은 분기다. 다녀가지 않고 지나간다. [대본] 판에서 그 점을 끌어
     /// 카드에 이으면 다시 분기가 된다. [✕ 분기점 지우기] · 우클릭이 분기점째 걷는다.
     /// </summary>
-    /// <param name="openIndex">그 줄의 이어지지 않은 분기점 가운데 몇째인가(<see cref="ExitPort.OpenSlot"/>).</param>
-    /// <param name="order">그 줄의 분기점 전체 가운데 몇째인가 — 이어진 분기들 뒤다.</param>
-    private Control BuildOpenDetourCard(DialogueNode node, string lineId, int openIndex, int order, int count, int palette)
+    /// <param name="order">그 줄의 분기점 전체 가운데 몇째 자리인가 — 그 분기점의 신원이다(<see cref="ExitPort.OpenSlot"/>).</param>
+    private Control BuildOpenDetourCard(DialogueNode node, string lineId, int order, int count, int palette)
     {
         var head = new DockPanel { LastChildFill = true };
         head.Children.Add(new TextBlock
@@ -830,14 +826,14 @@ public partial class DialogueNodeEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center
         });
 
-        Button remove = SmallButton("✕ 분기점 지우기", () => RemoveOpenDetour(node, lineId));
+        Button remove = SmallButton("✕ 분기점 지우기", () => RemoveOpenDetour(node, lineId, order));
         ToolTip.SetTip(remove, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
         DockPanel.SetDock(remove, Dock.Right);
         head.Children.Insert(0, remove);
 
         var card = new Border
         {
-            Tag = BranchMarkerTag(lineId, ExitPort.OpenSlot(openIndex)),
+            Tag = BranchMarkerTag(lineId, ExitPort.OpenSlot(order)),
             Margin = new Thickness(0, 2, 0, 2),
             Padding = new Thickness(8, 4),
             CornerRadius = new CornerRadius(8),
@@ -870,17 +866,17 @@ public partial class DialogueNodeEditor : UserControl
             }
 
             args.Handled = true;
-            RemoveOpenDetour(node, lineId);
+            RemoveOpenDetour(node, lineId, order);
         };
 
         return card;
     }
 
     /// <summary>이어지지 않은 분기점 하나를 지운다 — 분기점 카드의 [✕] · 우클릭 · ＋ 메뉴가 같은 길이다.</summary>
-    private void RemoveOpenDetour(DialogueNode node, string lineId) =>
+    private void RemoveOpenDetour(DialogueNode node, string lineId, int position) =>
         UiGuard.Run(_session!, "분기점 지우기", () =>
         {
-            _session!.Editor.RemoveOpenDetour(node.Id, lineId);
+            _session!.Editor.RemoveOpenDetour(node.Id, lineId, position);
             _session.SetStatus("이어지지 않은 분기점을 지웠습니다.");
         });
 
@@ -1070,9 +1066,9 @@ public partial class DialogueNodeEditor : UserControl
         IReadOnlyList<string> existing = resolved.Line.LineId is { Length: > 0 } markerLineId
             ? node.FindExtension(markerLineId)?.DetourTargetNodeIds ?? []
             : [];
-        int openPoints = resolved.Line.LineId is { Length: > 0 } openLineId
-            ? node.FindExtension(openLineId)?.OpenDetours ?? 0
-            : 0;
+        List<int> openPoints = resolved.Line.LineId is { Length: > 0 } openLineId
+            ? [.. node.FindExtension(openLineId)?.OpenDetourPositions ?? []]
+            : [];
 
         if (existing.Count > 0)
         {
@@ -1095,9 +1091,10 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         // 연결만 끊은 분기점 — 하나씩 지운다.
-        for (int index = 0; index < openPoints; index++)
+        foreach (int position in openPoints)
         {
-            Button removeOpen = SmallButton("✕ 이어지지 않은 분기점 지우기", () => RemoveOpenDetour(node, resolved.Line.LineId));
+            Button removeOpen = SmallButton(
+                $"✕ 이어지지 않은 분기점({position + 1}번째) 지우기", () => RemoveOpenDetour(node, resolved.Line.LineId, position));
             ToolTip.SetTip(removeOpen, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
             panel.Children.Add(removeOpen);
         }
