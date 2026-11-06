@@ -213,6 +213,29 @@ public sealed class ChapterSheetEditTests : IDisposable
     });
 
     [Fact]
+    public void 긴_조건_라벨은_넓힌_칸에서_잘리고_칸_어디에_손을_올려도_전체가_보인다() => HeadlessUi.Run(() =>
+    {
+        const string longLabel = "성실 3 미만 · 요령 3 미만 · 신뢰 높음 · 그리고 아주 긴 꼬리";
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        session.Editor.AddChapterCondition("ch01", longLabel, "trust < 3");
+        Redraw(view);
+
+        var row = (Grid)Row(view, "condition:" + longLabel);
+        Assert.Equal(ChapterGraphView.ConditionLabelWidth, row.ColumnDefinitions[0].Width.Value);
+        Assert.True(ChapterGraphView.ConditionLabelWidth >= 150);
+
+        // 라벨은 칸 안에서 잘리고(…), 풍선이 전체를 말한다.
+        SelectableTextBlock label = row.GetLogicalDescendants().OfType<SelectableTextBlock>().Single();
+        Assert.True(label.Bounds.Width <= ChapterGraphView.ConditionLabelWidth + 0.5);
+        Assert.Equal(longLabel, ToolTip.GetTip(label));
+
+        // 칸 어디에 손을 올려도 라벨이 받는다 — 글자 획 사이 · 「…」 곁의 빈자리도(바탕 없는 글은 받지 않아 풍선이 안 떴다).
+        Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();   // 손 닿는 자리는 그린 장면으로 잰다
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Same(label, label.InputHitTest(new Point(label.Bounds.Width - 1, 1)));
+    });
+
+    [Fact]
     public void 예_아니오로_바꾸면_범위_칸이_걷히고_처음_값을_예_아니오로_고른다() => HeadlessUi.Run(() =>
     {
         (ChapterGraphView view, AuthoringSession session) = Show();

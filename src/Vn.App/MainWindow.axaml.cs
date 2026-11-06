@@ -103,12 +103,9 @@ public partial class MainWindow : Window
 
         // 두 하이어아키 · 탭 사이 선택 맞추기 (MainWindow.Hierarchy.cs).
         WireHierarchies();
-        ChapterGraph.ChapterAddButton.Click += (_, _) =>
-            UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(ChapterGraph.ChapterAddButton));
-        // 챕터가 하나도 없을 때 판 한가운데 서는 [＋ 챕터] — 뜻이 같으니 배선도 같다.
-        // 플라이아웃만 누른 그 단추에 붙는다(화면 반대편에서 열리면 눈이 길을 잃는다).
-        ChapterGraph.ChapterAddCenterButton.Click += (_, _) =>
-            UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(ChapterGraph.ChapterAddCenterButton));
+        // 새 챕터는 [대본] 탭 하이어아키의 [＋]에서 만든다.
+        Graph.ChapterAddButton.Click += (_, _) =>
+            UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(Graph.ChapterAddButton));
         // 프로젝트가 아직 없을 때는 [새 프로젝트]가 먼저다 —
         // 툴바의 [새로 만들기]와 같은 길 하나를 지난다.
         ChapterGraph.ProjectNewCenterButton.Click += OnNewClick;
@@ -142,7 +139,16 @@ public partial class MainWindow : Window
                     OnSaveClick(this, new RoutedEventArgs());
                     break;
 
-                // 주의: 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
+                // [대본] 카드 글 칸은 예외다 — 칸은 쓰다 멈출 때마다 글을 넣고(되돌리기 한 칸) 줄이 늘고 줄면 새 칸이 되어
+                //    칸 자체의 되돌리기 기록이 비어 있다. 그래서 거기서는 프로젝트 되돌리기 · 다시 실행이다(넣지 않은 글이
+                //    있으면 그것부터 걷는다).
+                case Avalonia.Input.Key.Z or Avalonia.Input.Key.Y when Graph.IsWritingFocused:
+                    args.Handled = true;
+                    bool redo = args.Key == Avalonia.Input.Key.Y;
+                    UiGuard.Run(_session, redo ? "다시 실행" : "되돌리기", () => Graph.UndoInWriting(redo));
+                    break;
+
+                // 주의: 다른 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
                 //    되돌리는 것이고, 그것을 프로젝트 되돌리기로 바꾸면 쓰던 문장이 통째로
                 //    날아간다. TextBox가 제 되돌리기를 먼저 하도록 둔다.
                 case Avalonia.Input.Key.Z when FocusManager?.GetFocusedElement() is not TextBox:
@@ -382,10 +388,24 @@ public partial class MainWindow : Window
         _session.SetStatus(
             $"챕터 '{chapterId}' → '{newId}'로 바꿨습니다" +
             (result.SupplyRenamed ? "(조건 노드도 함께)." : ".") +
-            (result.StaleExport is { } stale
-                ? $" ⚠ 옛 이름의 내보내기 '{stale}'가 남아 있습니다 — 지우고 다시 내보내 주세요."
-                : " 내보낸 JSON이 있었다면 다시 내보내 주세요."));
+            StaleExportNote(result.StaleExport, chapterId));
         return true;
+    }
+
+    /// <summary>
+    /// 지우거나 이름을 바꾼 챕터의 옛 진행 JSON이 어떻게 됐는지 한 마디 — 바로 앞의 다시 읽기가 내보내며 걷는다
+    /// (<see cref="ChapterExportService"/>). 못 걷었으면 그렇다고 말한다: 그냥 두면 게임이 없는 챕터를 계속 싣는다.
+    /// </summary>
+    private string StaleExportNote(string? stale, string chapterId)
+    {
+        if (stale is null || _session.ProjectPath is not { } projectPath)
+        {
+            return string.Empty;
+        }
+
+        return File.Exists(ChapterExportService.ExportPathFor(projectPath, chapterId))
+            ? $" ⚠ 옛 진행 JSON '{stale}'을 걷지 못했습니다 — 다른 프로그램에 잡혀 있는지 확인하세요."
+            : $" 옛 진행 JSON '{stale}'은 걷었습니다(게임 폴더의 같은 파일도).";
     }
 
     /// <summary>
@@ -446,10 +466,7 @@ public partial class MainWindow : Window
                 _session.SetStatus(
                     $"챕터 '{chapterId}'를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). " +
                     "되돌리기(Ctrl+Z)로 돌아옵니다." +
-                    (result.StaleExport is { } stale
-                        ? $" ⚠ 내보낸 '{stale}'가 남아 있습니다 — 지우지 않으면 게임이 " +
-                          "없는 챕터를 계속 싣습니다."
-                        : string.Empty));
+                    StaleExportNote(result.StaleExport, chapterId));
             });
         };
 

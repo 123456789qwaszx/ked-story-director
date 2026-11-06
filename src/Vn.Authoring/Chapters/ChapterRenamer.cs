@@ -9,16 +9,15 @@ namespace Vn.Authoring.Chapters;
 /// 개명은 <see cref="ProjectEditor.RenameChapter"/> 한 번이다: <c>Project.Chapters</c>의 Id · 판 이름 ·
 /// 조건 공급 노드 이름이 한 변경으로 바뀌고 되돌리기 한 번에 돌아온다.
 ///
-/// 따라 바뀌어야 할 파일은 진행 JSON 하나이고, 그것은 옮기지 않고 이름만 말한다.
+/// 따라 바뀌어야 할 파일은 진행 JSON 하나이고, 여기서는 옮기지 않고 이름만 말한다 — 새 이름의 파일은 바로 뒤의
+/// 내보내기가 쓰고, 옛 이름의 파일은 같은 내보내기가 걷는다(<see cref="ChapterExportService"/>).
 /// </summary>
 public static class ChapterRenamer
 {
     /// <param name="SupplyRenamed">조건 공급 노드의 이름이 따라갔으면 참.</param>
     /// <param name="StaleExport">
-    /// 옛 이름으로 내보낸 진행 JSON이 남아 있으면 그 파일 이름. <b>지우지 않는다</b> —
-    /// 산출물이라도 남의 폴더(개발자가 가져가는 자리)에 있는 파일이다. 대신 <b>이름을 말해</b>
-    /// 사람이 지우게 한다: 그냥 두면 런타임이 없는 챕터를 계속 싣는다.
-    /// <see cref="ChapterDeleter"/>도 같은 규칙을 쓴다.
+    /// 옛 이름으로 내보낸 진행 JSON이 남아 있으면 그 파일 이름. 여기서는 지우지 않는다 — 개명은 모델만 바꾸고(되돌리기
+    /// 한 칸), 파일은 바로 뒤의 내보내기가 걷는다. 화면은 이 이름으로 걷혔는지 말한다. <see cref="ChapterDeleter"/>도 같다.
     /// </param>
     public sealed record Result(
         bool Renamed,

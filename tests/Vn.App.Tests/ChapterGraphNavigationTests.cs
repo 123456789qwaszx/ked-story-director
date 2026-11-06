@@ -108,7 +108,7 @@ public sealed class ChapterGraphNavigationTests : IDisposable
             Wheel(scroll, delta: -1, KeyModifiers.None);
         }
 
-        Assert.Equal(0.3, Scale(view), 3);
+        Assert.Equal(0.1, Scale(view), 3);   // 큰 챕터도 [전체 보기]로 한 화면에 들어오는 하한
 
         for (int index = 0; index < 80; index++)
         {

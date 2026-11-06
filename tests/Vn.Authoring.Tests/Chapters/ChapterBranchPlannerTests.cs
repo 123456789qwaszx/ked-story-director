@@ -66,6 +66,25 @@ public sealed class ChapterBranchPlannerTests
     }
 
     [Fact]
+    public async Task 소수점_자리에서_비켜도_끝난다()
+    {
+        // 비킨 자리(이웃 X + 간격)를 다시 재면 소수점 오차로 간격이 아주 조금 모자라게 나와 같은 이웃에 다시 부딪쳤다 — 같은 자리로
+        // 비키기를 끝없이 되풀이해 [자동 정렬]이 앱을 멈췄다. 연출 그래프의 카드 자리는 소수 둘째 자리까지 남는다.
+        ChapterGraphModel model = Model([Episode("root", 0, 0), Episode("a", 0, 0), Episode("b", 0, 0)], []);
+        var board = new Dictionary<string, (double X, double Y)>
+        {
+            ["root"] = (0, 0), ["a"] = (483.55, 1000), ["b"] = (533.55, 1000)
+        };
+
+        Task<IReadOnlyDictionary<string, (double X, double Y)>> arranging =
+            Task.Run(() => ChapterBranchPlanner.LayoutLikeBoard(model, board));
+        Assert.Same(arranging, await Task.WhenAny(arranging, Task.Delay(TimeSpan.FromSeconds(5))));
+
+        IReadOnlyDictionary<string, (double X, double Y)> placed = await arranging;
+        Assert.Equal(placed["a"].X + ChapterBranchPlanner.SiblingSpacing, placed["b"].X, 3);   // 이웃 바로 오른쪽으로 비켰다
+    }
+
+    [Fact]
     public void 연출_그래프에_카드가_없는_에피소드는_맨_아래_줄에_선다()
     {
         ChapterGraphModel model = Model(

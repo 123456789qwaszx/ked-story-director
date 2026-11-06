@@ -2,6 +2,7 @@ using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
+using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Chapters;
 
@@ -61,12 +62,12 @@ public static class BranchEntryCondition
             return new State(null, true, null);
         }
 
-        if (head is not [{ Kind: ConditionTransitionKind.BeginIf, ConditionId: { } conditionId }] ||
-            node.TrailingTransitions is not [{ Kind: ConditionTransitionKind.EndIf }])
+        if (!HasEntryShape(node, first) ||
+            head is not [{ ConditionId: { } conditionId }])
         {
             return State.Refuse(
-                "이 대본의 조건 구조는 대사 편집기에서 지은 것이라 여기서 고칠 수 없습니다. " +
-                "그 노드를 열어서 고치세요.");
+                "조건 줄(<<if>> · <<endif>>) 바깥에 쓴 줄이 있거나 조건이 여럿이라 여기서 고칠 수 없습니다. " +
+                "[대본] 탭에서 이 카드의 글 칸을 고치면 바깥 줄이 조건 안쪽으로 모여 다시 고칠 수 있습니다.");
         }
 
         // 공급된 조건의 `이름`이 곧 챕터 조건의 라벨이다 (ChapterBoardSupply).
@@ -76,6 +77,66 @@ public static class BranchEntryCondition
             true,
             null);
     }
+
+    /// <summary>
+    /// 그 출구 포트가 분기 에피소드의 <b>첫머리 조건</b>인가 — 다른 카드가 분기로 부르는 카드에서, 첫 줄에서 열려 꼬리에서 닫히는
+    /// 그 IF의 갈래 포트이고 아무 데도 잇지 않았다. 판은 이것을 출구로 그리지 않는다: 조건이 미달이면 곧바로 돌아올 뿐 다른
+    /// 곳으로 가는 길이 아니고, 걸린 조건은 카드 머리의 표가 말한다.
+    /// </summary>
+    public static bool IsEntryGatePort(StoryProject project, DialogueNode node, ExitPort port)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(node);
+        ArgumentNullException.ThrowIfNull(port);
+
+        return port is { Kind: ExitPortKind.Branch, IsConnected: false } &&
+               node.Script.ActiveLines.FirstOrDefault() is { } first &&
+               string.Equals(port.BranchOpenLineId, first.Id, StringComparison.Ordinal) &&
+               HasEntryShape(node, first) &&
+               project.EnumerateNodes().OfType<DialogueNode>().Any(caller =>
+                   caller.LineExtensions.Any(extension => extension.DetourTargetNodeIds.Contains(node.Id)));
+    }
+
+    /// <summary>
+    /// 첫머리 조건을 지켜야 하는 카드인가 — 분기로 다녀오는 카드이고 툴이 아는 모양의 조건이 걸려 있다. 이런 카드의 첫 줄을
+    /// 지우거나 옮기면 조건 구조가 깨지므로(첫 줄의 <c>BeginIf</c>가 함께 사라지거나 따라 내려간다) 화면이 그 손짓을 막는다.
+    /// </summary>
+    public static bool IsGuarded(StoryProject project, string nodeId, GameDefinition? definition = null)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        return project.EnumerateNodes().OfType<DialogueNode>().Any(caller => caller.LineExtensions.Any(extension =>
+                   extension.DetourTargetNodeIds.Contains(nodeId, StringComparer.Ordinal))) &&
+               Read(project, nodeId, definition) is { Label: not null, Editable: true };
+    }
+
+    /// <summary>
+    /// 첫머리 조건을 지키는 분기 카드(<see cref="IsGuarded"/>)의 분기 색 번호 — 부르는 카드의 그 분기 포트 번호다. 연출 그래프의
+    /// 분기 선 · 카드 표가 이 번호로 칠하므로, 대사 편집기의 첫머리 조건 묶음도 이 번호로 칠하면 같은 색이 된다. 아니면 <c>null</c>.
+    /// </summary>
+    public static int? EntryPalette(StoryProject project, string nodeId, GameDefinition? definition = null)
+    {
+        if (!IsGuarded(project, nodeId, definition))
+        {
+            return null;
+        }
+
+        foreach (DialogueNode caller in project.EnumerateNodes().OfType<DialogueNode>())
+        {
+            if (NodeConnections.PortsOf(caller, project, definition).FirstOrDefault(port =>
+                    port.Kind == ExitPortKind.Detour && string.Equals(port.TargetNodeId, nodeId, StringComparison.Ordinal)) is { } detour)
+            {
+                return detour.PaletteIndex;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>툴이 아는 조건 모양 — 첫 줄에 <c>BeginIf</c> 하나, 꼬리에 <c>EndIf</c> 하나.</summary>
+    private static bool HasEntryShape(DialogueNode node, ScriptLine first) =>
+        node.FindExtension(first.Id)?.Transitions is [{ Kind: ConditionTransitionKind.BeginIf, ConditionId: not null }] &&
+        node.TrailingTransitions is [{ Kind: ConditionTransitionKind.EndIf }];
 
     /// <summary>
     /// 조건을 건다(<c>null</c>이면 걷는다). 못 걸면 <b>사유</b>를 돌려주고 아무것도 안 바꾼다.

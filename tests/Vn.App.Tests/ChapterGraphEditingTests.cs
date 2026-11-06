@@ -114,10 +114,9 @@ public sealed class ChapterGraphEditingTests
         // v9 — 사전은 챕터 전체의 어휘다. 에피소드 하나가 사라졌다고 낱말을 지우면
         // 다른 에피소드의 드롭다운에서도 사라진다.
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         ChapterGraphModel reread = Chapter(session);
 
@@ -133,7 +132,7 @@ public sealed class ChapterGraphEditingTests
         //    같은 Id로 다시 만들면 같은 이름의 노드가 둘이 되어 내보내기가 통째로 막힌다
         //    ("번들 이름이 겹칩니다").
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         // 판과 카드는 프로젝트를 열 때 이미 섰다(AlignBoardsWithChapters) — 여기서 또 만들면
         // 같은 이름이 둘이 되어 실물이 아니라 사본을 재게 된다.
@@ -144,8 +143,7 @@ public sealed class ChapterGraphEditingTests
         Vn.Authoring.Script.ScriptDocument blank = ghost.Script;
         Assert.DoesNotContain(blank.ActiveLines, line => blank.Text(line.Id).Text.Length > 0);
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         Assert.Null(session.Project.FindNode(ghost.Id));
     });
@@ -158,7 +156,7 @@ public sealed class ChapterGraphEditingTests
         //
         // 글은 그래도 안 사라진다 — 카드가 대본을 들고 있어 되돌리면 카드와 함께 돌아온다.
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         DialogueNode written = session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => node.MarkedEpisodeId == "branch05.02A");
@@ -169,8 +167,7 @@ public sealed class ChapterGraphEditingTests
             new Vn.Authoring.Script.LocalizedLine("윌로", "잃으면 안 되는 줄");
         written.Script = script;
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         // 카드가 <b>사라진다</b> — `(떼어냄)`이 판에 남지 않는다.
         Assert.Null(session.Project.FindNode(written.Id));
@@ -197,10 +194,6 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<TextBox>("IdBox")!.IsEnabled);
-
-        var delete = view.FindControl<Button>("DeleteEpisodeButton")!;
-        Assert.True(delete.IsVisible);
-        Assert.True(delete.IsEnabled);
     });
 
     [Fact]
@@ -331,25 +324,34 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 선택지_줄을_누르면_그_아래에_설명이_읽기_전용으로_펼쳐지고_다시_누르면_접힌다() => HeadlessUi.Run(() =>
+    public void 선택지_설명은_기본으로_펼쳐져_있고_읽기_전용이며_누르면_접힌다() => HeadlessUi.Run(() =>
     {
-        // 에피소드 칸은 확인하는 자리다 — 펼친 설명에는 고칠 칸이 없다.
+        // 에피소드 칸은 확인하는 자리다 — 설명은 처음부터 펼쳐져 있고, 펼친 설명에는 고칠 칸이 없다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEpisode("main05.02");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
+        List<ChapterEdge> edges = Chapter(session).Edges.Where(edge => edge.FromEpisodeId == "main05.02").ToList();
         ChapterEdge target = Edge(session, "main05.02", "branch05.02A");
-        view.ToggleChoice(target);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        int row = edges.FindIndex(edge => edge.ToEpisodeId == target.ToEpisodeId && edge.OptionLabel == target.OptionLabel);
+        Assert.Equal(edges.Count, Details(view).Count);
 
-        Border detail = Detail(view)!;
+        // 줄은 「문구 → 도착」뿐이다 — 해금조건은 줄에 붙이지 않고 아래 설명이 보인다.
+        TextBlock line = view.FindControl<StackPanel>("EdgeListPanel")!.Children.OfType<Grid>().ElementAt(row)
+            .Children.OfType<TextBlock>().Last();
+        Assert.Equal($"{target.OptionLabel}   → {target.ToEpisodeId}", line.Text);
+        Assert.DoesNotContain("[", line.Text, StringComparison.Ordinal);
+
+        Border detail = DetailOf(view, row)!;
         List<string?> lines = detail.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToList();
-        Assert.Contains("문구: 「라루의 제안을 듣는다」", lines);
-        Assert.Contains("도착: branch05.02A", lines);
         Assert.Contains("해금조건: 신뢰높음", lines);
         Assert.Contains(lines, line => line!.StartsWith("스탯변화: ", StringComparison.Ordinal));
+
+        // 문구와 도착은 바로 위 줄이 보인다 — 설명이 되풀이하지 않는다.
+        Assert.DoesNotContain(lines, line => line!.StartsWith("문구: ", StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, line => line!.StartsWith("도착: ", StringComparison.Ordinal));
 
         // 고칠 칸이 없다 — 글자 칸 · 고르기 · 체크 · 단추 모두.
         Assert.DoesNotContain(view.FindControl<StackPanel>("EdgeListPanel")!.GetVisualDescendants(),
@@ -357,10 +359,48 @@ public sealed class ChapterGraphEditingTests
         Assert.Null(view.FindControl<TextBox>("EdgeLabelBox"));
         Assert.Null(view.FindControl<ComboBox>("EdgeTargetCombo"));
 
-        // 다시 누르면 접힌다.
+        // 누르면 그 줄만 접히고, 다시 누르면 펼쳐진다.
         view.ToggleChoice(target);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Null(Detail(view));
+        Assert.Null(DetailOf(view, row));
+        Assert.Equal(edges.Count - 1, Details(view).Count);
+
+        view.ToggleChoice(target);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(DetailOf(view, row));
+    });
+
+    [Fact]
+    public void 선택지를_접어도_다른_선택지는_그대로고_다른_에피소드로_넘어가면_다시_펼쳐진다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        List<ChapterEdge> edges = Chapter(session).Edges.Where(edge => edge.FromEpisodeId == "main05.02").ToList();
+        Assert.True(edges.Count >= 2);
+
+        // 처음부터 모두 펼쳐져 있다.
+        Assert.Equal(edges.Count, Details(view).Count);
+
+        // 첫째를 접으면 첫째만 접히고 둘째는 그대로다.
+        view.ToggleChoice(edges[0]);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Null(DetailOf(view, 0));
+        Assert.NotNull(DetailOf(view, 1));
+
+        // 둘째도 접는다.
+        view.ToggleChoice(edges[1]);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(edges.Count - 2, Details(view).Count);
+
+        // 다른 에피소드로 넘어가면 다시 모두 펼쳐진다.
+        view.SelectEpisode("main05.01");
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(edges.Count, Details(view).Count);
     });
 
     [Fact]
@@ -369,7 +409,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar();
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null);
 
         ChapterGraphModel afterAdd = Chapter(session);
         Assert.NotNull(afterAdd.FindEpisode("new01"));
@@ -392,7 +432,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar(); // new01 + 카드
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null); // new01 + 카드
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -421,12 +461,12 @@ public sealed class ChapterGraphEditingTests
     public void 에피소드를_더하면_그_자리에서_대사_노드가_선다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => node.MarkedEpisodeId == "new01");
 
-        view.AddEpisodeFromToolbar();
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs(); // QueueReload 한 차례
 
         // 더한 그 자리에서 노드가 서 있다 — 에피소드와 카드가 한 변경이다.
@@ -443,27 +483,21 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 선택한_노드의_자식으로_에피소드가_생기고_간선이_이어진다() => HeadlessUi.Run(() =>
+    public void 고른_에피소드의_다음으로_더하면_간선이_이어진다() => HeadlessUi.Run(() =>
     {
-        // v3 — [＋ 에피소드]는 선택된 노드의 다음으로 만든다. 흐름 연결이 기본값이다.
+        // 「에피소드 추가」는 누른 줄의 에피소드 다음으로 만든다. 흐름 연결이 기본값이다.
         using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
-        view.SelectEpisode("main05.end");
-        view.AddEpisodeFromToolbar();
+        EpisodeAdder.Add(session, "ch05", after: "main05.end", sceneId: null);
 
         ChapterGraphModel reread = Chapter(session);
         ChapterEpisode added = reread.FindEpisode("new01")!;
 
-        // 간선이 함께 이어졌고, 대사엔트리는 EpisodeId로 자동이다.
+        // 간선이 함께 이어졌고(문구 「계속」), 대사엔트리는 EpisodeId로 자동이다.
         Assert.Contains(reread.Edges, edge =>
-            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "new01");
+            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "new01" && edge.OptionLabel == "계속");
         Assert.Equal("new01", added.DialogueEntry);
-
-        // 새 노드가 선택되어 바로 [개명]할 수 있다 — 판을 다시 세워도 선택이 남는다.
-        view.Refresh();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Equal("new01", view.FindControl<TextBox>("IdBox")!.Text);
     });
 
     [Fact]
@@ -497,9 +531,14 @@ public sealed class ChapterGraphEditingTests
         // [폴더 열기]도 없다.
         Assert.Null(view.FindControl<Button>("OpenFolderButton"));
 
+        // [에피소드 삭제]도 없다 — 지우기는 하이어아키의 우클릭 「지우기」 하나다.
+        Assert.Null(view.FindControl<Button>("DeleteEpisodeButton"));
+
+        // [＋ 에피소드]도 없다 — 에피소드는 하이어아키의 우클릭 「에피소드 추가」로 더한다.
+        Assert.Null(view.FindControl<Button>("AddEpisodeButton"));
+
         // 남아야 하는 이웃 — 지우다 같이 쓸려 나가면 여기서 걸린다.
-        Assert.NotNull(view.FindControl<Button>("AddEpisodeButton"));
-        Assert.NotNull(view.FindControl<Button>("DeleteEpisodeButton"));
+        Assert.NotNull(view.FindControl<Button>("AutoArrangeButton"));
     });
 
     [Fact]
@@ -532,7 +571,7 @@ public sealed class ChapterGraphEditingTests
         view.SelectEpisode("main05.02");
         Assert.True(view.FindControl<ScrollViewer>("SelectionSection")!.IsVisible);
         Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-        Assert.Equal("에피소드 · main05.02", title.Text);
+        Assert.Equal("조용한 복도", title.Text);   // 「장면 - 제목」 — 장면ID가 없으면 제목만
 
         view.Inspect(HierarchyPick.Project);
         Assert.True(view.FindControl<ScrollViewer>("SpeakerSection")!.IsVisible);
@@ -742,10 +781,24 @@ public sealed class ChapterGraphEditingTests
     }
 
     /// <summary>견본 챕터(ch05 복도)를 든 프로젝트. 판과 카드는 열 때 선다.</summary>
-    /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명 — 없으면 null.</summary>
-    private static Border? Detail(ChapterGraphView view) =>
+    /// <summary>그 차례(0부터)의 선택지 줄 바로 아래에 펼쳐진 설명 — 접혀 있으면 null.</summary>
+    private static Border? DetailOf(ChapterGraphView view, int row)
+    {
+        List<Control> children = view.FindControl<StackPanel>("EdgeListPanel")!.Children.ToList();
+        List<int> rows = children.Select((child, index) => (child, index))
+            .Where(pair => pair.child is Grid)
+            .Select(pair => pair.index)
+            .ToList();
+        int next = rows[row] + 1;
+
+        return next < children.Count && children[next] is Border { Tag: ChapterGraphView.ChoiceDetailTag } detail ? detail : null;
+    }
+
+    /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명들 — 위에서 아래 차례.</summary>
+    private static List<Border> Details(ChapterGraphView view) =>
         view.FindControl<StackPanel>("EdgeListPanel")!.Children.OfType<Border>()
-            .SingleOrDefault(border => border.Tag as string == ChapterGraphView.ChoiceDetailTag);
+            .Where(border => border.Tag as string == ChapterGraphView.ChoiceDetailTag)
+            .ToList();
 
     private sealed class TempProject : IDisposable
     {

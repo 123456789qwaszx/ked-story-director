@@ -8,8 +8,9 @@ using Vn.App.Views;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[구성] 에피소드 칸</b> — 에피소드ID · 제목 칸 왼쪽에 이름표가 서서 무슨 칸인지 말한다. 장면은 여기서 정하지 않는다 —
-/// 하이어아키의 장면 줄에서 이름을 바꾸면 그 장면의 에피소드가 모두 따라가고 되돌리기 한 칸이다.
+/// <b>[구성] 에피소드 칸</b> — 머리글이 「장면 - 제목」을 말하고(부제 없음), 칸은 에피소드ID 하나다. 그 왼쪽에 이름표가
+/// 선다. 제목은 [대본] 탭에서 고친다. 장면은 여기서 정하지 않는다 — [대본] 탭 하이어아키의 장면 줄에서 이름을 바꾸면 그
+/// 장면의 에피소드가 모두 따라가고 되돌리기 한 칸이다.
 /// </summary>
 public sealed class ChapterEpisodeFieldsTests : IDisposable
 {
@@ -25,7 +26,7 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     }
 
     [Fact]
-    public void 두_칸_왼쪽에_이름표가_서고_장면ID_칸과_장면_일괄_단추는_없다() => HeadlessUi.Run(() =>
+    public void 에피소드ID_칸_하나에_이름표가_서고_제목_칸과_장면ID_칸은_없다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
@@ -34,9 +35,9 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal("에피소드ID", LabelOf(view, "IdBox"));
-        Assert.Equal("제목", LabelOf(view, "EpisodeTitleBox"));
         Assert.Equal("a", view.FindControl<TextBox>("IdBox")!.Text);
 
+        Assert.Null(view.FindControl<TextBox>("EpisodeTitleBox"));
         Assert.Null(view.FindControl<TextBox>("SceneIdBox"));
         Assert.Null(view.FindControl<Button>("ApplySceneGroupButton"));
 
@@ -44,10 +45,49 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     });
 
     [Fact]
-    public void 하이어아키에서_장면_이름을_바꾸면_그_장면의_에피소드가_모두_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    public void 머리글은_장면_제목이고_부제는_없다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
-        StoryHierarchy tree = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        TextBlock title = view.FindControl<TextBlock>("InspectorTitle")!;
+        TextBlock subtitle = view.FindControl<TextBlock>("InspectorSubtitle")!;
+
+        // ch01 b — 장면 hall.
+        view.SelectChapter("ch01");
+        view.SelectEpisode("b");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("hall - b", title.Text);
+        Assert.False(subtitle.IsVisible);
+
+        // [대본] 탭에서 제목을 고치면 머리글이 따라간다 · 비우면 EpisodeId다.
+        session.Editor.UpdateEpisode("ch01", "b", title: "교무실");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("hall - 교무실", title.Text);
+
+        session.Editor.UpdateEpisode("ch01", "b", title: string.Empty);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("hall - b", title.Text);
+
+        // ch02 x — 장면ID가 없으면 제목만.
+        view.SelectChapter("ch02");
+        view.SelectEpisode("x");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("x", title.Text);
+
+        // 다른 것을 보면 부제가 다시 선다.
+        view.Inspect(HierarchyPick.Project);
+        Assert.Equal("화자", title.Text);
+        Assert.True(subtitle.IsVisible);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 하이어아키에서_장면_이름을_바꾸면_그_장면의_에피소드가_모두_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 장면 이름은 [대본] 탭 하이어아키에서 고친다 — [구성] 탭 하이어아키는 고치지 않는다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        StoryHierarchy tree = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
 
         // opening — root · a 둘이 든 장면.

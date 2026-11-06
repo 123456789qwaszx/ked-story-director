@@ -9,6 +9,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using System.Text.RegularExpressions;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
@@ -249,18 +250,68 @@ public partial class GraphEditorView : UserControl
     /// <summary>판 왼쪽 하이어아키 (2026-10-30 HY3) — 셸이 내용을 채우고 고른 줄을 받는다(챕터 그래프의 것과 같은 컨트롤).</summary>
     internal StoryHierarchy HierarchyView => Hierarchy;
 
+    /// <summary>하이어아키 머리의 [＋] 새 챕터 — 셸이 클릭을 받고 플라이아웃의 과녁으로도 쓴다.</summary>
+    internal Button ChapterAddButton => AddChapterButton;
+
     /// <summary>하이어아키 기둥 접기 (2026-10-30 HC) — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
     internal HierarchyDock HierarchyDock { get; }
 
-    /// <summary>인스펙터 머리글 — 무엇을 보는지. 내용(<see cref="SetSidePanel"/>)을 짓는 셸이 함께 맞춘다.</summary>
+    /// <summary>
+    /// 인스펙터 머리글 — 무엇을 보는지. 내용(<see cref="SetSidePanel"/>)을 짓는 셸이 함께 맞춘다. 부제가 비면 그 줄이 서지
+    /// 않는다.
+    /// </summary>
     internal void SetInspectorHeader(string title, string subtitle)
     {
         InspectorTitle.Text = title;
         InspectorSubtitle.Text = subtitle;
+        InspectorSubtitle.IsVisible = subtitle.Length > 0;
     }
 
     /// <summary>고른 카드가 화면 밖이면 그리로 옮긴다 — 하이어아키에서 고른 카드가 판에서 보이게.</summary>
     internal void RevealSelected() => ScrollToSelected();
+
+    /// <summary>
+    /// 카드를 두 번 눌렀다(글 칸 · 포트 · 선택지 칸 밖 — 글 칸의 두 번 누르기는 낱말 고르기다). 셸이 [구성] 탭의 그 에피소드로
+    /// 데려간다.
+    /// </summary>
+    internal event Action<string>? CardOpened;
+
+    /// <summary>선택지 레인을 두 번 눌렀다(챕터, 출발, 도착, 문구) — 셸이 [구성] 탭의 그 간선으로 데려간다.</summary>
+    internal event Action<string, string, string, string>? ChoiceOpened;
+
+    /// <summary>
+    /// 그 선택지 레인을 고르고(인스펙터가 그 선을 설명한다) 출발 카드가 화면 밖이면 그리로 옮긴다 — [구성] 탭에서 간선을 두 번
+    /// 눌러 넘어왔을 때. 그 레인이 판에 없으면(접힌 판 · 장면) 출발 카드를 고르고 false다.
+    /// </summary>
+    internal bool SelectChoiceRail(string chapterId, string from, string to, string label)
+    {
+        RailKey? key = _railVisuals.Select(visual => visual.Tag).OfType<RailKey>().FirstOrDefault(rail =>
+            string.Equals(rail.ChapterId, chapterId, StringComparison.Ordinal) &&
+            string.Equals(rail.From, from, StringComparison.Ordinal) &&
+            string.Equals(rail.To, to, StringComparison.Ordinal) &&
+            string.Equals(rail.Label?.Trim() ?? string.Empty, label, StringComparison.Ordinal));
+        string? fromNodeId = _session is { } session ? EpisodeNaming.CardFor(session.Project, chapterId, from)?.Id : null;
+
+        if (key is null)
+        {
+            if (fromNodeId is not null)
+            {
+                _session!.Select(fromNodeId);
+                ScrollToSelected();
+            }
+
+            return false;
+        }
+
+        SelectRail(key);
+
+        if (fromNodeId is not null && TargetVisualOf(fromNodeId) is { } target)
+        {
+            RevealTarget(target);
+        }
+
+        return true;
+    }
 
     public GraphEditorView()
     {
@@ -397,6 +448,7 @@ public partial class GraphEditorView : UserControl
         _shapePreview = null;
         HideShapeOverlay();
         SlotLabelBox = null;
+        _finishSlot = null;   // 아직 적고 있으면 아래에서 칸을 새로 지으며 다시 잡는다
 
         // 고른 간선이 사라졌으면 그 간선을 설명하던 줄도 사라져야 한다 — 안 그러면
         // 방금 지운 간선의 이름이 띠에 남는다(늘 서 있던 설명이 그 자리를 덮고 있어서
@@ -2209,9 +2261,8 @@ public partial class GraphEditorView : UserControl
 
         card.PointerPressed += (_, args) => OnCardPressed(visual, args);
 
-        // ⛔ 카드 더블클릭 = "무대에서 본다"는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다
-        //    (그쪽에는 그래프가 없다 — 무대가 제 챕터 · 씬 선택기로 씬을 고른다).
-        //    더블클릭은 이제 두 번 누른 것일 뿐이다(첫 누름이 시작한 끌기는 놓을 때 끝난다).
+        // 카드 더블클릭 = [구성] 탭의 그 에피소드로 간다(OnCardPressed → CardOpened — 첫 누름이 시작한 끌기는 놓을 때 끝난다).
+        // ⛔ 옛 「무대에서 본다」는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다.
 
         return visual;
     }
@@ -2333,6 +2384,16 @@ public partial class GraphEditorView : UserControl
 
         UiGuard.Run(session, "글 넣기", () =>
         {
+            // 분기로 다녀오는 카드의 첫머리 조건 줄은 [구성] 탭이 정한다 — 글 칸에서 지우거나 고쳤으면 그 줄을 되살리고, 조건
+            // 줄 바깥(위 · 아래)에 쓴 줄은 조건 안쪽으로 모은다.
+            bool gateRestored = false;
+
+            if (EntryGateOf(nodeId) is { } gate && KeepEntryGate(text, gate) is { } kept)
+            {
+                text = kept;
+                gateRestored = true;
+            }
+
             // 처음 보인 글의 줄 신원을 잇는다(2026-10-30) — 같은 자리에서 고친 줄은 그 줄이다. 이게 없으면 동기화가 내용만
             // 보고 짝을 맞추다 두 줄 이상 고친 구간에서 "확신할 수 없다"며 통째로 거절했다.
             string withIds = _writingLayouts.TryGetValue(nodeId, out ScenarioWritingLayout? shownLayout)
@@ -2384,8 +2445,127 @@ public partial class GraphEditorView : UserControl
             {
                 session.SetStatus($"글을 넣었습니다 — {outcome.Summary()}. 되돌리기 한 번이면 돌아갑니다.");
             }
+
+            if (gateRestored)
+            {
+                session.SetStatus("분기 조건 줄을 지켰습니다 — 조건 줄은 되살리고 바깥에 쓴 줄은 조건 안쪽으로 모았습니다. " +
+                                  "이 카드에 들어갈 조건은 [구성] 탭의 분기 칸에서 바꿉니다.");
+            }
         });
     }
+
+    /// <summary>
+    /// 그 카드의 첫머리 조건 줄 — 분기로 다녀오는 카드에 조건이 걸려 있을 때만이다. 글 칸에 보인 그대로의 두 줄(바깥쪽
+    /// <c>&lt;&lt;if …&gt;&gt;</c>과 그 짝 <c>&lt;&lt;endif&gt;&gt;</c>)이다.
+    /// <list type="bullet">
+    /// <item>[구성] 탭이 아는 모양(첫 줄 <c>if</c> 하나 + 꼬리 <c>endif</c> 하나)이면 그 두 줄이다.</item>
+    /// <item>그 모양이 이미 깨졌으면(조건 줄 바깥에 줄이 있다 — [구성] 탭이 「여기서 고칠 수 없습니다」를 말한다) 글 칸의 처음
+    /// <c>if</c> 줄과 마지막 <c>endif</c> 줄이다 — 다음에 넣을 때 바깥 줄을 안쪽으로 모아 바로잡는다.</item>
+    /// </list>
+    /// 조건이 없는 분기 카드에 작가가 중간에 쓴 조건은 건드리지 않는다(그때는 [구성] 탭이 「언제나」로 읽는다).
+    /// </summary>
+    private (string Head, string Tail)? EntryGateOf(string nodeId)
+    {
+        if (_session is not { } session ||
+            !_branchEntries.ContainsKey(nodeId) ||
+            _writingShown.GetValueOrDefault(nodeId) is not { } shown)
+        {
+            return null;
+        }
+
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, nodeId, session.Definition);
+
+        if (state is not { Label: not null, Editable: true } and not { Editable: false })
+        {
+            return null;
+        }
+
+        List<string> lines = WritingLines(shown);
+        int head = lines.FindIndex(IsIfLine);
+        int tail = lines.FindLastIndex(IsEndIfLine);
+
+        return head >= 0 && tail > head ? (lines[head].Trim(), lines[tail].Trim()) : null;
+    }
+
+    /// <summary>
+    /// 첫머리 조건 줄을 지킨 글 — 조건 줄이 맨 처음과 맨 끝에 보인 그대로 제 줄로 있으면 <c>null</c>(손댈 것이 없다). 아니면:
+    /// <list type="bullet">
+    /// <item>조건 줄과 같은 줄에 붙여 쓴 글(「&lt;&lt;if …&gt;&gt;ASD」 · 「SAD&lt;&lt;endif&gt;&gt;」)은 떼어 제 줄로 세운다.</item>
+    /// <item>지우거나 고친 조건 줄은 보인 그대로 되살린다.</item>
+    /// <item>조건 줄 위 · 아래(바깥)에 쓴 줄은 조건 안쪽으로 모은다 — 위에 쓴 줄은 안쪽 맨 위, 아래에 쓴 줄은 안쪽 맨 아래다.</item>
+    /// </list>
+    /// 사이의 대사는 사람이 쓴 그대로다. 대사를 다 지웠으면 손대지 않는다 — 빈 글은 넣지 않는 규칙이 그대로 받는다.
+    /// </summary>
+    private static string? KeepEntryGate(string text, (string Head, string Tail) gate)
+    {
+        List<string> original = WritingLines(text);
+        List<string> lines = SplitGateTokens(original);
+
+        // 바깥 if — 보인 그대로면 어디에 있든 그 줄이고, 고쳤으면 맨 첫 줄의 if다(지웠으면 없다).
+        int head = lines.FindIndex(line => string.Equals(line.Trim(), gate.Head, StringComparison.Ordinal));
+
+        if (head < 0 && lines.Count > 0 && IsIfLine(lines[0]))
+        {
+            head = 0;
+        }
+
+        if (head >= 0)
+        {
+            lines.RemoveAt(head);
+        }
+
+        // 바깥 endif — 안쪽 if보다 endif가 하나 더 많으면 마지막 endif가 바깥 것이다(지웠으면 수가 같다).
+        if (lines.Count(IsEndIfLine) > lines.Count(IsIfLine))
+        {
+            lines.RemoveAt(lines.FindLastIndex(IsEndIfLine));
+        }
+
+        if (lines.All(string.IsNullOrWhiteSpace))
+        {
+            return null;
+        }
+
+        List<string> kept = [gate.Head, .. lines, gate.Tail];
+
+        return kept.Select(line => line.Trim()).SequenceEqual(original.Select(line => line.Trim()), StringComparer.Ordinal)
+            ? null
+            : string.Join('\n', kept);
+    }
+
+    /// <summary>조건 줄의 꼴 — 같은 줄에 붙은 글과 떼어 낼 때 쓴다(조건식의 <c>&gt;=</c>는 <c>&gt;&gt;</c>가 아니라 걸리지 않는다).</summary>
+    [GeneratedRegex("(<<if\\b.*?>>|<<endif>>)")]
+    private static partial Regex GateToken();
+
+    /// <summary>
+    /// 조건 줄(<c>&lt;&lt;if …&gt;&gt;</c> · <c>&lt;&lt;endif&gt;&gt;</c>)에 같은 줄로 붙여 쓴 글을 떼어 제 줄로 세운다 —
+    /// 「&lt;&lt;if …&gt;&gt;ASD」는 「&lt;&lt;if …&gt;&gt;」와 「ASD」 두 줄이다. 조건 줄이 없는 줄은 그대로다.
+    /// </summary>
+    private static List<string> SplitGateTokens(List<string> lines) =>
+        [.. lines.SelectMany(line => GateToken().IsMatch(line)
+            ? GateToken().Split(line).Where(part => !string.IsNullOrWhiteSpace(part)).Select(part => part.Trim())
+            : [line])];
+
+    /// <summary>글 칸의 줄들 — 앞뒤의 빈 줄은 뺀다.</summary>
+    private static List<string> WritingLines(string text)
+    {
+        List<string> lines = [.. text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')];
+
+        while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[0]))
+        {
+            lines.RemoveAt(0);
+        }
+
+        while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+        {
+            lines.RemoveAt(lines.Count - 1);
+        }
+
+        return lines;
+    }
+
+    private static bool IsIfLine(string line) => line.TrimStart().StartsWith("<<if", StringComparison.Ordinal);
+
+    private static bool IsEndIfLine(string line) => string.Equals(line.Trim(), "<<endif>>", StringComparison.Ordinal);
 
     /// <summary>쓰다가 이만큼 멈추면 넣는다.</summary>
     private static readonly TimeSpan LiveWritingDelay = TimeSpan.FromMilliseconds(400);
@@ -2423,6 +2603,78 @@ public partial class GraphEditorView : UserControl
         }
     }
 
+    /// <summary>카드 글 칸에 초점이 있는가 — 셸의 Ctrl+Z · Ctrl+Y가 칸 대신 <see cref="UndoInWriting"/>으로 가는 때.</summary>
+    internal bool IsWritingFocused => CaptureWritingFocus() is not null;
+
+    /// <summary>
+    /// 카드 글 칸의 Ctrl+Z · Ctrl+Y — 프로젝트 되돌리기 · 다시 실행이다. 칸은 쓰다 멈출 때마다 글을 넣고(넣을 때마다 되돌리기
+    /// 한 칸), 줄이 늘고 줄면 판을 다시 그려 새 칸이 되므로 칸 자체의 되돌리기 기록은 비어 있다.
+    /// <list type="bullet">
+    /// <item>아직 넣지 않은 글이 있으면 Ctrl+Z는 그것부터 걷는다 — 마지막으로 넣은 글로(Esc와 같다). Ctrl+Y는 하지 않는다.</item>
+    /// <item>되돌린 뒤 판을 다시 그리지 않아 칸이 그대로면 칸을 모델의 글로 다시 채운다 — 쓰는 중인 칸은 다시 채우지 않는
+    /// 규칙(<see cref="RefreshWriting"/>)이 있어, 그냥 두면 되돌린 글이 칸에 보이지 않는다. 커서는 그 자리(글 끝을 넘지 않게)다.</item>
+    /// </list>
+    /// </summary>
+    internal void UndoInWriting(bool redo)
+    {
+        if (_session is not { } session ||
+            CaptureWritingFocus() is not { } focus ||
+            !_writingBoxes.TryGetValue(focus.NodeId, out TextBox? box))
+        {
+            return;
+        }
+
+        _liveWriting.Stop();
+
+        if (focus.Dirty)
+        {
+            if (!redo)
+            {
+                box.Text = _writingShown.GetValueOrDefault(focus.NodeId, box.Text ?? string.Empty);
+                MarkWriting(box, problem: null);
+                PlaceCaret(box, focus);
+            }
+
+            return;
+        }
+
+        if (redo)
+        {
+            session.Editor.Redo();
+        }
+        else
+        {
+            session.Editor.Undo();
+        }
+
+        // 판을 다시 그렸으면 Rebuild가 새 칸에 모델의 글과 초점을 이미 줬다.
+        if (!ReferenceEquals(_writingBoxes.GetValueOrDefault(focus.NodeId), box) ||
+            session.Project.FindDialogue(focus.NodeId) is null)
+        {
+            return;
+        }
+
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(session.Project, focus.NodeId, session.Definition);
+
+        if (string.Equals(layout.Text, box.Text, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _writingShown[focus.NodeId] = layout.Text;
+        _writingLayouts[focus.NodeId] = layout;
+        box.Text = layout.Text;
+        _liveWriting.Stop();
+        PlaceCaret(box, focus);
+    }
+
+    private static void PlaceCaret(TextBox box, WritingFocus focus)
+    {
+        int length = box.Text?.Length ?? 0;
+        box.SelectionStart = Math.Clamp(focus.SelectionStart, 0, length);
+        box.SelectionEnd = Math.Clamp(focus.SelectionStart, 0, length);
+    }
+
     /// <summary>
     /// 그 노드의 글 칸을 모델의 글로 다시 채운다 — 곁기둥이 줄을 고쳤을 때(판은 다시 안 그린다). 사람이 그 칸에서
     /// 쓰는 중이거나(초점) 넣지 않은 글이 있으면 건드리지 않는다 — 쓰던 글이 사라지면 안 된다.
@@ -2455,6 +2707,29 @@ public partial class GraphEditorView : UserControl
         {
             WritingFocusSink.Focus();
         }
+
+        // 열린 선택지 문구 칸도 딴 데를 누르면 닫는다 — 빈 판 · 카드는 초점을 받지 않아 칸이 초점을 쥔 채 남는다.
+        FinishSlotLater();
+    }
+
+    /// <summary>
+    /// 열린 선택지 문구 칸을 Enter처럼 닫는다 — 적은 문구는 넣고, 아무것도 안 적었으면 그냥 닫힌다. 닫기는 판을 다시 그리므로
+    /// 지금 도는 누르기 · 초점 처리가 끝난 뒤로 미룬다(§5-13). 그 사이에 칸이 이미 닫혔거나 새로 열렸으면 하지 않는다.
+    /// </summary>
+    private void FinishSlotLater()
+    {
+        if (_finishSlot is not { } finish)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "선택지 문구", () =>
+        {
+            if (ReferenceEquals(_finishSlot, finish))
+            {
+                finish();
+            }
+        }));
     }
 
     /// <summary>못 넣은 칸은 붉게, 사유는 풍선으로. <paramref name="problem"/>이 null이면 걷는다.</summary>
@@ -3068,20 +3343,37 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 문구를 적고 있는 칸. 없으면 null.</summary>
     private string? _editingSlot;
 
+    /// <summary>문구 입력칸의 가장 좁은 폭 — 빈 칸에도 적을 자리가 보이게.</summary>
+    private const double SlotEditorMinWidth = 90;
+
+    /// <summary>문구 입력칸의 여유 — 테두리 · 안쪽 여백 · 커서 자리.</summary>
+    private const double SlotEditorSlack = 24;
+
+    /// <summary>열린 문구 입력칸을 Enter처럼 닫는 일 — 칸이 열려 있을 때만 있다.</summary>
+    private Action? _finishSlot;
+
     /// <summary>
-    /// 문구 입력칸 — Enter 확정 · Esc 취소 · 딴 데를 누르면 취소.
+    /// 문구 입력칸 — Enter 확정 · Esc 취소. 딴 데(빈 판 · 카드)를 누르거나 초점이 떠나면 <b>Enter처럼</b> 닫는다 — 적은
+    /// 문구는 넣고, 아무것도 안 적었으면 그냥 닫힌다(<see cref="FinishSlotLater"/>).
     ///
     /// 이미 이어진 길이면 <b>그 간선의 문구를 고치고</b>, 아직 안 이었으면 적어만 둔다.
     /// 어느 쪽이든 <b>챕터의 선택지 사전에 배운다</b> — 문구의 주인은 챕터다(v9).
     /// </summary>
     private Control SlotEditor(GraphChoicePort choice)
     {
+        // 폭을 정해 둔다 — 판은 칸 줄의 폭을 재서 레인이 나갈 자리를 정하는데(DrawRailBranch), 판에 붙기 전의 글자 칸은 틀이
+        // 아직 없어 제 폭을 작게 잰다. 그러면 레인이 글자 칸 위를 지나간다. 지금 문구의 폭에 여유를 더한다(적는 동안 넘치면
+        // 칸 안에서 밀린다).
+        var probe = new TextBlock { Text = LabelOf(choice), FontSize = 10 };
+        probe.Measure(Size.Infinity);
+
         var box = new TextBox
         {
             Text = LabelOf(choice),
             FontSize = 10,
             Padding = new Thickness(3, 0),
             MinHeight = 0,
+            Width = Math.Max(SlotEditorMinWidth, Math.Ceiling(probe.DesiredSize.Width) + SlotEditorSlack),
             VerticalAlignment = VerticalAlignment.Center
         };
 
@@ -3089,6 +3381,7 @@ public partial class GraphEditorView : UserControl
         {
             _editingSlot = null;
             SlotLabelBox = null;
+            _finishSlot = null;
 
             string wanted = box.Text?.Trim() ?? string.Empty;
 
@@ -3113,11 +3406,12 @@ public partial class GraphEditorView : UserControl
         {
             if (string.Equals(_editingSlot, SlotKey(choice), StringComparison.Ordinal))
             {
-                Commit(keep: false);
+                FinishSlotLater();
             }
         });
 
         SlotLabelBox = box;
+        _finishSlot = () => Commit(keep: true);
         return box;
     }
 
@@ -3839,11 +4133,15 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (TargetVisualOf(nodeId) is not { } target)
+        if (TargetVisualOf(nodeId) is { } target)
         {
-            return;
+            RevealTarget(target);
         }
+    }
 
+    /// <summary>그 카드(또는 프록시)가 화면에 하나도 안 보이면 가운데로 옮긴다 — 이미 보이면 끼어들지 않는다.</summary>
+    private void RevealTarget(Control target)
+    {
         double left = Canvas.GetLeft(target);
         double top = Canvas.GetTop(target);
         double width = target.Bounds.Width > 0 ? target.Bounds.Width : CardWidth;
@@ -4035,6 +4333,14 @@ public partial class GraphEditorView : UserControl
     {
         ReleaseWritingFocus();
         _session?.Select(card.NodeId);
+
+        // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다).
+        if (args.ClickCount >= 2 && args.GetCurrentPoint(card.Visual).Properties.IsLeftButtonPressed)
+        {
+            args.Handled = true;
+            CardOpened?.Invoke(card.NodeId);
+            return;
+        }
 
         // 범위 선택된 카드를 잡으면 무리가 함께 움직인다 (W40).
         if (_multiSelected.Contains(card.NodeId) && _multiSelected.Count > 1)
@@ -4997,6 +5303,12 @@ public partial class GraphEditorView : UserControl
             _multiSelected.Clear(); // 선 하나를 고르면 카드 무리는 풀린다
             HighlightSelection();
             SelectRail(key);
+
+            // 두 번 누르면 [구성] 탭의 그 간선으로 간다(셸이 데려간다).
+            if (args.ClickCount >= 2)
+            {
+                ChoiceOpened?.Invoke(key.ChapterId, key.From, key.To, key.Label?.Trim() ?? string.Empty);
+            }
         };
         _railVisuals.Add(hit);
 

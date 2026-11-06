@@ -26,6 +26,7 @@
                 <Button x:Name="AddDialogueButton" Content="+ 대사 노드" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                 <Button x:Name="DeleteNodeButton" Content="노드 삭제" />
+                <!-- 빈 선택지 숨기기는 툴바에 두지 않는다 — [대본] 탭은 카드마다 인스펙터(대사 편집기)의 체크로 정한다. -->
             </StackPanel>
         </Border>
 
@@ -54,9 +55,17 @@
                                 Padding="10,6"
                                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                                 BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto,Auto">
                                 <TextBlock Text="하이어아키" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <!-- 새 챕터 — 챕터는 이 탭에서 만든다([구성] 탭 하이어아키에는 이 단추가 없다). 배선은 셸이다. -->
                                 <Button Grid.Column="1"
+                                    x:Name="AddChapterButton"
+                                    Content="＋"
+                                    FontSize="12"
+                                    Padding="7,2"
+                                    VerticalAlignment="Top"
+                                    ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
+                                <Button Grid.Column="2"
                                     x:Name="FoldHierarchyButton"
                                     Content="‹"
                                     FontSize="12"
@@ -99,8 +108,12 @@
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
+            <!-- 초점이 바뀌어도 판을 스크롤하지 않는다 — 글 칸을 반영하면 판을 다시 그리고 새 칸에 초점을 돌려주는데,
+                 그 칸은 아직 자리가 잡히기 전이라 판이 엉뚱한 자리로 튄다. 판 안에서 초점을 받는 칸은 사람이 지금
+                 보고 누른 칸이라 따로 데려올 까닭이 없다. 쓰는 커서를 따라가는 스크롤은 그대로다. -->
             <ScrollViewer Grid.Column="2"
                           x:Name="GraphScroll"
+                          BringIntoViewOnFocusChange="False"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
                 <!-- 배율은 레이아웃 변환이다 — 스크롤 범위가 확대/축소를 그대로 따라온다. -->

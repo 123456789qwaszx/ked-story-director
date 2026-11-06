@@ -142,10 +142,10 @@ public sealed class ChapterDeleterTests : IDisposable
     }
 
     [Fact]
-    public void 내보낸_진행_JSON은_지우지_않고_이름을_말한다()
+    public void 제거는_진행_JSON을_건드리지_않고_이름을_말한다()
     {
-        // 산출물이라도 남의 폴더(개발자가 가져가는 자리)에 있는 파일이다. 그냥 두면
-        // 런타임이 없는 챕터를 계속 싣게 되므로, 지우는 대신 <b>이름을 말한다</b>.
+        // 제거는 모델만 바꾼다(되돌리기 한 칸). 파일은 바로 뒤의 내보내기가 걷고(ChapterExportService),
+        // 화면은 이 이름으로 걷혔는지 말한다.
         ProjectEditor editor = Build();
 
         string export = ChapterExportService.ExportPathFor(ProjectPath, Doomed);

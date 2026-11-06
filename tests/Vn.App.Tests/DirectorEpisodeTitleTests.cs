@@ -54,7 +54,8 @@ public sealed class DirectorEpisodeTitleTests : IDisposable
         // [대본] — 이름 칸 · 머리글 · 카드 머리 · 하이어아키가 제목이다.
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         Assert.Equal("교무실", NameBox(window).Text);
-        Assert.Equal("에피소드 · 교무실", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("ch01챕터 - hall", graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 「{챕터}챕터 - {장면}」 — 제목은 이름 칸
+        Assert.False(graph.FindControl<TextBlock>("InspectorSubtitle")!.IsVisible);   // 부제(대사 줄 — 화자 · 대사 · 분기)는 없다
         Assert.Contains("교무실", CardTexts(graph, card.Id));
         Assert.Equal("교무실", Row(graph.HierarchyView, "b").Text);
 
@@ -91,7 +92,7 @@ public sealed class DirectorEpisodeTitleTests : IDisposable
     });
 
     [Fact]
-    public void 대본_탭_하이어아키의_이름_고치기는_제목을_고치고_구성_탭은_EpisodeId를_고친다() => HeadlessUi.Run(() =>
+    public void 대본_탭_하이어아키의_이름_고치기는_제목을_고치고_구성_탭_하이어아키는_고치지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
         StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
@@ -103,8 +104,10 @@ public sealed class DirectorEpisodeTitleTests : IDisposable
         ChapterEpisode x = session.Editor.FindChapter("ch02")!.Episodes.Single(episode => episode.EpisodeId == "x");
         Assert.Equal("복도", x.Title);
 
-        Rename(chapter, StoryHierarchy.EpisodeKey("ch02", "y"), "y2");
-        Assert.Contains(session.Editor.FindChapter("ch02")!.Episodes, episode => episode.EpisodeId == "y2");
+        // [구성] 탭 하이어아키는 이름 칸을 열지 않는다 — EpisodeId는 [구성] 탭 인스펙터의 에피소드ID 칸에서 고친다.
+        chapter.BeginRename(StoryHierarchy.EpisodeKey("ch02", "y"));
+        Assert.Null(chapter.RenameBox);
+        Assert.Contains(session.Editor.FindChapter("ch02")!.Episodes, episode => episode.EpisodeId == "y");
 
         window.Close();
     });

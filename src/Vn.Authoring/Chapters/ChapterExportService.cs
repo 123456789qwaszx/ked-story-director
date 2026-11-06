@@ -10,13 +10,17 @@ namespace Vn.Authoring.Chapters;
 /// <param name="Failed">쓰기 자체가 실패한 챕터(잠김·권한).</param>
 /// <param name="Written">실제로 쓴(또는 같은 내용이라 둔) 파일 — 사람이 "어디로 나갔나"를 보는 자리.</param>
 /// <param name="GameFolderNote">게임 폴더(<see cref="Serialization.RuntimeTarget"/>)로도 썼는지 한 마디. 설정이 없으면 null.</param>
+/// <param name="Removed">이번에 걷은 옛 진행 JSON의 챕터 — 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 것.</param>
+/// <param name="RemoveFailed">걷어야 하는데 못 걷은 옛 진행 JSON의 챕터(잠김 · 권한).</param>
 public sealed record ChapterExportRun(
     IReadOnlyList<string> Refused,
     IReadOnlyList<string> Failed,
     IReadOnlyList<string>? DeploymentBlocked = null,
     IReadOnlyDictionary<string, string>? Checksums = null,
     IReadOnlyList<string>? Written = null,
-    string? GameFolderNote = null)
+    string? GameFolderNote = null,
+    IReadOnlyList<string>? Removed = null,
+    IReadOnlyList<string>? RemoveFailed = null)
 {
     public static ChapterExportRun Empty { get; } = new([], [], [], new Dictionary<string, string>());
 
@@ -28,15 +32,21 @@ public sealed record ChapterExportRun(
     {
         get
         {
+            string? removed = Removed is { Count: > 0 } gone
+                ? "지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷었습니다: " +
+                  string.Join(", ", gone.Select(id => id + ChapterExportService.ExportFileSuffix))
+                : null;
+
             if (Written is not { Count: > 0 } written)
             {
-                return null;
+                return removed;
             }
 
             string folder = Path.GetFileName(Path.GetDirectoryName(written[0]) ?? string.Empty);
             string files = string.Join(", ", written.Select(Path.GetFileName));
 
-            return $"진행 JSON → {folder}/ ({files})" + (GameFolderNote is null ? string.Empty : $" · {GameFolderNote}");
+            return $"진행 JSON → {folder}/ ({files})" + (GameFolderNote is null ? string.Empty : $" · {GameFolderNote}") +
+                   (removed is null ? string.Empty : $" · {removed}");
         }
     }
 
@@ -45,9 +55,9 @@ public sealed record ChapterExportRun(
     public bool AllExported => Refused.Count == 0 && Failed.Count == 0 && Blocked.Count == 0;
 
     /// <summary>
-    /// 검증 보고 맨 위에 세울 결론 — <b>못 나갔을 때만 있다.</b> 잘 나간 것은 말하지 않는다.
+    /// 검증 보고 맨 위에 세울 결론 — <b>못 나갔거나 옛 파일을 못 걷었을 때만 있다.</b> 잘 나간 것은 말하지 않는다.
     /// </summary>
-    public string? Notice => AllExported
+    public string? Notice => AllExported && RemoveFailed is not { Count: > 0 }
         ? null
         : string.Join("\n", new[]
         {
@@ -64,7 +74,11 @@ public sealed record ChapterExportRun(
                 ? null
                 : $"출시 기준선 뒤 선택지 순번이 바뀌어 진행 JSON 갱신을 막았습니다: " +
                   $"{string.Join(", ", Blocked)} — 과거 선택 이력의 OptionIndex가 다른 선택을 " +
-                  $"가리킬 수 있습니다. {ChapterReleaseBaseline.FolderName}/ 기준선과 순서를 확인하세요."
+                  $"가리킬 수 있습니다. {ChapterReleaseBaseline.FolderName}/ 기준선과 순서를 확인하세요.",
+            RemoveFailed is not { Count: > 0 } kept
+                ? null
+                : $"지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷지 못했습니다: {string.Join(", ", kept)}" +
+                  " — 파일이 다른 프로그램에 잡혀 있는지 확인하세요. 그냥 두면 게임이 없는 챕터를 계속 싣습니다."
         }.Where(part => part is not null));
 }
 
@@ -244,6 +258,11 @@ public sealed class ChapterExportService
             }
         }
 
+        // 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 옛 파일은 걷는다 — 두면 게임이 없는 챕터를 계속 싣는다.
+        var removed = new List<string>();
+        var removeFailed = new List<string>();
+        RemoveStale(entries, projectPath, gameFolder, removed, removeFailed);
+
         string? gameNote = gameFolder is null
             ? null
             : gameFailed.Count > 0
@@ -252,7 +271,67 @@ public sealed class ChapterExportService
                     ? $"게임 폴더 → {gameFolder}"
                     : null;
 
-        return new ChapterExportRun(refused, failed, blocked, checksums, written, gameNote);
+        return new ChapterExportRun(refused, failed, blocked, checksums, written, gameNote, removed, removeFailed);
+    }
+
+    /// <summary>
+    /// <c>exported/</c>에서 지금 프로젝트에 없는 챕터의 진행 JSON을 걷는다. <c>exported/</c>는 이 툴이 모델에서 짓는
+    /// 산출물 자리라, 걷어도 잃는 것이 없다 — 챕터 제거 · 개명을 되돌리면 다음 내보내기가 같은 파일을 다시 쓴다.
+    ///
+    /// 게임 폴더의 같은 이름 파일은 <b>걷는 옛 파일과 바이트가 같을 때만</b> 함께 걷는다 — 이 툴이 써 둔 그대로라는
+    /// 뜻이다. 다르면(사람이 고쳤거나 다른 곳에서 왔다) 그 폴더의 남의 파일이므로 둔다.
+    ///
+    /// 이름은 대소문자를 가리지 않고 맞춘다 — 대소문자만 바꾼 개명에서, 그것을 가리지 않는 파일 시스템은 방금 쓴 새 파일을
+    /// 옛 이름으로 들고 있다. 그것을 옛 파일로 보고 걷으면 새 파일이 사라진다.
+    /// </summary>
+    private static void RemoveStale(
+        IReadOnlyList<ChapterEntry> entries,
+        string projectPath,
+        string? gameFolder,
+        List<string> removed,
+        List<string> removeFailed)
+    {
+        string folder = Path.GetDirectoryName(ExportPathFor(projectPath, "_"))!;
+
+        if (!Directory.Exists(folder))
+        {
+            return;
+        }
+
+        var live = new HashSet<string>(entries.Select(entry => entry.ChapterId), StringComparer.OrdinalIgnoreCase);
+
+        foreach (string path in Directory.EnumerateFiles(folder, "*" + ExportFileSuffix).Order(StringComparer.Ordinal))
+        {
+            string fileName = Path.GetFileName(path);
+            string chapterId = fileName[..^ExportFileSuffix.Length];
+
+            if (live.Contains(chapterId))
+            {
+                continue;
+            }
+
+            try
+            {
+                if (gameFolder is not null &&
+                    Path.Combine(gameFolder, fileName) is var gamePath &&
+                    File.Exists(gamePath) &&
+                    File.ReadAllBytes(gamePath).SequenceEqual(File.ReadAllBytes(path)))
+                {
+                    File.Delete(gamePath);
+                }
+
+                File.Delete(path);
+                removed.Add(chapterId);
+            }
+            catch (IOException)
+            {
+                removeFailed.Add(chapterId);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                removeFailed.Add(chapterId);
+            }
+        }
     }
 
     /// <summary>

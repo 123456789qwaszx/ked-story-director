@@ -24,8 +24,8 @@ public sealed class NewProjectNoiseViewTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        // [＋ 에피소드] — 카드가 함께 서고, 그 카드의 대본은 아직 비어 있다.
-        view.AddEpisodeFromToolbar();
+        // 에피소드 추가 — 카드가 함께 서고, 그 카드의 대본은 아직 비어 있다.
+        EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.Refresh();

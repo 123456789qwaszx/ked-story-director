@@ -9,7 +9,7 @@
                 BorderThickness="0,0,0,1">
             <!-- [다시 읽기] 단추는 두지 않는다 — **화면이 저절로 따라오기 때문이다.** 챕터 폴더와
                  대본 폴더에 감시자가 붙어 있고, 저장이 내려앉으면 화면이 스스로 다시 읽는다. -->
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid>
                 <!-- 주의: 왼쪽 무리는 <b>연출 그래프 툴바와 한 쌍</b>이다.
                      같은 StackPanel(Spacing=6) · 같은 라벨 여백 · 콤보 뒤 같은 구분선.
                      짝: `GraphEditorView.axaml`의 툴바 — 한쪽을 고치면 둘 다 고친다.
@@ -25,9 +25,7 @@
                          챕터 진행 JSON이 사람 손을 기다리면 누른 순간의 낡은 파일이 디스크에
                          남는다. 다시 읽을 때마다 저절로 나간다 — 내보내기의 거부 규칙은 그대로 적용된다. -->
                     <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
-                    <Button x:Name="AddEpisodeButton"
-                            Content="＋ 에피소드"
-                            ToolTip.Tip="선택된 에피소드의 다음으로 새 에피소드를 만들어 잇습니다. 선택이 없으면 홀로 섭니다. 이름은 우측 [이름] 칸에서 고치고 Enter." />
+                    <!-- [＋ 에피소드] 단추는 두지 않는다 — 에피소드는 하이어아키의 우클릭 「에피소드 추가」로 더한다. -->
 
                     <!-- 자동 정렬 — 자리의 주인이 사람이라서
                          필요한 짝이다. 손으로 옮기다 판이 엉키면 되돌릴 길이 있어야 한다.
@@ -36,24 +34,21 @@
                     <Button x:Name="AutoArrangeButton"
                             Content="자동 정렬"
                             ToolTip.Tip="모든 카드를 [대본] 탭에 놓인 모양대로 다시 세웁니다. 손으로 옮긴 자리는 사라집니다 — 되돌리기(Ctrl+Z) 한 번으로 돌아옵니다." />
+                    <!-- 전체 보기 — 화면(배율 · 스크롤)만 맞춘다. 카드 자리는 그대로다. -->
+                    <Button x:Name="FitChapterButton"
+                            Content="전체 보기"
+                            ToolTip.Tip="이 챕터의 카드가 모두 한 화면에 들어오게 배율과 위치를 맞춥니다. 카드가 적으면 100%보다 키우지는 않습니다." />
+                    <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                    <!-- 빈 선택지 숨기기 — [구성] 판 전체에 하나다. [대본] 탭은 카드마다 인스펙터의 체크로 정한다. -->
+                    <CheckBox x:Name="HideEmptyChoicesCheck" Content="빈 선택지 숨기기" FontSize="11" VerticalAlignment="Center"
+                              ToolTip.Tip="켜면 이 판의 모든 카드에서 이어지지 않은 빈 선택지 점과 들어오는 길 없는 입구 점을 감춥니다. [대본] 탭의 선택지 칸은 카드마다 따로 정합니다." />
                 </StackPanel>
 
                 <!-- 픽스처(재생루트 하이라이트)는 화면에 세우지 않는다.
                      주의: 챕터의 픽스처와 `ChapterFixtureWalker`는 남아 있다 — 화면만 없으므로
                      다시 보이려면 콤보와 걷기 호출을 세우면 된다. -->
 
-                <!-- 편집은 언제나 열려 있다. 오른쪽 끝이 파괴적 동작의 자리다 — 빨갛게. -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                    <!-- 삭제는 늘 같은 자리에 있다 — 자리가 움직이면 그 자리를
-                         누르던 손이 삭제를 누른다. 빨간 것은 지우는 단추라서다. -->
-                    <Button x:Name="DeleteEpisodeButton"
-                            Content="에피소드 삭제"
-                            FontSize="11"
-                            VerticalAlignment="Center"
-                            Background="#C0392B"
-                            Foreground="White"
-                            ToolTip.Tip="선택한 에피소드와 그 에피소드를 오가는 간선, [대본] 탭의 카드를 함께 지웁니다. 챕터의 선택지 문구는 그대로 둡니다. 되돌리기(Ctrl+Z)로 돌아옵니다." />
-                </StackPanel>
+                <!-- 에피소드를 지우는 단추는 두지 않는다 — 지우기는 하이어아키의 우클릭 「지우기」 하나다. -->
             </Grid>
         </Border>
 
@@ -84,7 +79,8 @@
                             Padding="10,6"
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                             BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="*,Auto,Auto">
+                        <!-- 새 챕터 [＋]는 여기 두지 않는다 — [대본] 탭 하이어아키의 [＋]와 하이어아키 우클릭 「챕터 추가」로 만든다. -->
+                        <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="하이어아키" FontWeight="SemiBold" />
                                 <TextBlock x:Name="ChapterSummary"
@@ -93,13 +89,6 @@
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                             <Button Grid.Column="1"
-                                    x:Name="AddChapterButton"
-                                    Content="＋"
-                                    FontSize="12"
-                                    Padding="7,2"
-                                    VerticalAlignment="Top"
-                                    ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
-                            <Button Grid.Column="2"
                                     x:Name="FoldHierarchyButton"
                                     Content="‹"
                                     FontSize="12"
@@ -177,31 +166,15 @@
                                Opacity="0.55"
                                TextWrapping="Wrap"
                                MaxWidth="420" />
-                    <!-- 빈 판의 첫걸음은 <b>둘 중 하나만</b> 선다. 프로젝트가 아직 없으면 [새 프로젝트]가, 프로젝트는
-                         있는데 챕터가 하나도 없으면 [＋ 챕터]가 선다 — 안내문만 있으면
-                         다음 할 일이 글로만 서 있으니, 누를 자리가 판 한가운데 함께 선다.
-                         배선은 셸: 각각 툴바의 [새로 만들기]·우측 기둥의 [＋]와 같은 길이다. -->
+                    <!-- 빈 판의 첫걸음 — 프로젝트가 아직 없으면 [새 프로젝트]가 판 한가운데 선다(배선은 셸: 툴바의 [새로
+                         만들기]와 같은 길). 챕터 · 에피소드를 더하는 단추는 두지 않는다 — 이 탭에서는 더하지 않고, 안내문이
+                         [대본] 탭으로 데려간다. -->
                     <Button x:Name="EmptyNewProjectButton"
                             Content="새 프로젝트"
                             HorizontalAlignment="Center"
                             Padding="16,6"
                             IsVisible="False"
                             ToolTip.Tip="새 프로젝트를 만들고 저장합니다 — 저장돼야 챕터가 살 폴더가 정해집니다." />
-                    <Button x:Name="EmptyAddChapterButton"
-                            Content="＋ 챕터"
-                            HorizontalAlignment="Center"
-                            Padding="16,6"
-                            IsVisible="False"
-                            ToolTip.Tip="새 챕터 — 프로젝트에 챕터를 만들고 판을 엽니다." />
-                    <!-- 셋째 걸음 — 챕터는 열렸는데 에피소드가 하나도 없을 때. 앞의 둘과
-                         달리 배선까지 이 뷰의 것이다: 툴바의 [＋ 에피소드]와 같은 길을 탄다
-                         (선택이 없으니 홀로 선다). -->
-                    <Button x:Name="EmptyAddEpisodeButton"
-                            Content="＋ 에피소드"
-                            HorizontalAlignment="Center"
-                            Padding="16,6"
-                            IsVisible="False"
-                            ToolTip.Tip="첫 에피소드를 만듭니다 — 이름은 우측 [이름] 칸에서 고치고 Enter." />
                 </StackPanel>
             </Grid>
 
@@ -239,44 +212,34 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="6">
                     <TextBlock x:Name="NoSelectionText"
-                               Text="노드 클릭 = 선택&#x0A;선택한 뒤 [＋ 에피소드] = 다음 에피소드로 잇기&#x0A;선(길) 클릭 = 표시·해금조건과 스탯변화 편집"
+                               Text="노드 클릭 = 선택&#x0A;선(길) 클릭 = 표시·해금조건과 스탯변화 편집&#x0A;챕터 · 장면 · 에피소드는 [대본] 탭에서 더하고 지우고 고칩니다"
                                FontSize="11"
                                Opacity="0.55"
                                TextWrapping="Wrap" />
 
-                    <!-- 장면 — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. 이름을
-                         고치면 그 에피소드들의 장면ID가 함께 바뀐다(되돌리기 한 칸). -->
+                    <!-- 장면 — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. 이름은 머리글이 보이고, 고치는
+                         것은 [대본] 탭 하이어아키의 장면 줄이다(그 에피소드들의 장면ID가 함께 바뀐다). -->
                     <StackPanel x:Name="ScenePanel" Spacing="6" IsVisible="False">
-                        <TextBox x:Name="SceneNameBox" FontSize="11" PlaceholderText="장면ID — 적고 Enter"
-                                 ToolTip.Tip="고치고 Enter를 누르면 이 장면의 에피소드 모두의 장면ID가 바뀝니다. 비우면 에피소드마다 제 장면(미지정)이 됩니다." />
                         <TextBlock x:Name="SceneHintText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
                         <TextBlock Text="에피소드" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0" />
                         <StackPanel x:Name="SceneEpisodesPanel" Spacing="2" />
                     </StackPanel>
 
                     <StackPanel x:Name="PropertyPanel" Spacing="6" IsVisible="False">
-                        <!-- 에피소드의 두 칸 — 왼쪽 기둥의 이름표가 무슨 칸인지 말한다. 둘 다 고치고 Enter.
-                             개명 = Id를 고치고 Enter(간선 · 픽스처 · 카드가 함께 따라간다). 장면은 여기서 정하지 않는다 —
-                             하이어아키에서 에피소드를 장면 줄로 끌고, 장면 줄에서 이름을 바꾼다. -->
-                        <Grid x:Name="EpisodeFieldsGrid" ColumnDefinitions="70,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+                        <!-- 에피소드ID 칸 — 왼쪽 기둥의 이름표가 무슨 칸인지 말한다. 개명 = Id를 고치고 Enter(간선 · 픽스처 ·
+                             카드가 함께 따라간다). 제목은 머리글(「장면 - 제목」)이 보이고 [대본] 탭에서 고친다. 장면은 여기서
+                             정하지 않는다 — 하이어아키에서 에피소드를 장면 줄로 끌고, 장면 줄에서 이름을 바꾼다. -->
+                        <Grid x:Name="EpisodeFieldsGrid" ColumnDefinitions="70,*" RowDefinitions="Auto">
                             <TextBlock Grid.Row="0" Text="에피소드ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                             <TextBox Grid.Row="0" Grid.Column="1" x:Name="IdBox" FontSize="11"
                                      ToolTip.Tip="이름을 고치고 Enter를 누르면 개명됩니다 — 간선·픽스처·대본 파일·대사 노드가 함께 따라갑니다. 조건식의 cleared: 참조가 있으면 거부됩니다." />
-
-                            <!-- 제목 — 런타임 끝 카드의 "마지막 에피소드" 줄. 비우면 내보내기가 이름을 쓴다. -->
-                            <TextBlock Grid.Row="1" Text="제목" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
-                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="EpisodeTitleBox" FontSize="11" PlaceholderText="비우면 에피소드ID"
-                                     ToolTip.Tip="게임의 끝 카드가 '마지막 에피소드'로 보여 주는 글자입니다. 고치고 Enter. 비우면 에피소드 이름이 나갑니다." />
-
                         </Grid>
 
-                        <!-- 선택지 — 이 에피소드에서 나가는 길들. 길 하나 = 선택지 하나.
-                             줄을 클릭하면 그 줄 바로 아래에서 문구와 도착을 고친다. 문구는 글자 칸에 직접 적는다(적은
-                             문구는 챕터의 선택지 사전에 남는다). 여기서는 길을 더하거나 끊지 않는다 — 선택지를 잇고 끊는 것은
-                             [대본] 탭(카드 아래 칸)에서 한다. -->
+                        <!-- 선택지 — 이 에피소드에서 나가는 길들. 길 하나 = 선택지 하나. 줄이 문구와 도착을 보인다.
+                             여기서는 길을 더하거나 끊지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다. -->
                         <TextBlock x:Name="ChoiceHeaderText" Text="선택지" FontWeight="SemiBold" FontSize="12"
                                    Margin="0,10,0,0" />
-                        <!-- 선택지 줄 — 누르면 그 줄 아래에 문구 · 도착 · 조건 · 스탯변화가 펼쳐진다(읽기 전용). 다시 누르면 접힌다. -->
+                        <!-- 선택지 줄 — 누르면 그 줄 아래에 조건 · 스탯변화가 펼쳐진다(읽기 전용). 다시 누르면 접힌다. -->
                         <StackPanel x:Name="EdgeListPanel" Spacing="3" />
 
                         <!-- 대사 미리보기 — 선택지 아래에 접어 둔다. 에피소드 노드만으로는 정보가
@@ -509,6 +472,11 @@
                     </ScrollViewer>
                     </Panel>
                 </Grid>
+
+                <!-- 초점 받이 — 칼럼의 빈 곳을 누르면 글자 칸의 초점을 여기로 옮긴다. 글자 칸은 초점을 잃을 때 내므로 Enter와
+                     같이 반영되고 칸이 놓인다. 빈 곳(글 · 여백)은 초점을 받지 않아서, 옮기지 않으면 칸이 초점을 쥔 채 남는다. -->
+                <Border x:Name="InspectorFocusSink" Width="0" Height="0" Focusable="True"
+                        IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
             </Grid>
         </Grid>
 

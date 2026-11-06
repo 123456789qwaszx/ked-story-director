@@ -135,7 +135,7 @@ internal static class AppSettingsService
     }
 
     /// <summary>
-    /// 빈 선택지 칸을 감춘 카드들 (인스펙터의 「빈 선택지 숨기기」) — 프로젝트별. 없는 카드는 칸이 셋 선다.
+    /// [대본] 탭에서 빈 선택지 칸을 감춘 카드들 (인스펙터의 「빈 선택지 숨기기」) — 프로젝트별. 없는 카드는 칸이 셋 선다.
     /// 하이어아키 접힘과 같은 까닭으로 프로젝트 파일이 아니라 여기다(내 화면 편의가 팀의 파일을 바꾸면 안 된다).
     /// </summary>
     public static IReadOnlyList<string> LoadHiddenChoices(string projectPath) =>
@@ -155,6 +155,19 @@ internal static class AppSettingsService
         settings.Explorers[key] = state;
 
         Prune(settings.Explorers);
+        Save(settings);
+    }
+
+    /// <summary>
+    /// [구성] 탭 툴바의 「빈 선택지 숨기기」(앱 전체 하나). 하이어아키 접힘과 같은 까닭으로 프로젝트 파일이 아니라 여기다
+    /// (내 화면 편의가 팀의 파일을 바꾸면 안 된다).
+    /// </summary>
+    public static bool LoadHideEmptyChoices() => Load(SettingsPath).HideEmptyChoices;
+
+    public static void SaveHideEmptyChoices(bool hide)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.HideEmptyChoices = hide;
         Save(settings);
     }
 
@@ -279,11 +292,14 @@ internal static class AppSettingsService
 
         /// <summary>하이어아키 기둥을 접어 두었는가 — 프로젝트와 상관없는 화면 편의라 하나만 둔다.</summary>
         public bool HierarchyFolded { get; set; }
+
+        /// <summary>[구성] 탭의 「빈 선택지 숨기기」 — <see cref="LoadHideEmptyChoices"/>.</summary>
+        public bool HideEmptyChoices { get; set; }
     }
 
     /// <summary>
     /// 한 프로젝트의 화면 기억 — 하이어아키 접힘(마디 <b>열쇠</b>만 싣는다 — 트리 구조는 그릴 때마다 프로젝트에서 다시 나오므로,
-    /// 여기 남은 것이 실제 마디와 안 맞으면 그냥 안 쓰인다)과 빈 선택지 칸을 감춘 카드들.
+    /// 여기 남은 것이 실제 마디와 안 맞으면 그냥 안 쓰인다)과 [대본] 탭에서 빈 선택지 칸을 감춘 카드들.
     /// </summary>
     internal sealed class ExplorerState
     {
@@ -291,7 +307,7 @@ internal static class AppSettingsService
 
         public List<string> Collapsed { get; set; } = [];
 
-        /// <summary>빈 선택지 칸을 감춘 카드(노드 Id) — 인스펙터의 「빈 선택지 숨기기」.</summary>
+        /// <summary>빈 선택지 칸을 감춘 카드(노드 Id) — [대본] 탭 인스펙터의 「빈 선택지 숨기기」.</summary>
         public List<string> HiddenChoices { get; set; } = [];
     }
 }

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -43,8 +44,14 @@ public partial class MainWindow
         ChapterGraph.HierarchyView.Folds = _folds;
         Graph.HierarchyView.Folds = _folds;
 
-        // [대본] 탭은 에피소드를 보이는 제목으로 보이고 고친다 — EpisodeId는 [구성] 탭의 하이어아키 · 인스펙터에서 정한다.
+        // [대본] 탭은 에피소드를 보이는 제목으로 보이고 고친다 — EpisodeId는 [구성] 탭의 인스펙터에서 정한다.
         Graph.HierarchyView.ShowEpisodeTitles = true;
+
+        // [구성] 탭 하이어아키는 고르기만 한다 — 챕터 · 장면 · 에피소드는 [대본] 탭에서 더하고 지우고 고친다.
+        ChapterGraph.HierarchyView.ReadOnly = true;
+
+        // [구성] 탭의 챕터 줄은 누르면 그 챕터의 조건 · 스탯 표가 선다 — 곁글이 그것을 말한다(에피소드 수 대신).
+        ChapterGraph.HierarchyView.ChapterDetail = "챕터 조건 스탯";
 
         // 한쪽에서 접거나 펴면 다른 쪽도 맞춘다.
         ChapterGraph.HierarchyView.FoldChanged += () => Graph.HierarchyView.RefreshFolds();
@@ -83,6 +90,17 @@ public partial class MainWindow
                 UiGuard.Run(_session, "장면 옮기기", () => OnHierarchyDropped(source, target));
         }
 
+        // 카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다.
+        ChapterGraph.EpisodeOpened += (chapterId, episodeId) =>
+            UiGuard.Run(_session, "[대본] 탭으로", () => OpenInDirector(chapterId, episodeId));
+        Graph.CardOpened += nodeId => UiGuard.Run(_session, "[구성] 탭으로", () => OpenInChapterGraph(nodeId));
+
+        // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
+        ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>
+            UiGuard.Run(_session, "[대본] 탭으로", () => OpenChoiceInDirector(chapterId, from, to, label));
+        Graph.ChoiceOpened += (chapterId, from, to, label) =>
+            UiGuard.Run(_session, "[구성] 탭으로", () => OpenChoiceInChapterGraph(chapterId, from, to, label));
+
         // 챕터 그래프에서 고른 에피소드가 세션의 선택(그 카드)이 된다 — 연출 그래프로 넘어가도 같은 것을 본다.
         ChapterGraph.EpisodePicked += (chapterId, episodeId) => UiGuard.Run(_session, "선택 맞추기", () =>
         {
@@ -102,6 +120,60 @@ public partial class MainWindow
                 _syncingSelection = false;
             }
         });
+    }
+
+    /// <summary>
+    /// [구성] 판에서 에피소드 카드를 두 번 눌렀다 — [대본] 탭으로 넘어가 그 챕터의 판을 열고 그 카드를 고르고 보이게 한다.
+    /// </summary>
+    private void OpenInDirector(string chapterId, string episodeId)
+    {
+        if (EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is not { } card)
+        {
+            return;
+        }
+
+        MainTabs.SelectedItem = GraphTabItem;
+        OnDirectorHierarchyPicked(new HierarchyPick(HierarchyKind.Episode, chapterId, EpisodeId: episodeId));
+        _session.Select(card.Id);
+    }
+
+    /// <summary>
+    /// [대본] 판에서 카드를 두 번 눌렀다 — 에피소드 카드면 [구성] 탭으로 넘어가 그 챕터와 에피소드를 고르고 보이게 한다. 챕터
+    /// 판의 카드가 아니면(낙서판) 갈 곳이 없어 아무 일도 없다.
+    /// </summary>
+    private void OpenInChapterGraph(string nodeId)
+    {
+        if (PickOf(_session.Project.FindNode(nodeId)) is not { ChapterId: { } chapterId, EpisodeId: { } episodeId })
+        {
+            return;
+        }
+
+        MainTabs.SelectedItem = ChapterTabItem;
+        ChapterGraph.SelectChapter(chapterId);
+        ChapterGraph.SelectEpisode(episodeId);
+        Dispatcher.UIThread.Post(() => ChapterGraph.RevealEpisode(episodeId), DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// [구성] 판에서 선택지 간선을 두 번 눌렀다 — [대본] 탭으로 넘어가 그 챕터의 판을 열고 그 선택지 레인을 고른다(인스펙터가
+    /// 그 선을 설명한다). 판을 다시 그린 뒤에 레인이 서므로 고르기는 미룬다.
+    /// </summary>
+    private void OpenChoiceInDirector(string chapterId, string from, string to, string label)
+    {
+        MainTabs.SelectedItem = GraphTabItem;
+        _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
+        Dispatcher.UIThread.Post(
+            () => UiGuard.Run(_session, "[대본] 탭으로", () => Graph.SelectChoiceRail(chapterId, from, to, label)),
+            DispatcherPriority.Background);
+    }
+
+    /// <summary>[대본] 판에서 선택지 레인을 두 번 눌렀다 — [구성] 탭으로 넘어가 그 챕터를 열고 그 간선을 고른다.</summary>
+    private void OpenChoiceInChapterGraph(string chapterId, string from, string to, string label)
+    {
+        MainTabs.SelectedItem = ChapterTabItem;
+        ChapterGraph.SelectChapter(chapterId);
+        ChapterGraph.SelectEdgeKey(from, to, label);
+        Dispatcher.UIThread.Post(() => ChapterGraph.RevealEpisode(from), DispatcherPriority.Background);
     }
 
     /// <summary>
@@ -231,6 +303,24 @@ public partial class MainWindow
             : null;
 
     /// <summary>
+    /// 에피소드 카드의 인스펙터 머리글 — 「{챕터}챕터 - {장면}」. 챕터는 하이어아키에 보이는 챕터 Id, 장면ID가 없으면 챕터만이다.
+    /// 제목은 바로 아래 이름 칸이 보인다.
+    /// </summary>
+    private string EpisodeHeader(DialogueNode card)
+    {
+        if (EpisodeNaming.ChapterOf(_session.Project, card) is not { } chapter)
+        {
+            return EpisodeNaming.ShownNameOf(_session.Project, card);
+        }
+
+        string head = $"{chapter.ChapterId}챕터";
+
+        return EpisodeNaming.EpisodeFor(chapter, card)?.SceneId is { } sceneId && !string.IsNullOrWhiteSpace(sceneId)
+            ? $"{head} - {sceneId.Trim()}"
+            : head;
+    }
+
+    /// <summary>
     /// 세션의 선택이 바뀌었다 — 카드를 고르면 요약이 풀리고, 연출 그래프의 하이어아키와 챕터 그래프가 그 에피소드를 비춘다.
     /// </summary>
     private void SyncSelection()
@@ -274,11 +364,10 @@ public partial class MainWindow
         }
         else if (node is DialogueNode dialogue)
         {
+            // 에피소드 카드는 「{챕터}챕터 - {장면}」이다. 부제는 두지 않는다.
             Graph.SetInspectorHeader(
-                PickOf(dialogue) is not null
-                    ? $"에피소드 · {EpisodeNaming.ShownNameOf(_session.Project, dialogue)}"
-                    : $"대사 노드 · {dialogue.Name}",
-                "대사 줄 — 화자 · 대사 · 분기");
+                PickOf(dialogue) is not null ? EpisodeHeader(dialogue) : $"대사 노드 · {dialogue.Name}",
+                string.Empty);
         }
         else
         {
@@ -313,6 +402,12 @@ public partial class MainWindow
                 Graph.SetInspectorHeader(
                     $"챕터 · {chapter.ChapterId}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
                 Note("조건 · 스탯은 [구성] 탭에서 고칩니다.");
+                StatTable(chapter.Model.Stats);
+
+                if (named.Count > 0 || scenes.Any(scene => scene.IsDefault && scene.Episodes.Count > 0))
+                {
+                    Heading("장면");
+                }
 
                 foreach (ChapterScene scene in named)
                 {
@@ -355,6 +450,104 @@ public partial class MainWindow
                 Graph.SetInspectorHeader("인스펙터", "고른 것이 사라졌습니다 — 하이어아키에서 다시 고르세요");
                 break;
         }
+    }
+
+    /// <summary>요약 칸의 작은 제목 — 챕터 요약의 「스탯」 · 「장면」.</summary>
+    private void Heading(string text) => DirectorSummary.Children.Add(new TextBlock
+    {
+        Text = text,
+        FontSize = 12,
+        FontWeight = FontWeight.SemiBold,
+        Margin = new Thickness(0, 8, 0, 0)
+    });
+
+    /// <summary>
+    /// 챕터의 스탯 표 — 스탯 · 범위(처음 값) · 대본에 쓰는 글(<see cref="ChapterStatScript.InlineRead"/>) · [복사]. 작가가 대사에
+    /// 스탯의 지금 값을 넣을 때 키를 외우거나 문법을 칠 필요 없이 그대로 붙여 쓴다. 글은 끌어 골라도 된다.
+    /// </summary>
+    private void StatTable(IReadOnlyList<ChapterStat> stats)
+    {
+        Heading("스탯 — 대사에 붙여 쓰기");
+
+        if (stats.Count == 0)
+        {
+            Note("이 챕터에는 아직 스탯이 없습니다 — [구성] 탭에서 더합니다.");
+            return;
+        }
+
+        var table = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,Auto"),
+            ColumnSpacing = 8,
+            RowSpacing = 3
+        };
+
+        void Cell(Control cell, int row, int column)
+        {
+            Grid.SetRow(cell, row);
+            Grid.SetColumn(cell, column);
+            table.Children.Add(cell);
+        }
+
+        TextBlock Head(string text) => new() { Text = text, FontSize = 10, Opacity = 0.6 };
+
+        table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        Cell(Head("스탯"), 0, 0);
+        Cell(Head("범위"), 0, 1);
+        Cell(Head("대본에 쓰는 글"), 0, 2);
+
+        int row = 1;
+
+        foreach (ChapterStat stat in stats)
+        {
+            string snippet = ChapterStatScript.InlineRead(stat);
+            string name = string.IsNullOrWhiteSpace(stat.DisplayName) || stat.DisplayName == stat.Key
+                ? stat.Key
+                : $"{stat.DisplayName} ({stat.Key})";
+            string range = stat.Type == ChapterStatType.Bool
+                ? "참/거짓(1/0) · 처음 " + (stat.Initial != 0 ? "참" : "거짓")
+                : $"{stat.Minimum}~{stat.Maximum} · 처음 {stat.Initial}";
+
+            table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            Cell(new TextBlock { Text = name, FontSize = 11, VerticalAlignment = VerticalAlignment.Center }, row, 0);
+            Cell(new TextBlock { Text = range, FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center }, row, 1);
+            Cell(new SelectableTextBlock
+            {
+                Text = snippet,
+                FontSize = 11,
+                FontFamily = new FontFamily("Consolas, Menlo, monospace"),
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Tag = "stat-snippet:" + stat.Key
+            }, row, 2);
+
+            var copy = new Button
+            {
+                Content = "복사",
+                FontSize = 10,
+                Padding = new Thickness(6, 1),
+                Tag = "stat-copy:" + stat.Key
+            };
+            ToolTip.SetTip(copy, $"{snippet}를 복사합니다 — 대사에 붙이면 그 자리에 {name}의 지금 값이 나옵니다.");
+            copy.Click += async (_, _) => await UiGuard.RunAsync(_session, "스탯 복사", () => CopySnippetAsync(snippet, name));
+            Cell(copy, row, 3);
+
+            row++;
+        }
+
+        DirectorSummary.Children.Add(table);
+    }
+
+    private async Task CopySnippetAsync(string snippet, string name)
+    {
+        if (Clipboard is not { } clipboard)
+        {
+            _session.SetStatus("클립보드에 접근할 수 없습니다 — 글을 끌어 골라 복사하세요.");
+            return;
+        }
+
+        await clipboard.SetTextAsync(snippet);
+        _session.SetStatus($"{snippet}를 복사했습니다 — 대사에 붙이면 그 자리에 {name}의 지금 값이 나옵니다.");
     }
 
     /// <summary>요약 칸에서 고른 것 — 연출 그래프 하이어아키의 그 줄을 누른 것과 같다.</summary>

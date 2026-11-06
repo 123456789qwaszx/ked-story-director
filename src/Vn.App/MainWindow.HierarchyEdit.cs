@@ -198,28 +198,7 @@ public partial class MainWindow
     private void CreateEpisode(ChapterEntry chapter, string? after, string? sceneId)
     {
         string chapterId = chapter.ChapterId;
-        string episodeId = _session.Editor.NextEpisodeId(chapterId);
-        ChapterGraphModel model = chapter.Model;
-
-        _session.Editor.Batch(() =>
-        {
-            if (after is not null && model.FindEpisode(after) is not null)
-            {
-                (double x, double y) = ChapterBranchPlanner.SuggestPlacement(model, after);
-                _session.Editor.AddNextEpisode(
-                    chapterId, after, episodeId, title: string.Empty, x, y, optionLabel: ChapterGraphView.DefaultOptionLabel);
-            }
-            else
-            {
-                double x = model.Episodes.Count == 0 ? 0 : model.Episodes.Max(episode => episode.X) + ChapterBranchPlanner.SiblingSpacing;
-                _session.Editor.AddEpisode(chapterId, episodeId, title: string.Empty, x, 0);
-            }
-
-            if (sceneId is not null)
-            {
-                _session.Editor.UpdateEpisode(chapterId, episodeId, sceneId: sceneId);
-            }
-        });
+        string episodeId = EpisodeAdder.Add(_session, chapterId, after, sceneId);
 
         if (EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is { } card)
         {

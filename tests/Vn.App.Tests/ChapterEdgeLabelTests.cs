@@ -21,13 +21,9 @@ public sealed class ChapterEdgeLabelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        // 사람이 하는 그대로: 노드 하나 → 그 자식 하나 (간선이 함께 생긴다).
-        view.AddEpisodeFromToolbar();
-        view.Refresh();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        view.SelectEpisode("new01");
-        view.AddEpisodeFromToolbar();
+        // 사람이 하는 그대로([대본] 하이어아키 우클릭 「에피소드 추가」): 노드 하나 → 그 다음 하나 (간선이 함께 생긴다).
+        EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
+        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -46,11 +42,8 @@ public sealed class ChapterEdgeLabelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar();
-        view.Refresh();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        view.SelectEpisode("new01");
-        view.AddEpisodeFromToolbar();
+        EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
+        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -91,11 +84,8 @@ public sealed class ChapterEdgeLabelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar();
-        view.Refresh();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        view.SelectEpisode("new01");
-        view.AddEpisodeFromToolbar();
+        EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
+        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 

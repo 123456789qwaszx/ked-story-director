@@ -11,10 +11,13 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>카드 아래 선택지 칸은 셋이다 — 인스펙터의 「빈 선택지 숨기기」를 켜면 이은 선택지만</b> 선다. 다 이은 카드의
+/// <b>[대본] 카드 아래 선택지 칸은 셋이다 — 인스펙터의 「빈 선택지 숨기기」를 켠 카드는 이은 선택지만</b> 선다. 다 이은 카드의
 /// 안 이은 칸은 판만 어지럽힌다. 감추는 것은 안 이은 칸뿐이고(자동 길 자리도 이은 것이 없으면 감춘다), 이은 길은
-/// 언제나 선다 — 이은 길을 숨기면 판이 거짓말을 한다.
-/// 켠 카드는 사용자 설정에 프로젝트별로 기억한다(화면 편의라 프로젝트 파일이 아니다).
+/// 언제나 선다 — 이은 길을 숨기면 판이 거짓말을 한다. 켠 카드는 사용자 설정에 프로젝트별로 기억한다(화면 편의라 프로젝트
+/// 파일이 아니다).
+///
+/// <b>[구성] 탭은 툴바의 체크 하나</b>가 판 전체에 걸린다 — 빈 선택지 점과 들어오는 길 없는 입구 점을 감추고, 앱 설정에
+/// 기억한다. [대본] 탭의 카드별 칸과는 따로다.
 /// </summary>
 public sealed class ChoiceSlotCountTests : IDisposable
 {
@@ -23,6 +26,9 @@ public sealed class ChoiceSlotCountTests : IDisposable
 
     public void Dispose()
     {
+        // [구성] 설정은 이 시험 프로세스가 함께 쓴다 — 중간에 실패해도 다른 시험의 판이 점을 감춘 채 서지 않게.
+        AppSettingsService.SaveHideEmptyChoices(false);
+
         if (Directory.Exists(_directory))
         {
             Directory.Delete(_directory, recursive: true);
@@ -38,10 +44,11 @@ public sealed class ChoiceSlotCountTests : IDisposable
         // 기본 — 아무것도 안 이었어도 칸이 셋이다(첫 칸이 자동 길 자리).
         Assert.Equal(3, SlotRows(graph, "root").Count);
 
-        // 숨기면 — 이은 것이 없으니 자동 칸까지 아무것도 안 선다. 레일이 없으니 카드 아래 깊이도 없다.
+        // 숨기면 — 이은 것이 없으니 자동 칸까지 아무것도 안 선다. 숨긴 카드만 그렇다.
         session.SetHideEmptyChoices(root, hide: true);
         graph.Rebuild();
         Assert.Empty(SlotRows(graph, "root"));
+        Assert.Equal(3, SlotRows(graph, "b").Count);
 
         // 둘을 이으면 — 이은 둘만 선다. 빈 칸은 안 붙는다.
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
@@ -75,18 +82,21 @@ public sealed class ChoiceSlotCountTests : IDisposable
         session.Select(card.Id);
         Dispatcher.UIThread.RunJobs();
 
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        Assert.Null(graph.FindControl<CheckBox>("HideEmptyChoicesCheck"));   // [대본] 툴바에는 일괄 체크가 없다
+
         CheckBox box = HideEmptyChoicesBox(window);
         Assert.True(box.IsVisible);
         Assert.False(box.IsChecked);
-        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         Assert.Equal(3, SlotRows(graph, "b").Count);
 
-        // b는 아무 데도 안 이었다 — 켜면 칸이 하나도 안 선다.
+        // b는 아무 데도 안 이었다 — 켜면 칸이 하나도 안 선다. 다른 카드는 그대로다.
         box.IsChecked = true;
         Dispatcher.UIThread.RunJobs();
 
         Assert.Contains(card.Id, session.HiddenChoiceNodeIds);
         Assert.Empty(SlotRows(graph, "b"));
+        Assert.Equal(3, SlotRows(graph, "a").Count);
 
         // 다음에 열어도 — 같은 프로젝트를 다시 열면 켠 카드가 그대로다.
         var again = new AuthoringSession();
@@ -98,6 +108,48 @@ public sealed class ChoiceSlotCountTests : IDisposable
 
         Assert.DoesNotContain(card.Id, session.HiddenChoiceNodeIds);
         Assert.Equal(3, SlotRows(graph, "b").Count);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 구성_탭_툴바의_체크는_빈_점과_길_없는_입구_점을_감추고_대본_탭의_칸은_건드리지_않는다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
+        Dispatcher.UIThread.RunJobs();
+
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        chapterGraph.SelectChapter("ch01");
+        Dispatcher.UIThread.RunJobs();
+        CheckBox chapterCheck = chapterGraph.FindControl<CheckBox>("HideEmptyChoicesCheck")!;
+
+        Assert.False(chapterCheck.IsChecked);
+        Assert.Equal(3, EmptySlotDots(chapterGraph, "b"));
+        Assert.Equal(3, EntryDots(chapterGraph));   // 들어오는 길이 없는 root · b에도 서 있다
+
+        // 켜면 — [구성] 판이 빈 점과 길 없는 입구 점을 감춘다.
+        chapterCheck.IsChecked = true;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(session.HideEmptyChoices);
+        Assert.Equal(0, EmptySlotDots(chapterGraph, "b"));
+        Assert.Equal(0, EmptySlotDots(chapterGraph, "root"));   // 이은 선택지 하나만 선다
+        Assert.Equal(1, EntryDots(chapterGraph));   // 들어오는 길이 있는 a만 입구 점이 선다
+
+        // [대본] 탭의 칸은 그대로다 — 카드마다 따로 정한다.
+        graph.Rebuild();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(3, SlotRows(graph, "b").Count);
+        Assert.Empty(session.HiddenChoiceNodeIds);
+
+        // 다음에 열어도 — 앱 설정이라 새 세션도 켜진 채로 시작한다.
+        Assert.True(new AuthoringSession().HideEmptyChoices);
+
+        chapterCheck.IsChecked = false;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(3, EmptySlotDots(chapterGraph, "b"));
 
         window.Close();
     });
@@ -144,6 +196,17 @@ public sealed class ChoiceSlotCountTests : IDisposable
             .OrderBy(Canvas.GetTop)
             .Select(row => row.Children.OfType<TextBlock>().First().Text ?? string.Empty)
             .ToList();
+
+    /// <summary>[구성] 판에서 그 에피소드 카드 아래의 빈 선택지 점 수.</summary>
+    private static int EmptySlotDots(ChapterGraphView view, string episodeId) =>
+        view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Avalonia.Controls.Shapes.Ellipse>()
+            .Count(dot => dot.Tag is string tag &&
+                          tag.StartsWith(ChapterGraphView.EmptySlotTag + episodeId + "#", StringComparison.Ordinal));
+
+    /// <summary>[구성] 판의 입구 점 수 — 들어오는 길이 모이는 카드 위변 가운데 점이다.</summary>
+    private static int EntryDots(ChapterGraphView view) =>
+        view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Avalonia.Controls.Shapes.Ellipse>()
+            .Count(dot => ToolTip.GetTip(dot) as string == "이 에피소드로 들어오는 길이 여기로 모입니다.");
 
     private static CheckBox HideEmptyChoicesBox(MainWindow window) =>
         window.GetLogicalDescendants().OfType<DialogueNodeEditor>().Distinct().Single()

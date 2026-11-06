@@ -223,6 +223,82 @@ public sealed class ChapterExportServiceTests : IDisposable
         Assert.Equal("ep1", document.RootElement.GetProperty("StartEpisodeId").GetString());
     }
 
+    // ── 지운 · 이름을 바꾼 챕터의 옛 파일 ─────────────────────────────────────
+
+    [Fact]
+    public void 프로젝트에_없는_챕터의_진행_JSON은_걷는다()
+    {
+        // 2026-11-06 소유자 — 만들었다가 지운 챕터와 개명 전 이름의 JSON이 폴더에 그대로 남았다. 두면 게임이 없는
+        // 챕터를 계속 싣는다. exported/는 모델에서 짓는 산출물이라 걷어도 잃는 것이 없다(되돌리면 다시 나간다).
+        var service = new ChapterExportService();
+        service.ExportAll([Entry("ch01", Sound), Entry("ch_old", Sound), Entry("ch_gone", Sound)], ProjectPath);
+
+        // ch_old → ch_new로 개명, ch_gone은 지웠다.
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound), Entry("ch_new", Sound)], ProjectPath);
+
+        Assert.True(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch01")));
+        Assert.True(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch_new")));
+        Assert.False(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch_old")));
+        Assert.False(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch_gone")));
+        Assert.Equal(["ch_gone", "ch_old"], run.Removed!);
+        Assert.Contains("ch_old.progression.json", run.WhereNotice!, StringComparison.Ordinal);
+        Assert.Null(run.Notice);
+
+        // 다음 내보내기에서는 걷을 것이 없다.
+        Assert.Empty(service.ExportAll([Entry("ch01", Sound), Entry("ch_new", Sound)], ProjectPath).Removed!);
+    }
+
+    [Fact]
+    public void 검증에_걸려_못_나간_챕터의_파일은_걷지_않는다()
+    {
+        // 프로젝트에 있는 챕터다 — 낡은 파일이라도 "한 번은 옳았던" 판이라 그대로 둔다(G8).
+        var service = new ChapterExportService();
+        string path = ChapterExportService.ExportPathFor(ProjectPath, "ch01");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "{ \"한번은\": \"옳았던 판\" }");
+
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Unreachable)], ProjectPath);
+
+        Assert.True(File.Exists(path));
+        Assert.Empty(run.Removed!);
+    }
+
+    [Fact]
+    public void 게임_폴더의_옛_파일은_이_툴이_쓴_그대로일_때만_함께_걷는다()
+    {
+        // 게임 폴더는 런타임 저장소다 — 이 툴이 쓴 그대로(바이트가 같다)면 걷고, 다르면(사람이 고쳤거나 다른 곳에서 왔다)
+        // 남의 파일이라 둔다.
+        string game = Path.Combine(_root, "game");
+        Directory.CreateDirectory(game);
+        var service = new ChapterExportService();
+        service.ExportAll([Entry("ch01", Sound), Entry("ch_old", Sound), Entry("ch_hand", Sound)], ProjectPath, gameFolder: game);
+
+        string handEdited = Path.Combine(game, "ch_hand" + ChapterExportService.ExportFileSuffix);
+        File.WriteAllText(handEdited, "{ \"사람이\": \"고쳤다\" }");
+        string foreign = Path.Combine(game, "ch_other" + ChapterExportService.ExportFileSuffix);
+        File.WriteAllText(foreign, "{}");
+
+        service.ExportAll([Entry("ch01", Sound)], ProjectPath, gameFolder: game);
+
+        Assert.True(File.Exists(Path.Combine(game, "ch01" + ChapterExportService.ExportFileSuffix)));
+        Assert.False(File.Exists(Path.Combine(game, "ch_old" + ChapterExportService.ExportFileSuffix)));
+        Assert.True(File.Exists(handEdited));
+        Assert.True(File.Exists(foreign));   // exported/에 없던 것 — 이 툴이 낸 적이 없다
+    }
+
+    [Fact]
+    public void 대소문자만_바꾼_개명은_새_파일을_걷지_않는다()
+    {
+        // 대소문자를 가리지 않는 파일 시스템은 방금 쓴 새 파일을 옛 이름으로 들고 있다 — 그것을 옛 파일로 보면 사라진다.
+        var service = new ChapterExportService();
+        service.ExportAll([Entry("Ch01", Sound)], ProjectPath);
+
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound)], ProjectPath);
+
+        Assert.Empty(run.Removed!);
+        Assert.True(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch01")));
+    }
+
     // ── ⑧ 저작 관문 — `대사엔트리`가 실재하는 대사노드를 가리키나 ─────────────
 
     /// <summary>
