@@ -1,0 +1,83 @@
+{
+  "ChapterId": "또다른챕터",
+  "DisplayName": "또다른챕터",
+  "StartEpisodeId": "new01",
+  "Stats": [
+    {
+      "Key": "성실",
+      "DisplayName": "성실",
+      "Type": "Number",
+      "Initial": 0,
+      "Minimum": 0,
+      "Maximum": 100
+    },
+    {
+      "Key": "요령",
+      "DisplayName": "요령",
+      "Type": "Number",
+      "Initial": 0,
+      "Minimum": 0,
+      "Maximum": 100
+    }
+  ],
+  "Nodes": [
+    {
+      "EpisodeId": "new01",
+      "Title": "첫번째에피소드",
+      "IndexText": "",
+      "DialogueEntryId": "new01",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [
+        {
+          "TargetEpisodeId": "new02",
+          "ChoiceLabel": "qweqw",
+          "Auto": false,
+          "VisibleConditions": [],
+          "Conditions": [],
+          "LockedReasonText": "",
+          "StatChanges": []
+        }
+      ],
+      "EventKey": "",
+      "SceneId": "새로운장면",
+      "DesignerNote": "",
+      "Position": {
+        "X": 0,
+        "Y": 0
+      }
+    },
+    {
+      "EpisodeId": "new02",
+      "Title": "new02",
+      "IndexText": "",
+      "DialogueEntryId": "new02",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "새로운장면",
+      "DesignerNote": "",
+      "Position": {
+        "X": 0,
+        "Y": 165.87
+      }
+    },
+    {
+      "EpisodeId": "분기 1",
+      "Title": "분기 1",
+      "IndexText": "",
+      "DialogueEntryId": "분기_1",
+      "VisibleConditions": [],
+      "UnlockConditions": [],
+      "NextOptions": [],
+      "EventKey": "",
+      "SceneId": "새로운장면",
+      "DesignerNote": "",
+      "Position": {
+        "X": 284.62,
+        "Y": 17.99
+      }
+    }
+  ]
+}
