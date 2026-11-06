@@ -275,6 +275,43 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     internal event Action<string>? CardOpened;
 
+    /// <summary>선택지 레인을 두 번 눌렀다(챕터, 출발, 도착, 문구) — 셸이 [구성] 탭의 그 간선으로 데려간다.</summary>
+    internal event Action<string, string, string, string>? ChoiceOpened;
+
+    /// <summary>
+    /// 그 선택지 레인을 고르고(인스펙터가 그 선을 설명한다) 출발 카드가 화면 밖이면 그리로 옮긴다 — [구성] 탭에서 간선을 두 번
+    /// 눌러 넘어왔을 때. 그 레인이 판에 없으면(접힌 판 · 장면) 출발 카드를 고르고 false다.
+    /// </summary>
+    internal bool SelectChoiceRail(string chapterId, string from, string to, string label)
+    {
+        RailKey? key = _railVisuals.Select(visual => visual.Tag).OfType<RailKey>().FirstOrDefault(rail =>
+            string.Equals(rail.ChapterId, chapterId, StringComparison.Ordinal) &&
+            string.Equals(rail.From, from, StringComparison.Ordinal) &&
+            string.Equals(rail.To, to, StringComparison.Ordinal) &&
+            string.Equals(rail.Label?.Trim() ?? string.Empty, label, StringComparison.Ordinal));
+        string? fromNodeId = _session is { } session ? EpisodeNaming.CardFor(session.Project, chapterId, from)?.Id : null;
+
+        if (key is null)
+        {
+            if (fromNodeId is not null)
+            {
+                _session!.Select(fromNodeId);
+                ScrollToSelected();
+            }
+
+            return false;
+        }
+
+        SelectRail(key);
+
+        if (fromNodeId is not null && TargetVisualOf(fromNodeId) is { } target)
+        {
+            RevealTarget(target);
+        }
+
+        return true;
+    }
+
     public GraphEditorView()
     {
         InitializeComponent();
@@ -3881,11 +3918,15 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (TargetVisualOf(nodeId) is not { } target)
+        if (TargetVisualOf(nodeId) is { } target)
         {
-            return;
+            RevealTarget(target);
         }
+    }
 
+    /// <summary>그 카드(또는 프록시)가 화면에 하나도 안 보이면 가운데로 옮긴다 — 이미 보이면 끼어들지 않는다.</summary>
+    private void RevealTarget(Control target)
+    {
         double left = Canvas.GetLeft(target);
         double top = Canvas.GetTop(target);
         double width = target.Bounds.Width > 0 ? target.Bounds.Width : CardWidth;
@@ -5047,6 +5088,12 @@ public partial class GraphEditorView : UserControl
             _multiSelected.Clear(); // 선 하나를 고르면 카드 무리는 풀린다
             HighlightSelection();
             SelectRail(key);
+
+            // 두 번 누르면 [구성] 탭의 그 간선으로 간다(셸이 데려간다).
+            if (args.ClickCount >= 2)
+            {
+                ChoiceOpened?.Invoke(key.ChapterId, key.From, key.To, key.Label?.Trim() ?? string.Empty);
+            }
         };
         _railVisuals.Add(hit);
 

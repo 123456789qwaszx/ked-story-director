@@ -12,6 +12,7 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
+/// <b>카드 · 선택지 간선을 두 번 누르면 다른 탭의 같은 것으로 간다</b>. 선택지 간선은 [구성]의 간선 ↔ [대본]의 선택지 레인이다.
 /// <b>카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다</b> — [구성] 판의 카드는 [대본] 탭의 그 카드로(그 판을 열고 고른다),
 /// [대본] 판의 카드는 [구성] 탭의 그 에피소드로(그 챕터를 열고 고른다). 한 번 누르기는 고르기일 뿐이고, [대본] 카드의 글
 /// 칸 안에서 두 번 누르는 것은 낱말 고르기라 탭을 바꾸지 않는다.
@@ -79,6 +80,58 @@ public sealed class CardDoubleClickTests : IDisposable
         Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
         Assert.Equal("b", view.FindControl<TextBox>("IdBox")!.Text);
         Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "b"), view.HierarchyView.Selection?.Key);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 구성_탭의_선택지_간선을_두_번_누르면_대본_탭의_그_레인으로_간다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, ChapterTab);
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
+        Dispatcher.UIThread.RunJobs();
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        view.SelectChapter("ch01");
+        view.Refresh();
+        Dispatcher.UIThread.RunJobs();
+        Border label = view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
+            .Single(item => item.Tag is ChapterGraphView.EdgeLabelMark { FromEpisodeId: "root", ToEpisodeId: "a" });
+
+        // 한 번 — 그 간선을 고르기만 한다.
+        Press(label, clicks: 1);
+        Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
+        Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
+
+        // 두 번 — [대본] 탭에서 그 선택지 레인을 골랐다(인스펙터가 그 선을 설명한다).
+        Press(label, clicks: 2);
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
+        Assert.Equal("ch01", session.ActiveFile?.Name);
+        Assert.StartsWith("선택지 · ", graph.FindControl<TextBlock>("InspectorTitle")!.Text, StringComparison.Ordinal);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 대본_탭의_선택지_레인을_두_번_누르면_구성_탭의_그_간선으로_간다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, DirectorTab);
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
+        Dispatcher.UIThread.RunJobs();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+
+        // 선택지 레인의 누르는 자리 — 투명한 넓은 선이 그 레인의 열쇠(챕터 · 출발 · 도착 · 문구)를 진다.
+        Control rail = graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Avalonia.Controls.Shapes.Path>()
+            .Single(path => path.Tag?.GetType().Name == "RailKey" && path.Tag.ToString()!.Contains("From = root", StringComparison.Ordinal));
+
+        Press(rail, clicks: 1);
+        Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
+
+        Press(rail, clicks: 2);
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
+        Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
+        Assert.Equal("선택지 · root → a", view.FindControl<TextBlock>("InspectorTitle")!.Text);
 
         window.Close();
     });

@@ -271,6 +271,20 @@ public partial class ChapterGraphView : UserControl
     /// <summary>에피소드 카드를 두 번 눌렀다(챕터, 에피소드) — 셸이 [대본] 탭의 그 카드로 데려간다.</summary>
     internal event Action<string, string>? EpisodeOpened;
 
+    /// <summary>선택지 간선을 두 번 눌렀다(챕터, 출발, 도착, 문구) — 셸이 [대본] 탭의 그 선택지 레인으로 데려간다.</summary>
+    internal event Action<string, string, string, string>? ChoiceOpened;
+
+    /// <summary>선택지 간선을 눌렀다 — 고르고, 두 번 누름이면 [대본] 탭으로 가자고 알린다.</summary>
+    private void PressChoice(string from, string to, string label, int clickCount)
+    {
+        SelectEdgeKey(from, to, label);
+
+        if (clickCount >= 2 && _selectedChapterId is { } chapterId)
+        {
+            ChoiceOpened?.Invoke(chapterId, from, to, label);
+        }
+    }
+
     /// <summary>밖에서 고른 에피소드를 비추는 중 — 그동안은 <see cref="EpisodePicked"/>를 알리지 않는다.</summary>
     private bool _showingOutside;
 
@@ -1453,7 +1467,7 @@ public partial class ChapterGraphView : UserControl
         hit.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "간선 선택", () => SelectEdgeKey(hitFrom, hitTo, hitLabel));
+            UiGuard.Run(_session, "간선 선택", () => PressChoice(hitFrom, hitTo, hitLabel, e.ClickCount));
         };
         GraphCanvas.Children.Add(hit);
 
@@ -1573,7 +1587,7 @@ public partial class ChapterGraphView : UserControl
         text.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "간선 선택", () => SelectEdgeKey(fromId, toId, labelKey));
+            UiGuard.Run(_session, "간선 선택", () => PressChoice(fromId, toId, labelKey, e.ClickCount));
         };
 
         text.Measure(Size.Infinity);

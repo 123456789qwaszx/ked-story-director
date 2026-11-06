@@ -91,6 +91,12 @@ public partial class MainWindow
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenInDirector(chapterId, episodeId));
         Graph.CardOpened += nodeId => UiGuard.Run(_session, "[구성] 탭으로", () => OpenInChapterGraph(nodeId));
 
+        // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
+        ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>
+            UiGuard.Run(_session, "[대본] 탭으로", () => OpenChoiceInDirector(chapterId, from, to, label));
+        Graph.ChoiceOpened += (chapterId, from, to, label) =>
+            UiGuard.Run(_session, "[구성] 탭으로", () => OpenChoiceInChapterGraph(chapterId, from, to, label));
+
         // 챕터 그래프에서 고른 에피소드가 세션의 선택(그 카드)이 된다 — 연출 그래프로 넘어가도 같은 것을 본다.
         ChapterGraph.EpisodePicked += (chapterId, episodeId) => UiGuard.Run(_session, "선택 맞추기", () =>
         {
@@ -142,6 +148,28 @@ public partial class MainWindow
         ChapterGraph.SelectChapter(chapterId);
         ChapterGraph.SelectEpisode(episodeId);
         Dispatcher.UIThread.Post(() => ChapterGraph.RevealEpisode(episodeId), DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// [구성] 판에서 선택지 간선을 두 번 눌렀다 — [대본] 탭으로 넘어가 그 챕터의 판을 열고 그 선택지 레인을 고른다(인스펙터가
+    /// 그 선을 설명한다). 판을 다시 그린 뒤에 레인이 서므로 고르기는 미룬다.
+    /// </summary>
+    private void OpenChoiceInDirector(string chapterId, string from, string to, string label)
+    {
+        MainTabs.SelectedItem = GraphTabItem;
+        _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
+        Dispatcher.UIThread.Post(
+            () => UiGuard.Run(_session, "[대본] 탭으로", () => Graph.SelectChoiceRail(chapterId, from, to, label)),
+            DispatcherPriority.Background);
+    }
+
+    /// <summary>[대본] 판에서 선택지 레인을 두 번 눌렀다 — [구성] 탭으로 넘어가 그 챕터를 열고 그 간선을 고른다.</summary>
+    private void OpenChoiceInChapterGraph(string chapterId, string from, string to, string label)
+    {
+        MainTabs.SelectedItem = ChapterTabItem;
+        ChapterGraph.SelectChapter(chapterId);
+        ChapterGraph.SelectEdgeKey(from, to, label);
+        Dispatcher.UIThread.Post(() => ChapterGraph.RevealEpisode(from), DispatcherPriority.Background);
     }
 
     /// <summary>
