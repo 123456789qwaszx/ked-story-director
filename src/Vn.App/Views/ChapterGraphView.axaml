@@ -472,6 +472,11 @@
                     </ScrollViewer>
                     </Panel>
                 </Grid>
+
+                <!-- 초점 받이 — 칼럼의 빈 곳을 누르면 글자 칸의 초점을 여기로 옮긴다. 글자 칸은 초점을 잃을 때 내므로 Enter와
+                     같이 반영되고 칸이 놓인다. 빈 곳(글 · 여백)은 초점을 받지 않아서, 옮기지 않으면 칸이 초점을 쥔 채 남는다. -->
+                <Border x:Name="InspectorFocusSink" Width="0" Height="0" Focusable="True"
+                        IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top" />
             </Grid>
         </Grid>
 

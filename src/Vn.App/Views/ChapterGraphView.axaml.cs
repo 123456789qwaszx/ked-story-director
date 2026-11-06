@@ -1,11 +1,14 @@
 using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Definition;
@@ -400,6 +403,11 @@ public partial class ChapterGraphView : UserControl
         // 스탯변화 줄 편집기 — 간선 패널.
         EdgeStatsHost.Children.Add(_edgeStats);
 
+        // 칼럼의 빈 곳을 누르면 Enter처럼 — 적던 글자 칸을 놓는다(초점을 잃을 때 낸다). 누른 것의 처리보다 먼저(터널) 낸다:
+        // 누른 것이 선택을 옮기는 고리면, 옮긴 뒤에 내면 글이 엉뚱한 자리로 간다.
+        ChapterRightRows.AddHandler(
+            PointerPressedEvent, (_, args) => ReleaseInspectorTyping(args.Source), RoutingStrategies.Tunnel, handledEventsToo: true);
+
         AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
         HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
             _session?.SetHideEmptyChoices(HideEmptyChoicesCheck.IsChecked == true));
@@ -719,6 +727,22 @@ public partial class ChapterGraphView : UserControl
         return lines == 0
             ? null
             : $"화자 '{previous}' → '{renamed}' — 줄 {lines}개가 따라갔습니다.";
+    }
+
+    /// <summary>
+    /// 칼럼 안의 글자 칸에 초점이 있고 누른 곳이 글자 칸 · 스크롤 막대가 아니면, 초점을 받이로 옮겨 그 칸을 놓는다 — 칸은 초점을
+    /// 잃을 때 내므로 Enter와 같다(간선 패널의 문구 · 잠금 안내문 · 스탯변화 숫자).
+    /// </summary>
+    private void ReleaseInspectorTyping(object? pressed)
+    {
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not TextBox typing ||
+            !typing.GetVisualAncestors().Contains(ChapterRightRows) ||
+            pressed is Visual visual && visual.GetSelfAndVisualAncestors().Any(item => item is TextBox or ScrollBar))
+        {
+            return;
+        }
+
+        InspectorFocusSink.Focus();
     }
 
     private static void CommitOnEnter(Avalonia.Input.KeyEventArgs args, Action commit)
