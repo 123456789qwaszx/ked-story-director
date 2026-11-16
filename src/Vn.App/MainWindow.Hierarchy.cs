@@ -95,6 +95,10 @@ public partial class MainWindow
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenInDirector(chapterId, episodeId));
         Graph.CardOpened += nodeId => UiGuard.Run(_session, "[구성] 탭으로", () => OpenInChapterGraph(nodeId));
 
+        // 판에서 장면의 영역을 누르면 하이어아키에서 그 장면 줄을 고른 것과 같다 — 인스펙터에 메모 공간이 선다(2026-11-17).
+        Graph.ScenePicked += (chapterId, sceneId) => UiGuard.Run(_session, "장면", () =>
+            PickInDirector(new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId)));
+
         // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
         ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenChoiceInDirector(chapterId, from, to, label));
@@ -374,6 +378,12 @@ public partial class MainWindow
         {
             Graph.SetInspectorHeader("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다");
         }
+
+        // 장면 요약이 서 있는 동안 [＋ 대사 노드]는 그 장면에 세운다(2026-11-17).
+        Graph.NewNodeScene = summary && _directorLine is null &&
+                             _directorSummary is { Kind: HierarchyKind.Scene, ChapterId: { } sceneChapter, SceneId: { } pickedScene }
+            ? (sceneChapter, pickedScene)
+            : null;
 
         Graph.HierarchyView.Show(summary ? _directorSummary : PickOf(node));
     }

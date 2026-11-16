@@ -102,6 +102,21 @@ public partial class GraphEditorView : UserControl
     /// <summary>챕터(판) 박스 — 펼친 판의 노드들을 감싸는 배경 프레임 + 이름표 (2단계 무대 3번).</summary>
     private readonly List<Control> _frames = new();
 
+    /// <summary>
+    /// 판에 그린 장면 테두리의 자리 — 빈 곳을 눌렀을 때 그 자리가 어느 장면 안인지 찾는다(<see cref="SceneAt"/>). 테두리는 손을
+    /// 받지 않으므로(카드 · 선 · 범위 선택이 먼저다) 자리로 찾는다. 테두리를 그릴 때마다 다시 채운다.
+    /// </summary>
+    private readonly List<(Rect Area, string FileId, string ChapterId, string SceneId)> _sceneAreas = new();
+
+    /// <summary>판에서 장면의 영역(테두리 안의 빈 곳)을 눌렀다(챕터, 장면) — 셸이 하이어아키에서 그 장면 줄을 고른 것처럼 다룬다.</summary>
+    internal event Action<string, string>? ScenePicked;
+
+    /// <summary>
+    /// [＋ 대사 노드]가 세울 장면(챕터, 장면) — 셸이 인스펙터에 장면 요약을 세운 동안 맞춰 둔다(하이어아키에서 골랐든 판에서
+    /// 눌렀든). null이면 지금까지처럼 장면 없이 보고 있는 곳에 세운다.
+    /// </summary>
+    internal (string ChapterId, string SceneId)? NewNodeScene { get; set; }
+
     /// <summary>챕터 간선의 철도 배선 (T1) — 미러 선·분기점·선택지 칩.</summary>
     private readonly List<Control> _railVisuals = new();
 
@@ -453,6 +468,7 @@ public partial class GraphEditorView : UserControl
         _proxies.Clear();
         _edges.Clear();
         _frames.Clear();
+        _sceneAreas.Clear();
         bool hadLine = _selectedEdge is not null || _selectedRail is not null;
         _selectedEdge = null;
         _selectedRail = null;
@@ -518,6 +534,7 @@ public partial class GraphEditorView : UserControl
         }
 
         _frames.Clear();
+        _sceneAreas.Clear();
 
         if (_session is null || _projection is null)
         {
@@ -632,7 +649,8 @@ public partial class GraphEditorView : UserControl
     /// 장면이 하나뿐인 챕터. 앞의 둘은 접힌 판과 <b>같은 규칙</b>이고(규격 §2), 셋째는
     /// 챕터 프레임과 똑같은 자리에 겹쳐 그려 봐야 테두리만 두 겹이 되기 때문이다.
     ///
-    /// ⚠ 히트 대상이 아니다 — 클릭·드래그·포트에 아무 영향이 없다(챕터 프레임과 같다).
+    /// ⚠ 히트 대상이 아니다 — 클릭·드래그·포트에 아무 영향이 없다(챕터 프레임과 같다). 테두리 안의 빈 곳을 <b>누르면</b>(끌지 않고)
+    /// 그 장면을 고른다 — 자리를 <see cref="_sceneAreas"/>에 적어 두고 범위 선택이 아무것도 못 잡았을 때 찾는다(2026-11-17).
     /// </summary>
     private void DrawSceneFrames(string fileId, IEnumerable<ExpandedNodeProjection> nodes)
     {
@@ -690,6 +708,7 @@ public partial class GraphEditorView : UserControl
             // 챕터 프레임(24·46)보다 얕게 — 두 테두리가 붙어 보이지 않게 한다.
             area = area.Inflate(new Thickness(10, 26, 10, 10));
 
+            _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
             _frames.Add(SceneFrame(area));
             _frames.Add(SceneLabel(area, fileId, scene, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)));
         }
@@ -4445,6 +4464,16 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private void FinishRubberBand(Rect rect, Point end)
     {
+        // 끌지 않고 누르기만 한 자리가 장면 테두리 안이면 그 장면을 고른다(2026-11-17 소유자) — 하이어아키에서 그 장면 줄을 고른
+        // 것과 같다. 카드 · 선은 제가 먼저 누름을 받으므로 여기까지 오는 것은 빈 곳뿐이다.
+        if (rect.Width < ClickSlop && rect.Height < ClickSlop && SceneAt(end) is { } scene)
+        {
+            _multiSelected.Clear();
+            HighlightSelection();
+            ScenePicked?.Invoke(scene.ChapterId, scene.SceneId);
+            return;
+        }
+
         _multiSelected.Clear();
         var cards = new List<(double Distance, string NodeId)>();
 
@@ -4496,6 +4525,59 @@ public partial class GraphEditorView : UserControl
         {
             lines.MinBy(item => item.Distance).Pick();
         }
+    }
+
+    /// <summary>누르기와 끌기를 가르는 폭(px) — 이보다 작게 움직였으면 누른 것이다.</summary>
+    private const double ClickSlop = 4;
+
+    /// <summary>그 자리를 품은 장면 테두리. 장면 테두리는 서로 겹치지 않게 서지만, 겹쳤다면 작은 쪽이 먼저다.</summary>
+    private (string FileId, string ChapterId, string SceneId)? SceneAt(Point point)
+    {
+        foreach ((Rect area, string fileId, string chapterId, string sceneId) in
+                 _sceneAreas.OrderBy(item => item.Area.Width * item.Area.Height))
+        {
+            if (area.Contains(point))
+            {
+                return (fileId, chapterId, sceneId);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 장면에 세울 새 카드의 자리 — 그 장면 테두리의 오른쪽 옆, 위를 맞춰. 다른 카드와 겹치면 아래로 비킨다. 테두리가 없으면
+    /// (장면이 하나뿐인 챕터 · 접은 장면) null — 보고 있는 곳에 세운다.
+    /// </summary>
+    private (double X, double Y)? PlaceBesideScene(string fileId, string sceneId)
+    {
+        if (_sceneAreas.FirstOrDefault(item =>
+                string.Equals(item.FileId, fileId, StringComparison.Ordinal) &&
+                string.Equals(item.SceneId, sceneId, StringComparison.Ordinal)) is not { SceneId: not null } found)
+        {
+            return null;
+        }
+
+        // 테두리는 카드에서 (10, 26, 10, 10)만큼 나와 있다 — 새 카드가 들어가면 테두리가 그만큼 넓어진다.
+        double x = found.Area.Right - 10 + 40;
+        double y = found.Area.Y + 26;
+        List<Rect> taken = _cards
+            .Select(card => new Rect(Canvas.GetLeft(card.Visual), Canvas.GetTop(card.Visual), card.Visual.Width, CardHeightOf(card)))
+            .ToList();
+
+        for (int attempt = 0; attempt < 40; attempt++)
+        {
+            var wanted = new Rect(x - 20, y - 20, CardWidth + 40, 200);
+
+            if (!taken.Any(wanted.Intersects))
+            {
+                break;
+            }
+
+            y += 60;
+        }
+
+        return (ClampNodeX(x), ClampNodeY(y));
     }
 
     /// <summary>실행 선의 굵기 — 고른 선만 굵다.</summary>
@@ -5015,9 +5097,26 @@ public partial class GraphEditorView : UserControl
         double y = ClampNodeY(
             ((GraphScroll.Offset.Y + (GraphScroll.Viewport.Height / 2)) / _zoom) - 90 + stagger);
 
+        // 장면을 고른 채면(인스펙터에 장면 요약이 서 있다) 그 장면에 세운다(2026-11-17 소유자) — 그 장면 테두리 옆에. 장면은 이
+        // 판의 챕터 것이어야 하고 지금도 에피소드가 있어야 한다(그 사이 풀렸으면 장면 없이 세운다).
+        string? sceneId = null;
+
+        if (NewNodeScene is { } target &&
+            string.Equals(activeFile.Name, target.ChapterId, StringComparison.Ordinal) &&
+            _session.Editor.FindChapter(target.ChapterId) is { } chapter &&
+            chapter.Episodes.Any(episode => string.Equals(episode.SceneId?.Trim(), target.SceneId, StringComparison.Ordinal)))
+        {
+            sceneId = target.SceneId;
+
+            if (PlaceBesideScene(fileId, sceneId) is { } beside)
+            {
+                (x, y) = beside;
+            }
+        }
+
         // 이 판에서 사람이 만드는 노드는 대사뿐이다.
         // 챕터 판이면 에피소드도 선다 — 작가는 ID를 보지 않으므로 처음 제목을 붙인다(display-names N2).
-        _session.Select(_session.Editor.AddDialogueNode(fileId, x, y, title: NewNames.Episode).Id);
+        _session.Select(_session.Editor.AddDialogueNode(fileId, x, y, sceneId: sceneId, title: NewNames.Episode).Id);
     }
 
     private void DeleteSelectedNode()
