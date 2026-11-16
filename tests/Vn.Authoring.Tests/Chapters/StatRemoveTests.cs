@@ -162,14 +162,16 @@ public sealed class StatRemoveTests
     [Fact]
     public void 빈_식은_검증이_짚어_사람이_채운다()
     {
-        // 비우고 끝내면 아무도 모른다 — 빈 식이 <b>할 일이 남았다</b>고 말해야 한다.
+        // 비우고 끝내면 아무도 모른다 — 빈 식이 <b>할 일이 남았다</b>고 말해야 한다. 식 미정은 경고다(writer-fields W1 — 항상 통과).
         ProjectEditor editor = World();
 
         editor.RemoveChapterStat("ch01", "trust", clearUses: true);
 
         Assert.Contains(
             Chapter(editor).ToGraphModel("ch01", null).Diagnostics,
-            item => item.Message.Contains("비어 있습니다", StringComparison.Ordinal));
+            item => item.Code == ChapterDiagnosticCode.ConditionExpressionBlank &&
+                    item.Severity == ChapterDiagnosticSeverity.Warning &&
+                    item.Message.Contains("식 미정", StringComparison.Ordinal));
     }
 
     [Fact]

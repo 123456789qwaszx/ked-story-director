@@ -17,6 +17,7 @@ public enum ChapterGateVerdict
 /// 간선 관문(표시·해금조건) 판정의 <b>단일 구현</b> — 도달성 증명·픽스처
 /// 워커가 이 하나를 본다. 규칙이 두 벌이면 한쪽만 고쳐질 때 증명과 플레이가 갈린다.
 ///
+/// 식 미정(빈 식) 조건은 항 없이 유효하다 — 항상 열린다(writer-fields W1).
 /// 깨진 라벨(<see cref="ChapterGateVerdict.Broken"/>)은 "지나갈 수 없음"이다 —
 /// 깨진 조건을 통과시켜 도달 가능을 부풀리지 않는다.
 /// </summary>

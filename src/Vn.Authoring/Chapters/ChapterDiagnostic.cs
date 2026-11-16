@@ -25,6 +25,11 @@ public enum ChapterDiagnosticCode
 
     DialogueEntryBlank,
     ConditionLabelUndefined,
+
+    /// <summary>
+    /// 조건의 식이 비었다 — <b>식 미정</b>, 경고다(2026-11-16 · writer-fields W1). 항상 통과한다(관문이 없는 것과 같다). 작가가 라벨만 먼저
+    /// 걸고 개발자가 식을 나중에 채운다. 글자는 있는데 읽어낼 항이 없는 식은 같은 코드의 <b>오류</b>다.
+    /// </summary>
     ConditionExpressionBlank,
     ConditionExpressionMalformed,
     StatKeyUnknown,

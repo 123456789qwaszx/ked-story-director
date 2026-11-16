@@ -157,6 +157,19 @@ public sealed class ChapterDocument
 
         foreach (ChapterCondition condition in Conditions)
         {
+            // 식 미정 — 항상 통과한다. 할 일이 남았다고 경고로 말한다(내보내기를 막지 않는다).
+            if (string.IsNullOrWhiteSpace(condition.Expression))
+            {
+                diagnostics.Add(new ChapterDiagnostic(
+                    ChapterDiagnosticSeverity.Warning,
+                    ChapterDiagnosticCode.ConditionExpressionBlank,
+                    path,
+                    ChapterSheetNames.Conditions,
+                    null,
+                    $"조건 '{condition.Label}' — 식 미정입니다. [구성] 탭에서 식을 채울 때까지 항상 통과합니다."));
+                continue;
+            }
+
             foreach (ConditionParseProblem problem in
                      ConditionExpressionParser.Parse(condition.Expression, keys).Problems)
             {
@@ -180,12 +193,17 @@ public sealed class ChapterDocument
         string message) =>
         new(severity, code, path, ChapterSheetNames.Stats, EpisodeId: null, message);
 
-    /// <summary>식 원문에서 해석 결과를 다시 만든다 — 담아 둔 것을 믿지 않는다.</summary>
+    /// <summary>
+    /// 식 원문에서 해석 결과를 다시 만든다 — 담아 둔 것을 믿지 않는다.
+    ///
+    /// <b>식이 빈 조건은 「식 미정」이고 항상 통과한다</b>(유효, 항 없음 — 관문이 없는 것과 같다). 작가가 [대본]에서 라벨만 먼저 걸고
+    /// 개발자가 [구성]에서 식을 나중에 채우는 흐름이다(2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W1). 진단은 경고다.
+    /// </summary>
     private ChapterCondition Reparse(ChapterCondition condition)
     {
-        if (condition.Expression.Length == 0)
+        if (string.IsNullOrWhiteSpace(condition.Expression))
         {
-            return condition with { Parsed = [], IsValid = false };
+            return condition with { Parsed = [], IsValid = true };
         }
 
         ConditionParseResult parsed = ConditionExpressionParser.Parse(
