@@ -5,7 +5,7 @@
   "Stats": [
     {
       "Key": "trust",
-      "DisplayName": "신뢰",
+      "DisplayName": "trust",
       "Type": "Number",
       "Initial": 2,
       "Minimum": 0,
@@ -13,7 +13,7 @@
     },
     {
       "Key": "metLaru",
-      "DisplayName": "라루를 만남",
+      "DisplayName": "metLaru",
       "Type": "Bool",
       "Initial": 1,
       "Minimum": 0,
@@ -21,7 +21,7 @@
     },
     {
       "Key": "remembered",
-      "DisplayName": "기억함",
+      "DisplayName": "remembered",
       "Type": "Bool",
       "Initial": 0,
       "Minimum": 0,

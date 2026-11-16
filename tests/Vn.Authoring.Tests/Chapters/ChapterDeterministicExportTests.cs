@@ -41,7 +41,7 @@ public sealed class ChapterDeterministicExportTests : IDisposable
     public void 프로젝트를_저장하고_다시_열어_export해도_바이트가_같다()
     {
         var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("reload").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        editor.EnsureChapter("reload").Stats.Add(new ChapterStat("trust", 0, 0, 10));
         editor.AddEpisode("reload", "ep1", "첫 화", 0, 0);
         editor.AddEpisode("reload", "ep2", "둘째", 200, 0);
         editor.AddEdge("reload", "ep1", "ep2", optionLabel: "다음");
@@ -211,8 +211,8 @@ public sealed class ChapterDeterministicExportTests : IDisposable
         ],
         [],
         [
-            new ChapterStat("flag", "깃발", 0, 0, 1, ChapterStatType.Bool),
-            new ChapterStat("trust", "신뢰", 0, 0, 5)
+            new ChapterStat("flag", 0, 0, 1, ChapterStatType.Bool),
+            new ChapterStat("trust", 0, 0, 5)
         ],
         [], []);
 

@@ -299,9 +299,6 @@ internal sealed class StatChangeEditor : StackPanel
         return grid;
     }
 
-    /// <summary>드롭다운에 보이는 이름 — 표시명이 있으면 그것, 없으면 키.</summary>
-    private static string Display(ChapterStat stat) =>
-        string.IsNullOrWhiteSpace(stat.DisplayName) || stat.DisplayName == stat.Key
-            ? stat.Key
-            : $"{stat.DisplayName} ({stat.Key})";
+    /// <summary>드롭다운에 보이는 이름 — 스탯은 키만 있다(writer-fields W2).</summary>
+    private static string Display(ChapterStat stat) => stat.Key;
 }

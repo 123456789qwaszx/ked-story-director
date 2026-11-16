@@ -224,8 +224,6 @@ internal static class ChapterDocumentJson
             ["maximum"] = stat.Maximum
         };
 
-        Text(json, "displayName", stat.DisplayName);
-
         if (stat.Type != ChapterStatType.Int)
         {
             json["type"] = stat.Type.ToString();
@@ -234,9 +232,9 @@ internal static class ChapterDocumentJson
         return json;
     }
 
+    // 옛 파일의 스탯 displayName은 읽지 않고 지나간다 — 걷힌 칸이다(writer-fields W2).
     private static ChapterStat ReadStat(JsonObject json) => new(
         Text(json["key"]),
-        Text(json["displayName"]),
         (int?)json["initial"] ?? 0,
         (int?)json["minimum"] ?? 0,
         (int?)json["maximum"] ?? 0,

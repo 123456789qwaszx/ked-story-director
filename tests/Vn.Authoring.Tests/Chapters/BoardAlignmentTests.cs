@@ -130,7 +130,7 @@ public sealed class BoardAlignmentTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 
@@ -143,7 +143,7 @@ public sealed class BoardAlignmentTests
         // 조건부터 적고 에피소드를 나중에 만드는 순서 — 판은 첫 에피소드와 함께 선다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 
         editor.AddEpisode("ch01", "ep01", "복도", 0, 0);
@@ -174,7 +174,7 @@ public sealed class BoardAlignmentTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         editor.AddEpisode("ch01", "ep01", "복도", 0, 0);
 
         return editor;

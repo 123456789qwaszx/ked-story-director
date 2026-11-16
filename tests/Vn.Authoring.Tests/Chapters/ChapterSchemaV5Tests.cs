@@ -23,8 +23,8 @@ public sealed class ChapterSchemaV5Tests
     public ChapterSchemaV5Tests()
     {
         _editor.EnsureChapter("ch01");
-        _editor.AddChapterStat("ch01", "trust", "신뢰", initial: 0, minimum: 0, maximum: 10);
-        _editor.AddChapterStat("ch01", "anger", "분노", initial: 0, minimum: 0, maximum: 10);
+        _editor.AddChapterStat("ch01", "trust", initial: 0, minimum: 0, maximum: 10);
+        _editor.AddChapterStat("ch01", "anger", initial: 0, minimum: 0, maximum: 10);
 
         _editor.AddEpisode("ch01", "ep1", title: "", 0, 0);
         _editor.AddEpisode("ch01", "ep2", title: "", 200, 0);
@@ -90,7 +90,7 @@ public sealed class ChapterSchemaV5Tests
     public void bool_스탯의_true_조건은_1과의_같음_비교다()
     {
         _editor.AddChapterStat(
-            "ch01", "seen", "프롤로그", initial: 0, minimum: 0, maximum: 1, type: ChapterStatType.Bool);
+            "ch01", "seen", initial: 0, minimum: 0, maximum: 1, type: ChapterStatType.Bool);
         _editor.AddChapterCondition("ch01", "프롤로그봄", "seen == true");
 
         ChapterGraphModel model = Model();
@@ -108,7 +108,7 @@ public sealed class ChapterSchemaV5Tests
     {
         // 2026-10-29 · D2 — 이 검사는 옛 리더(`VerifyBoolStatUsage`)에만 있다가 모델 검사
         // (`ChapterStructureCheck`)로 옮겨 왔다. 내보내기 관문(코어 §G4)보다 먼저, 고치는 중에 짚는다.
-        _editor.AddChapterStat("ch01", "seen", "프롤로그", type: ChapterStatType.Bool);
+        _editor.AddChapterStat("ch01", "seen", type: ChapterStatType.Bool);
         _editor.AddChapterCondition("ch01", "이상한조건", "seen >= 1");
         _editor.UpdateEdge("ch01", "ep1", "ep2", statChanges: "seen +1", matchOptionLabel: "계속");
 
@@ -131,7 +131,7 @@ public sealed class ChapterSchemaV5Tests
         chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "왼쪽으로", null, null));
         chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "계속", null, null));
         chapter.Edges.Add(new ChapterEdge("ep2", "ep1", "왼쪽으로", null, null));   // 같은 문구 재사용
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         chapter.ChoiceOptions.Add(new ChapterChoiceOption("10", "왼쪽으로", Memo: null));
         chapter.ChoiceOptions.Add(new ChapterChoiceOption("20", "오른쪽으로", "아직 아무 길도 안 쓴다"));
 

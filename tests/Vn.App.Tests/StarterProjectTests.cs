@@ -164,8 +164,6 @@ internal static class StarterProject
         }
 
         ProjectEditor editor = session.Editor;
-        editor.UpdateChapterStat("ch01", "trust", displayName: "신뢰");
-        editor.UpdateChapterStat("ch01", "fatigue", displayName: "피로");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 2", "라루를 믿기로 했다면");
 
         // ④ 에피소드 넷 — 갈라졌다 다시 만나는 최소 모양. 에피소드마다 연출 그래프에 카드가 함께 선다.

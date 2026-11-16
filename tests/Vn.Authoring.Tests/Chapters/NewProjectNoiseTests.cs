@@ -20,8 +20,8 @@ public sealed class NewProjectNoiseTests
         var editor = new ProjectEditor(new StoryProject());
 
         editor.EnsureChapter("ch01");
-        editor.AddChapterStat("ch01", "trust", "신뢰", initial: 0, minimum: 0, maximum: 10);
-        editor.AddChapterStat("ch01", "anger", "분노", initial: 0, minimum: 0, maximum: 10);
+        editor.AddChapterStat("ch01", "trust", initial: 0, minimum: 0, maximum: 10);
+        editor.AddChapterStat("ch01", "anger", initial: 0, minimum: 0, maximum: 10);
         editor.EnsureChapterBoard("ch01");
 
         editor.AddEpisode("ch01", "ep01", title: string.Empty, 0, 0);

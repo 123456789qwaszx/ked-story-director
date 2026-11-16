@@ -441,7 +441,7 @@ public static class ChapterReachabilityProver
             for (int index = 0; index < chapter.Stats.Count && index < min.Length; index++)
             {
                 ChapterStat stat = chapter.Stats[index];
-                list.Add(new ChapterStatSpan(stat.Key, stat.DisplayName, min[index], max[index]));
+                list.Add(new ChapterStatSpan(stat.Key, stat.Key, min[index], max[index]));
             }
 
             built[episodeId] = list;

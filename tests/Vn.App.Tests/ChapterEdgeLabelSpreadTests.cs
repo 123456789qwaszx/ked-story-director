@@ -84,7 +84,6 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
         const string Long = "아주 길고 긴 선택지 문구가 여기 있어서 한 줄에 다 들어가지 않는다";
         session.Editor.AddChapterStat("ch01", "trust");
         session.Editor.AddChapterStat("ch01", "anger");
-        session.Editor.UpdateChapterStat("ch01", "trust", displayName: "신뢰");
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
         session.Editor.AddChapterCondition("ch01", "신뢰있음", "trust >= 1");
         session.Editor.AddEdge("ch01", "root", "b", conditionLabel: "신뢰높음", optionLabel: Long, statChanges: "trust +2; anger -1");
@@ -99,7 +98,7 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
             [ChapterGraphView.EdgeLabelRow.Conditions, ChapterGraphView.EdgeLabelRow.Option, ChapterGraphView.EdgeLabelRow.Stats],
             rows.Select(row => (ChapterGraphView.EdgeLabelRow)row.Tag!));
         Assert.Equal(["표시: 신뢰있음", "해금: 신뢰높음"], Texts(rows[0]));
-        Assert.Equal(["신뢰 +2", "anger -1"], Texts(rows[2]));   // 표시 이름이 있으면 그것으로
+        Assert.Equal(["trust +2", "anger -1"], Texts(rows[2]));   // 스탯은 키만 있다(writer-fields W2)
 
         // 줄이는 것은 문구뿐이다 — 조건과 스탯은 다 보인다.
         var option = (TextBlock)rows[1];
@@ -110,7 +109,7 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
         string tip = (string)ToolTip.GetTip(label)!;
         Assert.Contains("표시조건: 신뢰있음", tip, StringComparison.Ordinal);
         Assert.Contains("해금조건: 신뢰높음", tip, StringComparison.Ordinal);
-        Assert.Contains("스탯변화: 신뢰 +2 · anger -1", tip, StringComparison.Ordinal);
+        Assert.Contains("스탯변화: trust +2 · anger -1", tip, StringComparison.Ordinal);
     });
 
     [Fact]

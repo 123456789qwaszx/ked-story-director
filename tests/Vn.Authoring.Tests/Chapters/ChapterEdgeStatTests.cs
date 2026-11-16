@@ -20,7 +20,7 @@ public sealed class ChapterEdgeStatTests
     public ChapterEdgeStatTests()
     {
         _editor.EnsureChapter("ch01");
-        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        Chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
         _editor.AddEpisode("ch01", "ep1", title: "", 0, 0);
         _editor.AddEpisode("ch01", "ep2", title: "", 1, 0);

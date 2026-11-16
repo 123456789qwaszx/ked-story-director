@@ -232,7 +232,7 @@ public sealed class BranchGateWritingTests : IDisposable
         session.Editor.SetScriptLineText(branch.Id, branch.Script.ActiveLines.First().Id, "하린", "다시 그린 간판, 생각보다 훨씬 낫다.");
 
         ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             session.Editor, EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, chapter.ToGraphModel("ch01"));

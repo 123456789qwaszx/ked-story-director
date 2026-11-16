@@ -30,7 +30,7 @@ public sealed class ChapterSheetEditTests : IDisposable
 
         // [＋ 챕터](AuthoringSession.CreateChapter)와 같은 모양 — 챕터 · 스탯 `trust` · 판.
         var editor = new ProjectEditor(new StoryProject { Title = "챕터 시트 편집" });
-        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 100));
+        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", 0, 0, 100));
         editor.EnsureChapterBoard("ch01");
 
         ProjectStore.Save(ManifestPath, editor.Project);
@@ -50,20 +50,8 @@ public sealed class ChapterSheetEditTests : IDisposable
         // 한 줄짜리 글자가 아니라 고칠 수 있는 칸이어야 한다.
         (ChapterGraphView view, _) = Show();
 
-        // 표시 이름 · 처음 값 · 최소 · 최대 — 키는 라벨(개명은 [✎]), 종류는 콤보다.
-        Assert.Equal(4, Boxes(Row(view, "stat:trust")).Count);
-    });
-
-    [Fact]
-    public void 표시이름을_고치면_모델에_써진다() => HeadlessUi.Run(() =>
-    {
-        (ChapterGraphView view, AuthoringSession session) = Show();
-
-        Commit(Boxes(Row(view, "stat:trust"))[0], "신뢰도");
-
-        Assert.Equal(
-            "신뢰도",
-            session.Editor.FindChapter("ch01")!.Stats.Single(stat => stat.Key == "trust").DisplayName);
+        // 처음 값 · 최소 · 최대 — 키는 라벨(개명은 [✎]), 종류는 콤보다. 표시 이름 칸은 걷혔다(writer-fields W2).
+        Assert.Equal(3, Boxes(Row(view, "stat:trust")).Count);
     });
 
     [Fact]
@@ -245,7 +233,7 @@ public sealed class ChapterSheetEditTests : IDisposable
 
         Panel row = Row(view, "stat:trust");
         Assert.Equal(ChapterStatType.Bool, Stat(session).Type);
-        Assert.Single(Boxes(row));                                   // 표시 이름만 — 최소 · 최대가 없다
+        Assert.Empty(Boxes(row));                                    // 최소 · 최대가 없다(표시 이름 칸은 걷혔다)
         ComboBox initial = row.GetLogicalDescendants().OfType<ComboBox>().Single(combo => Equals(combo.Tag, "stat-initial"));
         Assert.Equal(["아니오", "예"], initial.ItemsSource!.Cast<string>());
 

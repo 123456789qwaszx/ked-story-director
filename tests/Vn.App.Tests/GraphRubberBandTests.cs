@@ -57,7 +57,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal("교무실로 간다", graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<TextBox>()
             .First(box => box.IsEffectivelyVisible && box.Tag as string == "summary-label").Text);   // 문구는 고치는 칸에 선다
         Assert.Contains("해금조건: 용기 — 아니면 잠긴 채 보입니다", Facts(graph));
-        Assert.Contains("스탯변화: 신뢰 +2", Facts(graph));
+        Assert.Contains("스탯변화: trust +2", Facts(graph));
         Assert.Equal(1.4, Lane(graph, "a").StrokeThickness);
         Assert.Equal(2.4, Lane(graph, "b").StrokeThickness);
 
@@ -171,7 +171,7 @@ public sealed class GraphRubberBandTests : IDisposable
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
         session.SetFileExpanded(EpisodeNaming.BoardOf(session.Project, "ch02")!.Id, expanded: false);
-        session.Editor.AddChapterStat("ch01", "trust", "신뢰");
+        session.Editor.AddChapterStat("ch01", "trust");
         session.Editor.AddEdge("ch01", "root", "b", conditionLabel: "용기", optionLabel: "교무실로 간다", statChanges: "trust +2");
         Dispatcher.UIThread.RunJobs();
 

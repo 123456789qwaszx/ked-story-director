@@ -115,9 +115,9 @@ public sealed class ChapterSceneNoteTests : IDisposable
     }
 
     [Fact]
-    public void 메모가_없는_견본을_열고_저장하면_매니페스트가_한_글자도_안_바뀐다()
+    public void 메모가_없는_견본을_열고_저장하면_매니페스트에_새_칸이_생기지_않는다()
     {
-        // 형식 4 그대로 칸만 더했다(Q2) — 옛 프로젝트는 새 칸을 새로 쓰지 않는다.
+        // 형식 4 그대로 칸만 더했다(Q2) — 옛 프로젝트는 새 칸을 새로 쓰지 않는다. 걷힌 칸(스탯 displayName — writer-fields W2)만 빠진다.
         string source = Path.GetFullPath("../../../../../samples/RuntimeSamples/FestivalEve");
         string copy = Path.Combine(_directory, "FestivalEve");
         CopyDirectory(source, copy);
@@ -128,7 +128,17 @@ public sealed class ChapterSceneNoteTests : IDisposable
 
         ProjectStore.Save(manifest, ProjectStore.Load(manifest).Project);
 
-        Assert.Equal(Lf(before), Lf(File.ReadAllText(manifest)));
+        JsonNode expected = JsonNode.Parse(before)!;
+
+        foreach (JsonNode? chapter in expected["chapters"]!.AsArray())
+        {
+            foreach (JsonNode? stat in chapter!["stats"]?.AsArray() ?? [])
+            {
+                stat!.AsObject().Remove("displayName");
+            }
+        }
+
+        Assert.True(JsonNode.DeepEquals(expected, JsonNode.Parse(File.ReadAllText(manifest))));
     }
 
     [Fact]
@@ -154,8 +164,6 @@ public sealed class ChapterSceneNoteTests : IDisposable
         Assert.Equal(["옥상"], ChapterSceneNotes.Orphans(chapter.Episodes, chapter.SceneNotes).Select(note => note.SceneId));
         Assert.Null(ChapterSceneNotes.Of([new ChapterSceneNote("교실", " ")], "교실"));
     }
-
-    private static string Lf(string text) => text.Replace("\r\n", "\n");
 
     private static void CopyDirectory(string from, string to)
     {

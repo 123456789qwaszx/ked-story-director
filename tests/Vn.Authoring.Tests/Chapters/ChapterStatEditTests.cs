@@ -20,16 +20,10 @@ public sealed class ChapterStatEditTests
         ProjectEditor editor = World();
 
         ChapterStat stat = editor.AddChapterStat(
-            "ch01", "courage", displayName: "용기", initial: 2, minimum: 0, maximum: 5);
+            "ch01", "courage", initial: 2, minimum: 0, maximum: 5);
 
-        Assert.Equal("용기", stat.DisplayName);
+        Assert.Equal("courage", stat.Key);
         Assert.Contains(Chapter(editor).Stats, item => item.Key == "courage");
-    }
-
-    [Fact]
-    public void 표시이름을_안_주면_키를_쓴다()
-    {
-        Assert.Equal("courage", World().AddChapterStat("ch01", "courage").DisplayName);
     }
 
     [Fact]
@@ -88,14 +82,13 @@ public sealed class ChapterStatEditTests
     }
 
     [Fact]
-    public void 값과_표시이름을_고친다()
+    public void 값을_고친다()
     {
         ProjectEditor editor = World();
 
-        editor.UpdateChapterStat("ch01", "trust", displayName: "신뢰도", maximum: 20);
+        editor.UpdateChapterStat("ch01", "trust", maximum: 20);
 
         ChapterStat stat = Chapter(editor).Stats.Single(item => item.Key == "trust");
-        Assert.Equal("신뢰도", stat.DisplayName);
         Assert.Equal(20, stat.Maximum);
 
         // 안 준 것은 그대로다 — `UpdateEpisode`와 같은 손버릇.
@@ -217,7 +210,7 @@ public sealed class ChapterStatEditTests
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("ch01");
 
-        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
         editor.AddEpisode("ch01", "root", title: "root", 0, 0);
         editor.AddEpisode("ch01", "a", title: "a", 0, 0);

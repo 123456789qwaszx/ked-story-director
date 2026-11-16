@@ -1665,13 +1665,10 @@ public partial class ChapterGraphView : UserControl
         new SolidColorBrush(Color.Parse(delta.IsSet ? "#3D7BD9" : delta.Amount < 0 ? "#C0392B" : "#1F9D55"))
     );
 
-    /// <summary>스탯 변화 하나의 글 — 스탯 표에 표시 이름이 있으면 그 이름으로. [대본] 탭 인스펙터도 같은 말을 쓴다.</summary>
+    /// <summary>스탯 변화 하나의 글 — 스탯은 키만 있다(writer-fields W2). [대본] 탭 인스펙터도 같은 말을 쓴다.</summary>
     internal static string DeltaText(IReadOnlyList<ChapterStat>? stats, StatDelta delta)
     {
-        string name = stats?.FirstOrDefault(stat =>
-                          string.Equals(stat.Key, delta.Key, StringComparison.Ordinal))?.DisplayName is { Length: > 0 } display
-            ? display
-            : delta.Key;
+        string name = delta.Key;
 
         return delta.IsSet
             ? $"{name} → {(delta.Amount != 0 ? "예" : "아니오")}"
@@ -3516,12 +3513,7 @@ public partial class ChapterGraphView : UserControl
         ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식에 쓰는 이름입니다. 바꾸려면 [✎].");
         head.Children.Add(key);
 
-        TextBox name = SheetBox(
-            stat.DisplayName, double.NaN, "표시 이름 — 화면에 보이는 이름입니다. 세이브 열쇠는 왼쪽의 키입니다",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, displayName: value));
-        name.PlaceholderText = "표시 이름";
-        Grid.SetColumn(name, 1);
-        head.Children.Add(name);
+        // 표시 이름 칸은 걷혔다 — 스탯은 키만 있다. 게임 화면의 글자는 게임 쪽이 키로 로컬라이즈한다(writer-fields W2).
 
         var type = new ComboBox
         {
@@ -4296,8 +4288,7 @@ public partial class ChapterGraphView : UserControl
             .Select(stat => new VariableSpec
             {
                 Name = stat.Key,
-                Type = "number",
-                Description = string.IsNullOrWhiteSpace(stat.DisplayName) ? null : stat.DisplayName
+                Type = "number"
             })
             .ToArray();
 

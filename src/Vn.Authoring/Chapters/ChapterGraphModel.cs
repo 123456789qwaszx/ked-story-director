@@ -168,10 +168,12 @@ public enum ChapterStatType
 /// `스탯` 시트 한 행 = Tier 2 키 하나. <see cref="Minimum"/>·<see cref="Maximum"/>는 장식이 아니라
 /// 도달성 증명의 <b>탐색 경계</b>다 (§7-5). bool 스탯은 편집기가 경계를 0·1로 고정하고 모델 검사가 어긋남을 짚는다(ChapterStructureCheck) —
 /// 프루버·픽스처 워커는 타입을 몰라도 그대로 옳게 돈다.
+///
+/// <b>키만 있다</b> — 표시 이름은 2026-11-16에 걷혔다(writer-fields W2). 게임 화면에 보일 글자는 게임 쪽이 키로 로컬라이즈한다. 작가가 대사에
+/// 쓰는 <c>{stat("키")}</c>의 따옴표 안이 이 키다.
 /// </summary>
 public sealed record ChapterStat(
     string Key,
-    string DisplayName,
     int Initial,
     int Minimum,
     int Maximum,

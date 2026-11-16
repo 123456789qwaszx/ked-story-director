@@ -74,10 +74,10 @@ public sealed class ChapterStatEditingTests
 
         // 줄에는 챕터의 스탯이 전부 선다 — 견본에는 `복도지남` 깃발도 있어
         // 뒤가 따라붙는다. 여기서 재는 것은 맨 앞의 그 수치다.
-        Assert.StartsWith($"{stat.DisplayName} 2", StatLine(view, "main05.02"));
+        Assert.StartsWith($"{stat.Key} 2", StatLine(view, "main05.02"));
 
         // 그 길을 지나지 않은 시작 노드는 초기값 그대로다.
-        Assert.StartsWith($"{stat.DisplayName} {stat.Initial}", StatLine(view, "main05.01"));
+        Assert.StartsWith($"{stat.Key} {stat.Initial}", StatLine(view, "main05.01"));
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -86,10 +86,7 @@ public sealed class ChapterStatEditingTests
     private static ChapterGraphModel Reread(AuthoringSession session) =>
         session.Editor.FindChapter(SampleChapters.Corridor)!.ToGraphModel(SampleChapters.Corridor);
 
-    private static string Display(ChapterStat stat) =>
-        string.IsNullOrWhiteSpace(stat.DisplayName) || stat.DisplayName == stat.Key
-            ? stat.Key
-            : $"{stat.DisplayName} ({stat.Key})";
+    private static string Display(ChapterStat stat) => stat.Key;
 
     private static StatChangeEditor Editor(ChapterGraphView view, string host) =>
         view.FindControl<StackPanel>(host)!.Children.OfType<StatChangeEditor>().Single();

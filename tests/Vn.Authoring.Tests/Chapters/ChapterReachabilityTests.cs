@@ -217,7 +217,7 @@ public sealed class ChapterReachabilityTests
         ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
 
         ChapterStatSpan span = Assert.Single(result.SpansFor("ep2"));
-        Assert.Equal("신뢰", span.DisplayName);
+        Assert.Equal("trust", span.DisplayName);   // 스탯은 키만 있다(writer-fields W2)
         Assert.True(span.IsFixed);
         Assert.Equal(2, span.Minimum);
         Assert.Equal(2, span.Maximum);
@@ -378,7 +378,7 @@ public sealed class ChapterReachabilityTests
         for (int index = 0; index < flags; index++)
         {
             stats.Add(new ChapterStat(
-                $"flag{index:00}", $"깃발{index:00}",
+                $"flag{index:00}",
                 Initial: 0, Minimum: 0, Maximum: 1));
 
             string from = $"ep{index:00}";
@@ -412,7 +412,7 @@ public sealed class ChapterReachabilityTests
     {
         var stats = new List<ChapterStat>
         {
-            new("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: statMaximum)
+            new("trust", Initial: 0, Minimum: 0, Maximum: statMaximum)
         };
 
         var statKeys = stats.Select(stat => stat.Key).ToHashSet(StringComparer.Ordinal);

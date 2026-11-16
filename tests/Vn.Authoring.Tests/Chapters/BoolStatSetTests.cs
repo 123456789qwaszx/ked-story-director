@@ -257,8 +257,8 @@ public sealed class BoolStatSetTests
         editor.EnsureChapter("ch01");
 
         // `met`은 bool, `trust`는 정수 — 두 규칙이 갈리는 자리를 한 챕터에서 본다.
-        editor.AddChapterStat("ch01", "met", "만났음", initial: 0, minimum: 0, maximum: 1, type: ChapterStatType.Bool);
-        editor.AddChapterStat("ch01", "trust", "신뢰", initial: 0, minimum: 0, maximum: 5);
+        editor.AddChapterStat("ch01", "met", initial: 0, minimum: 0, maximum: 1, type: ChapterStatType.Bool);
+        editor.AddChapterStat("ch01", "trust", initial: 0, minimum: 0, maximum: 5);
 
         for (int index = 0; index < episodeIds.Length; index++)
         {

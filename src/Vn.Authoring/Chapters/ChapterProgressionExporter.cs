@@ -214,7 +214,8 @@ public static class ChapterProgressionExporter
     private static StatJson Stat(ChapterStat stat) => new()
     {
         Key = stat.Key,
-        DisplayName = stat.DisplayName,
+        // 표시 이름은 걷혔다 — 계약 칸에는 키를 그대로 낸다(게임이 키로 로컬라이즈한다, writer-fields W2).
+        DisplayName = stat.Key,
         Type = stat.Type == ChapterStatType.Bool
             ? nameof(Contract.StatType.Bool)
             : nameof(Contract.StatType.Number),

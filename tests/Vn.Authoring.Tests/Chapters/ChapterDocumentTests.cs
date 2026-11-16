@@ -82,9 +82,9 @@ public sealed class ChapterDocumentTests : IDisposable
         Assert.Equal([("신뢰높음", "trust >= 3", "친해졌을 때")],
             read.Conditions.Select(item => (item.Label, item.Expression, item.Description)));
 
-        Assert.Equal([("trust", "신뢰", 0, 0, 10, ChapterStatType.Int), ("met", "만남", 0, 0, 1, ChapterStatType.Bool)],
+        Assert.Equal([("trust", 0, 0, 10, ChapterStatType.Int), ("met", 0, 0, 1, ChapterStatType.Bool)],
             read.Stats.Select(item =>
-                (item.Key, item.DisplayName, item.Initial, item.Minimum, item.Maximum, item.Type)));
+                (item.Key, item.Initial, item.Minimum, item.Maximum, item.Type)));
 
         ChapterFixture fixture = Assert.Single(read.Fixtures);
 
@@ -153,8 +153,8 @@ public sealed class ChapterDocumentTests : IDisposable
         ],
         Stats =
         [
-            new ChapterStat("trust", "신뢰", 0, 0, 10),
-            new ChapterStat("met", "만남", 0, 0, 1, ChapterStatType.Bool)
+            new ChapterStat("trust", 0, 0, 10),
+            new ChapterStat("met", 0, 0, 1, ChapterStatType.Bool)
         ],
         ChoiceOptions = [new ChapterChoiceOption("10", "같이 간다", "첫 갈림")],
         Fixtures =

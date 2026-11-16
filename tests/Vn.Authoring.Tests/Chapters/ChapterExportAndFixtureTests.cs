@@ -286,7 +286,7 @@ public sealed class ChapterExportAndFixtureTests
             ],
             [new ChapterEdge("ep1", "ep2", "다음", null, null)],
             [],
-            [new ChapterStat("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: 5)],
+            [new ChapterStat("trust", Initial: 0, Minimum: 0, Maximum: 5)],
             [],
             []);
 
@@ -357,8 +357,8 @@ public sealed class ChapterExportAndFixtureTests
         // 여기가 깨지면 계약서 G1~G5도 함께 고쳐야 한다.
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("gd");
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
-        chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("anger", 0, 0, 10));
 
         editor.AddEpisode("gd", "ep1", "첫 화", 0, 0);
         editor.AddEpisode("gd", "ep2", "둘째", 200, 0);
@@ -411,8 +411,8 @@ public sealed class ChapterExportAndFixtureTests
             [new ChapterEdge("ep1", "ep2", "다음", null, null)],
             [],
             [
-                new ChapterStat("trust", "신뢰", Initial: 1, Minimum: 0, Maximum: 5),
-                new ChapterStat("flag", "깃발", Initial: 0, Minimum: 0, Maximum: 1,
+                new ChapterStat("trust", Initial: 1, Minimum: 0, Maximum: 5),
+                new ChapterStat("flag", Initial: 0, Minimum: 0, Maximum: 1,
                     Type: ChapterStatType.Bool)
             ],
             [],
@@ -430,7 +430,7 @@ public sealed class ChapterExportAndFixtureTests
 
         JsonElement trust = stats[0];
         Assert.Equal("trust", trust.GetProperty("Key").GetString());
-        Assert.Equal("신뢰", trust.GetProperty("DisplayName").GetString());
+        Assert.Equal("trust", trust.GetProperty("DisplayName").GetString());   // 표시 이름은 걷혔다 — 키를 그대로 낸다(writer-fields W2)
         Assert.Equal(1, trust.GetProperty("Initial").GetInt32());
         Assert.Equal(5, trust.GetProperty("Maximum").GetInt32());
 

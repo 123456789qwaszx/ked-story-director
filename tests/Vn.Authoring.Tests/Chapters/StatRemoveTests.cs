@@ -64,7 +64,7 @@ public sealed class StatRemoveTests
     {
         // 단순 포함 검사면 `trustworthy`가 `trust`를 쓰는 것으로 세어 못 지우게 막는다.
         ProjectEditor editor = World();
-        Chapter(editor).Stats.Add(new ChapterStat("solo", "solo", 0, 0, 10));
+        Chapter(editor).Stats.Add(new ChapterStat("solo", 0, 0, 10));
         editor.AddChapterCondition("ch01", "닮은것", "solotype >= 1");
 
         Assert.Empty(editor.FindStatUses("ch01", "solo"));
@@ -233,9 +233,9 @@ public sealed class StatRemoveTests
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("ch01");
 
-        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10));
-        chapter.Stats.Add(new ChapterStat("fatigue", "fatigue", 0, 0, 10));
-        chapter.Stats.Add(new ChapterStat("unused", "unused", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("fatigue", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("unused", 0, 0, 10));
 
         editor.AddEpisode("ch01", "root", title: "root", 0, 0);
         editor.AddEpisode("ch01", "a", title: "a", 0, 0);

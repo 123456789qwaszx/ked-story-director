@@ -1053,15 +1053,7 @@ public sealed partial class ProjectEditor
         //    식별자가 아니라 <b>문자열 리터럴</b>이라 정규화가 없다. `호감 도`와
         //    `호감_도`는 게임에서도 서로 다른 스탯이다.
 
-        ChapterStat renamed = chapter.Stats[index] with
-        {
-            Key = to,
-
-            // 표시이름을 따로 안 정했으면(= 키와 같았으면) 함께 간다. 정해 뒀으면 사람의 글자다.
-            DisplayName = string.Equals(chapter.Stats[index].DisplayName, from, StringComparison.Ordinal)
-                ? to
-                : chapter.Stats[index].DisplayName
-        };
+        ChapterStat renamed = chapter.Stats[index] with { Key = to };
 
         var edges = new List<(int Index, ChapterEdge Edge)>();
 
@@ -1396,7 +1388,6 @@ public sealed partial class ProjectEditor
     public ChapterStat AddChapterStat(
         string chapterId,
         string key,
-        string? displayName = null,
         int initial = 0,
         int minimum = 0,
         int maximum = 100,
@@ -1414,7 +1405,6 @@ public sealed partial class ProjectEditor
 
         var stat = BoolBounded(new ChapterStat(
             target,
-            string.IsNullOrWhiteSpace(displayName) ? target : displayName.Trim(),
             initial,
             minimum,
             maximum,
@@ -1426,7 +1416,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 스탯의 값·표시이름·타입을 고친다 — null이 아닌 것만 바꾼다
+    /// 스탯의 값·타입을 고친다 — null이 아닌 것만 바꾼다
     /// (<see cref="UpdateEpisode"/>와 같은 손버릇).
     ///
     /// <b>키는 여기서 못 바꾼다.</b> 키를 바꾸는 것은 참조를 끌고 가는 일이라
@@ -1436,7 +1426,6 @@ public sealed partial class ProjectEditor
     public void UpdateChapterStat(
         string chapterId,
         string key,
-        string? displayName = null,
         int? initial = null,
         int? minimum = null,
         int? maximum = null,
@@ -1455,7 +1444,6 @@ public sealed partial class ProjectEditor
 
         Mutate(() => chapter.Stats[index] = BoolBounded(chapter.Stats[index] with
         {
-            DisplayName = displayName ?? chapter.Stats[index].DisplayName,
             Initial = initial ?? chapter.Stats[index].Initial,
             Minimum = minimum ?? chapter.Stats[index].Minimum,
             Maximum = maximum ?? chapter.Stats[index].Maximum,

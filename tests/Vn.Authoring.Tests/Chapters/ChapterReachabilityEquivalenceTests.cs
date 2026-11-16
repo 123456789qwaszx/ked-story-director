@@ -231,7 +231,7 @@ public sealed class ChapterReachabilityEquivalenceTests
     {
         var stats = new List<ChapterStat>
         {
-            new("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: statMaximum)
+            new("trust", Initial: 0, Minimum: 0, Maximum: statMaximum)
         };
 
         var statKeys = stats.Select(stat => stat.Key).ToHashSet(StringComparer.Ordinal);

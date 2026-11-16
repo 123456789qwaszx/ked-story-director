@@ -29,8 +29,8 @@ public sealed class ChapterStatSpanViewTests : IDisposable
     public ChapterStatSpanViewTests()
     {
         ChapterDocument chapter = _editor.EnsureChapter("ch01");
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10));
-        chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("anger", 0, 0, 10));
 
         // ep1 ─(+1)─ 싼길 ─┐
         //   └─(+3)─ 비싼길 ─┴─ 합류      (분노는 챕터 어디에서도 움직이지 않는다)
@@ -58,8 +58,8 @@ public sealed class ChapterStatSpanViewTests : IDisposable
     {
         Canvas canvas = Render();
 
-        Assert.Equal("신뢰 1", StatLine(canvas, "싼길"));
-        Assert.Equal("신뢰 3", StatLine(canvas, "비싼길"));
+        Assert.Equal("trust 1", StatLine(canvas, "싼길"));
+        Assert.Equal("trust 3", StatLine(canvas, "비싼길"));
     });
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class ChapterStatSpanViewTests : IDisposable
     {
         Canvas canvas = Render();
 
-        Assert.Equal("신뢰 1~3", StatLine(canvas, "합류"));
+        Assert.Equal("trust 1~3", StatLine(canvas, "합류"));
     });
 
     [Fact]
@@ -77,8 +77,8 @@ public sealed class ChapterStatSpanViewTests : IDisposable
         // 움직이는 신뢰가 그 줄에 묻힌다.
         Canvas canvas = Render();
 
-        Assert.DoesNotContain("분노", StatLine(canvas, "합류"));
-        Assert.DoesNotContain("분노", StatLine(canvas, "ep1"));
+        Assert.DoesNotContain("anger", StatLine(canvas, "합류"));
+        Assert.DoesNotContain("anger", StatLine(canvas, "ep1"));
     });
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class ChapterStatSpanViewTests : IDisposable
     {
         Canvas canvas = Render();
 
-        Assert.Equal("신뢰 0", StatLine(canvas, "ep1"));
+        Assert.Equal("trust 0", StatLine(canvas, "ep1"));
     });
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class ChapterStatSpanViewTests : IDisposable
 
         Canvas canvas = Render();
 
-        Assert.Equal("신뢰 0 · 분노 0", StatLine(canvas, "합류"));
+        Assert.Equal("trust 0 · anger 0", StatLine(canvas, "합류"));
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────

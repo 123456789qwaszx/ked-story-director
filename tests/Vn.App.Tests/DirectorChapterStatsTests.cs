@@ -33,9 +33,9 @@ public sealed class DirectorChapterStatsTests : IDisposable
     public void 챕터를_고르면_스탯_표와_대사에_붙일_글이_선다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
-        session.Editor.AddChapterStat("ch01", "성실", "성실", initial: 1, minimum: 0, maximum: 5);
-        session.Editor.AddChapterStat("ch01", "trust", "신뢰", initial: 0, minimum: 0, maximum: 10);
-        session.Editor.AddChapterStat("ch01", "met", "만남", type: ChapterStatType.Bool, maximum: 1);
+        session.Editor.AddChapterStat("ch01", "성실", initial: 1, minimum: 0, maximum: 5);
+        session.Editor.AddChapterStat("ch01", "trust", initial: 0, minimum: 0, maximum: 10);
+        session.Editor.AddChapterStat("ch01", "met", type: ChapterStatType.Bool, maximum: 1);
         Dispatcher.UIThread.RunJobs();
 
         GraphEditorView graph = Pick(window, "ch01");
@@ -45,7 +45,7 @@ public sealed class DirectorChapterStatsTests : IDisposable
         Assert.Equal("{stat(\"met\")}", Snippet(graph, "met").Text);
 
         List<string> texts = Texts(graph);
-        Assert.Contains("신뢰 (trust)", texts);
+        Assert.Contains("trust", texts);   // 스탯은 키만 있다(writer-fields W2)
         Assert.Contains("0~5 · 처음 1", texts);
         Assert.Contains("참/거짓(1/0) · 처음 거짓", texts);
 
@@ -56,7 +56,7 @@ public sealed class DirectorChapterStatsTests : IDisposable
     public void 복사를_누르면_그_글이_클립보드에_든다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
-        session.Editor.AddChapterStat("ch01", "성실", "성실", maximum: 5);
+        session.Editor.AddChapterStat("ch01", "성실", maximum: 5);
         Dispatcher.UIThread.RunJobs();
 
         GraphEditorView graph = Pick(window, "ch01");

@@ -480,9 +480,7 @@ public partial class MainWindow
         foreach (ChapterStat stat in stats)
         {
             string snippet = ChapterStatScript.InlineRead(stat);
-            string name = string.IsNullOrWhiteSpace(stat.DisplayName) || stat.DisplayName == stat.Key
-                ? stat.Key
-                : $"{stat.DisplayName} ({stat.Key})";
+            string name = stat.Key;   // 스탯은 키만 있다(writer-fields W2)
             string range = stat.Type == ChapterStatType.Bool
                 ? "참/거짓(1/0) · 처음 " + (stat.Initial != 0 ? "참" : "거짓")
                 : $"{stat.Minimum}~{stat.Maximum} · 처음 {stat.Initial}";

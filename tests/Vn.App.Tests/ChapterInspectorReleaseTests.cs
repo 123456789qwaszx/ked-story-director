@@ -144,8 +144,8 @@ public sealed class ChapterInspectorReleaseTests
 
             var editor = new ProjectEditor(new StoryProject { Title = "칼럼 빈 곳 누르기" });
             ChapterDocument chapter = editor.EnsureChapter("ch01");
-            chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 100));
-            chapter.Stats.Add(new ChapterStat("anger", "분노", 0, 0, 100));
+            chapter.Stats.Add(new ChapterStat("trust", 0, 0, 100));
+            chapter.Stats.Add(new ChapterStat("anger", 0, 0, 100));
             editor.EnsureChapterBoard("ch01");
 
             ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);

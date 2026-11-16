@@ -424,7 +424,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         ],
         [new ChapterEdge("ep1", "ep2", "다음", null, null)],
         [],
-        [new ChapterStat("trust", "신뢰", Initial: 1, Minimum: 0, Maximum: 5)],
+        [new ChapterStat("trust", Initial: 1, Minimum: 0, Maximum: 5)],
         [],
         []);
 
@@ -439,7 +439,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         ],
         [new ChapterEdge("ep1", "ep2", "다음", null, null)],
         [],
-        [new ChapterStat("trust", "신뢰", Initial: 1, Minimum: 0, Maximum: 5)],
+        [new ChapterStat("trust", Initial: 1, Minimum: 0, Maximum: 5)],
         [],
         []);
 }

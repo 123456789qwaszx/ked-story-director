@@ -12,11 +12,11 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class StatChangeEditorTests
 {
-    private static readonly ChapterStat Trust = new("trust", "신뢰", 0, 0, 10);
-    private static readonly ChapterStat Anger = new("anger", "분노", 0, 0, 10);
+    private static readonly ChapterStat Trust = new("trust", 0, 0, 10);
+    private static readonly ChapterStat Anger = new("anger", 0, 0, 10);
 
     private static readonly ChapterStat Key =
-        new("key", "열쇠", 0, 0, 1, ChapterStatType.Bool);
+        new("key", 0, 0, 1, ChapterStatType.Bool);
 
     [Fact]
     public void 시트_글을_읽어_줄로_세우고_그대로_돌려준다() => HeadlessUi.Run(() =>
@@ -41,10 +41,10 @@ public sealed class StatChangeEditorTests
 
         // 드롭다운은 엑셀 `스탯` 시트에 선언된 것만 담는다.
         Assert.Equal(
-            ["신뢰 (trust)", "분노 (anger)"],
+            ["trust", "anger"],
             (IEnumerable<string>)StatCombo(editor, 0).ItemsSource!);
 
-        StatCombo(editor, 0).SelectedItem = "분노 (anger)";
+        StatCombo(editor, 0).SelectedItem = "anger";
         SignCombo(editor, 0).SelectedIndex = 1;  // －
         AmountBox(editor, 0).Text = "3";
 
@@ -60,7 +60,7 @@ public sealed class StatChangeEditorTests
 
         Add(editor);
 
-        Assert.Equal("분노 (anger)", StatCombo(editor, 1).SelectedItem);
+        Assert.Equal("anger", StatCombo(editor, 1).SelectedItem);
     });
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class StatChangeEditorTests
         var editor = new StatChangeEditor();
         editor.Load([Trust, Key], [new StatDelta("trust", 5)]);
 
-        StatCombo(editor, 0).SelectedItem = "열쇠 (key)";
+        StatCombo(editor, 0).SelectedItem = "key";
 
         // bool로 바뀌었으므로 글도 깃발 표기가 된다 (2026-08-19).
         Assert.Equal("key true", editor.ToSheetText());
