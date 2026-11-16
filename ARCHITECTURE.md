@@ -42,7 +42,8 @@ MyStory/
                                      AI가 장면 하나씩 연출 초안을 낼 때 읽는다. 진행 JSON이 나갈 때 함께 나가고 런타임은 읽지 않는다
 ```
 
-챕터는 장면 메모(`sceneNotes[]` — 장면마다 자유 글, 열쇠는 `EffectiveSceneId`)를 든다. 장면이 아니라 곁 자료다 — 장면의 구성원은
+챕터는 장면 항목(`sceneNotes[]` — 장면마다 이름(`name`)과 자유 글(`text`), 열쇠는 `EffectiveSceneId`)을 든다. [대본] 탭은 이 이름 · 챕터 표시
+이름 · 에피소드 제목만 다루고 ID는 [구성] 탭에서 바꾼다(2026-11-16 · [`docs/work-orders/display-names-orders.md`](docs/work-orders/display-names-orders.md)). 장면이 아니라 곁 자료다 — 장면의 구성원은
 늘 `Episode.SceneId`에서 계산한다. 에피소드마다의 지시는 에피소드의 `memo`다(2026-11-16 · [`docs/work-orders/scene-notes-orders.md`](docs/work-orders/scene-notes-orders.md)).
 
 | 형식 | 상수 | 파일 |
@@ -306,6 +307,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 챕터 조건 → 대사 카드 | `Chapters/ChapterBoardSupply.cs` · `ConditionYarnTranslator.cs` |
 | 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` |
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
+| 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 장면 단위 내보내기(`scenes.json`) | `Chapters/ChapterScenesExporter.cs` — 쓰는 때는 `ChapterExportService.ExportAll` |
 
 **편집 · 저장 · 화면**

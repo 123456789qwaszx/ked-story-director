@@ -87,6 +87,28 @@ public sealed class ChapterScenesExportTests : IDisposable
     }
 
     [Fact]
+    public void 장면_displayName은_작가가_붙인_이름이고_비면_장면ID다()
+    {
+        // display-names N5 — AI가 사람이 붙인 이름으로 장면을 읽는다. 열쇠(sceneId)는 그대로 ID다.
+        ProjectEditor editor = Sample();
+        IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(Model(editor));
+        editor.SetSceneName(Ch, scenes[0].SceneId, "마감 전날의 교실");
+        editor.SetSceneName(Ch, "옥상", "옥상(풀림)");   // 이름만 남은 주인 없는 항목
+
+        JsonElement root = Export(editor);
+        JsonElement[] exported = root.GetProperty("scenes").EnumerateArray().ToArray();
+
+        Assert.Equal((scenes[0].SceneId, "마감 전날의 교실"),
+            (exported[0].GetProperty("sceneId").GetString(), exported[0].GetProperty("displayName").GetString()));
+        Assert.Equal(scenes[1].SceneId, exported[1].GetProperty("displayName").GetString());
+        Assert.False(exported[0].TryGetProperty("note", out _));   // 이름만 — 메모 칸은 없다
+
+        JsonElement orphan = Assert.Single(root.GetProperty("orphanNotes").EnumerateArray());
+        Assert.Equal("옥상(풀림)", orphan.GetProperty("name").GetString());
+        Assert.False(orphan.TryGetProperty("text", out _));
+    }
+
+    [Fact]
     public void 은퇴한_줄은_싣지_않는다()
     {
         ProjectEditor editor = Sample();
