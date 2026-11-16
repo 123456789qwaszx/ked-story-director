@@ -420,7 +420,7 @@ public partial class MainWindow
                 foreach (ChapterEpisode episode in scenes.Where(scene => scene.IsDefault).SelectMany(scene => scene.Episodes))
                 {
                     string episodeId = episode.EpisodeId;
-                    Link("· " + episodeId, "summary-episode:" + episodeId, () =>
+                    Link("· " + episode.ShownTitle, "summary-episode:" + episodeId, () =>
                         PickInDirector(new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, EpisodeId: episodeId)));
                 }
 
@@ -441,7 +441,8 @@ public partial class MainWindow
                 {
                     string episodeId = episode.EpisodeId;
                     bool root = string.Equals(scene.RootEpisodeId, episodeId, StringComparison.Ordinal);
-                    Link((root ? "⌂ " : "· ") + episodeId, "summary-episode:" + episodeId, () =>
+                    // 하이어아키 · 메모 카드와 같은 보이는 이름(제목, 비면 EpisodeId)이다.
+                    Link((root ? "⌂ " : "· ") + episode.ShownTitle, "summary-episode:" + episodeId, () =>
                         PickInDirector(new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, scene.SceneId, episodeId)));
                 }
 

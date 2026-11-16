@@ -186,9 +186,20 @@ public partial class MainWindow : Window
     /// </summary>
     private Control BuildSidePanel()
     {
+        // 요약 칸(챕터 · 장면 — 장면 메모 공간이 길어진다)은 기둥을 넘치면 세로로 스크롤한다. 보이기는 요약 칸을 따른다 —
+        // 빈 스크롤 칸이 대사 편집기 위에 겹쳐 누름을 가로채지 않게.
+        var summary = new ScrollViewer
+        {
+            Content = DirectorSummary,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            Tag = "director-summary-scroll"
+        };
+        summary.Bind(Visual.IsVisibleProperty, DirectorSummary.GetObservable(Visual.IsVisibleProperty));
+
         return new Panel
         {
-            Children = { DialogueEditor, DirectorSummary, EmptyText }
+            Children = { DialogueEditor, summary, EmptyText }
         };
     }
 

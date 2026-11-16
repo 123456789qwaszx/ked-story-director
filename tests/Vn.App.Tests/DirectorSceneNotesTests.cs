@@ -187,6 +187,41 @@ public sealed class DirectorSceneNotesTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 장면_요약의_에피소드_목록은_보이는_제목이다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        session.Editor.UpdateEpisode("ch01", "a", title: "교실 - 반쯤 빈 간판");
+        Dispatcher.UIThread.RunJobs();
+
+        GraphEditorView graph = PickScene(window, "opening");
+
+        Assert.Equal("⌂ root", ((Button)Control(graph, "summary-episode:root")).Content);
+        Assert.Equal("· 교실 - 반쯤 빈 간판", ((Button)Control(graph, "summary-episode:a")).Content);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 요약_칸은_넘치면_세로로_스크롤하고_보이기는_요약을_따른다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        GraphEditorView graph = PickScene(window, "opening");
+        ScrollViewer scroll = graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<ScrollViewer>()
+            .Single(viewer => viewer.Tag as string == "director-summary-scroll");
+
+        Assert.True(scroll.IsVisible);
+        Assert.Equal(Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, scroll.VerticalScrollBarVisibility);
+        Assert.Contains(Box(graph, "scene-note"), ((Control)scroll.Content!).GetLogicalDescendants());
+
+        // 카드를 고르면 요약이 풀린다 — 빈 스크롤 칸이 대사 편집기 위에 남지 않는다.
+        Control(graph, "summary-episode:a").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(scroll.IsVisible);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static GraphEditorView PickScene(MainWindow window, string sceneId)
