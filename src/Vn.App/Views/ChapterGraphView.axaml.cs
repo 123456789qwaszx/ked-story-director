@@ -241,9 +241,16 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
+        SceneIdGrid.IsVisible = !scene.IsDefault;
+
+        if (!SceneIdBox.IsFocused)
+        {
+            SceneIdBox.Text = scene.SceneId;
+        }
+
         SceneHintText.Text = scene.IsDefault
             ? "장면ID를 안 적은 에피소드 — 에피소드 하나가 곧 장면 하나입니다."
-            : $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 이름은 [대본] 탭 하이어아키의 장면 줄에서 고칩니다. " +
+            : $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 장면 이름은 [대본] 탭 하이어아키의 장면 줄에서 고칩니다. " +
               "장면 시작점(⌂)은 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.";
 
         foreach (ChapterEpisode episode in scene.Episodes)
@@ -381,12 +388,20 @@ public partial class ChapterGraphView : UserControl
                 UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
             }
         };
-        ChapterDisplayNameBox.KeyDown += (_, e) =>
+        ChapterIdBox.KeyDown += (_, e) =>
         {
             if (e.Key == Avalonia.Input.Key.Enter)
             {
                 e.Handled = true;
-                UiGuard.Run(_session, "챕터 표시 이름 저장", ApplyChapterDisplayName);
+                UiGuard.Run(_session, "챕터 ID 바꾸기", RenameSelectedChapter);
+            }
+        };
+        SceneIdBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter)
+            {
+                e.Handled = true;
+                UiGuard.Run(_session, "장면 ID 바꾸기", RenameInspectedScene);
             }
         };
         Hierarchy.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnHierarchyPicked(pick));
@@ -3362,18 +3377,75 @@ public partial class ChapterGraphView : UserControl
     private static string StatChangesText(ChapterEdge edge) => string.Join("; ", edge.StatChanges
         .Select(delta => $"{delta.Key} {(delta.Amount >= 0 ? "+" : "")}{delta.Amount}"));
 
-    /// <summary>챕터 표시 이름 저장 — 진행 JSON의 DisplayName(2026-11-04). 비우면 챕터 Id로 물러선다.</summary>
-    internal void ApplyChapterDisplayName()
+    /// <summary>
+    /// 챕터ID 칸의 Enter — 챕터 개명(<see cref="ChapterRenamer"/> — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 간다). [구성] 탭은 ID를
+    /// 다루고 챕터 이름은 [대본] 탭에서 고친다(display-names N4).
+    /// </summary>
+    internal void RenameSelectedChapter()
     {
-        if (_selectedChapterId is not { } chapterId)
+        if (_session is null || _selectedChapterId is not { } oldId)
         {
-            _session?.SetStatus("챕터를 다시 골라 주세요.");
             return;
         }
 
-        ChapterEdit(
-            () => _session!.Editor.UpdateChapterDisplayName(chapterId, ChapterDisplayNameBox.Text),
-            $"챕터 '{chapterId}'의 표시 이름을 저장했습니다.");
+        string newId = ChapterIdBox.Text?.Trim() ?? string.Empty;
+
+        if (newId.Length == 0 || string.Equals(newId, oldId, StringComparison.Ordinal))
+        {
+            ChapterIdBox.Text = oldId;
+            return;
+        }
+
+        ChapterRenamer.Result result = ChapterRenamer.Rename(_session.Editor, _session.ProjectPath, oldId, newId);
+
+        if (!result.Renamed)
+        {
+            _session.SetStatus(result.Failure!);
+            return;
+        }
+
+        Refresh();
+        SelectChapter(newId);
+        _session.SetStatus($"챕터 ID '{oldId}' → '{newId}' — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갔습니다.");
+    }
+
+    /// <summary>
+    /// 장면ID 칸의 Enter — 그 장면의 에피소드 모두의 장면ID를 바꾼다(<see cref="ProjectEditor.RenameScene"/> — 장면 이름 · 메모가 함께
+    /// 간다, 되돌리기 한 칸). <b>다른 장면이 쓰는 ID로는 바꾸지 않는다</b> — 그러면 두 장면이 합쳐진다(합치기는 [대본] 탭에서 에피소드를
+    /// 끌어 옮긴다). 비울 수도 없다(풀기는 [대본] 탭의 「장면 풀기」).
+    /// </summary>
+    internal void RenameInspectedScene()
+    {
+        if (_session is null || _selectedChapterId is not { } chapterId || _inspectedSceneId is not { } oldId)
+        {
+            return;
+        }
+
+        string newId = SceneIdBox.Text?.Trim() ?? string.Empty;
+
+        if (string.Equals(newId, oldId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (newId.Length == 0 || newId.StartsWith("__scene_", StringComparison.Ordinal))
+        {
+            SceneIdBox.Text = oldId;
+            _session.SetStatus("장면ID는 비울 수 없습니다 — 장면을 풀려면 [대본] 탭 하이어아키의 「장면 풀기」를 씁니다.");
+            return;
+        }
+
+        if (_session.Editor.FindChapter(chapterId)?.Episodes.Any(episode =>
+                string.Equals(episode.EffectiveSceneId, newId, StringComparison.Ordinal)) == true)
+        {
+            SceneIdBox.Text = oldId;
+            _session.SetStatus($"장면ID '{newId}'는 다른 장면이 씁니다 — 바꾸면 두 장면이 합쳐집니다. 합치려면 [대본] 탭에서 에피소드를 끌어 옮깁니다.");
+            return;
+        }
+
+        int moved = _session.Editor.RenameScene(chapterId, oldId, newId);
+        _inspectedSceneId = newId;
+        _session.SetStatus($"장면 ID '{oldId}' → '{newId}' — 에피소드 {moved}개, 장면 이름 · 메모가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
 
@@ -3557,10 +3629,10 @@ public partial class ChapterGraphView : UserControl
 
         ChapterGraphModel? model = LiveSheetModel ?? snapshot;
 
-        // 표시 이름은 챕터 값이라 이 표와 같은 자리에서 다시 채운다 — 손으로 적는 중이면 덮지 않는다.
-        if (!ChapterDisplayNameBox.IsFocused)
+        // 챕터ID는 이 표와 같은 자리에서 다시 채운다 — 손으로 적는 중이면 덮지 않는다.
+        if (!ChapterIdBox.IsFocused)
         {
-            ChapterDisplayNameBox.Text = model?.DisplayName ?? string.Empty;
+            ChapterIdBox.Text = _selectedChapterId ?? string.Empty;
         }
 
         ConditionListPanel.Children.Clear();

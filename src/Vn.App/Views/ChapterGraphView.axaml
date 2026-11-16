@@ -220,6 +220,13 @@
                     <!-- 장면 — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. 이름은 머리글이 보이고, 고치는
                          것은 [대본] 탭 하이어아키의 장면 줄이다(그 에피소드들의 장면ID가 함께 바뀐다). -->
                     <StackPanel x:Name="ScenePanel" Spacing="6" IsVisible="False">
+                        <!-- 장면ID 칸 — 런타임 저장 · 롤백 경계. 고치고 Enter(RenameScene — 장면 이름 · 메모가 함께 간다). 장면 이름은
+                             [대본] 탭에서 고친다(display-names N4). 미지정 장면에는 서지 않는다. -->
+                        <Grid x:Name="SceneIdGrid" ColumnDefinitions="70,*">
+                            <TextBlock Text="장면ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" x:Name="SceneIdBox" FontSize="11"
+                                     ToolTip.Tip="고치고 Enter를 누르면 이 장면의 에피소드 모두의 장면ID가 바뀝니다 — 장면 이름 · 메모가 함께 따라갑니다. 다른 장면이 쓰는 ID로는 바꾸지 않습니다(합치기는 [대본] 탭에서 에피소드를 끌어 옮깁니다)." />
+                        </Grid>
                         <TextBlock x:Name="SceneHintText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
                         <TextBlock Text="에피소드" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0" />
                         <StackPanel x:Name="SceneEpisodesPanel" Spacing="2" />
@@ -442,10 +449,13 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConditionSection" Margin="10" Spacing="4">
-                            <!-- 표시 이름 — 진행 JSON의 DisplayName, 게임 끝 카드의 머리. 비우면 챕터 Id. -->
-                            <TextBox x:Name="ChapterDisplayNameBox" FontSize="11" PlaceholderText="표시 이름 (비우면 챕터 Id)"
-                                     Margin="0,0,0,10"
-                                     ToolTip.Tip="게임의 끝 카드 머리에 뜨는 챕터 이름입니다. 고치고 Enter. 신원이 아니라 글자라 바꿔도 저장·간선이 따라가지 않습니다." />
+                            <!-- 챕터ID 칸 — [구성] 탭은 ID를 다룬다(챕터 이름은 [대본] 탭에서 — display-names N4). 고치고 Enter면
+                                 개명이다(ChapterRenamer — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 간다). -->
+                            <Grid x:Name="ChapterIdGrid" ColumnDefinitions="70,*" Margin="0,0,0,10">
+                                <TextBlock Text="챕터ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" x:Name="ChapterIdBox" FontSize="11"
+                                         ToolTip.Tip="고치고 Enter를 누르면 챕터 ID가 바뀝니다 — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갑니다. 챕터 이름은 [대본] 탭 하이어아키에서 고칩니다." />
+                            </Grid>
                             <!-- 조건은 툴에서 편집한다. -->
                             <TextBlock Text="조건 (라벨 ↔ 식)"
                                        FontWeight="SemiBold"

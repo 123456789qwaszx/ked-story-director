@@ -39,7 +39,8 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
         Assert.Equal("a", view.FindControl<TextBox>("IdBox")!.Text);
 
         Assert.Null(view.FindControl<TextBox>("EpisodeTitleBox"));
-        Assert.Null(view.FindControl<TextBox>("SceneIdBox"));
+        // 장면ID 칸은 장면 인스펙터에만 선다(display-names N4) — 에피소드를 고른 동안은 보이지 않는다.
+        Assert.False(view.FindControl<TextBox>("SceneIdBox")!.IsEffectivelyVisible);
         Assert.Null(view.FindControl<Button>("ApplySceneGroupButton"));
 
         window.Close();
