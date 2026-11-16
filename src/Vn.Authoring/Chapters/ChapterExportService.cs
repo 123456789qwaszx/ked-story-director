@@ -12,6 +12,7 @@ namespace Vn.Authoring.Chapters;
 /// <param name="GameFolderNote">게임 폴더(<see cref="Serialization.RuntimeTarget"/>)로도 썼는지 한 마디. 설정이 없으면 null.</param>
 /// <param name="Removed">이번에 걷은 옛 진행 JSON의 챕터 — 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 것.</param>
 /// <param name="RemoveFailed">걷어야 하는데 못 걷은 옛 진행 JSON의 챕터(잠김 · 권한).</param>
+/// <param name="ScenesFailed">장면 파일(<see cref="ChapterScenesExporter"/>)을 쓰지 못한 챕터(잠김 · 권한).</param>
 public sealed record ChapterExportRun(
     IReadOnlyList<string> Refused,
     IReadOnlyList<string> Failed,
@@ -20,7 +21,8 @@ public sealed record ChapterExportRun(
     IReadOnlyList<string>? Written = null,
     string? GameFolderNote = null,
     IReadOnlyList<string>? Removed = null,
-    IReadOnlyList<string>? RemoveFailed = null)
+    IReadOnlyList<string>? RemoveFailed = null,
+    IReadOnlyList<string>? ScenesFailed = null)
 {
     public static ChapterExportRun Empty { get; } = new([], [], [], new Dictionary<string, string>());
 
@@ -57,7 +59,7 @@ public sealed record ChapterExportRun(
     /// <summary>
     /// 검증 보고 맨 위에 세울 결론 — <b>못 나갔거나 옛 파일을 못 걷었을 때만 있다.</b> 잘 나간 것은 말하지 않는다.
     /// </summary>
-    public string? Notice => AllExported && RemoveFailed is not { Count: > 0 }
+    public string? Notice => AllExported && RemoveFailed is not { Count: > 0 } && ScenesFailed is not { Count: > 0 }
         ? null
         : string.Join("\n", new[]
         {
@@ -78,7 +80,11 @@ public sealed record ChapterExportRun(
             RemoveFailed is not { Count: > 0 } kept
                 ? null
                 : $"지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷지 못했습니다: {string.Join(", ", kept)}" +
-                  " — 파일이 다른 프로그램에 잡혀 있는지 확인하세요. 그냥 두면 게임이 없는 챕터를 계속 싣습니다."
+                  " — 파일이 다른 프로그램에 잡혀 있는지 확인하세요. 그냥 두면 게임이 없는 챕터를 계속 싣습니다.",
+            ScenesFailed is not { Count: > 0 } scenes
+                ? null
+                : $"장면 파일({ChapterScenesExporter.FileSuffix})을 쓰지 못했습니다: {string.Join(", ", scenes)}" +
+                  $" — {ChapterExportService.ExportFolderName}/ 의 파일이 다른 프로그램에 잡혀 있는지 확인하세요."
         }.Where(part => part is not null));
 }
 
@@ -193,6 +199,7 @@ public sealed class ChapterExportService
         var written = new List<string>();
         var gameWritten = new List<string>();
         var gameFailed = new List<string>();
+        var scenesFailed = new List<string>();
 
         foreach (ChapterEntry entry in entries)
         {
@@ -251,6 +258,15 @@ public sealed class ChapterExportService
             checksums[entry.ChapterId] = result.Checksum!;
             written.Add(exportPath);
 
+            // 장면 파일 — 연출 초안을 짓는 쪽(AI)이 장면 하나씩 읽는 저작 자료다. 진행 JSON이 나갈 때 함께 나간다
+            // (거부된 챕터는 둘 다 그대로 — exported/가 없으면 아직 아무것도 안 나갔다는 뜻이 그대로 선다). 게임 폴더에는
+            // 쓰지 않는다 — 런타임이 읽지 않는다.
+            if (!TryWrite(ChapterScenesExporter.PathFor(projectPath, entry.ChapterId),
+                    ChapterScenesExporter.Export(entry.Model, project)))
+            {
+                scenesFailed.Add(entry.ChapterId);
+            }
+
             if (gameFolder is not null)
             {
                 string gamePath = Path.Combine(gameFolder, entry.ChapterId + ExportFileSuffix);
@@ -271,7 +287,7 @@ public sealed class ChapterExportService
                     ? $"게임 폴더 → {gameFolder}"
                     : null;
 
-        return new ChapterExportRun(refused, failed, blocked, checksums, written, gameNote, removed, removeFailed);
+        return new ChapterExportRun(refused, failed, blocked, checksums, written, gameNote, removed, removeFailed, scenesFailed);
     }
 
     /// <summary>
@@ -299,6 +315,28 @@ public sealed class ChapterExportService
         }
 
         var live = new HashSet<string>(entries.Select(entry => entry.ChapterId), StringComparer.OrdinalIgnoreCase);
+
+        // 장면 파일도 같은 규칙으로 걷는다 — 게임 폴더에는 쓰지 않으므로 거기는 보지 않는다.
+        foreach (string path in Directory.EnumerateFiles(folder, "*" + ChapterScenesExporter.FileSuffix).Order(StringComparer.Ordinal))
+        {
+            if (live.Contains(Path.GetFileName(path)[..^ChapterScenesExporter.FileSuffix.Length]))
+            {
+                continue;
+            }
+
+            try
+            {
+                File.Delete(path);
+            }
+            catch (IOException)
+            {
+                removeFailed.Add(Path.GetFileName(path));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                removeFailed.Add(Path.GetFileName(path));
+            }
+        }
 
         foreach (string path in Directory.EnumerateFiles(folder, "*" + ExportFileSuffix).Order(StringComparer.Ordinal))
         {
