@@ -351,7 +351,9 @@ public partial class MainWindow : Window
     {
         var panel = new StackPanel { Spacing = 4, MinWidth = 220 };
 
-        var name = new TextBox { Text = chapterId, FontSize = 11 };
+        // [대본] 탭은 이름만 — 표시 이름을 고친다. ID(파일 이름)는 [구성] 탭의 챕터 ID 칸이다(display-names N3).
+        string current = _session.Editor.FindChapter(chapterId)?.ShownName ?? chapterId;
+        var name = new TextBox { Text = current, FontSize = 11, PlaceholderText = "챕터 이름" };
         panel.Children.Add(name);
 
         var flyout = new Flyout { Content = panel };
@@ -359,13 +361,17 @@ public partial class MainWindow : Window
         var rename = new Button { Content = "이름 바꾸기", HorizontalAlignment = HorizontalAlignment.Stretch };
         rename.Click += (_, _) => UiGuard.Run(_session, "챕터 이름 바꾸기", () =>
         {
-            string newId = name.Text?.Trim() ?? string.Empty;
+            string wanted = name.Text?.Trim() ?? string.Empty;
 
-            if (newId.Length == 0 || string.Equals(newId, chapterId, StringComparison.Ordinal) ||
-                RenameChapter(chapterId, newId))
+            if (!string.Equals(wanted, current, StringComparison.Ordinal))
             {
-                flyout.Hide();
+                _session.Editor.UpdateChapterDisplayName(chapterId, wanted);
+                _session.SetStatus(wanted.Length == 0
+                    ? "챕터 이름을 비웠습니다 — 챕터 ID가 보입니다."
+                    : $"챕터 이름을 「{wanted}」(으)로 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
             }
+
+            flyout.Hide();
         });
         panel.Children.Add(rename);
         panel.Children.Add(MenuSeparator());

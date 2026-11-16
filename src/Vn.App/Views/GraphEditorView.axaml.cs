@@ -132,6 +132,9 @@ public partial class GraphEditorView : UserControl
     /// 여기서 따로 읽으면 감시·재시도 규칙이 두 벌이 된다. 선택도 마찬가지로
     /// <c>ActiveFileId</c> 하나를 비출 뿐이라, 챕터 그래프에서 고른 것이 여기에도 보인다.
     /// </summary>
+    /// <summary>챕터 콤보가 지금 보이는 이름들 — 이름만 바뀌어도 항목을 다시 세우려고 들고 있는다.</summary>
+    private string? _chapterComboNames;
+
     private void RefreshChapterCombo()
     {
         _syncingChapter = true;
@@ -139,10 +142,19 @@ public partial class GraphEditorView : UserControl
         try
         {
             string[] ids = _chapters.Select(entry => entry.ChapterId).ToArray();
+            string names = string.Join("\u001f", _chapters.Select(entry => entry.Model.ShownName));
 
+            // 항목은 ID(고르는 규칙 그대로), 보이는 글은 이름이다(display-names N3). 이름만 바뀌어도 다시 세운다.
             if (!ids.SequenceEqual(
-                    (ChapterCombo.ItemsSource as IEnumerable<string>) ?? [], StringComparer.Ordinal))
+                    (ChapterCombo.ItemsSource as IEnumerable<string>) ?? [], StringComparer.Ordinal) ||
+                !string.Equals(names, _chapterComboNames, StringComparison.Ordinal))
             {
+                _chapterComboNames = names;
+                ChapterCombo.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<string>((id, _) => new TextBlock
+                {
+                    Text = _chapters.FirstOrDefault(entry => string.Equals(entry.ChapterId, id, StringComparison.Ordinal))
+                        ?.Model.ShownName ?? id
+                });
                 ChapterCombo.ItemsSource = ids;
             }
 
@@ -544,9 +556,11 @@ public partial class GraphEditorView : UserControl
             area = area.Inflate(new Thickness(24, 46, 24, 24));
 
             bool isActive = string.Equals(group.Key, _session.ActiveFileId, StringComparison.Ordinal);
-            string chapterName = _session.Project.Files
+            // 판 이름 = 챕터 ID — 이름표는 보이는 이름(표시 이름, 비면 ID)이다(display-names N3).
+            string boardName = _session.Project.Files
                 .FirstOrDefault(file => string.Equals(file.Id, group.Key, StringComparison.Ordinal))
                 ?.Name ?? group.Key;
+            string chapterName = _session.Editor.FindChapter(boardName)?.ShownName ?? boardName;
 
             var frame = new Border
             {

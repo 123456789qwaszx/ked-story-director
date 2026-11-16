@@ -98,6 +98,21 @@ public partial class MainWindow
                     : $"제목을 '{name}'(으)로 바꿨습니다. 에피소드ID '{episodeId}'는 그대로입니다.");
                 break;
 
+            // [대본] 탭은 이름만 고친다 — 챕터는 표시 이름, 장면은 장면 이름. ID는 그대로다(display-names N3).
+            case HierarchyKind.Chapter when tree.ShowEpisodeTitles && row.ChapterId is { } chapterId:
+                _session.Editor.UpdateChapterDisplayName(chapterId, name);
+                _session.SetStatus(name.Length == 0
+                    ? "챕터 이름을 비웠습니다 — 챕터 ID가 보입니다."
+                    : $"챕터 이름을 「{name}」(으)로 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                break;
+
+            case HierarchyKind.Scene when tree.ShowEpisodeTitles && row.ChapterId is { } chapterId && row.SceneId is { } sceneId:
+                _session.Editor.SetSceneName(chapterId, sceneId, name);
+                _session.SetStatus(name.Length == 0
+                    ? "장면 이름을 비웠습니다 — 장면 ID가 보입니다."
+                    : $"장면 이름을 「{name}」(으)로 바꿨습니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.");
+                break;
+
             case HierarchyKind.Chapter when row.ChapterId is { } chapterId && name.Length > 0:
                 RenameChapter(chapterId, name);
                 break;

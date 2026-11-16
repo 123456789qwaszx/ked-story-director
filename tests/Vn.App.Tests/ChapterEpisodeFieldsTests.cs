@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
+using Vn.Authoring.Chapters;
 
 namespace Vn.App.Tests;
 
@@ -83,9 +84,9 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     });
 
     [Fact]
-    public void 하이어아키에서_장면_이름을_바꾸면_그_장면의_에피소드가_모두_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    public void 하이어아키에서_장면_이름을_바꾸면_이름만_바뀌고_장면ID는_그대로이며_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
     {
-        // 장면 이름은 [대본] 탭 하이어아키에서 고친다 — [구성] 탭 하이어아키는 고치지 않는다.
+        // 장면 이름은 [대본] 탭 하이어아키에서 고친다 — 이름만이다. 장면ID(런타임 저장 · 롤백 경계)는 그대로다(display-names N3).
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
         StoryHierarchy tree = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
@@ -97,15 +98,26 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
         box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("교실", SceneOf(session, "root"));
-        Assert.Equal("교실", SceneOf(session, "a"));
+        Assert.Equal("opening", SceneOf(session, "root"));
+        Assert.Equal("opening", SceneOf(session, "a"));
+        Assert.Equal("hall", SceneOf(session, "b"));
+        ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
+        Assert.Equal("교실", ChapterSceneNotes.NameOf(chapter.SceneNotes, "opening"));
+        Assert.Equal("교실", tree.Rows.Single(row => row.Key == StoryHierarchy.SceneKey("ch01", "opening")).Text);
+
+        // 같은 이름을 다른 장면에 붙여도 합쳐지지 않는다.
+        tree.BeginRename(StoryHierarchy.SceneKey("ch01", "hall"));
+        tree.RenameBox!.Text = "교실";
+        tree.RenameBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+        Dispatcher.UIThread.RunJobs();
         Assert.Equal("hall", SceneOf(session, "b"));
 
         session.Editor.Undo();
+        session.Editor.Undo();
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("opening", SceneOf(session, "root"));
-        Assert.Equal("opening", SceneOf(session, "a"));
+        Assert.Empty(session.Editor.FindChapter("ch01")!.SceneNotes);
+        Assert.Equal("opening", tree.Rows.Single(row => row.Key == StoryHierarchy.SceneKey("ch01", "opening")).Text);
 
         window.Close();
     });

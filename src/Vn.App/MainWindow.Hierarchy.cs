@@ -313,10 +313,11 @@ public partial class MainWindow
             return EpisodeNaming.ShownNameOf(_session.Project, card);
         }
 
-        string head = $"{chapter.ChapterId}챕터";
+        // 이름으로 — 챕터는 표시 이름(비면 ID), 장면은 장면 이름(비면 장면ID). [대본] 탭은 ID를 보이지 않는다(display-names N3).
+        string head = $"{chapter.ShownName}챕터";
 
         return EpisodeNaming.EpisodeFor(chapter, card)?.SceneId is { } sceneId && !string.IsNullOrWhiteSpace(sceneId)
-            ? $"{head} - {sceneId.Trim()}"
+            ? $"{head} - {ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId.Trim()) ?? sceneId.Trim()}"
             : head;
     }
 
@@ -400,7 +401,7 @@ public partial class MainWindow
                 IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
                 List<ChapterScene> named = scenes.Where(scene => !scene.IsDefault).ToList();
                 Graph.SetInspectorHeader(
-                    $"챕터 · {chapter.ChapterId}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
+                    $"챕터 · {chapter.Model.ShownName}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
                 Note("조건 · 스탯은 [구성] 탭에서 고칩니다.");
                 StatTable(chapter.Model.Stats);
                 OrphanSceneNotes(chapter.ChapterId);

@@ -170,9 +170,15 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Equal("x2", Chapter(session, "ch02").FindEpisode("x")!.Title);
         Assert.Equal("x2", tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch02", "x")).Text);
 
-        // 장면 — 그 장면의 에피소드 모두의 장면ID.
+        // 장면 — 이름만. 장면ID는 그대로다(display-names N3).
         Rename(tree, StoryHierarchy.SceneKey("ch01", "hall"), "lobby", Key.Enter);
-        Assert.Equal("lobby", Chapter(session).Episodes.Single(episode => episode.EpisodeId == "b").SceneId);
+        Assert.Equal("hall", Chapter(session).Episodes.Single(episode => episode.EpisodeId == "b").SceneId);
+        Assert.Equal("lobby", ChapterSceneNotes.NameOf(Chapter(session).SceneNotes, "hall"));
+
+        // 챕터 — 표시 이름만. 챕터 ID는 그대로다.
+        Rename(tree, StoryHierarchy.ChapterKey("ch02"), "두 번째 장", Key.Enter);
+        Assert.Equal("두 번째 장", Chapter(session, "ch02").DisplayName);
+        Assert.Equal("두 번째 장", tree.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch02")).Text);
 
         // Esc — 없던 일.
         Rename(tree, StoryHierarchy.EpisodeKey("ch02", "y"), "zzz", Key.Escape);

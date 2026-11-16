@@ -379,7 +379,8 @@ public partial class StoryHierarchy : UserControl
         bool flat = scenes.All(scene => scene.IsDefault);
 
         rows.Add(new HierarchyRow(
-            HierarchyKind.Chapter, key, chapterId, null, null, chapterId,
+            // [대본] 탭은 이름(표시 이름, 비면 ID), [구성] 탭은 ID다(display-names N3).
+            HierarchyKind.Chapter, key, chapterId, null, null, ShowEpisodeTitles ? chapter.Model.ShownName : chapterId,
             Detail: ChapterDetail ?? $"에피소드 {chapter.Model.Episodes.Count}" + (flat && scenes.Count > 0 ? " · 장면 미지정" : string.Empty),
             Depth: 1, IsSceneRoot: false, HasWarning: chapter.HasErrors));
 
@@ -397,7 +398,7 @@ public partial class StoryHierarchy : UserControl
             string sceneKey = SceneKey(chapterId, scene.SceneId);
 
             rows.Add(new HierarchyRow(
-                HierarchyKind.Scene, sceneKey, chapterId, scene.SceneId, null, scene.DisplayName,
+                HierarchyKind.Scene, sceneKey, chapterId, scene.SceneId, null, ShowEpisodeTitles ? scene.DisplayName : scene.SceneId,
                 // 장면 메모나 에피소드 지시가 있으면 글자로 알린다(색만으로 알리지 않는다 — §6-3).
                 Detail: ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? "메모" : null, Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry));
 
@@ -842,8 +843,12 @@ public partial class StoryHierarchy : UserControl
     /// <summary>이름 칸에 처음 적힐 이름 — 제목으로 세운 에피소드 줄이면 그 제목, 아니면 <see cref="NameOf"/>.</summary>
     private string CurrentNameOf(HierarchyRow row) => TitleRow(row) ? row.Text : NameOf(row);
 
-    /// <summary>제목으로 세운 에피소드 줄인가.</summary>
-    private bool TitleRow(HierarchyRow row) => ShowEpisodeTitles && row.Kind == HierarchyKind.Episode;
+    /// <summary>
+    /// 이름으로 세운 줄인가 — [대본] 탭의 챕터 · 장면 · 에피소드 줄. 그 줄의 이름 고치기는 보이는 이름(표시 이름 · 장면 이름 · 제목)만
+    /// 고치고 ID는 그대로다. 비울 수 있다(ID로 물러선다).
+    /// </summary>
+    private bool TitleRow(HierarchyRow row) =>
+        ShowEpisodeTitles && row.Kind is HierarchyKind.Episode or HierarchyKind.Scene or HierarchyKind.Chapter;
 
     /// <summary>그 줄의 이름 칸을 연다(프로젝트 줄은 이름을 여기서 고치지 않는다).</summary>
     internal void BeginRename(string key)
@@ -880,7 +885,7 @@ public partial class StoryHierarchy : UserControl
 
             Draw();
 
-            // 장면 이름과 제목은 비울 수 있다(장면은 풀리고, 제목은 EpisodeId로 물러선다).
+            // 이름은 비울 수 있다(ID로 물러선다). [구성] 탭의 장면 줄도 비울 수 있었다(장면이 풀린다) — 지금은 읽기 전용이다.
             if (keep && !string.Equals(wanted, current, StringComparison.Ordinal) &&
                 (wanted.Length > 0 || row.Kind == HierarchyKind.Scene || TitleRow(row)))
             {
