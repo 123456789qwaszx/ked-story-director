@@ -81,7 +81,7 @@ MyStory/
 
 | 파일 | 하는 일 |
 |---|---|
-| `StoryProject.cs` | 프로젝트 — 판 · 대본 · 챕터 · 링크 · 작가 화자(`WriterSpeakers`) |
+| `StoryProject.cs` | 프로젝트 — 판 · 대본 · 챕터 · 링크 · 작가 화자(`WriterSpeakers` — 유물, 쓰지 않는다. 화자는 정의 파일 speakers 하나다) |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
 | `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 선택지 출구(`ChoiceExits` — compositor가 읽는다) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
 | `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
@@ -305,7 +305,9 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 런타임에 나가는 필드 | `Chapters/ChapterProgressionExporter.cs` + [`docs/runtime-contract.md`](docs/runtime-contract.md) |
 | 진단이 짚는 자리 · 문장 | `Chapters/ChapterDiagnostic.cs`(에피소드는 `EpisodeId`, 간선은 메시지의 `ChapterEdge.Where`) |
 | 챕터 조건 → 대사 카드 | `Chapters/ChapterBoardSupply.cs` · `ConditionYarnTranslator.cs` |
-| 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` |
+| 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` · `RenameChapterCondition`(간선이 따라간다, 공급 사본은 Id 보존) |
+| 화자 목록(이름 · 캐릭터 키) | 규칙 `App/Services/AuthoringSession.cs`의 `AddSpeakerName` · `RenameSpeakerName` · `RemoveSpeakerName` · `SetSpeakerCharacterId`(쓰면 `SpeakersChanged`), 화면 이름 `App/MainWindow.Speakers.cs`([대본]) · 키 `ChapterGraphView` [화자] 탭([구성]) |
+| 조건 이름 · 식 미정 | 이름 화면 `App/MainWindow.Conditions.cs`([대본] 챕터 요약), 식은 `ChapterGraphView` 조건 표([구성]). 빈 식 = 항상 통과 `ChapterDocument.Reparse`, 진단 `ConditionExpressionBlank`(경고) |
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 장면 단위 내보내기(`scenes.json`) | `Chapters/ChapterScenesExporter.cs` — 쓰는 때는 `ChapterExportService.ExportAll` |

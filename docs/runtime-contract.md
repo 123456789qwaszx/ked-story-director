@@ -533,6 +533,9 @@ bool 어휘 준수 · **장면마다 밖에서 들어오는 자리가 하나**(`
 → `ChapterProgressionExporter.ChapterJson`에 **`Stats` 한 줄 + 매핑 하나.**
 한 행 = `(Key, DisplayName, Initial, Minimum, Maximum, Type)`.
 
+> 2026-11-16(writer-fields W2): 툴에서 스탯 표시 이름을 걷었다 — **`DisplayName`은 `Key`와 같은 글자로 나간다**(칸 · 모양은 그대로).
+> 게임 화면에 보일 스탯 이름은 게임 쪽이 키로 로컬라이즈한다. 식이 빈 조건(「식 미정」)은 빈 `Conditions[]`로 나간다 — 관문 없음과 같다.
+
 **G-2. 서브 레인 출력 경로 제거 — ✅ 확인 완료 (2026-08-19).** 이미터가 내는 것은
 `StoryFileName` 하나뿐이다. `SetPrefix`·`PresPrefix` 상수는 **파일 인식에만** 남아 있고
 (고아 정리가 옛 프로젝트에 남은 `Set_*`·`Pres_*`를 "우리 것"으로 알아봐야 지운다) 생성
