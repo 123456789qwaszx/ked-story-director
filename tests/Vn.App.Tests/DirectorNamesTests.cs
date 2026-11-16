@@ -70,7 +70,7 @@ public sealed class DirectorNamesTests : IDisposable
         graph.HierarchyView.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
         graph.HierarchyView.RowButton(StoryHierarchy.EpisodeKey("ch01", "a"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("축제 전날챕터 - 교실", title.Text);
+        Assert.Equal("축제 전날 - 교실", title.Text);
 
         // 콤보의 항목은 ID 그대로(고르는 규칙), 보이는 글은 이름.
         ComboBox combo = graph.FindControl<ComboBox>("ChapterCombo")!;
