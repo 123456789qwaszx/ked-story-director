@@ -324,4 +324,5 @@ public static class ChapterSheetNames
     public const string Conditions = "조건";
     public const string Stats = "스탯";
     public const string Choices = "선택지";
+    public const string SceneNotes = "장면 메모";
 }

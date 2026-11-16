@@ -52,6 +52,38 @@ public static class ChapterSceneNotes
         IReadOnlyList<ChapterEpisode> episodes, IEnumerable<ChapterSceneNote> notes) =>
         Ordered(episodes, notes).Where(note => !IsOwned(episodes, note.SceneId)).ToList();
 
+    /// <summary>
+    /// 주인 없는 메모마다 경고 하나(<see cref="ChapterDiagnosticCode.SceneNoteOrphaned"/>) — 내보내기를 막지 않는다.
+    /// 메시지는 메모의 첫머리를 보여 어느 메모인지 짚는다.
+    /// </summary>
+    public static IReadOnlyList<ChapterDiagnostic> Diagnostics(
+        IReadOnlyList<ChapterEpisode> episodes, IEnumerable<ChapterSceneNote> notes, string path) =>
+        Orphans(episodes, notes)
+            .Select(note => new ChapterDiagnostic(
+                ChapterDiagnosticSeverity.Warning,
+                ChapterDiagnosticCode.SceneNoteOrphaned,
+                path,
+                ChapterSheetNames.SceneNotes,
+                EpisodeId: null,
+                $"장면 '{ShownSceneName(note.SceneId)}'의 메모에 주인이 없습니다 — 그 장면의 에피소드가 없습니다(「{Lead(note.Text)}」). " +
+                "장면을 되살리거나 챕터 인스펙터에서 지웁니다."))
+            .ToList();
+
+    /// <summary>사람에게 보이는 장면 이름 — 미지정 장면(<c>__scene_{Id}</c>)은 화면과 같은 「미지정 · {Id}」.</summary>
+    public static string ShownSceneName(string sceneId) =>
+        sceneId.StartsWith(UnnamedPrefix, StringComparison.Ordinal)
+            ? ChapterSceneGrouping.DefaultSceneName(sceneId[UnnamedPrefix.Length..])
+            : sceneId;
+
+    /// <summary>메모의 첫머리 한 줄 — 길면 자른다.</summary>
+    public static string Lead(string text, int length = 24)
+    {
+        string line = text.Trim().Split('\n')[0].Trim();
+        return line.Length <= length ? line : line[..length].TrimEnd() + "…";
+    }
+
+    private const string UnnamedPrefix = "__scene_";
+
     /// <summary>그 장면의 메모 — 없거나 비었으면 null.</summary>
     public static ChapterSceneNote? Of(IEnumerable<ChapterSceneNote> notes, string sceneId) =>
         notes.FirstOrDefault(note =>

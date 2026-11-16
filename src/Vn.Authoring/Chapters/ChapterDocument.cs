@@ -87,7 +87,8 @@ public sealed class ChapterDocument
         .. ConditionDiagnostics(path),
         .. ChapterAutoEdgeCheck.Of(Episodes, Edges, path),
         .. ChapterSceneEntryCheck.Of(Episodes, Edges, path),
-        .. ChapterStructureCheck.Of(Episodes, Edges, Conditions.Select(Reparse).ToList(), Stats, path)
+        .. ChapterStructureCheck.Of(Episodes, Edges, Conditions.Select(Reparse).ToList(), Stats, path),
+        .. ChapterSceneNotes.Diagnostics(Episodes, SceneNotes, path)
     ];
 
     /// <summary>

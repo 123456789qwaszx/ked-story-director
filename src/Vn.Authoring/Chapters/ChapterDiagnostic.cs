@@ -78,7 +78,13 @@ public enum ChapterDiagnosticCode
     /// 이것이 <b>보증의 성격이 바뀌었다는 신호</b>다. 이 코드가 있으면 같은 실행의
     /// <see cref="EpisodeUnreachable"/>은 「없음을 증명했다」가 아니라 「못 찾았다」다.
     /// </summary>
-    ReachabilityExplorationIncomplete
+    ReachabilityExplorationIncomplete,
+
+    /// <summary>
+    /// <b>주인 없는 장면 메모</b> — 그 장면ID를 가진 에피소드가 없다(장면을 풀었거나, 마지막 에피소드를 지웠거나, 다른 장면으로
+    /// 합쳤다). 경고다 — 내보내기를 막지 않는다. 메모를 조용히 지우지 않으므로 사람이 챕터 인스펙터에서 지우거나 장면을 되살린다.
+    /// </summary>
+    SceneNoteOrphaned
 }
 
 /// <summary>
