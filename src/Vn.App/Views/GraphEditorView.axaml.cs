@@ -677,7 +677,7 @@ public partial class GraphEditorView : UserControl
             area = area.Inflate(new Thickness(10, 26, 10, 10));
 
             _frames.Add(SceneFrame(area));
-            _frames.Add(SceneLabel(area, fileId, scene));
+            _frames.Add(SceneLabel(area, fileId, scene, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)));
         }
     }
 
@@ -710,7 +710,7 @@ public partial class GraphEditorView : UserControl
     /// 장면 이름표 — <b>누르면 그 장면을 접는다</b> (2026-10-30 — 챕터 이름표와 같은 손짓). 접은 장면은 줄 목록 상자로
     /// 간소화되고(<see cref="BuildSceneProxy"/>), 그 상자를 두 번 누르면 다시 편다. 하이어아키의 눈과 같은 상태다.
     /// </summary>
-    private Border SceneLabel(Rect area, string fileId, ChapterScene scene)
+    private Border SceneLabel(Rect area, string fileId, ChapterScene scene, bool hasMemo)
     {
         var label = new Border
         {
@@ -722,9 +722,9 @@ public partial class GraphEditorView : UserControl
             Child = new TextBlock
             {
                 // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
-                Text = scene.HasSplitEntry
-                    ? $"장면 {scene.DisplayName} ⚠ ⌄"
-                    : $"장면 {scene.DisplayName} ⌄",
+                // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
+                Text = $"장면 {scene.DisplayName}" + (hasMemo ? " · 메모" : string.Empty) +
+                       (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
                 FontSize = 10,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Brushes.White

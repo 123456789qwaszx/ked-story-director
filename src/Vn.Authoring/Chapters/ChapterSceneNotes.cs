@@ -84,6 +84,13 @@ public static class ChapterSceneNotes
 
     private const string UnnamedPrefix = "__scene_";
 
+    /// <summary>
+    /// 그 장면에 적힌 것이 있는가 — 장면 메모나, 그 장면 에피소드의 지시(<see cref="ChapterEpisode.Memo"/>)가 하나라도.
+    /// 하이어아키의 장면 줄과 판의 장면 이름표가 「메모」를 다는 근거다.
+    /// </summary>
+    public static bool HasMemo(IEnumerable<ChapterSceneNote> notes, ChapterScene scene) =>
+        Of(notes, scene.SceneId) is not null || scene.Episodes.Any(episode => !string.IsNullOrWhiteSpace(episode.Memo));
+
     /// <summary>그 장면의 메모 — 없거나 비었으면 null.</summary>
     public static ChapterSceneNote? Of(IEnumerable<ChapterSceneNote> notes, string sceneId) =>
         notes.FirstOrDefault(note =>

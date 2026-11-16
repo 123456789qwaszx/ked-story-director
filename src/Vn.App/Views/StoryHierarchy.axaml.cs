@@ -398,7 +398,8 @@ public partial class StoryHierarchy : UserControl
 
             rows.Add(new HierarchyRow(
                 HierarchyKind.Scene, sceneKey, chapterId, scene.SceneId, null, scene.DisplayName,
-                Detail: null, Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry));
+                // 장면 메모나 에피소드 지시가 있으면 글자로 알린다(색만으로 알리지 않는다 — §6-3).
+                Detail: ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? "메모" : null, Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry));
 
             if (!IsExpanded(sceneKey))
             {

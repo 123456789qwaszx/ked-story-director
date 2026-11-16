@@ -354,7 +354,8 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(() =>
+        // 글자다 — 구조가 아니라 판 · 하이어아키의 표시만 바뀐다. 인스펙터를 다시 세우면 쓰던 칸이 사라진다.
+        Mutate(ProjectChangeKind.NodeMetadata, () =>
         {
             if (wanted is null)
             {
@@ -387,7 +388,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(() => chapter.Episodes[index] = chapter.Episodes[index] with { Memo = wanted });
+        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with { Memo = wanted });
     }
 
     /// <summary>

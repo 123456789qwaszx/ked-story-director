@@ -403,6 +403,7 @@ public partial class MainWindow
                     $"챕터 · {chapter.ChapterId}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
                 Note("조건 · 스탯은 [구성] 탭에서 고칩니다.");
                 StatTable(chapter.Model.Stats);
+                OrphanSceneNotes(chapter.ChapterId);
 
                 if (named.Count > 0 || scenes.Any(scene => scene.IsDefault && scene.Episodes.Count > 0))
                 {
@@ -433,6 +434,8 @@ public partial class MainWindow
             {
                 Graph.SetInspectorHeader($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}");
                 Note("에피소드를 누르면 그 카드의 대사를 씁니다. 장면 이름은 [구성] 탭에서 고칩니다.");
+                SceneNoteSpace(chapter.ChapterId, scene);
+                Heading("에피소드");
 
                 foreach (ChapterEpisode episode in scene.Episodes)
                 {
