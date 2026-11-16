@@ -166,3 +166,4 @@
 | 11-16 | — | — | 지시서. 코드 변경 0 |
 | 11-16 | S0 | (S0 커밋) | Q1~Q4 답을 2절에 적었다. 장면 메모는 자유 글 한 칸, 에피소드 지시는 있던 `Episode.Memo`를 [+ 에피소드]로 골라 붙인 카드에 쓴다. 형식 4 그대로. 3 · 4 · 5 · 6 · 7 · 8절을 그에 맞게 고쳤다. 코드 변경 0 |
 | 11-16 | S1 | (S1 커밋) | `ChapterSceneNote(SceneId, Text)` · `ChapterDocument.SceneNotes` · `ChapterGraphModel.SceneNotes` · `ChapterSceneNotes`(주인 · 차례). 저장 키 `sceneNotes`는 `fixtures` 뒤, 비면 안 쓴다. 같은 장면이 둘이거나 열쇠가 빈 항목은 읽지 않는다(§6-8). 시험 `ChapterSceneNoteTests` 7(견본 열고 저장 → 매니페스트 그대로 포함). 확인은 VM의 Linux .NET 10.0.404 — Vn.Authoring.Tests 627/627 · Vn.App.Tests 387/387 |
+| 11-16 | S2 | (S2 커밋) | `ProjectEditor.SetSceneNote`(비우면 지움) · `UpdateEpisodeMemo`(에피소드 지시, 비우면 null) · `RenameScene`(장면 이름 바꾸기 — 메모를 같은 칸 안에서 데려간다. 받는 쪽에 메모가 있으면 보낸 쪽은 주인 없이 남고, 풀면 주인 없이 남는다). `RenameEpisode`가 `__scene_{Id}` 메모를 데려간다. [대본] 하이어아키의 장면 이름 바꾸기가 `RenameScene`을 부른다. 시험 `ChapterSceneNoteEditingTests` 12. Vn.Authoring.Tests 639/639 · Vn.App.Tests 387/387 |

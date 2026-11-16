@@ -100,26 +100,19 @@ public partial class MainWindow
                 RenameChapter(chapterId, name);
                 break;
 
-            case HierarchyKind.Scene when row.ChapterId is { } chapterId:
+            case HierarchyKind.Scene when row.ChapterId is { } chapterId && row.SceneId is { } sceneId:
             {
-                ChapterEntry? chapter = _chapters.FirstOrDefault(entry =>
-                    string.Equals(entry.ChapterId, chapterId, StringComparison.Ordinal));
-                string[] episodeIds = chapter is null
-                    ? []
-                    : chapter.Model.Episodes
-                        .Where(episode => string.Equals(episode.EffectiveSceneId, row.SceneId, StringComparison.Ordinal))
-                        .Select(episode => episode.EpisodeId)
-                        .ToArray();
+                // 장면 메모가 함께 간다(ProjectEditor.RenameScene — 같은 되돌리기 칸).
+                int moved = _session.Editor.RenameScene(chapterId, sceneId, name);
 
-                if (episodeIds.Length == 0)
+                if (moved == 0)
                 {
                     return;
                 }
 
-                _session.Editor.UpdateEpisodeScenes(chapterId, episodeIds, name);
                 _session.SetStatus(name.Length == 0
-                    ? $"장면ID를 걷었습니다 — 에피소드 {episodeIds.Length}개가 저마다 제 장면입니다."
-                    : $"장면 이름을 '{name}'로 바꿨습니다 — 에피소드 {episodeIds.Length}개.");
+                    ? $"장면ID를 걷었습니다 — 에피소드 {moved}개가 저마다 제 장면입니다."
+                    : $"장면 이름을 '{name}'로 바꿨습니다 — 에피소드 {moved}개.");
                 break;
             }
 

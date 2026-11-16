@@ -290,6 +290,130 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// 장면 이름 바꾸기 — 그 장면의 에피소드 모두에 새 장면ID를 적는다. 비우면 장면을 풀어 저마다 제 장면이 된다.
+    /// 되돌리기 한 칸이고, <b>장면 메모를 데려간다</b>(같은 칸 안에서 열쇠를 옮긴다):
+    /// <list type="bullet">
+    /// <item>새 이름의 장면에 메모가 없으면 옛 메모가 새 열쇠로 간다(이름 바꾸기 · 메모 없는 장면으로 합치기).</item>
+    /// <item>받는 장면에 이미 메모가 있으면 그것을 두고, 보낸 장면의 메모는 옛 열쇠에 <b>주인 없이</b> 남는다.</item>
+    /// <item>풀면(빈 이름) 메모는 옛 열쇠에 주인 없이 남는다 — 조용히 지우지 않는다(검증이 알린다).</item>
+    /// </list>
+    /// </summary>
+    /// <returns>장면ID가 바뀐 에피소드 수 — 그 장면의 에피소드가 없으면 0이고 아무것도 하지 않는다.</returns>
+    public int RenameScene(string chapterId, string sceneId, string name)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        string wanted = name.Trim();
+
+        List<int> members = Enumerable.Range(0, chapter.Episodes.Count)
+            .Where(index => string.Equals(chapter.Episodes[index].EffectiveSceneId, sceneId, StringComparison.Ordinal))
+            .ToList();
+
+        if (members.Count == 0)
+        {
+            return 0;
+        }
+
+        Mutate(() =>
+        {
+            foreach (int index in members)
+            {
+                chapter.Episodes[index] = chapter.Episodes[index] with { SceneId = wanted };
+            }
+
+            if (wanted.Length > 0)
+            {
+                CarrySceneNote(chapter, sceneId, wanted);
+            }
+        });
+
+        return members.Count;
+    }
+
+    // ── 장면 메모 ──────────────────────────────────────────────────────────
+    // 장면이 아니라 장면에 붙는 곁 자료다(ChapterSceneNote). 열쇠는 EffectiveSceneId.
+
+    /// <summary>
+    /// 장면 메모를 적는다 — 비우면 지운다. 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 주인 없는 메모를 지우는 것도 이것이다.
+    /// 앞뒤 빈칸은 걷는다(글 안의 줄바꿈은 그대로).
+    /// </summary>
+    public void SetSceneNote(string chapterId, string sceneId, string? text)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+
+        if (string.IsNullOrWhiteSpace(sceneId))
+        {
+            throw new ArgumentException("장면 메모의 장면ID가 비었습니다.", nameof(sceneId));
+        }
+
+        string? wanted = string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        int index = chapter.SceneNotes.FindIndex(note => string.Equals(note.SceneId, sceneId, StringComparison.Ordinal));
+        string? current = index >= 0 && !ChapterSceneNotes.IsBlank(chapter.SceneNotes[index]) ? chapter.SceneNotes[index].Text : null;
+
+        if (string.Equals(current, wanted, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Mutate(() =>
+        {
+            if (wanted is null)
+            {
+                chapter.SceneNotes.RemoveAt(index);
+            }
+            else if (index >= 0)
+            {
+                chapter.SceneNotes[index] = chapter.SceneNotes[index] with { Text = wanted };
+            }
+            else
+            {
+                chapter.SceneNotes.Add(new ChapterSceneNote(sceneId, wanted));
+            }
+        });
+    }
+
+    /// <summary>
+    /// 에피소드 지시 — 그 에피소드의 <see cref="ChapterEpisode.Memo"/>. 장면 메모 공간의 에피소드 카드가 이것을 쓴다.
+    /// 비우면 지운다(null — 카드가 빠진다). 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 앞뒤 빈칸은 걷는다.
+    /// </summary>
+    public void UpdateEpisodeMemo(string chapterId, string episodeId, string? memo)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        int index = RequireEpisodeIndex(chapter, episodeId);
+        string? wanted = string.IsNullOrWhiteSpace(memo) ? null : memo.Trim();
+        string? current = string.IsNullOrWhiteSpace(chapter.Episodes[index].Memo) ? null : chapter.Episodes[index].Memo;
+
+        if (string.Equals(current, wanted, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Mutate(() => chapter.Episodes[index] = chapter.Episodes[index] with { Memo = wanted });
+    }
+
+    /// <summary>
+    /// 장면의 열쇠가 바뀔 때 메모를 데려간다 — 받는 열쇠에 이미 메모가 있으면 그것을 두고 옛 것은 옛 열쇠에 남는다
+    /// (주인 없는 메모가 된다). <c>Mutate</c> 안에서만 부른다.
+    /// </summary>
+    private static void CarrySceneNote(ChapterDocument chapter, string fromSceneId, string toSceneId)
+    {
+        if (string.Equals(fromSceneId, toSceneId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        int from = chapter.SceneNotes.FindIndex(note => string.Equals(note.SceneId, fromSceneId, StringComparison.Ordinal));
+
+        if (from < 0 || ChapterSceneNotes.Of(chapter.SceneNotes, toSceneId) is not null)
+        {
+            return;
+        }
+
+        chapter.SceneNotes.RemoveAll(note => string.Equals(note.SceneId, toSceneId, StringComparison.Ordinal));
+        from = chapter.SceneNotes.FindIndex(note => string.Equals(note.SceneId, fromSceneId, StringComparison.Ordinal));
+        chapter.SceneNotes[from] = chapter.SceneNotes[from] with { SceneId = toSceneId };
+    }
+
+    /// <summary>
     /// 에피소드의 자리 — 그래프에서 끌어 옮긴 결과.
     ///
     /// 자리는 <b>구조가 아니다</b> — 파생 그래프도 편집 행도 안 달라지므로
@@ -385,6 +509,7 @@ public sealed partial class ProjectEditor
         Mutate(() =>
         {
             ChapterEpisode episode = chapter.Episodes[index];
+            string oldSceneId = episode.EffectiveSceneId;
 
             chapter.Episodes[index] = episode with
             {
@@ -398,6 +523,9 @@ public sealed partial class ProjectEditor
             };
 
             Retarget(chapter, oldId, newId);
+
+            // 장면을 안 나눈 에피소드의 장면 열쇠(__scene_{Id})는 이름을 따라 바뀐다 — 그 장면의 메모를 데려간다.
+            CarrySceneNote(chapter, oldSceneId, chapter.Episodes[index].EffectiveSceneId);
         });
     }
 
