@@ -62,44 +62,24 @@ public static class ChapterBoardSupply
     }
 
     /// <summary>
-    /// 라벨이 바뀐 조건은 <b>이름만 갈아 끼운다</b> — 조건 이름을 고쳐도 연결이 이어져야 한다.
-    ///
-    /// 줄에 매달린 전환은 <see cref="Model.LineConditionTransition.ConditionId"/>로 잇는다.
-    /// 그래서 이름이 바뀌었다고 조건을 <b>새로 만들면</b> Id가 달라져 이미 매달린 갈래가 전부
-    /// 고아가 된다 — 같은 식이면 같은 조건이므로, 있는 것의 이름만 고쳐 Id를 지킨다.
-    /// 반대로 이름을 그냥 두면 판에는 <b>사라진 옛 라벨</b>이 계속 보인다.
-    ///
-    /// 고치는 것은 <b>공급 노드가 소유한 조건</b>뿐이다. 같은 식을 전역 정의나 작가의
-    /// 설정노드가 이미 주고 있어도 그쪽 이름은 남의 것이라 건드리지 않는다.
+    /// <b>식 미정</b>인 조건이 대사 카드에서 서는 식 — 항상 통과한다(writer-fields W1의 규칙: 식이 빈 조건은 관문이 없는 것과 같다).
+    /// 빈 식을 그대로 두면 이미터가 <c>&lt;&lt;if false&gt;&gt;</c>로 내어 분기가 영영 안 탄다 — 그래서 사본에는 이 글자를 적는다.
     /// </summary>
-    /// <returns>공급 노드가 이미 그 식을 갖고 있어 새로 만들 필요가 없으면 true.</returns>
-    private static bool RenameSuppliedCondition(
-        ProjectEditor editor,
-        SetNode supply,
-        string label,
-        string yarn)
-    {
-        ConditionDefinition? existing = supply.Conditions.FirstOrDefault(condition =>
-            string.Equals(condition.Expression.Trim(), yarn, StringComparison.Ordinal));
-
-        if (existing is null)
-        {
-            return false;
-        }
-
-        if (!string.Equals(existing.Name, label, StringComparison.Ordinal))
-        {
-            editor.UpdateCondition(existing.Id, label, existing.Expression);
-        }
-
-        return true;
-    }
+    public const string UndecidedYarn = "true";
 
     /// <summary>
-    /// 챕터의 조건 <b>전부</b>를 그 판의 모든 대사 노드가 쓸 수 있게 공급한다 (2단계 4번).
-    /// 작가의 자유 노드가 조건 드롭다운에서 챕터 라벨(A 계층)을 바로 고르게 하는 자리다 —
-    /// 설정노드를 손으로 찾아 잇는 절차가 없어야 "개발자를 안 부르고" 조건을 건다.
-    /// 링크·조건 모두 멱등이다(있으면 다시 만들지 않는다).
+    /// 챕터의 조건 <b>전부</b>를 그 판의 모든 대사 노드가 쓸 수 있게 공급한다 (2단계 4번). 분기의 조건(다녀갈 카드 첫머리의
+    /// <c>&lt;&lt;if&gt;&gt;</c>)이 이 사본을 Id로 붙든다. 멱등이다(바뀔 것이 없으면 안 건드린다).
+    ///
+    /// <b>사본의 짝은 이름(라벨)이다</b> (2026-11-17 — 전에는 식이었다). 챕터 조건 하나에 사본 하나:
+    /// <list type="bullet">
+    /// <item>같은 이름의 사본이 있으면 <b>Id를 지킨 채</b> 식만 맞춘다 — 식을 고쳐도, 식 미정이었다가 채워져도 매달린 분기가 그대로 따라온다.</item>
+    /// <item>없으면 만든다. 다만 옛 프로젝트(식으로 짝짓던 때)의 사본 — 지금 어느 조건의 이름도 아니고 식이 같은 것 — 은 이어받아 이름을 고친다.</item>
+    /// <item><b>식 미정</b>(식이 빈) 조건도 공급한다 — <see cref="UndecidedYarn"/>(항상 통과). 식 미정인 조건이 여럿이어도 이름으로
+    /// 갈리므로 섞이지 않는다. 식이 같은 조건 둘도 이제 사본이 따로다.</item>
+    /// <item>식이 <b>틀린</b> 조건(문법 · 모르는 스탯)은 건드리지 않는다 — 있던 사본은 옛 식 그대로 남고, 검증이 오류로 짚는다.</item>
+    /// </list>
+    /// 이름 바꾸기는 <c>ProjectEditor.RenameChapterCondition</c>이 사본의 이름을 먼저 옮긴 뒤 이것을 부른다.
     /// </summary>
     public static void SupplyChapterConditionsToBoard(
         ProjectEditor editor,
@@ -109,14 +89,27 @@ public static class ChapterBoardSupply
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(chapter);
 
-        List<(string Label, string Yarn)> translatable = chapter.Conditions
-            .Select(condition => (condition.Label, Translated: ConditionYarnTranslator.Translate(condition)))
-            .Where(pair => pair.Translated.IsTranslatable)
-            .Select(pair => (pair.Label, Yarn: pair.Translated.Yarn!))
-            .DistinctBy(pair => pair.Yarn, StringComparer.Ordinal)
-            .ToList();
+        var wanted = new List<(string Label, string Yarn)>();
 
-        if (translatable.Count == 0)
+        foreach (ChapterCondition condition in chapter.Conditions)
+        {
+            if (string.IsNullOrWhiteSpace(condition.Label) ||
+                wanted.Any(item => string.Equals(item.Label, condition.Label, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(condition.Expression))
+            {
+                wanted.Add((condition.Label, UndecidedYarn));
+            }
+            else if (ConditionYarnTranslator.Translate(condition) is { Yarn: { } yarn })
+            {
+                wanted.Add((condition.Label, yarn));
+            }
+        }
+
+        if (wanted.Count == 0)
         {
             return;
         }
@@ -128,12 +121,28 @@ public static class ChapterBoardSupply
 
         supply ??= editor.AddSetNode(fileId, name: supplyName);
 
-        foreach ((string label, string yarn) in translatable)
+        var labels = new HashSet<string>(chapter.Conditions.Select(condition => condition.Label), StringComparer.Ordinal);
+
+        foreach ((string label, string yarn) in wanted)
         {
-            // 있으면 이름만 따라가고(Id 보존 = 매달린 갈래 보존), 없으면 만든다.
-            if (!RenameSuppliedCondition(editor, supply, label, yarn))
+            ConditionDefinition? held = supply.Conditions.FirstOrDefault(condition =>
+                string.Equals(condition.Name, label, StringComparison.Ordinal));
+
+            // 옛 사본 — 지금 어느 조건의 이름도 아닌데 식이 같다(식으로 짝짓던 때 이름이 어긋난 것). 식 미정끼리는 잇지 않는다.
+            held ??= string.Equals(yarn, UndecidedYarn, StringComparison.Ordinal)
+                ? null
+                : supply.Conditions.FirstOrDefault(condition =>
+                    !labels.Contains(condition.Name) &&
+                    string.Equals(condition.Expression.Trim(), yarn, StringComparison.Ordinal));
+
+            if (held is null)
             {
                 editor.AddCondition(supply.Id, label, yarn);
+            }
+            else if (!string.Equals(held.Name, label, StringComparison.Ordinal) ||
+                     !string.Equals(held.Expression.Trim(), yarn, StringComparison.Ordinal))
+            {
+                editor.UpdateCondition(held.Id, label, yarn);   // Id 보존 = 매달린 분기 보존
             }
         }
 

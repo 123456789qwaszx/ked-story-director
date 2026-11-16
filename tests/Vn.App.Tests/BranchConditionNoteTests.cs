@@ -70,7 +70,7 @@ public sealed class BranchConditionNoteTests : IDisposable
     });
 
     [Fact]
-    public void 분기_카드에서_조건을_바로_고르고_식_미정인_조건은_고를_수_없다() => HeadlessUi.Run(() =>
+    public void 분기_카드에서_조건을_바로_고르고_식_미정인_조건도_고른다() => HeadlessUi.Run(() =>
     {
         // 2026-11-17 소유자 — [대본] 탭에서 만든 조건 이름을 분기 카드에서 바로 고른다([구성] 탭으로 가는 단추를 대신한다).
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
@@ -85,7 +85,7 @@ public sealed class BranchConditionNoteTests : IDisposable
         ComboBox picker = Picker(window, root, branch);
         List<ComboBoxItem> items = picker.Items.OfType<ComboBoxItem>().ToList();
         Assert.Equal([BranchConditionPicker.Always, "신뢰높음", "아직모름 (식 미정)"], items.Select(item => item.Content));
-        Assert.False(items[2].IsEnabled);
+        Assert.True(items[2].IsEnabled);
 
         picker.SelectedItem = items[1];
         Dispatcher.UIThread.RunJobs();
@@ -104,6 +104,22 @@ public sealed class BranchConditionNoteTests : IDisposable
         session.Editor.Undo();
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+
+        // 식 미정인 조건도 건다 — 지금은 늘 다녀온다고 말하고, 카드 머리의 표도 그렇게 적는다.
+        ComboBox third = Picker(window, root, branch);
+        third.SelectedItem = third.Items.OfType<ComboBoxItem>().Single(item => Equals(item.Tag, "아직모름"));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("아직모름", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Contains("식 미정이라 지금은 늘 다녀옵니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("⑂ 조건: 아직모름 (식 미정)", ChipText(window, branch));
+        Assert.Contains(Texts(BranchCard(window, root, branch)), text => text.Contains("식 미정이라 지금은 늘 다녀옵니다", StringComparison.Ordinal));
+
+        // [구성]에서 식을 채우면 그 분기가 그대로 그 식을 따른다 — 표에서 (식 미정)이 걷힌다.
+        session.Editor.UpdateChapterCondition("ch01", "아직모름", "trust >= 7");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("아직모름", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("⑂ 조건: 아직모름", ChipText(window, branch));
 
         window.Close();
     });

@@ -276,7 +276,7 @@ public partial class MainWindow
             Grid.SetColumn(pick, 1);
             row.Children.Add(pick);
             DirectorSummary.Children.Add(row);
-            Note(BranchConditionNote.Sentence(state));
+            Note(BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, target, state.Label)));
             return;
         }
 

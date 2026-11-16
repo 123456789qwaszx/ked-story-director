@@ -933,7 +933,7 @@ public partial class DialogueNodeEditor : UserControl
 
         detail.Children.Add(new TextBlock
         {
-            Text = BranchConditionNote.Sentence(state) + " " + (lastConnected
+            Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, targetId, state.Label)) + " " + (lastConnected
                 ? "다녀왔다가 이 줄부터 이어집니다."
                 : "다녀왔다가 다음 분기로 갑니다."),
             FontSize = 10,

@@ -304,7 +304,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 도달성 | `Chapters/ChapterReachabilityProver.cs` |
 | 런타임에 나가는 필드 | `Chapters/ChapterProgressionExporter.cs` + [`docs/runtime-contract.md`](docs/runtime-contract.md) |
 | 진단이 짚는 자리 · 문장 | `Chapters/ChapterDiagnostic.cs`(에피소드는 `EpisodeId`, 간선은 메시지의 `ChapterEdge.Where`) |
-| 챕터 조건 → 대사 카드 | `Chapters/ChapterBoardSupply.cs` · `ConditionYarnTranslator.cs` |
+| 챕터 조건 → 대사 카드 | `Chapters/ChapterBoardSupply.cs`(사본은 **이름**으로 짝짓는다, 식 미정은 `true`) · `ConditionYarnTranslator.cs`, 분기에 거는 칸 `App/Views/BranchConditionPicker.cs` |
 | 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` · `RenameChapterCondition`(간선이 따라간다, 공급 사본은 Id 보존) |
 | 화자 목록(이름 · 캐릭터 키) | 규칙 `App/Services/AuthoringSession.cs`의 `AddSpeakerName` · `RenameSpeakerName` · `RemoveSpeakerName` · `SetSpeakerCharacterId`(쓰면 `SpeakersChanged`), 화면 이름 `App/MainWindow.Speakers.cs`([대본]) · 키 `ChapterGraphView` [화자] 탭([구성]) |
 | 조건 이름 · 식 미정 | 이름 화면 `App/MainWindow.Conditions.cs`([대본] 챕터 요약), 식은 `ChapterGraphView` 조건 표([구성]). 빈 식 = 항상 통과 `ChapterDocument.Reparse`, 진단 `ConditionExpressionBlank`(경고) |

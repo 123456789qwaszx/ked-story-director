@@ -175,17 +175,17 @@ public sealed class StatRemoveTests
     }
 
     [Fact]
-    public void 판에_공급된_사본도_Id를_지킨_채_비워진다()
+    public void 판에_공급된_사본도_Id를_지킨_채_식_미정이_된다()
     {
-        // ⚠ 갈래가 이 Id로 잇는다. 식이 비면 이미터가 `<<if false>>`로 내므로 갈래는
-        //    <b>서 있되 안 탄다</b> — 조용히 꺼져 있는 것이 사라지는 것보다 낫다.
+        // ⚠ 갈래가 이 Id로 잇는다. 챕터 조건이 식 미정이 됐으니 사본도 식 미정의 식(항상 통과)이다 — 간선과 같은 규칙
+        //    (2026-11-17 — 전에는 비워서 `<<if false>>`로 꺼 두었다).
         (ProjectEditor editor, ConditionDefinition supplied) = WorldWithSupply();
         string id = supplied.Id;
 
         editor.RemoveChapterStat("ch01", "trust", clearUses: true);
 
         Assert.Equal(id, supplied.Id);
-        Assert.Equal(string.Empty, supplied.Expression);
+        Assert.Equal(ChapterBoardSupply.UndecidedYarn, supplied.Expression);
     }
 
     [Fact]

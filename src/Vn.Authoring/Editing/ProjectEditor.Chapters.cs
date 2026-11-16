@@ -849,7 +849,6 @@ public sealed partial class ProjectEditor
             ?? throw new InvalidOperationException($"조건 라벨 '{label}'이 없습니다.");
 
         int index = chapter.Conditions.IndexOf(condition);
-        string? suppliedBefore = SuppliedYarnOf(chapterId, label);
 
         Batch(() =>
         {
@@ -864,7 +863,7 @@ public sealed partial class ProjectEditor
                 IsValid = false
             });
 
-            RetargetSuppliedCondition(chapterId, label, suppliedBefore);
+            // 사본은 이름으로 짝짓는다 — 같은 이름의 사본이 Id를 지킨 채 새 식을 받는다(식 미정 ↔ 식 채움도 같다).
             SupplyChapterConditions(chapterId);
         });
     }
@@ -884,49 +883,6 @@ public sealed partial class ProjectEditor
         {
             ChapterBoardSupply.SupplyChapterConditionsToBoard(
                 this, board.Id, chapter.ToGraphModel(string.Empty));
-        }
-    }
-
-    /// <summary>이 조건이 지금 판에 공급될 때의 Yarn 식. 식이 비었거나 번역이 안 되면 null이다.</summary>
-    private string? SuppliedYarnOf(string chapterId, string label)
-    {
-        ChapterCondition? parsed = FindChapter(chapterId)?.ToGraphModel(string.Empty).Conditions
-            .FirstOrDefault(item => string.Equals(item.Label, label, StringComparison.Ordinal));
-
-        return parsed is null ? null : ConditionYarnTranslator.Translate(parsed).Yarn;
-    }
-
-    /// <summary>
-    /// 식이 바뀐 조건은 공급 노드에서 <b>Id를 지킨 채</b> 식만 간다.
-    ///
-    /// 공급은 식으로 짝을 찾는다(<c>ChapterBoardSupply.RenameSuppliedCondition</c>). 그대로 두면
-    /// 식을 고칠 때마다 <b>새 Id로 하나 더</b> 생기고, 줄에 매달린 전환은 옛 Id를 붙든 채
-    /// 옛 식으로 남는다. 가져오기 단추 시절에는 마지막 모양만 건너가서 덜 보였지만, 이제는
-    /// 고칠 때마다 공급되므로 여기서 막아야 한다.
-    /// </summary>
-    private void RetargetSuppliedCondition(string chapterId, string label, string? before)
-    {
-        string? after = SuppliedYarnOf(chapterId, label);
-
-        if (before is null || after is null || string.Equals(before, after, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        string supplyName = ChapterBoardSupply.ConditionSupplyNodeName(chapterId);
-
-        if (Project.EnumerateNodes().OfType<SetNode>().FirstOrDefault(node =>
-                string.Equals(node.Name, supplyName, StringComparison.Ordinal)) is not { } supply ||
-            supply.Conditions.Any(item =>
-                string.Equals(item.Expression.Trim(), after, StringComparison.Ordinal)))
-        {
-            return;
-        }
-
-        if (supply.Conditions.FirstOrDefault(item =>
-                string.Equals(item.Expression.Trim(), before, StringComparison.Ordinal)) is { } held)
-        {
-            UpdateCondition(held.Id, label, after);
         }
     }
 
@@ -1299,10 +1255,10 @@ public sealed partial class ProjectEditor
 
             foreach (ConditionDefinition supplied in emptied)
             {
-                // <b>Id는 지킨다</b> — 줄에 매달린 갈래가 이 Id로 잇는다. 식을 비우면
-                //    이미터가 `<<if false>>`로 내므로 갈래는 <b>서 있되 안 탄다</b>:
-                //    사람이 조건을 채울 때까지 조용히 꺼져 있는 것이 사라지는 것보다 낫다.
-                supplied.Expression = string.Empty;
+                // <b>Id는 지킨다</b> — 줄에 매달린 갈래가 이 Id로 잇는다. 챕터 조건은 식 미정이 됐으므로 사본도
+                //    식 미정의 식(항상 통과)이 된다 — 간선과 같은 규칙이다(writer-fields W1 · 2026-11-17).
+                //    전에는 비워서 `<<if false>>`로 꺼 두었다.
+                supplied.Expression = ChapterBoardSupply.UndecidedYarn;
             }
 
             foreach ((int at, ChapterFixture fixture) in fixtures)
@@ -1596,7 +1552,13 @@ public sealed partial class ProjectEditor
                 }
             });
 
-            SupplyChapterConditions(chapterId);   // 공급 사본의 이름이 따라간다(식으로 짝을 찾는다 — Id 보존)
+            // 공급 사본의 이름을 먼저 옮긴다(Id 보존 = 매달린 분기 보존) — 공급은 이름으로 짝을 찾는다.
+            foreach ((SetNode _, ConditionDefinition copy) in SuppliedNamed(chapterId, from))
+            {
+                UpdateCondition(copy.Id, to, copy.Expression);
+            }
+
+            SupplyChapterConditions(chapterId);
         });
 
         return new ChapterConditionRenameOutcome(true, edges.Count, null);

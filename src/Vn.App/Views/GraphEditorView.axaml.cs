@@ -2061,6 +2061,7 @@ public partial class GraphEditorView : UserControl
     {
         BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId, _session.Definition);
         IBrush accent = BranchPalette.Accent(entry.PaletteIndex);
+        bool undecided = BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label);
 
         var chip = new Border
         {
@@ -2075,14 +2076,14 @@ public partial class GraphEditorView : UserControl
             Tag = BranchConditionChipTag + nodeId,
             Child = new TextBlock
             {
-                Text = BranchConditionNote.Chip(state),
+                Text = BranchConditionNote.Chip(state, undecided),
                 FontSize = 9,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = accent,
                 MaxWidth = 110,
                 TextTrimming = TextTrimming.CharacterEllipsis
             },
-            [ToolTip.TipProperty] = $"분기로 다녀오는 에피소드입니다. {BranchConditionNote.Sentence(state)} " +
+            [ToolTip.TipProperty] = $"분기로 다녀오는 에피소드입니다. {BranchConditionNote.Sentence(state, undecided)} " +
                                     $"{BranchConditionNote.Where} 누르면 [구성] 탭의 그 분기로 갑니다."
         };
 

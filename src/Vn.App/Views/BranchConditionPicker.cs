@@ -10,9 +10,8 @@ namespace Vn.App.Views;
 /// [대본] 탭에서 만들었으니 분기의 조건도 거기서 바로 고른다). [구성] 탭 분기 패널의 콤보와 같은 일을 한다 — 규칙은
 /// <see cref="BranchEntryCondition"/> 하나다.
 ///
-/// 목록은 「(언제나)」와 그 챕터의 조건 이름이다. <b>식 미정인 조건은 보이되 고를 수 없다</b> — 분기의 조건은 다녀갈 카드의 첫머리에
-/// 식으로 서는데(<c>&lt;&lt;if&gt;&gt;</c>) 식이 없으면 세울 것이 없다. [구성] 탭에서 식을 채우면 고를 수 있다. (간선의 표시조건 ·
-/// 해금조건은 식 미정이어도 건다 — 그쪽은 이름으로 가리킨다.)
+/// 목록은 「(언제나)」와 그 챕터의 조건 이름이다. <b>식 미정인 조건도 고른다</b> — 식을 채울 때까지 항상 통과하고(간선과 같은 규칙),
+/// [구성] 탭에서 식을 채우면 그 분기가 저절로 새 식을 따른다(사본은 이름으로 짝짓는다 — <see cref="ChapterBoardSupply"/>).
 ///
 /// 고르는 순간 나간다(되돌리기 한 칸). 고르기가 끝난 뒤에 넣는다 — 고르는 중에 화면을 다시 세우면 고르기가 엉킨다.
 /// </summary>
@@ -39,13 +38,12 @@ internal static class BranchConditionPicker
             var item = new ComboBoxItem
             {
                 Content = undecided ? $"{condition.Label} (식 미정)" : condition.Label,
-                Tag = condition.Label,
-                IsEnabled = !undecided
+                Tag = condition.Label
             };
 
             if (undecided)
             {
-                ToolTip.SetTip(item, "식 미정인 조건은 분기에 걸 수 없습니다 — [구성] 탭에서 식을 채우면 고를 수 있습니다.");
+                ToolTip.SetTip(item, "식 미정 — 지금은 항상 통과합니다. [구성] 탭에서 식을 채우면 이 분기가 그 식을 따릅니다.");
             }
 
             items.Add(item);
@@ -98,7 +96,9 @@ internal static class BranchConditionPicker
 
                 session.SetStatus(failure ?? (label is null
                     ? $"'{name}'의 조건을 걷었습니다 — 언제나 다녀옵니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
-                    : $"'{name}'은 조건 '{label}'일 때만 다녀옵니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
+                    : BranchConditionNote.IsUndecided(session.Project, targetNodeId, label)
+                        ? $"'{name}'에 조건 '{label}'을 걸었습니다 — 식 미정이라 지금은 늘 다녀옵니다. [구성] 탭에서 식을 채우면 따릅니다."
+                        : $"'{name}'은 조건 '{label}'일 때만 다녀옵니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
                 applied?.Invoke();
             }));
         };

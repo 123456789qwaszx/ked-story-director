@@ -14,16 +14,26 @@ internal static class BranchConditionNote
     /// <summary>어디서 정하는가.</summary>
     internal const string Where = "조건은 [대본] 탭의 분기 카드 · 분기 선에서, 또는 [구성] 탭의 분기 선(점선)에서 고릅니다.";
 
+    /// <summary>그 분기(다녀갈 카드)에 걸린 조건이 <b>식 미정</b>인가 — 그 챕터의 그 이름 조건이 식이 비었다.</summary>
+    internal static bool IsUndecided(Vn.Authoring.Model.StoryProject project, string targetNodeId, string? label) =>
+        label is not null &&
+        project.FindNode(targetNodeId) is { } node &&
+        EpisodeNaming.ChapterOf(project, node)?.Conditions.FirstOrDefault(condition =>
+            string.Equals(condition.Label, label, StringComparison.Ordinal)) is { } found &&
+        string.IsNullOrWhiteSpace(found.Expression);
+
     /// <summary>카드 머리에 다는 짧은 표.</summary>
-    internal static string Chip(BranchEntryCondition.State state) =>
+    internal static string Chip(BranchEntryCondition.State state, bool undecided = false) =>
         state.Label is { } label
-            ? $"⑂ 조건: {label}"
+            ? undecided ? $"⑂ 조건: {label} (식 미정)" : $"⑂ 조건: {label}"
             : state.Blocked is not null ? "⑂ 조건: 직접 지음" : "⑂ 조건 없음";
 
     /// <summary>지금 이 분기가 어떻게 도는가 — 한 문장.</summary>
-    internal static string Sentence(BranchEntryCondition.State state) =>
+    internal static string Sentence(BranchEntryCondition.State state, bool undecided = false) =>
         state.Label is { } label
-            ? $"조건 「{label}」일 때만 재생합니다 — 아니면 들렀다가 바로 돌아옵니다."
+            ? undecided
+                ? $"조건 「{label}」 — 식 미정이라 지금은 늘 다녀옵니다. [구성] 탭에서 식을 채우면 그 식이 맞을 때만 재생합니다."
+                : $"조건 「{label}」일 때만 재생합니다 — 아니면 들렀다가 바로 돌아옵니다."
             : state.Blocked is not null
                 ? "대사 편집기에서 직접 지은 조건이 있습니다 — [구성] 탭에서는 읽기만 합니다."
                 : "지금은 조건 없이 늘 다녀옵니다.";
