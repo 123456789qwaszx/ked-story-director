@@ -94,7 +94,9 @@ public sealed class DirectorHierarchyTests : IDisposable
         Assert.False(Editor(window).IsVisible);
         Assert.Equal("챕터 · ch01", title.Text);
 
-        Summary(graph, "summary-scene:hall").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        // 요약 칸은 장면 목록을 세우지 않는다 — 장면은 하이어아키에서 고른다.
+        Assert.DoesNotContain(SummaryTags(graph), tag => tag.StartsWith("summary-scene:", StringComparison.Ordinal));
+        graph.HierarchyView.RowButton(StoryHierarchy.SceneKey("ch01", "hall"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal("장면 · hall", title.Text);
@@ -108,10 +110,12 @@ public sealed class DirectorHierarchyTests : IDisposable
         Assert.Equal(0, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);
         Assert.Equal("장면 · hall", chapterGraph.FindControl<TextBlock>("InspectorTitle")!.Text);
 
-        // 장면의 에피소드를 누르면 그 카드의 대사를 쓴다.
+        // 장면 요약도 에피소드 목록을 세우지 않는다 — 에피소드는 하이어아키에서 고르고, 고르면 그 카드의 대사를 쓴다.
         window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;
         Dispatcher.UIThread.RunJobs();
-        Summary(graph, "summary-episode:b").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.DoesNotContain(SummaryTags(graph), tag => tag.StartsWith("summary-episode:", StringComparison.Ordinal));
+        graph.HierarchyView.Fold(StoryHierarchy.SceneKey("ch01", "hall"), collapse: false);
+        graph.HierarchyView.RowButton(StoryHierarchy.EpisodeKey("ch01", "b"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(Card(session, "ch01", "b").Id, session.SelectedNodeId);
@@ -127,6 +131,10 @@ public sealed class DirectorHierarchyTests : IDisposable
 
     private static DialogueNodeEditor Editor(MainWindow window) =>
         window.GetLogicalDescendants().OfType<DialogueNodeEditor>().Distinct().Single();
+
+    private static List<string> SummaryTags(GraphEditorView graph) =>
+        graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Control>()
+            .Where(control => control.IsEffectivelyVisible).Select(control => control.Tag as string ?? string.Empty).ToList();
 
     /// <summary>연출 그래프 인스펙터의 요약 칸에서 그 단추.</summary>
     private static Button Summary(GraphEditorView graph, string tag) =>

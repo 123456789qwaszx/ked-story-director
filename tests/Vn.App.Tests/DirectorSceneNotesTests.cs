@@ -188,16 +188,19 @@ public sealed class DirectorSceneNotesTests : IDisposable
     });
 
     [Fact]
-    public void 장면_요약의_에피소드_목록은_보이는_제목이다() => HeadlessUi.Run(() =>
+    public void 장면_요약은_에피소드_목록을_세우지_않고_카드는_보이는_제목이다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
         session.Editor.UpdateEpisode("ch01", "a", title: "교실 - 반쯤 빈 간판");
+        session.Editor.UpdateEpisodeMemo("ch01", "a", "지시");
         Dispatcher.UIThread.RunJobs();
 
         GraphEditorView graph = PickScene(window, "opening");
 
-        Assert.Equal("⌂ root", ((Button)Control(graph, "summary-episode:root")).Content);
-        Assert.Equal("· 교실 - 반쯤 빈 간판", ((Button)Control(graph, "summary-episode:a")).Content);
+        Assert.DoesNotContain(Side(graph), control =>
+            (control.Tag as string)?.StartsWith("summary-episode:", StringComparison.Ordinal) == true);
+        Assert.Contains("· 교실 - 반쯤 빈 간판", Side(graph).OfType<TextBlock>().Select(block => block.Text));   // 지시 카드 머리
+        Assert.Equal(["root"], AddContents((ComboBox)Control(graph, "scene-note-add")));                     // 남은 에피소드
 
         window.Close();
     });
@@ -215,7 +218,8 @@ public sealed class DirectorSceneNotesTests : IDisposable
         Assert.Contains(Box(graph, "scene-note"), ((Control)scroll.Content!).GetLogicalDescendants());
 
         // 카드를 고르면 요약이 풀린다 — 빈 스크롤 칸이 대사 편집기 위에 남지 않는다.
-        Control(graph, "summary-episode:a").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        graph.HierarchyView.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+        graph.HierarchyView.RowButton(StoryHierarchy.EpisodeKey("ch01", "a"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         Assert.False(scroll.IsVisible);
 
@@ -249,6 +253,9 @@ public sealed class DirectorSceneNotesTests : IDisposable
         Find(graph, tag) ?? throw new Xunit.Sdk.XunitException($"'{tag}'가 없습니다.");
 
     private static TextBox Box(GraphEditorView graph, string tag) => (TextBox)Control(graph, tag);
+
+    private static IEnumerable<string> AddContents(ComboBox add) =>
+        add.Items.OfType<ComboBoxItem>().Select(item => item.Content as string ?? string.Empty);
 
     private static List<string?> AddTags(ComboBox add) =>
         add.Items.OfType<ComboBoxItem>().Select(item => item.Tag as string).ToList();

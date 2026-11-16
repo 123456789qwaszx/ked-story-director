@@ -405,25 +405,7 @@ public partial class MainWindow
                 StatTable(chapter.Model.Stats);
                 OrphanSceneNotes(chapter.ChapterId);
 
-                if (named.Count > 0 || scenes.Any(scene => scene.IsDefault && scene.Episodes.Count > 0))
-                {
-                    Heading("장면");
-                }
-
-                foreach (ChapterScene scene in named)
-                {
-                    Link($"{scene.DisplayName}  ({scene.Episodes.Count})", "summary-scene:" + scene.SceneId, () =>
-                        PickInDirector(new HierarchyPick(HierarchyKind.Scene, chapter.ChapterId, scene.SceneId)));
-                }
-
-                // 장면ID가 없는 에피소드 — 챕터 직속.하이어아키와 같은 차례로 장면들 뒤에.
-                foreach (ChapterEpisode episode in scenes.Where(scene => scene.IsDefault).SelectMany(scene => scene.Episodes))
-                {
-                    string episodeId = episode.EpisodeId;
-                    Link("· " + episode.ShownTitle, "summary-episode:" + episodeId, () =>
-                        PickInDirector(new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, EpisodeId: episodeId)));
-                }
-
+                // 장면 · 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자).
                 OpenInChapterGraph(pick, "[구성] 탭에서 조건 · 스탯 열기");
                 break;
             }
@@ -433,18 +415,11 @@ public partial class MainWindow
                                              string.Equals(item.SceneId, pick.SceneId, StringComparison.Ordinal)) is { } scene:
             {
                 Graph.SetInspectorHeader($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}");
-                Note("에피소드를 누르면 그 카드의 대사를 씁니다. 장면 이름은 [구성] 탭에서 고칩니다.");
-                SceneNoteSpace(chapter.ChapterId, scene);
-                Heading("에피소드");
+                Note("장면 이름은 [구성] 탭에서 고칩니다.");
 
-                foreach (ChapterEpisode episode in scene.Episodes)
-                {
-                    string episodeId = episode.EpisodeId;
-                    bool root = string.Equals(scene.RootEpisodeId, episodeId, StringComparison.Ordinal);
-                    // 하이어아키 · 메모 카드와 같은 보이는 이름(제목, 비면 EpisodeId)이다.
-                    Link((root ? "⌂ " : "· ") + episode.ShownTitle, "summary-episode:" + episodeId, () =>
-                        PickInDirector(new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, scene.SceneId, episodeId)));
-                }
+                // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가
+                // 그 장면의 에피소드를 고르는 자리다.
+                SceneNoteSpace(chapter.ChapterId, scene);
 
                 OpenInChapterGraph(pick, "[구성] 탭에서 장면 열기");
                 break;
