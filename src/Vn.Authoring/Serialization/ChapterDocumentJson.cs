@@ -41,6 +41,7 @@ internal static class ChapterDocumentJson
             Put(json, "stats", chapter.Stats, WriteStat);
             Put(json, "choiceOptions", chapter.ChoiceOptions, WriteChoice);
             Put(json, "fixtures", chapter.Fixtures, WriteFixture);
+            Put(json, "sceneNotes", ChapterSceneNotes.Ordered(chapter.Episodes, chapter.SceneNotes), WriteSceneNote);
 
             array.Add(json);
         }
@@ -68,7 +69,8 @@ internal static class ChapterDocumentJson
                 Conditions = Take(json["conditions"], ReadCondition),
                 Stats = Take(json["stats"], ReadStat),
                 ChoiceOptions = Take(json["choiceOptions"], ReadChoice),
-                Fixtures = Take(json["fixtures"], ReadFixture)
+                Fixtures = Take(json["fixtures"], ReadFixture),
+                SceneNotes = ReadSceneNotes(json["sceneNotes"])
             });
         }
 
@@ -300,6 +302,44 @@ internal static class ChapterDocumentJson
             stats,
             Take(json["choices"], choice => new ChapterFixtureChoice(
                 Text(choice["from"]), Text(choice["to"]))));
+    }
+
+    // ── 장면 메모 ────────────────────────────────────────────────────────────
+
+    private static JsonObject WriteSceneNote(ChapterSceneNote note) => new()
+    {
+        ["sceneId"] = note.SceneId,
+        ["text"] = note.Text
+    };
+
+    /// <summary>
+    /// 열쇠가 비었거나 같은 장면이 둘이면 읽지 않는다 — 어느 것이 그 장면의 메모인지 도구가 정할 수 없다(§6-8).
+    /// 글이 빈 메모는 없는 것으로 읽는다(쓸 때 빼는 것과 같다).
+    /// </summary>
+    private static List<ChapterSceneNote> ReadSceneNotes(JsonNode? node)
+    {
+        var notes = new List<ChapterSceneNote>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (ChapterSceneNote note in Take(node, json => new ChapterSceneNote(Text(json["sceneId"]), Text(json["text"]))))
+        {
+            if (string.IsNullOrWhiteSpace(note.SceneId))
+            {
+                throw new InvalidDataException("sceneNotes 항목에 sceneId가 없습니다.");
+            }
+
+            if (!seen.Add(note.SceneId))
+            {
+                throw new InvalidDataException($"sceneNotes에 장면 '{note.SceneId}'의 메모가 둘 있습니다.");
+            }
+
+            if (!ChapterSceneNotes.IsBlank(note))
+            {
+                notes.Add(note);
+            }
+        }
+
+        return notes;
     }
 
     // ── 잔손 ────────────────────────────────────────────────────────────────

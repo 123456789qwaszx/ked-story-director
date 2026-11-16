@@ -183,6 +183,19 @@ public sealed record ChapterChoiceOption(
     string Text,
     string? Memo);
 
+/// <summary>
+/// <b>장면 메모 하나</b> — 작가가 장면마다 자유롭게 적는 사정(의도 · 인물의 감정 · 고비 · 자리). AI가 장면 하나씩
+/// 연출 초안을 낼 때 대사와 함께 읽는다(<c>docs/work-orders/scene-notes-orders.md</c>).
+///
+/// <b>장면이 아니라 장면에 붙는 곁 자료다.</b> 장면의 구성원 · 순서 · 루트는 여기 없다 — 늘 <see cref="ChapterEpisode.SceneId"/>에서
+/// 계산한다(계약 §0-0 "Scene 엔티티를 만들지 않는다"). 열쇠는 <see cref="ChapterEpisode.EffectiveSceneId"/>라서 장면을
+/// 안 나눈 에피소드(<c>__scene_{EpisodeId}</c>)에도 단다. 그 장면의 에피소드가 하나도 없으면 <b>주인 없는 메모</b>다 —
+/// 조용히 지우지 않는다(<see cref="ChapterSceneNotes"/>).
+///
+/// 에피소드마다의 지시는 여기 없다 — 그 에피소드의 <see cref="ChapterEpisode.Memo"/>다(에피소드를 따라다닌다).
+/// </summary>
+public sealed record ChapterSceneNote(string SceneId, string Text);
+
 /// <param name="From">고정 선택의 출발 에피소드.</param>
 /// <param name="To">그 선택이 향하는 도착 에피소드.</param>
 public sealed record ChapterFixtureChoice(string From, string To);
@@ -257,6 +270,9 @@ public sealed class ChapterGraphModel
 
     /// <summary>`선택지` 시트 — 챕터가 함께 쓰는 문구 사전. 인덱스 순으로 선다.</summary>
     public IReadOnlyList<ChapterChoiceOption> ChoiceOptions { get; }
+
+    /// <summary>장면 메모 — <see cref="ChapterDocument.SceneNotes"/>. 런타임은 읽지 않는다.</summary>
+    public IReadOnlyList<ChapterSceneNote> SceneNotes { get; init; } = [];
 
     /// <summary>
     /// 고를 수 있는 문구들 — 사전에 적힌 것 + 간선이 이미 쓰고 있는 것의 합집합(중복 제거).

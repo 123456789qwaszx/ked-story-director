@@ -45,6 +45,12 @@ public sealed class ChapterDocument
     public List<ChapterFixture> Fixtures { get; init; } = [];
 
     /// <summary>
+    /// 장면 메모 — 장면마다 하나, 열쇠는 <see cref="ChapterEpisode.EffectiveSceneId"/>. 진행 JSON에 나가지 않는다.
+    /// 이 목록의 차례는 뜻이 없다 — 저장할 때 <see cref="ChapterSceneNotes.Ordered"/>가 차례를 정한다.
+    /// </summary>
+    public List<ChapterSceneNote> SceneNotes { get; init; } = [];
+
+    /// <summary>
     /// 읽는 쪽이 늘 쓰던 모양으로 낸다 — 내보내기·도달성·프리뷰·그래프 뷰가 전부
     /// <see cref="ChapterGraphModel"/>을 받으므로, 주인이 바뀌어도 그쪽은 그대로다.
     /// </summary>
@@ -66,6 +72,7 @@ public sealed class ChapterDocument
         ChoiceOptions)
     {
         DisplayName = DisplayName,
+        SceneNotes = SceneNotes,
     };
 
     /// <summary>
