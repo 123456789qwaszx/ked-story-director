@@ -5002,7 +5002,8 @@ public partial class GraphEditorView : UserControl
             ((GraphScroll.Offset.Y + (GraphScroll.Viewport.Height / 2)) / _zoom) - 90 + stagger);
 
         // 이 판에서 사람이 만드는 노드는 대사뿐이다.
-        _session.Select(_session.Editor.AddDialogueNode(fileId, x, y).Id);
+        // 챕터 판이면 에피소드도 선다 — 작가는 ID를 보지 않으므로 처음 제목을 붙인다(display-names N2).
+        _session.Select(_session.Editor.AddDialogueNode(fileId, x, y, title: NewNames.Episode).Id);
     }
 
     private void DeleteSelectedNode()

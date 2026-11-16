@@ -34,14 +34,14 @@ internal static class EpisodeAdder
             {
                 (double x, double y) = ChapterBranchPlanner.SuggestPlacement(model, after);
                 session.Editor.AddNextEpisode(
-                    chapterId, after, episodeId, title: string.Empty, x, y, optionLabel: DefaultOptionLabel);
+                    chapterId, after, episodeId, title: NewNames.Episode, x, y, optionLabel: DefaultOptionLabel);
             }
             else
             {
                 double x = model.Episodes.Count == 0
                     ? 0
                     : model.Episodes.Max(episode => episode.X) + ChapterBranchPlanner.SiblingSpacing;
-                session.Editor.AddEpisode(chapterId, episodeId, title: string.Empty, x, 0);
+                session.Editor.AddEpisode(chapterId, episodeId, title: NewNames.Episode, x, 0);
             }
 
             if (sceneId is not null)

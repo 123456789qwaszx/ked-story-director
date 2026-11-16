@@ -43,7 +43,9 @@ public partial class MainWindow
             {
                 // 장면은 에피소드가 들어야 있다 — 새 장면은 첫 에피소드와 함께 선다.
                 // 그 에피소드에 간선을 저절로 잇지 않는다 — 새 장면이 어디서 들어오는지는 사람이 잇는다.
-                CreateEpisode(chapter, after: null, NextSceneId(chapter.Model));
+                // 장면ID는 자동이고(작가는 보지 않는다) 이름은 「새 장면」이다 — 한 되돌리기 칸(display-names N2).
+                CreateEpisode(chapter, after: null, NewNames.NextSceneId(_session.Editor.FindChapter(chapter.ChapterId)!),
+                    sceneName: NewNames.Scene);
                 break;
             }
 
@@ -188,10 +190,20 @@ public partial class MainWindow
     /// 에피소드를 하나 더한다 — <paramref name="after"/>에서 간선을 달고(없으면 홀로), <paramref name="sceneId"/>가 있으면 그
     /// 장면에. 되돌리기 한 칸(<c>Batch</c>). 더한 에피소드를 두 탭에서 고른다.
     /// </summary>
-    private void CreateEpisode(ChapterEntry chapter, string? after, string? sceneId)
+    private void CreateEpisode(ChapterEntry chapter, string? after, string? sceneId, string? sceneName = null)
     {
         string chapterId = chapter.ChapterId;
-        string episodeId = EpisodeAdder.Add(_session, chapterId, after, sceneId);
+        string episodeId = string.Empty;
+
+        _session.Editor.Batch(() =>
+        {
+            episodeId = EpisodeAdder.Add(_session, chapterId, after, sceneId);
+
+            if (sceneId is not null && sceneName is not null)
+            {
+                _session.Editor.SetSceneName(chapterId, sceneId, sceneName);
+            }
+        });
 
         if (EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is { } card)
         {
@@ -199,7 +211,7 @@ public partial class MainWindow
         }
 
         _session.SetStatus(
-            $"'{episodeId}'을 더했습니다" + (sceneId is null ? string.Empty : $"(장면 '{sceneId}')") +
+            (sceneName is null ? $"「{NewNames.Episode}」를 더했습니다" : $"「{sceneName}」 장면을 더했습니다") +
             ". 이름은 하이어아키에서 두 번 눌러 고칩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
@@ -208,18 +220,4 @@ public partial class MainWindow
 
     /// <summary>적어 둔 장면ID — 비었으면 null(미지정).</summary>
     private static string? RealSceneId(string? sceneId) => string.IsNullOrWhiteSpace(sceneId) ? null : sceneId.Trim();
-
-    /// <summary>그 챕터에서 아직 안 쓰인 장면 자리표시 — <c>scene01</c>, <c>scene02</c>… 사람이 두 번 눌러 고친다.</summary>
-    private static string NextSceneId(ChapterGraphModel model)
-    {
-        var taken = new HashSet<string>(model.Episodes.Select(episode => episode.EffectiveSceneId), StringComparer.Ordinal);
-        int number = 1;
-
-        while (taken.Contains($"scene{number:D2}"))
-        {
-            number++;
-        }
-
-        return $"scene{number:D2}";
-    }
 }

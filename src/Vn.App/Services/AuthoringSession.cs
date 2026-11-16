@@ -386,6 +386,24 @@ internal sealed class AuthoringSession
         return null;
     }
 
+    /// <summary>
+    /// 작가가 이름으로 새 챕터를 만든다 — ID는 자동(<see cref="NewNames.NextChapterId"/>, <c>ch01</c>…), 적은 이름은 표시 이름이다
+    /// (비우면 「새 챕터」). [대본] 탭의 [＋ 챕터]가 부른다(display-names N2). 세우는 규칙은 <see cref="CreateChapter"/> 그대로다.
+    /// </summary>
+    /// <returns>만든 챕터의 ID, 못 만든 이유 — 둘 중 하나만 있다.</returns>
+    internal (string? ChapterId, string? Failure) CreateNamedChapter(string? name)
+    {
+        string chapterId = NewNames.NextChapterId(Project);
+
+        if (CreateChapter(chapterId) is { } failure)
+        {
+            return (null, failure);
+        }
+
+        Editor.FindChapter(chapterId)!.DisplayName = string.IsNullOrWhiteSpace(name) ? NewNames.Chapter : name.Trim();
+        return (chapterId, null);
+    }
+
     /// <param name="reveal">
     /// 접혀 있으면 편다(기본). 하이어아키에서 고를 때는 false다 — 보이기는 눈이 정한다.
     /// </param>

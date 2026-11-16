@@ -116,9 +116,10 @@ public sealed partial class ProjectEditor
         double x = 0,
         double y = 0,
         string? name = null,
-        string? sceneId = null)
+        string? sceneId = null,
+        string? title = null)
     {
-        (DialogueNode created, _, Action attach) = NewDialogueNodeCore(fileId, x, y, name, sceneId);
+        (DialogueNode created, _, Action attach) = NewDialogueNodeCore(fileId, x, y, name, sceneId, title: title);
         Mutate(attach);
 
         return created;

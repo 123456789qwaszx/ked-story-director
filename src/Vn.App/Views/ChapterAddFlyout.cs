@@ -5,7 +5,7 @@ using Vn.App.Services;
 namespace Vn.App.Views;
 
 /// <summary>
-/// <b>[＋ 챕터]의 창구</b> — 이름을 받아 <see cref="AuthoringSession.CreateChapter"/>로 넘긴다.
+/// <b>[＋ 챕터]의 창구</b> — 작가가 적은 이름을 받아 <see cref="AuthoringSession.CreateNamedChapter"/>로 넘긴다(ID는 자동).
 ///
 /// <b>창구는 이것 하나다</b>: [대본] 탭 하이어아키의 [＋] · 하이어아키 우클릭 「챕터 추가」 · [구성] 탭 빈 판
 /// 한가운데 단추가 함께 쓴다. 창구가 두 벌이면 <b>어느 쪽으로 만들었느냐에 따라 챕터가 달라진다</b>.
@@ -21,7 +21,7 @@ internal static class ChapterAddFlyout
 
         var name = new TextBox
         {
-            PlaceholderText = "챕터 Id (예: ch06) — 파일 이름이 됩니다",
+            PlaceholderText = "챕터 이름 (예: 축제 전날)",
             FontSize = 11
         };
 
@@ -37,17 +37,19 @@ internal static class ChapterAddFlyout
 
         void Submit() => UiGuard.Run(session, "새 챕터", () =>
         {
-            string chapterId = name.Text?.Trim() ?? string.Empty;
+            // 작가는 이름만 적는다 — ID(진행 JSON 파일 이름)는 자동이다(display-names N2).
+            (string? chapterId, string? failure) = session.CreateNamedChapter(name.Text);
 
-            if (session.CreateChapter(chapterId) is { } failure)
+            if (failure is not null || chapterId is null)
             {
-                session.SetStatus(failure);
+                session.SetStatus(failure ?? "챕터를 만들지 못했습니다.");
                 return;
             }
 
             flyout.Hide();
             created?.Invoke(chapterId);
-            session.SetStatus($"챕터 '{chapterId}'를 만들었습니다. 하이어아키에서 그 챕터 줄을 우클릭해 「에피소드 추가」로 첫 에피소드를 세웁니다.");
+            string shown = session.Editor.FindChapter(chapterId)!.ShownName;
+            session.SetStatus($"챕터 「{shown}」를 만들었습니다. 하이어아키에서 그 챕터 줄을 우클릭해 「에피소드 추가」로 첫 에피소드를 세웁니다.");
         });
 
         create.Click += (_, _) => Submit();

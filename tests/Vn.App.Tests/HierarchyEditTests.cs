@@ -93,6 +93,15 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.DoesNotContain(Chapter(session).Edges, edge => edge.ToEpisodeId == "new01");
         Assert.Contains(tree.Rows, row => row.Key == StoryHierarchy.SceneKey("ch01", "scene01"));
 
+        // ID는 자동이고 작가에게는 처음 이름이 보인다(display-names N2).
+        Assert.Equal(NewNames.Episode, added.Title);
+        Assert.Equal(NewNames.Scene, ChapterSceneNotes.NameOf(Chapter(session).SceneNotes, "scene01"));
+
+        // 되돌리기 한 칸 — 에피소드 · 장면 이름이 함께 물러난다.
+        session.Editor.Undo();
+        Assert.DoesNotContain(Chapter(session).Episodes, episode => episode.EpisodeId == "new01");
+        Assert.Empty(Chapter(session).SceneNotes);
+
         window.Close();
     });
 

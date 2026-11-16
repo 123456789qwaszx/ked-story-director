@@ -39,21 +39,22 @@ public sealed class ChapterAddButtonTests : IDisposable
         graph.ChapterAddButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
-        TextBox name = ChapterIdBox(window);
-        name.Text = "ch09";
+        // 작가는 이름만 적는다 — ID는 자동(ch01 · ch02가 있으니 ch03), 적은 이름은 표시 이름이다(display-names N2).
+        TextBox name = ChapterNameBox(window);
+        name.Text = " 축제 전날 ";
         name.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
         Dispatcher.UIThread.RunJobs();
 
-        Assert.NotNull(session.Editor.FindChapter("ch09"));
-        Assert.Equal("ch09", session.ActiveFile?.Name);   // 그 챕터의 판이 열린다
+        Assert.Equal("축제 전날", session.Editor.FindChapter("ch03")!.DisplayName);
+        Assert.Equal("ch03", session.ActiveFile?.Name);   // 그 챕터의 판이 열린다
 
         window.Close();
     });
 
-    /// <summary>열린 챕터 창구의 Id 칸 — 플라이아웃 틀 안에서만 찾는다.</summary>
-    private static TextBox ChapterIdBox(Window window) =>
+    /// <summary>열린 챕터 창구의 이름 칸 — 플라이아웃 틀 안에서만 찾는다.</summary>
+    private static TextBox ChapterNameBox(Window window) =>
         window.GetVisualDescendants().OfType<TextBox>()
             .First(box => box.IsEffectivelyVisible
                 && box.FindAncestorOfType<FlyoutPresenter>() is not null
-                && box.PlaceholderText?.StartsWith("챕터 Id", StringComparison.Ordinal) == true);
+                && box.PlaceholderText?.StartsWith("챕터 이름", StringComparison.Ordinal) == true);
 }
