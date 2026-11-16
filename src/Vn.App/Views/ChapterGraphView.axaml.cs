@@ -3506,8 +3506,8 @@ public partial class ChapterGraphView : UserControl
     };
 
     /// <summary>
-    /// [챕터] 탭의 <b>조건 표</b> — 스탯 표와 같은 날 편집 가능해졌다.
-    /// 라벨과 식을 그 자리에서 고치고, [✕]가 <b>쓰는 곳을 세어</b> 거절한다.
+    /// [챕터] 탭의 <b>조건 표</b> — 조건마다 <b>식</b>을 정한다. 조건 이름(라벨)은 [대본] 탭이 더하고 고치고 지운다(writer-fields W4) —
+    /// 여기는 이름을 읽기만 한다. 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
     /// </summary>
     private void RefreshConditionList(ChapterGraphModel? snapshot)
     {
@@ -3532,26 +3532,23 @@ public partial class ChapterGraphView : UserControl
         {
             ConditionListPanel.Children.Add(new TextBlock
             {
-                Text = "조건이 없습니다 — 아래 [＋ 조건]으로 만듭니다.",
+                Text = "조건이 없습니다 — 조건 이름은 [대본] 탭에서 하이어아키의 챕터 줄을 골라 더합니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });
         }
-
-        ConditionListPanel.Children.Add(AddRowButton(
-            "＋ 조건", "조건 추가", ConditionAddFlyout, ConditionListPanel));
     }
 
     /// <summary>
-    /// 조건 한 줄 — 라벨(고정 폭 <see cref="ConditionLabelWidth"/>) · 식 · 삭제. 식 칸은 남은 폭을 채운다 — 고정 폭이면 좁은
-    /// 인스펙터에서 줄 끝의 [✕]가 밖으로 밀려 지울 수 없다. 잘린 라벨(…)은 마우스를 올리면 다 보인다 — 라벨 칸 전체가 손을
+    /// 조건 한 줄 — 라벨(고정 폭 <see cref="ConditionLabelWidth"/>, 읽기만) · 식. 식 칸은 남은 폭을 채운다. 지우기는 [대본] 탭의 일이다.
+    /// 잘린 라벨(…)은 마우스를 올리면 다 보인다 — 라벨 칸 전체가 손을
     /// 받도록 투명한 바탕을 깐다(바탕 없는 글은 글자 획 위만 손을 받아, 「…」 근처에서는 풍선이 안 뜬다).
     /// </summary>
     private Control ConditionRow(ChapterCondition condition)
     {
         var row = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*"),
             Tag = $"condition:{condition.Label}"
         };
 
@@ -3564,22 +3561,24 @@ public partial class ChapterGraphView : UserControl
             TextTrimming = TextTrimming.CharacterEllipsis,
             Background = Brushes.Transparent
         };
+        bool undecided = string.IsNullOrWhiteSpace(condition.Expression);
         ToolTip.SetTip(label, condition.Label);
+
+        if (undecided)
+        {
+            label.Foreground = UnlockConditionInk;   // 「아직 비었다」의 호박색 — 화자의 키 없음과 같다
+        }
+
         row.Children.Add(label);
 
         TextBox expression = SheetBox(
             condition.Expression, double.NaN, "식 (예: trust >= 3; 열쇠 == true)",
             value => _session!.Editor.UpdateChapterCondition(_selectedChapterId!, condition.Label, value));
         expression.Margin = new Thickness(3, 0, 0, 0);
+        expression.PlaceholderText = "⚠ 식 미정 — 항상 통과합니다";
+        expression.Tag = "condition-expression:" + condition.Label;
         Grid.SetColumn(expression, 1);
         row.Children.Add(expression);
-
-        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
-        ToolTip.SetTip(remove, "지웁니다 — 쓰는 곳이 있으면 어디인지 말하고 거절합니다.");
-        remove.Click += (_, _) =>
-            UiGuard.Run(_session, "조건 삭제", () => RemoveCondition(condition.Label));
-        Grid.SetColumn(remove, 2);
-        row.Children.Add(remove);
 
         return row;
     }
@@ -3674,18 +3673,6 @@ public partial class ChapterGraphView : UserControl
             UiGuard.Run(_session, "스탯 추가", () =>
             {
                 _session!.Editor.AddChapterStat(_selectedChapterId!, key);
-                Draw();
-            }));
-    }
-
-    private void ConditionAddFlyout(Button anchor)
-    {
-        PromptFlyout(anchor, "조건 라벨 (예: 신뢰높음)", label =>
-            UiGuard.Run(_session, "조건 추가", () =>
-            {
-                // 식은 빈 채로 만든다 — 진단이 "조건식이 비어 있습니다"로 짚어 주고,
-                // 사람은 방금 생긴 줄에서 바로 적는다. 라벨만 정하면 되는 것이 첫 손짓이다.
-                _session!.Editor.AddChapterCondition(_selectedChapterId!, label, string.Empty);
                 Draw();
             }));
     }
@@ -3881,25 +3868,11 @@ public partial class ChapterGraphView : UserControl
         flyout.ShowAt(anchor);
     }
 
-    private void RemoveCondition(string label)
-    {
-        Vn.Authoring.Editing.ChapterConditionRemoveOutcome outcome =
-            _session!.Editor.RemoveChapterCondition(_selectedChapterId!, label);
-
-        if (!outcome.Applied)
-        {
-            throw new InvalidOperationException(Explain(outcome.Refusal, outcome.Uses));
-        }
-
-        _session.SetStatus($"조건 '{label}'을 지웠습니다.");
-        Draw();
-    }
-
     /// <summary>
     /// 거절 사유 + <b>쓰는 자리 목록</b>. ⛔ *"쓰이고 있습니다"*로 끝내면 사람이 챕터를
     /// 뒤져야 한다 — 어디인지 말해야 거절이 정리 안내가 된다.
     /// </summary>
-    private static string Explain(string? refusal, IReadOnlyList<Vn.Authoring.Editing.ChapterUse> uses)
+    internal static string Explain(string? refusal, IReadOnlyList<Vn.Authoring.Editing.ChapterUse> uses)
     {
         if (uses.Count == 0)
         {

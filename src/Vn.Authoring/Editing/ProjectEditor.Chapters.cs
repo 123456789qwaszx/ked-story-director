@@ -1532,6 +1532,76 @@ public sealed partial class ProjectEditor
         return new ChapterConditionRemoveOutcome(true, supplied.Count, [], null);
     }
 
+    /// <summary>
+    /// 챕터 조건의 <b>라벨</b>을 바꾼다 — [대본] 탭(작가가 「하린과 친해졌을 때」처럼 뜻으로 부르는 이름, writer-fields W4). 식은 그대로다.
+    ///
+    /// 라벨은 이름이 아니라 <b>참조 열쇠</b>다 — 간선의 표시조건 · 해금조건이 이 글자로 가리킨다. 그래서 그 자리들이 함께 간다.
+    /// 판에 공급된 사본(대사 줄의 갈래가 <b>Id</b>로 붙든다)은 공급이 식으로 짝을 찾아 이름만 따라간다 — Id가 그대로라 갈래도 그대로다.
+    /// 비울 수 없고, 이미 있는 라벨로는 바꾸지 않는다(두 조건이 한 라벨로 합쳐진다). 되돌리기 한 칸이다.
+    /// </summary>
+    public ChapterConditionRenameOutcome RenameChapterCondition(string chapterId, string oldLabel, string newLabel)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        string from = (oldLabel ?? string.Empty).Trim();
+        string to = (newLabel ?? string.Empty).Trim();
+
+        if (to.Length == 0)
+        {
+            return ChapterConditionRenameOutcome.Refuse("조건 이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.");
+        }
+
+        if (string.Equals(from, to, StringComparison.Ordinal))
+        {
+            return ChapterConditionRenameOutcome.Refuse("같은 이름입니다 — 바꿀 것이 없습니다.");
+        }
+
+        if (FindCondition(chapter, from) is not { } condition)
+        {
+            return ChapterConditionRenameOutcome.Refuse($"조건 '{from}'이 이 챕터에 없습니다.");
+        }
+
+        if (FindCondition(chapter, to) is not null)
+        {
+            return ChapterConditionRenameOutcome.Refuse($"조건 '{to}'이 이미 있습니다.");
+        }
+
+        int index = chapter.Conditions.IndexOf(condition);
+        var edges = new List<(int Index, ChapterEdge Edge)>();
+
+        for (int i = 0; i < chapter.Edges.Count; i++)
+        {
+            ChapterEdge edge = chapter.Edges[i];
+            bool unlock = string.Equals(edge.ConditionLabel, from, StringComparison.Ordinal);
+            bool visible = string.Equals(edge.VisibleConditionLabel, from, StringComparison.Ordinal);
+
+            if (unlock || visible)
+            {
+                edges.Add((i, edge with
+                {
+                    ConditionLabel = unlock ? to : edge.ConditionLabel,
+                    VisibleConditionLabel = visible ? to : edge.VisibleConditionLabel
+                }));
+            }
+        }
+
+        Batch(() =>
+        {
+            Mutate(() =>
+            {
+                chapter.Conditions[index] = condition with { Label = to };
+
+                foreach ((int at, ChapterEdge edge) in edges)
+                {
+                    chapter.Edges[at] = edge;
+                }
+            });
+
+            SupplyChapterConditions(chapterId);   // 공급 사본의 이름이 따라간다(식으로 짝을 찾는다 — Id 보존)
+        });
+
+        return new ChapterConditionRenameOutcome(true, edges.Count, null);
+    }
+
     /// <summary>이 조건을 <b>쓰는 곳</b> — 간선의 표시/해금, 그리고 대사 줄의 갈래.</summary>
     public IReadOnlyList<ChapterUse> FindConditionUses(string chapterId, string label)
     {
@@ -1967,6 +2037,15 @@ public sealed record ChapterConditionRemoveOutcome(
 {
     public static ChapterConditionRemoveOutcome Refuse(string reason, IReadOnlyList<ChapterUse> uses) =>
         new(false, 0, uses, reason);
+}
+
+/// <summary>챕터 조건 라벨 바꾸기 한 판의 결과 — <see cref="ProjectEditor.RenameChapterCondition"/>.</summary>
+/// <param name="Applied">바꿨는가. false면 <b>아무것도 안 건드렸다</b>.</param>
+/// <param name="Edges">라벨이 따라간 간선 수(표시조건 · 해금조건).</param>
+/// <param name="Refusal">거절 사유. <paramref name="Applied"/>가 false일 때만 있다.</param>
+public sealed record ChapterConditionRenameOutcome(bool Applied, int Edges, string? Refusal)
+{
+    public static ChapterConditionRenameOutcome Refuse(string reason) => new(false, 0, reason);
 }
 
 /// <summary>챕터 개명이 모델에서 함께 바꾼 것 — <see cref="ProjectEditor.RenameChapter"/>의 결과.</summary>

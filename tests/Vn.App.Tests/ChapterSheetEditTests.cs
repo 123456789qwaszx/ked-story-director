@@ -183,15 +183,17 @@ public sealed class ChapterSheetEditTests : IDisposable
     });
 
     [Fact]
-    public void 조건_줄의_식_칸은_남은_폭을_채우고_지우기가_표_폭_안에_선다() => HeadlessUi.Run(() =>
+    public void 조건_줄은_이름을_읽기만_하고_식_칸이_남은_폭을_채운다() => HeadlessUi.Run(() =>
     {
-        // 식 칸이 고정 폭이면 인스펙터 기본 폭에서 줄 끝의 [✕]가 밖으로 밀려 조건을 지울 수 없다.
+        // 조건 이름은 [대본] 탭이 더하고 고치고 지운다(writer-fields W4) — 여기는 식만 정한다. 지우기 · 더하기 단추가 없다.
         (ChapterGraphView view, _) = Show();
         Panel row = Row(view, "condition:신뢰높음");
         StackPanel table = view.FindControl<StackPanel>("ConditionListPanel")!;
 
-        AssertInside(Buttons(row).Single(), table, "[✕]");
+        Assert.Empty(Buttons(row));
+        Assert.DoesNotContain(table.Children.OfType<Button>(), button => Equals(button.Content, "＋ 조건"));
         TextBox expression = Boxes(row).Single();
+        Assert.Equal("⚠ 식 미정 — 항상 통과합니다", expression.PlaceholderText);
         AssertInside(expression, table, "식 칸");
         Assert.True(expression.Bounds.Width >= 120, $"식 칸이 너무 좁다: {expression.Bounds.Width}");
 

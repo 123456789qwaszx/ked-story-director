@@ -404,8 +404,11 @@ public partial class MainWindow
                 List<ChapterScene> named = scenes.Where(scene => !scene.IsDefault).ToList();
                 Graph.SetInspectorHeader(
                     $"챕터 · {chapter.Model.ShownName}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
-                Note("조건 · 스탯은 [구성] 탭에서 고칩니다.");
+                Note("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
                 StatTable(chapter.Model.Stats);
+
+                // 조건 이름은 여기서 더하고 고치고 지운다(writer-fields W4). 식은 [구성] 탭이다.
+                ConditionList(chapter.ChapterId);
                 OrphanSceneNotes(chapter.ChapterId);
 
                 // 장면 · 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자).

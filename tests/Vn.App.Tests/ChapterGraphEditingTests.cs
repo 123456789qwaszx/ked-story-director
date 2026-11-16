@@ -545,7 +545,7 @@ public sealed class ChapterGraphEditingTests
     public void 스탯_안내는_조건과_같은_말투로_어디서_고치는지_말한다() => HeadlessUi.Run(() =>
     {
         // 두 표가 같은 탭에 나란히 서 있으니 "어디서 고치나"의 대답도 같은 모양이어야
-        // 눈이 한 번에 읽는다. 대답은 <b>여기서</b>다.
+        // 눈이 한 번에 읽는다. 스탯은 <b>여기서</b>, 조건은 식을 여기서 · 이름은 [대본] 탭에서다(writer-fields W4).
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
@@ -555,7 +555,7 @@ public sealed class ChapterGraphEditingTests
             .ToList();
 
         Assert.DoesNotContain(lines, text => text.Contains("엑셀", StringComparison.Ordinal));
-        Assert.Contains(lines, text => text.Contains("여기서 고칩니다", StringComparison.Ordinal));
+        Assert.Contains(lines, text => text.Contains("조건 이름은 [대본] 탭에서 더하고 고치고 지웁니다", StringComparison.Ordinal));
         Assert.Contains(lines, text => text.Contains("여기서 만들고 고칩니다", StringComparison.Ordinal));
     });
 
