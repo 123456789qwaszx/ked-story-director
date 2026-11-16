@@ -419,9 +419,8 @@ public partial class MainWindow
 
                 // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가
                 // 그 장면의 에피소드를 고르는 자리다.
+                // 「[구성] 탭에서 장면 열기」도 두지 않는다(2026-11-16 소유자) — 장면 요약은 메모 공간이다.
                 SceneNoteSpace(chapter.ChapterId, scene);
-
-                OpenInChapterGraph(pick, "[구성] 탭에서 장면 열기");
                 break;
             }
 

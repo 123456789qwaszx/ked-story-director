@@ -102,18 +102,10 @@ public sealed class DirectorHierarchyTests : IDisposable
         Assert.Equal("장면 · hall", title.Text);
         Assert.Equal(StoryHierarchy.SceneKey("ch01", "hall"), graph.HierarchyView.Selection?.Key);
 
-        // 장면 이름은 챕터 그래프에서 고친다 — 넘어가면 그 인스펙터에 같은 장면이 선다.
-        Summary(graph, "summary-open").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Dispatcher.UIThread.RunJobs();
-
-        ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
-        Assert.Equal(0, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);
-        Assert.Equal("장면 · hall", chapterGraph.FindControl<TextBlock>("InspectorTitle")!.Text);
-
-        // 장면 요약도 에피소드 목록을 세우지 않는다 — 에피소드는 하이어아키에서 고르고, 고르면 그 카드의 대사를 쓴다.
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;
-        Dispatcher.UIThread.RunJobs();
+        // 장면 요약은 메모 공간이다 — 에피소드 목록도 「[구성] 탭에서 장면 열기」도 없다. 에피소드는 하이어아키에서 고르고,
+        // 고르면 그 카드의 대사를 쓴다.
         Assert.DoesNotContain(SummaryTags(graph), tag => tag.StartsWith("summary-episode:", StringComparison.Ordinal));
+        Assert.DoesNotContain("summary-open", SummaryTags(graph));
         graph.HierarchyView.Fold(StoryHierarchy.SceneKey("ch01", "hall"), collapse: false);
         graph.HierarchyView.RowButton(StoryHierarchy.EpisodeKey("ch01", "b"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
