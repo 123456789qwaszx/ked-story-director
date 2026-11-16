@@ -108,8 +108,14 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private readonly List<(Rect Area, string FileId, string ChapterId, string SceneId)> _sceneAreas = new();
 
-    /// <summary>판에서 장면의 영역(테두리 안의 빈 곳)을 눌렀다(챕터, 장면) — 셸이 하이어아키에서 그 장면 줄을 고른 것처럼 다룬다.</summary>
-    internal event Action<string, string>? ScenePicked;
+    /// <summary>판에 그린 챕터 테두리의 자리(챕터인 판만) — 장면 밖 · 챕터 안의 빈 곳을 찾는다.</summary>
+    private readonly List<(Rect Area, string ChapterId)> _chapterAreas = new();
+
+    /// <summary>
+    /// 판의 빈 곳을 눌렀다(끌지 않고) — 셸이 하이어아키에서 그 줄을 고른 것처럼 다룬다(2026-11-17 소유자). 장면 테두리 안이면 그 장면,
+    /// 장면 밖 · 챕터 테두리 안이면 그 챕터, 챕터 밖의 빈 판이면 프로젝트다.
+    /// </summary>
+    internal event Action<HierarchyPick>? AreaPicked;
 
     /// <summary>
     /// [＋ 대사 노드]가 세울 장면(챕터, 장면) — 셸이 인스펙터에 장면 요약을 세운 동안 맞춰 둔다(하이어아키에서 골랐든 판에서
@@ -469,6 +475,7 @@ public partial class GraphEditorView : UserControl
         _edges.Clear();
         _frames.Clear();
         _sceneAreas.Clear();
+        _chapterAreas.Clear();
         bool hadLine = _selectedEdge is not null || _selectedRail is not null;
         _selectedEdge = null;
         _selectedRail = null;
@@ -535,6 +542,7 @@ public partial class GraphEditorView : UserControl
 
         _frames.Clear();
         _sceneAreas.Clear();
+        _chapterAreas.Clear();
 
         if (_session is null || _projection is null)
         {
@@ -578,6 +586,11 @@ public partial class GraphEditorView : UserControl
                 .FirstOrDefault(file => string.Equals(file.Id, group.Key, StringComparison.Ordinal))
                 ?.Name ?? group.Key;
             string chapterName = _session.Editor.FindChapter(boardName)?.ShownName ?? boardName;
+
+            if (_session.Editor.FindChapter(boardName) is not null)
+            {
+                _chapterAreas.Add((area, boardName));
+            }
 
             var frame = new Border
             {
@@ -645,9 +658,9 @@ public partial class GraphEditorView : UserControl
     /// 같은 장면의 카드가 한 영역으로 보여야 작가가 <b>어디까지가 한 수명</b>인지 안다 —
     /// 장면 안에서는 모든 게 물릴 수 있고 장면이 끝나면 확정되기 때문이다.
     ///
-    /// ⚠ <b>안 그리는 경우 셋</b>: 챕터가 아닌 판 · 장면ID를 하나도 안 적은 챕터 ·
-    /// 장면이 하나뿐인 챕터. 앞의 둘은 접힌 판과 <b>같은 규칙</b>이고(규격 §2), 셋째는
-    /// 챕터 프레임과 똑같은 자리에 겹쳐 그려 봐야 테두리만 두 겹이 되기 때문이다.
+    /// ⚠ <b>안 그리는 경우 둘</b>: 챕터가 아닌 판 · 장면ID를 하나도 안 적은 챕터 — 접힌 판과 <b>같은 규칙</b>이다(규격 §2).
+    /// 장면이 하나뿐인 챕터에도 그린다(2026-11-17 소유자 — 전에는 챕터 프레임과 겹친다고 걷었다): 테두리가 있어야 그 장면을
+    /// 눌러 고르고 접을 수 있다.
     ///
     /// ⚠ 히트 대상이 아니다 — 클릭·드래그·포트에 아무 영향이 없다(챕터 프레임과 같다). 테두리 안의 빈 곳을 <b>누르면</b>(끌지 않고)
     /// 그 장면을 고른다 — 자리를 <see cref="_sceneAreas"/>에 적어 두고 범위 선택이 아무것도 못 잡았을 때 찾는다(2026-11-17).
@@ -664,7 +677,7 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
             chapter.ToGraphModel(chapter.ChapterId));
 
-        if (scenes.Count < 2 || scenes.All(scene => scene.IsDefault))
+        if (scenes.All(scene => scene.IsDefault))
         {
             return;
         }
@@ -4466,11 +4479,15 @@ public partial class GraphEditorView : UserControl
     {
         // 끌지 않고 누르기만 한 자리가 장면 테두리 안이면 그 장면을 고른다(2026-11-17 소유자) — 하이어아키에서 그 장면 줄을 고른
         // 것과 같다. 카드 · 선은 제가 먼저 누름을 받으므로 여기까지 오는 것은 빈 곳뿐이다.
-        if (rect.Width < ClickSlop && rect.Height < ClickSlop && SceneAt(end) is { } scene)
+        // 장면 밖 · 챕터 테두리 안이면 그 챕터, 챕터 밖의 빈 판이면 프로젝트(화자)다.
+        if (rect.Width < ClickSlop && rect.Height < ClickSlop)
         {
             _multiSelected.Clear();
             HighlightSelection();
-            ScenePicked?.Invoke(scene.ChapterId, scene.SceneId);
+            AreaPicked?.Invoke(
+                SceneAt(end) is { } scene ? new HierarchyPick(HierarchyKind.Scene, scene.ChapterId, SceneId: scene.SceneId)
+                : ChapterAt(end) is { } chapterId ? new HierarchyPick(HierarchyKind.Chapter, chapterId)
+                : HierarchyPick.Project);
             return;
         }
 
@@ -4545,9 +4562,23 @@ public partial class GraphEditorView : UserControl
         return null;
     }
 
+    /// <summary>그 자리를 품은 챕터 테두리의 챕터.</summary>
+    private string? ChapterAt(Point point)
+    {
+        foreach ((Rect area, string chapterId) in _chapterAreas)
+        {
+            if (area.Contains(point))
+            {
+                return chapterId;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// 장면에 세울 새 카드의 자리 — 그 장면 테두리의 오른쪽 옆, 위를 맞춰. 다른 카드와 겹치면 아래로 비킨다. 테두리가 없으면
-    /// (장면이 하나뿐인 챕터 · 접은 장면) null — 보고 있는 곳에 세운다.
+    /// (접은 장면) null — 보고 있는 곳에 세운다.
     /// </summary>
     private (double X, double Y)? PlaceBesideScene(string fileId, string sceneId)
     {

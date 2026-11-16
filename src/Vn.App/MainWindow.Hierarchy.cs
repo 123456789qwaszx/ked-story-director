@@ -95,9 +95,9 @@ public partial class MainWindow
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenInDirector(chapterId, episodeId));
         Graph.CardOpened += nodeId => UiGuard.Run(_session, "[구성] 탭으로", () => OpenInChapterGraph(nodeId));
 
-        // 판에서 장면의 영역을 누르면 하이어아키에서 그 장면 줄을 고른 것과 같다 — 인스펙터에 메모 공간이 선다(2026-11-17).
-        Graph.ScenePicked += (chapterId, sceneId) => UiGuard.Run(_session, "장면", () =>
-            PickInDirector(new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId)));
+        // 판의 빈 곳을 누르면 하이어아키에서 그 줄을 고른 것과 같다(2026-11-17) — 장면 영역은 메모 공간, 챕터 영역은 스탯 · 조건,
+        // 챕터 밖의 빈 판은 화자.
+        Graph.AreaPicked += pick => UiGuard.Run(_session, "판", () => PickInDirector(pick));
 
         // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
         ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>

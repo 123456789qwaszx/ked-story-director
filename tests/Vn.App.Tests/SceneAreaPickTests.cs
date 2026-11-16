@@ -52,14 +52,29 @@ public sealed class SceneAreaPickTests : IDisposable
     });
 
     [Fact]
-    public void 장면_밖의_빈_곳과_끌기는_장면을_고르지_않는다() => HeadlessUi.Run(() =>
+    public void 챕터_영역은_챕터를_챕터_밖의_빈_판은_프로젝트를_고르고_끌기는_아무것도_고르지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, _, GraphEditorView graph) = Show();
-        string? before = Title(graph);   // 처음 고른 카드 — 빈 곳을 눌러도 그대로다(지금까지와 같다)
-        Assert.DoesNotContain("장면 · ", before);
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
+        session.Select(CardId(session, "root"));
+        Dispatcher.UIThread.RunJobs();
 
+        // 장면 밖 · 챕터 테두리 안(챕터 이름표 왼쪽의 여백) — 그 챕터의 스탯 · 조건이 선다.
+        Border chapterLabel = Canvas(graph).Children.OfType<Border>()
+            .Single(border => border.Child is TextBlock { Text: "챕터 ch01 ⌄" });
+        Click(graph, new Point(Avalonia.Controls.Canvas.GetLeft(chapterLabel) - 6, Avalonia.Controls.Canvas.GetTop(chapterLabel) + 2));
+
+        Assert.Null(session.SelectedNodeId);
+        Assert.Equal("챕터 · ch01", Title(graph));
+        Assert.Contains(Side(graph), control => (string?)control.Tag == "condition-add-name");
+        Assert.Equal(StoryHierarchy.ChapterKey("ch01"), graph.HierarchyView.Selection?.Key);
+
+        // 챕터 밖의 빈 판 — 화자 목록이 선다.
         Click(graph, new Point(3000, 3000));
-        Assert.Equal(before, Title(graph));
+        Assert.Equal("화자", Title(graph));
+        Assert.Contains(Side(graph), control => (string?)control.Tag == "speaker-add-name");
+        Assert.Equal(StoryHierarchy.ProjectKey, graph.HierarchyView.Selection?.Key);
+
+        string? before = Title(graph);
 
         // 장면 안에서 시작해도 끌었으면 범위 선택이다 — 아무것도 못 잡았으면 아무것도 고르지 않는다.
         Point inside = InsideScene(graph, "hall");

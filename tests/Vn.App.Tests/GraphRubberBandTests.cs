@@ -119,13 +119,13 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal("ch01 - hall", Title(graph));
         Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
 
-        // 다시 레인을 고른 뒤 빈 판을 누르면 설명이 내려간다.
+        // 다시 레인을 고른 뒤 빈 판을 누르면 설명이 내려간다 — 챕터 밖의 빈 판이라 프로젝트(화자)가 선다(2026-11-17).
         Press(LaneHit(graph), At(graph, new Point(222, 400)));
         Assert.Equal("선택지 · root → b", Title(graph));
-        Press(Canvas(graph), At(graph, new Point(400, 300)));
-        Release(Canvas(graph), At(graph, new Point(400, 300)));
+        Press(Canvas(graph), At(graph, new Point(3000, 3000)));
+        Release(Canvas(graph), At(graph, new Point(3000, 3000)));
 
-        Assert.Equal("인스펙터", Title(graph));
+        Assert.Equal("화자", Title(graph));
         Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
 
         window.Close();

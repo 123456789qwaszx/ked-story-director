@@ -54,15 +54,15 @@ public sealed class SceneFrameTests
     });
 
     [Fact]
-    public void 장면이_하나뿐이면_안_그린다() => HeadlessUi.Run(() =>
+    public void 장면이_하나뿐이어도_그린다() => HeadlessUi.Run(() =>
     {
-        // 챕터 프레임과 똑같은 자리에 겹쳐 그려 봐야 테두리만 두 겹이 된다.
+        // 2026-11-17 소유자 — 테두리가 있어야 그 장면을 눌러 고르고 접는다(전에는 챕터 프레임과 겹친다고 걷었다).
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         Chapter(session, ("opening", "ep01"), ("opening", "ep02"));
         graph.Rebuild();
 
-        Assert.Empty(SceneLabels(graph));
+        Assert.Single(SceneLabels(graph));
     });
 
     [Fact]
