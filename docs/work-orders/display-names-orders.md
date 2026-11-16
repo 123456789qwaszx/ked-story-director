@@ -71,3 +71,4 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-16 | N0 | (N0 커밋) | 지시서. 1절의 넷은 소유자가 정했다. 코드 변경 0 |
+| 11-16 | N1 | (N1 커밋) | `ChapterSceneNote(SceneId, Text, Name)` — 이름만 · 글만 · 둘 다 항목, 둘 다 비면 안 쓴다(파일 `name` · `text` 각각 비면 안 쓴다). `ChapterSceneNotes.TextOf` · `NameOf`, `ChapterSceneGrouping`이 장면 이름을 `DisplayName`에(같은 이름 두 장면이 따로 선다). `ChapterDocument` · `ChapterGraphModel.ShownName`. 편집 `SetSceneName` · `RemoveSceneNote`(통째) — `SetSceneNote`는 글만(이름을 남긴다). N5의 `scenes.json`도 함께: 장면 `displayName` = 이름, `note`는 글이 있을 때만, `orphanNotes`에 `name`. 시험 `SceneNameTests` 7. Vn.Authoring.Tests 658 · Vn.App.Tests 395 |

@@ -333,43 +333,79 @@ public sealed partial class ProjectEditor
     // 장면이 아니라 장면에 붙는 곁 자료다(ChapterSceneNote). 열쇠는 EffectiveSceneId.
 
     /// <summary>
-    /// 장면 메모를 적는다 — 비우면 지운다. 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 주인 없는 메모를 지우는 것도 이것이다.
+    /// 장면 메모를 적는다 — 비우면 글을 지운다(이름은 그대로). 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다.
     /// 앞뒤 빈칸은 걷는다(글 안의 줄바꿈은 그대로).
     /// </summary>
-    public void SetSceneNote(string chapterId, string sceneId, string? text)
+    public void SetSceneNote(string chapterId, string sceneId, string? text) =>
+        UpdateSceneEntry(chapterId, sceneId, string.IsNullOrWhiteSpace(text) ? string.Empty : text.Trim(), name: null, setName: false);
+
+    /// <summary>
+    /// 장면 이름 — 작가가 [대본] 탭에서 붙이는 이름(SceneId는 그대로다 — 같은 이름의 장면이 여럿이어도 합쳐지지 않는다).
+    /// 비우면 이름을 지운다(SceneId가 보인다). 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 앞뒤 빈칸은 걷는다.
+    /// </summary>
+    public void SetSceneName(string chapterId, string sceneId, string? name) =>
+        UpdateSceneEntry(chapterId, sceneId, text: null, string.IsNullOrWhiteSpace(name) ? null : name.Trim(), setName: true);
+
+    /// <summary>장면 항목(이름 · 메모)을 통째로 지운다 — 주인 없는 항목의 [지우기]. 되돌리기 한 칸, 없으면 칸을 쓰지 않는다.</summary>
+    public void RemoveSceneNote(string chapterId, string sceneId)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+
+        if (!chapter.SceneNotes.Any(note => string.Equals(note.SceneId, sceneId, StringComparison.Ordinal)))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.NodeMetadata, () =>
+            chapter.SceneNotes.RemoveAll(note => string.Equals(note.SceneId, sceneId, StringComparison.Ordinal)));
+    }
+
+    /// <summary>
+    /// 장면 항목 하나를 고친다 — <paramref name="text"/>가 null이면 글을, <paramref name="setName"/>이 거짓이면 이름을 그대로 둔다.
+    /// 둘 다 비면 항목을 지운다. 글자라 <c>NodeMetadata</c>로 알린다 — 인스펙터를 다시 세우면 쓰던 칸이 사라진다.
+    /// </summary>
+    private void UpdateSceneEntry(string chapterId, string sceneId, string? text, string? name, bool setName)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
 
         if (string.IsNullOrWhiteSpace(sceneId))
         {
-            throw new ArgumentException("장면 메모의 장면ID가 비었습니다.", nameof(sceneId));
+            throw new ArgumentException("장면 항목의 장면ID가 비었습니다.", nameof(sceneId));
         }
 
-        string? wanted = string.IsNullOrWhiteSpace(text) ? null : text.Trim();
         int index = chapter.SceneNotes.FindIndex(note => string.Equals(note.SceneId, sceneId, StringComparison.Ordinal));
-        string? current = index >= 0 && !ChapterSceneNotes.IsBlank(chapter.SceneNotes[index]) ? chapter.SceneNotes[index].Text : null;
+        ChapterSceneNote current = index >= 0 ? chapter.SceneNotes[index] : new ChapterSceneNote(sceneId, string.Empty);
+        ChapterSceneNote wanted = current with
+        {
+            Text = text ?? (string.IsNullOrWhiteSpace(current.Text) ? string.Empty : current.Text),
+            Name = setName ? name : (string.IsNullOrWhiteSpace(current.Name) ? null : current.Name)
+        };
 
-        if (string.Equals(current, wanted, StringComparison.Ordinal))
+        bool same = string.Equals(Normal(current.Text), Normal(wanted.Text), StringComparison.Ordinal) &&
+                    string.Equals(Normal(current.Name), Normal(wanted.Name), StringComparison.Ordinal);
+
+        if (same)
         {
             return;
         }
 
-        // 글자다 — 구조가 아니라 판 · 하이어아키의 표시만 바뀐다. 인스펙터를 다시 세우면 쓰던 칸이 사라진다.
         Mutate(ProjectChangeKind.NodeMetadata, () =>
         {
-            if (wanted is null)
+            if (ChapterSceneNotes.IsBlank(wanted))
             {
                 chapter.SceneNotes.RemoveAt(index);
             }
             else if (index >= 0)
             {
-                chapter.SceneNotes[index] = chapter.SceneNotes[index] with { Text = wanted };
+                chapter.SceneNotes[index] = wanted;
             }
             else
             {
-                chapter.SceneNotes.Add(new ChapterSceneNote(sceneId, wanted));
+                chapter.SceneNotes.Add(wanted);
             }
         });
+
+        static string? Normal(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     /// <summary>

@@ -114,9 +114,12 @@ public static class ChapterSceneGrouping
                 group.First(episode =>
                     string.Equals(episode.EffectiveSceneId, group.Key, StringComparison.Ordinal)).SceneId);
 
+            // 보이는 이름 — 작가가 붙인 장면 이름, 없으면 장면ID(미지정은 「미지정 · {Id}」). 이름은 글자라 같은 이름의 장면이
+            // 여럿이어도 SceneId로 갈린다(docs/work-orders/display-names-orders.md).
             scenes.Add(new ChapterScene(
                 group.Key,
-                isDefault ? DefaultSceneName(root.EpisodeId) : group.Key,
+                ChapterSceneNotes.NameOf(chapter.SceneNotes, group.Key) ??
+                (isDefault ? DefaultSceneName(root.EpisodeId) : group.Key),
                 isDefault,
                 root.EpisodeId,
                 episodes,

@@ -213,8 +213,8 @@ public partial class MainWindow
             };
             remove.Click += (_, _) => UiGuard.Run(_session, "주인 없는 메모 지우기", () =>
             {
-                _session.Editor.SetSceneNote(chapterId, sceneId, null);
-                _session.SetStatus($"장면 '{ChapterSceneNotes.ShownSceneName(sceneId)}'의 메모를 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                _session.Editor.RemoveSceneNote(chapterId, sceneId);
+                _session.SetStatus($"장면 '{orphan.Name?.Trim() ?? ChapterSceneNotes.ShownSceneName(sceneId)}'의 메모를 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
                 ShowSelectedNode();
             });
             DockPanel.SetDock(remove, Dock.Right);
@@ -223,7 +223,8 @@ public partial class MainWindow
             row.Children.Add(remove);
             row.Children.Add(new SelectableTextBlock
             {
-                Text = $"{ChapterSceneNotes.ShownSceneName(sceneId)} — {orphan.Text}",
+                Text = $"{orphan.Name?.Trim() ?? ChapterSceneNotes.ShownSceneName(sceneId)}" +
+                       (string.IsNullOrWhiteSpace(orphan.Text) ? " — (이름만)" : $" — {orphan.Text}"),
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap
             });
@@ -233,7 +234,7 @@ public partial class MainWindow
     }
 
     private string? SceneNoteNow(string chapterId, string sceneId) =>
-        _session.Editor.FindChapter(chapterId) is { } chapter ? ChapterSceneNotes.Of(chapter.SceneNotes, sceneId)?.Text : null;
+        _session.Editor.FindChapter(chapterId) is { } chapter ? ChapterSceneNotes.TextOf(chapter.SceneNotes, sceneId) : null;
 
     private bool HasCardNow(string chapterId, string episodeId) =>
         _session.Editor.FindChapter(chapterId)?.Episodes.FirstOrDefault(episode =>

@@ -30,6 +30,13 @@ public sealed class ChapterDocument
     /// </summary>
     public string? DisplayName { get; set; }
 
+    /// <summary>보이는 챕터 이름 — 표시 이름, 비면 <see cref="ChapterId"/>. [대본] 탭(작가 자리)은 이것만 보인다.</summary>
+    public string ShownName => ShownNameOf(ChapterId, DisplayName);
+
+    /// <summary>보이는 이름의 규칙 한 자리 — 모델 두 층이 같은 것을 부른다.</summary>
+    public static string ShownNameOf(string chapterId, string? displayName) =>
+        string.IsNullOrWhiteSpace(displayName) ? chapterId : displayName.Trim();
+
     public List<ChapterEpisode> Episodes { get; init; } = [];
 
     public List<ChapterEdge> Edges { get; init; } = [];

@@ -54,9 +54,9 @@ public static class ChapterScenesExporter
                 ["rootEpisodeId"] = scene.RootEpisodeId
             };
 
-            if (ChapterSceneNotes.Of(chapter.SceneNotes, scene.SceneId) is { } note)
+            if (ChapterSceneNotes.TextOf(chapter.SceneNotes, scene.SceneId) is { } note)
             {
-                json["note"] = note.Text;
+                json["note"] = note;
             }
 
             var episodes = new JsonArray();
@@ -87,7 +87,19 @@ public static class ChapterScenesExporter
 
             foreach (ChapterSceneNote orphan in orphans)
             {
-                array.Add(new JsonObject { ["sceneId"] = orphan.SceneId, ["text"] = orphan.Text });
+                var item = new JsonObject { ["sceneId"] = orphan.SceneId };
+
+                if (!string.IsNullOrWhiteSpace(orphan.Name))
+                {
+                    item["name"] = orphan.Name.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(orphan.Text))
+                {
+                    item["text"] = orphan.Text;
+                }
+
+                array.Add(item);
             }
 
             root["orphanNotes"] = array;

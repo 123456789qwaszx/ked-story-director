@@ -12,8 +12,17 @@ namespace Vn.Authoring.Chapters;
 /// </summary>
 public static class ChapterSceneNotes
 {
-    /// <summary>글이 빈 메모 — 쓰지 않는다.</summary>
-    public static bool IsBlank(ChapterSceneNote note) => string.IsNullOrWhiteSpace(note.Text);
+    /// <summary>글도 이름도 빈 항목 — 쓰지 않는다.</summary>
+    public static bool IsBlank(ChapterSceneNote note) =>
+        string.IsNullOrWhiteSpace(note.Text) && string.IsNullOrWhiteSpace(note.Name);
+
+    /// <summary>그 장면의 메모 글 — 없거나 비었으면 null.</summary>
+    public static string? TextOf(IEnumerable<ChapterSceneNote> notes, string sceneId) =>
+        Of(notes, sceneId) is { Text: var text } && !string.IsNullOrWhiteSpace(text) ? text : null;
+
+    /// <summary>그 장면의 이름 — 없거나 비었으면 null.</summary>
+    public static string? NameOf(IEnumerable<ChapterSceneNote> notes, string sceneId) =>
+        Of(notes, sceneId) is { Name: { } name } && !string.IsNullOrWhiteSpace(name) ? name.Trim() : null;
 
     /// <summary>그 장면의 에피소드가 하나라도 있는가.</summary>
     public static bool IsOwned(IReadOnlyList<ChapterEpisode> episodes, string sceneId) =>
@@ -65,7 +74,8 @@ public static class ChapterSceneNotes
                 path,
                 ChapterSheetNames.SceneNotes,
                 EpisodeId: null,
-                $"장면 '{ShownSceneName(note.SceneId)}'의 메모에 주인이 없습니다 — 그 장면의 에피소드가 없습니다(「{Lead(note.Text)}」). " +
+                $"장면 '{note.Name?.Trim() ?? ShownSceneName(note.SceneId)}'의 메모에 주인이 없습니다 — 그 장면의 에피소드가 없습니다" +
+                (string.IsNullOrWhiteSpace(note.Text) ? ". " : $"(「{Lead(note.Text)}」). ") +
                 "장면을 되살리거나 챕터 인스펙터에서 지웁니다."))
             .ToList();
 
@@ -89,7 +99,7 @@ public static class ChapterSceneNotes
     /// 하이어아키의 장면 줄과 판의 장면 이름표가 「메모」를 다는 근거다.
     /// </summary>
     public static bool HasMemo(IEnumerable<ChapterSceneNote> notes, ChapterScene scene) =>
-        Of(notes, scene.SceneId) is not null || scene.Episodes.Any(episode => !string.IsNullOrWhiteSpace(episode.Memo));
+        TextOf(notes, scene.SceneId) is not null || scene.Episodes.Any(episode => !string.IsNullOrWhiteSpace(episode.Memo));
 
     /// <summary>그 장면의 메모 — 없거나 비었으면 null.</summary>
     public static ChapterSceneNote? Of(IEnumerable<ChapterSceneNote> notes, string sceneId) =>

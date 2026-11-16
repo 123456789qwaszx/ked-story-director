@@ -312,22 +312,25 @@ internal static class ChapterDocumentJson
 
     // ── 장면 메모 ────────────────────────────────────────────────────────────
 
-    private static JsonObject WriteSceneNote(ChapterSceneNote note) => new()
+    private static JsonObject WriteSceneNote(ChapterSceneNote note)
     {
-        ["sceneId"] = note.SceneId,
-        ["text"] = note.Text
-    };
+        var json = new JsonObject { ["sceneId"] = note.SceneId };
+        Text(json, "name", string.IsNullOrWhiteSpace(note.Name) ? null : note.Name);
+        Text(json, "text", string.IsNullOrWhiteSpace(note.Text) ? null : note.Text);
+        return json;
+    }
 
     /// <summary>
     /// 열쇠가 비었거나 같은 장면이 둘이면 읽지 않는다 — 어느 것이 그 장면의 메모인지 도구가 정할 수 없다(§6-8).
-    /// 글이 빈 메모는 없는 것으로 읽는다(쓸 때 빼는 것과 같다).
+    /// 글도 이름도 빈 항목은 없는 것으로 읽는다(쓸 때 빼는 것과 같다).
     /// </summary>
     private static List<ChapterSceneNote> ReadSceneNotes(JsonNode? node)
     {
         var notes = new List<ChapterSceneNote>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (ChapterSceneNote note in Take(node, json => new ChapterSceneNote(Text(json["sceneId"]), Text(json["text"]))))
+        foreach (ChapterSceneNote note in Take(node, json =>
+                     new ChapterSceneNote(Text(json["sceneId"]), Text(json["text"]), OptionalText(json["name"]))))
         {
             if (string.IsNullOrWhiteSpace(note.SceneId))
             {
