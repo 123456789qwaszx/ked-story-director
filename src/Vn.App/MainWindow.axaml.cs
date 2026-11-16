@@ -85,6 +85,7 @@ public partial class MainWindow : Window
         ChapterGraph.Attach(_session);
         DialogueEditor.Attach(_session);
         _session.Changed += OnSessionChanged;
+        _session.SpeakersChanged += OnSpeakersChanged;
         // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 — 판을 다시 그리거나
         // 챕터를 다시 읽을 이유가 없다. 그 구분이 없으면 노드가 늘수록 느려진다.
         _session.StatusChanged += (_, _) =>

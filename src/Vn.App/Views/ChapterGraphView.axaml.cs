@@ -355,11 +355,7 @@ public partial class ChapterGraphView : UserControl
         // [다시 읽기] 단추는 없다 — 화면이 스스로 따라온다. <see cref="Reload"/>는
         // 감시자와 챕터 전환이 부른다.
 
-        // [화자] 탭 — 프로젝트 전체의 캐스트. 엔터로도 더한다: 이름을 여럿
-        // 적을 때 손이 마우스로 갔다 오지 않는다.
-        SpeakerAddButton.Click += (_, _) => UiGuard.Run(_session, "화자 추가", AddSpeaker);
-        SpeakerNameBox.KeyDown += (_, args) => CommitOnEnter(args, AddSpeaker);
-        SpeakerCharacterIdBox.KeyDown += (_, args) => CommitOnEnter(args, AddSpeaker);
+        // [화자] 탭은 캐릭터 키만 잇는다 — 이름을 더하는 폼은 [대본] 탭에 있다(writer-fields W3).
 
         ChapterCombo.SelectionChanged += (_, _) =>
         {
@@ -501,12 +497,17 @@ public partial class ChapterGraphView : UserControl
             Draw();
         });
         session.HideEmptyChoicesChanged += _hideEmptyChanged;
+
+        // 화자 목록은 정의 파일이라 Changed에 오지 않는다 — [대본] 탭이 이름을 더하면 여기 키 목록도 선다.
+        _speakersChanged = (_, _) => UiGuard.Run(_session, "화자", RebuildSpeakerTab);
+        session.SpeakersChanged += _speakersChanged;
         Reload();
     }
 
     /// <summary>세션 구독을 끊을 수 있도록 들고 있는다 — 람다를 바로 걸면 뗄 수가 없다.</summary>
     private EventHandler<Vn.Authoring.Editing.ProjectChangedEventArgs>? _sessionChanged;
     private EventHandler? _hideEmptyChanged;
+    private EventHandler? _speakersChanged;
 
     /// <summary>
     /// 세션에서 손을 뗀다 — 구독을 끊는다.
@@ -536,8 +537,14 @@ public partial class ChapterGraphView : UserControl
             _session.HideEmptyChoicesChanged -= _hideEmptyChanged;
         }
 
+        if (_session is not null && _speakersChanged is not null)
+        {
+            _session.SpeakersChanged -= _speakersChanged;
+        }
+
         _sessionChanged = null;
         _hideEmptyChanged = null;
+        _speakersChanged = null;
         _session = null;
     }
 
@@ -572,11 +579,10 @@ public partial class ChapterGraphView : UserControl
         });
     }
 
-    // ── [화자] 탭 = 프로젝트의 캐스트 ──────────────────────────
+    // ── [화자] 탭 = 캐릭터 키 ──────────────────────────
     //
-    // 화자는 챕터의 것이 아니다 — 챕터마다 따로 적으면 같은 값을 챕터 수만큼 치른다.
-    // 등록 창구는 이 탭 하나이고 값은 `game.definition.json`의 speakers에 산다
-    // (초상화 매핑과 같은 배열 — 화자의 집이 하나라는 뜻이다).
+    // 화자는 챕터의 것이 아니다 — 값은 `game.definition.json`의 speakers에 산다(초상화 매핑과 같은 배열). 이름은 [대본] 탭(작가)이
+    // 더하고 고치고 지운다. 여기는 그 이름마다 <b>캐릭터 키</b>를 잇는 자리다 — 초상화 · 표정이 이 키로 붙는다(writer-fields W3).
 
     /// <summary>[화자] 탭을 지금 정의 파일의 목록으로 다시 그린다.</summary>
     private void RebuildSpeakerTab()
@@ -594,8 +600,7 @@ public partial class ChapterGraphView : UserControl
         {
             SpeakerListPanel.Children.Add(new TextBlock
             {
-                Text = "아직 없습니다. 위에 이름을 적고 [＋ 추가]를 누르면 모든 챕터의 대본에서 " +
-                       "그 화자를 고를 수 있습니다.",
+                Text = "아직 화자가 없습니다 — 화자 이름은 [대본] 탭에서 하이어아키의 프로젝트 줄을 골라 더합니다.",
                 FontSize = 10,
                 Opacity = 0.55,
                 TextWrapping = TextWrapping.Wrap
@@ -603,145 +608,86 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        for (int index = 0; index < speakers.Count; index++)
+        int missing = speakers.Count(speaker => string.IsNullOrWhiteSpace(speaker.CharacterId));
+
+        if (missing > 0)
         {
-            SpeakerListPanel.Children.Add(BuildSpeakerRow(index, speakers[index]));
+            SpeakerListPanel.Children.Add(new TextBlock
+            {
+                Text = $"⚠ 캐릭터 키가 없는 화자 {missing}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.",
+                FontSize = 10,
+                Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
+                TextWrapping = TextWrapping.Wrap,
+                Tag = "speaker-missing-keys"
+            });
+        }
+
+        foreach (SpeakerSpec speaker in speakers)
+        {
+            SpeakerListPanel.Children.Add(BuildSpeakerRow(speaker));
         }
     }
 
     /// <summary>
-    /// 화자 한 줄 — `[이름][캐릭터키][✕]`. 고치면 그 자리에서 정의 파일에 저장된다
+    /// 화자 한 줄 — `이름 [캐릭터 키]`. 이름은 읽기만 한다([대본] 탭의 것). 키를 고치면 그 자리에서 정의 파일에 저장된다
     /// ([적용] 없음 — 챕터 편집 탭과 같은 규칙).
     /// </summary>
-    private Control BuildSpeakerRow(int index, SpeakerSpec speaker)
+    private Control BuildSpeakerRow(SpeakerSpec speaker)
     {
-        var name = new TextBox { Text = speaker.Name, FontSize = 12 };
+        string speakerName = speaker.Name;
+        bool missing = string.IsNullOrWhiteSpace(speaker.CharacterId);
+        var name = new TextBlock
+        {
+            Text = missing ? "⚠ " + speakerName : speakerName,
+            FontSize = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Tag = "speaker-name:" + speakerName
+        };
+        ToolTip.SetTip(name, missing
+            ? $"'{speakerName}' — 캐릭터 키가 없습니다. 이름은 [대본] 탭에서 고칩니다."
+            : $"'{speakerName}' — 이름은 [대본] 탭에서 고칩니다.");
         var characterId = new TextBox
         {
             Text = speaker.CharacterId,
             Margin = new Thickness(6, 0, 0, 0),
             FontSize = 12,
-            PlaceholderText = "캐릭터키"
+            PlaceholderText = "캐릭터 키",
+            Tag = "speaker-key:" + speakerName
         };
 
         void Commit()
         {
-            List<SpeakerSpec> edited = _session!.Definition.Speakers.ToList();
+            if (_session is null)
+            {
+                return;
+            }
 
-            if (index >= edited.Count)
+            if (!_session.Definition.Speakers.Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal)))
             {
                 return; // 그 사이 목록이 바뀌었다 — 다음 그리기가 정본이다.
             }
 
-            string typed = (name.Text ?? string.Empty).Trim();
+            string typed = (characterId.Text ?? string.Empty).Trim();
 
-            // 이름을 지워 빈칸으로 만드는 것은 삭제가 아니다 — 삭제는 ✕ 하나뿐이다.
-            // 빈 이름을 저장하면 목록에서 조용히 사라져 되돌릴 손잡이가 없어진다.
-            if (typed.Length == 0)
+            if (_session.SetSpeakerCharacterId(speakerName, typed))
             {
-                name.Text = edited[index].Name;
-                _session.SetStatus("이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.");
-                return;
-            }
-
-            string previous = edited[index].Name;
-
-            // 같은 이름이 이미 있으면 개명이 아니라 <b>합치기</b>다 — 목록이 신원이라
-            // 두 줄이 같은 이름을 가질 수 없다([＋ 추가]가 막는 것과 같은 규칙).
-            if (!string.Equals(previous, typed, StringComparison.Ordinal) &&
-                edited.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)))
-            {
-                name.Text = previous;
-                _session.SetStatus($"화자 '{typed}'은 이미 있습니다.");
-                return;
-            }
-
-            // 개명이 먼저다 — 이미 쓰인 이름을 끌고 간 뒤 등록부를 간다.
-            // 끌고 가는 것은 <b>프로젝트의 줄</b>뿐이다.
-            string? report = string.Equals(previous, typed, StringComparison.Ordinal)
-                ? null
-                : CarrySpeakerRename(previous, typed);
-
-            edited[index] = new SpeakerSpec
-            {
-                Name = typed,
-                CharacterId = (characterId.Text ?? string.Empty).Trim()
-            };
-
-            SaveSpeakers(edited);
-
-            // 개명 보고는 저장 뒤에 세운다 — 어휘 밀기의 상태 줄이 덮어쓰지 않게.
-            if (report is not null)
-            {
-                _session.SetStatus(report);
+                _session.SetStatus(typed.Length == 0
+                    ? $"화자 '{speakerName}'의 캐릭터 키를 비웠습니다 — 초상화가 붙지 않습니다."
+                    : $"화자 '{speakerName}' — 캐릭터 키 '{typed}'.");
             }
         }
 
-        name.LostFocus += (_, _) => UiGuard.Run(_session, "화자 수정", Commit);
-        characterId.LostFocus += (_, _) => UiGuard.Run(_session, "화자 수정", Commit);
-        name.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        characterId.LostFocus += (_, _) => UiGuard.Run(_session, "캐릭터 키", Commit);
         characterId.KeyDown += (_, args) => CommitOnEnter(args, Commit);
 
-        var remove = new Button
-        {
-            Content = "✕",
-            FontSize = 11,
-            Margin = new Thickness(6, 0, 0, 0),
-            [ToolTip.TipProperty] = $"'{speaker.Name}'를 목록에서 지웁니다. " +
-                                    "이미 대본에 적힌 이름은 그대로 남습니다(화자 칸은 자유 입력)."
-        };
-        remove.Click += (_, _) => UiGuard.Run(_session, "화자 삭제", () =>
-        {
-            List<SpeakerSpec> edited = _session!.Definition.Speakers.ToList();
-
-            if (index < edited.Count)
-            {
-                edited.RemoveAt(index);
-                SaveSpeakers(edited);
-            }
-        });
-
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,Auto") };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
         Grid.SetColumn(name, 0);
         Grid.SetColumn(characterId, 1);
-        Grid.SetColumn(remove, 2);
         row.Children.Add(name);
         row.Children.Add(characterId);
-        row.Children.Add(remove);
 
         return row;
-    }
-
-    /// <summary>
-    /// 화자 개명을 <b>이미 쓰인 곳까지</b> 끌고 간다 — 프로젝트 대본의 줄들.
-    ///
-    /// 등록부만 갈면 그 이름을 쓰던 줄이 전부 <b>미등록</b>이 된다: 드롭다운에서 사라지고,
-    /// 초상화 매핑이 끊기고, 공백 있는 이름은 파서가 산문으로 읽어 대사와 합쳐진다.
-    /// </summary>
-    /// <returns>
-    /// 저장 뒤에 세울 상태 줄. 여기서 바로 쓰면 이어지는 어휘 밀기의 메시지가 덮는다.
-    /// 말할 것이 없으면 null.
-    /// </returns>
-    private string? CarrySpeakerRename(string previous, string renamed)
-    {
-        if (_session is null)
-        {
-            return null;
-        }
-
-        string from = previous.Trim();
-        string to = renamed.Trim();
-
-        if (from.Length == 0 || to.Length == 0 || string.Equals(from, to, StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        int lines = _session.Editor.RenameSpeaker(from, to);
-
-        return lines == 0
-            ? null
-            : $"화자 '{previous}' → '{renamed}' — 줄 {lines}개가 따라갔습니다.";
     }
 
     /// <summary>
@@ -767,58 +713,6 @@ public partial class ChapterGraphView : UserControl
             commit();
             args.Handled = true;
         }
-    }
-
-    /// <summary>폼의 한 줄을 목록 끝에 더한다. 같은 이름은 거절한다(목록이 신원이다).</summary>
-    private void AddSpeaker()
-    {
-        if (_session is null)
-        {
-            return;
-        }
-
-        string name = (SpeakerNameBox.Text ?? string.Empty).Trim();
-
-        if (name.Length == 0)
-        {
-            _session.SetStatus("화자 이름을 적어 주세요.");
-            return;
-        }
-
-        List<SpeakerSpec> edited = _session.Definition.Speakers.ToList();
-
-        if (edited.Any(item => string.Equals(item.Name, name, StringComparison.Ordinal)))
-        {
-            _session.SetStatus($"화자 '{name}'은 이미 있습니다.");
-            return;
-        }
-
-        edited.Add(new SpeakerSpec
-        {
-            Name = name,
-            CharacterId = (SpeakerCharacterIdBox.Text ?? string.Empty).Trim()
-        });
-
-        if (SaveSpeakers(edited))
-        {
-            SpeakerNameBox.Text = string.Empty;
-            SpeakerCharacterIdBox.Text = string.Empty;
-            SpeakerNameBox.Focus();
-            _session.SetStatus($"화자 '{name}'을 더했습니다 — 모든 챕터의 대본에서 고를 수 있습니다.");
-        }
-    }
-
-    /// <summary>목록을 정의 파일에 통째로 쓰고 [화자] 탭을 다시 그린다.</summary>
-    private bool SaveSpeakers(IReadOnlyList<SpeakerSpec> speakers)
-    {
-        if (_session is null || !_session.SaveSpeakers(speakers))
-        {
-            return false;
-        }
-
-        RebuildSpeakerTab();
-
-        return true;
     }
 
     private void Reload()

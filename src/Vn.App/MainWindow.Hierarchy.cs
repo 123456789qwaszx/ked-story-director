@@ -391,8 +391,10 @@ public partial class MainWindow
             {
                 IReadOnlyList<Vn.Authoring.Definition.SpeakerSpec> speakers = _session.Definition.Speakers;
                 Graph.SetInspectorHeader("화자", $"프로젝트 전체의 캐스트 — {speakers.Count}명");
-                Note(speakers.Count == 0 ? "아직 화자가 없습니다." : string.Join(" · ", speakers.Select(speaker => speaker.Name)));
-                OpenInChapterGraph(pick, "[구성] 탭에서 화자 고치기");
+
+                // 화자 이름은 여기서 더하고 고치고 지운다(writer-fields W3 — 2026-08-23 결정을 소유자가 바꿨다). 캐릭터 키는 [구성] 탭이다.
+                SpeakerList();
+                OpenInChapterGraph(pick, "[구성] 탭에서 캐릭터 키 잇기");
                 break;
             }
 
@@ -416,7 +418,7 @@ public partial class MainWindow
                                              string.Equals(item.SceneId, pick.SceneId, StringComparison.Ordinal)) is { } scene:
             {
                 Graph.SetInspectorHeader($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}");
-                Note("장면 이름은 [구성] 탭에서 고칩니다.");
+                Note("장면 이름은 하이어아키에서 고칩니다 — 두 번 누르거나 오른쪽 클릭 [이름 바꾸기].");
 
                 // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가
                 // 그 장면의 에피소드를 고르는 자리다.

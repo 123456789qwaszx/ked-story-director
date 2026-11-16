@@ -112,6 +112,12 @@ internal sealed class AuthoringSession
     public event EventHandler? SelectionChanged;
 
     /// <summary>
+    /// 화자 목록이 정의 파일에 쓰였다(<see cref="SaveSpeakers"/>). 프로젝트 변경이 아니다 — 정의 파일은 되돌리기 밖이다. [대본] 탭의 프로젝트
+    /// 요약(화자 이름)과 [구성] 탭의 [화자] 탭(캐릭터 키)이 듣고 목록을 다시 세운다.
+    /// </summary>
+    public event EventHandler? SpeakersChanged;
+
+    /// <summary>
     /// 현재 파일 또는 그래프 펼침 상태가 바뀌었을 때.
     /// StoryProject 변경이 아니므로 <see cref="Changed"/>와 분리한다.
     /// </summary>
@@ -284,14 +290,104 @@ internal sealed class AuthoringSession
         StatusChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // `game.definition.json`은 기획자 전용이다 — 작가 화면은 거기 쓰지 않는다. 작가가 더한
-    // 화자는 프로젝트에 산다 (`StoryProject.WriterSpeakers`). 정의 파일에 쓰는 창구는 아래 둘 — 화자 탭의
-    // [저장](`SaveSpeakers`)과 검증 보고의 [등록](`RegisterVariables`) — 뿐이고, 둘 다
-    // 기획자 화면(챕터 그래프)에서만 불린다.
+    // 화자의 집은 `game.definition.json`의 speakers 하나다. 2026-11-16(writer-fields W3)부터 화자 <b>이름</b>은 [대본] 탭(작가)이
+    // 더하고 고치고 지우며, <b>캐릭터 키</b>는 [구성] 탭(기획자)이 잇는다 — 규칙은 아래 화자 창구(AddSpeakerName …) 한 벌이다.
+    // (2026-08-23의 「작가가 더한 화자는 없앤다」 결정을 소유자가 바꿨다. 옛 `StoryProject.WriterSpeakers`는 유물 그대로다.)
+    // 검증 보고의 [등록](`RegisterVariables`)도 정의 파일에 쓴다.
+
+    /// <summary>화자 이름을 더한다 — [대본] 탭. 못 더했으면 그 이유(빈 이름 · 같은 이름 · 저장 전 프로젝트).</summary>
+    public string? AddSpeakerName(string? name)
+    {
+        string typed = (name ?? string.Empty).Trim();
+
+        if (typed.Length == 0)
+        {
+            return "화자 이름을 적어 주세요.";
+        }
+
+        List<SpeakerSpec> edited = Definition.Speakers.ToList();
+
+        if (edited.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)))
+        {
+            return $"화자 '{typed}'은 이미 있습니다.";
+        }
+
+        edited.Add(new SpeakerSpec { Name = typed, CharacterId = string.Empty });
+        return SaveSpeakers(edited) ? null : StatusMessage;
+    }
 
     /// <summary>
-    /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 챕터 그래프 [화자] 탭 전용.
-    /// 여기서 더한 화자는 게임 정의에 저장되며, 모든 챕터가 공유해서 쓴다.
+    /// 화자 이름을 바꾼다 — [대본] 탭. 이미 쓰인 대사 줄의 화자가 따라간다(<see cref="ProjectEditor.RenameSpeaker"/>), 캐릭터 키는 그대로다.
+    /// 비울 수 없고(지우기는 따로), 이미 있는 이름으로는 바꾸지 않는다(두 화자의 줄이 한 이름으로 합쳐진다).
+    /// </summary>
+    /// <returns>상태줄에 세울 말 — 무엇이 따라갔는지, 또는 못 바꾼 이유. 같은 이름이면 null.</returns>
+    public string? RenameSpeakerName(string oldName, string? newName)
+    {
+        string typed = (newName ?? string.Empty).Trim();
+
+        if (string.Equals(oldName, typed, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (typed.Length == 0)
+        {
+            return "이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.";
+        }
+
+        List<SpeakerSpec> edited = Definition.Speakers.ToList();
+        int index = edited.FindIndex(item => string.Equals(item.Name, oldName, StringComparison.Ordinal));
+
+        if (index < 0)
+        {
+            return $"화자 '{oldName}'이 없습니다 — 목록이 바뀌었습니다.";
+        }
+
+        if (edited.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)))
+        {
+            return $"화자 '{typed}'은 이미 있습니다.";
+        }
+
+        // 개명이 먼저다 — 이미 쓰인 이름을 끌고 간 뒤 등록부를 간다.
+        int lines = Editor.RenameSpeaker(oldName, typed);
+        edited[index] = new SpeakerSpec { Name = typed, CharacterId = edited[index].CharacterId };
+
+        if (!SaveSpeakers(edited))
+        {
+            return StatusMessage;
+        }
+
+        return lines == 0
+            ? $"화자 '{oldName}' → '{typed}'."
+            : $"화자 '{oldName}' → '{typed}' — 줄 {lines}개가 따라갔습니다.";
+    }
+
+    /// <summary>화자를 목록에서 지운다 — [대본] 탭. 이미 대본에 적힌 이름은 그대로 남는다(화자 칸은 자유 입력).</summary>
+    public bool RemoveSpeakerName(string name)
+    {
+        List<SpeakerSpec> edited = Definition.Speakers.ToList();
+        return edited.RemoveAll(item => string.Equals(item.Name, name, StringComparison.Ordinal)) > 0 && SaveSpeakers(edited);
+    }
+
+    /// <summary>화자의 캐릭터 키 — [구성] 탭. 초상화 · 표정이 이 키로 붙는다. 같은 값이면 쓰지 않는다.</summary>
+    public bool SetSpeakerCharacterId(string name, string? characterId)
+    {
+        string typed = (characterId ?? string.Empty).Trim();
+        List<SpeakerSpec> edited = Definition.Speakers.ToList();
+        int index = edited.FindIndex(item => string.Equals(item.Name, name, StringComparison.Ordinal));
+
+        if (index < 0 || string.Equals(edited[index].CharacterId, typed, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        edited[index] = new SpeakerSpec { Name = edited[index].Name, CharacterId = typed };
+        return SaveSpeakers(edited);
+    }
+
+    /// <summary>
+    /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 위 화자 창구들이 부른다. 화자는 게임 정의에 저장되며,
+    /// 모든 챕터가 공유해서 쓴다. 쓰고 나면 <see cref="SpeakersChanged"/>를 알린다 — 두 탭의 화자 목록이 다시 선다.
     ///
     /// <b>통째로 쓰는 것이 규격이다</b> — 더하기만 하는 <see cref="RegisterVariables"/>와
     /// 다르다. 탭에서 지운 이름이 파일에 남으면 목록이 화면과 갈리고, 그 순간부터 어느 쪽이
@@ -311,6 +407,7 @@ internal sealed class AuthoringSession
 
         GameDefinitionStore.SaveSpeakers(ProjectPath, speakers);
         Definition = GameDefinition.LoadBeside(ProjectPath);
+        SpeakersChanged?.Invoke(this, EventArgs.Empty);
         return true;
     }
 
