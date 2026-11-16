@@ -69,10 +69,9 @@ public partial class MainWindow
         // 판에서 고른 선 — 인스펙터가 그 선을 설명한다(MainWindow.LineInspector.cs).
         Graph.LineSelected += line => UiGuard.Run(_session, "선 고르기", () => OnDirectorLinePicked(line));
 
-        // 분기 조건은 챕터 그래프에서 정한다 — 연출 그래프의 표 · 인스펙터 단추가 그리로 데려간다.
+        // 판의 카드 머리 표(⑂ 조건 …)를 누르면 [구성] 탭의 그 분기로 간다. 분기 카드 · 분기 선 인스펙터는 조건을 바로 고른다
+        // (BranchConditionPicker — 2026-11-17).
         Graph.BranchConditionRequested += (chapterId, branchKey) =>
-            UiGuard.Run(_session, "분기 조건", () => OpenBranchCondition(chapterId, branchKey));
-        DialogueEditor.BranchConditionRequested += (chapterId, branchKey) =>
             UiGuard.Run(_session, "분기 조건", () => OpenBranchCondition(chapterId, branchKey));
 
         // 눈 기둥은 연출 그래프의 하이어아키에만 — 접을 판이 거기 있다(SF2 · docs/plans/hierarchy.md §3).

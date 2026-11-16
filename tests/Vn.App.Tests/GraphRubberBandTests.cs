@@ -110,8 +110,10 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Null(session.SelectedNodeId);
         Assert.Equal("선택지 · root → b", Title(graph));
 
-        // 설명의 「도착」 고리 — 그 카드를 고르고 대사 편집기로 바뀐다. 고른 레인은 놓인다.
-        Summary(graph, "summary-node:" + CardId(session, "b")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        // 출발 · 도착 고리는 없다(2026-11-17 소유자 — 머리글이 말한다). 카드를 고르면 대사 편집기로 바뀌고 고른 레인은 놓인다.
+        Assert.DoesNotContain(graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Button>(),
+            button => button.IsEffectivelyVisible && (button.Tag as string)?.StartsWith("summary-node:", StringComparison.Ordinal) == true);
+        session.Select(CardId(session, "b"));
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(CardId(session, "b"), session.SelectedNodeId);
@@ -132,7 +134,7 @@ public sealed class GraphRubberBandTests : IDisposable
     });
 
     [Fact]
-    public void 범위로_분기_선을_잡으면_인스펙터가_그_분기의_조건을_보이고_구성_탭의_그_분기로_데려간다() => HeadlessUi.Run(() =>
+    public void 범위로_분기_선을_잡으면_인스펙터에서_그_분기의_조건을_바로_고른다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
         string root = CardId(session, "root");
@@ -148,15 +150,25 @@ public sealed class GraphRubberBandTests : IDisposable
 
         Assert.Equal(4, line.StrokeThickness);
         Assert.StartsWith("분기 · root → ", Title(graph), StringComparison.Ordinal);
-        Assert.Contains("조건: 없음", Facts(graph));
 
-        Summary(graph, "summary-open").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        // [구성] 탭으로 가는 단추 · 출발/다녀갈 곳 고리는 없다 — 조건을 여기서 고른다(2026-11-17 소유자).
+        List<Button> buttons = graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Button>()
+            .Where(button => button.IsEffectivelyVisible && button.Tag is string tag &&
+                             (tag == "summary-open" || tag.StartsWith("summary-node:", StringComparison.Ordinal)))
+            .ToList();
+        Assert.Empty(buttons);
+
+        session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
+        Dispatcher.UIThread.RunJobs();
+        Band(graph, middle + new Point(6, 6), middle - new Point(6, 6));
+
+        ComboBox picker = BranchPicker(graph);
+        Assert.Equal(BranchConditionPicker.Always, (picker.SelectedItem as ComboBoxItem)?.Content);
+        picker.SelectedItem = picker.Items.OfType<ComboBoxItem>().Single(item => Equals(item.Tag, "신뢰높음"));
         Dispatcher.UIThread.RunJobs();
 
-        ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
-        Assert.Equal(0, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);
-        Assert.True(chapterGraph.FindControl<StackPanel>("BranchPanel")!.IsVisible);
-        Assert.NotNull(session.Project.FindNode(detour.Id));
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, detour.Id, session.Definition).Label);
+        Assert.Equal(0 + 1, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);   // [대본] 탭에 그대로다
 
         window.Close();
     });
@@ -193,6 +205,10 @@ public sealed class GraphRubberBandTests : IDisposable
     /// <summary>레인을 누르는 자리 — 넓고 투명한 같은 선이다.</summary>
     private static ShapePath LaneHit(GraphEditorView graph) =>
         Canvas(graph).Children.OfType<ShapePath>().Single(path => path.Tag?.GetType().Name == "RailKey");
+
+    private static ComboBox BranchPicker(GraphEditorView graph) =>
+        graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<ComboBox>()
+            .Single(combo => combo.IsEffectivelyVisible && (string?)combo.Tag == "summary-branch-condition");
 
     private static string? Title(GraphEditorView graph) => graph.FindControl<TextBlock>("InspectorTitle")!.Text;
 

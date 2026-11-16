@@ -110,9 +110,7 @@ public partial class MainWindow
             Note("조건과 스탯변화가 없습니다.");
         }
 
-        EpisodeLink("출발", chapter, edge.FromEpisodeId);
-        EpisodeLink("도착", chapter, edge.ToEpisodeId);
-
+        // 출발 · 도착 고리는 두지 않는다(2026-11-17 소유자) — 머리글이 이미 말한다.
         string from = edge.FromEpisodeId;
         string to = edge.ToEpisodeId;
         string label = edge.OptionLabel?.Trim() ?? string.Empty;
@@ -259,23 +257,26 @@ public partial class MainWindow
         string to = CardName(connection.TargetNodeId);
         ExitPort? port = connection.ExecutionPort;
 
-        if (port is { Kind: ExitPortKind.Detour, TargetNodeId: { } target, ExitKey: { } branchKey })
+        if (port is { Kind: ExitPortKind.Detour, TargetNodeId: { } target })
         {
             Graph.SetInspectorHeader($"분기 · {from} → {to}", "조건이 맞으면 다녀오는 에피소드");
             BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, target, _session.Definition);
-            Fact("조건", state.Label ?? "없음");
-            Note(BranchConditionNote.Sentence(state));
-            NodeLink("출발", connection.SourceNodeId, from);
-            NodeLink("다녀갈 곳", target, to);
 
-            if (_session.Project.FindNode(connection.SourceNodeId) is { } source &&
-                EpisodeNaming.ChapterOf(_session.Project, source) is { } chapter)
+            // 조건을 여기서 바로 고른다(2026-11-17 소유자 — 전에는 [구성] 탭으로 데려가는 단추였다). 출발 · 다녀갈 곳 고리도 두지
+            // 않는다 — 머리글이 이미 말한다.
+            ComboBox pick = BranchConditionPicker.Create(_session, target, "summary-branch-condition", ShowSelectedNode);
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            row.Children.Add(new TextBlock
             {
-                string chapterId = chapter.ChapterId;
-                ChapterTabButton(state.Label is null ? "[구성] 탭에서 조건 정하기" : "[구성] 탭에서 조건 바꾸기",
-                    () => OpenBranchCondition(chapterId, branchKey));
-            }
-
+                Text = "조건",
+                FontSize = 12,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 8, 0)
+            });
+            Grid.SetColumn(pick, 1);
+            row.Children.Add(pick);
+            DirectorSummary.Children.Add(row);
+            Note(BranchConditionNote.Sentence(state));
             return;
         }
 
@@ -290,9 +291,6 @@ public partial class MainWindow
             Graph.SetInspectorHeader($"실행 선 · {from} → {to}", "기본 출구");
             Note("카드가 끝나면 이리로 갑니다.");
         }
-
-        NodeLink("출발", connection.SourceNodeId, from);
-        NodeLink("도착", connection.TargetNodeId, to);
     }
 
     /// <summary>카드의 이름 — [대본] 탭에 보이는 그대로(에피소드는 제목, 비면 EpisodeId · 아니면 노드 이름).</summary>
@@ -312,24 +310,7 @@ public partial class MainWindow
         Tag = "summary-fact"
     });
 
-    /// <summary>그 에피소드의 카드로 가는 고리 — 카드가 없으면 이름만 적는다.</summary>
-    private void EpisodeLink(string role, ChapterGraphModel chapter, string episodeId)
-    {
-        if (EpisodeNaming.CardFor(_session.Project, chapter.ChapterId, episodeId) is { } card)
-        {
-            NodeLink(role, card.Id, TitleOf(chapter, episodeId));
-        }
-        else
-        {
-            Fact(role, TitleOf(chapter, episodeId));
-        }
-    }
-
-    /// <summary>그 카드를 고르는 고리 — 인스펙터가 그 카드의 대사 편집기로 바뀐다.</summary>
-    private void NodeLink(string role, string nodeId, string name) =>
-        Link($"{role} · {name}", "summary-node:" + nodeId, () => _session.Select(nodeId));
-
-    /// <summary>「[구성] 탭에서 …」 단추 — 고치는 자리로 데려간다.</summary>
+    /// <summary>「[구성] 탭에서 …」 단추 — 그 탭의 같은 것으로 데려간다.</summary>
     private void ChapterTabButton(string text, Action open)
     {
         var button = new Button

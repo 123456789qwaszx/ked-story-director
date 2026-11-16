@@ -41,11 +41,11 @@ public sealed class BranchConditionNoteTests : IDisposable
         DialogueNode branch = AddBranchThroughMenu(window, session, root);
 
         Assert.Contains("조건 없이 늘 다녀옵니다", session.StatusMessage, StringComparison.Ordinal);
-        Assert.Contains("[구성] 탭", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("분기 카드", session.StatusMessage, StringComparison.Ordinal);
 
         Assert.Equal("⑂ 조건 없음", ChipText(window, branch));
         Assert.Contains(Texts(BranchCard(window, root, branch)), text => text.StartsWith("지금은 조건 없이 늘 다녀옵니다", StringComparison.Ordinal));
-        Assert.NotNull(OpenButton(window, root, branch));
+        Assert.Equal(BranchConditionPicker.Always, Picked(Picker(window, root, branch)));
 
         window.Close();
     });
@@ -64,13 +64,52 @@ public sealed class BranchConditionNoteTests : IDisposable
 
         Assert.Equal("⑂ 조건: 신뢰높음", ChipText(window, branch));
         Assert.Contains(Texts(BranchCard(window, root, branch)), text => text.StartsWith("조건 「신뢰높음」일 때만 재생합니다", StringComparison.Ordinal));
-        Assert.Equal("[구성] 탭에서 조건 바꾸기", OpenButton(window, root, branch)!.Content);
+        Assert.Equal("신뢰높음", Picked(Picker(window, root, branch)));
 
         window.Close();
     });
 
     [Fact]
-    public void 표나_인스펙터_단추를_누르면_챕터_그래프의_그_분기_조건_칸이_열린다() => HeadlessUi.Run(() =>
+    public void 분기_카드에서_조건을_바로_고르고_식_미정인_조건은_고를_수_없다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — [대본] 탭에서 만든 조건 이름을 분기 카드에서 바로 고른다([구성] 탭으로 가는 단추를 대신한다).
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        DialogueNode root = Card(session, "root");
+        DialogueNode branch = AddBranchThroughMenu(window, session, root);
+        AddCondition(session, "신뢰높음");
+        session.Editor.AddChapterCondition("ch01", "아직모름", string.Empty);
+        session.Select(null);
+        session.Select(root.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        ComboBox picker = Picker(window, root, branch);
+        List<ComboBoxItem> items = picker.Items.OfType<ComboBoxItem>().ToList();
+        Assert.Equal([BranchConditionPicker.Always, "신뢰높음", "아직모름 (식 미정)"], items.Select(item => item.Content));
+        Assert.False(items[2].IsEnabled);
+
+        picker.SelectedItem = items[1];
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("⑂ 조건: 신뢰높음", ChipText(window, branch));
+        Assert.Contains("조건 '신뢰높음'일 때만 다녀옵니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("신뢰높음", Picked(Picker(window, root, branch)));   // 다시 선 카드도 그 조건을 보인다
+
+        // 「(언제나)」로 돌리면 조건이 걷힌다. 되돌리기 한 칸이다.
+        ComboBox again = Picker(window, root, branch);
+        again.SelectedItem = again.Items.OfType<ComboBoxItem>().First();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 카드_머리의_표를_누르면_챕터_그래프의_그_분기_조건_칸이_열린다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
         DialogueNode root = Card(session, "root");
@@ -84,18 +123,6 @@ public sealed class BranchConditionNoteTests : IDisposable
         Assert.Equal(0, tabs.SelectedIndex);
         Assert.True(chapterGraph.FindControl<Control>("BranchPanel")!.IsVisible);
         Assert.True(chapterGraph.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
-
-        // 인스펙터의 단추도 같은 자리로 간다.
-        tabs.SelectedIndex = GraphTab;
-        session.Select(root.Id);
-        Dispatcher.UIThread.RunJobs();
-        chapterGraph.SelectBranch(null);
-
-        OpenButton(window, root, branch)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.Equal(0, tabs.SelectedIndex);
-        Assert.True(chapterGraph.FindControl<Control>("BranchPanel")!.IsVisible);
 
         window.Close();
     });
@@ -148,9 +175,11 @@ public sealed class BranchConditionNoteTests : IDisposable
         Editor(window).LineHost.Children.Single(child =>
             Equals(child.Tag, DialogueNodeEditor.BranchMarkerTag(caller.Script.ActiveLines.First().Id, branch.Id)));
 
-    private static Button? OpenButton(MainWindow window, DialogueNode caller, DialogueNode branch) =>
-        BranchCard(window, caller, branch).GetVisualDescendants().OfType<Button>().FirstOrDefault(button =>
-            Equals(button.Tag, DialogueNodeEditor.BranchConditionTag(caller.Script.ActiveLines.First().Id, branch.Id)));
+    private static ComboBox Picker(MainWindow window, DialogueNode caller, DialogueNode branch) =>
+        BranchCard(window, caller, branch).GetLogicalDescendants().OfType<ComboBox>().Single(combo =>
+            Equals(combo.Tag, DialogueNodeEditor.BranchConditionTag(caller.Script.ActiveLines.First().Id, branch.Id)));
+
+    private static object? Picked(ComboBox combo) => (combo.SelectedItem as ComboBoxItem)?.Tag ?? BranchConditionPicker.Always;
 
     private static IEnumerable<string> Texts(Control card) =>
         card.GetVisualDescendants().OfType<TextBlock>().Select(block => block.Text ?? string.Empty);

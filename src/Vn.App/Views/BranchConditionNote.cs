@@ -5,14 +5,14 @@ namespace Vn.App.Views;
 /// <summary>
 /// 분기 조건을 사람에게 말하는 글 — 연출 그래프 카드의 표와 인스펙터의 분기 카드가 같은 말을 쓴다.
 ///
-/// 조건은 다녀오는 에피소드의 첫머리에 서고(<see cref="BranchEntryCondition"/>) 정하는 곳은 챕터 그래프의 분기 선 하나다.
-/// 연출 그래프는 조건을 고치지 않는 대신 지금 걸린 조건을 보이고 그 자리로 데려간다 — 안 보이면 조건 없는 분기와 조건 걸린
-/// 분기가 판에서 똑같아 보인다.
+/// 조건은 다녀오는 에피소드의 첫머리에 선다(<see cref="BranchEntryCondition"/>). 고르는 곳은 [대본] 탭의 분기 카드 · 분기 선
+/// 인스펙터(<see cref="BranchConditionPicker"/> — 2026-11-17)와 [구성] 탭의 분기 선이다. 지금 걸린 조건은 늘 보인다 — 안 보이면
+/// 조건 없는 분기와 조건 걸린 분기가 판에서 똑같아 보인다.
 /// </summary>
 internal static class BranchConditionNote
 {
     /// <summary>어디서 정하는가.</summary>
-    internal const string Where = "조건은 [구성] 탭에서 이 분기 선(점선)을 눌러 정합니다.";
+    internal const string Where = "조건은 [대본] 탭의 분기 카드 · 분기 선에서, 또는 [구성] 탭의 분기 선(점선)에서 고릅니다.";
 
     /// <summary>카드 머리에 다는 짧은 표.</summary>
     internal static string Chip(BranchEntryCondition.State state) =>

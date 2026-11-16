@@ -898,7 +898,7 @@ public partial class DialogueNodeEditor : UserControl
             ? EpisodeNaming.ShownNameOf(_session.Project, target)
             : "(사라진 노드)";
 
-        // 두 줄이다 — 위는 무엇으로 갈라지는가(와 지우기), 아래는 지금 조건과 정하러 가는 단추. 한 줄에 다 세우면 인스펙터 폭을
+        // 두 줄이다 — 위는 무엇으로 갈라지는가(와 지우기), 아래는 지금 조건과 조건을 고르는 칸. 한 줄에 다 세우면 인스펙터 폭을
         // 넘어 단추가 밖으로 밀린다.
         var row = new StackPanel
         {
@@ -927,7 +927,7 @@ public partial class DialogueNodeEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center
         });
 
-        // 지금 걸린 조건 — 연출 그래프에서는 고치지 않지만 보여야 한다. 조건 없는 분기와 조건 걸린 분기가 똑같아 보이면 헷갈린다.
+        // 지금 걸린 조건 — 여기서 바로 고른다(2026-11-17 소유자 — 전에는 [구성] 탭으로 데려가는 단추였다).
         BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, targetId, _session.Definition);
         string? chapterId = EpisodeNaming.ChapterOf(_session.Project, node)?.ChapterId;
 
@@ -943,18 +943,19 @@ public partial class DialogueNodeEditor : UserControl
 
         if (chapterId is not null)
         {
-            var open = new Button
+            // 고르면 모델이 바뀌어 편집기가 다시 선다 — 설명 글도 따라온다.
+            ComboBox pick = BranchConditionPicker.Create(_session, targetId, BranchConditionTag(lineId, targetId));
+            var pickRow = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            pickRow.Children.Add(new TextBlock
             {
-                Content = state.Label is null ? "[구성] 탭에서 조건 정하기" : "[구성] 탭에서 조건 바꾸기",
-                FontSize = 10,
-                Padding = new Thickness(6, 1),
-                Tag = BranchConditionTag(lineId, targetId),
-                HorizontalAlignment = HorizontalAlignment.Left
-            };
-            ToolTip.SetTip(open, BranchConditionNote.Where + " 누르면 그 분기를 고른 채로 [구성] 탭이 열립니다.");
-            string branchKey = ExitPort.DetourKey(lineId, targetId);
-            open.Click += (_, _) => UiGuard.Run(_session, "분기 조건", () => BranchConditionRequested?.Invoke(chapterId, branchKey));
-            detail.Children.Add(open);
+                Text = "조건",
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 6, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            Grid.SetColumn(pick, 1);
+            pickRow.Children.Add(pick);
+            detail.Children.Add(pickRow);
         }
 
         Button remove = RemoveBranchButton(node, lineId, targetId);
@@ -989,14 +990,10 @@ public partial class DialogueNodeEditor : UserControl
         return card;
     }
 
-    /// <summary>분기 카드의 「챕터 그래프에서 조건 정하기」 단추가 지는 표.</summary>
+    /// <summary>분기 카드의 조건 고르는 칸이 지는 표.</summary>
     internal static string BranchConditionTag(string lineId, string targetId) =>
         $"branch-condition:{ExitPort.DetourKey(lineId, targetId)}";
 
-    /// <summary>
-    /// 분기의 조건을 정하러 가자고 했다 (챕터 Id, 분기 열쇠 <see cref="ExitPort.DetourKey"/>) — 셸이 챕터 그래프를 열고 그 분기를 고른다.
-    /// </summary>
-    internal event Action<string, string>? BranchConditionRequested;
 
     /// <summary>그 줄의 「조건 분기」 카드 하나가 지는 표(줄과 다녀갈 카드) — 화면 테스트가 이것으로 찾는다.</summary>
     internal static string BranchMarkerTag(string lineId, string targetId) =>

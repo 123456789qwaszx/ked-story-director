@@ -68,10 +68,9 @@ public sealed class BranchMarkerCardTests : IDisposable
     });
 
     [Fact]
-    public void 카드에는_조건이_없다() => HeadlessUi.Run(() =>
+    public void 카드에는_조건을_고르는_칸_하나만_있고_식을_적는_칸은_없다() => HeadlessUi.Run(() =>
     {
-        // 조건식을 여기서 적게 하면 연출 그래프가 "갈지 말지"까지 정하게 된다 —
-        //    일부러 뒤로 미룬 일이다.
+        // 2026-11-17 소유자 — 조건을 카드에서 바로 고른다(챕터에 만들어 둔 조건 이름에서). 식을 적는 칸은 여전히 없다 — 식은 [구성] 탭이다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
         session.Editor.AddBranchMarker(nodeId, lineId);
@@ -79,8 +78,8 @@ public sealed class BranchMarkerCardTests : IDisposable
 
         Border card = Assert.IsType<Border>(Card(editor, lineId));
 
-        Assert.Empty(card.GetVisualDescendants().OfType<ComboBox>());
-        Assert.Empty(card.GetVisualDescendants().OfType<TextBox>());
+        Assert.Single(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(card).OfType<ComboBox>());
+        Assert.Empty(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(card).OfType<TextBox>());   // 콤보 틀 안의 칸은 세지 않는다
     });
 
     [Fact]
