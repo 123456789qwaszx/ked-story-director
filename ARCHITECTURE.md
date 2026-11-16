@@ -37,8 +37,13 @@ MyStory/
 ├─ game.definition.json        스탯 후보(variables) · 게임 전역 조건 · 화자(speakers). compositor의 키도 산다 — 모르는 키는 보존한다
 ├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
-└─ exported/{챕터}.progression.json
+└─ exported/{챕터}.progression.json  진행 JSON — 런타임 계약
+   exported/{챕터}.scenes.json       장면 단위 내보내기 — 장면 메모 · 에피소드 지시 · 살아 있는 대사(LineId · 화자 · 글).
+                                     AI가 장면 하나씩 연출 초안을 낼 때 읽는다. 진행 JSON이 나갈 때 함께 나가고 런타임은 읽지 않는다
 ```
+
+챕터는 장면 메모(`sceneNotes[]` — 장면마다 자유 글, 열쇠는 `EffectiveSceneId`)를 든다. 장면이 아니라 곁 자료다 — 장면의 구성원은
+늘 `Episode.SceneId`에서 계산한다. 에피소드마다의 지시는 에피소드의 `memo`다(2026-11-16 · [`docs/work-orders/scene-notes-orders.md`](docs/work-orders/scene-notes-orders.md)).
 
 | 형식 | 상수 | 파일 |
 |---|---|---|
@@ -300,6 +305,8 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 진단이 짚는 자리 · 문장 | `Chapters/ChapterDiagnostic.cs`(에피소드는 `EpisodeId`, 간선은 메시지의 `ChapterEdge.Where`) |
 | 챕터 조건 → 대사 카드 | `Chapters/ChapterBoardSupply.cs` · `ConditionYarnTranslator.cs` |
 | 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` |
+| 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
+| 장면 단위 내보내기(`scenes.json`) | `Chapters/ChapterScenesExporter.cs` — 쓰는 때는 `ChapterExportService.ExportAll` |
 
 **편집 · 저장 · 화면**
 
