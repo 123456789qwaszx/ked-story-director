@@ -194,6 +194,42 @@ public sealed class ChapterSceneNoteEditingTests
     }
 
     [Fact]
+    public void 지시_카드는_비워도_남고_빼기만_지시와_함께_뗀다()
+    {
+        ProjectEditor editor = Editor();
+
+        editor.AddEpisodeNoteCard(Ch, "ep01");                 // 빈 카드
+        editor.UpdateEpisodeMemo(Ch, "ep02", "지시");           // 지시를 적으면 카드도 선다
+        editor.UpdateEpisodeMemo(Ch, "ep02", "");
+
+        Assert.True(Chapter(editor).Episodes[0].HasNoteCard);
+        Assert.True(Chapter(editor).Episodes[1].HasNoteCard);
+        Assert.Null(Chapter(editor).Episodes[1].Memo);
+
+        editor.UpdateEpisodeMemo(Ch, "ep02", "다시");
+        editor.RemoveEpisodeNoteCard(Ch, "ep02");
+
+        Assert.False(Chapter(editor).Episodes[1].HasNoteCard);
+        Assert.Null(Chapter(editor).Episodes[1].Memo);
+
+        editor.Undo();   // 한 칸 — 카드와 지시가 함께 돌아온다
+        Assert.Equal((true, "다시"), (Chapter(editor).Episodes[1].NoteCard, Chapter(editor).Episodes[1].Memo));
+
+    }
+
+    [Fact]
+    public void 이미_붙은_카드를_또_붙이면_되돌리기_칸을_쓰지_않는다()
+    {
+        ProjectEditor editor = Editor();
+
+        editor.AddEpisodeNoteCard(Ch, "ep01");
+        editor.AddEpisodeNoteCard(Ch, "ep01");
+        editor.Undo();
+
+        Assert.False(Chapter(editor).Episodes[0].HasNoteCard);
+    }
+
+    [Fact]
     public void 에피소드_지시는_장면을_옮겨도_에피소드를_따라간다()
     {
         ProjectEditor editor = Editor();

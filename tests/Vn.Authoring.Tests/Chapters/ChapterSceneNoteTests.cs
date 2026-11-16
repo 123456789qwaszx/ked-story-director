@@ -71,6 +71,19 @@ public sealed class ChapterSceneNoteTests : IDisposable
     }
 
     [Fact]
+    public void 지시_카드_표시는_저장을_왕복하고_없으면_쓰지_않는다()
+    {
+        ChapterDocument chapter = Chapter();
+        chapter.Episodes[1] = chapter.Episodes[1] with { NoteCard = true };
+
+        string manifest = Save(chapter);
+        ChapterDocument read = Assert.Single(ProjectStore.Load(ManifestPath).Project.Chapters);
+
+        Assert.Equal([false, true, false, false], read.Episodes.Select(episode => episode.NoteCard));
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(manifest, "\"noteCard\": true"));
+    }
+
+    [Fact]
     public void 장면이_처음_나오는_차례로_쓰고_주인_없는_메모는_뒤에_열쇠_차례로_쓴다()
     {
         string manifest = Save(Chapter(

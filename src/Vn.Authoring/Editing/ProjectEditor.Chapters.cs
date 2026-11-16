@@ -374,7 +374,7 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 에피소드 지시 — 그 에피소드의 <see cref="ChapterEpisode.Memo"/>. 장면 메모 공간의 에피소드 카드가 이것을 쓴다.
-    /// 비우면 지운다(null — 카드가 빠진다). 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 앞뒤 빈칸은 걷는다.
+    /// 비우면 지운다(null). 카드는 그대로다 — 카드를 떼는 것은 <see cref="RemoveEpisodeNoteCard"/>다. 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 앞뒤 빈칸은 걷는다.
     /// </summary>
     public void UpdateEpisodeMemo(string chapterId, string episodeId, string? memo)
     {
@@ -388,7 +388,46 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with { Memo = wanted });
+        // 지시를 적으면 카드도 선다 — 그 뒤로 지시를 비워도 카드는 [빼기]로만 내린다.
+        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with
+        {
+            Memo = wanted,
+            NoteCard = chapter.Episodes[index].NoteCard || wanted is not null
+        });
+    }
+
+    /// <summary>
+    /// 장면 메모 공간에 그 에피소드의 지시 카드를 붙인다 — 지시가 비어도 카드가 남는다(<see cref="ChapterEpisode.NoteCard"/>).
+    /// 되돌리기 한 칸, 이미 붙었으면 칸을 쓰지 않는다.
+    /// </summary>
+    public void AddEpisodeNoteCard(string chapterId, string episodeId)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        int index = RequireEpisodeIndex(chapter, episodeId);
+
+        if (chapter.Episodes[index].NoteCard)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = true });
+    }
+
+    /// <summary>
+    /// 지시 카드를 뗀다 — [빼기]. 카드 표시와 지시를 함께 지운다, 되돌리기 한 칸. 이미 없으면 칸을 쓰지 않는다.
+    /// </summary>
+    public void RemoveEpisodeNoteCard(string chapterId, string episodeId)
+    {
+        ChapterDocument chapter = RequireChapter(chapterId);
+        int index = RequireEpisodeIndex(chapter, episodeId);
+
+        if (!chapter.Episodes[index].HasNoteCard)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.NodeMetadata, () =>
+            chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = false, Memo = null });
     }
 
     /// <summary>

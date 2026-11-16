@@ -14,8 +14,8 @@ namespace Vn.App;
 /// <b>장면 메모 공간</b> — [대본] 탭 하이어아키에서 장면을 고르면 인스펙터에 선다(<c>docs/work-orders/scene-notes-orders.md</c> S4).
 ///
 /// 둘로 이루어진다: 작가가 자유롭게 적는 <b>장면 메모</b> 한 칸과, [+ 에피소드]로 그 장면의 에피소드를 골라 붙이는 <b>에피소드 카드</b>
-/// (그 에피소드에만 해당하는 지시 — 에피소드의 <see cref="ChapterEpisode.Memo"/>). 카드가 있다는 것은 저장되지 않는다 — 지시가 비지
-/// 않은 에피소드가 곧 카드다. 그래서 빈 카드는 초점이 떠나면 빠진다. 카드의 차례는 장면 안 에피소드 차례다.
+/// (그 에피소드에만 해당하는 지시 — 에피소드의 <see cref="ChapterEpisode.Memo"/>). 카드를 붙였다는 것은 에피소드에
+/// 저장된다(<see cref="ChapterEpisode.NoteCard"/>) — 지시가 비어도 카드는 남고 [빼기]만 뗀다. 카드의 차례는 장면 안 에피소드 차례다.
 ///
 /// 칸은 초점이 떠날 때와 Ctrl+Enter에 넣는다(Enter는 줄바꿈 — 여러 줄 글이다). Esc는 넣지 않은 글을 걷는다. 넣기는 되돌리기 한
 /// 칸이고 인스펙터를 다시 세우지 않는다(<c>NodeMetadata</c>) — 다른 칸으로 옮겨 가는 누름이 사라진 칸에 떨어지지 않게.
@@ -45,7 +45,7 @@ public partial class MainWindow
         DirectorSummary.Children.Add(sceneBox);
 
         Heading("에피소드 지시");
-        Note("장면 안의 에피소드를 골라 그 에피소드에만 해당하는 지시를 적습니다. 지시를 비우면 카드가 빠집니다. " +
+        Note("장면 안의 에피소드를 골라 그 에피소드에만 해당하는 지시를 적습니다. 지시가 비어도 카드는 남고, [빼기]로 뗍니다. " +
              "Enter는 줄바꿈, Ctrl+Enter로 넣고 Esc로 되돌립니다.");
 
         var cards = new StackPanel { Spacing = 6 };
@@ -138,26 +138,20 @@ public partial class MainWindow
             WireNote(box, "에피소드 지시",
                 () => EpisodeMemoNow(chapterId, episodeId),
                 text => _session.Editor.UpdateEpisodeMemo(chapterId, episodeId, text),
-                committed: () =>
-                {
-                    if (EpisodeMemoNow(chapterId, episodeId) is null)
-                    {
-                        Drop(episodeId, card);
-                    }
-                });
+                committed: null);   // 지시를 비워도 카드는 남는다 — [빼기]만 뗀다
 
             remove.Click += (_, _) => UiGuard.Run(_session, "에피소드 지시 빼기", () =>
             {
-                _session.Editor.UpdateEpisodeMemo(chapterId, episodeId, null);
+                _session.Editor.RemoveEpisodeNoteCard(chapterId, episodeId);
                 Drop(episodeId, card);
-                _session.SetStatus($"'{episode.ShownTitle}'의 지시를 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                _session.SetStatus($"'{episode.ShownTitle}'의 지시 카드를 뺐습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
             });
 
             cards.Children.Insert(at, card);
             return box;
         }
 
-        foreach (ChapterEpisode episode in scene.Episodes.Where(episode => EpisodeMemoNow(chapterId, episode.EpisodeId) is not null))
+        foreach (ChapterEpisode episode in scene.Episodes.Where(episode => HasCardNow(chapterId, episode.EpisodeId)))
         {
             Card(episode);
         }
@@ -178,6 +172,7 @@ public partial class MainWindow
                     return;
                 }
 
+                _session.Editor.AddEpisodeNoteCard(chapterId, picked.EpisodeId);   // 비어도 남는다 — 저장된다
                 TextBox box = Card(picked);
                 RefillAdd();
                 box.Focus();
@@ -239,6 +234,10 @@ public partial class MainWindow
 
     private string? SceneNoteNow(string chapterId, string sceneId) =>
         _session.Editor.FindChapter(chapterId) is { } chapter ? ChapterSceneNotes.Of(chapter.SceneNotes, sceneId)?.Text : null;
+
+    private bool HasCardNow(string chapterId, string episodeId) =>
+        _session.Editor.FindChapter(chapterId)?.Episodes.FirstOrDefault(episode =>
+            string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))?.HasNoteCard == true;
 
     private string? EpisodeMemoNow(string chapterId, string episodeId) =>
         _session.Editor.FindChapter(chapterId)?.Episodes.FirstOrDefault(episode =>

@@ -50,6 +50,15 @@ public sealed record ChapterEpisode(
     /// <summary>런타임의 저장·롤백 경계. 비어 있으면 에피소드별 기본 장면을 쓴다.</summary>
     public string? SceneId { get; init; }
 
+    /// <summary>
+    /// 장면 메모 공간에 이 에피소드의 지시 카드를 붙였는가 — 지시(<see cref="Memo"/>)가 비어도 카드가 남는다. [빼기]만 내린다
+    /// (2026-11-16 소유자). 에피소드를 따라다닌다(지시와 같다). 화면만 쓰는 표시라 내보내기에 싣지 않는다.
+    /// </summary>
+    public bool NoteCard { get; init; }
+
+    /// <summary>장면 메모 공간에 카드가 서는가 — 붙였거나, 지시가 있다.</summary>
+    public bool HasNoteCard => NoteCard || !string.IsNullOrWhiteSpace(Memo);
+
     public string EffectiveSceneId => string.IsNullOrWhiteSpace(SceneId)
         ? $"__scene_{EpisodeId}"
         : SceneId.Trim();

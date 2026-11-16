@@ -80,7 +80,7 @@ public sealed class DirectorSceneNotesTests : IDisposable
     });
 
     [Fact]
-    public void 에피소드를_골라_붙이면_카드가_서고_지시를_비우면_빠진다() => HeadlessUi.Run(() =>
+    public void 에피소드를_골라_붙인_카드는_지시를_비워도_남고_다시_열어도_있다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
         GraphEditorView graph = PickScene(window, "opening");
@@ -103,8 +103,23 @@ public sealed class DirectorSceneNotesTests : IDisposable
         CtrlEnter(box);
 
         Assert.Null(Episode(session, "a").Memo);
-        Assert.Null(Find(graph, "episode-note-card:a"));
-        Assert.Equal(["scene-note-add:root", "scene-note-add:a"], AddTags(add));
+        Assert.True(Episode(session, "a").NoteCard);
+        Assert.NotNull(Find(graph, "episode-note-card:a"));   // [빼기]만 뗀다
+        Assert.Equal(["scene-note-add:root"], AddTags(add));
+
+        // 빈 채로 초점이 떠나도, 다른 곳을 골랐다 돌아와도 남는다.
+        add.SelectedIndex = 0;   // root — 지시를 적지 않는다
+        Dispatcher.UIThread.RunJobs();
+        Box(graph, "scene-note").Focus();
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(Find(graph, "episode-note-card:root"));
+
+        graph.HierarchyView.RowButton(StoryHierarchy.ChapterKey("ch01"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        graph = PickScene(window, "opening");
+
+        Assert.Equal(string.Empty, Box(graph, "episode-note:root").Text);
+        Assert.Equal(string.Empty, Box(graph, "episode-note:a").Text);
 
         window.Close();
     });
@@ -129,6 +144,7 @@ public sealed class DirectorSceneNotesTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.Null(Episode(session, "a").Memo);
+        Assert.False(Episode(session, "a").HasNoteCard);
         Assert.Null(Find(graph, "episode-note-card:a"));
 
         session.Editor.Undo();

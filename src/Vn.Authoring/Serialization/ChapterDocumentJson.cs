@@ -100,6 +100,11 @@ internal static class ChapterDocumentJson
             json["allowUnreachable"] = true;
         }
 
+        if (episode.NoteCard)
+        {
+            json["noteCard"] = true;
+        }
+
         return json;
     }
 
@@ -114,7 +119,8 @@ internal static class ChapterDocumentJson
         (bool?)json["allowUnreachable"] ?? false)
     {
         EventKey = Optional(json["eventKey"]),
-        SceneId = Optional(json["sceneId"])
+        SceneId = Optional(json["sceneId"]),
+        NoteCard = (bool?)json["noteCard"] ?? false
     };
 
     // ── 간선 ────────────────────────────────────────────────────────────────
