@@ -63,7 +63,6 @@ Avalonia 데스크톱 도구.** 원고(프로젝트 파일)는 연출 도구 [`k
 | `Graph/` | 화면에 *무엇을* 그릴지(`GraphProjectionBuilder`) · 선의 쪽(`EdgeSide`) · 선 모양 |
 | `Rendering/` | 대사 노드를 평평한 글로 펴기 — 카드 글 칸(`WorkingDialoguePreview.ScenarioText`) |
 | `Results/` | 대사 노드를 펼친 불변 결과(`DialoguePublisher.Draft`) — 합성기 · 검증이 읽는다(발행은 compositor로 갔다) |
-| `Definition/` | `game.definition.json` — 스탯 후보 · 화자 |
 | `Serialization/` | 저장 형식 |
 
 ## 5. 데이터가 흐르는 길
@@ -96,7 +95,7 @@ Avalonia 데스크톱 도구.** 원고(프로젝트 파일)는 연출 도구 [`k
 |---|---|
 | 모델을 바꾸는 편집 명령 | `Editing/ProjectEditor*.cs` — **여기에만** |
 | 챕터 · 에피소드 · 간선 · 조건 · 스탯 편집 | `Editing/ProjectEditor.Chapters.cs` |
-| 화자 · 대사 바꾸기 | `Editing/ProjectEditor.Scripts.cs`(`SetScriptLineText` · `ApplyScenarioText`) |
+| 화자 · 대사 바꾸기 | `Editing/ProjectEditor.Scripts.cs`(`SetScriptLineText` · `ApplyScenarioText`) · 화자 목록은 `Editing/ProjectEditor.Speakers.cs` |
 | if/elseif/endif의 뜻 | `Flow/ConditionFlowResolver.cs` |
 | 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs` — 화면이 아니라 여기 |
 | 챕터 값의 검사 하나 더하기 | `Chapters/ChapterStructureCheck.cs`(값의 흠) · `ChapterValidator.cs`(판과 맞대는 검사) |

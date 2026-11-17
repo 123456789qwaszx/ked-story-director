@@ -72,7 +72,7 @@ VNStoryEditor_avalonia
 | 에피소드·간선·선택지·조건·스탯 | `chapters/{id}.xlsx` — ⚠ **간선은 [연출 그래프]에서도 긋는다**(2026-09-17, R7): 카드 아래 3칸을 끌어다 놓으면 `ChapterDocument.Edges`를 그대로 고친다. **창구가 둘이지 정본은 하나**다 |
 | 대사 본문·화자·라인 구조 | `episodes/{chapter}/{episode}.xlsx` |
 | Yarn 진입 이름·인라인 연출 | 연출 그래프 |
-| 커맨드 어휘·초상화 매핑 | `game.definition.json` |
+| 커맨드 어휘 | `game.definition.json`(compositor) — ⛔ 초상화 매핑(화자 · 캐릭터 키)은 2026-11-17부터 프로젝트의 `speakers` |
 | 실제 런타임 입력 | 검증을 통과한 `exported/` 결과 |
 
 처리 순서:

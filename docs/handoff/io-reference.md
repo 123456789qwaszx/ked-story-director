@@ -6,6 +6,10 @@
 >
 > ⚠ **2026-10-29 · 프로젝트 형식 4:** `script/*.vnscript.json`은 없다 — 대본은 카드 안(판 파일 카드의 `script` 칸)에 든다.
 > 형식 3 프로젝트는 열지 않는다(⛔ 2026-11-17 — 그 전에는 열 때 옮겼다 · [`docs/plans/script-merge.md`](../plans/script-merge.md)).
+>
+> ⛔ **2026-11-17 · 정의 파일을 갈랐다:** 이 툴은 `game.definition.json`을 읽지도 쓰지도 않는다(§1-2 · §2-4는 지난 모양이다). 스탯은 챕터의 것,
+> 화자는 프로젝트의 것(매니페스트 `speakers`)이고, 전역 조건은 걷혔다. 저장할 때 그 파일에서 이 툴의 옛 칸만 걷는다 —
+> [`docs/work-orders/definition-split-orders.md`](../work-orders/definition-split-orders.md).
 
 2026-08-06 작성. 소유자가 관리자로서 툴의 모든 입출력을 정확히 관리하기 위한 기준 문서.
 아래 내용은 전부 코드에서 확인한 사실이다(추측 없음). 규범 충돌 시 코드와

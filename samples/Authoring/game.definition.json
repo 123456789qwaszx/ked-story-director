@@ -1,37 +1,4 @@
 {
-  "variables": [
-    {
-      "name": "favor",
-      "type": "number",
-      "description": "주인공에 대한 호감"
-    },
-    {
-      "name": "trust",
-      "type": "number",
-      "description": "약속에 대한 신뢰"
-    },
-    {
-      "name": "contract_signed",
-      "type": "bool",
-      "description": "계약서 서명 여부"
-    },
-    {
-      "name": "route",
-      "type": "string",
-      "description": "현재 루트"
-    }
-  ],
-  "conditions": [],
-  "speakers": [
-    {
-      "name": "윌로",
-      "characterId": "willo"
-    },
-    {
-      "name": "라루",
-      "characterId": "laru"
-    }
-  ],
   "presentationCommandCategories": [
     {
       "id": "camera",

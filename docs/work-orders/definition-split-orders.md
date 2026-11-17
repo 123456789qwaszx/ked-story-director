@@ -4,7 +4,8 @@
 해야 하고, speaker는 전체 프로젝트 단위인데 구분해야 하는 거 아니야?」 · 「애초에 저 game.definition은 그냥 중복 아니야? 프로젝트든
 뭐든 그런 곳에 저장해도 될 것 같은데. ked-presentation-runtime에 쓰이고 있는지도 모르겠어.」
 
-> **상태: 진행 중.**
+> **상태: 끝(S0–S4).** 남은 것 — ① compositor가 정의 파일의 `speakers`를 읽고 있었다면 매니페스트의 `speakers`로 옮겨 읽어야 한다(그쪽 저장소 ·
+> 여기서는 닿지 못했다) ② 열 때 옮기는 길(`GameDefinitionFile.SpeakersBeside`)은 소유자의 프로젝트가 한 번 저장된 뒤 걷는다(빚).
 
 ## 1. 지금 (조사)
 
@@ -63,3 +64,4 @@
 | 11-17 | S1 | (이 커밋) | 경고 `StatMissingFromGameDefinition` · 검증 보고의 [등록](`OfferStatRegistration`) · 세션 `RegisterVariables` · `GameDefinitionStore.AddVariables` · `GameDefinition.Variables` · `VariableSpec`을 걷었다. `ChapterDocument.ToGraphModel`은 정의 인자를 받지 않는다(스탯 검사는 범위만 본다). 새 챕터는 스탯 없이 선다(`CreateChapter`). 정의 파일 뼈대에서 `variables`를 뺐다(뼈대 자체는 S3에서 걷는다). 시험 — 등록 시험 · 견본의 변수 후보 시험을 지웠고, 씨앗 프로젝트는 챕터에 스탯을 더한다(`AddChapterStat`), [구성] 렌더 시험의 경고 11 → 7(스탯 넷). Authoring 699 · App 450 |
 | 11-17 | S2 | (이 커밋) | `GameDefinition.Conditions` · `ConditionSpec` · `AvailableConditionSourceKind.GameGlobal` · 해석기의 전역 갈래를 걷었다. 조건 하나 때문에 정의를 들고 다니던 인자를 걷었다 — `AvailableConditionResolver` · `ConditionChoices` · `ConditionFlowResolver` · `NodeConnections` · `DialoguePublisher` · `WorkingDialoguePreview` · `GraphProjectionBuilder` · `BranchEntryCondition` · `ChapterYarnExporter` · `ChapterExportService.ExportAll`(대본 붙여넣기 `ApplyScenarioText`는 화자 때문에 S3까지 남는다). 「설정노드에도 게임 전역 조건에도 없습니다」 → 「이 챕터에 없습니다」. 시험 — 공급 시험의 전역 조건 부분을 걷고 같은 판 조건으로 흐름을 본다. Authoring 699 · App 450 |
 | 11-17 | S3 | (이 커밋) | 화자 → 프로젝트: `Model/Speaker`(이름 · 캐릭터 키) · `StoryProject.Speakers` · `FindSpeaker` · `FindSpeakerCharacterId`, 매니페스트와 되돌리기 스냅숏의 `speakers`(비면 안 쓴다 · 손으로 고친 빈 이름 · 겹친 이름은 견딘다), 저장 검증(빈 이름 · 겹친 이름). 편집 명령 `ProjectEditor.Speakers.cs` — `AddSpeaker` · `RemoveSpeaker` · `SetSpeakerCharacterId` · `RenameSpeaker`(목록과 대사 줄이 한 칸 — Scripts에서 옮겼다). 세션 화자 창구는 명령을 부른다(저장 안 한 프로젝트에서도 고친다), `SpeakersChanged`는 목록이 바뀔 때마다(되돌리기 · 열기 포함) 낸다. 대본 붙여넣기(`ApplyScenarioText` · `ScenarioTextParser.Parse`)는 프로젝트의 화자를 본다 — 정의 인자를 걷었다. 정의 파일은 `GameDefinitionFile` 하나(`SpeakersBeside` — 열 때 옮김 · `StripBeside` — 저장할 때 `variables` · `conditions` · `speakers` · 이 툴의 `_안내`를 걷고, 남는 것이 없으면 지운다 · 깨진 파일은 둔다). `GameDefinition` · `GameDefinitionStore` · 세션 `Definition` · 정의 파일 뼈대를 걷었다. 화면 글(설정 창 툴팁 · [화자] 탭 안내)에서 정의 파일을 뺐다. 렌더로 [대본] 화자 목록 · [구성] [화자] 탭을 봤다. 시험 — 새 `SpeakerCommandTests` 6, 세션 시험 셋을 새 모양으로(프로젝트의 것 · 옮김 · 저장의 걷기), `GameDefinitionStoreTests` 걷음, 화자 시험들은 `SetSpeakers`(시험 준비 — 편집 명령을 지난다)로. Authoring 701 · App 451 |
+| 11-17 | S4 | (이 커밋) | 문서 — `README.md`(저장 구조) · `ARCHITECTURE.md`(읽는 것 · 저장 구조 · 모델 표 · 편집 파일 표 · 규칙 0 · 16 · 고칠 곳 표) · `ORIENTATION.md` · `two-graphs.md`(1절 표 · 7절 Q · 새 7절 AE) · `chapter-layer-guide.md` · `external-overview.md`, 지난 인계 · 출입구 문서에는 ⛔ 날짜만. 견본 셋(`samples/Authoring` · `FestivalEve` · `PresentationDemo`)을 툴의 길(열기 → 옮김 → 저장)로 옮겼다 — 화자가 매니페스트로 가고, 런타임 견본 둘의 정의 파일은 남는 칸이 없어 지워졌으며, `samples/Authoring`의 것은 compositor의 연출 어휘만 남았다. Authoring 701 · App 451 |

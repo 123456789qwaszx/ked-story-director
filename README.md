@@ -44,8 +44,8 @@
 
 ```text
 MyStory/
-├─ 예제.vnproject.json         목차 · 챕터 · 파일을 넘나드는 관계
-├─ game.definition.json        스탯 · 화자 (compositor의 연출 커맨드 어휘도 여기 산다 — 이 툴은 읽지도 지우지도 않는다)
+├─ 예제.vnproject.json         목차 · 챕터 · 화자 · 파일을 넘나드는 관계
+├─ game.definition.json        (있으면) compositor의 연출 커맨드 어휘 — 이 툴은 읽지 않고, 저장할 때 옛 칸(스탯 · 조건 · 화자)만 걷는다
 ├─ story/                      판(챕터마다 하나)과 그 위의 카드·노드 — 카드는 제 대본(줄 신원 + 본문)을 든다
 ├─ runtime.target.json         보낼 곳 — 형식마다 exported/ 밖에 한 벌 더 낼 폴더([⚙ 설정]의 「내보내기」가 적는다)
 └─ exported/                   툴의 작업 사본 — 고칠 때마다 저절로 나간다

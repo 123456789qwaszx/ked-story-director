@@ -8,7 +8,8 @@
 | `FestivalEve/` | `festival_eve` 축제 전날 | 장면 둘(교실 · 교무실 앞) · 스탯 둘(성실 · 요령) · 런타임과 같은 에피소드 다섯 + 분기 카드 다섯 + 소유자가 툴에서 더한 에피소드 셋(`Festival_Add` · `Festival_Advance` · `Festival_Lazy`, 2026-11-04 왕복 시험) |
 | `PresentationDemo/` | `presentation_demo` 연출 데모 | 에피소드 하나 |
 
-- `*.vnproject.json` · `story/` · `game.definition.json` — 원고(챕터 · 에피소드 · 간선 · 조건 · 카드의 대사).
+- `*.vnproject.json` · `story/` — 원고(챕터 · 에피소드 · 간선 · 조건 · 화자 · 카드의 대사). ⛔ 화자는 2026-11-17에 `game.definition.json`에서
+  매니페스트(`speakers`)로 옮겼고 그 파일은 걷었다 — compositor 쪽 사본도 같이 바꾼다.
 - `exported/{챕터}.progression.json` — 이 툴이 낸 진행 JSON. 런타임 예제도 같은 이름(`festival_eve.progression.json` · `presentation_demo.progression.json`)을 쓴다.
 - `runtime.target.json` — 보낼 곳(2026-11-04 게임 폴더 · 2026-11-17 형식마다). 저장소가 나란히 있으면(`GitHub/ked-story-director` · `GitHub/ked-presentation-runtime`) 상대 경로가 그대로 통해, 저장할 때 진행 JSON이 런타임의 `ChapterProgression/`으로도 나간다(`gameFolder`). compositor가 같은 칸을 읽어 Yarn을 거기로 쓴다. 폴더가 없으면 아무것도 안 쓴다.
 

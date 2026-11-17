@@ -44,7 +44,7 @@
 | 대사 본문 | 카드의 대본 `DialogueNode.Script`(`ScriptDocument`) — 줄의 신원은 `LineId`, 글은 locale별 `LocalizedLine(화자, 글)` | 카드 안 글 칸(D4) · 곁기둥 |
 | 분기 표식 | 대사 줄의 `DialogueLineExtension.DetourTargetNodeIds`(한 줄에 여럿 — 차례로 다녀온다 · 2026-10-29 `multi-branch`). 연결만 끊은 분기점은 같은 줄의 `OpenDetourPositions`(그 줄 분기점 전체에서 몇째 자리인가 — 끊은 그 자리에 남아 다른 분기의 자리와 색이 그대로다 · 2026-11-06, 파일 `openDetours` = 자리 배열, 내보내지 않는다) | 만들기 · 지우기 · 잇기 · 끊기는 **연출 그래프만.** 챕터 그래프는 분기점과 점선을 그리고, 누르면 그 분기의 정보와 조건을 연다 |
 | 분기의 조건 | 다녀갈 카드의 첫 줄 `BeginIf` + 꼬리 `EndIf` | 챕터 그래프의 분기 패널 |
-| 화자 | `game.definition.json`의 speakers | 이름 — [대본] 프로젝트 줄 요약, 캐릭터 키 — [구성] [화자] 탭(7절 Q) |
+| 화자 | `StoryProject.Speakers`(이름 · 캐릭터 키 — 모든 챕터가 쓴다 · 7절 AE) | 이름 — [대본] 프로젝트 줄 요약, 캐릭터 키 — [구성] [화자] 탭(7절 Q) |
 | ⛔ 연출 | 이 툴에 없다 — compositor가 제 파일에 둔다 | compositor |
 | 파생 — 그래프 모델 · 검증 · 증명 · 프레임 · 레일 · 포트 | 저장하지 않는다 | — |
 
@@ -647,7 +647,8 @@ d1 `034300f` · d2 `25797cb` · d3 `6188f72`).
 | 스탯 | 표만 보인다(키 · 범위 · 대사에 쓰는 글 · [복사]) — 더하지 않는다 | 만들기 · 종류 · 처음 값 · 범위 · 키 바꾸기(✎ — 세이브 열쇠) · 지우기 |
 
 - **화자 규칙 한 벌** — `AuthoringSession`의 `AddSpeakerName` · `RenameSpeakerName` · `RemoveSpeakerName` · `SetSpeakerCharacterId`(빈 이름 · 같은
-  이름 거절). 정의 파일은 되돌리기 밖이라 쓰고 나면 `SpeakersChanged`로 두 탭이 목록을 다시 세운다. (화자 개명이 대사 줄을 끄는 것은 되돌리기에 든다.)
+  이름 거절). 바꾸는 것은 편집기의 화자 명령이라 조작 하나 = 되돌리기 한 칸이고(개명은 대사 줄까지 한 칸), 목록이 바뀌면(되돌리기 포함)
+  `SpeakersChanged`로 두 탭이 목록을 다시 세운다(7절 AE — ⛔ 그 전에는 정의 파일에 바로 써 되돌리기 밖이었다).
 - **식 미정 = 항상 통과** — 식이 빈 조건은 오류가 아니다. `ChapterDocument.Reparse`가 유효 · 항 없음으로 풀어 관문이 없는 것과 같고(판정 ·
   도달성 증명), 진단 `ConditionExpressionBlank`는 🟡 경고다(「[구성] 탭에서 식을 채울 때까지 항상 통과합니다」). 진행 JSON은 빈 조건 배열 그대로다.
   식이 **틀린** 것(모르는 스탯 키 · 문법)은 그대로 🔴 오류다.
@@ -896,3 +897,18 @@ d1 `034300f` · d2 `25797cb` · d3 `6188f72`).
   들고, 섬 `attach05.02s`는 이어지지 않음 경고가 됐다. 통과하는 모양이 필요한 시험은 깃발 대신 길을 낸다(`main05.01 → main05.02`에 trust +3).
   옛 파일의 `allowUnreachable` 칸은 읽지 않는다(모르는 칸).
 
+### AE — 스탯은 챕터에, 화자는 프로젝트에 — 정의 파일을 가른다 (2026-11-17)
+
+> 소유자 — [구성]에서 스탯을 더해도 `game.definition.json`에 바로 반영되지 않고 지운 스탯이 남는다. 「variables는 챕터 단위, speaker는 전체 프로젝트
+> 단위」 · 「애초에 game.definition은 그냥 중복 아니야?」. 지시서 [`docs/work-orders/definition-split-orders.md`](../work-orders/definition-split-orders.md).
+
+- **런타임은 `game.definition.json`을 읽지 않는다**(`ked-presentation-runtime` · `ked-vn-workspace/runtime`). 스탯은 진행 JSON의 `stats`로 간다.
+- **스탯** — 챕터의 스탯(`ChapterDocument.Stats`)이 유일한 원천이다. 새 챕터는 스탯 없이 선다. ⛔ 정의 파일의 `variables`(스탯의 「존재」)와 「정의 파일에
+  없다」 경고 · 검증 보고의 [등록] · 그 목록으로 새 챕터를 깔던 길은 걷혔다 — 더하기만 해서 지운 스탯이 새 챕터마다 되살아났다.
+- **전역 조건** — ⛔ 정의 파일의 `conditions`는 걷혔다(쓰는 창구가 없었다). 조건의 자리는 챕터의 [조건] 하나다.
+- **화자** — 프로젝트의 것이다(`StoryProject.Speakers` · 매니페스트 `speakers` — `{ "name", "characterId" }`, 없으면 칸이 없다). 더하기 · 이름 바꾸기 ·
+  지우기 · 캐릭터 키는 `ProjectEditor.Speakers.cs`의 명령이다(되돌리기 한 칸 · 저장 안 한 프로젝트에서도 고친다). 대본 붙여넣기도 이 목록으로 화자를
+  가른다. compositor가 화자를 읽는다면 이 칸에서 읽어야 한다(그쪽 일).
+- **정의 파일** — 이 툴은 읽지도 만들지도 않는다. 화자가 없는 프로젝트를 열 때 그 `speakers`를 들여오고(「고쳤다」가 선다 — 한 번짜리, 빚), 저장할 때
+  `variables` · `conditions` · `speakers`와 이 툴이 깔던 안내(`_안내`)를 걷는다. 남의 칸(compositor의 연출 어휘)은 두고, 남는 것이 없으면 파일을 지운다.
+  깨진 파일은 건드리지 않는다.
