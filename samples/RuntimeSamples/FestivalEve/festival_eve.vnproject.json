@@ -205,15 +205,13 @@
           "key": "성실",
           "initial": 0,
           "minimum": 0,
-          "maximum": 5,
-          "displayName": "성실"
+          "maximum": 5
         },
         {
           "key": "요령",
           "initial": 0,
           "minimum": 0,
-          "maximum": 5,
-          "displayName": "요령"
+          "maximum": 5
         }
       ],
       "choiceOptions": [

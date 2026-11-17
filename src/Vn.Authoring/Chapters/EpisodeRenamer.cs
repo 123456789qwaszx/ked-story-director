@@ -58,7 +58,7 @@ public static class EpisodeRenamer
         }
         catch (InvalidOperationException exception)
         {
-            // 챕터 쪽이 막혔다(같은 Id·폐지된 cleared: 참조).
+            // 챕터 쪽이 막혔다(같은 Id).
             return Result.Fail(exception.Message);
         }
 

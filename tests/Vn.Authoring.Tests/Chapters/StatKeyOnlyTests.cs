@@ -25,27 +25,6 @@ public sealed class StatKeyOnlyTests : IDisposable
     }
 
     [Fact]
-    public void 옛_파일의_스탯_표시_이름은_읽고_지나가고_다시_쓰지_않는다()
-    {
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("ch01");
-        editor.AddChapterStat("ch01", "mainatrust", maximum: 10);
-        string manifest = Path.Combine(_directory, "p" + ProjectManifestJson.FileExtension);
-        ProjectStore.Save(manifest, editor.Project);
-
-        // 옛 툴이 쓴 모양 — 스탯마다 displayName이 있었다.
-        string text = File.ReadAllText(manifest);
-        File.WriteAllText(manifest, text.Replace("\"key\": \"mainatrust\",", "\"key\": \"mainatrust\",\n          \"displayName\": \"마이나의 신뢰도\",", StringComparison.Ordinal));
-        Assert.Contains("마이나의 신뢰도", File.ReadAllText(manifest), StringComparison.Ordinal);
-
-        StoryProject read = ProjectStore.Load(manifest).Project;
-        Assert.Equal("mainatrust", Assert.Single(Assert.Single(read.Chapters).Stats).Key);
-
-        ProjectStore.Save(manifest, read);
-        Assert.DoesNotContain("displayName", File.ReadAllText(manifest), StringComparison.Ordinal);
-    }
-
-    [Fact]
     public void 진행_JSON의_스탯_DisplayName은_키다()
     {
         var editor = new ProjectEditor(new StoryProject());

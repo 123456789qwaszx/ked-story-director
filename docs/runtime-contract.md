@@ -468,7 +468,7 @@ Option : { TargetEpisodeId, ChoiceLabel, VisibleConditions[], Conditions[],
 **F2. 비교 연산 5종 (+`Exists`는 죽었다).** `GreaterOrEqual` · `LessOrEqual` · `Equal` ·
 `GreaterThan` · `LessThan`(2026-08-16 개방). **`NotEqual`은 저작 파서가 닫아 두어 나오지
 않는다 — 넣지 말 것.** `Exists`는 `EpisodeCleared` 조건의 것이었고 그 종류가 2026-08-25에
-양쪽에서 폐지됐다(`cleared:` 문법 → `ClearedRetired` 진단) — 나올 일이 없다.
+양쪽에서 폐지됐다(`cleared:` 문법은 비교 연산자가 없는 항으로 오류다 — ⛔ 2026-11-17까지는 고치는 법을 말하는 `ClearedRetired` 진단) — 나올 일이 없다.
 
 **F3. bool 스탯은 0/1 + `Equal`뿐이다.** 경계 0·1 고정, **크기 비교와 증감은 오류**.
 양쪽이 같은 자리에서 막는다(`ChapterWorkbookReader.VerifyBoolStatUsage` ↔

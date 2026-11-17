@@ -414,25 +414,6 @@ public sealed class BranchMarkerTests
     }
 
     [Fact]
-    public void 옛_분기_선_모양은_그_줄의_첫_분기가_이어받는다()
-    {
-        // 2026-10-29 전에는 분기 선 모양의 열쇠가 줄만이었다(`detour:{줄}`) — 줄 하나에 분기가 하나였다.
-        (ProjectEditor editor, DialogueNode node, string lineId) = World();
-        DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
-        StoryFile file = editor.Project.FindFileContainingNode(node.Id)!;
-        JsonObject root = JsonNode.Parse(StoryFileJson.Write(file))!.AsObject();
-        JsonObject card = root["nodes"]!.AsArray().Single(item => (string?)item!["id"] == node.Id)!.AsObject();
-        card["edgeShapes"] = new JsonObject { [$"detour:{lineId}"] = new JsonObject { ["kind"] = "curve", ["bendY"] = 40 } };
-
-        DialogueNode reread = StoryFileJson.Read(root.ToJsonString()).Nodes.OfType<DialogueNode>()
-            .Single(item => item.Id == node.Id);
-
-        Assert.Equal(
-            [EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, made.Id))],
-            reread.EdgeShapes.Keys);
-    }
-
-    [Fact]
     public void 분기_하나를_지우면_같은_줄의_다른_분기는_남는다()
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();

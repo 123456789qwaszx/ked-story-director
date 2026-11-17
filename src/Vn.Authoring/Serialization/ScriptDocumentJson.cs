@@ -95,9 +95,6 @@ public static class ScriptDocumentJson
         var document = new ScriptDocument
         {
             PrimaryLocale = (string?)root["primaryLocale"] ?? ScriptDocument.DefaultLocale,
-
-            // `sourcePath`(가져온 작가 파일의 경로)는 대본 가져오기와 함께 걷혔다
-            //    (2026-10-29 · L5). 옛 파일의 그 키는 읽지 않고 지나간다.
             SourceRevision = (int?)root["sourceRevision"] ?? 0,
             SourceContentHash = (string?)root["sourceContentHash"]
         };

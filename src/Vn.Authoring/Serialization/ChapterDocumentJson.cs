@@ -13,10 +13,6 @@ namespace Vn.Authoring.Serialization;
 ///
 /// <b>파생값은 안 쓴다.</b> 조건의 <c>Parsed</c>·<c>IsValid</c>는 식 원문에서 다시 나온다
 /// (<see cref="ChapterDocument.ToGraphModel"/>) — 담아 두면 식을 고쳤을 때 둘이 갈린다.
-///
-/// 행마다 붙던 <c>sourceRow</c>(엑셀에서 들여온 값의 원래 행 번호)는 2026-10-29(L8)에 걷혔다.
-/// 진단이 에피소드를 행으로 짚던 마지막 쓰임이 Id로 바뀌어 읽을 곳이 없다. 옛 파일의 그 키는
-/// 읽지 않고 지나간다.
 /// </summary>
 internal static class ChapterDocumentJson
 {
@@ -232,7 +228,6 @@ internal static class ChapterDocumentJson
         return json;
     }
 
-    // 옛 파일의 스탯 displayName은 읽지 않고 지나간다 — 걷힌 칸이다(writer-fields W2).
     private static ChapterStat ReadStat(JsonObject json) => new(
         Text(json["key"]),
         (int?)json["initial"] ?? 0,

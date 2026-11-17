@@ -74,7 +74,7 @@ public static class ChapterBoardSupply
     /// <b>사본의 짝은 이름(라벨)이다</b> (2026-11-17 — 전에는 식이었다). 챕터 조건 하나에 사본 하나:
     /// <list type="bullet">
     /// <item>같은 이름의 사본이 있으면 <b>Id를 지킨 채</b> 식만 맞춘다 — 식을 고쳐도, 식 미정이었다가 채워져도 매달린 분기가 그대로 따라온다.</item>
-    /// <item>없으면 만든다. 다만 옛 프로젝트(식으로 짝짓던 때)의 사본 — 지금 어느 조건의 이름도 아니고 식이 같은 것 — 은 이어받아 이름을 고친다.</item>
+    /// <item>없으면 만든다.</item>
     /// <item><b>식 미정</b>(식이 빈) 조건도 공급한다 — <see cref="UndecidedYarn"/>(항상 통과). 식 미정인 조건이 여럿이어도 이름으로
     /// 갈리므로 섞이지 않는다. 식이 같은 조건 둘도 이제 사본이 따로다.</item>
     /// <item>식이 <b>틀린</b> 조건(문법 · 모르는 스탯)은 건드리지 않는다 — 있던 사본은 옛 식 그대로 남고, 검증이 오류로 짚는다.</item>
@@ -121,19 +121,10 @@ public static class ChapterBoardSupply
 
         supply ??= editor.AddSetNode(fileId, name: supplyName);
 
-        var labels = new HashSet<string>(chapter.Conditions.Select(condition => condition.Label), StringComparer.Ordinal);
-
         foreach ((string label, string yarn) in wanted)
         {
             ConditionDefinition? held = supply.Conditions.FirstOrDefault(condition =>
                 string.Equals(condition.Name, label, StringComparison.Ordinal));
-
-            // 옛 사본 — 지금 어느 조건의 이름도 아닌데 식이 같다(식으로 짝짓던 때 이름이 어긋난 것). 식 미정끼리는 잇지 않는다.
-            held ??= string.Equals(yarn, UndecidedYarn, StringComparison.Ordinal)
-                ? null
-                : supply.Conditions.FirstOrDefault(condition =>
-                    !labels.Contains(condition.Name) &&
-                    string.Equals(condition.Expression.Trim(), yarn, StringComparison.Ordinal));
 
             if (held is null)
             {

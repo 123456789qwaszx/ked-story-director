@@ -120,29 +120,25 @@
       "key": "trust",
       "initial": 0,
       "minimum": 0,
-      "maximum": 10,
-      "displayName": "신뢰"
+      "maximum": 10
     },
     {
       "key": "anger",
       "initial": 0,
       "minimum": 0,
-      "maximum": 10,
-      "displayName": "분노"
+      "maximum": 10
     },
     {
       "key": "fatigue",
       "initial": 0,
       "minimum": 0,
-      "maximum": 10,
-      "displayName": "피로"
+      "maximum": 10
     },
     {
       "key": "복도지남",
       "initial": 0,
       "minimum": 0,
       "maximum": 1,
-      "displayName": "복도를 지났다",
       "type": "Bool"
     }
   ],

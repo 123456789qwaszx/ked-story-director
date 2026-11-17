@@ -33,7 +33,7 @@ public sealed record ConditionYarnTranslation(string? Yarn, string? Problem)
 /// 해석 결과(<see cref="ConditionTerm"/>)를 조립만 한다 — 식을 두 번 해석하는 곳을 만들지 않는다.
 ///
 /// <b>남은 어휘는 스탯 비교 하나뿐이다</b> — 그래서 여기서 못 옮기는 항이 없다.
-/// <c>cleared:</c>는 파서가 오류로 막고, 그 자리는 Bool 스탯이
+/// 클리어 이력은 Bool 스탯이
 /// 대신한다. 깃발도 결국 스탯이라 이 번역기가 그대로 옮긴다.
 /// </summary>
 public static class ConditionYarnTranslator

@@ -49,13 +49,7 @@ public enum ConditionProblemKind
     TermMalformed,
     OperatorNotSupported,
     ValueNotInteger,
-    UnknownStatKey,
-
-    /// <summary>
-    /// 받지 않는 <c>cleared:</c> 문법. 조용히 무시하지 않고 짚어서
-    /// <b>고치는 법까지</b> 말한다 — 무시하면 관문이 통째로 사라져 잠긴 길이 열린다.
-    /// </summary>
-    ClearedRetired
+    UnknownStatKey
 }
 
 /// <param name="Fragment">문제가 된 조각 원문. 사람이 셀에서 눈으로 찾을 수 있어야 한다.</param>
@@ -89,14 +83,10 @@ public sealed record ConditionParseResult(
 /// trust == 5
 /// A ; B                 AND
 /// </code>
-/// <c>cleared:</c>는 받지 않는다 — 진행 코어가 클리어 이력을 기억하지 않는다.
-/// 같은 것을 <b>Bool 스탯</b>으로 적는다: 떠나는 간선에서 깃발을 켜고(<c>깃발 = 1</c>)
-/// 관문에서 읽는다(<c>깃발 == 1</c>). 문법은 알아보되 <b>오류로 짚고 고치는 법을 말한다</b>.
+/// 클리어 이력은 <b>Bool 스탯</b>으로 적는다: 떠나는 간선에서 깃발을 켜고(<c>깃발 = 1</c>) 관문에서 읽는다(<c>깃발 == 1</c>).
 /// </summary>
 public static class ConditionExpressionParser
 {
-    private const string ClearedPrefix = "cleared:";
-
     /// <summary>
     /// 소수점 금지의 자리 (G-3). 정수 고정이 경계값 버그(2.5 &gt;= 3)를 막고,
     /// 동시에 G7 도달성 증명의 유한 상태공간을 가능하게 한다.
@@ -129,25 +119,6 @@ public static class ConditionExpressionParser
 
             if (term.Length == 0)
             {
-                continue;
-            }
-
-            // 받지 않는 문법을 <b>이름으로 알아보고</b> 짚는다. 그냥 두면
-            // "비교 연산자를 찾지 못했습니다"로 떨어져서, 왜 안 되는지도 무엇으로 바꿔야
-            // 하는지도 안 보인다.
-            if (term.StartsWith(ClearedPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                string episodeId = term[ClearedPrefix.Length..].Trim();
-
-                problems.Add(new ConditionParseProblem(
-                    ConditionProblemKind.ClearedRetired,
-                    term,
-                    $"'{term}' — cleared: 는 폐지됐습니다(2026-08-25). 진행 코어가 클리어 " +
-                    "이력을 더 이상 기억하지 않습니다. 예/아니오 스탯으로 바꾸세요: 챕터의 스탯에 " +
-                    $"예/아니오 스탯을 하나 만들고(예: `{Flag(episodeId)}`), " +
-                    $"'{(episodeId.Length == 0 ? "그 에피소드" : episodeId)}'에서 나가는 " +
-                    $"간선의 `스탯변화`에 `{Flag(episodeId)} = 1`을 적은 뒤, 여기에는 " +
-                    $"`{Flag(episodeId)} == 1`을 적습니다."));
                 continue;
             }
 
@@ -231,20 +202,6 @@ public static class ConditionExpressionParser
 
         return new ConditionParseResult(terms, problems);
     }
-
-    /// <summary>
-    /// 폐지 안내에 넣을 <b>깃발 이름 제안</b>. 스탯키에 쓸 수 없는 글자(`.`·공백)를 밑줄로
-    /// 바꾼다 — 안내문을 그대로 복사해 붙일 수 있어야 이행이 막히지 않는다.
-    ///
-    /// <b>제안일 뿐 툴이 만들지 않는다.</b> 깃발을 켜는 간선을 사람이 골라야 하는데,
-    /// 그 자리를 툴이 추측하면 관문이 조용히 다른 뜻이 된다.
-    /// </summary>
-    private static string Flag(string episodeId) =>
-        episodeId.Length == 0
-            ? "cleared_그에피소드"
-            : "cleared_" + new string(episodeId
-                .Select(character => char.IsLetterOrDigit(character) ? character : '_')
-                .ToArray());
 
     /// <summary>
     /// 조건식 원문에서 <b>스탯키만</b> 갈아 끼운다 — 스탯 개명이 쓴다.

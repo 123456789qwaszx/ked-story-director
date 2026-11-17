@@ -127,15 +127,13 @@
       "key": "trust",
       "initial": 2,
       "minimum": 0,
-      "maximum": 10,
-      "displayName": "신뢰"
+      "maximum": 10
     },
     {
       "key": "metLaru",
       "initial": 1,
       "minimum": 0,
       "maximum": 1,
-      "displayName": "라루를 만남",
       "type": "Bool"
     },
     {
@@ -143,7 +141,6 @@
       "initial": 0,
       "minimum": 0,
       "maximum": 1,
-      "displayName": "기억함",
       "type": "Bool"
     }
   ],

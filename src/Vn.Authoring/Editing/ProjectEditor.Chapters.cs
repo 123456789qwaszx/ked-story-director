@@ -555,24 +555,10 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// EpisodeId 개명. <b>간선의 출발·도착과 픽스처 고정 선택이 함께 따라간다</b> — 신원이
     /// 바뀌었는데 참조가 남으면 유령 간선이 된다.
-    ///
-    /// 폐지된 <c>cleared:</c>를 참조하는 조건식이 있으면 <b>막는다</b>. 식은 사람 소유라
-    /// 툴이 고쳐 주지 않고(자동 추측 금지), 개명으로 참조만 더 낡게 만들 이유가 없다.
     /// </summary>
     public void RenameEpisode(string chapterId, string oldId, string newId)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
-
-        if (chapter.Conditions.FirstOrDefault(condition =>
-                condition.Expression.Contains($"cleared:{oldId}", StringComparison.Ordinal))
-            is { } stale)
-        {
-            throw new InvalidOperationException(
-                $"조건 '{stale.Label}'의 식이 cleared:{oldId}를 참조합니다. " +
-                "cleared: 는 2026-08-25에 폐지됐습니다 — [조건]에서 Bool 스탯으로 " +
-                "먼저 바꿔 주세요. 조건식은 사람 소유라 툴이 고치지 않습니다.");
-        }
-
         int index = RequireEpisodeIndex(chapter, oldId);
 
         if (FindEpisode(chapter, newId) is not null)

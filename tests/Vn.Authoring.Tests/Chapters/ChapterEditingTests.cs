@@ -109,20 +109,6 @@ public sealed class ChapterEditingTests
     }
 
     [Fact]
-    public void 폐지된_cleared_참조가_있으면_개명을_막는다()
-    {
-        // 식은 사람 소유라 툴이 고쳐 주지 않는다(자동 추측 금지) — 개명으로 참조만 더
-        // 낡게 만들 이유가 없다.
-        _editor.AddChapterCondition("ch01", "지난챕터", "cleared:ep01");
-
-        InvalidOperationException error = Assert.Throws<InvalidOperationException>(
-            () => _editor.RenameEpisode("ch01", "ep01", "ep0A"));
-
-        Assert.Contains("cleared:", error.Message);
-        Assert.Equal("ep01", Chapter.Episodes[0].EpisodeId);
-    }
-
-    [Fact]
     public void 에피소드를_지우면_끝점_간선도_함께_간다()
     {
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다");

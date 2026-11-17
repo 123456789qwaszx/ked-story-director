@@ -96,7 +96,7 @@ public sealed class OpenDetourTests
     }
 
     [Fact]
-    public void 분기점의_자리를_저장하고_수만_적힌_줄은_이어진_분기들_뒤에_둔다()
+    public void 분기점의_자리를_저장한다()
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
@@ -105,14 +105,6 @@ public sealed class OpenDetourTests
 
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project));
         Assert.Equal([null, second.Id], reloaded.FindDialogue(node.Id)!.FindExtension(lineId)!.DetourSlots());
-
-        // 자리 대신 수만 적힌 줄(`"openDetours": 1`) — 이어진 분기들 뒤에 선다.
-        string legacy = ProjectSnapshotCodec.Encode(editor.Project)
-            .Replace("\"openDetours\": [\n", "\"openDetours\": 1, \"_\": [\n", StringComparison.Ordinal);
-        Assert.Contains("\"openDetours\": 1", legacy, StringComparison.Ordinal);
-        Assert.Equal(
-            [second.Id, null],
-            ProjectSnapshotCodec.Decode(legacy).FindDialogue(node.Id)!.FindExtension(lineId)!.DetourSlots());
     }
 
     [Fact]

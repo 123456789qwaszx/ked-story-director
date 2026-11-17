@@ -12,8 +12,8 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 둘은 끊어지는 자리가 다르다.
 /// <list type="bullet">
 ///   <item><b>조건</b> — 줄에 매달린 전환은 <c>ConditionId</c>로 잇는다. 그래서 라벨이 바뀌었을
-///     때 조건을 <em>새로</em> 만들면 Id가 갈려 이미 매달린 갈래가 전부 고아가 된다. 같은 식이면
-///     같은 조건이므로 <b>이름만</b> 갈아 끼운다.</item>
+///     때 조건을 <em>새로</em> 만들면 Id가 갈려 이미 매달린 갈래가 전부 고아가 된다. 라벨을 바꾸는 명령
+///     (<see cref="ProjectEditor.RenameChapterCondition"/>)이 판 사본의 <b>이름만</b> 갈아 끼운다(<c>ConditionRenameTests</c>).</item>
 ///   <item><b>화자</b> — 붙드는 것이 이름 문자열 하나뿐이다(<c>LocalizedLine.Speaker</c>).
 ///     등록부에서만 갈면 그 줄들이 전부 미등록이 된다. 그래서 개명이 <b>프로젝트의 줄</b>을
 ///     함께 바꾼다(<see cref="ProjectEditor.RenameSpeaker"/>).</item>
@@ -42,46 +42,6 @@ public sealed class SpeakerAndConditionRenameTests
         stats: [],
         fixtures: [],
         diagnostics: []);
-
-    [Fact]
-    public void 조건_라벨을_바꾸면_이름만_따라가고_매달린_갈래는_산다()
-    {
-        // ⛔ 이것이 무너지면 라벨 한 글자에 그 조건을 쓰던 갈래가 전부 "알 수 없는 조건"이 된다.
-        var project = new StoryProject();
-        var file = new StoryFile("sf_ch01", "ch01", "story/ch01.vnstory.json");
-        project.Files.Add(file);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "ch01" });   // 카드는 챕터 판에만 선다
-
-        int next = 0;
-        var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
-
-        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문");
-        ScriptLine line = dialogue.Script.ActiveLines.Single();   // 카드는 빈 첫 줄을 들고 선다
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, file.Id, ChapterWith("신뢰 높음"));
-
-        SetNode supply = file.Nodes.OfType<SetNode>()
-            .Single(node => ChapterBoardSupply.IsConditionSupplyNode(node, file));
-        string conditionId = supply.Conditions.Single().Id;
-
-        editor.SetLineTransitions(dialogue.Id, line.Id, [
-            LineConditionTransition.BeginIf(conditionId),
-            LineConditionTransition.EndIf()
-        ]);
-
-        // 라벨이 바뀌었다 — 식은 그대로다.
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, file.Id, ChapterWith("신뢰가 높다"));
-
-        ConditionDefinition condition = Assert.Single(supply.Conditions);
-
-        Assert.Equal(conditionId, condition.Id);          // 신원은 그대로 — 갈래가 산다
-        Assert.Equal("신뢰가 높다", condition.Name);       // 이름은 따라간다
-        Assert.Equal(
-            conditionId,
-            dialogue.FindExtension(line.Id)!.Transitions[0].ConditionId);
-    }
 
     [Fact]
     public void 라벨이_그대로면_조건에_손대지_않는다()

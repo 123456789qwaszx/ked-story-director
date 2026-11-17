@@ -63,27 +63,6 @@ public sealed class ChapterSchemaV5Tests
         Assert.Equal(2, model.FindCondition("지쳐있음")!.Parsed.Count);
     }
 
-    [Fact]
-    public void 폐지된_cleared_는_고치는_법까지_말하며_거부한다()
-    {
-        // 옛 데이터가 들어오는 자리다. 조용히 무시하면 관문이 통째로 사라져 잠긴 길이 열린다 —
-        // 짚되, 무엇으로 바꿔야 하는지까지 말한다.
-        _editor.AddChapterCondition("ch01", "복도완료", "cleared:ep1");
-
-        ChapterGraphModel model = Model();
-
-        Assert.True(model.HasErrors);
-        Assert.False(model.FindCondition("복도완료")!.IsValid);
-
-        string message = Assert
-            .Single(model.Diagnostics, item => item.Message.Contains("cleared:"))
-            .Message;
-
-        Assert.Contains("폐지", message);
-        Assert.Contains("cleared_ep1", message);   // 깃발 이름 제안
-        Assert.Contains("스탯변화", message);        // 켜는 자리까지 짚는다
-    }
-
     // ── bool 스탯 ───────────────────────────────────────────────────────────
 
     [Fact]

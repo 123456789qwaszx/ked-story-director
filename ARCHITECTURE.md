@@ -400,8 +400,9 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 `ProjectManifestJson.Read`가 한 줄로 거절한다. **거부는 파괴적이지 않다** — 원본 파일도 세션도 그대로 남는다.
 ⛔ 그 전에는 형식 3(대본이 `script/*.vnscript.json`에 따로 선 형식)을 읽어서 옮기고 저장할 때 옛 대본 파일을 지웠다.
 
-형식 4 안에서 걷힌 칸은 **읽지 않고 지나간다**(깨지지 않는다): `excelLines` · `excelEpisode` · 대본의 `sourcePath` · 챕터의
-`sourceRow`. ⛔ 연출 층을 담은 옛 프로젝트(형식 3)는 연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남겼다 — 이제 열지 않는다.
+옛 모양을 고쳐 받거나 알리던 길(선 모양 열쇠 `detour:{줄}` · 수로 적힌 `openDetours` · 걷힌 대사 안 선택 전환 · `cleared:`의 안내 ·
+이름이 어긋난 조건 공급 사본)도 걷었다 — 그런 파일은 깨진 파일로 거절되거나 모르는 칸으로 지나간다. ⛔ 연출 층을 담은 옛 프로젝트(형식 3)는
+연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남겼다 — 이제 열지 않는다.
 열 때 카드 없는 에피소드에는 빈 카드가 선다(`AlignBoardsWithChapters`).
 
 ## 9. 확인 방법

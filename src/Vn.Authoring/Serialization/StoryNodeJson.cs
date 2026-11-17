@@ -7,12 +7,7 @@ namespace Vn.Authoring.Serialization;
 internal static class StoryNodeJson
 {
     /// <summary>
-    /// <see cref="DialogueNode.MarkedEpisodeId"/>가 앉는 칸. 2026-09-17에 <c>excelEpisode</c>에서
-    /// 바뀌었다 — 엑셀은 이 값의 주인이 아니게 된 지 오래다(R-F).
-    ///
-    /// 옛 이름 <c>excelEpisode</c>도 한동안 계속 읽었다(저장된 신원이라 못 읽으면 되살릴 길이 없다).
-    /// 2026-10-29(L6)에 그 갈래를 걷었다 — 2026-09-17 소유자: *"이전의 프로젝트들은 모두 버리고"*.
-    /// 그 뒤로 한 번이라도 저장한 프로젝트는 이미 새 이름으로 옮겨 앉아 있다.
+    /// <see cref="DialogueNode.MarkedEpisodeId"/>가 앉는 칸.
     /// </summary>
     private const string EpisodeMarkKey = "episodeMark";
 
@@ -121,33 +116,9 @@ internal static class StoryNodeJson
                     node.EdgeShapes[key] = shape;
                 }
             }
-
-            if (node is DialogueNode dialogue)
-            {
-                AdoptLineOnlyDetourShapes(dialogue);
-            }
         }
 
         return node;
-    }
-
-    /// <summary>
-    /// 분기 선 모양의 옛 열쇠(<c>detour:{줄}</c>)를 그 줄의 첫 분기 열쇠(<c>detour:{줄}&gt;{카드}</c>)로 옮긴다 —
-    /// 2026-10-29 전에는 줄 하나에 분기가 하나라 줄만으로 열쇠가 됐다(<see cref="ExitPort.DetourKey"/>).
-    /// </summary>
-    private static void AdoptLineOnlyDetourShapes(DialogueNode node)
-    {
-        foreach (DialogueLineExtension extension in node.LineExtensions)
-        {
-            string old = EdgeShape.KeyOf(ExitPortKind.Detour, extension.LineId);
-
-            if (extension.DetourTargetNodeIds.FirstOrDefault() is { } first &&
-                node.EdgeShapes.Remove(old, out EdgeShape? shape))
-            {
-                node.EdgeShapes.TryAdd(
-                    EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(extension.LineId, first)), shape);
-            }
-        }
     }
 
     private static void WriteSetNode(SetNode node, JsonObject json)
@@ -176,14 +147,13 @@ internal static class StoryNodeJson
     /// </summary>
     /// <summary>
     /// 분기점 전부를 차례대로 편다 — 이어진 분기(<c>detour</c>)에 이어지지 않은 분기점의 자리(<c>openDetours</c>)를 끼운다.
-    /// 자리 대신 수만 적힌 줄(숫자 하나)은 그만큼을 이어진 분기들 뒤에 둔다. 범위를 벗어난 자리는 뒤로 물린다.
+    /// 범위를 벗어난 자리는 뒤로 물린다.
     /// </summary>
     private static List<string?> ReadDetourSlots(IReadOnlyList<string> targets, JsonNode? openJson)
     {
         List<int> positions = openJson switch
         {
             JsonArray array => array.Select(item => (int?)item ?? -1).Where(position => position >= 0).Distinct().Order().ToList(),
-            JsonValue value when (int?)value is int count and > 0 => Enumerable.Range(targets.Count, count).ToList(),
             _ => []
         };
 
@@ -232,7 +202,7 @@ internal static class StoryNodeJson
 
             // 흔한 경우(전환 하나)는 `condition` 한 칸으로 그대로 쓴다 — 파일이 조용해야
             // diff가 읽힌다. 둘 이상이 몰린 줄(겹쳐 닫기·연달아 열기)만 `conditions` 배열로
-            // 나간다. 읽을 때는 둘 다 받으므로 옛 판이 그대로 열린다.
+            // 나간다. 읽을 때는 둘 다 받는다(<see cref="Transitions"/>).
             if (extension.Transitions.Count == 1)
             {
                 lineJson["condition"] = TransitionJson(extension.Transitions[0], node, extension, hasExit);
@@ -321,18 +291,11 @@ internal static class StoryNodeJson
 
             json["choiceExits"] = choiceExits;
         }
-
-        // `excelLines`(인덱스 → LineId)는 2026-09-16에 더 내보내지 않는다 (R-D).
-        //    구판 파일에 남아 있어도 읽지 않고 지나간다 — 뜻이 없는 값이다.
     }
 
     private static SetNode ReadSetNode(JsonObject json, string id, string name)
     {
         var node = new SetNode(id, name);
-
-        // `assignments`는 2026-09-17에 폐지됐다 (작가 변수 폐지) — 옛 프로젝트 파일에
-        //    남아 있어도 <b>안 읽는다</b>. 소유자가 옛 프로젝트를 버리기로 했으므로
-        //    되살릴 자리가 없다.
 
         foreach (JsonNode? item in json["conditions"]?.AsArray() ?? new JsonArray())
         {
@@ -395,8 +358,6 @@ internal static class StoryNodeJson
                     node.BranchExits[lineId] = exit;
                 }
             }
-
-            // 줄의 `set`도 2026-09-17에 폐지됐다 — 옛 파일에 남아 있어도 안 읽는다.
 
             extension.DetourTargetNodeIds.AddRange(DetourJson.Read(lineJson["detour"]));
             extension.SetDetourSlots(ReadDetourSlots(extension.DetourTargetNodeIds, lineJson["openDetours"]));
@@ -461,8 +422,7 @@ internal static class StoryNodeJson
     }
 
     /// <summary>
-    /// 줄의 전환 목록 — 새 <c>conditions</c> 배열이 있으면 그것, 없으면 옛 <c>condition</c>
-    /// 한 칸. 전환이 하나뿐이던 시절의 파일이 그대로 열린다.
+    /// 줄의 전환 목록 — <c>conditions</c> 배열(둘 이상)이 있으면 그것, 없으면 <c>condition</c> 한 칸(하나) — 쓰는 쪽의 두 모양이다.
     /// </summary>
     private static IEnumerable<JsonObject> Transitions(JsonObject lineJson)
     {

@@ -10,7 +10,7 @@ namespace Vn.Authoring.Tests.Chapters;
 ///
 /// 못 박는 것: ① 식 미정인 조건도 사본이 서고 식은 항상 통과(<c>true</c>)다, 여럿이어도 따로다 ② 분기에 걸 수 있고, 식을 채우면
 /// 사본의 Id가 그대로라 분기가 새 식을 따른다 ③ 식을 고쳐도 Id가 그대로다 ④ 식이 같은 조건 둘은 사본이 따로다 — 하나를 고쳐도 다른
-/// 하나는 그대로다 ⑤ 옛 사본(이름이 어긋나고 식이 같은 것)은 이어받는다 ⑥ 식을 비우면 사본이 식 미정이 된다.
+/// 하나는 그대로다 ⑤ 식을 비우면 사본이 식 미정이 된다. (⛔ 2026-11-17 — 이름이 어긋난 옛 사본을 식으로 이어받던 것은 옛 데이터 읽기와 함께 걷었다.)
 /// </summary>
 public sealed class ConditionSupplyByNameTests
 {
@@ -78,22 +78,6 @@ public sealed class ConditionSupplyByNameTests
         Assert.Equal(
             [("가", "stat(\"trust\") >= 9"), ("나", "stat(\"trust\") >= 3")],
             Supplied(editor).Select(item => (item.Name, item.Expression)));
-    }
-
-    [Fact]
-    public void 이름이_어긋난_옛_사본은_식이_같으면_이어받고_Id를_지킨다()
-    {
-        // 식으로 짝짓던 때의 프로젝트 — 사본의 이름이 지금 어느 조건의 이름도 아니다.
-        ProjectEditor editor = World();
-        editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
-        ConditionDefinition copy = Supplied(editor).Single();
-        editor.UpdateCondition(copy.Id, "옛이름", copy.Expression);
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, EpisodeNaming.BoardOf(editor.Project, "ch01")!.Id, editor.FindChapter("ch01")!.ToGraphModel("ch01"));
-
-        ConditionDefinition after = Supplied(editor).Single();
-        Assert.Equal((copy.Id, "신뢰높음"), (after.Id, after.Name));
     }
 
     [Fact]
