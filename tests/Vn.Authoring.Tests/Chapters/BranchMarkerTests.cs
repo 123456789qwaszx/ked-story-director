@@ -197,17 +197,25 @@ public sealed class BranchMarkerTests
     [Fact]
     public void 다녀오는_에피소드는_도달_불가로_울지_않는다()
     {
-        // ⛔ 들어오는 간선이 없는 것이 맞다 — 챕터 진행이 아니라 대본의 `<<detour>>`로
-        //    들어간다. 그래서 도달성 증명의 판정은 <b>옳고, 고치지 않는다</b>: 그 증명기는
-        //    저쪽 런타임의 오라클이고 코퍼스로 고정돼 있어 여기서 답을 바꾸면 둘이 조용히
-        //    갈린다. 이미 있는 `도달불가 허용`이 정확히 이 자리를 위한 칸이다.
+        // 들어오는 간선이 없는 것이 맞다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다. 도달성 증명(런타임의 오라클)은
+        //    고치지 않고, 검증이 그 결과를 실제 분기 연결과 함께 읽는다(ChapterBranchReach — 「분기로 들어온다」 알림).
+        //    ⛔ 2026-11-17 전에는 여기서 `도달불가 허용` 깃발을 달았다 — 만들 때 붙는 깃발이라 실제 연결과 따로 놀았다(소유자 보고:
+        //    새 에피소드를 분기점에 이으면 거짓 오류가 났다). 이제 깃발은 달지 않는다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
 
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
+        ChapterDocument chapter = editor.Project.Chapters.Single();
 
-        Assert.True(editor.Project.Chapters.Single().Episodes
+        Assert.False(chapter.Episodes
             .Single(episode => string.Equals(episode.EpisodeId, made.Name, StringComparison.Ordinal))
             .AllowUnreachable);
+
+        ChapterValidationResult result = ChapterValidator.Validate(chapter.ToGraphModel(chapter.ChapterId), editor.Project);
+        Assert.DoesNotContain(result.All, item =>
+            item.EpisodeId == made.Name && item.Code == ChapterDiagnosticCode.EpisodeUnreachable);
+        Assert.Contains(result.All, item =>
+            item.EpisodeId == made.Name && item.Code == ChapterDiagnosticCode.EpisodeEnteredByBranch &&
+            item.Severity == ChapterDiagnosticSeverity.Info);
     }
 
     [Fact]

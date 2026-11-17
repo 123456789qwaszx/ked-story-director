@@ -44,6 +44,12 @@ public static class ChapterValidator
         // 스탯 증감의 원천은 간선이다 — 증명기가 챕터 모델에서 직접 읽는다.
         ChapterReachabilityResult reachability = ChapterReachabilityProver.Prove(chapter);
 
+        // 분기로 들어오는 에피소드는 실제 연결(판의 분기점)로 알아본다 — 증명기는 간선만 따르는 오라클이라 그대로 둔다(2026-11-17).
+        if (project is not null)
+        {
+            reachability = ChapterBranchReach.Apply(chapter, project, reachability);
+        }
+
         return new ChapterValidationResult(diagnostics, reachability);
     }
 

@@ -143,7 +143,6 @@ public sealed partial class ProjectEditor
         double y,
         string? name,
         string? sceneId = null,
-        bool allowUnreachable = false,
         string? title = null,
         (double X, double Y)? episodePosition = null)
     {
@@ -170,7 +169,7 @@ public sealed partial class ProjectEditor
         var firstLine = new ScriptLine(_newLineId());
 
         (ChapterDocument? chapter, ChapterEpisode? episode) =
-            NewEpisodeFor(file, created, sceneId, allowUnreachable, title, episodePosition);
+            NewEpisodeFor(file, created, sceneId, title, episodePosition);
 
         return (created, episode, () =>
         {
@@ -217,7 +216,7 @@ public sealed partial class ProjectEditor
     /// 가장 가까운 카드를 기준으로 그 에피소드 곁에 놓는다(<see cref="ChapterBranchPlanner.PlaceLikeBoard"/>).
     /// </param>
     private (ChapterDocument? Chapter, ChapterEpisode? Episode) NewEpisodeFor(
-        StoryFile file, DialogueNode created, string? sceneId, bool allowUnreachable,
+        StoryFile file, DialogueNode created, string? sceneId,
         string? title = null, (double X, double Y)? episodePosition = null)
     {
         if (ChapterOfBoard(file) is not { } chapter)
@@ -245,8 +244,7 @@ public sealed partial class ProjectEditor
             DialogueEntry: created.Name,
             Math.Round(position.X, 2),
             Math.Round(position.Y, 2),
-            Memo: null,
-            AllowUnreachable: allowUnreachable)
+            Memo: null)
         {
             SceneId = sceneId
         });
@@ -301,19 +299,15 @@ public sealed partial class ProjectEditor
         // 분기로 다녀갈 카드는 원본의 <b>오른쪽</b>에 선다. 아래는 선택지로 가는 다음 에피소드의 자리다.
         (double x, double y) = Graph.NodePlacement.BesideOf(file, source);
 
+        // 들어오는 간선이 없다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다. 도달성 증명(런타임의 오라클)은 그대로
+        //    「간선으로는 못 간다」고 하고, 검증이 그 결과를 분기 연결과 함께 읽는다(ChapterBranchReach — 분기로 들어온다는 알림).
+        //    ⛔ 전에는 여기서 `도달불가 허용` 깃발을 달았다(2026-11-17에 걷었다) — 만들 때 붙는 깃발이라 실제 연결과 따로 놀았다.
         (DialogueNode created, _, Action attach) = NewDialogueNodeCore(
             file.Id,
             x,
             y,
             name ?? NextName("분기"),
-            SceneOfNode(file, source),
-            // 들어오는 간선이 없다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다.
-            //    그래서 도달성 증명은 이것을 <b>정확히 도달 불가로</b> 판정하고, 그 판정이
-            //    맞다. 증명기를 고치지 않는 이유는 그것이 저쪽 런타임의 <b>오라클</b>이기
-            //    때문이다(코퍼스로 고정돼 있어 여기서 답을 바꾸면 둘이 조용히 갈린다).
-            //    이미 있는 `도달불가 허용`이 정확히 이 자리를 위한 칸이다 — 오류가 알림으로
-            //    낮아지고, 그래도 판에는 표시된다.
-            allowUnreachable: true);
+            SceneOfNode(file, source));
 
         Mutate(() =>
         {

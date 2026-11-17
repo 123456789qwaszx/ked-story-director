@@ -40,6 +40,12 @@ public enum ChapterDiagnosticCode
     EdgeEndpointUnknown,
     EdgeEndpointBlank,
     EpisodeUnreachable,
+
+    /// <summary>
+    /// 선택지 · 자동 길로 들어오는 길은 없고 <b>분기로 들어오는</b> 에피소드 — 알림이다(<see cref="ChapterBranchReach"/>, 2026-11-17).
+    /// 도달할 수 있는 에피소드의 분기점이 들를 때만 선다 — 분기점의 에피소드가 도달할 수 없으면 <see cref="EpisodeUnreachable"/> 그대로다.
+    /// </summary>
+    EpisodeEnteredByBranch,
     OptionEdgeMismatch,
     ExitIntoLandingCard,
 
