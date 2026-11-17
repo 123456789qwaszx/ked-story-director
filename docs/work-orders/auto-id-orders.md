@@ -3,7 +3,7 @@
 `docs/work-orders/scene-required-orders.md` E6을 여기서 한다. 자동으로 붙는 에피소드ID가 `new01` · `new02`…라 챕터가 여럿이면 겹친다 —
 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 같은 이름의 노드 둘은 컴파일을 깬다.
 
-> **상태: I1 끝.**
+> **상태: I1 · I2 끝.**
 
 ## 1. 정한 것 (소유자 2026-11-17)
 
@@ -50,3 +50,4 @@ ID를 바꾸는 일 자체는 이미 있다 — `EpisodeRenamer`가 에피소드
 |---|---|---|---|
 | 11-17 | I0 | (이 커밋) | 지시서 — 1절은 소유자가 정했다 |
 | 11-17 | I1 | (이 커밋) | `NewNames` — `EpisodePrefix` · `BranchPrefix`(정규화를 지난 글자) · `IsAuto` · `NextEpisodeId` · `NextBranchName` · `TakenNames`(그 챕터의 에피소드ID + 프로젝트의 모든 카드 이름) · `NextFree`. `ProjectEditor` — 카드를 짓는 한 자리(`NewDialogueNodeCore`)가 장면으로 이름을 짓고, 분기 추가 · 빈 곳에 분기 카드는 부르는 카드의 장면(`SceneOfCard` — 분기 카드면 집의 장면). `NextEpisodeId(chapterId, sceneId)` — 하이어아키(`EpisodeAdder`)가 장면을 함께 준다. ⛔ 챕터마다 `new01`부터 세던 것 · 「분기 N」 걷음. 새 시험 `AutoIdTests` 12, 자동 ID를 박아 둔 시험 6 파일을 새 규칙으로. Authoring 692 · App 441 |
+| 11-17 | I2 | (이 커밋) | `ChapterYarnNames.Verify`(`ChapterValidator`가 분기 카드 검증 뒤에 부른다) — 이 챕터의 에피소드 대사 노드(`DialogueEntryIdOf`) · 분기 카드 이름이 다른 챕터의 것과 같으면 오류 `YarnNodeNameTaken`(에피소드 · 분기 카드는 집 에피소드를 짚고, 글이 상대 챕터 · 카드를 말한다). 새 시험 `ChapterYarnNamesTests` 3. 견본 한 장을 두 챕터에 세우던 내보내기 시험(`ChapterGraphSyncViewTests`)은 둘째 챕터의 EpisodeId · 대사엔트리에 그 챕터 Id를 붙였다 — 같은 이름이 둘이면 게임 Yarn 컴파일이 깨지는 것이 맞다. ⚠ 소유자의 프로젝트에 챕터마다 `new01` 같은 같은 ID가 있으면 이제 오류로 짚혀 내보내기가 멈춘다 — [구성] 탭의 에피소드ID 칸에서 고친다. Authoring 695 · App 441 |

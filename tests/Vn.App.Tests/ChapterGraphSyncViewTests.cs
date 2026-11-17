@@ -257,20 +257,33 @@ public sealed class ChapterGraphSyncViewTests
                 {
                     // 실제 프로젝트의 모양 — 시나리오 파일이 하나는 있다.
                     project.Files.Add(new StoryFile("sf_main", "본편", "story/main.vnstory.json"));
+                    var editor = new ProjectEditor(project);
+
+                    // 견본 하나를 여러 챕터에 세우면 EpisodeId · 대사엔트리가 같다 — Yarn 노드 이름은 프로젝트에서 하나여야 하므로
+                    // (2026-11-17 · ChapterYarnNames) 둘째 챕터부터 그 Id를 앞에 붙인다.
+                    foreach (string id in ids.Skip(1))
+                    {
+                        foreach (ChapterEpisode episode in editor.FindChapter(id)!.Episodes.ToList())
+                        {
+                            editor.RenameEpisode(id, episode.EpisodeId, EpisodeIdIn(ids, id, episode.EpisodeId));
+                            editor.UpdateEpisode(id, EpisodeIdIn(ids, id, episode.EpisodeId), dialogueEntry: $"{id}_{episode.DialogueEntry}");
+                        }
+                    }
 
                     if (allowUnreachable)
                     {
-                        var editor = new ProjectEditor(project);
-
                         foreach (string id in ids)
                         {
-                            editor.UpdateEpisode(id, "branch05.02A", allowUnreachable: true);
+                            editor.UpdateEpisode(id, EpisodeIdIn(ids, id, "branch05.02A"), allowUnreachable: true);
                         }
                     }
                 });
         }
 
         public string ManifestPath { get; }
+
+        private static string EpisodeIdIn(string[] ids, string chapterId, string episodeId) =>
+            chapterId == ids[0] ? episodeId : $"{chapterId}.{episodeId}";
 
         public string ExportFolder => Path.Combine(_directory, ChapterExportService.ExportFolderName);
 

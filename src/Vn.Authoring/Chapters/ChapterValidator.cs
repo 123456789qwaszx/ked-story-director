@@ -48,6 +48,9 @@ public static class ChapterValidator
         if (project is not null)
         {
             ChapterBranchCards.Verify(chapter, project, reachability.ReachableEpisodeIds, diagnostics);
+
+            // Yarn 노드 이름은 프로젝트에서 하나다 — 다른 챕터의 것과 겹치면 오류(2026-11-17).
+            ChapterYarnNames.Verify(chapter, project, diagnostics);
         }
 
         return new ChapterValidationResult(diagnostics, reachability);

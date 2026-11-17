@@ -55,6 +55,12 @@ public enum ChapterDiagnosticCode
 
     /// <summary>분기 카드의 Yarn 노드 이름이 에피소드 · 다른 분기 카드와 겹친다 — 오류(<see cref="ChapterBranchCards"/>).</summary>
     BranchCardNameTaken,
+
+    /// <summary>
+    /// 이 챕터의 Yarn 노드 이름(에피소드의 대사 노드 · 분기 카드)이 <b>다른 챕터</b>의 것과 겹친다 — 오류(<see cref="ChapterYarnNames"/>,
+    /// 2026-11-17). 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일한다.
+    /// </summary>
+    YarnNodeNameTaken,
     OptionEdgeMismatch,
     ExitIntoLandingCard,
 
