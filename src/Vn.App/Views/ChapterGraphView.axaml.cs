@@ -1004,7 +1004,8 @@ public partial class ChapterGraphView : UserControl
         if (model.Episodes.Count == 0)
         {
             EmptyText.IsVisible = true;
-            EmptyText.Text = $"'{entry.ChapterId}'에 에피소드가 없습니다.\n[대본] 탭에서 카드를 세우거나 하이어아키 우클릭 「에피소드 추가」로 더하면 여기에 그려집니다.";
+            EmptyText.Text = $"'{entry.ChapterId}'에 에피소드가 없습니다.\n[구성] 탭에서는 에피소드를 더하지 않습니다 — [대본] 탭의 [＋ 대사 노드]나 " +
+                "[대본] 탭 하이어아키의 장면 줄 우클릭 「에피소드 추가」로 더하면 여기에 그려집니다.";
         }
 
         DrawCanvas(model);
