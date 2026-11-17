@@ -31,36 +31,8 @@ public static class ProjectStore
         }
 
         ProjectManifest manifest = ProjectManifestJson.Read(json);
-        var notices = new List<string>();
-        StoryProject project = LoadManifest(openedPath, manifest, notices);
 
-        return new ProjectLoadResult(project, openedPath, notices);
-    }
-
-    /// <summary>
-    /// 걷힌 대사 안 선택지(2026-11-04)가 파일에 남아 있으면 한 줄 알린다 — 리더는 그 전환을 버리므로(<see cref="StoryNodeJson"/>)
-    /// 라벨 줄은 화자 없는 보통 줄이 되고 본문은 이어 재생된다. 글을 손봐야 한다는 뜻이다. 저장하면 파일에서도 사라진다.
-    /// </summary>
-    private static void NoticeRetiredChoices(string storyJson, string fileName, List<string> notices)
-    {
-        int count = StoryNodeJson.RetiredChoiceKindNames.Sum(name => CountOccurrences(storyJson, "\"" + name + "\""));
-
-        if (count > 0)
-        {
-            notices.Add($"'{fileName}'에 대사 안 선택지 전환 {count}개가 남아 있어 버렸습니다 — 선택지는 에피소드 끝 간선에서만 섭니다. 라벨 줄과 본문을 손보고 저장하세요.");
-        }
-    }
-
-    private static int CountOccurrences(string text, string token)
-    {
-        int count = 0;
-
-        for (int at = text.IndexOf(token, StringComparison.Ordinal); at >= 0; at = text.IndexOf(token, at + token.Length, StringComparison.Ordinal))
-        {
-            count++;
-        }
-
-        return count;
+        return new ProjectLoadResult(LoadManifest(openedPath, manifest), openedPath);
     }
 
     public static void Save(string manifestPath, StoryProject project)
@@ -144,8 +116,7 @@ public static class ProjectStore
 
     private static StoryProject LoadManifest(
         string manifestPath,
-        ProjectManifest manifest,
-        List<string>? notices = null)
+        ProjectManifest manifest)
     {
         string rootDirectory = Path.GetDirectoryName(manifestPath)
             ?? throw new InvalidDataException("프로젝트 manifest 디렉터리를 찾을 수 없습니다.");
@@ -166,14 +137,7 @@ public static class ProjectStore
                     storyPath);
             }
 
-            string storyJson = File.ReadAllText(storyPath, new UTF8Encoding(false));
-
-            if (notices is not null)
-            {
-                NoticeRetiredChoices(storyJson, reference.RelativePath, notices);
-            }
-
-            StoryFile file = StoryFileJson.Read(storyJson);
+            StoryFile file = StoryFileJson.Read(File.ReadAllText(storyPath, new UTF8Encoding(false)));
 
             if (!string.Equals(file.Id, reference.Id, StringComparison.Ordinal))
             {
@@ -230,11 +194,6 @@ public static class ProjectStore
     }
 }
 
-/// <param name="Notices">열면서 알릴 것 — 파일에서 버린 옛 구조 등. 비어 있으면 조용히 열렸다.</param>
 public sealed record ProjectLoadResult(
     StoryProject Project,
-    string ManifestPath,
-    IReadOnlyList<string>? Notices = null)
-{
-    public IReadOnlyList<string> LoadNotices => Notices ?? [];
-}
+    string ManifestPath);

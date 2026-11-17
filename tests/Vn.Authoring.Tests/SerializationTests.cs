@@ -380,6 +380,22 @@ public class SerializationTests
         return directory;
     }
 
+    [Theory]
+    [InlineData("beginChoice")]   // ⛔ 걷힌 대사 안 선택지 — 전에는 알아보고 버렸다
+    [InlineData("else")]          // ⛔ 전에는 모르는 이름을 endIf로 돌렸다
+    public void 모르는_조건_전환_종류는_깨진_파일이다(string kind)
+    {
+        var sample = new Sample();
+        sample.Line("갈래 안", new LineConditionTransition(ConditionTransitionKind.BeginIf, sample.ConditionA.Id));
+        string json = StoryFileJson.Write(sample.File);
+        Assert.Contains("\"beginIf\"", json, StringComparison.Ordinal);
+
+        InvalidDataException error = Assert.Throws<InvalidDataException>(
+            () => StoryFileJson.Read(json.Replace("\"beginIf\"", $"\"{kind}\"", StringComparison.Ordinal)));
+
+        Assert.Contains($"'{kind}'", error.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void 옛_파일의_선택지_자유_씬_배선은_열고_저장해도_남는다()
     {

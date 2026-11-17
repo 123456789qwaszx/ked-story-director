@@ -3,7 +3,7 @@
 **프로젝트는 형식 4만 연다.** 소유자의 프로젝트는 형식 4다(2026-11-17 소유자 — 「옛 데이터 읽기를 전부 걷읍시다」). 옛 모양을 읽어
 옮기거나 · 견디거나 · 알리던 코드와 그것만 지키던 시험 · 견본을 흔적 없이 걷는다.
 
-> **상태: L1 · L2 끝.** L1–L4는 형식 4 파일에 없는 모양이라 소유자의 파일에서 잃는 것이 없다 — 바로 한다. L5는 형식 4에 들어 있을 수
+> **상태: L1–L3 끝.** L1–L4는 형식 4 파일에 없는 모양이라 소유자의 파일에서 잃는 것이 없다 — 바로 한다. L5는 형식 4에 들어 있을 수
 > 있는 칸이라 걷으면 다음 저장에서 그 데이터가 빠진다 — 소유자가 정한 뒤에 한다(4절).
 
 ## 1. 정한 것
@@ -58,3 +58,4 @@
 |---|---|---|---|
 | 11-17 | L0 | (이 커밋) | 지시서 — 조사는 읽기 전용 훑기 한 번(코드 · 시험 · 견본 · 문서) |
 | 11-17 | L1 · L2 | (이 커밋) | 한 커밋 — 연출을 담은 옛 프로젝트는 모두 형식 3이라 형식 3을 거절하면 연출 백업도 함께 걷힌다. 형식 4 이전은 한 줄 거절(`ProjectManifestJson.Read` — 「형식 버전 N 프로젝트는 열지 않습니다 — 이 툴은 형식 4만 엽니다」). 걷음: `ScriptTable` 파일 · 대본 파일 읽기/지우기/거절 · 판 형식 1 · 문자열 대본 참조 · 대본 없는 카드(→ 깨진 파일) · 안 읽히던 `StoryProject.FormatVersion` · 연출 키/배선/노드 알아보기 · `presentation-original/` 만들기 · 열 때 그 알림. 시험 — `FormatThreeProjectTests`(8) · `tests/fixtures/format3-project/` · `LegacyPresentationProjectTests`(6) · `SerializationTests` 둘(대본 파일 거절 · 형식 4의 `scripts`) · 판 형식 1 줄을 걷고, 거절 시험에 형식 3을 더했다. 문서 — `ARCHITECTURE.md` 형식 표 · 8절 · 16(이미 남은 백업은 지우지 않는다) · 시험 표, `README.md`, `two-graphs.md` 1절 표, `io-reference.md` 머리. Authoring 689 · App 442 |
+| 11-17 | L3 | (이 커밋) | 대사 안 선택 전환을 알아보고 버리기(`RetiredChoiceKindNames`) · 열 때 그 알림(`NoticeRetiredChoices`) — 유일한 열기 알림이라 `ProjectLoadResult.Notices` · `LoadNotices` · 상태줄 꼬리도 걷음. 모르는 전환 종류를 `endIf`로 돌리던 뒷길도 걷어 `beginIf` · `beginElseIf` · `endIf` 밖은 깨진 파일이다. 새 시험 1(이론 2 — `beginChoice` · `else`). Authoring 691 · App 442 |

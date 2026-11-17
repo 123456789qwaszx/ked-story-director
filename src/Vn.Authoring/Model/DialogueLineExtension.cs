@@ -5,8 +5,8 @@ namespace Vn.Authoring.Model;
 ///
 /// <b>대사 안 선택지(<c>BeginChoice/BeginNextOption/EndChoice</c>)는 2026-11-04에 걷혔다</b> (소유자: *"선택지는
 /// 에피소드 끝에서만 있는 것으로 규칙을 정했는데 … 앞으로 이런 착각을 못 하게 기능 자체도 완전히 제거"*).
-/// 선택지는 챕터 <b>간선</b>(에피소드 끝)에서만 선다. 옛 원고의 그 전환은 리더가 알아보고 버린다
-/// (<see cref="Serialization.StoryNodeJson"/>).
+/// 선택지는 챕터 <b>간선</b>(에피소드 끝)에서만 선다. 그 전환이 남은 파일은 깨진 파일로 거절한다
+/// (<see cref="Serialization.StoryNodeJson"/> · ⛔ 2026-11-17 전에는 알아보고 버렸다).
 /// </summary>
 public enum ConditionTransitionKind
 {

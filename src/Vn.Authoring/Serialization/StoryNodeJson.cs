@@ -385,11 +385,7 @@ internal static class StoryNodeJson
 
             foreach (JsonObject transitionJson in Transitions(lineJson))
             {
-                if (ParseKind((string?)transitionJson["kind"]) is not { } kind)
-                {
-                    continue;   // 걷힌 종류(대사 안 선택지) — 알아보고 버린다. 출구도 함께 버린다.
-                }
-
+                ConditionTransitionKind kind = ParseKind((string?)transitionJson["kind"], id);
                 var transition = new LineConditionTransition(kind, (string?)transitionJson["condition"]);
 
                 extension.Transitions.Add(transition);
@@ -415,11 +411,7 @@ internal static class StoryNodeJson
                 continue;
             }
 
-            if (ParseKind((string?)transitionJson["kind"]) is not { } kind)
-            {
-                continue;   // 걷힌 종류 — 버린다.
-            }
-
+            ConditionTransitionKind kind = ParseKind((string?)transitionJson["kind"], id);
             var transition = new LineConditionTransition(kind, (string?)transitionJson["condition"]);
 
             node.TrailingTransitions.Add(transition);
@@ -490,18 +482,14 @@ internal static class StoryNodeJson
     };
 
     /// <summary>
-    /// 걷힌 대사 안 선택지의 종류 이름 (2026-11-04). 리더는 이것을 <b>알아보고 버린다</b> — 모르는 이름처럼
-    /// <c>endIf</c>로 돌리면 옛 원고의 선택 블록이 "if 없는 endif"가 되어 발행이 막힌다.
-    /// <see cref="ProjectStore"/>가 열 때 이 이름이 보이면 알린다.
+    /// 종류 이름 → 종류. <see cref="KindName"/>이 쓰는 셋 밖은 <b>깨진 파일</b>이다(2026-11-17) — ⛔ 전에는 모르는 이름을 <c>endIf</c>로
+    /// 돌리고 걷힌 대사 안 선택지(<c>beginChoice</c> · <c>beginNextOption</c> · <c>endChoice</c>)는 알아보고 버렸다.
     /// </summary>
-    public static readonly IReadOnlyList<string> RetiredChoiceKindNames = ["beginChoice", "beginNextOption", "endChoice"];
-
-    /// <summary>종류 이름 → 종류. 걷힌 선택지 종류는 null(버린다). 그 밖의 모르는 이름은 종전대로 <c>endIf</c>.</summary>
-    private static ConditionTransitionKind? ParseKind(string? kind) => kind switch
+    private static ConditionTransitionKind ParseKind(string? kind, string nodeId) => kind switch
     {
         "beginIf" => ConditionTransitionKind.BeginIf,
         "beginElseIf" => ConditionTransitionKind.BeginElseIf,
-        _ when kind is not null && RetiredChoiceKindNames.Contains(kind, StringComparer.Ordinal) => null,
-        _ => ConditionTransitionKind.EndIf
+        "endIf" => ConditionTransitionKind.EndIf,
+        _ => throw new InvalidDataException($"DialogueNode '{nodeId}'의 조건 전환 종류 '{kind}'를 모릅니다.")
     };
 }
