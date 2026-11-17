@@ -72,7 +72,7 @@ public sealed class ProjectFolderTests
     }
 
     [Fact]
-    public void 게임_폴더는_상대_경로로_남고_없으면_풀리지_않는다()
+    public void 보낼_곳은_상대_경로로_남고_없으면_풀리지_않고_모르는_칸은_지킨다()
     {
         string root = Temp();
 
@@ -84,24 +84,40 @@ public sealed class ProjectFolderTests
             Directory.CreateDirectory(game);
             string manifest = Path.Combine(project, "project.vnproject.json");
 
-            Assert.Null(RuntimeTarget.LoadBeside(manifest));
+            Assert.True(ExportDestinations.LoadBeside(manifest).IsEmpty);
 
-            RuntimeTarget target = RuntimeTarget.FromAbsolute(manifest, game);
-            Assert.Equal("../game/ChapterProgression", target.GameFolder);
+            string relative = ExportDestinations.Relativize(manifest, game);
+            Assert.Equal("../game/ChapterProgression", relative);
 
-            RuntimeTarget.SaveBeside(manifest, target);
-            RuntimeTarget loaded = RuntimeTarget.LoadBeside(manifest)!;
-            Assert.Equal(target.GameFolder, loaded.GameFolder);
-            Assert.Equal(Path.GetFullPath(game), loaded.ResolveExisting(manifest));
+            ExportDestinations.SaveBeside(manifest, ExportDestinations.None
+                .With(ExportFormat.Progression, relative)
+                .With(ExportFormat.DialogueYarn, "../yarn"));
+            ExportDestinations loaded = ExportDestinations.LoadBeside(manifest);
+            Assert.Equal((relative, null, "../yarn"), (loaded.Progression, loaded.Scenes, loaded.DialogueYarn));
+            Assert.Equal(Path.GetFullPath(game), loaded.ResolveExisting(manifest, ExportFormat.Progression));
+            Assert.Contains("\"gameFolder\"", File.ReadAllText(ExportDestinations.PathFor(manifest)), StringComparison.Ordinal);   // compositor가 읽는 칸
 
             // 가리키는 폴더가 없으면 만들지 않는다 — 다른 PC에서 엉뚱한 자리에 쌓이지 않게.
+            Assert.Null(loaded.ResolveExisting(manifest, ExportFormat.DialogueYarn));
             Directory.Delete(game, recursive: true);
-            Assert.Null(loaded.ResolveExisting(manifest));
+            Assert.Null(loaded.ResolveExisting(manifest, ExportFormat.Progression));
             Assert.False(Directory.Exists(Path.GetFullPath(game)));
 
+            // 모르는 칸(다른 툴의 것)은 지킨다 — 이 툴의 칸을 다 비워도 파일이 남는다.
+            File.WriteAllText(ExportDestinations.PathFor(manifest), "{ \"gameFolder\": \"../g\", \"compositorOnly\": 3 }");
+            ExportDestinations.SaveBeside(manifest, ExportDestinations.None);
+            string kept = File.ReadAllText(ExportDestinations.PathFor(manifest));
+            Assert.Contains("compositorOnly", kept, StringComparison.Ordinal);
+            Assert.DoesNotContain("\"gameFolder\":", kept, StringComparison.Ordinal);
+
+            // 남는 칸이 없으면 파일을 걷는다.
+            File.WriteAllText(ExportDestinations.PathFor(manifest), "{ \"gameFolder\": \"../g\" }");
+            ExportDestinations.SaveBeside(manifest, ExportDestinations.None);
+            Assert.False(File.Exists(ExportDestinations.PathFor(manifest)));
+
             // 깨진 파일은 "없음"이다 — 설정 하나 때문에 프로젝트를 못 열면 안 된다.
-            File.WriteAllText(RuntimeTarget.PathFor(manifest), "{ not json");
-            Assert.Null(RuntimeTarget.LoadBeside(manifest));
+            File.WriteAllText(ExportDestinations.PathFor(manifest), "{ not json");
+            Assert.True(ExportDestinations.LoadBeside(manifest).IsEmpty);
         }
         finally
         {
@@ -110,15 +126,14 @@ public sealed class ProjectFolderTests
     }
 
     [Fact]
-    public void 내보내기는_게임_폴더에도_쓰고_나간_자리를_말한다()
+    public void 내보내기는_exported에만_쓰고_나간_자리를_말한다()
     {
+        // 보낼 곳(게임 폴더 등)은 저장할 때 ExportDelivery가 비춘다 — 내보내기 자체는 exported/만 쓴다(2026-11-17).
         string root = Temp();
 
         try
         {
             string manifest = Path.Combine(root, "project.vnproject.json");
-            string game = Path.Combine(root, "game");
-            Directory.CreateDirectory(game);
 
             var editor = new ProjectEditor(new StoryProject());
             editor.EnsureChapter("ch01");
@@ -126,21 +141,12 @@ public sealed class ProjectFolderTests
             ProjectStore.Save(manifest, editor.Project);
 
             var entries = new[] { new ChapterEntry("ch01", editor.FindChapter("ch01")!.ToGraphModel("ch01")) };
-            var service = new ChapterExportService();
+            ChapterExportRun run = new ChapterExportService().ExportAll(entries, manifest, editor.Project);
 
-            ChapterExportRun withoutGame = service.ExportAll(entries, manifest, editor.Project);
-            Assert.True(withoutGame.AllExported);
-            Assert.Equal([ChapterExportService.ExportPathFor(manifest, "ch01")], withoutGame.Written);
-            Assert.Contains("진행 JSON → exported/ (ch01.progression.json)", withoutGame.WhereNotice);
-            Assert.DoesNotContain("게임 폴더", withoutGame.WhereNotice);
-
-            ChapterExportRun withGame = service.ExportAll(entries, manifest, editor.Project, game);
-            Assert.True(withGame.AllExported);
-            Assert.True(File.Exists(Path.Combine(game, "ch01.progression.json")));
-            Assert.Equal(
-                File.ReadAllBytes(ChapterExportService.ExportPathFor(manifest, "ch01")),
-                File.ReadAllBytes(Path.Combine(game, "ch01.progression.json")));
-            Assert.Contains($"게임 폴더 → {game}", withGame.WhereNotice);
+            Assert.True(run.AllExported);
+            Assert.Equal([ChapterExportService.ExportPathFor(manifest, "ch01")], run.Written);
+            Assert.Contains("진행 JSON → exported/ (ch01.progression.json)", run.WhereNotice);
+            Assert.DoesNotContain("보낸 곳", run.WhereNotice);
         }
         finally
         {

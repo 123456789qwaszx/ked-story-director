@@ -961,9 +961,16 @@ public partial class ChapterGraphView : UserControl
     /// 그 뒤로 동기화 보고까지 따라오므로, 상태줄에 얹으면 서로를 덮는다(실제로 덮였다).
     /// 못 나간 사유는 어차피 그 보고에 이미 서 있는 오류들이다 — 결론을 그 옆에 둔다.
     /// </summary>
-    private void AutoExport() =>
-        _exportRun = _export.ExportAll(
-            _entries, _session?.ProjectPath, _session?.Project, _session?.GameFolder, _session?.Definition);
+    private void AutoExport()
+    {
+        _exportRun = _export.ExportAll(_entries, _session?.ProjectPath, _session?.Project, _session?.Definition);
+
+        // 저장 직후에만 보낸다 — exported/를 방금 새로 쓴 뒤라 보낼 곳이 저장된 판과 같다(2026-11-17 · ExportDelivery).
+        if (_session is { ProjectPath: { } path } session && session.TakeDeliveryRequest())
+        {
+            _exportRun = _exportRun with { Delivery = ExportDelivery.Deliver(path, session.Destinations) };
+        }
+    }
 
     /// <summary>검증 보고 맨 위에 세울 내보내기 결론 — 못 나갔을 때만 있다.</summary>
     private string? ExportNotice() => _exportRun.Notice;

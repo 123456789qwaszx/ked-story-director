@@ -404,7 +404,7 @@ public partial class MainWindow : Window
 
         return File.Exists(ChapterExportService.ExportPathFor(projectPath, chapterId))
             ? $" ⚠ 옛 진행 JSON '{stale}'을 걷지 못했습니다 — 다른 프로그램에 잡혀 있는지 확인하세요."
-            : $" 옛 진행 JSON '{stale}'은 걷었습니다(게임 폴더의 같은 파일도).";
+            : $" 옛 진행 JSON '{stale}'은 걷었습니다(보낼 곳의 같은 파일은 저장할 때 걷습니다).";
     }
 
     /// <summary>
@@ -543,7 +543,7 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// 게임 폴더 —런타임의 <c>ChapterProgression</c> 폴더. 프로젝트 폴더의 <c>runtime.target.json</c>에
-    /// 상대 경로로 남고, 저장할 때마다 진행 JSON이 거기로도 나간다. compositor가 같은 파일을 읽어 Yarn을 쓴다.
+    /// 상대 경로로 남고, 저장할 때 진행 JSON이 거기로도 나간다. compositor가 같은 파일을 읽어 Yarn을 쓴다.
     /// </summary>
     private async void OnGameFolderClick(object? sender, RoutedEventArgs e)
     {
@@ -560,11 +560,10 @@ public partial class MainWindow : Window
                 return;
             }
 
-            RuntimeTarget target = RuntimeTarget.FromAbsolute(projectPath, folder);
-            RuntimeTarget.SaveBeside(projectPath, target);
-            _session.ReloadRuntimeTarget();
-            ChapterGraph.Refresh();
-            _session.SetStatus($"게임 폴더: {target.GameFolder} — 저장할 때마다 진행 JSON을 여기로도 씁니다.");
+            string relative = ExportDestinations.Relativize(projectPath, folder);
+            ExportDestinations.SaveBeside(projectPath, _session.Destinations.With(ExportFormat.Progression, relative));
+            _session.ReloadDestinations();
+            _session.SetStatus($"게임 폴더: {relative} — 저장할 때 진행 JSON을 여기로도 보냅니다.");
         }
         catch (Exception exception)
         {

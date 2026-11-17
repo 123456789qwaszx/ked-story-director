@@ -10,7 +10,9 @@ namespace Vn.Authoring.Chapters;
 /// <param name="Refused">검증 오류로 거부된 챕터. <b>파일은 손대지 않았다.</b></param>
 /// <param name="Failed">쓰기 자체가 실패한 챕터(잠김·권한).</param>
 /// <param name="Written">실제로 쓴(또는 같은 내용이라 둔) 파일 — 사람이 "어디로 나갔나"를 보는 자리.</param>
-/// <param name="GameFolderNote">게임 폴더(<see cref="Serialization.RuntimeTarget"/>)로도 썼는지 한 마디. 설정이 없으면 null.</param>
+/// <param name="Delivery">
+/// 저장 때의 보내기(<see cref="ExportDelivery"/>) 결과 — 저장 직후의 내보내기에만 있다. 그 밖의 다시 읽기는 <c>exported/</c>만 쓴다.
+/// </param>
 /// <param name="Removed">이번에 걷은 옛 진행 JSON의 챕터 — 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 것.</param>
 /// <param name="RemoveFailed">걷어야 하는데 못 걷은 옛 진행 JSON의 챕터(잠김 · 권한).</param>
 /// <param name="ScenesFailed">장면 파일(<see cref="ChapterScenesExporter"/>)을 쓰지 못한 챕터(잠김 · 권한).</param>
@@ -20,7 +22,7 @@ public sealed record ChapterExportRun(
     IReadOnlyList<string>? DeploymentBlocked = null,
     IReadOnlyDictionary<string, string>? Checksums = null,
     IReadOnlyList<string>? Written = null,
-    string? GameFolderNote = null,
+    ExportDeliveryRun? Delivery = null,
     IReadOnlyList<string>? Removed = null,
     IReadOnlyList<string>? RemoveFailed = null,
     IReadOnlyList<string>? ScenesFailed = null,
@@ -42,9 +44,11 @@ public sealed record ChapterExportRun(
                   string.Join(", ", gone.Select(id => id + ChapterExportService.ExportFileSuffix))
                 : null;
 
+            string? delivered = Delivery?.Where;
+
             if (Written is not { Count: > 0 } written)
             {
-                return removed;
+                return string.Join(" · ", new[] { removed, delivered }.Where(part => part is not null)) is { Length: > 0 } only ? only : null;
             }
 
             string folder = Path.GetFileName(Path.GetDirectoryName(written[0]) ?? string.Empty);
@@ -54,7 +58,7 @@ public sealed record ChapterExportRun(
                 ? $" · 대사 Yarn → {folder}/{ChapterYarnExporter.FolderName}/ ({scripts.Count}개)"
                 : string.Empty;
 
-            return $"진행 JSON → {folder}/ ({files})" + yarn + (GameFolderNote is null ? string.Empty : $" · {GameFolderNote}") +
+            return $"진행 JSON → {folder}/ ({files})" + yarn + (delivered is null ? string.Empty : $" · {delivered}") +
                    (removed is null ? string.Empty : $" · {removed}");
         }
     }
@@ -67,7 +71,7 @@ public sealed record ChapterExportRun(
     /// 검증 보고 맨 위에 세울 결론 — <b>못 나갔거나 옛 파일을 못 걷었을 때만 있다.</b> 잘 나간 것은 말하지 않는다.
     /// </summary>
     public string? Notice => AllExported && RemoveFailed is not { Count: > 0 } && ScenesFailed is not { Count: > 0 } &&
-                             YarnProblems is not { Count: > 0 }
+                             YarnProblems is not { Count: > 0 } && Delivery?.Problem is null
         ? null
         : string.Join("\n", new[]
         {
@@ -96,7 +100,8 @@ public sealed record ChapterExportRun(
             YarnProblems is not { Count: > 0 } yarn
                 ? null
                 : $"대사 Yarn이 나가지 않은 장면이 있습니다 — 그 장면의 옛 파일은 그대로 둡니다:\n" +
-                  string.Join("\n", yarn.Select(problem => "• " + problem))
+                  string.Join("\n", yarn.Select(problem => "• " + problem)),
+            Delivery?.Problem
         }.Where(part => part is not null));
 }
 
@@ -187,17 +192,15 @@ public sealed class ChapterExportService
     /// 그 비대칭이 저작 관문(`대사엔트리`가 대사노드와 맞는가)을 여기 걸지 못하는 이유다.
     /// 한 번도 안 연 챕터는 판에 노드가 없어서 전부 거부되기 때문이다.
     /// </summary>
-    /// <param name="gameFolder">
-    /// 게임 폴더(<see cref="Serialization.RuntimeTarget"/>가 푼 절대 경로). 주면 <c>exported/</c>와 함께 거기에도
-    /// <c>{챕터}.progression.json</c>을 쓴다 — 런타임 저장소로 손으로 복사하지 않아도 된다. null이면 안 쓴다.
-    /// <b>대사 Yarn은 거기 쓰지 않는다</b> — 연출 든 Yarn이 있으면 덮여서 연출이 사라진다(소유자 2026-11-17).
-    /// </param>
+    /// <remarks>
+    /// <c>exported/</c>에만 쓴다. 프로젝트 밖의 보낼 곳(게임 폴더 등)에는 <b>저장할 때만</b> <see cref="ExportDelivery"/>가 이 폴더를 비춘다(2026-11-17 ·
+    /// ⛔ 그 전에는 여기서 바뀔 때마다 게임 폴더에도 진행 JSON을 썼다).
+    /// </remarks>
     /// <param name="definition">대사 Yarn을 펼칠 때 조건을 찾는 정의 파일 — 카드 글 칸이 쓰는 것과 같은 것.</param>
     public ChapterExportRun ExportAll(
         IReadOnlyList<ChapterEntry> entries,
         string? projectPath,
         StoryProject? project = null,
-        string? gameFolder = null,
         GameDefinition? definition = null)
     {
         ArgumentNullException.ThrowIfNull(entries);
@@ -212,8 +215,6 @@ public sealed class ChapterExportService
         var blocked = new List<string>();
         var checksums = new Dictionary<string, string>(StringComparer.Ordinal);
         var written = new List<string>();
-        var gameWritten = new List<string>();
-        var gameFailed = new List<string>();
         var scenesFailed = new List<string>();
         var yarnWritten = new List<string>();
         var yarnProblems = new List<string>();
@@ -280,40 +281,25 @@ public sealed class ChapterExportService
             written.Add(exportPath);
 
             // 장면 파일 — 연출 초안을 짓는 쪽(AI)이 장면 하나씩 읽는 저작 자료다. 진행 JSON이 나갈 때 함께 나간다
-            // (거부된 챕터는 둘 다 그대로 — exported/가 없으면 아직 아무것도 안 나갔다는 뜻이 그대로 선다). 게임 폴더에는
-            // 쓰지 않는다 — 런타임이 읽지 않는다.
+            // (거부된 챕터는 둘 다 그대로 — exported/가 없으면 아직 아무것도 안 나갔다는 뜻이 그대로 선다).
             if (!TryWrite(ChapterScenesExporter.PathFor(projectPath, entry.ChapterId),
                     ChapterScenesExporter.Export(entry.Model, project)))
             {
                 scenesFailed.Add(entry.ChapterId);
             }
 
-            // 대사 Yarn — 장면 하나 = 파일 하나(docs/work-orders/yarn-output-orders.md). 진행 JSON이 나갈 때 함께, 게임 폴더에는 쓰지 않는다.
+            // 대사 Yarn — 장면 하나 = 파일 하나(docs/work-orders/yarn-output-orders.md). 진행 JSON이 나갈 때 함께.
             ExportYarn(entry, projectPath, project, definition, yarnChapters, yarnOwners, yarnWritten, yarnProblems);
-
-            if (gameFolder is not null)
-            {
-                string gamePath = Path.Combine(gameFolder, entry.ChapterId + ExportFileSuffix);
-                (TryWrite(gamePath, result.Json!) ? gameWritten : gameFailed).Add(entry.ChapterId);
-            }
         }
 
         // 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 옛 파일은 걷는다 — 두면 게임이 없는 챕터를 계속 싣는다.
         var removed = new List<string>();
         var removeFailed = new List<string>();
-        RemoveStale(entries, projectPath, gameFolder, removed, removeFailed);
+        RemoveStale(entries, projectPath, removed, removeFailed);
         RemoveStaleYarn(entries, projectPath, yarnChapters, yarnOwners, removeFailed);
 
-        string? gameNote = gameFolder is null
-            ? null
-            : gameFailed.Count > 0
-                ? $"게임 폴더에 쓰지 못함: {string.Join(", ", gameFailed)} ({gameFolder})"
-                : gameWritten.Count > 0
-                    ? $"게임 폴더 → {gameFolder}"
-                    : null;
-
         return new ChapterExportRun(
-            refused, failed, blocked, checksums, written, gameNote, removed, removeFailed, scenesFailed, yarnWritten, yarnProblems);
+            refused, failed, blocked, checksums, written, Delivery: null, removed, removeFailed, scenesFailed, yarnWritten, yarnProblems);
     }
 
     /// <summary>
@@ -428,8 +414,7 @@ public sealed class ChapterExportService
     /// <c>exported/</c>에서 지금 프로젝트에 없는 챕터의 진행 JSON을 걷는다. <c>exported/</c>는 이 툴이 모델에서 짓는
     /// 산출물 자리라, 걷어도 잃는 것이 없다 — 챕터 제거 · 개명을 되돌리면 다음 내보내기가 같은 파일을 다시 쓴다.
     ///
-    /// 게임 폴더의 같은 이름 파일은 <b>걷는 옛 파일과 바이트가 같을 때만</b> 함께 걷는다 — 이 툴이 써 둔 그대로라는
-    /// 뜻이다. 다르면(사람이 고쳤거나 다른 곳에서 왔다) 그 폴더의 남의 파일이므로 둔다.
+    /// 보낼 곳(게임 폴더 등)의 같은 이름 파일은 여기서 걷지 않는다 — 저장할 때 보내기가 보낸 기록으로 걷는다(<see cref="ExportDelivery"/>).
     ///
     /// 이름은 대소문자를 가리지 않고 맞춘다 — 대소문자만 바꾼 개명에서, 그것을 가리지 않는 파일 시스템은 방금 쓴 새 파일을
     /// 옛 이름으로 들고 있다. 그것을 옛 파일로 보고 걷으면 새 파일이 사라진다.
@@ -437,7 +422,6 @@ public sealed class ChapterExportService
     private static void RemoveStale(
         IReadOnlyList<ChapterEntry> entries,
         string projectPath,
-        string? gameFolder,
         List<string> removed,
         List<string> removeFailed)
     {
@@ -450,7 +434,7 @@ public sealed class ChapterExportService
 
         var live = new HashSet<string>(entries.Select(entry => entry.ChapterId), StringComparer.OrdinalIgnoreCase);
 
-        // 장면 파일도 같은 규칙으로 걷는다 — 게임 폴더에는 쓰지 않으므로 거기는 보지 않는다.
+        // 장면 파일도 같은 규칙으로 걷는다. 보낼 곳의 지난 파일은 저장할 때 보내기가 걷는다(ExportDelivery — 보낸 기록).
         foreach (string path in Directory.EnumerateFiles(folder, "*" + ChapterScenesExporter.FileSuffix).Order(StringComparer.Ordinal))
         {
             if (live.Contains(Path.GetFileName(path)[..^ChapterScenesExporter.FileSuffix.Length]))
@@ -484,14 +468,6 @@ public sealed class ChapterExportService
 
             try
             {
-                if (gameFolder is not null &&
-                    Path.Combine(gameFolder, fileName) is var gamePath &&
-                    File.Exists(gamePath) &&
-                    File.ReadAllBytes(gamePath).SequenceEqual(File.ReadAllBytes(path)))
-                {
-                    File.Delete(gamePath);
-                }
-
                 File.Delete(path);
                 removed.Add(chapterId);
             }

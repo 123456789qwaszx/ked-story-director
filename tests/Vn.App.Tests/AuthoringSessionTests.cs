@@ -289,10 +289,10 @@ public class AuthoringSessionTests : IDisposable
     // ── 새 프로젝트 자동 준비 + PNG 가져오기 ────────────────────────
 
     [Fact]
-    public void 게임_폴더를_정하면_저장이_진행_JSON을_거기로도_낸다()
+    public void 보낼_곳은_프로젝트_폴더에_살고_저장만이_보내기를_부탁한다()
     {
-        // 프로젝트는 폴더다 — 복제는 탐색기, 버전은 git이 맡는다.
-        // 폴더의 runtime.target.json이 게임 폴더를 가리키고, 두 툴이 각자 산출물을 거기로 쓴다.
+        // 프로젝트는 폴더다 — 폴더의 runtime.target.json이 형식마다 보낼 곳을 든다(2026-11-17 · export-destinations G1). 보내기는 저장할
+        // 때만이다 — 세션은 부탁만 하고 [구성]의 다시 읽기가 exported/를 새로 쓴 뒤에 보낸다.
         string project = TempDirectory();
         string game = TempDirectory();
 
@@ -300,19 +300,30 @@ public class AuthoringSessionTests : IDisposable
         {
             var session = new AuthoringSession();
             session.Save(Path.Combine(project, "project.vnproject.json"));
-            Assert.Null(session.GameFolder);
-            Assert.Contains("게임 폴더가 없습니다", session.StatusMessage);
+            Assert.True(session.Destinations.IsEmpty);
+            Assert.False(session.TakeDeliveryRequest());   // 보낼 곳이 없으면 부탁하지 않는다
+            Assert.DoesNotContain("게임 폴더", session.StatusMessage);
 
-            RuntimeTarget.SaveBeside(session.ProjectPath!, RuntimeTarget.FromAbsolute(session.ProjectPath!, game));
-            session.ReloadRuntimeTarget();
+            ExportDestinations.SaveBeside(
+                session.ProjectPath!,
+                ExportDestinations.None.With(ExportFormat.Progression, ExportDestinations.Relativize(session.ProjectPath!, game)));
+            session.ReloadDestinations();
+            Assert.Equal(Path.GetFullPath(game), session.Destinations.ResolveExisting(session.ProjectPath!, ExportFormat.Progression));
 
-            Assert.Equal(Path.GetFullPath(game), session.GameFolder);
+            // 고치기만으로는 부탁하지 않는다 — 저장이 부탁하고, 한 번 물으면 내린다.
+            session.Editor.EnsureChapter("ch01");
+            Assert.False(session.TakeDeliveryRequest());
+            session.Save();
+            Assert.Contains("보낼 곳에도 보냅니다", session.StatusMessage);
+            Assert.True(session.TakeDeliveryRequest());
+            Assert.False(session.TakeDeliveryRequest());
 
-            // 다시 열어도 설정이 따라온다 — 파일이 프로젝트 폴더에 산다.
+            // 다시 열어도 설정이 따라온다 — 파일이 프로젝트 폴더에 산다. 열기는 부탁하지 않는다.
             var reopened = new AuthoringSession();
             reopened.Open(session.ProjectPath!);
-            Assert.Equal(Path.GetFullPath(game), reopened.GameFolder);
-            Assert.Contains("게임 폴더", reopened.StatusMessage);
+            Assert.Equal(Path.GetFullPath(game), reopened.Destinations.ResolveExisting(reopened.ProjectPath!, ExportFormat.Progression));
+            Assert.Contains("저장하면 보냅니다: 진행 JSON", reopened.StatusMessage);
+            Assert.False(reopened.TakeDeliveryRequest());
         }
         finally
         {

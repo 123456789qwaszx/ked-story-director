@@ -137,16 +137,33 @@ internal sealed class AuthoringSession
     // 상태를 모두 맞춘 뒤에 알린다. 알린 다음에 상태를 바꾸면
     // 화면은 방금 지나간 값을 그린 채로 남는다.
     /// <summary>
-    /// 게임 폴더 설정 —프로젝트 폴더의 <c>runtime.target.json</c>. 없으면 null. 풀린 절대 경로가 실제로
-    /// 있을 때만 <see cref="GameFolder"/>가 있다 — 다른 PC에서 상대 경로가 빗나가면 아무것도 안 쓴다.
+    /// 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>(<see cref="ExportDestinations"/>). 형식마다 <c>exported/</c> 밖에 한 벌 더 낼
+    /// 폴더이고, <b>저장할 때만</b> 거기로 보낸다(<see cref="TakeDeliveryRequest"/> — 2026-11-17 · ⛔ 그 전에는 게임 폴더 하나였고 바뀔 때마다 썼다).
     /// </summary>
-    public RuntimeTarget? RuntimeTarget { get; private set; }
+    public ExportDestinations Destinations { get; private set; } = ExportDestinations.None;
 
-    public string? GameFolder =>
-        ProjectPath is { } path && RuntimeTarget is { } target ? target.ResolveExisting(path) : null;
+    public void ReloadDestinations() =>
+        Destinations = ProjectPath is { } path ? ExportDestinations.LoadBeside(path) : ExportDestinations.None;
 
-    public void ReloadRuntimeTarget() =>
-        RuntimeTarget = ProjectPath is { } path ? RuntimeTarget.LoadBeside(path) : null;
+    private bool _deliveryRequested;
+
+    /// <summary>
+    /// 저장이 보내기를 부탁했는가 — 묻는 순간 부탁을 내린다. [구성]의 다시 읽기가 <c>exported/</c>를 새로 쓴 <b>뒤에</b> 묻고 보낸다 — 저장
+    /// 직후의 다시 읽기라 보낼 곳이 저장된 판과 같다(저장에서 곧바로 보내면 처음 저장한 프로젝트는 아직 <c>exported/</c>가 없다).
+    /// </summary>
+    public bool TakeDeliveryRequest()
+    {
+        bool requested = _deliveryRequested;
+        _deliveryRequested = false;
+        return requested;
+    }
+
+    /// <summary>상태줄의 한 마디 — 보낼 곳이 있으면 어느 형식인지. 없으면 말하지 않는다(설정은 [⚙ 설정]에 있다).</summary>
+    private string DestinationsNote() => Destinations.IsEmpty
+        ? string.Empty
+        : " · 저장하면 보냅니다: " + string.Join(" · ", ExportDestinations.Formats
+            .Where(format => Destinations.FolderOf(format) is not null)
+            .Select(ExportDestinations.LabelOf));
 
     public void NewProject()
     {
@@ -154,7 +171,8 @@ internal sealed class AuthoringSession
 
         ProjectPath = null;
         Definition = GameDefinition.Empty;
-        RuntimeTarget = null;
+        Destinations = ExportDestinations.None;
+        _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage = "새 프로젝트입니다. [대본] 탭의 [＋ 대사 노드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
@@ -174,12 +192,12 @@ internal sealed class AuthoringSession
 
         ProjectPath = loaded.ManifestPath;
         Definition = GameDefinition.LoadBeside(loaded.ManifestPath);
-        ReloadRuntimeTarget();
+        ReloadDestinations();
+        _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
             $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
-            alignment +
-            (RuntimeTarget is null ? " · 게임 폴더 미지정" : $" · 게임 폴더 {RuntimeTarget.GameFolder}");
+            alignment + DestinationsNote();
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
@@ -240,7 +258,8 @@ internal sealed class AuthoringSession
         ProjectPath = Path.GetFullPath(target);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Project);
         Definition = GameDefinition.LoadBeside(ProjectPath);
-        ReloadRuntimeTarget();
+        ReloadDestinations();
+        _deliveryRequested = !Destinations.IsEmpty;
         AppSettingsService.SaveRecentProject(ProjectPath);
 
         bool provisioned = EnsureProjectFolders();
@@ -249,7 +268,7 @@ internal sealed class AuthoringSession
         // 복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
         StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
             (provisioned ? " 없던 정의 파일의 뼈대를 깔았습니다." : string.Empty) +
-            (RuntimeTarget is null ? " 게임 폴더가 없습니다 — [🎮 게임 폴더…]로 정하면 진행 JSON이 런타임으로도 나갑니다." : string.Empty);
+            (Destinations.IsEmpty ? string.Empty : " 보낼 곳에도 보냅니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
     }
 

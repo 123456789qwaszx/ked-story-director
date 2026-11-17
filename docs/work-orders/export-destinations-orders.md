@@ -3,7 +3,7 @@
 **소유자**: 툴 위 띠의 [🎮 게임 폴더…]를 바깥에 드러내는 대신, 설정 창 안에서 형식(진행 JSON · 장면 파일 · 대사 Yarn)마다 그 형식을 낼 폴더를
 정한다.
 
-> **상태: G0 지시서.**
+> **상태: G1 끝.**
 
 ## 1. 지금 (조사)
 
@@ -53,3 +53,4 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-17 | G0 | (이 커밋) | 지시서 — 2절은 소유자가 정했다 |
+| 11-17 | G1 | (이 커밋) | `RuntimeTarget` → `ExportDestinations`(`ExportFormat` 셋 · `gameFolder` · `scenesFolder` · `dialogueYarnFolder` · 모르는 칸 지키기 · 이 툴의 칸이 다 비면 파일을 걷는다 · 없거나 깨지면 `None`). `ExportDelivery`(`exported/`를 비추기 · 보낸 기록 `exported/.delivered.json` — 폴더는 프로젝트 기준 상대 경로 · 지난 파일은 같은 폴더에서 기록과 바이트가 같을 때만 걷는다 · 없는 폴더는 만들지 않는다 · 대사 Yarn을 게임 폴더로는 안 보낸다). `ExportAll`은 `exported/`만(게임 폴더 갈래 · 걷기 규칙을 걷었다), `ChapterExportRun.GameFolderNote` → `Delivery`(나간 자리 줄 · 못 보낸 것은 결론). 세션 `Destinations` · `TakeDeliveryRequest`(저장만 부탁한다) — [구성] 다시 읽기의 내보내기 뒤에 보낸다. 상태줄 — 열 때 「저장하면 보냅니다: …」, 저장 때 「보낼 곳에도 보냅니다 — 결과는 검증 보고에」(⛔ 「게임 폴더가 없습니다」 잔소리 · 「저장할 때마다」 거짓). 위 띠 단추는 G2까지 진행 JSON의 보낼 곳을 정한다. 시험 — 새 `ExportDeliveryTests` 5 · 헤드리스 하나(고칠 때는 안 보내고 저장할 때 보낸다), 게임 폴더 시험 넷을 새 모양으로(`ProjectFolderTests` 둘 · 세션 하나 · 대사 Yarn 하나), `ChapterExportServiceTests`의 게임 폴더 걷기 시험은 보내기 시험으로 옮겼다. Authoring 700 · App 447 |

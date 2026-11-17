@@ -264,29 +264,6 @@ public sealed class ChapterExportServiceTests : IDisposable
     }
 
     [Fact]
-    public void 게임_폴더의_옛_파일은_이_툴이_쓴_그대로일_때만_함께_걷는다()
-    {
-        // 게임 폴더는 런타임 저장소다 — 이 툴이 쓴 그대로(바이트가 같다)면 걷고, 다르면(사람이 고쳤거나 다른 곳에서 왔다)
-        // 남의 파일이라 둔다.
-        string game = Path.Combine(_root, "game");
-        Directory.CreateDirectory(game);
-        var service = new ChapterExportService();
-        service.ExportAll([Entry("ch01", Sound), Entry("ch_old", Sound), Entry("ch_hand", Sound)], ProjectPath, gameFolder: game);
-
-        string handEdited = Path.Combine(game, "ch_hand" + ChapterExportService.ExportFileSuffix);
-        File.WriteAllText(handEdited, "{ \"사람이\": \"고쳤다\" }");
-        string foreign = Path.Combine(game, "ch_other" + ChapterExportService.ExportFileSuffix);
-        File.WriteAllText(foreign, "{}");
-
-        service.ExportAll([Entry("ch01", Sound)], ProjectPath, gameFolder: game);
-
-        Assert.True(File.Exists(Path.Combine(game, "ch01" + ChapterExportService.ExportFileSuffix)));
-        Assert.False(File.Exists(Path.Combine(game, "ch_old" + ChapterExportService.ExportFileSuffix)));
-        Assert.True(File.Exists(handEdited));
-        Assert.True(File.Exists(foreign));   // exported/에 없던 것 — 이 툴이 낸 적이 없다
-    }
-
-    [Fact]
     public void 대소문자만_바꾼_개명은_새_파일을_걷지_않는다()
     {
         // 대소문자를 가리지 않는 파일 시스템은 방금 쓴 새 파일을 옛 이름으로 들고 있다 — 그것을 옛 파일로 보면 사라진다.

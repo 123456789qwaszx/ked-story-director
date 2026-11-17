@@ -6,6 +6,7 @@ using Vn.Authoring.Editing;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
+using Vn.Authoring.Serialization;
 using Vn.Authoring.Tests.Fixtures;
 
 namespace Vn.App.Tests;
@@ -152,6 +153,36 @@ public sealed class ChapterGraphSyncViewTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.Contains("새로판길", File.ReadAllText(path));
+    });
+
+    [Fact]
+    public void 보낼_곳에는_고칠_때가_아니라_저장할_때_보낸다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — exported/는 바뀔 때마다, 보낼 곳(게임 폴더 등)은 저장할 때만(export-destinations G1).
+        using var project = new TempProject(allowUnreachable: true);
+        string game = Path.Combine(Path.GetDirectoryName(project.ManifestPath)!, "game");
+        Directory.CreateDirectory(game);
+        ExportDestinations.SaveBeside(project.ManifestPath, ExportDestinations.None.With(ExportFormat.Progression, "game"));
+
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        string sent = Path.Combine(game, "ch05.progression.json");
+        Assert.False(File.Exists(sent));   // 열기만 해서는 보내지 않는다
+
+        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1);
+        session.Editor.AddEdge("ch05", "main05.01", "새로판길", optionLabel: "새로 판 길로");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Contains("새로판길", File.ReadAllText(Path.Combine(project.ExportFolder, "ch05.progression.json")));
+        Assert.False(File.Exists(sent));   // 고치기만 해서는 보내지 않는다
+
+        session.Save();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(
+            File.ReadAllBytes(Path.Combine(project.ExportFolder, "ch05.progression.json")),
+            File.ReadAllBytes(sent));
+        Assert.Contains(
+            view.FindControl<StackPanel>("DiagnosticsPanel")!.GetLogicalDescendants().OfType<TextBlock>(),
+            line => line.Text?.Contains("보낸 곳 → 진행 JSON game", StringComparison.Ordinal) == true);
     });
 
     [Fact]

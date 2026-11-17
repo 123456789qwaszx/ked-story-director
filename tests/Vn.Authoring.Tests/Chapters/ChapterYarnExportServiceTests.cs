@@ -50,14 +50,15 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
             : [];
 
     [Fact]
-    public void 진행_JSON과_함께_장면마다_exported_yarn에_나가고_게임_폴더에는_쓰지_않는다()
+    public void 진행_JSON과_함께_장면마다_exported_yarn에_나가고_게임_폴더로는_보내지_않는다()
     {
         (string manifest, ProjectEditor editor) = Copy();
         string game = Path.Combine(_root, "Game");
         Directory.CreateDirectory(game);
         ChapterEntry entry = Entry(editor);
 
-        ChapterExportRun run = new ChapterExportService().ExportAll([entry], manifest, editor.Project, game);
+        ChapterExportRun run = new ChapterExportService().ExportAll([entry], manifest, editor.Project);
+        ExportDelivery.Deliver(manifest, ExportDestinations.None.With(ExportFormat.Progression, game));   // 저장할 때의 보내기
 
         IReadOnlyList<ChapterYarnFile> files = ChapterYarnExporter.Export(entry.Model, editor.Project);
         Assert.Equal(files.Select(file => file.FileName).Order(StringComparer.Ordinal), YarnFiles(manifest));
@@ -75,7 +76,7 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
         Assert.Null(run.Notice);
         Assert.Contains($"대사 Yarn → exported/yarn/ ({files.Count}개)", run.WhereNotice);
 
-        // 게임 폴더에는 진행 JSON만 — .yarn은 하나도 없다.
+        // 게임 폴더에는 진행 JSON만 — .yarn은 하나도 없다(대사 Yarn의 보낼 곳은 따로 정한다).
         Assert.True(File.Exists(Path.Combine(game, Ch + ChapterExportService.ExportFileSuffix)));
         Assert.Empty(Directory.GetFiles(game, "*.yarn", SearchOption.AllDirectories));
     }
