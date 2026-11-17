@@ -68,7 +68,7 @@ public sealed class ScenarioLineIdentityTests
         // 분기 표식은 그 줄의 것이다 — 줄을 고쳐도(같은 자리의 줄이 신원을 잇는다) 표식이 따라간다.
         (ProjectEditor editor, DialogueNode node, string[] ids) = Card("첫 줄", "둘째 줄");
         DialogueNode branch = editor.AddBranchMarker(node.Id, ids[1]);
-        string shown = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id, Definition).Text;
+        string shown = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id).Text;
 
         Assert.True(Apply(editor, node, shown.Replace("둘째 줄", "고친 둘째 줄", StringComparison.Ordinal)).Applied);
 
@@ -92,7 +92,7 @@ public sealed class ScenarioLineIdentityTests
     /// <summary>글 칸에 보인 글을 기준으로 신원을 이어 넣는다 — 카드 글 칸이 하는 그대로(엄격하게, 지움 확인 없이).</summary>
     private static ScenarioPasteOutcome Apply(ProjectEditor editor, DialogueNode node, string edited)
     {
-        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id, Definition);
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id);
 
         return editor.ApplyScenarioText(
             node.Id,

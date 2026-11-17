@@ -66,7 +66,7 @@ public enum FlowProblemKind
     /// <summary>열린 조건이 없는데 <c>endif</c>가 나왔다.</summary>
     EndIfWithoutIf,
 
-    /// <summary>여는 전환이 가리키는 조건 정의가 프로젝트나 게임 정의에 없다.</summary>
+    /// <summary>여는 전환이 가리키는 조건 정의가 프로젝트에 없다.</summary>
     UnknownCondition,
 
     /// <summary>조건 정의는 남아 있지만 현재 DialogueNode의 Settings 범위에는 없다.</summary>

@@ -204,7 +204,7 @@ public class ScenarioPasteTests
         Assert.Equal(ConditionTransitionKind.EndIf, node.FindExtension(ids[2])!.Transition!.Kind);
 
         // 카드 글 칸에 보이는 글(ScenarioOnly 표기)을 그대로 넣으면 완전한 무변경이다.
-        string roundTrip = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id, Definition);
+        string roundTrip = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id);
 
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, roundTrip, Definition, confirmDeletes: true);
         Assert.True(outcome.Applied);

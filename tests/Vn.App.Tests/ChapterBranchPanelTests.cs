@@ -156,7 +156,7 @@ public sealed class ChapterBranchPanelTests
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, project.BranchNodeId, session.Definition).Label);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, project.BranchNodeId).Label);
         Assert.Equal(before + 1, session.Editor.Revision);
 
         // 칩에 조건이 보인다.
@@ -206,7 +206,7 @@ public sealed class ChapterBranchPanelTests
         DialogueNode branch = session.Project.FindDialogue(project.BranchNodeId)!;
 
         Assert.Equal("신뢰높음",
-            BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+            BranchEntryCondition.Read(session.Project, branch.Id).Label);
 
         // 부르는 쪽은 안 바뀐다 — 조건은 다녀간 쪽에만 산다.
         DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
@@ -230,7 +230,7 @@ public sealed class ChapterBranchPanelTests
 
         DialogueNode branch = session.Project.FindDialogue(project.BranchNodeId)!;
 
-        Assert.Null(BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Null(BranchEntryCondition.Read(session.Project, branch.Id).Label);
     });
 
     [Fact]
@@ -281,8 +281,8 @@ public sealed class ChapterBranchPanelTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         DialogueNode first = session.Project.FindDialogue(project.BranchNodeId)!;
-        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, second.Id, session.Definition).Label);
-        Assert.Null(BranchEntryCondition.Read(session.Project, first.Id, session.Definition).Label);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, second.Id).Label);
+        Assert.Null(BranchEntryCondition.Read(session.Project, first.Id).Label);
     });
 
     [Fact]

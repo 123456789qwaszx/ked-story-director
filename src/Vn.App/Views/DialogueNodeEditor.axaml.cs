@@ -216,20 +216,19 @@ public partial class DialogueNodeEditor : UserControl
             DialogueFlow flow = ConditionFlowResolver.Resolve(
                 node,
                 script,
-                _session.Project,
-                _session.Definition);
+                _session.Project);
 
             LineHost.Children.Clear();
             _lineCards.Clear();
 
             // 분기로 다녀오는 카드의 첫머리 조건 묶음도 그 분기의 색이다 — 판의 분기 선 · 카드 표와 같은 번호로 칠한다.
-            _entryGate = BranchEntryCondition.EntryPalette(_session.Project, node.Id, _session.Definition) is { } gatePalette &&
+            _entryGate = BranchEntryCondition.EntryPalette(_session.Project, node.Id) is { } gatePalette &&
                          node.Script.ActiveLines.FirstOrDefault() is { } gateLine
                 ? (gateLine.Id, gatePalette)
                 : null;
 
             // 분기 카드의 색은 연출 그래프 카드의 그 분기 포트 · 선과 같다 — 같은 포트 번호(PaletteIndex)로 칠한다.
-            Dictionary<string, int> detourPalette = NodeConnections.PortsOf(node, _session.Project, _session.Definition)
+            Dictionary<string, int> detourPalette = NodeConnections.PortsOf(node, _session.Project)
                 .Where(port => port.Kind == ExitPortKind.Detour && port.ExitKey is not null)
                 .ToDictionary(port => port.ExitKey!, port => port.PaletteIndex, StringComparer.Ordinal);
 
@@ -732,10 +731,10 @@ public partial class DialogueNodeEditor : UserControl
     private string ConditionLabelOf(DialogueNode node, string conditionId)
     {
         AvailableConditionCatalog available = AvailableConditionResolver.Resolve(
-            _session!.Project, node.Id, _session.Definition);
+            _session!.Project, node.Id);
         AvailableCondition? condition = available.Find(conditionId);
         AvailableCondition? known = condition ?? AvailableConditionResolver.FindKnown(
-            _session.Project, _session.Definition, conditionId);
+            _session.Project, conditionId);
 
         return condition is not null
             ? AvailableConditionResolver.LayeredLabel(condition)
@@ -932,7 +931,7 @@ public partial class DialogueNodeEditor : UserControl
         });
 
         // 지금 걸린 조건 — 글로만 보인다. 고르는 곳은 그 분기 카드 위쪽이다(2026-11-17 소유자 — ⛔ 같은 날 아침에는 여기 칸이 있었다).
-        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, targetId, _session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, targetId);
 
         detail.Children.Add(new TextBlock
         {
@@ -996,7 +995,7 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, node.Id, _session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, node.Id);
 
         // 고르면 모델이 바뀌어 편집기가 다시 선다 — 설명 글도 따라온다.
         ComboBox pick = BranchConditionPicker.Create(_session, node.Id, BranchConditionTag);
@@ -1377,7 +1376,6 @@ public partial class DialogueNodeEditor : UserControl
             resolved.PrecedingBranch,
             node,
             _session!.Project,
-            _session.Definition,
             resolved.Line.Transition);
 
         var box = new ComboBox
@@ -1570,7 +1568,7 @@ public partial class DialogueNodeEditor : UserControl
 
     /// <summary>첫머리 조건을 지켜야 하는 분기 카드인가(<see cref="BranchEntryCondition.IsGuarded"/>).</summary>
     private bool GuardsEntry(DialogueNode node) =>
-        _session is { } session && BranchEntryCondition.IsGuarded(session.Project, node.Id, session.Definition);
+        _session is { } session && BranchEntryCondition.IsGuarded(session.Project, node.Id);
 
     private static Button SmallButton(string glyph, Action action)
     {

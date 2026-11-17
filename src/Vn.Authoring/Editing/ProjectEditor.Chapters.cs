@@ -949,9 +949,6 @@ public sealed partial class ProjectEditor
     /// 찾는다</b> — 스탯을 갈면 식이 달라져 짝을 못 찾고, 다음 동기화가 <b>새 Id로 다시
     /// 만든다</b>. 그 자리 주석이 경고하는 바로 그 고아다. 그래서 여기서 <b>Id를 지킨 채</b>
     /// 식만 갈아 끼운다.
-    ///
-    /// <c>game.definition.json</c>의 변수는 <b>안 건드린다</b>. 그쪽은 게임 전역 어휘이고
-    /// 챕터 스탯은 만들 때 거기서 씨앗만 받는다 — 남의 이름이다.
     /// </summary>
     /// <returns>바꾼 자리의 수. 거절되면 <c>Applied</c>가 false이고 아무것도 안 건드렸다.</returns>
     public StatRenameOutcome RenameChapterStat(string chapterId, string oldKey, string newKey)

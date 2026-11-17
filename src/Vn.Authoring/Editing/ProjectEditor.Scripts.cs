@@ -114,7 +114,7 @@ public sealed partial class ProjectEditor
 
         // 전환은 넣기 <b>전에</b> 계획한다 — 그래야 엄격한 넣기가 문제를 보고 아무것도 안 바꾼 채 물러설 수 있다.
         // 남는 줄의 전환은 동기화가 건드리지 않으므로(은퇴한 줄만 접힌다) 넣기 전에 읽어도 같다.
-        ScenarioTransitionPlan transitions = PlanScenarioTransitions(node, parsed, plan, definition, problems);
+        ScenarioTransitionPlan transitions = PlanScenarioTransitions(node, parsed, plan, problems);
 
         if (strict && problems.Count > 0)
         {
@@ -180,10 +180,9 @@ public sealed partial class ProjectEditor
         DialogueNode node,
         ScenarioParseResult parsed,
         ScriptSyncPlan plan,
-        GameDefinition definition,
         List<string> problems)
     {
-        AvailableConditionCatalog conditions = AvailableConditionResolver.Resolve(Project, node.Id, definition);
+        AvailableConditionCatalog conditions = AvailableConditionResolver.Resolve(Project, node.Id);
 
         // 새 순서 인덱스 → 확정 LineId (사라진 줄 항목은 NewIndex가 없다).
         Dictionary<int, string> lineIdByNewIndex = plan.Entries

@@ -491,7 +491,6 @@ public partial class GraphEditorView : UserControl
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
             _session.ExpandedFileIds,
-            _session.Definition,
             _session.CollapsedScenes);
         ApplyBoardSize();
 
@@ -1664,7 +1663,6 @@ public partial class GraphEditorView : UserControl
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
             _session.ExpandedFileIds,
-            _session.Definition,
             _session.CollapsedScenes);
 
         // 카드를 옮겨 분기의 도착이 출발 카드를 넘었으면 포트가 반대쪽으로 선다 — 포트 줄은 카드 안에 지어지므로 카드부터 다시 짓는다.
@@ -2143,7 +2141,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private Border BranchConditionChip(string nodeId, int palette)
     {
-        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId, _session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId);
         IBrush accent = BranchPalette.Accent(palette);
         bool undecided = BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label);
 
@@ -2413,7 +2411,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private TextBox BuildWritingBox(string nodeId)
     {
-        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, nodeId, _session.Definition);
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, nodeId);
         string shown = layout.Text;
         _writingShown[nodeId] = shown;
         _writingLayouts[nodeId] = layout;
@@ -2558,7 +2556,7 @@ public partial class GraphEditorView : UserControl
 
             // 기준(처음 보인 글과 그 줄 짝)을 지금 모델의 글로 옮긴다 — 다음 넣기가 이 줄 짝으로 신원을 잇는다. 판이 다시
             // 그려졌으면 새 칸이 이미 그 기준을 들고 있다.
-            ScenarioWritingLayout now = WorkingDialoguePreview.ScenarioWriting(session.Project, nodeId, session.Definition);
+            ScenarioWritingLayout now = WorkingDialoguePreview.ScenarioWriting(session.Project, nodeId);
             _writingShown[nodeId] = now.Text;
             _writingLayouts[nodeId] = now;
 
@@ -2609,7 +2607,7 @@ public partial class GraphEditorView : UserControl
             return null;
         }
 
-        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, nodeId, session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, nodeId);
 
         if (state is not { Label: not null, Editable: true } and not { Editable: false })
         {
@@ -2790,7 +2788,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(session.Project, focus.NodeId, session.Definition);
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(session.Project, focus.NodeId);
 
         if (string.Equals(layout.Text, box.Text, StringComparison.Ordinal))
         {
@@ -2826,7 +2824,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId, _session.Definition);
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId);
         _writingShown[nodeId] = layout.Text;
         _writingLayouts[nodeId] = layout;
         box.Text = layout.Text;

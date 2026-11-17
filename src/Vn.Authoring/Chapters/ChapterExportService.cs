@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 using System.Text;
 
@@ -196,12 +195,10 @@ public sealed class ChapterExportService
     /// <c>exported/</c>에만 쓴다. 프로젝트 밖의 보낼 곳(게임 폴더 등)에는 <b>저장할 때만</b> <see cref="ExportDelivery"/>가 이 폴더를 비춘다(2026-11-17 ·
     /// ⛔ 그 전에는 여기서 바뀔 때마다 게임 폴더에도 진행 JSON을 썼다).
     /// </remarks>
-    /// <param name="definition">대사 Yarn을 펼칠 때 조건을 찾는 정의 파일 — 카드 글 칸이 쓰는 것과 같은 것.</param>
     public ChapterExportRun ExportAll(
         IReadOnlyList<ChapterEntry> entries,
         string? projectPath,
-        StoryProject? project = null,
-        GameDefinition? definition = null)
+        StoryProject? project = null)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
@@ -289,7 +286,7 @@ public sealed class ChapterExportService
             }
 
             // 대사 Yarn — 장면 하나 = 파일 하나(docs/work-orders/yarn-output-orders.md). 진행 JSON이 나갈 때 함께.
-            ExportYarn(entry, projectPath, project, definition, yarnChapters, yarnOwners, yarnWritten, yarnProblems);
+            ExportYarn(entry, projectPath, project, yarnChapters, yarnOwners, yarnWritten, yarnProblems);
         }
 
         // 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 옛 파일은 걷는다 — 두면 게임이 없는 챕터를 계속 싣는다.
@@ -311,7 +308,6 @@ public sealed class ChapterExportService
         ChapterEntry entry,
         string projectPath,
         StoryProject? project,
-        GameDefinition? definition,
         HashSet<string> chapters,
         Dictionary<string, string> owners,
         List<string> written,
@@ -320,7 +316,7 @@ public sealed class ChapterExportService
         chapters.Add(entry.ChapterId);
         string folder = ChapterYarnExporter.FolderFor(projectPath);
 
-        foreach (ChapterYarnFile file in ChapterYarnExporter.Export(entry.Model, project, definition))
+        foreach (ChapterYarnFile file in ChapterYarnExporter.Export(entry.Model, project))
         {
             string where = $"{entry.ChapterId} · {file.SceneId}";
 

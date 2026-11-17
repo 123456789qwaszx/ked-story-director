@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Flow;
@@ -75,8 +74,7 @@ public static class NodeConnections
 {
     public static IReadOnlyList<ExitPort> PortsOf(
         StoryNode node,
-        StoryProject project,
-        GameDefinition? definition = null)
+        StoryProject project)
     {
         ArgumentNullException.ThrowIfNull(node);
         ArgumentNullException.ThrowIfNull(project);
@@ -92,11 +90,10 @@ public static class NodeConnections
 
         if (node is DialogueNode dialogue)
         {
-            DialogueFlow flow = ConditionFlowResolver.Resolve(dialogue, project, definition);
+            DialogueFlow flow = ConditionFlowResolver.Resolve(dialogue, project);
             AvailableConditionCatalog available = AvailableConditionResolver.Resolve(
                 project,
-                dialogue.Id,
-                definition);
+                dialogue.Id);
 
             foreach (ConditionBranch branch in flow.Branches)
             {
@@ -104,7 +101,7 @@ public static class NodeConnections
                     ExitPortKind.Branch,
                     dialogue.Id,
                     branch.OpenLineId,
-                    LabelFor(branch, project, definition, available),
+                    LabelFor(branch, project, available),
                     branch.ExitTargetNodeId,
                     branch.PaletteIndex));
             }
@@ -128,13 +125,12 @@ public static class NodeConnections
 
     /// <summary>프로젝트 전체의 실행 간선.</summary>
     public static IReadOnlyList<ExitPort> AllConnections(
-        StoryProject project,
-        GameDefinition? definition = null)
+        StoryProject project)
     {
         ArgumentNullException.ThrowIfNull(project);
 
         return project.EnumerateNodes()
-            .SelectMany(node => PortsOf(node, project, definition))
+            .SelectMany(node => PortsOf(node, project))
             .Where(port => port.IsConnected)
             .ToList();
     }
@@ -142,7 +138,6 @@ public static class NodeConnections
     private static string LabelFor(
         ConditionBranch branch,
         StoryProject project,
-        GameDefinition? definition,
         AvailableConditionCatalog available)
     {
         AvailableCondition? condition = available.Find(branch.ConditionId);
@@ -156,7 +151,6 @@ public static class NodeConnections
         {
             AvailableCondition? known = AvailableConditionResolver.FindKnown(
                 project,
-                definition,
                 branch.ConditionId);
             name = known is null
                 ? "알 수 없는 조건"

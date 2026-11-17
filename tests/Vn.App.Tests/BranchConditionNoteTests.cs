@@ -63,7 +63,7 @@ public sealed class BranchConditionNoteTests : IDisposable
         DialogueNode branch = AddBranchThroughMenu(window, session, root);
         AddCondition(session, "신뢰높음");
 
-        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음", session.Definition));
+        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음"));
         session.Select(root.Id);
         Dispatcher.UIThread.RunJobs();
 
@@ -95,7 +95,7 @@ public sealed class BranchConditionNoteTests : IDisposable
         picker.SelectedItem = items[1];
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id).Label);
         Assert.Equal("⑂ 조건: 신뢰높음", ChipText(window, branch));
         Assert.Contains("조건 '신뢰높음'일 때만 다녀옵니다", session.StatusMessage, StringComparison.Ordinal);
         Assert.Equal("신뢰높음", Picked(Picker(window, session, branch)));   // 다시 선 카드도 그 조건을 보인다
@@ -104,18 +104,18 @@ public sealed class BranchConditionNoteTests : IDisposable
         ComboBox again = Picker(window, session, branch);
         again.SelectedItem = again.Items.OfType<ComboBoxItem>().First();
         Dispatcher.UIThread.RunJobs();
-        Assert.Null(BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Null(BranchEntryCondition.Read(session.Project, branch.Id).Label);
 
         session.Editor.Undo();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id).Label);
 
         // 식 미정인 조건도 건다 — 지금은 늘 다녀온다고 말하고, 카드 머리의 표도 그렇게 적는다.
         ComboBox third = Picker(window, session, branch);
         third.SelectedItem = third.Items.OfType<ComboBoxItem>().Single(item => Equals(item.Tag, "아직모름"));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("아직모름", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("아직모름", BranchEntryCondition.Read(session.Project, branch.Id).Label);
         Assert.Contains("식 미정이라 지금은 늘 다녀옵니다", session.StatusMessage, StringComparison.Ordinal);
         Assert.Equal("⑂ 조건: 아직모름 (식 미정)", ChipText(window, branch));
         Assert.Contains(Texts(Editor(window).BranchConditionHost), text => text.Contains("식 미정이라 지금은 늘 다녀옵니다", StringComparison.Ordinal));
@@ -126,7 +126,7 @@ public sealed class BranchConditionNoteTests : IDisposable
         // [구성]에서 식을 채우면 그 분기가 그대로 그 식을 따른다 — 표에서 (식 미정)이 걷힌다.
         session.Editor.UpdateChapterCondition("ch01", "아직모름", "trust >= 7");
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("아직모름", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("아직모름", BranchEntryCondition.Read(session.Project, branch.Id).Label);
         Assert.Equal("⑂ 조건: 아직모름", ChipText(window, branch));
 
         window.Close();

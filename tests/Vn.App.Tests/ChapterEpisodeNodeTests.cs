@@ -206,7 +206,7 @@ public sealed class ChapterEpisodeNodeTests
 
         Vn.Authoring.Flow.AvailableConditionCatalog available =
             Vn.Authoring.Flow.AvailableConditionResolver.Resolve(
-                session.Project, free.Id, session.Definition);
+                session.Project, free.Id);
 
         Assert.Contains(available.Conditions, condition => condition.Name == "신뢰높음");
 
@@ -259,7 +259,7 @@ public sealed class ChapterEpisodeNodeTests
         // 공급 자체는 살아 있다 — 작가는 라벨만 본다.
         Vn.Authoring.Flow.AvailableConditionCatalog available =
             Vn.Authoring.Flow.AvailableConditionResolver.Resolve(
-                session.Project, free.Id, session.Definition);
+                session.Project, free.Id);
 
         Assert.Contains(available.Conditions, condition => condition.Name == "신뢰높음");
     });

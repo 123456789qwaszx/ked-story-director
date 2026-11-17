@@ -963,7 +963,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void AutoExport()
     {
-        _exportRun = _export.ExportAll(_entries, _session?.ProjectPath, _session?.Project, _session?.Definition);
+        _exportRun = _export.ExportAll(_entries, _session?.ProjectPath, _session?.Project);
 
         // 저장 직후에만 보낸다 — exported/를 방금 새로 쓴 뒤라 보낼 곳이 저장된 판과 같다(2026-11-17 · ExportDelivery).
         if (_session is { ProjectPath: { } path } session && session.TakeDeliveryRequest())
@@ -1323,7 +1323,7 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, nodeId, _session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, nodeId);
 
         var chip = new Border
         {
@@ -3491,7 +3491,7 @@ public partial class ChapterGraphView : UserControl
     private void FillBranchCondition(ChapterGraphModel? model, string nodeId)
     {
         BranchEntryCondition.State state = BranchEntryCondition.Read(
-            _session!.Editor.Project, nodeId, _session.Definition);
+            _session!.Editor.Project, nodeId);
 
         BranchBlockedText.Text = state.Blocked ?? string.Empty;
         BranchBlockedText.IsVisible = state.Blocked is not null;
@@ -3630,8 +3630,7 @@ public partial class ChapterGraphView : UserControl
         string? failure = BranchEntryCondition.Set(
             _session.Editor,
             target.NodeId,
-            string.Equals(label, BranchAlwaysItem, StringComparison.Ordinal) ? null : label,
-            _session.Definition);
+            string.Equals(label, BranchAlwaysItem, StringComparison.Ordinal) ? null : label);
 
         _session.SetStatus(failure ?? (label is null or BranchAlwaysItem
             ? $"분기 카드 「{BranchCardName(target.NodeId)}」의 조건을 걷었습니다 — 언제나 재생됩니다."

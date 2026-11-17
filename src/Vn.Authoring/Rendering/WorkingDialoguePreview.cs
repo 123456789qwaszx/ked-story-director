@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 using Vn.Authoring.Results;
 
@@ -16,7 +15,6 @@ public static class WorkingDialoguePreview
     public static RenderedDocument Compose(
         StoryProject project,
         string dialogueNodeId,
-        GameDefinition? definition = null,
         DocumentOutputOptions? options = null,
         OutputPresetId? presetId = null,
         ILocalizedLineProvider? localization = null,
@@ -24,7 +22,7 @@ public static class WorkingDialoguePreview
     {
         ArgumentNullException.ThrowIfNull(project);
 
-        DialogueDraft draft = DialoguePublisher.Draft(project, dialogueNodeId, definition, locale);
+        DialogueDraft draft = DialoguePublisher.Draft(project, dialogueNodeId, locale);
         RenderedDocument document = ResultDocumentComposer.Compose(
             DialoguePublisher.AsResult(draft),
             project,
@@ -53,8 +51,8 @@ public static class WorkingDialoguePreview
     /// 넣을 때마다 제가 낸 글이 문제로 되돌아온다(머리글을 뺀 2026-09-18과 같은 이유).
     /// 끝의 줄바꿈은 걷는다 — 빈 줄 하나뿐인 새 카드는 빈 칸으로 보인다.
     /// </summary>
-    public static string ScenarioText(StoryProject project, string dialogueNodeId, GameDefinition? definition = null) =>
-        ScenarioWriting(project, dialogueNodeId, definition).Text;
+    public static string ScenarioText(StoryProject project, string dialogueNodeId) =>
+        ScenarioWriting(project, dialogueNodeId).Text;
 
     /// <summary>
     /// <see cref="ScenarioText"/>과 그 줄 짝 — 연출 그래프 카드가 분기 점을 글 칸의 그 대사 옆에 세우고, 글 칸이 고친 줄의
@@ -65,7 +63,7 @@ public static class WorkingDialoguePreview
     /// 클릭하면 … 펼쳐지면서"*) 줄 사이에 자리가 필요 없다.
     /// </summary>
     public static ScenarioWritingLayout ScenarioWriting(
-        StoryProject project, string dialogueNodeId, GameDefinition? definition = null)
+        StoryProject project, string dialogueNodeId)
     {
         DocumentOutputOptions scenario = OutputPresetCatalog.ScenarioOnly.Options;
         var writing = new DocumentOutputOptions(
@@ -80,7 +78,7 @@ public static class WorkingDialoguePreview
             includeDiagnostics: false);
 
         RenderedDocument document = Compose(
-            project, dialogueNodeId, definition, writing, OutputPresetId.ScenarioOnly);
+            project, dialogueNodeId, writing, OutputPresetId.ScenarioOnly);
 
         (string text, IReadOnlyDictionary<string, int> rowOfLine) = DocumentPreviewFormatter.FormatWithRows(document);
         return new ScenarioWritingLayout(text.TrimEnd('\n'), rowOfLine);

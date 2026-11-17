@@ -260,7 +260,7 @@ public partial class MainWindow
         if (port is { Kind: ExitPortKind.Detour, TargetNodeId: { } target })
         {
             Graph.SetInspectorHeader($"분기 · {from} → {to}", "들렀다 돌아오는 분기 카드");
-            BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, target, _session.Definition);
+            BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, target);
 
             // 조건은 여기서 고르지 않는다 — 그 분기 카드를 고르면 대본 위쪽에 칸이 선다(2026-11-17 소유자: 분기는 무조건 들른 뒤
             // 그 카드에서 if로 보므로). ⛔ 같은 날 아침에는 여기 칸이 있었다.

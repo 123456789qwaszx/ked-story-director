@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Flow;
@@ -19,7 +18,7 @@ public enum ConditionChoiceKind
 }
 
 /// <param name="Label">드롭다운에 그대로 보이는 문구.</param>
-/// <param name="IsAvailable">현재 DialogueNode의 Settings 범위 또는 게임 전역 조건에 포함되는가.</param>
+/// <param name="IsAvailable">현재 DialogueNode의 Settings 범위에 포함되는가.</param>
 public sealed record ConditionChoice(
     ConditionChoiceKind Kind,
     string? ConditionId,
@@ -44,7 +43,7 @@ public sealed record ConditionChoice(
 /// 이 드롭다운은 "이 줄이 조건에 포함되는가"를 표시하는 것이 아니다.
 /// <b>이 줄에서 조건 흐름을 바꿀 것인지</b>를 고르는 자리다. 그래서 항목의 의미가
 /// 바로 앞 줄까지의 상태에 따라 달라진다. 프로젝트의 모든 SetNode 조건을 전역 노출하지 않고,
-/// 현재 DialogueNode가 선 판의 SetNode와 게임 전역 조건만 사용한다.
+/// 현재 DialogueNode가 선 판의 SetNode만 사용한다.
 ///
 /// "선택지 시작 / 다음 옵션 / 선택지 끝" 항목은 2026-11-04에 걷혔다 — 선택지는 에피소드 끝 간선에서만 선다.
 /// 이 드롭다운은 조건만 다룬다.
@@ -64,7 +63,6 @@ public static class ConditionChoices
         ConditionBranch? preceding,
         DialogueNode dialogue,
         StoryProject project,
-        GameDefinition? definition = null,
         LineConditionTransition? currentTransition = null)
     {
         ArgumentNullException.ThrowIfNull(dialogue);
@@ -72,8 +70,7 @@ public static class ConditionChoices
 
         AvailableConditionCatalog catalog = AvailableConditionResolver.Resolve(
             project,
-            dialogue.Id,
-            definition);
+            dialogue.Id);
         var choices = new List<ConditionChoice>();
 
         if (preceding is null)
@@ -114,8 +111,7 @@ public static class ConditionChoices
         PreserveUnavailableCurrent(
             choices,
             currentTransition,
-            project,
-            definition);
+            project);
 
         return choices;
     }
@@ -148,8 +144,7 @@ public static class ConditionChoices
     private static void PreserveUnavailableCurrent(
         List<ConditionChoice> choices,
         LineConditionTransition? transition,
-        StoryProject project,
-        GameDefinition? definition)
+        StoryProject project)
     {
         if (transition is null || !transition.OpensBranch || transition.ConditionId is null)
         {
@@ -168,7 +163,6 @@ public static class ConditionChoices
 
         AvailableCondition? known = AvailableConditionResolver.FindKnown(
             project,
-            definition,
             transition.ConditionId);
         var unavailable = new ConditionChoice(
             kind,

@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
@@ -39,7 +38,7 @@ public static class BranchEntryCondition
     /// 그 구조를 여기서 덮어쓰는 순간 <b>짝이 어긋난 대본</b>이 된다 — 그래서 읽기만 하고
     /// 사유를 말한다.
     /// </summary>
-    public static State Read(StoryProject project, string nodeId, GameDefinition? definition = null)
+    public static State Read(StoryProject project, string nodeId)
     {
         ArgumentNullException.ThrowIfNull(project);
 
@@ -72,7 +71,7 @@ public static class BranchEntryCondition
 
         // 공급된 조건의 `이름`이 곧 챕터 조건의 라벨이다 (ChapterBoardSupply).
         return new State(
-            AvailableConditionResolver.Resolve(project, nodeId, definition).Find(conditionId)?.Name
+            AvailableConditionResolver.Resolve(project, nodeId).Find(conditionId)?.Name
                 ?? conditionId,
             true,
             null);
@@ -101,29 +100,29 @@ public static class BranchEntryCondition
     /// 첫머리 조건을 지켜야 하는 카드인가 — 분기로 다녀오는 카드이고 툴이 아는 모양의 조건이 걸려 있다. 이런 카드의 첫 줄을
     /// 지우거나 옮기면 조건 구조가 깨지므로(첫 줄의 <c>BeginIf</c>가 함께 사라지거나 따라 내려간다) 화면이 그 손짓을 막는다.
     /// </summary>
-    public static bool IsGuarded(StoryProject project, string nodeId, GameDefinition? definition = null)
+    public static bool IsGuarded(StoryProject project, string nodeId)
     {
         ArgumentNullException.ThrowIfNull(project);
 
         return project.EnumerateNodes().OfType<DialogueNode>().Any(caller => caller.LineExtensions.Any(extension =>
                    extension.DetourTargetNodeIds.Contains(nodeId, StringComparer.Ordinal))) &&
-               Read(project, nodeId, definition) is { Label: not null, Editable: true };
+               Read(project, nodeId) is { Label: not null, Editable: true };
     }
 
     /// <summary>
     /// 첫머리 조건을 지키는 분기 카드(<see cref="IsGuarded"/>)의 분기 색 번호 — 부르는 카드의 그 분기 포트 번호다. 연출 그래프의
     /// 분기 선 · 카드 표가 이 번호로 칠하므로, 대사 편집기의 첫머리 조건 묶음도 이 번호로 칠하면 같은 색이 된다. 아니면 <c>null</c>.
     /// </summary>
-    public static int? EntryPalette(StoryProject project, string nodeId, GameDefinition? definition = null)
+    public static int? EntryPalette(StoryProject project, string nodeId)
     {
-        if (!IsGuarded(project, nodeId, definition))
+        if (!IsGuarded(project, nodeId))
         {
             return null;
         }
 
         foreach (DialogueNode caller in project.EnumerateNodes().OfType<DialogueNode>())
         {
-            if (NodeConnections.PortsOf(caller, project, definition).FirstOrDefault(port =>
+            if (NodeConnections.PortsOf(caller, project).FirstOrDefault(port =>
                     port.Kind == ExitPortKind.Detour && string.Equals(port.TargetNodeId, nodeId, StringComparison.Ordinal)) is { } detour)
             {
                 return detour.PaletteIndex;
@@ -145,11 +144,11 @@ public static class BranchEntryCondition
     /// 조건은 기획자가 먼저 만드는 것이고, 툴이 만들어 주면 오타가 조용히 새 조건이 된다.
     /// </summary>
     public static string? Set(
-        ProjectEditor editor, string nodeId, string? label, GameDefinition? definition = null)
+        ProjectEditor editor, string nodeId, string? label)
     {
         ArgumentNullException.ThrowIfNull(editor);
 
-        if (Read(editor.Project, nodeId, definition) is { Editable: false } refused)
+        if (Read(editor.Project, nodeId) is { Editable: false } refused)
         {
             return refused.Blocked;
         }
@@ -161,7 +160,7 @@ public static class BranchEntryCondition
         }
 
         AvailableCondition? condition = AvailableConditionResolver
-            .Resolve(editor.Project, nodeId, definition).Conditions
+            .Resolve(editor.Project, nodeId).Conditions
             .FirstOrDefault(item =>
                 item.SourceKind == AvailableConditionSourceKind.ChapterLayer &&
                 string.Equals(item.Name, label, StringComparison.Ordinal));

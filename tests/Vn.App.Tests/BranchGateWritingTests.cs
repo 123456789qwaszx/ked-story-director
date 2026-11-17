@@ -51,7 +51,7 @@ public sealed class BranchGateWritingTests : IDisposable
         box.Text = typed.Replace("\n", Environment.NewLine, StringComparison.Ordinal);
         Release(window);
 
-        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id).Label);
         Assert.Equal("다시 그린 간판, 훨씬 낫다.", branch.Script.Text(branch.Script.ActiveLines.First().Id).Text);
         Assert.Contains("분기 조건 줄을 지켰습니다", session.StatusMessage, StringComparison.Ordinal);
 
@@ -75,7 +75,7 @@ public sealed class BranchGateWritingTests : IDisposable
         Release(window);
 
         // [구성] 탭이 아는 모양 그대로다 — 잠기지 않고 조건도 그대로다.
-        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, branch.Id, session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, branch.Id);
         Assert.Equal(("신뢰높음", true), (state.Label, state.Editable));
 
         // 바깥 줄은 안쪽 맨 위 · 맨 아래에 들어갔다.
@@ -108,7 +108,7 @@ public sealed class BranchGateWritingTests : IDisposable
             .Replace("{T}", tail, StringComparison.Ordinal);
         Release(window);
 
-        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, branch.Id, session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, branch.Id);
         Assert.Equal(("신뢰높음", true), (state.Label, state.Editable));
         Assert.Equal(expected, branch.Script.ActiveLines.Select(line => branch.Script.Text(line.Id).Text));
 
@@ -130,7 +130,7 @@ public sealed class BranchGateWritingTests : IDisposable
         string broken = box.Text! + "\n하린: 아래에 쓴 줄";
         Assert.True(session.Editor.ApplyScenarioText(branch.Id, broken, session.Definition).Applied);
         Dispatcher.UIThread.RunJobs();
-        Assert.False(BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Editable);
+        Assert.False(BranchEntryCondition.Read(session.Project, branch.Id).Editable);
 
         // 대사 한 글자를 고치고 나온다.
         box = Box(window, branch);
@@ -138,7 +138,7 @@ public sealed class BranchGateWritingTests : IDisposable
         box.Text = box.Text!.Replace("생각보다 ", string.Empty, StringComparison.Ordinal);
         Release(window);
 
-        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, branch.Id, session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, branch.Id);
         Assert.True(state.Editable);
         Assert.Equal("신뢰높음", state.Label);
         Assert.Equal("아래에 쓴 줄", branch.Script.Text(branch.Script.ActiveLines.Last().Id).Text);
@@ -167,7 +167,7 @@ public sealed class BranchGateWritingTests : IDisposable
         Assert.True(next["✕ 삭제"].IsEnabled);
 
         // 조건을 걷으면 다시 된다.
-        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, null, session.Definition));
+        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, null));
         Dispatcher.UIThread.RunJobs();
         Assert.True(LineButtons(window, row: 0)["✕ 삭제"].IsEnabled);
 
@@ -183,7 +183,7 @@ public sealed class BranchGateWritingTests : IDisposable
         DialogueNode root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
         DialogueNode branch = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);
         session.Editor.SetScriptLineText(branch.Id, branch.Script.ActiveLines.First().Id, "하린", "두 번째 분기.");
-        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음", session.Definition));
+        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음"));
         session.Select(branch.Id);
         Dispatcher.UIThread.RunJobs();
 
@@ -214,7 +214,7 @@ public sealed class BranchGateWritingTests : IDisposable
         Release(window);
 
         Assert.Equal("다시 그린 간판, 훨씬 낫다.", branch.Script.Text(branch.Script.ActiveLines.First().Id).Text);
-        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, branch.Id).Label);
         Assert.DoesNotContain("조건 줄을 지켰습니다", session.StatusMessage, StringComparison.Ordinal);
 
         window.Close();
@@ -236,7 +236,7 @@ public sealed class BranchGateWritingTests : IDisposable
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             session.Editor, EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, chapter.ToGraphModel("ch01"));
-        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음", session.Definition));
+        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음"));
         Dispatcher.UIThread.RunJobs();
 
         return (window, session, branch, Box(window, branch));

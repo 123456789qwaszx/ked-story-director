@@ -1,5 +1,4 @@
 using System.Text;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Results;
@@ -73,8 +72,7 @@ public static class ChapterYarnExporter
     /// <param name="project">대본(카드)을 읽을 프로젝트. 없으면 노드마다 본문이 비어 선다.</param>
     public static IReadOnlyList<ChapterYarnFile> Export(
         ChapterGraphModel chapter,
-        StoryProject? project,
-        GameDefinition? definition = null)
+        StoryProject? project)
     {
         ArgumentNullException.ThrowIfNull(chapter);
 
@@ -85,7 +83,7 @@ public static class ChapterYarnExporter
 
         foreach (ChapterScene scene in ChapterSceneGrouping.Of(chapter))
         {
-            ChapterYarnFile file = Scene(chapter, scene, via, homes, project, definition);
+            ChapterYarnFile file = Scene(chapter, scene, via, homes, project);
 
             // 정규화가 두 장면을 한 이름으로 접으면(`장면 1` · `장면.1`) 뒤의 것이 앞의 파일을 덮는다 — 쓰기 전에 막는다.
             if (names.TryGetValue(file.FileName, out string? taken))
@@ -117,8 +115,7 @@ public static class ChapterYarnExporter
         ChapterScene scene,
         ChapterBoard via,
         IReadOnlyList<BranchCardHome> homes,
-        StoryProject? project,
-        GameDefinition? definition)
+        StoryProject? project)
     {
         var problems = new List<ChapterYarnProblem>();
         var text = new StringBuilder();
@@ -143,7 +140,7 @@ public static class ChapterYarnExporter
             string title = ChapterProgressionExporter.DialogueEntryIdOf(episode, via);
 
             text.Append("title: ").Append(title).Append("\n---\n");
-            AppendBody(text, episode.EpisodeId, via.EpisodeNodeFor(episode), project, definition, problems);
+            AppendBody(text, episode.EpisodeId, via.EpisodeNodeFor(episode), project, problems);
             text.Append("===\n");
 
             // 이 에피소드가 부르는 분기 카드는 바로 뒤에 노드로 선다 — 분기 카드는 에피소드가 아니라 진행 JSON에 없고, 이 노드를
@@ -154,7 +151,7 @@ public static class ChapterYarnExporter
                 text.Append("// 분기 카드: ").Append(OneLine(EpisodeNaming.BranchTitleOf(home.Card)))
                     .Append(" — 「").Append(OneLine(episode.ShownTitle)).Append("」에서 들른다\n");
                 text.Append("title: ").Append(YarnNaming.StoryNodeTitleOf(home.Card.Name, home.Card.Id)).Append("\n---\n");
-                AppendBody(text, episode.EpisodeId, home.Card, project, definition, problems);
+                AppendBody(text, episode.EpisodeId, home.Card, project, problems);
                 text.Append("===\n");
             }
         }
@@ -172,7 +169,6 @@ public static class ChapterYarnExporter
         string episodeId,
         DialogueNode? card,
         StoryProject? project,
-        GameDefinition? definition,
         List<ChapterYarnProblem> problems)
     {
         if (project is null || card is null)
@@ -180,7 +176,7 @@ public static class ChapterYarnExporter
             return; // 카드가 없다 — 노드만 선다. 없는 카드는 챕터 검증이 짚는다.
         }
 
-        DialogueDraft draft = DialoguePublisher.Draft(project, card.Id, definition);
+        DialogueDraft draft = DialoguePublisher.Draft(project, card.Id);
 
         foreach (PublishProblem problem in draft.Problems)
         {

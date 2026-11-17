@@ -21,13 +21,6 @@ public sealed class GameDefinition
     public static GameDefinition Empty { get; } = new();
 
     /// <summary>
-    /// 프로젝트와 무관하게 게임이 언제나 제공하는 조건. 설정 노드가 만드는 조건에 더해진다.
-    /// 여러 게임에서 반복되는 조건(예: 난이도, 언어)을 프로젝트마다 다시 만들지 않아도 된다.
-    /// </summary>
-    [JsonPropertyName("conditions")]
-    public List<ConditionSpec> Conditions { get; init; } = new();
-
-    /// <summary>
     /// 대본의 화자명 ↔ 초상화 characterId 매핑. 이 툴은 챕터 그래프의 화자 목록으로 관리하고 등록 안 된
     /// 화자를 알아보는 데 쓴다 — 초상화로 화자를 강조하는 것은 compositor의 무대다.
     ///
@@ -99,18 +92,6 @@ public sealed class GameDefinition
                 AllowTrailingCommas = true
             });
     }
-}
-
-public sealed class ConditionSpec
-{
-    [JsonPropertyName("id")]
-    public string Id { get; init; } = string.Empty;
-
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
-
-    [JsonPropertyName("expression")]
-    public string Expression { get; init; } = string.Empty;
 }
 
 public sealed class SpeakerSpec

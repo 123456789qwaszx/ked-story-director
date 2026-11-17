@@ -1,5 +1,4 @@
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
@@ -61,7 +60,7 @@ public sealed class ChapterLayerSeparationTests
 
         // 조건 고르기 목록에도 챕터 조건이 없다.
         IReadOnlyList<ConditionChoice> choices = ConditionChoices.For(
-            preceding: null, board.Dialogue, board.Project, GameDefinition.Empty);
+            preceding: null, board.Dialogue, board.Project);
 
         Assert.DoesNotContain(choices, choice => choice.Label.Contains("신뢰높음"));
         Assert.Contains(choices, choice => choice.Label == "우호적");

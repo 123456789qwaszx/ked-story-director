@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 
@@ -84,7 +83,6 @@ public static class DialoguePublisher
     public static DialogueDraft Draft(
         StoryProject project,
         string dialogueNodeId,
-        GameDefinition? definition = null,
         string? locale = null)
     {
         ArgumentNullException.ThrowIfNull(project);
@@ -93,11 +91,10 @@ public static class DialoguePublisher
             ?? throw new InvalidOperationException($"'{dialogueNodeId}'는 대사 노드가 아닙니다.");
 
         DialogueScript script = DialogueScriptResolver.Resolve(project, node, locale);
-        DialogueFlow flow = ConditionFlowResolver.Resolve(node, script, project, definition);
+        DialogueFlow flow = ConditionFlowResolver.Resolve(node, script, project);
         AvailableConditionCatalog available = AvailableConditionResolver.Resolve(
             project,
-            node.Id,
-            definition);
+            node.Id);
 
         var problems = new List<PublishProblem>();
         var lines = new List<DialogueResultLine>();
@@ -124,14 +121,14 @@ public static class DialoguePublisher
                 line.Revision,
                 line.Speaker,
                 line.Text,
-                Freeze(line.Transition, project, definition, available),
+                Freeze(line.Transition, project, available),
                 line.Transition?.OpensBranch == true ? branchExit : null,
                 // 둘째 전환부터 — 겹쳐 닫기·연달아 열기가 여기 실린다 (2026-08-17).
                 line.Transitions.Count <= 1
                     ? null
                     : line.Transitions
                         .Skip(1)
-                        .Select(transition => Freeze(transition, project, definition, available))
+                        .Select(transition => Freeze(transition, project, available))
                         .OfType<DialogueResultTransition>()
                         .ToArray(),
                 line.Detours));
@@ -152,7 +149,7 @@ public static class DialoguePublisher
             // 마지막 줄 뒤의 전환 (2026-08-24) — 대사 없는 조건 블록이 대본의 끝일 때.
             // 줄에 실린 것과 <b>같은 얼리기</b>를 지난다: 조건 Id가 아니라 <b>식</b>이
             // 결과에 굳어야 산출물이 자기 완결이 된다.
-            FreezeTrailing(node, project, definition, available));
+            FreezeTrailing(node, project, available));
     }
 
     /// <summary>초안을 결과 모양으로 감싼다 — 미리보기 합성기와 흐름 해석이 이 모양을 읽는다.</summary>
@@ -178,7 +175,6 @@ public static class DialoguePublisher
     private static IReadOnlyList<DialogueResultTransition> FreezeTrailing(
         DialogueNode node,
         StoryProject project,
-        GameDefinition? definition,
         AvailableConditionCatalog available)
     {
         var frozen = new List<DialogueResultTransition>(node.TrailingTransitions.Count);
@@ -186,7 +182,7 @@ public static class DialoguePublisher
 
         foreach (LineConditionTransition transition in node.TrailingTransitions)
         {
-            if (Freeze(transition, project, definition, available) is not { } item)
+            if (Freeze(transition, project, available) is not { } item)
             {
                 continue;
             }
@@ -209,7 +205,6 @@ public static class DialoguePublisher
     private static DialogueResultTransition? Freeze(
         LineConditionTransition? transition,
         StoryProject project,
-        GameDefinition? definition,
         AvailableConditionCatalog available)
     {
         if (transition is null)
@@ -223,7 +218,7 @@ public static class DialoguePublisher
         }
 
         AvailableCondition? condition = available.Find(transition.ConditionId)
-            ?? AvailableConditionResolver.FindKnown(project, definition, transition.ConditionId);
+            ?? AvailableConditionResolver.FindKnown(project, transition.ConditionId);
 
         return new DialogueResultTransition(
             transition.Kind,

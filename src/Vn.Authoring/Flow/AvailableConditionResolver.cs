@@ -1,11 +1,13 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Flow;
 
+/// <summary>
+/// 조건이 어디서 왔나. ⛔ 게임 전역 조건(<c>GameGlobal</c> — <c>game.definition.json</c>의 <c>conditions</c>)은 2026-11-17에 걷혔다 —
+/// 쓰는 창구가 없었고 조건의 자리는 챕터의 [조건] 하나다(<c>docs/work-orders/definition-split-orders.md</c> S2).
+/// </summary>
 public enum AvailableConditionSourceKind
 {
-    GameGlobal,
     SetNode,
 
     /// <summary>
@@ -21,9 +23,7 @@ public enum AvailableConditionSourceKind
 }
 
 /// <summary>
-/// DialogueNode가 현재 선택할 수 있는 조건 하나의 읽기 모델.
-/// 프로젝트 조건과 게임 전역 조건의 저장 타입이 달라도 편집 화면과 흐름 해석기는
-/// 이 중립적인 형태만 본다.
+/// DialogueNode가 현재 선택할 수 있는 조건 하나의 읽기 모델. 편집 화면과 흐름 해석기는 이 중립적인 형태만 본다.
 /// </summary>
 public sealed record AvailableCondition(
     string Id,
@@ -65,17 +65,14 @@ public sealed class AvailableConditionCatalog
 /// <summary>
 /// DialogueNode가 사용할 수 있는 조건의 범위를 계산한다.
 ///
-/// 게임 전역 조건은 항상 들어오고, 프로젝트 조건은 <b>그 대사 노드와 같은 판</b>의 SetNode
-/// 것만 들어온다(<see cref="ConnectedSetNodeResolver"/> — 범위는 챕터다). 같은 Id가 여러 곳에서
-/// 공급되면 먼저 나온 하나만 사용한다. 순서는 게임 전역 조건 → 판 안의 노드 순서 → SetNode
-/// 내부 순서다.
+/// 조건은 <b>그 대사 노드와 같은 판</b>의 SetNode 것만 들어온다(<see cref="ConnectedSetNodeResolver"/> — 범위는 챕터다). 같은 Id가
+/// 여러 곳에서 공급되면 먼저 나온 하나만 사용한다. 순서는 판 안의 노드 순서 → SetNode 내부 순서다.
 /// </summary>
 public static class AvailableConditionResolver
 {
     public static AvailableConditionCatalog Resolve(
         StoryProject project,
-        string dialogueNodeId,
-        GameDefinition? definition = null)
+        string dialogueNodeId)
     {
         ArgumentNullException.ThrowIfNull(project);
 
@@ -84,24 +81,8 @@ public static class AvailableConditionResolver
             return new AvailableConditionCatalog(Array.Empty<AvailableCondition>());
         }
 
-        definition ??= GameDefinition.Empty;
         var conditions = new List<AvailableCondition>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (ConditionSpec condition in definition.Conditions)
-        {
-            if (string.IsNullOrWhiteSpace(condition.Id) || !seen.Add(condition.Id))
-            {
-                continue;
-            }
-
-            conditions.Add(new AvailableCondition(
-                condition.Id,
-                condition.Name,
-                condition.Expression,
-                AvailableConditionSourceKind.GameGlobal,
-                SourceNodeId: null));
-        }
 
         // A계층 공급 노드가 나른 조건은 종류를 달리 매긴다 — 작가의 목록에서 빠지고,
         // 이미 쓰인 것을 읽을 때만 이름이 나온다.
@@ -138,27 +119,11 @@ public static class AvailableConditionResolver
     /// </summary>
     public static AvailableCondition? FindKnown(
         StoryProject project,
-        GameDefinition? definition,
         string? conditionId)
     {
         if (string.IsNullOrEmpty(conditionId))
         {
             return null;
-        }
-
-        definition ??= GameDefinition.Empty;
-
-        ConditionSpec? global = definition.Conditions.FirstOrDefault(
-            condition => string.Equals(condition.Id, conditionId, StringComparison.Ordinal));
-
-        if (global is not null)
-        {
-            return new AvailableCondition(
-                global.Id,
-                global.Name,
-                global.Expression,
-                AvailableConditionSourceKind.GameGlobal,
-                SourceNodeId: null);
         }
 
         HashSet<string> chapterSupplyIds = Chapters.ChapterBoardSupply.ConditionSupplyNodeIds(project);

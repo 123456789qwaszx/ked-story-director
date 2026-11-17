@@ -25,7 +25,7 @@ internal static class BranchConditionPicker
     /// <param name="applied">넣은 뒤(성공이든 거절이든) 화면이 할 일 — 설명 글을 다시 세운다.</param>
     internal static ComboBox Create(AuthoringSession session, string targetNodeId, string tag, Action? applied = null)
     {
-        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, targetNodeId, session.Definition);
+        BranchEntryCondition.State state = BranchEntryCondition.Read(session.Project, targetNodeId);
         ChapterDocument? chapter = session.Project.FindNode(targetNodeId) is { } target
             ? EpisodeNaming.ChapterOf(session.Project, target)
             : null;
@@ -83,7 +83,7 @@ internal static class BranchConditionPicker
                 string name = session.Project.FindNode(targetNodeId) is { } node
                     ? EpisodeNaming.ShownNameOf(session.Project, node)
                     : targetNodeId;
-                string? failure = BranchEntryCondition.Set(session.Editor, targetNodeId, label, session.Definition);
+                string? failure = BranchEntryCondition.Set(session.Editor, targetNodeId, label);
 
                 if (failure is null)
                 {

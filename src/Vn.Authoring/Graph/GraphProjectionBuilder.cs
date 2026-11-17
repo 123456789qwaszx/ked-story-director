@@ -1,5 +1,4 @@
 ﻿using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 
@@ -35,7 +34,6 @@ public static class GraphProjectionBuilder
     public static GraphProjection Build(
         StoryProject project,
         IReadOnlySet<string> expandedFileIds,
-        GameDefinition? definition = null,
         IReadOnlySet<GraphSceneKey>? collapsedScenes = null)
     {
         ArgumentNullException.ThrowIfNull(project);
@@ -58,7 +56,7 @@ public static class GraphProjectionBuilder
                 StoryNode node = file.Nodes[index];
                 fileByNodeId[node.Id] = file;
                 rowIndexByNodeId[node.Id] = index;
-                portsByNodeId[node.Id] = BuildPorts(node, file, project, definition);
+                portsByNodeId[node.Id] = BuildPorts(node, file, project);
 
                 if (IsHiddenPlumbing(node))
                 {
@@ -246,10 +244,9 @@ public static class GraphProjectionBuilder
     private static IReadOnlyList<GraphOutputPortProjection> BuildPorts(
         StoryNode node,
         StoryFile file,
-        StoryProject project,
-        GameDefinition? definition)
+        StoryProject project)
     {
-        IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project, definition);
+        IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project);
 
         // 분기 에피소드의 첫머리 조건은 출구가 아니다 — 미달이면 곧바로 돌아올 뿐이다(BranchEntryCondition). 이어 둔 것이 없으면
         // 카드에 포트 줄을 세우지 않는다.

@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Script;
@@ -38,26 +37,10 @@ public class ConditionSupplyTests
         SetNode foreign = editor.AddSetNode(otherFile.Id, name: "남의 설정");
         ConditionDefinition foreignCondition = editor.AddCondition(foreign.Id, "남의 조건", "foreign == true");
 
-        var definition = new GameDefinition
-        {
-            Conditions = new List<ConditionSpec>
-            {
-                new()
-                {
-                    Id = "global_difficulty",
-                    Name = "고난도",
-                    Expression = "difficulty == hard"
-                }
-            }
-        };
-
-        AvailableConditionCatalog catalog = AvailableConditionResolver.Resolve(
-            project,
-            dialogue.Id,
-            definition);
+        AvailableConditionCatalog catalog = AvailableConditionResolver.Resolve(project, dialogue.Id);
 
         Assert.Equal(
-            new[] { "global_difficulty", firstCondition.Id, secondCondition.Id },
+            new[] { firstCondition.Id, secondCondition.Id },
             catalog.Conditions.Select(condition => condition.Id));
         Assert.DoesNotContain(
             catalog.Conditions,
@@ -66,21 +49,20 @@ public class ConditionSupplyTests
         IReadOnlyList<ConditionChoice> choices = ConditionChoices.For(
             preceding: null,
             dialogue,
-            project,
-            definition);
+            project);
 
-        Assert.Contains(choices, choice => choice.ConditionId == "global_difficulty");
         Assert.Contains(choices, choice => choice.ConditionId == firstCondition.Id);
         Assert.Contains(choices, choice => choice.ConditionId == secondCondition.Id);
         Assert.DoesNotContain(choices, choice => choice.ConditionId == foreignCondition.Id);
 
-        ScriptLine globalLine = dialogue.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
+        // 같은 판의 조건은 흐름에서도 아는 조건이다. ⛔ 게임 전역 조건(정의 파일의 conditions)은 2026-11-17에 걷혔다.
+        ScriptLine line = dialogue.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
         editor.SetLineTransition(
             dialogue.Id,
-            globalLine.Id,
-            LineConditionTransition.BeginIf("global_difficulty"));
+            line.Id,
+            LineConditionTransition.BeginIf(firstCondition.Id));
 
-        DialogueFlow flow = ConditionFlowResolver.Resolve(dialogue, project, definition);
+        DialogueFlow flow = ConditionFlowResolver.Resolve(dialogue, project);
         Assert.DoesNotContain(flow.Problems, problem =>
             problem.Kind is FlowProblemKind.UnknownCondition or FlowProblemKind.UnavailableCondition);
     }
@@ -165,7 +147,6 @@ public class ConditionSupplyTests
             preceding: null,
             dialogue,
             project,
-            definition: null,
             currentTransition: dialogue.FindExtension(scriptLine.Id)!.Transition);
         ConditionChoice current = ConditionChoices.Current(
             choices, dialogue.FindExtension(scriptLine.Id)!.Transition);

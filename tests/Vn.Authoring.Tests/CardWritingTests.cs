@@ -55,7 +55,7 @@ public sealed class CardWritingTests
         editor.AddBranchMarker(node.Id, lines[1]);
         editor.AddBranchMarker(node.Id, lines[2]);
 
-        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id, Definition);
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id);
 
         Assert.Equal(["라루: 첫 줄", "윌로: 둘째 줄", "라루: 셋째 줄"], layout.Text.Split('\n'));
         Assert.Equal([0, 1, 2], lines.Select(line => layout.RowOfLine[line]));
@@ -132,7 +132,7 @@ public sealed class CardWritingTests
             지문 한 줄.
             """, Definition);
 
-        string shown = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id, Definition);
+        string shown = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id);
         ScenarioPasteOutcome again = editor.ApplyScenarioText(node.Id, shown, Definition);
 
         Assert.DoesNotContain("[", shown, StringComparison.Ordinal);   // 머리글 · 진단 줄이 없다
@@ -179,7 +179,7 @@ public sealed class CardWritingTests
     {
         (ProjectEditor editor, DialogueNode node) = NewCard();
 
-        Assert.Equal(string.Empty, WorkingDialoguePreview.ScenarioText(editor.Project, node.Id, Definition));
+        Assert.Equal(string.Empty, WorkingDialoguePreview.ScenarioText(editor.Project, node.Id));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

@@ -94,7 +94,7 @@ public sealed class FoldedSceneProjectionTests
 
         // 판째 접혀 있으면 — 지금과 같은 판 상자다(소유자: "챕터가 접히는 건 현재를 유지").
         GraphProjection folded = GraphProjectionBuilder.Build(
-            editor.Project, new HashSet<string>(StringComparer.Ordinal), null, Fold(board, "hall"));
+            editor.Project, new HashSet<string>(StringComparer.Ordinal), Fold(board, "hall"));
 
         Assert.Empty(folded.Items.OfType<CollapsedSceneProjection>());
         Assert.Single(folded.Items.OfType<CollapsedFileProjection>());
@@ -153,7 +153,6 @@ public sealed class FoldedSceneProjectionTests
         GraphProjectionBuilder.Build(
             editor.Project,
             new HashSet<string>(editor.Project.Files.Select(file => file.Id), StringComparer.Ordinal),
-            null,
             folded);
 
     private sealed record Board(
