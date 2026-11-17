@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -195,7 +196,9 @@ public partial class ChapterGraphView : UserControl
             InspectorMode.Chapter => ($"챕터 · {_selectedChapterId}", "조건 · 스탯"),
             InspectorMode.Scene => SceneHeader(model),
             _ when _selectedEpisodeId is { } episodeId => (EpisodeHeader(model, episodeId), string.Empty),
-            _ when _selectedEdgeKey is { } edge => ($"선택지 · {edge.From} → {edge.To}", "문구 · 조건 · 스탯변화"),
+            // 머리글은 ID(이 탭은 ID를 다룬다), 부제는 보이는 제목 — 양 끝 에피소드를 한 번만 말한다(2026-11-17).
+            _ when _selectedEdgeKey is { } edge => ($"선택지 · {edge.From} → {edge.To}",
+                $"{model?.FindEpisode(edge.From)?.ShownTitle ?? edge.From} → {model?.FindEpisode(edge.To)?.ShownTitle ?? edge.To}"),
             _ when _selectedBranchKey is not null => ("분기", "다녀갈 에피소드에 들어갈 조건"),
             _ when _selectedSlot is { } slot => ($"선택지 칸 · {slot.Episode}", "아직 길이 없는 칸"),
             _ => ("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다")
@@ -429,8 +432,9 @@ public partial class ChapterGraphView : UserControl
         // 글자 칸만 초점을 잃을 때 낸다. 자판 하나마다 저장하면 되돌리기가 글자 수만큼 쪼개지고,
         // 그 사이의 다시 그리기가 칸을 다시 채워 쓰던 글을 끊는다.
         // 문구는 글자 칸이다 — 다른 글자 칸처럼 Enter나 초점을 잃을 때 낸다.
-        EdgeLabelEditBox.LostFocus += (_, _) => AutoSaveEdge();
-        EdgeLabelEditBox.KeyDown += (_, e) => CommitOnEnter(e, AutoSaveEdge);
+        // 문구 칸은 읽기 전용이다 — 고치는 곳은 [대본] 탭(2026-11-17 소유자).
+        EdgeVisibleNewButton.Click += (_, _) => UiGuard.Run(_session, "새 조건", () => ShowNewConditionFlyout(EdgeVisibleNewButton, visible: true));
+        EdgeUnlockNewButton.Click += (_, _) => UiGuard.Run(_session, "새 조건", () => ShowNewConditionFlyout(EdgeUnlockNewButton, visible: false));
 
         EdgeVisibleCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         EdgeConditionCombo.SelectionChanged += (_, _) => AutoSaveEdge();
@@ -2766,14 +2770,22 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        bool labelTyped = !string.Equals(
-            EdgeLabelEditBox.Text?.Trim() ?? string.Empty, edge.OptionLabel ?? string.Empty, StringComparison.Ordinal);
         bool messageTyped = !string.Equals(
             EdgeLockedMsgBox.Text ?? string.Empty, edge.LockedMessage ?? string.Empty, StringComparison.Ordinal);
 
-        if ((labelTyped && !edge.Auto) || messageTyped)
+        if (messageTyped)
         {
             AutoSaveEdge();
+        }
+
+        // 식 칸에 적던 것도 낸다 — 선택이 옮겨 가면 그 칸이 사라진다.
+        foreach (TextBox expression in new[] { EdgeVisibleExpressionHost, EdgeUnlockExpressionHost }
+                     .SelectMany(host => host.GetLogicalDescendants().OfType<TextBox>()))
+        {
+            if (expression.Tag is ExpressionCommit commit)
+            {
+                commit.Run();
+            }
         }
     }
 
@@ -3000,45 +3012,253 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void RefreshEdgePanel(ChapterGraphModel model, ChapterEdge edge, bool fill)
     {
-        EdgeFromToPanel.Children.Clear();
-        EdgeFromToPanel.Children.Add(EpisodeLink(model, edge.FromEpisodeId));
-        EdgeFromToPanel.Children.Add(new TextBlock
-        {
-            Text = "→",
-            FontSize = 11,
-            Opacity = 0.5,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-        });
-        EdgeFromToPanel.Children.Add(EpisodeLink(model, edge.ToEpisodeId));
-
         if (fill)
         {
             EdgeLockedMsgBox.Text = edge.LockedMessage ?? string.Empty;
             _edgeStats.Load(model.Stats, edge.StatChanges);
         }
 
+        // 문구는 읽기 전용 — 늘 지금 값이다(고치는 곳은 [대본] 탭).
+        EdgeLabelEditBox.Text = edge.Auto ? string.Empty : edge.OptionLabel ?? string.Empty;
+        EdgeLabelEditBox.PlaceholderText = edge.Auto ? "AUTO — 문구 없이 넘어갑니다" : "⚠ 문구 없음";
+
         // 자동 진행 길은 문구 · 조건 · 스탯변화를 갖지 않는다 — 그렇다고 말하고 칸을 잠근다(적어도 저장되지 않는다).
         EdgeAutoNote.IsVisible = edge.Auto;
-        EdgeLabelEditBox.IsEnabled = !edge.Auto;
         EdgeVisibleCombo.IsEnabled = !edge.Auto;
         EdgeConditionCombo.IsEnabled = !edge.Auto;
+        EdgeVisibleNewButton.IsEnabled = !edge.Auto;
+        EdgeUnlockNewButton.IsEnabled = !edge.Auto;
         EdgeLockedMsgBox.IsEnabled = !edge.Auto;
         _edgeStats.IsEnabled = !edge.Auto;
 
-        // 이 길의 문구 (v9) — 글자 칸에 지금 문구가 그대로 선다. 비우면 문구 없는 길이다.
-        if (fill)
-        {
-            EdgeLabelEditBox.Text = edge.OptionLabel ?? string.Empty;
-        }
-
-        var labels = new List<string> { "(없음)" };
+        var labels = new List<string> { NoGate };
         labels.AddRange(model.Conditions.Select(condition => condition.Label));
 
         // 관문 둘 — v8에서 에피소드에서 여기로 옮겨 왔다.
         SetItems(EdgeVisibleCombo, labels,
-            fill ? edge.VisibleConditionLabel ?? "(없음)" : EdgeVisibleCombo.SelectedItem as string);
+            fill ? edge.VisibleConditionLabel ?? NoGate : EdgeVisibleCombo.SelectedItem as string);
         SetItems(EdgeConditionCombo, labels,
-            fill ? edge.ConditionLabel ?? "(없음)" : EdgeConditionCombo.SelectedItem as string);
+            fill ? edge.ConditionLabel ?? NoGate : EdgeConditionCombo.SelectedItem as string);
+
+        string? visible = GateOf(EdgeVisibleCombo);
+        string? unlock = GateOf(EdgeConditionCombo);
+
+        FillExpressionHost(EdgeVisibleExpressionHost, model, edge, edge.Auto ? null : visible);
+        FillExpressionHost(EdgeUnlockExpressionHost, model, edge, edge.Auto ? null : unlock);
+
+        // 잠금 안내문은 해금조건에 딸린 칸이다 — 해금조건을 걸었을 때만 선다.
+        EdgeLockedMsgBox.IsVisible = !edge.Auto && unlock is not null;
+    }
+
+    /// <summary>마지막으로 연 [＋ 새 조건] 칸 — 화면 시험이 이것으로 찾는다(플라이아웃은 뷰의 논리 트리 밖에 선다).</summary>
+    internal StackPanel? NewConditionPanel { get; private set; }
+
+    /// <summary>관문 콤보의 「없음」 — 조건을 안 건 길.</summary>
+    private const string NoGate = "(없음)";
+
+    private static string? GateOf(ComboBox combo) =>
+        combo.SelectedItem is string label && !string.Equals(label, NoGate, StringComparison.Ordinal) ? label : null;
+
+    /// <summary>식 칸이 지는 표 — 칸의 값을 그 조건에 낸다(같은 값이면 아무것도 안 한다).</summary>
+    private sealed record ExpressionCommit(Action Run);
+
+    /// <summary>
+    /// 관문 콤보 바로 아래의 <b>식 칸</b> — 고른 조건의 수치를 여기서 바로 고친다(2026-11-17 소유자: [구성]은 수치를 잡는 자리다).
+    /// 고치면 챕터 조건의 식이 바뀐다 — 그 조건을 쓰는 다른 곳이 있으면 함께 바뀐다고 미리 말한다. 식이 비면 「식 미정」(항상 통과),
+    /// 못 읽는 식이면 그 까닭을 빨갛게 세운다. 조건을 안 걸었으면 아무것도 세우지 않는다.
+    ///
+    /// 적던 칸은 다시 세우지 않는다 — 다른 칸을 고쳐 판이 다시 그려져도 쓰던 식이 끊기지 않게.
+    /// </summary>
+    private void FillExpressionHost(StackPanel host, ChapterGraphModel model, ChapterEdge edge, string? label)
+    {
+        if (host.GetLogicalDescendants().OfType<TextBox>().FirstOrDefault() is { IsFocused: true } typing &&
+            Equals(host.DataContext, label) &&
+            label is not null &&
+            model.Conditions.FirstOrDefault(item => item.Label == label) is { } same &&
+            !string.Equals(typing.Text?.Trim() ?? string.Empty, same.Expression.Trim(), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        host.DataContext = label;
+        host.Children.Clear();
+
+        if (label is null ||
+            _session is null ||
+            _selectedChapterId is not { } chapterId ||
+            model.Conditions.FirstOrDefault(item => string.Equals(item.Label, label, StringComparison.Ordinal)) is not { } condition)
+        {
+            return;
+        }
+
+        string stored = condition.Expression.Trim();
+        var box = new TextBox
+        {
+            Text = stored,
+            FontSize = 11,
+            PlaceholderText = "⚠ 식 미정 — 항상 통과합니다 (예: trust >= 3)",
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        ToolTip.SetTip(box, "이 조건의 식 — 스탯 키와 정수를 비교합니다(>= · <= · > · < · ==), 여럿이면 `;`로 잇습니다. " +
+                            "예/아니오 스탯은 `키 == true`. Enter나 다른 곳을 누르면 반영됩니다.");
+
+        void Commit()
+        {
+            string typed = box.Text?.Trim() ?? string.Empty;
+
+            if (string.Equals(typed, stored, StringComparison.Ordinal) || _session is null)
+            {
+                return;
+            }
+
+            UiGuard.Run(_session, "조건 식", () =>
+            {
+                _session.Editor.UpdateChapterCondition(chapterId, label, typed);
+                stored = typed;
+                _session.SetStatus(typed.Length == 0
+                    ? $"조건 '{label}'의 식을 비웠습니다 — 식 미정, 항상 통과합니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
+                    : $"조건 '{label}' — 식 '{typed}'. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            });
+        }
+
+        box.Tag = new ExpressionCommit(Commit);
+        box.LostFocus += (_, _) => Commit();
+        box.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(12, 0, 0, 0) };
+        row.Children.Add(new TextBlock
+        {
+            Text = "식",
+            FontSize = 10,
+            Opacity = 0.6,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        Grid.SetColumn(box, 1);
+        row.Children.Add(box);
+        host.Children.Add(row);
+
+        TextBlock Note(string text, IBrush? ink = null) => new()
+        {
+            Text = text,
+            FontSize = 10,
+            Opacity = ink is null ? 0.6 : 1,
+            Foreground = ink,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(12, 0, 0, 0)
+        };
+
+        string head = $"조건 '{label}' — ";
+
+        foreach (ChapterDiagnostic problem in model.Diagnostics.Where(item =>
+                     item.Severity == ChapterDiagnosticSeverity.Error &&
+                     item.Message.StartsWith(head, StringComparison.Ordinal)))
+        {
+            host.Children.Add(Note("✕ " + problem.Message[head.Length..], new SolidColorBrush(Color.Parse("#C0392B"))));
+        }
+
+        int others = _session.Editor.FindConditionUses(chapterId, label)
+            .Count(use => !(use.Kind == Vn.Authoring.Editing.ChapterUseKind.Edge && string.Equals(use.Where, edge.Where, StringComparison.Ordinal)));
+
+        if (others > 0)
+        {
+            host.Children.Add(Note($"이 조건은 다른 곳 {others}곳에서도 씁니다 — 식을 고치면 그곳들도 함께 바뀝니다."));
+        }
+    }
+
+    /// <summary>
+    /// [＋ 새 조건] — 이름과 식을 한 번에 만들고 이 선택지의 표시조건(또는 해금조건)으로 건다. 되돌리기 한 칸이다.
+    ///
+    /// 조건 이름은 원래 [대본] 탭에서 짓는다(writer-fields W4). 간선에서 수치를 잡다가 조건이 없으면 탭을 오가야 해서, 이 자리만 예외로
+    /// 만든다(2026-11-17 소유자). 이름 규칙은 같다 — 빈 이름 · 이미 있는 이름은 받지 않는다. 식은 비워도 된다(식 미정 — 항상 통과).
+    /// </summary>
+    private void ShowNewConditionFlyout(Button anchor, bool visible)
+    {
+        if (_session is null || _selectedChapterId is not { } chapterId || _selectedEdgeKey is not { } key)
+        {
+            return;
+        }
+
+        var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)", Tag = "new-condition-name" };
+        var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "식 — 비우면 식 미정 (예: trust >= 3)", Tag = "new-condition-expression" };
+        var create = new Button
+        {
+            Content = visible ? "만들고 표시조건으로 걸기" : "만들고 해금조건으로 걸기",
+            FontSize = 10,
+            Padding = new Thickness(7, 2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Tag = "new-condition-create"
+        };
+        var panel = new StackPanel
+        {
+            Spacing = 4,
+            MaxWidth = 340,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = visible ? "새 조건 — 맞을 때만 이 선택지가 보입니다." : "새 조건 — 맞을 때만 이 선택지를 고를 수 있습니다.",
+                    FontSize = 10,
+                    TextWrapping = TextWrapping.Wrap
+                },
+                name,
+                expression,
+                create
+            }
+        };
+        var flyout = new Flyout { Content = panel };
+        NewConditionPanel = panel;
+
+        void Create() => UiGuard.Run(_session, "새 조건", () =>
+        {
+            string label = name.Text?.Trim() ?? string.Empty;
+            string typed = expression.Text?.Trim() ?? string.Empty;
+
+            if (label.Length == 0)
+            {
+                _session!.SetStatus("조건 이름을 적어 주세요.");
+                return;
+            }
+
+            if (_session!.Editor.FindChapter(chapterId)?.Conditions.Any(item => string.Equals(item.Label, label, StringComparison.Ordinal)) == true)
+            {
+                _session.SetStatus($"조건 '{label}'이 이미 있습니다 — 콤보에서 고르세요.");
+                return;
+            }
+
+            if (SelectedModel?.Edges.FirstOrDefault(candidate =>
+                    candidate.FromEpisodeId == key.From &&
+                    candidate.ToEpisodeId == key.To &&
+                    EdgeLabelKey(candidate) == key.Label) is not { } edge)
+            {
+                _session.SetStatus("간선을 다시 골라 주세요. 선택이 풀렸거나 그 간선이 사라졌습니다.");
+                return;
+            }
+
+            flyout.Hide();
+
+            // 조건 만들기와 걸기가 한 변경이다 — 되돌리기 한 번에 함께 돌아간다.
+            _session.Editor.Batch(() =>
+            {
+                _session.Editor.AddChapterCondition(chapterId, label, typed);
+                _session.Editor.UpdateEdge(
+                    chapterId, key.From, key.To,
+                    visibleConditionLabel: visible ? label : null,
+                    conditionLabel: visible ? null : label,
+                    matchOptionLabel: EdgeLabelKey(edge));
+            });
+
+            _panelFilledFor = default;   // 다시 그릴 때 콤보를 모델 값(방금 건 조건)으로 채운다
+            _session.SetStatus($"조건 '{label}'을 만들어 {(visible ? "표시조건" : "해금조건")}으로 걸었습니다" +
+                               (typed.Length == 0 ? " — 식 미정(항상 통과)입니다." : ".") + " 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        });
+
+        create.Click += (_, _) => Create();
+        name.KeyDown += (_, args) => CommitOnEnter(args, Create);
+        expression.KeyDown += (_, args) => CommitOnEnter(args, Create);
+
+        flyout.ShowAt(anchor);
+        name.Focus();
     }
 
     /// <summary>
@@ -3231,16 +3451,10 @@ public partial class ChapterGraphView : UserControl
             return string.Equals(value, current ?? string.Empty, StringComparison.Ordinal) ? null : value;
         }
 
-        string? Gate(ComboBox combo) =>
-            combo.SelectedItem as string == "(없음)" ? string.Empty : combo.SelectedItem as string;
+        string Gate(ComboBox combo) => GateOf(combo) ?? string.Empty;
 
-        // 문구도 이 저장에 실린다 (v9) — 신원의 일부라, 찾을 때는 고치기 전 값을 쓴다. 자동인지는 여기서 바꾸지 않는다.
+        // 문구는 여기서 고치지 않는다(읽기 전용 — 2026-11-17). 자동인지도 여기서 바꾸지 않는다.
         bool auto = edge.Auto;
-        string pickedLabel = EdgeLabelEditBox.Text?.Trim() ?? string.Empty;
-        if (auto)
-        {
-            pickedLabel = string.Empty;
-        }
 
         ChapterEdit(
             () =>
@@ -3251,11 +3465,7 @@ public partial class ChapterGraphView : UserControl
                     conditionLabel: Changed(auto ? string.Empty : Gate(EdgeConditionCombo), edge.ConditionLabel ?? string.Empty),
                     lockedMessage: Changed(auto ? string.Empty : EdgeLockedMsgBox.Text, edge.LockedMessage ?? string.Empty),
                     statChanges: Changed(auto ? string.Empty : _edgeStats.ToSheetText(), StatChangesText(edge)),
-                    matchOptionLabel: EdgeLabelKey(edge),
-                    optionLabel: Changed(pickedLabel, EdgeLabelKey(edge)));
-
-                // 문구를 바꿨으면 신원도 바뀌었다 — 선택이 풀리지 않게 열쇠를 따라 옮긴다.
-                _selectedEdgeKey = (key.From, key.To, pickedLabel);
+                    matchOptionLabel: EdgeLabelKey(edge));
             },
             $"간선 {key.From}→{key.To}을 저장했습니다.");
 

@@ -35,48 +35,6 @@ public sealed class ChapterEdgeLabelTests
     });
 
     [Fact]
-    public void 간선_패널의_에피소드를_누르면_그_에피소드_편집으로_간다() => HeadlessUi.Run(() =>
-    {
-        // 간선을 클릭한 뒤 거기 보이는 에피소드 이름도 고칠 수 있어야 한다.
-        // 누르면 그 에피소드의 속성 패널(Id [개명])로 간다.
-        using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
-        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
-        view.Refresh();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        view.SelectEdgeKey("new01", "new02", "계속");
-        Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-
-        // 도착 쪽 고리를 누른다 (출발 → 화살표 → 도착 순).
-        var links = view.FindControl<StackPanel>("EdgeFromToPanel")!;
-        var target = (TextBlock)links.Children[2];
-        Assert.Contains("new02", target.Text);
-
-        target.RaiseEvent(new Avalonia.Input.PointerPressedEventArgs(
-            target, new Avalonia.Input.Pointer(0, Avalonia.Input.PointerType.Mouse, true),
-            target, default, 0,
-            new Avalonia.Input.PointerPointProperties(
-                Avalonia.Input.RawInputModifiers.LeftMouseButton,
-                Avalonia.Input.PointerUpdateKind.LeftButtonPressed),
-            Avalonia.Input.KeyModifiers.None));
-
-        // 이제 에피소드 편집 자리다 — 여기서 [개명]으로 이름을 바꾼다.
-        Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-        Assert.Equal("new02", view.FindControl<TextBox>("IdBox")!.Text);
-
-        view.FindControl<TextBox>("IdBox")!.Text = "ep_left";
-        view.RenameSelectedEpisode();
-
-        ChapterGraphModel reread = Chapter(session);
-        Assert.NotNull(reread.FindEpisode("ep_left"));
-        Assert.Contains(reread.Edges, edge =>
-            edge.FromEpisodeId == "new01" && edge.ToEpisodeId == "ep_left");
-    });
-
-    [Fact]
     public void 다시_읽기가_끼어들어도_적던_잠금_안내문이_사라지지_않는다() => HeadlessUi.Run(() =>
     {
         // 판은 언제든 다시 선다(프로젝트의 어느 변경이든 다시 읽기를 부른다). 그 사이에 적어 둔

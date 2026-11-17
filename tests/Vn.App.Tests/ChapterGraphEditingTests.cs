@@ -46,9 +46,9 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 간선_패널의_선택지_문구는_글자_칸에_적혀_있고_거기서_고친다() => HeadlessUi.Run(() =>
+    public void 간선_패널의_선택지_문구는_읽기_전용이고_어디서_고치는지_말한다() => HeadlessUi.Run(() =>
     {
-        // 문구는 드롭다운으로 고르지 않는다 — 글자 칸에 지금 문구가 적혀 있고 그 자리에서 고친다. 저장은 관문과 함께 한 번이다.
+        // 2026-11-17 소유자 — [구성]은 수치를 잡는 자리다. 문구는 [대본] 탭에서 고치고 여기서는 보이기만 한다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -56,56 +56,23 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var labels = view.FindControl<TextBox>("EdgeLabelEditBox")!;
-        Assert.True(labels.IsEnabled); // 읽기 전용이 아니다 — 여기서 고친다
+        Assert.True(labels.IsReadOnly);
         Assert.Equal("라루의 제안을 듣는다", labels.Text);
+        Assert.Contains("[대본] 탭", view.FindControl<TextBlock>("EdgeLabelWhereText")!.Text, StringComparison.Ordinal);
 
+        // 칸에 무엇이 적혀도 저장은 문구를 건드리지 않는다 — 관문만 실린다.
         labels.Text = "혼자 문을 연다";
         view.FindControl<ComboBox>("EdgeVisibleCombo")!.SelectedItem = "지쳐있음";
         view.ApplyEdgeFromPanel();
 
         ChapterEdge reread = Edge(session, "main05.02", "branch05.02A");
-
-        Assert.Equal("혼자 문을 연다", reread.OptionLabel); // 문구가 한 저장에 함께 실렸다
+        Assert.Equal("라루의 제안을 듣는다", reread.OptionLabel);
         Assert.Equal("지쳐있음", reread.VisibleConditionLabel);
         Assert.Equal("신뢰높음", reread.ConditionLabel);
 
-        // 문구는 신원의 일부다 — 바꿔도 선택이 풀리지 않고 그 길이 계속 열려 있다.
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-        Assert.Equal("혼자 문을 연다", view.FindControl<TextBox>("EdgeLabelEditBox")!.Text);
-    });
-
-    [Fact]
-    public void 간선_패널의_문구는_Enter로_저장되고_다른_것을_고르면_적던_문구가_그_간선에_저장된다() => HeadlessUi.Run(() =>
-    {
-        using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        // Enter — 그 자리에서 저장된다(사전에 없던 새 문구도 된다).
-        var labels = view.FindControl<TextBox>("EdgeLabelEditBox")!;
-        labels.Text = "새로 적은 문구";
-        labels.RaiseEvent(new Avalonia.Input.KeyEventArgs
-        {
-            RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
-            Key = Avalonia.Input.Key.Enter
-        });
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Equal("새로 적은 문구", Edge(session, "main05.02", "branch05.02A").OptionLabel);
-
-        // 적다가(초점이 칸에 있다) 판에서 다른 간선을 고르면 — 적던 문구는 원래 간선에 들어가고 새 간선은 그대로다.
-        labels.Focus();
-        labels.Text = "고르기 전에 적은 문구";
-        ChapterEdge other = Chapter(session).Edges.First(edge =>
-            edge.FromEpisodeId != "main05.02" && !edge.HasNoOptionLabel);
-        view.SelectEdgeKey(other.FromEpisodeId, other.ToEpisodeId, other.OptionLabel!);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.Equal("고르기 전에 적은 문구", Edge(session, "main05.02", "branch05.02A").OptionLabel);
-        Assert.Equal(other.OptionLabel, Edge(session, other.FromEpisodeId, other.ToEpisodeId).OptionLabel);
-        Assert.Equal(other.OptionLabel, labels.Text);   // 칸은 새로 고른 간선의 문구다
+        // 양 끝 에피소드 고리는 없다 — 머리글(ID)과 부제(제목)가 한 번 말한다.
+        Assert.Null(view.FindControl<StackPanel>("EdgeFromToPanel"));
+        Assert.Equal("선택지 · main05.02 → branch05.02A", view.FindControl<TextBlock>("InspectorTitle")!.Text);
     });
 
     [Fact]
@@ -280,7 +247,7 @@ public sealed class ChapterGraphEditingTests
         Assert.Null(view.FindControl<Button>("EdgeDeleteButton"));
         Assert.Null(view.FindControl<CheckBox>("EdgeAutoCheck"));
         Assert.False(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
-        Assert.True(view.FindControl<TextBox>("EdgeLabelEditBox")!.IsEnabled);
+        Assert.True(view.FindControl<ComboBox>("EdgeConditionCombo")!.IsEnabled);
 
         // 자동 진행 길 — 안내가 서고 문구 · 조건 칸이 잠긴다. 저장해도 자동 그대로다.
         session.Editor.UpdateEdge("ch05", "main05.01", "main05.02", matchOptionLabel: "계속", optionLabel: string.Empty, auto: true);
@@ -289,38 +256,13 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
-        Assert.False(view.FindControl<TextBox>("EdgeLabelEditBox")!.IsEnabled);
+        Assert.True(string.IsNullOrEmpty(view.FindControl<TextBox>("EdgeLabelEditBox")!.Text));
+        Assert.StartsWith("AUTO", view.FindControl<TextBox>("EdgeLabelEditBox")!.PlaceholderText, StringComparison.Ordinal);
         Assert.False(view.FindControl<ComboBox>("EdgeConditionCombo")!.IsEnabled);
+        Assert.False(view.FindControl<Button>("EdgeVisibleNewButton")!.IsEnabled);
 
         view.ApplyEdgeFromPanel();
         Assert.True(Edge(session, "main05.01", "main05.02").Auto);
-    });
-
-    [Fact]
-    public void 선택지는_챕터의_모든_문구_중에서_고른다() => HeadlessUi.Run(() =>
-    {
-        // 제 것만이 아니라 챕터의 모든 선택지 문구 중에서 고른다.
-        // 견본의 사전에는 main05.02가 쓰는 문구 둘이 있고, main05.01의 길(「계속」)에도 그것을 적는다.
-        using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        view.SelectEdgeKey("main05.01", "main05.02", "계속");
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        // 문구는 간선 패널의 글자 칸에 적는다 — 다른 에피소드가 쓰는 문구를 그대로 적어도 된다.
-        var labels = view.FindControl<TextBox>("EdgeLabelEditBox")!;
-        Assert.Equal("계속", labels.Text);
-
-        labels.Text = "라루의 제안을 듣는다";
-        view.ApplyEdgeFromPanel();
-
-        ChapterGraphModel reread = Chapter(session);
-        ChapterEdge wired = reread.Edges.Single(candidate =>
-            candidate.FromEpisodeId == "main05.01" && candidate.ToEpisodeId == "main05.02");
-        Assert.Equal("라루의 제안을 듣는다", wired.OptionLabel);
-
-        // 같은 문구를 두 에피소드가 쓰고 있어도 사전에는 한 줄뿐이다.
-        Assert.Single(reread.ChoiceOptions, option => option.Text == "라루의 제안을 듣는다");
     });
 
     [Fact]

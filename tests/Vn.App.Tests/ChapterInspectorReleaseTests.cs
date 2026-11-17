@@ -13,24 +13,24 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// [구성] 탭 오른쪽 칼럼의 빈 곳을 누르면 Enter처럼 — 간선 패널의 글자 칸(문구 · 잠금 안내문 · 스탯변화 숫자)에 적던 것이
+/// [구성] 탭 오른쪽 칼럼의 빈 곳을 누르면 Enter처럼 — 간선 패널의 글자 칸(조건 식 · 잠금 안내문 · 스탯변화 숫자)에 적던 것이
 /// 반영되고 칸이 놓인다. 빈 곳(글 · 여백)은 초점을 받지 않아, 전에는 칸이 초점을 쥔 채 남고 반영되지 않았다.
 /// </summary>
 public sealed class ChapterInspectorReleaseTests
 {
     [Fact]
-    public void 문구를_적고_칼럼_빈_곳을_누르면_반영되고_칸이_놓인다() => HeadlessUi.Run(() =>
+    public void 조건_식을_적고_칼럼_빈_곳을_누르면_반영되고_칸이_놓인다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
         (Window window, ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        TextBox label = view.FindControl<TextBox>("EdgeLabelEditBox")!;
-        label.Focus();
-        label.Text = "카스미에게 맡긴다";
+        TextBox expression = UnlockExpression(view);
+        expression.Focus();
+        expression.Text = "trust >= 7";
         PressEmpty(view);
 
-        Assert.Equal("카스미에게 맡긴다", Edge(session).OptionLabel);
-        Assert.False(label.IsFocused);
+        Assert.Equal("trust >= 7", session.Editor.FindChapter("ch01")!.Conditions.Single(item => item.Label == "신뢰").Expression);
+        Assert.False(expression.IsFocused);
 
         window.Close();
     });
@@ -80,13 +80,13 @@ public sealed class ChapterInspectorReleaseTests
         using var project = new TempProject();
         (Window window, ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        TextBox label = view.FindControl<TextBox>("EdgeLabelEditBox")!;
-        label.Focus();
-        label.Text = "쓰는 중";
-        Press(label);
+        TextBox message = view.FindControl<TextBox>("EdgeLockedMsgBox")!;
+        message.Focus();
+        message.Text = "쓰는 중";
+        Press(message);
 
-        Assert.True(label.IsFocused);
-        Assert.Equal("계속", Edge(session).OptionLabel);
+        Assert.True(message.IsFocused);
+        Assert.True(string.IsNullOrEmpty(Edge(session).LockedMessage));
 
         window.Close();
     });
@@ -105,6 +105,11 @@ public sealed class ChapterInspectorReleaseTests
         Dispatcher.UIThread.RunJobs();
     }
 
+    /// <summary>해금조건 콤보 아래의 식 칸.</summary>
+    private static TextBox UnlockExpression(ChapterGraphView view) =>
+        Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(view.FindControl<StackPanel>("EdgeUnlockExpressionHost")!)
+            .OfType<TextBox>().Single();
+
     private static ChapterEdge Edge(AuthoringSession session) =>
         session.Editor.FindChapter("ch01")!.ToGraphModel("ch01").Edges.Single(edge =>
             edge.FromEpisodeId == "new01" && edge.ToEpisodeId == "new02");
@@ -122,6 +127,7 @@ public sealed class ChapterInspectorReleaseTests
 
         EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
         EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
+        session.Editor.UpdateEdge("ch01", "new01", "new02", conditionLabel: "신뢰", matchOptionLabel: "계속");   // 잠금 안내문 · 식 칸이 선다
         view.Refresh();
         Dispatcher.UIThread.RunJobs();
 
@@ -146,6 +152,7 @@ public sealed class ChapterInspectorReleaseTests
             ChapterDocument chapter = editor.EnsureChapter("ch01");
             chapter.Stats.Add(new ChapterStat("trust", 0, 0, 100));
             chapter.Stats.Add(new ChapterStat("anger", 0, 0, 100));
+            editor.AddChapterCondition("ch01", "신뢰", "trust >= 3");
             editor.EnsureChapterBoard("ch01");
 
             ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);

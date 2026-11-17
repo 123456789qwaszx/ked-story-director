@@ -30,35 +30,6 @@ public sealed class ChapterEditGateTests
     });
 
     [Fact]
-    public void 문구를_바꾼_직후에_고른_조건도_써진다() => HeadlessUi.Run(() =>
-    {
-        // 문구는 간선의 신원이다 — 한 번 고치면 손에 든 모델이 낡는다. 그 상태로 다음
-        // 저장을 부르면 간선을 못 찾아 조건이 조용히 안 써졌다(이 테스트가 잡았다).
-        using var project = new TempProject();
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        // 문구를 고쳐 Enter로 저장한다 — 문구는 간선의 신원이라 다음 저장이 그 간선을 새 열쇠로 찾아야 한다.
-        var label = view.FindControl<TextBox>("EdgeLabelEditBox")!;
-        label.Text = "혼자 문을 연다";
-        label.RaiseEvent(new Avalonia.Input.KeyEventArgs
-        {
-            RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
-            Key = Avalonia.Input.Key.Enter
-        });
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        view.FindControl<ComboBox>("EdgeVisibleCombo")!.SelectedItem = "지쳐있음";
-
-        ChapterEdge reread = Edge(session);
-
-        Assert.Equal("혼자 문을 연다", reread.OptionLabel);
-        Assert.Equal("지쳐있음", reread.VisibleConditionLabel);
-    });
-
-    [Fact]
     public void 잠금_안내문은_초점을_잃을_때_써진다() => HeadlessUi.Run(() =>
     {
         // 자판 하나마다 저장하면 글자마다 되돌리기 한 칸이 쌓이고, 그 변경이 판을 다시 세워
