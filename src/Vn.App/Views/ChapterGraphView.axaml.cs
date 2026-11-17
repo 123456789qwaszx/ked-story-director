@@ -202,7 +202,8 @@ public partial class ChapterGraphView : UserControl
         (string title, string subtitle) = _inspector switch
         {
             InspectorMode.Project => ("화자", "프로젝트 전체의 캐스트 — 모든 챕터가 같은 목록을 씁니다"),
-            InspectorMode.Chapter => ($"챕터 · {_selectedChapterId}", "조건 · 스탯"),
+            // 머리글은 표시 이름이다(비면 ID) — 장면 · 에피소드 머리글과 같다(2026-11-17 소유자). ID는 아래 「챕터ID」 칸이 보인다.
+            InspectorMode.Chapter => ($"챕터 · {model?.ShownName ?? _selectedChapterId}", "조건 · 스탯"),
             InspectorMode.Scene => SceneHeader(model),
             _ when _selectedEpisodeId is { } episodeId => (EpisodeHeader(model, episodeId), string.Empty),
             // 머리글은 문구(판의 선 이름표와 같은 글), 부제는 양 끝 에피소드의 보이는 제목(2026-11-17 소유자 — ⛔ 머리글의

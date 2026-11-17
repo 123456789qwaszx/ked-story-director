@@ -456,7 +456,20 @@ public sealed class ChapterGraphEditingTests
 
         // 처음 고른 것은 챕터다 — 하이어아키의 챕터 줄을 고른 것과 같아 조건 · 스탯이 선다.
         Assert.True(view.FindControl<ScrollViewer>("ChapterSection")!.IsVisible);
-        Assert.Equal("챕터 · ch05", view.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("챕터 · ch05", view.FindControl<TextBlock>("InspectorTitle")!.Text);   // 표시 이름이 없으면 ID
+    });
+
+    [Fact]
+    public void 챕터_머리글은_표시_이름이고_ID는_챕터ID_칸에_있다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — 장면 · 에피소드 머리글처럼 챕터 머리글도 보이는 이름이다. ID는 아래 「챕터ID」 칸이 보인다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        session.Editor.UpdateChapterDisplayName("ch05", "다섯째 날");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("챕터 · 다섯째 날", view.FindControl<TextBlock>("InspectorTitle")!.Text);
     });
 
     [Fact]
