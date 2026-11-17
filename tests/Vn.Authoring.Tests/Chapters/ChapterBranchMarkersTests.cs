@@ -28,7 +28,9 @@ public sealed class ChapterBranchMarkersTests
             Assert.Single(ChapterBranchMarkers.For(editor.Project, "ch01"));
 
         Assert.Equal("root", marker.FromEpisodeId);
-        Assert.Equal(EpisodeNaming.EpisodeIdOf(branch), marker.ToEpisodeId);
+        Assert.Equal(caller.Id, marker.FromNodeId);
+        Assert.Equal(branch.Name, marker.ToName);
+        Assert.True(marker.ToBranchCard);   // 다녀갈 곳은 분기 카드다(2026-11-17)
         Assert.Equal(branch.Id, marker.ToNodeId);
         Assert.Equal(lineId, marker.LineId);
     }
@@ -84,6 +86,25 @@ public sealed class ChapterBranchMarkersTests
         caller.RequireExtension(lineId).DetourTargetNodeIds.Add(outsider.Id);
 
         Assert.Empty(ChapterBranchMarkers.For(editor.Project, "ch01"));
+    }
+
+    [Fact]
+    public void 분기_카드가_또_들르면_출발은_그_분기_카드다()
+    {
+        (ProjectEditor editor, DialogueNode caller) = World();
+        DialogueNode first = editor.AddBranchMarker(caller.Id, caller.Script.ActiveLines.First().Id);
+        DialogueNode second = editor.AddBranchMarker(first.Id, first.Script.ActiveLines.First().Id);
+
+        ChapterBranchMarkers.Marker chained = ChapterBranchMarkers.For(editor.Project, "ch01")
+            .Single(marker => marker.ToNodeId == second.Id);
+
+        Assert.Equal(first.Id, chained.FromNodeId);
+        Assert.Null(chained.FromEpisodeId);
+
+        // 둘 다 집이 root다 — 사슬은 같은 집에 든다(대본 차례 — 분기 카드의 분기는 그 카드 바로 뒤).
+        Assert.Equal(
+            [(first.Id, "root"), (second.Id, "root")],
+            ChapterBranchCards.HomesOf(editor.Project, "ch01").Select(home => (home.Card.Id, home.EpisodeId)));
     }
 
     [Fact]

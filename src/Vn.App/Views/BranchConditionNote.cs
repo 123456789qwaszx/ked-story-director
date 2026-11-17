@@ -12,7 +12,7 @@ namespace Vn.App.Views;
 internal static class BranchConditionNote
 {
     /// <summary>어디서 정하는가.</summary>
-    internal const string Where = "조건은 [대본] 탭의 분기 카드 · 분기 선에서, 또는 [구성] 탭의 분기 선(점선)에서 고릅니다.";
+    internal const string Where = "조건은 [대본] 탭의 분기 카드 · 분기 선에서, 또는 [구성] 탭의 분기 선(점선) · 분기 카드 칩에서 고릅니다.";
 
     /// <summary>그 분기(다녀갈 카드)에 걸린 조건이 <b>식 미정</b>인가 — 그 챕터의 그 이름 조건이 식이 비었다.</summary>
     internal static bool IsUndecided(Vn.Authoring.Model.StoryProject project, string targetNodeId, string? label) =>

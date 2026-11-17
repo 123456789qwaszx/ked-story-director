@@ -55,51 +55,6 @@
           "sceneId": "교무실 앞"
         },
         {
-          "episodeId": "Festival_Wrapup_Remade",
-          "x": 506.43,
-          "y": 473.41,
-          "title": "Festival_Wrapup_Remade",
-          "dialogueEntry": "Festival_Wrapup_Remade",
-          "sceneId": "교실",
-          "allowUnreachable": true
-        },
-        {
-          "episodeId": "Festival_Wrapup_Sticker",
-          "x": 541.73,
-          "y": 554.73,
-          "title": "Festival_Wrapup_Sticker",
-          "dialogueEntry": "Festival_Wrapup_Sticker",
-          "sceneId": "교실",
-          "allowUnreachable": true
-        },
-        {
-          "episodeId": "Festival_Staffroom_Kasmi",
-          "x": 1100.92,
-          "y": 878.3,
-          "title": "Festival_Staffroom_Kasmi",
-          "dialogueEntry": "Festival_Staffroom_Kasmi",
-          "sceneId": "교무실 앞",
-          "allowUnreachable": true
-        },
-        {
-          "episodeId": "Festival_Staffroom_Praise",
-          "x": 880.92,
-          "y": 965.16,
-          "title": "Festival_Staffroom_Praise",
-          "dialogueEntry": "Festival_Staffroom_Praise",
-          "sceneId": "교무실 앞",
-          "allowUnreachable": true
-        },
-        {
-          "episodeId": "Festival_Staffroom_Pass",
-          "x": 829.6,
-          "y": 1114.77,
-          "title": "Festival_Staffroom_Pass",
-          "dialogueEntry": "Festival_Staffroom_Pass",
-          "sceneId": "교무실 앞",
-          "allowUnreachable": true
-        },
-        {
           "episodeId": "Festival_Add",
           "x": 526.5,
           "y": 241.44,

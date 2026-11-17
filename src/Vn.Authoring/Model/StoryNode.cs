@@ -133,6 +133,14 @@ public sealed class DialogueNode : StoryNode
     public Script.ScriptDocument Script { get; set; } = new();
 
     /// <summary>
+    /// <b>분기 카드인가</b> (2026-11-17 · <c>docs/work-orders/branch-card-orders.md</c>) — 다른 카드 대사 중의 분기점(<c>&lt;&lt;detour&gt;&gt;</c>)으로
+    /// 들렀다 <b>돌아오는</b> 카드. 챕터의 에피소드가 아니다 — 게임의 「지금 에피소드」가 되지 않으므로 선택지 칸이 없고 진행 JSON에 실리지 않는다
+    /// (Yarn 노드만). 「분기 추가」와 빈 곳에 놓은 분기점이 세운다. 만들 때 정하는 저장된 신원이다(판 파일의 <c>branchCard</c>).
+    /// ⛔ R7 결정 ⑤(2026-09-17 — 판의 카드는 전부 에피소드)를 분기 카드에 한해 뒤집었다: 분기로 들른 카드의 선택지는 게임에 나오지 않는다.
+    /// </summary>
+    public bool IsBranchCard { get; set; }
+
+    /// <summary>
     /// 이 노드가 <b>어느 에피소드인가</b>를 적어 둔 표식.
     ///
     /// <b>2026-09-17까지 이름이 <c>ExcelEpisodeId</c>였고, 그 이름이 두 번 거짓이 됐다.</b>

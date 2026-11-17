@@ -538,7 +538,11 @@ public static class GraphProjectionBuilder
             }
         }
 
-        return new SceneMap(chapter, scenes, sceneOf);
+        // 분기 카드는 집(부르는 에피소드)의 장면에 든다 — 저장하지 않고 연결에서 읽는다(2026-11-17).
+        var homeOf = ChapterBranchCards.HomesOf(project, chapter.ChapterId)
+            .ToDictionary(home => home.Card.Id, home => home.EpisodeId, StringComparer.Ordinal);
+
+        return new SceneMap(chapter, scenes, sceneOf, homeOf);
     }
 
     /// <summary>
@@ -610,22 +614,32 @@ public static class GraphProjectionBuilder
     /// 노드 → 에피소드는 <b>표식이 먼저고 없으면 이름이다</b> — EpisodeNaming 한 벌과 같아야 한다(아니면 같은 에피소드를
     ///   화면마다 다르게 짚는다).
     /// </summary>
+    /// <param name="HomeOfBranchCard">분기 카드 → 집(부르는 에피소드) — <see cref="ChapterBranchCards.HomesOf"/>.</param>
     private sealed record SceneMap(
         ChapterDocument Chapter,
         IReadOnlyList<ChapterScene> Scenes,
-        IReadOnlyDictionary<string, string> SceneOfEpisode)
+        IReadOnlyDictionary<string, string> SceneOfEpisode,
+        IReadOnlyDictionary<string, string> HomeOfBranchCard)
     {
         public string? EpisodeOf(StoryNode node) => EpisodeOf(node as DialogueNode, node.Name);
 
-        public string? SceneOf(StoryProject project, string nodeId, string nodeName) =>
-            EpisodeOf(project.FindNode(nodeId) as DialogueNode, nodeName) is { } episodeId
-                ? SceneOfEpisode[episodeId]
-                : null;
+        /// <summary>그 카드가 든 장면 — 에피소드면 제 장면, 분기 카드면 집의 장면.</summary>
+        public string? SceneOf(StoryProject project, string nodeId, string nodeName)
+        {
+            DialogueNode? dialogue = project.FindNode(nodeId) as DialogueNode;
+            string? episodeId = dialogue is { IsBranchCard: true }
+                ? HomeOfBranchCard.GetValueOrDefault(nodeId)
+                : EpisodeOf(dialogue, nodeName);
+
+            return episodeId is not null ? SceneOfEpisode.GetValueOrDefault(episodeId) : null;
+        }
 
         private string? EpisodeOf(DialogueNode? dialogue, string nodeName) =>
-            dialogue is { MarkedEpisodeId: { } marked } && SceneOfEpisode.ContainsKey(marked)
-                ? marked
-                : SceneOfEpisode.ContainsKey(nodeName) ? nodeName : null;
+            dialogue is { IsBranchCard: true }
+                ? null
+                : dialogue is { MarkedEpisodeId: { } marked } && SceneOfEpisode.ContainsKey(marked)
+                    ? marked
+                    : SceneOfEpisode.ContainsKey(nodeName) ? nodeName : null;
     }
 
     private static GraphPosition ProxyPosition(StoryFile file, int fileIndex)

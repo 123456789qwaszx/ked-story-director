@@ -76,10 +76,15 @@ public sealed class RuntimeSampleTests
             ["Festival_Staffroom_Pass"] = "성실 3 미만 · 요령 3 미만",
         };
 
+        // 다섯은 분기 카드다(2026-11-17) — 에피소드가 아니라 진행 JSON에 없다.
+        StoryFile board = EpisodeNaming.BoardOf(project, "festival_eve")!;
+
         foreach ((string branch, string? label) in expected)
         {
-            DialogueNode card = EpisodeNaming.CardFor(project, "festival_eve", branch)!;
+            DialogueNode card = board.Nodes.OfType<DialogueNode>().Single(node => node.Name == branch);
+            Assert.True(card.IsBranchCard, branch);
             Assert.Equal(label, BranchEntryCondition.Read(project, card.Id).Label);
+            Assert.DoesNotContain(Assert.Single(project.Chapters).Episodes, episode => episode.EpisodeId == branch);
         }
 
         IReadOnlyList<ChapterBranchMarkers.Marker> markers = ChapterBranchMarkers.For(project, "festival_eve");

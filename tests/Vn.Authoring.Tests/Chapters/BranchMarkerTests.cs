@@ -4,6 +4,7 @@ using Vn.Authoring.Editing;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
+using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 
 namespace Vn.Authoring.Tests.Chapters;
@@ -100,7 +101,7 @@ public sealed class BranchMarkerTests
         editor.Project.EnumerateNodes().OfType<DialogueNode>()
             .First(node => node.Name == "곁가지");
 
-    /// <summary>대사 한 줄짜리 에피소드 노드와, 다녀올 자유 씬 하나.</summary>
+    /// <summary>대사 한 줄짜리 에피소드 노드와, 다녀올 분기 카드 하나(「곁가지」 — 아직 아무도 부르지 않는다).</summary>
     private static (ProjectEditor Editor, DialogueNode Node, string LineId) World()
     {
         var project = new StoryProject();
@@ -113,9 +114,11 @@ public sealed class BranchMarkerTests
         DialogueNode node = editor.AddDialogueNode(fileId, 0, 0, "root");
         node.MarkedEpisodeId = "root";
 
-        editor.AddDialogueNode(fileId, 400, 0, "곁가지");
-
         string lineId = node.Script.ActiveLines.First().Id;
+
+        // 분기 카드는 「분기 추가」로만 선다 — 세우고 분기점만 걷으면 판에 남는다.
+        DialogueNode side = editor.AddBranchMarker(node.Id, lineId, name: "곁가지");
+        editor.RemoveBranchMarker(node.Id, lineId, side.Id);
 
         return (editor, node, lineId);
     }
@@ -155,7 +158,7 @@ public sealed class BranchMarkerTests
     // ── 「분기 추가」 (R7 P-5, 편집 명령) ───────────────────────────────────
 
     [Fact]
-    public void 한_번에_표식과_에피소드가_함께_선다()
+    public void 한_번에_표식과_분기_카드가_함께_선다()
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
 
@@ -164,10 +167,10 @@ public sealed class BranchMarkerTests
         Assert.Equal([made.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
         Assert.Single(Ports(editor, node), port => port.Kind == ExitPortKind.Detour);
 
-        // ⚠ 뒤집힌 자리다 (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는 자유 씬이라 표식이 없었다 —
-        //    이제 자유 씬이라는 종류가 없으므로 다녀오는 곳도 <b>그냥 에피소드</b>다.
-        Assert.Equal(made.Name, made.MarkedEpisodeId);
-        Assert.Contains(
+        // 분기 카드다(2026-11-17) — 챕터의 에피소드가 아니다. ⛔ R7 ⑤(2026-09-17)부터 이날까지는 「그냥 에피소드」였다(표식 · 에피소드 목록).
+        Assert.True(made.IsBranchCard);
+        Assert.Null(made.MarkedEpisodeId);
+        Assert.DoesNotContain(
             editor.Project.Chapters.Single().Episodes,
             episode => string.Equals(episode.EpisodeId, made.Name, StringComparison.Ordinal));
 
@@ -178,51 +181,39 @@ public sealed class BranchMarkerTests
     }
 
     [Fact]
-    public void 다녀오는_에피소드는_출발과_같은_장면에_선다()
+    public void 분기_카드는_장면을_저장하지_않는다()
     {
-        // 곁가지는 제 본줄 옆에 있어야 판에서 읽힌다 — 장면을 안 주면 `장면 밖`으로 밀려
-        // 챕터 프레임 바깥에 혼자 선다.
+        // 분기 카드의 장면은 부르는 에피소드를 따라 읽는다(판의 장면 테두리 · 대사 Yarn · 장면 파일 — 그 규칙은 투영과 내보내기의 시험이 본다).
+        // 저장해 두면 부르는 쪽 장면이 바뀔 때 둘이 갈린다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         editor.UpdateEpisode("ch01", "root", sceneId: "sc_아침");
 
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
 
-        Assert.Equal(
-            "sc_아침",
-            editor.Project.Chapters.Single().Episodes
-                .Single(episode => string.Equals(episode.EpisodeId, made.Name, StringComparison.Ordinal))
-                .SceneId);
+        Assert.DoesNotContain(editor.Project.Chapters.Single().Episodes, episode => episode.EpisodeId == made.Name);
     }
 
     [Fact]
-    public void 다녀오는_에피소드는_도달_불가로_울지_않는다()
+    public void 분기_카드는_도달성_오류도_경고도_없다()
     {
-        // 들어오는 간선이 없는 것이 맞다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다. 도달성 증명(런타임의 오라클)은
-        //    고치지 않고, 검증이 그 결과를 실제 분기 연결과 함께 읽는다(ChapterBranchReach — 「분기로 들어온다」 알림).
-        //    ⛔ 2026-11-17 전에는 여기서 `도달불가 허용` 깃발을 달았다 — 만들 때 붙는 깃발이라 실제 연결과 따로 놀았다(소유자 보고:
-        //    새 에피소드를 분기점에 이으면 거짓 오류가 났다). 이제 깃발은 달지 않는다.
+        // 분기 카드는 에피소드가 아니라 도달성 증명(런타임의 오라클 — 에피소드와 간선만) 밖이다. 도달할 수 있는 에피소드(root — 시작)가
+        // 부르므로 분기 카드 검증(ChapterBranchCards)도 말이 없다. ⛔ 2026-11-17 전에는 에피소드로 세우고 `도달불가 허용` 깃발로 오류를 낮췄다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
 
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
+        made.Script.RequireLocale(made.Script.PrimaryLocale).Entries[made.Script.ActiveLines.First().Id] = new LocalizedLine("라루", "들렀다 간다");
         ChapterDocument chapter = editor.Project.Chapters.Single();
 
-        Assert.False(chapter.Episodes
-            .Single(episode => string.Equals(episode.EpisodeId, made.Name, StringComparison.Ordinal))
-            .AllowUnreachable);
-
         ChapterValidationResult result = ChapterValidator.Validate(chapter.ToGraphModel(chapter.ChapterId), editor.Project);
-        Assert.DoesNotContain(result.All, item =>
-            item.EpisodeId == made.Name && item.Code == ChapterDiagnosticCode.EpisodeUnreachable);
-        Assert.Contains(result.All, item =>
-            item.EpisodeId == made.Name && item.Code == ChapterDiagnosticCode.EpisodeEnteredByBranch &&
-            item.Severity == ChapterDiagnosticSeverity.Info);
+
+        Assert.DoesNotContain(result.All, item => item.Message.Contains(made.Name, StringComparison.Ordinal));
     }
 
     [Fact]
-    public void 손으로_세운_카드는_도달_불가로_운다()
+    public void 손으로_세운_카드는_에피소드고_도달_불가로_운다()
     {
-        // ⚠ 「분기 추가」와 가르는 자리다. 작가가 판에 그냥 세운 카드는 <b>아직 안 이은 것</b>
-        //    이므로 짚어 줘야 한다 — 허용을 기본값으로 두면 고아 에피소드가 조용히 쌓인다.
+        // 작가가 판에 그냥 세운 카드는 <b>에피소드</b>이고 아직 안 이은 것이므로 짚어 줘야 한다 — 허용을 기본값으로 두면 고아 에피소드가
+        //    조용히 쌓인다. 분기 카드는 「분기 추가」 · 빈 곳에 놓은 분기점으로만 선다.
         (ProjectEditor editor, _, _) = World();
 
         DialogueNode made = editor.AddDialogueNode(
@@ -234,14 +225,14 @@ public sealed class BranchMarkerTests
     }
 
     [Fact]
-    public void 다녀오는_에피소드도_아래에_선택지_세_칸을_가진다()
+    public void 분기_카드에는_선택지_칸이_없다()
     {
-        // 소유자: "이 자유씬 역시 에피소드 노드이기에 아래쪽으로 선택지 3개가 뚫려 있는 상태" —
-        // 별도 기계가 아니라 <b>에피소드 선택지 3칸 바로 그것</b>이다(결정 ⑤).
+        // 분기로 들른 카드의 선택지는 게임에 나오지 않는다 — 런타임은 지금 에피소드의 대사를 끝까지 튼 뒤 지금 에피소드의 선택지를 띄운다
+        // (2026-11-17 소유자). ⛔ R7 ⑤(2026-09-17)부터 이날까지는 「에피소드 선택지 3칸 바로 그것」이었다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
 
-        Assert.Equal(3, Graph.GraphProjectionBuilder
+        Assert.Equal(0, Graph.GraphProjectionBuilder
             .Build(editor.Project, new HashSet<string>(editor.Project.Files.Select(file => file.Id)))
             .Items.OfType<Graph.ExpandedNodeProjection>()
             .Single(item => string.Equals(item.NodeId, made.Id, StringComparison.Ordinal))
@@ -324,6 +315,74 @@ public sealed class BranchMarkerTests
     }
 
     [Fact]
+    public void 분기점은_에피소드에_잇지_않는다()
+    {
+        // 들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 나오지 않는다(2026-11-17) — 분기점은 분기 카드에만 잇는다. 줄로 이어도,
+        // 포트로 이어도, 이어지지 않은 분기점을 이어도 같다. 아무것도 바뀌지 않는다(되돌리기 칸도 없다).
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
+        editor.AddEpisode("ch01", "다음", title: "다음", 600, 0);
+        DialogueNode episode = EpisodeNaming.CardFor(editor.Project, "ch01", "다음")!;
+        long before = editor.Revision;
+
+        Assert.False(editor.CanBranchTo(episode.Id));
+        Assert.True(editor.CanBranchTo(made.Id));
+
+        editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, episode.Id);
+        editor.SetExitTarget(Ports(editor, node).Single(port => port.TargetNodeId == made.Id), episode.Id);
+
+        Assert.Equal([made.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
+        Assert.Equal(before, editor.Revision);
+    }
+
+    [Fact]
+    public void 이어지지_않은_분기점을_빈_곳에_놓으면_새_분기_카드가_선다_되돌리기_한_칸()
+    {
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
+        editor.SetExitTarget(Ports(editor, node).Single(port => port.TargetNodeId == made.Id), null);
+        ExitPort open = Ports(editor, node).Single(port => port.IsOpenDetour);
+        long before = editor.Revision;
+
+        DialogueNode created = editor.AddBranchCardAt(open, 900, 300)!;
+
+        Assert.True(created.IsBranchCard);
+        Assert.Equal((900d, 300d), (created.Layout.X, created.Layout.Y));
+        Assert.Equal([created.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
+        Assert.DoesNotContain(Ports(editor, node), port => port.IsOpenDetour);
+        Assert.Equal(before + 1, editor.Revision);
+
+        editor.Undo();
+        Assert.Null(editor.Project.FindNode(created.Id));
+        Assert.Single(Ports(editor, (DialogueNode)editor.Project.FindNode(node.Id)!), port => port.IsOpenDetour);
+
+        // 이어진 분기점이면 아무것도 안 한다.
+        (ProjectEditor other, DialogueNode otherNode, string otherLine) = World();
+        DialogueNode linked = other.AddBranchMarker(otherNode.Id, otherLine);
+        Assert.Null(other.AddBranchCardAt(Ports(other, otherNode).Single(port => port.TargetNodeId == linked.Id), 0, 0));
+    }
+
+    [Fact]
+    public void 분기_카드는_저장하고_다시_열어도_분기_카드고_에피소드로_올리지_않는다()
+    {
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
+
+        string text = StoryFileJson.Write(editor.Project.FindFileContainingNode(made.Id)!);
+        Assert.Contains("\"branchCard\": true", text, StringComparison.Ordinal);
+        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(text, "branchCard").Count - 1);   // 곁가지와 이것 — 에피소드 카드에는 안 쓴다
+
+        StoryProject reopened = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project));
+        Assert.True(((DialogueNode)reopened.FindNode(made.Id)!).IsBranchCard);
+
+        // 열 때 판의 카드를 에피소드로 올리는 자리(LiftFreeScenes)가 분기 카드를 지나친다.
+        var again = new ProjectEditor(reopened);
+        again.EnsureChapterBoard("ch01");
+        Assert.DoesNotContain(again.Project.Chapters.Single().Episodes, episode => episode.EpisodeId == made.Name);
+        Assert.Null(EpisodeNaming.CardFor(again.Project, "ch01", made.Name));
+    }
+
+    [Fact]
     public void 같은_줄에_같은_곳은_두_번_들지_않는다()
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
@@ -399,21 +458,19 @@ public sealed class BranchMarkerTests
     // ── 「분기 지우기」 (2026-10-29 소유자) ─────────────────────────────────
 
     [Fact]
-    public void 분기_지우기는_분기만_걷고_함께_선_카드와_에피소드는_남긴다()
+    public void 분기_지우기는_분기만_걷고_함께_선_분기_카드는_남긴다()
     {
         // 2026-11-17 소유자 — 같은 단추가 카드의 출신(함께 선 것 · 사람이 이은 것)에 따라 카드를 지우기도 남기기도 하면 결과를
         //    미리 알 수 없다. 분기 지우기는 분기점과 선만 걷는다. (2026-10-29에는 함께 선 카드도 걷었다.)
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
-        string episodeId = EpisodeNaming.EpisodeIdOf(made);
 
         BranchMarkerRemoval removal = Assert.IsType<BranchMarkerRemoval>(editor.RemoveBranchMarker(node.Id, lineId, made.Id));
 
         Assert.Equal(EpisodeNaming.ShownNameOf(editor.Project, made), removal.KeptNodeName);
         Assert.Contains("판에 남아 있습니다", removal.Describe(), StringComparison.Ordinal);
         Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
-        Assert.NotNull(editor.Project.FindNode(made.Id));
-        Assert.Contains(editor.Project.Chapters.Single().Episodes, episode => episode.EpisodeId == episodeId);
+        Assert.True(((DialogueNode)editor.Project.FindNode(made.Id)!).IsBranchCard);
         Assert.DoesNotContain(Ports(editor, node), port => port.Kind == ExitPortKind.Detour);
     }
 
@@ -429,29 +486,11 @@ public sealed class BranchMarkerTests
         // 되돌리기는 스냅샷을 새로 푼다 — 노드는 Id로 다시 찾는다.
         var restored = (DialogueNode)editor.Project.FindNode(node.Id)!;
         Assert.Equal([made.Id], restored.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
-        Assert.NotNull(editor.Project.FindNode(made.Id));
-        Assert.Contains(
-            editor.Project.Chapters.Single().Episodes,
-            episode => episode.EpisodeId == EpisodeNaming.EpisodeIdOf(made));
+        Assert.True(((DialogueNode)editor.Project.FindNode(made.Id)!).IsBranchCard);
     }
 
     [Fact]
-    public void 다른_곳에서도_들어오는_에피소드는_남기고_표식만_지운다()
-    {
-        // 챕터의 길이 그 에피소드로 들어온다 — 분기 하나 지우다 이어 쓰는 에피소드를 걷으면 안 된다.
-        (ProjectEditor editor, DialogueNode node, string lineId) = World();
-        DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
-        editor.AddEdge("ch01", "root", EpisodeNaming.EpisodeIdOf(made), optionLabel: "따라간다");
-
-        BranchMarkerRemoval removal = editor.RemoveBranchMarker(node.Id, lineId, made.Id)!;
-
-        Assert.Equal(EpisodeNaming.ShownNameOf(editor.Project, made), removal.KeptNodeName);
-        Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
-        Assert.NotNull(editor.Project.FindNode(made.Id));
-    }
-
-    [Fact]
-    public void 다른_분기도_다녀가는_에피소드는_남긴다()
+    public void 다른_분기도_다녀가는_분기_카드는_남는다()
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);

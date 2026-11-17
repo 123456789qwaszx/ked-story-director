@@ -144,7 +144,8 @@ public sealed partial class ProjectEditor
         string? name,
         string? sceneId = null,
         string? title = null,
-        (double X, double Y)? episodePosition = null)
+        (double X, double Y)? episodePosition = null,
+        bool branchCard = false)
     {
         StoryFile file = RequireFile(fileId);
 
@@ -157,7 +158,8 @@ public sealed partial class ProjectEditor
                 ? NextEpisodeId(board)
                 : NextName("장면")))
         {
-            Layout = new NodeLayout { X = x, Y = y }
+            Layout = new NodeLayout { X = x, Y = y },
+            IsBranchCard = branchCard
         };
 
         if (Project.FindNode(created.Id) is not null)
@@ -168,8 +170,10 @@ public sealed partial class ProjectEditor
         ScriptDocument script = created.Script;
         var firstLine = new ScriptLine(_newLineId());
 
-        (ChapterDocument? chapter, ChapterEpisode? episode) =
-            NewEpisodeFor(file, created, sceneId, title, episodePosition);
+        // 분기 카드는 에피소드가 아니다 — 챕터에 에피소드를 짓지 않는다(장면도 부르는 에피소드를 따라 읽는다).
+        (ChapterDocument? chapter, ChapterEpisode? episode) = branchCard
+            ? (null, null)
+            : NewEpisodeFor(file, created, sceneId, title, episodePosition);
 
         return (created, episode, () =>
         {
@@ -184,14 +188,6 @@ public sealed partial class ProjectEditor
             }
         });
     }
-
-    /// <summary>
-    /// 이 노드가 선 <b>장면</b>. 챕터 판이 아니거나 아직 에피소드가 없으면 <c>null</c>이다.
-    /// </summary>
-    private string? SceneOfNode(StoryFile file, DialogueNode node) =>
-        ChapterOfBoard(file) is { } chapter && EpisodeNaming.EpisodeFor(chapter, node) is { } episode
-            ? episode.SceneId
-            : null;
 
     /// <summary>이 판이 곧 챕터라면 그 챕터 — 규칙은 <see cref="EpisodeNaming"/>이 갖는다.</summary>
     private ChapterDocument? ChapterOfBoard(StoryFile file) =>
@@ -269,9 +265,9 @@ public sealed partial class ProjectEditor
     /// 그 값은 <b>다녀갈 에피소드의 첫머리</b>에 적힌다
     /// (<see cref="Chapters.BranchEntryCondition"/>). 부르는 쪽 대본은 그대로다.
     ///
-    /// 다녀올 카드는 <b>그냥 에피소드다</b>.
-    /// 진행에 실리며, 아래에 선택지 3칸이 뚫린다. <b>출발과 같은
-    /// 장면</b>에 둔다 — 곁가지는 제 본줄 옆에 있어야 판에서 읽힌다.
+    /// 다녀올 카드는 <b>분기 카드</b>다(<see cref="DialogueNode.IsBranchCard"/> — 2026-11-17). 에피소드가 아니라 진행에 실리지 않고 선택지 칸이
+    /// 없다 — 들렀다 돌아오는 카드라 게임의 「지금 에피소드」가 되지 않는다. 장면은 저장하지 않고 부르는 에피소드를 따라 읽는다.
+    /// ⛔ 2026-09-17(R7 ⑤)부터 이날까지는 「그냥 에피소드」였다(선택지 3칸, 진행에 실림).
     ///
     /// 노드·대본·표식이 <b>한 번의 변경</b>이다. 갈라 두면 되돌리기 한 번에 표식만 사라져
     /// <b>아무도 안 부르는 씬</b>이 판에 남는다.
@@ -299,20 +295,58 @@ public sealed partial class ProjectEditor
         // 분기로 다녀갈 카드는 원본의 <b>오른쪽</b>에 선다. 아래는 선택지로 가는 다음 에피소드의 자리다.
         (double x, double y) = Graph.NodePlacement.BesideOf(file, source);
 
-        // 들어오는 간선이 없다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다. 도달성 증명(런타임의 오라클)은 그대로
-        //    「간선으로는 못 간다」고 하고, 검증이 그 결과를 분기 연결과 함께 읽는다(ChapterBranchReach — 분기로 들어온다는 알림).
-        //    ⛔ 전에는 여기서 `도달불가 허용` 깃발을 달았다(2026-11-17에 걷었다) — 만들 때 붙는 깃발이라 실제 연결과 따로 놀았다.
+        // 분기 카드 — 에피소드를 짓지 않는다. ⛔ 전에는 에피소드로 세우고 `도달불가 허용` 깃발을 달아 「경로 없음」을 낮췄다 —
+        //    만들 때 붙는 깃발이라 실제 연결과 따로 놀았다(2026-11-17 소유자 보고).
         (DialogueNode created, _, Action attach) = NewDialogueNodeCore(
             file.Id,
             x,
             y,
             name ?? NextName("분기"),
-            SceneOfNode(file, source));
+            branchCard: true);
 
         Mutate(() =>
         {
             attach();
             source.RequireExtension(beforeLineId).DetourTargetNodeIds.Add(created.Id);
+        });
+
+        return created;
+    }
+
+    /// <summary>
+    /// 그 카드에 분기점을 이을 수 있는가 — 챕터 판에서는 <b>분기 카드에만</b>(2026-11-17). 챕터가 아닌 판(작가의 낙서판)에는 에피소드가 없어
+    /// 가리지 않는다. 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다.
+    /// </summary>
+    public bool CanBranchTo(string nodeId) =>
+        Project.FindNode(nodeId) is DialogueNode target &&
+        (target.IsBranchCard ||
+         Project.FindFileContainingNode(nodeId) is not { } file ||
+         ChapterOfBoard(file) is null);
+
+    /// <summary>
+    /// <b>이어지지 않은 분기점을 판의 빈 곳에 놓았다</b> — 그 자리에 새 분기 카드를 세우고 잇는다(2026-11-17 소유자). 카드와 연결이 되돌리기 한
+    /// 칸이다. 분기 카드를 지운 뒤 다시 이을 때 「분기 추가」로 분기점을 하나 더 만들지 않아도 된다.
+    /// </summary>
+    /// <returns>세운 카드. 그 포트가 이어지지 않은 분기점이 아니면 <c>null</c>.</returns>
+    public DialogueNode? AddBranchCardAt(ExitPort openPoint, double x, double y)
+    {
+        ArgumentNullException.ThrowIfNull(openPoint);
+
+        if (!openPoint.IsOpenDetour ||
+            openPoint.BranchOpenLineId is not { } lineId ||
+            Project.FindFileContainingNode(openPoint.NodeId) is not { } file)
+        {
+            return null;
+        }
+
+        DialogueNode? created = null;
+
+        Batch(() =>
+        {
+            (DialogueNode card, _, Action attach) = NewDialogueNodeCore(file.Id, x, y, NextName("분기"), branchCard: true);
+            Mutate(attach);
+            ConnectOpenDetour(openPoint.NodeId, lineId, openPoint.OpenOrdinal!.Value, card.Id);
+            created = card;
         });
 
         return created;
@@ -592,6 +626,12 @@ public sealed partial class ProjectEditor
         // 분기는 줄 하나에 여럿이라 <b>그 분기</b>(지금 가는 곳)를 바꾼다 — 줄만 주면 어느 것인지 모른다.
         if (port.Kind == ExitPortKind.Detour && port.BranchOpenLineId is { } lineId)
         {
+            // 분기점은 분기 카드에만 잇는다(2026-11-17) — 에피소드에 이으면 들렀다 돌아오는 동안 그 에피소드의 선택지가 게임에 안 나온다.
+            if (targetNodeId is not null && !CanBranchTo(targetNodeId))
+            {
+                return;
+            }
+
             if (port.IsOpenDetour)
             {
                 ConnectOpenDetour(port.NodeId, lineId, port.OpenOrdinal!.Value, targetNodeId);
@@ -656,7 +696,11 @@ public sealed partial class ProjectEditor
         // 포트(<see cref="ExitPort"/>)로 부른다.
         if (kind == ExitPortKind.Detour)
         {
-            SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
+            if (targetNodeId is null || CanBranchTo(targetNodeId))
+            {
+                SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
+            }
+
             return;
         }
 

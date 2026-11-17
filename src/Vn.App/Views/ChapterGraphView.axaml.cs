@@ -200,7 +200,9 @@ public partial class ChapterGraphView : UserControl
             // 「출발 → 도착」 ID는 걷었다. 문구를 따로 보이던 읽기 전용 칸이 고칠 수 있는 칸처럼 보여서다).
             _ when _selectedEdgeKey is { } edge => ($"선택지 · {EdgeHeaderText(model, edge)}",
                 $"{model?.FindEpisode(edge.From)?.ShownTitle ?? edge.From} → {model?.FindEpisode(edge.To)?.ShownTitle ?? edge.To}"),
-            _ when _selectedBranchKey is not null => ("분기", "다녀갈 에피소드에 들어갈 조건"),
+            _ when _selectedBranchCardId is { } chipId => ($"⑂ 분기 카드 · {BranchCardName(chipId)}",
+                "들렀다 돌아오는 카드 — 조건은 여기서, 대본은 [대본] 탭에서 고칩니다"),
+            _ when _selectedBranchKey is not null => ("분기", "다녀갈 분기 카드에 들어갈 조건"),
             _ when _selectedSlot is { } slot => ($"선택지 칸 · {slot.Episode}", "아직 길이 없는 칸"),
             _ => ("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다")
         };
@@ -1030,12 +1032,21 @@ public partial class ChapterGraphView : UserControl
             pair => DrawnAt(pair.Key, pair.Value),
             StringComparer.Ordinal);
 
-        GraphCanvas.Width = _placed.Count == 0
+        // 분기 카드 칩은 부르는 에피소드 곁에 붙는다 — 그 에피소드의 자리(끄는 중이면 임시 자리)를 따라간다.
+        PlaceBranchChips();
+
+        List<(double Right, double Bottom)> extents =
+        [
+            .. _placed.Values.Select(position => (position.X + CardWidth, position.Y + CardHeight)),
+            .. _chipPlaced.Values.Select(position => (position.X + BranchChipWidth, position.Y + BranchChipHeight))
+        ];
+
+        GraphCanvas.Width = extents.Count == 0
             ? CanvasMargin * 2
-            : _placed.Values.Max(position => position.X) + CardWidth + CanvasMargin;
-        GraphCanvas.Height = _placed.Count == 0
+            : extents.Max(extent => extent.Right) + CanvasMargin;
+        GraphCanvas.Height = extents.Count == 0
             ? CanvasMargin * 2
-            : _placed.Values.Max(position => position.Y) + CardHeight + CanvasMargin;
+            : extents.Max(extent => extent.Bottom) + CanvasMargin;
 
 
         // 에피소드별 보이는 선택지 = 문구가 붙은 나가는 간선들 (길 하나가 곧 선택지
@@ -1061,6 +1072,9 @@ public partial class ChapterGraphView : UserControl
         {
             DrawEpisode(model, episode);
         }
+
+        // 칩은 카드 위에 선다 — 카드 사이가 좁으면 옆 카드에 걸치는데, 그래도 읽히고 눌려야 한다(자리는 에피소드를 옮겨 낸다).
+        DrawBranchChips();
 
         ApplySelectionVisuals();
 
@@ -1094,11 +1108,16 @@ public partial class ChapterGraphView : UserControl
     /// 아니라 <b>반드시 한 번 다녀오는 통로</b>다. 분기점을 만들고 지우고 잇고 끊는 것은 [대본] 탭의 일이고, 여기서는
     /// 그것을 보이고 분기점 · 점선을 누르면 그 분기의 정보와 조건을 연다. 연결만 끊은 분기점도 속 빈 점으로 남아 보인다.
     ///
+    /// <b>다녀갈 곳은 분기 카드다</b>(2026-11-17 소유자) — 에피소드가 아니라 판에 따로 서지 않고, 부르는 에피소드 곁에 <b>작은 칩</b>으로
+    /// 붙는다(<see cref="PlaceBranchChips"/>). 점선은 분기점에서 그 칩으로 든다. 분기 카드가 또 들르면 칩의 옆변에도 분기점이 선다.
+    /// 에피소드로 이어진 분기(옛 데이터 — 검증이 오류로 짚는다)는 그 에피소드 카드로 든다.
+    ///
     /// ⚠ <b>옆변으로 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
     /// 선택지처럼 우측으로 붙이되"*) — 선택지가 아래변의 칸을 쓰므로 자리가 겹치지 않는다(포트 하나 =
     /// 선택지 하나, v9). <b>다녀갈 카드가 왼쪽에 있으면 왼변으로</b> 나간다(2026-10-30 소유자: *"자기가 나온
     /// 에피소드보다 왼쪽에 있어도 오른쪽으로만 나오는데, 그걸 연출그래프처럼 왼쪽에 있으면 왼쪽으로"*) —
-    /// 연출 그래프의 분기 포트와 같은 규칙 하나(<see cref="Vn.Authoring.Graph.EdgeSide.GoesLeft"/>)다.
+    /// 연출 그래프의 분기 포트와 같은 규칙 하나(<see cref="Vn.Authoring.Graph.EdgeSide.GoesLeft"/>)다. 칩은 집(먼저 부르는 에피소드)의
+    /// 오른쪽에 서므로, 다른 곳에서 같은 분기 카드를 부르는 분기점만 왼변으로 나갈 수 있다.
     /// </summary>
     private void DrawBranchMarkers()
     {
@@ -1110,6 +1129,9 @@ public partial class ChapterGraphView : UserControl
         _branchByKey.Clear();
         _branchBase.Clear();
         _branchKnobs.Clear();
+        _branchChips.Clear();
+        _chipBase.Clear();
+        _branchPoints = [];
 
         // 분기점은 카드 옆변에 선다 — 다녀갈 카드가 왼쪽이면 왼변, 아니면(이어지지 않은 분기점도) 오른변이다. 한 변에
         // 여럿이면 옆변 가운데를 중심으로 세로로 늘어선다(대본의 분기점처럼 점에서 선이 나간다).
@@ -1117,23 +1139,22 @@ public partial class ChapterGraphView : UserControl
             ChapterBranchMarkers.PointsFor(_session.Editor.Project, chapterId);
 
         foreach (IGrouping<(string From, bool Left), ChapterBranchMarkers.BranchPoint> side in points
-                     .Where(point => _placed.ContainsKey(point.FromEpisodeId))
-                     .GroupBy(point => (point.FromEpisodeId, GoesLeft(point))))
+                     .Where(point => FromRect(point) is not null)
+                     .GroupBy(point => (point.FromNodeId, GoesLeft(point))))
         {
-            (double X, double Y) from = _placed[side.Key.From];
+            Rect from = FromRect(side.First())!.Value;
             List<ChapterBranchMarkers.BranchPoint> stacked = side.ToList();
 
             for (int index = 0; index < stacked.Count; index++)
             {
                 ChapterBranchMarkers.BranchPoint point = stacked[index];
                 var at = new Point(
-                    side.Key.Left ? from.X : from.X + CardWidth,
-                    from.Y + (CardHeight / 2) + ((index - ((stacked.Count - 1) / 2.0)) * BranchPointGap));
+                    side.Key.Left ? from.X : from.Right,
+                    from.Y + (from.Height / 2) + ((index - ((stacked.Count - 1) / 2.0)) * BranchPointGap));
 
                 IBrush accent = BranchPalette.Accent(point.Port.PaletteIndex);
 
-                if (point.ToEpisodeId is { } toEpisode && _placed.TryGetValue(toEpisode, out (double X, double Y) to) &&
-                    point.Marker is { } marker)
+                if (point.Marker is { } marker && ToRect(point) is { } to)
                 {
                     DrawBranchLine(point, marker, at, to, accent);
                 }
@@ -1143,38 +1164,118 @@ public partial class ChapterGraphView : UserControl
                 GraphCanvas.Children.Add(knob);
             }
         }
+
+        _branchPoints = points;
     }
+
+    /// <summary>이번 그리기의 분기점들 — 칩의 색을 정할 때 다시 본다.</summary>
+    private IReadOnlyList<ChapterBranchMarkers.BranchPoint> _branchPoints = [];
+
+    /// <summary>분기 카드 칩들을 세운다 — 에피소드 카드를 그린 뒤에(위에) 선다.</summary>
+    private void DrawBranchChips()
+    {
+        foreach ((string nodeId, (double X, double Y) at) in _chipPlaced)
+        {
+            // 칩의 색은 그 분기 카드를 처음 부르는 분기점의 색이다 — [대본] 탭의 그 분기 포트 · 선과 같다.
+            int palette = _branchPoints.FirstOrDefault(point =>
+                string.Equals(point.Port.TargetNodeId, nodeId, StringComparison.Ordinal))?.Port.PaletteIndex ?? 0;
+            DrawBranchChip(nodeId, at, BranchPalette.Accent(palette));
+        }
+    }
+
+    /// <summary>
+    /// 분기 카드 칩의 자리 — 집(그 분기 카드를 먼저 부르는 에피소드 — <see cref="ChapterBranchCards.HomesOf"/>)의 오른쪽에 대본 차례로 세로로
+    /// 늘어선다. 분기 카드가 부르는 분기 카드는 한 칸 들여 선다. 자리를 저장하지 않는다 — 끌어 옮기지 않고 에피소드를 따라간다(소유자).
+    /// </summary>
+    private void PlaceBranchChips()
+    {
+        _chipPlaced = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+
+        if (_session is null || _selectedChapterId is not { } chapterId)
+        {
+            return;
+        }
+
+        IReadOnlyList<ChapterBranchMarkers.Marker> markers = ChapterBranchMarkers.For(_session.Editor.Project, chapterId);
+        var depth = new Dictionary<string, int>(StringComparer.Ordinal);
+        var count = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (BranchCardHome home in ChapterBranchCards.HomesOf(_session.Editor.Project, chapterId))
+        {
+            if (!_placed.TryGetValue(home.EpisodeId, out (double X, double Y) at))
+            {
+                continue;
+            }
+
+            List<ChapterBranchMarkers.Marker> calls = markers
+                .Where(marker => string.Equals(marker.ToNodeId, home.Card.Id, StringComparison.Ordinal))
+                .ToList();
+            int level = calls.Any(marker => string.Equals(marker.FromEpisodeId, home.EpisodeId, StringComparison.Ordinal))
+                ? 0
+                : calls.Where(marker => depth.ContainsKey(marker.FromNodeId))
+                    .Select(marker => depth[marker.FromNodeId] + 1)
+                    .DefaultIfEmpty(0)
+                    .Min();
+
+            depth[home.Card.Id] = level;
+            int index = count.GetValueOrDefault(home.EpisodeId);
+            count[home.EpisodeId] = index + 1;
+
+            _chipPlaced[home.Card.Id] = (
+                at.X + CardWidth + BranchChipOffset + (level * BranchChipIndent),
+                at.Y + (index * (BranchChipHeight + BranchChipGap)));
+        }
+    }
+
+    /// <summary>분기점이 선 카드의 네모 — 에피소드 카드 또는 분기 카드 칩. 판에 없으면 <c>null</c>.</summary>
+    private Rect? FromRect(ChapterBranchMarkers.BranchPoint point) =>
+        point.FromEpisodeId is { } episode && _placed.TryGetValue(episode, out (double X, double Y) card)
+            ? new Rect(card.X, card.Y, CardWidth, CardHeight)
+            : ChipRect(point.FromNodeId);
+
+    /// <summary>다녀갈 카드의 네모 — 분기 카드면 그 칩, 에피소드(옛 데이터)면 그 카드. 이어지지 않았거나 판에 없으면 <c>null</c>.</summary>
+    private Rect? ToRect(ChapterBranchMarkers.BranchPoint point) =>
+        point.Port.TargetNodeId is not { } target
+            ? null
+            : point.ToBranchCard
+                ? ChipRect(target)
+                : point.ToName is { } episode && _placed.TryGetValue(episode, out (double X, double Y) card)
+                    ? new Rect(card.X, card.Y, CardWidth, CardHeight)
+                    : null;
+
+    private Rect? ChipRect(string nodeId) =>
+        _chipPlaced.TryGetValue(nodeId, out (double X, double Y) chip)
+            ? new Rect(chip.X, chip.Y, BranchChipWidth, BranchChipHeight)
+            : null;
 
     /// <summary>분기점이 설 변 — 다녀갈 카드가 이 카드보다 왼쪽이면 왼변이다. 이어지지 않은 분기점은 오른변이다.</summary>
     private bool GoesLeft(ChapterBranchMarkers.BranchPoint point) =>
-        point.ToEpisodeId is { } to &&
-        _placed.TryGetValue(point.FromEpisodeId, out (double X, double Y) from) &&
-        _placed.TryGetValue(to, out (double X, double Y) target) &&
+        FromRect(point) is { } from &&
+        ToRect(point) is { } target &&
         Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, target.X);
 
     /// <summary>
-    /// 이어진 분기의 점선 — 분기점에서 나가 도착 카드의 <b>가까운 세로 변</b> 가운데로 든다(두 카드가 가로로 겹쳐 서도 선이
+    /// 이어진 분기의 점선 — 분기점에서 나가 도착(칩 · 카드)의 <b>가까운 세로 변</b> 가운데로 든다(둘이 가로로 겹쳐 서도 선이
     /// 카드를 관통하지 않는다). 1.6px 점선은 사람이 못 누르므로 굵은 누름 선을 겹친다 — 누르면 그 분기를 고른다(조건 칸).
     /// </summary>
     private void DrawBranchLine(
-        ChapterBranchMarkers.BranchPoint point, ChapterBranchMarkers.Marker marker, Point start, (double X, double Y) to,
-        IBrush accent)
+        ChapterBranchMarkers.BranchPoint point, ChapterBranchMarkers.Marker marker, Point start, Rect to, IBrush accent)
     {
         bool goesLeft = GoesLeft(point);
         double entryX = goesLeft
-            ? to.X + CardWidth <= start.X ? to.X + CardWidth : to.X
-            : start.X <= to.X ? to.X : to.X + CardWidth;
+            ? to.Right <= start.X ? to.Right : to.X
+            : start.X <= to.X ? to.X : to.Right;
 
         var line = new Line
         {
             StartPoint = start,
-            EndPoint = new Point(entryX, to.Y + (CardHeight / 2)),
+            EndPoint = new Point(entryX, to.Y + (to.Height / 2)),
             Stroke = accent,
             StrokeThickness = BranchThickness,
             StrokeDashArray = new AvaloniaList<double> { 5, 4 },
             IsHitTestVisible = false,
             // 화면 없는 검증이 "무엇이 그려졌는지"를 색·좌표로 역추론하지 않게 한다.
-            Tag = $"분기:{marker.FromEpisodeId}->{marker.ToEpisodeId}"
+            Tag = $"분기:{marker.FromEpisodeId ?? marker.FromNodeId}->{marker.ToName}"
         };
 
         GraphCanvas.Children.Add(line);
@@ -1201,6 +1302,63 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
+    /// 분기 카드 칩 — 「⑂ 이름」 한 줄. 누르면 인스펙터에 그 분기 카드(부르는 곳 · 조건 · 대본)가 선다. <b>읽기 전용</b>이다 — 끌어
+    /// 옮기지 않고(자리는 부르는 에피소드를 따라간다) 대본도 여기서 고치지 않는다. 고치는 것은 조건뿐이다(소유자).
+    /// </summary>
+    private void DrawBranchChip(string nodeId, (double X, double Y) at, IBrush accent)
+    {
+        if (_session?.Project.FindDialogue(nodeId) is not { } card)
+        {
+            return;
+        }
+
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, nodeId, _session.Definition);
+
+        var chip = new Border
+        {
+            Width = BranchChipWidth,
+            Height = BranchChipHeight,
+            Padding = new Thickness(7, 0),
+            CornerRadius = new CornerRadius(4),
+            BorderThickness = new Thickness(1.2),
+            BorderBrush = accent,
+            Background = new SolidColorBrush(Color.Parse("#F4F2FA")),
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+            Child = new TextBlock
+            {
+                Text = state.Label is { } label ? $"⑂ {card.Name} · {label}" : $"⑂ {card.Name}",
+                FontSize = 10.5,
+                Foreground = new SolidColorBrush(Color.Parse("#3B3F46")),
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            },
+            Tag = new BranchCardMark(nodeId, card.Name)
+        };
+
+        ToolTip.SetTip(chip,
+            $"분기 카드 「{card.Name}」 — 들렀다 돌아오는 카드입니다(선택지가 없고 진행 JSON에 실리지 않습니다). " +
+            BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label)) +
+            " 누르면 인스펙터에 조건과 대본이 열립니다. 대본은 [대본] 탭에서 고칩니다.");
+
+        chip.PointerPressed += (_, e) =>
+        {
+            if (!e.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
+            e.Handled = true; // 캔버스(빈 공간 = 선택 해제 · 범위 선택)까지 흘러가면 곧바로 풀린다
+            UiGuard.Run(_session, "분기 카드 선택", () => SelectBranchCard(nodeId));
+        };
+
+        _branchChips[nodeId] = chip;
+        _chipBase[nodeId] = (chip.BorderBrush, chip.BorderThickness);
+        Canvas.SetLeft(chip, at.X);
+        Canvas.SetTop(chip, at.Y);
+        GraphCanvas.Children.Add(chip);
+    }
+
+    /// <summary>
     /// 분기점 — 이어진 분기는 속이 찬 점, 연결만 끊은 분기점은 속 빈 점이다. 누르면 그 분기를 고른다 — 점선을 누른 것과
     /// 같은 분기 패널(어디서 → 어디로 · 조건)이 열린다. 여기서는 잇고 끊지 않는다 — 그것은 [대본] 탭의 일이다.
     /// </summary>
@@ -1210,7 +1368,7 @@ public partial class ChapterGraphView : UserControl
         {
             Width = BranchKnobRadius * 2,
             Height = BranchKnobRadius * 2,
-            Fill = point.ToEpisodeId is null ? Brushes.Transparent : accent,
+            Fill = point.ToName is null ? Brushes.Transparent : accent,
             Stroke = accent,
             StrokeThickness = 2,
             ZIndex = 50,
@@ -1219,7 +1377,7 @@ public partial class ChapterGraphView : UserControl
         };
         Canvas.SetLeft(knob, at.X - BranchKnobRadius);
         Canvas.SetTop(knob, at.Y - BranchKnobRadius);
-        ToolTip.SetTip(knob, point.ToEpisodeId is { } to
+        ToolTip.SetTip(knob, point.ToName is { } to
             ? $"분기 → {to} — 누르면 이 분기의 정보와 조건이 열린다(점선을 누른 것과 같다)."
             : "이어지지 않은 분기점 — 다녀갈 곳이 없어 지나간다. 잇고 끊는 것은 [대본] 탭에서 한다.");
 
@@ -2009,6 +2167,33 @@ public partial class ChapterGraphView : UserControl
     private readonly Dictionary<string, (ChapterBranchMarkers.BranchPoint Point, Ellipse Knob)> _branchKnobs =
         new(StringComparer.Ordinal);
 
+    /// <summary>분기 카드 칩의 크기 · 자리 (2026-11-17) — 부르는 에피소드 카드의 오른변에서 떨어져 세로로 늘어선다.</summary>
+    private const double BranchChipWidth = 150;
+    private const double BranchChipHeight = 24;
+    private const double BranchChipOffset = 34;
+    private const double BranchChipGap = 6;
+
+    /// <summary>분기 카드가 부르는 분기 카드는 이만큼 들여 선다.</summary>
+    private const double BranchChipIndent = 14;
+
+    /// <summary>
+    /// 분기 카드 칩이 지는 표 — 화면 테스트가 이것으로 찾는다. 글자 표가 아닌 것은 「글자 표를 진 Border = 에피소드 카드」를 깨지 않기
+    /// 위해서다(<see cref="EdgeLabelMark"/>와 같은 까닭).
+    /// </summary>
+    internal sealed record BranchCardMark(string NodeId, string Name);
+
+    /// <summary>이번 그리기의 분기 카드 칩 — 열쇠는 NodeId.</summary>
+    private readonly Dictionary<string, Border> _branchChips = new(StringComparer.Ordinal);
+
+    /// <summary>칩의 기본 테두리 — 선택이 풀리면 이리 돌아온다.</summary>
+    private readonly Dictionary<string, (IBrush? Brush, Thickness Thickness)> _chipBase = new(StringComparer.Ordinal);
+
+    /// <summary>이번 그리기의 칩 자리(여백 포함, 왼쪽 위). <see cref="PlaceBranchChips"/>가 채운다.</summary>
+    private Dictionary<string, (double X, double Y)> _chipPlaced = new(StringComparer.Ordinal);
+
+    /// <summary>고른 분기 카드(칩)의 NodeId.</summary>
+    private string? _selectedBranchCardId;
+
 
     /// <summary>지금 끌고 있는 카드. 없으면 <c>null</c>.</summary>
     private string? _draggingEpisodeId;
@@ -2471,6 +2656,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEpisodeId = episodeId;
         _selectedEdgeKey = null;
         _selectedBranchKey = null;
+        _selectedBranchCardId = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
         UnfoldChoices(); // 다른 노드로 넘어가면 선택지는 다시 모두 펼쳐진다
@@ -2493,6 +2679,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
         _selectedEpisodeId = null;
         _selectedBranchKey = null;
+        _selectedBranchCardId = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
         UnfoldChoices();
@@ -2510,6 +2697,7 @@ public partial class ChapterGraphView : UserControl
         FlushEdgeTyping();
         _grouped.Clear();
         _selectedBranchKey = branchKey;
+        _selectedBranchCardId = null;
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
         _selectedSlot = null;
@@ -2518,6 +2706,25 @@ public partial class ChapterGraphView : UserControl
         ApplySelectionVisuals();
         RefreshPropertyPanel();
         ShowInHierarchy(null);   // 분기는 하이어아키에 없다
+    }
+
+    /// <summary>
+    /// 분기 카드(칩) 하나를 고른다 — 인스펙터에 부르는 곳 · 조건(고친다) · 대본(읽기 전용)이 선다(2026-11-17 소유자).
+    /// </summary>
+    internal void SelectBranchCard(string? nodeId)
+    {
+        FlushEdgeTyping();
+        _grouped.Clear();
+        _selectedBranchCardId = nodeId;
+        _selectedBranchKey = null;
+        _selectedEpisodeId = null;
+        _selectedEdgeKey = null;
+        _selectedSlot = null;
+        _inspector = InspectorMode.Selection;
+        UnfoldChoices();
+        ApplySelectionVisuals();
+        RefreshPropertyPanel();
+        ShowInHierarchy(null);
     }
 
     /// <summary>
@@ -2532,6 +2739,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
         _selectedBranchKey = null;
+        _selectedBranchCardId = null;
         _inspector = InspectorMode.Selection;
         UnfoldChoices();
         ApplySelectionVisuals();
@@ -2571,6 +2779,19 @@ public partial class ChapterGraphView : UserControl
         {
             knob.Stroke = BranchPalette.Accent(point.Port.PaletteIndex);
             knob.StrokeThickness = 2;
+        }
+
+        foreach ((string id, Border chip) in _branchChips)
+        {
+            (IBrush? brush, Thickness thickness) = _chipBase[id];
+            chip.BorderBrush = brush;
+            chip.BorderThickness = thickness;
+        }
+
+        if (_selectedBranchCardId is { } chipId && _branchChips.TryGetValue(chipId, out Border? selectedChip))
+        {
+            selectedChip.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
+            selectedChip.BorderThickness = new Thickness(2.4);
         }
 
         foreach (Ellipse dot in _emptySlotDots.Values)
@@ -2661,7 +2882,7 @@ public partial class ChapterGraphView : UserControl
             branch is null &&
             _selectedBranchKey is { } openKey &&
             _branchKnobs.TryGetValue(openKey, out (ChapterBranchMarkers.BranchPoint Point, Ellipse _) knob) &&
-            knob.Point.ToEpisodeId is null
+            knob.Point.ToName is null
                 ? knob.Point
                 : null;
 
@@ -2669,12 +2890,15 @@ public partial class ChapterGraphView : UserControl
             ? picked
             : null;
 
+        // 고른 분기 카드(칩) — 판에서 사라졌으면(지웠다) 패널도 닫힌다.
+        string? branchCard = _selectedBranchCardId is { } chosen && _branchChips.ContainsKey(chosen) ? chosen : null;
+
         PropertyPanel.IsVisible = episode is not null;
         EdgePanel.IsVisible = edge is not null;
-        BranchPanel.IsVisible = branch is not null || openPoint is not null;
+        BranchPanel.IsVisible = branch is not null || openPoint is not null || branchCard is not null;
         SlotPanel.IsVisible = slot is not null;
         NoSelectionText.IsVisible = episode is null && edge is null && branch is null && openPoint is null && slot is null &&
-                                    _inspector != InspectorMode.Scene;
+                                    branchCard is null && _inspector != InspectorMode.Scene;
         ApplyInspector();
 
         if (slot is { } shownSlot && model is not null)
@@ -2689,6 +2913,10 @@ public partial class ChapterGraphView : UserControl
         else if (openPoint is not null)
         {
             RefreshOpenBranchPanel(model, openPoint);
+        }
+        else if (branchCard is not null)
+        {
+            RefreshBranchCardPanel(model, branchCard);
         }
 
         (string? Episode, (string From, string To, string Label)? Edge) selection =
@@ -2828,15 +3056,21 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>그 에피소드 카드의 대사를 「화자: 대사」 줄로 편다. 카드나 대본이 없으면 빈 글이다.</summary>
-    private string DialogueOf(string episodeId)
-    {
-        if (_session is null ||
-            _selectedChapterId is not { } chapterId ||
-            EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is not { } card)
-        {
-            return string.Empty;
-        }
+    private string DialogueOf(string episodeId) =>
+        _session is not null &&
+        _selectedChapterId is { } chapterId &&
+        EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is { } card
+            ? DialogueOf(card)
+            : string.Empty;
 
+    /// <summary>분기 카드의 대본 — 인스펙터의 읽기 전용 칸. 비었으면 그렇다고 말한다(줄 없는 분기 카드는 검증 오류다).</summary>
+    private string ScriptOf(string nodeId) =>
+        _session?.Project.FindDialogue(nodeId) is { } card && DialogueOf(card) is { Length: > 0 } text
+            ? text
+            : "(아직 적힌 대사가 없습니다 — [대본] 탭의 그 카드에서 씁니다)";
+
+    private static string DialogueOf(Vn.Authoring.Model.DialogueNode card)
+    {
         Vn.Authoring.Script.ScriptDocument script = card.Script;
 
         var lines = new List<string>();
@@ -3289,7 +3523,7 @@ public partial class ChapterGraphView : UserControl
 
         if (model is not null)
         {
-            BranchFromToPanel.Children.Add(EpisodeLink(model, marker.FromEpisodeId));
+            BranchFromToPanel.Children.Add(CardLink(model, marker.FromEpisodeId, marker.FromNodeId));
             BranchFromToPanel.Children.Add(new TextBlock
             {
                 Text = "⤳",
@@ -3297,11 +3531,67 @@ public partial class ChapterGraphView : UserControl
                 Opacity = 0.5,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
             });
-            BranchFromToPanel.Children.Add(EpisodeLink(model, marker.ToEpisodeId));
+            BranchFromToPanel.Children.Add(marker.ToBranchCard
+                ? BranchCardLink(marker.ToNodeId, marker.ToName)
+                : EpisodeLink(model, marker.ToName));
         }
 
+        FillBranchCondition(model, marker.ToNodeId);
+        BranchScriptText.Text = ScriptOf(marker.ToNodeId);
+    }
+
+    /// <summary>
+    /// 분기 카드(칩)의 패널 — 부르는 곳 · 조건(고친다) · 대본(읽기 전용). 분기 선을 고른 것과 같은 조건 칸이다 — 조건은 분기마다가 아니라
+    /// 분기 카드의 첫머리에 산다(<see cref="BranchEntryCondition"/>).
+    /// </summary>
+    private void RefreshBranchCardPanel(ChapterGraphModel? model, string nodeId)
+    {
+        BranchFromToPanel.Children.Clear();
+        BranchFromToPanel.Children.Add(new TextBlock
+        {
+            Text = "부르는 곳",
+            FontSize = 11,
+            Opacity = 0.6,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        });
+
+        List<ChapterBranchMarkers.Marker> callers = _branchByKey.Values
+            .Select(found => found.Marker)
+            .Where(marker => string.Equals(marker.ToNodeId, nodeId, StringComparison.Ordinal))
+            .DistinctBy(marker => marker.FromNodeId)
+            .ToList();
+
+        if (model is not null)
+        {
+            foreach (ChapterBranchMarkers.Marker caller in callers)
+            {
+                BranchFromToPanel.Children.Add(CardLink(model, caller.FromEpisodeId, caller.FromNodeId));
+            }
+        }
+
+        if (callers.Count == 0)
+        {
+            BranchFromToPanel.Children.Add(new TextBlock
+            {
+                Text = "(없음 — 재생되지 않습니다)",
+                FontSize = 11,
+                Opacity = 0.6,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            });
+        }
+
+        FillBranchCondition(model, nodeId);
+        BranchScriptText.Text = ScriptOf(nodeId);
+    }
+
+    /// <summary>
+    /// 분기 카드의 조건 칸을 채운다 — 작가가 대사 편집기에서 지은 조건 구조는 <b>읽기만</b> 한다(덮으면 짝이 어긋난 대본이 된다).
+    /// 그때는 칸을 잠그고 사유를 세운다.
+    /// </summary>
+    private void FillBranchCondition(ChapterGraphModel? model, string nodeId)
+    {
         BranchEntryCondition.State state = BranchEntryCondition.Read(
-            _session!.Editor.Project, marker.ToNodeId, _session.Definition);
+            _session!.Editor.Project, nodeId, _session.Definition);
 
         BranchBlockedText.Text = state.Blocked ?? string.Empty;
         BranchBlockedText.IsVisible = state.Blocked is not null;
@@ -3323,6 +3613,41 @@ public partial class ChapterGraphView : UserControl
         }
     }
 
+    /// <summary>그 카드의 이름으로 건너뛰는 고리 — 에피소드면 그 에피소드를, 분기 카드면 그 칩을 고른다.</summary>
+    private Control CardLink(ChapterGraphModel model, string? episodeId, string nodeId) =>
+        episodeId is not null
+            ? EpisodeLink(model, episodeId)
+            : BranchCardLink(nodeId, BranchCardName(nodeId));
+
+    /// <summary>분기 카드의 이름 — 판에 없으면 NodeId.</summary>
+    private string BranchCardName(string nodeId) =>
+        _session?.Project.FindDialogue(nodeId)?.Name ?? nodeId;
+
+    /// <summary>분기 카드로 건너뛰는 고리 — 누르면 그 칩을 고른다(조건 · 대본).</summary>
+    private Control BranchCardLink(string nodeId, string name)
+    {
+        var link = new TextBlock
+        {
+            Text = $"⑂ {name}",
+            FontSize = 11,
+            TextDecorations = TextDecorations.Underline,
+            Foreground = new SolidColorBrush(Color.Parse("#6B5CA5")),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Background = Brushes.Transparent,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
+        };
+
+        ToolTip.SetTip(link, "이 분기 카드를 고릅니다 — 조건과 대본이 보입니다.");
+
+        link.PointerPressed += (_, e) =>
+        {
+            e.Handled = true;
+            UiGuard.Run(_session, "분기 카드 선택", () => SelectBranchCard(nodeId));
+        };
+
+        return link;
+    }
+
     /// <summary>
     /// 연결만 끊은 분기점의 패널 — 어디서 갈라지는지는 보이고, 다녀갈 곳이 없으니 조건 칸은 잠긴다. 잇는 곳은 [대본] 탭이다.
     /// </summary>
@@ -3332,7 +3657,7 @@ public partial class ChapterGraphView : UserControl
 
         if (model is not null)
         {
-            BranchFromToPanel.Children.Add(EpisodeLink(model, point.FromEpisodeId));
+            BranchFromToPanel.Children.Add(CardLink(model, point.FromEpisodeId, point.FromNodeId));
         }
 
         BranchFromToPanel.Children.Add(new TextBlock
@@ -3344,7 +3669,9 @@ public partial class ChapterGraphView : UserControl
         });
 
         BranchBlockedText.Text =
-            "이어지지 않은 분기점입니다 — 다녀갈 곳이 없어 지나갑니다. [대본] 탭에서 이 분기점을 끌어 카드에 이으면 조건을 정할 수 있습니다.";
+            "이어지지 않은 분기점입니다 — 다녀갈 곳이 없어 지나갑니다. [대본] 탭에서 이 분기점을 끌어 분기 카드에 잇거나 빈 곳에 놓아 " +
+            "새 분기 카드를 세우면 조건을 정할 수 있습니다.";
+        BranchScriptText.Text = string.Empty;
         BranchBlockedText.IsVisible = true;
         BranchConditionCombo.IsEnabled = false;
 
@@ -3390,8 +3717,7 @@ public partial class ChapterGraphView : UserControl
     /// <summary>고른 분기의 조건을 적는다. 고르는 순간 나간다 — 간선 패널과 같은 감각이다.</summary>
     private void SaveBranchCondition()
     {
-        if (_fillingPanel || _session is null || _selectedBranchKey is not { } branchKey ||
-            !_branchByKey.TryGetValue(branchKey, out (ChapterBranchMarkers.Marker Marker, Line _) branch))
+        if (_fillingPanel || _session is null || SelectedBranchTarget() is not { } target)
         {
             return;
         }
@@ -3400,13 +3726,27 @@ public partial class ChapterGraphView : UserControl
 
         string? failure = BranchEntryCondition.Set(
             _session.Editor,
-            branch.Marker.ToNodeId,
+            target.NodeId,
             string.Equals(label, BranchAlwaysItem, StringComparison.Ordinal) ? null : label,
             _session.Definition);
 
         _session.SetStatus(failure ?? (label is null or BranchAlwaysItem
-            ? $"'{branch.Marker.ToEpisodeId}'의 조건을 걷었습니다 — 언제나 재생됩니다."
-            : $"'{branch.Marker.ToEpisodeId}'은 조건 '{label}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
+            ? $"분기 카드 '{target.Name}'의 조건을 걷었습니다 — 언제나 재생됩니다."
+            : $"분기 카드 '{target.Name}'은 조건 '{label}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
+    }
+
+    /// <summary>조건 칸이 고치는 분기 카드 — 고른 분기 선(그 도착)이나 고른 칩.</summary>
+    private (string NodeId, string Name)? SelectedBranchTarget()
+    {
+        if (_selectedBranchKey is { } branchKey &&
+            _branchByKey.TryGetValue(branchKey, out (ChapterBranchMarkers.Marker Marker, Line _) branch))
+        {
+            return (branch.Marker.ToNodeId, branch.Marker.ToName);
+        }
+
+        return _selectedBranchCardId is { } nodeId && _branchChips.ContainsKey(nodeId)
+            ? (nodeId, BranchCardName(nodeId))
+            : null;
     }
 
     /// <summary>

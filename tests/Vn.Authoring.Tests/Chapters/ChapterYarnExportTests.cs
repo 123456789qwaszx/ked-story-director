@@ -2,6 +2,7 @@ using System.Text.Json;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
+using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 using Yarn;
@@ -93,7 +94,41 @@ public sealed class ChapterYarnExportTests
         CompilationResult result = Compile(Export(editor));
 
         Assert.Empty(Errors(result));
-        Assert.Equal(entries, result.Program!.Nodes.Keys.Order(StringComparer.Ordinal).ToArray());
+
+        // 진행 JSON이 부르는 노드 + 분기 카드 노드(진행 JSON에 없고 `<<detour>>`가 부른다 — 2026-11-17).
+        string[] branches = ChapterBranchCards.HomesOf(editor.Project, Ch)
+            .Select(home => YarnNaming.StoryNodeTitleOf(home.Card.Name, home.Card.Id))
+            .ToArray();
+        Assert.Equal(5, branches.Length);
+        Assert.Equal(
+            entries.Concat(branches).Order(StringComparer.Ordinal).ToArray(),
+            result.Program!.Nodes.Keys.Order(StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
+    public void 분기_카드는_집의_장면_파일에서_그_에피소드_바로_뒤에_서고_분기점이_부르는_노드가_다_있다()
+    {
+        ProjectEditor editor = Sample();
+        IReadOnlyList<ChapterYarnFile> files = Export(editor);
+        string classroom = files.Single(file => file.SceneId == "교실").Text;
+
+        // 교실 - 간판 완성(Festival_Wrapup)이 부르는 둘 — 그 노드가 끝난 바로 뒤에 대본 차례로.
+        int wrapup = classroom.IndexOf("title: Festival_Wrapup\n", StringComparison.Ordinal);
+        int remade = classroom.IndexOf("// 분기 카드: Festival_Wrapup_Remade — 「교실 - 간판 완성」에서 들른다\ntitle: Festival_Wrapup_Remade\n", StringComparison.Ordinal);
+        int sticker = classroom.IndexOf("title: Festival_Wrapup_Sticker\n", StringComparison.Ordinal);
+        Assert.True(wrapup >= 0 && remade > wrapup && sticker > remade, classroom);
+        Assert.DoesNotContain("title: Festival_Staffroom_Kasmi", classroom, StringComparison.Ordinal);
+
+        // 분기점이 부르는 노드는 모두 선다 — 없으면 게임에서 `<<detour>>`가 없는 노드를 부른다.
+        CompilationResult result = Compile(files);
+        string[] detours = files.SelectMany(file => file.Text.Split('\n'))
+            .Select(line => line.Trim())
+            .Where(line => line.StartsWith("<<detour ", StringComparison.Ordinal))
+            .Select(line => line["<<detour ".Length..^2])
+            .Distinct()
+            .ToArray();
+        Assert.Equal(5, detours.Length);
+        Assert.All(detours, title => Assert.Contains(title, result.Program!.Nodes.Keys));
     }
 
     [Fact]
@@ -106,7 +141,9 @@ public sealed class ChapterYarnExportTests
         Assert.Equal(scenes.Select(scene => scene.SceneId), files.Select(file => file.SceneId));
         Assert.Equal("festival_eve_교무실_앞.yarn", files.Single(file => file.SceneId == "교무실 앞").FileName);
 
-        // 장면 안 에피소드 차례 그대로 노드가 선다.
+        // 장면 안 에피소드 차례 그대로 노드가 서고, 그 장면의 에피소드가 부르는 분기 카드가 함께 선다.
+        IReadOnlyList<BranchCardHome> homes = ChapterBranchCards.HomesOf(editor.Project, Ch);
+
         foreach ((ChapterScene scene, ChapterYarnFile file) in scenes.Zip(files))
         {
             string[] titles = file.Text.Split('\n')
@@ -114,7 +151,8 @@ public sealed class ChapterYarnExportTests
                 .Select(line => line["title: ".Length..])
                 .ToArray();
 
-            Assert.Equal(scene.Episodes.Count, titles.Length);
+            int branches = homes.Count(home => scene.Episodes.Any(episode => episode.EpisodeId == home.EpisodeId));
+            Assert.Equal(scene.Episodes.Count + branches, titles.Length);
         }
     }
 
@@ -192,7 +230,7 @@ public sealed class ChapterYarnExportTests
     {
         // 간선 · 분기와 같은 규칙(writer-fields W1) — 식이 빈 조건은 오류가 아니라 「항상 통과」다.
         ProjectEditor editor = Sample();
-        DialogueNode branch = EpisodeNaming.CardFor(editor.Project, Ch, "Festival_Wrapup_Remade")!;
+        DialogueNode branch = EpisodeNaming.BoardOf(editor.Project, Ch)!.Nodes.OfType<DialogueNode>().Single(node => node.Name == "Festival_Wrapup_Remade");
         editor.AddChapterCondition(Ch, "다시 그렸을 때", string.Empty);
 
         Assert.Null(BranchEntryCondition.Set(editor, branch.Id, "다시 그렸을 때"));

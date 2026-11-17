@@ -16,6 +16,9 @@ internal static class StoryNodeJson
     /// </summary>
     private const string EpisodeMarkKey = "episodeMark";
 
+    /// <summary><see cref="DialogueNode.IsBranchCard"/>가 앉는 칸 — 분기 카드일 때만 쓴다.</summary>
+    private const string BranchCardKey = "branchCard";
+
     /// <summary>
     /// 연출 층의 노드 종류 — 연출 노드 · 명령 공급 노드. 2026-10-29에 <c>ked-story-compositor</c>로 갔다.
     /// 옛 파일에 있으면 읽지 않는다(<see cref="Read"/>가 null) — 원본은 <see cref="ProjectStore"/>가 남긴다.
@@ -217,6 +220,12 @@ internal static class StoryNodeJson
             json[EpisodeMarkKey] = node.MarkedEpisodeId;
         }
 
+        // 분기 카드만 적는다(2026-11-17) — 에피소드 카드에는 칸이 없다. 노드 종류(`kind`)는 그대로 `dialogue`다(다른 저장소가 이 파일을 읽는다).
+        if (node.IsBranchCard)
+        {
+            json[BranchCardKey] = true;
+        }
+
         var lines = new JsonArray();
 
         foreach (DialogueLineExtension extension in node.LineExtensions)
@@ -379,7 +388,8 @@ internal static class StoryNodeJson
         var node = new DialogueNode(id, name)
         {
             Script = ReadScript(json["script"], id, scripts),
-            MarkedEpisodeId = (string?)json[EpisodeMarkKey]
+            MarkedEpisodeId = (string?)json[EpisodeMarkKey],
+            IsBranchCard = (bool?)json[BranchCardKey] ?? false
         };
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 

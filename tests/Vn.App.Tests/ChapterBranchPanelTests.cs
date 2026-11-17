@@ -44,45 +44,97 @@ public sealed class ChapterBranchPanelTests
 
         Assert.Equal(Canvas.GetLeft(card) + CardWidth, drawn.StartPoint.X, 3);
         Assert.Equal(Canvas.GetTop(card) + (CardHeight / 2), drawn.StartPoint.Y, 3);
+
+        // 다녀갈 곳은 분기 카드 칩이다 — 점선이 그 칩의 왼변 가운데로 든다.
+        Border chip = Chip(canvas, project.BranchNodeId);
+        Assert.Equal(Canvas.GetLeft(chip), drawn.EndPoint.X, 3);
+        Assert.Equal(Canvas.GetTop(chip) + (chip.Height / 2), drawn.EndPoint.Y, 3);
     });
 
     private const double CardWidth = 190;
     private const double CardHeight = 74;
 
     [Fact]
-    public void 다녀갈_에피소드가_왼쪽에_있으면_분기는_왼변으로_나가_그_카드의_오른변으로_든다() => HeadlessUi.Run(() =>
+    public void 분기_카드는_부르는_에피소드_곁에_작은_칩으로_붙어_그_에피소드를_따라간다() => HeadlessUi.Run(() =>
     {
-        // 다녀갈 카드가 자기가 나온 에피소드보다 왼쪽에 있으면 왼쪽으로 나온다.
-        // 연출 그래프의 분기 포트와 같은 규칙(EdgeSide.GoesLeft)이다.
+        // 소유자(2026-11-17): "구성탭에서도 점선으로 붙은 작은 카드로써 읽기 전용으로 둡시다." 에피소드가 아니라 판에 따로 서지 않는다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
-        session.Editor.MoveEpisode("ch01", project.BranchEpisodeId, -400, 120);
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+
+        Assert.DoesNotContain(canvas.Children.OfType<Border>(), border => (border.Tag as string) == project.BranchName);
+        Border root = Card(canvas, "root");
+        Border chip = Chip(canvas, project.BranchNodeId);
+        Assert.True(Canvas.GetLeft(chip) > Canvas.GetLeft(root) + CardWidth, "칩이 카드 오른쪽에 선다");
+        Assert.Equal(Canvas.GetTop(root), Canvas.GetTop(chip), 3);
+        Assert.Contains(project.BranchName, ((TextBlock)chip.Child!).Text, StringComparison.Ordinal);
+        Assert.True(chip.Height < CardHeight);
+
+        // 에피소드를 옮기면 칩이 따라간다 — 칩의 자리는 저장하지 않는다.
+        double gap = Canvas.GetLeft(chip) - Canvas.GetLeft(root);
+        session.Editor.MoveEpisode("ch01", "root", 300, 200);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        root = Card(canvas, "root");
+        chip = Chip(canvas, project.BranchNodeId);
+        Assert.Equal(Canvas.GetLeft(root) + gap, Canvas.GetLeft(chip), 3);
+        Assert.Equal(Canvas.GetTop(root), Canvas.GetTop(chip), 3);
+    });
+
+    [Fact]
+    public void 칩이_왼쪽에_있으면_다른_곳의_분기는_왼변으로_나가_칩의_오른변으로_든다() => HeadlessUi.Run(() =>
+    {
+        // 칩은 집(먼저 부르는 에피소드 root)의 오른쪽에 선다. 오른쪽 멀리 선 east도 같은 분기 카드를 부르면 east의 분기점은 왼변으로
+        // 나간다 — 연출 그래프의 분기 포트와 같은 규칙(EdgeSide.GoesLeft)이다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        session.Editor.AddEpisode("ch01", "east", title: "east", 900, 300);
+        DialogueNode east = EpisodeNaming.CardFor(session.Project, "ch01", "east")!;
+        session.Editor.SetExitTarget(east.Id, Vn.Authoring.Flow.ExitPortKind.Detour, east.Script.ActiveLines.First().Id, project.BranchNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
-        Line drawn = Assert.Single(
-            canvas.Children.OfType<Line>(),
-            line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true);
-        Border root = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == "root");
-        Border target = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == project.BranchEpisodeId);
+        Border card = Card(canvas, "east");
+        Border chip = Chip(canvas, project.BranchNodeId);
+        Line drawn = BranchLines(canvas).Single(line => (line.Tag as string) == $"분기:east->{project.BranchName}");
 
-        Assert.True(Canvas.GetLeft(target) < Canvas.GetLeft(root), "다녀갈 카드가 왼쪽에 섰다");
-        Assert.Equal(Canvas.GetLeft(root), drawn.StartPoint.X, 3);
-        Assert.Equal(Canvas.GetTop(root) + (CardHeight / 2), drawn.StartPoint.Y, 3);
-        Assert.Equal(Canvas.GetLeft(target) + CardWidth, drawn.EndPoint.X, 3);
-        Assert.Equal(Canvas.GetTop(target) + (CardHeight / 2), drawn.EndPoint.Y, 3);
+        Assert.Equal(Canvas.GetLeft(card), drawn.StartPoint.X, 3);
+        Assert.Equal(Canvas.GetTop(card) + (CardHeight / 2), drawn.StartPoint.Y, 3);
+        Assert.Equal(Canvas.GetLeft(chip) + chip.Width, drawn.EndPoint.X, 3);
+    });
 
-        // 다시 오른쪽으로 옮기면 오른변으로 나간다.
-        session.Editor.MoveEpisode("ch01", project.BranchEpisodeId, 600, 120);
+    [Fact]
+    public void 칩을_누르면_부르는_곳과_조건과_읽기_전용_대본이_선다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+
+        Press(Chip(canvas, project.BranchNodeId));
+
+        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.False(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
+        Assert.Contains(project.BranchName, view.FindControl<TextBlock>("InspectorTitle")!.Text, StringComparison.Ordinal);
+        Assert.Contains(
+            view.FindControl<Panel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
+            text => text.Text == "root");
+        Assert.Contains("들렀다 간다", view.FindControl<TextBlock>("BranchScriptText")!.Text, StringComparison.Ordinal);
+
+        // 칩이 강조되고, 조건을 고르면 그 분기 카드의 첫머리에 적힌다(되돌리기 한 칸).
+        Assert.True(Chip(canvas, project.BranchNodeId).BorderThickness.Left > 2);
+        long before = session.Editor.Revision;
+        view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        drawn = Assert.Single(
-            canvas.Children.OfType<Line>(),
-            line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true);
-        root = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == "root");   // 다시 그려 새 카드다
-        target = canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == project.BranchEpisodeId);
-        Assert.Equal(Canvas.GetLeft(root) + CardWidth, drawn.StartPoint.X, 3);
-        Assert.Equal(Canvas.GetLeft(target), drawn.EndPoint.X, 3);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, project.BranchNodeId, session.Definition).Label);
+        Assert.Equal(before + 1, session.Editor.Revision);
+
+        // 칩에 조건이 보인다.
+        Assert.Contains("신뢰높음", ((TextBlock)Chip(canvas, project.BranchNodeId).Child!).Text, StringComparison.Ordinal);
+
+        // 빈 판을 누르면 풀린다.
+        Press(canvas);
+        Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
     });
 
     [Fact]
@@ -121,7 +173,7 @@ public sealed class ChapterBranchPanelTests
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
+        DialogueNode branch = session.Project.FindDialogue(project.BranchNodeId)!;
 
         Assert.Equal("신뢰높음",
             BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
@@ -146,7 +198,7 @@ public sealed class ChapterBranchPanelTests
         session.Editor.Undo();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
+        DialogueNode branch = session.Project.FindDialogue(project.BranchNodeId)!;
 
         Assert.Null(BranchEntryCondition.Read(session.Project, branch.Id, session.Definition).Label);
     });
@@ -158,7 +210,7 @@ public sealed class ChapterBranchPanelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
+        DialogueNode branch = session.Project.FindDialogue(project.BranchNodeId)!;
         string firstLineId = branch.Script.ActiveLines.First().Id;
 
         // 첫머리 조건 하나(BeginIf + 꼬리 EndIf)가 아닌 손 구조 — 첫 줄에 조건 종료가 얹혔다.
@@ -198,7 +250,7 @@ public sealed class ChapterBranchPanelTests
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        DialogueNode first = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
+        DialogueNode first = session.Project.FindDialogue(project.BranchNodeId)!;
         Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, second.Id, session.Definition).Label);
         Assert.Null(BranchEntryCondition.Read(session.Project, first.Id, session.Definition).Label);
     });
@@ -282,7 +334,7 @@ public sealed class ChapterBranchPanelTests
         (ChapterGraphView view, AuthoringSession session) = Show(project);
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
         DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
-        DialogueNode branch = EpisodeNaming.CardFor(session.Project, "ch01", project.BranchEpisodeId)!;
+        DialogueNode branch = session.Project.FindDialogue(project.BranchNodeId)!;
 
         Ellipse knob = Assert.Single(Knobs(canvas));
         Press(knob);
@@ -291,8 +343,8 @@ public sealed class ChapterBranchPanelTests
         Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
         Assert.True(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
         Assert.Contains(
-            view.FindControl<StackPanel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
-            text => text.Text?.StartsWith(project.BranchEpisodeId, StringComparison.Ordinal) == true);
+            view.FindControl<Panel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
+            text => text.Text?.Contains(project.BranchName, StringComparison.Ordinal) == true);
 
         // 끊기지 않았다 — 분기도 점선도 그대로다.
         Assert.Equal([branch.Id], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
@@ -325,7 +377,7 @@ public sealed class ChapterBranchPanelTests
         Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
         Assert.False(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
         Assert.Contains(
-            view.FindControl<StackPanel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
+            view.FindControl<Panel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
             text => text.Text?.Contains("이어지지 않음", StringComparison.Ordinal) == true);
         Assert.Contains("[대본] 탭", view.FindControl<TextBlock>("BranchBlockedText")!.Text, StringComparison.Ordinal);
 
@@ -359,6 +411,10 @@ public sealed class ChapterBranchPanelTests
 
     private static Border Card(Canvas canvas, string episodeId) =>
         canvas.Children.OfType<Border>().Single(border => (border.Tag as string) == episodeId);
+
+    private static Border Chip(Canvas canvas, string nodeId) =>
+        canvas.Children.OfType<Border>().Single(border =>
+            border.Tag is ChapterGraphView.BranchCardMark mark && mark.NodeId == nodeId);
 
     private static List<Ellipse> Knobs(Canvas canvas) =>
         canvas.Children.OfType<Ellipse>()
@@ -462,7 +518,10 @@ public sealed class ChapterBranchPanelTests
 
             BranchLineId = caller.Script.ActiveLines.First().Id;
             DialogueNode branch = editor.AddBranchMarker(caller.Id, BranchLineId);
-            BranchEpisodeId = EpisodeNaming.EpisodeIdOf(branch);
+            branch.Script.RequireLocale(branch.Script.PrimaryLocale).Entries[branch.Script.ActiveLines.First().Id] =
+                new Vn.Authoring.Script.LocalizedLine("라루", "들렀다 간다");
+            BranchName = branch.Name;
+            BranchNodeId = branch.Id;
             BranchKey = Vn.Authoring.Flow.ExitPort.DetourKey(BranchLineId, branch.Id);
 
             ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);
@@ -476,7 +535,10 @@ public sealed class ChapterBranchPanelTests
         /// <summary>분기 하나의 열쇠 — 줄과 다녀갈 카드(한 줄에 분기가 여럿일 수 있다).</summary>
         public string BranchKey { get; }
 
-        public string BranchEpisodeId { get; }
+        /// <summary>분기 카드의 이름 — 에피소드가 아니다(2026-11-17).</summary>
+        public string BranchName { get; }
+
+        public string BranchNodeId { get; }
 
         public void Dispose()
         {

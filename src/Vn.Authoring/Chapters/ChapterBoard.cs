@@ -83,7 +83,7 @@ internal sealed class ChapterBoard
 
         // 이름 뒷길도 <b>그 판 안에서만</b> — 다른 챕터에 같은 이름의 카드가 있어도 남의 것이다.
         return _board?.Nodes.OfType<DialogueNode>()
-            .FirstOrDefault(node => string.Equals(node.Name, name, StringComparison.Ordinal));
+            .FirstOrDefault(node => !node.IsBranchCard && string.Equals(node.Name, name, StringComparison.Ordinal));
     }
 
     /// <summary>

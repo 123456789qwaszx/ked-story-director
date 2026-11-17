@@ -1833,6 +1833,10 @@ public sealed partial class ProjectEditor
     ///
     /// <b>안전망이다</b> — 판에 세운 카드가 언제나 에피소드를 받으므로
     /// 올릴 것이 정상적으로는 없다. 어긋난 상태를 만나면 조용히 고친다.
+    ///
+    /// <b>분기 카드(<see cref="DialogueNode.IsBranchCard"/>)는 올리지 않는다</b>(2026-11-17) — 에피소드가 아닌 것이 그 카드의 신원이다.
+    /// 분기 카드 이전의 옛 곁가지는 여기서 에피소드로 올라가고, 그 분기점은 검증(<see cref="ChapterDiagnosticCode.BranchIntoEpisode"/>)이
+    /// 짚는다 — 옛 프로젝트를 분기 카드로 옮기는 코드는 짓지 않는다(소유자).
     /// </summary>
     /// <returns>올린 에피소드Id들. 올릴 것이 없으면 빈 목록이고 프로젝트를 안 건드린다.</returns>
     public IReadOnlyList<string> LiftFreeScenes(string chapterId)
@@ -1851,8 +1855,8 @@ public sealed partial class ProjectEditor
 
         foreach (DialogueNode node in board.Nodes.OfType<DialogueNode>())
         {
-            // 설정노드(A계층 조건 배관)는 애초에 `DialogueNode`가 아니라 여기 안 걸린다.
-            if (EpisodeNaming.EpisodeFor(chapter, node) is not null || !taken.Add(node.Name))
+            // 설정노드(A계층 조건 배관)는 애초에 `DialogueNode`가 아니라 여기 안 걸린다. 분기 카드는 에피소드가 아니다(2026-11-17) — 올리지 않는다.
+            if (node.IsBranchCard || EpisodeNaming.EpisodeFor(chapter, node) is not null || !taken.Add(node.Name))
             {
                 // 이름이 겹치면 건드리지 않는다 — 조용히 개명하면 어느 씬이 어디로 갔는지
                 // 아무도 모른다. 사람이 판에서 고치면 다음 번에 올라간다.

@@ -46,7 +46,8 @@ public sealed class ChapterRubberBandTests : IDisposable
         Assert.True(IsPicked(Card(view, "root")));
         Assert.True(IsPicked(Card(view, "a")));
         Assert.True(IsPicked(Card(view, "b")));
-        Assert.False(IsPicked(Card(view, "분기 1")));
+        Assert.False(IsPicked(Canvas(view).Children.OfType<Border>()
+            .Single(border => border.Tag is ChapterGraphView.BranchCardMark)));   // 분기 카드 칩은 범위로 묶지 않는다
 
         // 빈 판을 누르면 무리가 풀린다.
         Press(Canvas(view), At(view, new Point(700, 400)));
@@ -72,7 +73,6 @@ public sealed class ChapterRubberBandTests : IDisposable
         Assert.Equal((40, 200), Spot(session, "root"));
         Assert.Equal((260, 200), Spot(session, "a"));
         Assert.Equal((480, 200), Spot(session, "b"));
-        Assert.Equal((220, 200), Spot(session, "분기 1"));   // 무리 밖은 그대로
 
         session.Editor.Undo();
         Dispatcher.UIThread.RunJobs();
@@ -110,8 +110,8 @@ public sealed class ChapterRubberBandTests : IDisposable
     {
         (MainWindow window, ChapterGraphView view, AuthoringSession _) = Show();
 
-        // root 오른변의 분기점에서 아래 분기 카드로 내려가는 점선의 가운데쯤.
-        Band(view, new Point(255, 185), new Point(275, 210));
+        // root 오른변의 분기점(250, 97)에서 분기 카드 칩(284, 72)으로 오르는 점선 — 선택지 선(root→a)보다 위쪽.
+        Band(view, new Point(266, 77), new Point(276, 86));
 
         Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
         Assert.False(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
@@ -123,7 +123,7 @@ public sealed class ChapterRubberBandTests : IDisposable
 
     /// <summary>
     /// [구성] 탭의 ch01 — root(0,0) · a(220,0) · b(440,0) 위에 선택지 둘(root→b · root→a)과 root의 분기 하나를 놓는다. 분기 카드는
-    /// 다른 카드와 겹치지 않게 a 아래(220,200)로 옮긴다. 판에는 여백 60을 더해 선다(카드 190×74).
+    /// 에피소드가 아니라 root 오른쪽에 칩(150×24)으로 붙는다. 판에는 여백 60을 더해 선다(카드 190×74).
     /// </summary>
     private (MainWindow Window, ChapterGraphView View, AuthoringSession Session) Show()
     {
@@ -136,8 +136,7 @@ public sealed class ChapterRubberBandTests : IDisposable
         {
             ["root"] = (0, 0),
             ["a"] = (220, 0),
-            ["b"] = (440, 0),
-            ["분기 1"] = (220, 200)
+            ["b"] = (440, 0)
         });
         Dispatcher.UIThread.RunJobs();
 

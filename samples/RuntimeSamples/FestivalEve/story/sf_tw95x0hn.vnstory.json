@@ -426,7 +426,7 @@
           }
         ]
       },
-      "episodeMark": "Festival_Wrapup_Remade",
+      "branchCard": true,
       "lines": [
         {
           "lineId": "ln_s7tk0up3",
@@ -472,7 +472,7 @@
           }
         ]
       },
-      "episodeMark": "Festival_Wrapup_Sticker",
+      "branchCard": true,
       "lines": [
         {
           "lineId": "ln_v9rdek8z",
@@ -526,7 +526,7 @@
           }
         ]
       },
-      "episodeMark": "Festival_Staffroom_Kasmi",
+      "branchCard": true,
       "lines": [
         {
           "lineId": "ln_m208n5x2",
@@ -580,7 +580,7 @@
           }
         ]
       },
-      "episodeMark": "Festival_Staffroom_Praise",
+      "branchCard": true,
       "lines": [
         {
           "lineId": "ln_pq4uwryp",
@@ -626,7 +626,7 @@
           }
         ]
       },
-      "episodeMark": "Festival_Staffroom_Pass",
+      "branchCard": true,
       "lines": [
         {
           "lineId": "ln_as37pa6a",

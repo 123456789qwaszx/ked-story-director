@@ -41,11 +41,17 @@ public enum ChapterDiagnosticCode
     EdgeEndpointBlank,
     EpisodeUnreachable,
 
-    /// <summary>
-    /// 선택지 · 자동 길로 들어오는 길은 없고 <b>분기로 들어오는</b> 에피소드 — 알림이다(<see cref="ChapterBranchReach"/>, 2026-11-17).
-    /// 도달할 수 있는 에피소드의 분기점이 들를 때만 선다 — 분기점의 에피소드가 도달할 수 없으면 <see cref="EpisodeUnreachable"/> 그대로다.
-    /// </summary>
-    EpisodeEnteredByBranch,
+    /// <summary>분기점이 <b>에피소드</b>에 이어져 있다 — 분기는 분기 카드에만 잇는다(오류, <see cref="ChapterBranchCards"/>, 2026-11-17).</summary>
+    BranchIntoEpisode,
+
+    /// <summary>아무도 부르지 않는 분기 카드 — 경고(<see cref="ChapterBranchCards"/>).</summary>
+    BranchCardOrphaned,
+
+    /// <summary>도달할 수 없는 곳만 부르는 분기 카드 — 경고(<see cref="ChapterBranchCards"/>).</summary>
+    BranchCardUnreachable,
+
+    /// <summary>줄이 하나도 없는 분기 카드 — 오류(<see cref="ChapterBranchCards"/>).</summary>
+    BranchCardEmpty,
     OptionEdgeMismatch,
     ExitIntoLandingCard,
 

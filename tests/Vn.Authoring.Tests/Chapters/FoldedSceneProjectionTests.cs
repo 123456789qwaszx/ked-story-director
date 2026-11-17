@@ -1,5 +1,6 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 
@@ -21,21 +22,22 @@ public sealed class FoldedSceneProjectionTests
 
         GraphProjection projection = Project(editor, Fold(board, "hall"));
 
+        // visit은 root(opening)가 부르는 분기 카드라 opening에 든다 — 펼친 채다.
         Assert.Equal(
-            [board.Root.Id, board.A.Id],
+            [board.Root.Id, board.A.Id, board.Visit.Id],
             projection.Items.OfType<ExpandedNodeProjection>().Select(item => item.NodeId));
 
         CollapsedSceneProjection scene = Assert.Single(projection.Items.OfType<CollapsedSceneProjection>());
         Assert.Equal("hall", scene.SceneId);
         Assert.Equal(board.File.Id, scene.FileId);
 
-        // 줄 순서 = 판의 노드 순서.
+        // 줄 순서 = 판의 노드 순서. inner는 b(hall)가 부르는 분기 카드라 hall에 든다 — 분기 카드의 장면은 집(부르는 에피소드)의 것이다.
         Assert.Equal(
-            [board.B.Id, board.C.Id, board.Visit.Id, board.Inner.Id],
+            [board.B.Id, board.C.Id, board.Inner.Id],
             scene.Nodes.Select(entry => entry.NodeId));
 
         // 자리는 그 장면 카드들이 서던 자리의 왼쪽 위 — 접어도 그 자리에 선다.
-        StoryNode[] nodes = [board.B, board.C, board.Visit, board.Inner];
+        StoryNode[] nodes = [board.B, board.C, board.Inner];
         Assert.Equal(new GraphPosition(nodes.Min(node => node.Layout.X), nodes.Min(node => node.Layout.Y)), scene.Position);
 
         // 판째 접힌 것이 아니다.
@@ -49,14 +51,14 @@ public sealed class FoldedSceneProjectionTests
 
         GraphProjection projection = Project(editor, Fold(board, "hall"));
 
-        // root(펼친 opening) → visit(접은 hall)의 분기 선.
+        // c(접은 hall)도 visit을 부른다 — visit의 집은 판에서 먼저 만난 root(opening)라 c → visit 분기 선이 장면 밖으로 나간다.
         GraphConnectionProjection detour = Assert.Single(projection.Connections, connection =>
-            connection.SourceNodeId == board.Root.Id && connection.TargetNodeId == board.Visit.Id);
+            connection.SourceNodeId == board.C.Id && connection.TargetNodeId == board.Visit.Id);
 
-        Assert.Equal(GraphEndpointKind.ExpandedNodeOutput, detour.Source.Kind);
-        Assert.Equal(GraphEndpointKind.CollapsedSceneNodeInput, detour.Target.Kind);
-        Assert.Equal("hall", detour.Target.SceneId);
-        Assert.Equal(2, detour.Target.ProxyRowIndex);   // b · c · visit — 머리글 줄이 없다(상자 하나가 장면 하나다)
+        Assert.Equal(GraphEndpointKind.CollapsedSceneNodeOutput, detour.Source.Kind);
+        Assert.Equal("hall", detour.Source.SceneId);
+        Assert.Equal(1, detour.Source.ProxyRowIndex);   // b · c — 머리글 줄이 없다(상자 하나가 장면 하나다)
+        Assert.Equal(GraphEndpointKind.ExpandedNodeInput, detour.Target.Kind);
     }
 
     [Fact]
@@ -78,8 +80,11 @@ public sealed class FoldedSceneProjectionTests
         CollapsedNodeEntry b = scene.Nodes.Single(entry => entry.NodeId == board.B.Id);
         Assert.Equal((1, 0), (b.IncomingCount, b.OutgoingCount));
 
-        CollapsedNodeEntry visit = scene.Nodes.Single(entry => entry.NodeId == board.Visit.Id);
-        Assert.Equal((1, 0), (visit.IncomingCount, visit.OutgoingCount));
+        CollapsedNodeEntry inner = scene.Nodes.Single(entry => entry.NodeId == board.Inner.Id);
+        Assert.Equal((0, 0), (inner.IncomingCount, inner.OutgoingCount));   // b → inner는 안쪽이다
+
+        CollapsedNodeEntry c = scene.Nodes.Single(entry => entry.NodeId == board.C.Id);
+        Assert.Equal((0, 1), (c.IncomingCount, c.OutgoingCount));   // c → visit(opening) 분기 선 — b → c 선택지 길은 안쪽이다
     }
 
     [Fact]
@@ -109,8 +114,8 @@ public sealed class FoldedSceneProjectionTests
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// ch01: opening(root · a), hall(b · c · visit · inner). 선택지 길 root→a · a→b · b→c. 분기 선 root→visit(hall로 옮겼다) ·
-    /// b→inner(hall 안).
+    /// ch01: opening(root · a), hall(b · c). 선택지 길 root→a · a→b · b→c. 분기 카드 visit(root와 c가 부른다 — 집은 root라 opening) ·
+    /// inner(b가 부른다 — hall).
     /// </summary>
     private static (ProjectEditor Editor, Board Board) Build()
     {
@@ -129,7 +134,8 @@ public sealed class FoldedSceneProjectionTests
         DialogueNode b = Card(editor, "b");
 
         DialogueNode visit = editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);
-        editor.UpdateEpisode("ch01", EpisodeNaming.EpisodeIdOf(visit), sceneId: "hall");
+        DialogueNode c = Card(editor, "c");
+        editor.SetExitTarget(c.Id, ExitPortKind.Detour, c.Script.ActiveLines.First().Id, visit.Id);
         editor.MoveNode(visit.Id, 600, 700);
 
         DialogueNode inner = editor.AddBranchMarker(b.Id, b.Script.ActiveLines.First().Id);

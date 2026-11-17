@@ -23,6 +23,7 @@ public sealed record ChapterYarnFile(
 /// <b>대사만 있는 Yarn</b> — <c>exported/yarn/{챕터}_{장면}.yarn</c> (2026-11-17 · <c>docs/work-orders/yarn-output-orders.md</c>).
 ///
 /// 작가가 「대사만으로 굴러가는지」 확인하고, 연출을 붙이는 쪽(AI)이 장면 하나를 파일 하나로 읽는다. <b>장면 = 파일, 에피소드 = 노드.</b>
+/// 분기 카드는 그 집(부르는 에피소드 — <see cref="ChapterBranchCards.HomesOf"/>)의 노드 바로 뒤에 노드로 선다.
 /// 장면 메모는 파일 머리에, 에피소드 지시는 그 노드 앞에 <b>주석</b>으로 선다(소유자 2026-11-17 — 메모의 집은 진행 JSON이 아니라 여기다).
 ///
 /// ⛔ 2026-10-29(R2 · R3)에 「게임용 Yarn은 compositor만 낸다」로 이미터를 걷었던 것을 <b>대사만 있는 Yarn</b>의 범위에서 뒤집었다.
@@ -77,12 +78,13 @@ public static class ChapterYarnExporter
         ArgumentNullException.ThrowIfNull(chapter);
 
         var via = ChapterBoard.For(project, chapter.ChapterId);
+        IReadOnlyList<BranchCardHome> homes = project is null ? [] : ChapterBranchCards.HomesOf(project, chapter.ChapterId);
         var files = new List<ChapterYarnFile>();
         var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (ChapterScene scene in ChapterSceneGrouping.Of(chapter))
         {
-            ChapterYarnFile file = Scene(chapter, scene, via, project, definition);
+            ChapterYarnFile file = Scene(chapter, scene, via, homes, project, definition);
 
             // 정규화가 두 장면을 한 이름으로 접으면(`장면 1` · `장면.1`) 뒤의 것이 앞의 파일을 덮는다 — 쓰기 전에 막는다.
             if (names.TryGetValue(file.FileName, out string? taken))
@@ -113,6 +115,7 @@ public static class ChapterYarnExporter
         ChapterGraphModel chapter,
         ChapterScene scene,
         ChapterBoard via,
+        IReadOnlyList<BranchCardHome> homes,
         StoryProject? project,
         GameDefinition? definition)
     {
@@ -139,8 +142,20 @@ public static class ChapterYarnExporter
             string title = ChapterProgressionExporter.DialogueEntryIdOf(episode, via);
 
             text.Append("title: ").Append(title).Append("\n---\n");
-            AppendBody(text, episode, via.EpisodeNodeFor(episode), project, definition, problems);
+            AppendBody(text, episode.EpisodeId, via.EpisodeNodeFor(episode), project, definition, problems);
             text.Append("===\n");
+
+            // 이 에피소드가 부르는 분기 카드는 바로 뒤에 노드로 선다 — 분기 카드는 에피소드가 아니라 진행 JSON에 없고, 이 노드를
+            // `<<detour>>`가 부른다(2026-11-17). 타이틀은 분기점이 부르는 이름과 같은 함수를 지난다.
+            foreach (BranchCardHome home in homes.Where(home => string.Equals(home.EpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
+            {
+                text.Append('\n');
+                text.Append("// 분기 카드: ").Append(OneLine(home.Card.Name))
+                    .Append(" — 「").Append(OneLine(episode.ShownTitle)).Append("」에서 들른다\n");
+                text.Append("title: ").Append(YarnNaming.StoryNodeTitleOf(home.Card.Name, home.Card.Id)).Append("\n---\n");
+                AppendBody(text, episode.EpisodeId, home.Card, project, definition, problems);
+                text.Append("===\n");
+            }
         }
 
         return new ChapterYarnFile(
@@ -150,9 +165,10 @@ public static class ChapterYarnExporter
             problems);
     }
 
+    /// <param name="episodeId">문제를 짚을 에피소드 — 분기 카드면 그 집(부르는 에피소드).</param>
     private static void AppendBody(
         StringBuilder text,
-        ChapterEpisode episode,
+        string episodeId,
         DialogueNode? card,
         StoryProject? project,
         GameDefinition? definition,
@@ -169,7 +185,7 @@ public static class ChapterYarnExporter
         {
             // 줄 없는 카드는 막지 않는다 — 빈 노드로 선다(작가가 아직 안 쓴 에피소드다).
             bool blocking = problem.IsBlocking && problem.Kind != PublishProblemKind.MissingScript;
-            problems.Add(new ChapterYarnProblem(problem.Message, blocking, episode.EpisodeId, problem.LineId));
+            problems.Add(new ChapterYarnProblem(problem.Message, blocking, episodeId, problem.LineId));
         }
 
         RenderedDocument document = ResultDocumentComposer.Compose(
@@ -200,7 +216,7 @@ public static class ChapterYarnExporter
                     break;
 
                 case RenderedSegmentKind.DialogueLine:
-                    AppendLine(text, segment, indent, episode, problems);
+                    AppendLine(text, segment, indent, episodeId, problems);
                     break;
 
                 case RenderedSegmentKind.BranchDetour:
@@ -217,7 +233,7 @@ public static class ChapterYarnExporter
 
                 case RenderedSegmentKind.Warning:
                     problems.Add(new ChapterYarnProblem(
-                        segment.Text ?? "알 수 없는 경고", IsBlocking: false, episode.EpisodeId, segment.Source.LineId));
+                        segment.Text ?? "알 수 없는 경고", IsBlocking: false, episodeId, segment.Source.LineId));
                     break;
             }
         }
@@ -227,7 +243,7 @@ public static class ChapterYarnExporter
         StringBuilder text,
         RenderedSegment segment,
         string indent,
-        ChapterEpisode episode,
+        string episodeId,
         List<ChapterYarnProblem> problems)
     {
         string speaker = segment.Speaker?.Trim() ?? string.Empty;
@@ -237,7 +253,7 @@ public static class ChapterYarnExporter
         if (string.IsNullOrEmpty(lineId))
         {
             problems.Add(new ChapterYarnProblem(
-                $"대사 '{segment.Text}'에 LineId가 없어 #line: 태그를 만들 수 없습니다.", IsBlocking: true, episode.EpisodeId));
+                $"대사 '{segment.Text}'에 LineId가 없어 #line: 태그를 만들 수 없습니다.", IsBlocking: true, episodeId));
             return;
         }
 
@@ -248,7 +264,7 @@ public static class ChapterYarnExporter
             problems.Add(new ChapterYarnProblem(
                 $"대사 '{segment.Text}'가 `->`나 `===`로 시작합니다 — Yarn이 대사로 읽지 못합니다. 첫 글자를 고쳐 주세요.",
                 IsBlocking: true,
-                episode.EpisodeId,
+                episodeId,
                 lineId));
         }
 
@@ -258,7 +274,7 @@ public static class ChapterYarnExporter
             problems.Add(new ChapterYarnProblem(
                 $"대사 '{segment.Text}'의 중괄호 짝이 맞지 않습니다 — `{{ }}`는 스탯 읽기에만 씁니다.",
                 IsBlocking: true,
-                episode.EpisodeId,
+                episodeId,
                 lineId));
         }
 

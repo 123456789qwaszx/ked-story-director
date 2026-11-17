@@ -66,6 +66,7 @@ public static class EpisodeNaming
 
         return BoardOf(project, chapterId)?.Nodes.OfType<DialogueNode>()
             .FirstOrDefault(node =>
+                !node.IsBranchCard &&
                 string.Equals(EpisodeIdOf(node), episodeId, StringComparison.Ordinal));
     }
 
@@ -130,6 +131,12 @@ public static class EpisodeNaming
     {
         ArgumentNullException.ThrowIfNull(chapter);
         ArgumentNullException.ThrowIfNull(node);
+
+        // 분기 카드는 에피소드가 아니다(2026-11-17) — 이름이 우연히 에피소드와 같아도 그 에피소드를 대신하지 않는다.
+        if (node.IsBranchCard)
+        {
+            return null;
+        }
 
         string episodeId = EpisodeIdOf(node);
 
