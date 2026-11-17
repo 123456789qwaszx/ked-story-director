@@ -291,7 +291,8 @@ public static class ChapterProgressionExporter
         // 유니티가 "이 에피소드를 다 시청했을 때"의 이벤트·보상 트리거로 쓰는 패스스루
         // 인덱스이고, 툴은 해석하지 않는다.
         EventKey = episode.EventKey?.Trim() ?? string.Empty,
-        DesignerNote = episode.Memo ?? string.Empty,
+        // ⛔ `DesignerNote`(에피소드 지시)는 2026-11-17에 칸째 걷혔다(소유자) — 지시의 집은 대사 Yarn의 주석이다
+        //    (`ChapterYarnExporter`). 런타임 DTO에도 없던 칸이라(계약서 F절) 읽는 쪽이 없다.
         Position = new PositionJson { X = episode.X, Y = episode.Y }
     };
 
@@ -389,8 +390,6 @@ public static class ChapterProgressionExporter
 
         /// <summary>저장·롤백 경계. 빈 값은 런타임이 에피소드별 기본 장면으로 보정한다.</summary>
         public string SceneId { get; set; } = string.Empty;
-
-        public string DesignerNote { get; set; } = string.Empty;
 
         /// <summary>이 레이어의 확장 (G-2) — 게임 내 그래프가 같은 구도로 그린다.</summary>
         public PositionJson Position { get; set; } = new();

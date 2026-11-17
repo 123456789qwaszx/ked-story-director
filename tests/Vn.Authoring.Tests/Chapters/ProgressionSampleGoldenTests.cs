@@ -66,6 +66,8 @@ public sealed class ProgressionSampleGoldenTests
             {
                 Assert.False(node.TryGetProperty("EndingKey", out _));
                 Assert.False(node.TryGetProperty("IsChapterEndingCandidate", out _));
+                // 에피소드 지시는 대사 Yarn의 주석으로 갔다 — 진행 JSON에는 칸이 없다(2026-11-17).
+                Assert.False(node.TryGetProperty("DesignerNote", out _));
             });
 
         string[] eventKeys = document.RootElement

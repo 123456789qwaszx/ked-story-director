@@ -455,6 +455,7 @@ Option : { TargetEpisodeId, ChoiceLabel, VisibleConditions[], Conditions[],
 | ~~`Option.Kind`~~ | **저쪽에서 폐지** (`adfda627` — 자동 진행 자체가 폐지) | §G-7 종결. 이쪽이 내는 값은 버려진다 |
 | ~~`Option.HideWhenLocked`~~ | **저쪽 DTO에 없다** | 옛 F4의 "저쪽 DTO는 그대로 둔다"는 낡았다 — 저쪽이 걷었다 |
 | ~~`Node.EndingKey`·`IsChapterEndingCandidate`·`IndexText`·`Position`·`DesignerNote`·`VisibleConditions`·`UnlockConditions`·`Attachments`~~ | **저쪽 DTO에 없다** (`7503462f`) | 이쪽이 내는 빈 값은 버려진다(저쪽 견본 `qwer.progression.json`이 이쪽 08-27 산출물이고 이 칸들이 8개씩 들어 있다 — 무해). 재반입 때 함께 걷는다 |
+| ~~`Node.DesignerNote`~~ | ⛔ **이쪽에서도 걷었다** (2026-11-17 소유자) | 에피소드 지시가 실려 나가던 칸 — 저쪽 DTO에 없어 늘 버려졌다. 지시의 집은 이제 대사 Yarn(`exported/yarn/`)의 주석이다(`docs/work-orders/yarn-output-orders.md`). 위 줄의 나머지 칸은 그대로 재반입 때 걷는다 |
 
 **enum은 이름 문자열로 나간다** — 순서를 재배열해도 안 깨진다. 로더가 이름으로 맵핑하고,
 **알 수 없는 이름은 로더만의 검사 대상이다**(모델은 이미 enum이라 못 잡는다).
@@ -680,7 +681,7 @@ Scene 저작 UI·Exporter는 후속"**으로 명시했다(`docs/scene-boundary-p
 뒤처지고 미커밋이라 **원천을 런타임 사본으로 잡거나, 소유자가 정본을 먼저 커밋**해야 한다.
 반입하면 이쪽에서 `EndingRule`·`ScenarioAdvance`·`ScenarioTransition`·단일 `ProgressionDto.cs`
 참조 자리가 컴파일에서 드러나고, 내보내기의 레거시 칸(`EndingRules`·`Kind`·`HideWhenLocked`·
-`IndexText`·`Position`·`DesignerNote`·노드 관문)을 함께 걷는다. 저쪽 Scene 작업이 굳은 뒤
+`IndexText`·`Position`·노드 관문)을 함께 걷는다(`DesignerNote`는 2026-11-17에 먼저 걷었다). 저쪽 Scene 작업이 굳은 뒤
 §G-10과 한 번에.
 
 **G-12. 내보내기 결정성 · 선택지 순서 규율 — ⏸ 대기 (§C3·C4).** 같은 워크북이면 같은 바이트

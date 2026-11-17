@@ -49,7 +49,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_hall",
-      "DesignerNote": "Scene root",
       "Position": {
         "X": 0,
         "Y": 0
@@ -75,7 +74,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_hall",
-      "DesignerNote": "Auto 중간 Episode",
       "Position": {
         "X": 240,
         "Y": 0
@@ -135,7 +133,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_hall",
-      "DesignerNote": "Scene 마지막 선택",
       "Position": {
         "X": 480,
         "Y": 0
@@ -161,7 +158,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_trust",
-      "DesignerNote": "Via 이후 도착",
       "Position": {
         "X": 720,
         "Y": -120
@@ -187,7 +183,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_alone",
-      "DesignerNote": "",
       "Position": {
         "X": 720,
         "Y": 120
@@ -203,7 +198,6 @@
       "NextOptions": [],
       "EventKey": "ch01_true",
       "SceneId": "scene_true_end",
-      "DesignerNote": "",
       "Position": {
         "X": 960,
         "Y": -120
@@ -219,7 +213,6 @@
       "NextOptions": [],
       "EventKey": "ch01_alone",
       "SceneId": "scene_alone_end",
-      "DesignerNote": "",
       "Position": {
         "X": 960,
         "Y": 120
