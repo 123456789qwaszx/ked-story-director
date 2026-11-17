@@ -138,14 +138,14 @@ public sealed class ChapterBranchPanelTests
     });
 
     [Fact]
-    public void 분기를_고르면_조건_칸이_열린다() => HeadlessUi.Run(() =>
+    public void 분기_카드를_고르면_조건_칸이_열린다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
 
-        view.SelectBranch(project.BranchKey);
+        view.SelectBranchCard(project.BranchNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
@@ -162,12 +162,12 @@ public sealed class ChapterBranchPanelTests
     });
 
     [Fact]
-    public void 조건을_고르면_다녀갈_에피소드의_첫머리에_적힌다() => HeadlessUi.Run(() =>
+    public void 조건을_고르면_분기_카드의_첫머리에_적힌다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.SelectBranch(project.BranchKey);
+        view.SelectBranchCard(project.BranchNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
@@ -189,7 +189,7 @@ public sealed class ChapterBranchPanelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.SelectBranch(project.BranchKey);
+        view.SelectBranchCard(project.BranchNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
@@ -218,7 +218,7 @@ public sealed class ChapterBranchPanelTests
             branch.Id, firstLineId, [LineConditionTransition.EndIf()]);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        view.SelectBranch(project.BranchKey);
+        view.SelectBranchCard(project.BranchNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.False(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
@@ -230,9 +230,9 @@ public sealed class ChapterBranchPanelTests
     });
 
     [Fact]
-    public void 같은_줄의_분기_둘은_따로_고르고_조건도_따로_건다() => HeadlessUi.Run(() =>
+    public void 같은_줄의_분기_카드_둘은_따로_고르고_조건도_따로_건다() => HeadlessUi.Run(() =>
     {
-        // 한 줄에 분기가 여럿일 수 있다. 줄만으로 고르면 둘째가 첫째를 덮어 점선 하나만 고를 수 있게 된다.
+        // 한 줄에 분기가 여럿일 수 있다 — 칩이 둘이고 저마다 고른다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -245,7 +245,7 @@ public sealed class ChapterBranchPanelTests
             view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Line>()
                 .Count(line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true));
 
-        view.SelectBranch(Vn.Authoring.Flow.ExitPort.DetourKey(project.BranchLineId, second.Id));
+        view.SelectBranchCard(second.Id);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         view.FindControl<ComboBox>("BranchConditionCombo")!.SelectedItem = "신뢰높음";
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -256,40 +256,32 @@ public sealed class ChapterBranchPanelTests
     });
 
     [Fact]
-    public void 분기_강조는_다른_분기나_빈_판이나_카드를_고르면_풀린다() => HeadlessUi.Run(() =>
+    public void 칩_강조는_다른_칩이나_빈_판이나_카드를_고르면_풀린다() => HeadlessUi.Run(() =>
     {
-        // 분기 점선을 고르면 굵고 파래진다 — 그 강조가 선택을 옮겨도 남아 있으면 무엇을 고른 것인지 판이 거짓말을 한다.
+        // 고른 칩은 파랗고 굵다 — 그 강조가 선택을 옮겨도 남아 있으면 무엇을 고른 것인지 판이 거짓말을 한다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
         DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
-        session.Editor.AddBranchMarker(caller.Id, project.BranchLineId);
+        DialogueNode second = session.Editor.AddBranchMarker(caller.Id, project.BranchLineId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
-        List<Line> branches = BranchLines(canvas);
-        Assert.Equal(2, branches.Count);
-        double plain = branches[0].StrokeThickness;
-        List<Color> colors = branches.Select(line => ((ISolidColorBrush)line.Stroke!).Color).ToList();
+        double plain = Chip(canvas, project.BranchNodeId).BorderThickness.Left;
 
-        // 첫째를 누른다 — 그것만 굵다.
-        Press(HitOf(canvas, branches[0]));
-        Assert.True(branches[0].StrokeThickness > plain);
-        Assert.Equal(plain, branches[1].StrokeThickness);
+        Press(Chip(canvas, project.BranchNodeId));
+        Assert.True(Chip(canvas, project.BranchNodeId).BorderThickness.Left > plain);
+        Assert.Equal(plain, Chip(canvas, second.Id).BorderThickness.Left);
 
-        // 둘째를 누른다 — 첫째는 풀린다.
-        Press(HitOf(canvas, branches[1]));
-        Assert.Equal(plain, branches[0].StrokeThickness);
-        Assert.True(branches[1].StrokeThickness > plain);
+        Press(Chip(canvas, second.Id));
+        Assert.Equal(plain, Chip(canvas, project.BranchNodeId).BorderThickness.Left);
+        Assert.True(Chip(canvas, second.Id).BorderThickness.Left > plain);
 
-        // 빈 판을 누른다 — 둘 다 풀린다.
         Press(canvas);
-        Assert.All(branches, line => Assert.Equal(plain, line.StrokeThickness));
-        Assert.Equal(colors, branches.Select(line => ((ISolidColorBrush)line.Stroke!).Color));   // 저마다 제 색으로
+        Assert.Equal(plain, Chip(canvas, second.Id).BorderThickness.Left);
 
-        // 다시 고르고 카드를 고른다 — 풀린다.
-        Press(HitOf(canvas, branches[0]));
+        Press(Chip(canvas, project.BranchNodeId));
         view.SelectEpisode("root");
-        Assert.Equal(plain, branches[0].StrokeThickness);
+        Assert.Equal(plain, Chip(canvas, project.BranchNodeId).BorderThickness.Left);
     });
 
     [Fact]
@@ -327,43 +319,36 @@ public sealed class ChapterBranchPanelTests
     });
 
     [Fact]
-    public void 분기점을_누르면_점선을_누른_것과_같은_분기_정보가_나오고_끊기지_않는다() => HeadlessUi.Run(() =>
+    public void 점선과_분기점은_보이기만_하고_눌러도_아무것도_고르지_않는다() => HeadlessUi.Run(() =>
     {
-        // [구성] 탭에서는 분기점으로 잇고 끊지 않는다 — 누르면 그 분기를 고른다(점선을 누른 것과 같다).
+        // 소유자(2026-11-17): 점선을 누른 것과 칩을 누른 것이 같아졌으니 점선은 눌리지 않아도 된다 — 분기점도 마찬가지다. 고르는 것은 칩이다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
         DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
-        DialogueNode branch = session.Project.FindDialogue(project.BranchNodeId)!;
 
+        // 점선 위에 겹친 누름 선이 없다 — 점선은 눌리지 않는다.
+        Line line = Assert.Single(BranchLines(canvas));
+        Assert.False(line.IsHitTestVisible);
+        Assert.DoesNotContain(canvas.Children.OfType<Line>(), other =>
+            other != line && other.StartPoint == line.StartPoint && other.EndPoint == line.EndPoint);
+
+        // 분기점을 눌러도 아무것도 고르지 않고, 고른 것도 풀지 않는다.
+        view.SelectEpisode("root");
         Ellipse knob = Assert.Single(Knobs(canvas));
         Press(knob);
         Release(canvas, KnobCenter(knob));
 
-        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
-        Assert.True(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
-        Assert.Contains(
-            view.FindControl<Panel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
-            text => text.Text?.Contains(project.BranchName, StringComparison.Ordinal) == true);
+        Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
+        Assert.Contains("분기 카드", ToolTip.GetTip(knob) as string, StringComparison.Ordinal);
 
-        // 끊기지 않았다 — 분기도 점선도 그대로다.
-        Assert.Equal([branch.Id], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
-        Assert.Single(BranchLines(canvas));
-
-        // 점선을 누른 것과 같은 분기를 고른다 — 그 점선이 강조된다.
-        Assert.True(Assert.Single(BranchLines(canvas)).StrokeThickness > 2);
-
-        // 끌어 다른 에피소드에 놓아도 잇지 않는다.
-        Border target = Card(canvas, "root");
-        Press(Assert.Single(Knobs(canvas)));
-        var onCard = new Point(Canvas.GetLeft(target) + 20, Canvas.GetTop(target) + 20);
-        Move(canvas, onCard);
-        Release(canvas, onCard);
-        Assert.Equal([branch.Id], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
+        // 끊기지도 않았다.
+        Assert.Equal([project.BranchNodeId], session.Project.FindDialogue(caller.Id)!.FindExtension(project.BranchLineId)!.DetourTargetNodeIds);
     });
 
     [Fact]
-    public void 이어지지_않은_분기점을_누르면_이어지지_않았다고_말하고_조건_칸은_잠긴다() => HeadlessUi.Run(() =>
+    public void 이어지지_않은_분기점은_툴팁으로_대본_탭에서_잇는다고_말한다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -372,17 +357,10 @@ public sealed class ChapterBranchPanelTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
-        Press(Assert.Single(Knobs(canvas)));
+        Ellipse knob = Assert.Single(Knobs(canvas));
+        Assert.Contains("[대본] 탭", ToolTip.GetTip(knob) as string, StringComparison.Ordinal);
 
-        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
-        Assert.False(view.FindControl<ComboBox>("BranchConditionCombo")!.IsEnabled);
-        Assert.Contains(
-            view.FindControl<Panel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
-            text => text.Text?.Contains("이어지지 않음", StringComparison.Ordinal) == true);
-        Assert.Contains("[대본] 탭", view.FindControl<TextBlock>("BranchBlockedText")!.Text, StringComparison.Ordinal);
-
-        // 빈 판을 누르면 풀린다.
-        Press(canvas);
+        Press(knob);
         Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
     });
 
@@ -456,12 +434,6 @@ public sealed class ChapterBranchPanelTests
             .Where(line => (line.Tag as string)?.StartsWith("분기:", StringComparison.Ordinal) == true)
             .ToList();
 
-    /// <summary>점선에 겹친 굵은 누름 선 — 사람이 실제로 누르는 것이다.</summary>
-    private static Line HitOf(Canvas canvas, Line branch) =>
-        canvas.Children.OfType<Line>().Single(line =>
-            line != branch && line.StartPoint == branch.StartPoint && line.EndPoint == branch.EndPoint &&
-            line.Stroke == Brushes.Transparent);
-
     private static void Press(Control control)
     {
         var root = (Visual)TopLevel.GetTopLevel(control)!;
@@ -522,7 +494,6 @@ public sealed class ChapterBranchPanelTests
                 new Vn.Authoring.Script.LocalizedLine("라루", "들렀다 간다");
             BranchName = branch.Name;
             BranchNodeId = branch.Id;
-            BranchKey = Vn.Authoring.Flow.ExitPort.DetourKey(BranchLineId, branch.Id);
 
             ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);
             ProjectStore.Save(ManifestPath, editor.Project);
@@ -532,8 +503,6 @@ public sealed class ChapterBranchPanelTests
 
         public string BranchLineId { get; }
 
-        /// <summary>분기 하나의 열쇠 — 줄과 다녀갈 카드(한 줄에 분기가 여럿일 수 있다).</summary>
-        public string BranchKey { get; }
 
         /// <summary>분기 카드의 이름 — 에피소드가 아니다(2026-11-17).</summary>
         public string BranchName { get; }

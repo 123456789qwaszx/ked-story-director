@@ -2101,19 +2101,16 @@ public partial class GraphEditorView : UserControl
             Color.FromArgb(90, 128, 128, 128), 10, "⚙")
     };
 
-    /// <summary>분기로 다녀오는 카드 → 그 분기(챕터 · 열쇠 · 색). 판을 다시 세울 때마다 묻는다(<see cref="BranchEntries"/>).</summary>
-    private Dictionary<string, BranchEntry> _branchEntries = new(StringComparer.Ordinal);
-
-    /// <summary>분기 하나 — 조건을 정하러 갈 챕터와 분기 열쇠(<see cref="ExitPort.DetourKey"/>), 그 분기 선의 색 번호.</summary>
-    private readonly record struct BranchEntry(string ChapterId, string BranchKey, int PaletteIndex);
+    /// <summary>분기로 다녀오는 카드 → 그 분기 선의 색 번호. 판을 다시 세울 때마다 묻는다(<see cref="BranchEntries"/>).</summary>
+    private Dictionary<string, int> _branchEntries = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 분기 선이 들어오는 카드들 — 챕터 판의 분기만 든다(조건을 정하는 자리가 챕터 그래프다). 한 카드에 분기 선이 여럿 들어오면
-    /// 처음 것을 쓴다 — 조건은 카드의 첫머리 하나라 어느 선으로 가도 같은 조건이다.
+    /// 분기 선이 들어오는 카드들 — 챕터 판의 분기만 든다(조건은 챕터의 조건이다). 한 카드에 분기 선이 여럿 들어오면 처음 것의 색을
+    /// 쓴다 — 조건은 카드의 첫머리 하나라 어느 선으로 가도 같은 조건이다.
     /// </summary>
-    private Dictionary<string, BranchEntry> BranchEntries(GraphProjection projection)
+    private Dictionary<string, int> BranchEntries(GraphProjection projection)
     {
-        var entries = new Dictionary<string, BranchEntry>(StringComparer.Ordinal);
+        var entries = new Dictionary<string, int>(StringComparer.Ordinal);
 
         if (_session is null)
         {
@@ -2122,15 +2119,15 @@ public partial class GraphEditorView : UserControl
 
         foreach (GraphConnectionProjection connection in projection.Connections)
         {
-            if (connection.ExecutionPort is not { Kind: ExitPortKind.Detour, ExitKey: { } branchKey } ||
+            if (connection.ExecutionPort is not { Kind: ExitPortKind.Detour } ||
                 entries.ContainsKey(connection.TargetNodeId) ||
                 _session.Project.FindNode(connection.SourceNodeId) is not DialogueNode caller ||
-                EpisodeNaming.ChapterOf(_session.Project, caller) is not { } chapter)
+                EpisodeNaming.ChapterOf(_session.Project, caller) is null)
             {
                 continue;
             }
 
-            entries[connection.TargetNodeId] = new BranchEntry(chapter.ChapterId, branchKey, connection.PaletteIndex);
+            entries[connection.TargetNodeId] = connection.PaletteIndex;
         }
 
         return entries;
@@ -2139,17 +2136,15 @@ public partial class GraphEditorView : UserControl
     /// <summary>분기 조건 표의 Tag 머리 — 뒤에 카드(노드) Id.</summary>
     internal const string BranchConditionChipTag = "branch-condition-chip:";
 
-    /// <summary>분기의 조건을 정하러 가자고 했다 (챕터 Id, 분기 열쇠) — 셸이 챕터 그래프를 열고 그 분기를 고른다.</summary>
-    internal event Action<string, string>? BranchConditionRequested;
-
     /// <summary>
-    /// 분기로 다녀오는 카드 머리의 조건 표 — 「⑂ 조건 없음」 · 「⑂ 조건: X」. 연출 그래프는 조건을 고치지 않지만 보여야 한다: 조건 없는
-    /// 분기와 조건 걸린 분기가 판에서 똑같아 보이면 헷갈린다. 색은 그 분기 선의 색이고, 누르면 챕터 그래프의 그 분기로 간다.
+    /// 분기로 다녀오는 카드 머리의 조건 표 — 「⑂ 조건 없음」 · 「⑂ 조건: X」. 조건 없는 분기와 조건 걸린 분기가 판에서 똑같아 보이면
+    /// 헷갈린다. 색은 그 분기 선의 색이다. <b>누르면 그 카드를 고른다</b>(카드를 누른 것과 같다 — 인스펙터 위쪽에 조건 칸이 선다,
+    /// 2026-11-17 소유자). ⛔ 전에는 [구성] 탭의 그 분기로 갔다.
     /// </summary>
-    private Border BranchConditionChip(string nodeId, BranchEntry entry)
+    private Border BranchConditionChip(string nodeId, int palette)
     {
         BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId, _session.Definition);
-        IBrush accent = BranchPalette.Accent(entry.PaletteIndex);
+        IBrush accent = BranchPalette.Accent(palette);
         bool undecided = BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label);
 
         var chip = new Border
@@ -2159,9 +2154,8 @@ public partial class GraphEditorView : UserControl
             Margin = new Thickness(4, 0, 0, 0),
             BorderThickness = new Thickness(1),
             BorderBrush = accent,
-            Background = state.Label is null ? Brushes.Transparent : BranchPalette.Background(entry.PaletteIndex),
+            Background = state.Label is null ? Brushes.Transparent : BranchPalette.Background(palette),
             VerticalAlignment = VerticalAlignment.Center,
-            Cursor = new Cursor(StandardCursorType.Hand),
             Tag = BranchConditionChipTag + nodeId,
             Child = new TextBlock
             {
@@ -2172,16 +2166,10 @@ public partial class GraphEditorView : UserControl
                 MaxWidth = 110,
                 TextTrimming = TextTrimming.CharacterEllipsis
             },
-            [ToolTip.TipProperty] = $"분기로 다녀오는 에피소드입니다. {BranchConditionNote.Sentence(state, undecided)} " +
-                                    $"{BranchConditionNote.Where} 누르면 [구성] 탭의 그 분기로 갑니다."
+            [ToolTip.TipProperty] = $"분기로 다녀오는 카드입니다. {BranchConditionNote.Sentence(state, undecided)} {BranchConditionNote.Where}"
         };
 
-        chip.PointerPressed += (_, args) => UiGuard.Run(_session, "분기 조건", () =>
-        {
-            args.Handled = true;
-            BranchConditionRequested?.Invoke(entry.ChapterId, entry.BranchKey);
-        });
-
+        // 누르기는 카드로 흘린다 — 카드를 누른 것과 같다(고른다 · 끈다).
         return chip;
     }
 
@@ -2283,9 +2271,9 @@ public partial class GraphEditorView : UserControl
         title.Children.Add(titleIcon);
         title.Children.Add(titleName);
 
-        if (_branchEntries.TryGetValue(node.NodeId, out BranchEntry entry))
+        if (_branchEntries.TryGetValue(node.NodeId, out int palette))
         {
-            Control chip = BranchConditionChip(node.NodeId, entry);
+            Control chip = BranchConditionChip(node.NodeId, palette);
             Grid.SetColumn(chip, 2);
             title.Children.Add(chip);
         }

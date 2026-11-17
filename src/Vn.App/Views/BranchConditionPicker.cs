@@ -6,9 +6,9 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Views;
 
 /// <summary>
-/// <b>분기의 조건을 고르는 칸</b> — [대본] 탭의 분기 카드(대사 편집기)와 분기 선 인스펙터가 같은 칸을 쓴다(2026-11-17 소유자: 조건 이름을
-/// [대본] 탭에서 만들었으니 분기의 조건도 거기서 바로 고른다). [구성] 탭 분기 패널의 콤보와 같은 일을 한다 — 규칙은
-/// <see cref="BranchEntryCondition"/> 하나다.
+/// <b>분기의 조건을 고르는 칸</b> — [대본] 탭에서 분기 카드를 고르면 대본 위쪽에 선다(2026-11-17 소유자 — 분기는 무조건 들른 뒤 그
+/// 카드에서 <c>&lt;&lt;if&gt;&gt;</c>로 보므로 그 카드에서 고른다. ⛔ 같은 날 아침에는 부르는 카드의 분기 상자와 분기 선 인스펙터에 섰다).
+/// [구성] 탭 칩 인스펙터의 콤보와 같은 일을 한다 — 규칙은 <see cref="BranchEntryCondition"/> 하나다.
 ///
 /// 목록은 「(언제나)」와 그 챕터의 조건 이름이다. <b>식 미정인 조건도 고른다</b> — 식을 채울 때까지 항상 통과하고(간선과 같은 규칙),
 /// [구성] 탭에서 식을 채우면 그 분기가 저절로 새 식을 따른다(사본은 이름으로 짝짓는다 — <see cref="ChapterBoardSupply"/>).
@@ -20,7 +20,7 @@ internal static class BranchConditionPicker
     /// <summary>조건을 안 건 분기 — 언제나 다녀온다.</summary>
     internal const string Always = "(언제나)";
 
-    /// <param name="targetNodeId">다녀갈 카드 — 조건은 그 카드의 첫머리에 선다.</param>
+    /// <param name="targetNodeId">분기 카드 — 조건은 그 카드의 첫머리에 선다.</param>
     /// <param name="tag">칸의 Tag — 화면마다 제 표를 단다.</param>
     /// <param name="applied">넣은 뒤(성공이든 거절이든) 화면이 할 일 — 설명 글을 다시 세운다.</param>
     internal static ComboBox Create(AuthoringSession session, string targetNodeId, string tag, Action? applied = null)

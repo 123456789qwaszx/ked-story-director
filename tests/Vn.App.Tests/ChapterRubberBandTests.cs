@@ -14,7 +14,7 @@ namespace Vn.App.Tests;
 /// <summary>
 /// <b>[구성] 판의 범위 선택(러버밴드)</b> — [대본] 탭과 같은 규칙이다. 빈 판을 끌면 사각형이 서고, 카드가 걸리면 카드만 무리가
 /// 되어(함께 걸친 선은 고르지 않는다) 끌기 시작한 자리에서 가장 가까운 카드가 인스펙터에 선다. 무리의 카드를 끌면 무리가 함께
-/// 움직이고, 놓을 때 한 번 적는다(되돌리기 한 칸). 카드 없이 선(선택지 선 · 분기 점선)만 걸리면 놓은 자리(포인터)에서 가장
+/// 움직이고, 놓을 때 한 번 적는다(되돌리기 한 칸). 카드 없이 선(선택지 선)만 걸리면 놓은 자리(포인터)에서 가장
 /// 가까운 선 하나를 고른다.
 /// </summary>
 public sealed class ChapterRubberBandTests : IDisposable
@@ -106,15 +106,17 @@ public sealed class ChapterRubberBandTests : IDisposable
     });
 
     [Fact]
-    public void 분기_점선만_걸리면_그_분기를_고른다() => HeadlessUi.Run(() =>
+    public void 분기_점선만_걸리면_아무것도_고르지_않는다() => HeadlessUi.Run(() =>
     {
+        // 분기 점선은 고르는 것이 아니다(2026-11-17 소유자 — 분기는 칩으로 고른다). 점선만 걸린 범위는 아무것도 고르지 않는다.
         (MainWindow window, ChapterGraphView view, AuthoringSession _) = Show();
 
         // root 오른변의 분기점(250, 97)에서 분기 카드 칩(284, 72)으로 오르는 점선 — 선택지 선(root→a)보다 위쪽.
         Band(view, new Point(266, 77), new Point(276, 86));
 
-        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.False(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
         Assert.False(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
+        Assert.False(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
 
         window.Close();
     });

@@ -20,6 +20,9 @@
                               ToolTip.Tip="켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요." />
                 </Grid>
 
+                <!-- 분기 카드의 조건 — 대본 위쪽(2026-11-17 소유자: 분기는 무조건 들른 뒤 그 카드에서 if로 본다). 분기 카드일 때만 선다. -->
+                <StackPanel x:Name="BranchConditionHost" Spacing="3" IsVisible="False" />
+
                 <Button x:Name="AddLineButton"
                         HorizontalAlignment="Right"
                         Content="줄 추가"

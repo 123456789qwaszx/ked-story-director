@@ -208,6 +208,8 @@ public partial class DialogueNodeEditor : UserControl
             HideEmptyChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
             HideEmptyChoicesBox.IsChecked = _session.HiddenChoiceNodeIds.Contains(node.Id);
 
+            FillBranchCondition(node);
+
             DialogueScript script = DialogueScriptResolver.Resolve(_session.Project, node);
             DialogueFlow flow = ConditionFlowResolver.Resolve(
                 node,
@@ -927,9 +929,8 @@ public partial class DialogueNodeEditor : UserControl
             VerticalAlignment = VerticalAlignment.Center
         });
 
-        // 지금 걸린 조건 — 여기서 바로 고른다(2026-11-17 소유자 — 전에는 [구성] 탭으로 데려가는 단추였다).
+        // 지금 걸린 조건 — 글로만 보인다. 고르는 곳은 그 분기 카드 위쪽이다(2026-11-17 소유자 — ⛔ 같은 날 아침에는 여기 칸이 있었다).
         BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, targetId, _session.Definition);
-        string? chapterId = EpisodeNaming.ChapterOf(_session.Project, node)?.ChapterId;
 
         detail.Children.Add(new TextBlock
         {
@@ -940,23 +941,6 @@ public partial class DialogueNodeEditor : UserControl
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
         });
-
-        if (chapterId is not null)
-        {
-            // 고르면 모델이 바뀌어 편집기가 다시 선다 — 설명 글도 따라온다.
-            ComboBox pick = BranchConditionPicker.Create(_session, targetId, BranchConditionTag(lineId, targetId));
-            var pickRow = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
-            pickRow.Children.Add(new TextBlock
-            {
-                Text = "조건",
-                FontSize = 11,
-                Margin = new Thickness(0, 0, 6, 0),
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            Grid.SetColumn(pick, 1);
-            pickRow.Children.Add(pick);
-            detail.Children.Add(pickRow);
-        }
 
         Button remove = RemoveBranchButton(node, lineId, targetId);
         DockPanel.SetDock(remove, Dock.Right);
@@ -990,9 +974,52 @@ public partial class DialogueNodeEditor : UserControl
         return card;
     }
 
-    /// <summary>분기 카드의 조건 고르는 칸이 지는 표.</summary>
-    internal static string BranchConditionTag(string lineId, string targetId) =>
-        $"branch-condition:{ExitPort.DetourKey(lineId, targetId)}";
+    /// <summary>분기 카드 위쪽의 조건 고르는 칸이 지는 표.</summary>
+    internal const string BranchConditionTag = "branch-card-condition";
+
+    /// <summary>
+    /// <b>분기 카드의 조건</b> — 대본 위쪽에 한 칸(2026-11-17 소유자: 분기는 무조건 들른 뒤 그 카드에서 <c>&lt;&lt;if&gt;&gt;</c>로 보므로,
+    /// 조건은 그 카드에서 고르는 것이 직관적이다). 조건은 분기마다가 아니라 이 카드의 첫머리 하나다(<see cref="BranchEntryCondition"/>) —
+    /// 어느 분기점에서 들러도 같다. 고르는 칸은 여기 한 곳이다 — ⛔ 부르는 카드의 분기 상자와 [대본] 분기 선 인스펙터의 칸은 같은 날 걷었다.
+    /// 챕터 판의 분기 카드에만 선다(조건은 챕터의 것이다).
+    /// </summary>
+    private void FillBranchCondition(DialogueNode node)
+    {
+        BranchConditionHost.Children.Clear();
+        BranchConditionHost.IsVisible =
+            _session is not null && node.IsBranchCard && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
+
+        if (_session is null || !BranchConditionHost.IsVisible)
+        {
+            return;
+        }
+
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, node.Id, _session.Definition);
+
+        // 고르면 모델이 바뀌어 편집기가 다시 선다 — 설명 글도 따라온다.
+        ComboBox pick = BranchConditionPicker.Create(_session, node.Id, BranchConditionTag);
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+        row.Children.Add(new TextBlock
+        {
+            Text = "⑂ 조건",
+            FontSize = 12,
+            FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(0, 0, 8, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        Grid.SetColumn(pick, 1);
+        row.Children.Add(pick);
+
+        BranchConditionHost.Children.Add(row);
+        BranchConditionHost.Children.Add(new TextBlock
+        {
+            Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, node.Id, state.Label)) +
+                   " 분기로는 늘 들르고, 이 카드가 첫머리에서 조건을 봅니다.",
+            FontSize = 10,
+            Opacity = 0.7,
+            TextWrapping = TextWrapping.Wrap
+        });
+    }
 
 
     /// <summary>그 줄의 「조건 분기」 카드 하나가 지는 표(줄과 다녀갈 카드) — 화면 테스트가 이것으로 찾는다.</summary>

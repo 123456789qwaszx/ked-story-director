@@ -259,24 +259,13 @@ public partial class MainWindow
 
         if (port is { Kind: ExitPortKind.Detour, TargetNodeId: { } target })
         {
-            Graph.SetInspectorHeader($"분기 · {from} → {to}", "조건이 맞으면 다녀오는 에피소드");
+            Graph.SetInspectorHeader($"분기 · {from} → {to}", "들렀다 돌아오는 분기 카드");
             BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, target, _session.Definition);
 
-            // 조건을 여기서 바로 고른다(2026-11-17 소유자 — 전에는 [구성] 탭으로 데려가는 단추였다). 출발 · 다녀갈 곳 고리도 두지
-            // 않는다 — 머리글이 이미 말한다.
-            ComboBox pick = BranchConditionPicker.Create(_session, target, "summary-branch-condition", ShowSelectedNode);
-            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
-            row.Children.Add(new TextBlock
-            {
-                Text = "조건",
-                FontSize = 12,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 8, 0)
-            });
-            Grid.SetColumn(pick, 1);
-            row.Children.Add(pick);
-            DirectorSummary.Children.Add(row);
-            Note(BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, target, state.Label)));
+            // 조건은 여기서 고르지 않는다 — 그 분기 카드를 고르면 대본 위쪽에 칸이 선다(2026-11-17 소유자: 분기는 무조건 들른 뒤
+            // 그 카드에서 if로 보므로). ⛔ 같은 날 아침에는 여기 칸이 있었다.
+            Note(BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, target, state.Label)) +
+                 $" 조건은 분기 카드 「{to}」를 고르면 대본 위쪽에서 고릅니다.");
             return;
         }
 

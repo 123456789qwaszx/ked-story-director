@@ -68,18 +68,24 @@ public sealed class BranchMarkerCardTests : IDisposable
     });
 
     [Fact]
-    public void 카드에는_조건을_고르는_칸_하나만_있고_식을_적는_칸은_없다() => HeadlessUi.Run(() =>
+    public void 부르는_쪽_분기_상자에는_고르는_칸이_없고_조건은_분기_카드_위쪽_한_칸에서_고른다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-17 소유자 — 조건을 카드에서 바로 고른다(챕터에 만들어 둔 조건 이름에서). 식을 적는 칸은 여전히 없다 — 식은 [구성] 탭이다.
+        // 2026-11-17 소유자 — 분기는 무조건 들른 뒤 그 카드에서 if로 보므로 조건은 분기 카드에서 고른다(대본 위쪽 한 칸). 부르는 쪽 분기
+        // 상자는 지금 조건을 글로만 보인다. 식을 적는 칸은 어디에도 없다 — 식은 [구성] 탭이다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
-        session.Editor.AddBranchMarker(nodeId, lineId);
+        DialogueNode made = session.Editor.AddBranchMarker(nodeId, lineId);
         Rebuild(editor, nodeId);
 
         Border card = Assert.IsType<Border>(Card(editor, lineId));
+        Assert.Empty(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(card).OfType<ComboBox>());
+        Assert.False(editor.BranchConditionHost.IsVisible);   // 부르는 쪽은 분기 카드가 아니다
 
-        Assert.Single(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(card).OfType<ComboBox>());
-        Assert.Empty(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(card).OfType<TextBox>());   // 콤보 틀 안의 칸은 세지 않는다
+        Rebuild(editor, made.Id);
+
+        Assert.True(editor.BranchConditionHost.IsVisible);
+        Assert.Single(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(editor.BranchConditionHost).OfType<ComboBox>());
+        Assert.Empty(Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(editor.BranchConditionHost).OfType<TextBox>());
     });
 
     [Fact]

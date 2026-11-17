@@ -5,14 +5,14 @@ namespace Vn.App.Views;
 /// <summary>
 /// 분기 조건을 사람에게 말하는 글 — 연출 그래프 카드의 표와 인스펙터의 분기 카드가 같은 말을 쓴다.
 ///
-/// 조건은 다녀오는 에피소드의 첫머리에 선다(<see cref="BranchEntryCondition"/>). 고르는 곳은 [대본] 탭의 분기 카드 · 분기 선
-/// 인스펙터(<see cref="BranchConditionPicker"/> — 2026-11-17)와 [구성] 탭의 분기 선이다. 지금 걸린 조건은 늘 보인다 — 안 보이면
+/// 조건은 분기 카드의 첫머리에 선다(<see cref="BranchEntryCondition"/>). 고르는 곳은 분기 카드 한 곳이다 — [대본] 탭은 그 카드의
+/// 대본 위쪽 칸(<see cref="BranchConditionPicker"/>), [구성] 탭은 그 칩의 인스펙터(2026-11-17). 지금 걸린 조건은 늘 보인다 — 안 보이면
 /// 조건 없는 분기와 조건 걸린 분기가 판에서 똑같아 보인다.
 /// </summary>
 internal static class BranchConditionNote
 {
     /// <summary>어디서 정하는가.</summary>
-    internal const string Where = "조건은 [대본] 탭의 분기 카드 · 분기 선에서, 또는 [구성] 탭의 분기 선(점선) · 분기 카드 칩에서 고릅니다.";
+    internal const string Where = "조건은 분기 카드에서 고릅니다 — [대본] 탭은 그 카드를 골라 대본 위쪽 칸에서, [구성] 탭은 그 칩을 눌러서.";
 
     /// <summary>그 분기(다녀갈 카드)에 걸린 조건이 <b>식 미정</b>인가 — 그 챕터의 그 이름 조건이 식이 비었다.</summary>
     internal static bool IsUndecided(Vn.Authoring.Model.StoryProject project, string targetNodeId, string? label) =>

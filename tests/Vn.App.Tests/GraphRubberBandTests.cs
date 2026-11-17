@@ -151,24 +151,18 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal(4, line.StrokeThickness);
         Assert.StartsWith("분기 · root → ", Title(graph), StringComparison.Ordinal);
 
-        // [구성] 탭으로 가는 단추 · 출발/다녀갈 곳 고리는 없다 — 조건을 여기서 고른다(2026-11-17 소유자).
+        // [구성] 탭으로 가는 단추 · 출발/다녀갈 곳 고리는 없다.
         List<Button> buttons = graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Button>()
             .Where(button => button.IsEffectivelyVisible && button.Tag is string tag &&
                              (tag == "summary-open" || tag.StartsWith("summary-node:", StringComparison.Ordinal)))
             .ToList();
         Assert.Empty(buttons);
 
-        session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
-        Dispatcher.UIThread.RunJobs();
-        Band(graph, middle + new Point(6, 6), middle - new Point(6, 6));
-
-        ComboBox picker = BranchPicker(graph);
-        Assert.Equal(BranchConditionPicker.Always, (picker.SelectedItem as ComboBoxItem)?.Content);
-        picker.SelectedItem = picker.Items.OfType<ComboBoxItem>().Single(item => Equals(item.Tag, "신뢰높음"));
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, detour.Id, session.Definition).Label);
-        Assert.Equal(0 + 1, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);   // [대본] 탭에 그대로다
+        // 조건 칸도 없다 — 조건은 그 분기 카드를 골라 대본 위쪽에서 고른다(2026-11-17 소유자). 선 인스펙터는 그것을 말한다.
+        Assert.DoesNotContain(graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<ComboBox>(),
+            combo => combo.IsEffectivelyVisible);
+        Assert.Contains(graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<TextBlock>(),
+            text => text.IsEffectivelyVisible && text.Text?.Contains($"분기 카드 「{detour.Name}」를 고르면 대본 위쪽", StringComparison.Ordinal) == true);
 
         window.Close();
     });
@@ -205,10 +199,6 @@ public sealed class GraphRubberBandTests : IDisposable
     /// <summary>레인을 누르는 자리 — 넓고 투명한 같은 선이다.</summary>
     private static ShapePath LaneHit(GraphEditorView graph) =>
         Canvas(graph).Children.OfType<ShapePath>().Single(path => path.Tag?.GetType().Name == "RailKey");
-
-    private static ComboBox BranchPicker(GraphEditorView graph) =>
-        graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<ComboBox>()
-            .Single(combo => combo.IsEffectivelyVisible && (string?)combo.Tag == "summary-branch-condition");
 
     private static string? Title(GraphEditorView graph) => graph.FindControl<TextBlock>("InspectorTitle")!.Text;
 
