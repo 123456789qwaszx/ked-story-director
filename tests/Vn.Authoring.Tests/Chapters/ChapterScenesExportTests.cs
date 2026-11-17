@@ -39,6 +39,34 @@ public sealed class ChapterScenesExportTests : IDisposable
         JsonDocument.Parse(ChapterScenesExporter.Export(Model(editor), editor.Project)).RootElement.Clone();
 
     [Fact]
+    public void 분기_카드의_대사는_부르는_에피소드_아래_branches로_든다()
+    {
+        // 분기 카드 대사에도 연출이 붙는다(2026-11-17 소유자 — ked-scenes/2). 분기 카드는 에피소드가 아니라 episodes에 없다.
+        ProjectEditor editor = Sample();
+        JsonElement root = Export(editor);
+        JsonElement[] episodes = root.GetProperty("scenes").EnumerateArray()
+            .SelectMany(scene => scene.GetProperty("episodes").EnumerateArray())
+            .ToArray();
+
+        Assert.Equal("ked-scenes/2", root.GetProperty("format").GetString());
+        Assert.DoesNotContain(episodes, episode => episode.GetProperty("episodeId").GetString() == "Festival_Wrapup_Remade");
+
+        JsonElement wrapup = episodes.Single(episode => episode.GetProperty("episodeId").GetString() == "Festival_Wrapup");
+        JsonElement[] branches = wrapup.GetProperty("branches").EnumerateArray().ToArray();
+        Assert.Equal(["Festival_Wrapup_Remade", "Festival_Wrapup_Sticker"], branches.Select(branch => branch.GetProperty("name").GetString()));
+
+        DialogueNode remade = EpisodeNaming.BoardOf(editor.Project, Ch)!.Nodes.OfType<DialogueNode>().Single(node => node.Name == "Festival_Wrapup_Remade");
+        Assert.Equal(
+            remade.Script.ActiveLines.Select(line => line.Id),
+            branches[0].GetProperty("lines").EnumerateArray().Select(line => line.GetProperty("lineId").GetString()));
+
+        // 분기 카드를 부르지 않는 에피소드는 branches를 쓰지 않는다(빈 칸은 쓰지 않는다).
+        Assert.False(episodes.Single(episode => episode.GetProperty("episodeId").GetString() == "Festival_Classroom")
+            .TryGetProperty("branches", out _));
+        Assert.Equal(5, episodes.Sum(episode => episode.TryGetProperty("branches", out JsonElement found) ? found.GetArrayLength() : 0));
+    }
+
+    [Fact]
     public void 장면마다_메모와_에피소드_지시와_살아_있는_대사가_하이어아키_차례로_든다()
     {
         ProjectEditor editor = Sample();
