@@ -8,10 +8,6 @@ namespace Vn.Authoring.Chapters;
 /// </summary>
 /// <param name="Index">"05"·"05A"·"★"처럼 사람이 붙이는 표시용 순번. 숫자가 아니어도 된다.</param>
 /// <param name="DialogueEntry">런타임이 재생할 대사 엔트리 이름. 비면 오류다.</param>
-/// <param name="AllowUnreachable">
-/// `도달불가 허용` 열(선택)이 켜져 있는가. 도달성 증명이 이 에피소드의 도달 불가를
-/// 오류가 아니라 알림으로 낮추되, 그 사실은 그래프에 표시된다 — 조용히 넘기지 않는다.
-/// </param>
 public sealed record ChapterEpisode(
     string EpisodeId,
     string Title,
@@ -19,9 +15,10 @@ public sealed record ChapterEpisode(
     string DialogueEntry,
     double X,
     double Y,
-    string? Memo,
-    bool AllowUnreachable = false)
+    string? Memo)
 {
+    // ⛔ `AllowUnreachable`(`도달불가 허용` — 도달 불가를 알림으로 낮추던 깃발)은 2026-11-17에 걷혔다. 이어지지 않은 에피소드는 경고가
+    //    됐고(`EpisodeNotConnected`), 조건 때문에 못 닿는 것은 고칠 설계 버그라 낮출 자리가 없다(화면에 켜는 곳도 없었다).
     // 선택지 수를 따로 세지 않는다: 이 에피소드에서 나가는 간선 하나가 곧 선택지 하나다.
 
     /// <summary>

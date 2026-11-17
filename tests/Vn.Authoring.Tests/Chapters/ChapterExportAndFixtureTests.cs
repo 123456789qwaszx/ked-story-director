@@ -24,8 +24,7 @@ public sealed class ChapterExportAndFixtureTests
         ChapterGraphModel chapter = Sample();
 
         // 견본 간선에는 trust 증감이 없다 → 신뢰높음 관문이 영원히 닫혀 branch05.02A가 도달
-        // 불가다. 그래서 그 에피소드에 `도달불가 허용`이 없는 원본 대신 검증을 통과하는
-        // 절단본으로 낸다 — 거부 동작은 아래 테스트가 따로 고정한다.
+        // 불가다(설계 버그 — 오류). 그래서 원본 대신 검증을 통과하는 절단본으로 낸다 — 거부 동작은 아래 테스트가 따로 고정한다.
         ChapterGraphModel trimmed = Trim(chapter, remove: "branch05.02A");
 
         ChapterExportResult result = ChapterProgressionExporter.Export(trimmed);
@@ -71,8 +70,7 @@ public sealed class ChapterExportAndFixtureTests
         Assert.Equal("main05.03", options[0].GetProperty("TargetEpisodeId").GetString());
 
         // 2026-08-25 — 부착이라는 종류가 계약에서 사라졌다. `attach05.02s`는 이제 들어오는
-        // 간선이 없는 <b>보통 에피소드</b>로 나가고, 의도임은 저작 쪽 `도달불가 허용`이
-        // 적는다(산출물에는 안 실린다 — 저작의 사정이다).
+        // 간선이 없는 <b>보통 에피소드</b>로 나간다(저작 쪽에서는 이어지지 않음 — 경고 · 내보내기를 막지 않는다).
         JsonElement island = nodes.EnumerateArray()
             .Single(node => node.GetProperty("EpisodeId").GetString() == "attach05.02s");
         Assert.False(island.TryGetProperty("Kind", out _));

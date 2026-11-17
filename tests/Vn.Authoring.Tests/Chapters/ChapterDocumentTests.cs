@@ -46,7 +46,7 @@ public sealed class ChapterDocumentTests : IDisposable
 
         Assert.Equal("ch01", read.ChapterId);
 
-        // 에피소드 — 자리·표시 순번·장면 경계·이벤트키·도달불가 허용까지.
+        // 에피소드 — 자리·표시 순번·장면 경계·이벤트키까지.
         ChapterEpisode episode = read.Episodes[0];
 
         Assert.Equal("ep01", episode.EpisodeId);
@@ -57,7 +57,6 @@ public sealed class ChapterDocumentTests : IDisposable
         Assert.Equal("첫 장면", episode.Memo);
         Assert.Equal("ev_corridor", episode.EventKey);
         Assert.Equal("sc_corridor", episode.SceneId);
-        Assert.True(read.Episodes[1].AllowUnreachable);
 
         // 간선 — 문구·관문 둘·잠금 안내문·자동·스탯변화.
         ChapterEdge edge = read.Edges[0];
@@ -131,8 +130,7 @@ public sealed class ChapterDocumentTests : IDisposable
                 EventKey = "ev_corridor",
                 SceneId = "sc_corridor"
             },
-            new ChapterEpisode("ep02", "옥상", "10", "Story_ch01_02", 300, 40, null,
-                AllowUnreachable: true)
+            new ChapterEpisode("ep02", "옥상", "10", "Story_ch01_02", 300, 40, null)
         ],
         Edges =
         [

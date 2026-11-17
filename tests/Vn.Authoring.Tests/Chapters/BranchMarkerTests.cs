@@ -210,18 +210,20 @@ public sealed class BranchMarkerTests
     }
 
     [Fact]
-    public void 손으로_세운_카드는_에피소드고_도달_불가로_운다()
+    public void 손으로_세운_카드는_에피소드고_이어지지_않았다고_말한다()
     {
-        // 작가가 판에 그냥 세운 카드는 <b>에피소드</b>이고 아직 안 이은 것이므로 짚어 줘야 한다 — 허용을 기본값으로 두면 고아 에피소드가
-        //    조용히 쌓인다. 분기 카드는 「분기 추가」 · 빈 곳에 놓은 분기점으로만 선다.
+        // 작가가 판에 그냥 세운 카드는 <b>에피소드</b>이고 아직 안 이은 것이므로 짚어 줘야 한다 — 말없이 두면 고아 에피소드가 조용히
+        //    쌓인다. 작업 중이라 경고다(EpisodeNotConnected — 2026-11-17). 분기 카드는 「분기 추가」 · 빈 곳에 놓은 분기점으로만 선다.
         (ProjectEditor editor, _, _) = World();
 
         DialogueNode made = editor.AddDialogueNode(
             editor.Project.Files[0].Id, name: "혼자선카드");
+        ChapterDocument chapter = editor.Project.Chapters.Single();
 
-        Assert.False(editor.Project.Chapters.Single().Episodes
-            .Single(episode => string.Equals(episode.EpisodeId, made.Name, StringComparison.Ordinal))
-            .AllowUnreachable);
+        ChapterDiagnostic said = Assert.Single(
+            ChapterValidator.Validate(chapter.ToGraphModel(chapter.ChapterId), editor.Project).All,
+            item => item.Code == ChapterDiagnosticCode.EpisodeNotConnected);
+        Assert.Equal((made.Name, ChapterDiagnosticSeverity.Warning), (said.EpisodeId, said.Severity));
     }
 
     [Fact]

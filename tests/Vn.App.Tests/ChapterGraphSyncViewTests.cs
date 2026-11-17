@@ -114,9 +114,9 @@ public sealed class ChapterGraphSyncViewTests
     [Fact]
     public void 검증을_통과하면_규약_폴더에_JSON이_저절로_나간다() => HeadlessUi.Run(() =>
     {
-        // 도달 불가를 `도달불가 허용`(D3)으로 명시 예외 처리하면 검증을 통과한다.
+        // 견본의 의도된 오류(신뢰를 올려 주는 길이 없어 branch05.02A에 못 닿는다)를 고치면 검증을 통과한다.
         // 단추를 누르지 않는다 — 프로젝트를 여는 그 순간 나간다.
-        using var project = new TempProject(allowUnreachable: true);
+        using var project = new TempProject(passing: true);
 
         (ChapterGraphView view, _) = Show(project);
 
@@ -136,7 +136,7 @@ public sealed class ChapterGraphSyncViewTests
     public void 툴에서_고치면_JSON도_따라_갱신된다() => HeadlessUi.Run(() =>
     {
         // 툴에서 고친 것이 JSON까지 간다 — 자동 내보내기는 사람 손을 기다리지 않는다.
-        using var project = new TempProject(allowUnreachable: true);
+        using var project = new TempProject(passing: true);
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -159,7 +159,7 @@ public sealed class ChapterGraphSyncViewTests
     public void 보낼_곳에는_고칠_때가_아니라_저장할_때_보낸다() => HeadlessUi.Run(() =>
     {
         // 2026-11-17 소유자 — exported/는 바뀔 때마다, 보낼 곳(게임 폴더 등)은 저장할 때만(export-destinations G1).
-        using var project = new TempProject(allowUnreachable: true);
+        using var project = new TempProject(passing: true);
         string game = Path.Combine(Path.GetDirectoryName(project.ManifestPath)!, "game");
         Directory.CreateDirectory(game);
         ExportDestinations.SaveBeside(project.ManifestPath, ExportDestinations.None.With(ExportFormat.Progression, "game"));
@@ -194,7 +194,7 @@ public sealed class ChapterGraphSyncViewTests
         // 둘째 챕터도 판과 카드가 서 있어야 검증이 그 챕터의 카드를 찾는다 — 열 때 맞추기
         // (<c>AlignBoardsWithChapters</c>)가 두 챕터 모두에 세운다. 판 없는 챕터는 거부가 맞다
         // (검증이 다른 챕터(ch05) 판의 같은 EpisodeId 노드를 집어 통과시키면 안 된다).
-        using var project = new TempProject(allowUnreachable: true, "ch05", "ch99");
+        using var project = new TempProject(passing: true, "ch05", "ch99");
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
@@ -271,12 +271,12 @@ public sealed class ChapterGraphSyncViewTests
         private readonly string _directory = Path.Combine(
             Path.GetTempPath(), "vn-chapter-sync-view", Guid.NewGuid().ToString("N"));
 
-        /// <param name="allowUnreachable">
-        /// 견본에서 도달 불가인 <c>branch05.02A</c>를 `도달불가 허용`(D3)으로 명시 예외 처리한다 —
-        /// 검증을 통과해 진행 JSON이 나가는 모양.
+        /// <param name="passing">
+        /// 견본의 의도된 오류를 고친다 — <c>branch05.02A</c>의 관문(신뢰높음 = trust ≥ 3)에 닿게 <c>main05.01 → main05.02</c>에서
+        /// trust +3. 검증을 통과해 진행 JSON이 나가는 모양(⛔ 2026-11-17까지는 `도달불가 허용` 깃발로 오류를 낮췄다 — 그 깃발은 걷혔다).
         /// </param>
         /// <param name="chapterIds">견본을 세울 챕터 Id들. 비우면 <c>ch05</c> 하나다.</param>
-        public TempProject(bool allowUnreachable = false, params string[] chapterIds)
+        public TempProject(bool passing = false, params string[] chapterIds)
         {
             string[] ids = chapterIds.Length > 0 ? chapterIds : [SampleChapters.Corridor];
 
@@ -301,11 +301,13 @@ public sealed class ChapterGraphSyncViewTests
                         }
                     }
 
-                    if (allowUnreachable)
+                    if (passing)
                     {
                         foreach (string id in ids)
                         {
-                            editor.UpdateEpisode(id, EpisodeIdIn(ids, id, "branch05.02A"), allowUnreachable: true);
+                            editor.UpdateEdge(
+                                id, EpisodeIdIn(ids, id, "main05.01"), EpisodeIdIn(ids, id, "main05.02"),
+                                statChanges: "trust +3", matchOptionLabel: "계속");
                         }
                     }
                 });

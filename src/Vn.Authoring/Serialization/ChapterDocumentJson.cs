@@ -91,11 +91,6 @@ internal static class ChapterDocumentJson
         Text(json, "eventKey", episode.EventKey);
         Text(json, "sceneId", episode.SceneId);
 
-        if (episode.AllowUnreachable)
-        {
-            json["allowUnreachable"] = true;
-        }
-
         if (episode.NoteCard)
         {
             json["noteCard"] = true;
@@ -111,8 +106,7 @@ internal static class ChapterDocumentJson
         Text(json["dialogueEntry"]),
         (double?)json["x"] ?? 0,
         (double?)json["y"] ?? 0,
-        Optional(json["memo"]),
-        (bool?)json["allowUnreachable"] ?? false)
+        Optional(json["memo"]))
     {
         EventKey = Optional(json["eventKey"]),
         SceneId = Optional(json["sceneId"]),

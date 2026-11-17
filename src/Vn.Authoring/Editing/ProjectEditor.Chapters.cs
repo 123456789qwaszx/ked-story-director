@@ -248,7 +248,6 @@ public sealed partial class ProjectEditor
         string? title = null,
         string? dialogueEntry = null,
         string? memo = null,
-        bool? allowUnreachable = null,
         string? sceneId = null)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
@@ -259,7 +258,6 @@ public sealed partial class ProjectEditor
             Title = title ?? chapter.Episodes[index].Title,
             DialogueEntry = dialogueEntry ?? chapter.Episodes[index].DialogueEntry,
             Memo = memo ?? chapter.Episodes[index].Memo,
-            AllowUnreachable = allowUnreachable ?? chapter.Episodes[index].AllowUnreachable,
             SceneId = sceneId ?? chapter.Episodes[index].SceneId
         });
     }

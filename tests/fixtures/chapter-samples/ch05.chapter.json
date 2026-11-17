@@ -37,8 +37,7 @@
       "y": 170,
       "title": "샘플 섬 회상",
       "dialogueEntry": "Story_ch05_02_side",
-      "memo": "의도한 섬 — 들어오는 간선이 없다(`도달불가 허용`으로 표시)",
-      "allowUnreachable": true
+      "memo": "의도한 섬 — 들어오는 간선이 없다(이어지지 않음 — 경고)"
     },
     {
       "episodeId": "main05.end",

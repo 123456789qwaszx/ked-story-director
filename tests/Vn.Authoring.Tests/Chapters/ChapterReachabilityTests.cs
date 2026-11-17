@@ -34,14 +34,14 @@ public sealed class ChapterReachabilityTests
         // ⚠ 2026-08-25 — `attach05.02s`는 이제 도달 <b>불가</b>다. 예전에는 종류가
         // `Attachment`라 증명기가 "간선이 아니라 관문 만족 가능성으로" 따로 통과시켰는데,
         // 코어가 `EpisodeKind`를 지우면서 그 특례가 함께 사라졌다. 들어오는 간선이 없는
-        // 섬은 이제 그냥 섬이고, 의도임은 `도달불가 허용`이 적는다 — 그래서 오류가 아니라
-        // 알림이다(D3).
+        // 섬은 이제 그냥 섬이고, 이어지지 않은 것이라 오류가 아니라 경고다(2026-11-17 — EpisodeNotConnected · ⛔ 그 전에는
+        // `도달불가 허용` 깃발이 알림으로 낮췄다).
         Assert.DoesNotContain("attach05.02s", result.ReachableEpisodeIds);
 
         ChapterDiagnostic island = Assert.Single(result.Diagnostics,
             item => item.Message.Contains("attach05.02s", StringComparison.Ordinal));
 
-        Assert.NotEqual(ChapterDiagnosticSeverity.Error, island.Severity);
+        Assert.Equal((ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.EpisodeNotConnected), (island.Severity, island.Code));
     }
 
     [Fact]
@@ -177,27 +177,6 @@ public sealed class ChapterReachabilityTests
             .Select(item => item.EpisodeId!));
         Assert.All(result.Diagnostics, item => Assert.Equal(ChapterDiagnosticSeverity.Warning, item.Severity));
         Assert.DoesNotContain(result.Diagnostics, item => item.Code == ChapterDiagnosticCode.EpisodeUnreachable);
-    }
-
-    [Fact]
-    public void 도달불가_허용이_켜진_에피소드는_오류가_아니라_알림이다()
-    {
-        // D3 — 의도적 도달 불가(폐기 예정·미완성)는 명시 예외로 두되, 그 사실은 표시된다.
-        ChapterGraphModel chapter = Chapter(
-            episodes:
-            [
-                Episode("ep1"),
-                Episode("보류", allowUnreachable: true)
-            ],
-            edges: [],
-            conditions: []);
-
-        ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
-
-        ChapterDiagnostic notice = Assert.Single(result.Diagnostics);
-        Assert.Equal(ChapterDiagnosticSeverity.Info, notice.Severity);
-        Assert.Contains("도달불가 허용", notice.Message);
-        Assert.False(result.HasErrors);
     }
 
     [Fact]
@@ -420,8 +399,8 @@ public sealed class ChapterReachabilityTests
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>v8 — 관문은 에피소드가 아니라 들어오는 길이 갖는다(간선 조건으로 준다).</summary>
-    private static ChapterEpisode Episode(string id, bool allowUnreachable = false) =>
-        new(id, id, "01", $"Story_{id}", 0, 0, null, allowUnreachable);
+    private static ChapterEpisode Episode(string id) =>
+        new(id, id, "01", $"Story_{id}", 0, 0, null);
 
     /// <param name="edges">TrustDelta — 그 간선을 타는 순간 커밋되는 trust 증감 (2026-08-14 규칙).</param>
     private static ChapterGraphModel Chapter(

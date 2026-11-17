@@ -324,7 +324,7 @@ public static class ChapterReachabilityProver
     /// <summary>
     /// 도달 불가를 <b>원인 조건까지 지목해</b> 보고한다. 간선이 있는데 못 닿으면(조건 때문) 오류이고, 아직 이어지지 않았으면
     /// 경고다(<see cref="ChapterDiagnosticCode.EpisodeNotConnected"/> — 2026-11-17 소유자: 작업 중인 에피소드 하나가 챕터의 내보내기를
-    /// 통째로 막았다). `도달불가 허용`이 켜진 에피소드는 알림으로 낮춘다 — 의도임이 표시된 것이므로.
+    /// 통째로 막았다). ⛔ `도달불가 허용` 깃발로 알림으로 낮추던 갈래는 같은 날 걷혔다.
     /// </summary>
     private static void ReportUnreachable(
         ChapterGraphModel chapter,
@@ -340,7 +340,7 @@ public static class ChapterReachabilityProver
         {
             string cause = DiagnoseCause(chapter, episode, reachable, maxSeen, minSeen);
 
-            if (!connected.Contains(episode.EpisodeId) && !episode.AllowUnreachable)
+            if (!connected.Contains(episode.EpisodeId))
             {
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Warning,
@@ -353,17 +353,13 @@ public static class ChapterReachabilityProver
                 continue;
             }
 
-            ChapterDiagnosticSeverity severity = episode.AllowUnreachable
-                ? ChapterDiagnosticSeverity.Info
-                : complete
-                    ? ChapterDiagnosticSeverity.Error
-                    : ChapterDiagnosticSeverity.Warning;
+            ChapterDiagnosticSeverity severity = complete
+                ? ChapterDiagnosticSeverity.Error
+                : ChapterDiagnosticSeverity.Warning;
 
-            string prefix = episode.AllowUnreachable
-                ? $"'{episode.EpisodeId}'는 도달 불가이지만 `도달불가 허용`이 켜져 있습니다"
-                : complete
-                    ? $"'{episode.EpisodeId}'에 도달할 수 있는 경로가 없습니다"
-                    : $"'{episode.EpisodeId}'에 도달하는 경로를 찾지 못했습니다(탐색이 상한에서 중단됨)";
+            string prefix = complete
+                ? $"'{episode.EpisodeId}'에 도달할 수 있는 경로가 없습니다"
+                : $"'{episode.EpisodeId}'에 도달하는 경로를 찾지 못했습니다(탐색이 상한에서 중단됨)";
 
             diagnostics.Add(new ChapterDiagnostic(
                 severity,

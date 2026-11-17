@@ -2138,13 +2138,12 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 도달성 증명이 "닿을 수 없다"고 한 에피소드인가 (G7). `도달불가 허용`이 켜진 노드는
-    /// 의도된 것이므로 오류 표식을 달지 않는다 — 대신 그 사실이 진단 목록에 알림으로 선다(D3).
+    /// 도달성 증명이 "닿을 수 없다"고 한 에피소드인가 (G7) — 간선은 있는데 조건 때문에 못 닿는 것. 아직 이어지지 않은 것은 오류가
+    /// 아니라 작업 중이라 따로 흐리게 선다(<see cref="IsNotConnected"/>).
     /// </summary>
     private bool IsUnreachable(ChapterEpisode episode) =>
         _validation is { } validation &&
         !validation.Reachability.ReachableEpisodeIds.Contains(episode.EpisodeId) &&
-        !episode.AllowUnreachable &&
         !IsNotConnected(episode);
 
     /// <summary>
