@@ -33,7 +33,7 @@
 
 ```text
 MyStory/
-├─ 예제.vnproject.json         매니페스트 — 판 목록 · 챕터(chapters[]) · 링크 · 작가 화자
+├─ 예제.vnproject.json         매니페스트 — 판 목록 · 챕터(chapters[]) · 링크 · 작가 화자 · [대본] 판 크기(board — 기본이면 없다)
 ├─ game.definition.json        스탯 후보(variables) · 게임 전역 조건 · 화자(speakers). compositor의 키도 산다 — 모르는 키는 보존한다
 ├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
@@ -313,6 +313,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 장면 단위 내보내기(`scenes.json`) | `Chapters/ChapterScenesExporter.cs` — 쓰는 때는 `ChapterExportService.ExportAll` |
+| [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs` |
 | 대사 Yarn(`exported/yarn/`) | 글 짓기 `Chapters/ChapterYarnExporter.cs`(타이틀은 `ChapterProgressionExporter.DialogueEntryIdOf`), 쓰기 · 낡은 파일 걷기 `ChapterExportService.ExportAll`, 컴파일 확인은 시험 `ChapterYarnExportTests`(앱은 컴파일러를 싣지 않는다) |
 
 **편집 · 저장 · 화면**

@@ -3,7 +3,7 @@
 **위 띠에 [⚙ 설정] 단추를 두고, 앞으로 필요할 설정을 한 창에 모은다.** 첫 설정은 **[대본] 판 크기**(가로 · 세로)다 — 대본의 양이
 많아지면 판을 늘린다.
 
-> **상태: 진행 중** — 설계는 소유자와 이야기로 정했다(2026-11-17, 아래 1절).
+> **상태: 끝 (C0–C4, 2026-11-17).** 설계는 소유자와 이야기로 정했다(아래 1절). 남은 것: compositor가 manifest의 `board`를 무시하는지 확인(5절).
 
 ## 1. 정한 것 (소유자 2026-11-17)
 
@@ -74,3 +74,4 @@
 | 11-17 | C1 | (C1 커밋) | `Model/BoardSize`(범위 4,000 ~ 60,000 · 기본 12,000×8,000 · 카드 차지 자리 폭 210 / 높이 240 + 늘린 글 칸 — 판이 그리는 값과 같다), `StoryProject.Board`. manifest · 스냅숏의 `board: { width, height }`(기본이면 안 쓴다, 없거나 숫자가 아니면 기본, 범위 밖이면 들인다 — `ProjectManifestJson.WriteBoard/ReadBoard` 한 벌). `Graph/BoardResize` — `Plan`(순수 함수: 가로 · 세로 따로 r = min(1, (새 크기 − 카드 크기) / 카드 자리), 모든 노드에 곱하고 새로 겹친 카드만 오른쪽으로 비키며 넘치면 판을 넓힌다) · `Apply`(크기 · 자리 · 실행 선 `EdgeShapes`와 선택지 레인 `ChapterEdge.Shape`의 꺾임). `ProjectEditor.SetBoardSize` — 한 `Mutate`(Layout), 같은 결과면 적지 않는다. 시험 `BoardSizeTests` 9(저장 왕복 · 범위 · 늘리기 · 다 들면 그대로 · 전체 비율 · 새 겹침 비키기와 판 넓히기 · 원래 겹침은 그대로 · 꺾임 비율 · 크게 줄이고 되돌리기 한 번이면 스냅숏이 같다). Vn.Authoring.Tests 705 · Vn.App.Tests 425 |
 | 11-17 | C2 | (C2 커밋) | `GraphEditorView` — 상수 12000×8000을 걷고 `_boardWidth/_boardHeight`(`ApplyBoardSize`: 프로젝트의 `Board`, 그려지는 카드가 바깥이면 그 카드까지)가 캔버스 · 카드 자리 제한(`ClampNodeX/Y` — 높이 몫은 `BoardSize.CardHeight`) · 미니맵을 정한다. 다시 그리기와 자리 갱신(`RefreshPositions` — 크기 바꾸기는 Layout 변경이다) 둘 다 지난다. 카드 폭 · 글 칸 기본 높이 상수는 `BoardSize`의 것을 쓴다(한 곳). 바로잡음: 줄이는 축의 자리를 정수로 내린다 — 곱셈 끝자리 오차로 카드 끝이 새 판을 머리카락만큼 넘어 판이 1 넓어졌다(4000 → 4001). C1의 「비키다 넘치면」 시험이 그 오차 덕에 통과하고 있었다 — 간격을 실제로 겹치게(오른쪽 멀리 300 간격) 고쳤다. 시험 `DirectorBoardSizeTests` 4(판이 따르고 되돌리기로 돌아온다 · 줄이면 카드가 판 안 · 판 밖 카드는 그 카드까지 넓혀 그린다 · 늘린 판에서 새 카드가 옛 가장자리 너머에 선다). Vn.Authoring.Tests 705 · Vn.App.Tests 429 |
 | 11-17 | C3 | (C3 커밋) | 위 띠 [📂 챕터진행] 오른쪽에 [⚙ 설정](`SettingsButton` — 비어 있던 9열, 이름 · 더러움 표시 열은 그대로). `Views/SettingsWindow`(코드로 짓는 모달 — 이 앱의 첫 창): [이 프로젝트] 묶음 머리(「project.vnproject.json에 저장 · 되돌리기 · [저장]해야 파일에」), 「[대본] 판 크기」 설명 · 가로 · 세로 `NumericUpDown`(4,000 ~ 60,000, 1,000씩, 천 단위 쉼표 — 범위 밖 값은 칸에서 바로 들인다: Avalonia 12의 칸은 코드로 넣은 값을 들이지 않았다), [기본값으로 (12,000 × 8,000)], 미리 알림(같은 `BoardResize.Plan` — 「카드 N장이 판 밖으로 나갑니다 … 되돌리기 한 번이면」, 비켜 서느라 판이 커지면 그 크기). [확인](`IsDefault`)은 `SetBoardSize` 한 번 · [취소](`IsCancel`) · Esc는 버린다. 적다 만 글자도 읽는다(값으로 넘어오기 전에 Enter를 누른 경우). `MainWindow.OpenSettings`가 연 창을 돌려준다(시험 손잡이). 헤드리스 렌더로 위 띠와 창을 눈으로 봤다. 시험 `SettingsWindowTests` 5. Vn.Authoring.Tests 705 · Vn.App.Tests 434 |
+| 11-17 | C4 | (C4 커밋) | 문서 — `two-graphs.md` 3.1 「판」 줄과 7절 W(새 절), `ARCHITECTURE.md`(매니페스트의 `board` · 「여는 곳」 표), `writer-guide.md` 조작 표 · `작가에게.txt`(판이 모자랄 때), 인계 `2026-11-17-yarn-handoff.md`(이 세션의 뒤 일 전부). 끝 |
