@@ -289,7 +289,6 @@ internal sealed class AuthoringSession
     // 화자의 집은 `game.definition.json`의 speakers 하나다. 2026-11-16(writer-fields W3)부터 화자 <b>이름</b>은 [대본] 탭(작가)이
     // 더하고 고치고 지우며, <b>캐릭터 키</b>는 [구성] 탭(기획자)이 잇는다 — 규칙은 아래 화자 창구(AddSpeakerName …) 한 벌이다.
     // (2026-08-23의 「작가가 더한 화자는 없앤다」 결정을 소유자가 바꿨다.)
-    // 검증 보고의 [등록](`RegisterVariables`)도 정의 파일에 쓴다.
 
     /// <summary>화자 이름을 더한다 — [대본] 탭. 못 더했으면 그 이유(빈 이름 · 같은 이름 · 저장 전 프로젝트).</summary>
     public string? AddSpeakerName(string? name)
@@ -385,8 +384,7 @@ internal sealed class AuthoringSession
     /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 위 화자 창구들이 부른다. 화자는 게임 정의에 저장되며,
     /// 모든 챕터가 공유해서 쓴다. 쓰고 나면 <see cref="SpeakersChanged"/>를 알린다 — 두 탭의 화자 목록이 다시 선다.
     ///
-    /// <b>통째로 쓰는 것이 규격이다</b> — 더하기만 하는 <see cref="RegisterVariables"/>와
-    /// 다르다. 탭에서 지운 이름이 파일에 남으면 목록이 화면과 갈리고, 그 순간부터 어느 쪽이
+    /// <b>통째로 쓰는 것이 규격이다</b> — 탭에서 지운 이름이 파일에 남으면 목록이 화면과 갈리고, 그 순간부터 어느 쪽이
     /// 진짜인지 아무도 모른다. 쓰고 나면 정의를 다시 읽어 드롭다운이 같은 목록을 본다.
     ///
     /// 초상화 매핑도 같은 배열이 진다(<c>characterId</c>) — 화자의 집이 하나라는 뜻이다.
@@ -408,29 +406,6 @@ internal sealed class AuthoringSession
     }
 
     /// <summary>
-    /// 스탯 키를 <c>game.definition.json</c>의 variables에 더한다 — 검증 보고의 [등록] 단추 전용.
-    /// 존재의 원천은 정의 파일이므로(§3.1) 자동 쓰기가 아니라 사람이 누른 순간에만 쓰고,
-    /// 없는 이름만 더한다. 쓰고 나면 정의를 다시 읽어 챕터 검증이 새 원천을 본다.
-    /// </summary>
-    public bool RegisterVariables(IReadOnlyList<VariableSpec> variables)
-    {
-        if (ProjectPath is null)
-        {
-            SetStatus("스탯은 game.definition.json에 등록됩니다. 프로젝트를 먼저 저장해 주세요.");
-            return false;
-        }
-
-        int added = GameDefinitionStore.AddVariables(ProjectPath, variables);
-        Definition = GameDefinition.LoadBeside(ProjectPath);
-
-        SetStatus(added > 0
-            ? $"{GameDefinition.FileName}에 변수 {added}개를 등록했습니다."
-            : "새로 등록할 변수가 없습니다 — 이미 정의 파일에 있습니다.");
-
-        return added > 0;
-    }
-
-    /// <summary>
     /// 그 챕터의 판을 보장한다. <b>규칙은 <see cref="ProjectEditor.EnsureChapterBoard"/>가
     /// 갖는다</b> — 세션 상태를 하나도 안 보는 순수 편집 작업이다.
     /// 여기 있는 것은 부르는 자리 스물여덟을 안 건드리기 위한 이름 하나뿐이다.
@@ -438,10 +413,11 @@ internal sealed class AuthoringSession
     internal string EnsureChapterBoard(string chapterId) => Editor.EnsureChapterBoard(chapterId);
 
     /// <summary>
-    /// <b>챕터 하나를 세운다</b> — 이름을 받고, 스탯을 정의 파일에서 깔고, 판을 만들어 고른다.
+    /// <b>챕터 하나를 세운다</b> — 이름을 받고, 판을 만들어 고른다. <b>스탯 없이 시작한다</b> — 스탯은 챕터마다 [구성] 탭에서 더한다
+    /// (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S1 — ⛔ 그 전에는 정의 파일의 <c>variables</c>로 깔았다.
+    /// 그 목록은 더하기만 해서 지운 스탯이 새 챕터마다 되살아났다).
     ///
-    /// <b>챕터를 세우는 규칙은 여기 한 벌이다.</b> 두 벌이면 어느 창구로 만들었느냐에 따라 챕터가
-    /// 달라진다 — 실제로 스탯을 한쪽만 깔면 그 챕터는 도달성 증명의 탐색 경계가 없다.
+    /// <b>챕터를 세우는 규칙은 여기 한 벌이다.</b> 두 벌이면 어느 창구로 만들었느냐에 따라 챕터가 달라진다.
     ///
     /// 주의: 챕터는 프로젝트가 든다 — 만드는 파일은 없다.
     /// </summary>
@@ -465,15 +441,7 @@ internal sealed class AuthoringSession
             return $"챕터 '{chapterId}'가 이미 있습니다.";
         }
 
-        // 스탯은 정의 파일의 변수에서 온다.
-        ChapterDocument chapter = Editor.EnsureChapter(chapterId);
-
-        foreach (Vn.Authoring.Definition.VariableSpec variable in Definition.Variables)
-        {
-            chapter.Stats.Add(new ChapterStat(
-                variable.Name, Initial: 0, Minimum: 0, Maximum: 100));
-        }
-
+        Editor.EnsureChapter(chapterId);
         SelectFile(EnsureChapterBoard(chapterId));
 
         return null;

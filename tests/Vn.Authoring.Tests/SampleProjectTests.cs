@@ -126,16 +126,6 @@ public class SampleProjectTests
         Assert.Equal(2, connections.Count);
     }
 
-    [Fact]
-    public void 게임_정의가_변수_후보를_공급한다()
-    {
-        GameDefinition definition = GameDefinition.LoadBeside(SamplePath);
-
-        Assert.Equal(4, definition.Variables.Count);
-        // 도구는 이 이름들을 코드로 알지 못한다. 파일이 공급할 뿐이다.
-        Assert.Contains(definition.Variables, variable => variable.Name == "favor");
-    }
-
     /// <summary>
     /// 손으로 쓴 파일을 도구가 다시 써도 의미가 같아야 한다.
     /// 키 순서나 공백은 도구 형식으로 정규화되지만 구조는 그대로다.

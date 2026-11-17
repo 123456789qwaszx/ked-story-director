@@ -141,7 +141,7 @@ public sealed class StatRenameTests
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
             editor.Project.Files.Single(file => file.Name == "ch01").Id,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
             .Single(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
@@ -248,7 +248,7 @@ public sealed class StatRenameTests
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
             fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
             .Single(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));

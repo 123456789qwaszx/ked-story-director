@@ -168,7 +168,7 @@ public sealed class StatRemoveTests
         editor.RemoveChapterStat("ch01", "trust", clearUses: true);
 
         Assert.Contains(
-            Chapter(editor).ToGraphModel("ch01", null).Diagnostics,
+            Chapter(editor).ToGraphModel("ch01").Diagnostics,
             item => item.Code == ChapterDiagnosticCode.ConditionExpressionBlank &&
                     item.Severity == ChapterDiagnosticSeverity.Warning &&
                     item.Message.Contains("식 미정", StringComparison.Ordinal));
@@ -219,7 +219,7 @@ public sealed class StatRemoveTests
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
             fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         return (editor, editor.Project.EnumerateNodes().OfType<SetNode>()
             .SelectMany(node => node.Conditions).Single());

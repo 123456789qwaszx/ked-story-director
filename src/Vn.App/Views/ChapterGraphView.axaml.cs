@@ -802,7 +802,7 @@ public partial class ChapterGraphView : UserControl
         return _session.Project.Chapters
             .Select(chapter => new ChapterEntry(
                 chapter.ChapterId,
-                chapter.ToGraphModel(chapter.ChapterId, _session.Definition),
+                chapter.ToGraphModel(chapter.ChapterId),
                 ChapterBranchCards.HomesOf(_session.Project, chapter.ChapterId)))
             .OrderBy(entry => entry.ChapterId, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -2261,7 +2261,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private ChapterGraphModel? LiveSheetModel =>
         _selectedChapterId is { } id && _session?.Editor.FindChapter(id) is { } chapter
-            ? chapter.ToGraphModel(id, _session.Definition)
+            ? chapter.ToGraphModel(id)
             : null;
 
     private void WireCardInteraction(Border card, ChapterEpisode episode)
@@ -4587,59 +4587,6 @@ public partial class ChapterGraphView : UserControl
                 },
                 dim: diagnostic.Severity == ChapterDiagnosticSeverity.Info));
         }
-
-        OfferStatRegistration(model, all);
-    }
-
-    /// <summary>
-    /// "스탯이 정의 파일에 없다" 경고 밑에 [등록] 단추를 세운다. 시트를 자동으로 믿고 쓰면
-    /// 오타까지 게임 어휘가 되므로, 정의 파일 쓰기는 사람이 이 단추를 누른 순간에만 일어난다.
-    /// </summary>
-    private void OfferStatRegistration(ChapterGraphModel model, List<ChapterDiagnostic> all)
-    {
-        if (_session?.ProjectPath is null ||
-            all.All(item => item.Code != ChapterDiagnosticCode.StatMissingFromGameDefinition))
-        {
-            return;
-        }
-
-        GameDefinition definition = _session.Definition;
-
-        VariableSpec[] missing = model.Stats
-            .Where(stat => !definition.Variables.Any(variable =>
-                string.Equals(variable.Name, stat.Key, StringComparison.Ordinal)))
-            .Select(stat => new VariableSpec
-            {
-                Name = stat.Key,
-                Type = "number"
-            })
-            .ToArray();
-
-        if (missing.Length == 0)
-        {
-            return;
-        }
-
-        var register = new Button
-        {
-            Content = $"이 스탯 {missing.Length}개를 {GameDefinition.FileName}에 등록",
-            FontSize = 10,
-            Padding = new Thickness(8, 2),
-            Margin = new Thickness(0, 4, 0, 2)
-        };
-
-        ToolTip.SetTip(register,
-            "정의 파일의 variables에 없는 이름만 더합니다. 값(초기/최소/최대)은 계속 스탯 시트가 소유합니다.");
-
-        register.Click += (_, _) => UiGuard.Run(_session, "스탯 등록", () =>
-        {
-            if (_session.RegisterVariables(missing))
-            {
-                Reload(); // 새 정의로 다시 읽어 경고가 걷힌 화면을 보인다
-            }
-        });
-
-        DiagnosticsPanel.Children.Add(register);
     }
 
     /// <summary>

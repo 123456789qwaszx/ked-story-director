@@ -67,7 +67,7 @@ public partial class MainWindow
 
     private void FillChoiceSummary(GraphEditorView.PickedLine.Choice choice)
     {
-        ChapterGraphModel? chapter = _session.Editor.FindChapter(choice.ChapterId)?.ToGraphModel(choice.ChapterId, _session.Definition);
+        ChapterGraphModel? chapter = _session.Editor.FindChapter(choice.ChapterId)?.ToGraphModel(choice.ChapterId);
         ChapterEdge? edge = chapter?.Edges.FirstOrDefault(item =>
             string.Equals(item.FromEpisodeId, choice.From, StringComparison.Ordinal) &&
             string.Equals(item.ToEpisodeId, choice.To, StringComparison.Ordinal) &&

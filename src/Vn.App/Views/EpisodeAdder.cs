@@ -25,7 +25,7 @@ internal static class EpisodeAdder
 
         ChapterDocument chapter = session.Editor.FindChapter(chapterId)
             ?? throw new InvalidOperationException($"챕터 '{chapterId}'가 없습니다.");
-        ChapterGraphModel model = chapter.ToGraphModel(chapterId, session.Definition);
+        ChapterGraphModel model = chapter.ToGraphModel(chapterId);
         string episodeId = session.Editor.NextEpisodeId(chapterId, sceneId);
         session.Editor.Batch(() =>
         {

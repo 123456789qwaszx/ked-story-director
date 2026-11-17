@@ -62,12 +62,7 @@ public sealed class ChapterDocument
     /// <see cref="ChapterGraphModel"/>을 받으므로, 주인이 바뀌어도 그쪽은 그대로다.
     /// </summary>
     /// <param name="sourcePath">진단이 짚을 자리 — 보통 챕터 Id다(엑셀 시절에는 워크북 경로였다).</param>
-    /// <param name="definition">
-    /// 주면 <b>스탯 검사</b>도 함께 돌린다(<see cref="StatDiagnostics"/>). 리더의 불평과는
-    /// 다른 것이다 — 파일의 흠이 아니라 <b>값의 흠</b>이라, 주인이 프로젝트가 된 뒤에도 남는다.
-    /// 자동 길 검사(<see cref="ChapterAutoEdgeCheck"/>)는 정의 파일이 없어도 늘 돈다.
-    /// </param>
-    public ChapterGraphModel ToGraphModel(string sourcePath, GameDefinition? definition = null) => new(
+    public ChapterGraphModel ToGraphModel(string sourcePath) => new(
         ChapterId,
         sourcePath,
         Episodes,
@@ -75,7 +70,7 @@ public sealed class ChapterDocument
         Conditions.Select(Reparse).ToList(),
         Stats,
         Fixtures,
-        ModelDiagnostics(sourcePath, definition),
+        ModelDiagnostics(sourcePath),
         ChoiceOptions)
     {
         DisplayName = DisplayName,
@@ -88,9 +83,9 @@ public sealed class ChapterDocument
     /// <b>새 검사를 더할 자리가 여기다.</b> 리더 안에만 두면 R-F 뒤에는 <b>툴이 소유한
     /// 챕터에서 조용히 안 돈다</b> — V1이 정확히 그 사고였다(자동 길 다섯이 그렇게 빠졌다).
     /// </summary>
-    private IReadOnlyList<ChapterDiagnostic> ModelDiagnostics(string path, GameDefinition? definition) =>
+    private IReadOnlyList<ChapterDiagnostic> ModelDiagnostics(string path) =>
     [
-        .. StatDiagnostics(path, definition),
+        .. StatDiagnostics(path),
         .. ConditionDiagnostics(path),
         .. ChapterAutoEdgeCheck.Of(Episodes, Edges, path),
         .. ChapterSceneEntryCheck.Of(Episodes, Edges, path),
@@ -119,11 +114,13 @@ public sealed class ChapterDocument
     /// <summary>
     /// 스탯에 대한 <b>모델 검사</b>.
     ///
-    /// <b>왜 모델에 있나</b>: 두 검사 모두 파일의 성질이 아니라 <b>값</b>을 본다 — 범위가
-    /// 뒤집혔는가, 정의 파일이 그 스탯을 아는가. 값을 읽는 문 한 곳에만 두면 다른 길로 들어온
+    /// <b>왜 모델에 있나</b>: 파일의 성질이 아니라 <b>값</b>을 본다 — 범위가 뒤집혔는가. 값을 읽는 문 한 곳에만 두면 다른 길로 들어온
     /// 값에서는 <b>조용히 사라지는</b> 검사가 된다.
+    ///
+    /// ⛔ 「스탯이 game.definition.json에 없다」 경고(<c>StatMissingFromGameDefinition</c>)는 2026-11-17에 걷혔다 — 정의 파일의
+    /// <c>variables</c>는 챕터 스탯의 중복이었다. 스탯의 원천은 챕터 하나다(<c>docs/work-orders/definition-split-orders.md</c> S1).
     /// </summary>
-    private IReadOnlyList<ChapterDiagnostic> StatDiagnostics(string path, GameDefinition? definition)
+    private IReadOnlyList<ChapterDiagnostic> StatDiagnostics(string path)
     {
         var diagnostics = new List<ChapterDiagnostic>();
 
@@ -142,17 +139,6 @@ public sealed class ChapterDocument
                     ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
                     $"스탯 '{stat.Key}'의 초기값({stat.Initial})이 " +
                     $"최소~최대({stat.Minimum}~{stat.Maximum}) 밖입니다."));
-            }
-
-            if (definition is not null &&
-                !definition.Variables.Any(variable =>
-                    string.Equals(variable.Name, stat.Key, StringComparison.Ordinal)))
-            {
-                diagnostics.Add(Stat(
-                    ChapterDiagnosticSeverity.Warning,
-                    ChapterDiagnosticCode.StatMissingFromGameDefinition, path,
-                    $"스탯 '{stat.Key}'가 game.definition.json에 없습니다. " +
-                    "스탯의 원천은 정의 파일입니다(§3.1)."));
             }
         }
 

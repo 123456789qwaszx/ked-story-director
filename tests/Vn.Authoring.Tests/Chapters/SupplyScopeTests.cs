@@ -91,7 +91,7 @@ public sealed class SupplyScopeTests
             ChapterBoardSupply.SupplyChapterConditionsToBoard(
                 editor,
                 editor.EnsureChapterBoard(chapterId),
-                editor.FindChapter(chapterId)!.ToGraphModel(chapterId, null));
+                editor.FindChapter(chapterId)!.ToGraphModel(chapterId));
         }
 
         return editor;

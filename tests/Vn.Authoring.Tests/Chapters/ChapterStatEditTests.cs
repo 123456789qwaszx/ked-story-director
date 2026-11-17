@@ -63,7 +63,7 @@ public sealed class ChapterStatEditTests
         Assert.Equal(
             "stat(\"호감도 (윌로우)\") >= 3",
             ConditionYarnTranslator.Translate(
-                Chapter(editor).ToGraphModel("ch01", null).Conditions.Single(item => item.Label == "친함")).Yarn);
+                Chapter(editor).ToGraphModel("ch01").Conditions.Single(item => item.Label == "친함")).Yarn);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class ChapterStatEditTests
 
         Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "이상함");
         Assert.Contains(
-            Chapter(editor).ToGraphModel("ch01", null).Diagnostics,
+            Chapter(editor).ToGraphModel("ch01").Diagnostics,
             item => item.Message.Contains("이상함", StringComparison.Ordinal));
     }
 
@@ -229,7 +229,7 @@ public sealed class ChapterStatEditTests
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
             fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         return editor;
     }

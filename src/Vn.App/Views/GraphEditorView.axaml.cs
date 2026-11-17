@@ -880,7 +880,7 @@ public partial class GraphEditorView : UserControl
             //    (legacy-cleanup.md L3). 그 목록도 같은 프로젝트를 읽은 것이라, 프로젝트에 없는 챕터를 줄 수 있는 것은
             //    낡은 스냅샷뿐이었다.
             ChapterGraphModel? chapter =
-                _session.Editor.FindChapter(boardName)?.ToGraphModel(boardName, _session.Definition);
+                _session.Editor.FindChapter(boardName)?.ToGraphModel(boardName);
 
             if (chapter is null)
             {

@@ -405,7 +405,7 @@ public sealed class HierarchyEditTests : IDisposable
     }
 
     private static ChapterGraphModel Chapter(AuthoringSession session, string chapterId = "ch01") =>
-        session.Editor.FindChapter(chapterId)!.ToGraphModel(chapterId, session.Definition);
+        session.Editor.FindChapter(chapterId)!.ToGraphModel(chapterId);
 
     private static IEnumerable<MenuItem> Items(StoryHierarchy tree, string key) =>
         ((IEnumerable<object>)tree.RowButton(key)!.ContextMenu!.ItemsSource!).OfType<MenuItem>();

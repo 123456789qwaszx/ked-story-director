@@ -60,3 +60,4 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-17 | S0 | (이 커밋) | 지시서 — 2절은 소유자가 정했다 |
+| 11-17 | S1 | (이 커밋) | 경고 `StatMissingFromGameDefinition` · 검증 보고의 [등록](`OfferStatRegistration`) · 세션 `RegisterVariables` · `GameDefinitionStore.AddVariables` · `GameDefinition.Variables` · `VariableSpec`을 걷었다. `ChapterDocument.ToGraphModel`은 정의 인자를 받지 않는다(스탯 검사는 범위만 본다). 새 챕터는 스탯 없이 선다(`CreateChapter`). 정의 파일 뼈대에서 `variables`를 뺐다(뼈대 자체는 S3에서 걷는다). 시험 — 등록 시험 · 견본의 변수 후보 시험을 지웠고, 씨앗 프로젝트는 챕터에 스탯을 더한다(`AddChapterStat`), [구성] 렌더 시험의 경고 11 → 7(스탯 넷). Authoring 699 · App 450 |

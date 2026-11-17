@@ -62,9 +62,8 @@ public class GameDefinitionStoreTests
             Assert.Equal(["라루", "윌로"], definition.Speakers.Select(item => item.Name));
             Assert.Null(definition.FindSpeakerCharacterId("옛화자"));
 
-            // — 나머지 어휘는 그대로다. 이 툴이 읽지 않는 키(compositor의 연출 카탈로그)도 파일에 남는다.
-            Assert.Single(definition.Variables);
-            Assert.Equal("favor", definition.Variables[0].Name);
+            // — 나머지 칸은 그대로다. 이 툴이 읽지 않는 키(compositor의 연출 카탈로그)도 파일에 남는다.
+            Assert.Contains("\"favor\"", File.ReadAllText(definitionPath));
             Assert.Contains("\"presentationCommandCategories\"", File.ReadAllText(definitionPath));
         }
         finally
@@ -76,8 +75,6 @@ public class GameDefinitionStoreTests
     [Fact]
     public void 뼈대는_없을_때만_깔리고_있는_파일은_불가침이다()
     {
-        // 실사례 — 정의 파일을 손으로 만들어야 하는 걸 모른 채 스탯을 시트에 적자,
-        // 멀쩡한 스탯이 "정의에 없다" 경고부터 맞았다. 새 프로젝트 저장이 뼈대를 깐다.
         string projectPath = TempProject();
 
         try
@@ -86,57 +83,13 @@ public class GameDefinitionStoreTests
 
             // 뼈대는 유효한 JSON이고 아직 아무 어휘도 선언하지 않는다.
             GameDefinition definition = GameDefinition.LoadBeside(projectPath);
-            Assert.Empty(definition.Variables);
             Assert.Empty(definition.Speakers);
 
             // 두 번째 부름은 아무것도 하지 않는다 — 사람이 채운 파일을 덮지 않는다.
             File.WriteAllText(GameDefinition.PathFor(projectPath),
-                """{ "variables": [ { "name": "trust", "type": "number" } ] }""");
+                """{ "speakers": [ { "name": "라루", "characterId": "laru" } ] }""");
             Assert.False(GameDefinitionStore.EnsureBeside(projectPath));
-            Assert.Single(GameDefinition.LoadBeside(projectPath).Variables);
-        }
-        finally
-        {
-            Directory.Delete(Path.GetDirectoryName(projectPath)!, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void 변수_등록은_없는_이름만_더하고_나머지는_보존한다()
-    {
-        // [등록] 단추의 계약 — 시트의 스탯 키를 정의 파일에 더하되,
-        // 이미 있는 항목(사람이 쓴 타입·설명)과 다른 키는 그대로 둔다.
-        string projectPath = TempProject();
-
-        try
-        {
-            File.WriteAllText(GameDefinition.PathFor(projectPath), """
-                {
-                  "variables": [ { "name": "trust", "type": "int", "description": "사람이 쓴 설명" } ],
-                  "speakers": [ { "name": "라루", "characterId": "laru" } ]
-                }
-                """);
-
-            int added = GameDefinitionStore.AddVariables(projectPath,
-            [
-                new VariableSpec { Name = "trust", Type = "number", Description = "덮어쓰면 안 됨" },
-                new VariableSpec { Name = "fatigue", Type = "number", Description = "피로" },
-                new VariableSpec { Name = "  ", Type = "number" }
-            ]);
-
-            Assert.Equal(1, added); // fatigue만 — trust는 이미 있고 빈 이름은 걸러진다
-
-            GameDefinition definition = GameDefinition.LoadBeside(projectPath);
-            Assert.Equal(["trust", "fatigue"], definition.Variables.Select(item => item.Name));
-            Assert.Equal("사람이 쓴 설명", definition.Variables[0].Description); // 기존 항목 불가침
-            Assert.Equal("피로", definition.Variables[1].Description);
-            Assert.Equal("laru", definition.FindSpeakerCharacterId("라루")); // 다른 키 보존
-
-            // 더할 게 없으면 파일도 건드리지 않는다.
-            DateTime before = File.GetLastWriteTimeUtc(GameDefinition.PathFor(projectPath));
-            Assert.Equal(0, GameDefinitionStore.AddVariables(
-                projectPath, [new VariableSpec { Name = "trust" }]));
-            Assert.Equal(before, File.GetLastWriteTimeUtc(GameDefinition.PathFor(projectPath)));
+            Assert.Single(GameDefinition.LoadBeside(projectPath).Speakers);
         }
         finally
         {

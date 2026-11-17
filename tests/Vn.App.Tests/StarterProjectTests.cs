@@ -13,9 +13,8 @@ namespace Vn.App.Tests;
 /// <summary>
 /// 넘겨줄 <b>씨앗 프로젝트</b> (2026-08-17 소유자 — 비개발자 인계).
 ///
-/// 빈 exe만 주면 첫 화면이 막다른 길이다: 새로 만든 `game.definition.json`은 `variables`가
-/// 비어 있어 <b>스탯이 하나도 없고</b>, 스탯이 없으면 조건을 못 만들고, 조건이 없으면 간선의
-/// 관문을 못 쓴다 — 분기 있는 이야기를 아예 시작할 수 없다.
+/// 빈 exe만 주면 첫 화면이 막다른 길이다: 새 챕터에는 <b>스탯이 하나도 없고</b>, 스탯이 없으면 조건을 못 만들고, 조건이 없으면
+/// 간선의 관문을 못 쓴다 — 분기 있는 이야기를 어디서 시작할지 모른다.
 ///
 /// 그래서 <b>이미 돌아가는 최소 한 판</b>을 함께 준다. 켜서 열면 분기 하나가 실제로 서 있고,
 /// 그것을 고쳐 나가면 된다.
@@ -44,13 +43,13 @@ public sealed class StarterProjectTests : IDisposable
         var session = new AuthoringSession();
         session.Open(manifest);
 
-        // 스탯이 있다 — 여기서 막히면 조건도 관문도 못 쓴다(빈 프로젝트의 막다른 길).
-        Assert.Contains("trust", session.Definition.Variables.Select(item => item.Name));
+        // 스탯이 있다 — 여기서 막히면 조건도 관문도 못 쓴다(빈 프로젝트의 막다른 길). 스탯은 챕터의 것이다.
+        Assert.Equal(["trust", "fatigue"], session.Editor.FindChapter("ch01")!.Stats.Select(item => item.Key));
 
         // 받는 사람이 처음 여는 것은 폴더다 — 무엇부터 열지 적힌 한 장이 같이 있다.
         Assert.True(File.Exists(Path.Combine(_directory, "읽어주세요.txt")));
 
-        ChapterGraphModel chapter = session.Editor.FindChapter("ch01")!.ToGraphModel("ch01", session.Definition);
+        ChapterGraphModel chapter = session.Editor.FindChapter("ch01")!.ToGraphModel("ch01");
 
         Assert.DoesNotContain(chapter.Diagnostics, item =>
             item.Severity == ChapterDiagnosticSeverity.Error);
@@ -139,15 +138,7 @@ internal static class StarterProject
         var session = new AuthoringSession();
         session.Save(manifest);
 
-        // ② 스탯 — 정의 파일이 어휘의 원천이다(검증 보고의 [등록]과 같은 길).
-        //    여기가 비면 조건도 관문도 못 만든다.
-        session.RegisterVariables(
-        [
-            new VariableSpec { Name = "trust", Type = "number", Description = "신뢰" },
-            new VariableSpec { Name = "fatigue", Type = "number", Description = "피로" }
-        ]);
-
-        // 화자는 챕터가 아니라 프로젝트의 것이다 (2026-08-23) — 챕터 그래프 [화자] 탭이 쓰는
+        // ② 화자는 챕터가 아니라 프로젝트의 것이다 (2026-08-23) — 챕터 그래프 [화자] 탭이 쓰는
         // 그 배열에 그대로 적는다.
         session.SaveSpeakers(
         [
@@ -155,7 +146,7 @@ internal static class StarterProject
             new SpeakerSpec { Name = "라루", CharacterId = "laru" }
         ]);
 
-        // ③ 챕터 — [＋ 챕터]가 스탯을 정의 파일에서 깐다. 표시이름은 [챕터] 탭에서 고친다.
+        // ③ 챕터 — [＋ 챕터]는 스탯 없이 세운다. 스탯은 [구성] 탭에서 챕터마다 더한다 — 여기가 비면 조건도 관문도 못 만든다.
         string? refused = session.CreateChapter("ch01");
 
         if (refused is not null)
@@ -164,6 +155,8 @@ internal static class StarterProject
         }
 
         ProjectEditor editor = session.Editor;
+        editor.AddChapterStat("ch01", "trust");
+        editor.AddChapterStat("ch01", "fatigue");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 2", "라루를 믿기로 했다면");
 
         // ④ 에피소드 넷 — 갈라졌다 다시 만나는 최소 모양. 에피소드마다 연출 그래프에 카드가 함께 선다.

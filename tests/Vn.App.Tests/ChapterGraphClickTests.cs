@@ -158,7 +158,7 @@ public sealed class ChapterGraphClickTests
         Drag(window, CardCenter(window, canvas, "main05.02"), new Vector(40, 40));
 
         Assert.False(ChapterBranchPlanner.NeedsSeeding(
-            session.Editor.FindChapter("ch05")!.ToGraphModel("ch05", session.Definition)));
+            session.Editor.FindChapter("ch05")!.ToGraphModel("ch05")));
 
         // ④ 한 번의 변경이라 한 번에 물러난다.
         session.Editor.Undo();

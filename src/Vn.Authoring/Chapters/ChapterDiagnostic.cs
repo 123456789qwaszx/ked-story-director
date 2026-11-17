@@ -35,8 +35,6 @@ public enum ChapterDiagnosticCode
     StatKeyUnknown,
     StatValueNotInteger,
     StatRangeInvalid,
-
-    StatMissingFromGameDefinition,
     EdgeEndpointUnknown,
     EdgeEndpointBlank,
     EpisodeUnreachable,
