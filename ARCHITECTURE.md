@@ -16,8 +16,8 @@
 | | |
 |---|---|
 | **읽는 것** | 프로젝트 하나(`*.vnproject.json` · `story/`)와 `game.definition.json` |
-| **쓰는 것** | 같은 프로젝트(원고), 그리고 `exported/{챕터}.progression.json`(유니티 런타임 수입물 — 검증을 통과하면 저절로) |
-| **읽어 가는 쪽** | [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가 원고를 **읽기만** 해서 제 연출과 합쳐 게임용 Yarn을 낸다 |
+| **쓰는 것** | 같은 프로젝트(원고), 그리고 `exported/{챕터}.progression.json`(유니티 런타임 수입물 — 검증을 통과하면 저절로)과 함께 나가는 장면 파일 · **대사만 있는 Yarn**(`exported/yarn/` — 2026-11-17) |
+| **읽어 가는 쪽** | [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가 원고를 **읽기만** 해서 제 연출과 합쳐 게임용 Yarn을 낸다. 대사 Yarn은 게임 폴더에 쓰지 않으므로 그것을 덮지 않는다 |
 
 두 화면이 같은 프로젝트를 고친다.
 
@@ -40,6 +40,8 @@ MyStory/
 └─ exported/{챕터}.progression.json  진행 JSON — 런타임 계약
    exported/{챕터}.scenes.json       장면 단위 내보내기 — 장면 메모 · 에피소드 지시 · 살아 있는 대사(LineId · 화자 · 글).
                                      AI가 장면 하나씩 연출 초안을 낼 때 읽는다. 진행 JSON이 나갈 때 함께 나가고 런타임은 읽지 않는다
+   exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn — 장면 = 파일, 에피소드 = 노드(타이틀 = DialogueEntryId), 장면 메모 · 에피소드
+                                     지시는 // 주석. 진행 JSON이 나갈 때 함께 나가고 게임 폴더에는 쓰지 않는다
 ```
 
 챕터는 장면 항목(`sceneNotes[]` — 장면마다 이름(`name`)과 자유 글(`text`), 열쇠는 `EffectiveSceneId`)을 든다. [대본] 탭은 이 이름 · 챕터 표시
@@ -148,7 +150,7 @@ MyStory/
 | `Results/DialoguePublisher.cs` | 대사 노드를 펼친 불변 초안(`Draft`) — 줄마다 그 순간의 화자 · 글 · 얼린 조건식 · 출구. 문제(`PublishProblem`)를 함께 낸다 |
 | `Rendering/ResultDocumentComposer.cs` | 그 초안을 의미 조각(`RenderedSegment`)으로 — 프리셋 둘(`RuntimeFull` · `ScenarioOnly`, `DocumentOutputOptions`) |
 | `Rendering/WorkingDialoguePreview.cs` · `DocumentPreviewFormatter.cs` | **카드 글 칸의 글**(`ScenarioText`) — 넣을 때 `ScenarioTextParser`가 같은 문법으로 되읽는다 |
-| `Rendering/YarnSyntax.cs` · `YarnNaming.cs` | 조건 줄 표기 · 스탯 읽기(`stat("키")`) · 노드 이름 규칙 |
+| `Rendering/YarnSyntax.cs` · `YarnNaming.cs` | 조건 줄 표기 · 스탯 읽기(`stat("키")`) · 노드 이름 규칙 · 대사 Yarn의 들여쓰기 · `<<detour>>` · 작가 글 이스케이프(`EscapeLineText`) |
 
 이름의 「발행」 · 「결과」는 남은 이름이다 — 발행(고정본 · 결과 저장소)은 compositor로 갔다.
 
@@ -311,6 +313,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 장면 단위 내보내기(`scenes.json`) | `Chapters/ChapterScenesExporter.cs` — 쓰는 때는 `ChapterExportService.ExportAll` |
+| 대사 Yarn(`exported/yarn/`) | 글 짓기 `Chapters/ChapterYarnExporter.cs`(타이틀은 `ChapterProgressionExporter.DialogueEntryIdOf`), 쓰기 · 낡은 파일 걷기 `ChapterExportService.ExportAll`, 컴파일 확인은 시험 `ChapterYarnExportTests`(앱은 컴파일러를 싣지 않는다) |
 
 **편집 · 저장 · 화면**
 
