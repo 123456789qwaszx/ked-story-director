@@ -60,8 +60,14 @@ public static class ChapterRenamer
             return Result.Fail($"챕터 '{newId}'가 이미 있습니다.");
         }
 
-        // 챕터 Id · 판 · 배관이 한 변경으로.
-        ChapterRenameEffect effect = editor.RenameChapter(oldId, newId);
+        // 챕터 Id · 판 · 배관이 한 변경으로 — 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 같은 칸에서 따라간다(2026-11-17).
+        ChapterRenameEffect effect = default!;
+
+        editor.Batch(() =>
+        {
+            effect = editor.RenameChapter(oldId, newId);
+            AutoIdFollower.FollowChapter(editor, oldId, newId);
+        });
 
         string? stale = projectManifestPath is null
             ? null

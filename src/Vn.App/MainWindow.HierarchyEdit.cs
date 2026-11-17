@@ -125,8 +125,10 @@ public partial class MainWindow
             return;
         }
 
-        _session.Editor.UpdateEpisode(chapterId, episodeId, sceneId: sceneId);
-        _session.SetStatus($"'{episodeId}'를 장면 '{sceneId}'로 옮겼습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        // 자동 모양 그대로인 ID는 새 장면의 이름으로 따라간다(분기 카드도 — AutoIdFollower, 같은 되돌리기 칸).
+        string moved = AutoIdFollower.MoveEpisodeToScene(_session.Editor, chapterId, episodeId, sceneId);
+        _session.SetStatus($"'{episodeId}'를 장면 '{sceneId}'로 옮겼습니다" +
+            (moved == episodeId ? "" : $"(에피소드ID는 '{moved}'로 따라갔습니다)") + ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
     /// <summary>

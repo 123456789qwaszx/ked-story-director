@@ -3701,9 +3701,10 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        int moved = _session.Editor.RenameScene(chapterId, oldId, newId);
+        // 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 새 장면ID로 따라간다(AutoIdFollower — 같은 되돌리기 칸).
+        int moved = AutoIdFollower.RenameScene(_session.Editor, chapterId, oldId, newId);
         _inspectedSceneId = newId;
-        _session.SetStatus($"장면 ID '{oldId}' → '{newId}' — 에피소드 {moved}개, 장면 이름 · 메모가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        _session.SetStatus($"장면 ID '{oldId}' → '{newId}' — 에피소드 {moved}개, 장면 이름 · 메모와 자동 ID가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
 

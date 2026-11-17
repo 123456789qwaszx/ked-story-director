@@ -329,6 +329,35 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
+    public void 자동_ID인_에피소드를_다른_장면으로_끌면_ID가_그_장면으로_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — 자동 모양 그대로인 ID만 따라간다(auto-id-orders I3). 사람이 지은 ID(root · a · b)는 그대로다.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+        Click(tree, StoryHierarchy.EpisodeKey("ch01", "root"), "에피소드 추가");
+        Assert.Contains(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_opening_new01");
+        long before = session.Editor.Revision;
+
+        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "ch01_opening_new01"), StoryHierarchy.SceneKey("ch01", "hall"));
+        Dispatcher.UIThread.RunJobs();
+
+        ChapterEpisode moved = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_hall_new01");
+        Assert.Equal("hall", moved.SceneId);
+        Assert.Contains(Chapter(session).Edges, edge => edge.FromEpisodeId == "root" && edge.ToEpisodeId == "ch01_hall_new01");
+        Assert.Contains("ch01_hall_new01", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal(before + 1, session.Editor.Revision);
+
+        // 사람이 지은 ID는 옮겨도 그대로다.
+        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.SceneKey("ch01", "hall"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("hall", Chapter(session).FindEpisode("a")!.SceneId);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 챕터_줄에는_놓지_못하고_장면_없는_에피소드는_경고가_서고_장면_줄로_끌어_넣는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, StoryHierarchy tree) = Open();
