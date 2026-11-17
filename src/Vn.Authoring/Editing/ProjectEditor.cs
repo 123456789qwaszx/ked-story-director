@@ -157,9 +157,11 @@ public sealed partial class ProjectEditor
         ChapterDocument board = ChapterOfBoard(file)
             ?? throw new InvalidOperationException($"'{file.Name}'은(는) 챕터의 판이 아닙니다 — 카드는 챕터 판에만 섭니다.");
 
-        // <b>이름을 고르는 규칙도 여기 하나다</b>. 이 이름이 곧 EpisodeId가 되므로 <c>장면 3</c> 같은 <b>공백 든 Id</b>가 나오면
-        //    안 된다 — 그 Id는 진행 JSON과 산출물의 열쇠로 나간다. 다른 창구와 같은 `new01` 규약으로 맞춘다.
-        var created = new DialogueNode(name: name ?? NextEpisodeId(board))
+        // <b>이름을 고르는 규칙은 NewNames 하나다</b>. 이 이름이 곧 EpisodeId · Yarn 노드 이름이 되므로 챕터와 장면이 든 자리표시로
+        //    프로젝트에서 겹치지 않게 짓는다(`ch01_scene01_new01` · 분기 카드 `ch01_scene01_branch01`).
+        var created = new DialogueNode(name: name ?? (branchCard
+            ? NewNames.NextBranchName(Project, board, sceneId)
+            : NewNames.NextEpisodeId(Project, board, sceneId)))
         {
             Layout = new NodeLayout { X = x, Y = y },
             IsBranchCard = branchCard
@@ -298,7 +300,8 @@ public sealed partial class ProjectEditor
             file.Id,
             x,
             y,
-            name ?? NextName("분기"),
+            name,
+            SceneOfCard(source),
             branchCard: true);
 
         Mutate(() =>
@@ -336,7 +339,8 @@ public sealed partial class ProjectEditor
 
         Batch(() =>
         {
-            (DialogueNode card, _, Action attach) = NewDialogueNodeCore(file.Id, x, y, NextName("분기"), branchCard: true);
+            (DialogueNode card, _, Action attach) = NewDialogueNodeCore(
+                file.Id, x, y, name: null, SceneOfCard(Project.FindDialogue(openPoint.NodeId)), branchCard: true);
             Mutate(attach);
             ConnectOpenDetour(openPoint.NodeId, lineId, openPoint.OpenOrdinal!.Value, card.Id);
             created = card;
@@ -1253,32 +1257,26 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 그 챕터의 다음 자리표시 Id. <b>화면이 손수 세지 않게</b> 열어 둔다 — 세는 규칙이
-    /// 화면마다 있으면 하나가 다른 목록을 훑다가 겹치는 Id를 내고, 그러면 <c>AddEpisode</c>가
-    /// *"이미 있습니다"*로 던진다.
+    /// 그 챕터 · 장면의 다음 자리표시 EpisodeId(<see cref="NewNames.NextEpisodeId"/>). <b>화면이 손수 세지 않게</b> 열어 둔다 — 세는 규칙이
+    /// 화면마다 있으면 하나가 다른 목록을 훑다가 겹치는 Id를 내고, 그러면 <c>AddEpisode</c>가 *"이미 있습니다"*로 던진다.
     /// </summary>
-    public string NextEpisodeId(string chapterId) => NextEpisodeId(RequireChapter(chapterId));
+    public string NextEpisodeId(string chapterId, string? sceneId) =>
+        NewNames.NextEpisodeId(Project, RequireChapter(chapterId), sceneId);
 
     /// <summary>
-    /// 그 챕터에서 <b>아직 안 쓰인 자리표시 EpisodeId</b> — <c>new01</c>, <c>new02</c>…
-    ///
-    /// 챕터 그래프·대본 탭·연출 그래프가 모두 이 규약 하나를 쓴다 — 창구마다 규약이 다르면
-    /// 같은 행동이 다른 Id를 만든다. EpisodeId는 진행 JSON과 산출물의 <b>열쇠</b>로 나가므로
-    /// 공백이 든 Id(<c>장면 3</c>)는 특히 나쁘다.
-    ///
-    /// 사람이 고칠 것을 전제한 이름이다 — 이름을 정하는 것은 기획자의 일이고, 여기서는
-    /// <b>겹치지 않는 자리</b>만 준다.
+    /// 그 카드가 선 장면 — 에피소드 카드면 그 에피소드의 장면, 분기 카드면 집(처음 부르는 에피소드)의 장면. 분기 카드의 자동 이름이 쓴다.
     /// </summary>
-    private static string NextEpisodeId(Chapters.ChapterDocument chapter)
+    private string? SceneOfCard(DialogueNode? card)
     {
-        int number = 1;
-
-        while (chapter.Episodes.Any(episode =>
-                   string.Equals(episode.EpisodeId, $"new{number:D2}", StringComparison.Ordinal)))
+        if (card is null || EpisodeNaming.ChapterOf(Project, card) is not { } chapter)
         {
-            number++;
+            return null;
         }
 
-        return $"new{number:D2}";
+        string? episodeId = card.IsBranchCard
+            ? ChapterBranchCards.HomesOf(Project, chapter.ChapterId).FirstOrDefault(home => home.Card.Id == card.Id)?.EpisodeId
+            : EpisodeNaming.EpisodeFor(chapter, card)?.EpisodeId;
+
+        return episodeId is null ? null : FindEpisode(chapter, episodeId)?.SceneId;
     }
 }

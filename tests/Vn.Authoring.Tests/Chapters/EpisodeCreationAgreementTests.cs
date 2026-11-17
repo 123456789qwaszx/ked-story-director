@@ -11,7 +11,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 편집기 명령이 아니라 <b>화면에</b> 살았기 때문이다 — 챕터 그래프는 <c>AddEpisode</c> 뒤에
 /// 노드 만들기를 한 줄 더 불렀고, 대본 탭은 <b>그 한 줄이 없었다</b>. 그래서 작가의 탭에서
 /// 만든 에피소드만 쓸 자리가 없었다. Id 규약도 갈렸다: 연출 그래프는 <c>장면 3</c>,
-/// 나머지는 <c>new01</c>.
+/// 나머지는 <c>new01</c>(지금은 챕터 · 장면이 든 <c>ch01_scene01_new01</c> — <c>docs/work-orders/auto-id-orders.md</c>).
 ///
 /// ⚠ <b>이 파일이 다음 갈림을 막는다.</b> 창구가 하나 더 생겨도 같은 것을 만들어야 한다.
 /// </summary>
@@ -66,14 +66,15 @@ public sealed class EpisodeCreationAgreementTests
     {
         // ⛔ 연출 그래프의 [＋대사노드]는 이름을 안 주고 부른다. 그때 <c>장면 3</c>이 나오면
         //    그것이 곧 EpisodeId가 되고, <b>공백 든 Id가 대본 워크북의 파일 이름</b>으로
-        //    나간다. 다른 두 창구가 쓰던 `new01` 규약으로 맞춘다.
+        //    나간다. 다른 창구와 같은 규약(<see cref="NewNames.NextEpisodeId"/> — 챕터 · 장면이 든 자리표시)으로 맞춘다.
         ProjectEditor editor = World();
         string fileId = editor.EnsureChapterBoard("ch01");
 
-        DialogueNode created = editor.AddDialogueNode(fileId, 100, 100);
+        DialogueNode created = editor.AddDialogueNode(fileId, 100, 100, sceneId: "scene01");
 
-        Assert.Equal("new01", EpisodeNaming.EpisodeIdOf(created));
-        AssertWritable(editor, "new01");
+        Assert.Equal("ch01_scene01_new01", EpisodeNaming.EpisodeIdOf(created));
+        Assert.Equal("ch01_scene01_new02", editor.NextEpisodeId("ch01", "scene01"));   // 화면이 세는 길도 같은 규약이다
+        AssertWritable(editor, "ch01_scene01_new01");
     }
 
     /// <summary>에피소드가 <b>쓸 수 있는 상태</b>로 섰는가 — 카드와 대본이 붙어 있는가.</summary>

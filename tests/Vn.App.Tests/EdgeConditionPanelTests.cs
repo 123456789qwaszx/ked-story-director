@@ -60,8 +60,8 @@ public sealed class EdgeConditionPanelTests : IDisposable
     public void 다른_곳에서도_쓰는_조건이면_함께_바뀐다고_말하고_식이_틀리면_까닭을_보인다() => HeadlessUi.Run(() =>
     {
         (Window window, ChapterGraphView view, AuthoringSession session) = Show();
-        session.Editor.AddEdge("ch01", "new01", "new03", optionLabel: "다른 길");
-        session.Editor.UpdateEdge("ch01", "new01", "new03", visibleConditionLabel: "신뢰", matchOptionLabel: "다른 길");
+        session.Editor.AddEdge("ch01", "ch01_new01", "ch01_new03", optionLabel: "다른 길");
+        session.Editor.UpdateEdge("ch01", "ch01_new01", "ch01_new03", visibleConditionLabel: "신뢰", matchOptionLabel: "다른 길");
         Dispatcher.UIThread.RunJobs();
 
         Combo(view, "EdgeVisibleCombo").SelectedItem = "신뢰";
@@ -185,9 +185,9 @@ public sealed class EdgeConditionPanelTests : IDisposable
         session.Editor.FindChapter("ch01")!.Conditions.Single(item => item.Label == label);
 
     private static ChapterEdge Edge(AuthoringSession session) =>
-        session.Editor.FindChapter("ch01")!.Edges.Single(edge => edge.FromEpisodeId == "new01" && edge.ToEpisodeId == "new02");
+        session.Editor.FindChapter("ch01")!.Edges.Single(edge => edge.FromEpisodeId == "ch01_new01" && edge.ToEpisodeId == "ch01_new02");
 
-    /// <summary>ch01 — 에피소드 셋(new01 → new02 「계속」, new03), 스탯 trust, 조건 「신뢰」(trust >= 3). new01 → new02를 고른다.</summary>
+    /// <summary>ch01 — 에피소드 셋(ch01_new01 → ch01_new02 「계속」, ch01_new03), 스탯 trust, 조건 「신뢰」(trust >= 3). ch01_new01 → ch01_new02를 고른다.</summary>
     private (Window Window, ChapterGraphView View, AuthoringSession Session) Show()
     {
         Directory.CreateDirectory(_directory);
@@ -208,12 +208,12 @@ public sealed class EdgeConditionPanelTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
-        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
+        EpisodeAdder.Add(session, "ch01", after: "ch01_new01", sceneId: null);
         EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
         view.Refresh();
         Dispatcher.UIThread.RunJobs();
 
-        view.SelectEdgeKey("new01", "new02", "계속");
+        view.SelectEdgeKey("ch01_new01", "ch01_new02", "계속");
         Dispatcher.UIThread.RunJobs();
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 

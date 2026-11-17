@@ -3,7 +3,7 @@
 `docs/work-orders/scene-required-orders.md` E6을 여기서 한다. 자동으로 붙는 에피소드ID가 `new01` · `new02`…라 챕터가 여럿이면 겹친다 —
 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 같은 이름의 노드 둘은 컴파일을 깬다.
 
-> **상태: I0 지시서.**
+> **상태: I1 끝.**
 
 ## 1. 정한 것 (소유자 2026-11-17)
 
@@ -49,3 +49,4 @@ ID를 바꾸는 일 자체는 이미 있다 — `EpisodeRenamer`가 에피소드
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-17 | I0 | (이 커밋) | 지시서 — 1절은 소유자가 정했다 |
+| 11-17 | I1 | (이 커밋) | `NewNames` — `EpisodePrefix` · `BranchPrefix`(정규화를 지난 글자) · `IsAuto` · `NextEpisodeId` · `NextBranchName` · `TakenNames`(그 챕터의 에피소드ID + 프로젝트의 모든 카드 이름) · `NextFree`. `ProjectEditor` — 카드를 짓는 한 자리(`NewDialogueNodeCore`)가 장면으로 이름을 짓고, 분기 추가 · 빈 곳에 분기 카드는 부르는 카드의 장면(`SceneOfCard` — 분기 카드면 집의 장면). `NextEpisodeId(chapterId, sceneId)` — 하이어아키(`EpisodeAdder`)가 장면을 함께 준다. ⛔ 챕터마다 `new01`부터 세던 것 · 「분기 N」 걷음. 새 시험 `AutoIdTests` 12, 자동 ID를 박아 둔 시험 6 파일을 새 규칙으로. Authoring 692 · App 441 |

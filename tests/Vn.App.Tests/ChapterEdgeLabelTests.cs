@@ -23,12 +23,12 @@ public sealed class ChapterEdgeLabelTests
 
         // 사람이 하는 그대로([대본] 하이어아키 우클릭 「에피소드 추가」): 노드 하나 → 그 다음 하나 (간선이 함께 생긴다).
         EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
-        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
+        EpisodeAdder.Add(session, "ch01", after: "ch01_new01", sceneId: null);
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         ChapterEdge fresh = Assert.Single(Chapter(session).Edges,
-            edge => edge.FromEpisodeId == "new01" && edge.ToEpisodeId == "new02");
+            edge => edge.FromEpisodeId == "ch01_new01" && edge.ToEpisodeId == "ch01_new02");
         // v12 — 툴이 길을 놓으면 문구가 함께 들어간다. 빈 문구는 이제 오류다.
         Assert.Equal("계속", fresh.OptionLabel);
         Assert.False(fresh.HasNoOptionLabel);
@@ -43,11 +43,11 @@ public sealed class ChapterEdgeLabelTests
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
-        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
+        EpisodeAdder.Add(session, "ch01", after: "ch01_new01", sceneId: null);
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        view.SelectEdgeKey("new01", "new02", "계속");
+        view.SelectEdgeKey("ch01_new01", "ch01_new02", "계속");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         view.FindControl<TextBox>("EdgeLockedMsgBox")!.Text = "아직 이르다";
 
@@ -58,7 +58,7 @@ public sealed class ChapterEdgeLabelTests
         view.ApplyEdgeFromPanel();
 
         ChapterEdge saved = Chapter(session).Edges.Single(edge =>
-            edge.FromEpisodeId == "new01" && edge.ToEpisodeId == "new02");
+            edge.FromEpisodeId == "ch01_new01" && edge.ToEpisodeId == "ch01_new02");
 
         Assert.Equal("아직 이르다", saved.LockedMessage);
     });

@@ -18,7 +18,7 @@ internal static class EpisodeAdder
     /// </summary>
     internal const string DefaultOptionLabel = "계속";
 
-    /// <returns>더한 에피소드의 Id — 자리표시 Id(<c>new01</c>…)이고, 사람이 [구성] 탭 인스펙터의 에피소드ID 칸에서 고친다.</returns>
+    /// <returns>더한 에피소드의 Id — 자리표시 Id(<c>ch01_scene01_new01</c>…)이고, 사람이 [구성] 탭 인스펙터의 에피소드ID 칸에서 고친다.</returns>
     public static string Add(AuthoringSession session, string chapterId, string? after, string? sceneId)
     {
         ArgumentNullException.ThrowIfNull(session);
@@ -26,8 +26,7 @@ internal static class EpisodeAdder
         ChapterDocument chapter = session.Editor.FindChapter(chapterId)
             ?? throw new InvalidOperationException($"챕터 '{chapterId}'가 없습니다.");
         ChapterGraphModel model = chapter.ToGraphModel(chapterId, session.Definition);
-        string episodeId = session.Editor.NextEpisodeId(chapterId);
-
+        string episodeId = session.Editor.NextEpisodeId(chapterId, sceneId);
         session.Editor.Batch(() =>
         {
             if (after is not null && model.FindEpisode(after) is not null)

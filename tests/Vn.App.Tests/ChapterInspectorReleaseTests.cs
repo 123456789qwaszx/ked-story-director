@@ -112,7 +112,7 @@ public sealed class ChapterInspectorReleaseTests
 
     private static ChapterEdge Edge(AuthoringSession session) =>
         session.Editor.FindChapter("ch01")!.ToGraphModel("ch01").Edges.Single(edge =>
-            edge.FromEpisodeId == "new01" && edge.ToEpisodeId == "new02");
+            edge.FromEpisodeId == "ch01_new01" && edge.ToEpisodeId == "ch01_new02");
 
     private static (Window Window, ChapterGraphView View, AuthoringSession Session) Show(TempProject project)
     {
@@ -126,12 +126,12 @@ public sealed class ChapterInspectorReleaseTests
         Dispatcher.UIThread.RunJobs();
 
         EpisodeAdder.Add(session, "ch01", after: null, sceneId: null);
-        EpisodeAdder.Add(session, "ch01", after: "new01", sceneId: null);
-        session.Editor.UpdateEdge("ch01", "new01", "new02", conditionLabel: "신뢰", matchOptionLabel: "계속");   // 잠금 안내문 · 식 칸이 선다
+        EpisodeAdder.Add(session, "ch01", after: "ch01_new01", sceneId: null);
+        session.Editor.UpdateEdge("ch01", "ch01_new01", "ch01_new02", conditionLabel: "신뢰", matchOptionLabel: "계속");   // 잠금 안내문 · 식 칸이 선다
         view.Refresh();
         Dispatcher.UIThread.RunJobs();
 
-        view.SelectEdgeKey("new01", "new02", "계속");
+        view.SelectEdgeKey("ch01_new01", "ch01_new02", "계속");
         Dispatcher.UIThread.RunJobs();
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 

@@ -66,15 +66,15 @@ public sealed class HierarchyEditTests : IDisposable
 
         Click(tree, StoryHierarchy.EpisodeKey("ch01", "root"), "에피소드 추가");
 
-        ChapterEpisode added = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "new01");
+        ChapterEpisode added = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_opening_new01");
         Assert.Equal("opening", added.SceneId);
-        Assert.Contains(Chapter(session).Edges, edge => edge.FromEpisodeId == "root" && edge.ToEpisodeId == "new01");
-        Assert.Equal(EpisodeNaming.CardFor(session.Project, "ch01", "new01")!.Id, session.SelectedNodeId);
-        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "new01"), tree.Selection?.Key);
+        Assert.Contains(Chapter(session).Edges, edge => edge.FromEpisodeId == "root" && edge.ToEpisodeId == "ch01_opening_new01");
+        Assert.Equal(EpisodeNaming.CardFor(session.Project, "ch01", "ch01_opening_new01")!.Id, session.SelectedNodeId);
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "ch01_opening_new01"), tree.Selection?.Key);
 
         // 되돌리기 한 칸 — 에피소드 · 간선 · 장면이 함께 물러난다.
         session.Editor.Undo();
-        Assert.DoesNotContain(Chapter(session).Episodes, episode => episode.EpisodeId == "new01");
+        Assert.DoesNotContain(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_opening_new01");
 
         window.Close();
     });
@@ -88,10 +88,10 @@ public sealed class HierarchyEditTests : IDisposable
         Click(tree, StoryHierarchy.ChapterKey("ch01"), "장면 추가");
         Dispatcher.UIThread.RunJobs();
 
-        ChapterEpisode added = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "new01");
+        ChapterEpisode added = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_scene01_new01");
         Assert.Equal("scene01", added.SceneId);
         // 새로 만든 것에 간선을 바로 잇지는 않는다.
-        Assert.DoesNotContain(Chapter(session).Edges, edge => edge.ToEpisodeId == "new01");
+        Assert.DoesNotContain(Chapter(session).Edges, edge => edge.ToEpisodeId == "ch01_scene01_new01");
         Assert.Contains(tree.Rows, row => row.Key == StoryHierarchy.SceneKey("ch01", "scene01"));
 
         // ID는 자동이고 작가에게는 처음 이름이 보인다(display-names N2).
@@ -100,7 +100,7 @@ public sealed class HierarchyEditTests : IDisposable
 
         // 되돌리기 한 칸 — 에피소드 · 장면 이름이 함께 물러난다.
         session.Editor.Undo();
-        Assert.DoesNotContain(Chapter(session).Episodes, episode => episode.EpisodeId == "new01");
+        Assert.DoesNotContain(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_scene01_new01");
         Assert.Empty(Chapter(session).SceneNotes);
 
         window.Close();
@@ -310,7 +310,7 @@ public sealed class HierarchyEditTests : IDisposable
     [Fact]
     public void 장면ID가_없는_에피소드는_가짜_장면_줄_없이_장면들_뒤에_챕터_직속으로_선다() => HeadlessUi.Run(() =>
     {
-        // 장면ID가 없는 에피소드는 챕터 직속이다 — 「미지정 · new01」 같은 장면 줄을 에피소드마다 세우지 않는다.
+        // 장면ID가 없는 에피소드는 챕터 직속이다 — 「미지정 · ch01_new01」 같은 장면 줄을 에피소드마다 세우지 않는다.
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         session.Editor.AddDialogueNode(EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, 0, 900);   // 연출 그래프 「+ 대사 노드」
@@ -320,7 +320,7 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.DoesNotContain(tree.Rows, row => row.Kind == HierarchyKind.Scene && row.SceneId!.StartsWith("__scene_", StringComparison.Ordinal));
 
         List<string> keys = tree.Rows.Select(row => row.Key).ToList();
-        HierarchyRow loose = tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "new01"));
+        HierarchyRow loose = tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "ch01_new01"));
         Assert.Equal(2, loose.Depth);                     // 챕터 바로 아래
         Assert.False(loose.IsSceneRoot);                  // 장면이 아니다 — ⌂ 없음
         Assert.True(keys.IndexOf(loose.Key) > keys.IndexOf(StoryHierarchy.SceneKey("ch01", "hall")));   // 장면들 뒤

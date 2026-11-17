@@ -355,16 +355,16 @@ public sealed class ChapterGraphEditingTests
         EpisodeAdder.Add(session, "ch05", after: null, sceneId: null);
 
         ChapterGraphModel afterAdd = Chapter(session);
-        Assert.NotNull(afterAdd.FindEpisode("new01"));
+        Assert.NotNull(afterAdd.FindEpisode("ch05_new01"));
 
         // 다시 그린 판에서 골라 개명한다 — 자리표시 Id를 사람이 정한 이름으로.
-        view.SelectEpisode("new01");
+        view.SelectEpisode("ch05_new01");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         view.FindControl<TextBox>("IdBox")!.Text = "main05.05";
         view.RenameSelectedEpisode();
 
         ChapterGraphModel afterRename = Chapter(session);
-        Assert.Null(afterRename.FindEpisode("new01"));
+        Assert.Null(afterRename.FindEpisode("ch05_new01"));
         Assert.NotNull(afterRename.FindEpisode("main05.05"));
     });
 
@@ -375,15 +375,15 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null); // new01 + 카드
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null); // ch05_new01 + 카드
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         // 대사 노드는 에피소드를 더한 그 자리에서 함께 섰다 — <c>AddNextEpisode</c>가 카드까지 만든다.
         Assert.Contains(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.MarkedEpisodeId == "new01");
+            node => node.MarkedEpisodeId == "ch05_new01");
 
-        view.SelectEpisode("new01");
+        view.SelectEpisode("ch05_new01");
         view.FindControl<TextBox>("IdBox")!.Text = "ep_renamed";
         view.RenameSelectedEpisode();
 
@@ -393,7 +393,7 @@ public sealed class ChapterGraphEditingTests
         Assert.Contains(session.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => node.Name == "ep_renamed" && node.MarkedEpisodeId == "ep_renamed");
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.Name == "new01");
+            node => node.Name == "ch05_new01");
     });
 
     /// <summary>
@@ -407,7 +407,7 @@ public sealed class ChapterGraphEditingTests
         (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.MarkedEpisodeId == "new01");
+            node => node.MarkedEpisodeId == "ch05_new01");
 
         EpisodeAdder.Add(session, "ch05", after: null, sceneId: null);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs(); // QueueReload 한 차례
@@ -415,7 +415,7 @@ public sealed class ChapterGraphEditingTests
         // 더한 그 자리에서 노드가 서 있다 — 에피소드와 카드가 한 변경이다.
         DialogueNode node = Assert.Single(
             session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            item => item.MarkedEpisodeId == "new01");
+            item => item.MarkedEpisodeId == "ch05_new01");
 
         // 첫 대사도 함께 심어져 있다 — 빈 대본은 검증이 오류로
         // 막으므로, 방금 더한 에피소드가 그 오류부터 들고 시작하지 않는다.
@@ -435,12 +435,12 @@ public sealed class ChapterGraphEditingTests
         EpisodeAdder.Add(session, "ch05", after: "main05.end", sceneId: null);
 
         ChapterGraphModel reread = Chapter(session);
-        ChapterEpisode added = reread.FindEpisode("new01")!;
+        ChapterEpisode added = reread.FindEpisode("ch05_new01")!;
 
         // 간선이 함께 이어졌고(문구 「계속」), 대사엔트리는 EpisodeId로 자동이다.
         Assert.Contains(reread.Edges, edge =>
-            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "new01" && edge.OptionLabel == "계속");
-        Assert.Equal("new01", added.DialogueEntry);
+            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "ch05_new01" && edge.OptionLabel == "계속");
+        Assert.Equal("ch05_new01", added.DialogueEntry);
     });
 
     [Fact]
