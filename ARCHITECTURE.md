@@ -85,7 +85,7 @@ MyStory/
 |---|---|
 | `StoryProject.cs` | 프로젝트 — 판 · 대본 · 챕터 · 링크 · 작가 화자(`WriterSpeakers` — 유물, 쓰지 않는다. 화자는 정의 파일 speakers 하나다) |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
-| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 선택지 출구(`ChoiceExits` — compositor가 읽는다) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
+| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
 | `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
 | `EdgeShape.cs` | 사람이 고친 선 모양(꼴 · 굽이 — 자동 자리에서 옮긴 양) |
 | `NodeLink.cs` | 옛 공급 연결 데이터. 범위를 좁히지 않는다(조건 범위는 판이다 — `ConnectedSetNodeResolver`). 편집 API는 L2에 걷혔고 데이터는 남는다 |
@@ -289,7 +289,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 
 | 하고 싶은 일 | 여는 곳 |
 |---|---|
-| 출구를 어디에 저장하나 | `Model/StoryNode.cs`의 `DialogueNode.BranchExits` · `ChoiceExits` · `DefaultExitTargetNodeId` |
+| 출구를 어디에 저장하나 | `Model/StoryNode.cs`의 `DialogueNode.BranchExits` · `DefaultExitTargetNodeId` |
 | 포트를 만드는 규칙 · 간선 문구 | `Flow/NodeConnections.cs`의 `PortsOf` · `LabelFor` |
 | 연결 · 해제 | `ProjectEditor.SetExitTarget` |
 | 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs`(`IsHiddenPlumbing`) |
@@ -368,7 +368,8 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 14. **진행 스탯은 `stat("키")`로만 읽는다**(`YarnSyntax.StatRead`). 변수로 심으면 대사 중 쓰기가 문법적으로 열려 도달성 증명 밖의
     뒷길이 생긴다. 키는 정규화하지 않는다(진행 JSON이 원본 그대로 낸다).
 15. **챕터의 것은 그 챕터의 판에서만 찾는다**(§4.6).
-16. **compositor가 읽는 칸은 여기서 안 써도 지우지 않는다** — `ChoiceExits` · 링크 데이터 · `SourceRevision`. 이미 남은 연출 백업
+16. **compositor가 읽는 칸은 여기서 안 써도 지우지 않는다** — 링크 데이터 · `SourceRevision`(⛔ 2026-11-17 — `ChoiceExits`는
+    옛 데이터 읽기와 함께 걷었다 · `docs/work-orders/legacy-read-orders.md` L5). 이미 남은 연출 백업
     (`presentation-original/`)도 지우지 않는다(⛔ 2026-11-17 — 이 툴은 더 만들지 않는다). 정의 파일의 모르는 키도 보존한다.
 17. **`src/Ked.Progression`은 고치지 않는다.** 런타임 원본에서 옮겨 올 때만 바뀌고, 그때 지문(`runtime-sync.txt`)을 함께 갱신한다.
 18. **골든 파일은 언제나 UTF-8로 읽는다.** PowerShell 5.1은 BOM이 없으면 ANSI로 읽는다 — 한국어를 담은 `.ps1`은 UTF-8 BOM으로.

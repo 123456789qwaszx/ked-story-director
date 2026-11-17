@@ -108,11 +108,7 @@ public sealed class ProgressionSampleGoldenTests
     {
         var project = new StoryProject();
         var file = new StoryFile(name: ChapterId);
-        var choice = new DialogueNode(name: "Story_ch01_choice") { MarkedEpisodeId = "choice" };
-        var via = new DialogueNode(name: "암전 전환");
-        choice.ChoiceExits["라루에게 맡긴다"] = via.Id;
-        file.Nodes.Add(choice);
-        file.Nodes.Add(via);
+        file.Nodes.Add(new DialogueNode(name: "Story_ch01_choice") { MarkedEpisodeId = "choice" });
         project.Files.Add(file);
         return project;
     }

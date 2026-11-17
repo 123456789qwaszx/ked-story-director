@@ -12,14 +12,6 @@ public enum ExitPortKind
     Branch,
 
     /// <summary>
-    /// 챕터 간선(선택지) 하나를 골랐을 때의 출구 (v9, 2026-08-17). <b>열쇠는 선택지 문구</b>다 —
-    /// 대본에 OPTION이 없어도(v9에서는 없는 것이 정상) 선택지마다 자유 씬을 달 수 있다.
-    ///
-    /// 대본의 줄에 매이지 않으므로 대본을 고쳐도 사라지지 않는다(문구의 주인은 챕터다).
-    /// </summary>
-    Choice,
-
-    /// <summary>
     /// <b>「조건 분기」 표식</b>이 뚫은 출구 (R7 P-5 · 2026-09-17). 열쇠는 그 줄의 LineId와 다녀갈 노드다 — 한 줄에
     /// 분기가 여럿일 수 있다(2026-10-29, <see cref="ExitPort.DetourKey"/>).
     ///
@@ -36,7 +28,6 @@ public enum ExitPortKind
 /// Settings link는 실행 포트가 아니며 <see cref="StoryProject.Links"/>에 별도로 저장된다.
 /// 이 타입은 오직 다음 실행 노드를 결정하는 기본/조건 출구만 표현한다.
 /// </summary>
-/// <param name="ChoiceText">챕터 간선 선택지(<see cref="ExitPortKind.Choice"/>)의 원문 라벨. 간선과 라벨 짝을 맞추는 열쇠다.</param>
 /// <param name="OpenOrdinal">
 /// 이어지지 않은 분기점(<see cref="Model.DialogueLineExtension.OpenDetourPositions"/>)이면 그 줄의 분기점 전체에서 몇째
 /// 자리인가. 다녀갈 곳이 없어 신원을 이 자리로 가린다 — 다른 분기를 끊어도 자리가 안 바뀐다.
@@ -48,7 +39,6 @@ public sealed record ExitPort(
     string Label,
     string? TargetNodeId,
     int PaletteIndex,
-    string? ChoiceText = null,
     int? OpenOrdinal = null)
 {
     public bool IsConnected => TargetNodeId is not null;
@@ -57,12 +47,11 @@ public sealed record ExitPort(
     public bool IsOpenDetour => Kind == ExitPortKind.Detour && TargetNodeId is null && OpenOrdinal is not null;
 
     /// <summary>
-    /// 이 포트를 저장할 때의 열쇠. 갈래는 여는 줄의 LineId, 선택지는 <b>문구</b>다(v9), 분기는 줄과 다녀갈 노드다
+    /// 이 포트를 저장할 때의 열쇠. 갈래는 여는 줄의 LineId, 분기는 줄과 다녀갈 노드다
     /// (<see cref="DetourKey"/>). 기본 출구는 열쇠가 없다 — 노드에 자리가 하나뿐이다.
     /// </summary>
     public string? ExitKey => Kind switch
     {
-        ExitPortKind.Choice => ChoiceText,
         ExitPortKind.Detour when BranchOpenLineId is { } lineId && TargetNodeId is { } target => DetourKey(lineId, target),
         ExitPortKind.Detour when BranchOpenLineId is { } lineId && OpenOrdinal is { } open => DetourKey(lineId, OpenSlot(open)),
         _ => BranchOpenLineId

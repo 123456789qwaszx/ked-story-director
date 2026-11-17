@@ -122,8 +122,7 @@ public static class ChapterStructureCheck
                 "여럿 있습니다 — 문구를 다르게 하거나 하나를 지워 주세요."));
         }
 
-        // 같은 에피소드에서 같은 문구가 서로 다른 곳으로 간다 — 플레이어에게는 같은 버튼 둘이고,
-        // 문구를 열쇠로 매다는 연출(`DialogueNode.ChoiceExits`)도 한 벌뿐이라 두 길이 같은 연출을 탄다.
+        // 같은 에피소드에서 같은 문구가 서로 다른 곳으로 간다 — 플레이어에게는 같은 버튼 둘이다.
         foreach (IGrouping<(string, string), ChapterEdge> collided in edges
                      .Where(edge => !edge.HasNoOptionLabel)
                      .GroupBy(edge => (edge.FromEpisodeId, edge.OptionLabel!))

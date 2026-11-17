@@ -184,15 +184,8 @@ public sealed class DialogueNode : StoryNode
     /// </summary>
     public List<LineConditionTransition> TrailingTransitions { get; init; } = new();
 
-    /// <summary>
-    /// <b>선택지 문구 → 그 선택지를 고른 뒤 거쳐 갈 자유 씬</b> (v9, 2026-08-17).
-    ///
-    /// v9에서 선택지의 주인은 챕터 `간선` 시트이고 대본에는 OPTION이 없다 — 그래서 작가의
-    /// 배선이 매달릴 자리도 대본의 줄이 아니라 <b>문구</b>다. <see cref="BranchExits"/>와
-    /// 달리 대본 편집으로 청소되지 않는다: 문구의 주인은 챕터라 대본이 바뀌어도 그대로다.
-    /// 간선이 사라지면 배선은 고아로 남는다(쓰레기가 아니라 되돌릴 수 있는 상태다).
-    /// </summary>
-    public Dictionary<string, string> ChoiceExits { get; init; } = new(StringComparer.Ordinal);
+    // ⛔ `ChoiceExits`(선택지 문구 → 거쳐 갈 자유 씬 — 2026-08-17)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 대사 안 선택지가
+    //    2026-11-04에 걷힌 뒤로 만드는 곳도 읽는 곳도 없이 파일을 오가기만 했다(docs/work-orders/legacy-read-orders.md L5).
     // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:
     //    "툴이 LineId의 주인"). 워크북을 <b>다시 읽을 때</b> 어느 줄이 어느 줄인지
     //    맞추려고 들고 있던 표다 — 다시 읽지 않으면 맞출 상대가 없고, 신원은 이제

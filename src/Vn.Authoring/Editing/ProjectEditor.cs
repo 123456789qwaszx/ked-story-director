@@ -697,19 +697,15 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        // 선택지 출구는 문구가 열쇠다 — 대본의 줄에 매이지 않는다.
-        Dictionary<string, string> exits =
-            kind == ExitPortKind.Choice ? dialogue.ChoiceExits : dialogue.BranchExits;
-
         Mutate(() =>
         {
             if (targetNodeId is null)
             {
-                exits.Remove(branchOpenLineId);
+                dialogue.BranchExits.Remove(branchOpenLineId);
             }
             else
             {
-                exits[branchOpenLineId] = targetNodeId;
+                dialogue.BranchExits[branchOpenLineId] = targetNodeId;
             }
 
             ForgetShapeIfCut(dialogue, kind, branchOpenLineId, targetNodeId);
@@ -1221,14 +1217,6 @@ public sealed partial class ProjectEditor
                          .ToList())
             {
                 dialogue.BranchExits.Remove(key);
-            }
-
-            foreach (string key in dialogue.ChoiceExits
-                         .Where(pair => string.Equals(pair.Value, nodeId, StringComparison.Ordinal))
-                         .Select(pair => pair.Key)
-                         .ToList())
-            {
-                dialogue.ChoiceExits.Remove(key);
             }
 
             // 분기가 다녀가던 카드가 사라졌다 — 분기점은 이어지지 않은 채 제자리에 남는다(연결만 끊은 것과 같다).

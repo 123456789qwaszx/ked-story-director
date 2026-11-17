@@ -270,10 +270,6 @@ public static class ChapterProgressionExporter
                 // 잠기면 숨기는 칸은 계약에 없다 — 숨기려는 조건은 <b>표시조건</b>에 적는다
                 // (`해금조건 + 잠기면 숨김`과 결과가 같고, 말이 한 번만 나온다).
                 LockedReasonText = edge.LockedMessage ?? string.Empty,
-                // 이 길에 매달린 <b>자유 씬</b>. 저작 자리는
-                // **연출 그래프**다 — 시나리오 작가가 엑셀노드의 선택지 포트에 커스텀
-                // 대사 노드를 잇고, 그 배선은 프로젝트에 산다(`DialogueNode.ChoiceExits`).
-                //
                 StatChanges = edge.StatChanges
                     .Select(delta => new StatChangeJson
                     {

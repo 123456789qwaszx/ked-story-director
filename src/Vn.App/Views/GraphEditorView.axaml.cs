@@ -976,8 +976,7 @@ public partial class GraphEditorView : UserControl
     ///
     /// ⛔ 칸이 없는 가지의 옛 칩(「● 문구」 · 「○ 진행」)과 그 칩이 열던 자유 씬 배선, 배선된 자유 씬을 지나는 웹
     ///    경로 · (진행) 합류선 · 「⏹ 종료」 스텁은 2026-10-29에 걷혔다(legacy-cleanup.md L3). 칸은 간선마다 늘 서므로
-    ///    칸 없는 가지는 낡은 챕터 스냅샷에서만 나왔고, 자유 씬 배선(<see cref="DialogueNode.ChoiceExits"/>)은 그 칩만
-    ///    적었다. 옛 파일의 배선 데이터는 그대로 오간다.
+    ///    칸 없는 가지는 낡은 챕터 스냅샷에서만 나왔다. 그 배선 데이터(`ChoiceExits`)도 2026-11-17에 걷혔다.
     /// </summary>
     private void DrawRailsFrom(
         string chapterId,
