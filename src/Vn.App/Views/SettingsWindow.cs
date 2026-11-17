@@ -67,7 +67,7 @@ internal sealed class SettingsWindow : Window
             {
                 Group(
                     "이 프로젝트",
-                    "project.vnproject.json에 저장됩니다 — 바꾸면 되돌리기(Ctrl+Z)가 되고, [저장]해야 파일에 남습니다.",
+                    "project.vnproject.json에 저장됩니다 — 바꾸면 되돌리기(Ctrl+Z)가 되고, File → 저장(Ctrl+S)해야 파일에 남습니다.",
                     BoardSection()),
                 new StackPanel
                 {

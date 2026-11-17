@@ -12,33 +12,38 @@
                 Padding="12,10"
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,16,Auto,Auto,16,Auto,Auto,Auto,Auto,16,*,Auto">
-                <!-- 프로젝트는 폴더다 — 새로/열기는 폴더를 고른다. [다른 이름으로…]는 두지 않는다:
-                     복제는 탐색기, 버전은 git. manifest 이름은 사람이 짓지 않는다(ProjectFolder). -->
-                <Button Grid.Column="0" x:Name="NewButton" Content="새 프로젝트…"
-                        ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/ · game.definition.json)." />
-                <Button Grid.Column="1" x:Name="OpenButton" Content="열기…" Margin="6,0,0,0"
-                        ToolTip.Tip="프로젝트 폴더를 고릅니다." />
-                <Button Grid.Column="2" x:Name="SaveButton" Content="저장" Margin="6,0,0,0" />
-                <Button Grid.Column="3" x:Name="GameFolderButton" Content="🎮 게임 폴더…" Margin="6,0,0,0"
-                        ToolTip.Tip="런타임의 ChapterProgression 폴더를 고릅니다. 저장할 때마다 진행 JSON을 여기로도 씁니다(runtime.target.json — compositor도 같은 설정을 읽어 Yarn을 씁니다)." />
+            <Grid x:Name="TopBar" ColumnDefinitions="Auto,16,Auto,16,Auto,Auto,*,Auto">
+                <!-- File 메뉴 (2026-11-17 소유자 — 유니티처럼 눌러 목록에서 고른다). [실행 취소] · [다시 실행] 단추는 같은 날 걷었다 —
+                     되돌리기는 Ctrl+Z · Ctrl+Y다.
+                     프로젝트는 폴더다 — 새로/열기는 폴더를 고른다. [다른 이름으로…]는 두지 않는다: 복제는 탐색기, 버전은 git.
+                     manifest 이름은 사람이 짓지 않는다(ProjectFolder). -->
+                <Menu Grid.Column="0" x:Name="MainMenu" VerticalAlignment="Center">
+                    <MenuItem x:Name="FileMenu" Header="File">
+                        <MenuItem x:Name="NewMenuItem" Header="새 프로젝트…"
+                                  ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/ · game.definition.json)." />
+                        <MenuItem x:Name="OpenMenuItem" Header="열기…"
+                                  ToolTip.Tip="프로젝트 폴더를 고릅니다." />
+                        <Separator />
+                        <MenuItem x:Name="SaveMenuItem" Header="저장" InputGesture="Ctrl+S" />
+                    </MenuItem>
+                </Menu>
 
-                <Button Grid.Column="5" x:Name="UndoButton" Content="실행 취소" />
-                <Button Grid.Column="6" x:Name="RedoButton" Content="다시 실행" Margin="6,0,0,0" />
+                <Button Grid.Column="2" x:Name="GameFolderButton" Content="🎮 게임 폴더…"
+                        ToolTip.Tip="런타임의 ChapterProgression 폴더를 고릅니다. 진행 JSON을 exported/와 함께 여기로도 씁니다(runtime.target.json — compositor도 같은 설정을 읽어 Yarn을 씁니다)." />
 
                 <!--
-                  진행 JSON은 사람 손을 안 기다리고 저절로 나가므로, 사람이 할
+                  진행 JSON · 장면 파일 · 대사 Yarn은 사람 손을 안 기다리고 저절로 나가므로, 사람이 할
                   일은 "가서 꺼내 오는 것"뿐이다. 그 자리를 모르면 꺼내 갈 수 없으니 폴더를 연다.
-                  게임용 Yarn과 문서는 ked-story-compositor만 낸다.
+                  연출 든 게임용 Yarn은 ked-story-compositor가 낸다.
                 -->
-                <Button Grid.Column="8" x:Name="OpenExportFolderButton" Content="📂 챕터진행"
-                        ToolTip.Tip="exported/ 폴더를 엽니다 — 챕터별 진행 JSON이 여기 있습니다." />
+                <Button Grid.Column="4" x:Name="OpenExportFolderButton" Content="📂 챕터진행"
+                        ToolTip.Tip="exported/ 폴더를 엽니다 — 챕터별 진행 JSON · 장면 파일(scenes.json) · 대사 Yarn(yarn/)이 여기 있습니다." />
 
                 <!-- 설정은 이 창 하나에 모은다(2026-11-17 · docs/work-orders/settings-orders.md) — 묶음마다 어디에 저장되는지 적는다. -->
-                <Button Grid.Column="9" x:Name="SettingsButton" Content="⚙ 설정" Margin="6,0,0,0"
+                <Button Grid.Column="5" x:Name="SettingsButton" Content="⚙ 설정" Margin="6,0,0,0"
                         ToolTip.Tip="설정 — [대본] 판 크기 등. 프로젝트에 싣는 설정은 되돌리기(Ctrl+Z)가 됩니다." />
 
-                <StackPanel Grid.Column="13" VerticalAlignment="Center" Margin="8,0">
+                <StackPanel Grid.Column="6" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock x:Name="ProjectNameText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                     <TextBlock x:Name="ProjectPathText" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
@@ -47,7 +52,7 @@
                      더하면 열이 늘고, 그때 <c>*</c>(프로젝트 이름)와 이 칸이 <b>함께</b>
                      밀려야 한다. 이름 칸만 옮기면 이 글이 <b>이름 위에 겹쳐</b> 선다.
                      열 번호는 둘이 한 쌍이다. -->
-                <TextBlock Grid.Column="14"
+                <TextBlock Grid.Column="7"
                            x:Name="DirtyText"
                            VerticalAlignment="Center"
                            FontWeight="SemiBold" />

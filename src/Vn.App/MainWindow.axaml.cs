@@ -118,13 +118,11 @@ public partial class MainWindow : Window
         // 프로젝트가 아직 없을 때는 [새 프로젝트]가 먼저다 —
         // 툴바의 [새로 만들기]와 같은 길 하나를 지난다.
         ChapterGraph.ProjectNewCenterButton.Click += OnNewClick;
-        NewButton.Click += OnNewClick;
-        OpenButton.Click += OnOpenClick;
-        SaveButton.Click += OnSaveClick;
+        NewMenuItem.Click += OnNewClick;
+        OpenMenuItem.Click += OnOpenClick;
+        SaveMenuItem.Click += OnSaveClick;
         GameFolderButton.Click += OnGameFolderClick;
         SettingsButton.Click += (_, _) => UiGuard.Run(_session, "설정", () => OpenSettings());
-        UndoButton.Click += (_, _) => _session.Editor.Undo();
-        RedoButton.Click += (_, _) => _session.Editor.Redo();
         OpenExportFolderButton.Click += (_, _) =>
             UiGuard.Run(_session, "내보낸 폴더 열기", OpenExportFolder);
 
@@ -626,7 +624,7 @@ public partial class MainWindow : Window
 
             if (_session.ProjectPath is null)
             {
-                _session.SetStatus("프로젝트 폴더가 없습니다 — [새 프로젝트…]로 폴더를 고르세요.");
+                _session.SetStatus("프로젝트 폴더가 없습니다 — File 메뉴의 [새 프로젝트…]로 폴더를 고르세요.");
                 return;
             }
 
@@ -733,9 +731,6 @@ public partial class MainWindow : Window
 
         bool dirty = _session.IsDirty;
         DirtyText.Text = dirty ? "● 저장되지 않은 변경" : string.Empty;
-
-        UndoButton.IsEnabled = _session.Editor.CanUndo;
-        RedoButton.IsEnabled = _session.Editor.CanRedo;
 
         Title = dirty ? $"* {BaseTitle} — {name}" : $"{BaseTitle} — {name}";
     }

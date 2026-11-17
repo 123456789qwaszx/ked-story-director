@@ -74,7 +74,7 @@
 
 ```
 {프로젝트 폴더}/
-├─ project.vnproject.json      ← [열기…]로 여는 것
+├─ project.vnproject.json      ← File 메뉴의 [열기…]로 여는 것
 ├─ chapters/{챕터Id}.xlsx      ← 챕터 워크북 (구조·분기·조건)
 ├─ episodes/{챕터Id}/{에피소드Id}.xlsx  ← 에피소드 워크북 (대본)
 └─ exported/{챕터Id}.progression.json   ← 저절로 나갑니다 (검증을 통과한 챕터만)

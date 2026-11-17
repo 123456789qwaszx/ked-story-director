@@ -375,7 +375,7 @@
 
                         <!-- [적용] 단추는 없다 — 고르는 순간 반영된다. 글자 칸만 초점을 잃거나 Enter일 때 낸다.
                              길을 끊거나 자동으로 바꾸는 것은 여기서 하지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭이다. -->
-                        <TextBlock Text="고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다. 파일에는 [저장] · 자동 저장이 씁니다."
+                        <TextBlock Text="고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다. 파일에는 File → 저장(Ctrl+S) · 자동 저장이 씁니다."
                                    FontSize="10" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
                     </StackPanel>
 

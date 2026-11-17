@@ -35,6 +35,53 @@ public sealed class MainChromeTests
     });
 
     [Fact]
+    public void 위_띠의_File_메뉴에_새_프로젝트_열기_저장이_있고_실행_취소_단추는_없다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — 새 프로젝트 · 열기 · 저장은 File 메뉴(유니티처럼 눌러 목록에서 고른다), [실행 취소] · [다시 실행] 단추는
+        // 걷는다(되돌리기는 Ctrl+Z · Ctrl+Y). 위 띠에 남는 단추는 게임 폴더 · 챕터진행 · 설정이다.
+        string folder = Path.Combine(Path.GetTempPath(), "vn-file-menu", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+
+        try
+        {
+            var window = new MainWindow();
+            window.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+            MenuItem file = window.FindControl<MenuItem>("FileMenu")!;
+            Assert.Equal("File", file.Header);
+            Assert.Equal(["새 프로젝트…", "열기…", "저장"], file.Items.OfType<MenuItem>().Select(item => item.Header as string));
+            Assert.Equal("Ctrl+S", window.FindControl<MenuItem>("SaveMenuItem")!.InputGesture?.ToString());
+
+            foreach (string gone in new[] { "NewButton", "OpenButton", "SaveButton", "UndoButton", "RedoButton" })
+            {
+                Assert.Null(window.FindControl<Button>(gone));
+            }
+
+            Assert.Equal(
+                ["GameFolderButton", "OpenExportFolderButton", "SettingsButton"],
+                window.FindControl<Grid>("TopBar")!.Children.OfType<Button>().Select(button => button.Name));
+
+            // 메뉴의 [저장]이 저장한다.
+            window.CreateProjectIn(folder);
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            window.SessionProbe.Editor.EnsureChapter("ch01");
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Assert.True(window.SessionProbe.IsDirty);
+
+            window.FindControl<MenuItem>("SaveMenuItem")!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Assert.False(window.SessionProbe.IsDirty);
+
+            window.Close();
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    });
+
+    [Fact]
     public void 새_프로젝트는_대본_탭에_있다가_만들어도_구성에서_시작한다() => HeadlessUi.Run(() =>
     {
         string folder = Path.Combine(Path.GetTempPath(), "vn-new-project-tab", Guid.NewGuid().ToString("N"));
