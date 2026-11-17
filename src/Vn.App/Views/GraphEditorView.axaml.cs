@@ -31,7 +31,7 @@ namespace Vn.App.Views;
 /// </summary>
 public partial class GraphEditorView : UserControl
 {
-    private const double CardWidth = 210;
+    private const double CardWidth = BoardSize.CardWidth;   // 판 크기 계산(BoardResize)과 같은 값 — 한 곳에서 정한다
 
     // 카드 크기는 사람이 가장자리를 끌어 키운다 — 오른쪽은 폭, 아래는 글 칸 높이, 오른쪽 아래 모서리는 둘 다. 기본보다 작게는
     // 줄이지 않는다(머리 · 포트 줄이 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다).
@@ -65,7 +65,7 @@ public partial class GraphEditorView : UserControl
 
     // 대사 카드 안의 글 칸 (D4) — 다섯 줄 남짓. 넘치면 칸이 스크롤한다(카드 높이가 글에 따라 출렁이면
     // 아래 레일과 선택지 칸이 쓰는 동안 들썩인다).
-    private const double WritingBoxHeight = 88;
+    private const double WritingBoxHeight = BoardSize.CardWritingHeight;
     private const double WritingBoxGap = 6;
 
     /// <summary>글 칸의 줄 높이 — 고정한다(분기 점이 그 대사 높이에 서고, 대사마다 점 하나라 줄 간격 15면 겹치지 않는다).</summary>
@@ -224,8 +224,14 @@ public partial class GraphEditorView : UserControl
     // 판 크기 (W41) — 캔버스 크기의 유일한 정의. 미니맵과 같은 3:2 비율을 유지해야
     // 미니맵이 왜곡 없이 축소된다. Canvas는 좌표 공간일 뿐이라 크기 자체는 비용이
     // 없다 — 비용은 노드 수에서 나온다(가상화는 파일 판 백로그).
-    private const double CanvasWidth = 12000;
-    private const double CanvasHeight = 8000;
+    // 판 크기 — 프로젝트의 것(StoryProject.Board, [⚙ 설정]에서 고친다 · 2026-11-17). 그려지는 카드가 그보다 바깥이면 그 카드까지
+    // 넓혀 그린다(ApplyBoardSize — 옛 파일 · 손으로 고친 파일에서 카드가 판 밖으로 사라지지 않게). 캔버스 · 카드 자리 제한 · 미니맵이 이 둘만 본다.
+    private double _boardWidth = BoardSize.Default.Width;
+    private double _boardHeight = BoardSize.Default.Height;
+
+    private double CanvasWidth => _boardWidth;
+
+    private double CanvasHeight => _boardHeight;
     private const double MinimapWidth = 180;   // 캔버스와 같은 3:2 비율
     private const double MinimapHeight = 120;
 
@@ -365,7 +371,7 @@ public partial class GraphEditorView : UserControl
         FoldHierarchyButton.Click += (_, _) => HierarchyDock.Toggle(folded: true);
         HierarchyStrip.Click += (_, _) => HierarchyDock.Toggle(folded: false);
 
-        // 판 크기는 상수 한 곳이 정한다 (W41) — 미니맵 배율과 어긋날 길을 없앤다.
+        // 판 크기는 한 곳(_boardWidth · _boardHeight — 프로젝트의 판 크기, ApplyBoardSize)이 정한다 (W41) — 미니맵 배율과 어긋날 길을 없앤다.
         GraphCanvas.Width = CanvasWidth;
         GraphCanvas.Height = CanvasHeight;
 
@@ -483,6 +489,7 @@ public partial class GraphEditorView : UserControl
             _session.ExpandedFileIds,
             _session.Definition,
             _session.CollapsedScenes);
+        ApplyBoardSize();
 
         // 카드 안 글 칸에 초점이 있었으면 다시 그린 뒤 그 칸으로 돌려준다(D4) — 판을 비우기 전에 잰다.
         WritingFocus? writing = CaptureWritingFocus();
@@ -1658,7 +1665,46 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
+        bool boardChanged = ApplyBoardSize();
         PlaceVisuals(_projection);
+
+        if (boardChanged)
+        {
+            RefreshMinimap();   // 미니맵 배율이 판 크기를 따른다
+        }
+    }
+
+    /// <summary>
+    /// 판 크기를 프로젝트에 맞춘다 — <see cref="StoryProject.Board"/>, 그려지는 카드가 그보다 바깥이면 그 카드까지(안전장치). 바뀌었으면 참.
+    /// 크기 바꾸기(<see cref="ProjectEditor.SetBoardSize"/>)는 자리 변경(Layout)이라 <see cref="RefreshPositions"/>로, 되돌리기는 다시 그리기로 온다 —
+    /// 둘 다 여기를 지난다.
+    /// </summary>
+    private bool ApplyBoardSize()
+    {
+        if (_session is null)
+        {
+            return false;
+        }
+
+        double width = _session.Project.Board.Width;
+        double height = _session.Project.Board.Height;
+
+        foreach (StoryNode node in _session.Project.EnumerateNodes().Where(node => !GraphProjectionBuilder.IsHiddenPlumbing(node)))
+        {
+            width = Math.Max(width, node.Layout.X + BoardSize.CardWidthOf(node));
+            height = Math.Max(height, node.Layout.Y + BoardSize.CardHeightOf(node));
+        }
+
+        if (width == _boardWidth && height == _boardHeight)
+        {
+            return false;
+        }
+
+        _boardWidth = width;
+        _boardHeight = height;
+        GraphCanvas.Width = width;
+        GraphCanvas.Height = height;
+        return true;
     }
 
     /// <summary>지금 선 카드들의 크기가 프로젝트의 것과 다른가 — 폭과 글 칸 높이.</summary>
@@ -4806,9 +4852,9 @@ public partial class GraphEditorView : UserControl
     }
 
     // 판 경계 클램프 (GB-4) — 카드가 스크롤이 닿지 않는 바깥으로 끌려 나가지 않는다.
-    private static double ClampNodeX(double x) => Math.Clamp(x, 0, CanvasWidth - CardWidth);
+    private double ClampNodeX(double x) => Math.Clamp(x, 0, CanvasWidth - CardWidth);
 
-    private static double ClampNodeY(double y) => Math.Clamp(y, 0, CanvasHeight - 240);
+    private double ClampNodeY(double y) => Math.Clamp(y, 0, CanvasHeight - BoardSize.CardHeight);
 
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs args)
     {

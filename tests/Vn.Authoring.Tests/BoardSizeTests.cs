@@ -145,12 +145,13 @@ public sealed class BoardSizeTests : IDisposable
 
         editor.SetBoardSize(6000, 8000);
 
+        // 줄이는 축은 정수로 내린다(끝자리 오차로 판을 넘지 않게).
         double r = plan.RatioX;
         Assert.Equal((0, 100), At(editor, "a"));
-        Assert.Equal((3000 * r, 100), At(editor, "b"));
-        Assert.Equal((6000 * r, 100), At(editor, "c"));
-        Assert.Equal((9000 * r, 100), At(editor, "d"));     // 나간 카드만이 아니라 전체가 같은 비율이다
-        Assert.Equal((3000 * r, 6000), At(editor, "e"));
+        Assert.Equal((Math.Floor(3000 * r), 100), At(editor, "b"));
+        Assert.Equal((Math.Floor(6000 * r), 100), At(editor, "c"));
+        Assert.Equal((Math.Floor(9000 * r), 100), At(editor, "d"));     // 나간 카드만이 아니라 전체가 같은 비율이다
+        Assert.Equal((Math.Floor(3000 * r), 6000), At(editor, "e"));
         Assert.True(At(editor, "d").X + BoardSize.CardWidth <= 6000);
         Assert.Equal(new BoardSize(6000, 8000), editor.Project.Board);
     }
@@ -158,7 +159,8 @@ public sealed class BoardSizeTests : IDisposable
     [Fact]
     public void 줄여서_새로_겹친_카드는_비키고_비키다_넘치면_판을_넓힌다()
     {
-        // 한 줄에 카드 열둘을 300 간격으로 — 가로 4000으로 줄이면 간격이 카드 폭(210)보다 좁아진다.
+        // 한 줄에 카드 열둘을 오른쪽 멀리(9000부터) 300 간격으로 — 가로 4000으로 줄이면 비율이 0.3쯤이라 간격(90쯤)이 카드 폭(210)보다
+        // 좁아져 겹친다. 비켜 서면 열둘이 4000에 안 든다.
         var editor = new ProjectEditor(new StoryProject { Title = "촘촘" });
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
@@ -167,7 +169,7 @@ public sealed class BoardSizeTests : IDisposable
         for (int index = 0; index < ids.Length; index++)
         {
             editor.AddEpisode("ch01", ids[index], title: ids[index], 0, 0);
-            editor.MoveNode(EpisodeNaming.CardFor(editor.Project, "ch01", ids[index])!.Id, 1000 + (index * 1000), 100);
+            editor.MoveNode(EpisodeNaming.CardFor(editor.Project, "ch01", ids[index])!.Id, 9000 + (index * 300), 100);
         }
 
         editor.SetBoardSize(4000, 8000);

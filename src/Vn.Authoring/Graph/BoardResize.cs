@@ -61,9 +61,13 @@ public static class BoardResize
         // 모든 노드의 자리를 같은 비율로 — 숨은 배관 노드도(판 밖에 남지 않게).
         var positions = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
 
+        // 줄이는 축은 정수로 내린다 — 곱셈의 끝자리 오차(3760.0000000000005)로 카드 끝이 새 판을 머리카락만큼 넘으면 판이 1 넓어진다.
+        // 내림이라 수학적으로 든 카드는 언제나 든다.
         foreach (StoryNode node in project.EnumerateNodes())
         {
-            positions[node.Id] = (node.Layout.X * ratioX, node.Layout.Y * ratioY);
+            positions[node.Id] = (
+                ratioX < 1 ? Math.Floor(node.Layout.X * ratioX) : node.Layout.X,
+                ratioY < 1 ? Math.Floor(node.Layout.Y * ratioY) : node.Layout.Y);
         }
 
         Separate(cards, positions);
