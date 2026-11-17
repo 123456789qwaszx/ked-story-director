@@ -224,7 +224,8 @@ public sealed class ChapterScenesExportTests : IDisposable
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.AddEpisode("ch01", "ep01", "", 0, 0, sceneId: "교실");
-        editor.AddEpisode("ch01", "ep02", "", 220, 0, sceneId: "교실");   // 들어오는 길이 없다 — 도달 불가
+        editor.AddEpisode("ch01", "ep02", "", 220, 0, sceneId: "교실");
+        editor.AddChapterCondition("ch01", "깨짐", "없는스탯 >= 1");   // 모르는 스탯 — 검증 오류로 거부된다
         editor.SetSceneNote("ch01", "교실", "교실의 사정");
         string manifest = Path.Combine(_root, "p" + ProjectManifestJson.FileExtension);
         var entry = new ChapterEntry("ch01", editor.FindChapter("ch01")!.ToGraphModel("ch01"));

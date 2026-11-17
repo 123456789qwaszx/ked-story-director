@@ -138,10 +138,26 @@ public sealed class ChapterExportServiceTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "{ \"한번은\": \"옳았던 판\" }");
 
-        ChapterExportRun run = service.ExportAll([Entry("ch01", Unreachable)], ProjectPath);
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Blocked)], ProjectPath);
 
         Assert.Contains("ch01", run.Refused);
         Assert.Equal("{ \"한번은\": \"옳았던 판\" }", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void 이어지지_않은_에피소드가_있어도_나가고_진행_JSON에_그대로_실린다()
+    {
+        // 2026-11-17 소유자 — 작업 중인(아직 안 이은) 에피소드는 내보내기를 막지 않는다. 게임에서는 거기 갈 길이 없을 뿐이다.
+        ChapterGraphModel model = Sound("ch01");
+        model = new ChapterGraphModel(
+            model.ChapterId, model.SourcePath,
+            [.. model.Episodes, new ChapterEpisode("ep9", "작업 중", "", "ep9", 400, 0, null)],
+            model.Edges, model.Conditions, model.Stats, model.Fixtures, model.Diagnostics);
+
+        ChapterExportRun run = new ChapterExportService().ExportAll([new ChapterEntry("ch01", model)], ProjectPath);
+
+        Assert.True(run.AllExported, run.Notice);
+        Assert.Contains("\"EpisodeId\": \"ep9\"", File.ReadAllText(ChapterExportService.ExportPathFor(ProjectPath, "ch01")));
     }
 
     [Fact]
@@ -172,7 +188,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         var service = new ChapterExportService();
 
         ChapterExportRun run = service.ExportAll(
-            [Entry("ch01", Sound), Entry("ch02", Unreachable)],
+            [Entry("ch01", Sound), Entry("ch02", Blocked)],
             ProjectPath);
 
         Assert.Equal(["ch02"], run.Refused);
@@ -257,7 +273,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "{ \"한번은\": \"옳았던 판\" }");
 
-        ChapterExportRun run = service.ExportAll([Entry("ch01", Unreachable)], ProjectPath);
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Blocked)], ProjectPath);
 
         Assert.True(File.Exists(path));
         Assert.Empty(run.Removed!);
@@ -409,8 +425,11 @@ public sealed class ChapterExportServiceTests : IDisposable
         [],
         []);
 
-    /// <summary>ep3로 들어오는 길이 없다 — 도달성 증명이 오류로 잡는다(D3).</summary>
-    private static ChapterGraphModel Unreachable(string chapterId) => new(
+    /// <summary>
+    /// ep3로 가는 간선은 있지만 조건(trust ≥ 9)이 스탯 최대(5)를 넘어 못 닿는다 — 도달성 증명이 오류로 잡는다(D3). ⛔ 2026-11-17까지는
+    /// 「들어오는 길이 없다」였다 — 이제 그것은 작업 중(이어지지 않음 — 경고)이다.
+    /// </summary>
+    private static ChapterGraphModel Blocked(string chapterId) => new(
         chapterId,
         string.Empty,
         [
@@ -418,8 +437,12 @@ public sealed class ChapterExportServiceTests : IDisposable
             new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null),
             new ChapterEpisode("ep3", "닿지 않는 화", "", "ep3", 400, 0, null)
         ],
-        [new ChapterEdge("ep1", "ep2", "다음", null, null)],
-        [],
+        [new ChapterEdge("ep1", "ep2", "다음", null, null), new ChapterEdge("ep2", "ep3", "올라간다", "높음", null)],
+        [
+            new ChapterCondition("높음", "trust >= 9", null,
+                [new ConditionTerm(ConditionTermKind.StatComparison, "trust", ConditionComparison.AtLeast, 9)],
+                IsValid: true)
+        ],
         [new ChapterStat("trust", Initial: 1, Minimum: 0, Maximum: 5)],
         [],
         []);

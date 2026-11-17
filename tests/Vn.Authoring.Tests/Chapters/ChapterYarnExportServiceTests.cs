@@ -141,7 +141,8 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
         const string extra = "festival_eve_extra";
         editor.EnsureChapter(extra);
         editor.AddEpisode(extra, "ep01", "", 0, 0, sceneId: "교실");
-        editor.AddEpisode(extra, "ep02", "", 220, 0, sceneId: "교실");   // 들어오는 길이 없다 — 도달 불가로 거부된다
+        editor.AddEpisode(extra, "ep02", "", 220, 0, sceneId: "교실");
+        editor.AddChapterCondition(extra, "깨짐", "없는스탯 >= 1");   // 모르는 스탯 — 검증 오류로 거부된다
 
         string folder = ChapterYarnExporter.FolderFor(manifest);
         Directory.CreateDirectory(folder);
@@ -162,6 +163,7 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
         editor.EnsureChapter("ch01");
         editor.AddEpisode("ch01", "ep01", "", 0, 0, sceneId: "교실");
         editor.AddEpisode("ch01", "ep02", "", 220, 0, sceneId: "교실");
+        editor.AddChapterCondition("ch01", "깨짐", "없는스탯 >= 1");   // 모르는 스탯 — 검증 오류로 거부된다
         string manifest = Path.Combine(_root, "p" + ProjectManifestJson.FileExtension);
 
         ChapterExportRun run = new ChapterExportService().ExportAll([Entry(editor, "ch01")], manifest, editor.Project);

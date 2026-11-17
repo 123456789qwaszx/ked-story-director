@@ -125,7 +125,7 @@ public static class ChapterReachabilityProver
         (reachable, complete, visited) = Explore(chapter, start, maxSeen, minSeen, spans);
 
         ReportIncompleteExploration(chapter, complete, visited, diagnostics);
-        ReportUnreachable(chapter, reachable, maxSeen, minSeen, complete, diagnostics);
+        ReportUnreachable(chapter, reachable, ConnectedFromStart(chapter, start), maxSeen, minSeen, complete, diagnostics);
 
         return new ChapterReachabilityResult(
             reachable, diagnostics, complete, BuildSpans(chapter, spans), visited);
@@ -298,12 +298,38 @@ public static class ChapterReachabilityProver
     // ── 보고 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 도달 불가를 <b>원인 조건까지 지목해</b> 보고한다. 기본은 오류이고,
-    /// `도달불가 허용`이 켜진 에피소드는 알림으로 낮춘다 — 의도임이 표시된 것이므로.
+    /// 시작에서 <b>간선만 따라</b>(조건은 보지 않고) 닿는 에피소드 — 이어졌는가. 여기 없으면 아직 이어지지 않은 것이고(작업 중), 여기
+    /// 있는데 증명이 못 닿으면 조건 때문이다(설계 버그).
+    /// </summary>
+    private static HashSet<string> ConnectedFromStart(ChapterGraphModel chapter, ChapterEpisode start)
+    {
+        var connected = new HashSet<string>(StringComparer.Ordinal) { start.EpisodeId };
+        var queue = new Queue<string>([start.EpisodeId]);
+        ILookup<string, ChapterEdge> outgoing = chapter.Edges.ToLookup(edge => edge.FromEpisodeId, StringComparer.Ordinal);
+
+        while (queue.TryDequeue(out string? from))
+        {
+            foreach (ChapterEdge edge in outgoing[from])
+            {
+                if (connected.Add(edge.ToEpisodeId))
+                {
+                    queue.Enqueue(edge.ToEpisodeId);
+                }
+            }
+        }
+
+        return connected;
+    }
+
+    /// <summary>
+    /// 도달 불가를 <b>원인 조건까지 지목해</b> 보고한다. 간선이 있는데 못 닿으면(조건 때문) 오류이고, 아직 이어지지 않았으면
+    /// 경고다(<see cref="ChapterDiagnosticCode.EpisodeNotConnected"/> — 2026-11-17 소유자: 작업 중인 에피소드 하나가 챕터의 내보내기를
+    /// 통째로 막았다). `도달불가 허용`이 켜진 에피소드는 알림으로 낮춘다 — 의도임이 표시된 것이므로.
     /// </summary>
     private static void ReportUnreachable(
         ChapterGraphModel chapter,
         IReadOnlySet<string> reachable,
+        IReadOnlySet<string> connected,
         int[] maxSeen,
         int[] minSeen,
         bool complete,
@@ -313,6 +339,19 @@ public static class ChapterReachabilityProver
                      !reachable.Contains(episode.EpisodeId)))
         {
             string cause = DiagnoseCause(chapter, episode, reachable, maxSeen, minSeen);
+
+            if (!connected.Contains(episode.EpisodeId) && !episode.AllowUnreachable)
+            {
+                diagnostics.Add(new ChapterDiagnostic(
+                    ChapterDiagnosticSeverity.Warning,
+                    ChapterDiagnosticCode.EpisodeNotConnected,
+                    chapter.SourcePath,
+                    ChapterSheetNames.Episodes,
+                    episode.EpisodeId,
+                    $"'{episode.EpisodeId}'는 시작에서 이어지지 않았습니다. {cause} 작업 중이면 그대로 두어도 됩니다 — 내보내기를 막지 않고, " +
+                    "게임에서는 거기 갈 길이 없습니다. 이으려면 다른 에피소드 카드 아래의 선택지 칸에서 이리로 잇습니다."));
+                continue;
+            }
 
             ChapterDiagnosticSeverity severity = episode.AllowUnreachable
                 ? ChapterDiagnosticSeverity.Info

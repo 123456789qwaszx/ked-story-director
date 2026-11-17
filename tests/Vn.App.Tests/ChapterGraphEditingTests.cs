@@ -426,6 +426,26 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
+    public void 이어지지_않은_에피소드는_오류_없이_흐리게_서고_잇으면_또렷해진다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — 막 만든 에피소드(아직 안 이음)는 작업 중이다. 오류 표식 없이 흐리게 서고, 내보내기를 막지 않는다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        var canvas = view.FindControl<Avalonia.Controls.Canvas>("GraphCanvas")!;
+
+        EpisodeAdder.Add(session, "ch05", after: null, sceneId: null);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Border Card() => canvas.Children.OfType<Border>().Single(item => item.Tag as string == "ch05_new01");
+        Assert.Equal(0.55, Card().Opacity, 3);
+        Assert.Equal(1, Card().BorderThickness.Left);   // ⚠ 오류 테두리가 아니다
+
+        session.Editor.AddEdge("ch05", "main05.end", "ch05_new01", optionLabel: "이어서");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, Card().Opacity, 3);
+    });
+
+    [Fact]
     public void 고른_에피소드의_다음으로_더하면_간선이_이어진다() => HeadlessUi.Run(() =>
     {
         // 「에피소드 추가」는 누른 줄의 에피소드 다음으로 만든다. 흐름 연결이 기본값이다.

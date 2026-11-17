@@ -41,6 +41,13 @@ public enum ChapterDiagnosticCode
     EdgeEndpointBlank,
     EpisodeUnreachable,
 
+    /// <summary>
+    /// 시작에서 <b>간선으로 이어지지 않은</b> 에피소드 — 막 만들어 아직 안 이은 것, 또는 그런 것만 부르는 섬(2026-11-17 소유자). 경고다 —
+    /// 내보내기를 막지 않고 진행 JSON에도 그대로 실린다(게임에서는 거기 갈 길이 없다 · 런타임 코어도 고아 노드를 거절하지 않는다).
+    /// 간선은 있는데 스탯 조건 때문에 못 닿는 것은 설계 버그라 지금처럼 <see cref="EpisodeUnreachable"/>(오류)다.
+    /// </summary>
+    EpisodeNotConnected,
+
     /// <summary>분기점이 <b>에피소드</b>에 이어져 있다 — 분기는 분기 카드에만 잇는다(오류, <see cref="ChapterBranchCards"/>, 2026-11-17).</summary>
     BranchIntoEpisode,
 

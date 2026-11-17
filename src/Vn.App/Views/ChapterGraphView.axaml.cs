@@ -1917,6 +1917,14 @@ public partial class ChapterGraphView : UserControl
 
         ToolTip.SetTip(card, Tooltip(model, episode) + StatSpanDetail(episode));
 
+        // 아직 이어지지 않았다 — 오류가 아니라 작업 중이라 흐리게만 세운다(내보내기를 막지 않는다).
+        if (IsNotConnected(episode))
+        {
+            card.Opacity = 0.55;
+            ToolTip.SetTip(card, "이어지지 않음 — 시작에서 이리로 오는 길이 아직 없습니다(작업 중이면 그대로 두어도 됩니다).\n" +
+                                 Tooltip(model, episode) + StatSpanDetail(episode));
+        }
+
         if (GatedIncoming(model, episode).Count > 0)
         {
             card.BorderThickness = new Thickness(1.6);
@@ -2136,7 +2144,17 @@ public partial class ChapterGraphView : UserControl
     private bool IsUnreachable(ChapterEpisode episode) =>
         _validation is { } validation &&
         !validation.Reachability.ReachableEpisodeIds.Contains(episode.EpisodeId) &&
-        !episode.AllowUnreachable;
+        !episode.AllowUnreachable &&
+        !IsNotConnected(episode);
+
+    /// <summary>
+    /// 시작에서 아직 이어지지 않은 에피소드인가(2026-11-17) — 오류가 아니라 작업 중이다. 카드를 흐리게 세운다(⚠를 달지 않는다).
+    /// </summary>
+    private bool IsNotConnected(ChapterEpisode episode) =>
+        _validation is { } validation &&
+        validation.Reachability.Diagnostics.Any(item =>
+            item.Code == ChapterDiagnosticCode.EpisodeNotConnected &&
+            string.Equals(item.EpisodeId, episode.EpisodeId, StringComparison.Ordinal));
 
     // ── 편집 (v4: 자리는 사람이 소유한다 — 드래그가 에피소드의 X·Y를 고친다) ──────
 

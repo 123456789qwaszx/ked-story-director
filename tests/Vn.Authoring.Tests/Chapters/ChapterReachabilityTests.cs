@@ -160,6 +160,26 @@ public sealed class ChapterReachabilityTests
     }
 
     [Fact]
+    public void 이어지지_않은_에피소드는_경고고_그것만_부르는_섬도_같다()
+    {
+        // 2026-11-17 소유자 — 막 만들어 아직 안 이은 에피소드 하나가 챕터의 내보내기를 통째로 막았다. 간선으로 이어지지 않은 것은
+        // 작업 중이라 경고다(EpisodeNotConnected). 간선은 있는데 조건 때문에 못 닿는 것은 그대로 오류다(아래 스탯 관문 시험들).
+        ChapterGraphModel chapter = Chapter(
+            episodes: [Episode("ep1"), Episode("섬"), Episode("섬의_끝")],
+            edges: [("섬", "섬의_끝", null, 0)],
+            conditions: []);
+
+        ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
+
+        Assert.False(result.HasErrors);
+        Assert.Equal(["섬", "섬의_끝"], result.Diagnostics
+            .Where(item => item.Code == ChapterDiagnosticCode.EpisodeNotConnected)
+            .Select(item => item.EpisodeId!));
+        Assert.All(result.Diagnostics, item => Assert.Equal(ChapterDiagnosticSeverity.Warning, item.Severity));
+        Assert.DoesNotContain(result.Diagnostics, item => item.Code == ChapterDiagnosticCode.EpisodeUnreachable);
+    }
+
+    [Fact]
     public void 도달불가_허용이_켜진_에피소드는_오류가_아니라_알림이다()
     {
         // D3 — 의도적 도달 불가(폐기 예정·미완성)는 명시 예외로 두되, 그 사실은 표시된다.
