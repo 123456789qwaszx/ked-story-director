@@ -67,17 +67,17 @@ public sealed class ChapterLayerSeparationTests
     }
 
     [Fact]
-    public void 이미_쓰인_챕터_조건은_이름이_보이고_출처가_붙는다()
+    public void 이미_쓰인_챕터_조건은_이름_그대로_보인다()
     {
-        // 숨긴다고 "알 수 없는 조건"이 되면 그게 더 나쁘다 — 대사 노드의 조건라벨이
-        // 가리키는 A계층 조건은 이름이 그대로 읽히되, 왜 못 고치는지가 이름에 있다.
+        // 숨긴다고 "알 수 없는 조건"이 되면 그게 더 나쁘다 — 대사 노드의 조건라벨이 가리키는 챕터 조건은 이름이 그대로 읽힌다.
+        // 앞에 붙던 「[기획]」은 2026-11-17에 걷었다 — 조건 이름은 작가가 [대본] 탭에서 짓는다.
         Board board = BuildBoard();
 
         AvailableCondition chapter = AvailableConditionResolver
             .Resolve(board.Project, board.Dialogue.Id)
             .Conditions.Single(item => item.Name == "신뢰높음");
 
-        Assert.Equal("[기획] 신뢰높음", AvailableConditionResolver.LayeredLabel(chapter));
+        Assert.Equal("신뢰높음", AvailableConditionResolver.LayeredLabel(chapter));
 
         AvailableCondition own = AvailableConditionResolver
             .Resolve(board.Project, board.Dialogue.Id)

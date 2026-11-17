@@ -191,16 +191,15 @@ public static class AvailableConditionResolver
     }
 
     /// <summary>
-    /// 화면에 세울 이름. <b>A계층 조건은 출처를 앞에 단다</b> (2026-08-17) — 작가가 고칠 수
-    /// 없는 것이 왜 여기 보이는지가 이름 하나로 설명돼야 한다. 계층이 다르다는 사실은
-    /// 숨기는 게 아니라 <b>보이게</b> 갈라야 한다는 소유자 지시.
+    /// 화면에 세울 이름 — 조건의 이름 그대로다.
+    ///
+    /// ⛔ 2026-11-17 소유자: 챕터 조건 앞의 「[기획]」을 걷었다. 2026-08-17에는 작가가 고칠 수 없는 조건이 왜 보이는지를 이름으로
+    /// 말하려고 붙였지만, 이제 조건 이름은 작가가 [대본] 탭에서 짓고 분기에 직접 건다(two-graphs 7절 Q · S) — 작가의 것이다.
     /// </summary>
     public static string LayeredLabel(AvailableCondition condition)
     {
         ArgumentNullException.ThrowIfNull(condition);
 
-        return condition.SourceKind == AvailableConditionSourceKind.ChapterLayer
-            ? $"[기획] {condition.DisplayName}"
-            : condition.DisplayName;
+        return condition.DisplayName;
     }
 }
