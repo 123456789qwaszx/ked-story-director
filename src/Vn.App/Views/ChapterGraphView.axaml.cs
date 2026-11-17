@@ -311,6 +311,12 @@ public partial class ChapterGraphView : UserControl
     /// <summary>에피소드 카드를 두 번 눌렀다(챕터, 에피소드) — 셸이 [대본] 탭의 그 카드로 데려간다.</summary>
     internal event Action<string, string>? EpisodeOpened;
 
+    /// <summary>
+    /// 분기 카드의 칩을 두 번 눌렀다(노드 Id) — 셸이 [대본] 탭의 그 분기 카드로 데려간다(에피소드 카드와 같다 — 2026-11-17 소유자 보고:
+    /// 칩은 두 번 눌러도 [대본]으로 가지 않았다).
+    /// </summary>
+    internal event Action<string>? BranchCardOpened;
+
     /// <summary>선택지 간선을 두 번 눌렀다(챕터, 출발, 도착, 문구) — 셸이 [대본] 탭의 그 선택지 레인으로 데려간다.</summary>
     internal event Action<string, string, string, string>? ChoiceOpened;
 
@@ -1349,6 +1355,12 @@ public partial class ChapterGraphView : UserControl
 
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제 · 범위 선택)까지 흘러가면 곧바로 풀린다
             UiGuard.Run(_session, "분기 카드 선택", () => SelectBranchCard(nodeId));
+
+            // 두 번 누름 — 에피소드 카드처럼 셸에 알린다([대본] 탭의 그 분기 카드로).
+            if (e.ClickCount >= 2)
+            {
+                BranchCardOpened?.Invoke(nodeId);
+            }
         };
 
         _branchChips[nodeId] = chip;

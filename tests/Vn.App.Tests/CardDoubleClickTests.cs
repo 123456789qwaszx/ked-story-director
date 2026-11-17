@@ -85,6 +85,56 @@ public sealed class CardDoubleClickTests : IDisposable
     });
 
     [Fact]
+    public void 구성_탭의_분기_칩을_두_번_누르면_대본_탭의_그_분기_카드로_간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 보고 — 칩은 두 번 눌러도 [대본]으로 가지 않았다. 에피소드 카드와 같게 간다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, ChapterTab);
+        DialogueNode home = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
+        DialogueNode branch = session.Editor.AddBranchMarker(home.Id, home.Script.ActiveLines.First().Id);
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        view.SelectChapter("ch01");
+        view.Refresh();
+        Dispatcher.UIThread.RunJobs();
+        Border chip = view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
+            .Single(item => item.Tag is ChapterGraphView.BranchCardMark mark && mark.NodeId == branch.Id);
+
+        // 한 번 — 고르기만 한다.
+        Press(chip, clicks: 1);
+        Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
+        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+
+        // 두 번 — [대본] 탭의 그 분기 카드다(그 챕터의 판이 열렸다).
+        Press(chip, clicks: 2);
+        Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
+        Assert.Equal(branch.Id, session.SelectedNodeId);
+        Assert.Equal("ch01", session.ActiveFile?.Name);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 대본_탭의_분기_카드를_두_번_누르면_구성_탭의_그_칩으로_간다() => HeadlessUi.Run(() =>
+    {
+        // ⛔ 2026-11-17까지는 집 에피소드를 골랐다 — 이제 그 분기 카드의 칩을 고른다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, DirectorTab);
+        DialogueNode home = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
+        DialogueNode branch = session.Editor.AddBranchMarker(home.Id, home.Script.ActiveLines.First().Id);
+        Dispatcher.UIThread.RunJobs();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        Border card = graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>().Single(item => item.Tag as string == branch.Id);
+
+        Press(card, clicks: 2);
+
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
+        Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
+        Assert.Equal(branch.Name, view.FindControl<TextBox>("BranchIdBox")!.Text);
+        Assert.Equal(StoryHierarchy.BranchKey("ch01", branch.Id), view.HierarchyView.Selection?.Key);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 구성_탭의_선택지_간선을_두_번_누르면_대본_탭의_그_레인으로_간다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, ChapterTab);

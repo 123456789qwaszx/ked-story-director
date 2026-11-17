@@ -97,6 +97,7 @@ public partial class MainWindow
         // 카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다.
         ChapterGraph.EpisodeOpened += (chapterId, episodeId) =>
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenInDirector(chapterId, episodeId));
+        ChapterGraph.BranchCardOpened += nodeId => UiGuard.Run(_session, "[대본] 탭으로", () => OpenBranchInDirector(nodeId));
         Graph.CardOpened += nodeId => UiGuard.Run(_session, "[구성] 탭으로", () => OpenInChapterGraph(nodeId));
 
         // 판의 빈 곳을 누르면 하이어아키에서 그 줄을 고른 것과 같다(2026-11-17) — 장면 영역은 메모 공간, 챕터 영역은 스탯 · 조건,
@@ -146,18 +147,43 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// [대본] 판에서 카드를 두 번 눌렀다 — 에피소드 카드면 [구성] 탭으로 넘어가 그 챕터와 에피소드를 고르고 보이게 한다.
+    /// [구성] 판에서 분기 카드의 칩을 두 번 눌렀다 — [대본] 탭으로 넘어가 그 챕터의 판을 열고 그 분기 카드를 고르고 보이게 한다
+    /// (하이어아키의 분기 카드 줄을 누른 것과 같은 길).
+    /// </summary>
+    private void OpenBranchInDirector(string nodeId)
+    {
+        if (PickOf(_session.Project.FindNode(nodeId)) is not { Kind: HierarchyKind.Branch } pick)
+        {
+            return;
+        }
+
+        MainTabs.SelectedItem = GraphTabItem;
+        OnDirectorHierarchyPicked(pick);
+    }
+
+    /// <summary>
+    /// [대본] 판에서 카드를 두 번 눌렀다 — [구성] 탭으로 넘어가 그 챕터를 열고, 에피소드 카드면 그 에피소드를, 분기 카드면 그 칩을
+    /// 고르고 보이게 한다(칩은 집 에피소드 곁에 선다). ⛔ 2026-11-17까지 분기 카드는 집 에피소드를 골랐다.
     /// </summary>
     private void OpenInChapterGraph(string nodeId)
     {
-        if (PickOf(_session.Project.FindNode(nodeId)) is not { ChapterId: { } chapterId, EpisodeId: { } episodeId })
+        if (PickOf(_session.Project.FindNode(nodeId)) is not { ChapterId: { } chapterId, EpisodeId: { } episodeId } pick)
         {
             return;
         }
 
         MainTabs.SelectedItem = ChapterTabItem;
         ChapterGraph.SelectChapter(chapterId);
-        ChapterGraph.SelectEpisode(episodeId);
+
+        if (pick is { Kind: HierarchyKind.Branch, NodeId: { } branchId })
+        {
+            ChapterGraph.SelectBranchCard(branchId);
+        }
+        else
+        {
+            ChapterGraph.SelectEpisode(episodeId);
+        }
+
         Dispatcher.UIThread.Post(() => ChapterGraph.RevealEpisode(episodeId), DispatcherPriority.Background);
     }
 
