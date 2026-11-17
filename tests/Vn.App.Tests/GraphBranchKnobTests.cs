@@ -124,7 +124,9 @@ public sealed class GraphBranchKnobTests
             Stage("첫 줄", "둘째 줄");
         DialogueNode first = session.Editor.AddBranchMarker(card.Id, lines[1]);
         DialogueNode second = session.Editor.AddBranchMarker(card.Id, lines[1]);
-        DialogueNode elsewhere = session.Editor.AddDialogueNode(TestBoard.Of(session).Id, name: "딴 곳");
+        // 다른 분기 카드 하나 — 분기점은 분기 카드에만 잇는다(2026-11-17). 세우고 분기점만 걷으면 판에 남는다.
+        DialogueNode elsewhere = session.Editor.AddBranchMarker(card.Id, lines[0], name: "딴 곳");
+        session.Editor.RemoveBranchMarker(card.Id, lines[0], elsewhere.Id);
         session.Editor.MoveNode(elsewhere.Id, 60, 520);
         ShowGraph(window);
 
@@ -322,7 +324,7 @@ public sealed class GraphBranchKnobTests
         Dispatcher.UIThread.RunJobs();
 
         AuthoringSession session = window.SessionProbe;
-        DialogueNode card = session.Editor.AddDialogueNode(TestBoard.Of(session).Id, name: "본문");
+        DialogueNode card = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, name: "본문");
         var lines = new List<string> { card.Script.ActiveLines.Single().Id };   // 카드는 빈 첫 줄을 들고 선다
 
         while (lines.Count < texts.Length)

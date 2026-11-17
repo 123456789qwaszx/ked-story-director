@@ -19,7 +19,9 @@ public sealed class ChapterFrameTests
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         // 챕터 판 두 개, 각각 노드 하나씩.
+        session.Editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string ch01 = session.EnsureChapterBoard("ch01");
+        session.Editor.EnsureChapter("ch02");   // 판은 챕터가 세운다
         string ch02 = session.EnsureChapterBoard("ch02");
         session.Editor.AddDialogueNode(ch01, name: "ep_a");
         session.Editor.AddDialogueNode(ch02, name: "ep_b");
@@ -55,6 +57,7 @@ public sealed class ChapterFrameTests
         // PDF 9장 — "특정 챕터를 체크해제하면 표형태로 접힘". 손잡이는 이름표 클릭이다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
+        session.Editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string ch01 = session.EnsureChapterBoard("ch01");
         session.Editor.AddDialogueNode(ch01, name: "ep_a");
         graph.Rebuild();

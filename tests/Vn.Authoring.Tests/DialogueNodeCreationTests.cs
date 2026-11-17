@@ -13,6 +13,7 @@ public class DialogueNodeCreationTests
         var project = new StoryProject();
         var file = new StoryFile("sf_x4", "테스트", "story/x4.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "테스트" });   // 카드는 챕터 판에만 선다
         int next = 0;
         return (new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}"), file);
     }

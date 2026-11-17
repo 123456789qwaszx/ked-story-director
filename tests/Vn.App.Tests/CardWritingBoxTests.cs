@@ -356,7 +356,7 @@ public sealed class CardWritingBoxTests : IDisposable
 
     private static DialogueNode Card(AuthoringSession session, double x, double y)
     {
-        DialogueNode node = session.Editor.AddDialogueNode(TestBoard.Of(session).Id, name: $"카드 {x},{y}");
+        DialogueNode node = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, name: $"카드 {x},{y}");
         session.Editor.MoveNode(node.Id, x, y);
         return node;
     }
@@ -376,7 +376,7 @@ public sealed class CardWritingBoxTests : IDisposable
             string manifest = Path.Combine(_directory, "p" + ProjectManifestJson.FileExtension);
             ProjectStore.Save(manifest, new StoryProject { Title = "글 칸" });
             session.Open(manifest);
-            TestBoard.Of(session);
+            TestChapter.Board(session);
         }
 
         DialogueNode first = Card(session, 40, 40);

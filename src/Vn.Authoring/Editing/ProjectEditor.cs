@@ -53,9 +53,13 @@ public sealed partial class ProjectEditor
 
     // ── 파일과 노드 ────────────────────────────────────────────────────────
 
-    public StoryFile AddStoryFile(string? name = null)
+    /// <summary>
+    /// 챕터의 판을 하나 세운다 — 판은 챕터가 세운다(챕터 = 판 1:1, 이름이 챕터 Id). 부르는 곳은 <see cref="EnsureChapterBoard"/> 하나다.
+    /// ⛔ 2026-11-17까지는 아무 판(낙서판)이나 세우는 공개 명령이었다 — 낙서판을 걷으며 들였다.
+    /// </summary>
+    private StoryFile AddChapterBoardFile(string chapterId)
     {
-        var file = new StoryFile(name: name ?? NextFileName());
+        var file = new StoryFile(name: chapterId);
 
         Mutate(() => Project.Files.Add(file));
         return file;
@@ -149,14 +153,13 @@ public sealed partial class ProjectEditor
     {
         StoryFile file = RequireFile(fileId);
 
-        // <b>이름을 고르는 규칙도 여기 하나다</b>. 챕터 판에서는 이 이름이
-        //    곧 EpisodeId가 되므로 <c>장면 3</c> 같은 <b>공백 든 Id</b>가 나오면 안 된다 —
-        //    그 Id는 진행 JSON과 산출물의 열쇠로 나간다. 다른 창구와 같은 `new01`
-        //    규약으로 맞춘다. 챕터 판이 아닌 판은 화면에 없다(2026-11-17 — 낙서판을 걷었다) — 편집 명령이 그릇으로 받을 때만 「카드 N」이다.
-        var created = new DialogueNode(
-            name: name ?? (ChapterOfBoard(file) is { } board
-                ? NextEpisodeId(board)
-                : NextName("카드")))
+        // 카드는 챕터 판에만 선다(2026-11-17 — 낙서판을 걷었다). 옛 프로젝트에 챕터가 아닌 판이 남아 있어도 거기에는 세우지 않는다.
+        ChapterDocument board = ChapterOfBoard(file)
+            ?? throw new InvalidOperationException($"'{file.Name}'은(는) 챕터의 판이 아닙니다 — 카드는 챕터 판에만 섭니다.");
+
+        // <b>이름을 고르는 규칙도 여기 하나다</b>. 이 이름이 곧 EpisodeId가 되므로 <c>장면 3</c> 같은 <b>공백 든 Id</b>가 나오면
+        //    안 된다 — 그 Id는 진행 JSON과 산출물의 열쇠로 나간다. 다른 창구와 같은 `new01` 규약으로 맞춘다.
+        var created = new DialogueNode(name: name ?? NextEpisodeId(board))
         {
             Layout = new NodeLayout { X = x, Y = y },
             IsBranchCard = branchCard
@@ -173,7 +176,7 @@ public sealed partial class ProjectEditor
         // 분기 카드는 에피소드가 아니다 — 챕터에 에피소드를 짓지 않는다(장면도 부르는 에피소드를 따라 읽는다).
         (ChapterDocument? chapter, ChapterEpisode? episode) = branchCard
             ? (null, null)
-            : NewEpisodeFor(file, created, sceneId, title, episodePosition);
+            : NewEpisodeFor(file, board, created, sceneId, title, episodePosition);
 
         return (created, episode, () =>
         {
@@ -194,7 +197,7 @@ public sealed partial class ProjectEditor
         EpisodeNaming.ChapterOfBoard(Project, file);
 
     /// <summary>
-    /// 이 노드가 질 <b>에피소드</b>를 짓는다. 챕터 판이 아니면 둘 다 <c>null</c>이다(그런 판은 화면에 없다 — 편집 명령이 그릇으로 받을 뿐).
+    /// 이 노드가 질 <b>에피소드</b>를 짓는다(카드는 챕터 판에만 선다 — 판이 챕터가 아니면 앞에서 거절한다).
     ///
     /// <b>이미 있는 에피소드면 짓지 않고 표식만 붙인다.</b> 챕터 그래프에서 먼저 만든
     /// 에피소드에 대본을 다는 것이(그리고 열 때 카드 없는 에피소드에 빈 카드를 세우는 것이 —
@@ -211,14 +214,9 @@ public sealed partial class ProjectEditor
     /// 가장 가까운 카드를 기준으로 그 에피소드 곁에 놓는다(<see cref="ChapterBranchPlanner.PlaceLikeBoard"/>).
     /// </param>
     private (ChapterDocument? Chapter, ChapterEpisode? Episode) NewEpisodeFor(
-        StoryFile file, DialogueNode created, string? sceneId,
+        StoryFile file, ChapterDocument chapter, DialogueNode created, string? sceneId,
         string? title = null, (double X, double Y)? episodePosition = null)
     {
-        if (ChapterOfBoard(file) is not { } chapter)
-        {
-            return (null, null);
-        }
-
         if (EpisodeNaming.EpisodeFor(chapter, created) is { } standing)
         {
             // 표식이 신원이다 — 이름은 사람이 고치는 글자라 개명 때마다 끊긴다(P-6 결정).
@@ -313,14 +311,10 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 그 카드에 분기점을 이을 수 있는가 — 챕터 판에서는 <b>분기 카드에만</b>(2026-11-17). 챕터 판이 아닌 판(화면에는 없다 — 편집 명령이
-    /// 그릇으로 받을 뿐)에는 에피소드가 없어 가리지 않는다. 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다.
+    /// 그 카드에 분기점을 이을 수 있는가 — <b>분기 카드에만</b>(2026-11-17). 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다.
     /// </summary>
     public bool CanBranchTo(string nodeId) =>
-        Project.FindNode(nodeId) is DialogueNode target &&
-        (target.IsBranchCard ||
-         Project.FindFileContainingNode(nodeId) is not { } file ||
-         ChapterOfBoard(file) is null);
+        Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true };
 
     /// <summary>
     /// <b>이어지지 않은 분기점을 판의 빈 곳에 놓았다</b> — 그 자리에 새 분기 카드를 세우고 잇는다(2026-11-17 소유자). 카드와 연결이 되돌리기 한
@@ -976,8 +970,10 @@ public sealed partial class ProjectEditor
     /// <returns>그 챕터 판의 파일 Id. 이미 있으면 그대로다.</returns>
     public string EnsureChapterBoard(string chapterId)
     {
+        // 판은 챕터가 세운다 — 챕터가 없는 판(낙서판)은 세우지 않는다(2026-11-17).
+        RequireChapter(chapterId);
         StoryFile? standing = Chapters.EpisodeNaming.BoardOf(Project, chapterId);
-        StoryFile board = standing ?? AddStoryFile(chapterId);
+        StoryFile board = standing ?? AddChapterBoardFile(chapterId);
 
         // 챕터마다 「X 설정」 노드(작가 조건 · 변수를 담는 자리)를 세우지 않는다 — 그 안을 채울
         //    편집기가 없어 눌러도 빈 칸이다. 옛 판에 남은 것은 데이터째 두고 연출 그래프에서만 숨긴다
@@ -1262,11 +1258,6 @@ public sealed partial class ProjectEditor
     {
         return Project.FindDialogue(nodeId)
             ?? throw new InvalidOperationException($"'{nodeId}'는 대사 노드가 아닙니다.");
-    }
-
-    private string NextFileName()
-    {
-        return $"파일 {Project.Files.Count + 1}";
     }
 
     private string NextName(string prefix)

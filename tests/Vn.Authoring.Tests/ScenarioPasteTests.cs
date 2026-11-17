@@ -21,6 +21,7 @@ public class ScenarioPasteTests
         var project = new StoryProject();
         var file = new StoryFile("sf_paste", "테스트", "story/paste.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "테스트" });   // 카드는 챕터 판에만 선다
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
         DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");

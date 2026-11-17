@@ -24,6 +24,7 @@ public sealed class ChapterLayerSeparationTests
         var project = new StoryProject();
         var file = new StoryFile("sf_ch01", "ch01");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "ch01" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "EP00");

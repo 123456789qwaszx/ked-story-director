@@ -21,6 +21,7 @@ public class ConditionSupplyTests
         var project = new StoryProject();
         var file = new StoryFile("sf_scope", "범위");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "범위" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         SetNode first = editor.AddSetNode(file.Id, name: "첫 설정");
@@ -33,6 +34,7 @@ public class ConditionSupplyTests
         // 다른 판의 설정노드는 미치지 않는다 — 챕터가 다르면 다른 어휘다.
         var otherFile = new StoryFile("sf_other", "다른 챕터");
         project.Files.Add(otherFile);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "다른 챕터" });   // 카드는 챕터 판에만 선다
         SetNode foreign = editor.AddSetNode(otherFile.Id, name: "남의 설정");
         ConditionDefinition foreignCondition = editor.AddCondition(foreign.Id, "남의 조건", "foreign == true");
 
@@ -90,6 +92,7 @@ public class ConditionSupplyTests
         var project = new StoryProject();
         var file = new StoryFile("sf_order", "순서");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "순서" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         SetNode first = editor.AddSetNode(file.Id, name: "첫 번째");
@@ -139,7 +142,9 @@ public class ConditionSupplyTests
         var here = new StoryFile("sf_here", "이 챕터");
         var there = new StoryFile("sf_there", "저 챕터");
         project.Files.Add(here);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "이 챕터" });   // 카드는 챕터 판에만 선다
         project.Files.Add(there);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "저 챕터" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         SetNode foreign = editor.AddSetNode(there.Id, name: "저쪽 설정");

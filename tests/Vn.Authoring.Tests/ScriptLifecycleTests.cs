@@ -19,7 +19,7 @@ public sealed class ScriptLifecycleTests
     public void 카드를_지우면_대본도_빠지고_되돌리면_함께_돌아온다()
     {
         var editor = new ProjectEditor(new StoryProject());
-        StoryFile file = editor.AddStoryFile("판");
+        StoryFile file = TestChapter.Board(editor);
         DialogueNode card = editor.AddDialogueNode(file.Id, name: "장면");
         string lineId = card.Script.ActiveLines.Single().Id;
 

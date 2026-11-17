@@ -210,7 +210,7 @@ public class AuthoringSessionTests : IDisposable
         var changes = new List<FileGraphStateChangedEventArgs>();
         session.FileGraphStateChanged += (_, e) => changes.Add(e);
 
-        StoryFile added = session.Editor.AddStoryFile("추가");
+        StoryFile added = NewBoard(session, "ch09");
         session.Editor.AddDialogueNode(added.Id, name: "장면");
 
         Assert.Equal(2, changes.Count);
@@ -239,7 +239,7 @@ public class AuthoringSessionTests : IDisposable
     public void Undo로_파일이_사라지면_workspace_상태에서_정리되고_Redo시_다시_펼쳐진다()
     {
         var session = new AuthoringSession();
-        StoryFile added = session.Editor.AddStoryFile("추가");
+        StoryFile added = NewBoard(session, "ch09");
 
         Assert.True(session.ExpandedFileIds.Contains(added.Id));
 
@@ -400,6 +400,19 @@ public class AuthoringSessionTests : IDisposable
         session.Open(path);
         session.SelectFile(EpisodeNamingBoard(session, chapterIds[0]));
         return session;
+    }
+
+    /// <summary>챕터와 그 판을 한 되돌리기 칸에 세운다 — 판이 생기는 일 하나.</summary>
+    private static StoryFile NewBoard(AuthoringSession session, string chapterId)
+    {
+        string boardId = string.Empty;
+        session.Editor.Batch(() =>
+        {
+            session.Editor.EnsureChapter(chapterId);
+            boardId = session.Editor.EnsureChapterBoard(chapterId);
+        });
+
+        return session.Project.FindFile(boardId)!;
     }
 
     private static string EpisodeNamingBoard(AuthoringSession session, string chapterId) =>

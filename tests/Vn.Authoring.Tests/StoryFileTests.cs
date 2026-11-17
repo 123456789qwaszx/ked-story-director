@@ -12,7 +12,9 @@ public class StoryFileTests
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
         project.Files.Add(first);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });   // 카드는 챕터 판에만 선다
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         DialogueNode a1 = editor.AddDialogueNode(first.Id, name: "A1");
@@ -31,7 +33,9 @@ public class StoryFileTests
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
         project.Files.Add(first);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });   // 카드는 챕터 판에만 선다
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         DialogueNode existing = editor.AddDialogueNode(first.Id, name: "기존");
@@ -49,7 +53,9 @@ public class StoryFileTests
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
         project.Files.Add(first);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });   // 카드는 챕터 판에만 선다
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         DialogueNode source = editor.AddDialogueNode(first.Id, name: "출발");
@@ -71,7 +77,9 @@ public class StoryFileTests
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
         project.Files.Add(first);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });   // 카드는 챕터 판에만 선다
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         DialogueNode source = editor.AddDialogueNode(first.Id, name: "출발");
@@ -93,7 +101,9 @@ public class StoryFileTests
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
         project.Files.Add(first);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });   // 카드는 챕터 판에만 선다
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         editor.AddNode(first.Id, new DialogueNode("nd_same", "첫 노드"));

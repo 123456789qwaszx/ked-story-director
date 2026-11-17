@@ -189,6 +189,7 @@ public sealed class CardWritingTests
         var project = new StoryProject();
         var file = new StoryFile("sf_card", "카드", "story/card.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "카드" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         return (editor, editor.AddDialogueNode(file.Id, name: "장면"));

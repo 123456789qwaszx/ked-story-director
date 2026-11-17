@@ -21,11 +21,11 @@ public sealed class ProjectEditorBatchTests
 
         editor.Batch(() =>
         {
-            editor.AddStoryFile("하나");
-            editor.AddStoryFile("둘");
+            editor.EnsureChapter("하나");
+            editor.EnsureChapter("둘");
         });
 
-        Assert.Equal(2, editor.Project.Files.Count(file => file.Name is "하나" or "둘"));
+        Assert.Equal(2, editor.Project.Chapters.Count(chapter => chapter.ChapterId is "하나" or "둘"));
 
         editor.Undo();
 
@@ -43,9 +43,9 @@ public sealed class ProjectEditorBatchTests
 
         editor.Batch(() =>
         {
-            editor.AddStoryFile("하나");
-            editor.AddStoryFile("둘");
-            editor.AddStoryFile("셋");
+            editor.EnsureChapter("하나");
+            editor.EnsureChapter("둘");
+            editor.EnsureChapter("셋");
         });
 
         Assert.Equal(1, raised);
@@ -61,15 +61,15 @@ public sealed class ProjectEditorBatchTests
 
         editor.Batch(() =>
         {
-            editor.AddStoryFile("하나");
-            editor.Batch(() => editor.AddStoryFile("둘"));
+            editor.EnsureChapter("하나");
+            editor.Batch(() => { editor.EnsureChapter("둘"); });
         });
 
         Assert.Equal(1, raised);
 
         editor.Undo();
 
-        Assert.DoesNotContain(editor.Project.Files, file => file.Name is "하나" or "둘");
+        Assert.DoesNotContain(editor.Project.Chapters, chapter => chapter.ChapterId is "하나" or "둘");
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class ProjectEditorBatchTests
 
         Assert.Throws<InvalidOperationException>(() => editor.Batch(() =>
         {
-            editor.AddStoryFile("하나");
+            editor.EnsureChapter("하나");
             throw new InvalidOperationException("일부러");
         }));
 

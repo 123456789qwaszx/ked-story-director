@@ -61,6 +61,7 @@ public sealed class GraphHintBarTests
         ProjectStore.Save(manifest, new StoryProject { Title = "안내 띠 검증" });
         session.Open(manifest);
 
+        session.Editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string fileId = session.EnsureChapterBoard("ch01");
 
         var graph = new GraphEditorView();

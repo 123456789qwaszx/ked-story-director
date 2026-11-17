@@ -4406,7 +4406,7 @@ public partial class GraphEditorView : UserControl
                 Canvas.GetTop(card.Visual),
                 card.Visual.Width,
                 CardHeightOf(card),
-                card.Style.Accent); // 카드와 같은 시각 언어 — 미니맵에서도 에피소드·낙서가 갈린다.
+                card.Style.Accent); // 카드와 같은 시각 언어 — 미니맵에서도 에피소드·분기 카드가 갈린다.
         }
 
         foreach (FileProxyVisual proxy in _proxies)

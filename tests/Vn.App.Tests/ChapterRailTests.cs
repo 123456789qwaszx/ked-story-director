@@ -77,20 +77,6 @@ public sealed class ChapterRailTests
     });
 
     [Fact]
-    public void 챕터가_아닌_판에는_철도가_생기지_않는다() => HeadlessUi.Run(() =>
-    {
-        (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("일반판");
-
-        session.Editor.AddDialogueNode(fileId, name: "자유A");
-        session.Editor.AddDialogueNode(fileId, name: "자유B");
-        graph.Rebuild();
-
-        var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-        Assert.Empty(canvas.Children.OfType<Line>());
-        Assert.DoesNotContain(canvas.Children.OfType<StackPanel>(), row => row.Tag is string);
-    });
-
-    [Fact]
     public void 카드가_없는_도착은_스텁으로_보인다() => HeadlessUi.Run(() =>
     {
         // 없는 노드로 선을 그으면 거짓말이지만, 가지를 통째로 숨기면 선택지가 사라져
@@ -108,48 +94,6 @@ public sealed class ChapterRailTests
         Assert.Contains(canvas.Children.OfType<TextBlock>(), block =>
             (block.Text ?? "").Contains("EP01", StringComparison.Ordinal) &&
             (block.Text ?? "").Contains("카드 없음", StringComparison.Ordinal));
-    });
-
-    [Fact]
-    public void 챕터_밖의_카드는_한눈에_갈린다() => HeadlessUi.Run(() =>
-    {
-        // 종별 시각 언어: 에피소드 = 각진 미색 서류(📄), 그 밖 = 둥근 흰 원고(✎).
-        //
-        // 챕터 판의 카드는 전부 에피소드다 — 그래서 가르는 것은
-        //    <b>챕터에 실린 카드인가</b> 하나뿐이고, 판 위 카드끼리는 다 같아 보인다
-        //    (조건 노드 카드도 종류가 하나뿐이니 가를 것이 없다).
-        (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
-
-        DialogueNode episode = AddEpisodeCard(session, fileId, "EP00");
-        DialogueNode free = session.Editor.AddDialogueNode(fileId, name: "자유씬");
-        graph.Rebuild();
-
-        var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-        Border episodeCard = canvas.Children.OfType<Border>()
-            .Single(border => Equals(border.Tag, episode.Id));
-        Border freeCard = canvas.Children.OfType<Border>()
-            .Single(border => Equals(border.Tag, free.Id));
-
-        Assert.NotEqual(freeCard.CornerRadius, episodeCard.CornerRadius);
-        Assert.NotEqual(
-            ((Avalonia.Media.SolidColorBrush)freeCard.Background!).Color,
-            ((Avalonia.Media.SolidColorBrush)episodeCard.Background!).Color);
-    });
-
-    [Fact]
-    public void 챕터에서_지운_에피소드_노드에는_레일이_없다() => HeadlessUi.Run(() =>
-    {
-        // 챕터 밖의 노드에 진행·종료를 그리는 것은 거짓말이다 — 동기화 보고가 알릴 일이다.
-        (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
-
-        AddEpisodeCard(session, fileId, "EP99"); // 챕터에는 없는 에피소드
-
-        Chapter(session, "ch01", episodes: ["EP00"], edges: []);
-        graph.Rebuild();
-
-        var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-        Assert.Empty(canvas.Children.OfType<Line>());
-        Assert.Empty(Rows(canvas, "EP99"));
     });
 
     [Fact]
@@ -246,6 +190,7 @@ public sealed class ChapterRailTests
         ProjectStore.Save(manifest, new StoryProject { Title = "철도 검증" });
         session.Open(manifest);
 
+        session.Editor.EnsureChapter(name);   // 판은 챕터가 세운다
         string fileId = session.EnsureChapterBoard(name);
 
         var graph = new GraphEditorView();

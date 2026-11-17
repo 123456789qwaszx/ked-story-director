@@ -79,7 +79,7 @@ public sealed class ChapterBranchMarkersTests
         // ⚠ 그릴 카드가 없는 선은 판이 거짓말을 하는 것이다 (구판 프로젝트의 자유 씬).
         (ProjectEditor editor, DialogueNode caller) = World();
 
-        StoryFile elsewhere = editor.AddStoryFile("다른 판");
+        StoryFile elsewhere = TestChapter.Board(editor, "ch02");
         DialogueNode outsider = editor.AddDialogueNode(elsewhere.Id, 0, 0, "바깥");
 
         string lineId = caller.Script.ActiveLines.First().Id;

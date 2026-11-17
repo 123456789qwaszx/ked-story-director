@@ -212,6 +212,7 @@ internal sealed class SyncFixture
         var project = new StoryProject { Title = "동기화" };
         var file = new StoryFile("sf_sync", "동기화 파일");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "동기화 파일" });   // 카드는 챕터 판에만 선다
 
         Editor = new ProjectEditor(project, newLineId: () => $"ln_{++_nextLine:D3}");
         Dialogue = Editor.AddDialogueNode(file.Id, name: "장면");

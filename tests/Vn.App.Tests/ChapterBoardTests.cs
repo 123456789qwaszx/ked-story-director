@@ -15,6 +15,7 @@ public class ChapterBoardTests
         var session = new AuthoringSession();
         int before = session.Project.Files.Count;
 
+        session.Editor.EnsureChapter("ch05");   // 판은 챕터가 세운다
         string boardId = session.EnsureChapterBoard("ch05");
 
         StoryFile board = session.Project.Files.Single(file => file.Id == boardId);
@@ -26,6 +27,7 @@ public class ChapterBoardTests
         Assert.Equal(before + 1, session.Project.Files.Count);
 
         // 다른 챕터는 다른 판이다.
+        session.Editor.EnsureChapter("ch06");
         Assert.NotEqual(boardId, session.EnsureChapterBoard("ch06"));
     }
 }

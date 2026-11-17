@@ -128,7 +128,7 @@ public class GraphProjectionTests
         // 화면은 끄는 동안 선을 이 열쇠로 다시 찾는다 — 같은 줄의 분기들이 한 열쇠를 나눠 가지면 모두 첫 선의
         // 경로를 받아 나머지 분기가 끊긴 것처럼 보였다(2026-10-29 소유자 보고).
         var editor = new Vn.Authoring.Editing.ProjectEditor(new StoryProject());
-        StoryFile file = editor.AddStoryFile("판");
+        StoryFile file = TestChapter.Board(editor);
         DialogueNode source = editor.AddDialogueNode(file.Id, name: "본문");
         string lineId = source.Script.ActiveLines.Single().Id;
         editor.AddBranchMarker(source.Id, lineId);

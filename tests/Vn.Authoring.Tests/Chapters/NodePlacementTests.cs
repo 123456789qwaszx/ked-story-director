@@ -90,18 +90,6 @@ public sealed class NodePlacementTests
     }
 
     [Fact]
-    public void 챕터가_아닌_판도_겹치지는_않게_둔다()
-    {
-        var project = new StoryProject();
-        var editor = new ProjectEditor(project);
-
-        string fileId = editor.EnsureChapterBoard("작가의 판");   // 같은 이름의 챕터가 없다
-        editor.AddDialogueNode(fileId, 0, 0, "아무거나");
-
-        Assert.Equal((0, NodePlacement.Row), NodePlacement.For(project, "작가의 판", "또 하나"));
-    }
-
-    [Fact]
     public void 분기로_다녀갈_카드는_원본_오른쪽에_선다()
     {
         var editor = new ProjectEditor(new StoryProject());

@@ -16,6 +16,7 @@ public sealed class ChapterBoardEditorTests
     public void 없으면_판을_만든다()
     {
         var editor = new ProjectEditor(new StoryProject { Title = "판" });
+        editor.EnsureChapter("ch01");
 
         string fileId = editor.EnsureChapterBoard("ch01");
 
@@ -32,6 +33,7 @@ public sealed class ChapterBoardEditorTests
         // 왼쪽 챕터 목록 클릭과 에피소드 동기화가 같은 규칙 하나를 쓴다 — 두 번째
         // 부름이 판을 또 만들면 같은 챕터가 판 둘을 갖는다.
         var editor = new ProjectEditor(new StoryProject { Title = "판" });
+        editor.EnsureChapter("ch01");
 
         string first = editor.EnsureChapterBoard("ch01");
         string second = editor.EnsureChapterBoard("ch01");
@@ -44,6 +46,8 @@ public sealed class ChapterBoardEditorTests
     public void 챕터마다_판이_따로다()
     {
         var editor = new ProjectEditor(new StoryProject { Title = "판" });
+        editor.EnsureChapter("ch01");
+        editor.EnsureChapter("ch02");
 
         string ch01 = editor.EnsureChapterBoard("ch01");
         string ch02 = editor.EnsureChapterBoard("ch02");
@@ -53,14 +57,12 @@ public sealed class ChapterBoardEditorTests
     }
 
     [Fact]
-    public void 사람이_만든_같은_이름의_판을_다시_쓴다()
+    public void 챕터가_없으면_판을_세우지_않는다()
     {
-        // 판을 먼저 만들어 두고 챕터를 뒤에 더하는 순서가 실재한다. 그때 판을 하나 더
-        // 만들면 작가가 이미 적은 노드들이 안 보이는 판에 남는다.
+        // 판은 챕터가 세운다 — 챕터 없는 판(낙서판)은 없다(2026-11-17).
         var editor = new ProjectEditor(new StoryProject { Title = "판" });
-        StoryFile made = editor.AddStoryFile("ch01");
 
-        Assert.Equal(made.Id, editor.EnsureChapterBoard("ch01"));
-        Assert.Single(editor.Project.Files);
+        Assert.Throws<InvalidOperationException>(() => editor.EnsureChapterBoard("ch01"));
+        Assert.Empty(editor.Project.Files);
     }
 }

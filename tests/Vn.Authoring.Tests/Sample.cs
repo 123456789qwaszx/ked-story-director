@@ -17,8 +17,10 @@ internal sealed class Sample
 
     public Sample()
     {
+        // 챕터 하나와 그 판 — 카드는 챕터 판에만 선다(2026-11-17 — 낙서판을 걷었다).
         var project = new StoryProject { Title = "테스트" };
-        File = new StoryFile("sf_test", "테스트 파일");
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "test" });
+        File = new StoryFile("sf_test", "test");
         project.Files.Add(File);
 
         Editor = new ProjectEditor(project, newLineId: NextLineId);
@@ -34,10 +36,6 @@ internal sealed class Sample
         Dialogue.Script.Lines.Clear();
         Dialogue.Script.RequireLocale(Dialogue.Script.PrimaryLocale).Entries.Clear();
         _nextLineNumber = 0;
-        // 이 노드는 실제 제품의 에피소드(엑셀노드) 자리다 — 기본 출구는 엑셀노드만
-        // 가지므로(2026-08-21) 그렇게 표시해야 출구 테스트들이 실물과 같은 길을 지난다.
-        // 대상 노드 셋(TargetA·TargetB·TargetDefault)은 커스텀(자유) 씬 그대로다.
-        Dialogue.MarkedEpisodeId = "ep_본문";
 
         TargetA = AddEndNode("A로 간다");
         TargetB = AddEndNode("B로 간다");

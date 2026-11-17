@@ -75,18 +75,6 @@ public sealed class ChoiceSlotProjectionTests
     }
 
     [Fact]
-    public void 챕터가_아닌_판에는_칸이_없다()
-    {
-        var project = new StoryProject();
-        var editor = new ProjectEditor(project);
-
-        string fileId = editor.EnsureChapterBoard("작가의 판");   // 같은 이름의 챕터가 없다
-        editor.AddDialogueNode(fileId, name: "아무거나");
-
-        Assert.DoesNotContain(Ports(project), port => port.Kind == GraphOutputPortKind.Choice);
-    }
-
-    [Fact]
     public void 대본이_아직_없는_에피소드로_가는_길도_산다()
     {
         // ⚠ 대본이 없는 것과 길이 없는 것은 다르다 — 도착 노드를 못 찾아도 간선은 있다.

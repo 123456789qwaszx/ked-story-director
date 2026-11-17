@@ -3,7 +3,7 @@
 **에피소드는 늘 챕터와 장면에 속한다.** 장면 없는 에피소드를 만드는 창구 · 장면을 비우는 창구를 걷고, 챕터가 아닌 판(낙서판 — 새 프로젝트의
 「기본 파일」)을 흔적 없이 걷는다. 처음 쓰는 사람을 위해 아무것도 없을 때 [＋ 대사 노드]가 챕터와 장면을 저절로 세운다.
 
-> **상태: 진행 중.** 1절은 소유자가 정했다.
+> **상태: E0–E5 끝, E6(ID) 남음.** 1절은 소유자가 정했다.
 
 ## 1. 정한 것 (소유자 2026-11-17)
 
@@ -59,4 +59,5 @@
 | 11-17 | E2 | 커밋됨 | 하이어아키 — 「에피소드 추가」는 장면이 있는 줄(장면 · 장면 안 에피소드)에만, 「장면 풀기」 · 「장면에서 빼기」(`HierarchyCommand.DeleteScene` · `DetachFromScene`)와 챕터 줄에 놓기를 걷었다(`Accepts` — 장면 줄만). 장면 없는 에피소드 줄에 ⚠(「장면 줄로 끌어 넣어 주세요」). 시험 `HierarchyEditTests` 3을 고쳤다 |
 | 11-17 | E3 | 커밋됨 | 검증 — `ChapterDiagnosticCode.EpisodeWithoutScene` 경고(`ChapterDocument.ModelDiagnostics` — 값의 흠이라 어디서 왔든 본다). 내보내기를 막지 않는다. 시험 — `NewProjectNoiseTests`(툴이 하는 그대로 장면과 함께 · 경고 시험 하나 더), [구성] 렌더 시험의 옛 견본(장면 없는 에피소드 여섯)이 경고 4 → 10 |
 | 11-17 | E4 (가) | 커밋됨 | 소유자 — (가)부터, 그 뒤 저수준. 새 프로젝트는 판 없이(상태줄이 [＋ 대사 노드]를 말한다). `LiftFreeScenes` · `SceneOfCaller` · `BoardAlignment.ScenesLifted` 걷음(열 때 알림도). 「마지막 판은 지우지 않는다」(`ChapterDeleter` · `RemoveChapterWithBoard`) 걷음 — 판이 없으면 [＋ 대사 노드]가 세운다. [대본] 「노드 삭제」의 낙서판 갈래 걷음. 낙서판을 말하던 주석(편집기 · 이름 규칙 · 투영 · 대사 편집기 · 셸) · 문서(`two-graphs.md` 2.2 표의 「낙서판 카드」 → 「분기 카드」, 더블클릭 · 곁기둥 · D2/D3 기록에 ⛔, `chapter-layer-guide.md`). 시험 — 낙서판 동작을 보던 것 걷음(`FreeSceneLiftTests` · 낙서판 카드 지우기 · 낙서판 에피소드 · 낙서판 화자 · 낙서판 분기 쪽), 판을 그릇으로 쓰던 창 시험은 `TestBoard`(챕터가 아닌 그릇 판 — 저수준 정리에서 걷는다), `AuthoringSessionTests`는 챕터 판으로, 자유 노드 시험 둘은 분기 카드로. **저수준은 남겼다**: 편집 명령이 챕터가 아닌 판을 그릇으로 받는다(이름 「카드 N」, `CanBranchTo`의 예외) — 시험 197곳이 쓴다. Authoring 707 · App 445 |
-| 11-17 | E5 | (이 커밋) | [구성]의 빈 판 안내 · 주석을 「[구성] 탭에서는 더하지 않는다 — [대본] 탭의 [＋ 대사 노드] · 장면 줄 「에피소드 추가」」로. 문서 — `two-graphs.md` 7절 AB(새) · 2.1 툴바 · 빈 판 · 하이어아키 줄의 차림표 · P(장면 풀기), `hierarchy.md` 4절에 ⛔, `writer-guide.md` 1 · 1-1 · 1-2. 남은 것: 저수준 정리(편집 명령이 챕터 판만 받게 · 시험 197곳 · `TestBoard`) · E6(ID) |
+| 11-17 | E5 | 커밋됨 | [구성]의 빈 판 안내 · 주석을 「[구성] 탭에서는 더하지 않는다 — [대본] 탭의 [＋ 대사 노드] · 장면 줄 「에피소드 추가」」로. 문서 — `two-graphs.md` 7절 AB(새) · 2.1 툴바 · 빈 판 · 하이어아키 줄의 차림표 · P(장면 풀기), `hierarchy.md` 4절에 ⛔, `writer-guide.md` 1 · 1-1 · 1-2. 남은 것: 저수준 정리(편집 명령이 챕터 판만 받게 · 시험 197곳 · `TestBoard`) · E6(ID) |
+| 11-17 | E4 (나) | (이 커밋) | 저수준 — 카드는 챕터 판에만(`NewDialogueNodeCore`가 거절 · 이름은 늘 `NextEpisodeId`, 「카드 N」 걷음), 판은 챕터가 세운다(`EnsureChapterBoard`가 챕터를 요구 · 공개 `AddStoryFile` → 안의 `AddChapterBoardFile`, 「파일 N」 걷음), `CanBranchTo`는 분기 카드만. 시험 — 판을 그릇으로 쓰던 것은 챕터 판으로 옮겼다(공용 `Sample` · 판마다 챕터를 함께 · `TestChapter` 손잡이 둘 — ⛔ `TestBoard` 걷음, 묶음 시험은 판 대신 챕터를 세운다, 판 시험은 챕터를 먼저). **지운 시험 9**(기준 — ① 걷은 기능 · ③ 중복): `ChapterBoardEditorTests.사람이_만든_같은_이름의_판을_다시_쓴다`(① 판을 먼저 만드는 순서), `NodePlacementTests.챕터가_아닌_판도_겹치지는_않게_둔다`(①), `ChoiceSlotProjectionTests.챕터가_아닌_판에는_칸이_없다`(①), `ChapterRailTests.챕터가_아닌_판에는_철도가_생기지_않는다`(①), `ChapterRailTests.챕터_밖의_카드는_한눈에_갈린다`(③ — `BranchCardBoardTests`가 에피소드와 분기 카드의 모양을 본다), `ChapterRailTests.챕터에서_지운_에피소드_노드에는_레일이_없다`(① — 툴이 못 만드는 옛 상태), (가)에서 지운 낙서판 시험 다섯(`FreeSceneLiftTests` 파일 · 낙서판 카드 지우기 · 낙서판 에피소드 · 낙서판 화자 · 낙서판 분기 쪽)은 앞 기록. 새 시험 1(`챕터가_없으면_판을_세우지_않는다`), 분기점 잇기 시험 하나는 다른 곳을 분기 카드로. Authoring 705 · App 442 |

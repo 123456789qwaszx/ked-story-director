@@ -215,6 +215,7 @@ public class LineIdRoundTripTests
         var project = new StoryProject();
         var file = new StoryFile("sf_roundtrip", "테스트", "story/roundtrip.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "테스트" });   // 카드는 챕터 판에만 선다
 
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");

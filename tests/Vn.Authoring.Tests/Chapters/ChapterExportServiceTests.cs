@@ -338,6 +338,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         // 판만 서고 카드가 없는 상태(옛 프로젝트를 맞추기 전)에 내보내면
         // 결과는 판이 아예 없을 때와 같다 — 부를 노드가 하나도 없다.
         var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         editor.EnsureChapterBoard("ch01");
 
         ChapterExportRun run = new ChapterExportService()
@@ -353,6 +354,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         // 이름은 진짜 빠진 것이다 — 이대로 내보내면 진행 JSON이 없는 노드를 부르고
         // 로드·검증·증명은 통과하는데 재생만 안 된다.
         var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string fileId = editor.EnsureChapterBoard("ch01");
         editor.AddDialogueNode(fileId, name: "ep1");     // ep2는 없다
 
@@ -377,6 +379,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         // 노드를 만들어도 캐시가 옛 결론을 그대로 준다 — 캐시가 만드는 가장 나쁜 거짓말이
         // 여기서 한 번 더 나올 자리다.
         var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string fileId = editor.EnsureChapterBoard("ch01");
         editor.AddDialogueNode(fileId, name: "ep1");
 
@@ -399,6 +402,7 @@ public sealed class ChapterExportServiceTests : IDisposable
     {
         // 콘솔·테스트처럼 판을 볼 수 없는 자리에서도 나머지 검증은 그대로 돌아야 한다.
         var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), name: "ep1");
 
         Assert.True(new ChapterExportService()

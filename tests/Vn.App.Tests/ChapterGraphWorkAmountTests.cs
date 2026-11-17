@@ -94,7 +94,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
 
         for (int index = 0; index < 20; index++)
         {
-            session.Editor.AddStoryFile($"판{index}");
+            session.Editor.EnsureChapter($"판{index}");
         }
 
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -220,7 +220,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
         // 손을 뗐으니 세션이 무슨 말을 해도 이 뷰는 듣지 않는다.
         for (int index = 0; index < 10; index++)
         {
-            session.Editor.AddStoryFile($"판{index}");
+            session.Editor.EnsureChapter($"판{index}");
         }
 
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -248,7 +248,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
         int reloads = 0;
         view.EntriesReloaded += _ => reloads++;
 
-        session.Editor.AddStoryFile("판");
+        session.Editor.EnsureChapter("판");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(0, reloads);

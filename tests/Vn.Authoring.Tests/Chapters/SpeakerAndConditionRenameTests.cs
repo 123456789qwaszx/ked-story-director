@@ -50,6 +50,7 @@ public sealed class SpeakerAndConditionRenameTests
         var project = new StoryProject();
         var file = new StoryFile("sf_ch01", "ch01", "story/ch01.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "ch01" });   // 카드는 챕터 판에만 선다
 
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
@@ -89,6 +90,7 @@ public sealed class SpeakerAndConditionRenameTests
         var project = new StoryProject();
         var file = new StoryFile("sf_ch01", "ch01", "story/ch01.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "ch01" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(

@@ -74,6 +74,7 @@ public class EditingTests
         var project = new StoryProject();
         var file = new StoryFile("sf_start", "시작 파일");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "시작 파일" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
         SetNode first = editor.AddSetNode(file.Id);
         editor.AddDialogueNode(file.Id);
