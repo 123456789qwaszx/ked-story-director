@@ -460,6 +460,23 @@ public sealed partial class ProjectEditor
     // ProjectEditor.Scripts.cs에 있다. 여기서는 이미 있는 LineId에 논리를 붙인다.
 
     /// <summary>
+    /// <b>[대본] 판 크기를 바꾼다</b>(2026-11-17 · <see cref="Graph.BoardResize"/>) — 늘리면 크기만, 줄여서 판 밖으로 나가는 카드가 있으면
+    /// 카드 전체의 자리와 선 꺾임을 같은 비율로 다시 적는다. 크기 · 자리 · 꺾임이 <b>되돌리기 한 칸</b>이다(Ctrl+Z 한 번에 그대로 돌아온다).
+    /// 결과가 지금과 같으면 적지 않는다. 값은 범위(<see cref="BoardSize.Minimum"/> ~ <see cref="BoardSize.Maximum"/>) 안으로 들인다.
+    /// </summary>
+    public void SetBoardSize(double width, double height)
+    {
+        Graph.BoardResizePlan plan = Graph.BoardResize.Plan(Project, width, height);
+
+        if (plan.Size == Project.Board && plan.Positions.Count == 0)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () => Graph.BoardResize.Apply(Project, plan));
+    }
+
+    /// <summary>
     /// 이 줄에서 조건 흐름을 어떻게 바꿀지 정한다.
     /// 갈래를 더 이상 열지 않게 되면 거기 매달려 있던 조건 출구도 함께 사라진다.
     ///

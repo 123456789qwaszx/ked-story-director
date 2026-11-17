@@ -71,3 +71,4 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-17 | C0 | (C0 커밋) | 지시서. 1절은 소유자와 이야기로 정했다(저장은 프로젝트, 줄일 때는 전체 비율로 자리 다시 적기, 숫자 4,000 · 60,000 · 12,000×8,000, 창은 [이 프로젝트]부터) |
+| 11-17 | C1 | (C1 커밋) | `Model/BoardSize`(범위 4,000 ~ 60,000 · 기본 12,000×8,000 · 카드 차지 자리 폭 210 / 높이 240 + 늘린 글 칸 — 판이 그리는 값과 같다), `StoryProject.Board`. manifest · 스냅숏의 `board: { width, height }`(기본이면 안 쓴다, 없거나 숫자가 아니면 기본, 범위 밖이면 들인다 — `ProjectManifestJson.WriteBoard/ReadBoard` 한 벌). `Graph/BoardResize` — `Plan`(순수 함수: 가로 · 세로 따로 r = min(1, (새 크기 − 카드 크기) / 카드 자리), 모든 노드에 곱하고 새로 겹친 카드만 오른쪽으로 비키며 넘치면 판을 넓힌다) · `Apply`(크기 · 자리 · 실행 선 `EdgeShapes`와 선택지 레인 `ChapterEdge.Shape`의 꺾임). `ProjectEditor.SetBoardSize` — 한 `Mutate`(Layout), 같은 결과면 적지 않는다. 시험 `BoardSizeTests` 9(저장 왕복 · 범위 · 늘리기 · 다 들면 그대로 · 전체 비율 · 새 겹침 비키기와 판 넓히기 · 원래 겹침은 그대로 · 꺾임 비율 · 크게 줄이고 되돌리기 한 번이면 스냅숏이 같다). Vn.Authoring.Tests 705 · Vn.App.Tests 425 |

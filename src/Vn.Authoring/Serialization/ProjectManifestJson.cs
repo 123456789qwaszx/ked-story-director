@@ -83,6 +83,12 @@ public static class ProjectManifestJson
             root["chapters"] = chapters;
         }
 
+        // [대본] 판 크기 (2026-11-17) — 기본이면 쓰지 않는다.
+        if (WriteBoard(project.Board) is { } board)
+        {
+            root["board"] = board;
+        }
+
         // 작가가 더한 화자 (2026-08-17) — 정의 파일이 아니라 여기 산다(정의 파일은 기획자 전용).
         // <b>이름이 빈 줄은 파일에 안 쓴다</b> — 편집 중인 빈 자리는 메모리에서는 살아 있어야
         // 하지만(안 그러면 만들자마자 사라진다) 저장물에 남길 이유는 없다.
@@ -225,7 +231,28 @@ public static class ProjectManifestJson
             links,
             chapters,
             writerSpeakers,
-            carriesPresentation);
+            carriesPresentation,
+            ReadBoard(root["board"]));
+    }
+
+    /// <summary>
+    /// [대본] 판 크기 — manifest와 되돌리기 스냅숏이 같은 것을 쓴다(스냅숏에 안 실으면 되돌리기가 크기를 잃는다). 기본이면 null(쓰지 않는다).
+    /// </summary>
+    internal static JsonObject? WriteBoard(BoardSize board) =>
+        board.IsDefault ? null : new JsonObject { ["width"] = board.Width, ["height"] = board.Height };
+
+    /// <summary>없거나 숫자가 아니면 기본, 범위 밖이면 범위 안으로.</summary>
+    internal static BoardSize ReadBoard(JsonNode? node)
+    {
+        if (node is not JsonObject board)
+        {
+            return BoardSize.Default;
+        }
+
+        static double Side(JsonNode? value, double fallback) =>
+            value is JsonValue number && number.TryGetValue(out double side) ? BoardSize.ClampSide(side, fallback) : fallback;
+
+        return new BoardSize(Side(board["width"], BoardSize.Default.Width), Side(board["height"], BoardSize.Default.Height));
     }
 
     /// <summary>
@@ -348,7 +375,8 @@ public sealed record ProjectManifest(
     IReadOnlyList<NodeLink> Links,
     IReadOnlyList<ChapterDocument> Chapters,
     IReadOnlyList<WriterSpeaker> WriterSpeakers,
-    bool CarriesPresentation);
+    bool CarriesPresentation,
+    BoardSize Board);
 
 /// <summary>형식 3의 따로 선 대본 파일 하나 — 옮길 때만 읽는다.</summary>
 public sealed record ScriptFileReference(

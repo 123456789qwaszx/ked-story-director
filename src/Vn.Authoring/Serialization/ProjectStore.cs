@@ -321,7 +321,8 @@ public static class ProjectStore
         {
             FormatVersion = StoryProject.CurrentFormatVersion,
             Title = manifest.Title,
-            StartNodeId = manifest.StartNodeId
+            StartNodeId = manifest.StartNodeId,
+            Board = manifest.Board
         };
         storyCarriesPresentation = false;
         // 형식 3 — 따로 선 대본 파일을 읽어 카드에 꽂는다(형식 4는 대본이 판 파일 안에 있어 목록이 비었다).

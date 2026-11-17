@@ -87,6 +87,9 @@ public sealed class StoryProject
     /// <summary>이야기가 시작되는 노드. null이면 아직 정하지 않은 것이다.</summary>
     public string? StartNodeId { get; set; }
 
+    /// <summary>[대본] 판의 크기(2026-11-17) — [⚙ 설정]에서 고친다. 바꾸는 길은 <see cref="Editing.ProjectEditor.SetBoardSize"/> 하나다.</summary>
+    public BoardSize Board { get; set; } = BoardSize.Default;
+
     /// <summary>
     /// 프로젝트 전체 노드를 결정적인 순서로 펼친다.
     /// 파일 순서 → 각 파일의 Nodes 순서다.

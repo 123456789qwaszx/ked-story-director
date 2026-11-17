@@ -68,6 +68,12 @@ public static class ProjectSnapshotCodec
             root["writerSpeakers"] = writerSpeakers;
         }
 
+        // 판 크기 — 안 실으면 되돌리기가 카드 자리는 되돌리고 크기는 잃는다.
+        if (ProjectManifestJson.WriteBoard(project.Board) is { } board)
+        {
+            root["board"] = board;
+        }
+
         return JsonSupport.ToDeterministicText(root);
     }
 
@@ -93,7 +99,8 @@ public static class ProjectSnapshotCodec
         {
             FormatVersion = projectFormatVersion,
             Title = (string?)root["title"] ?? "제목 없음",
-            StartNodeId = (string?)root["startNode"]
+            StartNodeId = (string?)root["startNode"],
+            Board = ProjectManifestJson.ReadBoard(root["board"])
         };
 
         foreach (JsonNode? item in files)
