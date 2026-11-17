@@ -83,10 +83,9 @@ public sealed class BranchMarkerCardTests : IDisposable
     });
 
     [Fact]
-    public void 분기_지우기는_표식과_그_에피소드를_함께_걷는다() => HeadlessUi.Run(() =>
+    public void 분기_지우기는_분기만_걷고_그_에피소드는_남긴다() => HeadlessUi.Run(() =>
     {
-        // 「분기 추가」의 반대다 — 표식만 걷지 않고 「분기 추가」가 세운 에피소드도 판에서 걷는다
-        // (되돌리기 한 번에 돌아온다).
+        // 2026-11-17 소유자 — 분기 지우기는 분기점과 선만 걷는다. 「분기 추가」가 세운 카드도 남고, 상태줄이 그렇게 말한다.
         (DialogueNodeEditor editor, AuthoringSession session, string nodeId, string lineId) = Show();
 
         DialogueNode made = session.Editor.AddBranchMarker(nodeId, lineId);
@@ -100,8 +99,8 @@ public sealed class BranchMarkerCardTests : IDisposable
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.Empty(Node(session, nodeId).FindExtension(lineId)?.DetourTargetNodeIds ?? []);
-        Assert.Null(session.Project.FindNode(made.Id));
-        Assert.Contains(made.Name, session.StatusMessage, StringComparison.Ordinal);
+        Assert.NotNull(session.Project.FindNode(made.Id));
+        Assert.Contains("판에 남아 있습니다", session.StatusMessage, StringComparison.Ordinal);
 
         Rebuild(editor, nodeId);
         Assert.Null(Card(editor, lineId));
@@ -138,7 +137,7 @@ public sealed class BranchMarkerCardTests : IDisposable
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.Equal([second.Id], Node(session, nodeId).FindExtension(lineId)!.DetourTargetNodeIds);
-        Assert.Null(session.Project.FindNode(first.Id));
+        Assert.NotNull(session.Project.FindNode(first.Id));   // 카드는 남는다(2026-11-17)
     });
 
     [Fact]
@@ -159,8 +158,8 @@ public sealed class BranchMarkerCardTests : IDisposable
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.Equal([first.Id], Node(session, nodeId).FindExtension(lineId)!.DetourTargetNodeIds);
-        Assert.Null(session.Project.FindNode(second.Id));
-        Assert.Contains(second.Name, session.StatusMessage, StringComparison.Ordinal);
+        Assert.NotNull(session.Project.FindNode(second.Id));   // 카드는 남는다(2026-11-17)
+        Assert.Contains("판에 남아 있습니다", session.StatusMessage, StringComparison.Ordinal);
 
         // 되돌리기 한 번이면 돌아온다.
         session.Editor.Undo();

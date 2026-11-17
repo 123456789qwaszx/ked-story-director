@@ -13,8 +13,8 @@ namespace Vn.App.Tests;
 /// <summary>
 /// <b>연출 그래프에서 분기 선을 지우면 분기가 지워진다</b>.
 ///
-/// 선 우클릭(삭제)은 분기 카드의 [✕ 분기 지우기]와 같은 길(<c>RemoveBranchMarker</c>)이다 — 표식만 걷고
-/// 「분기 추가」가 세운 카드를 판에 남기면 사람은 지워지지 않았다고 본다.
+/// 선 우클릭(삭제)은 분기 카드의 [✕ 분기 지우기]와 같은 길(<c>RemoveBranchMarker</c>)이다 — 분기점과 선만 걷고
+/// 다녀가던 카드는 남긴다(2026-11-17 소유자 — 전에는 「분기 추가」가 세운 카드도 함께 걷었다).
 /// 진짜 마우스로 잰다.
 /// </summary>
 public sealed class GraphBranchEdgeTests
@@ -22,7 +22,7 @@ public sealed class GraphBranchEdgeTests
     private const int GraphTab = 1;
 
     [Fact]
-    public void 분기_선을_우클릭하면_표식과_다녀가던_카드가_함께_지워진다() => HeadlessUi.Run(() =>
+    public void 분기_선을_우클릭하면_분기만_지워지고_다녀가던_카드는_남는다() => HeadlessUi.Run(() =>
     {
         var window = new MainWindow();
         window.Show();
@@ -50,9 +50,10 @@ public sealed class GraphBranchEdgeTests
         Dispatcher.UIThread.RunJobs();
 
         Assert.Empty(((DialogueNode)session.Project.FindNode(source.Id)!).FindExtension(line.Id)?.DetourTargetNodeIds ?? []);
-        Assert.Null(session.Project.FindNode(made.Id));
+        Assert.NotNull(session.Project.FindNode(made.Id));
+        Assert.Contains("판에 남아 있습니다", session.StatusMessage, StringComparison.Ordinal);
 
-        // 되돌리기 한 번이면 둘이 함께 돌아온다.
+        // 되돌리기 한 번이면 분기가 돌아온다.
         session.Editor.Undo();
         Assert.NotNull(session.Project.FindNode(made.Id));
         Assert.Equal([made.Id], ((DialogueNode)session.Project.FindNode(source.Id)!).FindExtension(line.Id)?.DetourTargetNodeIds ?? []);

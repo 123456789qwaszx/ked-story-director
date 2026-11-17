@@ -325,16 +325,13 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// <b>「분기 지우기」</b> — <see cref="AddBranchMarker"/>의 반대다. 그 줄 앞의 분기 하나(줄과 다녀갈 카드 —
-    /// 한 줄에 여럿일 수 있다)를 걷고,
-    /// 그 분기가 다녀가던 카드(분기를 추가할 때 함께 선 에피소드)도 <b>다른 곳이 쓰지 않으면</b> 함께 걷는다.
+    /// <b>「분기 지우기」</b> — 그 줄 앞의 분기 하나(줄과 다녀갈 카드 — 한 줄에 여럿일 수 있다)의 <b>분기점과 선만</b> 걷는다.
+    /// <b>다녀가던 카드는 어떤 경우에도 남긴다</b> (2026-11-17 소유자).
     ///
-    /// 표식만 지우고 카드를 남기면 아무도 안 부르는 카드가 판에 남아 사람은 분기가 지워지지 않았다고 본다.
-    /// 써 둔 대사는 되돌리기 한 번에 표식 · 카드 · 대본과 함께 돌아온다.
-    ///
-    /// <b>남기는 경우</b> — 그 카드를 다른 곳이 쓰고 있으면 표식만 걷는다: 다른 표식 · 출구가 그리로 가거나,
-    /// 챕터의 길(간선)이 그리로 들어오거나, 챕터의 시작 에피소드이거나, 다른 판에 서 있을 때. 다른 데서 이어 쓰는
-    /// 에피소드를 분기 하나 지우다 함께 걷으면 안 된다.
+    /// 전에는(2026-10-29) 「분기 추가」가 함께 세운 카드를 다른 곳이 쓰지 않으면 함께 걷었다. 같은 단추가 카드의 출신(함께 선
+    /// 것인가 · 사람이 이은 것인가 — 화면에 안 보인다)에 따라 카드를 지우기도 남기기도 해서 결과를 미리 알 수 없었다. 이제 규칙은
+    /// 하나다: 분기 지우기는 분기만 지운다. 카드를 없애려면 그 카드를 고르고 [노드 삭제]를 누른다. 방금 더한 분기를 물리려면
+    /// 되돌리기(Ctrl+Z)가 분기와 카드를 함께 걷는다.
     /// </summary>
     /// <param name="targetNodeId">그 분기가 다녀가는 카드 — 한 줄의 분기들 가운데 어느 것인지 가린다.</param>
     /// <returns>지운 것. 그 자리에 그 분기가 없었으면 <c>null</c>이다.</returns>
@@ -346,79 +343,13 @@ public sealed partial class ProjectEditor
             return null;
         }
 
-        StoryNode? target = Project.FindNode(targetNodeId);
-        bool take = target is DialogueNode card && MadeForThisBranchOnly(card, source, beforeLineId);
+        string? kept = Project.FindNode(targetNodeId) is { } target
+            ? Chapters.EpisodeNaming.ShownNameOf(Project, target)
+            : null;
 
-        Batch(() =>
-        {
-            SetDetourTarget(nodeId, beforeLineId, from: targetNodeId, to: null, keepPoint: false);
+        SetDetourTarget(nodeId, beforeLineId, from: targetNodeId, to: null, keepPoint: false);
 
-            if (!take)
-            {
-                return;
-            }
-
-            var card = (DialogueNode)target!;
-
-            if (Chapters.EpisodeNaming.ChapterOf(Project, card) is { } chapter &&
-                FindEpisode(chapter, Chapters.EpisodeNaming.EpisodeIdOf(card)) is not null)
-            {
-                RemoveEpisode(chapter.ChapterId, Chapters.EpisodeNaming.EpisodeIdOf(card));
-            }
-
-            RemoveNode(card.Id);
-        });
-
-        return new BranchMarkerRemoval(
-            TakenNodeName: take ? target!.Name : null,
-            KeptNodeName: take ? null : target?.Name);
-    }
-
-    /// <summary>
-    /// 그 카드를 쓰는 것이 <b>이 분기 하나뿐</b>인가 — 같은 판에 서 있고, 다른 표식 · 출구 · 챕터의 길이 그리로
-    /// 가지 않고, 시작 노드 · 챕터의 시작 에피소드가 아니다.
-    /// </summary>
-    private bool MadeForThisBranchOnly(DialogueNode card, DialogueNode source, string beforeLineId)
-    {
-        if (Project.FindFileContainingNode(card.Id) != Project.FindFileContainingNode(source.Id) ||
-            string.Equals(Project.StartNodeId, card.Id, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        foreach (StoryNode node in Project.EnumerateNodes())
-        {
-            if (string.Equals(node.DefaultExitTargetNodeId, card.Id, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            if (node is not DialogueNode dialogue)
-            {
-                continue;
-            }
-
-            if (dialogue.BranchExits.Values.Concat(dialogue.ChoiceExits.Values)
-                    .Any(target => string.Equals(target, card.Id, StringComparison.Ordinal)) ||
-                dialogue.LineExtensions.Any(extension =>
-                    extension.DetourTargetNodeIds.Contains(card.Id) &&
-                    !(ReferenceEquals(dialogue, source) &&
-                      string.Equals(extension.LineId, beforeLineId, StringComparison.Ordinal))))
-            {
-                return false;
-            }
-        }
-
-        if (Chapters.EpisodeNaming.ChapterOf(Project, card) is not { } chapter)
-        {
-            return true;
-        }
-
-        string episodeId = Chapters.EpisodeNaming.EpisodeIdOf(card);
-
-        return !string.Equals(
-                   chapter.Episodes.FirstOrDefault()?.EpisodeId, episodeId, StringComparison.Ordinal) &&
-               !chapter.Edges.Any(edge => string.Equals(edge.ToEpisodeId, episodeId, StringComparison.Ordinal));
+        return new BranchMarkerRemoval(kept);
     }
 
     public SetNode AddSetNode(

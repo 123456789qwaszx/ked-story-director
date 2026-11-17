@@ -375,7 +375,7 @@ public sealed class BranchMarkerTests
         editor.RemoveBranchMarker(node.Id, lineId, first.Id);
 
         Assert.Equal([second.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
-        Assert.Null(editor.Project.FindNode(first.Id));
+        Assert.NotNull(editor.Project.FindNode(first.Id));   // 카드는 남는다(2026-11-17)
         Assert.NotNull(editor.Project.FindNode(second.Id));
     }
 
@@ -391,25 +391,26 @@ public sealed class BranchMarkerTests
     // ── 「분기 지우기」 (2026-10-29 소유자) ─────────────────────────────────
 
     [Fact]
-    public void 분기_지우기는_표식과_함께_선_에피소드를_걷는다()
+    public void 분기_지우기는_분기만_걷고_함께_선_카드와_에피소드는_남긴다()
     {
-        // 소유자: "조건 분기를 추가는 가능한데, 현재는 지우는게 불가능 합니다." — 「분기 추가」의 반대다.
-        //    표식만 걷고 카드를 남기면 아무도 안 부르는 카드가 판에 서서, 사람은 분기가 안 지워졌다고 본다.
+        // 2026-11-17 소유자 — 같은 단추가 카드의 출신(함께 선 것 · 사람이 이은 것)에 따라 카드를 지우기도 남기기도 하면 결과를
+        //    미리 알 수 없다. 분기 지우기는 분기점과 선만 걷는다. (2026-10-29에는 함께 선 카드도 걷었다.)
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
         string episodeId = EpisodeNaming.EpisodeIdOf(made);
 
         BranchMarkerRemoval removal = Assert.IsType<BranchMarkerRemoval>(editor.RemoveBranchMarker(node.Id, lineId, made.Id));
 
-        Assert.Equal(made.Name, removal.TakenNodeName);
+        Assert.Equal(EpisodeNaming.ShownNameOf(editor.Project, made), removal.KeptNodeName);
+        Assert.Contains("판에 남아 있습니다", removal.Describe(), StringComparison.Ordinal);
         Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
-        Assert.Null(editor.Project.FindNode(made.Id));
-        Assert.DoesNotContain(editor.Project.Chapters.Single().Episodes, episode => episode.EpisodeId == episodeId);
+        Assert.NotNull(editor.Project.FindNode(made.Id));
+        Assert.Contains(editor.Project.Chapters.Single().Episodes, episode => episode.EpisodeId == episodeId);
         Assert.DoesNotContain(Ports(editor, node), port => port.Kind == ExitPortKind.Detour);
     }
 
     [Fact]
-    public void 분기_지우기는_되돌리기_한_번에_통째로_돌아온다()
+    public void 분기_지우기는_되돌리기_한_번에_돌아온다()
     {
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
@@ -436,8 +437,7 @@ public sealed class BranchMarkerTests
 
         BranchMarkerRemoval removal = editor.RemoveBranchMarker(node.Id, lineId, made.Id)!;
 
-        Assert.Null(removal.TakenNodeName);
-        Assert.Equal(made.Name, removal.KeptNodeName);
+        Assert.Equal(EpisodeNaming.ShownNameOf(editor.Project, made), removal.KeptNodeName);
         Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
         Assert.NotNull(editor.Project.FindNode(made.Id));
     }

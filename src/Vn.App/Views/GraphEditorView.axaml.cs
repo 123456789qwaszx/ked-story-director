@@ -5089,8 +5089,8 @@ public partial class GraphEditorView : UserControl
 
         if (_selectedEdge.Connection.ExecutionPort is { } exit)
         {
-            // 분기 선을 지우는 것은 「분기 지우기」다 — 표식과, 분기가 다녀가던 에피소드를 함께 걷는다
-            // (2026-10-29 소유자). 그 밖의 출구는 잇던 선만 끊는다.
+            // 분기 선을 지우는 것은 「분기 지우기」다 — 분기점과 선만 걷고 다녀가던 카드는 남긴다
+            // (2026-11-17 소유자 — 전에는 함께 선 카드도 걷었다). 그 밖의 출구는 잇던 선만 끊는다.
             if (exit.Kind == ExitPortKind.Detour &&
                 exit.BranchOpenLineId is { } lineId &&
                 exit.TargetNodeId is { } targetId &&

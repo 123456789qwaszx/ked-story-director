@@ -782,8 +782,8 @@ public partial class DialogueNodeEditor : UserControl
     /// 구체적인 조건식도 선택지 문구도 여기서 정하지 않는다. 대본에는 <c>&lt;&lt;detour {노드}&gt;&gt;</c>
     /// 한 줄로 나가고, <c>&lt;&lt;if&gt;&gt;</c>가 없다.
     ///
-    /// [✕ 분기 지우기]는 「분기 추가」의 반대다 — 표식과, 그 분기가 다녀가던 카드를 함께 걷는다(다른 곳이 쓰는
-    /// 카드면 남긴다 — <see cref="Vn.Authoring.Editing.ProjectEditor.RemoveBranchMarker"/>). 같은 단추가 그 줄의
+    /// [✕ 분기 지우기]는 분기점과 선만 걷는다 — 다녀가던 카드는 늘 남는다(2026-11-17 —
+    /// <see cref="Vn.Authoring.Editing.ProjectEditor.RemoveBranchMarker"/>). 같은 단추가 그 줄의
     /// ＋ 메뉴에도 서고, 카드를 <b>우클릭</b>해도 같다(연출 그래프에서 분기 선을
     /// 우클릭하는 것과 같은 손놀림이다).
     ///
@@ -974,7 +974,7 @@ public partial class DialogueNodeEditor : UserControl
             Background = BranchPalette.Background(palette),
             Child = new StackPanel { Children = { head, detail } }
         };
-        ToolTip.SetTip(card, "우클릭하면 이 분기를 지웁니다(✕ 분기 지우기와 같다). 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        ToolTip.SetTip(card, "우클릭하면 이 분기를 지웁니다(✕ 분기 지우기와 같다) — 다녀가던 카드는 남습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
 
         card.PointerPressed += (_, args) =>
         {
@@ -1000,14 +1000,14 @@ public partial class DialogueNodeEditor : UserControl
         $"branch:{Vn.Authoring.Flow.ExitPort.DetourKey(lineId, targetId)}";
 
     /// <summary>
-    /// [✕ 분기 지우기] — 「분기 추가」의 짝이다. 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다.
+    /// [✕ 분기 지우기] — 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다. 분기만 지운다 — 카드는 남는다.
     /// </summary>
     private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId, string label = "✕ 분기 지우기")
     {
         Button remove = SmallButton(label, () => RemoveBranch(node, lineId, targetId));
         ToolTip.SetTip(
             remove,
-            "분기와, 이 분기가 다녀가던 에피소드를 함께 지웁니다(다른 곳에서도 쓰는 에피소드면 남깁니다). " +
+            "이 분기(분기점과 선)만 지웁니다 — 다녀가던 카드는 판에 남습니다. 카드를 없애려면 그 카드를 고르고 [노드 삭제]를 누르세요. " +
             "되돌리기(Ctrl+Z)로 돌아옵니다.");
         return remove;
     }
