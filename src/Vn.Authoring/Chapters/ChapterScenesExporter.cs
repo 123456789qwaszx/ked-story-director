@@ -139,7 +139,13 @@ public static class ChapterScenesExporter
         foreach (BranchCardHome home in branches.Where(home =>
                      string.Equals(home.EpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
         {
-            called.Add(new JsonObject { ["name"] = home.Card.Name, ["lines"] = Lines(home.Card) });
+            // `name`은 ID(= Yarn 노드 이름), `title`은 작가가 보는 제목이다 — 에피소드의 episodeId · title과 같은 짝(2026-11-17).
+            called.Add(new JsonObject
+            {
+                ["name"] = home.Card.Name,
+                ["title"] = EpisodeNaming.BranchTitleOf(home.Card),
+                ["lines"] = Lines(home.Card)
+            });
         }
 
         if (called.Count > 0)

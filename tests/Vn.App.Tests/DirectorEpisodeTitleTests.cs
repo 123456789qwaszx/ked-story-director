@@ -32,6 +32,39 @@ public sealed class DirectorEpisodeTitleTests : IDisposable
     }
 
     [Fact]
+    public void 분기_카드의_이름_칸은_제목을_고치고_ID는_그대로다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — 분기 카드도 제목을 따로 둔다(auto-id-orders I4). ID(= Yarn 노드 이름)는 [구성] 탭에서 정한다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        DialogueNode home = Card(session, "b");
+        DialogueNode branch = session.Editor.AddBranchMarker(home.Id, home.Script.ActiveLines.First().Id);
+        string id = branch.Name;
+        session.Select(branch.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        TextBox name = NameBox(window);
+        Assert.Equal(NewNames.Branch, name.Text);
+        long before = session.Editor.Revision;
+
+        name.Text = "교무실 회상";
+        Enter(name);
+
+        Assert.Equal(("교무실 회상", id), (branch.Title, branch.Name));
+        Assert.Equal(before + 1, session.Editor.Revision);
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        Assert.Contains("교무실 회상", CardTexts(graph, branch.Id));
+        Assert.Contains(graph.HierarchyView.Rows, row => row.Kind == HierarchyKind.Branch && row.Text == "⑂ 교무실 회상");
+
+        // 비우면 ID가 보인다.
+        NameBox(window).Text = string.Empty;
+        Enter(NameBox(window));
+        Assert.Null(branch.Title);
+        Assert.Equal(id, NameBox(window).Text);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 이름_칸에_제목을_적고_Enter를_누르면_제목만_바뀌고_대본_탭이_제목을_보인다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);

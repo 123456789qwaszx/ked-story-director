@@ -135,7 +135,7 @@ public sealed class BranchCardBoardTests : IDisposable
             List<HierarchyRow> rows = tree.Rows.ToList();
             int root = rows.FindIndex(row => row.Kind == HierarchyKind.Episode && row.EpisodeId == "root");
             HierarchyRow row = rows[root + 1];
-            Assert.Equal((HierarchyKind.Branch, key, $"⑂ {branch.Name}"), (row.Kind, row.Key, row.Text));
+            Assert.Equal((HierarchyKind.Branch, key, $"⑂ {EpisodeNaming.BranchTitleOf(branch)}"), (row.Kind, row.Key, row.Text));
             Assert.Equal(rows[root].Depth + 1, row.Depth);
         }
 
@@ -151,7 +151,7 @@ public sealed class BranchCardBoardTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Assert.True(chapterGraph.FindControl<StackPanel>("BranchPanel")!.IsVisible);
-        Assert.Contains(branch.Name, chapterGraph.FindControl<TextBlock>("InspectorTitle")!.Text, StringComparison.Ordinal);
+        Assert.Contains(EpisodeNaming.BranchTitleOf(branch), chapterGraph.FindControl<TextBlock>("InspectorTitle")!.Text, StringComparison.Ordinal);
 
         window.Close();
     });

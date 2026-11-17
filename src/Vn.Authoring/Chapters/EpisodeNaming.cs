@@ -85,19 +85,43 @@ public static class EpisodeNaming
     }
 
     /// <summary>
-    /// 그 카드가 화면에 보이는 이름 — 챕터의 에피소드면 그 제목(<see cref="ChapterEpisode.ShownTitle"/>), 아니면 노드 이름이다.
-    /// [대본] 탭은 이 이름을 보이고 고친다. EpisodeId는 [구성] 탭에서 정한다.
+    /// 그 카드가 화면에 보이는 이름 — 챕터의 에피소드면 그 제목(<see cref="ChapterEpisode.ShownTitle"/>), 분기 카드면 그 제목
+    /// (<see cref="BranchTitleOf"/>), 아니면 노드 이름이다. [대본] 탭은 이 이름을 보이고 고친다. ID는 [구성] 탭에서 정한다.
     /// </summary>
     public static string ShownNameOf(StoryProject project, StoryNode node)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(node);
 
+        if (node is DialogueNode { IsBranchCard: true } branch)
+        {
+            return BranchTitleOf(branch);
+        }
+
         return node is DialogueNode dialogue &&
                ChapterOf(project, dialogue)?.Episodes.FirstOrDefault(episode =>
                    string.Equals(episode.EpisodeId, EpisodeIdOf(dialogue), StringComparison.Ordinal)) is { } found
             ? found.ShownTitle
             : node.Name;
+    }
+
+    /// <summary>분기 카드의 보이는 제목 — <see cref="DialogueNode.Title"/>, 비면 이름(ID)이다(2026-11-17).</summary>
+    public static string BranchTitleOf(DialogueNode card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        return card.Title is { Length: > 0 } title ? title : card.Name;
+    }
+
+    /// <summary>
+    /// 글(검증 · 상태줄)에서 분기 카드를 가리키는 말 — 「제목」(ID). 새 분기 카드는 모두 「새 분기」로 서므로 제목만으로는 어느 카드인지
+    /// 모른다. 제목이 ID와 같으면(비었으면) 「ID」만.
+    /// </summary>
+    public static string BranchLabelOf(DialogueNode card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+
+        string title = BranchTitleOf(card);
+        return string.Equals(title, card.Name, StringComparison.Ordinal) ? $"「{title}」" : $"「{title}」({card.Name})";
     }
 
     /// <summary>그 노드가 대신하는 에피소드 Id — 표식이 먼저고, 없으면 이름이다.</summary>

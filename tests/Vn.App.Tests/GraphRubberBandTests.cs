@@ -162,7 +162,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.DoesNotContain(graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<ComboBox>(),
             combo => combo.IsEffectivelyVisible);
         Assert.Contains(graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<TextBlock>(),
-            text => text.IsEffectivelyVisible && text.Text?.Contains($"분기 카드 「{detour.Name}」를 고르면 대본 위쪽", StringComparison.Ordinal) == true);
+            text => text.IsEffectivelyVisible && text.Text?.Contains($"분기 카드 「{EpisodeNaming.BranchTitleOf(detour)}」를 고르면 대본 위쪽", StringComparison.Ordinal) == true);
 
         window.Close();
     });

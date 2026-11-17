@@ -36,7 +36,7 @@ public sealed class ChapterYarnNamesTests
         editor.AddBranchMarker(home.Id, home.Script.ActiveLines.First().Id, name: "side");
 
         ChapterDiagnostic branch = Assert.Single(Taken(editor, "ch02"));
-        Assert.Contains("분기 카드 「side」", branch.Message, StringComparison.Ordinal);
+        Assert.Contains("분기 카드 「새 분기」(side)", branch.Message, StringComparison.Ordinal);   // 제목과 ID
         Assert.Equal(EpisodeNaming.EpisodeIdOf(home), branch.EpisodeId);   // 집 에피소드를 짚는다
     }
 

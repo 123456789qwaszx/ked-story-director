@@ -198,11 +198,13 @@ public partial class DialogueNodeEditor : UserControl
 
             // 에피소드 카드의 이름 칸은 보이는 제목이다(비면 EpisodeId가 보인다). EpisodeId는 [구성] 탭에서 정한다.
             NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, node);
-            NameBox.PlaceholderText = _chapterEpisode ? "제목 (비우면 에피소드ID)" : "장면 이름";
+            NameBox.PlaceholderText = _chapterEpisode ? "제목 (비우면 에피소드ID)" : node.IsBranchCard ? "제목 (비우면 분기 카드 ID)" : "장면 이름";
             ToolTip.SetTip(NameBox, _chapterEpisode
                 ? $"게임에 보이는 제목입니다. 고치고 Enter. 비우면 에피소드ID({EpisodeNaming.EpisodeIdOf(node)})가 보입니다. " +
                   "에피소드ID는 [구성] 탭에서 정합니다."
-                : null);
+                : node.IsBranchCard
+                    ? $"분기 카드의 제목입니다. 고치고 Enter. 비우면 분기 카드 ID({node.Name})가 보입니다. ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다."
+                    : null);
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
             HideEmptyChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
@@ -1497,7 +1499,27 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        // 에피소드가 아니면(분기 카드) 노드 이름을 고친다.
+        // 분기 카드 — 이름 칸은 보이는 제목이다(2026-11-17). ID(= Yarn 노드 이름)는 [구성] 탭에서 정한다.
+        if (node.IsBranchCard)
+        {
+            string title = (NameBox.Text ?? string.Empty).Trim();
+
+            if (string.Equals(title, EpisodeNaming.ShownNameOf(_session.Project, node), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _session.Editor.SetBranchCardTitle(node.Id, title);
+
+            // 제목은 노드의 곁 자료라 인스펙터를 다시 세우지 않는다 — 비웠으면 칸이 ID를 보이게 여기서 맞춘다.
+            NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindDialogue(node.Id) ?? node);
+            _session.SetStatus(title.Length == 0
+                ? $"제목을 비웠습니다 — 분기 카드 ID '{node.Name}'가 보입니다."
+                : $"제목을 '{title}'(으)로 바꿨습니다. 분기 카드 ID '{node.Name}'는 그대로입니다.");
+            return;
+        }
+
+        // 에피소드가 아닌 카드(챕터 밖 — 옛 데이터)는 노드 이름을 고친다.
         if (!_chapterEpisode || EpisodeNaming.ChapterOf(_session.Project, node) is not { } chapter)
         {
             _session.Editor.RenameNode(node.Id, NameBox.Text ?? string.Empty);

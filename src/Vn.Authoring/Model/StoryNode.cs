@@ -141,6 +141,13 @@ public sealed class DialogueNode : StoryNode
     public bool IsBranchCard { get; set; }
 
     /// <summary>
+    /// <b>분기 카드의 보이는 제목</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c> I4) — [대본] 탭이 보이고 고친다(처음
+    /// 「새 분기」, 비면 이름이 보인다). 분기 카드의 <see cref="StoryNode.Name"/>은 ID(= Yarn 노드 이름)이고 [구성] 탭에서 정한다 — 에피소드의
+    /// 제목(<c>ChapterEpisode.Title</c>)과 EpisodeId가 갈린 것과 같다. 에피소드 카드에는 쓰지 않는다(제목은 챕터가 든다).
+    /// </summary>
+    public string? Title { get; set; }
+
+    /// <summary>
     /// 이 노드가 <b>어느 에피소드인가</b>를 적어 둔 표식.
     ///
     /// <b>2026-09-17까지 이름이 <c>ExcelEpisodeId</c>였고, 그 이름이 두 번 거짓이 됐다.</b>

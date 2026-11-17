@@ -150,7 +150,7 @@ public static class ChapterYarnExporter
             foreach (BranchCardHome home in homes.Where(home => string.Equals(home.EpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
             {
                 text.Append('\n');
-                text.Append("// 분기 카드: ").Append(OneLine(home.Card.Name))
+                text.Append("// 분기 카드: ").Append(OneLine(EpisodeNaming.BranchTitleOf(home.Card)))
                     .Append(" — 「").Append(OneLine(episode.ShownTitle)).Append("」에서 들른다\n");
                 text.Append("title: ").Append(YarnNaming.StoryNodeTitleOf(home.Card.Name, home.Card.Id)).Append("\n---\n");
                 AppendBody(text, episode.EpisodeId, home.Card, project, definition, problems);

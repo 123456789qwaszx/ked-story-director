@@ -116,7 +116,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     null,
-                    $"분기 카드 「{branch.Name}」를 부르는 분기점이 없습니다 — 게임에서 재생되지 않습니다. 쓰지 않으면 지우고, 쓰려면 분기점을 이 카드에 이으세요."));
+                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}를 부르는 분기점이 없습니다 — 게임에서 재생되지 않습니다. 쓰지 않으면 지우고, 쓰려면 분기점을 이 카드에 이으세요."));
             }
             else if (!played.Contains(branch.Id))
             {
@@ -126,7 +126,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 「{branch.Name}」를 부르는 「{string.Join("」 · 「", callers.Select(caller => Shown(chapter, caller)))}」에 " +
+                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}를 부르는 「{string.Join("」 · 「", callers.Select(caller => Shown(chapter, caller)))}」에 " +
                     "도달할 수 없습니다 — 이 분기 카드도 게임에서 재생되지 않습니다."));
             }
 
@@ -141,12 +141,12 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 「{branch.Name}」의 Yarn 노드 이름 '{title}'이(가) {owner}와 겹칩니다 — 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 " +
-                    "컴파일이 깨집니다. [대본] 탭에서 분기 카드의 이름을 고쳐 주세요."));
+                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}의 Yarn 노드 이름 '{title}'이(가) {owner}와 겹칩니다 — 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 " +
+                    "컴파일이 깨집니다. [구성] 탭에서 분기 카드의 ID를 고쳐 주세요."));
             }
             else
             {
-                taken[title] = $"분기 카드 「{branch.Name}」";
+                taken[title] = $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}";
             }
 
             // ③ 줄이 없는 분기 카드.
@@ -158,7 +158,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 「{branch.Name}」에 재생할 줄이 하나도 없습니다. [대본] 탭의 그 카드에 대사를 한 줄이라도 적어 주세요."));
+                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}에 재생할 줄이 하나도 없습니다. [대본] 탭의 그 카드에 대사를 한 줄이라도 적어 주세요."));
             }
         }
     }
@@ -218,5 +218,5 @@ public static class ChapterBranchCards
 
     /// <summary>사람에게 보일 이름 — 에피소드면 제목, 아니면 카드 이름.</summary>
     private static string Shown(ChapterGraphModel chapter, DialogueNode card) =>
-        EpisodeOf(chapter, card) is { } episode ? chapter.FindEpisode(episode)!.ShownTitle : card.Name;
+        EpisodeOf(chapter, card) is { } episode ? chapter.FindEpisode(episode)!.ShownTitle : EpisodeNaming.BranchTitleOf(card);
 }

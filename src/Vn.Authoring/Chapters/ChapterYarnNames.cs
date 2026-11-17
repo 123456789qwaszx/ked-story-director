@@ -61,7 +61,7 @@ public static class ChapterYarnNames
 
         foreach (DialogueNode card in EpisodeNaming.BoardOf(project, chapterId)?.Nodes.OfType<DialogueNode>().Where(node => node.IsBranchCard) ?? [])
         {
-            yield return (YarnNaming.StoryNodeTitleOf(card.Name, card.Id), $"분기 카드 「{card.Name}」", homes.GetValueOrDefault(card.Id));
+            yield return (YarnNaming.StoryNodeTitleOf(card.Name, card.Id), $"분기 카드 {EpisodeNaming.BranchLabelOf(card)}", homes.GetValueOrDefault(card.Id));
         }
     }
 }

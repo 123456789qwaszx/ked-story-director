@@ -2,6 +2,7 @@ using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
+using Vn.Authoring.Serialization;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -100,6 +101,30 @@ public sealed class AutoIdTests
         DialogueNode created = editor.AddBranchCardAt(Ports(editor, episode).Single(port => port.IsOpenDetour), 600, 0)!;
 
         Assert.Equal("ch01_scene01_branch02", created.Name);   // 앞의 카드(branch01)는 판에 남아 있다
+    }
+
+    [Fact]
+    public void 분기_카드는_새_분기_제목으로_서고_제목은_파일을_오가며_되돌리기_한_칸이다()
+    {
+        // 분기 카드는 이름(= ID = Yarn 노드 이름)과 제목이 갈린다(I4) — 작가는 제목을, 개발자는 ID를 본다.
+        ProjectEditor editor = World();
+        DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, 0, 0, sceneId: "scene01");
+        DialogueNode branch = editor.AddBranchMarker(episode.Id, episode.Script.ActiveLines.First().Id);
+        Assert.Equal((NewNames.Branch, NewNames.Branch), (branch.Title, EpisodeNaming.ShownNameOf(editor.Project, branch)));
+
+        long before = editor.Revision;
+        editor.SetBranchCardTitle(branch.Id, "  옥상 회상 ");
+        editor.SetBranchCardTitle(branch.Id, "옥상 회상");   // 같은 값은 칸을 쓰지 않는다
+        Assert.Equal(("옥상 회상", before + 1), (branch.Title, editor.Revision));
+        Assert.Equal("「옥상 회상」(ch01_scene01_branch01)", EpisodeNaming.BranchLabelOf(branch));
+
+        StoryFile reread = StoryFileJson.Read(StoryFileJson.Write(editor.Project.FindFileContainingNode(branch.Id)!));
+        Assert.Equal("옥상 회상", reread.Nodes.OfType<DialogueNode>().Single(node => node.Id == branch.Id).Title);
+
+        editor.SetBranchCardTitle(branch.Id, "");
+        Assert.Equal("ch01_scene01_branch01", EpisodeNaming.ShownNameOf(editor.Project, branch));   // 비면 ID가 보인다
+        editor.Undo();
+        Assert.Equal("옥상 회상", editor.Project.FindDialogue(branch.Id)!.Title);
     }
 
     private static IReadOnlyList<ExitPort> Ports(ProjectEditor editor, DialogueNode node) =>

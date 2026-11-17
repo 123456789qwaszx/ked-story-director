@@ -14,6 +14,9 @@ internal static class StoryNodeJson
     /// <summary><see cref="DialogueNode.IsBranchCard"/>가 앉는 칸 — 분기 카드일 때만 쓴다.</summary>
     private const string BranchCardKey = "branchCard";
 
+    /// <summary><see cref="DialogueNode.Title"/>(분기 카드의 보이는 제목)이 앉는 칸 — 있을 때만 쓴다.</summary>
+    private const string TitleKey = "title";
+
     public static JsonObject Write(StoryNode node)
     {
         string kind = node switch
@@ -185,6 +188,11 @@ internal static class StoryNodeJson
             json[BranchCardKey] = true;
         }
 
+        if (node.Title is { Length: > 0 } title)
+        {
+            json[TitleKey] = title;
+        }
+
         var lines = new JsonArray();
 
         foreach (DialogueLineExtension extension in node.LineExtensions)
@@ -313,7 +321,8 @@ internal static class StoryNodeJson
         {
             Script = ReadScript(json["script"], id),
             MarkedEpisodeId = (string?)json[EpisodeMarkKey],
-            IsBranchCard = (bool?)json[BranchCardKey] ?? false
+            IsBranchCard = (bool?)json[BranchCardKey] ?? false,
+            Title = (string?)json[TitleKey]
         };
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 

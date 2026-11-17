@@ -67,7 +67,7 @@ public sealed class ChapterBranchPanelTests
         Border chip = Chip(canvas, project.BranchNodeId);
         Assert.True(Canvas.GetLeft(chip) > Canvas.GetLeft(root) + CardWidth, "칩이 카드 오른쪽에 선다");
         Assert.Equal(Canvas.GetTop(root), Canvas.GetTop(chip), 3);
-        Assert.Contains(project.BranchName, ((TextBlock)chip.Child!).Text, StringComparison.Ordinal);
+        Assert.Contains(TempProject.BranchTitle, ((TextBlock)chip.Child!).Text, StringComparison.Ordinal);
         Assert.True(chip.Height < CardHeight);
 
         // 에피소드를 옮기면 칩이 따라간다 — 칩의 자리는 저장하지 않는다.
@@ -104,6 +104,36 @@ public sealed class ChapterBranchPanelTests
     });
 
     [Fact]
+    public void 분기_카드_ID_칸은_이름을_바꾸고_비우거나_쓰인_이름은_받지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 — 분기 카드의 ID(= Yarn 노드 이름)는 [구성] 탭에서 정한다. 제목은 [대본] 탭의 것이라 그대로다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        view.SelectBranchCard(project.BranchNodeId);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        TextBox box = view.FindControl<TextBox>("BranchIdBox")!;
+        Assert.Equal(project.BranchName, box.Text);
+        DialogueNode card = session.Project.FindDialogue(project.BranchNodeId)!;
+
+        // 쓰인 이름(에피소드 카드 「root」)과 빈 이름은 받지 않는다 — 칸이 되돌아간다.
+        foreach (string refused in new[] { "root", " " })
+        {
+            long unchanged = session.Editor.Revision;
+            box.Text = refused;
+            view.RenameInspectedBranchCard();
+            Assert.Equal((project.BranchName, project.BranchName), (card.Name, box.Text));
+            Assert.Equal(unchanged, session.Editor.Revision);
+        }
+
+        long before = session.Editor.Revision;
+        box.Text = "ch01_hallway_flashback";
+        view.RenameInspectedBranchCard();
+
+        Assert.Equal(("ch01_hallway_flashback", TempProject.BranchTitle), (card.Name, card.Title));
+        Assert.Equal(before + 1, session.Editor.Revision);
+    });
+
+    [Fact]
     public void 칩을_누르면_부르는_곳과_조건과_읽기_전용_대본이_선다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();
@@ -114,7 +144,7 @@ public sealed class ChapterBranchPanelTests
 
         Assert.True(view.FindControl<StackPanel>("BranchPanel")!.IsVisible);
         Assert.False(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-        Assert.Contains(project.BranchName, view.FindControl<TextBlock>("InspectorTitle")!.Text, StringComparison.Ordinal);
+        Assert.Contains(TempProject.BranchTitle, view.FindControl<TextBlock>("InspectorTitle")!.Text, StringComparison.Ordinal);
         Assert.Contains(
             view.FindControl<Panel>("BranchFromToPanel")!.Children.OfType<TextBlock>(),
             text => text.Text == "root");
@@ -492,6 +522,7 @@ public sealed class ChapterBranchPanelTests
             DialogueNode branch = editor.AddBranchMarker(caller.Id, BranchLineId);
             branch.Script.RequireLocale(branch.Script.PrimaryLocale).Entries[branch.Script.ActiveLines.First().Id] =
                 new Vn.Authoring.Script.LocalizedLine("라루", "들렀다 간다");
+            editor.SetBranchCardTitle(branch.Id, BranchTitle);   // 작가가 보는 제목 — ID(이름)와 따로다(2026-11-17)
             BranchName = branch.Name;
             BranchNodeId = branch.Id;
 
@@ -506,6 +537,9 @@ public sealed class ChapterBranchPanelTests
 
         /// <summary>분기 카드의 이름 — 에피소드가 아니다(2026-11-17).</summary>
         public string BranchName { get; }
+
+        /// <summary>분기 카드의 보이는 제목 — 칩 · 인스펙터 머리글은 이것을 보인다. 이름(<see cref="BranchName"/>)은 ID다.</summary>
+        public const string BranchTitle = "들르는 길";
 
         public string BranchNodeId { get; }
 

@@ -24,6 +24,9 @@ public static class NewNames
     /// <summary>새 챕터의 처음 이름 — 작가가 이름을 비워 만들었을 때.</summary>
     public const string Chapter = "새 챕터";
 
+    /// <summary>새 분기 카드의 처음 제목(<see cref="DialogueNode.Title"/>).</summary>
+    public const string Branch = "새 분기";
+
     /// <summary>
     /// 에피소드ID 자동 앞머리 — <c>{챕터}_{장면}_new</c>(장면이 없으면 <c>{챕터}_new</c>). Yarn 노드 이름 정규화를 지난 글자다 — 장면ID에 공백이
     /// 있어도 ID에는 들지 않는다.

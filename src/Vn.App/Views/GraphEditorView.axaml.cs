@@ -2255,9 +2255,14 @@ public partial class GraphEditorView : UserControl
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
-            [ToolTip.TipProperty] = _session?.Project.FindNode(node.NodeId) is DialogueNode { MarkedEpisodeId: not null } episode
-                ? $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다."
-                : null
+            [ToolTip.TipProperty] = _session?.Project.FindNode(node.NodeId) switch
+            {
+                DialogueNode { MarkedEpisodeId: not null } episode =>
+                    $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다.",
+                DialogueNode { IsBranchCard: true } branch =>
+                    $"분기 카드 ID: {branch.Name} — ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.",
+                _ => null
+            }
         };
 
         var title = new Grid

@@ -8,6 +8,7 @@ using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Flow;
+using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 
@@ -64,7 +65,9 @@ public sealed class BranchMarkerCardTests : IDisposable
             editor.LineHost.Children.IndexOf(card) <
             editor.LineHost.Children.IndexOf(LineCardAfter(editor, card)));
 
-        Assert.Contains(Texts(card), text => text.Contains(made.Name, StringComparison.Ordinal));
+        // 분기 카드는 제목으로 보인다(처음 「새 분기」 — ID는 [구성]에서 본다, 2026-11-17).
+        Assert.Contains(Texts(card), text => text.Contains(NewNames.Branch, StringComparison.Ordinal));
+        Assert.DoesNotContain(Texts(card), text => text.Contains(made.Name, StringComparison.Ordinal));
     });
 
     [Fact]
@@ -120,6 +123,8 @@ public sealed class BranchMarkerCardTests : IDisposable
 
         DialogueNode first = session.Editor.AddBranchMarker(nodeId, lineId);
         DialogueNode second = session.Editor.AddBranchMarker(nodeId, lineId);
+        session.Editor.SetBranchCardTitle(first.Id, "첫 갈래");
+        session.Editor.SetBranchCardTitle(second.Id, "둘째 갈래");
         Rebuild(editor, nodeId);
 
         Control firstCard = Card(editor, lineId, first.Id)!;
@@ -130,8 +135,8 @@ public sealed class BranchMarkerCardTests : IDisposable
         Assert.DoesNotContain("branch:", editor.LineHost.Children[at + 2].Tag as string ?? string.Empty, StringComparison.Ordinal);
         Assert.Contains(Texts(firstCard), text => text.Contains("1/2", StringComparison.Ordinal));
         Assert.Contains(Texts(secondCard), text => text.Contains("2/2", StringComparison.Ordinal));
-        Assert.Contains(Texts(firstCard), text => text.Contains(first.Name, StringComparison.Ordinal));
-        Assert.Contains(Texts(secondCard), text => text.Contains(second.Name, StringComparison.Ordinal));
+        Assert.Contains(Texts(firstCard), text => text.Contains("첫 갈래", StringComparison.Ordinal));
+        Assert.Contains(Texts(secondCard), text => text.Contains("둘째 갈래", StringComparison.Ordinal));
         Assert.Equal(
             2,
             NodeConnections.PortsOf(Node(session, nodeId), session.Project).Count(port => port.Kind == ExitPortKind.Detour));

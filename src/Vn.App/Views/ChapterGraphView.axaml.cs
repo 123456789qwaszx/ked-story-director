@@ -430,6 +430,14 @@ public partial class ChapterGraphView : UserControl
                 UiGuard.Run(_session, "장면 ID 바꾸기", RenameInspectedScene);
             }
         };
+        BranchIdBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter)
+            {
+                e.Handled = true;
+                UiGuard.Run(_session, "분기 카드 ID 바꾸기", RenameInspectedBranchCard);
+            }
+        };
         Hierarchy.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnHierarchyPicked(pick));
         // 판 다루기 — 휠 확대·축소, 가운데 단추 끌어 이동. 휠은 <b>터널</b>로 받는다:
         // 스크롤뷰가 먼저 먹어 버리면 휠이 배율이 아니라 그냥 스크롤이 된다.
@@ -1316,17 +1324,19 @@ public partial class ChapterGraphView : UserControl
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
             Child = new TextBlock
             {
-                Text = state.Label is { } label ? $"⑂ {card.Name} · {label}" : $"⑂ {card.Name}",
+                Text = state.Label is { } label
+                    ? $"⑂ {EpisodeNaming.BranchTitleOf(card)} · {label}"
+                    : $"⑂ {EpisodeNaming.BranchTitleOf(card)}",
                 FontSize = 10.5,
                 Foreground = new SolidColorBrush(Color.Parse("#3B3F46")),
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis
             },
-            Tag = new BranchCardMark(nodeId, card.Name)
+            Tag = new BranchCardMark(nodeId, EpisodeNaming.BranchTitleOf(card))
         };
 
         ToolTip.SetTip(chip,
-            $"분기 카드 「{card.Name}」 — 들렀다 돌아오는 카드입니다(선택지가 없고 진행 JSON에 실리지 않습니다). " +
+            $"분기 카드 {EpisodeNaming.BranchLabelOf(card)} — 들렀다 돌아오는 카드입니다(선택지가 없고 진행 JSON에 실리지 않습니다). " +
             BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label)) +
             " 누르면 인스펙터에 조건과 대본이 열립니다. 대본은 [대본] 탭에서 고칩니다.");
 
@@ -3400,6 +3410,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void RefreshBranchCardPanel(ChapterGraphModel? model, string nodeId)
     {
+        BranchIdBox.Text = _session?.Project.FindDialogue(nodeId)?.Name ?? string.Empty;
         BranchFromToPanel.Children.Clear();
         BranchFromToPanel.Children.Add(new TextBlock
         {
@@ -3473,8 +3484,50 @@ public partial class ChapterGraphView : UserControl
             : BranchCardLink(nodeId, BranchCardName(nodeId));
 
     /// <summary>분기 카드의 이름 — 판에 없으면 NodeId.</summary>
+    /// <summary>
+    /// 분기 카드 ID 칸의 Enter — 카드 이름(= Yarn 노드 이름)을 바꾼다(되돌리기 한 칸). 부르는 쪽은 노드 Id로 이으므로 따라갈 것이 없다.
+    /// <b>비울 수 없고 프로젝트의 다른 노드가 쓰는 이름으로는 바꾸지 않는다</b> — Yarn 노드 이름은 프로젝트에서 하나다(2026-11-17).
+    /// </summary>
+    internal void RenameInspectedBranchCard()
+    {
+        if (_session is null || _selectedBranchCardId is not { } nodeId ||
+            _session.Project.FindDialogue(nodeId) is not { IsBranchCard: true } card ||
+            EpisodeNaming.ChapterOf(_session.Project, card) is not { } chapter)
+        {
+            return;
+        }
+
+        string wanted = BranchIdBox.Text?.Trim() ?? string.Empty;
+
+        if (string.Equals(wanted, card.Name, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        HashSet<string> taken = NewNames.TakenNames(_session.Project, chapter);
+        taken.Remove(card.Name);
+        taken.Remove(Vn.Authoring.Rendering.YarnNaming.StoryNodeTitleOf(card.Name, card.Id));
+
+        string? refusal = wanted.Length == 0
+            ? "분기 카드 ID는 비울 수 없습니다 — 게임의 Yarn 노드 이름입니다."
+            : taken.Contains(wanted) || taken.Contains(Vn.Authoring.Rendering.YarnNaming.StoryNodeTitleOf(wanted, card.Id))
+                ? $"'{wanted}'는 프로젝트의 다른 노드가 쓰는 이름입니다 — Yarn 노드 이름은 프로젝트에서 하나여야 합니다."
+                : null;
+
+        if (refusal is not null)
+        {
+            BranchIdBox.Text = card.Name;
+            _session.SetStatus(refusal);
+            return;
+        }
+
+        string old = card.Name;
+        _session.Editor.RenameNode(card.Id, wanted);
+        _session.SetStatus($"분기 카드 ID '{old}' → '{wanted}'. 제목 「{EpisodeNaming.BranchTitleOf(card)}」는 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+    }
+
     private string BranchCardName(string nodeId) =>
-        _session?.Project.FindDialogue(nodeId)?.Name ?? nodeId;
+        _session?.Project.FindDialogue(nodeId) is { } card ? EpisodeNaming.BranchTitleOf(card) : nodeId;
 
     /// <summary>분기 카드로 건너뛰는 고리 — 누르면 그 칩을 고른다(조건 · 대본).</summary>
     private Control BranchCardLink(string nodeId, string name)
@@ -3545,8 +3598,8 @@ public partial class ChapterGraphView : UserControl
             _session.Definition);
 
         _session.SetStatus(failure ?? (label is null or BranchAlwaysItem
-            ? $"분기 카드 '{target.Name}'의 조건을 걷었습니다 — 언제나 재생됩니다."
-            : $"분기 카드 '{target.Name}'은 조건 '{label}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
+            ? $"분기 카드 「{BranchCardName(target.NodeId)}」의 조건을 걷었습니다 — 언제나 재생됩니다."
+            : $"분기 카드 「{BranchCardName(target.NodeId)}」은 조건 '{label}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
     }
 
     /// <summary>조건 칸이 고치는 분기 카드 — 고른 칩.</summary>

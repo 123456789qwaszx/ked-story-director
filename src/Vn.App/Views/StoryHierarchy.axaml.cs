@@ -447,7 +447,7 @@ public partial class StoryHierarchy : UserControl
                 chapter.ChapterId,
                 scene.SceneId,
                 episode.EpisodeId,
-                "⑂ " + home.Card.Name,
+                "⑂ " + EpisodeNaming.BranchTitleOf(home.Card),
                 Detail: null,
                 depth,
                 IsSceneRoot: false,

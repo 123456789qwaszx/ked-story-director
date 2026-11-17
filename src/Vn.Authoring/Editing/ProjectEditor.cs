@@ -164,7 +164,10 @@ public sealed partial class ProjectEditor
             : NewNames.NextEpisodeId(Project, board, sceneId)))
         {
             Layout = new NodeLayout { X = x, Y = y },
-            IsBranchCard = branchCard
+            IsBranchCard = branchCard,
+
+            // 분기 카드는 제목을 따로 든다(에피소드의 제목은 챕터가 든다) — 작가는 제목을, 개발자는 [구성]에서 ID(이름)를 본다.
+            Title = branchCard ? title ?? NewNames.Branch : null
         };
 
         if (Project.FindNode(created.Id) is not null)
@@ -411,6 +414,20 @@ public sealed partial class ProjectEditor
                 Project.StartNodeId = Project.EnumerateNodes().FirstOrDefault()?.Id;
             }
         });
+    }
+
+    /// <summary>
+    /// 분기 카드의 보이는 제목을 고친다(<see cref="DialogueNode.Title"/>) — [대본] 탭. 앞뒤 빈칸은 걷고, 비우면 이름(ID)이 보인다.
+    /// 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 분기 카드가 아니면 아무것도 하지 않는다.
+    /// </summary>
+    public void SetBranchCardTitle(string nodeId, string? title)
+    {
+        string? wanted = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
+
+        if (Project.FindDialogue(nodeId) is { IsBranchCard: true } card && !string.Equals(card.Title, wanted, StringComparison.Ordinal))
+        {
+            Mutate(ProjectChangeKind.NodeMetadata, () => card.Title = wanted);
+        }
     }
 
     public void RenameNode(string nodeId, string name)
