@@ -56,4 +56,5 @@
 |---|---|---|---|
 | 11-17 | E0 | 커밋됨 | 지시서 — 1절은 소유자가 정했다 |
 | 11-17 | E1 | 커밋됨 | `GraphEditorView.AddDialogueNode` — 고른 장면 → 고른 카드의 장면(분기 카드면 집의 장면, 장면 없는 옛 에피소드는 따르지 않는다) → 새 장면(「새 장면」 이름까지). 지금 판이 챕터가 아니면 첫 챕터, 챕터가 없으면 `CreateNamedChapter`(「새 챕터」 — 챕터를 세우는 규칙 한 벌). 한 `Batch` — 되돌리기 한 칸. 상태줄이 어디에 섰는지 말한다. 시험 `SceneAreaPickTests` 3(옛 「장면 없이 선다」를 고쳤다) |
-| 11-17 | E2 | (이 커밋) | 하이어아키 — 「에피소드 추가」는 장면이 있는 줄(장면 · 장면 안 에피소드)에만, 「장면 풀기」 · 「장면에서 빼기」(`HierarchyCommand.DeleteScene` · `DetachFromScene`)와 챕터 줄에 놓기를 걷었다(`Accepts` — 장면 줄만). 장면 없는 에피소드 줄에 ⚠(「장면 줄로 끌어 넣어 주세요」). 시험 `HierarchyEditTests` 3을 고쳤다 |
+| 11-17 | E2 | 커밋됨 | 하이어아키 — 「에피소드 추가」는 장면이 있는 줄(장면 · 장면 안 에피소드)에만, 「장면 풀기」 · 「장면에서 빼기」(`HierarchyCommand.DeleteScene` · `DetachFromScene`)와 챕터 줄에 놓기를 걷었다(`Accepts` — 장면 줄만). 장면 없는 에피소드 줄에 ⚠(「장면 줄로 끌어 넣어 주세요」). 시험 `HierarchyEditTests` 3을 고쳤다 |
+| 11-17 | E3 | (이 커밋) | 검증 — `ChapterDiagnosticCode.EpisodeWithoutScene` 경고(`ChapterDocument.ModelDiagnostics` — 값의 흠이라 어디서 왔든 본다). 내보내기를 막지 않는다. 시험 — `NewProjectNoiseTests`(툴이 하는 그대로 장면과 함께 · 경고 시험 하나 더), [구성] 렌더 시험의 옛 견본(장면 없는 에피소드 여섯)이 경고 4 → 10 |

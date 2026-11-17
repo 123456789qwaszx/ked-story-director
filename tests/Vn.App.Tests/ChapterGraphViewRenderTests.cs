@@ -200,10 +200,10 @@ public sealed class ChapterGraphViewRenderTests
         // 표식이 유일한 알림 창구다 — 관례대로 오류는 빨강, 경고는 노랑이다.
         Assert.Contains("🔴 오류 1", (string)expander.Header!);
 
-        // 경고 4건 — 스탯이 game.definition.json(기본값은 variables가 비어 있다)에 없다는
-        // 것이 스탯 수만큼이다.
-        // 견본의 간선은 모두 문구를 가져 문구 없는 간선 경고는 없고, 스탯은 `복도지남` 깃발까지 넷이다.
-        Assert.Contains("🟡 경고 4", (string)expander.Header!);
+        // 경고 10건 — 스탯이 game.definition.json(기본값은 variables가 비어 있다)에 없다는
+        // 것이 스탯 수만큼(`복도지남` 깃발까지 넷), 그리고 견본의 에피소드 여섯이 장면이 없다(옛 견본 — 2026-11-17부터 경고).
+        // 견본의 간선은 모두 문구를 가져 문구 없는 간선 경고는 없다.
+        Assert.Contains("🟡 경고 10", (string)expander.Header!);
 
         // 접힌 채로도 사람이 열면 목록이 그대로 있다 — 원할 때 언제든 확인한다.
         expander.IsExpanded = true;
