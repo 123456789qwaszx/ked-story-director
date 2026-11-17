@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Chapters;
@@ -14,6 +15,8 @@ namespace Vn.Authoring.Chapters;
 /// <item>아무도 부르지 않는 분기 카드 · 도달할 수 없는 곳(에피소드 또는 그런 분기 카드)만 부르는 분기 카드 → <b>경고</b>(소유자). 분기 카드는 진행
 ///   JSON에 없어 게임을 깨지 않는다 — 재생되지 않을 뿐이다. 분기 카드의 분기도 사슬로 따른다.</item>
 /// <item>줄이 하나도 없는 분기 카드 → 오류. Yarn 컴파일러가 줄 없는 노드를 빼서 <c>&lt;&lt;detour&gt;&gt;</c>가 없는 노드를 부른다(에피소드의 「빈 씬」과 같은 까닭).</item>
+/// <item>분기 카드의 Yarn 노드 이름이 에피소드나 다른 분기 카드와 겹친다 → 오류. 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 컴파일이 깨진다 —
+///   분기 카드는 [대본] 탭에서 이름을 자유롭게 고친다.</item>
 /// </list>
 /// </summary>
 /// <summary>분기 카드와 그 집(부르는 에피소드) — <see cref="ChapterBranchCards.HomesOf"/>.</summary>
@@ -91,6 +94,15 @@ public static class ChapterBranchCards
             }
         }
 
+        // 이미 쓴 Yarn 노드 이름 — 에피소드의 대사 노드(진행 JSON이 부르는 그 이름)부터.
+        ChapterBoard via = ChapterBoard.For(project, chapter.ChapterId);
+        var taken = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (ChapterEpisode episode in chapter.Episodes)
+        {
+            taken.TryAdd(ChapterProgressionExporter.DialogueEntryIdOf(episode, via), $"에피소드 「{episode.ShownTitle}」");
+        }
+
         foreach (DialogueNode branch in cards.Where(card => card.IsBranchCard))
         {
             List<DialogueNode> callers = calls.Where(call => call.Target.Id == branch.Id).Select(call => call.Caller).Distinct().ToList();
@@ -116,6 +128,25 @@ public static class ChapterBranchCards
                     at,
                     $"분기 카드 「{branch.Name}」를 부르는 「{string.Join("」 · 「", callers.Select(caller => Shown(chapter, caller)))}」에 " +
                     "도달할 수 없습니다 — 이 분기 카드도 게임에서 재생되지 않습니다."));
+            }
+
+            // ④ Yarn 노드 이름이 겹친다 — 에피소드의 대사 노드 · 다른 분기 카드.
+            string title = YarnNaming.StoryNodeTitleOf(branch.Name, branch.Id);
+
+            if (taken.TryGetValue(title, out string? owner))
+            {
+                diagnostics.Add(new ChapterDiagnostic(
+                    ChapterDiagnosticSeverity.Error,
+                    ChapterDiagnosticCode.BranchCardNameTaken,
+                    chapter.SourcePath,
+                    ChapterSheetNames.Episodes,
+                    at,
+                    $"분기 카드 「{branch.Name}」의 Yarn 노드 이름 '{title}'이(가) {owner}와 겹칩니다 — 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 " +
+                    "컴파일이 깨집니다. [대본] 탭에서 분기 카드의 이름을 고쳐 주세요."));
+            }
+            else
+            {
+                taken[title] = $"분기 카드 「{branch.Name}」";
             }
 
             // ③ 줄이 없는 분기 카드.

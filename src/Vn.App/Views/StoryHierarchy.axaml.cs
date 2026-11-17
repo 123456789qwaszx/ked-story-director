@@ -16,7 +16,10 @@ internal enum HierarchyKind
     Project,
     Chapter,
     Scene,
-    Episode
+    Episode,
+
+    /// <summary>분기 카드 — 부르는 에피소드 밑의 「⑂ 이름」 줄(2026-11-17). 에피소드가 아니다 — 고르면 그 카드(칩)로 간다.</summary>
+    Branch
 }
 
 /// <summary>
@@ -123,11 +126,13 @@ internal sealed class HierarchyFolds
 /// <summary>
 /// 하이어아키에서 고른 것 — 인스펙터가 이것을 보인다. 장면 · 에피소드는 제 챕터를 함께 든다(Id는 챕터 안에서만 유일하다).
 /// </summary>
+/// <param name="NodeId">분기 카드 줄이면 그 카드 — 그때 <paramref name="EpisodeId"/>는 그 집(부르는 에피소드)이다.</param>
 internal sealed record HierarchyPick(
     HierarchyKind Kind,
     string? ChapterId = null,
     string? SceneId = null,
-    string? EpisodeId = null)
+    string? EpisodeId = null,
+    string? NodeId = null)
 {
     public static HierarchyPick Project { get; } = new(HierarchyKind.Project);
 
@@ -137,6 +142,7 @@ internal sealed record HierarchyPick(
         HierarchyKind.Project => StoryHierarchy.ProjectKey,
         HierarchyKind.Chapter => StoryHierarchy.ChapterKey(ChapterId!),
         HierarchyKind.Scene => StoryHierarchy.SceneKey(ChapterId!, SceneId!),
+        HierarchyKind.Branch => StoryHierarchy.BranchKey(ChapterId!, NodeId!),
         _ => StoryHierarchy.EpisodeKey(ChapterId!, EpisodeId!)
     };
 }
@@ -156,9 +162,10 @@ internal sealed record HierarchyRow(
     int Depth,
     bool IsSceneRoot,
     bool HasWarning,
-    HierarchyEye Eye = HierarchyEye.None)
+    HierarchyEye Eye = HierarchyEye.None,
+    string? NodeId = null)
 {
-    public HierarchyPick Pick => new(Kind, ChapterId, SceneId, EpisodeId);
+    public HierarchyPick Pick => new(Kind, ChapterId, SceneId, EpisodeId, NodeId);
 }
 
 /// <summary>
@@ -186,6 +193,8 @@ public partial class StoryHierarchy : UserControl
     internal static string SceneKey(string chapterId, string sceneId) => "sc:" + chapterId + "/" + sceneId;
 
     internal static string EpisodeKey(string chapterId, string episodeId) => "ep:" + chapterId + "/" + episodeId;
+
+    internal static string BranchKey(string chapterId, string nodeId) => "br:" + chapterId + "/" + nodeId;
 
     /// <summary>접힘 — 셸이 두 탭의 하이어아키에 같은 것을 준다(<see cref="HierarchyFolds"/>).</summary>
     internal HierarchyFolds Folds { get; set; } = new();
@@ -410,6 +419,7 @@ public partial class StoryHierarchy : UserControl
             foreach (ChapterEpisode episode in scene.Episodes)
             {
                 rows.Add(EpisodeRow(chapterId, scene, episode, depth: 3));
+                AddBranches(rows, chapter, scene, episode, depth: 4);
             }
         }
 
@@ -419,7 +429,32 @@ public partial class StoryHierarchy : UserControl
             foreach (ChapterEpisode episode in scene.Episodes)
             {
                 rows.Add(EpisodeRow(chapterId, scene, episode, depth: 2) with { IsSceneRoot = false });
+                AddBranches(rows, chapter, scene, episode, depth: 3);
             }
+        }
+    }
+
+    /// <summary>
+    /// 그 에피소드가 부르는 분기 카드들 — 에피소드 밑에 「⑂ 이름」 줄로, 대본 차례로(2026-11-17 소유자 — 두 탭 같다). 에피소드 줄은 접지
+    /// 않으므로 늘 보인다. 분기 카드가 부르는 분기 카드도 같은 집이라 같은 자리에 선다.
+    /// </summary>
+    private static void AddBranches(List<HierarchyRow> rows, ChapterEntry chapter, ChapterScene scene, ChapterEpisode episode, int depth)
+    {
+        foreach (BranchCardHome home in chapter.BranchCards.Where(home =>
+                     string.Equals(home.EpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
+        {
+            rows.Add(new HierarchyRow(
+                HierarchyKind.Branch,
+                BranchKey(chapter.ChapterId, home.Card.Id),
+                chapter.ChapterId,
+                scene.SceneId,
+                episode.EpisodeId,
+                "⑂ " + home.Card.Name,
+                Detail: null,
+                depth,
+                IsSceneRoot: false,
+                HasWarning: false,
+                NodeId: home.Card.Id));
         }
     }
 
@@ -468,8 +503,8 @@ public partial class StoryHierarchy : UserControl
 
         path.Add(ChapterKey(chapterId));
 
-        // 챕터 직속 에피소드는 가는 길에 장면 마디가 없다.
-        if (pick.Kind == HierarchyKind.Episode && pick.EpisodeId is { } episodeId &&
+        // 챕터 직속 에피소드는 가는 길에 장면 마디가 없다. 분기 카드 줄은 그 집(부르는 에피소드)의 길이다.
+        if (pick.Kind is HierarchyKind.Episode or HierarchyKind.Branch && pick.EpisodeId is { } episodeId &&
             _chapters.FirstOrDefault(chapter => string.Equals(chapter.ChapterId, chapterId, StringComparison.Ordinal))
                 ?.Model.FindEpisode(episodeId) is { SceneId: { } sceneId } episode &&
             !string.IsNullOrWhiteSpace(sceneId))
@@ -496,6 +531,8 @@ public partial class StoryHierarchy : UserControl
             // 장면 줄은 장면ID를 적은 장면만이다 — 미지정 장면은 줄이 없다(챕터 직속).
             HierarchyKind.Scene => !IsDefaultScene(pick.SceneId) && chapter?.Model.Episodes.Any(episode =>
                 string.Equals(episode.EffectiveSceneId, pick.SceneId, StringComparison.Ordinal)) == true,
+            HierarchyKind.Branch => chapter?.BranchCards.Any(home =>
+                string.Equals(home.Card.Id, pick.NodeId, StringComparison.Ordinal)) == true,
             _ => chapter?.Model.FindEpisode(pick.EpisodeId ?? string.Empty) is not null
         };
     }
@@ -570,6 +607,7 @@ public partial class StoryHierarchy : UserControl
             HierarchyKind.Project => (13.0, FontWeight.Bold, 1.0),
             HierarchyKind.Chapter => (13.0, FontWeight.SemiBold, 1.0),
             HierarchyKind.Scene => (12.0, FontWeight.SemiBold, 0.8),
+            HierarchyKind.Branch => (11.0, FontWeight.Normal, 0.75),
             _ => (12.0, FontWeight.Normal, 1.0)
         };
 
@@ -621,7 +659,8 @@ public partial class StoryHierarchy : UserControl
 
         button.Click += (_, _) => UiGuard.Run(null, "하이어아키", () => Press(row));
 
-        if (!ReadOnly)
+        // 분기 카드 줄은 고르기만 한다 — 만들고 지우고 이름을 고치는 것은 [대본] 판의 일이다.
+        if (!ReadOnly && row.Kind != HierarchyKind.Branch)
         {
             button.ContextMenu = Menu(row, button);
             WireDrag(button, row);
@@ -855,7 +894,7 @@ public partial class StoryHierarchy : UserControl
     {
         if (ReadOnly ||
             _rows.FirstOrDefault(row => string.Equals(row.Key, key, StringComparison.Ordinal)) is not { } row ||
-            row.Kind == HierarchyKind.Project)
+            row.Kind is HierarchyKind.Project or HierarchyKind.Branch)
         {
             return;
         }
@@ -921,7 +960,7 @@ public partial class StoryHierarchy : UserControl
     /// </summary>
     private Border Arrow(HierarchyRow row)
     {
-        bool leaf = row.Kind == HierarchyKind.Episode;
+        bool leaf = row.Kind is HierarchyKind.Episode or HierarchyKind.Branch;
         var arrow = new Border
         {
             Width = 16,
@@ -1009,7 +1048,7 @@ public partial class StoryHierarchy : UserControl
             ? _rows.FindIndex(row => string.Equals(row.Key, pick.Key, StringComparison.Ordinal))
             : -1;
         HierarchyRow? current = index >= 0 ? _rows[index] : null;
-        bool expandable = current is not null && current.Kind != HierarchyKind.Episode;
+        bool expandable = current is not null && current.Kind is not (HierarchyKind.Episode or HierarchyKind.Branch);
 
         HierarchyRow? next = e.Key switch
         {

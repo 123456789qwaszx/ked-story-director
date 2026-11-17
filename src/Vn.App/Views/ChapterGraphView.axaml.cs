@@ -129,7 +129,16 @@ public partial class ChapterGraphView : UserControl
             if (pick.ChapterId is { } chapterId)
             {
                 SelectChapter(chapterId);
-                SelectEpisode(pick.Kind == HierarchyKind.Episode ? pick.EpisodeId : null);
+
+                // 분기 카드 줄 — 그 칩을 고른다(부르는 곳 · 조건 · 대본).
+                if (pick.Kind == HierarchyKind.Branch)
+                {
+                    SelectBranchCard(pick.NodeId);
+                }
+                else
+                {
+                    SelectEpisode(pick.Kind == HierarchyKind.Episode ? pick.EpisodeId : null);
+                }
             }
 
             _inspector = pick.Kind switch
@@ -778,7 +787,9 @@ public partial class ChapterGraphView : UserControl
 
         return _session.Project.Chapters
             .Select(chapter => new ChapterEntry(
-                chapter.ChapterId, chapter.ToGraphModel(chapter.ChapterId, _session.Definition)))
+                chapter.ChapterId,
+                chapter.ToGraphModel(chapter.ChapterId, _session.Definition),
+                ChapterBranchCards.HomesOf(_session.Project, chapter.ChapterId)))
             .OrderBy(entry => entry.ChapterId, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -2724,8 +2735,16 @@ public partial class ChapterGraphView : UserControl
         UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
-        ShowInHierarchy(null);
+        ShowInHierarchy(BranchPick(nodeId));
     }
+
+    /// <summary>분기 카드의 하이어아키 줄 — 집(부르는 에피소드)이 없으면 줄도 없다.</summary>
+    private HierarchyPick? BranchPick(string? nodeId) =>
+        nodeId is not null &&
+        _entries.FirstOrDefault(entry => entry.ChapterId == _selectedChapterId) is { } entry &&
+        entry.BranchCards.FirstOrDefault(home => home.Card.Id == nodeId) is { } found
+            ? new HierarchyPick(HierarchyKind.Branch, entry.ChapterId, EpisodeId: found.EpisodeId, NodeId: nodeId)
+            : null;
 
     /// <summary>
     /// 빈 선택지 칸 하나를 고른다 — 카드 아래의 빈 점이다. 아직 이 칸에서 나가는 길이 없다는 것과 길을 더하는 곳을 보인다.

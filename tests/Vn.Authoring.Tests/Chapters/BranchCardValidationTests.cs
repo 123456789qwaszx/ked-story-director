@@ -102,6 +102,29 @@ public sealed class BranchCardValidationTests
     }
 
     [Fact]
+    public void 분기_카드의_Yarn_이름이_에피소드나_다른_분기_카드와_겹치면_오류다()
+    {
+        // 분기 카드는 [대본] 탭에서 이름을 자유롭게 고친다 — 같은 이름의 Yarn 노드가 둘이면 컴파일이 깨진다.
+        (ProjectEditor editor, DialogueNode root) = World();
+        string lineId = root.Script.ActiveLines.First().Id;
+        DialogueNode first = Filled(editor.AddBranchMarker(root.Id, lineId));
+        DialogueNode second = Filled(editor.AddBranchMarker(root.Id, lineId));
+
+        editor.RenameNode(first.Id, "root");
+        editor.RenameNode(second.Id, "root");
+
+        List<ChapterDiagnostic> errors = Branch(Validate(editor)).ToList();
+
+        Assert.Equal(2, errors.Count);
+        Assert.All(errors, error => Assert.Equal(ChapterDiagnosticCode.BranchCardNameTaken, error.Code));
+        Assert.Contains(errors, error => error.Message.Contains("에피소드 「root」", StringComparison.Ordinal));
+
+        editor.RenameNode(first.Id, "들름 1");
+        editor.RenameNode(second.Id, "들름 2");
+        Assert.Empty(Branch(Validate(editor)));
+    }
+
+    [Fact]
     public void 분기_카드는_진행_JSON에_실리지_않는다()
     {
         (ProjectEditor editor, DialogueNode root) = World();
@@ -122,7 +145,8 @@ public sealed class BranchCardValidationTests
         ChapterDiagnosticCode.BranchIntoEpisode,
         ChapterDiagnosticCode.BranchCardOrphaned,
         ChapterDiagnosticCode.BranchCardUnreachable,
-        ChapterDiagnosticCode.BranchCardEmpty
+        ChapterDiagnosticCode.BranchCardEmpty,
+        ChapterDiagnosticCode.BranchCardNameTaken
     ];
 
     private static IEnumerable<ChapterDiagnostic> Branch(ChapterValidationResult result) =>

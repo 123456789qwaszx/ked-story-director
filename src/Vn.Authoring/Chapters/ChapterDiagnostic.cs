@@ -52,6 +52,9 @@ public enum ChapterDiagnosticCode
 
     /// <summary>줄이 하나도 없는 분기 카드 — 오류(<see cref="ChapterBranchCards"/>).</summary>
     BranchCardEmpty,
+
+    /// <summary>분기 카드의 Yarn 노드 이름이 에피소드 · 다른 분기 카드와 겹친다 — 오류(<see cref="ChapterBranchCards"/>).</summary>
+    BranchCardNameTaken,
     OptionEdgeMismatch,
     ExitIntoLandingCard,
 

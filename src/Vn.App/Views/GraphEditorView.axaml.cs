@@ -459,17 +459,21 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private void RefreshDeleteButton()
     {
+        bool branch = _session?.SelectedNode is DialogueNode { IsBranchCard: true };
         bool episode =
+            !branch &&
             _session?.SelectedNode is DialogueNode card &&
             EpisodeNaming.ChapterOf(_session.Project, card) is not null;
 
-        DeleteNodeButton.Content = episode ? "에피소드 삭제…" : "노드 삭제";
+        DeleteNodeButton.Content = branch ? "분기 카드 삭제" : episode ? "에피소드 삭제…" : "노드 삭제";
         ToolTip.SetTip(
             DeleteNodeButton,
-            episode
-                ? "이 카드는 챕터의 에피소드입니다 — 간선·픽스처 참조까지 함께 지웁니다. " +
-                  "되돌리기(Ctrl+Z)로 돌아옵니다."
-                : "이 판의 카드 하나를 지웁니다. 되돌리기 한 번으로 돌아옵니다.");
+            branch
+                ? "분기 카드를 지웁니다 — 부르던 분기점은 이어지지 않은 채 남습니다. 되돌리기 한 번으로 돌아옵니다."
+                : episode
+                    ? "이 카드는 챕터의 에피소드입니다 — 간선·픽스처 참조까지 함께 지웁니다. " +
+                      "되돌리기(Ctrl+Z)로 돌아옵니다."
+                    : "이 판의 카드 하나를 지웁니다. 되돌리기 한 번으로 돌아옵니다.");
     }
 
     // ── 그리기 ──────────────────────────────────────────────────────────────
@@ -724,6 +728,13 @@ public partial class GraphEditorView : UserControl
 
         List<ExpandedNodeProjection> all = nodes.ToList();
 
+        // 분기 카드는 집(부르는 에피소드)의 장면에 든다 — 저장하지 않고 연결에서 읽는다(2026-11-17).
+        var homeOf = ChapterBranchCards.HomesOf(_session.Project, chapter.ChapterId)
+            .ToDictionary(home => home.Card.Id, home => home.EpisodeId, StringComparer.Ordinal);
+
+        string? SceneEpisodeOf(ExpandedNodeProjection node) =>
+            IsBranchCard(node.NodeId) ? homeOf.GetValueOrDefault(node.NodeId) : EpisodeOf(node);
+
         // 장면ID를 적은 장면만 테두리를 받는다 — 장면ID가 없는 에피소드는 챕터 직속이다(2026-11-01 B안).
         foreach (ChapterScene scene in scenes.Where(scene => !scene.IsDefault))
         {
@@ -731,7 +742,7 @@ public partial class GraphEditorView : UserControl
 
             foreach (ExpandedNodeProjection node in all)
             {
-                if (EpisodeOf(node) is not { } episodeId ||
+                if (SceneEpisodeOf(node) is not { } episodeId ||
                     !sceneOf.TryGetValue(episodeId, out ChapterScene? owner) ||
                     !ReferenceEquals(owner, scene) ||
                     FindCard(node.NodeId) is not { } card)
@@ -2070,8 +2081,12 @@ public partial class GraphEditorView : UserControl
     /// 장면의 루트 에피소드인가 (2026-10-30 SR — 소유자: "장면의 Root 노드는 색깔을 조금 다르게"). 같은 서류 모양에 등뼈 ·
     /// 바탕만 챕터 그래프의 「SCENE ROOT」 표와 같은 파랑 쪽으로 바꾸고, 아이콘은 하이어아키의 ⌂다 — 세 화면이 한 말을 한다.
     /// </param>
-    private static CardStyle CardStyleFor(GraphNodeKind kind, bool chapterEpisode, bool sceneRoot = false) => kind switch
+    private static CardStyle CardStyleFor(GraphNodeKind kind, bool chapterEpisode, bool sceneRoot = false, bool branchCard = false) => kind switch
     {
+        // 분기 카드(2026-11-17) — 들렀다 돌아오는 카드. 에피소드와 다른 물건이라 색 · 표가 다르다(보라 · ⑂).
+        GraphNodeKind.Dialogue when branchCard => new CardStyle(
+            Color.FromRgb(0x7C, 0x5C, 0xC4), Color.FromRgb(0xF6, 0xF3, 0xFC),
+            Color.FromRgb(0xD5, 0xCB, 0xEE), 4, "⑂"),
         GraphNodeKind.Dialogue when chapterEpisode && sceneRoot => new CardStyle(
             Color.FromRgb(0x3D, 0x7B, 0xD9), Color.FromRgb(0xEF, 0xF4, 0xFC),
             Color.FromRgb(0xC3, 0xD5, 0xEF), 4, "⌂"),
@@ -2219,23 +2234,30 @@ public partial class GraphEditorView : UserControl
     private bool IsChapterEpisode(string nodeId) =>
         _session?.Project.FindNode(nodeId) is DialogueNode { MarkedEpisodeId: not null };
 
+    private bool IsBranchCard(string nodeId) =>
+        _session?.Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true };
+
     private NodeCard BuildCard(ExpandedNodeProjection node)
     {
         bool sceneRoot = _sceneRootNodeIds.Contains(node.NodeId);
-        CardStyle style = CardStyleFor(node.NodeKind, IsChapterEpisode(node.NodeId), sceneRoot);
+        bool branchCard = IsBranchCard(node.NodeId);
+        CardStyle style = CardStyleFor(node.NodeKind, IsChapterEpisode(node.NodeId), sceneRoot, branchCard);
 
         var body = new StackPanel { Spacing = 0 };
 
         var titleIcon = new TextBlock
         {
-            Text = style.Icon,
+            Text = branchCard ? $"{style.Icon} 분기" : style.Icon,
             FontSize = 11,
             Foreground = new SolidColorBrush(style.Accent),
             Margin = new Thickness(0, 0, 5, 0),
             VerticalAlignment = VerticalAlignment.Center,
             [ToolTip.TipProperty] = sceneRoot
                 ? "장면 시작점 — 장면이 시작하는 에피소드입니다. 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
-                : null
+                : branchCard
+                    ? "분기 카드 — 다른 카드의 분기점으로 들렀다가 그 자리로 돌아옵니다. 선택지가 없고 진행 JSON에 실리지 않습니다. " +
+                      "장면은 부르는 에피소드의 것입니다."
+                    : null
         };
 
         // 에피소드 카드는 보이는 제목이다 — EpisodeId는 [구성] 탭에서 정하고, 여기서는 툴팁으로만 보인다.
@@ -4561,8 +4583,12 @@ public partial class GraphEditorView : UserControl
 
         GraphCanvas.Children.Add(_connectingLine);
         // 공급 포트 안내는 2026-08-22에 사라졌다 — 끌 수 있는 포트가 실행 출구뿐이다.
-        SetHint("연결할 실행 노드 또는 접힌 파일의 실행 노드 행 위에서 놓으세요. " +
-            "빈 곳에 놓으면 실행 연결이 끊어집니다.");
+        SetHint(port.ExecutionPort is { Kind: ExitPortKind.Detour } detour
+            ? detour.IsOpenDetour
+                ? "분기 카드 위에 놓으면 잇습니다. 빈 곳에 놓으면 그 자리에 새 분기 카드가 섭니다. 에피소드에는 잇지 않습니다."
+                : "분기 카드 위에 놓으면 그리로 옮겨 잇습니다. 빈 곳에 놓으면 연결만 끊기고 분기점은 남습니다."
+            : "연결할 실행 노드 또는 접힌 파일의 실행 노드 행 위에서 놓으세요. " +
+              "빈 곳에 놓으면 실행 연결이 끊어집니다.");
 
         args.Handled = true;
     }
@@ -4905,10 +4931,60 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
+        if (port.ExecutionPort is { Kind: ExitPortKind.Detour } detour)
+        {
+            Point at = args.GetPosition(GraphCanvas);
+            UiGuard.Run(_session, "분기 잇기", () => JoinBranch(detour, target, at));
+            return;
+        }
+
         if (port.ExecutionPort is not null)
         {
             _session?.Editor.SetExitTarget(port.ExecutionPort, target);
         }
+    }
+
+    /// <summary>
+    /// <b>분기점을 놓았다</b> (2026-11-17 · branch-card-orders B3). 분기점은 <b>분기 카드에만</b> 잇는다 — 에피소드에 놓으면 받지 않고 까닭을
+    /// 말한다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 나오지 않는다). <b>이어지지 않은 분기점을 빈 곳에</b> 놓으면 그 자리에 새 분기
+    /// 카드가 서고 이어진다(소유자 — 분기 카드를 지운 뒤 다시 이을 때 「분기 추가」로 분기점을 하나 더 만들지 않는다). 이어진 분기점을 빈 곳에
+    /// 놓으면 연결만 끊긴다(분기점은 남는다).
+    /// </summary>
+    private void JoinBranch(ExitPort detour, string? target, Point at)
+    {
+        if (_session is null)
+        {
+            return;
+        }
+
+        if (target is null)
+        {
+            if (!detour.IsOpenDetour)
+            {
+                _session.Editor.SetExitTarget(detour, null);
+                return;
+            }
+
+            if (_session.Editor.AddBranchCardAt(detour, ClampNodeX(at.X), ClampNodeY(at.Y - (TitleHeight / 2))) is { } created)
+            {
+                _session.SetStatus($"분기 카드 '{created.Name}'을(를) 세우고 이었습니다 — 들러서 할 대사를 적으세요. {BranchConditionNote.Where}");
+            }
+
+            return;
+        }
+
+        if (!_session.Editor.CanBranchTo(target))
+        {
+            string name = _session.Project.FindNode(target) is { } node
+                ? EpisodeNaming.ShownNameOf(_session.Project, node)
+                : target;
+            _session.SetStatus(
+                $"'{name}'은(는) 에피소드입니다 — 분기점은 분기 카드에만 잇습니다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 " +
+                "나오지 않습니다). 빈 곳에 놓으면 새 분기 카드가 섭니다.");
+            return;
+        }
+
+        _session.Editor.SetExitTarget(detour, target);
     }
 
     /// <summary>
@@ -4933,7 +5009,9 @@ public partial class GraphEditorView : UserControl
 
         if (EpisodeAt(targetNodeId) is not var (chapterId, episodeId))
         {
-            _session.SetStatus("에피소드가 아닌 노드에는 선택지를 놓을 수 없습니다.");
+            _session.SetStatus(IsBranchCard(targetNodeId)
+                ? "분기 카드에는 선택지를 잇지 않습니다 — 분기 카드는 분기점으로 들렀다 돌아오는 카드입니다. 선택지는 에피소드에 잇습니다."
+                : "에피소드가 아닌 노드에는 선택지를 놓을 수 없습니다.");
             return;
         }
 
@@ -5288,6 +5366,16 @@ public partial class GraphEditorView : UserControl
         // ⚠ <b>여기서만 묻는다.</b> 챕터 그래프의 [에피소드 삭제]는 이름이 이미 무엇을
         //    지우는지 말하지만, 여기서 사람은 <b>카드를 지운다고 생각하고</b> 누른다 —
         //    지워지는 것은 카드 하나가 아니라 에피소드와 그 간선이다.
+        // 분기 카드는 에피소드가 아니다(2026-11-17) — 카드만 지운다. 부르던 분기점은 이어지지 않은 채 남는다. 되돌리기 한 번에 돌아온다.
+        if (_session.Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } branch)
+        {
+            _session.Editor.RemoveNode(nodeId);
+            _session.SetStatus(
+                $"분기 카드 '{branch.Name}'을(를) 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
+                "되돌리기(Ctrl+Z)로 돌아옵니다.");
+            return;
+        }
+
         if (_session.Project.FindNode(nodeId) is DialogueNode card &&
             EpisodeNaming.ChapterOf(_session.Project, card) is { } chapter)
         {

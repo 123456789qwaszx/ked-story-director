@@ -233,6 +233,16 @@ public partial class MainWindow
             _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
         }
 
+        // 분기 카드 줄 — 그 카드를 고르고 보이게 한다(에피소드 카드와 같다).
+        if (pick.Kind == HierarchyKind.Branch && pick.NodeId is { } branchId && _session.Project.FindNode(branchId) is not null)
+        {
+            _directorSummary = null;
+            _session.Select(branchId);
+            ShowSelectedNode();
+            Dispatcher.UIThread.Post(Graph.RevealSelected, DispatcherPriority.Background);
+            return;
+        }
+
         if (pick.Kind == HierarchyKind.Episode &&
             EpisodeNaming.CardFor(_session.Project, pick.ChapterId!, pick.EpisodeId!) is { } card)
         {
@@ -309,11 +319,24 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>세션이 고른 카드를 하이어아키의 줄로 — 챕터 판의 에피소드 카드가 아니면 null.</summary>
-    private HierarchyPick? PickOf(StoryNode? node) =>
-        node is DialogueNode dialogue && EpisodeNaming.ChapterOf(_session.Project, dialogue) is { } chapter
-            ? new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, EpisodeId: EpisodeNaming.EpisodeIdOf(dialogue))
-            : null;
+    /// <summary>세션이 고른 카드를 하이어아키의 줄로 — 에피소드 카드면 에피소드 줄, 분기 카드면 집 밑의 그 줄. 그 밖이면 null.</summary>
+    private HierarchyPick? PickOf(StoryNode? node)
+    {
+        if (node is not DialogueNode dialogue || EpisodeNaming.ChapterOf(_session.Project, dialogue) is not { } chapter)
+        {
+            return null;
+        }
+
+        if (dialogue.IsBranchCard)
+        {
+            return ChapterBranchCards.HomesOf(_session.Project, chapter.ChapterId)
+                .FirstOrDefault(home => home.Card.Id == dialogue.Id) is { } home
+                ? new HierarchyPick(HierarchyKind.Branch, chapter.ChapterId, EpisodeId: home.EpisodeId, NodeId: dialogue.Id)
+                : null;
+        }
+
+        return new HierarchyPick(HierarchyKind.Episode, chapter.ChapterId, EpisodeId: EpisodeNaming.EpisodeIdOf(dialogue));
+    }
 
     /// <summary>
     /// 에피소드 카드의 인스펙터 머리글 — 「{챕터} - {장면}」(2026-11-16 — 이름이 들어가므로 「챕터」 꼬리를 뗐다). 챕터는 하이어아키에 보이는 챕터 Id, 장면ID가 없으면 챕터만이다.
