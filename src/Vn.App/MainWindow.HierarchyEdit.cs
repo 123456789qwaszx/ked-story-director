@@ -5,8 +5,8 @@ using Vn.Authoring.Chapters;
 namespace Vn.App;
 
 /// <summary>
-/// <b>하이어아키에서 고치기</b> — 우클릭 차림표(챕터 · 장면 · 에피소드
-/// 추가, 장면 풀기, 에피소드 지우기)와 두 번 눌러 이름 바꾸기. 두 탭의 하이어아키가 이 한 벌을 쓴다.
+/// <b>하이어아키에서 고치기</b> — 우클릭 차림표(챕터 · 장면 · 에피소드 추가, 에피소드 지우기)와 두 번 눌러 이름 바꾸기, 에피소드를 다른
+/// 장면 줄로 끌어 옮기기. 두 탭의 하이어아키가 이 한 벌을 쓴다(고치는 것은 [대본] 탭뿐 — [구성] 탭 하이어아키는 읽기 전용이다).
 ///
 /// 주의: 규칙은 여기 없다 — 만들기는 <c>ProjectEditor</c>, 지우기는 <see cref="EpisodeDeleter"/>, 개명은
 /// <see cref="EpisodeRenamer"/> · <see cref="ChapterRenamer"/>. 이 자리는 <b>누른 줄이 무엇을 어디에 하자는지</b>를 풀고
@@ -51,31 +51,21 @@ public partial class MainWindow
 
             case HierarchyCommand.AddEpisode:
             {
+                // 에피소드는 늘 장면에 속한다 — 장면 줄은 그 장면 끝에, 장면 안 에피소드 줄은 그 뒤에(간선까지)(2026-11-17).
                 (string? after, string? sceneId) = row.Kind switch
                 {
                     HierarchyKind.Episode => (row.EpisodeId, RealSceneId(chapter.Model.FindEpisode(row.EpisodeId!)?.SceneId)),
-                    HierarchyKind.Scene when scene is not null => (scene.Episodes[^1].EpisodeId,
-                        scene.IsDefault ? null : scene.SceneId),
-                    _ => (LastEpisodeOf(chapter.Model), null)
+                    HierarchyKind.Scene when scene is { IsDefault: false } => (scene.Episodes[^1].EpisodeId, scene.SceneId),
+                    _ => (null, null)
                 };
 
-                CreateEpisode(chapter, after, sceneId);
+                if (sceneId is not null)
+                {
+                    CreateEpisode(chapter, after, sceneId);
+                }
+
                 break;
             }
-
-            case HierarchyCommand.DeleteScene when scene is not null && !scene.IsDefault:
-            {
-                string[] episodeIds = scene.Episodes.Select(episode => episode.EpisodeId).ToArray();
-                _session.Editor.UpdateEpisodeScenes(chapterId, episodeIds, string.Empty);
-                _session.SetStatus(
-                    $"장면 '{scene.SceneId}'를 풀었습니다 — 에피소드 {episodeIds.Length}개는 남고 저마다 제 장면입니다. " +
-                    "되돌리기(Ctrl+Z)로 돌아옵니다.");
-                break;
-            }
-
-            case HierarchyCommand.DetachFromScene when row.EpisodeId is { } episodeId:
-                DetachFromScene(chapterId, episodeId);
-                break;
 
             case HierarchyCommand.DeleteEpisode when row.EpisodeId is { } episodeId:
             {
@@ -166,19 +156,13 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 에피소드를 끌어 놓았다 — 다른 장면 줄이면 그 장면으로(장면ID가 그 장면의 것이 된다), 챕터 줄이면 장면에서 빼 챕터
-    /// 직속으로. 되돌리기 한 칸.
+    /// 에피소드를 끌어 놓았다 — 다른 장면 줄이면 그 장면으로(장면ID가 그 장면의 것이 된다). 되돌리기 한 칸. 장면 줄에만 놓는다
+    /// (<see cref="StoryHierarchy.Accepts"/>).
     /// </summary>
     private void OnHierarchyDropped(HierarchyRow source, HierarchyRow target)
     {
         if (source.ChapterId is not { } chapterId || source.EpisodeId is not { } episodeId)
         {
-            return;
-        }
-
-        if (target.Kind == HierarchyKind.Chapter)
-        {
-            DetachFromScene(chapterId, episodeId);
             return;
         }
 
@@ -189,16 +173,6 @@ public partial class MainWindow
 
         _session.Editor.UpdateEpisode(chapterId, episodeId, sceneId: sceneId);
         _session.SetStatus($"'{episodeId}'를 장면 '{sceneId}'로 옮겼습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
-    }
-
-    /// <summary>
-    /// 에피소드를 장면에서 뺀다 — 장면ID를 걷어 <b>챕터 직속</b>으로.런타임에서는 그 에피소드 하나가 저장 · 롤백
-    /// 구간이 된다(장면ID가 없는 에피소드의 규칙 그대로). 되돌리기 한 칸.
-    /// </summary>
-    private void DetachFromScene(string chapterId, string episodeId)
-    {
-        _session.Editor.UpdateEpisode(chapterId, episodeId, sceneId: string.Empty);
-        _session.SetStatus($"'{episodeId}'를 장면에서 뺐습니다 — 이제 챕터 직속입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
     /// <summary>
@@ -229,9 +203,6 @@ public partial class MainWindow
             (sceneName is null ? $"「{NewNames.Episode}」를 더했습니다" : $"「{sceneName}」 장면을 더했습니다") +
             ". 이름은 하이어아키에서 두 번 눌러 고칩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
-
-    private static string? LastEpisodeOf(ChapterGraphModel model) =>
-        model.Episodes.Count > 0 ? model.Episodes[^1].EpisodeId : null;
 
     /// <summary>적어 둔 장면ID — 비었으면 null(미지정).</summary>
     private static string? RealSceneId(string? sceneId) => string.IsNullOrWhiteSpace(sceneId) ? null : sceneId.Trim();

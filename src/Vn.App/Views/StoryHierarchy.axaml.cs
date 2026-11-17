@@ -53,20 +53,18 @@ internal enum HierarchyCommand
     /// <summary>새 장면 — 누른 줄의 챕터에, 첫 에피소드와 함께(장면은 에피소드가 들어야 있다).</summary>
     AddScene,
 
-    /// <summary>새 에피소드 — 누른 줄이 자리를 정한다: 장면 줄은 그 장면 끝에, 에피소드 줄은 그 뒤에(간선까지), 챕터 줄은 챕터 끝에.</summary>
+    /// <summary>
+    /// 새 에피소드 — 누른 줄이 자리를 정한다: 장면 줄은 그 장면 끝에, 에피소드 줄은 그 뒤에(간선까지). 장면이 있는 줄에만 선다 — 에피소드는
+    /// 늘 장면에 속한다(2026-11-17). ⛔ 챕터 줄의 「에피소드 추가」(장면 없는 에피소드)는 걷었다.
+    /// </summary>
     AddEpisode,
 
     /// <summary>챕터 줄 — 이름 바꾸기 · 제거 차림(셸의 그 차림표).</summary>
     ChapterMenu,
 
-    /// <summary>장면 줄 — 장면을 푼다(장면ID를 걷는다 · 에피소드는 남는다).</summary>
-    DeleteScene,
-
     /// <summary>에피소드 줄 — 그 에피소드를 지운다.</summary>
-    DeleteEpisode,
+    DeleteEpisode
 
-    /// <summary>에피소드 줄 — 장면에서 뺀다(장면ID를 걷는다 → 챕터 직속).</summary>
-    DetachFromScene
 }
 
 /// <summary>
@@ -473,7 +471,8 @@ public partial class StoryHierarchy : UserControl
                 : episode.Title.Trim(),
             depth,
             IsSceneRoot: string.Equals(scene.RootEpisodeId, episode.EpisodeId, StringComparison.Ordinal),
-            HasWarning: false);
+            // 장면 없는 에피소드(옛 데이터) — 검증 경고와 같다. 장면 줄로 끌어 넣어 고친다(2026-11-17).
+            HasWarning: scene.IsDefault);
 
     /// <summary>
     /// 이 마디가 펴져 있는가 — 사람이 접지 않았고, 사람이 폈거나 <b>고른 것이 그 안에 있을 때</b>다(처음 열면 고른 것이
@@ -639,9 +638,12 @@ public partial class StoryHierarchy : UserControl
                 FontSize = 10,
                 Foreground = Brushes.DarkOrange,
                 VerticalAlignment = VerticalAlignment.Center,
-                [ToolTip.TipProperty] = row.Kind == HierarchyKind.Scene
-                    ? "밖에서 들어오는 자리가 둘입니다 — 장면은 한 자리에서만 시작해야 합니다."
-                    : "이 챕터에 오류가 있습니다 — 아래 검증 보고를 보세요."
+                [ToolTip.TipProperty] = row.Kind switch
+                {
+                    HierarchyKind.Scene => "밖에서 들어오는 자리가 둘입니다 — 장면은 한 자리에서만 시작해야 합니다.",
+                    HierarchyKind.Episode => "장면이 없는 에피소드입니다 — 장면 줄로 끌어 넣어 주세요. 에피소드는 늘 장면에 속합니다.",
+                    _ => "이 챕터에 오류가 있습니다 — 아래 검증 보고를 보세요."
+                }
             });
         }
 
@@ -806,7 +808,12 @@ public partial class StoryHierarchy : UserControl
         if (row.ChapterId is not null)
         {
             items.Add(MenuItemFor("장면 추가", HierarchyCommand.AddScene, row, anchor));
-            items.Add(MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor));
+
+            // 에피소드는 늘 장면에 속한다 — 장면이 있는 줄(장면 · 장면 안 에피소드)에서만 더한다(2026-11-17).
+            if (row.Kind is HierarchyKind.Scene or HierarchyKind.Episode && !IsDefaultScene(row.SceneId))
+            {
+                items.Add(MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor));
+            }
         }
 
         switch (row.Kind)
@@ -816,26 +823,15 @@ public partial class StoryHierarchy : UserControl
                 items.Add(MenuItemFor("이름 바꾸기 · 제거…", HierarchyCommand.ChapterMenu, row, anchor));
                 break;
 
+            // ⛔ 「장면 풀기」 · 「장면에서 빼기」는 걷었다(2026-11-17 — 장면 없는 에피소드를 만든다). 옮기기는 다른 장면 줄로 끌어 놓는다.
             case HierarchyKind.Scene:
                 items.Add(new Separator());
                 items.Add(RenameItem(row));
-
-                if (!IsDefaultScene(row.SceneId))
-                {
-                    items.Add(MenuItemFor("장면 풀기 (에피소드는 남는다)", HierarchyCommand.DeleteScene, row, anchor));
-                }
-
                 break;
 
             case HierarchyKind.Episode:
                 items.Add(new Separator());
                 items.Add(RenameItem(row));
-
-                if (!IsDefaultScene(row.SceneId))
-                {
-                    items.Add(MenuItemFor("장면에서 빼기 (챕터 직속으로)", HierarchyCommand.DetachFromScene, row, anchor));
-                }
-
                 items.Add(MenuItemFor("에피소드 지우기", HierarchyCommand.DeleteEpisode, row, anchor));
                 break;
         }
@@ -1114,19 +1110,15 @@ public partial class StoryHierarchy : UserControl
     private string? _hoverKey;
 
     /// <summary>
-    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의</b> 다른 장면 줄에(그 장면으로) 또는 챕터 줄에(장면에서 빼 챕터 직속으로).
-    /// 이미 챕터 직속인 에피소드를 챕터 줄에 놓는 것은 할 일이 없다.
+    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의</b> 다른 장면 줄에(그 장면으로). 장면 없는 에피소드(옛 데이터 — 경고)도 이렇게
+    /// 장면에 넣는다. ⛔ 챕터 줄에 놓아 장면에서 빼던 것은 걷었다(2026-11-17 — 에피소드는 늘 장면에 속한다).
     /// </summary>
     internal static bool Accepts(HierarchyRow source, HierarchyRow target) =>
         source.Kind == HierarchyKind.Episode &&
+        target.Kind == HierarchyKind.Scene &&
         string.Equals(source.ChapterId, target.ChapterId, StringComparison.Ordinal) &&
-        target.Kind switch
-        {
-            HierarchyKind.Scene => !string.Equals(source.SceneId, target.SceneId, StringComparison.Ordinal) &&
-                                   !IsDefaultScene(target.SceneId),
-            HierarchyKind.Chapter => !IsDefaultScene(source.SceneId),
-            _ => false
-        };
+        !string.Equals(source.SceneId, target.SceneId, StringComparison.Ordinal) &&
+        !IsDefaultScene(target.SceneId);
 
     /// <summary>화면 없이 끌기를 재는 자리 — 누름 · 놓임 두 번을 대신한다.</summary>
     internal void Drag(string sourceKey, string targetKey)

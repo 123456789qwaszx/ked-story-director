@@ -33,22 +33,23 @@ public sealed class HierarchyEditTests : IDisposable
     }
 
     [Fact]
-    public void 추가_셋은_어느_줄에서나_같고_그_아래에_그_줄의_일이_선다() => HeadlessUi.Run(() =>
+    public void 에피소드_추가는_장면이_있는_줄에만_서고_장면을_비우는_일은_없다() => HeadlessUi.Run(() =>
     {
+        // 2026-11-17 소유자 — 장면 없는 에피소드를 허용하지 않는다. 챕터 줄 「에피소드 추가」 · 「장면 풀기」 · 「장면에서 빼기」를 걷었다.
         (MainWindow window, StoryHierarchy tree) = Open();
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
 
-        string[] adds = ["챕터 추가", "장면 추가", "에피소드 추가"];
+        string[] adds = ["챕터 추가", "장면 추가"];
 
         Assert.Equal(["챕터 추가"], Headers(tree, StoryHierarchy.ProjectKey));
         Assert.Equal([.. adds, "이름 바꾸기 · 제거…"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
-        Assert.Equal([.. adds, "이름 바꾸기", "장면 풀기 (에피소드는 남는다)"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
+        Assert.Equal([.. adds, "에피소드 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
         Assert.Equal(
-            [.. adds, "이름 바꾸기", "장면에서 빼기 (챕터 직속으로)", "에피소드 지우기"],
+            [.. adds, "에피소드 추가", "이름 바꾸기", "에피소드 지우기"],
             Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
 
-        // 챕터 직속 에피소드(장면ID 없음)에는 뺄 장면이 없다.
+        // 장면 없는 에피소드(옛 데이터)에서는 에피소드를 더하지 않는다 — 더하면 장면 없는 에피소드가 또 선다.
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
         Assert.Equal([.. adds, "이름 바꾸기", "에피소드 지우기"], Headers(tree, StoryHierarchy.EpisodeKey("ch02", "x")));
 
@@ -106,15 +107,11 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
-    public void 장면을_풀면_에피소드는_남고_에피소드를_지우면_사라진다() => HeadlessUi.Run(() =>
+    public void 에피소드를_지우면_사라진다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
-        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
-
-        Click(tree, StoryHierarchy.SceneKey("ch01", "hall"), "장면 풀기 (에피소드는 남는다)");
-        Assert.True(string.IsNullOrEmpty(Chapter(session).Episodes.Single(episode => episode.EpisodeId == "b").SceneId));
 
         Click(tree, StoryHierarchy.EpisodeKey("ch02", "y"), "에피소드 지우기");
         Assert.DoesNotContain(Chapter(session, "ch02").Episodes, episode => episode.EpisodeId == "y");
@@ -332,35 +329,33 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
-    public void 챕터_줄로_끌거나_차림표로_장면에서_빼고_장면_줄로_끌면_다시_들어간다() => HeadlessUi.Run(() =>
+    public void 챕터_줄에는_놓지_못하고_장면_없는_에피소드는_경고가_서고_장면_줄로_끌어_넣는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
 
-        // 챕터 줄에 놓으면 — 장면ID를 걷어 챕터 직속으로.
-        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.ChapterKey("ch01"));
-        Dispatcher.UIThread.RunJobs();
-        Assert.True(string.IsNullOrEmpty(Chapter(session).FindEpisode("a")!.SceneId));
-        Assert.Equal(2, tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "a")).Depth);
-
-        // 이미 챕터 직속이면 챕터 줄은 받지 않는다.
+        // 챕터 줄은 받지 않는다 — 장면에서 빼는 길은 없다(2026-11-17).
         HierarchyRow a = tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "a"));
         Assert.False(StoryHierarchy.Accepts(a, tree.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch01"))));
+        tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.ChapterKey("ch01"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("opening", Chapter(session).FindEpisode("a")!.SceneId);
 
-        // 장면 줄에 놓으면 — 그 장면으로.
+        // 장면 없는 에피소드(옛 데이터)는 ⚠가 서고, 장면 줄로 끌어 넣으면 고쳐진다 — 되돌리기 한 칸.
+        tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        Assert.True(tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch02", "x")).HasWarning);
+        Assert.False(tree.Rows.Single(row => row.Key == StoryHierarchy.EpisodeKey("ch01", "a")).HasWarning);
+
+        session.Editor.UpdateEpisode("ch01", "a", sceneId: string.Empty);   // 옛 데이터 — 편집 명령은 받는다
+        Dispatcher.UIThread.RunJobs();
         tree.Drag(StoryHierarchy.EpisodeKey("ch01", "a"), StoryHierarchy.SceneKey("ch01", "hall"));
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("hall", Chapter(session).FindEpisode("a")!.SceneId);
 
-        // 차림표 「장면에서 빼기」도 같은 일이다 — 되돌리기 한 칸.
-        tree.Fold(StoryHierarchy.SceneKey("ch01", "hall"), collapse: false);
-        Click(tree, StoryHierarchy.EpisodeKey("ch01", "b"), "장면에서 빼기 (챕터 직속으로)");
-        Assert.True(string.IsNullOrEmpty(Chapter(session).FindEpisode("b")!.SceneId));
-
         session.Editor.Undo();
-        Assert.Equal("hall", Chapter(session).FindEpisode("b")!.SceneId);
+        Assert.True(string.IsNullOrEmpty(Chapter(session).FindEpisode("a")!.SceneId));
 
         window.Close();
     });
