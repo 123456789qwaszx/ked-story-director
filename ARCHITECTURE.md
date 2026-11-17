@@ -15,7 +15,7 @@
 
 | | |
 |---|---|
-| **읽는 것** | 프로젝트 하나(`*.vnproject.json` · `story/`). `game.definition.json`은 읽지 않는다 — 화자가 없는 프로젝트를 열 때 그 `speakers`를 옮겨 오고, 저장할 때 이 툴이 쓰던 칸을 걷을 뿐이다(2026-11-17 · `docs/work-orders/definition-split-orders.md`) |
+| **읽는 것** | 프로젝트 하나(`*.vnproject.json` · `story/`). `game.definition.json`은 읽지도 쓰지도 않는다(2026-11-17 · `docs/work-orders/definition-split-orders.md`) |
 | **쓰는 것** | 같은 프로젝트(원고), 그리고 `exported/{챕터}.progression.json`(유니티 런타임 수입물 — 검증을 통과하면 저절로)과 함께 나가는 장면 파일 · **대사만 있는 Yarn**(`exported/yarn/` — 2026-11-17) |
 | **읽어 가는 쪽** | [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가 원고를 **읽기만** 해서 제 연출과 합쳐 게임용 Yarn을 낸다. 대사 Yarn은 게임 폴더로 보내지 않으므로 그것을 덮지 않는다 |
 
@@ -34,7 +34,7 @@
 ```text
 MyStory/
 ├─ 예제.vnproject.json         매니페스트 — 판 목록 · 챕터(chapters[]) · 화자(speakers — 없으면 없다) · [대본] 판 크기(board — 기본이면 없다)
-├─ game.definition.json        (있으면) compositor의 연출 어휘. 이 툴은 저장할 때 옛 칸(variables · conditions · speakers)만 걷고 남의 칸은 둔다
+├─ game.definition.json        (있으면) compositor의 연출 어휘. 이 툴은 읽지도 쓰지도 않는다
 ├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
 └─ exported/{챕터}.progression.json  진행 JSON — 런타임 계약
@@ -167,7 +167,6 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 | `StoryFileJson.cs` · `StoryNodeJson.cs` · `EdgeShapeJson.cs` | 판 · **노드 직렬화는 여기 하나뿐** · 선 모양 |
 | `ScriptDocumentJson.cs` | 대본 |
 | `ProjectSnapshotCodec.cs` · `JsonSupport.cs` | 되돌리기 · 저장 여부 비교 · 공통 |
-| `GameDefinitionFile.cs` | 옛 `game.definition.json` — 열 때 화자 옮기기(한 번짜리 — 빚) · 저장할 때 이 툴의 칸 걷기(남의 칸은 둔다). ⛔ 정의 읽기 · 쓰기(`GameDefinition` · `GameDefinitionStore`)는 2026-11-17에 걷혔다 |
 
 ### 3.9 `Vn.App` — 화면
 
@@ -374,7 +373,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 15. **챕터의 것은 그 챕터의 판에서만 찾는다**(§4.6).
 16. **compositor가 읽는 칸은 여기서 안 써도 지우지 않는다** — `SourceRevision`(⛔ 2026-11-17 — `ChoiceExits` · 링크 데이터는
     옛 데이터 읽기와 함께 걷었다 · `docs/work-orders/legacy-read-orders.md` L5). 이미 남은 연출 백업
-    (`presentation-original/`)도 지우지 않는다(⛔ 2026-11-17 — 이 툴은 더 만들지 않는다). 정의 파일의 남의 칸도 보존한다(이 툴의 옛 칸만 걷는다).
+    (`presentation-original/`)도 지우지 않는다(⛔ 2026-11-17 — 이 툴은 더 만들지 않는다). `game.definition.json`은 건드리지 않는다.
 17. **`src/Ked.Progression`은 고치지 않는다.** 런타임 원본에서 옮겨 올 때만 바뀌고, 그때 지문(`runtime-sync.txt`)을 함께 갱신한다.
 18. **골든 파일은 언제나 UTF-8로 읽는다.** PowerShell 5.1은 BOM이 없으면 ANSI로 읽는다 — 한국어를 담은 `.ps1`은 UTF-8 BOM으로.
 

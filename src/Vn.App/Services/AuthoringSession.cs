@@ -188,10 +188,9 @@ internal sealed class AuthoringSession
         ReloadDestinations();
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
-        string moved = AdoptDefinitionSpeakers(project, loaded.ManifestPath);
         StatusMessage =
             $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
-            alignment + moved + DestinationsNote();
+            alignment + DestinationsNote();
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
@@ -205,31 +204,6 @@ internal sealed class AuthoringSession
             activeFileChanged: true,
             expandedFilesChanged: true,
             fileListChanged: true);
-    }
-
-    /// <summary>
-    /// <b>화자 옮김</b>(2026-11-17 · <c>docs/work-orders/definition-split-orders.md</c> S3) — 프로젝트에 화자가 없고 옆 <c>game.definition.json</c>에
-    /// <c>speakers</c>가 있으면 들인다. 소유자의 프로젝트를 잃지 않으려는 한 번짜리 길이다 — 옮겨진 뒤 걷는다(빚).
-    ///
-    /// 저장본 스냅샷을 뜬 <b>뒤에</b> 들인다 — 「고쳤다」가 서야 한다. 저장하면 프로젝트에 남고 정의 파일에서 걷힌다(<see cref="Save"/>).
-    /// </summary>
-    /// <returns>상태줄에 덧붙일 한 마디(옮긴 것이 없으면 빈 글).</returns>
-    private static string AdoptDefinitionSpeakers(StoryProject project, string manifestPath)
-    {
-        if (project.Speakers.Count > 0)
-        {
-            return string.Empty;
-        }
-
-        IReadOnlyList<Speaker> found = GameDefinitionFile.SpeakersBeside(manifestPath);
-
-        if (found.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        project.Speakers.AddRange(found);
-        return $" · 화자 {found.Count}명을 {GameDefinitionFile.FileName}에서 프로젝트로 옮겼습니다 — 저장하면 남습니다.";
     }
 
     /// <summary>
@@ -280,34 +254,11 @@ internal sealed class AuthoringSession
         _deliveryRequested = !Destinations.IsEmpty;
         AppSettingsService.SaveRecentProject(ProjectPath);
 
-        string stripped = StripDefinitionFile(ProjectPath);
-
         // 저장은 프로젝트에 쓰는 일 하나다. "다른 이름으로 저장"은 없다 — 프로젝트는 폴더이고,
         // 복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
         StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
-            stripped +
             (Destinations.IsEmpty ? string.Empty : " 보낼 곳에도 보냅니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
-    }
-
-    /// <summary>
-    /// <b>매 저장마다</b> 옆 <c>game.definition.json</c>에서 이 툴이 쓰던 칸(스탯 · 전역 조건 · 화자)을 걷는다(2026-11-17 소유자 ·
-    /// definition-split S3 — 화자는 이제 프로젝트에 저장됐다). 남의 칸(compositor의 연출 어휘)은 둔다. ⛔ 그 전에는 저장이 없던 정의 파일의
-    /// 뼈대를 깔았다 — 이 툴은 이제 그 파일을 만들지 않는다.
-    /// </summary>
-    /// <returns>상태줄에 덧붙일 한 마디 — 걷은 것이 없으면 빈 글. 못 걷어도 저장은 끝난 것이다.</returns>
-    private static string StripDefinitionFile(string projectPath)
-    {
-        try
-        {
-            return GameDefinitionFile.StripBeside(projectPath)
-                ? $" {GameDefinitionFile.FileName}에서 옮긴 칸(스탯 · 조건 · 화자)을 걷었습니다."
-                : string.Empty;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            return $" {GameDefinitionFile.FileName}의 옮긴 칸을 걷지 못했습니다: {exception.Message}";
-        }
     }
 
     public void SetStatus(string message)

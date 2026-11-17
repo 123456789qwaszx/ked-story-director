@@ -6,8 +6,7 @@ namespace Vn.Authoring.Tests;
 
 /// <summary>
 /// <b>화자는 프로젝트의 것이다</b> (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S3) — 「speaker는 전체 프로젝트 단위」.
-/// 화자 명령은 조작마다 되돌리기 한 칸이고, 매니페스트와 되돌리기 스냅숏을 왕복한다. 옛 집이던 <c>game.definition.json</c>은 열 때 화자를
-/// 옮겨 오는 데만 읽고, 저장할 때 이 툴의 칸을 걷는다.
+/// 화자 명령은 조작마다 되돌리기 한 칸이고, 매니페스트와 되돌리기 스냅숏을 왕복한다.
 /// </summary>
 public class SpeakerCommandTests
 {
@@ -100,39 +99,6 @@ public class SpeakerCommandTests
             StringComparison.Ordinal);
 
         Assert.Equal([new Speaker("라루", "laru"), new Speaker("윌로", string.Empty)], ProjectManifestJson.Read(manifest).Speakers);
-    }
-
-    [Fact]
-    public void 옛_정의_파일의_화자는_읽고_다른_안내는_걷지_않는다()
-    {
-        string directory = Path.Combine(Path.GetTempPath(), $"VnTool.Speakers.{Guid.NewGuid():N}");
-        Directory.CreateDirectory(directory);
-        string projectPath = Path.Combine(directory, "p" + ProjectManifestJson.FileExtension);
-        string definition = GameDefinitionFile.PathFor(projectPath);
-
-        try
-        {
-            Assert.Empty(GameDefinitionFile.SpeakersBeside(projectPath));   // 없으면 빈 목록
-            Assert.False(GameDefinitionFile.StripBeside(projectPath));
-
-            File.WriteAllText(definition, """
-                { "_안내": "compositor의 안내", "speakers": [ { "name": "라루", "characterId": "laru" } ] }
-                """);
-            Assert.Equal([new Speaker("라루", "laru")], GameDefinitionFile.SpeakersBeside(projectPath));
-
-            Assert.True(GameDefinitionFile.StripBeside(projectPath));
-            string left = File.ReadAllText(definition);
-            Assert.Contains("compositor의 안내", left, StringComparison.Ordinal);   // 이 툴의 안내만 걷는다
-            Assert.DoesNotContain("speakers", left, StringComparison.Ordinal);
-
-            File.WriteAllText(definition, "{ 깨짐");
-            Assert.Empty(GameDefinitionFile.SpeakersBeside(projectPath));
-            Assert.False(GameDefinitionFile.StripBeside(projectPath));
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
     }
 
     private static List<string> Speakers(Sample sample) =>

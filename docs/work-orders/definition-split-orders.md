@@ -1,11 +1,11 @@
-# 정의 파일을 가른다 — 스탯은 챕터에, 화자는 프로젝트에 (S0–S4) — 2026-11-17
+# 정의 파일을 가른다 — 스탯은 챕터에, 화자는 프로젝트에 (S0–S5) — 2026-11-17
 
 **소유자**: [구성]에서 스탯을 더해도 `game.definition.json`에 바로 반영되지 않고, 지운 스탯이 거기 남는다. 「variables는 챕터 단위로
 해야 하고, speaker는 전체 프로젝트 단위인데 구분해야 하는 거 아니야?」 · 「애초에 저 game.definition은 그냥 중복 아니야? 프로젝트든
 뭐든 그런 곳에 저장해도 될 것 같은데. ked-presentation-runtime에 쓰이고 있는지도 모르겠어.」
 
-> **상태: 끝(S0–S4).** 남은 것 — ① compositor가 정의 파일의 `speakers`를 읽고 있었다면 매니페스트의 `speakers`로 옮겨 읽어야 한다(그쪽 저장소 ·
-> 여기서는 닿지 못했다) ② 열 때 옮기는 길(`GameDefinitionFile.SpeakersBeside`)은 소유자의 프로젝트가 한 번 저장된 뒤 걷는다(빚).
+> **상태: 끝(S0–S5).** 남은 것 — compositor가 정의 파일의 `speakers`를 읽고 있었다면 매니페스트의 `speakers`로 옮겨 읽어야 한다(그쪽 저장소 ·
+> 여기서는 닿지 못했다).
 
 ## 1. 지금 (조사)
 
@@ -32,16 +32,13 @@
 | 스탯 | **챕터의 스탯이 유일한 원천.** 정의 파일의 `variables`를 걷는다 — 경고 · [등록] · 정의 파일로 새 챕터를 깔던 길까지. **새 챕터는 스탯 없이 시작한다** |
 | 화자 | **프로젝트 파일로 옮긴다**(`.vnproject.json`의 `speakers`). 화자 편집이 되돌리기 · 저장(Ctrl+S)을 같이 탄다 |
 | 전역 조건 | **걷는다.** 조건의 자리는 챕터의 [조건] 하나다 |
-| 정의 파일에 남은 칸 | **저장할 때 걷는다** — 이 툴이 쓰던 `variables` · `conditions` · `speakers`만. 다른 칸(compositor의 것)은 그대로 둔다. 이 툴은 정의 파일을 더 읽지도 만들지도 않는다 |
+| 정의 파일에 남은 칸 | ~~저장할 때 걷는다~~ → **건드리지 않는다**(S5 — 소유자: 「이런 쓸모없는 마이그레이션 기능 필요 없습니다. 지금 툴을 제작하는 단계입니다」). 이 툴은 정의 파일을 읽지도 쓰지도 만들지도 않는다 |
 
 ## 3. 규칙
 
 - 화자 편집(더하기 · 이름 바꾸기 · 지우기 · 캐릭터 키)은 `ProjectEditor`의 명령이다 — **조작 하나 = 되돌리기 한 칸**, 같은 값은 기록하지 않는다.
   이름 바꾸기는 대사 줄의 화자가 따라가는 것까지 한 칸이다.
-- **옮김**: 프로젝트를 열 때 프로젝트에 화자가 없고 정의 파일에 `speakers`가 있으면 그것을 프로젝트로 들인다(상태줄이 말한다 · 저장해야
-  남는다). 소유자의 프로젝트를 잃지 않으려는 한 번짜리 길이다 — 옮겨진 뒤 걷는다(빚).
-- **걷기**: 저장할 때 정의 파일에서 `variables` · `conditions` · `speakers`를 걷는다(바이트를 다시 쓰는 것은 걷을 칸이 있을 때만). 남는 칸이
-  이 툴이 깔던 안내(`_안내`)뿐이면 파일을 지운다.
+- ⛔ **옮김 · 걷기**(S3 — 열 때 정의 파일의 화자를 들이고, 저장할 때 옛 칸을 걷었다)는 S5에서 걷혔다 — 옛 데이터를 다루는 길은 두지 않는다.
 - compositor가 정의 파일의 화자를 읽고 있다면 프로젝트 파일의 `speakers`로 옮겨 읽어야 한다 — 그쪽에 부탁할 일이다.
 
 ## 4. 단계
@@ -53,6 +50,7 @@
 | S2 | 전역 조건 — `conditions` · `ConditionSpec` · `GameGlobal` · 조건 해석기 · 발행 · 내보내기 · 판 투영에 실려 다니던 정의 인자 | 시험 |
 | S3 | 화자 — `StoryProject.Speakers` · 매니페스트 · 스냅숏 · 편집 명령 · 세션 창구 · 화면 · 대본 붙여넣기, 열 때 옮김 · 저장할 때 걷기, `GameDefinition` · `GameDefinitionStore` 걷기 | 시험 · 헤드리스 |
 | S4 | 문서 · 견본(`samples/*`의 정의 파일 → 매니페스트) | 문서가 지금 동작과 맞다 |
+| S5 | 옮김 · 걷기를 걷는다(소유자) — `GameDefinitionFile` · 세션의 두 갈래 · 그 시험 | 시험 |
 
 각 단계는 빌드(경고 0) · 두 시험 프로젝트가 모두 통과한 채로 커밋한다.
 
@@ -65,3 +63,4 @@
 | 11-17 | S2 | (이 커밋) | `GameDefinition.Conditions` · `ConditionSpec` · `AvailableConditionSourceKind.GameGlobal` · 해석기의 전역 갈래를 걷었다. 조건 하나 때문에 정의를 들고 다니던 인자를 걷었다 — `AvailableConditionResolver` · `ConditionChoices` · `ConditionFlowResolver` · `NodeConnections` · `DialoguePublisher` · `WorkingDialoguePreview` · `GraphProjectionBuilder` · `BranchEntryCondition` · `ChapterYarnExporter` · `ChapterExportService.ExportAll`(대본 붙여넣기 `ApplyScenarioText`는 화자 때문에 S3까지 남는다). 「설정노드에도 게임 전역 조건에도 없습니다」 → 「이 챕터에 없습니다」. 시험 — 공급 시험의 전역 조건 부분을 걷고 같은 판 조건으로 흐름을 본다. Authoring 699 · App 450 |
 | 11-17 | S3 | (이 커밋) | 화자 → 프로젝트: `Model/Speaker`(이름 · 캐릭터 키) · `StoryProject.Speakers` · `FindSpeaker` · `FindSpeakerCharacterId`, 매니페스트와 되돌리기 스냅숏의 `speakers`(비면 안 쓴다 · 손으로 고친 빈 이름 · 겹친 이름은 견딘다), 저장 검증(빈 이름 · 겹친 이름). 편집 명령 `ProjectEditor.Speakers.cs` — `AddSpeaker` · `RemoveSpeaker` · `SetSpeakerCharacterId` · `RenameSpeaker`(목록과 대사 줄이 한 칸 — Scripts에서 옮겼다). 세션 화자 창구는 명령을 부른다(저장 안 한 프로젝트에서도 고친다), `SpeakersChanged`는 목록이 바뀔 때마다(되돌리기 · 열기 포함) 낸다. 대본 붙여넣기(`ApplyScenarioText` · `ScenarioTextParser.Parse`)는 프로젝트의 화자를 본다 — 정의 인자를 걷었다. 정의 파일은 `GameDefinitionFile` 하나(`SpeakersBeside` — 열 때 옮김 · `StripBeside` — 저장할 때 `variables` · `conditions` · `speakers` · 이 툴의 `_안내`를 걷고, 남는 것이 없으면 지운다 · 깨진 파일은 둔다). `GameDefinition` · `GameDefinitionStore` · 세션 `Definition` · 정의 파일 뼈대를 걷었다. 화면 글(설정 창 툴팁 · [화자] 탭 안내)에서 정의 파일을 뺐다. 렌더로 [대본] 화자 목록 · [구성] [화자] 탭을 봤다. 시험 — 새 `SpeakerCommandTests` 6, 세션 시험 셋을 새 모양으로(프로젝트의 것 · 옮김 · 저장의 걷기), `GameDefinitionStoreTests` 걷음, 화자 시험들은 `SetSpeakers`(시험 준비 — 편집 명령을 지난다)로. Authoring 701 · App 451 |
 | 11-17 | S4 | (이 커밋) | 문서 — `README.md`(저장 구조) · `ARCHITECTURE.md`(읽는 것 · 저장 구조 · 모델 표 · 편집 파일 표 · 규칙 0 · 16 · 고칠 곳 표) · `ORIENTATION.md` · `two-graphs.md`(1절 표 · 7절 Q · 새 7절 AE) · `chapter-layer-guide.md` · `external-overview.md`, 지난 인계 · 출입구 문서에는 ⛔ 날짜만. 견본 셋(`samples/Authoring` · `FestivalEve` · `PresentationDemo`)을 툴의 길(열기 → 옮김 → 저장)로 옮겼다 — 화자가 매니페스트로 가고, 런타임 견본 둘의 정의 파일은 남는 칸이 없어 지워졌으며, `samples/Authoring`의 것은 compositor의 연출 어휘만 남았다. Authoring 701 · App 451 |
+| 11-17 | S5 | (이 커밋) | 소유자 — 「옮기기 기능 버립시다. 이런 쓸모없는 마이그레이션 기능 필요 없습니다. 지금 툴을 제작하는 단계입니다.」 열 때 정의 파일의 화자를 옮겨 오던 길과, 같은 종류인 저장할 때 옛 칸을 걷던 길을 함께 걷었다 — `GameDefinitionFile` · `AuthoringSession`의 `AdoptDefinitionSpeakers` · `StripDefinitionFile`. 이 툴은 이제 정의 파일을 읽지도 쓰지도 않는다. 시험 — 옮김 · 걷기 시험 셋을 지우고, 「저장은 프로젝트만 쓰고 정의 파일은 만들지도 건드리지도 않는다」 하나를 세웠다(에셋 폴더도 만들지 않는다 — 지운 시험에 있던 확인). 문서 — README · ARCHITECTURE · two-graphs AE · 출입구 문서 |
