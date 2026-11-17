@@ -115,8 +115,9 @@ public sealed class SceneAreaPickTests : IDisposable
     });
 
     [Fact]
-    public void 하이어아키에서_장면을_골라도_같고_장면을_고르지_않았으면_장면_없이_선다() => HeadlessUi.Run(() =>
+    public void 고른_장면_고른_카드의_장면_아니면_새_장면에_선다_장면_없는_에피소드는_서지_않는다() => HeadlessUi.Run(() =>
     {
+        // 2026-11-17 소유자 — 장면 없는 에피소드를 허용하지 않는다. 고른 장면 → 고른 카드의 장면 → 새 장면 차례.
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
         Button add = graph.FindControl<Button>("AddDialogueButton")!;
 
@@ -128,13 +129,89 @@ public sealed class SceneAreaPickTests : IDisposable
         ChapterEpisode first = session.Editor.FindChapter("ch01")!.Episodes[^1];
         Assert.Equal("opening", first.SceneId);
 
-        // 이제 새 카드가 골라져 있다(장면 요약이 풀렸다) — 다시 더하면 장면 없이 선다.
+        // 이제 새 카드가 골라져 있다(장면 요약이 풀렸다) — 다시 더하면 그 카드의 장면에 선다.
         add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         ChapterEpisode second = session.Editor.FindChapter("ch01")!.Episodes[^1];
         Assert.NotEqual(first.EpisodeId, second.EpisodeId);
-        Assert.True(string.IsNullOrEmpty(second.SceneId));
+        Assert.Equal("opening", second.SceneId);
+
+        // 아무것도 안 고르면 새 장면(「새 장면」)과 함께 선다 — 되돌리기 한 칸에 둘 다 걷힌다.
+        session.Select(null);
+        Dispatcher.UIThread.RunJobs();
+        long before = session.Editor.Revision;
+        add.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
+        ChapterEpisode third = chapter.Episodes[^1];
+        Assert.False(string.IsNullOrWhiteSpace(third.SceneId));
+        Assert.NotEqual("opening", third.SceneId);
+        Assert.NotEqual("hall", third.SceneId);
+        Assert.Equal(NewNames.Scene, ChapterSceneNotes.NameOf(chapter.SceneNotes, third.SceneId!));
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.All(chapter.Episodes, episode => Assert.False(string.IsNullOrWhiteSpace(episode.SceneId)));
+
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain(session.Editor.FindChapter("ch01")!.Episodes, episode => episode.EpisodeId == third.EpisodeId);
+        Assert.Null(ChapterSceneNotes.NameOf(session.Editor.FindChapter("ch01")!.SceneNotes, third.SceneId!));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 빈_챕터에서도_새_장면과_함께_선다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
+        (string? chapterId, _) = session.CreateNamedChapter("빈 챕터");
+        Dispatcher.UIThread.RunJobs();
+        session.Select(null);
+
+        graph.FindControl<Button>("AddDialogueButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        ChapterEpisode made = Assert.Single(session.Editor.FindChapter(chapterId!)!.Episodes);
+        Assert.False(string.IsNullOrWhiteSpace(made.SceneId));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 챕터가_하나도_없으면_챕터와_장면을_함께_세운다_되돌리기_한_칸() => HeadlessUi.Run(() =>
+    {
+        // 처음 쓰는 사람을 위해(2026-11-17 소유자) — 아무것도 없는 프로젝트에서 [＋ 대사 노드]를 누르면 「새 챕터」 · 「새 장면」이 선다.
+        string folder = Path.Combine(_directory, "empty");
+        Directory.CreateDirectory(folder);
+        string manifest = Path.Combine(folder, "p" + Vn.Authoring.Serialization.ProjectManifestJson.FileExtension);
+        Vn.Authoring.Serialization.ProjectStore.Save(manifest, new StoryProject { Title = "빈 프로젝트" });
+
+        var window = new MainWindow { Width = 1400, Height = 900 };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        AuthoringSession session = window.SessionProbe;
+        session.Open(manifest);
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 1;
+        Dispatcher.UIThread.RunJobs();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        long before = session.Editor.Revision;
+
+        graph.FindControl<Button>("AddDialogueButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        ChapterDocument chapter = Assert.Single(session.Project.Chapters);
+        Assert.Equal(NewNames.Chapter, chapter.DisplayName);
+        ChapterEpisode made = Assert.Single(chapter.Episodes);
+        Assert.Equal(NewNames.Scene, ChapterSceneNotes.NameOf(chapter.SceneNotes, made.SceneId!));
+        Assert.NotNull(EpisodeNaming.CardFor(session.Project, chapter.ChapterId, made.EpisodeId));
+        Assert.Equal(EpisodeNaming.CardFor(session.Project, chapter.ChapterId, made.EpisodeId)!.Id, session.SelectedNodeId);
+        Assert.Contains("새 챕터", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal(before + 1, session.Editor.Revision);
+
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(session.Project.Chapters);
 
         window.Close();
     });

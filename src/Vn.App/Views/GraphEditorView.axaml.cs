@@ -119,7 +119,7 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// [＋ 대사 노드]가 세울 장면(챕터, 장면) — 셸이 인스펙터에 장면 요약을 세운 동안 맞춰 둔다(하이어아키에서 골랐든 판에서
-    /// 눌렀든). null이면 지금까지처럼 장면 없이 보고 있는 곳에 세운다.
+    /// 눌렀든). null이면 고른 카드의 장면, 그것도 없으면 새 장면이다(<see cref="AddDialogueNode"/>).
     /// </summary>
     internal (string ChapterId, string SceneId)? NewNodeScene { get; set; }
 
@@ -5289,6 +5289,13 @@ public partial class GraphEditorView : UserControl
         }
     }
 
+    /// <summary>
+    /// <b>[＋ 대사 노드]</b> — 에피소드는 늘 챕터와 장면에 속한다(2026-11-17 소유자 · <c>docs/work-orders/scene-required-orders.md</c> E1).
+    /// 장면은 고른 장면(인스펙터에 장면 요약이 서 있다) → 고른 카드의 장면(분기 카드면 그 집의 장면) → <b>새 장면</b> 차례로 정한다(빈
+    /// 챕터도). 챕터가 하나도 없으면 처음 쓰는 사람을 위해 <b>챕터 + 장면</b>을 함께 세운다(챕터를 세우는 규칙은
+    /// <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌). 챕터 · 장면 · 카드가 되돌리기 한 칸이다.
+    /// ⛔ 2026-11-01~11-17에는 장면을 안 고르면 장면 없는 에피소드(「챕터 직속」)가 섰다.
+    /// </summary>
     private void AddDialogueNode()
     {
         if (_session is null)
@@ -5296,44 +5303,129 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (_session.ActiveFileId is not { } fileId)
+        string? failure = null;
+        string? chapterMade = null;
+        string? sceneMade = null;
+        string? sceneName = null;
+        DialogueNode? created = null;
+
+        _session.Editor.Batch(() =>
         {
-            _session.SetStatus("새 노드를 추가할 StoryFile이 없습니다.");
+            if (TargetChapter(out failure, out chapterMade) is not { } chapter ||
+                EpisodeNaming.BoardOf(_session.Project, chapter.ChapterId) is not { } board)
+            {
+                return;
+            }
+
+            // 지금 보고 있는 곳에 만든다 (GB-4) — 큰 판에서 "만들었는데 안 보임"을 없앤다.
+            // 연속 생성은 계단으로 밀려 정확히 겹치지 않는다.
+            double stagger = (board.Nodes.Count % 5) * 26;
+            double x = ClampNodeX(
+                ((GraphScroll.Offset.X + (GraphScroll.Viewport.Width / 2)) / _zoom) - (CardWidth / 2) + stagger);
+            double y = ClampNodeY(
+                ((GraphScroll.Offset.Y + (GraphScroll.Viewport.Height / 2)) / _zoom) - 90 + stagger);
+
+            string sceneId;
+
+            if (SceneForNewCard(chapter, board) is { } existing)
+            {
+                sceneId = existing;
+
+                // 그 장면 테두리 옆에 선다 — 장면에 들어간 것이 보인다.
+                if (PlaceBesideScene(board.Id, sceneId) is { } beside)
+                {
+                    (x, y) = beside;
+                }
+            }
+            else
+            {
+                sceneId = sceneMade = NewNames.NextSceneId(chapter);
+            }
+
+            // 작가는 ID를 보지 않으므로 처음 제목을 붙인다(display-names N2).
+            created = _session.Editor.AddDialogueNode(board.Id, x, y, sceneId: sceneId, title: NewNames.Episode);
+
+            if (sceneMade is not null)
+            {
+                _session.Editor.SetSceneName(chapter.ChapterId, sceneMade, NewNames.Scene);
+            }
+
+            sceneName = ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId) is { Length: > 0 } named ? named : sceneId;
+        });
+
+        if (created is null)
+        {
+            _session.SetStatus(failure ?? "새 카드를 세울 챕터를 찾지 못했습니다.");
             return;
         }
 
-        StoryFile activeFile = _session.ActiveFile
-            ?? throw new InvalidOperationException($"현재 StoryFile '{fileId}'를 찾을 수 없습니다.");
+        _session.Select(created.Id);
+        _session.SetStatus(
+            chapterMade is not null
+                ? $"챕터 「{NewNames.Chapter}」와 장면 「{NewNames.Scene}」을 세우고 에피소드를 더했습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다."
+                : sceneMade is not null
+                    ? $"장면 「{NewNames.Scene}」을 세우고 에피소드를 더했습니다 — 장면이나 그 장면의 카드를 골라 두면 그 장면에 더합니다."
+                    : $"장면 「{sceneName}」에 에피소드를 더했습니다.");
+    }
 
-        // 지금 보고 있는 곳에 만든다 (GB-4) — 큰 판에서 "만들었는데 안 보임"을 없앤다.
-        // 연속 생성은 계단으로 밀려 정확히 겹치지 않는다.
-        int fileNodeCount = activeFile.Nodes.Count;
-        double stagger = (fileNodeCount % 5) * 26;
-        double x = ClampNodeX(
-            ((GraphScroll.Offset.X + (GraphScroll.Viewport.Width / 2)) / _zoom) - (CardWidth / 2) + stagger);
-        double y = ClampNodeY(
-            ((GraphScroll.Offset.Y + (GraphScroll.Viewport.Height / 2)) / _zoom) - 90 + stagger);
+    /// <summary>
+    /// 새 카드가 설 챕터 — 지금 판의 챕터, 아니면 첫 챕터. 챕터가 하나도 없으면 「새 챕터」를 세운다(<paramref name="chapterMade"/>).
+    /// </summary>
+    private ChapterDocument? TargetChapter(out string? failure, out string? chapterMade)
+    {
+        failure = null;
+        chapterMade = null;
 
-        // 장면을 고른 채면(인스펙터에 장면 요약이 서 있다) 그 장면에 세운다(2026-11-17 소유자) — 그 장면 테두리 옆에. 장면은 이
-        // 판의 챕터 것이어야 하고 지금도 에피소드가 있어야 한다(그 사이 풀렸으면 장면 없이 세운다).
-        string? sceneId = null;
-
-        if (NewNodeScene is { } target &&
-            string.Equals(activeFile.Name, target.ChapterId, StringComparison.Ordinal) &&
-            _session.Editor.FindChapter(target.ChapterId) is { } chapter &&
-            chapter.Episodes.Any(episode => string.Equals(episode.SceneId?.Trim(), target.SceneId, StringComparison.Ordinal)))
+        if (_session!.ActiveFile is { } active && EpisodeNaming.ChapterOfBoard(_session.Project, active) is { } current)
         {
-            sceneId = target.SceneId;
-
-            if (PlaceBesideScene(fileId, sceneId) is { } beside)
-            {
-                (x, y) = beside;
-            }
+            return current;
         }
 
-        // 이 판에서 사람이 만드는 노드는 대사뿐이다.
-        // 챕터 판이면 에피소드도 선다 — 작가는 ID를 보지 않으므로 처음 제목을 붙인다(display-names N2).
-        _session.Select(_session.Editor.AddDialogueNode(fileId, x, y, sceneId: sceneId, title: NewNames.Episode).Id);
+        if (_session.Project.Chapters.FirstOrDefault() is { } first)
+        {
+            _session.SelectFile(_session.EnsureChapterBoard(first.ChapterId));
+            return first;
+        }
+
+        (string? chapterId, string? refused) = _session.CreateNamedChapter(NewNames.Chapter);
+        failure = refused;
+        chapterMade = chapterId;
+
+        return chapterId is null ? null : _session.Editor.FindChapter(chapterId);
+    }
+
+    /// <summary>
+    /// 이미 있는 장면 가운데 새 카드가 들 곳 — 고른 장면, 아니면 고른 카드의 장면(분기 카드면 그 집의 장면). 없으면 null(새 장면을 세운다).
+    /// 장면 없는 에피소드(옛 데이터)를 골라 두었으면 그 장면은 따르지 않는다.
+    /// </summary>
+    private string? SceneForNewCard(ChapterDocument chapter, StoryFile board)
+    {
+        bool Lives(string? sceneId) =>
+            !string.IsNullOrWhiteSpace(sceneId) &&
+            chapter.Episodes.Any(episode => string.Equals(episode.SceneId?.Trim(), sceneId.Trim(), StringComparison.Ordinal));
+
+        if (NewNodeScene is { } target &&
+            string.Equals(target.ChapterId, chapter.ChapterId, StringComparison.Ordinal) &&
+            Lives(target.SceneId))
+        {
+            return target.SceneId;
+        }
+
+        if (_session!.SelectedNode is not DialogueNode selected ||
+            !board.Nodes.Contains(selected))
+        {
+            return null;
+        }
+
+        string? episodeId = selected.IsBranchCard
+            ? ChapterBranchCards.HomesOf(_session.Project, chapter.ChapterId)
+                .FirstOrDefault(home => home.Card.Id == selected.Id)?.EpisodeId
+            : EpisodeNaming.EpisodeFor(chapter, selected)?.EpisodeId;
+        string? sceneId = episodeId is null
+            ? null
+            : chapter.Episodes.FirstOrDefault(episode => episode.EpisodeId == episodeId)?.SceneId?.Trim();
+
+        return Lives(sceneId) ? sceneId : null;
     }
 
     private void DeleteSelectedNode()
