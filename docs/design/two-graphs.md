@@ -45,7 +45,7 @@
 | 분기 표식 | 대사 줄의 `DialogueLineExtension.DetourTargetNodeIds`(한 줄에 여럿 — 차례로 다녀온다 · 2026-10-29 `multi-branch`). 연결만 끊은 분기점은 같은 줄의 `OpenDetourPositions`(그 줄 분기점 전체에서 몇째 자리인가 — 끊은 그 자리에 남아 다른 분기의 자리와 색이 그대로다 · 2026-11-06, 파일 `openDetours` = 자리 배열, 내보내지 않는다) | 만들기 · 지우기 · 잇기 · 끊기는 **연출 그래프만.** 챕터 그래프는 분기점과 점선을 그리고, 누르면 그 분기의 정보와 조건을 연다 |
 | 분기의 조건 | 다녀갈 카드의 첫 줄 `BeginIf` + 꼬리 `EndIf` | 챕터 그래프의 분기 패널 |
 | 화자 | `game.definition.json`의 speakers | 이름 — [대본] 프로젝트 줄 요약, 캐릭터 키 — [구성] [화자] 탭(7절 Q) |
-| ⛔ 연출 | 이 툴에 없다 — compositor가 제 파일에 둔다(옛 프로젝트의 연출은 열 때 `presentation-original/`에 남긴다) | compositor |
+| ⛔ 연출 | 이 툴에 없다 — compositor가 제 파일에 둔다 | compositor |
 | 파생 — 그래프 모델 · 검증 · 증명 · 프레임 · 레일 · 포트 | 저장하지 않는다 | — |
 
 ---

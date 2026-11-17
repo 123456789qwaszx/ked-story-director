@@ -7,28 +7,15 @@ namespace Vn.Authoring.Serialization;
 /// <summary>
 /// 프로젝트 메타데이터와 <b>부속 파일의 목차</b>를 담는 manifest 형식.
 ///
-/// 본문은 어디에도 없다. 카드와 그 대본은 <c>files</c>가 가리키는 판 파일에 있다(형식 4 — 형식 3까지는 대본이
-/// 따로 선 파일이었고 <c>scripts</c>가 가리켰다. 그 목록은 옮길 때만 읽는다).
+/// 본문은 어디에도 없다. 카드와 그 대본은 <c>files</c>가 가리키는 판 파일에 있다.
 /// manifest가 커지지 않아야 파일을 나눈 이유가 남는다. 조건 공급 link는 파일을 넘나드는 관계라서 여기에 둔다.
 ///
-/// <b>연출 키는 쓰지 않고 읽지도 않는다</b> (2026-10-29) — <see cref="PresentationKeys"/>의 키와 연출 배선은
-/// <c>ked-story-compositor</c>의 것이다. 옛 파일에 있으면 <see cref="ProjectManifest.CarriesPresentation"/>만
-/// 켠다 — 저장하면 사라지므로 <see cref="ProjectStore"/>가 그 전에 원본을 남긴다.
+/// <b>연출은 여기 없다</b> (2026-10-29 — <c>ked-story-compositor</c>의 것이다).
 /// </summary>
 public static class ProjectManifestJson
 {
     public const int CurrentFormatVersion = StoryProject.CurrentFormatVersion;
     public const string FileExtension = ".vnproject.json";
-
-    /// <summary>
-    /// 연출 층이 manifest에 두던 키 — 발행 결과 파일 · 결과 조합 · 곡선 · 빠른 명령 · 최근 명령 · 에셋 폴더.
-    /// </summary>
-    public static IReadOnlyList<string> PresentationKeys { get; } =
-        ["results", "compositions", "easeCurves", "quickCommands", "recentCommands", "assetRoots"];
-
-    /// <summary>연출 층의 배선 종류 — 명령 공급 · 연출 공급, 그리고 형식 2 시절의 실시간 연출 link.</summary>
-    public static IReadOnlyList<string> PresentationLinkKinds { get; } =
-        ["commandSupply", "presentationSupply", "presentation"];
 
     public static string Write(StoryProject project)
     {
@@ -112,58 +99,19 @@ public static class ProjectManifestJson
                 $"현재 VnTool은 {CurrentFormatVersion}까지 읽을 수 있습니다.");
         }
 
-        if (version > 0 && version <= StoryProject.LastUnsupportedFormatVersion)
+        // 앞의 형식은 옮기지 않는다(2026-11-17). 거절만 분명히 한다 — 아니면 「manifest가 아닙니다」로 엉뚱하게 거절된다.
+        if (version > 0 && version < CurrentFormatVersion)
         {
             throw new InvalidDataException(
-                $"형식 버전 {version} 프로젝트는 더 이상 열 수 없습니다. " +
-                "그 형식에서는 화자·대사를 대사 노드가 직접 소유했고 연출이 편집 중인 노드를 " +
-                "실시간으로 읽었습니다. 지금 구조로 자동 변환하면 어느 문장이 어느 LineId인지 " +
-                "도구가 임의로 정하게 되므로, 덮어써서 원고를 잃는 대신 열지 않습니다. " +
-                "새 프로젝트를 만들고 대사를 카드 글 칸에 붙여 넣으세요.");
+                $"형식 버전 {version} 프로젝트는 열지 않습니다 — 이 툴은 형식 {CurrentFormatVersion}만 엽니다.");
         }
 
-        if ((version != CurrentFormatVersion && version != StoryProject.LegacyScriptFilesFormatVersion) ||
-            root["files"] is not JsonArray files)
+        if (version != CurrentFormatVersion || root["files"] is not JsonArray files)
         {
             throw new InvalidDataException("VnTool 프로젝트 manifest가 아닙니다.");
         }
 
-        var scripts = new List<ScriptFileReference>();
-        HashSet<string> scriptIds = new(StringComparer.Ordinal);
         HashSet<string> allPaths = new(StringComparer.OrdinalIgnoreCase);
-
-        // 따로 선 대본 목록은 형식 3에서만 읽는다 — 저장할 때 그 파일들을 지우므로(옮겨 갔다), 형식 4에 손으로 적힌
-        // `scripts`가 남의 파일을 지우게 두지 않는다.
-        JsonArray? legacyScripts = version == StoryProject.LegacyScriptFilesFormatVersion
-            ? root["scripts"]?.AsArray()
-            : null;
-
-        foreach (JsonNode? item in legacyScripts ?? new JsonArray())
-        {
-            if (item is not JsonObject script)
-            {
-                throw new InvalidDataException("프로젝트 manifest의 scripts 항목이 객체가 아닙니다.");
-            }
-
-            string id = (string?)script["id"]
-                ?? throw new InvalidDataException("프로젝트 manifest의 대본 항목에 id가 없습니다.");
-            string path = ProjectStore.NormalizeRelativePath(
-                (string?)script["path"]
-                    ?? throw new InvalidDataException($"대본 '{id}'에 path가 없습니다."),
-                ScriptDocumentJson.LegacyFileExtension);
-
-            if (!scriptIds.Add(id))
-            {
-                throw new InvalidDataException($"대본 Id '{id}'가 manifest에서 중복됩니다.");
-            }
-
-            if (!allPaths.Add(path))
-            {
-                throw new InvalidDataException($"부속 파일 경로 '{path}'가 manifest에서 중복됩니다.");
-            }
-
-            scripts.Add(new ScriptFileReference(id, (string?)script["name"] ?? "이름 없는 대본", path));
-        }
 
         var references = new List<ProjectStoryFileReference>();
         HashSet<string> ids = new(StringComparer.Ordinal);
@@ -197,7 +145,6 @@ public static class ProjectManifestJson
 
         var links = new List<NodeLink>();
         HashSet<string> linkIds = new(StringComparer.Ordinal);
-        bool carriesPresentation = PresentationKeys.Any(key => root[key] is not null);
 
         foreach (JsonNode? item in root["links"]?.AsArray() ?? new JsonArray())
         {
@@ -206,11 +153,7 @@ public static class ProjectManifestJson
                 throw new InvalidDataException("프로젝트 manifest의 links 항목이 객체가 아닙니다.");
             }
 
-            if (ReadLink(linkObject) is not { } link)
-            {
-                carriesPresentation = true; // 연출 배선 — 읽지 않는다
-                continue;
-            }
+            NodeLink link = ReadLink(linkObject);
 
             if (!linkIds.Add(link.Id))
             {
@@ -226,12 +169,10 @@ public static class ProjectManifestJson
         return new ProjectManifest(
             (string?)root["title"] ?? "제목 없음",
             (string?)root["startNode"],
-            scripts,
             references,
             links,
             chapters,
             writerSpeakers,
-            carriesPresentation,
             ReadBoard(root["board"]));
     }
 
@@ -331,17 +272,11 @@ public static class ProjectManifestJson
         return result;
     }
 
-    /// <summary>연출 배선(<see cref="PresentationLinkKinds"/>)이면 null — 그 배선은 compositor의 것이다.</summary>
-    internal static NodeLink? ReadLink(JsonObject json)
+    internal static NodeLink ReadLink(JsonObject json)
     {
         string id = (string?)json["id"]
             ?? throw new InvalidDataException("NodeLink에 id가 없습니다.");
         string? kindName = (string?)json["kind"];
-
-        if (kindName is not null && PresentationLinkKinds.Contains(kindName))
-        {
-            return null;
-        }
 
         NodeLinkKind kind = kindName switch
         {
@@ -363,26 +298,14 @@ public static class ProjectManifestJson
 
 }
 
-/// <param name="CarriesPresentation">
-/// 연출 데이터(<see cref="ProjectManifestJson.PresentationKeys"/>의 키나 연출 배선)가 있었다 — 읽지 않았다.
-/// </param>
-/// <param name="LegacyScripts">형식 3 매니페스트가 가리키던 따로 선 대본 파일들. 형식 4는 비어 있다.</param>
 public sealed record ProjectManifest(
     string Title,
     string? StartNodeId,
-    IReadOnlyList<ScriptFileReference> LegacyScripts,
     IReadOnlyList<ProjectStoryFileReference> Files,
     IReadOnlyList<NodeLink> Links,
     IReadOnlyList<ChapterDocument> Chapters,
     IReadOnlyList<WriterSpeaker> WriterSpeakers,
-    bool CarriesPresentation,
     BoardSize Board);
-
-/// <summary>형식 3의 따로 선 대본 파일 하나 — 옮길 때만 읽는다.</summary>
-public sealed record ScriptFileReference(
-    string Id,
-    string Name,
-    string RelativePath);
 
 public sealed record ProjectStoryFileReference(
     string Id,

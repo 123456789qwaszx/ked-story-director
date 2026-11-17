@@ -19,12 +19,6 @@ internal static class StoryNodeJson
     /// <summary><see cref="DialogueNode.IsBranchCard"/>가 앉는 칸 — 분기 카드일 때만 쓴다.</summary>
     private const string BranchCardKey = "branchCard";
 
-    /// <summary>
-    /// 연출 층의 노드 종류 — 연출 노드 · 명령 공급 노드. 2026-10-29에 <c>ked-story-compositor</c>로 갔다.
-    /// 옛 파일에 있으면 읽지 않는다(<see cref="Read"/>가 null) — 원본은 <see cref="ProjectStore"/>가 남긴다.
-    /// </summary>
-    public static IReadOnlyList<string> PresentationKinds { get; } = ["presentation", "commandSupply"];
-
     public static JsonObject Write(StoryNode node)
     {
         string kind = node switch
@@ -91,22 +85,17 @@ internal static class StoryNodeJson
         return json;
     }
 
-    /// <summary>노드 하나를 읽는다. 연출 층의 노드(<see cref="PresentationKinds"/>)면 null이다.</summary>
-    public static StoryNode? Read(JsonObject json, ScriptTable? scripts = null)
+    /// <summary>노드 하나를 읽는다.</summary>
+    public static StoryNode Read(JsonObject json)
     {
         string id = (string?)json["id"] ?? Identifier.Node();
         string name = (string?)json["name"] ?? "이름 없음";
         string kind = (string?)json["kind"] ?? "dialogue";
 
-        if (PresentationKinds.Contains(kind))
-        {
-            return null;
-        }
-
         StoryNode node = kind switch
         {
             "set" => ReadSetNode(json, id, name),
-            "dialogue" => ReadDialogueNode(json, id, name, scripts),
+            "dialogue" => ReadDialogueNode(json, id, name),
             _ => throw new InvalidDataException($"지원하지 않는 노드 종류 '{kind}'입니다.")
         };
 
@@ -181,7 +170,7 @@ internal static class StoryNodeJson
 
     /// <summary>
     /// 대사 노드는 <b>제 대본</b>(<c>script</c> — 줄 신원 · locale별 화자 · 대사)과 <b>LineId별 논리</b>를 쓴다(형식 4 ·
-    /// 2026-10-29). 형식 3까지는 대본을 따로 선 파일에 두고 여기에는 그 Id만 적었다.
+    /// 2026-10-29).
     /// 조건 갈래 출구는 갈래를 여는 줄의 항목 안에 함께 적어 둔다. 별도 배열로 나누면
     /// 줄이 사라졌을 때 짝 없는 출구가 파일에 남는다.
     /// </summary>
@@ -360,34 +349,17 @@ internal static class StoryNodeJson
         return node;
     }
 
-    /// <summary>
-    /// 카드의 대본 — 형식 4면 그 자리에 든 내용, 형식 3이면 가리킨 Id로 표(<see cref="ScriptTable"/>)에서 받는다.
-    /// 대본 없이 저장된 옛 카드는 빈 대본을 받는다.
-    /// </summary>
-    private static Script.ScriptDocument ReadScript(JsonNode? script, string nodeId, ScriptTable? scripts)
-    {
-        switch (script)
-        {
-            case JsonObject body:
-                return ScriptDocumentJson.ReadBody(body, nodeId);
+    /// <summary>카드의 대본 — 카드 JSON의 <c>script</c> 칸. 늘 쓰이므로 없으면 깨진 파일이다.</summary>
+    private static Script.ScriptDocument ReadScript(JsonNode? script, string nodeId) =>
+        script is JsonObject body
+            ? ScriptDocumentJson.ReadBody(body, nodeId)
+            : throw new InvalidDataException($"DialogueNode '{nodeId}'에 대본(script)이 없습니다.");
 
-            case JsonValue reference when reference.TryGetValue(out string? scriptId):
-                return scripts?.For(nodeId, scriptId)
-                    ?? throw new InvalidDataException(
-                        $"DialogueNode '{nodeId}'가 따로 선 대본 '{scriptId}'를 가리킵니다 — 형식 3 판은 프로젝트와 함께 읽어야 합니다.");
-
-            default:
-                var empty = new Script.ScriptDocument();
-                empty.RequireLocale(empty.PrimaryLocale);
-                return empty;
-        }
-    }
-
-    private static DialogueNode ReadDialogueNode(JsonObject json, string id, string name, ScriptTable? scripts)
+    private static DialogueNode ReadDialogueNode(JsonObject json, string id, string name)
     {
         var node = new DialogueNode(id, name)
         {
-            Script = ReadScript(json["script"], id, scripts),
+            Script = ReadScript(json["script"], id),
             MarkedEpisodeId = (string?)json[EpisodeMarkKey],
             IsBranchCard = (bool?)json[BranchCardKey] ?? false
         };

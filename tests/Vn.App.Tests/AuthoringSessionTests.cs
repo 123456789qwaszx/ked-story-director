@@ -94,7 +94,7 @@ public class AuthoringSessionTests : IDisposable
             InvalidDataException error = Assert.Throws<InvalidDataException>(
                 () => session.Open(legacyPath));
 
-            Assert.Contains("더 이상 열 수 없습니다", error.Message, StringComparison.Ordinal);
+            Assert.Contains("열지 않습니다", error.Message, StringComparison.Ordinal);
             Assert.Equal(pathBefore, session.ProjectPath);
             Assert.Equal(nodesBefore, session.Project.EnumerateNodes().Count());
             Assert.False(session.IsDirty);

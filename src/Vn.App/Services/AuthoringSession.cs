@@ -167,15 +167,6 @@ internal sealed class AuthoringSession
             fileListChanged: true);
     }
 
-    /// <summary>
-    /// 연출을 담은 옛 프로젝트를 열었을 때 한 줄 — 연출은 이 툴이 읽지 않고(저장하면 사라진다) 원본은 남겼다.
-    /// 연출은 ked-story-compositor가 그 원본에서 가져간다.
-    /// </summary>
-    private static string PresentationBackupNote(string? backupDirectory) =>
-        backupDirectory is null
-            ? string.Empty
-            : $" · 연출 데이터는 읽지 않습니다 — 원본을 '{Path.GetFileName(backupDirectory)}' 폴더에 남겼습니다(연출은 ked-story-compositor에서)";
-
     public void Open(string path)
     {
         ProjectLoadResult loaded = ProjectStore.Load(path);
@@ -188,7 +179,6 @@ internal sealed class AuthoringSession
         StatusMessage =
             $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
             alignment +
-            PresentationBackupNote(loaded.PresentationBackupDirectory) +
             (RuntimeTarget is null ? " · 게임 폴더 미지정" : $" · 게임 폴더 {RuntimeTarget.GameFolder}") +
             // 열면서 버린 옛 구조(대사 안 선택지 등)는 조용히 지나가지 않는다 — 글을 손봐야 한다.
             (loaded.LoadNotices.Count == 0 ? string.Empty : " · ⚠ " + string.Join(" / ", loaded.LoadNotices));

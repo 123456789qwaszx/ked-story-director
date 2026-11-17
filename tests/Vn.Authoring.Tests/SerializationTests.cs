@@ -211,16 +211,12 @@ public class SerializationTests
     }
 
     /// <summary>
-    /// 버전 2 이하는 화자·대사를 대사 노드가 직접 소유했고 연출이 편집 중인 노드를 실시간으로
-    /// 읽었다. 그 데이터를 새 의미로 자동 해석하면 어느 문장이 어느 LineId인지 도구가 임의로
-    /// 정하게 된다. <b>덮어써서 원고를 잃는 것보다 열지 않는 편이 낫다.</b>
-    ///
-    /// 이전에 있던 두 마이그레이션 테스트를 이 테스트로 교체했다.
-    /// 그 경로는 이제 존재하지 않으며, 존재하지 않아야 한다는 것이 새 불변 조건이다.
+    /// 형식 4 이전은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c>) — 한 줄로 분명히.
     /// </summary>
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
+    [InlineData(3)]
     public void 이전_형식_프로젝트는_열지_않고_이유를_알린다(int version)
     {
         string json = $$"""
@@ -234,8 +230,8 @@ public class SerializationTests
         InvalidDataException error = Assert.Throws<InvalidDataException>(
             () => ProjectManifestJson.Read(json));
 
-        Assert.Contains("더 이상 열 수 없습니다", error.Message, StringComparison.Ordinal);
-        Assert.Contains("카드 글 칸에 붙여 넣으세요", error.Message, StringComparison.Ordinal);
+        Assert.Contains($"형식 버전 {version} 프로젝트는 열지 않습니다", error.Message, StringComparison.Ordinal);
+        Assert.Contains("형식 4만 엽니다", error.Message, StringComparison.Ordinal);
     }
 
     /// <summary>이전 형식 파일을 열려다 실패해도 그 파일은 그대로 남아 있어야 한다.</summary>
@@ -261,35 +257,12 @@ public class SerializationTests
     }
 
     [Fact]
-    public void 개별_대본_파일을_프로젝트로_잘못_열지_않는다()
-    {
-        string directory = TempDirectory();
-        string scriptPath = Path.Combine(directory, "chapter.vnscript.json");
-        File.WriteAllText(scriptPath, """
-            { "formatVersion": 1, "scriptId": "sc_chapter", "name": "1장", "lines": [], "locales": [] }
-            """);
-
-        try
-        {
-            InvalidDataException error = Assert.Throws<InvalidDataException>(
-                () => ProjectStore.Load(scriptPath));
-            Assert.Contains("manifest", error.Message, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-    }
-
-    [Theory]
-    [InlineData(1)]   // 형식 3 프로젝트의 판 파일
-    [InlineData(2)]   // 형식 4
-    public void 개별_StoryFile을_프로젝트로_잘못_열지_않는다(int version)
+    public void 개별_StoryFile을_프로젝트로_잘못_열지_않는다()
     {
         string directory = TempDirectory();
         string storyPath = Path.Combine(directory, "chapter.vnstory.json");
-        File.WriteAllText(storyPath, $$"""
-            { "formatVersion": {{version}}, "fileId": "sf_chapter", "name": "1장", "nodes": [] }
+        File.WriteAllText(storyPath, """
+            { "formatVersion": 2, "fileId": "sf_chapter", "name": "1장", "nodes": [] }
             """);
 
         try
@@ -390,18 +363,6 @@ public class SerializationTests
         project.Links.Add(new NodeLink("lk_two", NodeLinkKind.Settings, setNode.Id, dialogue.Id));
 
         Assert.Throws<InvalidDataException>(() => ProjectSnapshotCodec.Encode(project));
-    }
-
-    [Fact]
-    public void 형식_4_manifest의_scripts는_읽지_않는다()
-    {
-        // 형식 3의 대본 목록은 저장할 때 지울 파일 목록이기도 하다 — 형식 4에 적힌 것은 따르지 않는다.
-        ProjectManifest manifest = ProjectManifestJson.Read("""
-            { "formatVersion": 4, "files": [],
-              "scripts": [ { "id": "sc_a", "name": "A", "path": "script/sc_a.vnscript.json" } ] }
-            """);
-
-        Assert.Empty(manifest.LegacyScripts);
     }
 
     [Fact]

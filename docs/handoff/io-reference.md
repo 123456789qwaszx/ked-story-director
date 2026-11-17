@@ -5,7 +5,7 @@
 > 지금 동작의 정본은 [`docs/design/two-graphs.md`](../design/two-graphs.md)다.
 >
 > ⚠ **2026-10-29 · 프로젝트 형식 4:** `script/*.vnscript.json`은 없다 — 대본은 카드 안(판 파일 카드의 `script` 칸)에 든다.
-> 형식 3 프로젝트는 열 때 옮기고, 저장할 때 옛 대본 파일을 지운다([`docs/plans/script-merge.md`](../plans/script-merge.md)).
+> 형식 3 프로젝트는 열지 않는다(⛔ 2026-11-17 — 그 전에는 열 때 옮겼다 · [`docs/plans/script-merge.md`](../plans/script-merge.md)).
 
 2026-08-06 작성. 소유자가 관리자로서 툴의 모든 입출력을 정확히 관리하기 위한 기준 문서.
 아래 내용은 전부 코드에서 확인한 사실이다(추측 없음). 규범 충돌 시 코드와

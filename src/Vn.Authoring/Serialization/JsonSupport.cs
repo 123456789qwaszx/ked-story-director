@@ -195,7 +195,7 @@ internal static class JsonSupport
 
     /// <summary>
     /// 카드의 대본이 성립하는지, 같은 LineId에 확장이 두 벌 붙지 않았는지 본다. (카드는 제 대본을 든다 — 가리키는 대본이 있는지 보던 검사는
-    /// S2에 걷혔다. 형식 3 파일을 읽을 때 없는 대본을 가리키면 <see cref="ScriptTable"/>이 거절한다.)
+    /// S2에 걷혔다.)
     /// </summary>
     private static void ValidateDialogueNode(
         StoryProject project,

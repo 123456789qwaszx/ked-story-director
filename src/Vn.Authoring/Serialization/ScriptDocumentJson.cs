@@ -13,17 +13,9 @@ namespace Vn.Authoring.Serialization;
 /// </code>
 /// 나누어 저장하면 둘의 버전이 어긋날 수 있고, 어긋난 순간 LineId가 어느 문장을 가리키는지
 /// 알 수 없게 된다. 하나의 덩이로 함께 움직이게 한다.
-///
-/// 형식 3까지는 대본마다 따로 선 파일(<c>script/{Id}.vnscript.json</c>)이었다 — Id · 이름을 든. 그 파일은
-/// <see cref="ReadLegacyFile"/>로만 읽는다(옮기기 · <c>docs/plans/script-merge.md</c>).
 /// </summary>
 public static class ScriptDocumentJson
 {
-    /// <summary>형식 3의 대본 파일 확장자. 그 파일을 읽어서 옮길 때만 쓴다.</summary>
-    public const string LegacyFileExtension = ".vnscript.json";
-
-    private const int LegacyFileFormatVersion = 1;
-
     /// <summary>카드 JSON의 <c>script</c> 칸 — Id도 이름도 없다. 카드가 곧 신원이다.</summary>
     internal static JsonObject WriteBody(ScriptDocument document)
     {
@@ -174,27 +166,4 @@ public static class ScriptDocumentJson
 
         return document;
     }
-
-    /// <summary>
-    /// 형식 3의 대본 파일 하나 — 그 대본의 Id와 내용. 이름(<c>name</c>)은 읽지 않는다(카드 이름이 곧 이름이다).
-    /// </summary>
-    internal static (string Id, ScriptDocument Script) ReadLegacyFile(string json)
-    {
-        JsonObject root = JsonSupport.ParseObject(json, "대본");
-        int version = (int?)root["formatVersion"] ?? 0;
-
-        if (version != LegacyFileFormatVersion)
-        {
-            throw new InvalidDataException($"대본 형식 버전 {version}은 지원하지 않습니다.");
-        }
-
-        string id = (string?)root["scriptId"]
-            ?? throw new InvalidDataException("대본에 scriptId가 없습니다.");
-
-        return (id, ReadBody(root, id));
-    }
-
-    /// <summary>같은 내용의 사본 — 형식 3에서 대본 하나를 두 카드가 가리켰을 때 둘째가 받는다.</summary>
-    internal static ScriptDocument Copy(ScriptDocument document) =>
-        ReadBody(WriteBody(document), "사본");
 }

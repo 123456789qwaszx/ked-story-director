@@ -50,8 +50,8 @@ MyStory/
 
 | 형식 | 상수 | 파일 |
 |---|---|---|
-| 프로젝트 | `StoryProject.CurrentFormatVersion` = 4 (3은 읽어서 옮기고 2 이하는 거부 — §8) | `*.vnproject.json` |
-| 판 | `StoryFileJson.CurrentFormatVersion` = 2 (1은 형식 3과 함께 읽는다) | `*.vnstory.json` |
+| 프로젝트 | `StoryProject.CurrentFormatVersion` = 4 (이 형식만 연다 — §8) | `*.vnproject.json` |
+| 판 | `StoryFileJson.CurrentFormatVersion` = 2 | `*.vnstory.json` |
 | 되돌리기 스냅샷 | `ProjectSnapshotCodec.CurrentSnapshotVersion` = 3 | (메모리) |
 
 ⛔ 형식 3까지는 대본이 `script/*.vnscript.json`에 따로 섰고(`ScriptDocumentJson` 형식 1) 카드는 그 Id를 가리켰다
@@ -66,7 +66,7 @@ MyStory/
 | `src/Vn.Authoring` | 저작 도메인 · 검증 · 도달성 증명 · 내보내기 | 화면을 모른다. 화면 없이 테스트한다 |
 | `src/Vn.App` | Avalonia 화면과 OS 연결 | 도메인 규칙을 소유하지 않는다 |
 | `src/Ked.Progression` | 런타임 진행 코어의 **사본** — 낸 JSON을 소비자 규칙으로 다시 실어 보는 오라클 | **고치지 않는다.** `CoreCopyInStepTests`의 지문이 지킨다 |
-| `tests/Vn.Authoring.Tests` · `tests/Vn.App.Tests` | xUnit · Avalonia 헤드리스 | `tests/fixtures/chapter-samples/` 견본 챕터 둘 · `tests/fixtures/format3-project/` 형식 3 견본 |
+| `tests/Vn.Authoring.Tests` · `tests/Vn.App.Tests` | xUnit · Avalonia 헤드리스 | `tests/fixtures/chapter-samples/` 견본 챕터 둘 |
 
 참조 방향: `Ked.Progression → Vn.Authoring → Vn.App`.
 
@@ -158,7 +158,7 @@ MyStory/
 
 | 파일 | 하는 일 |
 |---|---|
-| `ProjectStore.cs` | 파일 배치 · 원자적 저장 · 연출 백업(`presentation-original/`) |
+| `ProjectStore.cs` | 파일 배치 · 원자적 저장 |
 | `ProjectManifestJson.cs` · `ChapterDocumentJson.cs` | 매니페스트 · 챕터 |
 | `StoryFileJson.cs` · `StoryNodeJson.cs` · `EdgeShapeJson.cs` | 판 · **노드 직렬화는 여기 하나뿐** · 선 모양 |
 | `ScriptDocumentJson.cs` | 대본 |
@@ -368,8 +368,8 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 14. **진행 스탯은 `stat("키")`로만 읽는다**(`YarnSyntax.StatRead`). 변수로 심으면 대사 중 쓰기가 문법적으로 열려 도달성 증명 밖의
     뒷길이 생긴다. 키는 정규화하지 않는다(진행 JSON이 원본 그대로 낸다).
 15. **챕터의 것은 그 챕터의 판에서만 찾는다**(§4.6).
-16. **compositor가 읽는 칸은 여기서 안 써도 지우지 않는다** — `ChoiceExits` · 링크 데이터 · `SourceRevision` · 연출 백업
-    (`presentation-original/`). 정의 파일의 모르는 키도 보존한다.
+16. **compositor가 읽는 칸은 여기서 안 써도 지우지 않는다** — `ChoiceExits` · 링크 데이터 · `SourceRevision`. 이미 남은 연출 백업
+    (`presentation-original/`)도 지우지 않는다(⛔ 2026-11-17 — 이 툴은 더 만들지 않는다). 정의 파일의 모르는 키도 보존한다.
 17. **`src/Ked.Progression`은 고치지 않는다.** 런타임 원본에서 옮겨 올 때만 바뀌고, 그때 지문(`runtime-sync.txt`)을 함께 갱신한다.
 18. **골든 파일은 언제나 UTF-8로 읽는다.** PowerShell 5.1은 BOM이 없으면 ANSI로 읽는다 — 한국어를 담은 `.ps1`은 UTF-8 BOM으로.
 
@@ -394,20 +394,14 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 
 고정은 시간(ms)이 아니라 **일의 횟수**로 건다 — `ChapterGraphWorkAmountTests`.
 
-## 8. 이전 프로젝트 정책 — 1 · 2는 거부하고 3은 옮긴다
+## 8. 이전 프로젝트 정책 — 형식 4만 연다
 
-형식 버전 1과 2는 **읽지 않는다.** `ProjectManifestJson.Read`가 이유를 담아 거부한다 — 그 형식에서는 노드가 화자 · 대사를 직접
-소유했고, 지금 구조로 바꾸려면 어느 문장이 어느 LineId인지 도구가 임의로 정해야 한다. 옮기려면 새 프로젝트를 만들고 대사를 카드
-글 칸에 붙여 넣는다. **거부는 파괴적이지 않다** — 원본 파일도 세션도 그대로 남는다.
+**형식 4 이전은 열지 않는다**(2026-11-17 · [`docs/work-orders/legacy-read-orders.md`](docs/work-orders/legacy-read-orders.md)).
+`ProjectManifestJson.Read`가 한 줄로 거절한다. **거부는 파괴적이지 않다** — 원본 파일도 세션도 그대로 남는다.
+⛔ 그 전에는 형식 3(대본이 `script/*.vnscript.json`에 따로 선 형식)을 읽어서 옮기고 저장할 때 옛 대본 파일을 지웠다.
 
-**형식 3은 읽어서 옮긴다**(2026-10-29 · `script-merge`). 옮기기가 기계적이라서다 — 카드마다 가리키던 대본 파일의 내용을
-그대로 카드 안에 넣는다(LineId · 개정 번호 · 은퇴한 줄 그대로, `ScriptTable`). 한 대본을 두 카드가 가리켰으면 둘째는 같은 내용의
-사본을 받고, 어느 카드도 안 가리키는 대본은 버린다. 열기만 해서는 아무것도 지우지 않는다. **저장할 때** 옛 매니페스트가 가리키던
-대본 파일을 지운다(새 판 파일과 매니페스트를 다 쓴 뒤 · 매니페스트가 가리키지 않던 파일은 남긴다). 고정 자료
-`tests/fixtures/format3-project`(견본의 형식 3 시절)를 옮기면 지금 견본과 글자까지 같다(`FormatThreeProjectTests`).
-
-형식 3 · 4 안에서 걷힌 칸은 **읽지 않고 지나간다**(깨지지 않는다): `excelLines` · `excelEpisode` · 대본의 `sourcePath` · 챕터의
-`sourceRow`. 연출 층을 담은 옛 프로젝트는 연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남긴다(compositor가 가져간다).
+형식 4 안에서 걷힌 칸은 **읽지 않고 지나간다**(깨지지 않는다): `excelLines` · `excelEpisode` · 대본의 `sourcePath` · 챕터의
+`sourceRow`. ⛔ 연출 층을 담은 옛 프로젝트(형식 3)는 연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남겼다 — 이제 열지 않는다.
 열 때 카드 없는 에피소드에는 빈 카드가 선다(`AlignBoardsWithChapters`).
 
 ## 9. 확인 방법
@@ -432,7 +426,6 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 | `EditingTests` · `RenameCarriesReferencesTests` | 화자 · 대사의 원본이 대본에만 · 되돌리기 · 개명이 참조를 끈다 |
 | `ResultDocumentComposerTests` · `OutputPresetTests` | 조각 순서와 원본 매핑 · 프리셋 |
 | `SerializationTests` · `StoryFileTests` · `SampleProjectTests` | 결정적 JSON · 원자적 저장 · 이전 형식 거부 · 손으로 쓴 견본(`samples/Authoring/`) |
-| `LegacyPresentationProjectTests` | 연출을 담은 옛 프로젝트 — 연출을 읽지 않고 백업한다 |
 | `GraphProjectionTests` · `EdgeSideTests` · `EdgeShapeTests` | 무엇이 그려지나 · 선의 쪽 · 선 모양 |
 | `CoreCopyInStepTests` | `Ked.Progression` 사본이 런타임과 발맞춰 있다 |
 | `Chapters/ChapterReachabilityTests` · `ChapterReachabilityEquivalenceTests` | 도달성 증명 · 코어와 같은 답 |

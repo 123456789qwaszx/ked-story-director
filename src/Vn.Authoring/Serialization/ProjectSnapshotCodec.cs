@@ -97,7 +97,6 @@ public static class ProjectSnapshotCodec
 
         var project = new StoryProject
         {
-            FormatVersion = projectFormatVersion,
             Title = (string?)root["title"] ?? "제목 없음",
             StartNodeId = (string?)root["startNode"],
             Board = ProjectManifestJson.ReadBoard(root["board"])
@@ -131,9 +130,7 @@ public static class ProjectSnapshotCodec
                 throw new InvalidDataException("프로젝트 스냅샷의 links 항목이 객체가 아닙니다.");
             }
 
-            // 스냅샷은 이 툴이 쓴 것이라 연출 배선이 없다 — 있으면 깨진 스냅샷이다.
-            project.Links.Add(ProjectManifestJson.ReadLink(linkObject)
-                ?? throw new InvalidDataException("프로젝트 스냅샷에 연출 배선이 있습니다."));
+            project.Links.Add(ProjectManifestJson.ReadLink(linkObject));
         }
 
         project.Chapters.AddRange(ChapterDocumentJson.Read(root["chapters"]));

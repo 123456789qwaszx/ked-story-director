@@ -11,7 +11,6 @@ namespace Vn.Authoring.Tests;
 /// 되돌리기는 프로젝트를 통째로 되살리므로 남길 까닭이 없었고, 남은 대본은 저장할 때마다 쌓였다.
 ///
 /// S2부터는 카드가 대본을 든다 — 카드와 함께 가는 것이 당연해졌다. 그래도 이 약속은 붙들어 둔다.
-/// 옛 파일에 남아 있던 고아 대본을 버리는 일은 <see cref="FormatThreeProjectTests"/>가 잰다.
 /// </summary>
 public sealed class ScriptLifecycleTests
 {
