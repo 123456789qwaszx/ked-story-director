@@ -5,7 +5,7 @@
 
 ## 1. 지금 상태
 
-- **클라우드 세션**이었다(소유자 PC가 아니다). 브랜치 `claude/brave-tesla-x2ttj9` — `origin/dev`(`624d7a8`) 위에 커밋 6개(Y0 · Y1+Y2 · Y3 · Y4 · Y5),
+- **클라우드 세션**이었다(소유자 PC가 아니다). 브랜치 `claude/brave-tesla-x2ttj9` — GitHub `dev`(`origin/dev` = `624d7a8`) 바로 위에 커밋 5개(Y0 · Y1+Y2 · Y3 · Y4 · Y5 — 갈라진 곳이 없어 `dev`로 그대로 빨리감기된다),
   그 가지로 push했다. **`dev`에는 아직 안 들어갔다** — 합칠지는 소유자가 정한다.
 - 빌드 경고 0, `Vn.Authoring.Tests` 696 · `Vn.App.Tests` 415 전부 통과(Linux 컨테이너, 헤드리스). **Windows에서 돌려 보지 않았고 화면을 눈으로 보지 않았다.**
 - ⚠ Y4가 `samples/RuntimeSamples/FestivalEve/exported/festival_eve.progression.json`에서 `DesignerNote` 줄 13개를 걷었다(`RuntimeSampleTests`가
