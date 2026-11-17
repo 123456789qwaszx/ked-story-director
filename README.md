@@ -47,11 +47,15 @@ MyStory/
 ├─ 예제.vnproject.json         목차 · 챕터 · 파일을 넘나드는 관계
 ├─ game.definition.json        스탯 · 화자 (compositor의 연출 커맨드 어휘도 여기 산다 — 이 툴은 읽지도 지우지도 않는다)
 ├─ story/                      판(챕터마다 하나)과 그 위의 카드·노드 — 카드는 제 대본(줄 신원 + 본문)을 든다
-└─ exported/
-   ├─ ch01.progression.json    런타임 수입물 — 검증을 통과하면 자동으로 나간다
+├─ runtime.target.json         보낼 곳 — 형식마다 exported/ 밖에 한 벌 더 낼 폴더([⚙ 설정]의 「내보내기」가 적는다)
+└─ exported/                   툴의 작업 사본 — 고칠 때마다 저절로 나간다
+   ├─ ch01.progression.json    런타임 수입물 — 검증을 통과하면 나간다
    ├─ ch01.scenes.json         장면마다 메모 · 대사 — 연출을 붙이는 쪽이 읽는다
-   └─ yarn/ch01_scene01.yarn   대사만 있는 Yarn — 장면마다 하나, 게임 폴더에는 쓰지 않는다
+   └─ yarn/ch01_scene01.yarn   대사만 있는 Yarn — 장면마다 하나, 게임 폴더로는 보내지 않는다
 ```
+
+**보낼 곳에는 저장(Ctrl+S)할 때만 보냅니다** — 진행 JSON의 보낼 곳이 게임 폴더(런타임의 `ChapterProgression`)이고, 장면 파일 · 대사
+Yarn도 따로 정할 수 있습니다. 이 툴이 보낸 그대로인 지난 파일만 걷습니다.
 
 프로젝트는 형식 4만 엽니다 — 그 앞의 형식(대본이 따로 서거나 연출을 담은 옛 프로젝트)은 열지 않고 알립니다.
 

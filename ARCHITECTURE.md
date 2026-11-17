@@ -17,7 +17,7 @@
 |---|---|
 | **읽는 것** | 프로젝트 하나(`*.vnproject.json` · `story/`)와 `game.definition.json` |
 | **쓰는 것** | 같은 프로젝트(원고), 그리고 `exported/{챕터}.progression.json`(유니티 런타임 수입물 — 검증을 통과하면 저절로)과 함께 나가는 장면 파일 · **대사만 있는 Yarn**(`exported/yarn/` — 2026-11-17) |
-| **읽어 가는 쪽** | [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가 원고를 **읽기만** 해서 제 연출과 합쳐 게임용 Yarn을 낸다. 대사 Yarn은 게임 폴더에 쓰지 않으므로 그것을 덮지 않는다 |
+| **읽어 가는 쪽** | [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가 원고를 **읽기만** 해서 제 연출과 합쳐 게임용 Yarn을 낸다. 대사 Yarn은 게임 폴더로 보내지 않으므로 그것을 덮지 않는다 |
 
 두 화면이 같은 프로젝트를 고친다.
 
@@ -41,7 +41,9 @@ MyStory/
    exported/{챕터}.scenes.json       장면 단위 내보내기 — 장면 메모 · 에피소드 지시 · 살아 있는 대사(LineId · 화자 · 글).
                                      AI가 장면 하나씩 연출 초안을 낼 때 읽는다. 진행 JSON이 나갈 때 함께 나가고 런타임은 읽지 않는다
    exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn — 장면 = 파일, 에피소드 = 노드(타이틀 = DialogueEntryId), 장면 메모 · 에피소드
-                                     지시는 // 주석. 진행 JSON이 나갈 때 함께 나가고 게임 폴더에는 쓰지 않는다
+                                     지시는 // 주석. 진행 JSON이 나갈 때 함께 나가고 게임 폴더로는 보내지 않는다
+runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖의 폴더(gameFolder = 진행 JSON · compositor도 읽는다, scenesFolder,
+                                     dialogueYarnFolder). 저장할 때만 exported/를 거기로 비춘다(ExportDelivery · 보낸 기록 exported/.delivered.json)
 ```
 
 챕터는 장면 항목(`sceneNotes[]` — 장면마다 이름(`name`)과 자유 글(`text`), 열쇠는 `EffectiveSceneId`)을 든다. [대본] 탭은 이 이름 · 챕터 표시
@@ -101,7 +103,8 @@ MyStory/
 | `ChapterValidator.cs` | 모델 검사 + **판과 맞대는 검사**(대사엔트리의 카드가 있나 · 재생할 줄이 있나) + 도달성 증명을 한 벌로 |
 | `ChapterReachabilityProver.cs` | (에피소드, 스탯 벡터) 상태공간을 끝까지 걸어 "닿을 수 있는가"를 증명. 도착 스탯 폭도 걷는 김에 적는다 |
 | `ChapterProgressionExporter.cs` | 진행 JSON. 낸 것을 `Ked.Progression.ProgressionLoader`에 다시 실어 보고 거부 사유를 에피소드 · 간선으로 옮긴다(`CoreRefusals`) |
-| `ChapterExportService.cs` | 검증 캐시(지문 = 챕터 모델 + 판의 노드 이름) · 전 챕터 자동 내보내기 · 거부 장부 |
+| `ChapterExportService.cs` | 검증 캐시(지문 = 챕터 모델 + 판의 노드 이름) · 전 챕터 자동 내보내기(`exported/`만) · 거부 장부 |
+| `ExportDelivery.cs` | 저장할 때 `exported/`를 형식마다 보낼 곳으로 비춘다 — 보낸 기록으로 이 툴이 보낸 그대로인 지난 파일만 걷는다 |
 | `ChapterExportBytes.cs` · `ChapterReleaseBaseline.cs` | 바이트 계약(서버가 SHA-256으로 버전을 식별) · 출시 기준선과 선택지 배열 비교 |
 | `ChapterBoard.cs` · `EpisodeNaming.cs` · `ChapterSpine.cs` | 에피소드 ↔ 판의 카드를 잇는 규약(그 챕터의 판에서만 찾는다) · 착지 카드 판정 |
 | `ChapterBoardSupply.cs` · `ConditionYarnTranslator.cs` | 챕터 조건을 판의 공급 노드(`챕터 {Id} 조건`)로 번역해 나른다 — 대사 카드의 조건 목록에 뜨는 길 |
@@ -158,6 +161,7 @@ MyStory/
 | 파일 | 하는 일 |
 |---|---|
 | `ProjectStore.cs` | 파일 배치 · 원자적 저장 |
+| `ExportDestinations.cs` | 보낼 곳(`runtime.target.json`) — 형식마다 폴더, 모르는 칸은 지킨다 |
 | `ProjectManifestJson.cs` · `ChapterDocumentJson.cs` | 매니페스트 · 챕터 |
 | `StoryFileJson.cs` · `StoryNodeJson.cs` · `EdgeShapeJson.cs` | 판 · **노드 직렬화는 여기 하나뿐** · 선 모양 |
 | `ScriptDocumentJson.cs` | 대본 |

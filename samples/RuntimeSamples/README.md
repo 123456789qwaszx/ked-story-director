@@ -10,7 +10,7 @@
 
 - `*.vnproject.json` · `story/` · `game.definition.json` — 원고(챕터 · 에피소드 · 간선 · 조건 · 카드의 대사).
 - `exported/{챕터}.progression.json` — 이 툴이 낸 진행 JSON. 런타임 예제도 같은 이름(`festival_eve.progression.json` · `presentation_demo.progression.json`)을 쓴다.
-- `runtime.target.json` — 게임 폴더(2026-11-04). 저장소가 나란히 있으면(`GitHub/ked-story-director` · `GitHub/ked-presentation-runtime`) 상대 경로가 그대로 통해, 저장할 때마다 진행 JSON이 런타임의 `ChapterProgression/`으로도 나간다. compositor가 같은 파일을 읽어 Yarn을 거기로 쓴다. 폴더가 없으면 아무것도 안 쓴다.
+- `runtime.target.json` — 보낼 곳(2026-11-04 게임 폴더 · 2026-11-17 형식마다). 저장소가 나란히 있으면(`GitHub/ked-story-director` · `GitHub/ked-presentation-runtime`) 상대 경로가 그대로 통해, 저장할 때 진행 JSON이 런타임의 `ChapterProgression/`으로도 나간다(`gameFolder`). compositor가 같은 칸을 읽어 Yarn을 거기로 쓴다. 폴더가 없으면 아무것도 안 쓴다.
 
 연출(무대 명령 · 줄 태그)과 게임용 Yarn은 **ked-story-compositor**가 이 원고의 사본 옆에서 짓고 낸다 —
 compositor `samples/RuntimeSamples/README.md`에 손 대본과 다른 점이 있다.

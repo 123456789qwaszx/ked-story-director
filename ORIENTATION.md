@@ -33,7 +33,7 @@ Avalonia 데스크톱 도구.** 원고(프로젝트 파일)는 연출 도구 [`k
 ```
   ked-story-director   ← 이 레포. 원고 · 검증 · progression.json
         ├─ exported/{챕터}.progression.json ──────────→ 유니티 런타임
-        ├─ exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn(2026-11-17 — 게임 폴더에는 쓰지 않는다)
+        ├─ exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn(2026-11-17 — 게임 폴더로는 보내지 않는다)
         └─ 프로젝트 파일(원고, 읽기 전용) ─→ ked-story-compositor ─→ 게임용 Yarn 번들
 ```
 
