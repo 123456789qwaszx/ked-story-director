@@ -29,6 +29,14 @@ public partial class MainWindow : Window
     /// <summary>검증용 손잡이 — 창이 쓰는 세션 하나. 테스트가 판을 짓고 선택을 옮긴다.</summary>
     internal AuthoringSession SessionProbe => _session;
 
+    /// <summary>[⚙ 설정] — 설정 창을 모달로 연다(<see cref="SettingsWindow"/>). 시험이 연 창을 잡도록 돌려준다.</summary>
+    internal SettingsWindow OpenSettings()
+    {
+        var settings = new SettingsWindow(_session);
+        _ = settings.ShowDialog(this);
+        return settings;
+    }
+
     // ── 연출 그래프의 곁기둥 ──
     //
     // 주의: XAML이 아니라 여기서 만든다. 자리는 연출 그래프의 것이지만(SetSidePanel) 배선은
@@ -114,6 +122,7 @@ public partial class MainWindow : Window
         OpenButton.Click += OnOpenClick;
         SaveButton.Click += OnSaveClick;
         GameFolderButton.Click += OnGameFolderClick;
+        SettingsButton.Click += (_, _) => UiGuard.Run(_session, "설정", () => OpenSettings());
         UndoButton.Click += (_, _) => _session.Editor.Undo();
         RedoButton.Click += (_, _) => _session.Editor.Redo();
         OpenExportFolderButton.Click += (_, _) =>
