@@ -46,22 +46,24 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 간선_패널의_선택지_문구는_읽기_전용이고_어디서_고치는지_말한다() => HeadlessUi.Run(() =>
+    public void 간선_패널의_머리글이_선택지_문구이고_문구_칸은_없다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-17 소유자 — [구성]은 수치를 잡는 자리다. 문구는 [대본] 탭에서 고치고 여기서는 보이기만 한다.
+        // 2026-11-17 소유자 — [구성]은 수치를 잡는 자리다. 문구는 [대본] 탭에서 고치고, 여기서는 머리글에 보이기만 한다.
+        // ⛔ 같은 날 둔 읽기 전용 문구 칸은 고칠 수 있는 칸처럼 보여 걷었다. 머리글의 「출발 → 도착」 ID 자리에 문구가 선다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        var labels = view.FindControl<TextBox>("EdgeLabelEditBox")!;
-        Assert.True(labels.IsReadOnly);
-        Assert.Equal("라루의 제안을 듣는다", labels.Text);
-        Assert.Contains("[대본] 탭", view.FindControl<TextBlock>("EdgeLabelWhereText")!.Text, StringComparison.Ordinal);
+        Assert.Equal("선택지 · 라루의 제안을 듣는다", view.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Null(view.FindControl<TextBox>("EdgeLabelEditBox"));
+        Assert.Null(view.FindControl<TextBlock>("EdgeLabelWhereText"));
+        Assert.DoesNotContain(
+            view.FindControl<StackPanel>("EdgePanel")!.GetVisualDescendants().OfType<TextBox>(),
+            box => box.Text == "라루의 제안을 듣는다");
 
-        // 칸에 무엇이 적혀도 저장은 문구를 건드리지 않는다 — 관문만 실린다.
-        labels.Text = "혼자 문을 연다";
+        // 저장은 문구를 건드리지 않는다 — 관문만 실린다.
         view.FindControl<ComboBox>("EdgeVisibleCombo")!.SelectedItem = "지쳐있음";
         view.ApplyEdgeFromPanel();
 
@@ -70,9 +72,9 @@ public sealed class ChapterGraphEditingTests
         Assert.Equal("지쳐있음", reread.VisibleConditionLabel);
         Assert.Equal("신뢰높음", reread.ConditionLabel);
 
-        // 양 끝 에피소드 고리는 없다 — 머리글(ID)과 부제(제목)가 한 번 말한다.
+        // 양 끝 에피소드 고리는 없다 — 부제(양 끝 제목)가 한 번 말한다.
         Assert.Null(view.FindControl<StackPanel>("EdgeFromToPanel"));
-        Assert.Equal("선택지 · main05.02 → branch05.02A", view.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Contains(" → ", view.FindControl<TextBlock>("InspectorSubtitle")!.Text, StringComparison.Ordinal);
     });
 
     [Fact]
@@ -256,8 +258,7 @@ public sealed class ChapterGraphEditingTests
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
-        Assert.True(string.IsNullOrEmpty(view.FindControl<TextBox>("EdgeLabelEditBox")!.Text));
-        Assert.StartsWith("AUTO", view.FindControl<TextBox>("EdgeLabelEditBox")!.PlaceholderText, StringComparison.Ordinal);
+        Assert.Equal("선택지 · AUTO", view.FindControl<TextBlock>("InspectorTitle")!.Text);
         Assert.False(view.FindControl<ComboBox>("EdgeConditionCombo")!.IsEnabled);
         Assert.False(view.FindControl<Button>("EdgeVisibleNewButton")!.IsEnabled);
 
@@ -525,7 +526,7 @@ public sealed class ChapterGraphEditingTests
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
         Assert.True(view.FindControl<ScrollViewer>("SelectionSection")!.IsVisible);
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-        Assert.StartsWith("선택지 · main05.02 → branch05.02A", title.Text, StringComparison.Ordinal);
+        Assert.Equal("선택지 · 라루의 제안을 듣는다", title.Text);
         Assert.Single(Sections(view), section => section.IsVisible);
     });
 
@@ -605,8 +606,8 @@ public sealed class ChapterGraphEditingTests
 
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
         Assert.False(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-        // 문구 칸에 그 길의 문구가 선다.
-        Assert.Contains("라루의 제안을 듣는다", view.FindControl<TextBox>("EdgeLabelEditBox")!.Text);
+        // 머리글에 그 길의 문구가 선다.
+        Assert.Contains("라루의 제안을 듣는다", view.FindControl<TextBlock>("InspectorTitle")!.Text);
         Assert.Equal("신뢰높음", view.FindControl<ComboBox>("EdgeConditionCombo")!.SelectedItem);
 
         // 안내문을 고쳐 적용 → 간선에 써진다.

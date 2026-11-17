@@ -196,8 +196,9 @@ public partial class ChapterGraphView : UserControl
             InspectorMode.Chapter => ($"챕터 · {_selectedChapterId}", "조건 · 스탯"),
             InspectorMode.Scene => SceneHeader(model),
             _ when _selectedEpisodeId is { } episodeId => (EpisodeHeader(model, episodeId), string.Empty),
-            // 머리글은 ID(이 탭은 ID를 다룬다), 부제는 보이는 제목 — 양 끝 에피소드를 한 번만 말한다(2026-11-17).
-            _ when _selectedEdgeKey is { } edge => ($"선택지 · {edge.From} → {edge.To}",
+            // 머리글은 문구(판의 선 이름표와 같은 글), 부제는 양 끝 에피소드의 보이는 제목(2026-11-17 소유자 — ⛔ 머리글의
+            // 「출발 → 도착」 ID는 걷었다. 문구를 따로 보이던 읽기 전용 칸이 고칠 수 있는 칸처럼 보여서다).
+            _ when _selectedEdgeKey is { } edge => ($"선택지 · {EdgeHeaderText(model, edge)}",
                 $"{model?.FindEpisode(edge.From)?.ShownTitle ?? edge.From} → {model?.FindEpisode(edge.To)?.ShownTitle ?? edge.To}"),
             _ when _selectedBranchKey is not null => ("분기", "다녀갈 에피소드에 들어갈 조건"),
             _ when _selectedSlot is { } slot => ($"선택지 칸 · {slot.Episode}", "아직 길이 없는 칸"),
@@ -213,6 +214,21 @@ public partial class ChapterGraphView : UserControl
             FillScenePanel(model);
         }
     }
+
+    /// <summary>고른 간선의 문구 — 판의 선 이름표와 같은 규칙(<see cref="EdgeOptionText"/>). 간선이 사라졌으면 고를 때의 문구.</summary>
+    private static string EdgeHeaderText(ChapterGraphModel? model, (string From, string To, string Label) key) =>
+        model?.Edges.FirstOrDefault(candidate =>
+                candidate.FromEpisodeId == key.From &&
+                candidate.ToEpisodeId == key.To &&
+                EdgeLabelKey(candidate) == key.Label) is { } edge
+            ? EdgeOptionText(edge)
+            : key.Label.Length > 0 ? key.Label : "⚠ 문구 없음";
+
+    /// <summary>선택지 간선의 문구 한 줄 — 자동 길은 「AUTO」, 문구가 비면 「⚠ 문구 없음」. 판의 이름표와 인스펙터 머리글이 같이 쓴다.</summary>
+    internal static string EdgeOptionText(ChapterEdge edge) =>
+        edge.Auto ? "AUTO"
+        : edge.HasNoOptionLabel ? "⚠ 문구 없음"
+        : edge.OptionLabel!;
 
     /// <summary>
     /// 에피소드 인스펙터의 머리글 — 「장면 - 제목」(<see cref="ChapterEpisode.SceneAndTitle"/>). EpisodeId는 바로 아래 칸이
@@ -1447,9 +1463,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void AddEdgeLabel(ChapterEdge edge, Point from, Point to)
     {
-        string option = edge.Auto ? "AUTO"
-            : edge.HasNoOptionLabel ? "⚠ 문구 없음"
-            : edge.OptionLabel!;
+        string option = EdgeOptionText(edge);
 
         IBrush ink = new SolidColorBrush(Color.Parse(
             edge.Auto ? "#3D7BD9" : edge.HasNoOptionLabel ? "#C0392B" : "#5A646E"));
@@ -3018,10 +3032,6 @@ public partial class ChapterGraphView : UserControl
             EdgeLockedMsgBox.Text = edge.LockedMessage ?? string.Empty;
             _edgeStats.Load(model.Stats, edge.StatChanges);
         }
-
-        // 문구는 읽기 전용 — 늘 지금 값이다(고치는 곳은 [대본] 탭).
-        EdgeLabelEditBox.Text = edge.Auto ? string.Empty : edge.OptionLabel ?? string.Empty;
-        EdgeLabelEditBox.PlaceholderText = edge.Auto ? "AUTO — 문구 없이 넘어갑니다" : "⚠ 문구 없음";
 
         // 자동 진행 길은 문구 · 조건 · 스탯변화를 갖지 않는다 — 그렇다고 말하고 칸을 잠근다(적어도 저장되지 않는다).
         EdgeAutoNote.IsVisible = edge.Auto;

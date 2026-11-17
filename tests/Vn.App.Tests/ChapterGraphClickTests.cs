@@ -60,7 +60,7 @@ public sealed class ChapterGraphClickTests
         Click(window, center);
 
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-        Assert.Contains("라루의 제안을 듣는다", view.FindControl<TextBox>("EdgeLabelEditBox")!.Text); // 짝 칸 표시
+        Assert.Contains("라루의 제안을 듣는다", view.FindControl<TextBlock>("InspectorTitle")!.Text); // 머리글이 그 문구
     });
 
     [Fact]

@@ -197,7 +197,8 @@
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
-                            <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
+                            <!-- 줄을 넘긴다 — 선택지 간선은 문구가 머리글이다(2026-11-17), 긴 문구도 다 보여야 한다. -->
+                            <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" TextWrapping="Wrap" />
                             <TextBlock x:Name="InspectorSubtitle"
                                        FontSize="11"
                                        Opacity="0.65"
@@ -329,20 +330,16 @@
                          "이 선택지는 언제 보이고 언제 열리는가 · 고르면 무엇이 변하는가"를 여기서 정한다.
 
                          2026-11-17 소유자: [구성]은 수치를 잡는 자리다 — 조건이 위, 그 조건의 식(수치)을 콤보 바로 아래에서 고친다.
-                         문구는 읽기 전용(고치는 곳은 [대본] 탭)이고, 양 끝 에피소드 고리는 걷었다(머리글이 말한다). -->
+                         양 끝 에피소드 고리는 걷었다. 문구는 머리글에 선다(「선택지 · 문구」, 부제는 양 끝 에피소드의 제목) —
+                         ⛔ 같은 날 둔 읽기 전용 문구 칸과 「고치는 곳」 안내는 고칠 수 있는 칸처럼 보여 걷었다(소유자). -->
                     <StackPanel x:Name="EdgePanel" Spacing="6" IsVisible="False">
-                        <TextBlock Text="선택지 문구" FontWeight="SemiBold" FontSize="12" />
-                        <TextBox x:Name="EdgeLabelEditBox" FontSize="11" HorizontalAlignment="Stretch"
-                                 IsReadOnly="True" PlaceholderText="⚠ 문구 없음" />
-                        <TextBlock x:Name="EdgeLabelWhereText" FontSize="10" Opacity="0.55" TextWrapping="Wrap"
-                                   Text="문구는 [대본] 탭에서 고칩니다 — 판에서 이 선택지 선을 누르거나, 카드 아래의 선택지 칸에서." />
 
                         <!-- 자동 진행 길이면 그렇다고 말하고 칸을 잠근다 — 자동 길은 문구 · 조건 · 스탯변화를 갖지 않는다.
                              자동인지는 여기서 정하지 않는다([대본] 탭에서 문구 없이 이은 길이다). -->
                         <TextBlock x:Name="EdgeAutoNote" FontSize="10" Opacity="0.7" TextWrapping="Wrap" IsVisible="False"
                                    Text="자동 진행 길입니다 — 플레이어 입력 없이 넘어갑니다. 문구 · 조건 · 스탯변화를 갖지 않습니다." />
 
-                        <TextBlock Text="조건" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
+                        <TextBlock Text="조건" FontWeight="SemiBold" FontSize="12" />
                         <TextBlock Text="표시조건 — 맞을 때만 이 선택지가 보입니다" FontSize="10" Opacity="0.6" />
                         <Grid ColumnDefinitions="*,Auto">
                             <ComboBox x:Name="EdgeVisibleCombo" FontSize="11" HorizontalAlignment="Stretch"

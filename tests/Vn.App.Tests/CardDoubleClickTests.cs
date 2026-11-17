@@ -131,7 +131,7 @@ public sealed class CardDoubleClickTests : IDisposable
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-        Assert.Equal("선택지 · root → a", view.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("선택지 · 가자", view.FindControl<TextBlock>("InspectorTitle")!.Text);   // [구성] 머리글은 문구다
 
         window.Close();
     });

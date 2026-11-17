@@ -163,7 +163,9 @@ public sealed class ChapterRubberBandTests : IDisposable
     private static bool IsPicked(Border card) => card.BorderBrush is ISolidColorBrush { Color: var color } && color == Picked;
 
     /// <summary>간선 패널의 선택지 문구 칸 — 고른 간선의 문구가 적혀 있다.</summary>
-    private static string? ChoiceText(ChapterGraphView view) => view.FindControl<TextBox>("EdgeLabelEditBox")!.Text;
+    /// <summary>고른 선택지의 문구 — 간선 인스펙터의 머리글 「선택지 · 문구」.</summary>
+    private static string? ChoiceText(ChapterGraphView view) =>
+        view.FindControl<TextBlock>("InspectorTitle")!.Text?.Replace("선택지 · ", string.Empty, StringComparison.Ordinal);
 
     /// <summary>빈 판을 눌러 끌고 놓는다 — 사람이 범위를 긋는 길 그대로다.</summary>
     private static void Band(ChapterGraphView view, Point from, Point to)
