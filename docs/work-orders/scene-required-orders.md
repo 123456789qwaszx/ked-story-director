@@ -3,7 +3,7 @@
 **에피소드는 늘 챕터와 장면에 속한다.** 장면 없는 에피소드를 만드는 창구 · 장면을 비우는 창구를 걷고, 챕터가 아닌 판(낙서판 — 새 프로젝트의
 「기본 파일」)을 흔적 없이 걷는다. 처음 쓰는 사람을 위해 아무것도 없을 때 [＋ 대사 노드]가 챕터와 장면을 저절로 세운다.
 
-> **상태: E0–E5 끝. E6(ID)은 [`auto-id-orders.md`](auto-id-orders.md)에서 한다.** 1절은 소유자가 정했다.
+> **상태: 끝(E0–E6).** E6(ID)은 [`auto-id-orders.md`](auto-id-orders.md)에서 했다. 1절은 소유자가 정했다.
 
 ## 1. 정한 것 (소유자 2026-11-17)
 
@@ -64,3 +64,4 @@
 | 11-17 | E5 | 커밋됨 | [구성]의 빈 판 안내 · 주석을 「[구성] 탭에서는 더하지 않는다 — [대본] 탭의 [＋ 대사 노드] · 장면 줄 「에피소드 추가」」로. 문서 — `two-graphs.md` 7절 AB(새) · 2.1 툴바 · 빈 판 · 하이어아키 줄의 차림표 · P(장면 풀기), `hierarchy.md` 4절에 ⛔, `writer-guide.md` 1 · 1-1 · 1-2. 남은 것: 저수준 정리(편집 명령이 챕터 판만 받게 · 시험 197곳 · `TestBoard`) · E6(ID) |
 | 11-17 | E4 (나) | (이 커밋) | 저수준 — 카드는 챕터 판에만(`NewDialogueNodeCore`가 거절 · 이름은 늘 `NextEpisodeId`, 「카드 N」 걷음), 판은 챕터가 세운다(`EnsureChapterBoard`가 챕터를 요구 · 공개 `AddStoryFile` → 안의 `AddChapterBoardFile`, 「파일 N」 걷음), `CanBranchTo`는 분기 카드만. 시험 — 판을 그릇으로 쓰던 것은 챕터 판으로 옮겼다(공용 `Sample` · 판마다 챕터를 함께 · `TestChapter` 손잡이 둘 — ⛔ `TestBoard` 걷음, 묶음 시험은 판 대신 챕터를 세운다, 판 시험은 챕터를 먼저). **지운 시험 9**(기준 — ① 걷은 기능 · ③ 중복): `ChapterBoardEditorTests.사람이_만든_같은_이름의_판을_다시_쓴다`(① 판을 먼저 만드는 순서), `NodePlacementTests.챕터가_아닌_판도_겹치지는_않게_둔다`(①), `ChoiceSlotProjectionTests.챕터가_아닌_판에는_칸이_없다`(①), `ChapterRailTests.챕터가_아닌_판에는_철도가_생기지_않는다`(①), `ChapterRailTests.챕터_밖의_카드는_한눈에_갈린다`(③ — `BranchCardBoardTests`가 에피소드와 분기 카드의 모양을 본다), `ChapterRailTests.챕터에서_지운_에피소드_노드에는_레일이_없다`(① — 툴이 못 만드는 옛 상태), (가)에서 지운 낙서판 시험 다섯(`FreeSceneLiftTests` 파일 · 낙서판 카드 지우기 · 낙서판 에피소드 · 낙서판 화자 · 낙서판 분기 쪽)은 앞 기록. 새 시험 1(`챕터가_없으면_판을_세우지_않는다`), 분기점 잇기 시험 하나는 다른 곳을 분기 카드로. Authoring 705 · App 442 |
 | 11-17 | E2 잔여 | (이 커밋) | 「장면ID를 비워 장면 풀기」가 남아 있었다 — `ProjectEditor.RenameScene`이 빈 ID를 받으면 장면을 풀었다(화면에서는 [구성] 하이어아키의 ID 줄 개명 갈래 — 읽기 전용이라 열리지 않는 죽은 길이었다). `RenameScene`은 빈 ID를 거절, 셸의 ID 줄 개명 갈래 셋(챕터 · 장면 · 에피소드)과 그것만 쓰던 `MainWindow.RenameChapter` · `RenameEpisode` 걷음, [구성] 장면ID 칸의 「장면 풀기」 안내를 고침. 시험 — 장면 풀기 시험 → 「장면ID는 비울 수 없다」, 주인 없는 메모를 만드는 두 시험은 에피소드를 옮겨서. Authoring 705 · App 442 |
+| 11-17 | E6 | `auto-id-orders.md` I0–I5 | 자동 ID에 챕터 · 장면(`{챕터}_{장면}_newNN` · 분기 카드 `_branchNN`), 챕터를 넘는 Yarn 노드 이름 겹침은 오류, 자동 모양 그대로인 ID만 자리를 따라간다, 분기 카드에 제목을 따로 |
