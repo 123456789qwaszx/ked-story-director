@@ -4,11 +4,73 @@ namespace Vn.Authoring.Rendering;
 
 /// <summary>
 /// Yarn 표기 조립 규칙 — 카드 글 칸의 시나리오 표기(조건 줄)와 노드 이름 규칙(<see cref="YarnNaming"/>) ·
-/// 챕터 조건 번역이 지난다. 게임용 Yarn 파일은 이 툴이 내지 않는다(<c>ked-story-compositor</c>의 이미터).
+/// 챕터 조건 번역 · <b>대사만 있는 Yarn</b>(<see cref="Chapters.ChapterYarnExporter"/> — 2026-11-17)이 지난다.
+/// 연출 든 게임용 Yarn은 이 툴이 내지 않는다.
 /// (Yarn 미리보기 서식은 2026-10-29에 Script Preview 탭과 함께 걷혔다.)
 /// </summary>
 internal static class YarnSyntax
 {
+    public const string Indent = "    ";
+
+    public static string IndentOf(int level) =>
+        string.Concat(Enumerable.Repeat(Indent, Math.Max(0, level)));
+
+    public static void AppendJump(StringBuilder builder, string target)
+    {
+        builder.Append("<<jump ").Append(target).Append(">>");
+    }
+
+    /// <summary>
+    /// <c>&lt;&lt;detour 노드&gt;&gt;</c> — 대상 노드를 재생하고 이 자리로 돌아온다.
+    /// 조건 갈래의 출구가 쓴다 (YarnSpinner 3.x).
+    /// </summary>
+    public static void AppendDetour(StringBuilder builder, string target)
+    {
+        builder.Append("<<detour ").Append(target).Append(">>");
+    }
+
+    /// <summary>
+    /// <b>대사 글을 Yarn 줄에 그대로 실을 수 있게 막는다</b> (2026-11-17 · 컴파일러 3.2.1로 하나씩 돌려 봤다).
+    ///
+    /// 작가는 Yarn 문법을 모르고 글을 쓴다. 그대로 실으면: <c>#</c>는 태그로 읽혀 그 뒤가 문법 오류가 되고,
+    /// <c>//</c> 뒤는 주석으로 <b>조용히 잘리고</b>(오류도 없다 — <c>#line:</c>까지 함께 사라진다), <c>&lt;&lt;</c>는 명령으로,
+    /// <c>\</c>는 이스케이프의 머리로 읽힌다. 넷 다 <c>\</c>를 앞에 세우면 컴파일러가 원래 글자로 되돌려 문자열 표에 싣는다.
+    ///
+    /// <b><c>{ }</c>와 <c>[ ]</c>는 건드리지 않는다</b> — <c>{stat("키")}</c>는 작가가 일부러 적는 스탯 읽기이고
+    /// (<see cref="StatRead"/>), 대괄호는 마크업이다. 홑 <c>&lt;</c> · <c>&gt;</c> · <c>/</c>도 그대로 통과한다.
+    /// </summary>
+    public static string EscapeLineText(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder(text.Length + 8);
+
+        for (int index = 0; index < text.Length; index++)
+        {
+            char c = text[index];
+            char next = index + 1 < text.Length ? text[index + 1] : '\0';
+
+            if (c == '\\' || c == '#')
+            {
+                builder.Append('\\').Append(c);
+            }
+            else if ((c == '<' || c == '>' || c == '/') && next == c)
+            {
+                builder.Append('\\').Append(c).Append('\\').Append(c);
+                index++;
+            }
+            else
+            {
+                builder.Append(c);
+            }
+        }
+
+        return builder.ToString();
+    }
+
     public static void AppendCondition(StringBuilder builder, string keyword, string? expression)
     {
         builder.Append("<<")

@@ -1,0 +1,267 @@
+using System.Text.Json;
+using Vn.Authoring.Chapters;
+using Vn.Authoring.Editing;
+using Vn.Authoring.Model;
+using Vn.Authoring.Script;
+using Vn.Authoring.Serialization;
+using Yarn;
+using Yarn.Compiler;
+
+namespace Vn.Authoring.Tests.Chapters;
+
+/// <summary>
+/// 대사만 있는 Yarn <c>exported/yarn/{챕터}_{장면}.yarn</c> (2026-11-17 · <c>docs/work-orders/yarn-output-orders.md</c> Y1 · Y2).
+/// 지키는 것: <b>실제로 컴파일된다</b>(YarnSpinner.Compiler 3.2.1 — 앱은 컴파일러를 싣지 않고 여기서만 본다) · 노드 타이틀 = 진행 JSON의
+/// <c>DialogueEntryId</c> · 장면 메모와 에피소드 지시는 주석 · 작가의 글자가 그대로 문자열 표에 실린다 · 결정성.
+/// </summary>
+public sealed class ChapterYarnExportTests
+{
+    private const string Ch = "festival_eve";
+
+    private static readonly string[] SampleManifests =
+    [
+        "FestivalEve/festival_eve.vnproject.json",
+        "PresentationDemo/presentation_demo.vnproject.json"
+    ];
+
+    private static string SamplePath(string relative) =>
+        Path.GetFullPath("../../../../../samples/RuntimeSamples/" + relative);
+
+    private static ProjectEditor Sample() => new(ProjectStore.Load(SamplePath(SampleManifests[0])).Project);
+
+    private static ChapterGraphModel Model(ProjectEditor editor, string chapterId = Ch) =>
+        editor.FindChapter(chapterId)!.ToGraphModel(chapterId);
+
+    private static IReadOnlyList<ChapterYarnFile> Export(ProjectEditor editor) =>
+        ChapterYarnExporter.Export(Model(editor), editor.Project);
+
+    /// <summary>
+    /// 파일들을 <b>한 Yarn 프로젝트로</b> 컴파일한다 — 장면 사이의 <c>&lt;&lt;detour&gt;&gt;</c>가 서려면 함께 걸어야 한다.
+    /// <c>stat</c>은 런타임이 등록하는 함수라(계약서 §D1-1) 여기서도 같은 모양(글자 → 수)으로 알려 준다.
+    /// </summary>
+    internal static CompilationResult Compile(IEnumerable<ChapterYarnFile> files)
+    {
+        var library = new Library();
+        library.RegisterFunction("stat", (string _) => 0f);
+
+        ISourceInput[] inputs = files
+            .Select(file => (ISourceInput)new CompilationJob.File { FileName = file.FileName, Source = file.Text })
+            .ToArray();
+
+        return Compiler.Compile(CompilationJob.CreateFromInputs(inputs, library));
+    }
+
+    private static string[] Errors(CompilationResult result) => result.Diagnostics
+        .Where(diagnostic => diagnostic.Severity == Diagnostic.DiagnosticSeverity.Error)
+        .Select(diagnostic => $"{diagnostic.FileName}:{diagnostic.Range.Start.Line + 1}: {diagnostic.Message}")
+        .ToArray();
+
+    private static void SetLine(DialogueNode card, string lineId, string speaker, string text) =>
+        card.Script.RequireLocale(card.Script.PrimaryLocale).Entries[lineId] = new LocalizedLine(speaker, text);
+
+    [Fact]
+    public void 견본_프로젝트의_모든_장면이_막힘_없이_컴파일된다()
+    {
+        foreach (string manifest in SampleManifests)
+        {
+            StoryProject project = ProjectStore.Load(SamplePath(manifest)).Project;
+
+            List<ChapterYarnFile> files = project.Chapters
+                .SelectMany(chapter => ChapterYarnExporter.Export(chapter.ToGraphModel(chapter.ChapterId), project))
+                .ToList();
+
+            Assert.NotEmpty(files);
+            Assert.All(files, file => Assert.False(file.HasBlockingProblems, $"{file.FileName}: {string.Join(" / ", file.Problems)}"));
+
+            CompilationResult result = Compile(files);
+            Assert.True(Errors(result).Length == 0, string.Join("\n", Errors(result)));
+        }
+    }
+
+    [Fact]
+    public void 노드_타이틀은_진행_JSON의_DialogueEntryId와_같다()
+    {
+        ProjectEditor editor = Sample();
+        ChapterGraphModel model = Model(editor);
+
+        ChapterExportResult progression = ChapterProgressionExporter.Export(model, editor.Project);
+        string[] entries = JsonDocument.Parse(progression.Json!).RootElement.GetProperty("Nodes").EnumerateArray()
+            .Select(node => node.GetProperty("DialogueEntryId").GetString()!)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        CompilationResult result = Compile(Export(editor));
+
+        Assert.Empty(Errors(result));
+        Assert.Equal(entries, result.Program!.Nodes.Keys.Order(StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
+    public void 장면이_파일이고_파일_이름은_챕터_장면이다()
+    {
+        ProjectEditor editor = Sample();
+        IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(Model(editor));
+        IReadOnlyList<ChapterYarnFile> files = Export(editor);
+
+        Assert.Equal(scenes.Select(scene => scene.SceneId), files.Select(file => file.SceneId));
+        Assert.Equal("festival_eve_교무실_앞.yarn", files.Single(file => file.SceneId == "교무실 앞").FileName);
+
+        // 장면 안 에피소드 차례 그대로 노드가 선다.
+        foreach ((ChapterScene scene, ChapterYarnFile file) in scenes.Zip(files))
+        {
+            string[] titles = file.Text.Split('\n')
+                .Where(line => line.StartsWith("title: ", StringComparison.Ordinal))
+                .Select(line => line["title: ".Length..])
+                .ToArray();
+
+            Assert.Equal(scene.Episodes.Count, titles.Length);
+        }
+    }
+
+    [Fact]
+    public void 장면_메모는_파일_머리에_에피소드_지시는_그_노드_앞에_주석으로_선다()
+    {
+        ProjectEditor editor = Sample();
+        ChapterScene first = ChapterSceneGrouping.Of(Model(editor))[0];
+        ChapterEpisode second = first.Episodes[1];
+
+        editor.SetSceneName(Ch, first.SceneId, "마감 전날의 교실");
+        editor.SetSceneNote(Ch, first.SceneId, "마감 전날.\n\n하린: 지침 → 결심");
+        editor.UpdateEpisodeMemo(Ch, second.EpisodeId, "짧게\r\n해 질 무렵");
+
+        ChapterYarnFile file = Export(editor)[0];
+        string title = ChapterProgressionExporter.DialogueEntryIdOf(second, ChapterBoard.For(editor.Project, Ch));
+
+        Assert.StartsWith(
+            $"// 장면: 마감 전날의 교실 ({first.SceneId})\n// 마감 전날.\n//\n// 하린: 지침 → 결심\n\n// 에피소드: ",
+            file.Text);
+        Assert.Contains($"// 에피소드: {second.ShownTitle}\n// 짧게\n// 해 질 무렵\ntitle: {title}\n---\n", file.Text);
+        Assert.Empty(Errors(Compile(Export(editor))));
+    }
+
+    [Fact]
+    public void 이름이_없는_장면은_장면ID만_적는다()
+    {
+        ProjectEditor editor = Sample();
+        ChapterScene first = ChapterSceneGrouping.Of(Model(editor))[0];
+
+        Assert.StartsWith($"// 장면: {first.SceneId}\n\n// 에피소드: ", Export(editor)[0].Text);
+    }
+
+    [Fact]
+    public void 작가가_적은_Yarn_글자는_그대로_문자열_표에_실린다()
+    {
+        // #은 태그, //는 주석(조용히 잘린다), <<는 명령, \는 이스케이프 — 막지 않으면 원고가 깨지거나 줄어든다.
+        // {stat("키")}는 일부러 적는 스탯 읽기라 그대로 둔다.
+        ProjectEditor editor = Sample();
+        ChapterEpisode episode = Model(editor).Episodes[0];
+        DialogueNode card = EpisodeNaming.CardFor(editor.Project, Ch, episode.EpisodeId)!;
+        ScriptLine[] lines = card.Script.ActiveLines.Take(3).ToArray();
+
+        SetLine(card, lines[0].Id, "하린", "1등 #1 이다 // 진짜로 <<농담>> C:\\temp");
+        SetLine(card, lines[1].Id, "", "http://x.y — 3 < 5 > 2 [b]굵게[/b]");
+        SetLine(card, lines[2].Id, "시구레", "성실은 {stat(\"성실\")}점");
+
+        CompilationResult result = Compile(Export(editor));
+
+        Assert.Empty(Errors(result));
+        Assert.Equal("하린: 1등 #1 이다 // 진짜로 <<농담>> C:\\temp", result.StringTable!["line:" + lines[0].Id].text);
+        Assert.Equal("http://x.y — 3 < 5 > 2 [b]굵게[/b]", result.StringTable!["line:" + lines[1].Id].text);
+        Assert.Equal("시구레: 성실은 {0}점", result.StringTable!["line:" + lines[2].Id].text);
+    }
+
+    [Fact]
+    public void 빈_줄은_보이지_않는_한_글자로_서고_줄바꿈은_빈칸으로_접힌다()
+    {
+        ProjectEditor editor = Sample();
+        DialogueNode card = EpisodeNaming.CardFor(editor.Project, Ch, Model(editor).Episodes[0].EpisodeId)!;
+        ScriptLine[] lines = card.Script.ActiveLines.Take(2).ToArray();
+
+        SetLine(card, lines[0].Id, "", "");
+        SetLine(card, lines[1].Id, "하린", "첫 줄\n둘째 줄");
+
+        string text = Export(editor)[0].Text;
+
+        Assert.Contains($"\n{ChapterYarnExporter.EmptyLineBody} #line:{lines[0].Id}\n", text);
+        Assert.Contains($"\n하린: 첫 줄 둘째 줄 #line:{lines[1].Id}\n", text);
+        Assert.Empty(Errors(Compile(Export(editor))));
+    }
+
+    [Fact]
+    public void 분기에_건_식_미정_조건은_항상_통과로_나간다()
+    {
+        // 간선 · 분기와 같은 규칙(writer-fields W1) — 식이 빈 조건은 오류가 아니라 「항상 통과」다.
+        ProjectEditor editor = Sample();
+        DialogueNode branch = EpisodeNaming.CardFor(editor.Project, Ch, "Festival_Wrapup_Remade")!;
+        editor.AddChapterCondition(Ch, "다시 그렸을 때", string.Empty);
+
+        Assert.Null(BranchEntryCondition.Set(editor, branch.Id, "다시 그렸을 때"));
+
+        string text = Export(editor).Single(file => file.Text.Contains("title: Festival_Wrapup_Remade\n", StringComparison.Ordinal)).Text;
+
+        Assert.Contains("title: Festival_Wrapup_Remade\n---\n<<if true>>\n    하린:", text);
+        Assert.Empty(Errors(Compile(Export(editor))));
+    }
+
+    [Fact]
+    public void 카드가_없는_에피소드도_노드는_선다()
+    {
+        // 진행 JSON이 그 타이틀을 부른다 — 노드가 없으면 런타임이 없는 노드를 찾는다.
+        ProjectEditor editor = Sample();
+        ChapterGraphModel model = Model(editor);
+        ChapterEpisode episode = model.Episodes[0];
+
+        IReadOnlyList<ChapterYarnFile> files = ChapterYarnExporter.Export(model, project: null);
+        string title = ChapterProgressionExporter.DialogueEntryIdOf(episode, ChapterBoard.For(null, Ch));
+
+        Assert.Contains($"title: {title}\n---\n===\n", files[0].Text);
+        Assert.All(files, file => Assert.False(file.HasBlockingProblems));
+    }
+
+    [Fact]
+    public void Yarn이_읽지_못하는_줄은_막는다()
+    {
+        ProjectEditor editor = Sample();
+        DialogueNode card = EpisodeNaming.CardFor(editor.Project, Ch, Model(editor).Episodes[0].EpisodeId)!;
+        ScriptLine[] lines = card.Script.ActiveLines.Take(2).ToArray();
+
+        SetLine(card, lines[0].Id, "", "-> 가자");
+        SetLine(card, lines[1].Id, "하린", "값 { 끝");
+
+        ChapterYarnFile file = Export(editor)[0];
+
+        Assert.True(file.HasBlockingProblems);
+        Assert.Contains(file.Problems, problem => problem.IsBlocking && problem.LineId == lines[0].Id);
+        Assert.Contains(file.Problems, problem => problem.IsBlocking && problem.LineId == lines[1].Id);
+    }
+
+    [Fact]
+    public void 정규화가_두_장면을_한_이름으로_접으면_뒤의_것을_막는다()
+    {
+        ProjectEditor editor = Sample();
+        ChapterGraphModel model = Model(editor);
+        ChapterEpisode[] episodes = model.Episodes.ToArray();
+
+        editor.UpdateEpisodeScenes(Ch, episodes.Take(episodes.Length / 2).Select(e => e.EpisodeId).ToArray(), "장면 1");
+        editor.UpdateEpisodeScenes(Ch, episodes.Skip(episodes.Length / 2).Select(e => e.EpisodeId).ToArray(), "장면.1");
+
+        IReadOnlyList<ChapterYarnFile> files = Export(editor);
+
+        Assert.Equal(["festival_eve_장면_1.yarn", "festival_eve_장면_1.yarn"], files.Select(file => file.FileName).ToArray());
+        Assert.False(files[0].HasBlockingProblems);
+        Assert.True(files[1].HasBlockingProblems);
+    }
+
+    [Fact]
+    public void 같은_입력이면_같은_바이트다()
+    {
+        ProjectEditor editor = Sample();
+        editor.SetSceneNote(Ch, Model(editor).Episodes[0].EffectiveSceneId, "메모\r\n둘째");
+
+        string[] first = Export(editor).Select(file => file.Text).ToArray();
+        string[] again = Export(editor).Select(file => file.Text).ToArray();
+
+        Assert.Equal(first, again);
+        Assert.All(first, text => Assert.DoesNotContain("\r", text));
+    }
+}
