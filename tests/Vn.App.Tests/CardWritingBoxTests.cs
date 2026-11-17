@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -194,6 +195,62 @@ public sealed class CardWritingBoxTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.NotEqual(before, zoom.Text);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 글_칸_위의_휠은_판을_스크롤하지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 보고 — 글이 칸에 다 들어가 칸에 스크롤이 없으면, 칸이 받지 않은 휠이 판의 ScrollViewer까지
+        // 올라가 판 전체가 세로로 스크롤됐다. 칸 위의 휠은 칸의 것이다 — 칸이 스크롤할 것이 없으면 아무 일도 없다.
+        (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
+        string zoom = graph.FindControl<TextBlock>("ZoomText")!.Text ?? string.Empty;
+        Assert.True(scroll.Extent.Height > scroll.Viewport.Height);   // 판은 세로로 스크롤할 자리가 있다
+        Vector before = scroll.Offset;
+
+        TextBox box = Box(window, first.Id);
+        Point inside = box.TranslatePoint(new Point(30, 20), window)!.Value;
+
+        for (int turn = 0; turn < 3; turn++)
+        {
+            window.MouseWheel(inside, new Vector(0, -1));
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.Equal(before, scroll.Offset);
+        Assert.Equal(zoom, graph.FindControl<TextBlock>("ZoomText")!.Text);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 넘치는_글은_칸이_스크롤하고_끝에_닿아도_판으로_넘기지_않는다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
+        Vector before = scroll.Offset;
+
+        TextBox box = Box(window, first.Id);
+        box.Text = string.Join("\n", Enumerable.Range(1, 40).Select(index => $"라루: {index}번째 줄"));
+        Dispatcher.UIThread.RunJobs();
+
+        ScrollViewer inner = box.GetVisualDescendants().OfType<ScrollViewer>().First();
+        Assert.True(inner.Extent.Height > inner.Viewport.Height);
+        Point inside = box.TranslatePoint(new Point(30, 20), window)!.Value;
+
+        // 칸의 끝을 넘도록 넉넉히 굴린다 — 끝에 닿은 뒤의 휠도 판으로 올라가지 않는다.
+        for (int turn = 0; turn < 60; turn++)
+        {
+            window.MouseWheel(inside, new Vector(0, -1));
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.True(inner.Offset.Y > 0);
+        Assert.Equal(before, scroll.Offset);
 
         window.Close();
     });

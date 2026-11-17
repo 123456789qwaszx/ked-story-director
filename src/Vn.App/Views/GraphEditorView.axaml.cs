@@ -384,6 +384,7 @@ public partial class GraphEditorView : UserControl
 
         // 그래프 내비게이션 (W40) — 휠 줌·중간 버튼 팬은 스크롤보다 먼저 가로챈다.
         GraphScroll.AddHandler(PointerWheelChangedEvent, OnGraphWheel, RoutingStrategies.Tunnel);
+        GraphCanvas.AddHandler(PointerWheelChangedEvent, OnWritingBoxWheel, RoutingStrategies.Bubble);
         GraphScroll.AddHandler(PointerPressedEvent, OnGraphPanPressed, RoutingStrategies.Tunnel);
         GraphScroll.AddHandler(PointerMovedEvent, OnGraphPanMoved, RoutingStrategies.Tunnel);
         GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, RoutingStrategies.Tunnel);
@@ -4055,6 +4056,19 @@ public partial class GraphEditorView : UserControl
         double factor = args.Delta.Y > 0 ? 1.15 : 1 / 1.15;
         ApplyZoom(_zoom * factor, args.GetPosition(GraphScroll));
         args.Handled = true;
+    }
+
+    /// <summary>
+    /// 글 칸이 쓰지 않은 휠을 판에서 멈춘다 (2026-11-17 소유자 보고). 칸 위의 휠은 확대가 아니라 칸의 스크롤인데(<see cref="OnGraphWheel"/>),
+    /// 글이 칸에 다 들어가 스크롤할 것이 없으면 칸이 휠을 받지 않고 그대로 올라가 <b>판의 ScrollViewer가 판 전체를 세로로 스크롤했다</b>.
+    /// 버블에서 캔버스는 칸보다 바깥이고 판의 스크롤보다 안쪽이라, 칸이 먼저 제 몫을 하고 남은 것만 여기서 끝난다.
+    /// </summary>
+    private void OnWritingBoxWheel(object? sender, PointerWheelEventArgs args)
+    {
+        if (InWritingBox(args.Source))
+        {
+            args.Handled = true;
+        }
     }
 
     /// <summary>배율 적용 — anchor(뷰포트 좌표) 아래의 내용이 그 자리에 남게 오프셋을 맞춘다.</summary>
