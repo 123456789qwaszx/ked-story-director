@@ -683,20 +683,6 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        if (kind == ExitPortKind.Default)
-        {
-            if (!string.Equals(node.DefaultExitTargetNodeId, targetNodeId, StringComparison.Ordinal))
-            {
-                Mutate(() =>
-                {
-                    node.DefaultExitTargetNodeId = targetNodeId;
-                    ForgetShapeIfCut(node, kind, branchOpenLineId, targetNodeId);
-                });
-            }
-
-            return;
-        }
-
         if (node is not DialogueNode dialogue || branchOpenLineId is null)
         {
             return;
@@ -1218,11 +1204,6 @@ public sealed partial class ProjectEditor
         // 사라진 노드를 가리키던 출구를 남겨 두면 그래프에 끊어진 간선이 생긴다.
         foreach (StoryNode other in Project.EnumerateNodes())
         {
-            if (string.Equals(other.DefaultExitTargetNodeId, nodeId, StringComparison.Ordinal))
-            {
-                other.DefaultExitTargetNodeId = null;
-            }
-
             if (other is not DialogueNode dialogue)
             {
                 continue;

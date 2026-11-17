@@ -225,12 +225,6 @@ public static class ChapterYarnExporter
                     text.Append('\n');
                     break;
 
-                case RenderedSegmentKind.DefaultJump:
-                    text.Append(indent);
-                    YarnSyntax.AppendJump(text, TargetOf(segment));
-                    text.Append('\n');
-                    break;
-
                 case RenderedSegmentKind.Warning:
                     problems.Add(new ChapterYarnProblem(
                         segment.Text ?? "알 수 없는 경고", IsBlocking: false, episodeId, segment.Source.LineId));

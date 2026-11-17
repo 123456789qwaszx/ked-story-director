@@ -11,7 +11,6 @@
         "x": 60,
         "y": 80
       },
-      "defaultExit": "nd_scene",
       "conditions": [
         {
           "id": "cd_favor",
@@ -33,7 +32,6 @@
         "x": 360,
         "y": 80
       },
-      "defaultExit": "nd_normal",
       "script": {
         "primaryLocale": "ko-KR",
         "sourceRevision": 1,

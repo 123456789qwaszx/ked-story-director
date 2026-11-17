@@ -15,7 +15,6 @@ public class SerializationTests
         var (_, l1, _, l3, _, _, _) = sample.BuildSpecExample();
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, sample.TargetA.Id);
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l3, sample.TargetB.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
         sample.Editor.MoveNode(sample.Dialogue.Id, 120, 340);
 
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
@@ -28,7 +27,6 @@ public class SerializationTests
         Assert.Equal(DialogueScriptResolver.Resolve(sample.Project, sample.Dialogue).Lines.Select(line => line.LineId), DialogueScriptResolver.Resolve(reloaded, dialogue).Lines.Select(line => line.LineId));
         Assert.Equal(sample.TargetA.Id, dialogue.BranchExits[l1]);
         Assert.Equal(sample.TargetB.Id, dialogue.BranchExits[l3]);
-        Assert.Equal(sample.TargetDefault.Id, dialogue.DefaultExitTargetNodeId);
         Assert.Equal(120, dialogue.Layout.X);
         Assert.Equal(340, dialogue.Layout.Y);
 

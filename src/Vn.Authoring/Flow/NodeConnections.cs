@@ -3,11 +3,11 @@ using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Flow;
 
+/// <summary>
+/// 실행 출구의 종류 — 조건 갈래와 분기점. ⛔ 기본 출구(<c>Default</c> — 노드가 끝난 뒤의 출구)는 2026-11-17에 걷혔다.
+/// </summary>
 public enum ExitPortKind
 {
-    /// <summary>실행 가능한 노드 전체가 끝난 뒤의 출구.</summary>
-    Default,
-
     /// <summary>특정 조건 갈래를 지났을 때의 출구.</summary>
     Branch,
 
@@ -25,7 +25,7 @@ public enum ExitPortKind
 /// <summary>
 /// 그래프에서 끌어다 연결할 수 있는 실행 출력 포트 하나.
 ///
-/// 오직 다음 실행 노드를 결정하는 출구(기본 · 갈래 · 분기)만 표현한다.
+/// 오직 다음 실행 노드를 결정하는 출구(갈래 · 분기)만 표현한다.
 /// </summary>
 /// <param name="OpenOrdinal">
 /// 이어지지 않은 분기점(<see cref="Model.DialogueLineExtension.OpenDetourPositions"/>)이면 그 줄의 분기점 전체에서 몇째
@@ -47,7 +47,7 @@ public sealed record ExitPort(
 
     /// <summary>
     /// 이 포트를 저장할 때의 열쇠. 갈래는 여는 줄의 LineId, 분기는 줄과 다녀갈 노드다
-    /// (<see cref="DetourKey"/>). 기본 출구는 열쇠가 없다 — 노드에 자리가 하나뿐이다.
+    /// (<see cref="DetourKey"/>).
     /// </summary>
     public string? ExitKey => Kind switch
     {
@@ -121,20 +121,6 @@ public static class NodeConnections
                         : new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", null, ports.Count, OpenOrdinal: slot));
                 }
             }
-
-            // ~~기본 출구는 엑셀노드만 가진다~~ (2026-08-21) — <b>걷혔다</b>
-            //    (R7 P-6 · 결정 ⑤ · 2026-09-17). 그 관문이 곧 엑셀노드/자유노드의 구분이었고,
-            //    구분이 없어졌으므로 <b>대사 노드는 전부 기본 출구를 가진다</b>.
-            //
-            // 이 규칙은 `StoryNode.EffectiveDefaultExit`에도 <b>따로 한 벌</b> 있었다 —
-            //    같은 규칙이 두 곳에 살면 갈린다. 그쪽도 함께 걷었다.
-            ports.Add(new ExitPort(
-                ExitPortKind.Default,
-                dialogue.Id,
-                null,
-                "기본",
-                dialogue.DefaultExitTargetNodeId,
-                -1));
         }
 
         return ports;

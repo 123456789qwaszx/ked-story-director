@@ -185,9 +185,7 @@ public class GraphProjectionTests
             Layout = new NodeLayout { X = 80, Y = 100 }
         };
         // 실행 흐름은 DialogueNode만 정한다. SetNode는 조건 공급자일 뿐이다.
-        // 간선의 매개는 조건 갈래 출구다 (2026-08-21) — 기본 출구는 커스텀 노드에서
-        // 폐지됐고 엑셀노드의 것은 카드가 아니라 철도 칩에 살아, 카드 간선을 만드는
-        // 출구는 갈래 하나뿐이다.
+        // 간선의 매개는 조건 갈래 출구다 — 카드 간선을 만드는 출구는 갈래(와 분기)뿐이다(기본 출구는 2026-11-17에 걷혔다).
         var script = new ScriptDocument();
         script.Lines.Add(new ScriptLine("ln_a1"));
 

@@ -39,7 +39,7 @@ internal sealed class Sample
 
         TargetA = AddEndNode("A로 간다");
         TargetB = AddEndNode("B로 간다");
-        TargetDefault = AddEndNode("기본으로 간다");
+        TargetC = AddEndNode("C로 간다");
     }
 
     public ProjectEditor Editor { get; }
@@ -66,7 +66,7 @@ internal sealed class Sample
 
     public DialogueNode TargetB { get; }
 
-    public DialogueNode TargetDefault { get; }
+    public DialogueNode TargetC { get; }
 
     /// <summary>대본에 줄을 하나 붙이고 그 줄의 LineId를 돌려준다.</summary>
     public string Line(string text, LineConditionTransition? transition = null)

@@ -48,12 +48,9 @@ public abstract class StoryNode
     /// </summary>
     public Dictionary<string, EdgeShape> EdgeShapes { get; init; } = new(StringComparer.Ordinal);
 
-    /// <summary>
-    /// 노드가 끝난 뒤 이동할 노드. null이면 이야기가 여기서 멈춘다.
-    ///
-    /// 실행 가능한 DialogueNode와 SetNode가 사용한다.
-    /// </summary>
-    public string? DefaultExitTargetNodeId { get; set; }
+    // ⛔ `DefaultExitTargetNodeId`(기본 출구 — 노드가 끝난 뒤 이동할 노드 · 판 파일 `defaultExit`)는 2026-11-17에 걷혔다
+    //    (`docs/work-orders/default-exit-orders.md`). 에피소드 사이의 흐름은 챕터 간선이, 분기 카드는 부른 자리로 돌아오는 것이 맡아
+    //    쓰는 화면이 남지 않았다.
 }
 
 /// <summary>
@@ -107,9 +104,8 @@ public sealed class ConditionDefinition
 /// 이 분리 덕분에 대본을 다시 읽어 문구가 바뀌어도 조건 구조가 그대로 남고,
 /// 같은 문장을 고칠 수 있는 자리가 도구 안에 하나만 존재한다.
 ///
-/// 출구는 두 종류다.
-///   기본 출구   — 모든 줄과 조건 체인이 끝난 뒤 이동한다. 노드 전체가 소유한다.
-///   조건 갈래 출구 — 특정 조건 갈래를 지났을 때만 이동한다.
+/// 출구는 조건 갈래 출구(특정 조건 갈래를 지났을 때만 이동한다)와 분기점(들렀다 돌아온다)이다. 노드가 끝난 뒤의 흐름은 챕터
+/// 간선이 맡는다(에피소드) — 분기 카드는 부른 자리로 돌아온다.
 ///
 /// <b>조건 갈래 출구는 갈래를 여는 줄의 Id로 기억한다.</b> 갈래의 마지막 줄에 매달면
 /// 줄을 하나 추가하는 순간 출구가 갈래 중간에 파묻히고, 그 아래 대사가 실행되는
@@ -197,10 +193,6 @@ public sealed class DialogueNode : StoryNode
     //    "툴이 LineId의 주인"). 워크북을 <b>다시 읽을 때</b> 어느 줄이 어느 줄인지
     //    맞추려고 들고 있던 표다 — 다시 읽지 않으면 맞출 상대가 없고, 신원은 이제
     //    프로젝트가 그냥 갖는다. 구판 프로젝트 파일의 `excelLines`는 읽지 않고 지나간다.
-
-    // `EffectiveDefaultExit`(커스텀 노드에는 기본 출구가 없다 — 2026-08-21)는 R7 P-6
-    //    (결정 ⑤ · 2026-09-17)에 뜻을 잃고 `[Obsolete]` 껍데기로 남았다가 L4(2026-10-29)에
-    //    걷혔다. 엑셀노드/자유노드 구분이 없어져 `DefaultExitTargetNodeId`와 같았다.
 
     /// <summary>그 줄의 확장 — 없으면 만들어 붙인다. 빈 확장은 저장 때 알아서 빠진다.</summary>
     public DialogueLineExtension RequireExtension(string lineId)

@@ -20,7 +20,6 @@ public class ResultDocumentComposerTests
 
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, sample.TargetA.Id);
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l3, sample.TargetB.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
 
         DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
@@ -46,7 +45,6 @@ public class ResultDocumentComposerTests
                 RenderedSegmentKind.ConditionEnd,
                 RenderedSegmentKind.DialogueLine,
                 RenderedSegmentKind.DialogueLine,
-                RenderedSegmentKind.DefaultJump,
                 RenderedSegmentKind.NodeFooter
             },
             meaningful.Select(segment => segment.Kind));

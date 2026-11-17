@@ -3428,7 +3428,6 @@ public partial class GraphEditorView : UserControl
         {
             Text = port.Label,
             FontSize = 10,
-            Opacity = port.Kind == GraphOutputPortKind.ExecutionDefault ? 0.6 : 1,
             FontWeight = branch ? FontWeight.SemiBold : FontWeight.Normal,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
@@ -4765,7 +4764,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     internal event Action<PickedLine?>? LineSelected;
 
-    /// <summary>판에서 고른 선 — 선택지 레인이거나 실행 선(분기 · 갈래 · 기본 출구)이다.</summary>
+    /// <summary>판에서 고른 선 — 선택지 레인이거나 실행 선(분기 · 갈래)이다.</summary>
     internal abstract record PickedLine
     {
         private PickedLine()
@@ -5245,11 +5244,7 @@ public partial class GraphEditorView : UserControl
 
         string sourceName = FindNodeName(edge.Connection.SourceNodeId) ?? edge.Connection.SourceNodeId;
         string targetName = FindNodeName(edge.Connection.TargetNodeId) ?? edge.Connection.TargetNodeId;
-        string kind = edge.Connection.Kind == GraphConnectionKind.ExecutionBranch
-            ? $"조건 '{edge.Connection.Label}'"
-            : "기본 출구";
-
-        SetHint($"{sourceName} — {kind} → {targetName} · 우클릭으로 삭제");
+        SetHint($"{sourceName} — 조건 '{edge.Connection.Label}' → {targetName} · 우클릭으로 삭제");
     }
 
     /// <summary>

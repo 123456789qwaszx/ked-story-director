@@ -132,7 +132,6 @@ public enum GraphNodeKind
 
 public enum GraphOutputPortKind
 {
-    ExecutionDefault,
     ExecutionBranch,
 
     /// <summary>
@@ -193,9 +192,9 @@ public sealed record GraphOutputPortProjection(
     /// </summary>
     bool OnLeft = false);
 
+/// <summary>실행 선의 종류 — 갈래 · 분기 출구(⛔ 기본 출구 <c>ExecutionDefault</c>는 2026-11-17에 걷혔다).</summary>
 public enum GraphConnectionKind
 {
-    ExecutionDefault,
     ExecutionBranch
 }
 

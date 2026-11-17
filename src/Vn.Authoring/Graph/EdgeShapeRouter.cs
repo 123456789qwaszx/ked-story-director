@@ -35,7 +35,7 @@ public static class EdgeShapeRouter
     private const double CurveReach = 48;
 
     /// <summary>
-    /// 실행 선(IF 갈래 · 분기 · 기본 출구) — 카드 옆 포트에서 나가 도착 카드의 옆으로 든다.
+    /// 실행 선(IF 갈래 · 분기) — 카드 옆 포트에서 나가 도착 카드의 옆으로 든다.
     /// <paramref name="leftward"/>면 왼쪽 포트에서 나가 도착 카드의 오른쪽으로 든다(G2).
     /// </summary>
     public static ShapedEdge Execution(GraphPosition from, GraphPosition to, bool leftward, EdgeShape? shape)

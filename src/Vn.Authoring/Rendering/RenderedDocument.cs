@@ -16,7 +16,8 @@ public enum RenderedSegmentKind
     /// 갈래로 <b>돌아와</b> 나머지 대본을 계속한다. jump면 갈래 뒤의 대사가 전부 죽는다.
     /// </summary>
     BranchDetour,
-    DefaultJump,
+
+    // DefaultJump(기본 출구의 <<jump>>)는 기본 출구와 함께 2026-11-17에 걷혔다.
     Warning,
     NodeFooter
 }

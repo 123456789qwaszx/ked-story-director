@@ -46,7 +46,6 @@ public sealed class DialogueDraft
         int sourceScriptRevision,
         string locale,
         IReadOnlyList<DialogueResultLine> lines,
-        string? defaultExitTargetNodeId,
         IReadOnlyList<PublishProblem> problems,
         IReadOnlyList<DialogueResultTransition>? trailingTransitions = null)
     {
@@ -56,7 +55,6 @@ public sealed class DialogueDraft
         SourceScriptRevision = sourceScriptRevision;
         Locale = locale;
         Lines = lines;
-        DefaultExitTargetNodeId = defaultExitTargetNodeId;
         Problems = problems;
     }
 
@@ -72,8 +70,6 @@ public sealed class DialogueDraft
 
     /// <summary>마지막 줄 뒤의 전환들 — 대사 없는 조건 블록이 대본의 끝일 때 (2026-08-24).</summary>
     public IReadOnlyList<DialogueResultTransition> TrailingTransitions { get; }
-
-    public string? DefaultExitTargetNodeId { get; }
 
     public IReadOnlyList<PublishProblem> Problems { get; }
 
@@ -152,8 +148,6 @@ public static class DialoguePublisher
             node.Script.SourceRevision,
             script.Locale,
             lines,
-            // 커스텀 노드는 기본 출구가 없다 — detour의 복귀가 그 자리를 맡는다.
-            node.DefaultExitTargetNodeId,
             problems,
             // 마지막 줄 뒤의 전환 (2026-08-24) — 대사 없는 조건 블록이 대본의 끝일 때.
             // 줄에 실린 것과 <b>같은 얼리기</b>를 지난다: 조건 Id가 아니라 <b>식</b>이
@@ -172,7 +166,6 @@ public static class DialoguePublisher
             draft.SourceScriptRevision,
             draft.Locale,
             draft.Lines,
-            draft.DefaultExitTargetNodeId,
             draft.TrailingTransitions);
     }
 

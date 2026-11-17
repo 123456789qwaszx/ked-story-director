@@ -210,17 +210,6 @@ public static class ResultDocumentComposer
                 Source: nodeSource));
         }
 
-        if (options.IncludeExecutionJumps && dialogue.DefaultExitTargetNodeId is { } defaultTarget)
-        {
-            segments.Add(new RenderedSegment(
-                Id: $"node:{dialogue.SourceNodeId}:default-jump",
-                Kind: RenderedSegmentKind.DefaultJump,
-                Layer: DocumentLayer.ExecutionJumps,
-                Source: nodeSource,
-                TargetNodeId: defaultTarget,
-                TargetNodeName: project?.FindNode(defaultTarget)?.Name));
-        }
-
         if (options.IncludeStructure)
         {
             segments.Add(new RenderedSegment(

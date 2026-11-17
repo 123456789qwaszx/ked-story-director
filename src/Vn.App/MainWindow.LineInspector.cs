@@ -269,17 +269,9 @@ public partial class MainWindow
             return;
         }
 
-        if (connection.Kind == GraphConnectionKind.ExecutionBranch)
-        {
-            Graph.SetInspectorHeader($"갈래 · {from} → {to}", "조건 갈래의 출구");
-            Fact("갈래", connection.Label);
-            Note("이 갈래를 지나면 이리로 갑니다.");
-        }
-        else
-        {
-            Graph.SetInspectorHeader($"실행 선 · {from} → {to}", "기본 출구");
-            Note("카드가 끝나면 이리로 갑니다.");
-        }
+        Graph.SetInspectorHeader($"갈래 · {from} → {to}", "조건 갈래의 출구");
+        Fact("갈래", connection.Label);
+        Note("이 갈래를 지나면 이리로 갑니다.");
     }
 
     /// <summary>카드의 이름 — [대본] 탭에 보이는 그대로(에피소드는 제목, 비면 EpisodeId · 아니면 노드 이름).</summary>

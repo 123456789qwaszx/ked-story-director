@@ -193,8 +193,6 @@ public static class ChapterBoardSupply
                 }
             }
 
-            Check(dialogue.DefaultExitTargetNodeId, "기본 출구");
-
             foreach ((_, string targetId) in dialogue.BranchExits)
             {
                 Check(targetId, "갈래 출구");

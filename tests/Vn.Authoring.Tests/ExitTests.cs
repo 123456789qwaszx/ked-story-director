@@ -17,38 +17,11 @@ public class ExitTests
 
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, sample.TargetA.Id);
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l3, sample.TargetB.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
 
         DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
 
         Assert.Equal(sample.TargetA.Id, flow.Branches[0].ExitTargetNodeId);
         Assert.Equal(sample.TargetB.Id, flow.Branches[1].ExitTargetNodeId);
-        Assert.Equal(sample.TargetDefault.Id, sample.Dialogue.DefaultExitTargetNodeId);
-    }
-
-    [Fact]
-    public void 기본_출구와_조건_출구는_서로_독립적이다()
-    {
-        var sample = new Sample();
-        var (_, l1, _, _, _, _, _) = sample.BuildSpecExample();
-
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, sample.TargetA.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
-
-        // 기본 출구를 끊어도 조건 출구는 그대로다.
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, null);
-
-        DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
-        Assert.Equal(sample.TargetA.Id, flow.Branches[0].ExitTargetNodeId);
-        Assert.Null(sample.Dialogue.DefaultExitTargetNodeId);
-
-        // 반대도 마찬가지다.
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, null);
-
-        flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
-        Assert.Null(flow.Branches[0].ExitTargetNodeId);
-        Assert.Equal(sample.TargetDefault.Id, sample.Dialogue.DefaultExitTargetNodeId);
     }
 
     [Fact]
@@ -175,74 +148,16 @@ public class ExitTests
         Assert.Empty(sample.Dialogue.LineExtensions);
     }
 
-    /// <summary>
-    /// ⚠ <b>2026-09-17에 뒤집혔다</b> (R7 P-6 · 결정 ⑤). 전에는 *커스텀(자유) 노드는 출구가
-    /// 없다*(2026-08-21)였고 — detour로 재생되고 돌아가야 하므로 — 그 관문이 <b>곧
-    /// 엑셀노드/자유노드의 구분</b>이었다.
-    ///
-    /// 구분이 없어졌으므로 관문도 없다. 같은 규칙이 <b>세 곳</b>에 살고 있었다:
-    /// <c>NodeConnections</c>(포트) · <c>ProjectEditor.SetExitTarget</c>(쓰기 거절) ·
-    /// <c>StoryNode.EffectiveDefaultExit</c>(실행이 보는 값). 셋을 함께 걷었다.
-    /// </summary>
-    [Fact]
-    public void 모든_대사_노드가_기본_출구_포트를_가진다()
-    {
-        var sample = new Sample();
-        sample.BuildSpecExample();
-
-        Assert.Contains(
-            NodeConnections.PortsOf(sample.Dialogue, sample.Project),
-            port => port.Kind == ExitPortKind.Default);
-
-        Assert.Contains(
-            NodeConnections.PortsOf(sample.TargetA, sample.Project),
-            port => port.Kind == ExitPortKind.Default);
-    }
-
-    [Fact]
-    public void 표식_없는_노드의_기본_출구도_쓰고_펼친다()
-    {
-        var sample = new Sample();
-
-        sample.Editor.SetExitTarget(sample.TargetA.Id, ExitPortKind.Default, null, sample.TargetB.Id);
-
-        Assert.Equal(sample.TargetB.Id, sample.TargetA.DefaultExitTargetNodeId);
-
-        var result = sample.Unfold(sample.TargetA.Id);
-        Assert.Equal(sample.TargetB.Id, result.DefaultExitTargetNodeId);
-    }
-
-    [Fact]
-    public void 없는_노드를_가리키는_배선은_어느_노드에서든_문제다()
-    {
-        // 전에는 커스텀 노드의 같은 상태를 <b>안 보는 값</b>이라 넘겼다 — 이제 실행이
-        // 보므로 끊긴 배선은 어디서든 끊긴 배선이다.
-        var sample = new Sample();
-
-        sample.TargetA.DefaultExitTargetNodeId = "없는_노드";
-        sample.Dialogue.DefaultExitTargetNodeId = "없는_노드";
-
-        Assert.Contains(
-            ConditionFlowResolver.Resolve(sample.TargetA, sample.Project).Problems,
-            problem => problem.Kind == FlowProblemKind.MissingExitTarget);
-
-        Assert.Contains(
-            ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project).Problems,
-            problem => problem.Kind == FlowProblemKind.MissingExitTarget);
-    }
-
     [Fact]
     public void 노드를_지우면_그것을_가리키던_출구가_함께_끊긴다()
     {
         var sample = new Sample();
         string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opener, sample.TargetA.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetA.Id);
 
         sample.Editor.RemoveNode(sample.TargetA.Id);
 
         Assert.Empty(sample.Dialogue.BranchExits);
-        Assert.Null(sample.Dialogue.DefaultExitTargetNodeId);
         Assert.DoesNotContain(
             ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project).Problems,
             problem => problem.Kind == FlowProblemKind.MissingExitTarget);

@@ -15,11 +15,6 @@ internal static class YarnSyntax
     public static string IndentOf(int level) =>
         string.Concat(Enumerable.Repeat(Indent, Math.Max(0, level)));
 
-    public static void AppendJump(StringBuilder builder, string target)
-    {
-        builder.Append("<<jump ").Append(target).Append(">>");
-    }
-
     /// <summary>
     /// <c>&lt;&lt;detour 노드&gt;&gt;</c> — 대상 노드를 재생하고 이 자리로 돌아온다.
     /// 조건 갈래의 출구가 쓴다 (YarnSpinner 3.x).

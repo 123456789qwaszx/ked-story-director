@@ -77,7 +77,6 @@ public sealed class DialogueResult
         int sourceScriptRevision,
         string locale,
         IReadOnlyList<DialogueResultLine> lines,
-        string? defaultExitTargetNodeId,
         IReadOnlyList<DialogueResultTransition>? trailingTransitions = null)
     {
         TrailingTransitions = trailingTransitions ?? Array.Empty<DialogueResultTransition>();
@@ -86,7 +85,6 @@ public sealed class DialogueResult
         SourceScriptRevision = sourceScriptRevision;
         Locale = locale;
         Lines = lines;
-        DefaultExitTargetNodeId = defaultExitTargetNodeId;
     }
 
     /// <summary>이 결과를 낳은 DialogueNode. 추적용이며 결과의 유효성을 좌우하지 않는다.</summary>
@@ -105,8 +103,6 @@ public sealed class DialogueResult
     /// 결과에 실어야 합성기가 노드를 다시 읽지 않고 문서 끝에서 그 블록을 닫는다.
     /// </summary>
     public IReadOnlyList<DialogueResultTransition> TrailingTransitions { get; }
-
-    public string? DefaultExitTargetNodeId { get; }
 
     public DialogueResultLine? FindLine(string? lineId)
     {

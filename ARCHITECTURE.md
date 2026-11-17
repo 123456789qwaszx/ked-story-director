@@ -85,7 +85,7 @@ MyStory/
 |---|---|
 | `StoryProject.cs` | 프로젝트 — 판(카드와 그 대본) · 챕터 · [대본] 판 크기. 화자는 정의 파일 speakers 하나다 |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
-| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
+| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 에피소드 표식(`MarkedEpisodeId`) · 분기 카드의 제목(`Title`)을 든다. ⛔ 기본 출구는 2026-11-17에 걷혔다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
 | `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
 | `EdgeShape.cs` | 사람이 고친 선 모양(꼴 · 굽이 — 자동 자리에서 옮긴 양) |
 | `Identifier.cs` | 식별자 형식 |
@@ -288,7 +288,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 
 | 하고 싶은 일 | 여는 곳 |
 |---|---|
-| 출구를 어디에 저장하나 | `Model/StoryNode.cs`의 `DialogueNode.BranchExits` · `DefaultExitTargetNodeId` |
+| 출구를 어디에 저장하나 | `Model/StoryNode.cs`의 `DialogueNode.BranchExits` · 줄 확장의 분기점(`DialogueLineExtension`) |
 | 포트를 만드는 규칙 · 간선 문구 | `Flow/NodeConnections.cs`의 `PortsOf` · `LabelFor` |
 | 연결 · 해제 | `ProjectEditor.SetExitTarget` |
 | 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs`(`IsHiddenPlumbing`) |

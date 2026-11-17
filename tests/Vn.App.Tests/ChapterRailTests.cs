@@ -99,7 +99,7 @@ public sealed class ChapterRailTests
     [Fact]
     public void 에피소드_카드의_선택지는_칸으로_서고_진행은_맨_아래다() => HeadlessUi.Run(() =>
     {
-        // 에피소드 카드의 선택지 · 기본 출구 포트는 카드 아래 칸에 선다. 칸의 주인은 챕터 간선이다.
+        // 에피소드 카드의 선택지는 카드 아래 칸에 선다. 칸의 주인은 챕터 간선이다.
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
 
         DialogueNode ep00 = AddEpisodeCard(session, fileId, "EP00");
@@ -118,17 +118,7 @@ public sealed class ChapterRailTests
             ]);
         graph.Rebuild();
 
-        // ① 에피소드 카드에는 기본 출구 · 선택지 포트가 없다 — 칸으로 이사했다(IF 갈래만 남는다).
-        ExpandedNodeProjection projected = GraphProjectionBuilder
-            .Build(session.Project, session.Project.Files.Select(file => file.Id)
-                .ToHashSet(StringComparer.Ordinal))
-            .Items.OfType<ExpandedNodeProjection>()
-            .Single(item => item.NodeId == ep00.Id);
-
-        Assert.DoesNotContain(projected.OutputPorts,
-            port => port.Kind == GraphOutputPortKind.ExecutionDefault);
-
-        // ② 칸의 차례 — 선택지(간선 순서)가 위, 문구 없는 진행이 그 아래다.
+        // 칸의 차례 — 선택지(간선 순서)가 위, 문구 없는 진행이 그 아래다.
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         List<string> order = Rows(canvas, "EP00")
             .Take(3)

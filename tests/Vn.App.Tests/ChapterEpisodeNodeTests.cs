@@ -135,13 +135,8 @@ public sealed class ChapterEpisodeNodeTests
         DialogueNode first = session.Editor.AddBranchMarker(episodeNodeId, episode.Script.ActiveLines.First().Id);
         DialogueNode second = session.Editor.AddBranchMarker(episodeNodeId, episode.Script.ActiveLines.First().Id);
 
-        // [기본 출구] 편집 구역은 없다 — 같은 값을 판의 레일 칩이 편집하므로 창구는 하나다.
         editor.Show(episodeNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.Null(editor.FindControl<Grid>("DefaultExitControls"));
-        Assert.Null(editor.FindControl<ComboBox>("DefaultExitCombo"));
-        Assert.Null(editor.FindControl<TextBlock>("DefaultExitSubtitle"));
 
         List<StoryNode> targets = editor.ExitTargetsProbe(first.Id);
 
@@ -161,20 +156,13 @@ public sealed class ChapterEpisodeNodeTests
         // 갈래(detour) 출구가 에피소드 카드를 가리키면 여전히 크게 말한다.
         free.BranchExits["ln_legacy"] = episodeNodeId;
 
-        // 기본 출구도 살아 있는 배선이라 <b>갈래 출구와 나란히</b> 짚인다.
-        free.DefaultExitTargetNodeId = episodeNodeId;
-
         ChapterGraphModel chapter = Chapter(session);
 
         var warnings = ChapterBoardSupply.WarnExitsIntoLandingCards(session.Editor, fileId, chapter);
 
-        Assert.Equal(2, warnings.Count);
-        Assert.All(warnings, item =>
-            Assert.Equal(ChapterDiagnosticSeverity.Warning, item.Severity));
-        Assert.Contains(warnings, item => item.Message.Contains("기본 출구", StringComparison.Ordinal));
-
-        ChapterDiagnostic warning = Assert.Single(
-            warnings, item => item.Message.Contains("갈래 출구", StringComparison.Ordinal));
+        ChapterDiagnostic warning = Assert.Single(warnings);
+        Assert.Equal(ChapterDiagnosticSeverity.Warning, warning.Severity);
+        Assert.Contains("갈래 출구", warning.Message);
         Assert.Contains("우회로", warning.Message);
         Assert.Contains("챕터 간선", warning.Message);
     });

@@ -49,11 +49,6 @@ internal static class StoryNodeJson
             ((JsonObject)json["layout"]!)["writingHeight"] = Math.Round(writingHeight, 2);
         }
 
-        if (node.DefaultExitTargetNodeId is not null)
-        {
-            json["defaultExit"] = node.DefaultExitTargetNodeId;
-        }
-
         // 선 모양(G3) — "lines"는 대사 노드의 LineId별 논리가 이미 쓰는 칸이라 이름이 다르다.
         var shapes = new JsonObject();
 
@@ -96,8 +91,6 @@ internal static class StoryNodeJson
             "dialogue" => ReadDialogueNode(json, id, name),
             _ => throw new InvalidDataException($"지원하지 않는 노드 종류 '{kind}'입니다.")
         };
-
-        node.DefaultExitTargetNodeId = (string?)json["defaultExit"];
 
         if (json["layout"] is JsonObject layout)
         {

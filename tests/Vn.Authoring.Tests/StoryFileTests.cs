@@ -47,7 +47,7 @@ public class StoryFileTests
     }
 
     [Fact]
-    public void 파일이_달라도_실행_간선은_프로젝트_전체에서_계산된다()
+    public void 노드_삭제는_소유_파일에서_제거한다()
     {
         var project = new StoryProject();
         var first = new StoryFile("sf_a", "A");
@@ -61,36 +61,11 @@ public class StoryFileTests
         DialogueNode source = editor.AddDialogueNode(first.Id, name: "출발");
         source.MarkedEpisodeId = "ep_출발";
         DialogueNode target = editor.AddDialogueNode(second.Id, name: "도착");
-        editor.SetExitTarget(source.Id, Vn.Authoring.Flow.ExitPortKind.Default, null, target.Id);
-
-        Vn.Authoring.Flow.ExitPort edge = Assert.Single(
-            Vn.Authoring.Flow.NodeConnections.AllConnections(project));
-
-        Assert.Equal(source.Id, edge.NodeId);
-        Assert.Equal(target.Id, edge.TargetNodeId);
-    }
-
-    [Fact]
-    public void 노드_삭제는_소유_파일에서_제거하고_파일_간_출구도_정리한다()
-    {
-        var project = new StoryProject();
-        var first = new StoryFile("sf_a", "A");
-        var second = new StoryFile("sf_b", "B");
-        project.Files.Add(first);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });   // 카드는 챕터 판에만 선다
-        project.Files.Add(second);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
-        var editor = new ProjectEditor(project);
-
-        DialogueNode source = editor.AddDialogueNode(first.Id, name: "출발");
-        source.MarkedEpisodeId = "ep_출발";
-        DialogueNode target = editor.AddDialogueNode(second.Id, name: "도착");
-        editor.SetExitTarget(source.Id, Vn.Authoring.Flow.ExitPortKind.Default, null, target.Id);
 
         editor.RemoveNode(target.Id);
 
         Assert.Empty(second.Nodes);
-        Assert.Null(source.DefaultExitTargetNodeId);
+        Assert.Single(first.Nodes, node => node.Id == source.Id);
         Assert.Null(project.FindNode(target.Id));
     }
 

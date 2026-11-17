@@ -251,19 +251,6 @@ public static class GraphProjectionBuilder
     {
         IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project, definition);
 
-        // T2 (철도 배선) — 에피소드 카드의 선택지 옵션 포트와 기본 출구는 카드가 아니라
-        // 짝 간선의 칩에 산다. IF 갈래 출구는 카드에 남는다(내부 곁가지는 간선과 무관).
-        //
-        // <b>「조건 분기」 표식도 카드에 남는다</b> (R7 P-5 · 2026-09-17). 이것을 안 넣어
-        //    두면 「분기 추가」가 <b>안 보이는 포트를 뚫는다</b> — 소유자가 그린 그림의
-        //    핵심("연출그래프의 카드에 포트만 뚫리는데")이 통째로 빠진다. P-6 뒤로는 판의
-        //    카드가 전부 에피소드라 이 갈래에 <b>모두</b> 걸리므로 더 그렇다.
-        if (node is DialogueNode { MarkedEpisodeId: not null })
-        {
-            exits = exits.Where(exit =>
-                exit.Kind is Vn.Authoring.Flow.ExitPortKind.Detour or Vn.Authoring.Flow.ExitPortKind.Branch);
-        }
-
         // 분기 에피소드의 첫머리 조건은 출구가 아니다 — 미달이면 곧바로 돌아올 뿐이다(BranchEntryCondition). 이어 둔 것이 없으면
         // 카드에 포트 줄을 세우지 않는다.
         if (node is DialogueNode dialogue)
@@ -274,9 +261,7 @@ public static class GraphProjectionBuilder
         var ports = exits
             .Select(exit => new GraphOutputPortProjection(
                 PortKey(exit),
-                exit.Kind == ExitPortKind.Default
-                    ? GraphOutputPortKind.ExecutionDefault
-                    : GraphOutputPortKind.ExecutionBranch,
+                GraphOutputPortKind.ExecutionBranch,
                 exit.NodeId,
                 exit.Label,
                 exit.PaletteIndex,
@@ -403,10 +388,8 @@ public static class GraphProjectionBuilder
                     // 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
                     //   줄만 쓰면 같은 줄의 분기 선들이 한 열쇠를 나눠 가져, 끄는 동안 선을 열쇠로 다시 찾는 화면이
                     //   모두 첫 선의 경로를 받는다 — 나머지 분기가 끊긴 것처럼 보였다.
-                    $"execution:{exit.NodeId}:{exit.Kind}:{(exit.Kind == ExitPortKind.Detour ? exit.ExitKey : exit.BranchOpenLineId) ?? "default"}",
-                    exit.Kind == ExitPortKind.Default
-                        ? GraphConnectionKind.ExecutionDefault
-                        : GraphConnectionKind.ExecutionBranch,
+                    $"execution:{exit.NodeId}:{exit.Kind}:{(exit.Kind == ExitPortKind.Detour ? exit.ExitKey : exit.BranchOpenLineId)}",
+                    GraphConnectionKind.ExecutionBranch,
                     node.Id,
                     targetNodeId,
                     port.Key,
@@ -658,7 +641,6 @@ public static class GraphProjectionBuilder
         //    한 줄이 갈래도 열고 표식도 지면 열쇠가 겹쳐 <b>두 포트가 한 자리를 다툰다</b>.
         return exit.Kind switch
         {
-            ExitPortKind.Default => $"execution:{exit.NodeId}:default",
             // 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
             ExitPortKind.Detour => $"execution:{exit.NodeId}:detour:{exit.ExitKey}",
             _ => $"execution:{exit.NodeId}:branch:{exit.BranchOpenLineId}"

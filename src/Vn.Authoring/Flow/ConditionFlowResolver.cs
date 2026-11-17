@@ -366,15 +366,6 @@ public static class ConditionFlowResolver
                     "조건 출구가 가리키는 노드를 찾을 수 없습니다."));
             }
         }
-
-        if (node.DefaultExitTargetNodeId is not null &&
-            project.FindNode(node.DefaultExitTargetNodeId) is null)
-        {
-            problems.Add(new FlowProblem(
-                FlowProblemKind.MissingExitTarget,
-                null,
-                "기본 출구가 가리키는 노드를 찾을 수 없습니다."));
-        }
     }
 
     private sealed class BranchBuilder

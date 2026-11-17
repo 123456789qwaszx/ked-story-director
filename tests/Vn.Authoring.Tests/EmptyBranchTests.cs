@@ -197,7 +197,7 @@ public class EmptyBranchTests
         ConditionBranch branch = Assert.Single(flow.Branches);
 
         // 빈 갈래에 커스텀 씬을 매단다 — 신원은 줄이 아니라 꼬리 앵커다.
-        sample.Dialogue.BranchExits[branch.OpenLineId] = sample.TargetDefault.Id;
+        sample.Dialogue.BranchExits[branch.OpenLineId] = sample.TargetC.Id;
 
         DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
@@ -206,7 +206,7 @@ public class EmptyBranchTests
         RenderedSegment detour = Assert.Single(
             document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
 
-        Assert.Equal(sample.TargetDefault.Id, detour.TargetNodeId);
+        Assert.Equal(sample.TargetC.Id, detour.TargetNodeId);
     }
 
     [Fact]
@@ -231,13 +231,13 @@ public class EmptyBranchTests
         Assert.Null(port.TargetNodeId);
 
         // 포트로 매단다 — 카드에서 자유 씬을 고르는 것과 같은 길이다.
-        sample.Editor.SetExitTarget(port, sample.TargetDefault.Id);
+        sample.Editor.SetExitTarget(port, sample.TargetC.Id);
 
         ExitPort wired = Assert.Single(
             NodeConnections.PortsOf(sample.Dialogue, sample.Project),
             item => item.Kind == ExitPortKind.Branch);
 
-        Assert.Equal(sample.TargetDefault.Id, wired.TargetNodeId);
+        Assert.Equal(sample.TargetC.Id, wired.TargetNodeId);
     }
 
     [Fact]

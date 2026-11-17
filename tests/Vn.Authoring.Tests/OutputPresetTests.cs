@@ -39,7 +39,6 @@ public class OutputPresetTests
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
-        Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DefaultJump);
         Assert.Equal(OutputPresetId.RuntimeFull, document.PresetId);
     }
 
@@ -56,9 +55,7 @@ public class OutputPresetTests
         Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.NodeHeader);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
-        Assert.DoesNotContain(document.Segments, segment =>
-            segment.Kind is RenderedSegmentKind.BranchDetour
-                or RenderedSegmentKind.DefaultJump);
+        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
 
         string text = DocumentPreviewFormatter.Format(document);
         Assert.DoesNotContain("[장면]", text, StringComparison.Ordinal);
@@ -119,11 +116,6 @@ public class OutputPresetTests
             ExitPortKind.Branch,
             opening,
             sample.TargetA.Id);
-        sample.Editor.SetExitTarget(
-            sample.Dialogue.Id,
-            ExitPortKind.Default,
-            null,
-            sample.TargetDefault.Id);
 
         return new PresetSample(sample, opening, sample.Unfold());
     }

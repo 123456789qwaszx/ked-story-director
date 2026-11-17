@@ -17,10 +17,9 @@ public class ConnectionTests
 
         IReadOnlyList<ExitPort> ports = NodeConnections.PortsOf(sample.Dialogue, sample.Project);
 
-        Assert.Equal(3, ports.Count);
+        Assert.Equal(2, ports.Count);   // ⛔ 기본 출구 포트는 2026-11-17에 걷혔다
         Assert.Equal(l1, ports[0].BranchOpenLineId);
         Assert.Equal(l3, ports[1].BranchOpenLineId);
-        Assert.Equal(ExitPortKind.Default, ports[2].Kind);
     }
 
     [Fact]
@@ -125,17 +124,19 @@ public class ConnectionTests
         Assert.Empty(NodeConnections.PortsOf(sample.SetNode, sample.Project));
 
         // 실행 출구를 억지로 지정해도 조용히 무시된다.
-        sample.Editor.SetExitTarget(sample.SetNode.Id, ExitPortKind.Default, null, sample.Dialogue.Id);
-        Assert.Null(sample.SetNode.DefaultExitTargetNodeId);
+        long before = sample.Editor.Revision;
+        sample.Editor.SetExitTarget(sample.SetNode.Id, ExitPortKind.Branch, "ln_x", sample.Dialogue.Id);
+        Assert.Equal(before, sample.Editor.Revision);
     }
 
     [Fact]
     public void 없는_노드로는_연결되지_않는다()
     {
         var sample = new Sample();
+        string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
 
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, "nd_없는것");
+        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opener, "nd_없는것");
 
-        Assert.Null(sample.Dialogue.DefaultExitTargetNodeId);
+        Assert.Empty(sample.Dialogue.BranchExits);
     }
 }
