@@ -1,5 +1,4 @@
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
@@ -37,13 +36,6 @@ internal sealed class AuthoringSession
 
     /// <summary>현재 프로젝트 manifest 경로. 아직 저장하지 않았으면 null이다.</summary>
     public string? ProjectPath { get; private set; }
-
-    /// <summary>
-    /// `game.definition.json`의 내용 — 기획자가 소유하는 어휘(스탯·조건·화자). 화면은 그릴 때마다 여기서 읽는다.
-    /// </summary>
-    public GameDefinition Definition { get; private set; } = GameDefinition.Empty;
-
-    // 주의: 챕터에서 오는 화자 어휘는 없다 — 화자의 유일한 원천은 <see cref="Definition"/>이다.
 
     /// <summary>
     /// 새 노드가 추가될 현재 작업 파일.
@@ -112,10 +104,13 @@ internal sealed class AuthoringSession
     public event EventHandler? SelectionChanged;
 
     /// <summary>
-    /// 화자 목록이 정의 파일에 쓰였다(<see cref="SaveSpeakers"/>). 프로젝트 변경이 아니다 — 정의 파일은 되돌리기 밖이다. [대본] 탭의 프로젝트
-    /// 요약(화자 이름)과 [구성] 탭의 [화자] 탭(캐릭터 키)이 듣고 목록을 다시 세운다.
+    /// 프로젝트의 화자 목록이 바뀌었다 — 화자 명령 · 되돌리기 · 열기 모두. <see cref="Changed"/> 뒤에 알린다. [대본] 탭의 프로젝트
+    /// 요약(화자 이름)과 [구성] 탭의 [화자] 탭(캐릭터 키)이 듣고 목록을 다시 세운다 — 모든 변경마다 다시 세우지 않으려고 따로 둔다.
     /// </summary>
     public event EventHandler? SpeakersChanged;
+
+    /// <summary>마지막으로 알린 화자 목록의 지문 — <see cref="SpeakersChanged"/>를 바뀐 때만 낸다.</summary>
+    private string _speakerSignature = string.Empty;
 
     /// <summary>
     /// 현재 파일 또는 그래프 펼침 상태가 바뀌었을 때.
@@ -170,7 +165,6 @@ internal sealed class AuthoringSession
         StoryProject project = NewProjectInstance();
 
         ProjectPath = null;
-        Definition = GameDefinition.Empty;
         Destinations = ExportDestinations.None;
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
@@ -191,13 +185,13 @@ internal sealed class AuthoringSession
         (StoryProject project, string alignment) = AlignBoards(loaded.Project);
 
         ProjectPath = loaded.ManifestPath;
-        Definition = GameDefinition.LoadBeside(loaded.ManifestPath);
         ReloadDestinations();
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
+        string moved = AdoptDefinitionSpeakers(project, loaded.ManifestPath);
         StatusMessage =
             $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
-            alignment + DestinationsNote();
+            alignment + moved + DestinationsNote();
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
@@ -211,6 +205,31 @@ internal sealed class AuthoringSession
             activeFileChanged: true,
             expandedFilesChanged: true,
             fileListChanged: true);
+    }
+
+    /// <summary>
+    /// <b>화자 옮김</b>(2026-11-17 · <c>docs/work-orders/definition-split-orders.md</c> S3) — 프로젝트에 화자가 없고 옆 <c>game.definition.json</c>에
+    /// <c>speakers</c>가 있으면 들인다. 소유자의 프로젝트를 잃지 않으려는 한 번짜리 길이다 — 옮겨진 뒤 걷는다(빚).
+    ///
+    /// 저장본 스냅샷을 뜬 <b>뒤에</b> 들인다 — 「고쳤다」가 서야 한다. 저장하면 프로젝트에 남고 정의 파일에서 걷힌다(<see cref="Save"/>).
+    /// </summary>
+    /// <returns>상태줄에 덧붙일 한 마디(옮긴 것이 없으면 빈 글).</returns>
+    private static string AdoptDefinitionSpeakers(StoryProject project, string manifestPath)
+    {
+        if (project.Speakers.Count > 0)
+        {
+            return string.Empty;
+        }
+
+        IReadOnlyList<Speaker> found = GameDefinitionFile.SpeakersBeside(manifestPath);
+
+        if (found.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        project.Speakers.AddRange(found);
+        return $" · 화자 {found.Count}명을 {GameDefinitionFile.FileName}에서 프로젝트로 옮겼습니다 — 저장하면 남습니다.";
     }
 
     /// <summary>
@@ -257,28 +276,39 @@ internal sealed class AuthoringSession
 
         ProjectPath = Path.GetFullPath(target);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Project);
-        Definition = GameDefinition.LoadBeside(ProjectPath);
         ReloadDestinations();
         _deliveryRequested = !Destinations.IsEmpty;
         AppSettingsService.SaveRecentProject(ProjectPath);
 
-        bool provisioned = EnsureProjectFolders();
+        string stripped = StripDefinitionFile(ProjectPath);
 
         // 저장은 프로젝트에 쓰는 일 하나다. "다른 이름으로 저장"은 없다 — 프로젝트는 폴더이고,
         // 복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
         StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
-            (provisioned ? " 없던 정의 파일의 뼈대를 깔았습니다." : string.Empty) +
+            stripped +
             (Destinations.IsEmpty ? string.Empty : " 보낼 곳에도 보냅니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
     }
 
     /// <summary>
-    /// 프로젝트 폴더의 기본 살림 — <b>매 저장마다</b> 정의 파일이 없으면 뼈대를 깐다. 손으로 만들어야
-    /// 하는 파일이면 새 프로젝트마다 스탯 경고부터 맞는다. 있는 파일은 불가침이다. 무언가
-    /// 실제로 만들었을 때만 true — 조용한 저장이 시끄러워지지 않는다.
+    /// <b>매 저장마다</b> 옆 <c>game.definition.json</c>에서 이 툴이 쓰던 칸(스탯 · 전역 조건 · 화자)을 걷는다(2026-11-17 소유자 ·
+    /// definition-split S3 — 화자는 이제 프로젝트에 저장됐다). 남의 칸(compositor의 연출 어휘)은 둔다. ⛔ 그 전에는 저장이 없던 정의 파일의
+    /// 뼈대를 깔았다 — 이 툴은 이제 그 파일을 만들지 않는다.
     /// </summary>
-    private bool EnsureProjectFolders() =>
-        ProjectPath is not null && GameDefinitionStore.EnsureBeside(ProjectPath);
+    /// <returns>상태줄에 덧붙일 한 마디 — 걷은 것이 없으면 빈 글. 못 걷어도 저장은 끝난 것이다.</returns>
+    private static string StripDefinitionFile(string projectPath)
+    {
+        try
+        {
+            return GameDefinitionFile.StripBeside(projectPath)
+                ? $" {GameDefinitionFile.FileName}에서 옮긴 칸(스탯 · 조건 · 화자)을 걷었습니다."
+                : string.Empty;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return $" {GameDefinitionFile.FileName}의 옮긴 칸을 걷지 못했습니다: {exception.Message}";
+        }
+    }
 
     public void SetStatus(string message)
     {
@@ -286,11 +316,11 @@ internal sealed class AuthoringSession
         StatusChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // 화자의 집은 `game.definition.json`의 speakers 하나다. 2026-11-16(writer-fields W3)부터 화자 <b>이름</b>은 [대본] 탭(작가)이
-    // 더하고 고치고 지우며, <b>캐릭터 키</b>는 [구성] 탭(기획자)이 잇는다 — 규칙은 아래 화자 창구(AddSpeakerName …) 한 벌이다.
-    // (2026-08-23의 「작가가 더한 화자는 없앤다」 결정을 소유자가 바꿨다.)
+    // 화자의 집은 프로젝트다(<see cref="StoryProject.Speakers"/> · 2026-11-17 definition-split S3 — ⛔ 그 전에는 game.definition.json의 speakers).
+    // 화자 <b>이름</b>은 [대본] 탭(작가)이 더하고 고치고 지우며, <b>캐릭터 키</b>는 [구성] 탭(기획자)이 잇는다(writer-fields W3). 규칙(빈 이름 ·
+    // 같은 이름)은 아래 화자 창구 한 벌이고, 바꾸는 것은 편집기의 화자 명령이다 — 조작 하나 = 되돌리기 한 칸.
 
-    /// <summary>화자 이름을 더한다 — [대본] 탭. 못 더했으면 그 이유(빈 이름 · 같은 이름 · 저장 전 프로젝트).</summary>
+    /// <summary>화자 이름을 더한다 — [대본] 탭. 못 더했으면 그 이유(빈 이름 · 같은 이름).</summary>
     public string? AddSpeakerName(string? name)
     {
         string typed = (name ?? string.Empty).Trim();
@@ -300,19 +330,17 @@ internal sealed class AuthoringSession
             return "화자 이름을 적어 주세요.";
         }
 
-        List<SpeakerSpec> edited = Definition.Speakers.ToList();
-
-        if (edited.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)))
+        if (Project.FindSpeaker(typed) is not null)
         {
             return $"화자 '{typed}'은 이미 있습니다.";
         }
 
-        edited.Add(new SpeakerSpec { Name = typed, CharacterId = string.Empty });
-        return SaveSpeakers(edited) ? null : StatusMessage;
+        Editor.AddSpeaker(typed);
+        return null;
     }
 
     /// <summary>
-    /// 화자 이름을 바꾼다 — [대본] 탭. 이미 쓰인 대사 줄의 화자가 따라간다(<see cref="ProjectEditor.RenameSpeaker"/>), 캐릭터 키는 그대로다.
+    /// 화자 이름을 바꾼다 — [대본] 탭. 이미 쓰인 대사 줄의 화자가 같은 칸에서 따라간다(<see cref="ProjectEditor.RenameSpeaker"/>), 캐릭터 키는 그대로다.
     /// 비울 수 없고(지우기는 따로), 이미 있는 이름으로는 바꾸지 않는다(두 화자의 줄이 한 이름으로 합쳐진다).
     /// </summary>
     /// <returns>상태줄에 세울 말 — 무엇이 따라갔는지, 또는 못 바꾼 이유. 같은 이름이면 null.</returns>
@@ -330,27 +358,17 @@ internal sealed class AuthoringSession
             return "이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.";
         }
 
-        List<SpeakerSpec> edited = Definition.Speakers.ToList();
-        int index = edited.FindIndex(item => string.Equals(item.Name, oldName, StringComparison.Ordinal));
-
-        if (index < 0)
+        if (Project.FindSpeaker(oldName) is null)
         {
             return $"화자 '{oldName}'이 없습니다 — 목록이 바뀌었습니다.";
         }
 
-        if (edited.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)))
+        if (Project.FindSpeaker(typed) is not null)
         {
             return $"화자 '{typed}'은 이미 있습니다.";
         }
 
-        // 개명이 먼저다 — 이미 쓰인 이름을 끌고 간 뒤 등록부를 간다.
         int lines = Editor.RenameSpeaker(oldName, typed);
-        edited[index] = new SpeakerSpec { Name = typed, CharacterId = edited[index].CharacterId };
-
-        if (!SaveSpeakers(edited))
-        {
-            return StatusMessage;
-        }
 
         return lines == 0
             ? $"화자 '{oldName}' → '{typed}'."
@@ -358,52 +376,10 @@ internal sealed class AuthoringSession
     }
 
     /// <summary>화자를 목록에서 지운다 — [대본] 탭. 이미 대본에 적힌 이름은 그대로 남는다(화자 칸은 자유 입력).</summary>
-    public bool RemoveSpeakerName(string name)
-    {
-        List<SpeakerSpec> edited = Definition.Speakers.ToList();
-        return edited.RemoveAll(item => string.Equals(item.Name, name, StringComparison.Ordinal)) > 0 && SaveSpeakers(edited);
-    }
+    public bool RemoveSpeakerName(string name) => Editor.RemoveSpeaker(name);
 
-    /// <summary>화자의 캐릭터 키 — [구성] 탭. 초상화 · 표정이 이 키로 붙는다. 같은 값이면 쓰지 않는다.</summary>
-    public bool SetSpeakerCharacterId(string name, string? characterId)
-    {
-        string typed = (characterId ?? string.Empty).Trim();
-        List<SpeakerSpec> edited = Definition.Speakers.ToList();
-        int index = edited.FindIndex(item => string.Equals(item.Name, name, StringComparison.Ordinal));
-
-        if (index < 0 || string.Equals(edited[index].CharacterId, typed, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        edited[index] = new SpeakerSpec { Name = edited[index].Name, CharacterId = typed };
-        return SaveSpeakers(edited);
-    }
-
-    /// <summary>
-    /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 위 화자 창구들이 부른다. 화자는 게임 정의에 저장되며,
-    /// 모든 챕터가 공유해서 쓴다. 쓰고 나면 <see cref="SpeakersChanged"/>를 알린다 — 두 탭의 화자 목록이 다시 선다.
-    ///
-    /// <b>통째로 쓰는 것이 규격이다</b> — 탭에서 지운 이름이 파일에 남으면 목록이 화면과 갈리고, 그 순간부터 어느 쪽이
-    /// 진짜인지 아무도 모른다. 쓰고 나면 정의를 다시 읽어 드롭다운이 같은 목록을 본다.
-    ///
-    /// 초상화 매핑도 같은 배열이 진다(<c>characterId</c>) — 화자의 집이 하나라는 뜻이다.
-    /// </summary>
-    public bool SaveSpeakers(IReadOnlyList<SpeakerSpec> speakers)
-    {
-        ArgumentNullException.ThrowIfNull(speakers);
-
-        if (ProjectPath is null)
-        {
-            SetStatus("화자는 game.definition.json에 저장됩니다. 프로젝트를 먼저 저장해 주세요.");
-            return false;
-        }
-
-        GameDefinitionStore.SaveSpeakers(ProjectPath, speakers);
-        Definition = GameDefinition.LoadBeside(ProjectPath);
-        SpeakersChanged?.Invoke(this, EventArgs.Empty);
-        return true;
-    }
+    /// <summary>화자의 캐릭터 키 — [구성] 탭. 초상화 · 표정이 이 키로 붙는다. 같은 값이면 기록하지 않는다.</summary>
+    public bool SetSpeakerCharacterId(string name, string? characterId) => Editor.SetSpeakerCharacterId(name, characterId);
 
     /// <summary>
     /// 그 챕터의 판을 보장한다. <b>규칙은 <see cref="ProjectEditor.EnsureChapterBoard"/>가
@@ -611,7 +587,16 @@ internal sealed class AuthoringSession
             SelectionChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId));
+        bool speakersChanged = !string.Equals(_speakerSignature, speakers, StringComparison.Ordinal);
+        _speakerSignature = speakers;
+
         Changed?.Invoke(this, e);
+
+        if (speakersChanged)
+        {
+            SpeakersChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         if (activeChanged || expandedChanged || fileListChanged)
         {

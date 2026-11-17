@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
@@ -12,13 +11,11 @@ namespace Vn.Authoring.Tests;
 /// </summary>
 public class ScenarioPasteTests
 {
-    private static readonly GameDefinition Definition = GameDefinition.Parse("""
-        { "speakers": [ { "name": "라루", "characterId": "laru" }, { "name": "윌로", "characterId": "willo" } ] }
-        """)!;
+    private static readonly Speaker[] Speakers = [new("라루", "laru"), new("윌로", "willo")];
 
     private static (ProjectEditor Editor, DialogueNode Node) BuildEditor()
     {
-        var project = new StoryProject();
+        var project = new StoryProject { Speakers = [.. Speakers] };
         var file = new StoryFile("sf_paste", "테스트", "story/paste.vnstory.json");
         project.Files.Add(file);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "테스트" });   // 카드는 챕터 판에만 선다
@@ -52,7 +49,7 @@ public class ScenarioPasteTests
             마지막 지문.
             """;
 
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, text, Definition);
+        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, text);
 
         Assert.True(outcome.Applied);
         ScriptDocument script = node.Script;
@@ -74,15 +71,13 @@ public class ScenarioPasteTests
         // 실사례 — 화자 칸의 공백 있는 이름이 지문으로 합쳐져 "화자와 내용이 합쳐진다"로
         // 보였다. 등록된 이름과 다듬기 없이 정확히 일치할 때만 예외를 연다: 미등록 산문
         // ("그는 말했다: …")과 이름 뒤 공백("윌로 : …")은 여전히 지문이다.
-        GameDefinition definition = GameDefinition.Parse("""
-            { "speakers": [ { "name": "늙은 상인", "characterId": "merchant" } ] }
-            """)!;
+        Speaker[] speakers = [new("늙은 상인", "merchant")];
 
         ScenarioParseResult parsed = ScenarioTextParser.Parse("""
             늙은 상인: 어서 오게.
             그는 말했다: 이건 지문이다.
             늙은 상인 : 이름 뒤 공백은 지문이다.
-            """, definition);
+            """, speakers);
 
         Assert.Equal(("늙은 상인", "어서 오게."), (parsed.Lines[0].Speaker, parsed.Lines[0].Text));
         Assert.Equal(string.Empty, parsed.Lines[1].Speaker);
@@ -106,7 +101,7 @@ public class ScenarioPasteTests
             윌로: 여섯째 줄
             라루: 일곱째 줄
             윌로: 여덟째 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         ScriptDocument script = node.Script;
         List<string> before = script.ActiveLines.Select(line => line.Id).ToList();
@@ -121,7 +116,7 @@ public class ScenarioPasteTests
             라루: 다섯째 줄
             라루: 일곱째 줄
             윌로: 여덟째 줄 (고침)
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         Assert.True(outcome.Applied);
         List<string> after = script.ActiveLines.Select(line => line.Id).ToList();
@@ -147,14 +142,14 @@ public class ScenarioPasteTests
         // 불변식 1의 다른 반쪽 — 임의로 잇는 대신 통째로 거부한다.
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
         editor.ApplyScenarioText(
-            node.Id, "라루: 첫 줄\n윌로: 둘째 줄\n라루: 셋째 줄", Definition, confirmDeletes: true);
+            node.Id, "라루: 첫 줄\n윌로: 둘째 줄\n라루: 셋째 줄", confirmDeletes: true);
 
         ScriptDocument script = node.Script;
         List<string> before = script.ActiveLines.Select(line => line.Id).ToList();
 
         // 인접한 두 줄을 동시에 고치면 어느 줄이 어느 줄의 수정인지 알 수 없다.
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(
-            node.Id, "라루: 완전히 새 문장 A\n윌로: 완전히 새 문장 B\n라루: 셋째 줄", Definition, confirmDeletes: true);
+            node.Id, "라루: 완전히 새 문장 A\n윌로: 완전히 새 문장 B\n라루: 셋째 줄", confirmDeletes: true);
 
         Assert.False(outcome.Applied);
         Assert.True(outcome.Plan!.HasConflicts);
@@ -165,15 +160,15 @@ public class ScenarioPasteTests
     public void 삭제는_확인_없이는_적용되지_않는다()
     {
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
-        editor.ApplyScenarioText(node.Id, "라루: 첫 줄\n윌로: 둘째 줄", Definition, confirmDeletes: true);
+        editor.ApplyScenarioText(node.Id, "라루: 첫 줄\n윌로: 둘째 줄", confirmDeletes: true);
 
-        ScenarioPasteOutcome first = editor.ApplyScenarioText(node.Id, "라루: 첫 줄", Definition);
+        ScenarioPasteOutcome first = editor.ApplyScenarioText(node.Id, "라루: 첫 줄");
 
         Assert.False(first.Applied);
         Assert.True(first.NeedsDeleteConfirmation);
         Assert.Equal(2, node.Script.ActiveLines.Count()); // 그대로
 
-        ScenarioPasteOutcome second = editor.ApplyScenarioText(node.Id, "라루: 첫 줄", Definition, confirmDeletes: true);
+        ScenarioPasteOutcome second = editor.ApplyScenarioText(node.Id, "라루: 첫 줄", confirmDeletes: true);
         Assert.True(second.Applied);
         Assert.Single(node.Script.ActiveLines);
     }
@@ -194,7 +189,7 @@ public class ScenarioPasteTests
             윌로: 갈래 안 줄
             <<endif>>
             라루: 갈래 뒤 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         ScriptDocument script = node.Script;
         List<string> ids = script.ActiveLines.Select(line => line.Id).ToList();
@@ -206,7 +201,7 @@ public class ScenarioPasteTests
         // 카드 글 칸에 보이는 글(ScenarioOnly 표기)을 그대로 넣으면 완전한 무변경이다.
         string roundTrip = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id);
 
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, roundTrip, Definition, confirmDeletes: true);
+        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, roundTrip, confirmDeletes: true);
         Assert.True(outcome.Applied);
         Assert.True(outcome.Plan!.IsNoOp);
         Assert.Equal(ids, node.Script.ActiveLines.Select(line => line.Id));
@@ -223,7 +218,7 @@ public class ScenarioPasteTests
             윌로: 갈래 줄
             <<endif>>
             라루: 뒤 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         Assert.True(outcome.Applied); // 대사는 들어온다
         Assert.Contains(outcome.Problems, problem => problem.Contains("미지의식", StringComparison.Ordinal));
@@ -245,7 +240,7 @@ public class ScenarioPasteTests
             <<camera_shake>>
             [주의] 장식 줄
             윌로: 둘째 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         Assert.True(outcome.Applied);
         Assert.Equal(2, outcome.Parsed.UnparsedLines.Count);

@@ -2,7 +2,6 @@ using System.Text;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
@@ -134,17 +133,16 @@ internal static class StarterProject
 
         string manifest = Path.Combine(folder, "예제" + ProjectManifestJson.FileExtension);
 
-        // ① 프로젝트 — 첫 저장이 assets 폴더와 기본 튜닝, 빈 정의 파일까지 준비한다.
+        // ① 프로젝트 — 첫 저장이 폴더를 준비한다.
         var session = new AuthoringSession();
         session.Save(manifest);
 
-        // ② 화자는 챕터가 아니라 프로젝트의 것이다 (2026-08-23) — 챕터 그래프 [화자] 탭이 쓰는
-        // 그 배열에 그대로 적는다.
-        session.SaveSpeakers(
-        [
-            new SpeakerSpec { Name = "윌로", CharacterId = "willo" },
-            new SpeakerSpec { Name = "라루", CharacterId = "laru" }
-        ]);
+        // ② 화자는 챕터가 아니라 프로젝트의 것이다 — [대본] 탭이 이름을, [구성] 탭이 캐릭터 키를 적는 그 창구 그대로.
+        foreach ((string name, string characterId) in (ReadOnlySpan<(string, string)>)[("윌로", "willo"), ("라루", "laru")])
+        {
+            session.AddSpeakerName(name);
+            session.SetSpeakerCharacterId(name, characterId);
+        }
 
         // ③ 챕터 — [＋ 챕터]는 스탯 없이 세운다. 스탯은 [구성] 탭에서 챕터마다 더한다 — 여기가 비면 조건도 관문도 못 만든다.
         string? refused = session.CreateChapter("ch01");
@@ -223,9 +221,8 @@ internal static class StarterProject
           갈라졌다 다시 만나는 최소 모양이다. 이 위에 덧그리면 된다.
 
         [무엇이 어디 있나]
-          예제.vnproject.json  프로젝트 — 이것을 연다. 챕터(스탯 · 조건 · 에피소드 · 길)가 여기 있다
+          예제.vnproject.json  프로젝트 — 이것을 연다. 챕터(스탯 · 조건 · 에피소드 · 길)와 화자(윌로 · 라루)가 여기 있다
           story/               연출 그래프의 판과 카드(카드의 대사째) — 툴이 쓰고 읽는다
-          game.definition.json 스탯 이름(trust · fatigue)과 화자(윌로 · 라루)의 원천
           assets/portraits/    표정 그림을 넣는 곳 (지금은 비어 있다)
           exported/            툴이 내는 진행 JSON — 손으로 고치지 않는다
 

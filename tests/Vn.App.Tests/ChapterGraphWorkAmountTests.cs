@@ -162,7 +162,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
 
         // <b>대본에 글이 있어야 이 자리에 닿는다.</b> 빈 대본에 처음 넣는 한 번은 진짜로
         // 바뀌므로 방송이 맞다 — 그 뒤부터가 고정점이다. 빈 판으로 재면 아무것도 안 재는 것이다.
-        session.Editor.ApplyScenarioText(card.Id, text, session.Definition, confirmDeletes: true);
+        session.Editor.ApplyScenarioText(card.Id, text, confirmDeletes: true);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         int broadcasts = 0;
@@ -171,7 +171,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
         // 이제 대본도 글도 그대로인 채 다시 반영한다.
         for (int index = 0; index < 3; index++)
         {
-            session.Editor.ApplyScenarioText(card.Id, text, session.Definition, confirmDeletes: true);
+            session.Editor.ApplyScenarioText(card.Id, text, confirmDeletes: true);
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         }
 
@@ -188,13 +188,13 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
         (ChapterGraphView view, AuthoringSession session, Window window) = Show();
 
         DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch01", "ep0")!;
-        session.Editor.ApplyScenarioText(card.Id, "라루: 이미 쓰여 있던 대사", session.Definition, confirmDeletes: true);
+        session.Editor.ApplyScenarioText(card.Id, "라루: 이미 쓰여 있던 대사", confirmDeletes: true);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         int broadcasts = 0;
         session.Changed += (_, _) => broadcasts++;
 
-        session.Editor.ApplyScenarioText(card.Id, "라루: 새로 쓴 대사", session.Definition, confirmDeletes: true);
+        session.Editor.ApplyScenarioText(card.Id, "라루: 새로 쓴 대사", confirmDeletes: true);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(broadcasts > 0, "대사가 바뀌었으면 열려 있는 화면이 따라와야 한다");

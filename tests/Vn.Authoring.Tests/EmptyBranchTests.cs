@@ -1,6 +1,5 @@
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Results;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Script;
 using Vn.Authoring.Flow;
@@ -85,7 +84,6 @@ public class EmptyBranchTests
         ScenarioPasteOutcome outcome = sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         Assert.True(outcome.Applied, string.Join(" / ", outcome.Problems));
@@ -105,7 +103,6 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
@@ -131,13 +128,12 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         Assert.NotEmpty(sample.Dialogue.TrailingTransitions);
 
         sample.Editor.ApplyScenarioText(
-            sample.Dialogue.Id, "복도는 조용했다\n", GameDefinition.Empty, confirmDeletes: true);
+            sample.Dialogue.Id, "복도는 조용했다\n", confirmDeletes: true);
 
         Assert.Empty(sample.Dialogue.TrailingTransitions);
     }
@@ -153,7 +149,6 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         DialogueResult result = sample.Unfold();
@@ -190,7 +185,6 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
@@ -220,7 +214,6 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         ExitPort port = Assert.Single(
@@ -248,7 +241,7 @@ public class EmptyBranchTests
         var sample = new Sample();
 
         ScenarioParseResult parsed = ScenarioTextParser.Parse(
-            $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n", GameDefinition.Empty);
+            $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n", []);
 
         Assert.Contains(parsed.UnparsedLines, problem => problem.Contains("붙일 곳이 없습니다"));
     }

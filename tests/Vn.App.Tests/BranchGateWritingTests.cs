@@ -128,7 +128,7 @@ public sealed class BranchGateWritingTests : IDisposable
 
         // 지키기 전에 만들어진 모양 — 조건 줄 아래에 줄이 있어 [구성] 탭이 잠겼다.
         string broken = box.Text! + "\n하린: 아래에 쓴 줄";
-        Assert.True(session.Editor.ApplyScenarioText(branch.Id, broken, session.Definition).Applied);
+        Assert.True(session.Editor.ApplyScenarioText(branch.Id, broken).Applied);
         Dispatcher.UIThread.RunJobs();
         Assert.False(BranchEntryCondition.Read(session.Project, branch.Id).Editable);
 
@@ -227,7 +227,7 @@ public sealed class BranchGateWritingTests : IDisposable
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
         DialogueNode root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
-        Assert.True(session.Editor.ApplyScenarioText(root.Id, "하린: 첫 줄", session.Definition).Applied);
+        Assert.True(session.Editor.ApplyScenarioText(root.Id, "하린: 첫 줄").Applied);
         DialogueNode branch = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);
         session.Editor.SetScriptLineText(branch.Id, branch.Script.ActiveLines.First().Id, "하린", "다시 그린 간판, 생각보다 훨씬 낫다.");
 

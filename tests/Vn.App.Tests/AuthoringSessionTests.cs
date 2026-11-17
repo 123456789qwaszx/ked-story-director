@@ -1,6 +1,5 @@
 using System.Text;
 using Vn.App.Services;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 
@@ -257,28 +256,83 @@ public class AuthoringSessionTests : IDisposable
     // ── 튜닝 관리 ───────────────────────────────────────────────────
 
     /// <summary>
-    /// 화자를 지우면 세션의 정의가 <b>곧바로</b> 바뀐다 — 챕터 그래프에서 화자를 지우면
-    /// 연출 그래프도 옛 목록을 보이면 안 된다. 화면은 그릴 때마다 정의를 읽는다.
+    /// 화자는 프로젝트의 것이다(2026-11-17 · definition-split S3) — 고칠 때마다 되돌리기 한 칸이고, 저장하면 매니페스트에 남는다.
+    /// 정의 파일은 만들지 않는다. ⛔ 그 전에는 고칠 때 바로 game.definition.json에 썼다(되돌리기 밖).
     /// </summary>
     [Fact]
-    public void 화자를_지우면_정의가_곧바로_바뀐다()
+    public void 화자는_프로젝트의_것이라_되돌리기_한_칸이고_저장하면_매니페스트에_남는다()
     {
         string directory = TempDirectory();
 
         try
         {
+            string manifest = Path.Combine(directory, "project.vnproject.json");
             var session = new AuthoringSession();
-            session.Save(Path.Combine(directory, "project.vnproject.json"));
+            long before = session.Editor.Revision;
 
-            Assert.True(session.SaveSpeakers([
-                new SpeakerSpec { Name = "라루" },
-                new SpeakerSpec { Name = "윌로우" }
-            ]));
+            // 저장 전 프로젝트에서도 고친다.
+            Assert.Null(session.AddSpeakerName("라루"));
+            Assert.Null(session.AddSpeakerName("윌로우"));
+            Assert.True(session.RemoveSpeakerName("윌로우"));
+            Assert.False(session.SetSpeakerCharacterId("라루", string.Empty));   // 같은 값은 기록하지 않는다
+            Assert.Equal(before + 3, session.Editor.Revision);
+            Assert.Equal("라루", Assert.Single(session.Project.Speakers).Name);
 
-            // 지우는 방식 — 남길 것만 넘긴다(통째로 쓰는 것이 규격이다).
-            Assert.True(session.SaveSpeakers([new SpeakerSpec { Name = "라루" }]));
+            session.Editor.Undo();
+            Assert.Equal(["라루", "윌로우"], session.Project.Speakers.Select(speaker => speaker.Name));
 
-            Assert.Equal("라루", Assert.Single(session.Definition.Speakers).Name);
+            session.Save(manifest);
+            Assert.Contains("\"speakers\"", File.ReadAllText(manifest));
+            Assert.False(File.Exists(Path.Combine(directory, "game.definition.json")));
+
+            var reopened = new AuthoringSession();
+            reopened.Open(manifest);
+            Assert.Equal(["라루", "윌로우"], reopened.Project.Speakers.Select(speaker => speaker.Name));
+            Assert.False(reopened.IsDirty);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// <b>옮김</b>(definition-split S3) — 프로젝트에 화자가 없고 옆 정의 파일에 speakers가 있으면 열 때 들인다(「고쳤다」가 선다). 저장하면
+    /// 프로젝트에 남고 정의 파일에서 걷힌다 — 남의 칸은 둔다. 프로젝트에 화자가 있으면 정의 파일의 것은 보지 않는다.
+    /// </summary>
+    [Fact]
+    public void 열_때_정의_파일의_화자를_프로젝트로_옮기고_저장하면_정의_파일에서_걷는다()
+    {
+        string directory = TempDirectory();
+
+        try
+        {
+            string manifest = Path.Combine(directory, "project.vnproject.json");
+            string definition = Path.Combine(directory, "game.definition.json");
+            new AuthoringSession().Save(manifest);
+            File.WriteAllText(definition, """
+                { "speakers": [ { "name": "라루", "characterId": "laru" }, { "name": "윌로", "characterId": "" } ],
+                  "presentationCommands": [ { "id": "shake" } ] }
+                """);
+
+            var session = new AuthoringSession();
+            session.Open(manifest);
+
+            Assert.Equal([("라루", "laru"), ("윌로", "")], session.Project.Speakers.Select(speaker => (speaker.Name, speaker.CharacterId)));
+            Assert.True(session.IsDirty);
+            Assert.Contains("화자 2명을", session.StatusMessage, StringComparison.Ordinal);
+
+            session.Save();
+            string left = File.ReadAllText(definition);
+            Assert.DoesNotContain("speakers", left, StringComparison.Ordinal);
+            Assert.Contains("presentationCommands", left, StringComparison.Ordinal);
+
+            // 이미 옮겼으면 정의 파일의 화자는 보지 않는다(다음 저장에서 걷힌다).
+            File.WriteAllText(definition, """{ "speakers": [ { "name": "유령", "characterId": "ghost" } ] }""");
+            var again = new AuthoringSession();
+            again.Open(manifest);
+            Assert.Equal(["라루", "윌로"], again.Project.Speakers.Select(speaker => speaker.Name));
+            Assert.False(again.IsDirty);
         }
         finally
         {
@@ -332,8 +386,12 @@ public class AuthoringSessionTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// 저장은 정의 파일을 만들지 않고, 있으면 이 툴이 쓰던 칸(variables · conditions · speakers · 이 툴의 안내)만 걷는다 — 남의 칸은 둔다.
+    /// 남는 것이 없으면 파일을 지운다(definition-split S3). ⛔ 그 전에는 없으면 뼈대를 깔았다.
+    /// </summary>
     [Fact]
-    public void 저장은_정의_파일이_없으면_뼈대를_깔고_있는_파일은_건드리지_않는다()
+    public void 저장은_정의_파일을_만들지_않고_이_툴이_쓰던_칸만_걷는다()
     {
         string directory = TempDirectory();
 
@@ -343,12 +401,32 @@ public class AuthoringSessionTests : IDisposable
             session.Save(Path.Combine(directory, "project.vnproject.json"));
 
             string definition = Path.Combine(directory, "game.definition.json");
-            Assert.True(File.Exists(definition));
+            Assert.False(File.Exists(definition));
 
-            File.WriteAllText(definition, """{"variables":[],"speakers":[]}""");
+            File.WriteAllText(definition, """
+                { "variables": [ { "name": "trust" } ], "conditions": [], "speakers": [],
+                  "presentationCommandCategories": [ { "id": "camera" } ] }
+                """);
             session.Save();
+            Assert.Equal(
+                ["presentationCommandCategories"],
+                ((System.Text.Json.Nodes.JsonObject)System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(definition))!).Select(item => item.Key));
+            Assert.Contains("걷었습니다", session.StatusMessage, StringComparison.Ordinal);
 
-            Assert.Equal("""{"variables":[],"speakers":[]}""", File.ReadAllText(definition));
+            // 걷을 것이 없으면 건드리지 않는다.
+            DateTime written = File.GetLastWriteTimeUtc(definition);
+            session.Save();
+            Assert.Equal(written, File.GetLastWriteTimeUtc(definition));
+
+            // 이 툴의 칸과 안내뿐이면 파일째 지운다.
+            File.WriteAllText(definition, """{ "_안내": "게임이 아는 어휘의 원천입니다.", "variables": [], "speakers": [] }""");
+            session.Save();
+            Assert.False(File.Exists(definition));
+
+            // 깨진 파일은 건드리지 않는다.
+            File.WriteAllText(definition, "{ 이건 JSON이 아님");
+            session.Save();
+            Assert.Equal("{ 이건 JSON이 아님", File.ReadAllText(definition));
             Assert.False(Directory.Exists(Path.Combine(directory, "assets"))); // 에셋 폴더는 compositor의 일이다
         }
         finally

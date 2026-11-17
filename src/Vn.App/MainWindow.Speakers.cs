@@ -6,7 +6,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Vn.App.Services;
 using Vn.App.Views;
-using Vn.Authoring.Definition;
+using Vn.Authoring.Model;
 
 namespace Vn.App;
 
@@ -16,8 +16,8 @@ namespace Vn.App;
 /// 작가가 화자 이름을 더하고 고치고 지운다. 이름을 고치면 이미 쓰인 대사 줄의 화자가 따라간다. 캐릭터 키(초상화 · 표정)는 여기서
 /// 정하지 않는다 — [구성] 탭의 [화자] 탭이 잇는다. 규칙(빈 이름 · 같은 이름)은 <see cref="AuthoringSession"/>의 화자 창구 한 벌이다.
 ///
-/// 칸은 초점이 떠날 때와 Enter에 넣고, Esc는 넣지 않은 글을 걷는다. 화자 목록은 정의 파일이라(되돌리기 밖) 넣고 나면
-/// <see cref="AuthoringSession.SpeakersChanged"/>로 요약이 다시 선다.
+/// 칸은 초점이 떠날 때와 Enter에 넣고, Esc는 넣지 않은 글을 걷는다. 화자 목록은 프로젝트의 것이라(되돌리기 한 칸) 넣고 나면 —
+/// 되돌려도 — <see cref="AuthoringSession.SpeakersChanged"/>로 요약이 다시 선다.
 /// </summary>
 public partial class MainWindow
 {
@@ -27,7 +27,7 @@ public partial class MainWindow
     /// <summary>프로젝트 요약 칸의 화자 목록 — 이름 칸 · ✕ 줄들과 맨 아래 더하기 줄.</summary>
     private void SpeakerList()
     {
-        IReadOnlyList<SpeakerSpec> speakers = _session.Definition.Speakers;
+        IReadOnlyList<Speaker> speakers = _session.Project.Speakers;
 
         Note("대본의 화자 칸에서 고를 이름입니다. 모든 챕터가 같은 목록을 씁니다. 이름을 고치면 이미 쓴 대사 줄도 따라갑니다. " +
              "캐릭터 키(초상화 · 표정)는 [구성] 탭에서 잇습니다.");
@@ -39,7 +39,7 @@ public partial class MainWindow
 
         var rows = new StackPanel { Spacing = 3, Margin = new Thickness(0, 4, 0, 0) };
 
-        foreach (SpeakerSpec speaker in speakers)
+        foreach (Speaker speaker in speakers)
         {
             rows.Children.Add(SpeakerRow(speaker));
         }
@@ -88,7 +88,7 @@ public partial class MainWindow
     }
 
     /// <summary>화자 한 줄 — `[이름][✕]`. 이름을 비우는 것은 지우기가 아니다 — 지우기는 ✕ 하나다.</summary>
-    private Control SpeakerRow(SpeakerSpec speaker)
+    private Control SpeakerRow(Speaker speaker)
     {
         string speakerName = speaker.Name;
         var name = new TextBox { Text = speakerName, FontSize = 12, Tag = "speaker-name:" + speakerName };
@@ -104,8 +104,8 @@ public partial class MainWindow
             }
 
             string? report = _session.RenameSpeakerName(speakerName, typed);
-            bool renamed = _session.Definition.Speakers.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)) &&
-                           !_session.Definition.Speakers.Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal));
+            bool renamed = _session.Project.Speakers.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)) &&
+                           !_session.Project.Speakers.Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal));
 
             if (!renamed)
             {
@@ -157,7 +157,7 @@ public partial class MainWindow
         return row;
     }
 
-    /// <summary>화자 목록이 정의 파일에 쓰였다 — 프로젝트 요약이 서 있으면 다시 세운다(넣기가 끝난 뒤에 — 넣는 칸을 그 자리에서 걷지 않게).</summary>
+    /// <summary>화자 목록이 바뀌었다 — 프로젝트 요약이 서 있으면 다시 세운다(넣기가 끝난 뒤에 — 넣는 칸을 그 자리에서 걷지 않게).</summary>
     private void OnSpeakersChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "화자", () =>
     {
         if (!DirectorSummary.IsVisible || _directorSummary is not { Kind: HierarchyKind.Project } pick)

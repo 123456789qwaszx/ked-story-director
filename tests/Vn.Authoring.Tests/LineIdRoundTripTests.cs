@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
@@ -17,9 +16,7 @@ namespace Vn.Authoring.Tests;
 /// </summary>
 public class LineIdRoundTripTests
 {
-    private static readonly GameDefinition Definition = GameDefinition.Parse("""
-        { "speakers": [ { "name": "라루", "characterId": "laru" }, { "name": "윌로", "characterId": "willo" } ] }
-        """)!;
+    private static readonly Speaker[] Speakers = [new("라루", "laru"), new("윌로", "willo")];
 
     // ── 파서 ────────────────────────────────────────────────────────────────
 
@@ -27,7 +24,7 @@ public class LineIdRoundTripTests
     public void 태그가_대사_본문에_남지_않는다()
     {
         ScenarioParseResult parsed = ScenarioTextParser.Parse(
-            "라루: 여기서 잠깐 쉬어도 될까? #line:ln_0002", Definition);
+            "라루: 여기서 잠깐 쉬어도 될까? #line:ln_0002", Speakers);
 
         ScenarioLine line = Assert.Single(parsed.Lines);
 
@@ -39,7 +36,7 @@ public class LineIdRoundTripTests
     [Fact]
     public void 화자가_없는_줄에서도_태그를_떼어낸다()
     {
-        ScenarioParseResult parsed = ScenarioTextParser.Parse("복도는 조용했다. #line:ln_0007", Definition);
+        ScenarioParseResult parsed = ScenarioTextParser.Parse("복도는 조용했다. #line:ln_0007", Speakers);
 
         ScenarioLine line = Assert.Single(parsed.Lines);
 
@@ -51,7 +48,7 @@ public class LineIdRoundTripTests
     [Fact]
     public void 태그가_없으면_LineId도_없다()
     {
-        ScenarioParseResult parsed = ScenarioTextParser.Parse("라루: 그냥 대사", Definition);
+        ScenarioParseResult parsed = ScenarioTextParser.Parse("라루: 그냥 대사", Speakers);
 
         Assert.Null(Assert.Single(parsed.Lines).LineId);
     }
@@ -61,7 +58,7 @@ public class LineIdRoundTripTests
     {
         // "#line:" 뒤에 공백이 오면 그건 사람이 쓴 문장이지 태그가 아니다. 임의로 잘라내지 않는다.
         ScenarioParseResult parsed = ScenarioTextParser.Parse(
-            "라루: 메모 #line: 여기 확인", Definition);
+            "라루: 메모 #line: 여기 확인", Speakers);
 
         ScenarioLine line = Assert.Single(parsed.Lines);
 
@@ -85,7 +82,7 @@ public class LineIdRoundTripTests
             라루: … #line:ln_001
             윌로: 말이 없었다. #line:ln_002
             라루: … #line:ln_003
-            """, Definition);
+            """);
 
         Assert.True(outcome.Applied, outcome.Summary());
         Assert.Empty(outcome.Plan!.Conflicts);
@@ -102,7 +99,7 @@ public class LineIdRoundTripTests
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, """
             라루: 첫 줄 #line:ln_001
             윌로: 아주 다른 문장 #line:ln_002
-            """, Definition);
+            """);
 
         Assert.True(outcome.Applied, outcome.Summary());
         Assert.Equal(1, outcome.Plan!.Count(ScriptSyncKind.Modified));
@@ -129,7 +126,7 @@ public class LineIdRoundTripTests
             라루: 구간 끝 줄 #line:ln_004
             라루: 둘째 줄 #line:ln_002
             윌로: 수렴 지점 #line:ln_005
-            """, Definition);
+            """);
 
         Assert.True(outcome.Applied, outcome.Summary());
 
@@ -152,7 +149,7 @@ public class LineIdRoundTripTests
             라루: 첫 줄 #line:ln_001
             라루: 사이에 끼운 새 줄
             윌로: 둘째 줄 #line:ln_002
-            """, Definition);
+            """);
 
         Assert.True(outcome.Applied, outcome.Summary());
         Assert.Equal(1, outcome.Plan!.Count(ScriptSyncKind.Inserted));
@@ -176,7 +173,7 @@ public class LineIdRoundTripTests
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, """
             라루: 첫 줄
             윌로: 고친 둘째 줄
-            """, Definition);
+            """);
 
         Assert.True(outcome.Applied, outcome.Summary());
         Assert.Equal(
@@ -195,7 +192,7 @@ public class LineIdRoundTripTests
             -> 라루의 제안을 듣는다 #line:ln_0007
                 라루: 고맙다는 말은 안 할래. #line:ln_0110
             -> 혼자 문을 연다 #line:ln_0008
-            """, Definition);
+            """, Speakers);
 
         Assert.Equal(2, parsed.UnparsedLines.Count);
         Assert.All(parsed.UnparsedLines, line => Assert.Contains("간선", line));
@@ -212,7 +209,7 @@ public class LineIdRoundTripTests
     private static (ProjectEditor Editor, DialogueNode Node) BuildEditor(
         params (string LineId, string Speaker, string Text)[] lines)
     {
-        var project = new StoryProject();
+        var project = new StoryProject { Speakers = [.. Speakers] };
         var file = new StoryFile("sf_roundtrip", "테스트", "story/roundtrip.vnstory.json");
         project.Files.Add(file);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "테스트" });   // 카드는 챕터 판에만 선다

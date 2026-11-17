@@ -440,7 +440,7 @@ public partial class MainWindow
         {
             case HierarchyKind.Project:
             {
-                IReadOnlyList<Vn.Authoring.Definition.SpeakerSpec> speakers = _session.Definition.Speakers;
+                IReadOnlyList<Vn.Authoring.Model.Speaker> speakers = _session.Project.Speakers;
                 Graph.SetInspectorHeader("화자", $"프로젝트 전체의 캐스트 — {speakers.Count}명");
 
                 // 화자 이름은 여기서 더하고 고치고 지운다(writer-fields W3 — 2026-08-23 결정을 소유자가 바꿨다). 캐릭터 키는 [구성] 탭이다.

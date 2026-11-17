@@ -77,6 +77,16 @@ internal static class JsonSupport
     {
         ArgumentNullException.ThrowIfNull(project);
 
+        HashSet<string> speakerNames = new(StringComparer.Ordinal);
+
+        foreach (Speaker speaker in project.Speakers)
+        {
+            if (string.IsNullOrWhiteSpace(speaker.Name) || !speakerNames.Add(speaker.Name))
+            {
+                throw new InvalidDataException($"화자 이름 '{speaker.Name}'이 비었거나 겹칩니다.");
+            }
+        }
+
         HashSet<string> fileIds = new(StringComparer.Ordinal);
         HashSet<string> nodeIds = new(StringComparer.Ordinal);
         HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);

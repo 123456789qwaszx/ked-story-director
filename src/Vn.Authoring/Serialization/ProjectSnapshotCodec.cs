@@ -49,6 +49,12 @@ public static class ProjectSnapshotCodec
             root["chapters"] = chapters;
         }
 
+        // 화자 — 프로젝트의 것이라 되돌리기가 함께 든다.
+        if (ProjectManifestJson.WriteSpeakers(project.Speakers) is { } speakers)
+        {
+            root["speakers"] = speakers;
+        }
+
         // 판 크기 — 안 실으면 되돌리기가 카드 자리는 되돌리고 크기는 잃는다.
         if (ProjectManifestJson.WriteBoard(project.Board) is { } board)
         {
@@ -80,6 +86,7 @@ public static class ProjectSnapshotCodec
         {
             Title = (string?)root["title"] ?? "제목 없음",
             StartNodeId = (string?)root["startNode"],
+            Speakers = ProjectManifestJson.ReadSpeakers(root["speakers"]),
             Board = ProjectManifestJson.ReadBoard(root["board"])
         };
 

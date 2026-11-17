@@ -12,7 +12,6 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 
 namespace Vn.App.Views;
 
@@ -543,7 +542,7 @@ public partial class ChapterGraphView : UserControl
         });
         session.HideEmptyChoicesChanged += _hideEmptyChanged;
 
-        // 화자 목록은 정의 파일이라 Changed에 오지 않는다 — [대본] 탭이 이름을 더하면 여기 키 목록도 선다.
+        // 화자 목록이 바뀔 때만(명령 · 되돌리기 · 열기) [화자] 탭을 다시 그린다 — [대본] 탭이 이름을 더하면 여기 키 목록도 선다.
         _speakersChanged = (_, _) => UiGuard.Run(_session, "화자", RebuildSpeakerTab);
         session.SpeakersChanged += _speakersChanged;
         Reload();
@@ -626,10 +625,10 @@ public partial class ChapterGraphView : UserControl
 
     // ── [화자] 탭 = 캐릭터 키 ──────────────────────────
     //
-    // 화자는 챕터의 것이 아니다 — 값은 `game.definition.json`의 speakers에 산다(초상화 매핑과 같은 배열). 이름은 [대본] 탭(작가)이
+    // 화자는 챕터의 것이 아니라 프로젝트의 것이다(StoryProject.Speakers — 이름과 초상화 키가 한 줄). 이름은 [대본] 탭(작가)이
     // 더하고 고치고 지운다. 여기는 그 이름마다 <b>캐릭터 키</b>를 잇는 자리다 — 초상화 · 표정이 이 키로 붙는다(writer-fields W3).
 
-    /// <summary>[화자] 탭을 지금 정의 파일의 목록으로 다시 그린다.</summary>
+    /// <summary>[화자] 탭을 지금 프로젝트의 화자 목록으로 다시 그린다.</summary>
     private void RebuildSpeakerTab()
     {
         SpeakerListPanel.Children.Clear();
@@ -639,7 +638,7 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        IReadOnlyList<SpeakerSpec> speakers = _session.Definition.Speakers;
+        IReadOnlyList<Vn.Authoring.Model.Speaker> speakers = _session.Project.Speakers;
 
         if (speakers.Count == 0)
         {
@@ -667,17 +666,17 @@ public partial class ChapterGraphView : UserControl
             });
         }
 
-        foreach (SpeakerSpec speaker in speakers)
+        foreach (Vn.Authoring.Model.Speaker speaker in speakers)
         {
             SpeakerListPanel.Children.Add(BuildSpeakerRow(speaker));
         }
     }
 
     /// <summary>
-    /// 화자 한 줄 — `이름 [캐릭터 키]`. 이름은 읽기만 한다([대본] 탭의 것). 키를 고치면 그 자리에서 정의 파일에 저장된다
+    /// 화자 한 줄 — `이름 [캐릭터 키]`. 이름은 읽기만 한다([대본] 탭의 것). 키를 고치면 그 자리에서 프로젝트에 들어간다 — 되돌리기 한 칸
     /// ([적용] 없음 — 챕터 편집 탭과 같은 규칙).
     /// </summary>
-    private Control BuildSpeakerRow(SpeakerSpec speaker)
+    private Control BuildSpeakerRow(Vn.Authoring.Model.Speaker speaker)
     {
         string speakerName = speaker.Name;
         bool missing = string.IsNullOrWhiteSpace(speaker.CharacterId);
@@ -708,7 +707,7 @@ public partial class ChapterGraphView : UserControl
                 return;
             }
 
-            if (!_session.Definition.Speakers.Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal)))
+            if (!_session.Project.Speakers.Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal)))
             {
                 return; // 그 사이 목록이 바뀌었다 — 다음 그리기가 정본이다.
             }

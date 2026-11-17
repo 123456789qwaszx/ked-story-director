@@ -302,7 +302,7 @@ public sealed class ChapterEpisodeNodeTests
         session.Editor.SetScriptLineText(card.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
 
         ScenarioPasteOutcome pasted = session.Editor.ApplyScenarioText(
-            card.Id, "윌로: 첫 줄\n라루: 둘째 줄", session.Definition, confirmDeletes: true);
+            card.Id, "윌로: 첫 줄\n라루: 둘째 줄", confirmDeletes: true);
 
         Assert.True(pasted.Applied, string.Join(" / ", pasted.Problems));
 

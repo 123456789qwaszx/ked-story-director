@@ -55,6 +55,12 @@ public static class ProjectManifestJson
             root["chapters"] = chapters;
         }
 
+        // 화자 (2026-11-17 — definition-split S3). 없으면 쓰지 않는다.
+        if (WriteSpeakers(project.Speakers) is { } speakers)
+        {
+            root["speakers"] = speakers;
+        }
+
         // [대본] 판 크기 (2026-11-17) — 기본이면 쓰지 않는다.
         if (WriteBoard(project.Board) is { } board)
         {
@@ -127,7 +133,56 @@ public static class ProjectManifestJson
             (string?)root["startNode"],
             references,
             chapters,
+            ReadSpeakers(root["speakers"]),
             ReadBoard(root["board"]));
+    }
+
+    /// <summary>
+    /// 화자 목록 — manifest와 되돌리기 스냅숏이 같은 것을 쓴다. 비었으면 null(쓰지 않는다). 각 항목은 <c>{ "name", "characterId" }</c>이고
+    /// 키가 비었어도 칸을 쓴다(compositor가 읽는다 — 늘 같은 모양이 낫다).
+    /// </summary>
+    internal static JsonArray? WriteSpeakers(IReadOnlyList<Speaker> speakers)
+    {
+        if (speakers.Count == 0)
+        {
+            return null;
+        }
+
+        var array = new JsonArray();
+
+        foreach (Speaker speaker in speakers)
+        {
+            array.Add(new JsonObject { ["name"] = speaker.Name, ["characterId"] = speaker.CharacterId });
+        }
+
+        return array;
+    }
+
+    /// <summary>
+    /// 없으면 빈 목록. 손으로 고친 파일을 견딘다 — 이름이 빈 항목은 건너뛰고, 같은 이름은 처음 것만 받는다(앞뒤 공백은 걷는다).
+    /// </summary>
+    internal static List<Speaker> ReadSpeakers(JsonNode? node)
+    {
+        var speakers = new List<Speaker>();
+
+        if (node is not JsonArray array)
+        {
+            return speakers;
+        }
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (JsonObject item in array.OfType<JsonObject>())
+        {
+            string name = ((string?)item["name"] ?? string.Empty).Trim();
+
+            if (name.Length > 0 && names.Add(name))
+            {
+                speakers.Add(new Speaker(name, ((string?)item["characterId"] ?? string.Empty).Trim()));
+            }
+        }
+
+        return speakers;
     }
 
     /// <summary>
@@ -156,6 +211,7 @@ public sealed record ProjectManifest(
     string? StartNodeId,
     IReadOnlyList<ProjectStoryFileReference> Files,
     IReadOnlyList<ChapterDocument> Chapters,
+    IReadOnlyList<Speaker> Speakers,
     BoardSize Board);
 
 public sealed record ProjectStoryFileReference(

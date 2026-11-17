@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
@@ -15,9 +14,7 @@ namespace Vn.Authoring.Tests;
 /// </summary>
 public sealed class CardWritingTests
 {
-    private static readonly GameDefinition Definition = GameDefinition.Parse("""
-        { "speakers": [ { "name": "라루", "characterId": "laru" }, { "name": "윌로", "characterId": "willo" } ] }
-        """)!;
+    private static readonly Speaker[] Speakers = [new("라루", "laru"), new("윌로", "willo")];
 
     [Fact]
     public void 글_칸의_글은_대사마다_몇_번째_줄인가를_함께_낸다()
@@ -49,7 +46,7 @@ public sealed class CardWritingTests
             라루: 첫 줄
             윌로: 둘째 줄
             라루: 셋째 줄
-            """, Definition);
+            """);
         string[] lines = node.Script.ActiveLines.Select(line => line.Id).ToArray();
         editor.AddBranchMarker(node.Id, lines[1]);
         editor.AddBranchMarker(node.Id, lines[1]);
@@ -62,7 +59,7 @@ public sealed class CardWritingTests
 
         // 보인 글을 그대로 넣으면 아무것도 바뀌지 않는다.
         long before = editor.Revision;
-        editor.ApplyScenarioText(node.Id, layout.Text, Definition, confirmDeletes: true, strict: true);
+        editor.ApplyScenarioText(node.Id, layout.Text, confirmDeletes: true, strict: true);
         Assert.Equal(before, editor.Revision);
         Assert.Equal(lines, node.Script.ActiveLines.Select(line => line.Id));
     }
@@ -76,7 +73,7 @@ public sealed class CardWritingTests
         string blank = Lines(editor, node).Single().Id;
 
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(
-            node.Id, "라루: 하나\n윌로: 둘\n셋째는 지문이다.", Definition);
+            node.Id, "라루: 하나\n윌로: 둘\n셋째는 지문이다.");
 
         Assert.True(outcome.Applied);
         Assert.Empty(outcome.Problems);
@@ -103,7 +100,7 @@ public sealed class CardWritingTests
             윌로: 갈래 안
             <<endif>>
             라루: 끝
-            """, Definition);
+            """);
 
         Assert.True(outcome.Applied);
         Assert.Equal(1, changes);
@@ -130,10 +127,10 @@ public sealed class CardWritingTests
             윌로: 갈래 안
             <<endif>>
             지문 한 줄.
-            """, Definition);
+            """);
 
         string shown = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id);
-        ScenarioPasteOutcome again = editor.ApplyScenarioText(node.Id, shown, Definition);
+        ScenarioPasteOutcome again = editor.ApplyScenarioText(node.Id, shown);
 
         Assert.DoesNotContain("[", shown, StringComparison.Ordinal);   // 머리글 · 진단 줄이 없다
         Assert.Empty(again.Problems);
@@ -150,14 +147,14 @@ public sealed class CardWritingTests
         (ProjectEditor editor, DialogueNode node) = NewCard();
         long revision = editor.Revision;
 
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, text, Definition, strict: true);
+        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, text, strict: true);
 
         Assert.False(outcome.Applied);
         Assert.NotEmpty(outcome.Problems);
         Assert.Equal(revision, editor.Revision);
 
         // 엄격하지 않으면 예전처럼 넣을 수 있는 것은 넣는다.
-        Assert.True(editor.ApplyScenarioText(node.Id, text, Definition).Applied);
+        Assert.True(editor.ApplyScenarioText(node.Id, text).Applied);
     }
 
     [Fact]
@@ -165,10 +162,10 @@ public sealed class CardWritingTests
     {
         // 줄도 전환도 그대로인데 적으면 되돌리기에 빈 칸이 끼고 판이 다시 그려진다(§5-8).
         (ProjectEditor editor, DialogueNode node) = NewCard();
-        editor.ApplyScenarioText(node.Id, "라루: 하나\n윌로: 둘", Definition);
+        editor.ApplyScenarioText(node.Id, "라루: 하나\n윌로: 둘");
         long revision = editor.Revision;
 
-        ScenarioPasteOutcome again = editor.ApplyScenarioText(node.Id, "\n라루: 하나\n\n윌로: 둘\n\n", Definition);
+        ScenarioPasteOutcome again = editor.ApplyScenarioText(node.Id, "\n라루: 하나\n\n윌로: 둘\n\n");
 
         Assert.True(again.Applied);
         Assert.Equal(revision, editor.Revision);
@@ -186,7 +183,7 @@ public sealed class CardWritingTests
 
     private static (ProjectEditor Editor, DialogueNode Node) NewCard()
     {
-        var project = new StoryProject();
+        var project = new StoryProject { Speakers = [.. Speakers] };
         var file = new StoryFile("sf_card", "카드", "story/card.vnstory.json");
         project.Files.Add(file);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "카드" });   // 카드는 챕터 판에만 선다

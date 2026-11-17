@@ -124,6 +124,7 @@ public static class ProjectStore
         {
             Title = manifest.Title,
             StartNodeId = manifest.StartNodeId,
+            Speakers = manifest.Speakers.ToList(),
             Board = manifest.Board
         };
         foreach (ProjectStoryFileReference reference in manifest.Files)

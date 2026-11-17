@@ -20,7 +20,7 @@
                 <Menu Grid.Column="0" x:Name="MainMenu" VerticalAlignment="Center">
                     <MenuItem x:Name="FileMenu" Header="File">
                         <MenuItem x:Name="NewMenuItem" Header="새 프로젝트…"
-                                  ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/ · game.definition.json)." />
+                                  ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/)." />
                         <MenuItem x:Name="OpenMenuItem" Header="열기…"
                                   ToolTip.Tip="프로젝트 폴더를 고릅니다." />
                         <Separator />

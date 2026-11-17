@@ -2536,7 +2536,7 @@ public partial class GraphEditorView : UserControl
 
             string? before = _writingShown.GetValueOrDefault(nodeId);
             ScenarioPasteOutcome outcome = session.Editor.ApplyScenarioText(
-                nodeId, withIds, session.Definition, confirmDeletes: !live, strict: true);
+                nodeId, withIds, confirmDeletes: !live, strict: true);
 
             if (!outcome.Applied && live)
             {

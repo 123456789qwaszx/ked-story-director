@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
@@ -16,7 +15,7 @@ namespace Vn.App.Tests;
 ///
 /// 화자 이름은 [대본] 탭(작가)이 더하고 고치고 지운다(<see cref="DirectorSpeakersTests"/>). 여기는 그 이름마다 캐릭터 키를 잇는
 /// 자리다 — 이름은 읽기만 하고, 더하는 폼도 ✕도 없다. 키가 없는 화자는 알린다(초상화 · 표정이 붙지 않는다).
-/// 값의 집은 여전히 <c>game.definition.json</c>의 speakers 하나다.
+/// 값의 집은 프로젝트의 화자 목록이다(2026-11-17 · definition-split S3 — ⛔ 그 전에는 <c>game.definition.json</c>의 speakers).
 /// </summary>
 public sealed class SpeakerTabTests : IDisposable
 {
@@ -52,7 +51,7 @@ public sealed class SpeakerTabTests : IDisposable
     public void 이름은_읽기만_하고_더하는_폼도_지우기도_없다() => HeadlessUi.Run(() =>
     {
         (ChapterGraphView view, AuthoringSession session) = Show();
-        Assert.True(session.SaveSpeakers([new SpeakerSpec { Name = "라루", CharacterId = "laru" }]));
+        session.SetSpeakers(("라루", "laru"));
         Dispatcher.RunJobs();
 
         Assert.Null(view.FindControl<TextBox>("SpeakerNameBox"));
@@ -65,30 +64,31 @@ public sealed class SpeakerTabTests : IDisposable
     });
 
     [Fact]
-    public void 캐릭터_키를_적으면_정의_파일에_남고_이름은_그대로다() => HeadlessUi.Run(() =>
+    public void 캐릭터_키를_적으면_프로젝트에_남고_이름은_그대로다() => HeadlessUi.Run(() =>
     {
         (ChapterGraphView view, AuthoringSession session) = Show();
-        Assert.True(session.SaveSpeakers([new SpeakerSpec { Name = "라루" }]));
+        session.SetSpeakers(("라루", ""));
         Dispatcher.RunJobs();
 
         TextBox key = Rows(view)[0].Children.OfType<TextBox>().Single();
         key.Text = "  laru  ";
         Enter(key);
 
-        SpeakerSpec saved = Assert.Single(session.Definition.Speakers);
+        Speaker saved = Assert.Single(session.Project.Speakers);
         Assert.Equal(("라루", "laru"), (saved.Name, saved.CharacterId));
-        Assert.Contains("laru", File.ReadAllText(GameDefinition.PathFor(ManifestPath)));
         Assert.Contains("캐릭터 키 'laru'", session.StatusMessage);
+
+        // 되돌리기 한 칸이고 — 되돌리면 탭도 다시 선다.
+        session.Editor.Undo();
+        Dispatcher.RunJobs();
+        Assert.Equal(string.Empty, Rows(view)[0].Children.OfType<TextBox>().Single().Text);
     });
 
     [Fact]
     public void 캐릭터_키가_없는_화자를_알린다() => HeadlessUi.Run(() =>
     {
         (ChapterGraphView view, AuthoringSession session) = Show();
-        Assert.True(session.SaveSpeakers([
-            new SpeakerSpec { Name = "라루", CharacterId = "laru" },
-            new SpeakerSpec { Name = "윌로" }
-        ]));
+        session.SetSpeakers(("라루", "laru"), ("윌로", ""));
         Dispatcher.RunJobs();
 
         TextBlock warning = view.FindControl<StackPanel>("SpeakerListPanel")!.Children.OfType<TextBlock>()

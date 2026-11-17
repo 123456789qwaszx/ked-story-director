@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
@@ -16,7 +15,7 @@ namespace Vn.Authoring.Tests;
 /// </summary>
 public sealed class ScenarioLineIdentityTests
 {
-    private static readonly GameDefinition Definition = new();
+    private static readonly Speaker[] Speakers = [];
 
     [Fact]
     public void 줄을_모두_새로_고쳐_써도_거절하지_않고_줄마다_신원을_잇는다()
@@ -97,7 +96,6 @@ public sealed class ScenarioLineIdentityTests
         return editor.ApplyScenarioText(
             node.Id,
             ScenarioLineIdentity.CarryLineIds(layout.Text, layout.RowOfLine, edited),
-            Definition,
             confirmDeletes: true,
             strict: true);
     }
@@ -111,7 +109,7 @@ public sealed class ScenarioLineIdentityTests
         var editor = new ProjectEditor(project);
         DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");
 
-        Assert.True(editor.ApplyScenarioText(node.Id, string.Join('\n', texts), Definition).Applied);
+        Assert.True(editor.ApplyScenarioText(node.Id, string.Join('\n', texts)).Applied);
         return (editor, node, node.Script.ActiveLines.Select(line => line.Id).ToArray());
     }
 }

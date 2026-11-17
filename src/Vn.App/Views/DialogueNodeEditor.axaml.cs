@@ -565,7 +565,7 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         {
-            // 화자는 등록 목록(game.definition speakers)의 드롭다운 + 자유 입력 겸용이다.
+            // 화자는 프로젝트의 화자 목록의 드롭다운 + 자유 입력 겸용이다.
             speaker = new AutoCompleteBox
             {
                 Text = resolved.Line.Speaker,
@@ -674,13 +674,13 @@ public partial class DialogueNodeEditor : UserControl
     }
 
     /// <summary>
-    /// 화자 후보 — <b>`game.definition.json`의 speakers 하나</b>가 원천이다. 기획자가 챕터
-    /// 그래프의 [화자] 탭에서 적고, 모든 챕터가 같은 목록을 본다.
+    /// 화자 후보 — <b>프로젝트의 화자 목록</b>(<c>StoryProject.Speakers</c>) 하나가 원천이다. [대본] 탭의 프로젝트 줄에서 더하고,
+    /// 모든 챕터가 같은 목록을 본다.
     ///
     /// 여기 없는 이름도 화자 칸에 직접 적으면 그만이다 — 이 목록은 편의일 뿐이다.
     /// </summary>
     private List<string> SpeakerNames() =>
-        _session?.Definition.Speakers
+        _session?.Project.Speakers
             .Select(item => item.Name)
             .Where(name => name.Length > 0)
             .Distinct(StringComparer.Ordinal)

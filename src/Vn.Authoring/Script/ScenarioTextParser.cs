@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Script;
@@ -66,9 +65,10 @@ public sealed record ScenarioParseResult(
 /// </summary>
 public static class ScenarioTextParser
 {
-    public static ScenarioParseResult Parse(string? text, GameDefinition definition)
+    /// <param name="speakers">프로젝트의 화자 목록(<see cref="StoryProject.Speakers"/>) — 미등록 화자를 짚고, 공백 있는 이름을 알아본다.</param>
+    public static ScenarioParseResult Parse(string? text, IReadOnlyList<Speaker> speakers)
     {
-        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(speakers);
 
         var lines = new List<ScenarioLine>();
         var unparsed = new List<string>();
@@ -107,9 +107,8 @@ public static class ScenarioTextParser
             }
 
             (string tagless, string? lineId) = SplitLineTag(line);
-            (string speaker, string body) = SplitSpeaker(tagless, definition);
-            bool unregistered = speaker.Length > 0 &&
-                definition.FindSpeakerCharacterId(speaker) is null;
+            (string speaker, string body) = SplitSpeaker(tagless, speakers);
+            bool unregistered = speaker.Length > 0 && !IsListed(speakers, speaker);
 
             lines.Add(new ScenarioLine(speaker, body, unregistered, [.. pending], lineId));
             pending.Clear();
@@ -208,7 +207,7 @@ public static class ScenarioTextParser
     }
 
     /// <summary>첫 콜론 기준, 접두에 공백이 없을 때만 화자다.</summary>
-    private static (string Speaker, string Text) SplitSpeaker(string line, GameDefinition definition)
+    private static (string Speaker, string Text) SplitSpeaker(string line, IReadOnlyList<Speaker> speakers)
     {
         int colon = line.IndexOf(':');
 
@@ -223,15 +222,16 @@ public static class ScenarioTextParser
         // 등록된 화자명과 <b>다듬기 없이 정확히</b> 같으면 그 이름이다("늙은 상인"처럼 공백
         // 있는 이름도 이름이다). 정확 일치만 받아야 "윌로 : …"(이름 뒤 공백)가 지문이라는
         // 기존 규칙이 그대로 산다. 등록부는 명시적 어휘라 산문과 헷갈릴 일이 없다.
-        if (prefix.Any(char.IsWhiteSpace) &&
-            !definition.Speakers.Any(speaker =>
-                string.Equals(speaker.Name, prefix, StringComparison.Ordinal)))
+        if (prefix.Any(char.IsWhiteSpace) && !IsListed(speakers, prefix))
         {
             return (string.Empty, line);
         }
 
         return (prefix, line[(colon + 1)..].TrimStart());
     }
+
+    private static bool IsListed(IReadOnlyList<Speaker> speakers, string name) =>
+        speakers.Any(speaker => string.Equals(speaker.Name, name, StringComparison.Ordinal));
 
     private static bool TryParseStructure(string line, out ScenarioStructureIntent? intent)
     {

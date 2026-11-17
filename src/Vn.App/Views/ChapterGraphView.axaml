@@ -424,7 +424,7 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                <!-- 화자 — 하이어아키의 프로젝트 줄. 프로젝트 전체의 캐스트다. 값은 game.definition.json의 speakers에 산다.
+                <!-- 화자 — 하이어아키의 프로젝트 줄. 프로젝트 전체의 캐스트다. 값은 프로젝트의 화자 목록에 산다(되돌리기 한 칸).
                      이름은 [대본] 탭(작가)이 더하고 고치고 지운다. 여기는 이름마다 캐릭터 키를 잇는 자리다(writer-fields W3). -->
                     <ScrollViewer x:Name="SpeakerSection"
                                   IsVisible="False"
@@ -432,7 +432,7 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="4">
                             <TextBlock x:Name="SpeakerHintText"
-                                       Text="화자마다 캐릭터 키를 잇습니다 — 초상화 · 표정이 이 키로 붙습니다. 화자 이름은 [대본] 탭에서 더하고 고칩니다. 모든 챕터가 같은 목록을 씁니다(game.definition.json)."
+                                       Text="화자마다 캐릭터 키를 잇습니다 — 초상화 · 표정이 이 키로 붙습니다. 화자 이름은 [대본] 탭에서 더하고 고칩니다. 모든 챕터가 같은 목록을 씁니다."
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap"

@@ -48,7 +48,31 @@ public sealed class StoryProject
 
     // ⛔ `Links`(조건 공급 연결 — 범위 결정에서는 2026-08-17에 빠졌다)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 조건 범위는
     //    판이다(<see cref="Flow.ConnectedSetNodeResolver"/>) · docs/work-orders/legacy-read-orders.md L5. 유물이던 작가 화자
-    //    `WriterSpeakers`(2026-08-23 — 화자의 집은 정의 파일 speakers)도 함께 걷혔다.
+    //    `WriterSpeakers`도 함께 걷혔다.
+
+    /// <summary>
+    /// <b>화자 목록</b> — 대본의 화자 이름 ↔ 초상화 · 표정의 캐릭터 키. 챕터가 아니라 <b>프로젝트</b>의 것이다 — 모든 챕터가 같은 목록을 쓴다
+    /// (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S3). 이름은 겹치지 않고 비지 않는다.
+    ///
+    /// ⛔ 그 전에는 프로젝트 옆 <c>game.definition.json</c>의 <c>speakers</c>에 살아 되돌리기 밖이었고, 고칠 때 바로 디스크에 썼다.
+    /// </summary>
+    public List<Speaker> Speakers { get; init; } = new();
+
+    /// <summary>화자명에 잇는 캐릭터 키. 목록에 없거나 키가 비었으면 null.</summary>
+    public string? FindSpeakerCharacterId(string? speakerName) =>
+        FindSpeaker(speakerName) is { CharacterId: { Length: > 0 } characterId } ? characterId : null;
+
+    /// <summary>그 이름의 화자 — 앞뒤 공백을 걷고 Ordinal로 찾는다. 없으면 null.</summary>
+    public Speaker? FindSpeaker(string? speakerName)
+    {
+        if (string.IsNullOrWhiteSpace(speakerName))
+        {
+            return null;
+        }
+
+        string name = speakerName.Trim();
+        return Speakers.FirstOrDefault(speaker => string.Equals(speaker.Name, name, StringComparison.Ordinal));
+    }
 
     /// <summary>이야기가 시작되는 노드. null이면 아직 정하지 않은 것이다.</summary>
     public string? StartNodeId { get; set; }

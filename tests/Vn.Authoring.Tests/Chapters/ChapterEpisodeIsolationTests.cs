@@ -1,5 +1,4 @@
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 
@@ -17,14 +16,12 @@ namespace Vn.Authoring.Tests.Chapters;
 /// </summary>
 public sealed class ChapterEpisodeIsolationTests
 {
-    private static readonly GameDefinition Definition = GameDefinition.Parse("""
-        { "speakers": [ { "name": "라루", "characterId": "laru" } ] }
-        """)!;
+    private static readonly Speaker[] Speakers = [new("라루", "laru")];
 
     [Fact]
     public void 같은_이름의_에피소드가_챕터마다_다른_카드와_대본을_갖는다()
     {
-        var editor = new ProjectEditor(new StoryProject());
+        var editor = new ProjectEditor(new StoryProject { Speakers = [.. Speakers] });
         editor.EnsureChapter("ch00");
         editor.EnsureChapter("ch01");
 
@@ -38,7 +35,7 @@ public sealed class ChapterEpisodeIsolationTests
         Assert.NotSame(cardA.Script, cardB.Script);
 
         // 한쪽 원고를 고쳐도 다른 쪽은 그대로다 — 이것이 보고된 버그의 핵심이다.
-        editor.ApplyScenarioText(cardA.Id, "라루: ch00의 대사", Definition, confirmDeletes: true);
+        editor.ApplyScenarioText(cardA.Id, "라루: ch00의 대사", confirmDeletes: true);
 
         Assert.Contains("ch00의 대사", TextOf(editor.Project, cardA));
         Assert.DoesNotContain("ch00의 대사", TextOf(editor.Project, cardB));
@@ -49,13 +46,13 @@ public sealed class ChapterEpisodeIsolationTests
     {
         // 두 판(챕터)에 같은 이름의 에피소드가 있어도, 판 맞추기는 자기 판의 카드만 본다 —
         // 남의 판에서 찾아 버리면 이 챕터의 에피소드는 원고를 쓸 카드가 없다.
-        var editor = new ProjectEditor(new StoryProject());
+        var editor = new ProjectEditor(new StoryProject { Speakers = [.. Speakers] });
 
         // ch00 판에 'new01' 카드가 이미 서 있다(다른 챕터의 원고를 담은 카드).
         editor.EnsureChapter("ch00");
         editor.AddEpisode("ch00", "new01", "new01", 0, 0);
         DialogueNode standing = EpisodeNaming.CardFor(editor.Project, "ch00", "new01")!;
-        editor.ApplyScenarioText(standing.Id, "라루: ch00의 대사다.", Definition, confirmDeletes: true);
+        editor.ApplyScenarioText(standing.Id, "라루: ch00의 대사다.", confirmDeletes: true);
 
         // ch01에는 같은 이름의 에피소드만 있고 카드가 없다 — 옛 프로젝트의 어긋난 모양이다.
         editor.EnsureChapter("ch01").Episodes.Add(new ChapterEpisode(
@@ -75,7 +72,7 @@ public sealed class ChapterEpisodeIsolationTests
         Assert.NotEqual(standing.Id, created.Id);
 
         // 새 카드에 쓴 원고는 그 카드에만 간다 — 남의 원고가 쏟아지지 않는다.
-        editor.ApplyScenarioText(created.Id, "라루: ch01의 대사다.", Definition, confirmDeletes: true);
+        editor.ApplyScenarioText(created.Id, "라루: ch01의 대사다.", confirmDeletes: true);
 
         Assert.DoesNotContain("ch01의 대사다.", TextOf(editor.Project, standing));
         Assert.Contains("ch00의 대사다.", TextOf(editor.Project, standing));
