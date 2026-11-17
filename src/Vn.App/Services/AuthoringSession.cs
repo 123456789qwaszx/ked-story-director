@@ -655,8 +655,15 @@ internal sealed class AuthoringSession
         }
     }
 
+    /// <summary>
+    /// 프로젝트를 열거나 새로 만들 때마다 하나씩 는다 — 화면이 「새 프로젝트의 첫 화면」을 알아보는 열쇠다(되돌리기는 프로젝트 객체를
+    /// 갈아 끼우므로 객체로는 못 가린다).
+    /// </summary>
+    internal int ProjectGeneration { get; private set; }
+
     private void ResetFileGraphState(StoryProject project, string? activeFileId = null)
     {
+        ProjectGeneration++;
         ActiveFileId = activeFileId ?? project.Files.FirstOrDefault()?.Id;
 
         _expandedFileIds.Clear();

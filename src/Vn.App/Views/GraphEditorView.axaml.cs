@@ -237,10 +237,19 @@ public partial class GraphEditorView : UserControl
     private Rectangle? _minimapViewport;
     private string? _followedNodeId; // 선택이 바뀐 순간에만 화면이 따라간다 (GB-4)
 
-    // 판별 뷰 상태 (GB-1) — 판(활성 파일)마다 보던 자리·배율을 기억한다.
-    // 뷰 상태라 저장하지 않는다(원칙 E) — 세션 안에서만 산다.
-    private readonly Dictionary<string, (Vector Offset, double Zoom)> _boardViews = new(StringComparer.Ordinal);
-    private string? _viewedFileId;
+    // ⛔ 판별 뷰 상태(GB-1 — 활성 판이 바뀌면 떠나는 판의 자리 · 배율을 기억하고 새 판은 그 자리로, 처음이면 그 챕터 전체 보기로)는
+    //    2026-11-17에 걷혔다(소유자 보고). 모든 챕터가 한 캔버스에 서므로 활성 판은 카드 하나를 눌러도 바뀌는데, 그 확인이 판을 다시
+    //    그릴 때만 돌아서 <b>선택지 문구를 처음 열 때</b> 화면이 아까 활성이 된 챕터로 튀었다. 이제 화면은 사람이 그 챕터로 가자고 할
+    //    때만 옮긴다(<see cref="GoToBoard"/>).
+
+    /// <summary>맞추기로 한 판 — 판을 다 그리고 화면 크기가 선 뒤에 맞춘다(<see cref="ApplyPendingFit"/>). 없으면 null.</summary>
+    private PendingFit? _pendingFit;
+
+    /// <summary>첫 화면을 맞춘 프로젝트의 세대(<see cref="AuthoringSession.ProjectGeneration"/>) — 새로 열면 다시 맞춘다.</summary>
+    private int _fittedGeneration = -1;
+
+    /// <param name="FileId">맞출 판. null이면 맞추는 그때의 활성 판(프로젝트를 연 첫 화면).</param>
+    private sealed record PendingFit(string? FileId);
 
     // 접힌 파일 드래그 (W52) — 프록시 위치는 안 노드들의 평균이므로,
     // 끌기는 파일 안 노드 전부를 같은 delta로 옮기는 것이다(펼치면 그 자리에 있다).
@@ -375,7 +384,11 @@ public partial class GraphEditorView : UserControl
             }
 
             UiGuard.Run(_session, "챕터 고르기", () =>
-                _session.SelectFile(_session.EnsureChapterBoard(chapterId)));
+            {
+                string board = _session.EnsureChapterBoard(chapterId);
+                _session.SelectFile(board);
+                GoToBoard(board);   // 사람이 고른 챕터다 — 그리로 간다
+            });
         };
 
         GraphCanvas.PointerMoved += OnCanvasPointerMoved;
@@ -389,6 +402,15 @@ public partial class GraphEditorView : UserControl
         GraphScroll.AddHandler(PointerMovedEvent, OnGraphPanMoved, RoutingStrategies.Tunnel);
         GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, RoutingStrategies.Tunnel);
         GraphScroll.ScrollChanged += (_, _) => RefreshMinimapViewport();
+
+        // 맞추기로 한 판이 남아 있는데 화면 크기가 이제 섰다(탭이 처음 보였다) — 그때 맞춘다.
+        GraphScroll.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == ScrollViewer.ViewportProperty && _pendingFit is not null)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(ApplyPendingFit, Avalonia.Threading.DispatcherPriority.Background);
+            }
+        };
         MinimapCanvas.PointerPressed += OnMinimapPressed;
         MinimapCanvas.PointerMoved += OnMinimapMoved;
         MinimapCanvas.PointerReleased += (_, _) => _minimapDragging = false;
@@ -519,7 +541,7 @@ public partial class GraphEditorView : UserControl
         DrawEdges();
         HighlightSelection();
         RefreshMinimap();
-        HandleBoardSwitch();
+        FitNewProject();
         RestoreWritingFocus(writing);
 
         // 고른 선이 판과 함께 사라졌다 — 인스펙터도 그 선을 내린다.
@@ -1559,53 +1581,58 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 판 전환 (GB-1) — 활성 파일이 바뀌었으면 떠나는 판의 자리·배율을 기억하고,
-    /// 새 판은 기억해 둔 자리로(처음이면 전체 보기로) 돌아간다.
+    /// <b>그 챕터로 간다</b> — 그 판의 카드(접혔으면 그 표)가 여백을 두고 들어오게 배율과 자리를 맞춘다(<see cref="FitFile"/>).
+    /// 사람이 챕터를 골랐을 때만 부른다: [대본]의 챕터 콤보, 하이어아키의 챕터 줄, [＋ 챕터]. 카드를 누르거나 [구성] 탭에서 챕터를
+    /// 고른 것처럼 활성 판만 바뀐 일로는 화면을 옮기지 않는다(2026-11-17 — 그것이 늦게 돌아 화면이 튀었다).
+    ///
+    /// 맞추기는 미룬다 — 고르기가 판을 펼치면 다시 그리기는 다음 차례에 오고, 그 전에 맞추면 카드를 못 찾아 엉뚱한 곳(전체 보기)으로
+    /// 간다. 탭이 아직 안 보여 화면 크기가 0이면 보일 때 맞춘다.
     /// </summary>
-    private void HandleBoardSwitch()
-    {
-        string? active = _session?.ActiveFileId;
+    internal void GoToBoard(string fileId) => RequestFit(new PendingFit(fileId));
 
-        if (string.Equals(active, _viewedFileId, StringComparison.Ordinal))
+    private void RequestFit(PendingFit fit)
+    {
+        _pendingFit = fit;
+        Avalonia.Threading.Dispatcher.UIThread.Post(ApplyPendingFit, Avalonia.Threading.DispatcherPriority.Background);
+    }
+
+    private void ApplyPendingFit()
+    {
+        if (_pendingFit is not { } fit || _session is null)
         {
             return;
         }
 
-        if (_viewedFileId is { } previous)
+        if (GraphScroll.Viewport.Width <= 0 || GraphScroll.Viewport.Height <= 0)
         {
-            _boardViews[previous] = (GraphScroll.Offset, _zoom);
+            return;   // 아직 안 보인다 — 화면 크기가 서면 다시 온다(생성자의 Viewport 구독)
         }
 
-        _viewedFileId = active;
+        _pendingFit = null;
 
-        void Restore()
+        if ((fit.FileId ?? _session.ActiveFileId) is { } fileId)
         {
-            if (active is not null &&
-                _boardViews.TryGetValue(active, out (Vector Offset, double Zoom) view))
-            {
-                SetZoom(view.Zoom);
-                GraphScroll.Offset = view.Offset;
-                RefreshMinimapViewport();
-            }
-            else if (active is not null)
-            {
-                FitFile(active); // 처음 여는 챕터는 그 챕터 박스가 들어오게 (PDF 9장 "그 챕터로 이동")
-            }
-            else
-            {
-                FitAll();
-            }
-        }
-
-        if (GraphScroll.Viewport.Width > 0)
-        {
-            Restore();
+            FitFile(fileId);
         }
         else
         {
-            // 앱 시작 직후 첫 레이아웃 전 — 뷰포트 크기가 잡힌 다음 턴에 자리를 잡는다.
-            Avalonia.Threading.Dispatcher.UIThread.Post(Restore);
+            FitAll();
         }
+    }
+
+    /// <summary>
+    /// 프로젝트를 새로 열었거나 새로 만들었으면 <b>첫 화면</b>을 활성 챕터에 맞춘다. 탭이 안 보일 때 열었으면(앱은 [구성] 탭에서 열린다)
+    /// [대본] 탭이 처음 보일 때 맞춘다. 되돌리기 · 다시 그리기로는 다시 맞추지 않는다.
+    /// </summary>
+    private void FitNewProject()
+    {
+        if (_session is null || _session.ProjectGeneration == _fittedGeneration)
+        {
+            return;
+        }
+
+        _fittedGeneration = _session.ProjectGeneration;
+        RequestFit(new PendingFit(null));
     }
 
     /// <summary>좌표만 바뀌었을 때. projection을 다시 계산하되 컨트롤은 유지한다.</summary>
@@ -4124,9 +4151,18 @@ public partial class GraphEditorView : UserControl
             bounds = bounds is { } current ? current.Union(rect) : rect;
         }
 
+        // 접힌 판 · 접힌 장면은 표로 선다 — 하이어아키에서 접힌 챕터를 골라도 그 표로 간다.
+        foreach (FileProxyVisual proxy in _proxies.Where(proxy => string.Equals(proxy.FileId, fileId, StringComparison.Ordinal)))
+        {
+            var rect = new Rect(
+                Canvas.GetLeft(proxy.Visual), Canvas.GetTop(proxy.Visual),
+                ProxyWidth, ProxyHeaderHeight + (proxy.VisualRowCount * ProxyRowHeight));
+            bounds = bounds is { } current ? current.Union(rect) : rect;
+        }
+
         if (bounds is not { } area)
         {
-            FitAll(); // 빈 판이거나 접혀 있다 — 전체 보기가 차선이다
+            FitAll(); // 빈 판이다(카드가 아직 없다) — 전체 보기가 차선이다
             return;
         }
 

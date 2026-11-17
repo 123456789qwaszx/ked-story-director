@@ -325,6 +325,7 @@ public partial class MainWindow : Window
         {
             ChapterGraph.Refresh();
             ChapterGraph.SelectChapter(chapterId);
+            Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));   // [＋ 챕터]는 [대본]에 있다 — 만든 챕터로 간다
         });
 
     /// <summary>

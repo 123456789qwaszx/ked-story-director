@@ -64,7 +64,17 @@ public partial class MainWindow
         ChapterGraph.HierarchyDock.Changed += value => OnHierarchyDockChanged(Graph.HierarchyDock, value);
         Graph.HierarchyDock.Changed += value => OnHierarchyDockChanged(ChapterGraph.HierarchyDock, value);
 
-        Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnDirectorHierarchyPicked(pick));
+        Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () =>
+        {
+            OnDirectorHierarchyPicked(pick);
+
+            // 하이어아키의 챕터 줄은 「그 챕터로 가자」다 — 화면을 그리로 옮긴다. 판의 빈 곳을 눌러 챕터를 고른 것(AreaPicked)은
+            // 이미 그 자리를 보고 있으므로 옮기지 않는다 — 그래서 OnDirectorHierarchyPicked 안이 아니라 여기다.
+            if (pick.Kind == HierarchyKind.Chapter && pick.ChapterId is { } chapterId)
+            {
+                Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));
+            }
+        });
 
         // 판에서 고른 선 — 인스펙터가 그 선을 설명한다(MainWindow.LineInspector.cs).
         Graph.LineSelected += line => UiGuard.Run(_session, "선 고르기", () => OnDirectorLinePicked(line));
