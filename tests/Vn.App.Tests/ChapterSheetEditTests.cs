@@ -141,8 +141,7 @@ public sealed class ChapterSheetEditTests : IDisposable
         // <b>키는 세이브의 열쇠다</b> (런타임 회신 §6.2). 저쪽 `LocalSaveFile.Stats`가 이
         //    글자로 저장하고, 복원은 키가 없으면 <b>처음 값</b>으로 떨어진다 — 경고도 없다.
         //    개명이 끌고 가는 다섯 자리는 프로젝트 안이고 <b>디스크의 세이브는 그 다섯에
-        //    없다</b>. 표시 이름만 고치려던 사람이 이 문을 열 수 있으므로, 경고가
-        //    <b>적기 전에</b> 서야 한다.
+        //    없다</b>. 그래서 경고가 <b>적기 전에</b> 서야 한다. (걷힌 [표시 이름] 칸을 가리키지 않는다 — W2.)
         (ChapterGraphView view, _) = Show();
 
         Press(Buttons(Row(view, "stat:trust")).First());
@@ -152,7 +151,7 @@ public sealed class ChapterSheetEditTests : IDisposable
 
         Assert.Contains(shown, text => text.Contains("세이브의 열쇠", StringComparison.Ordinal));
         Assert.Contains(shown, text => text.Contains("처음 값", StringComparison.Ordinal));
-        Assert.Contains(shown, text => text.Contains("[표시 이름]", StringComparison.Ordinal));
+        Assert.DoesNotContain(shown, text => text.Contains("표시 이름", StringComparison.Ordinal));
     });
 
     [Fact]

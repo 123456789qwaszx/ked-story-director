@@ -1551,7 +1551,7 @@ public partial class ChapterGraphView : UserControl
         new() { Text = text, FontSize = size, Foreground = ink };
 
     /// <summary>
-    /// 스탯 변화 하나를 작가의 말로 — 표시 이름으로 「성실 +1」, 예/아니오 스탯은 「열쇠 → 예」. 오르면 초록, 내리면 빨강이다.
+    /// 스탯 변화 하나를 작가의 말로 — 키로 「trust +1」, 예/아니오 스탯은 「열쇠 → 예」. 오르면 초록, 내리면 빨강이다.
     /// </summary>
     private (string Text, IBrush Ink) DescribeDelta(StatDelta delta) =>
     (
@@ -3384,7 +3384,7 @@ public partial class ChapterGraphView : UserControl
     internal static readonly string[] StatTypeNames = ["숫자", "예/아니오"];
 
     /// <summary>
-    /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 · 표시 이름 · 종류 · 개명 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
+    /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 · 종류 · 개명 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
     /// 처음 값 하나). 값 칸마다 이름을 붙인다 — 이름 없는 숫자 칸 셋은 처음 보는 사람이 무엇인지 모른다. 한 줄에 다 세우면
     /// 인스펙터 폭을 넘어 뒤쪽 칸이 밀린다. 아래 줄의 숫자 칸은 남은 폭을 셋이 나눠 가진다 — 고정 폭이면 좁은 인스펙터에서
     /// 마지막 칸이 잘린다.
@@ -3404,7 +3404,7 @@ public partial class ChapterGraphView : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
         };
-        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식에 쓰는 이름입니다. 바꾸려면 [✎].");
+        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다. 바꾸려면 [✎].");
         head.Children.Add(key);
 
         // 표시 이름 칸은 걷혔다 — 스탯은 키만 있다. 게임 화면의 글자는 게임 쪽이 키로 로컬라이즈한다(writer-fields W2).
@@ -3678,15 +3678,14 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 스탯의 <b>키</b>를 바꾼다 — 표시 이름이 아니다.
+    /// 스탯의 <b>키</b>를 바꾼다 — 스탯은 키만 있다(표시 이름은 writer-fields W2에서 걷혔다).
     ///
     /// ⛔ <b>키는 세이브의 열쇠다</b> (2026-09-17, 런타임 회신 §6.2가 짚었다).
     /// 저쪽 <c>LocalSaveFile.Stats</c>가 이 글자로 저장하고, 복원은 키가 없으면 <b>초기값</b>으로
     /// 떨어진다 — 오류도 경고도 없다. 개명이 끌고 가는 다섯 자리는 <b>프로젝트 안</b>이고,
     /// <b>이미 디스크에 나간 세이브는 그 다섯에 없다.</b>
     ///
-    /// ⚠ 그래서 경고가 <b>적기 전에</b> 선다. 표시 이름만 고치려는 사람이 이 문을 열면
-    /// 되돌릴 수 없는 일을 하게 되므로, 옆 칸을 쓰라고 말해 준다.
+    /// ⚠ 그래서 경고가 <b>적기 전에</b> 선다 — 세이브는 되돌리기로 돌아오지 않는다.
     /// </summary>
     private void ShowStatRenameFlyout(Control anchor, string key)
     {
@@ -3712,8 +3711,8 @@ public partial class ChapterGraphView : UserControl
             }),
             caution:
                 "⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 " +
-                "처음 값으로 떨어집니다(경고 없이). 표시 이름만 고치려면 닫고 옆의 " +
-                "[표시 이름] 칸을 쓰세요.");
+                "처음 값으로 떨어집니다(경고 없이). 출시 전이면 괜찮지만, 이미 플레이한 세이브가 있으면 " +
+                "되도록 바꾸지 마세요.");
     }
 
     /// <summary>글자 하나를 받는 작은 플라이아웃 — [챕터 추가]와 같은 손버릇이다.</summary>
