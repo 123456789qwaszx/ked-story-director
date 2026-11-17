@@ -269,7 +269,7 @@ internal sealed class AuthoringSession
 
     // 화자의 집은 `game.definition.json`의 speakers 하나다. 2026-11-16(writer-fields W3)부터 화자 <b>이름</b>은 [대본] 탭(작가)이
     // 더하고 고치고 지우며, <b>캐릭터 키</b>는 [구성] 탭(기획자)이 잇는다 — 규칙은 아래 화자 창구(AddSpeakerName …) 한 벌이다.
-    // (2026-08-23의 「작가가 더한 화자는 없앤다」 결정을 소유자가 바꿨다. 옛 `StoryProject.WriterSpeakers`는 유물 그대로다.)
+    // (2026-08-23의 「작가가 더한 화자는 없앤다」 결정을 소유자가 바꿨다.)
     // 검증 보고의 [등록](`RegisterVariables`)도 정의 파일에 쓴다.
 
     /// <summary>화자 이름을 더한다 — [대본] 탭. 못 더했으면 그 이유(빈 이름 · 같은 이름 · 저장 전 프로젝트).</summary>

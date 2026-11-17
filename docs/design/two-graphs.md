@@ -635,7 +635,7 @@ d1 `034300f` · d2 `25797cb` · d3 `6188f72`).
 
 > P의 원칙을 화자 · 조건 · 스탯에 넓혔다 — [대본] 탭은 작가가 생각하는 단위(이름 · 뜻)를 더하고 고치고, [구성] 탭은 그 세부를 정한다.
 > 지시서 [`docs/work-orders/writer-fields-orders.md`](../work-orders/writer-fields-orders.md). ⛔ 2026-08-23의 「화자는 [화자] 탭에서만 · 작가가 더한
-> 화자는 없앤다」 결정을 소유자가 바꿨다(옛 `StoryProject.WriterSpeakers`는 유물 그대로 — 쓰지 않는다).
+> 화자는 없앤다」 결정을 소유자가 바꿨다(⛔ 유물이던 옛 `StoryProject.WriterSpeakers`는 2026-11-17에 걷혔다).
 
 | | [대본] 탭 — 더하고 고치고 지운다 | [구성] 탭 — 정한다 |
 |---|---|---|

@@ -155,10 +155,8 @@ public static class ProjectStore
             project.Files.Add(file);
         }
 
-        // 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지
-        //    않는다(WriterSpeaker는 가변이라 복제한다).
+        // 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지 않는다.
         project.Chapters.AddRange(manifest.Chapters);
-        project.WriterSpeakers.AddRange(manifest.WriterSpeakers.Select(speaker => speaker.Clone()));
 
         JsonSupport.ValidateProject(project);
         return project;

@@ -47,19 +47,8 @@ public sealed class StoryProject
     public List<ChapterDocument> Chapters { get; init; } = new();
 
     // ⛔ `Links`(조건 공급 연결 — 범위 결정에서는 2026-08-17에 빠졌다)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 조건 범위는
-    //    판이다(<see cref="Flow.ConnectedSetNodeResolver"/>) · docs/work-orders/legacy-read-orders.md L5.
-
-    /// <summary>
-    /// <b>유물이다</b> (2026-08-23 소유자: "작가가 더한 화자라는 개념도 없애는 게 맞을 것
-    /// 같아 — 이런 캐릭터는 컨셉과 배경이 꼼꼼히 정해져야 하는데 작가가 임의로 추가한다는
-    /// 게 좋아보이진 않아서"). 화자의 주인은 기획자 하나다: 챕터 `화자` 시트와
-    /// `game.definition.json`.
-    ///
-    /// <b>아무도 읽지 않는다</b> — 더하는 화면도, 고르는 목록도 사라졌다. 그래도 지우지
-    /// 않는 이유는 구판 프로젝트 파일의 값을 조용히 날리지 않기 위해서다(이 저장소의
-    /// "구판 데이터는 지우지 않고 무시한다" 규칙). 읽고 다시 쓰기만 한다.
-    /// </summary>
-    public List<WriterSpeaker> WriterSpeakers { get; init; } = new();
+    //    판이다(<see cref="Flow.ConnectedSetNodeResolver"/>) · docs/work-orders/legacy-read-orders.md L5. 유물이던 작가 화자
+    //    `WriterSpeakers`(2026-08-23 — 화자의 집은 정의 파일 speakers)도 함께 걷혔다.
 
     /// <summary>이야기가 시작되는 노드. null이면 아직 정하지 않은 것이다.</summary>
     public string? StartNodeId { get; set; }

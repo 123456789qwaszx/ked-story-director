@@ -33,7 +33,7 @@
 
 ```text
 MyStory/
-├─ 예제.vnproject.json         매니페스트 — 판 목록 · 챕터(chapters[]) · 링크 · 작가 화자 · [대본] 판 크기(board — 기본이면 없다)
+├─ 예제.vnproject.json         매니페스트 — 판 목록 · 챕터(chapters[]) · [대본] 판 크기(board — 기본이면 없다)
 ├─ game.definition.json        스탯 후보(variables) · 게임 전역 조건 · 화자(speakers). compositor의 키도 산다 — 모르는 키는 보존한다
 ├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
@@ -83,7 +83,7 @@ MyStory/
 
 | 파일 | 하는 일 |
 |---|---|
-| `StoryProject.cs` | 프로젝트 — 판 · 대본 · 챕터 · 링크 · 작가 화자(`WriterSpeakers` — 유물, 쓰지 않는다. 화자는 정의 파일 speakers 하나다) |
+| `StoryProject.cs` | 프로젝트 — 판(카드와 그 대본) · 챕터 · [대본] 판 크기. 화자는 정의 파일 speakers 하나다 |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
 | `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 기본 출구 · 에피소드 표식(`MarkedEpisodeId`)을 든다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
 | `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |

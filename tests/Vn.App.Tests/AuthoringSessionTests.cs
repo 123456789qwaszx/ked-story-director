@@ -257,40 +257,6 @@ public class AuthoringSessionTests : IDisposable
     // ── 튜닝 관리 ───────────────────────────────────────────────────
 
     /// <summary>
-    /// 작가는 화자를 더하지 않는다 — 캐릭터는 컨셉·배경이 꼼꼼히 정해져야 하는 것이라
-    /// 작가가 임의로 더할 자리가 아니다. 더하는 화면도 고르는 목록도 없지만, <b>구판 프로젝트의 값은 조용히 날리지 않는다</b> — 이 저장소의
-    /// "구판 데이터는 지우지 않고 무시한다" 규칙이다.
-    /// </summary>
-    [Fact]
-    public void 폐지된_작가_화자_데이터는_열고_저장해도_살아남는다()
-    {
-        string directory = TempDirectory();
-
-        try
-        {
-            string path = Path.Combine(directory, "project.vnproject.json");
-            var session = new AuthoringSession();
-            session.Save(path);
-
-            // 구판 프로젝트가 들고 있던 값 — 이제 아무 화면도 이걸 읽지 않는다.
-            session.Project.WriterSpeakers.Add(new WriterSpeaker { Name = "구판화자" });
-            session.Save(path);
-
-            var reopened = new AuthoringSession();
-            reopened.Open(path);
-            Assert.Equal("구판화자", Assert.Single(reopened.Project.WriterSpeakers).Name);
-
-            // 정의 파일은 손대지 않는다 (기획자 전용).
-            Assert.DoesNotContain(reopened.Definition.Speakers, speaker =>
-                string.Equals(speaker.Name, "구판화자", StringComparison.Ordinal));
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-    }
-
-    /// <summary>
     /// 화자를 지우면 세션의 정의가 <b>곧바로</b> 바뀐다 — 챕터 그래프에서 화자를 지우면
     /// 연출 그래프도 옛 목록을 보이면 안 된다. 화면은 그릴 때마다 정의를 읽는다.
     /// </summary>

@@ -3,7 +3,7 @@
 **프로젝트는 형식 4만 연다.** 소유자의 프로젝트는 형식 4다(2026-11-17 소유자 — 「옛 데이터 읽기를 전부 걷읍시다」). 옛 모양을 읽어
 옮기거나 · 견디거나 · 알리던 코드와 그것만 지키던 시험 · 견본을 흔적 없이 걷는다.
 
-> **상태: L1–L4 끝, L5를 한다.** L1–L4는 형식 4 파일에 없는 모양이라 소유자의 파일에서 잃는 것이 없었다. L5는 형식 4에 들어 있을 수 있는
+> **상태: 끝(L0–L5).** L1–L4는 형식 4 파일에 없는 모양이라 소유자의 파일에서 잃는 것이 없었다. L5는 형식 4에 들어 있을 수 있는
 > 칸이라 다음 저장에서 그 데이터가 빠진다 — 소유자가 정했다(4절: 셋 다 걷는다).
 
 ## 1. 정한 것
@@ -62,3 +62,4 @@
 | 11-17 | L4 | (이 커밋) | 걷음 — 선 모양 열쇠 `detour:{줄}` 옮기기(`AdoptLineOnlyDetourShapes`), 수로 적힌 `openDetours`, `cleared:`의 안내(`ClearedRetired` · 깃발 이름 제안 — 이제 비교 연산자가 없는 항으로 오류) · 개명 막기, 이름이 어긋난 조건 공급 사본을 식으로 이어받기(11-16 전에 저장한 프로젝트용 — 그 뒤 툴로 연 프로젝트는 이미 옮겨 앉았다), 「읽고 지나간다」 주석(`excelEpisode` · `excelLines` · `assignments` · 줄 `set` · `sourceRow` · `sourcePath` · 스탯 `displayName`). 견본 — 스탯 `displayName`을 `tests/fixtures/chapter-samples/ch01` · `ch05`와 축제 전날 매니페스트에서 걷었다(축제 전날 왕복 시험이 그것을 빼던 손질도). 시험 6을 걷음: `BranchMarkerTests` 옛 선 모양 · `StatKeyOnlyTests` 스탯 표시 이름 · `ChapterSchemaV5Tests` cleared · `ChapterEditingTests` cleared 개명 · `ConditionSupplyByNameTests` 옛 사본 · `SpeakerAndConditionRenameTests` 조건 라벨(공급만으로 라벨을 바꿔 옛 사본 이어받기를 보던 것 — 명령으로 바꾸는 길은 `ConditionRenameTests.판에_공급된_사본은_Id를_지킨_채_이름만_간다`가 본다). `OpenDetourTests` 하나는 수 부분을 걷었다. Authoring 685 · App 442 |
 | 11-17 | L5a | (이 커밋) | `DialogueNode.ChoiceExits` · 그 읽기/쓰기 · 검증 · 지운 노드 따라 걷기 · 착지 카드 경고의 한 갈래, 만드는 곳이 없던 `ExitPortKind.Choice` · `ExitPort.ChoiceText`. 시험 — `SerializationTests.옛_파일의_선택지_자유_씬_배선은_열고_저장해도_남는다` 걷음, 진행 JSON 골든의 판에서 배선과 그것만 쓰던 카드를 뺐다(출력은 같다). `ARCHITECTURE.md` 16 · 모델 표 · `ORIENTATION.md`. Authoring 684 · App 442 |
 | 11-17 | L5b | (이 커밋) | `StoryProject.Links` · `NodeLink` 파일 · `Identifier.Link` · 매니페스트와 스냅샷의 `links` 읽기/쓰기 · 검증 · 지운 노드 따라 걷기. 견본 `samples/Authoring`의 링크를 걷었다. 시험 — `SerializationTests` Settings link 둘 · `ConditionSupplyTests` 옛 공급 링크 · `GraphProjectionTests` 공급선을 걷고, 왕복 시험 둘 · 견본 시험 · 판 공급 시험에서 링크 부분을 뺐다(판 공급 시험은 `판의_대사노드는_잇지_않아도_챕터_조건을_본다`로). 「Settings link」를 말하던 흐름 주석. `ARCHITECTURE.md` 16 · 모델 표 · `ORIENTATION.md`. Authoring 680 · App 442 |
+| 11-17 | L5c | (이 커밋) | `StoryProject.WriterSpeakers` · `WriterSpeaker` 파일 · 매니페스트와 스냅샷의 `writerSpeakers` 읽기/쓰기. 시험 — `AuthoringSessionTests.폐지된_작가_화자_데이터는_열고_저장해도_살아남는다` 걷음. `ARCHITECTURE.md` 배치 · 모델 표, `two-graphs.md`. Authoring 680 · App 441 |

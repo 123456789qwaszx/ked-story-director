@@ -44,16 +44,9 @@ public static class ProjectSnapshotCodec
 
         root["files"] = files;
 
-        // 작가 화자 — manifest와 같은 직렬화 하나를 쓴다. 예전엔 스냅샷에
-        // 안 실려 <b>undo가 작가 화자를 지우는 잠복 버그</b>가 있었다(W67 후속에서 발견).
         if (ChapterDocumentJson.Write(project.Chapters) is { } chapters)
         {
             root["chapters"] = chapters;
-        }
-
-        if (ProjectManifestJson.WriteWriterSpeakers(project.WriterSpeakers) is { } writerSpeakers)
-        {
-            root["writerSpeakers"] = writerSpeakers;
         }
 
         // 판 크기 — 안 실으면 되돌리기가 카드 자리는 되돌리고 크기는 잃는다.
@@ -112,7 +105,6 @@ public static class ProjectSnapshotCodec
         }
 
         project.Chapters.AddRange(ChapterDocumentJson.Read(root["chapters"]));
-        project.WriterSpeakers.AddRange(ProjectManifestJson.ReadWriterSpeakers(root["writerSpeakers"]));
 
         JsonSupport.ValidateProject(project);
         return project;
