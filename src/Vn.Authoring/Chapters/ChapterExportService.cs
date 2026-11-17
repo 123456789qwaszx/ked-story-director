@@ -1,3 +1,4 @@
+using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 using System.Text;
 
@@ -22,7 +23,9 @@ public sealed record ChapterExportRun(
     string? GameFolderNote = null,
     IReadOnlyList<string>? Removed = null,
     IReadOnlyList<string>? RemoveFailed = null,
-    IReadOnlyList<string>? ScenesFailed = null)
+    IReadOnlyList<string>? ScenesFailed = null,
+    IReadOnlyList<string>? YarnWritten = null,
+    IReadOnlyList<string>? YarnProblems = null)
 {
     public static ChapterExportRun Empty { get; } = new([], [], [], new Dictionary<string, string>());
 
@@ -47,7 +50,11 @@ public sealed record ChapterExportRun(
             string folder = Path.GetFileName(Path.GetDirectoryName(written[0]) ?? string.Empty);
             string files = string.Join(", ", written.Select(Path.GetFileName));
 
-            return $"진행 JSON → {folder}/ ({files})" + (GameFolderNote is null ? string.Empty : $" · {GameFolderNote}") +
+            string yarn = YarnWritten is { Count: > 0 } scripts
+                ? $" · 대사 Yarn → {folder}/{ChapterYarnExporter.FolderName}/ ({scripts.Count}개)"
+                : string.Empty;
+
+            return $"진행 JSON → {folder}/ ({files})" + yarn + (GameFolderNote is null ? string.Empty : $" · {GameFolderNote}") +
                    (removed is null ? string.Empty : $" · {removed}");
         }
     }
@@ -59,7 +66,8 @@ public sealed record ChapterExportRun(
     /// <summary>
     /// 검증 보고 맨 위에 세울 결론 — <b>못 나갔거나 옛 파일을 못 걷었을 때만 있다.</b> 잘 나간 것은 말하지 않는다.
     /// </summary>
-    public string? Notice => AllExported && RemoveFailed is not { Count: > 0 } && ScenesFailed is not { Count: > 0 }
+    public string? Notice => AllExported && RemoveFailed is not { Count: > 0 } && ScenesFailed is not { Count: > 0 } &&
+                             YarnProblems is not { Count: > 0 }
         ? null
         : string.Join("\n", new[]
         {
@@ -84,7 +92,11 @@ public sealed record ChapterExportRun(
             ScenesFailed is not { Count: > 0 } scenes
                 ? null
                 : $"장면 파일({ChapterScenesExporter.FileSuffix})을 쓰지 못했습니다: {string.Join(", ", scenes)}" +
-                  $" — {ChapterExportService.ExportFolderName}/ 의 파일이 다른 프로그램에 잡혀 있는지 확인하세요."
+                  $" — {ChapterExportService.ExportFolderName}/ 의 파일이 다른 프로그램에 잡혀 있는지 확인하세요.",
+            YarnProblems is not { Count: > 0 } yarn
+                ? null
+                : $"대사 Yarn이 나가지 않은 장면이 있습니다 — 그 장면의 옛 파일은 그대로 둡니다:\n" +
+                  string.Join("\n", yarn.Select(problem => "• " + problem))
         }.Where(part => part is not null));
 }
 
@@ -178,12 +190,15 @@ public sealed class ChapterExportService
     /// <param name="gameFolder">
     /// 게임 폴더(<see cref="Serialization.RuntimeTarget"/>가 푼 절대 경로). 주면 <c>exported/</c>와 함께 거기에도
     /// <c>{챕터}.progression.json</c>을 쓴다 — 런타임 저장소로 손으로 복사하지 않아도 된다. null이면 안 쓴다.
+    /// <b>대사 Yarn은 거기 쓰지 않는다</b> — 연출 든 Yarn이 있으면 덮여서 연출이 사라진다(소유자 2026-11-17).
     /// </param>
+    /// <param name="definition">대사 Yarn을 펼칠 때 조건을 찾는 정의 파일 — 카드 글 칸이 쓰는 것과 같은 것.</param>
     public ChapterExportRun ExportAll(
         IReadOnlyList<ChapterEntry> entries,
         string? projectPath,
         StoryProject? project = null,
-        string? gameFolder = null)
+        string? gameFolder = null,
+        GameDefinition? definition = null)
     {
         ArgumentNullException.ThrowIfNull(entries);
 
@@ -200,6 +215,12 @@ public sealed class ChapterExportService
         var gameWritten = new List<string>();
         var gameFailed = new List<string>();
         var scenesFailed = new List<string>();
+        var yarnWritten = new List<string>();
+        var yarnProblems = new List<string>();
+
+        // 대사 Yarn의 장부 — 이번에 다룬 챕터와, 그 챕터들이 지금 가진 파일 이름(막혀서 안 쓴 것도 — 옛 파일을 지키려고).
+        var yarnChapters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var yarnOwners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (ChapterEntry entry in entries)
         {
@@ -267,6 +288,9 @@ public sealed class ChapterExportService
                 scenesFailed.Add(entry.ChapterId);
             }
 
+            // 대사 Yarn — 장면 하나 = 파일 하나(docs/work-orders/yarn-output-orders.md). 진행 JSON이 나갈 때 함께, 게임 폴더에는 쓰지 않는다.
+            ExportYarn(entry, projectPath, project, definition, yarnChapters, yarnOwners, yarnWritten, yarnProblems);
+
             if (gameFolder is not null)
             {
                 string gamePath = Path.Combine(gameFolder, entry.ChapterId + ExportFileSuffix);
@@ -278,6 +302,7 @@ public sealed class ChapterExportService
         var removed = new List<string>();
         var removeFailed = new List<string>();
         RemoveStale(entries, projectPath, gameFolder, removed, removeFailed);
+        RemoveStaleYarn(entries, projectPath, yarnChapters, yarnOwners, removeFailed);
 
         string? gameNote = gameFolder is null
             ? null
@@ -287,7 +312,116 @@ public sealed class ChapterExportService
                     ? $"게임 폴더 → {gameFolder}"
                     : null;
 
-        return new ChapterExportRun(refused, failed, blocked, checksums, written, gameNote, removed, removeFailed, scenesFailed);
+        return new ChapterExportRun(
+            refused, failed, blocked, checksums, written, gameNote, removed, removeFailed, scenesFailed, yarnWritten, yarnProblems);
+    }
+
+    /// <summary>
+    /// 챕터 하나의 대사 Yarn을 <c>exported/yarn/</c>에 쓴다. <b>막는 문제를 안은 장면은 쓰지 않고</b> 그 장면의 옛 파일을 둔다 —
+    /// 진행 JSON이 거부될 때와 같은 규칙(깨진 것으로 덮지 않는다). 다른 챕터가 이미 쓴 파일 이름이면 그것도 막는다
+    /// (챕터 <c>a</c>의 장면 <c>b_c</c>와 챕터 <c>a_b</c>의 장면 <c>c</c>는 같은 이름이 된다).
+    /// </summary>
+    private static void ExportYarn(
+        ChapterEntry entry,
+        string projectPath,
+        StoryProject? project,
+        GameDefinition? definition,
+        HashSet<string> chapters,
+        Dictionary<string, string> owners,
+        List<string> written,
+        List<string> problems)
+    {
+        chapters.Add(entry.ChapterId);
+        string folder = ChapterYarnExporter.FolderFor(projectPath);
+
+        foreach (ChapterYarnFile file in ChapterYarnExporter.Export(entry.Model, project, definition))
+        {
+            string where = $"{entry.ChapterId} · {file.SceneId}";
+
+            if (owners.TryGetValue(file.FileName, out string? owner) &&
+                !string.Equals(owner, entry.ChapterId, StringComparison.OrdinalIgnoreCase))
+            {
+                problems.Add($"{where}: 챕터 '{owner}'의 장면과 파일 이름이 같습니다({file.FileName}) — 장면 ID나 챕터 ID를 고쳐 주세요.");
+                continue;
+            }
+
+            owners.TryAdd(file.FileName, entry.ChapterId);
+
+            if (file.Problems.FirstOrDefault(problem => problem.IsBlocking) is { } blocking)
+            {
+                int more = file.Problems.Count(problem => problem.IsBlocking) - 1;
+                problems.Add($"{where}: {blocking.Message}" + (more > 0 ? $" (외 {more}개)" : string.Empty));
+                continue;
+            }
+
+            string path = Path.Combine(folder, file.FileName);
+
+            if (TryWrite(path, file.Text))
+            {
+                written.Add(path);
+            }
+            else
+            {
+                problems.Add($"{where}: {YarnWriteFailedNote(file.FileName)}");
+            }
+        }
+    }
+
+    private static string YarnWriteFailedNote(string fileName) =>
+        $"{ExportFolderName}/{ChapterYarnExporter.FolderName}/{fileName}을 쓰지 못했습니다 — 파일이 다른 프로그램에 잡혀 있는지 확인하세요.";
+
+    /// <summary>
+    /// <c>exported/yarn/</c>에서 지금 없는 장면 · 챕터의 파일을 걷는다. 파일의 주인은 <b>이름이 가장 길게 맞는 챕터</b>다
+    /// (<c>ch01_</c>과 <c>ch01_extra_</c>가 함께 있으면 <c>ch01_extra_…</c>는 뒤의 것). 주인이 없으면(챕터를 지웠다) 걷고, 주인이 이번에
+    /// 나갔는데 그 이름을 지금 짓지 않으면(장면을 지웠거나 개명했다) 걷는다. 주인이 거부 · 막힘으로 안 나갔으면 둔다.
+    /// </summary>
+    private static void RemoveStaleYarn(
+        IReadOnlyList<ChapterEntry> entries,
+        string projectPath,
+        HashSet<string> exported,
+        Dictionary<string, string> current,
+        List<string> removeFailed)
+    {
+        string folder = ChapterYarnExporter.FolderFor(projectPath);
+
+        if (!Directory.Exists(folder))
+        {
+            return;
+        }
+
+        (string ChapterId, string Prefix)[] live = entries
+            .Select(entry => (entry.ChapterId, ChapterYarnExporter.FilePrefixOf(entry.ChapterId)))
+            .OrderByDescending(item => item.Item2.Length)
+            .ToArray();
+
+        foreach (string path in Directory.EnumerateFiles(folder, "*" + ChapterYarnExporter.FileExtension).Order(StringComparer.Ordinal))
+        {
+            string fileName = Path.GetFileName(path);
+            string? owner = live
+                .Where(item => fileName.StartsWith(item.Prefix, StringComparison.OrdinalIgnoreCase))
+                .Select(item => item.ChapterId)
+                .FirstOrDefault();
+
+            bool stale = owner is null || (exported.Contains(owner) && !current.ContainsKey(fileName));
+
+            if (!stale)
+            {
+                continue;
+            }
+
+            try
+            {
+                File.Delete(path);
+            }
+            catch (IOException)
+            {
+                removeFailed.Add(fileName);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                removeFailed.Add(fileName);
+            }
+        }
     }
 
     /// <summary>
