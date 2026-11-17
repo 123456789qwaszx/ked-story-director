@@ -146,19 +146,4 @@ public sealed class SpeakerAndConditionRenameTests
         Assert.Equal(revision, world.Editor.Revision);
     }
 
-    [Fact]
-    public void 챕터_아닌_판의_줄도_바뀐다()
-    {
-        // 작가의 낙서판(챕터 아닌 판)의 카드는 진행에 안 실리지만, 화자는 같은 화자다.
-        var editor = new ProjectEditor(new StoryProject());
-        string fileId = editor.AddStoryFile("낙서").Id;
-        DialogueNode node = editor.AddDialogueNode(fileId, name: "메모");
-        ScriptDocument script = node.Script;
-        ScriptLine line = script.ActiveLines.First();
-        editor.SetScriptLineText(node.Id, line.Id, "라루", "혼잣말");
-
-        Assert.Equal(1, editor.RenameSpeaker("라루", "라루엘"));
-
-        Assert.Equal("라루엘", script.Text(line.Id, script.PrimaryLocale).Speaker);
-    }
 }

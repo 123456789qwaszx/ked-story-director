@@ -124,7 +124,7 @@ public sealed class GraphBranchKnobTests
             Stage("첫 줄", "둘째 줄");
         DialogueNode first = session.Editor.AddBranchMarker(card.Id, lines[1]);
         DialogueNode second = session.Editor.AddBranchMarker(card.Id, lines[1]);
-        DialogueNode elsewhere = session.Editor.AddDialogueNode(session.ActiveFile!.Id, name: "딴 곳");
+        DialogueNode elsewhere = session.Editor.AddDialogueNode(TestBoard.Of(session).Id, name: "딴 곳");
         session.Editor.MoveNode(elsewhere.Id, 60, 520);
         ShowGraph(window);
 
@@ -322,7 +322,7 @@ public sealed class GraphBranchKnobTests
         Dispatcher.UIThread.RunJobs();
 
         AuthoringSession session = window.SessionProbe;
-        DialogueNode card = session.Editor.AddDialogueNode(session.ActiveFile!.Id, name: "본문");
+        DialogueNode card = session.Editor.AddDialogueNode(TestBoard.Of(session).Id, name: "본문");
         var lines = new List<string> { card.Script.ActiveLines.Single().Id };   // 카드는 빈 첫 줄을 들고 선다
 
         while (lines.Count < texts.Length)

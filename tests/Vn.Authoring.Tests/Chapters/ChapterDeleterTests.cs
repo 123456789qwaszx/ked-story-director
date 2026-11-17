@@ -121,24 +121,21 @@ public sealed class ChapterDeleterTests : IDisposable
     // ── 고치면서 생긴 사고 자리 ─────────────────────────────────────────────
 
     [Fact]
-    public void 마지막_판은_지우지_않고_아무것도_건드리지_않는다()
+    public void 마지막_챕터도_판과_함께_지우고_되돌리기_한_번에_돌아온다()
     {
-        // 판이 하나뿐이면 새 노드가 갈 자리가 없어진다(ProjectEditor의 오랜 불변식).
-        //
-        // ⚠ 중요한 것은 <b>거절이 아무것도 안 바꾸는가</b>다. 챕터만 걷고 거절하면
-        //    판은 남는데 챕터가 없는 — 이 기능이 고치려던 바로 그 반쪽 상태가 된다.
+        // ⛔ 2026-11-17 전에는 「마지막 판은 지우지 않는다(새 노드가 갈 자리가 없어진다)」였다. 이제 판이 없으면 [＋ 대사 노드]가
+        //    챕터와 장면을 세운다 — 새 프로젝트도 판 없이 시작한다.
         ProjectEditor editor = Build(secondBoard: false);
-        long revision = editor.Revision;
 
         ChapterDeleter.Result result = ChapterDeleter.Delete(editor, ProjectPath, Doomed);
 
-        Assert.False(result.Deleted);
-        Assert.Contains("마지막 판", result.Failure!, StringComparison.Ordinal);
+        Assert.True(result.Deleted);
+        Assert.Null(editor.FindChapter(Doomed));
+        Assert.DoesNotContain(editor.Project.Files, file => string.Equals(file.Name, Doomed, StringComparison.Ordinal));
 
-        Assert.Equal(revision, editor.Revision);
+        editor.Undo();
         Assert.NotNull(editor.FindChapter(Doomed));
-        Assert.Contains(editor.Project.Files, file =>
-            string.Equals(file.Name, Doomed, StringComparison.Ordinal));
+        Assert.Contains(editor.Project.Files, file => string.Equals(file.Name, Doomed, StringComparison.Ordinal));
     }
 
     [Fact]

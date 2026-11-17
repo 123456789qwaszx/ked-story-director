@@ -90,7 +90,7 @@ internal sealed class AuthoringSession
 
     public StoryNode? SelectedNode => Project.FindNode(SelectedNodeId);
 
-    public string StatusMessage { get; private set; } = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
+    public string StatusMessage { get; private set; } = "새 프로젝트입니다. [대본] 탭의 [＋ 대사 노드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
@@ -156,7 +156,7 @@ internal sealed class AuthoringSession
         Definition = GameDefinition.Empty;
         RuntimeTarget = null;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
-        StatusMessage = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
+        StatusMessage = "새 프로젝트입니다. [대본] 탭의 [＋ 대사 노드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
         ResetFileGraphState(project);
         Editor.Replace(project);
@@ -233,19 +233,8 @@ internal sealed class AuthoringSession
                 return (aligner.Project, string.Empty);
             }
 
-            var parts = new List<string>();
-
-            if (aligned.CardsStood.Count > 0)
-            {
-                parts.Add($"카드가 없던 에피소드 {aligned.CardsStood.Count}개에 빈 카드를 세웠습니다");
-            }
-
-            if (aligned.ScenesLifted.Count > 0)
-            {
-                parts.Add($"자유 씬 {aligned.ScenesLifted.Count}개를 에피소드로 올렸습니다");
-            }
-
-            return (aligner.Project, $" · {string.Join(" · ", parts)} — 저장하면 남습니다.");
+            return (aligner.Project,
+                $" · 카드가 없던 에피소드 {aligned.CardsStood.Count}개에 빈 카드를 세웠습니다 — 저장하면 남습니다.");
         }
         catch (Exception exception)
         {
@@ -708,11 +697,9 @@ internal sealed class AuthoringSession
 
     private static StoryProject NewProjectInstance()
     {
-        // 대본을 미리 만들지 않는다 —대사 노드가 생성될 때 전용 대본이
-        // 함께 태어나므로, 미리 둔 대본은 아무도 안 읽는 빈 파일로 남을 뿐이다.
-        var project = new StoryProject { Title = "새 프로젝트" };
-        project.Files.Add(new StoryFile(name: "기본 파일"));
-        return project;
+        // 판을 미리 두지 않는다 — 판은 챕터가 세운다(챕터 = 판 1:1). 첫 [＋ 대사 노드]가 「새 챕터」 · 「새 장면」과 함께 첫 카드를
+        // 세운다(2026-11-17 소유자). ⛔ 그 전에는 챕터가 아닌 판 「기본 파일」(낙서판)으로 시작했다.
+        return new StoryProject { Title = "새 프로젝트" };
     }
 }
 

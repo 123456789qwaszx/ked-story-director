@@ -56,13 +56,6 @@ public static class ChapterDeleter
             return Result.Fail($"챕터 '{chapterId}'를 찾지 못했습니다.");
         }
 
-        if (board is not null && editor.Project.Files.Count <= 1)
-        {
-            return Result.Fail(
-                $"'{chapterId}'는 마지막 판이라 지울 수 없습니다 — 새 노드가 갈 자리가 " +
-                "없어집니다. 다른 챕터를 하나 만든 뒤에 지워 주세요.");
-        }
-
         int nodesRemoved = editor.RemoveChapterWithBoard(chapterId);
 
         string? stale = projectManifestPath is null

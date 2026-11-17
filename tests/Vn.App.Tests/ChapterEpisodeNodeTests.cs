@@ -127,20 +127,15 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
-    public void 출구_후보에_에피소드_카드가_없다() => HeadlessUi.Run(() =>
+    public void 분기_목표_후보는_분기_카드뿐이고_에피소드_카드가_없다() => HeadlessUi.Run(() =>
     {
-        // 에피소드 사이 흐름은 챕터 간선(기획자) 소유다.
-        // 자유 노드의 출구로 에피소드 카드를 고를 수 있으면 챕터 장부(표시/해금·스탯 환산·
-        // cleared)를 지나치는 뒷길이 생기고, Yarn 점프라 "복귀"도 처음부터 다시 재생된다.
+        // 에피소드 사이 흐름은 챕터 간선(기획자) 소유다 — 분기점은 분기 카드에만 잇는다(2026-11-17).
         (DialogueNodeEditor editor, AuthoringSession session, string episodeNodeId) = ShowEpisodeCard();
+        DialogueNode episode = session.Project.FindDialogue(episodeNodeId)!;
+        DialogueNode first = session.Editor.AddBranchMarker(episodeNodeId, episode.Script.ActiveLines.First().Id);
+        DialogueNode second = session.Editor.AddBranchMarker(episodeNodeId, episode.Script.ActiveLines.First().Id);
 
-        // 자유 노드는 챕터가 아닌 판에 산다 — 챕터 판의 대사 노드는 전부 에피소드다.
-        string scratch = session.Editor.AddStoryFile("낙서판").Id;
-        DialogueNode free = session.Editor.AddDialogueNode(scratch, name: "곁가지");
-        session.Editor.AddDialogueNode(scratch, name: "곁가지2");
-
-        // [기본 출구] 편집 구역은 없다 — 같은 값을 판의 레일 칩이 편집하므로 창구는
-        // 하나다. 후보 규칙은 갈래(detour) 출구가 진다. 여기서 지키는 것은 그 규칙이다.
+        // [기본 출구] 편집 구역은 없다 — 같은 값을 판의 레일 칩이 편집하므로 창구는 하나다.
         editor.Show(episodeNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -148,12 +143,10 @@ public sealed class ChapterEpisodeNodeTests
         Assert.Null(editor.FindControl<ComboBox>("DefaultExitCombo"));
         Assert.Null(editor.FindControl<TextBlock>("DefaultExitSubtitle"));
 
-        // 갈래 출구의 후보 — 자유 노드만 남고 에피소드 카드는 빠진다.
-        List<StoryNode> targets = editor.ExitTargetsProbe(free.Id);
+        List<StoryNode> targets = editor.ExitTargetsProbe(first.Id);
 
-        Assert.Contains(targets, target => target.Name == "곁가지2");
-        Assert.DoesNotContain(targets, target =>
-            target is DialogueNode { MarkedEpisodeId: not null });
+        Assert.Contains(targets, target => target.Id == second.Id);
+        Assert.All(targets, target => Assert.True(((DialogueNode)target).IsBranchCard));
     });
 
     [Fact]
@@ -187,21 +180,20 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
-    public void 자유_노드는_그대로_편집된다() => HeadlessUi.Run(() =>
+    public void 분기_카드는_그대로_편집된다() => HeadlessUi.Run(() =>
     {
+        // 분기 카드는 에피소드가 아니다 — 이름 칸은 카드 이름을 고치고 줄도 더한다.
         var session = new AuthoringSession();
         using var project = new TempProject();
         session.Open(project.ManifestPath);
-
-        // 자유 노드는 챕터가 아닌 판에 산다 — 챕터 판에 세우면 에피소드가 된다.
-        string scratch = session.Editor.AddStoryFile("낙서판").Id;
-        DialogueNode free = session.Editor.AddDialogueNode(scratch, name: "자유씬");
+        DialogueNode episode = EpisodeNaming.CardFor(session.Project, SampleChapters.Corridor, "main05.02")!;
+        DialogueNode branch = session.Editor.AddBranchMarker(episode.Id, episode.Script.ActiveLines.First().Id);
 
         var editor = new DialogueNodeEditor();
         var window = new Window { Width = 1200, Height = 800, Content = editor };
         window.Show();
         editor.Attach(session);
-        editor.Show(free.Id);
+        editor.Show(branch.Id);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.False(editor.FindControl<TextBox>("NameBox")!.IsReadOnly);

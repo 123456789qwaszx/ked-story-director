@@ -86,10 +86,10 @@ public sealed class EpisodeNamingLookupTests
         Assert.Same(board, EpisodeNaming.BoardOf(editor.Project, "ch01"));
         Assert.Equal("ch01", EpisodeNaming.ChapterOfBoard(editor.Project, board)!.ChapterId);
 
-        // 챕터 아닌 판은 양쪽 다 null이다 — 새 프로젝트의 `기본 파일`이 그렇다.
-        StoryFile scratch = editor.AddStoryFile("낙서");
+        // 챕터 판이 아닌 판(화면에는 없다 — 편집 명령이 그릇으로 받을 뿐)은 null이다.
+        StoryFile other = editor.AddStoryFile("판");
 
-        Assert.Null(EpisodeNaming.ChapterOfBoard(editor.Project, scratch));
+        Assert.Null(EpisodeNaming.ChapterOfBoard(editor.Project, other));
         Assert.Null(EpisodeNaming.BoardOf(editor.Project, "없는챕터"));
     }
 

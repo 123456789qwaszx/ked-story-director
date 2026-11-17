@@ -6,17 +6,17 @@ using Vn.Authoring.Serialization;
 
 namespace Vn.App.Tests;
 
-public class AuthoringSessionTests
+public class AuthoringSessionTests : IDisposable
 {
     [Fact]
-    public void 새_프로젝트는_기본_StoryFile을_현재_파일로_가진다()
+    public void 새_프로젝트는_판_없이_시작한다()
     {
+        // 2026-11-17 소유자 — 낙서판(「기본 파일」)을 걷었다. 판은 챕터가 세운다 — 첫 [＋ 대사 노드]가 챕터 · 장면과 함께 세운다.
         var session = new AuthoringSession();
 
-        StoryFile file = Assert.Single(session.Project.Files);
-        Assert.Equal(file.Id, session.ActiveFileId);
-        Assert.Same(file, session.ActiveFile);
-        Assert.EndsWith(StoryFileJson.FileExtension, file.RelativePath);
+        Assert.Empty(session.Project.Files);
+        Assert.Null(session.ActiveFile);
+        Assert.Contains("[＋ 대사 노드]", session.StatusMessage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -56,11 +56,12 @@ public class AuthoringSessionTests
     [Fact]
     public void dirty_비교는_디스크가_아니라_ProjectSnapshotCodec을_사용한다()
     {
-        var session = new AuthoringSession();
+        AuthoringSession session = OpenWithChapters("ch01");
         StoryFile file = session.ActiveFile!;
 
         Assert.False(session.IsDirty);
-        DialogueNode node = session.Editor.AddDialogueNode(file.Id, name: "새 장면");
+
+        DialogueNode node = session.Editor.AddDialogueNode(file.Id, name: "새 장면", sceneId: "scene01");
         Assert.True(session.IsDirty);
 
         session.Editor.Undo();
@@ -71,10 +72,6 @@ public class AuthoringSessionTests
         Assert.NotNull(session.Project.FindNode(node.Id));
     }
 
-    /// <summary>
-    /// 형식 1 · 2는 자동 마이그레이션하지 않고 거부한다(형식 3은 옮긴다 — 기계적이라서). 이 테스트는 그 마이그레이션을
-    /// 검증하던 테스트를 대체한다. 열지 못한 뒤에도 세션은 원래 상태로 계속 쓸 수 있어야 한다.
-    /// </summary>
     [Fact]
     public void 이전_형식을_열면_거부하고_세션은_그대로_남는다()
     {
@@ -110,12 +107,12 @@ public class AuthoringSessionTests
 
 
     [Fact]
-    public void 새_프로젝트의_모든_파일은_기본적으로_그래프에_펼쳐진다()
+    public void 연_프로젝트의_모든_판은_기본적으로_그래프에_펼쳐지고_새_판도_펼쳐진다()
     {
-        var session = new AuthoringSession();
+        AuthoringSession session = OpenWithChapters("ch01");
         StoryFile first = Assert.Single(session.Project.Files);
-
-        StoryFile second = session.Editor.AddStoryFile("두 번째");
+        session.Editor.EnsureChapter("ch02");
+        StoryFile second = session.Project.FindFile(session.Editor.EnsureChapterBoard("ch02"))!;
 
         Assert.True(session.ExpandedFileIds.Contains(first.Id));
         Assert.True(session.ExpandedFileIds.Contains(second.Id));
@@ -129,9 +126,9 @@ public class AuthoringSessionTests
     {
         // 선택과 펼침은 독립이다 — "선택=그 파일만 펼침"이면 여러 파일을 오가며 함께
         // 볼 수 없다. 접힌 파일을 고르면 펴 주기만 한다.
-        var session = new AuthoringSession();
+        AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
-        StoryFile second = session.Editor.AddStoryFile("두 번째");
+        StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
         session.Editor.AddDialogueNode(first.Id, name: "첫 파일");
         session.Editor.AddDialogueNode(second.Id, name: "둘째 파일");
 
@@ -151,7 +148,7 @@ public class AuthoringSessionTests
     [Fact]
     public void 펼침_체크는_프로젝트_dirty와_Undo에_영향을_주지_않는다()
     {
-        var session = new AuthoringSession();
+        AuthoringSession session = OpenWithChapters("ch01");
         StoryFile file = session.ActiveFile!;
 
         session.SetFileExpanded(file.Id, expanded: false);
@@ -164,9 +161,9 @@ public class AuthoringSessionTests
     [Fact]
     public void 새_노드는_ActiveFile의_마지막에_추가된다()
     {
-        var session = new AuthoringSession();
+        AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
-        StoryFile second = session.Editor.AddStoryFile("두 번째");
+        StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
         SetNode existing = session.Editor.AddSetNode(second.Id, name: "기존");
 
         session.SelectFile(second.Id);
@@ -180,9 +177,9 @@ public class AuthoringSessionTests
     [Fact]
     public void 파일_상태_변경_이벤트는_현재_선택과_펼침_변경을_구분한다()
     {
-        var session = new AuthoringSession();
+        AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
-        StoryFile second = session.Editor.AddStoryFile("두 번째");
+        StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
         var changes = new List<FileGraphStateChangedEventArgs>();
         session.FileGraphStateChanged += (_, e) => changes.Add(e);
 
@@ -226,9 +223,9 @@ public class AuthoringSessionTests
     [Fact]
     public void 접어_둔_파일은_다른_프로젝트_편집_뒤에도_접힌_상태를_유지한다()
     {
-        var session = new AuthoringSession();
+        AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
-        StoryFile second = session.Editor.AddStoryFile("두 번째");
+        StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
         DialogueNode node = session.Editor.AddDialogueNode(first.Id, name: "장면");
 
         session.SetFileExpanded(second.Id, expanded: false);
@@ -378,6 +375,41 @@ public class AuthoringSessionTests
             Assert.False(Directory.Exists(Path.Combine(directory, "assets"))); // 에셋 폴더는 compositor의 일이다
         }
         finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    /// <summary>챕터 판만 든 프로젝트를 저장하고 연다 — 깨끗한 세션(고친 것 없음), 지금 판은 첫 챕터의 판이다.</summary>
+    private AuthoringSession OpenWithChapters(params string[] chapterIds)
+    {
+        var editor = new Vn.Authoring.Editing.ProjectEditor(new StoryProject { Title = "판" });
+
+        foreach (string chapterId in chapterIds)
+        {
+            editor.EnsureChapter(chapterId);
+            editor.EnsureChapterBoard(chapterId);
+        }
+
+        string directory = TempDirectory();
+        _directories.Add(directory);
+        string path = Path.Combine(directory, "project" + ProjectManifestJson.FileExtension);
+        ProjectStore.Save(path, editor.Project);
+
+        var session = new AuthoringSession();
+        session.Open(path);
+        session.SelectFile(EpisodeNamingBoard(session, chapterIds[0]));
+        return session;
+    }
+
+    private static string EpisodeNamingBoard(AuthoringSession session, string chapterId) =>
+        Vn.Authoring.Chapters.EpisodeNaming.BoardOf(session.Project, chapterId)!.Id;
+
+    private readonly List<string> _directories = [];
+
+    public void Dispose()
+    {
+        foreach (string directory in _directories.Where(Directory.Exists))
         {
             Directory.Delete(directory, recursive: true);
         }

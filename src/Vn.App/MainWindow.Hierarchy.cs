@@ -146,8 +146,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// [대본] 판에서 카드를 두 번 눌렀다 — 에피소드 카드면 [구성] 탭으로 넘어가 그 챕터와 에피소드를 고르고 보이게 한다. 챕터
-    /// 판의 카드가 아니면(낙서판) 갈 곳이 없어 아무 일도 없다.
+    /// [대본] 판에서 카드를 두 번 눌렀다 — 에피소드 카드면 [구성] 탭으로 넘어가 그 챕터와 에피소드를 고르고 보이게 한다.
     /// </summary>
     private void OpenInChapterGraph(string nodeId)
     {

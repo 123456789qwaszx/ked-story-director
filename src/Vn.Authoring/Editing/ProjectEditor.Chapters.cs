@@ -62,11 +62,8 @@ public sealed partial class ProjectEditor
             return 0;
         }
 
-        if (board is not null && Project.Files.Count <= 1)
-        {
-            throw new InvalidOperationException(
-                "마지막 시나리오 파일은 제거할 수 없습니다 — 새 노드가 갈 곳이 없어집니다.");
-        }
+        // ⛔ 「마지막 판은 지우지 않는다(새 노드가 갈 곳이 없어진다)」는 2026-11-17에 걷었다 — 판이 없으면 [＋ 대사 노드]가 챕터와
+        //    장면을 세운다(낙서판을 걷으며 새 프로젝트도 판 없이 시작한다).
 
         int nodes = board?.Nodes.Count ?? 0;
 
@@ -893,7 +890,6 @@ public sealed partial class ProjectEditor
     /// <item><b>에피소드마다 카드가 선다.</b> 대본이 아직 없는 에피소드에도 빈 카드가 선다 —
     ///   빈 노드라도 서 있어야 여기에 쓰면 된다는 것이 보인다. 대사는 카드
     ///   안에 직접 쓰므로, 카드가 없는 에피소드는 <b>글을 쓸 자리가 없는</b> 에피소드다.</item>
-    /// <item><b>판의 대사 노드는 전부 에피소드다</b> — 어긋난 옛 자유 씬을 올린다(<see cref="LiftFreeScenes"/>).</item>
     /// <item><b>판이 있는 챕터는 조건을 공급받는다</b>(<see cref="SupplyChapterConditions"/>).</item>
     /// </list>
     ///
@@ -905,7 +901,6 @@ public sealed partial class ProjectEditor
     public BoardAlignment AlignBoardsWithChapters()
     {
         var cards = new List<string>();
-        var lifted = new List<string>();
 
         Batch(() =>
         {
@@ -937,13 +932,12 @@ public sealed partial class ProjectEditor
 
                 if (EpisodeNaming.BoardOf(Project, chapterId) is not null)
                 {
-                    lifted.AddRange(LiftFreeScenes(chapterId).Select(id => $"{chapterId}/{id}"));
                     SupplyChapterConditions(chapterId);
                 }
             }
         });
 
-        return new BoardAlignment(cards, lifted);
+        return new BoardAlignment(cards);
     }
 
 
@@ -1817,108 +1811,6 @@ public sealed partial class ProjectEditor
             : throw new InvalidOperationException(
                 $"스탯변화 '{text}': {parsed.Problems[0].Message}");
     }
-
-
-    /// <summary>
-    /// <b>판에 남은 옛 자유 씬을 에피소드로 올린다</b>.
-    ///
-    /// 자유 씬은 <b>종류가 아니라 빈자리</b>다 — 에피소드가 없는 대사 노드. 챕터 판의
-    /// 대사 노드는 전부 에피소드여야 하므로 그 빈자리를 채운다.
-    ///
-    /// <b>들어오는 간선이 없다.</b> 이것들은 대본의 갈래가 <c>&lt;&lt;detour&gt;&gt;</c>로
-    /// 부르는 곁가지라 챕터 진행에는 안 실려 있다. 그래서 <c>도달불가 허용</c>을 켜서
-    /// 올린다 — 도달성 증명은 <b>한 줄도 안 건드린다</b>.
-    ///
-    /// <b>부른 쪽의 장면</b>에 둔다. 곁가지는 제 본줄 옆에 있어야 판에서 읽힌다.
-    ///
-    /// <b>안전망이다</b> — 판에 세운 카드가 언제나 에피소드를 받으므로
-    /// 올릴 것이 정상적으로는 없다. 어긋난 상태를 만나면 조용히 고친다.
-    ///
-    /// <b>분기 카드(<see cref="DialogueNode.IsBranchCard"/>)는 올리지 않는다</b>(2026-11-17) — 에피소드가 아닌 것이 그 카드의 신원이다.
-    /// 분기 카드 이전의 옛 곁가지는 여기서 에피소드로 올라가고, 그 분기점은 검증(<see cref="ChapterDiagnosticCode.BranchIntoEpisode"/>)이
-    /// 짚는다 — 옛 프로젝트를 분기 카드로 옮기는 코드는 짓지 않는다(소유자).
-    /// </summary>
-    /// <returns>올린 에피소드Id들. 올릴 것이 없으면 빈 목록이고 프로젝트를 안 건드린다.</returns>
-    public IReadOnlyList<string> LiftFreeScenes(string chapterId)
-    {
-        ChapterDocument chapter = RequireChapter(chapterId);
-
-        if (Project.Files.FirstOrDefault(item =>
-                string.Equals(item.Name, chapterId, StringComparison.Ordinal)) is not { } board)
-        {
-            return [];
-        }
-
-        var taken = new HashSet<string>(
-            chapter.Episodes.Select(episode => episode.EpisodeId), StringComparer.Ordinal);
-        var plans = new List<(DialogueNode Node, string EpisodeId)>();
-
-        foreach (DialogueNode node in board.Nodes.OfType<DialogueNode>())
-        {
-            // 설정노드(A계층 조건 배관)는 애초에 `DialogueNode`가 아니라 여기 안 걸린다. 분기 카드는 에피소드가 아니다(2026-11-17) — 올리지 않는다.
-            if (node.IsBranchCard || EpisodeNaming.EpisodeFor(chapter, node) is not null || !taken.Add(node.Name))
-            {
-                // 이름이 겹치면 건드리지 않는다 — 조용히 개명하면 어느 씬이 어디로 갔는지
-                // 아무도 모른다. 사람이 판에서 고치면 다음 번에 올라간다.
-                continue;
-            }
-
-            plans.Add((node, node.Name));
-        }
-
-        if (plans.Count == 0)
-        {
-            return [];
-        }
-
-        Mutate(() =>
-        {
-            foreach ((DialogueNode node, string episodeId) in plans)
-            {
-                node.MarkedEpisodeId = episodeId;
-
-                chapter.Episodes.Add(new ChapterEpisode(
-                    episodeId,
-                    episodeId,
-                    Index: string.Empty,
-                    DialogueEntry: episodeId,
-                    Math.Round(node.Layout.X, 2),
-                    Math.Round(node.Layout.Y, 2),
-                    Memo: null,
-                    AllowUnreachable: true)
-                {
-                    SceneId = SceneOfCaller(board, chapter, node)
-                });
-            }
-        });
-
-        return plans.Select(plan => plan.EpisodeId).ToList();
-    }
-
-    /// <summary>
-    /// 이 곁가지를 <c>&lt;&lt;detour&gt;&gt;</c>로 부르는 카드의 <b>장면</b>.
-    /// 아무도 안 부르면 <c>null</c>이다 — 그때는 장면 밖에 선다.
-    /// </summary>
-    private static string? SceneOfCaller(
-        StoryFile board, ChapterDocument chapter, DialogueNode target)
-    {
-        foreach (DialogueNode caller in board.Nodes.OfType<DialogueNode>())
-        {
-            bool calls =
-                caller.BranchExits.Values.Any(id =>
-                    string.Equals(id, target.Id, StringComparison.Ordinal)) ||
-                caller.LineExtensions.Any(extension => extension.DetourTargetNodeIds.Contains(target.Id)) ||
-                caller.ChoiceExits.Values.Any(id =>
-                    string.Equals(id, target.Id, StringComparison.Ordinal));
-
-            if (calls && EpisodeNaming.EpisodeFor(chapter, caller) is { } episode)
-            {
-                return episode.SceneId;
-            }
-        }
-
-        return null;
-    }
 }
 
 
@@ -2021,14 +1913,11 @@ public sealed record ChapterRenameEffect(bool BoardRenamed, bool SupplyRenamed);
 
 
 /// <summary>
-/// 판 맞추기 한 판의 결과. 둘 다 <c>챕터/에피소드</c> 꼴이다.
+/// 판 맞추기 한 판의 결과. ⛔ 옛 자유 씬을 에피소드로 올리던 일(`LiftFreeScenes`)은 2026-11-17에 걷었다 — 옛 프로젝트는 고려하지 않는다(소유자).
 /// </summary>
-/// <param name="CardsStood">카드가 없어서 빈 카드를 세운 에피소드.</param>
-/// <param name="ScenesLifted">에피소드가 없어서 에피소드로 올린 옛 자유 씬.</param>
-public sealed record BoardAlignment(
-    IReadOnlyList<string> CardsStood,
-    IReadOnlyList<string> ScenesLifted)
+/// <param name="CardsStood">카드가 없어서 빈 카드를 세운 에피소드 — <c>챕터/에피소드</c> 꼴.</param>
+public sealed record BoardAlignment(IReadOnlyList<string> CardsStood)
 {
     /// <summary>무언가 맞췄는가.</summary>
-    public bool Changed => CardsStood.Count > 0 || ScenesLifted.Count > 0;
+    public bool Changed => CardsStood.Count > 0;
 }

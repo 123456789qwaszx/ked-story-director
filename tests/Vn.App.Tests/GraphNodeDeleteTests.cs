@@ -71,27 +71,6 @@ public sealed class GraphNodeDeleteTests : IDisposable
         Assert.Equal("에피소드 삭제…", DeleteButton(graph).Content);
     });
 
-    [Fact]
-    public void 작가의_판에서는_카드만_지우고_묻지_않는다() => HeadlessUi.Run(() =>
-    {
-        // 챕터가 아닌 판의 카드는 에피소드가 아니다 — 새 프로젝트의 `기본 파일`이 그렇다.
-        // 되돌리기가 살아 있으므로 물을 이유도 없다.
-        (GraphEditorView graph, AuthoringSession session) = Show();
-
-        string freeBoard = session.Editor.AddStoryFile("낙서").Id;
-        DialogueNode scratch = session.Editor.AddDialogueNode(freeBoard, name: "메모");
-
-        session.Select(scratch.Id);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.Equal("노드 삭제", DeleteButton(graph).Content);
-
-        Click(graph);
-
-        Assert.Null(graph.DeleteConfirmButton);
-        Assert.Null(session.Project.FindNode(scratch.Id));
-    });
-
     /// <summary>그 에피소드의 카드 — `AddEpisode`가 함께 세운 것이다.</summary>
     private static DialogueNode Card(AuthoringSession session, string episodeId)
     {

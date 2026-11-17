@@ -34,22 +34,6 @@ public sealed class EdgeSideTests
     }
 
     [Fact]
-    public void 낙서판에서도_같은_규칙이다()
-    {
-        var project = new StoryProject();
-        var board = new StoryFile("sf_free", "낙서판");
-        project.Files.Add(board);
-        var editor = new ProjectEditor(project);
-        DialogueNode node = editor.AddDialogueNode(board.Id, 800, 0, "본문");
-        string lineId = node.Script.ActiveLines.First().Id;
-        DialogueNode branch = editor.AddBranchMarker(node.Id, lineId);
-
-        editor.MoveNode(branch.Id, 100, 0);
-
-        Assert.True(DetourPort(editor, node.Id).OnLeft);
-    }
-
-    [Fact]
     public void 같은_자리면_늘_쓰던_오른쪽이다()
     {
         Assert.True(EdgeSide.GoesLeft(sourceX: 800, targetX: 100));

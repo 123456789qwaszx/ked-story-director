@@ -76,21 +76,6 @@ public sealed class EpisodeCreationAgreementTests
         AssertWritable(editor, "new01");
     }
 
-    [Fact]
-    public void 챕터가_아닌_판에서는_에피소드가_안_선다()
-    {
-        // 작가의 낙서판에는 챕터가 없다 — 거기 세운 카드는 진행에 안 실린다.
-        var project = new StoryProject();
-        var editor = new ProjectEditor(project);
-        string fileId = editor.AddStoryFile("낙서").Id;
-
-        DialogueNode created = editor.AddDialogueNode(fileId, 0, 0);
-
-        Assert.StartsWith("장면", created.Name, StringComparison.Ordinal);
-        Assert.Null(created.MarkedEpisodeId);
-        Assert.Empty(project.Chapters);
-    }
-
     /// <summary>에피소드가 <b>쓸 수 있는 상태</b>로 섰는가 — 카드와 대본이 붙어 있는가.</summary>
     private static void AssertWritable(ProjectEditor editor, string episodeId)
     {

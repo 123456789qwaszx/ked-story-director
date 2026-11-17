@@ -1468,7 +1468,7 @@ public partial class DialogueNodeEditor : UserControl
     internal List<StoryNode> ExitTargetsProbe(string nodeId) =>
         ExitTargets((DialogueNode)_session!.Project.FindNode(nodeId)!);
 
-    /// <summary>분기가 다녀갈 수 있는 카드 — 분기 카드(챕터 판) · 낙서판의 카드. 에피소드에는 분기점을 잇지 않는다(2026-11-17).</summary>
+    /// <summary>분기가 다녀갈 수 있는 카드 — 분기 카드. 에피소드에는 분기점을 잇지 않는다(2026-11-17).</summary>
     private List<StoryNode> ExitTargets(DialogueNode node) => _session!.Project.EnumerateNodes()
         .Where(other => !string.Equals(other.Id, node.Id, StringComparison.Ordinal))
         .Where(other => _session.Editor.CanBranchTo(other.Id))
@@ -1497,7 +1497,7 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        // 챕터 판의 에피소드가 아니면(낙서판 카드) 노드 이름을 고친다.
+        // 에피소드가 아니면(분기 카드) 노드 이름을 고친다.
         if (!_chapterEpisode || EpisodeNaming.ChapterOf(_session.Project, node) is not { } chapter)
         {
             _session.Editor.RenameNode(node.Id, NameBox.Text ?? string.Empty);

@@ -116,7 +116,7 @@ public sealed class GraphDragCommitTests
         AuthoringSession session = window.SessionProbe;
 
         DialogueNode dialogue = session.Editor.AddDialogueNode(
-            session.ActiveFile!.Id, name: "본문");
+            TestBoard.Of(session).Id, name: "본문");
         ScriptLine line = dialogue.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
         session.Editor.SetScriptLineText(dialogue.Id, line.Id, "라루", "첫 줄");
         session.Editor.MoveNode(dialogue.Id, 40, 40);

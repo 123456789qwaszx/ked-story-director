@@ -152,11 +152,11 @@ public sealed partial class ProjectEditor
         // <b>이름을 고르는 규칙도 여기 하나다</b>. 챕터 판에서는 이 이름이
         //    곧 EpisodeId가 되므로 <c>장면 3</c> 같은 <b>공백 든 Id</b>가 나오면 안 된다 —
         //    그 Id는 진행 JSON과 산출물의 열쇠로 나간다. 다른 창구와 같은 `new01`
-        //    규약으로 맞춘다.
+        //    규약으로 맞춘다. 챕터 판이 아닌 판은 화면에 없다(2026-11-17 — 낙서판을 걷었다) — 편집 명령이 그릇으로 받을 때만 「카드 N」이다.
         var created = new DialogueNode(
             name: name ?? (ChapterOfBoard(file) is { } board
                 ? NextEpisodeId(board)
-                : NextName("장면")))
+                : NextName("카드")))
         {
             Layout = new NodeLayout { X = x, Y = y },
             IsBranchCard = branchCard
@@ -194,8 +194,7 @@ public sealed partial class ProjectEditor
         EpisodeNaming.ChapterOfBoard(Project, file);
 
     /// <summary>
-    /// 이 노드가 질 <b>에피소드</b>를 짓는다. 챕터 판이 아니면 둘 다 <c>null</c>이다 —
-    /// 작가의 낙서판에는 챕터가 없고, 거기 세운 노드는 진행에 안 실린다.
+    /// 이 노드가 질 <b>에피소드</b>를 짓는다. 챕터 판이 아니면 둘 다 <c>null</c>이다(그런 판은 화면에 없다 — 편집 명령이 그릇으로 받을 뿐).
     ///
     /// <b>이미 있는 에피소드면 짓지 않고 표식만 붙인다.</b> 챕터 그래프에서 먼저 만든
     /// 에피소드에 대본을 다는 것이(그리고 열 때 카드 없는 에피소드에 빈 카드를 세우는 것이 —
@@ -314,8 +313,8 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 그 카드에 분기점을 이을 수 있는가 — 챕터 판에서는 <b>분기 카드에만</b>(2026-11-17). 챕터가 아닌 판(작가의 낙서판)에는 에피소드가 없어
-    /// 가리지 않는다. 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다.
+    /// 그 카드에 분기점을 이을 수 있는가 — 챕터 판에서는 <b>분기 카드에만</b>(2026-11-17). 챕터 판이 아닌 판(화면에는 없다 — 편집 명령이
+    /// 그릇으로 받을 뿐)에는 에피소드가 없어 가리지 않는다. 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다.
     /// </summary>
     public bool CanBranchTo(string nodeId) =>
         Project.FindNode(nodeId) is DialogueNode target &&

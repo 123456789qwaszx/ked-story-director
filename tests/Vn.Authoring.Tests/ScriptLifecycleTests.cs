@@ -52,7 +52,6 @@ public sealed class ScriptLifecycleTests
     public void 챕터를_지우면_판의_대본도_빠진다()
     {
         var editor = new ProjectEditor(new StoryProject());
-        editor.AddStoryFile("낙서판");
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
         editor.AddEpisode("ch01", "root", "root", 0, 0);
