@@ -30,10 +30,6 @@ public class SampleProjectTests
         StoryFile file = Assert.Single(project.Files);
         Assert.Equal("sf_chapter01", file.Id);
         Assert.IsType<SetNode>(file.Nodes[0]);
-        NodeLink settings = Assert.Single(project.Links);
-        Assert.Equal(NodeLinkKind.Settings, settings.Kind);
-        Assert.Equal("nd_setup", settings.SourceNodeId);
-        Assert.Equal("nd_scene", settings.TargetNodeId);
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ namespace Vn.Authoring.Serialization;
 /// 프로젝트 메타데이터와 <b>부속 파일의 목차</b>를 담는 manifest 형식.
 ///
 /// 본문은 어디에도 없다. 카드와 그 대본은 <c>files</c>가 가리키는 판 파일에 있다.
-/// manifest가 커지지 않아야 파일을 나눈 이유가 남는다. 조건 공급 link는 파일을 넘나드는 관계라서 여기에 둔다.
+/// manifest가 커지지 않아야 파일을 나눈 이유가 남는다.
 ///
 /// <b>연출은 여기 없다</b> (2026-10-29 — <c>ked-story-compositor</c>의 것이다).
 /// </summary>
@@ -34,13 +34,6 @@ public static class ProjectManifestJson
             });
         }
 
-        var links = new JsonArray();
-
-        foreach (NodeLink link in project.Links)
-        {
-            links.Add(WriteLink(link));
-        }
-
         var root = new JsonObject
         {
             ["formatVersion"] = CurrentFormatVersion,
@@ -52,18 +45,10 @@ public static class ProjectManifestJson
             root["startNode"] = project.StartNodeId;
         }
 
-        // exportFormats(내보내기 양식) · outputPath(라이브 Yarn 출력 폴더)는 2026-10-29에 걷혔다 — Yarn과
-        //    문서는 ked-story-compositor가 낸다. 옛 파일의 두 키는 읽지 않고 지나간다.
-
         root["files"] = files;
 
-        if (links.Count > 0)
-        {
-            root["links"] = links;
-        }
-
-        // 기획자의 챕터 — 에피소드 구조·간선·선택지·조건·스탯 (R-F). 대본(scripts)이 따로
-        // 파일로 나가는 것과 달리 여기 그대로 산다: 한 챕터가 수십 행이라 파일을 가를 만한
+        // 기획자의 챕터 — 에피소드 구조·간선·선택지·조건·스탯 (R-F). 판 파일로 나가는 카드와
+        // 달리 여기 그대로 산다: 한 챕터가 수십 행이라 파일을 가를 만한
         // 부피가 아니고, 가르면 매니페스트만 보고는 판이 몇 개인지도 모른다.
         if (ChapterDocumentJson.Write(project.Chapters) is { } chapters)
         {
@@ -143,26 +128,6 @@ public static class ProjectManifestJson
             references.Add(new ProjectStoryFileReference(id, name, path));
         }
 
-        var links = new List<NodeLink>();
-        HashSet<string> linkIds = new(StringComparer.Ordinal);
-
-        foreach (JsonNode? item in root["links"]?.AsArray() ?? new JsonArray())
-        {
-            if (item is not JsonObject linkObject)
-            {
-                throw new InvalidDataException("프로젝트 manifest의 links 항목이 객체가 아닙니다.");
-            }
-
-            NodeLink link = ReadLink(linkObject);
-
-            if (!linkIds.Add(link.Id))
-            {
-                throw new InvalidDataException($"NodeLink Id '{link.Id}'가 manifest에서 중복됩니다.");
-            }
-
-            links.Add(link);
-        }
-
         List<ChapterDocument> chapters = ChapterDocumentJson.Read(root["chapters"]);
         List<WriterSpeaker> writerSpeakers = ReadWriterSpeakers(root["writerSpeakers"]);
 
@@ -170,7 +135,6 @@ public static class ProjectManifestJson
             (string?)root["title"] ?? "제목 없음",
             (string?)root["startNode"],
             references,
-            links,
             chapters,
             writerSpeakers,
             ReadBoard(root["board"]));
@@ -248,61 +212,12 @@ public static class ProjectManifestJson
 
         return speakers;
     }
-
-    internal static JsonObject WriteLink(NodeLink link)
-    {
-        var result = new JsonObject
-        {
-            ["id"] = link.Id,
-            ["kind"] = link.Kind switch
-            {
-                NodeLinkKind.Settings => "settings",
-                _ => throw new InvalidDataException($"지원하지 않는 NodeLink 종류 '{link.Kind}'입니다.")
-            },
-            ["source"] = link.SourceNodeId,
-            ["target"] = link.TargetNodeId,
-            ["order"] = link.Order
-        };
-
-        if (!link.IsEnabled)
-        {
-            result["enabled"] = false;
-        }
-
-        return result;
-    }
-
-    internal static NodeLink ReadLink(JsonObject json)
-    {
-        string id = (string?)json["id"]
-            ?? throw new InvalidDataException("NodeLink에 id가 없습니다.");
-        string? kindName = (string?)json["kind"];
-
-        NodeLinkKind kind = kindName switch
-        {
-            "settings" => NodeLinkKind.Settings,
-            { } unknown => throw new InvalidDataException($"지원하지 않는 NodeLink 종류 '{unknown}'입니다."),
-            _ => throw new InvalidDataException($"NodeLink '{id}'에 kind가 없습니다.")
-        };
-        string source = (string?)json["source"]
-            ?? throw new InvalidDataException($"NodeLink '{id}'에 source가 없습니다.");
-        string target = (string?)json["target"]
-            ?? throw new InvalidDataException($"NodeLink '{id}'에 target이 없습니다.");
-
-        return new NodeLink(id, kind, source, target)
-        {
-            IsEnabled = (bool?)json["enabled"] ?? true,
-            Order = (int?)json["order"] ?? 0
-        };
-    }
-
 }
 
 public sealed record ProjectManifest(
     string Title,
     string? StartNodeId,
     IReadOnlyList<ProjectStoryFileReference> Files,
-    IReadOnlyList<NodeLink> Links,
     IReadOnlyList<ChapterDocument> Chapters,
     IReadOnlyList<WriterSpeaker> WriterSpeakers,
     BoardSize Board);

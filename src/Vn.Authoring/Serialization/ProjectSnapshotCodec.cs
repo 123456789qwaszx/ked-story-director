@@ -30,13 +30,6 @@ public static class ProjectSnapshotCodec
             files.Add(item);
         }
 
-        var links = new JsonArray();
-
-        foreach (NodeLink link in project.Links)
-        {
-            links.Add(ProjectManifestJson.WriteLink(link));
-        }
-
         var root = new JsonObject
         {
             ["snapshotVersion"] = CurrentSnapshotVersion,
@@ -50,11 +43,6 @@ public static class ProjectSnapshotCodec
         }
 
         root["files"] = files;
-
-        if (links.Count > 0)
-        {
-            root["links"] = links;
-        }
 
         // 작가 화자 — manifest와 같은 직렬화 하나를 쓴다. 예전엔 스냅샷에
         // 안 실려 <b>undo가 작가 화자를 지우는 잠복 버그</b>가 있었다(W67 후속에서 발견).
@@ -121,16 +109,6 @@ public static class ProjectSnapshotCodec
             file.RelativePath = ProjectStore.NormalizeRelativeStoryPath(
                 (string?)fileObject["path"] ?? ProjectStore.DefaultRelativePath(file.Id));
             project.Files.Add(file);
-        }
-
-        foreach (JsonNode? item in root["links"]?.AsArray() ?? new JsonArray())
-        {
-            if (item is not JsonObject linkObject)
-            {
-                throw new InvalidDataException("프로젝트 스냅샷의 links 항목이 객체가 아닙니다.");
-            }
-
-            project.Links.Add(ProjectManifestJson.ReadLink(linkObject));
         }
 
         project.Chapters.AddRange(ChapterDocumentJson.Read(root["chapters"]));

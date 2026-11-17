@@ -13,8 +13,8 @@ namespace Vn.Authoring.Flow;
 /// 줄과 그 순서는 대본이 준다. 이 해석기는 <see cref="DialogueScriptResolver"/>가 합친
 /// 투영만 보고, 대본을 직접 열지 않는다.
 ///
-/// 조건의 존재 여부는 프로젝트 전체 목록이 아니라 현재 DialogueNode에 Settings link로 연결된
-/// SetNode와 게임 전역 조건을 합친 카탈로그로 검증한다. 연결이 끊겼을 때 Transition은 보존하고
+/// 조건의 존재 여부는 프로젝트 전체 목록이 아니라 현재 DialogueNode가 선 판의 SetNode
+/// (<see cref="ConnectedSetNodeResolver"/>)와 게임 전역 조건을 합친 카탈로그로 검증한다. 연결이 끊겼을 때 Transition은 보존하고
 /// <see cref="FlowProblemKind.UnavailableCondition"/>으로 알린다.
 /// </summary>
 public static class ConditionFlowResolver

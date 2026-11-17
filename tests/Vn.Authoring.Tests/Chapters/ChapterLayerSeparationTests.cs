@@ -92,10 +92,10 @@ public sealed class ChapterLayerSeparationTests
     //    지키던 것 — 대사 중에 스탯이 변하는 뒷길 — 은 <b>구조적으로 불가능</b>해졌다.
 
     [Fact]
-    public void 동기화는_대사노드마다_링크를_잇지_않는다()
+    public void 판의_대사노드는_잇지_않아도_챕터_조건을_본다()
     {
         // 2026-08-17 — 공급 범위가 판(챕터) 전체가 되면서 배관이 사라졌다. 노드를 만들 때마다
-        // 링크를 다시 잇지 않아도 조건이 보인다.
+        // 다시 잇지 않아도 조건이 보인다.
         Board board = BuildBoard();
         StoryFile file = board.Project.Files.Single();
 
@@ -113,13 +113,10 @@ public sealed class ChapterLayerSeparationTests
             fixtures: [],
             diagnostics: []);
 
-        int linksBefore = board.Project.Links.Count;
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             board.Editor, file.Id, chapter);
 
-        Assert.Equal(linksBefore, board.Project.Links.Count);
-
-        // 링크가 없어도 그 판의 대사노드는 챕터 조건을 본다(고르지는 못한다 — A계층).
+        // 그 판의 대사노드는 챕터 조건을 본다(고르지는 못한다 — A계층).
         AvailableConditionCatalog catalog = AvailableConditionResolver.Resolve(
             board.Project, board.Dialogue.Id);
         Assert.Contains(catalog.Conditions, item =>

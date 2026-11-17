@@ -46,14 +46,8 @@ public sealed class StoryProject
     /// </summary>
     public List<ChapterDocument> Chapters { get; init; } = new();
 
-    /// <summary>
-    /// 실행 출구가 아닌 조건 공급 관계.
-    ///
-    /// <b>범위 결정에는 더 이상 쓰이지 않는다</b> (2026-08-17) — 작가의 조건·변수는 판
-    /// (챕터) 단위 전역이라 링크 없이 미친다. 구판 프로젝트의 데이터를 지우지 않으려고
-    /// 남겨 둘 뿐이고, 그래프도 이 선을 그리지 않는다.
-    /// </summary>
-    public List<NodeLink> Links { get; init; } = new();
+    // ⛔ `Links`(조건 공급 연결 — 범위 결정에서는 2026-08-17에 빠졌다)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 조건 범위는
+    //    판이다(<see cref="Flow.ConnectedSetNodeResolver"/>) · docs/work-orders/legacy-read-orders.md L5.
 
     /// <summary>
     /// <b>유물이다</b> (2026-08-23 소유자: "작가가 더한 화자라는 개념도 없애는 게 맞을 것

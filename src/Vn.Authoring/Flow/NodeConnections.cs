@@ -25,8 +25,7 @@ public enum ExitPortKind
 /// <summary>
 /// 그래프에서 끌어다 연결할 수 있는 실행 출력 포트 하나.
 ///
-/// Settings link는 실행 포트가 아니며 <see cref="StoryProject.Links"/>에 별도로 저장된다.
-/// 이 타입은 오직 다음 실행 노드를 결정하는 기본/조건 출구만 표현한다.
+/// 오직 다음 실행 노드를 결정하는 출구(기본 · 갈래 · 분기)만 표현한다.
 /// </summary>
 /// <param name="OpenOrdinal">
 /// 이어지지 않은 분기점(<see cref="Model.DialogueLineExtension.OpenDetourPositions"/>)이면 그 줄의 분기점 전체에서 몇째
@@ -141,7 +140,7 @@ public static class NodeConnections
         return ports;
     }
 
-    /// <summary>프로젝트 전체의 실행 간선. Settings link는 포함하지 않는다.</summary>
+    /// <summary>프로젝트 전체의 실행 간선.</summary>
     public static IReadOnlyList<ExitPort> AllConnections(
         StoryProject project,
         GameDefinition? definition = null)

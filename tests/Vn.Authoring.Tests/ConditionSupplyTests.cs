@@ -179,17 +179,4 @@ public class ConditionSupplyTests
         Assert.Contains("사용할 수 없음", branch.Label, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void 옛_파일의_공급_링크는_그_노드를_지우면_함께_걷힌다()
-    {
-        // 링크를 만드는 편집은 2026-10-29에 걷혔다(legacy-cleanup.md L-D2) — 옛 파일의 링크 데이터만 남는다.
-        // 없는 노드를 가리키는 링크가 파일에 남으면 다음에 열 때 검증이 거절한다.
-        var sample = new Sample();
-        sample.Project.Links.Add(new NodeLink(
-            kind: NodeLinkKind.Settings, sourceNodeId: sample.SetNode.Id, targetNodeId: sample.Dialogue.Id));
-
-        sample.Editor.RemoveNode(sample.SetNode.Id);
-
-        Assert.Empty(sample.Project.Links);
-    }
 }

@@ -1195,10 +1195,6 @@ public sealed partial class ProjectEditor
     private void RemoveReferencesToNode(string nodeId)
     {
         // 사라진 노드를 가리키던 출구를 남겨 두면 그래프에 끊어진 간선이 생긴다.
-        Project.Links.RemoveAll(link =>
-            string.Equals(link.SourceNodeId, nodeId, StringComparison.Ordinal) ||
-            string.Equals(link.TargetNodeId, nodeId, StringComparison.Ordinal));
-
         foreach (StoryNode other in Project.EnumerateNodes())
         {
             if (string.Equals(other.DefaultExitTargetNodeId, nodeId, StringComparison.Ordinal))

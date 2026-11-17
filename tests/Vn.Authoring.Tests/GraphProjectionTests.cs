@@ -50,22 +50,6 @@ public class GraphProjectionTests
     }
 
     [Fact]
-    public void 조건_공급선은_그리지_않는다()
-    {
-        // 2026-08-17 소유자 — 작가의 조건·변수는 챕터 단위 전역이다. 범위가 판 전체이므로
-        // 선을 그리면 대사노드 수만큼 거미줄이 되고, 그 선이 무엇을 정하지도 않는다.
-        // 구판 프로젝트에 남은 Settings 링크 데이터는 조용히 무시된다.
-        var (project, fileA, _, _, _, _) = BuildProject();
-
-        GraphProjection projection = GraphProjectionBuilder.Build(
-            project,
-            new HashSet<string>(new[] { fileA.Id }, StringComparer.Ordinal));
-
-        // 그려지는 선은 모두 실행 출구다 — 링크에서 나오는 선은 없다.
-        Assert.All(projection.Connections, connection => Assert.NotNull(connection.ExecutionPort));
-    }
-
-    [Fact]
     public void 소스_파일이_접히면_간선_시작점도_그_노드_행으로_투영된다()
     {
         var (project, _, fileB, setA, _, dialogueB) = BuildProject();
@@ -230,11 +214,6 @@ public class GraphProjectionTests
         fileB.Nodes.Add(dialogueB);
         project.Files.Add(fileA);
         project.Files.Add(fileB);
-        project.Links.Add(new NodeLink(
-            "lk_settings",
-            NodeLinkKind.Settings,
-            setA.Id,
-            dialogueB.Id));
 
         return (project, fileA, fileB, setA, dialogueA, dialogueB);
     }
