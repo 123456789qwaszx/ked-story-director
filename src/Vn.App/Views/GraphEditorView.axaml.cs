@@ -4075,9 +4075,9 @@ public partial class GraphEditorView : UserControl
     /// <summary>휠 — 누른 키와 무관하게 배율이다 (2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다).</summary>
     private void OnGraphWheel(object? sender, PointerWheelEventArgs args)
     {
-        if (InWritingBox(args.Source))
+        if (WheelBelongsToBox(args.Source))
         {
-            return;   // 글 칸 위의 휠은 칸이 스크롤한다(D4)
+            return;   // 고른 카드의 글 칸 위다 — 칸이 스크롤한다
         }
 
         double factor = args.Delta.Y > 0 ? 1.15 : 1 / 1.15;
@@ -4086,13 +4086,36 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 글 칸이 쓰지 않은 휠을 판에서 멈춘다 (2026-11-17 소유자 보고). 칸 위의 휠은 확대가 아니라 칸의 스크롤인데(<see cref="OnGraphWheel"/>),
-    /// 글이 칸에 다 들어가 스크롤할 것이 없으면 칸이 휠을 받지 않고 그대로 올라가 <b>판의 ScrollViewer가 판 전체를 세로로 스크롤했다</b>.
-    /// 버블에서 캔버스는 칸보다 바깥이고 판의 스크롤보다 안쪽이라, 칸이 먼저 제 몫을 하고 남은 것만 여기서 끝난다.
+    /// <b>이 휠이 글 칸의 것인가</b> (2026-11-17 소유자) — <b>고른 카드</b>의 글 칸 위이거나, 초점을 쥔 칸(적고 있는 선택지 문구 칸) 위일
+    /// 때만이다. 그때는 칸이 스크롤하고(스크롤할 것이 없으면 아무 일도 없다) 판은 확대도 스크롤도 하지 않는다. 고르지 않은 카드의 글 칸
+    /// 위에서는 칸 밖과 같이 판을 확대한다 — 카드는 거의 글 칸이라, 칸 위라는 이유로 휠을 먹으면 판을 확대할 자리가 없다
+    /// (⛔ 전에는 모든 글 칸이 휠을 먹어 글이 칸에 다 들어간 카드 위에서는 휠이 아무 일도 안 했다).
+    /// </summary>
+    private bool WheelBelongsToBox(object? source)
+    {
+        if ((source as Visual)?.FindAncestorOfType<TextBox>(includeSelf: true) is not { } box)
+        {
+            return false;
+        }
+
+        if (box.IsKeyboardFocusWithin)
+        {
+            return true;
+        }
+
+        return box.Tag is string tag &&
+               tag.StartsWith(WritingTag, StringComparison.Ordinal) &&
+               string.Equals(tag[WritingTag.Length..], _session?.SelectedNodeId, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 글 칸이 쓰지 않은 휠을 판에서 멈춘다 (2026-11-17 소유자 보고). 칸의 것인 휠(<see cref="WheelBelongsToBox"/>)은 확대가 가로채지
+    /// 않는데, 글이 칸에 다 들어가 스크롤할 것이 없으면 칸이 휠을 받지 않고 그대로 올라가 <b>판의 ScrollViewer가 판 전체를 세로로
+    /// 스크롤했다</b>. 버블에서 캔버스는 칸보다 바깥이고 판의 스크롤보다 안쪽이라, 칸이 먼저 제 몫을 하고 남은 것만 여기서 끝난다.
     /// </summary>
     private void OnWritingBoxWheel(object? sender, PointerWheelEventArgs args)
     {
-        if (InWritingBox(args.Source))
+        if (WheelBelongsToBox(args.Source))
         {
             args.Handled = true;
         }

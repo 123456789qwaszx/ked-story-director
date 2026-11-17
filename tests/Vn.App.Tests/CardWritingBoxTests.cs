@@ -173,41 +173,46 @@ public sealed class CardWritingBoxTests : IDisposable
     });
 
     [Fact]
-    public void 글_칸_위의_휠은_판을_확대하지_않는다() => HeadlessUi.Run(() =>
+    public void 고르지_않은_카드의_글_칸_위에서는_휠이_판을_확대한다() => HeadlessUi.Run(() =>
     {
-        // 판의 확대는 터널로 먼저 휠을 받는다 — 글 칸 위에서는 칸이 스크롤해야 한다.
+        // 2026-11-17 소유자 — 글 칸이 휠을 먹는 것은 그 카드를 골랐을 때뿐이다. 고르지 않았으면 칸 위라도 평소처럼 확대다.
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
-        TextBlock zoom = graph.FindControl<TextBlock>("ZoomText")!;
-        string before = zoom.Text ?? string.Empty;
+        session.Select(null);
+        Dispatcher.UIThread.RunJobs();
+        string before = ZoomOf(graph);
 
         TextBox box = Box(window, first.Id);
         window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, 1));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(before, zoom.Text);
+        Assert.NotEqual(before, ZoomOf(graph));
 
-        // 칸 밖(빈 판)의 휠은 여전히 확대다.
-        ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
-        Point empty = scroll.TranslatePoint(
-            new Point(scroll.Bounds.Width * 0.6, scroll.Bounds.Height * 0.5), window)!.Value;
-        window.MouseWheel(empty, new Vector(0, 1));
+        // 골랐다가 놓으면 다시 확대다.
+        session.Select(first.Id);
+        session.Select(null);
+        Dispatcher.UIThread.RunJobs();
+        string again = ZoomOf(graph);
+        box = Box(window, first.Id);
+        window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, 1));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.NotEqual(before, zoom.Text);
+        Assert.NotEqual(again, ZoomOf(graph));
 
         window.Close();
     });
 
     [Fact]
-    public void 글_칸_위의_휠은_판을_스크롤하지_않는다() => HeadlessUi.Run(() =>
+    public void 고른_카드의_글_칸이_넘치지_않으면_휠은_판을_확대도_스크롤도_하지_않는다() => HeadlessUi.Run(() =>
     {
         // 2026-11-17 소유자 보고 — 글이 칸에 다 들어가 칸에 스크롤이 없으면, 칸이 받지 않은 휠이 판의 ScrollViewer까지
-        // 올라가 판 전체가 세로로 스크롤됐다. 칸 위의 휠은 칸의 것이다 — 칸이 스크롤할 것이 없으면 아무 일도 없다.
+        // 올라가 판 전체가 세로로 스크롤됐다. 고른 카드의 칸 위의 휠은 칸의 것이다 — 칸이 스크롤할 것이 없으면 아무 일도 없다.
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
-        string zoom = graph.FindControl<TextBlock>("ZoomText")!.Text ?? string.Empty;
+        session.Select(first.Id);
+        Dispatcher.UIThread.RunJobs();
+        string zoom = ZoomOf(graph);
         Assert.True(scroll.Extent.Height > scroll.Viewport.Height);   // 판은 세로로 스크롤할 자리가 있다
         Vector before = scroll.Offset;
 
@@ -221,17 +226,28 @@ public sealed class CardWritingBoxTests : IDisposable
         }
 
         Assert.Equal(before, scroll.Offset);
-        Assert.Equal(zoom, graph.FindControl<TextBlock>("ZoomText")!.Text);
+        Assert.Equal(zoom, ZoomOf(graph));
+
+        // 칸 밖(빈 판)의 휠은 카드를 골라 두었어도 확대다.
+        Point empty = scroll.TranslatePoint(
+            new Point(scroll.Bounds.Width * 0.6, scroll.Bounds.Height * 0.5), window)!.Value;
+        window.MouseWheel(empty, new Vector(0, 1));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.NotEqual(zoom, ZoomOf(graph));
 
         window.Close();
     });
 
     [Fact]
-    public void 넘치는_글은_칸이_스크롤하고_끝에_닿아도_판으로_넘기지_않는다() => HeadlessUi.Run(() =>
+    public void 고른_카드의_넘치는_글은_칸이_스크롤하고_끝에_닿아도_판으로_넘기지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
+        session.Select(first.Id);
+        Dispatcher.UIThread.RunJobs();
+        string zoom = ZoomOf(graph);
         Vector before = scroll.Offset;
 
         TextBox box = Box(window, first.Id);
@@ -251,9 +267,36 @@ public sealed class CardWritingBoxTests : IDisposable
 
         Assert.True(inner.Offset.Y > 0);
         Assert.Equal(before, scroll.Offset);
+        Assert.Equal(zoom, ZoomOf(graph));
 
         window.Close();
     });
+
+    [Fact]
+    public void 고르지_않은_카드의_넘치는_글_위에서도_휠은_확대다() => HeadlessUi.Run(() =>
+    {
+        // 넘치는 칸이라도 고르지 않았으면 칸은 그대로고 판이 확대된다 — 스크롤하려면 그 카드를 고른다.
+        (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+
+        TextBox box = Box(window, first.Id);
+        box.Text = string.Join("\n", Enumerable.Range(1, 40).Select(index => $"라루: {index}번째 줄"));
+        Dispatcher.UIThread.RunJobs();
+        session.Select(null);
+        Dispatcher.UIThread.RunJobs();
+        string zoom = ZoomOf(graph);
+
+        ScrollViewer inner = box.GetVisualDescendants().OfType<ScrollViewer>().First();
+        window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, -1));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(0, inner.Offset.Y);
+        Assert.NotEqual(zoom, ZoomOf(graph));
+
+        window.Close();
+    });
+
+    private static string ZoomOf(GraphEditorView graph) => graph.FindControl<TextBlock>("ZoomText")!.Text ?? string.Empty;
 
     [Fact]
     public void 곁기둥에서_고친_줄이_카드의_글_칸에도_비친다() => HeadlessUi.Run(() =>
