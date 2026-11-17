@@ -121,7 +121,6 @@ public partial class MainWindow : Window
         NewMenuItem.Click += OnNewClick;
         OpenMenuItem.Click += OnOpenClick;
         SaveMenuItem.Click += OnSaveClick;
-        GameFolderButton.Click += OnGameFolderClick;
         SettingsButton.Click += (_, _) => UiGuard.Run(_session, "설정", () => OpenSettings());
         OpenExportFolderButton.Click += (_, _) =>
             UiGuard.Run(_session, "내보낸 폴더 열기", OpenExportFolder);
@@ -539,36 +538,6 @@ public partial class MainWindow : Window
         }
 
         _session.Open(found.ManifestPath!);
-    }
-
-    /// <summary>
-    /// 게임 폴더 —런타임의 <c>ChapterProgression</c> 폴더. 프로젝트 폴더의 <c>runtime.target.json</c>에
-    /// 상대 경로로 남고, 저장할 때 진행 JSON이 거기로도 나간다. compositor가 같은 파일을 읽어 Yarn을 쓴다.
-    /// </summary>
-    private async void OnGameFolderClick(object? sender, RoutedEventArgs e)
-    {
-        try
-        {
-            if (_session.ProjectPath is not { } projectPath)
-            {
-                _session.SetStatus("프로젝트를 먼저 열거나 만들어야 게임 폴더를 정할 수 있습니다.");
-                return;
-            }
-
-            if (await PickFolderAsync("게임 폴더 — 런타임의 ChapterProgression") is not { } folder)
-            {
-                return;
-            }
-
-            string relative = ExportDestinations.Relativize(projectPath, folder);
-            ExportDestinations.SaveBeside(projectPath, _session.Destinations.With(ExportFormat.Progression, relative));
-            _session.ReloadDestinations();
-            _session.SetStatus($"게임 폴더: {relative} — 저장할 때 진행 JSON을 여기로도 보냅니다.");
-        }
-        catch (Exception exception)
-        {
-            Report("게임 폴더", exception);
-        }
     }
 
     private async Task<string?> PickFolderAsync(string title)

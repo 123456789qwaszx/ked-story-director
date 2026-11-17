@@ -3,9 +3,11 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Vn.App.Services;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
+using Vn.Authoring.Serialization;
 
 namespace Vn.App.Views;
 
@@ -13,11 +15,12 @@ namespace Vn.App.Views;
 /// <b>[⚙ 설정] 창</b> (2026-11-17 · <c>docs/work-orders/settings-orders.md</c> C3) — 앞으로 필요할 설정을 한 창에 모은다.
 ///
 /// 묶음마다 <b>어디에 저장되는가</b>를 머리에 적는다 — 프로젝트에 싣는 설정은 되돌리기가 되고 「저장되지 않은 변경」을 켜지만, PC별 설정은
-/// 그렇지 않다. 섞으면 「이건 왜 Ctrl+Z가 안 되지?」가 생긴다. 지금은 [이 프로젝트] 묶음 하나(「[대본] 판 크기」)이고, PC별 설정이
-/// 생기면 [이 PC] 묶음을 더한다.
+/// 그렇지 않다. 섞으면 「이건 왜 Ctrl+Z가 안 되지?」가 생긴다. 묶음은 둘이다 — [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
+/// [내보내기](형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
+/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다). PC별 설정이 생기면 [이 PC] 묶음을 더한다.
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
-/// 칸), [취소] · Esc는 버린다. 줄여서 카드가 움직이면 [확인] 전에 미리 말한다(<see cref="BoardResize.Plan"/> — 바꾸기와 같은 계산).
+/// 칸 · 보낼 곳은 그 파일에 바로), [취소] · Esc는 버린다. 줄여서 카드가 움직이면 [확인] 전에 미리 말한다(<see cref="BoardResize.Plan"/> — 바꾸기와 같은 계산).
 /// </summary>
 internal sealed class SettingsWindow : Window
 {
@@ -26,9 +29,10 @@ internal sealed class SettingsWindow : Window
     public SettingsWindow(AuthoringSession session)
     {
         _session = session;
+        _destinations = session.Destinations;
 
         Title = "설정";
-        Width = 480;
+        Width = 560;
         SizeToContent = SizeToContent.Height;
         CanResize = false;
         ShowInTaskbar = false;
@@ -69,6 +73,11 @@ internal sealed class SettingsWindow : Window
                     "이 프로젝트",
                     "project.vnproject.json에 저장됩니다 — 바꾸면 되돌리기(Ctrl+Z)가 되고, File → 저장(Ctrl+S)해야 파일에 남습니다.",
                     BoardSection()),
+                Group(
+                    "내보내기",
+                    $"{ExportDestinations.FileName}(프로젝트 폴더)에 저장됩니다 — [확인]을 누르면 바로 파일에 남고 되돌리기는 없습니다. exported/에는 " +
+                    "늘 쓰고, 보낼 곳에는 File → 저장(Ctrl+S)할 때 보냅니다.",
+                    ExportSection()),
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -95,12 +104,204 @@ internal sealed class SettingsWindow : Window
 
     internal Button CancelButton { get; }
 
-    /// <summary>[확인] — 판 크기를 바꾸고(같으면 아무것도 적지 않는다) 창을 닫는다.</summary>
+    /// <summary>형식마다 보낼 곳 줄의 글(적힌 경로 · 「보내지 않음」 · 없는 폴더 표시).</summary>
+    internal TextBlock DestinationText(ExportFormat format) => _destinationTexts[format];
+
+    /// <summary>보낼 곳을 받지 않은 까닭 — 받지 않았을 때만 보인다.</summary>
+    internal TextBlock ExportNote { get; } = new()
+    {
+        FontSize = 11,
+        TextWrapping = TextWrapping.Wrap,
+        IsVisible = false,
+        Foreground = new SolidColorBrush(Color.Parse("#B9770E"))
+    };
+
+    /// <summary>
+    /// 그 형식의 보낼 곳을 정한다(폴더 고르기 창이 고른 절대 경로 · 비우면 끈다) — [확인] 전까지는 창 안에서만. 받지 않으면 그 까닭을 내고
+    /// <see cref="ExportNote"/>에 보인다: <b>대사 Yarn은 게임 폴더(진행 JSON의 보낼 곳)와 같은 곳으로 보내지 않는다</b> — 게임의 Yarn 프로젝트가
+    /// compositor의 연출 든 Yarn과 같은 노드 이름을 둘 읽어 컴파일이 깨진다.
+    /// </summary>
+    internal string? SetDestination(ExportFormat format, string? absoluteFolder)
+    {
+        if (_session.ProjectPath is not { } projectPath)
+        {
+            return "프로젝트를 먼저 저장해야 보낼 곳을 정할 수 있습니다.";
+        }
+
+        ExportDestinations wanted = _destinations.With(
+            format, absoluteFolder is null ? null : ExportDestinations.Relativize(projectPath, absoluteFolder));
+
+        string? refusal = SameFolder(wanted, projectPath)
+            ? "대사 Yarn은 게임 폴더(진행 JSON의 보낼 곳)와 같은 곳으로 보내지 않습니다 — 게임의 Yarn 프로젝트가 compositor의 연출 든 Yarn과 " +
+              "같은 노드 이름을 둘 읽어 컴파일이 깨집니다."
+            : null;
+
+        if (refusal is null)
+        {
+            _destinations = wanted;
+            RefreshDestinations();
+        }
+
+        ExportNote.Text = refusal ?? string.Empty;
+        ExportNote.IsVisible = refusal is not null;
+        return refusal;
+    }
+
+    /// <summary>[확인] — 판 크기를 바꾸고(같으면 아무것도 적지 않는다), 보낼 곳이 바뀌었으면 그 파일에 적고 창을 닫는다.</summary>
     internal void Confirm()
     {
         (double width, double height) = WantedBoard();
-        UiGuard.Run(_session, "설정", () => _session.Editor.SetBoardSize(width, height));
+        UiGuard.Run(_session, "설정", () =>
+        {
+            _session.Editor.SetBoardSize(width, height);
+
+            if (_session.ProjectPath is { } projectPath && _destinations != _session.Destinations)
+            {
+                ExportDestinations.SaveBeside(projectPath, _destinations);
+                _session.ReloadDestinations();
+                _session.SetStatus(_destinations.IsEmpty
+                    ? "보낼 곳을 모두 껐습니다 — exported/에만 냅니다."
+                    : "보낼 곳을 바꿨습니다 — 다음 저장(Ctrl+S)부터 거기로 보냅니다.");
+            }
+        });
         Close(true);
+    }
+
+    // ── 「내보내기」 ───────────────────────────────────────────────────────────
+
+    private ExportDestinations _destinations;
+
+    private readonly Dictionary<ExportFormat, TextBlock> _destinationTexts = [];
+
+    private Control ExportSection()
+    {
+        var panel = new StackPanel { Spacing = 6 };
+
+        if (_session.ProjectPath is null)
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = "프로젝트를 먼저 저장해야 보낼 곳을 정할 수 있습니다(경로는 프로젝트 폴더 기준으로 적힙니다).",
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap
+            });
+        }
+
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"),
+            ColumnSpacing = 8,
+            RowSpacing = 6,
+            IsEnabled = _session.ProjectPath is not null
+        };
+
+        int row = 0;
+
+        foreach (ExportFormat format in ExportDestinations.Formats)
+        {
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+
+            var label = new TextBlock
+            {
+                Text = format == ExportFormat.Progression ? "진행 JSON → 게임 폴더" : ExportDestinations.LabelOf(format),
+                FontSize = 12,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var text = new TextBlock
+            {
+                FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            var pick = new Button { Content = "고르기…", FontSize = 11, Tag = $"export-pick:{format}" };
+            var clear = new Button { Content = "✕", FontSize = 11, Tag = $"export-clear:{format}" };
+            ToolTip.SetTip(clear, "보내지 않는다");
+
+            pick.Click += async (_, _) =>
+            {
+                if (await PickFolderAsync($"보낼 곳 — {ExportDestinations.LabelOf(format)}") is { } folder)
+                {
+                    SetDestination(format, folder);
+                }
+            };
+            clear.Click += (_, _) => SetDestination(format, null);
+
+            _destinationTexts[format] = text;
+            Place(grid, label, row, 0);
+            Place(grid, text, row, 1);
+            Place(grid, pick, row, 2);
+            Place(grid, clear, row, 3);
+            row++;
+        }
+
+        panel.Children.Add(grid);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "진행 JSON의 보낼 곳은 런타임의 ChapterProgression 폴더(게임 폴더)이고 compositor도 이 칸을 읽어 Yarn을 씁니다. 대사 Yarn은 게임 " +
+                   "폴더와 같은 곳으로 보내지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다). 없는 폴더는 만들지 않습니다.",
+            FontSize = 11,
+            Opacity = 0.7,
+            TextWrapping = TextWrapping.Wrap
+        });
+        panel.Children.Add(ExportNote);
+
+        RefreshDestinations();
+        return panel;
+    }
+
+    private void RefreshDestinations()
+    {
+        foreach ((ExportFormat format, TextBlock text) in _destinationTexts)
+        {
+            string? written = _destinations.FolderOf(format);
+            bool missing = written is not null && _session.ProjectPath is { } path && _destinations.ResolveExisting(path, format) is null;
+
+            text.Text = written is null ? "(보내지 않음)" : missing ? $"⚠ 없는 폴더 — {written}" : written;
+            text.Opacity = written is null ? 0.55 : 1;
+            // null을 넣으면 물려받은 글자색이 아니라 빈 붓이 된다(글이 사라진다) — 값을 걷는다.
+            if (missing)
+            {
+                text.Foreground = new SolidColorBrush(Color.Parse("#B9770E"));
+            }
+            else
+            {
+                text.ClearValue(TextBlock.ForegroundProperty);
+            }
+            ToolTip.SetTip(text, written is null || _session.ProjectPath is not { } project
+                ? null
+                : ExportDestinations.ResolveFolder(project, written));
+        }
+    }
+
+    /// <summary>대사 Yarn이 게임 폴더와 같은 곳인가 — 둘 다 정했을 때만.</summary>
+    private static bool SameFolder(ExportDestinations destinations, string projectPath) =>
+        destinations.Resolve(projectPath, ExportFormat.Progression) is { } game &&
+        destinations.Resolve(projectPath, ExportFormat.DialogueYarn) is { } yarn &&
+        string.Equals(
+            game.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            yarn.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            StringComparison.OrdinalIgnoreCase);
+
+    private async Task<string?> PickFolderAsync(string title)
+    {
+        if (!StorageProvider.CanPickFolder)
+        {
+            ExportNote.Text = "이 환경에서는 폴더 선택 창을 열 수 없습니다.";
+            ExportNote.IsVisible = true;
+            return null;
+        }
+
+        IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions { Title = title, AllowMultiple = false });
+
+        return folders.Count == 0 ? null : folders[0].Path.LocalPath;
+    }
+
+    private static void Place(Grid grid, Control control, int row, int column)
+    {
+        Grid.SetRow(control, row);
+        Grid.SetColumn(control, column);
+        grid.Children.Add(control);
     }
 
     // ── 「[대본] 판 크기」 ─────────────────────────────────────────────────────
@@ -172,7 +373,14 @@ internal sealed class SettingsWindow : Window
 
         BoardNote.Text = string.Join("\n", notes);
         BoardNote.IsVisible = notes.Count > 0;
-        BoardNote.Foreground = plan.MovedCards > 0 ? new SolidColorBrush(Color.Parse("#B9770E")) : null;
+        if (plan.MovedCards > 0)
+        {
+            BoardNote.Foreground = new SolidColorBrush(Color.Parse("#B9770E"));
+        }
+        else
+        {
+            BoardNote.ClearValue(TextBlock.ForegroundProperty);   // null은 빈 붓이다 — 글이 사라진다
+        }
     }
 
     /// <summary>두 칸의 값 — 적다 만 글자(아직 값으로 안 넘어온 것)도 읽는다. 못 읽으면 지금 판의 값.</summary>

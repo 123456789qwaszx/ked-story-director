@@ -15,6 +15,7 @@ namespace Vn.App.Tests;
 /// <summary>
 /// <b>[⚙ 설정] 창</b> (2026-11-17 · <c>docs/work-orders/settings-orders.md</c> C3) — 위 띠의 단추가 모달 창을 연다. [이 프로젝트] 묶음의
 /// 「[대본] 판 크기」를 고치고 [확인]하면 판이 바뀌고 되돌리기 한 칸이다. [취소] · Esc는 버린다. 줄여서 카드가 움직이면 미리 말한다.
+/// [내보내기] 묶음은 형식마다 보낼 곳을 정한다(export-destinations G2).
 /// </summary>
 public sealed class SettingsWindowTests : IDisposable
 {
@@ -149,6 +150,75 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     /// <summary>챕터 하나 — 카드 셋을 가로 0 · 5000 · 10000에.</summary>
+    [Fact]
+    public void 내보내기_묶음은_형식마다_보낼_곳을_정하고_확인하면_runtime_target_json에_남는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-17 소유자 — 위 띠의 [🎮 게임 폴더…]를 설정 창의 형식별 보낼 곳으로(export-destinations G2). 되돌리기 밖이고 저장할 때 보낸다.
+        (MainWindow window, AuthoringSession session) = Open();
+        string game = Path.Combine(_directory, "game");
+        string yarn = Path.Combine(_directory, "dialogue-yarn");
+        Directory.CreateDirectory(game);
+        Directory.CreateDirectory(yarn);
+        SettingsWindow settings = window.OpenSettings();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(window.FindControl<Button>("GameFolderButton"));
+        Assert.All(ExportDestinations.Formats, format => Assert.Equal("(보내지 않음)", settings.DestinationText(format).Text));
+
+        Assert.Null(settings.SetDestination(ExportFormat.Progression, game));
+        Assert.Equal("game", settings.DestinationText(ExportFormat.Progression).Text);
+
+        // 대사 Yarn은 게임 폴더와 같은 곳으로 받지 않는다 — 까닭을 보인다.
+        Assert.NotNull(settings.SetDestination(ExportFormat.DialogueYarn, game));
+        Assert.True(settings.ExportNote.IsVisible);
+        Assert.Equal("(보내지 않음)", settings.DestinationText(ExportFormat.DialogueYarn).Text);
+        Assert.Null(settings.SetDestination(ExportFormat.DialogueYarn, yarn));
+        Assert.False(settings.ExportNote.IsVisible);
+
+        // 없는 폴더는 표시한다(만들지 않는다).
+        Assert.Null(settings.SetDestination(ExportFormat.Scenes, Path.Combine(_directory, "nowhere")));
+        Assert.StartsWith("⚠ 없는 폴더", settings.DestinationText(ExportFormat.Scenes).Text);
+        Assert.False(Directory.Exists(Path.Combine(_directory, "nowhere")));
+
+        // [확인] 전에는 파일에 안 남는다.
+        Assert.True(session.Destinations.IsEmpty);
+        long before = session.Editor.Revision;
+        settings.Confirm();
+        Dispatcher.UIThread.RunJobs();
+
+        ExportDestinations saved = ExportDestinations.LoadBeside(session.ProjectPath!);
+        Assert.Equal(("game", "nowhere", "dialogue-yarn"), (saved.Progression, saved.Scenes, saved.DialogueYarn));
+        Assert.Equal(saved, session.Destinations);
+        Assert.Equal(before, session.Editor.Revision);   // 되돌리기 밖이다
+        Assert.Contains("다음 저장(Ctrl+S)부터", session.StatusMessage);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 내보내기에서_취소하면_보낼_곳을_버리고_다시_열면_지금_값을_보인다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = Open();
+        string game = Path.Combine(_directory, "game");
+        Directory.CreateDirectory(game);
+        ExportDestinations.SaveBeside(session.ProjectPath!, ExportDestinations.None.With(ExportFormat.Progression, "game"));
+        session.ReloadDestinations();
+
+        SettingsWindow settings = window.OpenSettings();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("game", settings.DestinationText(ExportFormat.Progression).Text);
+
+        settings.SetDestination(ExportFormat.Progression, null);
+        Assert.Equal("(보내지 않음)", settings.DestinationText(ExportFormat.Progression).Text);
+        settings.CancelButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("game", ExportDestinations.LoadBeside(session.ProjectPath!).Progression);
+        Assert.Equal("game", window.OpenSettings().DestinationText(ExportFormat.Progression).Text);
+
+        window.Close();
+    });
+
     private (MainWindow Window, AuthoringSession Session) Open()
     {
         Directory.CreateDirectory(_directory);

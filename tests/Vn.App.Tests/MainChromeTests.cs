@@ -38,7 +38,7 @@ public sealed class MainChromeTests
     public void 위_띠의_File_메뉴에_새_프로젝트_열기_저장이_있고_실행_취소_단추는_없다() => HeadlessUi.Run(() =>
     {
         // 2026-11-17 소유자 — 새 프로젝트 · 열기 · 저장은 File 메뉴(유니티처럼 눌러 목록에서 고른다), [실행 취소] · [다시 실행] 단추는
-        // 걷는다(되돌리기는 Ctrl+Z · Ctrl+Y). 위 띠에 남는 단추는 게임 폴더 · 챕터진행 · 설정이다.
+        // 걷는다(되돌리기는 Ctrl+Z · Ctrl+Y). 위 띠에 남는 단추는 챕터진행 · 설정이다(⛔ 게임 폴더는 같은 날 설정 창의 「내보내기」로 갔다).
         string folder = Path.Combine(Path.GetTempPath(), "vn-file-menu", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
 
@@ -59,7 +59,7 @@ public sealed class MainChromeTests
             }
 
             Assert.Equal(
-                ["GameFolderButton", "OpenExportFolderButton", "SettingsButton"],
+                ["OpenExportFolderButton", "SettingsButton"],
                 window.FindControl<Grid>("TopBar")!.Children.OfType<Button>().Select(button => button.Name));
 
             // 메뉴의 [저장]이 저장한다.
