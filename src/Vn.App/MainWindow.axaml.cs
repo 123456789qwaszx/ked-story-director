@@ -392,33 +392,6 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 챕터 이름을 바꾼다 — 챕터 줄 차림표와 하이어아키의 두 번 눌러 고치기가 같은 이 길을 지난다. 됐으면 참.
-    ///
-    /// 주의: 개명은 <b>여러 자리를 함께</b> 옮기는 한 동작이다(챕터·판·조건 배관). 셸이 그중 일부만 알면 나머지가
-    /// 뒤처진다 — 그 주인은 ChapterRenamer 하나다.
-    /// </summary>
-    private bool RenameChapter(string chapterId, string newId)
-    {
-        ChapterRenamer.Result result =
-            ChapterRenamer.Rename(_session.Editor, _session.ProjectPath, chapterId, newId);
-
-        if (!result.Renamed)
-        {
-            _session.SetStatus(result.Failure!);
-            return false;
-        }
-
-        ChapterGraph.Refresh();
-        ChapterGraph.SelectChapter(newId);
-
-        _session.SetStatus(
-            $"챕터 '{chapterId}' → '{newId}'로 바꿨습니다" +
-            (result.SupplyRenamed ? "(조건 노드도 함께)." : ".") +
-            StaleExportNote(result.StaleExport, chapterId));
-        return true;
-    }
-
-    /// <summary>
     /// 지우거나 이름을 바꾼 챕터의 옛 진행 JSON이 어떻게 됐는지 한 마디 — 바로 앞의 다시 읽기가 내보내며 걷는다
     /// (<see cref="ChapterExportService"/>). 못 걷었으면 그렇다고 말한다: 그냥 두면 게임이 없는 챕터를 계속 싣는다.
     /// </summary>

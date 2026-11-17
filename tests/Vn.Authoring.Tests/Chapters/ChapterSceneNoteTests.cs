@@ -87,7 +87,7 @@ public sealed class ChapterSceneNoteTests : IDisposable
     public void 장면이_처음_나오는_차례로_쓰고_주인_없는_메모는_뒤에_열쇠_차례로_쓴다()
     {
         string manifest = Save(Chapter(
-            new ChapterSceneNote("옥상", "주인 없음 — 장면을 풀었다"),
+            new ChapterSceneNote("옥상", "주인 없음 — 에피소드를 옮겼다"),
             new ChapterSceneNote("__scene_ep04", "미지정"),
             new ChapterSceneNote("교실", "교실"),
             new ChapterSceneNote("강당", "주인 없음"),

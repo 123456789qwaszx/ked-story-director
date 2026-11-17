@@ -287,12 +287,11 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 장면 이름 바꾸기 — 그 장면의 에피소드 모두에 새 장면ID를 적는다. 비우면 장면을 풀어 저마다 제 장면이 된다.
-    /// 되돌리기 한 칸이고, <b>장면 메모를 데려간다</b>(같은 칸 안에서 열쇠를 옮긴다):
+    /// 장면ID 바꾸기 — 그 장면의 에피소드 모두에 새 장면ID를 적는다. <b>비울 수 없다</b> — 에피소드는 늘 장면에 속한다(2026-11-17 ·
+    /// ⛔ 전에는 비우면 장면을 풀어 저마다 제 장면이 됐다). 되돌리기 한 칸이고, <b>장면 메모를 데려간다</b>(같은 칸 안에서 열쇠를 옮긴다):
     /// <list type="bullet">
-    /// <item>새 이름의 장면에 메모가 없으면 옛 메모가 새 열쇠로 간다(이름 바꾸기 · 메모 없는 장면으로 합치기).</item>
+    /// <item>새 장면ID에 메모가 없으면 옛 메모가 새 열쇠로 간다(바꾸기 · 메모 없는 장면으로 합치기).</item>
     /// <item>받는 장면에 이미 메모가 있으면 그것을 두고, 보낸 장면의 메모는 옛 열쇠에 <b>주인 없이</b> 남는다.</item>
-    /// <item>풀면(빈 이름) 메모는 옛 열쇠에 주인 없이 남는다 — 조용히 지우지 않는다(검증이 알린다).</item>
     /// </list>
     /// </summary>
     /// <returns>장면ID가 바뀐 에피소드 수 — 그 장면의 에피소드가 없으면 0이고 아무것도 하지 않는다.</returns>
@@ -300,6 +299,11 @@ public sealed partial class ProjectEditor
     {
         ChapterDocument chapter = RequireChapter(chapterId);
         string wanted = name.Trim();
+
+        if (wanted.Length == 0)
+        {
+            throw new InvalidOperationException("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
+        }
 
         List<int> members = Enumerable.Range(0, chapter.Episodes.Count)
             .Where(index => string.Equals(chapter.Episodes[index].EffectiveSceneId, sceneId, StringComparison.Ordinal))
@@ -317,10 +321,7 @@ public sealed partial class ProjectEditor
                 chapter.Episodes[index] = chapter.Episodes[index] with { SceneId = wanted };
             }
 
-            if (wanted.Length > 0)
-            {
-                CarrySceneNote(chapter, sceneId, wanted);
-            }
+            CarrySceneNote(chapter, sceneId, wanted);
         });
 
         return members.Count;

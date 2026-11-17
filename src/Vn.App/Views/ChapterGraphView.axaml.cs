@@ -3670,7 +3670,7 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 장면ID 칸의 Enter — 그 장면의 에피소드 모두의 장면ID를 바꾼다(<see cref="ProjectEditor.RenameScene"/> — 장면 이름 · 메모가 함께
     /// 간다, 되돌리기 한 칸). <b>다른 장면이 쓰는 ID로는 바꾸지 않는다</b> — 그러면 두 장면이 합쳐진다(합치기는 [대본] 탭에서 에피소드를
-    /// 끌어 옮긴다). 비울 수도 없다(풀기는 [대본] 탭의 「장면 풀기」).
+    /// 끌어 옮긴다). 비울 수도 없다 — 에피소드는 늘 장면에 속한다.
     /// </summary>
     internal void RenameInspectedScene()
     {
@@ -3689,7 +3689,7 @@ public partial class ChapterGraphView : UserControl
         if (newId.Length == 0 || newId.StartsWith("__scene_", StringComparison.Ordinal))
         {
             SceneIdBox.Text = oldId;
-            _session.SetStatus("장면ID는 비울 수 없습니다 — 장면을 풀려면 [대본] 탭 하이어아키의 「장면 풀기」를 씁니다.");
+            _session.SetStatus("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
             return;
         }
 

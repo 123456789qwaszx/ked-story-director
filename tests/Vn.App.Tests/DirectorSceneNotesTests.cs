@@ -183,7 +183,7 @@ public sealed class DirectorSceneNotesTests : IDisposable
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
         session.Editor.SetSceneNote("ch01", "hall", "홀의 사정");
-        session.Editor.RenameScene("ch01", "hall", "");   // 장면을 풀었다 — 메모는 주인 없이 남는다
+        session.Editor.UpdateEpisode("ch01", "b", sceneId: "opening");   // hall의 유일한 에피소드를 옮겼다 — 메모는 주인 없이 남는다
         Dispatcher.UIThread.RunJobs();
 
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;

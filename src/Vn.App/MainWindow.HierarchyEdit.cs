@@ -76,6 +76,10 @@ public partial class MainWindow
         }
     }
 
+    /// <summary>
+    /// 줄 이름 고치기 — [대본] 탭 하이어아키만 연다(보이는 이름만 고친다). [구성] 탭 하이어아키는 읽기 전용이고, ID는 [구성] 탭
+    /// 인스펙터의 ID 칸에서 고친다(⛔ 2026-11-17 — ID로 세운 줄의 개명 갈래 · 「장면ID를 비워 장면 풀기」는 걷었다: 열리지 않는 길이었다).
+    /// </summary>
     private void OnHierarchyRename(StoryHierarchy tree, HierarchyRow row, string name)
     {
         switch (row.Kind)
@@ -102,57 +106,7 @@ public partial class MainWindow
                     ? "장면 이름을 비웠습니다 — 장면 ID가 보입니다."
                     : $"장면 이름을 「{name}」(으)로 바꿨습니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.");
                 break;
-
-            case HierarchyKind.Chapter when row.ChapterId is { } chapterId && name.Length > 0:
-                RenameChapter(chapterId, name);
-                break;
-
-            case HierarchyKind.Scene when row.ChapterId is { } chapterId && row.SceneId is { } sceneId:
-            {
-                // 장면 메모가 함께 간다(ProjectEditor.RenameScene — 같은 되돌리기 칸).
-                int moved = _session.Editor.RenameScene(chapterId, sceneId, name);
-
-                if (moved == 0)
-                {
-                    return;
-                }
-
-                _session.SetStatus(name.Length == 0
-                    ? $"장면ID를 걷었습니다 — 에피소드 {moved}개가 저마다 제 장면입니다."
-                    : $"장면 이름을 '{name}'로 바꿨습니다 — 에피소드 {moved}개.");
-                break;
-            }
-
-            case HierarchyKind.Episode when row.ChapterId is { } chapterId && row.EpisodeId is { } oldId && name.Length > 0:
-                RenameEpisode(chapterId, oldId, name);
-                break;
         }
-    }
-
-    /// <summary>
-    /// 에피소드 개명 — [구성] 탭 하이어아키(두 번 눌러)의 길이다(규칙은
-    /// <see cref="EpisodeRenamer"/>: 간선 · 픽스처 · 카드가 함께 간다, 되돌리기 한 칸). 못 바꾸면 사유를 상태줄에 말하고 거짓을 낸다.
-    /// </summary>
-    private bool RenameEpisode(string chapterId, string oldId, string newId)
-    {
-        newId = newId.Trim();
-        EpisodeRenamer.Result result = EpisodeRenamer.Rename(_session.Editor, chapterId, oldId, newId);
-
-        if (!result.Renamed)
-        {
-            _session.SetStatus(result.Failure!);
-            return false;
-        }
-
-        // 카드는 같은 카드다(신원표만 바뀌었다) — 그것을 고르고 있었으면 챕터 그래프도 새 이름으로 고른다.
-        if (EpisodeNaming.CardFor(_session.Project, chapterId, newId) is { } card &&
-            string.Equals(_session.SelectedNodeId, card.Id, StringComparison.Ordinal))
-        {
-            ChapterGraph.ShowEpisode(chapterId, newId);
-        }
-
-        _session.SetStatus($"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
-        return true;
     }
 
     /// <summary>

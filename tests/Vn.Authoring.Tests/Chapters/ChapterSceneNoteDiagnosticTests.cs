@@ -44,7 +44,7 @@ public sealed class ChapterSceneNoteDiagnosticTests
         editor.SetSceneNote(Ch, "교실", "마감 전날, 다시 시작할지 고른다. 가볍게 열고 결심으로 맺는다\n둘째 줄");
         editor.SetSceneNote(Ch, "__scene_ep02", "혼자");
 
-        editor.RenameScene(Ch, "교실", "");
+        editor.UpdateEpisode(Ch, "ep01", sceneId: "복도");
         editor.RemoveEpisode(Ch, "ep02");
 
         IReadOnlyList<ChapterDiagnostic> orphaned = Orphaned(editor);

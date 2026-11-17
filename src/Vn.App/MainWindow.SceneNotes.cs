@@ -185,7 +185,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 챕터 요약 칸의 <b>주인 없는 장면 메모</b> — 장면을 풀었거나 그 장면의 에피소드가 모두 없어져 주인이 없어진 메모. 지우는 자리가
+    /// 챕터 요약 칸의 <b>주인 없는 장면 메모</b> — 그 장면의 에피소드가 모두 없어지거나 다른 장면으로 옮겨져 주인이 없어진 메모. 지우는 자리가
     /// 여기다(검증 경고 <see cref="ChapterDiagnosticCode.SceneNoteOrphaned"/>가 이리로 보낸다). 없으면 아무것도 세우지 않는다.
     /// </summary>
     private void OrphanSceneNotes(string chapterId)

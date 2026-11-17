@@ -132,15 +132,14 @@ public sealed class ChapterSceneNoteEditingTests
     }
 
     [Fact]
-    public void 장면을_풀면_메모는_주인_없이_남는다()
+    public void 장면ID는_비울_수_없다()
     {
         ProjectEditor editor = Editor();
-        editor.SetSceneNote(Ch, "복도", "풀린 장면");
+        long before = editor.Revision;
 
-        Assert.Equal(2, editor.RenameScene(Ch, "복도", ""));
+        Assert.Throws<InvalidOperationException>(() => editor.RenameScene(Ch, "복도", " "));
 
-        Assert.Equal([("복도", "풀린 장면")], Notes(editor));
-        Assert.Equal(["복도"], Orphans(editor));
+        Assert.Equal(before, editor.Revision);
     }
 
     [Fact]
