@@ -8,7 +8,7 @@
 툴은 그때까지 장면을 넘는 자동 길을 세 겹으로 막았다 — [대본]에서 문구를 지울 때와 문구 없는 칸을 다른 장면 카드로 끌 때 거절하고,
 [구성] 검증이 `AutoEdgeCrossesScene`으로 짚고, 내보낼 때 툴의 코어 사본(옛 규칙)이 거부했다. 런타임 계획서 §5의 B1~B3을 한다.
 
-> **상태: 진행 중.**
+> **상태: 끝 (2026-11-18)** — 3절의 소유자 결정 둘은 남았다.
 
 ## 1. 규칙
 
@@ -42,3 +42,4 @@
 |---|---|---|---|
 | 11-18 | X0 | (이 커밋) | 지시서 |
 | 11-18 | X1 | (이 커밋) | 코어 사본 `Spec/ChapterInvariants.cs` · `Spec/EpisodeOption.cs`를 런타임 `036535b`에서 바이트 그대로(코드 차이는 `VerifyAuto`의 같은 장면 검사뿐이었다) · `runtime-sync.txt` · `UPSTREAM.md`(부분 반입 기록 — 나머지는 2026-09-02 그대로). `ChapterAutoEdgeCheck`의 같은 장면 검사와 진단 코드 `AutoEdgeCrossesScene`(쓰지 않게 된 에피소드 인자도), [대본] 문구를 지울 때의 거절, 문구 없는 칸을 다른 장면 카드로 끌 때의 거절(쓰지 않게 된 `SceneOf`도)을 걷었다. 시험 — 거절을 보던 셋을 「받는다」로(검증 · 끌기 · 문구 지우기), 내보내기 관문이 받는 시험 하나. Authoring 656 · App 442 |
+| 11-18 | X2 | (이 커밋) | 문서 — `runtime-contract.md`(규칙 ④ · `Node.SceneId` 줄), `chapter-layer-guide.md`(장면 규칙 2), `design/two-graphs.md`(4절 손짓 표 둘 · 7절 AG 새로), `ChapterEdge.Auto` 주석. Authoring 656 · App 442 |
