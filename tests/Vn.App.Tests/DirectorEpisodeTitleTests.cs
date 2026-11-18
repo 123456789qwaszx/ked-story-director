@@ -106,6 +106,38 @@ public sealed class DirectorEpisodeTitleTests : IDisposable
     });
 
     [Fact]
+    public void 구성_하이어아키의_챕터와_장면_줄도_ID_옆에_이름이_곁글로_선다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「구성 탭의 하이어 아키의 장면과 챕터 옆에 DisplayName이 적혀있도록 해주십시오. 에피소드 처럼.」
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        StoryHierarchy tree = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
+        HierarchyRow ByKey(string key) => tree.Rows.Single(row => row.Key == key);
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        Dispatcher.UIThread.RunJobs();
+
+        // 이름이 없으면(ID와 같으면) 곁글이 없다 — ⛔ 「챕터 조건 스탯」 곁글은 걷혔다.
+        Assert.Equal(("ch01", null), (ByKey(StoryHierarchy.ChapterKey("ch01")).Text, ByKey(StoryHierarchy.ChapterKey("ch01")).Detail));
+        Assert.Equal(("opening", null), (ByKey(StoryHierarchy.SceneKey("ch01", "opening")).Text, ByKey(StoryHierarchy.SceneKey("ch01", "opening")).Detail));
+
+        session.Editor.UpdateChapterDisplayName("ch01", "축제 전날");
+        session.Editor.SetSceneName("ch01", "opening", "교실");
+        session.Editor.SetSceneNote("ch01", "hall", "복도의 사정");
+        session.Editor.SetSceneName("ch01", "hall", "복도");
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(("ch01", "축제 전날"), (ByKey(StoryHierarchy.ChapterKey("ch01")).Text, ByKey(StoryHierarchy.ChapterKey("ch01")).Detail));
+        Assert.Equal(("opening", "교실"), (ByKey(StoryHierarchy.SceneKey("ch01", "opening")).Text, ByKey(StoryHierarchy.SceneKey("ch01", "opening")).Detail));
+        Assert.Equal("복도 · 메모", ByKey(StoryHierarchy.SceneKey("ch01", "hall")).Detail);   // 메모는 이름 뒤에
+
+        // [대본] 하이어아키는 그대로 이름으로 선다(곁글에 이름을 되풀이하지 않는다).
+        StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
+        HierarchyRow chapter = director.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch01"));
+        Assert.Equal(("축제 전날", null), (chapter.Text, chapter.Detail));
+
+        window.Close();
+    });
+
+    [Fact]
     public void 제목을_비우면_EpisodeId가_보인다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);

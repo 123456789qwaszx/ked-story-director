@@ -260,12 +260,6 @@ public partial class StoryHierarchy : UserControl
     /// </summary>
     internal bool ShowEpisodeTitles { get; set; }
 
-    /// <summary>
-    /// 챕터 줄의 곁글 — 정하면 이 글이 서고, 없으면 곁글이 없다([대본] 탭). [구성] 탭은 「챕터 조건 스탯」이다(그 줄을 누르면 인스펙터가
-    /// 그 챕터의 조건 · 스탯 표를 보인다 — 프로젝트 줄의 「화자」와 같은 말투다). ⛔ 「에피소드 N」은 2026-11-18에 걷혔다(소유자 — 필요 없다).
-    /// </summary>
-    internal string? ChapterDetail { get; set; }
-
     /// <summary>이름을 고치는 중인 칸 — 화면 시험의 손잡이이자 실제 입력칸이다. 없으면 null.</summary>
     internal TextBox? RenameBox { get; private set; }
 
@@ -392,9 +386,10 @@ public partial class StoryHierarchy : UserControl
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
 
         rows.Add(new HierarchyRow(
-            // [대본] 탭은 이름(표시 이름, 비면 ID), [구성] 탭은 ID다(display-names N3).
+            // [대본] 탭은 이름(표시 이름, 비면 ID), [구성] 탭은 ID에 곁글로 이름이다(에피소드처럼 — 2026-11-18 소유자). ⛔ [구성] 곁글 「챕터 조건
+            // 스탯」 · 「에피소드 N」은 같은 날 걷혔다.
             HierarchyKind.Chapter, key, chapterId, null, null, ShowEpisodeTitles ? chapter.Model.ShownName : chapterId,
-            Detail: ChapterDetail,
+            Detail: ShowEpisodeTitles ? null : NameBeside(chapterId, chapter.Model.DisplayName),
             Depth: 1, IsSceneRoot: false, HasWarning: chapter.HasErrors));
 
         if (!IsExpanded(key))
@@ -409,8 +404,14 @@ public partial class StoryHierarchy : UserControl
 
             rows.Add(new HierarchyRow(
                 HierarchyKind.Scene, sceneKey, chapterId, scene.SceneId, null, ShowEpisodeTitles ? scene.DisplayName : scene.SceneId,
-                // 장면 메모나 에피소드 지시가 있으면 글자로 알린다(색만으로 알리지 않는다 — §6-3).
-                Detail: ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? "메모" : null, Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry));
+                // [구성] 탭은 ID에 곁글로 이름(에피소드처럼 — 2026-11-18 소유자). 장면 메모나 에피소드 지시가 있으면 글자로 알린다(색만으로 알리지
+                // 않는다 — §6-3).
+                Detail: string.Join(" · ", new[]
+                {
+                    ShowEpisodeTitles ? null : NameBeside(scene.SceneId, scene.DisplayName),
+                    ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? "메모" : null
+                }.OfType<string>()) is { Length: > 0 } sceneDetail ? sceneDetail : null,
+                Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry));
 
             if (!IsExpanded(sceneKey))
             {
@@ -449,6 +450,10 @@ public partial class StoryHierarchy : UserControl
         }
     }
 
+    /// <summary>ID로 선 줄의 곁글 이름 — 비었거나 ID와 같으면 없다(에피소드 제목과 같은 규칙).</summary>
+    private static string? NameBeside(string id, string? name) =>
+        string.IsNullOrWhiteSpace(name) || string.Equals(name.Trim(), id, StringComparison.Ordinal) ? null : name.Trim();
+
     private HierarchyRow EpisodeRow(string chapterId, ChapterScene scene, ChapterEpisode episode, int depth) =>
         new(
             HierarchyKind.Episode,
@@ -457,11 +462,7 @@ public partial class StoryHierarchy : UserControl
             scene.SceneId,
             episode.EpisodeId,
             ShowEpisodeTitles ? episode.ShownTitle : episode.EpisodeId,
-            Detail: ShowEpisodeTitles ||
-                    string.IsNullOrWhiteSpace(episode.Title) ||
-                    string.Equals(episode.Title.Trim(), episode.EpisodeId, StringComparison.Ordinal)
-                ? null
-                : episode.Title.Trim(),
+            Detail: ShowEpisodeTitles ? null : NameBeside(episode.EpisodeId, episode.Title),
             depth,
             IsSceneRoot: string.Equals(scene.RootEpisodeId, episode.EpisodeId, StringComparison.Ordinal),
             HasWarning: false);
