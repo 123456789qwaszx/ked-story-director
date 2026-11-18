@@ -118,6 +118,41 @@ public sealed class DirectorHierarchyTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 챕터_콤보는_하이어아키와_판에서_고른_챕터를_따라간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「그래프쪽이나 하이어아키에서 특정 챕터나 챕터내 장면, 에피소드를 눌렀을 때, 누른 챕터로 드롭다운의 챕터역시 바뀌도록」.
+        (MainWindow window, AuthoringSession session) = Show();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        ComboBox combo = graph.FindControl<ComboBox>("ChapterCombo")!;
+        StoryHierarchy tree = graph.HierarchyView;
+
+        void Pick(string key)
+        {
+            tree.RowButton(key)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Pick(StoryHierarchy.ChapterKey("ch02"));
+        Assert.Equal("ch02", combo.SelectedItem);
+
+        Pick(StoryHierarchy.SceneKey("ch01", "opening"));
+        Assert.Equal("ch01", combo.SelectedItem);
+
+        tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch02", "street"), collapse: false);
+        Pick(StoryHierarchy.EpisodeKey("ch02", "x"));
+        Assert.Equal("ch02", combo.SelectedItem);
+
+        // 판에서 다른 챕터의 카드를 누른 것 — 고른 카드의 챕터가 활성 판이 된다.
+        session.Select(Card(session, "ch01", "b").Id);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("ch01", session.ActiveFile?.Name);
+        Assert.Equal("ch01", combo.SelectedItem);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static DialogueNode Card(AuthoringSession session, string chapterId, string episodeId) =>

@@ -445,6 +445,27 @@ public partial class GraphEditorView : UserControl
             }
         });
 
+        // 고른 카드의 챕터가 활성 판이다(2026-11-18 소유자 — 「누른 챕터로 드롭다운의 챕터역시 바뀌도록」) — 하이어아키 · 판의 빈 곳은 셸이
+        // 이미 그 판을 활성으로 한다. 판에서 다른 챕터의 카드를 눌렀을 때가 여기다. 보는 자리는 옮기지 않는다(reveal: false).
+        session.SelectionChanged += (_, _) => UiGuard.Run(_session, "챕터 따라가기", () =>
+        {
+            if (_session?.SelectedNode is { } node &&
+                _session.Project.FindFileContainingNode(node.Id) is { } board &&
+                !string.Equals(board.Id, _session.ActiveFileId, StringComparison.Ordinal))
+            {
+                _session.SelectFile(board.Id, reveal: false);
+            }
+        });
+
+        // 활성 판이 바뀌면 콤보가 따라간다 — ⛔ 그 전에는 다시 그릴 때만 맞춰, 하이어아키에서 다른 챕터를 골라도 콤보는 그대로였다.
+        session.FileGraphStateChanged += (_, args) =>
+        {
+            if (args.ActiveFileChanged)
+            {
+                UiGuard.Run(_session, "챕터 콤보 맞추기", RefreshChapterCombo);
+            }
+        };
+
         RefreshDeleteButton();
     }
 
