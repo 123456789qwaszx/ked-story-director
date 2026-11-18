@@ -22,7 +22,8 @@ namespace Vn.App.Tests;
 /// 때마다 통째로 그었다) 무리 안팎을 잇는 길만 다시 긋는다 — 그래도 놓은 뒤의 모습은 통째로 그은 것과 같다 ④ 글을 되돌리고 다시 해도 판을
 /// 다시 짓지 않고, 고른 카드가 아니어도 그 카드의 글 칸이 돌아온다(board-speed PF1 — ⛔ 되돌리기가 늘 구조로 알려 판을 통째로 다시 지었다)
 /// ⑤ 인스펙터가 그 카드를 보이는 채 글이 짧은 사이에 두 번 바뀌어도 옛 글이 돌아오지 않는다(⛔ 줄 표의 낡은 칸이 옛 글을 도로 넣어 두 값 사이를
-/// 끝없이 오갔다 — 창이 멈췄다).
+/// 끝없이 오갔다 — 창이 멈췄다) ⑥ 카드의 「빈 선택지 숨기기」를 켜고 꺼도 판을 다시 짓지 않고 그 카드의 철도만 다시 긋는다 — 모습은 통째로 그은 것과
+/// 같다(board-speed PF2 — ⛔ 「펼친 판이 바뀌었다」로 알려 판을 통째로 다시 지었다).
 /// </summary>
 public sealed class BoardWorkAmountTests : IDisposable
 {
@@ -220,6 +221,61 @@ public sealed class BoardWorkAmountTests : IDisposable
 
         window.Close();
     });
+
+    [Fact]
+    public void 빈_선택지를_숨기고_세워도_판을_다시_짓지_않고_그_카드의_철도만_다시_긋는다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "교실로 간다");
+        Dispatcher.UIThread.RunJobs();
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        Canvas canvas = graph.FindControl<Canvas>("GraphCanvas")!;
+        string root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!.Id;
+
+        int rails = graph.RailDrawCount;
+        int redrawn = graph.RailFollowRedrawCount;
+        int visuals = graph.RailVisuals.Count;
+        List<(string Kind, double[] At)> shown = Shapes(graph, canvas);
+
+        session.SetHideEmptyChoices(root, hide: true);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(rails, graph.RailDrawCount);                      // 통째로 긋지 않았다
+        Assert.Equal(redrawn + 1, graph.RailFollowRedrawCount);        // root의 묶음 하나만
+        Assert.True(graph.RailVisuals.Count < visuals);                // 빈 칸이 걷혔다
+        AssertSameAsFullRedraw(graph, canvas, ref rails);
+
+        session.SetHideEmptyChoices(root, hide: false);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.Equal(visuals, graph.RailVisuals.Count);
+        AssertSameShapes(shown, Shapes(graph, canvas));
+
+        session.SetHideEmptyChoices(root, hide: false);   // 이 PC의 설정이다 — 처음대로 두고 끝낸다
+        window.Close();
+    });
+
+    /// <summary>지금 모습이 같은 카드로 통째로 그은 모습과 같은가(끌기 밖의 자리 갱신은 통째로 긋는다).</summary>
+    private static void AssertSameAsFullRedraw(GraphEditorView graph, Canvas canvas, ref int rails)
+    {
+        List<(string Kind, double[] At)> followed = Shapes(graph, canvas);
+        graph.RefreshPositions();
+        Dispatcher.UIThread.RunJobs();
+        rails = graph.RailDrawCount;
+        AssertSameShapes(Shapes(graph, canvas), followed);
+    }
+
+    private static void AssertSameShapes(List<(string Kind, double[] At)> drawn, List<(string Kind, double[] At)> other)
+    {
+        Assert.Equal(drawn.Count, other.Count);
+
+        for (int index = 0; index < drawn.Count; index++)
+        {
+            Assert.Equal(drawn[index].Kind, other[index].Kind);
+            Assert.True(drawn[index].At.Zip(other[index].At).All(pair => Math.Abs(pair.First - pair.Second) <= 0.6),
+                $"{drawn[index].Kind} [{string.Join(", ", drawn[index].At)}] · [{string.Join(", ", other[index].At)}]");
+        }
+    }
 
     private static void Click(MenuItem item)
     {

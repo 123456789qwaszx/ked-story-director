@@ -449,11 +449,13 @@ internal sealed class AuthoringSession
             AppSettingsService.SaveHiddenChoices(ProjectPath, _hiddenChoiceNodeIds);
         }
 
-        RaiseFileGraphStateChanged(
-            activeFileChanged: false,
-            expandedFilesChanged: true,
-            fileListChanged: false);
+        // 그 카드의 칸만 바뀌었다 — [대본] 판이 그 카드의 철도만 다시 긋는다(2026-11-18 · board-speed PF2). ⛔ 그 전에는 「펼친 판이 바뀌었다」로
+        // 알려 셸이 하이어아키 둘을 다시 세우고 판을 통째로 다시 지었다(에피소드 300개에서 3.5초).
+        HiddenChoicesChanged?.Invoke(nodeId);
     }
+
+    /// <summary>[대본] 카드 하나의 「빈 선택지 숨기기」가 바뀌었다 — 그 카드의 노드 Id.</summary>
+    internal event Action<string>? HiddenChoicesChanged;
 
     /// <summary>[구성] 탭에서 빈 선택지를 감추거나(참) 다시 세운다 — 기억하고 [구성] 판에 알린다.</summary>
     internal void SetHideEmptyChoices(bool hide)

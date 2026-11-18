@@ -583,6 +583,9 @@ public partial class GraphEditorView : UserControl
             }
         };
 
+        // 카드의 「빈 선택지 숨기기」 — 그 카드의 철도만 다시 긋는다(board-speed PF2).
+        session.HiddenChoicesChanged += nodeId => UiGuard.Run(_session, "선택지 칸", () => RedrawChoicesOf(nodeId));
+
         // 미니맵은 설정 창 「기타」가 켜고 끈다(side-fold K3).
         session.ShowMinimapChanged += (_, _) => ApplyShowMinimap();
         ApplyShowMinimap();
@@ -1412,6 +1415,34 @@ public partial class GraphEditorView : UserControl
             }
         }
 
+        RedrawRailGroups(stale, now);
+    }
+
+    /// <summary>
+    /// 그 카드의 빈 선택지를 감추거나 다시 세웠다 — 그 카드에서 나가는 철도 묶음만 다시 긋고, 테두리를 맞춘다(테두리는 카드 아래 칸까지
+    /// 감싼다). 판은 다시 짓지 않는다(2026-11-18 · board-speed PF2).
+    /// </summary>
+    private void RedrawChoicesOf(string nodeId)
+    {
+        if (_session is null || _projection is null ||
+            _session.Project.FindNode(nodeId) is not DialogueNode { MarkedEpisodeId: { Length: > 0 } episodeId } ||
+            _session.Project.FindFileContainingNode(nodeId) is not { } file)
+        {
+            return;
+        }
+
+        RedrawRailGroups(
+            _railGroups.Where(group => group.Origin is RailOrigin.FromCard card &&
+                                       string.Equals(card.FileId, file.Id, StringComparison.Ordinal) &&
+                                       string.Equals(card.EpisodeId, episodeId, StringComparison.Ordinal)).ToList(),
+            RailAnchors());
+        DrawChapterFrames(followRails: true);
+        RefreshMinimap();
+    }
+
+    /// <summary>그 묶음들만 지금 자리로 다시 긋는다 — 그림이 있던 캔버스 자리에 끼운다(겹침 차례를 지킨다).</summary>
+    private void RedrawRailGroups(List<RailGroup> stale, Dictionary<string, Rect> now)
+    {
         if (stale.Count == 0)
         {
             return;
