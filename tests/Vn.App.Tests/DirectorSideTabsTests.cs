@@ -71,10 +71,10 @@ public sealed class DirectorSideTabsTests : IDisposable
         PickRow(graph, StoryHierarchy.ProjectKey);
         Assert.Equal(SideTab.Speakers, graph.ShownSideTab);
 
-        // 챕터 줄 → 인스펙터 탭(머리가 이름 칸이다 — M3).
+        // 챕터 줄 → 「조건 및 스탯」 탭 — 이름 칸도 그 탭 맨 위다(2026-11-18 · chapter-pick Y1, ⛔ V3에서는 인스펙터였다).
         PickRow(graph, StoryHierarchy.ChapterKey("ch01"));
-        Assert.Equal(SideTab.Inspector, graph.ShownSideTab);
-        Assert.Equal("ch01", graph.InspectorHeaderText);
+        Assert.Equal(SideTab.Conditions, graph.ShownSideTab);
+        Assert.Contains(Shown(graph), control => control is TextBox { Tag: "chapter-name", Text: "ch01" });
 
         // 조건 탭에 있다가 카드를 고르면 인스펙터 탭이 그 카드를 보인다.
         graph.ShowSideTab(SideTab.Conditions);

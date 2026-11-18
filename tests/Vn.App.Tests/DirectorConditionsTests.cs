@@ -170,10 +170,8 @@ public sealed class DirectorConditionsTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("ch01", graph.InspectorHeaderText);   // 챕터 요약 — 머리는 이름만(2026-11-18)
 
-        // 챕터 줄은 인스펙터(이름 칸)를 연다 — 조건은 「조건 및 스탯」 탭이고 그 탭은 지금 챕터를 보인다(side-tabs V3). 사람이 탭을 누른다.
-        Assert.Equal(SideTab.Inspector, graph.ShownSideTab);
-        graph.ShowSideTab(SideTab.Conditions);
-        Dispatcher.UIThread.RunJobs();
+        // 챕터 줄은 「조건 및 스탯」 탭을 연다 — 그 탭은 지금 챕터를 보인다(2026-11-18 · chapter-pick Y1, ⛔ V3에서는 인스펙터였다).
+        Assert.Equal(SideTab.Conditions, graph.ShownSideTab);
         return graph;
     }
 

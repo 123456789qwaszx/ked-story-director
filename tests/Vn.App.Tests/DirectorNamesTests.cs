@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
@@ -88,9 +89,10 @@ public sealed class DirectorNamesTests : IDisposable
     });
 
     [Fact]
-    public void 챕터와_장면의_이름은_인스펙터_머리의_이름_칸에서_고친다() => HeadlessUi.Run(() =>
+    public void 챕터_이름은_조건_및_스탯_탭_맨_위에서_장면_이름은_인스펙터_머리에서_고친다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-18 소유자 — 「챕터이름과 장면 이름을 우측 인스펙터에서 바꿀 수 있도록 해주십시오. 에피소드와 마찬가지로.」
+        // 2026-11-18 소유자 — 「챕터이름과 장면 이름을 우측 인스펙터에서 바꿀 수 있도록 해주십시오. 에피소드와 마찬가지로.」 같은 날 — 「대본 탭에서
+        // 챕터를 눌렀을 때, 조건과 스탯탭으로 넘어가도록 … 챕터 이름을 바꾸는 기능도 같이 합치고요」(chapter-pick Y1 — 챕터 이름 칸은 그 탭 맨 위로).
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         TextBox box = graph.FindControl<TextBox>("InspectorNameBox")!;
@@ -101,27 +103,38 @@ public sealed class DirectorNamesTests : IDisposable
             Dispatcher.UIThread.RunJobs();
         }
 
-        void Press(Key key)
+        void PressOn(TextBox target, Key key)
         {
-            box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key });
+            target.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key, Source = target });
             Dispatcher.UIThread.RunJobs();
         }
 
-        // 챕터 — 이름 칸에 지금 이름(비었으면 ID). 적고 Enter면 한 칸에 바뀌고 하이어아키도 따라간다.
+        // 「조건 및 스탯」 탭 맨 위의 챕터 이름 칸 — 탭을 다시 지으면 새 칸이라 그때마다 찾는다.
+        TextBox ChapterBox() => graph.FindControl<ContentControl>("ConditionHost")!.GetLogicalDescendants().OfType<TextBox>()
+            .Single(item => (string?)item.Tag == "chapter-name");
+
+        // 챕터 — 「조건 및 스탯」 탭이 열리고 맨 위 이름 칸에 지금 이름(비었으면 ID). 인스펙터 머리는 이름 글이다(이름 칸은 한 자리).
         Pick(StoryHierarchy.ChapterKey("ch01"));
-        Assert.True(box.IsVisible);
-        Assert.Equal("ch01", box.Text);
+        Assert.Equal(SideTab.Conditions, graph.ShownSideTab);
+        Assert.False(box.IsVisible);
+        Assert.Equal("ch01", graph.InspectorHeaderText);
+        Assert.Equal("ch01", ChapterBox().Text);
+
+        // 적고 Enter면 한 칸에 바뀌고 하이어아키도 따라간다.
         long before = session.Editor.Revision;
-        box.Text = "축제 전날";
-        Press(Key.Enter);
+        TextBox chapterBox = ChapterBox();
+        chapterBox.Text = "축제 전날";
+        PressOn(chapterBox, Key.Enter);
         Assert.Equal("축제 전날", session.Editor.FindChapter("ch01")!.DisplayName);
         Assert.Equal(before + 1, session.Editor.Revision);
         Assert.Equal("축제 전날", Text(graph.HierarchyView, StoryHierarchy.ChapterKey("ch01")));
+        Assert.Equal("축제 전날", ChapterBox().Text);
 
         // Esc는 그만두기 — 적던 글이 지금 이름으로 돌아가고 아무것도 안 바뀐다.
-        box.Text = "안 쓸 이름";
-        Press(Key.Escape);
-        Assert.Equal("축제 전날", box.Text);
+        chapterBox = ChapterBox();
+        chapterBox.Text = "안 쓸 이름";
+        PressOn(chapterBox, Key.Escape);
+        Assert.Equal("축제 전날", chapterBox.Text);
         Assert.Equal(before + 1, session.Editor.Revision);
 
         // 장면 — 초점이 떠나면 바꾼다(에피소드 이름 칸과 같다).
@@ -136,9 +149,10 @@ public sealed class DirectorNamesTests : IDisposable
 
         // 비우면 ID가 보인다.
         Pick(StoryHierarchy.ChapterKey("ch01"));
-        box.Text = string.Empty;
-        Press(Key.Enter);
-        Assert.Equal("ch01", box.Text);
+        chapterBox = ChapterBox();
+        chapterBox.Text = string.Empty;
+        PressOn(chapterBox, Key.Enter);
+        Assert.Equal("ch01", ChapterBox().Text);
 
         // 프로젝트 줄 · 에피소드는 이름 칸이 아니다(에피소드는 대사 편집기의 이름 칸이 고친다).
         Pick(StoryHierarchy.ProjectKey);

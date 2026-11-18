@@ -59,14 +59,14 @@ public sealed class SceneAreaPickTests : IDisposable
         session.Select(CardId(session, "root"));
         Dispatcher.UIThread.RunJobs();
 
-        // 장면 밖 · 챕터 테두리 안(챕터 이름표 왼쪽의 여백) — 그 챕터가 인스펙터에 선다(이름 칸). 「조건 및 스탯」 탭이 그 챕터를 따라간다.
+        // 장면 밖 · 챕터 테두리 안(챕터 이름표 왼쪽의 여백) — 그 챕터를 고른다. 「조건 및 스탯」 탭이 열려 그 챕터를 보인다(이름 칸 · 스탯 · 조건).
         Border chapterLabel = Canvas(graph).Children.OfType<Border>()
             .Single(border => border.Child is TextBlock { Text: "챕터 ch01 ⌄" });
         Click(graph, new Point(Avalonia.Controls.Canvas.GetLeft(chapterLabel) - 6, Avalonia.Controls.Canvas.GetTop(chapterLabel) + 2));
 
         Assert.Null(session.SelectedNodeId);
         Assert.Equal("ch01", Title(graph));
-        Assert.Equal(SideTab.Inspector, graph.ShownSideTab);
+        Assert.Equal(SideTab.Conditions, graph.ShownSideTab);   // 챕터는 「조건 및 스탯」 탭(chapter-pick Y1)
         Assert.Equal("ch01", graph.FindControl<ComboBox>("ConditionChapterCombo")!.SelectedItem);
         Assert.Equal(StoryHierarchy.ChapterKey("ch01"), graph.HierarchyView.Selection?.Key);
 

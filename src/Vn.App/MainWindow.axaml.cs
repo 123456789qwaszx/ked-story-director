@@ -389,7 +389,7 @@ public partial class MainWindow : Window
         OnDirectorHierarchyPicked(new HierarchyPick(HierarchyKind.Chapter, chapterId));
         Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));   // 「챕터 추가」는 [대본]에 있다 — 만든 챕터로 간다
         _session.SetStatus(
-            $"챕터 「{NewNames.Chapter}」를 장면 「{NewNames.Scene}」 · 「{NewNames.Episode}」와 함께 만들었습니다 — 이름은 오른쪽 인스펙터 머리나 하이어아키에서 고칩니다.");
+            $"챕터 「{NewNames.Chapter}」를 장면 「{NewNames.Scene}」 · 「{NewNames.Episode}」와 함께 만들었습니다 — 이름은 오른쪽 「조건 및 스탯」 탭 맨 위나 하이어아키에서 고칩니다.");
     }
 
     /// <summary>

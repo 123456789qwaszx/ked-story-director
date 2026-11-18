@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -83,6 +85,7 @@ public partial class MainWindow
             return;
         }
 
+        ChapterNameBox(chapter);
         Guide("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
         StatTable(chapter.Model.Stats);
 
@@ -90,6 +93,58 @@ public partial class MainWindow
         ConditionList(chapter.ChapterId);
         OpenInChapterGraph(new HierarchyPick(HierarchyKind.Chapter, chapter.ChapterId), "[구성] 탭에서 조건 · 스탯 열기");
     });
+
+    /// <summary>
+    /// 「조건 및 스탯」 탭 맨 위의 <b>챕터 이름 칸</b>(2026-11-18 소유자 · chapter-pick Y1 — ⛔ 그 전에는 인스펙터 머리였다). 손짓은 하이어아키 · 에피소드의
+    /// 이름 칸과 같다 — Enter · 다른 곳 누르기 = 바꾸기, Esc = 그만두기, 비우면 챕터 ID가 보인다. 바꾸기는 하이어아키 이름 칸과 한 벌(<see cref="RenameChapter"/>).
+    /// </summary>
+    private void ChapterNameBox(ChapterEntry chapter)
+    {
+        string chapterId = chapter.ChapterId;
+        string shown = chapter.Model.ShownName;
+        var box = new TextBox
+        {
+            Text = shown,
+            FontSize = 13,
+            FontWeight = FontWeight.SemiBold,
+            PlaceholderText = "챕터 이름 (비우면 챕터 ID)",
+            Tag = "chapter-name"
+        };
+        ToolTip.SetTip(box, $"게임에 보이는 챕터 이름입니다. 고치고 Enter. 비우면 챕터 ID({chapterId})가 보입니다. ID는 [구성] 탭에서 정합니다.");
+
+        void Commit() => UiGuard.Run(_session, "챕터 이름", () =>
+        {
+            string wanted = (box.Text ?? string.Empty).Trim();
+
+            if (string.Equals(wanted, shown, StringComparison.Ordinal))
+            {
+                box.Text = shown;   // 앞뒤 빈칸만 걷었다
+                return;
+            }
+
+            shown = RenameChapter(chapterId, wanted);
+            box.Text = shown;
+        });
+
+        box.LostFocus += (_, _) => Commit();
+        box.AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = true;
+                Commit();
+            }
+            else if (args.Key == Key.Escape)
+            {
+                args.Handled = true;
+                box.Text = shown;
+            }
+        }, RoutingStrategies.Tunnel);
+
+        // 칸 이름 — 머리(「챕터 단위 조건 · 스탯」) 바로 아래 맨 칸이 무엇인지 말한다. 칸 이름이라 설명 간소화에도 남는다.
+        _sheet.Children.Add(new TextBlock { Text = "챕터 이름", FontSize = 11, Opacity = 0.65 });
+        _sheet.Children.Add(box);
+    }
 
     /// <summary>화자 · 조건 탭을 다시 짓는다 — 구조가 바뀌었거나 지금 챕터가 바뀌었다.</summary>
     private void FillSideTabs()
@@ -328,8 +383,14 @@ public partial class MainWindow
         _directorLine = null;
         Graph.ReleaseLine();
 
-        // 고른 것을 보이는 탭으로 간다 — 프로젝트는 화자, 그 밖은 인스펙터(챕터 · 장면은 이름 칸이 인스펙터 머리다 — side-tabs V3).
-        Graph.ShowSideTab(pick.Kind == HierarchyKind.Project ? SideTab.Speakers : SideTab.Inspector);
+        // 고른 것을 보이는 탭으로 간다 — 프로젝트는 화자, 챕터는 조건 및 스탯(이름 칸도 거기 맨 위다 — 2026-11-18 소유자 · chapter-pick Y1,
+        // ⛔ V3에서는 이름 칸이 인스펙터 머리라 인스펙터로 갔다), 그 밖은 인스펙터(장면은 이름 칸이 인스펙터 머리다).
+        Graph.ShowSideTab(pick.Kind switch
+        {
+            HierarchyKind.Project => SideTab.Speakers,
+            HierarchyKind.Chapter => SideTab.Conditions,
+            _ => SideTab.Inspector
+        });
 
         if (pick.ChapterId is { } chapterId)
         {
@@ -548,16 +609,10 @@ public partial class MainWindow
 
             case HierarchyKind.Chapter when chapter is not null:
             {
-                // 머리는 이름 칸이다 — 여기서 고친다(2026-11-18 소유자 — 에피소드와 마찬가지로).
-                string chapterId = chapter.ChapterId;
-                Graph.SetInspectorNameEditor(
-                    StoryHierarchy.ChapterKey(chapterId),
-                    chapter.Model.ShownName,
-                    "챕터 이름 (비우면 챕터 ID)",
-                    $"게임에 보이는 챕터 이름입니다. 고치고 Enter. 비우면 챕터 ID({chapterId})가 보입니다. ID는 [구성] 탭에서 정합니다.",
-                    name => RenameChapter(chapterId, name));
-                // 스탯 표 · 조건 이름은 「조건 및 스탯」 탭에 산다(side-tabs V3).
-                Guide("이 챕터의 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.");
+                // 머리는 이름 글이다 — 이름 칸은 「조건 및 스탯」 탭 맨 위 한 자리다(2026-11-18 소유자 — 「챕터 이름을 바꾸는 기능도 같이 합치고요」 ·
+                // chapter-pick Y1, ⛔ 그 전에는 이 머리가 이름 칸이었다 — M3). 챕터를 고르면 그 탭이 열린다 — 이 보기는 탭을 손으로 열었을 때다.
+                Graph.SetInspectorHeader(chapter.Model.ShownName, string.Empty);
+                Guide("이 챕터의 이름 · 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.");
                 OrphanSceneNotes(chapter.ChapterId);
 
                 // 장면 · 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자).
