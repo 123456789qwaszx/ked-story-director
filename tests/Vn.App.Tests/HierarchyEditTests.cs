@@ -8,6 +8,7 @@ using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Model;
 
 namespace Vn.App.Tests;
 
@@ -417,13 +418,15 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
-    public void 장면_지우기는_한_번_확인한_뒤_그_장면의_에피소드와_항목을_한_칸에_걷는다() => HeadlessUi.Run(() =>
+    public void 장면_지우기는_한_번_확인한_뒤_그_장면의_에피소드와_분기_카드와_항목을_한_칸에_걷는다() => HeadlessUi.Run(() =>
     {
         // 2026-11-18 소유자 — 장면 줄: 에피소드 추가 · 이름 바꾸기 · 장면 지우기.
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         session.Editor.SetSceneNote("ch01", "opening", "교실의 사정");
+        DialogueNode root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        DialogueNode branch = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);   // root가 부르는 분기 카드
         Dispatcher.UIThread.RunJobs();
         string key = StoryHierarchy.SceneKey("ch01", "opening");
 
@@ -440,6 +443,8 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Null(EpisodeNaming.CardFor(session.Project, "ch01", "root"));
         Assert.Null(EpisodeNaming.CardFor(session.Project, "ch01", "a"));
         Assert.Empty(Chapter(session).SceneNotes);                                             // 장면 항목도 함께
+        Assert.Null(session.Project.FindNode(branch.Id));                                      // 부르던 분기 카드도 함께(2026-11-18 소유자)
+        Assert.Contains("분기 카드 1장", session.StatusMessage, StringComparison.Ordinal);
         Assert.DoesNotContain(tree.Rows, row => row.Key == key);
         Assert.Equal(before + 1, session.Editor.Revision);                                     // 되돌리기 한 칸
 

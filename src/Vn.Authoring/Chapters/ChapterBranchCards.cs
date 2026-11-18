@@ -163,7 +163,40 @@ public static class ChapterBranchCards
     public static IReadOnlyList<BranchCardHome> HomesOf(StoryProject project, string chapterId)
     {
         ArgumentNullException.ThrowIfNull(project);
+        return Homes(project, chapterId, _ => true);
+    }
 
+    /// <summary>
+    /// <b>장면째 지울 때 함께 갈 분기 카드</b>(2026-11-18 소유자 — 「장면 지우기시에 분기카드까지 함께」) — 집이 그 장면의 에피소드인 분기 카드(사슬
+    /// 포함 — 하이어아키에서 그 장면 밑에 보이던 것) 가운데 <b>장면을 걷은 뒤 집을 잃는 것</b>. 다른 장면의 에피소드도 부르는 카드는 그쪽으로 집을
+    /// 옮겨 남는다(그쪽 대사가 부르고 있다).
+    /// </summary>
+    public static IReadOnlyList<DialogueNode> GoingWithScene(StoryProject project, string chapterId, string sceneId)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        if (project.Chapters.FirstOrDefault(item => string.Equals(item.ChapterId, chapterId, StringComparison.Ordinal)) is not { } chapter)
+        {
+            return [];
+        }
+
+        HashSet<string> inScene = chapter.Episodes
+            .Where(episode => string.Equals(episode.SceneId, sceneId, StringComparison.Ordinal))
+            .Select(episode => episode.EpisodeId)
+            .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> kept = Homes(project, chapterId, episodeId => !inScene.Contains(episodeId))
+            .Select(home => home.Card.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return HomesOf(project, chapterId)
+            .Where(home => inScene.Contains(home.EpisodeId) && !kept.Contains(home.Card.Id))
+            .Select(home => home.Card)
+            .ToList();
+    }
+
+    /// <summary><see cref="HomesOf"/>의 알맹이 — <paramref name="fromEpisode"/>가 참인 에피소드에서만 분기를 따른다.</summary>
+    private static List<BranchCardHome> Homes(StoryProject project, string chapterId, Func<string, bool> fromEpisode)
+    {
         if (EpisodeNaming.BoardOf(project, chapterId) is not { } board ||
             project.Chapters.FirstOrDefault(item => string.Equals(item.ChapterId, chapterId, StringComparison.Ordinal)) is not { } chapter)
         {
@@ -191,7 +224,7 @@ public static class ChapterBranchCards
 
         foreach (DialogueNode card in byId.Values)
         {
-            if (EpisodeNaming.EpisodeFor(chapter, card) is { } episode)
+            if (EpisodeNaming.EpisodeFor(chapter, card) is { } episode && fromEpisode(episode.EpisodeId))
             {
                 Visit(card, episode.EpisodeId);
             }

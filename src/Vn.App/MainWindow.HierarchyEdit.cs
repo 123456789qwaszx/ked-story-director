@@ -67,23 +67,29 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 하이어아키 장면 줄 우클릭 「장면 지우기」 — 확인 한 번 뒤에 그 장면의 에피소드(카드 · 간선째)와 장면 항목(이름 · 메모)을 걷는다
-    /// (<see cref="Vn.Authoring.Editing.ProjectEditor.RemoveScene"/> — 되돌리기 한 칸). 에피소드 여럿이 함께 사라지므로 챕터 지우기와 같이 묻는다.
+    /// 하이어아키 장면 줄 우클릭 「장면 지우기」 — 확인 한 번 뒤에 그 장면의 에피소드(카드 · 간선째)와 그 에피소드들이 부르던 분기 카드, 장면 항목
+    /// (이름 · 메모)을 걷는다(<see cref="Vn.Authoring.Editing.ProjectEditor.RemoveScene"/> — 되돌리기 한 칸). 에피소드 여럿이 함께 사라지므로 챕터
+    /// 지우기와 같이 묻는다. 분기 카드 수는 확인 문구에 미리 센다(<see cref="ChapterBranchCards.GoingWithScene"/>).
     /// </summary>
     private void ConfirmSceneRemoval(Control anchor, ChapterEntry chapter, ChapterScene scene)
     {
         string chapterId = chapter.ChapterId;
         string sceneId = scene.SceneId;
+        int branchCards = ChapterBranchCards.GoingWithScene(_session.Project, chapterId, sceneId).Count;
 
         RemoveConfirmButton = ConfirmFlyout.Show(
             anchor,
             _session,
-            $"장면 「{scene.DisplayName}」의 에피소드 {scene.Episodes.Count}개와 [대본] 탭의 카드가 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
+            $"장면 「{scene.DisplayName}」의 에피소드 {scene.Episodes.Count}개" +
+            (branchCards > 0 ? $"와 그 에피소드가 부르던 분기 카드 {branchCards}장이" : "가") +
+            " [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
             "장면 지우기",
             () =>
             {
-                int removed = _session.Editor.RemoveScene(chapterId, sceneId);
-                _session.SetStatus($"장면 「{scene.DisplayName}」를 지웠습니다(에피소드 {removed}개와 카드). 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                Vn.Authoring.Editing.ProjectEditor.RemovedScene removed = _session.Editor.RemoveScene(chapterId, sceneId);
+                _session.SetStatus(
+                    $"장면 「{scene.DisplayName}」를 지웠습니다 — 에피소드 {removed.Episodes}개" +
+                    (removed.BranchCards > 0 ? $", 분기 카드 {removed.BranchCards}장" : "") + ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
             },
             closed: () => RemoveConfirmButton = null);
     }

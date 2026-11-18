@@ -1,5 +1,6 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Tests.Chapters;
@@ -200,10 +201,10 @@ public sealed class ChapterSceneNoteEditingTests
         editor.SetSceneNote(Ch, "교실", "교실");
         long before = editor.Revision;
 
-        Assert.Equal(0, editor.RemoveScene(Ch, "없는 장면"));
+        Assert.Equal(new ProjectEditor.RemovedScene(0, 0), editor.RemoveScene(Ch, "없는 장면"));
         Assert.Equal(before, editor.Revision);
 
-        Assert.Equal(2, editor.RemoveScene(Ch, "복도"));
+        Assert.Equal(new ProjectEditor.RemovedScene(2, 0), editor.RemoveScene(Ch, "복도"));
         Assert.Equal(before + 1, editor.Revision);
         Assert.Equal(["ep03", "ep04"], Chapter(editor).Episodes.Select(episode => episode.EpisodeId));
         Assert.Null(EpisodeNaming.CardFor(editor.Project, Ch, "ep01"));
@@ -213,6 +214,42 @@ public sealed class ChapterSceneNoteEditingTests
         Assert.Equal(4, Chapter(editor).Episodes.Count);
         Assert.Equal([("교실", "교실"), ("복도", "복도의 사정")], Notes(editor));
     }
+
+    [Fact]
+    public void 장면을_지우면_그_장면이_부르던_분기_카드도_한_칸에_걷히고_다른_장면도_부르는_카드는_남는다()
+    {
+        // 2026-11-18 소유자 — 「장면 지우기시에 분기카드까지 함께 지워주십시오.」 걷는 것은 장면을 걷은 뒤 집을 잃는 카드다(사슬 포함).
+        ProjectEditor editor = Editor();
+        DialogueNode ep01 = Card(editor, "ep01");
+        DialogueNode ep03 = Card(editor, "ep03");
+
+        DialogueNode own = editor.AddBranchMarker(ep01.Id, ep01.Script.ActiveLines.First().Id);              // 복도만 부른다
+        DialogueNode chained = editor.AddBranchMarker(own.Id, own.Script.ActiveLines.First().Id);           // 그 카드가 부른다(사슬)
+        DialogueNode shared = editor.AddBranchMarker(ep01.Id, ep01.Script.ActiveLines.First().Id);          // 복도와 교실이 함께 부른다
+        DialogueNode other = editor.AddBranchMarker(ep03.Id, ep03.Script.ActiveLines.First().Id);
+        editor.SetExitTarget(NodeConnections.PortsOf(ep03, editor.Project).Single(port => port.TargetNodeId == other.Id), shared.Id);
+        editor.RemoveNode(other.Id);
+
+        Assert.Equal(
+            [own.Id, chained.Id],
+            ChapterBranchCards.GoingWithScene(editor.Project, Ch, "복도").Select(card => card.Id));
+
+        long before = editor.Revision;
+        Assert.Equal(new ProjectEditor.RemovedScene(2, 2), editor.RemoveScene(Ch, "복도"));
+        Assert.Equal(before + 1, editor.Revision);
+
+        Assert.Null(editor.Project.FindNode(own.Id));
+        Assert.Null(editor.Project.FindNode(chained.Id));
+        Assert.NotNull(editor.Project.FindNode(shared.Id));   // 교실이 부르고 있다 — 집이 교실로 옮겨 남는다
+        Assert.Equal("ep03", ChapterBranchCards.HomesOf(editor.Project, Ch).Single(home => home.Card.Id == shared.Id).EpisodeId);
+
+        editor.Undo();   // 한 칸 — 에피소드와 분기 카드가 함께 돌아온다
+        Assert.NotNull(editor.Project.FindNode(own.Id));
+        Assert.NotNull(editor.Project.FindNode(chained.Id));
+        Assert.Equal(4, Chapter(editor).Episodes.Count);
+    }
+
+    private static DialogueNode Card(ProjectEditor editor, string episodeId) => EpisodeNaming.CardFor(editor.Project, Ch, episodeId)!;
 
     [Fact]
     public void 에피소드_지시는_장면을_옮겨도_에피소드를_따라간다()

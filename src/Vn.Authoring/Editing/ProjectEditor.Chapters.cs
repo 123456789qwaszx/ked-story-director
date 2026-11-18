@@ -536,11 +536,12 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 장면 지우기 — 그 장면의 에피소드를 <see cref="RemoveEpisode"/>와 같이 걷고(카드 · 간선 · 픽스처 참조) 장면 항목(이름 · 메모)도 걷는다.
-    /// 한 되돌리기 칸이다(2026-11-18 소유자 — [대본] 하이어아키 장면 줄 「장면 지우기」). 장면째 지우는 것이라 메모를 주인 없이 남기지 않는다
-    /// (에피소드를 지우거나 옮겨 장면이 비는 것과 다르다). 분기 카드는 에피소드 지우기처럼 판에 남는다(부르는 곳이 없으면 검증이 짚는다).
+    /// 그 에피소드들이 부르던 분기 카드도 걷는다 — 장면을 걷은 뒤 집을 잃는 것만(<see cref="ChapterBranchCards.GoingWithScene"/> · 2026-11-18
+    /// 소유자 — 「장면 지우기시에 분기카드까지 함께」). 한 되돌리기 칸이다. 장면째 지우는 것이라 메모를 주인 없이 남기지 않는다(에피소드를 지우거나
+    /// 옮겨 장면이 비는 것과 다르다). ⛔ 그 전에는 분기 카드가 판에 남았다(부르는 곳이 없어 검증이 경고했다).
     /// </summary>
-    /// <returns>걷은 에피소드 수 — 그 장면이 없으면 0이고 아무것도 하지 않는다.</returns>
-    public int RemoveScene(string chapterId, string sceneId)
+    /// <returns>걷은 에피소드 · 분기 카드 수 — 그 장면이 없으면 둘 다 0이고 아무것도 하지 않는다.</returns>
+    public RemovedScene RemoveScene(string chapterId, string sceneId)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
         List<string> episodes = chapter.Episodes
@@ -550,8 +551,13 @@ public sealed partial class ProjectEditor
 
         if (episodes.Count == 0)
         {
-            return 0;
+            return new RemovedScene(0, 0);
         }
+
+        // 걷기 전에 센다 — 에피소드를 걷고 나면 집을 잃은 카드는 HomesOf에서 사라져 찾을 수 없다.
+        List<string> branchCards = ChapterBranchCards.GoingWithScene(Project, chapterId, sceneId)
+            .Select(card => card.Id)
+            .ToList();
 
         Batch(() =>
         {
@@ -560,11 +566,19 @@ public sealed partial class ProjectEditor
                 RemoveEpisode(chapterId, episodeId);
             }
 
+            foreach (string cardId in branchCards)
+            {
+                RemoveNode(cardId);
+            }
+
             RemoveSceneNote(chapterId, sceneId);
         });
 
-        return episodes.Count;
+        return new RemovedScene(episodes.Count, branchCards.Count);
     }
+
+    /// <summary><see cref="RemoveScene"/>이 걷은 것 — 에피소드 수와 분기 카드 수.</summary>
+    public readonly record struct RemovedScene(int Episodes, int BranchCards);
 
     // ── 간선 ────────────────────────────────────────────────────────────────
     // 길 하나가 곧 선택지 하나이고, 신원은 (출발, 도착, 문구)다.
