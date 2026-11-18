@@ -501,9 +501,11 @@ public partial class ChapterGraphView : UserControl
         // 스크롤뷰가 먼저 먹어 버리면 휠이 배율이 아니라 그냥 스크롤이 된다.
         GraphScroll.AddHandler(
             PointerWheelChangedEvent, OnGraphWheel, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        GraphScroll.PointerPressed += OnGraphPanPressed;
-        GraphScroll.PointerMoved += OnGraphPanMoved;
-        GraphScroll.PointerReleased += OnGraphPanReleased;
+        // 가운데 단추 끌기도 <b>터널</b>로 먼저 받는다 — [대본] 판과 같다. 선 · 문구 · 점 · 칩은 누름을 받아 먹으므로(Handled), 버블로
+        // 받으면 그 위에서 시작한 끌기가 판을 못 움직였다(⛔ 2026-11-18까지 · 소유자 — inspector-boxes-pan J2). 가운데 단추가 아니면 그냥 지나간다.
+        GraphScroll.AddHandler(PointerPressedEvent, OnGraphPanPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        GraphScroll.AddHandler(PointerMovedEvent, OnGraphPanMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         ZoomResetButton.Click += (_, _) => ApplyZoom(1, null);
         FitChapterButton.Click += (_, _) => UiGuard.Run(_session, "화면 맞춤", FitChapter);
 

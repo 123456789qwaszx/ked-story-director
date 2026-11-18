@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -155,6 +156,20 @@ public sealed class ChapterGraphNavigationTests : IDisposable
         Assert.Equal(50, scroll.Offset.X, 1);
     });
 
+    [Fact]
+    public void 선_문구_위에서_시작한_가운데_끌기도_판을_옮긴다() => HeadlessUi.Run(() =>
+    {
+        // ⛔ 2026-11-18까지는 선 · 문구 · 점이 누름을 먼저 먹어 판이 안 움직였다 — 판이 터널로 먼저 받는다([대본]과 같다 · J2).
+        (ChapterGraphView view, ScrollViewer scroll) = Show();
+        Control label = view.FindControl<Canvas>("GraphCanvas")!.GetVisualDescendants().OfType<Control>()
+            .First(control => control.Tag is ChapterGraphView.EdgeLabelMark && control.IsEffectivelyVisible);   // 선택지 문구 — 누름을 먹는다
+
+        MiddlePress(scroll, new Point(300, 200), source: label);
+        MiddleMove(scroll, new Point(250, 200));
+        Assert.Equal(50, scroll.Offset.X, 1);
+        MiddleRelease(scroll, new Point(250, 200));
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static double Scale(ChapterGraphView view) =>
@@ -176,9 +191,10 @@ public sealed class ChapterGraphNavigationTests : IDisposable
             RoutedEvent = InputElement.PointerWheelChangedEvent
         });
 
-    private static void MiddlePress(ScrollViewer scroll, Point at) =>
-        scroll.RaiseEvent(new PointerPressedEventArgs(
-            scroll,
+    /// <param name="source">누른 자리 — 비면 판 자체. 선 · 문구를 주면 그것이 누름을 받는 길(터널 → 버블)을 그대로 탄다.</param>
+    private static void MiddlePress(ScrollViewer scroll, Point at, Control? source = null) =>
+        (source ?? scroll).RaiseEvent(new PointerPressedEventArgs(
+            source ?? scroll,
             new Pointer(0, PointerType.Mouse, true),
             scroll,
             at,
