@@ -14,8 +14,9 @@
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
             <Grid x:Name="TopBar" ColumnDefinitions="Auto,16,Auto,Auto,*,Auto">
-                <!-- File 메뉴 (2026-11-17 소유자 — 유니티처럼 눌러 목록에서 고른다). [실행 취소] · [다시 실행] 단추는 같은 날 걷었다 —
-                     되돌리기는 Ctrl+Z · Ctrl+Y다.
+                <!-- File 메뉴 (2026-11-17 소유자 — 유니티처럼 눌러 목록에서 고른다). 되돌리기 · 다시 실행도 여기 있다(2026-11-18 소유자 —
+                     「키보드를 안 쓰는 사람들을 위해서기도 하고, 중요한 기능이니만큼 단축키를 몰라도 사용할 수 있도록」 · finishing FX7) — 메뉴 글
+                     옆에 단축키를 적고, 누르면 그 키와 같은 일을 한다. ⛔ 2026-11-17에 위 띠의 [실행 취소] · [다시 실행] 단추를 걷으며 키로만 남겼다.
                      프로젝트는 폴더다 — 새로/열기는 폴더를 고른다. [다른 이름으로…]는 두지 않는다: 복제는 탐색기, 버전은 git.
                      manifest 이름은 사람이 짓지 않는다(ProjectFolder). -->
                 <!-- File은 이웃 단추([📂 작업 폴더] · [⚙ 설정])와 같은 모양이다 — 테마의 맨 윗 메뉴 항목은 바탕이 투명해 글자만 보였다
@@ -35,6 +36,11 @@
                                   ToolTip.Tip="프로젝트 폴더를 고릅니다." />
                         <Separator />
                         <MenuItem x:Name="SaveMenuItem" Header="저장" InputGesture="Ctrl+S" />
+                        <Separator />
+                        <MenuItem x:Name="UndoMenuItem" Header="되돌리기" InputGesture="Ctrl+Z"
+                                  ToolTip.Tip="방금 한 편집 하나를 되돌립니다." />
+                        <MenuItem x:Name="RedoMenuItem" Header="다시 실행" InputGesture="Ctrl+Y"
+                                  ToolTip.Tip="되돌린 편집을 다시 합니다." />
                     </MenuItem>
                 </Menu>
 
@@ -80,12 +86,12 @@
             <TextBlock x:Name="StatusText" FontSize="11" TextWrapping="Wrap" />
         </Border>
 
-        <!-- 탭 둘 — 곁기둥은 제 화면 안에 있다: <b>챕터 목록</b>은
-             [구성](챕터 그래프)에, <b>노드 편집기</b>는 [대본](연출 그래프)에. 자리가 곧 소속이다.
-             탭 순서가 곧 작업 순서다: ① [구성]에서 이야기 뼈대(에피소드 · 분기 조건 · 스탯 · 선택지)를 짜고,
-             ② [대본]에서 카드를 잇고 대사를 쓴다. 왼쪽에서 오른쪽으로 밟으면 챕터가 완성된다.
+        <!-- 탭 둘 — [구성](챕터 그래프)과 [대본](연출 그래프). 틀은 같다: 왼쪽 하이어아키 · 가운데 판 · 오른쪽 탭 셋(인스펙터 · 화자 ·
+             조건 및 스탯). 두 기둥은 접히고(ColumnDock) 두 탭이 함께 접힌다. 하이어아키의 접힘과 선택도 두 탭이 함께 쓴다.
+             하는 일은 나뉜다: [대본]은 챕터 · 장면 · 에피소드를 더하고 지우고 이름을 고치며, 카드를 잇고(선택지 · 분기) 대사를 쓴다.
+             [구성]은 ID · 조건 식 · 스탯 · 선택지의 표시/해금 조건과 스탯변화 · 캐릭터 키를 정한다(하이어아키는 읽기 전용).
+             둘 다 세션의 편집기 한 벌로 고친다.
              창을 열면 [구성]이 서고, 새 프로젝트를 만들어도 [구성]으로 온다.
-             두 그래프는 데이터도 편집 경로도 공유하지 않는다 (G-1).
              무대 프리뷰는 연출 층과 함께 ked-story-compositor의 몫이다.
              주의: 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
         <TabControl x:Name="MainTabs" Padding="0">

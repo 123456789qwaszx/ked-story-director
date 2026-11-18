@@ -54,7 +54,7 @@ public partial class MainWindow : Window
 
     private readonly DispatcherTimer _autoSaveTimer;
     private bool _restoredRecent;
-    /// <summary>왼쪽 챕터 목록의 데이터. 원천은 챕터 그래프 뷰의 읽기 하나다.</summary>
+    /// <summary>하이어아키의 챕터 데이터. 원천은 [구성] 판(ChapterGraphView)의 다시 읽기 하나다.</summary>
     private IReadOnlyList<ChapterEntry> _chapters = Array.Empty<ChapterEntry>();
 
     public MainWindow()
@@ -77,18 +77,16 @@ public partial class MainWindow : Window
         Graph.SetConditionPanel(TabScroll(DirectorConditions, "director-conditions-scroll"));
 
         Graph.Attach(_session);
-        // 왼쪽 챕터 목록의 원천은 챕터 그래프 뷰가 읽은 목록 하나다 — 두 곳이 따로 읽으면
-        // 감시·재시도 규칙이 두 벌이 된다. Attach 전에 구독해야 첫 읽기부터 받는다.
+        // 하이어아키 · 콤보의 챕터 목록은 [구성] 판이 다시 읽은 목록 하나다 — 두 곳이 따로 읽지 않는다.
+        // Attach 전에 구독해야 첫 읽기부터 받는다.
         ChapterGraph.EntriesReloaded += entries =>
         {
             _chapters = entries;
             RebuildFileList();
-            // 연출 그래프의 철도 배선도 같은 목록 하나를 본다 — 두 곳이 따로 읽지 않는다.
-            Graph.SupplyChapters(entries);
+            Graph.SupplyChapters(entries);   // [대본] 툴바의 챕터 콤보 · 빈 판의 [＋ 첫 챕터 만들기]
             FillConditionTab();   // 스탯 표는 이 목록의 모델을 본다
         };
-        // 위 드롭다운으로 골라도 왼쪽 목록의 강조가 따라온다 —
-        // 목록 클릭이 하던 일(판 활성 + 목록 다시 그리기)을 여기서도 똑같이 한다.
+        // [구성] 툴바 콤보로 골라도 하이어아키의 강조가 따라온다 — 하이어아키에서 고를 때 하는 일(판 활성 + 다시 그리기)을 여기서도 한다.
         ChapterGraph.ChapterSelected += chapterId => UiGuard.Run(_session, "챕터 선택", () =>
         {
             _session.SelectFile(_session.EnsureChapterBoard(chapterId));
@@ -116,12 +114,13 @@ public partial class MainWindow : Window
 
         // 두 하이어아키 · 탭 사이 선택 맞추기 (MainWindow.Hierarchy.cs).
         WireHierarchies();
-        // 프로젝트가 아직 없을 때는 [새 프로젝트]가 먼저다 —
-        // 툴바의 [새로 만들기]와 같은 길 하나를 지난다.
+        // 프로젝트가 아직 없을 때는 [구성] 빈 판 한가운데의 [새 프로젝트]가 먼저다 — File 메뉴의 「새 프로젝트…」와 같은 길 하나를 지난다.
         ChapterGraph.ProjectNewCenterButton.Click += OnNewClick;
         NewMenuItem.Click += OnNewClick;
         OpenMenuItem.Click += OnOpenClick;
         SaveMenuItem.Click += OnSaveClick;
+        UndoMenuItem.Click += (_, _) => UndoOrRedo(redo: false);
+        RedoMenuItem.Click += (_, _) => UndoOrRedo(redo: true);
         SettingsButton.Click += (_, _) => UiGuard.Run(_session, "설정", () => OpenSettings());
         WorkFolderButton.Click += (_, _) =>
             UiGuard.Run(_session, "작업 폴더 열기", OpenWorkFolder);
@@ -130,9 +129,8 @@ public partial class MainWindow : Window
 
         // 저장 단축키 — 어디에 포커스가 있어도 Ctrl+S가 저장이다.
         //
-        // Ctrl+Z · Ctrl+Y도 창 전체에서 받는다. 되돌리기 단추는 창 위쪽 띠에 있어서, 트리에서
-        //    실수로 지운 사람이 찾아 올라가게 해서는 안 된다 — 지우는 단추는 Ctrl+Z로 되돌릴 수
-        //    있어야 한다.
+        // Ctrl+Z · Ctrl+Y도 창 전체에서 받는다 — 하이어아키나 판에서 실수로 지운 사람이 메뉴를 찾아 올라가지 않아도 그 자리에서
+        //    되돌린다. 같은 일을 File 메뉴의 「되돌리기」 · 「다시 실행」도 한다(UndoOrRedo).
         AddHandler(KeyDownEvent, (_, args) =>
         {
             // Delete = [대본] 탭에서 고른 카드(에피소드 · 분기 카드)를 지운다(2026-11-18 소유자) — 묻지 않는다(되돌리기 한 칸). 글 칸에서는
@@ -162,8 +160,7 @@ public partial class MainWindow : Window
                 //    있으면 그것부터 걷는다).
                 case Avalonia.Input.Key.Z or Avalonia.Input.Key.Y when Graph.IsWritingFocused:
                     args.Handled = true;
-                    bool redo = args.Key == Avalonia.Input.Key.Y;
-                    UiGuard.Run(_session, redo ? "다시 실행" : "되돌리기", () => Graph.UndoInWriting(redo));
+                    UndoOrRedo(redo: args.Key == Avalonia.Input.Key.Y);
                     break;
 
                 // 주의: 다른 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
@@ -171,12 +168,12 @@ public partial class MainWindow : Window
                 //    날아간다. TextBox가 제 되돌리기를 먼저 하도록 둔다.
                 case Avalonia.Input.Key.Z when FocusManager?.GetFocusedElement() is not TextBox:
                     args.Handled = true;
-                    UiGuard.Run(_session, "되돌리기", _session.Editor.Undo);
+                    UndoOrRedo(redo: false);
                     break;
 
                 case Avalonia.Input.Key.Y when FocusManager?.GetFocusedElement() is not TextBox:
                     args.Handled = true;
-                    UiGuard.Run(_session, "다시 실행", _session.Editor.Redo);
+                    UndoOrRedo(redo: true);
                     break;
             }
         }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -232,9 +229,8 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// 검증용 손잡이 — 최근 프로젝트 복원을 끈다. 헤드리스 테스트의 창은 "이 컴퓨터가
-    /// 마지막에 연 프로젝트"를 물려받으면 안 된다: 복원된 챕터의 감시자가 부르는 에피소드
-    /// 동기화가 테스트가 세운 노드를 솎아 내고 판을 다시 그려, 부하에 따라 매번 다른
-    /// 테스트가 흔들린다(더블클릭 넷 사이에 판이 재건되면 제스처도 끊긴다).
+    /// 마지막에 연 프로젝트"를 물려받으면 안 된다: 테스트가 세운 프로젝트 대신 이 컴퓨터의 프로젝트가 열리면 판이 다시 그려져
+    /// 부하에 따라 매번 다른 테스트가 흔들린다(더블클릭 넷 사이에 판이 재건되면 제스처도 끊긴다).
     /// </summary>
     internal static bool RestoreRecentProjectOnOpen { get; set; } = true;
 
@@ -643,8 +639,36 @@ public partial class MainWindow : Window
         ShowSelectedNode();
     }
 
+    /// <summary>
+    /// 되돌리기 · 다시 실행 — Ctrl+Z · Ctrl+Y와 File 메뉴의 「되돌리기」 · 「다시 실행」이 이 한 벌을 지난다(finishing FX7). [대본] 카드 글 칸에
+    /// 초점이 있으면 칸의 규칙을 따른다(넣지 않은 글이 있으면 그것부터 걷는다 — <see cref="GraphEditorView.UndoInWriting"/>). 메뉴를 열면 초점이
+    /// 메뉴로 가 칸이 쓰던 글을 먼저 넣으므로, 메뉴의 되돌리기는 그 글부터 되돌린다 — 키와 같은 결과다.
+    /// </summary>
+    private void UndoOrRedo(bool redo) =>
+        UiGuard.Run(_session, redo ? "다시 실행" : "되돌리기", () =>
+        {
+            if (Graph.IsWritingFocused)
+            {
+                Graph.UndoInWriting(redo);
+            }
+            else if (redo)
+            {
+                _session.Editor.Redo();
+            }
+            else
+            {
+                _session.Editor.Undo();
+            }
+
+            RefreshShell();
+        });
+
     private void RefreshShell()
     {
+        // 되돌릴 것 · 다시 할 것이 없으면 메뉴가 꺼진다 — 눌러도 아무 일이 없는 항목은 고장처럼 보인다.
+        UndoMenuItem.IsEnabled = _session.Editor.CanUndo;
+        RedoMenuItem.IsEnabled = _session.Editor.CanRedo;
+
         string name = ProjectDisplayTitle();
 
         ProjectNameText.Text = name;

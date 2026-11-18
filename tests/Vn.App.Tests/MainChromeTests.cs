@@ -82,7 +82,8 @@ public sealed class MainChromeTests
 
             MenuItem file = window.FindControl<MenuItem>("FileMenu")!;
             Assert.Equal("File", file.Header);
-            Assert.Equal(["새 프로젝트…", "열기…", "저장"], file.Items.OfType<MenuItem>().Select(item => item.Header as string));
+            // 되돌리기 · 다시 실행도 메뉴에 있다(2026-11-18 소유자 · finishing FX7 — 단추는 걷힌 그대로다).
+            Assert.Equal(["새 프로젝트…", "열기…", "저장", "되돌리기", "다시 실행"], file.Items.OfType<MenuItem>().Select(item => item.Header as string));
             Assert.Equal("Ctrl+S", window.FindControl<MenuItem>("SaveMenuItem")!.InputGesture?.ToString());
 
             foreach (string gone in new[] { "NewButton", "OpenButton", "SaveButton", "UndoButton", "RedoButton" })
