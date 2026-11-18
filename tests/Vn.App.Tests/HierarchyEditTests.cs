@@ -15,9 +15,9 @@ namespace Vn.App.Tests;
 /// <b>하이어아키에서 고치기</b> — 우클릭 차림표와 두 번 눌러 이름 바꾸기. 고치는 하이어아키는 [대본] 탭의 것이다 — [구성] 탭
 /// 하이어아키는 고르기 · 접기만 한다(읽기 전용).
 ///
-/// 「챕터 · 장면 · 에피소드 추가」는 어느 줄에서나 같은 자리에 서고(어디서 눌러야 무엇이 나오는지 외울 것이 없게) 어디에
-/// 붙일지는 누른 줄이 정한다. 그 아래에 그 줄만의 일이 선다. 새 장면은 첫 에피소드와 함께 선다 — 장면은 에피소드가
-/// 장면ID를 들어야 있는 것이다.
+/// 「챕터 · 장면 추가」는 어느 줄에서나 같은 자리에 서고(어디서 눌러야 무엇이 나오는지 외울 것이 없게) 어디에 붙일지는 누른 줄이
+/// 정한다. 「에피소드 추가」는 장면 줄에만 서고 길 없이 세운다(2026-11-18 소유자). 그 아래에 그 줄만의 일이 선다. 새 장면은 첫
+/// 에피소드와 함께 선다 — 장면은 에피소드가 장면ID를 들어야 있는 것이다.
 /// </summary>
 public sealed class HierarchyEditTests : IDisposable
 {
@@ -33,9 +33,10 @@ public sealed class HierarchyEditTests : IDisposable
     }
 
     [Fact]
-    public void 에피소드_추가는_장면이_있는_줄에만_서고_장면을_비우는_일은_없다() => HeadlessUi.Run(() =>
+    public void 에피소드_추가는_장면_줄에만_서고_장면을_비우는_일은_없다() => HeadlessUi.Run(() =>
     {
         // 2026-11-17 소유자 — 장면 없는 에피소드를 허용하지 않는다. 챕터 줄 「에피소드 추가」 · 「장면 풀기」 · 「장면에서 빼기」를 걷었다.
+        // 2026-11-18 소유자 — 에피소드 줄 「에피소드 추가」(그 뒤에 「계속」 길로 잇던 것)도 걷었다.
         (MainWindow window, StoryHierarchy tree) = Open();
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
@@ -46,29 +47,29 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Equal([.. adds, "이름 바꾸기 · 제거…"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
         Assert.Equal([.. adds, "에피소드 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
         Assert.Equal(
-            [.. adds, "에피소드 추가", "이름 바꾸기", "에피소드 지우기"],
+            [.. adds, "이름 바꾸기", "에피소드 지우기"],
             Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
 
         window.Close();
     });
 
     [Fact]
-    public void 에피소드_줄의_에피소드_추가는_그_뒤에_같은_장면으로_간선을_달고_서고_두_탭이_그것을_고른다() => HeadlessUi.Run(() =>
+    public void 장면_줄의_에피소드_추가는_그_장면에_길_없이_서고_두_탭이_그것을_고른다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
-        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+        int edges = Chapter(session).Edges.Count;
 
-        Click(tree, StoryHierarchy.EpisodeKey("ch01", "root"), "에피소드 추가");
+        Click(tree, StoryHierarchy.SceneKey("ch01", "opening"), "에피소드 추가");
 
         ChapterEpisode added = Assert.Single(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_opening_new01");
         Assert.Equal("opening", added.SceneId);
-        Assert.Contains(Chapter(session).Edges, edge => edge.FromEpisodeId == "root" && edge.ToEpisodeId == "ch01_opening_new01");
+        Assert.Equal(edges, Chapter(session).Edges.Count);   // 길은 잇지 않는다 — 잇기는 [대본] 판에서 선택지 칸을 끌어서
         Assert.Equal(EpisodeNaming.CardFor(session.Project, "ch01", "ch01_opening_new01")!.Id, session.SelectedNodeId);
         Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "ch01_opening_new01"), tree.Selection?.Key);
 
-        // 되돌리기 한 칸 — 에피소드 · 간선 · 장면이 함께 물러난다.
+        // 되돌리기 한 칸 — 에피소드 · 카드가 함께 물러난다.
         session.Editor.Undo();
         Assert.DoesNotContain(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_opening_new01");
 
@@ -316,9 +317,9 @@ public sealed class HierarchyEditTests : IDisposable
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
-        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
-        Click(tree, StoryHierarchy.EpisodeKey("ch01", "root"), "에피소드 추가");
+        Click(tree, StoryHierarchy.SceneKey("ch01", "opening"), "에피소드 추가");
         Assert.Contains(Chapter(session).Episodes, episode => episode.EpisodeId == "ch01_opening_new01");
+        session.Editor.AddEdge("ch01", "root", "ch01_opening_new01", optionLabel: "계속");   // 길이 옮기기를 따라가는지 본다
         long before = session.Editor.Revision;
 
         tree.Drag(StoryHierarchy.EpisodeKey("ch01", "ch01_opening_new01"), StoryHierarchy.SceneKey("ch01", "hall"));

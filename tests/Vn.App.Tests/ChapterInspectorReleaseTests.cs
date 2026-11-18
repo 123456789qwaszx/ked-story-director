@@ -125,8 +125,9 @@ public sealed class ChapterInspectorReleaseTests
         view.Attach(session);
         Dispatcher.UIThread.RunJobs();
 
-        EpisodeAdder.Add(session, "ch01", after: null, sceneId: "s1");
-        EpisodeAdder.Add(session, "ch01", after: "ch01_s1_new01", sceneId: "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        session.Editor.AddEdge("ch01", "ch01_s1_new01", "ch01_s1_new02", optionLabel: "계속");
         session.Editor.UpdateEdge("ch01", "ch01_s1_new01", "ch01_s1_new02", conditionLabel: "신뢰", matchOptionLabel: "계속");   // 잠금 안내문 · 식 칸이 선다
         view.Refresh();
         Dispatcher.UIThread.RunJobs();

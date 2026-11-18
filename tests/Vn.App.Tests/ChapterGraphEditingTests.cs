@@ -352,7 +352,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        EpisodeAdder.Add(session, "ch05", after: null, sceneId: "s1");
+        EpisodeAdder.Add(session, "ch05", "s1");
 
         ChapterGraphModel afterAdd = Chapter(session);
         Assert.NotNull(afterAdd.FindEpisode("ch05_s1_new01"));
@@ -375,7 +375,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        EpisodeAdder.Add(session, "ch05", after: null, sceneId: "s1"); // ch05_s1_new01 + 카드
+        EpisodeAdder.Add(session, "ch05", "s1"); // ch05_s1_new01 + 카드
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -409,7 +409,7 @@ public sealed class ChapterGraphEditingTests
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => node.MarkedEpisodeId == "ch05_s1_new01");
 
-        EpisodeAdder.Add(session, "ch05", after: null, sceneId: "s1");
+        EpisodeAdder.Add(session, "ch05", "s1");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs(); // QueueReload 한 차례
 
         // 더한 그 자리에서 노드가 서 있다 — 에피소드와 카드가 한 변경이다.
@@ -433,7 +433,7 @@ public sealed class ChapterGraphEditingTests
         (ChapterGraphView view, AuthoringSession session) = Show(project);
         var canvas = view.FindControl<Avalonia.Controls.Canvas>("GraphCanvas")!;
 
-        EpisodeAdder.Add(session, "ch05", after: null, sceneId: "s1");
+        EpisodeAdder.Add(session, "ch05", "s1");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Border Card() => canvas.Children.OfType<Border>().Single(item => item.Tag as string == "ch05_s1_new01");
@@ -446,21 +446,19 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 고른_에피소드의_다음으로_더하면_간선이_이어진다() => HeadlessUi.Run(() =>
+    public void 더한_에피소드는_길_없이_선다() => HeadlessUi.Run(() =>
     {
-        // 「에피소드 추가」는 누른 줄의 에피소드 다음으로 만든다. 흐름 연결이 기본값이다.
+        // 2026-11-18 소유자 — 에피소드는 서로 떨어진 내용이고 잇기는 사람이 정한다. ⛔ 그 전에는 누른 에피소드 다음으로 「계속」 길을 이었다.
         using var project = new TempProject();
         (ChapterGraphView _, AuthoringSession session) = Show(project);
+        int edges = Chapter(session).Edges.Count;
 
-        EpisodeAdder.Add(session, "ch05", after: "main05.end", sceneId: "s1");
+        EpisodeAdder.Add(session, "ch05", "s1");
 
         ChapterGraphModel reread = Chapter(session);
-        ChapterEpisode added = reread.FindEpisode("ch05_s1_new01")!;
-
-        // 간선이 함께 이어졌다(문구 「계속」).
-        Assert.Contains(reread.Edges, edge =>
-            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "ch05_s1_new01" && edge.OptionLabel == "계속");
-        Assert.Equal("ch05_s1_new01", added.EpisodeId);
+        Assert.NotNull(reread.FindEpisode("ch05_s1_new01"));
+        Assert.Equal(edges, reread.Edges.Count);
+        Assert.DoesNotContain(reread.Edges, edge => edge.ToEpisodeId == "ch05_s1_new01");
     });
 
     [Fact]

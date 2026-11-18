@@ -49,7 +49,7 @@ internal static class ChapterAddFlyout
             flyout.Hide();
             created?.Invoke(chapterId);
             string shown = session.Editor.FindChapter(chapterId)!.ShownName;
-            session.SetStatus($"챕터 「{shown}」를 만들었습니다. 하이어아키에서 그 챕터 줄을 우클릭해 「에피소드 추가」로 첫 에피소드를 세웁니다.");
+            session.SetStatus($"챕터 「{shown}」를 만들었습니다. 하이어아키에서 그 챕터 줄을 우클릭해 「장면 추가」로 첫 장면과 에피소드를 세웁니다.");
         });
 
         create.Click += (_, _) => Submit();

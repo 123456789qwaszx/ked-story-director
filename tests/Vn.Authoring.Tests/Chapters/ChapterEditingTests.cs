@@ -38,12 +38,12 @@ public sealed class ChapterEditingTests
     }
 
     [Fact]
-    public void 다음_에피소드는_에피소드와_간선이_한_번에_선다()
+    public void 새_문구로_길을_이으면_사전에도_올라간다()
     {
-        // 분기 저작의 핵심 동작 — 둘 중 하나만 선 채로 남지 않는다.
-        _editor.AddNextEpisode("ch01", "ep02", "ep03", "복도 끝", 400, 0, optionLabel: "더 간다", sceneId: "ep03");
+        // ⛔ 에피소드와 간선을 한 번에 세우던 「다음 에피소드」(`AddNextEpisode`)는 2026-11-18에 걷혔다 — 에피소드는 길 없이 서고 잇기는 따로다.
+        _editor.AddEpisode("ch01", "ep03", "복도 끝", 400, 0, sceneId: "ep03");
+        _editor.AddEdge("ch01", "ep02", "ep03", optionLabel: "더 간다");
 
-        Assert.Contains(Chapter.Episodes, episode => episode.EpisodeId == "ep03");
         Assert.Contains(Chapter.Edges, edge =>
             edge.FromEpisodeId == "ep02" && edge.ToEpisodeId == "ep03" && edge.OptionLabel == "더 간다");
 

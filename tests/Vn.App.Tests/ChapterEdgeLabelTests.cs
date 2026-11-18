@@ -22,8 +22,9 @@ public sealed class ChapterEdgeLabelTests
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         // 사람이 하는 그대로([대본] 하이어아키 우클릭 「에피소드 추가」): 노드 하나 → 그 다음 하나 (간선이 함께 생긴다).
-        EpisodeAdder.Add(session, "ch01", after: null, sceneId: "s1");
-        EpisodeAdder.Add(session, "ch01", after: "ch01_s1_new01", sceneId: "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        session.Editor.AddEdge("ch01", "ch01_s1_new01", "ch01_s1_new02", optionLabel: "계속");
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -42,8 +43,9 @@ public sealed class ChapterEdgeLabelTests
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        EpisodeAdder.Add(session, "ch01", after: null, sceneId: "s1");
-        EpisodeAdder.Add(session, "ch01", after: "ch01_s1_new01", sceneId: "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        session.Editor.AddEdge("ch01", "ch01_s1_new01", "ch01_s1_new02", optionLabel: "계속");
         view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 

@@ -13,12 +13,9 @@ namespace Vn.Authoring.Chapters;
 /// 자리의 주인은 <see cref="ChapterEpisode.X"/>·<see cref="ChapterEpisode.Y"/>이고
 /// <c>ProjectEditor.MoveEpisode</c>가 고친다.
 ///
-/// <b>그래서 이 계산은 「그리는 자리」가 아니라 「첫 자리」다.</b> 두 곳이 쓴다:
-///
-/// <list type="number">
-///   <item><see cref="SuggestPlacement"/> — 새로 세우는 카드 하나의 자리</item>
-///   <item>[자동 정렬] — 연출 그래프에 카드가 하나도 없을 때(있으면 그 모양을 본뜬다 — <see cref="LayoutLikeBoard"/>)</item>
-/// </list>
+/// <b>그래서 이 계산은 「그리는 자리」가 아니라 「첫 자리」다.</b> [자동 정렬]이 쓴다 — 연출 그래프에 카드가 하나도 없을 때(있으면 그 모양을
+/// 본뜬다 — <see cref="LayoutLikeBoard"/>). ⛔ 새로 세우는 카드 하나의 자리를 부모 아래로 제안하던 <c>SuggestPlacement</c>는 2026-11-18에
+/// 「다음 에피소드」와 함께 걷혔다.
 ///
 /// ⛔ 엑셀에서 들여온 챕터(X·Y가 전부 0이라 한 자리에 포개진다)에 한 번 심어 주던 <c>NeedsSeeding</c>은 2026-11-18에 걷혔다(old-shapes O9).
 ///
@@ -81,42 +78,6 @@ public static class ChapterBranchPlanner
         }
 
         return depths;
-    }
-
-    /// <summary>
-    /// [＋ 에피소드]의 첫 자리 제안. 줄 = 부모 깊이 + 1 (부모가 손으로 더 아래로 옮겨졌으면
-    /// 그 아래), 가로 = 부모 바로 아래에서 시작해 그 줄에서 아직 비어 있는 첫 자리 — 다른 부모의
-    /// 자식과 겹치지 않는다.
-    /// </summary>
-    public static (double X, double Y) SuggestPlacement(ChapterGraphModel model, string parentEpisodeId)
-    {
-        ArgumentNullException.ThrowIfNull(model);
-
-        ChapterEpisode parent = model.FindEpisode(parentEpisodeId)
-            ?? throw new InvalidOperationException($"부모 에피소드 '{parentEpisodeId}'가 없습니다.");
-
-        IReadOnlyDictionary<string, int> depths = Depths(model);
-        double startY = model.StartEpisode?.Y ?? 0;
-
-        // 부모가 도달 불가라 깊이가 없으면 부모 기준 상대 배치로 물러난다.
-        double y = depths.TryGetValue(parent.EpisodeId, out int parentDepth)
-            ? Math.Max(parent.Y + DepthSpacing, startY + ((parentDepth + 1) * DepthSpacing))
-            : parent.Y + DepthSpacing;
-
-        // 그 줄(±반 칸)에 이미 선 노드들과 가로로 부딪치지 않는 첫 자리를 찾는다.
-        List<double> occupied = model.Episodes
-            .Where(episode => Math.Abs(episode.Y - y) < DepthSpacing / 2)
-            .Select(episode => episode.X)
-            .ToList();
-
-        double x = parent.X;
-
-        while (occupied.Any(other => Math.Abs(other - x) < SiblingSpacing))
-        {
-            x += SiblingSpacing;
-        }
-
-        return (x, y);
     }
 
     /// <summary>

@@ -29,26 +29,13 @@ public sealed class EpisodeCreationAgreementTests
     }
 
     [Fact]
-    public void 다음_에피소드도_같은_것을_만든다()
-    {
-        // 분기 저작의 길 — 에피소드·카드·대본·간선이 한 변경이다.
-        ProjectEditor editor = World();
-        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0, sceneId: "root");
-
-        editor.AddNextEpisode("ch01", "root", "ep02", title: string.Empty, 260, 0, optionLabel: "다음", sceneId: "ep02");
-
-        AssertWritable(editor, "ep02");
-        Assert.Single(editor.FindChapter("ch01")!.Edges);
-    }
-
-    [Fact]
     public void 되돌리기_한_번에_에피소드와_카드가_함께_사라진다()
     {
         // ⚠ 전에는 화면이 둘로 나눠 했으므로 <b>되돌리기가 두 걸음</b>이었다 — 한 번 누르면
         //    에피소드는 남고 카드만 사라지는 <b>반쪽 상태</b>가 진짜로 존재했다.
         ProjectEditor editor = World();
-        editor.AddNextEpisode(
-            "ch01", Seed(editor), "ep02", title: string.Empty, 260, 0, optionLabel: "다음", sceneId: "ep02");
+        Seed(editor);
+        editor.AddEpisode("ch01", "ep02", title: string.Empty, 260, 0, sceneId: "ep02");
 
         editor.Undo();
 
@@ -91,11 +78,8 @@ public sealed class EpisodeCreationAgreementTests
         Assert.NotEmpty(card.Script.ActiveLines);   // 빈 첫 줄을 든 제 대본과 함께 선다
     }
 
-    private static string Seed(ProjectEditor editor)
-    {
+    private static void Seed(ProjectEditor editor) =>
         editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0, sceneId: "root");
-        return "root";
-    }
 
     private static ProjectEditor World()
     {

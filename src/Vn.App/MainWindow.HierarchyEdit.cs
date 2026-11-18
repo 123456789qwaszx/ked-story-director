@@ -44,28 +44,14 @@ public partial class MainWindow
                 // 장면은 에피소드가 들어야 있다 — 새 장면은 첫 에피소드와 함께 선다.
                 // 그 에피소드에 간선을 저절로 잇지 않는다 — 새 장면이 어디서 들어오는지는 사람이 잇는다.
                 // 장면ID는 자동이고(작가는 보지 않는다) 이름은 「새 장면」이다 — 한 되돌리기 칸(display-names N2).
-                CreateEpisode(chapter, after: null, NewNames.NextSceneId(_session.Editor.FindChapter(chapter.ChapterId)!),
-                    sceneName: NewNames.Scene);
+                CreateEpisode(chapter, NewNames.NextSceneId(_session.Editor.FindChapter(chapter.ChapterId)!), sceneName: NewNames.Scene);
                 break;
             }
 
-            case HierarchyCommand.AddEpisode:
-            {
-                // 에피소드는 늘 장면에 속한다 — 장면 줄은 그 장면 끝에, 장면 안 에피소드 줄은 그 뒤에(간선까지)(2026-11-17).
-                (string? after, string? sceneId) = row.Kind switch
-                {
-                    HierarchyKind.Episode => (row.EpisodeId, chapter.Model.FindEpisode(row.EpisodeId!)?.SceneId),
-                    HierarchyKind.Scene when scene is not null => (scene.Episodes[^1].EpisodeId, scene.SceneId),
-                    _ => (null, null)
-                };
-
-                if (sceneId is not null)
-                {
-                    CreateEpisode(chapter, after, sceneId);
-                }
-
+            // 장면 줄에서만 — 그 장면에 길 없이 선다(2026-11-18 소유자 · ⛔ 에피소드 줄에서 그 뒤에 「계속」 길로 잇던 것은 걷었다).
+            case HierarchyCommand.AddEpisode when row.Kind == HierarchyKind.Scene && scene is not null:
+                CreateEpisode(chapter, scene.SceneId);
                 break;
-            }
 
             case HierarchyCommand.DeleteEpisode when row.EpisodeId is { } episodeId:
             {
@@ -132,17 +118,17 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 에피소드를 하나 더한다 — <paramref name="after"/>에서 간선을 달고(없으면 홀로), <paramref name="sceneId"/>의 장면에.
+    /// 에피소드를 하나 더한다 — <paramref name="sceneId"/>의 장면에, 길 없이(<see cref="EpisodeAdder"/>).
     /// 되돌리기 한 칸(<c>Batch</c>). 더한 에피소드를 두 탭에서 고른다.
     /// </summary>
-    private void CreateEpisode(ChapterEntry chapter, string? after, string sceneId, string? sceneName = null)
+    private void CreateEpisode(ChapterEntry chapter, string sceneId, string? sceneName = null)
     {
         string chapterId = chapter.ChapterId;
         string episodeId = string.Empty;
 
         _session.Editor.Batch(() =>
         {
-            episodeId = EpisodeAdder.Add(_session, chapterId, after, sceneId);
+            episodeId = EpisodeAdder.Add(_session, chapterId, sceneId);
 
             if (sceneName is not null)
             {

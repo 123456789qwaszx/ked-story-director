@@ -34,17 +34,6 @@ public sealed class NodePlacementTests
     }
 
     [Fact]
-    public void 간선이_아직_없어도_부모를_주면_그_아래에_선다()
-    {
-        // 회귀(§6-1): 에피소드와 간선을 한 변경으로 만드는 길은 자리를 물을 때 간선이 아직 없다.
-        //    예전에는 그래서 언제나 판 오른쪽 끝에 섰다.
-        StoryProject project = World("root");
-        Place(project, "root", 0, 0);
-
-        Assert.Equal((0, NodePlacement.Row), NodePlacement.For(project, "ch01", "새것", parentEpisodeId: "root"));
-    }
-
-    [Fact]
     public void 부모_아래가_차_있으면_오른쪽으로_비켜_선다()
     {
         StoryProject project = World("root", "a", "b");
@@ -111,21 +100,6 @@ public sealed class NodePlacementTests
         Assert.Equal(
             (caller.Layout.X + NodePlacement.Column, caller.Layout.Y + NodePlacement.Row),
             (second.Layout.X, second.Layout.Y));
-    }
-
-    [Fact]
-    public void 챕터_그래프에서_이은_다음_에피소드의_카드는_부모_아래에_선다()
-    {
-        // 회귀(§6-1)를 편집기 명령으로 본다 — AddNextEpisode가 부모를 함께 준다.
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "root", "복도", 0, 0, sceneId: "root");
-        editor.AddNextEpisode("ch01", "root", "next", "옥상", 0, 170, optionLabel: "간다", sceneId: "next");
-
-        DialogueNode root = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
-        DialogueNode next = EpisodeNaming.CardFor(editor.Project, "ch01", "next")!;
-
-        Assert.Equal((root.Layout.X, root.Layout.Y + NodePlacement.Row), (next.Layout.X, next.Layout.Y));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

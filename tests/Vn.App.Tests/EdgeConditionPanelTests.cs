@@ -207,9 +207,10 @@ public sealed class EdgeConditionPanelTests : IDisposable
         view.Attach(session);
         Dispatcher.UIThread.RunJobs();
 
-        EpisodeAdder.Add(session, "ch01", after: null, sceneId: "s1");
-        EpisodeAdder.Add(session, "ch01", after: "ch01_s1_new01", sceneId: "s1");
-        EpisodeAdder.Add(session, "ch01", after: null, sceneId: "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        EpisodeAdder.Add(session, "ch01", "s1");
+        session.Editor.AddEdge("ch01", "ch01_s1_new01", "ch01_s1_new02", optionLabel: "계속");
+        EpisodeAdder.Add(session, "ch01", "s1");
         view.Refresh();
         Dispatcher.UIThread.RunJobs();
 

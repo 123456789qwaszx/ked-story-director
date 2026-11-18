@@ -133,45 +133,6 @@ public sealed class ChapterBranchPlannerTests
     }
 
     [Fact]
-    public void 서로_다른_부모의_자식이_같은_줄에서_겹치지_않는다()
-    {
-        // 옛 결함 그대로의 사례: 같은 깊이의 두 부모(a, b)가 각자 자식을 만들면
-        // 옛 규칙(부모 자리 + 형제 수 × 간격)으로는 정확히 같은 자리에 겹쳤다.
-        var episodes = new List<ChapterEpisode>
-        {
-            Episode("root", 0, 0), Episode("a", 0, 170), Episode("b", 220, 170)
-        };
-        var edges = new List<ChapterEdge> { Edge("root", "a"), Edge("root", "b") };
-
-        (double ax, double ay) = ChapterBranchPlanner.SuggestPlacement(
-            Model(episodes, edges), "a");
-        episodes.Add(Episode("a1", ax, ay));
-        edges.Add(Edge("a", "a1"));
-
-        (double bx, double by) = ChapterBranchPlanner.SuggestPlacement(
-            Model(episodes, edges), "b");
-
-        Assert.Equal(ay, by);                                  // 같은 깊이 → 같은 줄
-        Assert.True(Math.Abs(ax - bx) >= ChapterBranchPlanner.SiblingSpacing,
-            $"두 자식이 겹쳤다: a1의 X={ax}, b1의 X={bx}");
-    }
-
-    [Fact]
-    public void 제안_줄은_깊이가_정한다_부모가_위에_있어도()
-    {
-        // 부모가 손으로 위로 옮겨져 있어도 새 노드는 자기 깊이 줄로 간다 —
-        // depth 구분이 배치에서 무너지지 않는다.
-        ChapterGraphModel model = Model(
-            [Episode("root", 0, 0), Episode("mid", 110, 40)],   // mid를 root 근처로 끌어다 둠
-            [Edge("root", "mid")]);
-
-        (double x, double y) = ChapterBranchPlanner.SuggestPlacement(model, "mid");
-
-        Assert.Equal(2 * ChapterBranchPlanner.DepthSpacing, y);  // depth(mid)=1 → 줄 2
-        Assert.Equal(110d, x);                                   // 부모 바로 아래에서 시작한다
-    }
-
-    [Fact]
     public void 순환이_있어도_깊이_계산이_멈춘다()
     {
         ChapterGraphModel model = Model(

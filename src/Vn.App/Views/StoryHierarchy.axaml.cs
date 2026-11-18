@@ -780,8 +780,8 @@ public partial class StoryHierarchy : UserControl
     // ── 우클릭 차림표 (추가 셋은 어느 줄에서나 같은 자리에 선다) ──────────
 
     /// <summary>
-    /// 줄의 차림표 — 「챕터 추가 · 장면 추가 · 에피소드 추가」는 어느 줄에서나 같다(어디서 눌러야 무엇이 나오는지
-    /// 외울 것이 없게). 어디에 붙일지는 누른 줄이
+    /// 줄의 차림표 — 「챕터 추가 · 장면 추가」는 어느 줄에서나 같다(어디서 눌러야 무엇이 나오는지 외울 것이 없게). 「에피소드 추가」는
+    /// 장면 줄에만 선다(2026-11-18 소유자 — 에피소드 줄에서 더하면 그 뒤에 길로 이어 붙던 것을 걷었다). 어디에 붙일지는 누른 줄이
     /// 정한다. 그 아래에 그 줄만의 일(이름 바꾸기 · 지우기)이 선다.
     /// </summary>
     private ContextMenu Menu(HierarchyRow row, Control anchor)
@@ -792,8 +792,8 @@ public partial class StoryHierarchy : UserControl
         {
             items.Add(MenuItemFor("장면 추가", HierarchyCommand.AddScene, row, anchor));
 
-            // 에피소드는 늘 장면에 속한다 — 장면이 있는 줄(장면 · 장면 안 에피소드)에서만 더한다(2026-11-17).
-            if (row.Kind is HierarchyKind.Scene or HierarchyKind.Episode)
+            // 에피소드는 늘 장면에 속한다 — 장면 줄에서만 더한다(그 장면에 길 없이 선다).
+            if (row.Kind is HierarchyKind.Scene)
             {
                 items.Add(MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor));
             }

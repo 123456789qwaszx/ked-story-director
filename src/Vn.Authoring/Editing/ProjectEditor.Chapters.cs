@@ -161,18 +161,14 @@ public sealed partial class ProjectEditor
     /// 챕터에 에피소드를 넣는 것은 카드를 놓을 자리가 없다는 뜻이다.
     /// </summary>
     private (DialogueNode Node, ChapterEpisode? Episode, Action Attach) NewEpisodeCore(
-        string chapterId, string episodeId, string title, double x, double y, string sceneId,
-        string? parentEpisodeId = null)
+        string chapterId, string episodeId, string title, double x, double y, string sceneId)
     {
         string fileId = EnsureChapterBoard(chapterId);
 
         // <b>자리가 둘이다.</b> 주어진 (x, y)는 <b>챕터 그래프</b>의 자리이고, 연출 판의
-        //    카드는 제 판의 규칙(<see cref="Graph.NodePlacement"/>)으로 선다 — 부모 카드의 아래에.
+        //    카드는 제 판의 규칙(<see cref="Graph.NodePlacement"/>)으로 선다.
         //    한쪽 좌표를 다른 판에 그대로 넣으면 사람이 맞춰 둔 배치가 흐트러진다.
-        //
-        // 부모를 <b>직접</b> 준다. 이 자리를 묻는 순간에는 에피소드도 간선도 아직
-        //    챕터에 없다 — 챕터에서 찾으면 언제나 "챕터에 없는 이름"으로 빠져 판 오른쪽 끝에 선다.
-        (double cardX, double cardY) = Graph.NodePlacement.For(Project, chapterId, episodeId, parentEpisodeId);
+        (double cardX, double cardY) = Graph.NodePlacement.For(Project, chapterId, episodeId);
 
         return NewDialogueNodeCore(
             fileId,
@@ -182,48 +178,6 @@ public sealed partial class ProjectEditor
             sceneId: sceneId,
             title: title,
             episodePosition: (x, y));
-    }
-
-    /// <summary>
-    /// 다음 에피소드 — 분기 저작의 핵심 동작. 에피소드와 간선이 <b>한 번의 변경</b>이다
-    /// (둘 중 하나만 선 채로 남지 않는다).
-    /// </summary>
-    public ChapterEpisode AddNextEpisode(
-        string chapterId,
-        string parentEpisodeId,
-        string newEpisodeId,
-        string title,
-        double x,
-        double y,
-        string sceneId,
-        string? optionLabel = null)
-    {
-        ChapterDocument chapter = RequireChapter(chapterId);
-
-        if (FindEpisode(chapter, newEpisodeId) is not null)
-        {
-            throw new InvalidOperationException($"EpisodeId '{newEpisodeId}'가 이미 있습니다.");
-        }
-
-        if (FindEpisode(chapter, parentEpisodeId) is null)
-        {
-            throw new InvalidOperationException($"부모 에피소드 '{parentEpisodeId}'가 없습니다.");
-        }
-
-        (_, ChapterEpisode? episode, Action attach) = NewEpisodeCore(
-            chapterId, newEpisodeId, title, x, y, sceneId, parentEpisodeId);
-
-        ChapterEdge edge = NewEdge(chapter, parentEpisodeId, newEpisodeId, optionLabel);
-
-        // 에피소드·카드·대본·간선이 <b>한 변경</b>이다 — 되돌리기 한 번에 넷이 함께 사라진다.
-        Mutate(() =>
-        {
-            attach();
-            chapter.Edges.Add(edge);
-            LearnChoiceLabel(chapter, optionLabel);
-        });
-
-        return episode!;
     }
 
     /// <summary>속성 패널의 저장 — null이 아닌 것만 바꾼다. 장면ID는 비울 수 없다(에피소드는 늘 장면에 속한다).</summary>

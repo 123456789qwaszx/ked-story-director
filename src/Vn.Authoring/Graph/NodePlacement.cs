@@ -41,15 +41,11 @@ public static class NodePlacement
     public const double Row = 400;
 
     /// <summary>
-    /// 그 에피소드의 카드가 설 자리.
+    /// 그 에피소드의 카드가 설 자리 — 부모(챕터의 간선에서 찾는다 — 들어오는 길의 출발 중 카드가 선 가장 아래 것)의 아래, 부모가 없으면
+    /// 판의 맨 아래 카드 밑. ⛔ 에피소드와 간선을 한 변경으로 만들던 「다음 에피소드」(<c>AddNextEpisode</c>)가 부모를 직접 주던 인자는
+    /// 2026-11-18에 그 명령과 함께 걷혔다(에피소드는 길 없이 선다).
     /// </summary>
-    /// <param name="parentEpisodeId">
-    /// 이 에피소드로 이어 줄 부모. 주지 않으면 챕터의 간선에서 찾는다(들어오는 길의 출발 중 카드가 선 가장 아래 것).
-    /// 에피소드와 간선을 <b>한 변경으로</b> 만드는 길(<c>AddNextEpisode</c>)은 자리를 물을 때 간선이 아직
-    /// 없다 — 그래서 부모를 직접 준다.
-    /// </param>
-    public static (double X, double Y) For(
-        StoryProject project, string chapterId, string episodeId, string? parentEpisodeId = null)
+    public static (double X, double Y) For(StoryProject project, string chapterId, string episodeId)
     {
         ArgumentNullException.ThrowIfNull(project);
 
@@ -58,7 +54,7 @@ public static class NodePlacement
             return (0, 0);
         }
 
-        if (ParentCard(project, chapterId, episodeId, parentEpisodeId) is { } parent)
+        if (ParentCard(project, chapterId, episodeId) is { } parent)
         {
             return FirstFree(board, parent.Layout.X, parent.Layout.Y + Row + ExtraHeight(parent));
         }
@@ -93,18 +89,12 @@ public static class NodePlacement
     }
 
     /// <summary>
-    /// 부모 카드 — 준 것이 먼저고, 없으면 들어오는 간선의 출발 중 카드가 선 것 가운데 <b>가장 아래</b> 것이다.
+    /// 부모 카드 — 들어오는 간선의 출발 중 카드가 선 것 가운데 <b>가장 아래</b> 것이다.
     /// 합류하는 에피소드는 가장 깊은 부모의 밑에 서야 그 부모의 레인이 위로 거슬러 오르지 않는다
     /// (챕터 그래프의 깊이 규칙과 같다 — <see cref="ChapterBranchPlanner.Depths"/>).
     /// </summary>
-    private static DialogueNode? ParentCard(
-        StoryProject project, string chapterId, string episodeId, string? parentEpisodeId)
+    private static DialogueNode? ParentCard(StoryProject project, string chapterId, string episodeId)
     {
-        if (parentEpisodeId is not null)
-        {
-            return EpisodeNaming.CardFor(project, chapterId, parentEpisodeId);
-        }
-
         ChapterDocument? chapter = project.Chapters.FirstOrDefault(item =>
             string.Equals(item.ChapterId, chapterId, StringComparison.Ordinal));
 

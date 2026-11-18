@@ -4,43 +4,29 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Views;
 
 /// <summary>
-/// <b>에피소드를 하나 더한다</b> — [대본] 탭 하이어아키의 우클릭 「에피소드 추가」 · 「장면 추가」가 부른다. 창구는 이것 하나다
-/// (두 벌이면 어느 쪽으로 더했느냐에 따라 간선 · 자리가 달라진다).
+/// <b>에피소드를 하나 더한다</b> — [대본] 탭 하이어아키의 장면 줄 우클릭 「에피소드 추가」와 「장면 추가」가 부른다. 창구는 이것 하나다
+/// (두 벌이면 어느 쪽으로 더했느냐에 따라 자리가 달라진다).
 ///
-/// <paramref name="after"/>가 있으면 그 다음으로 간선(문구 <see cref="DefaultOptionLabel"/>)까지 잇고, 자리는 그 곁이다
-/// (<see cref="ChapterBranchPlanner.SuggestPlacement"/>). 없으면 홀로 맨 오른쪽에 선다. 에피소드는 <paramref name="sceneId"/>의 장면에
-/// 선다(에피소드는 늘 장면에 속한다). 에피소드 · 카드 · 대본 · 간선이 한 번의 변경이다(되돌리기 한 칸).
+/// 에피소드는 <paramref name="sceneId"/>의 장면에 <b>길 없이</b> 선다(챕터 그래프에서는 맨 오른쪽) — 에피소드는 서로 떨어진 내용이고, 잇기는
+/// 사람이 [대본] 판에서 선택지 칸을 끌어 정한다(2026-11-18 소유자). 에피소드 · 카드 · 대본이 한 번의 변경이다(되돌리기 한 칸).
+/// ⛔ 그 전에는 앞 에피소드(누른 에피소드 줄, 장면 줄이면 그 장면의 마지막 에피소드)에서 문구 「계속」 길을 이어 붙였다 — 같은 에피소드에서
+/// 여러 번 더하면 선택지가 셋을 넘어 늘어났다.
 /// </summary>
 internal static class EpisodeAdder
 {
-    /// <summary>
-    /// 툴이 길을 놓을 때 넣어 주는 문구. 빈 문구는 오류이므로 무언가는 있어야 하고, 기획자가 바로 고쳐 쓸 수 있는 가장 짧은 말이다.
-    /// </summary>
-    internal const string DefaultOptionLabel = "계속";
-
     /// <returns>더한 에피소드의 Id — 자리표시 Id(<c>ch01_scene01_new01</c>…)이고, 사람이 [구성] 탭 인스펙터의 에피소드ID 칸에서 고친다.</returns>
-    public static string Add(AuthoringSession session, string chapterId, string? after, string sceneId)
+    public static string Add(AuthoringSession session, string chapterId, string sceneId)
     {
         ArgumentNullException.ThrowIfNull(session);
 
         ChapterDocument chapter = session.Editor.FindChapter(chapterId)
             ?? throw new InvalidOperationException($"챕터 '{chapterId}'가 없습니다.");
-        ChapterGraphModel model = chapter.ToGraphModel(chapterId);
         string episodeId = session.Editor.NextEpisodeId(chapterId, sceneId);
-        if (after is not null && model.FindEpisode(after) is not null)
-        {
-            (double x, double y) = ChapterBranchPlanner.SuggestPlacement(model, after);
-            session.Editor.AddNextEpisode(
-                chapterId, after, episodeId, title: NewNames.Episode, x, y, sceneId, optionLabel: DefaultOptionLabel);
-        }
-        else
-        {
-            double x = model.Episodes.Count == 0
-                ? 0
-                : model.Episodes.Max(episode => episode.X) + ChapterBranchPlanner.SiblingSpacing;
-            session.Editor.AddEpisode(chapterId, episodeId, title: NewNames.Episode, x, 0, sceneId);
-        }
+        double x = chapter.Episodes.Count == 0
+            ? 0
+            : chapter.Episodes.Max(episode => episode.X) + ChapterBranchPlanner.SiblingSpacing;
 
+        session.Editor.AddEpisode(chapterId, episodeId, title: NewNames.Episode, x, 0, sceneId);
         return episodeId;
     }
 }

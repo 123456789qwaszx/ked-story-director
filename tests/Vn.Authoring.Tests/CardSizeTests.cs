@@ -88,7 +88,7 @@ public sealed class CardSizeTests
     [Fact]
     public void 글_칸을_늘린_카드의_아래_자리는_늘린_만큼_아래다()
     {
-        // 다음 에피소드는 부모 카드 밑에 선다 — 부모의 글 칸을 늘렸으면 그 위에 겹쳐 서지 않는다.
+        // 새 에피소드는 판의 맨 아래 카드 밑에 선다 — 그 카드의 글 칸을 늘렸으면 그 위에 겹쳐 서지 않는다.
         var project = new StoryProject { Title = "늘린 카드" };
         var editor = new ProjectEditor(project);
         editor.EnsureChapter("ch01");
@@ -96,9 +96,9 @@ public sealed class CardSizeTests
         editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "root");
         DialogueNode root = EpisodeNaming.CardFor(project, "ch01", "root")!;
 
-        (double _, double plainY) = NodePlacement.For(project, "ch01", "next", parentEpisodeId: "root");
+        (double _, double plainY) = NodePlacement.For(project, "ch01", "next");
         editor.ResizeNode(root.Id, null, NodePlacement.WritingHeight + 300);
-        (double _, double tallY) = NodePlacement.For(project, "ch01", "next", parentEpisodeId: "root");
+        (double _, double tallY) = NodePlacement.For(project, "ch01", "next");
 
         Assert.Equal(root.Layout.Y + NodePlacement.Row, plainY);
         Assert.Equal(plainY + 300, tallY);
