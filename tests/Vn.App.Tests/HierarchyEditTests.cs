@@ -311,6 +311,28 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
+    public void 줄을_누르면_초점이_하이어아키로_와서_창에_친_화살표가_듣는다() => HeadlessUi.Run(() =>
+    {
+        // ⛔ 2026-11-18까지는 하이어아키가 초점을 받지 못해 실제 앱에서 화살표가 듣지 않았다 — 위 시험은 키 알림을 직접 쏴서 몰랐다.
+        // 여기서는 창에 키를 친다(초점을 가진 곳으로 간다 · side-fold K2).
+        (MainWindow window, StoryHierarchy tree) = Open();
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        tree.RowButton(StoryHierarchy.ChapterKey("ch01"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(tree, window.FocusManager?.GetFocusedElement());
+
+        window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(StoryHierarchy.SceneKey("ch01", "opening"), tree.Selection?.Key);
+
+        window.KeyPress(Key.Up, RawInputModifiers.None, PhysicalKey.ArrowUp, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(StoryHierarchy.ChapterKey("ch01"), tree.Selection?.Key);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 자동_ID인_에피소드를_다른_장면으로_끌면_ID가_그_장면으로_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
     {
         // 2026-11-17 소유자 — 자동 모양 그대로인 ID만 따라간다(auto-id-orders I3). 사람이 지은 ID(root · a · b)는 그대로다.

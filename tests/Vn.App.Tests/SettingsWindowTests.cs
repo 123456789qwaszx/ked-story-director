@@ -334,6 +334,47 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     [Fact]
+    public void 단축키_묶음은_처음에_접혀_있고_펼치면_자리별_표가_선다() => HeadlessUi.Run(() =>
+    {
+        // 「설정 안에 사용가능한 단축키들을 정리해두는 것이 필요」(2026-11-18 소유자 · side-fold K2). 묶음 차례는 이 프로젝트 · 내보내기 · 단축키 · 기타.
+        (MainWindow window, _) = Open();
+        SettingsWindow settings = window.OpenSettings();
+        Dispatcher.UIThread.RunJobs();
+
+        StackPanel groups = (StackPanel)settings.Content!;
+        Assert.Equal(1, groups.Children.IndexOf(settings.ExportGroup));
+        Assert.Equal(2, groups.Children.IndexOf(settings.ShortcutGroup));
+        Assert.Equal("단축키", ((TextBlock)settings.ShortcutGroup.Header!).Text);
+        Assert.False(settings.ShortcutGroup.IsExpanded);
+
+        settings.ShortcutGroup.IsExpanded = true;
+        Dispatcher.UIThread.RunJobs();
+
+        // 자리마다 표 하나 — 표의 원천(Shortcuts.Table)과 같은 차례 · 같은 글이다.
+        List<Grid> tables = settings.ShortcutGroup.GetLogicalDescendants().OfType<Grid>()
+            .Where(grid => (grid.Tag as string)?.StartsWith("shortcuts:", StringComparison.Ordinal) == true).ToList();
+        Assert.Equal(
+            ["창 어디서나", "[대본] 판", "[대본] 카드 글 칸", "[구성] 판", "하이어아키", "글 칸"],
+            tables.Select(grid => ((string)grid.Tag!)["shortcuts:".Length..]));
+        Assert.Equal(Shortcuts.Table.Sum(place => place.Entries.Count), tables.Sum(grid => grid.RowDefinitions.Count));
+
+        Assert.Equal("저장", Does(tables[0], "Ctrl+S"));
+        Assert.StartsWith("고른 카드", Does(tables[1], "Delete"), StringComparison.Ordinal);
+        Assert.StartsWith("보이는 줄 사이로 고르기", Does(tables[4], "↑ · ↓"), StringComparison.Ordinal);
+        Assert.StartsWith("장면 메모 · 에피소드 지시 넣기", Does(tables[5], "Ctrl+Enter"), StringComparison.Ordinal);
+
+        settings.Close();
+        window.Close();
+    });
+
+    /// <summary>표에서 그 키 줄의 「하는 일」 글.</summary>
+    private static string Does(Grid table, string keys)
+    {
+        TextBlock key = table.Children.OfType<TextBlock>().Single(block => Grid.GetColumn(block) == 0 && block.Text == keys);
+        return table.Children.OfType<TextBlock>().Single(block => Grid.GetColumn(block) == 1 && Grid.GetRow(block) == Grid.GetRow(key)).Text!;
+    }
+
+    [Fact]
     public void 기타_묶음의_미니맵을_끄고_확인하면_대본_판의_지도가_걷히고_다음에도_꺼져_있다() => HeadlessUi.Run(() =>
     {
         // 「기타」 — 이 PC의 앱 설정이다(2026-11-18 소유자 · side-fold K3). 끄면 지도만 걷고 배율 줄은 남는다.

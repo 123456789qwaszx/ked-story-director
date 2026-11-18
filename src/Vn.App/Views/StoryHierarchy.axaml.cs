@@ -218,6 +218,10 @@ public partial class StoryHierarchy : UserControl
     {
         InitializeComponent();
 
+        // 줄을 누르면 초점이 하이어아키로 와야 화살표(↑↓←→)가 여기로 온다(Press의 Focus). 줄 단추는 초점을 받지 않으므로 이 컨트롤이
+        // 받는다. ⛔ 2026-11-18까지는 초점을 받지 못해 실제 앱에서 화살표가 듣지 않았다 — 시험이 키 알림을 직접 쏴서 몰랐다(side-fold K2).
+        Focusable = true;
+
         // 빈 자리의 차림표 — 줄 위에서 우클릭하면 그 줄의 차림표가 먼저 뜨고, 빈 데서 눌렀을 때만 여기까지 온다.
         _emptyAreaMenu = new ContextMenu
         {

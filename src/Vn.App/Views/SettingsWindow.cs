@@ -18,7 +18,7 @@ namespace Vn.App.Views;
 /// 묶음마다 <b>어디에 저장되는가</b>를 머리에 적는다 — 프로젝트에 싣는 설정은 되돌리기가 되고 「저장되지 않은 변경」을 켜지만, PC별 설정은
 /// 그렇지 않다. 섞으면 「이건 왜 Ctrl+Z가 안 되지?」가 생긴다. 묶음은 둘이다 — [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
 /// [내보내기](형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
-/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만), [기타](이 PC의 앱 설정 — [대본] 미니맵 · 2026-11-18 소유자 ·
+/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [기타](이 PC의 앱 설정 — [대본] 미니맵 · 2026-11-18 소유자 ·
 /// <c>docs/work-orders/side-fold-settings-orders.md</c> K3).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
@@ -97,6 +97,21 @@ internal sealed class SettingsWindow : Window
             }
         };
 
+        // 「단축키」 — 읽기만 하는 표다. 접어 둔다 — 펼치면 길어서 창이 화면을 넘지 않게 표는 제 안에서 스크롤한다(side-fold K2).
+        ShortcutGroup = new Expander
+        {
+            Header = new TextBlock { Text = "단축키", FontWeight = FontWeight.SemiBold, FontSize = 14 },
+            IsExpanded = false,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Content = new ScrollViewer
+            {
+                MaxHeight = 380,
+                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+                Content = ShortcutSection()
+            }
+        };
+
         Content = new StackPanel
         {
             Margin = new Thickness(16),
@@ -108,6 +123,7 @@ internal sealed class SettingsWindow : Window
                     "project.vnproject.json에 저장됩니다 — 바꾸면 되돌리기(Ctrl+Z)가 되고, File → 저장(Ctrl+S)해야 파일에 남습니다.",
                     BoardSection()),
                 ExportGroup,   // 접는 묶음은 제 테두리가 있다
+                ShortcutGroup,
                 Group(
                     "기타",
                     "이 PC의 앱 설정에 저장됩니다 — 프로젝트 파일과 상관없고 되돌리기가 없습니다. [확인]을 누르면 바로 반영됩니다.",
@@ -139,6 +155,9 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「내보내기」 머리 — 접혀 있어도 지금 보내는 형식이 보인다.</summary>
     internal TextBlock ExportHeader { get; } = new() { FontWeight = FontWeight.SemiBold, FontSize = 14 };
+
+    /// <summary>「단축키」 묶음 — 접고 편다(처음에는 접혀 있다). 읽기만 한다.</summary>
+    internal Expander ShortcutGroup { get; }
 
     /// <summary>「기타」의 「[대본] 탭 미니맵 보이기」 — [확인]으로 반영한다.</summary>
     internal CheckBox MinimapCheck { get; }
@@ -591,6 +610,51 @@ internal sealed class SettingsWindow : Window
         Grid.SetColumn(box, 1);
         grid.Children.Add(text);
         grid.Children.Add(box);
+    }
+
+    /// <summary>「단축키」의 표 — 자리마다 제목과 「누르는 것 · 하는 일」 줄들(<see cref="Shortcuts.Table"/> 한 벌).</summary>
+    private static Control ShortcutSection()
+    {
+        var places = new StackPanel { Spacing = 10, Margin = new Thickness(0, 0, 8, 0) };
+
+        foreach (Shortcuts.Place place in Shortcuts.Table)
+        {
+            var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("170,*"), Tag = "shortcuts:" + place.Name };
+
+            for (int index = 0; index < place.Entries.Count; index++)
+            {
+                Shortcuts.Entry entry = place.Entries[index];
+                grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+                Place(grid, new TextBlock
+                {
+                    Text = entry.Keys,
+                    FontSize = 11,
+                    FontWeight = FontWeight.SemiBold,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 2, 8, 2)
+                }, index, 0);
+                Place(grid, new TextBlock
+                {
+                    Text = entry.Does,
+                    FontSize = 11,
+                    Opacity = 0.8,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 2)
+                }, index, 1);
+            }
+
+            places.Children.Add(new StackPanel
+            {
+                Spacing = 2,
+                Children =
+                {
+                    new TextBlock { Text = place.Name, FontSize = 12, FontWeight = FontWeight.SemiBold },
+                    grid
+                }
+            });
+        }
+
+        return places;
     }
 
     /// <summary>묶음 하나 — 머리(이름 · 어디에 저장되는가)와 그 아래 설정들.</summary>
