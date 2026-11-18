@@ -552,6 +552,41 @@ public sealed class HierarchyEditTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 챕터의_마지막_에피소드는_차림표도_Delete_키도_지우지_않고_까닭을_말한다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「챕터내 1개의 장면과 에피소드는 챕터 자체를 지우지 않는 한 유지되도록」.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch02", "street"), collapse: false);
+        string x = StoryHierarchy.EpisodeKey("ch02", "x");
+
+        // 둘 중 하나는 지운다 — 남은 하나는 마지막이다.
+        Assert.True(Items(tree, x).Single(item => (string?)item.Header == "에피소드 지우기").IsEnabled);
+        Click(tree, StoryHierarchy.EpisodeKey("ch02", "y"), "에피소드 지우기");
+        Assert.Equal(["x"], Chapter(session, "ch02").Episodes.Select(episode => episode.EpisodeId));
+
+        MenuItem delete = Items(tree, x).Single(item => (string?)item.Header == "에피소드 지우기");
+        Assert.False(delete.IsEnabled);
+        Assert.Equal(ChapterMinimum.LastEpisodeReason, ToolTip.GetTip(delete));
+
+        // Delete 키 — 받되 지우지 않고 상태줄이 까닭을 말한다. [삭제]도 꺼져 있다.
+        Pick(tree, x);
+        long before = session.Editor.Revision;
+        window.KeyPress(Key.Delete, RawInputModifiers.None, PhysicalKey.Delete, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(before, session.Editor.Revision);
+        Assert.Equal(ChapterMinimum.LastEpisodeReason, session.StatusMessage);
+        Assert.False(DeleteButton(window).IsEnabled);
+
+        // 장면도 하나뿐이다 — 고르면 [삭제]는 「장면 삭제」로 꺼져 있다.
+        Pick(tree, StoryHierarchy.SceneKey("ch02", "street"));
+        Assert.Equal(("장면 삭제", false), ((string?)DeleteButton(window).Content, DeleteButton(window).IsEnabled));
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static void Press(StoryHierarchy tree, Key key)

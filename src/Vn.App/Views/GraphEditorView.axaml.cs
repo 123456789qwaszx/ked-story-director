@@ -498,6 +498,28 @@ public partial class GraphEditorView : UserControl
         BranchCard
     }
 
+    /// <summary>
+    /// 그것이 챕터의 마지막 에피소드 · 장면이면 지우지 않는 까닭(<see cref="ChapterMinimum"/>), 아니면 null. 챕터 · 분기 카드는 늘 null이다.
+    /// </summary>
+    private string? KeptReason(DeleteTarget target)
+    {
+        switch (target)
+        {
+            case DeleteTarget.Episode when _session!.SelectedNode is DialogueNode card &&
+                                           _session.Editor.FindChapter(EpisodeNaming.ChapterOf(_session.Project, card).ChapterId) is { } chapter &&
+                                           ChapterMinimum.IsLastEpisode(chapter.Episodes, EpisodeNaming.EpisodeIdOf(card)):
+                return ChapterMinimum.LastEpisodeReason;
+
+            case DeleteTarget.Scene when _summaryPick is { ChapterId: { } chapterId, SceneId: { } sceneId } &&
+                                         _session!.Editor.FindChapter(chapterId) is { } chapter &&
+                                         ChapterMinimum.IsLastScene(chapter.Episodes, sceneId):
+                return ChapterMinimum.LastSceneReason;
+
+            default:
+                return null;
+        }
+    }
+
     /// <summary>고른 카드가 먼저다(에피소드 · 분기 카드), 없으면 요약이 선 챕터 · 장면 — 그것이 아직 있을 때만.</summary>
     private DeleteTarget TargetToDelete()
     {
@@ -531,8 +553,10 @@ public partial class GraphEditorView : UserControl
     private void RefreshDeleteButton()
     {
         DeleteTarget target = TargetToDelete();
+        string? kept = KeptReason(target);
 
-        DeleteButton.IsEnabled = target != DeleteTarget.None;
+        // 챕터의 마지막 에피소드 · 장면이면 이름은 그대로 두고 끈다 — 툴팁이 까닭을 말한다(2026-11-18 소유자 · ChapterMinimum).
+        DeleteButton.IsEnabled = target != DeleteTarget.None && kept is null;
         DeleteButton.Content = target switch
         {
             DeleteTarget.Chapter => "챕터 삭제",
@@ -541,7 +565,7 @@ public partial class GraphEditorView : UserControl
             DeleteTarget.BranchCard => "분기 카드 삭제",
             _ => "삭제"
         };
-        ToolTip.SetTip(DeleteButton, target switch
+        ToolTip.SetTip(DeleteButton, kept ?? target switch
         {
             DeleteTarget.Chapter => "고른 챕터와 그 장면 · 에피소드 · 카드를 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
             DeleteTarget.Scene => "고른 장면의 에피소드 · 카드와 그 에피소드들이 부르던 분기 카드, 장면 이름 · 메모를 지웁니다 — 한 번 더 확인합니다. " +
@@ -563,6 +587,7 @@ public partial class GraphEditorView : UserControl
 
         // 활성 판이 바뀌면 콤보도 따라간다 — 챕터 그래프에서 고른 것이 여기에도 보인다.
         RefreshChapterCombo();
+        RefreshDeleteButton();   // 에피소드가 늘거나 줄면 마지막인지가 바뀐다(ChapterMinimum)
 
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
@@ -5567,7 +5592,16 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        switch (TargetToDelete())
+        DeleteTarget target = TargetToDelete();
+
+        // 단추는 그때 꺼져 있다 — 다시 그리기 전에 눌렸을 때를 위해 한 번 더 본다.
+        if (KeptReason(target) is { } kept)
+        {
+            _session.SetStatus(kept);
+            return;
+        }
+
+        switch (target)
         {
             // 챕터 · 장면은 셸이 묻고 지운다 — 챕터 지우기(판 · 조건 배관 · 진행 JSON)와 장면 지우기는 셸의 일이다.
             case DeleteTarget.Chapter or DeleteTarget.Scene:
@@ -5612,7 +5646,16 @@ public partial class GraphEditorView : UserControl
     /// <returns>지웠으면 참 — 셸이 키를 처리한 것으로 적는다.</returns>
     internal bool DeleteSelectedCard()
     {
-        switch (TargetToDelete())
+        DeleteTarget target = TargetToDelete();
+
+        // 챕터의 마지막 에피소드는 남는다 — 키는 받되 까닭을 말한다(2026-11-18 · ChapterMinimum).
+        if (KeptReason(target) is { } kept)
+        {
+            _session!.SetStatus(kept);
+            return true;
+        }
+
+        switch (target)
         {
             case DeleteTarget.BranchCard:
                 RemoveSelectedBranchCard();

@@ -43,6 +43,7 @@ public sealed class GraphNodeDeleteTests : IDisposable
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
         DialogueNode card = Card(session, "ep01");
+        Card(session, "ep02");   // 챕터의 마지막 에피소드는 지우지 않는다(ChapterMinimum)
 
         session.Select(card.Id);
         Click(graph);
@@ -69,6 +70,19 @@ public sealed class GraphNodeDeleteTests : IDisposable
         Assert.Equal(("삭제", false), ((string?)delete.Content, delete.IsEnabled));
 
         DialogueNode card = Card(session, "ep01");   // 장면 ep01에 선다
+        session.Select(card.Id);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // 챕터의 마지막 에피소드 · 장면 — 이름은 그대로, 꺼진 채 툴팁이 까닭을 말한다(2026-11-18 소유자 · ChapterMinimum).
+        Assert.Equal(("에피소드 삭제", false), ((string?)delete.Content, delete.IsEnabled));
+        Assert.Equal(ChapterMinimum.LastEpisodeReason, ToolTip.GetTip(delete));
+        session.Select(null);
+        graph.SummaryPick = new HierarchyPick(HierarchyKind.Scene, "ch01", SceneId: "ep01");
+        Assert.Equal(("장면 삭제", false), ((string?)delete.Content, delete.IsEnabled));
+        Assert.Equal(ChapterMinimum.LastSceneReason, ToolTip.GetTip(delete));
+        graph.SummaryPick = null;
+
+        Card(session, "ep02");   // 장면 ep02의 에피소드 — 이제 ep01은 마지막이 아니다
         session.Select(card.Id);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Assert.Equal(("에피소드 삭제", true), ((string?)delete.Content, delete.IsEnabled));

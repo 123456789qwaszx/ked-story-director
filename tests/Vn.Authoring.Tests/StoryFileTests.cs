@@ -60,10 +60,11 @@ public class StoryFileTests
 
         DialogueNode source = editor.AddDialogueNode(first.Id, "출발", name: "출발");
         DialogueNode target = editor.AddDialogueNode(second.Id, "도착", name: "도착");
+        DialogueNode kept = editor.AddDialogueNode(second.Id, "도착", name: "남는다");   // 챕터의 마지막 에피소드는 지우지 않는다(ChapterMinimum)
 
         global::Vn.Authoring.Chapters.EpisodeDeleter.Delete(editor, "B", "도착");   // 에피소드 카드는 에피소드와 함께 지운다
 
-        Assert.Empty(second.Nodes);
+        Assert.Equal([kept.Id], second.Nodes.Select(node => node.Id));
         Assert.Single(first.Nodes, node => node.Id == source.Id);
         Assert.Null(project.FindNode(target.Id));
     }

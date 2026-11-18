@@ -822,7 +822,7 @@ public partial class StoryHierarchy : UserControl
             HierarchyKind.Episode =>
             [
                 RenameItem(row),
-                MenuItemFor("에피소드 지우기", HierarchyCommand.DeleteEpisode, row, anchor)
+                LastEpisodeKept(MenuItemFor("에피소드 지우기", HierarchyCommand.DeleteEpisode, row, anchor), row)
             ],
             _ => []
         };
@@ -835,6 +835,20 @@ public partial class StoryHierarchy : UserControl
         var item = new MenuItem { Header = header, FontSize = 11, Tag = command };
         item.Click += (_, _) => UiGuard.Run(null, "하이어아키 차림표", () =>
             CommandRequested?.Invoke(command, row ?? ProjectRow(), anchor));
+
+        return item;
+    }
+
+    /// <summary>챕터의 마지막 에피소드면 「에피소드 지우기」를 끈다 — 챕터에는 에피소드 하나가 늘 남는다(2026-11-18 · <see cref="ChapterMinimum"/>).</summary>
+    private MenuItem LastEpisodeKept(MenuItem item, HierarchyRow row)
+    {
+        if (_chapters.FirstOrDefault(chapter => string.Equals(chapter.ChapterId, row.ChapterId, StringComparison.Ordinal)) is { } entry &&
+            ChapterMinimum.IsLastEpisode(entry.Model.Episodes, row.EpisodeId!))
+        {
+            item.IsEnabled = false;
+            ToolTip.SetTip(item, ChapterMinimum.LastEpisodeReason);
+            ToolTip.SetShowOnDisabled(item, true);
+        }
 
         return item;
     }

@@ -52,9 +52,15 @@ public static class EpisodeDeleter
             return Result.Fail("지울 에피소드 이름이 비어 있습니다.");
         }
 
-        if (editor.FindChapter(chapterId) is null)
+        if (editor.FindChapter(chapterId) is not { } chapter)
         {
             return Result.Fail($"챕터 '{chapterId}'를 찾지 못했습니다.");
+        }
+
+        // 챕터에는 에피소드 하나가 늘 남는다(2026-11-18 소유자 · ChapterMinimum).
+        if (ChapterMinimum.IsLastEpisode(chapter.Episodes, episodeId))
+        {
+            return Result.Fail(ChapterMinimum.LastEpisodeReason);
         }
 
         // 행 · 그것을 쓰는 것들 · 카드가 편집기의 한 칸이다(되돌리기 한 번에 함께 돌아온다).

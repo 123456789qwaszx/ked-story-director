@@ -541,9 +541,15 @@ public sealed partial class ProjectEditor
     /// 옮겨 장면이 비는 것과 다르다). ⛔ 그 전에는 분기 카드가 판에 남았다(부르는 곳이 없어 검증이 경고했다).
     /// </summary>
     /// <returns>걷은 에피소드 · 분기 카드 수 — 그 장면이 없으면 둘 다 0이고 아무것도 하지 않는다.</returns>
+    /// <exception cref="InvalidOperationException">챕터의 마지막 장면이다(<see cref="ChapterMinimum"/> — 화면은 그때 지우기를 끈다).</exception>
     public RemovedScene RemoveScene(string chapterId, string sceneId)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
+
+        if (ChapterMinimum.IsLastScene(chapter.Episodes, sceneId))
+        {
+            throw new InvalidOperationException(ChapterMinimum.LastSceneReason);
+        }
         List<string> episodes = chapter.Episodes
             .Where(episode => string.Equals(episode.SceneId, sceneId, StringComparison.Ordinal))
             .Select(episode => episode.EpisodeId)

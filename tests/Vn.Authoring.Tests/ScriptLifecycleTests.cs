@@ -20,11 +20,13 @@ public sealed class ScriptLifecycleTests
         var editor = new ProjectEditor(new StoryProject());
         StoryFile file = TestChapter.Board(editor);
         DialogueNode card = editor.AddDialogueNode(file.Id, "장면", name: "장면");
+        editor.AddDialogueNode(file.Id, "장면", name: "남는다");   // 챕터의 마지막 에피소드는 지우지 않는다(ChapterMinimum)
         string lineId = card.Script.ActiveLines.Single().Id;
+        int before = editor.Project.EnumerateScripts().Count();
 
         Assert.True(EpisodeDeleter.Delete(editor, "ch01", "장면").Ok);
 
-        Assert.Empty(editor.Project.EnumerateScripts());
+        Assert.Equal(before - 1, editor.Project.EnumerateScripts().Count());
 
         editor.Undo();
 
