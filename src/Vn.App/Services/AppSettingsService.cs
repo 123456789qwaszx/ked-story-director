@@ -203,6 +203,22 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>[대본] 판 카드 글 칸의 글꼴 · 글자 크기 · 줄 간격(%) (설정 창 「대본 글 칸」 — writer-comfort WC5). 글꼴이 비면 기본 글꼴이다.</summary>
+    public static (string Family, double Size, int LineSpacing) LoadScriptFont()
+    {
+        AppSettings settings = Load(SettingsPath);
+        return (settings.ScriptFontFamily ?? string.Empty, settings.ScriptFontSize, settings.ScriptLineSpacing);
+    }
+
+    public static void SaveScriptFont(string family, double size, int lineSpacing)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.ScriptFontFamily = family.Length == 0 ? null : family;
+        settings.ScriptFontSize = size;
+        settings.ScriptLineSpacing = lineSpacing;
+        Save(settings);
+    }
+
     /// <summary>하이어아키 기둥을 접어 두었는가 (두 그래프가 함께 쓴다).</summary>
     public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
 
@@ -349,6 +365,15 @@ internal static class AppSettingsService
 
         /// <summary>설명 간소화 — <see cref="LoadBriefGuides"/>. 처음에는 꺼져 있다(안내가 다 보인다).</summary>
         public bool BriefGuides { get; set; }
+
+        /// <summary>[대본] 카드 글 칸의 글꼴 이름 — <see cref="LoadScriptFont"/>. null이면 기본 글꼴.</summary>
+        public string? ScriptFontFamily { get; set; }
+
+        /// <summary>[대본] 카드 글 칸의 글자 크기 — 처음에는 11.</summary>
+        public double ScriptFontSize { get; set; } = Views.ScriptFont.DefaultSize;
+
+        /// <summary>[대본] 카드 글 칸의 줄 간격 — 글자 크기에 대한 %, 처음에는 140.</summary>
+        public int ScriptLineSpacing { get; set; } = Views.ScriptFont.DefaultLineSpacing;
     }
 
     /// <summary>

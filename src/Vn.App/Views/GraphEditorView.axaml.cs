@@ -69,8 +69,6 @@ public partial class GraphEditorView : UserControl
     private const double WritingBoxHeight = BoardSize.CardWritingHeight;
     private const double WritingBoxGap = 6;
 
-    /// <summary>글 칸의 줄 높이 — 고정한다(분기 점이 그 대사 높이에 서고, 대사마다 점 하나라 줄 간격 15면 겹치지 않는다).</summary>
-    private const double WritingLineHeight = 15;
     internal const string WritingTag = "writing:";
 
     // 한 대사의 분기 점들을 접은 공통 점과, 누르면 카드 밖으로 펼쳐지는 개별 점들 (2026-10-30 — PlaceLineKnobs).
@@ -462,6 +460,29 @@ public partial class GraphEditorView : UserControl
         }
 
         return true;
+    }
+
+    /// <summary>판에 붙어 있는 동안 「대본 글 칸」 설정을 듣는다 — 떨어지면 끊는다(설정은 앱 하나라 붙들고 있으면 판이 안 풀린다).</summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        ScriptFont.Changed += ApplyScriptFont;
+        ApplyScriptFont();   // 떨어져 있던 사이에 바뀌었을 수 있다
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        ScriptFont.Changed -= ApplyScriptFont;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    /// <summary>서 있는 카드 글 칸이 모두 새 글꼴 · 크기 · 줄 간격을 입는다 — 판은 다시 짓지 않는다(writer-comfort WC5).</summary>
+    private void ApplyScriptFont()
+    {
+        foreach (TextBox box in _writingBoxes.Values)
+        {
+            ScriptFont.Apply(box);
+        }
     }
 
     public GraphEditorView()
@@ -2981,8 +3002,6 @@ public partial class GraphEditorView : UserControl
             Text = shown,
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
-            FontSize = 11,
-            LineHeight = WritingLineHeight,
             Height = WritingHeightFor(nodeId),
             Margin = new Thickness(0, WritingBoxGap, 0, 0),
             Padding = new Thickness(4, 3),
@@ -2990,6 +3009,10 @@ public partial class GraphEditorView : UserControl
             Tag = WritingTag + nodeId
         };
         ScrollViewer.SetVerticalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
+
+        // 글꼴 · 글자 크기 · 줄 간격은 설정 창 「대본 글 칸」의 것(writer-comfort WC5 — ⛔ 그 전에는 11 · 줄 높이 15로 굳었다). 분기 점은 실제 글자
+        // 배치로 그 대사 높이를 재므로(MeasureLineAnchors) 어느 줄 간격에도 따라간다 — 줄 간격을 아주 좁히면 이웃 대사의 분기 점이 맞닿을 수 있다.
+        ScriptFont.Apply(box);
         _writingBoxes[nodeId] = box;
 
         box.GotFocus += (_, _) =>

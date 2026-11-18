@@ -19,11 +19,12 @@ namespace Vn.App.Views;
 /// 묶음은 넷이다 — ⛔ 묶음마다 어디에 저장되는가를 머리에 적던 것(C3)은 2026-11-18에 걷었다(소유자 — 「이런 설명은 필요없어」 ·
 /// <c>docs/work-orders/settings-wording-orders.md</c> Z2). [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
 /// 「내보내기 (복제할 폴더 선택)」(형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
-/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
+/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [대본 글 칸](이 PC의 앱 설정 — 카드 글 칸의 글꼴 ·
+/// 글자 크기 · 줄 간격, <see cref="ScriptFont"/> · writer-comfort WC5), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
 /// <c>docs/work-orders/side-fold-settings-orders.md</c> K3, 설명 간소화 · 같은 날 brief-guides G1).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
-/// 칸 · 보낼 곳은 그 파일에 바로), [취소] · Esc는 버린다. 「기타」의 체크는 [확인]을 기다리지 않고 누르는 즉시 앱 설정에 반영한다 — [취소]로
+/// 칸 · 보낼 곳은 그 파일에 바로), [취소] · Esc는 버린다. 「대본 글 칸」과 「기타」는 [확인]을 기다리지 않고 고치는 즉시 앱 설정에 반영한다 — [취소]로
 /// 돌아가지 않는다(2026-11-18 소유자 · <c>docs/work-orders/inspector-boxes-pan-orders.md</c> J3). 줄여서 카드가 움직이면 [확인] 전에 미리 말한다(<see cref="BoardResize.Plan"/> — 바꾸기와 같은 계산).
 /// </summary>
 internal sealed class SettingsWindow : Window
@@ -86,6 +87,53 @@ internal sealed class SettingsWindow : Window
         HideMinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "미니맵", () =>
             _session.SetShowMinimap(HideMinimapCheck.IsChecked != true));
 
+        ScriptFontCombo = new ComboBox { FontSize = 12, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = FontNames() };
+        ScriptFontSizeBox = new NumericUpDown
+        {
+            Minimum = (decimal)ScriptFont.MinSize,
+            Maximum = (decimal)ScriptFont.MaxSize,
+            Increment = 1,
+            FormatString = "0",
+            FontSize = 12,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        ScriptLineSpacingBox = new NumericUpDown
+        {
+            Minimum = ScriptFont.MinLineSpacing,
+            Maximum = ScriptFont.MaxLineSpacing,
+            Increment = 10,
+            FormatString = "0",
+            FontSize = 12,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        ToolTip.SetTip(ScriptLineSpacingBox, "글자 크기에 대한 % — 100이면 줄이 붙고, 160이면 워드 프로세서의 「줄 간격 160%」와 같습니다.");
+        ScriptPreview = new TextBox
+        {
+            Text = "윌로: 오늘따라 바람이 차네.\n라루: 그러게. 겉옷 챙겨 올 걸 그랬어.\n두 사람은 말없이 언덕을 오른다.",
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MaxHeight = 170,   // 세 줄이 다 보이게 글에 맞춰 자라되, 아주 큰 글자에서는 창이 화면을 넘지 않게 칸 안에서 흐른다
+            Padding = new Thickness(4, 3)
+        };
+        ToolTip.SetTip(ScriptPreview, "미리 보기 — [대본] 판의 카드 글 칸이 이렇게 보입니다.");
+        ScriptFontDefaultButton = new Button
+        {
+            Content = $"기본값으로 (기본 글꼴 · {ScriptFont.DefaultSize:0} · {ScriptFont.DefaultLineSpacing}%)",
+            FontSize = 11
+        };
+        FillScriptFont();
+
+        // 고치는 즉시 판의 카드 글 칸에 반영한다 — 「기타」의 체크와 같은 규칙([취소]로 돌아가지 않는다 · 되돌리기 없음 — 이 PC의 앱 설정이다).
+        ScriptFontCombo.SelectionChanged += (_, _) => OnScriptFontEdited();
+        ScriptFontSizeBox.ValueChanged += (_, _) => OnScriptFontEdited();
+        ScriptLineSpacingBox.ValueChanged += (_, _) => OnScriptFontEdited();
+        ScriptFontDefaultButton.Click += (_, _) => UiGuard.Run(_session, "대본 글 칸", () =>
+        {
+            ScriptFont.Reset();
+            FillScriptFont();
+        });
+
         ConfirmButton = new Button { Content = "확인", IsDefault = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
         CancelButton = new Button { Content = "취소", IsCancel = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
         ConfirmButton.Click += (_, _) => Confirm();
@@ -143,6 +191,7 @@ internal sealed class SettingsWindow : Window
                 Group("이 프로젝트", BoardSection()),
                 ExportGroup,   // 접는 묶음은 제 테두리가 있다
                 ShortcutGroup,
+                Group("대본 글 칸", ScriptFontSection()),
                 Group("기타", new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck } }),
                 new StackPanel
                 {
@@ -177,6 +226,23 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「단축키」 묶음 — 접고 편다(처음에는 접혀 있다). 읽기만 한다.</summary>
     internal Expander ShortcutGroup { get; }
+
+    /// <summary>「대본 글 칸」의 글꼴 — 맨 위는 「기본」(테마의 글꼴), 그 아래 이 PC의 글꼴들.</summary>
+    internal ComboBox ScriptFontCombo { get; }
+
+    /// <summary>「대본 글 칸」의 글자 크기.</summary>
+    internal NumericUpDown ScriptFontSizeBox { get; }
+
+    /// <summary>「대본 글 칸」의 줄 간격 — 글자 크기에 대한 %.</summary>
+    internal NumericUpDown ScriptLineSpacingBox { get; }
+
+    /// <summary>「대본 글 칸」의 미리 보기 — 카드 글 칸과 같은 설정을 입는다.</summary>
+    internal TextBox ScriptPreview { get; }
+
+    internal Button ScriptFontDefaultButton { get; }
+
+    /// <summary>글꼴 칸의 맨 위 — 테마의 글꼴을 그대로 쓴다.</summary>
+    internal const string DefaultFontName = "기본";
 
     /// <summary>「기타」의 「설명 간소화」 — 누르는 즉시 반영한다(<see cref="GuideMode"/>).</summary>
     internal CheckBox BriefGuidesCheck { get; }
@@ -604,6 +670,101 @@ internal sealed class SettingsWindow : Window
         decimal.TryParse(box.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out decimal typed)
             ? (double)typed
             : box.Value is { } value ? (double)value : fallback;
+
+    /// <summary>「대본 글 칸」 — 글꼴 · 글자 크기 · 줄 간격과 미리 보기.</summary>
+    private Control ScriptFontSection()
+    {
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto"),
+            ColumnSpacing = 10,
+            RowSpacing = 6
+        };
+
+        AddRow(grid, 0, "글꼴", ScriptFontCombo);
+        AddRow(grid, 1, "글자 크기", ScriptFontSizeBox);
+        AddRow(grid, 2, "줄 간격 (%)", ScriptLineSpacingBox);
+
+        return new StackPanel
+        {
+            Spacing = 6,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "[대본] 판의 카드에서 대본을 쓰는 칸의 글자입니다. 고치면 바로 바뀝니다 — 이 PC에만 적용되고 프로젝트 파일은 바뀌지 않습니다.",
+                    FontSize = 11,
+                    Opacity = 0.7,
+                    TextWrapping = TextWrapping.Wrap
+                },
+                grid,
+                ScriptPreview,
+                ScriptFontDefaultButton
+            }
+        };
+    }
+
+    /// <summary>칸들을 지금 설정으로 채우고 미리 보기에 입힌다 — 채우는 동안의 바뀜은 넣기로 치지 않는다.</summary>
+    private void FillScriptFont()
+    {
+        _fillingScript = true;
+
+        try
+        {
+            ScriptFontCombo.SelectedItem = ScriptFont.Family.Length == 0 ? DefaultFontName : ScriptFont.Family;
+            ScriptFontSizeBox.Value = (decimal)ScriptFont.Size;
+            ScriptLineSpacingBox.Value = ScriptFont.LineSpacing;
+            ScriptFont.Apply(ScriptPreview);
+        }
+        finally
+        {
+            _fillingScript = false;
+        }
+    }
+
+    private bool _fillingScript;
+
+    /// <summary>칸 하나를 고쳤다 — 셋을 함께 넣는다(범위 밖은 끝으로 당겨진다). 비운 숫자 칸은 기본값이다.</summary>
+    private void OnScriptFontEdited()
+    {
+        if (_fillingScript)
+        {
+            return;
+        }
+
+        UiGuard.Run(_session, "대본 글 칸", () =>
+        {
+            string family = ScriptFontCombo.SelectedItem as string ?? DefaultFontName;
+            ScriptFont.Set(
+                family == DefaultFontName ? null : family,
+                (double)(ScriptFontSizeBox.Value ?? (decimal)ScriptFont.DefaultSize),
+                (int)(ScriptLineSpacingBox.Value ?? ScriptFont.DefaultLineSpacing));
+            FillScriptFont();
+        });
+    }
+
+    /// <summary>
+    /// 글꼴 칸의 목록 — 「기본」과 이 PC의 글꼴(이름 차례). 기억한 글꼴이 이 PC에 없으면(지웠다 · 다른 PC의 설정) 그 이름도 목록에 둔다 —
+    /// 칸이 빈 채로 서면 무엇을 쓰고 있는지 모른다(없는 글꼴은 테마의 글꼴로 그려진다).
+    /// </summary>
+    private static List<string> FontNames()
+    {
+        List<string> names = FontManager.Current.SystemFonts
+            .Select(family => family.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.Create(CultureInfo.GetCultureInfo("ko-KR"), ignoreCase: true))
+            .ToList();
+
+        if (ScriptFont.Family.Length > 0 && !names.Contains(ScriptFont.Family, StringComparer.Ordinal))
+        {
+            names.Insert(0, ScriptFont.Family);
+        }
+
+        names.Insert(0, DefaultFontName);
+        return names;
+    }
 
     private static NumericUpDown SideBox(double value) => new()
     {
