@@ -37,6 +37,8 @@ MyStory/
 ├─ game.definition.json        (있으면) compositor의 연출 어휘. 이 툴은 읽지도 쓰지도 않는다
 ├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
+│                              목차에서 빠진 판(지운 챕터의 판)은 저장할 때 지운다 — 툴이 지은 이름 `sf_` + ID 8자만, 폴더에 다른 목차가 없을 때만
+│                              (`ProjectStore.RemoveStaleStoryFiles` · 2026-11-18)
 └─ exported/{챕터}.progression.json  진행 JSON — 런타임 계약
    exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn — 장면 = 파일, 에피소드 = 노드(타이틀 = DialogueEntryId), 장면 메모 · 에피소드
                                      지시는 // 주석. 진행 JSON이 나갈 때 함께 나가고 게임 폴더로는 보내지 않는다

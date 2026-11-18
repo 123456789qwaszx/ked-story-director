@@ -3,7 +3,7 @@
 **소유자**: 「확인하다 찾은 문제만 고쳐줘.」 — 챕터를 지운 뒤 저장해도 그 챕터의 `story/sf_….vnstory.json`이 남는다(2026-11-18 · 「sf_c5irt5ve.vnstory는 뭐야?」를
 살피다 찾았다).
 
-> **상태: 하는 중.**
+> **상태: 끝 (2026-11-18).**
 
 ## 1. 지금
 
@@ -40,4 +40,5 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-18 | SF0 | e9493d10 | 지시서 |
-| 11-18 | SF1 | (이 커밋) | `ProjectStore.Save` 끝(판 파일 · 목차를 쓴 뒤)에 `RemoveStaleStoryFiles` — `story/` 바로 안의 `*.vnstory.json` 중 이름이 `IsToolMadeStoryFileName`(`sf_` + `Identifier`의 글자 8자 — `Identifier.IsIdCharacter`)이고 이번에 쓴 판이 아닌 것을 지운다. 폴더에 다른 `*.vnproject.json`이 있으면 하지 않는다. 지우지 못하면 남긴다. 시험 — 새 `StaleStoryFilesTests`(지운 챕터의 판만 사라짐 · 복사본 · 다른 이름 · 하위 폴더 · 다른 파일 그대로 · 다시 열기 · 되돌려 다시 저장하면 다시 섬 · 다른 목차가 있으면 그대로 · 이름 알아보기 · 툴이 짓는 이름은 알아보는 모양). 고치기 전에는 첫 시험이 실패함을 확인. Authoring 657 · App 481 |
+| 11-18 | SF1 | 9f9ed806 | `ProjectStore.Save` 끝(판 파일 · 목차를 쓴 뒤)에 `RemoveStaleStoryFiles` — `story/` 바로 안의 `*.vnstory.json` 중 이름이 `IsToolMadeStoryFileName`(`sf_` + `Identifier`의 글자 8자 — `Identifier.IsIdCharacter`)이고 이번에 쓴 판이 아닌 것을 지운다. 폴더에 다른 `*.vnproject.json`이 있으면 하지 않는다. 지우지 못하면 남긴다. 시험 — 새 `StaleStoryFilesTests`(지운 챕터의 판만 사라짐 · 복사본 · 다른 이름 · 하위 폴더 · 다른 파일 그대로 · 다시 열기 · 되돌려 다시 저장하면 다시 섬 · 다른 목차가 있으면 그대로 · 이름 알아보기 · 툴이 짓는 이름은 알아보는 모양). 고치기 전에는 첫 시험이 실패함을 확인. Authoring 657 · App 481 |
+| 11-18 | SF2 | (이 커밋) | 문서 — 구조 문서(저장 구조의 `story/*.vnstory.json` 줄에 정리 규칙). Authoring 657 · App 481 |
