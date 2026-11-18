@@ -448,7 +448,7 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.PointerMoved += OnGraphPanMoved;
         GraphScroll.PointerReleased += OnGraphPanReleased;
         ZoomResetButton.Click += (_, _) => ApplyZoom(1, null);
-        FitChapterButton.Click += (_, _) => UiGuard.Run(_session, "전체 보기", FitChapter);
+        FitChapterButton.Click += (_, _) => UiGuard.Run(_session, "화면 맞춤", FitChapter);
 
         // 스탯변화 줄 편집기 — 간선 패널.
         EdgeStatsHost.Children.Add(_edgeStats);
@@ -855,7 +855,7 @@ public partial class ChapterGraphView : UserControl
     // Ctrl을 요구하지 않는다 — 판 위에서 휠은 곧 배율이다.
     // 세로로 훑는 일은 가운데 단추 끌기가 맡는다.
 
-    private const double MinZoom = 0.1;  // 큰 챕터도 [전체 보기]로 한 화면에 들어오게
+    private const double MinZoom = 0.1;  // 큰 챕터도 [화면 맞춤]으로 한 화면에 들어오게
     private const double MaxZoom = 2.5;
 
     private double _zoom = 1;
@@ -893,7 +893,7 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// [전체 보기] — 이 챕터의 카드가 모두 한 화면에 들어오는 배율과 자리. 판은 이 챕터의 카드만 여백째 감싸므로
+    /// [화면 맞춤] — 이 챕터의 카드가 모두 한 화면에 들어오는 배율과 자리. 판은 이 챕터의 카드만 여백째 감싸므로
     /// (<see cref="DisplayPlacement"/>) 판 전체를 화면에 맞춘다. 카드가 적다고 100%보다 키우지는 않는다.
     /// </summary>
     internal void FitChapter()

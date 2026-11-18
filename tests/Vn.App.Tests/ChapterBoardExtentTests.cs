@@ -92,7 +92,7 @@ public sealed class ChapterBoardExtentTests : IDisposable
         ScrollViewer scroll = view.FindControl<ScrollViewer>("GraphScroll")!;
         Canvas canvas = view.FindControl<Canvas>("GraphCanvas")!;
         Button fit = view.FindControl<Button>("FitChapterButton")!;
-        Assert.Equal("전체 보기", fit.Content);
+        Assert.Equal("화면 맞춤", fit.Content);
 
         // 큰 챕터 — 판 전체(두 카드 + 여백)가 화면 안에 들어오고, 한쪽은 화면에 꼭 맞는다.
         fit.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
