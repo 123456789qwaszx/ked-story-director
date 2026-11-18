@@ -105,7 +105,13 @@ public enum ChapterDiagnosticCode
     /// <b>주인 없는 장면 메모</b> — 그 장면ID를 가진 에피소드가 없다(마지막 에피소드를 지웠거나 옮겼거나, 다른 장면으로
     /// 합쳤다). 경고다 — 내보내기를 막지 않는다. 메모를 조용히 지우지 않으므로 사람이 챕터 인스펙터에서 지우거나 장면을 되살린다.
     /// </summary>
-    SceneNoteOrphaned
+    SceneNoteOrphaned,
+
+    /// <summary>
+    /// 그 챕터의 대사에 나오는 화자에게 <b>캐릭터 키가 없다</b> — 그 화자의 대사에는 초상화 · 표정이 붙지 않는다. 경고다 — 내보내기를 막지
+    /// 않는다(<see cref="ChapterSpeakerKeys"/> · 2026-11-18 writer-comfort WC6).
+    /// </summary>
+    SpeakerCharacterKeyMissing
 }
 
 /// <summary>

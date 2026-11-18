@@ -160,7 +160,7 @@ public sealed class ChapterExportService
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        string fingerprint = Fingerprint(entry.Model, BoardNames(project, entry.ChapterId));
+        string fingerprint = Fingerprint(entry.Model, BoardNames(project, entry.ChapterId)) + SpeakerKeys(project, entry.Model);
 
         if (_cache.TryGetValue(entry.ChapterId, out var cached) &&
             string.Equals(cached.Fingerprint, fingerprint, StringComparison.Ordinal))
@@ -521,6 +521,15 @@ public sealed class ChapterExportService
 
         return builder.ToString();
     }
+
+    /// <summary>
+    /// 지문에 실을 <b>캐릭터 키가 없는 화자</b>(<see cref="ChapterSpeakerKeys.MissingOf"/>) — 화자의 키는 프로젝트의 화자 목록에 살아 챕터 모델 ·
+    /// 판 이름에 없다. 싣지 않으면 키를 적어도 옛 경고가 남고, 새 화자의 대사를 써도 경고가 안 선다(writer-comfort WC6).
+    /// </summary>
+    private static string SpeakerKeys(StoryProject? project, ChapterGraphModel chapter) =>
+        project is null
+            ? string.Empty
+            : "화자키|" + string.Join('\u001f', ChapterSpeakerKeys.MissingOf(chapter, project)) + "\n";
 
     /// <summary>
     /// 지문에 실을 <b>판의 상태</b> — 그 챕터 판의 대사노드(이름·표식·줄이 있는지). 판이 없으면

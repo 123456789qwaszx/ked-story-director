@@ -48,6 +48,9 @@ public static class ChapterValidator
 
             // Yarn 노드 이름은 프로젝트에서 하나다 — 다른 챕터의 것과 겹치면 오류(2026-11-17).
             ChapterYarnNames.Verify(chapter, project, diagnostics);
+
+            // 대사에 나오는데 캐릭터 키가 없는 화자 — 경고(2026-11-18 writer-comfort WC6).
+            ChapterSpeakerKeys.Verify(chapter, project, diagnostics);
         }
 
         return new ChapterValidationResult(diagnostics, reachability);

@@ -200,6 +200,8 @@ public sealed class BranchMarkerTests
 
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
         made.Script.RequireLocale(made.Script.PrimaryLocale).Entries[made.Script.ActiveLines.First().Id] = new LocalizedLine("라루", "들렀다 간다");
+        editor.AddSpeaker("라루");
+        editor.SetSpeakerCharacterId("라루", "laru");   // 화자 키 경고(writer-comfort WC6)는 이 시험의 일이 아니다 — 키를 갖춰 둔다
         ChapterDocument chapter = editor.Project.Chapters.Single();
 
         ChapterValidationResult result = ChapterValidator.Validate(chapter.ToGraphModel(chapter.ChapterId), editor.Project);

@@ -331,4 +331,7 @@ public static class ChapterSheetNames
     public const string Stats = "스탯";
     public const string Choices = "선택지";
     public const string SceneNotes = "장면 메모";
+
+    /// <summary>화자 — 프로젝트의 화자 목록과 그 캐릭터 키(<see cref="ChapterSpeakerKeys"/>).</summary>
+    public const string Speakers = "화자";
 }
