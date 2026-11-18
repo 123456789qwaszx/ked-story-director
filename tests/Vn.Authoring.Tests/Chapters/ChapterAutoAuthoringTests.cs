@@ -45,7 +45,7 @@ public sealed class ChapterAutoAuthoringTests
         _editor.AddEpisode("auto", "ep3", "셋째", 400, 0, sceneId: "scene-b");
         _editor.AddChapterCondition("auto", "항상", "trust >= 0");
 
-        // 장면을 건너고, 관문·스탯변화·문구를 다 단 자동 길 — 그리고 곁에 다른 길.
+        // 관문·스탯변화·문구를 다 단 자동 길 — 그리고 곁에 다른 길. 장면을 건너는 것은 규칙이 아니다(2026-11-18).
         _editor.AddEdge("auto", "ep1", "ep3",
             conditionLabel: "항상", optionLabel: "계속", statChanges: "trust +1", auto: true);
         _editor.AddEdge("auto", "ep1", "ep2", optionLabel: "다른 길");
@@ -55,7 +55,6 @@ public sealed class ChapterAutoAuthoringTests
         Assert.Contains(ChapterDiagnosticCode.AutoEdgeHasSiblings, codes);
         Assert.Contains(ChapterDiagnosticCode.AutoEdgeHasConditions, codes);
         Assert.Contains(ChapterDiagnosticCode.AutoEdgeHasStatChanges, codes);
-        Assert.Contains(ChapterDiagnosticCode.AutoEdgeCrossesScene, codes);
         Assert.Contains(ChapterDiagnosticCode.AutoEdgeHasChoiceLabel, codes);
     }
 }

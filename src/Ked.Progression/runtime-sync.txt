@@ -7,7 +7,7 @@ Loading/Dto/StatDto.cs 3bc9158ecd753a449d6c4f8c58673d8b
 Loading/LoadResults.cs b26fa88ea18c17e1327ec03e3d2c3155
 Loading/ProgressionLoader.cs edf6ab3d5890d3e6f7a770d75da5370d
 Spec/ChapterDefinition.cs 57b73888703b42b8fc83f3b5eb4c53ce
-Spec/ChapterInvariants.cs b7cb15484960b736e0a762149e76ebc2
+Spec/ChapterInvariants.cs ae9fe0fdbe145b3d07663091ea685b69
 Spec/EpisodeNode.cs 7c3017a707017885a8e9a02db3dd1ee5
 Spec/EpisodeOption.cs 0035218d9204812fe9ecbdaa09e4dd2a
 Spec/ScenarioInvariants.cs 4855fcb0b2b8def7f2944f76b3923498

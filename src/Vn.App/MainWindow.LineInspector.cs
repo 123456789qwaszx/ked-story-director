@@ -192,8 +192,8 @@ public partial class MainWindow
     /// 선택지 문구를 넣는다. 같으면 아무것도 안 한다.
     /// <list type="bullet">
     /// <item>문구를 적었다 — 그 문구의 선택지다. 자동 길이었으면 선택지가 된다.</item>
-    /// <item>문구를 지웠다 — 그 에피소드의 길이 이것 하나면 자동 길이 된다(자동 길은 같은 장면 안에서만 — 장면을 넘으면 넣지
-    /// 않고 말한다). 길이 둘 이상이면 넣지 않는다 — 문구 없는 선택지는 오류다.</item>
+    /// <item>문구를 지웠다 — 그 에피소드의 길이 이것 하나면 자동 길이 된다(장면을 넘어도 된다 — ⛔ 2026-11-18까지는 같은 장면
+    /// 안에서만이었다). 길이 둘 이상이면 넣지 않는다 — 문구 없는 선택지는 오류다.</item>
     /// </list>
     /// 넣은 뒤에는 바뀐 신원(출발 · 도착 · 문구)으로 그 레인을 다시 고른다 — 판이 다시 그려지며 고른 선이 풀리기 때문이다.
     /// </summary>
@@ -217,15 +217,6 @@ public partial class MainWindow
             {
                 _session.SetStatus("문구를 비우지 않았습니다 — 길이 둘 이상인 에피소드의 선택지에는 문구가 있어야 합니다. " +
                                    "자동 길(AUTO)은 하나뿐인 길만 될 수 있습니다.");
-                ShowSelectedNode();
-                return;
-            }
-
-            if (chapter.FindEpisode(edge.FromEpisodeId) is { } from && chapter.FindEpisode(edge.ToEpisodeId) is { } to &&
-                !string.Equals(from.SceneId, to.SceneId, StringComparison.Ordinal))
-            {
-                _session.SetStatus("문구를 비우지 않았습니다 — 자동 길(AUTO)은 같은 장면 안에서만 이어집니다. " +
-                                   "두 에피소드를 같은 장면에 두거나 문구를 남겨 주세요.");
                 ShowSelectedNode();
                 return;
             }

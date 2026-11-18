@@ -312,8 +312,7 @@ public sealed class ChoiceSlotTests : IDisposable
         // §2 ③-a — 묻지 않고 지나가는 길에는 고를 것이 없으니 문구도 없다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        // 자동 길은 장면을 못 넘으므로 둘을 같은 장면에 둔다 — 안 그러면 규격 위반이고,
-        //    화면이 그것을 먼저 막는다(아래 테스트).
+        // 같은 장면 안의 외길 — 장면을 넘는 것은 아래 시험.
         session.Editor.UpdateEpisode("ch01", "root", sceneId: "opening");
         session.Editor.UpdateEpisode("ch01", "a", sceneId: "opening");
         graph.Rebuild();
@@ -332,17 +331,22 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
-    public void 장면을_넘는_자동_길은_먼저_막고_대안을_말한다() => HeadlessUi.Run(() =>
+    public void 장면을_넘는_자동_길도_이어진다() => HeadlessUi.Run(() =>
     {
-        // 장면 경계는 실제로 `Commit → Exit → Enter`다 — 묻지 않고 넘어가면 안 된다
-        //    (`AutoEdgeCrossesScene`). 관문에서야 알면 되돌려야 하니 여기서 먼저 말한다.
+        // 2026-11-18 — 런타임이 자동 간선의 「같은 장면」 규칙을 걷었다(경계의 일은 묻는 선택지로 넘을 때와 같고 박스만 뜨지 않는다).
+        //    ⛔ 그 전에는 여기서 먼저 막고 「문구를 적어 선택지로」라고 말했다.
         (GraphEditorView graph, AuthoringSession session) = Show();
+        Assert.NotEqual(
+            session.Editor.FindChapter("ch01")!.Episodes.Single(episode => episode.EpisodeId == "root").SceneId,
+            session.Editor.FindChapter("ch01")!.Episodes.Single(episode => episode.EpisodeId == "a").SceneId);
 
         Drag(graph, session, "root", slot: 0, onto: "a");
 
-        Assert.Empty(session.Editor.FindChapter("ch01")!.Edges);
-        Assert.Contains("같은 장면 안에서만", session.StatusMessage, StringComparison.Ordinal);
-        Assert.Contains("문구를 적어", session.StatusMessage, StringComparison.Ordinal);
+        ChapterEdge edge = Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
+        Assert.True(edge.Auto);
+        Assert.DoesNotContain(
+            session.Editor.FindChapter("ch01")!.ToGraphModel("ch01").Errors,
+            item => item.Code.ToString().StartsWith("AutoEdge", StringComparison.Ordinal));
     });
 
     [Fact]

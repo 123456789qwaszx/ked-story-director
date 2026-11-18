@@ -11,8 +11,8 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>[대본] 탭 선 설명의 「문구」 칸</b> — 선택지 레인을 고르면 인스펙터에서 그 문구를 고친다(Enter · 딴 데를 누르면 넣고 Esc는
-/// 되돌린다). 자동 길(AUTO)에 문구를 적으면 선택지가 되고, 그 에피소드의 하나뿐인 선택지 문구를 지우면 자동 길이 된다. 길이
-/// 둘 이상이거나 장면을 넘는 길이면 문구를 비우지 않는다.
+/// 되돌린다). 자동 길(AUTO)에 문구를 적으면 선택지가 되고, 그 에피소드의 하나뿐인 선택지 문구를 지우면 자동 길이 된다(장면을 넘어도 —
+/// 2026-11-18). 길이 둘 이상이면 문구를 비우지 않는다.
 /// </summary>
 public sealed class DirectorChoiceLabelTests : IDisposable
 {
@@ -74,19 +74,21 @@ public sealed class DirectorChoiceLabelTests : IDisposable
     });
 
     [Fact]
-    public void 길이_둘_이상이거나_장면을_넘으면_문구를_비우지_않는다() => HeadlessUi.Run(() =>
+    public void 장면을_넘는_하나뿐인_길은_자동_길이_되고_길이_둘_이상이면_문구를_비우지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();
 
-        // 장면을 넘는 하나뿐인 길 — root(opening) → b(hall).
+        // 장면을 넘는 하나뿐인 길 — root(opening) → b(hall). 자동 길이 된다(2026-11-18 — ⛔ 그 전에는 「같은 장면」으로 거절했다).
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "복도로");
         Pick(graph, "b", "복도로");
         TextBox box = LabelBox(window)!;
         box.Text = string.Empty;
         Enter(box);
+        Assert.True(Edge(session, "b").Auto);
+        Assert.True(Edge(session, "b").HasNoOptionLabel);
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
         Assert.Equal("복도로", Edge(session, "b").OptionLabel);
-        Assert.False(Edge(session, "b").Auto);
-        Assert.Contains("같은 장면", session.StatusMessage, StringComparison.Ordinal);
 
         // 길이 둘 — 문구 없는 선택지는 오류다.
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");

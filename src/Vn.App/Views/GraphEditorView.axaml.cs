@@ -4965,26 +4965,12 @@ public partial class GraphEditorView : UserControl
         string label = LabelOf(choice);
 
         // 문구가 없는 채로 살아 있는 칸은 <b>자동 길</b> 자리다 (§2 ③-a). 이미 이어진 자동 길을 옮기면
-        // 자동 길 그대로다 — 그래서 아래의 장면 검사도 받는다.
+        // 자동 길 그대로다. 자동 길은 장면을 넘어도 된다(⛔ 2026-11-18까지는 같은 장면 안에서만이라 여기서 먼저 거절했다).
         bool auto = choice.IsEmpty ? label.Length == 0 : choice.IsAuto;
 
         if (string.Equals(choice.ToEpisodeId, episodeId, StringComparison.Ordinal))
         {
             return;   // 이어져 있던 그 카드에 도로 놓았다 — 바뀐 것이 없다(§5-8)
-        }
-
-        // ⚠ <b>자동 길은 장면을 못 넘는다</b> — 장면 경계는 실제로 `Commit → Exit → Enter`라,
-        //   묻지 않고 넘어가면 안 된다(`AutoEdgeCrossesScene`). 관문에서야 알면 되돌려야 하니
-        //   여기서 먼저 말하고, <b>대신 할 수 있는 것</b>을 함께 말한다.
-        if (auto && SceneOf(choice.ChapterId, choice.FromEpisodeId) is { } from &&
-            SceneOf(choice.ChapterId, episodeId) is { } to &&
-            !string.Equals(from, to, StringComparison.Ordinal))
-        {
-            _session.SetStatus(
-                "자동 길은 같은 장면 안에서만 이어집니다 — 두 에피소드를 같은 장면에 두거나, " +
-                "문구를 적어 선택지로 이어 주세요.");
-
-            return;
         }
 
         if (!choice.IsEmpty)
@@ -5070,13 +5056,6 @@ public partial class GraphEditorView : UserControl
 
         Rebuild();
     }
-
-    /// <summary>그 에피소드의 장면ID.</summary>
-    private string? SceneOf(string chapterId, string episodeId) =>
-        _session?.Editor.FindChapter(chapterId)?.Episodes
-            .FirstOrDefault(episode =>
-                string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))
-            ?.SceneId;
 
     /// <summary>
     /// 그 노드가 선 자리 — (챕터, 에피소드). 에피소드가 아니면 null.

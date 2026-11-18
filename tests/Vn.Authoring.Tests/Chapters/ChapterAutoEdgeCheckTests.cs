@@ -3,7 +3,8 @@ using Vn.Authoring.Chapters;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>자동 길 다섯 규칙이 툴 소유 챕터에서도 돈다</b> (V1 · `docs/plans/R6.md` §9).
+/// <b>자동 길 규칙이 툴 소유 챕터에서도 돈다</b> (V1 · `docs/plans/R6.md` §9). ⛔ 다섯이던 규칙은 2026-11-18에 넷이 됐다 — 「같은 장면」을
+/// 런타임과 함께 걷었다(<c>docs/work-orders/auto-edge-across-scenes-orders.md</c>).
 ///
 /// ⛔ 이 다섯은 옛 워크북 리더(<c>ChapterWorkbookReader</c>) 안에만 있었다. R-F로 판의 주인이
 /// 워크북에서 프로젝트로 넘어가자 읽는 길이 사라졌고, 그와 함께 <b>조용히 안 돌게 됐다</b>.
@@ -15,16 +16,35 @@ namespace Vn.Authoring.Tests.Chapters;
 public sealed class ChapterAutoEdgeCheckTests
 {
     [Fact]
-    public void 자동_길이_장면을_건너면_저작_중에_뜬다()
+    public void 자동_길은_장면을_건너도_아무_말도_없다()
     {
-        // ⛔ 회귀의 본체. 장면은 확정·롤백의 경계라, 입력 없이 그 경계를 넘으면 되돌아갈
-        //    자리가 사라진다 — 코어의 `VerifyAuto`와 같은 규칙이다.
+        // 2026-11-18 — 장면 경계의 일(무대 비우기 · 확정 · 저장)은 묻는 선택지로 넘을 때와 같고 박스만 뜨지 않는다. 코어의 `VerifyAuto`도
+        //    같은 날 그 검사를 걷었다. ⛔ 그 전에는 `AutoEdgeCrossesScene` 오류였다.
         ChapterDocument chapter = Chapter(("opening", "ep01"), ("classroom", "ep02"));
         chapter.Edges.Add(Auto("ep01", "ep02"));
 
-        Assert.Contains(
+        Assert.DoesNotContain(
             Errors(chapter),
-            item => item.Code == ChapterDiagnosticCode.AutoEdgeCrossesScene);
+            item => item.Code.ToString().StartsWith("AutoEdge", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void 장면을_건너는_자동_길은_내보내기도_받는다()
+    {
+        // 내보내기 관문은 툴의 코어 사본(런타임 036535b의 `VerifyAuto`)으로 판정한다 — 런타임과 같은 답이어야 한다.
+        ChapterDocument chapter = Chapter(("opening", "ep01"), ("classroom", "ep02"));
+        chapter.Edges.Add(Auto("ep01", "ep02"));
+
+        ChapterExportResult result = ChapterProgressionExporter.Export(chapter.ToGraphModel("ch01"));
+
+        Assert.False(result.Refused, string.Join("\n", result.Validation.Diagnostics.Select(item => item.Message)));
+
+        using var document = System.Text.Json.JsonDocument.Parse(result.Json!);
+        System.Text.Json.JsonElement option = document.RootElement.GetProperty("Nodes").EnumerateArray()
+            .Single(node => node.GetProperty("EpisodeId").GetString() == "ep01")
+            .GetProperty("NextOptions").EnumerateArray().Single();
+        Assert.True(option.GetProperty("Auto").GetBoolean());
+        Assert.Equal("ep02", option.GetProperty("TargetEpisodeId").GetString());
     }
 
     [Fact]

@@ -82,7 +82,6 @@ public enum ChapterDiagnosticCode
     AutoEdgeHasSiblings,
     AutoEdgeHasConditions,
     AutoEdgeHasStatChanges,
-    AutoEdgeCrossesScene,
     AutoEdgeHasChoiceLabel,
 
     /// <summary>

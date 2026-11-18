@@ -18,9 +18,9 @@ namespace Ked.Progression
         // 스탯이 변하는 유일한 곳
         public IReadOnlyList<StatChange> StatChanges { get; }
 
-        // 자동 간선 — 묻지 않고 지나간다. 장면 안에서 에피소드만 나누고 싶을 때.
+        // 자동 간선 — 묻지 않고 지나간다. 물을 것 없이 다음 에피소드로 갈 때(장면을 넘어도 된다).
         // 저작자가 명시적으로 켠다. 개수로 추론하지 않는다(옛 자동 진행이 툴의 실수를 조용히 지나가게 했다).
-        // 규칙(ChapterInvariants): 그 에피소드의 유일한 간선, 조건 없음, 스탯 변화 없음, 같은 장면.
+        // 규칙(ChapterInvariants): 그 에피소드의 유일한 간선, 조건 없음, 스탯 변화 없음.
         public bool IsAuto { get; }
 
         private EpisodeOption(

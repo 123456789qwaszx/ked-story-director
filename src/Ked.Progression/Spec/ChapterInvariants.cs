@@ -129,7 +129,7 @@ namespace Ked.Progression
                     EpisodeOption option = options[i];
                     string where = $"Nodes[{node.EpisodeId}].NextOptions[{i}]";
 
-                    if (!nodesById.TryGetValue(option.TargetEpisodeId, out EpisodeNode target))
+                    if (!nodesById.ContainsKey(option.TargetEpisodeId))
                     {
                         into.Add(ProgressionDiagnostic.Error(
                             where,
@@ -138,7 +138,7 @@ namespace Ked.Progression
                     }
 
                     if (option.IsAuto)
-                        VerifyAuto(node, options.Count, option, target, where, into);
+                        VerifyAuto(options.Count, option, where, into);
 
                     VerifyConditions(
                         option.VisibleConditions, statsByKey, where + ".VisibleConditions", into);
@@ -236,15 +236,16 @@ namespace Ked.Progression
                 offending[sceneId] = path;
         }
 
-        // 자동 간선 — 묻지 않고 지나가는 길은 넷을 지켜야 한다.
+        // 자동 간선 — 묻지 않고 지나가는 길은 셋을 지켜야 한다.
         // 유일한 간선(고를 것이 없어야 묻지 않는 게 맞다) · 조건 없음(판정할 것이 없어야 한다) ·
-        // 스탯 변화 없음(스탯 효과는 플레이어에게 보이는 선택지에서만 일어난다 — 도달성 증명과 UX의 근거) ·
-        // 같은 장면(장면 경계는 무대가 갈리는 자리라 모르게 넘어가면 이상하다).
+        // 스탯 변화 없음(스탯 효과는 플레이어에게 보이는 선택지에서만 일어난다 — 도달성 증명과 UX의 근거).
+        //
+        // 장면은 넘어도 된다. 경계에서 일어나는 일(무대 비우기 · 확정 · 저장)은 묻는 선택지로 넘을 때와
+        // 같고 박스만 뜨지 않는다. 자동(Auto)도 장면 소속(SceneId)도 저작자가 적은 것이라 런타임이
+        // 몰래 정하는 것이 없다(2026-11-18, docs/PLAN_auto-edge-across-scenes.md).
         private static void VerifyAuto(
-            EpisodeNode node,
             int siblingCount,
             EpisodeOption option,
-            EpisodeNode target,
             string where,
             ICollection<ProgressionDiagnostic> into)
         {
@@ -268,15 +269,6 @@ namespace Ked.Progression
                     where,
                     "자동 간선에는 스탯 변화를 둘 수 없다 — 스탯 효과는 플레이어에게 보이는 선택지에서만 " +
                     "일어난다. 스탯을 바꾸려면 문구를 주고 Auto를 끌 것."));
-            }
-
-            if (target != null &&
-                !string.Equals(node.SceneId, target.SceneId, StringComparison.Ordinal))
-            {
-                into.Add(ProgressionDiagnostic.Error(
-                    where,
-                    $"자동 간선은 장면을 나갈 수 없다 ('{node.SceneId}' → '{target.SceneId}'). " +
-                    "장면 경계는 무대가 갈리는 자리다 — 묻는 선택지로 둘 것."));
             }
         }
 
