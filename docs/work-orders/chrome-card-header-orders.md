@@ -51,4 +51,5 @@
 
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
-| 11-18 | U0 | (이 커밋) | 지시서 |
+| 11-18 | U0 | 9761ee99 | 지시서 |
+| 11-18 | U1 | (이 커밋) | File(`FileMenu`)에 단추의 바탕 · 글색 · 모서리 · 여백(`ButtonBackground` · `ButtonForeground` · `ControlCornerRadius` · `ButtonPadding`)과 높이 32. 위 띠 여백 10 → 4, [구성] · [대본] 탭 머리 글 18 · 높이 34(`TabControl#MainTabs > TabItem` — 판 안 오른쪽 기둥 탭은 그대로), 두 탭의 툴바 여백 8 → 4 — 툴바의 챕터 콤보가 창 위 111 → 81. 시험 — File 바탕 = [⚙ 설정] 바탕 · 같은 높이 · 탭 머리 · 툴바 자리 · 안쪽 탭은 12 그대로. 눈으로. App 475 |

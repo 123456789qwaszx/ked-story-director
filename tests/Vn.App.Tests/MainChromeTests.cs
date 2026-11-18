@@ -1,3 +1,4 @@
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
@@ -30,6 +31,37 @@ public sealed class MainChromeTests
         Assert.Equal("대본", ((TabItem)tabs.Items[1]!).Header);
         Assert.Equal(2, tabs.Items.Count);
         Assert.Same(window.FindControl<TabItem>("ChapterTabItem"), tabs.SelectedItem);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void File은_이웃_단추와_같은_모양이고_위_세_줄은_붙어_있다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「File은 흰 바탕에 흰 배경이라서 글자만 보입니다」 · 「줄이 너무 떨어져있는데 조금 붙여주십시오」(chrome-card-header U1).
+        var window = new MainWindow { Width = 1400, Height = 820 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // File은 [⚙ 설정]과 같은 바탕이다(투명이 아니다) · 같은 높이다.
+        MenuItem file = window.FindControl<MenuItem>("FileMenu")!;
+        Button settings = window.FindControl<Button>("SettingsButton")!;
+        var fileBrush = Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(file.Background);
+        var buttonBrush = Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(settings.Background);
+        Assert.NotEqual(0, fileBrush.Color.A);
+        Assert.Equal(buttonBrush.Color, fileBrush.Color);
+        Assert.Equal(settings.Bounds.Height, file.Bounds.Height, 1);
+
+        // 세 줄(위 띠 · 탭 줄 · 툴바) — 탭 머리는 34, 툴바의 챕터 콤보는 창 위에서 90 안에 선다(⛔ 그 전에는 48 · 111).
+        TabItem tab = window.FindControl<TabItem>("ChapterTabItem")!;
+        Assert.Equal(18, tab.FontSize);
+        Assert.True(tab.Bounds.Height <= 36, $"탭 머리 높이 {tab.Bounds.Height}");
+        ComboBox combo = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<ComboBox>("ChapterCombo")!;
+        double top = combo.TranslatePoint(new Avalonia.Point(0, 0), window)!.Value.Y;
+        Assert.True(top <= 90, $"툴바가 창 위에서 {top}에 선다");
+
+        // 판 안 오른쪽 기둥의 탭은 제 크기 그대로다(「>」 자식 고르기).
+        Assert.Equal(12, window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<TabItem>("InspectorTabItem")!.FontSize);
 
         window.Close();
     });

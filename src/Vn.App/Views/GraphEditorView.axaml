@@ -3,8 +3,9 @@
              xmlns:views="using:Vn.App.Views"
              x:Class="Vn.App.Views.GraphEditorView">
     <Grid RowDefinitions="Auto,*,Auto">
+        <!-- 툴바 위아래 여백 4 — 위 띠 · 탭 줄과 붙인다(2026-11-18 소유자 · chrome-card-header U1, ⛔ 그 전에는 8). -->
         <Border Grid.Row="0"
-                Padding="10,8"
+                Padding="10,4"
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Spacing="6">

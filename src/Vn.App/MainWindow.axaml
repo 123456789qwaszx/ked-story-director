@@ -8,8 +8,9 @@
         MinHeight="640"
         Title="VnTool">
     <DockPanel>
+        <!-- 위아래 여백은 4 — 위 띠 · 탭 줄 · 툴바 세 줄을 붙인다(2026-11-18 소유자 — 「불필요하게 공간을 활용」 · chrome-card-header U1, ⛔ 그 전에는 10). -->
         <Border DockPanel.Dock="Top"
-                Padding="12,10"
+                Padding="12,4"
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
             <Grid x:Name="TopBar" ColumnDefinitions="Auto,16,Auto,Auto,*,Auto">
@@ -17,8 +18,17 @@
                      되돌리기는 Ctrl+Z · Ctrl+Y다.
                      프로젝트는 폴더다 — 새로/열기는 폴더를 고른다. [다른 이름으로…]는 두지 않는다: 복제는 탐색기, 버전은 git.
                      manifest 이름은 사람이 짓지 않는다(ProjectFolder). -->
+                <!-- File은 이웃 단추([📂 작업 폴더] · [⚙ 설정])와 같은 모양이다 — 테마의 맨 윗 메뉴 항목은 바탕이 투명해 글자만 보였다
+                     (2026-11-18 소유자 · chrome-card-header U1). 단추의 바탕 · 모서리 · 여백을 그대로 빌린다 — 마우스를 올리면 테마의 메뉴
+                     강조가 그 위에 선다. -->
                 <Menu Grid.Column="0" x:Name="MainMenu" VerticalAlignment="Center">
-                    <MenuItem x:Name="FileMenu" Header="File">
+                    <MenuItem x:Name="FileMenu"
+                              Header="File"
+                              Background="{DynamicResource ButtonBackground}"
+                              Foreground="{DynamicResource ButtonForeground}"
+                              CornerRadius="{DynamicResource ControlCornerRadius}"
+                              Padding="{DynamicResource ButtonPadding}"
+                              MinHeight="32">
                         <MenuItem x:Name="NewMenuItem" Header="새 프로젝트…"
                                   ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/)." />
                         <MenuItem x:Name="OpenMenuItem" Header="열기…"
@@ -79,6 +89,15 @@
              무대 프리뷰는 연출 층과 함께 ked-story-compositor의 몫이다.
              주의: 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
         <TabControl x:Name="MainTabs" Padding="0">
+            <!-- 탭 글은 18 · 높이 34 — 테마 기본(24 · 48)은 위 띠 · 툴바 사이를 넓게 벌렸다(2026-11-18 소유자 · chrome-card-header U1).
+                 「>」 자식 고르기 — 판 안 오른쪽 기둥의 탭(제 크기가 따로 있다)에는 닿지 않는다. -->
+            <TabControl.Styles>
+                <Style Selector="TabControl#MainTabs > TabItem">
+                    <Setter Property="FontSize" Value="18" />
+                    <Setter Property="MinHeight" Value="34" />
+                    <Setter Property="Padding" Value="12,0" />
+                </Style>
+            </TabControl.Styles>
             <TabItem x:Name="ChapterTabItem" Header="구성">
                 <views:ChapterGraphView x:Name="ChapterGraph" />
             </TabItem>
