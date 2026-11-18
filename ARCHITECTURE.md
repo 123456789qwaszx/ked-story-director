@@ -430,7 +430,7 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 | `ExitTests` · `ConnectionTests` · `EmptyBranchTests` | 출구는 여는 줄에 · 고아로 남는다 · 포트 |
 | `EditingTests` · `RenameCarriesReferencesTests` | 화자 · 대사의 원본이 대본에만 · 되돌리기 · 개명이 참조를 끈다 |
 | `ResultDocumentComposerTests` · `OutputPresetTests` | 조각 순서와 원본 매핑 · 프리셋 |
-| `SerializationTests` · `StoryFileTests` · `SampleProjectTests` | 결정적 JSON · 원자적 저장 · 이전 형식 거부 · 손으로 쓴 견본(`samples/Authoring/`) |
+| `SerializationTests` · `StoryFileTests` | 결정적 JSON · 원자적 저장 · 이전 형식 거부 |
 | `GraphProjectionTests` · `EdgeSideTests` · `EdgeShapeTests` | 무엇이 그려지나 · 선의 쪽 · 선 모양 |
 | `CoreCopyInStepTests` | `Ked.Progression` 사본이 런타임과 발맞춰 있다 |
 | `Chapters/ChapterReachabilityTests` · `ChapterReachabilityEquivalenceTests` | 도달성 증명 · 코어와 같은 답 |
