@@ -255,10 +255,23 @@ public partial class StoryHierarchy : UserControl
     internal event Action<HierarchyRow, string>? RenameRequested;
 
     /// <summary>
-    /// 에피소드 줄을 보이는 제목(<see cref="ChapterEpisode.ShownTitle"/>)으로 세우고, 이름 고치기도 제목을 고친다 — [대본] 탭의
-    /// 하이어아키다. 끄면 EpisodeId로 세우고 제목은 곁글로 붙는다([구성] 탭).
+    /// 줄을 보이는 이름(챕터 표시 이름 · 장면 이름 · 에피소드 제목)으로 세우고, 이름 고치기도 그 이름을 고친다 — [대본] 탭의 하이어아키다.
+    /// 끄면 ID로 세우고 이름은 곁글로 붙는다([구성] 탭 — 「ID로 보기」를 끄면 [구성]도 켠다 · 2026-11-18). 바뀌면 줄을 다시 세운다.
     /// </summary>
-    internal bool ShowEpisodeTitles { get; set; }
+    internal bool ShowEpisodeTitles
+    {
+        get => _showEpisodeTitles;
+        set
+        {
+            if (_showEpisodeTitles != value)
+            {
+                _showEpisodeTitles = value;
+                Refresh();
+            }
+        }
+    }
+
+    private bool _showEpisodeTitles;
 
     /// <summary>이름을 고치는 중인 칸 — 화면 시험의 손잡이이자 실제 입력칸이다. 없으면 null.</summary>
     internal TextBox? RenameBox { get; private set; }

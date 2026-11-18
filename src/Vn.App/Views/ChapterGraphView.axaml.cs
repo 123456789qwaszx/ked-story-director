@@ -461,6 +461,8 @@ public partial class ChapterGraphView : UserControl
         AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
         HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
             _session?.SetHideEmptyChoices(HideEmptyChoicesCheck.IsChecked == true));
+        ShowIdsCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "ID로 보기", () =>
+            _session?.SetShowIds(ShowIdsCheck.IsChecked == true));
 
         // 간선 패널은 고르는 순간 저장된다. 에피소드 패널의 개명이 Enter로 확정되는 것과 같은 감각이다 —
         // [적용]이라는 문턱이 하나 더 있으면 "고쳤는데 왜 그대로지"가 생긴다.
@@ -538,6 +540,15 @@ public partial class ChapterGraphView : UserControl
         });
         session.HideEmptyChoicesChanged += _hideEmptyChanged;
 
+        // 「ID로 보기」 — 켜면 ID, 끄면 이름(하이어아키는 [대본] 탭의 모양으로). 체크를 맞추고 하이어아키 · 판을 다시 세운다.
+        ApplyShowIds();
+        _showIdsChanged = (_, _) => UiGuard.Run(_session, "ID로 보기", () =>
+        {
+            ApplyShowIds();
+            Draw();
+        });
+        session.ShowIdsChanged += _showIdsChanged;
+
         // 화자 목록이 바뀔 때만(명령 · 되돌리기 · 열기) [화자] 탭을 다시 그린다 — [대본] 탭이 이름을 더하면 여기 키 목록도 선다.
         _speakersChanged = (_, _) => UiGuard.Run(_session, "화자", RebuildSpeakerTab);
         session.SpeakersChanged += _speakersChanged;
@@ -547,7 +558,16 @@ public partial class ChapterGraphView : UserControl
     /// <summary>세션 구독을 끊을 수 있도록 들고 있는다 — 람다를 바로 걸면 뗄 수가 없다.</summary>
     private EventHandler<Vn.Authoring.Editing.ProjectChangedEventArgs>? _sessionChanged;
     private EventHandler? _hideEmptyChanged;
+    private EventHandler? _showIdsChanged;
     private EventHandler? _speakersChanged;
+
+    /// <summary>「ID로 보기」를 체크와 하이어아키에 비춘다 — 끄면 하이어아키가 [대본] 탭처럼 이름으로 선다(곁글 없음).</summary>
+    private void ApplyShowIds()
+    {
+        bool showIds = _session?.ShowIds != false;
+        ShowIdsCheck.IsChecked = showIds;
+        HierarchyView.ShowEpisodeTitles = !showIds;
+    }
 
     /// <summary>
     /// 세션에서 손을 뗀다 — 구독을 끊는다.
@@ -577,6 +597,11 @@ public partial class ChapterGraphView : UserControl
             _session.HideEmptyChoicesChanged -= _hideEmptyChanged;
         }
 
+        if (_session is not null && _showIdsChanged is not null)
+        {
+            _session.ShowIdsChanged -= _showIdsChanged;
+        }
+
         if (_session is not null && _speakersChanged is not null)
         {
             _session.SpeakersChanged -= _speakersChanged;
@@ -584,6 +609,7 @@ public partial class ChapterGraphView : UserControl
 
         _sessionChanged = null;
         _hideEmptyChanged = null;
+        _showIdsChanged = null;
         _speakersChanged = null;
         _session = null;
     }
@@ -1784,6 +1810,7 @@ public partial class ChapterGraphView : UserControl
         bool hasError = model.EpisodeHasError(episode) || IsUnreachable(episode);
 
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        bool showIds = _session?.ShowIds != false;   // 「ID로 보기」
 
         // 시작 에피소드(첫 행)가 곧 Root다 — 도달성의 씨앗이자 분기 저작의 출발점.
         bool start = ReferenceEquals(model.StartEpisode, episode);
@@ -1817,7 +1844,10 @@ public partial class ChapterGraphView : UserControl
             Padding = new Thickness(4, 0),
             Child = new TextBlock
             {
-                Text = episode.SceneId,   // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 무엇인지는 툴팁이 말한다
+                // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 「ID로 보기」를 끄면 장면 이름. 무엇인지는 툴팁이 말한다.
+                Text = showIds ? episode.SceneId : ChapterSceneNotes.NameOf(model.SceneNotes, episode.SceneId) is { Length: > 0 } sceneName
+                    ? sceneName
+                    : episode.SceneId,
                 FontSize = 9,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Brushes.White
@@ -1839,30 +1869,19 @@ public partial class ChapterGraphView : UserControl
             header.Children.Add(new TextBlock { Text = "⚠", FontSize = 11, Foreground = Brushes.IndianRed });
         }
 
-        bool hasTitle = !string.IsNullOrWhiteSpace(episode.Title);
-
+        // 머리는 한 줄이다 — 「ID로 보기」면 EpisodeId, 끄면 제목(비면 EpisodeId) · 2026-11-18 소유자. ⛔ 그 전에는 제목 아래 둘째 줄에
+        // EpisodeId를 따로 적었다(칩 옆의 제목과 함께 — 「ID로 보기」가 들어와 걷었다).
         header.Children.Add(new TextBlock
         {
-            Text = hasTitle ? episode.Title : episode.EpisodeId,
+            Text = showIds ? episode.EpisodeId : episode.ShownTitle,
             FontWeight = FontWeight.SemiBold,
             FontSize = 12,
-            TextTrimming = TextTrimming.CharacterEllipsis
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Tag = CardNameTag
         });
 
         var body = new StackPanel { Spacing = 1 };
         body.Children.Add(header);
-
-        // 제목이 없으면 굵은 줄이 이미 Id다 — 같은 글자를 두 번 쓰지 않는다.
-        if (hasTitle)
-        {
-            body.Children.Add(new TextBlock
-            {
-                Text = episode.EpisodeId,
-                FontSize = 10,
-                Opacity = 0.6,
-                TextTrimming = TextTrimming.CharacterEllipsis
-            });
-        }
 
         // 여기 도착했을 때의 스탯 (2026-08-17 소유자: "간선을 따라 왔을 때 스탯의 변화량이
         // 노드에 표시되도록. 여러 루트가 있을 때는 스탯의 최소최대량을 표기"). 도달성 증명이
@@ -2107,6 +2126,9 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>카드의 도착 스탯 줄에 붙는 표식 — 검증이 그 줄을 집는 손잡이다.</summary>
     internal const string StatLineTag = "episode-stats";
+
+    /// <summary>카드 머리의 이름 줄(「ID로 보기」면 EpisodeId, 끄면 제목) — 시험이 이 Tag로 집는다.</summary>
+    internal const string CardNameTag = "episode-name";
 
     /// <summary>카드 툴팁의 스탯 절 — 좁은 카드 줄이 잘려도 여기서는 다 읽힌다.</summary>
     private string StatSpanDetail(ChapterEpisode episode)

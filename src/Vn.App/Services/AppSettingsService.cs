@@ -171,6 +171,18 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>
+    /// [구성] 탭 툴바의 「ID로 보기」(앱 전체 하나 — 처음에는 켜져 있다). 「빈 선택지 숨기기」와 같은 까닭으로 여기다(내 화면 편의).
+    /// </summary>
+    public static bool LoadShowIds() => Load(SettingsPath).ShowIds;
+
+    public static void SaveShowIds(bool show)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.ShowIds = show;
+        Save(settings);
+    }
+
     /// <summary>하이어아키 기둥을 접어 두었는가 (두 그래프가 함께 쓴다).</summary>
     public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
 
@@ -295,6 +307,9 @@ internal static class AppSettingsService
 
         /// <summary>[구성] 탭의 「빈 선택지 숨기기」 — <see cref="LoadHideEmptyChoices"/>.</summary>
         public bool HideEmptyChoices { get; set; }
+
+        /// <summary>[구성] 탭의 「ID로 보기」 — <see cref="LoadShowIds"/>. 처음(이 칸이 없는 설정 파일)에는 켜져 있다.</summary>
+        public bool ShowIds { get; set; } = true;
     }
 
     /// <summary>

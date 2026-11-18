@@ -43,6 +43,9 @@
                     <!-- 빈 선택지 숨기기 — [구성] 판 전체에 하나다. [대본] 탭은 카드마다 인스펙터의 체크로 정한다. -->
                     <CheckBox x:Name="HideEmptyChoicesCheck" Content="빈 선택지 숨기기" FontSize="11" VerticalAlignment="Center"
                               ToolTip.Tip="켜면 이 판의 모든 카드에서 이어지지 않은 빈 선택지 점과 들어오는 길 없는 입구 점을 감춥니다. [대본] 탭의 선택지 칸은 카드마다 따로 정합니다." />
+                    <!-- ID로 보기 — 켜면(처음) 하이어아키 · 카드가 ID로, 끄면 [대본] 탭처럼 이름으로 선다(2026-11-18 소유자). 앱 설정에 기억한다. -->
+                    <CheckBox x:Name="ShowIdsCheck" Content="ID로 보기" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"
+                              ToolTip.Tip="켜면 하이어아키와 카드가 챕터ID · 장면ID · 에피소드ID로 보입니다(이름은 하이어아키 곁글에). 끄면 [대본] 탭처럼 보이는 이름으로 봅니다." />
                 </StackPanel>
 
                 <!-- 픽스처(재생루트 하이라이트)는 화면에 세우지 않는다.

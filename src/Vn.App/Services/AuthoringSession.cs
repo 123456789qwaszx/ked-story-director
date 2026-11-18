@@ -78,6 +78,15 @@ internal sealed class AuthoringSession
     /// <summary>[구성] 탭의 「빈 선택지 숨기기」가 바뀌었다 — [구성] 판이 다시 그린다.</summary>
     public event EventHandler? HideEmptyChoicesChanged;
 
+    /// <summary>
+    /// [구성] 탭에서 ID로 보는가 — 그 탭 툴바의 「ID로 보기」(하나다 · 처음에는 켜져 있다 · 2026-11-18 소유자). 켜면 하이어아키 · 카드가 ID(챕터ID ·
+    /// 장면ID · EpisodeId)로, 끄면 [대본] 탭처럼 보이는 이름으로 선다. 화면 편의라 사용자 설정에 기억한다(앱 전체).
+    /// </summary>
+    public bool ShowIds { get; private set; } = AppSettingsService.LoadShowIds();
+
+    /// <summary>[구성] 탭의 「ID로 보기」가 바뀌었다 — [구성] 판 · 하이어아키가 다시 선다.</summary>
+    public event EventHandler? ShowIdsChanged;
+
     public string? SelectedNodeId { get; private set; }
 
     public StoryNode? SelectedNode => Project.FindNode(SelectedNodeId);
@@ -448,6 +457,19 @@ internal sealed class AuthoringSession
         HideEmptyChoices = hide;
         AppSettingsService.SaveHideEmptyChoices(hide);
         HideEmptyChoicesChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>[구성] 탭을 ID로(참) 또는 이름으로 본다 — 기억하고 [구성] 탭에 알린다.</summary>
+    internal void SetShowIds(bool show)
+    {
+        if (ShowIds == show)
+        {
+            return;
+        }
+
+        ShowIds = show;
+        AppSettingsService.SaveShowIds(show);
+        ShowIdsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>장면 하나를 접거나 편다 — 판 접기와 같은 알림으로 그래프 · 하이어아키가 다시 선다.</summary>
