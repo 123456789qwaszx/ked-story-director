@@ -98,7 +98,7 @@ internal sealed class SettingsWindow : Window
                     "이 프로젝트",
                     "project.vnproject.json에 저장됩니다 — 바꾸면 되돌리기(Ctrl+Z)가 되고, File → 저장(Ctrl+S)해야 파일에 남습니다.",
                     BoardSection()),
-                Framed(ExportGroup),
+                ExportGroup,   // 접는 묶음은 제 테두리가 있다
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -131,8 +131,45 @@ internal sealed class SettingsWindow : Window
 
     internal Button CancelButton { get; }
 
-    /// <summary>형식마다 보낼 곳 줄의 글(적힌 경로 · 「보내지 않음」 · 없는 폴더 표시).</summary>
-    internal TextBlock DestinationText(ExportFormat format) => _destinationTexts[format];
+    /// <summary>형식마다 보낼 곳의 경로 칸 — 절대 경로가 보인다. 비면 보내지 않는다.</summary>
+    internal TextBox DestinationBox(ExportFormat format) => _destinationBoxes[format];
+
+    /// <summary>형식마다 경로 칸 아래의 알림 — 없는 폴더일 때만 보인다.</summary>
+    internal TextBlock MissingNote(ExportFormat format) => _missingNotes[format];
+
+    /// <summary>
+    /// 경로 칸의 글을 보낼 곳으로 — Enter · 초점 이탈 · [확인]. 비우면 보내지 않는다. 상대 경로를 적으면 프로젝트 폴더 기준이다. 지금과 같으면 아무것도 하지
+    /// 않는다. 받지 않으면 그 까닭을 내고 칸은 지금 값으로 돌아간다.
+    /// </summary>
+    internal string? ApplyBox(ExportFormat format)
+    {
+        if (_session.ProjectPath is not { } projectPath)
+        {
+            return null;
+        }
+
+        string typed = (_destinationBoxes[format].Text ?? string.Empty).Trim().Trim('"');
+        string? current = _destinations.FolderOf(format) is { } written ? ExportDestinations.ResolveFolder(projectPath, written) : null;
+        string? wanted;
+
+        try
+        {
+            wanted = typed.Length == 0 ? null : ExportDestinations.ResolveFolder(projectPath, typed);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            RefreshDestinations();
+            return ShowRefusal($"경로를 읽지 못했습니다 — {typed}");
+        }
+
+        if (string.Equals(wanted, current, StringComparison.OrdinalIgnoreCase))
+        {
+            RefreshDestinations();   // 같은 곳을 다르게 적었다(상대 경로 · 따옴표) — 칸을 절대 경로로 맞춘다
+            return null;
+        }
+
+        return SetDestination(format, wanted);
+    }
 
     /// <summary>보낼 곳을 받지 않은 까닭 — 받지 않았을 때만 보인다.</summary>
     internal TextBlock ExportNote { get; } = new()
@@ -166,9 +203,15 @@ internal sealed class SettingsWindow : Window
         if (refusal is null)
         {
             _destinations = wanted;
-            RefreshDestinations();
         }
 
+        RefreshDestinations();   // 받지 않았으면 칸이 지금 값으로 돌아간다
+        return ShowRefusal(refusal);
+    }
+
+    /// <summary>받지 않은 까닭을 보인다(없으면 걷는다) — 그 까닭을 돌려준다.</summary>
+    private string? ShowRefusal(string? refusal)
+    {
         ExportNote.Text = refusal ?? string.Empty;
         ExportNote.IsVisible = refusal is not null;
         return refusal;
@@ -177,6 +220,16 @@ internal sealed class SettingsWindow : Window
     /// <summary>[확인] — 판 크기를 바꾸고(같으면 아무것도 적지 않는다), 보낼 곳이 바뀌었으면 그 파일에 적고 창을 닫는다.</summary>
     internal void Confirm()
     {
+        // 경로 칸에 적다 만 글도 반영한다 — 받지 않은 것이 있으면 창을 닫지 않고 까닭을 보인다.
+        foreach (ExportFormat format in ExportDestinations.Formats)
+        {
+            if (ApplyBox(format) is not null)
+            {
+                ExportGroup.IsExpanded = true;
+                return;
+            }
+        }
+
         (double width, double height) = WantedBoard();
         UiGuard.Run(_session, "설정", () =>
         {
@@ -198,7 +251,9 @@ internal sealed class SettingsWindow : Window
 
     private ExportDestinations _destinations;
 
-    private readonly Dictionary<ExportFormat, TextBlock> _destinationTexts = [];
+    private readonly Dictionary<ExportFormat, TextBox> _destinationBoxes = [];
+
+    private readonly Dictionary<ExportFormat, TextBlock> _missingNotes = [];
 
     private readonly Dictionary<ExportFormat, HyperlinkButton> _formatLinks = [];
 
@@ -261,9 +316,9 @@ internal sealed class SettingsWindow : Window
 
         var grid = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
             ColumnSpacing = 8,
-            RowSpacing = 6,
+            RowSpacing = 4,
             IsEnabled = _session.ProjectPath is not null
         };
 
@@ -286,31 +341,57 @@ internal sealed class SettingsWindow : Window
             ToolTip.SetTip(label, WhatIs(format));
             label.Click += (_, _) => UiGuard.Run(_session, "작업 폴더에서 보기", () => ShowInWorkFolder(format));
             _formatLinks[format] = label;
-            var text = new TextBlock
+
+            // 보낼 곳은 탐색기의 주소 칸처럼 — 경로가 보이고, 적거나 붙여 넣고, [찾아보기…]로 고른다(2026-11-18 소유자 — 「(보내지 않음)으로는 뭐가뭔지
+            // 잘 이해가 안 가니, 다른 윈도우 탐색기처럼 경로를 연결하는 형식을」). 비우면 보내지 않는다 — 자리표시가 그렇게 말하고, 칸 안의 ✕가 비운다.
+            // ⛔ 그 전에는 상대 경로 글(비면 「(보내지 않음)」) · [고르기…] · [✕]였다.
+            var box = new TextBox
             {
                 FontSize = 11,
                 VerticalAlignment = VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis
+                PlaceholderText = format == ExportFormat.Progression
+                    ? "보내지 않음 — 게임의 ChapterProgression 폴더를 찾아보거나 경로를 붙여 넣으세요"
+                    : "보내지 않음 — 보낼 폴더를 찾아보거나 경로를 붙여 넣으세요",
+                Tag = $"export-path:{format}"
             };
-            var pick = new Button { Content = "고르기…", FontSize = 11, Tag = $"export-pick:{format}" };
-            var clear = new Button { Content = "✕", FontSize = 11, Tag = $"export-clear:{format}" };
-            ToolTip.SetTip(clear, "보내지 않는다");
-
-            pick.Click += async (_, _) =>
+            box.Classes.Add("clearButton");
+            box.LostFocus += (_, _) => ApplyBox(format);
+            box.KeyDown += (_, args) =>
             {
-                if (await PickFolderAsync($"보낼 곳 — {ExportDestinations.LabelOf(format)}") is { } folder)
+                if (args.Key == Avalonia.Input.Key.Enter)
+                {
+                    args.Handled = true;
+                    ApplyBox(format);
+                }
+            };
+
+            var browse = new Button { Content = "찾아보기…", FontSize = 11, Tag = $"export-browse:{format}" };
+            browse.Click += async (_, _) =>
+            {
+                if (await PickFolderAsync($"보낼 곳 — {ExportDestinations.LabelOf(format)}", format) is { } folder)
                 {
                     SetDestination(format, folder);
                 }
             };
-            clear.Click += (_, _) => SetDestination(format, null);
 
-            _destinationTexts[format] = text;
+            // 없는 폴더는 칸 아래에 알린다(만들지 않는다).
+            var missing = new TextBlock
+            {
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap,
+                IsVisible = false,
+                Foreground = new SolidColorBrush(Color.Parse("#B9770E"))
+            };
+
+            _destinationBoxes[format] = box;
+            _missingNotes[format] = missing;
             Place(grid, label, row, 0);
-            Place(grid, text, row, 1);
-            Place(grid, pick, row, 2);
-            Place(grid, clear, row, 3);
-            row++;
+            Place(grid, box, row, 1);
+            Place(grid, browse, row, 2);
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            Place(grid, missing, row + 1, 1);
+            Grid.SetColumnSpan(missing, 2);
+            row += 2;
         }
 
         panel.Children.Add(grid);
@@ -338,25 +419,16 @@ internal sealed class SettingsWindow : Window
             ? "내보내기 — 작업 폴더에만 냅니다"
             : $"내보내기 — {string.Join(" · ", sending)}을(를) 보낼 곳에도 냅니다";
 
-        foreach ((ExportFormat format, TextBlock text) in _destinationTexts)
+        foreach ((ExportFormat format, TextBox box) in _destinationBoxes)
         {
             string? written = _destinations.FolderOf(format);
-            bool missing = written is not null && _session.ProjectPath is { } path && _destinations.ResolveExisting(path, format) is null;
+            string? full = written is not null && _session.ProjectPath is { } project ? ExportDestinations.ResolveFolder(project, written) : null;
+            bool missing = full is not null && !Directory.Exists(full);
 
-            text.Text = written is null ? "(보내지 않음)" : missing ? $"⚠ 없는 폴더 — {written}" : written;
-            text.Opacity = written is null ? 0.55 : 1;
-            // null을 넣으면 물려받은 글자색이 아니라 빈 붓이 된다(글이 사라진다) — 값을 걷는다.
-            if (missing)
-            {
-                text.Foreground = new SolidColorBrush(Color.Parse("#B9770E"));
-            }
-            else
-            {
-                text.ClearValue(TextBlock.ForegroundProperty);
-            }
-            ToolTip.SetTip(text, written is null || _session.ProjectPath is not { } project
-                ? null
-                : ExportDestinations.ResolveFolder(project, written));
+            box.Text = full ?? string.Empty;
+            ToolTip.SetTip(box, full);   // 긴 경로는 칸에서 잘린다 — 다 보이게
+            _missingNotes[format].Text = missing ? "⚠ 없는 폴더입니다 — 만들지 않습니다. 폴더를 만든 뒤 다시 찾아보세요." : string.Empty;
+            _missingNotes[format].IsVisible = missing;
         }
     }
 
@@ -369,7 +441,7 @@ internal sealed class SettingsWindow : Window
             yarn.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
             StringComparison.OrdinalIgnoreCase);
 
-    private async Task<string?> PickFolderAsync(string title)
+    private async Task<string?> PickFolderAsync(string title, ExportFormat format)
     {
         if (!StorageProvider.CanPickFolder)
         {
@@ -378,8 +450,15 @@ internal sealed class SettingsWindow : Window
             return null;
         }
 
+        // 지금 보낼 곳(있으면)에서 연다 — 탐색기처럼 지금 자리에서 시작한다.
+        string? current = _destinationBoxes[format].Text is { Length: > 0 } typed && Directory.Exists(typed) ? typed : null;
         IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(
-            new FolderPickerOpenOptions { Title = title, AllowMultiple = false });
+            new FolderPickerOpenOptions
+            {
+                Title = title,
+                AllowMultiple = false,
+                SuggestedStartLocation = current is null ? null : await StorageProvider.TryGetFolderFromPathAsync(current)
+            });
 
         return folders.Count == 0 ? null : folders[0].Path.LocalPath;
     }
@@ -500,19 +579,14 @@ internal sealed class SettingsWindow : Window
         grid.Children.Add(box);
     }
 
-    /// <summary>묶음의 테두리 — 펼친 묶음과 접는 묶음이 같은 테두리에 선다.</summary>
-    private static Border Framed(Control child) => new()
+    /// <summary>묶음 하나 — 머리(이름 · 어디에 저장되는가)와 그 아래 설정들.</summary>
+    private static Control Group(string title, string where, Control body) => new Border
     {
         BorderBrush = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128)),
         BorderThickness = new Thickness(1),
         CornerRadius = new CornerRadius(4),
         Padding = new Thickness(12, 10),
-        Child = child
-    };
-
-    /// <summary>묶음 하나 — 머리(이름 · 어디에 저장되는가)와 그 아래 설정들.</summary>
-    private static Control Group(string title, string where, Control body) => Framed(
-        new StackPanel
+        Child = new StackPanel
         {
             Spacing = 8,
             Children =
@@ -528,5 +602,6 @@ internal sealed class SettingsWindow : Window
                 },
                 body
             }
-        });
+        }
+    };
 }

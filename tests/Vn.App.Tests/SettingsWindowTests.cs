@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
@@ -163,21 +164,22 @@ public sealed class SettingsWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.Null(window.FindControl<Button>("GameFolderButton"));
-        Assert.All(ExportDestinations.Formats, format => Assert.Equal("(보내지 않음)", settings.DestinationText(format).Text));
+        Assert.All(ExportDestinations.Formats, format => Assert.Equal(string.Empty, settings.DestinationBox(format).Text));   // 비면 보내지 않는다
 
         Assert.Null(settings.SetDestination(ExportFormat.Progression, game));
-        Assert.Equal("game", settings.DestinationText(ExportFormat.Progression).Text);
+        Assert.Equal(game, settings.DestinationBox(ExportFormat.Progression).Text);   // 탐색기처럼 절대 경로가 보인다
 
         // 대사 Yarn은 게임 폴더와 같은 곳으로 받지 않는다 — 까닭을 보인다.
         Assert.NotNull(settings.SetDestination(ExportFormat.DialogueYarn, game));
         Assert.True(settings.ExportNote.IsVisible);
-        Assert.Equal("(보내지 않음)", settings.DestinationText(ExportFormat.DialogueYarn).Text);
+        Assert.Equal(string.Empty, settings.DestinationBox(ExportFormat.DialogueYarn).Text);
         Assert.Null(settings.SetDestination(ExportFormat.DialogueYarn, yarn));
         Assert.False(settings.ExportNote.IsVisible);
 
         // 없는 폴더는 표시한다(만들지 않는다).
         Assert.Null(settings.SetDestination(ExportFormat.Scenes, Path.Combine(_directory, "nowhere")));
-        Assert.StartsWith("⚠ 없는 폴더", settings.DestinationText(ExportFormat.Scenes).Text);
+        Assert.True(settings.MissingNote(ExportFormat.Scenes).IsVisible);
+        Assert.StartsWith("⚠ 없는 폴더", settings.MissingNote(ExportFormat.Scenes).Text);
         Assert.False(Directory.Exists(Path.Combine(_directory, "nowhere")));
 
         // [확인] 전에는 파일에 안 남는다.
@@ -255,6 +257,60 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     [Fact]
+    public void 보낼_곳은_경로_칸에_적거나_붙여_넣고_비우면_보내지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「(보내지 않음)으로는 뭐가뭔지 잘 이해가 안 가니, 다른 윈도우 탐색기처럼 경로를 연결하는 형식을」.
+        (MainWindow window, AuthoringSession session) = Open();
+        string game = Path.Combine(_directory, "game");
+        Directory.CreateDirectory(game);
+        SettingsWindow settings = window.OpenSettings();
+        TextBox box = settings.DestinationBox(ExportFormat.Progression);
+
+        void Enter()
+        {
+            box.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.Contains("보내지 않음", box.PlaceholderText, StringComparison.Ordinal);
+        Assert.Contains("clearButton", box.Classes);   // 칸 안의 ✕로 비운다
+        Assert.Equal(["export-browse:Progression"], settings.GetLogicalDescendants().OfType<Button>()
+            .Where(button => (button.Tag as string)?.EndsWith(":Progression", StringComparison.Ordinal) == true && button is not HyperlinkButton)
+            .Select(button => (string)button.Tag!));   // [찾아보기…] 하나 — ⛔ [고르기…] · [✕]는 걷혔다
+
+        // 붙여 넣은 절대 경로(따옴표째여도) — Enter.
+        box.Text = $"\"{game}\"";
+        Enter();
+        Assert.Equal("game", ExportDestinationsOf(settings).Progression);
+        Assert.Equal(game, box.Text);
+
+        // 상대 경로는 프로젝트 폴더 기준이다.
+        box.Text = "game";
+        Enter();
+        Assert.Equal(game, box.Text);
+
+        // 비우면 보내지 않는다.
+        box.Text = string.Empty;
+        Enter();
+        Assert.Null(ExportDestinationsOf(settings).Progression);
+
+        // 적다 만 글도 [확인]이 반영한다.
+        box.Text = game;
+        settings.Confirm();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("game", ExportDestinations.LoadBeside(session.ProjectPath!).Progression);
+
+        window.Close();
+    });
+
+    /// <summary>창 안에서 고친(아직 [확인] 전) 보낼 곳 — 칸의 글로 읽는다.</summary>
+    private ExportDestinations ExportDestinationsOf(SettingsWindow settings) =>
+        ExportDestinations.Formats.Aggregate(ExportDestinations.None, (all, format) =>
+            all.With(format, settings.DestinationBox(format).Text is { Length: > 0 } full
+                ? ExportDestinations.Relativize(Path.Combine(_directory, "p" + ProjectManifestJson.FileExtension), full)
+                : null));
+
+    [Fact]
     public void 내보내기에서_취소하면_보낼_곳을_버리고_다시_열면_지금_값을_보인다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = Open();
@@ -265,15 +321,15 @@ public sealed class SettingsWindowTests : IDisposable
 
         SettingsWindow settings = window.OpenSettings();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("game", settings.DestinationText(ExportFormat.Progression).Text);
+        Assert.Equal(game, settings.DestinationBox(ExportFormat.Progression).Text);
 
         settings.SetDestination(ExportFormat.Progression, null);
-        Assert.Equal("(보내지 않음)", settings.DestinationText(ExportFormat.Progression).Text);
+        Assert.Equal(string.Empty, settings.DestinationBox(ExportFormat.Progression).Text);
         settings.CancelButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal("game", ExportDestinations.LoadBeside(session.ProjectPath!).Progression);
-        Assert.Equal("game", window.OpenSettings().DestinationText(ExportFormat.Progression).Text);
+        Assert.Equal(game, window.OpenSettings().DestinationBox(ExportFormat.Progression).Text);
 
         window.Close();
     });
