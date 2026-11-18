@@ -1874,6 +1874,8 @@ public partial class ChapterGraphView : UserControl
         // 모델의 오류든 도달 불가든 노드에는 같은 ⚠로 선다 — 기획자에게는 둘 다 "고칠 것"이다.
         bool hasError = model.EpisodeHasError(episode) || IsUnreachable(episode);
 
+        // 머리는 두 줄이다 — 위는 칩(장면 시작점 · 장면 · 🔒 · ⚠), 아래는 에피소드 이름(2026-11-18 소유자 — 「에피소드 이름이 시작점과 새장면
+        // 아래쪽에」 · chrome-card-header U2). ⛔ 그 전에는 칩 뒤 같은 줄에 이름이 섰다.
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         bool showIds = _session?.ShowIds != false;   // 「ID로 보기」
 
@@ -1882,71 +1884,57 @@ public partial class ChapterGraphView : UserControl
 
         if (model.IsSceneRoot(episode))
         {
-            var root = new Border
-            {
-                Background = new SolidColorBrush(Color.Parse("#3D7BD9")),
-                CornerRadius = new CornerRadius(3),
-                Padding = new Thickness(4, 0),
-                // 「장면」은 곁의 장면 칩이 이미 말한다 — 「시작점」만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 시작점」).
-                Child = new TextBlock
-                {
-                    Text = "시작점",
-                    FontSize = 9,
-                    FontWeight = FontWeight.Bold,
-                    Foreground = Brushes.White
-                }
-            };
+            // 「장면 시작점」(2026-11-18 소유자 — ⛔ 같은 날 H2에서 「시작점」으로 줄였다가 되돌렸다).
+            Border root = CardChip("장면 시작점", "#3D7BD9", FontWeight.Bold);
             ToolTip.SetTip(root, start
                 ? "시작 에피소드이자 장면 시작점입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
                 : "다른 장면에서 들어오는 장면 시작점입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
             header.Children.Add(root);
         }
 
-        var scene = new Border
-        {
-            Background = new SolidColorBrush(Color.Parse("#6B5CA5")),
-            CornerRadius = new CornerRadius(3),
-            Padding = new Thickness(4, 0),
-            Child = new TextBlock
-            {
-                // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 「ID로 보기」를 끄면 장면 이름. 무엇인지는 툴팁이 말한다.
-                Text = showIds ? episode.SceneId : ChapterSceneNotes.NameOf(model.SceneNotes, episode.SceneId) is { Length: > 0 } sceneName
-                    ? sceneName
-                    : episode.SceneId,
-                FontSize = 9,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = Brushes.White
-            }
-        };
+        // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 「ID로 보기」를 끄면 장면 이름. 무엇인지는 툴팁이 말한다.
+        Border scene = CardChip(
+            showIds ? episode.SceneId : ChapterSceneNotes.NameOf(model.SceneNotes, episode.SceneId) is { Length: > 0 } sceneName
+                ? sceneName
+                : episode.SceneId,
+            "#6B5CA5",
+            FontWeight.SemiBold);
         ToolTip.SetTip(scene, $"장면: {episode.SceneId} — 같은 장면ID끼리 저장·롤백 구간을 공유합니다.");
         header.Children.Add(scene);
 
         // 관문은 v8에서 길(간선)의 것이 됐다 — 카드는 "들어오는 길에 관문이 있다"를 표시한다.
         if (GatedIncoming(model, episode) is { Count: > 0 } gatedPaths)
         {
-            var lockMark = new TextBlock { Text = "🔒", FontSize = 11 };
+            var lockMark = new TextBlock { Text = "🔒", FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
             ToolTip.SetTip(lockMark, GateSummary(gatedPaths));
             header.Children.Add(lockMark);
         }
 
         if (hasError)
         {
-            header.Children.Add(new TextBlock { Text = "⚠", FontSize = 11, Foreground = Brushes.IndianRed });
+            header.Children.Add(new TextBlock
+            {
+                Text = "⚠",
+                FontSize = 11,
+                Foreground = Brushes.IndianRed,
+                VerticalAlignment = VerticalAlignment.Center
+            });
         }
 
-        // 머리는 한 줄이다 — 「ID로 보기」면 EpisodeId, 끄면 제목(비면 EpisodeId) · 2026-11-18 소유자. ⛔ 그 전에는 제목 아래 둘째 줄에
-        // EpisodeId를 따로 적었다(칩 옆의 제목과 함께 — 「ID로 보기」가 들어와 걷었다).
-        header.Children.Add(new TextBlock
+        var body = new StackPanel { Spacing = 1 };
+        body.Children.Add(header);
+
+        // 이름 — 「ID로 보기」면 EpisodeId, 끄면 제목(비면 EpisodeId) · 2026-11-18 소유자. 칩과 같은 한글 먼저 글꼴이다.
+        body.Children.Add(new TextBlock
         {
             Text = showIds ? episode.EpisodeId : episode.ShownTitle,
             FontWeight = FontWeight.SemiBold,
             FontSize = 12,
+            FontFamily = CardHeadFont,
+            Margin = new Thickness(0, 2, 0, 0),
             TextTrimming = TextTrimming.CharacterEllipsis,
             Tag = CardNameTag
         });
-
-        var body = new StackPanel { Spacing = 1 };
-        body.Children.Add(header);
 
         // 여기 도착했을 때의 스탯 (2026-08-17 소유자: "간선을 따라 왔을 때 스탯의 변화량이
         // 노드에 표시되도록. 여러 루트가 있을 때는 스탯의 최소최대량을 표기"). 도달성 증명이
@@ -2194,6 +2182,36 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>카드 머리의 이름 줄(「ID로 보기」면 EpisodeId, 끄면 제목) — 시험이 이 Tag로 집는다.</summary>
     internal const string CardNameTag = "episode-name";
+
+    /// <summary>카드 머리 칩의 높이 — 칩 안 글의 글꼴이 무엇이든 상자가 같다(2026-11-18 소유자 · chrome-card-header U2).</summary>
+    internal const double CardChipHeight = 16;
+
+    /// <summary>
+    /// 카드 머리(칩 · 이름)의 글꼴 — <b>한글 먼저</b>(맑은 고딕 → Apple SD Gothic Neo → Noto Sans KR · CJK KR → 앱 기본). 앱 글꼴(Inter)에는 한글이
+    /// 없어 한글은 시스템 글꼴로, 라틴(장면ID · EpisodeId)은 Inter로 그려졌다 — 「ID로 보기」를 켜고 끌 때마다 글꼴과 줄 높이가 바뀌었다
+    /// (2026-11-18 소유자 — 「글자체자체도 다른 것 같은데」). 한글 글꼴은 라틴 글자도 그리므로 두 모드가 같은 글꼴이다. 앱 전체는 그대로다.
+    /// </summary>
+    internal static readonly FontFamily CardHeadFont =
+        new("Malgun Gothic, Apple SD Gothic Neo, Noto Sans KR, Noto Sans CJK KR, $Default");
+
+    /// <summary>카드 머리 칩 하나 — 높이를 박고(<see cref="CardChipHeight"/>) 글은 가운데에 선다.</summary>
+    private static Border CardChip(string text, string color, FontWeight weight) => new()
+    {
+        Background = new SolidColorBrush(Color.Parse(color)),
+        CornerRadius = new CornerRadius(3),
+        Padding = new Thickness(4, 0),
+        Height = CardChipHeight,
+        VerticalAlignment = VerticalAlignment.Center,
+        Child = new TextBlock
+        {
+            Text = text,
+            FontSize = 9,
+            FontWeight = weight,
+            FontFamily = CardHeadFont,
+            Foreground = Brushes.White,
+            VerticalAlignment = VerticalAlignment.Center
+        }
+    };
 
     /// <summary>카드 툴팁의 스탯 절 — 좁은 카드 줄이 잘려도 여기서는 다 읽힌다.</summary>
     private string StatSpanDetail(ChapterEpisode episode)
