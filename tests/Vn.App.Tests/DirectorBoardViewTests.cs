@@ -104,22 +104,6 @@ public sealed class DirectorBoardViewTests : IDisposable
     });
 
     [Fact]
-    public void 챕터_콤보로_고르면_바로_그_챕터로_간다() => HeadlessUi.Run(() =>
-    {
-        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open(GraphTab);
-        Assert.False(Visible(graph, Text(graph, "먼 시작")));
-
-        graph.FindControl<ComboBox>("ChapterCombo")!.SelectedItem = "ch02";
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.Equal(Board(session, "ch02"), session.ActiveFileId);
-        Assert.True(Visible(graph, Text(graph, "먼 시작")));
-        Assert.True(Visible(graph, Text(graph, "먼 끝")));
-
-        window.Close();
-    });
-
-    [Fact]
     public void 하이어아키의_챕터_줄을_고르면_그_챕터로_가고_접힌_챕터면_그_표로_간다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open(GraphTab);

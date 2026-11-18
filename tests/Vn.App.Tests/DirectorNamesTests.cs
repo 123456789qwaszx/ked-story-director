@@ -71,12 +71,7 @@ public sealed class DirectorNamesTests : IDisposable
         graph.HierarchyView.RowButton(StoryHierarchy.EpisodeKey("ch01", "a"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("축제 전날 - 교실", title.Text);
-
-        // 콤보의 항목은 ID 그대로(고르는 규칙), 보이는 글은 이름.
-        ComboBox combo = graph.FindControl<ComboBox>("ChapterCombo")!;
-        Assert.Equal("ch01", combo.SelectedItem);
-        Control shown = combo.ItemTemplate!.Build("ch01")!;
-        Assert.Equal("축제 전날", ((TextBlock)shown).Text);
+        Assert.Null(graph.FindControl<ComboBox>("ChapterCombo"));   // ⛔ [대본] 챕터 드롭다운은 2026-11-18에 걷혔다
 
         window.Close();
     });
