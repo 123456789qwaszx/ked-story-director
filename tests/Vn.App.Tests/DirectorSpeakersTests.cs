@@ -169,7 +169,7 @@ public sealed class DirectorSpeakersTests : IDisposable
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         graph.HierarchyView.RowButton(StoryHierarchy.ProjectKey)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("화자", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal("화자", graph.InspectorHeaderText);
         return graph;
     }
 

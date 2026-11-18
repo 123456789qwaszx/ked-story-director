@@ -249,7 +249,7 @@ public sealed class DirectorSceneNotesTests : IDisposable
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         graph.HierarchyView.RowButton(StoryHierarchy.SceneKey("ch01", sceneId))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(sceneId, graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 머리는 이름만(2026-11-18)
+        Assert.Equal(sceneId, graph.InspectorHeaderText);   // 머리는 이름만(2026-11-18)
         return graph;
     }
 

@@ -290,7 +290,7 @@ public sealed class SceneAreaPickTests : IDisposable
         return new Point(Avalonia.Controls.Canvas.GetLeft(label) - 5, Avalonia.Controls.Canvas.GetTop(label) + 2);
     }
 
-    private static string? Title(GraphEditorView graph) => graph.FindControl<TextBlock>("InspectorTitle")!.Text;
+    private static string? Title(GraphEditorView graph) => graph.InspectorHeaderText;
 
     private static IEnumerable<Control> Side(GraphEditorView graph) =>
         graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Control>().Distinct()

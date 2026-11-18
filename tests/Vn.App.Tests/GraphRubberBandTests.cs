@@ -200,7 +200,7 @@ public sealed class GraphRubberBandTests : IDisposable
     private static ShapePath LaneHit(GraphEditorView graph) =>
         Canvas(graph).Children.OfType<ShapePath>().Single(path => path.Tag?.GetType().Name == "RailKey");
 
-    private static string? Title(GraphEditorView graph) => graph.FindControl<TextBlock>("InspectorTitle")!.Text;
+    private static string? Title(GraphEditorView graph) => graph.InspectorHeaderText;
 
     private static List<string?> Facts(GraphEditorView graph) =>
         graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<TextBlock>()

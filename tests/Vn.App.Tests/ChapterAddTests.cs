@@ -51,7 +51,7 @@ public sealed class ChapterAddTests : IDisposable
 
         // 만든 챕터가 골라진다 — 하이어아키에서 그 줄을 누른 것과 같다(2026-11-18 소유자).
         Assert.Equal(new HierarchyPick(HierarchyKind.Chapter, "ch03"), graph.HierarchyView.Selection);
-        Assert.Equal(NewNames.Chapter, graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal(NewNames.Chapter, graph.InspectorHeaderText);
 
         // 첫 장면 · 첫 에피소드가 함께 선다 — 같은 되돌리기 칸이다(2026-11-18 소유자 — 「1개의 장면과 1개의 에피소드는 같이」).
         ChapterDocument made = session.Editor.FindChapter("ch03")!;

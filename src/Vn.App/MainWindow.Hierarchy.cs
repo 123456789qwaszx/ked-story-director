@@ -438,8 +438,9 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 프로젝트 · 챕터 · 장면 줄의 요약 — 고치는 자리는 챕터 그래프다(「챕터 그래프에서 열기」). 머리에는 이름만 둔다 — 챕터 · 장면은 그 이름 그대로
-    /// (⛔ 2026-11-18 소유자 — 「챕터 · 」 · 「장면 · 」 머리말과 화자 수 · 에피소드 · 장면 수의 부제를 걷었다: 쓸모없는 정보).
+    /// 프로젝트 · 챕터 · 장면 줄의 요약 — 고치는 자리는 챕터 그래프다(「챕터 그래프에서 열기」). 머리에는 이름만 둔다 — 챕터 · 장면은 그 이름을
+    /// 고치는 이름 칸이다(⛔ 2026-11-18 소유자 — 「챕터 · 」 · 「장면 · 」 머리말과 화자 수 · 에피소드 · 장면 수의 부제를 걷었다: 쓸모없는 정보. 같은 날
+    /// 이름 글을 이름 칸으로 — 에피소드와 마찬가지로 여기서 고친다).
     /// </summary>
     private void FillDirectorSummary(HierarchyPick pick)
     {
@@ -461,7 +462,14 @@ public partial class MainWindow
 
             case HierarchyKind.Chapter when chapter is not null:
             {
-                Graph.SetInspectorHeader(chapter.Model.ShownName, string.Empty);
+                // 머리는 이름 칸이다 — 여기서 고친다(2026-11-18 소유자 — 에피소드와 마찬가지로).
+                string chapterId = chapter.ChapterId;
+                Graph.SetInspectorNameEditor(
+                    StoryHierarchy.ChapterKey(chapterId),
+                    chapter.Model.ShownName,
+                    "챕터 이름 (비우면 챕터 ID)",
+                    $"게임에 보이는 챕터 이름입니다. 고치고 Enter. 비우면 챕터 ID({chapterId})가 보입니다. ID는 [구성] 탭에서 정합니다.",
+                    name => RenameChapter(chapterId, name));
                 Note("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
                 StatTable(chapter.Model.Stats);
 
@@ -478,8 +486,15 @@ public partial class MainWindow
                                          ChapterSceneGrouping.Of(chapter.Model).FirstOrDefault(item =>
                                              string.Equals(item.SceneId, pick.SceneId, StringComparison.Ordinal)) is { } scene:
             {
-                Graph.SetInspectorHeader(scene.DisplayName, string.Empty);
-                Note("장면 이름은 하이어아키에서 고칩니다 — 두 번 누르거나 오른쪽 클릭 [이름 바꾸기].");
+                // 머리는 이름 칸이다 — 여기서 고친다(2026-11-18 소유자). ⛔ 「장면 이름은 하이어아키에서 고칩니다」 안내는 걷었다.
+                string sceneChapterId = chapter.ChapterId;
+                string sceneId = scene.SceneId;
+                Graph.SetInspectorNameEditor(
+                    StoryHierarchy.SceneKey(sceneChapterId, sceneId),
+                    scene.DisplayName,
+                    "장면 이름 (비우면 장면 ID)",
+                    $"장면 이름입니다. 고치고 Enter. 비우면 장면 ID({sceneId})가 보입니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.",
+                    name => RenameScene(sceneChapterId, sceneId, name));
 
                 // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가
                 // 그 장면의 에피소드를 고르는 자리다.

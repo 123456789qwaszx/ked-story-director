@@ -168,7 +168,7 @@ public sealed class DirectorConditionsTests : IDisposable
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         graph.HierarchyView.RowButton(StoryHierarchy.ChapterKey("ch01"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("ch01", graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 챕터 요약 — 머리는 이름만(2026-11-18)
+        Assert.Equal("ch01", graph.InspectorHeaderText);   // 챕터 요약 — 머리는 이름만(2026-11-18)
         return graph;
     }
 

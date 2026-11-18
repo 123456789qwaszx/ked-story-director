@@ -308,9 +308,59 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     internal void SetInspectorHeader(string title, string subtitle)
     {
+        _nameCommit = null;
+        _nameKey = null;
+        InspectorNameBox.IsVisible = false;
+        InspectorTitle.IsVisible = true;
         InspectorTitle.Text = title;
         InspectorSubtitle.Text = subtitle;
         InspectorSubtitle.IsVisible = subtitle.Length > 0;
+    }
+
+    /// <summary>
+    /// 머리를 <b>이름 칸</b>으로 — 챕터 · 장면 요약(2026-11-18 소유자 — 「챕터이름과 장면 이름을 우측 인스펙터에서 바꿀 수 있도록 … 에피소드와
+    /// 마찬가지로」). 손짓은 에피소드의 이름 칸과 같다: Enter · 초점 이탈 = 바꾸기, Esc = 그만두기. 같은 이름이면 부르지 않는다.
+    /// </summary>
+    /// <param name="key">무엇의 이름인가 — 같은 것을 다시 비출 때 쓰던 글을 덮지 않는다(고친 뒤 다시 그리기가 이것을 다시 부른다).</param>
+    /// <param name="shown">지금 보이는 이름(비었으면 ID).</param>
+    /// <param name="commit">고친 이름(앞뒤 빈칸을 걷은)을 받아 바꾸고 이제 보일 이름을 돌려준다 — 비웠으면 ID다. 이름만 바뀌면 요약을 다시 세우지
+    /// 않으므로 칸은 이것으로 맞춘다.</param>
+    internal void SetInspectorNameEditor(string key, string shown, string placeholder, string tip, Func<string, string> commit)
+    {
+        bool typing = string.Equals(_nameKey, key, StringComparison.Ordinal) && InspectorNameBox.IsFocused;
+
+        _nameKey = key;
+        _nameShown = shown;
+        _nameCommit = commit;
+
+        InspectorTitle.IsVisible = false;
+        InspectorSubtitle.IsVisible = false;
+        InspectorNameBox.IsVisible = true;
+        InspectorNameBox.PlaceholderText = placeholder;
+        ToolTip.SetTip(InspectorNameBox, tip);
+
+        if (!typing)
+        {
+            InspectorNameBox.Text = shown;
+        }
+    }
+
+    /// <summary>지금 머리에 보이는 것 — 이름 칸이 서 있으면 그 글, 아니면 이름 글. 시험의 손잡이다.</summary>
+    internal string? InspectorHeaderText => InspectorNameBox.IsVisible ? InspectorNameBox.Text : InspectorTitle.Text;
+
+    private string? _nameKey;
+    private string _nameShown = string.Empty;
+    private Func<string, string>? _nameCommit;
+
+    private void CommitInspectorName()
+    {
+        string wanted = (InspectorNameBox.Text ?? string.Empty).Trim();
+
+        if (_nameCommit is { } commit && !string.Equals(wanted, _nameShown, StringComparison.Ordinal))
+        {
+            _nameShown = commit(wanted);
+            InspectorNameBox.Text = _nameShown;
+        }
     }
 
     /// <summary>고른 카드가 화면 밖이면 그리로 옮긴다 — 하이어아키에서 고른 카드가 판에서 보이게.</summary>
@@ -374,6 +424,22 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Height = CanvasHeight;
 
         AddEpisodeButton.Click += (_, _) => AddEpisodeCard();
+
+        // 머리의 이름 칸 — Enter · 초점 이탈 = 바꾸기, Esc = 그만두기(에피소드 이름 칸 · 하이어아키 이름 칸과 같은 손짓).
+        InspectorNameBox.LostFocus += (_, _) => UiGuard.Run(_session, "이름 바꾸기", CommitInspectorName);
+        InspectorNameBox.KeyDown += (_, args) => UiGuard.Run(_session, "이름 바꾸기", () =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = true;
+                CommitInspectorName();
+            }
+            else if (args.Key == Key.Escape)
+            {
+                args.Handled = true;
+                InspectorNameBox.Text = _nameShown;
+            }
+        });
         DeleteButton.Click += (_, _) => UiGuard.Run(_session, "삭제", DeleteSelected);
 
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 에피소드]가 거기에 선다.
@@ -4732,7 +4798,7 @@ public partial class GraphEditorView : UserControl
 
         _session.Select(made.Card.Id);
         _session.SetStatus(made.SceneMade is not null
-            ? $"장면 「{NewNames.Scene}」을 세우고 누른 자리에 에피소드를 더했습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다."
+            ? $"장면 「{NewNames.Scene}」을 세우고 누른 자리에 에피소드를 더했습니다 — 이름은 오른쪽 인스펙터 머리나 하이어아키에서 고칩니다."
             : $"장면 「{(ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId!) is { Length: > 0 } named ? named : sceneId)}」의 누른 자리에 에피소드를 더했습니다.");
     }
 

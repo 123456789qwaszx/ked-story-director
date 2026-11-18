@@ -179,6 +179,8 @@
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
+                            <!-- 챕터 · 장면 요약의 머리는 이름 칸이다(2026-11-18 소유자 — 에피소드의 이름 칸처럼 여기서 고친다). 그 밖에는 이름 글. -->
+                            <TextBox x:Name="InspectorNameBox" FontWeight="SemiBold" IsVisible="False" />
                             <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
                             <TextBlock x:Name="InspectorSubtitle"
                                        FontSize="11"
