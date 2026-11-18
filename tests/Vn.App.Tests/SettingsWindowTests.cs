@@ -196,6 +196,29 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     [Fact]
+    public void 내보내기_묶음은_처음에_접혀_있고_머리가_보내는_형식을_말한다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「설정창 속에서 내보내기의 내용은 접을 수 있도록 해주십시오.」
+        (MainWindow window, AuthoringSession session) = Open();
+        string game = Path.Combine(_directory, "game");
+        Directory.CreateDirectory(game);
+        SettingsWindow settings = window.OpenSettings();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(settings.ExportGroup.IsExpanded);
+        Assert.Equal("내보내기 — 작업 폴더에만 냅니다", settings.ExportHeader.Text);
+
+        settings.SetDestination(ExportFormat.Progression, game);
+        Assert.Equal("내보내기 — 진행 JSON을(를) 보낼 곳에도 냅니다", settings.ExportHeader.Text);
+
+        settings.ExportGroup.IsExpanded = true;   // 머리를 눌러 편다
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(settings.ExportGroup.IsExpanded);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 내보내기에서_취소하면_보낼_곳을_버리고_다시_열면_지금_값을_보인다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = Open();

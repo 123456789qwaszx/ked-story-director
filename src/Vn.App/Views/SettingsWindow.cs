@@ -63,6 +63,30 @@ internal sealed class SettingsWindow : Window
         BoardWidthBox.ValueChanged += (_, _) => OnSideChanged(BoardWidthBox);
         BoardHeightBox.ValueChanged += (_, _) => OnSideChanged(BoardHeightBox);
 
+        // 「내보내기」는 접는다 — 자주 고칠 것이 아니다(2026-11-18 소유자 — 「내보내기의 내용은 접을 수 있도록」). 머리가 지금 보내는 형식을 말한다.
+        ExportGroup = new Expander
+        {
+            Header = ExportHeader,
+            IsExpanded = false,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = $"{ExportDestinations.FileName}(프로젝트 폴더)에 저장됩니다 — [확인]을 누르면 바로 파일에 남고 되돌리기는 없습니다. 작업 폴더" +
+                               "(exported/)에는 늘 쓰고, 보낼 곳에는 File → 저장(Ctrl+S)할 때 보냅니다.",
+                        FontSize = 11,
+                        Opacity = 0.6,
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    ExportSection()
+                }
+            }
+        };
+
         Content = new StackPanel
         {
             Margin = new Thickness(16),
@@ -73,11 +97,7 @@ internal sealed class SettingsWindow : Window
                     "이 프로젝트",
                     "project.vnproject.json에 저장됩니다 — 바꾸면 되돌리기(Ctrl+Z)가 되고, File → 저장(Ctrl+S)해야 파일에 남습니다.",
                     BoardSection()),
-                Group(
-                    "내보내기",
-                    $"{ExportDestinations.FileName}(프로젝트 폴더)에 저장됩니다 — [확인]을 누르면 바로 파일에 남고 되돌리기는 없습니다. exported/에는 " +
-                    "늘 쓰고, 보낼 곳에는 File → 저장(Ctrl+S)할 때 보냅니다.",
-                    ExportSection()),
+                Framed(ExportGroup),
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -99,6 +119,12 @@ internal sealed class SettingsWindow : Window
     internal TextBlock BoardNote { get; }
 
     internal Button DefaultButton { get; }
+
+    /// <summary>「내보내기」 묶음 — 접고 편다(처음에는 접혀 있다).</summary>
+    internal Expander ExportGroup { get; }
+
+    /// <summary>「내보내기」 머리 — 접혀 있어도 지금 보내는 형식이 보인다.</summary>
+    internal TextBlock ExportHeader { get; } = new() { FontWeight = FontWeight.SemiBold, FontSize = 14 };
 
     internal Button ConfirmButton { get; }
 
@@ -251,6 +277,14 @@ internal sealed class SettingsWindow : Window
 
     private void RefreshDestinations()
     {
+        List<string> sending = ExportDestinations.Formats
+            .Where(format => _destinations.FolderOf(format) is not null)
+            .Select(ExportDestinations.LabelOf)
+            .ToList();
+        ExportHeader.Text = sending.Count == 0
+            ? "내보내기 — 작업 폴더에만 냅니다"
+            : $"내보내기 — {string.Join(" · ", sending)}을(를) 보낼 곳에도 냅니다";
+
         foreach ((ExportFormat format, TextBlock text) in _destinationTexts)
         {
             string? written = _destinations.FolderOf(format);
@@ -413,14 +447,19 @@ internal sealed class SettingsWindow : Window
         grid.Children.Add(box);
     }
 
-    /// <summary>묶음 하나 — 머리(이름 · 어디에 저장되는가)와 그 아래 설정들.</summary>
-    private static Control Group(string title, string where, Control body) => new Border
+    /// <summary>묶음의 테두리 — 펼친 묶음과 접는 묶음이 같은 테두리에 선다.</summary>
+    private static Border Framed(Control child) => new()
     {
         BorderBrush = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128)),
         BorderThickness = new Thickness(1),
         CornerRadius = new CornerRadius(4),
         Padding = new Thickness(12, 10),
-        Child = new StackPanel
+        Child = child
+    };
+
+    /// <summary>묶음 하나 — 머리(이름 · 어디에 저장되는가)와 그 아래 설정들.</summary>
+    private static Control Group(string title, string where, Control body) => Framed(
+        new StackPanel
         {
             Spacing = 8,
             Children =
@@ -436,6 +475,5 @@ internal sealed class SettingsWindow : Window
                 },
                 body
             }
-        }
-    };
+        });
 }
