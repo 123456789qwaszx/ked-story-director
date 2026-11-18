@@ -151,7 +151,7 @@ public partial class MainWindow
 
         if (edge.Auto)
         {
-            Note("AUTO — 플레이어 입력 없이 넘어갑니다. 문구를 적으면 선택지가 됩니다.");
+            Guide("AUTO — 플레이어 입력 없이 넘어갑니다. 문구를 적으면 선택지가 됩니다.", "AUTO — 플레이어 입력 없이 넘어갑니다.");
         }
         else if (edge.HasNoOptionLabel)
         {
@@ -256,14 +256,14 @@ public partial class MainWindow
 
             // 조건은 여기서 고르지 않는다 — 그 분기 카드를 고르면 대본 위쪽에 칸이 선다(2026-11-17 소유자: 분기는 무조건 들른 뒤
             // 그 카드에서 if로 보므로). ⛔ 같은 날 아침에는 여기 칸이 있었다.
-            Note(BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, target, state.Label)) +
-                 $" 조건은 분기 카드 「{to}」를 고르면 대본 위쪽에서 고릅니다.");
+            string sentence = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, target, state.Label));
+            Guide(sentence + $" 조건은 분기 카드 「{to}」를 고르면 대본 위쪽에서 고릅니다.", sentence);
             return;
         }
 
         Graph.SetInspectorHeader($"갈래 · {from} → {to}", "조건 갈래의 출구");
         Fact("갈래", connection.Label);
-        Note("이 갈래를 지나면 이리로 갑니다.");
+        Guide("이 갈래를 지나면 이리로 갑니다.");
     }
 
     /// <summary>카드의 이름 — [대본] 탭에 보이는 그대로(에피소드는 제목, 비면 EpisodeId · 아니면 노드 이름).</summary>

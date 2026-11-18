@@ -30,12 +30,12 @@ public partial class MainWindow
     {
         IReadOnlyList<Speaker> speakers = _session.Project.Speakers;
 
-        Note("대본의 화자 칸에서 고를 이름입니다. 모든 챕터가 같은 목록을 씁니다. 이름을 고치면 이미 쓴 대사 줄도 따라갑니다. " +
-             "캐릭터 키(초상화 · 표정)는 [구성] 탭에서 잇습니다.");
+        Guide("대본의 화자 칸에서 고를 이름입니다. 모든 챕터가 같은 목록을 씁니다. 이름을 고치면 이미 쓴 대사 줄도 따라갑니다. " +
+              "캐릭터 키(초상화 · 표정)는 [구성] 탭에서 잇습니다.");
 
         if (speakers.Count == 0)
         {
-            Note("아직 화자가 없습니다 — 아래에 이름을 적고 [＋ 추가]를 누르세요.");
+            Guide("아직 화자가 없습니다 — 아래에 이름을 적고 [＋ 추가]를 누르세요.", "아직 화자가 없습니다.");
         }
 
         var rows = new StackPanel { Spacing = 3, Margin = new Thickness(0, 4, 0, 0) };

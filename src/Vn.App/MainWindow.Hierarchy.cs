@@ -79,11 +79,11 @@ public partial class MainWindow
     {
         if (ConditionTabChapter is not { } chapter)
         {
-            Note("챕터를 고르면 그 챕터의 조건 · 스탯이 여기 섭니다.");
+            Guide("챕터를 고르면 그 챕터의 조건 · 스탯이 여기 섭니다.", "고른 챕터가 없습니다.");
             return;
         }
 
-        Note("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
+        Guide("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
         StatTable(chapter.Model.Stats);
 
         // 조건 이름은 여기서 더하고 고치고 지운다(writer-fields W4). 식은 [구성] 탭이다.
@@ -534,7 +534,7 @@ public partial class MainWindow
             {
                 // 화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭에 늘 서 있다(side-tabs V3) — 여기는 그 안내뿐이다.
                 Graph.SetInspectorHeader("프로젝트", string.Empty);
-                Note("화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.");
+                Guide("화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.");
                 break;
             }
 
@@ -549,7 +549,7 @@ public partial class MainWindow
                     $"게임에 보이는 챕터 이름입니다. 고치고 Enter. 비우면 챕터 ID({chapterId})가 보입니다. ID는 [구성] 탭에서 정합니다.",
                     name => RenameChapter(chapterId, name));
                 // 스탯 표 · 조건 이름은 「조건 및 스탯」 탭에 산다(side-tabs V3).
-                Note("이 챕터의 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.");
+                Guide("이 챕터의 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.");
                 OrphanSceneNotes(chapter.ChapterId);
 
                 // 장면 · 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자).
@@ -602,7 +602,7 @@ public partial class MainWindow
 
         if (stats.Count == 0)
         {
-            Note("이 챕터에는 아직 스탯이 없습니다 — [구성] 탭에서 더합니다.");
+            Guide("이 챕터에는 아직 스탯이 없습니다 — [구성] 탭에서 더합니다.", "이 챕터에는 아직 스탯이 없습니다.");
             return;
         }
 
@@ -689,6 +689,19 @@ public partial class MainWindow
     private void Note(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,
+        FontSize = 11,
+        Opacity = 0.65,
+        TextWrapping = TextWrapping.Wrap
+    });
+
+    /// <summary>
+    /// 안내글 한 줄 — <see cref="Note"/>와 같은 모양이지만 설명 간소화를 따른다(<see cref="GuideLine"/> · brief-guides G2). 짧은 꼴이 없으면 간소화 때
+    /// 숨는다(쓰는 법 풀이). 상태를 말하고 쓰는 법을 덧붙인 줄은 짧은 꼴에 상태만 둔다. 상태 · 경고만 말하는 줄은 <see cref="Note"/>다.
+    /// </summary>
+    private void Guide(string full, string? brief = null) => _sheet.Children.Add(new GuideLine
+    {
+        Full = full,
+        Brief = brief,
         FontSize = 11,
         Opacity = 0.65,
         TextWrapping = TextWrapping.Wrap

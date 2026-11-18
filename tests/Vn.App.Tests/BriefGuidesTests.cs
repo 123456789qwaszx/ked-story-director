@@ -86,6 +86,56 @@ public sealed class BriefGuidesTests : IDisposable
         }
     });
 
+    [Fact]
+    public void 대본의_화자_조건_스탯_탭도_안내는_숨고_상태만_남는다() => HeadlessUi.Run(() =>
+    {
+        GuideMode.Set(false);
+
+        try
+        {
+            (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: 1);
+            GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+            ContentControl speakers = graph.FindControl<ContentControl>("SpeakerHost")!;
+            ContentControl conditions = graph.FindControl<ContentControl>("ConditionHost")!;
+
+            GuideLine speakerHint = Guide(speakers, "대본의 화자 칸에서 고를 이름입니다");
+            GuideLine noSpeakers = Guide(speakers, "아직 화자가 없습니다");
+            GuideLine exprHint = Guide(conditions, "스탯과 조건의 식은 [구성] 탭에서 정합니다");
+            GuideLine conditionHint = Guide(conditions, "간선의 표시조건 · 해금조건에 고를 이름입니다");
+            GuideLine noStats = Guide(conditions, "이 챕터에는 아직 스탯이 없습니다");
+            GuideLine subtitle = Guide(graph.FindControl<TabItem>("ConditionTabItem")!, "이 챕터에서만 씁니다");
+            Assert.All(new[] { speakerHint, noSpeakers, exprHint, conditionHint, noStats, subtitle }, line => Assert.True(line.IsVisible));
+
+            // 안내글은 화면에 서 있을 때 스위치를 듣고, 가려진 탭의 글은 그 탭이 열릴 때 맞춘다 — 사람이 탭을 여는 것처럼 연다.
+            GuideMode.Set(true);
+            graph.ShowSideTab(SideTab.Speakers);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(speakerHint.IsVisible);
+            Assert.Equal("아직 화자가 없습니다.", noSpeakers.Text);
+
+            graph.ShowSideTab(SideTab.Conditions);
+            Dispatcher.UIThread.RunJobs();
+            Assert.All(new[] { exprHint, conditionHint, subtitle }, line => Assert.False(line.IsVisible));
+            Assert.Equal("이 챕터에는 아직 스탯이 없습니다.", noStats.Text);
+
+            // 다시 지은 탭(화자를 더했다)도 스위치를 따른다. 상태만 말하는 줄(「이 챕터에는 아직 조건이 없습니다.」)은 그대로다.
+            window.SessionProbe.AddSpeakerName("하린");
+            graph.ShowSideTab(SideTab.Speakers);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(Guide(speakers, "대본의 화자 칸에서 고를 이름입니다").IsVisible);
+            graph.ShowSideTab(SideTab.Conditions);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Contains(conditions.GetLogicalDescendants().OfType<TextBlock>(),
+                block => block.Text == "이 챕터에는 아직 조건이 없습니다." && block is not GuideLine);
+
+            window.Close();
+        }
+        finally
+        {
+            GuideMode.Set(false);
+        }
+    });
+
     /// <summary>그 자리 안에서 그 글로 시작하는 안내글 — 긴 꼴로 찾는다.</summary>
     internal static GuideLine Guide(ILogical host, string start) =>
         host.GetLogicalDescendants().OfType<GuideLine>().Single(line => line.Full.StartsWith(start, StringComparison.Ordinal));

@@ -45,8 +45,8 @@ public partial class MainWindow
         _sheet.Children.Add(sceneBox);
 
         Heading("에피소드 지시");
-        Note("장면 안의 에피소드를 골라 그 에피소드에만 해당하는 지시를 적습니다. 지시가 비어도 카드는 남고, [빼기]로 뗍니다. " +
-             "Enter는 줄바꿈, Ctrl+Enter로 넣고 Esc로 되돌립니다.");
+        Guide("장면 안의 에피소드를 골라 그 에피소드에만 해당하는 지시를 적습니다. 지시가 비어도 카드는 남고, [빼기]로 뗍니다. " +
+              "Enter는 줄바꿈, Ctrl+Enter로 넣고 Esc로 되돌립니다.");
 
         var cards = new StackPanel { Spacing = 6 };
         var shown = new List<string>();   // 카드가 선 에피소드 — 장면 안 차례로
@@ -197,7 +197,7 @@ public partial class MainWindow
         }
 
         Heading("주인 없는 장면 메모");
-        Note("그 장면의 에피소드가 없어진 메모입니다. 같은 이름으로 장면을 되살리면 다시 그 장면의 메모가 됩니다.");
+        Guide("그 장면의 에피소드가 없어진 메모입니다. 같은 이름으로 장면을 되살리면 다시 그 장면의 메모가 됩니다.");
 
         foreach (ChapterSceneNote orphan in orphans)
         {

@@ -221,7 +221,7 @@
                                     BorderThickness="0,0,0,1">
                                 <StackPanel Spacing="1">
                                     <TextBlock Text="프로젝트 단위 화자" FontWeight="SemiBold" />
-                                    <TextBlock Text="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                    <views:GuideLine Full="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </Border>
                             <ContentControl Grid.Row="1" x:Name="SpeakerHost" />
@@ -239,7 +239,7 @@
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Spacing="1" VerticalAlignment="Center">
                                         <TextBlock Text="챕터 단위 조건 · 스탯" FontWeight="SemiBold" />
-                                        <TextBlock Text="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                        <views:GuideLine Full="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                     <ComboBox Grid.Column="1"
                                               x:Name="ConditionChapterCombo"
