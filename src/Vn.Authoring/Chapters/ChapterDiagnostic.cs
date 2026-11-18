@@ -46,9 +46,6 @@ public enum ChapterDiagnosticCode
     /// </summary>
     EpisodeNotConnected,
 
-    /// <summary>분기점이 <b>에피소드</b>에 이어져 있다 — 분기는 분기 카드에만 잇는다(오류, <see cref="ChapterBranchCards"/>, 2026-11-17).</summary>
-    BranchIntoEpisode,
-
     /// <summary>아무도 부르지 않는 분기 카드 — 경고(<see cref="ChapterBranchCards"/>).</summary>
     BranchCardOrphaned,
 

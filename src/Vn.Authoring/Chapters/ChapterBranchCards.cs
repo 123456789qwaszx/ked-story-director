@@ -10,8 +10,6 @@ namespace Vn.Authoring.Chapters;
 /// 분기 카드(<see cref="DialogueNode.IsBranchCard"/>)는 에피소드가 아니라 도달성 증명(<see cref="ChapterReachabilityProver"/> — 런타임의 오라클,
 /// 에피소드와 간선만)의 밖이다. 그래서 여기서 따로 본다:
 /// <list type="number">
-/// <item>분기점이 <b>에피소드</b>에 이어져 있다 → 오류. 분기는 분기 카드에만 잇는다 — 들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 안 나온다.
-///   편집 명령은 이렇게 잇지 않으니 옛 프로젝트의 것이다(옮기지 않는다 — 소유자).</item>
 /// <item>아무도 부르지 않는 분기 카드 · 도달할 수 없는 곳(에피소드 또는 그런 분기 카드)만 부르는 분기 카드 → <b>경고</b>(소유자). 분기 카드는 진행
 ///   JSON에 없어 게임을 깨지 않는다 — 재생되지 않을 뿐이다. 분기 카드의 분기도 사슬로 따른다.</item>
 /// <item>줄이 하나도 없는 분기 카드 → 오류. Yarn 컴파일러가 줄 없는 노드를 빼서 <c>&lt;&lt;detour&gt;&gt;</c>가 없는 노드를 부른다(에피소드의 「빈 씬」과 같은 까닭).</item>
@@ -60,20 +58,10 @@ public static class ChapterBranchCards
             }
         }
 
-        // ① 분기점이 에피소드에 이어져 있다.
-        foreach ((DialogueNode caller, DialogueNode target) in calls.Where(call => !call.Target.IsBranchCard))
-        {
-            diagnostics.Add(new ChapterDiagnostic(
-                ChapterDiagnosticSeverity.Error,
-                ChapterDiagnosticCode.BranchIntoEpisode,
-                chapter.SourcePath,
-                ChapterSheetNames.Episodes,
-                EpisodeOf(chapter, caller),
-                $"「{Shown(chapter, caller)}」의 분기점이 에피소드 「{Shown(chapter, target)}」에 이어져 있습니다 — 분기는 분기 카드에만 잇습니다" +
-                "(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 나오지 않습니다). [대본] 탭에서 그 분기를 끊고 분기점을 빈 곳에 놓아 분기 카드로 다시 이으세요."));
-        }
+        // ⛔ 「분기점이 에피소드에 이어져 있다」(BranchIntoEpisode)는 2026-11-18에 걷혔다 — 잇는 길이 모두 분기 카드만 받고, 그런 파일은 읽을 때
+        //    거절한다(JsonSupport.ValidateProject · old-shapes O2).
 
-        // ② 재생될 수 있는 분기 카드 — 도달할 수 있는 에피소드가 부르거나, 그런 분기 카드가 부른다(사슬).
+        // ① 재생될 수 있는 분기 카드 — 도달할 수 있는 에피소드가 부르거나, 그런 분기 카드가 부른다(사슬).
         var played = new HashSet<string>(StringComparer.Ordinal);
         bool grew = true;
 
@@ -81,7 +69,7 @@ public static class ChapterBranchCards
         {
             grew = false;
 
-            foreach ((DialogueNode caller, DialogueNode target) in calls.Where(call => call.Target.IsBranchCard))
+            foreach ((DialogueNode caller, DialogueNode target) in calls)
             {
                 bool callerPlays = caller.IsBranchCard
                     ? played.Contains(caller.Id)
@@ -130,7 +118,7 @@ public static class ChapterBranchCards
                     "도달할 수 없습니다 — 이 분기 카드도 게임에서 재생되지 않습니다."));
             }
 
-            // ④ Yarn 노드 이름이 겹친다 — 에피소드의 대사 노드 · 다른 분기 카드.
+            // ③ Yarn 노드 이름이 겹친다 — 에피소드의 대사 노드 · 다른 분기 카드.
             string title = YarnNaming.StoryNodeTitleOf(branch.Name, branch.Id);
 
             if (taken.TryGetValue(title, out string? owner))
@@ -149,7 +137,7 @@ public static class ChapterBranchCards
                 taken[title] = $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}";
             }
 
-            // ③ 줄이 없는 분기 카드.
+            // ② 줄이 없는 분기 카드.
             if (!branch.Script.ActiveLines.Any())
             {
                 diagnostics.Add(new ChapterDiagnostic(

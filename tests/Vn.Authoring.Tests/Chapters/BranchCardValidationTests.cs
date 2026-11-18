@@ -2,6 +2,7 @@ using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Serialization;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -25,20 +26,17 @@ public sealed class BranchCardValidationTests
     }
 
     [Fact]
-    public void 분기점이_에피소드에_이어져_있으면_오류다()
+    public void 분기점이_에피소드에_이어진_프로젝트는_받지_않는다()
     {
-        // 편집 명령은 이렇게 잇지 않는다 — 옛 프로젝트의 것이다(옮기지 않는다 — 소유자). 들렀다 돌아오는 동안 그 에피소드의 선택지는
-        // 게임에 나오지 않는다.
+        // 편집 명령은 이렇게 잇지 않는다 — 그런 파일은 읽기 · 저장 · 되돌리기가 지나는 검증이 거절한다(2026-11-18 · old-shapes O2,
+        // ⛔ 그 전에는 검증 보고의 오류 BranchIntoEpisode로 짚고 [구성]에 그렸다).
         (ProjectEditor editor, DialogueNode root) = World();
         editor.AddEpisode("ch01", "옆길", title: "옆길", 400, 0);
         DialogueNode side = EpisodeNaming.CardFor(editor.Project, "ch01", "옆길")!;
         root.RequireExtension(root.Script.ActiveLines.First().Id).DetourTargetNodeIds.Add(side.Id);
 
-        ChapterDiagnostic error = Assert.Single(Branch(Validate(editor)));
-
-        Assert.Equal((ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.BranchIntoEpisode, "root"),
-            (error.Severity, error.Code, error.EpisodeId));
-        Assert.Contains("분기 카드", error.Message, StringComparison.Ordinal);
+        InvalidDataException refused = Assert.Throws<InvalidDataException>(() => JsonSupport.ValidateProject(editor.Project));
+        Assert.Contains("분기 카드", refused.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -142,7 +140,6 @@ public sealed class BranchCardValidationTests
 
     private static readonly ChapterDiagnosticCode[] BranchCodes =
     [
-        ChapterDiagnosticCode.BranchIntoEpisode,
         ChapterDiagnosticCode.BranchCardOrphaned,
         ChapterDiagnosticCode.BranchCardUnreachable,
         ChapterDiagnosticCode.BranchCardEmpty,

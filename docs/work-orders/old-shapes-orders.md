@@ -41,3 +41,4 @@
 |---|---|---|---|
 | 11-18 | O0 | (이 커밋) | 지시서 — 조사(코드 갈래 목록)와 소유자의 네 결정(대사엔트리 칸 · 줄 조건 드롭다운 · 구조 검사 · 옛 견본) |
 | 11-18 | O1 | (이 커밋) | 옛 견본 `samples/Authoring`과 `SampleProjectTests`(6)를 걷었다. 지금 모양의 견본은 `samples/RuntimeSamples` 둘이다. 설정 시험의 최근 프로젝트 경로는 축제 전날 견본으로. Authoring 694 · App 450 |
+| 11-18 | O2 | (이 커밋) | 에피소드로 이어진 분기 — 저장 검증(`JsonSupport.ValidateProject` — 읽기 · 저장 · 되돌리기)이 분기 카드가 아닌(또는 없는) 분기 대상을 거절한다. 검증 `BranchIntoEpisode`, 표식의 `ToBranchCard`, [구성]이 에피소드 카드로 긋던 점선 갈래를 걷었다. 시험 — 오류를 보던 시험을 「받지 않는다」로. Authoring 694 · App 450 |

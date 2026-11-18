@@ -1142,7 +1142,6 @@ public partial class ChapterGraphView : UserControl
     ///
     /// <b>다녀갈 곳은 분기 카드다</b>(2026-11-17 소유자) — 에피소드가 아니라 판에 따로 서지 않고, 부르는 에피소드 곁에 <b>작은 칩</b>으로
     /// 붙는다(<see cref="PlaceBranchChips"/>). 점선은 분기점에서 그 칩으로 든다. 분기 카드가 또 들르면 칩의 옆변에도 분기점이 선다.
-    /// 에피소드로 이어진 분기(옛 데이터 — 검증이 오류로 짚는다)는 그 에피소드 카드로 든다.
     ///
     /// ⚠ <b>옆변으로 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
     /// 선택지처럼 우측으로 붙이되"*) — 선택지가 아래변의 칸을 쓰므로 자리가 겹치지 않는다(포트 하나 =
@@ -1261,15 +1260,9 @@ public partial class ChapterGraphView : UserControl
             ? new Rect(card.X, card.Y, CardWidth, CardHeight)
             : ChipRect(point.FromNodeId);
 
-    /// <summary>다녀갈 카드의 네모 — 분기 카드면 그 칩, 에피소드(옛 데이터)면 그 카드. 이어지지 않았거나 판에 없으면 <c>null</c>.</summary>
+    /// <summary>다녀갈 분기 카드의 칩 네모. 이어지지 않았거나 판에 없으면 <c>null</c>.</summary>
     private Rect? ToRect(ChapterBranchMarkers.BranchPoint point) =>
-        point.Port.TargetNodeId is not { } target
-            ? null
-            : point.ToBranchCard
-                ? ChipRect(target)
-                : point.ToName is { } episode && _placed.TryGetValue(episode, out (double X, double Y) card)
-                    ? new Rect(card.X, card.Y, CardWidth, CardHeight)
-                    : null;
+        point.Port.TargetNodeId is { } target ? ChipRect(target) : null;
 
     private Rect? ChipRect(string nodeId) =>
         _chipPlaced.TryGetValue(nodeId, out (double X, double Y) chip)

@@ -219,5 +219,15 @@ internal static class JsonSupport
                     $"DialogueNode '{node.Id}'의 조건 출구가 없는 노드 '{target}'를 가리킵니다.");
             }
         }
+
+        // 분기는 분기 카드에만 잇는다 — 잇는 길이 모두 분기 카드만 받는다(2026-11-18 · old-shapes O2). 다른 것을 가리키면 옛 데이터라 받지 않는다.
+        foreach (string target in node.LineExtensions.SelectMany(extension => extension.DetourTargetNodeIds))
+        {
+            if (project.FindNode(target) is not DialogueNode { IsBranchCard: true })
+            {
+                throw new InvalidDataException(
+                    $"DialogueNode '{node.Id}'의 분기가 분기 카드가 아닌 '{target}'를 가리킵니다 — 분기는 분기 카드에만 잇습니다.");
+            }
+        }
     }
 }

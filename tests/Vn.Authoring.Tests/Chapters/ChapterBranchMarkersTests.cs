@@ -30,7 +30,6 @@ public sealed class ChapterBranchMarkersTests
         Assert.Equal("root", marker.FromEpisodeId);
         Assert.Equal(caller.Id, marker.FromNodeId);
         Assert.Equal(branch.Name, marker.ToName);
-        Assert.True(marker.ToBranchCard);   // 다녀갈 곳은 분기 카드다(2026-11-17)
         Assert.Equal(branch.Id, marker.ToNodeId);
         Assert.Equal(lineId, marker.LineId);
     }

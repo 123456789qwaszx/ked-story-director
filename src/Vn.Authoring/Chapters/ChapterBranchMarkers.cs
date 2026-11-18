@@ -19,8 +19,7 @@ namespace Vn.Authoring.Chapters;
 /// (<see cref="BranchEntryCondition"/>).
 ///
 /// <b>다녀올 곳은 분기 카드다</b>(2026-11-17 — <see cref="DialogueNode.IsBranchCard"/>). 분기점은 에피소드 카드에도, 분기 카드에도(분기 카드가
-/// 또 들른다) 선다 — 그래서 출발은 카드(NodeId)로 짚고, 에피소드면 그 Id를 함께 싣는다. 에피소드로 이어진 분기는 옛 데이터다(검증이 짚는다) —
-/// 그래도 그리기는 한다(판이 거짓말을 하지 않게).
+/// 또 들른다) 선다 — 그래서 출발은 카드(NodeId)로 짚고, 에피소드면 그 Id를 함께 싣는다. 다녀올 곳은 늘 분기 카드다(그 밖은 읽을 때 거절한다).
 /// </summary>
 public static class ChapterBranchMarkers
 {
@@ -29,15 +28,13 @@ public static class ChapterBranchMarkers
     /// <param name="LineId">그 줄. 다녀올 카드와 함께 표식의 신원이다(한 카드가 분기를 여럿 가질 수 있고, 한 줄에도
     /// 여럿일 수 있다).</param>
     /// <param name="ToNodeId">다녀올 카드의 NodeId. 조건을 읽고 쓰는 쪽이 이것을 쓴다.</param>
-    /// <param name="ToName">다녀올 카드의 이름 — 분기 카드면 카드 이름, 에피소드(옛 데이터)면 그 Id.</param>
-    /// <param name="ToBranchCard">다녀올 카드가 분기 카드인가 — 아니면 에피소드다(옛 데이터).</param>
+    /// <param name="ToName">다녀올 분기 카드의 이름.</param>
     public sealed record Marker(
         string FromNodeId,
         string? FromEpisodeId,
         string LineId,
         string ToNodeId,
-        string ToName,
-        bool ToBranchCard);
+        string ToName);
 
     /// <summary>
     /// 그 챕터의 분기 전부. 챕터가 없거나 판이 없으면 빈 목록이다.
@@ -58,16 +55,15 @@ public static class ChapterBranchMarkers
     /// <param name="FromNodeId">분기점이 선 카드.</param>
     /// <param name="FromEpisodeId">그 카드가 에피소드면 그 Id — 분기 카드면 <c>null</c>.</param>
     /// <param name="Port">그 분기점의 포트 — 차례 · 색 번호 · 신원(<see cref="Key"/>)이 여기서 나온다.</param>
-    /// <param name="ToName">다녀올 카드의 이름(<see cref="Marker.ToName"/>). 이어지지 않은 분기점이면 <c>null</c>이다.</param>
-    /// <param name="ToBranchCard">다녀올 카드가 분기 카드인가.</param>
-    public sealed record BranchPoint(string FromNodeId, string? FromEpisodeId, ExitPort Port, string? ToName, bool ToBranchCard)
+    /// <param name="ToName">다녀올 분기 카드의 이름(<see cref="Marker.ToName"/>). 이어지지 않은 분기점이면 <c>null</c>이다.</param>
+    public sealed record BranchPoint(string FromNodeId, string? FromEpisodeId, ExitPort Port, string? ToName)
     {
         /// <summary>그 분기점의 열쇠 — 줄과 다녀갈 카드(이어지지 않았으면 그 줄의 몇째 빈 자리, <see cref="ExitPort.OpenSlot"/>).</summary>
         public string Key => Port.ExitKey!;
 
         /// <summary>이어진 분기면 그 표식.</summary>
         public Marker? Marker => ToName is { } to && Port.TargetNodeId is { } node
-            ? new Marker(FromNodeId, FromEpisodeId, Port.BranchOpenLineId!, node, to, ToBranchCard)
+            ? new Marker(FromNodeId, FromEpisodeId, Port.BranchOpenLineId!, node, to)
             : null;
     }
 
@@ -99,14 +95,11 @@ public static class ChapterBranchMarkers
             {
                 if (port.TargetNodeId is not { } target)
                 {
-                    points.Add(new BranchPoint(card.Id, from, port, null, false));
+                    points.Add(new BranchPoint(card.Id, from, port, null));
                 }
                 else if (onBoard.TryGetValue(target, out DialogueNode? to))
                 {
-                    string name = to.IsBranchCard || chapter is null
-                        ? to.Name
-                        : EpisodeNaming.EpisodeFor(chapter, to)?.EpisodeId ?? to.Name;
-                    points.Add(new BranchPoint(card.Id, from, port, name, to.IsBranchCard));
+                    points.Add(new BranchPoint(card.Id, from, port, to.Name));
                 }
             }
         }
