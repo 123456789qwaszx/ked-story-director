@@ -425,7 +425,7 @@ public partial class MainWindow
         // 요약이 선 줄(프로젝트 · 챕터 · 장면) — [삭제]가 무엇을 지울지 본다(2026-11-18 소유자).
         Graph.SummaryPick = summary && _directorLine is null ? _directorSummary : null;
 
-        // 장면 요약이 서 있는 동안 [＋ 대사 노드]는 그 장면에 세운다(2026-11-17).
+        // 장면 요약이 서 있는 동안 [＋ 에피소드]는 그 장면에 세운다(2026-11-17).
         Graph.NewNodeScene = summary && _directorLine is null &&
                              _directorSummary is { Kind: HierarchyKind.Scene, ChapterId: { } sceneChapter, SceneId: { } pickedScene }
             ? (sceneChapter, pickedScene)

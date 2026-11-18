@@ -322,7 +322,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// 하이어아키 우클릭 「챕터 추가」 — 「새 챕터」(자동 ID)를 <b>바로</b> 세우고 그 챕터를 고른다. 이름은 하이어아키에서 두 번 눌러 고친다
     /// (2026-11-18 소유자 — ⛔ 이름 칸을 먼저 띄우던 창구 <c>ChapterAddFlyout</c>와 하이어아키 머리의 [＋]는 걷혔다). 챕터를 세우는 규칙은
-    /// <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌이다([＋ 대사 노드]도 그것을 부른다).
+    /// <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌이다([＋ 에피소드]도 그것을 부른다).
     /// </summary>
     private void CreateChapterNow()
     {

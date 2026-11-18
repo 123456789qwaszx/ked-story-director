@@ -581,7 +581,7 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = ReadOnly
                     ? "챕터가 없습니다. [대본] 탭에서 만드세요."
-                    : "챕터가 없습니다. 우클릭 「챕터 추가」나 [＋ 대사 노드]로 만드세요.",
+                    : "챕터가 없습니다. 우클릭 「챕터 추가」나 [＋ 에피소드]로 만드세요.",
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
                 FontSize = 11,

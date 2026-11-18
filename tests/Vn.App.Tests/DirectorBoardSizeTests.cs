@@ -87,7 +87,7 @@ public sealed class DirectorBoardSizeTests : IDisposable
     [Fact]
     public void 늘린_판에서는_새_카드가_옛_가장자리_너머에도_선다() => HeadlessUi.Run(() =>
     {
-        // 카드 자리 제한(가장자리에서 멈춘다)이 판 크기를 따른다 — [＋ 대사 노드]는 지금 보는 곳에 세운다.
+        // 카드 자리 제한(가장자리에서 멈춘다)이 판 크기를 따른다 — [＋ 에피소드]는 지금 보는 곳에 세운다.
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();
         session.Editor.SetBoardSize(30000, 20000);
         Dispatcher.UIThread.RunJobs();
@@ -97,7 +97,7 @@ public sealed class DirectorBoardSizeTests : IDisposable
         session.Select(null);   // 고른 카드가 있으면 그 장면 테두리 옆에 선다 — 보는 곳에 세우려면 고른 것이 없어야 한다
         Dispatcher.UIThread.RunJobs();
 
-        graph.FindControl<Button>("AddDialogueButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        graph.FindControl<Button>("AddEpisodeButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         StoryNode added = session.SelectedNode!;

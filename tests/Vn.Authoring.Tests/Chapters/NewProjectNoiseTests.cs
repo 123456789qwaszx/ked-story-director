@@ -16,7 +16,7 @@ public sealed class NewProjectNoiseTests
     [Fact]
     public void 갓_만든_챕터와_빈_에피소드는_고칠_것이_없다()
     {
-        // 툴이 하는 그대로: [＋ 챕터](스탯을 깔고 판을 세운다) → [＋ 대사 노드](새 장면과 함께 — 2026-11-17).
+        // 툴이 하는 그대로: [＋ 챕터](스탯을 깔고 판을 세운다) → [＋ 에피소드](새 장면과 함께 — 2026-11-17).
         var editor = new ProjectEditor(new StoryProject());
 
         editor.EnsureChapter("ch01");

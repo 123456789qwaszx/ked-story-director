@@ -8,7 +8,7 @@
   챕터 삭제, 장면을 클릭하면 장면 삭제, 에피소드를 클릭하면 에피소드 삭제로 바뀌는 게 맞겠습니다.」(P3)
 - 「+대사 노드 버튼 역시, 이름을 바꿉시다. '+에피소드'로 해주십시오.」(P4)
 
-> **상태: 진행 중.**
+> **상태: 끝 (2026-11-18).**
 
 ## 1. 지금
 
@@ -38,3 +38,4 @@
 | 11-18 | P1 | (이 커밋) | 「챕터 추가」(`MainWindow.CreateChapterNow`)가 만든 챕터를 하이어아키에서 그 줄을 누른 것처럼 고른다(`OnDirectorHierarchyPicked` — 줄이 칠해지고 인스펙터에 챕터 요약). 시험 — 챕터 추가 시험이 고른 줄 · 인스펙터 머리를 잰다. 문서 — 작가 가이드 · 두 그래프 설계(7절 AJ 새로). Authoring 648 · App 446 |
 | 11-18 | P2 | (이 커밋) | 「장면 지우기」(`ProjectEditor.RemoveScene`)가 그 장면의 에피소드가 부르던 분기 카드 가운데 장면을 걷은 뒤 집을 잃는 것을 함께 걷는다(`ChapterBranchCards.GoingWithScene` — `HomesOf`의 알맹이를 에피소드 거르기로 나눴다). 돌려주는 것은 에피소드 · 분기 카드 수(`RemovedScene`). 확인 문구 · 상태 문구에 분기 카드 수. 시험 — 사슬로 불린 카드도 걷히고 다른 장면도 부르는 카드는 집을 옮겨 남는다 · 한 칸 · 되돌리기, 화면 시험의 장면 지우기에 분기 카드. 문서 — 작가 가이드 · 두 그래프 설계(7절 AI에 ⛔ · AJ). Authoring 649 · App 446 |
 | 11-18 | P3 | (이 커밋) | [대본] 툴바의 [노드 삭제](`DeleteNodeButton`)를 [삭제](`DeleteButton`)로 — 고른 카드(에피소드 · 분기 카드)가 먼저, 없으면 셸이 비추는 요약의 줄(`GraphEditorView.SummaryPick` — 챕터 · 장면, 아직 있을 때만). 고른 것이 없으면 꺼진 「삭제」(꺼진 채로도 툴팁). 챕터 · 장면은 `RemoveRequested`로 셸에 넘겨 단추 옆에 확인 칸(`MainWindow.OnDirectorRemoveRequested` → `ConfirmChapterRemoval` · `ConfirmSceneRemoval`), 지운 뒤 고른 것을 놓는다(`ForgetRemovedPick`). 「에피소드 삭제…」의 말줄임표를 뗐다. 하이어아키 차림표의 「챕터 지우기」 · 「장면 지우기」와 `HierarchyCommand.DeleteChapter` · `DeleteScene`을 걷었다. 「[노드 삭제]로 카드를 없앤다」던 안내 셋을 「[분기 카드 삭제]」로. 시험 — 단추 이름 · 꺼짐(없음 · 프로젝트 · 사라진 것), 챕터 · 장면 지우기를 줄 고르기 → [삭제] → 확인으로, 지운 뒤 꺼진 「삭제」, 차림표 항목. 눈으로 — 꺼진 「삭제」 · 「챕터 삭제」. 문서 — 작가 가이드 · 두 그래프 설계(툴바 · 7절 AJ). Authoring 649 · App 446 |
+| 11-18 | P4 | (이 커밋) | [대본] 툴바의 [+ 대사 노드]를 [+ 에피소드]로 — 단추(`AddDialogueButton` → `AddEpisodeButton`, 처리 `AddDialogueNode` → `AddEpisodeCard`)와 단추를 이름으로 부르던 안내(새 프로젝트 상태줄 · 빈 하이어아키 · 빈 [구성] 판) · 주석 · 시험(이름 · 상태줄 확인). 하는 일은 그대로다. 문서 — 작가 가이드, 두 그래프 설계의 현재 표(7절 앞의 기록은 그때의 이름 그대로) · 7절 AJ. Authoring 649 · App 446 |

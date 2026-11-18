@@ -1000,7 +1000,7 @@ public partial class ChapterGraphView : UserControl
             EmptyText.Text = !saved
                 ? "아직 프로젝트가 없습니다.\n새 프로젝트를 만들고 저장하면 여기에 챕터 판이 섭니다."
                 : _entries.Count == 0
-                    ? "아직 챕터가 없습니다.\n[대본] 탭에서 [＋ 대사 노드]나 하이어아키 우클릭 「챕터 추가」로 첫 챕터를 만들면 여기에 판이 섭니다."
+                    ? "아직 챕터가 없습니다.\n[대본] 탭에서 [＋ 에피소드]나 하이어아키 우클릭 「챕터 추가」로 첫 챕터를 만들면 여기에 판이 섭니다."
                     : "하이어아키에서 챕터를 고르면 여기에 판이 섭니다.";
 
             // 빈 판의 첫걸음 — 프로젝트가 없을 때만 단추가 선다. 챕터는 이 탭에서 만들지 않는다.
@@ -1020,7 +1020,7 @@ public partial class ChapterGraphView : UserControl
         if (model.Episodes.Count == 0)
         {
             EmptyText.IsVisible = true;
-            EmptyText.Text = $"'{entry.ChapterId}'에 에피소드가 없습니다.\n[구성] 탭에서는 에피소드를 더하지 않습니다 — [대본] 탭의 [＋ 대사 노드]나 " +
+            EmptyText.Text = $"'{entry.ChapterId}'에 에피소드가 없습니다.\n[구성] 탭에서는 에피소드를 더하지 않습니다 — [대본] 탭의 [＋ 에피소드]나 " +
                 "[대본] 탭 하이어아키의 장면 줄 우클릭 「에피소드 추가」로 더하면 여기에 그려집니다.";
         }
 

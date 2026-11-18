@@ -82,7 +82,7 @@ internal sealed class AuthoringSession
 
     public StoryNode? SelectedNode => Project.FindNode(SelectedNodeId);
 
-    public string StatusMessage { get; private set; } = "새 프로젝트입니다. [대본] 탭의 [＋ 대사 노드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
+    public string StatusMessage { get; private set; } = "새 프로젝트입니다. [대본] 탭의 [＋ 에피소드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
@@ -168,7 +168,7 @@ internal sealed class AuthoringSession
         Destinations = ExportDestinations.None;
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
-        StatusMessage = "새 프로젝트입니다. [대본] 탭의 [＋ 대사 노드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
+        StatusMessage = "새 프로젝트입니다. [대본] 탭의 [＋ 에피소드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
         ResetFileGraphState(project);
         Editor.Replace(project);
@@ -347,7 +347,7 @@ internal sealed class AuthoringSession
 
     /// <summary>
     /// 작가가 이름으로 새 챕터를 만든다 — ID는 자동(<see cref="NewNames.NextChapterId"/>, <c>ch01</c>…), 적은 이름은 표시 이름이다
-    /// (비우면 「새 챕터」). [대본] 탭 하이어아키의 「챕터 추가」와 [＋ 대사 노드](챕터가 없을 때)가 부른다(display-names N2). 세우는 규칙은 <see cref="CreateChapter"/> 그대로다.
+    /// (비우면 「새 챕터」). [대본] 탭 하이어아키의 「챕터 추가」와 [＋ 에피소드](챕터가 없을 때)가 부른다(display-names N2). 세우는 규칙은 <see cref="CreateChapter"/> 그대로다.
     /// </summary>
     /// <returns>만든 챕터의 ID, 못 만든 이유 — 둘 중 하나만 있다.</returns>
     internal (string? ChapterId, string? Failure) CreateNamedChapter(string? name)
@@ -585,7 +585,7 @@ internal sealed class AuthoringSession
 
     private static StoryProject NewProjectInstance()
     {
-        // 판을 미리 두지 않는다 — 판은 챕터가 세운다(챕터 = 판 1:1). 첫 [＋ 대사 노드]가 「새 챕터」 · 「새 장면」과 함께 첫 카드를
+        // 판을 미리 두지 않는다 — 판은 챕터가 세운다(챕터 = 판 1:1). 첫 [＋ 에피소드]가 「새 챕터」 · 「새 장면」과 함께 첫 카드를
         // 세운다(2026-11-17 소유자). ⛔ 그 전에는 챕터가 아닌 판 「기본 파일」(낙서판)으로 시작했다.
         return new StoryProject { Title = "새 프로젝트" };
     }

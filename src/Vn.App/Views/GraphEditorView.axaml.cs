@@ -118,8 +118,8 @@ public partial class GraphEditorView : UserControl
     internal event Action<HierarchyPick>? AreaPicked;
 
     /// <summary>
-    /// [＋ 대사 노드]가 세울 장면(챕터, 장면) — 셸이 인스펙터에 장면 요약을 세운 동안 맞춰 둔다(하이어아키에서 골랐든 판에서
-    /// 눌렀든). null이면 고른 카드의 장면, 그것도 없으면 새 장면이다(<see cref="AddDialogueNode"/>).
+    /// [＋ 에피소드]가 세울 장면(챕터, 장면) — 셸이 인스펙터에 장면 요약을 세운 동안 맞춰 둔다(하이어아키에서 골랐든 판에서
+    /// 눌렀든). null이면 고른 카드의 장면, 그것도 없으면 새 장면이다(<see cref="AddEpisodeCard"/>).
     /// </summary>
     internal (string ChapterId, string SceneId)? NewNodeScene { get; set; }
 
@@ -373,10 +373,10 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Width = CanvasWidth;
         GraphCanvas.Height = CanvasHeight;
 
-        AddDialogueButton.Click += (_, _) => AddDialogueNode();
+        AddEpisodeButton.Click += (_, _) => AddEpisodeCard();
         DeleteButton.Click += (_, _) => UiGuard.Run(_session, "삭제", DeleteSelected);
 
-        // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 대사 노드]가 거기에 선다.
+        // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 에피소드]가 거기에 선다.
         // ⚠ 다시 그리기가 콤보를 맞출 때는 안 돈다(_syncingChapter) — 안 그러면
         //    선택을 비추는 일이 선택을 바꾸는 일이 되어 서로를 부른다.
         ChapterCombo.SelectionChanged += (_, _) =>
@@ -601,7 +601,7 @@ public partial class GraphEditorView : UserControl
 
         DrawChapterFrames();
 
-        AddDialogueButton.IsEnabled = _session.ActiveFileId is not null;
+        AddEpisodeButton.IsEnabled = _session.ActiveFileId is not null;
 
         DrawEdges();
         HighlightSelection();
@@ -5270,13 +5270,13 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// <b>[＋ 대사 노드]</b> — 에피소드는 늘 챕터와 장면에 속한다(2026-11-17 소유자 · <c>docs/work-orders/scene-required-orders.md</c> E1).
+    /// <b>[＋ 에피소드]</b> — 에피소드는 늘 챕터와 장면에 속한다(2026-11-17 소유자 · <c>docs/work-orders/scene-required-orders.md</c> E1).
     /// 장면은 고른 장면(인스펙터에 장면 요약이 서 있다) → 고른 카드의 장면(분기 카드면 그 집의 장면) → <b>새 장면</b> 차례로 정한다(빈
     /// 챕터도). 챕터가 하나도 없으면 처음 쓰는 사람을 위해 <b>챕터 + 장면</b>을 함께 세운다(챕터를 세우는 규칙은
     /// <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌). 챕터 · 장면 · 카드가 되돌리기 한 칸이다.
     /// ⛔ 2026-11-01~11-17에는 장면을 안 고르면 장면 없는 에피소드(「챕터 직속」)가 섰다.
     /// </summary>
-    private void AddDialogueNode()
+    private void AddEpisodeCard()
     {
         if (_session is null)
         {

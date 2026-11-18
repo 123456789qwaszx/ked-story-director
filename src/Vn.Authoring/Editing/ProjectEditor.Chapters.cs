@@ -61,7 +61,7 @@ public sealed partial class ProjectEditor
 
         StoryFile? board = BoardOf(chapterId);   // 아직 판을 안 세운 챕터도 있다
 
-        // ⛔ 「마지막 판은 지우지 않는다(새 노드가 갈 곳이 없어진다)」는 2026-11-17에 걷었다 — 판이 없으면 [＋ 대사 노드]가 챕터와
+        // ⛔ 「마지막 판은 지우지 않는다(새 노드가 갈 곳이 없어진다)」는 2026-11-17에 걷었다 — 판이 없으면 [＋ 에피소드]가 챕터와
         //    장면을 세운다(낙서판을 걷으며 새 프로젝트도 판 없이 시작한다).
 
         int nodes = board?.Nodes.Count ?? 0;

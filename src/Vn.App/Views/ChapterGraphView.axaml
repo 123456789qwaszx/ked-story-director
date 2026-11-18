@@ -26,7 +26,7 @@
                          남는다. 다시 읽을 때마다 저절로 나간다 — 내보내기의 거부 규칙은 그대로 적용된다. -->
                     <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                     <!-- [＋ 에피소드] 단추는 두지 않는다 — [구성] 탭에서는 에피소드를 더하지 않는다(하이어아키도 읽기 전용). 에피소드는 [대본] 탭의
-                         [＋ 대사 노드] · 하이어아키 장면 줄 우클릭 「에피소드 추가」로 더한다. -->
+                         [＋ 에피소드] · 하이어아키 장면 줄 우클릭 「에피소드 추가」로 더한다. -->
 
                     <!-- 자동 정렬 — 자리의 주인이 사람이라서
                          필요한 짝이다. 손으로 옮기다 판이 엉키면 되돌릴 길이 있어야 한다.
@@ -80,7 +80,7 @@
                             Padding="10,6"
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                             BorderThickness="0,0,0,1">
-                        <!-- 새 챕터는 여기서 만들지 않는다 — [대본] 탭의 [＋ 대사 노드](챕터가 없으면 함께)와 하이어아키 우클릭 「챕터 추가」로 만든다. -->
+                        <!-- 새 챕터는 여기서 만들지 않는다 — [대본] 탭의 [＋ 에피소드](챕터가 없으면 함께)와 하이어아키 우클릭 「챕터 추가」로 만든다. -->
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="하이어아키" FontWeight="SemiBold" />

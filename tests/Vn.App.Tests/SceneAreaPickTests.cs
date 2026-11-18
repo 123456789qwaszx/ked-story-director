@@ -14,7 +14,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>[대본] 판에서 장면의 영역을 누른다</b> (2026-11-17 소유자). 장면 테두리 안의 빈 곳을 누르면 하이어아키에서 그 장면 줄을 고른 것과
-/// 같다 — 인스펙터에 메모 공간이 서고 하이어아키가 그 줄을 비춘다. 그 상태에서 [＋ 대사 노드]는 그 장면에 세운다(하이어아키에서
+/// 같다 — 인스펙터에 메모 공간이 서고 하이어아키가 그 줄을 비춘다. 그 상태에서 [＋ 에피소드]는 그 장면에 세운다(하이어아키에서
 /// 장면을 골랐을 때도 같다). 끌면 범위 선택이고, 테두리 밖의 빈 곳은 지금까지와 같다.
 /// </summary>
 public sealed class SceneAreaPickTests : IDisposable
@@ -87,12 +87,12 @@ public sealed class SceneAreaPickTests : IDisposable
     });
 
     [Fact]
-    public void 장면을_고른_채_대사_노드를_더하면_그_장면에_서고_다른_카드와_겹치지_않는다() => HeadlessUi.Run(() =>
+    public void 장면을_고른_채_에피소드를_더하면_그_장면에_서고_다른_카드와_겹치지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
         Click(graph, InsideScene(graph, "hall"));
 
-        graph.FindControl<Button>("AddDialogueButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        graph.FindControl<Button>("AddEpisodeButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         ChapterEpisode added = session.Editor.FindChapter("ch01")!.Episodes
@@ -119,7 +119,7 @@ public sealed class SceneAreaPickTests : IDisposable
     {
         // 2026-11-17 소유자 — 장면 없는 에피소드를 허용하지 않는다. 고른 장면 → 고른 카드의 장면 → 새 장면 차례.
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
-        Button add = graph.FindControl<Button>("AddDialogueButton")!;
+        Button add = graph.FindControl<Button>("AddEpisodeButton")!;
 
         graph.HierarchyView.RowButton(StoryHierarchy.SceneKey("ch01", "opening"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
@@ -169,7 +169,7 @@ public sealed class SceneAreaPickTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         session.Select(null);
 
-        graph.FindControl<Button>("AddDialogueButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        graph.FindControl<Button>("AddEpisodeButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         ChapterEpisode made = Assert.Single(session.Editor.FindChapter(chapterId!)!.Episodes);
@@ -181,7 +181,7 @@ public sealed class SceneAreaPickTests : IDisposable
     [Fact]
     public void 챕터가_하나도_없으면_챕터와_장면을_함께_세운다_되돌리기_한_칸() => HeadlessUi.Run(() =>
     {
-        // 처음 쓰는 사람을 위해(2026-11-17 소유자) — 아무것도 없는 프로젝트에서 [＋ 대사 노드]를 누르면 「새 챕터」 · 「새 장면」이 선다.
+        // 처음 쓰는 사람을 위해(2026-11-17 소유자) — 아무것도 없는 프로젝트에서 [＋ 에피소드]를 누르면 「새 챕터」 · 「새 장면」이 선다.
         string folder = Path.Combine(_directory, "empty");
         Directory.CreateDirectory(folder);
         string manifest = Path.Combine(folder, "p" + Vn.Authoring.Serialization.ProjectManifestJson.FileExtension);
@@ -197,7 +197,7 @@ public sealed class SceneAreaPickTests : IDisposable
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         long before = session.Editor.Revision;
 
-        graph.FindControl<Button>("AddDialogueButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        graph.FindControl<Button>("AddEpisodeButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
         ChapterDocument chapter = Assert.Single(session.Project.Chapters);

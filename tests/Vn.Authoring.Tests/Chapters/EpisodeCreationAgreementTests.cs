@@ -51,7 +51,7 @@ public sealed class EpisodeCreationAgreementTests
     [Fact]
     public void 판에_카드를_세우는_길도_같은_Id_규약을_쓴다()
     {
-        // ⛔ 연출 그래프의 [＋대사노드]는 이름을 안 주고 부른다. 그때 <c>장면 3</c>이 나오면
+        // ⛔ [대본] 탭의 [＋ 에피소드]는 이름을 안 주고 부른다. 그때 <c>장면 3</c>이 나오면
         //    그것이 곧 EpisodeId가 되고, <b>공백 든 Id가 대본 워크북의 파일 이름</b>으로
         //    나간다. 다른 창구와 같은 규약(<see cref="NewNames.NextEpisodeId"/> — 챕터 · 장면이 든 자리표시)으로 맞춘다.
         ProjectEditor editor = World();

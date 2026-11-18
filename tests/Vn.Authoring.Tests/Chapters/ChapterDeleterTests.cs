@@ -122,7 +122,7 @@ public sealed class ChapterDeleterTests : IDisposable
     [Fact]
     public void 마지막_챕터도_판과_함께_지우고_되돌리기_한_번에_돌아온다()
     {
-        // ⛔ 2026-11-17 전에는 「마지막 판은 지우지 않는다(새 노드가 갈 자리가 없어진다)」였다. 이제 판이 없으면 [＋ 대사 노드]가
+        // ⛔ 2026-11-17 전에는 「마지막 판은 지우지 않는다(새 노드가 갈 자리가 없어진다)」였다. 이제 판이 없으면 [＋ 에피소드]가
         //    챕터와 장면을 세운다 — 새 프로젝트도 판 없이 시작한다.
         ProjectEditor editor = Build(secondBoard: false);
 
