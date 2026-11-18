@@ -367,19 +367,8 @@ public sealed partial class ProjectEditor
         return new BranchMarkerRemoval(kept);
     }
 
-    public SetNode AddSetNode(
-        string fileId,
-        double x = 0,
-        double y = 0,
-        string? name = null)
-    {
-        var node = new SetNode(name: name ?? NextName("설정"))
-        {
-            Layout = new NodeLayout { X = x, Y = y }
-        };
-
-        return AddNode(fileId, node);
-    }
+    /// <summary>판의 챕터 조건 공급 노드를 세운다 — 공급(<see cref="Chapters.ChapterBoardSupply"/>)만 부른다(설정 노드는 그것뿐이다 · old-shapes O6).</summary>
+    internal SetNode AddSetNode(string fileId, string name) => AddNode(fileId, new SetNode(name: name));
 
     public void RemoveNode(string nodeId)
     {
@@ -911,14 +900,10 @@ public sealed partial class ProjectEditor
         });
     }
 
-    // ── 설정 공급 연결 ──────────────────────────────────────────────────────
-    //
-    // 링크를 만들고 끊고 켜는 편집은 없다. 조건 공급은 판 전체라 링크를 아무도 읽지 않는다. 옛 파일의 링크
-    //    데이터는 그대로 읽고 쓰고, 노드를 지우면 그 노드를 가리키던 링크도 함께 걷힌다(RemoveReferencesToNode).
-
     // ── 조건 ────────────────────────────────────────────────────────────────
+    // 공급 노드의 조건 사본 — 공급(<see cref="Chapters.ChapterBoardSupply"/>)만 부른다. 조건의 주인은 챕터다.
 
-    public ConditionDefinition AddCondition(string setNodeId, string name, string expression)
+    internal ConditionDefinition AddCondition(string setNodeId, string name, string expression)
     {
         var setNode = Project.FindNode(setNodeId) as SetNode
             ?? throw new InvalidOperationException($"'{setNodeId}'는 설정 노드가 아닙니다.");
@@ -928,7 +913,7 @@ public sealed partial class ProjectEditor
         return condition;
     }
 
-    public void UpdateCondition(string conditionId, string name, string expression)
+    internal void UpdateCondition(string conditionId, string name, string expression)
     {
         ConditionDefinition? condition = Project.FindCondition(conditionId);
 
@@ -950,26 +935,6 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 조건을 지운다. 그 조건을 쓰던 줄의 전환은 남겨 둔다.
-    /// 지우면 작가가 쓴 갈래 구조가 조용히 무너지기 때문이다.
-    /// 대신 <see cref="ConditionFlowResolver"/>가 "알 수 없는 조건"으로 알린다.
-    /// </summary>
-    public void RemoveCondition(string conditionId)
-    {
-        SetNode? owner = Project.EnumerateNodes().OfType<SetNode>()
-            .FirstOrDefault(node => node.Conditions.Any(
-                item => string.Equals(item.Id, conditionId, StringComparison.Ordinal)));
-
-        if (owner is null)
-        {
-            return;
-        }
-
-        Mutate(() => owner.Conditions.RemoveAll(
-            item => string.Equals(item.Id, conditionId, StringComparison.Ordinal)));
-    }
-
-    /// <summary>
     /// 그 챕터의 <b>판</b>을 보장한다 — 없으면 만들어 돌려준다 (챕터 = 판 1:1, G-1 v2).
     ///
     /// <b>왜 여기 있나</b> — 이 함수는 <b>세션 상태를 하나도 안 본다.</b> 열려 있는 파일도,
@@ -985,10 +950,6 @@ public sealed partial class ProjectEditor
         RequireChapter(chapterId);
         StoryFile? standing = Chapters.EpisodeNaming.BoardOf(Project, chapterId);
         StoryFile board = standing ?? AddChapterBoardFile(chapterId);
-
-        // 챕터마다 「X 설정」 노드(작가 조건 · 변수를 담는 자리)를 세우지 않는다 — 그 안을 채울
-        //    편집기가 없어 눌러도 빈 칸이다. 옛 판에 남은 것은 데이터째 두고 연출 그래프에서만 숨긴다
-        //    (`GraphProjectionBuilder.IsHiddenPlumbing`) — 그 안의 조건은 그대로 고를 수 있다.
 
         // 판이 <b>막 섰으면</b> 챕터 조건이 함께 공급된다 — 조건을 먼저 적고 에피소드를
         // 나중에 만든 챕터는 여기서 받지 않으면 대사 노드의 조건 목록이 비어 있게 된다.
@@ -1252,14 +1213,6 @@ public sealed partial class ProjectEditor
     {
         return Project.FindDialogue(nodeId)
             ?? throw new InvalidOperationException($"'{nodeId}'는 대사 노드가 아닙니다.");
-    }
-
-    private string NextName(string prefix)
-    {
-        int count = Project.EnumerateNodes().Count(node =>
-            node.Name.StartsWith(prefix, StringComparison.Ordinal)) + 1;
-
-        return $"{prefix} {count}";
     }
 
     /// <summary>

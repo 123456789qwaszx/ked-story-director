@@ -17,51 +17,6 @@ public static class ChapterBoardSupply
     public static string ConditionSupplyNodeName(string chapterId) => $"챕터 {chapterId} 조건";
 
     /// <summary>
-    /// 이 노드가 <b>A계층(기획자) 조건을 나르는 배관</b>인가. 챕터 = 판 1:1이므로 판 이름이
-    /// 곧 챕터 Id다. <b>계층을 가르는 규칙은 이 하나뿐이다</b>(사본 금지) — 그래프 프로젝션의
-    /// 카드 숨김도, 작가 조건 목록의 배제도 같은 것을 부른다.
-    /// </summary>
-    public static bool IsConditionSupplyNode(StoryNode node, StoryFile file)
-    {
-        ArgumentNullException.ThrowIfNull(node);
-        ArgumentNullException.ThrowIfNull(file);
-
-        // 판 이름이 챕터 Id와 어긋난 프로젝트(구판·수기 개명)에서도 배관은 배관이다 —
-        // 이름 규약만으로도 알아본다. 이 판정이 이미터의 네임스페이스에도 쓰이므로
-        // (스탯에는 접두를 붙이면 안 된다) 놓치면 게임이 깨진다.
-        return node is SetNode &&
-               (string.Equals(node.Name, ConditionSupplyNodeName(file.Name), StringComparison.Ordinal) ||
-                IsConditionSupplyNodeName(node.Name));
-    }
-
-    /// <summary>이름만으로 A계층 공급 노드인지 — <c>챕터 … 조건</c>.</summary>
-    public static bool IsConditionSupplyNodeName(string? name) =>
-        name is not null &&
-        name.StartsWith("챕터 ", StringComparison.Ordinal) &&
-        name.EndsWith(" 조건", StringComparison.Ordinal);
-
-    /// <summary>프로젝트 전체에서 A계층 공급 노드의 Id들. 작가 화면이 이 집합을 걸러 낸다.</summary>
-    public static HashSet<string> ConditionSupplyNodeIds(StoryProject project)
-    {
-        ArgumentNullException.ThrowIfNull(project);
-
-        var ids = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (StoryFile file in project.Files)
-        {
-            foreach (StoryNode node in file.Nodes)
-            {
-                if (IsConditionSupplyNode(node, file))
-                {
-                    ids.Add(node.Id);
-                }
-            }
-        }
-
-        return ids;
-    }
-
-    /// <summary>
     /// <b>식 미정</b>인 조건이 대사 카드에서 서는 식 — 항상 통과한다(writer-fields W1의 규칙: 식이 빈 조건은 관문이 없는 것과 같다).
     /// 빈 식을 그대로 두면 이미터가 <c>&lt;&lt;if false&gt;&gt;</c>로 내어 분기가 영영 안 탄다 — 그래서 사본에는 이 글자를 적는다.
     /// </summary>

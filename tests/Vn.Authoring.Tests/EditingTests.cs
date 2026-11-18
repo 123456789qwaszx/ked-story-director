@@ -76,7 +76,7 @@ public class EditingTests
         project.Files.Add(file);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "시작 파일" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
-        SetNode first = editor.AddSetNode(file.Id);
+        DialogueNode first = editor.AddDialogueNode(file.Id);
         editor.AddDialogueNode(file.Id);
 
         Assert.Equal(first.Id, editor.Project.StartNodeId);
@@ -218,7 +218,7 @@ public class EditingTests
     }
 
     [Fact]
-    public void 조건_수정은_그래프_라벨과_Dialogue_선택지에_즉시_반영된다()
+    public void 조건_수정은_그래프_라벨에_즉시_반영된다()
     {
         var sample = new Sample();
         string opener = sample.Line(
@@ -236,11 +236,6 @@ public class EditingTests
             NodeConnections.PortsOf(sample.Dialogue, sample.Project),
             port => port.Kind == ExitPortKind.Branch);
         Assert.Equal("호감 매우 높음", branchPort.Label);
-
-        ConditionChoice choice = Assert.Single(
-            ConditionChoices.For(preceding: null, sample.Dialogue, sample.Project),
-            item => string.Equals(item.ConditionId, sample.ConditionA.Id, StringComparison.Ordinal));
-        Assert.Equal("호감 매우 높음", choice.Label);
     }
 
     // ⛔ <b>assignment 알림 검사 셋은 2026-09-17에 걷혔다</b> (작가 변수 폐지). 설정노드가

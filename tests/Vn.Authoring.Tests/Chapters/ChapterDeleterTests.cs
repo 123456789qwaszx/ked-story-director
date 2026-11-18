@@ -220,9 +220,7 @@ public sealed class ChapterDeleterTests : IDisposable
         }
 
         // 배관이 실제로 섰는지 확인하고 시작한다 — 없으면 첫 테스트가 헛돈다.
-        Assert.Single(
-            editor.Project.EnumerateNodes().OfType<SetNode>(),
-            node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+        Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 설정 노드는 판의 공급 노드뿐이다
 
         return editor;
     }

@@ -179,13 +179,14 @@ public class ScenarioPasteTests
         // X11이 만든 전제: ScenarioOnly 표기 = 파싱 문법.
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
         var file = editor.Project.Files[0];
-        SetNode set = editor.AddSetNode(file.Id, name: "설정");
-        ConditionDefinition condition = editor.AddCondition(set.Id, "호감 높음", "favor >= 5");
+        editor.AddChapterStat(file.Name, "favor", maximum: 10);
+        editor.AddChapterCondition(file.Name, "호감 높음", "favor >= 5");   // 조건은 챕터의 것 — 판의 공급 노드가 사본을 나른다
+        ConditionDefinition condition = file.Nodes.OfType<SetNode>().Single().Conditions.Single();
 
-        // 기존 첫 줄("라루: 첫 줄")이 닻으로 남고 나머지는 순수 삽입이다.
-        editor.ApplyScenarioText(node.Id, """
+        // 기존 첫 줄("라루: 첫 줄")이 닻으로 남고 나머지는 순수 삽입이다. 대본의 <<if>>는 그 사본의 식이다.
+        editor.ApplyScenarioText(node.Id, $"""
             라루: 첫 줄
-            <<if favor >= 5>>
+            <<if {condition.Expression}>>
             윌로: 갈래 안 줄
             <<endif>>
             라루: 갈래 뒤 줄

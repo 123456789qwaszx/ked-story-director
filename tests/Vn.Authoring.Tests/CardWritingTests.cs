@@ -94,9 +94,9 @@ public sealed class CardWritingTests
         int changes = 0;
         editor.Changed += (_, _) => changes++;
 
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, """
+        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, $"""
             라루: 처음
-            <<if favor >= 5>>
+            <<if {condition.Expression}>>
             윌로: 갈래 안
             <<endif>>
             라루: 끝
@@ -120,10 +120,10 @@ public sealed class CardWritingTests
     {
         // 쓰는 면은 왕복해야 한다 — 보인 글을 손대지 않고 넣었는데 줄이 고쳐지거나 조건이 풀리면 안 된다.
         (ProjectEditor editor, DialogueNode node) = NewCard();
-        Condition(editor);
-        editor.ApplyScenarioText(node.Id, """
+        ConditionDefinition condition = Condition(editor);
+        editor.ApplyScenarioText(node.Id, $"""
             라루: 처음
-            <<if favor >= 5>>
+            <<if {condition.Expression}>>
             윌로: 갈래 안
             <<endif>>
             지문 한 줄.
@@ -192,11 +192,13 @@ public sealed class CardWritingTests
         return (editor, editor.AddDialogueNode(file.Id, name: "장면"));
     }
 
-    /// <summary>favor >= 5 — 같은 판의 설정 노드에 두면 그 판의 노드가 쓸 수 있다.</summary>
+    /// <summary>챕터 조건 「호감 높음」(favor >= 5) — 판의 공급 노드가 나른 사본을 돌려준다(대본의 <c>&lt;&lt;if&gt;&gt;</c>는 그 식이다).</summary>
     private static ConditionDefinition Condition(ProjectEditor editor)
     {
-        SetNode set = editor.AddSetNode(editor.Project.Files[0].Id, name: "설정");
-        return editor.AddCondition(set.Id, "호감 높음", "favor >= 5");
+        StoryFile board = editor.Project.Files[0];
+        editor.AddChapterStat(board.Name, "favor", maximum: 10);
+        editor.AddChapterCondition(board.Name, "호감 높음", "favor >= 5");
+        return board.Nodes.OfType<SetNode>().Single().Conditions.Single();
     }
 
     // 지금 프로젝트에서 다시 찾는다 — 되돌리기는 프로젝트를 새 객체로 갈아 끼운다.

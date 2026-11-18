@@ -113,6 +113,14 @@ internal static class JsonSupport
                 throw new InvalidDataException($"StoryFile 경로 '{relativePath}'가 중복됩니다.");
             }
 
+            // 설정 노드는 그 판의 챕터 조건 공급 노드 하나뿐이다 — 공급만 세운다(2026-11-18 · old-shapes O6). 옛 「X 설정」 노드는 받지 않는다.
+            if (file.Nodes.OfType<SetNode>().Count(node =>
+                    string.Equals(node.Name, Chapters.ChapterBoardSupply.ConditionSupplyNodeName(file.Name), StringComparison.Ordinal)) !=
+                file.Nodes.OfType<SetNode>().Count() || file.Nodes.OfType<SetNode>().Count() > 1)
+            {
+                throw new InvalidDataException($"판 '{file.Name}'에 챕터 조건 공급 노드가 아닌 설정 노드가 있거나 공급 노드가 둘입니다.");
+            }
+
             foreach (StoryNode node in file.Nodes)
             {
                 if (!nodeIds.Add(node.Id))

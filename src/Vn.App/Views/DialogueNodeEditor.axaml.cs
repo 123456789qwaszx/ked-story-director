@@ -706,11 +706,11 @@ public partial class DialogueNodeEditor : UserControl
         return rail.Children.Count > 0 ? rail : null;
     }
 
-    private static Button TagButton(string text, IBrush background)
+    private static Border TagChip(string text, IBrush background)
     {
-        return new Button
+        return new Border
         {
-            Content = new TextBlock
+            Child = new TextBlock
             {
                 Text = text,
                 FontSize = 9,
@@ -720,7 +720,6 @@ public partial class DialogueNodeEditor : UserControl
             Background = background,
             Padding = new Thickness(6, 1),
             CornerRadius = new CornerRadius(3),
-            MinHeight = 0,
             Margin = new Thickness(0, 0, 4, 0),
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -741,7 +740,10 @@ public partial class DialogueNodeEditor : UserControl
                 : "알 수 없는 조건";
     }
 
-    /// <summary>이 줄의 전환 태그. 누르면 기존 조건 드롭다운이 Flyout으로 열린다.</summary>
+    /// <summary>
+    /// 이 줄의 전환 태그 — 보이기만 한다. 줄의 조건 전환은 분기 카드의 조건(분기 패널)과 대본 글의 <c>&lt;&lt;if&gt;&gt;</c>가 정한다(2026-11-18 소유자 ·
+    /// old-shapes O6 — ⛔ 그 전에는 누르면 줄 조건 드롭다운이 열렸고, 옛 「X 설정」 노드의 조건만 고를 수 있었다).
+    /// </summary>
     private Control BuildTransitionTag(DialogueNode node, ResolvedLine resolved)
     {
         var neutral = new SolidColorBrush(Color.FromArgb(160, 107, 114, 128));
@@ -754,22 +756,8 @@ public partial class DialogueNodeEditor : UserControl
             _ => ("조건 종료", neutral)
         };
 
-        // 대본 층의 조건은 옛 프로젝트에서 온 값이다 — 그 주인은 프로젝트라 여기서 고친다.
-        Button tag = TagButton(label, background);
-        ToolTip.SetTip(tag, "누르면 이 줄의 조건 전환을 고칩니다.");
-
-        tag.Click += (_, _) =>
-        {
-            var panel = new StackPanel { Spacing = 4, MinWidth = 220 };
-            panel.Children.Add(new TextBlock
-            {
-                Text = "이 줄의 조건 전환",
-                FontSize = 10,
-                Opacity = 0.6
-            });
-            panel.Children.Add(BuildConditionBox(node, resolved));
-            new Flyout { Content = panel }.ShowAt(tag);
-        };
+        Border tag = TagChip(label, background);
+        ToolTip.SetTip(tag, $"이 줄의 조건 전환입니다 — 분기 카드의 조건이나 대본 글의 <<if>>로 고칩니다. {BranchConditionNote.Where}");
 
         return tag;
     }
@@ -1177,14 +1165,6 @@ public partial class DialogueNodeEditor : UserControl
                 MaxWidth = 250
             });
         }
-        else
-        {
-            // 조건 추가/변경 — 무엇이 가능한지는 기존 ConditionChoices가 정한다.
-            Section("조건");
-            panel.Children.Add(BuildConditionBox(node, resolved));
-
-            // 작가 변수는 없다 — 값이 변하는 자리는 <b>챕터 간선의 `스탯변화`</b> 하나다.
-        }
 
         // 출구는 선택·조건 갈래의 마지막 줄에서만 매달 수 있다.
         //
@@ -1364,50 +1344,6 @@ public partial class DialogueNodeEditor : UserControl
     }
 
     /// <summary>
-    /// 조건 드롭다운. "이 줄이 조건에 포함되는가"가 아니라
-    /// "이 줄에서 조건 흐름을 바꿀 것인가"를 고르는 자리다.
-    /// 무엇을 보여 줄지는 <see cref="ConditionChoices"/>가 정한다.
-    /// </summary>
-    private ComboBox BuildConditionBox(DialogueNode node, ResolvedLine resolved)
-    {
-        IReadOnlyList<ConditionChoice> choices = ConditionChoices.For(
-            resolved.PrecedingBranch,
-            node,
-            _session!.Project,
-            resolved.Line.Transition);
-
-        var box = new ComboBox
-        {
-            Margin = new Thickness(8, 0),
-            FontSize = 11,
-            MinWidth = 150,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            ItemsSource = choices.Select(choice => choice.Label).ToList(),
-            SelectedIndex = IndexOfChoice(choices, ConditionChoices.Current(choices, resolved.Line.Transition))
-        };
-
-        box.SelectionChanged += (_, _) =>
-        {
-            if (_building || box.SelectedIndex < 0 || box.SelectedIndex >= choices.Count)
-            {
-                return;
-            }
-
-            ConditionChoice picked = choices[box.SelectedIndex];
-
-            if (picked == ConditionChoices.Current(choices, resolved.Line.Transition))
-            {
-                return;
-            }
-
-            _session.Editor.SetLineTransition(node.Id, resolved.Line.LineId, picked.ToTransition());
-        };
-
-        return box;
-    }
-
-
-    /// <summary>
     /// 대본에서 사라진 줄에 남은 조건 데이터. 자동으로 지우지 않으므로 눈에 보여야 한다.
     /// </summary>
     private void AddOrphanCards(DialogueNode node, DialogueScript script)
@@ -1528,19 +1464,6 @@ public partial class DialogueNodeEditor : UserControl
         _session.SetStatus(wanted.Length == 0
             ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'가 보입니다."
             : $"제목을 '{wanted}'(으)로 바꿨습니다. 에피소드ID '{episodeId}'는 그대로입니다.");
-    }
-
-    private static int IndexOfChoice(IReadOnlyList<ConditionChoice> choices, ConditionChoice choice)
-    {
-        for (int index = 0; index < choices.Count; index++)
-        {
-            if (choices[index] == choice)
-            {
-                return index;
-            }
-        }
-
-        return 0;
     }
 
     /// <summary>분기로 다녀오는 카드의 첫머리 조건 — 그 갈래를 여는 줄(첫 줄)과 그 분기의 색 번호. 아니면 null.</summary>

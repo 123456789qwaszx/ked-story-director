@@ -137,7 +137,7 @@ public class ConditionFlowTests
     {
         var sample = new Sample();
         sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
-        sample.Editor.RemoveCondition(sample.ConditionA.Id);
+        sample.Editor.RemoveNode(sample.SetNode.Id);   // 공급 노드째 — 조건 사본이 사라진다
 
         DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
 

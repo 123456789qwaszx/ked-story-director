@@ -78,14 +78,15 @@ public class ResultDocumentComposerTests
         var sample = new Sample();
         sample.Line("조건 대사", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         DialogueResult result = sample.Unfold();
+        string expression = sample.ConditionA.Expression;
 
-        sample.Editor.RemoveCondition(sample.ConditionA.Id);
+        sample.Editor.RemoveNode(sample.SetNode.Id);   // 공급 노드째 — 조건 사본이 사라진다
 
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
         RenderedSegment condition = Assert.Single(document.Segments, segment =>
             segment.Kind == RenderedSegmentKind.ConditionBegin);
 
-        Assert.Equal("favor >= 5", condition.Expression);
+        Assert.Equal(expression, condition.Expression);
         Assert.Equal(sample.ConditionA.Id, condition.Source.ConditionId);
     }
 

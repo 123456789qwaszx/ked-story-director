@@ -12,86 +12,6 @@ namespace Vn.Authoring.Tests;
 public class ConditionSupplyTests
 {
     [Fact]
-    public void 같은_판의_모든_설정노드가_챕터_전역으로_공급한다()
-    {
-        // 2026-08-17 소유자 — "시나리오 작가가 만든 조건, 변수 등은 챕터 단위로 기록이 되어서
-        // 사용됐으면 해. 이거는 챕터단위로 전역에 쓰이는거야." 판 = 챕터 1:1이므로 같은 판에
-        // 서 있는 것만으로 미친다. 링크를 걸어야 보이던 옛 규칙은 폐지됐다.
-        var project = new StoryProject();
-        var file = new StoryFile("sf_scope", "범위");
-        project.Files.Add(file);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "범위" });   // 카드는 챕터 판에만 선다
-        var editor = new ProjectEditor(project);
-
-        SetNode first = editor.AddSetNode(file.Id, name: "첫 설정");
-        ConditionDefinition firstCondition = editor.AddCondition(first.Id, "첫 조건", "linked == true");
-        SetNode second = editor.AddSetNode(file.Id, name: "둘째 설정");
-        ConditionDefinition secondCondition = editor.AddCondition(second.Id, "둘째 조건", "other == true");
-        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "장면");
-        // 링크는 걸지 않는다 — 그래도 둘 다 보여야 한다.
-
-        // 다른 판의 설정노드는 미치지 않는다 — 챕터가 다르면 다른 어휘다.
-        var otherFile = new StoryFile("sf_other", "다른 챕터");
-        project.Files.Add(otherFile);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "다른 챕터" });   // 카드는 챕터 판에만 선다
-        SetNode foreign = editor.AddSetNode(otherFile.Id, name: "남의 설정");
-        ConditionDefinition foreignCondition = editor.AddCondition(foreign.Id, "남의 조건", "foreign == true");
-
-        AvailableConditionCatalog catalog = AvailableConditionResolver.Resolve(project, dialogue.Id);
-
-        Assert.Equal(
-            new[] { firstCondition.Id, secondCondition.Id },
-            catalog.Conditions.Select(condition => condition.Id));
-        Assert.DoesNotContain(
-            catalog.Conditions,
-            condition => condition.Id == foreignCondition.Id);
-
-        IReadOnlyList<ConditionChoice> choices = ConditionChoices.For(
-            preceding: null,
-            dialogue,
-            project);
-
-        Assert.Contains(choices, choice => choice.ConditionId == firstCondition.Id);
-        Assert.Contains(choices, choice => choice.ConditionId == secondCondition.Id);
-        Assert.DoesNotContain(choices, choice => choice.ConditionId == foreignCondition.Id);
-
-        // 같은 판의 조건은 흐름에서도 아는 조건이다. ⛔ 게임 전역 조건(정의 파일의 conditions)은 2026-11-17에 걷혔다.
-        ScriptLine line = dialogue.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
-        editor.SetLineTransition(
-            dialogue.Id,
-            line.Id,
-            LineConditionTransition.BeginIf(firstCondition.Id));
-
-        DialogueFlow flow = ConditionFlowResolver.Resolve(dialogue, project);
-        Assert.DoesNotContain(flow.Problems, problem =>
-            problem.Kind is FlowProblemKind.UnknownCondition or FlowProblemKind.UnavailableCondition);
-    }
-
-    [Fact]
-    public void 공급_순서는_판_안의_노드_순서다()
-    {
-        // 링크 Order가 정하던 것을 이제 판의 노드 순서가 정한다 — 두 화면이 같은 하나를 본다.
-        var project = new StoryProject();
-        var file = new StoryFile("sf_order", "순서");
-        project.Files.Add(file);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "순서" });   // 카드는 챕터 판에만 선다
-        var editor = new ProjectEditor(project);
-
-        SetNode first = editor.AddSetNode(file.Id, name: "첫 번째");
-        ConditionDefinition firstCondition = editor.AddCondition(first.Id, "첫 조건", "a");
-        SetNode second = editor.AddSetNode(file.Id, name: "두 번째");
-        ConditionDefinition secondCondition = editor.AddCondition(second.Id, "둘째 조건", "b");
-        editor.AddDialogueNode(file.Id, name: "장면");
-
-        DialogueNode dialogue = project.EnumerateNodes().OfType<DialogueNode>().Single();
-        AvailableConditionCatalog catalog = AvailableConditionResolver.Resolve(project, dialogue.Id);
-
-        Assert.Equal(
-            new[] { firstCondition.Id, secondCondition.Id },
-            catalog.Conditions.Select(condition => condition.Id));
-    }
-
-    [Fact]
     public void 설정노드를_지우면_기존_Transition은_보존되고_사용불가로_표시된다()
     {
         // 범위가 판 전체가 된 뒤로는 <b>노드를 지워야</b> 조건이 사라진다(링크를 끊는 것이
@@ -129,8 +49,9 @@ public class ConditionSupplyTests
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "저 챕터" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
-        SetNode foreign = editor.AddSetNode(there.Id, name: "저쪽 설정");
-        ConditionDefinition foreignCondition = editor.AddCondition(foreign.Id, "저쪽 조건", "far == true");
+        editor.AddChapterStat("저 챕터", "far", maximum: 1, type: global::Vn.Authoring.Chapters.ChapterStatType.Bool);
+        editor.AddChapterCondition("저 챕터", "저쪽 조건", "far == true");   // 저 판의 공급 노드가 사본을 나른다
+        ConditionDefinition foreignCondition = there.Nodes.OfType<SetNode>().Single().Conditions.Single();
 
         DialogueNode dialogue = editor.AddDialogueNode(here.Id, name: "장면");
         ScriptLine scriptLine = dialogue.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
@@ -142,18 +63,6 @@ public class ConditionSupplyTests
             flow.Problems,
             item => item.Kind == FlowProblemKind.UnavailableCondition);
         Assert.Equal(scriptLine.Id, problem.LineId);
-
-        IReadOnlyList<ConditionChoice> choices = ConditionChoices.For(
-            preceding: null,
-            dialogue,
-            project,
-            currentTransition: dialogue.FindExtension(scriptLine.Id)!.Transition);
-        ConditionChoice current = ConditionChoices.Current(
-            choices, dialogue.FindExtension(scriptLine.Id)!.Transition);
-
-        Assert.False(current.IsAvailable);
-        Assert.Equal(foreignCondition.Id, current.ConditionId);
-        Assert.Contains("사용할 수 없음", current.Label, StringComparison.Ordinal);
 
         ExitPort branch = NodeConnections.PortsOf(dialogue, project)
             .Single(port => port.Kind == ExitPortKind.Branch);

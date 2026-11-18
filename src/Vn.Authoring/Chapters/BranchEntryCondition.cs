@@ -161,9 +161,7 @@ public static class BranchEntryCondition
 
         AvailableCondition? condition = AvailableConditionResolver
             .Resolve(editor.Project, nodeId).Conditions
-            .FirstOrDefault(item =>
-                item.SourceKind == AvailableConditionSourceKind.ChapterLayer &&
-                string.Equals(item.Name, label, StringComparison.Ordinal));
+            .FirstOrDefault(item => string.Equals(item.Name, label, StringComparison.Ordinal));
 
         if (condition is null)
         {

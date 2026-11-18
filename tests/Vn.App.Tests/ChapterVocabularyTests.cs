@@ -24,29 +24,4 @@ public sealed class ChapterVocabularyTests
         Assert.Empty(session.Project.FindFile(fileId)!.Nodes.OfType<SetNode>());
     }
 
-    [Fact]
-    public void 옛_판에_남은_설정_노드는_카드가_없고_조건은_그대로_고른다()
-    {
-        var session = new AuthoringSession();
-        session.Editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
-        string fileId = session.EnsureChapterBoard("ch01");
-
-        SetNode settings = session.Editor.AddSetNode(fileId, name: "ch01 설정");
-        ConditionDefinition condition = session.Editor.AddCondition(settings.Id, "옛 조건", "x == true");
-        DialogueNode dialogue = session.Editor.AddDialogueNode(fileId, name: "장면");
-
-        GraphProjection projection = GraphProjectionBuilder.Build(
-            session.Project, new HashSet<string>([fileId]));
-
-        Assert.DoesNotContain(
-            projection.Items.OfType<ExpandedNodeProjection>(),
-            item => item.NodeId == settings.Id);
-        Assert.Contains(
-            projection.Items.OfType<ExpandedNodeProjection>(),
-            item => item.NodeId == dialogue.Id);
-
-        Assert.Contains(
-            AvailableConditionResolver.Resolve(session.Project, dialogue.Id).Conditions,
-            item => item.Id == condition.Id);
-    }
 }

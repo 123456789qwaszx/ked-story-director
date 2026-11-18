@@ -22,7 +22,7 @@ public sealed class RenameCarriesReferencesTests
     private sealed record World(
         ProjectEditor Editor, StoryFile File, SetNode SetNode, DialogueNode Dialogue, string LineId);
 
-    /// <summary>설정노드 하나(아이템 `열쇠`) · 그것을 쓰는 조건 하나 · 그것을 쓰는 대사 줄 하나.</summary>
+    /// <summary>챕터 조건 하나(스탯 `열쇠` — 판의 공급 노드가 사본을 나른다) · 대사 줄 하나.</summary>
     private static World Build(bool ability = false)
     {
         var project = new StoryProject();
@@ -33,9 +33,9 @@ public sealed class RenameCarriesReferencesTests
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
 
-        SetNode setNode = editor.AddSetNode(file.Id, name: "ch01 설정");
-
-        editor.AddCondition(setNode.Id, "열쇠 있음", ability ? "$열쇠 == true" : "$열쇠 >= 1");
+        editor.AddChapterStat("ch01", "열쇠", maximum: 1, type: ability ? global::Vn.Authoring.Chapters.ChapterStatType.Bool : global::Vn.Authoring.Chapters.ChapterStatType.Int);
+        editor.AddChapterCondition("ch01", "열쇠 있음", ability ? "열쇠 == true" : "열쇠 >= 1");
+        SetNode setNode = file.Nodes.OfType<SetNode>().Single();
 
         DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문");
         ScriptLine line = dialogue.Script.ActiveLines.Single();   // 카드는 빈 첫 줄을 들고 선다
@@ -55,7 +55,7 @@ public sealed class RenameCarriesReferencesTests
     [Fact]
     public void 조건_이름을_바꿔도_매달린_갈래는_그대로다()
     {
-        // 작가가 설정노드에서 고치는 조건 이름 — 줄에 매달린 전환은 <b>Id</b>로 잇는다.
+        // 조건 이름을 고친다 — 줄에 매달린 전환은 공급 사본의 <b>Id</b>로 잇는다(개명은 사본의 Id를 지킨다).
         // 이 성질이 깨지는 날은 조건에 Id가 없어진 날이고, 그러면 이름 한 글자에 그 조건을
         // 쓰던 갈래가 전부 "알 수 없는 조건"이 된다.
         World world = Build();
@@ -66,14 +66,14 @@ public sealed class RenameCarriesReferencesTests
             LineConditionTransition.EndIf()
         ]);
 
-        world.Editor.UpdateCondition(condition.Id, "보물열쇠 있음", condition.Expression);
+        world.Editor.RenameChapterCondition("ch01", "열쇠 있음", "보물열쇠 있음");
 
         Assert.Equal("보물열쇠 있음", world.SetNode.Conditions[0].Name);
         Assert.Equal(
             condition.Id,
             world.Dialogue.FindExtension(world.LineId)!.Transitions[0].ConditionId);
 
-        // 그리고 그 조건이 여전히 <b>고를 수 있는 목록</b>에 새 이름으로 서 있다.
+        // 그리고 그 조건이 여전히 카드가 보는 목록에 새 이름으로 서 있다.
         AvailableCondition? available = AvailableConditionResolver
             .Resolve(world.Editor.Project, world.Dialogue.Id)
             .Find(condition.Id);

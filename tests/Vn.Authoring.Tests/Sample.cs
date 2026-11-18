@@ -7,7 +7,7 @@ namespace Vn.Authoring.Tests;
 
 /// <summary>
 /// 테스트가 공유하는 작은 프로젝트 하나.
-/// 대본 하나, 조건 두 개, 대사 노드 하나, 그리고 이동할 대상 노드 세 개를 갖춘다.
+/// 대본 하나, 챕터 조건 두 개(판의 공급 노드가 나른다), 대사 노드 하나, 그리고 이동할 대상 노드 세 개를 갖춘다.
 ///
 /// LineId는 예측 가능한 값으로 주입한다. 무작위 Id는 동기화 계획을 테스트에서 읽을 수 없게 만든다.
 /// </summary>
@@ -25,9 +25,14 @@ internal sealed class Sample
 
         Editor = new ProjectEditor(project, newLineId: NextLineId);
 
-        SetNode = Editor.AddSetNode(File.Id, name: "설정");
-        ConditionA = Editor.AddCondition(SetNode.Id, "호감 높음", "favor >= 5");
-        ConditionB = Editor.AddCondition(SetNode.Id, "신뢰 높음", "trust >= 3");
+        // 조건은 챕터의 것이다 — 판의 공급 노드(설정 노드는 그것뿐이다)가 사본을 나르고, 대본의 줄 전환은 그 사본을 가리킨다.
+        Editor.AddChapterStat("test", "favor", maximum: 10);
+        Editor.AddChapterStat("test", "trust", maximum: 10);
+        Editor.AddChapterCondition("test", "호감 높음", "favor >= 5");
+        Editor.AddChapterCondition("test", "신뢰 높음", "trust >= 3");
+        SetNode = File.Nodes.OfType<SetNode>().Single();
+        ConditionA = SetNode.Conditions.Single(condition => condition.Name == "호감 높음");
+        ConditionB = SetNode.Conditions.Single(condition => condition.Name == "신뢰 높음");
 
         Dialogue = Editor.AddDialogueNode(File.Id, name: "본문");
 

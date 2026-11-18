@@ -87,9 +87,6 @@ public sealed partial class ProjectEditor
     /// <b>개명의 주인은 모델이다</b>. <c>Project.Chapters</c>의 Id와 판·배관이 함께 바뀌어야
     /// 저장하고 다시 열었을 때 챕터와 판의 이름이 갈리지 않는다. 파일 이름 바꾸기는 후속 출력의 일이다.
     ///
-    /// 새 이름의 배관이 이미 있으면 배관은 <b>손대지 않는다</b> — 이름이 겹치면 어느 쪽이 그
-    /// 챕터의 배관인지 정해지지 않는다. 합치는 것은 조건을 옮기는 일이라 개명의 몫이 아니고,
-    /// 그 상태에서도 동기화가 새 이름 쪽에 마저 공급하므로 조용히 깨지지는 않는다.
     /// </summary>
     /// <returns>판·배관의 이름이 실제로 따라갔는가(없었으면 거짓).</returns>
     public ChapterRenameEffect RenameChapter(string oldId, string newId)
@@ -103,13 +100,10 @@ public sealed partial class ProjectEditor
 
         StoryFile? board = EpisodeNaming.BoardOf(Project, oldId);
 
-        string oldSupplyName = ChapterBoardSupply.ConditionSupplyNodeName(oldId);
         string newSupplyName = ChapterBoardSupply.ConditionSupplyNodeName(newId);
-        List<SetNode> supplies = Project.EnumerateNodes().OfType<SetNode>().ToList();
 
-        SetNode? supply = supplies.Any(node => string.Equals(node.Name, newSupplyName, StringComparison.Ordinal))
-            ? null
-            : supplies.FirstOrDefault(node => string.Equals(node.Name, oldSupplyName, StringComparison.Ordinal));
+        // 그 판의 공급 노드(설정 노드는 그것 하나뿐이다 — 저장 검증이 지킨다).
+        SetNode? supply = board?.Nodes.OfType<SetNode>().SingleOrDefault();
 
         Mutate(() =>
         {

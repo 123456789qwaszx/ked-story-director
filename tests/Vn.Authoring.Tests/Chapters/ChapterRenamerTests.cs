@@ -74,7 +74,6 @@ public sealed class ChapterRenamerTests : IDisposable
         Assert.True(result.SupplyRenamed);
 
         List<string> supplies = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Where(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name))
             .Select(node => node.Name)
             .ToList();
 
@@ -92,9 +91,7 @@ public sealed class ChapterRenamerTests : IDisposable
 
         editor.UpdateChapterCondition(NewId, "신뢰높음", "trust >= 4");
 
-        SetNode supply = Assert.Single(
-            editor.Project.EnumerateNodes().OfType<SetNode>(),
-            node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+        SetNode supply = Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 배관을 하나 더 만들지 않았다
 
         Assert.Equal(ChapterBoardSupply.ConditionSupplyNodeName(NewId), supply.Name);
     }
@@ -223,9 +220,7 @@ public sealed class ChapterRenamerTests : IDisposable
         editor.SetScriptLineText(card.Id, script.ActiveLines.First().Id, "윌로", "복도는 조용했다");
 
         // 배관이 실제로 섰는지 확인하고 시작한다 — 없으면 위 두 테스트가 헛돈다.
-        Assert.Single(
-            editor.Project.EnumerateNodes().OfType<SetNode>(),
-            node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+        Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 설정 노드는 판의 공급 노드뿐이다
 
         return editor;
     }

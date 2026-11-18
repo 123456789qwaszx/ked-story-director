@@ -144,7 +144,7 @@ public sealed class StatRenameTests
             editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Single(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+            .Single();   // 설정 노드는 판의 공급 노드뿐이다
 
         Assert.Equal(supplied.Id, Assert.Single(supply.Conditions).Id);
     }
@@ -251,7 +251,7 @@ public sealed class StatRenameTests
             editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Single(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+            .Single();   // 설정 노드는 판의 공급 노드뿐이다
 
         return (editor, Assert.Single(supply.Conditions));
     }

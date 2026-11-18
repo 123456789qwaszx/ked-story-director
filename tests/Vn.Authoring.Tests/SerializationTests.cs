@@ -102,7 +102,7 @@ public class SerializationTests
             project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
             project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
             first.Nodes.Add(new DialogueNode("nd_a", "A 노드") { IsBranchCard = true });   // 에피소드가 아닌 카드는 분기 카드뿐이다
-            second.Nodes.Add(new SetNode("nd_b", "B 노드"));
+            second.Nodes.Add(new SetNode("nd_b", global::Vn.Authoring.Chapters.ChapterBoardSupply.ConditionSupplyNodeName("B")));   // 설정 노드는 판의 공급 노드뿐이다
             project.StartNodeId = "nd_a";
 
             ProjectStore.Save(manifestPath, project);
@@ -311,6 +311,23 @@ public class SerializationTests
 
         project.Files.Add(new StoryFile("sf_a2", "A", "story/a2.vnstory.json"));
         Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+    }
+
+    /// <summary>설정 노드는 판의 챕터 조건 공급 노드 하나뿐이다 — 옛 「X 설정」 노드는 받지 않는다(2026-11-18 · old-shapes O6).</summary>
+    [Fact]
+    public void 공급_노드가_아닌_설정_노드는_저장하지_않는다()
+    {
+        var project = new StoryProject();
+        var board = new StoryFile("sf_a", "A", "story/a.vnstory.json");
+        project.Files.Add(board);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+
+        board.Nodes.Add(new SetNode("nd_set", "A 설정"));
+        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+
+        board.Nodes.Clear();
+        board.Nodes.Add(new SetNode("nd_supply", global::Vn.Authoring.Chapters.ChapterBoardSupply.ConditionSupplyNodeName("A")));
+        ProjectManifestJson.Write(project);
     }
 
     [Fact]

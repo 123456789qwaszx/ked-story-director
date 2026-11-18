@@ -165,7 +165,7 @@ public class AuthoringSessionTests : IDisposable
         AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
         StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
-        SetNode existing = session.Editor.AddSetNode(second.Id, name: "기존");
+        DialogueNode existing = session.Editor.AddDialogueNode(second.Id, name: "기존");
 
         session.SelectFile(second.Id);
         DialogueNode added = session.Editor.AddDialogueNode(session.ActiveFileId!, name: "추가");
