@@ -182,7 +182,7 @@ public sealed class ChapterGraphSyncViewTests
             File.ReadAllBytes(sent));
         Assert.Contains(
             view.FindControl<StackPanel>("DiagnosticsPanel")!.GetLogicalDescendants().OfType<TextBlock>(),
-            line => line.Text?.Contains("보낸 곳 → 진행 JSON game", StringComparison.Ordinal) == true);
+            line => line.Text?.Contains("복제한 곳 → 진행 JSON game", StringComparison.Ordinal) == true);
     });
 
     [Fact]

@@ -129,8 +129,8 @@ public sealed record ExportDestinations(string? Progression, string? DialogueYar
 
         var written = new JsonObject
         {
-            [NoteKey] = "보낼 곳 — 프로젝트 폴더 기준 상대 경로 또는 절대 경로. director는 저장할 때 진행 JSON을 gameFolder로, 대사 Yarn을 " +
-                        "dialogueYarnFolder로 보낸다. compositor는 gameFolder를 읽어 제 Yarn을 쓴다."
+            [NoteKey] = "복제할 폴더 — 프로젝트 폴더 기준 상대 경로 또는 절대 경로. director는 저장할 때 진행 JSON을 gameFolder로, 대사 Yarn을 " +
+                        "dialogueYarnFolder로 복제한다. compositor는 gameFolder를 읽어 제 Yarn을 쓴다."
         };
 
         foreach ((string key, JsonNode? value) in root.ToList())

@@ -111,7 +111,7 @@ public sealed class StatChangeEditorTests
         var editor = new StatChangeEditor();
         editor.Load([], []);
 
-        Assert.Contains("[챕터] 탭", editor.Children.OfType<TextBlock>().Single().Text!);
+        Assert.Contains("「조건 및 스탯」 탭", editor.Children.OfType<TextBlock>().Single().Text!);
         Assert.Equal(string.Empty, editor.ToSheetText());
     });
 

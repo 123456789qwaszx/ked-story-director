@@ -9,6 +9,7 @@ using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Views;
 
@@ -105,7 +106,7 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         _session?.SetStatus(
-            $"{what}은(는) [대본] 탭 카드의 IF 갈래 포트에서 합니다 — 잇고 떼는 문은 하나입니다.");
+            $"{what}{Josa.은는(what)} [대본] 탭 카드의 IF 갈래 포트에서 합니다 — 잇고 떼는 문은 하나입니다.");
         return true;
     }
 
@@ -1116,7 +1117,7 @@ public partial class DialogueNodeEditor : UserControl
             UiGuard.Run(_session!, "분기 추가", () =>
             {
                 DialogueNode created = _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId);
-                _session.SetStatus($"분기 '{created.Name}'을(를) 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
+                _session.SetStatus($"분기 '{created.Name}'{Josa.을를(created.Name)} 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
             });
         };
 
@@ -1412,8 +1413,8 @@ public partial class DialogueNodeEditor : UserControl
             // 제목은 노드의 곁 자료라 인스펙터를 다시 세우지 않는다 — 비웠으면 칸이 ID를 보이게 여기서 맞춘다.
             NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindDialogue(node.Id) ?? node);
             _session.SetStatus(title.Length == 0
-                ? $"제목을 비웠습니다 — 분기 카드 ID '{node.Name}'가 보입니다."
-                : $"제목을 '{title}'(으)로 바꿨습니다. 분기 카드 ID '{node.Name}'는 그대로입니다.");
+                ? $"제목을 비웠습니다 — 분기 카드 ID '{node.Name}'{Josa.이가(node.Name)} 보입니다."
+                : $"제목을 '{title}'{Josa.으로(title)} 바꿨습니다. 분기 카드 ID '{node.Name}'{Josa.은는(node.Name)} 그대로입니다.");
             return;
         }
 
@@ -1431,8 +1432,8 @@ public partial class DialogueNodeEditor : UserControl
 
         _session.Editor.UpdateEpisode(chapter.ChapterId, episodeId, title: wanted);
         _session.SetStatus(wanted.Length == 0
-            ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'가 보입니다."
-            : $"제목을 '{wanted}'(으)로 바꿨습니다. 에피소드ID '{episodeId}'는 그대로입니다.");
+            ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'{Josa.이가(episodeId)} 보입니다."
+            : $"제목을 '{wanted}'{Josa.으로(wanted)} 바꿨습니다. 에피소드ID '{episodeId}'{Josa.은는(episodeId)} 그대로입니다.");
     }
 
     /// <summary>분기로 다녀오는 카드의 첫머리 조건 — 그 갈래를 여는 줄(첫 줄)과 그 분기의 색 번호. 아니면 null.</summary>

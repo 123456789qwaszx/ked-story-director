@@ -171,10 +171,10 @@ internal sealed class AuthoringSession
         return requested;
     }
 
-    /// <summary>상태줄의 한 마디 — 보낼 곳이 있으면 어느 형식인지. 없으면 말하지 않는다(설정은 [⚙ 설정]에 있다).</summary>
+    /// <summary>상태줄의 한 마디 — 복제할 폴더가 있으면 어느 형식인지. 없으면 말하지 않는다(설정은 [⚙ 설정]에 있다).</summary>
     private string DestinationsNote() => Destinations.IsEmpty
         ? string.Empty
-        : " · 저장하면 보냅니다: " + string.Join(" · ", ExportDestinations.Formats
+        : " · 저장할 때 복제합니다: " + string.Join(" · ", ExportDestinations.Formats
             .Where(format => Destinations.FolderOf(format) is not null)
             .Select(ExportDestinations.LabelOf));
 
@@ -240,7 +240,7 @@ internal sealed class AuthoringSession
         // 저장은 프로젝트에 쓰는 일 하나다. "다른 이름으로 저장"은 없다 — 프로젝트는 폴더이고,
         // 복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
         StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
-            (Destinations.IsEmpty ? string.Empty : " 보낼 곳에도 보냅니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
+            (Destinations.IsEmpty ? string.Empty : " 고른 폴더에도 복제합니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
     }
 

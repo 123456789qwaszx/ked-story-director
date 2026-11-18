@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Serialization;
 
@@ -377,7 +378,7 @@ internal static class ChapterDocumentJson
             ? null
             : JsonSupport.RequiredString(node, what) is { Length: > 0 } text
                 ? text
-                : throw new InvalidDataException($"{what}이(가) 빈 글자로 적혔습니다 — 비면 칸째 쓰지 않습니다.");
+                : throw new InvalidDataException($"{what}{Josa.이가(what)} 빈 글자로 적혔습니다 — 비면 칸째 쓰지 않습니다.");
 
     /// <summary>종류 이름 — 쓰는 이름(<c>ToString()</c>) 밖은 받지 않는다.</summary>
     private static T Kind<T>(JsonNode? node, string what) where T : struct, Enum =>

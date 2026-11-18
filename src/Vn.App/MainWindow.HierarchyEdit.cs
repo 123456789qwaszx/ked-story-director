@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Text;
 
 namespace Vn.App;
 
@@ -133,8 +134,8 @@ public partial class MainWindow
             case HierarchyKind.Episode when tree.ShowEpisodeTitles && row.ChapterId is { } chapterId && row.EpisodeId is { } episodeId:
                 _session.Editor.UpdateEpisode(chapterId, episodeId, title: name);
                 _session.SetStatus(name.Length == 0
-                    ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'가 보입니다."
-                    : $"제목을 '{name}'(으)로 바꿨습니다. 에피소드ID '{episodeId}'는 그대로입니다.");
+                    ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'{Josa.이가(episodeId)} 보입니다."
+                    : $"제목을 '{name}'{Josa.으로(name)} 바꿨습니다. 에피소드ID '{episodeId}'{Josa.은는(episodeId)} 그대로입니다.");
                 break;
 
             // [대본] 탭은 이름만 고친다 — 챕터는 표시 이름, 장면은 장면 이름. ID는 그대로다(display-names N3).
@@ -155,7 +156,7 @@ public partial class MainWindow
         _session.Editor.UpdateChapterDisplayName(chapterId, name);
         _session.SetStatus(name.Length == 0
             ? "챕터 이름을 비웠습니다 — 챕터 ID가 보입니다."
-            : $"챕터 이름을 「{name}」(으)로 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            : $"챕터 이름을 「{name}」{Josa.으로(name)} 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
         return _session.Editor.FindChapter(chapterId)?.ShownName ?? chapterId;
     }
 
@@ -166,7 +167,7 @@ public partial class MainWindow
         _session.Editor.SetSceneName(chapterId, sceneId, name);
         _session.SetStatus(name.Length == 0
             ? "장면 이름을 비웠습니다 — 장면 ID가 보입니다."
-            : $"장면 이름을 「{name}」(으)로 바꿨습니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.");
+            : $"장면 이름을 「{name}」{Josa.으로(name)} 바꿨습니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.");
         return _session.Editor.FindChapter(chapterId) is { } chapter &&
                ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId) is { Length: > 0 } named
             ? named

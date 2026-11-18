@@ -154,7 +154,7 @@ public sealed class ProjectFolderTests
             Assert.True(run.AllExported);
             Assert.Equal([ChapterExportService.ExportPathFor(manifest, "ch01")], run.Written);
             Assert.Contains("진행 JSON → exported/ (ch01.progression.json)", run.WhereNotice);
-            Assert.DoesNotContain("보낸 곳", run.WhereNotice);
+            Assert.DoesNotContain("복제한 곳", run.WhereNotice);
         }
         finally
         {

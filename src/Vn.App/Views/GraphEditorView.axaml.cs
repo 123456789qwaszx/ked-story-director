@@ -18,6 +18,7 @@ using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Views;
 
@@ -5365,7 +5366,7 @@ public partial class GraphEditorView : UserControl
 
             if (_session.Editor.AddBranchCardAt(detour, ClampNodeX(at.X), ClampNodeY(at.Y - (TitleHeight / 2))) is { } created)
             {
-                _session.SetStatus($"분기 카드 '{created.Name}'을(를) 세우고 이었습니다 — 들러서 할 대사를 적으세요. {BranchConditionNote.Where}");
+                _session.SetStatus($"분기 카드 '{created.Name}'{Josa.을를(created.Name)} 세우고 이었습니다 — 들러서 할 대사를 적으세요. {BranchConditionNote.Where}");
             }
 
             return;
@@ -5375,8 +5376,8 @@ public partial class GraphEditorView : UserControl
         {
             string name = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindNode(target)!);
             _session.SetStatus(_session.Editor.IsBranchCardElsewhere(detour.NodeId, target)
-                ? $"'{name}'은(는) 다른 챕터의 분기 카드입니다 — 분기점은 같은 챕터의 분기 카드에만 잇습니다. 빈 곳에 놓으면 새 분기 카드가 섭니다."
-                : $"'{name}'은(는) 에피소드입니다 — 분기점은 분기 카드에만 잇습니다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 " +
+                ? $"'{name}'{Josa.은는(name)} 다른 챕터의 분기 카드입니다 — 분기점은 같은 챕터의 분기 카드에만 잇습니다. 빈 곳에 놓으면 새 분기 카드가 섭니다."
+                : $"'{name}'{Josa.은는(name)} 에피소드입니다 — 분기점은 분기 카드에만 잇습니다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 " +
                   "나오지 않습니다). 빈 곳에 놓으면 새 분기 카드가 섭니다.");
             return;
         }
@@ -5897,7 +5898,7 @@ public partial class GraphEditorView : UserControl
         DialogueNode branch = (DialogueNode)_session!.SelectedNode!;
         _session.Editor.RemoveNode(branch.Id);
         _session.SetStatus(
-            $"분기 카드 '{branch.Name}'을(를) 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
+            $"분기 카드 '{branch.Name}'{Josa.을를(branch.Name)} 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
             "되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 

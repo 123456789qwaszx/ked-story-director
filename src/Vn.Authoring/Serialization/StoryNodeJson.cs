@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Nodes;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Serialization;
 
@@ -416,7 +417,7 @@ internal static class StoryNodeJson
             (null, null) => [],
             (null, { } single) => [JsonSupport.RequiredObject(single, what)],
             (JsonArray { Count: > 1 } array, null) => JsonSupport.Objects(array, what),
-            _ => throw new InvalidDataException($"{what}은(는) condition 하나이거나 conditions 둘 이상입니다.")
+            _ => throw new InvalidDataException($"{what}{Josa.은는(what)} condition 하나이거나 conditions 둘 이상입니다.")
         };
     }
 

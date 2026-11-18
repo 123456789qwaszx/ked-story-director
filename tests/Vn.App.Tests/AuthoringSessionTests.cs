@@ -357,7 +357,7 @@ public class AuthoringSessionTests : IDisposable
             session.Editor.EnsureChapter("ch01");
             Assert.False(session.TakeDeliveryRequest());
             session.Save();
-            Assert.Contains("보낼 곳에도 보냅니다", session.StatusMessage);
+            Assert.Contains("고른 폴더에도 복제합니다", session.StatusMessage);
             Assert.True(session.TakeDeliveryRequest());
             Assert.False(session.TakeDeliveryRequest());
 
@@ -365,7 +365,7 @@ public class AuthoringSessionTests : IDisposable
             var reopened = new AuthoringSession();
             reopened.Open(session.ProjectPath!);
             Assert.Equal(Path.GetFullPath(game), reopened.Destinations.ResolveExisting(reopened.ProjectPath!, ExportFormat.Progression));
-            Assert.Contains("저장하면 보냅니다: 진행 JSON", reopened.StatusMessage);
+            Assert.Contains("저장할 때 복제합니다: 진행 JSON", reopened.StatusMessage);
             Assert.False(reopened.TakeDeliveryRequest());
         }
         finally

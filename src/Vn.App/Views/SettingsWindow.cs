@@ -9,6 +9,7 @@ using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Views;
 
@@ -331,9 +332,10 @@ internal sealed class SettingsWindow : Window
 
         if (target is null)
         {
+            string label = ExportDestinations.LabelOf(format);
             ExportNote.Text = _session.ProjectPath is null
                 ? "프로젝트를 먼저 저장해야 작업 폴더가 정해집니다."
-                : $"아직 작업 폴더에 나간 {ExportDestinations.LabelOf(format)}이(가) 없습니다 — 검증을 통과한 챕터가 생기면 저절로 나갑니다.";
+                : $"아직 작업 폴더에 나간 {label}{Josa.이가(label)} 없습니다 — 검증을 통과한 챕터가 생기면 저절로 나갑니다.";
             ExportNote.IsVisible = true;
             return;
         }

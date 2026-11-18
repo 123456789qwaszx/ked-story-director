@@ -1,5 +1,6 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Chapters;
 
@@ -39,7 +40,7 @@ public static class ChapterYarnNames
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     episodeId,
-                    $"{owner}의 Yarn 노드 이름 '{title}'이(가) {taken}와 겹칩니다 — 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 " +
+                    $"{owner}의 Yarn 노드 이름 '{title}'{Josa.이가(title)} {taken}{Josa.과와(taken)} 겹칩니다 — 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 " +
                     "같은 이름의 노드가 둘이면 컴파일이 깨집니다. [구성] 탭에서 ID를 고쳐 주세요."));
             }
         }

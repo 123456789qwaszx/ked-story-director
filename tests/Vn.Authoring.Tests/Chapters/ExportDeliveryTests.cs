@@ -53,8 +53,8 @@ public sealed class ExportDeliveryTests : IDisposable
         Assert.NotEmpty(Directory.GetFiles(yarn));
         Assert.Empty(Directory.GetFiles(game, "*.yarn"));   // 형식마다 제 자리로만
         Assert.Null(run.Problem);
-        Assert.Contains("보낸 곳 → 진행 JSON ../game · 대사 Yarn ../yarn", run.Where);
-        Assert.Contains("보낸 곳 →", (new ChapterExportRun([], []) with { Delivery = run }).WhereNotice);
+        Assert.Contains("복제한 곳 → 진행 JSON ../game · 대사 Yarn ../yarn", run.Where);
+        Assert.Contains("복제한 곳 →", (new ChapterExportRun([], []) with { Delivery = run }).WhereNotice);
         _ = editor;
     }
 
@@ -106,8 +106,8 @@ public sealed class ExportDeliveryTests : IDisposable
         ExportDeliveryRun run = ExportDelivery.Deliver(Manifest, ExportDestinations.None.With(ExportFormat.DialogueYarn, missing));
 
         Assert.False(Directory.Exists(missing));
-        Assert.Contains("보낼 곳이 없어 보내지 않았습니다: 대사 Yarn", run.Problem);
-        Assert.Contains("보낼 곳이 없어", (new ChapterExportRun([], []) with { Delivery = run }).Notice);
+        Assert.Contains("복제할 폴더가 없어 복제하지 않았습니다: 대사 Yarn", run.Problem);
+        Assert.Contains("복제할 폴더가 없어", (new ChapterExportRun([], []) with { Delivery = run }).Notice);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public sealed class ExportDeliveryTests : IDisposable
 
         Assert.Empty(Directory.GetFiles(game, "*.yarn"));
         Assert.True(File.Exists(Path.Combine(game, "ch01" + ChapterExportService.ExportFileSuffix)));
-        Assert.Contains("게임 폴더와 같은 곳으로는 보내지 않습니다", run.Problem);
+        Assert.Contains("게임 폴더와 같은 곳으로는 복제하지 않습니다", run.Problem);
     }
 
     /// <summary>그 챕터들만 든 프로젝트를 저장하고 exported/로 낸다(다시 읽기의 내보내기와 같다 — 없는 챕터의 파일은 걷힌다).</summary>

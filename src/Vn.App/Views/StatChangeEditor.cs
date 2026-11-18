@@ -132,7 +132,7 @@ internal sealed class StatChangeEditor : StackPanel
 
             if (_stats.Count == 0)
             {
-                Children.Add(Hint("이 챕터에 스탯이 없습니다 — [챕터] 탭의 스탯 표에서 먼저 선언하세요."));
+                Children.Add(Hint("이 챕터에 스탯이 없습니다 — 「조건 및 스탯」 탭의 스탯 표에서 먼저 선언하세요."));
                 return;
             }
 
@@ -153,7 +153,7 @@ internal sealed class StatChangeEditor : StackPanel
                 Padding = new Thickness(7, 1),
                 HorizontalAlignment = HorizontalAlignment.Left,
                 [ToolTip.TipProperty] =
-                    "이 길을 건너는 순간 1회 반영됩니다. 스탯은 [챕터] 탭에서 선언한 것만 고를 수 있습니다."
+                    "이 길을 건너는 순간 1회 반영됩니다. 스탯은 「조건 및 스탯」 탭에서 선언한 것만 고를 수 있습니다."
             };
 
             add.Click += (_, _) =>

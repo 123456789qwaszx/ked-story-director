@@ -22,20 +22,20 @@ public sealed record ExportDeliveryRun(
     /// <summary>나간 자리 — 「보낸 곳 → 진행 JSON ../game · 대사 Yarn …」. 보낸 것이 없으면 null.</summary>
     public string? Where => Sent.Count == 0 && Removed.Count == 0
         ? null
-        : "보낸 곳 → " + string.Join(" · ", Sent) +
+        : "복제한 곳 → " + string.Join(" · ", Sent) +
           (Removed.Count == 0 ? string.Empty : $" · 지난 파일을 걷었습니다: {string.Join(", ", Removed)}");
 
-    /// <summary>못 보낸 것 — 없으면 null.</summary>
+    /// <summary>복제하지 못한 것 — 없으면 null.</summary>
     public string? Problem => Missing.Count == 0 && Failed.Count == 0
         ? null
         : string.Join("\n", new[]
         {
             Missing.Count == 0
                 ? null
-                : $"보낼 곳이 없어 보내지 않았습니다: {string.Join(" · ", Missing)} — [⚙ 설정]의 「내보내기」에서 폴더를 확인하세요(폴더는 만들지 않습니다).",
+                : $"복제할 폴더가 없어 복제하지 않았습니다: {string.Join(" · ", Missing)} — [⚙ 설정]의 「내보내기」에서 폴더를 확인하세요(폴더는 만들지 않습니다).",
             Failed.Count == 0
                 ? null
-                : $"보낼 곳에 쓰거나 걷지 못했습니다: {string.Join(", ", Failed)} — 파일이 다른 프로그램에 잡혀 있는지 확인하세요."
+                : $"복제할 폴더에 쓰거나 걷지 못했습니다: {string.Join(", ", Failed)} — 파일이 다른 프로그램에 잡혀 있는지 확인하세요."
         }.Where(part => part is not null));
 }
 
@@ -88,7 +88,7 @@ public static class ExportDelivery
                 destinations.Resolve(projectPath, format) is { } yarnFolder &&
                 SameFolder(game, yarnFolder))
             {
-                failed.Add($"{ExportDestinations.LabelOf(format)} — 게임 폴더와 같은 곳으로는 보내지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다)");
+                failed.Add($"{ExportDestinations.LabelOf(format)} — 게임 폴더와 같은 곳으로는 복제하지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다)");
                 after.AddRange(before.Where(item => item.Format == format));
                 continue;
             }
@@ -232,7 +232,7 @@ public static class ExportDelivery
 
             JsonSupport.WriteAtomic(path, JsonSupport.ToDeterministicText(new JsonObject
             {
-                ["_안내"] = "이 툴이 저장할 때 보낼 곳으로 보낸 파일 — 이번에 안 보낸 파일은 바이트가 이 지문과 같을 때만 걷는다.",
+                ["_안내"] = "이 툴이 저장할 때 복제한 파일 — 이번에 복제하지 않은 파일은 바이트가 이 지문과 같을 때만 걷는다.",
                 ["files"] = files
             }));
         }

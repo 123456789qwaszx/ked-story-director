@@ -50,9 +50,9 @@
                 <Button Grid.Column="2" x:Name="WorkFolderButton" Content="📂 작업 폴더"
                         ToolTip.Tip="작업 폴더(프로젝트 폴더의 exported/)를 엽니다 — 툴이 저절로 내는 챕터별 진행 JSON · 대사 Yarn(yarn/)이 여기 있습니다." />
 
-                <!-- 설정은 이 창 하나에 모은다(2026-11-17 · docs/work-orders/settings-orders.md) — 묶음마다 어디에 저장되는지 적는다. -->
+                <!-- 설정은 이 창 하나에 모은다(2026-11-17 · docs/work-orders/settings-orders.md). -->
                 <Button Grid.Column="3" x:Name="SettingsButton" Content="⚙ 설정" Margin="6,0,0,0"
-                        ToolTip.Tip="설정 — [대본] 판 크기 · 형식마다 보낼 곳(게임 폴더 등). 묶음마다 어디에 저장되는지 적혀 있습니다." />
+                        ToolTip.Tip="설정 — [대본] 판 크기 · 복제할 폴더(게임 폴더 등) · 단축키 · 미니맵 · 설명 간소화" />
 
                 <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock x:Name="ProjectNameText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />

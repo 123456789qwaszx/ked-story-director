@@ -419,7 +419,7 @@ public partial class MainWindow : Window
 
         return File.Exists(ChapterExportService.ExportPathFor(projectPath, chapterId))
             ? $" ⚠ 옛 진행 JSON '{stale}'을 걷지 못했습니다 — 다른 프로그램에 잡혀 있는지 확인하세요."
-            : $" 옛 진행 JSON '{stale}'은 걷었습니다(보낼 곳의 같은 파일은 저장할 때 걷습니다).";
+            : $" 옛 진행 JSON '{stale}'은 걷었습니다(복제할 폴더의 같은 파일은 다음 저장 때 걷습니다).";
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Serialization;
 
@@ -35,13 +36,13 @@ internal static class JsonSupport
     internal static string RequiredString(JsonNode? node, string what) =>
         node is JsonValue value && value.GetValueKind() == JsonValueKind.String
             ? (string)value!
-            : throw new InvalidDataException($"{what}이(가) 없거나 문자열이 아닙니다.");
+            : throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 문자열이 아닙니다.");
 
     /// <summary>비지 않은 문자열 칸 — Id · 이름 · 열쇠.</summary>
     internal static string RequiredText(JsonNode? node, string what) =>
         RequiredString(node, what) is { } text && !string.IsNullOrWhiteSpace(text)
             ? text
-            : throw new InvalidDataException($"{what}이(가) 비었습니다.");
+            : throw new InvalidDataException($"{what}{Josa.이가(what)} 비었습니다.");
 
     /// <summary>없어도 되는 문자열 칸 — 있으면 문자열이어야 한다.</summary>
     internal static string? OptionalString(JsonNode? node, string what) => node is null ? null : RequiredString(node, what);
@@ -49,14 +50,14 @@ internal static class JsonSupport
     internal static double RequiredNumber(JsonNode? node, string what) =>
         node is JsonValue value && value.GetValueKind() == JsonValueKind.Number && double.IsFinite((double)value)
             ? (double)value
-            : throw new InvalidDataException($"{what}이(가) 없거나 수가 아닙니다.");
+            : throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 수가 아닙니다.");
 
     internal static double? OptionalNumber(JsonNode? node, string what) => node is null ? null : RequiredNumber(node, what);
 
     internal static int RequiredInt(JsonNode? node, string what) =>
         node is JsonValue value && value.GetValueKind() == JsonValueKind.Number && value.TryGetValue(out int number)
             ? number
-            : throw new InvalidDataException($"{what}이(가) 없거나 정수가 아닙니다.");
+            : throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 정수가 아닙니다.");
 
     /// <summary>켤 때만 쓰는 깃발 — 없으면 꺼짐, 있으면 <c>true</c>여야 한다(툴은 <c>false</c>를 쓰지 않는다).</summary>
     internal static bool Flag(JsonNode? node, string what) =>
@@ -64,10 +65,10 @@ internal static class JsonSupport
             ? false
             : node is JsonValue value && value.GetValueKind() == JsonValueKind.True
                 ? true
-                : throw new InvalidDataException($"{what}은(는) 켤 때만 true로 적습니다.");
+                : throw new InvalidDataException($"{what}{Josa.은는(what)} 켤 때만 true로 적습니다.");
 
     internal static JsonObject RequiredObject(JsonNode? node, string what) =>
-        node as JsonObject ?? throw new InvalidDataException($"{what}이(가) 없거나 객체가 아닙니다.");
+        node as JsonObject ?? throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 객체가 아닙니다.");
 
     /// <summary>객체 배열 — 없으면 빈 것(비면 쓰지 않는 칸), 배열이 아니거나 객체 아닌 항목이 있으면 받지 않는다.</summary>
     internal static IEnumerable<JsonObject> Objects(JsonNode? node, string what)
@@ -79,7 +80,7 @@ internal static class JsonSupport
 
         if (node is not JsonArray array)
         {
-            throw new InvalidDataException($"{what}이(가) 배열이 아닙니다.");
+            throw new InvalidDataException($"{what}{Josa.이가(what)} 배열이 아닙니다.");
         }
 
         return array.Select(item => item as JsonObject ?? throw new InvalidDataException($"{what}에 객체가 아닌 항목이 있습니다.")).ToList();
@@ -87,7 +88,7 @@ internal static class JsonSupport
 
     /// <summary>늘 쓰는 객체 배열 — 없으면 받지 않는다.</summary>
     internal static IEnumerable<JsonObject> RequiredObjects(JsonNode? node, string what) =>
-        node is null ? throw new InvalidDataException($"{what}이(가) 없습니다.") : Objects(node, what);
+        node is null ? throw new InvalidDataException($"{what}{Josa.이가(what)} 없습니다.") : Objects(node, what);
 
     public static string ToDeterministicText(JsonObject root)
     {
@@ -165,7 +166,7 @@ internal static class JsonSupport
             // 판은 챕터의 판이다 — 판은 챕터와 함께 서고 바뀌고 지워진다(2026-11-18 · old-shapes O3). 챕터가 아닌 판은 옛 데이터라 받지 않는다.
             if (!chapterIds.Contains(file.Name) || !boardNames.Add(file.Name))
             {
-                throw new InvalidDataException($"판 '{file.Name}'은(는) 챕터의 판이 아니거나 같은 챕터의 판이 둘입니다.");
+                throw new InvalidDataException($"판 '{file.Name}'{Josa.은는(file.Name)} 챕터의 판이 아니거나 같은 챕터의 판이 둘입니다.");
             }
 
             string relativePath = ProjectStore.NormalizeRelativeStoryPath(file.RelativePath);
@@ -235,7 +236,7 @@ internal static class JsonSupport
                 if (!fits)
                 {
                     throw new InvalidDataException(
-                        $"판 '{chapter.ChapterId}'의 카드 '{card.Name}'이(가) 그 챕터의 에피소드 하나를 가리키지 않습니다(표식이 없거나 · 없는 에피소드거나 · 겹치거나 · 이름이 EpisodeId와 다릅니다).");
+                        $"판 '{chapter.ChapterId}'의 카드 '{card.Name}'{Josa.이가(card.Name)} 그 챕터의 에피소드 하나를 가리키지 않습니다(표식이 없거나 · 없는 에피소드거나 · 겹치거나 · 이름이 EpisodeId와 다릅니다).");
                 }
             }
 

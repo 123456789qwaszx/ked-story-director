@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Serialization;
 
@@ -188,7 +189,7 @@ public static class ProjectManifestJson
         static double Side(JsonNode? value, string what) =>
             JsonSupport.RequiredNumber(value, what) is var side && side == BoardSize.ClampSide(side, side)
                 ? side
-                : throw new InvalidDataException($"{what} {side}은(는) {BoardSize.Minimum} ~ {BoardSize.Maximum} 안의 정수여야 합니다.");
+                : throw new InvalidDataException($"{what} {side}{Josa.은는(side)} {BoardSize.Minimum} ~ {BoardSize.Maximum} 안의 정수여야 합니다.");
 
         return new BoardSize(Side(board["width"], "판 크기의 width"), Side(board["height"], "판 크기의 height"));
     }

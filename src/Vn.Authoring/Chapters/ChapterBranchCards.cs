@@ -1,6 +1,7 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Chapters;
 
@@ -129,7 +130,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}의 Yarn 노드 이름 '{title}'이(가) {owner}와 겹칩니다 — 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 " +
+                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}의 Yarn 노드 이름 '{title}'{Josa.이가(title)} {owner}{Josa.과와(owner)} 겹칩니다 — 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 " +
                     "컴파일이 깨집니다. [구성] 탭에서 분기 카드의 ID를 고쳐 주세요."));
             }
             else

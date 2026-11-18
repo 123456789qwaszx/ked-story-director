@@ -3,6 +3,7 @@ using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Editing;
 
@@ -401,7 +402,7 @@ public sealed partial class ProjectEditor
             Chapters.EpisodeNaming.ChapterOfBoard(Project, owner).Episodes.Any(episode =>
                 string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
         {
-            throw new InvalidOperationException($"'{episodeId}'은(는) 에피소드 카드입니다 — 에피소드와 함께 지웁니다.");
+            throw new InvalidOperationException($"'{episodeId}'{Josa.은는(episodeId)} 에피소드 카드입니다 — 에피소드와 함께 지웁니다.");
         }
 
         Mutate(() => RemoveNodeCore(owner, node));
@@ -441,7 +442,7 @@ public sealed partial class ProjectEditor
     {
         if (Project.FindNode(nodeId) is DialogueNode { MarkedEpisodeId: { } episodeId })
         {
-            throw new InvalidOperationException($"'{episodeId}'은(는) 에피소드 카드입니다 — 이름은 에피소드 이름 바꾸기가 함께 옮깁니다.");
+            throw new InvalidOperationException($"'{episodeId}'{Josa.은는(episodeId)} 에피소드 카드입니다 — 이름은 에피소드 이름 바꾸기가 함께 옮깁니다.");
         }
 
         if (Project.FindNode(nodeId) is { } node && !string.Equals(node.Name, name, StringComparison.Ordinal))
