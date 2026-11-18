@@ -177,7 +177,7 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 | `Views/StatChangeEditor.cs` · `ConfirmFlyout.cs` · `BranchPalette.cs` | 스탯변화 칸 · 확인 · 갈래 색 |
 | `Services/AuthoringSession.cs` | 열린 프로젝트 · 저장 여부 · 선택 · 정의 · 상태줄 |
 | `Services/ProjectRefreshPlanner.cs` | 변경 종류 → 그래프 · 곁기둥 중 무엇을 다시 만들지 |
-| `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
+| `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 · 설명 간소화(`Views/GuideLine.cs`) — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
 
 ---
 
