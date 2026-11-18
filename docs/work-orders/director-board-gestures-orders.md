@@ -48,3 +48,4 @@
 | 11-18 | Q0 | (이 커밋) | 지시서 |
 | 11-18 | Q1 | (이 커밋) | `ConfirmFlyout`이 붙은 창(`TopLevel`)에 누름 · 키 손잡이를 띄운 뒤에 단다(터널 · 처리된 것도) — 칸 안이 아닌 누름과 Esc면 닫는다. 어떻게 닫히든 한 번(`Finish`) 손잡이를 떼고 `closed`를 부른다(⛔ 그 전에는 확인을 누를 때만 불러 바깥 누름 뒤에도 시험 손잡이가 남았다). 시험 — 바깥 누름 · Esc가 닫고 아무것도 지우지 않는다. 문서 — 작가 가이드 · 두 그래프 설계(7절 AK 새로). Authoring 649 · App 447 |
 | 11-18 | Q2 | (이 커밋) | `GraphEditorView.Attach` — 활성 판이 바뀌면(`FileGraphStateChanged.ActiveFileChanged`) `RefreshChapterCombo`, 고른 카드의 판이 활성 판과 다르면 `SelectFile(reveal: false)`. 시험 — 챕터 줄 · 장면 줄 · 에피소드 줄 · 판의 카드 고르기마다 콤보가 그 챕터다(고치기 전에는 첫 단계에서 ch01에 머물렀다). 문서 — 두 그래프 설계(챕터 고르기 · 7절 AK). Authoring 649 · App 448 |
+| 11-18 | Q3 | (이 커밋) | [구성] `ChapterCombo`에 [대본]과 같은 항목 틀(`ItemTemplate` — `ShownName`, 비면 ID). 항목은 ID 그대로라 고르기 · 시험 손잡이는 그대로다. 시험 — 이름 시험이 [구성] 콤보의 이름 · ID를 잰다. 문서 — 두 그래프 설계(툴바 · 7절 AK). Authoring 649 · App 448 |

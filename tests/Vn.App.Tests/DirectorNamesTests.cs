@@ -78,6 +78,12 @@ public sealed class DirectorNamesTests : IDisposable
         Control shown = combo.ItemTemplate!.Build("ch01")!;
         Assert.Equal("축제 전날", ((TextBlock)shown).Text);
 
+        // [구성] 탭의 콤보도 같다(2026-11-18 소유자 — 「대본과 동일하게 Chapter의 displayName이 드롭다운에」).
+        ComboBox structure = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<ComboBox>("ChapterCombo")!;
+        Assert.Equal("ch01", structure.SelectedItem);
+        Assert.Equal("축제 전날", ((TextBlock)structure.ItemTemplate!.Build("ch01")!).Text);
+        Assert.Equal("ch02", ((TextBlock)structure.ItemTemplate!.Build("ch02")!).Text);   // 이름이 없으면 ID
+
         window.Close();
     });
 

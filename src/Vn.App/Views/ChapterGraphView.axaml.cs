@@ -762,6 +762,13 @@ public partial class ChapterGraphView : UserControl
         _entries.AddRange(ChapterEntries());
 
         _updatingCombo = true;
+
+        // 항목은 ID(고르는 규칙 그대로), 보이는 글은 챕터 이름(비면 ID) — [대본] 콤보와 같다(2026-11-18 소유자 · ⛔ 그 전에는 ID가 보였다).
+        // 목록을 늘 새로 주므로 이름만 바뀌어도 다시 선다.
+        ChapterCombo.ItemTemplate ??= new Avalonia.Controls.Templates.FuncDataTemplate<string>((id, _) => new TextBlock
+        {
+            Text = _entries.FirstOrDefault(entry => string.Equals(entry.ChapterId, id, StringComparison.Ordinal))?.Model.ShownName ?? id
+        });
         ChapterCombo.ItemsSource = _entries.Select(entry => entry.ChapterId).ToList();
 
         if (_selectedChapterId is null ||
