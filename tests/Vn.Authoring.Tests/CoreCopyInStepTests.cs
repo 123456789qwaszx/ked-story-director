@@ -17,17 +17,22 @@ namespace Vn.Authoring.Tests;
 /// 두 겹이다:
 /// <list type="number">
 /// <item><b>지문</b>(<see cref="ManifestName"/>) — 늘 돈다. 사본을 여기서 고치면 잡힌다.</item>
-/// <item><b>맞대조</b> — 런타임 저장소가 옆에 있을 때만. 저쪽이 바뀐 것을 잡는다.</item>
+/// <item><b>맞대조</b> — 런타임 저장소(<c>ked-presentation-runtime</c> — 정본, 소유자)가 옆에 있을 때만. 저쪽이 바뀐 것을 잡는다.
+/// 옆 폴더 런타임의 <b>지금 체크아웃</b>과 견준다.</item>
 /// </list>
 ///
 /// ⚠ 2번이 건너뛰어도 1번이 지키므로 <b>조용한 통과는 없다</b>: 사본을 고치려면 반드시
 /// 지문을 갱신해야 하고, 지문을 갱신하는 것은 <b>옮겨 왔다는 선언</b>이다.
+///
+/// ⛔ 2번은 2026-11-06~11-18에 <b>조용히 건너뛰었다</b> — 옆 폴더 <c>ked-progression-runtime</c>의 <c>Assets/Progression/Runtime</c>을 찾았는데
+/// 런타임이 코어 자리를 <c>Assets/Ked.Progression/Core</c>로 옮겼다. 이제 런타임 저장소가 있는데 코어 자리가 없으면 <b>실패한다</b>
+/// (<c>docs/work-orders/core-sync-orders.md</c>).
 /// </summary>
 public sealed class CoreCopyInStepTests
 {
     private const string ManifestName = "runtime-sync.txt";
     private const string CopyFolder = "src/Ked.Progression";
-    private const string RuntimeFolder = "Assets/Progression/Runtime";
+    private const string RuntimeFolder = "Assets/Ked.Progression/Core";
 
     /// <summary>
     /// ⚠ 이쪽에만 있는 것 — <b>저작 전용</b>이라 런타임에 갈 이유가 없다. 도달성 증명은
@@ -70,6 +75,11 @@ public sealed class CoreCopyInStepTests
             //    런타임을 안 받아 둔 기계에서는 잴 방법이 없다.
             return;
         }
+
+        // 저장소는 있는데 코어 자리가 없다 — 런타임이 배치를 바꿨다. 건너뛰면 맞대조가 아무도 모르게 꺼진다(2026-11-06~11-18에 그랬다).
+        Assert.True(
+            Directory.Exists(Path.Combine(runtime, RuntimeFolder)),
+            $"런타임 저장소 '{runtime}'에 코어 자리 '{RuntimeFolder}'가 없습니다 — 런타임이 코어를 옮겼다면 이 시험의 RuntimeFolder를 고치세요.");
 
         var drifted = new List<string>();
 
@@ -214,21 +224,22 @@ public sealed class CoreCopyInStepTests
     private static string RepoRoot =>
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 
-    /// <summary>런타임 저장소. 환경 변수가 먼저고, 없으면 <b>옆 폴더</b>다.</summary>
+    /// <summary>런타임 저장소(<c>ked-presentation-runtime</c>). 환경 변수 <c>KED_PRESENTATION_RUNTIME</c>이 먼저고, 없으면 <b>옆 폴더</b>다.
+    /// 저장소가 있는지만 본다 — 코어 자리가 있는지는 시험이 따로 본다(없으면 실패).</summary>
     private static string? RuntimeRoot
     {
         get
         {
-            string? named = Environment.GetEnvironmentVariable("KED_PROGRESSION_RUNTIME");
+            string? named = Environment.GetEnvironmentVariable("KED_PRESENTATION_RUNTIME");
 
             if (!string.IsNullOrWhiteSpace(named) && Directory.Exists(named))
             {
                 return named;
             }
 
-            string sibling = Path.GetFullPath(Path.Combine(RepoRoot, "..", "ked-progression-runtime"));
+            string sibling = Path.GetFullPath(Path.Combine(RepoRoot, "..", "ked-presentation-runtime"));
 
-            return Directory.Exists(Path.Combine(sibling, RuntimeFolder)) ? sibling : null;
+            return Directory.Exists(sibling) ? sibling : null;
         }
     }
 }

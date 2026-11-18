@@ -5,24 +5,24 @@
 
 ## 현재 기준
 
-- 반입일: 2026-09-02
-- 저장소: `123456789qwaszx/ked-presentation-runtime`
-- 브랜치: `server_DB`
-- 커밋: `d53cc2f58423ba6e83fabfabbe88f1f547272380`
-- 원천: `Assets/Scripts/Ked.Progression/**/*.cs`
+- 반입일: 2026-11-18 — 사본이 가진 파일 전부가 아래 커밋과 같다(맞대조 `CoreCopyInStepTests` — 옆 폴더 `ked-presentation-runtime`의 지금 체크아웃과 견준다)
+- 저장소: `123456789qwaszx/ked-presentation-runtime` — **정본**(소유자 2026-11-18)
+- 브랜치: `fix/progressionScene`
+- 커밋: `036535be670adb3f4103207169cd3f1210eb1ee7`
+- 원천: `Assets/Ked.Progression/Core/**/*.cs` 가운데 사본이 쓰는 것 — `Loading/` · `Spec/` · `State/` · `Transition/` · `Vocabulary/`
 - 대상: `src/Ked.Progression/**/*.cs`
+- 들이지 않는 것: 런타임에만 있는 장면 실행 — `SceneRun/` · `Contracts/` · `Response/` · `ProgressionDriver.cs` · `ISceneRunner.cs` · `AssemblyInfo.cs`
+  (툴은 실행하지 않는다). 사본에만 있는 것: `Reachability/`(도달성 증명 — 저작 전용).
+- ⚠ 자동 간선 변경(`ChapterInvariants` · `EpisodeOption`)은 아직 `fix/progressionScene`에만 있고 원본 `ked-progression-runtime`에도 없다(런타임
+  `vendoring.md`). 옆 폴더 런타임에 다른 브랜치를 꺼내 두면 맞대조가 `ChapterInvariants`가 갈렸다고 알린다(`EpisodeOption`은 주석만 다르다).
 
-## 부분 반입 — 2026-11-18 (자동 간선이 장면을 넘는다)
+## 반입 기록
 
-- 저장소: `123456789qwaszx/ked-presentation-runtime` · 브랜치 `fix/progressionScene` · 커밋 `036535be670adb3f4103207169cd3f1210eb1ee7`
-- 원천: `Assets/Ked.Progression/Core/Spec/ChapterInvariants.cs` · `Assets/Ked.Progression/Core/Spec/EpisodeOption.cs` → 같은 이름의 `Spec/` 두 파일(바이트 그대로)
-- 뜻: `ChapterInvariants.VerifyAuto`의 「같은 장면」 검사가 걷혔다(규칙 넷 → 셋 — 유일한 간선 · 조건 없음 · 스탯 변화 없음). 런타임
-  `docs/PLAN_auto-edge-across-scenes.md`, 툴 `docs/work-orders/auto-edge-across-scenes-orders.md`.
-- ⚠ **나머지 파일은 위 기준(2026-09-02) 그대로다.** 런타임은 그 뒤 배치를 `Assets/Ked.Progression/Core`로 옮기고 이름을 바꿨다
-  (`ProgressionState` → `ChapterState`, `ScenarioProgression` → `ScenarioDefinition`) — 코드가 다른 파일 다섯(`LoadResults` ·
-  `ProgressionLoader` · `ChapterDefinition` · `ChapterTransition` · `ConditionEvaluator`)과 런타임에만 있는 장면 실행(`SceneRun/` 등)은
-  아직 들이지 않았다. 판정 규칙(`ChapterInvariants`)은 이번 반입으로 런타임과 같다.
-- ⚠ 이 변경은 런타임의 사본에만 있고 원본(`ked-progression-runtime`)에는 아직 없다(런타임 `vendoring.md`).
+| 날 | 커밋 | 들인 것 |
+|---|---|---|
+| 2026-11-18 | `036535b` | 갈린 다섯(`Loading/LoadResults.cs` · `Loading/ProgressionLoader.cs` · `Spec/ChapterDefinition.cs` · `Transition/ChapterTransition.cs` · `Transition/ConditionEvaluator.cs`)과 이름이 바뀐 둘(`State/ProgressionState.cs` → `State/ChapterState.cs` · `Spec/ScenarioProgression.cs` → `Spec/ScenarioDefinition.cs` — `FoldChoices` → `ApplyChoices`). 런타임이 11-06~07에 배치를 `Core/`로 옮기며 바꾼 이름과 `ChapterTransition.Resolve`의 인자 검사다 — 판정 규칙은 그대로 · 툴 코드는 이 이름들을 쓰지 않는다. 맞대조를 되살렸다(`docs/work-orders/core-sync-orders.md`) |
+| 2026-11-18 | `036535b` | `Spec/ChapterInvariants.cs` · `Spec/EpisodeOption.cs` — 자동 간선의 「같은 장면」 검사가 걷혔다(`docs/work-orders/auto-edge-across-scenes-orders.md`) |
+| 2026-09-02 | `d53cc2f5`(`server_DB`, 그때 원천 `Assets/Scripts/Ked.Progression/`) | 사본 전체 — 아래 「이번 반입의 의미 있는 변화」 |
 
 ## 반입 경계
 

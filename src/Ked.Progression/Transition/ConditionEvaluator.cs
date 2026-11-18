@@ -4,7 +4,7 @@ namespace Ked.Progression
 {
     public static class ConditionEvaluator
     {
-        public static bool IsMet(in ProgressionCondition condition, ProgressionState state)
+        public static bool IsMet(in ProgressionCondition condition, ChapterState state)
         {
             if (state == null)
                 throw new ArgumentNullException(nameof(state));
@@ -22,7 +22,7 @@ namespace Ked.Progression
         }
 
         private static bool EvaluateStat(
-            in ProgressionCondition condition, ProgressionState state)
+            in ProgressionCondition condition, ChapterState state)
         {
             // 규칙: 정의되지 않은 키면 GetStat 소관.
             int value = state.GetStat(condition.Key);

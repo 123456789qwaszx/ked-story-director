@@ -34,7 +34,8 @@
   `ScenarioProgression` → `ScenarioDefinition`, 배치 `Assets/Ked.Progression/Core`). 코드가 다른 파일은 이번 둘 밖에 다섯
   (`LoadResults` · `ProgressionLoader` · `ChapterDefinition` · `ChapterTransition` · `ConditionEvaluator` — 이름 바꿈과 인자 검사). 맞대조
   시험(`CoreCopyInStepTests`)은 옛 자리(`ked-progression-runtime/Assets/Progression/Runtime`)를 찾아 건너뛰고 있었다. 무엇을 정본으로
-  맞댈지(원본 `ked-progression-runtime` 또는 사본 `ked-presentation-runtime` — 이번 변경은 사본에만 있다)는 소유자가 정한다.
+  맞댈지(원본 `ked-progression-runtime` 또는 사본 `ked-presentation-runtime` — 이번 변경은 사본에만 있다)는 소유자가 정한다. → 같은 날 정했다:
+  정본은 `ked-presentation-runtime`, 갈린 다섯만 들이고 맞대조를 되살렸다([`core-sync-orders.md`](core-sync-orders.md)).
 
 ## 4. 진행 기록
 

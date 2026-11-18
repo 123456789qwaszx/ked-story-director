@@ -2,7 +2,7 @@
 
 **소유자**: 「그 다섯 파일만 들이고 맞대조 시험을 되살립시다.」 정본은 `ked-presentation-runtime`(소유자).
 
-> **상태: 진행 중.**
+> **상태: 끝 (2026-11-18).**
 
 ## 1. 지금
 
@@ -25,10 +25,11 @@
 ## 3. 알아 둘 것
 
 - 맞대조는 옆 폴더 런타임의 **지금 체크아웃**과 견준다. 자동 길 변경(`036535b`)은 아직 `fix/progressionScene`에만 있으므로, 그 브랜치가 합쳐지기 전에
-  다른 브랜치를 꺼내 두면 `ChapterInvariants` · `EpisodeOption`이 갈렸다고 나온다 — 그것이 맞는 알림이다.
+  다른 브랜치를 꺼내 두면 `ChapterInvariants`가 갈렸다고 나온다(`EpisodeOption`은 주석만 다르다) — 그것이 맞는 알림이다.
 
 ## 4. 진행 기록
 
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-18 | V0 | (이 커밋) | 지시서 |
+| 11-18 | V1 | (이 커밋) | 다섯 파일과 이름이 바뀐 둘(`ChapterState` · `ScenarioDefinition`)을 런타임 `036535b`에서 바이트 그대로 들였다 — 옛 이름의 둘은 걷혔다. 맞대조 시험은 옆 폴더 `ked-presentation-runtime`의 `Assets/Ked.Progression/Core`와 맞대고(`KED_PRESENTATION_RUNTIME`이 먼저), 저장소는 있는데 코어 자리가 없으면 실패한다. 확인 — `036535b`와는 맞고, 자동 길 변경 전 커밋(`511e655`)과는 `ChapterInvariants`를 짚고, 코어 자리가 없는 폴더는 실패한다. 지문 · `UPSTREAM.md`(반입 기록 표) · `runtime-contract.md`(맞대조 · 정본). Authoring 648 · App 442 |

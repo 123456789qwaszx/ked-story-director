@@ -11,25 +11,23 @@ namespace Ked.Progression
     {
         private static readonly ResolvedOption[] None = new ResolvedOption[0];
 
-        public static ChapterAdvance Resolve(ChapterDefinition chapter, ProgressionState state)
+        public static ChapterAdvance Resolve(
+            ChapterDefinition chapter,
+            ChapterState state)
         {
-            if (chapter == null) throw new ArgumentNullException(nameof(chapter));
-            if (state == null) throw new ArgumentNullException(nameof(state));
-            
-            if (!chapter.TryGetNode(state.CurrentEpisodeId, out EpisodeNode node))
-                throw new ArgumentException(
-                    $"지금 에피소드 '{state.CurrentEpisodeId}'가" +
-                    $" 챕터 '{chapter.ChapterId}'에 없다.", nameof(state));
+            chapter.TryGetNode(state.CurrentEpisodeId, out EpisodeNode node);
             
             IReadOnlyList<EpisodeOption> options = node.NextOptions;
 
-            // 자동 간선 — 불변식이 "유일한 간선·조건 없음"을 보장하므로 판정할 것이 없다.
+            // 자동 간선 - 불변식이 "유일한 간선·조건 없음"을 보장하므로 판정할 것이 없다.
             if (options.Count == 1 && options[0].IsAuto)
+            {
                 return new ChapterAdvance(
-                    ChapterAdvanceKind.AutoAdvance,
-                    new[] { ResolvedOption.Shown(options[0], 0) },
+                    ChapterAdvanceKind.AutoAdvance, 
+                    new[] { ResolvedOption.Shown(options[0], 0) }, 
                     0);
-
+            }
+            
             var shownOrLocked = new List<ResolvedOption>();
             int hidden = 0;
             bool anySelectable = false;
@@ -38,15 +36,16 @@ namespace Ked.Progression
             {
                 EpisodeOption option = options[i];
                 
+                // 실패한 표시 조건을 목록에서 숨긴다
                 if (FirstUnmet(option.VisibleConditions, state).IsConstructed)
                 {
-                    // 표시조건 미달이면 목록에 만들지 않는다.
                     hidden++;
                     continue;
                 }
 
                 ProgressionCondition blocking = FirstUnmet(option.Conditions, state);
 
+                // 막고 있는 조건이 없으면, 이 선택지를 선택 가능한 상태로 추가
                 if (!blocking.IsConstructed)
                 {
                     shownOrLocked.Add(ResolvedOption.Shown(option, i));
@@ -67,7 +66,8 @@ namespace Ked.Progression
 
         // 미달 조건 중 첫번째 것.
         private static ProgressionCondition FirstUnmet(
-            IReadOnlyList<ProgressionCondition> conditions, ProgressionState state)
+            IReadOnlyList<ProgressionCondition> conditions,
+            ChapterState state)
         {
             for (int i = 0; i < conditions.Count; i++)
             {

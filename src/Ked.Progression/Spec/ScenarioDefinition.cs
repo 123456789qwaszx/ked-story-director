@@ -5,7 +5,7 @@ namespace Ked.Progression
 {
     // 챕터들을 묶는 자리.
     // [1] 현재 영구 계층을 다루지 않기에, 사실상 껍데기.
-    public sealed class ScenarioProgression
+    public sealed class ScenarioDefinition
     {
         private readonly Dictionary<string, ChapterDefinition> _chaptersById;
 
@@ -17,7 +17,7 @@ namespace Ked.Progression
 
         public IReadOnlyList<ChapterDefinition> Chapters { get; }
 
-        public ScenarioProgression(
+        public ScenarioDefinition(
             string scenarioId,
             string displayName,
             string startChapterId,

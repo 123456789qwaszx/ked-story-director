@@ -142,7 +142,7 @@ Stop/New Game/Manual Load는 커밋 금지, Episode Skip은 연출 기능이라 
 | | |
 |---|---|
 | **지문** | `src/Ked.Progression/runtime-sync.txt` — 공유 24파일의 <b>코드</b> 해시. 어느 기계에서든 돈다 |
-| **맞대조** | 런타임 저장소가 옆 폴더에 있거나 `KED_PROGRESSION_RUNTIME`이 가리키면 파일 내용을 직접 비교 |
+| **맞대조** | 런타임 저장소(`ked-presentation-runtime` — 2026-11-18 소유자: 정본)가 옆 폴더에 있거나 `KED_PRESENTATION_RUNTIME`이 가리키면 `Assets/Ked.Progression/Core`와 파일 내용을 직접 비교. 저장소는 있는데 그 자리가 없으면 **실패한다** — ⛔ 2026-11-06~11-18에는 옛 자리(`ked-progression-runtime/Assets/Progression/Runtime`)를 찾다 조용히 건너뛰었다(`work-orders/core-sync-orders.md`) |
 
 재는 것은 **코드지 글이 아니다** — 주석은 이쪽이 더 두껍고 그건 의도다. 실제로 `ChapterDefinition.cs`의
 차이는 주석뿐이었고, 필드 위치만 저쪽에 맞춰 옮겼다(2026-09-16).
@@ -413,7 +413,7 @@ UPM을 버리고 `Assets/Scripts/Ked.Progression/`에 복사 반입했다**("매
 
 | 사본 | 어디 | 상태 (2026-09-16 실측) |
 |---|---|---|
-| **정본** | **`ked-progression-runtime` `dev`** — `Assets/Progression/Runtime/` | ⭐ **여기가 정본이다** (2026-09-16 소유자: *"Scenario/Chapter/Scene/Episode 계약이 완전히 굳었다"*). Core/Runtime/Host 세 층. 문서는 `Progression-Runtime_README.md`·`Progression-Runtime_Plan.md` |
+| **정본** | ⛔ 2026-11-18 소유자: **`ked-presentation-runtime`** — `Assets/Ked.Progression/Core/`가 툴의 사본이 따르는 곳이다(`src/Ked.Progression/UPSTREAM.md`). 아래는 2026-09-16의 기록: **`ked-progression-runtime` `dev`** — `Assets/Progression/Runtime/` (2026-09-16 소유자: *"Scenario/Chapter/Scene/Episode 계약이 완전히 굳었다"*). Core/Runtime/Host 세 층 |
 | 이쪽 사본 | `src/Ked.Progression/` | ✅ **공유 24파일 중 23개 차이 0.** 남은 하나도 위치 차이뿐. 이쪽에만 `Reachability/`(도달성 증명 — 저작 전용), 저쪽에만 `Scene/`·`Contracts/`·`ProgressionDriver`(실행 층) |
 | ~~옛 정본~~ | `ked-progression` `feat/host-integration` | **더는 정본이 아니다.** 08-25에서 멈춤 |
 | ~~옛 런타임 사본~~ | `ked-presentation-runtime/Assets/Scripts/Ked.Progression/` | 실제 작업이 `ked-progression-runtime`으로 옮겨 갔다 |

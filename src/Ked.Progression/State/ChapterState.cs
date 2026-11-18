@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Ked.Progression
 {
     // 챕터 진행 상태.
-    public sealed class ProgressionState
+    public sealed class ChapterState
     {
         private readonly Dictionary<string, int> _stats;
 
@@ -12,13 +12,13 @@ namespace Ked.Progression
 
         public IReadOnlyDictionary<string, int> Stats => _stats;
 
-        private ProgressionState(string currentEpisodeId, Dictionary<string, int> stats)
+        private ChapterState(string currentEpisodeId, Dictionary<string, int> stats)
         {
             CurrentEpisodeId = currentEpisodeId;
             _stats = stats;
         }
 
-        public static ProgressionState CreateInitial(IEnumerable<StatDefinition> stats, string startEpisodeId)
+        public static ChapterState CreateInitial(IEnumerable<StatDefinition> stats, string startEpisodeId)
         {
             var values = new Dictionary<string, int>(StringComparer.Ordinal);
 
@@ -30,7 +30,7 @@ namespace Ked.Progression
                 values[stat.Key] = stat.Initial;
             }
 
-            return new ProgressionState(startEpisodeId, values);
+            return new ChapterState(startEpisodeId, values);
         }
         
         public int GetStat(string key)
@@ -49,9 +49,11 @@ namespace Ked.Progression
         // - 이후 선택지의 조건 판정에 사용.
         // - 롤백 시 pending을 줄여 다시 계산.
         // - Scene이 끝나면 최종 상태로 확정.
-        public ProgressionState FoldChoices(ChapterDefinition chapter, IReadOnlyList<EpisodeOption> choices)
+        public ChapterState ApplyChoices(
+            ChapterDefinition chapter, 
+            IReadOnlyList<EpisodeOption> choices)
         {
-            ProgressionState state = this;
+            ChapterState state = this;
 
             for (int i = 0; i < choices.Count; i++)
                 state = state.ApplyChoice(chapter, choices[i]);
@@ -62,7 +64,9 @@ namespace Ked.Progression
         // 유일한 스탯 입력 자리.
         // 간선의 StatChange를 순서대로 반영하고,
         // 도착 에피소드로 이동한 새 ProgressionState를 반환.
-        public ProgressionState ApplyChoice(ChapterDefinition chapter, EpisodeOption choices)
+        public ChapterState ApplyChoice(
+            ChapterDefinition chapter, 
+            EpisodeOption choices)
         {
             RequireOutgoingEdge(chapter, choices);
 
@@ -81,7 +85,7 @@ namespace Ked.Progression
                 stats[change.Key] = definition.Clamp(change.ApplyTo(current));
             }
 
-            return new ProgressionState(choices.TargetEpisodeId, stats);
+            return new ChapterState(choices.TargetEpisodeId, stats);
         }
         
         // 고른 간선이 지금 에피소드에서 나가는 길인지 — 참조 동일성으로 본다.
@@ -106,7 +110,7 @@ namespace Ked.Progression
                 $"고른 간선({chosen})이 에피소드 '{CurrentEpisodeId}'에서 나가는 길이 아니다.", nameof(chosen));
         }
 
-        public static ProgressionState Restore(
+        public static ChapterState Restore(
             ChapterDefinition chapter, 
             string currentEpisodeId, 
             IReadOnlyDictionary<string, int> savedStats)
@@ -120,7 +124,7 @@ namespace Ked.Progression
                     : stat.Initial;
             }
 
-            return new ProgressionState(currentEpisodeId, values);
+            return new ChapterState(currentEpisodeId, values);
         }
     }
 }
