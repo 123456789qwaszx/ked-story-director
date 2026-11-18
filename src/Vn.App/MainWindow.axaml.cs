@@ -320,7 +320,7 @@ public partial class MainWindow : Window
     // ── 파일 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 하이어아키 우클릭 「챕터 추가」 — 「새 챕터」(자동 ID)를 <b>바로</b> 세우고 그 챕터로 간다. 이름은 하이어아키에서 두 번 눌러 고친다
+    /// 하이어아키 우클릭 「챕터 추가」 — 「새 챕터」(자동 ID)를 <b>바로</b> 세우고 그 챕터를 고른다. 이름은 하이어아키에서 두 번 눌러 고친다
     /// (2026-11-18 소유자 — ⛔ 이름 칸을 먼저 띄우던 창구 <c>ChapterAddFlyout</c>와 하이어아키 머리의 [＋]는 걷혔다). 챕터를 세우는 규칙은
     /// <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌이다([＋ 대사 노드]도 그것을 부른다).
     /// </summary>
@@ -336,6 +336,9 @@ public partial class MainWindow : Window
 
         ChapterGraph.Refresh();
         ChapterGraph.SelectChapter(chapterId);
+
+        // 만든 챕터를 고른다 — 하이어아키에서 그 줄을 누른 것과 같다(줄이 칠해지고 인스펙터에 챕터 요약 · 2026-11-18 소유자).
+        OnDirectorHierarchyPicked(new HierarchyPick(HierarchyKind.Chapter, chapterId));
         Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));   // 「챕터 추가」는 [대본]에 있다 — 만든 챕터로 간다
         _session.SetStatus(
             $"챕터 「{NewNames.Chapter}」를 만들었습니다 — 이름은 하이어아키에서 두 번 눌러 고치고, 첫 장면은 그 챕터 줄 우클릭 「장면 추가」로 세웁니다.");
