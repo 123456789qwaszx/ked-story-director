@@ -561,14 +561,12 @@ public partial class DialogueNodeEditor : UserControl
                 FontSize = 11,
                 MinHeight = 26,
                 ItemsSource = SpeakerNames(),
-                FilterMode = AutoCompleteFilterMode.Contains,
-                MinimumPrefixLength = 0,
             };
             Wire(speaker);
 
-            // 후보는 포커스 때마다 다시 읽는다 —방금 등록한 화자가 카드 재생성
-            // 없이도 자동완성에 바로 나온다.
-            speaker.GotFocus += (_, _) => speaker.ItemsSource = SpeakerNames();
+            // 후보는 조합 중인 첫 글자 · 자음부터 거른다(writer-comfort WC3 — ⛔ 칸의 글만 보아 한글은 둘째 글자부터 움직였다). 목록은 칠 때마다
+            // 지금 화자 목록에서 — 방금 등록한 화자도 카드를 다시 짓지 않고 나온다.
+            SpeakerSuggest.Attach(speaker, SpeakerNames);
 
             // ▾ = 등록 화자 전체 목록 — 자동완성은 타이핑해야 열리니 클릭 한 번 길을 따로 둔다.
             AutoCompleteBox speakerBox = speaker;
