@@ -60,6 +60,17 @@ public class ProjectRefreshPlannerTests
     }
 
     [Fact]
+    public void 구성_판의_자리_이동은_대본_판을_건드리지_않는다()
+    {
+        // [대본] 판은 대사 노드의 자리를 읽는다 — [구성]에서 에피소드를 옮겨도 다시 짓거나 다시 놓을 것이 없다(finishing FX3).
+        ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(
+            ProjectChangeKind.ChapterLayout,
+            new DialogueNode(name: "장면"));
+
+        Assert.Equal(default, plan);
+    }
+
+    [Fact]
     public void 그래프_좌표_이동은_자리만_다시_놓는다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(

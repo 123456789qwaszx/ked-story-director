@@ -124,7 +124,7 @@ public sealed class ChapterGraphClickTests
         Click(window, CardCenter(window, canvas, "main05.02"));
 
         Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible); // 골라지긴 했다
-        Assert.DoesNotContain(ProjectChangeKind.NodeMetadata, kinds);
+        Assert.DoesNotContain(ProjectChangeKind.ChapterLayout, kinds);
     });
 
     [Fact]

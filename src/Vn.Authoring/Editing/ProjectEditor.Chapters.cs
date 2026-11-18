@@ -425,7 +425,7 @@ public sealed partial class ProjectEditor
         ChapterDocument chapter = RequireChapter(chapterId);
         int index = RequireEpisodeIndex(chapter, episodeId);
 
-        Mutate(ProjectChangeKind.NodeMetadata, () =>
+        Mutate(ProjectChangeKind.ChapterLayout, () =>
             chapter.Episodes[index] = chapter.Episodes[index] with
             {
                 X = Math.Round(x, 2),
@@ -464,7 +464,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(ProjectChangeKind.NodeMetadata, () =>
+        Mutate(ProjectChangeKind.ChapterLayout, () =>
         {
             foreach ((int index, double x, double y) in moves)
             {

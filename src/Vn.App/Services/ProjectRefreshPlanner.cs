@@ -49,6 +49,9 @@ internal static class ProjectRefreshPlanner
             // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
 
+            // [구성] 판의 에피소드 자리 — [대본] 판은 대사 노드의 자리를 읽는다. [구성]은 제 다시 읽기로 그린다.
+            ProjectChangeKind.ChapterLayout => default,
+
             _ => default
         };
     }

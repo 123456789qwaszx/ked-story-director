@@ -225,7 +225,7 @@ public sealed class ChapterEditingTests
 
         _editor.MoveEpisode("ch01", "ep01", 12.3456, 67.891);
 
-        Assert.Equal(ProjectChangeKind.NodeMetadata, kind);
+        Assert.Equal(ProjectChangeKind.ChapterLayout, kind);
         Assert.Equal((12.35, 67.89), (Chapter.Episodes[0].X, Chapter.Episodes[0].Y));
     }
 

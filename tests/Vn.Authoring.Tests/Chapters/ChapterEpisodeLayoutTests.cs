@@ -59,7 +59,7 @@ public sealed class ChapterEpisodeLayoutTests
             ["ep01"] = (1.239, 2.341)
         });
 
-        Assert.Equal(ProjectChangeKind.NodeMetadata, kind);
+        Assert.Equal(ProjectChangeKind.ChapterLayout, kind);   // [대본] 판은 다시 짓지 않는다(finishing FX3)
         Assert.Equal((1.24, 2.34), (Chapter.Episodes[0].X, Chapter.Episodes[0].Y));
     }
 

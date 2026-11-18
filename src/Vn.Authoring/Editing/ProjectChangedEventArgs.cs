@@ -32,7 +32,13 @@ public enum ProjectChangeKind
     NodeMetadata,
 
     /// <summary>그래프에서의 좌표만 바뀌었다.</summary>
-    Layout
+    Layout,
+
+    /// <summary>
+    /// [구성] 판의 에피소드 자리만 바뀌었다 — [대본] 판은 대사 노드의 자리를 읽으므로 그 판은 그대로다. ⛔ 2026-11-18까지는
+    /// <see cref="NodeMetadata"/>여서 [구성]에서 카드를 놓을 때마다 [대본] 판을 통째로 다시 지었다(에피소드 300개에서 3초 · finishing FX3).
+    /// </summary>
+    ChapterLayout
 }
 
 public sealed class ProjectChangedEventArgs : EventArgs
