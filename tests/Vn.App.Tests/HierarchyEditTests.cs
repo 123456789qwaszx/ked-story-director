@@ -580,9 +580,11 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Equal(ChapterMinimum.LastEpisodeReason, session.StatusMessage);
         Assert.False(DeleteButton(window).IsEnabled);
 
-        // 장면도 하나뿐이다 — 고르면 [삭제]는 「장면 삭제」로 꺼져 있다.
+        // 장면도 하나뿐이다 — 고르면 [삭제]는 꺼진 「삭제 불가」다(에피소드도 — 위).
+        Assert.Equal("삭제 불가", DeleteButton(window).Content);
         Pick(tree, StoryHierarchy.SceneKey("ch02", "street"));
-        Assert.Equal(("장면 삭제", false), ((string?)DeleteButton(window).Content, DeleteButton(window).IsEnabled));
+        Assert.Equal(("삭제 불가", false), ((string?)DeleteButton(window).Content, DeleteButton(window).IsEnabled));
+        Assert.Equal(ChapterMinimum.LastSceneReason, ToolTip.GetTip(DeleteButton(window)));
 
         window.Close();
     });

@@ -621,9 +621,10 @@ public partial class GraphEditorView : UserControl
         DeleteTarget target = TargetToDelete();
         string? kept = KeptReason(target);
 
-        // 챕터의 마지막 에피소드 · 장면이면 이름은 그대로 두고 끈다 — 툴팁이 까닭을 말한다(2026-11-18 소유자 · ChapterMinimum).
+        // 챕터의 마지막 에피소드 · 장면이면 꺼진 「삭제 불가」 — 툴팁이 까닭을 말한다(2026-11-18 소유자 · ChapterMinimum). ⛔ 처음에는 「에피소드 삭제」 ·
+        //    「장면 삭제」 이름을 둔 채 껐는데, 같은 날 소유자가 「일종의 버그처럼 느껴집니다」 — 할 수 없는 일의 이름이 꺼진 채 서 있었다.
         DeleteButton.IsEnabled = target != DeleteTarget.None && kept is null;
-        DeleteButton.Content = target switch
+        DeleteButton.Content = kept is not null ? "삭제 불가" : target switch
         {
             DeleteTarget.Chapter => "챕터 삭제",
             DeleteTarget.Scene => "장면 삭제",

@@ -73,12 +73,12 @@ public sealed class GraphNodeDeleteTests : IDisposable
         session.Select(card.Id);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // 챕터의 마지막 에피소드 · 장면 — 이름은 그대로, 꺼진 채 툴팁이 까닭을 말한다(2026-11-18 소유자 · ChapterMinimum).
-        Assert.Equal(("에피소드 삭제", false), ((string?)delete.Content, delete.IsEnabled));
+        // 챕터의 마지막 에피소드 · 장면 — 꺼진 「삭제 불가」, 툴팁이 까닭을 말한다(2026-11-18 소유자 · ChapterMinimum).
+        Assert.Equal(("삭제 불가", false), ((string?)delete.Content, delete.IsEnabled));
         Assert.Equal(ChapterMinimum.LastEpisodeReason, ToolTip.GetTip(delete));
         session.Select(null);
         graph.SummaryPick = new HierarchyPick(HierarchyKind.Scene, "ch01", SceneId: "ep01");
-        Assert.Equal(("장면 삭제", false), ((string?)delete.Content, delete.IsEnabled));
+        Assert.Equal(("삭제 불가", false), ((string?)delete.Content, delete.IsEnabled));
         Assert.Equal(ChapterMinimum.LastSceneReason, ToolTip.GetTip(delete));
         graph.SummaryPick = null;
 
