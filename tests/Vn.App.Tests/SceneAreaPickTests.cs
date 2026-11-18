@@ -216,6 +216,50 @@ public sealed class SceneAreaPickTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 판의_빈_곳_우클릭은_장면_안에서_에피소드를_챕터_안에서_장면을_챕터_밖에서_챕터를_누른_자리에_더한다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「챕터 바깥 빈 공간에서 우클릭 하면 챕터 추가. 챕터 내에서 우클릭 하면 장면 추가, 장면 내에서 우클릭 하면 에피소드 추가」.
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
+        ChapterDocument Ch01() => session.Editor.FindChapter("ch01")!;
+        string SceneOf(DialogueNode card) =>
+            Ch01().Episodes.Single(episode => episode.EpisodeId == EpisodeNaming.EpisodeIdOf(card)).SceneId!;
+
+        // 챕터 안 · 장면 밖(챕터 이름표 왼쪽의 여백) — 새 장면과 첫 에피소드가 누른 자리에.
+        Border chapterLabel = Canvas(graph).Children.OfType<Border>()
+            .Single(border => border.Child is TextBlock { Text: "챕터 ch01 ⌄" });
+        var inChapter = new Point(Avalonia.Controls.Canvas.GetLeft(chapterLabel) - 6, Avalonia.Controls.Canvas.GetTop(chapterLabel) + 2);
+        int scenes = Ch01().Episodes.Select(episode => episode.SceneId).Distinct().Count();
+        long before = session.Editor.Revision;
+        RightClick(graph, inChapter);
+        Choose(graph, "장면 추가");
+
+        DialogueNode sceneCard = (DialogueNode)session.SelectedNode!;
+        Assert.Equal(scenes + 1, Ch01().Episodes.Select(episode => episode.SceneId).Distinct().Count());
+        Assert.Equal(NewNames.Scene, ChapterSceneNotes.NameOf(Ch01().SceneNotes, SceneOf(sceneCard)));
+        Assert.Equal(before + 1, session.Editor.Revision);   // 장면 · 카드 · 이름이 한 칸
+        Assert.True(Math.Abs(sceneCard.Layout.Y - (inChapter.Y - 20)) < 1 || sceneCard.Layout.Y == 0);
+
+        // 장면 안 — 그 장면에, 누른 자리에.
+        Point inHall = InsideScene(graph, "hall");
+        before = session.Editor.Revision;
+        RightClick(graph, inHall);
+        Choose(graph, "에피소드 추가");
+
+        DialogueNode hallCard = (DialogueNode)session.SelectedNode!;
+        Assert.Equal("hall", SceneOf(hallCard));
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.Equal(inHall.Y - 20, hallCard.Layout.Y, 1);
+
+        // 챕터 밖 — 하이어아키의 「챕터 추가」와 같다(세우고 고른다).
+        RightClick(graph, new Point(3000, 3000));
+        Choose(graph, "챕터 추가");
+        Assert.NotNull(session.Editor.FindChapter("ch03"));
+        Assert.Equal(StoryHierarchy.ChapterKey("ch03"), graph.HierarchyView.Selection?.Key);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Show()
@@ -255,6 +299,26 @@ public sealed class SceneAreaPickTests : IDisposable
     {
         Press(Canvas(graph), At(graph, onCanvas));
         Release(Canvas(graph), At(graph, onCanvas));
+    }
+
+    private static void RightClick(GraphEditorView graph, Point onCanvas)
+    {
+        Canvas canvas = Canvas(graph);
+        canvas.RaiseEvent(new PointerPressedEventArgs(
+            canvas, new Pointer(0, PointerType.Mouse, true), (Visual)TopLevel.GetTopLevel(canvas)!, At(graph, onCanvas), 0,
+            new PointerPointProperties(RawInputModifiers.RightMouseButton, PointerUpdateKind.RightButtonPressed),
+            KeyModifiers.None));
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>판 우클릭 차림표의 항목 — 자리마다 하나뿐이다.</summary>
+    private static void Choose(GraphEditorView graph, string header)
+    {
+        MenuItem item = Assert.Single(((IEnumerable<object>)graph.BoardMenu!.ItemsSource!).OfType<MenuItem>());
+        Assert.Equal(header, item.Header);
+        graph.BoardMenu.Close();
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
     }
 
     private static Point At(GraphEditorView graph, Point onCanvas) =>

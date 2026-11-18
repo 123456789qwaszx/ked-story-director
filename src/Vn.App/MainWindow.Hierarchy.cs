@@ -107,6 +107,9 @@ public partial class MainWindow
         // [대본] 툴바의 [삭제]가 고른 챕터 · 장면을 지우자고 한다 — 확인 칸은 셸이 띄운다(챕터 · 장면 지우기는 셸의 일이다).
         Graph.RemoveRequested += (pick, anchor) => UiGuard.Run(_session, "삭제", () => OnDirectorRemoveRequested(pick, anchor));
 
+        // [대본] 판의 챕터 밖 빈 곳 우클릭 「챕터 추가」 — 하이어아키의 「챕터 추가」와 같다(세우고 고른다).
+        Graph.ChapterAddRequested += () => UiGuard.Run(_session, "챕터 추가", CreateChapterNow);
+
         // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
         ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenChoiceInDirector(chapterId, from, to, label));

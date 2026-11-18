@@ -4620,6 +4620,14 @@ public partial class GraphEditorView : UserControl
         SelectEdge(null);
         ReleaseWritingFocus();
 
+        // 빈 곳 우클릭 = 그 자리에 더하기(2026-11-18 소유자) — 장면 안이면 에피소드, 챕터 안이면 장면, 챕터 밖이면 챕터.
+        if (args.GetCurrentPoint(GraphCanvas).Properties.IsRightButtonPressed)
+        {
+            args.Handled = true;
+            ShowBoardMenu(args.GetPosition(GraphCanvas));
+            return;
+        }
+
         // 빈 곳 좌클릭 = 범위 선택 시작 (W40). 이전 무리는 새 범위가 대신한다.
         if (args.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
         {
@@ -4631,6 +4639,66 @@ public partial class GraphEditorView : UserControl
             GraphCanvas.Children.Add(_rubberBand);
             args.Pointer.Capture(GraphCanvas);
         }
+    }
+
+    /// <summary>판의 빈 곳 우클릭 차림표 — 시험의 손잡이다(차림표의 팝업은 창 밖에 산다). 닫혀도 마지막 것을 든다.</summary>
+    internal ContextMenu? BoardMenu { get; private set; }
+
+    /// <summary>[대본] 판 빈 곳의 「챕터 추가」 — 셸이 하이어아키의 「챕터 추가」와 같이 세우고 고른다.</summary>
+    internal event Action? ChapterAddRequested;
+
+    /// <summary>
+    /// <b>판의 빈 곳 우클릭</b>(2026-11-18 소유자 — 「챕터 바깥 빈 공간에서 우클릭 하면 챕터 추가. 챕터 내에서 우클릭 하면 장면 추가, 장면 내에서
+    /// 우클릭 하면 에피소드 추가」) — 그 자리에 맞는 항목 하나. 자리는 좌클릭이 고르는 자리와 같은 테두리로 잰다(<see cref="SceneAt"/> ·
+    /// <see cref="ChapterAt"/>). 에피소드 · 장면은 누른 자리에 카드가 선다.
+    /// </summary>
+    private void ShowBoardMenu(Point at)
+    {
+        (string header, Action act) = SceneAt(at) is { } scene
+            ? ("에피소드 추가", () => AddEpisodeAt(scene.ChapterId, scene.SceneId, at))
+            : ChapterAt(at) is { } chapterId
+                ? ("장면 추가", () => AddEpisodeAt(chapterId, sceneId: null, at))
+                : ("챕터 추가", (Action)(() => ChapterAddRequested?.Invoke()));
+
+        var item = new MenuItem { Header = header };
+        item.Click += (_, _) => UiGuard.Run(_session, header, act);
+
+        BoardMenu = new ContextMenu { ItemsSource = new[] { item } };
+        BoardMenu.Open(GraphCanvas);
+    }
+
+    /// <summary>
+    /// 누른 자리에 에피소드 카드를 세운다 — <paramref name="sceneId"/>의 장면에, 없으면 새 장면(「새 장면」)과 함께. 카드 · 장면 이름이 한 되돌리기
+    /// 칸이고(<see cref="AddEpisodeCard"/>와 같은 명령), 세운 카드를 고른다.
+    /// </summary>
+    private void AddEpisodeAt(string chapterId, string? sceneId, Point at)
+    {
+        if (_session?.Editor.FindChapter(chapterId) is not { } chapter ||
+            EpisodeNaming.BoardOf(_session.Project, chapterId) is not { } board)
+        {
+            return;
+        }
+
+        double x = ClampNodeX(at.X - (CardWidth / 2));
+        double y = ClampNodeY(at.Y - 20);
+        string? sceneMade = null;
+        DialogueNode? created = null;
+
+        _session.Editor.Batch(() =>
+        {
+            string scene = sceneId ?? (sceneMade = NewNames.NextSceneId(chapter));
+            created = _session.Editor.AddDialogueNode(board.Id, scene, x, y, title: NewNames.Episode);
+
+            if (sceneMade is not null)
+            {
+                _session.Editor.SetSceneName(chapterId, sceneMade, NewNames.Scene);
+            }
+        });
+
+        _session.Select(created!.Id);
+        _session.SetStatus(sceneMade is not null
+            ? $"장면 「{NewNames.Scene}」을 세우고 누른 자리에 에피소드를 더했습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다."
+            : $"장면 「{(ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId!) is { Length: > 0 } named ? named : sceneId)}」의 누른 자리에 에피소드를 더했습니다.");
     }
 
     /// <summary>
