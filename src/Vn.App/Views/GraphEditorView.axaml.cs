@@ -4758,7 +4758,10 @@ public partial class GraphEditorView : UserControl
         }
     }
 
-    /// <summary>판의 빈 곳 우클릭 차림표 — 시험의 손잡이다(차림표의 팝업은 창 밖에 산다). 닫혀도 마지막 것을 든다.</summary>
+    /// <summary>
+    /// 판의 빈 곳 우클릭 차림표 — <b>하나뿐이다</b>(2026-11-18 소유자 보고 — 우클릭을 빠르게 하면 차림표가 겹겹이 떠 누를 때마다 챕터 · 에피소드가
+    /// 하나씩 더 섰다). 우클릭마다 새로 짓던 것을 한 벌로 두고, 다시 띄우기 전에 닫는다. 시험의 손잡이이기도 하다(팝업은 창 밖에 산다).
+    /// </summary>
     internal ContextMenu? BoardMenu { get; private set; }
 
     /// <summary>[대본] 판 빈 곳의 「챕터 추가」 — 셸이 하이어아키의 「챕터 추가」와 같이 세우고 고른다. 누른 자리에 첫 카드가 선다.</summary>
@@ -4778,10 +4781,48 @@ public partial class GraphEditorView : UserControl
                 : ("챕터 추가", (Action)(() => ChapterAddRequested?.Invoke(at)));
 
         var item = new MenuItem { Header = header };
-        item.Click += (_, _) => UiGuard.Run(_session, header, act);
+        item.Click += (_, _) =>
+        {
+            BoardMenu?.Close();
+            UiGuard.Run(_session, header, act);
+        };
 
-        BoardMenu = new ContextMenu { ItemsSource = new[] { item } };
+        BoardMenu ??= NewBoardMenu();
+        BoardMenu.Close();
+        BoardMenu.ItemsSource = new[] { item };
         BoardMenu.Open(GraphCanvas);
+    }
+
+    /// <summary>
+    /// 판 차림표 한 벌. 떠 있는 동안 붙은 창의 누름을 스스로 본다 — 차림표 밖을 누르면 닫는다(확인 칸 <see cref="ConfirmFlyout"/>과 같은 까닭: 팝업의
+    /// 바깥 누름 닫기에만 기대면 데스크톱에서 닫히지 않고 남았다). 띄운 누름은 이미 지나갔으므로 다음 누름부터 본다.
+    /// </summary>
+    private ContextMenu NewBoardMenu()
+    {
+        var menu = new ContextMenu();
+
+        void OnPress(object? sender, PointerPressedEventArgs args)
+        {
+            if (args.Source is not Visual source || !(ReferenceEquals(source, menu) || menu.IsVisualAncestorOf(source)))
+            {
+                menu.Close();
+            }
+        }
+
+        TopLevel? window = null;
+
+        menu.Opened += (_, _) =>
+        {
+            window = TopLevel.GetTopLevel(GraphCanvas);
+            window?.AddHandler(PointerPressedEvent, OnPress, RoutingStrategies.Tunnel, handledEventsToo: true);
+        };
+        menu.Closed += (_, _) =>
+        {
+            window?.RemoveHandler(PointerPressedEvent, OnPress);
+            window = null;
+        };
+
+        return menu;
     }
 
     /// <summary>

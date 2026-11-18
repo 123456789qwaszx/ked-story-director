@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
@@ -261,6 +262,37 @@ public sealed class SceneAreaPickTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 우클릭을_빠르게_거듭해도_판_차림표는_하나뿐이고_한_번_고르면_하나만_선다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 보고 — 우클릭을 빠르게 하면 차림표가 겹겹이 떠 챕터 생성 · 에피소드 생성이 「복제」됐다.
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
+        Point inHall = InsideScene(graph, "hall");
+        int before = session.Editor.FindChapter("ch01")!.Episodes.Count;
+
+        RightClick(graph, inHall);
+        ContextMenu menu = graph.BoardMenu!;
+        RightClick(graph, inHall + new Point(2, 0));
+        RightClick(graph, inHall + new Point(4, 0));
+
+        Assert.Same(menu, graph.BoardMenu);   // 새로 짓지 않는다 — 떠 있는 것은 늘 하나다
+        Assert.True(menu.IsOpen);
+        Choose(graph, "에피소드 추가");
+        Assert.Equal(before + 1, session.Editor.FindChapter("ch01")!.Episodes.Count);
+        Assert.False(menu.IsOpen);
+
+        // 떠 있는 동안 다른 데를 누르면 닫힌다(아무것도 더하지 않는다).
+        RightClick(graph, inHall);
+        Assert.True(menu.IsOpen);
+        window.MouseDown(new Point(100, 700), MouseButton.Left);
+        window.MouseUp(new Point(100, 700), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(menu.IsOpen);
+        Assert.Equal(before + 1, session.Editor.FindChapter("ch01")!.Episodes.Count);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Show()
@@ -317,8 +349,7 @@ public sealed class SceneAreaPickTests : IDisposable
     {
         MenuItem item = Assert.Single(((IEnumerable<object>)graph.BoardMenu!.ItemsSource!).OfType<MenuItem>());
         Assert.Equal(header, item.Header);
-        graph.BoardMenu.Close();
-        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));   // 차림표는 항목이 닫는다
         Dispatcher.UIThread.RunJobs();
     }
 
