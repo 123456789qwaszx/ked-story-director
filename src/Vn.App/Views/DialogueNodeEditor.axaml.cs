@@ -1451,7 +1451,7 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>분기 조건이 걸린 첫 줄의 막힌 손짓이 하는 말.</summary>
     private const string EntryGuardTip =
         "분기 조건이 걸린 첫 줄이라 지우거나 옮길 수 없습니다 — 조건 구조가 깨집니다. 글은 카드의 글 칸에서 고치세요(조건 줄은 지켜집니다). " +
-        "조건은 [구성] 탭의 분기 칸에서 바꿉니다.";
+        "조건은 이 카드 위의 「⑂ 조건」에서 바꿉니다.";
 
     /// <summary>첫머리 조건을 지켜야 하는 분기 카드인가(<see cref="BranchEntryCondition.IsGuarded"/>).</summary>
     private bool GuardsEntry(DialogueNode node) =>

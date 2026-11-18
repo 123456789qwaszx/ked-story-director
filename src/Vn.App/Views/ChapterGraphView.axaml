@@ -271,7 +271,7 @@
                         <Grid x:Name="EpisodeFieldsGrid" ColumnDefinitions="70,*" RowDefinitions="Auto">
                             <TextBlock Grid.Row="0" Text="에피소드ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                             <TextBox Grid.Row="0" Grid.Column="1" x:Name="IdBox" FontSize="11"
-                                     ToolTip.Tip="이름을 고치고 Enter를 누르면 개명됩니다 — 간선·픽스처·대본 파일·대사 노드가 함께 따라갑니다. 조건식의 cleared: 참조가 있으면 거부됩니다." />
+                                     ToolTip.Tip="고치고 Enter를 누르거나 칸을 떠나면 바뀝니다(Esc는 그만두기) — 간선 · 픽스처 · [대본] 판의 카드가 함께 따라갑니다." />
                         </Grid>
 
                         <!-- 선택지 — 이 에피소드에서 나가는 길들. 길 하나 = 선택지 하나. 줄이 문구와 도착을 보인다.
