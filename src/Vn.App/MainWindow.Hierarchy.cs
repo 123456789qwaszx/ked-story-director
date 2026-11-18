@@ -179,6 +179,7 @@ public partial class MainWindow
 
         // [대본] 판의 챕터 밖 빈 곳 우클릭 「챕터 추가」 — 하이어아키의 「챕터 추가」와 같다(세우고 고른다).
         Graph.ChapterAddRequested += at => UiGuard.Run(_session, "챕터 추가", () => CreateChapterNow(at));
+        Graph.FirstChapterRequested += () => UiGuard.Run(_session, "챕터 추가", () => CreateChapterNow(null));
 
         // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
         ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>

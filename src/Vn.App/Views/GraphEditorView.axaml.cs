@@ -136,6 +136,7 @@ public partial class GraphEditorView : UserControl
     {
         _chapters = entries;
         RefreshChapterCombo();
+        EmptyBoardPanel.IsVisible = entries.Count == 0;   // 챕터가 없으면 판 한가운데 [＋ 첫 챕터 만들기](first-chapter F1)
 
         if (_projection is not null)
         {
@@ -482,6 +483,7 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Height = CanvasHeight;
 
         AddEpisodeButton.Click += (_, _) => AddEpisodeCard();
+        FirstChapterButton.Click += (_, _) => FirstChapterRequested?.Invoke();
 
         // 머리의 이름 칸 — Enter · 초점 이탈 = 바꾸기, Esc = 그만두기(에피소드 이름 칸 · 하이어아키 이름 칸과 같은 손짓).
         InspectorNameBox.LostFocus += (_, _) => UiGuard.Run(_session, "이름 바꾸기", CommitInspectorName);
@@ -4873,6 +4875,9 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>[대본] 판 빈 곳의 「챕터 추가」 — 셸이 하이어아키의 「챕터 추가」와 같이 세우고 고른다. 누른 자리에 첫 카드가 선다.</summary>
     internal event Action<Point>? ChapterAddRequested;
+
+    /// <summary>빈 판 한가운데의 [＋ 첫 챕터 만들기] — 셸이 「챕터 추가」와 같이 세우고 고른다(first-chapter F1). 첫 카드는 새 챕터 자리에 선다.</summary>
+    internal event Action? FirstChapterRequested;
 
     /// <summary>
     /// <b>판의 빈 곳 우클릭</b>(2026-11-18 소유자 — 「챕터 바깥 빈 공간에서 우클릭 하면 챕터 추가. 챕터 내에서 우클릭 하면 장면 추가, 장면 내에서
