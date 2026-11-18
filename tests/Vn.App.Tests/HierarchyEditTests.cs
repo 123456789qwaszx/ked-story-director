@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -460,6 +461,39 @@ public sealed class HierarchyEditTests : IDisposable
         session.Editor.Undo();
         Assert.Equal(3, Chapter(session).Episodes.Count);
         Assert.Equal("교실의 사정", ChapterSceneNotes.TextOf(Chapter(session).SceneNotes, "opening"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 확인_칸은_바깥을_누르거나_Esc면_닫히고_아무것도_지우지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「확인창을 끌 방법이 없습니다. 다른 공간을 클릭하면 자동으로 꺼지도록」.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        long before = session.Editor.Revision;
+        Pick(tree, StoryHierarchy.ChapterKey("ch02"));
+
+        // 판의 빈 곳을 누른다.
+        Press(DeleteButton(window));
+        Button first = window.RemoveConfirmButton!;
+        window.MouseDown(new Point(700, 600), MouseButton.Left);
+        window.MouseUp(new Point(700, 600), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(window.RemoveConfirmButton);
+        Assert.False(first.IsAttachedToVisualTree());
+
+        // Esc.
+        Pick(tree, StoryHierarchy.ChapterKey("ch02"));
+        Press(DeleteButton(window));
+        Button second = window.RemoveConfirmButton!;
+        window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(window.RemoveConfirmButton);
+        Assert.False(second.IsAttachedToVisualTree());
+
+        Assert.NotNull(session.Editor.FindChapter("ch02"));
+        Assert.Equal(before, session.Editor.Revision);
 
         window.Close();
     });
