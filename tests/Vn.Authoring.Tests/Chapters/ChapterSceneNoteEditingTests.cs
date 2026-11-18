@@ -192,6 +192,29 @@ public sealed class ChapterSceneNoteEditingTests
     }
 
     [Fact]
+    public void 장면을_지우면_에피소드와_장면_항목이_한_칸에_걷히고_없는_장면은_아무것도_안_한다()
+    {
+        // 2026-11-18 소유자 — [대본] 하이어아키 「장면 지우기」. 장면째 지우는 것이라 메모를 주인 없이 남기지 않는다.
+        ProjectEditor editor = Editor();
+        editor.SetSceneNote(Ch, "복도", "복도의 사정");
+        editor.SetSceneNote(Ch, "교실", "교실");
+        long before = editor.Revision;
+
+        Assert.Equal(0, editor.RemoveScene(Ch, "없는 장면"));
+        Assert.Equal(before, editor.Revision);
+
+        Assert.Equal(2, editor.RemoveScene(Ch, "복도"));
+        Assert.Equal(before + 1, editor.Revision);
+        Assert.Equal(["ep03", "ep04"], Chapter(editor).Episodes.Select(episode => episode.EpisodeId));
+        Assert.Null(EpisodeNaming.CardFor(editor.Project, Ch, "ep01"));
+        Assert.Equal([("교실", "교실")], Notes(editor));
+
+        editor.Undo();
+        Assert.Equal(4, Chapter(editor).Episodes.Count);
+        Assert.Equal([("교실", "교실"), ("복도", "복도의 사정")], Notes(editor));
+    }
+
+    [Fact]
     public void 에피소드_지시는_장면을_옮겨도_에피소드를_따라간다()
     {
         ProjectEditor editor = Editor();

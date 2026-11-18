@@ -9,7 +9,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>새 챕터는 [대본] 탭 하이어아키 우클릭 「챕터 추가」로 바로 선다</b>(2026-11-18 소유자) — 이름 칸 없이 「새 챕터」(자동 ID)가 서고 그 챕터의
+/// <b>새 챕터는 [대본] 탭 하이어아키의 프로젝트 줄(또는 빈 곳) 우클릭 「챕터 추가」로 바로 선다</b>(2026-11-18 소유자) — 이름 칸 없이 「새 챕터」(자동 ID)가 서고 그 챕터의
 /// 판이 열린다. 이름은 하이어아키에서 두 번 눌러 고친다. ⛔ 하이어아키 머리의 [＋]와 이름을 먼저 받던 창구(<c>ChapterAddFlyout</c>)는 걷혔다.
 /// </summary>
 public sealed class ChapterAddTests : IDisposable
@@ -37,7 +37,7 @@ public sealed class ChapterAddTests : IDisposable
         Assert.Null(graph.FindControl<Button>("AddChapterButton"));
         Assert.Null(chapterGraph.FindControl<Button>("AddChapterButton"));
 
-        ((IEnumerable<object>)graph.HierarchyView.RowButton(StoryHierarchy.ChapterKey("ch01"))!.ContextMenu!.ItemsSource!)
+        ((IEnumerable<object>)graph.HierarchyView.RowButton(StoryHierarchy.ProjectKey)!.ContextMenu!.ItemsSource!)
             .OfType<MenuItem>().Single(item => (string?)item.Header == "챕터 추가")
             .RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         Dispatcher.UIThread.RunJobs();

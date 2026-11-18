@@ -33,7 +33,7 @@ public sealed class HierarchyEditTests : IDisposable
     }
 
     [Fact]
-    public void 에피소드_추가는_장면_줄에만_서고_장면을_비우는_일은_없다() => HeadlessUi.Run(() =>
+    public void 줄마다_제_일만_서고_에피소드_추가는_장면_줄에만_선다() => HeadlessUi.Run(() =>
     {
         // 2026-11-17 소유자 — 장면 없는 에피소드를 허용하지 않는다. 챕터 줄 「에피소드 추가」 · 「장면 풀기」 · 「장면에서 빼기」를 걷었다.
         // 2026-11-18 소유자 — 에피소드 줄 「에피소드 추가」(그 뒤에 「계속」 길로 잇던 것)도 걷었다.
@@ -41,14 +41,11 @@ public sealed class HierarchyEditTests : IDisposable
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
 
-        string[] adds = ["챕터 추가", "장면 추가"];
-
+        // 2026-11-18 소유자 — 줄마다 제 일만 선다.
         Assert.Equal(["챕터 추가"], Headers(tree, StoryHierarchy.ProjectKey));
-        Assert.Equal([.. adds, "이름 바꾸기", "챕터 제거…"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
-        Assert.Equal([.. adds, "에피소드 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
-        Assert.Equal(
-            [.. adds, "이름 바꾸기", "에피소드 지우기"],
-            Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
+        Assert.Equal(["장면 추가", "이름 바꾸기", "챕터 지우기"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
+        Assert.Equal(["에피소드 추가", "이름 바꾸기", "장면 지우기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
+        Assert.Equal(["이름 바꾸기", "에피소드 지우기"], Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
 
         window.Close();
     });
@@ -387,7 +384,7 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
-    public void 챕터_줄의_이름_바꾸기는_줄_안에서_하고_제거는_한_번_확인한_뒤_지운다() => HeadlessUi.Run(() =>
+    public void 챕터_줄의_이름_바꾸기는_줄_안에서_하고_지우기는_한_번_확인한_뒤_지운다() => HeadlessUi.Run(() =>
     {
         // 2026-11-18 소유자 — 「이름 바꾸기 · 제거…」를 나눈다. 이름 바꾸기는 장면 · 에피소드와 같이 줄 안에서, 제거만 한 번 확인한다.
         (MainWindow window, StoryHierarchy tree) = Open();
@@ -400,10 +397,10 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Equal("축제 당일", session.Editor.FindChapter("ch02")!.DisplayName);
 
         // 제거 — 차림표를 누르면 확인 칸만 선다(아직 지우지 않는다).
-        Click(tree, key, "챕터 제거…");
+        Click(tree, key, "챕터 지우기");
         Assert.NotNull(session.Editor.FindChapter("ch02"));
-        Button confirm = window.ChapterRemoveConfirmButton!;
-        Assert.Equal("챕터 제거", confirm.Content);
+        Button confirm = window.RemoveConfirmButton!;
+        Assert.Equal("챕터 지우기", confirm.Content);
 
         long before = session.Editor.Revision;
         confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -415,6 +412,40 @@ public sealed class HierarchyEditTests : IDisposable
 
         session.Editor.Undo();
         Assert.NotNull(session.Editor.FindChapter("ch02"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 장면_지우기는_한_번_확인한_뒤_그_장면의_에피소드와_항목을_한_칸에_걷는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 장면 줄: 에피소드 추가 · 이름 바꾸기 · 장면 지우기.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        session.Editor.SetSceneNote("ch01", "opening", "교실의 사정");
+        Dispatcher.UIThread.RunJobs();
+        string key = StoryHierarchy.SceneKey("ch01", "opening");
+
+        Click(tree, key, "장면 지우기");
+        Assert.Equal(3, Chapter(session).Episodes.Count);   // 확인 전에는 지우지 않는다
+        Button confirm = window.RemoveConfirmButton!;
+        Assert.Equal("장면 지우기", confirm.Content);
+
+        long before = session.Editor.Revision;
+        confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(["b"], Chapter(session).Episodes.Select(episode => episode.EpisodeId));   // opening의 root · a가 걷혔다
+        Assert.Null(EpisodeNaming.CardFor(session.Project, "ch01", "root"));
+        Assert.Null(EpisodeNaming.CardFor(session.Project, "ch01", "a"));
+        Assert.Empty(Chapter(session).SceneNotes);                                             // 장면 항목도 함께
+        Assert.DoesNotContain(tree.Rows, row => row.Key == key);
+        Assert.Equal(before + 1, session.Editor.Revision);                                     // 되돌리기 한 칸
+
+        session.Editor.Undo();
+        Assert.Equal(3, Chapter(session).Episodes.Count);
+        Assert.Equal("교실의 사정", ChapterSceneNotes.TextOf(Chapter(session).SceneNotes, "opening"));
 
         window.Close();
     });

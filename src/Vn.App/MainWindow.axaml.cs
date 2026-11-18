@@ -372,7 +372,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 하이어아키 챕터 줄 우클릭 「챕터 제거…」 — <b>확인 한 번</b> 뒤에 지운다(누른 줄 옆에 붙는 확인 칸 — [대본] 「에피소드 삭제…」와 같은
+    /// 하이어아키 챕터 줄 우클릭 「챕터 지우기」 — <b>확인 한 번</b> 뒤에 지운다(누른 줄 옆에 붙는 확인 칸 — [대본] 「에피소드 삭제…」와 같은
     /// <see cref="ConfirmFlyout"/>). 챕터 · 판 · 조건 배관을 함께 걷는다(<see cref="ChapterDeleter"/>) — 사람이 폴더에서 손으로 지우면 절반만
     /// 지워진다(판과 노드가 남아 이름이 겹치는 번들로 뒤늦게 터진다). 되돌리기 한 칸.
     /// ⛔ 2026-11-18까지는 이름 칸 · [이름 바꾸기] · 두 번 누르는 [챕터 제거…]를 한 플라이아웃에 담았다(소유자 — 둘을 나눈다).
@@ -381,11 +381,11 @@ public partial class MainWindow : Window
     {
         string shown = _session.Editor.FindChapter(chapterId)?.ShownName ?? chapterId;
 
-        ChapterRemoveConfirmButton = ConfirmFlyout.Show(
+        RemoveConfirmButton = ConfirmFlyout.Show(
             anchor,
             _session,
             $"챕터 「{shown}」와 그 장면 · 에피소드 · [대본] 탭의 카드가 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
-            "챕터 제거",
+            "챕터 지우기",
             () =>
             {
                 ChapterDeleter.Result result = ChapterDeleter.Delete(_session.Editor, _session.ProjectPath, chapterId);
@@ -402,13 +402,14 @@ public partial class MainWindow : Window
                     $"챕터 「{shown}」를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). 되돌리기(Ctrl+Z)로 돌아옵니다." +
                     StaleExportNote(result.StaleExport, chapterId));
             },
-            closed: () => ChapterRemoveConfirmButton = null);
+            closed: () => RemoveConfirmButton = null);
     }
 
     /// <summary>
-    /// 뜬 「챕터 제거」 확인 단추 — 화면 시험의 손잡이다(플라이아웃의 팝업은 창 밖에 살아 나무를 타고 내려가 찾을 수 없다). 없으면 null.
+    /// 뜬 「챕터 지우기」 · 「장면 지우기」 확인 단추 — 화면 시험의 손잡이다(플라이아웃의 팝업은 창 밖에 살아 나무를 타고 내려가 찾을 수 없다).
+    /// 없으면 null.
     /// </summary>
-    internal Button? ChapterRemoveConfirmButton { get; private set; }
+    internal Button? RemoveConfirmButton { get; private set; }
 
     /// <summary>
     /// 새 프로젝트 = <b>폴더 하나</b>.고른 폴더에 고정 이름(<see cref="ProjectFolder.DefaultManifestName"/>)으로

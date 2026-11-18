@@ -47,15 +47,15 @@ internal enum HierarchyEye
 /// </summary>
 internal enum HierarchyCommand
 {
-    /// <summary>새 챕터 — 프로젝트에.</summary>
+    /// <summary>새 챕터 — 프로젝트에(프로젝트 줄 · 빈 곳).</summary>
     AddChapter,
 
-    /// <summary>새 장면 — 누른 줄의 챕터에, 첫 에피소드와 함께(장면은 에피소드가 들어야 있다).</summary>
+    /// <summary>새 장면 — 누른 챕터 줄의 챕터에, 첫 에피소드와 함께(장면은 에피소드가 들어야 있다).</summary>
     AddScene,
 
     /// <summary>
-    /// 새 에피소드 — 누른 줄이 자리를 정한다: 장면 줄은 그 장면 끝에, 에피소드 줄은 그 뒤에(간선까지). 장면이 있는 줄에만 선다 — 에피소드는
-    /// 늘 장면에 속한다(2026-11-17). ⛔ 챕터 줄의 「에피소드 추가」(장면 없는 에피소드)는 걷었다.
+    /// 새 에피소드 — 누른 장면 줄의 장면에, 길 없이(2026-11-18). ⛔ 챕터 줄의 「에피소드 추가」(장면 없는 에피소드)와 에피소드 줄의 것(그 뒤에 길로
+    /// 이어 붙이기)은 걷었다.
     /// </summary>
     AddEpisode,
 
@@ -64,6 +64,9 @@ internal enum HierarchyCommand
     /// 함께 담던 셸의 「이름 바꾸기 · 제거…」 차림표는 걷혔다).
     /// </summary>
     DeleteChapter,
+
+    /// <summary>장면 줄 — 그 장면을 지운다(에피소드째 — 확인 한 번 뒤 — 셸이 묻는다).</summary>
+    DeleteScene,
 
     /// <summary>에피소드 줄 — 그 에피소드를 지운다.</summary>
     DeleteEpisode
@@ -799,45 +802,38 @@ public partial class StoryHierarchy : UserControl
     // ── 우클릭 차림표 (추가 셋은 어느 줄에서나 같은 자리에 선다) ──────────
 
     /// <summary>
-    /// 줄의 차림표 — 「챕터 추가 · 장면 추가」는 어느 줄에서나 같다(어디서 눌러야 무엇이 나오는지 외울 것이 없게). 「에피소드 추가」는
-    /// 장면 줄에만 선다(2026-11-18 소유자 — 에피소드 줄에서 더하면 그 뒤에 길로 이어 붙던 것을 걷었다). 어디에 붙일지는 누른 줄이
-    /// 정한다. 그 아래에 그 줄만의 일(이름 바꾸기 · 지우기)이 선다.
+    /// 줄의 차림표 — 줄마다 제 일만 선다(2026-11-18 소유자): 프로젝트 줄 = 챕터 추가, 챕터 줄 = 장면 추가 · 이름 바꾸기 · 챕터 지우기, 장면 줄 =
+    /// 에피소드 추가 · 이름 바꾸기 · 장면 지우기, 에피소드 줄 = 이름 바꾸기 · 에피소드 지우기. ⛔ 그 전에는 「챕터 추가 · 장면 추가」가 어느 줄에서나
+    /// 같은 자리에 섰다.
     /// </summary>
     private ContextMenu Menu(HierarchyRow row, Control anchor)
     {
-        var items = new List<Control> { MenuItemFor("챕터 추가", HierarchyCommand.AddChapter, row, anchor) };
-
-        if (row.ChapterId is not null)
+        List<Control> items = row.Kind switch
         {
-            items.Add(MenuItemFor("장면 추가", HierarchyCommand.AddScene, row, anchor));
+            HierarchyKind.Project => [MenuItemFor("챕터 추가", HierarchyCommand.AddChapter, row, anchor)],
+            HierarchyKind.Chapter =>
+            [
+                MenuItemFor("장면 추가", HierarchyCommand.AddScene, row, anchor),
+                new Separator(),
+                RenameItem(row),
+                MenuItemFor("챕터 지우기", HierarchyCommand.DeleteChapter, row, anchor)
+            ],
 
             // 에피소드는 늘 장면에 속한다 — 장면 줄에서만 더한다(그 장면에 길 없이 선다).
-            if (row.Kind is HierarchyKind.Scene)
-            {
-                items.Add(MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor));
-            }
-        }
-
-        switch (row.Kind)
-        {
-            case HierarchyKind.Chapter:
-                items.Add(new Separator());
-                items.Add(RenameItem(row));
-                items.Add(MenuItemFor("챕터 제거…", HierarchyCommand.DeleteChapter, row, anchor));
-                break;
-
-            // ⛔ 「장면 풀기」 · 「장면에서 빼기」는 걷었다(2026-11-17 — 장면 없는 에피소드를 만든다). 옮기기는 다른 장면 줄로 끌어 놓는다.
-            case HierarchyKind.Scene:
-                items.Add(new Separator());
-                items.Add(RenameItem(row));
-                break;
-
-            case HierarchyKind.Episode:
-                items.Add(new Separator());
-                items.Add(RenameItem(row));
-                items.Add(MenuItemFor("에피소드 지우기", HierarchyCommand.DeleteEpisode, row, anchor));
-                break;
-        }
+            HierarchyKind.Scene =>
+            [
+                MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor),
+                new Separator(),
+                RenameItem(row),
+                MenuItemFor("장면 지우기", HierarchyCommand.DeleteScene, row, anchor)
+            ],
+            HierarchyKind.Episode =>
+            [
+                RenameItem(row),
+                MenuItemFor("에피소드 지우기", HierarchyCommand.DeleteEpisode, row, anchor)
+            ],
+            _ => []
+        };
 
         return new ContextMenu { ItemsSource = items };
     }
