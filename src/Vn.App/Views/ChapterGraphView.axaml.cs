@@ -1195,13 +1195,16 @@ public partial class ChapterGraphView : UserControl
         _lineByEdge.Clear();
         _lineBase.Clear();
         _labelRects.Clear();
+        _parts.Clear();
+        CanvasBuildCount++;
 
         // 자리는 사람이 소유한다 — 에피소드가 제 X·Y를 지고 있고 드래그가 그것을
         // 고친다. 그리기는 <b>덮지 않는다</b>: 덮으면 옮긴 일이 아무 일도 아니게 된다.
         //
         // 주의: 끄는 중인 카드 하나만 임시 자리(`_dragPosition`)를 쓴다 — 아직 프로젝트에
         //   안 적은 자리다. 놓을 때 한 번 적는다(되돌리기 한 번 = 드래그 한 번).
-        _placed = DisplayPlacement(model).ToDictionary(
+        _storedPlacement = DisplayPlacement(model).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        _placed = _storedPlacement.ToDictionary(
             pair => pair.Key,
             pair => DrawnAt(pair.Key, pair.Value),
             StringComparer.Ordinal);
@@ -1244,7 +1247,7 @@ public partial class ChapterGraphView : UserControl
 
         foreach (ChapterEpisode episode in model.Episodes)
         {
-            DrawEpisode(model, episode);
+            DrawPart([episode.EpisodeId], () => DrawEpisode(model, episode), redrawable: false);
         }
 
         // 칩은 카드 위에 선다 — 카드 사이가 좁으면 옆 카드에 걸치는데, 그래도 읽히고 눌려야 한다(자리는 에피소드를 옮겨 낸다).
@@ -1327,12 +1330,20 @@ public partial class ChapterGraphView : UserControl
 
                 IBrush accent = BranchPalette.Accent(point.Port.PaletteIndex);
 
-                if (point.Marker is { } marker && ToRect(point) is { } to)
-                {
-                    DrawBranchLine(point, marker, at, to, accent);
-                }
+                // 분기점은 출발(카드 · 칩)에, 점선은 출발과 도착 칩에 기댄다 — 칩은 집 에피소드를 따라 선다.
+                DrawPart(
+                    [point.FromEpisodeId ?? _chipHome.GetValueOrDefault(point.FromNodeId),
+                     point.Port.TargetNodeId is { } target ? _chipHome.GetValueOrDefault(target) : null],
+                    () =>
+                    {
+                        if (point.Marker is { } marker && ToRect(point) is { } to)
+                        {
+                            DrawBranchLine(point, marker, at, to, accent);
+                        }
 
-                GraphCanvas.Children.Add(BranchKnob(point, at, accent));
+                        GraphCanvas.Children.Add(BranchKnob(point, at, accent));
+                    },
+                    redrawable: false);
             }
         }
 
@@ -1350,7 +1361,7 @@ public partial class ChapterGraphView : UserControl
             // 칩의 색은 그 분기 카드를 처음 부르는 분기점의 색이다 — [대본] 탭의 그 분기 포트 · 선과 같다.
             int palette = _branchPoints.FirstOrDefault(point =>
                 string.Equals(point.Port.TargetNodeId, nodeId, StringComparison.Ordinal))?.Port.PaletteIndex ?? 0;
-            DrawBranchChip(nodeId, at, BranchPalette.Accent(palette));
+            DrawPart([_chipHome.GetValueOrDefault(nodeId)], () => DrawBranchChip(nodeId, at, BranchPalette.Accent(palette)), redrawable: false);
         }
     }
 
@@ -1361,6 +1372,7 @@ public partial class ChapterGraphView : UserControl
     private void PlaceBranchChips()
     {
         _chipPlaced = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+        _chipHome.Clear();
 
         if (_session is null || _selectedChapterId is not { } chapterId)
         {
@@ -1392,6 +1404,7 @@ public partial class ChapterGraphView : UserControl
             int index = count.GetValueOrDefault(home.EpisodeId);
             count[home.EpisodeId] = index + 1;
 
+            _chipHome[home.Card.Id] = home.EpisodeId;
             _chipPlaced[home.Card.Id] = (
                 at.X + CardWidth + BranchChipOffset + (level * BranchChipIndent),
                 at.Y + (index * (BranchChipHeight + BranchChipGap)));
@@ -1641,8 +1654,11 @@ public partial class ChapterGraphView : UserControl
 
             for (int index = 0; index < options.Count; index++)
             {
-                DrawPortEdge(options[index],
-                    new Point(PortX(position.X, index, slots), position.Y + CardHeight + 5));
+                ChapterEdge edge = options[index];
+                int slot = index;
+
+                // 선은 두 카드에 기댄다 — 끄는 동안 한쪽만 움직였으면 그 선만 지금 자리로 다시 긋는다(PortOf가 그때의 자리를 읽는다).
+                DrawPart([edge.FromEpisodeId, edge.ToEpisodeId], () => DrawPortEdge(edge, PortOf(edge.FromEpisodeId, slot, slots)), redrawable: true);
             }
         }
     }
@@ -2381,6 +2397,148 @@ public partial class ChapterGraphView : UserControl
     /// <summary>실제로 움직였나 — 그냥 누른 것과 끈 것을 가른다(안 움직였으면 안 적는다).</summary>
     private bool _dragMoved;
 
+    // ── 끄는 동안 제자리에서 옮기기 (2026-11-18 · board-speed PF3) ───────────────────────────────
+    //
+    // [구성] 판은 카드 · 점 · 선택지 선(선 · 화살촉 · 누르는 자리 · 문구) · 분기 표시 · 분기 칩을 그리는 단위(조각)마다 그 조각이 기대는 에피소드와
+    // 그었을 때의 자리를 적어 둔다. 끄는 동안에는 기대는 에피소드가 모두 같은 만큼 움직인 조각은 그림째 옮기고(<see cref="TranslateTransform"/>),
+    // 무리 안팎을 잇는 선택지 선만 지금 자리로 다시 긋는다. 무리 안팎을 잇는 분기 점선은 끄는 동안 감춘다(드물다). 놓으면 지금처럼 한 번 적고
+    // 통째로 다시 그린다(문구 자리 피하기 · 판 크기 · 검증은 그때). ⛔ 그 전에는 움직일 때마다 판을 통째로 다시 지었다(에피소드 60개 챕터에서
+    // 0.13초, 300개에서 0.6초).
+
+    /// <summary>판의 그림 조각 — 그 그림, 기대는 에피소드의 그었을 때 자리, 그때 더한 문구 자리, 다시 긋는 법(선택지 선만).</summary>
+    private sealed record CanvasPart(
+        List<Control> Visuals,
+        Dictionary<string, (double X, double Y)> DrawnAt,
+        List<Rect> Labels,
+        IReadOnlyList<string> Deps,
+        Action? Redraw);
+
+    private readonly List<CanvasPart> _parts = new();
+
+    /// <summary>분기 카드 칩 → 그 칩이 붙는 집 에피소드.</summary>
+    private readonly Dictionary<string, string> _chipHome = new(StringComparer.Ordinal);
+
+    /// <summary>이번 그리기의 저장된 자리(여백 전) — 끄는 동안 지금 자리를 다시 셈하는 바탕.</summary>
+    private Dictionary<string, (double X, double Y)> _storedPlacement = new(StringComparer.Ordinal);
+
+    /// <summary>판을 통째로 지은 횟수 — 시험이 「끄는 동안 다시 짓지 않았다」를 보는 창이다.</summary>
+    internal int CanvasBuildCount { get; private set; }
+
+    /// <summary>끄는 동안 다시 그은 선택지 선의 수.</summary>
+    internal int PartRedrawCount { get; private set; }
+
+    /// <summary>조각 하나를 그리고 적어 둔다 — 그리는 일은 캔버스 끝에 덧붙인다.</summary>
+    private void DrawPart(IEnumerable<string?> deps, Action draw, bool redrawable)
+    {
+        int start = GraphCanvas.Children.Count;
+        int labels = _labelRects.Count;
+        draw();
+
+        List<string> on = deps.OfType<string>().Distinct(StringComparer.Ordinal).ToList();
+        _parts.Add(new CanvasPart(
+            GraphCanvas.Children.Skip(start).ToList(),
+            on.Where(_placed.ContainsKey).ToDictionary(dep => dep, dep => _placed[dep], StringComparer.Ordinal),
+            _labelRects.Skip(labels).ToList(),
+            on,
+            redrawable ? draw : null));
+    }
+
+    /// <summary>그 에피소드의 선택지 점 자리 — 카드 아래 칸.</summary>
+    private Point PortOf(string episodeId, int index, int slots)
+    {
+        (double X, double Y) position = _placed[episodeId];
+        return new Point(PortX(position.X, index, slots), position.Y + CardHeight + 5);
+    }
+
+    /// <summary>끄는 동안의 한 걸음 — 판을 다시 짓지 않고 조각을 옮기거나(같이 움직였다) 다시 긋거나(한쪽만) 감춘다.</summary>
+    private void MoveInPlace()
+    {
+        _placed = _storedPlacement.ToDictionary(pair => pair.Key, pair => DrawnAt(pair.Key, pair.Value), StringComparer.Ordinal);
+        var stale = new List<CanvasPart>();
+
+        foreach (CanvasPart part in _parts)
+        {
+            Vector? shift = null;
+            bool rigid = true;
+
+            foreach ((string dep, (double X, double Y) drawn) in part.DrawnAt)
+            {
+                (double X, double Y) now = _placed[dep];
+                var moved = new Vector(now.X - drawn.X, now.Y - drawn.Y);
+
+                if (shift is { } first && (Math.Abs(first.X - moved.X) > 0.01 || Math.Abs(first.Y - moved.Y) > 0.01))
+                {
+                    rigid = false;
+                    break;
+                }
+
+                shift ??= moved;
+            }
+
+            if (rigid)
+            {
+                Vector by = shift ?? default;
+                bool still = Math.Abs(by.X) < 0.01 && Math.Abs(by.Y) < 0.01;
+
+                foreach (Control visual in part.Visuals)
+                {
+                    visual.RenderTransform = still ? null : new TranslateTransform(by.X, by.Y);
+                    visual.IsVisible = true;
+                }
+
+                continue;
+            }
+
+            if (part.Redraw is null)
+            {
+                foreach (Control visual in part.Visuals)
+                {
+                    visual.IsVisible = false;   // 무리 안팎을 잇는 분기 점선 — 놓으면 다시 선다
+                }
+
+                continue;
+            }
+
+            stale.Add(part);
+        }
+
+        foreach (CanvasPart part in stale)
+        {
+            int at = part.Visuals.Count > 0 ? GraphCanvas.Children.IndexOf(part.Visuals[0]) : -1;
+
+            foreach (Control visual in part.Visuals)
+            {
+                GraphCanvas.Children.Remove(visual);
+            }
+
+            foreach (Rect label in part.Labels)
+            {
+                _labelRects.Remove(label);
+            }
+
+            _parts.Remove(part);
+            DrawPart(part.Deps, part.Redraw!, redrawable: true);
+            PartRedrawCount++;
+
+            // 선은 카드 아래에 깔려야 한다 — 덧붙인 그림을 옛 자리로 옮긴다.
+            if (at >= 0)
+            {
+                CanvasPart redrawn = _parts[^1];
+
+                foreach (Control visual in redrawn.Visuals)
+                {
+                    GraphCanvas.Children.Remove(visual);
+                    GraphCanvas.Children.Insert(Math.Min(at++, GraphCanvas.Children.Count), visual);
+                }
+            }
+        }
+
+        if (stale.Count > 0)
+        {
+            ApplySelectionVisuals();
+        }
+    }
+
     /// <summary>
     /// 다시 그리기 예약 — <see cref="QueueReload"/>와 같은 수법이다. 포인터는 프레임보다
     /// 빨리 오므로, 들어오는 대로 판을 다시 그리면 대부분 버려질 그림을 그린다.
@@ -2740,9 +2898,9 @@ public partial class ChapterGraphView : UserControl
             {
                 _dragRedrawQueued = false;
 
-                if (_draggingEpisodeId is not null && SelectedModel is { } model)
+                if (_draggingEpisodeId is not null)
                 {
-                    DrawCanvas(model);
+                    UiGuard.Run(_session, "끌기", MoveInPlace);
                 }
             },
             DispatcherPriority.Render);

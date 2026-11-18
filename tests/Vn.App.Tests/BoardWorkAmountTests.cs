@@ -23,7 +23,8 @@ namespace Vn.App.Tests;
 /// 다시 짓지 않고, 고른 카드가 아니어도 그 카드의 글 칸이 돌아온다(board-speed PF1 — ⛔ 되돌리기가 늘 구조로 알려 판을 통째로 다시 지었다)
 /// ⑤ 인스펙터가 그 카드를 보이는 채 글이 짧은 사이에 두 번 바뀌어도 옛 글이 돌아오지 않는다(⛔ 줄 표의 낡은 칸이 옛 글을 도로 넣어 두 값 사이를
 /// 끝없이 오갔다 — 창이 멈췄다) ⑥ 카드의 「빈 선택지 숨기기」를 켜고 꺼도 판을 다시 짓지 않고 그 카드의 철도만 다시 긋는다 — 모습은 통째로 그은 것과
-/// 같다(board-speed PF2 — ⛔ 「펼친 판이 바뀌었다」로 알려 판을 통째로 다시 지었다).
+/// 같다(board-speed PF2 — ⛔ 「펼친 판이 바뀌었다」로 알려 판을 통째로 다시 지었다) ⑦ [구성] 판을 끄는 동안 판을 다시 짓지 않고 한쪽만 움직인
+/// 선택지 선만 다시 긋는다 — 마지막 걸음의 모습은 놓은 뒤 통째로 그린 모습과 같다(board-speed PF3 — ⛔ 움직일 때마다 통째로 다시 지었다).
 /// </summary>
 public sealed class BoardWorkAmountTests : IDisposable
 {
@@ -276,6 +277,71 @@ public sealed class BoardWorkAmountTests : IDisposable
                 $"{drawn[index].Kind} [{string.Join(", ", drawn[index].At)}] · [{string.Join(", ", other[index].At)}]");
         }
     }
+
+    [Fact]
+    public void 구성_판을_끄는_동안_다시_짓지_않고_마지막_모습은_놓은_뒤와_같다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "교실로 간다");
+        session.Editor.AddEdge("ch01", "a", "b", optionLabel: "복도로 나간다");
+        Dispatcher.UIThread.RunJobs();
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        Canvas canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        var top = (Visual)TopLevel.GetTopLevel(canvas)!;
+        var pointer = new Pointer(0, PointerType.Mouse, true);
+        Border card = canvas.Children.OfType<Border>().Single(border => border.Tag as string == "a");
+        Point grab = canvas.TranslatePoint(new Point(Canvas.GetLeft(card) + 30, Canvas.GetTop(card) + 12), top)!.Value;
+
+        int builds = view.CanvasBuildCount;
+        int redrawn = view.PartRedrawCount;
+        card.RaiseEvent(new PointerPressedEventArgs(card, pointer, top, grab, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed), KeyModifiers.None));
+        Dispatcher.UIThread.RunJobs();
+
+        Point to = grab;
+        for (int step = 1; step <= 4; step++)
+        {
+            to = grab + new Point(step * 20, step * 40);   // 아래로 — 판의 왼위는 그대로다
+            canvas.RaiseEvent(new PointerEventArgs(InputElement.PointerMovedEvent, canvas, pointer, top, to, 0,
+                new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other), KeyModifiers.None));
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        Assert.Equal(builds, view.CanvasBuildCount);                // 끄는 동안 판을 다시 짓지 않았다
+        Assert.Equal(redrawn + (4 * 2), view.PartRedrawCount);      // a에 닿은 선 둘(root→a · a→b)만 걸음마다
+        List<(string Kind, double[] At)> dragging = CanvasShapes(canvas);
+
+        canvas.RaiseEvent(new PointerReleasedEventArgs(canvas, pointer, top, to, 0,
+            new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased), KeyModifiers.None, MouseButton.Left));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(view.CanvasBuildCount > builds);                // 놓으면 한 번 적고 다시 그린다
+        AssertSameShapes(CanvasShapes(canvas), dragging);
+
+        window.Close();
+    });
+
+    /// <summary>[구성] 판의 그림마다 실제 모양 — 종류와 자리(옮김 포함) · 기하. 보이는 것만, 차례 없이 견주게 정렬한다.</summary>
+    private static List<(string Kind, double[] At)> CanvasShapes(Canvas canvas) =>
+        canvas.Children
+            .Where(visual => visual.IsVisible)
+            .Select(visual =>
+            {
+                Point origin = visual.TranslatePoint(default, canvas)!.Value;
+                var by = new Vector(origin.X, origin.Y);
+
+                IEnumerable<Point> points = visual switch
+                {
+                    Line line => [line.StartPoint + by, line.EndPoint + by],
+                    Polygon polygon => polygon.Points.Select(point => point + by),
+                    _ => [origin, origin + new Vector(visual.Bounds.Width, visual.Bounds.Height)]
+                };
+
+                return (Kind: visual.GetType().Name, At: points.SelectMany(point => new[] { point.X, point.Y }).ToArray());
+            })
+            .OrderBy(shape => shape.Kind, StringComparer.Ordinal)
+            .ThenBy(shape => string.Join(",", shape.At.Select(value => Math.Round(value).ToString(CultureInfo.InvariantCulture))), StringComparer.Ordinal)
+            .ToList();
 
     private static void Click(MenuItem item)
     {
