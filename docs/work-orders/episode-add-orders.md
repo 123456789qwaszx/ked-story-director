@@ -7,7 +7,7 @@
 - 「festival_eve 예제를 없앱시다. 불필요합니다.」 → **예제를 걷고 원고는 시험 재료로 옮긴다** · **툴 쪽만**(런타임의 예제는 그대로 — 이제 툴이 다시 내지
   않으므로 런타임이 직접 든다).
 
-> **상태: 진행 중.**
+> **상태: 끝 (2026-11-18).**
 
 ## 1. 지금
 
@@ -31,3 +31,4 @@
 |---|---|---|---|
 | 11-18 | K0 | (이 커밋) | 지시서 — 소유자의 결정 셋(장면 줄에만 길 없이 · 시험 재료로 옮긴다 · 툴 쪽만) |
 | 11-18 | K1 | (이 커밋) | 「에피소드 추가」는 장면 줄에만 서고 그 장면에 길 없이 세운다(`EpisodeAdder` — 챕터 그래프에서는 맨 오른쪽). 에피소드 줄의 차림표에서 걷었다. 이 명령만 쓰던 `ProjectEditor.AddNextEpisode` · `ChapterBranchPlanner.SuggestPlacement` · 문구 「계속」(`EpisodeAdder.DefaultOptionLabel`) · `NodePlacement.For`의 부모 인자를 걷었다. 챕터를 만든 뒤의 안내(「챕터 줄 우클릭 「에피소드 추가」」 — 챕터 줄에는 그 항목이 없었다)를 「장면 추가」로. 시험 — 에피소드 줄 추가 · 다음 에피소드 · 자리 제안 · 부모 인자를 보던 다섯을 지웠고, 「다음으로 더하면 간선이 이어진다」를 「길 없이 선다」로, 길이 있어야 하던 준비물은 길을 따로 잇는다. 문서 — 작가 가이드 · 챕터 층 안내 · 두 그래프 설계(7절 AH 새로). Authoring 651 · App 442 |
+| 11-18 | K2 | (이 커밋) | 예제 `samples/RuntimeSamples/FestivalEve`를 걷었다 — 보낼 곳(`runtime.target.json`) · 연출 파일(`*.vncompose.json` · `ExportedTuning/` · `assets/`) · 결과 · Yarn · `exported/`. 원고(매니페스트 · 판)는 `tests/fixtures/festival-eve`로 옮겨 시험 재료로 쓴다(대사 Yarn · 장면 파일 · 장면 메모 · 설정의 최근 프로젝트). 예제 시험(`RuntimeSampleTests`)의 festival_eve 둘과 축제 전날의 조건 분기 시험을 지웠고, 재료의 `exported/`를 읽던 장면 파일 시험은 먼저 내보내고 견준다. README(예제는 연출 데모 하나) · 두 그래프 설계 7절 AH. Authoring 648 · App 442 |

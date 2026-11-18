@@ -65,7 +65,7 @@ public sealed class ChapterSceneNoteDiagnosticTests
     public void 주인_없는_메모는_검증_오류가_아니고_내보내기를_막지_않는다()
     {
         // 검증 오류 없이 내보내지는 견본(축제 전날)에 주인 없는 메모 하나를 얹는다.
-        string manifest = Path.GetFullPath("../../../../../samples/RuntimeSamples/FestivalEve/festival_eve.vnproject.json");
+        string manifest = Path.GetFullPath("../../../../../tests/fixtures/festival-eve/festival_eve.vnproject.json");
         var editor = new ProjectEditor(ProjectStore.Load(manifest).Project);
         editor.SetSceneNote("festival_eve", "옥상", "주인 없음");
 

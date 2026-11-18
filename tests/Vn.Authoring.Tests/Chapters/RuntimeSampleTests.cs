@@ -5,7 +5,8 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <c>samples/RuntimeSamples</c> — ked-presentation-runtime의 예제 두 챕터(축제 전날 · 연출 데모)의 <b>원고</b>다 (2026-11-04).
+/// <c>samples/RuntimeSamples</c> — ked-presentation-runtime의 예제 챕터(연출 데모)의 <b>원고</b>다 (2026-11-04). ⛔ 축제 전날
+/// (<c>festival_eve</c>)은 2026-11-18에 예제에서 걷혔다(소유자 — 불필요) — 원고는 시험 재료로 <c>tests/fixtures/festival-eve</c>에 남았다.
 /// 소유자: <i>"목표는 런타임 예제를 손 대본 대신 두 툴로 내는 것입니다."</i> 이 툴이 진행 JSON을 내고,
 /// ked-story-compositor가 같은 원고의 사본 옆에 연출을 얹어 Yarn을 낸다.
 ///
@@ -20,7 +21,6 @@ public sealed class RuntimeSampleTests
     private static string Lf(string text) => text.Replace("\r\n", "\n");
 
     [Theory]
-    [InlineData("FestivalEve", "festival_eve")]
     [InlineData("PresentationDemo", "presentation_demo")]
     public void 원고는_검증_오류_없이_읽힌다(string folder, string chapterId)
     {
@@ -43,7 +43,6 @@ public sealed class RuntimeSampleTests
     }
 
     [Theory]
-    [InlineData("FestivalEve", "festival_eve")]
     [InlineData("PresentationDemo", "presentation_demo")]
     public void 다시_내보낸_진행_JSON이_실린_것과_같다(string folder, string chapterId)
     {
@@ -58,36 +57,5 @@ public sealed class RuntimeSampleTests
         Assert.Equal(
             Lf(File.ReadAllText(ChapterExportService.ExportPathFor(manifest, chapterId))),
             Lf(export.Json!));
-    }
-
-    [Fact]
-    public void 축제_전날의_조건_분기는_다녀갈_카드의_첫머리에_있다()
-    {
-        // 예제의 <<if>>/<<elseif>>/<<else>>는 툴의 모양으로 다시 짰다(2026-11-04 소유자: "툴에서 else를 사용할 수
-        // 있는 방법 자체가 없다") — 부르는 카드에는 분기 표식, 조건은 다녀갈 카드의 첫머리. else 쪽은 여집합 조건이다.
-        StoryProject project = ProjectStore.Load(ManifestOf("FestivalEve", "festival_eve")).Project;
-
-        var expected = new Dictionary<string, string?>(StringComparer.Ordinal)
-        {
-            ["Festival_Wrapup_Remade"] = "성실 2 이상",
-            ["Festival_Wrapup_Sticker"] = "성실 2 미만",
-            ["Festival_Staffroom_Kasmi"] = "요령 3 이상",
-            ["Festival_Staffroom_Praise"] = "성실 3 이상 · 요령 3 미만",
-            ["Festival_Staffroom_Pass"] = "성실 3 미만 · 요령 3 미만",
-        };
-
-        // 다섯은 분기 카드다(2026-11-17) — 에피소드가 아니라 진행 JSON에 없다.
-        StoryFile board = EpisodeNaming.BoardOf(project, "festival_eve")!;
-
-        foreach ((string branch, string? label) in expected)
-        {
-            DialogueNode card = board.Nodes.OfType<DialogueNode>().Single(node => node.Name == branch);
-            Assert.True(card.IsBranchCard, branch);
-            Assert.Equal(label, BranchEntryCondition.Read(project, card.Id).Label);
-            Assert.DoesNotContain(Assert.Single(project.Chapters).Episodes, episode => episode.EpisodeId == branch);
-        }
-
-        IReadOnlyList<ChapterBranchMarkers.Marker> markers = ChapterBranchMarkers.For(project, "festival_eve");
-        Assert.Equal(5, markers.Count);
     }
 }

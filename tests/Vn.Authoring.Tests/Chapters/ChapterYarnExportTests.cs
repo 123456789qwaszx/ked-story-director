@@ -19,14 +19,15 @@ public sealed class ChapterYarnExportTests
 {
     private const string Ch = "festival_eve";
 
+    /// <summary>시험 재료(축제 전날 — <c>tests/fixtures/festival-eve</c>)와 런타임 예제(연출 데모)의 원고.</summary>
     private static readonly string[] SampleManifests =
     [
-        "FestivalEve/festival_eve.vnproject.json",
-        "PresentationDemo/presentation_demo.vnproject.json"
+        "tests/fixtures/festival-eve/festival_eve.vnproject.json",
+        "samples/RuntimeSamples/PresentationDemo/presentation_demo.vnproject.json"
     ];
 
     private static string SamplePath(string relative) =>
-        Path.GetFullPath("../../../../../samples/RuntimeSamples/" + relative);
+        Path.GetFullPath("../../../../../" + relative);
 
     private static ProjectEditor Sample() => new(ProjectStore.Load(SamplePath(SampleManifests[0])).Project);
 

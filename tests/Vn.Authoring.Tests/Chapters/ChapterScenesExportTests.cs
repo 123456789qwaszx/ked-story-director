@@ -29,7 +29,7 @@ public sealed class ChapterScenesExportTests : IDisposable
     }
 
     private static string SampleManifest =>
-        Path.GetFullPath("../../../../../samples/RuntimeSamples/FestivalEve/festival_eve.vnproject.json");
+        Path.GetFullPath("../../../../../tests/fixtures/festival-eve/festival_eve.vnproject.json");
 
     private static ProjectEditor Sample() => new(ProjectStore.Load(SampleManifest).Project);
 
@@ -190,16 +190,18 @@ public sealed class ChapterScenesExportTests : IDisposable
     [Fact]
     public void 진행_JSON과_같은_때_나가고_지운_챕터의_장면_파일은_걷힌다()
     {
-        // 견본 폴더를 통째로 옮겨 그 자리에서 내보낸다 — 견본의 exported/는 건드리지 않는다.
+        // 시험 재료 폴더를 통째로 옮겨 그 자리에서 내보낸다 — 재료는 건드리지 않는다.
         string folder = Path.Combine(_root, "FestivalEve");
         CopyDirectory(Path.GetDirectoryName(SampleManifest)!, folder);
         string manifest = Path.Combine(folder, "festival_eve.vnproject.json");
-        string progression = File.ReadAllText(ChapterExportService.ExportPathFor(manifest, Ch));
 
         var editor = new ProjectEditor(ProjectStore.Load(manifest).Project);
+        var service = new ChapterExportService();
+        service.ExportAll([new ChapterEntry(Ch, Model(editor))], manifest, editor.Project);   // 메모 전의 진행 JSON
+        string progression = File.ReadAllText(ChapterExportService.ExportPathFor(manifest, Ch));
+
         editor.SetSceneNote(Ch, Model(editor).Episodes[0].SceneId, "메모");
         var entry = new ChapterEntry(Ch, Model(editor));
-        var service = new ChapterExportService();
 
         ChapterExportRun run = service.ExportAll([entry], manifest, editor.Project);
 

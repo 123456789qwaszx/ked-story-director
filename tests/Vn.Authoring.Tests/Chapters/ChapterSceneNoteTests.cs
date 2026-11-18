@@ -121,7 +121,7 @@ public sealed class ChapterSceneNoteTests : IDisposable
     public void 메모가_없는_견본을_열고_저장하면_매니페스트에_새_칸이_생기지_않는다()
     {
         // 형식 4 그대로 칸만 더했다(Q2) — 메모가 없는 프로젝트는 새 칸을 새로 쓰지 않는다.
-        string source = Path.GetFullPath("../../../../../samples/RuntimeSamples/FestivalEve");
+        string source = Path.GetFullPath("../../../../../tests/fixtures/festival-eve");
         string copy = Path.Combine(_directory, "FestivalEve");
         CopyDirectory(source, copy);
         string manifest = Path.Combine(copy, "festival_eve.vnproject.json");

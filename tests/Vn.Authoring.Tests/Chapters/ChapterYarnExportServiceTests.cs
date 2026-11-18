@@ -29,9 +29,9 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
     }
 
     private static string SampleManifest =>
-        Path.GetFullPath("../../../../../samples/RuntimeSamples/FestivalEve/festival_eve.vnproject.json");
+        Path.GetFullPath("../../../../../tests/fixtures/festival-eve/festival_eve.vnproject.json");
 
-    /// <summary>견본 폴더를 통째로 옮겨 그 자리에서 내보낸다 — 견본의 exported/는 건드리지 않는다.</summary>
+    /// <summary>시험 재료 폴더를 통째로 옮겨 그 자리에서 내보낸다 — 재료는 건드리지 않는다.</summary>
     private (string Manifest, ProjectEditor Editor) Copy()
     {
         string folder = Path.Combine(_root, "FestivalEve");

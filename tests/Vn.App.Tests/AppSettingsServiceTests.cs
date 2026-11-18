@@ -126,7 +126,7 @@ public class AppSettingsServiceTests
     public void 정상적인_설정은_그대로_읽는다()
     {
         string path = TempSettings();
-        string project = Path.GetFullPath("../../../../../samples/RuntimeSamples/FestivalEve/festival_eve.vnproject.json");
+        string project = Path.GetFullPath("../../../../../tests/fixtures/festival-eve/festival_eve.vnproject.json");
 
         Write(path, $"{{ \"RecentProject\": {System.Text.Json.JsonSerializer.Serialize(project)} }}");
 

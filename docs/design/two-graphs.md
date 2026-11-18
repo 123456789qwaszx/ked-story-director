@@ -928,7 +928,7 @@ d1 `034300f` · d2 `25797cb` · d3 `6188f72`).
 - **읽기** — 늘 쓰는 칸이 빠졌거나 모양이 다르면 거절한다. 대신 값(이름 · 종류 · 자리 · 끝점 · 스탯 범위 …) · 객체 아닌 항목 건너뛰기 · 모르는
   선 모양 · 스탯 종류 · 변화 종류의 기본값 · 빈 글자 칸 · 어긋난 분기점 자리 · 판 크기 들이기를 걷었다. 그대로 둔 것: 보낼 곳 파일
   (`runtime.target.json`) — compositor와 함께 쓰는 설정이라 모르는 칸을 지키고 깨지면 없는 것으로 본다.
-- **그 밖** — 옛 견본 `samples/Authoring`(지금 견본은 `samples/RuntimeSamples` 둘), 열 때 판 맞추기(`AlignBoardsWithChapters`), 엑셀 시절 포개진
+- **그 밖** — 옛 견본 `samples/Authoring`(지금 견본은 `samples/RuntimeSamples` — 같은 날 연출 데모 하나만 남았다, 7절 AH), 열 때 판 맞추기(`AlignBoardsWithChapters`), 엑셀 시절 포개진
   자리를 한 번 심던 `NeedsSeeding`, 부르는 곳 없던 `ChoiceLabels` · `UpdateEpisodeScenes`, [대본]의 자유 씬 카드 모양(✎).
 - **남긴 것(소유자)** — 챕터 구조 검사(`ChapterStructureCheck` — 빈 · 겹친 Id, 끝점, 관문 라벨 …)는 안전망으로 둔다. 값의 흠이라 손으로 고친 파일 ·
   앞으로 생길 창구도 지나야 한다.
@@ -958,3 +958,6 @@ d1 `034300f` · d2 `25797cb` · d3 `6188f72`).
 - ⛔ 그 전에는 에피소드 줄에서 더하면 그 에피소드에서 문구 「계속」 길을 이어 붙였고(장면 줄은 그 장면의 마지막 에피소드에서), 같은 에피소드에서
   여러 번 더하면 선택지가 셋을 넘어 늘어났다. 이 명령만 쓰던 「다음 에피소드」(`ProjectEditor.AddNextEpisode` — 에피소드와 간선을 한 변경으로),
   새 카드 자리 제안(`ChapterBranchPlanner.SuggestPlacement`), 카드 자리의 부모 인자(`NodePlacement.For`)를 함께 걷었다.
+- **예제 `festival_eve`를 걷었다**(소유자 — 「불필요합니다」) — `samples/RuntimeSamples/FestivalEve`의 예제로서의 것(보낼 곳 · 연출 파일 · 결과 · Yarn ·
+  산출물)을 걷고, 원고(매니페스트 · 판)만 시험 재료로 `tests/fixtures/festival-eve`에 옮겼다(대사 Yarn · 장면 파일 · 장면 메모 시험이 쓴다). 런타임의
+  `festival_eve`는 그대로이고 이제 이 툴이 다시 내지 않는다.
