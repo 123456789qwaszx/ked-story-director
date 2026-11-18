@@ -78,8 +78,9 @@ public sealed class StoryHierarchyTests : IDisposable
     });
 
     [Fact]
-    public void 챕터_줄은_그_챕터와_조건_스탯을_프로젝트_줄은_화자를_인스펙터에_세운다() => HeadlessUi.Run(() =>
+    public void 챕터_줄은_조건_및_스탯_탭을_프로젝트_줄은_화자_탭을_연다() => HeadlessUi.Run(() =>
     {
+        // 오른쪽 기둥은 탭 셋이다 — 고르면 그것을 보이는 탭으로 간다(2026-11-18 소유자 · side-tabs V1).
         (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
 
         tree.RowButton(StoryHierarchy.ChapterKey("ch02"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -89,6 +90,21 @@ public sealed class StoryHierarchyTests : IDisposable
         Assert.Equal("ch02", window.SessionProbe.ActiveFile?.Name);
         Assert.Equal("Chapter", Shown(graph));
         Assert.Equal(StoryHierarchy.ChapterKey("ch02"), tree.Selection?.Key);
+
+        // 조건 탭 머리의 작은 드롭다운이 지금 챕터를 비춘다. 고르면 그 챕터로 가고 탭은 그대로다.
+        ComboBox small = graph.FindControl<ComboBox>("ConditionChapterCombo")!;
+        Assert.Equal("ch02", small.SelectedItem);
+        small.SelectedItem = "ch01";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("ch01", graph.FindControl<ComboBox>("ChapterCombo")!.SelectedItem);
+        Assert.Equal("ch01", window.SessionProbe.ActiveFile?.Name);
+        Assert.Equal("Chapter", Shown(graph));
+
+        // 툴바 콤보로 바꿔도 탭은 그대로다 — 작은 드롭다운이 따라온다.
+        graph.FindControl<ComboBox>("ChapterCombo")!.SelectedItem = "ch02";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("ch02", small.SelectedItem);
+        Assert.Equal("Chapter", Shown(graph));
 
         tree.RowButton(StoryHierarchy.ProjectKey)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
@@ -166,10 +182,14 @@ public sealed class StoryHierarchyTests : IDisposable
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <summary>인스펙터에 선 칸 — 하나만 선다.</summary>
-    private static string Shown(ChapterGraphView graph) =>
-        Assert.Single(new[] { "Selection", "Speaker", "Chapter" },
-            name => graph.FindControl<ScrollViewer>(name + "Section")!.IsVisible);
+    /// <summary>오른쪽 기둥이 보이는 것 — 화자 탭(Speaker) · 조건 및 스탯 탭(Chapter), 인스펙터 탭이면 그 안에 선 칸 하나(Selection · Overview).</summary>
+    private static string Shown(ChapterGraphView graph) => graph.ShownSideTab switch
+    {
+        SideTab.Speakers => "Speaker",
+        SideTab.Conditions => "Chapter",
+        _ => Assert.Single(new[] { "Selection", "Overview" },
+            name => graph.FindControl<ScrollViewer>(name + "Section")!.IsVisible)
+    };
 
     /// <summary>하이어아키 시험의 프로젝트(<see cref="HierarchyFixture"/>)를 챕터 그래프 탭으로 연다.</summary>
     private (MainWindow Window, ChapterGraphView Graph, StoryHierarchy Tree) Show()

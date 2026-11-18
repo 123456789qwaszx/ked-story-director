@@ -190,11 +190,23 @@
                  모든 편집은 프로젝트를 고치고, 변경 알림이 그래프를 다시 그린다. -->
             <Grid Grid.Column="4" x:Name="ChapterRightRows">
 
-                <!-- 인스펙터: 하이어아키나 판에서 고른 것을 보인다. 프로젝트 →
-                     화자, 챕터 → 조건 · 스탯, 장면 → 장면 이름, 에피소드 · 선택지(길) · 분기 → 그 편집. 머리글이 무엇을
-                     보는지 말한다.
-                     탭으로 나누지 않는다 — 고르는 것이 내용을 정한다.
-                     -->
+                <!-- 오른쪽 기둥 = 탭 셋 — 인스펙터 · 화자 · 조건 및 스탯(2026-11-18 소유자 · side-tabs V1). 화자와 조건이 하이어아키의
+                     줄을 골라야만 보여 처음 쓰는 사람이 찾지 못했다 — 탭으로 늘 세운다. ⛔ 그 전에는 탭 없이 고른 것이 내용을 정했다.
+                     고르면 그것을 보이는 탭으로 간다: 프로젝트 줄 → 화자, 챕터 줄 → 조건 및 스탯([구성]은 수치를 잡는 자리다), 그 밖 →
+                     인스펙터. 콤보로 챕터를 바꾸는 것은 탭을 바꾸지 않는다. 탭은 언제든 손으로 연다. -->
+                <TabControl x:Name="SideTabs" Padding="0">
+                    <TabControl.Styles>
+                        <!-- 탭 글은 작게 — 테마 기본(큰 글 · 48 높이)은 판의 [구성] · [대본] 탭과 같은 무게라 기둥 안에서는 너무 크다. -->
+                        <Style Selector="TabItem">
+                            <Setter Property="FontSize" Value="12" />
+                            <Setter Property="MinHeight" Value="30" />
+                            <Setter Property="Padding" Value="10,2" />
+                        </Style>
+                    </TabControl.Styles>
+
+                <TabItem x:Name="InspectorTabItem" Header="인스펙터">
+                <!-- 인스펙터: 하이어아키나 판에서 고른 것을 보인다. 장면 → 장면ID, 에피소드 · 선택지(길) · 분기 → 그 편집, 챕터 →
+                     챕터ID, 프로젝트 → 옆 탭 안내. 머리글이 무엇을 보는지 말한다. -->
                 <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
@@ -427,10 +439,41 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                <!-- 화자 — 하이어아키의 프로젝트 줄. 프로젝트 전체의 캐스트다. 값은 프로젝트의 화자 목록에 산다(되돌리기 한 칸).
-                     이름은 [대본] 탭(작가)이 더하고 고치고 지운다. 여기는 이름마다 캐릭터 키를 잇는 자리다(writer-fields W3). -->
-                    <ScrollViewer x:Name="SpeakerSection"
+                    <!-- 프로젝트 · 챕터 줄 — 그 줄의 것은 옆 탭에 산다(화자 · 조건 및 스탯). 여기는 챕터ID 칸과 옆 탭 안내뿐이다. -->
+                    <ScrollViewer x:Name="OverviewSection"
                                   IsVisible="False"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10" Spacing="6">
+                            <!-- 챕터ID 칸 — [구성] 탭은 ID를 다룬다(챕터 이름은 [대본] 탭에서 — display-names N4). 고치고 Enter면
+                                 개명이다(ChapterRenamer — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 간다). -->
+                            <Grid x:Name="ChapterIdGrid" ColumnDefinitions="70,*">
+                                <TextBlock Text="챕터ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" x:Name="ChapterIdBox" FontSize="11"
+                                         ToolTip.Tip="고치고 Enter를 누르면 챕터 ID가 바뀝니다 — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갑니다. 챕터 이름은 [대본] 탭 하이어아키에서 고칩니다." />
+                            </Grid>
+                            <TextBlock x:Name="OverviewText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+                    </Panel>
+                </Grid>
+                </TabItem>
+
+                <!-- 화자 — 프로젝트 전체의 캐스트다. 값은 프로젝트의 화자 목록에 산다(되돌리기 한 칸).
+                     이름은 [대본] 탭(작가)이 더하고 고치고 지운다. 여기는 이름마다 캐릭터 키를 잇는 자리다(writer-fields W3). -->
+                <TabItem x:Name="SpeakerTabItem" Header="화자">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                            Padding="10,6"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderThickness="0,0,0,1">
+                        <StackPanel Spacing="1">
+                            <TextBlock Text="프로젝트 단위 화자" FontWeight="SemiBold" />
+                            <TextBlock Text="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                    <ScrollViewer Grid.Row="1"
+                                  x:Name="SpeakerSection"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="4">
@@ -444,20 +487,39 @@
                             <StackPanel x:Name="SpeakerListPanel" Spacing="2" Margin="0,6,0,0" />
                         </StackPanel>
                     </ScrollViewer>
-                <!-- 챕터 — 하이어아키의 챕터 줄. 판 전체에 걸린 표들 — 조건의 식과 스탯을 여기서 정한다(조건 이름은 [대본] 탭 — writer-fields W4).
-                     에피소드·간선은 그래프가 이미 그리므로 여기 반복하지 않는다. -->
-                    <ScrollViewer x:Name="ChapterSection"
-                                  IsVisible="False"
+                </Grid>
+                </TabItem>
+
+                <!-- 조건 및 스탯 — 챕터 단위다. 판 전체에 걸린 표들 — 조건의 식과 스탯을 여기서 정한다(조건 이름 고치기 · 지우기는 [대본] 탭 —
+                     writer-fields W4). 머리가 챕터 단위임을 말하고, 오른쪽 위 작은 드롭다운이 지금 챕터를 비춘다 — 고르면 툴바 콤보로 고른 것과
+                     같다(2026-11-18 소유자). 에피소드·간선은 그래프가 이미 그리므로 여기 반복하지 않는다. -->
+                <TabItem x:Name="ConditionTabItem" Header="조건 및 스탯">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                            Padding="10,6"
+                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="1" VerticalAlignment="Center">
+                                <TextBlock Text="챕터 단위 조건 · 스탯" FontWeight="SemiBold" />
+                                <TextBlock Text="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="1"
+                                      x:Name="ConditionChapterCombo"
+                                      FontSize="11"
+                                      MinHeight="24"
+                                      MaxWidth="130"
+                                      Padding="6,0"
+                                      Margin="8,0,0,0"
+                                      VerticalAlignment="Top"
+                                      ToolTip.Tip="이 탭이 보이는 챕터 — 지금 챕터를 따라갑니다. 고르면 그 챕터로 갑니다(툴바의 챕터 콤보와 같습니다)." />
+                        </Grid>
+                    </Border>
+                    <ScrollViewer Grid.Row="1"
+                                  x:Name="ChapterSection"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConditionSection" Margin="10" Spacing="4">
-                            <!-- 챕터ID 칸 — [구성] 탭은 ID를 다룬다(챕터 이름은 [대본] 탭에서 — display-names N4). 고치고 Enter면
-                                 개명이다(ChapterRenamer — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 간다). -->
-                            <Grid x:Name="ChapterIdGrid" ColumnDefinitions="70,*" Margin="0,0,0,10">
-                                <TextBlock Text="챕터ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
-                                <TextBox Grid.Column="1" x:Name="ChapterIdBox" FontSize="11"
-                                         ToolTip.Tip="고치고 Enter를 누르면 챕터 ID가 바뀝니다 — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갑니다. 챕터 이름은 [대본] 탭 하이어아키에서 고칩니다." />
-                            </Grid>
                             <!-- 조건의 식은 여기서 정한다. 이름(라벨)은 읽기만 한다. -->
                             <TextBlock Text="조건 (이름 → 식)"
                                        FontWeight="SemiBold"
@@ -482,8 +544,9 @@
                             <StackPanel x:Name="StatListPanel" Spacing="2" />
                         </StackPanel>
                     </ScrollViewer>
-                    </Panel>
                 </Grid>
+                </TabItem>
+                </TabControl>
 
                 <!-- 초점 받이 — 칼럼의 빈 곳을 누르면 글자 칸의 초점을 여기로 옮긴다. 글자 칸은 초점을 잃을 때 내므로 Enter와
                      같이 반영되고 칸이 놓인다. 빈 곳(글 · 여백)은 초점을 받지 않아서, 옮기지 않으면 칸이 초점을 쥔 채 남는다. -->

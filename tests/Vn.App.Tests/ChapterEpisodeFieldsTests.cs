@@ -76,9 +76,9 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("street - x", title.Text);
 
-        // 다른 것을 보면 부제가 다시 선다.
-        view.Inspect(HierarchyPick.Project);
-        Assert.Equal("화자", title.Text);
+        // 다른 것을 보면 부제가 다시 선다 — 고름을 놓으면 안내 머리글.
+        view.SelectEpisode(null);
+        Assert.Equal("인스펙터", title.Text);
         Assert.True(subtitle.IsVisible);
 
         window.Close();

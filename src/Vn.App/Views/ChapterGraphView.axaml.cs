@@ -74,6 +74,7 @@ public partial class ChapterGraphView : UserControl
         _selectedChapterId = chapterId;
         _updatingCombo = true;
         ChapterCombo.SelectedItem = chapterId;
+        ConditionChapterCombo.SelectedItem = chapterId;
         _updatingCombo = false;
 
         // 고른 챕터의 선택은 이전 챕터의 것이 아니다 — 들고 있으면 없는 간선을 가리킨다.
@@ -116,8 +117,8 @@ public partial class ChapterGraphView : UserControl
     private bool _fromHierarchy;
 
     /// <summary>
-    /// 하이어아키에서 줄을 골랐다 —챕터 · 에피소드를 판에서 고르고 인스펙터를 그것에 맞춘다: 프로젝트 →
-    /// 화자, 챕터 → 조건 · 스탯, 장면 → 장면 이름, 에피소드 → 구조.
+    /// 하이어아키에서 줄을 골랐다 —챕터 · 에피소드를 판에서 고르고 오른쪽 기둥을 그것에 맞춘다: 프로젝트 → 「화자」 탭,
+    /// 챕터 → 「조건 및 스탯」 탭, 장면 · 에피소드 · 분기 → 「인스펙터」 탭.
     /// </summary>
     private void OnHierarchyPicked(HierarchyPick pick)
     {
@@ -149,6 +150,15 @@ public partial class ChapterGraphView : UserControl
             };
             _inspectedSceneId = pick.SceneId;
             ApplyInspector();
+
+            // 고른 것을 보이는 탭으로 간다 — 프로젝트는 화자, 챕터는 조건 및 스탯([구성]은 수치를 잡는 자리다), 그 밖은 인스펙터
+            // (2026-11-18 소유자 · side-tabs V1).
+            ShowSideTab(pick.Kind switch
+            {
+                HierarchyKind.Project => SideTab.Speakers,
+                HierarchyKind.Chapter => SideTab.Conditions,
+                _ => SideTab.Inspector
+            });
         }
         finally
         {
@@ -182,13 +192,30 @@ public partial class ChapterGraphView : UserControl
     /// <summary>장면 인스펙터가 보이는 장면(유효 장면ID).</summary>
     private string? _inspectedSceneId;
 
+    /// <summary>오른쪽 기둥이 지금 보이는 탭 — 화면 시험의 손잡이.</summary>
+    internal SideTab ShownSideTab =>
+        ReferenceEquals(SideTabs.SelectedItem, SpeakerTabItem) ? SideTab.Speakers
+        : ReferenceEquals(SideTabs.SelectedItem, ConditionTabItem) ? SideTab.Conditions
+        : SideTab.Inspector;
 
-    /// <summary>인스펙터의 칸 하나만 세우고 머리글을 맞춘다.</summary>
+    /// <summary>오른쪽 기둥의 탭을 연다 — 고르기가 부르고, 화면 시험이 탭을 누른 것 대신 부른다.</summary>
+    internal void ShowSideTab(SideTab tab) => SideTabs.SelectedItem = tab switch
+    {
+        SideTab.Speakers => SpeakerTabItem,
+        SideTab.Conditions => ConditionTabItem,
+        _ => InspectorTabItem
+    };
+
+
+    /// <summary>인스펙터 탭의 칸 하나만 세우고 머리글을 맞춘다. 화자 · 조건 및 스탯은 제 탭에 늘 서 있다.</summary>
     private void ApplyInspector()
     {
         SelectionSection.IsVisible = _inspector is InspectorMode.Selection or InspectorMode.Scene;
-        SpeakerSection.IsVisible = _inspector == InspectorMode.Project;
-        ChapterSection.IsVisible = _inspector == InspectorMode.Chapter;
+        OverviewSection.IsVisible = _inspector is InspectorMode.Project or InspectorMode.Chapter;
+        ChapterIdGrid.IsVisible = _inspector == InspectorMode.Chapter;
+        OverviewText.Text = _inspector == InspectorMode.Chapter
+            ? "이 챕터의 조건 · 스탯은 「조건 및 스탯」 탭에서 정합니다."
+            : "화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.";
         ScenePanel.IsVisible = _inspector == InspectorMode.Scene;
 
         if (_inspector == InspectorMode.Scene)
@@ -200,9 +227,9 @@ public partial class ChapterGraphView : UserControl
 
         (string title, string subtitle) = _inspector switch
         {
-            InspectorMode.Project => ("화자", "프로젝트 전체의 캐스트 — 모든 챕터가 같은 목록을 씁니다"),
+            InspectorMode.Project => ("프로젝트", string.Empty),
             // 머리글은 표시 이름이다(비면 ID) — 장면 · 에피소드 머리글과 같다(2026-11-17 소유자). ID는 아래 「챕터ID」 칸이 보인다.
-            InspectorMode.Chapter => ($"챕터 · {model?.ShownName ?? _selectedChapterId}", "조건 · 스탯"),
+            InspectorMode.Chapter => ($"챕터 · {model?.ShownName ?? _selectedChapterId}", string.Empty),
             InspectorMode.Scene => SceneHeader(model),
             _ when _selectedEpisodeId is { } episodeId => (EpisodeHeader(model, episodeId), string.Empty),
             // 머리글은 문구(판의 선 이름표와 같은 글), 부제는 양 끝 에피소드의 보이는 제목(2026-11-17 소유자 — ⛔ 머리글의
@@ -398,6 +425,15 @@ public partial class ChapterGraphView : UserControl
             // 드롭다운도 왼쪽 목록 클릭과 같은 길을 지난다 — 여기서
             // Draw()만 부르면 빨간 테두리가 안 사라진다.
             if (ChapterCombo.SelectedItem is string picked)
+            {
+                UiGuard.Run(_session, "챕터 선택", () => SelectChapter(picked));
+            }
+        };
+
+        // 「조건 및 스탯」 탭의 작은 드롭다운 — 툴바 콤보와 같은 길이다. 탭은 그대로 둔다(보던 탭에서 챕터만 바뀐다).
+        ConditionChapterCombo.SelectionChanged += (_, _) =>
+        {
+            if (!_updatingCombo && ConditionChapterCombo.SelectedItem is string picked)
             {
                 UiGuard.Run(_session, "챕터 선택", () => SelectChapter(picked));
             }
@@ -791,11 +827,14 @@ public partial class ChapterGraphView : UserControl
 
         // 항목은 ID(고르는 규칙 그대로), 보이는 글은 챕터 이름(비면 ID) — [대본] 콤보와 같다(2026-11-18 소유자 · ⛔ 그 전에는 ID가 보였다).
         // 목록을 늘 새로 주므로 이름만 바뀌어도 다시 선다.
+        // 「조건 및 스탯」 탭 머리의 작은 드롭다운도 같은 목록 · 같은 선택이다(2026-11-18 소유자 · side-tabs V1).
         ChapterCombo.ItemTemplate ??= new Avalonia.Controls.Templates.FuncDataTemplate<string>((id, _) => new TextBlock
         {
             Text = _entries.FirstOrDefault(entry => string.Equals(entry.ChapterId, id, StringComparison.Ordinal))?.Model.ShownName ?? id
         });
+        ConditionChapterCombo.ItemTemplate ??= ChapterCombo.ItemTemplate;
         ChapterCombo.ItemsSource = _entries.Select(entry => entry.ChapterId).ToList();
+        ConditionChapterCombo.ItemsSource = _entries.Select(entry => entry.ChapterId).ToList();
 
         if (_selectedChapterId is null ||
             _entries.All(entry => entry.ChapterId != _selectedChapterId))
@@ -808,6 +847,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         ChapterCombo.SelectedItem = _selectedChapterId;
+        ConditionChapterCombo.SelectedItem = _selectedChapterId;
         _updatingCombo = false;
 
         RebuildSpeakerTab();
@@ -2651,6 +2691,12 @@ public partial class ChapterGraphView : UserControl
         _selectedBranchCardId = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
+
+        if (episodeId is not null)
+        {
+            ShowSideTab(SideTab.Inspector);   // 고른 것을 보인다 — 고름을 놓는 것(null)은 탭을 바꾸지 않는다
+        }
+
         UnfoldChoices(); // 다른 노드로 넘어가면 선택지는 다시 모두 펼쳐진다
         ApplySelectionVisuals();
         RefreshPropertyPanel();
@@ -2673,6 +2719,7 @@ public partial class ChapterGraphView : UserControl
         _selectedBranchCardId = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
+        ShowSideTab(SideTab.Inspector);
         UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
@@ -2691,6 +2738,11 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = null;
         _selectedSlot = null;
         _inspector = InspectorMode.Selection;
+
+        if (nodeId is not null)
+        {
+            ShowSideTab(SideTab.Inspector);
+        }
         UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
@@ -2718,6 +2770,7 @@ public partial class ChapterGraphView : UserControl
         _selectedEdgeKey = null;
         _selectedBranchCardId = null;
         _inspector = InspectorMode.Selection;
+        ShowSideTab(SideTab.Inspector);
         UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
