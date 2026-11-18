@@ -119,8 +119,8 @@ public partial class MainWindow : Window
         OpenMenuItem.Click += OnOpenClick;
         SaveMenuItem.Click += OnSaveClick;
         SettingsButton.Click += (_, _) => UiGuard.Run(_session, "설정", () => OpenSettings());
-        OpenExportFolderButton.Click += (_, _) =>
-            UiGuard.Run(_session, "내보낸 폴더 열기", OpenExportFolder);
+        WorkFolderButton.Click += (_, _) =>
+            UiGuard.Run(_session, "작업 폴더 열기", OpenWorkFolder);
 
         Opened += OnOpened;
 
@@ -557,11 +557,12 @@ public partial class MainWindow : Window
     /// 주의: 폴더를 <b>대신 만들지 않는다.</b> 없다는 것은 아직 한 챕터도 안 나갔다는 뜻이고,
     /// 빈 폴더를 열어 주면 "나갔는데 비었다"로 읽힌다 — 사유를 말하는 편이 낫다.
     /// </summary>
-    private void OpenExportFolder()
+    /// <summary>[📂 작업 폴더] — 프로젝트 폴더의 <c>exported/</c>를 연다(툴이 저절로 내는 진행 JSON · 장면 파일 · 대사 Yarn의 자리).</summary>
+    private void OpenWorkFolder()
     {
         if (_session?.ProjectPath is not { } projectPath)
         {
-            _session?.SetStatus("프로젝트를 먼저 저장해야 내보낼 자리가 정해집니다.");
+            _session?.SetStatus("프로젝트를 먼저 저장해야 작업 폴더가 정해집니다.");
             return;
         }
 
@@ -571,7 +572,7 @@ public partial class MainWindow : Window
         if (!Directory.Exists(folder))
         {
             _session.SetStatus(
-                $"아직 나간 진행 JSON이 없습니다 — 검증을 통과한 챕터가 생기면 저절로 " +
+                $"작업 폴더가 아직 없습니다 — 검증을 통과한 챕터가 생기면 진행 JSON이 저절로 " +
                 $"여기 나갑니다: {folder}");
             return;
         }

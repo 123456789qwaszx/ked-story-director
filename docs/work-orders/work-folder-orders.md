@@ -33,3 +33,4 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-18 | T0 | (이 커밋) | 지시서 |
+| 11-18 | T1 | (이 커밋) | 위 띠 단추 `OpenExportFolderButton`「📂 챕터진행」 → `WorkFolderButton`「📂 작업 폴더」(⛔ 주석), 처리 `OpenExportFolder` → `OpenWorkFolder`, 툴팁 · 상태 문구가 「작업 폴더(exported/)」라 부른다. 시험 — 위 띠 단추 이름 · 글자. 문서 — 작가 가이드(내보낸 폴더 → 작업 폴더) · 두 그래프 설계(설정 창 · 위 띠). Authoring 653 · App 456 |
