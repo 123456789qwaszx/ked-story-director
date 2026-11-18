@@ -135,10 +135,58 @@ public partial class GraphEditorView : UserControl
     internal void SupplyChapters(IReadOnlyList<ChapterEntry> entries)
     {
         _chapters = entries;
+        RefreshChapterCombo();
 
         if (_projection is not null)
         {
             DrawChapterRails();
+        }
+    }
+
+    /// <summary>선택을 비추는 동안에는 <c>SelectionChanged</c>가 선택을 바꾸지 않게 한다.</summary>
+    private bool _syncingChapter;
+
+    /// <summary>
+    /// 챕터 목록과 지금 활성인 판을 콤보에 비춘다 (2026-08-25).
+    ///
+    /// 목록의 원천은 <b>챕터 그래프가 읽은 하나</b>다(<see cref="SupplyChapters"/>) —
+    /// 여기서 따로 읽으면 감시·재시도 규칙이 두 벌이 된다. 선택도 마찬가지로
+    /// <c>ActiveFileId</c> 하나를 비출 뿐이라, 챕터 그래프에서 고른 것이 여기에도 보인다.
+    /// </summary>
+    /// <summary>챕터 콤보가 지금 보이는 이름들 — 이름만 바뀌어도 항목을 다시 세우려고 들고 있는다.</summary>
+    private string? _chapterComboNames;
+
+    private void RefreshChapterCombo()
+    {
+        _syncingChapter = true;
+
+        try
+        {
+            string[] ids = _chapters.Select(entry => entry.ChapterId).ToArray();
+            string names = string.Join("\u001f", _chapters.Select(entry => entry.Model.ShownName));
+
+            // 항목은 ID(고르는 규칙 그대로), 보이는 글은 이름이다(display-names N3). 이름만 바뀌어도 다시 세운다.
+            if (!ids.SequenceEqual(
+                    (ChapterCombo.ItemsSource as IEnumerable<string>) ?? [], StringComparer.Ordinal) ||
+                !string.Equals(names, _chapterComboNames, StringComparison.Ordinal))
+            {
+                _chapterComboNames = names;
+                ChapterCombo.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<string>((id, _) => new TextBlock
+                {
+                    Text = _chapters.FirstOrDefault(entry => string.Equals(entry.ChapterId, id, StringComparison.Ordinal))
+                        ?.Model.ShownName ?? id
+                });
+                ChapterCombo.ItemsSource = ids;
+            }
+
+            // 판 이름 = ChapterId (챕터=판 1:1) — 활성 판이 곧 고른 챕터다.
+            ChapterCombo.SelectedItem = _session?.ActiveFile?.Name is { } name && ids.Contains(name)
+                ? name
+                : null;
+        }
+        finally
+        {
+            _syncingChapter = false;
         }
     }
 
@@ -328,6 +376,25 @@ public partial class GraphEditorView : UserControl
         AddDialogueButton.Click += (_, _) => AddDialogueNode();
         DeleteNodeButton.Click += (_, _) => DeleteSelectedNode();
 
+        // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 대사 노드]가 거기에 선다.
+        // ⚠ 다시 그리기가 콤보를 맞출 때는 안 돈다(_syncingChapter) — 안 그러면
+        //    선택을 비추는 일이 선택을 바꾸는 일이 되어 서로를 부른다.
+        ChapterCombo.SelectionChanged += (_, _) =>
+        {
+            if (_syncingChapter || _session is null ||
+                ChapterCombo.SelectedItem is not string chapterId)
+            {
+                return;
+            }
+
+            UiGuard.Run(_session, "챕터 고르기", () =>
+            {
+                string board = _session.EnsureChapterBoard(chapterId);
+                _session.SelectFile(board);
+                GoToBoard(board);   // 사람이 고른 챕터다 — 그리로 간다
+            });
+        };
+
         GraphCanvas.PointerMoved += OnCanvasPointerMoved;
         GraphCanvas.PointerReleased += OnCanvasPointerReleased;
         GraphCanvas.PointerPressed += OnCanvasPointerPressed;
@@ -412,6 +479,9 @@ public partial class GraphEditorView : UserControl
         {
             return;
         }
+
+        // 활성 판이 바뀌면 콤보도 따라간다 — 챕터 그래프에서 고른 것이 여기에도 보인다.
+        RefreshChapterCombo();
 
         _projection = GraphProjectionBuilder.Build(
             _session.Project,
@@ -1500,7 +1570,7 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// <b>그 챕터로 간다</b> — 그 판의 카드(접혔으면 그 표)가 여백을 두고 들어오게 배율과 자리를 맞춘다(<see cref="FitFile"/>).
-    /// 사람이 챕터를 골랐을 때만 부른다: 하이어아키의 챕터 줄, 「챕터 추가」. 카드를 누르거나 [구성] 탭에서 챕터를
+    /// 사람이 챕터를 골랐을 때만 부른다: 챕터 콤보, 하이어아키의 챕터 줄, 「챕터 추가」. 카드를 누르거나 [구성] 탭에서 챕터를
     /// 고른 것처럼 활성 판만 바뀐 일로는 화면을 옮기지 않는다(2026-11-17 — 그것이 늦게 돌아 화면이 튀었다).
     ///
     /// 맞추기는 미룬다 — 고르기가 판을 펼치면 다시 그리기는 다음 차례에 오고, 그 전에 맞추면 카드를 못 찾아 엉뚱한 곳(전체 보기)으로

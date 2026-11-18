@@ -13,7 +13,7 @@
 - 「챕터선택 드롭다운은 아까 지웠었는데, 실제 사용결과 있는 편이 더 직관적입니다. 다시 복구해주십시오.」(D6 — D1을 되돌린다)
 - 「에피소드를 눌렀을 때 줄 추가 버튼이 빈 선택지 숨기기 아래에 별도 한 줄로 있는데 … # 화자 대사 라인 우측 빈 공간으로 위치를 옮겨주십시오.」(D7)
 
-> **상태: 진행 중**(D5–D7).
+> **상태: 진행 중**(D7).
 
 ## 1. 지금
 
@@ -48,3 +48,4 @@
 | 11-18 | D3 | (이 커밋) | 챕터 줄 차림표 — 「이름 바꾸기」(장면 · 에피소드와 같은 줄 안의 이름 칸 · `RenameItem`)와 「챕터 제거…」(`HierarchyCommand.DeleteChapter` → `MainWindow.ConfirmChapterRemoval` — `ConfirmFlyout` 확인 한 번 뒤 `ChapterDeleter`). 셸의 챕터 플라이아웃(`ShowChapterContextFlyout` · `BuildChapterRemoveButton` · 쓰는 곳 없어진 `MenuSeparator`)과 `HierarchyCommand.ChapterMenu`를 걷었다. 같은 줄의 이름 칸이 열린 채 다시 「이름 바꾸기」를 부르면 칸이 닫히던 것을 고쳤다(그대로 둔다). 시험 — 챕터 차림표 항목, 이름 바꾸기는 줄 안에서 · 제거는 확인 뒤 한 칸으로 · 되돌리기. 문서 — 작가 가이드 · 두 그래프 설계. Authoring 647 · App 443 |
 | 11-18 | D4 | (이 커밋) | 줄마다 제 일만 — 챕터 줄: 장면 추가 · 이름 바꾸기 · 챕터 지우기, 장면 줄: 에피소드 추가 · 이름 바꾸기 · 장면 지우기, 에피소드 줄: 이름 바꾸기 · 에피소드 지우기, 프로젝트 줄: 챕터 추가(빈 곳도). 「챕터 제거…」는 「챕터 지우기」로. 「장면 지우기」 새로 — `ProjectEditor.RemoveScene`(에피소드를 `RemoveEpisode`로 · 장면 항목을 `RemoveSceneNote`로, `Batch` 한 칸) · `HierarchyCommand.DeleteScene` · `MainWindow.ConfirmSceneRemoval`(확인 한 번). 확인 단추 손잡이는 둘이 함께 쓰는 `RemoveConfirmButton`. 시험 — 줄마다의 차림표 · 장면 지우기(확인 · 한 칸 · 되돌리기 · 메모) · `RemoveScene`(없는 장면 · 한 칸) · 챕터 추가는 프로젝트 줄에서. 문서 — 작가 가이드 · 두 그래프 설계. Authoring 648 · App 444 |
 | 11-18 | D5 | (이 커밋) | [대본] 인스펙터 머리 — 프로젝트 「화자」, 챕터 · 장면은 이름만(부제 · 머리말을 걷었다). 하이어아키 챕터 줄의 「에피소드 N」 곁글을 걷었다([구성] 탭의 「챕터 조건 스탯」은 그대로). [구성] 탭 인스펙터 머리는 그대로다. 시험 — [대본] 머리를 재던 일곱 파일을 이름만으로. Authoring 648 · App 444 |
+| 11-18 | D6 | (이 커밋) | [대본] 챕터 드롭다운을 되살렸다 — D1(`6d48ab6`)을 되돌렸다(`ChapterCombo` · `RefreshChapterCombo` · 선택 바뀜 · `_syncingChapter`). 그 사이 D2–D5에서 바뀐 것(챕터 추가는 바로 선다 · 줄마다의 차림표 · 이름만의 머리)은 그대로다. 시험 — 드롭다운으로 챕터를 옮기는 시험과 이름 시험의 드롭다운 확인(ID 그대로)을 되살렸다. 문서 — 두 그래프 설계(툴바 · 화면 · 챕터 고르기 · 이름, 7절 AI의 D1 줄에 ⛔) · 챕터 층 안내. Authoring 648 · App 445 |
