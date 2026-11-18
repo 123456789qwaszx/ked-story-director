@@ -251,11 +251,12 @@ public sealed class SceneAreaPickTests : IDisposable
         Assert.Equal(before + 1, session.Editor.Revision);
         Assert.Equal(inHall.Y - 20, hallCard.Layout.Y, 1);
 
-        // 챕터 밖 — 하이어아키의 「챕터 추가」와 같다(세우고 고른다).
+        // 챕터 밖 — 하이어아키의 「챕터 추가」와 같다(세우고 고른다). 첫 장면 · 에피소드의 카드는 누른 자리에 선다.
         RightClick(graph, new Point(3000, 3000));
         Choose(graph, "챕터 추가");
-        Assert.NotNull(session.Editor.FindChapter("ch03"));
+        ChapterEpisode first = Assert.Single(session.Editor.FindChapter("ch03")!.Episodes);
         Assert.Equal(StoryHierarchy.ChapterKey("ch03"), graph.HierarchyView.Selection?.Key);
+        Assert.Equal(3000 - 20, EpisodeNaming.CardFor(session.Project, "ch03", first.EpisodeId)!.Layout.Y, 1);
 
         window.Close();
     });

@@ -31,3 +31,4 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-18 | M0 | (이 커밋) | 지시서 |
+| 11-18 | M1 | (이 커밋) | `MainWindow.CreateChapterNow(at)`이 한 `Batch`에 `CreateNamedChapter` + `GraphEditorView.AddFirstEpisode`(→ `CreateEpisodeCard` — 「새 장면」 · 「새 에피소드」 카드, 판 우클릭의 `AddEpisodeAt`와 한 벌로 뺐다). 자리 — 판 우클릭이면 누른 자리(`ChapterAddRequested`가 자리를 넘긴다), 하이어아키면 `NewChapterSpot`(모든 카드의 오른쪽 끝 + 240, 맨 위 카드 높이). 상태 문구. 시험 — 챕터 추가가 장면 · 에피소드 하나를 한 칸에 세우고 카드가 다른 카드 오른쪽 · 진행 JSON이 나간다 · 되돌리면 챕터째 사라진다, 판 우클릭 챕터 추가의 카드가 누른 자리, 옛 파일의 빈 챕터는 「에피소드가 아직 없습니다」(R1 시험을 옮겼다). 문서 — 작가 가이드 · 두 그래프 설계(7절 AM 새로). Authoring 650 · App 453 |

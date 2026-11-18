@@ -5,6 +5,7 @@ using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Model;
 
 namespace Vn.App.Tests;
 
@@ -52,9 +53,44 @@ public sealed class ChapterAddTests : IDisposable
         Assert.Equal(new HierarchyPick(HierarchyKind.Chapter, "ch03"), graph.HierarchyView.Selection);
         Assert.Equal(NewNames.Chapter, graph.FindControl<TextBlock>("InspectorTitle")!.Text);
 
-        // 빈 챕터는 막힌 것이 아니다 — 「진행 JSON 미출력」이 서지 않고, 그 챕터의 보고는 에피소드가 아직 없다고 말한다(2026-11-18 소유자).
-        Expander report = chapterGraph.FindControl<Expander>("DiagnosticsExpander")!;
-        Assert.DoesNotContain("미출력", (string)report.Header!, StringComparison.Ordinal);
+        // 첫 장면 · 첫 에피소드가 함께 선다 — 같은 되돌리기 칸이다(2026-11-18 소유자 — 「1개의 장면과 1개의 에피소드는 같이」).
+        ChapterDocument made = session.Editor.FindChapter("ch03")!;
+        ChapterEpisode first = Assert.Single(made.Episodes);
+        Assert.Equal(NewNames.Episode, first.Title);
+        Assert.Equal(NewNames.Scene, ChapterSceneNotes.NameOf(made.SceneNotes, first.SceneId!));
+        DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch03", first.EpisodeId)!;
+
+        // 카드는 판의 모든 카드 오른쪽에 선다 — 다른 챕터와 겹치지 않는다.
+        double others = session.Project.Files.SelectMany(file => file.Nodes).OfType<DialogueNode>()
+            .Where(node => node.Id != card.Id).Max(node => node.Layout.X);
+        Assert.True(card.Layout.X > others, $"{card.Layout.X} ≤ {others}");
+
+        // 진행 JSON이 저절로 나간다 — 「진행 JSON 미출력」이 서지 않는다.
+        Assert.DoesNotContain("미출력", (string)chapterGraph.FindControl<Expander>("DiagnosticsExpander")!.Header!, StringComparison.Ordinal);
+        Assert.True(File.Exists(ChapterExportService.ExportPathFor(session.ProjectPath!, "ch03")));
+
+        // 되돌리기 한 번에 챕터째 사라진다.
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(session.Editor.FindChapter("ch03"));
+        Assert.Null(session.Project.FindNode(card.Id));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 옛_파일의_빈_챕터는_막힌_것이_아니라_에피소드가_아직_없다고_말한다() => HeadlessUi.Run(() =>
+    {
+        // 「챕터 추가」는 이제 장면 · 에피소드를 함께 세우지만, 그 전에 만든 빈 챕터는 파일에 남아 있다(읽기 규칙은 바꾸지 않았다) —
+        // 「진행 JSON 미출력」이 서지 않고 그 챕터의 보고는 에피소드가 아직 없다고 말한다(2026-11-18 · R1).
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        (string? chapterId, _) = session.CreateNamedChapter(null);
+        chapterGraph.Refresh();
+        chapterGraph.SelectChapter(chapterId!);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.DoesNotContain("미출력", (string)chapterGraph.FindControl<Expander>("DiagnosticsExpander")!.Header!, StringComparison.Ordinal);
         Assert.Contains(
             chapterGraph.FindControl<StackPanel>("DiagnosticsPanel")!.Children.OfType<TextBlock>(),
             line => line.Text!.StartsWith("에피소드가 아직 없습니다", StringComparison.Ordinal));

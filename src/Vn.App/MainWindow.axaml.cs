@@ -330,13 +330,26 @@ public partial class MainWindow : Window
     // ── 파일 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 하이어아키 우클릭 「챕터 추가」 — 「새 챕터」(자동 ID)를 <b>바로</b> 세우고 그 챕터를 고른다. 이름은 하이어아키에서 두 번 눌러 고친다
-    /// (2026-11-18 소유자 — ⛔ 이름 칸을 먼저 띄우던 창구 <c>ChapterAddFlyout</c>와 하이어아키 머리의 [＋]는 걷혔다). 챕터를 세우는 규칙은
-    /// <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌이다([＋ 에피소드]도 그것을 부른다).
+    /// 「챕터 추가」(하이어아키 프로젝트 줄 · 빈 곳, [대본] 판의 챕터 밖 우클릭) — 「새 챕터」(자동 ID)를 <b>바로</b> 세우고 그 챕터를 고른다. 이름은
+    /// 하이어아키에서 두 번 눌러 고친다(2026-11-18 소유자 — ⛔ 이름 칸을 먼저 띄우던 창구 <c>ChapterAddFlyout</c>와 하이어아키 머리의 [＋]는 걷혔다).
+    /// <b>첫 장면 「새 장면」과 첫 에피소드를 함께 세운다</b>(같은 날 — 「빈 챕터를 생성했을 때, 화면상으로 아무 변화없는게 진짜 거슬리네」) — 챕터 ·
+    /// 판 · 장면 · 카드가 한 되돌리기 칸이다. 카드는 <paramref name="at"/>(판 우클릭의 자리)에, 없으면 판의 모든 카드 오른쪽에 선다. 챕터를 세우는
+    /// 규칙은 <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌이다([＋ 에피소드]도 그것을 부른다).
     /// </summary>
-    private void CreateChapterNow()
+    private void CreateChapterNow(Avalonia.Point? at)
     {
-        (string? chapterId, string? failure) = _session.CreateNamedChapter(null);
+        string? chapterId = null;
+        string? failure = null;
+
+        _session.Editor.Batch(() =>
+        {
+            (chapterId, failure) = _session.CreateNamedChapter(null);
+
+            if (chapterId is not null)
+            {
+                Graph.AddFirstEpisode(chapterId, at);
+            }
+        });
 
         if (failure is not null || chapterId is null)
         {
@@ -351,7 +364,7 @@ public partial class MainWindow : Window
         OnDirectorHierarchyPicked(new HierarchyPick(HierarchyKind.Chapter, chapterId));
         Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));   // 「챕터 추가」는 [대본]에 있다 — 만든 챕터로 간다
         _session.SetStatus(
-            $"챕터 「{NewNames.Chapter}」를 만들었습니다 — 이름은 하이어아키에서 두 번 눌러 고치고, 첫 장면은 그 챕터 줄 우클릭 「장면 추가」로 세웁니다.");
+            $"챕터 「{NewNames.Chapter}」를 장면 「{NewNames.Scene}」 · 「{NewNames.Episode}」와 함께 만들었습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다.");
     }
 
     /// <summary>

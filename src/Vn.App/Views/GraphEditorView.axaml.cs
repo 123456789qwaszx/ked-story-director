@@ -4670,8 +4670,8 @@ public partial class GraphEditorView : UserControl
     /// <summary>판의 빈 곳 우클릭 차림표 — 시험의 손잡이다(차림표의 팝업은 창 밖에 산다). 닫혀도 마지막 것을 든다.</summary>
     internal ContextMenu? BoardMenu { get; private set; }
 
-    /// <summary>[대본] 판 빈 곳의 「챕터 추가」 — 셸이 하이어아키의 「챕터 추가」와 같이 세우고 고른다.</summary>
-    internal event Action? ChapterAddRequested;
+    /// <summary>[대본] 판 빈 곳의 「챕터 추가」 — 셸이 하이어아키의 「챕터 추가」와 같이 세우고 고른다. 누른 자리에 첫 카드가 선다.</summary>
+    internal event Action<Point>? ChapterAddRequested;
 
     /// <summary>
     /// <b>판의 빈 곳 우클릭</b>(2026-11-18 소유자 — 「챕터 바깥 빈 공간에서 우클릭 하면 챕터 추가. 챕터 내에서 우클릭 하면 장면 추가, 장면 내에서
@@ -4684,7 +4684,7 @@ public partial class GraphEditorView : UserControl
             ? ("에피소드 추가", () => AddEpisodeAt(scene.ChapterId, scene.SceneId, at))
             : ChapterAt(at) is { } chapterId
                 ? ("장면 추가", () => AddEpisodeAt(chapterId, sceneId: null, at))
-                : ("챕터 추가", (Action)(() => ChapterAddRequested?.Invoke()));
+                : ("챕터 추가", (Action)(() => ChapterAddRequested?.Invoke(at)));
 
         var item = new MenuItem { Header = header };
         item.Click += (_, _) => UiGuard.Run(_session, header, act);
@@ -4700,13 +4700,59 @@ public partial class GraphEditorView : UserControl
     private void AddEpisodeAt(string chapterId, string? sceneId, Point at)
     {
         if (_session?.Editor.FindChapter(chapterId) is not { } chapter ||
-            EpisodeNaming.BoardOf(_session.Project, chapterId) is not { } board)
+            CreateEpisodeCard(chapterId, sceneId, ClampNodeX(at.X - (CardWidth / 2)), ClampNodeY(at.Y - 20)) is not { } made)
         {
             return;
         }
 
-        double x = ClampNodeX(at.X - (CardWidth / 2));
-        double y = ClampNodeY(at.Y - 20);
+        _session.Select(made.Card.Id);
+        _session.SetStatus(made.SceneMade is not null
+            ? $"장면 「{NewNames.Scene}」을 세우고 누른 자리에 에피소드를 더했습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다."
+            : $"장면 「{(ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId!) is { Length: > 0 } named ? named : sceneId)}」의 누른 자리에 에피소드를 더했습니다.");
+    }
+
+    /// <summary>
+    /// 새 챕터의 첫 장면 · 첫 에피소드(2026-11-18 소유자 — 「새로운 챕터를 만들 때, 1개의 장면과 1개의 에피소드는 같이」) — 셸의 「챕터 추가」가 챕터와
+    /// 같은 되돌리기 칸 안에서 부른다. 카드는 판 우클릭이면 누른 자리, 아니면 판의 모든 카드 오른쪽(<see cref="NewChapterSpot"/>)에 선다.
+    /// </summary>
+    internal void AddFirstEpisode(string chapterId, Point? at)
+    {
+        (double x, double y) = at is { } point
+            ? (ClampNodeX(point.X - (CardWidth / 2)), ClampNodeY(point.Y - 20))
+            : NewChapterSpot();
+
+        CreateEpisodeCard(chapterId, sceneId: null, x, y);
+    }
+
+    /// <summary>새 챕터의 첫 카드가 설 자리 — 판의 모든 카드 오른쪽, 맨 위 카드와 같은 높이. 챕터들은 한 판에 서므로 겹치지 않게 비켜 선다.</summary>
+    private (double X, double Y) NewChapterSpot()
+    {
+        List<DialogueNode> cards = _session!.Project.Files.SelectMany(file => file.Nodes).OfType<DialogueNode>().ToList();
+
+        if (cards.Count == 0)
+        {
+            return (ClampNodeX(NewChapterGap / 2), ClampNodeY(NewChapterGap / 2));
+        }
+
+        double right = cards.Max(card => card.Layout.X + (card.Layout.Width ?? CardWidth));
+        return (ClampNodeX(right + NewChapterGap), ClampNodeY(cards.Min(card => card.Layout.Y)));
+    }
+
+    /// <summary>새 챕터가 앞 챕터들의 카드에서 비켜 서는 거리 — 챕터 · 장면 테두리와 이름표가 들어가고도 남는다.</summary>
+    private const double NewChapterGap = 240;
+
+    /// <summary>
+    /// 그 자리에 에피소드 카드를 세운다 — <paramref name="sceneId"/>의 장면에, 없으면 새 장면(「새 장면」)과 함께. 카드 · 장면 이름이 한 되돌리기
+    /// 칸이다([＋ 에피소드]와 같은 명령). 고르지는 않는다 — 부른 쪽이 정한다.
+    /// </summary>
+    private (DialogueNode Card, string? SceneMade)? CreateEpisodeCard(string chapterId, string? sceneId, double x, double y)
+    {
+        if (_session?.Editor.FindChapter(chapterId) is not { } chapter ||
+            EpisodeNaming.BoardOf(_session.Project, chapterId) is not { } board)
+        {
+            return null;
+        }
+
         string? sceneMade = null;
         DialogueNode? created = null;
 
@@ -4721,10 +4767,7 @@ public partial class GraphEditorView : UserControl
             }
         });
 
-        _session.Select(created!.Id);
-        _session.SetStatus(sceneMade is not null
-            ? $"장면 「{NewNames.Scene}」을 세우고 누른 자리에 에피소드를 더했습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다."
-            : $"장면 「{(ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId!) is { Length: > 0 } named ? named : sceneId)}」의 누른 자리에 에피소드를 더했습니다.");
+        return (created!, sceneMade);
     }
 
     /// <summary>
