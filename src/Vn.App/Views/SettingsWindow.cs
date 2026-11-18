@@ -77,7 +77,7 @@ internal sealed class SettingsWindow : Window
             IsChecked = GuideMode.Brief
         };
         ToolTip.SetTip(BriefGuidesCheck,
-            "켜면 인스펙터 · 화자 · 조건 및 스탯의 쓰는 법 안내글을 걷고, 「스탯이 없습니다 — 아래 [＋ 스탯]으로 만듭니다」 같은 줄은 앞부분만 남깁니다. " +
+            "켜면 인스펙터 · 화자 · 조건 및 스탯의 쓰는 법 안내글을 걷고, 「스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다」 같은 줄은 앞부분만 남깁니다. " +
             "칸 이름 · 제목 · 경고는 그대로입니다.");
         BriefGuidesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "설명 간소화", () =>
             GuideMode.Set(BriefGuidesCheck.IsChecked == true));

@@ -40,7 +40,7 @@ public sealed class BriefGuidesTests : IDisposable
             GuideLine emptyConditions = Guide(view.FindControl<StackPanel>("ConditionListPanel")!, "조건이 없습니다");
             GuideLine subtitle = Guide(view.FindControl<TabItem>("ConditionTabItem")!, "이 챕터에서만 씁니다");
             Assert.True(conditionHint.IsVisible);
-            Assert.Equal("조건이 없습니다 — 아래 [＋ 조건]으로 만듭니다.", emptyConditions.Text);
+            Assert.Equal("조건이 없습니다 — 아래 칸에 이름을 적고 [＋ 추가]로 만듭니다.", emptyConditions.Text);
 
             // 설정 창 「기타」 — 처음에는 꺼져 있다. 누르는 즉시 반영된다.
             SettingsWindow settings = window.OpenSettings();

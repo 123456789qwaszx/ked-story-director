@@ -79,9 +79,9 @@ public sealed class ChapterGraphSyncViewTests
             .Children.OfType<StackPanel>()
             .Single(panel => Equals(panel.Tag, "stat:trust"));
 
-        // 값 칸 넷(표시 이름 · 처음 값 · 최소 · 최대) + 개명 · 삭제.
-        Assert.Equal(3, row.GetLogicalDescendants().OfType<TextBox>().Count());   // 처음 값 · 최소 · 최대 — 표시 이름 칸은 걷혔다
-        Assert.Equal(2, row.GetLogicalDescendants().OfType<Button>().Count());
+        // 칸 넷(키 · 처음 값 · 최소 · 최대) + 삭제. 표시 이름 칸은 걷혔고(W2), 키는 [✎] 대신 칸에서 고친다(writer-comfort WC4).
+        Assert.Equal(4, row.GetLogicalDescendants().OfType<TextBox>().Count());
+        Assert.Single(row.GetLogicalDescendants().OfType<Button>());
 
         Assert.Null(view.FindControl<StackPanel>("FixtureListPanel"));
     });

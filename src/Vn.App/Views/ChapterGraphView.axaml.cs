@@ -12,6 +12,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Views;
 
@@ -3678,7 +3679,7 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// [＋ 새 조건] — 이름과 식을 한 번에 만들고 이 선택지의 표시조건(또는 해금조건)으로 건다. 되돌리기 한 칸이다.
     ///
-    /// 간선에서 수치를 잡다가 조건이 없으면 탭을 오가야 해서 둔 자리다(2026-11-17 소유자). 이름 규칙은 조건 표의 [＋ 조건]과 같다
+    /// 간선에서 수치를 잡다가 조건이 없으면 탭을 오가야 해서 둔 자리다(2026-11-17 소유자). 이름 규칙은 조건 표의 더하기 줄과 같다
     /// (<see cref="ShowConditionFlyout"/>).
     /// </summary>
     private void ShowNewConditionFlyout(Button anchor, bool visible)
@@ -3693,7 +3694,6 @@ public partial class ChapterGraphView : UserControl
             chapterId,
             visible ? "새 조건 — 맞을 때만 이 선택지가 보입니다." : "새 조건 — 맞을 때만 이 선택지를 고를 수 있습니다.",
             visible ? "만들고 표시조건으로 걸기" : "만들고 해금조건으로 걸기",
-            " — 콤보에서 고르세요.",
             (label, typed) =>
             {
                 if (SelectedModel?.Edges.FirstOrDefault(candidate =>
@@ -3724,39 +3724,13 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 조건 표 아래의 [＋ 조건] — 이름과 식을 한 번에 만든다. 되돌리기 한 칸이다(2026-11-18 소유자 · side-tabs V2 — 「구성탭에서도 조건을
-    /// 추가할 수 있도록」). 이름을 고치고 지우는 것은 [대본] 탭에 그대로 있다.
-    /// </summary>
-    private void ConditionAddFlyout(Button anchor)
-    {
-        if (_session is null || _selectedChapterId is not { } chapterId)
-        {
-            return;
-        }
-
-        ShowConditionFlyout(
-            anchor,
-            chapterId,
-            "새 조건 — 이 챕터에서만 씁니다. 간선의 표시조건 · 해금조건과 분기 조건에 고릅니다.",
-            "만들기",
-            ".",
-            (label, typed) =>
-            {
-                _session.Editor.AddChapterCondition(chapterId, label, typed);
-                _session.SetStatus($"조건 '{label}'을 만들었습니다" +
-                                   (typed.Length == 0 ? " — 식 미정(항상 통과)입니다." : ".") + " 되돌리기(Ctrl+Z)로 돌아옵니다.");
-                return true;
-            });
-    }
-
-    /// <summary>
-    /// 조건 이름과 식을 한 번에 받는 플라이아웃 — 간선의 [＋ 새 조건]과 조건 표의 [＋ 조건]이 같이 쓴다. 이름 규칙은 [대본] 탭과 같다 —
+    /// 조건 이름과 식을 한 번에 받는 플라이아웃 — 간선의 [＋ 새 조건]. ⛔ 조건 표의 [＋ 조건]도 함께 썼는데 늘 서 있는 더하기 줄로 바뀌었다
+    /// (writer-comfort WC4). 이름 규칙은 [대본] 탭과 같다 —
     /// 빈 이름 · 이미 있는 이름은 받지 않는다(상태줄이 말한다). 식은 비워도 된다(식 미정 — 항상 통과). 받으면(<paramref name="accept"/>가
     /// 참) 닫힌다. 만들기 단추와 두 칸의 Enter가 같다.
     /// </summary>
-    /// <param name="duplicateTail">이미 있는 이름일 때 상태줄 말의 꼬리 — 간선은 「콤보에서 고르세요」.</param>
     private void ShowConditionFlyout(
-        Button anchor, string chapterId, string intro, string createText, string duplicateTail, Func<string, string, bool> accept)
+        Button anchor, string chapterId, string intro, string createText, Func<string, string, bool> accept)
     {
         var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)", Tag = "new-condition-name" };
         var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "식 — 비우면 식 미정 (예: trust >= 3)", Tag = "new-condition-expression" };
@@ -3796,7 +3770,7 @@ public partial class ChapterGraphView : UserControl
 
             if (_session!.Editor.FindChapter(chapterId)?.Conditions.Any(item => string.Equals(item.Label, label, StringComparison.Ordinal)) == true)
             {
-                _session.SetStatus($"조건 '{label}'이 이미 있습니다{duplicateTail}");
+                _session.SetStatus($"조건 '{label}'{Josa.이가(label)} 이미 있습니다 — 콤보에서 고르세요.");
                 return;
             }
 
@@ -4180,9 +4154,12 @@ public partial class ChapterGraphView : UserControl
     /// 그 문장은 <b>R-F(2026-09-16)가 이미 낡게 만들었다</b> — 그날 워크북이 산출물이 되고
     /// 값의 주인이 <c>ChapterDocument</c>로 넘어왔는데 안내만 남아 있었다.
     ///
-    /// ⚠ <b>키 칸은 없다.</b> 키를 바꾸는 것은 간선·조건·픽스처·공급 조건을 함께 끌고 가는
-    /// 일이라 [✎]가 <see cref="ProjectEditor.RenameChapterStat"/>로 간다 — 칸으로 두면
-    /// 글자를 고치는 사이의 중간 상태가 전부 진짜 개명이 된다.
+    /// <b>키는 그 줄의 이름 칸에서 고친다</b>(2026-11-18 소유자 — 「다른 화자이름 같은것처럼 편하게」 · writer-comfort WC4). 키를 바꾸는 것은
+    /// 간선·조건·픽스처·공급 조건을 함께 끌고 가는 일이라 <see cref="ProjectEditor.RenameChapterStat"/>로 가고, 칸은 Enter와 칸을 떠날 때만 넣는다 —
+    /// 글자를 고치는 사이의 중간 상태는 개명이 되지 않는다. 키 칸에 초점이 있는 동안 그 줄에 세이브 경고가 선다(적기 전에 읽는다).
+    /// ⛔ 그 전에는 키가 읽기만 하는 글이고 [✎] → 플라이아웃으로만 바꿨다.
+    ///
+    /// 더하기는 표 아래에 늘 서 있는 줄이다 — 키 칸 + [＋ 추가](Enter도 같다). ⛔ [＋ 스탯] → 플라이아웃은 걷었다.
     ///
     /// ⛔ 픽스처 표는 2026-08-24에 걷었다 (소유자 — 한 번도 안 썼다).
     /// </summary>
@@ -4201,22 +4178,34 @@ public partial class ChapterGraphView : UserControl
         {
             StatListPanel.Children.Add(new GuideLine
             {
-                Full = "스탯이 없습니다 — 아래 [＋ 스탯]으로 만듭니다.",
+                Full = "스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다.",
                 Brief = "스탯이 없습니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });
         }
 
-        StatListPanel.Children.Add(AddRowButton(
-            "＋ 스탯", "스탯 추가", StatAddFlyout, StatListPanel));
+        if (_selectedChapterId is { } chapterId)
+        {
+            StatListPanel.Children.Add(AddRow(
+                "stat-add",
+                "새 스탯 키 (예: courage)",
+                "Enter로도 더합니다. 숫자 0(0~100)으로 섭니다 — 종류 · 값은 그 줄에서 고칩니다.",
+                "스탯 추가",
+                key =>
+                {
+                    _session!.Editor.AddChapterStat(chapterId, key);
+                    _session.SetStatus($"스탯 '{key}'{Josa.을를(key)} 더했습니다 — 숫자 0(0~100)입니다. 종류 · 값은 그 줄에서 고칩니다. " +
+                                       "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                }));
+        }
     }
 
     /// <summary>스탯 종류의 이름 — 작가가 읽는 말이다. 차례는 <see cref="ChapterStatType"/>의 Int · Bool과 같다.</summary>
     internal static readonly string[] StatTypeNames = ["숫자", "예/아니오"];
 
     /// <summary>
-    /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 · 종류 · 개명 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
+    /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 칸 · 종류 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
     /// 처음 값 하나). 값 칸마다 이름을 붙인다 — 이름 없는 숫자 칸 셋은 처음 보는 사람이 무엇인지 모른다. 한 줄에 다 세우면
     /// 인스펙터 폭을 넘어 뒤쪽 칸이 밀린다. 아래 줄의 숫자 칸은 남은 폭을 셋이 나눠 가진다 — 고정 폭이면 좁은 인스펙터에서
     /// 마지막 칸이 잘린다.
@@ -4226,17 +4215,26 @@ public partial class ChapterGraphView : UserControl
         bool isBool = stat.Type == ChapterStatType.Bool;
         var row = new StackPanel { Spacing = 3, Margin = new Thickness(0, 0, 0, 6), Tag = $"stat:{stat.Key}" };
 
-        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("88,*,Auto,Auto,Auto") };
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto") };
+        string chapterId = _selectedChapterId!;
 
-        var key = new SelectableTextBlock
+        TextBox key = NameBox(stat.Key, "stat-key", "스탯 키 바꾸기", to =>
         {
-            Text = stat.Key,
-            FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis
-        };
-        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다. 바꾸려면 [✎].");
+            Vn.Authoring.Editing.StatRenameOutcome outcome = _session!.Editor.RenameChapterStat(chapterId, stat.Key, to);
+
+            if (!outcome.Applied)
+            {
+                return outcome.Refusal ?? "바꾸지 못했습니다.";
+            }
+
+            _session.SetStatus(
+                $"'{stat.Key}' → '{to}' — 간선 {outcome.Edges} · 조건 {outcome.Conditions} · " +
+                $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳이 " +
+                "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.");
+            return null;
+        });
+        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다. 고치고 Enter(또는 칸을 떠나면) — " +
+                            "간선 · 조건의 참조가 따라갑니다. Esc는 그만두기.");
         head.Children.Add(key);
 
         // 표시 이름 칸은 걷혔다 — 스탯은 키만 있다. 게임 화면의 글자는 게임 쪽이 키로 로컬라이즈한다(writer-fields W2).
@@ -4261,27 +4259,33 @@ public partial class ChapterGraphView : UserControl
                 _selectedChapterId!,
                 stat.Key,
                 type: type.SelectedIndex == 1 ? ChapterStatType.Bool : ChapterStatType.Int));
-        Grid.SetColumn(type, 2);
+        Grid.SetColumn(type, 1);
         head.Children.Add(type);
-
-        var rename = new Button { Content = "✎", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(4, 0, 0, 0) };
-        ToolTip.SetTip(
-            rename,
-            "키(세이브 열쇠)를 바꿉니다 — 간선·조건·픽스처의 참조가 함께 따라가지만, " +
-            "이미 저장된 세이브는 못 따라옵니다. 표시 이름만 고치려면 [표시 이름] 칸을 쓰세요.");
-        rename.Click += (_, _) => ShowStatRenameFlyout(rename, stat.Key);
-        Grid.SetColumn(rename, 3);
-        head.Children.Add(rename);
 
         var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
         ToolTip.SetTip(remove, "지웁니다 — 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.");
         remove.Click += (_, _) => UiGuard.Run(_session, "스탯 삭제", () => RemoveStat(remove, stat.Key));
-        Grid.SetColumn(remove, 4);
+        Grid.SetColumn(remove, 2);
         head.Children.Add(remove);
 
         row.Children.Add(head);
 
-        var values = new Grid { Margin = new Thickness(88, 0, 0, 0) };
+        // ⚠ 세이브 경고 — 키 칸에 초점이 있는 동안만 선다. 적기 전에 읽는다(세이브는 되돌리기로 돌아오지 않는다 — 런타임 회신 §6.2).
+        var caution = new TextBlock
+        {
+            Text = "⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 처음 값으로 떨어집니다(경고 없이). " +
+                   "출시 전이면 괜찮지만, 이미 플레이한 세이브가 있으면 되도록 바꾸지 마세요.",
+            FontSize = 10,
+            Foreground = UnlockConditionInk,
+            TextWrapping = TextWrapping.Wrap,
+            IsVisible = false,
+            Tag = "stat-key-caution"
+        };
+        key.GotFocus += (_, _) => caution.IsVisible = true;
+        key.LostFocus += (_, _) => caution.IsVisible = false;
+        row.Children.Add(caution);
+
+        var values = new Grid { Margin = new Thickness(12, 0, 0, 0) };
 
         void Add(Control cell)
         {
@@ -4338,8 +4342,9 @@ public partial class ChapterGraphView : UserControl
     };
 
     /// <summary>
-    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>식</b>을 정한다. 이름은 읽기만 한다 — 고치고 지우는 것은 [대본] 탭이다(writer-fields W4).
-    /// 더하기는 표 아래 [＋ 조건]으로 여기서도 한다(side-tabs V2 — 이름과 식을 함께). 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
+    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>이름</b>과 <b>식</b>을 고친다. 지우는 것은 [대본] 탭이다(writer-fields W4).
+    /// 더하기는 표 아래에 늘 서 있는 줄 — 이름 칸 + [＋ 추가](writer-comfort WC4 — ⛔ [＋ 조건] → 이름과 식을 함께 받는 플라이아웃은 걷었다 ·
+    /// 그 전 side-tabs V2). 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
     /// </summary>
     private void RefreshConditionList(ChapterGraphModel? snapshot)
     {
@@ -4364,23 +4369,34 @@ public partial class ChapterGraphView : UserControl
         {
             ConditionListPanel.Children.Add(new GuideLine
             {
-                Full = "조건이 없습니다 — 아래 [＋ 조건]으로 만듭니다.",
+                Full = "조건이 없습니다 — 아래 칸에 이름을 적고 [＋ 추가]로 만듭니다.",
                 Brief = "조건이 없습니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });
         }
 
-        // 더하기는 여기서도 한다 — 스탯 표의 [＋ 스탯]과 같은 결이다(2026-11-18 소유자 · side-tabs V2).
-        Button add = AddRowButton("＋ 조건", "조건 추가", ConditionAddFlyout, ConditionListPanel);
-        add.Tag = "condition-add";
-        ConditionListPanel.Children.Add(add);
+        // 더하기는 여기서도 한다 — 스탯 표의 더하기 줄과 같은 결이다(2026-11-18 소유자 · side-tabs V2 · writer-comfort WC4).
+        if (_selectedChapterId is { } chapterId)
+        {
+            ConditionListPanel.Children.Add(AddRow(
+                "condition-add",
+                "새 조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)",
+                "Enter로도 더합니다. 식은 비어 있습니다(식 미정 — 항상 통과) — 그 줄의 식 칸에서 채웁니다.",
+                "조건 추가",
+                label =>
+                {
+                    _session!.Editor.AddChapterCondition(chapterId, label, string.Empty);
+                    _session.SetStatus($"조건 '{label}'{Josa.을를(label)} 더했습니다 — 식 미정(항상 통과)입니다. 식은 그 줄에서 채웁니다. " +
+                                       "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                }));
+        }
     }
 
     /// <summary>
-    /// 조건 한 줄 — 라벨(고정 폭 <see cref="ConditionLabelWidth"/>, 읽기만) · 식. 식 칸은 남은 폭을 채운다. 지우기는 [대본] 탭의 일이다.
-    /// 잘린 라벨(…)은 마우스를 올리면 다 보인다 — 라벨 칸 전체가 손을
-    /// 받도록 투명한 바탕을 깐다(바탕 없는 글은 글자 획 위만 손을 받아, 「…」 근처에서는 풍선이 안 뜬다).
+    /// 조건 한 줄 — 이름 칸(고정 폭 <see cref="ConditionLabelWidth"/>) · 식. 식 칸은 남은 폭을 채운다. 지우기는 [대본] 탭의 일이다.
+    /// 이름은 그 자리에서 고친다 — 그 이름을 건 간선(표시조건 · 해금조건)이 따라간다(<see cref="ProjectEditor.RenameChapterCondition"/> ·
+    /// writer-comfort WC4 — ⛔ 그 전에는 읽기만 했다). 칸에 다 안 들어가는 이름은 마우스를 올리면 다 보인다.
     /// </summary>
     private Control ConditionRow(ChapterCondition condition)
     {
@@ -4390,17 +4406,23 @@ public partial class ChapterGraphView : UserControl
             Tag = $"condition:{condition.Label}"
         };
 
-        var label = new SelectableTextBlock
+        string chapterId = _selectedChapterId!;
+        TextBox label = NameBox(condition.Label, "condition-label", "조건 이름", to =>
         {
-            Text = condition.Label,
-            FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            Background = Brushes.Transparent
-        };
+            Vn.Authoring.Editing.ChapterConditionRenameOutcome outcome = _session!.Editor.RenameChapterCondition(chapterId, condition.Label, to);
+
+            if (!outcome.Applied)
+            {
+                return outcome.Refusal ?? "바꾸지 못했습니다.";
+            }
+
+            _session.SetStatus(outcome.Edges == 0
+                ? $"조건 '{condition.Label}' → '{to}'."
+                : $"조건 '{condition.Label}' → '{to}' — 간선 {outcome.Edges}개가 따라갔습니다.");
+            return null;
+        });
         bool undecided = string.IsNullOrWhiteSpace(condition.Expression);
-        ToolTip.SetTip(label, condition.Label);
+        ToolTip.SetTip(label, condition.Label + " — 고치고 Enter(또는 칸을 떠나면). 이 이름을 건 간선이 따라갑니다. Esc는 그만두기.");
 
         if (undecided)
         {
@@ -4421,7 +4443,7 @@ public partial class ChapterGraphView : UserControl
         return row;
     }
 
-    /// <summary>조건 표의 라벨 칸 폭 — 「성실 3 이상 · 요령 3 미만」쯤은 잘리지 않는다. 더 길면 「…」이고 손을 올리면 다 보인다.</summary>
+    /// <summary>조건 표의 이름 칸 폭 — 「성실 3 이상 · 요령 3 미만」쯤은 다 보인다. 더 길면 칸 안에서 흐르고 손을 올리면 다 보인다.</summary>
     internal const double ConditionLabelWidth = 150;
 
     // ── 스탯·조건 편집의 잔손 ───────────────────────────────────────────────
@@ -4486,121 +4508,107 @@ public partial class ChapterGraphView : UserControl
         return box;
     }
 
-    /// <summary>표 아래의 [＋] 한 줄.</summary>
-    private static Button AddRowButton(
-        string caption, string action, Action<Button> open, Panel host)
+    /// <summary>
+    /// 표 줄의 <b>이름 칸</b> — 스탯 키 · 조건 이름을 그 자리에서 고친다(writer-comfort WC4 — [대본] 탭의 화자 · 조건 이름 칸과 같은 손버릇).
+    /// Enter와 칸을 떠날 때 <paramref name="rename"/>으로 넣고(참조가 따라간다 · 되돌리기 한 칸), Esc는 그만둔다. 같은 이름이면 넣지 않는다.
+    /// 거절(빈 이름 · 이미 있는 이름 …)이면 옛 이름으로 돌리고 상태줄이 까닭을 말한다.
+    /// </summary>
+    /// <param name="rename">새 이름으로 바꾼다 — 거절이면 그 까닭, 바꿨으면 null.</param>
+    private TextBox NameBox(string name, string tag, string action, Func<string, string?> rename)
     {
-        var button = new Button
+        var box = new TextBox
         {
-            Content = caption,
+            Text = name,
             FontSize = 10,
-            Padding = new Thickness(7, 2),
-            Margin = new Thickness(0, 4, 0, 0),
-            HorizontalAlignment = HorizontalAlignment.Left
+            FontWeight = FontWeight.SemiBold,
+            MinHeight = 0,
+            MinWidth = 0,
+            Padding = new Thickness(4, 1),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = tag + ":" + name
         };
 
-        _ = action;
-        _ = host;
-        button.Click += (_, _) => open(button);
-
-        return button;
-    }
-
-    private void StatAddFlyout(Button anchor)
-    {
-        PromptFlyout(anchor, "스탯 키 (예: courage)", key =>
-            UiGuard.Run(_session, "스탯 추가", () =>
-            {
-                _session!.Editor.AddChapterStat(_selectedChapterId!, key);
-                Draw();
-            }));
-    }
-
-    /// <summary>
-    /// 스탯의 <b>키</b>를 바꾼다 — 스탯은 키만 있다(표시 이름은 writer-fields W2에서 걷혔다).
-    ///
-    /// ⛔ <b>키는 세이브의 열쇠다</b> (2026-09-17, 런타임 회신 §6.2가 짚었다).
-    /// 저쪽 <c>LocalSaveFile.Stats</c>가 이 글자로 저장하고, 복원은 키가 없으면 <b>초기값</b>으로
-    /// 떨어진다 — 오류도 경고도 없다. 개명이 끌고 가는 다섯 자리는 <b>프로젝트 안</b>이고,
-    /// <b>이미 디스크에 나간 세이브는 그 다섯에 없다.</b>
-    ///
-    /// ⚠ 그래서 경고가 <b>적기 전에</b> 선다 — 세이브는 되돌리기로 돌아오지 않는다.
-    /// </summary>
-    private void ShowStatRenameFlyout(Control anchor, string key)
-    {
-        PromptFlyout(
-            anchor,
-            $"'{key}'의 새 키",
-            to => UiGuard.Run(_session, "스탯 키 바꾸기", () =>
-            {
-                Vn.Authoring.Editing.StatRenameOutcome outcome =
-                    _session!.Editor.RenameChapterStat(_selectedChapterId!, key, to);
-
-                if (!outcome.Applied)
-                {
-                    throw new InvalidOperationException(outcome.Refusal ?? "바꾸지 못했습니다.");
-                }
-
-                _session.SetStatus(
-                    $"'{key}' → '{to}' — 간선 {outcome.Edges} · 조건 {outcome.Conditions} · " +
-                    $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳이 " +
-                    "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.");
-
-                Draw();
-            }),
-            caution:
-                "⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 " +
-                "처음 값으로 떨어집니다(경고 없이). 출시 전이면 괜찮지만, 이미 플레이한 세이브가 있으면 " +
-                "되도록 바꾸지 마세요.");
-    }
-
-    /// <summary>글자 하나를 받는 작은 플라이아웃 — [챕터 추가]와 같은 손버릇이다.</summary>
-    private static void PromptFlyout(
-        Control anchor, string placeholder, Action<string> accept, string? caution = null)
-    {
-        var box = new TextBox { PlaceholderText = placeholder, FontSize = 11, MinWidth = 200 };
-        var panel = new StackPanel { Spacing = 4, MaxWidth = 340 };
-
-        // ⚠ 경고가 <b>칸보다 위</b>에 선다 — 적고 나서 읽는 경고는 경고가 아니다.
-        if (caution is { Length: > 0 })
+        void Commit()
         {
-            panel.Children.Add(new TextBlock
+            string typed = (box.Text ?? string.Empty).Trim();
+
+            if (string.Equals(typed, name, StringComparison.Ordinal))
             {
-                Text = caution,
-                FontSize = 10,
-                Opacity = 0.8,
-                TextWrapping = TextWrapping.Wrap
-            });
-        }
-
-        panel.Children.Add(box);
-
-        var flyout = new Flyout { Content = panel };
-
-        void Accept()
-        {
-            string text = (box.Text ?? string.Empty).Trim();
-
-            if (text.Length == 0)
-            {
+                box.Text = name;   // 앞뒤 공백만 걷었다
                 return;
             }
 
-            flyout.Hide();
-            accept(text);
+            UiGuard.Run(_session, action, () =>
+            {
+                if (rename(typed) is { } refusal)
+                {
+                    box.Text = name;
+                    _session!.SetStatus(refusal);
+                }
+            });
         }
 
-        box.KeyDown += (_, args) =>
-        {
-            if (args.Key == Avalonia.Input.Key.Enter)
-            {
-                args.Handled = true;
-                Accept();
-            }
-        };
+        box.LostFocus += (_, _) => Commit();
+        box.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(box, () => name);
 
-        flyout.ShowAt(anchor);
-        box.Focus();
+        return box;
+    }
+
+    /// <summary>
+    /// 표 아래에 <b>늘 서 있는 더하기 줄</b> — 이름 칸 + 그 오른쪽 [＋ 추가](Enter도 같다). [대본] 탭의 화자 · 조건 더하기 줄과 같은 모양이다
+    /// (2026-11-18 소유자 — 「ID를 쓰는 공간이 항상 있고, 그 오른쪽에 '+추가'를 눌러서」 · writer-comfort WC4). 빈 이름은 받지 않는다.
+    /// 더한 뒤에는 다시 선 표의 같은 칸에 초점을 준다 — 잇달아 더한다.
+    /// </summary>
+    /// <param name="tag">단추의 Tag — 칸은 「Tag-name」이다.</param>
+    private Grid AddRow(string tag, string placeholder, string tip, string action, Action<string> add)
+    {
+        var box = new TextBox
+        {
+            FontSize = 10,
+            MinHeight = 0,
+            Padding = new Thickness(4, 2),
+            PlaceholderText = placeholder,
+            Tag = tag + "-name"
+        };
+        var button = new Button
+        {
+            Content = "＋ 추가",
+            FontSize = 10,
+            Padding = new Thickness(7, 2),
+            Margin = new Thickness(4, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = tag
+        };
+        ToolTip.SetTip(button, tip);
+
+        void Add()
+        {
+            string typed = (box.Text ?? string.Empty).Trim();
+
+            if (typed.Length == 0)
+            {
+                _session?.SetStatus("이름을 적어 주세요.");
+                return;
+            }
+
+            if (UiGuard.Run(_session, action, () => add(typed)))
+            {
+                // 표는 넣기가 부른 다시 그리기에서 다시 선다 — 그 뒤에 새 칸에 초점을 준다.
+                Dispatcher.UIThread.Post(() => ConditionSection.GetLogicalDescendants().OfType<TextBox>()
+                    .FirstOrDefault(item => Equals(item.Tag, box.Tag))?.Focus());
+            }
+        }
+
+        button.Click += (_, _) => Add();
+        box.KeyDown += (_, args) => CommitOnEnter(args, Add);
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 4, 0, 0) };
+        Grid.SetColumn(button, 1);
+        row.Children.Add(box);
+        row.Children.Add(button);
+
+        return row;
     }
 
     /// <summary>
