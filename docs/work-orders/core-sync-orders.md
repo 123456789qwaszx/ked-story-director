@@ -1,6 +1,8 @@
-# 코어 사본을 런타임에 맞추고 맞대조를 되살린다 (V0–V1) — 2026-11-18
+# 코어 사본을 런타임에 맞추고 맞대조를 되살린다 (V0–V2) — 2026-11-18
 
 **소유자**: 「그 다섯 파일만 들이고 맞대조 시험을 되살립시다.」 정본은 `ked-presentation-runtime`(소유자).
+⛔ 같은 날 뒤집었다 — 「맞대조 시험은 제거하는게 맞겠습니다. 이 ked-story-director만 별도 시나리오 작가에게 툴로 제공하는 경우가 많을
+것이기 때문입니다.」(V2). 들인 다섯 파일은 그대로다.
 
 > **상태: 끝 (2026-11-18).**
 
@@ -20,6 +22,7 @@
 | # | 일 |
 |---|---|
 | V0 | 지시서 |
+| V2 | **맞대조를 걷는다**(소유자 — 이 저장소만 작가에게 건넨다) — `CoreCopyInStepTests`의 맞대조와 그 손잡이(옆 폴더 · 환경 변수 `KED_PRESENTATION_RUNTIME` · 코어 자리). 지문은 남긴다(이 저장소 안에서만 돈다 — 사본을 여기서 고치면 잡는다). 런타임이 바뀐 것은 옮겨 올 때 사람이 견준다(`UPSTREAM.md`의 「재반입 검산」) |
 | V1 | **다섯 파일을 들이고 맞대조를 되살린다** — 다섯을 런타임 `036535b`의 것으로(바이트 그대로). 다섯이 새 이름을 부르므로 옛 이름의 두 파일(`State/ProgressionState.cs` · `Spec/ScenarioProgression.cs`)이 새 이름의 파일(`State/ChapterState.cs` · `Spec/ScenarioDefinition.cs`)로 바뀐다 — 이름 바꿈과 `ApplyChoices`뿐이고 더 끌고 오는 것은 없다. 런타임에만 있는 장면 실행(`SceneRun/` · `ProgressionDriver` · `Contracts/` …)은 들이지 않는다. 맞대조 시험은 옆 폴더 `ked-presentation-runtime`의 `Assets/Ked.Progression/Core`와 맞대고(환경 변수 `KED_PRESENTATION_RUNTIME`이 먼저), **런타임 저장소는 있는데 코어 자리가 없으면 실패한다**(건너뛰지 않는다 — 배치가 또 바뀌어도 조용히 지나가지 않게). 지문 · `UPSTREAM.md` · 문서 |
 
 ## 3. 알아 둘 것
@@ -33,3 +36,4 @@
 |---|---|---|---|
 | 11-18 | V0 | (이 커밋) | 지시서 |
 | 11-18 | V1 | (이 커밋) | 다섯 파일과 이름이 바뀐 둘(`ChapterState` · `ScenarioDefinition`)을 런타임 `036535b`에서 바이트 그대로 들였다 — 옛 이름의 둘은 걷혔다. 맞대조 시험은 옆 폴더 `ked-presentation-runtime`의 `Assets/Ked.Progression/Core`와 맞대고(`KED_PRESENTATION_RUNTIME`이 먼저), 저장소는 있는데 코어 자리가 없으면 실패한다. 확인 — `036535b`와는 맞고, 자동 길 변경 전 커밋(`511e655`)과는 `ChapterInvariants`를 짚고, 코어 자리가 없는 폴더는 실패한다. 지문 · `UPSTREAM.md`(반입 기록 표) · `runtime-contract.md`(맞대조 · 정본). Authoring 648 · App 442 |
+| 11-18 | V2 | (이 커밋) | 맞대조를 걷었다 — 시험 하나(`런타임_저장소가_옆에_있으면_맞대조한다`)와 그 손잡이. 지문 시험은 남겼다. `UPSTREAM.md` · `runtime-contract.md` · `ARCHITECTURE.md`의 맞대조 줄. Authoring 647 · App 443 |

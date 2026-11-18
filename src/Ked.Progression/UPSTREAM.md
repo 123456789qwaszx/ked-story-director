@@ -5,7 +5,7 @@
 
 ## 현재 기준
 
-- 반입일: 2026-11-18 — 사본이 가진 파일 전부가 아래 커밋과 같다(맞대조 `CoreCopyInStepTests` — 옆 폴더 `ked-presentation-runtime`의 지금 체크아웃과 견준다)
+- 반입일: 2026-11-18 — 사본이 가진 파일 전부가 아래 커밋과 같다(들일 때 아래 「재반입 검산」으로 견줬다)
 - 저장소: `123456789qwaszx/ked-presentation-runtime` — **정본**(소유자 2026-11-18)
 - 브랜치: `fix/progressionScene`
 - 커밋: `036535be670adb3f4103207169cd3f1210eb1ee7`
@@ -14,7 +14,9 @@
 - 들이지 않는 것: 런타임에만 있는 장면 실행 — `SceneRun/` · `Contracts/` · `Response/` · `ProgressionDriver.cs` · `ISceneRunner.cs` · `AssemblyInfo.cs`
   (툴은 실행하지 않는다). 사본에만 있는 것: `Reachability/`(도달성 증명 — 저작 전용).
 - ⚠ 자동 간선 변경(`ChapterInvariants` · `EpisodeOption`)은 아직 `fix/progressionScene`에만 있고 원본 `ked-progression-runtime`에도 없다(런타임
-  `vendoring.md`). 옆 폴더 런타임에 다른 브랜치를 꺼내 두면 맞대조가 `ChapterInvariants`가 갈렸다고 알린다(`EpisodeOption`은 주석만 다르다).
+  `vendoring.md`). 다시 들일 때 다른 브랜치와 견주면 `ChapterInvariants`가 다르다(`EpisodeOption`은 주석만 다르다).
+- 지키는 시험은 **지문**(`runtime-sync.txt` — `CoreCopyInStepTests`) 하나다 — 사본을 여기서 고치면 잡는다. ⛔ 옆 폴더 런타임과 파일을 맞대던 맞대조는
+  2026-11-18에 걷혔다(소유자 — 이 저장소만 시나리오 작가에게 툴로 건네는 경우가 많다, `docs/work-orders/core-sync-orders.md` V2).
 
 ## 반입 기록
 

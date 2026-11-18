@@ -137,12 +137,12 @@ Stop/New Game/Manual Load는 커밋 금지, Episode Skip은 연출 기능이라 
 
 ### 이제 사람이 아니라 테스트가 잰다 (T2 · 2026-09-16)
 
-위 표는 **그날의 실측**이고, 실측은 아무도 다시 안 한다. `CoreCopyInStepTests`가 두 겹으로 지킨다:
+위 표는 **그날의 실측**이고, 실측은 아무도 다시 안 한다. `CoreCopyInStepTests`가 지킨다:
 
 | | |
 |---|---|
-| **지문** | `src/Ked.Progression/runtime-sync.txt` — 공유 24파일의 <b>코드</b> 해시. 어느 기계에서든 돈다 |
-| **맞대조** | 런타임 저장소(`ked-presentation-runtime` — 2026-11-18 소유자: 정본)가 옆 폴더에 있거나 `KED_PRESENTATION_RUNTIME`이 가리키면 `Assets/Ked.Progression/Core`와 파일 내용을 직접 비교. 저장소는 있는데 그 자리가 없으면 **실패한다** — ⛔ 2026-11-06~11-18에는 옛 자리(`ked-progression-runtime/Assets/Progression/Runtime`)를 찾다 조용히 건너뛰었다(`work-orders/core-sync-orders.md`) |
+| **지문** | `src/Ked.Progression/runtime-sync.txt` — 사본 파일의 <b>코드</b> 해시. 어느 기계에서든 돈다 — 사본을 여기서 고치면 잡는다 |
+| ~~**맞대조**~~ | ⛔ 2026-11-18에 걷혔다(소유자 — 이 저장소만 시나리오 작가에게 툴로 건네는 경우가 많다). 옆 폴더 런타임과 파일 내용을 직접 비교했다. 런타임(`ked-presentation-runtime` — 정본)이 바뀐 것은 옮겨 올 때 사람이 견준다(`src/Ked.Progression/UPSTREAM.md`의 「재반입 검산」 · `work-orders/core-sync-orders.md`) |
 
 재는 것은 **코드지 글이 아니다** — 주석은 이쪽이 더 두껍고 그건 의도다. 실제로 `ChapterDefinition.cs`의
 차이는 주석뿐이었고, 필드 위치만 저쪽에 맞춰 옮겼다(2026-09-16).
