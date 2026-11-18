@@ -148,17 +148,10 @@ public sealed class DialogueLineExtension
         int total = DetourTargetNodeIds.Count + OpenDetourPositions.Count;
         int target = 0;
 
+        // 자리는 늘 맞다 — 읽기가 어긋난 자리를 받지 않는다(2026-11-18 · old-shapes O8 — ⛔ 그 전에는 남은 분기를 뒤에 붙여 견뎠다).
         for (int index = 0; index < total; index++)
         {
-            slots.Add(OpenDetourPositions.Contains(index) || target >= DetourTargetNodeIds.Count
-                ? null
-                : DetourTargetNodeIds[target++]);
-        }
-
-        // 자리가 어긋난 파일(이어진 분기가 자리보다 많다)이어도 분기를 잃지 않는다 — 남은 것을 뒤에 붙인다.
-        while (target < DetourTargetNodeIds.Count)
-        {
-            slots.Add(DetourTargetNodeIds[target++]);
+            slots.Add(OpenDetourPositions.Contains(index) ? null : DetourTargetNodeIds[target++]);
         }
 
         return slots;

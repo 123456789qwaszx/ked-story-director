@@ -81,9 +81,11 @@ internal static class StoryNodeJson
     /// <summary>노드 하나를 읽는다.</summary>
     public static StoryNode Read(JsonObject json)
     {
-        string id = (string?)json["id"] ?? Identifier.Node();
-        string name = (string?)json["name"] ?? "이름 없음";
-        string kind = (string?)json["kind"] ?? "dialogue";
+        // 쓰는 모양만 받는다(2026-11-18 · old-shapes O8) — ⛔ 그 전에는 빠진 Id에 새 Id를, 이름에 「이름 없음」을, 종류에 대사를,
+        //    자리에 0을 넣고 모르는 선 모양은 건너뛰었다.
+        string id = JsonSupport.RequiredText(json["id"], "노드의 id");
+        string name = JsonSupport.RequiredText(json["name"], $"노드 '{id}'의 name");
+        string kind = JsonSupport.RequiredText(json["kind"], $"노드 '{id}'의 kind");
 
         StoryNode node = kind switch
         {
@@ -92,25 +94,21 @@ internal static class StoryNodeJson
             _ => throw new InvalidDataException($"지원하지 않는 노드 종류 '{kind}'입니다.")
         };
 
-        if (json["layout"] is JsonObject layout)
+        JsonObject layout = JsonSupport.RequiredObject(json["layout"], $"노드 '{id}'의 layout");
+        node.Layout = new NodeLayout
         {
-            node.Layout = new NodeLayout
-            {
-                X = (double?)layout["x"] ?? 0,
-                Y = (double?)layout["y"] ?? 0,
-                Width = (double?)layout["width"],
-                WritingHeight = (double?)layout["writingHeight"]
-            };
-        }
+            X = JsonSupport.RequiredNumber(layout["x"], $"노드 '{id}'의 layout.x"),
+            Y = JsonSupport.RequiredNumber(layout["y"], $"노드 '{id}'의 layout.y"),
+            Width = JsonSupport.OptionalNumber(layout["width"], $"노드 '{id}'의 layout.width"),
+            WritingHeight = JsonSupport.OptionalNumber(layout["writingHeight"], $"노드 '{id}'의 layout.writingHeight")
+        };
 
-        if (json["edgeShapes"] is JsonObject shapes)
+        if (json["edgeShapes"] is { } shapes)
         {
-            foreach ((string key, JsonNode? value) in shapes)
+            foreach ((string key, JsonNode? value) in JsonSupport.RequiredObject(shapes, $"노드 '{id}'의 edgeShapes"))
             {
-                if (EdgeShapeJson.Read(value) is { } shape)
-                {
-                    node.EdgeShapes[key] = shape;
-                }
+                node.EdgeShapes[key] = EdgeShapeJson.Read(value)
+                    ?? throw new InvalidDataException($"노드 '{id}'의 선 모양 '{key}'가 비었습니다.");
             }
         }
 
@@ -136,36 +134,45 @@ internal static class StoryNodeJson
     }
 
     /// <summary>
-    /// 대사 노드는 <b>제 대본</b>(<c>script</c> — 줄 신원 · locale별 화자 · 대사)과 <b>LineId별 논리</b>를 쓴다(형식 4 ·
-    /// 2026-10-29).
-    /// 조건 갈래 출구는 갈래를 여는 줄의 항목 안에 함께 적어 둔다. 별도 배열로 나누면
-    /// 줄이 사라졌을 때 짝 없는 출구가 파일에 남는다.
+    /// 분기점 전부를 차례대로 편다 — 이어진 분기(<c>detour</c>)에 이어지지 않은 분기점의 자리(<c>openDetours</c>)를 끼운다. 자리는 쓰는
+    /// 모양(오름차순 · 겹침 없음 · 분기점 수 안)만 받는다(2026-11-18 · old-shapes O8 — ⛔ 그 전에는 어긋난 자리를 버리거나 뒤로 물렸다).
     /// </summary>
-    /// <summary>
-    /// 분기점 전부를 차례대로 편다 — 이어진 분기(<c>detour</c>)에 이어지지 않은 분기점의 자리(<c>openDetours</c>)를 끼운다.
-    /// 범위를 벗어난 자리는 뒤로 물린다.
-    /// </summary>
-    private static List<string?> ReadDetourSlots(IReadOnlyList<string> targets, JsonNode? openJson)
+    private static List<string?> ReadDetourSlots(IReadOnlyList<string> targets, JsonNode? openJson, string owner)
     {
         List<int> positions = openJson switch
         {
-            JsonArray array => array.Select(item => (int?)item ?? -1).Where(position => position >= 0).Distinct().Order().ToList(),
-            _ => []
+            null => [],
+            JsonArray { Count: > 0 } array => array.Select(item => JsonSupport.RequiredInt(item, $"{owner}의 openDetours 자리")).ToList(),
+            _ => throw new InvalidDataException($"{owner}의 openDetours는 자리 번호의 배열입니다.")
         };
 
         int total = targets.Count + positions.Count;
+
+        for (int index = 0; index < positions.Count; index++)
+        {
+            if (positions[index] < 0 || positions[index] >= total || (index > 0 && positions[index] <= positions[index - 1]))
+            {
+                throw new InvalidDataException($"{owner}의 openDetours 자리가 어긋났습니다(분기점 {total}개 안에서 오름차순이어야 합니다).");
+            }
+        }
+
         var slots = new List<string?>(total);
         int target = 0;
 
         for (int index = 0; index < total; index++)
         {
-            bool open = positions.Contains(index) || target >= targets.Count;
-            slots.Add(open ? null : targets[target++]);
+            slots.Add(positions.Contains(index) ? null : targets[target++]);
         }
 
         return slots;
     }
 
+    /// <summary>
+    /// 대사 노드는 <b>제 대본</b>(<c>script</c> — 줄 신원 · locale별 화자 · 대사)과 <b>LineId별 논리</b>를 쓴다(형식 4 ·
+    /// 2026-10-29).
+    /// 조건 갈래 출구는 갈래를 여는 줄의 항목 안에 함께 적어 둔다. 별도 배열로 나누면
+    /// 줄이 사라졌을 때 짝 없는 출구가 파일에 남는다.
+    /// </summary>
     private static void WriteDialogueNode(DialogueNode node, JsonObject json)
     {
         json["script"] = ScriptDocumentJson.WriteBody(node.Script);
@@ -287,16 +294,13 @@ internal static class StoryNodeJson
     {
         var node = new SetNode(id, name);
 
-        foreach (JsonNode? item in json["conditions"]?.AsArray() ?? new JsonArray())
+        foreach (JsonObject condition in JsonSupport.Objects(json["conditions"], $"설정 노드 '{id}'의 conditions"))
         {
-            if (item is JsonObject condition)
+            node.Conditions.Add(new ConditionDefinition(JsonSupport.RequiredText(condition["id"], $"설정 노드 '{id}'의 조건 id"))
             {
-                node.Conditions.Add(new ConditionDefinition((string?)condition["id"])
-                {
-                    Name = (string?)condition["name"] ?? string.Empty,
-                    Expression = (string?)condition["expression"] ?? string.Empty
-                });
-            }
+                Name = JsonSupport.RequiredString(condition["name"], $"설정 노드 '{id}'의 조건 name"),
+                Expression = JsonSupport.RequiredString(condition["expression"], $"설정 노드 '{id}'의 조건 expression")
+            });
         }
 
         return node;
@@ -313,21 +317,16 @@ internal static class StoryNodeJson
         var node = new DialogueNode(id, name)
         {
             Script = ReadScript(json["script"], id),
-            MarkedEpisodeId = (string?)json[EpisodeMarkKey],
-            IsBranchCard = (bool?)json[BranchCardKey] ?? false,
-            Title = (string?)json[TitleKey]
+            MarkedEpisodeId = JsonSupport.OptionalString(json[EpisodeMarkKey], $"DialogueNode '{id}'의 {EpisodeMarkKey}"),
+            IsBranchCard = JsonSupport.Flag(json[BranchCardKey], $"DialogueNode '{id}'의 {BranchCardKey}"),
+            Title = JsonSupport.OptionalString(json[TitleKey], $"DialogueNode '{id}'의 {TitleKey}")
         };
+
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 
-        foreach (JsonNode? item in json["lines"]?.AsArray() ?? new JsonArray())
+        foreach (JsonObject lineJson in JsonSupport.RequiredObjects(json["lines"], $"DialogueNode '{id}'의 lines"))
         {
-            if (item is not JsonObject lineJson)
-            {
-                continue;
-            }
-
-            string lineId = (string?)lineJson["lineId"]
-                ?? throw new InvalidDataException($"DialogueNode '{id}'의 줄 항목에 lineId가 없습니다.");
+            string lineId = JsonSupport.RequiredText(lineJson["lineId"], $"DialogueNode '{id}'의 줄 항목의 lineId");
 
             if (!lineIds.Add(lineId))
             {
@@ -337,41 +336,41 @@ internal static class StoryNodeJson
 
             var extension = new DialogueLineExtension(lineId);
 
-            foreach (JsonObject transitionJson in Transitions(lineJson))
+            foreach (JsonObject transitionJson in Transitions(lineJson, id))
             {
-                ConditionTransitionKind kind = ParseKind((string?)transitionJson["kind"], id);
-                var transition = new LineConditionTransition(kind, (string?)transitionJson["condition"]);
-
+                LineConditionTransition transition = ReadTransition(transitionJson, id);
                 extension.Transitions.Add(transition);
 
-                if ((string?)transitionJson["exit"] is { } exit && transition.OpensBranch)
+                // 갈래 출구는 여는 전환에만 적는다 — 닫는 전환에 붙은 출구는 쓰는 모양이 아니다.
+                if (JsonSupport.OptionalString(transitionJson["exit"], $"DialogueNode '{id}'의 출구") is { } exit)
                 {
-                    node.BranchExits[lineId] = exit;
+                    node.BranchExits[lineId] = transition.OpensBranch
+                        ? exit
+                        : throw new InvalidDataException($"DialogueNode '{id}'의 줄 '{lineId}'에서 갈래를 열지 않는 전환에 출구가 있습니다.");
                 }
             }
 
             extension.DetourTargetNodeIds.AddRange(DetourJson.Read(lineJson["detour"]));
-            extension.SetDetourSlots(ReadDetourSlots(extension.DetourTargetNodeIds, lineJson["openDetours"]));
+            extension.SetDetourSlots(ReadDetourSlots(extension.DetourTargetNodeIds, lineJson["openDetours"], $"DialogueNode '{id}'의 줄 '{lineId}'"));
 
             node.LineExtensions.Add(extension);
         }
 
-        foreach (JsonNode? item in json["trailing"]?.AsArray() ?? new JsonArray())
+        foreach (JsonObject transitionJson in JsonSupport.Objects(json["trailing"], $"DialogueNode '{id}'의 trailing"))
         {
-            if (item is not JsonObject transitionJson)
-            {
-                continue;
-            }
-
-            ConditionTransitionKind kind = ParseKind((string?)transitionJson["kind"], id);
-            var transition = new LineConditionTransition(kind, (string?)transitionJson["condition"]);
-
+            LineConditionTransition transition = ReadTransition(transitionJson, id);
             node.TrailingTransitions.Add(transition);
 
-            // 끝의 빈 갈래도 출구(detour)를 가질 수 있다 — 열쇠는 그 갈래의 앵커다.
-            if ((string?)transitionJson["exit"] is { } exit &&
-                (string?)transitionJson["anchor"] is { } anchor &&
-                transition.OpensBranch)
+            // 끝의 빈 갈래도 출구(detour)를 가질 수 있다 — 열쇠는 그 갈래의 앵커다. 앵커는 여는 전환에만 적는다.
+            string? anchor = JsonSupport.OptionalString(transitionJson["anchor"], $"DialogueNode '{id}'의 꼬리 갈래 앵커");
+            string? exit = JsonSupport.OptionalString(transitionJson["exit"], $"DialogueNode '{id}'의 꼬리 갈래 출구");
+
+            if (transition.OpensBranch != (anchor is not null) || (exit is not null && anchor is null))
+            {
+                throw new InvalidDataException($"DialogueNode '{id}'의 꼬리 전환의 앵커 · 출구가 어긋났습니다(여는 전환에만 앵커가 있고 출구는 앵커에 매달립니다).");
+            }
+
+            if (anchor is not null && exit is not null)
             {
                 node.BranchExits[anchor] = exit;
             }
@@ -379,6 +378,11 @@ internal static class StoryNodeJson
 
         return node;
     }
+
+    /// <summary>전환 하나 — 종류(<see cref="ParseKind"/>)와 조건 Id(없으면 닫기 · 그 밖).</summary>
+    private static LineConditionTransition ReadTransition(JsonObject json, string nodeId) => new(
+        ParseKind(JsonSupport.RequiredText(json["kind"], $"DialogueNode '{nodeId}'의 전환 kind"), nodeId),
+        JsonSupport.OptionalString(json["condition"], $"DialogueNode '{nodeId}'의 전환 condition"));
 
     /// <summary>전환 하나를 JSON으로. 갈래 출구는 <b>여는 전환</b>에만 붙는다.</summary>
     private static JsonObject TransitionJson(
@@ -403,16 +407,20 @@ internal static class StoryNodeJson
     }
 
     /// <summary>
-    /// 줄의 전환 목록 — <c>conditions</c> 배열(둘 이상)이 있으면 그것, 없으면 <c>condition</c> 한 칸(하나) — 쓰는 쪽의 두 모양이다.
+    /// 줄의 전환 목록 — <c>conditions</c> 배열(둘 이상)이 있으면 그것, 없으면 <c>condition</c> 한 칸(하나) — 쓰는 쪽의 두 모양이다. 둘 다
+    /// 있거나 하나짜리 배열 · 객체 아닌 칸은 받지 않는다.
     /// </summary>
-    private static IEnumerable<JsonObject> Transitions(JsonObject lineJson)
+    private static IEnumerable<JsonObject> Transitions(JsonObject lineJson, string nodeId)
     {
-        if (lineJson["conditions"] is JsonArray array)
-        {
-            return array.OfType<JsonObject>();
-        }
+        string what = $"DialogueNode '{nodeId}'의 줄 '{(string?)lineJson["lineId"]}'의 전환";
 
-        return lineJson["condition"] is JsonObject single ? [single] : [];
+        return (lineJson["conditions"], lineJson["condition"]) switch
+        {
+            (null, null) => [],
+            (null, { } single) => [JsonSupport.RequiredObject(single, what)],
+            (JsonArray { Count: > 1 } array, null) => JsonSupport.Objects(array, what),
+            _ => throw new InvalidDataException($"{what}은(는) condition 하나이거나 conditions 둘 이상입니다.")
+        };
     }
 
     private static string KindName(ConditionTransitionKind kind) => kind switch
@@ -426,7 +434,7 @@ internal static class StoryNodeJson
     /// 종류 이름 → 종류. <see cref="KindName"/>이 쓰는 셋 밖은 <b>깨진 파일</b>이다(2026-11-17) — ⛔ 전에는 모르는 이름을 <c>endIf</c>로
     /// 돌리고 걷힌 대사 안 선택지(<c>beginChoice</c> · <c>beginNextOption</c> · <c>endChoice</c>)는 알아보고 버렸다.
     /// </summary>
-    private static ConditionTransitionKind ParseKind(string? kind, string nodeId) => kind switch
+    private static ConditionTransitionKind ParseKind(string kind, string nodeId) => kind switch
     {
         "beginIf" => ConditionTransitionKind.BeginIf,
         "beginElseIf" => ConditionTransitionKind.BeginElseIf,

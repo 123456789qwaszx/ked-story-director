@@ -41,8 +41,9 @@ public sealed class EdgeGateClearTests
     }
 
     [Fact]
-    public void 파일의_빈_조건도_null로_읽는다()
+    public void 파일의_빈_조건은_받지_않는다()
     {
+        // 툴은 빈 칸을 쓰지 않는다 — 빈 글자로 적힌 칸은 손으로 고친 파일이다(2026-11-18 · old-shapes O8 — ⛔ 그 전에는 null로 읽었다).
         ProjectEditor editor = World();
         editor.AddEdge("ch01", "시작", "끝", conditionLabel: "신뢰높음", optionLabel: "계속");
 
@@ -50,8 +51,7 @@ public sealed class EdgeGateClearTests
             .Replace("\"conditionLabel\": \"신뢰높음\"", "\"conditionLabel\": \"\"", StringComparison.Ordinal);
         Assert.Contains("\"conditionLabel\": \"\"", encoded, StringComparison.Ordinal);
 
-        StoryProject reloaded = ProjectSnapshotCodec.Decode(encoded);
-        Assert.Null(reloaded.Chapters.Single().Edges.Single().ConditionLabel);
+        Assert.Throws<InvalidDataException>(() => ProjectSnapshotCodec.Decode(encoded));
     }
 
     private static ChapterEdge Edge(ProjectEditor editor) => editor.FindChapter("ch01")!.Edges.Single();

@@ -74,9 +74,9 @@ public static class ProjectSnapshotCodec
             throw new InvalidDataException("지원하지 않는 프로젝트 스냅샷입니다.");
         }
 
-        int projectFormatVersion = (int?)root["projectFormatVersion"] ?? StoryProject.CurrentFormatVersion;
+        int projectFormatVersion = JsonSupport.RequiredInt(root["projectFormatVersion"], "스냅샷의 projectFormatVersion");
 
-        if (projectFormatVersion > StoryProject.CurrentFormatVersion)
+        if (projectFormatVersion != StoryProject.CurrentFormatVersion)
         {
             throw new InvalidDataException(
                 $"스냅샷의 프로젝트 형식 버전 {projectFormatVersion}은 지원하지 않습니다.");
@@ -84,8 +84,8 @@ public static class ProjectSnapshotCodec
 
         var project = new StoryProject
         {
-            Title = (string?)root["title"] ?? "제목 없음",
-            StartNodeId = (string?)root["startNode"],
+            Title = JsonSupport.RequiredString(root["title"], "스냅샷의 title"),
+            StartNodeId = JsonSupport.OptionalString(root["startNode"], "스냅샷의 startNode"),
             Speakers = ProjectManifestJson.ReadSpeakers(root["speakers"]),
             Board = ProjectManifestJson.ReadBoard(root["board"])
         };
@@ -107,7 +107,7 @@ public static class ProjectSnapshotCodec
 
             StoryFile file = StoryFileJson.ReadObject(storyRoot);   // 카드의 대본은 카드 안에 든다
             file.RelativePath = ProjectStore.NormalizeRelativeStoryPath(
-                (string?)fileObject["path"] ?? ProjectStore.DefaultRelativePath(file.Id));
+                JsonSupport.RequiredText(fileObject["path"], $"스냅샷의 파일 '{file.Id}'의 path"));
             project.Files.Add(file);
         }
 

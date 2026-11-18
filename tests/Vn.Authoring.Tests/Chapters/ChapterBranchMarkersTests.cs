@@ -73,21 +73,6 @@ public sealed class ChapterBranchMarkersTests
     }
 
     [Fact]
-    public void 다른_판의_노드를_가리키면_안_낸다()
-    {
-        // ⚠ 그릴 카드가 없는 선은 판이 거짓말을 하는 것이다 (구판 프로젝트의 자유 씬).
-        (ProjectEditor editor, DialogueNode caller) = World();
-
-        StoryFile elsewhere = TestChapter.Board(editor, "ch02");
-        DialogueNode outsider = editor.AddDialogueNode(elsewhere.Id, "바깥", 0, 0, name: "바깥");
-
-        string lineId = caller.Script.ActiveLines.First().Id;
-        caller.RequireExtension(lineId).DetourTargetNodeIds.Add(outsider.Id);
-
-        Assert.Empty(ChapterBranchMarkers.For(editor.Project, "ch01"));
-    }
-
-    [Fact]
     public void 분기_카드가_또_들르면_출발은_그_분기_카드다()
     {
         (ProjectEditor editor, DialogueNode caller) = World();

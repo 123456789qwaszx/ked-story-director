@@ -311,10 +311,18 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 그 카드에 분기점을 이을 수 있는가 — <b>분기 카드에만</b>(2026-11-17). 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다.
+    /// <paramref name="fromNodeId"/>의 분기점을 그 카드에 이을 수 있는가 — <b>같은 판의 분기 카드에만</b>(2026-11-17 · 판은 2026-11-18
+    /// old-shapes O8 — ⛔ 그 전에는 판을 안 봐 [대본]에서 다른 챕터의 분기 카드에도 이어졌고, [구성]은 그 분기를 그릴 카드가 없어 뺐다).
+    /// 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다(<see cref="IsBranchCardElsewhere"/>).
     /// </summary>
-    public bool CanBranchTo(string nodeId) =>
-        Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true };
+    public bool CanBranchTo(string fromNodeId, string nodeId) =>
+        Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } &&
+        Project.FindFileContainingNode(nodeId) is { } board &&
+        ReferenceEquals(board, Project.FindFileContainingNode(fromNodeId));
+
+    /// <summary>그 카드가 다른 판의 분기 카드인가 — 놓기를 거절할 때 까닭을 고른다.</summary>
+    public bool IsBranchCardElsewhere(string fromNodeId, string nodeId) =>
+        Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } && !CanBranchTo(fromNodeId, nodeId);
 
     /// <summary>
     /// <b>이어지지 않은 분기점을 판의 빈 곳에 놓았다</b> — 그 자리에 새 분기 카드를 세우고 잇는다(2026-11-17 소유자). 카드와 연결이 되돌리기 한
@@ -645,7 +653,7 @@ public sealed partial class ProjectEditor
         if (port.Kind == ExitPortKind.Detour && port.BranchOpenLineId is { } lineId)
         {
             // 분기점은 분기 카드에만 잇는다(2026-11-17) — 에피소드에 이으면 들렀다 돌아오는 동안 그 에피소드의 선택지가 게임에 안 나온다.
-            if (targetNodeId is not null && !CanBranchTo(targetNodeId))
+            if (targetNodeId is not null && !CanBranchTo(port.NodeId, targetNodeId))
             {
                 return;
             }
@@ -700,7 +708,7 @@ public sealed partial class ProjectEditor
         // 포트(<see cref="ExitPort"/>)로 부른다.
         if (kind == ExitPortKind.Detour)
         {
-            if (targetNodeId is null || CanBranchTo(targetNodeId))
+            if (targetNodeId is null || CanBranchTo(nodeId, targetNodeId))
             {
                 SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
             }

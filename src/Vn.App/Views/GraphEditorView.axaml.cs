@@ -4922,14 +4922,13 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (!_session.Editor.CanBranchTo(target))
+        if (!_session.Editor.CanBranchTo(detour.NodeId, target))
         {
-            string name = _session.Project.FindNode(target) is { } node
-                ? EpisodeNaming.ShownNameOf(_session.Project, node)
-                : target;
-            _session.SetStatus(
-                $"'{name}'은(는) 에피소드입니다 — 분기점은 분기 카드에만 잇습니다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 " +
-                "나오지 않습니다). 빈 곳에 놓으면 새 분기 카드가 섭니다.");
+            string name = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindNode(target)!);
+            _session.SetStatus(_session.Editor.IsBranchCardElsewhere(detour.NodeId, target)
+                ? $"'{name}'은(는) 다른 챕터의 분기 카드입니다 — 분기점은 같은 챕터의 분기 카드에만 잇습니다. 빈 곳에 놓으면 새 분기 카드가 섭니다."
+                : $"'{name}'은(는) 에피소드입니다 — 분기점은 분기 카드에만 잇습니다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 " +
+                  "나오지 않습니다). 빈 곳에 놓으면 새 분기 카드가 섭니다.");
             return;
         }
 

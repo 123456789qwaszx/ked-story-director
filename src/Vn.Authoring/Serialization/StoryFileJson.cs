@@ -56,26 +56,20 @@ public static class StoryFileJson
             throw new InvalidDataException("StoryFile에 nodes 배열이 없습니다.");
         }
 
-        string id = (string?)root["fileId"]
-            ?? throw new InvalidDataException("StoryFile에 fileId가 없습니다.");
-        string name = (string?)root["name"] ?? "이름 없는 파일";
+        string id = JsonSupport.RequiredText(root["fileId"], "StoryFile의 fileId");
+        string name = JsonSupport.RequiredText(root["name"], $"StoryFile '{id}'의 name");
         var file = new StoryFile(id, name);
-
         HashSet<string> nodeIds = new(StringComparer.Ordinal);
 
-        foreach (JsonNode? item in nodes)
+        foreach (JsonObject nodeJson in JsonSupport.Objects(nodes, $"StoryFile '{id}'의 nodes"))
         {
-            if (item is not JsonObject nodeJson)
-            {
-                continue;
-            }
-
             StoryNode node = StoryNodeJson.Read(nodeJson);
 
             if (!nodeIds.Add(node.Id))
             {
                 throw new InvalidDataException($"StoryFile '{id}' 안에서 노드 Id '{node.Id}'가 중복됩니다.");
             }
+
             file.Nodes.Add(node);
         }
 

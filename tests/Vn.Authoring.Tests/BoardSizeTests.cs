@@ -79,17 +79,22 @@ public sealed class BoardSizeTests : IDisposable
     }
 
     [Fact]
-    public void 범위_밖의_값은_최소_최대로_들인다()
+    public void 범위_밖의_값은_고를_때_최소_최대로_들이고_파일에_있으면_받지_않는다()
     {
         ProjectEditor editor = Board();
 
         editor.SetBoardSize(100000, 80000);
         Assert.Equal(new BoardSize(BoardSize.Maximum, BoardSize.Maximum), editor.Project.Board);
 
-        // 옛 파일 · 손으로 고친 파일도 같다.
-        Assert.Equal(new BoardSize(BoardSize.Minimum, 9000),
+        // 손으로 고친 파일은 들이지 않는다(2026-11-18 · old-shapes O8 — ⛔ 그 전에는 범위 안으로 들이고 숫자가 아니면 기본으로 읽었다).
+        Assert.Throws<InvalidDataException>(() =>
             ProjectManifestJson.ReadBoard(System.Text.Json.Nodes.JsonNode.Parse("{\"width\": 10, \"height\": 9000}")));
-        Assert.Equal(BoardSize.Default, ProjectManifestJson.ReadBoard(System.Text.Json.Nodes.JsonNode.Parse("{\"width\": \"넓게\"}")));
+        Assert.Throws<InvalidDataException>(() =>
+            ProjectManifestJson.ReadBoard(System.Text.Json.Nodes.JsonNode.Parse("{\"width\": \"넓게\", \"height\": 9000}")));
+        Assert.Throws<InvalidDataException>(() =>
+            ProjectManifestJson.ReadBoard(System.Text.Json.Nodes.JsonNode.Parse("{\"width\": 20000}")));
+        Assert.Equal(new BoardSize(20000, 9000),
+            ProjectManifestJson.ReadBoard(System.Text.Json.Nodes.JsonNode.Parse("{\"width\": 20000, \"height\": 9000}")));
     }
 
     [Fact]

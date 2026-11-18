@@ -68,12 +68,6 @@ public static class ProjectStore
         JsonSupport.WriteAtomic(fullManifestPath, manifestText);
     }
 
-    public static string DefaultRelativePath(string fileId)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
-        return $"story/{fileId}{StoryFileJson.FileExtension}";
-    }
-
     public static string NormalizeRelativeStoryPath(string relativePath) =>
         NormalizeRelativePath(relativePath, StoryFileJson.FileExtension);
 

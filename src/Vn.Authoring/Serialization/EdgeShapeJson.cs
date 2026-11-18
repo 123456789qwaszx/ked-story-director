@@ -36,21 +36,31 @@ internal static class EdgeShapeJson
         return json;
     }
 
-    /// <summary>모르는 꼴은 직각으로 읽는다 — 모양 하나 때문에 프로젝트를 못 여는 일은 없다.</summary>
+    /// <summary>
+    /// 없으면 null(고친 것이 없는 선). 쓰는 꼴(<c>curve</c> · <c>straight</c>) 밖의 이름이나 수가 아닌 굽이는 받지 않는다(2026-11-18 · old-shapes
+    /// O8 — ⛔ 그 전에는 모르는 꼴을 직각으로 읽었다).
+    /// </summary>
     internal static EdgeShape? Read(JsonNode? node)
     {
-        if (node is not JsonObject json)
+        if (node is null)
         {
             return null;
         }
 
+        JsonObject json = JsonSupport.RequiredObject(node, "선 모양");
         var shape = new EdgeShape(
-            Enum.TryParse((string?)json["kind"], ignoreCase: true, out EdgeShapeKind kind) && Enum.IsDefined(kind)
-                ? kind
-                : EdgeShapeKind.Elbow,
-            (double?)json["bendX"] ?? 0,
-            (double?)json["bendY"] ?? 0);
+            json["kind"] is null ? EdgeShapeKind.Elbow : KindOf(JsonSupport.RequiredText(json["kind"], "선 모양의 kind")),
+            JsonSupport.OptionalNumber(json["bendX"], "선 모양의 bendX") ?? 0,
+            JsonSupport.OptionalNumber(json["bendY"], "선 모양의 bendY") ?? 0);
 
         return shape.IsDefault ? null : shape;
     }
+
+    /// <summary>쓰는 이름 — 직각은 기본이라 쓰지 않는다.</summary>
+    private static EdgeShapeKind KindOf(string name) => name switch
+    {
+        "curve" => EdgeShapeKind.Curve,
+        "straight" => EdgeShapeKind.Straight,
+        _ => throw new InvalidDataException($"선 모양의 kind '{name}'를 모릅니다.")
+    };
 }

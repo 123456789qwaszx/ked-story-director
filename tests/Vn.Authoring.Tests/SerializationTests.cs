@@ -266,7 +266,7 @@ public class SerializationTests
         Directory.CreateDirectory(Path.Combine(directory, "story"));
         string manifestPath = Path.Combine(directory, "project.vnproject.json");
         File.WriteAllText(manifestPath, """
-            { "formatVersion": 4, "files": [
+            { "formatVersion": 4, "title": "다른 Id", "files": [
               { "id": "sf_manifest", "name": "A", "path": "story/a.vnstory.json" }
             ] }
             """);

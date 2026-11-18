@@ -92,24 +92,19 @@ public static class ScriptDocumentJson
     /// <param name="owner">문제를 알릴 때 짚을 이름 — 그 카드의 Id.</param>
     internal static ScriptDocument ReadBody(JsonObject root, string owner)
     {
+        // 쓰는 모양만 받는다(2026-11-18 · old-shapes O8) — ⛔ 그 전에는 빠진 locale · 판 · 줄 판에 대신 값을 넣고 객체 아닌 항목은 건너뛰었다.
         var document = new ScriptDocument
         {
-            PrimaryLocale = (string?)root["primaryLocale"] ?? ScriptDocument.DefaultLocale,
-            SourceRevision = (int?)root["sourceRevision"] ?? 0,
-            SourceContentHash = (string?)root["sourceContentHash"]
+            PrimaryLocale = JsonSupport.RequiredText(root["primaryLocale"], $"'{owner}'의 대본 primaryLocale"),
+            SourceRevision = JsonSupport.RequiredInt(root["sourceRevision"], $"'{owner}'의 대본 sourceRevision"),
+            SourceContentHash = JsonSupport.OptionalString(root["sourceContentHash"], $"'{owner}'의 대본 sourceContentHash")
         };
 
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 
-        foreach (JsonNode? item in root["lines"]?.AsArray() ?? new JsonArray())
+        foreach (JsonObject lineJson in JsonSupport.RequiredObjects(root["lines"], $"'{owner}'의 대본 lines"))
         {
-            if (item is not JsonObject lineJson)
-            {
-                continue;
-            }
-
-            string lineId = (string?)lineJson["id"]
-                ?? throw new InvalidDataException($"'{owner}'의 대본 줄에 id가 없습니다.");
+            string lineId = JsonSupport.RequiredText(lineJson["id"], $"'{owner}'의 대본 줄 id");
 
             if (!lineIds.Add(lineId))
             {
@@ -118,19 +113,13 @@ public static class ScriptDocumentJson
 
             document.Lines.Add(new ScriptLine(
                 lineId,
-                (int?)lineJson["revision"] ?? 1,
-                (bool?)lineJson["retired"] ?? false));
+                JsonSupport.RequiredInt(lineJson["revision"], $"'{owner}'의 대본 줄 '{lineId}'의 revision"),
+                JsonSupport.Flag(lineJson["retired"], $"'{owner}'의 대본 줄 '{lineId}'의 retired")));
         }
 
-        foreach (JsonNode? item in root["locales"]?.AsArray() ?? new JsonArray())
+        foreach (JsonObject localeJson in JsonSupport.RequiredObjects(root["locales"], $"'{owner}'의 대본 locales"))
         {
-            if (item is not JsonObject localeJson)
-            {
-                continue;
-            }
-
-            string locale = (string?)localeJson["locale"]
-                ?? throw new InvalidDataException($"'{owner}'의 대본 locale에 이름이 없습니다.");
+            string locale = JsonSupport.RequiredText(localeJson["locale"], $"'{owner}'의 대본 locale 이름");
 
             if (document.FindLocale(locale) is not null)
             {
@@ -139,23 +128,18 @@ public static class ScriptDocumentJson
 
             var target = new ScriptLocale(locale);
 
-            foreach ((string lineId, JsonNode? entry) in localeJson["entries"]?.AsObject()
-                         ?? new JsonObject())
+            foreach ((string lineId, JsonNode? entry) in JsonSupport.RequiredObject(localeJson["entries"], $"'{owner}'의 대본 locale '{locale}'의 entries"))
             {
-                if (entry is not JsonObject text)
-                {
-                    continue;
-                }
-
                 if (!lineIds.Contains(lineId))
                 {
                     throw new InvalidDataException(
                         $"'{owner}'의 대본 locale '{locale}'이 없는 LineId '{lineId}'를 가리킵니다.");
                 }
 
+                JsonObject text = JsonSupport.RequiredObject(entry, $"'{owner}'의 대본 locale '{locale}'의 줄 '{lineId}'");
                 target.Entries[lineId] = new LocalizedLine(
-                    (string?)text["speaker"] ?? string.Empty,
-                    (string?)text["text"] ?? string.Empty);
+                    JsonSupport.OptionalString(text["speaker"], $"'{owner}'의 대본 줄 '{lineId}'의 speaker") ?? string.Empty,
+                    JsonSupport.RequiredString(text["text"], $"'{owner}'의 대본 줄 '{lineId}'의 text"));
             }
 
             document.Locales.Add(target);

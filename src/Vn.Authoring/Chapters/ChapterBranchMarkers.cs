@@ -40,11 +40,7 @@ public static class ChapterBranchMarkers
     /// 그 챕터의 분기 전부. 챕터가 없거나 판이 없으면 빈 목록이다.
     ///
     /// <b>대본에 적힌 차례 그대로</b>(한 줄 안에서는 다녀오는 차례로) 선다 — 판에서 읽는 차례와 카드에서 보는 차례가
-    /// 같아야 한다(<c>NodeConnections</c>가 분기 포트를 세우는 규칙과 같다).
-    ///
-    /// <b>이 챕터 안에서 끝나는 표식만</b> 낸다. 다녀올 노드가 다른 판에 있으면(구판
-    /// 프로젝트의 자유 씬이 그랬다) 챕터 그래프가 그릴 카드가 없으므로 뺀다 — 없는 카드로
-    /// 선을 그으면 판이 거짓말을 한다.
+    /// 같아야 한다(<c>NodeConnections</c>가 분기 포트를 세우는 규칙과 같다). 분기는 늘 같은 판의 분기 카드로 간다(저장 검증이 지킨다).
     /// </summary>
     public static IReadOnlyList<Marker> For(StoryProject project, string chapterId) =>
         PointsFor(project, chapterId).Select(point => point.Marker).OfType<Marker>().ToList();
@@ -70,7 +66,7 @@ public static class ChapterBranchMarkers
     /// <summary>
     /// 그 챕터 카드들의 분기점 전부 — 판의 카드 차례, 카드 안에서는 포트 차례 그대로(대본의 줄 차례, 한 줄 안에서는 이어진
     /// 분기들 뒤에 이어지지 않은 분기점). [구성] 탭이 카드 옆변에 이 점들을 세우고 이어진 것만 선을 긋는다 — 연결만 끊은
-    /// 분기점도 판에 남아 보인다. 다른 판으로 가는 분기는 그릴 카드가 없어 뺀다.
+    /// 분기점도 판에 남아 보인다. ⛔ 다른 판으로 가는 분기를 빼던 갈래는 2026-11-18에 걷혔다(old-shapes O8 — 분기는 같은 판의 분기 카드에만 잇는다).
     /// </summary>
     public static IReadOnlyList<BranchPoint> PointsFor(StoryProject project, string chapterId)
     {
@@ -93,14 +89,7 @@ public static class ChapterBranchMarkers
 
             foreach (ExitPort port in NodeConnections.PortsOf(card, project).Where(port => port.Kind == ExitPortKind.Detour))
             {
-                if (port.TargetNodeId is not { } target)
-                {
-                    points.Add(new BranchPoint(card.Id, from, port, null));
-                }
-                else if (onBoard.TryGetValue(target, out DialogueNode? to))
-                {
-                    points.Add(new BranchPoint(card.Id, from, port, to.Name));
-                }
+                points.Add(new BranchPoint(card.Id, from, port, port.TargetNodeId is { } target ? onBoard[target].Name : null));
             }
         }
 

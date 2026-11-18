@@ -325,14 +325,40 @@ public sealed class BranchMarkerTests
         DialogueNode episode = EpisodeNaming.CardFor(editor.Project, "ch01", "다음")!;
         long before = editor.Revision;
 
-        Assert.False(editor.CanBranchTo(episode.Id));
-        Assert.True(editor.CanBranchTo(made.Id));
+        Assert.False(editor.CanBranchTo(node.Id, episode.Id));
+        Assert.True(editor.CanBranchTo(node.Id, made.Id));
 
         editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, episode.Id);
         editor.SetExitTarget(Ports(editor, node).Single(port => port.TargetNodeId == made.Id), episode.Id);
 
         Assert.Equal([made.Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
         Assert.Equal(before, editor.Revision);
+    }
+
+    [Fact]
+    public void 분기점은_다른_챕터의_분기_카드에_잇지_않고_그런_파일은_받지_않는다()
+    {
+        // 2026-11-18 · old-shapes O8 — [대본]은 모든 챕터를 한 캔버스에 그려 다른 챕터의 분기 카드에도 놓을 수 있었다. [구성]은 그 분기를
+        // 그릴 카드가 없어 뺐다. 이제 분기는 같은 판의 분기 카드에만 잇는다.
+        (ProjectEditor editor, DialogueNode node, string lineId) = World();
+        editor.EnsureChapter("ch02");
+        editor.AddEpisode("ch02", "x", title: "x", 0, 0, sceneId: "x");
+        DialogueNode other = EpisodeNaming.CardFor(editor.Project, "ch02", "x")!;
+        DialogueNode elsewhere = editor.AddBranchMarker(other.Id, other.Script.ActiveLines.First().Id);
+        long before = editor.Revision;
+
+        Assert.False(editor.CanBranchTo(node.Id, elsewhere.Id));
+        Assert.True(editor.IsBranchCardElsewhere(node.Id, elsewhere.Id));
+        Assert.False(editor.IsBranchCardElsewhere(node.Id, Target(editor).Id));
+
+        editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, elsewhere.Id);
+        Assert.Empty(node.FindExtension(lineId)?.DetourTargetNodeIds ?? []);
+        Assert.Equal(before, editor.Revision);
+
+        // 손으로 고친 파일 — 저장 검증이 받지 않는다.
+        node.RequireExtension(lineId).DetourTargetNodeIds.Add(elsewhere.Id);
+        InvalidDataException error = Assert.Throws<InvalidDataException>(() => JsonSupport.ValidateProject(editor.Project));
+        Assert.Contains("같은 판의 분기 카드", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]

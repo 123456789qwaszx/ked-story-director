@@ -23,22 +23,22 @@ internal static class DetourJson
         };
     }
 
-    /// <summary>문자열이든 배열이든 다녀올 곳들을 차례대로. 빈 값과 같은 곳의 두 번째는 버린다.</summary>
+    /// <summary>
+    /// 문자열(하나)이든 배열(둘 이상)이든 다녀올 곳들을 차례대로. 쓰는 모양 밖 — 빈 값 · 문자열 아닌 항목 · 같은 곳 둘 · 하나짜리 배열 —
+    /// 은 받지 않는다(2026-11-18 · old-shapes O8 — ⛔ 그 전에는 버리고 읽었다).
+    /// </summary>
     public static List<string> Read(JsonNode? node)
     {
-        IEnumerable<string?> values = node switch
+        List<string> targets = node switch
         {
-            JsonArray array => array.Select(item => item is JsonValue value && value.TryGetValue(out string? text)
-                ? text
-                : null),
-            JsonValue value when value.TryGetValue(out string? text) => [text],
-            _ => []
+            null => [],
+            JsonArray { Count: > 1 } array => array.Select(item => JsonSupport.RequiredText(item, "분기(detour)의 대상")).ToList(),
+            JsonValue => [JsonSupport.RequiredText(node, "분기(detour)의 대상")],
+            _ => throw new InvalidDataException("분기(detour)는 문자열 하나이거나 둘 이상의 배열입니다.")
         };
 
-        return values
-            .OfType<string>()
-            .Where(target => target.Length > 0)
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
+        return targets.Distinct(StringComparer.Ordinal).Count() == targets.Count
+            ? targets
+            : throw new InvalidDataException("분기(detour)에 같은 대상이 둘 있습니다.");
     }
 }

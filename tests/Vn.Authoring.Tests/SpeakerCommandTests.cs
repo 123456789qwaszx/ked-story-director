@@ -87,18 +87,23 @@ public class SpeakerCommandTests
         Assert.DoesNotContain("\"speakers\"", ProjectManifestJson.Write(new StoryProject()), StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void 손으로_고친_매니페스트의_빈_이름과_겹친_이름은_견딘다()
+    [Theory]
+    [InlineData("""{ "name": "윌로" }""")]                                                        // characterId가 빠졌다
+    [InlineData("""{ "name": "", "characterId": "" }""")]                                         // 빈 이름
+    [InlineData("""{ "name": "라루", "characterId": "laru" }, { "name": "라루", "characterId": "x" }""")]   // 겹친 이름
+    [InlineData("\"라루\"")]                                                                    // 객체가 아니다
+    public void 손으로_고친_매니페스트의_빠진_칸_빈_이름_겹친_이름은_받지_않는다(string items)
     {
+        // 2026-11-18 · old-shapes O8 — ⛔ 그 전에는 빈 이름을 건너뛰고 같은 이름은 처음 것만 받았다(앞뒤 공백도 걷었다).
         string manifest = ProjectManifestJson.Write(new StoryProject()).Replace(
             "\"files\"",
-            """
-            "speakers": [ { "name": " 라루 ", "characterId": "laru" }, { "name": "" }, { "name": "라루", "characterId": "other" }, { "name": "윌로" } ],
+            $$"""
+            "speakers": [ {{items}} ],
             "files"
             """,
             StringComparison.Ordinal);
 
-        Assert.Equal([new Speaker("라루", "laru"), new Speaker("윌로", string.Empty)], ProjectManifestJson.Read(manifest).Speakers);
+        Assert.Throws<InvalidDataException>(() => JsonSupport.ValidateProject(new StoryProject { Speakers = ProjectManifestJson.Read(manifest).Speakers.ToList() }));
     }
 
     private static List<string> Speakers(Sample sample) =>

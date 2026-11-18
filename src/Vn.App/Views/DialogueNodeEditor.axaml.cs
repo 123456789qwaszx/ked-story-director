@@ -883,9 +883,8 @@ public partial class DialogueNodeEditor : UserControl
     private Control BuildBranchMarkerCard(
         DialogueNode node, string lineId, string targetId, int order, int count, bool lastConnected, int palette)
     {
-        string name = _session?.Project.FindNode(targetId) is { } target
-            ? EpisodeNaming.ShownNameOf(_session.Project, target)
-            : "(사라진 노드)";
+        // 분기 대상은 늘 있다 — 저장 검증이 지킨다(old-shapes O8).
+        string name = EpisodeNaming.ShownNameOf(_session!.Project, _session.Project.FindNode(targetId)!);
 
         // 두 줄이다 — 위는 무엇으로 갈라지는가(와 지우기), 아래는 지금 조건과 조건을 고르는 칸. 한 줄에 다 세우면 인스펙터 폭을
         // 넘어 단추가 밖으로 밀린다.
@@ -1109,9 +1108,7 @@ public partial class DialogueNodeEditor : UserControl
 
             foreach (string target in existing)
             {
-                string name = _session?.Project.FindNode(target) is { } found
-                    ? EpisodeNaming.ShownNameOf(_session.Project, found)
-                    : "(사라진 노드)";
+                string name = EpisodeNaming.ShownNameOf(_session!.Project, _session.Project.FindNode(target)!);
                 panel.Children.Add(RemoveBranchButton(node, resolved.Line.LineId, target, $"✕ '{name}' 분기 지우기"));
             }
         }
@@ -1247,11 +1244,11 @@ public partial class DialogueNodeEditor : UserControl
     /// </summary>
     private Control BuildExitRail(DialogueNode node, ConditionBranch branch)
     {
-        StoryNode? target = _session!.Project.FindNode(branch.ExitTargetNodeId);
+        StoryNode target = _session!.Project.FindNode(branch.ExitTargetNodeId)!;   // 출구 대상은 늘 있다 — 저장 검증이 지킨다
 
         var caption = new TextBlock
         {
-            Text = $"→ 분기 이후: {target?.Name ?? "(사라진 노드)"}",
+            Text = $"→ 분기 이후: {target.Name}",
             FontSize = 10,
             FontWeight = FontWeight.SemiBold,
             Foreground = BranchPalette.Accent(PaletteOf(branch))
@@ -1399,10 +1396,10 @@ public partial class DialogueNodeEditor : UserControl
     internal List<StoryNode> ExitTargetsProbe(string nodeId) =>
         ExitTargets((DialogueNode)_session!.Project.FindNode(nodeId)!);
 
-    /// <summary>분기가 다녀갈 수 있는 카드 — 분기 카드. 에피소드에는 분기점을 잇지 않는다(2026-11-17).</summary>
+    /// <summary>분기가 다녀갈 수 있는 카드 — 같은 판의 분기 카드. 에피소드에는 분기점을 잇지 않는다(2026-11-17).</summary>
     private List<StoryNode> ExitTargets(DialogueNode node) => _session!.Project.EnumerateNodes()
         .Where(other => !string.Equals(other.Id, node.Id, StringComparison.Ordinal))
-        .Where(other => _session.Editor.CanBranchTo(other.Id))
+        .Where(other => _session.Editor.CanBranchTo(node.Id, other.Id))
         .ToList();
 
     // ── 그 밖 ───────────────────────────────────────────────────────────────

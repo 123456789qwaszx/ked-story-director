@@ -106,12 +106,9 @@ public static class ProjectManifestJson
                 throw new InvalidDataException("프로젝트 manifest의 files 항목이 객체가 아닙니다.");
             }
 
-            string id = (string?)file["id"]
-                ?? throw new InvalidDataException("프로젝트 manifest의 파일 항목에 id가 없습니다.");
-            string name = (string?)file["name"] ?? "이름 없는 파일";
-            string path = ProjectStore.NormalizeRelativeStoryPath(
-                (string?)file["path"]
-                ?? throw new InvalidDataException($"StoryFile '{id}'에 path가 없습니다."));
+            string id = JsonSupport.RequiredText(file["id"], "프로젝트 manifest의 파일 항목의 id");
+            string name = JsonSupport.RequiredText(file["name"], $"StoryFile '{id}'의 name");
+            string path = ProjectStore.NormalizeRelativeStoryPath(JsonSupport.RequiredText(file["path"], $"StoryFile '{id}'의 path"));
 
             if (!ids.Add(id))
             {
@@ -129,8 +126,8 @@ public static class ProjectManifestJson
         List<ChapterDocument> chapters = ChapterDocumentJson.Read(root["chapters"]);
 
         return new ProjectManifest(
-            (string?)root["title"] ?? "제목 없음",
-            (string?)root["startNode"],
+            JsonSupport.RequiredString(root["title"], "프로젝트 manifest의 title"),
+            JsonSupport.OptionalString(root["startNode"], "프로젝트 manifest의 startNode"),
             references,
             chapters,
             ReadSpeakers(root["speakers"]),
@@ -159,31 +156,15 @@ public static class ProjectManifestJson
     }
 
     /// <summary>
-    /// 없으면 빈 목록. 손으로 고친 파일을 견딘다 — 이름이 빈 항목은 건너뛰고, 같은 이름은 처음 것만 받는다(앞뒤 공백은 걷는다).
+    /// 없으면 빈 목록. 쓰는 모양만 받는다 — 빈 · 겹친 이름은 저장 검증이 거절한다(2026-11-18 · old-shapes O8 — ⛔ 그 전에는 손으로 고친 파일을
+    /// 견뎌 빈 이름을 건너뛰고 같은 이름은 처음 것만 받았다).
     /// </summary>
-    internal static List<Speaker> ReadSpeakers(JsonNode? node)
-    {
-        var speakers = new List<Speaker>();
-
-        if (node is not JsonArray array)
-        {
-            return speakers;
-        }
-
-        var names = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (JsonObject item in array.OfType<JsonObject>())
-        {
-            string name = ((string?)item["name"] ?? string.Empty).Trim();
-
-            if (name.Length > 0 && names.Add(name))
-            {
-                speakers.Add(new Speaker(name, ((string?)item["characterId"] ?? string.Empty).Trim()));
-            }
-        }
-
-        return speakers;
-    }
+    internal static List<Speaker> ReadSpeakers(JsonNode? node) =>
+        JsonSupport.Objects(node, "speakers")
+            .Select(item => new Speaker(
+                JsonSupport.RequiredString(item["name"], "화자의 name"),
+                JsonSupport.RequiredString(item["characterId"], "화자의 characterId")))
+            .ToList();
 
     /// <summary>
     /// [대본] 판 크기 — manifest와 되돌리기 스냅숏이 같은 것을 쓴다(스냅숏에 안 실으면 되돌리기가 크기를 잃는다). 기본이면 null(쓰지 않는다).
@@ -191,18 +172,25 @@ public static class ProjectManifestJson
     internal static JsonObject? WriteBoard(BoardSize board) =>
         board.IsDefault ? null : new JsonObject { ["width"] = board.Width, ["height"] = board.Height };
 
-    /// <summary>없거나 숫자가 아니면 기본, 범위 밖이면 범위 안으로.</summary>
+    /// <summary>
+    /// 없으면 기본. 있으면 두 변이 범위(<see cref="BoardSize.Minimum"/> ~ <see cref="BoardSize.Maximum"/>) 안의 정수여야 한다 — 툴은 고른 크기를
+    /// 그렇게 맞춰 쓴다(2026-11-18 · old-shapes O8 — ⛔ 그 전에는 숫자가 아니면 기본으로, 범위 밖이면 범위 안으로 들였다).
+    /// </summary>
     internal static BoardSize ReadBoard(JsonNode? node)
     {
-        if (node is not JsonObject board)
+        if (node is null)
         {
             return BoardSize.Default;
         }
 
-        static double Side(JsonNode? value, double fallback) =>
-            value is JsonValue number && number.TryGetValue(out double side) ? BoardSize.ClampSide(side, fallback) : fallback;
+        JsonObject board = JsonSupport.RequiredObject(node, "board");
 
-        return new BoardSize(Side(board["width"], BoardSize.Default.Width), Side(board["height"], BoardSize.Default.Height));
+        static double Side(JsonNode? value, string what) =>
+            JsonSupport.RequiredNumber(value, what) is var side && side == BoardSize.ClampSide(side, side)
+                ? side
+                : throw new InvalidDataException($"{what} {side}은(는) {BoardSize.Minimum} ~ {BoardSize.Maximum} 안의 정수여야 합니다.");
+
+        return new BoardSize(Side(board["width"], "판 크기의 width"), Side(board["height"], "판 크기의 height"));
     }
 }
 

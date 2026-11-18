@@ -27,6 +27,68 @@ internal static class JsonSupport
         }
     }
 
+    // ── 엄격한 읽기 (2026-11-18 · old-shapes O8) ─────────────────────────────────
+    // 툴이 늘 쓰는 칸이 빠졌거나 모양이 다르면 받지 않는다 — 대신 값을 채우지도, 모르는 항목을 건너뛰지도 않는다. 기본값이라 쓰지 않는
+    // 칸만 없어도 된다(Optional…). ⛔ 그 전에는 빠진 이름 · 자리 · 종류에 대신 값을 넣고 객체 아닌 항목은 건너뛰었다.
+
+    /// <summary>문자열 칸 — 빈 글자도 받는다(툴이 빈 채로 쓰는 칸).</summary>
+    internal static string RequiredString(JsonNode? node, string what) =>
+        node is JsonValue value && value.GetValueKind() == JsonValueKind.String
+            ? (string)value!
+            : throw new InvalidDataException($"{what}이(가) 없거나 문자열이 아닙니다.");
+
+    /// <summary>비지 않은 문자열 칸 — Id · 이름 · 열쇠.</summary>
+    internal static string RequiredText(JsonNode? node, string what) =>
+        RequiredString(node, what) is { } text && !string.IsNullOrWhiteSpace(text)
+            ? text
+            : throw new InvalidDataException($"{what}이(가) 비었습니다.");
+
+    /// <summary>없어도 되는 문자열 칸 — 있으면 문자열이어야 한다.</summary>
+    internal static string? OptionalString(JsonNode? node, string what) => node is null ? null : RequiredString(node, what);
+
+    internal static double RequiredNumber(JsonNode? node, string what) =>
+        node is JsonValue value && value.GetValueKind() == JsonValueKind.Number && double.IsFinite((double)value)
+            ? (double)value
+            : throw new InvalidDataException($"{what}이(가) 없거나 수가 아닙니다.");
+
+    internal static double? OptionalNumber(JsonNode? node, string what) => node is null ? null : RequiredNumber(node, what);
+
+    internal static int RequiredInt(JsonNode? node, string what) =>
+        node is JsonValue value && value.GetValueKind() == JsonValueKind.Number && value.TryGetValue(out int number)
+            ? number
+            : throw new InvalidDataException($"{what}이(가) 없거나 정수가 아닙니다.");
+
+    /// <summary>켤 때만 쓰는 깃발 — 없으면 꺼짐, 있으면 <c>true</c>여야 한다(툴은 <c>false</c>를 쓰지 않는다).</summary>
+    internal static bool Flag(JsonNode? node, string what) =>
+        node is null
+            ? false
+            : node is JsonValue value && value.GetValueKind() == JsonValueKind.True
+                ? true
+                : throw new InvalidDataException($"{what}은(는) 켤 때만 true로 적습니다.");
+
+    internal static JsonObject RequiredObject(JsonNode? node, string what) =>
+        node as JsonObject ?? throw new InvalidDataException($"{what}이(가) 없거나 객체가 아닙니다.");
+
+    /// <summary>객체 배열 — 없으면 빈 것(비면 쓰지 않는 칸), 배열이 아니거나 객체 아닌 항목이 있으면 받지 않는다.</summary>
+    internal static IEnumerable<JsonObject> Objects(JsonNode? node, string what)
+    {
+        if (node is null)
+        {
+            return [];
+        }
+
+        if (node is not JsonArray array)
+        {
+            throw new InvalidDataException($"{what}이(가) 배열이 아닙니다.");
+        }
+
+        return array.Select(item => item as JsonObject ?? throw new InvalidDataException($"{what}에 객체가 아닌 항목이 있습니다.")).ToList();
+    }
+
+    /// <summary>늘 쓰는 객체 배열 — 없으면 받지 않는다.</summary>
+    internal static IEnumerable<JsonObject> RequiredObjects(JsonNode? node, string what) =>
+        node is null ? throw new InvalidDataException($"{what}이(가) 없습니다.") : Objects(node, what);
+
     public static string ToDeterministicText(JsonObject root)
     {
         return root.ToJsonString(WriteOptions)
@@ -278,13 +340,16 @@ internal static class JsonSupport
             }
         }
 
-        // 분기는 분기 카드에만 잇는다 — 잇는 길이 모두 분기 카드만 받는다(2026-11-18 · old-shapes O2). 다른 것을 가리키면 옛 데이터라 받지 않는다.
+        // 분기는 같은 판의 분기 카드에만 잇는다 — 잇는 길이 모두 그것만 받는다(2026-11-18 · old-shapes O2 · 판은 O8). 다른 것을 가리키면 받지 않는다.
+        StoryFile? home = project.FindFileContainingNode(node.Id);
+
         foreach (string target in node.LineExtensions.SelectMany(extension => extension.DetourTargetNodeIds))
         {
-            if (project.FindNode(target) is not DialogueNode { IsBranchCard: true })
+            if (project.FindNode(target) is not DialogueNode { IsBranchCard: true } ||
+                !ReferenceEquals(project.FindFileContainingNode(target), home))
             {
                 throw new InvalidDataException(
-                    $"DialogueNode '{node.Id}'의 분기가 분기 카드가 아닌 '{target}'를 가리킵니다 — 분기는 분기 카드에만 잇습니다.");
+                    $"DialogueNode '{node.Id}'의 분기가 같은 판의 분기 카드가 아닌 '{target}'를 가리킵니다 — 분기는 같은 판의 분기 카드에만 잇습니다.");
             }
         }
     }
