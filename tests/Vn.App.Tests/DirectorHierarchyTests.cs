@@ -153,6 +153,35 @@ public sealed class DirectorHierarchyTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 다른_챕터가_막혀도_검증_보고가_그_까닭을_보인다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「진행 JSON 미출력이라고 에러를 띄우는데 보고할 것이 없다고 나오는 경우」. 결론은 전 챕터의 내보내기에서 오고 보고는
+        // 고른 챕터 하나였다 — 막힌 챕터의 오류가 보고에 같이 서야 「아래 오류를 고치면」이 참이다.
+        (MainWindow window, AuthoringSession session) = Show();
+        ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        chapterGraph.SelectChapter("ch01");
+        session.Editor.AddEdge("ch02", "x", "y");   // 문구 없는 길 — ch02가 막힌다
+        Dispatcher.UIThread.RunJobs();
+
+        string header = (string)chapterGraph.FindControl<Expander>("DiagnosticsExpander")!.Header!;
+        List<string> lines = chapterGraph.FindControl<StackPanel>("DiagnosticsPanel")!.GetLogicalDescendants()
+            .OfType<TextBlock>().Select(text => text.Text ?? string.Empty).ToList();
+
+        Assert.Contains("진행 JSON 미출력", header, StringComparison.Ordinal);
+        Assert.Contains("오류 1", header, StringComparison.Ordinal);
+        Assert.Contains(lines, line => line.StartsWith("검증 오류로 진행 JSON이 나가지 않았습니다: ch02", StringComparison.Ordinal));
+        Assert.Contains(lines, line => line.StartsWith("ch02 · 간선", StringComparison.Ordinal));
+        Assert.DoesNotContain("보고할 것이 없습니다.", lines);
+
+        // 고치면 결론과 그 오류가 함께 걷힌다.
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain("미출력", (string)chapterGraph.FindControl<Expander>("DiagnosticsExpander")!.Header!, StringComparison.Ordinal);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static DialogueNode Card(AuthoringSession session, string chapterId, string episodeId) =>

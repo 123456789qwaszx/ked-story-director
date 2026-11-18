@@ -216,6 +216,12 @@ public sealed class ChapterExportServiceTests : IDisposable
         string notice = Assert.IsType<string>(run.Notice);
         Assert.Contains("ch02", notice);
         Assert.DoesNotContain("ch01", notice);   // 잘 나간 것은 말하지 않는다
+
+        // 막힌 까닭도 함께 싣는다 — 보고가 고른 챕터와 상관없이 「아래 오류」를 그린다(2026-11-18).
+        Assert.NotEmpty(run.RefusalErrors!);
+        Assert.Equal(
+            service.ValidationFor(Entry("ch02", Blocked)).All.Where(item => item.Severity == ChapterDiagnosticSeverity.Error),
+            run.RefusalErrors!);   // 막힌 ch02의 오류뿐 — 잘 나간 ch01의 것은 없다
     }
 
     [Fact]

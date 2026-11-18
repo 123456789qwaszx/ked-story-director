@@ -15,6 +15,10 @@ namespace Vn.Authoring.Chapters;
 /// <param name="Removed">이번에 걷은 옛 진행 JSON의 챕터 — 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 것.</param>
 /// <param name="RemoveFailed">걷어야 하는데 못 걷은 옛 진행 JSON의 챕터(잠김 · 권한).</param>
 /// <param name="ScenesFailed">장면 파일(<see cref="ChapterScenesExporter"/>)을 쓰지 못한 챕터(잠김 · 권한).</param>
+/// <param name="RefusalErrors">
+/// 막힌 챕터들의 오류 — 검증기의 것과 진행 코어의 거부(<c>CoreRefusals</c> — 검증 캐시에는 없다)를 함께. 검증 보고는 고른 챕터 하나를 그리므로,
+/// 결론(「아래 오류를 고치면」)의 그 오류가 아래에 서도록 이것을 더해 그린다(2026-11-18 소유자 — 「진행 JSON 미출력인데 보고할 것이 없다」).
+/// </param>
 public sealed record ChapterExportRun(
     IReadOnlyList<string> Refused,
     IReadOnlyList<string> Failed,
@@ -26,7 +30,8 @@ public sealed record ChapterExportRun(
     IReadOnlyList<string>? RemoveFailed = null,
     IReadOnlyList<string>? ScenesFailed = null,
     IReadOnlyList<string>? YarnWritten = null,
-    IReadOnlyList<string>? YarnProblems = null)
+    IReadOnlyList<string>? YarnProblems = null,
+    IReadOnlyList<ChapterDiagnostic>? RefusalErrors = null)
 {
     public static ChapterExportRun Empty { get; } = new([], [], [], new Dictionary<string, string>());
 
@@ -211,6 +216,7 @@ public sealed class ChapterExportService
         var scenesFailed = new List<string>();
         var yarnWritten = new List<string>();
         var yarnProblems = new List<string>();
+        var refusalErrors = new List<ChapterDiagnostic>();
 
         // 대사 Yarn의 장부 — 이번에 다룬 챕터와, 그 챕터들이 지금 가진 파일 이름(막혀서 안 쓴 것도 — 옛 파일을 지키려고).
         var yarnChapters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -237,6 +243,7 @@ public sealed class ChapterExportService
             if (result.Refused)
             {
                 refused.Add(entry.ChapterId);
+                refusalErrors.AddRange(result.Validation.All.Where(item => item.Severity == ChapterDiagnosticSeverity.Error));
                 continue;
             }
 
@@ -300,7 +307,8 @@ public sealed class ChapterExportService
         RemoveStaleYarn(entries, projectPath, yarnChapters, yarnOwners, removeFailed);
 
         return new ChapterExportRun(
-            refused, failed, blocked, checksums, written, Delivery: null, removed, removeFailed, scenesFailed, yarnWritten, yarnProblems);
+            refused, failed, blocked, checksums, written, Delivery: null, removed, removeFailed, scenesFailed, yarnWritten, yarnProblems,
+            refusalErrors);
     }
 
     /// <summary>

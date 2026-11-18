@@ -4437,9 +4437,12 @@ public partial class ChapterGraphView : UserControl
     {
         // 모델 진단(구조 검사 포함) + 검증기(구조·교차·도달성) 진단을 한 목록으로 본다.
         // 같은 진단이 두 곳에서 나올 수 있으므로(모델이 낸 것을 검증기가 다시 담는다) 겹은 지운다.
+        // 막힌 챕터들의 오류도 더한다(2026-11-18 소유자 — 「진행 JSON 미출력인데 보고할 것이 없다」) — 결론은 전 챕터의 내보내기에서 오므로, 다른
+        // 챕터가 막혔거나 진행 코어가 거부한 까닭(검증 캐시에는 없다)이 여기 없으면 「아래 오류」가 아래에 없다. 줄마다 챕터 ID가 앞에 선다.
         List<ChapterDiagnostic> all = model.Diagnostics
             .Concat(_validation?.All ?? Enumerable.Empty<ChapterDiagnostic>())
             .Concat(BoardWarnings(model))
+            .Concat(_exportRun.RefusalErrors ?? [])
             .Distinct()
             .ToList();
 
