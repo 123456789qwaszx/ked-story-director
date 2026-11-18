@@ -3392,8 +3392,8 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// [＋ 새 조건] — 이름과 식을 한 번에 만들고 이 선택지의 표시조건(또는 해금조건)으로 건다. 되돌리기 한 칸이다.
     ///
-    /// 조건 이름은 원래 [대본] 탭에서 짓는다(writer-fields W4). 간선에서 수치를 잡다가 조건이 없으면 탭을 오가야 해서, 이 자리만 예외로
-    /// 만든다(2026-11-17 소유자). 이름 규칙은 같다 — 빈 이름 · 이미 있는 이름은 받지 않는다. 식은 비워도 된다(식 미정 — 항상 통과).
+    /// 간선에서 수치를 잡다가 조건이 없으면 탭을 오가야 해서 둔 자리다(2026-11-17 소유자). 이름 규칙은 조건 표의 [＋ 조건]과 같다
+    /// (<see cref="ShowConditionFlyout"/>).
     /// </summary>
     private void ShowNewConditionFlyout(Button anchor, bool visible)
     {
@@ -3402,11 +3402,81 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
+        ShowConditionFlyout(
+            anchor,
+            chapterId,
+            visible ? "새 조건 — 맞을 때만 이 선택지가 보입니다." : "새 조건 — 맞을 때만 이 선택지를 고를 수 있습니다.",
+            visible ? "만들고 표시조건으로 걸기" : "만들고 해금조건으로 걸기",
+            " — 콤보에서 고르세요.",
+            (label, typed) =>
+            {
+                if (SelectedModel?.Edges.FirstOrDefault(candidate =>
+                        candidate.FromEpisodeId == key.From &&
+                        candidate.ToEpisodeId == key.To &&
+                        EdgeLabelKey(candidate) == key.Label) is not { } edge)
+                {
+                    _session.SetStatus("간선을 다시 골라 주세요. 선택이 풀렸거나 그 간선이 사라졌습니다.");
+                    return false;
+                }
+
+                // 조건 만들기와 걸기가 한 변경이다 — 되돌리기 한 번에 함께 돌아간다.
+                _session.Editor.Batch(() =>
+                {
+                    _session.Editor.AddChapterCondition(chapterId, label, typed);
+                    _session.Editor.UpdateEdge(
+                        chapterId, key.From, key.To,
+                        visibleConditionLabel: visible ? label : null,
+                        conditionLabel: visible ? null : label,
+                        matchOptionLabel: EdgeLabelKey(edge));
+                });
+
+                _panelFilledFor = default;   // 다시 그릴 때 콤보를 모델 값(방금 건 조건)으로 채운다
+                _session.SetStatus($"조건 '{label}'을 만들어 {(visible ? "표시조건" : "해금조건")}으로 걸었습니다" +
+                                   (typed.Length == 0 ? " — 식 미정(항상 통과)입니다." : ".") + " 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                return true;
+            });
+    }
+
+    /// <summary>
+    /// 조건 표 아래의 [＋ 조건] — 이름과 식을 한 번에 만든다. 되돌리기 한 칸이다(2026-11-18 소유자 · side-tabs V2 — 「구성탭에서도 조건을
+    /// 추가할 수 있도록」). 이름을 고치고 지우는 것은 [대본] 탭에 그대로 있다.
+    /// </summary>
+    private void ConditionAddFlyout(Button anchor)
+    {
+        if (_session is null || _selectedChapterId is not { } chapterId)
+        {
+            return;
+        }
+
+        ShowConditionFlyout(
+            anchor,
+            chapterId,
+            "새 조건 — 이 챕터에서만 씁니다. 간선의 표시조건 · 해금조건과 분기 조건에 고릅니다.",
+            "만들기",
+            ".",
+            (label, typed) =>
+            {
+                _session.Editor.AddChapterCondition(chapterId, label, typed);
+                _session.SetStatus($"조건 '{label}'을 만들었습니다" +
+                                   (typed.Length == 0 ? " — 식 미정(항상 통과)입니다." : ".") + " 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                return true;
+            });
+    }
+
+    /// <summary>
+    /// 조건 이름과 식을 한 번에 받는 플라이아웃 — 간선의 [＋ 새 조건]과 조건 표의 [＋ 조건]이 같이 쓴다. 이름 규칙은 [대본] 탭과 같다 —
+    /// 빈 이름 · 이미 있는 이름은 받지 않는다(상태줄이 말한다). 식은 비워도 된다(식 미정 — 항상 통과). 받으면(<paramref name="accept"/>가
+    /// 참) 닫힌다. 만들기 단추와 두 칸의 Enter가 같다.
+    /// </summary>
+    /// <param name="duplicateTail">이미 있는 이름일 때 상태줄 말의 꼬리 — 간선은 「콤보에서 고르세요」.</param>
+    private void ShowConditionFlyout(
+        Button anchor, string chapterId, string intro, string createText, string duplicateTail, Func<string, string, bool> accept)
+    {
         var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)", Tag = "new-condition-name" };
         var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "식 — 비우면 식 미정 (예: trust >= 3)", Tag = "new-condition-expression" };
         var create = new Button
         {
-            Content = visible ? "만들고 표시조건으로 걸기" : "만들고 해금조건으로 걸기",
+            Content = createText,
             FontSize = 10,
             Padding = new Thickness(7, 2),
             HorizontalAlignment = HorizontalAlignment.Left,
@@ -3418,12 +3488,7 @@ public partial class ChapterGraphView : UserControl
             MaxWidth = 340,
             Children =
             {
-                new TextBlock
-                {
-                    Text = visible ? "새 조건 — 맞을 때만 이 선택지가 보입니다." : "새 조건 — 맞을 때만 이 선택지를 고를 수 있습니다.",
-                    FontSize = 10,
-                    TextWrapping = TextWrapping.Wrap
-                },
+                new TextBlock { Text = intro, FontSize = 10, TextWrapping = TextWrapping.Wrap },
                 name,
                 expression,
                 create
@@ -3445,35 +3510,14 @@ public partial class ChapterGraphView : UserControl
 
             if (_session!.Editor.FindChapter(chapterId)?.Conditions.Any(item => string.Equals(item.Label, label, StringComparison.Ordinal)) == true)
             {
-                _session.SetStatus($"조건 '{label}'이 이미 있습니다 — 콤보에서 고르세요.");
+                _session.SetStatus($"조건 '{label}'이 이미 있습니다{duplicateTail}");
                 return;
             }
 
-            if (SelectedModel?.Edges.FirstOrDefault(candidate =>
-                    candidate.FromEpisodeId == key.From &&
-                    candidate.ToEpisodeId == key.To &&
-                    EdgeLabelKey(candidate) == key.Label) is not { } edge)
+            if (accept(label, typed))
             {
-                _session.SetStatus("간선을 다시 골라 주세요. 선택이 풀렸거나 그 간선이 사라졌습니다.");
-                return;
+                flyout.Hide();
             }
-
-            flyout.Hide();
-
-            // 조건 만들기와 걸기가 한 변경이다 — 되돌리기 한 번에 함께 돌아간다.
-            _session.Editor.Batch(() =>
-            {
-                _session.Editor.AddChapterCondition(chapterId, label, typed);
-                _session.Editor.UpdateEdge(
-                    chapterId, key.From, key.To,
-                    visibleConditionLabel: visible ? label : null,
-                    conditionLabel: visible ? null : label,
-                    matchOptionLabel: EdgeLabelKey(edge));
-            });
-
-            _panelFilledFor = default;   // 다시 그릴 때 콤보를 모델 값(방금 건 조건)으로 채운다
-            _session.SetStatus($"조건 '{label}'을 만들어 {(visible ? "표시조건" : "해금조건")}으로 걸었습니다" +
-                               (typed.Length == 0 ? " — 식 미정(항상 통과)입니다." : ".") + " 되돌리기(Ctrl+Z)로 돌아옵니다.");
         });
 
         create.Click += (_, _) => Create();
@@ -4007,8 +4051,8 @@ public partial class ChapterGraphView : UserControl
     };
 
     /// <summary>
-    /// [챕터] 탭의 <b>조건 표</b> — 조건마다 <b>식</b>을 정한다. 조건 이름(라벨)은 [대본] 탭이 더하고 고치고 지운다(writer-fields W4) —
-    /// 여기는 이름을 읽기만 한다. 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
+    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>식</b>을 정한다. 이름은 읽기만 한다 — 고치고 지우는 것은 [대본] 탭이다(writer-fields W4).
+    /// 더하기는 표 아래 [＋ 조건]으로 여기서도 한다(side-tabs V2 — 이름과 식을 함께). 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
     /// </summary>
     private void RefreshConditionList(ChapterGraphModel? snapshot)
     {
@@ -4033,11 +4077,16 @@ public partial class ChapterGraphView : UserControl
         {
             ConditionListPanel.Children.Add(new TextBlock
             {
-                Text = "조건이 없습니다 — 조건 이름은 [대본] 탭에서 하이어아키의 챕터 줄을 골라 더합니다.",
+                Text = "조건이 없습니다 — 아래 [＋ 조건]으로 만듭니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });
         }
+
+        // 더하기는 여기서도 한다 — 스탯 표의 [＋ 스탯]과 같은 결이다(2026-11-18 소유자 · side-tabs V2).
+        Button add = AddRowButton("＋ 조건", "조건 추가", ConditionAddFlyout, ConditionListPanel);
+        add.Tag = "condition-add";
+        ConditionListPanel.Children.Add(add);
     }
 
     /// <summary>

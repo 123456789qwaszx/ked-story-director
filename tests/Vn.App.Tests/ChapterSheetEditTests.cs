@@ -184,13 +184,14 @@ public sealed class ChapterSheetEditTests : IDisposable
     [Fact]
     public void 조건_줄은_이름을_읽기만_하고_식_칸이_남은_폭을_채운다() => HeadlessUi.Run(() =>
     {
-        // 조건 이름은 [대본] 탭이 더하고 고치고 지운다(writer-fields W4) — 여기는 식만 정한다. 지우기 · 더하기 단추가 없다.
+        // 조건 이름을 고치고 지우는 것은 [대본] 탭이다(writer-fields W4) — 줄에는 식 칸만 있고 지우기 단추가 없다.
+        // 더하기는 표 아래 [＋ 조건]으로 여기서도 한다(⛔ 2026-11-18 소유자 · side-tabs V2 — 그 전에는 여기에 더하기가 없었다).
         (ChapterGraphView view, _) = Show();
         Panel row = Row(view, "condition:신뢰높음");
         StackPanel table = view.FindControl<StackPanel>("ConditionListPanel")!;
 
         Assert.Empty(Buttons(row));
-        Assert.DoesNotContain(table.Children.OfType<Button>(), button => Equals(button.Content, "＋ 조건"));
+        Assert.Equal("＋ 조건", Assert.IsType<Button>(table.Children[^1]).Content);
         TextBox expression = Boxes(row).Single();
         Assert.Equal("⚠ 식 미정 — 항상 통과합니다", expression.PlaceholderText);
         AssertInside(expression, table, "식 칸");
@@ -199,6 +200,59 @@ public sealed class ChapterSheetEditTests : IDisposable
         // 잘린 라벨은 마우스를 올리면 다 보인다.
         SelectableTextBlock label = row.GetLogicalDescendants().OfType<SelectableTextBlock>().Single();
         Assert.Equal("신뢰높음", ToolTip.GetTip(label));
+    });
+
+    [Fact]
+    public void 표_아래_더하기는_이름과_식을_함께_만들고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 「구성탭에서도 조건을 추가할 수 있도록」(2026-11-18 소유자 · side-tabs V2) — 스탯 표의 [＋ 스탯]과 같은 결이다.
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        long before = session.Editor.Revision;
+
+        StackPanel panel = OpenConditionAdd(view);
+        PanelBox(panel, "new-condition-name").Text = "  하린과 친해졌을 때 ";
+        PanelBox(panel, "new-condition-expression").Text = "trust >= 3";
+        PanelClick(panel, "new-condition-create");
+
+        ChapterCondition made = session.Editor.FindChapter("ch01")!.Conditions.Single(item => item.Label == "하린과 친해졌을 때");
+        Assert.Equal("trust >= 3", made.Expression);
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.Contains("만들었습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // 표에 그 줄이 선다 — [＋ 조건]은 늘 맨 아래다.
+        Redraw(view);
+        Assert.Equal("trust >= 3", Boxes(Row(view, "condition:하린과 친해졌을 때")).Single().Text);
+        Assert.Equal("＋ 조건", Assert.IsType<Button>(view.FindControl<StackPanel>("ConditionListPanel")!.Children[^1]).Content);
+
+        // 되돌리기 한 번에 사라진다.
+        session.Editor.Undo();
+        Assert.DoesNotContain(session.Editor.FindChapter("ch01")!.Conditions, item => item.Label == "하린과 친해졌을 때");
+
+        // 식은 비워도 된다 — 식 미정(항상 통과).
+        panel = OpenConditionAdd(view);
+        PanelBox(panel, "new-condition-name").Text = "아직 모름";
+        PanelClick(panel, "new-condition-create");
+        Assert.Equal(string.Empty, session.Editor.FindChapter("ch01")!.Conditions.Single(item => item.Label == "아직 모름").Expression);
+        Assert.Contains("식 미정", session.StatusMessage, StringComparison.Ordinal);
+    });
+
+    [Fact]
+    public void 빈_이름과_이미_있는_이름은_조건_더하기가_받지_않는다() => HeadlessUi.Run(() =>
+    {
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        long before = session.Editor.Revision;
+        StackPanel panel = OpenConditionAdd(view);
+
+        PanelBox(panel, "new-condition-name").Text = "   ";
+        PanelClick(panel, "new-condition-create");
+        Assert.Contains("적어 주세요", session.StatusMessage, StringComparison.Ordinal);
+
+        PanelBox(panel, "new-condition-name").Text = "신뢰높음";
+        PanelClick(panel, "new-condition-create");
+        Assert.Contains("이미 있습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        Assert.Equal(before, session.Editor.Revision);
+        Assert.Equal(["신뢰높음"], session.Editor.FindChapter("ch01")!.Conditions.Select(item => item.Label));
     });
 
     [Fact]
@@ -280,6 +334,26 @@ public sealed class ChapterSheetEditTests : IDisposable
     {
         Point end = cell.TranslatePoint(new Point(cell.Bounds.Width, 0), table)!.Value;
         Assert.True(end.X <= table.Bounds.Width + 0.5, $"{name}이(가) 표 밖으로 밀렸다: {end.X} > {table.Bounds.Width}");
+    }
+
+    /// <summary>조건 표 아래 [＋ 조건]을 눌러 연 칸 — 플라이아웃은 뷰의 논리 트리 밖에 서서 뷰가 들고 있는 것으로 찾는다.</summary>
+    private static StackPanel OpenConditionAdd(ChapterGraphView view)
+    {
+        view.FindControl<StackPanel>("ConditionListPanel")!.Children.OfType<Button>()
+            .Single(button => Equals(button.Tag, "condition-add"))
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        return view.NewConditionPanel!;
+    }
+
+    private static TextBox PanelBox(StackPanel panel, string tag) =>
+        panel.Children.OfType<TextBox>().Single(box => (string?)box.Tag == tag);
+
+    private static void PanelClick(StackPanel panel, string tag)
+    {
+        panel.Children.OfType<Button>().Single(button => (string?)button.Tag == tag)
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
     }
 
     /// <summary>Enter로 확정한다 — 초점을 잃는 길과 같은 자리로 간다.</summary>

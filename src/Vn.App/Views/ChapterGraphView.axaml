@@ -520,11 +520,11 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConditionSection" Margin="10" Spacing="4">
-                            <!-- 조건의 식은 여기서 정한다. 이름(라벨)은 읽기만 한다. -->
+                            <!-- 조건의 식은 여기서 정한다. 이름(라벨)은 읽기만 한다 — 더하기는 표 아래 [＋ 조건](이름 + 식), 고치기 · 지우기는 [대본] 탭. -->
                             <TextBlock Text="조건 (이름 → 식)"
                                        FontWeight="SemiBold"
                                        FontSize="12" />
-                            <TextBlock Text="조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 조건 이름은 [대본] 탭에서 더하고 고치고 지웁니다(하이어아키의 챕터 줄). 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다."
+                            <TextBlock Text="조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 [＋ 조건]으로 이름과 식을 함께 만듭니다. 이름을 고치거나 지우는 것은 [대본] 탭에서 합니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다."
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap"
