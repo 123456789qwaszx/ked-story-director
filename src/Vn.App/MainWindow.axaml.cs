@@ -266,7 +266,7 @@ public partial class MainWindow : Window
     {
         void Apply()
         {
-            ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(e.Kind, _session.SelectedNode);
+            ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(e.Kind, _session.SelectedNode, e.FromHistory);
 
             if (plan.RebuildGraph)
             {
@@ -276,6 +276,16 @@ public partial class MainWindow : Window
             {
                 // 좌표만 바뀌었다. 카드를 다시 만들면 드래그가 끊긴다.
                 Graph.RefreshPositions();
+            }
+            else if (plan.RefreshAllCardWriting)
+            {
+                // 글을 되돌렸다 — 어느 카드의 글인지 모르므로 글 칸마다 모델의 글로 다시 채운다(쓰는 중인 칸은 UndoInWriting이 채운다).
+                Graph.RefreshAllWriting();
+
+                if (DialogueEditor.IsVisible && !DialogueEditor.IsKeyboardFocusWithin)
+                {
+                    DialogueEditor.Rebuild();
+                }
             }
             else if (plan.RefreshCardWriting && _session.SelectedNodeId is { } writtenNodeId)
             {

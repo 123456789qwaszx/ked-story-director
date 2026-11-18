@@ -32,6 +32,11 @@ public partial class DialogueNodeEditor : UserControl
     private AuthoringSession? _session;
     private string? _nodeId;
     private bool _building;
+
+    /// <summary>
+    /// 줄 표를 몇 번째로 다시 세웠나 — 줄의 글 칸은 자기가 지어진 번째를 쥐고, 다시 세워져 낡은 칸이 되었으면 넣지 않는다(아래 Commit).
+    /// </summary>
+    private int _generation;
     private string? _selectedLineId;
     private readonly Dictionary<string, Border> _lineCards = new(StringComparer.Ordinal);
 
@@ -192,6 +197,7 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         _building = true;
+        _generation++;
 
         try
         {
@@ -505,18 +511,29 @@ public partial class DialogueNodeEditor : UserControl
 
         AutoCompleteBox? speaker = null;
         string nodeId = _nodeId ?? string.Empty;
+        int generation = _generation;
 
         // 글자가 바뀔 때마다 대본에 넣되, 그것이 카드 목록을 다시 만들지는 않는다.
         // 편집기가 내용 변경과 구조 변경을 구분해서 알리기 때문에 가능하다.
+        //
+        // ⚠ 칸의 「글이 바뀌었다」는 한 박자 늦게 온다 — 줄 표를 세우며 채운 글도 세우기가 끝난 뒤에 「바뀜」으로 온다. 그래서 <b>낡은 칸</b>(그 뒤에
+        //   표를 다시 세웠다)과 <b>지어질 때의 글 그대로인 칸</b>은 넣지 않는다. ⛔ 2026-11-18까지는 넣었다 — 글이 짧은 사이에 두 번 바뀌면(되돌리고
+        //   곧 다시 실행) 앞선 칸이 옛 글을 도로 넣고, 표가 다시 서고, 그 칸이 또 옛 글을 넣어 두 값 사이를 끝없이 오갔다(board-speed PF1).
         void Commit()
         {
-            if (_building || nodeId.Length == 0)
+            if (_building || nodeId.Length == 0 || generation != _generation)
             {
                 return;
             }
 
             string nextSpeaker = speaker?.Text ?? resolved.Line.Speaker;
             string nextText = text.Text ?? string.Empty;
+
+            if (string.Equals(nextSpeaker, resolved.Line.Speaker, StringComparison.Ordinal) &&
+                string.Equals(nextText, resolved.Line.Text, StringComparison.Ordinal))
+            {
+                return;   // 지어질 때의 글 그대로다 — 세우며 채운 글의 늦은 「바뀜」
+            }
 
             _session!.Editor.SetScriptLineText(
                 nodeId, resolved.Line.LineId, nextSpeaker, nextText, script.Locale);

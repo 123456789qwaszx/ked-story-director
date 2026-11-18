@@ -60,6 +60,26 @@ public class ProjectRefreshPlannerTests
     }
 
     [Fact]
+    public void 되돌리기에서_온_글은_판을_다시_짓지_않고_글_칸들을_다시_채우며_그_밖은_구조로_받는다()
+    {
+        // 되돌리기 · 다시 실행은 객체가 모두 새것이다 — 화면이 객체를 붙들지 않는 종류만 가볍게(board-speed PF1).
+        ProjectRefreshPlan text = ProjectRefreshPlanner.Plan(ProjectChangeKind.DialogueContent, new DialogueNode(name: "장면"), fromHistory: true);
+        Assert.False(text.RebuildGraph);
+        Assert.True(text.RefreshAllCardWriting);
+
+        Assert.Equal(default, ProjectRefreshPlanner.Plan(ProjectChangeKind.ChapterLayout, null, fromHistory: true));
+        Assert.Equal(default, ProjectRefreshPlanner.Plan(ProjectChangeKind.Content, null, fromHistory: true));
+
+        // 자리 · 이름 · 조건은 구조로 — 접은 장면 상자처럼 지을 때의 객체로 일하는 화면이 있다.
+        foreach (ProjectChangeKind kind in new[] { ProjectChangeKind.Layout, ProjectChangeKind.NodeMetadata, ProjectChangeKind.ConditionDefinition })
+        {
+            Assert.Equal(
+                ProjectRefreshPlanner.Plan(ProjectChangeKind.Structure, null),
+                ProjectRefreshPlanner.Plan(kind, null, fromHistory: true));
+        }
+    }
+
+    [Fact]
     public void 구성_판의_자리_이동은_대본_판을_건드리지_않는다()
     {
         // [대본] 판은 대사 노드의 자리를 읽는다 — [구성]에서 에피소드를 옮겨도 다시 짓거나 다시 놓을 것이 없다(finishing FX3).

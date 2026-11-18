@@ -3339,6 +3339,18 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
+    /// 모든 카드의 글 칸을 모델의 글로 다시 채운다 — 글을 되돌리거나 다시 했을 때(판은 다시 안 그린다 · board-speed PF1). 칸마다
+    /// <see cref="RefreshWriting"/>의 규칙 그대로다 — 쓰는 중인 칸 · 넣지 않은 글이 있는 칸은 건드리지 않는다.
+    /// </summary>
+    internal void RefreshAllWriting()
+    {
+        foreach (string nodeId in _writingBoxes.Keys.ToList())
+        {
+            RefreshWriting(nodeId);
+        }
+    }
+
+    /// <summary>
     /// 그 노드의 글 칸을 모델의 글로 다시 채운다 — 곁기둥이 줄을 고쳤을 때(판은 다시 안 그린다). 사람이 그 칸에서
     /// 쓰는 중이거나(초점) 넣지 않은 글이 있으면 건드리지 않는다 — 쓰던 글이 사라지면 안 된다.
     /// </summary>

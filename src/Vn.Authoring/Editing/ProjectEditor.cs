@@ -22,8 +22,11 @@ public sealed partial class ProjectEditor
 {
     private const int MaxHistory = 100;
 
-    private readonly List<string> _undo = new();
-    private readonly List<string> _redo = new();
+    private readonly List<HistoryEntry> _undo = new();
+    private readonly List<HistoryEntry> _redo = new();
+
+    /// <summary>되돌리기 기록 한 칸 — 그 편집 앞의 스냅샷과 그 편집의 변경 종류(되돌리기 · 다시 실행이 그 종류로 알린다).</summary>
+    private readonly record struct HistoryEntry(string Snapshot, ProjectChangeKind Kind);
     private readonly Func<string> _newLineId;
 
     /// <param name="newLineId">
@@ -986,9 +989,10 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        _redo.Add(ProjectSnapshotCodec.Encode(Project));
-        Restore(_undo[^1]);
+        HistoryEntry entry = _undo[^1];
         _undo.RemoveAt(_undo.Count - 1);
+        _redo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true);
     }
 
     public void Redo()
@@ -998,9 +1002,10 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        _undo.Add(ProjectSnapshotCodec.Encode(Project));
-        Restore(_redo[^1]);
+        HistoryEntry entry = _redo[^1];
         _redo.RemoveAt(_redo.Count - 1);
+        _undo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true);
     }
 
     /// <summary>파일에서 새로 읽었을 때처럼, 기록을 버리고 통째로 갈아 끼운다.</summary>
@@ -1012,10 +1017,14 @@ public sealed partial class ProjectEditor
         Raise(ProjectChangeKind.Structure);
     }
 
-    private void Restore(string snapshot)
+    /// <summary>
+    /// 스냅샷으로 되돌린다 — 되돌리기 · 다시 실행은 <b>되돌린 그 편집의 종류</b>로 알린다(2026-11-18 · board-speed PF1). 글 한 줄을 되돌렸는데
+    /// 구조가 바뀌었다고 알리면 화면이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 4초). ⛔ 그 전에는 늘 구조로 알렸다.
+    /// </summary>
+    private void Restore(string snapshot, ProjectChangeKind kind, bool fromHistory)
     {
         Project = ProjectSnapshotCodec.Decode(snapshot);
-        Raise(ProjectChangeKind.Structure);
+        Raise(kind, fromHistory);
     }
 
     private void Mutate(Action change) => Mutate(ProjectChangeKind.Structure, change);
@@ -1026,16 +1035,16 @@ public sealed partial class ProjectEditor
         // 명령 수만큼 쪼개진다.
         if (_batchDepth == 0)
         {
-            PushUndo(ProjectSnapshotCodec.Encode(Project));
+            PushUndo(new HistoryEntry(ProjectSnapshotCodec.Encode(Project), kind));
         }
 
         change();
         Raise(kind);
     }
 
-    private void PushUndo(string snapshot)
+    private void PushUndo(HistoryEntry entry)
     {
-        _undo.Add(snapshot);
+        _undo.Add(entry);
 
         if (_undo.Count > MaxHistory)
         {
@@ -1094,12 +1103,12 @@ public sealed partial class ProjectEditor
             {
                 if (completed)
                 {
-                    PushUndo(before);
+                    PushUndo(new HistoryEntry(before, changed));
                     Raise(changed);
                 }
                 else
                 {
-                    Restore(before);
+                    Restore(before, ProjectChangeKind.Structure, fromHistory: false);
                 }
             }
         }
@@ -1118,7 +1127,7 @@ public sealed partial class ProjectEditor
     /// </summary>
     public long Revision { get; private set; }
 
-    private void Raise(ProjectChangeKind kind)
+    private void Raise(ProjectChangeKind kind, bool fromHistory = false)
     {
         // 묶음 안이면 알림은 묶음이 끝날 때 한 번이다. 종류가 섞이면 구조로 올린다 —
         // 덜 그려서 낡은 화면이 남는 것보다 한 번 더 그리는 편이 낫다.
@@ -1129,7 +1138,7 @@ public sealed partial class ProjectEditor
         }
 
         Revision++;
-        Changed?.Invoke(this, new ProjectChangedEventArgs(kind));
+        Changed?.Invoke(this, new ProjectChangedEventArgs(kind, fromHistory));
     }
 
     /// <summary>

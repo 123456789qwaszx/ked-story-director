@@ -19,7 +19,10 @@ namespace Vn.App.Tests;
 ///
 /// 못 박는 것: ① 카드 글 칸의 글을 넣어도 [대본] 판의 철도를 다시 긋지 않는다(⛔ [구성]이 다시 읽을 때마다 한 번 더 그었다) ② 가려진
 /// [구성] 판은 바뀔 때마다 그리지 않고 보일 때 한 번 그린다 ③ [대본] 무리를 끄는 동안 · 놓은 뒤 철도를 통째로 다시 긋지 않고(⛔ 움직일
-/// 때마다 통째로 그었다) 무리 안팎을 잇는 길만 다시 긋는다 — 그래도 놓은 뒤의 모습은 통째로 그은 것과 같다.
+/// 때마다 통째로 그었다) 무리 안팎을 잇는 길만 다시 긋는다 — 그래도 놓은 뒤의 모습은 통째로 그은 것과 같다 ④ 글을 되돌리고 다시 해도 판을
+/// 다시 짓지 않고, 고른 카드가 아니어도 그 카드의 글 칸이 돌아온다(board-speed PF1 — ⛔ 되돌리기가 늘 구조로 알려 판을 통째로 다시 지었다)
+/// ⑤ 인스펙터가 그 카드를 보이는 채 글이 짧은 사이에 두 번 바뀌어도 옛 글이 돌아오지 않는다(⛔ 줄 표의 낡은 칸이 옛 글을 도로 넣어 두 값 사이를
+/// 끝없이 오갔다 — 창이 멈췄다).
 /// </summary>
 public sealed class BoardWorkAmountTests : IDisposable
 {
@@ -164,6 +167,65 @@ public sealed class BoardWorkAmountTests : IDisposable
 
         window.Close();
     });
+
+    [Fact]
+    public void 글을_되돌리고_다시_해도_판을_다시_짓지_않고_그_카드의_글_칸이_따라온다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        string cardA = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;
+        session.Select(cardA);   // 사람이 쓰는 그대로 — 고른 카드의 글이 바뀌면 그 칸이 따라온다
+        Dispatcher.UIThread.RunJobs();
+        session.Editor.ApplyScenarioText(cardA, "첫 줄.");
+        session.Editor.ApplyScenarioText(cardA, "고친 첫 줄.");
+        Dispatcher.UIThread.RunJobs();
+
+        // 다른 카드를 고른 채 되돌린다 — 되돌린 글은 고른 카드의 것이 아니다.
+        session.Select(EpisodeNaming.CardFor(session.Project, "ch01", "b")!.Id);
+        Dispatcher.UIThread.RunJobs();
+        TextBox WritingOf(string cardId) => graph.FindControl<Canvas>("GraphCanvas")!.GetLogicalDescendants().OfType<TextBox>()
+            .Single(item => item.Tag as string == GraphEditorView.WritingTag + cardId);
+        TextBox box = WritingOf(cardA);
+        Assert.Contains("고친 첫 줄.", box.Text, StringComparison.Ordinal);
+
+        int rails = graph.RailDrawCount;
+        Click(window.FindControl<MenuItem>("UndoMenuItem")!);
+        Assert.Same(box, WritingOf(cardA));   // 판을 다시 짓지 않았다 — 같은 칸이다
+        Assert.DoesNotContain("고친", box.Text, StringComparison.Ordinal);
+        Assert.Contains("첫 줄.", box.Text, StringComparison.Ordinal);
+
+        Click(window.FindControl<MenuItem>("RedoMenuItem")!);
+        Assert.Contains("고친 첫 줄.", box.Text, StringComparison.Ordinal);
+        Assert.Equal(rails, graph.RailDrawCount);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 인스펙터가_보이는_카드의_글이_잇달아_바뀌어도_옛_글로_돌아가지_않는다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        string cardA = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;
+        session.Select(cardA);   // 인스펙터의 줄 표가 이 카드를 보인다
+        Dispatcher.UIThread.RunJobs();
+        long before = session.Editor.Revision;
+
+        // 사이에 화면이 일할 틈 없이 두 번 — 되돌리고 곧 다시 실행할 때와 같다.
+        session.Editor.ApplyScenarioText(cardA, "첫 줄.");
+        session.Editor.ApplyScenarioText(cardA, "고친 첫 줄.");
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(before + 2, session.Editor.Revision);   // 줄 표가 아무것도 도로 넣지 않았다
+        Assert.Equal("고친 첫 줄.", Vn.Authoring.Rendering.WorkingDialoguePreview.ScenarioWriting(session.Project, cardA).Text);
+
+        window.Close();
+    });
+
+    private static void Click(MenuItem item)
+    {
+        item.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+    }
 
     /// <summary>철도 그림마다 판 위의 실제 모양 — 종류와 자리(옮김 포함) · 기하의 수들. 차례 없이 견주게 반올림한 글로 정렬한다.</summary>
     private static List<(string Kind, double[] At)> Shapes(GraphEditorView graph, Canvas canvas) =>

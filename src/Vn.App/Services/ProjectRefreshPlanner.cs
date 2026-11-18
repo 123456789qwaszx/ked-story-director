@@ -12,8 +12,28 @@ namespace Vn.App.Services;
 /// </summary>
 internal static class ProjectRefreshPlanner
 {
-    public static ProjectRefreshPlan Plan(ProjectChangeKind kind, StoryNode? selectedNode)
+    /// <param name="fromHistory">
+    /// 되돌리기 · 다시 실행에서 왔다(<see cref="ProjectChangedEventArgs.FromHistory"/>) — 프로젝트의 객체가 모두 새것이다. 그래서 가볍게 받는 것은
+    /// 화면이 객체를 붙들지 않는 종류뿐이다(2026-11-18 · board-speed PF1): 글(카드의 글 칸들을 다시 채운다 — 되돌린 글이 고른 카드의 것이라는
+    /// 보장이 없다) · [구성] 자리 · 화자. 그 밖은 구조로 받는다 — 예컨대 접은 장면 상자는 지을 때의 판 객체로 끌기를 잰다. ⛔ 그 전에는
+    /// 되돌리기가 늘 구조로 알려 글 한 줄을 되돌려도 판을 통째로 다시 지었다.
+    /// </param>
+    public static ProjectRefreshPlan Plan(ProjectChangeKind kind, StoryNode? selectedNode, bool fromHistory = false)
     {
+        if (fromHistory)
+        {
+            return kind switch
+            {
+                ProjectChangeKind.DialogueContent => new ProjectRefreshPlan(
+                    RebuildGraph: false,
+                    RefreshGraphPositions: false,
+                    RebuildInspector: false,
+                    RefreshAllCardWriting: true),
+                ProjectChangeKind.ChapterLayout or ProjectChangeKind.Content => default,
+                _ => Plan(ProjectChangeKind.Structure, selectedNode)
+            };
+        }
+
         return kind switch
         {
             ProjectChangeKind.Layout => new ProjectRefreshPlan(
@@ -61,4 +81,5 @@ internal readonly record struct ProjectRefreshPlan(
     bool RebuildGraph,
     bool RefreshGraphPositions,
     bool RebuildInspector,
-    bool RefreshCardWriting = false);
+    bool RefreshCardWriting = false,
+    bool RefreshAllCardWriting = false);

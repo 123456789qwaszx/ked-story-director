@@ -43,10 +43,20 @@ public enum ProjectChangeKind
 
 public sealed class ProjectChangedEventArgs : EventArgs
 {
-    public ProjectChangedEventArgs(ProjectChangeKind kind)
+    public ProjectChangedEventArgs(ProjectChangeKind kind, bool fromHistory = false)
     {
         Kind = kind;
+        FromHistory = fromHistory;
     }
 
+    /// <summary>
+    /// 바뀐 것의 종류. 되돌리기 · 다시 실행이면 <b>되돌린 그 편집의 종류</b>다(2026-11-18 · board-speed PF1 — ⛔ 그 전에는 늘 <see cref="ProjectChangeKind.Structure"/>였다).
+    /// </summary>
     public ProjectChangeKind Kind { get; }
+
+    /// <summary>
+    /// 되돌리기 · 다시 실행에서 왔다 — 프로젝트를 스냅샷에서 <b>통째로 새로</b> 지었다(객체가 모두 새것이다). 지은 객체를 붙들어 두는 화면은 종류가
+    /// 가벼워도 다시 지어야 한다 — 어느 종류를 가볍게 받아도 되는지는 화면이 정한다.
+    /// </summary>
+    public bool FromHistory { get; }
 }
