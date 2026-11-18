@@ -59,19 +59,21 @@ public sealed class SceneAreaPickTests : IDisposable
         session.Select(CardId(session, "root"));
         Dispatcher.UIThread.RunJobs();
 
-        // 장면 밖 · 챕터 테두리 안(챕터 이름표 왼쪽의 여백) — 그 챕터의 스탯 · 조건이 선다.
+        // 장면 밖 · 챕터 테두리 안(챕터 이름표 왼쪽의 여백) — 그 챕터가 인스펙터에 선다(이름 칸). 「조건 및 스탯」 탭이 그 챕터를 따라간다.
         Border chapterLabel = Canvas(graph).Children.OfType<Border>()
             .Single(border => border.Child is TextBlock { Text: "챕터 ch01 ⌄" });
         Click(graph, new Point(Avalonia.Controls.Canvas.GetLeft(chapterLabel) - 6, Avalonia.Controls.Canvas.GetTop(chapterLabel) + 2));
 
         Assert.Null(session.SelectedNodeId);
         Assert.Equal("ch01", Title(graph));
-        Assert.Contains(Side(graph), control => (string?)control.Tag == "condition-add-name");
+        Assert.Equal(SideTab.Inspector, graph.ShownSideTab);
+        Assert.Equal("ch01", graph.FindControl<ComboBox>("ConditionChapterCombo")!.SelectedItem);
         Assert.Equal(StoryHierarchy.ChapterKey("ch01"), graph.HierarchyView.Selection?.Key);
 
-        // 챕터 밖의 빈 판 — 화자 목록이 선다.
+        // 챕터 밖의 빈 판 — 프로젝트를 고른다: 「화자」 탭이 열린다(side-tabs V3).
         Click(graph, new Point(3000, 3000));
-        Assert.Equal("화자", Title(graph));
+        Assert.Equal("프로젝트", Title(graph));
+        Assert.Equal(SideTab.Speakers, graph.ShownSideTab);
         Assert.Contains(Side(graph), control => (string?)control.Tag == "speaker-add-name");
         Assert.Equal(StoryHierarchy.ProjectKey, graph.HierarchyView.Selection?.Key);
 
@@ -325,7 +327,7 @@ public sealed class SceneAreaPickTests : IDisposable
     private static string? Title(GraphEditorView graph) => graph.InspectorHeaderText;
 
     private static IEnumerable<Control> Side(GraphEditorView graph) =>
-        graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Control>().Distinct()
+        graph.ShownSideHost.GetLogicalDescendants().OfType<Control>().Distinct()
             .Where(control => control.IsEffectivelyVisible);
 
     private static void Click(GraphEditorView graph, Point onCanvas)

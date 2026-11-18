@@ -32,6 +32,72 @@ public partial class MainWindow
     /// <summary>연출 그래프 인스펙터의 요약 칸 — 대사 편집기와 빈 안내 사이에 겹쳐 선다(하나만 보인다).</summary>
     private readonly StackPanel DirectorSummary = new() { Margin = new Thickness(12), Spacing = 6, IsVisible = false };
 
+    /// <summary>[대본] 「화자」 탭의 칸 — 화자 이름 목록(side-tabs V3). 늘 서 있다.</summary>
+    private readonly StackPanel DirectorSpeakers = new() { Margin = new Thickness(12), Spacing = 6 };
+
+    /// <summary>[대본] 「조건 및 스탯」 탭의 칸 — 지금 챕터(활성 판)의 스탯 표 · 조건 이름(side-tabs V3). 늘 서 있다.</summary>
+    private readonly StackPanel DirectorConditions = new() { Margin = new Thickness(12), Spacing = 6 };
+
+    /// <summary>
+    /// 요약 조각(제목 · 안내 · 표 · 목록)이 들어갈 칸 — 보통은 인스펙터의 <see cref="DirectorSummary"/>이고, 화자 · 조건 탭을 짓는 동안만
+    /// 그 탭의 칸이다(<see cref="FillSheet"/>). 같은 조각을 세 자리가 함께 쓴다.
+    /// </summary>
+    private StackPanel _sheet;
+
+    /// <summary>칸 하나를 비우고 다시 짓는다 — 짓는 동안 요약 조각이 그 칸에 선다.</summary>
+    private void FillSheet(StackPanel panel, Action fill)
+    {
+        StackPanel was = _sheet;
+        _sheet = panel;
+        panel.Children.Clear();
+
+        try
+        {
+            fill();
+        }
+        finally
+        {
+            _sheet = was;
+        }
+    }
+
+    /// <summary>「화자」 탭을 다시 짓는다 — 화자 이름을 더하고 고치고 지운다. 캐릭터 키는 [구성] 탭이다.</summary>
+    private void FillSpeakerTab() => FillSheet(DirectorSpeakers, () =>
+    {
+        SpeakerList();
+        OpenInChapterGraph(HierarchyPick.Project, "[구성] 탭에서 캐릭터 키 잇기");
+    });
+
+    /// <summary>「조건 및 스탯」 탭이 보이는 챕터 — 활성 판의 챕터다(툴바 콤보 · 탭의 작은 드롭다운과 같은 값).</summary>
+    private ChapterEntry? ConditionTabChapter =>
+        _session.ActiveFile?.Name is { } name
+            ? _chapters.FirstOrDefault(entry => string.Equals(entry.ChapterId, name, StringComparison.Ordinal))
+            : null;
+
+    /// <summary>「조건 및 스탯」 탭을 다시 짓는다 — 지금 챕터의 스탯 표(대사에 붙여 쓰기)와 조건 이름. 식 · 스탯은 [구성] 탭에서 정한다.</summary>
+    private void FillConditionTab() => FillSheet(DirectorConditions, () =>
+    {
+        if (ConditionTabChapter is not { } chapter)
+        {
+            Note("챕터를 고르면 그 챕터의 조건 · 스탯이 여기 섭니다.");
+            return;
+        }
+
+        Note("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
+        StatTable(chapter.Model.Stats);
+
+        // 조건 이름은 여기서 더하고 고치고 지운다(writer-fields W4). 식은 [구성] 탭이다.
+        ConditionList(chapter.ChapterId);
+        OpenInChapterGraph(new HierarchyPick(HierarchyKind.Chapter, chapter.ChapterId), "[구성] 탭에서 조건 · 스탯 열기");
+    });
+
+    /// <summary>화자 · 조건 탭을 다시 짓는다 — 구조가 바뀌었거나 지금 챕터가 바뀌었다.</summary>
+    private void FillSideTabs()
+    {
+        FillSpeakerTab();
+        FillConditionTab();
+    }
+
     /// <summary>한 탭의 선택을 다른 쪽에 옮기는 중 — 되돌아오는 알림이 다시 옮기지 않게.</summary>
     private bool _syncingSelection;
 
@@ -240,6 +306,9 @@ public partial class MainWindow
         _directorLine = null;
         Graph.ReleaseLine();
 
+        // 고른 것을 보이는 탭으로 간다 — 프로젝트는 화자, 그 밖은 인스펙터(챕터 · 장면은 이름 칸이 인스펙터 머리다 — side-tabs V3).
+        Graph.ShowSideTab(pick.Kind == HierarchyKind.Project ? SideTab.Speakers : SideTab.Inspector);
+
         if (pick.ChapterId is { } chapterId)
         {
             _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
@@ -435,9 +504,9 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 프로젝트 · 챕터 · 장면 줄의 요약 — 고치는 자리는 챕터 그래프다(「챕터 그래프에서 열기」). 머리에는 이름만 둔다 — 챕터 · 장면은 그 이름을
-    /// 고치는 이름 칸이다(⛔ 2026-11-18 소유자 — 「챕터 · 」 · 「장면 · 」 머리말과 화자 수 · 에피소드 · 장면 수의 부제를 걷었다: 쓸모없는 정보. 같은 날
-    /// 이름 글을 이름 칸으로 — 에피소드와 마찬가지로 여기서 고친다).
+    /// 프로젝트 · 챕터 · 장면 줄의 인스펙터 요약. 머리에는 이름만 둔다 — 챕터 · 장면은 그 이름을 고치는 이름 칸이다(⛔ 2026-11-18 소유자 —
+    /// 「챕터 · 」 · 「장면 · 」 머리말과 화자 수 · 에피소드 · 장면 수의 부제를 걷었다: 쓸모없는 정보. 같은 날 이름 글을 이름 칸으로 — 에피소드와
+    /// 마찬가지로 여기서 고친다). 화자 · 스탯 · 조건은 제 탭에 늘 서 있다(side-tabs V3) — 프로젝트는 그 안내, 챕터는 이름 칸 · 떠도는 메모.
     /// </summary>
     private void FillDirectorSummary(HierarchyPick pick)
     {
@@ -449,11 +518,9 @@ public partial class MainWindow
         {
             case HierarchyKind.Project:
             {
-                Graph.SetInspectorHeader("화자", string.Empty);
-
-                // 화자 이름은 여기서 더하고 고치고 지운다(writer-fields W3 — 2026-08-23 결정을 소유자가 바꿨다). 캐릭터 키는 [구성] 탭이다.
-                SpeakerList();
-                OpenInChapterGraph(pick, "[구성] 탭에서 캐릭터 키 잇기");
+                // 화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭에 늘 서 있다(side-tabs V3) — 여기는 그 안내뿐이다.
+                Graph.SetInspectorHeader("프로젝트", string.Empty);
+                Note("화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.");
                 break;
             }
 
@@ -467,15 +534,11 @@ public partial class MainWindow
                     "챕터 이름 (비우면 챕터 ID)",
                     $"게임에 보이는 챕터 이름입니다. 고치고 Enter. 비우면 챕터 ID({chapterId})가 보입니다. ID는 [구성] 탭에서 정합니다.",
                     name => RenameChapter(chapterId, name));
-                Note("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
-                StatTable(chapter.Model.Stats);
-
-                // 조건 이름은 여기서 더하고 고치고 지운다(writer-fields W4). 식은 [구성] 탭이다.
-                ConditionList(chapter.ChapterId);
+                // 스탯 표 · 조건 이름은 「조건 및 스탯」 탭에 산다(side-tabs V3).
+                Note("이 챕터의 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.");
                 OrphanSceneNotes(chapter.ChapterId);
 
                 // 장면 · 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자).
-                OpenInChapterGraph(pick, "[구성] 탭에서 조건 · 스탯 열기");
                 break;
             }
 
@@ -507,7 +570,7 @@ public partial class MainWindow
     }
 
     /// <summary>요약 칸의 작은 제목 — 챕터 요약의 「스탯」 · 「장면」.</summary>
-    private void Heading(string text) => DirectorSummary.Children.Add(new TextBlock
+    private void Heading(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,
         FontSize = 12,
@@ -587,7 +650,7 @@ public partial class MainWindow
             row++;
         }
 
-        DirectorSummary.Children.Add(table);
+        _sheet.Children.Add(table);
     }
 
     private async Task CopySnippetAsync(string snippet, string name)
@@ -609,7 +672,7 @@ public partial class MainWindow
         Graph.HierarchyView.Show(pick);
     }
 
-    private void Note(string text) => DirectorSummary.Children.Add(new TextBlock
+    private void Note(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,
         FontSize = 11,
@@ -629,7 +692,7 @@ public partial class MainWindow
             Tag = tag
         };
         button.Click += (_, _) => UiGuard.Run(_session, "요약", onClick);
-        DirectorSummary.Children.Add(button);
+        _sheet.Children.Add(button);
     }
 
     /// <summary>「챕터 그래프에서 열기」 — 챕터 그래프 탭으로 넘어가 그 인스펙터에 같은 줄을 세운다.</summary>

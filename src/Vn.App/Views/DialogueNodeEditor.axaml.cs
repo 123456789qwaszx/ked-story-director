@@ -605,7 +605,7 @@ public partial class DialogueNodeEditor : UserControl
         if (candidates.Count == 0)
         {
             _session!.SetStatus(
-                "등록된 화자가 없습니다 — [구성] 탭에서 하이어아키 맨 위의 프로젝트 줄을 눌러 화자를 더하면 여기 목록에 옵니다. " +
+                "등록된 화자가 없습니다 — 오른쪽 「화자」 탭에서 화자를 더하면 여기 목록에 옵니다. " +
                 "그때까지는 화자 칸에 직접 입력하세요.");
             return;
         }
@@ -644,7 +644,7 @@ public partial class DialogueNodeEditor : UserControl
     }
 
     /// <summary>
-    /// 화자 후보 — <b>프로젝트의 화자 목록</b>(<c>StoryProject.Speakers</c>) 하나가 원천이다. [대본] 탭의 프로젝트 줄에서 더하고,
+    /// 화자 후보 — <b>프로젝트의 화자 목록</b>(<c>StoryProject.Speakers</c>) 하나가 원천이다. [대본] 탭 오른쪽의 「화자」 탭에서 더하고,
     /// 모든 챕터가 같은 목록을 본다.
     ///
     /// 여기 없는 이름도 화자 칸에 직접 적으면 그만이다 — 이 목록은 편의일 뿐이다.

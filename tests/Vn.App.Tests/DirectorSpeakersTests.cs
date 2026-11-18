@@ -169,7 +169,9 @@ public sealed class DirectorSpeakersTests : IDisposable
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         graph.HierarchyView.RowButton(StoryHierarchy.ProjectKey)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("화자", graph.InspectorHeaderText);
+        // 프로젝트 줄은 「화자」 탭을 연다(side-tabs V3) — 인스펙터는 옆 탭 안내다.
+        Assert.Equal(SideTab.Speakers, graph.ShownSideTab);
+        Assert.Equal("프로젝트", graph.InspectorHeaderText);
         return graph;
     }
 
@@ -189,7 +191,7 @@ public sealed class DirectorSpeakersTests : IDisposable
     }
 
     private static IEnumerable<Control> Side(GraphEditorView graph) =>
-        graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Control>().Distinct()
+        graph.ShownSideHost.GetLogicalDescendants().OfType<Control>().Distinct()
             .Where(control => control.IsEffectivelyVisible);
 
     private static Control? Find(GraphEditorView graph, string tag) =>

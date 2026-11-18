@@ -143,7 +143,7 @@ public sealed class DirectorNamesTests : IDisposable
         // 프로젝트 줄 · 에피소드는 이름 칸이 아니다(에피소드는 대사 편집기의 이름 칸이 고친다).
         Pick(StoryHierarchy.ProjectKey);
         Assert.False(box.IsVisible);
-        Assert.Equal("화자", graph.InspectorHeaderText);
+        Assert.Equal("프로젝트", graph.InspectorHeaderText);
 
         window.Close();
     });

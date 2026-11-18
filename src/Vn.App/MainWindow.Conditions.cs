@@ -12,7 +12,8 @@ using Vn.Authoring.Editing;
 namespace Vn.App;
 
 /// <summary>
-/// [대본] 탭의 <b>조건 이름</b> — 하이어아키의 챕터 줄을 고르면 인스펙터의 스탯 표 아래에 선다(<c>docs/work-orders/writer-fields-orders.md</c> W4).
+/// [대본] 탭의 <b>조건 이름</b> — 오른쪽 기둥 「조건 및 스탯」 탭의 스탯 표 아래에 늘 선다(<c>docs/work-orders/writer-fields-orders.md</c> W4 ·
+/// side-tabs V3 — ⛔ 그 전에는 하이어아키의 챕터 줄을 골라야 인스펙터에 섰다). 지금 챕터(활성 판)의 것이다.
 ///
 /// 작가가 조건을 뜻으로 부르는 이름(「하린과 친해졌을 때」)을 더하고 고치고 지운다. 식(<c>trust &gt;= 3</c>)은 [구성] 탭이 정한다 — 식이 빈
 /// 조건은 「식 미정」으로 항상 통과하고 경고만 한다. 이름을 고치면 그 이름을 가리키던 간선(표시조건 · 해금조건)이 따라간다
@@ -22,7 +23,7 @@ namespace Vn.App;
 /// </summary>
 public partial class MainWindow
 {
-    /// <summary>챕터 요약 칸의 조건 목록 — 이름 칸 · 식(읽기만) · ✕ 줄들과 맨 아래 더하기 줄.</summary>
+    /// <summary>「조건 및 스탯」 탭의 조건 목록 — 이름 칸 · 식(읽기만) · ✕ 줄들과 맨 아래 더하기 줄.</summary>
     private void ConditionList(string chapterId)
     {
         if (_session.Editor.FindChapter(chapterId) is not { } chapter)
@@ -46,7 +47,7 @@ public partial class MainWindow
             Note("이 챕터에는 아직 조건이 없습니다.");
         }
 
-        DirectorSummary.Children.Add(rows);
+        _sheet.Children.Add(rows);
 
         var addBox = new TextBox { FontSize = 12, PlaceholderText = "새 조건 이름", Tag = "condition-add-name" };
         var addButton = new Button
@@ -76,7 +77,7 @@ public partial class MainWindow
 
             _session.Editor.AddChapterCondition(chapterId, typed, string.Empty);   // 요약이 다시 선다(되돌리기 한 칸)
             _session.SetStatus($"조건 '{typed}'을 더했습니다 — 식 미정(항상 통과)입니다. 식은 [구성] 탭에서 채웁니다.");
-            FocusSummaryBox("condition-add-name");
+            FocusConditionBox("condition-add-name");
         });
 
         addButton.Click += (_, _) => Add();
@@ -93,7 +94,7 @@ public partial class MainWindow
         Grid.SetColumn(addButton, 1);
         addRow.Children.Add(addBox);
         addRow.Children.Add(addButton);
-        DirectorSummary.Children.Add(addRow);
+        _sheet.Children.Add(addRow);
     }
 
     /// <summary>조건 한 줄 — `[이름][✕]`과 그 아래 식(읽기만, 비면 「식 미정」). 이름을 비우는 것은 지우기가 아니다.</summary>
@@ -179,7 +180,7 @@ public partial class MainWindow
         return row;
     }
 
-    /// <summary>다시 선 요약에서 그 칸에 초점을 준다 — 넣기가 끝난 뒤에(요약은 넣기 안에서 다시 선다).</summary>
-    private void FocusSummaryBox(string tag) => Dispatcher.UIThread.Post(() =>
-        DirectorSummary.GetLogicalDescendants().OfType<TextBox>().FirstOrDefault(box => Equals(box.Tag, tag))?.Focus());
+    /// <summary>다시 선 「조건 및 스탯」 탭에서 그 칸에 초점을 준다 — 넣기가 끝난 뒤에(탭은 넣기 안에서 다시 선다).</summary>
+    private void FocusConditionBox(string tag) => Dispatcher.UIThread.Post(() =>
+        DirectorConditions.GetLogicalDescendants().OfType<TextBox>().FirstOrDefault(box => Equals(box.Tag, tag))?.Focus());
 }

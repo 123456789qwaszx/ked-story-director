@@ -177,17 +177,38 @@ public partial class GraphEditorView : UserControl
                         ?.Model.ShownName ?? id
                 });
                 ChapterCombo.ItemsSource = ids;
+
+                // 「조건 및 스탯」 탭 머리의 작은 드롭다운도 같은 목록이다(side-tabs V3).
+                ConditionChapterCombo.ItemTemplate = ChapterCombo.ItemTemplate;
+                ConditionChapterCombo.ItemsSource = ids;
             }
 
             // 판 이름 = ChapterId (챕터=판 1:1) — 활성 판이 곧 고른 챕터다.
             ChapterCombo.SelectedItem = _session?.ActiveFile?.Name is { } name && ids.Contains(name)
                 ? name
                 : null;
+            ConditionChapterCombo.SelectedItem = ChapterCombo.SelectedItem;
         }
         finally
         {
             _syncingChapter = false;
         }
+    }
+
+    /// <summary>콤보에서 챕터를 골랐다 — 그 챕터의 판을 활성으로 하고 그리로 간다. 선택을 비추는 동안(<see cref="_syncingChapter"/>)은 하지 않는다.</summary>
+    private void PickChapterFromCombo(ComboBox combo)
+    {
+        if (_syncingChapter || _session is null || combo.SelectedItem is not string chapterId)
+        {
+            return;
+        }
+
+        UiGuard.Run(_session, "챕터 고르기", () =>
+        {
+            string board = _session.EnsureChapterBoard(chapterId);
+            _session.SelectFile(board);
+            GoToBoard(board);   // 사람이 고른 챕터다 — 그리로 간다
+        });
     }
 
     private AuthoringSession? _session;
@@ -295,6 +316,34 @@ public partial class GraphEditorView : UserControl
     /// 세션·선택 전환과 얽혀 있어 이 뷰로 옮기면 그 배선이 두 벌이 된다.
     /// </summary>
     internal void SetSidePanel(Control content) => SideHost.Content = content;
+
+    /// <summary>「화자」 탭의 내용 — 셸이 짓는다(화자 이름 목록).</summary>
+    internal void SetSpeakerPanel(Control content) => SpeakerHost.Content = content;
+
+    /// <summary>「조건 및 스탯」 탭의 내용 — 셸이 짓는다(지금 챕터의 스탯 표 · 조건 이름).</summary>
+    internal void SetConditionPanel(Control content) => ConditionHost.Content = content;
+
+    /// <summary>오른쪽 기둥이 지금 보이는 탭 — 화면 시험의 손잡이.</summary>
+    internal SideTab ShownSideTab =>
+        ReferenceEquals(SideTabs.SelectedItem, SpeakerTabItem) ? SideTab.Speakers
+        : ReferenceEquals(SideTabs.SelectedItem, ConditionTabItem) ? SideTab.Conditions
+        : SideTab.Inspector;
+
+    /// <summary>지금 보이는 탭의 내용 자리(<c>SideHost</c> · <c>SpeakerHost</c> · <c>ConditionHost</c>) — 화면 시험이 이 안을 본다.</summary>
+    internal ContentControl ShownSideHost => ShownSideTab switch
+    {
+        SideTab.Speakers => SpeakerHost,
+        SideTab.Conditions => ConditionHost,
+        _ => SideHost
+    };
+
+    /// <summary>오른쪽 기둥의 탭을 연다 — 셸의 고르기가 부르고, 화면 시험이 탭을 누른 것 대신 부른다.</summary>
+    internal void ShowSideTab(SideTab tab) => SideTabs.SelectedItem = tab switch
+    {
+        SideTab.Speakers => SpeakerTabItem,
+        SideTab.Conditions => ConditionTabItem,
+        _ => InspectorTabItem
+    };
 
     /// <summary>판 왼쪽 하이어아키 (2026-10-30 HY3) — 셸이 내용을 채우고 고른 줄을 받는다(챕터 그래프의 것과 같은 컨트롤).</summary>
     internal StoryHierarchy HierarchyView => Hierarchy;
@@ -445,21 +494,10 @@ public partial class GraphEditorView : UserControl
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 에피소드]가 거기에 선다.
         // ⚠ 다시 그리기가 콤보를 맞출 때는 안 돈다(_syncingChapter) — 안 그러면
         //    선택을 비추는 일이 선택을 바꾸는 일이 되어 서로를 부른다.
-        ChapterCombo.SelectionChanged += (_, _) =>
-        {
-            if (_syncingChapter || _session is null ||
-                ChapterCombo.SelectedItem is not string chapterId)
-            {
-                return;
-            }
+        ChapterCombo.SelectionChanged += (_, _) => PickChapterFromCombo(ChapterCombo);
 
-            UiGuard.Run(_session, "챕터 고르기", () =>
-            {
-                string board = _session.EnsureChapterBoard(chapterId);
-                _session.SelectFile(board);
-                GoToBoard(board);   // 사람이 고른 챕터다 — 그리로 간다
-            });
-        };
+        // 「조건 및 스탯」 탭의 작은 드롭다운 — 툴바 콤보와 같은 길이다. 탭은 그대로 둔다(보던 탭에서 챕터만 바뀐다).
+        ConditionChapterCombo.SelectionChanged += (_, _) => PickChapterFromCombo(ConditionChapterCombo);
 
         GraphCanvas.PointerMoved += OnCanvasPointerMoved;
         GraphCanvas.PointerReleased += OnCanvasPointerReleased;

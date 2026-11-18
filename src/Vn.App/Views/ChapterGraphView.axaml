@@ -385,7 +385,7 @@
 
                         <!-- 스탯이 변하는 유일한 자리 — 이 간선을 타는 순간 1회 커밋.
                              문법을 외우는 칸이 아니라 고르는 줄이다. 스탯은
-                             챕터에 선언한 것(챕터 줄의 스탯 표)만 드롭다운에 온다. -->
+                             챕터에 선언한 것(「조건 및 스탯」 탭의 스탯 표)만 드롭다운에 온다. -->
                         <TextBlock Text="스탯변화 — 이 길을 고르면" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
                         <StackPanel x:Name="EdgeStatsHost" Spacing="3" />
 

@@ -168,28 +168,88 @@
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
-            <!-- 우측 기둥 = 인스펙터.
-                 내용(대사 편집기 · 요약)은 셸이 짓는다. -->
+            <!-- 우측 기둥 = 탭 셋 — 인스펙터 · 화자 · 조건 및 스탯([구성] 탭과 같은 차례 · 같은 이름 — 2026-11-18 소유자 · side-tabs V3).
+                 ⛔ 그 전에는 인스펙터 하나였고 화자 · 조건 · 스탯은 하이어아키의 프로젝트 · 챕터 줄을 골라야만 섰다.
+                 내용(대사 편집기 · 요약 · 화자 목록 · 조건과 스탯)은 셸이 짓는다 — 이 뷰는 자리만 내준다.
+                 고르면 그것을 보이는 탭으로 간다: 프로젝트 → 화자, 그 밖 → 인스펙터(챕터는 이름 칸이 인스펙터 머리다 — M3).
+                 콤보로 챕터를 바꾸는 것은 탭을 바꾸지 않는다. -->
             <Border Grid.Column="4"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                     BorderThickness="1,0,0,0">
-                <Grid RowDefinitions="Auto,*">
-                    <Border Grid.Row="0"
-                            Padding="10,6"
-                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
-                            BorderThickness="0,0,0,1">
-                        <StackPanel Spacing="1">
-                            <!-- 챕터 · 장면 요약의 머리는 이름 칸이다(2026-11-18 소유자 — 에피소드의 이름 칸처럼 여기서 고친다). 그 밖에는 이름 글. -->
-                            <TextBox x:Name="InspectorNameBox" FontWeight="SemiBold" IsVisible="False" />
-                            <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
-                            <TextBlock x:Name="InspectorSubtitle"
-                                       FontSize="11"
-                                       Opacity="0.65"
-                                       TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
-                    </Border>
-                    <ContentControl Grid.Row="1" x:Name="SideHost" />
-                </Grid>
+                <TabControl x:Name="SideTabs" Padding="0">
+                    <TabControl.Styles>
+                        <!-- 탭 글은 작게 — 테마 기본(큰 글 · 48 높이)은 [구성] · [대본] 탭과 같은 무게라 기둥 안에서는 너무 크다. -->
+                        <Style Selector="TabItem">
+                            <Setter Property="FontSize" Value="12" />
+                            <Setter Property="MinHeight" Value="30" />
+                            <Setter Property="Padding" Value="10,2" />
+                        </Style>
+                    </TabControl.Styles>
+
+                    <TabItem x:Name="InspectorTabItem" Header="인스펙터">
+                        <Grid RowDefinitions="Auto,*">
+                            <Border Grid.Row="0"
+                                    Padding="10,6"
+                                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                    BorderThickness="0,0,0,1">
+                                <StackPanel Spacing="1">
+                                    <!-- 챕터 · 장면 요약의 머리는 이름 칸이다(2026-11-18 소유자 — 에피소드의 이름 칸처럼 여기서 고친다). 그 밖에는 이름 글. -->
+                                    <TextBox x:Name="InspectorNameBox" FontWeight="SemiBold" IsVisible="False" />
+                                    <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="InspectorSubtitle"
+                                               FontSize="11"
+                                               Opacity="0.65"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Border>
+                            <ContentControl Grid.Row="1" x:Name="SideHost" />
+                        </Grid>
+                    </TabItem>
+
+                    <!-- 화자 — 프로젝트 전체의 캐스트. 이름을 더하고 고치고 지운다(writer-fields W3). 캐릭터 키는 [구성] 탭이다. -->
+                    <TabItem x:Name="SpeakerTabItem" Header="화자">
+                        <Grid RowDefinitions="Auto,*">
+                            <Border Grid.Row="0"
+                                    Padding="10,6"
+                                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                    BorderThickness="0,0,0,1">
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="프로젝트 단위 화자" FontWeight="SemiBold" />
+                                    <TextBlock Text="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Border>
+                            <ContentControl Grid.Row="1" x:Name="SpeakerHost" />
+                        </Grid>
+                    </TabItem>
+
+                    <!-- 조건 및 스탯 — 챕터 단위다. 머리가 그것을 말하고, 오른쪽 위 작은 드롭다운이 지금 챕터(활성 판 — 툴바 콤보와 같은 값)를
+                         비춘다. 고르면 툴바 콤보로 고른 것과 같다(2026-11-18 소유자). 스탯 표(대사에 붙여 쓰기) · 조건 이름(writer-fields W4). -->
+                    <TabItem x:Name="ConditionTabItem" Header="조건 및 스탯">
+                        <Grid RowDefinitions="Auto,*">
+                            <Border Grid.Row="0"
+                                    Padding="10,6"
+                                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                    BorderThickness="0,0,0,1">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="1" VerticalAlignment="Center">
+                                        <TextBlock Text="챕터 단위 조건 · 스탯" FontWeight="SemiBold" />
+                                        <TextBlock Text="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1"
+                                              x:Name="ConditionChapterCombo"
+                                              FontSize="11"
+                                              MinHeight="24"
+                                              MaxWidth="150"
+                                              Padding="6,0"
+                                              Margin="8,0,0,0"
+                                              VerticalAlignment="Top"
+                                              ToolTip.Tip="이 탭이 보이는 챕터 — 지금 챕터를 따라갑니다. 고르면 그 챕터로 갑니다(툴바의 챕터 콤보와 같습니다)." />
+                                </Grid>
+                            </Border>
+                            <ContentControl Grid.Row="1" x:Name="ConditionHost" />
+                        </Grid>
+                    </TabItem>
+                </TabControl>
             </Border>
         </Grid>
 

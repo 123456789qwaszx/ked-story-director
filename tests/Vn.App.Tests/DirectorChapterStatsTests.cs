@@ -89,11 +89,16 @@ public sealed class DirectorChapterStatsTests : IDisposable
         graph.HierarchyView.RowButton(StoryHierarchy.ChapterKey(chapterId))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(chapterId, graph.InspectorHeaderText);   // 머리는 이름만(2026-11-18)
+
+        // 스탯 표는 「조건 및 스탯」 탭에 산다 — 그 탭은 지금 챕터(방금 고른 챕터)를 보인다(side-tabs V3). 사람이 탭을 누른다.
+        graph.ShowSideTab(SideTab.Conditions);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(chapterId, graph.FindControl<ComboBox>("ConditionChapterCombo")!.SelectedItem);
         return graph;
     }
 
     private static IEnumerable<Control> Side(GraphEditorView graph) =>
-        graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Control>().Distinct()
+        graph.ShownSideHost.GetLogicalDescendants().OfType<Control>().Distinct()
             .Where(control => control.IsEffectivelyVisible);
 
     private static Control Control(string tag, GraphEditorView graph) =>

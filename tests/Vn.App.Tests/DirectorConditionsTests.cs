@@ -11,8 +11,8 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[대본] 탭에서 조건 이름을 더하고 고치고 지운다</b> (2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W4). 하이어아키의 챕터 줄을
-/// 고르면 스탯 표 아래에 조건 목록이 선다. 식은 [구성] 탭이 정한다 — 새 조건은 「식 미정」(항상 통과)으로 선다.
+/// <b>[대본] 탭에서 조건 이름을 더하고 고치고 지운다</b> (2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W4). 오른쪽 기둥의
+/// 「조건 및 스탯」 탭에 지금 챕터의 스탯 표와 조건 목록이 늘 선다(side-tabs V3). 식은 [구성] 탭이 정한다 — 새 조건은 「식 미정」(항상 통과)으로 선다.
 ///
 /// 못 박는 것: ① 더하면 식 미정으로 서고 되돌리기 한 칸이다 ② 같은 이름 · 빈 이름은 서지 않는다 ③ 이름을 고치면 간선이 따라간다
 /// ④ 쓰는 곳이 있으면 지우기를 거절하고 어디인지 말한다 ⑤ Esc는 넣지 않은 글을 걷는다.
@@ -169,13 +169,18 @@ public sealed class DirectorConditionsTests : IDisposable
         graph.HierarchyView.RowButton(StoryHierarchy.ChapterKey("ch01"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("ch01", graph.InspectorHeaderText);   // 챕터 요약 — 머리는 이름만(2026-11-18)
+
+        // 챕터 줄은 인스펙터(이름 칸)를 연다 — 조건은 「조건 및 스탯」 탭이고 그 탭은 지금 챕터를 보인다(side-tabs V3). 사람이 탭을 누른다.
+        Assert.Equal(SideTab.Inspector, graph.ShownSideTab);
+        graph.ShowSideTab(SideTab.Conditions);
+        Dispatcher.UIThread.RunJobs();
         return graph;
     }
 
     private static ChapterDocument Chapter(AuthoringSession session) => session.Editor.FindChapter("ch01")!;
 
     private static IEnumerable<Control> Side(GraphEditorView graph) =>
-        graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<Control>().Distinct()
+        graph.ShownSideHost.GetLogicalDescendants().OfType<Control>().Distinct()
             .Where(control => control.IsEffectivelyVisible);
 
     private static Control? Find(GraphEditorView graph, string tag) =>

@@ -11,20 +11,21 @@ using Vn.Authoring.Model;
 namespace Vn.App;
 
 /// <summary>
-/// [대본] 탭의 <b>화자 목록</b> — 하이어아키의 프로젝트 줄을 고르면 인스펙터에 선다(<c>docs/work-orders/writer-fields-orders.md</c> W3).
+/// [대본] 탭의 <b>화자 목록</b> — 오른쪽 기둥의 「화자」 탭에 늘 선다(<c>docs/work-orders/writer-fields-orders.md</c> W3 · side-tabs V3 — ⛔ 그 전에는
+/// 하이어아키의 프로젝트 줄을 골라야 인스펙터에 섰다).
 ///
 /// 작가가 화자 이름을 더하고 고치고 지운다. 이름을 고치면 이미 쓰인 대사 줄의 화자가 따라간다. 캐릭터 키(초상화 · 표정)는 여기서
 /// 정하지 않는다 — [구성] 탭의 [화자] 탭이 잇는다. 규칙(빈 이름 · 같은 이름)은 <see cref="AuthoringSession"/>의 화자 창구 한 벌이다.
 ///
 /// 칸은 초점이 떠날 때와 Enter에 넣고, Esc는 넣지 않은 글을 걷는다. 화자 목록은 프로젝트의 것이라(되돌리기 한 칸) 넣고 나면 —
-/// 되돌려도 — <see cref="AuthoringSession.SpeakersChanged"/>로 요약이 다시 선다.
+/// 되돌려도 — <see cref="AuthoringSession.SpeakersChanged"/>로 탭이 다시 선다.
 /// </summary>
 public partial class MainWindow
 {
-    /// <summary>다시 세운 요약에서 초점을 돌려 줄 칸의 Tag — [＋ 추가]로 여럿을 잇달아 더할 때 손이 마우스로 가지 않게.</summary>
+    /// <summary>다시 세운 「화자」 탭에서 초점을 돌려 줄 칸의 Tag — [＋ 추가]로 여럿을 잇달아 더할 때 손이 마우스로 가지 않게.</summary>
     private string? _speakerFocusTag;
 
-    /// <summary>프로젝트 요약 칸의 화자 목록 — 이름 칸 · ✕ 줄들과 맨 아래 더하기 줄.</summary>
+    /// <summary>「화자」 탭의 화자 목록 — 이름 칸 · ✕ 줄들과 맨 아래 더하기 줄.</summary>
     private void SpeakerList()
     {
         IReadOnlyList<Speaker> speakers = _session.Project.Speakers;
@@ -44,7 +45,7 @@ public partial class MainWindow
             rows.Children.Add(SpeakerRow(speaker));
         }
 
-        DirectorSummary.Children.Add(rows);
+        _sheet.Children.Add(rows);
 
         var addBox = new TextBox { FontSize = 12, PlaceholderText = "새 화자 이름", Tag = "speaker-add-name" };
         var addButton = new Button
@@ -84,7 +85,7 @@ public partial class MainWindow
         Grid.SetColumn(addButton, 1);
         addRow.Children.Add(addBox);
         addRow.Children.Add(addButton);
-        DirectorSummary.Children.Add(addRow);
+        _sheet.Children.Add(addRow);
     }
 
     /// <summary>화자 한 줄 — `[이름][✕]`. 이름을 비우는 것은 지우기가 아니다 — 지우기는 ✕ 하나다.</summary>
@@ -157,21 +158,15 @@ public partial class MainWindow
         return row;
     }
 
-    /// <summary>화자 목록이 바뀌었다 — 프로젝트 요약이 서 있으면 다시 세운다(넣기가 끝난 뒤에 — 넣는 칸을 그 자리에서 걷지 않게).</summary>
+    /// <summary>화자 목록이 바뀌었다 — 「화자」 탭을 다시 세운다(넣기가 끝난 뒤에 — 넣는 칸을 그 자리에서 걷지 않게).</summary>
     private void OnSpeakersChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "화자", () =>
     {
-        if (!DirectorSummary.IsVisible || _directorSummary is not { Kind: HierarchyKind.Project } pick)
-        {
-            _speakerFocusTag = null;
-            return;
-        }
-
-        FillDirectorSummary(pick);
+        FillSpeakerTab();
 
         if (_speakerFocusTag is { } tag)
         {
             _speakerFocusTag = null;
-            DirectorSummary.GetLogicalDescendants().OfType<TextBox>().FirstOrDefault(box => Equals(box.Tag, tag))?.Focus();
+            DirectorSpeakers.GetLogicalDescendants().OfType<TextBox>().FirstOrDefault(box => Equals(box.Tag, tag))?.Focus();
         }
     }));
 }

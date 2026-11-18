@@ -42,7 +42,7 @@ public partial class MainWindow
             () => SceneNoteNow(chapterId, sceneId),
             text => _session.Editor.SetSceneNote(chapterId, sceneId, text),
             committed: null);
-        DirectorSummary.Children.Add(sceneBox);
+        _sheet.Children.Add(sceneBox);
 
         Heading("에피소드 지시");
         Note("장면 안의 에피소드를 골라 그 에피소드에만 해당하는 지시를 적습니다. 지시가 비어도 카드는 남고, [빼기]로 뗍니다. " +
@@ -180,8 +180,8 @@ public partial class MainWindow
         });
 
         RefillAdd();
-        DirectorSummary.Children.Add(cards);
-        DirectorSummary.Children.Add(add);
+        _sheet.Children.Add(cards);
+        _sheet.Children.Add(add);
     }
 
     /// <summary>
@@ -229,7 +229,7 @@ public partial class MainWindow
                 TextWrapping = TextWrapping.Wrap
             });
 
-            DirectorSummary.Children.Add(row);
+            _sheet.Children.Add(row);
         }
     }
 

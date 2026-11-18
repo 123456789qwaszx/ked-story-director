@@ -60,6 +60,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _sheet = DirectorSummary;   // 요약 조각은 보통 인스펙터에 선다 — 화자 · 조건 탭은 짓는 동안만(FillSheet)
 
         // 마지막 안전망 (공통 불변식 4). 개별 핸들러의 포획을 놓친 예외가 여기까지 오면
         // 로그와 상태줄에 남기고 앱은 계속 산다 — 클릭 하나가 미저장 원고를 끝내지 않는다.
@@ -72,6 +73,8 @@ public partial class MainWindow : Window
 
         // 곁기둥을 제 화면에 건다 — Attach보다 먼저여야 첫 그리기부터 자리가 서 있다.
         Graph.SetSidePanel(BuildSidePanel());
+        Graph.SetSpeakerPanel(TabScroll(DirectorSpeakers, "director-speakers-scroll"));
+        Graph.SetConditionPanel(TabScroll(DirectorConditions, "director-conditions-scroll"));
 
         Graph.Attach(_session);
         // 왼쪽 챕터 목록의 원천은 챕터 그래프 뷰가 읽은 목록 하나다 — 두 곳이 따로 읽으면
@@ -82,6 +85,7 @@ public partial class MainWindow : Window
             RebuildFileList();
             // 연출 그래프의 철도 배선도 같은 목록 하나를 본다 — 두 곳이 따로 읽지 않는다.
             Graph.SupplyChapters(entries);
+            FillConditionTab();   // 스탯 표는 이 목록의 모델을 본다
         };
         // 위 드롭다운으로 골라도 왼쪽 목록의 강조가 따라온다 —
         // 목록 클릭이 하던 일(판 활성 + 목록 다시 그리기)을 여기서도 똑같이 한다.
@@ -217,6 +221,15 @@ public partial class MainWindow : Window
         };
     }
 
+    /// <summary>화자 · 조건 탭의 칸 — 넘치면 세로로 스크롤한다.</summary>
+    private static ScrollViewer TabScroll(StackPanel content, string tag) => new()
+    {
+        Content = content,
+        HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+        VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+        Tag = tag
+    };
+
     /// <summary>
     /// 검증용 손잡이 — 최근 프로젝트 복원을 끈다. 헤드리스 테스트의 창은 "이 컴퓨터가
     /// 마지막에 연 프로젝트"를 물려받으면 안 된다: 복원된 챕터의 감시자가 부르는 에피소드
@@ -285,6 +298,7 @@ public partial class MainWindow : Window
             if (plan.RebuildInspector)
             {
                 RebuildInspector();
+                FillSideTabs();
             }
 
             RefreshShell();
@@ -302,6 +316,12 @@ public partial class MainWindow : Window
 
     private void OnSelectionChanged(object? sender, EventArgs e)
     {
+        // 카드를 고르면 인스펙터 탭이 그것을 보인다 — 고름을 놓는 것은 탭을 바꾸지 않는다(side-tabs V3).
+        if (_session.SelectedNode is not null)
+        {
+            Graph.ShowSideTab(SideTab.Inspector);
+        }
+
         SyncSelection();
         ShowSelectedNode();
         Graph.HighlightSelection();
@@ -317,6 +337,11 @@ public partial class MainWindow : Window
             if (e.ExpandedFilesChanged)
             {
                 Graph.Rebuild();
+            }
+
+            if (e.ActiveFileChanged)
+            {
+                FillConditionTab();   // 「조건 및 스탯」 탭은 지금 챕터(활성 판)를 보인다
             }
 
             RefreshShell();

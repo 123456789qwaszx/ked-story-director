@@ -37,6 +37,7 @@ public partial class MainWindow
         if (line is not null)
         {
             _directorSummary = null;
+            Graph.ShowSideTab(SideTab.Inspector);   // 고른 선을 보인다(side-tabs V3)
 
             if (_session.SelectedNodeId is not null)
             {
@@ -146,7 +147,7 @@ public partial class MainWindow
         });
         Grid.SetColumn(box, 1);
         row.Children.Add(box);
-        DirectorSummary.Children.Add(row);
+        _sheet.Children.Add(row);
 
         if (edge.Auto)
         {
@@ -274,7 +275,7 @@ public partial class MainWindow
         chapter.FindEpisode(episodeId)?.ShownTitle ?? episodeId;
 
     /// <summary>선 설명의 한 줄 — 「이름: 값」.</summary>
-    private void Fact(string name, string value) => DirectorSummary.Children.Add(new TextBlock
+    private void Fact(string name, string value) => _sheet.Children.Add(new TextBlock
     {
         Text = $"{name}: {value}",
         FontSize = 12,
@@ -293,6 +294,6 @@ public partial class MainWindow
             Tag = "summary-open"
         };
         button.Click += (_, _) => UiGuard.Run(_session, "[구성] 탭에서 열기", open);
-        DirectorSummary.Children.Add(button);
+        _sheet.Children.Add(button);
     }
 }

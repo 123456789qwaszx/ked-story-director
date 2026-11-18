@@ -702,7 +702,7 @@ public partial class ChapterGraphView : UserControl
         {
             SpeakerListPanel.Children.Add(new TextBlock
             {
-                Text = "아직 화자가 없습니다 — 화자 이름은 [대본] 탭에서 하이어아키의 프로젝트 줄을 골라 더합니다.",
+                Text = "아직 화자가 없습니다 — 화자 이름은 [대본] 탭의 「화자」 탭에서 더합니다.",
                 FontSize = 10,
                 Opacity = 0.55,
                 TextWrapping = TextWrapping.Wrap
