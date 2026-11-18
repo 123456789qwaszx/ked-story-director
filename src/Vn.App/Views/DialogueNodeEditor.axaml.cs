@@ -236,12 +236,6 @@ public partial class DialogueNodeEditor : UserControl
                 _selectedLineId = flow.Lines.FirstOrDefault()?.Line.LineId;
             }
 
-            if (flow.Lines.Count > 0)
-            {
-                // 목록 위에 한 번만 나오는 얇은 열 헤더 — 카드에는 열 이름이 없다.
-                LineHost.Children.Add(BuildColumnHeader());
-            }
-
             // 선택지는 대사 안에 서지 않는다 — 챕터 간선에서만 선다.
 
             foreach (ResolvedLine line in flow.Lines)
@@ -433,33 +427,11 @@ public partial class DialogueNodeEditor : UserControl
     // 태그는 표시가 아니라 편집 진입점이다: 누르면 기존 편집 컨트롤이 Flyout으로 열린다.
 
     /// <summary>
-    /// 헤더와 모든 카드가 공유하는 열 구성 — Index | 화자 | 대사 | ＋. 태그 · 출구 레일은 화자 열(30)에서 시작한다.
+    /// 모든 카드가 공유하는 열 구성 — Index | 화자 | 대사 | ＋. 태그 · 출구 레일은 화자 열(30)에서 시작한다.
+    /// 목록 위의 열 머리(axaml의 <c>ColumnHeader</c>)도 앞 세 열이 이것과 같다 — 넷째 열은 [줄 추가] 자리다.
     /// LineId는 화면에 열로 내지 않는다 — 줄 신원은 데이터에만 산다.
     /// </summary>
     private const string RowColumns = "30,96,*,28";
-
-    /// <summary>목록 위에 한 번만 나오는 얇은 열 헤더.</summary>
-    private Control BuildColumnHeader()
-    {
-        var header = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions(RowColumns),
-            // 카드 왼쪽의 선택 띠(3) + 여백(4) + 카드 안쪽 여백(6)만큼 맞춰 들어간다.
-            Margin = new Thickness(13, 0, 0, 2)
-        };
-
-        void Add(string text, int column)
-        {
-            var block = new TextBlock { Text = text, FontSize = 9, Opacity = 0.45 };
-            Grid.SetColumn(block, column);
-            header.Children.Add(block);
-        }
-
-        Add("#", 0);
-        Add("화자", 1);
-        Add("대사", 2);
-        return header;
-    }
 
     private Control BuildCard(DialogueNode node, DialogueScript script, ResolvedLine resolved)
     {

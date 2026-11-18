@@ -56,6 +56,28 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
+    public void 줄_추가는_열_머리_줄의_오른쪽에_선다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「빈 선택지 숨기기」 아래에 따로 서던 줄을 걷고 「# 화자 대사」 머리 줄의 오른쪽 빈 곳에 둔다.
+        // 머리 줄은 목록 밖에 선다 — 줄이 길어져 목록이 흘러도 단추가 보인다.
+        (DialogueNodeEditor editor, _, _) = ShowEpisodeCard();
+        Button add = editor.FindControl<Button>("AddLineButton")!;
+        Grid header = editor.FindControl<Grid>("ColumnHeader")!;
+
+        Assert.Same(header, add.Parent);
+        Assert.Equal(header.ColumnDefinitions.Count - 1, Grid.GetColumn(add));
+        Assert.Equal(
+            ["#", "화자", "대사"],
+            header.Children.OfType<TextBlock>().OrderBy(Grid.GetColumn).Select(block => block.Text));
+        Assert.Null(header.FindAncestorOfType<ScrollViewer>());
+
+        // 같은 높이에 선다 — 단추가 머리 글자들 아래로 한 줄을 따로 먹지 않는다.
+        TextBlock line = header.Children.OfType<TextBlock>().Single(block => block.Text == "대사");
+        Assert.True(add.Bounds.Bottom >= line.Bounds.Bottom - 1 && add.Bounds.Top <= line.Bounds.Top);
+        Assert.True(add.IsVisible);
+    });
+
+    [Fact]
     public void 챕터_에피소드의_본문과_화자가_열렸다() => HeadlessUi.Run(() =>
     {
         // 본문 · 화자 · ▾ 셋 다 열려 있다.

@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Vn.App.Views.DialogueNodeEditor">
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,Auto,*">
         <Border Grid.Row="0"
                 Padding="12,10"
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
@@ -23,11 +23,6 @@
                 <!-- 분기 카드의 조건 — 대본 위쪽(2026-11-17 소유자: 분기는 무조건 들른 뒤 그 카드에서 if로 본다). 분기 카드일 때만 선다. -->
                 <StackPanel x:Name="BranchConditionHost" Spacing="3" IsVisible="False" />
 
-                <Button x:Name="AddLineButton"
-                        HorizontalAlignment="Right"
-                        Content="줄 추가"
-                        FontSize="11" />
-
                 <TextBlock x:Name="ProblemText"
                            FontSize="11"
                            Foreground="#C2410C"
@@ -36,13 +31,28 @@
             </StackPanel>
         </Border>
 
+        <!-- 열 머리(# · 화자 · 대사)와 그 오른쪽 빈 곳의 [줄 추가] — 목록과 함께 흐르지 않고 위에 선다(줄이 길어져도 단추가 보인다).
+             앞 세 열은 줄 카드의 열(DialogueNodeEditor.RowColumns)과 같고, 왼쪽은 목록 여백(12) + 카드의 선택 띠 · 여백 · 안쪽 여백(13)만큼 들어간다. -->
+        <Grid Grid.Row="1"
+              x:Name="ColumnHeader"
+              ColumnDefinitions="30,96,*,Auto"
+              Margin="25,6,12,0">
+            <TextBlock Grid.Column="0" Text="#" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
+            <TextBlock Grid.Column="1" Text="화자" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
+            <TextBlock Grid.Column="2" Text="대사" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
+            <Button Grid.Column="3"
+                    x:Name="AddLineButton"
+                    Content="줄 추가"
+                    FontSize="11" />
+        </Grid>
+
         <!-- 이 편집기는 대사 편집 하나다. 긴 대본은 카드 안 글 칸에 붙여 넣는다. -->
         <!-- Background이 있어야 카드 아래 빈 공간이 우클릭을 받는다. -->
-        <ScrollViewer Grid.Row="1"
+        <ScrollViewer Grid.Row="2"
                       x:Name="LineScroll"
                       Background="Transparent"
                       HorizontalScrollBarVisibility="Disabled">
-            <StackPanel x:Name="LineHost" Margin="12" Spacing="3" />
+            <StackPanel x:Name="LineHost" Margin="12,4,12,12" Spacing="3" />
         </ScrollViewer>
     </Grid>
 </UserControl>
