@@ -267,8 +267,8 @@ public partial class StoryHierarchy : UserControl
     internal bool ShowEpisodeTitles { get; set; }
 
     /// <summary>
-    /// 챕터 줄의 곁글 — 정하면 「에피소드 N」 대신 이 글이 선다. [구성] 탭은 「챕터 조건 스탯」이다(그 줄을 누르면 인스펙터가
-    /// 그 챕터의 조건 · 스탯 표를 보인다 — 프로젝트 줄의 「화자」와 같은 말투다).
+    /// 챕터 줄의 곁글 — 정하면 이 글이 서고, 없으면 곁글이 없다([대본] 탭). [구성] 탭은 「챕터 조건 스탯」이다(그 줄을 누르면 인스펙터가
+    /// 그 챕터의 조건 · 스탯 표를 보인다 — 프로젝트 줄의 「화자」와 같은 말투다). ⛔ 「에피소드 N」은 2026-11-18에 걷혔다(소유자 — 필요 없다).
     /// </summary>
     internal string? ChapterDetail { get; set; }
 
@@ -400,7 +400,7 @@ public partial class StoryHierarchy : UserControl
         rows.Add(new HierarchyRow(
             // [대본] 탭은 이름(표시 이름, 비면 ID), [구성] 탭은 ID다(display-names N3).
             HierarchyKind.Chapter, key, chapterId, null, null, ShowEpisodeTitles ? chapter.Model.ShownName : chapterId,
-            Detail: ChapterDetail ?? $"에피소드 {chapter.Model.Episodes.Count}",
+            Detail: ChapterDetail,
             Depth: 1, IsSceneRoot: false, HasWarning: chapter.HasErrors));
 
         if (!IsExpanded(key))

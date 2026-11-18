@@ -428,7 +428,10 @@ public partial class MainWindow
         Graph.HierarchyView.Show(summary ? _directorSummary : PickOf(node));
     }
 
-    /// <summary>프로젝트 · 챕터 · 장면 줄의 요약 — 고치는 자리는 챕터 그래프다(「챕터 그래프에서 열기」).</summary>
+    /// <summary>
+    /// 프로젝트 · 챕터 · 장면 줄의 요약 — 고치는 자리는 챕터 그래프다(「챕터 그래프에서 열기」). 머리에는 이름만 둔다 — 챕터 · 장면은 그 이름 그대로
+    /// (⛔ 2026-11-18 소유자 — 「챕터 · 」 · 「장면 · 」 머리말과 화자 수 · 에피소드 · 장면 수의 부제를 걷었다: 쓸모없는 정보).
+    /// </summary>
     private void FillDirectorSummary(HierarchyPick pick)
     {
         DirectorSummary.Children.Clear();
@@ -439,8 +442,7 @@ public partial class MainWindow
         {
             case HierarchyKind.Project:
             {
-                IReadOnlyList<Vn.Authoring.Model.Speaker> speakers = _session.Project.Speakers;
-                Graph.SetInspectorHeader("화자", $"프로젝트 전체의 캐스트 — {speakers.Count}명");
+                Graph.SetInspectorHeader("화자", string.Empty);
 
                 // 화자 이름은 여기서 더하고 고치고 지운다(writer-fields W3 — 2026-08-23 결정을 소유자가 바꿨다). 캐릭터 키는 [구성] 탭이다.
                 SpeakerList();
@@ -450,9 +452,7 @@ public partial class MainWindow
 
             case HierarchyKind.Chapter when chapter is not null:
             {
-                IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
-                Graph.SetInspectorHeader(
-                    $"챕터 · {chapter.Model.ShownName}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {scenes.Count}");
+                Graph.SetInspectorHeader(chapter.Model.ShownName, string.Empty);
                 Note("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
                 StatTable(chapter.Model.Stats);
 
@@ -469,7 +469,7 @@ public partial class MainWindow
                                          ChapterSceneGrouping.Of(chapter.Model).FirstOrDefault(item =>
                                              string.Equals(item.SceneId, pick.SceneId, StringComparison.Ordinal)) is { } scene:
             {
-                Graph.SetInspectorHeader($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}");
+                Graph.SetInspectorHeader(scene.DisplayName, string.Empty);
                 Note("장면 이름은 하이어아키에서 고칩니다 — 두 번 누르거나 오른쪽 클릭 [이름 바꾸기].");
 
                 // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가

@@ -40,13 +40,13 @@ public sealed class SceneAreaPickTests : IDisposable
         Click(graph, InsideScene(graph, "hall"));
 
         Assert.Null(session.SelectedNodeId);
-        Assert.Equal("장면 · hall", Title(graph));
+        Assert.Equal("hall", Title(graph));
         Assert.Contains(Side(graph), control => (string?)control.Tag == "scene-note");
         Assert.Equal(StoryHierarchy.SceneKey("ch01", "hall"), graph.HierarchyView.Selection?.Key);
 
         // 다른 장면을 누르면 그 장면으로 바뀐다.
         Click(graph, InsideScene(graph, "opening"));
-        Assert.Equal("장면 · opening", Title(graph));
+        Assert.Equal("opening", Title(graph));
 
         window.Close();
     });
@@ -64,7 +64,7 @@ public sealed class SceneAreaPickTests : IDisposable
         Click(graph, new Point(Avalonia.Controls.Canvas.GetLeft(chapterLabel) - 6, Avalonia.Controls.Canvas.GetTop(chapterLabel) + 2));
 
         Assert.Null(session.SelectedNodeId);
-        Assert.Equal("챕터 · ch01", Title(graph));
+        Assert.Equal("ch01", Title(graph));
         Assert.Contains(Side(graph), control => (string?)control.Tag == "condition-add-name");
         Assert.Equal(StoryHierarchy.ChapterKey("ch01"), graph.HierarchyView.Selection?.Key);
 

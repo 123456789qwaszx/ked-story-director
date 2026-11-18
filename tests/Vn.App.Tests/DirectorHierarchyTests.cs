@@ -94,14 +94,14 @@ public sealed class DirectorHierarchyTests : IDisposable
 
         Assert.Null(session.SelectedNodeId);
         Assert.False(Editor(window).IsVisible);
-        Assert.Equal("챕터 · ch01", title.Text);
+        Assert.Equal("ch01", title.Text);
 
         // 요약 칸은 장면 목록을 세우지 않는다 — 장면은 하이어아키에서 고른다.
         Assert.DoesNotContain(SummaryTags(graph), tag => tag.StartsWith("summary-scene:", StringComparison.Ordinal));
         graph.HierarchyView.RowButton(StoryHierarchy.SceneKey("ch01", "hall"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("장면 · hall", title.Text);
+        Assert.Equal("hall", title.Text);
         Assert.Equal(StoryHierarchy.SceneKey("ch01", "hall"), graph.HierarchyView.Selection?.Key);
 
         // 장면 요약은 메모 공간이다 — 에피소드 목록도 「[구성] 탭에서 장면 열기」도 없다. 에피소드는 하이어아키에서 고르고,

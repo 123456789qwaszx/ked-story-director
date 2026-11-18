@@ -49,7 +49,7 @@ public sealed class DirectorNamesTests : IDisposable
     });
 
     [Fact]
-    public void 인스펙터_머리와_챕터_콤보가_이름이다() => HeadlessUi.Run(() =>
+    public void 인스펙터_머리는_이름이다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
         session.Editor.UpdateChapterDisplayName("ch01", "축제 전날");
@@ -61,11 +61,11 @@ public sealed class DirectorNamesTests : IDisposable
 
         graph.HierarchyView.RowButton(StoryHierarchy.ChapterKey("ch01"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("챕터 · 축제 전날", title.Text);
+        Assert.Equal("축제 전날", title.Text);   // 머리는 이름만 — 「챕터 · 」 머리말은 2026-11-18에 걷혔다
 
         graph.HierarchyView.RowButton(StoryHierarchy.SceneKey("ch01", "opening"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("장면 · 교실", title.Text);
+        Assert.Equal("교실", title.Text);
 
         graph.HierarchyView.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
         graph.HierarchyView.RowButton(StoryHierarchy.EpisodeKey("ch01", "a"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

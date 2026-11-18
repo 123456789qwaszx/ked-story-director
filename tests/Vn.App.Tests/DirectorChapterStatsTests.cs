@@ -88,7 +88,7 @@ public sealed class DirectorChapterStatsTests : IDisposable
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         graph.HierarchyView.RowButton(StoryHierarchy.ChapterKey(chapterId))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal($"챕터 · {chapterId}", graph.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Equal(chapterId, graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 머리는 이름만(2026-11-18)
         return graph;
     }
 
