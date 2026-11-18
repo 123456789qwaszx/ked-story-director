@@ -8,8 +8,8 @@ using Vn.App.Views;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[구성] 카드 머리의 장면 배지는 작가의 말로 적는다</b> — 장면ID를 적은 에피소드는 「장면 · 장면ID」, 장면이 시작하는 카드는
-/// 「장면 시작점」을 단다. 영어 「SCENE」 · 「SCENE ROOT」는 쓰지 않는다.
+/// <b>[구성] 카드 머리의 장면 배지는 작가의 말로 적는다</b> — 에피소드마다 장면ID, 장면이 시작하는 카드는 「시작점」을 단다(2026-11-18 소유자 —
+/// ⛔ 그 전에는 「장면 · 장면ID」 · 「장면 시작점」 — 「장면」이 겹쳤다). 영어 「SCENE」 · 「SCENE ROOT」는 쓰지 않는다.
 /// </summary>
 public sealed class ChapterCardBadgeTests : IDisposable
 {
@@ -25,7 +25,7 @@ public sealed class ChapterCardBadgeTests : IDisposable
     }
 
     [Fact]
-    public void 장면_배지는_장면과_장면_시작점으로_적힌다() => HeadlessUi.Run(() =>
+    public void 장면_배지는_장면ID와_시작점으로_적힌다() => HeadlessUi.Run(() =>
     {
         // ch01 — opening: root · a, hall: b.
         (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
@@ -34,11 +34,13 @@ public sealed class ChapterCardBadgeTests : IDisposable
         view.Refresh();
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Contains("장면 시작점", Badges(view, "root"));
-        Assert.Contains("장면 · opening", Badges(view, "root"));
-        Assert.DoesNotContain("장면 시작점", Badges(view, "a"));
-        Assert.Contains("장면 · opening", Badges(view, "a"));
-        Assert.Contains("장면 · hall", Badges(view, "b"));
+        // 2026-11-18 소유자 — 「장면이라는 단어는 중복이라 필요없습니다. "시작점" "{장면ID}"가 표시되도록」.
+        Assert.Contains("시작점", Badges(view, "root"));
+        Assert.Contains("opening", Badges(view, "root"));
+        Assert.DoesNotContain("시작점", Badges(view, "a"));
+        Assert.Contains("opening", Badges(view, "a"));
+        Assert.Contains("hall", Badges(view, "b"));
+        Assert.DoesNotContain(Badges(view, "root").Concat(Badges(view, "b")), badge => badge?.StartsWith("장면", StringComparison.Ordinal) == true);
 
         Assert.DoesNotContain(
             view.FindControl<Canvas>("GraphCanvas")!.GetVisualDescendants().OfType<TextBlock>(),

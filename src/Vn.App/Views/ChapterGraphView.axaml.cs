@@ -1795,9 +1795,10 @@ public partial class ChapterGraphView : UserControl
                 Background = new SolidColorBrush(Color.Parse("#3D7BD9")),
                 CornerRadius = new CornerRadius(3),
                 Padding = new Thickness(4, 0),
+                // 「장면」은 곁의 장면 칩이 이미 말한다 — 「시작점」만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 시작점」).
                 Child = new TextBlock
                 {
-                    Text = "장면 시작점",
+                    Text = "시작점",
                     FontSize = 9,
                     FontWeight = FontWeight.Bold,
                     Foreground = Brushes.White
@@ -1816,7 +1817,7 @@ public partial class ChapterGraphView : UserControl
             Padding = new Thickness(4, 0),
             Child = new TextBlock
             {
-                Text = $"장면 · {episode.SceneId}",
+                Text = episode.SceneId,   // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 무엇인지는 툴팁이 말한다
                 FontSize = 9,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Brushes.White
