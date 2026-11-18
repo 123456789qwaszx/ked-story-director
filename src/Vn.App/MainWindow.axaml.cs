@@ -143,6 +143,15 @@ public partial class MainWindow : Window
                 return;
             }
 
+            // F = [대본] 탭에서 고른 것에 화면 맞추기(2026-11-18 소유자 · writer-comfort WC2) — 글 칸 · 콤보에서는 그 칸의 것이다.
+            if (args.Key == Avalonia.Input.Key.F && args.KeyModifiers == Avalonia.Input.KeyModifiers.None &&
+                ReferenceEquals(MainTabs.SelectedItem, GraphTabItem) &&
+                FocusManager?.GetFocusedElement() is not (TextBox or ComboBox))
+            {
+                UiGuard.Run(_session, "화면 맞추기", () => args.Handled = Graph.FocusSelection());
+                return;
+            }
+
             if (!args.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control))
             {
                 return;

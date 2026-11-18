@@ -4826,14 +4826,78 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        area = area.Inflate(80);
+        FitRect(area.Inflate(80));
+    }
+
+    /// <summary>그 네모가 화면에 들어오는 배율(100%를 넘지 않는다)로 그 가운데를 화면 가운데에.</summary>
+    private void FitRect(Rect area)
+    {
         SetZoom(Math.Min(
             1.0,
             Math.Min(GraphScroll.Viewport.Width / area.Width, GraphScroll.Viewport.Height / area.Height)));
+        CenterOn(area.Center);
+    }
+
+    /// <summary>판의 그 점을 화면 가운데에 — 판 밖으로는 넘기지 않는다(스크롤이 막는다).</summary>
+    private void CenterOn(Point point)
+    {
         GraphScroll.Offset = new Vector(
-            Math.Max(0, (area.Center.X * _zoom) - (GraphScroll.Viewport.Width / 2)),
-            Math.Max(0, (area.Center.Y * _zoom) - (GraphScroll.Viewport.Height / 2)));
+            Math.Max(0, (point.X * _zoom) - (GraphScroll.Viewport.Width / 2)),
+            Math.Max(0, (point.Y * _zoom) - (GraphScroll.Viewport.Height / 2)));
         RefreshMinimapViewport();
+    }
+
+    /// <summary>F로 카드에 맞출 때의 배율 — 글 칸을 읽고 쓰기에 알맞은 크기.</summary>
+    internal const double EditZoom = 1.0;
+
+    /// <summary>
+    /// <b>F — 고른 것에 화면을 맞춘다</b>(2026-11-18 소유자 · writer-comfort WC2). 카드(에피소드 · 분기 카드)를 골랐으면 <see cref="EditZoom"/>로 그
+    /// 카드를 화면 가운데에, 장면이면 그 장면 테두리(접혔으면 그 상자)가 들어오게, 챕터면 그 챕터가 들어오게(<see cref="GoToBoard"/>와 같다).
+    /// 고른 것이 없으면 거짓이다.
+    /// </summary>
+    internal bool FocusSelection()
+    {
+        if (_session is null || GraphScroll.Viewport.Width <= 0 || GraphScroll.Viewport.Height <= 0)
+        {
+            return false;
+        }
+
+        if (_session.SelectedNodeId is { } nodeId && FindCard(nodeId) is { } card)
+        {
+            SetZoom(EditZoom);
+            CenterOn(new Rect(Canvas.GetLeft(card.Visual), Canvas.GetTop(card.Visual), card.Visual.Width, CardHeightOf(card)).Center);
+            return true;
+        }
+
+        switch (_summaryPick)
+        {
+            case { Kind: HierarchyKind.Scene, ChapterId: { } chapterId, SceneId: { } sceneId }:
+                if (_sceneAreas.FirstOrDefault(scene => string.Equals(scene.ChapterId, chapterId, StringComparison.Ordinal) &&
+                                                        string.Equals(scene.SceneId, sceneId, StringComparison.Ordinal)) is { Area.Width: > 0 } shown)
+                {
+                    FitRect(shown.Area.Inflate(40));
+                    return true;
+                }
+
+                if (_session.Project.Files.FirstOrDefault(file => string.Equals(file.Name, chapterId, StringComparison.Ordinal)) is { } folded &&
+                    FindSceneProxy(folded.Id, sceneId) is { } proxy)
+                {
+                    FitRect(new Rect(
+                        Canvas.GetLeft(proxy.Visual), Canvas.GetTop(proxy.Visual),
+                        ProxyWidth, ProxyHeaderHeight + (proxy.VisualRowCount * ProxyRowHeight)).Inflate(40));
+                    return true;
+                }
+
+                return false;
+
+            case { Kind: HierarchyKind.Chapter, ChapterId: { } chapterId }
+                when _session.Project.Files.FirstOrDefault(file => string.Equals(file.Name, chapterId, StringComparison.Ordinal)) is { } board:
+                FitFile(board.Id);
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     /// <summary>전체 보기 (GB-4) — 노드·프록시 전부가 여백을 두고 들어오는 배율과 위치.</summary>
