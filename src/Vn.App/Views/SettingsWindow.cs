@@ -58,13 +58,15 @@ internal sealed class SettingsWindow : Window
             BoardHeightBox.Value = (decimal)BoardSize.Default.Height;
         };
 
-        MinimapCheck = new CheckBox
+        // 「미니맵 감추기」 — 처음 꺼져 있다(지도가 보인다), 켜면 걷힌다(2026-11-18 소유자 · settings-wording Z1 — ⛔ 그 전에는 「[대본] 탭 미니맵
+        // 보이기」가 처음 켜져 있었다). 앱 설정은 그대로 ShowMinimap이고 체크가 거꾸로 비춘다.
+        HideMinimapCheck = new CheckBox
         {
-            Content = "[대본] 탭 미니맵 보이기",
+            Content = "미니맵 감추기",
             FontSize = 12,
-            IsChecked = session.ShowMinimap
+            IsChecked = !session.ShowMinimap
         };
-        ToolTip.SetTip(MinimapCheck, "[대본] 판 오른쪽 아래의 전체 지도입니다. 끄면 지도만 걷고 [전체 · 50 · 100 · 150] 배율 줄은 남습니다.");
+        ToolTip.SetTip(HideMinimapCheck, "[대본] 판 오른쪽 아래의 전체 지도를 감춥니다. 지도만 걷히고 [전체 · 50 · 100 · 150] 배율 줄은 남습니다.");
 
         // 설명 간소화 — 오른쪽 기둥의 안내글을 걷고 「없습니다 — …」 줄은 상태만 남긴다(2026-11-18 소유자 · brief-guides G1). 누르는 즉시.
         BriefGuidesCheck = new CheckBox
@@ -80,8 +82,8 @@ internal sealed class SettingsWindow : Window
             GuideMode.Set(BriefGuidesCheck.IsChecked == true));
 
         // 누르는 즉시 판에 반영한다(J3 · ⛔ 그 전에는 [확인]을 기다렸다).
-        MinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "미니맵", () =>
-            _session.SetShowMinimap(MinimapCheck.IsChecked == true));
+        HideMinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "미니맵", () =>
+            _session.SetShowMinimap(HideMinimapCheck.IsChecked != true));
 
         ConfirmButton = new Button { Content = "확인", IsDefault = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
         CancelButton = new Button { Content = "취소", IsCancel = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
@@ -145,7 +147,7 @@ internal sealed class SettingsWindow : Window
                 Group(
                     "기타",
                     "이 PC의 앱 설정에 저장됩니다 — 프로젝트 파일과 상관없고 되돌리기가 없습니다. 누르는 즉시 반영됩니다([취소]로 돌아가지 않습니다).",
-                    new StackPanel { Spacing = 4, Children = { MinimapCheck, BriefGuidesCheck } }),
+                    new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck } }),
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -180,8 +182,8 @@ internal sealed class SettingsWindow : Window
     /// <summary>「기타」의 「설명 간소화」 — 누르는 즉시 반영한다(<see cref="GuideMode"/>).</summary>
     internal CheckBox BriefGuidesCheck { get; }
 
-    /// <summary>「기타」의 「[대본] 탭 미니맵 보이기」 — 누르는 즉시 반영한다.</summary>
-    internal CheckBox MinimapCheck { get; }
+    /// <summary>「기타」의 「미니맵 감추기」 — 켜면 [대본] 판의 지도가 걷힌다. 누르는 즉시 반영한다.</summary>
+    internal CheckBox HideMinimapCheck { get; }
 
     internal Button ConfirmButton { get; }
 
