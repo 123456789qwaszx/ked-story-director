@@ -9,7 +9,7 @@ namespace Vn.Authoring.Chapters;
 /// </param>
 public sealed record ChapterEntry(string ChapterId, ChapterGraphModel Model, IReadOnlyList<BranchCardHome>? Branches = null)
 {
-    /// <summary>모델 진단에 오류가 있는가. 왼쪽 목록이 붉게 표시한다.</summary>
+    /// <summary>모델 진단에 오류가 있는가. 하이어아키의 챕터 줄이 ⚠로 표시한다.</summary>
     public bool HasErrors => Model.HasErrors;
 
     /// <summary>분기 카드들 — 없으면 빈 목록.</summary>

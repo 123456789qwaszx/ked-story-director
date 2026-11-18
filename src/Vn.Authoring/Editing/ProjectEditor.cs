@@ -957,7 +957,7 @@ public sealed partial class ProjectEditor
     /// 선택도, 저장 여부도 안 묻고 <see cref="Project"/>와 자기 자신만 쓰는 순수한 편집 작업이다.
     /// 세션에 두면 도메인이 셸의 메서드를 불러야 한다.
     ///
-    /// 왼쪽 챕터 목록 클릭과 에피소드 동기화가 <b>같은 규칙 하나</b>를 쓴다.
+    /// 챕터를 고르는 곳(하이어아키 · 콤보 · 챕터 만들기)이 모두 <b>같은 규칙 하나</b>를 쓴다.
     /// </summary>
     /// <returns>그 챕터 판의 파일 Id. 이미 있으면 그대로다.</returns>
     public string EnsureChapterBoard(string chapterId)

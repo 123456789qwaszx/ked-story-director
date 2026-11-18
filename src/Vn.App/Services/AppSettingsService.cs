@@ -25,7 +25,7 @@ internal static class AppSettingsService
     /// 테스트 격리의 손잡이 — <b>피해가 양방향이다.</b> 헤드리스
     /// MainWindow가 이 파일을 진짜 %APPDATA%에서 읽으면 개발자의 실제 최근 프로젝트를
     /// 열어 버리고(OnOpened — 그 프로젝트의 그날 상태에 따라 무관한 테스트들이 무작위로
-    /// 죽고, 세션이 실제 원고 폴더에 감시자를 걸고 노드를 더한다), 반대로 테스트가 여는
+    /// 죽고, 열자마자 실제 원고 폴더의 <c>exported/</c>에 진행 JSON을 쓴다), 반대로 테스트가 여는
     /// 임시 프로젝트가 <b>사용자의 진짜 최근 프로젝트를 덮어쓴다</b>.
     ///
     /// 돌려세우는 자리는 <c>Vn.App.Tests.TestProcessIsolation</c> 하나다(어셈블리가

@@ -18,9 +18,9 @@ namespace Vn.App.Views;
 ///
 /// 묶음은 넷이다 — ⛔ 묶음마다 어디에 저장되는가를 머리에 적던 것(C3)은 2026-11-18에 걷었다(소유자 — 「이런 설명은 필요없어」 ·
 /// <c>docs/work-orders/settings-wording-orders.md</c> Z2). [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
-/// [내보내기](형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
-/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [기타](이 PC의 앱 설정 — [대본] 미니맵 · 2026-11-18 소유자 ·
-/// <c>docs/work-orders/side-fold-settings-orders.md</c> K3).
+/// 「내보내기 (복제할 폴더 선택)」(형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
+/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
+/// <c>docs/work-orders/side-fold-settings-orders.md</c> K3, 설명 간소화 · 같은 날 brief-guides G1).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
 /// 칸 · 보낼 곳은 그 파일에 바로), [취소] · Esc는 버린다. 「기타」의 체크는 [확인]을 기다리지 않고 누르는 즉시 앱 설정에 반영한다 — [취소]로

@@ -122,8 +122,8 @@ internal sealed class AuthoringSession
     public event EventHandler? SelectionChanged;
 
     /// <summary>
-    /// 프로젝트의 화자 목록이 바뀌었다 — 화자 명령 · 되돌리기 · 열기 모두. <see cref="Changed"/> 뒤에 알린다. [대본] 탭의 프로젝트
-    /// 요약(화자 이름)과 [구성] 탭의 [화자] 탭(캐릭터 키)이 듣고 목록을 다시 세운다 — 모든 변경마다 다시 세우지 않으려고 따로 둔다.
+    /// 프로젝트의 화자 목록이 바뀌었다 — 화자 명령 · 되돌리기 · 열기 모두. <see cref="Changed"/> 뒤에 알린다. [대본] 탭의 「화자」 탭
+    /// (화자 이름)과 [구성] 탭의 「화자」 탭(캐릭터 키)이 듣고 목록을 다시 세운다 — 모든 변경마다 다시 세우지 않으려고 따로 둔다.
     /// </summary>
     public event EventHandler? SpeakersChanged;
 

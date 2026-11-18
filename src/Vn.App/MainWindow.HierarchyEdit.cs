@@ -149,7 +149,7 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>챕터의 보이는 이름을 고친다 — 하이어아키 이름 칸과 [대본] 인스펙터 머리의 이름 칸이 이 한 벌을 쓴다. 비우면 챕터 ID가 보인다.</summary>
+    /// <summary>챕터의 보이는 이름을 고친다 — 하이어아키 이름 칸과 [대본] 「조건 및 스탯」 탭 맨 위의 챕터 이름 칸이 이 한 벌을 쓴다. 비우면 챕터 ID가 보인다.</summary>
     /// <returns>이제 보이는 이름(비웠으면 챕터 ID).</returns>
     private string RenameChapter(string chapterId, string name)
     {

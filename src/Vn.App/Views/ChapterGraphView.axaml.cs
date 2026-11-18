@@ -44,10 +44,10 @@ public partial class ChapterGraphView : UserControl
     private string? _selectedChapterId;
     private bool _updatingCombo;
 
-    /// <summary>챕터 목록이 다시 읽혔다. 왼쪽 패널(MainWindow)이 이걸 듣고 목록을 다시 그린다.</summary>
+    /// <summary>챕터 목록이 다시 읽혔다. 셸(MainWindow)이 듣고 두 하이어아키 · [대본] 툴바 콤보 · 「조건 및 스탯」 탭을 다시 세운다.</summary>
     internal event Action<IReadOnlyList<ChapterEntry>>? EntriesReloaded;
 
-    /// <summary>프로젝트를 다시 읽어 판을 다시 세운다. 새 챕터를 만든 직후 부른다.</summary>
+    /// <summary>프로젝트를 다시 읽어 판을 다시 세운다. 셸이 챕터를 만들거나 지운 직후 부른다.</summary>
     internal void Refresh() => Reload();
 
     /// <summary>
@@ -57,12 +57,12 @@ public partial class ChapterGraphView : UserControl
     internal int CanvasDrawCount { get; private set; }
 
     /// <summary>
-    /// 챕터를 고른다 — <b>어디서 골랐든 이 길 하나를 지난다</b> (왼쪽 목록 클릭 · 위
-    /// 드롭다운 · 코드).
+    /// 챕터를 고른다 — <b>어디서 골랐든 이 길 하나를 지난다</b> (하이어아키 줄 · 툴바 콤보 ·
+    /// 「조건 및 스탯」 탭의 작은 드롭다운 · 코드).
     ///
     /// 이 길을 건너뛰고 <c>Draw()</c>만 부르면: ① 검증을 다시 안 돌려 <b>이전 챕터의 결과</b>로
     /// 그린다 — 도달 불가 빨간 테두리가 남고 도착 스탯이 안 보인다 ② 판을 활성으로 바꾸지 않아
-    /// <b>왼쪽 챕터 목록의 강조가 따라오지 않는다</b>.
+    /// <b>[대본] 툴바 콤보 · 「조건 및 스탯」 탭이 따라오지 않는다</b>(둘 다 활성 판을 본다).
     /// </summary>
     internal void SelectChapter(string chapterId)
     {
@@ -91,7 +91,7 @@ public partial class ChapterGraphView : UserControl
         // 챕터를 고르는 것은 <b>보는 일</b>이지 들여오는 일이 아니다 — 대본은 연출 그래프 카드의
         //    글 칸에서 쓴다.
 
-        // 그 챕터의 판을 활성으로 — 왼쪽 목록의 강조가 이 값을 본다.
+        // 그 챕터의 판을 활성으로 — [대본] 툴바 콤보 · 「조건 및 스탯」 탭이 이 값을 본다.
         ChapterSelected?.Invoke(chapterId);
     }
 
@@ -103,11 +103,12 @@ public partial class ChapterGraphView : UserControl
 
     // ── 하이어아키 (docs/plans/hierarchy.md) ──────────
     //
-    // 내용(프로젝트 · 챕터 목록)과 챕터 줄 우클릭은 <b>셸(MainWindow)이 짓는다</b> — 세션 전환(EnsureChapterBoard) ·
-    // 개명 · 제거 규칙이 셸에 한 벌이다. 줄을 고른 뒤 이 판에서 할 일(챕터 · 에피소드 고르기, 아래 칸 바꾸기)은
+    // 내용(프로젝트 · 챕터 목록)과 접힘은 <b>셸(MainWindow)이 짓는다</b> — 두 탭의 하이어아키가 한 원천 · 한 접힘을 쓴다.
+    // 이 탭의 하이어아키는 <b>읽기 전용</b>이다(셸이 ReadOnly로 세운다 — 차림표 · 이름 고치기 · 끌어 옮기기가 없다. 더하고 지우고
+    // 고치는 것은 [대본] 탭). 줄을 고른 뒤 이 판에서 할 일(챕터 · 에피소드 고르기, 오른쪽 탭 바꾸기)은
     // 이 뷰가 한다(<see cref="OnHierarchyPicked"/>).
 
-    /// <summary>하이어아키 — 셸이 내용을 채우고 챕터 줄 우클릭을 받는다.</summary>
+    /// <summary>하이어아키 — 셸이 내용을 채우고 접힘을 맞춘다(읽기 전용).</summary>
     internal StoryHierarchy HierarchyView => Hierarchy;
 
     /// <summary>하이어아키 기둥 접기 —셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
@@ -397,7 +398,7 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>
     /// 판 한가운데의 [새 프로젝트] — 프로젝트가 아직 없을 때만 보인다(챕터보다 먼저다).
-    /// 클릭의 뜻은 툴바의 [새로 만들기]와 같으므로 배선도 같은 셸이 짓는다.
+    /// 클릭의 뜻은 File 메뉴의 「새 프로젝트…」와 같으므로 배선도 같은 셸이 짓는다.
     /// </summary>
     internal Button ProjectNewCenterButton => EmptyNewProjectButton;
 
@@ -426,7 +427,7 @@ public partial class ChapterGraphView : UserControl
         SideStrip.Click += (_, _) => SideDock.Toggle(folded: false);
 
         // [다시 읽기] 단추는 없다 — 화면이 스스로 따라온다. <see cref="Reload"/>는
-        // 감시자와 챕터 전환이 부른다.
+        // 세션의 변경 알림(QueueReload) · 붙이기(Attach) · 셸의 Refresh(챕터를 만들거나 지운 뒤)가 부른다.
 
         // [화자] 탭은 캐릭터 키만 잇는다 — 이름을 더하는 폼은 [대본] 탭에 있다(writer-fields W3).
 
@@ -437,7 +438,7 @@ public partial class ChapterGraphView : UserControl
                 return;
             }
 
-            // 드롭다운도 왼쪽 목록 클릭과 같은 길을 지난다 — 여기서
+            // 드롭다운도 하이어아키 줄 클릭과 같은 길을 지난다 — 여기서
             // Draw()만 부르면 빨간 테두리가 안 사라진다.
             if (ChapterCombo.SelectedItem is string picked)
             {
@@ -591,7 +592,7 @@ public partial class ChapterGraphView : UserControl
 
     internal void Attach(AuthoringSession session)
     {
-        DetachSession();   // 두 번 붙이면 구독도 감시도 두 벌이 된다
+        DetachSession();   // 두 번 붙이면 구독이 두 벌이 된다
 
         _session = session;
         _sessionChanged = (_, _) => QueueReload();
@@ -640,13 +641,12 @@ public partial class ChapterGraphView : UserControl
     ///
     /// <b>왜 필요한가</b>: 앱에서는
     /// 뷰가 프로세스와 수명이 같아 티가 안 나지만, 테스트에서는 한 어셈블리가 <b>디스패처
-    /// 하나</b>를 나눠 쓴다. 떼지 않으면 창을 안 닫고 끝낸 테스트의 뷰가 그대로 살아 있고, 그 감시자는
-    /// 이미 지워진 임시 폴더를 본다.
+    /// 하나</b>를 나눠 쓴다. 떼지 않으면 창을 안 닫고 끝낸 테스트의 뷰가 그대로 살아 그 세션의 알림을 계속 듣고,
+    /// 다른 세션에 다시 붙인 뷰는 옛 세션이 바뀔 때도 다시 읽는다.
     ///
-    /// 그 다음이 나쁘다 — 250ms 디바운스가 <b>타이머 스레드에서</b> 깨어나 없어진 디스패처에
-    /// <c>Post</c>를 하면 <c>NullReferenceException</c>이 나고, 그 자리는 잡을 사람이 없어
-    /// <b>프로세스가 내려간다.</b> 죽는 순간 돌고 있던 테스트가 실패로 찍히므로 매번 다른
-    /// 이름이 나오고, 혼자 돌리면 통과한다.
+    /// ⛔ 폴더 감시자가 있던 때는 더 나빴다 — 남은 뷰의 감시자가 지워진 임시 폴더를 보고, 250ms 디바운스가 <b>타이머
+    /// 스레드에서</b> 깨어나 없어진 디스패처에 <c>Post</c>를 해 <b>프로세스가 내려갔다</b>(매번 다른 테스트가 실패로 찍히고,
+    /// 혼자 돌리면 통과했다). 감시자는 걷혔고 다시 읽기는 세션의 변경 알림이 부른다(<see cref="QueueReload"/>).
     ///
     /// 앱에서는 뷰가 하나뿐이라 새는 일이 없지만, <b>끊을 수 있다는 것 자체가 규격</b>이다 —
     /// 붙이는 길만 있고 떼는 길이 없으면 수명은 언제나 우연에 맡겨진다.
@@ -686,11 +686,10 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 재읽기 예약 — <b>몰려 오는 변경을 한 번으로 합친다</b>.
     ///
-    /// 동기화 한 번이 프로젝트 변경을 수십 개 낸다(에피소드마다 노드·줄이 붙는다).
-    /// 그 하나하나가 재읽기를 예약하면, 그 한 번마다
-    /// 챕터 전부를 다시 읽고 진행 JSON을 쓰고 판을 통째로 다시 그린다.
-    /// 노드 60개에서 <b>123번</b> 돌아 58초가 된다 — 마지막 한 번 말고는 전부 버려질
-    /// 그림이다.
+    /// 프로젝트 변경 알림은 한 UI 차례에 여럿 올 수 있다. 그 하나하나가 재읽기를 예약하면, 그 한 번마다
+    /// 챕터 전부를 다시 읽고 진행 JSON을 쓰고 판을 통째로 다시 그린다 — 마지막 한 번 말고는 전부 버려질
+    /// 그림이다. ⛔ 에피소드 동기화가 있던 때는 한 번이 변경을 수십 개 냈고(에피소드마다 노드·줄이 붙었다),
+    /// 노드 60개에서 <b>123번</b> 돌아 58초가 됐다.
     ///
     /// 예약 표시는 실제로 돌기 직전에 내린다: 재읽기가 도는 동안 들어온 변경은
     /// 다음 차례를 새로 예약한다(놓치지 않는다).
@@ -1281,7 +1280,9 @@ public partial class ChapterGraphView : UserControl
     ///
     /// <b>선택지와 다른 종류의 선이다.</b> 문구도 스탯변화도 없다. 점선인 것이 그 뜻이다: 사람이 고르는 길(실선)이
     /// 아니라 <b>반드시 한 번 다녀오는 통로</b>다. 분기점을 만들고 지우고 잇고 끊는 것은 [대본] 탭의 일이고, 여기서는
-    /// 그것을 보이고 분기점 · 점선을 누르면 그 분기의 정보와 조건을 연다. 연결만 끊은 분기점도 속 빈 점으로 남아 보인다.
+    /// 그것을 <b>보이기만 한다</b> — 분기점 · 점선은 눌러도 아무 일이 없고, 분기(정보 · 조건)는 그 칩을 눌러 고른다(2026-11-17 소유자 ·
+    /// <see cref="BranchKnob"/> · <see cref="DrawBranchLine"/>). 연결만 끊은 분기점도 속 빈 점으로 남아 보인다. ⛔ 그 전에는 분기점 · 점선을
+    /// 누르면 그 분기의 정보와 조건이 열렸다.
     ///
     /// <b>다녀갈 곳은 분기 카드다</b>(2026-11-17 소유자) — 에피소드가 아니라 판에 따로 서지 않고, 부르는 에피소드 곁에 <b>작은 칩</b>으로
     /// 붙는다(<see cref="PlaceBranchChips"/>). 점선은 분기점에서 그 칩으로 든다. 분기 카드가 또 들르면 칩의 옆변에도 분기점이 선다.
@@ -2953,7 +2954,7 @@ public partial class ChapterGraphView : UserControl
     /// 글자가 조용히 사라진다 — 사람 눈에는 "적용을 눌러도 안 바뀐다"로 보인다.
     /// 포커스가 어디 있는지로 판정하던 이전 방식은 콤보·체크박스를 만진 순간 뚫렸다.
     /// </summary>
-    /// <param name="preserveTyping">저장 감시가 부른 다시 그리기라면 참.</param>
+    /// <param name="preserveTyping">다시 읽은 뒤의 다시 그리기(Draw)나 선택지 접기라면 참 — 선택이 그대로면 칸을 다시 채우지 않는다.</param>
     private void RefreshPropertyPanel(bool preserveTyping = false)
     {
         ChapterGraphModel? model = SelectedModel;
@@ -4014,8 +4015,7 @@ public partial class ChapterGraphView : UserControl
 
 
     /// <summary>
-    /// <summary>
-    /// [챕터] 탭의 <b>스탯 표</b> — 2026-09-17부터 <b>편집 가능</b>하다 (소유자: *"이제 엑셀이
+    /// 「조건 및 스탯」 탭의 <b>스탯 표</b> — 2026-09-17부터 <b>편집 가능</b>하다 (소유자: *"이제 엑셀이
     /// 아닌 챕터그래프에서 직접 조건과 스탯을 정의"*).
     ///
     /// ⚠ 전에는 읽기 전용이었고 *"편집은 챕터 엑셀의 `스탯` 시트에서"*라고 적혀 있었다.

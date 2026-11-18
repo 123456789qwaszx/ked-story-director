@@ -59,8 +59,8 @@
                                 Padding="10,6"
                                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                                 BorderThickness="0,0,0,1">
-                            <!-- ⛔ 머리의 [＋](새 챕터)는 2026-11-18에 걷혔다(소유자 — [＋ 에피소드]가 챕터 · 장면을 세우고, 하이어아키 우클릭
-                                 「챕터 추가」가 바로 세운다). -->
+                            <!-- ⛔ 머리의 [＋](새 챕터)는 2026-11-18에 걷혔다(소유자). 새 챕터는 하이어아키 · 판의 챕터 밖 우클릭 「챕터 추가」가
+                                 바로 세우고, 챕터가 하나도 없으면 판 한가운데 [＋ 첫 챕터 만들기]가 선다. -->
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBlock Text="하이어아키" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <Button Grid.Column="1"
@@ -193,7 +193,8 @@
             <!-- 우측 기둥 = 탭 셋 — 인스펙터 · 화자 · 조건 및 스탯([구성] 탭과 같은 차례 · 같은 이름 — 2026-11-18 소유자 · side-tabs V3).
                  ⛔ 그 전에는 인스펙터 하나였고 화자 · 조건 · 스탯은 하이어아키의 프로젝트 · 챕터 줄을 골라야만 섰다.
                  내용(대사 편집기 · 요약 · 화자 목록 · 조건과 스탯)은 셸이 짓는다 — 이 뷰는 자리만 내준다.
-                 고르면 그것을 보이는 탭으로 간다: 프로젝트 → 화자, 그 밖 → 인스펙터(챕터는 이름 칸이 인스펙터 머리다 — M3).
+                 고르면 그것을 보이는 탭으로 간다: 프로젝트 → 화자, 챕터 → 조건 및 스탯(챕터 이름 칸이 그 탭 맨 위다 — chapter-pick Y1,
+                 ⛔ 그 전에는 인스펙터 머리였다 — M3), 그 밖 → 인스펙터.
                  콤보로 챕터를 바꾸는 것은 탭을 바꾸지 않는다. -->
             <Border Grid.Column="4"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
@@ -217,7 +218,8 @@
                                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                                     BorderThickness="0,0,0,1">
                                 <StackPanel Spacing="1">
-                                    <!-- 챕터 · 장면 요약의 머리는 이름 칸이다(2026-11-18 소유자 — 에피소드의 이름 칸처럼 여기서 고친다). 그 밖에는 이름 글. -->
+                                    <!-- 장면 요약의 머리는 이름 칸이다(2026-11-18 소유자 — 에피소드의 이름 칸처럼 여기서 고친다). 그 밖에는 이름 글 —
+                                         챕터 이름 칸은 「조건 및 스탯」 탭 맨 위다(chapter-pick Y1 · ⛔ 그 전에는 챕터 요약의 머리도 이름 칸이었다). -->
                                     <TextBox x:Name="InspectorNameBox" FontWeight="SemiBold" IsVisible="False" />
                                     <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
                                     <TextBlock x:Name="InspectorSubtitle"
