@@ -331,10 +331,12 @@ public partial class MainWindow
     /// <summary>세션이 고른 카드를 하이어아키의 줄로 — 에피소드 카드면 에피소드 줄, 분기 카드면 집 밑의 그 줄. 그 밖이면 null.</summary>
     private HierarchyPick? PickOf(StoryNode? node)
     {
-        if (node is not DialogueNode dialogue || EpisodeNaming.ChapterOf(_session.Project, dialogue) is not { } chapter)
+        if (node is not DialogueNode dialogue)
         {
             return null;
         }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, dialogue);
 
         if (dialogue.IsBranchCard)
         {
@@ -353,10 +355,7 @@ public partial class MainWindow
     /// </summary>
     private string EpisodeHeader(DialogueNode card)
     {
-        if (EpisodeNaming.ChapterOf(_session.Project, card) is not { } chapter)
-        {
-            return EpisodeNaming.ShownNameOf(_session.Project, card);
-        }
+        ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, card);
 
         // 이름으로 — 챕터는 표시 이름(비면 ID), 장면은 장면 이름(비면 장면ID). [대본] 탭은 ID를 보이지 않는다(display-names N3).
         string head = chapter.ShownName;

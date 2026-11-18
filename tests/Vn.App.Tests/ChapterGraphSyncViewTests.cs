@@ -286,8 +286,6 @@ public sealed class ChapterGraphSyncViewTests
                 ids.Select(id => (SampleChapters.Corridor, id)),
                 project =>
                 {
-                    // 실제 프로젝트의 모양 — 시나리오 파일이 하나는 있다.
-                    project.Files.Add(new StoryFile("sf_main", "본편", "story/main.vnstory.json"));
                     var editor = new ProjectEditor(project);
 
                     // 견본 하나를 여러 챕터에 세우면 EpisodeId · 대사엔트리가 같다 — Yarn 노드 이름은 프로젝트에서 하나여야 하므로

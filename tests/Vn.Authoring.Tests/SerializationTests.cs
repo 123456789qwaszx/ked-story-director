@@ -99,6 +99,8 @@ public class SerializationTests
             var second = new StoryFile("sf_b", "B", "story/b.vnstory.json");
             project.Files.Add(first);
             project.Files.Add(second);
+            project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+            project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
             first.Nodes.Add(new DialogueNode("nd_a", "A 노드"));
             second.Nodes.Add(new SetNode("nd_b", "B 노드"));
             project.StartNodeId = "nd_a";
@@ -165,6 +167,8 @@ public class SerializationTests
         second.Nodes.Add(new DialogueNode("nd_b", "B") { Script = secondScript });
         project.Files.Add(first);
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
 
         try
         {
@@ -289,7 +293,23 @@ public class SerializationTests
     {
         var project = new StoryProject();
         project.Files.Add(new StoryFile("sf_a", "A", relativePath));
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
 
+        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+    }
+
+    /// <summary>판은 챕터의 판이다 — 챕터가 없는 판 · 한 챕터의 판 둘은 받지 않는다(2026-11-18 · old-shapes O3).</summary>
+    [Fact]
+    public void 챕터가_아닌_판은_저장하지_않는다()
+    {
+        var project = new StoryProject();
+        project.Files.Add(new StoryFile("sf_a", "A", "story/a.vnstory.json"));
+        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        ProjectManifestJson.Write(project);
+
+        project.Files.Add(new StoryFile("sf_a2", "A", "story/a2.vnstory.json"));
         Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
     }
 
@@ -303,6 +323,8 @@ public class SerializationTests
         second.Nodes.Add(new SetNode("nd_same", "B"));
         project.Files.Add(first);
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
 
         Assert.Throws<InvalidDataException>(() => ProjectSnapshotCodec.Encode(project));
         Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));

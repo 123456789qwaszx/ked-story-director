@@ -786,9 +786,7 @@ public sealed class ChapterGraphEditingTests
 
         public TempProject()
         {
-            // 실제 프로젝트의 모양 — 시나리오 파일이 하나는 있다.
-            ManifestPath = SampleProject.Corridor(_directory, "편집 검증", project =>
-                project.Files.Add(new StoryFile("sf_main", "본편", "story/main.vnstory.json")));
+            ManifestPath = SampleProject.Corridor(_directory, "편집 검증");
         }
 
         public string ManifestPath { get; }

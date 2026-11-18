@@ -17,19 +17,19 @@ namespace Vn.Authoring.Chapters;
 public static class EpisodeNaming
 {
     /// <summary>
-    /// 이 판이 곧 <b>챕터</b>라면 그 챕터. 아니면 <c>null</c>이다 — 화면에는 챕터 판뿐이다(2026-11-17 — 새 프로젝트의 「기본 파일」
-    /// 낙서판을 걷었다). 옛 프로젝트에 남은 판만 null이다 — 거기에는 카드를 세우지 않는다.
+    /// 이 판의 <b>챕터</b> — 늘 있다. 판은 챕터와 함께 서고 바뀌고 지워지며, 챕터가 아닌 판은 저장 검증이 받지 않는다(2026-11-18 · old-shapes O3 —
+    /// ⛔ 그 전에는 옛 프로젝트에 남은 판에서 null이었다).
     ///
-    /// <b>챕터 = 판 1:1이고, 잇는 것은 이름이다</b> (G-1 v2). 이 한 줄이 「이 카드가
-    /// 에피소드인가」를 가르므로 <b>여기 한 곳에만</b> 둔다.
+    /// <b>챕터 = 판 1:1이고, 잇는 것은 이름이다</b> (G-1 v2). 그래서 <b>여기 한 곳에만</b> 둔다.
     /// </summary>
-    public static ChapterDocument? ChapterOfBoard(StoryProject project, StoryFile board)
+    public static ChapterDocument ChapterOfBoard(StoryProject project, StoryFile board)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(board);
 
         return project.Chapters.FirstOrDefault(chapter =>
-            string.Equals(chapter.ChapterId, board.Name, StringComparison.Ordinal));
+                   string.Equals(chapter.ChapterId, board.Name, StringComparison.Ordinal))
+               ?? throw new InvalidOperationException($"판 '{board.Name}'의 챕터가 없습니다.");
     }
 
     /// <summary>
@@ -70,18 +70,14 @@ public static class EpisodeNaming
                 string.Equals(EpisodeIdOf(node), episodeId, StringComparison.Ordinal));
     }
 
-    /// <summary>
-    /// 이 카드가 선 <b>챕터</b>. 챕터 판이 아니면 <c>null</c>이고, 그때 이 카드는
-    /// <b>에피소드가 아니다</b>.
-    /// </summary>
-    public static ChapterDocument? ChapterOf(StoryProject project, StoryNode node)
+    /// <summary>이 카드(프로젝트의 노드)가 선 <b>챕터</b> — 늘 있다(<see cref="ChapterOfBoard"/>).</summary>
+    public static ChapterDocument ChapterOf(StoryProject project, StoryNode node)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(node);
 
-        return project.FindFileContainingNode(node.Id) is { } board
-            ? ChapterOfBoard(project, board)
-            : null;
+        return ChapterOfBoard(project, project.FindFileContainingNode(node.Id)
+            ?? throw new InvalidOperationException($"노드 '{node.Id}'가 프로젝트에 없습니다."));
     }
 
     /// <summary>
@@ -99,7 +95,7 @@ public static class EpisodeNaming
         }
 
         return node is DialogueNode dialogue &&
-               ChapterOf(project, dialogue)?.Episodes.FirstOrDefault(episode =>
+               ChapterOf(project, dialogue).Episodes.FirstOrDefault(episode =>
                    string.Equals(episode.EpisodeId, EpisodeIdOf(dialogue), StringComparison.Ordinal)) is { } found
             ? found.ShownTitle
             : node.Name;

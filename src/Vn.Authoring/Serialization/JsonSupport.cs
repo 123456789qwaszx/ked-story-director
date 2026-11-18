@@ -90,12 +90,20 @@ internal static class JsonSupport
         HashSet<string> fileIds = new(StringComparer.Ordinal);
         HashSet<string> nodeIds = new(StringComparer.Ordinal);
         HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> chapterIds = project.Chapters.Select(chapter => chapter.ChapterId).ToHashSet(StringComparer.Ordinal);
+        HashSet<string> boardNames = new(StringComparer.Ordinal);
 
         foreach (StoryFile file in project.Files)
         {
             if (!fileIds.Add(file.Id))
             {
                 throw new InvalidDataException($"StoryFile Id '{file.Id}'가 중복됩니다.");
+            }
+
+            // 판은 챕터의 판이다 — 판은 챕터와 함께 서고 바뀌고 지워진다(2026-11-18 · old-shapes O3). 챕터가 아닌 판은 옛 데이터라 받지 않는다.
+            if (!chapterIds.Contains(file.Name) || !boardNames.Add(file.Name))
+            {
+                throw new InvalidDataException($"판 '{file.Name}'은(는) 챕터의 판이 아니거나 같은 챕터의 판이 둘입니다.");
             }
 
             string relativePath = ProjectStore.NormalizeRelativeStoryPath(file.RelativePath);

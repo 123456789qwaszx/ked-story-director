@@ -178,6 +178,8 @@ public class GraphProjectionTests
         DialogueNode DialogueB) BuildProject()
     {
         var project = new StoryProject { Title = "GraphProjection" };
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
         var fileA = new StoryFile("sf_a", "A", "story/a.vnstory.json");
         var fileB = new StoryFile("sf_b", "B", "story/b.vnstory.json");
         var setA = new SetNode("nd_set", "설정")

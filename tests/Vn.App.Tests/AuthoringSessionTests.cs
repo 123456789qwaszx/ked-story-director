@@ -22,6 +22,8 @@ public class AuthoringSessionTests : IDisposable
     public void 프로젝트를_열면_시작_노드가_속한_파일이_현재_파일이_된다()
     {
         var project = new StoryProject { Title = "테스트" };
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
         var first = new StoryFile("sf_a", "A", "story/a.vnstory.json");
         var second = new StoryFile("sf_b", "B", "story/b.vnstory.json");
         project.Files.Add(first);

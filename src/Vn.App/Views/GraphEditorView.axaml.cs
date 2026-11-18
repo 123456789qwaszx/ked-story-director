@@ -460,10 +460,7 @@ public partial class GraphEditorView : UserControl
     private void RefreshDeleteButton()
     {
         bool branch = _session?.SelectedNode is DialogueNode { IsBranchCard: true };
-        bool episode =
-            !branch &&
-            _session?.SelectedNode is DialogueNode card &&
-            EpisodeNaming.ChapterOf(_session.Project, card) is not null;
+        bool episode = !branch && _session?.SelectedNode is DialogueNode;
 
         DeleteNodeButton.Content = branch ? "분기 카드 삭제" : episode ? "에피소드 삭제…" : "노드 삭제";
         ToolTip.SetTip(
@@ -618,12 +615,8 @@ public partial class GraphEditorView : UserControl
             string boardName = _session.Project.Files
                 .FirstOrDefault(file => string.Equals(file.Id, group.Key, StringComparison.Ordinal))
                 ?.Name ?? group.Key;
-            string chapterName = _session.Editor.FindChapter(boardName)?.ShownName ?? boardName;
-
-            if (_session.Editor.FindChapter(boardName) is not null)
-            {
-                _chapterAreas.Add((area, boardName));
-            }
+            string chapterName = _session.Editor.FindChapter(boardName)!.ShownName;
+            _chapterAreas.Add((area, boardName));
 
             var frame = new Border
             {
@@ -702,11 +695,12 @@ public partial class GraphEditorView : UserControl
     private void DrawSceneFrames(string fileId, IEnumerable<ExpandedNodeProjection> nodes)
     {
         if (_session?.Project.Files.FirstOrDefault(file =>
-                string.Equals(file.Id, fileId, StringComparison.Ordinal)) is not { } board ||
-            _session.Editor.FindChapter(board.Name) is not { } chapter)
+                string.Equals(file.Id, fileId, StringComparison.Ordinal)) is not { } board)
         {
             return;
         }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(_session.Project, board);
 
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
             chapter.ToGraphModel(chapter.ChapterId));
@@ -878,13 +872,7 @@ public partial class GraphEditorView : UserControl
             // ⛔ 셸이 공급한 챕터 목록(<c>_chapters</c>) 스냅샷을 뒷받침으로 보던 길은 2026-10-29에 걷혔다
             //    (legacy-cleanup.md L3). 그 목록도 같은 프로젝트를 읽은 것이라, 프로젝트에 없는 챕터를 줄 수 있는 것은
             //    낡은 스냅샷뿐이었다.
-            ChapterGraphModel? chapter =
-                _session.Editor.FindChapter(boardName)?.ToGraphModel(boardName);
-
-            if (chapter is null)
-            {
-                continue; // 챕터 판이 아니다 — 일반 프로젝트는 아무 변화 없다.
-            }
+            ChapterGraphModel chapter = _session.Editor.FindChapter(boardName)!.ToGraphModel(boardName);
 
             // 에피소드 Id → 그 카드 자리. 아직 카드가 없는 에피소드는 없는 것으로 둔다 — 없는 노드로 선을 그으면 거짓말이다.
             var spots = new Dictionary<string, (DialogueNode Node, Rect Rect)>(StringComparer.Ordinal);
@@ -2119,8 +2107,7 @@ public partial class GraphEditorView : UserControl
         {
             if (connection.ExecutionPort is not { Kind: ExitPortKind.Detour } ||
                 entries.ContainsKey(connection.TargetNodeId) ||
-                _session.Project.FindNode(connection.SourceNodeId) is not DialogueNode caller ||
-                EpisodeNaming.ChapterOf(_session.Project, caller) is null)
+                _session.Project.FindNode(connection.SourceNodeId) is not DialogueNode)
             {
                 continue;
             }
@@ -2191,11 +2178,7 @@ public partial class GraphEditorView : UserControl
 
         foreach (StoryFile file in _session.Project.Files)
         {
-            if (_session.Editor.FindChapter(file.Name) is not { } chapter)
-            {
-                continue;
-            }
-
+            ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(_session.Project, file);
             IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.ToGraphModel(chapter.ChapterId));
 
             if (scenes.All(scene => scene.IsDefault))
@@ -5142,11 +5125,12 @@ public partial class GraphEditorView : UserControl
     private (string ChapterId, string EpisodeId)? EpisodeAt(string nodeId)
     {
         if (_session?.Project.FindFileContainingNode(nodeId) is not { } file ||
-            _session.Project.FindNode(nodeId) is not DialogueNode dialogue ||
-            _session.Editor.FindChapter(file.Name) is not { } chapter)
+            _session.Project.FindNode(nodeId) is not DialogueNode dialogue)
         {
             return null;
         }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(_session.Project, file);
 
         string episodeId = EpisodeNaming.EpisodeIdOf(dialogue);
 
@@ -5374,9 +5358,9 @@ public partial class GraphEditorView : UserControl
         failure = null;
         chapterMade = null;
 
-        if (_session!.ActiveFile is { } active && EpisodeNaming.ChapterOfBoard(_session.Project, active) is { } current)
+        if (_session!.ActiveFile is { } active)
         {
-            return current;
+            return EpisodeNaming.ChapterOfBoard(_session.Project, active);
         }
 
         if (_session.Project.Chapters.FirstOrDefault() is { } first)
@@ -5452,9 +5436,9 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (_session.Project.FindNode(nodeId) is DialogueNode card &&
-            EpisodeNaming.ChapterOf(_session.Project, card) is { } chapter)
+        if (_session.Project.FindNode(nodeId) is DialogueNode card)
         {
+            ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, card);
             string episodeId = EpisodeNaming.EpisodeIdOf(card);
 
             DeleteConfirmButton = ConfirmFlyout.Show(
@@ -5467,7 +5451,6 @@ public partial class GraphEditorView : UserControl
                 closed: () => DeleteConfirmButton = null);
         }
 
-        // ⛔ 챕터가 아닌 판(낙서판)의 카드를 그냥 지우던 갈래는 2026-11-17에 걷었다 — 그런 판은 화면에 없다.
     }
 
     /// <summary>

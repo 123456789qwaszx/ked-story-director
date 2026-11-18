@@ -207,7 +207,7 @@ public partial class DialogueNodeEditor : UserControl
                     : null);
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
-            HideEmptyChoicesBox.IsVisible = _chapterEpisode && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
+            HideEmptyChoicesBox.IsVisible = _chapterEpisode;
             HideEmptyChoicesBox.IsChecked = _session.HiddenChoiceNodeIds.Contains(node.Id);
 
             FillBranchCondition(node);
@@ -988,7 +988,7 @@ public partial class DialogueNodeEditor : UserControl
     {
         BranchConditionHost.Children.Clear();
         BranchConditionHost.IsVisible =
-            _session is not null && node.IsBranchCard && EpisodeNaming.ChapterOf(_session.Project, node) is not null;
+            _session is not null && node.IsBranchCard;
 
         if (_session is null || !BranchConditionHost.IsVisible)
         {
@@ -1514,12 +1514,14 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        // 에피소드가 아닌 카드(챕터 밖 — 옛 데이터)는 노드 이름을 고친다.
-        if (!_chapterEpisode || EpisodeNaming.ChapterOf(_session.Project, node) is not { } chapter)
+        // 에피소드가 아닌 카드(표식 없는 카드 — 옛 데이터)는 노드 이름을 고친다.
+        if (!_chapterEpisode)
         {
             _session.Editor.RenameNode(node.Id, NameBox.Text ?? string.Empty);
             return;
         }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, node);
 
         // 에피소드 카드 — 이름 칸은 보이는 제목이다. EpisodeId는 그대로 두고 제목만 고친다(비우면 EpisodeId가 보인다).
         string wanted = (NameBox.Text ?? string.Empty).Trim();

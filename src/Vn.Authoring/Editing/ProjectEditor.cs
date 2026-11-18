@@ -153,9 +153,7 @@ public sealed partial class ProjectEditor
     {
         StoryFile file = RequireFile(fileId);
 
-        // 카드는 챕터 판에만 선다(2026-11-17 — 낙서판을 걷었다). 옛 프로젝트에 챕터가 아닌 판이 남아 있어도 거기에는 세우지 않는다.
-        ChapterDocument board = ChapterOfBoard(file)
-            ?? throw new InvalidOperationException($"'{file.Name}'은(는) 챕터의 판이 아닙니다 — 카드는 챕터 판에만 섭니다.");
+        ChapterDocument board = ChapterOfBoard(file);
 
         // <b>이름을 고르는 규칙은 NewNames 하나다</b>. 이 이름이 곧 EpisodeId · Yarn 노드 이름이 되므로 챕터와 장면이 든 자리표시로
         //    프로젝트에서 겹치지 않게 짓는다(`ch01_scene01_new01` · 분기 카드 `ch01_scene01_branch01`).
@@ -198,7 +196,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>이 판이 곧 챕터라면 그 챕터 — 규칙은 <see cref="EpisodeNaming"/>이 갖는다.</summary>
-    private ChapterDocument? ChapterOfBoard(StoryFile file) =>
+    private ChapterDocument ChapterOfBoard(StoryFile file) =>
         EpisodeNaming.ChapterOfBoard(Project, file);
 
     /// <summary>
@@ -1266,10 +1264,12 @@ public sealed partial class ProjectEditor
     /// </summary>
     private string? SceneOfCard(DialogueNode? card)
     {
-        if (card is null || EpisodeNaming.ChapterOf(Project, card) is not { } chapter)
+        if (card is null)
         {
             return null;
         }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOf(Project, card);
 
         string? episodeId = card.IsBranchCard
             ? ChapterBranchCards.HomesOf(Project, chapter.ChapterId).FirstOrDefault(home => home.Card.Id == card.Id)?.EpisodeId

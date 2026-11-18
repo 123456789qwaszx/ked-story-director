@@ -18,7 +18,7 @@ internal static class BranchConditionNote
     internal static bool IsUndecided(Vn.Authoring.Model.StoryProject project, string targetNodeId, string? label) =>
         label is not null &&
         project.FindNode(targetNodeId) is { } node &&
-        EpisodeNaming.ChapterOf(project, node)?.Conditions.FirstOrDefault(condition =>
+        EpisodeNaming.ChapterOf(project, node).Conditions.FirstOrDefault(condition =>
             string.Equals(condition.Label, label, StringComparison.Ordinal)) is { } found &&
         string.IsNullOrWhiteSpace(found.Expression);
 

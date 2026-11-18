@@ -3519,11 +3519,12 @@ public partial class ChapterGraphView : UserControl
     internal void RenameInspectedBranchCard()
     {
         if (_session is null || _selectedBranchCardId is not { } nodeId ||
-            _session.Project.FindDialogue(nodeId) is not { IsBranchCard: true } card ||
-            EpisodeNaming.ChapterOf(_session.Project, card) is not { } chapter)
+            _session.Project.FindDialogue(nodeId) is not { IsBranchCard: true } card)
         {
             return;
         }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, card);
 
         string wanted = BranchIdBox.Text?.Trim() ?? string.Empty;
 

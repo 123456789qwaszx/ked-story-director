@@ -86,8 +86,7 @@ public sealed class ChapterEditGateTests
 
         public TempProject()
         {
-            ManifestPath = SampleProject.Corridor(_directory, "편집 스위치 검증", project =>
-                project.Files.Add(new StoryFile("sf_main", "본편", "story/main.vnstory.json")));
+            ManifestPath = SampleProject.Corridor(_directory, "편집 스위치 검증");
         }
 
         public string ManifestPath { get; }

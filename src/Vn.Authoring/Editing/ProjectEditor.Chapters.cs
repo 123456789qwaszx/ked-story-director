@@ -54,13 +54,12 @@ public sealed partial class ProjectEditor
     /// </remarks>
     public int RemoveChapterWithBoard(string chapterId)
     {
-        ChapterDocument? chapter = FindChapter(chapterId);
-        StoryFile? board = BoardOf(chapterId);
-
-        if (chapter is null && board is null)
+        if (FindChapter(chapterId) is not { } chapter)
         {
             return 0;
         }
+
+        StoryFile? board = BoardOf(chapterId);   // 아직 판을 안 세운 챕터도 있다
 
         // ⛔ 「마지막 판은 지우지 않는다(새 노드가 갈 곳이 없어진다)」는 2026-11-17에 걷었다 — 판이 없으면 [＋ 대사 노드]가 챕터와
         //    장면을 세운다(낙서판을 걷으며 새 프로젝트도 판 없이 시작한다).
@@ -69,10 +68,7 @@ public sealed partial class ProjectEditor
 
         Mutate(() =>
         {
-            if (chapter is not null)
-            {
-                Project.Chapters.Remove(chapter);
-            }
+            Project.Chapters.Remove(chapter);
 
             if (board is not null)
             {

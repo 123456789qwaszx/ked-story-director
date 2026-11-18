@@ -74,20 +74,6 @@ public sealed class CollapsedSceneGroupTests
     }
 
     [Fact]
-    public void 챕터를_못_찾는_판은_묶지_않는다()
-    {
-        // 작가의 자유 판 — 챕터가 아니므로 장면 경계가 없다.
-        var project = new StoryProject();
-        var file = new StoryFile { Name = "작가의 판" };
-        project.Files.Add(file);
-        file.Nodes.Add(new DialogueNode(name: "아무거나"));
-
-        CollapsedSceneGroup only = Assert.Single(Proxy(project).Scenes);
-
-        Assert.False(only.HasHeader);
-    }
-
-    [Fact]
     public void 장면ID가_없는_에피소드는_장면들_뒤에_챕터_직속_한_묶음이다()
     {
         // 2026-11-01 B안 — 전에는 장면ID가 없는 에피소드마다 「미지정 · x」 머리글이 섰다.

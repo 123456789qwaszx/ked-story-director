@@ -295,17 +295,17 @@ public static class GraphProjectionBuilder
     ///
     /// <b>챕터 판의 대사 노드는 전부 낸다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는
     /// 에피소드 노드만 냈지만 자유 씬이라는 종류가 없어졌다 — 카드를 세우는 것이 곧
-    /// 에피소드를 만드는 일이라 칸을 못 낼 노드가 없다(분기 카드는 빼고). 챕터가 아닌 판(옛 프로젝트에만 남는다)에는 칸이 없다.
+    /// 에피소드를 만드는 일이라 칸을 못 낼 노드가 없다(분기 카드는 빼고).
     /// </summary>
     private static IEnumerable<GraphOutputPortProjection> ChoiceSlots(
         StoryNode node, StoryFile file, StoryProject project)
     {
-        if (node is not DialogueNode dialogue ||
-            project.Chapters.FirstOrDefault(item =>
-                string.Equals(item.ChapterId, file.Name, StringComparison.Ordinal)) is not { } chapter)
+        if (node is not DialogueNode dialogue)
         {
             yield break;
         }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(project, file);
 
         // 노드 → 에피소드는 표식이 먼저고 없으면 이름이다 — 장면 묶기와 같은 규칙(EpisodeNaming 한 벌)이다.
         string episodeId = EpisodeNaming.EpisodeIdOf(dialogue);
@@ -482,19 +482,12 @@ public static class GraphProjectionBuilder
         new(string.Empty, string.Empty, entries);
 
     /// <summary>
-    /// 판의 노드를 장면으로 가르는 표 — 판이 챕터의 것이고 그 챕터가 장면ID를 하나라도 적었을 때만 있다(R6-explorer §2:
+    /// 판의 노드를 장면으로 가르는 표 — 그 챕터가 장면ID를 하나라도 적었을 때만 있다(R6-explorer §2:
     /// 장면ID를 하나도 안 적은 챕터는 장면 단이 없다).
     /// </summary>
     private static SceneMap? ScenesOf(StoryProject project, StoryFile file)
     {
-        ChapterDocument? chapter = project.Chapters.FirstOrDefault(item =>
-            string.Equals(item.ChapterId, file.Name, StringComparison.Ordinal));
-
-        if (chapter is null)
-        {
-            return null;
-        }
-
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(project, file);
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
             chapter.ToGraphModel(chapter.ChapterId));
 

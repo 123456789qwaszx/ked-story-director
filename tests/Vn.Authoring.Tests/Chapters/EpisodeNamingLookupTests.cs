@@ -84,12 +84,9 @@ public sealed class EpisodeNamingLookupTests
         (ProjectEditor editor, StoryFile board) = World();
 
         Assert.Same(board, EpisodeNaming.BoardOf(editor.Project, "ch01"));
-        Assert.Equal("ch01", EpisodeNaming.ChapterOfBoard(editor.Project, board)!.ChapterId);
+        Assert.Equal("ch01", EpisodeNaming.ChapterOfBoard(editor.Project, board).ChapterId);
 
-        // 챕터가 아닌 판(옛 프로젝트에만 남을 수 있다 — 2026-11-17 낙서판을 걷었다)은 null이다.
-        var other = new StoryFile(name: "판");
-
-        Assert.Null(EpisodeNaming.ChapterOfBoard(editor.Project, other));
+        // 판이 없는 챕터는 있다(아직 안 세웠다). 챕터가 없는 판은 저장 검증이 받지 않는다(2026-11-18 · old-shapes O3).
         Assert.Null(EpisodeNaming.BoardOf(editor.Project, "없는챕터"));
     }
 
