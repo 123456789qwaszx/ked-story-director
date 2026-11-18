@@ -272,6 +272,13 @@ public partial class StoryHierarchy : UserControl
     /// <summary>지금 이름을 고치고 있는 줄.</summary>
     private string? _renamingKey;
 
+    /// <summary>
+    /// 줄을 세우는 중인가. 세우다가 초점을 쥔 이름 칸이 판에서 빠지면 「딴 데를 누르면 없던 일로」(<c>LostFocus</c>)가 그 자리에서 불린다 —
+    /// 거기서 또 세우면 안쪽이 줄을 다 세운 뒤 바깥이 이어서 한 벌을 더 붙인다(2026-11-18 소유자 보고 — 이름 칸을 연 채로 다른 에피소드를
+    /// 누르면 프로젝트가 둘로 보였다). 그때는 이름 칸만 닫고 세우기는 진행 중인 쪽에 맡긴다.
+    /// </summary>
+    private bool _drawing;
+
     /// <summary>지금 고른 것. 없으면 null.</summary>
     internal HierarchyPick? Selection { get; private set; }
 
@@ -535,15 +542,24 @@ public partial class StoryHierarchy : UserControl
 
     private void Draw(List<HierarchyRow>? rows = null)
     {
-        _rows.Clear();
-        _rows.AddRange(rows ?? BuildRows());
-        RowHost.Children.Clear();
+        _drawing = true;
 
-        RenameBox = null;
-
-        foreach (HierarchyRow row in _rows)
+        try
         {
-            RowHost.Children.Add(string.Equals(_renamingKey, row.Key, StringComparison.Ordinal) ? RenameRow(row) : Build(row));
+            _rows.Clear();
+            _rows.AddRange(rows ?? BuildRows());
+            RowHost.Children.Clear();   // ⚠ 초점을 쥔 이름 칸이 여기서 빠지면 그 자리에서 「없던 일로」가 불린다(_drawing)
+
+            RenameBox = null;
+
+            foreach (HierarchyRow row in _rows)
+            {
+                RowHost.Children.Add(string.Equals(_renamingKey, row.Key, StringComparison.Ordinal) ? RenameRow(row) : Build(row));
+            }
+        }
+        finally
+        {
+            _drawing = false;
         }
 
         RenameBox?.Focus();
@@ -897,7 +913,11 @@ public partial class StoryHierarchy : UserControl
             RenameBox = null;
             string wanted = box.Text?.Trim() ?? string.Empty;
 
-            Draw();
+            // 줄을 세우는 도중이면(그 세우기가 이 칸을 판에서 뺐다) 다시 세우지 않는다 — 진행 중인 세우기가 이름 칸 없이 마저 세운다.
+            if (!_drawing)
+            {
+                Draw();
+            }
 
             // 이름은 비울 수 있다(ID로 물러선다). [구성] 탭의 장면 줄도 비울 수 있었다(장면이 풀린다) — 지금은 읽기 전용이다.
             if (keep && !string.Equals(wanted, current, StringComparison.Ordinal) &&

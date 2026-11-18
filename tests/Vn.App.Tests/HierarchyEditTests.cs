@@ -357,6 +357,35 @@ public sealed class HierarchyEditTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 이름_칸을_연_채로_다른_에피소드를_눌러도_줄은_한_벌이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 보고 — 이름 칸을 연 채로 다른 에피소드를 누르면 프로젝트가 둘로 보였다. 고르기가 하이어아키를 다시 세우는
+        // 도중(줄을 지우는 순간) 초점을 쥔 이름 칸이 판에서 빠져 「없던 일로」가 다시 세우기를 또 불렀고, 바깥 세우기가 이어서 한 벌을 더
+        // 붙였다(단추는 초점을 받지 않아 이름 칸이 초점을 쥔 채 남는다).
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+        Dispatcher.UIThread.RunJobs();
+
+        tree.BeginRename(StoryHierarchy.EpisodeKey("ch01", "a"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(tree.RenameBox!.IsFocused);
+
+        tree.RowButton(StoryHierarchy.EpisodeKey("ch01", "root"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        StackPanel host = tree.FindControl<StackPanel>("RowHost")!;
+        Assert.Equal(tree.Rows.Count, host.Children.OfType<DockPanel>().Count());
+        Assert.Single(tree.Rows, row => row.Kind == HierarchyKind.Project);
+        Assert.Null(tree.RenameBox);                                   // 이름 칸은 없던 일로 닫혔다
+        Assert.Equal("a", Chapter(session).FindEpisode("a")!.Title);   // 이름은 그대로다
+        Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "root"), tree.Selection?.Key);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static void Press(StoryHierarchy tree, Key key)
