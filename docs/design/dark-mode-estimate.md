@@ -2,9 +2,10 @@
 
 **소유자**: 「DARKMODE 수요를 조사하고, 필요하다면 추가 하기위한 견적을 내보는 일」(`docs/work-orders/finishing-orders.md` FX5).
 
-> **상태: 조사 · 견적만 했다.** 만들지 않았다 — 어느 안으로 갈지는 소유자가 정한다(맨 아래 「정할 것」).
+> **상태: (0)안을 했다(2026-11-18 · `docs/work-orders/light-theme-orders.md`)** — 앱은 이제 늘 밝게 뜨고 `ThemeForegroundBrush`가 정의됐다.
+> 진짜 다크 모드((1) · (2)안)는 만들지 않았다 — 작가에게서 요청이 나오면 (2)안으로 한 번에.
 
-## 1. 지금 상태 — 앱은 이미 OS의 어둡게를 따라가고, 판은 반쯤 깨진다
+## 1. 조사 때의 상태 — 앱은 OS의 어둡게를 따라가고, 판은 반쯤 깨졌다(⛔ (0)안으로 막았다)
 
 - **테마**: `src/Vn.App/App.axaml`의 `RequestedThemeVariant="Default"` — OS 설정을 따른다. Windows에서는 앱 색 설정(밝게/어둡게)을 읽고,
   켜진 채로 OS 설정을 바꿔도 따라 바뀐다(Avalonia.Win32 12.1.1).
@@ -74,7 +75,7 @@
 
 ## 3. 견적 — 단계 하나 = 커밋 하나, 전체 시험 통과
 
-### (0) 밝게로 잠그기 — 1–2단계, 1–1.5시간
+### (0) 밝게로 잠그기 — 1–2단계, 1–1.5시간 · ✅ 했다(2026-11-18)
 
 - `App.axaml`을 `RequestedThemeVariant="Light"`로, 시험 하나(OS가 어둡게여도 창은 밝게).
 - 함께: 빠진 `ThemeForegroundBrush`를 App의 테마 사전(Light/Dark)에 정의한다 — 잠재 결함을 걷는다.
