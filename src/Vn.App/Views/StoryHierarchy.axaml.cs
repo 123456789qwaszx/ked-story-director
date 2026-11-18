@@ -60,15 +60,9 @@ internal enum HierarchyCommand
     AddEpisode,
 
     /// <summary>
-    /// 챕터 줄 — 그 챕터를 지운다(확인 한 번 뒤 — 셸이 묻는다). 이름 바꾸기는 장면 · 에피소드 줄처럼 줄 안에서 한다(2026-11-18 소유자 — ⛔ 둘을
-    /// 함께 담던 셸의 「이름 바꾸기 · 제거…」 차림표는 걷혔다).
+    /// 에피소드 줄 — 그 에피소드를 지운다. ⛔ 챕터 줄의 「챕터 지우기」 · 장면 줄의 「장면 지우기」는 2026-11-18에 걷혔다(소유자 — 줄을 고르고 [대본]
+    /// 툴바의 [삭제]로 지운다 · <c>GraphEditorView.DeleteButton</c>).
     /// </summary>
-    DeleteChapter,
-
-    /// <summary>장면 줄 — 그 장면을 지운다(에피소드째 — 확인 한 번 뒤 — 셸이 묻는다).</summary>
-    DeleteScene,
-
-    /// <summary>에피소드 줄 — 그 에피소드를 지운다.</summary>
     DeleteEpisode
 
 }
@@ -802,9 +796,9 @@ public partial class StoryHierarchy : UserControl
     // ── 우클릭 차림표 (추가 셋은 어느 줄에서나 같은 자리에 선다) ──────────
 
     /// <summary>
-    /// 줄의 차림표 — 줄마다 제 일만 선다(2026-11-18 소유자): 프로젝트 줄 = 챕터 추가, 챕터 줄 = 장면 추가 · 이름 바꾸기 · 챕터 지우기, 장면 줄 =
-    /// 에피소드 추가 · 이름 바꾸기 · 장면 지우기, 에피소드 줄 = 이름 바꾸기 · 에피소드 지우기. ⛔ 그 전에는 「챕터 추가 · 장면 추가」가 어느 줄에서나
-    /// 같은 자리에 섰다.
+    /// 줄의 차림표 — 줄마다 제 일만 선다(2026-11-18 소유자): 프로젝트 줄 = 챕터 추가, 챕터 줄 = 장면 추가 · 이름 바꾸기, 장면 줄 = 에피소드 추가 ·
+    /// 이름 바꾸기, 에피소드 줄 = 이름 바꾸기 · 에피소드 지우기. 챕터 · 장면은 줄을 고르고 [대본] 툴바의 [삭제]로 지운다(⛔ 차림표의 「챕터 지우기」 ·
+    /// 「장면 지우기」는 같은 날 걷혔다). ⛔ 그 전에는 「챕터 추가 · 장면 추가」가 어느 줄에서나 같은 자리에 섰다.
     /// </summary>
     private ContextMenu Menu(HierarchyRow row, Control anchor)
     {
@@ -815,8 +809,7 @@ public partial class StoryHierarchy : UserControl
             [
                 MenuItemFor("장면 추가", HierarchyCommand.AddScene, row, anchor),
                 new Separator(),
-                RenameItem(row),
-                MenuItemFor("챕터 지우기", HierarchyCommand.DeleteChapter, row, anchor)
+                RenameItem(row)
             ],
 
             // 에피소드는 늘 장면에 속한다 — 장면 줄에서만 더한다(그 장면에 길 없이 선다).
@@ -824,8 +817,7 @@ public partial class StoryHierarchy : UserControl
             [
                 MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor),
                 new Separator(),
-                RenameItem(row),
-                MenuItemFor("장면 지우기", HierarchyCommand.DeleteScene, row, anchor)
+                RenameItem(row)
             ],
             HierarchyKind.Episode =>
             [

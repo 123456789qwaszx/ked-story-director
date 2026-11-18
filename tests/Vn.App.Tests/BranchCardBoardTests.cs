@@ -73,7 +73,7 @@ public sealed class BranchCardBoardTests : IDisposable
         // 분기 카드를 지운다 — 분기점은 이어지지 않은 채 남는다.
         session.Select(branch.Id);
         Dispatcher.UIThread.RunJobs();
-        Button delete = Graph(window).FindControl<Button>("DeleteNodeButton")!;
+        Button delete = Graph(window).FindControl<Button>("DeleteButton")!;
         Assert.Equal("분기 카드 삭제", delete.Content);
         delete.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();

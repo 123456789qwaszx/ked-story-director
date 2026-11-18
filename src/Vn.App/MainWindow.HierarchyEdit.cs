@@ -6,7 +6,7 @@ namespace Vn.App;
 
 /// <summary>
 /// <b>하이어아키에서 고치기</b> — 우클릭 차림표(챕터 · 장면 · 에피소드 추가, 에피소드 지우기)와 두 번 눌러 이름 바꾸기, 에피소드를 다른
-/// 장면 줄로 끌어 옮기기. 두 탭의 하이어아키가 이 한 벌을 쓴다(고치는 것은 [대본] 탭뿐 — [구성] 탭 하이어아키는 읽기 전용이다).
+/// 장면 줄로 끌어 옮기기, 고른 챕터 · 장면을 [대본] 툴바의 [삭제]로 지우기. 두 탭의 하이어아키가 이 한 벌을 쓴다(고치는 것은 [대본] 탭뿐 — [구성] 탭 하이어아키는 읽기 전용이다).
 ///
 /// 주의: 규칙은 여기 없다 — 만들기는 <c>ProjectEditor</c>, 지우기는 <see cref="EpisodeDeleter"/>, 개명은
 /// <see cref="EpisodeRenamer"/> · <see cref="ChapterRenamer"/>. 이 자리는 <b>누른 줄이 무엇을 어디에 하자는지</b>를 풀고
@@ -35,14 +35,6 @@ public partial class MainWindow
 
         switch (command)
         {
-            case HierarchyCommand.DeleteChapter:
-                ConfirmChapterRemoval(anchor, chapterId);
-                break;
-
-            case HierarchyCommand.DeleteScene when scene is not null:
-                ConfirmSceneRemoval(anchor, chapter, scene);
-                break;
-
             case HierarchyCommand.AddScene:
             {
                 // 장면은 에피소드가 들어야 있다 — 새 장면은 첫 에피소드와 함께 선다.
@@ -67,7 +59,32 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 하이어아키 장면 줄 우클릭 「장면 지우기」 — 확인 한 번 뒤에 그 장면의 에피소드(카드 · 간선째)와 그 에피소드들이 부르던 분기 카드, 장면 항목
+    /// [대본] 툴바의 [삭제]를 고른 챕터 · 장면에 눌렀다(2026-11-18 소유자 — ⛔ 하이어아키 차림표의 「챕터 지우기」 · 「장면 지우기」를 갈음한다). 단추
+    /// 옆에 확인 칸이 선다. 에피소드 · 분기 카드는 단추가 스스로 지운다(<see cref="GraphEditorView"/>).
+    /// </summary>
+    private void OnDirectorRemoveRequested(HierarchyPick pick, Control anchor)
+    {
+        if (pick.ChapterId is not { } chapterId ||
+            _chapters.FirstOrDefault(entry => string.Equals(entry.ChapterId, chapterId, StringComparison.Ordinal))
+                is not { } chapter)
+        {
+            return;
+        }
+
+        if (pick.Kind == HierarchyKind.Chapter)
+        {
+            ConfirmChapterRemoval(anchor, chapterId);
+        }
+        else if (pick.Kind == HierarchyKind.Scene &&
+                 ChapterSceneGrouping.Of(chapter.Model).FirstOrDefault(item =>
+                     string.Equals(item.SceneId, pick.SceneId, StringComparison.Ordinal)) is { } scene)
+        {
+            ConfirmSceneRemoval(anchor, chapter, scene);
+        }
+    }
+
+    /// <summary>
+    /// 고른 장면을 지운다([삭제] → 「장면 삭제」) — 확인 한 번 뒤에 그 장면의 에피소드(카드 · 간선째)와 그 에피소드들이 부르던 분기 카드, 장면 항목
     /// (이름 · 메모)을 걷는다(<see cref="Vn.Authoring.Editing.ProjectEditor.RemoveScene"/> — 되돌리기 한 칸). 에피소드 여럿이 함께 사라지므로 챕터
     /// 지우기와 같이 묻는다. 분기 카드 수는 확인 문구에 미리 센다(<see cref="ChapterBranchCards.GoingWithScene"/>).
     /// </summary>
@@ -90,8 +107,18 @@ public partial class MainWindow
                 _session.SetStatus(
                     $"장면 「{scene.DisplayName}」를 지웠습니다 — 에피소드 {removed.Episodes}개" +
                     (removed.BranchCards > 0 ? $", 분기 카드 {removed.BranchCards}장" : "") + ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                ForgetRemovedPick();
             },
             closed: () => RemoveConfirmButton = null);
+    }
+
+    /// <summary>
+    /// 지운 챕터 · 장면을 고른 채로 두지 않는다 — 인스펙터는 빈 안내로, [삭제]는 다시 「삭제」(꺼짐)로 돌아간다.
+    /// </summary>
+    private void ForgetRemovedPick()
+    {
+        _directorSummary = null;
+        ShowSelectedNode();
     }
 
     /// <summary>

@@ -992,7 +992,7 @@ public partial class DialogueNodeEditor : UserControl
         Button remove = SmallButton(label, () => RemoveBranch(node, lineId, targetId));
         ToolTip.SetTip(
             remove,
-            "이 분기(분기점과 선)만 지웁니다 — 다녀가던 카드는 판에 남습니다. 카드를 없애려면 그 카드를 고르고 [노드 삭제]를 누르세요. " +
+            "이 분기(분기점과 선)만 지웁니다 — 다녀가던 카드는 판에 남습니다. 카드를 없애려면 그 카드를 고르고 [분기 카드 삭제]를 누르세요. " +
             "되돌리기(Ctrl+Z)로 돌아옵니다.");
         return remove;
     }

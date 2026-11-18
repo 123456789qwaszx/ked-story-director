@@ -374,7 +374,7 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Height = CanvasHeight;
 
         AddDialogueButton.Click += (_, _) => AddDialogueNode();
-        DeleteNodeButton.Click += (_, _) => DeleteSelectedNode();
+        DeleteButton.Click += (_, _) => UiGuard.Run(_session, "삭제", DeleteSelected);
 
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 대사 노드]가 거기에 선다.
         // ⚠ 다시 그리기가 콤보를 맞출 때는 안 돈다(_syncingChapter) — 안 그러면
@@ -449,26 +449,86 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 지울 것의 이름을 <b>단추에 적는다</b> (2026-09-18).
+    /// 인스펙터가 요약을 세운 줄(프로젝트 · 챕터 · 장면) — 셸이 하이어아키 · 판의 빈 곳에서 고른 것을 비춘다. 카드를 고르면 null이다.
+    /// [삭제]가 무엇을 지울지 이것과 고른 카드로 정한다(<see cref="RefreshDeleteButton"/>).
+    /// </summary>
+    internal HierarchyPick? SummaryPick
+    {
+        get => _summaryPick;
+        set
+        {
+            _summaryPick = value;
+            RefreshDeleteButton();   // 같은 값이어도 — 구조가 바뀌어 고른 것이 사라졌을 수 있다
+        }
+    }
+
+    private HierarchyPick? _summaryPick;
+
+    /// <summary>[삭제]를 고른 챕터 · 장면에 눌렀다 — 셸이 단추 옆에 확인 칸을 띄우고 지운다. 에피소드 · 분기 카드는 이 뷰가 지운다.</summary>
+    internal event Action<HierarchyPick, Control>? RemoveRequested;
+
+    /// <summary>[삭제]가 지울 것.</summary>
+    private enum DeleteTarget
+    {
+        None,
+        Chapter,
+        Scene,
+        Episode,
+        BranchCard
+    }
+
+    /// <summary>고른 카드가 먼저다(에피소드 · 분기 카드), 없으면 요약이 선 챕터 · 장면 — 그것이 아직 있을 때만.</summary>
+    private DeleteTarget TargetToDelete()
+    {
+        if (_session is null)
+        {
+            return DeleteTarget.None;
+        }
+
+        if (_session.SelectedNode is DialogueNode card)
+        {
+            return card.IsBranchCard ? DeleteTarget.BranchCard : DeleteTarget.Episode;
+        }
+
+        ChapterDocument? chapter = _summaryPick?.ChapterId is { } chapterId ? _session.Editor.FindChapter(chapterId) : null;
+
+        return _summaryPick?.Kind switch
+        {
+            HierarchyKind.Chapter when chapter is not null => DeleteTarget.Chapter,
+            HierarchyKind.Scene when chapter is not null && chapter.Episodes.Any(episode =>
+                string.Equals(episode.SceneId, _summaryPick.SceneId, StringComparison.Ordinal)) => DeleteTarget.Scene,
+            _ => DeleteTarget.None
+        };
+    }
+
+    /// <summary>
+    /// 지울 것의 이름을 <b>단추에 적는다</b> (2026-09-18 · 2026-11-18 소유자 — 고른 것이 없으면 꺼진 「삭제」, 챕터 · 장면 · 에피소드 · 분기 카드를
+    /// 고르면 「챕터 삭제」 · 「장면 삭제」 · 「에피소드 삭제」 · 「분기 카드 삭제」).
     ///
-    /// ⛔ 챕터 판의 카드를 고른 채로 「노드 삭제」라고 적혀 있으면 <b>단추가 거짓말</b>이다 —
-    /// 그것을 누르면 에피소드가, 그러니까 간선까지 함께 사라진다. 누르기 <b>전에</b>
-    /// 보이는 것이 확인 한 걸음보다 먼저다.
+    /// ⛔ 고른 것과 다른 이름이 적혀 있으면 <b>단추가 거짓말</b>이다 — 누르기 <b>전에</b> 무엇이 사라지는지 보이는 것이 확인 한 걸음보다 먼저다.
     /// </summary>
     private void RefreshDeleteButton()
     {
-        bool branch = _session?.SelectedNode is DialogueNode { IsBranchCard: true };
-        bool episode = !branch && _session?.SelectedNode is DialogueNode;
+        DeleteTarget target = TargetToDelete();
 
-        DeleteNodeButton.Content = branch ? "분기 카드 삭제" : episode ? "에피소드 삭제…" : "노드 삭제";
-        ToolTip.SetTip(
-            DeleteNodeButton,
-            branch
-                ? "분기 카드를 지웁니다 — 부르던 분기점은 이어지지 않은 채 남습니다. 되돌리기 한 번으로 돌아옵니다."
-                : episode
-                    ? "이 카드는 챕터의 에피소드입니다 — 간선·픽스처 참조까지 함께 지웁니다. " +
-                      "되돌리기(Ctrl+Z)로 돌아옵니다."
-                    : "이 판의 카드 하나를 지웁니다. 되돌리기 한 번으로 돌아옵니다.");
+        DeleteButton.IsEnabled = target != DeleteTarget.None;
+        DeleteButton.Content = target switch
+        {
+            DeleteTarget.Chapter => "챕터 삭제",
+            DeleteTarget.Scene => "장면 삭제",
+            DeleteTarget.Episode => "에피소드 삭제",
+            DeleteTarget.BranchCard => "분기 카드 삭제",
+            _ => "삭제"
+        };
+        ToolTip.SetTip(DeleteButton, target switch
+        {
+            DeleteTarget.Chapter => "고른 챕터와 그 장면 · 에피소드 · 카드를 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
+            DeleteTarget.Scene => "고른 장면의 에피소드 · 카드와 그 에피소드들이 부르던 분기 카드, 장면 이름 · 메모를 지웁니다 — 한 번 더 확인합니다. " +
+                                  "되돌리기(Ctrl+Z)로 돌아옵니다.",
+            DeleteTarget.Episode => "고른 에피소드를 간선 · 픽스처 참조까지 함께 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
+            DeleteTarget.BranchCard => "분기 카드를 지웁니다 — 부르던 분기점은 이어지지 않은 채 남습니다. 되돌리기 한 번으로 돌아옵니다.",
+            _ => "하이어아키나 판에서 챕터 · 장면 · 에피소드를 고르면 그것을 지웁니다."
+        });
     }
 
     // ── 그리기 ──────────────────────────────────────────────────────────────
@@ -2018,7 +2078,7 @@ public partial class GraphEditorView : UserControl
         // (편집·재빌드)에 화면이 끼어들면 스크롤해 둔 자리를 빼앗는다.
         if (!string.Equals(_session?.SelectedNodeId, _followedNodeId, StringComparison.Ordinal))
         {
-            // 노드 삭제의 대체 선택(사라진 노드 → 첫 노드)은 사용자가 고른 게 아니다 —
+            // 지우기의 대체 선택(사라진 노드 → 첫 노드)은 사용자가 고른 게 아니다 —
             // 화면을 옮기지 않는다 (소유자 지시 2026-08-06).
             bool deletionFallback = _followedNodeId is not null &&
                 _session?.Project.FindNode(_followedNodeId) is null;
@@ -5342,47 +5402,54 @@ public partial class GraphEditorView : UserControl
             : chapter.Episodes.FirstOrDefault(episode => string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))?.SceneId;
     }
 
-    private void DeleteSelectedNode()
+    private void DeleteSelected()
     {
-        if (_session?.SelectedNodeId is not { } nodeId)
+        if (_session is null)
         {
             return;
         }
 
-        // ⛔ 설정 노드를 지우지 않게 막던 자리는 2026-10-29(L6)에 걷혔다 — 설정 노드는 이제
-        //    연출 그래프에 카드가 없어(`GraphProjectionBuilder.IsHiddenPlumbing`) 고를 수 없다.
-
-        // ⭐ <b>판의 카드는 에피소드 아니면 분기 카드다</b> (R7 P-6 · 2026-11-17 분기 카드). 에피소드 카드를 지우는 것은 <b>에피소드를
-        //    지우는 일</b>이고, 하이어아키의 「에피소드 지우기」와 같은 길을 지나야 한다 — 2026-09-18까지는 카드만 걷어 <b>대본 없는 반쪽
-        //    에피소드</b>가 남았다(만들기는 합쳐 놓고 지우기는 안 합친 자리였다).
-        //
-        // ⚠ <b>여기서만 묻는다.</b> 하이어아키의 「에피소드 지우기」는 이름이 이미 무엇을 지우는지 말하지만, 여기서 사람은 <b>카드를
-        //    지운다고 생각하고</b> 누른다 — 지워지는 것은 카드 하나가 아니라 에피소드와 그 간선이다.
-        // 분기 카드는 에피소드가 아니다(2026-11-17) — 카드만 지운다. 부르던 분기점은 이어지지 않은 채 남는다. 되돌리기 한 번에 돌아온다.
-        if (_session.Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } branch)
+        switch (TargetToDelete())
         {
-            _session.Editor.RemoveNode(nodeId);
-            _session.SetStatus(
-                $"분기 카드 '{branch.Name}'을(를) 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
-                "되돌리기(Ctrl+Z)로 돌아옵니다.");
-            return;
+            // 챕터 · 장면은 셸이 묻고 지운다 — 챕터 지우기(판 · 조건 배관 · 진행 JSON)와 장면 지우기는 셸의 일이다.
+            case DeleteTarget.Chapter or DeleteTarget.Scene:
+                RemoveRequested?.Invoke(_summaryPick!, DeleteButton);
+                return;
+
+            // 분기 카드는 에피소드가 아니다(2026-11-17) — 카드만 지운다. 부르던 분기점은 이어지지 않은 채 남는다. 되돌리기 한 번에 돌아온다.
+            case DeleteTarget.BranchCard:
+            {
+                DialogueNode branch = (DialogueNode)_session.SelectedNode!;
+                _session.Editor.RemoveNode(branch.Id);
+                _session.SetStatus(
+                    $"분기 카드 '{branch.Name}'을(를) 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
+                    "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                return;
+            }
+
+            // ⭐ <b>판의 카드는 에피소드 아니면 분기 카드다</b> (R7 P-6 · 2026-11-17 분기 카드). 에피소드 카드를 지우는 것은 <b>에피소드를
+            //    지우는 일</b>이고, 하이어아키의 「에피소드 지우기」와 같은 길을 지나야 한다 — 2026-09-18까지는 카드만 걷어 <b>대본 없는 반쪽
+            //    에피소드</b>가 남았다(만들기는 합쳐 놓고 지우기는 안 합친 자리였다).
+            //
+            // ⚠ <b>여기서 묻는다.</b> 하이어아키의 「에피소드 지우기」는 이름이 이미 무엇을 지우는지 말하지만, 여기서 사람은 <b>카드를
+            //    지운다고 생각하고</b> 누른다 — 지워지는 것은 카드 하나가 아니라 에피소드와 그 간선이다.
+            case DeleteTarget.Episode:
+            {
+                DialogueNode card = (DialogueNode)_session.SelectedNode!;
+                ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, card);
+                string episodeId = EpisodeNaming.EpisodeIdOf(card);
+
+                DeleteConfirmButton = ConfirmFlyout.Show(
+                    DeleteButton,
+                    _session,
+                    $"'{episodeId}'은 챕터 '{chapter.ChapterId}'의 에피소드입니다. " +
+                    "간선·픽스처 참조까지 함께 지웁니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.",
+                    "에피소드 지우기",
+                    () => DeleteEpisodeOfCard(chapter.ChapterId, episodeId),
+                    closed: () => DeleteConfirmButton = null);
+                return;
+            }
         }
-
-        if (_session.Project.FindNode(nodeId) is DialogueNode card)
-        {
-            ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, card);
-            string episodeId = EpisodeNaming.EpisodeIdOf(card);
-
-            DeleteConfirmButton = ConfirmFlyout.Show(
-                DeleteNodeButton,
-                _session,
-                $"'{episodeId}'은 챕터 '{chapter.ChapterId}'의 에피소드입니다. " +
-                "간선·픽스처 참조까지 함께 지웁니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.",
-                "에피소드 지우기",
-                () => DeleteEpisodeOfCard(chapter.ChapterId, episodeId),
-                closed: () => DeleteConfirmButton = null);
-        }
-
     }
 
     /// <summary>

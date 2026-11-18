@@ -104,6 +104,9 @@ public partial class MainWindow
         // 챕터 밖의 빈 판은 화자.
         Graph.AreaPicked += pick => UiGuard.Run(_session, "판", () => PickInDirector(pick));
 
+        // [대본] 툴바의 [삭제]가 고른 챕터 · 장면을 지우자고 한다 — 확인 칸은 셸이 띄운다(챕터 · 장면 지우기는 셸의 일이다).
+        Graph.RemoveRequested += (pick, anchor) => UiGuard.Run(_session, "삭제", () => OnDirectorRemoveRequested(pick, anchor));
+
         // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
         ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenChoiceInDirector(chapterId, from, to, label));
@@ -418,6 +421,9 @@ public partial class MainWindow
         {
             Graph.SetInspectorHeader("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다");
         }
+
+        // 요약이 선 줄(프로젝트 · 챕터 · 장면) — [삭제]가 무엇을 지울지 본다(2026-11-18 소유자).
+        Graph.SummaryPick = summary && _directorLine is null ? _directorSummary : null;
 
         // 장면 요약이 서 있는 동안 [＋ 대사 노드]는 그 장면에 세운다(2026-11-17).
         Graph.NewNodeScene = summary && _directorLine is null &&

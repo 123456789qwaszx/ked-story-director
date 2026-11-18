@@ -375,7 +375,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 하이어아키 챕터 줄 우클릭 「챕터 지우기」 — <b>확인 한 번</b> 뒤에 지운다(누른 줄 옆에 붙는 확인 칸 — [대본] 「에피소드 삭제…」와 같은
+    /// 고른 챕터를 지운다([대본] 툴바 [삭제] → 「챕터 삭제」) — <b>확인 한 번</b> 뒤에 지운다(누른 단추 옆에 붙는 확인 칸 — 「에피소드 삭제」와 같은
     /// <see cref="ConfirmFlyout"/>). 챕터 · 판 · 조건 배관을 함께 걷는다(<see cref="ChapterDeleter"/>) — 사람이 폴더에서 손으로 지우면 절반만
     /// 지워진다(판과 노드가 남아 이름이 겹치는 번들로 뒤늦게 터진다). 되돌리기 한 칸.
     /// ⛔ 2026-11-18까지는 이름 칸 · [이름 바꾸기] · 두 번 누르는 [챕터 제거…]를 한 플라이아웃에 담았다(소유자 — 둘을 나눈다).
@@ -400,6 +400,7 @@ public partial class MainWindow : Window
                 }
 
                 ChapterGraph.Refresh();
+                ForgetRemovedPick();
                 RefreshShell();
                 _session.SetStatus(
                     $"챕터 「{shown}」를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). 되돌리기(Ctrl+Z)로 돌아옵니다." +
@@ -409,7 +410,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 뜬 「챕터 지우기」 · 「장면 지우기」 확인 단추 — 화면 시험의 손잡이다(플라이아웃의 팝업은 창 밖에 살아 나무를 타고 내려가 찾을 수 없다).
+    /// 뜬 「챕터 지우기」 · 「장면 지우기」 확인 단추([삭제] → 「챕터 삭제」 · 「장면 삭제」가 띄운다) — 화면 시험의 손잡이다(플라이아웃의 팝업은 창 밖에 살아 나무를 타고 내려가 찾을 수 없다).
     /// 없으면 null.
     /// </summary>
     internal Button? RemoveConfirmButton { get; private set; }

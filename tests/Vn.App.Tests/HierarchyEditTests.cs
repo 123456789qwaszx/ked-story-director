@@ -42,10 +42,10 @@ public sealed class HierarchyEditTests : IDisposable
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
 
-        // 2026-11-18 소유자 — 줄마다 제 일만 선다.
+        // 2026-11-18 소유자 — 줄마다 제 일만 선다. 챕터 · 장면 지우기는 차림표에 없다 — 줄을 고르고 툴바의 [삭제]로 지운다.
         Assert.Equal(["챕터 추가"], Headers(tree, StoryHierarchy.ProjectKey));
-        Assert.Equal(["장면 추가", "이름 바꾸기", "챕터 지우기"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
-        Assert.Equal(["에피소드 추가", "이름 바꾸기", "장면 지우기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
+        Assert.Equal(["장면 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
+        Assert.Equal(["에피소드 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
         Assert.Equal(["이름 바꾸기", "에피소드 지우기"], Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
 
         window.Close();
@@ -385,9 +385,10 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
-    public void 챕터_줄의_이름_바꾸기는_줄_안에서_하고_지우기는_한_번_확인한_뒤_지운다() => HeadlessUi.Run(() =>
+    public void 챕터_줄의_이름_바꾸기는_줄_안에서_하고_지우기는_고른_뒤_삭제_단추로_한_번_확인한_뒤_지운다() => HeadlessUi.Run(() =>
     {
         // 2026-11-18 소유자 — 「이름 바꾸기 · 제거…」를 나눈다. 이름 바꾸기는 장면 · 에피소드와 같이 줄 안에서, 제거만 한 번 확인한다.
+        // 같은 날 — 제거는 차림표가 아니라 툴바의 [삭제]로.
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         string key = StoryHierarchy.ChapterKey("ch02");
@@ -397,8 +398,11 @@ public sealed class HierarchyEditTests : IDisposable
         Rename(tree, key, "축제 당일", Key.Enter);
         Assert.Equal("축제 당일", session.Editor.FindChapter("ch02")!.DisplayName);
 
-        // 제거 — 차림표를 누르면 확인 칸만 선다(아직 지우지 않는다).
-        Click(tree, key, "챕터 지우기");
+        // 지우기 — 줄을 고르면 툴바의 [삭제]가 「챕터 삭제」가 되고, 누르면 확인 칸만 선다(아직 지우지 않는다 · 2026-11-18 소유자).
+        Pick(tree, key);
+        Button delete = DeleteButton(window);
+        Assert.Equal(("챕터 삭제", true), ((string?)delete.Content, delete.IsEnabled));
+        Press(delete);
         Assert.NotNull(session.Editor.FindChapter("ch02"));
         Button confirm = window.RemoveConfirmButton!;
         Assert.Equal("챕터 지우기", confirm.Content);
@@ -410,6 +414,7 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Null(EpisodeNaming.BoardOf(session.Project, "ch02"));
         Assert.DoesNotContain(tree.Rows, row => row.Key == key);
         Assert.Equal(before + 1, session.Editor.Revision);   // 되돌리기 한 칸
+        Assert.Equal(("삭제", false), ((string?)delete.Content, delete.IsEnabled));   // 고른 것이 사라졌다 — 다시 꺼진 「삭제」
 
         session.Editor.Undo();
         Assert.NotNull(session.Editor.FindChapter("ch02"));
@@ -418,9 +423,9 @@ public sealed class HierarchyEditTests : IDisposable
     });
 
     [Fact]
-    public void 장면_지우기는_한_번_확인한_뒤_그_장면의_에피소드와_분기_카드와_항목을_한_칸에_걷는다() => HeadlessUi.Run(() =>
+    public void 장면은_고른_뒤_삭제_단추로_한_번_확인하고_그_장면의_에피소드와_분기_카드와_항목을_한_칸에_걷는다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-18 소유자 — 장면 줄: 에피소드 추가 · 이름 바꾸기 · 장면 지우기.
+        // 2026-11-18 소유자 — 장면을 고르면 툴바의 [삭제]가 「장면 삭제」가 된다(차림표의 「장면 지우기」는 걷혔다).
         (MainWindow window, StoryHierarchy tree) = Open();
         AuthoringSession session = window.SessionProbe;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
@@ -430,7 +435,10 @@ public sealed class HierarchyEditTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         string key = StoryHierarchy.SceneKey("ch01", "opening");
 
-        Click(tree, key, "장면 지우기");
+        Pick(tree, key);
+        Button delete = DeleteButton(window);
+        Assert.Equal(("장면 삭제", true), ((string?)delete.Content, delete.IsEnabled));
+        Press(delete);
         Assert.Equal(3, Chapter(session).Episodes.Count);   // 확인 전에는 지우지 않는다
         Button confirm = window.RemoveConfirmButton!;
         Assert.Equal("장면 지우기", confirm.Content);
@@ -447,6 +455,7 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Contains("분기 카드 1장", session.StatusMessage, StringComparison.Ordinal);
         Assert.DoesNotContain(tree.Rows, row => row.Key == key);
         Assert.Equal(before + 1, session.Editor.Revision);                                     // 되돌리기 한 칸
+        Assert.Equal(("삭제", false), ((string?)delete.Content, delete.IsEnabled));
 
         session.Editor.Undo();
         Assert.Equal(3, Chapter(session).Episodes.Count);
@@ -480,6 +489,23 @@ public sealed class HierarchyEditTests : IDisposable
         Items(tree, key).Select(item => (string)item.Header!).ToArray();
 
     /// <summary>그 줄의 차림표에서 그 항목을 누른다.</summary>
+    /// <summary>하이어아키의 그 줄을 누른다(고르기).</summary>
+    private static void Pick(StoryHierarchy tree, string key)
+    {
+        tree.RowButton(key)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>[대본] 툴바의 [삭제].</summary>
+    private static Button DeleteButton(MainWindow window) =>
+        window.FindControl<GraphEditorView>("Graph")!.FindControl<Button>("DeleteButton")!;
+
+    private static void Press(Button button)
+    {
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+    }
+
     private static void Click(StoryHierarchy tree, string key, string header)
     {
         Items(tree, key).Single(item => (string?)item.Header == header).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
