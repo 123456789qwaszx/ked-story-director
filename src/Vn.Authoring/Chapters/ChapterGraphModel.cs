@@ -292,17 +292,6 @@ public sealed class ChapterGraphModel
     /// <summary>장면 메모 — <see cref="ChapterDocument.SceneNotes"/>. 런타임은 읽지 않는다.</summary>
     public IReadOnlyList<ChapterSceneNote> SceneNotes { get; init; } = [];
 
-    /// <summary>
-    /// 고를 수 있는 문구들 — 사전에 적힌 것 + 간선이 이미 쓰고 있는 것의 합집합(중복 제거).
-    /// 사전에 없는 문구를 손으로 고친 파일에서도 툴의 드롭다운이 그 값을 잃지 않는다.
-    /// </summary>
-    public IReadOnlyList<string> ChoiceLabels =>
-        field ??= ChoiceOptions.Select(option => option.Text)
-            .Concat(Edges.Select(edge => edge.OptionLabel ?? string.Empty))
-            .Where(text => !string.IsNullOrWhiteSpace(text))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-
     public IReadOnlyList<ChapterDiagnostic> Diagnostics { get; }
 
     public bool HasErrors =>

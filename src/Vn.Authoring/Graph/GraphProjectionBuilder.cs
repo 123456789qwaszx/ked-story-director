@@ -290,8 +290,8 @@ public static class GraphProjectionBuilder
     /// 안다. 상한을 모델에 박는 것은 v9가 없앤 `선택지수` 칸을 되살리는 일이다.
     ///
     /// <b>챕터 판의 대사 노드는 전부 낸다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는
-    /// 에피소드 노드만 냈지만 자유 씬이라는 종류가 없어졌다 — 카드를 세우는 것이 곧
-    /// 에피소드를 만드는 일이라 칸을 못 낼 노드가 없다(분기 카드는 빼고).
+    /// 에피소드 노드만 냈지만 자유 씬이라는 종류가 없어졌다 — 판의 카드는 에피소드이거나 분기 카드라
+    /// 칸을 못 낼 노드가 없다(분기 카드는 선택지가 없어 빼고).
     /// </summary>
     private static IEnumerable<GraphOutputPortProjection> ChoiceSlots(
         StoryNode node, StoryFile file, StoryProject project)

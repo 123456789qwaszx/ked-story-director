@@ -139,7 +139,7 @@ public sealed partial class ProjectEditor
     /// 것</b>을 갈라 둔다.
     ///
     /// <b>챕터 판에 세우면 에피소드도 함께 선다</b>.
-    /// 자유 씬이라는 종류가 없으므로 <b>판의 대사 노드는 전부 에피소드</b>다 — 카드를
+    /// 자유 씬이라는 종류가 없으므로 <b>판의 대사 노드는 에피소드이거나 분기 카드</b>다 — 에피소드 카드를
     /// 세우는 것이 곧 에피소드를 만드는 일이고, 그래서 어긋난 이름이 애초에 안 생긴다.
     /// </summary>
     private (DialogueNode Created, ChapterEpisode? Episode, Action Attach) NewDialogueNodeCore(

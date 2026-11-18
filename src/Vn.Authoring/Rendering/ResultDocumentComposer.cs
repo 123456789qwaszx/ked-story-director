@@ -152,7 +152,7 @@ public static class ResultDocumentComposer
             // 「조건 분기」 표식 (R7 P-5) — 이 줄 <b>앞에서</b> 다녀온다. 전환과 같은 규약이다.
             //
             // 조건이 없다: `<<if>>`로 감싸지 않고 `<<detour>>` 한 줄만 나간다. 성립하든
-            //   말든 다녀오고, 다녀온 자유 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다.
+            //   말든 다녀오고, 다녀온 분기 카드가 제 첫머리에서 보고 아니면 곧바로 돌아온다.
             //   여럿이면(2026-10-29) 적힌 차례로 한 줄씩 — 첫째의 Id는 그전과 같다.
             for (int detour = 0; detour < line.DetourTargetNodeIds.Count; detour++)
             {

@@ -285,9 +285,6 @@ internal static class StoryNodeJson
 
             json["trailing"] = trailing;
         }
-
-        // 선택지별 자유 씬 배선 (v9) — 열쇠가 대본의 줄이 아니라 <b>문구</b>다. 그래서
-        // 줄 항목 안이 아니라 노드에 따로 선다(대본이 바뀌어도 이 배선은 그대로다).
     }
 
     private static SetNode ReadSetNode(JsonObject json, string id, string name)

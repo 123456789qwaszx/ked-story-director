@@ -46,9 +46,9 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
                                      dialogueYarnFolder). 저장할 때만 exported/를 거기로 비춘다(ExportDelivery · 보낸 기록 exported/.delivered.json)
 ```
 
-챕터는 장면 항목(`sceneNotes[]` — 장면마다 이름(`name`)과 자유 글(`text`), 열쇠는 `EffectiveSceneId`)을 든다. [대본] 탭은 이 이름 · 챕터 표시
+챕터는 장면 항목(`sceneNotes[]` — 장면마다 이름(`name`)과 자유 글(`text`), 열쇠는 `SceneId`)을 든다. [대본] 탭은 이 이름 · 챕터 표시
 이름 · 에피소드 제목만 다루고 ID는 [구성] 탭에서 바꾼다(2026-11-16 · [`docs/work-orders/display-names-orders.md`](docs/work-orders/display-names-orders.md)). 장면이 아니라 곁 자료다 — 장면의 구성원은
-늘 `Episode.SceneId`에서 계산한다. 에피소드마다의 지시는 에피소드의 `memo`다(2026-11-16 · [`docs/work-orders/scene-notes-orders.md`](docs/work-orders/scene-notes-orders.md)).
+늘 `Episode.SceneId`에서 계산하고, 에피소드는 늘 장면에 속한다(빈 장면ID는 읽지도 세우지도 않는다 · 2026-11-18). 에피소드마다의 지시는 에피소드의 `memo`다(2026-11-16 · [`docs/work-orders/scene-notes-orders.md`](docs/work-orders/scene-notes-orders.md)).
 
 | 형식 | 상수 | 파일 |
 |---|---|---|
@@ -100,7 +100,7 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 | `ChapterGraphModel.cs` | **펼친 모델** — `ChapterEpisode` · `ChapterEdge`(`Where` = 사람이 읽는 자리) · `ChapterCondition` · `ChapterStat` · `ChapterChoiceOption` · `ChapterFixture` · `Diagnostics` · `EpisodeHasError` |
 | `ChapterDiagnostic.cs` | 진단 하나 — 심각도 · 코드 · 자리(`Sheet`) · 대상 에피소드(`EpisodeId`) · 메시지 |
 | `ChapterStructureCheck.cs` · `ChapterAutoEdgeCheck.cs` · `ChapterSceneEntryCheck.cs` | **모델 검사** — 값의 흠(빈 · 겹친 Id, 끝점, 관문 라벨, 문구, 스탯 어휘, 자동 길 규칙, 장면 진입점) |
-| `ChapterValidator.cs` | 모델 검사 + **판과 맞대는 검사**(대사엔트리의 카드가 있나 · 재생할 줄이 있나) + 도달성 증명을 한 벌로 |
+| `ChapterValidator.cs` | 모델 검사 + **판과 맞대는 검사**(재생할 줄이 있나) + 도달성 증명을 한 벌로 |
 | `ChapterReachabilityProver.cs` | (에피소드, 스탯 벡터) 상태공간을 끝까지 걸어 "닿을 수 있는가"를 증명. 도착 스탯 폭도 걷는 김에 적는다 |
 | `ChapterProgressionExporter.cs` | 진행 JSON. 낸 것을 `Ked.Progression.ProgressionLoader`에 다시 실어 보고 거부 사유를 에피소드 · 간선으로 옮긴다(`CoreRefusals`) |
 | `ChapterExportService.cs` | 검증 캐시(지문 = 챕터 모델 + 판의 노드 이름) · 전 챕터 자동 내보내기(`exported/`만) · 거부 장부 |
@@ -122,7 +122,7 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 | `DialogueScriptResolver.cs` | 대본 줄 + 줄 논리를 합친 읽기 전용 투영(고아 줄 포함) |
 | `BranchAnchor.cs` | 조건 갈래의 신원을 짓는 유일한 자리 |
 | `NodeConnections.cs` | 실행 출구 포트(`PortsOf`)와 간선 문구 |
-| `AvailableConditionResolver.cs` · `ConnectedSetNodeResolver.cs` · `ConditionChoices.cs` | 쓸 수 있는 조건(게임 전역 + 같은 판의 설정노드) · 드롭다운에 무엇을 보일지 |
+| `AvailableConditionResolver.cs` · `ConnectedSetNodeResolver.cs` | 쓸 수 있는 조건 — 그 판의 챕터 조건(공급 노드의 사본) |
 
 ### 3.5 `Vn.Authoring/Graph` — 그래프에 무엇을 그릴지
 
@@ -143,7 +143,7 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 | `ProjectEditor.cs` | 판 · 노드 · 조건 · 출구(`SetExitTarget`) · 줄 전환 · 선 모양 · 되돌리기 |
 | `ProjectEditor.Scripts.cs` | 대본 줄(`InsertScriptLine` · `RetireScriptLine` · `MoveScriptLine` · `SetScriptLineText`) · 카드 글 반영(`ApplyScenarioText` — 화자 가르기는 프로젝트의 화자 목록을 본다) |
 | `ProjectEditor.Speakers.cs` | 화자 목록(`AddSpeaker` · `RemoveSpeaker` · `SetSpeakerCharacterId`) · 화자 개명(`RenameSpeaker` — 목록과 이미 쓴 줄을 한 칸에) |
-| `ProjectEditor.Chapters.cs` | 챕터 · 에피소드 · 간선(`AddEdge(before:)` — 줄 자리에 끼운다) · 조건 · 스탯(개명 · 삭제 — 그 챕터의 공급 노드만) · 판 맞추기(`AlignBoardsWithChapters`) |
+| `ProjectEditor.Chapters.cs` | 챕터 · 에피소드(장면을 꼭 받는다 — 카드와 한 칸에 서고 함께 지워진다) · 간선(`AddEdge(before:)` — 줄 자리에 끼운다) · 조건 · 스탯(개명 · 삭제 — 그 챕터의 공급 노드만) |
 | `ProjectChangedEventArgs.cs` | 변경의 종류(`ProjectChangeKind`) — 화면이 무엇을 다시 그릴지(`Vn.App/Services/ProjectRefreshPlanner`)의 근거 |
 
 ### 3.7 `Vn.Authoring/Rendering` · `Results` — 평평한 글로 펴기
@@ -282,8 +282,8 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 하고 싶은 일 | 여는 곳 |
 |---|---|
 | if/elseif/endif의 뜻 | `Flow/ConditionFlowResolver.cs` ← **이 파일이 조건 모델 그 자체다** |
-| 전환 종류 추가 | `Model/DialogueLineExtension.cs`의 `ConditionTransitionKind` → 위 해석자 → `Flow/ConditionChoices.cs` |
-| 드롭다운에 무엇을 보일지 · 쓸 수 있는 조건 | `Flow/ConditionChoices.cs` · `Flow/AvailableConditionResolver.cs` |
+| 전환 종류 추가 | `Model/DialogueLineExtension.cs`의 `ConditionTransitionKind` → 위 해석자 |
+| 쓸 수 있는 조건 | `Flow/AvailableConditionResolver.cs` |
 | 갈래 신원 | `Flow/BranchAnchor.cs` |
 | 갈래 색 | 자리는 `Flow/DialogueFlow.cs`의 `PaletteIndex`, 색은 `App/Views/BranchPalette.cs` |
 | 잘못된 구조를 알리는 방식 | `Flow/DialogueFlow.cs`의 `FlowProblemKind` |
@@ -407,7 +407,13 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 옛 모양을 고쳐 받거나 알리던 길(선 모양 열쇠 `detour:{줄}` · 수로 적힌 `openDetours` · 걷힌 대사 안 선택 전환 · `cleared:`의 안내 ·
 이름이 어긋난 조건 공급 사본)도 걷었다 — 그런 파일은 깨진 파일로 거절되거나 모르는 칸으로 지나간다. ⛔ 연출 층을 담은 옛 프로젝트(형식 3)는
 연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남겼다 — 이제 열지 않는다.
-열 때 카드 없는 에피소드에는 빈 카드가 선다(`AlignBoardsWithChapters`).
+
+**형식 4 안에서도 쓰는 모양만 받는다**(2026-11-18 · [`docs/work-orders/old-shapes-orders.md`](docs/work-orders/old-shapes-orders.md)). 읽기는 늘 쓰는 칸이
+빠졌거나 모양이 다르면 거절하고(`JsonSupport`의 엄격한 읽기 — 비어서 안 쓰는 칸만 없어도 된다), 저장 검증(`JsonSupport.ValidateProject` — 읽기 ·
+저장 · 되돌리기 스냅샷이 모두 지난다)이 불변식을 지킨다: 판은 챕터마다 하나 · 에피소드마다 그 판에 표식 카드 하나(이름 = EpisodeId) · 분기 카드는
+표식이 없다 · 에피소드는 장면에 속한다 · 분기는 같은 판의 분기 카드로만 · 설정 노드는 판의 챕터 조건 공급 노드 하나 · 화자 이름은 비지 않고 겹치지
+않는다. 툴이 만들지 않는 모양을 견디는 길은 두지 않는다. ⛔ 그 전에는 열 때 카드 없는 에피소드에 빈 카드를 세우고(`AlignBoardsWithChapters`),
+장면 없는 에피소드를 「미지정」 장면으로, 빠진 칸을 대신 값으로 읽었다.
 
 ## 9. 확인 방법
 
@@ -426,11 +432,11 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 | 파일 | 지키는 것 |
 |---|---|
 | `ScriptSyncTests` · `ScenarioPasteTests` · `CardWritingTests` · `LineIdRoundTripTests` | 글을 다시 넣어도 LineId가 이어진다 · 애매하면 멈춘다 · 카드 글 칸 왕복 |
-| `ConditionFlowTests` · `ConditionChoiceTests` · `ConditionSupplyTests` | 조건 해석 · 드롭다운 · 조건 범위(판) |
+| `ConditionFlowTests` · `ConditionSupplyTests` | 조건 해석 · 조건 범위(판) |
 | `ExitTests` · `ConnectionTests` · `EmptyBranchTests` | 출구는 여는 줄에 · 고아로 남는다 · 포트 |
 | `EditingTests` · `RenameCarriesReferencesTests` | 화자 · 대사의 원본이 대본에만 · 되돌리기 · 개명이 참조를 끈다 |
 | `ResultDocumentComposerTests` · `OutputPresetTests` | 조각 순서와 원본 매핑 · 프리셋 |
-| `SerializationTests` · `StoryFileTests` | 결정적 JSON · 원자적 저장 · 이전 형식 거부 |
+| `SerializationTests` · `StoryFileTests` · `Chapters/EpisodeCardInvariantTests` | 결정적 JSON · 원자적 저장 · 이전 형식 거부 · 쓰는 모양만 받는다(불변식 거절) |
 | `GraphProjectionTests` · `EdgeSideTests` · `EdgeShapeTests` | 무엇이 그려지나 · 선의 쪽 · 선 모양 |
 | `CoreCopyInStepTests` | `Ked.Progression` 사본이 런타임과 발맞춰 있다 |
 | `Chapters/ChapterReachabilityTests` · `ChapterReachabilityEquivalenceTests` | 도달성 증명 · 코어와 같은 답 |
@@ -439,4 +445,4 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 | `Chapters/SupplyScopeTests` · `EpisodeErrorMarkTests` | 챕터 범위 · 카드 오류 표식 |
 | `Vn.App.Tests/ChapterGraphWorkAmountTests` | 갱신 경로의 일의 횟수 |
 | `Vn.App.Tests/ChapterRailTests` · `ChoiceSlotTests` · `GraphChoiceSideTests` · `GraphEdgeShapeTests` | 선택지 줄 · 줄 차례 · 쪽 · 선 고치기(헤드리스) |
-| `Vn.App.Tests/ShellUndoTests` · `OpenAlignmentTests` · `TestProcessIsolation` | 셸 되돌리기 · 열 때 판 맞추기 · 테스트가 사용자 설정을 건드리지 않는다 |
+| `Vn.App.Tests/ShellUndoTests` · `TestProcessIsolation` | 셸 되돌리기 · 테스트가 사용자 설정을 건드리지 않는다 |

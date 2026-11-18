@@ -78,7 +78,7 @@ Scenario(회차) > Chapter > Scene > Episode
 | | 규칙 | 근거 |
 |---|---|---|
 | ① | **정본은 `Episode.SceneId` 하나다.** 같은 값을 가진 에피소드들이 한 Scene이다 | 런타임에도 저장되는 Scene 테이블이 없다 — `SceneProgression`은 **실행 시** 만들어진다 |
-| ② | **빈 값은 `__scene_{EpisodeId}`** — 에피소드 하나가 곧 장면 하나인 퇴화 상태 | `EpisodeNode` 생성자가 발급. 구판 워크북 호환이 여기 산다 |
+| ② | **늘 채운다** — 에피소드는 늘 장면에 속한다(2026-11-17 · 읽기는 2026-11-18). 런타임은 빈 값을 `__scene_{EpisodeId}`(에피소드 하나 = 장면 하나인 퇴화 상태)로 받지만 이 툴은 그 모양을 내지도 읽지도 않는다 | `EpisodeNode` 생성자가 빈 값에 발급(런타임의 구판 호환) · 툴은 저장 검증이 빈 장면ID를 거절한다 |
 | ③ | **Scene에 밖에서 들어오는 자리는 하나**(=루트). 챕터 시작도 그 하나로 센다. 같은 루트로 여러 간선·재진입은 정상 | `ChapterInvariants.VerifySceneEntries`. 롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 그 자리다 |
 | ④ | **자동 간선은 장면을 못 넘는다** | 장면 경계는 실제로 `Commit → Exit → Enter`다 — 모르게 넘어가면 안 된다 |
 
@@ -451,7 +451,7 @@ Option : { TargetEpisodeId, ChoiceLabel, VisibleConditions[], Conditions[],
 | `Nodes[]` | `EpisodeNode` | |
 | `NextOptions[]` | `EpisodeOption` | **배열 순서 = 화면 순서 = 서버 이력의 `OptionIndex`**(§C3). 정렬 금지 |
 | **`Node.EventKey`** | `EpisodeNode.EventKey` | ✅ **양쪽 다 섰다** — 이쪽 v14(08-26)부터 내고, 저쪽 DTO 칸도 같은 날(`665e47e1`). 해석 없이 실어 나르고, 장면 끝 fold에서 시청 보고(`PendingEvent`)의 열쇠가 된다. "칸 부탁 중"은 끝 |
-| **`Node.SceneId`** | `EpisodeNode.SceneId` | ✅ **양쪽 다 섰다 (2026-09-16 확인).** 이쪽은 `에피소드` 시트의 `장면ID` 칸을 그대로 낸다(빈 값도 빈 문자열로). 비면 저쪽 `EpisodeNode` **생성자**가 `__scene_{EpisodeId}`를 발급해 **에피소드 하나 = 장면 하나인 퇴화 상태**가 된다(매 에피소드 무대 클리어, 에피소드를 넘는 롤백 없음) — 구판 호환은 그 자리에서 산다.<br>불변식: 장면마다 밖에서 들어오는 자리 하나(**챕터 시작도 그 하나로 센다**, 재진입 허용). 이어하기는 장면 루트에서만. 자동 간선은 장면을 못 넘는다.<br>⛔ **이쪽이 그 불변식을 따로 구현하지 않는다** — 내보내기가 낸 JSON을 코어 로더에 되먹여(`ProgressionLoader.Load`) 코어의 Error를 `CoreRefusedChapter`로 세우고 **그 간선의 행까지 짚는다**. 판정의 주인은 코어 하나다 |
+| **`Node.SceneId`** | `EpisodeNode.SceneId` | ✅ **양쪽 다 섰다 (2026-09-16 확인).** 이쪽은 에피소드의 장면ID를 그대로 낸다 — **늘 채운다**(2026-11-18 — 에피소드는 늘 장면에 속하고 빈 장면ID는 읽지 않는다; ⛔ 그 전에는 빈 값도 빈 문자열로 냈다). 비면 저쪽 `EpisodeNode` **생성자**가 `__scene_{EpisodeId}`를 발급해 **에피소드 하나 = 장면 하나인 퇴화 상태**가 된다(매 에피소드 무대 클리어, 에피소드를 넘는 롤백 없음) — 구판 호환은 그 자리에서 산다.<br>불변식: 장면마다 밖에서 들어오는 자리 하나(**챕터 시작도 그 하나로 센다**, 재진입 허용). 이어하기는 장면 루트에서만. 자동 간선은 장면을 못 넘는다.<br>⛔ **이쪽이 그 불변식을 따로 구현하지 않는다** — 내보내기가 낸 JSON을 코어 로더에 되먹여(`ProgressionLoader.Load`) 코어의 Error를 `CoreRefusedChapter`로 세우고 **그 간선의 행까지 짚는다**. 판정의 주인은 코어 하나다 |
 | ~~`EndingRules`~~ | **저쪽에서 폐지** (`5e424840`) | 이쪽은 여전히 빈 배열을 낸다 — Newtonsoft가 모르는 칸을 버려 무해. 재반입(§G-11)하면 이쪽 DTO에서도 사라진다 |
 | ~~`Option.Kind`~~ | **저쪽에서 폐지** (`adfda627` — 자동 진행 자체가 폐지) | §G-7 종결. 이쪽이 내는 값은 버려진다 |
 | ~~`Option.HideWhenLocked`~~ | **저쪽 DTO에 없다** | 옛 F4의 "저쪽 DTO는 그대로 둔다"는 낡았다 — 저쪽이 걷었다 |
@@ -597,11 +597,12 @@ bool 어휘 준수 · **장면마다 밖에서 들어오는 자리가 하나**(`
 퇴화 상태(에피소드 = 장면)라 갈림이 안 보이지만, 내기 시작하는 순간 "저작 통과 · 게임 로드
 실패"가 실전이 된다 — 08-24에 하루 겪은 그 모양. 답은 §G-11이다.
 
-**G-8. `DialogueEntryId` 이름 규칙 — ✅ 2026-08-23 완료.** ⚠ **`대사엔트리`가 적힌 글자
-그대로 나가지 않는다.** `YarnBundleEmitter.StoryNodeTitleOf`를 통과한다:
+**G-8. `DialogueEntryId` 이름 규칙 — ✅ 2026-08-23 완료 · 2026-11-18 EpisodeId에서.** ⚠ **EpisodeId가 적힌 글자 그대로 나가지 않는다.**
+`YarnNaming.StoryNodeTitleOf`를 통과한다(⛔ 2026-11-18까지는 에피소드의 `대사엔트리` 칸(판 카드의 이름)에서 지었다 — 칸째 걷혔다,
+[`work-orders/old-shapes-orders.md`](work-orders/old-shapes-orders.md) O5):
 
 ```
-DialogueEntryId = SanitizeNodeName(대사엔트리)
+DialogueEntryId = SanitizeNodeName(EpisodeId)
                   └ 영숫자·밑줄이 아닌 글자를 전부 '_'로  (`장면 1` → `장면_1`)
 ```
 

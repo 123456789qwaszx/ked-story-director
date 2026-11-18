@@ -225,7 +225,8 @@ public partial class GraphEditorView : UserControl
     // 미니맵이 왜곡 없이 축소된다. Canvas는 좌표 공간일 뿐이라 크기 자체는 비용이
     // 없다 — 비용은 노드 수에서 나온다(가상화는 파일 판 백로그).
     // 판 크기 — 프로젝트의 것(StoryProject.Board, [⚙ 설정]에서 고친다 · 2026-11-17). 그려지는 카드가 그보다 바깥이면 그 카드까지
-    // 넓혀 그린다(ApplyBoardSize — 옛 파일 · 손으로 고친 파일에서 카드가 판 밖으로 사라지지 않게). 캔버스 · 카드 자리 제한 · 미니맵이 이 둘만 본다.
+    // 넓혀 그린다(ApplyBoardSize — 안전장치: 편집 명령은 카드 자리를 판에 묶지 않으므로 판 밖에 선 카드가 사라지지 않게). 캔버스 · 카드 자리
+    // 제한 · 미니맵이 이 둘만 본다.
     private double _boardWidth = BoardSize.Default.Width;
     private double _boardHeight = BoardSize.Default.Height;
 
@@ -684,8 +685,7 @@ public partial class GraphEditorView : UserControl
     /// 같은 장면의 카드가 한 영역으로 보여야 작가가 <b>어디까지가 한 수명</b>인지 안다 —
     /// 장면 안에서는 모든 게 물릴 수 있고 장면이 끝나면 확정되기 때문이다.
     ///
-    /// ⚠ <b>안 그리는 경우</b>: 장면ID를 하나도 안 적은 챕터(옛 데이터 — 2026-11-17부터 에피소드는 늘 장면에 속한다) — 접힌 판과
-    /// <b>같은 규칙</b>이다(규격 §2).
+    /// 에피소드는 늘 장면에 속하므로 장면마다 그린다(⛔ 장면ID를 하나도 안 적은 챕터에 안 그리던 갈래는 2026-11-18에 걷혔다 · old-shapes O7).
     /// 장면이 하나뿐인 챕터에도 그린다(2026-11-17 소유자 — 전에는 챕터 프레임과 겹친다고 걷었다): 테두리가 있어야 그 장면을
     /// 눌러 고르고 접을 수 있다.
     ///
@@ -2042,32 +2042,25 @@ public partial class GraphEditorView : UserControl
     /// <summary>
     /// 종별 시각 체계 (2026-08-15 소유자 — "대본노드와 엑셀노드가 똑같이 생겨서 구분이 어렵다").
     /// 색 하나에 기대지 않고 세 채널을 겹친다: 등뼈 색 + 아이콘 + 카드 형태.
-    /// 챕터의 에피소드만 <b>각진 미색 서류</b>다 — 작가의 자유 씬은 둥근 흰 원고(✎)라서
-    /// 섞여 있어도 한눈에 갈린다. 미니맵·접힌 목록도 같은 언어를 쓴다.
-    ///
-    /// ⚠ <b>모양이 잠김을 뜻하지는 않는다</b>(2026-09-16 · R-E). 서류 모양이던 시절에는
-    /// 본문이 실제로 읽기 전용이었지만 이제 대본은 어느 노드든 열린다 — 이 모양이 말하는
-    /// 것은 <b>소속</b>뿐이다: 챕터의 에피소드인가, 아니면 자유 씬인가.
+    /// 판의 카드는 에피소드(<b>각진 미색 서류</b> 📄 — 장면 루트는 파랑 ⌂)이거나 분기 카드(보라 ⑂)다. 미니맵·접힌 목록도 같은 언어를 쓴다.
+    /// ⛔ 작가의 자유 씬(둥근 흰 원고 ✎)은 종류째 없어졌고 그 모양은 2026-11-18에 걷혔다(old-shapes O9).
     /// </summary>
     /// <param name="sceneRoot">
     /// 장면의 루트 에피소드인가 (2026-10-30 SR — 소유자: "장면의 Root 노드는 색깔을 조금 다르게"). 같은 서류 모양에 등뼈 ·
     /// 바탕만 챕터 그래프의 「SCENE ROOT」 표와 같은 파랑 쪽으로 바꾸고, 아이콘은 하이어아키의 ⌂다 — 세 화면이 한 말을 한다.
     /// </param>
-    private static CardStyle CardStyleFor(GraphNodeKind kind, bool chapterEpisode, bool sceneRoot = false, bool branchCard = false) => kind switch
+    private static CardStyle CardStyleFor(GraphNodeKind kind, bool sceneRoot = false, bool branchCard = false) => kind switch
     {
         // 분기 카드(2026-11-17) — 들렀다 돌아오는 카드. 에피소드와 다른 물건이라 색 · 표가 다르다(보라 · ⑂).
         GraphNodeKind.Dialogue when branchCard => new CardStyle(
             Color.FromRgb(0x7C, 0x5C, 0xC4), Color.FromRgb(0xF6, 0xF3, 0xFC),
             Color.FromRgb(0xD5, 0xCB, 0xEE), 4, "⑂"),
-        GraphNodeKind.Dialogue when chapterEpisode && sceneRoot => new CardStyle(
+        GraphNodeKind.Dialogue when sceneRoot => new CardStyle(
             Color.FromRgb(0x3D, 0x7B, 0xD9), Color.FromRgb(0xEF, 0xF4, 0xFC),
             Color.FromRgb(0xC3, 0xD5, 0xEF), 4, "⌂"),
-        GraphNodeKind.Dialogue when chapterEpisode => new CardStyle(
+        GraphNodeKind.Dialogue => new CardStyle(
             Color.FromRgb(0xD9, 0x77, 0x06), Color.FromRgb(0xFB, 0xF6, 0xEA),
             Color.FromRgb(0xE3, 0xD5, 0xB7), 4, "📄"),
-        GraphNodeKind.Dialogue => new CardStyle(
-            Color.FromRgb(0x0D, 0x94, 0x88), Colors.White,
-            Color.FromArgb(90, 128, 128, 128), 10, "✎"),
         _ => new CardStyle(
             Color.FromRgb(0x3B, 0x82, 0xF6), Color.FromRgb(0xEF, 0xF6, 0xFF),
             Color.FromArgb(90, 128, 128, 128), 10, "⚙")
@@ -2178,9 +2171,6 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>챕터의 에피소드인가 — 소속을 묻는 것이지 잠금을 묻는 것이 아니다.</summary>
-    private bool IsChapterEpisode(string nodeId) =>
-        _session?.Project.FindNode(nodeId) is DialogueNode { MarkedEpisodeId: not null };
-
     private bool IsBranchCard(string nodeId) =>
         _session?.Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true };
 
@@ -2188,7 +2178,7 @@ public partial class GraphEditorView : UserControl
     {
         bool sceneRoot = _sceneRootNodeIds.Contains(node.NodeId);
         bool branchCard = IsBranchCard(node.NodeId);
-        CardStyle style = CardStyleFor(node.NodeKind, IsChapterEpisode(node.NodeId), sceneRoot, branchCard);
+        CardStyle style = CardStyleFor(node.NodeKind, sceneRoot, branchCard);
 
         var body = new StackPanel { Spacing = 0 };
 
@@ -3157,7 +3147,7 @@ public partial class GraphEditorView : UserControl
         var name = new TextBlock
         {
             // 접힌 목록에도 종 아이콘 — 카드와 같은 시각 언어.
-            Text = $"{CardStyleFor(entry.NodeKind, IsChapterEpisode(entry.NodeId), _sceneRootNodeIds.Contains(entry.NodeId)).Icon} {ShownName(entry.NodeId, entry.NodeName)}",
+            Text = $"{CardStyleFor(entry.NodeKind, _sceneRootNodeIds.Contains(entry.NodeId), IsBranchCard(entry.NodeId)).Icon} {ShownName(entry.NodeId, entry.NodeName)}",
             FontSize = 10,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center

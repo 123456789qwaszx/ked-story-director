@@ -2442,10 +2442,8 @@ public partial class ChapterGraphView : UserControl
     /// 끌던 자리를 <b>한 번</b> 적는다. 안 움직였으면(그냥 누른 것) 아무것도 안 적는다 —
     /// 카드를 고르기만 해도 되돌리기가 쌓이면 Ctrl+Z가 아무 일도 안 하는 것처럼 보인다.
     ///
-    /// ⭐ <b>아직 자리가 없던 챕터라면 여기서 판 전체가 함께 적힌다</b>
-    /// (<see cref="DisplayPlacement"/>). 그때까지 보이던 자리는 빌린 것이라, 끈 카드 하나만
-    /// 적으면 나머지는 다음 그리기에서 <b>도로 한 점에 포개진다</b> — 사람 눈에는 카드 하나를
-    /// 옮겼더니 나머지가 사라진 것으로 보인다. 한 번의 변경이므로 되돌리기도 한 번이다.
+    /// ⭐ <b>판 전체가 보이던 자리로 함께 적힌다</b>(<see cref="DisplayPlacement"/> — 왼위를 (0,0)으로 민 자리). 끈 카드 하나만 그
+    /// 자리로 적으면 나머지와 기준이 갈린다. 한 번의 변경이므로 되돌리기도 한 번이다.
     /// </summary>
     private void CommitDrag()
     {
@@ -2534,26 +2532,13 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// <b>이 챕터를 어디에 그리나</b> — 에피소드의 X·Y가 원칙이고, <b>아직 자리가 없으면</b>
-    /// (카드가 한 점에 포개져 있으면) 깊이 배치를 빌려 쓴다 (v4, 2026-09-18).
-    ///
-    /// ⚠ <b>왜 빌리기만 하나:</b> v3까지 자리는 그릴 때마다 계산됐으므로 에피소드의 X·Y는
-    /// 아무도 안 채웠다 — 엑셀에서 들여온 챕터는 전부 (0,0)이고, 그대로 그리면 판이
-    /// <b>카드 한 장처럼</b> 보인다. 그렇다고 판을 열어 봤다는 이유로 프로젝트에 적으면,
-    /// ① 사람이 안 한 변경이 저장 대기에 오르고 ② 그것이 되돌리기 목록 맨 위에 앉아
-    /// <b>사람의 첫 Ctrl+Z가 카드를 도로 포갠다</b>. 둘 다 사람이 시킨 적 없는 일이다.
-    ///
-    /// ⭐ 그래서 <b>사람이 처음 카드를 옮길 때</b> 그 손과 함께 적힌다
-    /// (<see cref="CommitDrag"/>). 되돌리기 한 번이면 그 손 이전으로 돌아간다.
-    ///
-    /// ⚠ "전부 0"이 아니라 "겹친다"로 묻는 것이라, 사람이 카드 둘을 <b>정확히</b> 포개 놓아도
-    /// 빌린 배치로 보인다. 소수점 둘째 자리까지 맞아떨어져야 하니 손으로는 거의 안 일어나고,
-    /// 일어나도 다음 옮기기 한 번으로 풀린다.
+    /// <b>이 챕터를 어디에 그리나</b> — 에피소드의 X·Y다(v4, 2026-09-18 — 자리의 주인은 사람이다). ⛔ 카드가 한 점에 포개진 챕터(엑셀
+    /// 시절 — 전부 0,0)에 깊이 배치를 빌려 그리던 것은 2026-11-18에 걷혔다(old-shapes O9 — 툴은 늘 자리를 주어 세운다).
     ///
     /// ⭐ <b>판은 이 챕터의 에피소드만 감싼다</b> — 왼위 에피소드가 (0,0)에 오게 통째로 민다. 서로의 거리는 그대로이므로
     /// 사람이 짠 모양은 안 바뀐다. 민 자리는 판의 크기도 정한다(<see cref="DrawCanvas"/>).
     /// <list type="bullet">
-    /// <item>음수 자리 — 손으로 적은 워크북의 견본 챕터 <c>branch05.02A</c>가 Y=−120이다. 그대로 그리면 카드가 캔버스 위쪽
+    /// <item>음수 자리 — 끌어 위 · 왼쪽 바깥으로 옮긴 카드(시험 견본 ch05의 <c>branch05.02A</c>도 Y=−120이다). 그대로 그리면 카드가 캔버스 위쪽
     /// 바깥에 서고 스크롤이 닿지 않아 못 만진다.</item>
     /// <item>먼 양수 자리 — [대본] 탭에서 세운 카드의 에피소드는 그 카드 자리(그때 보던 화면 한가운데)를 받을 수 있다.
     /// 그대로 그리면 판이 원점부터 그 자리까지를 다 잡아, 텅 빈 왼위가 다른 챕터의 자리처럼 보인다.</item>
@@ -2565,11 +2550,6 @@ public partial class ChapterGraphView : UserControl
     private IReadOnlyDictionary<string, (double X, double Y)> DisplayPlacement(
         ChapterGraphModel model)
     {
-        if (ChapterBranchPlanner.NeedsSeeding(model))
-        {
-            return ChapterBranchPlanner.Layout(model);
-        }
-
         double left = model.Episodes.Count == 0 ? 0 : model.Episodes.Min(episode => episode.X);
         double top = model.Episodes.Count == 0 ? 0 : model.Episodes.Min(episode => episode.Y);
 

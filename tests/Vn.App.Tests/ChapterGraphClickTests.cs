@@ -128,46 +128,6 @@ public sealed class ChapterGraphClickTests
     });
 
     [Fact]
-    public void 한_점에_포개진_챕터는_빌린_자리로_그리고_첫_옮기기에_적는다() => HeadlessUi.Run(() =>
-    {
-        // v3까지 자리는 그릴 때마다 계산됐으므로 X·Y를 아무도 안 채웠다 — 그 시절에 선
-        // 챕터가 정확히 이 모양이다. 그대로 그리면 판이 카드 한 장처럼 보인다.
-        using var project = new TempProject();
-        (Window window, Canvas canvas, ChapterGraphView view, AuthoringSession session) =
-            Show(project);
-
-        List<string> ids = session.Editor.FindChapter("ch05")!.Episodes
-            .Select(episode => episode.EpisodeId).ToList();
-
-        session.Editor.MoveEpisodes("ch05", ids.ToDictionary(id => id, _ => (0.0, 0.0)));
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        // ① 판을 열었다고 프로젝트에 적지는 않는다 — 값은 아직 전부 (0,0)이다.
-        Assert.All(session.Editor.FindChapter("ch05")!.Episodes,
-            episode => Assert.Equal((0.0, 0.0), (episode.X, episode.Y)));
-
-        // ② 그래도 카드는 흩어져 보인다 — 빌린 배치다. (D3부터 깊이가 아래로 가서 한 줄기 챕터는
-        //    X가 모두 같을 수 있다 — 자리 전체로 본다.)
-        List<(double, double)> places = ids
-            .Select(id => (Canvas.GetLeft(Card(canvas, id)), Canvas.GetTop(Card(canvas, id))))
-            .ToList();
-        Assert.Equal(places.Count, places.Distinct().Count());
-
-        // ③ 사람이 처음 옮기는 그 손과 함께 판 전체가 적힌다. 하나만 적으면 나머지는
-        //    다음 그리기에서 도로 한 점에 포개진다.
-        Drag(window, CardCenter(window, canvas, "main05.02"), new Vector(40, 40));
-
-        Assert.False(ChapterBranchPlanner.NeedsSeeding(
-            session.Editor.FindChapter("ch05")!.ToGraphModel("ch05")));
-
-        // ④ 한 번의 변경이라 한 번에 물러난다.
-        session.Editor.Undo();
-
-        Assert.All(session.Editor.FindChapter("ch05")!.Episodes,
-            episode => Assert.Equal((0.0, 0.0), (episode.X, episode.Y)));
-    });
-
-    [Fact]
     public void 자동_정렬은_한_번의_되돌리기다() => HeadlessUi.Run(() =>
     {
         using var project = new TempProject();

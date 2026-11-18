@@ -148,15 +148,13 @@ public sealed class DialogueNode : StoryNode
     ///   구성은 엑셀이 소유하고 툴에서는 읽기 전용 — 여기서 고쳐도 다음 동기화가 되돌린다"</i>
     ///   였는데, <b>그 동기화가 철거됐다.</b> 대본의 원본은 프로젝트다.</item>
     /// <item><b>null이 「자유 노드」를 뜻하지 않는다</b> (R7 P-6 · 결정 ⑤, 2026-09-17).
-    ///   자유 씬이라는 종류가 없어졌다 — 챕터 판의 카드는 <b>전부 에피소드</b>다.</item>
+    ///   자유 씬이라는 종류가 없어졌다 — 챕터 판의 카드는 에피소드이거나 분기 카드(2026-11-17)다.</item>
     /// </list>
     ///
-    /// <b>남은 뜻은 하나뿐이다: 노드 이름과 에피소드 Id가 <i>다를 때</i> 그 Id를 적어 둔다.</b>
-    /// 같으면 비어 있어도 된다 — 그래서 <b>이 값을 직접 읽으면 안 된다</b>. 답을 내는 자리는
-    /// <see cref="Chapters.EpisodeNaming"/> 하나다(표식이 있으면 표식, 없으면 이름).
+    /// <b>에피소드 카드에는 늘 있고 분기 카드에는 없다</b> — 이름도 그 EpisodeId다(저장 검증이 지킨다 · 2026-11-18 old-shapes O4 · O5 — ⛔ 그
+    /// 전에는 이름과 Id가 다를 때만 적었고, 없으면 이름으로 읽었다). 답을 내는 자리는 <see cref="Chapters.EpisodeNaming"/> 하나다.
     ///
-    /// <b>파생값이 아니라 저장된 신원이다.</b> 이름을 바꿔도 끊기지 않으라고 두는 것이므로
-    /// 잃으면 어느 카드가 어느 에피소드였는지 <b>복원할 수 없다</b>.
+    /// <b>파생값이 아니라 저장된 신원이다.</b> 잃으면 어느 카드가 어느 에피소드였는지 <b>복원할 수 없다</b>.
     /// </summary>
     public string? MarkedEpisodeId { get; set; }
 
@@ -188,7 +186,7 @@ public sealed class DialogueNode : StoryNode
     // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:
     //    "툴이 LineId의 주인"). 워크북을 <b>다시 읽을 때</b> 어느 줄이 어느 줄인지
     //    맞추려고 들고 있던 표다 — 다시 읽지 않으면 맞출 상대가 없고, 신원은 이제
-    //    프로젝트가 그냥 갖는다. 구판 프로젝트 파일의 `excelLines`는 읽지 않고 지나간다.
+    //    프로젝트가 그냥 갖는다.
 
     /// <summary>그 줄의 확장 — 없으면 만들어 붙인다. 빈 확장은 저장 때 알아서 빠진다.</summary>
     public DialogueLineExtension RequireExtension(string lineId)
