@@ -799,7 +799,8 @@ public partial class GraphEditorView : UserControl
     /// 이름표를 카드 <b>뒤에</b> 깐다. 작가가 "이 노드가 어느 챕터 소속인지"를 보고 붙일
     /// 곳을 정하는 무대다. 히트 대상이 아니라서 클릭·드래그·포트에 아무 영향이 없다.
     /// </summary>
-    private void DrawChapterFrames()
+    /// <param name="followRails">철도를 통째로 긋지 않고 따라가게 한다(<see cref="FollowRails"/>) — 끄는 동안과 그 끌기를 적은 직후.</param>
+    private void DrawChapterFrames(bool followRails = false)
     {
         foreach (Control frame in _frames)
         {
@@ -916,7 +917,14 @@ public partial class GraphEditorView : UserControl
             GraphCanvas.Children.Insert(index, _frames[index]);
         }
 
-        DrawChapterRails();
+        if (followRails)
+        {
+            FollowRails();
+        }
+        else
+        {
+            DrawChapterRails();
+        }
     }
 
     /// <summary>
@@ -1103,73 +1111,41 @@ public partial class GraphEditorView : UserControl
         // 고른 레인이 이번에 안 그려지면(판을 접었다 · 길이 사라졌다) 손잡이도 내린다 — 맨 끝에서 본다.
         _selectedRailDrawn = false;
 
+        _railGroups.Clear();
+        Dictionary<string, Rect> drawnAt = RailAnchors();
+
         // 장면을 다 접은 판도 레일이 선다 — 상자의 줄끼리, 줄과 카드 사이를 잇는다(2026-10-30).
-        foreach (IGrouping<string, GraphItemProjection> group in _projection.Items
+        foreach (string fileId in _projection.Items
                      .Where(item => item is ExpandedNodeProjection or CollapsedSceneProjection)
-                     .GroupBy(item => item.FileId, StringComparer.Ordinal))
+                     .Select(item => item.FileId)
+                     .Distinct(StringComparer.Ordinal))
         {
-            string boardName = _session.Project.Files
-                .FirstOrDefault(file => string.Equals(file.Id, group.Key, StringComparison.Ordinal))
-                ?.Name ?? string.Empty;
-
-            // 살아 있는 프로젝트의 챕터를 본다 — 이 화면이 간선을 직접 긋는다.
-            // ⛔ 셸이 공급한 챕터 목록(<c>_chapters</c>) 스냅샷을 뒷받침으로 보던 길은 2026-10-29에 걷혔다
-            //    (legacy-cleanup.md L3). 그 목록도 같은 프로젝트를 읽은 것이라, 프로젝트에 없는 챕터를 줄 수 있는 것은
-            //    낡은 스냅샷뿐이었다.
-            ChapterGraphModel chapter = _session.Editor.FindChapter(boardName)!.ToGraphModel(boardName);
-
-            // 에피소드 Id → 그 카드 자리. 아직 카드가 없는 에피소드는 없는 것으로 둔다 — 없는 노드로 선을 그으면 거짓말이다.
-            var spots = new Dictionary<string, (DialogueNode Node, Rect Rect)>(StringComparer.Ordinal);
-
-            foreach (ExpandedNodeProjection item in group.OfType<ExpandedNodeProjection>())
-            {
-                if (FindCard(item.NodeId) is not { } card)
-                {
-                    continue;
-                }
-
-                var rect = new Rect(item.Position.X, item.Position.Y, card.Visual.Width, CardHeightOf(card));
-
-                if (_session.Project.FindNode(item.NodeId) is DialogueNode dialogue)
-                {
-                    // ⭐ <b>곁가지도 제 가지와 선택지 칸을 받는다</b> (R7 P-6). 전에는 척추
-                    //    카드만 여기 들어와 레일을 받았는데, 이제는 판의 모든 카드가
-                    //    에피소드라 <b>전부 아래에 3칸이 뚫려야</b> 한다 — 곁가지에서
-                    //    진짜 분기를 뚫는 것이 「분기 추가」가 노리는 바로 그 손짓이다.
-                    if (dialogue.MarkedEpisodeId is { Length: > 0 } episodeId)
-                    {
-                        spots[episodeId] = (dialogue, rect);
-                    }
-                }
-            }
-
-            // 접은 장면의 에피소드 → 그 상자의 줄 (2026-10-30). 카드가 없어도 길은 그 줄에 붙는다.
-            Dictionary<string, FoldedRow> folded = FoldedRowsOf(group.Key);
+            RailBoard board = RailBoardOf(fileId);
 
             // 도착 포트 (2026-08-15 소유자) — 여러 선택지가 같은 에피소드로 이어지는 일이
             // 많으므로, 들어오는 가지들은 도착 카드 앞의 접점 하나로 모인다.
             var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
 
-            foreach ((string episodeId, (DialogueNode node, Rect rect)) in spots)
+            foreach ((string episodeId, (DialogueNode node, Rect _)) in board.Spots)
             {
-                List<ChapterEdge> edges = chapter.Edges
-                    .Where(edge => string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal))
-                    .ToList();
-
-                DrawRailsFrom(boardName, node, rect, edges, spots, folded, arrivals);
+                RecordRailGroup(new RailOrigin.FromCard(fileId, episodeId), board.DepsFrom(node.Id, episodeId), drawnAt,
+                    () => DrawRailsFromCard(board, episodeId, arrivals));
             }
 
-            foreach ((string episodeId, FoldedRow row) in folded)
+            foreach ((string episodeId, FoldedRow row) in board.Folded)
             {
-                if (chapter.Episodes.Any(episode => string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
+                if (board.Chapter.Episodes.Any(episode => string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
                 {
-                    DrawRailsFromRow(boardName, episodeId, row, chapter.Edges, spots, folded, arrivals);
+                    RecordRailGroup(new RailOrigin.FromRow(fileId, episodeId), board.DepsFrom(RowAnchor(row.Proxy), episodeId), drawnAt,
+                        () => DrawRailsFromRow(board.BoardName, episodeId, row, board.Chapter.Edges, board.Spots, board.Folded, arrivals));
                 }
             }
 
             foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
             {
-                DrawArrivalPort(spots[toId].Rect, toId, incoming);
+                (DialogueNode target, Rect rect) = board.Spots[toId];
+                RecordRailGroup(new RailOrigin.Arrival(fileId, toId, incoming), [target.Id], drawnAt,
+                    () => DrawArrivalPort(rect, toId, incoming));
             }
         }
 
@@ -1185,7 +1161,320 @@ public partial class GraphEditorView : UserControl
             HideShapeOverlay();
             LineSelected?.Invoke(null);
         }
+
+        SettleRailsLater();
     }
+
+    // ── 철도 따라가기 (2026-11-18 · finishing FX3) ─────────────────────────────────────────────
+    //
+    // 철도는 판에서 가장 비싼 그림이다 — 카드마다 줄기 · 가지 · 선택지 칸(글을 재야 한다) · 레인이 서서, 에피소드 300개면
+    // 3,600개쯤이고 통째로 다시 긋는 데 0.75초가 든다. ⛔ 그 전에는 끄는 동안 포인터가 움직일 때마다 통째로 다시 그어 무리
+    // 끌기가 한 번 움직이는 데 1.2초였다. 이제 철도를 묶음(한 출발의 가지들 · 한 도착 포트)으로 그어 두고, 묶음마다 기대는
+    // 자리(카드 · 접은 상자)와 그때의 사각형(자리 · 크기)을 적어 둔다. 끄는 동안에는 기대는 자리가 모두 같은 만큼 움직이고 크기가
+    // 그대로인 묶음은 그림째 옮기고(<see cref="TranslateTransform"/>), 아니면 — 무리 안과 밖을 잇는 길, 무리로 골라 테두리가 굵어진
+    // 카드 — 그 출발에서만 다시 긋는다. 놓은 뒤의 자리 갱신도 같은 길로 간다(그 끌기가 적은 자리뿐이다). 모양 · 고름 · 글이 바뀌는
+    // 다른 갱신은 늘 통째로 긋는다. 카드를 새로 지은 직후의 철도는 아직 재지 않은 카드 높이(어림)로 그어지므로, 배치가 끝난 뒤
+    // 한 번 따라가 맞춘다(<see cref="SettleRailsLater"/>).
+
+    /// <summary>철도 묶음의 출발 — 다시 그을 때 어디서부터인지.</summary>
+    private abstract record RailOrigin(string FileId)
+    {
+        /// <summary>펼친 카드에서 나가는 줄기 · 가지 · 칸 · 레인.</summary>
+        public sealed record FromCard(string FileId, string EpisodeId) : RailOrigin(FileId);
+
+        /// <summary>접은 장면 상자의 줄에서 나가는 레인.</summary>
+        public sealed record FromRow(string FileId, string EpisodeId) : RailOrigin(FileId);
+
+        /// <summary>도착 카드 위의 접점 · 화살표 · 포트.</summary>
+        public sealed record Arrival(string FileId, string EpisodeId, List<(string From, string Label)> Incoming) : RailOrigin(FileId);
+    }
+
+    /// <summary>철도 묶음 하나 — 그 그림과, 그림이 기대는 자리(카드 Id · 접은 상자 열쇠)를 그었을 때의 사각형.</summary>
+    private sealed class RailGroup(RailOrigin origin, Dictionary<string, Rect> drawnAt, List<Control> visuals, bool holdsSelected)
+    {
+        public RailOrigin Origin { get; } = origin;
+
+        public Dictionary<string, Rect> DrawnAt { get; set; } = drawnAt;
+
+        public List<Control> Visuals { get; set; } = visuals;
+
+        /// <summary>고른 레인이 이 묶음에 있다 — 모양 손잡이가 레인에 붙어 있어 옮기지 않고 다시 긋는다.</summary>
+        public bool HoldsSelected { get; set; } = holdsSelected;
+    }
+
+    private readonly List<RailGroup> _railGroups = new();
+
+    /// <summary>판 하나의 철도 재료 — 챕터, 에피소드 Id → 카드 자리, 접은 장면의 줄.</summary>
+    private sealed record RailBoard(
+        string BoardName,
+        ChapterGraphModel Chapter,
+        Dictionary<string, (DialogueNode Node, Rect Rect)> Spots,
+        Dictionary<string, FoldedRow> Folded)
+    {
+        /// <summary>그 출발의 묶음이 기대는 자리 — 출발 자신과 가지가 닿는 카드 · 접은 상자.</summary>
+        public List<string> DepsFrom(string self, string episodeId)
+        {
+            var deps = new List<string> { self };
+
+            foreach (ChapterEdge edge in Chapter.Edges.Where(edge =>
+                         string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal)))
+            {
+                if (Spots.TryGetValue(edge.ToEpisodeId, out (DialogueNode Node, Rect Rect) spot))
+                {
+                    deps.Add(spot.Node.Id);
+                }
+                else if (Folded.TryGetValue(edge.ToEpisodeId, out FoldedRow? row))
+                {
+                    deps.Add(RowAnchor(row.Proxy));
+                }
+            }
+
+            return deps;
+        }
+    }
+
+    /// <summary>접은 장면 상자의 자리 열쇠 — 카드 Id와 겹치지 않는다.</summary>
+    private static string RowAnchor(FileProxyVisual proxy) => $"scene-proxy\u001f{proxy.FileId}\u001f{proxy.SceneId}";
+
+    /// <summary>
+    /// 투영의 사각형 — 카드 Id와 접은 장면 상자 열쇠마다. 크기는 철도가 재는 그대로다(카드 높이는 잰 값, 아직 안 쟀으면 어림 —
+    /// <see cref="CardHeightOf"/>). 어림으로 잰 카드가 있으면 배치 뒤에 한 번 따라가 맞춘다.
+    /// </summary>
+    private Dictionary<string, Rect> RailAnchors()
+    {
+        var anchors = new Dictionary<string, Rect>(StringComparer.Ordinal);
+        Dictionary<string, NodeCard> cards = _cards.ToDictionary(card => card.NodeId, StringComparer.Ordinal);
+
+        foreach (GraphItemProjection item in _projection?.Items ?? [])
+        {
+            switch (item)
+            {
+                case ExpandedNodeProjection node when cards.TryGetValue(node.NodeId, out NodeCard? card):
+                    _railsGuessed |= card.Visual.Bounds.Height <= 0;
+                    anchors[node.NodeId] = new Rect(node.Position.X, node.Position.Y, card.Visual.Width, CardHeightOf(card));
+                    break;
+
+                case CollapsedSceneProjection scene when FindSceneProxy(scene.FileId, scene.SceneId) is { } proxy:
+                    anchors[RowAnchor(proxy)] = new Rect(new Point(scene.Position.X, scene.Position.Y), proxy.Visual.Bounds.Size);
+                    break;
+            }
+        }
+
+        return anchors;
+    }
+
+    /// <summary>아직 재지 않은 카드의 어림 높이로 그은 철도가 있다 — 배치 뒤에 한 번 따라가 맞춘다.</summary>
+    private bool _railsGuessed;
+
+    private bool _settleQueued;
+
+    /// <summary>배치가 끝난 뒤(낮은 순서) 철도를 한 번 따라가게 한다 — 어림으로 그은 묶음만 다시 긋는다.</summary>
+    private void SettleRailsLater()
+    {
+        if (!_railsGuessed || _settleQueued)
+        {
+            return;
+        }
+
+        _settleQueued = true;
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                _settleQueued = false;
+                _railsGuessed = false;
+                UiGuard.Run(_session, "철도 맞추기", FollowRails);
+            },
+            DispatcherPriority.Background);
+    }
+
+    /// <summary>그 판의 철도 재료를 지금 자리로 모은다.</summary>
+    private RailBoard RailBoardOf(string fileId)
+    {
+        string boardName = _session!.Project.Files
+            .FirstOrDefault(file => string.Equals(file.Id, fileId, StringComparison.Ordinal))
+            ?.Name ?? string.Empty;
+
+        // 살아 있는 프로젝트의 챕터를 본다 — 이 화면이 간선을 직접 긋는다.
+        // ⛔ 셸이 공급한 챕터 목록(<c>_chapters</c>) 스냅샷을 뒷받침으로 보던 길은 2026-10-29에 걷혔다
+        //    (legacy-cleanup.md L3). 그 목록도 같은 프로젝트를 읽은 것이라, 프로젝트에 없는 챕터를 줄 수 있는 것은
+        //    낡은 스냅샷뿐이었다.
+        ChapterGraphModel chapter = _session.Editor.FindChapter(boardName)!.ToGraphModel(boardName);
+
+        // 에피소드 Id → 그 카드 자리. 아직 카드가 없는 에피소드는 없는 것으로 둔다 — 없는 노드로 선을 그으면 거짓말이다.
+        var spots = new Dictionary<string, (DialogueNode Node, Rect Rect)>(StringComparer.Ordinal);
+        Dictionary<string, NodeCard> cards = _cards.ToDictionary(card => card.NodeId, StringComparer.Ordinal);
+
+        foreach (ExpandedNodeProjection item in _projection!.Items.OfType<ExpandedNodeProjection>()
+                     .Where(item => string.Equals(item.FileId, fileId, StringComparison.Ordinal)))
+        {
+            if (!cards.TryGetValue(item.NodeId, out NodeCard? card))
+            {
+                continue;
+            }
+
+            var rect = new Rect(item.Position.X, item.Position.Y, card.Visual.Width, CardHeightOf(card));
+
+            // ⭐ <b>곁가지도 제 가지와 선택지 칸을 받는다</b> (R7 P-6). 전에는 척추 카드만 여기 들어와 레일을 받았는데, 이제는
+            //    판의 모든 카드가 에피소드라 <b>전부 아래에 3칸이 뚫려야</b> 한다 — 곁가지에서 진짜 분기를 뚫는 것이
+            //    「분기 추가」가 노리는 바로 그 손짓이다.
+            if (_session.Project.FindNode(item.NodeId) is DialogueNode { MarkedEpisodeId: { Length: > 0 } episodeId } dialogue)
+            {
+                spots[episodeId] = (dialogue, rect);
+            }
+        }
+
+        // 접은 장면의 에피소드 → 그 상자의 줄 (2026-10-30). 카드가 없어도 길은 그 줄에 붙는다.
+        return new RailBoard(boardName, chapter, spots, FoldedRowsOf(fileId));
+    }
+
+    /// <summary>그 카드에서 나가는 가지들을 긋는다.</summary>
+    private void DrawRailsFromCard(RailBoard board, string episodeId, Dictionary<string, List<(string From, string Label)>> arrivals)
+    {
+        if (!board.Spots.TryGetValue(episodeId, out (DialogueNode Node, Rect Rect) spot))
+        {
+            return;
+        }
+
+        List<ChapterEdge> edges = board.Chapter.Edges
+            .Where(edge => string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal))
+            .ToList();
+
+        DrawRailsFrom(board.BoardName, spot.Node, spot.Rect, edges, board.Spots, board.Folded, arrivals);
+    }
+
+    /// <summary>묶음 하나를 긋고 적어 둔다 — 그은 그림 · 기대는 자리의 그때 자리 · 고른 레인이 들었는가.</summary>
+    private void RecordRailGroup(RailOrigin origin, IEnumerable<string> deps, IReadOnlyDictionary<string, Rect> now, Action draw)
+    {
+        int start = _railVisuals.Count;
+        bool selectedBefore = _selectedRailDrawn;
+        draw();
+
+        _railGroups.Add(new RailGroup(
+            origin,
+            deps.Distinct(StringComparer.Ordinal).Where(now.ContainsKey).ToDictionary(dep => dep, dep => now[dep], StringComparer.Ordinal),
+            _railVisuals.GetRange(start, _railVisuals.Count - start),
+            !selectedBefore && _selectedRailDrawn));
+    }
+
+    /// <summary>
+    /// 철도를 지금 투영의 자리로 따라가게 한다 — 기대는 자리가 모두 같은 만큼 움직인 묶음은 그림째 옮기고, 아니면 그 묶음만
+    /// 다시 긋는다(위 머리글). 끄는 동안과 그 끌기를 적은 직후에만 쓴다.
+    /// </summary>
+    private void FollowRails()
+    {
+        if (_session is null || _projection is null)
+        {
+            return;
+        }
+
+        Dictionary<string, Rect> now = RailAnchors();
+        var stale = new List<RailGroup>();
+
+        foreach (RailGroup group in _railGroups)
+        {
+            Vector? shift = null;
+            bool rigid = true;
+
+            foreach ((string anchor, Rect drawn) in group.DrawnAt)
+            {
+                // 사라졌거나 크기가 바뀌었다(무리로 골라 테두리가 굵어졌다 · 어림이 잰 값이 됐다) — 옮겨서는 맞지 않는다.
+                if (!now.TryGetValue(anchor, out Rect at) ||
+                    Math.Abs(at.Width - drawn.Width) > 0.01 || Math.Abs(at.Height - drawn.Height) > 0.01)
+                {
+                    rigid = false;
+                    break;
+                }
+
+                Vector moved = at.Position - drawn.Position;
+
+                if (shift is { } first && (Math.Abs(first.X - moved.X) > 0.01 || Math.Abs(first.Y - moved.Y) > 0.01))
+                {
+                    rigid = false;
+                    break;
+                }
+
+                shift ??= moved;
+            }
+
+            Vector by = shift ?? default;
+            bool still = Math.Abs(by.X) < 0.01 && Math.Abs(by.Y) < 0.01;
+
+            if (!rigid || (group.HoldsSelected && !still))
+            {
+                stale.Add(group);
+                continue;
+            }
+
+            foreach (Control visual in group.Visuals)
+            {
+                visual.RenderTransform = still ? null : new TranslateTransform(by.X, by.Y);
+            }
+        }
+
+        if (stale.Count == 0)
+        {
+            return;
+        }
+
+        RailFollowRedrawCount += stale.Count;
+        var boards = new Dictionary<string, RailBoard>(StringComparer.Ordinal);
+
+        foreach (RailGroup group in stale)
+        {
+            int at = group.Visuals.Count > 0 ? GraphCanvas.Children.IndexOf(group.Visuals[0]) : -1;
+
+            foreach (Control visual in group.Visuals)
+            {
+                GraphCanvas.Children.Remove(visual);
+                _railVisuals.Remove(visual);
+            }
+
+            if (!boards.TryGetValue(group.Origin.FileId, out RailBoard? board))
+            {
+                boards[group.Origin.FileId] = board = RailBoardOf(group.Origin.FileId);
+            }
+
+            int start = _railVisuals.Count;
+            bool selectedBefore = _selectedRailDrawn;
+            _selectedRailDrawn = false;
+
+            switch (group.Origin)
+            {
+                // 이웃 출발의 도착 장부는 그대로다 — 도착 포트는 도착 카드에만 기대어 제 묶음으로 따라간다.
+                case RailOrigin.FromCard card:
+                    DrawRailsFromCard(board, card.EpisodeId, new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                    break;
+
+                case RailOrigin.FromRow row when board.Folded.TryGetValue(row.EpisodeId, out FoldedRow? folded):
+                    DrawRailsFromRow(board.BoardName, row.EpisodeId, folded, board.Chapter.Edges, board.Spots, board.Folded,
+                        new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                    break;
+
+                case RailOrigin.Arrival arrival when board.Spots.TryGetValue(arrival.EpisodeId, out (DialogueNode Node, Rect Rect) spot):
+                    DrawArrivalPort(spot.Rect, arrival.EpisodeId, arrival.Incoming);
+                    break;
+            }
+
+            group.HoldsSelected = _selectedRailDrawn;
+            _selectedRailDrawn |= selectedBefore;
+            group.Visuals = _railVisuals.GetRange(start, _railVisuals.Count - start);
+            group.DrawnAt = group.DrawnAt.Keys.Where(now.ContainsKey)
+                .ToDictionary(anchor => anchor, anchor => now[anchor], StringComparer.Ordinal);
+
+            int insertAt = at >= 0 ? Math.Min(at, GraphCanvas.Children.Count) : Math.Min(_frames.Count, GraphCanvas.Children.Count);
+
+            foreach (Control visual in group.Visuals)
+            {
+                GraphCanvas.Children.Insert(insertAt++, visual);
+            }
+        }
+    }
+
+    /// <summary>철도를 따라가며 다시 그은 묶음의 수 — 시험이 「통째로 긋지 않았다」를 보는 창이다.</summary>
+    internal int RailFollowRedrawCount { get; private set; }
+
+    /// <summary>지금 판에 선 철도 그림 — 시험이 따라간 모습과 통째로 그은 모습을 견준다.</summary>
+    internal IReadOnlyList<Control> RailVisuals => _railVisuals;
 
     /// <summary>
     /// 한 출발 카드의 줄기와 가지들 (T2, v9로 개정 2026-08-17).
@@ -1916,7 +2205,7 @@ public partial class GraphEditorView : UserControl
         }
 
         bool boardChanged = ApplyBoardSize();
-        PlaceVisuals(_projection);
+        PlaceVisuals(_projection, followRails: _committingDrag);
 
         if (boardChanged)
         {
@@ -2012,7 +2301,7 @@ public partial class GraphEditorView : UserControl
                 .ToList(),
             _projection.Connections);
 
-        PlaceVisuals(_projection);
+        PlaceVisuals(_projection, followRails: true);
     }
 
     /// <summary>
@@ -2036,8 +2325,21 @@ public partial class GraphEditorView : UserControl
         _dragPositions.Clear();
         _proxyDragDelta = default;
 
-        _session?.Editor.MoveNodes(positions);
+        // 적은 자리는 끄는 동안 이미 그린 자리다 — 그 갱신(셸이 곧바로 부르는 RefreshPositions)은 철도를 통째로 긋지 않고 따라간다.
+        _committingDrag = true;
+
+        try
+        {
+            _session?.Editor.MoveNodes(positions);
+        }
+        finally
+        {
+            _committingDrag = false;
+        }
     }
+
+    /// <summary>끌기가 자리를 적는 중이다 — 그 자리 갱신은 철도를 따라가게 한다(<see cref="FollowRails"/>).</summary>
+    private bool _committingDrag;
 
     /// <summary>그 노드의 카드 폭 — 사람이 넓힌 폭이 있으면 그것, 없으면 기본 폭이다.</summary>
     private double WidthFor(string nodeId) =>
@@ -2207,18 +2509,26 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>투영의 자리대로 카드 · 접힌 판 · 간선 · 프레임 · 레일 · 미니맵을 놓는다.</summary>
-    private void PlaceVisuals(GraphProjection projection)
+    /// <param name="followRails">끄는 동안 · 그 끌기를 적은 직후 — 자리가 그대로인 카드는 건드리지 않고 철도는 따라가게 한다.</param>
+    private void PlaceVisuals(GraphProjection projection, bool followRails = false)
     {
+        Dictionary<string, NodeCard> cards = _cards.ToDictionary(card => card.NodeId, StringComparer.Ordinal);
+
         foreach (ExpandedNodeProjection node in projection.Items.OfType<ExpandedNodeProjection>())
         {
-            NodeCard? card = FindCard(node.NodeId);
-
-            if (card is not null)
+            if (!cards.TryGetValue(node.NodeId, out NodeCard? card))
             {
-                Canvas.SetLeft(card.Visual, node.Position.X);
-                Canvas.SetTop(card.Visual, node.Position.Y);
-                PlaceLineKnobs(card);
+                continue;
             }
+
+            if (followRails && Canvas.GetLeft(card.Visual) == node.Position.X && Canvas.GetTop(card.Visual) == node.Position.Y)
+            {
+                continue;
+            }
+
+            Canvas.SetLeft(card.Visual, node.Position.X);
+            Canvas.SetTop(card.Visual, node.Position.Y);
+            PlaceLineKnobs(card);
         }
 
         foreach (CollapsedFileProjection file in projection.Items.OfType<CollapsedFileProjection>())
@@ -2254,7 +2564,7 @@ public partial class GraphEditorView : UserControl
         }
 
         // 노드가 움직이면 그 노드를 감싸는 챕터 박스도 따라 늘고 준다.
-        DrawChapterFrames();
+        DrawChapterFrames(followRails);
 
         RefreshMinimap();
     }
