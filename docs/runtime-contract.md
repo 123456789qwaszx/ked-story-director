@@ -9,12 +9,17 @@
 > 당시 판단을 보존한 **역사 기록**이다. 현재 작업 지시로 읽지 않는다.
 > 완료 증거는 [`plans/PLAN.md`](plans/PLAN.md)와 R0~R4 세부 문서가 정본이다.
 
+> ⛔ **1부는 이제 이 툴의 몫이 아니다(2026-11-18 바로잡음).** 연출 층(연출 커맨드 · 게임용 Yarn 번들 · 발행)은 2026-10-29에
+> [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔다 — 1부의 「VnTool이 내는 것」은 이제 compositor가 낸다.
+> ked-story-director가 내는 것은 **2부의 진행 JSON**과 **연출 없는 대사 Yarn**(`exported/yarn/` — 2026-11-17, 게임 폴더로는 보내지 않는다)뿐이다.
+> 1부는 런타임 쪽 규칙의 기록으로 남긴다. 이 툴이 지키는 계약은 2부다.
+
 **표면이 둘로 갈렸다** (2026-08-17):
 
 | | 상대 | VnTool이 내는 것 |
 |---|---|---|
-| **1부** | `ked-presentation-runtime` (유니티) | `.yarn` 텍스트 + 연출 커맨드 |
-| **2부** | `Ked.Progression` (순수 C# 진행 코어 — 2026-09-02 실측: **런타임 안에 복사 반입**, 정본은 형제 저장소 `ked-progression`) | `exported/{챕터}.progression.json` |
+| **1부** | `ked-presentation-runtime` (유니티) | `.yarn` 텍스트 + 연출 커맨드 — ⛔ 지금은 compositor가 낸다 |
+| **2부** | `Ked.Progression` (순수 C# 진행 코어 — 2026-09-02 실측: **런타임 안에 복사 반입**, 정본은 형제 저장소 `ked-progression` — ⛔ 2026-11-18부터 정본은 `ked-presentation-runtime`, `src/Ked.Progression/UPSTREAM.md`) | `exported/{챕터}.progression.json` |
 
 이 문서와 어긋나는 출력은 컴파일이 되어도 **조용히 깨진다** — 대부분 즉시 오류가 아니라
 어긋난 재생으로 나타나므로 이미터 검증 단계에서 잡아야 한다.
@@ -164,6 +169,10 @@ Stop/New Game/Manual Load는 커밋 금지, Episode Skip은 연출 기능이라 
 ---
 
 # 1부 — 연출 런타임 (`.yarn` 텍스트)
+
+> ⛔ **이 부의 「도구가 내보낼 때 합친다」 · 「이미터」는 지금 `ked-story-compositor`의 일이다**(2026-10-29 연출 층 이사 · 2026-11-18 바로잡음).
+> ked-story-director는 연출 없는 대사 Yarn만 낸다 — 그 Yarn에 연출 커맨드 · 선택지(`->`) · `<<jump>>` · `<<set>>` · `<<declare>>`는 없고, 분기는 `<<detour>>`, 조건 줄은
+> `<<if>>`, 스탯 읽기는 `stat("키")`다(`Rendering/YarnSyntax.cs` · `Chapters/ChapterYarnExporter.cs`).
 
 ## A. 레인 구조
 
@@ -451,12 +460,12 @@ Option : { TargetEpisodeId, ChoiceLabel, VisibleConditions[], Conditions[],
 | `Nodes[]` | `EpisodeNode` | |
 | `NextOptions[]` | `EpisodeOption` | **배열 순서 = 화면 순서 = 서버 이력의 `OptionIndex`**(§C3). 정렬 금지 |
 | **`Node.EventKey`** | `EpisodeNode.EventKey` | ✅ **양쪽 다 섰다** — 이쪽 v14(08-26)부터 내고, 저쪽 DTO 칸도 같은 날(`665e47e1`). 해석 없이 실어 나르고, 장면 끝 fold에서 시청 보고(`PendingEvent`)의 열쇠가 된다. "칸 부탁 중"은 끝 |
-| **`Node.SceneId`** | `EpisodeNode.SceneId` | ✅ **양쪽 다 섰다 (2026-09-16 확인).** 이쪽은 에피소드의 장면ID를 그대로 낸다 — **늘 채운다**(2026-11-18 — 에피소드는 늘 장면에 속하고 빈 장면ID는 읽지 않는다; ⛔ 그 전에는 빈 값도 빈 문자열로 냈다). 비면 저쪽 `EpisodeNode` **생성자**가 `__scene_{EpisodeId}`를 발급해 **에피소드 하나 = 장면 하나인 퇴화 상태**가 된다(매 에피소드 무대 클리어, 에피소드를 넘는 롤백 없음) — 구판 호환은 그 자리에서 산다.<br>불변식: 장면마다 밖에서 들어오는 자리 하나(**챕터 시작도 그 하나로 센다**, 재진입 허용). 이어하기는 장면 루트에서만. 자동 간선은 장면을 넘어도 된다(2026-11-18 — ⛔ 그 전에는 못 넘었다).<br>⛔ **이쪽이 그 불변식을 따로 구현하지 않는다** — 내보내기가 낸 JSON을 코어 로더에 되먹여(`ProgressionLoader.Load`) 코어의 Error를 `CoreRefusedChapter`로 세우고 **그 간선의 행까지 짚는다**. 판정의 주인은 코어 하나다 |
+| **`Node.SceneId`** | `EpisodeNode.SceneId` | ✅ **양쪽 다 섰다 (2026-09-16 확인).** 이쪽은 에피소드의 장면ID를 그대로 낸다 — **늘 채운다**(2026-11-18 — 에피소드는 늘 장면에 속하고 빈 장면ID는 읽지 않는다; ⛔ 그 전에는 빈 값도 빈 문자열로 냈다). 비면 저쪽 `EpisodeNode` **생성자**가 `__scene_{EpisodeId}`를 발급해 **에피소드 하나 = 장면 하나인 퇴화 상태**가 된다(매 에피소드 무대 클리어, 에피소드를 넘는 롤백 없음) — 구판 호환은 그 자리에서 산다.<br>불변식: 장면마다 밖에서 들어오는 자리 하나(**챕터 시작도 그 하나로 센다**, 재진입 허용). 이어하기는 장면 루트에서만. 자동 간선은 장면을 넘어도 된다(2026-11-18 — ⛔ 그 전에는 못 넘었다).<br>⛔ **이쪽이 그 불변식을 따로 구현하지 않는다** — 내보내기가 낸 JSON을 코어 로더에 되먹여(`ProgressionLoader.Load`) 코어의 Error를 `CoreRefusedChapter`로 세우고 **그 에피소드 · 간선까지 짚는다**(`ChapterProgressionExporter.CoreRefusals`). 판정의 주인은 코어 하나다 |
 | ~~`EndingRules`~~ | **저쪽에서 폐지** (`5e424840`) | 이쪽은 여전히 빈 배열을 낸다 — Newtonsoft가 모르는 칸을 버려 무해. 재반입(§G-11)하면 이쪽 DTO에서도 사라진다 |
 | ~~`Option.Kind`~~ | **저쪽에서 폐지** (`adfda627` — 자동 진행 자체가 폐지) | §G-7 종결. 이쪽이 내는 값은 버려진다 |
 | ~~`Option.HideWhenLocked`~~ | **저쪽 DTO에 없다** | 옛 F4의 "저쪽 DTO는 그대로 둔다"는 낡았다 — 저쪽이 걷었다 |
 | ~~`Node.EndingKey`·`IsChapterEndingCandidate`·`IndexText`·`Position`·`DesignerNote`·`VisibleConditions`·`UnlockConditions`·`Attachments`~~ | **저쪽 DTO에 없다** (`7503462f`) | 이쪽이 내는 빈 값은 버려진다(저쪽 견본 `qwer.progression.json`이 이쪽 08-27 산출물이고 이 칸들이 8개씩 들어 있다 — 무해). 재반입 때 함께 걷는다 |
-| ~~`Node.DesignerNote`~~ | ⛔ **이쪽에서도 걷었다** (2026-11-17 소유자) | 에피소드 지시가 실려 나가던 칸 — 저쪽 DTO에 없어 늘 버려졌다. 지시의 집은 이제 대사 Yarn(`exported/yarn/`)의 주석이다(`docs/work-orders/yarn-output-orders.md`). 위 줄의 나머지 칸은 그대로 재반입 때 걷는다 |
+| ~~`Node.DesignerNote`~~ | ⛔ **이쪽에서도 걷었다** (2026-11-17 소유자) | 에피소드 지시가 실려 나가던 칸 — 저쪽 DTO에 없어 늘 버려졌다. 지시의 집은 이제 대사 Yarn(`exported/yarn/`)의 주석이다(지시서 `yarn-output-orders.md` — 2026-11-18 닫고 걷음). 위 줄의 나머지 칸은 그대로 재반입 때 걷는다 |
 
 **enum은 이름 문자열로 나간다** — 순서를 재배열해도 안 깨진다. 로더가 이름으로 맵핑하고,
 **알 수 없는 이름은 로더만의 검사 대상이다**(모델은 이미 enum이라 못 잡는다).
@@ -589,7 +598,7 @@ bool 어휘 준수 · **장면마다 밖에서 들어오는 자리가 하나**(`
 규칙이 두 곳에 살면 저쪽이 하나 늘릴 때마다 또 갈리고, 그것이 이 저장소 셋이 없애려는
 바로 그 병이다. **저쪽 판정을 그대로 받는다.**
 
-코어 진단의 경로(`Nodes[ep].NextOptions[i]`)는 엑셀 시트·행으로 번역해 싣는다 —
+코어 진단의 경로(`Nodes[ep].NextOptions[i]`)는 에피소드 · 간선으로 옮겨 싣는다(`CoreRefusals` — ⛔ 엑셀 시절에는 시트 · 행이었다) —
 "어딘가 잘못됐다"는 보고는 이 레이어에서 실패다. 코어의 **경고는 막지 않는다.**
 
 ⛔ **2026-09-02 — 이 관문이 저쪽보다 느슨해졌다.** 이쪽 로더가 08-25 사본이라

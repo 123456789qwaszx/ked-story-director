@@ -1,7 +1,7 @@
 # ked-story-director
 
 > **이야기의 뼈대와 대사를 쓰는 툴.** 2026-10-29에 VnTool(`VNStoryEditor_avalonia` `dev` @ `f2a7bdc`)에서 이력째 갈라졌다.
-> 대본 탭과 엑셀 연동을 걷었고(D2), 연출 그래프를 위→아래로 세웠고(D3), 대사를 카드 안에서 직접 쓴다(D4).
+> 옛 대본 탭(엑셀 대본 편집기 — 지금의 [대본] 탭과 다른 것)과 엑셀 연동을 걷었고(D2), 연출 그래프를 위→아래로 세웠고(D3), 대사를 카드 안에서 직접 쓴다(D4).
 > **연출(무대 프리뷰 · 연출 명령 · 게임용 Yarn · 발행)은 [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로
 > 갔다** — 그 툴은 이 툴의 프로젝트 파일을 원고로 읽고, 연출은 제 파일에 둔다. 계획과 단계는
 > [`docs/plans/director-split.md`](docs/plans/director-split.md) · [`docs/plans/presentation-removal.md`](docs/plans/presentation-removal.md),
@@ -10,32 +10,36 @@
 
 비주얼 노벨 저작 도구. C#/.NET 10 + Avalonia, 한국어 코드베이스.
 
-만들어 내는 것은 **원고(프로젝트 파일)** 와 유니티 런타임(별도 저장소)이 먹는 **`exported/{챕터}.progression.json`** 입니다.
-함께 **대사만 있는 Yarn**(`exported/yarn/` — 장면마다 한 파일, 메모는 주석)이 나가 작가가 대사만으로 굴러가는지 봅니다(2026-11-17).
-연출 든 게임용 Yarn 묶음은 compositor가 이 원고와 제 연출을 합쳐 냅니다.
+만들어 내는 것은 **원고(프로젝트 폴더)** 와 유니티 런타임(별도 저장소 `ked-presentation-runtime`)이 먹는 **`exported/{챕터}.progression.json`** 입니다.
+함께 **대사만 있는 Yarn**(`exported/yarn/` — 장면마다 한 파일, 메모는 주석, 연출 없음)이 나가 작가가 대사만으로 굴러가는지 봅니다(2026-11-17).
+내보내는 것은 진행 JSON과 이 대사 Yarn 둘뿐입니다. 연출 든 게임용 Yarn 묶음은 compositor가 이 원고와 제 연출을 합쳐 냅니다.
 
 ## 두 그래프
 
 화면의 탭 이름은 **[구성]**(챕터 그래프)과 **[대본]**(연출 그래프)이다(2026-11-05). 탭 순서가 작업 순서이고 창은 [구성]에서 열린다.
 문서와 코드는 아래의 옛 이름(챕터 그래프 · 연출 그래프, `ChapterGraphView` · `GraphEditorView`)을 그대로 쓴다.
 
+두 탭 모두 왼쪽에 **하이어아키**(프로젝트 → 챕터 → 장면 → 에피소드), 오른쪽에 **탭 셋 — 인스펙터 · 화자 · 조건 및 스탯**이 서고,
+두 기둥은 접힌다. [구성]의 하이어아키는 고르기 · 접기만 한다.
+
 | | **① 챕터 그래프 [구성]** (기획) | **② 연출 그래프 [대본]** (대사 · 흐름) |
 |---|---|---|
-| 만드는 것 | 에피소드 구조 · 선택지 · 조건 · 스탯 | 에피소드마다 대사 카드 · 카드 안 글 · 분기 · 조건 갈래 · 선택지 잇기 |
+| 만드는 것 | 챕터 구조의 수치 — ID · 조건 식 · 스탯 · 선택지의 조건 / 스탯변화 · 화자의 캐릭터 키 | 챕터 · 장면 · 에피소드 세우기와 지우기 · 대사 카드 · 카드 안 글 · 선택지 잇기(선 긋기) · 분기 · 이름(챕터 · 장면 · 에피소드 · 화자 · 조건) |
 | 값이 사는 곳 | 프로젝트 | 프로젝트 |
 | 도구의 역할 | 편집하고 검증하고 낸다 | 편집한다 |
 
 ## 원본은 프로젝트 하나
 
-모든 값의 원본은 **프로젝트 파일**입니다. 엑셀 워크북을 들여오고 내던 연동과 [대본] 탭은 2026-10-29(D2)에
+모든 값의 원본은 **프로젝트**입니다. 엑셀 워크북을 들여오고 내던 연동과 옛 대본 탭(엑셀 대본 편집기)은 2026-10-29(D2)에
 걷었습니다 — 나중에 다시 붙일 수 있지만 지금은 복잡하기만 하다는 판단입니다.
 
 - **대사 본문·화자** → 연출 그래프의 **대사 카드**(카드마다 대본 하나). 카드 안의 글 칸에서 직접 씁니다(D4).
-- **에피소드 구조·간선·조건·스탯** → 챕터 그래프. 간선은 연출 그래프에서도 긋습니다(2026-09-17, R7): 카드 아래 칸에
-  문구를 적어 다른 카드로 끌면 그것이 간선입니다. **창구가 둘이지 값이 사는 곳은 하나**입니다.
+- **에피소드 구조·간선·조건·스탯** → 챕터(`ChapterDocument`). 에피소드를 세우고 간선을 긋는 곳은 [대본]입니다 — 카드 아래 칸에
+  문구를 적어 다른 카드로 끌면 선택지, 맨 위 「자동」 칸을 끌면 자동 길입니다. [구성]에서는 그 ID와 간선의 조건 · 스탯변화를 고칩니다.
+  **창구가 둘이지 값이 사는 곳은 하나**입니다.
 - 챕터 조건은 판의 공급 노드(숨은 배관)로 저절로 건너가 대사 카드의 조건 목록에 뜹니다.
 - **진행 JSON**은 검증을 통과하면 저절로 나갑니다. 저장은 프로젝트를 씁니다.
-- 프로젝트를 열 때 **카드 없는 에피소드에는 빈 카드가 섭니다**(엑셀에서 들여온 옛 프로젝트를 위한 맞추기).
+- 툴이 만들지 않는 모양의 프로젝트(카드 없는 에피소드 · 장면 없는 에피소드 등)는 **열지 않습니다** — 고쳐 받지 않고 까닭을 알립니다.
 
 **각 값의 주인은 한 곳뿐**이라는 것이 설계 전체를 관통하는 규칙입니다. 같은 사실이 두 곳에
 있으면 어긋나고, 어긋남은 최종 출력에서야 드러납니다.
@@ -44,10 +48,10 @@
 
 ```text
 MyStory/
-├─ 예제.vnproject.json         목차 · 챕터 · 화자 · 파일을 넘나드는 관계
+├─ project.vnproject.json      매니페스트(형식 4) — 목차 · 챕터 · 화자 · 파일을 넘나드는 관계. 폴더에 하나뿐이어야 한다
 ├─ game.definition.json        (있으면) compositor의 연출 커맨드 어휘 — 이 툴은 읽지도 쓰지도 않는다
-├─ story/                      판(챕터마다 하나)과 그 위의 카드·노드 — 카드는 제 대본(줄 신원 + 본문)을 든다
-├─ runtime.target.json         보낼 곳 — 형식마다 exported/ 밖에 한 벌 더 낼 폴더([⚙ 설정]의 「내보내기」가 적는다)
+├─ story/sf_xxxxxxxx.vnstory.json  판(챕터마다 하나)과 그 위의 카드·노드 — 카드는 제 대본(줄 신원 + 본문)을 든다
+├─ runtime.target.json         (있으면) 복제할 폴더 — gameFolder(진행 JSON) · dialogueYarnFolder(대사 Yarn). 저장할 때 exported/를 거기로 복제한다([⚙ 설정]의 「내보내기」가 적는다)
 └─ exported/                   툴의 작업 사본 — 고칠 때마다 저절로 나간다
    ├─ ch01.progression.json    런타임 수입물 — 검증을 통과하면 나간다
    └─ yarn/ch01_scene01.yarn   대사만 있는 Yarn — 장면마다 하나, 게임 폴더로는 보내지 않는다
@@ -56,7 +60,7 @@ MyStory/
 **보낼 곳에는 저장(Ctrl+S)할 때만 보냅니다** — 진행 JSON의 보낼 곳이 게임 폴더(런타임의 `ChapterProgression`)이고, 대사 Yarn도 따로
 정할 수 있습니다. 이 툴이 보낸 그대로인 지난 파일만 걷습니다.
 
-프로젝트는 형식 4만 엽니다 — 그 앞의 형식(대본이 따로 서거나 연출을 담은 옛 프로젝트)은 열지 않고 알립니다.
+프로젝트는 형식 4만 엽니다 — 그 앞의 형식 1~3(대본이 따로 서거나 연출을 담은 옛 프로젝트)은 열지 않고 알립니다.
 
 ## 실행
 
@@ -84,12 +88,12 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 ## 문서
 
 **처음 보는 사람은 [`ORIENTATION.md`](ORIENTATION.md)(지도), 작업을 이어받는 사람은
-[`docs/design/two-graphs.md`](docs/design/two-graphs.md)(지금 동작)와 [`docs/plans/`](docs/plans/)의 마지막 계획에서 시작합니다.**
+[`docs/design/two-graphs.md`](docs/design/two-graphs.md)(지금 동작 — 7절 끝이 가장 새 결정)와 그 절이 가리키는 [`docs/work-orders/`](docs/work-orders/)의 지시서에서 시작합니다.**
 
 | 문서 | 무엇이 있나 |
 |---|---|
 | [`ORIENTATION.md`](ORIENTATION.md) | **처음 보는 사람의 지도.** 프로젝트 · 폴더 · 데이터 흐름 · 지뢰 · 읽는 순서 |
-| [`docs/design/two-graphs.md`](docs/design/two-graphs.md) | **지금 동작의 정본.** 두 그래프의 기능 · 사용자 동작 · 다시 쓸 때 지킬 것 · D2~L 설계 |
+| [`docs/design/two-graphs.md`](docs/design/two-graphs.md) | **지금 동작의 정본.** 두 그래프의 기능 · 사용자 동작 · 다시 쓸 때 지킬 것 · 7절의 결정 기록(D2부터 — 끝이 가장 새 것) |
 | [`docs/plans/legacy-cleanup.md`](docs/plans/legacy-cleanup.md) | 레거시 정리 L0~L8 — 걷은 것 · 남긴 것과 그 까닭 · 걷다가 찾은 결함 |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 코드 구조 — "이 기능은 어느 파일" |
 | [`docs/external-overview.md`](docs/external-overview.md) | **이력**(2026-09-17 기준). 외부 작업자용 책임 · 데이터 흐름 · 런타임 영향 |
@@ -97,7 +101,7 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 | [`docs/handoff/current-state.md`](docs/handoff/current-state.md) | **이력**(2026-08까지). 계층 규칙과 결정의 까닭 |
 | [`docs/run-log.md`](docs/run-log.md) | **이력**(VnTool 시절 결정의 정본). 한 일 · 근거 · 되돌리는 법 |
 | [`docs/handoff/architecture-decisions.md`](docs/handoff/architecture-decisions.md) | 확정된 설계와 **그 이유** |
-| [`docs/runtime-contract.md`](docs/runtime-contract.md) | 유니티 런타임과의 계약 (Gate D) |
+| [`docs/runtime-contract.md`](docs/runtime-contract.md) | 유니티 런타임과의 계약 (Gate D) — 이 툴의 몫은 2부(진행 JSON). 1부(연출 · 게임용 Yarn)는 compositor의 몫이다 |
 | [`docs/progression-handoff.md`](docs/progression-handoff.md) | 진행 코어 교환 이력·현행 상대·표본 JSON 안내 |
 | [`tests/fixtures/chapter-samples/`](tests/fixtures/chapter-samples/) | 견본 챕터 둘 — `ch05`(복도) · `ch01`(Scene·Auto·조건·스탯·EventKey를 담은 계약 표본). 2026-10-29까지 `docs/*.xlsx`였다 |
 | [`docs/work-orders/chapter-graph-orders.md`](docs/work-orders/chapter-graph-orders.md) | 챕터 계층 규격 원본 |

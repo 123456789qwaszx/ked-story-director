@@ -1,12 +1,13 @@
 # VNStoryEditor_avalonia — 외부 작업자용 시스템 안내와 런타임 정합성 점검
 
-> ⚠ **ked-story-director (2026-10-29 · D2):** 이 문서의 엑셀 관련 내용 — 챕터·대본 워크북, [대본] 탭, [대본/챕터 가져오기],
+> ⚠ **ked-story-director (2026-10-29 · D2):** 이 문서의 엑셀 관련 내용 — 챕터·대본 워크북, 옛 [대본] 탭(엑셀 대본 편집기 — 지금의 [대본] 탭과 다르다), [대본/챕터 가져오기],
 > 워크북 출력·잠금 — 은 이 저장소에서 걷혔다. 원본은 프로젝트 하나이고 대사는 연출 그래프의 카드에 산다.
 > 지금 동작의 정본은 [`docs/design/two-graphs.md`](design/two-graphs.md)다.
 >
 > ⛔ **같은 날 연출 층 전체**(무대 프리뷰 · 연출 노드 · 발행 · 게임용 Yarn 번들 · `Ked.Presentation.Core`)가
 > [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔다. 이 툴이 내는 것은 원고와 progression JSON이다
-> ([`docs/plans/presentation-removal.md`](plans/presentation-removal.md)).
+> ([`docs/plans/presentation-removal.md`](plans/presentation-removal.md)) — 2026-11-17부터 연출 없는 대사 Yarn(`exported/yarn/`)도 함께 낸다
+> (게임 폴더로는 보내지 않는다 · [`design/two-graphs.md`](design/two-graphs.md) 7절 V).
 
 기준일: 2026-09-17 (R7 완료 · 계층을 하나로)
 
@@ -54,6 +55,10 @@ VNStoryEditor_avalonia
 - 챕터 버전은 progression JSON의 SHA-256으로 식별되므로 동일 입력은 동일 바이트로 출력되어야 한다.
 
 ## 3. 저장소 안의 구역
+
+> ⛔ **이 표는 2026-09-17의 것이다.** 지금(ked-story-director) 구역은 `Vn.Authoring` · `Vn.App` · `Ked.Progression` 셋이다 —
+> `Vn.Core` · `Vn.Cli`는 2026-10-29 레거시 정리(L-D1 · [`plans/legacy-cleanup.md`](plans/legacy-cleanup.md))로, `Vn.Authoring`의 엑셀
+> 입출력은 같은 날 D2로 걷혔다. 지금의 지도는 [`ORIENTATION.md`](../ORIENTATION.md) §4.
 
 | 프로젝트 | 역할 | 경계 |
 |---|---|---|

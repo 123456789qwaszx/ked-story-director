@@ -373,8 +373,6 @@ VnTool이 내던 트리오(`Story_*` / `Set_*` / `Pres_*`)가 **`{대사엔트�
 | 계약 원문 | [`docs/runtime-contract.md`](runtime-contract.md) 2부·3부 |
 | **v11 규격 (엔딩·연출)** | `edge-presentation-orders.md`(2026-11-18 닫고 걷음) |
 | 내보내기 | `src/Vn.Authoring/Chapters/ChapterProgressionExporter.cs` |
-| 엔딩키 규칙 (한 곳) | `ChapterGraphModel.EndingKeyOf(episodeId)` |
-| 충돌 검사 | `ChapterWorkbookReader.VerifyEndingKeysAgree` |
 | 도달성 증명 (이관 원본) | `src/Vn.Authoring/Chapters/ChapterReachabilityProver.cs` |
 | 조건식 분해·조립 | `src/Vn.Authoring/Chapters/ConditionExpressionParser.cs` |
 | 표본을 붙드는 테스트 | `tests/Vn.Authoring.Tests/Chapters/ProgressionSampleGoldenTests.cs` |
@@ -389,6 +387,6 @@ VnTool이 내던 트리오(`Story_*` / `Set_*` / `Pres_*`)가 **`{대사엔트�
 - 재생성·필드·소비자 로더 검증:
   `ProgressionSampleGoldenTests`
 
-워크북은 같은 Scene 안의 여러 Episode, 명시적 Auto, 표시·해금조건,
-Number Add, Bool Set, 연출 그래프의 ViaNodeId, EventKey, 고정 NextOptions 순서를 한 흐름으로 보여 준다.
+원천 챕터는 같은 Scene 안의 여러 Episode, 명시적 Auto, 표시·해금조건,
+Number Add, Bool Set, EventKey, 고정 NextOptions 순서를 한 흐름으로 보여 준다(⛔ `ViaNodeId`는 2026-09-17에 걷혔다 — 위 추기).
 그 절이 이쪽 작업 목록이다.

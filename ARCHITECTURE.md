@@ -26,14 +26,15 @@
 | 값 | `StoryProject.Chapters` — 에피소드 · 간선 · 조건 · 스탯 · 선택지 사전 · 픽스처 | `StoryProject.Files`(판 = 챕터 1:1) — 카드마다 제 대본(`DialogueNode.Script`) |
 | 화면 | `Vn.App/Views/ChapterGraphView.axaml{,.cs}` | `Vn.App/Views/GraphEditorView.axaml.cs` · `DialogueNodeEditor.axaml.cs` |
 
-**각 값의 주인은 한 곳뿐이다.** 창구가 둘이어도 값은 한 곳에 산다 — 간선은 챕터 그래프에서도 연출 그래프의 선택지 칸에서도
-긋지만 둘 다 `ChapterDocument.Edges`를 고친다.
+**각 값의 주인은 한 곳뿐이다.** 창구가 둘이어도 값은 한 곳에 산다 — 간선을 긋고 끊는 곳은 연출 그래프의 선택지 칸이고
+(`GraphEditorView` → `AddEdge` · `RemoveEdge` · `SetEdgeRoute`), 챕터 그래프는 그 간선의 조건 · 스탯변화를 고친다(`UpdateEdge`).
+둘 다 `ChapterDocument.Edges`를 고친다. 에피소드도 연출 그래프에서 세우고 지운다 — 챕터 그래프는 ID · 조건 식 · 스탯을 고친다.
 
 ## 2. 저장 구조와 형식 버전
 
 ```text
 MyStory/
-├─ 예제.vnproject.json         매니페스트 — 판 목록 · 챕터(chapters[]) · 화자(speakers — 없으면 없다) · [대본] 판 크기(board — 기본이면 없다)
+├─ project.vnproject.json      매니페스트(폴더 안에 하나 — 새 프로젝트는 이 이름, `ProjectFolder`) — 판 목록 · 챕터(chapters[]) · 화자(speakers — 없으면 없다) · [대본] 판 크기(board — 기본이면 없다)
 ├─ game.definition.json        (있으면) compositor의 연출 어휘. 이 툴은 읽지도 쓰지도 않는다
 ├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
@@ -42,8 +43,8 @@ MyStory/
 └─ exported/{챕터}.progression.json  진행 JSON — 런타임 계약
    exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn — 장면 = 파일, 에피소드 = 노드(타이틀 = DialogueEntryId), 장면 메모 · 에피소드
                                      지시는 // 주석. 진행 JSON이 나갈 때 함께 나가고 게임 폴더로는 보내지 않는다
-runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖의 폴더(gameFolder = 진행 JSON · compositor도 읽는다, scenesFolder,
-                                     dialogueYarnFolder). 저장할 때만 exported/를 거기로 비춘다(ExportDelivery · 보낸 기록 exported/.delivered.json)
+runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exported/ 밖의 폴더(gameFolder = 진행 JSON · compositor도 읽는다,
+                                     dialogueYarnFolder = 대사 Yarn — 칸은 이 둘, 모르는 칸은 지킨다). 저장할 때만 exported/를 거기로 비춘다(ExportDelivery · 보낸 기록 exported/.delivered.json)
 ```
 
 챕터는 장면 항목(`sceneNotes[]` — 장면마다 이름(`name`)과 자유 글(`text`), 열쇠는 `SceneId`)을 든다. [대본] 탭은 이 이름 · 챕터 표시
@@ -88,7 +89,7 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 | `StoryProject.cs` · `Speaker.cs` | 프로젝트 — 판(카드와 그 대본) · 챕터 · **화자 목록**(이름 · 캐릭터 키 — 모든 챕터가 쓴다, 2026-11-17 · ⛔ 그 전에는 정의 파일 speakers) · [대본] 판 크기 |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
 | `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 에피소드 표식(`MarkedEpisodeId`) · 분기 카드의 제목(`Title`)을 든다. ⛔ 기본 출구는 2026-11-17에 걷혔다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
-| `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeId`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
+| `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeIds` — 한 줄에 여럿, 연결만 끊은 분기점은 `OpenDetourPositions`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
 | `EdgeShape.cs` | 사람이 고친 선 모양(꼴 · 굽이 — 자동 자리에서 옮긴 양) |
 | `Identifier.cs` | 식별자 형식 |
 
@@ -157,14 +158,15 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 
 이름의 「발행」 · 「결과」는 남은 이름이다 — 발행(고정본 · 결과 저장소)은 compositor로 갔다.
 
-### 3.8 `Vn.Authoring/Serialization` · `Definition`
+### 3.8 `Vn.Authoring/Serialization`
 
 | 파일 | 하는 일 |
 |---|---|
-| `ProjectStore.cs` | 파일 배치 · 원자적 저장 |
+| `ProjectStore.cs` | 파일 배치 · 원자적 저장 · 목차에서 빠진 판 파일 걷기 |
+| `ProjectFolder.cs` | 프로젝트는 폴더다 — 폴더 안의 유일한 `*.vnproject.json`을 찾고, 새 프로젝트는 `project.vnproject.json`으로 깐다 |
 | `ExportDestinations.cs` | 보낼 곳(`runtime.target.json`) — 형식마다 폴더, 모르는 칸은 지킨다 |
 | `ProjectManifestJson.cs` · `ChapterDocumentJson.cs` | 매니페스트 · 챕터 |
-| `StoryFileJson.cs` · `StoryNodeJson.cs` · `EdgeShapeJson.cs` | 판 · **노드 직렬화는 여기 하나뿐** · 선 모양 |
+| `StoryFileJson.cs` · `StoryNodeJson.cs` · `EdgeShapeJson.cs` · `DetourJson.cs` | 판 · **노드 직렬화는 여기 하나뿐** · 선 모양 · 분기 표식(`detour` — 하나면 글, 여럿이면 배열) |
 | `ScriptDocumentJson.cs` | 대본 |
 | `ProjectSnapshotCodec.cs` · `JsonSupport.cs` | 되돌리기 · 저장 여부 비교 · 공통 |
 
@@ -172,13 +174,32 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 
 | 파일 | 하는 일 |
 |---|---|
-| `MainWindow.axaml{,.cs}` | 도구 모음 · 열기 · 저장 · 탭 · 창 제목 |
-| `Views/ChapterGraphView.axaml{,.cs}` | 챕터 그래프 · 편집 패널 · [화자] · [챕터] 탭 · 검증 보고 |
-| `Views/GraphEditorView.axaml.cs` | 연출 그래프 — 카드 · 글 칸 · 포트 · 선택지 줄 · 선 고치기 · 미니맵 |
-| `Views/DialogueNodeEditor.axaml.cs` | 곁기둥의 대사 편집기(줄 표 · 조건 · 분기) |
-| `Views/StatChangeEditor.cs` · `ConfirmFlyout.cs` · `BranchPalette.cs` | 스탯변화 칸 · 확인 · 갈래 색 |
-| `Services/AuthoringSession.cs` | 열린 프로젝트 · 저장 여부 · 선택 · 정의 · 상태줄 |
+셸 `MainWindow`는 맡은 일별 partial이다(`MainWindow.*.cs`). 두 탭 모두 왼쪽 기둥은 하이어아키(`StoryHierarchy`), 오른쪽 기둥은
+탭 셋(인스펙터 · 화자 · 조건 및 스탯 — `SideTabs`)이고 두 기둥은 접힌다(`ColumnDock`).
+
+| 파일 | 하는 일 |
+|---|---|
+| `Program.cs` · `App.axaml{,.cs}` | 시작 — 시작 예외를 로그로 남기고, 주 창을 못 만들면 까닭을 보이는 창을 띄운다 |
+| `MainWindow.axaml{,.cs}` | 셸 — 위 띠(File 메뉴 · [📂 작업 폴더] · [⚙ 설정]) · 탭 둘([구성] · [대본]) · 상태줄 · 창 제목, 새로 만들기 · 열기(폴더) · 저장 · 10분 자동 저장 · 창 키(Ctrl+Z/Y · Delete) · 챕터 세우기(`CreateChapterNow`) · 챕터 지우기 확인 |
+| `MainWindow.Hierarchy.cs` | 두 탭의 하이어아키를 한 원천에서 채우고 선택을 함께 움직인다 · [대본] 인스펙터(카드 → 대사 편집기, 프로젝트 · 챕터 · 장면 줄 → 요약)와 탭 고르기 · 「조건 및 스탯」 탭 맨 위의 챕터 이름 칸 |
+| `MainWindow.HierarchyEdit.cs` | 하이어아키에서 고치기 — 우클릭 차림표(챕터 · 장면 · 에피소드 추가, 에피소드 지우기) · 두 번 눌러 이름 바꾸기 · 끌어 다른 장면으로 · [대본] [삭제]의 챕터 · 장면 지우기([구성] 하이어아키는 읽기 전용) |
+| `MainWindow.Speakers.cs` | [대본] 「화자」 탭 — 화자 이름 더하기 · 고치기 · 지우기(캐릭터 키는 [구성] 「화자」 탭) |
+| `MainWindow.Conditions.cs` | [대본] 「조건 및 스탯」 탭의 조건 이름 — 더하기 · 고치기 · 지우기(식은 [구성]) |
+| `MainWindow.SceneNotes.cs` | [대본] 장면 메모 공간 — 장면 메모 · 에피소드 지시 카드, 챕터의 주인 없는 메모 |
+| `MainWindow.LineInspector.cs` | [대본] 인스펙터의 선 설명 — 선택지 문구(자동 길 ↔ 선택지)는 여기서, 조건 · 스탯변화는 [구성]으로 데려간다 |
+| `Views/ChapterGraphView.axaml{,.cs}` | [구성] — 챕터 그래프 판 · 툴바(챕터 콤보 · [자동 정렬] · [화면 맞춤] · 「빈 선택지 숨기기」 · 「ID로 보기」) · 오른쪽 탭 셋(인스펙터의 ID 칸 · 간선 조건/스탯변화, 「화자」의 캐릭터 키, 「조건 및 스탯」의 식 · 스탯) · 검증 보고 |
+| `Views/GraphEditorView.axaml{,.cs}` | [대본] — 연출 그래프 판(카드 · 글 칸 · 포트 · 선택지 줄 · 선 고치기 · 판 우클릭 · 챕터 · 장면 이름표 · 미니맵) · 툴바(챕터 콤보 · [＋ 에피소드] · [삭제]) · 챕터가 없을 때의 [＋ 첫 챕터 만들기] |
+| `Views/DialogueNodeEditor.axaml{,.cs}` | [대본] 인스펙터의 대사 편집기(줄 표 · 조건 · 분기) |
+| `Views/StoryHierarchy.axaml{,.cs}` | 하이어아키 한 그루(프로젝트 → 챕터 → 장면 → 에피소드 · 분기 카드 줄) — 고르기 · 접기 · ↑↓←→. 고치는 일은 셸에 알리기만 한다 |
+| `Views/SideTab.cs` · `ColumnDock.cs` | 오른쪽 기둥의 탭 셋(차례 · 이름) · 기둥 접기(하이어아키 · 오른쪽 기둥) |
+| `Views/SettingsWindow.cs` · `Shortcuts.cs` | [⚙ 설정] 창(이 프로젝트 · 내보내기 · 단축키 · 기타) · 실제로 듣는 단축키 표 한 벌 |
+| `Views/EpisodeAdder.cs` | 에피소드 하나 더하기 — 장면에 길 없이(하이어아키 「에피소드 추가」 · 「장면 추가」) |
+| `Views/BranchConditionPicker.cs` · `BranchConditionNote.cs` | [대본] 분기 카드의 조건 칸 · 분기 조건을 말하는 글(두 탭이 같은 말) |
+| `Views/StatChangeEditor.cs` · `ConfirmFlyout.cs` · `BranchPalette.cs` | 스탯변화 칸 · 확인 칸 · 갈래 색 |
+| `Views/RubberBand.cs` · `EscToRevert.cs` · `GuideLine.cs` | 범위 선택(두 판) · 글 칸의 Esc = 넣기 전 값 · 안내글 한 줄과 설명 간소화 스위치(`GuideMode`) |
+| `Services/AuthoringSession.cs` | 열린 프로젝트 · 경로 · 저장 여부 · 선택 · 화자 창구 · 보낼 곳 · 화면 편의 상태 · 상태줄 |
 | `Services/ProjectRefreshPlanner.cs` | 변경 종류 → 그래프 · 곁기둥 중 무엇을 다시 만들지 |
+| `Services/WorkFolder.cs` | 작업 폴더(`exported/`)를 찾고, 그 형식의 파일을 고른 채 탐색기를 연다 |
 | `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 · 설명 간소화(`Views/GuideLine.cs`) — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
 
 ---
@@ -194,7 +215,7 @@ runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖�
 | 에피소드 구조 · 간선 · 조건 · 스탯의 원본은 | `ChapterDocument`. 두 화면이 같은 `ProjectEditor.Chapters` 명령을 부른다 |
 | 챕터 조건이 대사 카드에 뜨는 길은 | 판의 공급 노드(`ChapterBoardSupply`) — 조건 편집 명령 안과 판이 서는 순간에 번역해 나른다 |
 | 런타임이 무엇을 받나 | 검증과 코어 재적재를 통과한 진행 JSON만(§4.5) |
-| 이전 프로젝트는 | 형식 2 이하는 거부한다(§8) |
+| 이전 프로젝트는 | 형식 4 이전(1~3)은 열지 않는다(§8) |
 
 ### 4.1 조건은 반복 저장하지 않고 전환만 저장한다
 
@@ -213,7 +234,7 @@ Line 5  EndIf                           Line 5
 - `BeginIf` 줄은 자기가 연 갈래 **안**에 있고, `EndIf` 줄은 이미 **바깥**이다. `BeginElseIf`는 같은 체인의 형제다.
 - 한 줄 앞에 전환이 여럿일 수 있다(`Transitions` — 겹쳐 닫기 · 연달아 열기). 대사 없는 블록이 대본 끝이면 노드의
   `TrailingTransitions`가 닫는다.
-- 조건 안 조건(중첩)은 문제로 알린다. ⛔ 대사 안 선택 블록(조건 안 선택지 W54 · 결합 종료 W55 포함)은 2026-11-04에 걷혔다 — 선택지는 챕터 간선(에피소드 끝)에서만 선다. 옛 파일의 `beginChoice` 등은 리더가 알아보고 버리며 열 때 상태줄에 알린다.
+- 조건 안 조건(중첩)은 문제로 알린다. ⛔ 대사 안 선택 블록(조건 안 선택지 W54 · 결합 종료 W55 포함)은 2026-11-04에 걷혔다 — 선택지는 챕터 간선(에피소드 끝)에서만 선다. 옛 파일의 `beginChoice` 등은 모르는 전환 종류라 깨진 파일로 거절한다(2026-11-17 · §8 — ⛔ 그 전에는 알아보고 버리며 상태줄에 알렸다).
 
 ### 4.2 조건 갈래 출구는 갈래를 *여는 줄*에 매단다
 
@@ -316,7 +337,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 분기 카드(집 · 검증) | `Chapters/ChapterBranchCards.cs` — 분기 카드(`DialogueNode.IsBranchCard`)는 에피소드가 아니라 증명(`ChapterReachabilityProver`, 간선만 — 런타임의 오라클) 밖이다. `HomesOf` = 분기 카드의 집(먼저 부르는 에피소드 — 장면 · Yarn 파일 · [구성] 칩이 같은 규칙), `Verify` = 분기점이 에피소드에(오류) · 아무도 안 부름 · 도달 불가에서만 불림(경고) · 줄 없음(오류) · Yarn 노드 이름 겹침(오류). 부르는 곳 `ChapterValidator.Validate`(프로젝트를 줄 때) |
-| [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs`(묶음: 이 프로젝트 · 내보내기 · 단축키 — 표 `Views/Shortcuts.cs` · 기타 — 미니맵) |
+| [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs`(묶음: 이 프로젝트 · 내보내기 · 단축키 — 표 `Views/Shortcuts.cs` · 기타 — 미니맵 감추기 · 설명 간소화) |
 | 대사 Yarn(`exported/yarn/`) | 글 짓기 `Chapters/ChapterYarnExporter.cs`(타이틀은 `ChapterProgressionExporter.DialogueEntryIdOf`), 쓰기 · 낡은 파일 걷기 `ChapterExportService.ExportAll`, 컴파일 확인은 시험 `ChapterYarnExportTests`(앱은 컴파일러를 싣지 않는다) |
 
 **편집 · 저장 · 화면**
