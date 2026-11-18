@@ -272,6 +272,7 @@ internal sealed class StatChangeEditor : StackPanel
                 Changed?.Invoke(this, EventArgs.Empty);
             }
         };
+        EscToRevert.Wire(amountBox, () => Math.Abs(row.Seed).ToString(System.Globalization.CultureInfo.InvariantCulture));   // [대본]과 같다(J1)
         Grid.SetColumn(amountBox, 2);
         grid.Children.Add(amountBox);
 

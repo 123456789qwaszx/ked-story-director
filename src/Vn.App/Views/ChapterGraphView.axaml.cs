@@ -450,8 +450,20 @@ public partial class ChapterGraphView : UserControl
 
 
         // 편집 — 전부 편집기 명령으로 프로젝트에 가고, 세션의 변경 알림이 다시 읽어 화면이 따라온다.
-        // [개명]·[적용] 단추는 없다: Id는 Enter로 개명하고, 조건 콤보는
-        // 고르는 순간 저장된다. 편집은 늘 열려 있다.
+        // [개명]·[적용] 단추는 없다: Id는 Enter나 다른 곳을 누르면 개명하고(⛔ 2026-11-18까지는 Enter만 — side-boxes J1), 조건 콤보는
+        // 고르는 순간 저장된다. Esc는 지금 값으로 돌린다([대본]과 같다). 편집은 늘 열려 있다.
+        //
+        // ⚠ 초점을 잃을 때 바꾸려면 <b>그때의 대상이 적기 시작한 대상이어야 한다</b> — 판의 카드 · 선 · 점은 초점을 가져가지 않아
+        //    고름이 먼저 바뀔 수 있다. 고르기의 첫머리가 초점을 받이로 옮겨 먼저 낸다(FlushInspectorTyping).
+        IdBox.LostFocus += (_, _) => UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
+        ChapterIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "챕터 ID 바꾸기", RenameSelectedChapter);
+        SceneIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "장면 ID 바꾸기", RenameInspectedScene);
+        BranchIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "분기 카드 ID 바꾸기", RenameInspectedBranchCard);
+        EscToRevert.Wire(IdBox, () => _selectedEpisodeId);
+        EscToRevert.Wire(ChapterIdBox, () => _selectedChapterId);
+        EscToRevert.Wire(SceneIdBox, () => _inspectedSceneId);
+        EscToRevert.Wire(BranchIdBox, () => _session?.Project.FindDialogue(_selectedBranchCardId)?.Name);
+        EscToRevert.Wire(EdgeLockedMsgBox, () => SelectedEdge()?.LockedMessage);
         IdBox.KeyDown += (_, e) =>
         {
             if (e.Key == Avalonia.Input.Key.Enter)
@@ -791,6 +803,8 @@ public partial class ChapterGraphView : UserControl
 
         characterId.LostFocus += (_, _) => UiGuard.Run(_session, "캐릭터 키", Commit);
         characterId.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(characterId, () =>
+            _session?.Project.Speakers.FirstOrDefault(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal))?.CharacterId);
 
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
         Grid.SetColumn(name, 0);
@@ -2688,6 +2702,7 @@ public partial class ChapterGraphView : UserControl
     internal void SelectEpisode(string? episodeId)
     {
         FlushEdgeTyping();
+        episodeId = AfterRename(episodeId);   // 적던 ID를 낸 그 에피소드를 다시 누른 것이면 새 ID로
 
         // 범위 선택 무리는 그 안의 카드를 고르는 동안만 남는다.
         if (episodeId is null || !_grouped.Contains(episodeId))
@@ -2723,7 +2738,7 @@ public partial class ChapterGraphView : UserControl
     {
         FlushEdgeTyping();
         _grouped.Clear();
-        _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
+        _selectedEdgeKey = (AfterRename(fromEpisodeId)!, AfterRename(toEpisodeId)!, optionLabel.Trim());
         _selectedEpisodeId = null;
         _selectedBranchCardId = null;
         _selectedSlot = null;
@@ -2774,7 +2789,7 @@ public partial class ChapterGraphView : UserControl
     {
         FlushEdgeTyping();
         _grouped.Clear();
-        _selectedSlot = (episodeId, index);
+        _selectedSlot = (AfterRename(episodeId)!, index);
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
         _selectedBranchCardId = null;
@@ -2984,12 +2999,38 @@ public partial class ChapterGraphView : UserControl
         UiGuard.Run(_session, "간선 저장", ApplyEdgeFromPanel);
     }
 
+    /// <summary>고르기 첫머리(<see cref="FlushEdgeTyping"/>)에서 에피소드ID 칸을 내어 바뀐 이름 — 그 고르기가 옛 ID를 새 ID로 읽는다.</summary>
+    private (string Old, string New)? _episodeRenamed;
+
+    /// <summary>고르기 첫머리에서 바뀐 에피소드ID를 따라간다 — 옛 ID면 새 ID, 아니면 그대로.</summary>
+    private string? AfterRename(string? episodeId) =>
+        _episodeRenamed is { } renamed && string.Equals(episodeId, renamed.Old, StringComparison.Ordinal) ? renamed.New : episodeId;
+
+    /// <summary>고른 간선 — 사라졌으면 null.</summary>
+    private ChapterEdge? SelectedEdge() =>
+        _selectedEdgeKey is { } key
+            ? SelectedModel?.Edges.FirstOrDefault(candidate =>
+                candidate.FromEpisodeId == key.From &&
+                candidate.ToEpisodeId == key.To &&
+                EdgeLabelKey(candidate) == key.Label)
+            : null;
+
     /// <summary>
-    /// 선택을 옮기기 전에 간선 패널의 글자 칸에 적던 것을 그 간선에 낸다 — 판의 선 · 점은 초점을 가져가지 않아, 적던 칸이
+    /// 선택을 옮기기 전에 초점을 쥔 글 칸을 놓고(그 칸이 지금 대상에 낸다), 간선 패널의 글자 칸에 적던 것을 그 간선에 낸다 — 판의 선 · 점은 초점을 가져가지 않아, 적던 칸이
     /// 초점을 잃지 않은 채 다른 것이 골라지면 적던 글이 사라지거나(칸을 새 선택의 값으로 채운다) 엉뚱한 간선에 들어간다.
     /// </summary>
     private void FlushEdgeTyping()
     {
+        // 초점을 쥔 글 칸을 먼저 놓는다 — 초점을 잃을 때 내는 칸(ID · 식 · 스탯 표 · 캐릭터 키 · 잠금 안내문 · 스탯변화 숫자)이
+        // 고름이 바뀌기 전의 대상에 낸다(side-boxes J1). 칸이 지금 값과 같으면 아무것도 하지 않는다.
+        _episodeRenamed = null;
+
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox typing &&
+            typing.GetVisualAncestors().Contains(ChapterRightRows))
+        {
+            InspectorFocusSink.Focus();
+        }
+
         if (!EdgePanel.IsVisible ||
             _selectedEdgeKey is not { } key ||
             SelectedModel?.Edges.FirstOrDefault(candidate =>
@@ -3356,6 +3397,7 @@ public partial class ChapterGraphView : UserControl
         box.Tag = new ExpressionCommit(Commit);
         box.LostFocus += (_, _) => Commit();
         box.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(box, () => stored);
 
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(12, 0, 0, 0) };
         row.Children.Add(new TextBlock
@@ -3844,6 +3886,7 @@ public partial class ChapterGraphView : UserControl
 
         if (!result.Renamed)
         {
+            ChapterIdBox.Text = oldId;   // 받지 않았으면 칸이 지금 값으로 돌아온다
             _session.SetStatus(result.Failure!);
             return;
         }
@@ -4177,6 +4220,7 @@ public partial class ChapterGraphView : UserControl
 
         box.LostFocus += (_, _) => Commit();
         box.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(box, () => value);
 
         return box;
     }
@@ -4468,10 +4512,17 @@ public partial class ChapterGraphView : UserControl
                 _session.SetStatus(result.Failure!);
             }
 
+            // 받지 않았으면 칸이 지금 값으로 돌아온다 — 다른 곳을 눌러 낸 경우 칸에 남은 글이 바뀐 것처럼 보이면 안 된다.
+            if (oldId.Length > 0)
+            {
+                IdBox.Text = oldId;
+            }
+
             return;
         }
 
         _selectedEpisodeId = newId;
+        _episodeRenamed = (oldId, newId);   // 고르기 첫머리에서 낸 것이면, 그 고르기가 옛 ID를 새 ID로 읽는다
 
         _session.SetStatus(
             $"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다.");

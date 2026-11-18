@@ -66,9 +66,8 @@ internal static class Shortcuts
         new("글 칸",
         [
             new("Enter", "넣기 — 다른 곳을 눌러도 넣는다"),
-            new("Esc", "넣기 전 글로 되돌리기([대본] 탭)"),
+            new("Esc", "넣기 전 값으로 되돌리기 — 초점은 그대로(두 탭 모두)"),
             new("Ctrl+Enter", "장면 메모 · 에피소드 지시 넣기 — 이 두 칸은 Enter가 줄바꿈이다"),
-            new("Enter만", "[구성] 인스펙터의 ID 칸(에피소드 · 챕터 · 장면 · 분기 카드) — Enter를 눌러야 바뀐다"),
             new("우클릭", "대사 편집기의 줄 표 — 줄 추가 · 지우기"),
             new("Enter · Esc", "설정 창 — 확인 · 취소"),
         ]),
