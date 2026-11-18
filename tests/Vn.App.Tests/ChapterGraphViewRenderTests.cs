@@ -250,10 +250,10 @@ public sealed class ChapterGraphViewRenderTests
         Assert.Empty(canvas.Children);
         Assert.True(empty.IsVisible);
 
-        // 프로젝트는 있는데 챕터가 없는 첫 화면 — 챕터는 이 탭에서 만들지 않으므로 안내문이 [대본] 탭 하이어아키의 [＋]로
-        // 데려간다. [새 프로젝트]는 아니다: 프로젝트는 이미 있다.
-        Assert.Contains("하이어아키 우클릭 「챕터 추가」", empty.Text);
-        Assert.Null(view.FindControl<Button>("EmptyAddChapterButton"));
+        // 프로젝트는 있는데 챕터가 없는 첫 화면 — [＋ 첫 챕터 만들기]가 선다. 누르면 [대본] 탭으로 데려가 거기서 만든다(2026-11-18 소유자 ·
+        // first-chapter F2 — ⛔ 그 전에는 단추 없이 안내문만 [대본] 탭 하이어아키로 데려갔다). [새 프로젝트]는 아니다: 프로젝트는 이미 있다.
+        Assert.Contains("[대본] 탭으로", empty.Text);
+        Assert.True(view.FindControl<Button>("EmptyFirstChapterButton")!.IsVisible);
         Assert.False(view.ProjectNewCenterButton.IsVisible);
     });
 

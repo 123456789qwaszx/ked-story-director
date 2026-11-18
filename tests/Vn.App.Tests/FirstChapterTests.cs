@@ -57,6 +57,50 @@ public sealed class FirstChapterTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 구성_빈_판의_단추는_대본_탭으로_데려가_첫_챕터를_세운다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = OpenEmpty(tab: 0);
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        Button first = view.FindControl<Button>("EmptyFirstChapterButton")!;
+        Assert.True(first.IsVisible);
+        Assert.False(view.ProjectNewCenterButton.IsVisible);   // 프로젝트는 이미 있다
+        Assert.Equal("프로젝트", view.FindControl<TextBlock>("InspectorTitle")!.Text);   // 챕터가 없으면 인스펙터는 프로젝트
+
+        Click(first);
+
+        Assert.Same(window.FindControl<TabItem>("GraphTabItem"), window.FindControl<TabControl>("MainTabs")!.SelectedItem);
+        ChapterDocument chapter = Assert.Single(session.Project.Chapters);
+        Assert.Single(chapter.Episodes);
+        Assert.Equal(new HierarchyPick(HierarchyKind.Chapter, chapter.ChapterId),
+            window.FindControl<GraphEditorView>("Graph")!.HierarchyView.Selection);
+        Assert.False(first.IsVisible);   // [구성] 판이 섰다
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 챕터가_모두_없어지면_구성_인스펙터에_사라진_챕터가_남지_않는다() => HeadlessUi.Run(() =>
+    {
+        // ⛔ 2026-11-18까지는 판을 그릴 챕터가 없으면 그리기가 일찍 돌아 인스펙터를 다시 세우지 않았다 — 지운 챕터의 이름 · 챕터ID가 남았다(소유자 그림).
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(Path.Combine(_directory, "two"), tab: 0);
+        ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch01"));
+        view.ShowSideTab(SideTab.Inspector);
+        Dispatcher.UIThread.RunJobs();
+        Assert.StartsWith("챕터 · ", view.FindControl<TextBlock>("InspectorTitle")!.Text, StringComparison.Ordinal);
+
+        session.Editor.RemoveChapterWithBoard("ch01");
+        session.Editor.RemoveChapterWithBoard("ch02");
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("프로젝트", view.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.False(view.FindControl<Grid>("ChapterIdGrid")!.IsVisible);
+        Assert.True(view.FindControl<Button>("EmptyFirstChapterButton")!.IsVisible);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>챕터 없는 프로젝트를 저장하고 창을 띄워 연다.</summary>

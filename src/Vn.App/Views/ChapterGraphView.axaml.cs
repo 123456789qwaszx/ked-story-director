@@ -401,6 +401,9 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     internal Button ProjectNewCenterButton => EmptyNewProjectButton;
 
+    /// <summary>판 한가운데의 [＋ 첫 챕터 만들기] — 프로젝트는 있고 챕터가 없을 때만 보인다. 셸이 [대본] 탭으로 넘어가 거기서 만든다(F2).</summary>
+    internal event Action? FirstChapterRequested;
+
 
     /// <summary>머리글 아래 한 줄 — 지금 활성인 판의 요약.</summary>
     internal TextBlock ChapterSummaryText => ChapterSummary;
@@ -510,6 +513,7 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         ZoomResetButton.Click += (_, _) => ApplyZoom(1, null);
         FitChapterButton.Click += (_, _) => UiGuard.Run(_session, "화면 맞춤", FitChapter);
+        EmptyFirstChapterButton.Click += (_, _) => FirstChapterRequested?.Invoke();
 
         // 스탯변화 줄 편집기 — 간선 패널.
         EdgeStatsHost.Children.Add(_edgeStats);
@@ -1101,11 +1105,21 @@ public partial class ChapterGraphView : UserControl
             EmptyText.Text = !saved
                 ? "아직 프로젝트가 없습니다.\n새 프로젝트를 만들고 저장하면 여기에 챕터 판이 섭니다."
                 : _entries.Count == 0
-                    ? "아직 챕터가 없습니다.\n[대본] 탭에서 [＋ 에피소드]나 하이어아키 우클릭 「챕터 추가」로 첫 챕터를 만들면 여기에 판이 섭니다."
+                    ? "아직 챕터가 없습니다.\n누르면 [대본] 탭으로 가서 첫 챕터를 만듭니다."
                     : "하이어아키에서 챕터를 고르면 여기에 판이 섭니다.";
 
-            // 빈 판의 첫걸음 — 프로젝트가 없을 때만 단추가 선다. 챕터는 이 탭에서 만들지 않는다.
+            // 빈 판의 첫걸음 — 프로젝트가 없으면 [새 프로젝트], 챕터가 없으면 [＋ 첫 챕터 만들기]([대본]으로 데려가 거기서 만든다 · F2).
             EmptyNewProjectButton.IsVisible = !saved;
+            EmptyFirstChapterButton.IsVisible = saved && _entries.Count == 0;
+
+            // 챕터가 없으면 인스펙터는 프로젝트를 보인다 — 판을 그리지 않고 돌아가더라도 인스펙터는 다시 세운다. ⛔ 그 전에는 여기서
+            // 돌아가 마지막 챕터를 지워도 그 챕터의 이름 · 챕터ID가 인스펙터에 남았다(소유자 그림 · F2).
+            if (_entries.Count == 0)
+            {
+                _inspector = InspectorMode.Project;
+            }
+
+            ApplyInspector();
 
             DiagnosticsExpander.Header = "검증 보고";
             return;
@@ -1113,6 +1127,7 @@ public partial class ChapterGraphView : UserControl
 
         EmptyText.IsVisible = false;
         EmptyNewProjectButton.IsVisible = false;
+        EmptyFirstChapterButton.IsVisible = false;
 
         ChapterGraphModel model = entry.Model;
 

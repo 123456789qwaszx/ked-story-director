@@ -181,6 +181,13 @@ public partial class MainWindow
         Graph.ChapterAddRequested += at => UiGuard.Run(_session, "챕터 추가", () => CreateChapterNow(at));
         Graph.FirstChapterRequested += () => UiGuard.Run(_session, "챕터 추가", () => CreateChapterNow(null));
 
+        // [구성] 빈 판의 단추는 [대본] 탭으로 데려가 거기서 만든다 — 만드는 일은 [대본]의 것이다(first-chapter F2).
+        ChapterGraph.FirstChapterRequested += () => UiGuard.Run(_session, "챕터 추가", () =>
+        {
+            MainTabs.SelectedItem = GraphTabItem;
+            CreateChapterNow(null);
+        });
+
         // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
         ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>
             UiGuard.Run(_session, "[대본] 탭으로", () => OpenChoiceInDirector(chapterId, from, to, label));
