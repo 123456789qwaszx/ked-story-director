@@ -131,6 +131,16 @@ public partial class MainWindow : Window
         //    있어야 한다.
         AddHandler(KeyDownEvent, (_, args) =>
         {
+            // Delete = [대본] 탭에서 고른 카드(에피소드 · 분기 카드)를 지운다(2026-11-18 소유자) — 묻지 않는다(되돌리기 한 칸). 글 칸에서는
+            //    가로채지 않는다 — 거기서 Delete는 글자 지우기다.
+            if (args.Key == Avalonia.Input.Key.Delete && args.KeyModifiers == Avalonia.Input.KeyModifiers.None &&
+                ReferenceEquals(MainTabs.SelectedItem, GraphTabItem) &&
+                FocusManager?.GetFocusedElement() is not TextBox)
+            {
+                UiGuard.Run(_session, "지우기", () => args.Handled = Graph.DeleteSelectedCard());
+                return;
+            }
+
             if (!args.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control))
             {
                 return;

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Path = System.IO.Path;
@@ -494,6 +495,59 @@ public sealed class HierarchyEditTests : IDisposable
 
         Assert.NotNull(session.Editor.FindChapter("ch02"));
         Assert.Equal(before, session.Editor.Revision);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void Delete_키는_고른_에피소드를_묻지_않고_한_칸에_지우고_글_칸과_챕터와_구성_탭에서는_아무것도_안_한다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「특정 에피소드를 누른 상태에서 DELETE를 누르면 그 에피소드가 지워지도록 하는 단축키」.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+
+        void PressDelete()
+        {
+            window.KeyPress(Key.Delete, RawInputModifiers.None, PhysicalKey.Delete, null);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        // 챕터를 고른 채 — 지우지 않는다(챕터 · 장면은 [삭제]로 한 번 확인한다).
+        Pick(tree, StoryHierarchy.ChapterKey("ch02"));
+        long before = session.Editor.Revision;
+        PressDelete();
+        Assert.Equal(before, session.Editor.Revision);
+        Assert.NotNull(session.Editor.FindChapter("ch02"));
+
+        // 글 칸에 초점 — 거기서 Delete는 글자 지우기다.
+        Pick(tree, StoryHierarchy.EpisodeKey("ch01", "a"));
+        window.GetLogicalDescendants().OfType<DialogueNodeEditor>().First().FindControl<TextBox>("NameBox")!.Focus();
+        Dispatcher.UIThread.RunJobs();
+        PressDelete();
+        Assert.Equal(3, Chapter(session).Episodes.Count);
+
+        // [구성] 탭 — 하지 않는다.
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 0;
+        Dispatcher.UIThread.RunJobs();
+        window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<ComboBox>("ChapterCombo")!.Focus();   // 글 칸 밖
+        PressDelete();
+        Assert.Equal(3, Chapter(session).Episodes.Count);
+
+        // [대본] 탭 · 에피소드를 고른 채 — 지운다. 한 칸이고 되돌리면 돌아온다.
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 1;
+        Dispatcher.UIThread.RunJobs();
+        Pick(tree, StoryHierarchy.EpisodeKey("ch01", "a"));
+        before = session.Editor.Revision;
+        PressDelete();
+        Assert.Equal(["root", "b"], Chapter(session).Episodes.Select(episode => episode.EpisodeId));
+        Assert.Null(EpisodeNaming.CardFor(session.Project, "ch01", "a"));
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.Contains("되돌리기", session.StatusMessage, StringComparison.Ordinal);
+
+        session.Editor.Undo();
+        Assert.Equal(3, Chapter(session).Episodes.Count);
 
         window.Close();
     });

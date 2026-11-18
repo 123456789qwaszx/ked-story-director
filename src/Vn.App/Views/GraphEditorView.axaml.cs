@@ -5507,14 +5507,8 @@ public partial class GraphEditorView : UserControl
 
             // 분기 카드는 에피소드가 아니다(2026-11-17) — 카드만 지운다. 부르던 분기점은 이어지지 않은 채 남는다. 되돌리기 한 번에 돌아온다.
             case DeleteTarget.BranchCard:
-            {
-                DialogueNode branch = (DialogueNode)_session.SelectedNode!;
-                _session.Editor.RemoveNode(branch.Id);
-                _session.SetStatus(
-                    $"분기 카드 '{branch.Name}'을(를) 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
-                    "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                RemoveSelectedBranchCard();
                 return;
-            }
 
             // ⭐ <b>판의 카드는 에피소드 아니면 분기 카드다</b> (R7 P-6 · 2026-11-17 분기 카드). 에피소드 카드를 지우는 것은 <b>에피소드를
             //    지우는 일</b>이고, 하이어아키의 「에피소드 지우기」와 같은 길을 지나야 한다 — 2026-09-18까지는 카드만 걷어 <b>대본 없는 반쪽
@@ -5539,6 +5533,41 @@ public partial class GraphEditorView : UserControl
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// <b>Delete 키</b>(2026-11-18 소유자 — 「특정 에피소드를 누른 상태에서 DELETE를 누르면 그 에피소드가 지워지도록」) — 고른 카드를 <b>묻지 않고</b>
+    /// 지운다: 에피소드면 에피소드째(간선 · 픽스처 참조까지 — [삭제]의 「에피소드 삭제」와 같은 길), 분기 카드면 그 카드. 되돌리기 한 칸이고 상태줄이
+    /// 말한다. 챕터 · 장면은 하지 않는다 — 여럿이 함께 사라지는 일은 [삭제]로 한 번 확인한다.
+    /// </summary>
+    /// <returns>지웠으면 참 — 셸이 키를 처리한 것으로 적는다.</returns>
+    internal bool DeleteSelectedCard()
+    {
+        switch (TargetToDelete())
+        {
+            case DeleteTarget.BranchCard:
+                RemoveSelectedBranchCard();
+                return true;
+
+            case DeleteTarget.Episode:
+            {
+                DialogueNode card = (DialogueNode)_session!.SelectedNode!;
+                DeleteEpisodeOfCard(EpisodeNaming.ChapterOf(_session.Project, card).ChapterId, EpisodeNaming.EpisodeIdOf(card));
+                return true;
+            }
+
+            default:
+                return false;
+        }
+    }
+
+    private void RemoveSelectedBranchCard()
+    {
+        DialogueNode branch = (DialogueNode)_session!.SelectedNode!;
+        _session.Editor.RemoveNode(branch.Id);
+        _session.SetStatus(
+            $"분기 카드 '{branch.Name}'을(를) 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
+            "되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
     /// <summary>
