@@ -198,9 +198,10 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     [Fact]
-    public void 내보내기_묶음은_처음에_접혀_있고_머리가_보내는_형식을_말한다() => HeadlessUi.Run(() =>
+    public void 내보내기_묶음은_처음에_접혀_있고_머리는_복제할_폴더_선택이다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-18 소유자 — 「설정창 속에서 내보내기의 내용은 접을 수 있도록 해주십시오.」
+        // 2026-11-18 소유자 — 「설정창 속에서 내보내기의 내용은 접을 수 있도록 해주십시오.」 같은 날 — 「내보내기(복제할 폴더 선택)이 조금 더
+        // 직관적」(Z2 · ⛔ 그 전에는 머리가 지금 보내는 형식을 말했다). 머리는 폴더를 골라도 그대로다.
         (MainWindow window, AuthoringSession session) = Open();
         string game = Path.Combine(_directory, "game");
         Directory.CreateDirectory(game);
@@ -208,10 +209,15 @@ public sealed class SettingsWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.False(settings.ExportGroup.IsExpanded);
-        Assert.Equal("내보내기 — 작업 폴더에만 냅니다", settings.ExportHeader.Text);
+        Assert.Equal("내보내기 (복제할 폴더 선택)", settings.ExportHeader.Text);
 
         settings.SetDestination(ExportFormat.Progression, game);
-        Assert.Equal("내보내기 — 진행 JSON을(를) 보낼 곳에도 냅니다", settings.ExportHeader.Text);
+        Assert.Equal("내보내기 (복제할 폴더 선택)", settings.ExportHeader.Text);
+
+        // 묶음마다 「어디에 저장되는가」 줄은 없다(Z2 — 「이런 설명은 필요없어」).
+        List<string> texts = settings.GetLogicalDescendants().OfType<TextBlock>().Select(block => block.Text ?? string.Empty).ToList();
+        Assert.DoesNotContain(texts, text => text.Contains("에 저장됩니다", StringComparison.Ordinal));
+        Assert.DoesNotContain(texts, text => text.Contains("앱 설정", StringComparison.Ordinal));
 
         settings.ExportGroup.IsExpanded = true;   // 머리를 눌러 편다
         Dispatcher.UIThread.RunJobs();
@@ -271,7 +277,7 @@ public sealed class SettingsWindowTests : IDisposable
             Dispatcher.UIThread.RunJobs();
         }
 
-        Assert.Contains("보내지 않음", box.PlaceholderText, StringComparison.Ordinal);
+        Assert.Contains("복제하지 않음", box.PlaceholderText, StringComparison.Ordinal);   // Z2 — 「보내지 않음」에서
         Assert.Contains("clearButton", box.Classes);   // 칸 안의 ✕로 비운다
         Assert.Equal(["export-browse:Progression"], settings.GetLogicalDescendants().OfType<Button>()
             .Where(button => (button.Tag as string)?.EndsWith(":Progression", StringComparison.Ordinal) == true && button is not HyperlinkButton)

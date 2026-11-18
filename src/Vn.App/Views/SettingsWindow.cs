@@ -15,8 +15,8 @@ namespace Vn.App.Views;
 /// <summary>
 /// <b>[⚙ 설정] 창</b> (2026-11-17 · <c>docs/work-orders/settings-orders.md</c> C3) — 앞으로 필요할 설정을 한 창에 모은다.
 ///
-/// 묶음마다 <b>어디에 저장되는가</b>를 머리에 적는다 — 프로젝트에 싣는 설정은 되돌리기가 되고 「저장되지 않은 변경」을 켜지만, PC별 설정은
-/// 그렇지 않다. 섞으면 「이건 왜 Ctrl+Z가 안 되지?」가 생긴다. 묶음은 둘이다 — [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
+/// 묶음은 넷이다 — ⛔ 묶음마다 어디에 저장되는가를 머리에 적던 것(C3)은 2026-11-18에 걷었다(소유자 — 「이런 설명은 필요없어」 ·
+/// <c>docs/work-orders/settings-wording-orders.md</c> Z2). [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
 /// [내보내기](형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
 /// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [기타](이 PC의 앱 설정 — [대본] 미니맵 · 2026-11-18 소유자 ·
 /// <c>docs/work-orders/side-fold-settings-orders.md</c> K3).
@@ -93,7 +93,8 @@ internal sealed class SettingsWindow : Window
         BoardWidthBox.ValueChanged += (_, _) => OnSideChanged(BoardWidthBox);
         BoardHeightBox.ValueChanged += (_, _) => OnSideChanged(BoardHeightBox);
 
-        // 「내보내기」는 접는다 — 자주 고칠 것이 아니다(2026-11-18 소유자 — 「내보내기의 내용은 접을 수 있도록」). 머리가 지금 보내는 형식을 말한다.
+        // 「내보내기」는 접는다 — 자주 고칠 것이 아니다(2026-11-18 소유자 — 「내보내기의 내용은 접을 수 있도록」). 머리는 「내보내기 (복제할 폴더
+        // 선택)」 한 글이다(같은 날 소유자 — 「조금 더 직관적」 · Z2, ⛔ 그 전에는 지금 보내는 형식을 말했다).
         ExportGroup = new Expander
         {
             Header = ExportHeader,
@@ -106,8 +107,8 @@ internal sealed class SettingsWindow : Window
                 {
                     new TextBlock
                     {
-                        Text = $"{ExportDestinations.FileName}(프로젝트 폴더)에 저장됩니다 — [확인]을 누르면 바로 파일에 남고 되돌리기는 없습니다. 작업 폴더" +
-                               "(exported/)에는 늘 쓰고, 보낼 곳에는 File → 저장(Ctrl+S)할 때 보냅니다.",
+                        // 무엇이 「복제」인지만 말한다 — 저장 위치(runtime.target.json)는 걷었다(Z2).
+                        Text = "작업 폴더(exported/)에는 늘 쓰고, 고른 폴더에는 저장(Ctrl+S)할 때 복제합니다.",
                         FontSize = 11,
                         Opacity = 0.6,
                         TextWrapping = TextWrapping.Wrap
@@ -138,16 +139,10 @@ internal sealed class SettingsWindow : Window
             Spacing = 12,
             Children =
             {
-                Group(
-                    "이 프로젝트",
-                    "project.vnproject.json에 저장됩니다 — 바꾸면 되돌리기(Ctrl+Z)가 되고, File → 저장(Ctrl+S)해야 파일에 남습니다.",
-                    BoardSection()),
+                Group("이 프로젝트", BoardSection()),
                 ExportGroup,   // 접는 묶음은 제 테두리가 있다
                 ShortcutGroup,
-                Group(
-                    "기타",
-                    "이 PC의 앱 설정에 저장됩니다 — 프로젝트 파일과 상관없고 되돌리기가 없습니다. 누르는 즉시 반영됩니다([취소]로 돌아가지 않습니다).",
-                    new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck } }),
+                Group("기타", new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck } }),
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -173,8 +168,11 @@ internal sealed class SettingsWindow : Window
     /// <summary>「내보내기」 묶음 — 접고 편다(처음에는 접혀 있다).</summary>
     internal Expander ExportGroup { get; }
 
-    /// <summary>「내보내기」 머리 — 접혀 있어도 지금 보내는 형식이 보인다.</summary>
-    internal TextBlock ExportHeader { get; } = new() { FontWeight = FontWeight.SemiBold, FontSize = 14 };
+    /// <summary>「내보내기」 머리의 글 — 무엇을 고르는 묶음인지 말한다(Z2).</summary>
+    internal const string ExportTitle = "내보내기 (복제할 폴더 선택)";
+
+    /// <summary>「내보내기」 머리 — <see cref="ExportTitle"/>.</summary>
+    internal TextBlock ExportHeader { get; } = new() { Text = ExportTitle, FontWeight = FontWeight.SemiBold, FontSize = 14 };
 
     /// <summary>「단축키」 묶음 — 접고 편다(처음에는 접혀 있다). 읽기만 한다.</summary>
     internal Expander ShortcutGroup { get; }
@@ -247,14 +245,14 @@ internal sealed class SettingsWindow : Window
     {
         if (_session.ProjectPath is not { } projectPath)
         {
-            return "프로젝트를 먼저 저장해야 보낼 곳을 정할 수 있습니다.";
+            return "프로젝트를 먼저 저장해야 복제할 폴더를 정할 수 있습니다.";
         }
 
         ExportDestinations wanted = _destinations.With(
             format, absoluteFolder is null ? null : ExportDestinations.Relativize(projectPath, absoluteFolder));
 
         string? refusal = SameFolder(wanted, projectPath)
-            ? "대사 Yarn은 게임 폴더(진행 JSON의 보낼 곳)와 같은 곳으로 보내지 않습니다 — 게임의 Yarn 프로젝트가 compositor의 연출 든 Yarn과 " +
+            ? "대사 Yarn은 게임 폴더(진행 JSON을 복제할 폴더)와 같은 곳으로 복제하지 않습니다 — 게임의 Yarn 프로젝트가 compositor의 연출 든 Yarn과 " +
               "같은 노드 이름을 둘 읽어 컴파일이 깨집니다."
             : null;
 
@@ -298,8 +296,8 @@ internal sealed class SettingsWindow : Window
                 ExportDestinations.SaveBeside(projectPath, _destinations);
                 _session.ReloadDestinations();
                 _session.SetStatus(_destinations.IsEmpty
-                    ? "보낼 곳을 모두 껐습니다 — exported/에만 냅니다."
-                    : "보낼 곳을 바꿨습니다 — 다음 저장(Ctrl+S)부터 거기로 보냅니다.");
+                    ? "복제할 폴더를 모두 껐습니다 — exported/에만 냅니다."
+                    : "복제할 폴더를 바꿨습니다 — 다음 저장(Ctrl+S)부터 거기로 복제합니다.");
             }
         });
         Close(true);
@@ -349,7 +347,7 @@ internal sealed class SettingsWindow : Window
     {
         ExportFormat.Progression =>
             $"챕터마다 하나 — 에피소드 · 선택지 · 조건이 든 게임 진행 파일({{챕터}}{ChapterExportService.ExportFileSuffix}). 게임(런타임)이 싣습니다. " +
-            "보낼 곳은 게임의 ChapterProgression 폴더입니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.",
+            "복제할 폴더는 게임의 ChapterProgression 폴더입니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.",
         _ =>
             $"장면마다 하나 — 연출 없이 대사 · 조건 · 분기만 든 Yarn({ChapterYarnExporter.FolderName}/{{챕터}}_{{장면}}.yarn). 대사만으로 굴러가는지 볼 때 " +
             $"씁니다. 누르면 작업 폴더의 {ChapterYarnExporter.FolderName}/ 폴더를 엽니다."
@@ -363,7 +361,7 @@ internal sealed class SettingsWindow : Window
         {
             panel.Children.Add(new TextBlock
             {
-                Text = "프로젝트를 먼저 저장해야 보낼 곳을 정할 수 있습니다(경로는 프로젝트 폴더 기준으로 적힙니다).",
+                Text = "프로젝트를 먼저 저장해야 복제할 폴더를 정할 수 있습니다(경로는 프로젝트 폴더 기준으로 적힙니다).",
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap
             });
@@ -405,8 +403,8 @@ internal sealed class SettingsWindow : Window
                 FontSize = 11,
                 VerticalAlignment = VerticalAlignment.Center,
                 PlaceholderText = format == ExportFormat.Progression
-                    ? "보내지 않음 — 게임의 ChapterProgression 폴더를 찾아보거나 경로를 붙여 넣으세요"
-                    : "보내지 않음 — 보낼 폴더를 찾아보거나 경로를 붙여 넣으세요",
+                    ? "복제하지 않음 — 게임의 ChapterProgression 폴더를 찾아보거나 경로를 붙여 넣으세요"
+                    : "복제하지 않음 — 복제할 폴더를 찾아보거나 경로를 붙여 넣으세요",
                 Tag = $"export-path:{format}"
             };
             box.Classes.Add("clearButton");
@@ -423,7 +421,7 @@ internal sealed class SettingsWindow : Window
             var browse = new Button { Content = "찾아보기…", FontSize = 11, Tag = $"export-browse:{format}" };
             browse.Click += async (_, _) =>
             {
-                if (await PickFolderAsync($"보낼 곳 — {ExportDestinations.LabelOf(format)}", format) is { } folder)
+                if (await PickFolderAsync($"복제할 폴더 — {ExportDestinations.LabelOf(format)}", format) is { } folder)
                 {
                     SetDestination(format, folder);
                 }
@@ -452,8 +450,8 @@ internal sealed class SettingsWindow : Window
         panel.Children.Add(grid);
         panel.Children.Add(new TextBlock
         {
-            Text = "진행 JSON의 보낼 곳은 런타임의 ChapterProgression 폴더(게임 폴더)이고 compositor도 이 칸을 읽어 Yarn을 씁니다. 대사 Yarn은 게임 " +
-                   "폴더와 같은 곳으로 보내지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다). 없는 폴더는 만들지 않습니다.",
+            Text = "진행 JSON을 복제할 폴더는 런타임의 ChapterProgression 폴더(게임 폴더)이고 compositor도 이 칸을 읽어 Yarn을 씁니다. 대사 Yarn은 게임 " +
+                   "폴더와 같은 곳으로 복제하지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다). 없는 폴더는 만들지 않습니다.",
             FontSize = 11,
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
@@ -466,14 +464,6 @@ internal sealed class SettingsWindow : Window
 
     private void RefreshDestinations()
     {
-        List<string> sending = ExportDestinations.Formats
-            .Where(format => _destinations.FolderOf(format) is not null)
-            .Select(ExportDestinations.LabelOf)
-            .ToList();
-        ExportHeader.Text = sending.Count == 0
-            ? "내보내기 — 작업 폴더에만 냅니다"
-            : $"내보내기 — {string.Join(" · ", sending)}을(를) 보낼 곳에도 냅니다";
-
         foreach ((ExportFormat format, TextBox box) in _destinationBoxes)
         {
             string? written = _destinations.FolderOf(format);
@@ -679,8 +669,8 @@ internal sealed class SettingsWindow : Window
         return places;
     }
 
-    /// <summary>묶음 하나 — 머리(이름 · 어디에 저장되는가)와 그 아래 설정들.</summary>
-    private static Control Group(string title, string where, Control body) => new Border
+    /// <summary>묶음 하나 — 머리(이름)와 그 아래 설정들. ⛔ 머리 아래 「어디에 저장되는가」 줄은 2026-11-18에 걷었다(Z2).</summary>
+    private static Control Group(string title, Control body) => new Border
     {
         BorderBrush = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128)),
         BorderThickness = new Thickness(1),
@@ -691,15 +681,7 @@ internal sealed class SettingsWindow : Window
             Spacing = 8,
             Children =
             {
-                new StackPanel
-                {
-                    Spacing = 2,
-                    Children =
-                    {
-                        new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, FontSize = 14 },
-                        new TextBlock { Text = where, FontSize = 11, Opacity = 0.6, TextWrapping = TextWrapping.Wrap }
-                    }
-                },
+                new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, FontSize = 14 },
                 body
             }
         }
