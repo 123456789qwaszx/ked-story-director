@@ -177,9 +177,9 @@ public sealed class SettingsWindowTests : IDisposable
         Assert.False(settings.ExportNote.IsVisible);
 
         // 없는 폴더는 표시한다(만들지 않는다).
-        Assert.Null(settings.SetDestination(ExportFormat.Scenes, Path.Combine(_directory, "nowhere")));
-        Assert.True(settings.MissingNote(ExportFormat.Scenes).IsVisible);
-        Assert.StartsWith("⚠ 없는 폴더", settings.MissingNote(ExportFormat.Scenes).Text);
+        Assert.Null(settings.SetDestination(ExportFormat.DialogueYarn, Path.Combine(_directory, "nowhere")));
+        Assert.True(settings.MissingNote(ExportFormat.DialogueYarn).IsVisible);
+        Assert.StartsWith("⚠ 없는 폴더", settings.MissingNote(ExportFormat.DialogueYarn).Text);
         Assert.False(Directory.Exists(Path.Combine(_directory, "nowhere")));
 
         // [확인] 전에는 파일에 안 남는다.
@@ -189,7 +189,7 @@ public sealed class SettingsWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         ExportDestinations saved = ExportDestinations.LoadBeside(session.ProjectPath!);
-        Assert.Equal(("game", "nowhere", "dialogue-yarn"), (saved.Progression, saved.Scenes, saved.DialogueYarn));
+        Assert.Equal(("game", "nowhere"), (saved.Progression, saved.DialogueYarn));
         Assert.Equal(saved, session.Destinations);
         Assert.Equal(before, session.Editor.Revision);   // 되돌리기 밖이다
         Assert.Contains("다음 저장(Ctrl+S)부터", session.StatusMessage);
@@ -241,17 +241,16 @@ public sealed class SettingsWindowTests : IDisposable
         Assert.Equal(
             [
                 Path.Combine(work, "ch01" + ChapterExportService.ExportFileSuffix),   // 지금 챕터의 진행 JSON — 고른 채 연다
-                Path.Combine(work, "ch01" + ChapterScenesExporter.FileSuffix),        // 지금 챕터의 장면 파일
                 ChapterYarnExporter.FolderFor(session.ProjectPath!)                     // 대사 Yarn은 yarn/ 폴더째
             ],
             shown);
 
         // 아직 나간 것이 없으면 그렇다고 말한다.
         Directory.Delete(work, recursive: true);
-        settings.FormatLink(ExportFormat.Scenes).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Assert.Equal(3, shown.Count);
+        settings.FormatLink(ExportFormat.Progression).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(2, shown.Count);
         Assert.True(settings.ExportNote.IsVisible);
-        Assert.Contains("아직 작업 폴더에 나간 장면 파일", settings.ExportNote.Text, StringComparison.Ordinal);
+        Assert.Contains("아직 작업 폴더에 나간 진행 JSON", settings.ExportNote.Text, StringComparison.Ordinal);
 
         window.Close();
     });

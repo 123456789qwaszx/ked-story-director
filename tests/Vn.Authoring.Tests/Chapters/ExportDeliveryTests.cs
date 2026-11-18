@@ -37,11 +37,9 @@ public sealed class ExportDeliveryTests : IDisposable
     {
         ProjectEditor editor = Export("ch01");
         string game = Folder("game");
-        string scenes = Folder("scenes");
         string yarn = Folder("yarn");
         ExportDestinations destinations = ExportDestinations.None
             .With(ExportFormat.Progression, ExportDestinations.Relativize(Manifest, game))
-            .With(ExportFormat.Scenes, ExportDestinations.Relativize(Manifest, scenes))
             .With(ExportFormat.DialogueYarn, ExportDestinations.Relativize(Manifest, yarn));
 
         ExportDeliveryRun run = ExportDelivery.Deliver(Manifest, destinations);
@@ -49,14 +47,13 @@ public sealed class ExportDeliveryTests : IDisposable
         Assert.Equal(
             File.ReadAllBytes(ChapterExportService.ExportPathFor(Manifest, "ch01")),
             File.ReadAllBytes(Path.Combine(game, "ch01" + ChapterExportService.ExportFileSuffix)));
-        Assert.True(File.Exists(Path.Combine(scenes, "ch01" + ChapterScenesExporter.FileSuffix)));
         Assert.Equal(
             Directory.GetFiles(ChapterYarnExporter.FolderFor(Manifest)).Select(Path.GetFileName).Order(),
             Directory.GetFiles(yarn).Select(Path.GetFileName).Order());
         Assert.NotEmpty(Directory.GetFiles(yarn));
         Assert.Empty(Directory.GetFiles(game, "*.yarn"));   // 형식마다 제 자리로만
         Assert.Null(run.Problem);
-        Assert.Contains("보낸 곳 → 진행 JSON ../game · 장면 파일 ../scenes · 대사 Yarn ../yarn", run.Where);
+        Assert.Contains("보낸 곳 → 진행 JSON ../game · 대사 Yarn ../yarn", run.Where);
         Assert.Contains("보낸 곳 →", (new ChapterExportRun([], []) with { Delivery = run }).WhereNotice);
         _ = editor;
     }
@@ -106,10 +103,10 @@ public sealed class ExportDeliveryTests : IDisposable
         Export("ch01");
         string missing = Path.Combine(_root, "nowhere");
 
-        ExportDeliveryRun run = ExportDelivery.Deliver(Manifest, ExportDestinations.None.With(ExportFormat.Scenes, missing));
+        ExportDeliveryRun run = ExportDelivery.Deliver(Manifest, ExportDestinations.None.With(ExportFormat.DialogueYarn, missing));
 
         Assert.False(Directory.Exists(missing));
-        Assert.Contains("보낼 곳이 없어 보내지 않았습니다: 장면 파일", run.Problem);
+        Assert.Contains("보낼 곳이 없어 보내지 않았습니다: 대사 Yarn", run.Problem);
         Assert.Contains("보낼 곳이 없어", (new ChapterExportRun([], []) with { Delivery = run }).Notice);
     }
 

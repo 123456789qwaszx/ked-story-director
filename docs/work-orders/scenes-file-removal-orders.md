@@ -3,7 +3,7 @@
 **소유자**: 「진행 JSON과 장면 파일이 있는데 이 두개의 역할이 뭡니까? 또 장면파일은 필요한게 맞습니까? … 아마 compositor에서 쓰도록 하는 그런 것
 같은데, 불필요한 것 아닙니까?」 → 까닭을 말씀드리고(아래 1절) 「걷읍시다.」
 
-> **상태: 진행 중.**
+> **상태: 끝 (2026-11-18).**
 
 ## 1. 지금 — 왜 걷는가
 
@@ -28,3 +28,4 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-18 | N0 | (이 커밋) | 지시서 — 소유자에게 까닭을 말씀드리고 받은 결정 |
+| 11-18 | N1 | (이 커밋) | `ChapterScenesExporter`와 그 시험(8)을 지웠다. `ChapterExportService` — 장면 파일 쓰기 · 지운 챕터의 장면 파일 걷기 · `ScenesFailed`와 그 알림. `ExportDestinations` — `ExportFormat.Scenes` · `Scenes` 칸 · `scenesFolder` 읽기/쓰기 · 안내 글(옛 `scenesFolder`는 모르는 칸으로 지킨다). `ExportDelivery` — 장면 파일 보내기. `WorkFolder` · 설정 창 — 장면 파일 줄 · 고리 · 툴팁. 주석 · 툴팁(위 띠 [📂 작업 폴더] · 분기 카드의 집). 시험 — 보내기 · 보낼 곳 · 설정 창 시험에서 장면 파일을 걷고 대사 Yarn으로, 옛 `scenesFolder`가 든 파일이 열리고 지켜진다. 문서 — ARCHITECTURE · README · 작가 가이드 · 챕터 층 안내 · 두 그래프 설계(내보내기 줄 · 7절 AP). Authoring 645 · App 460 |

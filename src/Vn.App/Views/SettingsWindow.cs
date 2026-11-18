@@ -264,7 +264,7 @@ internal sealed class SettingsWindow : Window
     internal Action<string> Reveal { get; set; } = WorkFolder.Reveal;
 
     /// <summary>
-    /// 그 형식의 파일을 작업 폴더에서 보인다 — 진행 JSON · 장면 파일은 지금 챕터의 파일을 고른 채, 대사 Yarn은 <c>yarn/</c> 폴더를 연다
+    /// 그 형식의 파일을 작업 폴더에서 보인다 — 진행 JSON은 지금 챕터의 파일을 고른 채, 대사 Yarn은 <c>yarn/</c> 폴더를 연다
     /// (<see cref="WorkFolder.TargetOf"/>). 아직 나간 것이 없으면 그렇다고 말한다.
     /// </summary>
     internal void ShowInWorkFolder(ExportFormat format)
@@ -292,9 +292,6 @@ internal sealed class SettingsWindow : Window
         ExportFormat.Progression =>
             $"챕터마다 하나 — 에피소드 · 선택지 · 조건이 든 게임 진행 파일({{챕터}}{ChapterExportService.ExportFileSuffix}). 게임(런타임)이 싣습니다. " +
             "보낼 곳은 게임의 ChapterProgression 폴더입니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.",
-        ExportFormat.Scenes =>
-            $"챕터마다 하나 — 장면마다 대사 · 장면 메모 · 에피소드 지시를 모은 저작 자료({{챕터}}{ChapterScenesExporter.FileSuffix}). 연출을 붙이는 쪽이 " +
-            "읽습니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.",
         _ =>
             $"장면마다 하나 — 연출 없이 대사 · 조건 · 분기만 든 Yarn({ChapterYarnExporter.FolderName}/{{챕터}}_{{장면}}.yarn). 대사만으로 굴러가는지 볼 때 " +
             $"씁니다. 누르면 작업 폴더의 {ChapterYarnExporter.FolderName}/ 폴더를 엽니다."

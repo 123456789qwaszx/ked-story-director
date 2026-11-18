@@ -32,13 +32,13 @@
                      (docs/work-orders/export-destinations-orders.md). -->
 
                 <!--
-                  진행 JSON · 장면 파일 · 대사 Yarn은 사람 손을 안 기다리고 저절로 나가므로, 사람이 할
+                  진행 JSON · 대사 Yarn은 사람 손을 안 기다리고 저절로 나가므로, 사람이 할
                   일은 "가서 꺼내 오는 것"뿐이다. 그 자리를 모르면 꺼내 갈 수 없으니 폴더를 연다.
                   연출 든 게임용 Yarn은 ked-story-compositor가 낸다.
                 -->
                 <!-- ⛔ 2026-11-18까지 이름이 [📂 챕터진행]이었다(소유자 — 「작업 폴더로 바꿔주십시오」). -->
                 <Button Grid.Column="2" x:Name="WorkFolderButton" Content="📂 작업 폴더"
-                        ToolTip.Tip="작업 폴더(프로젝트 폴더의 exported/)를 엽니다 — 툴이 저절로 내는 챕터별 진행 JSON · 장면 파일 · 대사 Yarn(yarn/)이 여기 있습니다." />
+                        ToolTip.Tip="작업 폴더(프로젝트 폴더의 exported/)를 엽니다 — 툴이 저절로 내는 챕터별 진행 JSON · 대사 Yarn(yarn/)이 여기 있습니다." />
 
                 <!-- 설정은 이 창 하나에 모은다(2026-11-17 · docs/work-orders/settings-orders.md) — 묶음마다 어디에 저장되는지 적는다. -->
                 <Button Grid.Column="3" x:Name="SettingsButton" Content="⚙ 설정" Margin="6,0,0,0"

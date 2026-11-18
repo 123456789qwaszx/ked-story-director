@@ -557,7 +557,7 @@ public partial class MainWindow : Window
     /// 주의: 폴더를 <b>대신 만들지 않는다.</b> 없다는 것은 아직 한 챕터도 안 나갔다는 뜻이고,
     /// 빈 폴더를 열어 주면 "나갔는데 비었다"로 읽힌다 — 사유를 말하는 편이 낫다.
     /// </summary>
-    /// <summary>[📂 작업 폴더] — 프로젝트 폴더의 <c>exported/</c>를 연다(툴이 저절로 내는 진행 JSON · 장면 파일 · 대사 Yarn의 자리).</summary>
+    /// <summary>[📂 작업 폴더] — 프로젝트 폴더의 <c>exported/</c>를 연다(툴이 저절로 내는 진행 JSON · 대사 Yarn의 자리).</summary>
     private void OpenWorkFolder()
     {
         if (_session?.ProjectPath is not { } projectPath)

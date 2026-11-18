@@ -14,7 +14,6 @@ namespace Vn.Authoring.Chapters;
 /// </param>
 /// <param name="Removed">이번에 걷은 옛 진행 JSON의 챕터 — 프로젝트에 없는 챕터(지웠거나 이름을 바꿨다)의 것.</param>
 /// <param name="RemoveFailed">걷어야 하는데 못 걷은 옛 진행 JSON의 챕터(잠김 · 권한).</param>
-/// <param name="ScenesFailed">장면 파일(<see cref="ChapterScenesExporter"/>)을 쓰지 못한 챕터(잠김 · 권한).</param>
 /// <param name="RefusalErrors">
 /// 막힌 챕터들의 오류 — 검증기의 것과 진행 코어의 거부(<c>CoreRefusals</c> — 검증 캐시에는 없다)를 함께. 검증 보고는 고른 챕터 하나를 그리므로,
 /// 결론(「아래 오류를 고치면」)의 그 오류가 아래에 서도록 이것을 더해 그린다(2026-11-18 소유자 — 「진행 JSON 미출력인데 보고할 것이 없다」).
@@ -28,7 +27,6 @@ public sealed record ChapterExportRun(
     ExportDeliveryRun? Delivery = null,
     IReadOnlyList<string>? Removed = null,
     IReadOnlyList<string>? RemoveFailed = null,
-    IReadOnlyList<string>? ScenesFailed = null,
     IReadOnlyList<string>? YarnWritten = null,
     IReadOnlyList<string>? YarnProblems = null,
     IReadOnlyList<ChapterDiagnostic>? RefusalErrors = null)
@@ -74,7 +72,7 @@ public sealed record ChapterExportRun(
     /// <summary>
     /// 검증 보고 맨 위에 세울 결론 — <b>못 나갔거나 옛 파일을 못 걷었을 때만 있다.</b> 잘 나간 것은 말하지 않는다.
     /// </summary>
-    public string? Notice => AllExported && RemoveFailed is not { Count: > 0 } && ScenesFailed is not { Count: > 0 } &&
+    public string? Notice => AllExported && RemoveFailed is not { Count: > 0 } &&
                              YarnProblems is not { Count: > 0 } && Delivery?.Problem is null
         ? null
         : string.Join("\n", new[]
@@ -97,10 +95,6 @@ public sealed record ChapterExportRun(
                 ? null
                 : $"지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷지 못했습니다: {string.Join(", ", kept)}" +
                   " — 파일이 다른 프로그램에 잡혀 있는지 확인하세요. 그냥 두면 게임이 없는 챕터를 계속 싣습니다.",
-            ScenesFailed is not { Count: > 0 } scenes
-                ? null
-                : $"장면 파일({ChapterScenesExporter.FileSuffix})을 쓰지 못했습니다: {string.Join(", ", scenes)}" +
-                  $" — {ChapterExportService.ExportFolderName}/ 의 파일이 다른 프로그램에 잡혀 있는지 확인하세요.",
             YarnProblems is not { Count: > 0 } yarn
                 ? null
                 : $"대사 Yarn이 나가지 않은 장면이 있습니다 — 그 장면의 옛 파일은 그대로 둡니다:\n" +
@@ -213,7 +207,6 @@ public sealed class ChapterExportService
         var blocked = new List<string>();
         var checksums = new Dictionary<string, string>(StringComparer.Ordinal);
         var written = new List<string>();
-        var scenesFailed = new List<string>();
         var yarnWritten = new List<string>();
         var yarnProblems = new List<string>();
         var refusalErrors = new List<ChapterDiagnostic>();
@@ -288,14 +281,6 @@ public sealed class ChapterExportService
             checksums[entry.ChapterId] = result.Checksum!;
             written.Add(exportPath);
 
-            // 장면 파일 — 연출 초안을 짓는 쪽(AI)이 장면 하나씩 읽는 저작 자료다. 진행 JSON이 나갈 때 함께 나간다
-            // (거부된 챕터는 둘 다 그대로 — exported/가 없으면 아직 아무것도 안 나갔다는 뜻이 그대로 선다).
-            if (!TryWrite(ChapterScenesExporter.PathFor(projectPath, entry.ChapterId),
-                    ChapterScenesExporter.Export(entry.Model, project)))
-            {
-                scenesFailed.Add(entry.ChapterId);
-            }
-
             // 대사 Yarn — 장면 하나 = 파일 하나(docs/work-orders/yarn-output-orders.md). 진행 JSON이 나갈 때 함께.
             ExportYarn(entry, projectPath, project, yarnChapters, yarnOwners, yarnWritten, yarnProblems);
         }
@@ -307,7 +292,7 @@ public sealed class ChapterExportService
         RemoveStaleYarn(entries, projectPath, yarnChapters, yarnOwners, removeFailed);
 
         return new ChapterExportRun(
-            refused, failed, blocked, checksums, written, Delivery: null, removed, removeFailed, scenesFailed, yarnWritten, yarnProblems,
+            refused, failed, blocked, checksums, written, Delivery: null, removed, removeFailed, yarnWritten, yarnProblems,
             refusalErrors);
     }
 
@@ -441,28 +426,6 @@ public sealed class ChapterExportService
         }
 
         var live = new HashSet<string>(entries.Select(entry => entry.ChapterId), StringComparer.OrdinalIgnoreCase);
-
-        // 장면 파일도 같은 규칙으로 걷는다. 보낼 곳의 지난 파일은 저장할 때 보내기가 걷는다(ExportDelivery — 보낸 기록).
-        foreach (string path in Directory.EnumerateFiles(folder, "*" + ChapterScenesExporter.FileSuffix).Order(StringComparer.Ordinal))
-        {
-            if (live.Contains(Path.GetFileName(path)[..^ChapterScenesExporter.FileSuffix.Length]))
-            {
-                continue;
-            }
-
-            try
-            {
-                File.Delete(path);
-            }
-            catch (IOException)
-            {
-                removeFailed.Add(Path.GetFileName(path));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                removeFailed.Add(Path.GetFileName(path));
-            }
-        }
 
         foreach (string path in Directory.EnumerateFiles(folder, "*" + ExportFileSuffix).Order(StringComparer.Ordinal))
         {

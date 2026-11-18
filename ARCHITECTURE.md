@@ -16,7 +16,7 @@
 | | |
 |---|---|
 | **읽는 것** | 프로젝트 하나(`*.vnproject.json` · `story/`). `game.definition.json`은 읽지도 쓰지도 않는다(2026-11-17 · `docs/work-orders/definition-split-orders.md`) |
-| **쓰는 것** | 같은 프로젝트(원고), 그리고 `exported/{챕터}.progression.json`(유니티 런타임 수입물 — 검증을 통과하면 저절로)과 함께 나가는 장면 파일 · **대사만 있는 Yarn**(`exported/yarn/` — 2026-11-17) |
+| **쓰는 것** | 같은 프로젝트(원고), 그리고 `exported/{챕터}.progression.json`(유니티 런타임 수입물 — 검증을 통과하면 저절로)과 함께 나가는 **대사만 있는 Yarn**(`exported/yarn/` — 2026-11-17). ⛔ 장면 파일(`{챕터}.scenes.json`)은 2026-11-18에 걷혔다 — 대사 Yarn과 겹쳤고 읽는 곳이 없었다 |
 | **읽어 가는 쪽** | [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가 원고를 **읽기만** 해서 제 연출과 합쳐 게임용 Yarn을 낸다. 대사 Yarn은 게임 폴더로 보내지 않으므로 그것을 덮지 않는다 |
 
 두 화면이 같은 프로젝트를 고친다.
@@ -38,8 +38,6 @@ MyStory/
 ├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
 └─ exported/{챕터}.progression.json  진행 JSON — 런타임 계약
-   exported/{챕터}.scenes.json       장면 단위 내보내기 — 장면 메모 · 에피소드 지시 · 살아 있는 대사(LineId · 화자 · 글).
-                                     AI가 장면 하나씩 연출 초안을 낼 때 읽는다. 진행 JSON이 나갈 때 함께 나가고 런타임은 읽지 않는다
    exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn — 장면 = 파일, 에피소드 = 노드(타이틀 = DialogueEntryId), 장면 메모 · 에피소드
                                      지시는 // 주석. 진행 JSON이 나갈 때 함께 나가고 게임 폴더로는 보내지 않는다
 runtime.target.json                  보낼 곳 — 형식마다 exported/ 밖의 폴더(gameFolder = 진행 JSON · compositor도 읽는다, scenesFolder,
@@ -315,7 +313,6 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 조건 이름 · 식 미정 | 이름 화면 `App/MainWindow.Conditions.cs`([대본] 챕터 요약), 식은 `ChapterGraphView` 조건 표([구성]). 빈 식 = 항상 통과 `ChapterDocument.Reparse`, 진단 `ConditionExpressionBlank`(경고) |
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
-| 장면 단위 내보내기(`scenes.json`) | `Chapters/ChapterScenesExporter.cs` — 쓰는 때는 `ChapterExportService.ExportAll` |
 | 분기 카드(집 · 검증) | `Chapters/ChapterBranchCards.cs` — 분기 카드(`DialogueNode.IsBranchCard`)는 에피소드가 아니라 증명(`ChapterReachabilityProver`, 간선만 — 런타임의 오라클) 밖이다. `HomesOf` = 분기 카드의 집(먼저 부르는 에피소드 — 장면 · Yarn 파일 · [구성] 칩이 같은 규칙), `Verify` = 분기점이 에피소드에(오류) · 아무도 안 부름 · 도달 불가에서만 불림(경고) · 줄 없음(오류) · Yarn 노드 이름 겹침(오류). 부르는 곳 `ChapterValidator.Validate`(프로젝트를 줄 때) |
 | [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs` |
 | 대사 Yarn(`exported/yarn/`) | 글 짓기 `Chapters/ChapterYarnExporter.cs`(타이틀은 `ChapterProgressionExporter.DialogueEntryIdOf`), 쓰기 · 낡은 파일 걷기 `ChapterExportService.ExportAll`, 컴파일 확인은 시험 `ChapterYarnExportTests`(앱은 컴파일러를 싣지 않는다) |

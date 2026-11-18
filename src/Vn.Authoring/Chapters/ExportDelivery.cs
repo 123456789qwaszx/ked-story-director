@@ -19,7 +19,7 @@ public sealed record ExportDeliveryRun(
 {
     public static ExportDeliveryRun Empty { get; } = new([], [], [], []);
 
-    /// <summary>나간 자리 — 「보낸 곳 → 진행 JSON ../game · 장면 파일 …」. 보낸 것이 없으면 null.</summary>
+    /// <summary>나간 자리 — 「보낸 곳 → 진행 JSON ../game · 대사 Yarn …」. 보낸 것이 없으면 null.</summary>
     public string? Where => Sent.Count == 0 && Removed.Count == 0
         ? null
         : "보낸 곳 → " + string.Join(" · ", Sent) +
@@ -154,13 +154,12 @@ public static class ExportDelivery
         return new ExportDeliveryRun(sent, missing, failed, removed);
     }
 
-    /// <summary>그 형식이 <c>exported/</c>에서 보낼 파일들 — 진행 JSON · 장면 파일은 바로 아래, 대사 Yarn은 <c>yarn/</c> 아래.</summary>
+    /// <summary>그 형식이 <c>exported/</c>에서 보낼 파일들 — 진행 JSON은 바로 아래, 대사 Yarn은 <c>yarn/</c> 아래.</summary>
     private static IEnumerable<string> SourcesOf(string exported, ExportFormat format)
     {
         (string folder, string pattern) = format switch
         {
             ExportFormat.Progression => (exported, "*" + ChapterExportService.ExportFileSuffix),
-            ExportFormat.Scenes => (exported, "*" + ChapterScenesExporter.FileSuffix),
             _ => (Path.Combine(exported, ChapterYarnExporter.FolderName), "*" + ChapterYarnExporter.FileExtension)
         };
 
