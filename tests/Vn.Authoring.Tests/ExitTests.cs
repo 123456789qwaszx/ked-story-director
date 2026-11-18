@@ -155,7 +155,8 @@ public class ExitTests
         string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opener, sample.TargetA.Id);
 
-        sample.Editor.RemoveNode(sample.TargetA.Id);
+        global::Vn.Authoring.Chapters.EpisodeDeleter.Delete(
+            sample.Editor, global::Vn.Authoring.Chapters.EpisodeNaming.ChapterOf(sample.Project, sample.TargetA).ChapterId, sample.TargetA.MarkedEpisodeId!);   // 에피소드 카드는 에피소드와 함께 지운다
 
         Assert.Empty(sample.Dialogue.BranchExits);
         Assert.DoesNotContain(

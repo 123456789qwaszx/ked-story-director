@@ -85,12 +85,11 @@ public sealed class ChapterRenamerTests : IDisposable
     public void 개명_뒤_공급이_배관을_하나_더_만들지_않는다()
     {
         // 위 둘을 이어 붙인 자리 — 이름만 맞춰 두고 공급이 또 만들면 고친 것이 아니다.
-        // 공급은 프로젝트를 열 때(판 맞추기)와 조건을 고칠 때 돈다.
+        // 공급은 조건을 고칠 때 돈다.
         ProjectEditor editor = Build();
 
         ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
 
-        editor.AlignBoardsWithChapters();
         editor.UpdateChapterCondition(NewId, "신뢰높음", "trust >= 4");
 
         SetNode supply = Assert.Single(

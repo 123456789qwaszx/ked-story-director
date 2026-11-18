@@ -75,27 +75,6 @@ public sealed class ChoiceSlotProjectionTests
     }
 
     [Fact]
-    public void 대본이_아직_없는_에피소드로_가는_길도_산다()
-    {
-        // ⚠ 대본이 없는 것과 길이 없는 것은 다르다 — 도착 노드를 못 찾아도 간선은 있다.
-        //
-        // ⚠ <b>임포트의 모양으로 짓는다</b> (2026-09-18). 이제 저작 창구로는 카드 없는
-        //    에피소드가 안 생긴다 — 그 상태가 실제로 오는 길은 챕터 워크북 임포트뿐이고,
-        //    임포트는 이렇게 문서에 바로 넣는다. <b>그래서 이 테스트는 여전히 유효하다.</b>
-        ProjectEditor editor = World();
-        editor.FindChapter("ch01")!.Episodes.Add(new ChapterEpisode(
-            "아직안씀", "빈 자리", Index: string.Empty, DialogueEntry: "아직안씀",
-            0, 0, Memo: null));
-        editor.AddEdge("ch01", "root", "아직안씀", optionLabel: "그쪽으로");
-
-        GraphChoicePort slot = SlotsOf(editor, "root")[0];
-
-        Assert.Equal("아직안씀", slot.ToEpisodeId);
-        Assert.Null(slot.ToNodeId);
-        Assert.False(slot.IsEmpty);
-    }
-
-    [Fact]
     public void 자동_길은_문구가_없고_그렇다고_말한다()
     {
         // 자동 길의 문구는 비어야 한다(`AutoEdgeHasChoiceLabel`) — 빈 칸과 헷갈리지 않게

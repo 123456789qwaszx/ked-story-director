@@ -90,7 +90,7 @@ public sealed class StarterProjectTests : IDisposable
             Lines(session.Project, "믿는길"));
 
         // 씨앗을 심는 손이 대신 쓴 것이라도 열자마자 "고쳤다" 표시가 뜨면 안 된다 — 카드가 이미
-        // 서 있으니 열 때 맞출 것이 없다.
+        // 서 있으니 고칠 것이 없다.
         Assert.False(session.IsDirty);
     });
 

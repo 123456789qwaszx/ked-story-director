@@ -28,8 +28,8 @@ public class AuthoringSessionTests : IDisposable
         var second = new StoryFile("sf_b", "B", "story/b.vnstory.json");
         project.Files.Add(first);
         project.Files.Add(second);
-        first.Nodes.Add(new DialogueNode("nd_a", "A"));
-        second.Nodes.Add(new DialogueNode("nd_b", "B"));
+        first.Nodes.Add(new DialogueNode("nd_a", "A") { IsBranchCard = true });   // 에피소드가 아닌 카드는 분기 카드뿐이다
+        second.Nodes.Add(new DialogueNode("nd_b", "B") { IsBranchCard = true });
         project.StartNodeId = "nd_b";
 
         string directory = TempDirectory();

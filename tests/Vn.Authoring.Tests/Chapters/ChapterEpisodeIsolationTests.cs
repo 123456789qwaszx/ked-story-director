@@ -41,45 +41,6 @@ public sealed class ChapterEpisodeIsolationTests
         Assert.DoesNotContain("ch00의 대사", TextOf(editor.Project, cardB));
     }
 
-    [Fact]
-    public void 판_맞추기는_그_챕터의_판_안에서만_카드를_찾는다()
-    {
-        // 두 판(챕터)에 같은 이름의 에피소드가 있어도, 판 맞추기는 자기 판의 카드만 본다 —
-        // 남의 판에서 찾아 버리면 이 챕터의 에피소드는 원고를 쓸 카드가 없다.
-        var editor = new ProjectEditor(new StoryProject { Speakers = [.. Speakers] });
-
-        // ch00 판에 'new01' 카드가 이미 서 있다(다른 챕터의 원고를 담은 카드).
-        editor.EnsureChapter("ch00");
-        editor.AddEpisode("ch00", "new01", "new01", 0, 0);
-        DialogueNode standing = EpisodeNaming.CardFor(editor.Project, "ch00", "new01")!;
-        editor.ApplyScenarioText(standing.Id, "라루: ch00의 대사다.", confirmDeletes: true);
-
-        // ch01에는 같은 이름의 에피소드만 있고 카드가 없다 — 옛 프로젝트의 어긋난 모양이다.
-        editor.EnsureChapter("ch01").Episodes.Add(new ChapterEpisode(
-            EpisodeId: "new01", Title: "new01", Index: string.Empty,
-            DialogueEntry: "new01", X: 0, Y: 0, Memo: null));
-
-        BoardAlignment alignment = editor.AlignBoardsWithChapters();
-
-        Assert.Equal(["ch01/new01"], alignment.CardsStood);
-
-        // ch01 판에 새 카드가 섰고, ch00의 카드는 건드리지 않았다.
-        DialogueNode created = EpisodeNaming.CardFor(editor.Project, "ch01", "new01")!;
-
-        Assert.Equal(
-            EpisodeNaming.BoardOf(editor.Project, "ch01")!.Id,
-            editor.Project.FindFileContainingNode(created.Id)!.Id);
-        Assert.NotEqual(standing.Id, created.Id);
-
-        // 새 카드에 쓴 원고는 그 카드에만 간다 — 남의 원고가 쏟아지지 않는다.
-        editor.ApplyScenarioText(created.Id, "라루: ch01의 대사다.", confirmDeletes: true);
-
-        Assert.DoesNotContain("ch01의 대사다.", TextOf(editor.Project, standing));
-        Assert.Contains("ch00의 대사다.", TextOf(editor.Project, standing));
-        Assert.Contains("ch01의 대사다.", TextOf(editor.Project, created));
-    }
-
-    /// <summary>그 카드가 들고 있는 글 전부 — 어느 원고가 들어갔는지의 근거.</summary>
     private static string TextOf(StoryProject project, DialogueNode node) => string.Join(
         " | ",
         project.FindDialogue(node.Id)!.Script.Locales

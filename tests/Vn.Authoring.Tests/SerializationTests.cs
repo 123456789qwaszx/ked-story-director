@@ -44,11 +44,11 @@ public class SerializationTests
         //    (2026-09-17까지 이 테스트의 근거는 "엑셀 소유 대본의 잠금이 풀린다"였다 —
         //     그 잠금은 R-D에서, 자유 노드라는 종류는 P-6에서 없어졌다. 표식은 남았다.)
         var sample = new Sample();
-        sample.Dialogue.MarkedEpisodeId = "ep_hallway";
+        Assert.NotNull(sample.Dialogue.MarkedEpisodeId);   // 카드를 세우면 에피소드와 표식이 함께 선다
 
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
 
-        Assert.Equal("ep_hallway", reloaded.FindDialogue(sample.Dialogue.Id)!.MarkedEpisodeId);
+        Assert.Equal(sample.Dialogue.MarkedEpisodeId, reloaded.FindDialogue(sample.Dialogue.Id)!.MarkedEpisodeId);
     }
 
     // ⛔ `엑셀_행_신원_맵이_프로젝트와_함께_왕복한다`는 2026-09-16에 은퇴했다 (R-D).
@@ -101,7 +101,7 @@ public class SerializationTests
             project.Files.Add(second);
             project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
             project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
-            first.Nodes.Add(new DialogueNode("nd_a", "A 노드"));
+            first.Nodes.Add(new DialogueNode("nd_a", "A 노드") { IsBranchCard = true });   // 에피소드가 아닌 카드는 분기 카드뿐이다
             second.Nodes.Add(new SetNode("nd_b", "B 노드"));
             project.StartNodeId = "nd_a";
 
@@ -163,8 +163,8 @@ public class SerializationTests
 
         var first = new StoryFile("sf_a", "A", "story/a.vnstory.json");
         var second = new StoryFile("sf_b", "B", "story/b.vnstory.json");
-        first.Nodes.Add(new DialogueNode("nd_a", "A") { Script = firstScript });
-        second.Nodes.Add(new DialogueNode("nd_b", "B") { Script = secondScript });
+        first.Nodes.Add(new DialogueNode("nd_a", "A") { Script = firstScript, IsBranchCard = true });
+        second.Nodes.Add(new DialogueNode("nd_b", "B") { Script = secondScript, IsBranchCard = true });
         project.Files.Add(first);
         project.Files.Add(second);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
@@ -319,7 +319,7 @@ public class SerializationTests
         var project = new StoryProject();
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
-        first.Nodes.Add(new DialogueNode("nd_same", "A"));
+        first.Nodes.Add(new DialogueNode("nd_same", "A") { IsBranchCard = true });
         second.Nodes.Add(new SetNode("nd_same", "B"));
         project.Files.Add(first);
         project.Files.Add(second);

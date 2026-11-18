@@ -9,8 +9,8 @@ namespace Vn.Authoring.Chapters;
 /// 한 규칙이 여러 곳에 살면 갈리므로 여기 한 곳에 둔다.
 ///
 /// <b>표식이 신원이고 이름은 글자다.</b> <see cref="StoryNode.Name"/>은 사람이 판에서
-/// 고치는 글자라 신원으로 삼으면 개명 때마다 끊긴다. 그래서 <see cref="DialogueNode.MarkedEpisodeId"/>가
-/// 먼저고, 이름은 아직 표식이 안 붙은 구판 프로젝트를 위한 뒷길이다.
+/// 고치는 글자라 신원으로 삼으면 개명 때마다 끊긴다. 그래서 <see cref="DialogueNode.MarkedEpisodeId"/>가 신원이다 — 에피소드 카드는
+/// 늘 표식을 든다(그렇지 않은 판은 저장 검증이 받지 않는다 · 2026-11-18 old-shapes O4 — ⛔ 그 전에는 표식 없는 구판 카드를 이름으로 찾았다).
 ///
 /// <b>챕터 판의 대사 노드는 전부 에피소드</b>라서 이 규약이 늘 성립한다.
 /// </summary>
@@ -53,12 +53,7 @@ public static class EpisodeNaming
     /// <b>그 챕터의 판에서만</b> 찾는다. EpisodeId는 챕터 안에서만 유일하므로, 프로젝트
     /// 전체를 훑으면 다른 챕터의 같은 Id를 집는다.
     ///
-    /// 찾는 법이 여러 벌이면 서로 답이 갈린다(<i>표식 또는 이름</i>과 <i>표식만</i>은
-    /// 표식이 없는 구판 카드에서 다르게 답한다). 그래서 카드 찾기는 이것 하나다.
-    ///
-    /// <see cref="ChapterBoard.EpisodeNodeFor"/>는 <b>사본이 아니다</b> — 그쪽은
-    /// 내보내기용이라 이름 뒷길이 `대사엔트리`다(여기는 EpisodeId). 저쪽도
-    /// <b>그 챕터의 판만</b> 본다.
+    /// 찾는 법이 여러 벌이면 서로 답이 갈린다. 그래서 카드 찾기는 이것 하나다(<see cref="ChapterBoard"/>도 같은 표식으로 찾는다).
     /// </summary>
     public static DialogueNode? CardFor(StoryProject project, string chapterId, string episodeId)
     {
@@ -120,33 +115,15 @@ public static class EpisodeNaming
         return string.Equals(title, card.Name, StringComparison.Ordinal) ? $"「{title}」" : $"「{title}」({card.Name})";
     }
 
-    /// <summary>그 노드가 대신하는 에피소드 Id — 표식이 먼저고, 없으면 이름이다.</summary>
+    /// <summary>그 카드가 대신하는 에피소드 Id — 에피소드 카드면 표식, 분기 카드면 그 이름(분기 카드 ID)이다.</summary>
     public static string EpisodeIdOf(DialogueNode node)
     {
         ArgumentNullException.ThrowIfNull(node);
 
-        return node.MarkedEpisodeId is { Length: > 0 } marked ? marked : node.Name;
+        return node.MarkedEpisodeId ?? node.Name;
     }
 
-    /// <summary>
-    /// 그 에피소드를 대신할 노드의 <b>이름</b> — `대사엔트리`가 먼저고, 없으면 EpisodeId다.
-    ///
-    /// <see cref="EpisodeIdOf"/>의 역이 아니다. 판에서 노드를 개명해도 표식은 남으므로
-    /// 왕복이 깨질 수 있고, 그것이 정상이다 — 신원은 표식이지 이름이 아니다.
-    /// </summary>
-    public static string NodeNameOf(ChapterEpisode episode)
-    {
-        ArgumentNullException.ThrowIfNull(episode);
-
-        return episode.DialogueEntry is { Length: > 0 } entry ? entry : episode.EpisodeId;
-    }
-
-    /// <summary>
-    /// 이 노드가 대신하는 <b>에피소드</b>. 없으면 <c>null</c>이다.
-    ///
-    /// 표식으로 먼저 찾고(진짜 신원), 못 찾으면 <b>이름이 대신하는 에피소드</b>를 찾는다 —
-    /// 옛 워크북 임포터가 지은 카드는 노드 이름이 `대사엔트리`라서 EpisodeId만 봐서는 못 만난다.
-    /// </summary>
+    /// <summary>이 카드가 대신하는 <b>에피소드</b> — 표식으로 찾는다. 분기 카드면 <c>null</c>이다.</summary>
     public static ChapterEpisode? EpisodeFor(ChapterDocument chapter, DialogueNode node)
     {
         ArgumentNullException.ThrowIfNull(chapter);
@@ -158,11 +135,7 @@ public static class EpisodeNaming
             return null;
         }
 
-        string episodeId = EpisodeIdOf(node);
-
         return chapter.Episodes.FirstOrDefault(episode =>
-                   string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))
-               ?? chapter.Episodes.FirstOrDefault(episode =>
-                   string.Equals(NodeNameOf(episode), node.Name, StringComparison.Ordinal));
+            string.Equals(episode.EpisodeId, node.MarkedEpisodeId, StringComparison.Ordinal));
     }
 }

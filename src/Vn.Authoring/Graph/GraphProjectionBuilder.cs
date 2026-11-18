@@ -307,14 +307,13 @@ public static class GraphProjectionBuilder
 
         ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(project, file);
 
-        // 노드 → 에피소드는 표식이 먼저고 없으면 이름이다 — 장면 묶기와 같은 규칙(EpisodeNaming 한 벌)이다.
-        string episodeId = EpisodeNaming.EpisodeIdOf(dialogue);
-
-        if (!chapter.Episodes.Any(episode =>
-                string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
+        // 분기 카드는 선택지 칸이 없다 — 에피소드 카드만(표식이 신원이다 · EpisodeNaming 한 벌).
+        if (dialogue.IsBranchCard)
         {
             yield break;
         }
+
+        string episodeId = EpisodeNaming.EpisodeIdOf(dialogue);
 
         int slot = 0;
 

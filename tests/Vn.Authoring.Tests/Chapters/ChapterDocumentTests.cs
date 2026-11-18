@@ -1,6 +1,7 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Tests.Fixtures;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -40,6 +41,7 @@ public sealed class ChapterDocumentTests : IDisposable
         //    값을 흘려도 다음 읽기가 메워 줬다 — 이제 메워 줄 곳이 없다.
         var project = new StoryProject { Title = "챕터를 든다" };
         project.Chapters.Add(Sample());
+        SampleChapters.StandCards(project);   // 에피소드마다 카드가 선다(저장 검증이 지킨다)
 
         ProjectStore.Save(ManifestPath, project);
         ChapterDocument read = Assert.Single(ProjectStore.Load(ManifestPath).Project.Chapters);

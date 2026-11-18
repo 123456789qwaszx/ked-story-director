@@ -182,7 +182,7 @@ internal sealed class AuthoringSession
     public void Open(string path)
     {
         ProjectLoadResult loaded = ProjectStore.Load(path);
-        (StoryProject project, string alignment) = AlignBoards(loaded.Project);
+        StoryProject project = loaded.Project;
 
         ProjectPath = loaded.ManifestPath;
         ReloadDestinations();
@@ -190,7 +190,7 @@ internal sealed class AuthoringSession
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
             $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
-            alignment + DestinationsNote();
+            DestinationsNote();
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
@@ -204,41 +204,6 @@ internal sealed class AuthoringSession
             activeFileChanged: true,
             expandedFilesChanged: true,
             fileListChanged: true);
-    }
-
-    /// <summary>
-    /// 열 때 판을 챕터에 맞춘다 — <b>저장본 스냅샷을 뜨기 전에</b>.
-    ///
-    /// 맞추는 것은 카드 없는 에피소드에 빈 카드를 세우는 일과 조건 공급이다.
-    /// 규칙은 <see cref="ProjectEditor.AlignBoardsWithChapters"/>에 있다.
-    ///
-    /// 주의: 스냅샷 전이라 <b>맞춘 것만으로는 저장할 것이 생기지 않는다</b> — 열자마자 "고쳤다"는 표시가
-    /// 뜨면 사람은 자기가 무엇을 건드렸는지 찾는다. 맞춘 결과는 다음 저장에 함께 실리고, 저장 전에
-    /// 닫으면 다음에 열 때 다시 맞춘다(멱등이다).
-    ///
-    /// 주의: 맞추다 실패해도 <b>여는 일은 막지 않는다</b> — 맞추기는 묶음이라 실패하면 연 그대로 돌아온다.
-    /// </summary>
-    /// <returns>맞춘 프로젝트와, 상태줄에 덧붙일 한 마디(맞춘 것이 없으면 빈 글).</returns>
-    private static (StoryProject Project, string Note) AlignBoards(StoryProject loaded)
-    {
-        var aligner = new ProjectEditor(loaded);
-
-        try
-        {
-            BoardAlignment aligned = aligner.AlignBoardsWithChapters();
-
-            if (!aligned.Changed)
-            {
-                return (aligner.Project, string.Empty);
-            }
-
-            return (aligner.Project,
-                $" · 카드가 없던 에피소드 {aligned.CardsStood.Count}개에 빈 카드를 세웠습니다 — 저장하면 남습니다.");
-        }
-        catch (Exception exception)
-        {
-            return (aligner.Project, $" · 판을 챕터에 맞추지 못했습니다: {exception.Message}");
-        }
     }
 
     public void Save(string? path = null)

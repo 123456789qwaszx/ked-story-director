@@ -26,9 +26,7 @@ public sealed record ChapterValidationResult(
 public static class ChapterValidator
 {
     /// <param name="project">
-    /// 있으면 <b>`대사엔트리`가 실재하는 대사노드를 가리키는지</b>까지 본다
-    /// (<see cref="VerifyDialogueEntriesOnBoard"/>). null이면 그 검사를
-    /// 건너뛴다 — 판을 볼 수 없는 자리(콘솔·테스트)에서도 나머지 검증은 돌아야 한다.
+    /// 있으면 판(카드의 대본 · 분기 카드)까지 본다. null이면 그 검사를 건너뛴다 — 판을 볼 수 없는 자리(콘솔·테스트)에서도 나머지 검증은 돌아야 한다.
     /// </param>
     public static ChapterValidationResult Validate(
         ChapterGraphModel chapter,
@@ -38,7 +36,6 @@ public static class ChapterValidator
 
         var diagnostics = new List<ChapterDiagnostic>(chapter.Diagnostics);
 
-        VerifyDialogueEntriesOnBoard(chapter, project, diagnostics);
         VerifyScenesFilled(chapter, project, diagnostics);
 
         // 스탯 증감의 원천은 간선이다 — 증명기가 챕터 모델에서 직접 읽는다.
@@ -82,8 +79,8 @@ public static class ChapterValidator
 
         foreach (ChapterEpisode episode in chapter.Episodes)
         {
-            // ① 에피소드 자신의 대사 노드. 없는 것은 `VerifyDialogueEntriesOnBoard`가 짚으므로
-            //    여기서는 <b>있는데 비었을 때</b>만 본다 — 같은 말을 두 번 하지 않는다.
+            // ① 에피소드 자신의 대사 노드가 비었다. 에피소드마다 카드가 있는 것은 저장 검증이 지킨다(old-shapes O4 —
+            //    ⛔ 그 전에는 카드 없는 에피소드를 `DialogueEntryNodeMissing`으로 짚었다).
             if (board.EpisodeNodeFor(episode) is { } own && !HasPlayableLine(own))
             {
                 diagnostics.Add(new ChapterDiagnostic(
@@ -104,67 +101,4 @@ public static class ChapterValidator
     /// <summary>재생될 줄이 하나라도 있는가 — 본문이 비어도 줄은 줄이다(연출이 매달린다).</summary>
     private static bool HasPlayableLine(DialogueNode scene) =>
         scene.Script.ActiveLines.Any();
-
-    /// <summary>
-    /// <b>에피소드가 부를 대사 노드가 그 판에 실제로 있는가</b>.
-    ///
-    /// 노드가 없으면 그 .yarn이 아예 안 나가고 진행 JSON만 <b>없는 노드를 부른다</b> —
-    /// 로드·검증·도달성 증명은 전부 통과하고 재생만 안 된다. 유니티의 사전 대조가 잡는
-    /// 그 모양이고, <b>여기서 잡으면 유니티까지 안 간다.</b>
-    ///
-    /// <b>안 연 챕터도 봐주지 않는다.</b> 판이 없거나 비어 있을 때 이 관문을 건너뛰면
-    /// 진행 JSON이 그대로 나가고 게임에서만 죽는다. 판과 노드는 <b>프로젝트 파일에 남으므로</b>
-    /// (세션 상태가 아니다) 한 번 연 챕터는 계속 통과한다.
-    /// </summary>
-    private static void VerifyDialogueEntriesOnBoard(
-        ChapterGraphModel chapter,
-        StoryProject? project,
-        List<ChapterDiagnostic> diagnostics)
-    {
-        if (project is null || chapter.Episodes.Count == 0)
-        {
-            return;
-        }
-
-        // <b>판이 없어도 건너뛰지 않는다</b>. 판이 없거나 비어 있으면
-        //    그 챕터의 <b>모든</b> 에피소드가 부를 노드를 잃는데, 조용히 통과시키면
-        //    내보내기가 나가고 유니티 사전 대조가 재생을 통째로 막는다.
-        //    한 번도 안 연 챕터도 <b>내보내는 순간</b>에는 같은 사고다 — 안 열었다는 것이
-        //    면제 사유가 될 수 없다. 대신 무엇을 하면 되는지를 말한다.
-        ChapterBoard board = ChapterBoard.For(project, chapter.ChapterId);
-
-        List<ChapterEpisode> missing = chapter.Episodes
-            .Where(episode => board.EpisodeNodeFor(episode) is null)
-            .ToList();
-
-        if (missing.Count == chapter.Episodes.Count)
-        {
-            diagnostics.Add(new ChapterDiagnostic(
-                ChapterDiagnosticSeverity.Error,
-                ChapterDiagnosticCode.DialogueEntryNodeMissing,
-                chapter.SourcePath,
-                ChapterSheetNames.Episodes,
-                null,
-                $"'{chapter.ChapterId}' 판에 대사 노드가 하나도 없습니다 — 이대로 내보내면 " +
-                "진행 JSON이 부르는 노드가 전부 없어 게임이 재생을 시작하지 못합니다. " +
-                "프로젝트를 저장하고 다시 열면 에피소드마다 빈 카드가 섭니다."));
-
-            return;   // 에피소드마다 같은 말을 반복하지 않는다.
-        }
-
-        foreach (ChapterEpisode episode in missing)
-        {
-            diagnostics.Add(new ChapterDiagnostic(
-                ChapterDiagnosticSeverity.Error,
-                ChapterDiagnosticCode.DialogueEntryNodeMissing,
-                chapter.SourcePath,
-                ChapterSheetNames.Episodes,
-                episode.EpisodeId,
-                $"'{episode.EpisodeId}'의 대사엔트리 '{episode.DialogueEntry}'에 해당하는 " +
-                $"대사노드가 '{chapter.ChapterId}' 판에 없습니다. 이대로 내보내면 진행 JSON이 " +
-                "존재하지 않는 대사 노드를 부르고, 로드는 통과하는데 재생만 안 됩니다. " +
-                "프로젝트를 저장하고 다시 열면 에피소드마다 빈 카드가 섭니다."));
-        }
-    }
-
 }

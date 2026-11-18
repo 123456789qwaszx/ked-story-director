@@ -200,16 +200,9 @@ public sealed partial class ProjectEditor
         EpisodeNaming.ChapterOfBoard(Project, file);
 
     /// <summary>
-    /// 이 노드가 질 <b>에피소드</b>를 짓는다(카드는 챕터 판에만 선다 — 판이 챕터가 아니면 앞에서 거절한다).
-    ///
-    /// <b>이미 있는 에피소드면 짓지 않고 표식만 붙인다.</b> 챕터 그래프에서 먼저 만든
-    /// 에피소드에 대본을 다는 것이(그리고 열 때 카드 없는 에피소드에 빈 카드를 세우는 것이 —
-    /// <see cref="AlignBoardsWithChapters"/>) 정확히 그
-    /// 자리다 — 거기서 또 지으면 에피소드 하나에 카드가 둘 선다.
-    ///
-    /// 임포터는 노드를 <b>EpisodeId가 아니라 `대사엔트리`로</b> 짓는다. 그래서 찾는 일은
-    /// <see cref="EpisodeNaming.EpisodeFor"/>에 맡긴다 — 여기서 이름만 맞춰 보면 `대사엔트리`가
-    /// 따로 적힌 챕터마다 에피소드가 <b>두 배로 불어난다</b>.
+    /// 이 노드가 질 <b>에피소드</b>를 짓는다 — 에피소드와 카드는 한 칸에 선다. 그 이름의 에피소드가 이미 있으면 거절한다(에피소드 하나에 카드가
+    /// 둘 설 수 없다). ⛔ 그 전에는 이미 있는 에피소드에 표식만 붙였다 — 열 때 카드 없는 에피소드에 빈 카드를 세우던 판 맞추기의 뒷길이었다
+    /// (2026-11-18 · old-shapes O4).
     /// </summary>
     /// <param name="episodePosition">
     /// 챕터 그래프에서의 자리. <b>카드의 자리와 다른 판이다</b> — 연출 판의 좌표를 그대로
@@ -220,12 +213,9 @@ public sealed partial class ProjectEditor
         StoryFile file, ChapterDocument chapter, DialogueNode created, string? sceneId,
         string? title = null, (double X, double Y)? episodePosition = null)
     {
-        if (EpisodeNaming.EpisodeFor(chapter, created) is { } standing)
+        if (FindEpisode(chapter, created.Name) is not null)
         {
-            // 표식이 신원이다 — 이름은 사람이 고치는 글자라 개명 때마다 끊긴다(P-6 결정).
-            created.MarkedEpisodeId = standing.EpisodeId;
-
-            return (null, null);
+            throw new InvalidOperationException($"EpisodeId '{created.Name}'가 이미 있습니다.");
         }
 
         created.MarkedEpisodeId = created.Name;
@@ -402,16 +392,28 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(() =>
+        // 에피소드 카드는 에피소드와 함께만 지운다(EpisodeDeleter — 행을 먼저 걷고 카드를 걷는다). 카드만 걷으면 카드 없는 에피소드가 남는다
+        //    — 저장 검증이 받지 않는 모양이다(old-shapes O4).
+        if (node is DialogueNode { MarkedEpisodeId: { } episodeId } &&
+            Chapters.EpisodeNaming.ChapterOfBoard(Project, owner).Episodes.Any(episode =>
+                string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
         {
-            owner.Nodes.Remove(node);
-            RemoveReferencesToNode(nodeId);   // 카드의 대본은 카드 안이라 함께 간다
+            throw new InvalidOperationException($"'{episodeId}'은(는) 에피소드 카드입니다 — 에피소드와 함께 지웁니다.");
+        }
 
-            if (string.Equals(Project.StartNodeId, nodeId, StringComparison.Ordinal))
-            {
-                Project.StartNodeId = Project.EnumerateNodes().FirstOrDefault()?.Id;
-            }
-        });
+        Mutate(() => RemoveNodeCore(owner, node));
+    }
+
+    /// <summary>노드 하나를 걷는 <b>알맹이</b> — <see cref="Mutate"/> 밖이다(에피소드 지우기가 행과 카드를 한 칸에 걷는다).</summary>
+    private void RemoveNodeCore(StoryFile owner, StoryNode node)
+    {
+        owner.Nodes.Remove(node);
+        RemoveReferencesToNode(node.Id);   // 카드의 대본은 카드 안이라 함께 간다
+
+        if (string.Equals(Project.StartNodeId, node.Id, StringComparison.Ordinal))
+        {
+            Project.StartNodeId = Project.EnumerateNodes().FirstOrDefault()?.Id;
+        }
     }
 
     /// <summary>

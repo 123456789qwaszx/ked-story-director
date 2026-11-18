@@ -43,8 +43,7 @@ public sealed class SupplyScopeTests
     {
         ProjectEditor editor = TwoChapters();
 
-        string fileId = editor.Project.Files.Single(file => file.Name == "ch02").Id;
-        DialogueNode node = editor.AddDialogueNode(fileId, 0, 0, "root");
+        DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch02", "root")!;
         string lineId = node.Script.ActiveLines.First().Id;
 
         editor.SetLineTransition(

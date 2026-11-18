@@ -130,13 +130,20 @@ public sealed class NodePlacementTests
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <summary>그 에피소드의 카드를 그 자리에 세운다 — 사람이 끌어다 둔 것과 같다.</summary>
+    /// <summary>
+    /// 그 에피소드의 카드를 그 자리에 세운다 — 사람이 끌어다 둔 것과 같다. 일부 에피소드에만 카드가 선 순간(새 에피소드의 카드 자리를 묻는
+    /// 순간)을 재는 시험이라 편집기를 지나지 않고 판에 직접 놓는다(편집기는 에피소드와 카드를 한 칸에 세운다).
+    /// </summary>
     private static void Place(StoryProject project, string episodeId, double x, double y)
     {
-        var editor = new ProjectEditor(project);
+        StoryFile board = EpisodeNaming.BoardOf(project, "ch01") ?? Add(project, new StoryFile(name: "ch01"));
+        board.Nodes.Add(new DialogueNode(name: episodeId) { MarkedEpisodeId = episodeId, Layout = new NodeLayout { X = x, Y = y } });
+    }
 
-        editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), x, y, episodeId)
-            .MarkedEpisodeId = episodeId;
+    private static StoryFile Add(StoryProject project, StoryFile board)
+    {
+        project.Files.Add(board);
+        return board;
     }
 
     private static void Edge(StoryProject project, string from, string to) =>

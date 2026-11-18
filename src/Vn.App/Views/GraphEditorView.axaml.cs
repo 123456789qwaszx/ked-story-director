@@ -908,14 +908,6 @@ public partial class GraphEditorView : UserControl
 
             foreach ((string episodeId, (DialogueNode node, Rect rect)) in spots)
             {
-                // 챕터에서 지운 에피소드의 노드가 판에 남아 있으면 레일을 긋지 않는다 —
-                // 챕터 밖의 노드에 진행·종료를 그리는 것은 거짓말이다(동기화 보고의 몫).
-                if (chapter.Episodes.All(episode =>
-                        !string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
-                {
-                    continue;
-                }
-
                 List<ChapterEdge> edges = chapter.Edges
                     .Where(edge => string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal))
                     .ToList();
@@ -4984,7 +4976,7 @@ public partial class GraphEditorView : UserControl
         {
             _session.SetStatus(IsBranchCard(targetNodeId)
                 ? "분기 카드에는 선택지를 잇지 않습니다 — 분기 카드는 분기점으로 들렀다 돌아오는 카드입니다. 선택지는 에피소드에 잇습니다."
-                : "에피소드가 아닌 노드에는 선택지를 놓을 수 없습니다.");
+                : "선택지는 에피소드에 잇습니다.");
             return;
         }
 

@@ -96,19 +96,14 @@ public sealed class SceneFrameTests
         AuthoringSession session, params (string? SceneId, string EpisodeId)[] episodes)
     {
         ChapterDocument chapter = session.Editor.EnsureChapter("ch01");
-        string fileId = session.EnsureChapterBoard("ch01");
 
         for (int index = 0; index < episodes.Length; index++)
         {
             (string? sceneId, string episodeId) = episodes[index];
 
-            chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, index * 260, 0, null)
-            {
-                SceneId = sceneId
-            });
-
-            session.Editor.AddDialogueNode(fileId, index * 260, 0, episodeId).MarkedEpisodeId = episodeId;
+            // 에피소드와 카드가 한 칸에 선다 — 카드는 가로로 늘어놓는다.
+            session.Editor.AddEpisode("ch01", episodeId, episodeId, index * 260, 0, sceneId);
+            session.Editor.MoveNode(EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id, index * 260, 0);
         }
 
         return chapter;

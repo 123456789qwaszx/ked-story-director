@@ -360,7 +360,7 @@ public sealed class ChapterGraphViewRenderTests
 
     private static (Canvas Canvas, ChapterGraphView View) Render(TempProject project)
     {
-        // 카드는 세션이 열 때 이미 서 있다(<c>ProjectEditor.AlignBoardsWithChapters</c>).
+        // 카드는 이미 서 있다 — 견본을 세울 때 에피소드마다 함께 선다(<c>SampleChapters.StandCards</c>).
         var session = new AuthoringSession();
         session.Open(project.ManifestPath);
 

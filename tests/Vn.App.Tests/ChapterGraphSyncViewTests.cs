@@ -191,9 +191,7 @@ public sealed class ChapterGraphSyncViewTests
         // 고른 챕터만 내보내면 나머지는 누른 순간의 낡은 판으로 굳는다 — 사람 손을
         // 없앤 이유가 그것이다.
         //
-        // 둘째 챕터도 판과 카드가 서 있어야 검증이 그 챕터의 카드를 찾는다 — 열 때 맞추기
-        // (<c>AlignBoardsWithChapters</c>)가 두 챕터 모두에 세운다. 판 없는 챕터는 거부가 맞다
-        // (검증이 다른 챕터(ch05) 판의 같은 EpisodeId 노드를 집어 통과시키면 안 된다).
+        // 둘째 챕터도 판과 카드가 서 있다(견본을 세울 때 두 챕터 모두에 세운다).
         using var project = new TempProject(passing: true, "ch05", "ch99");
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
@@ -288,14 +286,13 @@ public sealed class ChapterGraphSyncViewTests
                 {
                     var editor = new ProjectEditor(project);
 
-                    // 견본 하나를 여러 챕터에 세우면 EpisodeId · 대사엔트리가 같다 — Yarn 노드 이름은 프로젝트에서 하나여야 하므로
-                    // (2026-11-17 · ChapterYarnNames) 둘째 챕터부터 그 Id를 앞에 붙인다.
+                    // 견본 하나를 여러 챕터에 세우면 EpisodeId · 카드 이름이 같다 — Yarn 노드 이름은 프로젝트에서 하나여야 하므로
+                    // (2026-11-17 · ChapterYarnNames) 둘째 챕터부터 그 Id를 앞에 붙인다(카드 이름도 따라간다).
                     foreach (string id in ids.Skip(1))
                     {
                         foreach (ChapterEpisode episode in editor.FindChapter(id)!.Episodes.ToList())
                         {
-                            editor.RenameEpisode(id, episode.EpisodeId, EpisodeIdIn(ids, id, episode.EpisodeId));
-                            editor.UpdateEpisode(id, EpisodeIdIn(ids, id, episode.EpisodeId), dialogueEntry: $"{id}_{episode.DialogueEntry}");
+                            Assert.True(EpisodeRenamer.Rename(editor, id, episode.EpisodeId, EpisodeIdIn(ids, id, episode.EpisodeId)).Renamed);
                         }
                     }
 

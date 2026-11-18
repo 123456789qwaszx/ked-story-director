@@ -169,8 +169,7 @@ public sealed class ChapterStatEditTests
         ConditionDefinition supplied = editor.Project.EnumerateNodes().OfType<SetNode>()
             .SelectMany(node => node.Conditions).Single();
 
-        string fileId = editor.Project.Files.Single(file => file.Name == "ch01").Id;
-        DialogueNode node = editor.AddDialogueNode(fileId, 0, 0, "root");
+        DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
         string lineId = node.Script.ActiveLines.First().Id;
 
         editor.SetLineTransition(

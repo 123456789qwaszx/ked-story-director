@@ -66,11 +66,6 @@ public enum ChapterDiagnosticCode
     OptionEdgeMismatch,
     ExitIntoLandingCard,
 
-    /// <summary>
-    /// `대사엔트리`가 가리키는 대사노드가 <b>그 챕터의 판에 없다</b>.
-    /// 이대로 내보내면 진행 JSON이 존재하지 않는 yarn 노드를 부른다.
-    /// </summary>
-    DialogueEntryNodeMissing,
 
     /// <summary>
     /// 진행 코어가 이 챕터를 <b>싣지 못한다</b>. 검증은 통과했지만 산출물을

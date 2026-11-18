@@ -117,26 +117,6 @@ public sealed class ChapterDialogueEntryTests
     }
 
     [Fact]
-    public void 제_판이_없으면_남의_판의_카드로_때우지_않는다()
-    {
-        // 판이 아직 없는 챕터 — 다른 챕터에 같은 Id의 카드가 있어도 그것은 남의 것이다.
-        // 검증이 "판에 대사 노드가 없다"로 막아야지, 남의 카드를 부르는 JSON이 나가면 안 된다.
-        ChapterGraphModel chapter = BuildChapter();
-
-        var project = new StoryProject();
-        var other = new StoryFile(name: "다른챕터");
-        other.Nodes.Add(new DialogueNode(name: "남의_카드") { MarkedEpisodeId = "시작" });
-        project.Files.Add(other);
-
-        ChapterValidationResult validation =
-            ChapterValidator.Validate(chapter, project);
-
-        Assert.Contains(
-            validation.All,
-            item => item.Code == ChapterDiagnosticCode.DialogueEntryNodeMissing);
-    }
-
-    [Fact]
     public void 판을_못_보면_대사엔트리_글자로_되돌아간다()
     {
         // 챕터 모델만으로 부르는 자리(CLI·테스트)가 그대로 살아 있어야 한다.

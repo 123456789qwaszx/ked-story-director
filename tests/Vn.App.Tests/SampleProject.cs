@@ -9,7 +9,7 @@ namespace Vn.App.Tests;
 ///
 /// 엑셀 연동이 있던 시절 화면 테스트는 엑셀 견본을 <c>chapters/</c>에 복사하고 세션이 그것을 자동으로
 /// 들여오기를 기다렸다. 이제 챕터는 프로젝트에 산다 — 견본(<see cref="SampleChapters"/>)을 매니페스트에
-/// 실어 저장하면, 세션이 열 때 판과 카드를 맞춘다(<c>ProjectEditor.AlignBoardsWithChapters</c>).
+/// 싣고 판과 카드를 세워(<see cref="SampleChapters.StandCards"/>) 저장한다.
 /// </summary>
 internal static class SampleProject
 {
@@ -34,6 +34,7 @@ internal static class SampleProject
             project.Chapters.Add(SampleChapters.Load(sample, chapterId));
         }
 
+        SampleChapters.StandCards(project);
         configure?.Invoke(project);
 
         string manifest = Path.Combine(directory, ManifestName + ProjectManifestJson.FileExtension);

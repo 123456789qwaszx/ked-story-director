@@ -103,7 +103,7 @@ public sealed class ChapterGraphEditingTests
         using var project = new TempProject();
         (ChapterGraphView _, AuthoringSession session) = Show(project);
 
-        // 판과 카드는 프로젝트를 열 때 이미 섰다(AlignBoardsWithChapters) — 여기서 또 만들면
+        // 판과 카드는 이미 섰다(견본을 세울 때 함께 — SampleChapters.StandCards) — 여기서 또 만들면
         // 같은 이름이 둘이 되어 실물이 아니라 사본을 재게 된다.
         DialogueNode ghost = session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => node.MarkedEpisodeId == "branch05.02A");

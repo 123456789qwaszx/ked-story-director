@@ -547,8 +547,8 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// EpisodeId 개명. <b>간선의 출발·도착과 픽스처 고정 선택이 함께 따라간다</b> — 신원이
-    /// 바뀌었는데 참조가 남으면 유령 간선이 된다.
+    /// EpisodeId 개명. <b>간선의 출발·도착과 픽스처 고정 선택, 카드의 표식이 함께 따라간다</b> — 신원이
+    /// 바뀌었는데 참조가 남으면 유령 간선이 되고, 표식이 남으면 에피소드를 잃은 카드가 된다(저장 검증이 받지 않는다 · old-shapes O4).
     /// </summary>
     public void RenameEpisode(string chapterId, string oldId, string newId)
     {
@@ -560,8 +560,15 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"EpisodeId '{newId}'가 이미 있습니다.");
         }
 
+        DialogueNode? card = EpisodeNaming.CardFor(Project, chapterId, oldId);
+
         Mutate(() =>
         {
+            if (card is not null)
+            {
+                card.MarkedEpisodeId = newId;
+            }
+
             ChapterEpisode episode = chapter.Episodes[index];
             string oldSceneId = episode.EffectiveSceneId;
 
@@ -584,7 +591,8 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 에피소드 삭제 — 그 에피소드를 끝점으로 하는 간선과 픽스처 고정 선택도 함께 걷는다.
+    /// 에피소드 삭제 — 그 에피소드를 끝점으로 하는 간선과 픽스처 고정 선택, 그리고 <b>그 카드</b>(제 대본째)를 한 칸에 함께 걷는다. 에피소드와
+    /// 카드는 한 칸에 서고 함께 지워진다(2026-11-18 · old-shapes O4 — ⛔ 그 전에는 행만 걷고 카드는 부르는 쪽이 따로 걷었다).
     ///
     /// <b>선택지 사전은 건드리지 않는다</b>(v9). 챕터 전체의 어휘라, 에피소드 하나가
     /// 사라졌다고 낱말을 지우면 다른 에피소드의 드롭다운에서도 사라진다.
@@ -593,6 +601,7 @@ public sealed partial class ProjectEditor
     {
         ChapterDocument chapter = RequireChapter(chapterId);
         int index = RequireEpisodeIndex(chapter, episodeId);
+        DialogueNode? card = EpisodeNaming.CardFor(Project, chapterId, episodeId);
 
         Mutate(() =>
         {
@@ -603,6 +612,11 @@ public sealed partial class ProjectEditor
                 string.Equals(edge.ToEpisodeId, episodeId, StringComparison.Ordinal));
 
             Retarget(chapter, episodeId, null);
+
+            if (card is not null && Project.FindFileContainingNode(card.Id) is { } board)
+            {
+                RemoveNodeCore(board, card);
+            }
         });
     }
 
@@ -863,64 +877,6 @@ public sealed partial class ProjectEditor
                 this, board.Id, chapter.ToGraphModel(string.Empty));
         }
     }
-
-    /// <summary>
-    /// <b>판을 챕터에 맞춘다</b> — 프로젝트를 열 때 한 번.
-    ///
-    /// <list type="number">
-    /// <item><b>에피소드마다 카드가 선다.</b> 대본이 아직 없는 에피소드에도 빈 카드가 선다 —
-    ///   빈 노드라도 서 있어야 여기에 쓰면 된다는 것이 보인다. 대사는 카드
-    ///   안에 직접 쓰므로, 카드가 없는 에피소드는 <b>글을 쓸 자리가 없는</b> 에피소드다.</item>
-    /// <item><b>판이 있는 챕터는 조건을 공급받는다</b>(<see cref="SupplyChapterConditions"/>).</item>
-    /// </list>
-    ///
-    /// 툴 안에서 만든 에피소드는 늘 카드와 함께 서므로(<see cref="AddEpisode"/>) 정상적인 프로젝트에서는
-    /// 할 일이 없다. 어긋남은 밖에서 들여온 옛 프로젝트에서 온다.
-    ///
-    /// 한 번의 변경이다 — 세션이 아닌 곳에서 불러도 되돌리기 한 번에 돌아간다.
-    /// </summary>
-    public BoardAlignment AlignBoardsWithChapters()
-    {
-        var cards = new List<string>();
-
-        Batch(() =>
-        {
-            foreach (ChapterDocument chapter in Project.Chapters.ToList())
-            {
-                string chapterId = chapter.ChapterId;
-
-                // 흐름 순서로 세운다 — 부모 카드가 먼저 서야 자식이 그 아래에 선다(NodePlacement).
-                // 깊이가 없는(닿지 않는) 에피소드는 맨 뒤다.
-                IReadOnlyDictionary<string, int> depths = ChapterBranchPlanner.Depths(chapter.ToGraphModel(chapterId));
-
-                List<ChapterEpisode> missing = chapter.Episodes
-                    .Where(episode => EpisodeNaming.CardFor(Project, chapterId, episode.EpisodeId) is null)
-                    .OrderBy(episode => depths.TryGetValue(episode.EpisodeId, out int depth) ? depth : int.MaxValue)
-                    .ToList();
-
-                if (missing.Count > 0)
-                {
-                    string fileId = EnsureChapterBoard(chapterId);
-
-                    foreach (ChapterEpisode episode in missing)
-                    {
-                        // 새 카드는 부모 카드의 아래에 선다 — 원점에 쌓이면 판을 열었을 때 카드가 한 곳에 겹친다.
-                        (double x, double y) = Graph.NodePlacement.For(Project, chapterId, episode.EpisodeId);
-                        AddDialogueNode(fileId, x, y, EpisodeNaming.NodeNameOf(episode));
-                        cards.Add($"{chapterId}/{episode.EpisodeId}");
-                    }
-                }
-
-                if (EpisodeNaming.BoardOf(Project, chapterId) is not null)
-                {
-                    SupplyChapterConditions(chapterId);
-                }
-            }
-        });
-
-        return new BoardAlignment(cards);
-    }
-
 
     /// <summary>
     /// <b>스탯 개명이 참조를 끌고 간다</b>.
@@ -1889,13 +1845,3 @@ public sealed record ChapterConditionRenameOutcome(bool Applied, int Edges, stri
 /// <param name="SupplyRenamed">조건 공급 노드의 이름이 따라갔는가.</param>
 public sealed record ChapterRenameEffect(bool BoardRenamed, bool SupplyRenamed);
 
-
-/// <summary>
-/// 판 맞추기 한 판의 결과. ⛔ 옛 자유 씬을 에피소드로 올리던 일(`LiftFreeScenes`)은 2026-11-17에 걷었다 — 옛 프로젝트는 고려하지 않는다(소유자).
-/// </summary>
-/// <param name="CardsStood">카드가 없어서 빈 카드를 세운 에피소드 — <c>챕터/에피소드</c> 꼴.</param>
-public sealed record BoardAlignment(IReadOnlyList<string> CardsStood)
-{
-    /// <summary>무언가 맞췄는가.</summary>
-    public bool Changed => CardsStood.Count > 0;
-}

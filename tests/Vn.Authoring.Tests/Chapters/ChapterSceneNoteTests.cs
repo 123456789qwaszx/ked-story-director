@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Tests.Fixtures;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -47,6 +48,7 @@ public sealed class ChapterSceneNoteTests : IDisposable
     {
         var project = new StoryProject { Title = "장면 메모" };
         project.Chapters.Add(chapter);
+        SampleChapters.StandCards(project);   // 에피소드마다 카드가 선다(저장 검증이 지킨다)
         ProjectStore.Save(ManifestPath, project);
         return File.ReadAllText(ManifestPath);
     }
@@ -102,7 +104,8 @@ public sealed class ChapterSceneNoteTests : IDisposable
         string first = Save(Chapter(new ChapterSceneNote("교실", "가"), new ChapterSceneNote("복도", "나")));
         string second = Save(Chapter(new ChapterSceneNote("복도", "나"), new ChapterSceneNote("교실", "가")));
 
-        Assert.Equal(first, second);
+        // 챕터 칸을 견준다 — 판 · 카드의 Id는 시험이 세울 때마다 새로 난다.
+        Assert.Equal(JsonNode.Parse(first)!["chapters"]!.ToJsonString(), JsonNode.Parse(second)!["chapters"]!.ToJsonString());
     }
 
     [Fact]

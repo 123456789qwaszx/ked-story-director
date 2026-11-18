@@ -198,13 +198,11 @@ public partial class DialogueNodeEditor : UserControl
 
             // 에피소드 카드의 이름 칸은 보이는 제목이다(비면 EpisodeId가 보인다). EpisodeId는 [구성] 탭에서 정한다.
             NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, node);
-            NameBox.PlaceholderText = _chapterEpisode ? "제목 (비우면 에피소드ID)" : node.IsBranchCard ? "제목 (비우면 분기 카드 ID)" : "장면 이름";
+            NameBox.PlaceholderText = _chapterEpisode ? "제목 (비우면 에피소드ID)" : "제목 (비우면 분기 카드 ID)";
             ToolTip.SetTip(NameBox, _chapterEpisode
                 ? $"게임에 보이는 제목입니다. 고치고 Enter. 비우면 에피소드ID({EpisodeNaming.EpisodeIdOf(node)})가 보입니다. " +
                   "에피소드ID는 [구성] 탭에서 정합니다."
-                : node.IsBranchCard
-                    ? $"분기 카드의 제목입니다. 고치고 Enter. 비우면 분기 카드 ID({node.Name})가 보입니다. ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다."
-                    : null);
+                : $"분기 카드의 제목입니다. 고치고 Enter. 비우면 분기 카드 ID({node.Name})가 보입니다. ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.");
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
             HideEmptyChoicesBox.IsVisible = _chapterEpisode;
@@ -1514,13 +1512,7 @@ public partial class DialogueNodeEditor : UserControl
             return;
         }
 
-        // 에피소드가 아닌 카드(표식 없는 카드 — 옛 데이터)는 노드 이름을 고친다.
-        if (!_chapterEpisode)
-        {
-            _session.Editor.RenameNode(node.Id, NameBox.Text ?? string.Empty);
-            return;
-        }
-
+        // 에피소드 카드다(분기 카드는 위에서 돌아갔다 — 그 밖의 카드는 없다).
         ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, node);
 
         // 에피소드 카드 — 이름 칸은 보이는 제목이다. EpisodeId는 그대로 두고 제목만 고친다(비우면 EpisodeId가 보인다).

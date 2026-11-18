@@ -127,10 +127,45 @@ internal static class JsonSupport
             }
         }
 
+        ValidateEpisodeCards(project);
+
         if (project.StartNodeId is not null && project.FindNode(project.StartNodeId) is null)
         {
             throw new InvalidDataException(
                 $"시작 노드 '{project.StartNodeId}'를 프로젝트에서 찾을 수 없습니다.");
+        }
+    }
+
+    /// <summary>
+    /// 에피소드와 카드는 한 칸에 서고 함께 지워진다(2026-11-18 · old-shapes O4) — 그래서 에피소드마다 그 챕터의 판에 카드가 <b>하나</b>,
+    /// 에피소드 카드는 그 챕터의 에피소드를 표식(<see cref="DialogueNode.MarkedEpisodeId"/>)으로 가리키고, 분기 카드는 표식이 없다.
+    /// 그렇지 않은 프로젝트(옛 데이터 · 손으로 고친 파일)는 받지 않는다.
+    /// </summary>
+    private static void ValidateEpisodeCards(StoryProject project)
+    {
+        foreach (Chapters.ChapterDocument chapter in project.Chapters)
+        {
+            HashSet<string> episodes = chapter.Episodes.Select(episode => episode.EpisodeId).ToHashSet(StringComparer.Ordinal);
+            HashSet<string> marked = new(StringComparer.Ordinal);
+            StoryFile? board = project.Files.FirstOrDefault(file => string.Equals(file.Name, chapter.ChapterId, StringComparison.Ordinal));
+
+            foreach (DialogueNode card in board?.Nodes.OfType<DialogueNode>() ?? [])
+            {
+                bool fits = card.IsBranchCard
+                    ? card.MarkedEpisodeId is null
+                    : card.MarkedEpisodeId is { } mark && episodes.Contains(mark) && marked.Add(mark);
+
+                if (!fits)
+                {
+                    throw new InvalidDataException(
+                        $"판 '{chapter.ChapterId}'의 카드 '{card.Name}'이(가) 그 챕터의 에피소드 하나를 가리키지 않습니다(표식이 없거나 · 없는 에피소드거나 · 겹칩니다).");
+                }
+            }
+
+            if (episodes.FirstOrDefault(episode => !marked.Contains(episode)) is { } lonely)
+            {
+                throw new InvalidDataException($"챕터 '{chapter.ChapterId}'의 에피소드 '{lonely}'에 카드가 없습니다.");
+            }
         }
     }
 

@@ -108,11 +108,9 @@ public sealed class BranchMarkerTests
         var editor = new ProjectEditor(project);
 
         editor.EnsureChapter("ch01");
-        string fileId = editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0);   // 에피소드와 카드가 한 칸에 선다
 
-        DialogueNode node = editor.AddDialogueNode(fileId, 0, 0, "root");
-        node.MarkedEpisodeId = "root";
+        DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
 
         string lineId = node.Script.ActiveLines.First().Id;
 

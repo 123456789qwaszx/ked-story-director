@@ -59,10 +59,9 @@ public class StoryFileTests
         var editor = new ProjectEditor(project);
 
         DialogueNode source = editor.AddDialogueNode(first.Id, name: "출발");
-        source.MarkedEpisodeId = "ep_출발";
         DialogueNode target = editor.AddDialogueNode(second.Id, name: "도착");
 
-        editor.RemoveNode(target.Id);
+        global::Vn.Authoring.Chapters.EpisodeDeleter.Delete(editor, "B", "도착");   // 에피소드 카드는 에피소드와 함께 지운다
 
         Assert.Empty(second.Nodes);
         Assert.Single(first.Nodes, node => node.Id == source.Id);

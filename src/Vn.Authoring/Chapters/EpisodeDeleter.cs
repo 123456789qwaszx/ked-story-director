@@ -11,8 +11,8 @@ namespace Vn.Authoring.Chapters;
 /// <b>두 자리를 함께 본다.</b>
 ///
 /// <list type="number">
-///   <item>챕터의 에피소드 행과 그것을 쓰는 간선·픽스처 참조 (<see cref="ProjectEditor.RemoveEpisode"/>)</item>
-///   <item>판 위의 <b>카드</b> — 함께 걷는다</item>
+///   <item>챕터의 에피소드 행과 그것을 쓰는 간선·픽스처 참조</item>
+///   <item>판 위의 <b>카드</b> — 함께 걷는다(둘 다 <see cref="ProjectEditor.RemoveEpisode"/>의 한 칸)</item>
 /// </list>
 ///
 /// 글이 든 카드도 이름만 바꿔 남기지 않고 지운다 — 판 편집에는 Ctrl+Z가 있으므로,
@@ -57,43 +57,10 @@ public static class EpisodeDeleter
             return Result.Fail($"챕터 '{chapterId}'를 찾지 못했습니다.");
         }
 
-        string? cardRemoved = null;
-
-        // <b>되돌리기 한 칸이다</b>. ①과 ②가 따로 적히면 Ctrl+Z 한 번은 카드만 돌려놓고 챕터의 에피소드 행은
-        //   지운 채로 둔다 — 챕터에 없는 카드가 판에 섰다가 둘째 Ctrl+Z에야 제자리를 찾는다.
-        editor.Batch(() =>
-        {
-            // ① 행과 그것을 쓰는 것들.
-            editor.RemoveEpisode(chapterId, episodeId);
-
-            // ② 카드.
-            cardRemoved = TakeCard(editor, chapterId, episodeId);
-        });
+        // 행 · 그것을 쓰는 것들 · 카드가 편집기의 한 칸이다(되돌리기 한 번에 함께 돌아온다).
+        string? cardRemoved = EpisodeNaming.CardFor(editor.Project, chapterId, episodeId)?.Name;
+        editor.RemoveEpisode(chapterId, episodeId);
 
         return new Result(true, null, cardRemoved);
-    }
-
-    /// <summary>
-    /// 그 에피소드의 카드를 <b>거둔다</b>.
-    ///
-    /// 글이 든 카드도 지운다 — 판 편집은 Ctrl+Z로 되돌릴 수 있다.
-    ///
-    /// 카드의 대본도 함께 걷힌다(남겨 두면 주인 없는 대본이 프로젝트에 쌓인다). 되돌리기 한 번이면
-    /// 카드와 대본이 함께 돌아온다(스냅샷).
-    ///
-    /// <b>이 챕터의 판에서만</b> 찾는다. 프로젝트 전체를 이름으로 훑으면 다른 챕터에 같은
-    /// Id가 있을 때 남의 카드를 건드린다.
-    /// </summary>
-    private static string? TakeCard(ProjectEditor editor, string chapterId, string episodeId)
-    {
-        if (EpisodeNaming.CardFor(editor.Project, chapterId, episodeId) is not { } card)
-        {
-            return null;
-        }
-
-        string name = card.Name;
-        editor.RemoveNode(card.Id);
-
-        return name;
     }
 }

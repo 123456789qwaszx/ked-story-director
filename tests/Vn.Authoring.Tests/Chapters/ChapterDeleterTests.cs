@@ -104,14 +104,13 @@ public sealed class ChapterDeleterTests : IDisposable
     [Fact]
     public void 다시_열어도_지운_챕터가_되살아나지_않는다()
     {
-        // 판만 걷고 챕터를 두면 다음에 열 때 판 맞추기가 그 챕터의 판을 <b>다시 세운다</b>.
+        // 챕터와 판이 함께 걷혀 저장된다 — 다시 열어도 그 챕터는 없다.
         ProjectEditor editor = Build();
 
         ChapterDeleter.Delete(editor, ProjectPath, Doomed);
         ProjectStore.Save(ProjectPath, editor.Project);
 
         var reopened = new ProjectEditor(ProjectStore.Load(ProjectPath).Project);
-        reopened.AlignBoardsWithChapters();
 
         Assert.Equal([Kept], reopened.Project.Chapters.Select(chapter => chapter.ChapterId).ToArray());
         Assert.DoesNotContain(reopened.Project.Files, file =>

@@ -286,7 +286,7 @@ public sealed class ChapterEpisodeNodeTests
 
     /// <summary>
     /// 견본 챕터를 든 프로젝트를 열고, <c>main05.02</c>의 카드에 대사 두 줄을 채워 편집기에 띄운다.
-    /// 카드는 세션이 열 때 이미 서 있다(<c>ProjectEditor.AlignBoardsWithChapters</c>).
+    /// 카드는 이미 서 있다 — 견본을 세울 때 에피소드마다 함께 선다(<c>SampleChapters.StandCards</c>).
     /// </summary>
     private static (DialogueNodeEditor Editor, AuthoringSession Session, string NodeId) ShowEpisodeCard()
     {

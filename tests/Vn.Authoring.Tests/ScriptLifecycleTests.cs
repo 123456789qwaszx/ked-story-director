@@ -22,7 +22,7 @@ public sealed class ScriptLifecycleTests
         DialogueNode card = editor.AddDialogueNode(file.Id, name: "장면");
         string lineId = card.Script.ActiveLines.Single().Id;
 
-        editor.RemoveNode(card.Id);
+        Assert.True(EpisodeDeleter.Delete(editor, "ch01", "장면").Ok);
 
         Assert.Empty(editor.Project.EnumerateScripts());
 

@@ -75,15 +75,10 @@ public static class EpisodeRenamer
     private static bool RenameNode(
         ProjectEditor editor, string chapterId, string oldId, string newId)
     {
-        if (EpisodeNaming.CardFor(editor.Project, chapterId, oldId) is not { } node)
+        // 표식은 개명이 이미 옮겼다 — 새 Id로 찾는다.
+        if (EpisodeNaming.CardFor(editor.Project, chapterId, newId) is not { } node)
         {
             return false;
-        }
-
-        // 표식도 함께 간다 — 옛 Id로 남으면 연출 그래프가 챕터 밖 노드로 보고 레일을 끊는다.
-        if (node.MarkedEpisodeId is not null)
-        {
-            node.MarkedEpisodeId = newId;
         }
 
         editor.RenameNode(node.Id, newId);

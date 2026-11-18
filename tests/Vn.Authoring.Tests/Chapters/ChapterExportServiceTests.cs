@@ -292,97 +292,27 @@ public sealed class ChapterExportServiceTests : IDisposable
         Assert.True(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch01")));
     }
 
-    // ── ⑧ 저작 관문 — `대사엔트리`가 실재하는 대사노드를 가리키나 ─────────────
-
-    /// <summary>
-    /// ⛔ <b>2026-08-25에 계약이 뒤집혔다.</b> 예전에는 판이 없거나 비어 있으면 이 관문을
-    /// 통째로 건너뛰었다 — "아직 안 연 챕터를 잘못됐다고 하지 않는다"는 뜻이었다.
-    ///
-    /// 그 면제가 실제로 낸 사고: 그 챕터의 진행 JSON이 <b>그대로 나가고</b>, 유니티의
-    /// 사전 대조가 "부르는 노드가 하나도 없다"로 재생을 통째로 막았다. 저작에서는
-    /// 초록이고 게임에서만 죽는, 이 저장소가 가장 싫어하는 모양이다.
-    ///
-    /// <b>안 열었다는 것은 면제 사유가 못 된다</b> — 내보내는 순간에는 같은 사고다.
-    /// 판과 노드는 프로젝트 파일에 남으므로(세션 상태가 아니다) 한 번 연 챕터는 계속
-    /// 통과한다. 오탐 걱정이 향하던 자리는 그쪽이었다.
-    /// </summary>
-    [Fact]
-    public void 한_번도_안_연_챕터는_거부하고_무엇을_하면_되는지_말한다()
-    {
-        var editor = new ProjectEditor(new StoryProject());
-        var service = new ChapterExportService();
-
-        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound)], ProjectPath, editor.Project);
-
-        Assert.Equal(["ch01"], run.Refused);
-
-        ChapterDiagnostic problem = Assert.Single(
-            service.ValidationFor(Entry("ch01", Sound), editor.Project).All,
-            item => item.Code == ChapterDiagnosticCode.DialogueEntryNodeMissing);
-
-        Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);
-        Assert.Contains("하나도 없습니다", problem.Message);
-        Assert.Contains("다시 열면", problem.Message);   // 고치는 법까지 말한다
-    }
-
-    [Fact]
-    public void 판은_섰지만_카드가_아직_없어도_거부한다()
-    {
-        // 판만 서고 카드가 없는 상태(옛 프로젝트를 맞추기 전)에 내보내면
-        // 결과는 판이 아예 없을 때와 같다 — 부를 노드가 하나도 없다.
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
-        editor.EnsureChapterBoard("ch01");
-
-        ChapterExportRun run = new ChapterExportService()
-            .ExportAll([Entry("ch01", Sound)], ProjectPath, editor.Project);
-
-        Assert.Equal(["ch01"], run.Refused);
-    }
-
-    [Fact]
-    public void 판에_노드가_있는데_하나가_빠지면_거부한다()
-    {
-        // 노드가 하나라도 있으면 그 챕터는 한 번은 동기화됐다는 뜻이고, 그때부터 빠진
-        // 이름은 진짜 빠진 것이다 — 이대로 내보내면 진행 JSON이 없는 노드를 부르고
-        // 로드·검증·증명은 통과하는데 재생만 안 된다.
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
-        string fileId = editor.EnsureChapterBoard("ch01");
-        editor.AddDialogueNode(fileId, name: "ep1");     // ep2는 없다
-
-        var service = new ChapterExportService();
-        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound)], ProjectPath, editor.Project);
-
-        Assert.Equal(["ch01"], run.Refused);
-
-        ChapterDiagnostic problem = Assert.Single(
-            service.ValidationFor(Entry("ch01", Sound), editor.Project).All,
-            item => item.Code == ChapterDiagnosticCode.DialogueEntryNodeMissing);
-
-        Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);
-        Assert.Contains("ep2", problem.Message);
-        Assert.Contains("다시 열면", problem.Message);   // 고치는 법까지 말한다
-    }
 
     [Fact]
     public void 노드가_생기면_캐시가_깨져_다시_증명한다()
     {
-        // ⛔ 이것이 없으면 **"고쳤는데 계속 거부한다"**가 된다. 지문이 파일만 보면 동기화가
-        // 노드를 만들어도 캐시가 옛 결론을 그대로 준다 — 캐시가 만드는 가장 나쁜 거짓말이
+        // ⛔ 이것이 없으면 **"고쳤는데 계속 거부한다"**가 된다. 지문이 파일만 보면 카드를
+        // 고쳐도 캐시가 옛 결론을 그대로 준다 — 캐시가 만드는 가장 나쁜 거짓말이
         // 여기서 한 번 더 나올 자리다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string fileId = editor.EnsureChapterBoard("ch01");
         editor.AddDialogueNode(fileId, name: "ep1");
+        DialogueNode second = editor.AddDialogueNode(fileId, name: "ep2");
+        editor.RetireScriptLine(second.Id, second.Script.ActiveLines.Single().Id);   // 줄 없는 카드 — 빈 에피소드라 거부한다
 
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
         Assert.Contains("ch01", service.ExportAll([entry], ProjectPath, editor.Project).Refused);
 
-        // 동기화가 빠진 노드를 만든다 — 디스크는 한 글자도 안 바뀌었다.
-        editor.AddDialogueNode(fileId, name: "ep2");
+        // 카드에 줄을 다시 넣는다 — 디스크는 한 글자도 안 바뀌었다.
+        editor.InsertScriptLine(second.Id);
 
         ChapterExportRun after = service.ExportAll([entry], ProjectPath, editor.Project);
 

@@ -1,5 +1,9 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Editing;
+using Vn.Authoring.Graph;
+using Vn.Authoring.Model;
+using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 
 namespace Vn.Authoring.Tests.Fixtures;
@@ -38,6 +42,55 @@ internal static class SampleChapters
         }
 
         return document;
+    }
+
+    /// <summary>
+    /// 견본 챕터에 <b>판과 카드</b>를 세운다. 툴은 에피소드와 카드를 한 칸에 세우는데(저장 검증이 지킨다) 견본 파일은 챕터만 든다 — 열 때
+    /// 카드를 맞추던 길은 걷혔으므로(2026-11-18 · old-shapes O4) 시험이 대신 세운다. 에피소드마다 표식 카드 하나(빈 줄 하나, 판 자리는
+    /// <see cref="NodePlacement"/> — 흐름 차례로 세워 부모 아래에 선다), 그리고 판마다 챕터 조건 공급.
+    /// </summary>
+    public static void StandCards(StoryProject project)
+    {
+        foreach (ChapterDocument chapter in project.Chapters.Where(chapter => chapter.Episodes.Count > 0))
+        {
+            StoryFile board = EpisodeNaming.BoardOf(project, chapter.ChapterId) ?? AddBoard(project, chapter.ChapterId);
+            IReadOnlyDictionary<string, int> depths = ChapterBranchPlanner.Depths(chapter.ToGraphModel(chapter.ChapterId));
+
+            foreach (ChapterEpisode episode in chapter.Episodes
+                         .Where(episode => EpisodeNaming.CardFor(project, chapter.ChapterId, episode.EpisodeId) is null)
+                         .OrderBy(episode => depths.TryGetValue(episode.EpisodeId, out int depth) ? depth : int.MaxValue)
+                         .ToList())
+            {
+                (double x, double y) = NodePlacement.For(project, chapter.ChapterId, episode.EpisodeId);
+                var card = new DialogueNode(name: string.IsNullOrEmpty(episode.DialogueEntry) ? episode.EpisodeId : episode.DialogueEntry)
+                {
+                    MarkedEpisodeId = episode.EpisodeId,
+                    Layout = new NodeLayout { X = x, Y = y }
+                };
+                var line = new ScriptLine(Identifier.Line());
+                card.Script.Lines.Add(line);
+                card.Script.RequireLocale(card.Script.PrimaryLocale).Entries[line.Id] = LocalizedLine.Empty;
+                board.Nodes.Add(card);
+                project.StartNodeId ??= card.Id;
+            }
+        }
+
+        var editor = new ProjectEditor(project);
+
+        foreach (ChapterDocument chapter in project.Chapters)
+        {
+            if (EpisodeNaming.BoardOf(project, chapter.ChapterId) is { } board)
+            {
+                ChapterBoardSupply.SupplyChapterConditionsToBoard(editor, board.Id, chapter.ToGraphModel(string.Empty));
+            }
+        }
+    }
+
+    private static StoryFile AddBoard(StoryProject project, string chapterId)
+    {
+        var board = new StoryFile(name: chapterId);
+        project.Files.Add(board);
+        return board;
     }
 
     /// <summary>견본의 그래프 모델 — 검증·증명·내보내기가 읽는 모양.</summary>
