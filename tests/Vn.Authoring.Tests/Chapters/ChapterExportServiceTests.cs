@@ -183,6 +183,25 @@ public sealed class ChapterExportServiceTests : IDisposable
     }
 
     [Fact]
+    public void 빈_챕터는_막힌_것이_아니라_낼_것이_없을_뿐이다()
+    {
+        // 2026-11-18 소유자 — 「빈 챕터를 띄운경우에는 보고할 것 없이 검증 오류만」. 진행 코어는 시작 에피소드가 빈 챕터를 거부하지만, 에피소드가
+        // 하나도 없는 챕터는 막힌 것이 아니다 — 결론을 세우지 않고, 옛 파일은 막혔을 때처럼 손대지 않는다.
+        string path = ChapterExportService.ExportPathFor(ProjectPath, "ch02");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "{ \"옛\": \"판\" }");
+
+        ChapterExportRun run = new ChapterExportService().ExportAll(
+            [Entry("ch01", Sound), Entry("ch02", id => new ChapterGraphModel(id, string.Empty, [], [], [], [], [], []))],
+            ProjectPath);
+
+        Assert.True(run.AllExported, run.Notice);
+        Assert.Null(run.Notice);
+        Assert.Equal([ChapterExportService.ExportPathFor(ProjectPath, "ch01")], run.Written);
+        Assert.Equal("{ \"옛\": \"판\" }", File.ReadAllText(path));
+    }
+
+    [Fact]
     public void 못_나간_것만_말한다()
     {
         var service = new ChapterExportService();

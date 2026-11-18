@@ -4532,7 +4532,10 @@ public partial class ChapterGraphView : UserControl
         {
             DiagnosticsPanel.Children.Add(new TextBlock
             {
-                Text = "보고할 것이 없습니다.",
+                // 빈 챕터는 낼 것이 없을 뿐이다 — 막힌 것이 아니라고 말한다(2026-11-18).
+                Text = model.Episodes.Count == 0
+                    ? "에피소드가 아직 없습니다 — 첫 에피소드를 세우면 진행 JSON이 저절로 나갑니다."
+                    : "보고할 것이 없습니다.",
                 FontSize = 11,
                 Opacity = 0.55
             });

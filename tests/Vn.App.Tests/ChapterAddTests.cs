@@ -52,6 +52,13 @@ public sealed class ChapterAddTests : IDisposable
         Assert.Equal(new HierarchyPick(HierarchyKind.Chapter, "ch03"), graph.HierarchyView.Selection);
         Assert.Equal(NewNames.Chapter, graph.FindControl<TextBlock>("InspectorTitle")!.Text);
 
+        // 빈 챕터는 막힌 것이 아니다 — 「진행 JSON 미출력」이 서지 않고, 그 챕터의 보고는 에피소드가 아직 없다고 말한다(2026-11-18 소유자).
+        Expander report = chapterGraph.FindControl<Expander>("DiagnosticsExpander")!;
+        Assert.DoesNotContain("미출력", (string)report.Header!, StringComparison.Ordinal);
+        Assert.Contains(
+            chapterGraph.FindControl<StackPanel>("DiagnosticsPanel")!.Children.OfType<TextBlock>(),
+            line => line.Text!.StartsWith("에피소드가 아직 없습니다", StringComparison.Ordinal));
+
         window.Close();
     });
 }
