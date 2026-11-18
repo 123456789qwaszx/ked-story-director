@@ -51,7 +51,7 @@ public static class ChapterSpeakerKeys
         var found = new Dictionary<string, (int Lines, string FirstPlace)>(StringComparer.Ordinal);
         var order = new List<string>();
 
-        foreach ((DialogueNode node, string place) in PlacesOf(chapter, project))
+        foreach ((DialogueNode node, string place) in ChapterScripts.PlacesOf(chapter, project))
         {
             foreach (Vn.Authoring.Script.ScriptLine line in node.Script.ActiveLines)
             {
@@ -77,25 +77,5 @@ public static class ChapterSpeakerKeys
         return order
             .Select(speaker => new Missing(speaker, project.FindSpeaker(speaker) is not null, found[speaker].Lines, found[speaker].FirstPlace))
             .ToList();
-    }
-
-    /// <summary>그 챕터의 대사가 사는 곳 — 에피소드의 대사 노드(에피소드 차례)와 판의 분기 카드. (노드, 사람이 읽는 이름)</summary>
-    private static IEnumerable<(DialogueNode Node, string Place)> PlacesOf(ChapterGraphModel chapter, StoryProject project)
-    {
-        ChapterBoard board = ChapterBoard.For(project, chapter.ChapterId);
-
-        foreach (ChapterEpisode episode in chapter.Episodes)
-        {
-            if (board.EpisodeNodeFor(episode) is { } node)
-            {
-                yield return (node, $"에피소드 「{episode.ShownTitle}」");
-            }
-        }
-
-        foreach (DialogueNode card in EpisodeNaming.BoardOf(project, chapter.ChapterId)?.Nodes.OfType<DialogueNode>()
-                     .Where(node => node.IsBranchCard) ?? [])
-        {
-            yield return (card, $"분기 카드 {EpisodeNaming.BranchLabelOf(card)}");
-        }
     }
 }

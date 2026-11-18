@@ -596,6 +596,7 @@ public partial class MainWindow
     private void FillDirectorSummary(HierarchyPick pick)
     {
         DirectorSummary.Children.Clear();
+        _textAmount = null;
         ChapterEntry? chapter = _chapters.FirstOrDefault(entry =>
             string.Equals(entry.ChapterId, pick.ChapterId, StringComparison.Ordinal));
 
@@ -614,6 +615,7 @@ public partial class MainWindow
                 // 머리는 이름 글이다 — 이름 칸은 「조건 및 스탯」 탭 맨 위 한 자리다(2026-11-18 소유자 — 「챕터 이름을 바꾸는 기능도 같이 합치고요」 ·
                 // chapter-pick Y1, ⛔ 그 전에는 이 머리가 이름 칸이었다 — M3). 챕터를 고르면 그 탭이 열린다 — 이 보기는 탭을 손으로 열었을 때다.
                 Graph.SetInspectorHeader(chapter.Model.ShownName, string.Empty);
+                ChapterTextAmount(chapter);
                 Guide("이 챕터의 이름 · 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.");
                 OrphanSceneNotes(chapter.ChapterId);
 
@@ -648,7 +650,54 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>요약 칸의 작은 제목 — 챕터 요약의 「스탯」 · 「장면」.</summary>
+    /// <summary>
+    /// 챕터 요약의 <b>쓴 글</b> — 그 챕터의 에피소드 · 분기 카드에 쓴 글자 수(공백 포함 · 공백 제외)와 줄 수(2026-11-18 소유자 — 「현재까지 챕터에
+    /// 작성해둔 글자 수를 표기해주면 작가들이 좋아할 것입니다. 자기의 작업량을 알 수 있으니까요」 · writer-comfort WC7). 세는 규칙은
+    /// <see cref="ChapterScripts.Count"/> 한 벌이다. 요약이 설 때 세고, 서 있는 동안 프로젝트가 바뀌면(되돌리기 따위) 다시 센다
+    /// (<see cref="RefreshChapterTextAmount"/>).
+    /// </summary>
+    private void ChapterTextAmount(ChapterEntry chapter)
+    {
+        Heading("쓴 글");
+        var total = new TextBlock
+        {
+            FontSize = 20,
+            FontWeight = FontWeight.SemiBold,
+            Tag = "chapter-characters"
+        };
+        ToolTip.SetTip(total, "이 챕터의 에피소드 · 분기 카드에 쓴 대사 · 지문의 글자 수입니다(공백 포함). 화자 이름은 세지 않습니다.");
+        var detail = new TextBlock
+        {
+            FontSize = 11,
+            Opacity = 0.7,
+            Margin = new Thickness(0, 0, 0, 6),
+            Tag = "chapter-characters-detail"
+        };
+        _sheet.Children.Add(total);
+        _sheet.Children.Add(detail);
+        _textAmount = (chapter.ChapterId, total, detail);
+        RefreshChapterTextAmount();
+    }
+
+    /// <summary>서 있는 「쓴 글」 — (챕터, 글자 수, 공백 제외 · 줄). 챕터 요약이 아니면 null.</summary>
+    private (string ChapterId, TextBlock Total, TextBlock Detail)? _textAmount;
+
+    /// <summary>챕터 요약이 서 있으면 「쓴 글」을 다시 센다 — 그 칸만 고친다(요약을 다시 세우지 않는다).</summary>
+    private void RefreshChapterTextAmount()
+    {
+        if (_textAmount is not { } shown || !DirectorSummary.IsVisible ||   // 카드를 고른 동안은 요약이 숨는다 — 셀 것이 없다
+            _session.Editor.FindChapter(shown.ChapterId) is not { } document)
+        {
+            return;
+        }
+
+        ChapterTextCount count = ChapterScripts.Count(document.ToGraphModel(shown.ChapterId), _session.Project);
+        System.Globalization.CultureInfo number = System.Globalization.CultureInfo.InvariantCulture;
+        shown.Total.Text = count.Characters.ToString("N0", number) + "자";
+        shown.Detail.Text = $"공백 제외 {count.CharactersWithoutSpaces.ToString("N0", number)}자 · {count.Lines.ToString("N0", number)}줄";
+    }
+
+    /// <summary>요약 칸의 작은 제목 — 챕터 요약의 「쓴 글」 · 「스탯」 · 「장면」.</summary>
     private void Heading(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,

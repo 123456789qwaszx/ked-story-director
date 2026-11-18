@@ -315,6 +315,10 @@ public partial class MainWindow : Window
                 RebuildInspector();
                 FillSideTabs();
             }
+            else
+            {
+                RefreshChapterTextAmount();   // 챕터 요약이 서 있으면 「쓴 글」을 다시 센다(writer-comfort WC7)
+            }
 
             RefreshShell();
         }
