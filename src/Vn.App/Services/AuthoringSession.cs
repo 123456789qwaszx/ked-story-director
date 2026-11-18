@@ -100,7 +100,7 @@ internal sealed class AuthoringSession
 
     public StoryNode? SelectedNode => Project.FindNode(SelectedNodeId);
 
-    public string StatusMessage { get; private set; } = "새 프로젝트입니다. [대본] 탭의 [＋ 에피소드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
+    public string StatusMessage { get; private set; } = "새 프로젝트입니다. 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
@@ -186,7 +186,7 @@ internal sealed class AuthoringSession
         Destinations = ExportDestinations.None;
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
-        StatusMessage = "새 프로젝트입니다. [대본] 탭의 [＋ 에피소드]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
+        StatusMessage = "새 프로젝트입니다. 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
         ResetFileGraphState(project);
         Editor.Replace(project);

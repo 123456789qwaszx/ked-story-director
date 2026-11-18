@@ -10,12 +10,13 @@ public class AuthoringSessionTests : IDisposable
     [Fact]
     public void 새_프로젝트는_판_없이_시작한다()
     {
-        // 2026-11-17 소유자 — 낙서판(「기본 파일」)을 걷었다. 판은 챕터가 세운다 — 첫 [＋ 에피소드]가 챕터 · 장면과 함께 세운다.
+        // 2026-11-17 소유자 — 낙서판(「기본 파일」)을 걷었다. 판은 챕터가 세운다 — 판 한가운데의 [＋ 첫 챕터 만들기]가 챕터 · 장면과 함께 세운다
+        // (2026-11-18 · first-chapter F3 — ⛔ 그 전에는 상태줄이 챕터 없이는 꺼져 있는 [＋ 에피소드]를 가리켰다).
         var session = new AuthoringSession();
 
         Assert.Empty(session.Project.Files);
         Assert.Null(session.ActiveFile);
-        Assert.Contains("[＋ 에피소드]", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("[＋ 첫 챕터 만들기]", session.StatusMessage, StringComparison.Ordinal);
     }
 
     [Fact]
