@@ -566,8 +566,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        string folder = Path.Combine(
-            Path.GetDirectoryName(projectPath)!, ChapterExportService.ExportFolderName);
+        string folder = WorkFolder.Of(projectPath);
 
         if (!Directory.Exists(folder))
         {
@@ -577,8 +576,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        System.Diagnostics.Process.Start(
-            new System.Diagnostics.ProcessStartInfo(folder) { UseShellExecute = true });
+        WorkFolder.Open(folder);
     }
 
     // ── 화면 ────────────────────────────────────────────────────────────────

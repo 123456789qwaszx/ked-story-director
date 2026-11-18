@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Vn.App.Services;
+using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
@@ -199,6 +200,51 @@ internal sealed class SettingsWindow : Window
 
     private readonly Dictionary<ExportFormat, TextBlock> _destinationTexts = [];
 
+    private readonly Dictionary<ExportFormat, HyperlinkButton> _formatLinks = [];
+
+    /// <summary>형식 이름의 고리 — 누르면 작업 폴더에서 그 파일을 보인다.</summary>
+    internal HyperlinkButton FormatLink(ExportFormat format) => _formatLinks[format];
+
+    /// <summary>작업 폴더에서 보이기 — 시험이 바꿔 끼워 무엇을 보였는지 잰다(탐색기를 띄우지 않고).</summary>
+    internal Action<string> Reveal { get; set; } = WorkFolder.Reveal;
+
+    /// <summary>
+    /// 그 형식의 파일을 작업 폴더에서 보인다 — 진행 JSON · 장면 파일은 지금 챕터의 파일을 고른 채, 대사 Yarn은 <c>yarn/</c> 폴더를 연다
+    /// (<see cref="WorkFolder.TargetOf"/>). 아직 나간 것이 없으면 그렇다고 말한다.
+    /// </summary>
+    internal void ShowInWorkFolder(ExportFormat format)
+    {
+        string? target = _session.ProjectPath is { } projectPath
+            ? WorkFolder.TargetOf(projectPath, format, _session.ActiveFile?.Name)
+            : null;
+
+        if (target is null)
+        {
+            ExportNote.Text = _session.ProjectPath is null
+                ? "프로젝트를 먼저 저장해야 작업 폴더가 정해집니다."
+                : $"아직 작업 폴더에 나간 {ExportDestinations.LabelOf(format)}이(가) 없습니다 — 검증을 통과한 챕터가 생기면 저절로 나갑니다.";
+            ExportNote.IsVisible = true;
+            return;
+        }
+
+        ExportNote.IsVisible = false;
+        Reveal(target);
+    }
+
+    /// <summary>형식마다 무엇인가 — 형식 이름의 툴팁.</summary>
+    private static string WhatIs(ExportFormat format) => format switch
+    {
+        ExportFormat.Progression =>
+            $"챕터마다 하나 — 에피소드 · 선택지 · 조건이 든 게임 진행 파일({{챕터}}{ChapterExportService.ExportFileSuffix}). 게임(런타임)이 싣습니다. " +
+            "보낼 곳은 게임의 ChapterProgression 폴더입니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.",
+        ExportFormat.Scenes =>
+            $"챕터마다 하나 — 장면마다 대사 · 장면 메모 · 에피소드 지시를 모은 저작 자료({{챕터}}{ChapterScenesExporter.FileSuffix}). 연출을 붙이는 쪽이 " +
+            "읽습니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.",
+        _ =>
+            $"장면마다 하나 — 연출 없이 대사 · 조건 · 분기만 든 Yarn({ChapterYarnExporter.FolderName}/{{챕터}}_{{장면}}.yarn). 대사만으로 굴러가는지 볼 때 " +
+            $"씁니다. 누르면 작업 폴더의 {ChapterYarnExporter.FolderName}/ 폴더를 엽니다."
+    };
+
     private Control ExportSection()
     {
         var panel = new StackPanel { Spacing = 6 };
@@ -227,12 +273,19 @@ internal sealed class SettingsWindow : Window
         {
             grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
 
-            var label = new TextBlock
+            // 형식 이름은 고리다 — 누르면 작업 폴더에서 그 형식의 파일을 보인다(2026-11-18 소유자 — 「뭐가 뭔지 모르겠으니 … 클릭하면 작업 폴더가
+            // 열리면서 해당하는 파일이 선택되거나 열리도록」). 무엇인지는 툴팁이 말한다.
+            var label = new HyperlinkButton
             {
-                Text = format == ExportFormat.Progression ? "진행 JSON → 게임 폴더" : ExportDestinations.LabelOf(format),
+                Content = ExportDestinations.LabelOf(format),
                 FontSize = 12,
-                VerticalAlignment = VerticalAlignment.Center
+                Padding = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = $"export-show:{format}"
             };
+            ToolTip.SetTip(label, WhatIs(format));
+            label.Click += (_, _) => UiGuard.Run(_session, "작업 폴더에서 보기", () => ShowInWorkFolder(format));
+            _formatLinks[format] = label;
             var text = new TextBlock
             {
                 FontSize = 11,

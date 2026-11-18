@@ -219,6 +219,42 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     [Fact]
+    public void 형식_이름을_누르면_작업_폴더에서_그_파일을_보인다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「진행 JSON, 장면 파일, 대사 Yarn은 솔직히 뭐가 뭔지 모르겠으니, 저기서 각각을 클릭하면 작업 폴더가 열리면서
+        // 해당하는 파일이 선택되거나 열리도록」. 탐색기는 띄우지 않고 무엇을 보였는지 잰다.
+        (MainWindow window, AuthoringSession session) = Open();
+        SettingsWindow settings = window.OpenSettings();
+        var shown = new List<string>();
+        settings.Reveal = shown.Add;
+        string work = Path.Combine(_directory, ChapterExportService.ExportFolderName);
+
+        foreach (ExportFormat format in ExportDestinations.Formats)
+        {
+            Assert.Equal(ExportDestinations.LabelOf(format), settings.FormatLink(format).Content);
+            Assert.NotNull(ToolTip.GetTip(settings.FormatLink(format)));   // 무엇인지 말한다
+            settings.FormatLink(format).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        }
+
+        Assert.Equal(
+            [
+                Path.Combine(work, "ch01" + ChapterExportService.ExportFileSuffix),   // 지금 챕터의 진행 JSON — 고른 채 연다
+                Path.Combine(work, "ch01" + ChapterScenesExporter.FileSuffix),        // 지금 챕터의 장면 파일
+                ChapterYarnExporter.FolderFor(session.ProjectPath!)                     // 대사 Yarn은 yarn/ 폴더째
+            ],
+            shown);
+
+        // 아직 나간 것이 없으면 그렇다고 말한다.
+        Directory.Delete(work, recursive: true);
+        settings.FormatLink(ExportFormat.Scenes).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(3, shown.Count);
+        Assert.True(settings.ExportNote.IsVisible);
+        Assert.Contains("아직 작업 폴더에 나간 장면 파일", settings.ExportNote.Text, StringComparison.Ordinal);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 내보내기에서_취소하면_보낼_곳을_버리고_다시_열면_지금_값을_보인다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = Open();
