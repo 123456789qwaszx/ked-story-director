@@ -193,6 +193,16 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>오른쪽 기둥(탭 셋)을 접어 두었는가 (두 그래프가 함께 쓴다 — side-fold K1).</summary>
+    public static bool LoadSideFolded() => Load(SettingsPath).SideFolded;
+
+    public static void SaveSideFolded(bool folded)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.SideFolded = folded;
+        Save(settings);
+    }
+
     private static ExplorerState? FindExplorer(AppSettings settings, string key) =>
         settings.Explorers?.FirstOrDefault(entry =>
             string.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase)).Value;
@@ -304,6 +314,9 @@ internal static class AppSettingsService
 
         /// <summary>하이어아키 기둥을 접어 두었는가 — 프로젝트와 상관없는 화면 편의라 하나만 둔다.</summary>
         public bool HierarchyFolded { get; set; }
+
+        /// <summary>오른쪽 기둥(인스펙터 · 화자 · 조건 및 스탯)을 접어 두었는가 — <see cref="LoadSideFolded"/>.</summary>
+        public bool SideFolded { get; set; }
 
         /// <summary>[구성] 탭의 「빈 선택지 숨기기」 — <see cref="LoadHideEmptyChoices"/>.</summary>
         public bool HideEmptyChoices { get; set; }

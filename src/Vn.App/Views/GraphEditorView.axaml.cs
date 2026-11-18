@@ -349,7 +349,10 @@ public partial class GraphEditorView : UserControl
     internal StoryHierarchy HierarchyView => Hierarchy;
 
     /// <summary>하이어아키 기둥 접기 (2026-10-30 HC) — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
-    internal HierarchyDock HierarchyDock { get; }
+    internal ColumnDock HierarchyDock { get; }
+
+    /// <summary>오른쪽 기둥(탭 셋) 접기 — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
+    internal ColumnDock SideDock { get; }
 
     /// <summary>
     /// 인스펙터 머리글 — 무엇을 보는지. 내용(<see cref="SetSidePanel"/>)을 짓는 셸이 함께 맞춘다. 부제가 비면 그 줄이 서지
@@ -463,10 +466,16 @@ public partial class GraphEditorView : UserControl
         InitializeComponent();
 
         // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
-        HierarchyDock = new HierarchyDock(
+        HierarchyDock = new ColumnDock(
             BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
         FoldHierarchyButton.Click += (_, _) => HierarchyDock.Toggle(folded: true);
         HierarchyStrip.Click += (_, _) => HierarchyDock.Toggle(folded: false);
+
+        // 오른쪽 기둥(탭 셋)도 같은 손짓으로 접는다(2026-11-18 소유자 · side-fold K1).
+        SideDock = new ColumnDock(
+            BoardColumns.ColumnDefinitions[4], BoardColumns.ColumnDefinitions[3], SideSplitter, SideOpen, SideStrip);
+        FoldSideButton.Click += (_, _) => SideDock.Toggle(folded: true);
+        SideStrip.Click += (_, _) => SideDock.Toggle(folded: false);
 
         // 판 크기는 한 곳(_boardWidth · _boardHeight — 프로젝트의 판 크기, ApplyBoardSize)이 정한다 (W41) — 미니맵 배율과 어긋날 길을 없앤다.
         GraphCanvas.Width = CanvasWidth;

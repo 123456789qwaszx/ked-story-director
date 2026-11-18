@@ -127,6 +127,13 @@ public partial class MainWindow
         ChapterGraph.HierarchyDock.Changed += value => OnHierarchyDockChanged(Graph.HierarchyDock, value);
         Graph.HierarchyDock.Changed += value => OnHierarchyDockChanged(ChapterGraph.HierarchyDock, value);
 
+        // 오른쪽 기둥(탭 셋)도 두 탭이 함께 접히고 기억된다 — 하이어아키와는 따로다(side-fold K1).
+        bool sideFolded = AppSettingsService.LoadSideFolded();
+        ChapterGraph.SideDock.Fold(sideFolded);
+        Graph.SideDock.Fold(sideFolded);
+        ChapterGraph.SideDock.Changed += value => OnSideDockChanged(Graph.SideDock, value);
+        Graph.SideDock.Changed += value => OnSideDockChanged(ChapterGraph.SideDock, value);
+
         Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () =>
         {
             OnDirectorHierarchyPicked(pick);
@@ -279,10 +286,17 @@ public partial class MainWindow
     }
 
     /// <summary>한 탭에서 하이어아키 기둥을 접거나 폈다 — 다른 탭을 맞추고 기억한다.</summary>
-    private static void OnHierarchyDockChanged(HierarchyDock other, bool folded)
+    private static void OnHierarchyDockChanged(ColumnDock other, bool folded)
     {
         other.Fold(folded);
         AppSettingsService.SaveHierarchyFolded(folded);
+    }
+
+    /// <summary>한 탭에서 오른쪽 기둥을 접거나 폈다 — 다른 탭을 맞추고 기억한다.</summary>
+    private static void OnSideDockChanged(ColumnDock other, bool folded)
+    {
+        other.Fold(folded);
+        AppSettingsService.SaveSideFolded(folded);
     }
 
     /// <summary>두 하이어아키를 다시 세운다 — 원천은 챕터 그래프가 읽은 챕터 목록 하나다.</summary>

@@ -165,6 +165,7 @@
             </Border>
 
             <GridSplitter Grid.Column="3"
+                          x:Name="SideSplitter"
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
@@ -176,6 +177,8 @@
             <Border Grid.Column="4"
                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                     BorderThickness="1,0,0,0">
+                <Panel>
+                <Panel x:Name="SideOpen">
                 <TabControl x:Name="SideTabs" Padding="0">
                     <TabControl.Styles>
                         <!-- 탭 글은 작게 — 테마 기본(큰 글 · 48 높이)은 [구성] · [대본] 탭과 같은 무게라 기둥 안에서는 너무 크다. -->
@@ -250,6 +253,40 @@
                         </Grid>
                     </TabItem>
                 </TabControl>
+                    <!-- 기둥 접기 — 탭 줄 오른쪽 끝(2026-11-18 소유자 · side-fold K1). 하이어아키의 「‹」와 같은 손짓이다(ColumnDock). -->
+                    <Button x:Name="FoldSideButton"
+                            Content="›"
+                            FontSize="12"
+                            Padding="7,0"
+                            Margin="0,5,4,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Background="Transparent"
+                            ToolTip.Tip="오른쪽 기둥(인스펙터 · 화자 · 조건 및 스탯)을 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다." />
+                </Panel>
+
+                <!-- 접힌 오른쪽 기둥 — 세로 띠 하나. 누르면 편다(ColumnDock). -->
+                <Button x:Name="SideStrip"
+                        IsVisible="False"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Top"
+                        Padding="0,6"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip.Tip="오른쪽 기둥을 펼칩니다">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="‹" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        <LayoutTransformControl>
+                            <LayoutTransformControl.LayoutTransform>
+                                <RotateTransform Angle="90" />
+                            </LayoutTransformControl.LayoutTransform>
+                            <TextBlock Text="인스펙터 · 화자 · 조건 및 스탯" FontSize="11" Opacity="0.7" />
+                        </LayoutTransformControl>
+                    </StackPanel>
+                </Button>
+                </Panel>
             </Border>
         </Grid>
 

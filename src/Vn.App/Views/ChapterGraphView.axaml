@@ -183,10 +183,11 @@
             </Grid>
 
             <GridSplitter Grid.Column="3"
+                          x:Name="SideSplitter"
                           ResizeDirection="Columns"
                           Background="{DynamicResource ThemeBorderLowBrush}" />
 
-            <!-- 오른쪽 기둥은 인스펙터 하나다 — 챕터 구조의 편집은 여기서, 대사는 연출 그래프의 카드에서.
+            <!-- 오른쪽 기둥 — 탭 셋(인스펙터 · 화자 · 조건 및 스탯)이고 접힌다. 챕터 구조의 편집은 여기서, 대사는 연출 그래프의 카드에서.
                  모든 편집은 프로젝트를 고치고, 변경 알림이 그래프를 다시 그린다. -->
             <Grid Grid.Column="4" x:Name="ChapterRightRows">
 
@@ -194,6 +195,7 @@
                      줄을 골라야만 보여 처음 쓰는 사람이 찾지 못했다 — 탭으로 늘 세운다. ⛔ 그 전에는 탭 없이 고른 것이 내용을 정했다.
                      고르면 그것을 보이는 탭으로 간다: 프로젝트 줄 → 화자, 챕터 줄 → 조건 및 스탯([구성]은 수치를 잡는 자리다), 그 밖 →
                      인스펙터. 콤보로 챕터를 바꾸는 것은 탭을 바꾸지 않는다. 탭은 언제든 손으로 연다. -->
+                <Panel x:Name="SideOpen">
                 <TabControl x:Name="SideTabs" Padding="0">
                     <TabControl.Styles>
                         <!-- 탭 글은 작게 — 테마 기본(큰 글 · 48 높이)은 판의 [구성] · [대본] 탭과 같은 무게라 기둥 안에서는 너무 크다. -->
@@ -547,6 +549,39 @@
                 </Grid>
                 </TabItem>
                 </TabControl>
+                    <!-- 기둥 접기 — 탭 줄 오른쪽 끝(2026-11-18 소유자 · side-fold K1). 하이어아키의 「‹」와 같은 손짓이다(ColumnDock). -->
+                    <Button x:Name="FoldSideButton"
+                            Content="›"
+                            FontSize="12"
+                            Padding="7,0"
+                            Margin="0,5,4,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Background="Transparent"
+                            ToolTip.Tip="오른쪽 기둥(인스펙터 · 화자 · 조건 및 스탯)을 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다." />
+                </Panel>
+
+                <!-- 접힌 오른쪽 기둥 — 세로 띠 하나. 누르면 편다(ColumnDock). -->
+                <Button x:Name="SideStrip"
+                        IsVisible="False"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Top"
+                        Padding="0,6"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip.Tip="오른쪽 기둥을 펼칩니다">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="‹" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        <LayoutTransformControl>
+                            <LayoutTransformControl.LayoutTransform>
+                                <RotateTransform Angle="90" />
+                            </LayoutTransformControl.LayoutTransform>
+                            <TextBlock Text="인스펙터 · 화자 · 조건 및 스탯" FontSize="11" Opacity="0.7" />
+                        </LayoutTransformControl>
+                    </StackPanel>
+                </Button>
 
                 <!-- 초점 받이 — 칼럼의 빈 곳을 누르면 글자 칸의 초점을 여기로 옮긴다. 글자 칸은 초점을 잃을 때 내므로 Enter와
                      같이 반영되고 칸이 놓인다. 빈 곳(글 · 여백)은 초점을 받지 않아서, 옮기지 않으면 칸이 초점을 쥔 채 남는다. -->

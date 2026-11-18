@@ -1,16 +1,17 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 
 namespace Vn.App.Views;
 
 /// <summary>
-/// <b>하이어아키 기둥 접기</b>.
+/// <b>기둥 접기</b> — 판 양옆의 기둥(왼쪽 하이어아키 · 오른쪽 탭 셋)을 좁은 세로 띠로 접고 편다.
 ///
-/// 판 왼쪽 기둥을 좁은 세로 띠로 접고 편다. 접으면 기둥은 <see cref="FoldedWidth"/>만 남아 띠(「›」 · 하이어아키)가 서고,
-/// 띠를 누르면 사람이 끌어 두었던 폭으로 돌아간다. 접힌 동안은 폭 손잡이(스플리터)도 걷는다 — 끌어 봐야 띠만 넓어진다.
+/// 접으면 기둥은 <see cref="FoldedWidth"/>만 남아 띠(「›」 · 하이어아키, 「‹」 · 인스펙터 …)가 서고, 띠를 누르면 사람이 끌어 두었던 폭으로
+/// 돌아간다. 접힌 동안은 폭 손잡이(스플리터)도 걷는다 — 끌어 봐야 띠만 넓어진다.
 ///
-/// 두 그래프가 한 벌을 쓰고, 어느 쪽에서 접든 셸이 다른 쪽을 맞추고 사용자 설정에 기억한다(<see cref="Changed"/>).
+/// 두 그래프가 기둥마다 한 벌씩 쓰고, 어느 쪽에서 접든 셸이 다른 쪽을 맞추고 사용자 설정에 기억한다(<see cref="Changed"/>).
+/// ⛔ 2026-11-18까지는 하이어아키만 접혀 이름이 <c>HierarchyDock</c>였다 — 오른쪽 기둥도 접게 되며 이름만 일반화했다(side-fold K1).
 /// </summary>
-internal sealed class HierarchyDock
+internal sealed class ColumnDock
 {
     /// <summary>접힌 기둥의 폭 — 띠 하나.</summary>
     internal const double FoldedWidth = 26;
@@ -24,7 +25,7 @@ internal sealed class HierarchyDock
     private readonly GridLength _splitterWidth;
     private GridLength _openWidth;
 
-    internal HierarchyDock(
+    internal ColumnDock(
         ColumnDefinition column, ColumnDefinition splitterColumn, GridSplitter splitter, Control open, Control strip)
     {
         _column = column;
