@@ -122,12 +122,13 @@ public sealed class ChapterRailTests
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         List<string> order = Rows(canvas, "EP00")
             .Take(3)
-            .Select(row => row.Children.OfType<TextBlock>().Single().Text ?? string.Empty)
+            .Select(row => row.Children.OfType<TextBlock>().SingleOrDefault()?.Text ??
+                           (row.Children.OfType<Border>().Single().Child as TextBlock)!.Text ?? string.Empty)
             .ToList();
 
         Assert.Equal("라루를 믿는다", order[0]);
         Assert.Equal("의심한다", order[1]);
-        Assert.DoesNotContain(order[2], new[] { "라루를 믿는다", "의심한다" });
+        Assert.Equal(GraphEditorView.SlotPlaceholderText, order[2]);   // 문구 없는 진행 — 적을 칸이 선다(2026-11-18)
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────

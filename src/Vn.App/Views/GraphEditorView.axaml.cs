@@ -1366,24 +1366,41 @@ public partial class GraphEditorView : UserControl
                 : "이어져 있습니다. 빈 곳에 끌어다 놓으면 끊깁니다."
         };
 
-        var label = new TextBlock
-        {
-            Text = auto ? "자동" : text.Length > 0 ? text : "＋ 선택지",
-            FontSize = 11,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = live ? dot : null,
-            Opacity = live ? 1 : 0.45,
-            FontStyle = text.Length > 0 || auto ? FontStyle.Normal : FontStyle.Italic,
-            VerticalAlignment = VerticalAlignment.Center,
+        // 빈 칸(자동 자리가 아니고 문구가 없다)은 <b>적는 칸 모양</b>이다(2026-11-18 소유자 — 「무엇을 입력할 수 있다는 걸 모르는 것 같습니다」):
+        // 네모 칸에 회색 「빈 선택지」. 폭은 문구 칸(SlotEditor)의 가장 좁은 폭과 같아 누르면 그 자리에서 칸이 열린다. ⛔ 그 전의 「＋ 선택지」는
+        // 글자색을 null로 못박아(붓이 없다) 보이지 않았다 — 점만 섰다.
+        Control label = !auto && text.Length == 0
+            ? new Border
+            {
+                Width = SlotEditorMinWidth,
+                Padding = new Thickness(4, 1),
+                BorderThickness = new Thickness(1),
+                BorderBrush = SlotPlaceholderBorder,
+                CornerRadius = new CornerRadius(3),
+                Background = Brushes.White,
+                VerticalAlignment = VerticalAlignment.Center,
+                Cursor = new Cursor(StandardCursorType.Ibeam),
+                Tag = SlotPlaceholderTag,
+                Child = new TextBlock { Text = SlotPlaceholderText, FontSize = 10, Foreground = SlotPlaceholderInk },
+                [ToolTip.TipProperty] = "눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다."
+            }
+            : new TextBlock
+            {
+                Text = auto ? "자동" : text,
+                FontSize = 11,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = dot,
+                Opacity = live ? 1 : 0.45,
+                VerticalAlignment = VerticalAlignment.Center,
 
-            // ⚠ 배경이 없으면 <b>눌림이 안 온다</b> — 투명한 TextBlock은 히트 대상이 아니다.
-            //   2026-09-16에 "문구를 적을 칸이 안 열린다"의 진짜 원인이 이것이었다.
-            Background = Brushes.Transparent,
-            Cursor = new Cursor(StandardCursorType.Ibeam),
-            [ToolTip.TipProperty] = auto
-                ? "자동 길 — 문구 없이 다음으로 갑니다. 선택지 문구를 하나라도 적으면 이 자리가 닫힙니다."
-                : "눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다."
-        };
+                // ⚠ 배경이 없으면 <b>눌림이 안 온다</b> — 투명한 TextBlock은 히트 대상이 아니다.
+                //   2026-09-16에 "문구를 적을 칸이 안 열린다"의 진짜 원인이 이것이었다.
+                Background = Brushes.Transparent,
+                Cursor = new Cursor(StandardCursorType.Ibeam),
+                [ToolTip.TipProperty] = auto
+                    ? "자동 길 — 문구 없이 다음으로 갑니다. 선택지 문구를 하나라도 적으면 이 자리가 닫힙니다."
+                    : "눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다."
+            };
 
         if (!slot.IsAuto)
         {
@@ -3505,6 +3522,15 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>문구 입력칸의 가장 좁은 폭 — 빈 칸에도 적을 자리가 보이게.</summary>
     private const double SlotEditorMinWidth = 90;
+
+    /// <summary>빈 선택지 칸의 글 — 회색으로 선다. 시험이 이 글로 찾는다.</summary>
+    internal const string SlotPlaceholderText = "빈 선택지";
+
+    /// <summary>빈 선택지 칸(네모)의 Tag — 칸 줄 안에서 글자 대신 선 그 칸을 찾는다.</summary>
+    internal const string SlotPlaceholderTag = "slot-placeholder";
+
+    private static readonly IBrush SlotPlaceholderInk = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF));
+    private static readonly IBrush SlotPlaceholderBorder = new SolidColorBrush(Color.FromRgb(0xB8, 0xBC, 0xC4));
 
     /// <summary>문구 입력칸의 여유 — 테두리 · 안쪽 여백 · 커서 자리.</summary>
     private const double SlotEditorSlack = 24;

@@ -61,6 +61,24 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
+    public void 빈_칸은_회색_빈_선택지가_든_네모_칸이고_누르면_그_자리에서_문구_칸이_열린다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「비어있는 선택지점 옆쪽에 입력할 수 있는 네모난 박스를 두고 그 안에 "빈 선택지"라는 글자를 회색으로」.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        IReadOnlyList<Control> faces = Labels(graph, "root");
+
+        Assert.Equal(["자동", GraphEditorView.SlotPlaceholderText, GraphEditorView.SlotPlaceholderText], faces.Select(TextOf));
+        Border box = Assert.IsType<Border>(faces[1]);
+        Assert.True(box.BorderThickness.Left > 0);   // 네모 칸
+        TextBlock text = Assert.IsType<TextBlock>(box.Child);
+        Assert.NotNull(text.Foreground);             // ⛔ 「＋ 선택지」는 붓이 없어 보이지 않았다
+
+        Press(box);
+        Assert.NotNull(graph.SlotLabelBox);
+        Assert.Equal(box.Width, graph.SlotLabelBox!.Width);   // 같은 폭 — 누르면 그 자리에서 열린다
+    });
+
+    [Fact]
     public void 문구를_적으면_그_칸이_붉어지고_자동_자리는_닫힌다() => HeadlessUi.Run(() =>
     {
         // 자동 길은 그 에피소드의 <b>유일한 간선</b>이어야 한다(`AutoEdgeHasSiblings`) —
@@ -161,7 +179,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         Assert.Null(graph.SlotLabelBox);
         Assert.Contains(session.Editor.FindChapter("ch01")!.ChoiceOptions, option => option.Text == "왼쪽으로");
-        Assert.Equal("왼쪽으로", Labels(graph, "root")[1].Text);
+        Assert.Equal("왼쪽으로", TextOf(Labels(graph, "root")[1]));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[1]);
     });
 
@@ -217,7 +235,7 @@ public sealed class ChoiceSlotTests : IDisposable
         Drag(graph, session, "root", slot: 0, onto: null);
 
         Assert.Empty(session.Editor.FindChapter("ch01")!.Edges);
-        Assert.Equal("왼쪽으로", Labels(graph, "root")[0].Text);
+        Assert.Equal("왼쪽으로", TextOf(Labels(graph, "root")[0]));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
     });
 
@@ -232,14 +250,14 @@ public sealed class ChoiceSlotTests : IDisposable
         Write(graph, "root", slot: 1, "rrrrrrr");
         Drag(graph, session, "root", slot: 1, onto: "a");
 
-        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(TextOf));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
         Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
 
         // 첫째 칸을 나중에 이어도 그 자리다 — 간선은 그 줄 자리에 끼워 들어가, 런타임 선택지 순서도 화면과 같다.
         Drag(graph, session, "root", slot: 0, onto: "a");
 
-        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(TextOf));
         Assert.Equal(
             ["asdsad", "rrrrrrr"],
             session.Editor.FindChapter("ch01")!.Edges.Select(edge => edge.OptionLabel));
@@ -256,7 +274,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         Drag(graph, session, "root", slot: 0, onto: null);
 
-        Assert.Equal(["하나", "둘"], Labels(graph, "root").Take(2).Select(label => label.Text));
+        Assert.Equal(["하나", "둘"], Labels(graph, "root").Take(2).Select(TextOf));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
         Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
 
@@ -504,13 +522,20 @@ public sealed class ChoiceSlotTests : IDisposable
             .Select(row => row.Children.OfType<Ellipse>().Single().Stroke!)
             .ToList();
 
-    private static IReadOnlyList<TextBlock> Labels(
+    /// <summary>
+    /// 칸마다 점 옆의 얼굴 — 문구(이은 · 적은 · 자동 칸)거나 빈 칸의 네모(「빈 선택지」). 칸 번호 차례대로. 문구 칸이 열린 칸은 빠진다.
+    /// </summary>
+    private static IReadOnlyList<Control> Labels(
         GraphEditorView graph, string episodeId) =>
         Rows(graph, episodeId)
-            .Select(row => row.Children.OfType<TextBlock>().SingleOrDefault())
-            .Where(label => label is not null)
-            .Select(label => label!)
+            .Select(row => row.Children.FirstOrDefault(child => child is TextBlock || child.Tag as string == GraphEditorView.SlotPlaceholderTag))
+            .Where(face => face is not null)
+            .Select(face => face!)
             .ToList();
+
+    /// <summary>얼굴의 글 — 빈 칸의 네모면 그 안의 「빈 선택지」.</summary>
+    private static string? TextOf(Control face) =>
+        face is TextBlock text ? text.Text : ((face as Border)?.Child as TextBlock)?.Text;
 
     /// <summary>
     /// 선택지 칸들 — <b>카드 아래 철도 위</b>에 선다.
