@@ -60,8 +60,8 @@ public sealed class EdgeGateClearTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "시작", "첫 화", 0, 0);
-        editor.AddEpisode("ch01", "끝", "끝 화", 200, 0);
+        editor.AddEpisode("ch01", "시작", "첫 화", 0, 0, sceneId: "시작");
+        editor.AddEpisode("ch01", "끝", "끝 화", 200, 0, sceneId: "끝");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
         return editor;
     }

@@ -350,7 +350,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 에피소드 카드의 인스펙터 머리글 — 「{챕터} - {장면}」(2026-11-16 — 이름이 들어가므로 「챕터」 꼬리를 뗐다). 챕터는 하이어아키에 보이는 챕터 Id, 장면ID가 없으면 챕터만이다.
+    /// 에피소드 카드의 인스펙터 머리글 — 「{챕터} - {장면}」(2026-11-16 — 이름이 들어가므로 「챕터」 꼬리를 뗐다). 챕터는 하이어아키에 보이는 챕터 Id다.
     /// 제목은 바로 아래 이름 칸이 보인다.
     /// </summary>
     private string EpisodeHeader(DialogueNode card)
@@ -360,8 +360,8 @@ public partial class MainWindow
         // 이름으로 — 챕터는 표시 이름(비면 ID), 장면은 장면 이름(비면 장면ID). [대본] 탭은 ID를 보이지 않는다(display-names N3).
         string head = chapter.ShownName;
 
-        return EpisodeNaming.EpisodeFor(chapter, card)?.SceneId is { } sceneId && !string.IsNullOrWhiteSpace(sceneId)
-            ? $"{head} - {ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId.Trim()) ?? sceneId.Trim()}"
+        return EpisodeNaming.EpisodeFor(chapter, card) is { } episode
+            ? $"{head} - {ChapterSceneNotes.NameOf(chapter.SceneNotes, episode.SceneId) ?? episode.SceneId}"
             : head;
     }
 
@@ -451,9 +451,8 @@ public partial class MainWindow
             case HierarchyKind.Chapter when chapter is not null:
             {
                 IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
-                List<ChapterScene> named = scenes.Where(scene => !scene.IsDefault).ToList();
                 Graph.SetInspectorHeader(
-                    $"챕터 · {chapter.Model.ShownName}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {named.Count}");
+                    $"챕터 · {chapter.Model.ShownName}", $"에피소드 {chapter.Model.Episodes.Count} · 장면 {scenes.Count}");
                 Note("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
                 StatTable(chapter.Model.Stats);
 

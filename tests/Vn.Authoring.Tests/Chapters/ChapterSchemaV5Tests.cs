@@ -26,8 +26,8 @@ public sealed class ChapterSchemaV5Tests
         _editor.AddChapterStat("ch01", "trust", initial: 0, minimum: 0, maximum: 10);
         _editor.AddChapterStat("ch01", "anger", initial: 0, minimum: 0, maximum: 10);
 
-        _editor.AddEpisode("ch01", "ep1", title: "", 0, 0);
-        _editor.AddEpisode("ch01", "ep2", title: "", 200, 0);
+        _editor.AddEpisode("ch01", "ep1", title: "", 0, 0, sceneId: "ep1");
+        _editor.AddEpisode("ch01", "ep2", title: "", 200, 0, sceneId: "ep2");
         _editor.AddEdge("ch01", "ep1", "ep2", optionLabel: "계속");
     }
 

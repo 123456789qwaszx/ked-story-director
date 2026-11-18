@@ -131,7 +131,9 @@ public sealed class DirectorEpisodeTitleTests : IDisposable
         StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
         StoryHierarchy chapter = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
         director.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        director.Fold(StoryHierarchy.SceneKey("ch02", "street"), collapse: false);
         chapter.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        chapter.Fold(StoryHierarchy.SceneKey("ch02", "street"), collapse: false);
 
         Rename(director, StoryHierarchy.EpisodeKey("ch02", "x"), "복도");
         ChapterEpisode x = session.Editor.FindChapter("ch02")!.Episodes.Single(episode => episode.EpisodeId == "x");

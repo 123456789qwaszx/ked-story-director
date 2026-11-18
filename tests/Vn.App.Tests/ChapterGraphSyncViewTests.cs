@@ -148,7 +148,7 @@ public sealed class ChapterGraphSyncViewTests
         //    이 테스트가 재려는 것은 "고치면 JSON이 따라오는가"이지 그쪽이 아니다.
         //
         // 새 에피소드는 카드와 첫 줄이 함께 선다 — 빈 노드 오류에 걸리지 않는다.
-        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1);
+        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1, sceneId: "새로판길");
         session.Editor.AddEdge("ch05", "main05.01", "새로판길", optionLabel: "새로 판 길로");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
@@ -168,7 +168,7 @@ public sealed class ChapterGraphSyncViewTests
         string sent = Path.Combine(game, "ch05.progression.json");
         Assert.False(File.Exists(sent));   // 열기만 해서는 보내지 않는다
 
-        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1);
+        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1, sceneId: "새로판길");
         session.Editor.AddEdge("ch05", "main05.01", "새로판길", optionLabel: "새로 판 길로");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Assert.Contains("새로판길", File.ReadAllText(Path.Combine(project.ExportFolder, "ch05.progression.json")));

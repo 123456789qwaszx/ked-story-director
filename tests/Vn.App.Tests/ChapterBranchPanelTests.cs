@@ -88,7 +88,7 @@ public sealed class ChapterBranchPanelTests
         // 나간다 — 연출 그래프의 분기 포트와 같은 규칙(EdgeSide.GoesLeft)이다.
         using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
-        session.Editor.AddEpisode("ch01", "east", title: "east", 900, 300);
+        session.Editor.AddEpisode("ch01", "east", title: "east", 900, 300, sceneId: "east");
         DialogueNode east = EpisodeNaming.CardFor(session.Project, "ch01", "east")!;
         session.Editor.SetExitTarget(east.Id, Vn.Authoring.Flow.ExitPortKind.Detour, east.Script.ActiveLines.First().Id, project.BranchNodeId);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -508,7 +508,7 @@ public sealed class ChapterBranchPanelTests
 
             editor.EnsureChapter("ch01");
             editor.EnsureChapterBoard("ch01");
-            editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+            editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
 
             ChapterDocument chapter = editor.FindChapter("ch01")!;
             chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));

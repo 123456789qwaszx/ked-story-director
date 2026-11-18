@@ -44,7 +44,7 @@ public static class ChapterSceneEntryCheck
             episodes.FirstOrDefault(candidate =>
                 string.Equals(candidate.EpisodeId, edge.FromEpisodeId, StringComparison.Ordinal))
                 is { } source &&
-            !string.Equals(source.EffectiveSceneId, episode.EffectiveSceneId, StringComparison.Ordinal));
+            !string.Equals(source.SceneId, episode.SceneId, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -69,10 +69,10 @@ public static class ChapterSceneEntryCheck
 
         void Land(ChapterEpisode episode, ChapterEdge? by)
         {
-            if (!landings.TryGetValue(episode.EffectiveSceneId, out List<string>? into))
+            if (!landings.TryGetValue(episode.SceneId, out List<string>? into))
             {
                 into = [];
-                landings[episode.EffectiveSceneId] = into;
+                landings[episode.SceneId] = into;
             }
 
             if (into.Contains(episode.EpisodeId, StringComparer.Ordinal))
@@ -84,7 +84,7 @@ public static class ChapterSceneEntryCheck
 
             if (into.Count == 2 && by is not null)
             {
-                offending[episode.EffectiveSceneId] = by;
+                offending[episode.SceneId] = by;
             }
         }
 
@@ -103,7 +103,7 @@ public static class ChapterSceneEntryCheck
 
             // 도착이 실재하지 않는 간선은 다른 진단이 이미 잡았다.
             if (from is null || to is null ||
-                string.Equals(from.EffectiveSceneId, to.EffectiveSceneId, StringComparison.Ordinal))
+                string.Equals(from.SceneId, to.SceneId, StringComparison.Ordinal))
             {
                 continue;
             }

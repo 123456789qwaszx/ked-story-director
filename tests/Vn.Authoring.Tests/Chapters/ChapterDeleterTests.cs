@@ -206,7 +206,7 @@ public sealed class ChapterDeleterTests : IDisposable
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 5));
 
         // 에피소드를 세우면 판과 카드가 함께 서고, 판이 선 뒤의 조건은 판의 공급 노드로 간다.
-        editor.AddEpisode(Doomed, EpisodeId, "조용한 복도", 0, 0);
+        editor.AddEpisode(Doomed, EpisodeId, "조용한 복도", 0, 0, sceneId: EpisodeId);
         editor.AddChapterCondition(Doomed, "신뢰높음", "trust >= 3", "라루를 신뢰");
 
         DialogueNode card = EpisodeNaming.CardFor(editor.Project, Doomed, EpisodeId)!;
@@ -216,7 +216,7 @@ public sealed class ChapterDeleterTests : IDisposable
         if (secondBoard)
         {
             editor.EnsureChapter(Kept);
-            editor.AddEpisode(Kept, EpisodeId, "다른 복도", 0, 0);
+            editor.AddEpisode(Kept, EpisodeId, "다른 복도", 0, 0, sceneId: EpisodeId);
         }
 
         // 배관이 실제로 섰는지 확인하고 시작한다 — 없으면 첫 테스트가 헛돈다.

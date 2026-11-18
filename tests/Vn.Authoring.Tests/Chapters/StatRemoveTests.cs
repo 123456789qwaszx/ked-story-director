@@ -237,8 +237,8 @@ public sealed class StatRemoveTests
         chapter.Stats.Add(new ChapterStat("fatigue", 0, 0, 10));
         chapter.Stats.Add(new ChapterStat("unused", 0, 0, 10));
 
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-        editor.AddEpisode("ch01", "a", title: "a", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
         editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다", statChanges: "trust +1");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 

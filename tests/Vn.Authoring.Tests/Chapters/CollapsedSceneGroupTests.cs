@@ -53,45 +53,6 @@ public sealed class CollapsedSceneGroupTests
         Assert.Equal(3, RowOf(projection, "ep02"));
     }
 
-    [Fact]
-    public void 장면ID를_하나도_안_적은_챕터는_묶음이_하나고_머리글이_없다()
-    {
-        // 대본 탭 트리와 <b>같은 규칙</b>이다(규격 §2) — 그대로 묶으면 에피소드 수만큼
-        // 머리글이 생겨 프록시가 통째로 노이즈가 된다.
-        StoryProject project = Project((null, "ep01"), (null, "ep02"));
-
-        CollapsedFileProjection proxy = Proxy(project);
-        CollapsedSceneGroup only = Assert.Single(proxy.Scenes);
-
-        Assert.False(only.HasHeader);
-        Assert.Equal(["ep01", "ep02"], only.Entries.Select(entry => entry.NodeName));
-
-        // 머리글이 없으니 행 번호도 안 밀린다.
-        GraphProjection projection = GraphProjectionBuilder.Build(project, new HashSet<string>(StringComparer.Ordinal));
-
-        Assert.Equal(0, RowOf(projection, "ep01"));
-        Assert.Equal(1, RowOf(projection, "ep02"));
-    }
-
-    [Fact]
-    public void 장면ID가_없는_에피소드는_장면들_뒤에_챕터_직속_한_묶음이다()
-    {
-        // 2026-11-01 B안 — 전에는 장면ID가 없는 에피소드마다 「미지정 · x」 머리글이 섰다.
-        StoryProject project = Project(("opening", "ep01"), (null, "ep02"), ("classroom", "ep03"), (null, "ep04"));
-
-        CollapsedFileProjection proxy = Proxy(project);
-
-        Assert.Equal(["opening", "classroom", "챕터 직속"], proxy.Scenes.Select(scene => scene.DisplayName));
-        CollapsedSceneGroup direct = proxy.Scenes[^1];
-        Assert.True(direct.ChapterDirect);
-        Assert.Equal(["ep02", "ep04"], direct.Entries.Select(entry => entry.NodeName));
-
-        // 머리글도 한 행이다 — 머리글(0) ep01(1) 머리글(2) ep03(3) 머리글(4) ep02(5) ep04(6).
-        GraphProjection projection = GraphProjectionBuilder.Build(project, new HashSet<string>(StringComparer.Ordinal));
-        Assert.Equal(5, RowOf(projection, "ep02"));
-        Assert.Equal(6, RowOf(projection, "ep04"));
-    }
-
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>그 노드가 선 화면 행 번호 — 투영이 간선 끝에 쓰는 그 값이다.</summary>
@@ -131,7 +92,7 @@ public sealed class CollapsedSceneGroupTests
         project.Files[0].Nodes.Add(new DialogueNode(name: name));
 
     /// <summary>챕터 하나와 그 판 — 판 이름이 챕터 Id인 것이 둘을 잇는 규약이다.</summary>
-    private static StoryProject Project(params (string? SceneId, string EpisodeId)[] episodes)
+    private static StoryProject Project(params (string SceneId, string EpisodeId)[] episodes)
     {
         var project = new StoryProject();
         var chapter = new ChapterDocument { ChapterId = "ch01" };
@@ -142,7 +103,7 @@ public sealed class CollapsedSceneGroupTests
 
         for (int index = 0; index < episodes.Length; index++)
         {
-            (string? sceneId, string episodeId) = episodes[index];
+            (string sceneId, string episodeId) = episodes[index];
 
             chapter.Episodes.Add(new ChapterEpisode(
                 episodeId, episodeId, string.Empty, 0, 0, null)

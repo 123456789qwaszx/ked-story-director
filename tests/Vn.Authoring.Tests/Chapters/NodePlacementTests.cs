@@ -94,7 +94,7 @@ public sealed class NodePlacementTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "root", "복도", 0, 0);
+        editor.AddEpisode("ch01", "root", "복도", 0, 0, sceneId: "root");
 
         DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
         string lineId = caller.Script.ActiveLines.First().Id;
@@ -119,8 +119,8 @@ public sealed class NodePlacementTests
         // 회귀(§6-1)를 편집기 명령으로 본다 — AddNextEpisode가 부모를 함께 준다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "root", "복도", 0, 0);
-        editor.AddNextEpisode("ch01", "root", "next", "옥상", 0, 170, optionLabel: "간다");
+        editor.AddEpisode("ch01", "root", "복도", 0, 0, sceneId: "root");
+        editor.AddNextEpisode("ch01", "root", "next", "옥상", 0, 170, optionLabel: "간다", sceneId: "next");
 
         DialogueNode root = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
         DialogueNode next = EpisodeNaming.CardFor(editor.Project, "ch01", "next")!;

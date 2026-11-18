@@ -383,12 +383,11 @@ public partial class StoryHierarchy : UserControl
         string chapterId = chapter.ChapterId;
         string key = ChapterKey(chapterId);
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
-        bool flat = scenes.All(scene => scene.IsDefault);
 
         rows.Add(new HierarchyRow(
             // [대본] 탭은 이름(표시 이름, 비면 ID), [구성] 탭은 ID다(display-names N3).
             HierarchyKind.Chapter, key, chapterId, null, null, ShowEpisodeTitles ? chapter.Model.ShownName : chapterId,
-            Detail: ChapterDetail ?? $"에피소드 {chapter.Model.Episodes.Count}" + (flat && scenes.Count > 0 ? " · 장면 미지정" : string.Empty),
+            Detail: ChapterDetail ?? $"에피소드 {chapter.Model.Episodes.Count}",
             Depth: 1, IsSceneRoot: false, HasWarning: chapter.HasErrors));
 
         if (!IsExpanded(key))
@@ -396,11 +395,8 @@ public partial class StoryHierarchy : UserControl
             return;
         }
 
-        // <b>장면ID를 적은 장면만 장면 줄이 된다</b>. 장면ID가 없는
-        //    에피소드는 장면들 뒤에 <b>챕터 직속</b>으로 선다 — 에피소드마다 가짜 장면 줄을 세우면 에피소드
-        //    하나를 만들 때마다 장면도 하나 생긴 것처럼 보인다. 데이터는 그대로다 — 런타임에서는 그 에피소드 하나가 저장 · 롤백
-        //    구간이다(EffectiveSceneId). 장면ID를 하나도 안 적은 챕터도 같은 규칙이라 전부 챕터 직속이다.
-        foreach (ChapterScene scene in scenes.Where(scene => !scene.IsDefault))
+        // 에피소드는 늘 장면에 속한다 — 장면 줄 밑에 선다(⛔ 장면ID가 없는 에피소드를 세우던 「챕터 직속」 줄은 2026-11-18에 걷혔다).
+        foreach (ChapterScene scene in scenes)
         {
             string sceneKey = SceneKey(chapterId, scene.SceneId);
 
@@ -418,16 +414,6 @@ public partial class StoryHierarchy : UserControl
             {
                 rows.Add(EpisodeRow(chapterId, scene, episode, depth: 3));
                 AddBranches(rows, chapter, scene, episode, depth: 4);
-            }
-        }
-
-        // 챕터 직속 — 장면이 아니므로 ⌂를 달지 않는다.
-        foreach (ChapterScene scene in scenes.Where(scene => scene.IsDefault))
-        {
-            foreach (ChapterEpisode episode in scene.Episodes)
-            {
-                rows.Add(EpisodeRow(chapterId, scene, episode, depth: 2) with { IsSceneRoot = false });
-                AddBranches(rows, chapter, scene, episode, depth: 3);
             }
         }
     }
@@ -471,8 +457,7 @@ public partial class StoryHierarchy : UserControl
                 : episode.Title.Trim(),
             depth,
             IsSceneRoot: string.Equals(scene.RootEpisodeId, episode.EpisodeId, StringComparison.Ordinal),
-            // 장면 없는 에피소드(옛 데이터) — 검증 경고와 같다. 장면 줄로 끌어 넣어 고친다(2026-11-17).
-            HasWarning: scene.IsDefault);
+            HasWarning: false);
 
     /// <summary>
     /// 이 마디가 펴져 있는가 — 사람이 접지 않았고, 사람이 폈거나 <b>고른 것이 그 안에 있을 때</b>다(처음 열면 고른 것이
@@ -502,13 +487,12 @@ public partial class StoryHierarchy : UserControl
 
         path.Add(ChapterKey(chapterId));
 
-        // 챕터 직속 에피소드는 가는 길에 장면 마디가 없다. 분기 카드 줄은 그 집(부르는 에피소드)의 길이다.
+        // 에피소드는 장면 마디 밑에 선다. 분기 카드 줄은 그 집(부르는 에피소드)의 길이다.
         if (pick.Kind is HierarchyKind.Episode or HierarchyKind.Branch && pick.EpisodeId is { } episodeId &&
             _chapters.FirstOrDefault(chapter => string.Equals(chapter.ChapterId, chapterId, StringComparison.Ordinal))
-                ?.Model.FindEpisode(episodeId) is { SceneId: { } sceneId } episode &&
-            !string.IsNullOrWhiteSpace(sceneId))
+                ?.Model.FindEpisode(episodeId) is { } episode)
         {
-            path.Add(SceneKey(chapterId, episode.EffectiveSceneId));
+            path.Add(SceneKey(chapterId, episode.SceneId));
         }
 
         return path;
@@ -527,9 +511,8 @@ public partial class StoryHierarchy : UserControl
         return pick.Kind switch
         {
             HierarchyKind.Chapter => chapter is not null,
-            // 장면 줄은 장면ID를 적은 장면만이다 — 미지정 장면은 줄이 없다(챕터 직속).
-            HierarchyKind.Scene => !IsDefaultScene(pick.SceneId) && chapter?.Model.Episodes.Any(episode =>
-                string.Equals(episode.EffectiveSceneId, pick.SceneId, StringComparison.Ordinal)) == true,
+            HierarchyKind.Scene => chapter?.Model.Episodes.Any(episode =>
+                string.Equals(episode.SceneId, pick.SceneId, StringComparison.Ordinal)) == true,
             HierarchyKind.Branch => chapter?.BranchCards.Any(home =>
                 string.Equals(home.Card.Id, pick.NodeId, StringComparison.Ordinal)) == true,
             _ => chapter?.Model.FindEpisode(pick.EpisodeId ?? string.Empty) is not null
@@ -810,7 +793,7 @@ public partial class StoryHierarchy : UserControl
             items.Add(MenuItemFor("장면 추가", HierarchyCommand.AddScene, row, anchor));
 
             // 에피소드는 늘 장면에 속한다 — 장면이 있는 줄(장면 · 장면 안 에피소드)에서만 더한다(2026-11-17).
-            if (row.Kind is HierarchyKind.Scene or HierarchyKind.Episode && !IsDefaultScene(row.SceneId))
+            if (row.Kind is HierarchyKind.Scene or HierarchyKind.Episode)
             {
                 items.Add(MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor));
             }
@@ -860,17 +843,13 @@ public partial class StoryHierarchy : UserControl
         _rows.FirstOrDefault(row => row.Kind == HierarchyKind.Project)
         ?? new HierarchyRow(HierarchyKind.Project, ProjectKey, null, null, null, _projectTitle, null, 0, false, false);
 
-    /// <summary>장면ID를 안 적은 장면(내부 발급 <c>__scene_*</c>)인가 — 풀 것이 없다.</summary>
-    private static bool IsDefaultScene(string? sceneId) =>
-        sceneId?.StartsWith("__scene_", StringComparison.Ordinal) == true;
-
     // ── 이름 고치기 ─────────────────────────────────────────────────────────
 
-    /// <summary>그 줄이 지고 있는 이름 — 화면 글월이 아니라 Id다(미지정 장면은 빈 이름 — 적으면 장면이 된다).</summary>
+    /// <summary>그 줄이 지고 있는 이름 — 화면 글월이 아니라 Id다.</summary>
     internal static string NameOf(HierarchyRow row) => row.Kind switch
     {
         HierarchyKind.Chapter => row.ChapterId ?? string.Empty,
-        HierarchyKind.Scene => IsDefaultScene(row.SceneId) ? string.Empty : row.SceneId ?? string.Empty,
+        HierarchyKind.Scene => row.SceneId ?? string.Empty,
         HierarchyKind.Episode => row.EpisodeId ?? string.Empty,
         _ => row.Text
     };
@@ -951,8 +930,7 @@ public partial class StoryHierarchy : UserControl
 
     /// <summary>
     /// 접기 손잡이. 에피소드는 펼 자식이 없어 그 자리에 표식(장면 루트 ⌂ · 그 밖 ·)을 세운다 — 그래서 <b>같은 깊이의 이름이 한 줄로
-    /// 선다</b>. 빈 손잡이 칸 옆에 표식을 따로 붙이면 에피소드 이름이 한 칸 더 들어가, 장면들 뒤의 챕터 직속
-    /// 에피소드가 마지막 장면의 자식처럼 보인다.
+    /// 선다</b>. 빈 손잡이 칸 옆에 표식을 따로 붙이면 에피소드 이름이 한 칸 더 들어간다.
     /// </summary>
     private Border Arrow(HierarchyRow row)
     {
@@ -1110,15 +1088,14 @@ public partial class StoryHierarchy : UserControl
     private string? _hoverKey;
 
     /// <summary>
-    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의</b> 다른 장면 줄에(그 장면으로). 장면 없는 에피소드(옛 데이터 — 경고)도 이렇게
-    /// 장면에 넣는다. ⛔ 챕터 줄에 놓아 장면에서 빼던 것은 걷었다(2026-11-17 — 에피소드는 늘 장면에 속한다).
+    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의</b> 다른 장면 줄에(그 장면으로). ⛔ 챕터 줄에 놓아 장면에서 빼던 것은
+    /// 걷었다(2026-11-17 — 에피소드는 늘 장면에 속한다).
     /// </summary>
     internal static bool Accepts(HierarchyRow source, HierarchyRow target) =>
         source.Kind == HierarchyKind.Episode &&
         target.Kind == HierarchyKind.Scene &&
         string.Equals(source.ChapterId, target.ChapterId, StringComparison.Ordinal) &&
-        !string.Equals(source.SceneId, target.SceneId, StringComparison.Ordinal) &&
-        !IsDefaultScene(target.SceneId);
+        !string.Equals(source.SceneId, target.SceneId, StringComparison.Ordinal);
 
     /// <summary>화면 없이 끌기를 재는 자리 — 누름 · 놓임 두 번을 대신한다.</summary>
     internal void Drag(string sourceKey, string targetKey)

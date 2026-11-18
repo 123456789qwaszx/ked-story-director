@@ -324,7 +324,7 @@ public sealed class GraphBranchKnobTests
         Dispatcher.UIThread.RunJobs();
 
         AuthoringSession session = window.SessionProbe;
-        DialogueNode card = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, name: "본문");
+        DialogueNode card = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, "본문", name: "본문");
         var lines = new List<string> { card.Script.ActiveLines.Single().Id };   // 카드는 빈 첫 줄을 들고 선다
 
         while (lines.Count < texts.Length)

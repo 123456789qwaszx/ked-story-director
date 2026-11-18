@@ -27,14 +27,14 @@ public sealed class SceneNameTests : IDisposable
         }
     }
 
-    /// <summary>scene01(ep01) · scene02(ep02) · 장면 없음(ep03).</summary>
+    /// <summary>scene01(ep01) · scene02(ep02) · scene03(ep03).</summary>
     private static ProjectEditor Editor()
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter(Ch);
         editor.AddEpisode(Ch, "ep01", "", 0, 0, sceneId: "scene01");
         editor.AddEpisode(Ch, "ep02", "", 0, 0, sceneId: "scene02");
-        editor.AddEpisode(Ch, "ep03", "", 0, 0);
+        editor.AddEpisode(Ch, "ep03", "", 0, 0, sceneId: "scene03");
         return editor;
     }
 
@@ -52,9 +52,8 @@ public sealed class SceneNameTests : IDisposable
         editor.SetSceneName(Ch, "scene02", "교실");
 
         IReadOnlyList<ChapterScene> scenes = Scenes(editor);
-        Assert.Equal(["scene01", "scene02", "__scene_ep03"], scenes.Select(scene => scene.SceneId));
-        Assert.Equal(["교실", "교실", "미지정 · ep03"], scenes.Select(scene => scene.DisplayName));
-        Assert.Equal(["scene01", "scene02", null], Chapter(editor).Episodes.Select(episode => episode.SceneId));
+        Assert.Equal(["scene01", "scene02", "scene03"], scenes.Select(scene => scene.SceneId));
+        Assert.Equal(["교실", "교실", "scene03"], scenes.Select(scene => scene.DisplayName));
     }
 
     [Fact]

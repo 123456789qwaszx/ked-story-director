@@ -18,7 +18,7 @@ public sealed class ChapterSceneNoteDiagnosticTests
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter(Ch);
         editor.AddEpisode(Ch, "ep01", "", 0, 0, sceneId: "교실");
-        editor.AddEpisode(Ch, "ep02", "", 0, 0);
+        editor.AddEpisode(Ch, "ep02", "", 0, 0, sceneId: "강당");
         return editor;
     }
 
@@ -32,7 +32,7 @@ public sealed class ChapterSceneNoteDiagnosticTests
     {
         ProjectEditor editor = Editor();
         editor.SetSceneNote(Ch, "교실", "교실");
-        editor.SetSceneNote(Ch, "__scene_ep02", "혼자");
+        editor.SetSceneNote(Ch, "강당", "혼자");
 
         Assert.Empty(Orphaned(editor));
     }
@@ -42,7 +42,7 @@ public sealed class ChapterSceneNoteDiagnosticTests
     {
         ProjectEditor editor = Editor();
         editor.SetSceneNote(Ch, "교실", "마감 전날, 다시 시작할지 고른다. 가볍게 열고 결심으로 맺는다\n둘째 줄");
-        editor.SetSceneNote(Ch, "__scene_ep02", "혼자");
+        editor.SetSceneNote(Ch, "강당", "혼자");
 
         editor.UpdateEpisode(Ch, "ep01", sceneId: "복도");
         editor.RemoveEpisode(Ch, "ep02");
@@ -58,7 +58,7 @@ public sealed class ChapterSceneNoteDiagnosticTests
         });
         Assert.Contains("'교실'", orphaned[1].Message);
         Assert.Contains("「마감 전날, 다시 시작할지 고른다. 가볍게…」", orphaned[1].Message);
-        Assert.Contains("'미지정 · ep02'", orphaned[0].Message);
+        Assert.Contains("'강당'", orphaned[0].Message);
     }
 
     [Fact]

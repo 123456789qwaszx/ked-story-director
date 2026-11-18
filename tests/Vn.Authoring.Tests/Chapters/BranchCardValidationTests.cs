@@ -31,7 +31,7 @@ public sealed class BranchCardValidationTests
         // 편집 명령은 이렇게 잇지 않는다 — 그런 파일은 읽기 · 저장 · 되돌리기가 지나는 검증이 거절한다(2026-11-18 · old-shapes O2,
         // ⛔ 그 전에는 검증 보고의 오류 BranchIntoEpisode로 짚고 [구성]에 그렸다).
         (ProjectEditor editor, DialogueNode root) = World();
-        editor.AddEpisode("ch01", "옆길", title: "옆길", 400, 0);
+        editor.AddEpisode("ch01", "옆길", title: "옆길", 400, 0, sceneId: "옆길");
         DialogueNode side = EpisodeNaming.CardFor(editor.Project, "ch01", "옆길")!;
         root.RequireExtension(root.Script.ActiveLines.First().Id).DetourTargetNodeIds.Add(side.Id);
 
@@ -61,7 +61,7 @@ public sealed class BranchCardValidationTests
     {
         // 외딴(들어오는 길 없음)이 부르는 분기 카드, 그 분기 카드가 또 부르는 분기 카드 — 둘 다 재생되지 않는다.
         (ProjectEditor editor, _) = World();
-        editor.AddEpisode("ch01", "외딴", title: "외딴", 0, 400);
+        editor.AddEpisode("ch01", "외딴", title: "외딴", 0, 400, sceneId: "외딴");
         DialogueNode lonely = EpisodeNaming.CardFor(editor.Project, "ch01", "외딴")!;
         Filled(lonely);
         DialogueNode first = Filled(editor.AddBranchMarker(lonely.Id, lonely.Script.ActiveLines.First().Id));
@@ -168,7 +168,7 @@ public sealed class BranchCardValidationTests
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
         DialogueNode root = Filled(EpisodeNaming.CardFor(editor.Project, "ch01", "root")!);
 
         return (editor, root);

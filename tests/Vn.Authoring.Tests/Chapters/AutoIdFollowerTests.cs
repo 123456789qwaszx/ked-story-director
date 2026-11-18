@@ -14,8 +14,8 @@ public sealed class AutoIdFollowerTests
     public void 다른_장면으로_옮기면_자동_ID가_그_장면의_다음_번호가_되고_분기_카드도_따라간다()
     {
         (ProjectEditor editor, string board) = World();
-        editor.AddDialogueNode(board, 0, 0, sceneId: "scene02");                       // scene02의 new01은 이미 있다
-        DialogueNode moving = editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
+        editor.AddDialogueNode(board, "scene02", 0, 0);                       // scene02의 new01은 이미 있다
+        DialogueNode moving = editor.AddDialogueNode(board, "scene01", 0, 0);
         DialogueNode branch = editor.AddBranchMarker(moving.Id, moving.Script.ActiveLines.First().Id);
         Assert.Equal(("ch01_scene01_new01", "ch01_scene01_branch01"), (moving.Name, branch.Name));
         long before = editor.Revision;
@@ -38,7 +38,7 @@ public sealed class AutoIdFollowerTests
     public void 사람이_고친_ID는_옮겨도_그대로다()
     {
         (ProjectEditor editor, string board) = World();
-        DialogueNode card = editor.AddDialogueNode(board, 0, 0, name: "opening", sceneId: "scene01");
+        DialogueNode card = editor.AddDialogueNode(board, "scene01", 0, 0, name: "opening");
         DialogueNode branch = editor.AddBranchMarker(card.Id, card.Script.ActiveLines.First().Id, name: "회상");
 
         string moved = AutoIdFollower.MoveEpisodeToScene(editor, "ch01", "opening", "scene02");
@@ -52,9 +52,9 @@ public sealed class AutoIdFollowerTests
     public void 장면ID를_바꾸면_번호를_지킨_채_따라간다()
     {
         (ProjectEditor editor, string board) = World();
-        DialogueNode first = editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
-        editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
-        editor.AddDialogueNode(board, 0, 0, name: "hand", sceneId: "scene01");
+        DialogueNode first = editor.AddDialogueNode(board, "scene01", 0, 0);
+        editor.AddDialogueNode(board, "scene01", 0, 0);
+        editor.AddDialogueNode(board, "scene01", 0, 0, name: "hand");
         DialogueNode branch = editor.AddBranchMarker(first.Id, first.Script.ActiveLines.First().Id);
         long before = editor.Revision;
 
@@ -72,7 +72,7 @@ public sealed class AutoIdFollowerTests
     public void 챕터ID를_바꾸면_따라간다()
     {
         (ProjectEditor editor, string board) = World();
-        DialogueNode card = editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
+        DialogueNode card = editor.AddDialogueNode(board, "scene01", 0, 0);
         DialogueNode branch = editor.AddBranchMarker(card.Id, card.Script.ActiveLines.First().Id);
         long before = editor.Revision;
 
@@ -89,8 +89,8 @@ public sealed class AutoIdFollowerTests
     {
         // 사람이 다른 챕터의 카드에 그 이름을 붙여 두었다 — Yarn 노드 이름은 프로젝트에서 하나다.
         (ProjectEditor editor, string board) = World();
-        editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
-        DialogueNode other = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, 0, 0, sceneId: "scene09");
+        editor.AddDialogueNode(board, "scene01", 0, 0);
+        DialogueNode other = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, "scene09", 0, 0);
         editor.RenameEpisode("ch02", other.Name, "ch01_hall_new01");   // 카드(= Yarn 노드 이름)가 함께 간다
 
         AutoIdFollower.RenameScene(editor, "ch01", "scene01", "hall");

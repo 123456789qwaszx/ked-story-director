@@ -54,31 +54,11 @@ public sealed class StoryHierarchyTests : IDisposable
     });
 
     [Fact]
-    public void 장면ID를_하나도_안_적은_챕터는_장면_단_없이_에피소드가_챕터_바로_아래에_선다() => HeadlessUi.Run(() =>
-    {
-        (MainWindow window, _, StoryHierarchy tree) = Show();
-
-        tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
-
-        List<HierarchyRow> under = tree.Rows.SkipWhile(row => row.ChapterId != "ch02").Skip(1).ToList();
-        Assert.Equal([HierarchyKind.Episode, HierarchyKind.Episode], under.Select(row => row.Kind));
-        Assert.All(under, row => Assert.Equal(2, row.Depth));
-        Assert.All(under, row => Assert.False(row.IsSceneRoot));   // 모두가 제 장면의 루트라 표식이 뜻이 없다
-        Assert.DoesNotContain(tree.Rows, row => row.Text.StartsWith("__scene_", StringComparison.Ordinal));
-
-        // 챕터 줄의 곁글 — [구성] 탭은 「챕터 조건 스탯」(누르면 서는 것), [대본] 탭은 에피소드 수와 「장면 미지정」이다.
-        Assert.Equal("챕터 조건 스탯", tree.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch02")).Detail);
-        StoryHierarchy director = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
-        Assert.Equal("에피소드 2 · 장면 미지정", director.Rows.Single(row => row.Key == StoryHierarchy.ChapterKey("ch02")).Detail);
-
-        window.Close();
-    });
-
-    [Fact]
     public void 에피소드_줄을_누르면_챕터_그래프가_그것을_고르고_인스펙터가_그것을_보인다_줄은_다시_세우지_않는다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, ChapterGraphView graph, StoryHierarchy tree) = Show();
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+        tree.Fold(StoryHierarchy.SceneKey("ch02", "street"), collapse: false);
         graph.Inspect(HierarchyPick.Project);
 
         string key = StoryHierarchy.EpisodeKey("ch02", "y");

@@ -158,10 +158,10 @@ internal static class StarterProject
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 2", "라루를 믿기로 했다면");
 
         // ④ 에피소드 넷 — 갈라졌다 다시 만나는 최소 모양. 에피소드마다 연출 그래프에 카드가 함께 선다.
-        editor.AddEpisode("ch01", "시작", "복도", 0, 0);
-        editor.AddEpisode("ch01", "믿는길", "함께 간다", 1, 0);
-        editor.AddEpisode("ch01", "혼자길", "혼자 간다", 1, 1);
-        editor.AddEpisode("ch01", "끝", "문 앞", 2, 0);
+        editor.AddEpisode("ch01", "시작", "복도", 0, 0, sceneId: "시작");
+        editor.AddEpisode("ch01", "믿는길", "함께 간다", 1, 0, sceneId: "믿는길");
+        editor.AddEpisode("ch01", "혼자길", "혼자 간다", 1, 1, sceneId: "혼자길");
+        editor.AddEpisode("ch01", "끝", "문 앞", 2, 0, sceneId: "끝");
 
         // ⑤ 길 — 문구가 곧 선택지 버튼이다.
         editor.AddEdge("ch01", "시작", "믿는길", optionLabel: "라루를 믿는다", statChanges: "trust +2");

@@ -17,8 +17,8 @@ public sealed class EpisodeErrorMarkTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "ep_a", "가", 0, 0);
-        editor.AddEpisode("ch01", "ep_b", "나", 0, 0);
+        editor.AddEpisode("ch01", "ep_a", "가", 0, 0, sceneId: "ep_a");
+        editor.AddEpisode("ch01", "ep_b", "나", 0, 0, sceneId: "ep_b");
         editor.AddEdge("ch01", "ep_a", "ep_b", optionLabel: "간다", conditionLabel: "없는조건");
 
         ChapterGraphModel model = editor.FindChapter("ch01")!.ToGraphModel("ch01");

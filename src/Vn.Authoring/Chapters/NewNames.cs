@@ -127,7 +127,7 @@ public static class NewNames
         ArgumentNullException.ThrowIfNull(chapter);
 
         var taken = new HashSet<string>(
-            chapter.Episodes.Select(episode => episode.EffectiveSceneId).Concat(chapter.SceneNotes.Select(note => note.SceneId)),
+            chapter.Episodes.Select(episode => episode.SceneId).Concat(chapter.SceneNotes.Select(note => note.SceneId)),
             StringComparer.Ordinal);
         int number = 1;
 

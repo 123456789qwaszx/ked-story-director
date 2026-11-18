@@ -22,15 +22,15 @@ public sealed class ChapterEdgeStatTests
         _editor.EnsureChapter("ch01");
         Chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
-        _editor.AddEpisode("ch01", "ep1", title: "", 0, 0);
-        _editor.AddEpisode("ch01", "ep2", title: "", 1, 0);
+        _editor.AddEpisode("ch01", "ep1", title: "", 0, 0, sceneId: "ep1");
+        _editor.AddEpisode("ch01", "ep2", title: "", 1, 0, sceneId: "ep2");
         _editor.AddEdge("ch01", "ep1", "ep2", optionLabel: "계속");
     }
 
     /// <summary>ep2 →(신뢰높음 관문)→ ep3, 그리고 ep1→ep2가 trust +3을 커밋한다.</summary>
     private void AddGatedThirdEpisode()
     {
-        _editor.AddEpisode("ch01", "ep3", title: "", 2, 0);
+        _editor.AddEpisode("ch01", "ep3", title: "", 2, 0, sceneId: "ep3");
         _editor.AddEdge("ch01", "ep2", "ep3", optionLabel: "계속", conditionLabel: "신뢰높음");
         _editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
         _editor.UpdateEdge("ch01", "ep1", "ep2", statChanges: "trust +3", matchOptionLabel: "계속");
@@ -127,7 +127,7 @@ public sealed class ChapterEdgeStatTests
     [Fact]
     public void 선택지_수정은_문구와_도착을_한_번에_옮긴다()
     {
-        _editor.AddEpisode("ch01", "ep3", title: "", 2, 0);
+        _editor.AddEpisode("ch01", "ep3", title: "", 2, 0, sceneId: "ep3");
         _editor.AddEdge("ch01", "ep1", "ep2", optionLabel: "믿는다");
 
         _editor.SetEdgeRoute("ch01", "ep1", "ep2", "믿는다", "ep3", "의심한다");

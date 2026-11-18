@@ -158,7 +158,7 @@ public sealed class ChapterScenesExportTests : IDisposable
     public void 같은_입력이면_같은_바이트다()
     {
         ProjectEditor editor = Sample();
-        editor.SetSceneNote(Ch, Model(editor).Episodes[0].EffectiveSceneId, "메모");
+        editor.SetSceneNote(Ch, Model(editor).Episodes[0].SceneId, "메모");
         editor.SetSceneNote(Ch, "옥상", "주인 없음");
 
         string first = ChapterScenesExporter.Export(Model(editor), editor.Project);
@@ -197,7 +197,7 @@ public sealed class ChapterScenesExportTests : IDisposable
         string progression = File.ReadAllText(ChapterExportService.ExportPathFor(manifest, Ch));
 
         var editor = new ProjectEditor(ProjectStore.Load(manifest).Project);
-        editor.SetSceneNote(Ch, Model(editor).Episodes[0].EffectiveSceneId, "메모");
+        editor.SetSceneNote(Ch, Model(editor).Episodes[0].SceneId, "메모");
         var entry = new ChapterEntry(Ch, Model(editor));
         var service = new ChapterExportService();
 

@@ -29,7 +29,7 @@ public sealed class StatKeyOnlyTests : IDisposable
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "ep01", "", 0, 0);
+        editor.AddEpisode("ch01", "ep01", "", 0, 0, sceneId: "ep01");
         editor.AddChapterStat("ch01", "마이나의 신뢰도", maximum: 10);
 
         ChapterExportResult export = ChapterProgressionExporter.Export(editor.FindChapter("ch01")!.ToGraphModel("ch01"));

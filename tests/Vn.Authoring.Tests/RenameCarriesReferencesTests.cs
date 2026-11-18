@@ -37,7 +37,7 @@ public sealed class RenameCarriesReferencesTests
         editor.AddChapterCondition("ch01", "열쇠 있음", ability ? "열쇠 == true" : "열쇠 >= 1");
         SetNode setNode = file.Nodes.OfType<SetNode>().Single();
 
-        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문");
+        DialogueNode dialogue = editor.AddDialogueNode(file.Id, "본문", name: "본문");
         ScriptLine line = dialogue.Script.ActiveLines.Single();   // 카드는 빈 첫 줄을 들고 선다
         editor.SetScriptLineText(dialogue.Id, line.Id, "라루", "문을 연다");
 

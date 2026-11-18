@@ -302,8 +302,8 @@ public sealed class ChapterExportServiceTests : IDisposable
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string fileId = editor.EnsureChapterBoard("ch01");
-        editor.AddDialogueNode(fileId, name: "ep1");
-        DialogueNode second = editor.AddDialogueNode(fileId, name: "ep2");
+        editor.AddDialogueNode(fileId, "ep1", name: "ep1");
+        DialogueNode second = editor.AddDialogueNode(fileId, "ep2", name: "ep2");
         editor.RetireScriptLine(second.Id, second.Script.ActiveLines.Single().Id);   // 줄 없는 카드 — 빈 에피소드라 거부한다
 
         var service = new ChapterExportService();
@@ -326,7 +326,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         // 콘솔·테스트처럼 판을 볼 수 없는 자리에서도 나머지 검증은 그대로 돌아야 한다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
-        editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), name: "ep1");
+        editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), "ep1", name: "ep1");
 
         Assert.True(new ChapterExportService()
             .ExportAll([Entry("ch01", Sound)], ProjectPath)

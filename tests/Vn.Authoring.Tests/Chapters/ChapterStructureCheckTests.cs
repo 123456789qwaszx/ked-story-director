@@ -54,8 +54,8 @@ public sealed class ChapterStructureCheckTests
         //    빈 문구를 자동으로 추측하지 않는다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "ep1", "복도", 0, 0);
-        editor.AddEpisode("ch01", "ep2", "옥상", 220, 0);
+        editor.AddEpisode("ch01", "ep1", "복도", 0, 0, sceneId: "ep1");
+        editor.AddEpisode("ch01", "ep2", "옥상", 220, 0, sceneId: "ep2");
         editor.AddEdge("ch01", "ep1", "ep2", optionLabel: string.Empty);
 
         ChapterGraphModel model = editor.FindChapter("ch01")!.ToGraphModel("ch01");
@@ -79,9 +79,9 @@ public sealed class ChapterStructureCheckTests
         // 플레이어에게는 같은 버튼 둘이고, 문구를 열쇠로 매다는 연출도 한 벌뿐이다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "ep1", "복도", 0, 0);
-        editor.AddEpisode("ch01", "ep2", "옥상", 220, 0);
-        editor.AddEpisode("ch01", "ep3", "지하", 220, 150);
+        editor.AddEpisode("ch01", "ep1", "복도", 0, 0, sceneId: "ep1");
+        editor.AddEpisode("ch01", "ep2", "옥상", 220, 0, sceneId: "ep2");
+        editor.AddEpisode("ch01", "ep3", "지하", 220, 150, sceneId: "ep3");
         editor.AddEdge("ch01", "ep1", "ep2", optionLabel: "간다");
         editor.AddEdge("ch01", "ep1", "ep3", optionLabel: "간다");
 

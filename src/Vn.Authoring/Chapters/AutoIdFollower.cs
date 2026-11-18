@@ -54,7 +54,7 @@ public static class AutoIdFollower
         ChapterDocument chapter = editor.FindChapter(chapterId)
             ?? throw new InvalidOperationException($"챕터 '{chapterId}'가 없습니다.");
         List<string> members = chapter.Episodes
-            .Where(episode => string.Equals(episode.EffectiveSceneId, oldSceneId, StringComparison.Ordinal))
+            .Where(episode => string.Equals(episode.SceneId, oldSceneId, StringComparison.Ordinal))
             .Select(episode => episode.EpisodeId)
             .ToList();
         int moved = 0;

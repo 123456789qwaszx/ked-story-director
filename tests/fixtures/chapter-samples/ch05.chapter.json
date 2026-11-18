@@ -3,6 +3,7 @@
   "episodes": [
     {
       "episodeId": "main05.01",
+      "sceneId": "main05.01",
       "x": 0,
       "y": 0,
       "title": "닫힌 문 앞에서",
@@ -10,12 +11,14 @@
     },
     {
       "episodeId": "main05.02",
+      "sceneId": "main05.02",
       "x": 220,
       "y": 0,
       "title": "조용한 복도"
     },
     {
       "episodeId": "branch05.02A",
+      "sceneId": "branch05.02A",
       "x": 440,
       "y": -120,
       "title": "라루의 제안",
@@ -23,12 +26,14 @@
     },
     {
       "episodeId": "main05.03",
+      "sceneId": "main05.03",
       "x": 440,
       "y": 120,
       "title": "문 너머"
     },
     {
       "episodeId": "attach05.02s",
+      "sceneId": "attach05.02s",
       "x": 220,
       "y": 170,
       "title": "샘플 섬 회상",
@@ -36,6 +41,7 @@
     },
     {
       "episodeId": "main05.end",
+      "sceneId": "main05.end",
       "x": 680,
       "y": 0,
       "title": "선택의 밤",

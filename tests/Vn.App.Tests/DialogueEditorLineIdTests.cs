@@ -34,7 +34,7 @@ public sealed class DialogueEditorLineIdTests : IDisposable
         var session = new AuthoringSession();
         session.Open(manifest);
         session.Editor.EnsureChapter("ch01");
-        DialogueNode node = session.Editor.AddDialogueNode(session.EnsureChapterBoard("ch01"), 0, 0, "root");
+        DialogueNode node = session.Editor.AddDialogueNode(session.EnsureChapterBoard("ch01"), "root", 0, 0, name: "root");
         string lineId = node.Script.ActiveLines.First().Id;
         session.Editor.SetScriptLineText(node.Id, lineId, "라루", "첫 줄");
 

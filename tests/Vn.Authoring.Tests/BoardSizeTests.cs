@@ -34,7 +34,7 @@ public sealed class BoardSizeTests : IDisposable
 
         for (int index = 0; index < ids.Length; index++)
         {
-            editor.AddEpisode("ch01", ids[index], title: ids[index], 0, 0);
+            editor.AddEpisode("ch01", ids[index], title: ids[index], 0, 0, sceneId: ids[index]);
             editor.MoveNode(Card(editor, ids[index]).Id, at[index].X, at[index].Y);
         }
 
@@ -168,7 +168,7 @@ public sealed class BoardSizeTests : IDisposable
 
         for (int index = 0; index < ids.Length; index++)
         {
-            editor.AddEpisode("ch01", ids[index], title: ids[index], 0, 0);
+            editor.AddEpisode("ch01", ids[index], title: ids[index], 0, 0, sceneId: ids[index]);
             editor.MoveNode(EpisodeNaming.CardFor(editor.Project, "ch01", ids[index])!.Id, 9000 + (index * 300), 100);
         }
 

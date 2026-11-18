@@ -29,9 +29,9 @@ public sealed record ChapterEpisode(
     public string ShownTitle => string.IsNullOrWhiteSpace(Title) ? EpisodeId : Title.Trim();
 
     /// <summary>
-    /// [구성] 탭 인스펙터 머리글 — 「장면 - 제목」. 장면ID가 없으면 <see cref="ShownTitle"/>만이다.
+    /// [구성] 탭 인스펙터 머리글 — 「장면 - 제목」.
     /// </summary>
-    public string SceneAndTitle => string.IsNullOrWhiteSpace(SceneId) ? ShownTitle : $"{SceneId.Trim()} - {ShownTitle}";
+    public string SceneAndTitle => $"{SceneId} - {ShownTitle}";
 
     /// <summary>
     /// `이벤트키` — <b>유니티 전용 패스스루 인덱스</b>다. 특정 에피소드를 다 시청했을 때
@@ -46,8 +46,11 @@ public sealed record ChapterEpisode(
     /// </summary>
     public string? EventKey { get; init; }
 
-    /// <summary>런타임의 저장·롤백 경계. 비어 있으면 에피소드별 기본 장면을 쓴다.</summary>
-    public string? SceneId { get; init; }
+    /// <summary>
+    /// 장면 — 런타임의 저장·롤백 경계. <b>에피소드는 늘 장면에 속한다</b> — 비면 저장 검증이 받지 않는다(2026-11-18 · old-shapes O7 —
+    /// ⛔ 그 전에는 비면 에피소드마다 혼자짜리 기본 장면(<c>__scene_{Id}</c>, <c>SceneId</c>)을 썼다).
+    /// </summary>
+    public string SceneId { get; init; } = string.Empty;
 
     /// <summary>
     /// 장면 메모 공간에 이 에피소드의 지시 카드를 붙였는가 — 지시(<see cref="Memo"/>)가 비어도 카드가 남는다. [빼기]만 내린다
@@ -58,9 +61,6 @@ public sealed record ChapterEpisode(
     /// <summary>장면 메모 공간에 카드가 서는가 — 붙였거나, 지시가 있다.</summary>
     public bool HasNoteCard => NoteCard || !string.IsNullOrWhiteSpace(Memo);
 
-    public string EffectiveSceneId => string.IsNullOrWhiteSpace(SceneId)
-        ? $"__scene_{EpisodeId}"
-        : SceneId.Trim();
 }
 
 /// <summary>
@@ -198,8 +198,8 @@ public sealed record ChapterChoiceOption(
 /// 연출 초안을 낼 때 대사와 함께 읽는다(<c>docs/work-orders/scene-notes-orders.md</c>).
 ///
 /// <b>장면이 아니라 장면에 붙는 곁 자료다.</b> 장면의 구성원 · 순서 · 루트는 여기 없다 — 늘 <see cref="ChapterEpisode.SceneId"/>에서
-/// 계산한다(계약 §0-0 "Scene 엔티티를 만들지 않는다"). 열쇠는 <see cref="ChapterEpisode.EffectiveSceneId"/>라서 장면을
-/// 안 나눈 에피소드(<c>__scene_{EpisodeId}</c>)에도 단다. 그 장면의 에피소드가 하나도 없으면 <b>주인 없는 메모</b>다 —
+/// 계산한다(계약 §0-0 "Scene 엔티티를 만들지 않는다"). 열쇠는 <see cref="ChapterEpisode.SceneId"/>다. 그 장면의
+/// 에피소드가 하나도 없으면 <b>주인 없는 메모</b>다 —
 /// 조용히 지우지 않는다(<see cref="ChapterSceneNotes"/>).
 ///
 /// 에피소드마다의 지시는 여기 없다 — 그 에피소드의 <see cref="ChapterEpisode.Memo"/>다(에피소드를 따라다닌다).

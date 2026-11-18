@@ -9,7 +9,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 여기서 나오는 것은 화면이 그릴 때마다 만드는 투영이다 — 런타임에도 장면 표가 없다.
 ///
 /// 못 박는 것: ① 같은 장면ID끼리 묶인다 ② 순서의 근거는 <b>루트의 깊이</b>다
-/// ③ 빈 장면ID는 사람에게 `__scene_*`로 보이지 않는다 ④ <b>깨진 챕터에서도 묶음이 나온다</b>.
+/// ③ <b>깨진 챕터에서도 묶음이 나온다</b>.
 /// </summary>
 public sealed class ChapterSceneGroupingTests
 {
@@ -50,56 +50,6 @@ public sealed class ChapterSceneGroupingTests
 
         // 그리고 깊이를 모르는(도달 못 하는) 장면은 뒤로 밀린다 — 순서가 흔들리지 않게.
         Assert.Equal(2, ChapterSceneGrouping.Of(chapter).Count);
-    }
-
-    [Fact]
-    public void 장면ID가_비면_내부_발급값을_사람에게_보이지_않는다()
-    {
-        // ⛔ `__scene_solo`는 퇴화 상태의 구현 세부다 — 화면에 그대로 뜨면 사람이 그것을
-        //    고쳐야 하는 값으로 읽는다.
-        ChapterGraphModel chapter = Chapter([Episode("solo", sceneId: null)], []);
-
-        ChapterScene scene = Assert.Single(ChapterSceneGrouping.Of(chapter));
-
-        Assert.True(scene.IsDefault);
-        Assert.Equal("__scene_solo", scene.SceneId);              // 비교의 열쇠는 그대로
-        Assert.Equal("미지정 · solo", scene.DisplayName);
-        Assert.DoesNotContain("__scene_", scene.DisplayName);
-    }
-
-    [Fact]
-    public void 섞인_챕터에서_미지정_장면끼리_이름이_안_겹친다()
-    {
-        // ⛔ 규격을 쓰다 드러난 구멍(2026-09-16). 표시명이 하나뿐이면 미지정 장면이 여럿일 때
-        //    <b>똑같은 줄이 여럿 서서</b> 어느 것이 어느 에피소드인지 알 수 없다.
-        //    (장면ID를 하나도 안 적은 챕터는 화면이 장면 단을 생략하므로 이 이름이 안 보인다 —
-        //     이 이름이 실제로 서는 자리는 <b>섞인 챕터</b>뿐이다.)
-        ChapterGraphModel chapter = Chapter(
-            [Episode("a", "opening"), Episode("b", null), Episode("c", null)],
-            [Edge("a", "b"), Edge("b", "c")]);
-
-        List<string> names = ChapterSceneGrouping.Of(chapter)
-            .Where(scene => scene.IsDefault)
-            .Select(scene => scene.DisplayName)
-            .ToList();
-
-        Assert.Equal(["미지정 · b", "미지정 · c"], names);
-        Assert.Equal(names.Count, names.Distinct(StringComparer.Ordinal).Count());
-    }
-
-    [Fact]
-    public void 빈_장면ID는_에피소드마다_제_장면이다()
-    {
-        // 구판 호환의 뜻 — 장면 개념이 서기 전의 동작이 그대로 살아 있어야 한다.
-        ChapterGraphModel chapter = Chapter(
-            [Episode("a", null), Episode("b", null)],
-            [Edge("a", "b")]);
-
-        IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter);
-
-        Assert.Equal(2, scenes.Count);
-        Assert.All(scenes, scene => Assert.True(scene.IsDefault));
-        Assert.All(scenes, scene => Assert.Single(scene.Episodes));
     }
 
     [Fact]
@@ -151,7 +101,7 @@ public sealed class ChapterSceneGroupingTests
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    private static ChapterEpisode Episode(string id, string? sceneId) =>
+    private static ChapterEpisode Episode(string id, string sceneId) =>
         new(id, id, string.Empty, 0, 0, null) { SceneId = sceneId };
 
     private static ChapterEdge Edge(string from, string to) =>

@@ -32,7 +32,7 @@ public sealed class SpeakerTabTests : IDisposable
 
         var editor = new ProjectEditor(new StoryProject { Title = "캐스트" });
         editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", 0, 0, 10));
-        editor.AddEpisode("ch01", "ep01", title: "ep01", 0, 0);
+        editor.AddEpisode("ch01", "ep01", title: "ep01", 0, 0, sceneId: "ep01");
 
         ProjectStore.Save(ManifestPath, editor.Project);
     }

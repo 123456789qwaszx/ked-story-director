@@ -3,7 +3,7 @@ namespace Vn.Authoring.Chapters;
 /// <summary>
 /// 장면 메모(<see cref="ChapterSceneNote"/>)의 규칙 — 누가 주인인가, 어떤 차례로 쓰는가.
 ///
-/// <b>주인</b>: 그 열쇠를 <see cref="ChapterEpisode.EffectiveSceneId"/>로 가진 에피소드가 하나라도 있으면 그 장면의 메모다.
+/// <b>주인</b>: 그 열쇠를 <see cref="ChapterEpisode.SceneId"/>로 가진 에피소드가 하나라도 있으면 그 장면의 메모다.
 /// 없으면 <b>주인 없는 메모</b> — 마지막 에피소드를 지우거나 옮기거나, 다른 장면으로 합쳤을 때 생긴다. 남겨 두고
 /// 검증이 알린다(조용히 지우지 않는다 — §6-9와 같은 생각).
 ///
@@ -26,7 +26,7 @@ public static class ChapterSceneNotes
 
     /// <summary>그 장면의 에피소드가 하나라도 있는가.</summary>
     public static bool IsOwned(IReadOnlyList<ChapterEpisode> episodes, string sceneId) =>
-        episodes.Any(episode => string.Equals(episode.EffectiveSceneId, sceneId, StringComparison.Ordinal));
+        episodes.Any(episode => string.Equals(episode.SceneId, sceneId, StringComparison.Ordinal));
 
     /// <summary>쓰는 차례 — 주인 있는 메모를 장면이 처음 나오는 차례로, 그 뒤에 주인 없는 메모를 열쇠 차례로. 빈 메모는 뺀다.</summary>
     public static List<ChapterSceneNote> Ordered(
@@ -46,7 +46,7 @@ public static class ChapterSceneNotes
 
         foreach (ChapterEpisode episode in episodes)
         {
-            if (byScene.Remove(episode.EffectiveSceneId, out ChapterSceneNote? note))
+            if (byScene.Remove(episode.SceneId, out ChapterSceneNote? note))
             {
                 ordered.Add(note);
             }
@@ -74,16 +74,10 @@ public static class ChapterSceneNotes
                 path,
                 ChapterSheetNames.SceneNotes,
                 EpisodeId: null,
-                $"장면 '{note.Name?.Trim() ?? ShownSceneName(note.SceneId)}'의 메모에 주인이 없습니다 — 그 장면의 에피소드가 없습니다" +
+                $"장면 '{note.Name?.Trim() ?? note.SceneId}'의 메모에 주인이 없습니다 — 그 장면의 에피소드가 없습니다" +
                 (string.IsNullOrWhiteSpace(note.Text) ? ". " : $"(「{Lead(note.Text)}」). ") +
                 "장면을 되살리거나 챕터 인스펙터에서 지웁니다."))
             .ToList();
-
-    /// <summary>사람에게 보이는 장면 이름 — 미지정 장면(<c>__scene_{Id}</c>)은 화면과 같은 「미지정 · {Id}」.</summary>
-    public static string ShownSceneName(string sceneId) =>
-        sceneId.StartsWith(UnnamedPrefix, StringComparison.Ordinal)
-            ? ChapterSceneGrouping.DefaultSceneName(sceneId[UnnamedPrefix.Length..])
-            : sceneId;
 
     /// <summary>메모의 첫머리 한 줄 — 길면 자른다.</summary>
     public static string Lead(string text, int length = 24)
@@ -91,8 +85,6 @@ public static class ChapterSceneNotes
         string line = text.Trim().Split('\n')[0].Trim();
         return line.Length <= length ? line : line[..length].TrimEnd() + "…";
     }
-
-    private const string UnnamedPrefix = "__scene_";
 
     /// <summary>
     /// 그 장면에 적힌 것이 있는가 — 장면 메모나, 그 장면 에피소드의 지시(<see cref="ChapterEpisode.Memo"/>)가 하나라도.

@@ -18,8 +18,8 @@ public sealed class EdgeSideTests
         // 챕터 시작 카드(start)는 멀리 오른쪽이다 — 예전 규칙(시작 카드 기준)이면 scene의 포트가 늘 왼쪽이었다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "start", "start", 0, 0);
-        editor.AddEpisode("ch01", "scene", "scene", 0, 0);
+        editor.AddEpisode("ch01", "start", "start", 0, 0, sceneId: "start");
+        editor.AddEpisode("ch01", "scene", "scene", 0, 0, sceneId: "scene");
         editor.MoveNode(EpisodeNaming.CardFor(editor.Project, "ch01", "start")!.Id, 2000, 0);
         DialogueNode scene = EpisodeNaming.CardFor(editor.Project, "ch01", "scene")!;
         editor.MoveNode(scene.Id, 800, 0);

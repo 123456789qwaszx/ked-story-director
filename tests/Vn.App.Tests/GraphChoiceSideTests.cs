@@ -184,7 +184,7 @@ public sealed class GraphChoiceSideTests : IDisposable
 
         foreach ((string id, double x, double y) in episodes)
         {
-            session.Editor.AddEpisode("ch01", id, title: id, 0, 0);
+            session.Editor.AddEpisode("ch01", id, title: id, 0, 0, sceneId: id);
             DialogueNode card = session.Project.EnumerateNodes().OfType<DialogueNode>()
                 .Single(node => EpisodeNaming.EpisodeIdOf(node) == id);
             session.Editor.MoveNode(card.Id, x, y);

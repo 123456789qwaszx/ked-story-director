@@ -25,8 +25,8 @@ public sealed class ChapterEpisodeIsolationTests
         editor.EnsureChapter("ch00");
         editor.EnsureChapter("ch01");
 
-        editor.AddEpisode("ch00", "new01", "new01", 0, 0);
-        editor.AddEpisode("ch01", "new01", "new01", 0, 0); // 두 번째도 정말 따로 선다
+        editor.AddEpisode("ch00", "new01", "new01", 0, 0, sceneId: "new01");
+        editor.AddEpisode("ch01", "new01", "new01", 0, 0, sceneId: "new01"); // 두 번째도 정말 따로 선다
 
         DialogueNode cardA = EpisodeNaming.CardFor(editor.Project, "ch00", "new01")!;
         DialogueNode cardB = EpisodeNaming.CardFor(editor.Project, "ch01", "new01")!;

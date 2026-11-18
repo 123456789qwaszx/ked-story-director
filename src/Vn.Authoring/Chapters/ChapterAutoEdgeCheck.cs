@@ -79,10 +79,10 @@ public static class ChapterAutoEdgeCheck
 
             if (episodeById.TryGetValue(edge.FromEpisodeId, out ChapterEpisode? from) &&
                 episodeById.TryGetValue(edge.ToEpisodeId, out ChapterEpisode? to) &&
-                !string.Equals(from.EffectiveSceneId, to.EffectiveSceneId, StringComparison.Ordinal))
+                !string.Equals(from.SceneId, to.SceneId, StringComparison.Ordinal))
             {
                 Error(ChapterDiagnosticCode.AutoEdgeCrossesScene,
-                    $"자동 길은 같은 장면 안에서만 이어집니다. 출발은 '{from.EffectiveSceneId}', 도착은 '{to.EffectiveSceneId}'입니다.");
+                    $"자동 길은 같은 장면 안에서만 이어집니다. 출발은 '{from.SceneId}', 도착은 '{to.SceneId}'입니다.");
             }
 
             if (!edge.HasNoOptionLabel)

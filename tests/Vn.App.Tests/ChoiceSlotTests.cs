@@ -314,7 +314,8 @@ public sealed class ChoiceSlotTests : IDisposable
 
         // 자동 길은 장면을 못 넘으므로 둘을 같은 장면에 둔다 — 안 그러면 규격 위반이고,
         //    화면이 그것을 먼저 막는다(아래 테스트).
-        session.Editor.UpdateEpisodeScenes("ch01", ["root", "a"], "opening");
+        session.Editor.UpdateEpisode("ch01", "root", sceneId: "opening");
+        session.Editor.UpdateEpisode("ch01", "a", sceneId: "opening");
         graph.Rebuild();
 
         Drag(graph, session, "root", slot: 0, onto: "a");
@@ -335,9 +336,6 @@ public sealed class ChoiceSlotTests : IDisposable
     {
         // 장면 경계는 실제로 `Commit → Exit → Enter`다 — 묻지 않고 넘어가면 안 된다
         //    (`AutoEdgeCrossesScene`). 관문에서야 알면 되돌려야 하니 여기서 먼저 말한다.
-        //
-        // 장면ID를 아무 데도 안 적은 챕터가 바로 이 경우다 — 에피소드마다 제 장면이라
-        //    (`__scene_*`) 자동 길이 아예 설 수 없다. 숨기지 않고 말한다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         Drag(graph, session, "root", slot: 0, onto: "a");
@@ -366,7 +364,7 @@ public sealed class ChoiceSlotTests : IDisposable
         // two-graphs.md §6-3 — 옛 길을 걷고 새로 그으면 옮긴 선택지가 목록 끝으로
         //    가고(= 런타임 OptionIndex가 바뀐다) 스탯 변화를 잃고 되돌리기도 두 칸이 된다.
         (GraphEditorView graph, AuthoringSession session) = Show();
-        session.Editor.AddEpisode("ch01", "b", title: "b", 0, 0);
+        session.Editor.AddEpisode("ch01", "b", title: "b", 0, 0, sceneId: "b");
         session.Editor.MoveNode(
             EpisodeNaming.CardFor(session.Project, "ch01", "b")!.Id, 640, 0);
         session.Editor.AddChapterStat("ch01", "trust", maximum: 10);
@@ -445,7 +443,7 @@ public sealed class ChoiceSlotTests : IDisposable
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         DialogueNode aside = session.Editor.AddDialogueNode(
-            session.Project.Files[0].Id, 0, 400, "곁가지");
+            session.Project.Files[0].Id, "곁가지", 0, 400, name: "곁가지");
         graph.Rebuild();
 
         Assert.Equal("곁가지", aside.MarkedEpisodeId);
@@ -621,7 +619,7 @@ public sealed class ChoiceSlotTests : IDisposable
             // 주의: <b>카드를 따로 세우지 않는다</b> — `AddEpisode`가 함께 만든다.
             //    여기서 한 장 더 만들면 이름이 같은 카드가 둘 서서 끌어
             //    놓기가 <b>엉뚱한 카드</b>를 맞힌다(`root → root` 간선이 생긴다).
-            session.Editor.AddEpisode(chapterId, episodeIds[index], title: episodeIds[index], 0, 0);
+            session.Editor.AddEpisode(chapterId, episodeIds[index], title: episodeIds[index], 0, 0, sceneId: episodeIds[index]);
 
             DialogueNode card = session.Project.EnumerateNodes().OfType<DialogueNode>()
                 .Single(node => EpisodeNaming.EpisodeIdOf(node) == episodeIds[index]);

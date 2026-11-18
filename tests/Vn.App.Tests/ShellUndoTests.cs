@@ -41,7 +41,7 @@ public sealed class ShellUndoTests : IDisposable
 
         DialogueNode node = SeedProject(window, _directory);
 
-        window.SessionProbe.Editor.AddEpisode("ch01", "ep02", title: string.Empty, 0, 0);
+        window.SessionProbe.Editor.AddEpisode("ch01", "ep02", title: string.Empty, 0, 0, sceneId: "ep02");
         Assert.Equal(2, window.SessionProbe.Editor.FindChapter("ch01")!.Episodes.Count);
 
         Press(window, Key.Z, KeyModifiers.Control);
@@ -74,7 +74,7 @@ public sealed class ShellUndoTests : IDisposable
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Assert.Same(box, window.FocusManager?.GetFocusedElement());   // 정말 글 칸에 초점이 있다
 
-        window.SessionProbe.Editor.AddEpisode("ch01", "ep02", title: string.Empty, 0, 0);
+        window.SessionProbe.Editor.AddEpisode("ch01", "ep02", title: string.Empty, 0, 0, sceneId: "ep02");
 
         Press(window, Key.Z, KeyModifiers.Control);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -98,7 +98,7 @@ public sealed class ShellUndoTests : IDisposable
         session.Editor.EnsureChapter("ch01");
 
         // ⚠ 카드와 대본까지 함께 선다 (2026-09-18) — 여기서 또 만들면 카드가 둘이 된다.
-        session.Editor.AddEpisode("ch01", "ep01", title: "ep01", 0, 0);
+        session.Editor.AddEpisode("ch01", "ep01", title: "ep01", 0, 0, sceneId: "ep01");
 
         DialogueNode node = session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(item => Vn.Authoring.Chapters.EpisodeNaming.EpisodeIdOf(item) == "ep01");

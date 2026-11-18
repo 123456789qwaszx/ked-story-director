@@ -93,7 +93,7 @@ public sealed class CardSizeTests
         var editor = new ProjectEditor(project);
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", "root", 0, 0);
+        editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "root");
         DialogueNode root = EpisodeNaming.CardFor(project, "ch01", "root")!;
 
         (double _, double plainY) = NodePlacement.For(project, "ch01", "next", parentEpisodeId: "root");

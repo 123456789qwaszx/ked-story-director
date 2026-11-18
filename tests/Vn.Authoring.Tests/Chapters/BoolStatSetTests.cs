@@ -262,7 +262,7 @@ public sealed class BoolStatSetTests
 
         for (int index = 0; index < episodeIds.Length; index++)
         {
-            editor.AddEpisode("ch01", episodeIds[index], episodeIds[index], index * 200, 0);
+            editor.AddEpisode("ch01", episodeIds[index], episodeIds[index], index * 200, 0, sceneId: episodeIds[index]);
         }
 
         return editor;

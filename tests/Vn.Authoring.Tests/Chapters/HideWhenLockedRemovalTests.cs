@@ -30,8 +30,8 @@ public sealed class HideWhenLockedRemovalTests
         chapter.Stats.Add(new ChapterStat("trust", 3, 0, 10));
         chapter.Stats.Add(new ChapterStat("fatigue", 0, 0, 10));
 
-        editor.AddEpisode("ch01", "시작", "첫 화", 0, 0);
-        editor.AddEpisode("ch01", "끝", "끝 화", 200, 0);
+        editor.AddEpisode("ch01", "시작", "첫 화", 0, 0, sceneId: "시작");
+        editor.AddEpisode("ch01", "끝", "끝 화", 200, 0, sceneId: "끝");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
         editor.AddEdge("ch01", "시작", "끝", conditionLabel: "신뢰높음", optionLabel: "계속");
         editor.UpdateEdge("ch01", "시작", "끝", lockedMessage: "신뢰가 부족하다", matchOptionLabel: "계속");

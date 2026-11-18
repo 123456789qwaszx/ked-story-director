@@ -147,13 +147,18 @@ internal static class JsonSupport
     /// <summary>
     /// 에피소드와 카드는 한 칸에 서고 함께 지워진다(2026-11-18 · old-shapes O4) — 그래서 에피소드마다 그 챕터의 판에 카드가 <b>하나</b>,
     /// 에피소드 카드는 그 챕터의 에피소드를 표식(<see cref="DialogueNode.MarkedEpisodeId"/>)으로 가리키고 이름도 그 EpisodeId다(O5 — Yarn 노드
-    /// 이름은 EpisodeId에서 짓는다), 분기 카드는 표식이 없다.
+    /// 이름은 EpisodeId에서 짓는다), 분기 카드는 표식이 없다. 에피소드는 늘 장면에 속한다(O7 — 장면ID가 비지 않는다).
     /// 그렇지 않은 프로젝트(옛 데이터 · 손으로 고친 파일)는 받지 않는다.
     /// </summary>
     private static void ValidateEpisodeCards(StoryProject project)
     {
         foreach (Chapters.ChapterDocument chapter in project.Chapters)
         {
+            if (chapter.Episodes.FirstOrDefault(episode => string.IsNullOrWhiteSpace(episode.SceneId)) is { } sceneless)
+            {
+                throw new InvalidDataException($"챕터 '{chapter.ChapterId}'의 에피소드 '{sceneless.EpisodeId}'에 장면ID가 없습니다.");
+            }
+
             HashSet<string> episodes = chapter.Episodes.Select(episode => episode.EpisodeId).ToHashSet(StringComparer.Ordinal);
             HashSet<string> marked = new(StringComparer.Ordinal);
             StoryFile? board = project.Files.FirstOrDefault(file => string.Equals(file.Name, chapter.ChapterId, StringComparison.Ordinal));

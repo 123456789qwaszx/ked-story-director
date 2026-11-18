@@ -51,7 +51,7 @@ public sealed class ChapterDocument
     public List<ChapterFixture> Fixtures { get; init; } = [];
 
     /// <summary>
-    /// 장면 메모 — 장면마다 하나, 열쇠는 <see cref="ChapterEpisode.EffectiveSceneId"/>. 진행 JSON에 나가지 않는다.
+    /// 장면 메모 — 장면마다 하나, 열쇠는 <see cref="ChapterEpisode.SceneId"/>. 진행 JSON에 나가지 않는다.
     /// 이 목록의 차례는 뜻이 없다 — 저장할 때 <see cref="ChapterSceneNotes.Ordered"/>가 차례를 정한다.
     /// </summary>
     public List<ChapterSceneNote> SceneNotes { get; init; } = [];
@@ -89,26 +89,8 @@ public sealed class ChapterDocument
         .. ChapterAutoEdgeCheck.Of(Episodes, Edges, path),
         .. ChapterSceneEntryCheck.Of(Episodes, Edges, path),
         .. ChapterStructureCheck.Of(Episodes, Edges, Conditions.Select(Reparse).ToList(), Stats, path),
-        .. ChapterSceneNotes.Diagnostics(Episodes, SceneNotes, path),
-        .. SceneDiagnostics(path)
+        .. ChapterSceneNotes.Diagnostics(Episodes, SceneNotes, path)
     ];
-
-    /// <summary>
-    /// <b>장면 없는 에피소드</b> — 경고(2026-11-17 소유자 · <c>docs/work-orders/scene-required-orders.md</c> E3). 에피소드는 늘 장면에 속한다 —
-    /// 툴의 창구는 장면 없는 에피소드를 만들지 않으니 옛 데이터 · 손으로 고친 파일에서 온다. 게임에서는 그 에피소드 하나가 혼자짜리 장면으로
-    /// 돌아(<see cref="ChapterEpisode.EffectiveSceneId"/>) 내보내기는 막지 않는다.
-    /// </summary>
-    private IEnumerable<ChapterDiagnostic> SceneDiagnostics(string path) =>
-        Episodes
-            .Where(episode => string.IsNullOrWhiteSpace(episode.SceneId))
-            .Select(episode => new ChapterDiagnostic(
-                ChapterDiagnosticSeverity.Warning,
-                ChapterDiagnosticCode.EpisodeWithoutScene,
-                path,
-                ChapterSheetNames.Episodes,
-                episode.EpisodeId,
-                $"'{episode.ShownTitle}'에 장면이 없습니다 — 에피소드는 장면에 속해야 합니다. [대본] 탭 하이어아키에서 그 에피소드를 장면 줄로 " +
-                "끌어 넣어 주세요(게임에서는 지금 혼자짜리 장면으로 돕니다)."));
 
     /// <summary>
     /// 스탯에 대한 <b>모델 검사</b>.

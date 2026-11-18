@@ -79,7 +79,7 @@ public sealed class ChapterBranchMarkersTests
         (ProjectEditor editor, DialogueNode caller) = World();
 
         StoryFile elsewhere = TestChapter.Board(editor, "ch02");
-        DialogueNode outsider = editor.AddDialogueNode(elsewhere.Id, 0, 0, "바깥");
+        DialogueNode outsider = editor.AddDialogueNode(elsewhere.Id, "바깥", 0, 0, name: "바깥");
 
         string lineId = caller.Script.ActiveLines.First().Id;
         caller.RequireExtension(lineId).DetourTargetNodeIds.Add(outsider.Id);
@@ -120,7 +120,7 @@ public sealed class ChapterBranchMarkersTests
 
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
 
         return (editor, EpisodeNaming.CardFor(editor.Project, "ch01", "root")!);
     }

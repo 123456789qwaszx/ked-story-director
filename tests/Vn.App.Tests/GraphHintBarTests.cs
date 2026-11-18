@@ -35,8 +35,8 @@ public sealed class GraphHintBarTests
         // 판이 비어서 조용한 것이 아니라는 것을 못 박는다.
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard();
 
-        session.Editor.AddDialogueNode(fileId, name: "첫 씬");
-        session.Editor.AddDialogueNode(fileId, name: "둘째 씬");
+        session.Editor.AddDialogueNode(fileId, "첫 씬", name: "첫 씬");
+        session.Editor.AddDialogueNode(fileId, "둘째 씬", name: "둘째 씬");
         graph.Rebuild();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 

@@ -34,10 +34,10 @@ public sealed class ChapterStatSpanViewTests : IDisposable
 
         // ep1 ─(+1)─ 싼길 ─┐
         //   └─(+3)─ 비싼길 ─┴─ 합류      (분노는 챕터 어디에서도 움직이지 않는다)
-        _editor.AddEpisode("ch01", "ep1", title: "", 0, 0);
-        _editor.AddEpisode("ch01", "싼길", title: "", 1, 0);
-        _editor.AddEpisode("ch01", "비싼길", title: "", 1, 1);
-        _editor.AddEpisode("ch01", "합류", title: "", 2, 0);
+        _editor.AddEpisode("ch01", "ep1", title: "", 0, 0, sceneId: "ep1");
+        _editor.AddEpisode("ch01", "싼길", title: "", 1, 0, sceneId: "싼길");
+        _editor.AddEpisode("ch01", "비싼길", title: "", 1, 1, sceneId: "비싼길");
+        _editor.AddEpisode("ch01", "합류", title: "", 2, 0, sceneId: "합류");
 
         _editor.AddEdge("ch01", "ep1", "싼길", statChanges: "trust +1");
         _editor.AddEdge("ch01", "ep1", "비싼길", statChanges: "trust +3");

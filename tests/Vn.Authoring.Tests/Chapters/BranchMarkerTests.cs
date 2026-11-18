@@ -108,7 +108,7 @@ public sealed class BranchMarkerTests
         var editor = new ProjectEditor(project);
 
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);   // 에피소드와 카드가 한 칸에 선다
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");   // 에피소드와 카드가 한 칸에 선다
 
         DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
 
@@ -215,7 +215,7 @@ public sealed class BranchMarkerTests
         (ProjectEditor editor, _, _) = World();
 
         DialogueNode made = editor.AddDialogueNode(
-            editor.Project.Files[0].Id, name: "혼자선카드");
+            editor.Project.Files[0].Id, "혼자선카드", name: "혼자선카드");
         ChapterDocument chapter = editor.Project.Chapters.Single();
 
         ChapterDiagnostic said = Assert.Single(
@@ -321,7 +321,7 @@ public sealed class BranchMarkerTests
         // 포트로 이어도, 이어지지 않은 분기점을 이어도 같다. 아무것도 바뀌지 않는다(되돌리기 칸도 없다).
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode made = editor.AddBranchMarker(node.Id, lineId);
-        editor.AddEpisode("ch01", "다음", title: "다음", 600, 0);
+        editor.AddEpisode("ch01", "다음", title: "다음", 600, 0, sceneId: "다음");
         DialogueNode episode = EpisodeNaming.CardFor(editor.Project, "ch01", "다음")!;
         long before = editor.Revision;
 

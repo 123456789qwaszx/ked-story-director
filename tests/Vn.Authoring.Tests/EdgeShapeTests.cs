@@ -54,7 +54,7 @@ public sealed class EdgeShapeTests
     public void 도착_문구_이름이_바뀌어도_모양은_간선을_따라간다()
     {
         ProjectEditor editor = Chapter();
-        editor.AddEpisode("ch01", "c", "c", 0, 0);
+        editor.AddEpisode("ch01", "c", "c", 0, 0, sceneId: "c");
         editor.SetEdgeShape("ch01", "a", "b", "간다", Curved);
 
         editor.SetEdgeRoute("ch01", "a", "b", "간다", "c", "돌아간다");
@@ -207,8 +207,8 @@ public sealed class EdgeShapeTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "a", "a", 0, 0);
-        editor.AddEpisode("ch01", "b", "b", 0, 0);
+        editor.AddEpisode("ch01", "a", "a", 0, 0, sceneId: "a");
+        editor.AddEpisode("ch01", "b", "b", 0, 0, sceneId: "b");
         editor.AddEdge("ch01", "a", "b", optionLabel: "간다");
 
         return editor;

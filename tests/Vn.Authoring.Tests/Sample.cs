@@ -34,7 +34,7 @@ internal sealed class Sample
         ConditionA = SetNode.Conditions.Single(condition => condition.Name == "호감 높음");
         ConditionB = SetNode.Conditions.Single(condition => condition.Name == "신뢰 높음");
 
-        Dialogue = Editor.AddDialogueNode(File.Id, name: "본문");
+        Dialogue = Editor.AddDialogueNode(File.Id, "본문", name: "본문");
 
         // 본문 카드는 <b>빈 대본</b>으로 시작한다 — 시험마다 줄을 처음부터 쌓는다(<see cref="Line"/>). 카드가 태어날 때
         // 든 빈 첫 줄을 걷고 LineId 번호도 처음으로 되돌린다(대본이 카드 안으로 들어오기 전과 같은 번호가 나온다).
@@ -114,7 +114,7 @@ internal sealed class Sample
     /// <summary>대본 한 줄짜리 종점 노드. 문제 없이 펼쳐지는 상태로 만들어 둔다.</summary>
     private DialogueNode AddEndNode(string name)
     {
-        DialogueNode node = Editor.AddDialogueNode(File.Id, name: name);   // 빈 첫 줄을 들고 선다
+        DialogueNode node = Editor.AddDialogueNode(File.Id, name, name: name);   // 빈 첫 줄을 들고 선다
         Editor.SetScriptLineText(node.Id, node.Script.ActiveLines.Single().Id, "화자", name);
         return node;
     }

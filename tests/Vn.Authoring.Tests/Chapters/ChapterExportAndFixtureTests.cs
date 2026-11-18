@@ -350,8 +350,8 @@ public sealed class ChapterExportAndFixtureTests
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         chapter.Stats.Add(new ChapterStat("anger", 0, 0, 10));
 
-        editor.AddEpisode("gd", "ep1", "첫 화", 0, 0);
-        editor.AddEpisode("gd", "ep2", "둘째", 200, 0);
+        editor.AddEpisode("gd", "ep1", "첫 화", 0, 0, sceneId: "ep1");
+        editor.AddEpisode("gd", "ep2", "둘째", 200, 0, sceneId: "ep2");
         editor.AddChapterCondition("gd", "신뢰0이상", "trust >= 0");
         editor.AddChapterCondition("gd", "신뢰초과", "trust > 1");
         editor.AddEdge("gd", "ep1", "ep2", optionLabel: "믿는다");

@@ -17,8 +17,8 @@ public sealed class EpisodeRenamerTests
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", "root", 0, 0);
-        editor.AddEpisode("ch01", "b", "b", 0, 400);
+        editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "b", "b", 0, 400, sceneId: "b");
         editor.AddEdge("ch01", "root", "b", optionLabel: "가자");
         DialogueNode card = EpisodeNaming.CardFor(editor.Project, "ch01", "b")!;
 
@@ -44,8 +44,8 @@ public sealed class EpisodeRenamerTests
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", "root", 0, 0);
-        editor.AddEpisode("ch01", "b", "b", 0, 400);
+        editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "b", "b", 0, 400, sceneId: "b");
         string before = ProjectSnapshotCodec.Encode(editor.Project);
 
         EpisodeRenamer.Result result = EpisodeRenamer.Rename(editor, "ch01", "b", "root");

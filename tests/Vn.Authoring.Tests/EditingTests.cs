@@ -58,7 +58,7 @@ public class EditingTests
 
         // 그래프에서 왼쪽 위에 놓아도 지정한 파일에서는 맨 뒤다.
         DialogueNode added = sample.Editor.AddDialogueNode(
-            sample.File.Id,
+            sample.File.Id, "나중에 만든 것",
             x: -500,
             y: -500,
             name: "나중에 만든 것");
@@ -76,8 +76,8 @@ public class EditingTests
         project.Files.Add(file);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "시작 파일" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
-        DialogueNode first = editor.AddDialogueNode(file.Id);
-        editor.AddDialogueNode(file.Id);
+        DialogueNode first = editor.AddDialogueNode(file.Id, "s1");
+        editor.AddDialogueNode(file.Id, "s1");
 
         Assert.Equal(first.Id, editor.Project.StartNodeId);
     }

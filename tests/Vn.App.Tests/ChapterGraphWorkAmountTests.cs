@@ -36,7 +36,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
         for (int index = 0; index < 6; index++)
         {
             string id = $"ep{index}";
-            editor.AddEpisode("ch01", id, title: $"제목{index}", index, 0);
+            editor.AddEpisode("ch01", id, title: $"제목{index}", index, 0, sceneId: id);
 
             if (previous.Length > 0)
             {
@@ -134,7 +134,7 @@ public sealed class ChapterGraphWorkAmountTests : IDisposable
 
         int before = view.ValidationComputeCount;
 
-        session.Editor.AddEpisode("ch01", "새에피소드", title: "새것", 9, 9);
+        session.Editor.AddEpisode("ch01", "새에피소드", title: "새것", 9, 9, sceneId: "새에피소드");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         view.Refresh();

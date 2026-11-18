@@ -106,13 +106,7 @@ public enum ChapterDiagnosticCode
     /// <b>주인 없는 장면 메모</b> — 그 장면ID를 가진 에피소드가 없다(마지막 에피소드를 지웠거나 옮겼거나, 다른 장면으로
     /// 합쳤다). 경고다 — 내보내기를 막지 않는다. 메모를 조용히 지우지 않으므로 사람이 챕터 인스펙터에서 지우거나 장면을 되살린다.
     /// </summary>
-    SceneNoteOrphaned,
-
-    /// <summary>
-    /// <b>장면 없는 에피소드</b> — 장면ID가 비었다(2026-11-17 — 에피소드는 늘 장면에 속한다). 경고다 — 게임에서는 혼자짜리 장면으로 돈다.
-    /// 툴은 이런 에피소드를 만들지 않으니 옛 데이터에서 온다.
-    /// </summary>
-    EpisodeWithoutScene
+    SceneNoteOrphaned
 }
 
 /// <summary>

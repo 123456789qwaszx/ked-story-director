@@ -200,10 +200,10 @@ public sealed class ChapterGraphViewRenderTests
         // 표식이 유일한 알림 창구다 — 관례대로 오류는 빨강, 경고는 노랑이다.
         Assert.Contains("🔴 오류 1", (string)expander.Header!);
 
-        // 경고 7건 — 견본의 에피소드 여섯이 장면이 없다(옛 견본 — 2026-11-17부터 경고), 그리고 의도한 섬 attach05.02s가 이어지지
-        // 않았다(2026-11-17부터 경고 — ⛔ 그 전에는 `도달불가 허용` 깃발이 알림으로 낮췄다). 견본의 간선은 모두 문구를 가져 문구 없는 간선
-        // 경고는 없다. ⛔ 「스탯이 game.definition.json에 없다」(스탯마다 하나)는 2026-11-17에 걷혔다 — 스탯은 챕터의 것이다.
-        Assert.Contains("🟡 경고 7", (string)expander.Header!);
+        // 경고 1건 — 의도한 섬 attach05.02s가 이어지지 않았다(2026-11-17부터 경고 — ⛔ 그 전에는 `도달불가 허용` 깃발이 알림으로 낮췄다).
+        // 견본의 간선은 모두 문구를 가져 문구 없는 간선 경고는 없다. ⛔ 「스탯이 game.definition.json에 없다」(스탯마다 하나)는 2026-11-17에,
+        // 「장면이 없는 에피소드」(견본의 여섯)는 2026-11-18에 걷혔다(old-shapes O7 — 에피소드는 늘 장면에 속하고 장면 없이는 읽지 않는다).
+        Assert.Contains("🟡 경고 1", (string)expander.Header!);
 
         // 접힌 채로도 사람이 열면 목록이 그대로 있다 — 원할 때 언제든 확인한다.
         expander.IsExpanded = true;

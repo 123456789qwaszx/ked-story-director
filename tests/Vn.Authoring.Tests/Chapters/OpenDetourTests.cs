@@ -170,7 +170,7 @@ public sealed class OpenDetourTests
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
 
         DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
         return (editor, node, node.Script.ActiveLines.First().Id);

@@ -107,7 +107,7 @@ public sealed class ScenarioLineIdentityTests
         project.Files.Add(file);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "카드" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
-        DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");
+        DialogueNode node = editor.AddDialogueNode(file.Id, "장면", name: "장면");
 
         Assert.True(editor.ApplyScenarioText(node.Id, string.Join('\n', texts)).Applied);
         return (editor, node, node.Script.ActiveLines.Select(line => line.Id).ToArray());

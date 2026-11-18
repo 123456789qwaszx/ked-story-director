@@ -141,7 +141,7 @@ public sealed class ChapterRailTests
 
     private static DialogueNode AddEpisodeCard(AuthoringSession session, string fileId, string episodeId)
     {
-        DialogueNode node = session.Editor.AddDialogueNode(fileId, name: episodeId);
+        DialogueNode node = session.Editor.AddDialogueNode(fileId, episodeId, name: episodeId);
         node.MarkedEpisodeId = episodeId;
         return node;
     }

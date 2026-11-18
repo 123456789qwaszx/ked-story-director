@@ -54,8 +54,8 @@ public partial class MainWindow
                 // 에피소드는 늘 장면에 속한다 — 장면 줄은 그 장면 끝에, 장면 안 에피소드 줄은 그 뒤에(간선까지)(2026-11-17).
                 (string? after, string? sceneId) = row.Kind switch
                 {
-                    HierarchyKind.Episode => (row.EpisodeId, RealSceneId(chapter.Model.FindEpisode(row.EpisodeId!)?.SceneId)),
-                    HierarchyKind.Scene when scene is { IsDefault: false } => (scene.Episodes[^1].EpisodeId, scene.SceneId),
+                    HierarchyKind.Episode => (row.EpisodeId, chapter.Model.FindEpisode(row.EpisodeId!)?.SceneId),
+                    HierarchyKind.Scene when scene is not null => (scene.Episodes[^1].EpisodeId, scene.SceneId),
                     _ => (null, null)
                 };
 
@@ -132,10 +132,10 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 에피소드를 하나 더한다 — <paramref name="after"/>에서 간선을 달고(없으면 홀로), <paramref name="sceneId"/>가 있으면 그
-    /// 장면에. 되돌리기 한 칸(<c>Batch</c>). 더한 에피소드를 두 탭에서 고른다.
+    /// 에피소드를 하나 더한다 — <paramref name="after"/>에서 간선을 달고(없으면 홀로), <paramref name="sceneId"/>의 장면에.
+    /// 되돌리기 한 칸(<c>Batch</c>). 더한 에피소드를 두 탭에서 고른다.
     /// </summary>
-    private void CreateEpisode(ChapterEntry chapter, string? after, string? sceneId, string? sceneName = null)
+    private void CreateEpisode(ChapterEntry chapter, string? after, string sceneId, string? sceneName = null)
     {
         string chapterId = chapter.ChapterId;
         string episodeId = string.Empty;
@@ -144,7 +144,7 @@ public partial class MainWindow
         {
             episodeId = EpisodeAdder.Add(_session, chapterId, after, sceneId);
 
-            if (sceneId is not null && sceneName is not null)
+            if (sceneName is not null)
             {
                 _session.Editor.SetSceneName(chapterId, sceneId, sceneName);
             }
@@ -160,6 +160,4 @@ public partial class MainWindow
             ". 이름은 하이어아키에서 두 번 눌러 고칩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
-    /// <summary>적어 둔 장면ID — 비었으면 null(미지정).</summary>
-    private static string? RealSceneId(string? sceneId) => string.IsNullOrWhiteSpace(sceneId) ? null : sceneId.Trim();
 }

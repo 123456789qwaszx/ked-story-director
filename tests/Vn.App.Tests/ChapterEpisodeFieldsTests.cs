@@ -70,11 +70,11 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("hall - b", title.Text);
 
-        // ch02 x — 장면ID가 없으면 제목만.
+        // ch02 x — 장면 street.
         view.SelectChapter("ch02");
         view.SelectEpisode("x");
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal("x", title.Text);
+        Assert.Equal("street - x", title.Text);
 
         // 다른 것을 보면 부제가 다시 선다.
         view.Inspect(HierarchyPick.Project);

@@ -37,8 +37,8 @@ public sealed class ChapterBoardExtentTests : IDisposable
         string board = session.ActiveFileId!;
 
         // [대본] 판에서 보던 화면 한가운데 — 원점에서 먼 자리에 카드 둘을 세운다(위 · 아래).
-        session.Editor.AddDialogueNode(board, 2600, 1800, name: "n1");
-        session.Editor.AddDialogueNode(board, 2600, 2200, name: "n2");
+        session.Editor.AddDialogueNode(board, "n1", 2600, 1800, name: "n1");
+        session.Editor.AddDialogueNode(board, "n2", 2600, 2200, name: "n2");
         Dispatcher.UIThread.RunJobs();
 
         // 에피소드 자리는 카드 자리가 아니다 — 첫 카드는 원점, 둘째는 그 아래 한 칸(판의 줄 간격을 줄여서).

@@ -105,8 +105,8 @@ public sealed class ChapterSheetEditTests : IDisposable
     {
         // ⭐ 다 — 간선은 그 항만 빠지고, 조건은 <b>식만 비고 남는다</b>.
         (ChapterGraphView view, AuthoringSession session) = Show();
-        session.Editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-        session.Editor.AddEpisode("ch01", "a", title: "a", 0, 0);
+        session.Editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        session.Editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다", statChanges: "trust +1");
         Redraw(view);
 

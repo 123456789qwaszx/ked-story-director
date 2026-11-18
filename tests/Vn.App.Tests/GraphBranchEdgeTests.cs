@@ -30,7 +30,7 @@ public sealed class GraphBranchEdgeTests
 
         AuthoringSession session = window.SessionProbe;
         DialogueNode source = session.Editor.AddDialogueNode(
-            TestChapter.Board(session).Id, name: "본문");
+            TestChapter.Board(session).Id, "본문", name: "본문");
         ScriptLine line = source.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
         session.Editor.SetScriptLineText(source.Id, line.Id, "라루", "첫 줄");
         DialogueNode made = session.Editor.AddBranchMarker(source.Id, line.Id);
@@ -71,7 +71,7 @@ public sealed class GraphBranchEdgeTests
         Dispatcher.UIThread.RunJobs();
 
         AuthoringSession session = window.SessionProbe;
-        DialogueNode source = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, name: "본문");
+        DialogueNode source = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, "본문", name: "본문");
         ScriptLine line = source.Script.ActiveLines.First();
         session.Editor.SetScriptLineText(source.Id, line.Id, "라루", "첫 줄");
         session.Editor.AddBranchMarker(source.Id, line.Id);

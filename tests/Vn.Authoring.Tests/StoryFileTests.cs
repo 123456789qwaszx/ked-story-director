@@ -17,9 +17,9 @@ public class StoryFileTests
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
-        DialogueNode a1 = editor.AddDialogueNode(first.Id, name: "A1");
-        DialogueNode a2 = editor.AddDialogueNode(first.Id, name: "A2");
-        DialogueNode b1 = editor.AddDialogueNode(second.Id, name: "B1");
+        DialogueNode a1 = editor.AddDialogueNode(first.Id, "A1", name: "A1");
+        DialogueNode a2 = editor.AddDialogueNode(first.Id, "A2", name: "A2");
+        DialogueNode b1 = editor.AddDialogueNode(second.Id, "B1", name: "B1");
 
         Assert.Equal(
             new[] { a1.Id, a2.Id, b1.Id },
@@ -38,8 +38,8 @@ public class StoryFileTests
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
-        DialogueNode existing = editor.AddDialogueNode(first.Id, name: "기존");
-        DialogueNode added = editor.AddDialogueNode(second.Id, name: "새 노드");
+        DialogueNode existing = editor.AddDialogueNode(first.Id, "기존", name: "기존");
+        DialogueNode added = editor.AddDialogueNode(second.Id, "새 노드", name: "새 노드");
 
         Assert.Equal(new[] { existing.Id }, first.Nodes.Select(node => node.Id));
         Assert.Equal(new[] { added.Id }, second.Nodes.Select(node => node.Id));
@@ -58,8 +58,8 @@ public class StoryFileTests
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
-        DialogueNode source = editor.AddDialogueNode(first.Id, name: "출발");
-        DialogueNode target = editor.AddDialogueNode(second.Id, name: "도착");
+        DialogueNode source = editor.AddDialogueNode(first.Id, "출발", name: "출발");
+        DialogueNode target = editor.AddDialogueNode(second.Id, "도착", name: "도착");
 
         global::Vn.Authoring.Chapters.EpisodeDeleter.Delete(editor, "B", "도착");   // 에피소드 카드는 에피소드와 함께 지운다
 

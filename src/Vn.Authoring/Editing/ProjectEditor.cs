@@ -113,14 +113,15 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 대사 노드를 만든다 — <b>제 대본과 첫 빈 줄까지</b> 함께 선다. 노드는 생성 즉시 편집 대상이라
     /// 바로 타이핑할 수 있다. 노드 · 대본 · 첫 줄이 한 번의 편집이라 되돌리기 한 번에 함께 사라진다.
-    /// 대본은 카드 안에 있으므로 이미 있는 대본을 주어 잇지 않는다.
+    /// 대본은 카드 안에 있으므로 이미 있는 대본을 주어 잇지 않는다. 판의 카드는 에피소드라 <paramref name="sceneId"/>(그 에피소드의
+    /// 장면)를 꼭 받는다(old-shapes O7).
     /// </summary>
     public DialogueNode AddDialogueNode(
         string fileId,
+        string sceneId,
         double x = 0,
         double y = 0,
         string? name = null,
-        string? sceneId = null,
         string? title = null)
     {
         (DialogueNode created, _, Action attach) = NewDialogueNodeCore(fileId, x, y, name, sceneId, title: title);
@@ -213,6 +214,12 @@ public sealed partial class ProjectEditor
         StoryFile file, ChapterDocument chapter, DialogueNode created, string? sceneId,
         string? title = null, (double X, double Y)? episodePosition = null)
     {
+        // 에피소드는 늘 장면에 속한다 — 장면 없이 세우지 않는다(old-shapes O7).
+        if (string.IsNullOrWhiteSpace(sceneId))
+        {
+            throw new InvalidOperationException("에피소드는 장면에 속합니다 — 장면을 주세요.");
+        }
+
         if (FindEpisode(chapter, created.Name) is not null)
         {
             throw new InvalidOperationException($"EpisodeId '{created.Name}'가 이미 있습니다.");
@@ -231,7 +238,7 @@ public sealed partial class ProjectEditor
             Math.Round(position.Y, 2),
             Memo: null)
         {
-            SceneId = sceneId
+            SceneId = sceneId.Trim()
         });
     }
 

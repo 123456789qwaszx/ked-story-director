@@ -215,7 +215,7 @@ internal sealed class SyncFixture
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "동기화 파일" });   // 카드는 챕터 판에만 선다
 
         Editor = new ProjectEditor(project, newLineId: () => $"ln_{++_nextLine:D3}");
-        Dialogue = Editor.AddDialogueNode(file.Id, name: "장면");
+        Dialogue = Editor.AddDialogueNode(file.Id, "장면", name: "장면");
 
         // 빈 대본에서 시작한다 — 카드가 들고 선 빈 첫 줄을 걷고 LineId 번호도 처음으로 되돌린다.
         Script.Lines.Clear();

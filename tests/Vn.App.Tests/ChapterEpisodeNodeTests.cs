@@ -151,7 +151,7 @@ public sealed class ChapterEpisodeNodeTests
         (_, AuthoringSession session, string episodeNodeId) = ShowEpisodeCard();
 
         string fileId = session.EnsureChapterBoard("ch05");
-        DialogueNode free = session.Editor.AddDialogueNode(fileId, name: "우회로");
+        DialogueNode free = session.Editor.AddDialogueNode(fileId, "우회로", name: "우회로");
 
         // 갈래(detour) 출구가 에피소드 카드를 가리키면 여전히 크게 말한다.
         free.BranchExits["ln_legacy"] = episodeNodeId;
@@ -197,7 +197,7 @@ public sealed class ChapterEpisodeNodeTests
         (_, AuthoringSession session, _) = ShowEpisodeCard();
 
         string fileId = session.EnsureChapterBoard("ch05");
-        DialogueNode free = session.Editor.AddDialogueNode(fileId, name: "자유씬");
+        DialogueNode free = session.Editor.AddDialogueNode(fileId, "자유씬", name: "자유씬");
 
         ChapterGraphModel chapter = Chapter(session);
 
@@ -227,7 +227,7 @@ public sealed class ChapterEpisodeNodeTests
         (_, AuthoringSession session, _) = ShowEpisodeCard();
 
         string fileId = session.EnsureChapterBoard("ch05");
-        DialogueNode free = session.Editor.AddDialogueNode(fileId, name: "자유씬");
+        DialogueNode free = session.Editor.AddDialogueNode(fileId, "자유씬", name: "자유씬");
 
         ChapterGraphModel chapter = Chapter(session);
 

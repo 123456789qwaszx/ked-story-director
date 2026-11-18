@@ -311,7 +311,7 @@ public sealed class CardLiveWritingTests
         Dispatcher.UIThread.RunJobs();
 
         AuthoringSession session = window.SessionProbe;
-        DialogueNode card = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, name: "본문");
+        DialogueNode card = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, "본문", name: "본문");
         Assert.True(session.Editor.ApplyScenarioText(card.Id, string.Join('\n', texts)).Applied);
         session.Editor.MoveNode(card.Id, 60, 60);
         session.Select(card.Id);

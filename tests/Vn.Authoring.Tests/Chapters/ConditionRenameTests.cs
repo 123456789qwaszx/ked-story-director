@@ -99,9 +99,9 @@ public sealed class ConditionRenameTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", 0, 0, 10));
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-        editor.AddEpisode("ch01", "a", title: "a", 0, 0);
-        editor.AddEpisode("ch01", "b", title: "b", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
+        editor.AddEpisode("ch01", "b", title: "b", 0, 0, sceneId: "b");
         editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다");
         editor.AddEdge("ch01", "root", "b", optionLabel: "따진다");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");

@@ -71,7 +71,7 @@ public sealed class EpisodeCardInvariantTests
         ProjectEditor editor = World();
 
         Assert.Throws<InvalidOperationException>(() =>
-            editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), name: "ep01"));
+            editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), "ep01", name: "ep01"));
     }
 
     private static ProjectEditor World()

@@ -129,11 +129,10 @@ public sealed partial class ProjectEditor
     /// 에피소드 하나를 세운다 — 카드(이름 = EpisodeId)와 한 칸에.
     /// </summary>
     /// <param name="sceneId">
-    /// 어느 장면에 놓을지. <b>만들면서 함께 정한다</b> — 만든 뒤에 <see cref="UpdateEpisode"/>로
-    /// 옮기면 되돌리기가 두 걸음이 되고, 그 사이 상태(장면 없는 에피소드)가 잠깐 진짜가 된다.
+    /// 어느 장면에 놓을지 — 에피소드는 늘 장면에 속한다(비면 거절 · old-shapes O7). <b>만들면서 함께 정한다</b>.
     /// </param>
     public ChapterEpisode AddEpisode(
-        string chapterId, string episodeId, string title, double x, double y, string? sceneId = null)
+        string chapterId, string episodeId, string title, double x, double y, string sceneId)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
 
@@ -162,7 +161,7 @@ public sealed partial class ProjectEditor
     /// 챕터에 에피소드를 넣는 것은 카드를 놓을 자리가 없다는 뜻이다.
     /// </summary>
     private (DialogueNode Node, ChapterEpisode? Episode, Action Attach) NewEpisodeCore(
-        string chapterId, string episodeId, string title, double x, double y, string? sceneId,
+        string chapterId, string episodeId, string title, double x, double y, string sceneId,
         string? parentEpisodeId = null)
     {
         string fileId = EnsureChapterBoard(chapterId);
@@ -196,8 +195,8 @@ public sealed partial class ProjectEditor
         string title,
         double x,
         double y,
-        string? optionLabel = null,
-        string? sceneId = null)
+        string sceneId,
+        string? optionLabel = null)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
 
@@ -227,7 +226,7 @@ public sealed partial class ProjectEditor
         return episode!;
     }
 
-    /// <summary>속성 패널의 저장 — null이 아닌 것만 바꾼다.</summary>
+    /// <summary>속성 패널의 저장 — null이 아닌 것만 바꾼다. 장면ID는 비울 수 없다(에피소드는 늘 장면에 속한다).</summary>
     public void UpdateEpisode(
         string chapterId,
         string episodeId,
@@ -238,35 +237,21 @@ public sealed partial class ProjectEditor
         ChapterDocument chapter = RequireChapter(chapterId);
         int index = RequireEpisodeIndex(chapter, episodeId);
 
+        if (sceneId is not null && string.IsNullOrWhiteSpace(sceneId))
+        {
+            throw new InvalidOperationException("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
+        }
+
         Mutate(() => chapter.Episodes[index] = chapter.Episodes[index] with
         {
             Title = title ?? chapter.Episodes[index].Title,
             Memo = memo ?? chapter.Episodes[index].Memo,
-            SceneId = sceneId ?? chapter.Episodes[index].SceneId
+            SceneId = sceneId?.Trim() ?? chapter.Episodes[index].SceneId
         });
     }
 
     /// <summary>그 챕터의 판 — 규칙은 <see cref="EpisodeNaming.BoardOf"/> 하나다.</summary>
     private StoryFile? BoardOf(string chapterId) => EpisodeNaming.BoardOf(Project, chapterId);
-
-    /// <summary>여러 에피소드의 장면ID를 한 번에 — 장면 경계는 묶어서 긋는 값이다.</summary>
-    public void UpdateEpisodeScenes(
-        string chapterId, IReadOnlyCollection<string> episodeIds, string sceneId)
-    {
-        ChapterDocument chapter = RequireChapter(chapterId);
-
-        List<int> targets = episodeIds.Distinct(StringComparer.Ordinal)
-            .Select(episodeId => RequireEpisodeIndex(chapter, episodeId))
-            .ToList();
-
-        Mutate(() =>
-        {
-            foreach (int index in targets)
-            {
-                chapter.Episodes[index] = chapter.Episodes[index] with { SceneId = sceneId };
-            }
-        });
-    }
 
     /// <summary>
     /// 장면ID 바꾸기 — 그 장면의 에피소드 모두에 새 장면ID를 적는다. <b>비울 수 없다</b> — 에피소드는 늘 장면에 속한다(2026-11-17 ·
@@ -288,7 +273,7 @@ public sealed partial class ProjectEditor
         }
 
         List<int> members = Enumerable.Range(0, chapter.Episodes.Count)
-            .Where(index => string.Equals(chapter.Episodes[index].EffectiveSceneId, sceneId, StringComparison.Ordinal))
+            .Where(index => string.Equals(chapter.Episodes[index].SceneId, sceneId, StringComparison.Ordinal))
             .ToList();
 
         if (members.Count == 0)
@@ -310,7 +295,7 @@ public sealed partial class ProjectEditor
     }
 
     // ── 장면 메모 ──────────────────────────────────────────────────────────
-    // 장면이 아니라 장면에 붙는 곁 자료다(ChapterSceneNote). 열쇠는 EffectiveSceneId.
+    // 장면이 아니라 장면에 붙는 곁 자료다(ChapterSceneNote). 열쇠는 SceneId.
 
     /// <summary>
     /// 장면 메모를 적는다 — 비우면 글을 지운다(이름은 그대로). 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다.
@@ -559,15 +544,9 @@ public sealed partial class ProjectEditor
                 card.Name = newId;
             }
 
-            ChapterEpisode episode = chapter.Episodes[index];
-            string oldSceneId = episode.EffectiveSceneId;
-
-            chapter.Episodes[index] = episode with { EpisodeId = newId };
+            chapter.Episodes[index] = chapter.Episodes[index] with { EpisodeId = newId };
 
             Retarget(chapter, oldId, newId);
-
-            // 장면을 안 나눈 에피소드의 장면 열쇠(__scene_{Id})는 이름을 따라 바뀐다 — 그 장면의 메모를 데려간다.
-            CarrySceneNote(chapter, oldSceneId, chapter.Episodes[index].EffectiveSceneId);
         });
     }
 

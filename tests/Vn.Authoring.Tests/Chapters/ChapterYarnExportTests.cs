@@ -280,8 +280,10 @@ public sealed class ChapterYarnExportTests
         ChapterGraphModel model = Model(editor);
         ChapterEpisode[] episodes = model.Episodes.ToArray();
 
-        editor.UpdateEpisodeScenes(Ch, episodes.Take(episodes.Length / 2).Select(e => e.EpisodeId).ToArray(), "장면 1");
-        editor.UpdateEpisodeScenes(Ch, episodes.Skip(episodes.Length / 2).Select(e => e.EpisodeId).ToArray(), "장면.1");
+        foreach (ChapterEpisode episode in episodes)
+        {
+            editor.UpdateEpisode(Ch, episode.EpisodeId, sceneId: Array.IndexOf(episodes, episode) < episodes.Length / 2 ? "장면 1" : "장면.1");
+        }
 
         IReadOnlyList<ChapterYarnFile> files = Export(editor);
 
@@ -294,7 +296,7 @@ public sealed class ChapterYarnExportTests
     public void 같은_입력이면_같은_바이트다()
     {
         ProjectEditor editor = Sample();
-        editor.SetSceneNote(Ch, Model(editor).Episodes[0].EffectiveSceneId, "메모\r\n둘째");
+        editor.SetSceneNote(Ch, Model(editor).Episodes[0].SceneId, "메모\r\n둘째");
 
         string[] first = Export(editor).Select(file => file.Text).ToArray();
         string[] again = Export(editor).Select(file => file.Text).ToArray();

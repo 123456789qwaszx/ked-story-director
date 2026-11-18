@@ -87,9 +87,9 @@ public sealed class ChapterAutoArrangeTests
             var editor = new ProjectEditor(new StoryProject { Title = "자동 정렬" });
             editor.EnsureChapter("ch01");
             editor.EnsureChapterBoard("ch01");
-            editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-            editor.AddEpisode("ch01", "a", title: "a", 0, 0);
-            editor.AddEpisode("ch01", "b", title: "b", 0, 0);
+            editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+            editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
+            editor.AddEpisode("ch01", "b", title: "b", 0, 0, sceneId: "b");
 
             ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);
             ProjectStore.Save(ManifestPath, editor.Project);

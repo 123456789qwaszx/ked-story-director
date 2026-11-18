@@ -212,7 +212,7 @@ public sealed class ChapterRenamerTests : IDisposable
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 5));
 
         // 에피소드를 세우면 판과 카드가 함께 서고, 판이 선 뒤의 조건은 판의 공급 노드로 간다.
-        editor.AddEpisode(OldId, EpisodeId, "조용한 복도", 0, 0);
+        editor.AddEpisode(OldId, EpisodeId, "조용한 복도", 0, 0, sceneId: EpisodeId);
         editor.AddChapterCondition(OldId, "신뢰높음", "trust >= 3", "라루를 신뢰");
 
         DialogueNode card = EpisodeNaming.CardFor(editor.Project, OldId, EpisodeId)!;

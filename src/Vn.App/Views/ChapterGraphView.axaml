@@ -223,7 +223,7 @@
                          것은 [대본] 탭 하이어아키의 장면 줄이다(그 에피소드들의 장면ID가 함께 바뀐다). -->
                     <StackPanel x:Name="ScenePanel" Spacing="6" IsVisible="False">
                         <!-- 장면ID 칸 — 런타임 저장 · 롤백 경계. 고치고 Enter(RenameScene — 장면 이름 · 메모가 함께 간다). 장면 이름은
-                             [대본] 탭에서 고친다(display-names N4). 미지정 장면에는 서지 않는다. -->
+                             [대본] 탭에서 고친다(display-names N4). -->
                         <Grid x:Name="SceneIdGrid" ColumnDefinitions="70,*">
                             <TextBlock Text="장면ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                             <TextBox Grid.Column="1" x:Name="SceneIdBox" FontSize="11"

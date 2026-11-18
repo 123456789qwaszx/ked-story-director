@@ -53,7 +53,7 @@ public class ConditionSupplyTests
         editor.AddChapterCondition("저 챕터", "저쪽 조건", "far == true");   // 저 판의 공급 노드가 사본을 나른다
         ConditionDefinition foreignCondition = there.Nodes.OfType<SetNode>().Single().Conditions.Single();
 
-        DialogueNode dialogue = editor.AddDialogueNode(here.Id, name: "장면");
+        DialogueNode dialogue = editor.AddDialogueNode(here.Id, "장면", name: "장면");
         ScriptLine scriptLine = dialogue.Script.ActiveLines.First();   // 카드는 빈 첫 줄을 들고 선다
         editor.SetLineTransition(
             dialogue.Id, scriptLine.Id, LineConditionTransition.BeginIf(foreignCondition.Id));

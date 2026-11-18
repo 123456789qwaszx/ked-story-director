@@ -10,7 +10,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// 하이어아키 시험들이 함께 여는 프로젝트 (2026-10-30 HY) — 챕터 둘: ch01은 장면 둘(opening: root · a, hall: b), ch02는
-/// 장면ID 없이 x · y.
+/// 장면 하나(street: x · y).
 /// </summary>
 internal static class HierarchyFixture
 {
@@ -27,8 +27,8 @@ internal static class HierarchyFixture
         editor.AddEpisode("ch01", "b", title: "b", 440, 0, sceneId: "hall");
         editor.EnsureChapter("ch02");
         editor.EnsureChapterBoard("ch02");
-        editor.AddEpisode("ch02", "x", title: "x", 0, 0);
-        editor.AddEpisode("ch02", "y", title: "y", 220, 0);
+        editor.AddEpisode("ch02", "x", title: "x", 0, 0, sceneId: "street");
+        editor.AddEpisode("ch02", "y", title: "y", 220, 0, sceneId: "street");
 
         string manifest = Path.Combine(directory, "p" + ProjectManifestJson.FileExtension);
         ProjectStore.Save(manifest, editor.Project);

@@ -74,7 +74,7 @@ public sealed class GraphNodeDeleteTests : IDisposable
     /// <summary>그 에피소드의 카드 — `AddEpisode`가 함께 세운 것이다.</summary>
     private static DialogueNode Card(AuthoringSession session, string episodeId)
     {
-        session.Editor.AddEpisode("ch01", episodeId, title: string.Empty, 0, 0);
+        session.Editor.AddEpisode("ch01", episodeId, title: string.Empty, 0, 0, sceneId: episodeId);
 
         return session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => EpisodeNaming.EpisodeIdOf(node) == episodeId);

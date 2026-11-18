@@ -23,8 +23,8 @@ public sealed class ChapterFrameTests
         string ch01 = session.EnsureChapterBoard("ch01");
         session.Editor.EnsureChapter("ch02");   // 판은 챕터가 세운다
         string ch02 = session.EnsureChapterBoard("ch02");
-        session.Editor.AddDialogueNode(ch01, name: "ep_a");
-        session.Editor.AddDialogueNode(ch02, name: "ep_b");
+        session.Editor.AddDialogueNode(ch01, "ep_a", name: "ep_a");
+        session.Editor.AddDialogueNode(ch02, "ep_b", name: "ep_b");
 
         graph.Rebuild();
 
@@ -59,7 +59,7 @@ public sealed class ChapterFrameTests
 
         session.Editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string ch01 = session.EnsureChapterBoard("ch01");
-        session.Editor.AddDialogueNode(ch01, name: "ep_a");
+        session.Editor.AddDialogueNode(ch01, "ep_a", name: "ep_a");
         graph.Rebuild();
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;

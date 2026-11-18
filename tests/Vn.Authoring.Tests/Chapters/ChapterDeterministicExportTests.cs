@@ -42,8 +42,8 @@ public sealed class ChapterDeterministicExportTests : IDisposable
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("reload").Stats.Add(new ChapterStat("trust", 0, 0, 10));
-        editor.AddEpisode("reload", "ep1", "첫 화", 0, 0);
-        editor.AddEpisode("reload", "ep2", "둘째", 200, 0);
+        editor.AddEpisode("reload", "ep1", "첫 화", 0, 0, sceneId: "ep1");
+        editor.AddEpisode("reload", "ep2", "둘째", 200, 0, sceneId: "ep2");
         editor.AddEdge("reload", "ep1", "ep2", optionLabel: "다음");
 
         byte[] first = ChapterExportBytes.Encode(ChapterProgressionExporter.Export(

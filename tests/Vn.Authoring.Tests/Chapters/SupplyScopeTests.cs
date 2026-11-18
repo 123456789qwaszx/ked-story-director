@@ -84,7 +84,7 @@ public sealed class SupplyScopeTests
             ChapterDocument chapter = editor.EnsureChapter(chapterId);
             chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
-            editor.AddEpisode(chapterId, "root", title: "root", 0, 0);
+            editor.AddEpisode(chapterId, "root", title: "root", 0, 0, sceneId: "root");
             editor.AddChapterCondition(chapterId, "신뢰높음", "trust >= 3");
 
             ChapterBoardSupply.SupplyChapterConditionsToBoard(

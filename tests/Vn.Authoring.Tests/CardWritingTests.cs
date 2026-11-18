@@ -189,7 +189,7 @@ public sealed class CardWritingTests
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "카드" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
 
-        return (editor, editor.AddDialogueNode(file.Id, name: "장면"));
+        return (editor, editor.AddDialogueNode(file.Id, "장면", name: "장면"));
     }
 
     /// <summary>챕터 조건 「호감 높음」(favor >= 5) — 판의 공급 노드가 나른 사본을 돌려준다(대본의 <c>&lt;&lt;if&gt;&gt;</c>는 그 식이다).</summary>

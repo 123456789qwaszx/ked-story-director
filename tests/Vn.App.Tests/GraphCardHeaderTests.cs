@@ -71,7 +71,7 @@ public sealed class GraphCardHeaderTests
         Dispatcher.UIThread.RunJobs();
 
         AuthoringSession session = window.SessionProbe;
-        DialogueNode source = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, name: "본문");
+        DialogueNode source = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, "본문", name: "본문");
         ScriptLine line = source.Script.ActiveLines.First();
         session.Editor.SetScriptLineText(source.Id, line.Id, "라루", "첫 줄");
         DialogueNode made = session.Editor.AddBranchMarker(source.Id, line.Id);

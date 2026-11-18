@@ -89,7 +89,7 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
         service.ExportAll([Entry(editor)], manifest, editor.Project);
 
         ChapterEpisode first = Entry(editor).Model.Episodes[0];
-        string path = Path.Combine(ChapterYarnExporter.FolderFor(manifest), ChapterYarnExporter.FileNameOf(Ch, first.EffectiveSceneId));
+        string path = Path.Combine(ChapterYarnExporter.FolderFor(manifest), ChapterYarnExporter.FileNameOf(Ch, first.SceneId));
         byte[] before = File.ReadAllBytes(path);
 
         DialogueNode card = EpisodeNaming.CardFor(editor.Project, Ch, first.EpisodeId)!;
@@ -100,7 +100,7 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
 
         Assert.Equal(before, File.ReadAllBytes(path));
         string problem = Assert.Single(run.YarnProblems!);
-        Assert.StartsWith($"{Ch} · {first.EffectiveSceneId}: ", problem);
+        Assert.StartsWith($"{Ch} · {first.SceneId}: ", problem);
         Assert.Contains("대사 Yarn이 나가지 않은 장면이 있습니다", run.Notice);
 
         // 다른 장면은 그대로 나간다 — 진행 JSON도.
@@ -116,11 +116,7 @@ public sealed class ChapterYarnExportServiceTests : IDisposable
         service.ExportAll([Entry(editor)], manifest, editor.Project);
         Assert.Contains("festival_eve_교실.yarn", YarnFiles(manifest));
 
-        string[] classroom = Entry(editor).Model.Episodes
-            .Where(episode => episode.EffectiveSceneId == "교실")
-            .Select(episode => episode.EpisodeId)
-            .ToArray();
-        editor.UpdateEpisodeScenes(Ch, classroom, "미술실");
+        editor.RenameScene(Ch, "교실", "미술실");
 
         ChapterExportRun moved = service.ExportAll([Entry(editor)], manifest, editor.Project);
 

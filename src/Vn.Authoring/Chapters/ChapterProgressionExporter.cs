@@ -276,7 +276,7 @@ public static class ChapterProgressionExporter
                     .ToList()
             })
             .ToList(),
-        SceneId = episode.SceneId?.Trim() ?? string.Empty,
+        SceneId = episode.SceneId.Trim(),
         // `EndingKey`·`IsChapterEndingCandidate`는 싣지 않는다. 대신 `EventKey`가 에피소드 `이벤트키` 열의 값 그대로 실린다.
         // 유니티가 "이 에피소드를 다 시청했을 때"의 이벤트·보상 트리거로 쓰는 패스스루
         // 인덱스이고, 툴은 해석하지 않는다.
@@ -378,7 +378,7 @@ public static class ChapterProgressionExporter
         /// </summary>
         public string EventKey { get; set; } = string.Empty;
 
-        /// <summary>저장·롤백 경계. 빈 값은 런타임이 에피소드별 기본 장면으로 보정한다.</summary>
+        /// <summary>저장·롤백 경계 — 늘 채워진다(에피소드는 늘 장면에 속한다 · 저장 검증이 지킨다).</summary>
         public string SceneId { get; set; } = string.Empty;
 
         /// <summary>이 레이어의 확장 (G-2) — 게임 내 그래프가 같은 구도로 그린다.</summary>

@@ -21,7 +21,7 @@ public class ScenarioPasteTests
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "테스트" });   // 카드는 챕터 판에만 선다
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
-        DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");
+        DialogueNode node = editor.AddDialogueNode(file.Id, "장면", name: "장면");
 
         // 자동 생성된 첫 빈 줄은 붙여넣기 시 삭제 후보가 되므로 본문을 채워 시작한다.
         editor.SetScriptLineText(node.Id, "ln_001", "라루", "첫 줄");

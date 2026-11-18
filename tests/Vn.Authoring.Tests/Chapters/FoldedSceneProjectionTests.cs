@@ -98,17 +98,6 @@ public sealed class FoldedSceneProjectionTests
 
         Assert.Empty(folded.Items.OfType<CollapsedSceneProjection>());
         Assert.Single(folded.Items.OfType<CollapsedFileProjection>());
-
-        // 장면ID를 하나도 안 적은 챕터 — 하이어아키에 장면 단이 없으니 접을 장면도 없다.
-        editor.EnsureChapter("ch02");
-        editor.EnsureChapterBoard("ch02");
-        editor.AddEpisode("ch02", "x", "x", 0, 0);
-        StoryFile flat = EpisodeNaming.BoardOf(editor.Project, "ch02")!;
-
-        GraphProjection projection = Project(editor, new HashSet<GraphSceneKey> { new(flat.Id, "__scene_x") });
-
-        Assert.Empty(projection.Items.OfType<CollapsedSceneProjection>());
-        Assert.Contains(projection.Items.OfType<ExpandedNodeProjection>(), item => item.FileId == flat.Id);
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

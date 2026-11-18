@@ -22,7 +22,7 @@ public sealed class EpisodeCreationAgreementTests
     {
         ProjectEditor editor = World();
 
-        ChapterEpisode episode = editor.AddEpisode("ch01", "ep01", title: string.Empty, 0, 0);
+        ChapterEpisode episode = editor.AddEpisode("ch01", "ep01", title: string.Empty, 0, 0, sceneId: "ep01");
 
         Assert.Equal("ep01", episode.EpisodeId);
         AssertWritable(editor, "ep01");
@@ -33,9 +33,9 @@ public sealed class EpisodeCreationAgreementTests
     {
         // 분기 저작의 길 — 에피소드·카드·대본·간선이 한 변경이다.
         ProjectEditor editor = World();
-        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0);
+        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0, sceneId: "root");
 
-        editor.AddNextEpisode("ch01", "root", "ep02", title: string.Empty, 260, 0, optionLabel: "다음");
+        editor.AddNextEpisode("ch01", "root", "ep02", title: string.Empty, 260, 0, optionLabel: "다음", sceneId: "ep02");
 
         AssertWritable(editor, "ep02");
         Assert.Single(editor.FindChapter("ch01")!.Edges);
@@ -48,7 +48,7 @@ public sealed class EpisodeCreationAgreementTests
         //    에피소드는 남고 카드만 사라지는 <b>반쪽 상태</b>가 진짜로 존재했다.
         ProjectEditor editor = World();
         editor.AddNextEpisode(
-            "ch01", Seed(editor), "ep02", title: string.Empty, 260, 0, optionLabel: "다음");
+            "ch01", Seed(editor), "ep02", title: string.Empty, 260, 0, optionLabel: "다음", sceneId: "ep02");
 
         editor.Undo();
 
@@ -70,7 +70,7 @@ public sealed class EpisodeCreationAgreementTests
         ProjectEditor editor = World();
         string fileId = editor.EnsureChapterBoard("ch01");
 
-        DialogueNode created = editor.AddDialogueNode(fileId, 100, 100, sceneId: "scene01");
+        DialogueNode created = editor.AddDialogueNode(fileId, "scene01", 100, 100);
 
         Assert.Equal("ch01_scene01_new01", EpisodeNaming.EpisodeIdOf(created));
         Assert.Equal("ch01_scene01_new02", editor.NextEpisodeId("ch01", "scene01"));   // 화면이 세는 길도 같은 규약이다
@@ -93,7 +93,7 @@ public sealed class EpisodeCreationAgreementTests
 
     private static string Seed(ProjectEditor editor)
     {
-        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0);
+        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0, sceneId: "root");
         return "root";
     }
 

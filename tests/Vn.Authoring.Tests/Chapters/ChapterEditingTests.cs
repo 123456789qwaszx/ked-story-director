@@ -24,15 +24,15 @@ public sealed class ChapterEditingTests
     public ChapterEditingTests()
     {
         _editor.EnsureChapter("ch01");
-        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0);
-        _editor.AddEpisode("ch01", "ep02", "옥상", 200, 0);
+        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0, sceneId: "ep01");
+        _editor.AddEpisode("ch01", "ep02", "옥상", 200, 0, sceneId: "ep02");
     }
 
     [Fact]
     public void 같은_Id로_두_번_세우지_못한다()
     {
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(
-            () => _editor.AddEpisode("ch01", "ep01", "또 복도", 0, 0));
+            () => _editor.AddEpisode("ch01", "ep01", "또 복도", 0, 0, sceneId: "ep01"));
 
         Assert.Contains("ep01", error.Message);
     }
@@ -41,7 +41,7 @@ public sealed class ChapterEditingTests
     public void 다음_에피소드는_에피소드와_간선이_한_번에_선다()
     {
         // 분기 저작의 핵심 동작 — 둘 중 하나만 선 채로 남지 않는다.
-        _editor.AddNextEpisode("ch01", "ep02", "ep03", "복도 끝", 400, 0, optionLabel: "더 간다");
+        _editor.AddNextEpisode("ch01", "ep02", "ep03", "복도 끝", 400, 0, optionLabel: "더 간다", sceneId: "ep03");
 
         Assert.Contains(Chapter.Episodes, episode => episode.EpisodeId == "ep03");
         Assert.Contains(Chapter.Edges, edge =>
@@ -107,7 +107,7 @@ public sealed class ChapterEditingTests
     [Fact]
     public void 배선을_고치면_도착과_문구가_한_번에_바뀐다()
     {
-        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0);
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "위로");
 
         _editor.SetEdgeRoute("ch01", "ep01", "ep02", "위로", "ep03", "아래로");
@@ -123,7 +123,7 @@ public sealed class ChapterEditingTests
     {
         // D3 · two-graphs.md §6-3 — 간선 순서가 곧 런타임 OptionIndex다(§5-3). 걷고 새로 그으면
         //    목록 끝으로 가고 관문을 잃는다.
-        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0);
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "위로", conditionLabel: "신뢰높음");
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "옆으로");
 
@@ -138,7 +138,7 @@ public sealed class ChapterEditingTests
     public void 다른_간선과_겹치게_고치는_배선은_거절한다()
     {
         // 신원 (출발, 도착, 문구)가 겹치면 같은 버튼이 둘이다 — AddEdge와 같은 규칙.
-        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0);
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다");
         _editor.AddEdge("ch01", "ep01", "ep03", optionLabel: "간다");
 
@@ -233,7 +233,7 @@ public sealed class ChapterEditingTests
     public void 되돌리면_챕터_편집도_되돌아간다()
     {
         // 워크북이 원본이던 시절에는 되돌릴 곳이 파일이라 여기 없었다 — 이제 있다.
-        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0);
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
         Assert.Equal(3, Chapter.Episodes.Count);
 
         _editor.Undo();

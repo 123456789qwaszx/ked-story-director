@@ -29,17 +29,17 @@ public sealed class ChapterSceneNoteTests : IDisposable
         }
     }
 
-    private static ChapterEpisode Episode(string id, string? sceneId) =>
+    private static ChapterEpisode Episode(string id, string sceneId) =>
         new(id, "", "", 0, 0, Memo: null) { SceneId = sceneId };
 
-    /// <summary>장면 「복도」 · 「교실」 둘과 장면을 안 나눈 에피소드 하나 — 에피소드 차례로 복도가 먼저 나온다.</summary>
+    /// <summary>장면 「복도」 · 「교실」 · 「무대」 — 에피소드 차례로 복도가 먼저 나온다.</summary>
     private static ChapterDocument Chapter(params ChapterSceneNote[] notes)
     {
         var chapter = new ChapterDocument { ChapterId = "ch01" };
         chapter.Episodes.Add(Episode("ep01", "복도"));
         chapter.Episodes.Add(Episode("ep02", "교실"));
         chapter.Episodes.Add(Episode("ep03", "복도"));
-        chapter.Episodes.Add(Episode("ep04", null));
+        chapter.Episodes.Add(Episode("ep04", "무대"));
         chapter.SceneNotes.AddRange(notes);
         return chapter;
     }
@@ -62,12 +62,12 @@ public sealed class ChapterSceneNoteTests : IDisposable
     {
         Save(Chapter(
             new ChapterSceneNote("교실", "마감 전날. 하린: 지침 → 결심\n\"좋아, 처음부터 다시.\""),
-            new ChapterSceneNote("__scene_ep04", "장면을 안 나눈 에피소드에도 단다")));
+            new ChapterSceneNote("무대", "막이 오르기 전")));
 
         ChapterDocument read = Assert.Single(ProjectStore.Load(ManifestPath).Project.Chapters);
 
         Assert.Equal(
-            [("교실", "마감 전날. 하린: 지침 → 결심\n\"좋아, 처음부터 다시.\""), ("__scene_ep04", "장면을 안 나눈 에피소드에도 단다")],
+            [("교실", "마감 전날. 하린: 지침 → 결심\n\"좋아, 처음부터 다시.\""), ("무대", "막이 오르기 전")],
             read.SceneNotes.Select(note => (note.SceneId, note.Text)));
         Assert.Equal(read.SceneNotes, read.ToGraphModel("ch01").SceneNotes);
     }
@@ -90,12 +90,12 @@ public sealed class ChapterSceneNoteTests : IDisposable
     {
         string manifest = Save(Chapter(
             new ChapterSceneNote("옥상", "주인 없음 — 에피소드를 옮겼다"),
-            new ChapterSceneNote("__scene_ep04", "미지정"),
+            new ChapterSceneNote("무대", "무대"),
             new ChapterSceneNote("교실", "교실"),
             new ChapterSceneNote("강당", "주인 없음"),
             new ChapterSceneNote("복도", "복도")));
 
-        Assert.Equal(["복도", "교실", "__scene_ep04", "강당", "옥상"], SavedSceneIds(manifest));
+        Assert.Equal(["복도", "교실", "무대", "강당", "옥상"], SavedSceneIds(manifest));
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public sealed class ChapterSceneNoteTests : IDisposable
     public void 주인은_실제_장면ID로_정한다()
     {
         ChapterDocument chapter = Chapter(
-            new ChapterSceneNote("교실", "가"), new ChapterSceneNote("옥상", "나"), new ChapterSceneNote("__scene_ep04", "다"));
+            new ChapterSceneNote("교실", "가"), new ChapterSceneNote("옥상", "나"), new ChapterSceneNote("무대", "다"));
 
         Assert.Equal(["옥상"], ChapterSceneNotes.Orphans(chapter.Episodes, chapter.SceneNotes).Select(note => note.SceneId));
         Assert.Null(ChapterSceneNotes.Of([new ChapterSceneNote("교실", " ")], "교실"));

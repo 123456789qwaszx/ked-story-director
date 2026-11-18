@@ -356,7 +356,7 @@ public sealed class CardWritingBoxTests : IDisposable
 
     private static DialogueNode Card(AuthoringSession session, double x, double y)
     {
-        DialogueNode node = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, name: $"카드 {x},{y}");
+        DialogueNode node = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, $"카드 {x},{y}", name: $"카드 {x},{y}");
         session.Editor.MoveNode(node.Id, x, y);
         return node;
     }

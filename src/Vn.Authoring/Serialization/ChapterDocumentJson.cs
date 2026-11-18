@@ -107,7 +107,7 @@ internal static class ChapterDocumentJson
         Optional(json["memo"]))
     {
         EventKey = Optional(json["eventKey"]),
-        SceneId = Optional(json["sceneId"]),
+        SceneId = Required(json["sceneId"], "에피소드의 sceneId"),
         NoteCard = (bool?)json["noteCard"] ?? false
     };
 
@@ -384,6 +384,12 @@ internal static class ChapterDocumentJson
     private static string Text(JsonNode? node) => (string?)node ?? string.Empty;
 
     private static string? Optional(JsonNode? node) => (string?)node;
+
+    /// <summary>비면 받지 않는다 — 툴이 늘 채워 쓰는 칸이다(비어 있는 것은 옛 데이터 · 손으로 고친 파일뿐이다).</summary>
+    private static string Required(JsonNode? node, string what) =>
+        (string?)node is { } text && !string.IsNullOrWhiteSpace(text)
+            ? text
+            : throw new InvalidDataException($"{what}가 비었습니다.");
 
     /// <summary>비었으면 없는 것 — 간선의 조건 · 잠금 안내문은 빈 글자를 「없음」으로 읽는다.</summary>
     private static string? OptionalText(JsonNode? node) => (string?)node is { } text && !string.IsNullOrWhiteSpace(text) ? text : null;

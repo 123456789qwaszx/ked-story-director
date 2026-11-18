@@ -68,7 +68,7 @@ public sealed class ChoiceSlotProjectionTests
         //    에피소드가 아닌 대사 노드에는 칸을 안 줬다. 자유 씬이라는 종류가 없어졌으므로
         //    그 규칙은 지킬 것이 없다 — 챕터 판의 대사 노드는 <b>전부</b> 에피소드다.
         ProjectEditor editor = World();
-        DialogueNode made = editor.AddDialogueNode(BoardOf(editor), name: "곁가지");
+        DialogueNode made = editor.AddDialogueNode(BoardOf(editor), "곁가지", name: "곁가지");
 
         Assert.Equal("곁가지", made.MarkedEpisodeId);
         Assert.Equal(3, SlotsOf(editor, "곁가지").Count);
@@ -133,7 +133,7 @@ public sealed class ChoiceSlotProjectionTests
         //    지금 그러면 <b>에피소드 하나에 카드가 둘</b> 선다.
         foreach (string episodeId in (string[])["root", "a", "b", "c", "d"])
         {
-            editor.AddEpisode("ch01", episodeId, title: episodeId, 0, 0);
+            editor.AddEpisode("ch01", episodeId, title: episodeId, 0, 0, sceneId: episodeId);
         }
 
         return editor;

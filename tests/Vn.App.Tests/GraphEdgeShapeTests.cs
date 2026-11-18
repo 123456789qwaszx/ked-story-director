@@ -207,8 +207,8 @@ public sealed class GraphEdgeShapeTests : IDisposable
         session.Open(manifest);
         session.Editor.EnsureChapter("ch01");
         string fileId = session.EnsureChapterBoard("ch01");
-        session.Editor.AddEpisode("ch01", "a", "a", 0, 0);
-        session.Editor.AddEpisode("ch01", "b", "b", 0, 0);
+        session.Editor.AddEpisode("ch01", "a", "a", 0, 0, sceneId: "a");
+        session.Editor.AddEpisode("ch01", "b", "b", 0, 0, sceneId: "b");
         session.Editor.MoveNode(EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id, 100, 40);
         session.Editor.MoveNode(EpisodeNaming.CardFor(session.Project, "ch01", "b")!.Id, 100, 520);
         session.Editor.AddEdge("ch01", "a", "b", optionLabel: "간다");

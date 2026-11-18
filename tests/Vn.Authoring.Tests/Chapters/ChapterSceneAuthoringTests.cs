@@ -9,34 +9,25 @@ namespace Vn.Authoring.Tests.Chapters;
 public sealed class ChapterSceneAuthoringTests
 {
     [Fact]
-    public void 장면ID를_정하면_에피소드에_남는다()
+    public void 에피소드는_장면_없이_서지_않고_장면ID를_비울_수_없다()
     {
+        // 2026-11-18 · old-shapes O7 — ⛔ 그 전에는 장면을 안 주면 에피소드마다 혼자짜리 기본 장면(`__scene_{Id}`)이 섰다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "root", "시작", 10, 20);
 
-        // 정하기 전에는 에피소드마다 고유한 퇴화 장면이다.
-        Assert.Equal("__scene_root", Assert.Single(editor.FindChapter("ch01")!.Episodes).EffectiveSceneId);
+        Assert.Throws<InvalidOperationException>(() => editor.AddEpisode("ch01", "root", "시작", 10, 20, sceneId: " "));
+        Assert.Empty(editor.FindChapter("ch01")!.Episodes);
+
+        editor.AddEpisode("ch01", "root", "시작", 10, 20, sceneId: "hall");
+        long revision = editor.Revision;
+
+        Assert.Throws<InvalidOperationException>(() => editor.UpdateEpisode("ch01", "root", sceneId: ""));
+        Assert.Equal(revision, editor.Revision);
 
         editor.UpdateEpisode("ch01", "root", sceneId: "opening");
 
         ChapterEpisode episode = Assert.Single(editor.FindChapter("ch01")!.ToGraphModel("ch01").Episodes);
         Assert.Equal("opening", episode.SceneId);
-        Assert.Equal("opening", episode.EffectiveSceneId);
-    }
-
-    [Fact]
-    public void 같은_장면의_여러_에피소드를_한_번에_다른_ID로_옮긴다()
-    {
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("bulk");
-        editor.AddEpisode("bulk", "a", "A", 0, 0);
-        editor.AddEpisode("bulk", "b", "B", 100, 0);
-
-        editor.UpdateEpisodeScenes("bulk", ["a", "b"], "scene-new");
-
-        ChapterGraphModel model = editor.FindChapter("bulk")!.ToGraphModel("bulk");
-        Assert.All(model.Episodes, episode => Assert.Equal("scene-new", episode.SceneId));
     }
 
     [Fact]

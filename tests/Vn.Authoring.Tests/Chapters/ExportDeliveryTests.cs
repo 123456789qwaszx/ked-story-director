@@ -136,7 +136,7 @@ public sealed class ExportDeliveryTests : IDisposable
 
         foreach (string chapterId in chapterIds)
         {
-            DialogueNode card = editor.AddDialogueNode(TestChapter.Board(editor, chapterId).Id, 0, 0, sceneId: "scene01");
+            DialogueNode card = editor.AddDialogueNode(TestChapter.Board(editor, chapterId).Id, "scene01", 0, 0);
             editor.SetScriptLineText(card.Id, card.Script.ActiveLines.First().Id, "라루", $"{chapterId}의 첫 줄");
         }
 

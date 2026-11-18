@@ -26,9 +26,9 @@ public sealed class ChapterEpisodeLayoutTests
     public ChapterEpisodeLayoutTests()
     {
         _editor.EnsureChapter("ch01");
-        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0);
-        _editor.AddEpisode("ch01", "ep02", "옥상", 0, 0);
-        _editor.AddEpisode("ch01", "ep03", "지하", 0, 0);
+        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0, sceneId: "ep01");
+        _editor.AddEpisode("ch01", "ep02", "옥상", 0, 0, sceneId: "ep02");
+        _editor.AddEpisode("ch01", "ep03", "지하", 0, 0, sceneId: "ep03");
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class ChapterEpisodeLayoutTests
         // (0,0)이 "안 채워졌다"는 뜻은 아니다 — 겹치는 것이 없으면 고칠 것도 없다.
         var lone = new ProjectEditor(new StoryProject());
         lone.EnsureChapter("ch02");
-        lone.AddEpisode("ch02", "ep01", "혼자", 0, 0);
+        lone.AddEpisode("ch02", "ep01", "혼자", 0, 0, sceneId: "ep01");
 
         Assert.False(ChapterBranchPlanner.NeedsSeeding(
             lone.FindChapter("ch02")!.ToGraphModel("ch02")));

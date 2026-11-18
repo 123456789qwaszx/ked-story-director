@@ -216,7 +216,7 @@ public class LineIdRoundTripTests
 
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
-        DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");
+        DialogueNode node = editor.AddDialogueNode(file.Id, "장면", name: "장면");
 
         editor.SetScriptLineText(node.Id, lines[0].LineId, lines[0].Speaker, lines[0].Text);
 

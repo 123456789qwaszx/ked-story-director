@@ -23,7 +23,7 @@ public class DialogueNodeCreationTests
     {
         (ProjectEditor editor, StoryFile file) = BuildEditor();
 
-        DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면 1");
+        DialogueNode node = editor.AddDialogueNode(file.Id, "장면 1", name: "장면 1");
 
         ScriptDocument script = node.Script;
 
@@ -46,7 +46,7 @@ public class DialogueNodeCreationTests
     {
         // 형식 4 — 대본은 카드 JSON의 `script` 칸에 든다. 줄 신원이 그대로 돌아와야 조건 · 출구가 붙는다.
         (ProjectEditor editor, StoryFile file) = BuildEditor();
-        editor.AddDialogueNode(file.Id, name: "장면");
+        editor.AddDialogueNode(file.Id, "장면", name: "장면");
 
         StoryProject decoded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project));
 

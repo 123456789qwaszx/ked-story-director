@@ -705,11 +705,6 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
             chapter.ToGraphModel(chapter.ChapterId));
 
-        if (scenes.All(scene => scene.IsDefault))
-        {
-            return;
-        }
-
         var sceneOf = new Dictionary<string, ChapterScene>(StringComparer.Ordinal);
 
         foreach (ChapterScene scene in scenes)
@@ -729,8 +724,7 @@ public partial class GraphEditorView : UserControl
         string? SceneEpisodeOf(ExpandedNodeProjection node) =>
             IsBranchCard(node.NodeId) ? homeOf.GetValueOrDefault(node.NodeId) : EpisodeOf(node);
 
-        // 장면ID를 적은 장면만 테두리를 받는다 — 장면ID가 없는 에피소드는 챕터 직속이다(2026-11-01 B안).
-        foreach (ChapterScene scene in scenes.Where(scene => !scene.IsDefault))
+        foreach (ChapterScene scene in scenes)
         {
             Rect? bounds = null;
 
@@ -2171,15 +2165,7 @@ public partial class GraphEditorView : UserControl
         foreach (StoryFile file in _session.Project.Files)
         {
             ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(_session.Project, file);
-            IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.ToGraphModel(chapter.ChapterId));
-
-            if (scenes.All(scene => scene.IsDefault))
-            {
-                continue;
-            }
-
-            // 챕터 직속 에피소드(장면ID 없음)는 장면이 아니라 칠하지 않는다(2026-11-01 B안).
-            foreach (ChapterScene scene in scenes.Where(scene => !scene.IsDefault))
+            foreach (ChapterScene scene in ChapterSceneGrouping.Of(chapter.ToGraphModel(chapter.ChapterId)))
             {
                 if (EpisodeNaming.CardFor(_session.Project, chapter.ChapterId, scene.RootEpisodeId) is { } card)
                 {
@@ -3147,11 +3133,9 @@ public partial class GraphEditorView : UserControl
                 FontWeight = FontWeight.SemiBold,
                 Opacity = 0.7,
                 VerticalAlignment = VerticalAlignment.Center,
-                [ToolTip.TipProperty] = scene.ChapterDirect
-                    ? "장면ID가 없는 에피소드들 — 장면에 묶이지 않고 챕터에 바로 속합니다(런타임에서는 에피소드 하나가 저장·롤백 구간)."
-                    : scene.SceneId.Length == 0
-                        ? "이 챕터의 진행에 안 실리는 노드들입니다 — 장면 경계가 없습니다."
-                        : $"장면 '{scene.DisplayName}' — 같은 장면끼리 저장·롤백 구간을 공유합니다."
+                [ToolTip.TipProperty] = scene.SceneId.Length == 0
+                    ? "이 챕터의 진행에 안 실리는 노드들입니다 — 장면 경계가 없습니다."
+                    : $"장면 '{scene.DisplayName}' — 같은 장면끼리 저장·롤백 구간을 공유합니다."
             }
         };
 
@@ -5003,9 +4987,6 @@ public partial class GraphEditorView : UserControl
         // ⚠ <b>자동 길은 장면을 못 넘는다</b> — 장면 경계는 실제로 `Commit → Exit → Enter`라,
         //   묻지 않고 넘어가면 안 된다(`AutoEdgeCrossesScene`). 관문에서야 알면 되돌려야 하니
         //   여기서 먼저 말하고, <b>대신 할 수 있는 것</b>을 함께 말한다.
-        //
-        // ⚠ 장면ID를 아무 데도 안 적은 챕터에서는 에피소드마다 제 장면이라(`__scene_*`)
-        //   자동 길이 아예 설 수 없다. 그것도 규칙 그대로다 — 숨기지 않고 말한다.
         if (auto && SceneOf(choice.ChapterId, choice.FromEpisodeId) is { } from &&
             SceneOf(choice.ChapterId, episodeId) is { } to &&
             !string.Equals(from, to, StringComparison.Ordinal))
@@ -5101,12 +5082,12 @@ public partial class GraphEditorView : UserControl
         Rebuild();
     }
 
-    /// <summary>그 에피소드의 장면 — 빈 칸이면 <c>__scene_{에피소드}</c>로 퇴화한다.</summary>
+    /// <summary>그 에피소드의 장면ID.</summary>
     private string? SceneOf(string chapterId, string episodeId) =>
         _session?.Editor.FindChapter(chapterId)?.Episodes
             .FirstOrDefault(episode =>
                 string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))
-            ?.EffectiveSceneId;
+            ?.SceneId;
 
     /// <summary>
     /// 그 노드가 선 자리 — (챕터, 에피소드). 에피소드가 아니면 null.
@@ -5317,7 +5298,7 @@ public partial class GraphEditorView : UserControl
             }
 
             // 작가는 ID를 보지 않으므로 처음 제목을 붙인다(display-names N2).
-            created = _session.Editor.AddDialogueNode(board.Id, x, y, sceneId: sceneId, title: NewNames.Episode);
+            created = _session.Editor.AddDialogueNode(board.Id, sceneId, x, y, title: NewNames.Episode);
 
             if (sceneMade is not null)
             {
@@ -5370,17 +5351,12 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// 이미 있는 장면 가운데 새 카드가 들 곳 — 고른 장면, 아니면 고른 카드의 장면(분기 카드면 그 집의 장면). 없으면 null(새 장면을 세운다).
-    /// 장면 없는 에피소드(옛 데이터)를 골라 두었으면 그 장면은 따르지 않는다.
     /// </summary>
     private string? SceneForNewCard(ChapterDocument chapter, StoryFile board)
     {
-        bool Lives(string? sceneId) =>
-            !string.IsNullOrWhiteSpace(sceneId) &&
-            chapter.Episodes.Any(episode => string.Equals(episode.SceneId?.Trim(), sceneId.Trim(), StringComparison.Ordinal));
-
         if (NewNodeScene is { } target &&
             string.Equals(target.ChapterId, chapter.ChapterId, StringComparison.Ordinal) &&
-            Lives(target.SceneId))
+            chapter.Episodes.Any(episode => string.Equals(episode.SceneId, target.SceneId, StringComparison.Ordinal)))
         {
             return target.SceneId;
         }
@@ -5395,11 +5371,10 @@ public partial class GraphEditorView : UserControl
             ? ChapterBranchCards.HomesOf(_session.Project, chapter.ChapterId)
                 .FirstOrDefault(home => home.Card.Id == selected.Id)?.EpisodeId
             : EpisodeNaming.EpisodeFor(chapter, selected)?.EpisodeId;
-        string? sceneId = episodeId is null
-            ? null
-            : chapter.Episodes.FirstOrDefault(episode => episode.EpisodeId == episodeId)?.SceneId?.Trim();
 
-        return Lives(sceneId) ? sceneId : null;
+        return episodeId is null
+            ? null
+            : chapter.Episodes.FirstOrDefault(episode => string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))?.SceneId;
     }
 
     private void DeleteSelectedNode()

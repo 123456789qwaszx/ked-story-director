@@ -193,8 +193,8 @@ public sealed class DirectorBoardViewTests : IDisposable
         {
             editor.EnsureChapter("ch01");
             editor.EnsureChapterBoard("ch01");
-            editor.AddEpisode("ch01", "root", title: "가까운 시작", 0, 0);
-            editor.AddEpisode("ch01", "a", title: "가까운 끝", 220, 0);
+            editor.AddEpisode("ch01", "root", title: "가까운 시작", 0, 0, sceneId: "root");
+            editor.AddEpisode("ch01", "a", title: "가까운 끝", 220, 0, sceneId: "a");
             editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
             Place(editor, "ch01", "root", 100, 100);
             Place(editor, "ch01", "a", 600, 100);
@@ -202,8 +202,8 @@ public sealed class DirectorBoardViewTests : IDisposable
 
         editor.EnsureChapter("ch02");
         editor.EnsureChapterBoard("ch02");
-        editor.AddEpisode("ch02", "x", title: "먼 시작", 0, 0);
-        editor.AddEpisode("ch02", "y", title: "먼 끝", 220, 0);
+        editor.AddEpisode("ch02", "x", title: "먼 시작", 0, 0, sceneId: "x");
+        editor.AddEpisode("ch02", "y", title: "먼 끝", 220, 0, sceneId: "y");
         editor.AddEdge("ch02", "x", "y", optionLabel: "멀리");
         Place(editor, "ch02", "x", 4000, 3000);
         Place(editor, "ch02", "y", 4500, 3000);

@@ -198,7 +198,7 @@ public sealed class BranchEntryConditionTests
 
         editor.EnsureChapter("ch01");
         string fileId = editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
 
         ChapterDocument chapter = editor.FindChapter("ch01")!;
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));

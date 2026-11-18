@@ -40,6 +40,8 @@ public sealed class DirectorHierarchyTests : IDisposable
         StoryHierarchy tree = graph.HierarchyView;
 
         tree.Fold(StoryHierarchy.ChapterKey("ch02"), collapse: false);
+
+        tree.Fold(StoryHierarchy.SceneKey("ch02", "street"), collapse: false);
         tree.RowButton(StoryHierarchy.EpisodeKey("ch02", "y"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
@@ -48,7 +50,7 @@ public sealed class DirectorHierarchyTests : IDisposable
         Assert.Equal("ch02", session.ActiveFile?.Name);
         Assert.Equal(card.Id, Editor(window).NodeId);
         Assert.True(Editor(window).IsVisible);
-        Assert.Equal("ch02", graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 장면ID가 없으면 챕터만
+        Assert.Equal("ch02 - street", graph.FindControl<TextBlock>("InspectorTitle")!.Text);   // 「{챕터} - {장면}」
 
         window.Close();
     });

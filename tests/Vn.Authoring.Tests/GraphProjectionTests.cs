@@ -113,7 +113,7 @@ public class GraphProjectionTests
         // 경로를 받아 나머지 분기가 끊긴 것처럼 보였다(2026-10-29 소유자 보고).
         var editor = new Vn.Authoring.Editing.ProjectEditor(new StoryProject());
         StoryFile file = TestChapter.Board(editor);
-        DialogueNode source = editor.AddDialogueNode(file.Id, name: "본문");
+        DialogueNode source = editor.AddDialogueNode(file.Id, "본문", name: "본문");
         string lineId = source.Script.ActiveLines.Single().Id;
         editor.AddBranchMarker(source.Id, lineId);
         editor.AddBranchMarker(source.Id, lineId);

@@ -19,7 +19,7 @@ public sealed class ScriptLifecycleTests
     {
         var editor = new ProjectEditor(new StoryProject());
         StoryFile file = TestChapter.Board(editor);
-        DialogueNode card = editor.AddDialogueNode(file.Id, name: "장면");
+        DialogueNode card = editor.AddDialogueNode(file.Id, "장면", name: "장면");
         string lineId = card.Script.ActiveLines.Single().Id;
 
         Assert.True(EpisodeDeleter.Delete(editor, "ch01", "장면").Ok);
@@ -37,8 +37,8 @@ public sealed class ScriptLifecycleTests
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", "root", 0, 0);
-        editor.AddEpisode("ch01", "a", "a", 0, 0);
+        editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "a", "a", 0, 0, sceneId: "a");
         int before = editor.Project.EnumerateScripts().Count();
 
         Assert.True(EpisodeDeleter.Delete(editor, "ch01", "a").Ok);
@@ -53,7 +53,7 @@ public sealed class ScriptLifecycleTests
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", "root", 0, 0);
+        editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "root");
 
         Assert.True(ChapterDeleter.Delete(editor, projectManifestPath: null, "ch01").Deleted);
 

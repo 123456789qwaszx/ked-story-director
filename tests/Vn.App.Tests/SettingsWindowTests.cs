@@ -230,7 +230,7 @@ public sealed class SettingsWindowTests : IDisposable
 
         foreach ((string id, double x) in cards)
         {
-            editor.AddEpisode("ch01", id, title: id, 0, 0);
+            editor.AddEpisode("ch01", id, title: id, 0, 0, sceneId: id);
             editor.MoveNode(EpisodeNaming.CardFor(editor.Project, "ch01", id)!.Id, x, 100);
         }
 

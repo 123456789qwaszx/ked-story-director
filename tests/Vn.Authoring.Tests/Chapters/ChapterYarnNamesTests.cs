@@ -14,8 +14,8 @@ public sealed class ChapterYarnNamesTests
     public void 다른_챕터의_에피소드와_이름이_겹치면_두_챕터_모두_오류다()
     {
         ProjectEditor editor = new(new StoryProject());
-        editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, 0, 0, name: "intro", sceneId: "scene01");
-        editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, 0, 0, name: "intro", sceneId: "scene01");
+        editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, "scene01", 0, 0, name: "intro");
+        editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, "scene01", 0, 0, name: "intro");
         editor.UpdateChapterDisplayName("ch02", "둘째 날");
 
         ChapterDiagnostic one = Assert.Single(Taken(editor, "ch01"));
@@ -31,8 +31,8 @@ public sealed class ChapterYarnNamesTests
     public void 분기_카드도_다른_챕터의_노드와_겹치면_오류다()
     {
         ProjectEditor editor = new(new StoryProject());
-        editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, 0, 0, name: "side", sceneId: "scene01");
-        DialogueNode home = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, 0, 0, sceneId: "scene01");
+        editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, "scene01", 0, 0, name: "side");
+        DialogueNode home = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, "scene01", 0, 0);
         editor.AddBranchMarker(home.Id, home.Script.ActiveLines.First().Id, name: "side");
 
         ChapterDiagnostic branch = Assert.Single(Taken(editor, "ch02"));
@@ -47,7 +47,7 @@ public sealed class ChapterYarnNamesTests
 
         foreach (string chapterId in new[] { "ch01", "ch02" })
         {
-            DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor, chapterId).Id, 0, 0, sceneId: "scene01");
+            DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor, chapterId).Id, "scene01", 0, 0);
             editor.AddBranchMarker(episode.Id, episode.Script.ActiveLines.First().Id);
         }
 

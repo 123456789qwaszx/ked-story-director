@@ -222,7 +222,7 @@ public partial class MainWindow
             }
 
             if (chapter.FindEpisode(edge.FromEpisodeId) is { } from && chapter.FindEpisode(edge.ToEpisodeId) is { } to &&
-                !string.Equals(from.EffectiveSceneId, to.EffectiveSceneId, StringComparison.Ordinal))
+                !string.Equals(from.SceneId, to.SceneId, StringComparison.Ordinal))
             {
                 _session.SetStatus("문구를 비우지 않았습니다 — 자동 길(AUTO)은 같은 장면 안에서만 이어집니다. " +
                                    "두 에피소드를 같은 장면에 두거나 문구를 남겨 주세요.");

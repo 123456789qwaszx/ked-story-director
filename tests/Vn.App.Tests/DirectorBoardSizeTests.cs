@@ -94,6 +94,7 @@ public sealed class DirectorBoardSizeTests : IDisposable
 
         ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
         scroll.Offset = new Vector(20000, 12000);
+        session.Select(null);   // 고른 카드가 있으면 그 장면 테두리 옆에 선다 — 보는 곳에 세우려면 고른 것이 없어야 한다
         Dispatcher.UIThread.RunJobs();
 
         graph.FindControl<Button>("AddDialogueButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -123,7 +124,7 @@ public sealed class DirectorBoardSizeTests : IDisposable
 
         foreach ((string id, double x, double y) in cards)
         {
-            editor.AddEpisode("ch01", id, title: id, 0, 0);
+            editor.AddEpisode("ch01", id, title: id, 0, 0, sceneId: id);
             editor.MoveNode(EpisodeNaming.CardFor(editor.Project, "ch01", id)!.Id, x, y);
         }
 

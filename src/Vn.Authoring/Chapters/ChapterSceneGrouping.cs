@@ -3,15 +3,7 @@ namespace Vn.Authoring.Chapters;
 /// <summary>
 /// 챕터 안의 장면 하나 — <b>저장된 것이 아니라 묶어 본 것</b>이다.
 /// </summary>
-/// <param name="SceneId">
-/// 비교의 열쇠 = <see cref="ChapterEpisode.EffectiveSceneId"/>. 빈 칸이면
-/// <c>__scene_{EpisodeId}</c>가 들어 있다 — <b>사람에게 보이는 값이 아니다</b>
-/// (<see cref="DisplayName"/>을 쓴다).
-/// </param>
-/// <param name="IsDefault">
-/// 장면ID를 안 적어 퇴화한 장면인가. 참이면 <b>에피소드 하나가 곧 장면 하나</b>이고,
-/// 그것이 장면 개념이 서기 전의 동작이다(구판 호환).
-/// </param>
+/// <param name="SceneId">비교의 열쇠 = <see cref="ChapterEpisode.SceneId"/>. 화면은 <see cref="DisplayName"/>을 쓴다.</param>
 /// <param name="RootEpisodeId">
 /// 밖에서 들어오는 자리. 롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 여기다.
 /// </param>
@@ -23,7 +15,6 @@ namespace Vn.Authoring.Chapters;
 public sealed record ChapterScene(
     string SceneId,
     string DisplayName,
-    bool IsDefault,
     string RootEpisodeId,
     IReadOnlyList<ChapterEpisode> Episodes,
     IReadOnlyList<string> ExtraEntries)
@@ -50,17 +41,7 @@ public sealed record ChapterScene(
 /// </summary>
 public static class ChapterSceneGrouping
 {
-    /// <summary>
-    /// 장면ID를 안 적은 장면의 이름 — 내부 발급값(<c>__scene_*</c>)을 사람에게 보이지 않는다.
-    ///
-    /// <b>에피소드 Id를 붙이는 이유</b>: 장면ID가 섞인 챕터에서는 미지정 장면이 여럿일 수
-    /// 있고, 전부 같은 이름이면 <b>똑같은 줄이 여럿 서서</b> 어느 것이 어느 에피소드인지 알 수
-    /// 없다. 미지정 장면에는 에피소드가 하나뿐이므로 그 Id가 곧 구분이다.
-    ///
-    /// 장면ID를 <b>하나도</b> 안 적은 챕터에서는 화면이 장면 단을 통째로 생략하므로
-    /// 이 이름이 안 보인다.
-    /// </summary>
-    public static string DefaultSceneName(string episodeId) => $"미지정 · {episodeId}";
+    // ⛔ 장면ID를 안 적은 장면(「미지정 · {Id}」 · <c>IsDefault</c>)은 2026-11-18에 걷혔다 — 에피소드는 늘 장면에 속한다(old-shapes O7).
 
     /// <summary>
     /// 장면 순서는 <b>루트의 깊이</b>다 — 챕터 시작에서 먼 순서가 곧 이야기 순서다.
@@ -89,7 +70,7 @@ public static class ChapterSceneGrouping
         var scenes = new List<ChapterScene>();
 
         foreach (IGrouping<string, ChapterEpisode> group in chapter.Episodes
-                     .GroupBy(episode => episode.EffectiveSceneId, StringComparer.Ordinal))
+                     .GroupBy(episode => episode.SceneId, StringComparer.Ordinal))
         {
             List<ChapterEpisode> ordered = group
                 .OrderBy(Depth)
@@ -110,17 +91,11 @@ public static class ChapterSceneGrouping
                 .OrderBy(episode => ReferenceEquals(episode, root) ? 0 : 1)
                 .ToList();
 
-            bool isDefault = string.IsNullOrWhiteSpace(
-                group.First(episode =>
-                    string.Equals(episode.EffectiveSceneId, group.Key, StringComparison.Ordinal)).SceneId);
-
-            // 보이는 이름 — 작가가 붙인 장면 이름, 없으면 장면ID(미지정은 「미지정 · {Id}」). 이름은 글자라 같은 이름의 장면이
+            // 보이는 이름 — 작가가 붙인 장면 이름, 없으면 장면ID. 이름은 글자라 같은 이름의 장면이
             // 여럿이어도 SceneId로 갈린다(docs/work-orders/display-names-orders.md).
             scenes.Add(new ChapterScene(
                 group.Key,
-                ChapterSceneNotes.NameOf(chapter.SceneNotes, group.Key) ??
-                (isDefault ? DefaultSceneName(root.EpisodeId) : group.Key),
-                isDefault,
+                ChapterSceneNotes.NameOf(chapter.SceneNotes, group.Key) ?? group.Key,
                 root.EpisodeId,
                 episodes,
                 entries.Skip(1).Select(episode => episode.EpisodeId).ToList()));

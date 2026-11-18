@@ -79,7 +79,7 @@ public sealed record CollapsedSceneProjection(
     : GraphItemProjection(FileId, Position);
 
 /// <summary>
-/// 접은 장면의 열쇠 — 판(<c>StoryFile.Id</c>)과 장면ID(<c>ChapterEpisode.EffectiveSceneId</c>). 판 Id라 챕터 이름이
+/// 접은 장면의 열쇠 — 판(<c>StoryFile.Id</c>)과 장면ID(<c>ChapterEpisode.SceneId</c>). 판 Id라 챕터 이름이
 /// 바뀌어도 따라간다. 저장 내용이 아니라 판 접기처럼 작업 상태다.
 /// </summary>
 public readonly record struct GraphSceneKey(string FileId, string SceneId);
@@ -88,21 +88,15 @@ public readonly record struct GraphSceneKey(string FileId, string SceneId);
 /// 접힌 판 안의 장면 묶음 하나.
 /// </summary>
 /// <param name="SceneId">
-/// 비교의 열쇠. <b>장면에 안 속한 노드</b>(에피소드가 아닌 자유 씬)는 빈 문자열이다 —
-/// 그쪽은 챕터의 진행에 안 실리므로 장면 경계도 없다.
+/// 비교의 열쇠. <b>장면 밖</b> 묶음(집 없는 분기 카드 — 챕터의 진행에 안 실린다)과 에피소드가 없는 판의 한 묶음은 빈 문자열이다.
 /// </param>
 /// <param name="DisplayName">
-/// 사람에게 보일 이름. 묶음이 하나뿐이면 <b>머리글을 안 그린다</b>(그릴 이유가 없다).
-/// </param>
-/// <param name="ChapterDirect">
-/// 장면ID가 없는 에피소드들의 묶음인가 (2026-11-01 B안) — 장면이 아니라 <b>챕터 직속</b>이다. 장면마다 머리글을 세우던 시절에는
-/// 「미지정 · x」 머리글이 에피소드 수만큼 섰다.
+/// 사람에게 보일 이름. 에피소드가 없는 판의 한 묶음은 비어 <b>머리글을 안 그린다</b>(그릴 이유가 없다).
 /// </param>
 public sealed record CollapsedSceneGroup(
     string SceneId,
     string DisplayName,
-    IReadOnlyList<CollapsedNodeEntry> Entries,
-    bool ChapterDirect = false)
+    IReadOnlyList<CollapsedNodeEntry> Entries)
 {
     /// <summary>
     /// 머리글 줄을 그리는가 — 이름이 있을 때만.

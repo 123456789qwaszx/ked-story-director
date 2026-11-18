@@ -300,7 +300,7 @@ public sealed class BranchMarkerCardTests : IDisposable
         session.Editor.EnsureChapter("ch01");
         string fileId = session.EnsureChapterBoard("ch01");
 
-        DialogueNode node = session.Editor.AddDialogueNode(fileId, 0, 0, "root");
+        DialogueNode node = session.Editor.AddDialogueNode(fileId, "root", 0, 0, name: "root");
         string lineId = node.Script.ActiveLines.First().Id;
 
         var editor = new DialogueNodeEditor();

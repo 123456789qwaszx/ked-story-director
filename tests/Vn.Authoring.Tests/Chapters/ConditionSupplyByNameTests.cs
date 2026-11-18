@@ -95,7 +95,7 @@ public sealed class ConditionSupplyByNameTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", 0, 0, 10));
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
         editor.EnsureChapterBoard("ch01");
         return editor;
     }

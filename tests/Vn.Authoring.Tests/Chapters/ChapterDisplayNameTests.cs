@@ -17,7 +17,7 @@ public sealed class ChapterDisplayNameTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("festival_eve");
-        editor.AddEpisode("festival_eve", "Festival_Classroom", "", 0, 0);
+        editor.AddEpisode("festival_eve", "Festival_Classroom", "", 0, 0, sceneId: "Festival_Classroom");
         return editor;
     }
 

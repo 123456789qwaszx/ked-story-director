@@ -76,7 +76,7 @@ public sealed class SpeakerAndConditionRenameTests
         string fileId = editor.EnsureChapterBoard("ch01");
 
         // 챕터 판에 세우면 에피소드도 함께 선다 — 이름이 곧 EpisodeId다.
-        DialogueNode node = editor.AddDialogueNode(fileId, name: episodeId);
+        DialogueNode node = editor.AddDialogueNode(fileId, episodeId, name: episodeId);
         ScriptDocument script = node.Script;
         ScriptLine line = script.ActiveLines.First();
         editor.SetScriptLineText(node.Id, line.Id, speaker, "문을 연다");

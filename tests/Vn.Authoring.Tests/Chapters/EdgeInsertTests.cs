@@ -15,8 +15,8 @@ public sealed class EdgeInsertTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "a", "a", 0, 0);
-        editor.AddEpisode("ch01", "b", "b", 0, 0);
+        editor.AddEpisode("ch01", "a", "a", 0, 0, sceneId: "a");
+        editor.AddEpisode("ch01", "b", "b", 0, 0, sceneId: "b");
         ChapterEdge second = editor.AddEdge("ch01", "a", "b", optionLabel: "둘");
 
         editor.AddEdge("ch01", "a", "b", optionLabel: "하나", before: second);
@@ -32,8 +32,8 @@ public sealed class EdgeInsertTests
     {
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "a", "a", 0, 0);
-        editor.AddEpisode("ch01", "b", "b", 0, 0);
+        editor.AddEpisode("ch01", "a", "a", 0, 0, sceneId: "a");
+        editor.AddEpisode("ch01", "b", "b", 0, 0, sceneId: "b");
         editor.AddEdge("ch01", "a", "b", optionLabel: "하나");
 
         editor.AddEdge("ch01", "a", "b", optionLabel: "둘");

@@ -131,7 +131,7 @@ public sealed class ChapterDocumentTests : IDisposable
                 EventKey = "ev_corridor",
                 SceneId = "sc_corridor"
             },
-            new ChapterEpisode("ep02", "옥상", "10", 300, 40, null)
+            new ChapterEpisode("ep02", "옥상", "10", 300, 40, null) { SceneId = "sc_roof" }
         ],
         Edges =
         [

@@ -167,9 +167,9 @@ public sealed class ChoiceSlotCountTests : IDisposable
 
         session.Editor.EnsureChapter("ch01");
         session.EnsureChapterBoard("ch01");
-        session.Editor.AddEpisode("ch01", "root", "root", 0, 0);
-        session.Editor.AddEpisode("ch01", "a", "a", 0, 500);
-        session.Editor.AddEpisode("ch01", "b", "b", 400, 500);
+        session.Editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "root");
+        session.Editor.AddEpisode("ch01", "a", "a", 0, 500, sceneId: "a");
+        session.Editor.AddEpisode("ch01", "b", "b", 400, 500, sceneId: "b");
 
         var graph = new GraphEditorView();
         var window = new Window { Width = 1400, Height = 900, Content = graph };

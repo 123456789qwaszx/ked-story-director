@@ -423,12 +423,10 @@ public static class GraphProjectionBuilder
     /// <c>SceneId</c>로 가는 투영이다. 판 이름이 챕터 Id와 같은 것이 그 다리이고, 그것이
     /// <c>EnsureChapterBoard</c>가 세우는 규약이다.
     ///
-    /// <b>묶지 않는 경우 둘</b>: ① 챕터를 못 찾는 판(작가의 자유 판) ② 장면ID를 하나도
-    /// 안 적은 챕터. ②를 그대로 묶으면 에피소드 수만큼
-    /// 장면 머리글이 생겨 프록시가 통째로 노이즈가 된다(<c>docs/plans/R6-explorer.md</c> §2).
+    /// <b>묶지 않는 경우</b>: 에피소드가 하나도 없는 챕터. 에피소드는 늘 장면에 속한다(old-shapes O7).
     ///
-    /// <b>자유 씬은 장면 밖이다.</b> 에피소드가 아닌 대사노드·설정 노드는 챕터의
-    /// 진행에 안 실리므로 장면 경계도 없다 — 맨 뒤 묶음으로 모은다.
+    /// <b>에피소드가 아닌 노드는 장면 밖이다</b> — 집이 없는 분기 카드 · 설정 노드는 챕터의
+    /// 진행에 안 실리므로 장면 경계도 없다. 맨 뒤 묶음으로 모은다.
     /// </summary>
     private static IReadOnlyList<CollapsedSceneGroup> SceneGroups(
         StoryProject project, StoryFile file, IReadOnlyList<CollapsedNodeEntry> entries)
@@ -442,7 +440,7 @@ public static class GraphProjectionBuilder
 
         var groups = new List<CollapsedSceneGroup>();
 
-        foreach (ChapterScene scene in map.Scenes.Where(scene => !scene.IsDefault))
+        foreach (ChapterScene scene in map.Scenes)
         {
             List<CollapsedNodeEntry> inScene = entries
                 .Where(entry => string.Equals(SceneFor(entry), scene.SceneId, StringComparison.Ordinal))
@@ -452,15 +450,6 @@ public static class GraphProjectionBuilder
             {
                 groups.Add(new CollapsedSceneGroup(scene.SceneId, scene.DisplayName, inScene));
             }
-        }
-
-        // 장면ID가 없는 에피소드는 <b>챕터 직속</b> 한 묶음이다 (2026-11-01 B안) — 장면들 뒤에, 이야기 차례대로.
-        var defaults = map.Scenes.Where(scene => scene.IsDefault).Select(scene => scene.SceneId).ToHashSet(StringComparer.Ordinal);
-        List<CollapsedNodeEntry> direct = entries.Where(entry => SceneFor(entry) is { } sceneId && defaults.Contains(sceneId)).ToList();
-
-        if (direct.Count > 0)
-        {
-            groups.Add(new CollapsedSceneGroup(string.Empty, "챕터 직속", direct, ChapterDirect: true));
         }
 
         List<CollapsedNodeEntry> outside = entries.Where(entry => SceneFor(entry) is null).ToList();
@@ -477,8 +466,7 @@ public static class GraphProjectionBuilder
         new(string.Empty, string.Empty, entries);
 
     /// <summary>
-    /// 판의 노드를 장면으로 가르는 표 — 그 챕터가 장면ID를 하나라도 적었을 때만 있다(R6-explorer §2:
-    /// 장면ID를 하나도 안 적은 챕터는 장면 단이 없다).
+    /// 판의 노드를 장면으로 가르는 표 — 에피소드가 없는 챕터는 없다.
     /// </summary>
     private static SceneMap? ScenesOf(StoryProject project, StoryFile file)
     {
@@ -486,7 +474,7 @@ public static class GraphProjectionBuilder
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
             chapter.ToGraphModel(chapter.ChapterId));
 
-        if (scenes.Count == 0 || scenes.All(scene => scene.IsDefault))
+        if (scenes.Count == 0)
         {
             return null;
         }

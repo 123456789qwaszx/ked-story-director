@@ -62,7 +62,7 @@ public class AuthoringSessionTests : IDisposable
 
         Assert.False(session.IsDirty);
 
-        DialogueNode node = session.Editor.AddDialogueNode(file.Id, name: "새 장면", sceneId: "scene01");
+        DialogueNode node = session.Editor.AddDialogueNode(file.Id, "scene01", name: "새 장면");
         Assert.True(session.IsDirty);
 
         session.Editor.Undo();
@@ -130,8 +130,8 @@ public class AuthoringSessionTests : IDisposable
         AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
         StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
-        session.Editor.AddDialogueNode(first.Id, name: "첫 파일");
-        session.Editor.AddDialogueNode(second.Id, name: "둘째 파일");
+        session.Editor.AddDialogueNode(first.Id, "첫 파일", name: "첫 파일");
+        session.Editor.AddDialogueNode(second.Id, "둘째 파일", name: "둘째 파일");
 
         session.SelectFile(second.Id);
 
@@ -165,10 +165,10 @@ public class AuthoringSessionTests : IDisposable
         AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
         StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
-        DialogueNode existing = session.Editor.AddDialogueNode(second.Id, name: "기존");
+        DialogueNode existing = session.Editor.AddDialogueNode(second.Id, "기존", name: "기존");
 
         session.SelectFile(second.Id);
-        DialogueNode added = session.Editor.AddDialogueNode(session.ActiveFileId!, name: "추가");
+        DialogueNode added = session.Editor.AddDialogueNode(session.ActiveFileId!, "추가", name: "추가");
 
         Assert.Empty(first.Nodes);
         Assert.Same(added, second.Nodes[^1]);
@@ -212,7 +212,7 @@ public class AuthoringSessionTests : IDisposable
         session.FileGraphStateChanged += (_, e) => changes.Add(e);
 
         StoryFile added = NewBoard(session, "ch09");
-        session.Editor.AddDialogueNode(added.Id, name: "장면");
+        session.Editor.AddDialogueNode(added.Id, "장면", name: "장면");
 
         Assert.Equal(2, changes.Count);
         Assert.All(changes, change => Assert.True(change.FileListChanged));
@@ -227,7 +227,7 @@ public class AuthoringSessionTests : IDisposable
         AuthoringSession session = OpenWithChapters("ch01", "ch02");
         StoryFile first = session.ActiveFile!;
         StoryFile second = session.Project.Files.Single(file => file.Id != first.Id);
-        DialogueNode node = session.Editor.AddDialogueNode(first.Id, name: "장면");
+        DialogueNode node = session.Editor.AddDialogueNode(first.Id, "장면", name: "장면");
 
         session.SetFileExpanded(second.Id, expanded: false);
         session.Editor.UpdateEpisode(first.Name, node.Name, title: "수정된 장면");   // 다른 프로젝트 편집(판 이름 = 챕터 ID)

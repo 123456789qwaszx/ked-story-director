@@ -137,7 +137,7 @@ public sealed class ProjectFolderTests
 
             var editor = new ProjectEditor(new StoryProject());
             editor.EnsureChapter("ch01");
-            editor.AddEpisode("ch01", "ep01", "첫 에피소드", 0, 0);
+            editor.AddEpisode("ch01", "ep01", "첫 에피소드", 0, 0, sceneId: "ep01");
             ProjectStore.Save(manifest, editor.Project);
 
             var entries = new[] { new ChapterEntry("ch01", editor.FindChapter("ch01")!.ToGraphModel("ch01")) };

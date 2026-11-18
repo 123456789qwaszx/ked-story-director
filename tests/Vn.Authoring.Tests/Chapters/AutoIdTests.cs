@@ -19,9 +19,9 @@ public sealed class AutoIdTests
         ProjectEditor editor = World();
         string board = TestChapter.Board(editor).Id;
 
-        DialogueNode first = editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
-        DialogueNode second = editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
-        DialogueNode other = editor.AddDialogueNode(board, 0, 0, sceneId: "scene02");
+        DialogueNode first = editor.AddDialogueNode(board, "scene01", 0, 0);
+        DialogueNode second = editor.AddDialogueNode(board, "scene01", 0, 0);
+        DialogueNode other = editor.AddDialogueNode(board, "scene02", 0, 0);
 
         Assert.Equal(
             ["ch01_scene01_new01", "ch01_scene01_new02", "ch01_scene02_new01"],
@@ -33,8 +33,8 @@ public sealed class AutoIdTests
     {
         // 장면ID는 챕터마다 scene01부터라 같아도, 챕터가 앞머리에 들어 Yarn 노드 이름이 갈린다.
         ProjectEditor editor = World();
-        DialogueNode one = editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, 0, 0, sceneId: "scene01");
-        DialogueNode two = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, 0, 0, sceneId: "scene01");
+        DialogueNode one = editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, "scene01", 0, 0);
+        DialogueNode two = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, "scene01", 0, 0);
 
         Assert.Equal("ch01_scene01_new01", one.Name);
         Assert.Equal("ch02_scene01_new01", two.Name);
@@ -45,10 +45,10 @@ public sealed class AutoIdTests
     {
         // 사람이 다른 챕터의 카드에 그 이름을 붙여 두었다 — Yarn 노드 이름은 프로젝트에서 하나라 건너뛴다.
         ProjectEditor editor = World();
-        DialogueNode taken = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, 0, 0, sceneId: "scene09");
+        DialogueNode taken = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, "scene09", 0, 0);
         editor.RenameEpisode("ch02", taken.Name, "ch01_scene01_new01");   // 카드(= Yarn 노드 이름)가 함께 간다
 
-        DialogueNode created = editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, 0, 0, sceneId: "scene01");
+        DialogueNode created = editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, "scene01", 0, 0);
 
         Assert.Equal("ch01_scene01_new02", created.Name);
     }
@@ -75,7 +75,7 @@ public sealed class AutoIdTests
     public void 분기_카드는_집의_장면으로_이름을_짓는다()
     {
         ProjectEditor editor = World();
-        DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, 0, 0, sceneId: "scene02");
+        DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, "scene02", 0, 0);
         string lineId = episode.Script.ActiveLines.First().Id;
 
         DialogueNode first = editor.AddBranchMarker(episode.Id, lineId);
@@ -93,7 +93,7 @@ public sealed class AutoIdTests
     public void 빈_곳에_세운_분기_카드도_같은_규칙이다()
     {
         ProjectEditor editor = World();
-        DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, 0, 0, sceneId: "scene01");
+        DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, "scene01", 0, 0);
         string lineId = episode.Script.ActiveLines.First().Id;
         DialogueNode made = editor.AddBranchMarker(episode.Id, lineId);
         editor.SetExitTarget(Ports(editor, episode).Single(port => port.TargetNodeId == made.Id), null);
@@ -108,7 +108,7 @@ public sealed class AutoIdTests
     {
         // 분기 카드는 이름(= ID = Yarn 노드 이름)과 제목이 갈린다(I4) — 작가는 제목을, 개발자는 ID를 본다.
         ProjectEditor editor = World();
-        DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, 0, 0, sceneId: "scene01");
+        DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, "scene01", 0, 0);
         DialogueNode branch = editor.AddBranchMarker(episode.Id, episode.Script.ActiveLines.First().Id);
         Assert.Equal((NewNames.Branch, NewNames.Branch), (branch.Title, EpisodeNaming.ShownNameOf(editor.Project, branch)));
 
