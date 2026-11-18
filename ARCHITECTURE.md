@@ -309,8 +309,8 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 진단이 짚는 자리 · 문장 | `Chapters/ChapterDiagnostic.cs`(에피소드는 `EpisodeId`, 간선은 메시지의 `ChapterEdge.Where`) |
 | 챕터 조건 → 대사 카드 | `Chapters/ChapterBoardSupply.cs`(사본은 **이름**으로 짝짓는다, 식 미정은 `true`) · `ConditionYarnTranslator.cs`, 분기에 거는 칸 `App/Views/BranchConditionPicker.cs` |
 | 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` · `RenameChapterCondition`(간선이 따라간다, 공급 사본은 Id 보존) |
-| 화자 목록(이름 · 캐릭터 키) | 규칙 `App/Services/AuthoringSession.cs`의 `AddSpeakerName` · `RenameSpeakerName` · `RemoveSpeakerName` · `SetSpeakerCharacterId`(쓰면 `SpeakersChanged`), 화면 이름 `App/MainWindow.Speakers.cs`([대본]) · 키 `ChapterGraphView` [화자] 탭([구성]) |
-| 조건 이름 · 식 미정 | 이름 화면 `App/MainWindow.Conditions.cs`([대본] 챕터 요약), 식은 `ChapterGraphView` 조건 표([구성]). 빈 식 = 항상 통과 `ChapterDocument.Reparse`, 진단 `ConditionExpressionBlank`(경고) |
+| 화자 목록(이름 · 캐릭터 키) | 규칙 `App/Services/AuthoringSession.cs`의 `AddSpeakerName` · `RenameSpeakerName` · `RemoveSpeakerName` · `SetSpeakerCharacterId`(쓰면 `SpeakersChanged`), 화면 이름 `App/MainWindow.Speakers.cs`([대본] 「화자」 탭) · 키 `ChapterGraphView` 「화자」 탭([구성]) — 두 탭의 오른쪽 기둥은 탭 셋 `SideTabs`(`Views/SideTab.cs` · 2026-11-18) |
+| 조건 이름 · 식 미정 | 이름 화면 `App/MainWindow.Conditions.cs`([대본] 「조건 및 스탯」 탭 — 지금 챕터 = 활성 판), 식 · [＋ 조건](이름 + 식)은 `ChapterGraphView` 「조건 및 스탯」 탭의 조건 표([구성]). 빈 식 = 항상 통과 `ChapterDocument.Reparse`, 진단 `ConditionExpressionBlank`(경고) |
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 분기 카드(집 · 검증) | `Chapters/ChapterBranchCards.cs` — 분기 카드(`DialogueNode.IsBranchCard`)는 에피소드가 아니라 증명(`ChapterReachabilityProver`, 간선만 — 런타임의 오라클) 밖이다. `HomesOf` = 분기 카드의 집(먼저 부르는 에피소드 — 장면 · Yarn 파일 · [구성] 칩이 같은 규칙), `Verify` = 분기점이 에피소드에(오류) · 아무도 안 부름 · 도달 불가에서만 불림(경고) · 줄 없음(오류) · Yarn 노드 이름 겹침(오류). 부르는 곳 `ChapterValidator.Validate`(프로젝트를 줄 때) |
