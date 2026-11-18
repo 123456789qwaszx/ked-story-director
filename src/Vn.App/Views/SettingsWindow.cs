@@ -22,7 +22,8 @@ namespace Vn.App.Views;
 /// <c>docs/work-orders/side-fold-settings-orders.md</c> K3).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
-/// 칸 · 보낼 곳은 그 파일에 바로 · 「기타」는 앱 설정에 바로), [취소] · Esc는 버린다. 줄여서 카드가 움직이면 [확인] 전에 미리 말한다(<see cref="BoardResize.Plan"/> — 바꾸기와 같은 계산).
+/// 칸 · 보낼 곳은 그 파일에 바로), [취소] · Esc는 버린다. 「기타」의 체크는 [확인]을 기다리지 않고 누르는 즉시 앱 설정에 반영한다 — [취소]로
+/// 돌아가지 않는다(2026-11-18 소유자 · <c>docs/work-orders/inspector-boxes-pan-orders.md</c> J3). 줄여서 카드가 움직이면 [확인] 전에 미리 말한다(<see cref="BoardResize.Plan"/> — 바꾸기와 같은 계산).
 /// </summary>
 internal sealed class SettingsWindow : Window
 {
@@ -64,6 +65,10 @@ internal sealed class SettingsWindow : Window
             IsChecked = session.ShowMinimap
         };
         ToolTip.SetTip(MinimapCheck, "[대본] 판 오른쪽 아래의 전체 지도입니다. 끄면 지도만 걷고 [전체 · 50 · 100 · 150] 배율 줄은 남습니다.");
+
+        // 누르는 즉시 판에 반영한다(J3 · ⛔ 그 전에는 [확인]을 기다렸다).
+        MinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "미니맵", () =>
+            _session.SetShowMinimap(MinimapCheck.IsChecked == true));
 
         ConfirmButton = new Button { Content = "확인", IsDefault = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
         CancelButton = new Button { Content = "취소", IsCancel = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
@@ -126,7 +131,7 @@ internal sealed class SettingsWindow : Window
                 ShortcutGroup,
                 Group(
                     "기타",
-                    "이 PC의 앱 설정에 저장됩니다 — 프로젝트 파일과 상관없고 되돌리기가 없습니다. [확인]을 누르면 바로 반영됩니다.",
+                    "이 PC의 앱 설정에 저장됩니다 — 프로젝트 파일과 상관없고 되돌리기가 없습니다. 누르는 즉시 반영됩니다([취소]로 돌아가지 않습니다).",
                     MinimapCheck),
                 new StackPanel
                 {
@@ -159,7 +164,7 @@ internal sealed class SettingsWindow : Window
     /// <summary>「단축키」 묶음 — 접고 편다(처음에는 접혀 있다). 읽기만 한다.</summary>
     internal Expander ShortcutGroup { get; }
 
-    /// <summary>「기타」의 「[대본] 탭 미니맵 보이기」 — [확인]으로 반영한다.</summary>
+    /// <summary>「기타」의 「[대본] 탭 미니맵 보이기」 — 누르는 즉시 반영한다.</summary>
     internal CheckBox MinimapCheck { get; }
 
     internal Button ConfirmButton { get; }
@@ -252,7 +257,7 @@ internal sealed class SettingsWindow : Window
         return refusal;
     }
 
-    /// <summary>[확인] — 판 크기를 바꾸고(같으면 아무것도 적지 않는다), 보낼 곳이 바뀌었으면 그 파일에 적고, 「기타」를 앱 설정에 반영하고 창을 닫는다.</summary>
+    /// <summary>[확인] — 판 크기를 바꾸고(같으면 아무것도 적지 않는다), 보낼 곳이 바뀌었으면 그 파일에 적고 창을 닫는다. 「기타」는 누를 때 이미 반영했다.</summary>
     internal void Confirm()
     {
         // 경로 칸에 적다 만 글도 반영한다 — 받지 않은 것이 있으면 창을 닫지 않고 까닭을 보인다.
@@ -269,7 +274,6 @@ internal sealed class SettingsWindow : Window
         UiGuard.Run(_session, "설정", () =>
         {
             _session.Editor.SetBoardSize(width, height);
-            _session.SetShowMinimap(MinimapCheck.IsChecked == true);   // 「기타」 — 앱 설정(같으면 아무것도 하지 않는다)
 
             if (_session.ProjectPath is { } projectPath && _destinations != _session.Destinations)
             {
