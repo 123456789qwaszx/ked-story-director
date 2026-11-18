@@ -216,7 +216,7 @@ public partial class ChapterGraphView : UserControl
         SelectionSection.IsVisible = _inspector is InspectorMode.Selection or InspectorMode.Scene;
         OverviewSection.IsVisible = _inspector is InspectorMode.Project or InspectorMode.Chapter;
         ChapterIdGrid.IsVisible = _inspector == InspectorMode.Chapter;
-        OverviewText.Text = _inspector == InspectorMode.Chapter
+        OverviewText.Full = _inspector == InspectorMode.Chapter
             ? "이 챕터의 조건 · 스탯은 「조건 및 스탯」 탭에서 정합니다."
             : "화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.";
         ScenePanel.IsVisible = _inspector == InspectorMode.Scene;
@@ -296,7 +296,7 @@ public partial class ChapterGraphView : UserControl
 
         if (InspectedScene(model) is not { } scene)
         {
-            SceneHintText.Text = "이 장면이 사라졌습니다 — 하이어아키에서 다시 고르세요.";
+            SceneHintText.Set("이 장면이 사라졌습니다 — 하이어아키에서 다시 고르세요.", "이 장면이 사라졌습니다.");
             return;
         }
 
@@ -305,8 +305,10 @@ public partial class ChapterGraphView : UserControl
             SceneIdBox.Text = scene.SceneId;
         }
 
-        SceneHintText.Text = $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 장면 이름은 [대본] 탭 하이어아키의 장면 줄에서 고칩니다. " +
-              "장면 시작점(⌂)은 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.";
+        SceneHintText.Set(
+            $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 장면 이름은 [대본] 탭 하이어아키의 장면 줄에서 고칩니다. " +
+            "장면 시작점(⌂)은 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.",
+            brief: null);
 
         foreach (ChapterEpisode episode in scene.Episodes)
         {
@@ -723,9 +725,10 @@ public partial class ChapterGraphView : UserControl
 
         if (speakers.Count == 0)
         {
-            SpeakerListPanel.Children.Add(new TextBlock
+            SpeakerListPanel.Children.Add(new GuideLine
             {
-                Text = "아직 화자가 없습니다 — 화자 이름은 [대본] 탭의 「화자」 탭에서 더합니다.",
+                Full = "아직 화자가 없습니다 — 화자 이름은 [대본] 탭의 「화자」 탭에서 더합니다.",
+                Brief = "아직 화자가 없습니다.",   // 설명 간소화(brief-guides G1)
                 FontSize = 10,
                 Opacity = 0.55,
                 TextWrapping = TextWrapping.Wrap
@@ -3090,16 +3093,22 @@ public partial class ChapterGraphView : UserControl
     {
         if (episodeId is null)
         {
-            DialoguePreviewHeader.Text = "에피소드를 선택하면 그 대사가 여기 보입니다.";
+            DialoguePreviewHeader.Set("에피소드를 선택하면 그 대사가 여기 보입니다.", brief: null);
             DialoguePreviewText.Text = string.Empty;
             return;
         }
 
         string preview = DialogueOf(episodeId);
 
-        DialoguePreviewHeader.Text = preview.Length > 0
-            ? string.Empty
-            : "아직 적힌 대사가 없습니다 — [대본] 탭의 카드에서 쓰세요";
+        if (preview.Length > 0)
+        {
+            DialoguePreviewHeader.Set(string.Empty, brief: null);
+        }
+        else
+        {
+            DialoguePreviewHeader.Set("아직 적힌 대사가 없습니다 — [대본] 탭의 카드에서 쓰세요", "아직 적힌 대사가 없습니다");
+        }
+
         DialoguePreviewText.Text = preview;
     }
 
@@ -3244,9 +3253,10 @@ public partial class ChapterGraphView : UserControl
 
         if (edges.Count == 0)
         {
-            EdgeListPanel.Children.Add(new TextBlock
+            EdgeListPanel.Children.Add(new GuideLine
             {
-                Text = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 잇습니다.",
+                Full = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 잇습니다.",
+                Brief = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다.",
                 FontSize = 10,
                 Opacity = 0.5,
                 TextWrapping = TextWrapping.Wrap
@@ -3768,10 +3778,10 @@ public partial class ChapterGraphView : UserControl
             Opacity = 0.6,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         });
-        SlotDetailText.Text = (options == 0
-                ? "이 에피소드에서 나가는 길이 아직 없습니다."
-                : $"이 에피소드에서 나가는 길은 {options}개이고, 이 칸은 비어 있습니다.") +
-            " [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이으면 이 칸이 길이 됩니다.";
+        string slotState = options == 0
+            ? "이 에피소드에서 나가는 길이 아직 없습니다."
+            : $"이 에피소드에서 나가는 길은 {options}개이고, 이 칸은 비어 있습니다.";
+        SlotDetailText.Set(slotState + " [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이으면 이 칸이 길이 됩니다.", slotState);
     }
 
     /// <summary>조건을 안 건 분기 — 언제나 재생된다. 「안 고름」과 같은 뜻이다.</summary>
@@ -3985,9 +3995,10 @@ public partial class ChapterGraphView : UserControl
 
         if (StatListPanel.Children.Count == 0)
         {
-            StatListPanel.Children.Add(new TextBlock
+            StatListPanel.Children.Add(new GuideLine
             {
-                Text = "스탯이 없습니다 — 아래 [＋ 스탯]으로 만듭니다.",
+                Full = "스탯이 없습니다 — 아래 [＋ 스탯]으로 만듭니다.",
+                Brief = "스탯이 없습니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });
@@ -4147,9 +4158,10 @@ public partial class ChapterGraphView : UserControl
 
         if (ConditionListPanel.Children.Count == 0)
         {
-            ConditionListPanel.Children.Add(new TextBlock
+            ConditionListPanel.Children.Add(new GuideLine
             {
-                Text = "조건이 없습니다 — 아래 [＋ 조건]으로 만듭니다.",
+                Full = "조건이 없습니다 — 아래 [＋ 조건]으로 만듭니다.",
+                Brief = "조건이 없습니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });

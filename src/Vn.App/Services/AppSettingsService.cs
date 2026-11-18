@@ -193,6 +193,16 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>설명을 간소화하는가 (설정 창 「기타」 — brief-guides G1). 처음에는 다 보인다.</summary>
+    public static bool LoadBriefGuides() => Load(SettingsPath).BriefGuides;
+
+    public static void SaveBriefGuides(bool brief)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.BriefGuides = brief;
+        Save(settings);
+    }
+
     /// <summary>하이어아키 기둥을 접어 두었는가 (두 그래프가 함께 쓴다).</summary>
     public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
 
@@ -336,6 +346,9 @@ internal static class AppSettingsService
 
         /// <summary>[대본] 판의 미니맵 — <see cref="LoadShowMinimap"/>. 처음(이 칸이 없는 설정 파일)에는 보인다.</summary>
         public bool ShowMinimap { get; set; } = true;
+
+        /// <summary>설명 간소화 — <see cref="LoadBriefGuides"/>. 처음에는 꺼져 있다(안내가 다 보인다).</summary>
+        public bool BriefGuides { get; set; }
     }
 
     /// <summary>

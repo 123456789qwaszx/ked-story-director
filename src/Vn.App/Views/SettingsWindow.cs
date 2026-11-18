@@ -66,6 +66,19 @@ internal sealed class SettingsWindow : Window
         };
         ToolTip.SetTip(MinimapCheck, "[대본] 판 오른쪽 아래의 전체 지도입니다. 끄면 지도만 걷고 [전체 · 50 · 100 · 150] 배율 줄은 남습니다.");
 
+        // 설명 간소화 — 오른쪽 기둥의 안내글을 걷고 「없습니다 — …」 줄은 상태만 남긴다(2026-11-18 소유자 · brief-guides G1). 누르는 즉시.
+        BriefGuidesCheck = new CheckBox
+        {
+            Content = "설명 간소화",
+            FontSize = 12,
+            IsChecked = GuideMode.Brief
+        };
+        ToolTip.SetTip(BriefGuidesCheck,
+            "켜면 인스펙터 · 화자 · 조건 및 스탯의 쓰는 법 안내글을 걷고, 「스탯이 없습니다 — 아래 [＋ 스탯]으로 만듭니다」 같은 줄은 앞부분만 남깁니다. " +
+            "칸 이름 · 제목 · 경고는 그대로입니다.");
+        BriefGuidesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "설명 간소화", () =>
+            GuideMode.Set(BriefGuidesCheck.IsChecked == true));
+
         // 누르는 즉시 판에 반영한다(J3 · ⛔ 그 전에는 [확인]을 기다렸다).
         MinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "미니맵", () =>
             _session.SetShowMinimap(MinimapCheck.IsChecked == true));
@@ -132,7 +145,7 @@ internal sealed class SettingsWindow : Window
                 Group(
                     "기타",
                     "이 PC의 앱 설정에 저장됩니다 — 프로젝트 파일과 상관없고 되돌리기가 없습니다. 누르는 즉시 반영됩니다([취소]로 돌아가지 않습니다).",
-                    MinimapCheck),
+                    new StackPanel { Spacing = 4, Children = { MinimapCheck, BriefGuidesCheck } }),
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -163,6 +176,9 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「단축키」 묶음 — 접고 편다(처음에는 접혀 있다). 읽기만 한다.</summary>
     internal Expander ShortcutGroup { get; }
+
+    /// <summary>「기타」의 「설명 간소화」 — 누르는 즉시 반영한다(<see cref="GuideMode"/>).</summary>
+    internal CheckBox BriefGuidesCheck { get; }
 
     /// <summary>「기타」의 「[대본] 탭 미니맵 보이기」 — 누르는 즉시 반영한다.</summary>
     internal CheckBox MinimapCheck { get; }

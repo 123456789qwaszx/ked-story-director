@@ -197,6 +197,8 @@
                      고르면 그것을 보이는 탭으로 간다: 프로젝트 줄 → 화자, 챕터 줄 → 조건 및 스탯([구성]은 수치를 잡는 자리다), 그 밖 →
                      인스펙터. 콤보로 챕터를 바꾸는 것은 탭을 바꾸지 않는다. 탭은 언제든 손으로 연다. -->
                 <Panel x:Name="SideOpen">
+                <!-- 흐린 안내글은 views:GuideLine이다 — 설정 「기타」의 「설명 간소화」를 켜면 숨거나(짧은 꼴이 없으면) 짧은 꼴로 선다
+                     (2026-11-18 소유자 · brief-guides G1). 칸 이름 · 제목 · 경고는 TextBlock 그대로다. -->
                 <TabControl x:Name="SideTabs" Padding="0">
                     <TabControl.Styles>
                         <!-- 탭 글은 작게 — 테마 기본(큰 글 · 48 높이)은 판의 [구성] · [대본] 탭과 같은 무게라 기둥 안에서는 너무 크다. -->
@@ -247,7 +249,7 @@
                             <TextBox Grid.Column="1" x:Name="SceneIdBox" FontSize="11"
                                      ToolTip.Tip="고치고 Enter를 누르면 이 장면의 에피소드 모두의 장면ID가 바뀝니다 — 장면 이름 · 메모가 함께 따라갑니다. 다른 장면이 쓰는 ID로는 바꾸지 않습니다(합치기는 [대본] 탭에서 에피소드를 끌어 옮깁니다)." />
                         </Grid>
-                        <TextBlock x:Name="SceneHintText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
+                        <views:GuideLine x:Name="SceneHintText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
                         <TextBlock Text="에피소드" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0" />
                         <StackPanel x:Name="SceneEpisodesPanel" Spacing="2" />
                     </StackPanel>
@@ -324,7 +326,7 @@
                                             </Style>
                                         </ToggleButton.Styles>
                                     </ToggleButton>
-                                    <TextBlock Grid.Column="1"
+                                    <views:GuideLine Grid.Column="1"
                                                x:Name="DialoguePreviewHeader"
                                                FontSize="10"
                                                Opacity="0.55"
@@ -394,7 +396,7 @@
 
                         <!-- [적용] 단추는 없다 — 고르는 순간 반영된다. 글자 칸만 초점을 잃거나 Enter일 때 낸다.
                              길을 끊거나 자동으로 바꾸는 것은 여기서 하지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭이다. -->
-                        <TextBlock Text="고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다. 파일에는 File → 저장(Ctrl+S) · 자동 저장이 씁니다."
+                        <views:GuideLine Full="고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다. 파일에는 File → 저장(Ctrl+S) · 자동 저장이 씁니다."
                                    FontSize="10" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
                     </StackPanel>
 
@@ -426,7 +428,7 @@
                                    TextWrapping="Wrap"
                                    IsVisible="False" />
 
-                        <TextBlock Text="조건은 분기 카드의 첫머리에 적힙니다 — 부르는 쪽 대본은 그대로입니다."
+                        <views:GuideLine Full="조건은 분기 카드의 첫머리에 적힙니다 — 부르는 쪽 대본은 그대로입니다."
                                    FontSize="10" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
 
                         <TextBlock Text="대본 — 읽기 전용 (고치는 곳은 [대본] 탭)" FontSize="10" Opacity="0.6" Margin="0,8,0,0" />
@@ -437,7 +439,7 @@
                     <StackPanel x:Name="SlotPanel" Spacing="6" IsVisible="False">
                         <TextBlock x:Name="SlotTitleText" FontWeight="SemiBold" FontSize="12" />
                         <StackPanel x:Name="SlotFromPanel" Orientation="Horizontal" Spacing="4" />
-                        <TextBlock x:Name="SlotDetailText" FontSize="10" Opacity="0.7" TextWrapping="Wrap" />
+                        <views:GuideLine x:Name="SlotDetailText" FontSize="10" Opacity="0.7" TextWrapping="Wrap" />
                     </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
@@ -455,7 +457,7 @@
                                 <TextBox Grid.Column="1" x:Name="ChapterIdBox" FontSize="11"
                                          ToolTip.Tip="고치고 Enter를 누르면 챕터 ID가 바뀝니다 — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갑니다. 챕터 이름은 [대본] 탭 하이어아키에서 고칩니다." />
                             </Grid>
-                            <TextBlock x:Name="OverviewText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
+                            <views:GuideLine x:Name="OverviewText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
                         </StackPanel>
                     </ScrollViewer>
                     </Panel>
@@ -472,7 +474,7 @@
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
                             <TextBlock Text="프로젝트 단위 화자" FontWeight="SemiBold" />
-                            <TextBlock Text="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                            <views:GuideLine Full="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </Border>
                     <ScrollViewer Grid.Row="1"
@@ -480,8 +482,8 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="4">
-                            <TextBlock x:Name="SpeakerHintText"
-                                       Text="화자마다 캐릭터 키를 잇습니다 — 초상화 · 표정이 이 키로 붙습니다. 화자 이름은 [대본] 탭에서 더하고 고칩니다. 모든 챕터가 같은 목록을 씁니다."
+                            <views:GuideLine x:Name="SpeakerHintText"
+                                       Full="화자마다 캐릭터 키를 잇습니다 — 초상화 · 표정이 이 키로 붙습니다. 화자 이름은 [대본] 탭에서 더하고 고칩니다. 모든 챕터가 같은 목록을 씁니다."
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap"
@@ -505,7 +507,7 @@
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="1" VerticalAlignment="Center">
                                 <TextBlock Text="챕터 단위 조건 · 스탯" FontWeight="SemiBold" />
-                                <TextBlock Text="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                <views:GuideLine Full="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                             <ComboBox Grid.Column="1"
                                       x:Name="ConditionChapterCombo"
@@ -527,7 +529,7 @@
                             <TextBlock Text="조건 (이름 → 식)"
                                        FontWeight="SemiBold"
                                        FontSize="12" />
-                            <TextBlock Text="조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 [＋ 조건]으로 이름과 식을 함께 만듭니다. 이름을 고치거나 지우는 것은 [대본] 탭에서 합니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다."
+                            <views:GuideLine Full="조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 [＋ 조건]으로 이름과 식을 함께 만듭니다. 이름을 고치거나 지우는 것은 [대본] 탭에서 합니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다."
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap"
@@ -540,7 +542,7 @@
                                        Margin="0,14,0,0" />
                             <!-- 조건 줄과 같은 결로 적는다 — 두 표가 같은 자리에 서 있으니
                                  "어디서 고치나"의 대답도 같은 모양이어야 눈이 한 번에 읽는다. -->
-                            <TextBlock Text="여기서 만들고 고칩니다. 종류는 둘입니다 — 숫자(호감도 · 점수처럼 오르내리는 값: 처음 값 · 최소 · 최대)와 예/아니오(했다 · 안 했다처럼 켜고 끄는 값: 처음 값만). 스탯은 키 하나로 부릅니다 — 조건 식, 대사의 {stat(&quot;키&quot;)}, 게임 화면의 글자(게임이 키로 정합니다)가 모두 이 키를 씁니다. ⚠ 키는 세이브에 저장되는 이름이라 [✎]로 바꾸면 이미 저장된 회차의 그 스탯이 처음 값으로 돌아갑니다. [✕]는 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다."
+                            <views:GuideLine Full="여기서 만들고 고칩니다. 종류는 둘입니다 — 숫자(호감도 · 점수처럼 오르내리는 값: 처음 값 · 최소 · 최대)와 예/아니오(했다 · 안 했다처럼 켜고 끄는 값: 처음 값만). 스탯은 키 하나로 부릅니다 — 조건 식, 대사의 {stat(&quot;키&quot;)}, 게임 화면의 글자(게임이 키로 정합니다)가 모두 이 키를 씁니다. ⚠ 키는 세이브에 저장되는 이름이라 [✎]로 바꾸면 이미 저장된 회차의 그 스탯이 처음 값으로 돌아갑니다. [✕]는 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다."
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap" />
