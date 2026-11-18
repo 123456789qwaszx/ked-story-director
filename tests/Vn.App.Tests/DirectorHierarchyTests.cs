@@ -163,6 +163,10 @@ public sealed class DirectorHierarchyTests : IDisposable
         session.Editor.AddEdge("ch02", "x", "y");   // 문구 없는 길 — ch02가 막힌다
         Dispatcher.UIThread.RunJobs();
 
+        // 보고는 [구성] 탭에 선다 — 가려진 동안의 그리기는 탭이 보일 때 한다(finishing FX3).
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 0;
+        Dispatcher.UIThread.RunJobs();
+
         string header = (string)chapterGraph.FindControl<Expander>("DiagnosticsExpander")!.Header!;
         List<string> lines = chapterGraph.FindControl<StackPanel>("DiagnosticsPanel")!.GetLogicalDescendants()
             .OfType<TextBlock>().Select(text => text.Text ?? string.Empty).ToList();

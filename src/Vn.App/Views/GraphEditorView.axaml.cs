@@ -128,21 +128,21 @@ public partial class GraphEditorView : UserControl
     private readonly List<Control> _railVisuals = new();
 
     /// <summary>
-    /// 챕터 그래프 뷰가 읽은 챕터 목록 (T1). 이 뷰는 챕터를 직접 읽지 않는다 —
-    /// 챕터 모델의 원천은 하나여야 감시·재시도 규칙이 두 벌이 되지 않는다.
+    /// [구성]이 읽은 챕터 목록 — 툴바 콤보가 이것을 비춘다(목록의 원천은 하나). 철도는 이것이 아니라 살아 있는 프로젝트를 읽는다.
     /// </summary>
     private IReadOnlyList<ChapterEntry> _chapters = Array.Empty<ChapterEntry>();
 
+    /// <remarks>
+    /// 철도는 다시 긋지 않는다 — 철도는 살아 있는 프로젝트와 이 판의 투영을 읽고(<see cref="DrawChapterRails"/>), 그 둘이 바뀌면 판이
+    /// 제 갱신으로 긋는다. ⛔ 2026-11-18까지는 여기서도 그었다(철도가 이 목록을 읽던 때의 흔적 — 그 길은 2026-10-29에 걷혔다): [구성]이
+    /// 다시 읽을 때마다, 곧 글을 넣거나 끌기를 놓을 때마다 판의 철도를 통째로 두 번 그었다(에피소드 300개에서 한 번에 0.75초 ·
+    /// finishing FX3).
+    /// </remarks>
     internal void SupplyChapters(IReadOnlyList<ChapterEntry> entries)
     {
         _chapters = entries;
         RefreshChapterCombo();
         EmptyBoardPanel.IsVisible = entries.Count == 0;   // 챕터가 없으면 판 한가운데 [＋ 첫 챕터 만들기](first-chapter F1)
-
-        if (_projection is not null)
-        {
-            DrawChapterRails();
-        }
     }
 
     /// <summary>선택을 비추는 동안에는 <c>SelectionChanged</c>가 선택을 바꾸지 않게 한다.</summary>
@@ -1081,8 +1081,13 @@ public partial class GraphEditorView : UserControl
     /// (CHOICE는 파일 맨 끝 0~1개) 분기점은 하나다 — Line 비율 같은 것은 존재하지 않는다.
     /// 기본 칩은 문구만(T-D4 — 수치는 챕터 그래프의 책임), 클릭하면 읽기 전용 상세.
     /// </summary>
+    /// <summary>철도를 통째로 다시 그은 횟수 — 시험이 「일을 몇 번 했는가」를 보는 창이다(에피소드 300개에서 한 번에 0.75초 · finishing FX3).</summary>
+    internal int RailDrawCount { get; private set; }
+
     private void DrawChapterRails()
     {
+        RailDrawCount++;
+
         foreach (Control visual in _railVisuals)
         {
             GraphCanvas.Children.Remove(visual);

@@ -411,6 +411,7 @@ public partial class ChapterGraphView : UserControl
     public ChapterGraphView()
     {
         InitializeComponent();
+        AttachedToVisualTree += (_, _) => UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
 
         // 하이어아키 기둥 접기 — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
@@ -886,9 +887,39 @@ public partial class ChapterGraphView : UserControl
 
         AutoExport();        // 진행 JSON은 사람 손을 기다리지 않는다
         Validate();
-        Draw();              // 못 나갔으면 그 결론이 검증 보고 맨 위에 선다
+        DrawWhenShown();     // 못 나갔으면 그 결론이 검증 보고 맨 위에 선다
 
         EntriesReloaded?.Invoke(_entries);
+    }
+
+    /// <summary>다시 읽은 뒤 아직 그리지 않았다 — [구성] 탭이 가려져 있었다. 탭이 다시 보이면 그린다.</summary>
+    private bool _drawPending;
+
+    /// <summary>
+    /// 판 · 검증 보고 · 인스펙터를 다시 그린다 — <b>[구성] 탭이 가려져 있으면 보일 때까지 미룬다</b>(2026-11-18 · finishing FX3). [대본] 탭에서
+    /// 글을 넣거나 카드를 옮길 때마다 다시 읽기가 돌고, 그때마다 보이지 않는 이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 0.3초).
+    /// 내보내기와 검증은 미루지 않는다 — 진행 JSON은 사람 손을 기다리지 않는다. 탭 안의 내용은 가려진 동안 화면 트리에서 떨어져 있다
+    /// (<see cref="TopLevel"/>이 없다) — 다시 붙는 순간 <see cref="OnShownAgain"/>이 그린다.
+    /// </summary>
+    private void DrawWhenShown()
+    {
+        if (TopLevel.GetTopLevel(this) is null)
+        {
+            _drawPending = true;
+            return;
+        }
+
+        _drawPending = false;
+        Draw();
+    }
+
+    private void OnShownAgain()
+    {
+        if (_drawPending)
+        {
+            _drawPending = false;
+            Draw();
+        }
     }
 
     /// <summary>프로젝트가 든 챕터를 화면이 쓰는 모양으로 낸다.</summary>

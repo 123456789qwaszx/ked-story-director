@@ -74,7 +74,11 @@ public sealed class FirstChapterTests : IDisposable
         Assert.Single(chapter.Episodes);
         Assert.Equal(new HierarchyPick(HierarchyKind.Chapter, chapter.ChapterId),
             window.FindControl<GraphEditorView>("Graph")!.HierarchyView.Selection);
-        Assert.False(first.IsVisible);   // [구성] 판이 섰다
+
+        // [구성]으로 돌아오면 판이 서 있다 — 가려진 동안의 그리기는 탭이 보일 때 한다(finishing FX3).
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 0;
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(first.IsVisible);
 
         window.Close();
     });
