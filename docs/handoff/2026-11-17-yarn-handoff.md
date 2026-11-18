@@ -1,7 +1,7 @@
 # 인계 — 2026-11-17 오후 (대사만 있는 Yarn · [대본] 손질 · [⚙ 설정]과 판 크기)
 
 > 앞 세션 인계 [`2026-11-17-handoff.md`](2026-11-17-handoff.md)의 4절 1~3번을 이 세션이 닫았다. 지금 동작의 정본은
-> [`docs/design/two-graphs.md`](../design/two-graphs.md) 7절 V · W, 단계별 근거는 [`yarn-output-orders.md`](../work-orders/yarn-output-orders.md) ·
+> [`docs/design/two-graphs.md`](../design/two-graphs.md) 7절 V · W, 단계별 근거는 `yarn-output-orders.md`(2026-11-18 닫고 걷음) ·
 > [`settings-orders.md`](../work-orders/settings-orders.md)의 진행 기록.
 
 ## 1. 지금 상태

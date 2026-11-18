@@ -573,7 +573,7 @@ bool 어휘 준수 · **장면마다 밖에서 들어오는 자리가 하나**(`
 `Op`를 함께 싣는다 — `"Set"`은 깃발 지정(값은 0/1), `"Add"`는 정수 증감.
 ⚠ **`"Add"`를 비우지 않고 명시한다**: 저쪽은 빈 문자열도 더하기로 읽지만(구 JSON 호환),
 적어 두면 "아무도 안 정한 것"과 "더하기로 정한 것"이 JSON에서 구별된다.
-규격: [`work-orders/bool-stat-orders.md`](work-orders/bool-stat-orders.md).
+규격: `bool-stat-orders.md`(2026-11-18 닫고 걷음).
 
 **G-7. ~~`Option.Kind` 내보내기~~ — 종결 (2026-09-02).** 저쪽이 칸을 세우는 대신
 **자동 진행 개념을 통째로 폐지했다**(`adfda627`, 08-26 — 문구 없는 간선은 로드 오류, §F5).
@@ -621,7 +621,7 @@ DialogueEntryId = SanitizeNodeName(EpisodeId)
 ⚠ **파일 이름도 접두가 없다**: `{대사엔트리}.yarn`. 그래서 `Story_*` 같은 이름 필터로
 산출물을 고르면 안 된다 — 폴더의 `.yarn` 전부가 대상이고, 무엇을 썼는지는 툴이
 `.vntool-output.json`에 적어 둔다. 선언 파일만 이름이 고정이다(`declarations.yarn`).
-규격: [`work-orders/dialogue-entry-naming-orders.md`](work-orders/dialogue-entry-naming-orders.md).
+규격: `dialogue-entry-naming-orders.md`(2026-11-18 닫고 걷음).
 
 **G-3. 커맨드 카탈로그 재검증 — ✅ 2026-08-18 완료.** 죽은 22개를 걷어 **179항목**으로 맞췄다(등록 178 + 동적 별칭 `<N>fr`). `docs/game.definition.json`은 문서가 아니라 **내장 리소스로 링크된 실물 팔레트**다 — 낡은 항목은 곧 작가가 고를 수 있는 unknown command다.
 → ✅ **2026-09-02 재실측 — 126 ↔ 126, 차이 0** (§E1). W65 이후 수치가 안 따라갔던 것뿐이고 어휘는 맞다.

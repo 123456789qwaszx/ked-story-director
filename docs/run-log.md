@@ -3113,7 +3113,7 @@ CHOICE/OPTION · 9열/IN/OUT)를 세어 놓고 골랐다. 감이 아니라 표�
 
 ### v11 착수 — 간선이 종류·엔딩키·연출을 든다 (규격 §1·§2·§5·§6, `(이 커밋)`)
 
-규격: [`work-orders/edge-presentation-orders.md`](work-orders/edge-presentation-orders.md).
+규격: `edge-presentation-orders.md`(2026-11-18 닫고 걷음).
 `ked-progression`과 합의를 마치고 들어간 첫 조각이다. 6단계 중 **1(시트·리더·라이터·이행기) ·
 2(검증) · 5(내보내기 번역)**가 섰다.
 
@@ -3627,8 +3627,8 @@ JSON에 도착한 뒤에는 아무도 볼 수 없다. 엔딩키 충돌과 같은
 ### 모션 그래프 지시서 — 커맨드가 이미 곡선이다 (`(이 커밋)`)
 
 **한 일** — 소유자 의도("MoveBy 하나를 펼쳐 재현하고, 동선·시간·ease를 편집")를
-지시서 두 장으로: [`work-orders/motion-graph-orders.md`](work-orders/motion-graph-orders.md)
-(VnTool, W64–W67) · [`work-orders/ease-open-orders.md`](work-orders/ease-open-orders.md)
+지시서 두 장으로: `motion-graph-orders.md`(2026-11-18 닫고 걷음)
+(VnTool, W64–W67) · `ease-open-orders.md`(2026-11-18 닫고 걷음)
 (런타임 수신 — 이징 골든 덤프 · 코어 `EaseFunctions` · `move_by` 다섯째 인자 ease ·
 채널 사상 회신). 설계 핵심: 포맷을 발명하지 않는다 — `move_by`가 이미 키 2개짜리
 1채널 커브이고, 그래프는 렌즈이며, 편집은 네 번째 입력 경로로 `ProjectEditor`에 수렴한다.
@@ -3657,7 +3657,7 @@ JSON에 도착한 뒤에는 아무도 볼 수 없다. 엔딩키 충돌과 같은
 ### 소유자 재조정 — 슬라이더 먼저, 곡선 에디터는 보류 (`(이 커밋)`)
 
 **한 일** — 앞 항목의 모션 그래프 계획을 소유자 지시로 재편성:
-[`work-orders/presentation-refresh-orders.md`](work-orders/presentation-refresh-orders.md)
+`presentation-refresh-orders.md`(2026-11-18 닫고 걷음)
 (W64–W68)가 순서의 정본이 됐다. ① 패키지화 대신 **Core 사본 최신화**(W64, 런타임이
 정본) ② **카탈로그 최신화 우선**(W65) ③ MoveBy부터 — 연출노드 클릭 → 프리뷰에
 합쳐진 커맨드 목록 → **개별 수치를 슬라이더로 실시간 조절**(아트가 조절, W66) ④
@@ -3688,7 +3688,7 @@ current-state §7 두 행 원복. 코드 변경 없음.
 **한 일** — `Ked.Presentation.Core` 사본을 런타임 저장소(정본, 2026-08-20 작업 트리)로
 전면 동기화. 소스 35파일 + 순수 테스트 18파일(UnityParity 제외) 이식, 튜닝 실덤프
 픽스처(`TuningFixtures/ExportedTuning`)도 폴더째 갱신. 계획서
-[`work-orders/presentation-refresh-orders.md`](work-orders/presentation-refresh-orders.md) §2.
+`presentation-refresh-orders.md`(2026-11-18 닫고 걷음) §2.
 
 **감사 결과** — 걱정하던 "툴 쪽 로컬 수정" ⓒ는 **0건**이었다(Vec2 연산자 등은 표기
 스타일 차이가 diff를 부풀린 것 — 런타임에도 전부 있다). 이식 후 코어 단독 빌드는
@@ -3883,7 +3883,7 @@ duration, 기본 이징 OutCubic)를 카탈로그가 데이터로 말한다 — 
 
 **남은 것** — W66b(시간 재현: 스크럽하면 이징 모양대로 논다)는 코어 `EaseFunctions`가
 서야 한다. W67(이징 편집)은 런타임의 다섯째 인자 개통이 선행이다. 둘 다
-[`work-orders/ease-open-orders.md`](work-orders/ease-open-orders.md)가 요청서다.
+`ease-open-orders.md`(2026-11-18 닫고 걷음)가 요청서다.
 
 ### "표기가 변화가 없다" — 실데이터 재현과 커맨드 스트립 (`(이 커밋)`)
 
@@ -4037,7 +4037,7 @@ ease-open-orders §3) `Lerp` 한 자리만 갈아 끼운다. W33이 이미 선�
 **커스텀 곡선 — 계약 먼저** (소유자 결정: "이징이라지만 사실 그냥 그래프 곡선.
 마야처럼 키를 줘서 커스텀. 선택기는 기본으로 두되 선택한 이징에서 출발"):
 MG4의 `@curve` 탈출구가 증거 대기에서 **소유자 직접 결정**으로 당겨졌다. 툴이 에디터를
-짓기 전에 런타임 계약 셋이 서야 한다 — [`work-orders/ease-curve-orders.md`](work-orders/ease-curve-orders.md):
+짓기 전에 런타임 계약 셋이 서야 한다 — `ease-curve-orders.md`(2026-11-18 닫고 걷음):
 ① 코어 `CurveFunctions`(Unity AnimationCurve와 같은 Hermite 모델 — 등가 심판이 이미
 저쪽에 있고 마야식 키+탄젠트와 1:1이다. **양쪽이 이 평가기 하나를 쓴다** — 프리뷰가
 그리는 모양 = 유니티가 재생하는 모양) ② 다섯째 토큰 `@이름` 분기(DOTween 커스텀 이즈
@@ -4576,7 +4576,7 @@ RectChain에 맞춰서 … 타겟만 잘 잡아주면 알아서 계산이 될텐
 ### 뎁스 레벨 폴드 지시서 (`(이 커밋)`)
 
 소유자 요청으로 저쪽 코어 개통 규격을 문서화했다 —
-[`docs/work-orders/depth-level-orders.md`](work-orders/depth-level-orders.md).
+`depth-level-orders.md`(2026-11-18 닫고 걷음).
 
 실코드를 읽고 썼고, 요지는 **데이터도 계산기도 이미 저쪽에 있다**는 것이다:
 덤프 `presets/depth.json`에 `level.yCurve`·`level.scaleCurve`가 이미 실려 나오고,

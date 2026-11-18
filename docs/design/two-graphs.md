@@ -712,7 +712,7 @@ d1 `034300f` · d2 `25797cb` · d3 `6188f72`).
 ### V — 대사만 있는 Yarn을 다시 이 툴이 낸다 (2026-11-17)
 
 > 소유자: compositor를 사람이 쓸 일이 없다(연출은 AI가 넣는다), 작가는 대사만으로 굴러가는지 확인해야 한다. ⛔ 2026-10-29(R2 · R3 · L1)의
-> 「게임용 Yarn은 compositor만 낸다」를 **대사만 있는 Yarn**의 범위에서 뒤집었다. 지시서 [`docs/work-orders/yarn-output-orders.md`](../work-orders/yarn-output-orders.md).
+> 「게임용 Yarn은 compositor만 낸다」를 **대사만 있는 Yarn**의 범위에서 뒤집었다. 지시서 `yarn-output-orders.md`(2026-11-18 닫고 걷음).
 
 - **놓는 곳** — `exported/yarn/{챕터}_{장면}.yarn`(`ChapterYarnExporter`). **게임 폴더로는 보내지 않는다** — compositor가
   연출 든 Yarn을 거기 쓰고 있으면 덮여서 연출이 사라지고 노드 이름이 겹친다. 따로 정한 보낼 곳(`dialogueYarnFolder`)으로는 저장할 때 간다(7절 AC).

@@ -211,7 +211,7 @@
 > ⛔ **그 세 칸은 다시 전부 폐지됐다** — `종류`·`연출`은 v12(2026-08-24), `엔딩키`는
 > v14(2026-08-26)에 **개념째**(툴의 보장은 챕터 안의 분기·그래프 구조까지).
 > 현재 열 배치는 [`../handoff/current-state.md`](../handoff/current-state.md) 계약 박스가
-> 정본이고, v11 규격의 근거는 [`edge-presentation-orders.md`](edge-presentation-orders.md)에 있다.
+> 정본이고, v11 규격의 근거는 `edge-presentation-orders.md`(2026-11-18 닫고 걷음)에 있다.
 
 | 시트 | 내용 | 매핑 |
 |---|---|---|
@@ -224,7 +224,7 @@
 | ~~`픽스처`~~ | (임시 제거 — 있으면 읽음, 새로 만들지 않음) | 재생루트 테스트용. **내보내기 제외** |
 
 - `간선`의 `선택지`가 비면 분기 없는 일반 진행.
-- 조건식(조립 결과) 문법: `trust >= 3` / `anger < 5` / `trust == 5` / `flag == true`(bool 스탯) / `cleared:main05.02`. AND는 `;`. 연산자 `>= <= == > <`. 정수 값(bool은 true/false). 미등록 스탯키는 오류(오타 교정 금지). bool 스탯에 크기 비교는 오류. **bool을 켜고 끄는 것은 증감이 아니라 지정이다**(v11 이후, 2026-08-19 — `met_willow true`/`false`; 증감은 여전히 오류): [`bool-stat-orders.md`](bool-stat-orders.md).
+- 조건식(조립 결과) 문법: `trust >= 3` / `anger < 5` / `trust == 5` / `flag == true`(bool 스탯) / `cleared:main05.02`. AND는 `;`. 연산자 `>= <= == > <`. 정수 값(bool은 true/false). 미등록 스탯키는 오류(오타 교정 금지). bool 스탯에 크기 비교는 오류. **bool을 켜고 끄는 것은 증감이 아니라 지정이다**(v11 이후, 2026-08-19 — `met_willow true`/`false`; 증감은 여전히 오류): `bool-stat-orders.md`(2026-11-18 닫고 걷음).
 
 ### 3.2 에피소드 워크북 — `{projectRoot}/episodes/{EpisodeId}.xlsx`
 

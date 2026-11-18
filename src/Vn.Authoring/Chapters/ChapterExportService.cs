@@ -281,7 +281,7 @@ public sealed class ChapterExportService
             checksums[entry.ChapterId] = result.Checksum!;
             written.Add(exportPath);
 
-            // 대사 Yarn — 장면 하나 = 파일 하나(docs/work-orders/yarn-output-orders.md). 진행 JSON이 나갈 때 함께.
+            // 대사 Yarn — 장면 하나 = 파일 하나(docs/design/two-graphs.md 7절 V). 진행 JSON이 나갈 때 함께.
             ExportYarn(entry, projectPath, project, yarnChapters, yarnOwners, yarnWritten, yarnProblems);
         }
 

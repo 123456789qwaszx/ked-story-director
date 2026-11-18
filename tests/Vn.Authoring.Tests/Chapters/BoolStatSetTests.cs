@@ -15,7 +15,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 고른 답은 <b>지정(Set)</b>이다. 증감은 깃발에 맞는 낱말이 아니다 — `met_willow +1`은
 /// "만난 횟수"로 읽히고 `+2`는 뜻이 없는데도 조용히 같은 결과가 된다.
 ///
-/// 규격: <c>docs/work-orders/bool-stat-orders.md</c>.
+/// 규격: <c>docs/runtime-contract.md</c> G-6(깃발 지정).
 /// </summary>
 public sealed class BoolStatSetTests
 {

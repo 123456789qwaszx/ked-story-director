@@ -311,7 +311,7 @@ Assert.Equal("fade_trust", Option("ep1").GetProperty("ViaNodeId").GetString());
 ✅ **코퍼스 일곱 케이스에 지정이 하나도 없어 기존 답은 한 줄도 안 바뀐다.** 재확인만 하면
 된다. 새 케이스(깃발이 관문을 여는 그래프)가 필요하면 이쪽에서 떠서 보낸다.
 
-전체 규격: [`work-orders/bool-stat-orders.md`](work-orders/bool-stat-orders.md).
+전체 규격: `bool-stat-orders.md`(2026-11-18 닫고 걷음).
 
 **아직 안 정한 것 — 깃발의 수명.** 챕터를 넘으면 되돌아가나? 지금은 챕터 안에서만 산다.
 그쪽 D1(스탯 수명)과 같은 결정이다.
@@ -371,7 +371,7 @@ VnTool이 내던 트리오(`Story_*` / `Set_*` / `Pres_*`)가 **`{대사엔트�
 | 무엇 | 어디 (`java-start` 기준) |
 |---|---|
 | 계약 원문 | [`docs/runtime-contract.md`](runtime-contract.md) 2부·3부 |
-| **v11 규격 (엔딩·연출)** | [`docs/work-orders/edge-presentation-orders.md`](work-orders/edge-presentation-orders.md) |
+| **v11 규격 (엔딩·연출)** | `edge-presentation-orders.md`(2026-11-18 닫고 걷음) |
 | 내보내기 | `src/Vn.Authoring/Chapters/ChapterProgressionExporter.cs` |
 | 엔딩키 규칙 (한 곳) | `ChapterGraphModel.EndingKeyOf(episodeId)` |
 | 충돌 검사 | `ChapterWorkbookReader.VerifyEndingKeysAgree` |
