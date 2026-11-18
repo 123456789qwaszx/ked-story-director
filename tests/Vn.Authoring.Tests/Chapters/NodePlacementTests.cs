@@ -161,7 +161,7 @@ public sealed class NodePlacementTests
         foreach (string episodeId in episodeIds)
         {
             chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, Index: string.Empty, DialogueEntry: episodeId,
+                episodeId, episodeId, Index: string.Empty,
                 0, 0, Memo: null));
         }
 

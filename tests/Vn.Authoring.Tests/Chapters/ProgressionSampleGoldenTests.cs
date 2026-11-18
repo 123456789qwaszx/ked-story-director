@@ -32,8 +32,7 @@ public sealed class ProgressionSampleGoldenTests
     {
         ChapterGraphModel chapter = SampleChapters.Model(SampleChapters.Contract, ChapterId);
         ChapterValidationResult validation = ChapterValidator.Validate(chapter);
-        ChapterExportResult result = ChapterProgressionExporter.ExportValidated(
-            chapter, validation, BuildProject());
+        ChapterExportResult result = ChapterProgressionExporter.ExportValidated(chapter, validation, project: null);
 
         Assert.False(result.Refused,
             string.Join(" / ", result.Validation.All.Select(item => item.Message)));
@@ -102,14 +101,5 @@ public sealed class ProgressionSampleGoldenTests
         Assert.Single(gated.GetProperty("Conditions").EnumerateArray());
         Assert.Equal(["Add", "Set"], gated.GetProperty("StatChanges").EnumerateArray()
             .Select(change => change.GetProperty("Op").GetString()!).ToArray());
-    }
-
-    private static StoryProject BuildProject()
-    {
-        var project = new StoryProject();
-        var file = new StoryFile(name: ChapterId);
-        file.Nodes.Add(new DialogueNode(name: "Story_ch01_choice") { MarkedEpisodeId = "choice" });
-        project.Files.Add(file);
-        return project;
     }
 }

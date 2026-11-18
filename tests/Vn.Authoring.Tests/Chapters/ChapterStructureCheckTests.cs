@@ -23,15 +23,6 @@ public sealed class ChapterStructureCheckTests
         Assert.Contains(model.Errors, item => item.Code == ChapterDiagnosticCode.EpisodeIdDuplicated);
     }
 
-    [Fact]
-    public void 빈_대사엔트리는_재생할_대상이_없다고_말한다()
-    {
-        ChapterGraphModel model = Chapter(episodes: [Episode("ep1", dialogueEntry: "")]).ToGraphModel("ch01");
-
-        ChapterDiagnostic error = Assert.Single(model.Errors, item => item.Code == ChapterDiagnosticCode.DialogueEntryBlank);
-        Assert.Contains("ep1", error.Message, StringComparison.Ordinal);
-    }
-
     // ── 간선 ────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -177,9 +168,8 @@ public sealed class ChapterStructureCheckTests
         Stats = [.. stats ?? []]
     };
 
-    private static ChapterEpisode Episode(string episodeId, string? dialogueEntry = null) =>
-        new(episodeId, episodeId, Index: string.Empty, DialogueEntry: dialogueEntry ?? episodeId,
-            0, 0, Memo: null);
+    private static ChapterEpisode Episode(string episodeId) =>
+        new(episodeId, episodeId, Index: string.Empty, 0, 0, Memo: null);
 
     private static ChapterEdge Edge(string from, string to, string? label) =>
         new(from, to, label, ConditionLabel: null, LockedMessage: null);

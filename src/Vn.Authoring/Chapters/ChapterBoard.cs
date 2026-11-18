@@ -52,18 +52,5 @@ internal sealed class ChapterBoard
     public DialogueNode? EpisodeNodeFor(ChapterEpisode episode) =>
         _excelNodes.GetValueOrDefault(episode.EpisodeId);
 
-    /// <summary>
-    /// 이 에피소드의 <b>Yarn 노드 이름</b> — 계약의 <c>DialogueEntryId</c>. 판에서 못 찾으면
-    /// 빈 문자열이고, 그때는 검증이 이미 오류로 막았다.
-    ///
-    /// <b>이름의 주인은 판의 노드다</b>. 에피소드의 `대사엔트리` 글자로 지으면
-    /// 주인이 둘이 된다 — 판에서 노드를 개명하는 순간 진행 JSON은 옛 이름을 부르고 .yarn은
-    /// 새 이름으로 서서, <b>로드·검증·증명이 전부 통과하는데 재생만 안 된다</b>. 이미터가
-    /// 그 노드에 붙이는 타이틀과 같은 함수를 지나는 것이 유일한 방어다.
-    /// </summary>
-    public string EpisodeNodeNameFor(ChapterEpisode episode) =>
-        EpisodeNodeFor(episode) is { } node
-            ? YarnNaming.StoryNodeTitleOf(node.Name, node.Id)
-            : string.Empty;
 
 }

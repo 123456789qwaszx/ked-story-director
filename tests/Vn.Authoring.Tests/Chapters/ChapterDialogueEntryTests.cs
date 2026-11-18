@@ -4,13 +4,13 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 챕터의 에피소드가 <b>판의 어느 대사 노드로 재생되는가</b> — 계약의
-/// <c>DialogueEntryId</c>가 판을 따라가는가.
+/// 챕터의 에피소드가 <b>어느 대사 노드로 재생되는가</b> — 계약의 <c>DialogueEntryId</c>는 EpisodeId에서 짓는다(2026-11-18 · old-shapes O5 —
+/// ⛔ 그 전에는 판 카드의 이름에서 지었고 `대사엔트리` 칸이 따로 있었다).
 ///
 /// ⛔ 이 파일은 한때 <b>간선에 매달린 연출 씬</b>이 계약의 `ViaNodeId`로 나가는지를 쟀다.
 /// 그 칸은 2026-09-17에 <b>양쪽에서 걷혔고</b>(같은 재생 순서를 에피소드 한 칸으로 말할
 /// 수 있다), 옛 프로젝트 호환도 안 본다(소유자: *"이전의 프로젝트들은 모두 버리고"*).
-/// 남은 것은 <b>이름의 주인이 판이다</b>를 지키는 검사들이다.
+/// 남은 것은 빈 에피소드를 막는 검사와 이름 규칙이다.
 /// </summary>
 public sealed class ChapterDialogueEntryTests
 {
@@ -56,70 +56,10 @@ public sealed class ChapterDialogueEntryTests
     }
 
     [Fact]
-    public void 판에서_노드를_개명해도_DialogueEntryId가_따라간다()
+    public void DialogueEntryId는_EpisodeId에서_짓는다()
     {
-        // ⛔ 이것이 "진행 JSON이 부르는 노드가 YarnProject에 없다"의 뿌리였다 (2026-08-25).
-        //    이름의 주인이 둘이었다 — 내보내기는 챕터의 `대사엔트리` 글자로 짓고, .yarn은
-        //    판 노드의 이름으로 선다. 판에서 개명하는 순간 둘이 갈리고, 로드·검증·증명은
-        //    전부 통과하는데 재생만 안 된다.
-        ChapterGraphModel chapter = BuildChapter();
-
-        var project = new StoryProject();
-        var file = new StoryFile(name: chapter.ChapterId);
-        var card = new DialogueNode(name: "Id를_바꿧음") { MarkedEpisodeId = "시작" };
-
-        file.Nodes.Add(card);
-        project.Files.Add(file);
-
-        ChapterExportResult result =
-            ChapterProgressionExporter.Export(chapter, project);
-
-        using var document = System.Text.Json.JsonDocument.Parse(result.Json!);
-
-        string entry = document.RootElement
-            .GetProperty("Nodes").EnumerateArray()
-            .Single(node => node.GetProperty("EpisodeId").GetString() == "시작")
-            .GetProperty("DialogueEntryId").GetString()!;
-
-        // 챕터의 `대사엔트리`는 아직 `시작`이지만, 재생될 yarn 노드는 개명된 쪽이다.
-        Assert.Equal("Id를_바꿧음", entry);
-    }
-
-    [Fact]
-    public void 다른_챕터의_같은_EpisodeId는_집지_않는다()
-    {
-        // EpisodeId는 챕터 안에서만 유일하다(EpisodeNaming). 2026-10-29까지 ChapterBoard가
-        // 프로젝트 전체의 카드를 EpisodeId 하나로 뒤져 먼저 만난 것을 집었다 — 다른 챕터의
-        // `시작`이 이 챕터의 `시작` 대신 잡히면 진행 JSON이 남의 대사를 부른다.
-        ChapterGraphModel chapter = BuildChapter();
-
-        var project = new StoryProject();
-        var other = new StoryFile(name: "다른챕터");
-        other.Nodes.Add(new DialogueNode(name: "남의_카드") { MarkedEpisodeId = "시작" });
-        var mine = new StoryFile(name: chapter.ChapterId);
-        mine.Nodes.Add(new DialogueNode(name: "제_카드") { MarkedEpisodeId = "시작" });
-
-        // 남의 판이 먼저다 — 전체를 뒤지면 이쪽이 먼저 잡힌다.
-        project.Files.Add(other);
-        project.Files.Add(mine);
-
-        ChapterExportResult result =
-            ChapterProgressionExporter.Export(chapter, project);
-
-        using var document = System.Text.Json.JsonDocument.Parse(result.Json!);
-
-        Assert.Equal(
-            "제_카드",
-            document.RootElement
-                .GetProperty("Nodes").EnumerateArray()
-                .Single(node => node.GetProperty("EpisodeId").GetString() == "시작")
-                .GetProperty("DialogueEntryId").GetString());
-    }
-
-    [Fact]
-    public void 판을_못_보면_대사엔트리_글자로_되돌아간다()
-    {
-        // 챕터 모델만으로 부르는 자리(CLI·테스트)가 그대로 살아 있어야 한다.
+        // 판을 안 봐도 같다 — 챕터 모델만으로 부르는 자리(CLI·테스트)도 같은 이름을 낸다(⛔ 2026-11-18까지는 판 카드의 이름에서 지었다 ·
+        // old-shapes O5).
         ChapterExportResult result =
             ChapterProgressionExporter.Export(BuildChapter());
 
@@ -133,18 +73,15 @@ public sealed class ChapterDialogueEntryTests
                 .GetProperty("DialogueEntryId").GetString());
     }
 
-    /// <summary>
-    /// 에피소드 셋(<c>시작</c> → <c>믿는길</c>/<c>혼자길</c>, 둘이 서로 오간다)짜리 챕터.
-    /// <c>대사엔트리</c>는 EpisodeId와 같다(v3 규약).
-    /// </summary>
+    /// <summary>에피소드 셋(<c>시작</c> → <c>믿는길</c>/<c>혼자길</c>, 둘이 서로 오간다)짜리 챕터.</summary>
     private static ChapterGraphModel BuildChapter() => new ChapterDocument
     {
         ChapterId = "ch01",
         Episodes =
         [
-            new ChapterEpisode("시작", "복도", string.Empty, "시작", 0, 0, null),
-            new ChapterEpisode("믿는길", "믿는다", string.Empty, "믿는길", 1, 0, null),
-            new ChapterEpisode("혼자길", "혼자 간다", string.Empty, "혼자길", 1, 1, null)
+            new ChapterEpisode("시작", "복도", string.Empty, 0, 0, null),
+            new ChapterEpisode("믿는길", "믿는다", string.Empty, 1, 0, null),
+            new ChapterEpisode("혼자길", "혼자 간다", string.Empty, 1, 1, null)
         ],
         Edges =
         [

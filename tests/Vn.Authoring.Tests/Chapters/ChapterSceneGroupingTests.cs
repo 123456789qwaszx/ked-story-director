@@ -152,7 +152,7 @@ public sealed class ChapterSceneGroupingTests
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static ChapterEpisode Episode(string id, string? sceneId) =>
-        new(id, id, string.Empty, id, 0, 0, null) { SceneId = sceneId };
+        new(id, id, string.Empty, 0, 0, null) { SceneId = sceneId };
 
     private static ChapterEdge Edge(string from, string to) =>
         new(from, to, "다음", null, null);

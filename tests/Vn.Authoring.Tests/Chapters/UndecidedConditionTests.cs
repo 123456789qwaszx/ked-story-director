@@ -13,8 +13,8 @@ public sealed class UndecidedConditionTests
     private static ChapterGraphModel Chapter(string expression)
     {
         var chapter = new ChapterDocument { ChapterId = "ch01" };
-        chapter.Episodes.Add(new ChapterEpisode("ep01", "", "", "ep01", 0, 0, Memo: null));
-        chapter.Episodes.Add(new ChapterEpisode("ep02", "", "", "ep02", 0, 0, Memo: null));
+        chapter.Episodes.Add(new ChapterEpisode("ep01", "", "", 0, 0, Memo: null));
+        chapter.Episodes.Add(new ChapterEpisode("ep02", "", "", 0, 0, Memo: null));
         chapter.Edges.Add(new ChapterEdge("ep01", "ep02", "같이 간다", "친해졌을 때", null));
         chapter.Conditions.Add(new ChapterCondition("친해졌을 때", expression, null, Parsed: [], IsValid: false));
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10, ChapterStatType.Int));

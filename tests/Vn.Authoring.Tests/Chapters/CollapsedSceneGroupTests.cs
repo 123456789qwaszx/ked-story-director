@@ -145,7 +145,7 @@ public sealed class CollapsedSceneGroupTests
             (string? sceneId, string episodeId) = episodes[index];
 
             chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, 0, 0, null)
+                episodeId, episodeId, string.Empty, 0, 0, null)
             {
                 SceneId = sceneId
             });

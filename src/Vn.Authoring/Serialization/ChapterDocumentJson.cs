@@ -86,7 +86,6 @@ internal static class ChapterDocumentJson
 
         Text(json, "title", episode.Title);
         Text(json, "index", episode.Index);
-        Text(json, "dialogueEntry", episode.DialogueEntry);
         Text(json, "memo", episode.Memo);
         Text(json, "eventKey", episode.EventKey);
         Text(json, "sceneId", episode.SceneId);
@@ -103,7 +102,6 @@ internal static class ChapterDocumentJson
         Text(json["episodeId"]),
         Text(json["title"]),
         Text(json["index"]),
-        Text(json["dialogueEntry"]),
         (double?)json["x"] ?? 0,
         (double?)json["y"] ?? 0,
         Optional(json["memo"]))

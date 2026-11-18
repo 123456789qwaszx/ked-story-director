@@ -19,7 +19,6 @@
           "x": 148.93,
           "y": 0,
           "title": "교실 - 반쯤 빈 간판",
-          "dialogueEntry": "Festival_Classroom",
           "sceneId": "교실"
         },
         {
@@ -27,7 +26,6 @@
           "x": 0,
           "y": 212.25,
           "title": "교실 - 처음부터 다시",
-          "dialogueEntry": "Festival_Remake",
           "sceneId": "교실"
         },
         {
@@ -35,7 +33,6 @@
           "x": 254.38,
           "y": 211.54,
           "title": "교실 - 있는 걸로",
-          "dialogueEntry": "Festival_Shortcut",
           "sceneId": "교실"
         },
         {
@@ -43,7 +40,6 @@
           "x": 208.05,
           "y": 427.45,
           "title": "교실 - 간판 완성",
-          "dialogueEntry": "Festival_Wrapup",
           "sceneId": "교실"
         },
         {
@@ -51,7 +47,6 @@
           "x": 339.08,
           "y": 753.06,
           "title": "교무실 앞 - 간판 검사",
-          "dialogueEntry": "Festival_Staffroom",
           "sceneId": "교무실 앞"
         },
         {
@@ -59,7 +54,6 @@
           "x": 526.5,
           "y": 241.44,
           "title": "Festival_Add",
-          "dialogueEntry": "Festival_Add",
           "sceneId": "교실"
         },
         {
@@ -67,7 +61,6 @@
           "x": 781.04,
           "y": 537.77,
           "title": "Festival_Advance",
-          "dialogueEntry": "Festival_Advance",
           "sceneId": "교실"
         },
         {
@@ -75,7 +68,6 @@
           "x": 1019.12,
           "y": 391.26,
           "title": "Festival_Lazy",
-          "dialogueEntry": "Festival_Lazy",
           "sceneId": "교실"
         }
       ],

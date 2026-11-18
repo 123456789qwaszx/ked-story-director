@@ -15,7 +15,7 @@ public sealed class EpisodeSceneAndTitleTests
     [InlineData("  ", "", "ep01")]
     public void 장면이_있으면_장면_제목이고_없으면_제목만이다(string? sceneId, string title, string expected)
     {
-        var episode = new ChapterEpisode("ep01", title, "01", "ep01", 0, 0, Memo: null) { SceneId = sceneId };
+        var episode = new ChapterEpisode("ep01", title, "01", 0, 0, Memo: null) { SceneId = sceneId };
 
         Assert.Equal(expected, episode.SceneAndTitle);
     }

@@ -7,12 +7,14 @@ namespace Vn.Authoring.Chapters;
 /// <see cref="X"/>·<see cref="Y"/>에 setter가 없는 것은 <b>레코드라서</b>다(<c>with</c>로 바꾼다).
 /// </summary>
 /// <param name="Index">"05"·"05A"·"★"처럼 사람이 붙이는 표시용 순번. 숫자가 아니어도 된다.</param>
-/// <param name="DialogueEntry">런타임이 재생할 대사 엔트리 이름. 비면 오류다.</param>
+/// <remarks>
+/// 런타임이 재생할 대사 엔트리(Yarn 노드 이름)는 <see cref="EpisodeId"/>에서 짓는다(<c>ChapterProgressionExporter.DialogueEntryIdOf</c>) —
+/// ⛔ 따로 적던 `대사엔트리` 칸은 2026-11-18에 걷혔다(늘 EpisodeId와 같았다 · <c>docs/work-orders/old-shapes-orders.md</c> O5).
+/// </remarks>
 public sealed record ChapterEpisode(
     string EpisodeId,
     string Title,
     string Index,
-    string DialogueEntry,
     double X,
     double Y,
     string? Memo)

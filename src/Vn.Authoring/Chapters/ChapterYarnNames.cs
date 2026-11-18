@@ -53,7 +53,7 @@ public static class ChapterYarnNames
 
         foreach (ChapterEpisode episode in episodes)
         {
-            yield return (ChapterProgressionExporter.DialogueEntryIdOf(episode, via), $"에피소드 「{episode.ShownTitle}」", episode.EpisodeId);
+            yield return (ChapterProgressionExporter.DialogueEntryIdOf(episode), $"에피소드 「{episode.ShownTitle}」", episode.EpisodeId);
         }
 
         Dictionary<string, string> homes = ChapterBranchCards.HomesOf(project, chapterId)

@@ -157,7 +157,7 @@ public sealed class ChapterRailTests
 
         chapter.Episodes.AddRange(episodes
             .Select((id, index) => new ChapterEpisode(
-                id, id, "01", id, index * 100, 0, null)));
+                id, id, "01", index * 100, 0, null)));
 
         chapter.Edges.AddRange(edges
             .Select((edge, index) => new ChapterEdge(

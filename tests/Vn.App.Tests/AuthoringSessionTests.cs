@@ -230,7 +230,7 @@ public class AuthoringSessionTests : IDisposable
         DialogueNode node = session.Editor.AddDialogueNode(first.Id, name: "장면");
 
         session.SetFileExpanded(second.Id, expanded: false);
-        session.Editor.RenameNode(node.Id, "수정된 장면");
+        session.Editor.UpdateEpisode(first.Name, node.Name, title: "수정된 장면");   // 다른 프로젝트 편집(판 이름 = 챕터 ID)
 
         Assert.False(session.ExpandedFileIds.Contains(second.Id));
         Assert.True(session.ExpandedFileIds.Contains(first.Id));

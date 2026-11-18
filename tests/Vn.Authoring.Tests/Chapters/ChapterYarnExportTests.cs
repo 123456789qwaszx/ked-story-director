@@ -168,7 +168,7 @@ public sealed class ChapterYarnExportTests
         editor.UpdateEpisodeMemo(Ch, second.EpisodeId, "짧게\r\n해 질 무렵");
 
         ChapterYarnFile file = Export(editor)[0];
-        string title = ChapterProgressionExporter.DialogueEntryIdOf(second, ChapterBoard.For(editor.Project, Ch));
+        string title = ChapterProgressionExporter.DialogueEntryIdOf(second);
 
         Assert.StartsWith(
             $"// 장면: 마감 전날의 교실 ({first.SceneId})\n// 마감 전날.\n//\n// 하린: 지침 → 결심\n\n// 에피소드: ",
@@ -250,7 +250,7 @@ public sealed class ChapterYarnExportTests
         ChapterEpisode episode = model.Episodes[0];
 
         IReadOnlyList<ChapterYarnFile> files = ChapterYarnExporter.Export(model, project: null);
-        string title = ChapterProgressionExporter.DialogueEntryIdOf(episode, ChapterBoard.For(null, Ch));
+        string title = ChapterProgressionExporter.DialogueEntryIdOf(episode);
 
         Assert.Contains($"title: {title}\n---\n===\n", files[0].Text);
         Assert.All(files, file => Assert.False(file.HasBlockingProblems));

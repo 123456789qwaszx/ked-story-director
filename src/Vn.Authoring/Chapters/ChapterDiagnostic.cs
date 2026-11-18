@@ -23,7 +23,6 @@ public enum ChapterDiagnosticCode
     /// </summary>
     EpisodeSceneEmpty,
 
-    DialogueEntryBlank,
     ConditionLabelUndefined,
 
     /// <summary>

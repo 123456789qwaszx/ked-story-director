@@ -225,13 +225,12 @@ public static class ChapterProgressionExporter
     };
 
     /// <summary>
-    /// 에피소드 하나의 <c>DialogueEntryId</c> — <b>곧 그 에피소드의 Yarn 노드 타이틀</b>이다. 진행 JSON과
-    /// 대사 Yarn(<see cref="ChapterYarnExporter"/>)이 <b>이 함수 하나</b>를 지난다 — 둘이 갈리면 진행 JSON이 없는 노드를 부른다.
+    /// 에피소드 하나의 <c>DialogueEntryId</c> — <b>곧 그 에피소드의 Yarn 노드 타이틀</b>이고 EpisodeId에서 짓는다(에피소드 카드의 이름도 늘
+    /// EpisodeId다 — 저장 검증이 지킨다). 진행 JSON과 대사 Yarn(<see cref="ChapterYarnExporter"/>)이 <b>이 함수 하나</b>를 지난다 — 둘이 갈리면
+    /// 진행 JSON이 없는 노드를 부른다. ⛔ 따로 적던 `대사엔트리` 칸 · 판 카드의 이름으로 짓던 길은 2026-11-18에 걷혔다(old-shapes O5).
     /// </summary>
-    internal static string DialogueEntryIdOf(ChapterEpisode episode, ChapterBoard via) =>
-        via.EpisodeNodeNameFor(episode) is { Length: > 0 } onBoard
-            ? onBoard
-            : YarnNaming.StoryNodeTitleOf(episode.DialogueEntry);
+    internal static string DialogueEntryIdOf(ChapterEpisode episode) =>
+        YarnNaming.StoryNodeTitleOf(episode.EpisodeId);
 
     private static NodeJson Node(
         ChapterGraphModel chapter, ChapterEpisode episode, ChapterBoard via) => new()
@@ -241,13 +240,8 @@ public static class ChapterProgressionExporter
         Title = episode.ShownTitle,
         IndexText = episode.Index,
         // 에피소드의 종류는 계약에 없다 — 저작의 `종류` 열은 <b>산출물에 실리지 않는다</b>.
-        // <b>이름의 주인은 판의 노드다</b>. 에피소드의 `대사엔트리` 글자로 지으면
-        // 주인이 둘이 되어, 판에서 노드를 개명하는 순간 진행 JSON은 옛 이름을 부르고 .yarn은
-        // 새 이름으로 선다 — 로드·검증·증명이 전부 통과하는데 재생만 안 된다.
-        //
-        // 판을 못 볼 때만(테스트·CLI) `대사엔트리` 글자로 되돌아간다. 그 경우에도 이미터의 이름
-        // 규칙은 지난다 — SanitizeNodeName이 `장면 1`을 `장면_1`로 만든다.
-        DialogueEntryId = DialogueEntryIdOf(episode, via),
+        // 이미터의 이름 규칙을 지난다 — SanitizeNodeName이 `장면 1`을 `장면_1`로 만든다.
+        DialogueEntryId = DialogueEntryIdOf(episode),
         // 관문은 에피소드가 아니라 그 길(간선)이 갖는다. 노드의 두 필드는 스키마
         // 1:1을 위해 남기되 비어 나간다(런타임 수입기가 NextOption 쪽을 읽어야 한다).
         VisibleConditions = [],

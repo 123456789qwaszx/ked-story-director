@@ -51,16 +51,8 @@ public sealed class ChapterExportAndFixtureTests
         // 통째로 지웠으므로 실으면 조용히 버려지는 칸이 하나 늘 뿐이다.
         Assert.False(start.TryGetProperty("Kind", out _));
         Assert.False(start.TryGetProperty("Attachments", out _));
-        // ⚠ 견본의 `대사엔트리`가 `Story_ch05_01`이다 — 이름 규칙이 어디에도 없던
-        // 시절 사람이 접두를 손으로 적어 둔 것이다(§4 가운데 줄의 그 방식). 이미터를
-        // 통과하면 접두가 한 번 더 붙고, **그 값이 맞다**: 이미터가 그 노드에 붙이는 yarn
-        // 타이틀도 `Story_Story_ch05_01`이라 둘이 같고, 그래야 재생된다.
-        //
-        // ⛔ 이 값을 보고 "이미 Story_로 시작하면 안 붙인다"는 가드를 넣지 말 것. 규칙의
-        // 둘째 사본이 생겨 이 수정의 목적을 되돌리고, 진짜로 Story_로 시작하는 이름을
-        // 영영 못 쓰게 된다. 고칠 것이 있다면 코드가 아니라 견본 데이터다
-        // (`docs/work-orders/dialogue-entry-naming-orders.md` §3.3).
-        Assert.Equal("Story_ch05_01", start.GetProperty("DialogueEntryId").GetString());   // 접두 폐지 — 대사엔트리 그대로
+        // DialogueEntryId는 EpisodeId에서 이미터의 이름 규칙으로 짓는다(2026-11-18 · old-shapes O5 — ⛔ 따로 적던 `대사엔트리` 칸은 걷혔다).
+        Assert.Equal(YarnNaming.StoryNodeTitleOf("main05.01"), start.GetProperty("DialogueEntryId").GetString());
         Assert.Equal(0, start.GetProperty("Position").GetProperty("X").GetDouble());
 
         // 간선 → NextOptions. 도착지·라벨·잠금 문구가 그대로 실린다.
@@ -179,9 +171,9 @@ public sealed class ChapterExportAndFixtureTests
             "invalid",
             "invalid",
             [
-                new ChapterEpisode("root", "루트", "", "root", 0, 0, null),
-                new ChapterEpisode("a", "A", "", "a", 200, 0, null),
-                new ChapterEpisode("b", "B", "", "b", 400, 0, null)
+                new ChapterEpisode("root", "루트", "", 0, 0, null),
+                new ChapterEpisode("a", "A", "", 200, 0, null),
+                new ChapterEpisode("b", "B", "", 400, 0, null)
             ],
             [
                 new ChapterEdge("root", "a", "A로", null, null),
@@ -265,7 +257,7 @@ public sealed class ChapterExportAndFixtureTests
     }
 
     [Fact]
-    public void 대사엔트리가_이미터의_이름_규칙을_그대로_지난다()
+    public void DialogueEntryId가_이미터의_이름_규칙을_그대로_지난다()
     {
         // 2026-08-23 — 진행 JSON은 `new01`이라 하고 yarn은 `Story_new01`이라 했다. 로드·
         // 검증·도달성 증명이 전부 통과하는데 **재생만** 안 됐다. 호스트의 사전 대조가
@@ -279,10 +271,10 @@ public sealed class ChapterExportAndFixtureTests
             "naming",
             string.Empty,
             [
-                new ChapterEpisode("ep1", "첫 화", "", "장면 1", 0, 0, null),
-                new ChapterEpisode("ep2", "둘째", "", "new01", 200, 0, null)
+                new ChapterEpisode("장면 1", "첫 화", "", 0, 0, null),
+                new ChapterEpisode("new01", "둘째", "", 200, 0, null)
             ],
-            [new ChapterEdge("ep1", "ep2", "다음", null, null)],
+            [new ChapterEdge("장면 1", "new01", "다음", null, null)],
             [],
             [new ChapterStat("trust", Initial: 0, Minimum: 0, Maximum: 5)],
             [],
@@ -297,7 +289,7 @@ public sealed class ChapterExportAndFixtureTests
         JsonElement nodes = document.RootElement.GetProperty("Nodes");
 
         // 공백이 밑줄로 — 정규화를 안 지나면 `장면 1`이 되어 저쪽이 노드를 못 찾는다.
-        // ⛔ `Story_` 접두는 2026-08-24에 폐지됐다 — 타이틀은 곧 대사엔트리다.
+        // ⛔ `Story_` 접두는 2026-08-24에 폐지됐다 — 타이틀은 곧 EpisodeId다.
         Assert.Equal("장면_1", nodes[0].GetProperty("DialogueEntryId").GetString());
         Assert.Equal("new01", nodes[1].GetProperty("DialogueEntryId").GetString());
 
@@ -403,8 +395,8 @@ public sealed class ChapterExportAndFixtureTests
             "stats",
             string.Empty,
             [
-                new ChapterEpisode("ep1", "첫 화", "", "ep1", 0, 0, null),
-                new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null)
+                new ChapterEpisode("ep1", "첫 화", "", 0, 0, null),
+                new ChapterEpisode("ep2", "둘째", "", 200, 0, null)
             ],
             [new ChapterEdge("ep1", "ep2", "다음", null, null)],
             [],

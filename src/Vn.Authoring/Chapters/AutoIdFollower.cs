@@ -10,7 +10,7 @@ namespace Vn.Authoring.Chapters;
 /// 다른 장면으로 옮기거나 장면ID · 챕터ID를 바꾸면 ID 속 자리가 옛것으로 남는다 — 그래서 <b>아직 자동 모양 그대로인 ID만</b> 새 자리의
 /// 이름으로 바꾼다. 사람이 고친 ID는 건드리지 않는다 — 바깥(compositor가 가져간 Yarn의 노드 이름, 게임 세이브)이 그 ID를 쥐고 있을 수 있다.
 ///
-/// 에피소드 개명은 <see cref="EpisodeRenamer"/>(간선 · 픽스처 · 카드 이름 · 대사엔트리가 함께)를, 분기 카드는 이름만 바꾼다(부르는 쪽은 노드
+/// 에피소드 개명은 <see cref="EpisodeRenamer"/>(간선 · 픽스처 · 카드의 표식과 이름이 함께)를, 분기 카드는 이름만 바꾼다(부르는 쪽은 노드
 /// Id로 잇는다). 분기 카드는 집(처음 부르는 에피소드)을 따른다. 옮기기와 따라가기가 <b>되돌리기 한 칸</b>이다.
 /// </summary>
 public static class AutoIdFollower

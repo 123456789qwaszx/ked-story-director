@@ -90,7 +90,7 @@ public sealed class ChapterSceneAuthoringTests
     }
 
     private static ChapterEpisode Episode(string id, string sceneId) =>
-        new(id, id, string.Empty, id, 0, 0, null) { SceneId = sceneId };
+        new(id, id, string.Empty, 0, 0, null) { SceneId = sceneId };
 
     private static ChapterGraphModel Chapter(
         ChapterEpisode first,

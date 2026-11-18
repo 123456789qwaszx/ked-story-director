@@ -105,8 +105,8 @@ public sealed class ChapterSchemaV5Tests
     public void 선택지_사전은_인덱스와_대본뿐이고_간선이_문구를_직접_적는다()
     {
         var chapter = new ChapterDocument { ChapterId = "v9" };
-        chapter.Episodes.Add(new ChapterEpisode("ep1", "", "", "Story_ep1", 0, 0, null));
-        chapter.Episodes.Add(new ChapterEpisode("ep2", "", "", "Story_ep2", 200, 0, null));
+        chapter.Episodes.Add(new ChapterEpisode("ep1", "", "", 0, 0, null));
+        chapter.Episodes.Add(new ChapterEpisode("ep2", "", "", 200, 0, null));
         chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "왼쪽으로", null, null));
         chapter.Edges.Add(new ChapterEdge("ep1", "ep2", "계속", null, null));
         chapter.Edges.Add(new ChapterEdge("ep2", "ep1", "왼쪽으로", null, null));   // 같은 문구 재사용

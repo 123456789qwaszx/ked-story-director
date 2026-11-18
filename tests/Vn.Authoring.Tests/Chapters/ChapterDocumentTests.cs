@@ -54,7 +54,6 @@ public sealed class ChapterDocumentTests : IDisposable
         Assert.Equal("ep01", episode.EpisodeId);
         Assert.Equal("복도", episode.Title);
         Assert.Equal("05A", episode.Index);
-        Assert.Equal("Story_ch01_01", episode.DialogueEntry);
         Assert.Equal((120, 40), (episode.X, episode.Y));
         Assert.Equal("첫 장면", episode.Memo);
         Assert.Equal("ev_corridor", episode.EventKey);
@@ -127,12 +126,12 @@ public sealed class ChapterDocumentTests : IDisposable
         ChapterId = "ch01",
         Episodes =
         [
-            new ChapterEpisode("ep01", "복도", "05A", "Story_ch01_01", 120, 40, "첫 장면")
+            new ChapterEpisode("ep01", "복도", "05A", 120, 40, "첫 장면")
             {
                 EventKey = "ev_corridor",
                 SceneId = "sc_corridor"
             },
-            new ChapterEpisode("ep02", "옥상", "10", "Story_ch01_02", 300, 40, null)
+            new ChapterEpisode("ep02", "옥상", "10", 300, 40, null)
         ],
         Edges =
         [

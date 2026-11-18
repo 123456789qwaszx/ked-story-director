@@ -6,7 +6,6 @@
       "x": 0,
       "y": 0,
       "title": "복도 진입",
-      "dialogueEntry": "Story_ch01_root",
       "memo": "Scene root",
       "sceneId": "scene_hall"
     },
@@ -15,7 +14,6 @@
       "x": 240,
       "y": 0,
       "title": "닫힌 문 앞",
-      "dialogueEntry": "Story_ch01_hall",
       "memo": "Auto 중간 Episode",
       "sceneId": "scene_hall"
     },
@@ -24,7 +22,6 @@
       "x": 480,
       "y": 0,
       "title": "누구와 갈지",
-      "dialogueEntry": "Story_ch01_choice",
       "memo": "Scene 마지막 선택",
       "sceneId": "scene_hall"
     },
@@ -33,7 +30,6 @@
       "x": 720,
       "y": -120,
       "title": "함께 가는 길",
-      "dialogueEntry": "Story_ch01_trust",
       "memo": "Via 이후 도착",
       "sceneId": "scene_trust"
     },
@@ -42,7 +38,6 @@
       "x": 720,
       "y": 120,
       "title": "혼자 가는 길",
-      "dialogueEntry": "Story_ch01_alone",
       "sceneId": "scene_alone"
     },
     {
@@ -50,7 +45,6 @@
       "x": 960,
       "y": -120,
       "title": "함께 문을 연다",
-      "dialogueEntry": "Story_ch01_true_end",
       "eventKey": "ch01_true",
       "sceneId": "scene_true_end"
     },
@@ -59,7 +53,6 @@
       "x": 960,
       "y": 120,
       "title": "혼자 문을 연다",
-      "dialogueEntry": "Story_ch01_alone_end",
       "eventKey": "ch01_alone",
       "sceneId": "scene_alone_end"
     }

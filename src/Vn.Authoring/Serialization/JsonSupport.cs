@@ -138,7 +138,8 @@ internal static class JsonSupport
 
     /// <summary>
     /// 에피소드와 카드는 한 칸에 서고 함께 지워진다(2026-11-18 · old-shapes O4) — 그래서 에피소드마다 그 챕터의 판에 카드가 <b>하나</b>,
-    /// 에피소드 카드는 그 챕터의 에피소드를 표식(<see cref="DialogueNode.MarkedEpisodeId"/>)으로 가리키고, 분기 카드는 표식이 없다.
+    /// 에피소드 카드는 그 챕터의 에피소드를 표식(<see cref="DialogueNode.MarkedEpisodeId"/>)으로 가리키고 이름도 그 EpisodeId다(O5 — Yarn 노드
+    /// 이름은 EpisodeId에서 짓는다), 분기 카드는 표식이 없다.
     /// 그렇지 않은 프로젝트(옛 데이터 · 손으로 고친 파일)는 받지 않는다.
     /// </summary>
     private static void ValidateEpisodeCards(StoryProject project)
@@ -153,12 +154,13 @@ internal static class JsonSupport
             {
                 bool fits = card.IsBranchCard
                     ? card.MarkedEpisodeId is null
-                    : card.MarkedEpisodeId is { } mark && episodes.Contains(mark) && marked.Add(mark);
+                    : card.MarkedEpisodeId is { } mark && string.Equals(card.Name, mark, StringComparison.Ordinal) &&
+                      episodes.Contains(mark) && marked.Add(mark);
 
                 if (!fits)
                 {
                     throw new InvalidDataException(
-                        $"판 '{chapter.ChapterId}'의 카드 '{card.Name}'이(가) 그 챕터의 에피소드 하나를 가리키지 않습니다(표식이 없거나 · 없는 에피소드거나 · 겹칩니다).");
+                        $"판 '{chapter.ChapterId}'의 카드 '{card.Name}'이(가) 그 챕터의 에피소드 하나를 가리키지 않습니다(표식이 없거나 · 없는 에피소드거나 · 겹치거나 · 이름이 EpisodeId와 다릅니다).");
                 }
             }
 

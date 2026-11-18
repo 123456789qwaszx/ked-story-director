@@ -25,7 +25,6 @@ public sealed class AutoIdFollowerTests
         Assert.Equal("ch01_scene02_new02", moved);
         ChapterEpisode episode = Episode(editor, moved);
         Assert.Equal("scene02", episode.SceneId);
-        Assert.Equal(moved, episode.DialogueEntry);
         Assert.Equal(moved, moving.Name);                         // 카드(= Yarn 노드 이름)가 함께 간다
         Assert.Equal("ch01_scene02_branch01", branch.Name);
         Assert.Equal(before + 1, editor.Revision);
@@ -92,7 +91,7 @@ public sealed class AutoIdFollowerTests
         (ProjectEditor editor, string board) = World();
         editor.AddDialogueNode(board, 0, 0, sceneId: "scene01");
         DialogueNode other = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, 0, 0, sceneId: "scene09");
-        editor.RenameNode(other.Id, "ch01_hall_new01");
+        editor.RenameEpisode("ch02", other.Name, "ch01_hall_new01");   // 카드(= Yarn 노드 이름)가 함께 간다
 
         AutoIdFollower.RenameScene(editor, "ch01", "scene01", "hall");
 

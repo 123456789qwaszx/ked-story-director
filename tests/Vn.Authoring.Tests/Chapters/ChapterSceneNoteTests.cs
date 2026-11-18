@@ -30,7 +30,7 @@ public sealed class ChapterSceneNoteTests : IDisposable
     }
 
     private static ChapterEpisode Episode(string id, string? sceneId) =>
-        new(id, "", "", $"Story_{id}", 0, 0, Memo: null) { SceneId = sceneId };
+        new(id, "", "", 0, 0, Memo: null) { SceneId = sceneId };
 
     /// <summary>장면 「복도」 · 「교실」 둘과 장면을 안 나눈 에피소드 하나 — 에피소드 차례로 복도가 먼저 나온다.</summary>
     private static ChapterDocument Chapter(params ChapterSceneNote[] notes)

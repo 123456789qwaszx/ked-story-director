@@ -137,7 +137,7 @@ public static class ChapterYarnExporter
             text.Append("// 에피소드: ").Append(OneLine(episode.ShownTitle)).Append('\n');
             AppendComment(text, episode.Memo);
 
-            string title = ChapterProgressionExporter.DialogueEntryIdOf(episode, via);
+            string title = ChapterProgressionExporter.DialogueEntryIdOf(episode);
 
             text.Append("title: ").Append(title).Append("\n---\n");
             AppendBody(text, episode.EpisodeId, via.EpisodeNodeFor(episode), project, problems);

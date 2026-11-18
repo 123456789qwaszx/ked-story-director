@@ -29,14 +29,6 @@ public sealed class ChapterEditingTests
     }
 
     [Fact]
-    public void 에피소드를_세우면_대사엔트리가_Id와_같다()
-    {
-        // ⚠ v3 규약. 임포터와 [대본] 탭의 노드 이름 규칙이 같은 값을 보므로, 어긋나면
-        //    같은 에피소드에 대사노드가 둘이 된다.
-        Assert.Equal("ep01", Chapter.Episodes[0].DialogueEntry);
-    }
-
-    [Fact]
     public void 같은_Id로_두_번_세우지_못한다()
     {
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(
@@ -94,18 +86,6 @@ public sealed class ChapterEditingTests
         Assert.Equal(["ep0A", "ep02"], Chapter.Episodes.Select(episode => episode.EpisodeId));
         Assert.Equal("ep0A", Chapter.Edges[0].FromEpisodeId);
         Assert.Equal("ep0A", Chapter.Fixtures[0].Choices[0].From);
-
-        // 대사엔트리도 규약을 따르던 것이라 함께 갔다.
-        Assert.Equal("ep0A", Chapter.Episodes[0].DialogueEntry);
-    }
-
-    [Fact]
-    public void 사람이_따로_적은_대사엔트리는_개명이_안_건드린다()
-    {
-        _editor.UpdateEpisode("ch01", "ep01", dialogueEntry: "Story_손으로_적음");
-        _editor.RenameEpisode("ch01", "ep01", "ep0A");
-
-        Assert.Equal("Story_손으로_적음", Chapter.Episodes[0].DialogueEntry);
     }
 
     [Fact]

@@ -227,7 +227,6 @@ public sealed partial class ProjectEditor
             created.Name,
             title ?? created.Name,
             Index: string.Empty,
-            DialogueEntry: created.Name,
             Math.Round(position.X, 2),
             Math.Round(position.Y, 2),
             Memo: null)
@@ -430,8 +429,17 @@ public sealed partial class ProjectEditor
         }
     }
 
+    /// <summary>
+    /// 노드 이름을 바꾼다 — 분기 카드(이름 = 분기 카드 ID · Yarn 노드 이름)와 설정 노드. 에피소드 카드의 이름은 늘 EpisodeId라 여기서 바꾸지 않는다
+    /// (<see cref="RenameEpisode"/>가 함께 옮긴다 · old-shapes O5).
+    /// </summary>
     public void RenameNode(string nodeId, string name)
     {
+        if (Project.FindNode(nodeId) is DialogueNode { MarkedEpisodeId: { } episodeId })
+        {
+            throw new InvalidOperationException($"'{episodeId}'은(는) 에피소드 카드입니다 — 이름은 에피소드 이름 바꾸기가 함께 옮깁니다.");
+        }
+
         if (Project.FindNode(nodeId) is { } node && !string.Equals(node.Name, name, StringComparison.Ordinal))
         {
             Mutate(ProjectChangeKind.NodeMetadata, () => node.Name = name);

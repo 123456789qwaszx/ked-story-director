@@ -151,7 +151,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         ChapterGraphModel model = Sound("ch01");
         model = new ChapterGraphModel(
             model.ChapterId, model.SourcePath,
-            [.. model.Episodes, new ChapterEpisode("ep9", "작업 중", "", "ep9", 400, 0, null)],
+            [.. model.Episodes, new ChapterEpisode("ep9", "작업 중", "", 400, 0, null)],
             model.Edges, model.Conditions, model.Stats, model.Fixtures, model.Diagnostics);
 
         ChapterExportRun run = new ChapterExportService().ExportAll([new ChapterEntry("ch01", model)], ProjectPath);
@@ -346,8 +346,8 @@ public sealed class ChapterExportServiceTests : IDisposable
         chapterId,
         string.Empty,
         [
-            new ChapterEpisode("ep1", "첫 화", "", "ep1", 0, 0, null),
-            new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null)
+            new ChapterEpisode("ep1", "첫 화", "", 0, 0, null),
+            new ChapterEpisode("ep2", "둘째", "", 200, 0, null)
         ],
         [new ChapterEdge("ep1", "ep2", "다음", null, null)],
         [],
@@ -363,9 +363,9 @@ public sealed class ChapterExportServiceTests : IDisposable
         chapterId,
         string.Empty,
         [
-            new ChapterEpisode("ep1", "첫 화", "", "ep1", 0, 0, null),
-            new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null),
-            new ChapterEpisode("ep3", "닿지 않는 화", "", "ep3", 400, 0, null)
+            new ChapterEpisode("ep1", "첫 화", "", 0, 0, null),
+            new ChapterEpisode("ep2", "둘째", "", 200, 0, null),
+            new ChapterEpisode("ep3", "닿지 않는 화", "", 400, 0, null)
         ],
         [new ChapterEdge("ep1", "ep2", "다음", null, null), new ChapterEdge("ep2", "ep3", "올라간다", "높음", null)],
         [

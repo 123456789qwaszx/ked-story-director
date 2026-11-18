@@ -62,7 +62,7 @@ internal static class SampleChapters
                          .ToList())
             {
                 (double x, double y) = NodePlacement.For(project, chapter.ChapterId, episode.EpisodeId);
-                var card = new DialogueNode(name: string.IsNullOrEmpty(episode.DialogueEntry) ? episode.EpisodeId : episode.DialogueEntry)
+                var card = new DialogueNode(name: episode.EpisodeId)
                 {
                     MarkedEpisodeId = episode.EpisodeId,
                     Layout = new NodeLayout { X = x, Y = y }

@@ -88,7 +88,7 @@ public static class ChapterBranchCards
 
         foreach (ChapterEpisode episode in chapter.Episodes)
         {
-            taken.TryAdd(ChapterProgressionExporter.DialogueEntryIdOf(episode, via), $"에피소드 「{episode.ShownTitle}」");
+            taken.TryAdd(ChapterProgressionExporter.DialogueEntryIdOf(episode), $"에피소드 「{episode.ShownTitle}」");
         }
 
         foreach (DialogueNode branch in cards.Where(card => card.IsBranchCard))

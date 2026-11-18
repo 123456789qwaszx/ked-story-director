@@ -400,7 +400,7 @@ public sealed class ChapterReachabilityTests
 
     /// <summary>v8 — 관문은 에피소드가 아니라 들어오는 길이 갖는다(간선 조건으로 준다).</summary>
     private static ChapterEpisode Episode(string id) =>
-        new(id, id, "01", $"Story_{id}", 0, 0, null);
+        new(id, id, "01", 0, 0, null);
 
     /// <param name="edges">TrustDelta — 그 간선을 타는 순간 커밋되는 trust 증감 (2026-08-14 규칙).</param>
     private static ChapterGraphModel Chapter(

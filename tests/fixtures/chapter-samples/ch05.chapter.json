@@ -6,37 +6,32 @@
       "x": 0,
       "y": 0,
       "title": "닫힌 문 앞에서",
-      "dialogueEntry": "Story_ch05_01",
       "memo": "챕터 진입점"
     },
     {
       "episodeId": "main05.02",
       "x": 220,
       "y": 0,
-      "title": "조용한 복도",
-      "dialogueEntry": "Story_ch05_02"
+      "title": "조용한 복도"
     },
     {
       "episodeId": "branch05.02A",
       "x": 440,
       "y": -120,
       "title": "라루의 제안",
-      "dialogueEntry": "Story_ch05_02A",
       "memo": "신뢰 루트"
     },
     {
       "episodeId": "main05.03",
       "x": 440,
       "y": 120,
-      "title": "문 너머",
-      "dialogueEntry": "Story_ch05_03"
+      "title": "문 너머"
     },
     {
       "episodeId": "attach05.02s",
       "x": 220,
       "y": 170,
       "title": "샘플 섬 회상",
-      "dialogueEntry": "Story_ch05_02_side",
       "memo": "의도한 섬 — 들어오는 간선이 없다(이어지지 않음 — 경고)"
     },
     {
@@ -44,7 +39,6 @@
       "x": 680,
       "y": 0,
       "title": "선택의 밤",
-      "dialogueEntry": "Story_ch05_end",
       "memo": "엔딩 후보",
       "eventKey": "ch05_normal"
     }

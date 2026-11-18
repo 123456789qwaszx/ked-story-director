@@ -217,5 +217,5 @@ public sealed class ChapterDeterministicExportTests : IDisposable
         [], []);
 
     private static ChapterEpisode Episode(string id) =>
-        new(id, id, "", id, 0, 0, null);
+        new(id, id, "", 0, 0, null);
 }

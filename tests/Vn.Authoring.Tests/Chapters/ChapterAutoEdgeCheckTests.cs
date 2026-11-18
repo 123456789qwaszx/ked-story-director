@@ -85,7 +85,7 @@ public sealed class ChapterAutoEdgeCheckTests
         foreach ((string sceneId, string episodeId) in episodes)
         {
             chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, 0, 0, null)
+                episodeId, episodeId, string.Empty, 0, 0, null)
             {
                 SceneId = sceneId
             });

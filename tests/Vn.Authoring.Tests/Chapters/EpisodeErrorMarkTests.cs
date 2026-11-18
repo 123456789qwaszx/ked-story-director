@@ -13,23 +13,6 @@ namespace Vn.Authoring.Tests.Chapters;
 public sealed class EpisodeErrorMarkTests
 {
     [Fact]
-    public void 툴에서_만든_에피소드의_오류가_카드에_표시된다()
-    {
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapter("ch01");
-        editor.AddEpisode("ch01", "ep_a", "가", 0, 0);
-        editor.AddEpisode("ch01", "ep_b", "나", 0, 0);
-
-        // 대사엔트리가 비면 런타임이 재생할 대상이 없다 — 에피소드 자리의 오류다.
-        editor.UpdateEpisode("ch01", "ep_a", dialogueEntry: string.Empty);
-
-        ChapterGraphModel model = editor.FindChapter("ch01")!.ToGraphModel("ch01");
-
-        Assert.True(model.EpisodeHasError(model.FindEpisode("ep_a")!));
-        Assert.False(model.EpisodeHasError(model.FindEpisode("ep_b")!));
-    }
-
-    [Fact]
     public void 간선의_오류는_에피소드에_번지지_않는다()
     {
         var editor = new ProjectEditor(new StoryProject());

@@ -33,7 +33,7 @@
       "EpisodeId": "root",
       "Title": "복도 진입",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_root",
+      "DialogueEntryId": "root",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -58,7 +58,7 @@
       "EpisodeId": "hall",
       "Title": "닫힌 문 앞",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_hall",
+      "DialogueEntryId": "hall",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -83,7 +83,7 @@
       "EpisodeId": "choice",
       "Title": "누구와 갈지",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_choice",
+      "DialogueEntryId": "choice",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -142,7 +142,7 @@
       "EpisodeId": "trust_path",
       "Title": "함께 가는 길",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_trust",
+      "DialogueEntryId": "trust_path",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -167,7 +167,7 @@
       "EpisodeId": "alone_path",
       "Title": "혼자 가는 길",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_alone",
+      "DialogueEntryId": "alone_path",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -192,7 +192,7 @@
       "EpisodeId": "true_end",
       "Title": "함께 문을 연다",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_true_end",
+      "DialogueEntryId": "true_end",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [],
@@ -207,7 +207,7 @@
       "EpisodeId": "alone_end",
       "Title": "혼자 문을 연다",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_alone_end",
+      "DialogueEntryId": "alone_end",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [],

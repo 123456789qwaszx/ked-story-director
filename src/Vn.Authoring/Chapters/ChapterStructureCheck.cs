@@ -58,12 +58,6 @@ public static class ChapterStructureCheck
                 diagnostics.Add(Episode(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.EpisodeIdDuplicated,
                     path, episode, $"EpisodeId '{episode.EpisodeId}'가 겹칩니다."));
             }
-
-            if (string.IsNullOrWhiteSpace(episode.DialogueEntry))
-            {
-                diagnostics.Add(Episode(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.DialogueEntryBlank,
-                    path, episode, $"'{episode.EpisodeId}'의 대사엔트리가 비어 있습니다. 런타임이 재생할 대상이 없습니다."));
-            }
         }
     }
 

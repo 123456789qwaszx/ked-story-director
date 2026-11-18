@@ -46,7 +46,7 @@ public sealed class AutoIdTests
         // 사람이 다른 챕터의 카드에 그 이름을 붙여 두었다 — Yarn 노드 이름은 프로젝트에서 하나라 건너뛴다.
         ProjectEditor editor = World();
         DialogueNode taken = editor.AddDialogueNode(TestChapter.Board(editor, "ch02").Id, 0, 0, sceneId: "scene09");
-        editor.RenameNode(taken.Id, "ch01_scene01_new01");
+        editor.RenameEpisode("ch02", taken.Name, "ch01_scene01_new01");   // 카드(= Yarn 노드 이름)가 함께 간다
 
         DialogueNode created = editor.AddDialogueNode(TestChapter.Board(editor, "ch01").Id, 0, 0, sceneId: "scene01");
 

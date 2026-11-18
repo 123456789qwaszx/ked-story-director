@@ -132,11 +132,7 @@ public sealed partial class ProjectEditor
     // ── 에피소드 ────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 에피소드 하나를 세운다.
-    ///
-    /// <b>대사엔트리 = EpisodeId</b>가 기본이다(v3 규약) — 옛 창구가 B열에 같은 값을 적던
-    /// 그 규칙이고, 임포터의 노드 이름 규칙도 같은 값을 본다. 어긋나면 같은
-    /// 에피소드에 대사노드가 둘이 된다.
+    /// 에피소드 하나를 세운다 — 카드(이름 = EpisodeId)와 한 칸에.
     /// </summary>
     /// <param name="sceneId">
     /// 어느 장면에 놓을지. <b>만들면서 함께 정한다</b> — 만든 뒤에 <see cref="UpdateEpisode"/>로
@@ -242,7 +238,6 @@ public sealed partial class ProjectEditor
         string chapterId,
         string episodeId,
         string? title = null,
-        string? dialogueEntry = null,
         string? memo = null,
         string? sceneId = null)
     {
@@ -252,7 +247,6 @@ public sealed partial class ProjectEditor
         Mutate(() => chapter.Episodes[index] = chapter.Episodes[index] with
         {
             Title = title ?? chapter.Episodes[index].Title,
-            DialogueEntry = dialogueEntry ?? chapter.Episodes[index].DialogueEntry,
             Memo = memo ?? chapter.Episodes[index].Memo,
             SceneId = sceneId ?? chapter.Episodes[index].SceneId
         });
@@ -547,8 +541,9 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// EpisodeId 개명. <b>간선의 출발·도착과 픽스처 고정 선택, 카드의 표식이 함께 따라간다</b> — 신원이
-    /// 바뀌었는데 참조가 남으면 유령 간선이 되고, 표식이 남으면 에피소드를 잃은 카드가 된다(저장 검증이 받지 않는다 · old-shapes O4).
+    /// EpisodeId 개명. <b>간선의 출발·도착과 픽스처 고정 선택, 카드의 표식과 이름이 함께 따라간다</b> — 신원이
+    /// 바뀌었는데 참조가 남으면 유령 간선이 되고, 표식이 남으면 에피소드를 잃은 카드가 된다. 에피소드 카드의 이름은 늘 EpisodeId다
+    /// (저장 검증이 지킨다 · old-shapes O4 · O5).
     /// </summary>
     public void RenameEpisode(string chapterId, string oldId, string newId)
     {
@@ -567,21 +562,13 @@ public sealed partial class ProjectEditor
             if (card is not null)
             {
                 card.MarkedEpisodeId = newId;
+                card.Name = newId;
             }
 
             ChapterEpisode episode = chapter.Episodes[index];
             string oldSceneId = episode.EffectiveSceneId;
 
-            chapter.Episodes[index] = episode with
-            {
-                EpisodeId = newId,
-
-                // 대사엔트리 = EpisodeId 규약(v3)을 따르던 것만 함께 간다 —
-                // 사람이 다르게 적어 둔 값은 건드리지 않는다.
-                DialogueEntry = string.Equals(episode.DialogueEntry, oldId, StringComparison.Ordinal)
-                    ? newId
-                    : episode.DialogueEntry
-            };
+            chapter.Episodes[index] = episode with { EpisodeId = newId };
 
             Retarget(chapter, oldId, newId);
 

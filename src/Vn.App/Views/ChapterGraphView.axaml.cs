@@ -4410,7 +4410,6 @@ public partial class ChapterGraphView : UserControl
         var lines = new List<string>
         {
             episode.EpisodeId,
-            $"대사엔트리: {episode.DialogueEntry}",
             $"위치: X={episode.X:0.##} Y={episode.Y:0.##}",
             $"선택지 {model.Edges.Count(edge => string.Equals(edge.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal))}개"
         };

@@ -457,10 +457,10 @@ public sealed class ChapterGraphEditingTests
         ChapterGraphModel reread = Chapter(session);
         ChapterEpisode added = reread.FindEpisode("ch05_new01")!;
 
-        // 간선이 함께 이어졌고(문구 「계속」), 대사엔트리는 EpisodeId로 자동이다.
+        // 간선이 함께 이어졌다(문구 「계속」).
         Assert.Contains(reread.Edges, edge =>
             edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "ch05_new01" && edge.OptionLabel == "계속");
-        Assert.Equal("ch05_new01", added.DialogueEntry);
+        Assert.Equal("ch05_new01", added.EpisodeId);
     });
 
     [Fact]
