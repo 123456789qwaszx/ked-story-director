@@ -37,6 +37,9 @@ public static class Identifier
 
     public static string File() => Create("sf");
 
+    /// <summary>식별자 뒷부분에 쓰는 글자인가 — 툴이 지은 판 파일 이름을 알아볼 때 쓴다(<c>ProjectStore.RemoveStaleStoryFiles</c>).</summary>
+    internal static bool IsIdCharacter(char character) => Alphabet.Contains(character);
+
     public static string Node() => Create("nd");
 
     public static string Line() => Create("ln");

@@ -39,4 +39,5 @@
 
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
-| 11-18 | SF0 | (이 커밋) | 지시서 |
+| 11-18 | SF0 | e9493d10 | 지시서 |
+| 11-18 | SF1 | (이 커밋) | `ProjectStore.Save` 끝(판 파일 · 목차를 쓴 뒤)에 `RemoveStaleStoryFiles` — `story/` 바로 안의 `*.vnstory.json` 중 이름이 `IsToolMadeStoryFileName`(`sf_` + `Identifier`의 글자 8자 — `Identifier.IsIdCharacter`)이고 이번에 쓴 판이 아닌 것을 지운다. 폴더에 다른 `*.vnproject.json`이 있으면 하지 않는다. 지우지 못하면 남긴다. 시험 — 새 `StaleStoryFilesTests`(지운 챕터의 판만 사라짐 · 복사본 · 다른 이름 · 하위 폴더 · 다른 파일 그대로 · 다시 열기 · 되돌려 다시 저장하면 다시 섬 · 다른 목차가 있으면 그대로 · 이름 알아보기 · 툴이 짓는 이름은 알아보는 모양). 고치기 전에는 첫 시험이 실패함을 확인. Authoring 657 · App 481 |

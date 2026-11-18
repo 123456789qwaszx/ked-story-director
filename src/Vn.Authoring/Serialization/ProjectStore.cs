@@ -14,6 +14,8 @@ namespace Vn.Authoring.Serialization;
 /// project.vnproject.json      목차와 파일을 넘나드는 관계
 /// story/&lt;fileId&gt;.vnstory.json       판 — 카드와 그 대본(줄 정체성 + locale별 본문)
 /// </code>
+///
+/// 저장은 목차에서 빠진 판 파일(지운 챕터의 판)을 걷는다 — 툴이 지은 이름만, 모든 쓰기가 끝난 뒤에(<see cref="RemoveStaleStoryFiles"/>).
 /// </summary>
 public static class ProjectStore
 {
@@ -66,6 +68,83 @@ public static class ProjectStore
         }
 
         JsonSupport.WriteAtomic(fullManifestPath, manifestText);
+
+        // 목차에서 빠진 판 파일을 걷는다 — 쓰기가 모두 끝난 뒤라, 중간에 꺼져도 남는 것은 쓰지 않는 파일뿐이다.
+        RemoveStaleStoryFiles(rootDirectory, fullManifestPath, writes.Select(write => write.Path));
+    }
+
+    /// <summary>판 파일이 사는 폴더 — 새 판의 기본 자리(<see cref="StoryFile"/>의 <c>story/{Id}.vnstory.json</c>)다.</summary>
+    internal const string StoryFolderName = "story";
+
+    /// <summary>
+    /// <b>목차에서 빠진 판 파일을 지운다</b>(2026-11-18 소유자 — 챕터를 지운 뒤 저장해도 그 판 파일이 <c>story/</c>에 남아 쌓였다 ·
+    /// <c>docs/work-orders/stale-story-files-orders.md</c>). 지우는 것은 툴이 지은 것만이다 — <c>story/</c> 바로 안, 이름이
+    /// <see cref="IsToolMadeStoryFileName"/>인 것. 사람이 복사해 둔 파일 · 다른 이름 · 하위 폴더는 건드리지 않는다. 폴더에 다른 목차가 있으면
+    /// (두 목차가 <c>story/</c>를 함께 쓰던 옛 배치) 아무것도 지우지 않는다. 지우지 못한 파일은 남긴다 — 저장은 이미 끝났고 다음 저장이 다시 본다.
+    /// </summary>
+    /// <returns>지운 파일 수.</returns>
+    internal static int RemoveStaleStoryFiles(string rootDirectory, string manifestPath, IEnumerable<string> keptPaths)
+    {
+        string storyFolder = Path.Combine(rootDirectory, StoryFolderName);
+
+        if (!Directory.Exists(storyFolder))
+        {
+            return 0;
+        }
+
+        bool otherManifest = Directory.GetFiles(rootDirectory, "*" + ProjectManifestJson.FileExtension, SearchOption.TopDirectoryOnly)
+            .Any(path => !string.Equals(Path.GetFullPath(path), manifestPath, StringComparison.OrdinalIgnoreCase));
+
+        if (otherManifest)
+        {
+            return 0;
+        }
+
+        // 이름이 대소문자만 다른 파일도 남긴다 — 윈도우에서는 같은 파일이다.
+        var kept = new HashSet<string>(keptPaths.Select(Path.GetFullPath), StringComparer.OrdinalIgnoreCase);
+        int removed = 0;
+
+        foreach (string file in Directory.GetFiles(storyFolder, "*" + StoryFileJson.FileExtension, SearchOption.TopDirectoryOnly))
+        {
+            if (!IsToolMadeStoryFileName(Path.GetFileName(file)) || kept.Contains(Path.GetFullPath(file)))
+            {
+                continue;
+            }
+
+            try
+            {
+                File.Delete(file);
+                removed++;
+            }
+            catch (IOException)
+            {
+                // 잠겨 있다 — 남긴다. 목차가 가리키지 않으니 읽히지는 않는다.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // 권한이 없다 — 남긴다.
+            }
+        }
+
+        return removed;
+    }
+
+    /// <summary>
+    /// 툴이 지은 판 파일 이름인가 — <c>sf_</c> + <see cref="Identifier"/>의 글자 8자 + <c>.vnstory.json</c>(<see cref="Identifier.File"/>의 모양).
+    /// </summary>
+    internal static bool IsToolMadeStoryFileName(string fileName)
+    {
+        const string prefix = "sf_";
+        const int idLength = 8;
+
+        if (!fileName.StartsWith(prefix, StringComparison.Ordinal) ||
+            !fileName.EndsWith(StoryFileJson.FileExtension, StringComparison.Ordinal) ||
+            fileName.Length != prefix.Length + idLength + StoryFileJson.FileExtension.Length)
+        {
+            return false;
+        }
+
+        return fileName.AsSpan(prefix.Length, idLength).ToString().All(Identifier.IsIdCharacter);
     }
 
     public static string NormalizeRelativeStoryPath(string relativePath) =>
