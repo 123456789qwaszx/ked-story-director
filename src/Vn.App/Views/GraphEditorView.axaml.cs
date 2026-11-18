@@ -819,15 +819,20 @@ public partial class GraphEditorView : UserControl
                     Foreground = Brushes.White
                 }
             };
-            ToolTip.SetTip(label, "클릭하면 이 챕터를 표 형태로 접습니다. 접힌 표를 더블클릭하면 다시 펼칩니다.");
+            ToolTip.SetTip(label, "누르면 이 챕터의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 표 형태로 접고, 접힌 표를 더블클릭하면 다시 펼칩니다.");
 
-            // 이름표만 히트 대상이다(프레임은 아님) — 클릭 = 접기 (PDF 9장 "체크해제하면 표형태").
+            // 이름표만 히트 대상이다(프레임은 아님) — 한 번 = 이 챕터의 카드를 모두 골라 함께 끈다, 두 번 = 접기(2026-11-18 소유자 · ⛔ 그 전에는 한 번에
+            // 접었다 — PDF 9장 "체크해제하면 표형태").
             string frameFileId = group.Key;
-            label.PointerPressed += (_, args) =>
-            {
-                args.Handled = true;
-                _session?.SetFileExpanded(frameFileId, expanded: false);
-            };
+            List<string> chapterCards = group.OfType<ExpandedNodeProjection>()
+                .Where(node => FindCard(node.NodeId) is not null)
+                .Select(node => node.NodeId)
+                .ToList();
+            label.PointerPressed += (_, args) => OnFrameLabelPressed(
+                args,
+                chapterCards,
+                new HierarchyPick(HierarchyKind.Chapter, boardName),
+                () => _session?.SetFileExpanded(frameFileId, expanded: false));
 
             Canvas.SetLeft(label, area.X + 12);
             Canvas.SetTop(label, area.Y + 10);
@@ -897,6 +902,7 @@ public partial class GraphEditorView : UserControl
         foreach (ChapterScene scene in scenes)
         {
             Rect? bounds = null;
+            var members = new List<string>();
 
             foreach (ExpandedNodeProjection node in all)
             {
@@ -910,6 +916,7 @@ public partial class GraphEditorView : UserControl
 
                 Rect rect = FrameRectOf(node, card);
                 bounds = bounds is { } current ? current.Union(rect) : rect;
+                members.Add(node.NodeId);
             }
 
             if (bounds is not { } area)
@@ -922,7 +929,7 @@ public partial class GraphEditorView : UserControl
 
             _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
             _frames.Add(SceneFrame(area));
-            _frames.Add(SceneLabel(area, fileId, scene, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)));
+            _frames.Add(SceneLabel(area, fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)));
         }
     }
 
@@ -952,10 +959,12 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 장면 이름표 — <b>누르면 그 장면을 접는다</b> (2026-10-30 — 챕터 이름표와 같은 손짓). 접은 장면은 줄 목록 상자로
-    /// 간소화되고(<see cref="BuildSceneProxy"/>), 그 상자를 두 번 누르면 다시 편다. 하이어아키의 눈과 같은 상태다.
+    /// 장면 이름표 — <b>한 번 누르면 그 장면의 카드를 모두 골라 함께 끌고, 두 번 누르면 그 장면을 접는다</b>(2026-11-18 소유자 · ⛔ 2026-10-30부터는
+    /// 한 번에 접었다 — 챕터 이름표와 같은 손짓). 접은 장면은 줄 목록 상자로 간소화되고(<see cref="BuildSceneProxy"/>), 그 상자를 두 번 누르면 다시
+    /// 편다. 하이어아키의 눈과 같은 상태다.
     /// </summary>
-    private Border SceneLabel(Rect area, string fileId, ChapterScene scene, bool hasMemo)
+    /// <param name="members">그 장면에 서 있는 카드(에피소드와 집이 그 장면인 분기 카드) — 테두리를 잰 그 카드들이다.</param>
+    private Border SceneLabel(Rect area, string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
     {
         var label = new Border
         {
@@ -975,14 +984,15 @@ public partial class GraphEditorView : UserControl
                 Foreground = Brushes.White
             }
         };
-        ToolTip.SetTip(label, "클릭하면 이 장면을 줄 목록으로 접습니다 — 간선은 접힌 줄에 붙습니다. 접힌 상자를 더블클릭하면 다시 펼칩니다.");
+        ToolTip.SetTip(label, "누르면 이 장면의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 줄 목록으로 접습니다(간선은 접힌 줄에 " +
+                              "붙습니다). 접힌 상자를 더블클릭하면 다시 펼칩니다.");
 
         string sceneId = scene.SceneId;
-        label.PointerPressed += (_, args) =>
-        {
-            args.Handled = true;
-            _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true);
-        };
+        label.PointerPressed += (_, args) => OnFrameLabelPressed(
+            args,
+            members,
+            new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
+            () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
 
         Canvas.SetLeft(label, area.X + 10);
         Canvas.SetTop(label, area.Y + 6);
@@ -4668,20 +4678,7 @@ public partial class GraphEditorView : UserControl
         // 범위 선택된 카드를 잡으면 무리가 함께 움직인다 (W40).
         if (_multiSelected.Contains(card.NodeId) && _multiSelected.Count > 1)
         {
-            _draggingGroup = true;
-            _groupDragStart = args.GetPosition(GraphCanvas);
-            _groupStartPositions.Clear();
-
-            foreach (NodeCard member in _cards)
-            {
-                if (_multiSelected.Contains(member.NodeId))
-                {
-                    _groupStartPositions[member.NodeId] = new Point(
-                        Canvas.GetLeft(member.Visual), Canvas.GetTop(member.Visual));
-                }
-            }
-
-            HighlightSelection();
+            BeginGroupDrag(args.GetPosition(GraphCanvas));
             args.Handled = true;
             return;
         }
@@ -4696,6 +4693,53 @@ public partial class GraphEditorView : UserControl
             position.Y - Canvas.GetTop(card.Visual));
 
         args.Handled = true;
+    }
+
+    /// <summary>무리(<see cref="_multiSelected"/>)를 함께 끌기 시작한다 — 움직임은 판이 받고(<see cref="OnCanvasPointerMoved"/>) 놓을 때 한 번 적는다.</summary>
+    private void BeginGroupDrag(Point at)
+    {
+        _draggingGroup = true;
+        _groupDragStart = at;
+        _groupStartPositions.Clear();
+
+        foreach (NodeCard member in _cards)
+        {
+            if (_multiSelected.Contains(member.NodeId))
+            {
+                _groupStartPositions[member.NodeId] = new Point(Canvas.GetLeft(member.Visual), Canvas.GetTop(member.Visual));
+            }
+        }
+
+        HighlightSelection();
+    }
+
+    /// <summary>
+    /// 챕터 · 장면 이름표를 눌렀다(2026-11-18 소유자 — 「한번 클릭했을 때 접히는 대신, 더블 클릭을 해야 접히도록 … 한번 좌클릭을 했을 때는 그 챕터내에
+    /// 포함된 에피소드나, 그 장면 내에 포함된 모든 에피소드가 클릭되도록 해서 이동시키는 용도」). 한 번 = 그 안의 카드를 모두 무리로 고르고(인스펙터 ·
+    /// 하이어아키는 그 챕터 · 장면 — 판의 빈 곳을 누른 것과 같다) 그대로 끌면 함께 움직인다. 두 번 = 접기.
+    /// </summary>
+    private void OnFrameLabelPressed(PointerPressedEventArgs args, IReadOnlyList<string> members, HierarchyPick pick, Action fold)
+    {
+        args.Handled = true;
+
+        if (!args.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (args.ClickCount >= 2)
+        {
+            fold();
+            return;
+        }
+
+        ReleaseWritingFocus();
+        SelectEdge(null);
+        AreaPicked?.Invoke(pick);
+
+        _multiSelected.Clear();
+        _multiSelected.UnionWith(members);
+        BeginGroupDrag(args.GetPosition(GraphCanvas));
     }
 
     private void OnPortPressed(

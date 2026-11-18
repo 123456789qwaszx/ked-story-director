@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
@@ -87,14 +88,17 @@ public sealed class SceneFoldTests
     });
 
     [Fact]
-    public void 장면_이름표를_누르면_접히고_상자를_두_번_누르면_펴진다() => HeadlessUi.Run(() =>
+    public void 장면_이름표를_두_번_누르면_접히고_상자를_두_번_누르면_펴진다() => HeadlessUi.Run(() =>
     {
+        // 2026-11-18 소유자 — 「한번 클릭했을 때 접히는 대신, 더블 클릭을 해야 접히도록」. 한 번은 그 장면의 카드를 고른다(아래 시험).
         (GraphEditorView graph, AuthoringSession session, string board) = Show();
         Canvas canvas = BoardCanvas(graph);
 
         Border label = canvas.Children.OfType<Border>()
             .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "hall");
         label.RaiseEvent(Press(label));
+        Assert.Empty(session.CollapsedScenes);   // 한 번은 접지 않는다
+        label.RaiseEvent(Press(label, clickCount: 2));
 
         Assert.Contains(new Vn.Authoring.Graph.GraphSceneKey(board, "hall"), session.CollapsedScenes);
 
@@ -106,6 +110,56 @@ public sealed class SceneFoldTests
 
         graph.Rebuild();
         Assert.NotNull(CardOf(canvas, Card(session, "b").Id));
+    });
+
+    [Fact]
+    public void 장면_이름표를_한_번_누르면_그_장면의_카드를_모두_골라_끌면_함께_움직인다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「한번 좌클릭을 했을 때는 … 그 장면 내에 포함된 모든 에피소드가 클릭되도록 해서 이동시키는 용도로」.
+        (GraphEditorView graph, AuthoringSession session, string board) = Show();
+        Canvas canvas = BoardCanvas(graph);
+        DialogueNode root = Card(session, "root");
+        DialogueNode a = Card(session, "a");
+        DialogueNode b = Card(session, "b");
+        // 무리 끌기는 판에 선 자리에서 옮긴다(범위 선택의 무리와 같다).
+        (double X, double Y) Shown(DialogueNode card) => (Canvas.GetLeft(CardOf(canvas, card.Id)!), Canvas.GetTop(CardOf(canvas, card.Id)!));
+        (double X, double Y) rootAt = Shown(root);
+        (double X, double Y) aAt = Shown(a);
+        (double X, double Y) bAt = (b.Layout.X, b.Layout.Y);
+
+        Border label = canvas.Children.OfType<Border>()
+            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
+        var top = (Visual)TopLevel.GetTopLevel(canvas)!;
+        var pointer = new Pointer(0, PointerType.Mouse, true);
+        Point at = label.TranslatePoint(new Point(4, 4), top)!.Value;
+        Point to = at + new Point(120, 60);
+        label.RaiseEvent(new PointerPressedEventArgs(
+            label, pointer, top, at, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed), KeyModifiers.None));
+
+        // 그 장면의 카드가 무리다(굵은 테두리) — 다른 장면의 카드는 아니다.
+        Assert.Equal(2, CardOf(canvas, root.Id)!.BorderThickness.Left);
+        Assert.Equal(2, CardOf(canvas, a.Id)!.BorderThickness.Left);
+        Assert.Equal(1, CardOf(canvas, b.Id)!.BorderThickness.Left);
+
+        // 그대로 끈다 — 판의 배율을 지나 판 위에서 얼마나 움직였는지로 잰다.
+        Point delta = top.TranslatePoint(to, canvas)!.Value - top.TranslatePoint(at, canvas)!.Value;
+        long before = session.Editor.Revision;
+        canvas.RaiseEvent(new PointerEventArgs(
+            InputElement.PointerMovedEvent, canvas, pointer, top, to, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other), KeyModifiers.None));
+        canvas.RaiseEvent(new PointerReleasedEventArgs(
+            canvas, pointer, top, to, 0,
+            new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased), KeyModifiers.None, MouseButton.Left));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(rootAt.X + delta.X, root.Layout.X, 3);
+        Assert.Equal(rootAt.Y + delta.Y, root.Layout.Y, 3);
+        Assert.Equal(aAt.X + delta.X, a.Layout.X, 3);
+        Assert.Equal(aAt.Y + delta.Y, a.Layout.Y, 3);
+        Assert.Equal(bAt, (b.Layout.X, b.Layout.Y));   // 다른 장면은 그대로
+        Assert.Equal(before + 1, session.Editor.Revision);   // 함께 한 칸
+        Assert.Empty(session.CollapsedScenes);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -160,8 +214,8 @@ public sealed class SceneFoldTests
     private static List<string> Texts(Control root) =>
         root.GetLogicalDescendants().OfType<TextBlock>().Select(text => text.Text ?? string.Empty).ToList();
 
-    private static PointerPressedEventArgs Press(Control target) =>
+    private static PointerPressedEventArgs Press(Control target, int clickCount = 1) =>
         new(target, new Pointer(0, PointerType.Mouse, true), target, default, 0,
             new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
-            KeyModifiers.None);
+            KeyModifiers.None, clickCount);
 }

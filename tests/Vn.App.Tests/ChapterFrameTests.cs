@@ -52,27 +52,34 @@ public sealed class ChapterFrameTests
     });
 
     [Fact]
-    public void 이름표를_클릭하면_접히고_표를_펼침으로_되돌린다() => HeadlessUi.Run(() =>
+    public void 이름표를_더블클릭하면_접히고_표를_펼침으로_되돌린다() => HeadlessUi.Run(() =>
     {
-        // PDF 9장 — "특정 챕터를 체크해제하면 표형태로 접힘". 손잡이는 이름표 클릭이다.
+        // PDF 9장 — "특정 챕터를 체크해제하면 표형태로 접힘". 손잡이는 이름표 더블클릭이다(2026-11-18 소유자 — ⛔ 그 전에는 한 번에 접었다. 한 번은
+        // 그 챕터의 카드를 모두 고른다).
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         session.Editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string ch01 = session.EnsureChapterBoard("ch01");
-        session.Editor.AddDialogueNode(ch01, "ep_a", name: "ep_a");
+        var card = session.Editor.AddDialogueNode(ch01, "ep_a", name: "ep_a");
         graph.Rebuild();
 
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         Border label = canvas.Children.OfType<Border>().First(border =>
             (border.Child as TextBlock)?.Text?.StartsWith("챕터 ch01") == true);
 
-        label.RaiseEvent(new Avalonia.Input.PointerPressedEventArgs(
+        Avalonia.Input.PointerPressedEventArgs Press(int clickCount) => new(
             label, new Avalonia.Input.Pointer(0, Avalonia.Input.PointerType.Mouse, true),
             label, default, 0,
             new Avalonia.Input.PointerPointProperties(
                 Avalonia.Input.RawInputModifiers.LeftMouseButton,
                 Avalonia.Input.PointerUpdateKind.LeftButtonPressed),
-            Avalonia.Input.KeyModifiers.None));
+            Avalonia.Input.KeyModifiers.None,
+            clickCount);
+
+        label.RaiseEvent(Press(1));
+        Assert.Contains(ch01, session.ExpandedFileIds);   // 한 번은 접지 않는다 — 그 챕터의 카드를 모두 무리로 고른다(굵은 테두리)
+        Assert.Equal(2, canvas.Children.OfType<Border>().Single(border => border.Tag as string == card.Id).BorderThickness.Left);
+        label.RaiseEvent(Press(2));
 
         // 세션의 펼침 상태가 접힘으로 바뀌었고, 다시 그리면 표 프록시가 선다.
         Assert.DoesNotContain(ch01, session.ExpandedFileIds);
