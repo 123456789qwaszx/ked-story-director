@@ -18,7 +18,7 @@ public partial class MainWindow
     {
         if (command == HierarchyCommand.AddChapter)
         {
-            ShowAddChapterFlyout(anchor);
+            CreateChapterNow();
             return;
         }
 

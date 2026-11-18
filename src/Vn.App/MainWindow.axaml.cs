@@ -112,9 +112,6 @@ public partial class MainWindow : Window
 
         // 두 하이어아키 · 탭 사이 선택 맞추기 (MainWindow.Hierarchy.cs).
         WireHierarchies();
-        // 새 챕터는 [대본] 탭 하이어아키의 [＋]에서 만든다.
-        Graph.ChapterAddButton.Click += (_, _) =>
-            UiGuard.Run(_session, "새 챕터", () => ShowAddChapterFlyout(Graph.ChapterAddButton));
         // 프로젝트가 아직 없을 때는 [새 프로젝트]가 먼저다 —
         // 툴바의 [새로 만들기]와 같은 길 하나를 지난다.
         ChapterGraph.ProjectNewCenterButton.Click += OnNewClick;
@@ -323,16 +320,26 @@ public partial class MainWindow : Window
     // ── 파일 ────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// [＋ 챕터]. <b>창구도 규칙도 여기 없다</b> — <see cref="ChapterAddFlyout"/>와
-    /// <see cref="AuthoringSession.CreateChapter"/>가 한 벌로 갖는다. 여기 있는 것은 <b>만든 뒤 이 화면이 할 일</b>뿐이다.
+    /// 하이어아키 우클릭 「챕터 추가」 — 「새 챕터」(자동 ID)를 <b>바로</b> 세우고 그 챕터로 간다. 이름은 하이어아키에서 두 번 눌러 고친다
+    /// (2026-11-18 소유자 — ⛔ 이름 칸을 먼저 띄우던 창구 <c>ChapterAddFlyout</c>와 하이어아키 머리의 [＋]는 걷혔다). 챕터를 세우는 규칙은
+    /// <see cref="AuthoringSession.CreateNamedChapter"/> 한 벌이다([＋ 대사 노드]도 그것을 부른다).
     /// </summary>
-    private void ShowAddChapterFlyout(Control anchor) =>
-        ChapterAddFlyout.ShowAt(anchor, _session, chapterId =>
+    private void CreateChapterNow()
+    {
+        (string? chapterId, string? failure) = _session.CreateNamedChapter(null);
+
+        if (failure is not null || chapterId is null)
         {
-            ChapterGraph.Refresh();
-            ChapterGraph.SelectChapter(chapterId);
-            Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));   // [＋ 챕터]는 [대본]에 있다 — 만든 챕터로 간다
-        });
+            _session.SetStatus(failure ?? "챕터를 만들지 못했습니다.");
+            return;
+        }
+
+        ChapterGraph.Refresh();
+        ChapterGraph.SelectChapter(chapterId);
+        Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));   // 「챕터 추가」는 [대본]에 있다 — 만든 챕터로 간다
+        _session.SetStatus(
+            $"챕터 「{NewNames.Chapter}」를 만들었습니다 — 이름은 하이어아키에서 두 번 눌러 고치고, 첫 장면은 그 챕터 줄 우클릭 「장면 추가」로 세웁니다.");
+    }
 
     /// <summary>
     /// 하이어아키를 다시 세운다 (docs/plans/hierarchy.md). 원천은 챕터 그래프 뷰가 읽은

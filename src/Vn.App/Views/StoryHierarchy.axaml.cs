@@ -580,8 +580,8 @@ public partial class StoryHierarchy : UserControl
             RowHost.Children.Add(new TextBlock
             {
                 Text = ReadOnly
-                    ? "챕터가 없습니다. [대본] 탭 하이어아키의 ＋로 만드세요."
-                    : "챕터가 없습니다. ＋나 우클릭 「챕터 추가」로 만드세요.",
+                    ? "챕터가 없습니다. [대본] 탭에서 만드세요."
+                    : "챕터가 없습니다. 우클릭 「챕터 추가」나 [＋ 대사 노드]로 만드세요.",
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
                 FontSize = 11,

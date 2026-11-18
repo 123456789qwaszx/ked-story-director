@@ -79,7 +79,7 @@
                             Padding="10,6"
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                             BorderThickness="0,0,0,1">
-                        <!-- 새 챕터 [＋]는 여기 두지 않는다 — [대본] 탭 하이어아키의 [＋]와 하이어아키 우클릭 「챕터 추가」로 만든다. -->
+                        <!-- 새 챕터는 여기서 만들지 않는다 — [대본] 탭의 [＋ 대사 노드](챕터가 없으면 함께)와 하이어아키 우클릭 「챕터 추가」로 만든다. -->
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="하이어아키" FontWeight="SemiBold" />

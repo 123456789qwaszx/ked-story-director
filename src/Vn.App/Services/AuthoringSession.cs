@@ -333,28 +333,40 @@ internal sealed class AuthoringSession
             return $"챕터 '{chapterId}'가 이미 있습니다.";
         }
 
-        Editor.EnsureChapter(chapterId);
-        SelectFile(EnsureChapterBoard(chapterId));
+        // 챕터와 그 판이 한 되돌리기 칸이다(⛔ 2026-11-18까지는 둘로 쌓여 Ctrl+Z 한 번에 판만 물러났다).
+        string board = string.Empty;
+        Editor.Batch(() =>
+        {
+            Editor.EnsureChapter(chapterId);
+            board = EnsureChapterBoard(chapterId);
+        });
+        SelectFile(board);
 
         return null;
     }
 
     /// <summary>
     /// 작가가 이름으로 새 챕터를 만든다 — ID는 자동(<see cref="NewNames.NextChapterId"/>, <c>ch01</c>…), 적은 이름은 표시 이름이다
-    /// (비우면 「새 챕터」). [대본] 탭의 [＋ 챕터]가 부른다(display-names N2). 세우는 규칙은 <see cref="CreateChapter"/> 그대로다.
+    /// (비우면 「새 챕터」). [대본] 탭 하이어아키의 「챕터 추가」와 [＋ 대사 노드](챕터가 없을 때)가 부른다(display-names N2). 세우는 규칙은 <see cref="CreateChapter"/> 그대로다.
     /// </summary>
     /// <returns>만든 챕터의 ID, 못 만든 이유 — 둘 중 하나만 있다.</returns>
     internal (string? ChapterId, string? Failure) CreateNamedChapter(string? name)
     {
         string chapterId = NewNames.NextChapterId(Project);
+        string? failure = null;
 
-        if (CreateChapter(chapterId) is { } failure)
+        // 챕터 · 판 · 이름이 한 되돌리기 칸이다. 이름도 편집 명령으로 적는다(⛔ 2026-11-18까지는 모델에 바로 적었다).
+        Editor.Batch(() =>
         {
-            return (null, failure);
-        }
+            failure = CreateChapter(chapterId);
 
-        Editor.FindChapter(chapterId)!.DisplayName = string.IsNullOrWhiteSpace(name) ? NewNames.Chapter : name.Trim();
-        return (chapterId, null);
+            if (failure is null)
+            {
+                Editor.UpdateChapterDisplayName(chapterId, string.IsNullOrWhiteSpace(name) ? NewNames.Chapter : name);
+            }
+        });
+
+        return failure is null ? (chapterId, null) : (null, failure);
     }
 
     /// <param name="reveal">

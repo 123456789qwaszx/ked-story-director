@@ -252,7 +252,7 @@ public sealed class ChapterGraphViewRenderTests
 
         // 프로젝트는 있는데 챕터가 없는 첫 화면 — 챕터는 이 탭에서 만들지 않으므로 안내문이 [대본] 탭 하이어아키의 [＋]로
         // 데려간다. [새 프로젝트]는 아니다: 프로젝트는 이미 있다.
-        Assert.Contains("[대본] 탭 하이어아키의 [＋]", empty.Text);
+        Assert.Contains("하이어아키 우클릭 「챕터 추가」", empty.Text);
         Assert.Null(view.FindControl<Button>("EmptyAddChapterButton"));
         Assert.False(view.ProjectNewCenterButton.IsVisible);
     });

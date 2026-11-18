@@ -251,9 +251,6 @@ public partial class GraphEditorView : UserControl
     /// <summary>판 왼쪽 하이어아키 (2026-10-30 HY3) — 셸이 내용을 채우고 고른 줄을 받는다(챕터 그래프의 것과 같은 컨트롤).</summary>
     internal StoryHierarchy HierarchyView => Hierarchy;
 
-    /// <summary>하이어아키 머리의 [＋] 새 챕터 — 셸이 클릭을 받고 플라이아웃의 과녁으로도 쓴다.</summary>
-    internal Button ChapterAddButton => AddChapterButton;
-
     /// <summary>하이어아키 기둥 접기 (2026-10-30 HC) — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
     internal HierarchyDock HierarchyDock { get; }
 
@@ -1503,7 +1500,7 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// <b>그 챕터로 간다</b> — 그 판의 카드(접혔으면 그 표)가 여백을 두고 들어오게 배율과 자리를 맞춘다(<see cref="FitFile"/>).
-    /// 사람이 챕터를 골랐을 때만 부른다: [대본]의 챕터 콤보, 하이어아키의 챕터 줄, [＋ 챕터]. 카드를 누르거나 [구성] 탭에서 챕터를
+    /// 사람이 챕터를 골랐을 때만 부른다: 하이어아키의 챕터 줄, 「챕터 추가」. 카드를 누르거나 [구성] 탭에서 챕터를
     /// 고른 것처럼 활성 판만 바뀐 일로는 화면을 옮기지 않는다(2026-11-17 — 그것이 늦게 돌아 화면이 튀었다).
     ///
     /// 맞추기는 미룬다 — 고르기가 판을 펼치면 다시 그리기는 다음 차례에 오고, 그 전에 맞추면 카드를 못 찾아 엉뚱한 곳(전체 보기)으로

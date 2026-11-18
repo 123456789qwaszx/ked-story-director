@@ -33,3 +33,4 @@
 |---|---|---|---|
 | 11-18 | D0 | (이 커밋) | 지시서 |
 | 11-18 | D1 | (이 커밋) | [대본] 툴바의 챕터 드롭다운(`ChapterCombo`)과 그 맞추기(`RefreshChapterCombo` · 선택 바뀜 · `_syncingChapter`)를 걷었다. [구성] 탭의 콤보는 그대로다. 시험 — 드롭다운으로 챕터를 옮기던 시험(바로 다음 시험이 같은 일을 하이어아키로 잰다)을 지우고, 이름 시험의 드롭다운 확인을 「없다」로. 문서 — 두 그래프 설계(툴바 · 화면 · 챕터 고르기 · 이름, 7절 AI 새로) · 챕터 층 안내. Authoring 647 · App 442 |
+| 11-18 | D2 | (이 커밋) | [대본] 하이어아키 머리의 [＋](`AddChapterButton`)와 이름 칸 창구(`ChapterAddFlyout`)를 걷었다. 우클릭 「챕터 추가」는 「새 챕터」를 바로 세우고 그 판으로 간다(`MainWindow.CreateChapterNow`). 함께 고친 것 — 챕터 세우기(`AuthoringSession.CreateChapter` · `CreateNamedChapter`)가 되돌리기 두 칸(챕터 · 판)이었고 이름을 모델에 바로 적었다: 한 칸(`Batch`)으로 묶고 이름은 편집 명령으로. 빈 하이어아키 · 빈 [구성] 판의 안내를 「챕터 추가」 · [＋ 대사 노드]로. 시험 — `ChapterAddButtonTests` → `ChapterAddTests`(바로 서고 한 칸 · ＋가 없다). 문서 — 작가 가이드 · 두 그래프 설계 · ARCHITECTURE. Authoring 647 · App 442 |
