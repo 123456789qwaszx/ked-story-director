@@ -7,7 +7,7 @@
 - 「챕터를 우클릭 해서 이름 바꾸기, 제거를 하는 경우도 둘을 분리한 다음 이름 바꾸기의 경우 다른 장면이나 에피소드의 이름을 바꾸는 것과 동일하게
   해주십시오. 제거의 경우에만 한번 확인을 하는 창을 두고요.」
 
-> **상태: 진행 중.**
+> **상태: 끝 (2026-11-18).**
 
 ## 1. 지금
 
@@ -34,3 +34,4 @@
 | 11-18 | D0 | (이 커밋) | 지시서 |
 | 11-18 | D1 | (이 커밋) | [대본] 툴바의 챕터 드롭다운(`ChapterCombo`)과 그 맞추기(`RefreshChapterCombo` · 선택 바뀜 · `_syncingChapter`)를 걷었다. [구성] 탭의 콤보는 그대로다. 시험 — 드롭다운으로 챕터를 옮기던 시험(바로 다음 시험이 같은 일을 하이어아키로 잰다)을 지우고, 이름 시험의 드롭다운 확인을 「없다」로. 문서 — 두 그래프 설계(툴바 · 화면 · 챕터 고르기 · 이름, 7절 AI 새로) · 챕터 층 안내. Authoring 647 · App 442 |
 | 11-18 | D2 | (이 커밋) | [대본] 하이어아키 머리의 [＋](`AddChapterButton`)와 이름 칸 창구(`ChapterAddFlyout`)를 걷었다. 우클릭 「챕터 추가」는 「새 챕터」를 바로 세우고 그 판으로 간다(`MainWindow.CreateChapterNow`). 함께 고친 것 — 챕터 세우기(`AuthoringSession.CreateChapter` · `CreateNamedChapter`)가 되돌리기 두 칸(챕터 · 판)이었고 이름을 모델에 바로 적었다: 한 칸(`Batch`)으로 묶고 이름은 편집 명령으로. 빈 하이어아키 · 빈 [구성] 판의 안내를 「챕터 추가」 · [＋ 대사 노드]로. 시험 — `ChapterAddButtonTests` → `ChapterAddTests`(바로 서고 한 칸 · ＋가 없다). 문서 — 작가 가이드 · 두 그래프 설계 · ARCHITECTURE. Authoring 647 · App 442 |
+| 11-18 | D3 | (이 커밋) | 챕터 줄 차림표 — 「이름 바꾸기」(장면 · 에피소드와 같은 줄 안의 이름 칸 · `RenameItem`)와 「챕터 제거…」(`HierarchyCommand.DeleteChapter` → `MainWindow.ConfirmChapterRemoval` — `ConfirmFlyout` 확인 한 번 뒤 `ChapterDeleter`). 셸의 챕터 플라이아웃(`ShowChapterContextFlyout` · `BuildChapterRemoveButton` · 쓰는 곳 없어진 `MenuSeparator`)과 `HierarchyCommand.ChapterMenu`를 걷었다. 같은 줄의 이름 칸이 열린 채 다시 「이름 바꾸기」를 부르면 칸이 닫히던 것을 고쳤다(그대로 둔다). 시험 — 챕터 차림표 항목, 이름 바꾸기는 줄 안에서 · 제거는 확인 뒤 한 칸으로 · 되돌리기. 문서 — 작가 가이드 · 두 그래프 설계. Authoring 647 · App 443 |

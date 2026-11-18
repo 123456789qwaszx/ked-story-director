@@ -356,48 +356,6 @@ public partial class MainWindow : Window
         : ProjectDisplayName(_session.ProjectPath);
 
     /// <summary>
-    /// 챕터 행 우클릭 — 이름 바꾸기와 <b>제거</b>. 둘 다 챕터·판·조건 배관을
-    /// 함께 옮기거나 걷는다(<see cref="ChapterRenamer"/> · <see cref="ChapterDeleter"/>).
-    ///
-    /// 제거가 툴에 있는 이유: 사람이 폴더에서 손으로 지우면 <b>절반만 지워진다</b> — 파일은
-    /// 사라져도 판과 노드가 프로젝트에 남아 이름이 겹치는 번들로 뒤늦게 터진다.
-    /// </summary>
-    private void ShowChapterContextFlyout(Control anchor, string chapterId)
-    {
-        var panel = new StackPanel { Spacing = 4, MinWidth = 220 };
-
-        // [대본] 탭은 이름만 — 표시 이름을 고친다. ID(파일 이름)는 [구성] 탭의 챕터 ID 칸이다(display-names N3).
-        string current = _session.Editor.FindChapter(chapterId)?.ShownName ?? chapterId;
-        var name = new TextBox { Text = current, FontSize = 11, PlaceholderText = "챕터 이름" };
-        panel.Children.Add(name);
-
-        var flyout = new Flyout { Content = panel };
-
-        var rename = new Button { Content = "이름 바꾸기", HorizontalAlignment = HorizontalAlignment.Stretch };
-        rename.Click += (_, _) => UiGuard.Run(_session, "챕터 이름 바꾸기", () =>
-        {
-            string wanted = name.Text?.Trim() ?? string.Empty;
-
-            if (!string.Equals(wanted, current, StringComparison.Ordinal))
-            {
-                _session.Editor.UpdateChapterDisplayName(chapterId, wanted);
-                _session.SetStatus(wanted.Length == 0
-                    ? "챕터 이름을 비웠습니다 — 챕터 ID가 보입니다."
-                    : $"챕터 이름을 「{wanted}」(으)로 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
-            }
-
-            flyout.Hide();
-        });
-        panel.Children.Add(rename);
-        panel.Children.Add(MenuSeparator());
-        panel.Children.Add(BuildChapterRemoveButton(flyout, chapterId));
-
-        flyout.ShowAt(anchor);
-        name.SelectAll();
-        name.Focus();
-    }
-
-    /// <summary>
     /// 지우거나 이름을 바꾼 챕터의 옛 진행 JSON이 어떻게 됐는지 한 마디 — 바로 앞의 다시 읽기가 내보내며 걷는다
     /// (<see cref="ChapterExportService"/>). 못 걷었으면 그렇다고 말한다: 그냥 두면 게임이 없는 챕터를 계속 싣는다.
     /// </summary>
@@ -414,49 +372,23 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// [챕터 제거] — <b>두 번 눌러야 지워진다</b>. 첫 누름은 무엇이 함께 사라지는지를
-    /// 그 자리에서 말하고, 그 문장을 읽은 손이 한 번 더 누른다.
-    ///
-    /// 확인 창을 따로 띄우지 않는 이유는 창이 사실을 <b>덮기</b> 때문이다 — 이 판에는
-    /// 방금 읽던 챕터 이름과 이름 칸이 함께 있어서, 여기서 묻는 편이 무엇을 지우는지
-    /// 더 분명하다. 되돌릴 자리(되돌리기)도 같은 문장에서 말한다.
+    /// 하이어아키 챕터 줄 우클릭 「챕터 제거…」 — <b>확인 한 번</b> 뒤에 지운다(누른 줄 옆에 붙는 확인 칸 — [대본] 「에피소드 삭제…」와 같은
+    /// <see cref="ConfirmFlyout"/>). 챕터 · 판 · 조건 배관을 함께 걷는다(<see cref="ChapterDeleter"/>) — 사람이 폴더에서 손으로 지우면 절반만
+    /// 지워진다(판과 노드가 남아 이름이 겹치는 번들로 뒤늦게 터진다). 되돌리기 한 칸.
+    /// ⛔ 2026-11-18까지는 이름 칸 · [이름 바꾸기] · 두 번 누르는 [챕터 제거…]를 한 플라이아웃에 담았다(소유자 — 둘을 나눈다).
     /// </summary>
-    private Control BuildChapterRemoveButton(Flyout flyout, string chapterId)
+    private void ConfirmChapterRemoval(Control anchor, string chapterId)
     {
-        var remove = new Button
-        {
-            Content = "챕터 제거…",
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            Foreground = new SolidColorBrush(Color.FromRgb(190, 60, 60))
-        };
+        string shown = _session.Editor.FindChapter(chapterId)?.ShownName ?? chapterId;
 
-        var caution = new TextBlock
-        {
-            Text = $"'{chapterId}'의 에피소드와 [대본] 탭의 카드가 함께 사라집니다. " +
-                   "되돌리기(Ctrl+Z)로 돌아옵니다.",
-            FontSize = 10,
-            Opacity = 0.75,
-            TextWrapping = TextWrapping.Wrap,
-            IsVisible = false,
-            Margin = new Thickness(0, 2, 0, 0)
-        };
-
-        bool armed = false;
-
-        remove.Click += (_, _) =>
-        {
-            if (!armed)
+        ChapterRemoveConfirmButton = ConfirmFlyout.Show(
+            anchor,
+            _session,
+            $"챕터 「{shown}」와 그 장면 · 에피소드 · [대본] 탭의 카드가 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
+            "챕터 제거",
+            () =>
             {
-                armed = true;
-                remove.Content = "정말 제거 — 한 번 더";
-                caution.IsVisible = true;
-                return;
-            }
-
-            UiGuard.Run(_session, "챕터 제거", () =>
-            {
-                ChapterDeleter.Result result =
-                    ChapterDeleter.Delete(_session.Editor, _session.ProjectPath, chapterId);
+                ChapterDeleter.Result result = ChapterDeleter.Delete(_session.Editor, _session.ProjectPath, chapterId);
 
                 if (!result.Deleted)
                 {
@@ -466,17 +398,17 @@ public partial class MainWindow : Window
 
                 ChapterGraph.Refresh();
                 RefreshShell();
-                flyout.Hide();
-
                 _session.SetStatus(
-                    $"챕터 '{chapterId}'를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). " +
-                    "되돌리기(Ctrl+Z)로 돌아옵니다." +
+                    $"챕터 「{shown}」를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). 되돌리기(Ctrl+Z)로 돌아옵니다." +
                     StaleExportNote(result.StaleExport, chapterId));
-            });
-        };
-
-        return new StackPanel { Spacing = 2, Children = { remove, caution } };
+            },
+            closed: () => ChapterRemoveConfirmButton = null);
     }
+
+    /// <summary>
+    /// 뜬 「챕터 제거」 확인 단추 — 화면 시험의 손잡이다(플라이아웃의 팝업은 창 밖에 살아 나무를 타고 내려가 찾을 수 없다). 없으면 null.
+    /// </summary>
+    internal Button? ChapterRemoveConfirmButton { get; private set; }
 
     /// <summary>
     /// 새 프로젝트 = <b>폴더 하나</b>.고른 폴더에 고정 이름(<see cref="ProjectFolder.DefaultManifestName"/>)으로
@@ -623,13 +555,6 @@ public partial class MainWindow : Window
     // ── 화면 ────────────────────────────────────────────────────────────────
 
 
-
-    private static Control MenuSeparator() => new Border
-    {
-        Height = 1,
-        Margin = new Thickness(4, 2),
-        Background = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
-    };
 
     private void ShowSelectedNode()
     {

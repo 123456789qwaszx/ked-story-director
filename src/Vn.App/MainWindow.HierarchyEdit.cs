@@ -35,8 +35,8 @@ public partial class MainWindow
 
         switch (command)
         {
-            case HierarchyCommand.ChapterMenu:
-                ShowChapterContextFlyout(anchor, chapterId);
+            case HierarchyCommand.DeleteChapter:
+                ConfirmChapterRemoval(anchor, chapterId);
                 break;
 
             case HierarchyCommand.AddScene:

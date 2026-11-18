@@ -59,8 +59,11 @@ internal enum HierarchyCommand
     /// </summary>
     AddEpisode,
 
-    /// <summary>챕터 줄 — 이름 바꾸기 · 제거 차림(셸의 그 차림표).</summary>
-    ChapterMenu,
+    /// <summary>
+    /// 챕터 줄 — 그 챕터를 지운다(확인 한 번 뒤 — 셸이 묻는다). 이름 바꾸기는 장면 · 에피소드 줄처럼 줄 안에서 한다(2026-11-18 소유자 — ⛔ 둘을
+    /// 함께 담던 셸의 「이름 바꾸기 · 제거…」 차림표는 걷혔다).
+    /// </summary>
+    DeleteChapter,
 
     /// <summary>에피소드 줄 — 그 에피소드를 지운다.</summary>
     DeleteEpisode
@@ -819,7 +822,8 @@ public partial class StoryHierarchy : UserControl
         {
             case HierarchyKind.Chapter:
                 items.Add(new Separator());
-                items.Add(MenuItemFor("이름 바꾸기 · 제거…", HierarchyCommand.ChapterMenu, row, anchor));
+                items.Add(RenameItem(row));
+                items.Add(MenuItemFor("챕터 제거…", HierarchyCommand.DeleteChapter, row, anchor));
                 break;
 
             // ⛔ 「장면 풀기」 · 「장면에서 빼기」는 걷었다(2026-11-17 — 장면 없는 에피소드를 만든다). 옮기기는 다른 장면 줄로 끌어 놓는다.
@@ -887,6 +891,13 @@ public partial class StoryHierarchy : UserControl
             _rows.FirstOrDefault(row => string.Equals(row.Key, key, StringComparison.Ordinal)) is not { } row ||
             row.Kind is HierarchyKind.Project or HierarchyKind.Branch)
         {
+            return;
+        }
+
+        // 이미 그 줄의 이름 칸이 열려 있으면 그대로 둔다 — 다시 세우면 그 칸이 판에서 빠지며 「없던 일로」가 되어 닫힌다.
+        if (string.Equals(_renamingKey, key, StringComparison.Ordinal) && RenameBox is not null)
+        {
+            RenameBox.Focus();
             return;
         }
 

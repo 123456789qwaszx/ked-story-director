@@ -44,7 +44,7 @@ public sealed class HierarchyEditTests : IDisposable
         string[] adds = ["챕터 추가", "장면 추가"];
 
         Assert.Equal(["챕터 추가"], Headers(tree, StoryHierarchy.ProjectKey));
-        Assert.Equal([.. adds, "이름 바꾸기 · 제거…"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
+        Assert.Equal([.. adds, "이름 바꾸기", "챕터 제거…"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
         Assert.Equal([.. adds, "에피소드 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
         Assert.Equal(
             [.. adds, "이름 바꾸기", "에피소드 지우기"],
@@ -382,6 +382,39 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Null(tree.RenameBox);                                   // 이름 칸은 없던 일로 닫혔다
         Assert.Equal("a", Chapter(session).FindEpisode("a")!.Title);   // 이름은 그대로다
         Assert.Equal(StoryHierarchy.EpisodeKey("ch01", "root"), tree.Selection?.Key);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 챕터_줄의_이름_바꾸기는_줄_안에서_하고_제거는_한_번_확인한_뒤_지운다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-18 소유자 — 「이름 바꾸기 · 제거…」를 나눈다. 이름 바꾸기는 장면 · 에피소드와 같이 줄 안에서, 제거만 한 번 확인한다.
+        (MainWindow window, StoryHierarchy tree) = Open();
+        AuthoringSession session = window.SessionProbe;
+        string key = StoryHierarchy.ChapterKey("ch02");
+
+        Click(tree, key, "이름 바꾸기");
+        Assert.NotNull(tree.RenameBox);   // 줄 안의 이름 칸 — 셸의 플라이아웃이 아니다
+        Rename(tree, key, "축제 당일", Key.Enter);
+        Assert.Equal("축제 당일", session.Editor.FindChapter("ch02")!.DisplayName);
+
+        // 제거 — 차림표를 누르면 확인 칸만 선다(아직 지우지 않는다).
+        Click(tree, key, "챕터 제거…");
+        Assert.NotNull(session.Editor.FindChapter("ch02"));
+        Button confirm = window.ChapterRemoveConfirmButton!;
+        Assert.Equal("챕터 제거", confirm.Content);
+
+        long before = session.Editor.Revision;
+        confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(session.Editor.FindChapter("ch02"));
+        Assert.Null(EpisodeNaming.BoardOf(session.Project, "ch02"));
+        Assert.DoesNotContain(tree.Rows, row => row.Key == key);
+        Assert.Equal(before + 1, session.Editor.Revision);   // 되돌리기 한 칸
+
+        session.Editor.Undo();
+        Assert.NotNull(session.Editor.FindChapter("ch02"));
 
         window.Close();
     });
