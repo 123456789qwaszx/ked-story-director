@@ -47,4 +47,5 @@
 | 날 | 단계 | 커밋 | 메모 |
 |---|---|---|---|
 | 11-18 | K0 | 7b93d3e3 | 지시서 |
-| 11-18 | K1 | (이 커밋) | `HierarchyDock` → `ColumnDock`(이름 · 설명만 일반화, 시험 `ColumnDockTests`). 두 탭의 오른쪽 기둥: 탭 줄 오른쪽 끝 `FoldSideButton`(「›」) · 접힌 띠 `SideStrip`(「‹」 + 세로 글 「인스펙터 · 화자 · 조건 및 스탯」) · 이름 붙인 `SideSplitter` · 여는 칸 `SideOpen` → `SideDock`. 셸이 두 탭을 맞추고 앱 설정 `SideFolded`에 기억(하이어아키와 따로). 시험 — 접기 · 띠 · 손잡이 걷기 · 두 탭 함께 · 하이어아키는 그대로 · 다음 창도 접힘 · 끌어 둔 폭으로 펴기. 눈으로 — 편 것 · 접은 것. App 467 |
+| 11-18 | K1 | cc573705 | `HierarchyDock` → `ColumnDock`(이름 · 설명만 일반화, 시험 `ColumnDockTests`). 두 탭의 오른쪽 기둥: 탭 줄 오른쪽 끝 `FoldSideButton`(「›」) · 접힌 띠 `SideStrip`(「‹」 + 세로 글 「인스펙터 · 화자 · 조건 및 스탯」) · 이름 붙인 `SideSplitter` · 여는 칸 `SideOpen` → `SideDock`. 셸이 두 탭을 맞추고 앱 설정 `SideFolded`에 기억(하이어아키와 따로). 시험 — 접기 · 띠 · 손잡이 걷기 · 두 탭 함께 · 하이어아키는 그대로 · 다음 창도 접힘 · 끌어 둔 폭으로 펴기. 눈으로 — 편 것 · 접은 것. App 467 |
+| 11-18 | K3 | (이 커밋) | K2보다 먼저 했다(단축키 조사를 기다리는 동안 — 서로 기대지 않는다). 앱 설정 `ShowMinimap`(처음 참 — 칸이 없는 옛 설정도 참) · `AuthoringSession.ShowMinimap` · `SetShowMinimap` · `ShowMinimapChanged`. [대본] 판 `ApplyShowMinimap` — `MinimapCanvas`만 걷고 배율 줄(`ZoomBar`)은 남긴다(지도가 없으면 위 구분선도 걷는다, 배율 글 앞에 틈). 설정 창 「기타」 묶음(머리 — 이 PC의 앱 설정 · 되돌리기 없음) · `MinimapCheck` — [확인]이 반영, [취소]는 버린다. 시험 — 처음 켜짐 · 취소는 버림 · 확인하면 지도만 걷힘 · 되돌리기 없음 · 앱 설정 · 다시 열면 꺼짐 · 새 창도 꺼짐 · 다시 켜기. 눈으로 — 설정 창 · 지도 없는 배율 줄. App 468 |

@@ -333,6 +333,68 @@ public sealed class SettingsWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 기타_묶음의_미니맵을_끄고_확인하면_대본_판의_지도가_걷히고_다음에도_꺼져_있다() => HeadlessUi.Run(() =>
+    {
+        // 「기타」 — 이 PC의 앱 설정이다(2026-11-18 소유자 · side-fold K3). 끄면 지도만 걷고 배율 줄은 남는다.
+        AppSettingsService.SaveShowMinimap(true);
+
+        try
+        {
+            (MainWindow window, AuthoringSession session) = Open();
+            GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+            Canvas map = graph.FindControl<Canvas>("MinimapCanvas")!;
+            Assert.True(map.IsVisible);
+
+            // 취소는 버린다.
+            SettingsWindow settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(settings.MinimapCheck.IsChecked);
+            settings.MinimapCheck.IsChecked = false;
+            settings.CancelButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(map.IsVisible);
+            Assert.True(session.ShowMinimap);
+
+            // 확인하면 걷힌다 — 배율 줄은 남는다. 프로젝트는 바뀌지 않는다(되돌리기 없음).
+            settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            settings.MinimapCheck.IsChecked = false;
+            settings.ConfirmButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(map.IsVisible);
+            Assert.True(graph.FindControl<Button>("FitAllButton")!.IsEffectivelyVisible);
+            Assert.False(session.ShowMinimap);
+            Assert.False(session.Editor.CanUndo);
+            Assert.False(AppSettingsService.LoadShowMinimap());
+
+            // 다시 열면 꺼진 채로 보인다 · 새 창도 꺼진 채로 선다.
+            settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(settings.MinimapCheck.IsChecked);
+            settings.Close();
+            var next = new MainWindow();
+            next.Show();
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(next.FindControl<GraphEditorView>("Graph")!.FindControl<Canvas>("MinimapCanvas")!.IsVisible);
+            next.Close();
+
+            // 다시 켜면 선다.
+            settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            settings.MinimapCheck.IsChecked = true;
+            settings.ConfirmButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(map.IsVisible);
+
+            window.Close();
+        }
+        finally
+        {
+            AppSettingsService.SaveShowMinimap(true);   // 설정은 이 시험 프로세스가 함께 쓴다
+        }
+    });
+
     private (MainWindow Window, AuthoringSession Session) Open()
     {
         Directory.CreateDirectory(_directory);

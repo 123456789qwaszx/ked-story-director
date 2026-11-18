@@ -183,6 +183,16 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>[대본] 판의 미니맵을 보이는가 (설정 창 「기타」 — side-fold K3). 처음에는 보인다.</summary>
+    public static bool LoadShowMinimap() => Load(SettingsPath).ShowMinimap;
+
+    public static void SaveShowMinimap(bool show)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.ShowMinimap = show;
+        Save(settings);
+    }
+
     /// <summary>하이어아키 기둥을 접어 두었는가 (두 그래프가 함께 쓴다).</summary>
     public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
 
@@ -323,6 +333,9 @@ internal static class AppSettingsService
 
         /// <summary>[구성] 탭의 「ID로 보기」 — <see cref="LoadShowIds"/>. 처음(이 칸이 없는 설정 파일)에는 켜져 있다.</summary>
         public bool ShowIds { get; set; } = true;
+
+        /// <summary>[대본] 판의 미니맵 — <see cref="LoadShowMinimap"/>. 처음(이 칸이 없는 설정 파일)에는 보인다.</summary>
+        public bool ShowMinimap { get; set; } = true;
     }
 
     /// <summary>

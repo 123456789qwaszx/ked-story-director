@@ -125,7 +125,8 @@
                 </LayoutTransformControl>
             </ScrollViewer>
 
-            <!-- 미니맵 — 우측 하단에 전체 맵과 현재 배율. 클릭·드래그로 뷰포트 이동. 판과 같은 칸에 겹쳐 선다. -->
+            <!-- 미니맵 — 우측 하단에 전체 맵과 현재 배율. 클릭·드래그로 뷰포트 이동. 판과 같은 칸에 겹쳐 선다.
+                 설정 창 「기타」에서 끄면 지도(MinimapCanvas)만 걷고 배율 줄은 남는다 — 길찾기 단추까지 잃지 않게(2026-11-18 소유자 · side-fold K3). -->
             <Border Grid.Column="2"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
@@ -142,7 +143,7 @@
                             Background="Transparent"
                             Cursor="Hand" />
                     <!-- 전체 보기·배율 프리셋 — 큰 판의 길찾기. -->
-                    <Border BorderBrush="#33808080" BorderThickness="0,1,0,0" Padding="4,2">
+                    <Border x:Name="ZoomBar" BorderBrush="#33808080" BorderThickness="0,1,0,0" Padding="4,2">
                         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
                             <Button Grid.Column="0" x:Name="FitAllButton" Content="전체"
                                     FontSize="9" Padding="5,1" Margin="0,0,3,0" />
@@ -154,6 +155,7 @@
                                     FontSize="9" Padding="4,1" />
                             <TextBlock Grid.Column="4"
                                        x:Name="ZoomText"
+                                       Margin="6,0,0,0"
                                        FontSize="10"
                                        Opacity="0.7"
                                        HorizontalAlignment="Right"

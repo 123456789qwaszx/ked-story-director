@@ -87,6 +87,15 @@ internal sealed class AuthoringSession
     /// <summary>[구성] 탭의 「ID로 보기」가 바뀌었다 — [구성] 판 · 하이어아키가 다시 선다.</summary>
     public event EventHandler? ShowIdsChanged;
 
+    /// <summary>
+    /// [대본] 판의 미니맵(우하단 지도)을 보이는가 — 설정 창 「기타」(처음에는 보인다 · 2026-11-18 소유자 · side-fold K3). 끄면 지도만 걷고 배율 줄은
+    /// 남는다. 화면 편의라 사용자 설정에 기억한다(앱 전체).
+    /// </summary>
+    public bool ShowMinimap { get; private set; } = AppSettingsService.LoadShowMinimap();
+
+    /// <summary>미니맵을 켜거나 껐다 — [대본] 판이 지도를 세우거나 걷는다.</summary>
+    public event EventHandler? ShowMinimapChanged;
+
     public string? SelectedNodeId { get; private set; }
 
     public StoryNode? SelectedNode => Project.FindNode(SelectedNodeId);
@@ -470,6 +479,19 @@ internal sealed class AuthoringSession
         ShowIds = show;
         AppSettingsService.SaveShowIds(show);
         ShowIdsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>[대본] 판의 미니맵을 보이거나(참) 걷는다 — 기억하고 [대본] 판에 알린다.</summary>
+    internal void SetShowMinimap(bool show)
+    {
+        if (ShowMinimap == show)
+        {
+            return;
+        }
+
+        ShowMinimap = show;
+        AppSettingsService.SaveShowMinimap(show);
+        ShowMinimapChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>장면 하나를 접거나 편다 — 판 접기와 같은 알림으로 그래프 · 하이어아키가 다시 선다.</summary>

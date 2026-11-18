@@ -579,7 +579,22 @@ public partial class GraphEditorView : UserControl
             }
         };
 
+        // 미니맵은 설정 창 「기타」가 켜고 끈다(side-fold K3).
+        session.ShowMinimapChanged += (_, _) => ApplyShowMinimap();
+        ApplyShowMinimap();
+
         RefreshDeleteButton();
+    }
+
+    /// <summary>
+    /// 미니맵을 세우거나 걷는다(<see cref="AuthoringSession.ShowMinimap"/>). 걷는 것은 지도뿐이다 — [전체 · 50 · 100 · 150] 배율 줄은 남는다.
+    /// 지도가 없으면 배율 줄 위의 구분선도 걷는다.
+    /// </summary>
+    private void ApplyShowMinimap()
+    {
+        bool show = _session?.ShowMinimap != false;
+        MinimapCanvas.IsVisible = show;
+        ZoomBar.BorderThickness = show ? new Thickness(0, 1, 0, 0) : default;
     }
 
     /// <summary>
