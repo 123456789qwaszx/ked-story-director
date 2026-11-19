@@ -31,7 +31,7 @@ public sealed class FirstChapterTests : IDisposable
     [Fact]
     public void 대본_빈_판의_단추가_첫_챕터를_세우고_사라진다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = OpenEmpty(tab: 1);
+        (MainWindow window, AuthoringSession session) = OpenEmpty(tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         StackPanel empty = graph.FindControl<StackPanel>("EmptyBoardPanel")!;
         Assert.True(empty.IsVisible);
@@ -60,7 +60,7 @@ public sealed class FirstChapterTests : IDisposable
     [Fact]
     public void 구성_빈_판의_단추는_대본_탭으로_데려가_첫_챕터를_세운다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = OpenEmpty(tab: 0);
+        (MainWindow window, AuthoringSession session) = OpenEmpty(tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Button first = view.FindControl<Button>("EmptyFirstChapterButton")!;
         Assert.True(first.IsVisible);
@@ -76,7 +76,7 @@ public sealed class FirstChapterTests : IDisposable
             window.FindControl<GraphEditorView>("Graph")!.HierarchyView.Selection);
 
         // [구성]으로 돌아오면 판이 서 있다 — 가려진 동안의 그리기는 탭이 보일 때 한다(finishing FX3).
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 0;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
         Dispatcher.UIThread.RunJobs();
         Assert.False(first.IsVisible);
 
@@ -87,7 +87,7 @@ public sealed class FirstChapterTests : IDisposable
     public void 챕터가_모두_없어지면_구성_인스펙터에_사라진_챕터가_남지_않는다() => HeadlessUi.Run(() =>
     {
         // ⛔ 2026-11-18까지는 판을 그릴 챕터가 없으면 그리기가 일찍 돌아 인스펙터를 다시 세우지 않았다 — 지운 챕터의 이름 · 챕터ID가 남았다(소유자 그림).
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(Path.Combine(_directory, "two"), tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(Path.Combine(_directory, "two"), tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch01"));
         view.ShowSideTab(SideTab.Inspector);

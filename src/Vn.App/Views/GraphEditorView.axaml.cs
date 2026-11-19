@@ -2346,7 +2346,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 프로젝트를 새로 열었거나 새로 만들었으면 <b>첫 화면</b>을 활성 챕터에 맞춘다. 탭이 안 보일 때 열었으면(앱은 [구성] 탭에서 열린다)
+    /// 프로젝트를 새로 열었거나 새로 만들었으면 <b>첫 화면</b>을 활성 챕터에 맞춘다. 탭이 안 보일 때 열었으면([구성] 탭을 보던 중)
     /// [대본] 탭이 처음 보일 때 맞춘다. 되돌리기 · 다시 그리기로는 다시 맞추지 않는다.
     /// </summary>
     private void FitNewProject()

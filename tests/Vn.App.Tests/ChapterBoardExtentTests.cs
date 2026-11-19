@@ -32,7 +32,7 @@ public sealed class ChapterBoardExtentTests : IDisposable
     [Fact]
     public void 대본_탭의_먼_자리에_세운_카드도_구성_판은_그_챕터만_감싼다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         Assert.Null(session.CreateChapter("ch09"));
         string board = session.ActiveFileId!;
 
@@ -58,7 +58,7 @@ public sealed class ChapterBoardExtentTests : IDisposable
     public void 이미_먼_자리에_적힌_에피소드도_판_원점으로_당겨_그린다() => HeadlessUi.Run(() =>
     {
         // 고치기 전에 만든 챕터 — 에피소드가 카드 자리(먼 양수)를 그대로 지고 있다.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.MoveEpisodes("ch02", new Dictionary<string, (double X, double Y)>
         {
             ["x"] = (2600, 1800),
@@ -80,7 +80,7 @@ public sealed class ChapterBoardExtentTests : IDisposable
     [Fact]
     public void 전체_보기는_큰_챕터를_한_화면에_넣고_작은_챕터는_키우지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.MoveEpisodes("ch02", new Dictionary<string, (double X, double Y)>
         {
             ["x"] = (0, 0),

@@ -31,7 +31,7 @@ public sealed class BoardCardReuseTests : IDisposable
     [Fact]
     public void 손놀림마다_그대로_둔_판이_새로_지은_판과_같다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string root = Card(session, "root");
         string a = Card(session, "a");
@@ -98,7 +98,7 @@ public sealed class BoardCardReuseTests : IDisposable
     public void 넣지_않은_글이_든_칸은_초점이_없으면_새로_짓고_초점이_있으면_그_글을_지킨다() => HeadlessUi.Run(() =>
     {
         // 지금까지처럼 — 판을 다시 그리면 초점 없는 칸은 모델의 글로 돌아가고, 쓰던 칸은 그 글과 커서를 지킨다.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string a = Card(session, "a");
         string b = Card(session, "b");

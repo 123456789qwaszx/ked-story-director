@@ -203,7 +203,7 @@ public sealed class BoardWheelTests : IDisposable
 
     private (MainWindow Window, GraphEditorView Graph, ScrollViewer Scroll) Open()
     {
-        (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         return (window, graph, graph.FindControl<ScrollViewer>("GraphScroll")!);
     }

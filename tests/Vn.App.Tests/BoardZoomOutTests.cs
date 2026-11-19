@@ -29,7 +29,7 @@ public sealed class BoardZoomOutTests : IDisposable
     [Fact]
     public void 판이_화면보다_작아질_만큼_줄여도_판은_화면_왼위에_붙어_있다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         session.Editor.SetBoardSize(4000, 4000);   // 가장 작은 판 — 10%면 400 × 400으로 화면보다 작다
         Dispatcher.UIThread.RunJobs();
 

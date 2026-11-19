@@ -19,7 +19,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class GraphBranchEdgeTests
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     [Fact]
     public void 분기_선을_우클릭하면_분기만_지워지고_다녀가던_카드는_남는다() => HeadlessUi.Run(() =>

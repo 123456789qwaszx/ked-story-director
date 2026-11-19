@@ -201,7 +201,7 @@ public sealed class CardResizeTests : IDisposable
     /// <summary>진짜 창의 [대본] 탭 — 셸이 편집을 받아 판을 고치는 길까지 함께 돈다(<see cref="HierarchyFixture"/>).</summary>
     private (GraphEditorView Graph, AuthoringSession Session) Show()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         return (window.FindControl<GraphEditorView>("Graph")!, session);
     }
 

@@ -19,8 +19,8 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class CardDoubleClickTests : IDisposable
 {
-    private const int ChapterTab = 0;
-    private const int DirectorTab = 1;
+    private const int ChapterTab = MainTab.Structure;
+    private const int DirectorTab = MainTab.Script;
 
     private readonly string _directory = Path.Combine(
         Path.GetTempPath(), "vn-card-double-click", Guid.NewGuid().ToString("N"));

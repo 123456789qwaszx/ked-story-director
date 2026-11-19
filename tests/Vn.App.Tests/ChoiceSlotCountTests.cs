@@ -77,7 +77,7 @@ public sealed class ChoiceSlotCountTests : IDisposable
     [Fact]
     public void 인스펙터의_체크로_켜고_끄며_다음에_열어도_기억한다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
         session.Select(card.Id);
         Dispatcher.UIThread.RunJobs();
@@ -115,7 +115,7 @@ public sealed class ChoiceSlotCountTests : IDisposable
     [Fact]
     public void 구성_탭_툴바의_체크는_빈_점과_길_없는_입구_점을_감추고_대본_탭의_칸은_건드리지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
         Dispatcher.UIThread.RunJobs();
 

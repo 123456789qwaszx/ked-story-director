@@ -92,14 +92,16 @@
             <TextBlock x:Name="StatusText" FontSize="11" TextWrapping="Wrap" />
         </Border>
 
-        <!-- 탭 둘 — [구성](챕터 그래프)과 [대본](연출 그래프). 틀은 같다: 왼쪽 하이어아키 · 가운데 판 · 오른쪽 탭 셋(인스펙터 · 화자 ·
+        <!-- 탭 둘 — [대본](연출 그래프)과 [구성](챕터 그래프). 틀은 같다: 왼쪽 하이어아키 · 가운데 판 · 오른쪽 탭 셋(인스펙터 · 화자 ·
              조건 및 스탯). 두 기둥은 접히고(ColumnDock) 두 탭이 함께 접힌다. 하이어아키의 접힘과 선택도 두 탭이 함께 쓴다.
              하는 일은 나뉜다: [대본]은 챕터 · 장면 · 에피소드를 더하고 지우고 이름을 고치며, 카드를 잇고(선택지 · 분기) 대사를 쓴다.
              [구성]은 ID · 조건 식 · 스탯 · 선택지의 표시/해금 조건과 스탯변화 · 캐릭터 키를 정한다(하이어아키는 읽기 전용).
              둘 다 세션의 편집기 한 벌로 고친다.
-             창을 열면 [구성]이 서고, 새 프로젝트를 만들어도 [구성]으로 온다.
+             탭 순서가 작업 순서다 — 먼저 [대본]에서 화를 만들고 쓰고 잇고, 그다음 [구성]에서 조건 · 스탯을 붙인다. 그래서 [대본]이 첫째이고 창을
+             열거나 새 프로젝트를 만들면 [대본]이 선다(2026-11-19 소유자 · usability UX23). ⛔ 2026-11-19까지는 [구성]이 첫째였다 — 이야기를
+             챕터 그래프에서 쓰던 때(run-log 「작업 순서가 곧 탭 순서」)의 순서로, 작가는 켤 때마다 [대본]을 눌러야 했다.
              무대 프리뷰는 연출 층과 함께 ked-story-compositor의 몫이다.
-             주의: 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
+             주의: 둘의 순서는 `MainChromeTests`가 고정하고 있다 — 시험은 탭을 번호가 아니라 이름(MainTab)으로 고른다. -->
         <!-- 탭 줄은 머리만 진다 — 두 판은 그 아래 한 칸에 늘 붙어 서고 고른 탭의 판만 보인다(MainWindow.ShowTab · 2026-11-19 · usability UX14).
              ⛔ 그 전에는 판이 탭 안에 들어 있어, 탭을 바꾸면 안 보이는 탭의 판이 화면 나무에서 떨어졌다가 돌아올 때 다시 붙었다 — 카드
              160장의 글 칸이 모양(템플릿)을 다시 입고 다시 재느라 [대본] 탭으로 돌아오는 데 1초가 넘었다. -->
@@ -113,13 +115,13 @@
                     <Setter Property="Padding" Value="12,0" />
                 </Style>
             </TabControl.Styles>
-            <TabItem x:Name="ChapterTabItem" Header="구성" />
             <TabItem x:Name="GraphTabItem" Header="대본" />
+            <TabItem x:Name="ChapterTabItem" Header="구성" />
         </TabControl>
 
         <Panel x:Name="TabBodies">
-            <views:ChapterGraphView x:Name="ChapterGraph" />
-            <views:GraphEditorView x:Name="Graph" IsVisible="False" />
+            <views:GraphEditorView x:Name="Graph" />
+            <views:ChapterGraphView x:Name="ChapterGraph" IsVisible="False" />
         </Panel>
     </DockPanel>
 </Window>

@@ -120,7 +120,7 @@ public sealed class HierarchyEditTests : IDisposable
     [Fact]
     public void 구성_탭_하이어아키는_고르기만_하고_우클릭_이름_고치기_끌기가_없다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         StoryHierarchy tree = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
         tree.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
@@ -551,14 +551,14 @@ public sealed class HierarchyEditTests : IDisposable
         Assert.Equal(3, Chapter(session).Episodes.Count);
 
         // [구성] 탭 — 하지 않는다.
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 0;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
         Dispatcher.UIThread.RunJobs();
         window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<ComboBox>("ChapterCombo")!.Focus();   // 글 칸 밖
         PressDelete();
         Assert.Equal(3, Chapter(session).Episodes.Count);
 
         // [대본] 탭 · 에피소드를 고른 채 — 지운다. 한 칸이고 되돌리면 돌아온다.
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 1;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Script;
         Dispatcher.UIThread.RunJobs();
         Pick(tree, StoryHierarchy.EpisodeKey("ch01", "a"));
         before = session.Editor.Revision;
@@ -622,7 +622,7 @@ public sealed class HierarchyEditTests : IDisposable
     /// <summary>[대본] 탭을 연 창과 그 탭의 하이어아키 — 고치는 하이어아키다.</summary>
     private (MainWindow Window, StoryHierarchy Tree) Open()
     {
-        (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         return (window, window.FindControl<GraphEditorView>("Graph")!.HierarchyView);
     }
 

@@ -19,7 +19,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class DirectorHierarchyTests : IDisposable
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     private readonly string _directory = Path.Combine(
         Path.GetTempPath(), "vn-director-hierarchy", Guid.NewGuid().ToString("N"));
@@ -164,7 +164,7 @@ public sealed class DirectorHierarchyTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         // 보고는 [구성] 탭에 선다 — 가려진 동안의 그리기는 탭이 보일 때 한다(finishing FX3).
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 0;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
         Dispatcher.UIThread.RunJobs();
 
         string header = (string)chapterGraph.FindControl<Expander>("DiagnosticsExpander")!.Header!;

@@ -154,7 +154,7 @@ public sealed class CardFitTests : IDisposable
 
     private (GraphEditorView Graph, AuthoringSession Session) Show()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         return (window.FindControl<GraphEditorView>("Graph")!, session);
     }
 

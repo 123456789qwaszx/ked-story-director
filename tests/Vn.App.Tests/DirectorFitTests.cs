@@ -33,7 +33,7 @@ public sealed class DirectorFitTests : IDisposable
     [Fact]
     public void 카드를_고르고_F를_누르면_100퍼센트로_그_카드가_화면_가운데에_선다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         string b = EpisodeNaming.CardFor(session.Project, "ch01", "b")!.Id;
         session.Editor.MoveNodes(new Dictionary<string, (double X, double Y)> { [b] = (5000, 3000) });   // 판 한가운데 — 가장자리에 막히지 않게
         session.Select(b);
@@ -57,7 +57,7 @@ public sealed class DirectorFitTests : IDisposable
     [Fact]
     public void 장면을_고르고_F를_누르면_그_장면이_화면에_들어오고_글_칸에서는_글자다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         string b = EpisodeNaming.CardFor(session.Project, "ch01", "b")!.Id;
         session.Editor.MoveNodes(new Dictionary<string, (double X, double Y)> { [b] = (9000, 6000) });   // hall 장면을 멀리
         Dispatcher.UIThread.RunJobs();

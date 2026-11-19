@@ -129,7 +129,7 @@ public sealed class ChapterRubberBandTests : IDisposable
     /// </summary>
     private (MainWindow Window, ChapterGraphView View, AuthoringSession Session) Show()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "교무실로 간다");
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "도서관으로 간다");
         DialogueNode root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;

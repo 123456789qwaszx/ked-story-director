@@ -563,8 +563,9 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 그 폴더에 새 프로젝트를 깐다 — 이미 프로젝트가 있는 폴더면 그것을 연다. 새 프로젝트는 [구성] 탭에서 시작한다: 탭 순서가
-    /// 작업 순서라(구성 → 대본) 뼈대를 짜는 자리가 첫걸음이다.
+    /// 그 폴더에 새 프로젝트를 깐다 — 이미 프로젝트가 있는 폴더면 그것을 연다. 새 프로젝트는 [대본] 탭에서 시작한다: 탭 순서가
+    /// 작업 순서라(대본 → 구성) 화를 만들고 쓰는 자리가 첫걸음이다(usability UX23 · ⛔ [구성]에서 시작했다 — 빈 [구성] 판의 첫 챕터 단추는
+    /// 어차피 [대본]으로 데려갔다).
     /// </summary>
     internal void CreateProjectIn(string folder)
     {
@@ -578,7 +579,7 @@ public partial class MainWindow : Window
         _session.NewProject();
         _session.Save(ProjectFolder.NewManifestPathIn(folder));
         RefreshShell();
-        MainTabs.SelectedItem = ChapterTabItem;
+        MainTabs.SelectedItem = GraphTabItem;
     }
 
     /// <summary>열기 = 폴더 고르기.폴더 안의 유일한 manifest를 찾는다 — 없거나 둘이면 사유를 말한다.</summary>

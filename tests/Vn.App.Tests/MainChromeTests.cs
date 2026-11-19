@@ -19,18 +19,25 @@ namespace Vn.App.Tests;
 public sealed class MainChromeTests
 {
     [Fact]
-    public void 구성이_첫_탭이고_그다음이_대본이며_창을_열면_구성이_선다() => HeadlessUi.Run(() =>
+    public void 대본이_첫_탭이고_그다음이_구성이며_창을_열면_대본이_선다() => HeadlessUi.Run(() =>
     {
+        // 탭 순서가 작업 순서다 — 먼저 [대본]에서 화를 만들고 쓰고 잇고, 그다음 [구성]에서 조건 · 스탯을 붙인다(2026-11-19 소유자 · usability UX23).
+        // ⛔ [구성]이 첫째였다(이야기를 챕터 그래프에서 쓰던 때의 순서) — 작가는 켤 때마다 [대본]을 눌러야 했다.
         var window = new MainWindow();
         window.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var tabs = window.FindControl<TabControl>("MainTabs")!;
 
-        Assert.Equal("구성", ((TabItem)tabs.Items[0]!).Header);
-        Assert.Equal("대본", ((TabItem)tabs.Items[1]!).Header);
+        Assert.Equal("대본", ((TabItem)tabs.Items[0]!).Header);
+        Assert.Equal("구성", ((TabItem)tabs.Items[1]!).Header);
         Assert.Equal(2, tabs.Items.Count);
-        Assert.Same(window.FindControl<TabItem>("ChapterTabItem"), tabs.SelectedItem);
+        Assert.Same(window.FindControl<TabItem>("GraphTabItem"), tabs.SelectedItem);
+        Assert.True(window.FindControl<GraphEditorView>("Graph")!.IsVisible);
+
+        // 시험이 탭을 고르는 이름(MainTab)이 이 차례와 맞는다.
+        Assert.Same(window.FindControl<TabItem>("GraphTabItem"), tabs.Items[MainTab.Script]);
+        Assert.Same(window.FindControl<TabItem>("ChapterTabItem"), tabs.Items[MainTab.Structure]);
 
         window.Close();
     });
@@ -50,15 +57,15 @@ public sealed class MainChromeTests
         graph.DetachedFromVisualTree += (_, _) => detached++;
         chapter.DetachedFromVisualTree += (_, _) => detached++;
 
-        Assert.Equal((true, false), (chapter.IsVisible, graph.IsVisible));   // 창을 열면 [구성]
+        Assert.Equal((false, true), (chapter.IsVisible, graph.IsVisible));   // 창을 열면 [대본]
 
-        tabs.SelectedIndex = 1;
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Equal((false, true), (chapter.IsVisible, graph.IsVisible));
-
-        tabs.SelectedIndex = 0;
+        tabs.SelectedIndex = MainTab.Structure;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Assert.Equal((true, false), (chapter.IsVisible, graph.IsVisible));
+
+        tabs.SelectedIndex = MainTab.Script;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal((false, true), (chapter.IsVisible, graph.IsVisible));
 
         Assert.Equal(0, detached);
         Assert.True(graph.IsAttachedToVisualTree() && chapter.IsAttachedToVisualTree());
@@ -97,6 +104,7 @@ public sealed class MainChromeTests
         TabItem tab = window.FindControl<TabItem>("ChapterTabItem")!;
         Assert.Equal(18, tab.FontSize);
         Assert.True(tab.Bounds.Height <= 36, $"탭 머리 높이 {tab.Bounds.Height}");
+        SelectTab(window, "ChapterTabItem");   // [구성] 판의 툴바를 잰다(창은 [대본]으로 열린다 — UX23)
         ComboBox combo = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<ComboBox>("ChapterCombo")!;
         double top = combo.TranslatePoint(new Avalonia.Point(0, 0), window)!.Value.Y;
         Assert.True(top <= 90, $"툴바가 창 위에서 {top}에 선다");
@@ -156,8 +164,9 @@ public sealed class MainChromeTests
     });
 
     [Fact]
-    public void 새_프로젝트는_대본_탭에_있다가_만들어도_구성에서_시작한다() => HeadlessUi.Run(() =>
+    public void 새_프로젝트는_구성_탭에_있다가_만들어도_대본에서_시작한다() => HeadlessUi.Run(() =>
     {
+        // 탭 순서가 작업 순서다 — 화를 만들고 쓰는 [대본]이 첫걸음이다(usability UX23 · ⛔ [구성]에서 시작했다).
         string folder = Path.Combine(Path.GetTempPath(), "vn-new-project-tab", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
 
@@ -166,13 +175,13 @@ public sealed class MainChromeTests
             var window = new MainWindow();
             window.Show();
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-            SelectTab(window, "GraphTabItem");
+            SelectTab(window, "ChapterTabItem");
 
             window.CreateProjectIn(folder);
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
             Assert.NotNull(window.SessionProbe.ProjectPath);
-            Assert.Same(window.FindControl<TabItem>("ChapterTabItem"), window.FindControl<TabControl>("MainTabs")!.SelectedItem);
+            Assert.Same(window.FindControl<TabItem>("GraphTabItem"), window.FindControl<TabControl>("MainTabs")!.SelectedItem);
 
             window.Close();
         }
@@ -256,11 +265,15 @@ public sealed class MainChromeTests
         window.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        SelectTab(window, "ChapterTabItem"); // 챕터 그래프 — 없다
-        Assert.Empty(Live<DialogueNodeEditor>(window));
+        // 두 판은 늘 화면 나무에 붙어 있다(UX14) — 곁기둥은 연출 그래프 안에 하나만 서고, [구성]을 보는 동안에는 보이지 않는다.
+        SelectTab(window, "ChapterTabItem"); // 챕터 그래프 — 안 보인다
+        DialogueNodeEditor editor = Assert.Single(Live<DialogueNodeEditor>(window));
+        Assert.False(editor.IsEffectivelyVisible);
 
         SelectTab(window, "GraphTabItem");
-        Assert.Single(Live<DialogueNodeEditor>(window));
+        Assert.Same(editor, Assert.Single(Live<DialogueNodeEditor>(window)));
+        Assert.Contains(window.FindControl<GraphEditorView>("Graph")!, editor.GetVisualAncestors());
+        Assert.DoesNotContain(window.FindControl<ChapterGraphView>("ChapterGraph")!, editor.GetVisualAncestors());
 
         window.Close();
     });
@@ -280,7 +293,9 @@ public sealed class MainChromeTests
         Assert.Null(window.FindControl<StackPanel>("FileListPanel"));
         Assert.Null(window.FindControl<Button>("AddFileButton"));
 
-        // 새 자리는 챕터 그래프 뷰 안이고, 셸이 그 손잡이로 하이어아키(2026-10-30 — 챕터 목록을 이었다)를 짓는다.
+        // 새 자리는 챕터 그래프 뷰 안이고, 셸이 그 손잡이로 하이어아키(2026-10-30 — 챕터 목록을 이었다)를 짓는다. 하이어아키는 보이는 탭의
+        // 판에 붙는다 — [구성]을 보고 본다(창은 [대본]으로 열린다 — UX23).
+        SelectTab(window, "ChapterTabItem");
         var chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Assert.Contains(chapterGraph, chapterGraph.HierarchyView.GetVisualAncestors());
         // 새 챕터 [＋]는 어디에도 없다 — [대본] 탭 하이어아키 우클릭 「챕터 추가」가 바로 세운다(ChapterAddTests).

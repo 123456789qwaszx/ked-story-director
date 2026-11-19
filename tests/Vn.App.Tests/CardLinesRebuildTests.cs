@@ -30,7 +30,7 @@ public sealed class CardLinesRebuildTests : IDisposable
     [Fact]
     public void 새_줄은_그_카드만_다시_짓고_다른_카드와_철도는_그대로다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string root = Card(session, "root");
         Border other = CardVisual(graph, Card(session, "a"));
@@ -58,7 +58,7 @@ public sealed class CardLinesRebuildTests : IDisposable
     public void 다른_카드나_선이_달라지면_그_카드만_짓지_않는다() => HeadlessUi.Run(() =>
     {
         // 그 카드만 다시 지어도 되는가 — 선(연결)이 생기거나 사라지거나, 다른 카드의 포트 · 이름 · 자리가 바뀌면 아니다.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         string root = Card(session, "root");
         GraphProjection Now() => GraphProjectionBuilder.Build(session.Project, session.ExpandedFileIds, session.CollapsedScenes);
 
@@ -82,7 +82,7 @@ public sealed class CardLinesRebuildTests : IDisposable
     public void 제목을_바꾸면_그_카드의_제목_글만_고치고_접은_상자_안이면_통째로_짓는다() => HeadlessUi.Run(() =>
     {
         // 2026-11-19 소유자 — 속도 개선 ③(usability UX15). ⛔ 제목 하나에 판을 통째로 다시 지었다 — 에피소드 160개에서 2.5초.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string a = Card(session, "a");
         Border card = CardVisual(graph, a);

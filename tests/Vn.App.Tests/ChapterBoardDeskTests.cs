@@ -158,7 +158,7 @@ public sealed class ChapterBoardDeskTests : IDisposable
     /// <summary>[구성] 탭 — ch01(root · a · hall의 b)이 한 줄로 선 작은 판. 판이 화면보다 작다.</summary>
     private (MainWindow Window, ChapterGraphView View) Open()
     {
-        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Dispatcher.UIThread.RunJobs();
         return (window, view);

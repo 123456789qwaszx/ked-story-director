@@ -29,7 +29,7 @@ public sealed class StructureIdFieldsTests : IDisposable
     [Fact]
     public void 챕터ID_칸에서_챕터를_개명하고_표시_이름_칸은_없다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.UpdateChapterDisplayName("ch01", "축제 전날");
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         view.HierarchyView.RowButton(StoryHierarchy.ChapterKey("ch01"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -51,7 +51,7 @@ public sealed class StructureIdFieldsTests : IDisposable
     [Fact]
     public void 장면ID_칸에서_장면을_개명하고_이름과_메모가_따라가며_다른_장면의_ID로는_바꾸지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.SetSceneName("ch01", "opening", "교실");
         session.Editor.SetSceneNote("ch01", "opening", "사정");
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;

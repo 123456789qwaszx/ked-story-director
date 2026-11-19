@@ -30,7 +30,7 @@ public sealed class DirectorNamesTests : IDisposable
     [Fact]
     public void 대본_탭은_이름을_구성_탭은_ID를_보인다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         session.Editor.UpdateChapterDisplayName("ch01", "축제 전날");
         session.Editor.SetSceneName("ch01", "opening", "교실");
         Dispatcher.UIThread.RunJobs();
@@ -53,7 +53,7 @@ public sealed class DirectorNamesTests : IDisposable
     [Fact]
     public void 인스펙터_머리는_이름이다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         session.Editor.UpdateChapterDisplayName("ch01", "축제 전날");
         session.Editor.SetSceneName("ch01", "opening", "교실");
         Dispatcher.UIThread.RunJobs();
@@ -93,7 +93,7 @@ public sealed class DirectorNamesTests : IDisposable
     {
         // 2026-11-18 소유자 — 「챕터이름과 장면 이름을 우측 인스펙터에서 바꿀 수 있도록 해주십시오. 에피소드와 마찬가지로.」 같은 날 — 「대본 탭에서
         // 챕터를 눌렀을 때, 조건과 스탯탭으로 넘어가도록 … 챕터 이름을 바꾸는 기능도 같이 합치고요」(chapter-pick Y1 — 챕터 이름 칸은 그 탭 맨 위로).
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         TextBox box = graph.FindControl<TextBox>("InspectorNameBox")!;
 

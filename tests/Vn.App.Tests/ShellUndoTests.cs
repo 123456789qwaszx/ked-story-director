@@ -64,8 +64,10 @@ public sealed class ShellUndoTests : IDisposable
 
         SeedProject(window, _directory);
 
-        // 첫 탭(챕터 그래프) 인스펙터의 챕터ID 칸(하이어아키의 챕터 줄) — 늘 서 있는 글자 칸이다. (화자 이름 칸은 [대본] 탭으로 옮겼다 — W3.)
-        // 챕터 줄은 「조건 및 스탯」 탭을 연다 — 사람이 「인스펙터」 탭을 누른 것처럼 옮긴다(side-tabs V1).
+        // [구성] 탭(챕터 그래프) 인스펙터의 챕터ID 칸(하이어아키의 챕터 줄) — 늘 서 있는 글자 칸이다. (화자 이름 칸은 [대본] 탭으로 옮겼다 — W3.)
+        // 챕터 줄은 「조건 및 스탯」 탭을 연다 — 사람이 「인스펙터」 탭을 누른 것처럼 옮긴다(side-tabs V1). 창은 [대본]으로 열리므로 [구성]을 고른다(UX23).
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         var chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         chapterGraph.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch01"));
         chapterGraph.ShowSideTab(SideTab.Inspector);

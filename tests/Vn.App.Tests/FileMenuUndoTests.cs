@@ -33,7 +33,7 @@ public sealed class FileMenuUndoTests : IDisposable
     [Fact]
     public void 메뉴의_되돌리기와_다시_실행은_단축키를_적고_할_것이_있을_때만_켜지며_한_칸씩_한다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         MenuItem undo = window.FindControl<MenuItem>("UndoMenuItem")!;
         MenuItem redo = window.FindControl<MenuItem>("RedoMenuItem")!;
 
@@ -70,7 +70,7 @@ public sealed class FileMenuUndoTests : IDisposable
     [Fact]
     public void 카드_글_칸에서_쓰던_중이면_메뉴의_되돌리기는_넣지_않은_글부터_걷는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string cardId = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;
         session.Editor.UpdateEpisode("ch01", "a", title: "첫째");   // 되돌릴 것이 있어 메뉴가 켜진다

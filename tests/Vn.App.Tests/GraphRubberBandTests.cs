@@ -66,7 +66,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
-        Assert.Equal(0, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);
+        Assert.Equal(MainTab.Structure, window.FindControl<TabControl>("MainTabs")!.SelectedIndex);
         Assert.True(chapterGraph.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 
         window.Close();
@@ -175,7 +175,7 @@ public sealed class GraphRubberBandTests : IDisposable
     /// </summary>
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Show()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         session.SetFileExpanded(EpisodeNaming.BoardOf(session.Project, "ch02")!.Id, expanded: false);
         session.Editor.AddChapterStat("ch01", "trust");
         session.Editor.AddEdge("ch01", "root", "b", conditionLabel: "용기", optionLabel: "교무실로 간다", statChanges: "trust +2");

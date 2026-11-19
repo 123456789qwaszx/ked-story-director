@@ -30,7 +30,7 @@ public sealed class DirectorChapterTextAmountTests : IDisposable
     [Fact]
     public void 챕터를_고르고_인스펙터_탭으로_가면_쓴_글자_수가_서고_글을_쓰면_따라간다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch01", "a")!;
         session.Editor.SetScriptLineText(card.Id, card.Script.ActiveLines.First().Id, string.Empty, "오늘은 바다에 가자.");

@@ -31,7 +31,7 @@ public sealed class WindowLeaveGestureTests : IDisposable
     [Fact]
     public void 구성_판에서_범위를_끌다_창을_떠나면_사각형을_거두고_다시_눌러도_쌓이지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         Canvas canvas = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<Canvas>("GraphCanvas")!;
         Dispatcher.UIThread.RunJobs();
 
@@ -60,7 +60,7 @@ public sealed class WindowLeaveGestureTests : IDisposable
     public void 놓음을_못_본_범위_사각형은_다음_누름이_걷는다() => HeadlessUi.Run(() =>
     {
         // 창을 떠난 줄 모르는 경우에도(놓음이 다른 데로 갔다) 새 사각형을 열 때 옛것을 걷는다 — 두 판 모두.
-        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         Canvas chapter = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<Canvas>("GraphCanvas")!;
         Press(chapter, chapter, new Point(4, 4));
         Move(chapter, new Point(40, 40));
@@ -68,7 +68,7 @@ public sealed class WindowLeaveGestureTests : IDisposable
         Release(chapter, new Point(8, 8));
         Assert.Empty(Bands(chapter));
 
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 1;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Script;
         Dispatcher.UIThread.RunJobs();
         Canvas script = window.FindControl<GraphEditorView>("Graph")!.FindControl<Canvas>("GraphCanvas")!;
         Press(script, script, new Point(4, 4));
@@ -83,7 +83,7 @@ public sealed class WindowLeaveGestureTests : IDisposable
     [Fact]
     public void 대본_판에서_선택지_점을_끌다_창을_떠나면_돌아와_누른_곳이_놓음이_되지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         Canvas canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "간다");
@@ -108,7 +108,7 @@ public sealed class WindowLeaveGestureTests : IDisposable
     [Fact]
     public void 대본_판에서_카드를_끌다_창을_떠나면_보이던_자리에서_놓는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         Canvas canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         string a = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;

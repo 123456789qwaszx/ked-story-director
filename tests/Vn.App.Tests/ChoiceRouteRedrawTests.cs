@@ -124,7 +124,7 @@ public sealed class ChoiceRouteRedrawTests : IDisposable
 
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Open()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         return (window, session, window.FindControl<GraphEditorView>("Graph")!);
     }
 

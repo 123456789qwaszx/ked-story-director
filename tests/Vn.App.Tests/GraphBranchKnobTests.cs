@@ -24,7 +24,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class GraphBranchKnobTests
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     [Fact]
     public void 분기_하나의_점은_그_대사_옆_카드_가장자리에_서고_선도_거기서_나간다() => HeadlessUi.Run(() =>

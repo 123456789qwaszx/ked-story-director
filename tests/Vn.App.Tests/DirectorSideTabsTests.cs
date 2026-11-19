@@ -18,7 +18,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class DirectorSideTabsTests : IDisposable
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     private readonly string _directory = Path.Combine(
         Path.GetTempPath(), "vn-director-side-tabs", Guid.NewGuid().ToString("N"));

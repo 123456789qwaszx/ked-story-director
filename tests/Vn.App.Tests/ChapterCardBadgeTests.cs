@@ -33,7 +33,7 @@ public sealed class ChapterCardBadgeTests : IDisposable
     public void 장면_배지는_장면ID와_장면_시작점으로_적힌다() => HeadlessUi.Run(() =>
     {
         // ch01 — opening: root · a, hall: b.
-        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         view.SelectChapter("ch01");
         view.Refresh();
@@ -59,7 +59,7 @@ public sealed class ChapterCardBadgeTests : IDisposable
     {
         // 2026-11-18 소유자 — 「ID로 보기를 체크하냐 마냐에 따라서, 시작점과 장면 이름 박스의 높이가 달라져서 불편합니다」 · 「에피소드 이름이 시작점과
         // 새장면 아래쪽에」(U2). 라틴 장면ID와 한글 장면 이름은 글꼴의 줄 높이가 달라, 칩이 글을 따라 자라면 높이가 바뀐다.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.SetSceneName("ch01", "opening", "첫 장면");
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         view.SelectChapter("ch01");

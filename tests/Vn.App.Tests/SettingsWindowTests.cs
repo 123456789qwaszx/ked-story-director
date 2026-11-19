@@ -601,7 +601,7 @@ public sealed class SettingsWindowTests : IDisposable
         var window = new MainWindow { Width = 1400, Height = 900 };
         window.Show();
         Dispatcher.UIThread.RunJobs();
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 1;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Script;
         Dispatcher.UIThread.RunJobs();
 
         AuthoringSession session = window.SessionProbe;

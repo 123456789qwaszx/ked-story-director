@@ -28,7 +28,7 @@ public sealed class SpeakerRenameWritingTests : IDisposable
     [Fact]
     public void 화자_이름을_바꾸면_고르지_않은_카드의_칸도_새_이름이고_쓰던_칸은_그대로다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string root = Card(session, "root");
         string a = Card(session, "a");

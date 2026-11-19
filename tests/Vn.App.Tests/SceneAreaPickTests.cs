@@ -195,7 +195,7 @@ public sealed class SceneAreaPickTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         AuthoringSession session = window.SessionProbe;
         session.Open(manifest);
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 1;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Script;
         Dispatcher.UIThread.RunJobs();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         long before = session.Editor.Revision;
@@ -299,7 +299,7 @@ public sealed class SceneAreaPickTests : IDisposable
 
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Show()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         session.SetFileExpanded(EpisodeNaming.BoardOf(session.Project, "ch02")!.Id, expanded: false);
         Dispatcher.UIThread.RunJobs();
         return (window, session, window.FindControl<GraphEditorView>("Graph")!);

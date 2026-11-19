@@ -30,7 +30,7 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
     [Fact]
     public void 같은_카드로_모이는_선택지_셋의_문구는_겹치지_않고_저마다_제_선_위에_선다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.MoveEpisode("ch01", "b", 40, 420);
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "교무실로 간다");
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "선생님께 진행 상황도 보고한다");
@@ -64,7 +64,7 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
     [Fact]
     public void 긴_문구는_줄이고_마우스를_올리면_전체가_보인다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         const string Long = "아주 길고 긴 선택지 문구가 여기 있어서 한 줄에 다 들어가지 않는다";
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: Long);
         Dispatcher.UIThread.RunJobs();
@@ -80,7 +80,7 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
     public void 문구_위에는_표시조건과_해금조건이_아래에는_스탯변화가_선다() => HeadlessUi.Run(() =>
     {
         // 판에서 선택지 문구만 보이면 그 길이 언제 보이고 언제 고를 수 있는지, 건너면 무엇이 바뀌는지 패널을 열어야 안다.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         const string Long = "아주 길고 긴 선택지 문구가 여기 있어서 한 줄에 다 들어가지 않는다";
         session.Editor.AddChapterStat("ch01", "trust");
         session.Editor.AddChapterStat("ch01", "anger");
@@ -115,7 +115,7 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
     [Fact]
     public void 조건도_스탯도_없으면_문구_한_줄이다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "그냥 간다");
         Dispatcher.UIThread.RunJobs();
 
@@ -131,7 +131,7 @@ public sealed class ChapterEdgeLabelSpreadTests : IDisposable
     public void 간선_패널에서_해금조건을_없음으로_돌리면_문구_위_조건_줄이_사라진다() => HeadlessUi.Run(() =>
     {
         // 「(없음)」이 빈 글자로 남으면 화면이 조건이 있는 것으로 읽어 「해금: 」이 남았다.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.AddChapterStat("ch01", "trust");
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "간다");

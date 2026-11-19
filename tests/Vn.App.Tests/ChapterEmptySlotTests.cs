@@ -30,7 +30,7 @@ public sealed class ChapterEmptySlotTests : IDisposable
     [Fact]
     public void 빈_선택지_칸을_누르면_칸_정보가_서고_길을_더하는_곳을_말한다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Canvas canvas = view.FindControl<Canvas>("GraphCanvas")!;
 
@@ -52,7 +52,7 @@ public sealed class ChapterEmptySlotTests : IDisposable
     [Fact]
     public void 다른_것을_고르거나_빈_판을_누르면_칸_선택이_풀린다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Canvas canvas = view.FindControl<Canvas>("GraphCanvas")!;
 
