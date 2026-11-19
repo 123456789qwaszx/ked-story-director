@@ -64,18 +64,19 @@ public sealed class StatChangeEditorTests
     });
 
     [Fact]
-    public void bool_스탯은_부호_대신_켬_끔이고_수치칸이_없다() => HeadlessUi.Run(() =>
+    public void bool_스탯은_부호_대신_활성_비활성이고_수치칸이_없다() => HeadlessUi.Run(() =>
     {
-        // 능력·소지품처럼 참/거짓뿐인 스탯에 `+5`를 적게 두면 뜻을 알 수 없다.
+        // 능력·소지품처럼 참/거짓뿐인 스탯에 `+5`를 적게 두면 뜻을 알 수 없다. 말은 「활성」 · 「비활성」(2026-11-19 소유자 · usability UX11 —
+        // ⛔ 「켬」 · 「끔」).
         var editor = new StatChangeEditor();
         editor.Load([Key], [new StatDelta("key", 1)]);
 
-        Assert.Equal(["켬", "끔"], (IEnumerable<string>)SignCombo(editor, 0).ItemsSource!);
+        Assert.Equal(["활성", "비활성"], (IEnumerable<string>)SignCombo(editor, 0).ItemsSource!);
         Assert.False(AmountBox(editor, 0).IsVisible);
 
         SignCombo(editor, 0).SelectedIndex = 1;
 
-        // 2026-08-19 — 이 기대값은 `key -1`이었다. 화면은 켬·끔을 보여 주면서 글로는 증감을
+        // 2026-08-19 — 이 기대값은 `key -1`이었다. 화면은 켬·끔(지금은 활성 · 비활성)을 보여 주면서 글로는 증감을
         // 적었고, 리더는 그 글을 "bool에 증감은 안 된다"며 오류로 잡았다. 툴이 제 손으로
         // 만든 값을 제가 거부하고 있었고, 이 테스트가 그 상태를 붙들고 있었다.
         Assert.Equal("key false", editor.ToSheetText());

@@ -58,7 +58,7 @@ internal sealed class StatChangeEditor : StackPanel
         // 없애면 안 된다(리더가 오류로 지목하는 쪽이 옳다).
         foreach (StatDelta delta in deltas)
         {
-            // 지정은 값이 곧 켬(1)·끔(0)이다 — 줄의 씨앗은 부호로 그것을 담는다.
+            // 지정은 값이 곧 활성(1)·비활성(0)이다 — 줄의 씨앗은 부호로 그것을 담는다.
             _rows.Add(new Row
             {
                 Key = delta.Key,
@@ -78,7 +78,7 @@ internal sealed class StatChangeEditor : StackPanel
     }
 
     /// <summary>
-    /// 줄 하나를 시트 표기로. bool은 <b>켬/끔이 곧 true/false</b>다.
+    /// 줄 하나를 시트 표기로. bool은 <b>활성/비활성이 곧 true/false</b>다.
     ///
     /// bool 줄을 `+1`·`-1`로 적으면 리더가 "bool에 증감은 안 된다"며 오류로 잡는다 —
     /// <b>툴이 제 손으로 만든 값을 제가 거부하게 된다.</b>
@@ -105,7 +105,7 @@ internal sealed class StatChangeEditor : StackPanel
 
             int sign = row.Sign.SelectedIndex == 1 ? -1 : 1;
 
-            // bool 스탯은 수치칸이 없다 — 부호가 곧 켬(+1)·끔(−1)이다.
+            // bool 스탯은 수치칸이 없다 — 부호가 곧 활성(+1)·비활성(−1)이다.
             int magnitude = row.Amount is { IsVisible: true } box
                 ? int.TryParse(
                     box.Text, System.Globalization.NumberStyles.None,
@@ -229,13 +229,13 @@ internal sealed class StatChangeEditor : StackPanel
         Grid.SetColumn(statCombo, 0);
         grid.Children.Add(statCombo);
 
-        // bool 스탯은 부호가 곧 켬/끔이다 — `+1`이라 적어 두면 무슨 뜻인지 알 수 없다.
+        // bool 스탯은 부호가 곧 활성/비활성이다 — `+1`이라 적어 두면 무슨 뜻인지 알 수 없다(2026-11-19 소유자 · usability UX11 · ⛔ 「켬」 · 「끔」).
         var signCombo = new ComboBox
         {
             FontSize = 11,
-            MinWidth = isBool ? 74 : 54,
+            MinWidth = isBool ? 84 : 54,
             Margin = new Thickness(4, 0, 0, 0),
-            ItemsSource = isBool ? new[] { "켬", "끔" } : ["＋", "－"],
+            ItemsSource = isBool ? new[] { "활성", "비활성" } : ["＋", "－"],
             SelectedIndex = row.Seed >= 0 ? 0 : 1
         };
         signCombo.SelectionChanged += (_, _) =>
