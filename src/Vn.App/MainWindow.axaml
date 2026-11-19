@@ -82,6 +82,28 @@
             </Grid>
         </Border>
 
+        <!-- 바깥에서 바뀐 프로젝트 — 연 뒤에 다른 곳(GitHub Desktop의 받기 등)이 프로젝트 파일을 바꿨는데 이 창에 고친 것이 남아 있을 때만 선다
+             (2026-11-19 · writer-release WR1). 고른 것이 없으면 저장 · 자동 저장이 덮어쓰지 않는다. 고친 것이 없으면 이 띠 없이 다시 읽는다
+             (MainWindow.CheckOutsideChanges). 창을 띄우지 않는다 — Ctrl+S 같은 키에는 붙을 자리가 없고, 띠는 읽던 판을 덮지 않는다. -->
+        <Border x:Name="OutsideChangeBar"
+                DockPanel.Dock="Top"
+                IsVisible="False"
+                Padding="12,6"
+                Background="#FFF4D6"
+                BorderBrush="#E0B84A"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto,8,Auto">
+                <TextBlock x:Name="OutsideChangeText"
+                           Grid.Column="0"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Foreground="#5A4300"
+                           Text="⚠ 이 프로젝트의 파일이 다른 곳에서 바뀌었습니다(GitHub Desktop의 받기 등). 이 창에 아직 저장하지 않은 것이 있어 저장을 멈췄습니다 — 어느 쪽을 남길지 고르세요." />
+                <Button x:Name="OutsideReloadButton" Grid.Column="1" Content="다시 열기 (여기서 고친 것 버림)" />
+                <Button x:Name="OutsideOverwriteButton" Grid.Column="3" Content="내 것으로 덮어쓰기" />
+            </Grid>
+        </Border>
+
         <!-- 상태줄은 <b>곁눈으로 읽는 줄</b>이다. 기본 글자크기(14)에 위아래 8씩
              주면 36px을 늘 차지하는데, 여기 뜨는 말은 대부분 "됐다"이고 그것은 크게
              볼 것이 아니다. 이 저장소가 곁정보에 쓰는 11로 맞춘다. -->
