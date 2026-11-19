@@ -137,6 +137,71 @@ public sealed class ChapterBoardDeskTests : IDisposable
     });
 
     [Fact]
+    public void 가장_왼쪽_위_카드를_더_왼쪽_위로_끌면_판이_그쪽으로_넓어지고_카드들은_제자리다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「가장 위쪽이나 가장 왼쪽에 있는 것을 위나 왼쪽으로 옮겨서 흰 영역을 늘려 주고 싶은데 그건 안 된다」(usability UX25).
+        // ⛔ 맨 왼쪽 · 맨 위 카드는 판 가장자리에서 막혔다.
+        (MainWindow window, ChapterGraphView view) = Open();
+        Canvas canvas = Board(view);
+        double width = canvas.Width;
+        double height = canvas.Height;
+        Point a = OnScreen(Card(canvas, "a"), default);
+        Point b = OnScreen(Card(canvas, "b"), default);
+
+        // root(맨 왼쪽 · 맨 위)를 왼쪽 위로 — 판 밖 바깥으로. 가로는 띄움(34)보다 멀리 끌어 스크롤까지 쓴다.
+        Border root = Card(canvas, "root");
+        Point grab = OnScreen(root, new Point(100, 30));
+        Point drop = grab + new Point(-90, -80);   // 판 여백(60)을 넘어 위 바깥으로
+        window.MouseDown(grab, MouseButton.Left);
+        window.MouseMove(grab + new Point(-10, -5), RawInputModifiers.LeftMouseButton);
+        window.MouseMove(drop, RawInputModifiers.LeftMouseButton);
+        Dispatcher.UIThread.RunJobs();
+        Point dragged = OnScreen(root, default);
+        Assert.True(dragged.X < OnScreen(canvas, default).X && dragged.Y < OnScreen(canvas, default).Y, "판 왼쪽 위 바깥에 섰다");
+
+        window.MouseUp(drop, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        // 판이 왼쪽 · 위로 넓어졌고, 끈 카드도 안 끈 카드도 화면에서 그 자리다.
+        Assert.True(canvas.Width > width && canvas.Height > height, $"판 {width}x{height} → {canvas.Width}x{canvas.Height}");
+        Assert.Equal(dragged.X, OnScreen(Card(canvas, "root"), default).X, 1.0);
+        Assert.Equal(dragged.Y, OnScreen(Card(canvas, "root"), default).Y, 1.0);
+        Assert.Equal(a.X, OnScreen(Card(canvas, "a"), default).X, 1.0);
+        Assert.Equal(a.Y, OnScreen(Card(canvas, "a"), default).Y, 1.0);
+        Assert.Equal(b.X, OnScreen(Card(canvas, "b"), default).X, 1.0);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 무리도_판의_왼쪽_위로_끌어_판을_넓힌다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, ChapterGraphView view) = Open();
+        Canvas canvas = Board(view);
+        double height = canvas.Height;
+
+        // root · a를 범위로 골라 무리로 — 위로 끈다(판 위 바깥으로).
+        window.MouseDown(OnScreen(canvas, new Point(20, -24)), MouseButton.Left);
+        window.MouseMove(OnScreen(canvas, new Point(470, 140)), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(OnScreen(canvas, new Point(470, 140)), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        Point grab = OnScreen(Card(canvas, "a"), new Point(100, 30));
+        Point root = OnScreen(Card(canvas, "root"), default);
+        window.MouseDown(grab, MouseButton.Left);
+        window.MouseMove(grab + new Point(0, -10), RawInputModifiers.LeftMouseButton);
+        window.MouseMove(grab + new Point(0, -80), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(grab + new Point(0, -80), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(canvas.Height > height);
+        Assert.Equal(root.Y - 80, OnScreen(Card(canvas, "root"), default).Y, 1.5);   // 무리째 위로 — 화면에서 끈 만큼
+        Assert.Equal(root.X, OnScreen(Card(canvas, "root"), default).X, 1.0);
+
+        window.Close();
+    });
+
+    [Fact]
     public void 창을_줄이면_판이_화면에_들어가게_띄움을_줄인다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, ChapterGraphView view) = Open();

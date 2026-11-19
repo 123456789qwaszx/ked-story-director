@@ -1210,13 +1210,24 @@ public partial class ChapterGraphView : UserControl
     /// <summary>다음에 판을 놓을 때 가운데로 놓는가 — 화면 크기를 아직 모르면(배치 전) 알게 될 때 놓는다.</summary>
     private bool _centerSheet = true;
 
-    /// <summary>판의 기준(가장 왼쪽 · 위 카드)이 옮겨진 거리(판 좌표) — 다음에 판을 놓을 때 그만큼 되돌린다(<see cref="CommitDrag"/>).</summary>
+    /// <summary>
+    /// 판 오른쪽 · 아래에 덧붙인 바깥(화면 px) — 판을 왼쪽 · 위로 넓히며 카드를 화면 제자리에 두려면 그만큼 더 스크롤해야 하는데, 판이 화면보다
+    /// 조금만 넓으면 스크롤할 자리가 모자란다(usability UX25). 가운데로 다시 놓거나 창 크기가 바뀌면 걷는다.
+    /// </summary>
+    private Vector _sheetTrail;
+
+    /// <summary>
+    /// 판의 기준(가장 왼쪽 · 위 카드)이 옮겨진 거리(판 좌표) — 판을 다시 그린 뒤 그만큼 되돌린다(<see cref="CommitDrag"/>). 양수면 기준 카드를
+    /// 오른쪽 · 아래로 옮겨 카드가 모두 당겨진 것이고, 음수면 기준보다 왼쪽 · 위에 놓아 판이 그쪽으로 넓어지며 카드가 모두 밀린 것이다.
+    /// </summary>
     private Vector _sheetNudge;
 
     /// <summary>판을 바탕 위에 놓는다 — <see cref="_sheetOffset"/>.</summary>
     /// <param name="keepInView">화면 크기가 바뀌었다(창 크기) — 판이 화면에 들어가면 들어가게 띄움을 줄인다. 편집으로 판 크기가 바뀔 때는 줄이지 않는다
     /// (카드가 놓은 자리에서 밀리지 않게 — 넘치면 스크롤이 생긴다).</param>
-    private void PlaceSheet(bool keepInView = false)
+    /// <param name="redrawn">판을 막 다시 그렸다 — 기준이 옮겨진 만큼(<see cref="_sheetNudge"/>)을 이때만 되돌린다. 다시 그리기 전에 화면 크기가 바뀌어 불리면
+    /// 카드는 아직 옛 기준에 서 있다.</param>
+    private void PlaceSheet(bool keepInView = false, bool redrawn = false)
     {
         Size viewport = GraphScroll.Viewport;
         double width = GraphCanvas.Width;
@@ -1227,28 +1238,40 @@ public partial class ChapterGraphView : UserControl
             return;   // 배치 전이거나 그릴 판이 없다 — 화면 크기와 판을 알게 되면 놓는다(⛔ 빈 판을 가운데로 놓아 버리면 그린 판이 반 화면 비켜 섰다)
         }
 
-        Vector nudge = _sheetNudge * _zoom;
-        _sheetNudge = default;
+        Vector nudge = redrawn ? _sheetNudge * _zoom : default;
+
+        if (redrawn)
+        {
+            _sheetNudge = default;
+        }
+
+        Vector? scrollTo = null;
 
         if (_centerSheet)
         {
             _sheetOffset = new Vector(
                 Math.Max(0, viewport.Width - (width * _zoom)) / 2,
                 Math.Max(0, viewport.Height - (height * _zoom)) / 2);
+            _sheetTrail = default;
             _centerSheet = false;
         }
         else if (nudge != default)
         {
-            // 카드가 모두 그만큼 당겨졌다 — 보던 자리를 그만큼 되돌리고(스크롤), 모자라면 판을 그만큼 띄운다.
-            double scrollX = Math.Min(GraphScroll.Offset.X, nudge.X);
-            double scrollY = Math.Min(GraphScroll.Offset.Y, nudge.Y);
+            // 카드가 화면에서 그 자리에 남게 한다 — 당겨졌으면(양수) 보던 자리를 그만큼 되돌리고 모자라면 판을 그만큼 띄우고, 밀렸으면(음수 —
+            // 판이 왼쪽 · 위로 넓어졌다) 판을 그만큼 덜 띄우고 모자라면 보던 자리를 그만큼 넘긴다.
+            (double marginX, double offsetX) = Absorb(nudge.X, _sheetOffset.X, GraphScroll.Offset.X);
+            (double marginY, double offsetY) = Absorb(nudge.Y, _sheetOffset.Y, GraphScroll.Offset.Y);
+            _sheetOffset = new Vector(marginX, marginY);
 
-            if (scrollX > 0 || scrollY > 0)
+            // 그만큼 스크롤하려면 판 오른쪽 · 아래로 바깥이 그만큼 있어야 한다 — 모자라면 덧붙인다.
+            _sheetTrail = new Vector(
+                Math.Max(0, offsetX + viewport.Width - (marginX + (width * _zoom))),
+                Math.Max(0, offsetY + viewport.Height - (marginY + (height * _zoom))));
+
+            if (Math.Abs(offsetX - GraphScroll.Offset.X) > 0.01 || Math.Abs(offsetY - GraphScroll.Offset.Y) > 0.01)
             {
-                GraphScroll.Offset = new Vector(GraphScroll.Offset.X - scrollX, GraphScroll.Offset.Y - scrollY);
+                scrollTo = new Vector(offsetX, offsetY);
             }
-
-            _sheetOffset += new Vector(nudge.X - scrollX, nudge.Y - scrollY);
         }
 
         if (keepInView)
@@ -1256,9 +1279,29 @@ public partial class ChapterGraphView : UserControl
             _sheetOffset = new Vector(
                 Math.Min(_sheetOffset.X, Math.Max(0, viewport.Width - (width * _zoom))),
                 Math.Min(_sheetOffset.Y, Math.Max(0, viewport.Height - (height * _zoom))));
+            _sheetTrail = default;
         }
 
-        ZoomHost.Margin = new Thickness(_sheetOffset.X, _sheetOffset.Y, 0, 0);
+        ZoomHost.Margin = new Thickness(_sheetOffset.X, _sheetOffset.Y, _sheetTrail.X, _sheetTrail.Y);
+
+        if (scrollTo is { } offset)
+        {
+            GraphScroll.UpdateLayout();   // 넓어진 판을 알아야 스크롤이 거기까지 간다
+            GraphScroll.Offset = offset;
+        }
+
+        // 한 축의 옮김을 띄움과 스크롤로 나눠 받는다 — (새 띄움, 새 스크롤).
+        static (double Margin, double Offset) Absorb(double nudge, double margin, double offset)
+        {
+            if (nudge >= 0)
+            {
+                double back = Math.Min(offset, nudge);
+                return (margin + nudge - back, offset - back);
+            }
+
+            double less = Math.Min(margin, -nudge);
+            return (margin - less, offset + (-nudge - less));
+        }
     }
 
     private void Draw()
@@ -1399,7 +1442,7 @@ public partial class ChapterGraphView : UserControl
                 : extents.Max(extent => extent.Bottom) + CanvasMargin;
         }
 
-        PlaceSheet();
+        PlaceSheet(redrawn: true);
 
 
         // 에피소드별 보이는 선택지 = 문구가 붙은 나가는 간선들 (길 하나가 곧 선택지
@@ -2879,21 +2922,20 @@ public partial class ChapterGraphView : UserControl
 
         Point position = args.GetPosition(GraphCanvas);
 
-        // 무리는 모양을 지킨 채 함께 민다 — 맨 왼쪽 · 맨 위 카드가 여백 안쪽(음수)으로 못 나간다.
+        // 판의 왼쪽 · 위로도 끈다 — 놓으면 판이 그쪽으로 넓어진다(판은 가장 왼쪽 · 위 카드를 기준으로 감싼다 · DisplayPlacement). 끄는 동안 판 밖의
+        // 카드는 바깥 위에 선다(usability UX25 · ⛔ 맨 왼쪽 · 맨 위 카드는 판 가장자리에서 막혀 판을 그쪽으로 넓힐 수 없었다).
+        // 무리는 모양을 지킨 채 함께 민다.
         if (_groupStart is { } group)
         {
-            _groupDelta = new Vector(
-                Math.Max(position.X - _groupGrab.X, -group.Values.Min(start => start.X)),
-                Math.Max(position.Y - _groupGrab.Y, -group.Values.Min(start => start.Y)));
+            _groupDelta = new Vector(position.X - _groupGrab.X, position.Y - _groupGrab.Y);
             _dragMoved = true;
             QueueDragRedraw();
             return;
         }
 
-        // 여백 안쪽(음수)으로는 못 나간다 — 스크롤이 닿지 않는 자리에 카드를 두면 못 찾는다.
         _dragPosition = (
-            X: Math.Max(0, position.X - _dragOffset.X - CanvasMargin),
-            Y: Math.Max(0, position.Y - _dragOffset.Y - CanvasMargin));
+            X: position.X - _dragOffset.X - CanvasMargin,
+            Y: position.Y - _dragOffset.Y - CanvasMargin);
         _dragMoved = true;
 
         QueueDragRedraw();
