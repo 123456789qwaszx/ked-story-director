@@ -347,7 +347,7 @@ public sealed class SettingsWindowTests : IDisposable
         SettingsWindow settings = window.OpenSettings();
         Dispatcher.UIThread.RunJobs();
 
-        StackPanel groups = (StackPanel)settings.Content!;
+        StackPanel groups = (StackPanel)settings.Body.Content!;   // 묶음들은 스크롤 안에 선다(UX1)
         Assert.Equal(1, groups.Children.IndexOf(settings.ExportGroup));
         Assert.Equal(2, groups.Children.IndexOf(settings.ShortcutGroup));
         Assert.Equal("단축키", ((TextBlock)settings.ShortcutGroup.Header!).Text);
@@ -480,6 +480,89 @@ public sealed class SettingsWindowTests : IDisposable
             BoardWheel.Set(null);   // 스위치는 이 시험 프로세스가 함께 쓴다
         }
     });
+
+    [Fact]
+    public void 창은_끌어서_크기를_바꾸고_줄여도_확인_취소는_늘_보이며_묶음이_스크롤한다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「설정창의 크기를 조절할 수 있게 해주시고, 스크롤 기능역시 추가해주십시오」(usability UX1).
+        // ⛔ 그 전에는 크기가 고정이고 창 전체가 스크롤하지 않아, 묶음을 펴거나 글자를 키우면 [확인]이 화면 밖으로 나갔다.
+        (MainWindow window, AuthoringSession _) = Open();
+        SettingsWindow settings = window.OpenSettings();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(settings.CanResize);
+        Assert.Equal((420, 320), (settings.MinWidth, settings.MinHeight));
+        Assert.Equal(SizeToContent.Height, settings.SizeToContent);   // 처음은 내용에 맞춘다
+
+        // 사람이 작게 끌었다(Avalonia는 사람의 크기 바꾸기에서 내용 맞춤을 끈다 — 그 뒤를 짓는다).
+        settings.SizeToContent = SizeToContent.Manual;
+        settings.Width = 420;
+        settings.Height = 360;
+        settings.ShortcutGroup.IsExpanded = true;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(360, settings.Bounds.Height, 1);   // 펴도 창은 자라지 않는다
+        Assert.True(settings.Body.Extent.Height > settings.Body.Viewport.Height, "묶음들이 스크롤해야 한다");
+        AssertInside(settings, settings.ConfirmButton);
+        AssertInside(settings, settings.CancelButton);
+
+        // 끝까지 내리면 맨 아래 묶음(「기타」)이 보인다 — 단추는 그대로 아래에 있다.
+        settings.Body.Offset = new Avalonia.Vector(0, settings.Body.Extent.Height);
+        Dispatcher.UIThread.RunJobs();
+        AssertInside(settings, settings.WheelPansCheck);
+        AssertInside(settings, settings.ConfirmButton);
+
+        settings.Close();
+        window.Close();
+    });
+
+    [Fact]
+    public void 처음_크기는_화면을_넘지_않고_넘는_만큼은_스크롤한다() => HeadlessUi.Run(() =>
+    {
+        // 처음 세로는 내용에 맞추되 화면(작업 영역) 높이에서 멈춘다 — 화면을 아는 창이 열기 전에 FitScreen을 부른다(헤드리스는 화면이 없다).
+        (MainWindow window, AuthoringSession _) = Open();
+        var settings = new SettingsWindow(window.SessionProbe);
+        settings.FitScreen(600);
+        settings.ShortcutGroup.IsExpanded = true;   // 단축키 표만으로도 600을 넘는다
+        settings.Show(window);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(600 - 48, settings.MaxHeight);
+        Assert.True(settings.Bounds.Height <= settings.MaxHeight + 0.5, $"창 높이 {settings.Bounds.Height}");
+        Assert.True(settings.Body.Extent.Height > settings.Body.Viewport.Height, "넘는 만큼은 스크롤해야 한다");
+        AssertInside(settings, settings.ConfirmButton);
+
+        // 작은 화면이어도 가장 작은 창보다 작게 묶지는 않는다.
+        settings.FitScreen(200);
+        Assert.Equal(settings.MinHeight, settings.MaxHeight);
+
+        settings.Close();
+        window.Close();
+    });
+
+    [Fact]
+    public void 단축키_표는_제_안에서_스크롤하지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 창 전체가 스크롤한다 — 표 안의 스크롤(⛔ side-fold K2의 380)은 스크롤 안의 스크롤이 되어 휠이 표에 걸렸다(UX1).
+        (MainWindow window, AuthoringSession _) = Open();
+        SettingsWindow settings = window.OpenSettings();
+        settings.ShortcutGroup.IsExpanded = true;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(settings.ShortcutGroup.GetLogicalDescendants().OfType<ScrollViewer>());
+
+        settings.Close();
+        window.Close();
+    });
+
+    /// <summary>그 칸이 창 안(위아래 모두)에 서 있다 — 스크롤에 가려지거나 창 밖으로 나가지 않았다.</summary>
+    private static void AssertInside(Window window, Control control)
+    {
+        Assert.True(control.IsEffectivelyVisible);
+        Avalonia.Point top = Avalonia.VisualExtensions.TranslatePoint(control, default, window)!.Value;
+        Assert.True(top.Y >= 0 && top.Y + control.Bounds.Height <= window.Bounds.Height + 0.5,
+            $"{control.GetType().Name} {top.Y:0.#} ~ {top.Y + control.Bounds.Height:0.#} · 창 {window.Bounds.Height:0.#}");
+    }
 
     private (MainWindow Window, AuthoringSession Session) Open()
     {

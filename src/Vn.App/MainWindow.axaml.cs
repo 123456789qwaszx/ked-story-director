@@ -33,6 +33,13 @@ public partial class MainWindow : Window
     internal SettingsWindow OpenSettings()
     {
         var settings = new SettingsWindow(_session);
+
+        // 처음 세로가 이 창이 선 화면을 넘지 않게(UX1) — 화면을 모르면(헤드리스) 내용에 맞춘 그대로다.
+        if (Screens.ScreenFromWindow(this) is { } screen)
+        {
+            settings.FitScreen(screen.WorkingArea.Height / screen.Scaling);
+        }
+
         _ = settings.ShowDialog(this);
         return settings;
     }

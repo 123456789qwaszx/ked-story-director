@@ -38,8 +38,14 @@ internal sealed class SettingsWindow : Window
 
         Title = "설정";
         Width = 560;
+
+        // 크기 — 끌어서 바꾼다(2026-11-19 소유자 · usability UX1 · ⛔ 그 전에는 고정이었다). 처음 세로는 내용에 맞추되 화면을 넘지 않는다
+        // (FitScreen이 MaxHeight를 준다) — 넘는 만큼은 묶음들이 스크롤한다. 사람이 끌어 바꾸면 Avalonia가 내용 맞춤을 끈다 — 그 뒤로는
+        // 묶음을 펴도 창이 자라지 않고 스크롤한다.
         SizeToContent = SizeToContent.Height;
-        CanResize = false;
+        CanResize = true;
+        MinWidth = 420;
+        MinHeight = 320;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
@@ -127,7 +133,7 @@ internal sealed class SettingsWindow : Window
             IsReadOnly = true,
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
-            MaxHeight = 170,   // 세 줄이 다 보이게 글에 맞춰 자라되, 아주 큰 글자에서는 창이 화면을 넘지 않게 칸 안에서 흐른다
+            MaxHeight = 170,   // 세 줄이 다 보이게 글에 맞춰 자라되, 아주 큰 글자에서는 칸 안에서 흐른다(미리 보기가 묶음을 다 먹지 않게)
             Padding = new Thickness(4, 3)
         };
         ToolTip.SetTip(ScriptPreview, "미리 보기 — [대본] 판의 카드 글 칸이 이렇게 보입니다.");
@@ -181,42 +187,61 @@ internal sealed class SettingsWindow : Window
             }
         };
 
-        // 「단축키」 — 읽기만 하는 표다. 접어 둔다 — 펼치면 길어서 창이 화면을 넘지 않게 표는 제 안에서 스크롤한다(side-fold K2).
+        // 「단축키」 — 읽기만 하는 표다. 접어 둔다. 펼치면 길다 — 창 전체가 스크롤한다(UX1 · ⛔ 그 전에는 표가 제 안에서 380까지만 서고
+        // 스크롤했다(side-fold K2) — 창이 스크롤하게 되면서 스크롤 안의 스크롤이 되어 걷었다).
         ShortcutGroup = new Expander
         {
             Header = new TextBlock { Text = "단축키", FontWeight = FontWeight.SemiBold, FontSize = 14 },
             IsExpanded = false,
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            Content = new ScrollViewer
-            {
-                MaxHeight = 380,
-                HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
-                VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
-                Content = ShortcutSection()
-            }
+            Content = ShortcutSection()
         };
 
-        Content = new StackPanel
+        // 묶음들은 스크롤하고 [취소] · [확인]은 아래에 늘 선다(UX1) — 창을 줄이거나 묶음을 펴도 단추가 화면 밖으로 나가지 않는다.
+        // 오른쪽 여백 20 — 스크롤 막대가 묶음의 테두리를 덮지 않게.
+        Body = new ScrollViewer
         {
-            Margin = new Thickness(16),
-            Spacing = 12,
-            Children =
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            Content = new StackPanel
             {
-                Group("이 프로젝트", BoardSection()),
-                ExportGroup,   // 접는 묶음은 제 테두리가 있다
-                ShortcutGroup,
-                Group("대본 글 칸", ScriptFontSection()),
-                Group("기타", new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck, WheelPansCheck } }),
-                new StackPanel
+                Margin = new Thickness(16, 16, 20, 8),
+                Spacing = 12,
+                Children =
                 {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children = { CancelButton, ConfirmButton }
+                    Group("이 프로젝트", BoardSection()),
+                    ExportGroup,   // 접는 묶음은 제 테두리가 있다
+                    ShortcutGroup,
+                    Group("대본 글 칸", ScriptFontSection()),
+                    Group("기타", new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck, WheelPansCheck } })
                 }
             }
         };
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(16, 8, 16, 16),
+            Spacing = 8,
+            Children = { CancelButton, ConfirmButton }
+        };
+        DockPanel.SetDock(buttons, Dock.Bottom);
+
+        Content = new DockPanel { Children = { buttons, Body } };
     }
+
+    /// <summary>
+    /// 처음 세로가 화면을 넘지 않게 한다 — <paramref name="workingHeight"/>는 그 화면의 작업 영역 높이(작업 표시줄을 뺀 것 · 화면 단위가 아니라
+    /// 앱의 단위). 열기 전에 부른다(가운데에 놓을 때 그 크기로 놓는다). 끌어서도 그보다 크게 하지 못한다 — 화면보다 큰 창은 쓸 데가 없다.
+    /// </summary>
+    internal void FitScreen(double workingHeight)
+    {
+        MaxHeight = Math.Max(MinHeight, workingHeight - ScreenMargin);
+    }
+
+    /// <summary>화면 높이에서 남기는 몫 — 창의 제목 줄 · 그림자.</summary>
+    private const double ScreenMargin = 48;
 
     // ── 시험 손잡이 ───────────────────────────────────────────────────────────
 
@@ -266,6 +291,9 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「기타」의 「휠로 판 옮기기」 — 켜면 두 판의 휠이 판을 옮긴다(<see cref="BoardWheel"/>). 누르는 즉시 반영한다.</summary>
     internal CheckBox WheelPansCheck { get; }
+
+    /// <summary>묶음들 — [취소] · [확인]을 뺀 창의 몸통이 이 안에서 스크롤한다(UX1).</summary>
+    internal ScrollViewer Body { get; }
 
     internal Button ConfirmButton { get; }
 
