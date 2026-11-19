@@ -296,6 +296,56 @@ public sealed class CardWritingBoxTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 휠로_판_옮기기를_켜도_글_칸의_휠은_고른_카드에서만_칸의_것이다() => HeadlessUi.Run(() =>
+    {
+        // 설정 「휠로 판 옮기기」(writer-app WA3)를 켜면 휠은 배율이 아니라 판 옮기기다 — 칸의 규칙은 그대로다: 고르지 않은 카드의 칸 위에서는
+        // 칸이 휠을 먹지 않고 판이 움직이고(판이 터널에서 옮긴다 — 스크롤에 맡기면 넘치는 칸이 먼저 먹는다), 고른 카드의 칸 위에서는 칸이 스크롤한다.
+        BoardWheel.Set(true);
+
+        try
+        {
+            (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
+            GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+            ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
+
+            TextBox box = Box(window, first.Id);
+            box.Text = string.Join("\n", Enumerable.Range(1, 40).Select(index => $"라루: {index}번째 줄"));
+            Dispatcher.UIThread.RunJobs();
+            session.Select(null);
+            Dispatcher.UIThread.RunJobs();
+            ScrollViewer inner = box.GetVisualDescendants().OfType<ScrollViewer>().First();
+            string zoom = ZoomOf(graph);
+            Vector before = scroll.Offset;
+
+            // 고르지 않았다 — 칸은 그대로고 판이 내려간다.
+            window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, -1));
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(0, inner.Offset.Y);
+            Assert.Equal(before.Y + BoardWheel.PanStep, scroll.Offset.Y, 1);
+            Assert.Equal(zoom, ZoomOf(graph));
+
+            // 골랐다 — 칸이 스크롤하고 판은 그대로다.
+            session.Select(first.Id);
+            Dispatcher.UIThread.RunJobs();
+            box = Box(window, first.Id);
+            inner = box.GetVisualDescendants().OfType<ScrollViewer>().First();
+            before = scroll.Offset;
+            window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, -1));
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(inner.Offset.Y > 0);
+            Assert.Equal(before, scroll.Offset);
+
+            window.Close();
+        }
+        finally
+        {
+            BoardWheel.Set(null);   // 스위치는 이 시험 프로세스가 함께 쓴다
+        }
+    });
+
     private static string ZoomOf(GraphEditorView graph) => graph.FindControl<TextBlock>("ZoomText")!.Text ?? string.Empty;
 
     [Fact]

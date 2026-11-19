@@ -193,6 +193,8 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `Views/StoryHierarchy.axaml{,.cs}` | 하이어아키 한 그루(프로젝트 → 챕터 → 장면 → 에피소드 · 분기 카드 줄) — 고르기 · 접기 · ↑↓←→. 고치는 일은 셸에 알리기만 한다 |
 | `Views/SideTab.cs` · `ColumnDock.cs` | 오른쪽 기둥의 탭 셋(차례 · 이름) · 기둥 접기(하이어아키 · 오른쪽 기둥) |
 | `Views/SettingsWindow.cs` · `Shortcuts.cs` | [⚙ 설정] 창(이 프로젝트 · 내보내기 · 단축키 · 기타) · 실제로 듣는 단축키 표 한 벌 |
+| `Views/PlatformKeys.cs` · `BoardWheel.cs` | OS마다 갈리는 키 한 벌(맥은 ⌘를 Ctrl처럼 · ⌘⇧Z · ⌫) · 두 판 위의 휠이 하는 일 한 벌(배율은 신호의 크기에 비례 · 설정 「휠로 판 옮기기」 · 트랙패드 집기) |
+| `Services/AppIdentity.cs` · `Assets/` | 보이는 이름(「스토리 디렉터」)과 설정 폴더 이름(`VnTool` — 바꾸지 않는다) · 아이콘(원본 `app-icon.png` → `tools/make-app-icons.py` → `app.ico` · `app.icns`) |
 | `Views/EpisodeAdder.cs` | 에피소드 하나 더하기 — 장면에 길 없이(하이어아키 「에피소드 추가」 · 「장면 추가」) |
 | `Views/BranchConditionPicker.cs` · `BranchConditionNote.cs` | [대본] 분기 카드의 조건 칸 · 분기 조건을 말하는 글(두 탭이 같은 말) |
 | `Views/StatChangeEditor.cs` · `ConfirmFlyout.cs` · `BranchPalette.cs` | 스탯변화 칸 · 확인 칸 · 갈래 색 |
@@ -200,7 +202,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `Services/AuthoringSession.cs` | 열린 프로젝트 · 경로 · 저장 여부 · 선택 · 화자 창구 · 보낼 곳 · 화면 편의 상태 · 상태줄 |
 | `Services/ProjectRefreshPlanner.cs` | 변경 종류 → 그래프 · 곁기둥 중 무엇을 다시 만들지 |
 | `Services/WorkFolder.cs` | 작업 폴더(`exported/`)를 찾고, 그 형식의 파일을 고른 채 탐색기를 연다 |
-| `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 · 설명 간소화(`Views/GuideLine.cs`) — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
+| `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 · 설명 간소화(`Views/GuideLine.cs`) · 휠로 판 옮기기(`Views/BoardWheel.cs`) — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
 
 ---
 
@@ -337,7 +339,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 분기 카드(집 · 검증) | `Chapters/ChapterBranchCards.cs` — 분기 카드(`DialogueNode.IsBranchCard`)는 에피소드가 아니라 증명(`ChapterReachabilityProver`, 간선만 — 런타임의 오라클) 밖이다. `HomesOf` = 분기 카드의 집(먼저 부르는 에피소드 — 장면 · Yarn 파일 · [구성] 칩이 같은 규칙), `Verify` = 분기점이 에피소드에(오류) · 아무도 안 부름 · 도달 불가에서만 불림(경고) · 줄 없음(오류) · Yarn 노드 이름 겹침(오류). 부르는 곳 `ChapterValidator.Validate`(프로젝트를 줄 때) |
-| [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs`(묶음: 이 프로젝트 · 내보내기 · 단축키 — 표 `Views/Shortcuts.cs` · 기타 — 미니맵 감추기 · 설명 간소화) |
+| [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs`(묶음: 이 프로젝트 · 내보내기 · 단축키 — 표 `Views/Shortcuts.cs` · 기타 — 미니맵 감추기 · 설명 간소화 · 휠로 판 옮기기) |
 | 대사 Yarn(`exported/yarn/`) | 글 짓기 `Chapters/ChapterYarnExporter.cs`(타이틀은 `ChapterProgressionExporter.DialogueEntryIdOf`), 쓰기 · 낡은 파일 걷기 `ChapterExportService.ExportAll`, 컴파일 확인은 시험 `ChapterYarnExportTests`(앱은 컴파일러를 싣지 않는다) |
 
 **편집 · 저장 · 화면**
@@ -442,9 +444,11 @@ dotnet build .\VnTool.sln
 dotnet test .\VnTool.sln          # 요약 줄 둘 — Vn.Authoring.Tests · Vn.App.Tests
 dotnet run --project .\src\Vn.App\Vn.App.csproj
 powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
+./publish-macos.sh                # 맥에서 — StoryDirector.app
 ```
 
-- CI는 `windows-latest`가 정본이다(`.github/workflows/test.yml` — 빌드 · 테스트 · portable 실행 확인).
+- CI는 `windows-latest`가 정본이다(`.github/workflows/test.yml` — 빌드 · 테스트 · portable 실행 확인). `macos-latest`가 같은 것을 한 번 더 하고
+  맥 꾸러미를 올려 둔다. 시험은 어느 OS에서 돌려도 「맥이 아님」으로 선다(`TestProcessIsolation` — 맥의 손을 보는 시험만 제 스코프에서 켠다).
 - 창이 뜨지 않으면 `%LOCALAPPDATA%\VnTool\logs\startup-error.log`를 먼저 본다.
 
 ### 어느 테스트가 무엇을 지키는가

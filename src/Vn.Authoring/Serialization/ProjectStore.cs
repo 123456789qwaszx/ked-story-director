@@ -23,7 +23,7 @@ public static class ProjectStore
     {
         string openedPath = Path.GetFullPath(path);
         string json = File.ReadAllText(openedPath, new UTF8Encoding(false));
-        JsonObject root = JsonSupport.ParseObject(json, "VnTool 프로젝트");
+        JsonObject root = JsonSupport.ParseObject(json, "프로젝트");
 
         if (LooksLikeStandaloneStoryFile(root))
         {

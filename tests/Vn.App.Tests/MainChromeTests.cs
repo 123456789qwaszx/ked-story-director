@@ -52,6 +52,16 @@ public sealed class MainChromeTests
         Assert.Equal(buttonBrush.Color, fileBrush.Color);
         Assert.Equal(settings.Bounds.Height, file.Bounds.Height, 1);
 
+        // 이웃 단추가 글꼴 때문에 더 커져도(Windows의 ⚙ · 📂 — 이모지 글꼴의 줄 높이) File이 함께 따라간다(writer-app WA8 ·
+        // ⛔ 메뉴가 32로 묶여 Windows에서만 File이 2px 낮았다).
+        Button work = window.FindControl<Button>("WorkFolderButton")!;
+        settings.MinHeight = file.Bounds.Height + 3;
+        window.UpdateLayout();
+        Assert.Equal(settings.Bounds.Height, file.Bounds.Height, 1);
+        Assert.Equal(settings.Bounds.Height, work.Bounds.Height, 1);
+        settings.ClearValue(Avalonia.Layout.Layoutable.MinHeightProperty);
+        window.UpdateLayout();
+
         // 세 줄(위 띠 · 탭 줄 · 툴바) — 탭 머리는 34, 툴바의 챕터 콤보는 창 위에서 90 안에 선다(⛔ 그 전에는 48 · 111).
         TabItem tab = window.FindControl<TabItem>("ChapterTabItem")!;
         Assert.Equal(18, tab.FontSize);

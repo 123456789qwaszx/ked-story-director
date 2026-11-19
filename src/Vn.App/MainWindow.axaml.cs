@@ -22,7 +22,7 @@ namespace Vn.App;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private const string BaseTitle = "VnTool";
+    private const string BaseTitle = AppIdentity.Name;
 
     private readonly AuthoringSession _session = new();
 
@@ -131,11 +131,19 @@ public partial class MainWindow : Window
         //
         // Ctrl+Z · Ctrl+Y도 창 전체에서 받는다 — 하이어아키나 판에서 실수로 지운 사람이 메뉴를 찾아 올라가지 않아도 그 자리에서
         //    되돌린다. 같은 일을 File 메뉴의 「되돌리기」 · 「다시 실행」도 한다(UndoOrRedo).
+        //
+        // 맥에서는 ⌘도 Ctrl처럼 듣고 ⌘⇧Z가 다시 실행이며 ⌫도 카드를 지운다 — OS마다 갈리는 것은 PlatformKeys 한 벌이다(writer-app WA1).
+        SaveMenuItem.InputGesture = PlatformKeys.Gesture(Avalonia.Input.Key.S);
+        UndoMenuItem.InputGesture = PlatformKeys.Gesture(Avalonia.Input.Key.Z);
+        RedoMenuItem.InputGesture = PlatformKeys.IsMac
+            ? PlatformKeys.Gesture(Avalonia.Input.Key.Z, Avalonia.Input.KeyModifiers.Shift)
+            : PlatformKeys.Gesture(Avalonia.Input.Key.Y);
+
         AddHandler(KeyDownEvent, (_, args) =>
         {
             // Delete = [대본] 탭에서 고른 카드(에피소드 · 분기 카드)를 지운다(2026-11-18 소유자) — 묻지 않는다(되돌리기 한 칸). 글 칸에서는
             //    가로채지 않는다 — 거기서 Delete는 글자 지우기다.
-            if (args.Key == Avalonia.Input.Key.Delete && args.KeyModifiers == Avalonia.Input.KeyModifiers.None &&
+            if (PlatformKeys.IsDelete(args.Key) && args.KeyModifiers == Avalonia.Input.KeyModifiers.None &&
                 ReferenceEquals(MainTabs.SelectedItem, GraphTabItem) &&
                 FocusManager?.GetFocusedElement() is not TextBox)
             {
@@ -152,7 +160,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            if (!args.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control))
+            if (!PlatformKeys.HasCommand(args.KeyModifiers))
             {
                 return;
             }
@@ -169,20 +177,15 @@ public partial class MainWindow : Window
                 //    있으면 그것부터 걷는다).
                 case Avalonia.Input.Key.Z or Avalonia.Input.Key.Y when Graph.IsWritingFocused:
                     args.Handled = true;
-                    UndoOrRedo(redo: args.Key == Avalonia.Input.Key.Y);
+                    UndoOrRedo(redo: PlatformKeys.IsRedo(args.Key, args.KeyModifiers));
                     break;
 
                 // 주의: 다른 글 입력칸에서는 <b>가로채지 않는다</b> — 거기서 Ctrl+Z는 <b>타이핑</b>을
                 //    되돌리는 것이고, 그것을 프로젝트 되돌리기로 바꾸면 쓰던 문장이 통째로
                 //    날아간다. TextBox가 제 되돌리기를 먼저 하도록 둔다.
-                case Avalonia.Input.Key.Z when FocusManager?.GetFocusedElement() is not TextBox:
+                case Avalonia.Input.Key.Z or Avalonia.Input.Key.Y when FocusManager?.GetFocusedElement() is not TextBox:
                     args.Handled = true;
-                    UndoOrRedo(redo: false);
-                    break;
-
-                case Avalonia.Input.Key.Y when FocusManager?.GetFocusedElement() is not TextBox:
-                    args.Handled = true;
-                    UndoOrRedo(redo: true);
+                    UndoOrRedo(redo: PlatformKeys.IsRedo(args.Key, args.KeyModifiers));
                     break;
             }
         }, Avalonia.Interactivity.RoutingStrategies.Tunnel);

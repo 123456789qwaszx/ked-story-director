@@ -46,8 +46,10 @@ public sealed class DirectorFitTests : IDisposable
         Assert.Equal("100%", graph.FindControl<TextBlock>("ZoomText")!.Text);
         Border card = CardOf(graph, b);
         Point center = card.TranslatePoint(new Point(card.Bounds.Width / 2, card.Bounds.Height / 2), scroll)!.Value;
-        Assert.Equal(scroll.Viewport.Width / 2, center.X, 2);
-        Assert.Equal(scroll.Viewport.Height / 2, center.Y, 2);
+        // 반 픽셀 안에서 — 카드는 픽셀에 맞춰 그려지므로, 화면이 홀수 픽셀이면 한가운데(.5)에는 설 수 없다(맥 CI의 화면 높이 759 —
+        // 가운데 379.5에 카드는 380. writer-app WA9 · ⛔ 그 전에는 소수 둘째 자리까지 보아 화면이 짝수인 Windows · Linux에서만 통과했다).
+        Assert.Equal(scroll.Viewport.Width / 2, center.X, 0.5);
+        Assert.Equal(scroll.Viewport.Height / 2, center.Y, 0.5);
 
         window.Close();
     });
