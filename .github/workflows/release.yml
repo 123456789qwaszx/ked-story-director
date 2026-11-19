@@ -2,12 +2,12 @@ name: release
 
 # 작가에게 건넬 판을 굽는다(2026-11-19 · docs/work-orders/writer-release-orders.md WR4).
 #
-#   GitHub 저장소 → Releases → Draft a new release → 태그 v0.1.0(Create new tag) · Target dev → [Publish release]
+#   (dev를 main에 올린 뒤) GitHub 저장소 → Releases → Draft a new release → 태그 v0.1.0(Create new tag) · Target main → [Publish release]
 #
 # 릴리스를 펴면 이 작업이 그 태그의 코드로 Windows · 맥 꾸러미를 굽고(시험을 먼저 돌린다) 그 릴리스에 두 zip을 붙인다 — 10분쯤 걸린다.
 # 판 번호는 태그에서 온다(v0.1.0 → 0.1.0) — 앱의 창 제목에 선다(WR2).
 #
-# ⚠ 「Run workflow」 단추로 돌리지 않는 까닭: 그 단추는 기본 가지(main)에 있는 작업에만 선다 — 일은 dev에서 한다.
+# 릴리스를 펴는 것이 곧 실행이다 — 「Run workflow」 단추는 두지 않는다: 구운 꾸러미는 늘 릴리스(태그 · 판 번호)에 붙는다.
 on:
   release:
     types: [published]

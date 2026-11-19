@@ -69,10 +69,12 @@ desktop.ini
 
 ## 3. 앱을 건넨다 — GitHub 릴리스
 
-이 저장소(ked-story-director)의 `dev`에서 굽는다.
+이 저장소(ked-story-director)의 `main`에서 굽는다. 일은 `dev`에서 하고, 판을 낼 때 `dev`를 `main`에 올린다(기본 가지는 `main` — 2026-11-19).
 
+0. `dev`를 `main`에 올린다 — 개발 세션에 「main에 올려 줘」(웹에서 하려면 Pull requests → New pull request → base `main` ← compare `dev` →
+   Create → Merge). 이미 같으면 건너뛴다.
 1. github.com의 ked-story-director → **Releases** → **Draft a new release**.
-2. **Choose a tag** → `v0.1.0`처럼 적고 **Create new tag: v0.1.0 on publish** → **Target: `dev`**.
+2. **Choose a tag** → `v0.1.0`처럼 적고 **Create new tag: v0.1.0 on publish** → **Target: `main`**.
 3. 제목(예: `스토리 디렉터 0.1.0`)과 바뀐 것 몇 줄 → **[Publish release]**.
 4. 10분쯤 뒤 그 릴리스에 `StoryDirector-0.1.0-windows.zip` · `StoryDirector-0.1.0-mac.zip`이 붙는다(Actions의 「release」 작업 —
    시험을 먼저 돌린다. 실패하면 붙지 않는다 — Actions 탭에서 까닭을 본다).

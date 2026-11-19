@@ -41,16 +41,16 @@
 | 11-19 | WR2 | 0dca64b | **판 번호** — 앱 어디에도 없었다(맥 꾸러미의 Info.plist만 구운 날짜). `Vn.App.csproj`에 `<Version>0.0.0</Version>` — 구울 때 `-p:Version=0.1.0`으로 정한다. 앱은 어셈블리의 정보 판 번호를 읽어(`AppIdentity.Version` — 빌드 도구가 붙이는 커밋 꼬리 `+…`는 떼고, 0.0.0 · 빈 값은 「개발판」) **창 제목**에 단다: 「스토리 디렉터 0.1.0 — 프로젝트」(손으로 지은 빌드는 「스토리 디렉터 개발판 — …」). 배포 스크립트가 번호를 받는다 — `publish-windows.ps1 -Version 0.1.0` · `publish-macos.sh arm64 0.1.0`(맥은 같은 번호를 Info.plist에도 — ⛔ 구운 날짜를 걷었다). 꾸러미 파일 이름은 그대로 두고(CI가 그 이름을 찾는다) 릴리스가 올릴 때 번호를 붙인다(WR4). 확인 — `-p:Version=0.1.0`으로 지은 실행 파일에 `0.1.0+커밋`이 실렸다. PowerShell은 이 자리에 없어 CI(Windows 작업 — 번호 없이 굽는다)가 문법을 본다. 시험 — 창 제목(시험 빌드는 개발판), 판 번호 읽기 일곱 가지. 전체 724 + 600 |
 | 11-19 | WR3 | 6d3d24e | 꾸러미에 **「먼저 읽어주세요.txt」**(= `docs/작가에게.txt`)를 넣는다 — Windows(실행 파일 곁) · 맥(앱 곁 — zip은 폴더째가 아니라 그 안을 싼다: 맨 위에 `StoryDirector.app` · 안내문). ⛔ 2026-08-26부터는 실행 파일만 담았다(그때의 안내문 · 견본이 옛 규격을 말해서) — 안내문은 그 뒤로 고쳐 왔고 WR5에서 다시 본다. 견본 프로젝트는 넣지 않는다(실제 프로젝트는 Git으로 받는다). CI가 두 꾸러미에 안내문이 들었는지 · 맥 zip의 맨 위에 앱이 있는지 본다. 확인 — 이 자리(Linux)에서 `publish-macos.sh arm64 0.1.0`을 돌려 zip의 맨 위에 앱과 「먼저 읽어주세요.txt」, Info.plist와 실행 파일에 0.1.0이 실렸다(서명 도구가 없어 서명은 빠진다 — 건넬 꾸러미는 맥 CI가 굽는다). Windows는 CI가 굽는다 |
 | 11-19 | WR4 | c82f870 | **릴리스** — `.github/workflows/release.yml`. 소유자가 GitHub 웹에서 **릴리스를 펴면**(Releases → Draft a new release → 태그 `v0.1.0` · Target `dev` → Publish) 그 태그의 코드로 Windows · 맥 작업이 각각 시험을 돌리고 꾸러미를 구워(판 번호는 태그에서 — `v0.1.0` → `0.1.0`) 그 릴리스에 `StoryDirector-0.1.0-windows.zip` · `StoryDirector-0.1.0-mac.zip`을 붙인다(`gh release upload`). 태그 모양이 다르면(`v` 빠짐 · 두 마디) 굽지 않고 멈춘다. ⛔ 「Run workflow」 단추로 돌리는 길은 두지 않았다 — 그 단추는 기본 가지(`main` — 2026-09-18 뒤로 쓰지 않는다)에 있는 작업에만 선다. 릴리스 이벤트는 태그가 가리키는 커밋의 작업 파일을 쓴다 — 그래서 `dev`(이 작업이 든 가지)를 Target으로 고른다. 입력값(태그)은 스크립트에 바로 넣지 않고 환경 변수로 넘긴다. 확인 — YAML을 읽어 보고 태그 모양 다섯 가지를 견줬다. **끝까지 돌려 보지는 못했다** — 릴리스를 펴는 것은 바깥에 내는 일이라 소유자의 첫 릴리스가 첫 실행이다(굽는 단계는 `test.yml`과 같은 스크립트다) |
-| 11-19 | WR5 | (이 커밋) | **안내문**(`docs/작가에게.txt` — 꾸러미의 「먼저 읽어주세요.txt」): 「처음 한 번」의 열기를 받은 프로젝트 먼저로, 새 절 **「프로젝트 주고받기 — GitHub Desktop」**(계정 · 초대 수락 · 설치 · Clone · 열기 / 쓰기 전 받기 · 쓴 뒤 저장 → Summary → Commit → Push / 함께 쓸 때 — 때를 나눈다 · conflict면 연락 · `exported`는 안 올라간다 / **노란 띠** — WR1의 두 갈래와 두 단추), 「개발자에게 넘길 것」을 「작업 폴더 (exported)」로(넘길 파일이 없다 — 올리면 된다), 「내보내기」 설정은 개발자의 것으로, 새 절 「새 판 · 문제가 생기면」(창 제목의 판 번호 · 새 판은 exe를 바꿔 넣는다 — 설정은 이 PC에 남는다 · 번호와 한 일을 알린다). 낡은 말은 없었다(UX0–UX32 뒤로 이미 고쳐 왔다 · Ctrl+Y 다시 실행 확인). **작가 안내서**(`docs/writer-guide.md`) 5절 「백업과 전달」(zip으로 보내기)을 「주고받기 · 백업 — GitHub Desktop」으로, 6절 툴 업데이트 · 7절 문제가 생기면에 판 번호. **소유자 절차**(`docs/project-repo/README.md` — 새 문서): 프로젝트 저장소 만들기(GitHub Desktop의 Add local repository → create → Publish · 비공개) · 작가 초대 · 둘 파일(`.gitignore` — `exported/` · `runtime.target.json` · `*.tmp` · OS 파일 / `.gitattributes` — `*.json` · `*.yarn`은 LF: 툴이 늘 LF · UTF-8 · BOM 없음으로 쓴다 — 확인) · 릴리스 펴기(태그 · Target `dev` · 붙는 zip 둘 · 작가에게 건네기) · 개발자 쪽 흐름(받고 열어 저장하면 게임 폴더로 — 보낼 곳은 각자의 것) · 충돌 때 한쪽 고르기. 코드 변경 없음 |
+| 11-19 | WR5 | c633e24 | **안내문**(`docs/작가에게.txt` — 꾸러미의 「먼저 읽어주세요.txt」): 「처음 한 번」의 열기를 받은 프로젝트 먼저로, 새 절 **「프로젝트 주고받기 — GitHub Desktop」**(계정 · 초대 수락 · 설치 · Clone · 열기 / 쓰기 전 받기 · 쓴 뒤 저장 → Summary → Commit → Push / 함께 쓸 때 — 때를 나눈다 · conflict면 연락 · `exported`는 안 올라간다 / **노란 띠** — WR1의 두 갈래와 두 단추), 「개발자에게 넘길 것」을 「작업 폴더 (exported)」로(넘길 파일이 없다 — 올리면 된다), 「내보내기」 설정은 개발자의 것으로, 새 절 「새 판 · 문제가 생기면」(창 제목의 판 번호 · 새 판은 exe를 바꿔 넣는다 — 설정은 이 PC에 남는다 · 번호와 한 일을 알린다). 낡은 말은 없었다(UX0–UX32 뒤로 이미 고쳐 왔다 · Ctrl+Y 다시 실행 확인). **작가 안내서**(`docs/writer-guide.md`) 5절 「백업과 전달」(zip으로 보내기)을 「주고받기 · 백업 — GitHub Desktop」으로, 6절 툴 업데이트 · 7절 문제가 생기면에 판 번호. **소유자 절차**(`docs/project-repo/README.md` — 새 문서): 프로젝트 저장소 만들기(GitHub Desktop의 Add local repository → create → Publish · 비공개) · 작가 초대 · 둘 파일(`.gitignore` — `exported/` · `runtime.target.json` · `*.tmp` · OS 파일 / `.gitattributes` — `*.json` · `*.yarn`은 LF: 툴이 늘 LF · UTF-8 · BOM 없음으로 쓴다 — 확인) · 릴리스 펴기(태그 · Target `dev` · 붙는 zip 둘 · 작가에게 건네기) · 개발자 쪽 흐름(받고 열어 저장하면 게임 폴더로 — 보낼 곳은 각자의 것) · 충돌 때 한쪽 고르기. 코드 변경 없음 |
 
 ## 4. 소유자가 할 일 (순서대로)
 
-1. 이 가지를 `dev`에 합친다 — 릴리스 작업(`release.yml`)이 `dev`에 있어야 Target `dev`로 펼 수 있다.
+1. ~~이 가지를 `dev`에 합친다~~ — 했다(df9dd5f). 그 뒤 `dev`를 `main`에 합치고 기본 가지를 `main`으로 바꾼다(7절).
 2. ~~프로젝트 저장소를 만들고 작가를 초대한다~~ — **Git으로 옮길 때로 미뤘다**(5절). 지금은 프로젝트를 zip으로 건넨다 — [`docs/project-repo/README.md`](../project-repo/README.md) 0절.
-3. 첫 릴리스를 편다(`v0.1.0` · Target `dev`) — 같은 문서 3절. **첫 실행이 곧 릴리스 작업의 첫 시험이다**(WR4) — 붙지 않으면 Actions의
+3. 첫 릴리스를 편다(`v0.1.0` · Target `main`) — 같은 문서 3절. **첫 실행이 곧 릴리스 작업의 첫 시험이다**(WR4) — 붙지 않으면 Actions의
    「release」에서 까닭을 본다.
-4. Windows zip을 작가에게 건넨다. 작가는 「먼저 읽어주세요.txt」대로 GitHub Desktop을 깔고 받는다.
-5. 작가의 PC에서 처음 한 번 같이 본다 — 압축 풀기 · 「PC 보호」 창 · Clone · 열기 · 저장 → Commit → Push 한 바퀴.
+4. Windows zip과 프로젝트 zip을 작가에게 건넨다(같은 문서 0절 — `runtime.target.json`은 빼고).
+5. 작가의 PC에서 처음 한 번 같이 본다 — 압축 풀기 · 「PC 보호」 창 · 프로젝트 열기 · 저장 → 폴더 압축 → 돌려주기 한 바퀴.
 
 ## 5. 바뀐 결정 — 지금은 zip, 나중에 Git (2026-11-19)
 
@@ -67,4 +67,17 @@
 - `claude/happy-euler-k4wb6a` · `claude/brave-tesla-x2ttj9` — 둘 다 `dev`에 든 것을 확인했다. 이 세션의 GitHub 연결이 가지 지우기를 받지 않아
   소유자가 웹(branches 페이지)에서 지운다.
 - `main` — **남긴다**(소유자 (a)). `dev`와 공통 조상이 없는 따로 시작한 기록이다 — 2026-07-30 「프로젝트 생성」부터 2026-09-18까지 714개, `dev`의 기록은
-  2026-11-18부터. 지우면 그 기록이 저장소에서 사라진다. 기본 가지는 소유자가 설정에서 `dev`로 바꾼다.
+  2026-11-18부터. 지우면 그 기록이 저장소에서 사라진다. 기본 가지는 소유자가 설정에서 `dev`로 바꾼다(→ 7절에서 `main`으로 되돌린다).
+
+## 7. dev를 main에 합치고 기본 가지를 main으로 (2026-11-19 소유자)
+
+소유자 — 「수정 사항 2개를 찾았는데, 이거까지 고치고 main에다가 dev를 합친 다음, 그 main을 default branch로 바꾼 다음 release 하는 게
+맞지 않아?」 → UX33 · UX34를 `dev`에 올린 뒤 합친다.
+
+- **합치는 법** — 둘은 공통 조상이 없다. `main`의 끝 `f2a7bdc`는 README가 말하는 「갈라진 자리」(VnTool `dev` @ `f2a7bdc`) 그 커밋이다 — 그 뒤에
+  `dev`를 잇는다. 합침 커밋 하나: 부모는 `main`(f2a7bdc)과 `dev`, 내용은 **`dev` 그대로**(옛 `main`의 파일은 하나도 섞지 않는다 — `samples/` ·
+  `ORIENTATION.md` 같은 옛 것이 되살아나지 않게). `main`과 `dev` 둘 다 그 커밋으로 앞감기한다 — 그래서 뒤로는 `dev` → `main`이 늘 앞감기다.
+- **뒤로의 흐름** — 일은 `dev`에 바로 올린다(6절 그대로). 판을 낼 때 `dev`를 `main`에 올리고 Target `main`으로 릴리스를 편다
+  ([`docs/project-repo/README.md`](../project-repo/README.md) 3절). 기본 가지는 소유자가 설정에서 `main`으로 바꾼다(이 세션의 GitHub 연결로는
+  저장소 설정을 못 바꾼다).
+- `release.yml`의 머리 말 · 3절의 Target을 `main`으로 고쳤다. 4절의 4 · 5번을 zip 단계(5절)에 맞췄다.
