@@ -66,6 +66,14 @@ internal static class ProjectRefreshPlanner
                 RefreshGraphPositions: false,
                 RebuildInspector: false),
 
+            // 에피소드 지시 — [대본] 판에는 서지 않는다. 장면 이름표의 「메모」 표시만 다시 단다(테두리 · 이름표 — 카드 · 철도는 그대로).
+            // 장면 메모 공간은 제가 고친 것을 제자리에서 고쳐 두었다(usability UX7 · ⛔ NodeMetadata — 판을 통째로 다시 지었다).
+            ProjectChangeKind.EpisodeNote => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: false,
+                RefreshSceneFrames: true),
+
             // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
 
@@ -82,4 +90,5 @@ internal readonly record struct ProjectRefreshPlan(
     bool RefreshGraphPositions,
     bool RebuildInspector,
     bool RefreshCardWriting = false,
-    bool RefreshAllCardWriting = false);
+    bool RefreshAllCardWriting = false,
+    bool RefreshSceneFrames = false);

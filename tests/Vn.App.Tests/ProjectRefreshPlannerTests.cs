@@ -12,6 +12,20 @@ namespace Vn.App.Tests;
 public class ProjectRefreshPlannerTests
 {
     [Fact]
+    public void 에피소드_지시는_판을_다시_짓지_않고_장면_테두리만_다시_긋고_되돌리기는_구조로_받는다()
+    {
+        // 2026-11-19 소유자 — 「에피소드 지시를 추가하고 빼는 것이 조금 느린데」(usability UX7). ⛔ NodeMetadata — 판을 통째로 다시 지었다.
+        ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(ProjectChangeKind.EpisodeNote, new DialogueNode(name: "장면"));
+
+        Assert.Equal(new ProjectRefreshPlan(RebuildGraph: false, RefreshGraphPositions: false, RebuildInspector: false, RefreshSceneFrames: true), plan);
+
+        // 되돌리면 프로젝트의 객체가 모두 새것이다 — 판이 옛 객체를 붙들지 않게 다시 짓는다.
+        ProjectRefreshPlan undo = ProjectRefreshPlanner.Plan(ProjectChangeKind.EpisodeNote, null, fromHistory: true);
+        Assert.True(undo.RebuildGraph);
+        Assert.True(undo.RebuildInspector);
+    }
+
+    [Fact]
     public void 조건을_편집_중인_SetNode는_유지하고_그래프만_갱신한다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(

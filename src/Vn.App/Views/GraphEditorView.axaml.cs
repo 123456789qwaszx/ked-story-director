@@ -2245,6 +2245,19 @@ public partial class GraphEditorView : UserControl
         RequestFit(new PendingFit(null));
     }
 
+    /// <summary>
+    /// 챕터 · 장면 테두리와 이름표만 다시 긋는다 — 카드 · 철도는 그대로다(철도는 따라가기만 하고, 아무것도 움직이지 않았으니 다시 긋지 않는다).
+    /// 장면 이름표의 「메모」 표시가 에피소드 지시를 따른다(usability UX7).
+    /// </summary>
+    internal void RefreshSceneFrames()
+    {
+        SceneFrameDrawCount++;
+        DrawChapterFrames(followRails: true);
+    }
+
+    /// <summary>테두리 · 이름표만 다시 그은 번 — 시험이 「판을 다시 짓지 않았다」를 본다.</summary>
+    internal int SceneFrameDrawCount { get; private set; }
+
     /// <summary>좌표만 바뀌었을 때. projection을 다시 계산하되 컨트롤은 유지한다.</summary>
     internal void RefreshPositions()
     {

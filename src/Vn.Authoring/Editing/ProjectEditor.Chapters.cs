@@ -344,7 +344,7 @@ public sealed partial class ProjectEditor
         }
 
         // 지시를 적으면 카드도 선다 — 그 뒤로 지시를 비워도 카드는 [빼기]로만 내린다.
-        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with
+        Mutate(ProjectChangeKind.EpisodeNote, () => chapter.Episodes[index] = chapter.Episodes[index] with
         {
             Memo = wanted,
             NoteCard = chapter.Episodes[index].NoteCard || wanted is not null
@@ -365,7 +365,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = true });
+        Mutate(ProjectChangeKind.EpisodeNote, () => chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = true });
     }
 
     /// <summary>
@@ -381,7 +381,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(ProjectChangeKind.NodeMetadata, () =>
+        Mutate(ProjectChangeKind.EpisodeNote, () =>
             chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = false, Memo = null });
     }
 

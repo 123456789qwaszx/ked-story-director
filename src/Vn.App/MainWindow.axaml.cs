@@ -296,6 +296,11 @@ public partial class MainWindow : Window
                 // 좌표만 바뀌었다. 카드를 다시 만들면 드래그가 끊긴다.
                 Graph.RefreshPositions();
             }
+            else if (plan.RefreshSceneFrames)
+            {
+                // 장면 이름표의 「메모」 표시만 — 판을 다시 짓지 않는다(에피소드 지시 · usability UX7).
+                Graph.RefreshSceneFrames();
+            }
             else if (plan.RefreshAllCardWriting)
             {
                 // 글을 되돌렸다 — 어느 카드의 글인지 모르므로 글 칸마다 모델의 글로 다시 채운다(쓰는 중인 칸은 UndoInWriting이 채운다).

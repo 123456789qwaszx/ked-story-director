@@ -38,7 +38,14 @@ public enum ProjectChangeKind
     /// [구성] 판의 에피소드 자리만 바뀌었다 — [대본] 판은 대사 노드의 자리를 읽으므로 그 판은 그대로다. ⛔ 2026-11-18까지는
     /// <see cref="NodeMetadata"/>여서 [구성]에서 카드를 놓을 때마다 [대본] 판을 통째로 다시 지었다(에피소드 300개에서 3초 · finishing FX3).
     /// </summary>
-    ChapterLayout
+    ChapterLayout,
+
+    /// <summary>
+    /// 에피소드 지시(에피소드의 <c>Memo</c>)나 지시 카드가 바뀌었다 — [대본] 판에는 서지 않고, 장면 이름표의 「메모」 표시만 그것을 본다.
+    /// ⛔ 2026-11-19까지는 <see cref="NodeMetadata"/>여서 지시 카드를 붙이고 쓰고 뗄 때마다 [대본] 판을 통째로 다시 지었다(에피소드 160개에서
+    /// 한 번에 2초 · usability UX7).
+    /// </summary>
+    EpisodeNote
 }
 
 public sealed class ProjectChangedEventArgs : EventArgs
