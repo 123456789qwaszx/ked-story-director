@@ -148,12 +148,20 @@
                 <ScrollViewer x:Name="GraphScroll"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto">
-                    <!-- 판이 화면보다 작으면(화면 맞춤 · 작은 챕터) 판을 화면 가운데에 둔다. 배율 칸은 판 크기 그대로 서야 한다 — 늘어나
-                         화면을 채우면 그 안에서 판을 가운데로 미는 거리가 배율로 줄지 않아, 판이 오른쪽 · 아래로 밀려 잘렸다(⛔ 2026-11-19까지 ·
-                         usability UX10 — [대본] 판의 같은 뿌리는 writer-comfort WC1에서 왼위에 붙여 고쳤다). -->
-                    <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Canvas x:Name="GraphCanvas" Background="Transparent" HorizontalAlignment="Left" VerticalAlignment="Top" />
-                    </LayoutTransformControl>
+                    <!-- 판 바깥(BoardDesk) — 보이는 칸을 늘 채우는 회색 바탕이다. 판(GraphCanvas · 흰 바탕)이 그 위에 선다 — 판 안과 밖이 눈에
+                         보인다(2026-11-19 소유자 · usability UX22). 빈 곳 누르기 · 끌기 · 놓기는 이 바탕이 받는다 — 판 둘레를 눌러 끌어도 범위
+                         고르기가 된다(⛔ 판 밖은 받을 주인이 없어 손짓이 막혔다).
+                         판이 화면보다 작으면(화면 맞춤 · 작은 챕터) 판을 띄워 화면 가운데에 둔다 — 띄움(Margin)은 코드가 정한다(PlaceSheet:
+                         처음 · 챕터를 바꿀 때 · 화면 맞춤 · 배율에 가운데로, 편집으로 판 크기가 바뀌면 왼위 그대로 — ⛔ 정렬로 늘 가운데에 두면
+                         판이 넓어질 때마다 그 반만큼 비켜 서 놓은 카드가 밀렸다 · UX22). 배율 칸은 판 크기 그대로 서야 한다 — 늘어나 화면을 채우면
+                         그 안에서 판을 가운데로 미는 거리가 배율로 줄지 않아, 판이 오른쪽 · 아래로 밀려 잘렸다(⛔ 2026-11-19까지 · usability UX10 —
+                         [대본] 판의 같은 뿌리는 writer-comfort WC1에서 왼위에 붙여 고쳤다).
+                         배율 칸은 판 밖을 자르지 않는다 — 범위 사각형 · 판 밖으로 끄는 카드가 바깥에서도 보인다(⛔ 잘려 사라져 보였다 · UX22). -->
+                    <Panel x:Name="BoardDesk" Background="#E9ECF0">
+                        <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Left" VerticalAlignment="Top" ClipToBounds="False">
+                            <Canvas x:Name="GraphCanvas" Background="White" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                        </LayoutTransformControl>
+                    </Panel>
                 </ScrollViewer>
 
                 <!-- 배율 표시 — 100%가 아닐 때만. 누르면 100%로 돌아온다. -->

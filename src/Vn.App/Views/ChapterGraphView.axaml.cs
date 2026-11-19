@@ -86,6 +86,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         _selectedChapterId = chapterId;
+        _centerSheet = true;   // 다른 챕터의 판 — 가운데에 놓는다
         _updatingCombo = true;
         ChapterCombo.SelectedItem = chapterId;
         ConditionChapterCombo.SelectedItem = chapterId;
@@ -618,8 +619,9 @@ public partial class ChapterGraphView : UserControl
         DialogueToggle.IsChecked = true;
 
         // 빈 판 클릭 = 선택 해제, 끌면 범위 선택. 카드·간선·라벨 핸들러가 각자 누름을 소비하므로(e.Handled)
-        // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다.
-        GraphCanvas.PointerPressed += (_, e) =>
+        // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다. 판 바깥(BoardDesk)이 받는다 — 판 안의 빈 곳도 판 둘레도 같다(usability UX22).
+        // 자리는 늘 판 좌표다(판 밖이면 음수이거나 판 크기를 넘는다).
+        BoardDesk.PointerPressed += (_, e) =>
         {
             if (e.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
             {
@@ -630,8 +632,22 @@ public partial class ChapterGraphView : UserControl
 
         // 카드 끌기 —누름은 카드가 받고(e.Handled), 움직임과 놓음은 여기로 올라온다.
         // 연출 그래프와 같은 자리에 같은 손놀림이다.
-        GraphCanvas.PointerMoved += OnCanvasPointerMoved;
-        GraphCanvas.PointerReleased += OnCanvasPointerReleased;
+        BoardDesk.PointerMoved += OnCanvasPointerMoved;
+        BoardDesk.PointerReleased += OnCanvasPointerReleased;
+
+        // 화면 크기를 알게 되거나 바뀌면 판을 다시 놓는다 — 가운데로 놓기로 한 것이 남았으면 그때 가운데로. 창 · 칸의 크기가 바뀌었으면 판이 화면에
+        // 들어가면 들어가게 띄움을 줄인다. 스크롤 막대가 서거나 걷혀 바뀐 것(판이 넘쳤다 — 놓은 직후)에는 줄이지 않는다 — 놓은 카드가 밀린다.
+        GraphScroll.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == BoundsProperty)
+            {
+                PlaceSheet(keepInView: true);
+            }
+            else if (args.Property == ScrollViewer.ViewportProperty)
+            {
+                PlaceSheet();
+            }
+        };
     }
 
     internal void Attach(AuthoringSession session)
@@ -639,6 +655,7 @@ public partial class ChapterGraphView : UserControl
         DetachSession();   // 두 번 붙이면 구독이 두 벌이 된다
 
         _session = session;
+        _centerSheet = true;   // 새 세션의 판 — 가운데에 놓는다
         _sessionChanged = (_, _) => QueueReload();
         session.Changed += _sessionChanged;
 
@@ -1075,20 +1092,22 @@ public partial class ChapterGraphView : UserControl
         Point pivot = anchor ?? new Point(
             GraphScroll.Viewport.Width / 2, GraphScroll.Viewport.Height / 2);
 
-        // 지금 pivot 아래에 있는 캔버스 좌표.
+        // 지금 pivot 아래에 있는 캔버스 좌표 — 판이 띄워 서 있으면 그만큼 뺀다(PlaceSheet).
         var content = new Point(
-            (GraphScroll.Offset.X + pivot.X) / _zoom,
-            (GraphScroll.Offset.Y + pivot.Y) / _zoom);
+            (GraphScroll.Offset.X + pivot.X - _sheetOffset.X) / _zoom,
+            (GraphScroll.Offset.Y + pivot.Y - _sheetOffset.Y) / _zoom);
 
         _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         ZoomHost.LayoutTransform = new ScaleTransform(_zoom, _zoom);
         ZoomText.Text = $"{Math.Round(_zoom * 100)}%";
         ZoomResetButton.IsVisible = Math.Abs(_zoom - 1) > 0.001;
+        _centerSheet = true;   // 배율이 바뀌면 판이 화면보다 작은 쪽은 가운데에 다시 선다
+        PlaceSheet();
         ZoomHost.UpdateLayout(); // 새 크기를 알아야 오프셋 상한이 맞는다
 
         GraphScroll.Offset = new Vector(
-            Math.Max(0, (content.X * _zoom) - pivot.X),
-            Math.Max(0, (content.Y * _zoom) - pivot.Y));
+            Math.Max(0, (content.X * _zoom) + _sheetOffset.X - pivot.X),
+            Math.Max(0, (content.Y * _zoom) + _sheetOffset.Y - pivot.Y));
     }
 
     /// <summary>
@@ -1178,6 +1197,70 @@ public partial class ChapterGraphView : UserControl
 
     // ── 그리기 ──────────────────────────────────────────────────────────────
 
+    /// <summary>다시 그리기 직전의 판 크기 — 끄는 동안은 판을 이 크기로 둔다(usability UX22).</summary>
+    private Size _heldBoardSize;
+
+    /// <summary>
+    /// 판(흰 종이)이 바탕 위에 띄워 선 거리(화면 px · usability UX22). 처음 · 챕터를 바꿀 때 · 화면 맞춤 · 배율을 바꿀 때는 판이 화면보다 작은 쪽을
+    /// 가운데로 띄우고, 그 밖에는 띄움을 그대로 둔다 — 편집으로 판이 넓어지거나 좁아져도 판은 제자리에 선다(넘치면 스크롤이 생긴다).
+    /// ⛔ 정렬로 늘 가운데에 두었을 때는 카드를 판 밖에 놓아 판이 넓어질 때마다 판이 그 반만큼 비켜 서 놓은 카드가 커서에서 밀렸다.
+    /// </summary>
+    private Vector _sheetOffset;
+
+    /// <summary>다음에 판을 놓을 때 가운데로 놓는가 — 화면 크기를 아직 모르면(배치 전) 알게 될 때 놓는다.</summary>
+    private bool _centerSheet = true;
+
+    /// <summary>판의 기준(가장 왼쪽 · 위 카드)이 옮겨진 거리(판 좌표) — 다음에 판을 놓을 때 그만큼 되돌린다(<see cref="CommitDrag"/>).</summary>
+    private Vector _sheetNudge;
+
+    /// <summary>판을 바탕 위에 놓는다 — <see cref="_sheetOffset"/>.</summary>
+    /// <param name="keepInView">화면 크기가 바뀌었다(창 크기) — 판이 화면에 들어가면 들어가게 띄움을 줄인다. 편집으로 판 크기가 바뀔 때는 줄이지 않는다
+    /// (카드가 놓은 자리에서 밀리지 않게 — 넘치면 스크롤이 생긴다).</param>
+    private void PlaceSheet(bool keepInView = false)
+    {
+        Size viewport = GraphScroll.Viewport;
+        double width = GraphCanvas.Width;
+        double height = GraphCanvas.Height;
+
+        if (viewport.Width <= 0 || viewport.Height <= 0 || double.IsNaN(width) || double.IsNaN(height) || width <= 0 || height <= 0)
+        {
+            return;   // 배치 전이거나 그릴 판이 없다 — 화면 크기와 판을 알게 되면 놓는다(⛔ 빈 판을 가운데로 놓아 버리면 그린 판이 반 화면 비켜 섰다)
+        }
+
+        Vector nudge = _sheetNudge * _zoom;
+        _sheetNudge = default;
+
+        if (_centerSheet)
+        {
+            _sheetOffset = new Vector(
+                Math.Max(0, viewport.Width - (width * _zoom)) / 2,
+                Math.Max(0, viewport.Height - (height * _zoom)) / 2);
+            _centerSheet = false;
+        }
+        else if (nudge != default)
+        {
+            // 카드가 모두 그만큼 당겨졌다 — 보던 자리를 그만큼 되돌리고(스크롤), 모자라면 판을 그만큼 띄운다.
+            double scrollX = Math.Min(GraphScroll.Offset.X, nudge.X);
+            double scrollY = Math.Min(GraphScroll.Offset.Y, nudge.Y);
+
+            if (scrollX > 0 || scrollY > 0)
+            {
+                GraphScroll.Offset = new Vector(GraphScroll.Offset.X - scrollX, GraphScroll.Offset.Y - scrollY);
+            }
+
+            _sheetOffset += new Vector(nudge.X - scrollX, nudge.Y - scrollY);
+        }
+
+        if (keepInView)
+        {
+            _sheetOffset = new Vector(
+                Math.Min(_sheetOffset.X, Math.Max(0, viewport.Width - (width * _zoom))),
+                Math.Min(_sheetOffset.Y, Math.Max(0, viewport.Height - (height * _zoom))));
+        }
+
+        ZoomHost.Margin = new Thickness(_sheetOffset.X, _sheetOffset.Y, 0, 0);
+    }
+
     private void Draw()
     {
         CanvasDrawCount++;
@@ -1192,7 +1275,8 @@ public partial class ChapterGraphView : UserControl
         _labelRects.Clear();
 
         // 그릴 것이 없으면 판도 없다. 이걸 지우지 않으면 큰 챕터를 보다가 못 읽는 챕터로
-        // 넘어갔을 때 텅 빈 캔버스가 이전 크기 그대로 남아 스크롤만 넓어진다.
+        // 넘어갔을 때 텅 빈 캔버스가 이전 크기 그대로 남아 스크롤만 넓어진다. 끄는 동안은 그 크기를 아래에서 그대로 쓴다(UX22).
+        _heldBoardSize = new Size(GraphCanvas.Width, GraphCanvas.Height);
         GraphCanvas.Width = 0;
         GraphCanvas.Height = 0;
 
@@ -1297,12 +1381,25 @@ public partial class ChapterGraphView : UserControl
             .. _chipPlaced.Values.Select(position => (position.X + BranchChipWidth, position.Y + BranchChipHeight))
         ];
 
-        GraphCanvas.Width = extents.Count == 0
-            ? CanvasMargin * 2
-            : extents.Max(extent => extent.Right) + CanvasMargin;
-        GraphCanvas.Height = extents.Count == 0
-            ? CanvasMargin * 2
-            : extents.Max(extent => extent.Bottom) + CanvasMargin;
+        // 끄는 동안은 판 크기를 그대로 둔다 — 판 밖으로 끈 카드는 바깥 위에 선 채 따라오고(배율 칸이 판 밖을 자르지 않는다), 놓으면 판이
+        // 그만큼 넓어진다(usability UX22). 끄는 걸음은 판을 다시 그리지 않지만(MoveInPlace) 그 사이에 다시 읽기가 판을 그리면, 넓어진 판이
+        // 가운데로 다시 서며 카드가 커서에서 비켜 난다.
+        if (_draggingEpisodeId is not null && _heldBoardSize.Width > 0 && _heldBoardSize.Height > 0)
+        {
+            GraphCanvas.Width = _heldBoardSize.Width;
+            GraphCanvas.Height = _heldBoardSize.Height;
+        }
+        else
+        {
+            GraphCanvas.Width = extents.Count == 0
+                ? CanvasMargin * 2
+                : extents.Max(extent => extent.Right) + CanvasMargin;
+            GraphCanvas.Height = extents.Count == 0
+                ? CanvasMargin * 2
+                : extents.Max(extent => extent.Bottom) + CanvasMargin;
+        }
+
+        PlaceSheet();
 
 
         // 에피소드별 보이는 선택지 = 문구가 붙은 나가는 간선들 (길 하나가 곧 선택지
@@ -2741,7 +2838,7 @@ public partial class ChapterGraphView : UserControl
             card.Bounds.Width > 0 ? card.Bounds.Width : CardWidth,
             card.Bounds.Height > 0 ? card.Bounds.Height : CardHeightOf(episodeId));
         var viewRect = new Rect(
-            GraphScroll.Offset.X / _zoom, GraphScroll.Offset.Y / _zoom,
+            (GraphScroll.Offset.X - _sheetOffset.X) / _zoom, (GraphScroll.Offset.Y - _sheetOffset.Y) / _zoom,
             GraphScroll.Viewport.Width / _zoom, GraphScroll.Viewport.Height / _zoom);
 
         if (viewRect.Contains(cardRect))
@@ -2750,8 +2847,8 @@ public partial class ChapterGraphView : UserControl
         }
 
         GraphScroll.Offset = new Vector(
-            Math.Max(0, (cardRect.Center.X * _zoom) - (GraphScroll.Viewport.Width / 2)),
-            Math.Max(0, (cardRect.Center.Y * _zoom) - (GraphScroll.Viewport.Height / 2)));
+            Math.Max(0, (cardRect.Center.X * _zoom) + _sheetOffset.X - (GraphScroll.Viewport.Width / 2)),
+            Math.Max(0, (cardRect.Center.Y * _zoom) + _sheetOffset.Y - (GraphScroll.Viewport.Height / 2)));
     }
 
     /// <summary>
@@ -2950,8 +3047,15 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
+        // 판은 가장 왼쪽 · 위 카드를 기준으로 감싼다(DisplayPlacement) — 그 카드를 오른쪽 · 아래로 옮겼으면 다시 그릴 때 모든 카드가 그만큼 당겨진다.
+        // 판을 놓을 때 그만큼 되돌려 카드가 화면에서 놓은 자리에 남게 한다(usability UX22).
+        Vector nudge = new(places.Values.Min(place => place.X), places.Values.Min(place => place.Y));
+
         UiGuard.Run(_session, "에피소드 자리", () =>
-            _session!.Editor.MoveEpisodes(chapterId, places));
+        {
+            _session!.Editor.MoveEpisodes(chapterId, places);
+            _sheetNudge = nudge;
+        });
     }
 
     /// <summary>
