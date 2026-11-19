@@ -10,7 +10,14 @@
     <AssemblyName>StoryDirector</AssemblyName>
     <AssemblyTitle>스토리 디렉터</AssemblyTitle>
     <Product>스토리 디렉터</Product>
+    <!-- 실행 파일의 아이콘(Windows 탐색기 · 작업 표시줄). 창의 아이콘은 App.axaml.cs가 같은 파일로 단다. 그림을 바꾸려면 원본
+         Assets/app-icon.png를 갈고 tools/make-app-icons.py로 다시 굽는다(.ico · 맥의 .icns) — WA5. -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
