@@ -115,10 +115,7 @@ public sealed class ChapterStatEditingTests
             .OfType<Border>()
             .Single(border => border.Tag as string == episodeId);
 
-        return ((StackPanel)card.Child!).Children
-            .OfType<TextBlock>()
-            .FirstOrDefault(block => block.Tag as string == ChapterGraphView.StatLineTag)
-            ?.Text ?? string.Empty;
+        return ChapterCardStats.Of(card);
     }
 
     private static (ChapterGraphView View, AuthoringSession Session) Show(TempProject project)

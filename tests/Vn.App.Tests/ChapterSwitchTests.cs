@@ -121,10 +121,7 @@ public sealed class ChapterSwitchTests : IDisposable
     {
         Border card = Cards(canvas).Single(border => (string)border.Tag! == episodeId);
 
-        return ((StackPanel)card.Child!).Children
-            .OfType<TextBlock>()
-            .FirstOrDefault(block => block.Tag as string == ChapterGraphView.StatLineTag)
-            ?.Text ?? string.Empty;
+        return ChapterCardStats.Of(card);
     }
 
     private (ChapterGraphView View, Canvas Canvas) Show()
