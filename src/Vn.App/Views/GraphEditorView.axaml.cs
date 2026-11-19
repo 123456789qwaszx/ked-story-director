@@ -6657,9 +6657,16 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (port.ExecutionPort is not null)
+        if (port.ExecutionPort is not null && _session is not null)
         {
-            _session?.Editor.SetExitTarget(port.ExecutionPort, target);
+            // 분기 카드의 갈래 출구는 끊기만 한다 — 판이 이어진 것(그 전의 파일)만 그린다(UX27).
+            if (target is not null && !_session.Editor.CanBranchFrom(port.NodeId))
+            {
+                _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 선은 빈 곳에 놓으면 끊깁니다.");
+                return;
+            }
+
+            _session.Editor.SetExitTarget(port.ExecutionPort, target);
         }
     }
 
@@ -6684,11 +6691,24 @@ public partial class GraphEditorView : UserControl
                 return;
             }
 
+            // 분기 카드의 분기점(그 전의 파일)에는 새 카드를 세우지 않는다 — 분기 카드는 분기를 내지 않는다(UX27).
+            if (!_session.Editor.CanBranchFrom(detour.NodeId))
+            {
+                _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 분기점은 줄의 ＋에서 지웁니다.");
+                return;
+            }
+
             if (_session.Editor.AddBranchCardAt(detour, ClampNodeX(at.X), ClampNodeY(at.Y - (TitleHeight / 2))) is { } created)
             {
                 _session.SetStatus($"분기 카드 '{created.Name}'{Josa.을를(created.Name)} 세우고 이었습니다 — 들러서 할 대사를 적으세요. {BranchConditionNote.Where}");
             }
 
+            return;
+        }
+
+        if (!_session.Editor.CanBranchFrom(detour.NodeId))
+        {
+            _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 선은 빈 곳에 놓으면 끊깁니다.");
             return;
         }
 

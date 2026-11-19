@@ -72,7 +72,7 @@ public sealed class AutoIdTests
         Assert.Equal(auto, NewNames.IsAuto(id, NewNames.EpisodePrefix("ch01", "scene01")));
 
     [Fact]
-    public void 분기_카드는_집의_장면으로_이름을_짓는다()
+    public void 분기_카드는_부르는_에피소드의_장면으로_이름을_짓는다()
     {
         ProjectEditor editor = World();
         DialogueNode episode = editor.AddDialogueNode(TestChapter.Board(editor).Id, "scene02", 0, 0);
@@ -81,12 +81,9 @@ public sealed class AutoIdTests
         DialogueNode first = editor.AddBranchMarker(episode.Id, lineId);
         DialogueNode second = editor.AddBranchMarker(episode.Id, lineId);
 
-        // 분기 카드에서 다시 분기해도 집(처음 부르는 에피소드)의 장면이다.
-        DialogueNode nested = editor.AddBranchMarker(first.Id, first.Script.ActiveLines.First().Id);
-
         Assert.Equal(
-            ["ch01_scene02_branch01", "ch01_scene02_branch02", "ch01_scene02_branch03"],
-            new[] { first, second, nested }.Select(card => card.Name));
+            ["ch01_scene02_branch01", "ch01_scene02_branch02"],
+            new[] { first, second }.Select(card => card.Name));
     }
 
     [Fact]

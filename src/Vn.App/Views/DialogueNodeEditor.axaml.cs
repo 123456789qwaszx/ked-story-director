@@ -117,27 +117,6 @@ public partial class DialogueNodeEditor : UserControl
         };
     }
 
-    /// <summary>
-    /// <b>챕터가 쥔</b> 것을 여기서 고치려는 시도를 막고, 어디서 고치는지 말한다. 참이면
-    /// 호출자는 그냥 돌아간다.
-    ///
-    /// <b>대본에 속한 것은 막지 않는다</b>
-    /// (줄 추가·삭제·이동, 화자·내용, 텍스트 반영, 조건 태그). 막는 문은
-    /// 챕터 흐름 하나뿐이고, 그것이 닫혀 있는 이유는 <b>문이 둘이면 안 되기</b>
-    /// 때문이다: 갈래 출구는 연출 그래프 카드의 IF 포트에서만 잇고 뗀다.
-    /// </summary>
-    private bool BlockIfChapterFlow(string what)
-    {
-        if (!_chapterEpisode)
-        {
-            return false;
-        }
-
-        _session?.SetStatus(
-            $"{what}{Josa.은는(what)} [대본] 탭 카드의 IF 갈래 포트에서 합니다 — 잇고 떼는 문은 하나입니다.");
-        return true;
-    }
-
     /// <summary>빈 공간의 줄 메뉴 —여기서의 추가는 언제나 맨 아래, 삭제는 대상이 없어 잠긴다.</summary>
     private void ShowEmptyAreaFlyout()
     {
@@ -1125,7 +1104,8 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
 
-        // 「분기 추가」 — <b>모든 노드에서</b> 선다.
+        // 「분기 추가」 — <b>에피소드 카드에서</b> 선다. 분기 카드는 분기를 내지 않는다(usability UX27 · ProjectEditor.CanBranchFrom) —
+        //    그 전의 파일에 남은 분기는 아래 목록에서 지운다.
         //
         // 조건을 걸지 않는다. 이 줄 <b>앞</b>에 아무것도 없는 카드가 끼고, 연출 그래프의
         //    카드에 포트가 하나 뚫리며, 다녀올 에피소드가 함께 서서 이미 이어진 상태가 된다.
@@ -1171,36 +1151,21 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(removeOpen);
         }
 
-        var addBranch = new Button
+        if (!_session!.Editor.CanBranchFrom(node.Id))
         {
-            Content = "＋ 분기 추가",
-            FontSize = 10,
-            Padding = new Thickness(7, 2)
-        };
-        ToolTip.SetTip(
-            addBranch,
-            "이 줄 앞에서 갈라집니다. 다녀올 에피소드가 함께 서고 이미 이어진 상태입니다 — 처음에는 조건 없이 늘 다녀옵니다. " +
-            BranchConditionNote.Where + " 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
-
-        addBranch.Click += (_, _) =>
-        {
-            if (_building)
+            panel.Children.Add(new TextBlock
             {
-                return;
-            }
-
-            // 새 분기에는 조건이 없다 — 만든 순간에 그 사실과 정하는 자리를 말한다.
-            UiGuard.Run(_session!, "분기 추가", () =>
-            {
-                DialogueNode created = _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId);
-                _session.SetStatus($"분기 '{created.Name}'{Josa.을를(created.Name)} 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
+                Text = "분기 카드 안에서는 분기를 내지 않습니다 — 들렀다 돌아오는 곳입니다. 갈라야 하면 부르는 에피소드에 분기를 하나 더 두세요.",
+                FontSize = 10,
+                Opacity = 0.65,
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 250
             });
-        };
-
-        panel.Children.Add(addBranch);
-
-        if (_chapterEpisode)
+        }
+        else
         {
+            panel.Children.Add(BuildAddBranchButton(node, resolved));
+
             // 여기서 막는 것은 챕터의 것이다 —선택지와 스탯변화는 간선, 갈래 출구는 IF 포트.
             panel.Children.Add(new TextBlock
             {
@@ -1212,8 +1177,8 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
 
-        // ⛔ 갈래 출구(이 갈래 끝에서 점프)는 여기에 두지 않는다(2026-11-19 소유자 · usability UX26 — 차림에서 걷었다). 잇고 떼는 자리는 판 카드의
-        //    IF 갈래 포트와 줄 아래의 출구 레일(「→ 분기 이후」)이다.
+        // ⛔ 갈래 출구(이 갈래 끝에서 점프)는 여기에 두지 않는다(2026-11-19 소유자 · usability UX26 — 차림에서 걷었다). 잇고 떼는 자리는 판
+        //    카드의 IF 갈래 포트 하나다 — 에피소드 카드만(분기 카드는 출구를 두지 않는다 · UX27).
 
         // ▲▼✕ 줄 이동 · 삭제의 진입점 — 행에는 단추를 두지 않고 여기서 한다.
         // 줄 구성의 주인은 프로젝트라 모든 노드에서 선다.
@@ -1286,6 +1251,38 @@ public partial class DialogueNodeEditor : UserControl
         _lineMetaFlyout.ShowAt(anchor);
     }
 
+    /// <summary>＋ 차림의 「＋ 분기 추가」 — 에피소드 카드에만 선다(분기 카드는 분기를 내지 않는다 · UX27).</summary>
+    private Button BuildAddBranchButton(DialogueNode node, ResolvedLine resolved)
+    {
+        var addBranch = new Button
+        {
+            Content = "＋ 분기 추가",
+            FontSize = 10,
+            Padding = new Thickness(7, 2)
+        };
+        ToolTip.SetTip(
+            addBranch,
+            "이 줄 앞에서 갈라집니다. 다녀올 분기 카드가 함께 서고 이미 이어진 상태입니다 — 처음에는 조건 없이 늘 다녀옵니다. " +
+            BranchConditionNote.Where + " 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
+
+        addBranch.Click += (_, _) =>
+        {
+            if (_building)
+            {
+                return;
+            }
+
+            // 새 분기에는 조건이 없다 — 만든 순간에 그 사실과 정하는 자리를 말한다.
+            UiGuard.Run(_session!, "분기 추가", () =>
+            {
+                DialogueNode created = _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId);
+                _session.SetStatus($"분기 '{created.Name}'{Josa.을를(created.Name)} 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
+            });
+        };
+
+        return addBranch;
+    }
+
     /// <summary>줄 ＋ 차림의 [아래에 줄 추가] 단추의 표 — 시험이 찾는다.</summary>
     internal const string LineMetaAddTag = "line-meta-add";
 
@@ -1295,13 +1292,11 @@ public partial class DialogueNodeEditor : UserControl
     // ── 출구 레일 ───────────────────────────────────────────────────────────
 
     /// <summary>
-    /// 갈래 출구가 있는 줄 아래의 출구 레일. 표시만 하면 기능이 퇴보한다 —
-    /// 누르면 출구 편집이 열린다.
+    /// 갈래 출구가 있는 줄 아래의 출구 레일 — <b>표시뿐이다</b>. 어디로 가는지는 계속 보인다: 잠근 것은 고치는 길이지 정보가 아니다.
     ///
-    /// 주의: <b>챕터 에피소드에서는 표시뿐이다</b>. 배선을 잇고
-    /// 떼는 자리는 <b>연출 그래프 카드의 IF 갈래 포트</b> 하나로 모은다 — 같은
-    /// <c>SetExitTarget</c>을 부르는 문이 둘이면 어느 쪽이 정본인지 화면이 말하지 못한다.
-    /// 어디로 가는지는 계속 보인다: 잠근 것은 고치는 길이지 정보가 아니다.
+    /// 잇고 떼는 자리는 <b>[대본] 판 카드의 IF 갈래 포트</b> 하나다 — 같은 <c>SetExitTarget</c>을 부르는 문이 둘이면 어느 쪽이 정본인지 화면이
+    /// 말하지 못한다. 분기 카드는 출구를 두지 않는다(usability UX27) — 그 전의 파일에 남은 것은 판에서 끊는다. ⛔ 전에는 분기 카드에서
+    /// 이 레일이 단추였고 누르면 대상 고르기가 열렸다(아무 카드에나 이어졌다).
     /// </summary>
     private Control BuildExitRail(DialogueNode node, ConditionBranch branch)
     {
@@ -1312,93 +1307,15 @@ public partial class DialogueNodeEditor : UserControl
             Text = $"→ 분기 이후: {target.Name}",
             FontSize = 10,
             FontWeight = FontWeight.SemiBold,
-            Foreground = BranchPalette.Accent(PaletteOf(branch))
+            Foreground = BranchPalette.Accent(PaletteOf(branch)),
+            Margin = new Thickness(30, 0, 0, 0),
+            Opacity = 0.8
         };
+        ToolTip.SetTip(caption, _session.Editor.CanBranchFrom(node.Id)
+            ? "이 갈래의 출구는 [대본] 판 카드의 IF 갈래 포트에서 잇고 뗍니다."
+            : "분기 카드에는 출구를 두지 않습니다 — [대본] 판에서 이 선을 고르고 Delete로 끊으세요.");
 
-        if (_chapterEpisode)
-        {
-            // 단추가 아니라 글이다 — 잇고 떼는 문이 여기가 아님이 모양으로 보인다.
-            caption.Margin = new Thickness(30, 0, 0, 0);
-            caption.Opacity = 0.8;
-            ToolTip.SetTip(caption,
-                "이 갈래의 출구는 [대본] 탭 카드의 IF 갈래 포트에서 잇고 뗍니다.");
-
-            return caption;
-        }
-
-        var button = new Button
-        {
-            Content = caption,
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(2, 0),
-            MinHeight = 0,
-            Margin = new Thickness(28, 0, 0, 0)
-        };
-        ToolTip.SetTip(button, "누르면 이 갈래의 출구를 고칩니다.");
-
-        button.Click += (_, _) =>
-        {
-            // 문이 둘이면 빗장도 둘이어야 한다 — 단추가 안 서더라도 여기서 다시 막는다.
-            if (BlockIfChapterFlow("갈래 출구 배선"))
-            {
-                return;
-            }
-
-            var panel = new StackPanel { Spacing = 4, MinWidth = 240 };
-            panel.Children.Add(new TextBlock
-            {
-                Text = "출구 (이 갈래 끝에서 점프)",
-                FontSize = 10,
-                Opacity = 0.6
-            });
-            panel.Children.Add(BuildExitEditor(node, branch));
-            new Flyout { Content = panel }.ShowAt(button);
-        };
-
-        return button;
-    }
-
-    /// <summary>갈래 출구 편집 — 그래프의 분기 간선과 같은 SetExitTarget 하나를 부른다.</summary>
-    private Control BuildExitEditor(DialogueNode node, ConditionBranch branch)
-    {
-        List<StoryNode> targets = ExitTargets(node); // 챕터 에피소드 제외
-
-        var combo = new ComboBox
-        {
-            ItemsSource = targets.Select(candidate => candidate.Name).ToList(),
-            SelectedIndex = targets.FindIndex(candidate =>
-                string.Equals(candidate.Id, branch.ExitTargetNodeId, StringComparison.Ordinal)),
-            FontSize = 11,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            PlaceholderText = "대상 노드"
-        };
-
-        combo.SelectionChanged += (_, _) =>
-        {
-            if (!_building && combo.SelectedIndex >= 0 && combo.SelectedIndex < targets.Count)
-            {
-                _session!.Editor.SetExitTarget(
-                    node.Id, ExitPortKind.Branch, branch.OpenLineId, targets[combo.SelectedIndex].Id);
-            }
-        };
-
-        var clear = new Button
-        {
-            Content = "해제",
-            FontSize = 10,
-            Margin = new Thickness(4, 0, 0, 0),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        clear.Click += (_, _) =>
-            _session!.Editor.SetExitTarget(node.Id, ExitPortKind.Branch, branch.OpenLineId, null);
-
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        Grid.SetColumn(combo, 0);
-        Grid.SetColumn(clear, 1);
-        row.Children.Add(combo);
-        row.Children.Add(clear);
-        return row;
+        return caption;
     }
 
     /// <summary>
@@ -1448,20 +1365,6 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
     }
-
-    // ── 출구 후보 ───────────────────────────────────────────────────────────
-    //
-    // 후보 계산은 갈래(detour) 출구가 쓴다.
-
-    /// <summary>검증용 손잡이 — 갈래 출구 콤보가 받는 후보 그대로.</summary>
-    internal List<StoryNode> ExitTargetsProbe(string nodeId) =>
-        ExitTargets((DialogueNode)_session!.Project.FindNode(nodeId)!);
-
-    /// <summary>분기가 다녀갈 수 있는 카드 — 같은 판의 분기 카드. 에피소드에는 분기점을 잇지 않는다(2026-11-17).</summary>
-    private List<StoryNode> ExitTargets(DialogueNode node) => _session!.Project.EnumerateNodes()
-        .Where(other => !string.Equals(other.Id, node.Id, StringComparison.Ordinal))
-        .Where(other => _session.Editor.CanBranchTo(node.Id, other.Id))
-        .ToList();
 
     // ── 그 밖 ───────────────────────────────────────────────────────────────
 

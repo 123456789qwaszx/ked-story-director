@@ -284,6 +284,11 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("분기는 대사 노드에만 둘 수 있습니다.");
         }
 
+        if (!CanBranchFrom(nodeId))
+        {
+            throw new InvalidOperationException(BranchCardBranchesRefusal);
+        }
+
         if (Project.FindFileContainingNode(nodeId) is not { } file)
         {
             throw new InvalidOperationException("판에 서 있지 않은 노드입니다.");
@@ -323,9 +328,23 @@ public sealed partial class ProjectEditor
     /// 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다(<see cref="IsBranchCardElsewhere"/>).
     /// </summary>
     public bool CanBranchTo(string fromNodeId, string nodeId) =>
+        CanBranchFrom(fromNodeId) &&
         Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } &&
         Project.FindFileContainingNode(nodeId) is { } board &&
         ReferenceEquals(board, Project.FindFileContainingNode(fromNodeId));
+
+    /// <summary>
+    /// 그 카드에서 <b>분기를 낼 수 있는가</b> — 분기점(<c>&lt;&lt;detour&gt;&gt;</c>로 들르는 곳)도 갈래 출구도. <b>분기 카드는 못 낸다</b>
+    /// (2026-11-19 소유자 · usability UX27): 분기 카드는 에피소드에서 들렀다 돌아오는 곳이라 그 안에서 다시 갈라지지 않는다 — 들르기가
+    /// 한 단계일 때 판을 읽을 수 있고, [구성]과 도달성 증명은 분기 카드를 보지 않는다. ⛔ 전에는 분기 카드의 분기도 사슬로 따랐고, 분기 카드의
+    /// 갈래 출구는 아무 카드에나 이어졌다 — 아무도 부르지 않는 분기 카드에 이으면 내보낸 Yarn이 없는 노드를 불러 게임이 멈췄고, 에피소드에
+    /// 이으면 그 에피소드가 진행 기록 밖에서 통째로 재생됐다. 이미 그런 파일은 읽되 챕터 검증이 오류로 짚는다(<see cref="Chapters.ChapterBranchCards"/>).
+    /// </summary>
+    public bool CanBranchFrom(string nodeId) => Project.FindNode(nodeId) is DialogueNode { IsBranchCard: false };
+
+    /// <summary>분기 카드에서 분기를 내려 할 때 하는 말 — 편집기의 거절 · 화면의 상태줄이 같은 글을 쓴다.</summary>
+    public const string BranchCardBranchesRefusal =
+        "분기 카드 안에서는 분기를 내지 않습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳입니다. 갈라야 하면 그 에피소드에 분기를 하나 더 두세요.";
 
     /// <summary>그 카드가 다른 판의 분기 카드인가 — 놓기를 거절할 때 까닭을 고른다.</summary>
     public bool IsBranchCardElsewhere(string fromNodeId, string nodeId) =>
@@ -341,6 +360,7 @@ public sealed partial class ProjectEditor
         ArgumentNullException.ThrowIfNull(openPoint);
 
         if (!openPoint.IsOpenDetour ||
+            !CanBranchFrom(openPoint.NodeId) ||
             openPoint.BranchOpenLineId is not { } lineId ||
             Project.FindFileContainingNode(openPoint.NodeId) is not { } file)
         {
@@ -720,6 +740,12 @@ public sealed partial class ProjectEditor
                 SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
             }
 
+            return;
+        }
+
+        // 분기 카드의 갈래 출구는 잇지 않는다 — 끊기만 받는다(UX27 · CanBranchFrom).
+        if (targetNodeId is not null && !CanBranchFrom(nodeId))
+        {
             return;
         }
 
@@ -1279,7 +1305,8 @@ public sealed partial class ProjectEditor
         NewNames.NextEpisodeId(Project, RequireChapter(chapterId), sceneId);
 
     /// <summary>
-    /// 그 카드가 선 장면 — 에피소드 카드면 그 에피소드의 장면, 분기 카드면 집(처음 부르는 에피소드)의 장면. 분기 카드의 자동 이름이 쓴다.
+    /// 분기를 낸 에피소드 카드의 장면 — 새 분기 카드의 자동 이름이 쓴다. 분기를 내는 것은 에피소드 카드뿐이다(<see cref="CanBranchFrom"/> ·
+    /// ⛔ 분기 카드에서 낸 분기는 집(처음 부르는 에피소드)의 장면을 따랐다 — 2026-11-19에 걷혔다).
     /// </summary>
     private string? SceneOfCard(DialogueNode? card)
     {
@@ -1289,11 +1316,6 @@ public sealed partial class ProjectEditor
         }
 
         ChapterDocument chapter = EpisodeNaming.ChapterOf(Project, card);
-
-        string? episodeId = card.IsBranchCard
-            ? ChapterBranchCards.HomesOf(Project, chapter.ChapterId).FirstOrDefault(home => home.Card.Id == card.Id)?.EpisodeId
-            : EpisodeNaming.EpisodeFor(chapter, card)?.EpisodeId;
-
-        return episodeId is null ? null : FindEpisode(chapter, episodeId)?.SceneId;
+        return EpisodeNaming.EpisodeFor(chapter, card)?.EpisodeId is { } episodeId ? FindEpisode(chapter, episodeId)?.SceneId : null;
     }
 }

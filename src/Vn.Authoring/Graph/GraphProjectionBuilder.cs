@@ -244,11 +244,11 @@ public static class GraphProjectionBuilder
     {
         IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project);
 
-        // 분기 에피소드의 첫머리 조건은 출구가 아니다 — 미달이면 곧바로 돌아올 뿐이다(BranchEntryCondition). 이어 둔 것이 없으면
-        // 카드에 포트 줄을 세우지 않는다.
-        if (node is DialogueNode dialogue)
+        // 분기 카드는 분기를 내지 않는다(usability UX27 · ProjectEditor.CanBranchFrom) — 조건 갈래(첫머리 조건도)에 출구 포트를 세우지 않는다.
+        // 이어 둔 것(그 전의 파일)만 선다 — 끊을 수 있게. ⛔ 전에는 첫머리 조건의 포트만 감췄고 다른 갈래는 아무 카드에나 이어졌다.
+        if (node is DialogueNode { IsBranchCard: true })
         {
-            exits = exits.Where(exit => !BranchEntryCondition.IsEntryGatePort(project, dialogue, exit));
+            exits = exits.Where(exit => exit.Kind != ExitPortKind.Branch || exit.IsConnected);
         }
 
         var ports = exits

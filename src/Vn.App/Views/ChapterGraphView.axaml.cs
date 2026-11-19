@@ -1586,7 +1586,8 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>
     /// 분기 카드 칩의 자리 — 집(그 분기 카드를 먼저 부르는 에피소드 — <see cref="ChapterBranchCards.HomesOf"/>)의 오른쪽에 대본 차례로 세로로
-    /// 늘어선다. 분기 카드가 부르는 분기 카드는 한 칸 들여 선다. 자리를 저장하지 않는다 — 끌어 옮기지 않고 에피소드를 따라간다(소유자).
+    /// 늘어선다. 자리를 저장하지 않는다 — 끌어 옮기지 않고 에피소드를 따라간다(소유자). ⛔ 분기 카드가 부르는 분기 카드를 한 칸 들여 세우던
+    /// 것은 2026-11-19에 걷혔다 — 분기 카드는 분기를 내지 않는다(usability UX27).
     /// </summary>
     private void PlaceBranchChips()
     {
@@ -1598,8 +1599,6 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        IReadOnlyList<ChapterBranchMarkers.Marker> markers = ChapterBranchMarkers.For(_session.Editor.Project, chapterId);
-        var depth = new Dictionary<string, int>(StringComparer.Ordinal);
         var count = new Dictionary<string, int>(StringComparer.Ordinal);
 
         foreach (BranchCardHome home in ChapterBranchCards.HomesOf(_session.Editor.Project, chapterId))
@@ -1609,23 +1608,12 @@ public partial class ChapterGraphView : UserControl
                 continue;
             }
 
-            List<ChapterBranchMarkers.Marker> calls = markers
-                .Where(marker => string.Equals(marker.ToNodeId, home.Card.Id, StringComparison.Ordinal))
-                .ToList();
-            int level = calls.Any(marker => string.Equals(marker.FromEpisodeId, home.EpisodeId, StringComparison.Ordinal))
-                ? 0
-                : calls.Where(marker => depth.ContainsKey(marker.FromNodeId))
-                    .Select(marker => depth[marker.FromNodeId] + 1)
-                    .DefaultIfEmpty(0)
-                    .Min();
-
-            depth[home.Card.Id] = level;
             int index = count.GetValueOrDefault(home.EpisodeId);
             count[home.EpisodeId] = index + 1;
 
             _chipHome[home.Card.Id] = home.EpisodeId;
             _chipPlaced[home.Card.Id] = (
-                at.X + CardWidth + BranchChipOffset + (level * BranchChipIndent),
+                at.X + CardWidth + BranchChipOffset,
                 at.Y + (index * (BranchChipHeight + BranchChipGap)));
         }
     }
@@ -2595,8 +2583,6 @@ public partial class ChapterGraphView : UserControl
     private const double BranchChipOffset = 34;
     private const double BranchChipGap = 6;
 
-    /// <summary>분기 카드가 부르는 분기 카드는 이만큼 들여 선다.</summary>
-    private const double BranchChipIndent = 14;
 
     /// <summary>
     /// 분기 카드 칩이 지는 표 — 화면 테스트가 이것으로 찾는다. 글자 표가 아닌 것은 「글자 표를 진 Border = 에피소드 카드」를 깨지 않기

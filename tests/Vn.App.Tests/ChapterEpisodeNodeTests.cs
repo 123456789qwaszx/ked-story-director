@@ -149,24 +149,6 @@ public sealed class ChapterEpisodeNodeTests
     });
 
     [Fact]
-    public void 분기_목표_후보는_분기_카드뿐이고_에피소드_카드가_없다() => HeadlessUi.Run(() =>
-    {
-        // 에피소드 사이 흐름은 챕터 간선(기획자) 소유다 — 분기점은 분기 카드에만 잇는다(2026-11-17).
-        (DialogueNodeEditor editor, AuthoringSession session, string episodeNodeId) = ShowEpisodeCard();
-        DialogueNode episode = session.Project.FindDialogue(episodeNodeId)!;
-        DialogueNode first = session.Editor.AddBranchMarker(episodeNodeId, episode.Script.ActiveLines.First().Id);
-        DialogueNode second = session.Editor.AddBranchMarker(episodeNodeId, episode.Script.ActiveLines.First().Id);
-
-        editor.Show(episodeNodeId);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        List<StoryNode> targets = editor.ExitTargetsProbe(first.Id);
-
-        Assert.Contains(targets, target => target.Id == second.Id);
-        Assert.All(targets, target => Assert.True(((DialogueNode)target).IsBranchCard));
-    });
-
-    [Fact]
     public void 에피소드_카드로_향하는_출구는_검증이_크게_말한다() => HeadlessUi.Run(() =>
     {
         // 편집기는 후보에서 빼지만, 이미 있는 연결(옛 프로젝트)은 막지 않고 경고한다.

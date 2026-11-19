@@ -9,7 +9,8 @@ namespace Vn.Authoring.Tests.Chapters;
 /// <summary>
 /// <b>분기 카드 검증</b> (2026-11-17 · <c>docs/work-orders/branch-card-orders.md</c> B2) — 분기 카드는 도달성 증명(런타임의 오라클 — 에피소드와
 /// 간선만) 밖이라 따로 본다. ① 분기점이 에피소드에 이어져 있다 → 오류(옛 데이터), ② 아무도 부르지 않거나 도달할 수 없는 곳만 부른다 → 경고
-/// (진행 JSON에 없어 게임을 깨지 않는다 — 소유자), ③ 줄이 없다 → 오류(Yarn이 줄 없는 노드를 빼 <c>&lt;&lt;detour&gt;&gt;</c>가 없는 노드를 부른다).
+/// (진행 JSON에 없어 게임을 깨지 않는다 — 소유자), ③ 줄이 없다 → 오류(Yarn이 줄 없는 노드를 빼 <c>&lt;&lt;detour&gt;&gt;</c>가 없는 노드를 부른다),
+/// ④ 분기 카드 안에 분기가 있다 → 오류(그 전의 파일 — usability UX27).
 /// </summary>
 public sealed class BranchCardValidationTests
 {
@@ -57,29 +58,58 @@ public sealed class BranchCardValidationTests
     }
 
     [Fact]
-    public void 도달할_수_없는_곳만_부르면_경고고_사슬도_따른다()
+    public void 도달할_수_없는_곳만_부르면_경고다()
     {
-        // 외딴(들어오는 길 없음)이 부르는 분기 카드, 그 분기 카드가 또 부르는 분기 카드 — 둘 다 재생되지 않는다.
+        // 외딴(들어오는 길 없음)이 부르는 분기 카드 — 재생되지 않는다.
         (ProjectEditor editor, _) = World();
         editor.AddEpisode("ch01", "외딴", title: "외딴", 0, 400, sceneId: "외딴");
         DialogueNode lonely = EpisodeNaming.CardFor(editor.Project, "ch01", "외딴")!;
         Filled(lonely);
-        DialogueNode first = Filled(editor.AddBranchMarker(lonely.Id, lonely.Script.ActiveLines.First().Id));
-        DialogueNode second = Filled(editor.AddBranchMarker(first.Id, first.Script.ActiveLines.First().Id));
+        DialogueNode made = Filled(editor.AddBranchMarker(lonely.Id, lonely.Script.ActiveLines.First().Id));
 
-        List<ChapterDiagnostic> warnings = Branch(Validate(editor)).ToList();
+        ChapterDiagnostic warning = Assert.Single(Branch(Validate(editor)));
 
-        Assert.Equal(2, warnings.Count);
-        Assert.All(warnings, warning => Assert.Equal(
-            (ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.BranchCardUnreachable),
-            (warning.Severity, warning.Code)));
-        Assert.Contains(warnings, warning => warning.Message.Contains(first.Name, StringComparison.Ordinal) &&
-                                             warning.Message.Contains("외딴", StringComparison.Ordinal));
-        Assert.Contains(warnings, warning => warning.Message.Contains(second.Name, StringComparison.Ordinal));
+        Assert.Equal((ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.BranchCardUnreachable), (warning.Severity, warning.Code));
+        Assert.Contains(made.Name, warning.Message, StringComparison.Ordinal);
+        Assert.Contains("외딴", warning.Message, StringComparison.Ordinal);
 
-        // 외딴으로 가는 길을 이으면 둘 다 조용해진다.
+        // 외딴으로 가는 길을 이으면 조용해진다.
         editor.AddEdge("ch01", "root", "외딴", optionLabel: "간다");
         Assert.Empty(Branch(Validate(editor)));
+    }
+
+    [Fact]
+    public void 분기_카드_안의_분기는_오류다_분기점이든_갈래_출구든()
+    {
+        // 편집기는 만들지 않는다(usability UX27) — 그 전의 파일에 남은 것을 그대로 지어 본다.
+        (ProjectEditor editor, DialogueNode root) = World();
+        string first = root.Script.ActiveLines.First().Id;
+        DialogueNode outer = Filled(editor.AddBranchMarker(root.Id, first));
+        DialogueNode inner = Filled(editor.AddBranchMarker(root.Id, first));
+        outer.RequireExtension(outer.Script.ActiveLines.First().Id).DetourTargetNodeIds.Add(inner.Id);
+
+        ChapterValidationResult result = Validate(editor);
+        ChapterDiagnostic error = Assert.Single(Branch(result), item => item.Code == ChapterDiagnosticCode.BranchCardBranches);
+        Assert.Equal((ChapterDiagnosticSeverity.Error, "root"), (error.Severity, error.EpisodeId));
+        Assert.Contains(outer.Name, error.Message, StringComparison.Ordinal);
+        Assert.True(result.HasErrors);   // 내보내지 않는다
+
+        // 분기점을 지우면(줄의 ＋ → ✕) 조용해진다 — 지우기는 받는다.
+        Assert.NotNull(editor.RemoveBranchMarker(outer.Id, outer.Script.ActiveLines.First().Id, inner.Id));
+        Assert.DoesNotContain(Branch(Validate(editor)), item => item.Code == ChapterDiagnosticCode.BranchCardBranches);
+
+        // 이어진 갈래 출구도 같다 — 첫머리 조건의 갈래가 다른 카드로 나간다.
+        ChapterDocument chapter = editor.FindChapter("ch01")!;
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
+        Assert.Null(BranchEntryCondition.Set(editor, outer.Id, "신뢰높음"));
+        outer.BranchExits[outer.Script.ActiveLines.First().Id] = inner.Id;
+
+        Assert.Single(Branch(Validate(editor)), item => item.Code == ChapterDiagnosticCode.BranchCardBranches);
+
+        // 걸린 조건만으로는 오류가 아니다 — 출구를 끊으면 조용해진다.
+        editor.SetExitTarget(outer.Id, Vn.Authoring.Flow.ExitPortKind.Branch, outer.Script.ActiveLines.First().Id, null);
+        Assert.DoesNotContain(Branch(Validate(editor)), item => item.Code == ChapterDiagnosticCode.BranchCardBranches);
     }
 
     [Fact]
@@ -143,7 +173,8 @@ public sealed class BranchCardValidationTests
         ChapterDiagnosticCode.BranchCardOrphaned,
         ChapterDiagnosticCode.BranchCardUnreachable,
         ChapterDiagnosticCode.BranchCardEmpty,
-        ChapterDiagnosticCode.BranchCardNameTaken
+        ChapterDiagnosticCode.BranchCardNameTaken,
+        ChapterDiagnosticCode.BranchCardBranches
     ];
 
     private static IEnumerable<ChapterDiagnostic> Branch(ChapterValidationResult result) =>
