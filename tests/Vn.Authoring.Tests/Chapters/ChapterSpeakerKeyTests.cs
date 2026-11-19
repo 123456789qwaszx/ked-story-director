@@ -22,6 +22,7 @@ public sealed class ChapterSpeakerKeyTests
         editor.AddEpisode(Ch, "ep01", "치즈 나초 한 접시", 0, 0, sceneId: "식당");
         editor.AddEpisode(Ch, "ep02", "사냥", 300, 0, sceneId: "사막");
         editor.AddSpeaker("샤통");
+        editor.SetSpeakerCharacterId("샤통", null);   // 키를 비운 화자 — 더하면 임시 키가 선다(UX29)
         editor.AddSpeaker("베니토");
         editor.SetSpeakerCharacterId("베니토", "benito");
 
@@ -67,6 +68,22 @@ public sealed class ChapterSpeakerKeyTests
         // 목록에 없는 이름 — 어디서 더하는지부터 말한다.
         Assert.Contains("화자 '???'는 화자 목록에 없어", missing[1].Message);
         Assert.Contains("에피소드 「사냥」", missing[1].Message);
+    }
+
+    [Fact]
+    public void 임시_키인_화자도_같은_경고로_짚고_키를_바꾸면_걷힌다()
+    {
+        // 더할 때 선 임시 키(temp_ + 로마자 · usability UX29)는 아직 정하지 않은 키다 — 그림과 맞지 않는다.
+        ProjectEditor editor = Editor();
+        editor.SetSpeakerCharacterId("샤통", "temp_syatong");
+
+        ChapterDiagnostic temp = Missing(editor).First();
+        Assert.Equal(ChapterDiagnosticSeverity.Warning, temp.Severity);
+        Assert.Contains("화자 '샤통'의 캐릭터 키가 아직 임시 키 'temp_syatong'입니다", temp.Message);
+        Assert.Contains("대사 3줄(처음 나오는 곳 — 에피소드 「치즈 나초 한 접시」)", temp.Message);
+
+        editor.SetSpeakerCharacterId("샤통", "chatong");
+        Assert.DoesNotContain(Missing(editor), item => item.Message.Contains("'샤통'", StringComparison.Ordinal));
     }
 
     [Fact]

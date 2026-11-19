@@ -47,7 +47,8 @@ public sealed class DirectorSpeakersTests : IDisposable
         Key(add, Avalonia.Input.Key.Enter);
 
         Speaker saved = Assert.Single(session.Project.Speakers);
-        Assert.Equal(("라루", string.Empty), (saved.Name, saved.CharacterId));
+        Assert.Equal(("라루", "temp_raru"), (saved.Name, saved.CharacterId));   // 키는 임시 키로 선다(UX29)
+        Assert.Contains("캐릭터 키는 임시로 'temp_raru'", session.StatusMessage, StringComparison.Ordinal);
         session.Save();
         Assert.Contains("라루", File.ReadAllText(session.ProjectPath!));
         Assert.Equal("라루", Box(graph, "speaker-name:라루").Text);

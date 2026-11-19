@@ -10,11 +10,14 @@ namespace Vn.Authoring.Chapters;
 ///
 /// <b>경고다</b> — 진행 JSON을 막지 않는다. 키는 연출 쪽(초상화 · 표정)의 것이고 키가 없어도 이야기는 돈다. 지문(화자 없는 줄)은 세지 않는다.
 /// 화자 목록에 아예 없는 이름도 키가 없는 것이라 함께 짚는다(어디서 더하는지가 달라 말이 다르다).
+///
+/// <b>임시 키도 짚는다</b>(usability UX29) — 화자를 더하면 키가 <c>temp_</c> + 이름의 로마자로 서는데(<see cref="CharacterKey"/>), 그대로면
+/// 그림과 맞지 않는다. 아직 정하지 않은 키라 같은 경고로, 말만 다르게 낸다.
 /// </summary>
 public static class ChapterSpeakerKeys
 {
-    /// <summary>키가 없는 화자 하나 — 이름 · 화자 목록에 있는가 · 그 챕터의 대사 줄 수 · 처음 나오는 곳.</summary>
-    public sealed record Missing(string Speaker, bool Registered, int Lines, string FirstPlace);
+    /// <summary>키가 없는 화자 하나 — 이름 · 화자 목록에 있는가 · 그 챕터의 대사 줄 수 · 처음 나오는 곳 · 임시 키(있으면).</summary>
+    public sealed record Missing(string Speaker, bool Registered, int Lines, string FirstPlace, string? TempKey = null);
 
     public static void Verify(ChapterGraphModel chapter, StoryProject project, List<ChapterDiagnostic> diagnostics)
     {
@@ -32,7 +35,10 @@ public static class ChapterSpeakerKeys
                 chapter.SourcePath,
                 ChapterSheetNames.Speakers,
                 null,
-                missing.Registered
+                missing.TempKey is { } temp
+                    ? $"화자 '{speaker}'의 캐릭터 키가 아직 임시 키 '{temp}'입니다 — 그림과 맞지 않으면 {where} [구성] 탭 오른쪽 「화자」 탭에서 " +
+                      "그림에 맞는 키로 바꿔 주세요."
+                    : missing.Registered
                     ? $"화자 '{speaker}'의 캐릭터 키가 없습니다 — {where} [구성] 탭 오른쪽 「화자」 탭에서 키를 적어 주세요."
                     : $"화자 '{speaker}'{Josa.은는(speaker)} 화자 목록에 없어 캐릭터 키가 없습니다 — {where} [대본] 탭 「화자」 탭에서 더한 뒤 " +
                       "[구성] 탭 「화자」 탭에서 키를 적어 주세요."));
@@ -57,9 +63,9 @@ public static class ChapterSpeakerKeys
             {
                 string speaker = node.Script.Text(line.Id).Speaker?.Trim() ?? string.Empty;
 
-                if (speaker.Length == 0 || project.FindSpeakerCharacterId(speaker) is not null)
+                if (speaker.Length == 0 || project.FindSpeakerCharacterId(speaker) is { } key && !CharacterKey.IsTemp(key))
                 {
-                    continue;   // 지문이거나 키가 있다
+                    continue;   // 지문이거나 정한 키가 있다
                 }
 
                 if (found.TryGetValue(speaker, out (int Lines, string FirstPlace) seen))
@@ -75,7 +81,9 @@ public static class ChapterSpeakerKeys
         }
 
         return order
-            .Select(speaker => new Missing(speaker, project.FindSpeaker(speaker) is not null, found[speaker].Lines, found[speaker].FirstPlace))
+            .Select(speaker => new Missing(
+                speaker, project.FindSpeaker(speaker) is not null, found[speaker].Lines, found[speaker].FirstPlace,
+                project.FindSpeakerCharacterId(speaker) is { } key && CharacterKey.IsTemp(key) ? key : null))
             .ToList();
     }
 }

@@ -802,12 +802,19 @@ public partial class ChapterGraphView : UserControl
         }
 
         int missing = speakers.Count(speaker => string.IsNullOrWhiteSpace(speaker.CharacterId));
+        int temporary = speakers.Count(speaker => Vn.Authoring.Model.CharacterKey.IsTemp(speaker.CharacterId));
 
-        if (missing > 0)
+        if (missing + temporary > 0)
         {
+            // 임시 키(temp_ — 화자를 더할 때 이름의 로마자로 선다 · UX29)도 아직 정하지 않은 키다.
             SpeakerListPanel.Children.Add(new TextBlock
             {
-                Text = $"⚠ 캐릭터 키가 없는 화자 {missing}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.",
+                Text = (missing, temporary) switch
+                {
+                    (> 0, > 0) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 · 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요.",
+                    (> 0, _) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.",
+                    _ => $"⚠ 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요."
+                },
                 FontSize = 10,
                 Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
                 TextWrapping = TextWrapping.Wrap,
@@ -829,9 +836,10 @@ public partial class ChapterGraphView : UserControl
     {
         string speakerName = speaker.Name;
         bool missing = string.IsNullOrWhiteSpace(speaker.CharacterId);
+        bool temporary = Vn.Authoring.Model.CharacterKey.IsTemp(speaker.CharacterId);
         var name = new TextBlock
         {
-            Text = missing ? "⚠ " + speakerName : speakerName,
+            Text = missing || temporary ? "⚠ " + speakerName : speakerName,
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -839,7 +847,9 @@ public partial class ChapterGraphView : UserControl
         };
         ToolTip.SetTip(name, missing
             ? $"'{speakerName}' — 캐릭터 키가 없습니다. 이름은 [대본] 탭에서 고칩니다."
-            : $"'{speakerName}' — 이름은 [대본] 탭에서 고칩니다.");
+            : temporary
+                ? $"'{speakerName}' — 캐릭터 키가 임시 키입니다(화자를 더할 때 이름의 로마자로 섰다). 그림에 맞는 키로 바꿔 주세요. 이름은 [대본] 탭에서 고칩니다."
+                : $"'{speakerName}' — 이름은 [대본] 탭에서 고칩니다.");
         var characterId = new TextBox
         {
             Text = speaker.CharacterId,

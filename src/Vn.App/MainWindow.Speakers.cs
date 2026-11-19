@@ -68,7 +68,8 @@ public partial class MainWindow
             }
 
             _speakerFocusTag = "speaker-add-name";
-            _session.SetStatus($"화자 '{typed}'을 더했습니다 — 모든 챕터의 대본에서 고를 수 있습니다. 캐릭터 키는 [구성] 탭에서 잇습니다.");
+            string key = _session.Project.FindSpeaker(typed)?.CharacterId ?? string.Empty;
+            _session.SetStatus($"화자 '{typed}'을 더했습니다 — 모든 챕터의 대본에서 고를 수 있습니다. 캐릭터 키는 임시로 '{key}' — [구성] 탭에서 그림에 맞게 바꿉니다.");
         });
 
         addButton.Click += (_, _) => Add();

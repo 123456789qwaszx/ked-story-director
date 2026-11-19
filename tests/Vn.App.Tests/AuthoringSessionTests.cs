@@ -277,7 +277,7 @@ public class AuthoringSessionTests : IDisposable
             Assert.Null(session.AddSpeakerName("라루"));
             Assert.Null(session.AddSpeakerName("윌로우"));
             Assert.True(session.RemoveSpeakerName("윌로우"));
-            Assert.False(session.SetSpeakerCharacterId("라루", string.Empty));   // 같은 값은 기록하지 않는다
+            Assert.False(session.SetSpeakerCharacterId("라루", "temp_raru"));   // 같은 값은 기록하지 않는다(더할 때 선 임시 키 — UX29)
             Assert.Equal(before + 3, session.Editor.Revision);
             Assert.Equal("라루", Assert.Single(session.Project.Speakers).Name);
 
