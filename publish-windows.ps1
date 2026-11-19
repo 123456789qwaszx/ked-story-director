@@ -1,4 +1,10 @@
-﻿$ErrorActionPreference = "Stop"
+﻿param(
+    # 판 번호 — 창 제목에 선다(앱이 읽는다 · writer-release WR2). 릴리스(.github/workflows/release.yml)가 정한다. 정하지 않으면 「개발판」.
+    #   .\publish-windows.ps1 -Version 0.1.0
+    [string]$Version = "0.0.0"
+)
+
+$ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Push-Location $root
 
@@ -27,6 +33,7 @@ try {
         -p:IncludeNativeLibrariesForSelfExtract=true `
         -p:EnableCompressionInSingleFile=true `
         -p:DebugType=none `
+        -p:Version=$Version `
         -o $publishDirectory
 
     if ($LASTEXITCODE -ne 0) {

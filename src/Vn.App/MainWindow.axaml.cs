@@ -22,7 +22,7 @@ namespace Vn.App;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private const string BaseTitle = AppIdentity.Name;
+    private static readonly string BaseTitle = AppIdentity.TitleName;
 
     private readonly AuthoringSession _session = new();
 

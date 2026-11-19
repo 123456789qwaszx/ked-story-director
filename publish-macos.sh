@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # 맥을 쓰는 작가에게 건네는 꾸러미를 만든다 — StoryDirector.app을 zip 하나로.
 #
-#   ./publish-macos.sh          Apple 칩(M1~) 맥용 — 기본
-#   ./publish-macos.sh x64      인텔 맥용
+#   ./publish-macos.sh                Apple 칩(M1~) 맥용 — 기본
+#   ./publish-macos.sh x64            인텔 맥용
+#   ./publish-macos.sh arm64 0.1.0    판 번호를 정해 굽는다(릴리스 — .github/workflows/release.yml). 정하지 않으면 「개발판」
 #
 # publish-windows.ps1의 맥판이다(2026-11-19 · docs/work-orders/writer-app-orders.md WA6). 받는 사람에게 없는 것을 전제하지 않는다 —
 # .NET을 함께 담으므로(self-contained) 받는 맥에 설치할 것이 없다.
@@ -18,11 +19,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 arch="${1:-arm64}"
+# 판 번호 — 창 제목(앱이 읽는다 · -p:Version)과 Finder의 「정보 가져오기」(Info.plist)에 같은 번호가 선다(writer-release WR2).
+version="${2:-0.0.0}"
 
 case "$arch" in
     arm64 | x64) ;;
     *)
-        echo "쓰는 법: ./publish-macos.sh [arm64|x64]" >&2
+        echo "쓰는 법: ./publish-macos.sh [arm64|x64] [판 번호]" >&2
         exit 2
         ;;
 esac
@@ -41,13 +44,14 @@ dotnet publish src/Vn.App/Vn.App.csproj \
     -r "$rid" \
     --self-contained true \
     -p:DebugType=none \
+    -p:Version="$version" \
     -o "$app/Contents/MacOS"
 
 # 독 · Finder의 그림 — tools/make-app-icons.py가 원본(Assets/app-icon.png)에서 굽는다.
 cp src/Vn.App/Assets/app.icns "$app/Contents/Resources/app.icns"
 
-# 꾸러미의 신원. 이름(CFBundleName)은 메뉴 막대와 독에 선다. 판 번호는 구운 날이다 — 「어느 판을 쓰세요?」에 Finder의 「정보 가져오기」가 답한다.
-version="$(date +%Y.%m.%d)"
+# 꾸러미의 신원. 이름(CFBundleName)은 메뉴 막대와 독에 선다. 판 번호는 위의 번호다 — 「어느 판을 쓰세요?」에 창 제목과 Finder의 「정보 가져오기」가
+# 같은 번호로 답한다. ⛔ 2026-11-19까지는 구운 날(2026.11.19)이었고 창에는 번호가 없었다.
 
 cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
