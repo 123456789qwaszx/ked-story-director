@@ -475,12 +475,75 @@ public partial class GraphEditorView : UserControl
         base.OnAttachedToVisualTree(e);
         ScriptFont.Changed += ApplyScriptFont;
         ApplyScriptFont();   // 떨어져 있던 사이에 바뀌었을 수 있다
+
+        // 창을 떠나면(Windows 키 · Alt+Tab) 하던 끌기를 정리한다 — 놓음이 이 창으로 오지 않는다(usability UX20).
+        _window = TopLevel.GetTopLevel(this) as WindowBase;
+
+        if (_window is not null)
+        {
+            _window.Deactivated += OnWindowDeactivated;
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         ScriptFont.Changed -= ApplyScriptFont;
+
+        if (_window is not null)
+        {
+            _window.Deactivated -= OnWindowDeactivated;
+            _window = null;
+        }
+
         base.OnDetachedFromVisualTree(e);
+    }
+
+    /// <summary>판이 선 창 — 창을 떠나는 순간을 듣는다(<see cref="EndGestures"/>).</summary>
+    private WindowBase? _window;
+
+    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, "끌기 정리", EndGestures);
+
+    /// <summary>
+    /// <b>하던 끌기를 정리한다</b> — 창을 떠나면 놓음이 이 창으로 오지 않아 끌기가 「끄는 중」으로 남는다(2026-11-19 소유자 — 범위 사각형이 판에 남아
+    /// 쌓였다 · usability UX20). 범위 사각형과 잇는 점선은 거둔다 — 어디에 놓을지 정하지 않았으니 아무것도 바꾸지 않는다(⛔ 그대로 두면 돌아와
+    /// 누른 자리가 그 놓음이 되어, 빈 곳을 누르면 선택지가 끊겼다). 카드 · 무리 · 접은 상자 끌기와 크기 · 선 모양은 보이던 자리에서 놓은 것으로
+    /// 마무리한다(⛔ 그대로 두면 돌아와 단추 없이 움직여도 카드가 따라왔다). 가운데 단추로 판 옮기기는 멈춘다.
+    /// </summary>
+    internal void EndGestures()
+    {
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+            _rubberBand = null;
+        }
+
+        if (_connectingFrom is not null || _connectingLine is not null)
+        {
+            if (_connectingLine is not null)
+            {
+                GraphCanvas.Children.Remove(_connectingLine);
+                _connectingLine = null;
+            }
+
+            _connectingFrom = null;
+            SetHint(null);
+        }
+
+        if (_bending)
+        {
+            _bending = false;
+            EdgeShape? bent = _shapePreview;
+            _shapePreview = null;
+
+            if (bent is not null)
+            {
+                ApplyShape(bent);
+            }
+        }
+
+        _panning = false;
+        CommitResize();
+        CommitDrag();
     }
 
     /// <summary>서 있는 카드 글 칸이 모두 새 글꼴 · 크기 · 줄 간격을 입는다 — 판은 다시 짓지 않는다(writer-comfort WC5).</summary>
@@ -6099,6 +6162,12 @@ public partial class GraphEditorView : UserControl
         {
             _multiSelected.Clear();
             HighlightSelection();
+
+            // 앞의 사각형이 남아 있으면(놓음을 못 봤다) 걷고 새로 연다 — 남은 채 새것을 열면 옛것이 판에 쌓인다.
+            if (_rubberBand is not null)
+            {
+                GraphCanvas.Children.Remove(_rubberBand);
+            }
 
             _rubberStart = args.GetPosition(GraphCanvas);
             _rubberBand = RubberBand.Create(_rubberStart);

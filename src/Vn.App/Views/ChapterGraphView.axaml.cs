@@ -428,6 +428,25 @@ public partial class ChapterGraphView : UserControl
         InitializeComponent();
         AttachedToVisualTree += (_, _) => UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
 
+        // 창을 떠나면(Windows 키 · Alt+Tab) 하던 끌기를 정리한다 — 놓음이 이 창으로 오지 않는다(usability UX20).
+        AttachedToVisualTree += (_, _) =>
+        {
+            _window = TopLevel.GetTopLevel(this) as WindowBase;
+
+            if (_window is not null)
+            {
+                _window.Deactivated += OnWindowDeactivated;
+            }
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            if (_window is not null)
+            {
+                _window.Deactivated -= OnWindowDeactivated;
+                _window = null;
+            }
+        };
+
         // 셸이 탭을 바꿀 때는 떼지 않고 보이기만 바꾼다(usability UX14) — 다시 보이는 순간 미뤄 둔 그리기를 한다.
         PropertyChanged += (_, args) =>
         {
@@ -2799,9 +2818,37 @@ public partial class ChapterGraphView : UserControl
         CommitDrag();
     }
 
+    /// <summary>판이 선 창 — 창을 떠나는 순간을 듣는다(<see cref="EndGestures"/>).</summary>
+    private WindowBase? _window;
+
+    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, "끌기 정리", EndGestures);
+
+    /// <summary>
+    /// <b>하던 끌기를 정리한다</b> — 창을 떠나면 놓음이 이 창으로 오지 않아 끌기가 「끄는 중」으로 남는다(2026-11-19 소유자 — 범위 사각형이 판에 남아
+    /// 쌓였다 · usability UX20). 범위 사각형은 거두고(아무것도 고르지 않는다), 카드 끌기는 보이던 자리에서 놓은 것으로 마무리하고(놓음을 못 본
+    /// 끌기를 다음 움직임에서 마무리하는 규칙과 같다), 가운데 단추로 판 옮기기는 멈춘다.
+    /// </summary>
+    internal void EndGestures()
+    {
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+            _rubberBand = null;
+        }
+
+        _panning = false;
+        CommitDrag();
+    }
+
     /// <summary>빈 판을 눌렀다 — 끄는 동안 범위 사각형이 선다.</summary>
     private void StartRubberBand(Avalonia.Input.PointerPressedEventArgs args)
     {
+        // 앞의 사각형이 남아 있으면(놓음을 못 봤다) 걷고 새로 연다 — 남은 채 새것을 열면 옛것이 판에 쌓인다.
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+        }
+
         _rubberStart = args.GetPosition(GraphCanvas);
         _rubberBand = RubberBand.Create(_rubberStart);
         GraphCanvas.Children.Add(_rubberBand);
