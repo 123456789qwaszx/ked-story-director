@@ -577,6 +577,7 @@ public partial class GraphEditorView : UserControl
     internal void Attach(AuthoringSession session)
     {
         _session = session;
+        _cardsGeneration = -1;   // 다른 세션의 카드는 그대로 두지 않는다
 
         // 단추가 <b>무엇을 지울지</b>는 고른 것에 달렸다 — 고를 때마다 이름을 맞춘다.
         session.SelectionChanged += (_, _) =>
@@ -763,12 +764,29 @@ public partial class GraphEditorView : UserControl
         // 카드 안 글 칸에 초점이 있었으면 다시 그린 뒤 그 칸으로 돌려준다(D4) — 판을 비우기 전에 잰다.
         WritingFocus? writing = CaptureWritingFocus();
 
+        _sceneRootNodeIds = SceneRootCards();
+        _branchEntries = BranchEntries(_projection);
+
+        // ⭐ 그대로인 카드는 판에 둔다(usability UX17) — 지금 지어도 똑같을 카드다(<see cref="CanKeep"/>). 판을 다시 그리는 값의 대부분은 카드를
+        //    떼고 새로 지은 카드의 글 칸을 다시 배치하는 데 든다(에피소드 160개에서 판 한 번에 1.3 ~ 2.3초 중 1초 남짓). 같은 프로젝트를
+        //    다시 그릴 때만이다 — 새로 열었으면 모두 새로 짓는다.
+        Dictionary<string, NodeCard> kept = _session.ProjectGeneration == _cardsGeneration
+            ? KeepableCards(_projection)
+            : new Dictionary<string, NodeCard>(StringComparer.Ordinal);
+        _cardsGeneration = _session.ProjectGeneration;
+        KeptCardCount = kept.Count;
+
         // 칸 목록을 먼저 비운다 — 판에서 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다
-        // (넣지 않은 글은 RestoreWritingFocus가 새 칸으로 옮긴다).
-        _writingBoxes.Clear();
-        GraphCanvas.Children.Clear();
-        _writingShown.Clear();
-        _writingLayouts.Clear();
+        // (넣지 않은 글은 RestoreWritingFocus가 새 칸으로 옮긴다). 그대로 둘 카드의 칸은 남긴다.
+        foreach (string nodeId in _writingBoxes.Keys.Where(id => !kept.ContainsKey(id)).ToList())
+        {
+            _writingBoxes.Remove(nodeId);
+            _writingShown.Remove(nodeId);
+            _writingLayouts.Remove(nodeId);
+        }
+
+        ClearBoardBut(kept.Values);
+        _railVisuals.Clear();
         _cards.Clear();
         _proxies.Clear();
         _edges.Clear();
@@ -789,13 +807,18 @@ public partial class GraphEditorView : UserControl
         // 여태 안 보였다).
         SetHint(null);
 
-        _sceneRootNodeIds = SceneRootCards();
-        _branchEntries = BranchEntries(_projection);
-
         foreach (GraphItemProjection item in _projection.Items)
         {
             switch (item)
             {
+                case ExpandedNodeProjection node when kept.TryGetValue(node.NodeId, out NodeCard? card):
+                    // 자리만 맞춘다 — 끌어 옮긴 카드는 제자리에서 옮겨졌고, 되돌리기는 옛 자리로 돌린다.
+                    Canvas.SetLeft(card.Visual, node.Position.X);
+                    Canvas.SetTop(card.Visual, node.Position.Y);
+                    PlaceLineKnobs(card);
+                    _cards.Add(card);
+                    break;
+
                 case ExpandedNodeProjection node:
                     _cards.Add(BuildCard(node));
                     break;
@@ -2273,6 +2296,120 @@ public partial class GraphEditorView : UserControl
         RequestFit(new PendingFit(null));
     }
 
+    /// <summary>카드를 지은 프로젝트의 세대 — 판을 다시 그릴 때 같은 세대면 그대로인 카드를 둔다(<see cref="Rebuild"/>).</summary>
+    private int _cardsGeneration = -1;
+
+    /// <summary>마지막으로 판을 다시 그릴 때 그대로 둔 카드의 수 — 시험이 「카드를 새로 짓지 않았다」를 본다.</summary>
+    internal int KeptCardCount { get; private set; }
+
+    /// <summary>카드를 하나도 그대로 두지 않고 판을 다시 그린다 — 시험이 「그대로 둔 판」을 「새로 지은 판」과 견준다.</summary>
+    internal void RebuildFresh()
+    {
+        _cardsGeneration = -1;
+        Rebuild();
+    }
+
+    /// <summary>새 투영의 카드 가운데 그대로 둘 수 있는 것 — 노드 Id로.</summary>
+    private Dictionary<string, NodeCard> KeepableCards(GraphProjection projection)
+    {
+        Dictionary<string, NodeCard> built = _cards.ToDictionary(card => card.NodeId, StringComparer.Ordinal);
+        var kept = new Dictionary<string, NodeCard>(StringComparer.Ordinal);
+
+        foreach (ExpandedNodeProjection node in projection.Items.OfType<ExpandedNodeProjection>())
+        {
+            if (built.TryGetValue(node.NodeId, out NodeCard? card) && CanKeep(card, node))
+            {
+                kept[node.NodeId] = card;
+            }
+        }
+
+        return kept;
+    }
+
+    /// <summary>
+    /// 그 카드를 판에 그대로 두어도 되는가 — <b>지금 지어도 똑같은가</b>(<see cref="BuildCard"/>가 읽는 것을 모두 본다). 지을 때 정해지는 것(종류 · 판 ·
+    /// 장면 시작점 · 분기 카드 · 분기 색 · 카드 안 포트 · 펼친 분기 무리)은 카드가 든 값과, 제자리에서 고쳐지는 것(제목 · 그 풍선 · 분기 조건 표 · 폭 ·
+    /// 글 칸 높이 · 글 칸의 글과 줄 자리)은 <b>지금 선 모습</b>과 견준다 — 제자리에서 고친 뒤 값이 되돌아와도 틀리지 않는다. 자리는 견주지 않는다(늘
+    /// 다시 놓는다). 넣지 않은 글이 든 칸은 초점이 없으면 새로 짓는다(지금까지처럼 모델의 글로 돌아간다 — 초점이 있으면 그 글을 지킨다).
+    /// ⚠ <see cref="BuildCard"/>가 새로 무엇을 읽게 되면 여기서도 본다 — 시험이 통째로 지은 판과 견준다.
+    /// 카드의 손잡이들은 값(노드 Id · 포트 열쇠)만 쥐고 누를 때 프로젝트에서 찾는다 — 되돌리기로 프로젝트의 객체가 모두 새것이어도 그대로 둘 수 있다.
+    /// </summary>
+    private bool CanKeep(NodeCard card, ExpandedNodeProjection node)
+    {
+        bool sceneRoot = _sceneRootNodeIds.Contains(node.NodeId);
+        bool branchCard = IsBranchCard(node.NodeId);
+        int? palette = _branchEntries.TryGetValue(node.NodeId, out int entry) ? entry : null;
+
+        if (card.NodeKind != node.NodeKind ||
+            !string.Equals(card.FileId, node.FileId, StringComparison.Ordinal) ||
+            card.SceneRoot != sceneRoot ||
+            card.BranchCard != branchCard ||
+            card.BranchPalette != palette ||
+            !card.Ports.SequenceEqual(node.OutputPorts.Where(port => port.Kind != GraphOutputPortKind.Choice)) ||
+            !string.Equals(card.Title.Text, ShownName(node.NodeId, node.NodeName), StringComparison.Ordinal) ||
+            !Equals(ToolTip.GetTip(card.Title), TitleTip(node.NodeId)) ||
+            Math.Abs(card.Visual.Width - WidthFor(node.NodeId)) > 0.01)
+        {
+            return false;
+        }
+
+        if (palette is not null &&
+            (card.TitleRow.Children.OfType<Border>().FirstOrDefault(border => border.Tag as string == BranchConditionChipTag + node.NodeId)
+                 ?.Child as TextBlock)?.Text != BranchChipText(node.NodeId))
+        {
+            return false;
+        }
+
+        foreach ((string group, IReadOnlyList<int> members) in card.LineGroups)
+        {
+            if (members.Count >= 2 &&
+                card.ExpandedGroups.Contains(group) != _expandedBranchGroups.Contains(BranchGroupId(card.NodeId, group)))
+            {
+                return false;
+            }
+        }
+
+        if (card.WritingBox is not { } box)
+        {
+            return node.NodeKind != GraphNodeKind.Dialogue;
+        }
+
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, node.NodeId);
+
+        return Math.Abs(box.Height - WritingHeightFor(node.NodeId)) <= 0.01 &&
+               string.Equals(_writingShown.GetValueOrDefault(card.NodeId), layout.Text, StringComparison.Ordinal) &&
+               _writingLayouts.GetValueOrDefault(card.NodeId) is { } shown &&
+               shown.RowOfLine.Count == layout.RowOfLine.Count &&
+               shown.RowOfLine.All(pair => layout.RowOfLine.TryGetValue(pair.Key, out int row) && row == pair.Value) &&
+               (box.IsFocused || string.Equals(box.Text ?? string.Empty, layout.Text, StringComparison.Ordinal));
+    }
+
+    /// <summary>판의 그림을 모두 뗀다 — 그대로 둘 카드(테두리 · 분기 점 · 공통 점)만 남긴다. 남길 것이 없으면 통째로 비운다.</summary>
+    private void ClearBoardBut(IEnumerable<NodeCard> keep)
+    {
+        var stay = new HashSet<Control>();
+
+        foreach (NodeCard card in keep)
+        {
+            stay.Add(card.Visual);
+            stay.UnionWith(card.LineKnobs.Values);
+
+            foreach (BranchHub hub in card.LineHubs.Values)
+            {
+                stay.Add(hub.Fan);
+                stay.Add(hub.Dot);
+            }
+        }
+
+        if (stay.Count == 0)
+        {
+            GraphCanvas.Children.Clear();
+            return;
+        }
+
+        GraphCanvas.Children.RemoveAll(GraphCanvas.Children.Where(child => !stay.Contains(child)).ToList());
+    }
+
     /// <summary>
     /// <b>카드 하나만 다시 짓는다</b> — 그 대사 노드의 줄이 생기거나 빠지거나 옮겨졌을 때(카드 글 칸에 새 줄 · usability UX13). 줄은 그 카드 안의
     /// 일이다 — 글 칸 · 줄에 걸린 분기 점 · 포트 줄. 다른 카드 · 선 · 접은 상자가 그대로인지 새 투영으로 견주고(<see cref="OnlyCardChanged"/>),
@@ -3248,6 +3385,13 @@ public partial class GraphEditorView : UserControl
     /// 헷갈린다. 색은 그 분기 선의 색이다. <b>누르면 그 카드를 고른다</b>(카드를 누른 것과 같다 — 인스펙터 위쪽에 조건 칸이 선다,
     /// 2026-11-17 소유자). ⛔ 전에는 [구성] 탭의 그 분기로 갔다.
     /// </summary>
+    /// <summary>분기 조건 표의 글 — 지금 조건으로(<see cref="CanKeep"/>가 선 표와 견준다).</summary>
+    private string BranchChipText(string nodeId)
+    {
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId);
+        return BranchConditionNote.Chip(state, BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label));
+    }
+
     private Border BranchConditionChip(string nodeId, int palette)
     {
         BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId);
@@ -3348,14 +3492,7 @@ public partial class GraphEditorView : UserControl
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
-            [ToolTip.TipProperty] = _session?.Project.FindNode(node.NodeId) switch
-            {
-                DialogueNode { MarkedEpisodeId: not null } episode =>
-                    $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다.",
-                DialogueNode { IsBranchCard: true } branch =>
-                    $"분기 카드 ID: {branch.Name} — ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.",
-                _ => null
-            }
+            [ToolTip.TipProperty] = TitleTip(node.NodeId)
         };
 
         var title = new Grid
@@ -3369,7 +3506,9 @@ public partial class GraphEditorView : UserControl
         title.Children.Add(titleIcon);
         title.Children.Add(titleName);
 
-        if (_branchEntries.TryGetValue(node.NodeId, out int palette))
+        bool branchEntry = _branchEntries.TryGetValue(node.NodeId, out int palette);
+
+        if (branchEntry)
         {
             Control chip = BranchConditionChip(node.NodeId, palette);
             Grid.SetColumn(chip, 2);
@@ -3425,7 +3564,15 @@ public partial class GraphEditorView : UserControl
             .Where(port => port.Kind != GraphOutputPortKind.Choice)
             .ToList();
 
-        var visual = new NodeCard(node.NodeId, node.NodeKind, card, inCard, style);
+        var visual = new NodeCard(node.NodeId, node.NodeKind, card, inCard, style)
+        {
+            FileId = node.FileId,
+            SceneRoot = sceneRoot,
+            BranchCard = branchCard,
+            BranchPalette = branchEntry ? palette : null,
+            Title = titleName,
+            TitleRow = title
+        };
 
         // ⭐ 「조건 분기」 포트는 포트 줄에 서지 않는다 — 점이 글 칸의 <b>그 대사 높이</b>에 선다(아래 BuildLineKnob ·
         //    2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에 분기 점이 생성되도록"*).
@@ -6960,6 +7107,16 @@ public partial class GraphEditorView : UserControl
     private string ShownName(string nodeId, string fallback) =>
         _session?.Project.FindNode(nodeId) is { } found ? EpisodeNaming.ShownNameOf(_session.Project, found) : fallback;
 
+    /// <summary>카드 제목의 풍선 — 에피소드ID · 분기 카드 ID는 여기서만 보인다(정하는 곳은 [구성] 탭).</summary>
+    private string? TitleTip(string nodeId) => _session?.Project.FindNode(nodeId) switch
+    {
+        DialogueNode { MarkedEpisodeId: not null } episode =>
+            $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다.",
+        DialogueNode { IsBranchCard: true } branch =>
+            $"분기 카드 ID: {branch.Name} — ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.",
+        _ => null
+    };
+
     /// <summary>그 챕터 에피소드의 보이는 제목 — 없으면 Id 그대로.</summary>
     private string EpisodeTitle(string chapterId, string episodeId) =>
         _session?.Editor.FindChapter(chapterId)?.Episodes.FirstOrDefault(episode =>
@@ -7058,6 +7215,26 @@ public partial class GraphEditorView : UserControl
 
         /// <summary>펼친 무리들.</summary>
         public HashSet<string> ExpandedGroups { get; } = new(StringComparer.Ordinal);
+
+        // ── 판을 다시 지을 때 이 카드를 그대로 둘지 가리는 재료(<see cref="CanKeep"/>) — 지을 때 정해져 제자리에서 바뀌지 않는 것들 ──
+
+        /// <summary>카드가 선 판.</summary>
+        public string FileId { get; init; } = string.Empty;
+
+        /// <summary>장면 시작점 카드인가 — 색과 머리 표의 풍선이 다르다.</summary>
+        public bool SceneRoot { get; init; }
+
+        /// <summary>분기 카드인가 — 색과 머리 표가 다르다.</summary>
+        public bool BranchCard { get; init; }
+
+        /// <summary>분기로 다녀오는 카드면 그 분기 선의 색 — 머리에 조건 표가 선다. 아니면 null.</summary>
+        public int? BranchPalette { get; init; }
+
+        /// <summary>머리의 제목 글 — 제목만 바뀌면 제자리에서 고친다(<see cref="RefreshCardTitle"/>).</summary>
+        public TextBlock Title { get; init; } = null!;
+
+        /// <summary>머리 줄 — 분기 조건 표가 여기 선다(조건이 바뀌면 제자리에서 바꿔 단다 · <see cref="RefreshBranchConditions"/>).</summary>
+        public Grid TitleRow { get; init; } = null!;
     }
 
     private sealed class FileProxyVisual
