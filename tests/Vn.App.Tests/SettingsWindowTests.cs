@@ -360,14 +360,15 @@ public sealed class SettingsWindowTests : IDisposable
         List<Grid> tables = settings.ShortcutGroup.GetLogicalDescendants().OfType<Grid>()
             .Where(grid => (grid.Tag as string)?.StartsWith("shortcuts:", StringComparison.Ordinal) == true).ToList();
         Assert.Equal(
-            ["창 어디서나", "[대본] 판", "[대본] 카드 글 칸", "[구성] 판", "하이어아키", "글 칸"],
+            ["창 어디서나", "[대본] 판", "[대본] 카드 글 칸", "[대본] 대사 편집기", "[구성] 판", "하이어아키", "글 칸"],
             tables.Select(grid => ((string)grid.Tag!)["shortcuts:".Length..]));
         Assert.Equal(Shortcuts.Table.Sum(place => place.Entries.Count), tables.Sum(grid => grid.RowDefinitions.Count));
 
         Assert.Equal("저장", Does(tables[0], "Ctrl+S"));
         Assert.StartsWith("고른 카드", Does(tables[1], "Delete"), StringComparison.Ordinal);
-        Assert.StartsWith("보이는 줄 사이로 고르기", Does(tables[4], "↑ · ↓"), StringComparison.Ordinal);
-        Assert.StartsWith("장면 메모 · 에피소드 지시 넣기", Does(tables[5], "Ctrl+Enter"), StringComparison.Ordinal);
+        Assert.StartsWith("앞 칸으로", Does(tables[3], "Ctrl+Tab"), StringComparison.Ordinal);
+        Assert.StartsWith("보이는 줄 사이로 고르기", Does(tables[5], "↑ · ↓"), StringComparison.Ordinal);
+        Assert.StartsWith("장면 메모 · 에피소드 지시 넣기", Does(tables[6], "Ctrl+Enter"), StringComparison.Ordinal);
 
         settings.Close();
         window.Close();

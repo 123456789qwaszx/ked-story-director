@@ -40,6 +40,17 @@ public partial class DialogueNodeEditor : UserControl
     private string? _selectedLineId;
     private readonly Dictionary<string, Border> _lineCards = new(StringComparer.Ordinal);
 
+    /// <summary>줄마다의 화자 칸 — 줄을 더하면 새 줄의 이 칸으로 초점을 옮긴다(<see cref="FocusLineLater"/>).</summary>
+    private readonly Dictionary<string, AutoCompleteBox> _speakerBoxes = new(StringComparer.Ordinal);
+
+    /// <summary>다시 세운 뒤 초점을 옮길 줄 — 줄을 더한 직후 셸이 표를 다시 세우므로 그 뒤에 새 칸을 찾는다.</summary>
+    private string? _focusLineId;
+
+    /// <summary>열려 있는 줄의 ＋ 차림과 그 ＋ · 그 안의 [아래에 줄 추가] — ＋에서 Tab이 그 단추로 간다(usability UX26).</summary>
+    private Flyout? _lineMetaFlyout;
+    private Button? _lineMetaAnchor;
+    private Button? _lineMetaAddButton;
+
     /// <summary>
     /// 지금 보는 노드가 <b>챕터의 에피소드</b>인가 (<see cref="DialogueNode.MarkedEpisodeId"/>).
     ///
@@ -81,6 +92,18 @@ public partial class DialogueNodeEditor : UserControl
             }
         });
         AddLineButton.Click += (_, _) => AddLine();
+
+        // Ctrl+Tab = 앞 칸으로(Shift+Tab과 같다) — 줄 표를 쓰다가 손을 떼지 않고 이전 줄로 돌아간다(2026-11-19 소유자 · usability UX26).
+        // 칸보다 먼저 받는다(터널) — 글 칸 · 화자 칸이 Tab을 제 것으로 쓰기 전에.
+        AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Key == Avalonia.Input.Key.Tab && args.KeyModifiers == Avalonia.Input.KeyModifiers.Control &&
+                TopLevel.GetTopLevel(this)?.FocusManager is { } focus)
+            {
+                args.Handled = true;
+                focus.TryMoveFocus(Avalonia.Input.NavigationDirection.Previous);
+            }
+        }, RoutingStrategies.Tunnel);
 
         // 목록 아래 빈 공간 우클릭 = 맨 아래 줄 추가.카드 위 우클릭은 카드가
         // 먼저 받아 Handled로 막고, 텍스트 칸은 기본 편집 메뉴의 자리다.
@@ -167,6 +190,7 @@ public partial class DialogueNodeEditor : UserControl
 
         ScriptLine line = _session.Editor.InsertScriptLine(node.Id); // 인덱스 없음 = 맨 끝
         SelectLine(line.Id);
+        FocusLineLater(line.Id);
     }
 
     internal void Attach(AuthoringSession session)
@@ -225,6 +249,7 @@ public partial class DialogueNodeEditor : UserControl
 
             LineHost.Children.Clear();
             _lineCards.Clear();
+            _speakerBoxes.Clear();
 
             // 분기로 다녀오는 카드의 첫머리 조건 묶음도 그 분기의 색이다 — 판의 분기 선 · 카드 표와 같은 번호로 칠한다.
             _entryGate = BranchEntryCondition.EntryPalette(_session.Project, node.Id) is { } gatePalette &&
@@ -425,6 +450,29 @@ public partial class DialogueNodeEditor : UserControl
 
         // 새 줄이 새 선택이다 — 프리뷰 기준도 함께 옮긴다.
         SelectLine(line.Id);
+        FocusLineLater(line.Id);
+    }
+
+    /// <summary>
+    /// 그 줄의 화자 칸으로 초점을 옮긴다 — 줄을 더하면 바로 그 줄을 쓴다(usability UX26 · ⛔ 「줄 추가를 누르면 바로 타이핑할 수 있습니다」라고
+    /// 안내했지만 초점이 가지 않았다). 셸이 표를 다시 세운 뒤에(그 사이에 또 세우면 마지막 표의) 칸을 찾는다. 셸 없이 선 편집기면 스스로 세운다.
+    /// </summary>
+    private void FocusLineLater(string lineId)
+    {
+        if (!_speakerBoxes.ContainsKey(lineId))
+        {
+            Rebuild();
+        }
+
+        _focusLineId = lineId;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (_focusLineId is { } pending && _speakerBoxes.TryGetValue(pending, out AutoCompleteBox? box))
+            {
+                _focusLineId = null;
+                box.Focus(Avalonia.Input.NavigationMethod.Tab);
+            }
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     // ── 카드 ────────────────────────────────────────────────────────────────
@@ -563,6 +611,7 @@ public partial class DialogueNodeEditor : UserControl
                 ItemsSource = SpeakerNames(),
             };
             Wire(speaker);
+            _speakerBoxes[resolved.Line.LineId] = speaker;
 
             // 후보는 조합 중인 첫 글자 · 자음부터 거른다(writer-comfort WC3 — ⛔ 칸의 글만 보아 한글은 둘째 글자부터 움직였다). 목록은 칠 때마다
             // 지금 화자 목록에서 — 방금 등록한 화자도 카드를 다시 짓지 않고 나온다.
@@ -1026,8 +1075,9 @@ public partial class DialogueNodeEditor : UserControl
     // ── ＋ (메타데이터 추가) ─────────────────────────────────────────────────
 
     /// <summary>
-    /// 행 오른쪽의 ＋ — 줄 추가가 아니라 <b>이 줄에</b> 조건·출구를 더하는
-    /// 버튼이다. 항목은 전부 기존 데이터 구조와 기존 편집 컨트롤을 그대로 쓴다.
+    /// 행 오른쪽의 ＋ — <b>이 줄</b>의 차림이다: 이 줄 앞의 분기, 줄 옮기기 · 지우기, 이 줄 아래에 줄 추가. 차림이 열린 채 ＋에서 Tab을 누르면
+    /// [아래에 줄 추가]로 간다 — Enter면 새 줄이 서고 그 줄의 화자 칸에서 바로 쓴다(usability UX26). 항목은 전부 기존 데이터 구조와 기존 편집
+    /// 컨트롤을 그대로 쓴다.
     /// </summary>
     private Button BuildPlusButton(DialogueNode node, ResolvedLine resolved)
     {
@@ -1041,13 +1091,24 @@ public partial class DialogueNodeEditor : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
-        ToolTip.SetTip(plus, "이 줄에 조건·분기·출구를 더하거나 고칩니다.");
+        ToolTip.SetTip(plus, "이 줄 앞에 분기를 더하거나, 줄을 옮기고 지우고 아래에 더합니다. 열고 Tab — [아래에 줄 추가].");
         plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, resolved);
+
+        // 초점이 ＋에 남아 있으면(차림이 초점을 가져가지 않았다) Tab이 차림 밖 다음 줄로 간다 — 열린 차림의 [아래에 줄 추가]로 데려간다.
+        plus.KeyDown += (_, args) =>
+        {
+            if (args.Key == Avalonia.Input.Key.Tab && args.KeyModifiers == Avalonia.Input.KeyModifiers.None &&
+                ReferenceEquals(_lineMetaAnchor, plus) && _lineMetaFlyout is { IsOpen: true } && _lineMetaAddButton is { } add)
+            {
+                args.Handled = true;
+                add.Focus(Avalonia.Input.NavigationMethod.Tab);
+            }
+        };
         return plus;
     }
 
     private void OpenLineMetaFlyout(
-        Control anchor,
+        Button anchor,
         DialogueNode node,
         ResolvedLine resolved)
     {
@@ -1151,34 +1212,8 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
 
-        // 출구는 선택·조건 갈래의 마지막 줄에서만 매달 수 있다.
-        //
-        // 주의: 챕터 에피소드에서는 <b>어디로 가는지만</b> 말한다 — 잇고 떼는
-        // 자리는 연출 그래프 카드의 IF 갈래 포트 하나다. 레일(→ 분기 이후)과 여기까지 열면 같은
-        // `SetExitTarget`을 부르는 문이 셋이 된다.
-        if (resolved.Branch is { } branch && resolved.Index == branch.LastLineIndex)
-        {
-            Section("출구 (이 갈래 끝에서 점프)");
-
-            if (_chapterEpisode)
-            {
-                StoryNode? wired = _session!.Project.FindNode(branch.ExitTargetNodeId);
-
-                panel.Children.Add(new TextBlock
-                {
-                    Text = wired is null
-                        ? "달린 씬이 없습니다 — [대본] 탭 카드의 IF 갈래 포트에서 답니다."
-                        : $"'{wired.Name}' — 잇고 떼는 것은 [대본] 탭 카드의 IF 갈래 포트에서 합니다.",
-                    FontSize = 10,
-                    Opacity = 0.7,
-                    TextWrapping = TextWrapping.Wrap
-                });
-            }
-            else
-            {
-                panel.Children.Add(BuildExitEditor(node, branch));
-            }
-        }
+        // ⛔ 갈래 출구(이 갈래 끝에서 점프)는 여기에 두지 않는다(2026-11-19 소유자 · usability UX26 — 차림에서 걷었다). 잇고 떼는 자리는 판 카드의
+        //    IF 갈래 포트와 줄 아래의 출구 레일(「→ 분기 이후」)이다.
 
         // ▲▼✕ 줄 이동 · 삭제의 진입점 — 행에는 단추를 두지 않고 여기서 한다.
         // 줄 구성의 주인은 프로젝트라 모든 노드에서 선다.
@@ -1198,6 +1233,26 @@ public partial class DialogueNodeEditor : UserControl
         lineRow.Children.Add(remove);
         panel.Children.Add(lineRow);
 
+        // [아래에 줄 추가] — 차림 맨 아래. ＋에서 Tab이면 여기로 오고, 누르면 이 줄 아래에 새 줄이 서고 그 줄의 화자 칸으로 간다(usability UX26).
+        var addBelow = new Button
+        {
+            Content = "＋ 아래에 줄 추가",
+            FontSize = 11,
+            Padding = new Thickness(8, 3),
+            Margin = new Thickness(0, 6, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            Tag = LineMetaAddTag
+        };
+        ToolTip.SetTip(addBelow, "이 줄 바로 아래에 새 줄을 더하고 그 줄의 화자 칸으로 갑니다(Enter).");
+        addBelow.Click += (_, _) => UiGuard.Run(_session, "줄 추가", () =>
+        {
+            _lineMetaFlyout?.Hide();
+            SelectLine(lineId);
+            AddLine();
+        });
+        panel.Children.Add(addBelow);
+
         // 분기 조건이 걸린 첫 줄은 지우거나 옮기지 않는다 — 첫 줄의 조건이 함께 사라지거나 따라 내려가 조건 구조가 깨진다.
         // 둘째 줄을 위로 올리는 것도 같다(조건 위로 올라선다). 글은 카드 글 칸에서 고친다 — 거기서는 조건 줄이 지켜진다.
         int row = node.Script.ActiveLines.ToList().FindIndex(line => string.Equals(line.Id, lineId, StringComparison.Ordinal));
@@ -1212,9 +1267,27 @@ public partial class DialogueNodeEditor : UserControl
             }
         }
 
+        // 차림을 열면 초점이 그 안의 첫 단추로 든다 — 연 뒤 <b>첫 Tab</b>은 [아래에 줄 추가]로 간다(그다음부터는 보통의 Tab 차례).
+        bool firstTab = true;
+        panel.AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (firstTab && args.Key == Avalonia.Input.Key.Tab && args.KeyModifiers == Avalonia.Input.KeyModifiers.None)
+            {
+                firstTab = false;
+                args.Handled = true;
+                addBelow.Focus(Avalonia.Input.NavigationMethod.Tab);
+            }
+        }, RoutingStrategies.Tunnel);
+
         LineMetaPanel = panel;
-        new Flyout { Content = panel }.ShowAt(anchor);
+        _lineMetaAnchor = anchor;
+        _lineMetaAddButton = addBelow;
+        _lineMetaFlyout = new Flyout { Content = panel };
+        _lineMetaFlyout.ShowAt(anchor);
     }
+
+    /// <summary>줄 ＋ 차림의 [아래에 줄 추가] 단추의 표 — 시험이 찾는다.</summary>
+    internal const string LineMetaAddTag = "line-meta-add";
 
     /// <summary>마지막으로 연 줄의 ＋ 차림 — 화면 시험이 그 안의 단추를 누르는 손잡이다(차림은 따로 뜨는 창이라 판에서 안 찾인다).</summary>
     internal StackPanel? LineMetaPanel { get; private set; }
