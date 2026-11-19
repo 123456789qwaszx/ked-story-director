@@ -18,7 +18,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class DirectorSceneNotesTests : IDisposable
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     private readonly string _directory = Path.Combine(
         Path.GetTempPath(), "vn-director-scene-notes", Guid.NewGuid().ToString("N"));
@@ -173,6 +173,53 @@ public sealed class DirectorSceneNotesTests : IDisposable
         Assert.Contains("메모", RowTexts(graph, "opening"));
         Assert.Contains("메모", RowTexts(graph, "hall"));
         Assert.Contains("· 메모", Label(graph, "opening"));
+        Assert.Contains("· 메모", Label(graph, "hall"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 에피소드_지시를_붙이고_쓰고_떼어도_판을_다시_짓지_않고_장면_이름표의_메모만_따라간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「에피소드 지시를 추가하고 빼는 것이 조금 느린데」(usability UX7). 판을 통째로 다시 짓는 데 들던 시간이었다 —
+        // 에피소드 160개에서 한 번에 2초. 판에는 에피소드 지시가 서지 않고, 장면 이름표의 「메모」만 그것을 본다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        GraphEditorView graph = PickScene(window, "hall");
+        int rails = graph.RailDrawCount;
+        int frames = graph.SceneFrameDrawCount;
+        Assert.DoesNotContain("· 메모", Label(graph, "hall"));
+
+        // 붙인다 — [+ 에피소드]에서 고른다.
+        var add = (ComboBox)Control(graph, "scene-note-add");
+        add.SelectedIndex = 0;   // b
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(Episode(session, "b").NoteCard);
+
+        // 쓴다.
+        TextBox box = Box(graph, "episode-note:b");
+        box.Text = "복도에서 마주친다";
+        CtrlEnter(box);
+        Assert.Equal("복도에서 마주친다", Episode(session, "b").Memo);
+        Assert.Contains("· 메모", Label(graph, "hall"));   // 판을 다시 짓지 않아도 이름표가 따라간다
+        Assert.Contains("메모", RowTexts(graph, "hall"));
+
+        // 뗀다.
+        var remove = (Button)Control(graph, "episode-note-remove:b");
+        remove.Focus();   // 사람이 누르면 초점이 먼저 단추로 간다 — 칸은 그때 넣는다(같은 글이라 적지 않는다)
+        Dispatcher.UIThread.RunJobs();
+        remove.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(Episode(session, "b").NoteCard);
+        Assert.DoesNotContain("· 메모", Label(graph, "hall"));
+
+        // 셋 다 판(카드 · 철도)을 다시 짓지 않았다 — 테두리 · 이름표만 다시 그었다.
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.Equal(frames + 3, graph.SceneFrameDrawCount);
+
+        // 되돌리면 지시가 돌아오고 장면 메모 공간도 그것을 보인다.
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("복도에서 마주친다", Episode(session, "b").Memo);
         Assert.Contains("· 메모", Label(graph, "hall"));
 
         window.Close();

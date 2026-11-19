@@ -42,7 +42,7 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 글을_넣어도_대본_판의_철도는_다시_긋지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string cardId = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;
 
@@ -77,7 +77,7 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 가려진_구성_판은_보일_때_한_번_그린다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         TabControl tabs = window.FindControl<TabControl>("MainTabs")!;
         session.SetShowIds(false);   // [구성] 카드가 제목을 보인다 — 앱 설정이라 끝에 되돌린다(다른 시험으로 새지 않게)
@@ -92,16 +92,16 @@ public sealed class BoardWorkAmountTests : IDisposable
             Dispatcher.UIThread.RunJobs();
             Assert.Equal(draws, view.CanvasDrawCount);   // 가려진 동안은 그리지 않는다
 
-            tabs.SelectedIndex = 0;
+            tabs.SelectedIndex = MainTab.Structure;
             Dispatcher.UIThread.RunJobs();
             Assert.Equal(draws + 1, view.CanvasDrawCount);   // 보이면 한 번 — 마지막 모습으로
             Assert.Contains(view.FindControl<Canvas>("GraphCanvas")!.GetLogicalDescendants().OfType<TextBlock>(),
                 block => block.Text == "둘째");
 
             // 바뀐 것이 없으면 탭을 오가도 다시 그리지 않는다.
-            tabs.SelectedIndex = 1;
+            tabs.SelectedIndex = MainTab.Script;
             Dispatcher.UIThread.RunJobs();
-            tabs.SelectedIndex = 0;
+            tabs.SelectedIndex = MainTab.Structure;
             Dispatcher.UIThread.RunJobs();
             Assert.Equal(draws + 1, view.CanvasDrawCount);
         }
@@ -115,7 +115,7 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 무리를_끄는_동안_철도는_따라가기만_하고_놓은_뒤의_모습은_통째로_그은_것과_같다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "교실로 간다");   // opening 안
         session.Editor.AddEdge("ch01", "a", "b", optionLabel: "복도로 나간다");    // opening → hall (무리 안팎)
         Dispatcher.UIThread.RunJobs();
@@ -175,7 +175,7 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 글을_되돌리고_다시_해도_판을_다시_짓지_않고_그_카드의_글_칸이_따라온다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string cardA = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;
         session.Select(cardA);   // 사람이 쓰는 그대로 — 고른 카드의 글이 바뀌면 그 칸이 따라온다
@@ -208,7 +208,7 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 인스펙터가_보이는_카드의_글이_잇달아_바뀌어도_옛_글로_돌아가지_않는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         string cardA = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;
         session.Select(cardA);   // 인스펙터의 줄 표가 이 카드를 보인다
         Dispatcher.UIThread.RunJobs();
@@ -228,7 +228,7 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 빈_선택지를_숨기고_세워도_판을_다시_짓지_않고_그_카드의_철도만_다시_긋는다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "교실로 간다");
         Dispatcher.UIThread.RunJobs();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
@@ -283,7 +283,7 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 구성_판을_끄는_동안_다시_짓지_않고_마지막_모습은_놓은_뒤와_같다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "교실로 간다");
         session.Editor.AddEdge("ch01", "a", "b", optionLabel: "복도로 나간다");
         Dispatcher.UIThread.RunJobs();

@@ -15,7 +15,7 @@ internal static class ProjectRefreshPlanner
     /// <param name="fromHistory">
     /// 되돌리기 · 다시 실행에서 왔다(<see cref="ProjectChangedEventArgs.FromHistory"/>) — 프로젝트의 객체가 모두 새것이다. 그래서 가볍게 받는 것은
     /// 화면이 객체를 붙들지 않는 종류뿐이다(2026-11-18 · board-speed PF1): 글(카드의 글 칸들을 다시 채운다 — 되돌린 글이 고른 카드의 것이라는
-    /// 보장이 없다) · [구성] 자리 · 화자. 그 밖은 구조로 받는다 — 예컨대 접은 장면 상자는 지을 때의 판 객체로 끌기를 잰다. ⛔ 그 전에는
+    /// 보장이 없다) · [구성] 자리 · 화자 · 선택지(usability UX21). 그 밖은 구조로 받는다 — 화면이 무엇을 붙드는지 하나씩 확인한 종류만 가볍게 받는다. ⛔ 그 전에는
     /// 되돌리기가 늘 구조로 알려 글 한 줄을 되돌려도 판을 통째로 다시 지었다.
     /// </param>
     public static ProjectRefreshPlan Plan(ProjectChangeKind kind, StoryNode? selectedNode, bool fromHistory = false)
@@ -30,6 +30,10 @@ internal static class ProjectRefreshPlanner
                     RebuildInspector: false,
                     RefreshAllCardWriting: true),
                 ProjectChangeKind.ChapterLayout or ProjectChangeKind.Content => default,
+
+                // 선택지 — [대본] 판은 선택지 쪽에 객체를 붙들지 않는다(카드 · 철도 · 접은 상자는 값만 쥐고 누를 때 프로젝트에서 찾는다). 알림이 실은
+                // 출발 카드의 철도만 다시 긋는다 — 판이 다른 것도 바뀌었다고 보면 스스로 통째로 짓는다(usability UX21 · ⛔ 구조).
+                ProjectChangeKind.ChoiceDetail or ProjectChangeKind.ChoiceRoute => Plan(kind, selectedNode),
                 _ => Plan(ProjectChangeKind.Structure, selectedNode)
             };
         }
@@ -50,9 +54,9 @@ internal static class ProjectRefreshPlanner
                 RebuildGraph: false,
                 RefreshGraphPositions: false,
                 RebuildInspector: false,
-                // 곁기둥에서 고친 글이 카드의 글 칸에도 비친다 — 안 그러면 낡은 칸의 글이
-                // 다음 넣기에서 방금 고친 줄을 도로 덮는다.
-                RefreshCardWriting: selectedNode is DialogueNode),
+                // 고친 글이 카드의 글 칸에도 비친다 — 안 그러면 낡은 칸의 글이 다음 넣기에서 방금 고친 줄을 도로 덮는다. 어느 카드인지는
+                // 알림이 싣는다(모르면 — 화자 이름 바꾸기처럼 여러 카드면 — 칸마다 · usability UX18). ⛔ 고른 카드의 칸만 다시 채웠다.
+                RefreshCardWriting: true),
 
             ProjectChangeKind.ConditionDefinition => new ProjectRefreshPlan(
                 RebuildGraph: true,
@@ -65,6 +69,48 @@ internal static class ProjectRefreshPlanner
                 RebuildGraph: true,
                 RefreshGraphPositions: false,
                 RebuildInspector: false),
+
+            // 에피소드 지시 — [대본] 판에는 서지 않는다. 장면 이름표의 「메모」 표시만 다시 단다(테두리 · 이름표 — 카드 · 철도는 그대로).
+            // 장면 메모 공간은 제가 고친 것을 제자리에서 고쳐 두었다(usability UX7 · ⛔ NodeMetadata — 판을 통째로 다시 지었다).
+            ProjectChangeKind.EpisodeNote => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: false,
+                RefreshSceneFrames: true),
+
+            // 한 카드의 줄이 바뀌었다 — 그 카드만 다시 짓는다(판이 다른 것도 바뀌었다고 보면 스스로 통째로 짓는다). 곁기둥의 줄 표는 줄이
+            // 늘고 줄었으니 다시 세운다(usability UX13 · ⛔ 구조 — 판을 통째로 다시 지었다).
+            ProjectChangeKind.DialogueLines => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: true,
+                RebuildCard: true),
+
+            // 카드 하나의 제목만 — 그 카드의 제목 글만 고친다(접은 상자 안이면 판이 스스로 통째로 짓는다 · usability UX15). 하이어아키는 [구성]의
+            // 다시 읽기로 따라온다.
+            // 카드를 골랐으면 그 대사 편집기의 이름 칸이 제가 고친 것이다(다시 세우면 쓰던 칸이 사라진다) — 장면 · 챕터 요약이 서 있으면 그 안의
+            // 에피소드 이름이 낡지 않게 다시 세운다(가볍다).
+            ProjectChangeKind.CardTitle => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: selectedNode is not DialogueNode,
+                RefreshCardTitle: true),
+
+            // 선택지 하나의 내용 — 카드는 그대로 두고 그 출발 카드에서 나가는 철도(선택지 칸)만 다시 긋는다(판이 다른 것도 바뀌었다고 보면
+            // 스스로 통째로 짓는다 · usability UX16). 인스펙터는 그 선택지를 보이고 있을 수 있어 다시 세운다(구조일 때와 같다).
+            // 선택지가 생기거나 걷히거나 도착이 바뀌었다 — 같은 길이다(장면 시작점이 바뀐 카드는 판이 새로 짓는다 · usability UX19).
+            ProjectChangeKind.ChoiceDetail or ProjectChangeKind.ChoiceRoute => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: true,
+                RedrawChoices: true),
+
+            // 챕터 조건 — [대본] 판에서는 분기 카드의 조건 표만 다시 단다. 조건 요약 · 대사 편집기의 조건 고르기는 다시 세운다(usability UX16).
+            ProjectChangeKind.ChapterCondition => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: true,
+                RefreshBranchConditions: true),
 
             // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
@@ -82,4 +128,9 @@ internal readonly record struct ProjectRefreshPlan(
     bool RefreshGraphPositions,
     bool RebuildInspector,
     bool RefreshCardWriting = false,
-    bool RefreshAllCardWriting = false);
+    bool RefreshAllCardWriting = false,
+    bool RefreshSceneFrames = false,
+    bool RebuildCard = false,
+    bool RefreshCardTitle = false,
+    bool RedrawChoices = false,
+    bool RefreshBranchConditions = false);

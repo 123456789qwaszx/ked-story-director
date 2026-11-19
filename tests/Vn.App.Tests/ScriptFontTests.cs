@@ -33,7 +33,7 @@ public sealed class ScriptFontTests : IDisposable
     public void 처음에는_기본_글꼴_11_줄_간격_140이고_칸이_그것을_입는다() => HeadlessUi.Run(() =>
     {
         ScriptFont.Reset();
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         TextBox box = WritingBox(window, session);
 
         Assert.Equal(11, box.FontSize);
@@ -56,7 +56,7 @@ public sealed class ScriptFontTests : IDisposable
         try
         {
             ScriptFont.Reset();
-            (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+            (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
             TextBox box = WritingBox(window, session);
             string font = FontManager.Current.SystemFonts.First().Name;
 

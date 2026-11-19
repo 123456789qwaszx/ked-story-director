@@ -25,8 +25,11 @@ public sealed partial class ProjectEditor
     private readonly List<HistoryEntry> _undo = new();
     private readonly List<HistoryEntry> _redo = new();
 
-    /// <summary>되돌리기 기록 한 칸 — 그 편집 앞의 스냅샷과 그 편집의 변경 종류(되돌리기 · 다시 실행이 그 종류로 알린다).</summary>
-    private readonly record struct HistoryEntry(string Snapshot, ProjectChangeKind Kind);
+    /// <summary>
+    /// 되돌리기 기록 한 칸 — 그 편집 앞의 스냅샷, 그 편집의 변경 종류와 바뀐 노드(되돌리기 · 다시 실행이 그 종류 · 그 노드로 알린다 — 노드는
+    /// usability UX21).
+    /// </summary>
+    private readonly record struct HistoryEntry(string Snapshot, ProjectChangeKind Kind, string? NodeId = null);
     private readonly Func<string> _newLineId;
 
     /// <param name="newLineId">
@@ -281,6 +284,11 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("분기는 대사 노드에만 둘 수 있습니다.");
         }
 
+        if (!CanBranchFrom(nodeId))
+        {
+            throw new InvalidOperationException(BranchCardBranchesRefusal);
+        }
+
         if (Project.FindFileContainingNode(nodeId) is not { } file)
         {
             throw new InvalidOperationException("판에 서 있지 않은 노드입니다.");
@@ -320,9 +328,23 @@ public sealed partial class ProjectEditor
     /// 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다(<see cref="IsBranchCardElsewhere"/>).
     /// </summary>
     public bool CanBranchTo(string fromNodeId, string nodeId) =>
+        CanBranchFrom(fromNodeId) &&
         Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } &&
         Project.FindFileContainingNode(nodeId) is { } board &&
         ReferenceEquals(board, Project.FindFileContainingNode(fromNodeId));
+
+    /// <summary>
+    /// 그 카드에서 <b>분기(분기점 — <c>&lt;&lt;detour&gt;&gt;</c>로 들르는 곳)를 낼 수 있는가</b>. <b>분기 카드는 못 낸다</b>
+    /// (2026-11-19 소유자 · usability UX27): 분기 카드는 에피소드에서 들렀다 돌아오는 곳이라 그 안에서 다시 갈라지지 않는다 — 들르기가
+    /// 한 단계일 때 판을 읽을 수 있고, [구성]과 도달성 증명은 분기 카드를 보지 않는다. ⛔ 전에는 분기 카드의 분기도 사슬로 따랐다. 이미 그런
+    /// 파일은 읽되 챕터 검증이 오류로 짚는다(<see cref="Chapters.ChapterBranchCards"/>). (분기 카드의 갈래 출구도 막았던 것은 UX28에서 갈래
+    /// 출구째 걷혔다.)
+    /// </summary>
+    public bool CanBranchFrom(string nodeId) => Project.FindNode(nodeId) is DialogueNode { IsBranchCard: false };
+
+    /// <summary>분기 카드에서 분기를 내려 할 때 하는 말 — 편집기의 거절 · 화면의 상태줄이 같은 글을 쓴다.</summary>
+    public const string BranchCardBranchesRefusal =
+        "분기 카드 안에서는 분기를 내지 않습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳입니다. 갈라야 하면 그 에피소드에 분기를 하나 더 두세요.";
 
     /// <summary>그 카드가 다른 판의 분기 카드인가 — 놓기를 거절할 때 까닭을 고른다.</summary>
     public bool IsBranchCardElsewhere(string fromNodeId, string nodeId) =>
@@ -338,6 +360,7 @@ public sealed partial class ProjectEditor
         ArgumentNullException.ThrowIfNull(openPoint);
 
         if (!openPoint.IsOpenDetour ||
+            !CanBranchFrom(openPoint.NodeId) ||
             openPoint.BranchOpenLineId is not { } lineId ||
             Project.FindFileContainingNode(openPoint.NodeId) is not { } file)
         {
@@ -433,7 +456,7 @@ public sealed partial class ProjectEditor
 
         if (Project.FindDialogue(nodeId) is { IsBranchCard: true } card && !string.Equals(card.Title, wanted, StringComparison.Ordinal))
         {
-            Mutate(ProjectChangeKind.NodeMetadata, () => card.Title = wanted);
+            Mutate(ProjectChangeKind.CardTitle, () => card.Title = wanted, card.Id);   // 그 카드의 제목 글만(usability UX15 · ⛔ NodeMetadata)
         }
     }
 
@@ -536,7 +559,6 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 이 줄에서 조건 흐름을 어떻게 바꿀지 정한다.
-    /// 갈래를 더 이상 열지 않게 되면 거기 매달려 있던 조건 출구도 함께 사라진다.
     ///
     /// 대본에 없는 LineId를 주면 아무것도 하지 않는다. 조건은 존재하는 줄에만 붙는다.
     /// </summary>
@@ -586,9 +608,6 @@ public sealed partial class ProjectEditor
         extension.Transitions.Clear();
         extension.Transitions.AddRange(resolved);
 
-        // 순서가 중요하다. 먼저 주인 없는 출구를 버리고, 그다음에 빈 항목을 버린다.
-        // 반대로 하면 아직 출구가 매달려 있어 빈 항목이 남는다.
-        PruneBranchExits(node);
         PruneLineExtensions(node);
     }
 
@@ -699,48 +718,19 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        if (node is not DialogueNode dialogue || branchOpenLineId is null)
+        if (branchOpenLineId is null)
         {
             return;
         }
 
-        // 「조건 분기」 표식의 목표는 <b>그 줄</b>이 진다 — 갈래 출구 장부에 적으면
-        // 여는 전환이 없는 고아가 되고, 저장할 때 그 칸이 전환 안에 있어 통째로 사라진다.
+        // 출구는 분기점뿐이다 — 그 목표는 <b>그 줄</b>이 진다(⛔ 갈래 출구 장부 `BranchExits`는 2026-11-19에 걷혔다 · usability UX28).
         //
         // 한 줄에 분기가 여럿일 수 있다. 줄만 주면 대상이 있으면 그 줄의 분기 끝에 하나를 <b>더하고</b>(이미 있으면
         // 그대로), 대상이 없으면 그 줄의 분기를 이어지지 않은 분기점까지 <b>모두</b> 걷는다. 분기 하나만 바꾸려면
         // 포트(<see cref="ExitPort"/>)로 부른다.
-        if (kind == ExitPortKind.Detour)
+        if (kind == ExitPortKind.Detour && (targetNodeId is null || CanBranchTo(nodeId, targetNodeId)))
         {
-            if (targetNodeId is null || CanBranchTo(nodeId, targetNodeId))
-            {
-                SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
-            }
-
-            return;
-        }
-
-        Mutate(() =>
-        {
-            if (targetNodeId is null)
-            {
-                dialogue.BranchExits.Remove(branchOpenLineId);
-            }
-            else
-            {
-                dialogue.BranchExits[branchOpenLineId] = targetNodeId;
-            }
-
-            ForgetShapeIfCut(dialogue, kind, branchOpenLineId, targetNodeId);
-        });
-    }
-
-    /// <summary>끊긴 출구의 선 모양은 걷는다 — 선이 없는데 모양만 파일에 남으면, 같은 자리를 다시 이을 때 옛 굽이가 되살아난다.</summary>
-    private static void ForgetShapeIfCut(StoryNode node, ExitPortKind kind, string? exitKey, string? targetNodeId)
-    {
-        if (targetNodeId is null)
-        {
-            node.EdgeShapes.Remove(EdgeShape.KeyOf(kind, exitKey));
+            SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
         }
     }
 
@@ -754,7 +744,7 @@ public sealed partial class ProjectEditor
     /// <item><c>from</c> 있음 · <c>to</c> 있음 — 그 분기를 제자리에서 다른 곳으로 잇는다(선 모양도 따라간다). <c>to</c>가
     ///   그 줄에 이미 있으면 둘이 같은 곳이 되므로 <c>from</c>을 걷는다.</item>
     /// </list>
-    /// 끊긴 분기의 선 모양은 걷는다(<see cref="ForgetShapeIfCut"/>와 같은 까닭).
+    /// 끊긴 분기의 선 모양은 걷는다 — 선이 없는데 모양만 파일에 남으면, 같은 자리를 다시 이을 때 옛 굽이가 되살아난다.
     /// </summary>
     private void SetDetourTarget(string nodeId, string lineId, string? from, string? to, bool keepPoint)
     {
@@ -992,7 +982,7 @@ public sealed partial class ProjectEditor
         HistoryEntry entry = _undo[^1];
         _undo.RemoveAt(_undo.Count - 1);
         _redo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
-        Restore(entry.Snapshot, entry.Kind, fromHistory: true);
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true, entry.NodeId);
     }
 
     public void Redo()
@@ -1005,7 +995,7 @@ public sealed partial class ProjectEditor
         HistoryEntry entry = _redo[^1];
         _redo.RemoveAt(_redo.Count - 1);
         _undo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
-        Restore(entry.Snapshot, entry.Kind, fromHistory: true);
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true, entry.NodeId);
     }
 
     /// <summary>파일에서 새로 읽었을 때처럼, 기록을 버리고 통째로 갈아 끼운다.</summary>
@@ -1020,26 +1010,28 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 스냅샷으로 되돌린다 — 되돌리기 · 다시 실행은 <b>되돌린 그 편집의 종류</b>로 알린다(2026-11-18 · board-speed PF1). 글 한 줄을 되돌렸는데
     /// 구조가 바뀌었다고 알리면 화면이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 4초). ⛔ 그 전에는 늘 구조로 알렸다.
+    /// 바뀐 노드도 싣는다 — 노드 Id는 스냅샷을 건너도 그대로라, 이은 선 하나를 되돌리면 판이 그 출발의 선만 다시 그을 수 있다(usability UX21).
     /// </summary>
-    private void Restore(string snapshot, ProjectChangeKind kind, bool fromHistory)
+    private void Restore(string snapshot, ProjectChangeKind kind, bool fromHistory, string? nodeId = null)
     {
         Project = ProjectSnapshotCodec.Decode(snapshot);
-        Raise(kind, fromHistory);
+        Raise(kind, fromHistory, nodeId);
     }
 
     private void Mutate(Action change) => Mutate(ProjectChangeKind.Structure, change);
 
-    private void Mutate(ProjectChangeKind kind, Action change)
+    /// <param name="nodeId">바뀐 노드가 하나로 정해지면 그 노드 — 알림에 싣는다(<see cref="ProjectChangedEventArgs.NodeId"/>).</param>
+    private void Mutate(ProjectChangeKind kind, Action change, string? nodeId = null)
     {
         // 묶음 안이면 스냅샷은 묶음이 처음에 한 번 떠 두었다 — 여기서 또 뜨면 되돌리기가
         // 명령 수만큼 쪼개진다.
         if (_batchDepth == 0)
         {
-            PushUndo(new HistoryEntry(ProjectSnapshotCodec.Encode(Project), kind));
+            PushUndo(new HistoryEntry(ProjectSnapshotCodec.Encode(Project), kind, nodeId));
         }
 
         change();
-        Raise(kind);
+        Raise(kind, nodeId: nodeId);
     }
 
     private void PushUndo(HistoryEntry entry)
@@ -1060,6 +1052,12 @@ public sealed partial class ProjectEditor
     /// <summary>묶음 안에서 일어난 변경의 종류. 아무것도 안 바뀌었으면 null이다.</summary>
     private ProjectChangeKind? _batchKind;
 
+    /// <summary>묶음 안의 알림이 모두 같은 노드였으면 그 노드 — 다른 노드가 섞이면 null로 모른다.</summary>
+    private string? _batchNodeId;
+
+    /// <summary>묶음 안에서 알림이 한 번이라도 왔는가 — 첫 알림의 노드를 받는다.</summary>
+    private bool _batchRaised;
+
     /// <summary>
     /// 여러 명령을 <b>되돌리기 한 칸 · 알림 한 번</b>으로 묶는다.
     ///
@@ -1073,7 +1071,14 @@ public sealed partial class ProjectEditor
     ///
     /// 묶음 안에서 아무것도 안 바뀌었으면 되돌리기 칸도 알림도 없다.
     /// </summary>
-    public void Batch(Action change)
+    public void Batch(Action change) => Batch(null, change);
+
+    /// <summary>
+    /// 묶음 — 안에서 무엇이 바뀌었든 <paramref name="kind"/>로 알린다(null이면 안의 알림들로 정한다 · 섞이면 구조). 묶음을 부르는 명령이 그 결과를
+    /// 알 때만 쓴다 — 예컨대 챕터 조건은 판에 서지 않는 공급 노드를 짓고 고치지만 판에는 조건만 바뀐 것이다(<see cref="ProjectChangeKind.ChapterCondition"/>).
+    /// 바깥 묶음 안에서 불리면 바깥 묶음이 정한다.
+    /// </summary>
+    private void Batch(ProjectChangeKind? kind, Action change)
     {
         ArgumentNullException.ThrowIfNull(change);
 
@@ -1086,6 +1091,8 @@ public sealed partial class ProjectEditor
         string before = ProjectSnapshotCodec.Encode(Project);
         _batchDepth++;
         _batchKind = null;
+        _batchNodeId = null;
+        _batchRaised = false;
         bool completed = false;
 
         try
@@ -1096,15 +1103,18 @@ public sealed partial class ProjectEditor
         finally
         {
             _batchDepth--;
-            ProjectChangeKind? kind = _batchKind;
+            ProjectChangeKind? raised = _batchKind is null ? null : kind ?? _batchKind;
+            string? batchNodeId = kind is null ? _batchNodeId : null;
             _batchKind = null;
+            _batchNodeId = null;
+            _batchRaised = false;
 
-            if (kind is { } changed)
+            if (raised is { } changed)
             {
                 if (completed)
                 {
-                    PushUndo(new HistoryEntry(before, changed));
-                    Raise(changed);
+                    PushUndo(new HistoryEntry(before, changed, batchNodeId));
+                    Raise(changed, nodeId: batchNodeId);
                 }
                 else
                 {
@@ -1127,70 +1137,32 @@ public sealed partial class ProjectEditor
     /// </summary>
     public long Revision { get; private set; }
 
-    private void Raise(ProjectChangeKind kind, bool fromHistory = false)
+    private void Raise(ProjectChangeKind kind, bool fromHistory = false, string? nodeId = null)
     {
         // 묶음 안이면 알림은 묶음이 끝날 때 한 번이다. 종류가 섞이면 구조로 올린다 —
-        // 덜 그려서 낡은 화면이 남는 것보다 한 번 더 그리는 편이 낫다.
+        // 덜 그려서 낡은 화면이 남는 것보다 한 번 더 그리는 편이 낫다. 노드가 섞여도 모른다(null) — 한 카드만 다시 지으면 다른 카드가 낡는다.
         if (_batchDepth > 0)
         {
             _batchKind = _batchKind is null || _batchKind == kind ? kind : ProjectChangeKind.Structure;
+            _batchNodeId = !_batchRaised ? nodeId : string.Equals(_batchNodeId, nodeId, StringComparison.Ordinal) ? nodeId : null;
+            _batchRaised = true;
+
+            if (_batchKind == ProjectChangeKind.DialogueLines && _batchNodeId is null)
+            {
+                _batchKind = ProjectChangeKind.Structure;   // 어느 카드인지 모르는 줄 변경은 구조다
+            }
+
             return;
         }
 
         Revision++;
-        Changed?.Invoke(this, new ProjectChangedEventArgs(kind, fromHistory));
-    }
-
-    /// <summary>
-    /// 주인 없는 출구를 버린다 — 갈래가 사라졌으면 거기 매달린 배선도 갈 곳이 없다.
-    /// 남겨 두면 그래프에 주인 없는 간선이 생기고, 그 간선은 어느 화면에서도 지울 수 없다.
-    ///
-    /// 대본에서 사라진 줄의 출구는 여기서 지우지 않는다. 그것은 <b>고아</b>이지 쓰레기가 아니다.
-    /// 대본을 되돌리면 살아나야 하고, 그때까지는 진단으로 보인다.
-    ///
-    /// <b>신원을 흐름 해석과 같은 규칙으로 짓는다</b>(<see cref="Flow.BranchAnchor"/>).
-    /// 첫 전환 하나만 보고 <b>맨 줄 Id</b>만 살리면 (ㄱ) 첫 전환이 여는 것이 아닌 줄의 출구가
-    /// 통째로 지워지고, (ㄴ) 한 줄이 갈래를 여럿 열 때 둘째부터의 출구가 매달자마자 사라진다.
-    /// </summary>
-    private static void PruneBranchExits(DialogueNode node)
-    {
-        var opening = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (DialogueLineExtension extension in node.LineExtensions)
-        {
-            int ordinal = 0;
-
-            foreach (LineConditionTransition transition in extension.Transitions)
-            {
-                if (transition.OpensBranch)
-                {
-                    opening.Add(Flow.BranchAnchor.ForLine(extension.LineId, ordinal++));
-                }
-            }
-        }
-
-        // 대본 끝의 줄 없는 갈래들.
-        int trailing = 0;
-
-        foreach (LineConditionTransition transition in node.TrailingTransitions)
-        {
-            if (transition.OpensBranch)
-            {
-                opening.Add(Flow.BranchAnchor.ForTrailing(trailing++));
-            }
-        }
-
-        foreach (string key in node.BranchExits.Keys.Where(key => !opening.Contains(key)).ToList())
-        {
-            node.BranchExits.Remove(key);
-        }
+        Changed?.Invoke(this, new ProjectChangedEventArgs(kind, fromHistory, nodeId));
     }
 
     /// <summary>아무것도 담지 않게 된 확장 항목을 버린다. 빈 항목은 파일만 시끄럽게 한다.</summary>
     private static void PruneLineExtensions(DialogueNode node)
     {
-        node.LineExtensions.RemoveAll(extension =>
-            extension.IsEmpty && !node.BranchExits.ContainsKey(extension.LineId));
+        node.LineExtensions.RemoveAll(extension => extension.IsEmpty);
     }
 
     private void RemoveReferencesToNode(string nodeId)
@@ -1201,14 +1173,6 @@ public sealed partial class ProjectEditor
             if (other is not DialogueNode dialogue)
             {
                 continue;
-            }
-
-            foreach (string key in dialogue.BranchExits
-                         .Where(pair => string.Equals(pair.Value, nodeId, StringComparison.Ordinal))
-                         .Select(pair => pair.Key)
-                         .ToList())
-            {
-                dialogue.BranchExits.Remove(key);
             }
 
             // 분기가 다녀가던 카드가 사라졌다 — 분기점은 이어지지 않은 채 제자리에 남는다(연결만 끊은 것과 같다).
@@ -1248,7 +1212,8 @@ public sealed partial class ProjectEditor
         NewNames.NextEpisodeId(Project, RequireChapter(chapterId), sceneId);
 
     /// <summary>
-    /// 그 카드가 선 장면 — 에피소드 카드면 그 에피소드의 장면, 분기 카드면 집(처음 부르는 에피소드)의 장면. 분기 카드의 자동 이름이 쓴다.
+    /// 분기를 낸 에피소드 카드의 장면 — 새 분기 카드의 자동 이름이 쓴다. 분기를 내는 것은 에피소드 카드뿐이다(<see cref="CanBranchFrom"/> ·
+    /// ⛔ 분기 카드에서 낸 분기는 집(처음 부르는 에피소드)의 장면을 따랐다 — 2026-11-19에 걷혔다).
     /// </summary>
     private string? SceneOfCard(DialogueNode? card)
     {
@@ -1258,11 +1223,6 @@ public sealed partial class ProjectEditor
         }
 
         ChapterDocument chapter = EpisodeNaming.ChapterOf(Project, card);
-
-        string? episodeId = card.IsBranchCard
-            ? ChapterBranchCards.HomesOf(Project, chapter.ChapterId).FirstOrDefault(home => home.Card.Id == card.Id)?.EpisodeId
-            : EpisodeNaming.EpisodeFor(chapter, card)?.EpisodeId;
-
-        return episodeId is null ? null : FindEpisode(chapter, episodeId)?.SceneId;
+        return EpisodeNaming.EpisodeFor(chapter, card)?.EpisodeId is { } episodeId ? FindEpisode(chapter, episodeId)?.SceneId : null;
     }
 }

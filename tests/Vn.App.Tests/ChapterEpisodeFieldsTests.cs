@@ -29,7 +29,7 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     [Fact]
     public void 에피소드ID_칸_하나에_이름표가_서고_제목_칸과_장면ID_칸은_없다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         view.SelectChapter("ch01");
         view.SelectEpisode("a");
@@ -49,7 +49,7 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     [Fact]
     public void 머리글은_장면_제목이고_부제는_없다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         TextBlock title = view.FindControl<TextBlock>("InspectorTitle")!;
         TextBlock subtitle = view.FindControl<TextBlock>("InspectorSubtitle")!;
@@ -88,7 +88,7 @@ public sealed class ChapterEpisodeFieldsTests : IDisposable
     public void 하이어아키에서_장면_이름을_바꾸면_이름만_바뀌고_장면ID는_그대로이며_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
     {
         // 장면 이름은 [대본] 탭 하이어아키에서 고친다 — 이름만이다. 장면ID(런타임 저장 · 롤백 경계)는 그대로다(display-names N3).
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         StoryHierarchy tree = window.FindControl<GraphEditorView>("Graph")!.HierarchyView;
         tree.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
 

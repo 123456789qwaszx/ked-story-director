@@ -17,7 +17,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class CardLiveWritingTests
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     [Fact]
     public void 줄을_모두_고쳐_쓰고_멈추면_칸을_나오지_않아도_들어가고_곁기둥에_비친다() => HeadlessUi.Run(() =>

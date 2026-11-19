@@ -18,8 +18,9 @@ namespace Vn.Authoring.Chapters;
 /// <b>뚫어뒀다면 반드시 행해지는 통로</b>이고, 막는 것은 다녀온 쪽의 첫머리 조건이다
 /// (<see cref="BranchEntryCondition"/>).
 ///
-/// <b>다녀올 곳은 분기 카드다</b>(2026-11-17 — <see cref="DialogueNode.IsBranchCard"/>). 분기점은 에피소드 카드에도, 분기 카드에도(분기 카드가
-/// 또 들른다) 선다 — 그래서 출발은 카드(NodeId)로 짚고, 에피소드면 그 Id를 함께 싣는다. 다녀올 곳은 늘 분기 카드다(그 밖은 읽을 때 거절한다).
+/// <b>다녀올 곳은 분기 카드다</b>(2026-11-17 — <see cref="DialogueNode.IsBranchCard"/>). 분기점은 에피소드 카드에 선다 — 분기 카드는 분기를 내지
+/// 않는다(2026-11-19 · usability UX27). 그 전의 파일에는 분기 카드의 분기점이 남아 있을 수 있어(챕터 검증이 오류로 짚는다) 출발은 카드(NodeId)로
+/// 짚고, 에피소드면 그 Id를 함께 싣는다. 다녀올 곳은 늘 분기 카드다(그 밖은 읽을 때 거절한다).
 /// </summary>
 public static class ChapterBranchMarkers
 {

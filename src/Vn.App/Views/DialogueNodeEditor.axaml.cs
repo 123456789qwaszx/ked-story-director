@@ -40,15 +40,26 @@ public partial class DialogueNodeEditor : UserControl
     private string? _selectedLineId;
     private readonly Dictionary<string, Border> _lineCards = new(StringComparer.Ordinal);
 
+    /// <summary>줄마다의 화자 칸 — 줄을 더하면 새 줄의 이 칸으로 초점을 옮긴다(<see cref="FocusLineLater"/>).</summary>
+    private readonly Dictionary<string, AutoCompleteBox> _speakerBoxes = new(StringComparer.Ordinal);
+
+    /// <summary>다시 세운 뒤 초점을 옮길 줄 — 줄을 더한 직후 셸이 표를 다시 세우므로 그 뒤에 새 칸을 찾는다.</summary>
+    private string? _focusLineId;
+
+    /// <summary>열려 있는 줄의 ＋ 차림과 그 ＋ · 그 안의 [아래에 줄 추가] — ＋에서 Tab이 그 단추로 간다(usability UX26).</summary>
+    private Flyout? _lineMetaFlyout;
+    private Button? _lineMetaAnchor;
+    private Button? _lineMetaAddButton;
+
     /// <summary>
     /// 지금 보는 노드가 <b>챕터의 에피소드</b>인가 (<see cref="DialogueNode.MarkedEpisodeId"/>).
     ///
     /// 참이어도 대본(본문·화자·줄 구성)은 잠그지 않는다 — 대본의 원본은 프로젝트다.
     ///
-    /// 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 셋뿐이고, 셋 다 대본이 아니다:
+    /// 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 둘뿐이고, 둘 다 대본이 아니다:
     /// ① 이름 칸 = 에피소드의 <b>보이는 제목</b> — EpisodeId는 [구성] 탭에서 정한다(<see cref="CommitName"/>)
     /// ② 스탯변화(챕터 간선의 것)
-    /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 문은 하나)
+    /// (⛔ 셋째였던 갈래 출구 배선은 2026-11-19에 갈래 출구와 함께 걷혔다 · usability UX28.)
     /// </summary>
     private bool _chapterEpisode;
 
@@ -82,6 +93,18 @@ public partial class DialogueNodeEditor : UserControl
         });
         AddLineButton.Click += (_, _) => AddLine();
 
+        // Ctrl+Tab = 앞 칸으로(Shift+Tab과 같다) — 줄 표를 쓰다가 손을 떼지 않고 이전 줄로 돌아간다(2026-11-19 소유자 · usability UX26).
+        // 칸보다 먼저 받는다(터널) — 글 칸 · 화자 칸이 Tab을 제 것으로 쓰기 전에.
+        AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Key == Avalonia.Input.Key.Tab && args.KeyModifiers == Avalonia.Input.KeyModifiers.Control &&
+                TopLevel.GetTopLevel(this)?.FocusManager is { } focus)
+            {
+                args.Handled = true;
+                focus.TryMoveFocus(Avalonia.Input.NavigationDirection.Previous);
+            }
+        }, RoutingStrategies.Tunnel);
+
         // 목록 아래 빈 공간 우클릭 = 맨 아래 줄 추가.카드 위 우클릭은 카드가
         // 먼저 받아 Handled로 막고, 텍스트 칸은 기본 편집 메뉴의 자리다.
         LineScroll.PointerPressed += (_, args) =>
@@ -92,27 +115,6 @@ public partial class DialogueNodeEditor : UserControl
                 ShowEmptyAreaFlyout();
             }
         };
-    }
-
-    /// <summary>
-    /// <b>챕터가 쥔</b> 것을 여기서 고치려는 시도를 막고, 어디서 고치는지 말한다. 참이면
-    /// 호출자는 그냥 돌아간다.
-    ///
-    /// <b>대본에 속한 것은 막지 않는다</b>
-    /// (줄 추가·삭제·이동, 화자·내용, 텍스트 반영, 조건 태그). 막는 문은
-    /// 챕터 흐름 하나뿐이고, 그것이 닫혀 있는 이유는 <b>문이 둘이면 안 되기</b>
-    /// 때문이다: 갈래 출구는 연출 그래프 카드의 IF 포트에서만 잇고 뗀다.
-    /// </summary>
-    private bool BlockIfChapterFlow(string what)
-    {
-        if (!_chapterEpisode)
-        {
-            return false;
-        }
-
-        _session?.SetStatus(
-            $"{what}{Josa.은는(what)} [대본] 탭 카드의 IF 갈래 포트에서 합니다 — 잇고 떼는 문은 하나입니다.");
-        return true;
     }
 
     /// <summary>빈 공간의 줄 메뉴 —여기서의 추가는 언제나 맨 아래, 삭제는 대상이 없어 잠긴다.</summary>
@@ -167,6 +169,7 @@ public partial class DialogueNodeEditor : UserControl
 
         ScriptLine line = _session.Editor.InsertScriptLine(node.Id); // 인덱스 없음 = 맨 끝
         SelectLine(line.Id);
+        FocusLineLater(line.Id);
     }
 
     internal void Attach(AuthoringSession session)
@@ -225,6 +228,7 @@ public partial class DialogueNodeEditor : UserControl
 
             LineHost.Children.Clear();
             _lineCards.Clear();
+            _speakerBoxes.Clear();
 
             // 분기로 다녀오는 카드의 첫머리 조건 묶음도 그 분기의 색이다 — 판의 분기 선 · 카드 표와 같은 번호로 칠한다.
             _entryGate = BranchEntryCondition.EntryPalette(_session.Project, node.Id) is { } gatePalette &&
@@ -425,6 +429,29 @@ public partial class DialogueNodeEditor : UserControl
 
         // 새 줄이 새 선택이다 — 프리뷰 기준도 함께 옮긴다.
         SelectLine(line.Id);
+        FocusLineLater(line.Id);
+    }
+
+    /// <summary>
+    /// 그 줄의 화자 칸으로 초점을 옮긴다 — 줄을 더하면 바로 그 줄을 쓴다(usability UX26 · ⛔ 「줄 추가를 누르면 바로 타이핑할 수 있습니다」라고
+    /// 안내했지만 초점이 가지 않았다). 셸이 표를 다시 세운 뒤에(그 사이에 또 세우면 마지막 표의) 칸을 찾는다. 셸 없이 선 편집기면 스스로 세운다.
+    /// </summary>
+    private void FocusLineLater(string lineId)
+    {
+        if (!_speakerBoxes.ContainsKey(lineId))
+        {
+            Rebuild();
+        }
+
+        _focusLineId = lineId;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (_focusLineId is { } pending && _speakerBoxes.TryGetValue(pending, out AutoCompleteBox? box))
+            {
+                _focusLineId = null;
+                box.Focus(Avalonia.Input.NavigationMethod.Tab);
+            }
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     // ── 카드 ────────────────────────────────────────────────────────────────
@@ -454,11 +481,6 @@ public partial class DialogueNodeEditor : UserControl
 
         body.Children.Add(BuildMainRow(node, script, resolved));
 
-        if (resolved.IsBranchExit && branch is not null)
-        {
-            body.Children.Add(BuildExitRail(node, branch));
-        }
-
         return new Border
         {
             // 조건 안이면 오른쪽으로 한 단계 들어가고 그 조건 팔레트의 색을 쓴다.
@@ -471,11 +493,7 @@ public partial class DialogueNodeEditor : UserControl
             BorderBrush = branch is null
                 ? new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
                 : BranchPalette.Accent(palette),
-            Background = resolved.IsBranchExit
-                ? BranchPalette.ExitBackground(palette)
-                : branch is null
-                    ? null
-                    : BranchPalette.Background(palette),
+            Background = branch is null ? null : BranchPalette.Background(palette),
             Child = body
         };
     }
@@ -563,6 +581,7 @@ public partial class DialogueNodeEditor : UserControl
                 ItemsSource = SpeakerNames(),
             };
             Wire(speaker);
+            _speakerBoxes[resolved.Line.LineId] = speaker;
 
             // 후보는 조합 중인 첫 글자 · 자음부터 거른다(writer-comfort WC3 — ⛔ 칸의 글만 보아 한글은 둘째 글자부터 움직였다). 목록은 칠 때마다
             // 지금 화자 목록에서 — 방금 등록한 화자도 카드를 다시 짓지 않고 나온다.
@@ -1026,8 +1045,9 @@ public partial class DialogueNodeEditor : UserControl
     // ── ＋ (메타데이터 추가) ─────────────────────────────────────────────────
 
     /// <summary>
-    /// 행 오른쪽의 ＋ — 줄 추가가 아니라 <b>이 줄에</b> 조건·출구를 더하는
-    /// 버튼이다. 항목은 전부 기존 데이터 구조와 기존 편집 컨트롤을 그대로 쓴다.
+    /// 행 오른쪽의 ＋ — <b>이 줄</b>의 차림이다: 이 줄 앞의 분기, 줄 옮기기 · 지우기, 이 줄 아래에 줄 추가. 차림이 열린 채 ＋에서 Tab을 누르면
+    /// [아래에 줄 추가]로 간다 — Enter면 새 줄이 서고 그 줄의 화자 칸에서 바로 쓴다(usability UX26). 항목은 전부 기존 데이터 구조와 기존 편집
+    /// 컨트롤을 그대로 쓴다.
     /// </summary>
     private Button BuildPlusButton(DialogueNode node, ResolvedLine resolved)
     {
@@ -1041,13 +1061,24 @@ public partial class DialogueNodeEditor : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
-        ToolTip.SetTip(plus, "이 줄에 조건·분기·출구를 더하거나 고칩니다.");
+        ToolTip.SetTip(plus, "이 줄 앞에 분기를 더하거나, 줄을 옮기고 지우고 아래에 더합니다. 열고 Tab — [아래에 줄 추가].");
         plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, resolved);
+
+        // 초점이 ＋에 남아 있으면(차림이 초점을 가져가지 않았다) Tab이 차림 밖 다음 줄로 간다 — 열린 차림의 [아래에 줄 추가]로 데려간다.
+        plus.KeyDown += (_, args) =>
+        {
+            if (args.Key == Avalonia.Input.Key.Tab && args.KeyModifiers == Avalonia.Input.KeyModifiers.None &&
+                ReferenceEquals(_lineMetaAnchor, plus) && _lineMetaFlyout is { IsOpen: true } && _lineMetaAddButton is { } add)
+            {
+                args.Handled = true;
+                add.Focus(Avalonia.Input.NavigationMethod.Tab);
+            }
+        };
         return plus;
     }
 
     private void OpenLineMetaFlyout(
-        Control anchor,
+        Button anchor,
         DialogueNode node,
         ResolvedLine resolved)
     {
@@ -1064,7 +1095,8 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
 
-        // 「분기 추가」 — <b>모든 노드에서</b> 선다.
+        // 「분기 추가」 — <b>에피소드 카드에서</b> 선다. 분기 카드는 분기를 내지 않는다(usability UX27 · ProjectEditor.CanBranchFrom) —
+        //    그 전의 파일에 남은 분기는 아래 목록에서 지운다.
         //
         // 조건을 걸지 않는다. 이 줄 <b>앞</b>에 아무것도 없는 카드가 끼고, 연출 그래프의
         //    카드에 포트가 하나 뚫리며, 다녀올 에피소드가 함께 서서 이미 이어진 상태가 된다.
@@ -1110,40 +1142,25 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(removeOpen);
         }
 
-        var addBranch = new Button
+        if (!_session!.Editor.CanBranchFrom(node.Id))
         {
-            Content = "＋ 분기 추가",
-            FontSize = 10,
-            Padding = new Thickness(7, 2)
-        };
-        ToolTip.SetTip(
-            addBranch,
-            "이 줄 앞에서 갈라집니다. 다녀올 에피소드가 함께 서고 이미 이어진 상태입니다 — 처음에는 조건 없이 늘 다녀옵니다. " +
-            BranchConditionNote.Where + " 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
-
-        addBranch.Click += (_, _) =>
-        {
-            if (_building)
-            {
-                return;
-            }
-
-            // 새 분기에는 조건이 없다 — 만든 순간에 그 사실과 정하는 자리를 말한다.
-            UiGuard.Run(_session!, "분기 추가", () =>
-            {
-                DialogueNode created = _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId);
-                _session.SetStatus($"분기 '{created.Name}'{Josa.을를(created.Name)} 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
-            });
-        };
-
-        panel.Children.Add(addBranch);
-
-        if (_chapterEpisode)
-        {
-            // 여기서 막는 것은 챕터의 것이다 —선택지와 스탯변화는 간선, 갈래 출구는 IF 포트.
             panel.Children.Add(new TextBlock
             {
-                Text = "📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서, 갈래 출구는 카드의 IF 포트에서 고칩니다.",
+                Text = "분기 카드 안에서는 분기를 내지 않습니다 — 들렀다 돌아오는 곳입니다. 갈라야 하면 부르는 에피소드에 분기를 하나 더 두세요.",
+                FontSize = 10,
+                Opacity = 0.65,
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 250
+            });
+        }
+        else
+        {
+            panel.Children.Add(BuildAddBranchButton(node, resolved));
+
+            // 여기서 막는 것은 챕터의 것이다 — 선택지와 스탯변화는 간선.
+            panel.Children.Add(new TextBlock
+            {
+                Text = "📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서 고칩니다.",
                 FontSize = 10,
                 Opacity = 0.65,
                 TextWrapping = TextWrapping.Wrap,
@@ -1151,34 +1168,7 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
 
-        // 출구는 선택·조건 갈래의 마지막 줄에서만 매달 수 있다.
-        //
-        // 주의: 챕터 에피소드에서는 <b>어디로 가는지만</b> 말한다 — 잇고 떼는
-        // 자리는 연출 그래프 카드의 IF 갈래 포트 하나다. 레일(→ 분기 이후)과 여기까지 열면 같은
-        // `SetExitTarget`을 부르는 문이 셋이 된다.
-        if (resolved.Branch is { } branch && resolved.Index == branch.LastLineIndex)
-        {
-            Section("출구 (이 갈래 끝에서 점프)");
-
-            if (_chapterEpisode)
-            {
-                StoryNode? wired = _session!.Project.FindNode(branch.ExitTargetNodeId);
-
-                panel.Children.Add(new TextBlock
-                {
-                    Text = wired is null
-                        ? "달린 씬이 없습니다 — [대본] 탭 카드의 IF 갈래 포트에서 답니다."
-                        : $"'{wired.Name}' — 잇고 떼는 것은 [대본] 탭 카드의 IF 갈래 포트에서 합니다.",
-                    FontSize = 10,
-                    Opacity = 0.7,
-                    TextWrapping = TextWrapping.Wrap
-                });
-            }
-            else
-            {
-                panel.Children.Add(BuildExitEditor(node, branch));
-            }
-        }
+        // ⛔ 갈래 출구(이 갈래 끝에서 점프)는 2026-11-19에 차림에서(usability UX26), 이어 통째로(UX28) 걷혔다.
 
         // ▲▼✕ 줄 이동 · 삭제의 진입점 — 행에는 단추를 두지 않고 여기서 한다.
         // 줄 구성의 주인은 프로젝트라 모든 노드에서 선다.
@@ -1198,6 +1188,26 @@ public partial class DialogueNodeEditor : UserControl
         lineRow.Children.Add(remove);
         panel.Children.Add(lineRow);
 
+        // [아래에 줄 추가] — 차림 맨 아래. ＋에서 Tab이면 여기로 오고, 누르면 이 줄 아래에 새 줄이 서고 그 줄의 화자 칸으로 간다(usability UX26).
+        var addBelow = new Button
+        {
+            Content = "＋ 아래에 줄 추가",
+            FontSize = 11,
+            Padding = new Thickness(8, 3),
+            Margin = new Thickness(0, 6, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            Tag = LineMetaAddTag
+        };
+        ToolTip.SetTip(addBelow, "이 줄 바로 아래에 새 줄을 더하고 그 줄의 화자 칸으로 갑니다(Enter).");
+        addBelow.Click += (_, _) => UiGuard.Run(_session, "줄 추가", () =>
+        {
+            _lineMetaFlyout?.Hide();
+            SelectLine(lineId);
+            AddLine();
+        });
+        panel.Children.Add(addBelow);
+
         // 분기 조건이 걸린 첫 줄은 지우거나 옮기지 않는다 — 첫 줄의 조건이 함께 사라지거나 따라 내려가 조건 구조가 깨진다.
         // 둘째 줄을 위로 올리는 것도 같다(조건 위로 올라선다). 글은 카드 글 칸에서 고친다 — 거기서는 조건 줄이 지켜진다.
         int row = node.Script.ActiveLines.ToList().FindIndex(line => string.Equals(line.Id, lineId, StringComparison.Ordinal));
@@ -1212,121 +1222,62 @@ public partial class DialogueNodeEditor : UserControl
             }
         }
 
+        // 차림을 열면 초점이 그 안의 첫 단추로 든다 — 연 뒤 <b>첫 Tab</b>은 [아래에 줄 추가]로 간다(그다음부터는 보통의 Tab 차례).
+        bool firstTab = true;
+        panel.AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (firstTab && args.Key == Avalonia.Input.Key.Tab && args.KeyModifiers == Avalonia.Input.KeyModifiers.None)
+            {
+                firstTab = false;
+                args.Handled = true;
+                addBelow.Focus(Avalonia.Input.NavigationMethod.Tab);
+            }
+        }, RoutingStrategies.Tunnel);
+
         LineMetaPanel = panel;
-        new Flyout { Content = panel }.ShowAt(anchor);
+        _lineMetaAnchor = anchor;
+        _lineMetaAddButton = addBelow;
+        _lineMetaFlyout = new Flyout { Content = panel };
+        _lineMetaFlyout.ShowAt(anchor);
     }
 
-    /// <summary>마지막으로 연 줄의 ＋ 차림 — 화면 시험이 그 안의 단추를 누르는 손잡이다(차림은 따로 뜨는 창이라 판에서 안 찾인다).</summary>
-    internal StackPanel? LineMetaPanel { get; private set; }
-
-    // ── 출구 레일 ───────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 갈래 출구가 있는 줄 아래의 출구 레일. 표시만 하면 기능이 퇴보한다 —
-    /// 누르면 출구 편집이 열린다.
-    ///
-    /// 주의: <b>챕터 에피소드에서는 표시뿐이다</b>. 배선을 잇고
-    /// 떼는 자리는 <b>연출 그래프 카드의 IF 갈래 포트</b> 하나로 모은다 — 같은
-    /// <c>SetExitTarget</c>을 부르는 문이 둘이면 어느 쪽이 정본인지 화면이 말하지 못한다.
-    /// 어디로 가는지는 계속 보인다: 잠근 것은 고치는 길이지 정보가 아니다.
-    /// </summary>
-    private Control BuildExitRail(DialogueNode node, ConditionBranch branch)
+    /// <summary>＋ 차림의 「＋ 분기 추가」 — 에피소드 카드에만 선다(분기 카드는 분기를 내지 않는다 · UX27).</summary>
+    private Button BuildAddBranchButton(DialogueNode node, ResolvedLine resolved)
     {
-        StoryNode target = _session!.Project.FindNode(branch.ExitTargetNodeId)!;   // 출구 대상은 늘 있다 — 저장 검증이 지킨다
-
-        var caption = new TextBlock
+        var addBranch = new Button
         {
-            Text = $"→ 분기 이후: {target.Name}",
+            Content = "＋ 분기 추가",
             FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = BranchPalette.Accent(PaletteOf(branch))
+            Padding = new Thickness(7, 2)
         };
+        ToolTip.SetTip(
+            addBranch,
+            "이 줄 앞에서 갈라집니다. 다녀올 분기 카드가 함께 서고 이미 이어진 상태입니다 — 처음에는 조건 없이 늘 다녀옵니다. " +
+            BranchConditionNote.Where + " 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
 
-        if (_chapterEpisode)
+        addBranch.Click += (_, _) =>
         {
-            // 단추가 아니라 글이다 — 잇고 떼는 문이 여기가 아님이 모양으로 보인다.
-            caption.Margin = new Thickness(30, 0, 0, 0);
-            caption.Opacity = 0.8;
-            ToolTip.SetTip(caption,
-                "이 갈래의 출구는 [대본] 탭 카드의 IF 갈래 포트에서 잇고 뗍니다.");
-
-            return caption;
-        }
-
-        var button = new Button
-        {
-            Content = caption,
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(2, 0),
-            MinHeight = 0,
-            Margin = new Thickness(28, 0, 0, 0)
-        };
-        ToolTip.SetTip(button, "누르면 이 갈래의 출구를 고칩니다.");
-
-        button.Click += (_, _) =>
-        {
-            // 문이 둘이면 빗장도 둘이어야 한다 — 단추가 안 서더라도 여기서 다시 막는다.
-            if (BlockIfChapterFlow("갈래 출구 배선"))
+            if (_building)
             {
                 return;
             }
 
-            var panel = new StackPanel { Spacing = 4, MinWidth = 240 };
-            panel.Children.Add(new TextBlock
+            // 새 분기에는 조건이 없다 — 만든 순간에 그 사실과 정하는 자리를 말한다.
+            UiGuard.Run(_session!, "분기 추가", () =>
             {
-                Text = "출구 (이 갈래 끝에서 점프)",
-                FontSize = 10,
-                Opacity = 0.6
+                DialogueNode created = _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId);
+                _session.SetStatus($"분기 '{created.Name}'{Josa.을를(created.Name)} 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
             });
-            panel.Children.Add(BuildExitEditor(node, branch));
-            new Flyout { Content = panel }.ShowAt(button);
         };
 
-        return button;
+        return addBranch;
     }
 
-    /// <summary>갈래 출구 편집 — 그래프의 분기 간선과 같은 SetExitTarget 하나를 부른다.</summary>
-    private Control BuildExitEditor(DialogueNode node, ConditionBranch branch)
-    {
-        List<StoryNode> targets = ExitTargets(node); // 챕터 에피소드 제외
+    /// <summary>줄 ＋ 차림의 [아래에 줄 추가] 단추의 표 — 시험이 찾는다.</summary>
+    internal const string LineMetaAddTag = "line-meta-add";
 
-        var combo = new ComboBox
-        {
-            ItemsSource = targets.Select(candidate => candidate.Name).ToList(),
-            SelectedIndex = targets.FindIndex(candidate =>
-                string.Equals(candidate.Id, branch.ExitTargetNodeId, StringComparison.Ordinal)),
-            FontSize = 11,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            PlaceholderText = "대상 노드"
-        };
-
-        combo.SelectionChanged += (_, _) =>
-        {
-            if (!_building && combo.SelectedIndex >= 0 && combo.SelectedIndex < targets.Count)
-            {
-                _session!.Editor.SetExitTarget(
-                    node.Id, ExitPortKind.Branch, branch.OpenLineId, targets[combo.SelectedIndex].Id);
-            }
-        };
-
-        var clear = new Button
-        {
-            Content = "해제",
-            FontSize = 10,
-            Margin = new Thickness(4, 0, 0, 0),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        clear.Click += (_, _) =>
-            _session!.Editor.SetExitTarget(node.Id, ExitPortKind.Branch, branch.OpenLineId, null);
-
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        Grid.SetColumn(combo, 0);
-        Grid.SetColumn(clear, 1);
-        row.Children.Add(combo);
-        row.Children.Add(clear);
-        return row;
-    }
+    /// <summary>마지막으로 연 줄의 ＋ 차림 — 화면 시험이 그 안의 단추를 누르는 손잡이다(차림은 따로 뜨는 창이라 판에서 안 찾인다).</summary>
+    internal StackPanel? LineMetaPanel { get; private set; }
 
     /// <summary>
     /// 대본에서 사라진 줄에 남은 조건 데이터. 자동으로 지우지 않으므로 눈에 보여야 한다.
@@ -1375,20 +1326,6 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
     }
-
-    // ── 출구 후보 ───────────────────────────────────────────────────────────
-    //
-    // 후보 계산은 갈래(detour) 출구가 쓴다.
-
-    /// <summary>검증용 손잡이 — 갈래 출구 콤보가 받는 후보 그대로.</summary>
-    internal List<StoryNode> ExitTargetsProbe(string nodeId) =>
-        ExitTargets((DialogueNode)_session!.Project.FindNode(nodeId)!);
-
-    /// <summary>분기가 다녀갈 수 있는 카드 — 같은 판의 분기 카드. 에피소드에는 분기점을 잇지 않는다(2026-11-17).</summary>
-    private List<StoryNode> ExitTargets(DialogueNode node) => _session!.Project.EnumerateNodes()
-        .Where(other => !string.Equals(other.Id, node.Id, StringComparison.Ordinal))
-        .Where(other => _session.Editor.CanBranchTo(node.Id, other.Id))
-        .ToList();
 
     // ── 그 밖 ───────────────────────────────────────────────────────────────
 
@@ -1446,6 +1383,9 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         _session.Editor.UpdateEpisode(chapter.ChapterId, episodeId, title: wanted);
+
+        // 제목은 카드의 곁 자료라 인스펙터를 다시 세우지 않는다(usability UX15) — 비웠으면 칸이 ID를 보이게 여기서 맞춘다(분기 카드와 같다).
+        NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindDialogue(node.Id) ?? node);
         _session.SetStatus(wanted.Length == 0
             ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'{Josa.이가(episodeId)} 보입니다."
             : $"제목을 '{wanted}'{Josa.으로(wanted)} 바꿨습니다. 에피소드ID '{episodeId}'{Josa.은는(episodeId)} 그대로입니다.");

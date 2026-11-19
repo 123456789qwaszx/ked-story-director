@@ -52,16 +52,13 @@ public sealed class BranchMarkerTests
     }
 
     [Fact]
-    public void 목표는_그_줄이_지고_갈래_출구_장부에_안_적힌다()
+    public void 목표는_그_줄이_진다()
     {
-        // ⛔ 갈래 출구 장부(`BranchExits`)에 적으면 <b>여는 전환이 없는 고아</b>가 되고,
-        //    그 칸은 저장할 때 전환 안에 실리므로 통째로 사라진다.
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
 
         editor.SetExitTarget(node.Id, ExitPortKind.Detour, lineId, Target(editor).Id);
 
         Assert.Equal([Target(editor).Id], node.FindExtension(lineId)!.DetourTargetNodeIds);
-        Assert.Empty(node.BranchExits);
     }
 
     [Fact]

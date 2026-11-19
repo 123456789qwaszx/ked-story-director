@@ -3,13 +3,11 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Flow;
 
 /// <summary>
-/// 실행 출구의 종류 — 조건 갈래와 분기점. ⛔ 기본 출구(<c>Default</c> — 노드가 끝난 뒤의 출구)는 2026-11-17에 걷혔다.
+/// 실행 출구의 종류 — 분기점. ⛔ 기본 출구(<c>Default</c> — 노드가 끝난 뒤의 출구)는 2026-11-17에, 갈래 출구(<c>Branch</c> — 조건 갈래가
+/// 끝나면 들를 카드)는 2026-11-19에 걷혔다(usability UX28).
 /// </summary>
 public enum ExitPortKind
 {
-    /// <summary>특정 조건 갈래를 지났을 때의 출구.</summary>
-    Branch,
-
     /// <summary>
     /// <b>「조건 분기」 표식</b>이 뚫은 출구 (R7 P-5 · 2026-09-17). 열쇠는 그 줄의 LineId와 다녀갈 노드다 — 한 줄에
     /// 분기가 여럿일 수 있다(2026-10-29, <see cref="ExitPort.DetourKey"/>).
@@ -24,7 +22,7 @@ public enum ExitPortKind
 /// <summary>
 /// 그래프에서 끌어다 연결할 수 있는 실행 출력 포트 하나.
 ///
-/// 오직 다음 실행 노드를 결정하는 출구(갈래 · 분기)만 표현한다.
+/// 오직 다음 실행 노드를 결정하는 출구(분기)만 표현한다.
 /// </summary>
 /// <param name="OpenOrdinal">
 /// 이어지지 않은 분기점(<see cref="Model.DialogueLineExtension.OpenDetourPositions"/>)이면 그 줄의 분기점 전체에서 몇째
@@ -45,8 +43,7 @@ public sealed record ExitPort(
     public bool IsOpenDetour => Kind == ExitPortKind.Detour && TargetNodeId is null && OpenOrdinal is not null;
 
     /// <summary>
-    /// 이 포트를 저장할 때의 열쇠. 갈래는 여는 줄의 LineId, 분기는 줄과 다녀갈 노드다
-    /// (<see cref="DetourKey"/>).
+    /// 이 포트를 저장할 때의 열쇠 — 분기는 줄과 다녀갈 노드다(<see cref="DetourKey"/>).
     /// </summary>
     public string? ExitKey => Kind switch
     {
@@ -91,20 +88,10 @@ public static class NodeConnections
         if (node is DialogueNode dialogue)
         {
             DialogueFlow flow = ConditionFlowResolver.Resolve(dialogue, project);
-            AvailableConditionCatalog available = AvailableConditionResolver.Resolve(
-                project,
-                dialogue.Id);
 
-            foreach (ConditionBranch branch in flow.Branches)
-            {
-                ports.Add(new ExitPort(
-                    ExitPortKind.Branch,
-                    dialogue.Id,
-                    branch.OpenLineId,
-                    LabelFor(branch, project, available),
-                    branch.ExitTargetNodeId,
-                    branch.PaletteIndex));
-            }
+            // 분기의 색 번호는 그 카드의 조건 갈래 색 다음부터 — 대사 편집기에서 같은 카드의 조건 표와 분기 카드가 같은 색이 되지 않게
+            // (갈래 출구 포트가 앞자리를 차지하던 때의 번호 그대로다 · ⛔ 갈래 출구는 2026-11-19에 걷혔다).
+            int palette = flow.Branches.Count;
 
             // 「조건 분기」 표식 — 분기 하나가 곧 포트 하나다 (R7 P-5). 대본에 적힌 순서, 한 줄 안에서는 다녀오는
             // 차례 그대로 선다: 판에서 읽는 차례와 카드에서 보는 차례가 같아야 한다.
@@ -114,8 +101,8 @@ public static class NodeConnections
                 for (int slot = 0; slot < line.DetourSlots.Count; slot++)
                 {
                     ports.Add(line.DetourSlots[slot] is { } detour
-                        ? new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", detour, ports.Count)
-                        : new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", null, ports.Count, OpenOrdinal: slot));
+                        ? new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", detour, palette++)
+                        : new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", null, palette++, OpenOrdinal: slot));
                 }
             }
         }
@@ -133,32 +120,5 @@ public static class NodeConnections
             .SelectMany(node => PortsOf(node, project))
             .Where(port => port.IsConnected)
             .ToList();
-    }
-
-    private static string LabelFor(
-        ConditionBranch branch,
-        StoryProject project,
-        AvailableConditionCatalog available)
-    {
-        AvailableCondition? condition = available.Find(branch.ConditionId);
-        string name;
-
-        if (condition is not null)
-        {
-            name = AvailableConditionResolver.LayeredLabel(condition);
-        }
-        else
-        {
-            AvailableCondition? known = AvailableConditionResolver.FindKnown(
-                project,
-                branch.ConditionId);
-            name = known is null
-                ? "알 수 없는 조건"
-                : AvailableConditionResolver.UnavailableLabel(known, branch.ConditionId);
-        }
-
-        return branch.BranchIndexInChain == 0
-            ? name
-            : $"{name} (elseif)";
     }
 }

@@ -187,7 +187,7 @@ public class GraphProjectionTests
             Layout = new NodeLayout { X = 80, Y = 100 }
         };
         // 실행 흐름은 DialogueNode만 정한다. SetNode는 조건 공급자일 뿐이다.
-        // 간선의 매개는 조건 갈래 출구다 — 카드 간선을 만드는 출구는 갈래(와 분기)뿐이다(기본 출구는 2026-11-17에 걷혔다).
+        // 간선의 매개는 분기다 — 카드 간선을 만드는 출구는 분기뿐이다(기본 출구는 2026-11-17에, 갈래 출구는 2026-11-19에 걷혔다).
         var script = new ScriptDocument();
         script.Lines.Add(new ScriptLine("ln_a1"));
 
@@ -199,10 +199,9 @@ public class GraphProjectionTests
             {
                 new DialogueLineExtension("ln_a1")
                 {
-                    Transitions = { LineConditionTransition.BeginIf("cd_x") }
+                    DetourTargetNodeIds = { "nd_b" }
                 }
-            },
-            BranchExits = { ["ln_a1"] = "nd_b" }
+            }
         };
         var dialogueB = new DialogueNode("nd_b", "대사 B")
         {

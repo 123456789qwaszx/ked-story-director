@@ -94,7 +94,7 @@ public sealed class ChapterSchemaV5Tests
         ChapterGraphModel model = Model();
 
         Assert.Contains(model.Errors, item =>
-            item.Sheet == ChapterSheetNames.Conditions && item.Message.Contains("예/아니오 스탯"));
+            item.Sheet == ChapterSheetNames.Conditions && item.Message.Contains("활성/비활성 스탯"));
         Assert.Contains(model.Errors, item =>
             item.Sheet == ChapterSheetNames.Edges && item.Message.Contains("증감"));
     }

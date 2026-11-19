@@ -21,7 +21,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class BranchConditionNoteTests : IDisposable
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     private readonly string _directory = Path.Combine(
         Path.GetTempPath(), "vn-branch-condition-note", Guid.NewGuid().ToString("N"));

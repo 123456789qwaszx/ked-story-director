@@ -31,7 +31,7 @@ public sealed class BriefGuidesTests : IDisposable
 
         try
         {
-            (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: 0);
+            (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
             ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
             view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch01"));   // 「조건 및 스탯」 탭
             Dispatcher.UIThread.RunJobs();
@@ -93,7 +93,7 @@ public sealed class BriefGuidesTests : IDisposable
 
         try
         {
-            (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: 1);
+            (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
             GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
             ContentControl speakers = graph.FindControl<ContentControl>("SpeakerHost")!;
             ContentControl conditions = graph.FindControl<ContentControl>("ConditionHost")!;

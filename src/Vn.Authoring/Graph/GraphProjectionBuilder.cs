@@ -242,14 +242,8 @@ public static class GraphProjectionBuilder
         StoryFile file,
         StoryProject project)
     {
+        // 출구 포트는 분기점뿐이다 — 조건 갈래는 포트를 세우지 않는다(⛔ 갈래 출구는 2026-11-19에 걷혔다 · usability UX28).
         IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project);
-
-        // 분기 에피소드의 첫머리 조건은 출구가 아니다 — 미달이면 곧바로 돌아올 뿐이다(BranchEntryCondition). 이어 둔 것이 없으면
-        // 카드에 포트 줄을 세우지 않는다.
-        if (node is DialogueNode dialogue)
-        {
-            exits = exits.Where(exit => !BranchEntryCondition.IsEntryGatePort(project, dialogue, exit));
-        }
 
         var ports = exits
             .Select(exit => new GraphOutputPortProjection(
@@ -263,7 +257,7 @@ public static class GraphProjectionBuilder
                 OnLeft: exit.TargetNodeId is { } targetId &&
                         file.Nodes.FirstOrDefault(other => string.Equals(other.Id, targetId, StringComparison.Ordinal))
                             is { } target &&
-                        EdgeSide.GoesLeft(node.Layout.X, target.Layout.X)))
+                        EdgeSide.GoesLeft(node.Layout.X, BoardSize.CardWidthOf(node), target.Layout.X, BoardSize.CardWidthOf(target))))
             .ToList();
 
         // 설정노드의 "이 챕터에 공급 중" 포트는 2026-08-22에 사라졌다 (소유자) —

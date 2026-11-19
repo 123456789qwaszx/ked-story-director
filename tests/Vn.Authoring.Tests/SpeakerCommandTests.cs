@@ -33,7 +33,9 @@ public class SpeakerCommandTests
         editor.Undo();
         Assert.Equal(new Speaker("라루", "laru"), Assert.Single(editor.Project.Speakers));
         editor.Undo();
-        Assert.Equal(new Speaker("라루", string.Empty), Assert.Single(editor.Project.Speakers));
+        Assert.Equal(new Speaker("라루", "temp_raru"), Assert.Single(editor.Project.Speakers));   // 더할 때 선 임시 키(UX29)
+        editor.Undo();
+        Assert.Empty(editor.Project.Speakers);   // 화자와 임시 키가 한 칸이다
     }
 
     [Fact]
@@ -62,7 +64,7 @@ public class SpeakerCommandTests
         Assert.Equal(1, editor.RenameSpeaker("라루", "라루엘"));
 
         Assert.Equal(revision + 1, editor.Revision);
-        Assert.Equal([new Speaker("라루엘", "laru"), new Speaker("윌로", string.Empty)], editor.Project.Speakers);
+        Assert.Equal([new Speaker("라루엘", "laru"), new Speaker("윌로", "temp_willo")], editor.Project.Speakers);
         Assert.Equal(["라루엘", "윌로"], Speakers(sample));
 
         // 이미 있는 이름으로는 바꾸지 않는다 — 두 화자의 줄이 합쳐진다.

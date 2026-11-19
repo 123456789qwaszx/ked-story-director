@@ -12,6 +12,53 @@ namespace Vn.App.Tests;
 public class ProjectRefreshPlannerTests
 {
     [Fact]
+    public void 에피소드_지시는_판을_다시_짓지_않고_장면_테두리만_다시_긋고_되돌리기는_구조로_받는다()
+    {
+        // 2026-11-19 소유자 — 「에피소드 지시를 추가하고 빼는 것이 조금 느린데」(usability UX7). ⛔ NodeMetadata — 판을 통째로 다시 지었다.
+        ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(ProjectChangeKind.EpisodeNote, new DialogueNode(name: "장면"));
+
+        Assert.Equal(new ProjectRefreshPlan(RebuildGraph: false, RefreshGraphPositions: false, RebuildInspector: false, RefreshSceneFrames: true), plan);
+
+        // 되돌리면 프로젝트의 객체가 모두 새것이다 — 판이 옛 객체를 붙들지 않게 다시 짓는다.
+        ProjectRefreshPlan undo = ProjectRefreshPlanner.Plan(ProjectChangeKind.EpisodeNote, null, fromHistory: true);
+        Assert.True(undo.RebuildGraph);
+        Assert.True(undo.RebuildInspector);
+    }
+
+    [Fact]
+    public void 줄_변경은_그_카드만_제목_변경은_제목_글만_다시_한다()
+    {
+        // usability UX13 · UX15 — 판을 통째로 짓지 않는다. 되돌리기는 구조로 받는다.
+        ProjectRefreshPlan lines = ProjectRefreshPlanner.Plan(ProjectChangeKind.DialogueLines, new DialogueNode(name: "장면"));
+        Assert.Equal((false, true, true), (lines.RebuildGraph, lines.RebuildCard, lines.RebuildInspector));
+
+        ProjectRefreshPlan title = ProjectRefreshPlanner.Plan(ProjectChangeKind.CardTitle, new DialogueNode(name: "장면"));
+        Assert.Equal((false, true, false), (title.RebuildGraph, title.RefreshCardTitle, title.RebuildInspector));   // 이름 칸이 제가 고쳤다
+
+        ProjectRefreshPlan titleWithSummary = ProjectRefreshPlanner.Plan(ProjectChangeKind.CardTitle, null);
+        Assert.True(titleWithSummary.RebuildInspector);   // 장면 · 챕터 요약이 서 있으면 그 안의 이름이 낡지 않게
+
+        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.DialogueLines, null, fromHistory: true).RebuildGraph);
+        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.CardTitle, null, fromHistory: true).RebuildGraph);
+    }
+
+    [Fact]
+    public void 선택지_내용은_철도만_챕터_조건은_조건_표만_다시_한다()
+    {
+        // usability UX16 — 판을 통째로 짓지 않는다. 인스펙터(선택지 · 조건 요약 · 조건 고르기)는 구조일 때처럼 다시 세운다. 되돌리기는 구조로 받는다.
+        ProjectRefreshPlan choice = ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceDetail, new DialogueNode(name: "장면"));
+        Assert.Equal((false, true, true), (choice.RebuildGraph, choice.RedrawChoices, choice.RebuildInspector));
+
+        ProjectRefreshPlan condition = ProjectRefreshPlanner.Plan(ProjectChangeKind.ChapterCondition, null);
+        Assert.Equal((false, true, true), (condition.RebuildGraph, condition.RefreshBranchConditions, condition.RebuildInspector));
+
+        // 선택지의 되돌리기는 그 변경과 같은 길이다(usability UX21) — 조건의 되돌리기는 구조로 받는다.
+        Assert.Equal(choice, ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceDetail, new DialogueNode(name: "장면"), fromHistory: true));
+        Assert.Equal(choice, ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceRoute, new DialogueNode(name: "장면"), fromHistory: true));
+        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.ChapterCondition, null, fromHistory: true).RebuildGraph);
+    }
+
+    [Fact]
     public void 조건을_편집_중인_SetNode는_유지하고_그래프만_갱신한다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(

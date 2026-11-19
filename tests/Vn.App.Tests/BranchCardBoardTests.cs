@@ -19,7 +19,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class BranchCardBoardTests : IDisposable
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     private readonly string _directory = System.IO.Path.Combine(
         System.IO.Path.GetTempPath(), "vn-branch-card-board", Guid.NewGuid().ToString("N"));
@@ -145,7 +145,7 @@ public sealed class BranchCardBoardTests : IDisposable
         Assert.Equal(branch.Id, session.SelectedNodeId);
 
         // [구성] — 누르면 그 칩을 고르고 인스펙터에 분기 카드가 선다.
-        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = 0;
+        window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
         Dispatcher.UIThread.RunJobs();
         chapter.RowButton(key)!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();

@@ -25,8 +25,8 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class DirectorBoardViewTests : IDisposable
 {
-    private const int ChapterTab = 0;
-    private const int GraphTab = 1;
+    private const int ChapterTab = MainTab.Structure;
+    private const int GraphTab = MainTab.Script;
 
     private readonly string _directory = Path.Combine(
         Path.GetTempPath(), "vn-director-board-view", Guid.NewGuid().ToString("N"));
@@ -154,9 +154,25 @@ public sealed class DirectorBoardViewTests : IDisposable
     });
 
     [Fact]
+    public void 대본_탭에서_연_프로젝트는_연_그_자리에서_맞추고_뒤에_튀지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「처음 툴을 열면 대본 탭에서 처음 배율이 큰 상태로 나온 다음, 렉이 걸린 듯이 전체 배율로 보여 준다」(usability UX24).
+        // ⛔ 맞추기를 미뤄(배경 차례) 판이 100%로 먼저 배치되고 그려진 뒤에 맞췄다 — 첫 화면이 큰 배율이었다가 튀었다.
+        (Vector Offset, double Zoom)? opened = null;
+        (MainWindow window, _, GraphEditorView graph) = Open(GraphTab, farFirst: true, afterOpen: g => opened = (Scroll(g).Offset, Zoom(g)));
+
+        Assert.NotNull(opened);
+        Assert.True(opened.Value.Offset != default);                      // 연 그 자리에서 이미 먼 챕터로 갔다(맞추지 않으면 (0, 0))
+        Assert.Equal((Scroll(graph).Offset, Zoom(graph)), opened.Value);  // 그 뒤로 바뀌지 않는다 — 튀지 않는다
+        Assert.True(Visible(graph, Text(graph, "먼 시작")));
+
+        window.Close();
+    });
+
+    [Fact]
     public void 구성_탭에서_연_프로젝트는_대본_탭이_처음_보일_때_맞춘다() => HeadlessUi.Run(() =>
     {
-        // 앱은 [구성] 탭에서 열린다 — 그때 [대본] 판은 크기가 0이라 맞출 수 없다. 보일 때 맞춘다.
+        // [구성] 탭을 보던 중에 열면 [대본] 판은 크기가 0이라 맞출 수 없다. 보일 때 맞춘다.
         (MainWindow window, _, GraphEditorView graph) = Open(ChapterTab, farFirst: true);
 
         window.FindControl<TabControl>("MainTabs")!.SelectedIndex = GraphTab;
@@ -183,7 +199,9 @@ public sealed class DirectorBoardViewTests : IDisposable
     /// 챕터 둘 — ch01은 원점 가까이(root → a, 선택지 「가자」), ch02는 멀리(4000, 3000). <paramref name="farFirst"/>면 먼 챕터 하나만
     /// 있는 프로젝트다(그것이 활성 판이다).
     /// </summary>
-    private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Open(int tab, bool farFirst = false)
+    /// <param name="afterOpen">프로젝트를 연 바로 그 자리(다음 배치 · 그리기 전)에서 판을 본다.</param>
+    private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Open(
+        int tab, bool farFirst = false, Action<GraphEditorView>? afterOpen = null)
     {
         Directory.CreateDirectory(_directory);
 
@@ -221,6 +239,7 @@ public sealed class DirectorBoardViewTests : IDisposable
 
         AuthoringSession session = window.SessionProbe;
         session.Open(manifest);
+        afterOpen?.Invoke(window.FindControl<GraphEditorView>("Graph")!);
         Dispatcher.UIThread.RunJobs();
 
         foreach (StoryFile board in session.Project.Files)
@@ -232,6 +251,9 @@ public sealed class DirectorBoardViewTests : IDisposable
 
         return (window, session, window.FindControl<GraphEditorView>("Graph")!);
     }
+
+    private static double Zoom(GraphEditorView graph) =>
+        (graph.FindControl<LayoutTransformControl>("ZoomHost")!.LayoutTransform as Avalonia.Media.ScaleTransform)?.ScaleX ?? 1;
 
     private static void Place(ProjectEditor editor, string chapterId, string episodeId, double x, double y) =>
         editor.MoveNode(EpisodeNaming.CardFor(editor.Project, chapterId, episodeId)!.Id, x, y);

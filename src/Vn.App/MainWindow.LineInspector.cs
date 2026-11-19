@@ -261,9 +261,7 @@ public partial class MainWindow
             return;
         }
 
-        Graph.SetInspectorHeader($"갈래 · {from} → {to}", "조건 갈래의 출구");
-        Fact("갈래", connection.Label);
-        Guide("이 갈래를 지나면 이리로 갑니다.");
+        // ⛔ 「갈래 · 조건 갈래의 출구」 요약은 2026-11-19에 갈래 출구와 함께 걷혔다(usability UX28) — 실행 선은 분기뿐이다.
     }
 
     /// <summary>카드의 이름 — [대본] 탭에 보이는 그대로(에피소드는 제목, 비면 EpisodeId · 아니면 노드 이름).</summary>

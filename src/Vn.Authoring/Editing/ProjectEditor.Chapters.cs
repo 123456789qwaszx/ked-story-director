@@ -196,12 +196,15 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
         }
 
-        Mutate(() => chapter.Episodes[index] = chapter.Episodes[index] with
+        // 제목만 바꾸면 그 카드의 제목 변경이다 — 판은 그 카드의 제목 글만 고친다(usability UX15 · ⛔ 구조 — 판을 통째로).
+        bool titleOnly = memo is null && sceneId is null && EpisodeNaming.CardFor(Project, chapterId, episodeId) is not null;
+
+        Mutate(titleOnly ? ProjectChangeKind.CardTitle : ProjectChangeKind.Structure, () => chapter.Episodes[index] = chapter.Episodes[index] with
         {
             Title = title ?? chapter.Episodes[index].Title,
             Memo = memo ?? chapter.Episodes[index].Memo,
             SceneId = sceneId?.Trim() ?? chapter.Episodes[index].SceneId
-        });
+        }, titleOnly ? EpisodeNaming.CardFor(Project, chapterId, episodeId)!.Id : null);
     }
 
     /// <summary>그 챕터의 판 — 규칙은 <see cref="EpisodeNaming.BoardOf"/> 하나다.</summary>
@@ -344,7 +347,7 @@ public sealed partial class ProjectEditor
         }
 
         // 지시를 적으면 카드도 선다 — 그 뒤로 지시를 비워도 카드는 [빼기]로만 내린다.
-        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with
+        Mutate(ProjectChangeKind.EpisodeNote, () => chapter.Episodes[index] = chapter.Episodes[index] with
         {
             Memo = wanted,
             NoteCard = chapter.Episodes[index].NoteCard || wanted is not null
@@ -365,7 +368,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(ProjectChangeKind.NodeMetadata, () => chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = true });
+        Mutate(ProjectChangeKind.EpisodeNote, () => chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = true });
     }
 
     /// <summary>
@@ -381,7 +384,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(ProjectChangeKind.NodeMetadata, () =>
+        Mutate(ProjectChangeKind.EpisodeNote, () =>
             chapter.Episodes[index] = chapter.Episodes[index] with { NoteCard = false, Memo = null });
     }
 
@@ -610,11 +613,12 @@ public sealed partial class ProjectEditor
             ? chapter.Edges.Count
             : RequireEdgeIndex(chapter, before.FromEpisodeId, before.ToEpisodeId, before.OptionLabel);
 
-        Mutate(() =>
+        // 출발은 그대로다 — 판은 그 출발의 철도만 다시 긋는다(usability UX19).
+        Mutate(ProjectChangeKind.ChoiceRoute, () =>
         {
             chapter.Edges.Insert(at, edge);
             LearnChoiceLabel(chapter, optionLabel);
-        });
+        }, EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
 
         return edge;
     }
@@ -662,11 +666,11 @@ public sealed partial class ProjectEditor
                 $"간선 {fromEpisodeId}→{newToEpisodeId}이 같은 선택지 문구로 이미 있습니다.");
         }
 
-        Mutate(() =>
+        Mutate(ProjectChangeKind.ChoiceRoute, () =>
         {
             chapter.Edges[index] = routed;
             LearnChoiceLabel(chapter, newOptionLabel);
-        });
+        }, EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
     }
 
     /// <summary>간선 한 줄의 속성 편집 — null이 아닌 것만 바꾼다 (관문 둘 포함, v8).</summary>
@@ -685,7 +689,8 @@ public sealed partial class ProjectEditor
         ChapterDocument chapter = RequireChapter(chapterId);
         int index = RequireEdgeIndex(chapter, fromEpisodeId, toEpisodeId, matchOptionLabel);
 
-        Mutate(() =>
+        // 이음(출발 · 도착)은 그대로다 — 선택지의 내용만(usability UX16). 판은 출발 카드에서 나가는 철도만 다시 긋는다.
+        Mutate(ProjectChangeKind.ChoiceDetail, () =>
         {
             ChapterEdge edge = chapter.Edges[index];
 
@@ -700,7 +705,7 @@ public sealed partial class ProjectEditor
             };
 
             LearnChoiceLabel(chapter, optionLabel);
-        });
+        }, EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
     }
 
     /// <summary>
@@ -731,7 +736,7 @@ public sealed partial class ProjectEditor
         ChapterDocument chapter = RequireChapter(chapterId);
         int index = RequireEdgeIndex(chapter, fromEpisodeId, toEpisodeId, optionLabel);
 
-        Mutate(() => chapter.Edges.RemoveAt(index));
+        Mutate(ProjectChangeKind.ChoiceRoute, () => chapter.Edges.RemoveAt(index), EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
     }
 
     // ── 선택지 사전 · 조건 ──────────────────────────────────────────────────
@@ -751,7 +756,8 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"'{text}'는 이미 선택지 사전에 있습니다.");
         }
 
-        Mutate(() => LearnChoiceLabel(chapter, text));
+        // 사전은 [대본] 판에 서지 않는다 — 판 · 인스펙터가 다시 세울 것이 없다([구성]은 어느 변경에든 다시 읽는다).
+        Mutate(ProjectChangeKind.Content, () => LearnChoiceLabel(chapter, text));
     }
 
     /// <summary>
@@ -788,8 +794,8 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"조건 라벨 '{label}'이 이미 있습니다.");
         }
 
-        // 조건과 그 조건의 공급이 <b>한 변경</b>이다 — 되돌리기 한 번에 함께 간다.
-        Batch(() =>
+        // 조건과 그 조건의 공급이 <b>한 변경</b>이다 — 되돌리기 한 번에 함께 간다. 공급 노드는 판에 서지 않는 배관이라 판에는 조건만 바뀐 것이다(UX16).
+        Batch(ProjectChangeKind.ChapterCondition, () =>
         {
             Mutate(() => chapter.Conditions.Add(
                 new ChapterCondition(label, expression, description, Parsed: [], IsValid: false)));
@@ -808,7 +814,7 @@ public sealed partial class ProjectEditor
 
         int index = chapter.Conditions.IndexOf(condition);
 
-        Batch(() =>
+        Batch(ProjectChangeKind.ChapterCondition, () =>
         {
             Mutate(() => chapter.Conditions[index] = condition with
             {

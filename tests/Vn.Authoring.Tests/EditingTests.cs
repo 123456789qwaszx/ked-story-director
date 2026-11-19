@@ -34,7 +34,6 @@ public class EditingTests
         sample.Line("바깥");
         string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         sample.Line("안쪽");
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opener, sample.TargetA.Id);
 
         // 여는 줄을 맨 위로 올리면 갈래의 시작도 맨 위가 된다.
         sample.Editor.MoveScriptLine(sample.Dialogue.Id, opener, -1);
@@ -45,9 +44,33 @@ public class EditingTests
         Assert.NotNull(flow.Lines[0].Branch);
         Assert.NotNull(flow.Lines[1].Branch);
         Assert.NotNull(flow.Lines[2].Branch);
+    }
 
-        // 출구는 갈래에 매여 있으므로 이동에도 살아남는다.
-        Assert.Equal(sample.TargetA.Id, flow.Branches[0].ExitTargetNodeId);
+    [Fact]
+    public void 대본에서_줄이_빠지면_그_줄의_전환도_함께_접힌다()
+    {
+        // W47 (소유자 결정): 줄 카드가 없는 조건은 지울 진입점조차 없는 유령이 된다 — 고아로 남기는 대신 줄이 물러날 때 함께 정리한다.
+        // (그 줄의 갈래 출구도 함께 접던 것은 2026-11-19에 갈래 출구와 함께 걷혔다 — 옛 ExitTests에서 옮겼다.)
+        var sample = new Sample();
+        string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
+
+        sample.Editor.RetireScriptLine(sample.Dialogue.Id, opener);
+
+        Assert.Empty(sample.Dialogue.LineExtensions);
+        DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
+        Assert.Empty(flow.Lines);
+        Assert.DoesNotContain(flow.Problems, problem => problem.Kind == FlowProblemKind.OrphanedLineExtension);
+    }
+
+    [Fact]
+    public void 전환을_지우면_빈_항목도_버린다()
+    {
+        var sample = new Sample();
+        string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
+
+        sample.Editor.SetLineTransition(sample.Dialogue.Id, opener, null);
+
+        Assert.Empty(sample.Dialogue.LineExtensions);
     }
 
     [Fact]
@@ -217,26 +240,8 @@ public class EditingTests
         Assert.Equal(ProjectChangeKind.ConditionDefinition, change!.Kind);
     }
 
-    [Fact]
-    public void 조건_수정은_그래프_라벨에_즉시_반영된다()
-    {
-        var sample = new Sample();
-        string opener = sample.Line(
-            "조건 시작",
-            LineConditionTransition.BeginIf(sample.ConditionA.Id));
-        sample.Editor.SetExitTarget(
-            sample.Dialogue.Id,
-            ExitPortKind.Branch,
-            opener,
-            sample.TargetA.Id);
-
-        sample.Editor.UpdateCondition(sample.ConditionA.Id, "호감 매우 높음", "$favor >= 10");
-
-        ExitPort branchPort = Assert.Single(
-            NodeConnections.PortsOf(sample.Dialogue, sample.Project),
-            port => port.Kind == ExitPortKind.Branch);
-        Assert.Equal("호감 매우 높음", branchPort.Label);
-    }
+    // ⛔ 「조건 수정은 그래프 라벨에 즉시 반영된다」는 2026-11-19에 걷혔다 — 조건 갈래의 출구 포트(라벨이 조건 이름)가 갈래 출구와 함께
+    //    걷혔다(usability UX28).
 
     // ⛔ <b>assignment 알림 검사 셋은 2026-09-17에 걷혔다</b> (작가 변수 폐지). 설정노드가
     //    변수를 들지 않으므로 `SetAssignments`라는 창구 자체가 없어졌다. 같은 자리의

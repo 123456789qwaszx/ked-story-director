@@ -95,65 +95,6 @@ public static class ChapterBoardSupply
         // 공급 범위가 판(챕터) 전체다 — 노드를 새로 만들 때마다 배관을 다시 잇지 않아도 된다.
     }
 
-    /// <summary>
-    /// 가드레일 — 판 위 노드의 출구(기본·갈래)가 <b>진행이 착지하는 카드</b>를 가리키면 경고.
-    /// 에피소드 사이의 흐름은 챕터 간선이 소유하므로, 이 점프는 챕터 장부
-    /// (표시/해금 검사·에피소드 끝 스탯 환산·cleared 기록)를 전부 지나친다. 게다가 Yarn
-    /// 점프는 노드 처음부터 다시 재생하므로 같은 에피소드로의 "복귀"도 함정이다.
-    /// 편집기는 후보에서 빼지만, 이미 있는 연결(옛 프로젝트)은 막지 않고 크게 말한다.
-    /// </summary>
-    public static IReadOnlyList<ChapterDiagnostic> WarnExitsIntoLandingCards(
-        ProjectEditor editor,
-        string fileId,
-        ChapterGraphModel chapter)
-    {
-        ArgumentNullException.ThrowIfNull(editor);
-        ArgumentNullException.ThrowIfNull(chapter);
-
-        // 판의 대사 노드는 <b>전부</b> 에피소드라, <c>MarkedEpisodeId</c>가 있는 노드를
-        //    가리키는지로 가르면 <b>모든 배선이 운다</b>.
-        //
-        // 기준은 <b>진행이 그 카드에 착지하는가</b>다 — 규칙은 <see cref="ChapterSpine"/> 한 벌이다.
-        HashSet<string> landed = ChapterSpine.LandedOn(chapter.Episodes, chapter.Edges);
-
-        Dictionary<string, DialogueNode> excelNodes = editor.Project.EnumerateNodes()
-            .OfType<DialogueNode>()
-            .Where(node => node.MarkedEpisodeId is { } episodeId && landed.Contains(episodeId))
-            .ToDictionary(node => node.Id, node => node, StringComparer.Ordinal);
-
-        if (excelNodes.Count == 0)
-        {
-            return Array.Empty<ChapterDiagnostic>();
-        }
-
-        StoryFile? file = editor.Project.Files.FirstOrDefault(candidate =>
-            string.Equals(candidate.Id, fileId, StringComparison.Ordinal));
-
-        var warnings = new List<ChapterDiagnostic>();
-
-        foreach (DialogueNode dialogue in (file?.Nodes ?? []).OfType<DialogueNode>())
-        {
-            void Check(string? targetId, string exitKind)
-            {
-                if (targetId is not null && excelNodes.TryGetValue(targetId, out DialogueNode? target))
-                {
-                    warnings.Add(new ChapterDiagnostic(
-                        ChapterDiagnosticSeverity.Warning,
-                        ChapterDiagnosticCode.ExitIntoLandingCard,
-                        chapter.SourcePath, null, null,
-                        $"노드 '{dialogue.Name}'의 {exitKind}가 진행이 착지하는 에피소드 " +
-                        $"'{target.Name}'을 가리킵니다 — 에피소드 사이의 흐름은 챕터 간선(기획자)이 " +
-                        "정합니다. 이 점프는 표시/해금·cleared 기록을 지나치고, 도착 노드를 처음부터 " +
-                        "다시 재생합니다. 출구를 비우고 카드 아래 선택지 칸으로 이어 주세요."));
-                }
-            }
-
-            foreach ((_, string targetId) in dialogue.BranchExits)
-            {
-                Check(targetId, "갈래 출구");
-            }
-        }
-
-        return warnings;
-    }
+    // ⛔ 「판 위 노드의 출구가 진행이 착지하는 카드를 가리킨다」 경고(`WarnExitsIntoLandingCards` · `ExitIntoLandingCard`)는 2026-11-19에
+    //    갈래 출구와 함께 걷혔다(usability UX28) — 가리킬 출구가 남지 않았다. 분기는 분기 카드에만 잇는다(저장 검증이 지킨다).
 }

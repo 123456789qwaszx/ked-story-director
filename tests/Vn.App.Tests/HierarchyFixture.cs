@@ -15,7 +15,7 @@ namespace Vn.App.Tests;
 internal static class HierarchyFixture
 {
     /// <summary>그 폴더에 프로젝트를 저장하고 창을 띄워 연다. <paramref name="tab"/>은 처음 보일 탭(0 챕터 · 1 연출).</summary>
-    public static (MainWindow Window, AuthoringSession Session) Open(string directory, int tab = 0)
+    public static (MainWindow Window, AuthoringSession Session) Open(string directory, int tab = MainTab.Structure)
     {
         Directory.CreateDirectory(directory);
 

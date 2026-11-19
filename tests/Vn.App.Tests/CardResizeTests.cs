@@ -147,12 +147,61 @@ public sealed class CardResizeTests : IDisposable
         Assert.Equal(DefaultHeight, WritingBox(graph, root).Height);
     });
 
+    [Fact]
+    public void 폭과_글_칸_높이는_예전_끝_720_900을_넘어_판의_가장_작은_변까지_키운다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「에피소드노드를 넓힐 수 있는 크기가 제한 되어있는데, 이런 크기 제한을 없애거나 더 늘릴 필요」(usability UX4).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+
+        DragGrip(graph, root, GraphEditorView.ResizeCornerGripTag, dx: 1200, dy: 1400);
+
+        Assert.Equal(DefaultWidth + 1200, session.Project.FindNode(root)!.Layout.Width);   // ⛔ 720에서 멈췄다
+        Assert.Equal(DefaultHeight + 1400, session.Project.FindNode(root)!.Layout.WritingHeight);   // ⛔ 900에서 멈췄다
+        Assert.Equal(DefaultWidth + 1200, Card(graph, root).Width);
+        Assert.Equal(DefaultHeight + 1400, WritingBox(graph, root).Height);
+
+        // 끝은 판의 가장 작은 변이다.
+        DragGrip(graph, root, GraphEditorView.ResizeCornerGripTag, dx: 9000, dy: 9000);
+        Assert.Equal((4000, 4000), (session.Project.FindNode(root)!.Layout.Width, session.Project.FindNode(root)!.Layout.WritingHeight));
+        Assert.Equal((Vn.Authoring.Model.BoardSize.Minimum, Vn.Authoring.Model.BoardSize.Minimum),
+            (GraphEditorView.MaxCardWidth, GraphEditorView.MaxWritingHeight));
+    });
+
+    [Fact]
+    public void 크기를_놓아도_철도를_통째로_긋지_않고_그_카드에_기대는_묶음만_다시_긋는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「카드 크기를 끌어 놓거나 글에 맞춤을 누를 때 같은 것들도 거슬리니 최적화를」(usability UX8). ⛔ 놓을 때마다 판의
+        // 철도를 통째로 다시 그었다 — 에피소드 160개에서 0.8초.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        int rails = graph.RailDrawCount;
+        int followed = graph.RailFollowRedrawCount;
+        double trunkBefore = SlotLeft(graph, "root");
+
+        DragGrip(graph, root, GraphEditorView.ResizeGripTag, dx: 100, dy: 0);
+
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.True(graph.RailFollowRedrawCount > followed, "넓힌 카드의 철도 묶음은 다시 그어야 한다");
+        Assert.Equal(trunkBefore + 50, SlotLeft(graph, "root"), precision: 0);   // 그래도 줄기는 넓힌 카드의 가운데 아래다
+
+        // 「글에 맞춤」도 같다.
+        rails = graph.RailDrawCount;
+        session.Editor.ApplyScenarioText(root, "라루: 오늘따라 바람이 유난히 차가워서 겉옷을 챙겨 오지 않은 것을 몹시 후회했다.");
+        Dispatcher.UIThread.RunJobs();
+        rails = graph.RailDrawCount;
+        graph.FitCardToWriting(root);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.Equal(Card(graph, root).Width / 2, SlotLeft(graph, "root") - Canvas.GetLeft(Card(graph, root)) - 14, precision: 0);
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>진짜 창의 [대본] 탭 — 셸이 편집을 받아 판을 고치는 길까지 함께 돈다(<see cref="HierarchyFixture"/>).</summary>
     private (GraphEditorView Graph, AuthoringSession Session) Show()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         return (window.FindControl<GraphEditorView>("Graph")!, session);
     }
 

@@ -13,22 +13,17 @@ namespace Vn.Authoring.Tests;
 public class ResultDocumentComposerTests
 {
     [Fact]
-    public void 조건_전환과_갈래_출구를_실행_순서대로_평평하게_합성한다()
+    public void 조건_전환을_실행_순서대로_평평하게_합성한다()
     {
         var sample = new Sample();
         var (_, l1, l2, l3, l4, l5, _) = sample.BuildSpecExample();
-
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, sample.TargetA.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l3, sample.TargetB.Id);
 
         DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
 
         RenderedSegment[] meaningful = document.Segments.ToArray();
 
-        // 갈래 출구의 소유자는 여는 줄이지만(§4.2), 실행은 갈래의 끝에서 일어난다.
-        // 출구가 여는 줄 바로 뒤에 나오면 갈래 본문이 그 아래 묻혀 실행되지 않는다.
-        // 조건 갈래의 출구는 detour다 — 커스텀 씬을 재생하고 돌아온다.
+        // ⛔ 갈래 끝마다 서던 갈래 출구의 detour는 2026-11-19에 걷혔다(usability UX28).
         Assert.Equal(
             new[]
             {
@@ -37,11 +32,9 @@ public class ResultDocumentComposerTests
                 RenderedSegmentKind.ConditionBegin,
                 RenderedSegmentKind.DialogueLine,
                 RenderedSegmentKind.DialogueLine,
-                RenderedSegmentKind.BranchDetour,
                 RenderedSegmentKind.ConditionElseIf,
                 RenderedSegmentKind.DialogueLine,
                 RenderedSegmentKind.DialogueLine,
-                RenderedSegmentKind.BranchDetour,
                 RenderedSegmentKind.ConditionEnd,
                 RenderedSegmentKind.DialogueLine,
                 RenderedSegmentKind.DialogueLine,
@@ -49,17 +42,11 @@ public class ResultDocumentComposerTests
             },
             meaningful.Select(segment => segment.Kind));
 
-        RenderedSegment firstJump = meaningful.Single(segment =>
-            segment.Kind == RenderedSegmentKind.BranchDetour &&
-            segment.TargetNodeId == sample.TargetA.Id);
-        RenderedSegment secondJump = meaningful.Single(segment =>
-            segment.Kind == RenderedSegmentKind.BranchDetour &&
-            segment.TargetNodeId == sample.TargetB.Id);
-
-        // 갈래 출구는 화면상 마지막 줄이 아니라 갈래를 여는 안정된 LineId를 소유한다.
-        Assert.Equal(l1, firstJump.Source.LineId);
-        Assert.Equal(l3, secondJump.Source.LineId);
-        Assert.Equal(sample.Dialogue.Id, firstJump.Source.NodeId);
+        RenderedSegment begin = meaningful.Single(segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
+        RenderedSegment elseIf = meaningful.Single(segment => segment.Kind == RenderedSegmentKind.ConditionElseIf);
+        Assert.Equal(l1, begin.Source.LineId);
+        Assert.Equal(l3, elseIf.Source.LineId);
+        Assert.Equal(sample.Dialogue.Id, begin.Source.NodeId);
 
         RenderedSegment end = meaningful.Single(segment =>
             segment.Kind == RenderedSegmentKind.ConditionEnd);

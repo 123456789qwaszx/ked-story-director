@@ -30,7 +30,20 @@ namespace Vn.App.Views;
 public partial class ChapterGraphView : UserControl
 {
     private const double CardWidth = 190;
+
+    /// <summary>
+    /// 카드의 높이 — 도착 스탯이 하나 이하인 카드(가장 낮은 카드). 스탯이 더 있으면 한 줄(<see cref="StatRowHeight"/>)씩 아래로 자란다
+    /// (2026-11-19 소유자 · usability UX3 · ⛔ 그 전에는 모든 카드가 74였고 스탯은 한 줄에서 「…」로 잘렸다). 카드마다의 높이는
+    /// <see cref="CardHeightOf"/> — 선택지 점 · 선 · 고르기 범위 · 판 크기가 그것을 따른다.
+    /// </summary>
     private const double CardHeight = 74;
+
+    /// <summary>스탯 줄 위까지 — 여백 · 칩 줄 · 이름 줄.</summary>
+    private const double CardHeadHeight = 58;
+
+    /// <summary>스탯 한 줄의 높이 — 글은 11이다.</summary>
+    internal const double StatRowHeight = 16;
+
     private const double CanvasMargin = 60;
 
     private readonly List<ChapterEntry> _entries = new();
@@ -73,6 +86,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         _selectedChapterId = chapterId;
+        _centerSheet = true;   // 다른 챕터의 판 — 가운데에 놓는다
         _updatingCombo = true;
         ChapterCombo.SelectedItem = chapterId;
         ConditionChapterCombo.SelectedItem = chapterId;
@@ -415,6 +429,34 @@ public partial class ChapterGraphView : UserControl
         InitializeComponent();
         AttachedToVisualTree += (_, _) => UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
 
+        // 창을 떠나면(Windows 키 · Alt+Tab) 하던 끌기를 정리한다 — 놓음이 이 창으로 오지 않는다(usability UX20).
+        AttachedToVisualTree += (_, _) =>
+        {
+            _window = TopLevel.GetTopLevel(this) as WindowBase;
+
+            if (_window is not null)
+            {
+                _window.Deactivated += OnWindowDeactivated;
+            }
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            if (_window is not null)
+            {
+                _window.Deactivated -= OnWindowDeactivated;
+                _window = null;
+            }
+        };
+
+        // 셸이 탭을 바꿀 때는 떼지 않고 보이기만 바꾼다(usability UX14) — 다시 보이는 순간 미뤄 둔 그리기를 한다.
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty && IsVisible)
+            {
+                UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
+            }
+        };
+
         // 하이어아키 기둥 접기 — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
             BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
@@ -577,8 +619,9 @@ public partial class ChapterGraphView : UserControl
         DialogueToggle.IsChecked = true;
 
         // 빈 판 클릭 = 선택 해제, 끌면 범위 선택. 카드·간선·라벨 핸들러가 각자 누름을 소비하므로(e.Handled)
-        // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다.
-        GraphCanvas.PointerPressed += (_, e) =>
+        // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다. 판 바깥(BoardDesk)이 받는다 — 판 안의 빈 곳도 판 둘레도 같다(usability UX22).
+        // 자리는 늘 판 좌표다(판 밖이면 음수이거나 판 크기를 넘는다).
+        BoardDesk.PointerPressed += (_, e) =>
         {
             if (e.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
             {
@@ -589,8 +632,22 @@ public partial class ChapterGraphView : UserControl
 
         // 카드 끌기 —누름은 카드가 받고(e.Handled), 움직임과 놓음은 여기로 올라온다.
         // 연출 그래프와 같은 자리에 같은 손놀림이다.
-        GraphCanvas.PointerMoved += OnCanvasPointerMoved;
-        GraphCanvas.PointerReleased += OnCanvasPointerReleased;
+        BoardDesk.PointerMoved += OnCanvasPointerMoved;
+        BoardDesk.PointerReleased += OnCanvasPointerReleased;
+
+        // 화면 크기를 알게 되거나 바뀌면 판을 다시 놓는다 — 가운데로 놓기로 한 것이 남았으면 그때 가운데로. 창 · 칸의 크기가 바뀌었으면 판이 화면에
+        // 들어가면 들어가게 띄움을 줄인다. 스크롤 막대가 서거나 걷혀 바뀐 것(판이 넘쳤다 — 놓은 직후)에는 줄이지 않는다 — 놓은 카드가 밀린다.
+        GraphScroll.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == BoundsProperty)
+            {
+                PlaceSheet(keepInView: true);
+            }
+            else if (args.Property == ScrollViewer.ViewportProperty)
+            {
+                PlaceSheet();
+            }
+        };
     }
 
     internal void Attach(AuthoringSession session)
@@ -598,6 +655,7 @@ public partial class ChapterGraphView : UserControl
         DetachSession();   // 두 번 붙이면 구독이 두 벌이 된다
 
         _session = session;
+        _centerSheet = true;   // 새 세션의 판 — 가운데에 놓는다
         _sessionChanged = (_, _) => QueueReload();
         session.Changed += _sessionChanged;
 
@@ -744,12 +802,19 @@ public partial class ChapterGraphView : UserControl
         }
 
         int missing = speakers.Count(speaker => string.IsNullOrWhiteSpace(speaker.CharacterId));
+        int temporary = speakers.Count(speaker => Vn.Authoring.Model.CharacterKey.IsTemp(speaker.CharacterId));
 
-        if (missing > 0)
+        if (missing + temporary > 0)
         {
+            // 임시 키(temp_ — 화자를 더할 때 이름의 로마자로 선다 · UX29)도 아직 정하지 않은 키다.
             SpeakerListPanel.Children.Add(new TextBlock
             {
-                Text = $"⚠ 캐릭터 키가 없는 화자 {missing}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.",
+                Text = (missing, temporary) switch
+                {
+                    (> 0, > 0) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 · 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요.",
+                    (> 0, _) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.",
+                    _ => $"⚠ 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요."
+                },
                 FontSize = 10,
                 Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
                 TextWrapping = TextWrapping.Wrap,
@@ -771,9 +836,10 @@ public partial class ChapterGraphView : UserControl
     {
         string speakerName = speaker.Name;
         bool missing = string.IsNullOrWhiteSpace(speaker.CharacterId);
+        bool temporary = Vn.Authoring.Model.CharacterKey.IsTemp(speaker.CharacterId);
         var name = new TextBlock
         {
-            Text = missing ? "⚠ " + speakerName : speakerName,
+            Text = missing || temporary ? "⚠ " + speakerName : speakerName,
             FontSize = 12,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -781,7 +847,9 @@ public partial class ChapterGraphView : UserControl
         };
         ToolTip.SetTip(name, missing
             ? $"'{speakerName}' — 캐릭터 키가 없습니다. 이름은 [대본] 탭에서 고칩니다."
-            : $"'{speakerName}' — 이름은 [대본] 탭에서 고칩니다.");
+            : temporary
+                ? $"'{speakerName}' — 캐릭터 키가 임시 키입니다(화자를 더할 때 이름의 로마자로 섰다). 그림에 맞는 키로 바꿔 주세요. 이름은 [대본] 탭에서 고칩니다."
+                : $"'{speakerName}' — 이름은 [대본] 탭에서 고칩니다.");
         var characterId = new TextBox
         {
             Text = speaker.CharacterId,
@@ -900,12 +968,13 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 판 · 검증 보고 · 인스펙터를 다시 그린다 — <b>[구성] 탭이 가려져 있으면 보일 때까지 미룬다</b>(2026-11-18 · finishing FX3). [대본] 탭에서
     /// 글을 넣거나 카드를 옮길 때마다 다시 읽기가 돌고, 그때마다 보이지 않는 이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 0.3초).
-    /// 내보내기와 검증은 미루지 않는다 — 진행 JSON은 사람 손을 기다리지 않는다. 탭 안의 내용은 가려진 동안 화면 트리에서 떨어져 있다
-    /// (<see cref="TopLevel"/>이 없다) — 다시 붙는 순간 <see cref="OnShownAgain"/>이 그린다.
+    /// 내보내기와 검증은 미루지 않는다 — 진행 JSON은 사람 손을 기다리지 않는다. 가려졌다 = 화면 트리에 없거나(창에 붙기 전) 보이지 않는다
+    /// (셸이 고른 탭의 판만 보인다 — usability UX14 · ⛔ 그 전에는 탭 안에 들어 있어 가려지면 화면 트리에서 떨어졌다) — 다시 보이는 순간
+    /// <see cref="OnShownAgain"/>이 그린다.
     /// </summary>
     private void DrawWhenShown()
     {
-        if (TopLevel.GetTopLevel(this) is null)
+        if (TopLevel.GetTopLevel(this) is null || !IsVisible)
         {
             _drawPending = true;
             return;
@@ -1033,20 +1102,22 @@ public partial class ChapterGraphView : UserControl
         Point pivot = anchor ?? new Point(
             GraphScroll.Viewport.Width / 2, GraphScroll.Viewport.Height / 2);
 
-        // 지금 pivot 아래에 있는 캔버스 좌표.
+        // 지금 pivot 아래에 있는 캔버스 좌표 — 판이 띄워 서 있으면 그만큼 뺀다(PlaceSheet).
         var content = new Point(
-            (GraphScroll.Offset.X + pivot.X) / _zoom,
-            (GraphScroll.Offset.Y + pivot.Y) / _zoom);
+            (GraphScroll.Offset.X + pivot.X - _sheetOffset.X) / _zoom,
+            (GraphScroll.Offset.Y + pivot.Y - _sheetOffset.Y) / _zoom);
 
         _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         ZoomHost.LayoutTransform = new ScaleTransform(_zoom, _zoom);
         ZoomText.Text = $"{Math.Round(_zoom * 100)}%";
         ZoomResetButton.IsVisible = Math.Abs(_zoom - 1) > 0.001;
+        _centerSheet = true;   // 배율이 바뀌면 판이 화면보다 작은 쪽은 가운데에 다시 선다
+        PlaceSheet();
         ZoomHost.UpdateLayout(); // 새 크기를 알아야 오프셋 상한이 맞는다
 
         GraphScroll.Offset = new Vector(
-            Math.Max(0, (content.X * _zoom) - pivot.X),
-            Math.Max(0, (content.Y * _zoom) - pivot.Y));
+            Math.Max(0, (content.X * _zoom) + _sheetOffset.X - pivot.X),
+            Math.Max(0, (content.Y * _zoom) + _sheetOffset.Y - pivot.Y));
     }
 
     /// <summary>
@@ -1136,6 +1207,113 @@ public partial class ChapterGraphView : UserControl
 
     // ── 그리기 ──────────────────────────────────────────────────────────────
 
+    /// <summary>다시 그리기 직전의 판 크기 — 끄는 동안은 판을 이 크기로 둔다(usability UX22).</summary>
+    private Size _heldBoardSize;
+
+    /// <summary>
+    /// 판(흰 종이)이 바탕 위에 띄워 선 거리(화면 px · usability UX22). 처음 · 챕터를 바꿀 때 · 화면 맞춤 · 배율을 바꿀 때는 판이 화면보다 작은 쪽을
+    /// 가운데로 띄우고, 그 밖에는 띄움을 그대로 둔다 — 편집으로 판이 넓어지거나 좁아져도 판은 제자리에 선다(넘치면 스크롤이 생긴다).
+    /// ⛔ 정렬로 늘 가운데에 두었을 때는 카드를 판 밖에 놓아 판이 넓어질 때마다 판이 그 반만큼 비켜 서 놓은 카드가 커서에서 밀렸다.
+    /// </summary>
+    private Vector _sheetOffset;
+
+    /// <summary>다음에 판을 놓을 때 가운데로 놓는가 — 화면 크기를 아직 모르면(배치 전) 알게 될 때 놓는다.</summary>
+    private bool _centerSheet = true;
+
+    /// <summary>
+    /// 판 오른쪽 · 아래에 덧붙인 바깥(화면 px) — 판을 왼쪽 · 위로 넓히며 카드를 화면 제자리에 두려면 그만큼 더 스크롤해야 하는데, 판이 화면보다
+    /// 조금만 넓으면 스크롤할 자리가 모자란다(usability UX25). 가운데로 다시 놓거나 창 크기가 바뀌면 걷는다.
+    /// </summary>
+    private Vector _sheetTrail;
+
+    /// <summary>
+    /// 판의 기준(가장 왼쪽 · 위 카드)이 옮겨진 거리(판 좌표) — 판을 다시 그린 뒤 그만큼 되돌린다(<see cref="CommitDrag"/>). 양수면 기준 카드를
+    /// 오른쪽 · 아래로 옮겨 카드가 모두 당겨진 것이고, 음수면 기준보다 왼쪽 · 위에 놓아 판이 그쪽으로 넓어지며 카드가 모두 밀린 것이다.
+    /// </summary>
+    private Vector _sheetNudge;
+
+    /// <summary>판을 바탕 위에 놓는다 — <see cref="_sheetOffset"/>.</summary>
+    /// <param name="keepInView">화면 크기가 바뀌었다(창 크기) — 판이 화면에 들어가면 들어가게 띄움을 줄인다. 편집으로 판 크기가 바뀔 때는 줄이지 않는다
+    /// (카드가 놓은 자리에서 밀리지 않게 — 넘치면 스크롤이 생긴다).</param>
+    /// <param name="redrawn">판을 막 다시 그렸다 — 기준이 옮겨진 만큼(<see cref="_sheetNudge"/>)을 이때만 되돌린다. 다시 그리기 전에 화면 크기가 바뀌어 불리면
+    /// 카드는 아직 옛 기준에 서 있다.</param>
+    private void PlaceSheet(bool keepInView = false, bool redrawn = false)
+    {
+        Size viewport = GraphScroll.Viewport;
+        double width = GraphCanvas.Width;
+        double height = GraphCanvas.Height;
+
+        if (viewport.Width <= 0 || viewport.Height <= 0 || double.IsNaN(width) || double.IsNaN(height) || width <= 0 || height <= 0)
+        {
+            return;   // 배치 전이거나 그릴 판이 없다 — 화면 크기와 판을 알게 되면 놓는다(⛔ 빈 판을 가운데로 놓아 버리면 그린 판이 반 화면 비켜 섰다)
+        }
+
+        Vector nudge = redrawn ? _sheetNudge * _zoom : default;
+
+        if (redrawn)
+        {
+            _sheetNudge = default;
+        }
+
+        Vector? scrollTo = null;
+
+        if (_centerSheet)
+        {
+            _sheetOffset = new Vector(
+                Math.Max(0, viewport.Width - (width * _zoom)) / 2,
+                Math.Max(0, viewport.Height - (height * _zoom)) / 2);
+            _sheetTrail = default;
+            _centerSheet = false;
+        }
+        else if (nudge != default)
+        {
+            // 카드가 화면에서 그 자리에 남게 한다 — 당겨졌으면(양수) 보던 자리를 그만큼 되돌리고 모자라면 판을 그만큼 띄우고, 밀렸으면(음수 —
+            // 판이 왼쪽 · 위로 넓어졌다) 판을 그만큼 덜 띄우고 모자라면 보던 자리를 그만큼 넘긴다.
+            (double marginX, double offsetX) = Absorb(nudge.X, _sheetOffset.X, GraphScroll.Offset.X);
+            (double marginY, double offsetY) = Absorb(nudge.Y, _sheetOffset.Y, GraphScroll.Offset.Y);
+            _sheetOffset = new Vector(marginX, marginY);
+
+            // 그만큼 스크롤하려면 판 오른쪽 · 아래로 바깥이 그만큼 있어야 한다 — 모자라면 덧붙인다.
+            _sheetTrail = new Vector(
+                Math.Max(0, offsetX + viewport.Width - (marginX + (width * _zoom))),
+                Math.Max(0, offsetY + viewport.Height - (marginY + (height * _zoom))));
+
+            if (Math.Abs(offsetX - GraphScroll.Offset.X) > 0.01 || Math.Abs(offsetY - GraphScroll.Offset.Y) > 0.01)
+            {
+                scrollTo = new Vector(offsetX, offsetY);
+            }
+        }
+
+        if (keepInView)
+        {
+            _sheetOffset = new Vector(
+                Math.Min(_sheetOffset.X, Math.Max(0, viewport.Width - (width * _zoom))),
+                Math.Min(_sheetOffset.Y, Math.Max(0, viewport.Height - (height * _zoom))));
+            _sheetTrail = default;
+        }
+
+        ZoomHost.Margin = new Thickness(_sheetOffset.X, _sheetOffset.Y, _sheetTrail.X, _sheetTrail.Y);
+
+        if (scrollTo is { } offset)
+        {
+            GraphScroll.UpdateLayout();   // 넓어진 판을 알아야 스크롤이 거기까지 간다
+            GraphScroll.Offset = offset;
+        }
+
+        // 한 축의 옮김을 띄움과 스크롤로 나눠 받는다 — (새 띄움, 새 스크롤).
+        static (double Margin, double Offset) Absorb(double nudge, double margin, double offset)
+        {
+            if (nudge >= 0)
+            {
+                double back = Math.Min(offset, nudge);
+                return (margin + nudge - back, offset - back);
+            }
+
+            double less = Math.Min(margin, -nudge);
+            return (margin - less, offset + (-nudge - less));
+        }
+    }
+
     private void Draw()
     {
         CanvasDrawCount++;
@@ -1150,7 +1328,8 @@ public partial class ChapterGraphView : UserControl
         _labelRects.Clear();
 
         // 그릴 것이 없으면 판도 없다. 이걸 지우지 않으면 큰 챕터를 보다가 못 읽는 챕터로
-        // 넘어갔을 때 텅 빈 캔버스가 이전 크기 그대로 남아 스크롤만 넓어진다.
+        // 넘어갔을 때 텅 빈 캔버스가 이전 크기 그대로 남아 스크롤만 넓어진다. 끄는 동안은 그 크기를 아래에서 그대로 쓴다(UX22).
+        _heldBoardSize = new Size(GraphCanvas.Width, GraphCanvas.Height);
         GraphCanvas.Width = 0;
         GraphCanvas.Height = 0;
 
@@ -1238,21 +1417,42 @@ public partial class ChapterGraphView : UserControl
             pair => DrawnAt(pair.Key, pair.Value),
             StringComparer.Ordinal);
 
+        // 카드마다의 높이 — 스탯 줄 수로 정해진다. 선 · 점은 카드보다 먼저 그어지므로 여기서 먼저 센다(UX3).
+        _cardHeight.Clear();
+
+        foreach (ChapterEpisode episode in model.Episodes)
+        {
+            _cardHeight[episode.EpisodeId] = CardHeightFor(StatRows(episode).Rows.Count);
+        }
+
         // 분기 카드 칩은 부르는 에피소드 곁에 붙는다 — 그 에피소드의 자리(끄는 중이면 임시 자리)를 따라간다.
         PlaceBranchChips();
 
         List<(double Right, double Bottom)> extents =
         [
-            .. _placed.Values.Select(position => (position.X + CardWidth, position.Y + CardHeight)),
+            .. _placed.Select(pair => (pair.Value.X + CardWidth, pair.Value.Y + CardHeightOf(pair.Key))),
             .. _chipPlaced.Values.Select(position => (position.X + BranchChipWidth, position.Y + BranchChipHeight))
         ];
 
-        GraphCanvas.Width = extents.Count == 0
-            ? CanvasMargin * 2
-            : extents.Max(extent => extent.Right) + CanvasMargin;
-        GraphCanvas.Height = extents.Count == 0
-            ? CanvasMargin * 2
-            : extents.Max(extent => extent.Bottom) + CanvasMargin;
+        // 끄는 동안은 판 크기를 그대로 둔다 — 판 밖으로 끈 카드는 바깥 위에 선 채 따라오고(배율 칸이 판 밖을 자르지 않는다), 놓으면 판이
+        // 그만큼 넓어진다(usability UX22). 끄는 걸음은 판을 다시 그리지 않지만(MoveInPlace) 그 사이에 다시 읽기가 판을 그리면, 넓어진 판이
+        // 가운데로 다시 서며 카드가 커서에서 비켜 난다.
+        if (_draggingEpisodeId is not null && _heldBoardSize.Width > 0 && _heldBoardSize.Height > 0)
+        {
+            GraphCanvas.Width = _heldBoardSize.Width;
+            GraphCanvas.Height = _heldBoardSize.Height;
+        }
+        else
+        {
+            GraphCanvas.Width = extents.Count == 0
+                ? CanvasMargin * 2
+                : extents.Max(extent => extent.Right) + CanvasMargin;
+            GraphCanvas.Height = extents.Count == 0
+                ? CanvasMargin * 2
+                : extents.Max(extent => extent.Bottom) + CanvasMargin;
+        }
+
+        PlaceSheet(redrawn: true);
 
 
         // 에피소드별 보이는 선택지 = 문구가 붙은 나가는 간선들 (길 하나가 곧 선택지
@@ -1396,7 +1596,8 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>
     /// 분기 카드 칩의 자리 — 집(그 분기 카드를 먼저 부르는 에피소드 — <see cref="ChapterBranchCards.HomesOf"/>)의 오른쪽에 대본 차례로 세로로
-    /// 늘어선다. 분기 카드가 부르는 분기 카드는 한 칸 들여 선다. 자리를 저장하지 않는다 — 끌어 옮기지 않고 에피소드를 따라간다(소유자).
+    /// 늘어선다. 자리를 저장하지 않는다 — 끌어 옮기지 않고 에피소드를 따라간다(소유자). ⛔ 분기 카드가 부르는 분기 카드를 한 칸 들여 세우던
+    /// 것은 2026-11-19에 걷혔다 — 분기 카드는 분기를 내지 않는다(usability UX27).
     /// </summary>
     private void PlaceBranchChips()
     {
@@ -1408,8 +1609,6 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        IReadOnlyList<ChapterBranchMarkers.Marker> markers = ChapterBranchMarkers.For(_session.Editor.Project, chapterId);
-        var depth = new Dictionary<string, int>(StringComparer.Ordinal);
         var count = new Dictionary<string, int>(StringComparer.Ordinal);
 
         foreach (BranchCardHome home in ChapterBranchCards.HomesOf(_session.Editor.Project, chapterId))
@@ -1419,23 +1618,12 @@ public partial class ChapterGraphView : UserControl
                 continue;
             }
 
-            List<ChapterBranchMarkers.Marker> calls = markers
-                .Where(marker => string.Equals(marker.ToNodeId, home.Card.Id, StringComparison.Ordinal))
-                .ToList();
-            int level = calls.Any(marker => string.Equals(marker.FromEpisodeId, home.EpisodeId, StringComparison.Ordinal))
-                ? 0
-                : calls.Where(marker => depth.ContainsKey(marker.FromNodeId))
-                    .Select(marker => depth[marker.FromNodeId] + 1)
-                    .DefaultIfEmpty(0)
-                    .Min();
-
-            depth[home.Card.Id] = level;
             int index = count.GetValueOrDefault(home.EpisodeId);
             count[home.EpisodeId] = index + 1;
 
             _chipHome[home.Card.Id] = home.EpisodeId;
             _chipPlaced[home.Card.Id] = (
-                at.X + CardWidth + BranchChipOffset + (level * BranchChipIndent),
+                at.X + CardWidth + BranchChipOffset,
                 at.Y + (index * (BranchChipHeight + BranchChipGap)));
         }
     }
@@ -1443,7 +1631,7 @@ public partial class ChapterGraphView : UserControl
     /// <summary>분기점이 선 카드의 네모 — 에피소드 카드 또는 분기 카드 칩. 판에 없으면 <c>null</c>.</summary>
     private Rect? FromRect(ChapterBranchMarkers.BranchPoint point) =>
         point.FromEpisodeId is { } episode && _placed.TryGetValue(episode, out (double X, double Y) card)
-            ? new Rect(card.X, card.Y, CardWidth, CardHeight)
+            ? new Rect(card.X, card.Y, CardWidth, CardHeightOf(episode))
             : ChipRect(point.FromNodeId);
 
     /// <summary>다녀갈 분기 카드의 칩 네모. 이어지지 않았거나 판에 없으면 <c>null</c>.</summary>
@@ -1459,7 +1647,7 @@ public partial class ChapterGraphView : UserControl
     private bool GoesLeft(ChapterBranchMarkers.BranchPoint point) =>
         FromRect(point) is { } from &&
         ToRect(point) is { } target &&
-        Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, target.X);
+        Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, from.Width, target.X, target.Width);
 
     /// <summary>
     /// 이어진 분기의 점선 — 분기점에서 나가 도착(칩 · 카드)의 <b>가까운 세로 변</b> 가운데로 든다(둘이 가로로 겹쳐 서도 선이
@@ -1917,7 +2105,8 @@ public partial class ChapterGraphView : UserControl
         new() { Text = text, FontSize = size, Foreground = ink };
 
     /// <summary>
-    /// 스탯 변화 하나를 작가의 말로 — 키로 「trust +1」, 예/아니오 스탯은 「열쇠 → 예」. 오르면 초록, 내리면 빨강이다.
+    /// 스탯 변화 하나를 작가의 말로 — 키로 「trust +1」, 활성/비활성 스탯은 「열쇠 → 활성」(2026-11-19 · usability UX12 — ⛔ 「→ 예」 · 「→ 아니오」).
+    /// 오르면 초록, 내리면 빨강이다.
     /// </summary>
     private (string Text, IBrush Ink) DescribeDelta(StatDelta delta) =>
     (
@@ -1931,7 +2120,7 @@ public partial class ChapterGraphView : UserControl
         string name = delta.Key;
 
         return delta.IsSet
-            ? $"{name} → {(delta.Amount != 0 ? "예" : "아니오")}"
+            ? $"{name} → {(delta.Amount != 0 ? "활성" : "비활성")}"
             : $"{name} {delta.Amount.ToString("+0;-0;+0", System.Globalization.CultureInfo.InvariantCulture)}";
     }
 
@@ -2020,11 +2209,14 @@ public partial class ChapterGraphView : UserControl
         body.Children.Add(header);
 
         // 이름 — 「ID로 보기」면 EpisodeId, 끄면 제목(비면 EpisodeId) · 2026-11-18 소유자. 칩과 같은 한글 먼저 글꼴이다.
+        // 글자는 14 · 굵게 · 진한 글색이다 — 카드에서 가장 먼저 읽는 줄이다(2026-11-19 소유자 — 「에피소드 제목이랑 이런 스탯 표기가 엄청 중요한
+        // 정보인데도 가독성이 떨어지는」 · UX3 · ⛔ 그 전에는 12 · SemiBold(반굵게가 없는 한글 글꼴에서는 보통 굵기로 그려졌다) · 테마 글색).
         body.Children.Add(new TextBlock
         {
             Text = showIds ? episode.EpisodeId : episode.ShownTitle,
-            FontWeight = FontWeight.SemiBold,
-            FontSize = 12,
+            FontWeight = FontWeight.Bold,
+            FontSize = 14,
+            Foreground = CardNameBrush,
             FontFamily = CardHeadFont,
             Margin = new Thickness(0, 2, 0, 0),
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -2034,17 +2226,42 @@ public partial class ChapterGraphView : UserControl
         // 여기 도착했을 때의 스탯 (2026-08-17 소유자: "간선을 따라 왔을 때 스탯의 변화량이
         // 노드에 표시되도록. 여러 루트가 있을 때는 스탯의 최소최대량을 표기"). 도달성 증명이
         // 이미 (에피소드, 스탯 벡터)로 걸으므로 그 결과를 읽기만 한다 — 따로 세지 않는다.
-        if (StatSpanText(episode) is { Length: > 0 } spans)
+        //
+        // 스탯 하나에 한 줄 — 왼쪽에 키, 오른쪽 끝에 값(굵게). 키가 길면 키만 줄고 값은 늘 보인다. 카드는 줄 수만큼 아래로 자란다
+        // (2026-11-19 소유자 — 「스탯 당 1줄씩만 차지하게 하며, 아래로 펼쳐지게」 · UX3 · ⛔ 그 전에는 「키 값 · 키 값」 한 줄(글자 9 · 흐리게)이
+        // 둘만 넘어도 「…」로 잘렸다).
+        if (StatRows(episode) is { Rows.Count: > 0 } stats)
         {
-            body.Children.Add(new TextBlock
+            var lines = new StackPanel { Margin = new Thickness(0, 3, 0, 0), Tag = StatLineTag };   // 검증이 이 묶음을 글자 짐작 없이 집는다
+
+            foreach ((string label, string value) in stats.Rows)
             {
-                Text = spans,
-                FontSize = 9,
-                Opacity = 0.75,
-                Foreground = new SolidColorBrush(Color.Parse("#3E7B9B")),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Tag = StatLineTag // 검증이 이 줄을 글자 짐작 없이 집는다
-            });
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Height = StatRowHeight };
+                row.Children.Add(new TextBlock
+                {
+                    Text = label,
+                    FontSize = 11,
+                    FontFamily = CardHeadFont,
+                    Foreground = StatKeyBrush,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                var shown = new TextBlock
+                {
+                    Text = stats.Partial ? "≈ " + value : value,
+                    FontSize = 11,
+                    FontWeight = FontWeight.Bold,
+                    FontFamily = CardHeadFont,
+                    Foreground = StatValueBrush,
+                    Margin = new Thickness(6, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(shown, 1);
+                row.Children.Add(shown);
+                lines.Children.Add(row);
+            }
+
+            body.Children.Add(lines);
         }
 
         // 선택지 포트 (2026-08-15 소유자) — 연출 그래프의 조건 갈래 포트처럼 카드
@@ -2055,9 +2272,9 @@ public partial class ChapterGraphView : UserControl
         var card = new Border
         {
             Width = CardWidth,
-            // ⚠ 카드는 <b>안 자란다</b> (v5) — 포트가 아래변 위에 걸터앉으므로 칸 수만큼
-            //   키를 늘릴 이유가 없다. v4까지는 선택지 줄마다 18px씩 자랐다.
-            Height = CardHeight,
+            // ⚠ 카드는 선택지 칸 수로는 <b>안 자란다</b> (v5) — 포트가 아래변 위에 걸터앉으므로 칸 수만큼
+            //   키를 늘릴 이유가 없다. v4까지는 선택지 줄마다 18px씩 자랐다. 스탯 줄 수로는 자란다(UX3).
+            Height = CardHeightOf(episode.EpisodeId),
             Padding = new Thickness(9, 7),
             CornerRadius = new CornerRadius(5),
             BorderThickness = new Thickness(hasError ? 2 : 1),
@@ -2138,7 +2355,7 @@ public partial class ChapterGraphView : UserControl
                     : "#C06A14"));
 
             Ellipse port = Dot(
-                new Point(PortX(x, index, slots), y + CardHeight),
+                new Point(PortX(x, index, slots), y + CardHeightOf(episodeId)),
                 colour,
                 filled: wired is not null,
                 tip: wired is null
@@ -2214,18 +2431,18 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 카드에 세울 스탯 줄 — `신뢰 1~3 · 분노 0` (2026-08-17). 값은 <b>도착 직후</b>다
-    /// (그 노드로 들어오는 간선의 증감까지 커밋한 뒤). 루트가 하나면 값 하나, 갈래가
-    /// 여럿이면 최소~최대로 벌어진다.
+    /// 카드에 세울 스탯 줄들 — 스탯마다 (이름, 값) 한 줄: `신뢰 1~3` · `분노 0` (2026-08-17 · 한 줄씩은 2026-11-19 UX3). 값은 <b>도착 직후</b>다
+    /// (그 노드로 들어오는 간선의 증감까지 커밋한 뒤). 루트가 하나면 값 하나, 갈래가 여럿이면 최소~최대로 벌어진다.
+    /// <c>Partial</c> — 탐색이 상한에서 잘려 이 폭이 "적어도 이만큼"이다(확정처럼 보이면 안 된다 — 값 앞에 「≈」).
     ///
     /// 닿을 수 없는 에피소드에는 아무것도 안 쓴다 — 도착이 없으니 도착 시점 값도 없다.
     /// bool 스탯은 숫자 대신 참/거짓으로 읽는다(0·1이 무슨 뜻인지 카드에서 알 수 없다).
     /// </summary>
-    private string StatSpanText(ChapterEpisode episode)
+    private (List<(string Label, string Value)> Rows, bool Partial) StatRows(ChapterEpisode episode)
     {
         if (_validation is not { } validation || SelectedModel is not { } model)
         {
-            return string.Empty;
+            return ([], false);
         }
 
         // 챕터 어디에서도 움직이지 않는 스탯은 뺀다 — 모든 카드에 `분노 0`이 붙으면
@@ -2245,11 +2462,6 @@ public partial class ChapterGraphView : UserControl
             .Where(span => moved.Count == 0 || moved.Contains(span.Key))
             .ToList();
 
-        if (spans.Count == 0)
-        {
-            return string.Empty;
-        }
-
         string Value(ChapterStatSpan span)
         {
             bool isBool = model.Stats.FirstOrDefault(stat =>
@@ -2262,17 +2474,28 @@ public partial class ChapterGraphView : UserControl
                     : $"{span.Minimum}~{span.Maximum}";
             }
 
-            return span.IsFixed ? (span.Minimum == 1 ? "참" : "거짓") : "참·거짓";
+            // 활성/비활성 스탯의 말은 앱 전체가 하나다(2026-11-19 소유자 · usability UX12 — ⛔ 「참」 · 「거짓」 · 「참·거짓」).
+            return span.IsFixed ? (span.Minimum == 1 ? "활성" : "비활성") : "활성·비활성";
         }
 
-        string body = string.Join(" · ", spans.Select(span =>
-            $"{(span.DisplayName.Length > 0 ? span.DisplayName : span.Key)} {Value(span)}"));
-
-        // 탐색이 상한에서 잘렸으면 이 폭은 "적어도 이만큼"이다 — 확정처럼 보이면 안 된다.
-        return validation.Reachability.ExplorationComplete ? body : "≈ " + body;
+        return (
+            spans.Select(span => (span.DisplayName.Length > 0 ? span.DisplayName : span.Key, Value(span))).ToList(),
+            spans.Count > 0 && !validation.Reachability.ExplorationComplete);
     }
 
-    /// <summary>카드의 도착 스탯 줄에 붙는 표식 — 검증이 그 줄을 집는 손잡이다.</summary>
+    /// <summary>스탯 줄 수 → 카드의 높이. 하나 이하면 <see cref="CardHeight"/>, 그보다 많으면 한 줄씩 자란다.</summary>
+    internal static double CardHeightFor(int statRows) => Math.Max(CardHeight, CardHeadHeight + (statRows * StatRowHeight));
+
+    /// <summary>그 에피소드 카드의 높이 — 판을 그릴 때 센다(<see cref="DrawCanvas"/>). 모르면 가장 낮은 카드.</summary>
+    private double CardHeightOf(string episodeId) => _cardHeight.GetValueOrDefault(episodeId, CardHeight);
+
+    private readonly Dictionary<string, double> _cardHeight = new(StringComparer.Ordinal);
+
+    private static readonly IBrush CardNameBrush = new SolidColorBrush(Color.Parse("#1F2933"));
+    private static readonly IBrush StatKeyBrush = new SolidColorBrush(Color.Parse("#2B5D74"));
+    private static readonly IBrush StatValueBrush = new SolidColorBrush(Color.Parse("#123A4D"));
+
+    /// <summary>카드의 도착 스탯 줄들을 담은 묶음에 붙는 표식 — 검증이 그 줄들을 집는 손잡이다(줄마다 키 · 값 두 글).</summary>
     internal const string StatLineTag = "episode-stats";
 
     /// <summary>카드 머리의 이름 줄(「ID로 보기」면 EpisodeId, 끄면 제목) — 시험이 이 Tag로 집는다.</summary>
@@ -2308,20 +2531,18 @@ public partial class ChapterGraphView : UserControl
         }
     };
 
-    /// <summary>카드 툴팁의 스탯 절 — 좁은 카드 줄이 잘려도 여기서는 다 읽힌다.</summary>
+    /// <summary>카드 툴팁의 스탯 절 — 카드의 줄과 같은 것에 범위가 무엇인지를 덧붙인다.</summary>
     private string StatSpanDetail(ChapterEpisode episode)
     {
-        string line = StatSpanText(episode);
+        (List<(string Label, string Value)> rows, bool partial) = StatRows(episode);
 
-        if (line.Length == 0)
+        if (rows.Count == 0)
         {
             return string.Empty;
         }
 
-        bool partial = line.StartsWith("≈ ", StringComparison.Ordinal);
-
         return "\n여기 도착했을 때의 스탯 —\n  "
-            + string.Join("\n  ", (partial ? line[2..] : line).Split(" · "))
+            + string.Join("\n  ", rows.Select(row => $"{row.Label} {row.Value}"))
             + "\n  (범위는 들어오는 루트가 여럿일 때 벌어집니다)"
             + (partial ? "\n  ≈ 탐색이 상한에서 멈춰 실제 폭은 더 넓을 수 있습니다." : string.Empty);
     }
@@ -2372,8 +2593,6 @@ public partial class ChapterGraphView : UserControl
     private const double BranchChipOffset = 34;
     private const double BranchChipGap = 6;
 
-    /// <summary>분기 카드가 부르는 분기 카드는 이만큼 들여 선다.</summary>
-    private const double BranchChipIndent = 14;
 
     /// <summary>
     /// 분기 카드 칩이 지는 표 — 화면 테스트가 이것으로 찾는다. 글자 표가 아닌 것은 「글자 표를 진 Border = 에피소드 카드」를 깨지 않기
@@ -2476,7 +2695,7 @@ public partial class ChapterGraphView : UserControl
     private Point PortOf(string episodeId, int index, int slots)
     {
         (double X, double Y) position = _placed[episodeId];
-        return new Point(PortX(position.X, index, slots), position.Y + CardHeight + 5);
+        return new Point(PortX(position.X, index, slots), position.Y + CardHeightOf(episodeId) + 5);
     }
 
     /// <summary>끄는 동안의 한 걸음 — 판을 다시 짓지 않고 조각을 옮기거나(같이 움직였다) 다시 긋거나(한쪽만) 감춘다.</summary>
@@ -2656,9 +2875,9 @@ public partial class ChapterGraphView : UserControl
         var cardRect = new Rect(
             Canvas.GetLeft(card), Canvas.GetTop(card),
             card.Bounds.Width > 0 ? card.Bounds.Width : CardWidth,
-            card.Bounds.Height > 0 ? card.Bounds.Height : CardHeight);
+            card.Bounds.Height > 0 ? card.Bounds.Height : CardHeightOf(episodeId));
         var viewRect = new Rect(
-            GraphScroll.Offset.X / _zoom, GraphScroll.Offset.Y / _zoom,
+            (GraphScroll.Offset.X - _sheetOffset.X) / _zoom, (GraphScroll.Offset.Y - _sheetOffset.Y) / _zoom,
             GraphScroll.Viewport.Width / _zoom, GraphScroll.Viewport.Height / _zoom);
 
         if (viewRect.Contains(cardRect))
@@ -2667,8 +2886,8 @@ public partial class ChapterGraphView : UserControl
         }
 
         GraphScroll.Offset = new Vector(
-            Math.Max(0, (cardRect.Center.X * _zoom) - (GraphScroll.Viewport.Width / 2)),
-            Math.Max(0, (cardRect.Center.Y * _zoom) - (GraphScroll.Viewport.Height / 2)));
+            Math.Max(0, (cardRect.Center.X * _zoom) + _sheetOffset.X - (GraphScroll.Viewport.Width / 2)),
+            Math.Max(0, (cardRect.Center.Y * _zoom) + _sheetOffset.Y - (GraphScroll.Viewport.Height / 2)));
     }
 
     /// <summary>
@@ -2699,21 +2918,20 @@ public partial class ChapterGraphView : UserControl
 
         Point position = args.GetPosition(GraphCanvas);
 
-        // 무리는 모양을 지킨 채 함께 민다 — 맨 왼쪽 · 맨 위 카드가 여백 안쪽(음수)으로 못 나간다.
+        // 판의 왼쪽 · 위로도 끈다 — 놓으면 판이 그쪽으로 넓어진다(판은 가장 왼쪽 · 위 카드를 기준으로 감싼다 · DisplayPlacement). 끄는 동안 판 밖의
+        // 카드는 바깥 위에 선다(usability UX25 · ⛔ 맨 왼쪽 · 맨 위 카드는 판 가장자리에서 막혀 판을 그쪽으로 넓힐 수 없었다).
+        // 무리는 모양을 지킨 채 함께 민다.
         if (_groupStart is { } group)
         {
-            _groupDelta = new Vector(
-                Math.Max(position.X - _groupGrab.X, -group.Values.Min(start => start.X)),
-                Math.Max(position.Y - _groupGrab.Y, -group.Values.Min(start => start.Y)));
+            _groupDelta = new Vector(position.X - _groupGrab.X, position.Y - _groupGrab.Y);
             _dragMoved = true;
             QueueDragRedraw();
             return;
         }
 
-        // 여백 안쪽(음수)으로는 못 나간다 — 스크롤이 닿지 않는 자리에 카드를 두면 못 찾는다.
         _dragPosition = (
-            X: Math.Max(0, position.X - _dragOffset.X - CanvasMargin),
-            Y: Math.Max(0, position.Y - _dragOffset.Y - CanvasMargin));
+            X: position.X - _dragOffset.X - CanvasMargin,
+            Y: position.Y - _dragOffset.Y - CanvasMargin);
         _dragMoved = true;
 
         QueueDragRedraw();
@@ -2735,9 +2953,37 @@ public partial class ChapterGraphView : UserControl
         CommitDrag();
     }
 
+    /// <summary>판이 선 창 — 창을 떠나는 순간을 듣는다(<see cref="EndGestures"/>).</summary>
+    private WindowBase? _window;
+
+    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, "끌기 정리", EndGestures);
+
+    /// <summary>
+    /// <b>하던 끌기를 정리한다</b> — 창을 떠나면 놓음이 이 창으로 오지 않아 끌기가 「끄는 중」으로 남는다(2026-11-19 소유자 — 범위 사각형이 판에 남아
+    /// 쌓였다 · usability UX20). 범위 사각형은 거두고(아무것도 고르지 않는다), 카드 끌기는 보이던 자리에서 놓은 것으로 마무리하고(놓음을 못 본
+    /// 끌기를 다음 움직임에서 마무리하는 규칙과 같다), 가운데 단추로 판 옮기기는 멈춘다.
+    /// </summary>
+    internal void EndGestures()
+    {
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+            _rubberBand = null;
+        }
+
+        _panning = false;
+        CommitDrag();
+    }
+
     /// <summary>빈 판을 눌렀다 — 끄는 동안 범위 사각형이 선다.</summary>
     private void StartRubberBand(Avalonia.Input.PointerPressedEventArgs args)
     {
+        // 앞의 사각형이 남아 있으면(놓음을 못 봤다) 걷고 새로 연다 — 남은 채 새것을 열면 옛것이 판에 쌓인다.
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+        }
+
         _rubberStart = args.GetPosition(GraphCanvas);
         _rubberBand = RubberBand.Create(_rubberStart);
         GraphCanvas.Children.Add(_rubberBand);
@@ -2755,7 +3001,7 @@ public partial class ChapterGraphView : UserControl
 
         foreach ((string episodeId, Border card) in _cardById)
         {
-            var bounds = new Rect(Canvas.GetLeft(card), Canvas.GetTop(card), CardWidth, CardHeight);
+            var bounds = new Rect(Canvas.GetLeft(card), Canvas.GetTop(card), CardWidth, CardHeightOf(episodeId));
 
             if (rect.Intersects(bounds))
             {
@@ -2839,8 +3085,15 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
+        // 판은 가장 왼쪽 · 위 카드를 기준으로 감싼다(DisplayPlacement) — 그 카드를 오른쪽 · 아래로 옮겼으면 다시 그릴 때 모든 카드가 그만큼 당겨진다.
+        // 판을 놓을 때 그만큼 되돌려 카드가 화면에서 놓은 자리에 남게 한다(usability UX22).
+        Vector nudge = new(places.Values.Min(place => place.X), places.Values.Min(place => place.Y));
+
         UiGuard.Run(_session, "에피소드 자리", () =>
-            _session!.Editor.MoveEpisodes(chapterId, places));
+        {
+            _session!.Editor.MoveEpisodes(chapterId, places);
+            _sheetNudge = nudge;
+        });
     }
 
     /// <summary>
@@ -3637,7 +3890,7 @@ public partial class ChapterGraphView : UserControl
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         ToolTip.SetTip(box, "이 조건의 식 — 스탯 키와 정수를 비교합니다(>= · <= · > · < · ==), 여럿이면 `;`로 잇습니다. " +
-                            "예/아니오 스탯은 `키 == true`. Enter나 다른 곳을 누르면 반영됩니다.");
+                            "활성/비활성 스탯은 `키 == true`(활성일 때). Enter나 다른 곳을 누르면 반영됩니다.");
 
         void Commit()
         {
@@ -4230,7 +4483,7 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>스탯 종류의 이름 — 작가가 읽는 말이다. 차례는 <see cref="ChapterStatType"/>의 Int · Bool과 같다.</summary>
-    internal static readonly string[] StatTypeNames = ["숫자", "예/아니오"];
+    internal static readonly string[] StatTypeNames = ["숫자", "활성/비활성"];   // ⛔ 「예/아니오」(usability UX12)
 
     /// <summary>
     /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 칸 · 종류 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
@@ -4281,7 +4534,7 @@ public partial class ChapterGraphView : UserControl
         ToolTip.SetTip(
             type,
             "종류 — 숫자: 호감도 · 점수처럼 오르내리는 값(처음 값 · 최소 · 최대). " +
-            "예/아니오: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
+            "활성/비활성: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
         type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 종류", () =>
             _session!.Editor.UpdateChapterStat(
                 _selectedChapterId!,
@@ -4331,12 +4584,12 @@ public partial class ChapterGraphView : UserControl
                 FontSize = 10,
                 MinHeight = 0,
                 Padding = new Thickness(8, 2, 4, 2),
-                ItemsSource = new[] { "아니오", "예" },
+                ItemsSource = new[] { "비활성", "활성" },   // ⛔ 「아니오」 · 「예」(usability UX12)
                 SelectedIndex = stat.Initial == 0 ? 0 : 1,
                 VerticalAlignment = VerticalAlignment.Center,
                 Tag = "stat-initial"
             };
-            ToolTip.SetTip(initial, "처음 값 — 챕터를 시작할 때 이 스탯이 켜져(예) 있는지 꺼져(아니오) 있는지입니다.");
+            ToolTip.SetTip(initial, "처음 값 — 챕터를 시작할 때 이 스탯이 활성인지 비활성인지입니다.");
             initial.SelectionChanged += (_, _) => UiGuard.Run(_session, "처음 값", () =>
                 _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: initial.SelectedIndex));
             Add(initial);
@@ -4878,18 +5131,6 @@ public partial class ChapterGraphView : UserControl
     /// <summary>머리글의 경고 표식 — <b>노랑</b>. 위 ⛔ 참조.</summary>
     private const string WarningMark = "🟡";
 
-    /// <summary>
-    /// 판 수준 경고 (2단계 가드레일) — 진행이 착지하는 카드로 향하는 출구. 막지 않고 크게 말한다.
-    ///
-    /// ⚠ 예전에는 엑셀 [대본 가져오기]를 누를 때만 셌다(2026-10-29 · D2에서 옮겼다). 그래서 연출
-    /// 그래프에서 출구를 고쳐도 가져오기를 다시 누를 때까지 경고가 남거나 안 떴다. 이제 그릴 때마다
-    /// 판에서 센다 — 판의 노드를 한 번 훑을 뿐이라 가볍다.
-    /// </summary>
-    private IReadOnlyList<ChapterDiagnostic> BoardWarnings(ChapterGraphModel model) =>
-        _session is not null && EpisodeNaming.BoardOf(_session.Project, model.ChapterId) is { } board
-            ? ChapterBoardSupply.WarnExitsIntoLandingCards(_session.Editor, board.Id, model)
-            : Array.Empty<ChapterDiagnostic>();
-
     private void DrawDiagnostics(ChapterGraphModel model)
     {
         // 모델 진단(구조 검사 포함) + 검증기(구조·교차·도달성) 진단을 한 목록으로 본다.
@@ -4898,7 +5139,6 @@ public partial class ChapterGraphView : UserControl
         // 챕터가 막혔거나 진행 코어가 거부한 까닭(검증 캐시에는 없다)이 여기 없으면 「아래 오류」가 아래에 없다. 줄마다 챕터 ID가 앞에 선다.
         List<ChapterDiagnostic> all = model.Diagnostics
             .Concat(_validation?.All ?? Enumerable.Empty<ChapterDiagnostic>())
-            .Concat(BoardWarnings(model))
             .Concat(_exportRun.RefusalErrors ?? [])
             .Distinct()
             .ToList();

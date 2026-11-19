@@ -30,9 +30,27 @@ public partial class MainWindow : Window
     internal AuthoringSession SessionProbe => _session;
 
     /// <summary>[⚙ 설정] — 설정 창을 모달로 연다(<see cref="SettingsWindow"/>). 시험이 연 창을 잡도록 돌려준다.</summary>
+    /// <summary>
+    /// 고른 탭의 판만 보인다 — 두 판은 늘 화면 나무에 붙어 있고 보이기만 바꾼다(2026-11-19 · usability UX14). ⛔ 판이 탭 안에 들어 있던 때는
+    /// 탭을 바꾸면 안 보이는 판이 떨어졌다 다시 붙어, [대본] 탭으로 돌아오는 데 카드 160장에서 1초가 넘었다.
+    /// </summary>
+    private void ShowTab()
+    {
+        bool graph = ReferenceEquals(MainTabs.SelectedItem, GraphTabItem);
+        ChapterGraph.IsVisible = !graph;
+        Graph.IsVisible = graph;
+    }
+
     internal SettingsWindow OpenSettings()
     {
         var settings = new SettingsWindow(_session);
+
+        // 처음 세로가 이 창이 선 화면을 넘지 않게(UX1) — 화면을 모르면(헤드리스) 내용에 맞춘 그대로다.
+        if (Screens.ScreenFromWindow(this) is { } screen)
+        {
+            settings.FitScreen(screen.WorkingArea.Height / screen.Scaling);
+        }
+
         _ = settings.ShowDialog(this);
         return settings;
     }
@@ -60,6 +78,10 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // 탭 줄은 머리만 — 고른 탭의 판만 보인다. 두 판은 늘 화면 나무에 붙어 있다(usability UX14).
+        MainTabs.SelectionChanged += (_, _) => ShowTab();
+        ShowTab();
         _sheet = DirectorSummary;   // 요약 조각은 보통 인스펙터에 선다 — 화자 · 조건 탭은 짓는 동안만(FillSheet)
 
         // 마지막 안전망 (공통 불변식 4). 개별 핸들러의 포획을 놓친 예외가 여기까지 오면
@@ -280,14 +302,39 @@ public partial class MainWindow : Window
         {
             ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(e.Kind, _session.SelectedNode, e.FromHistory);
 
-            if (plan.RebuildGraph)
+            if (plan.RebuildGraph || ((plan.RebuildCard || plan.RefreshCardTitle) && e.NodeId is null))
             {
                 Graph.Rebuild();
+            }
+            else if (plan.RefreshCardTitle)
+            {
+                // 카드 하나의 제목만 바뀌었다 — 그 제목 글만 고친다(usability UX15).
+                Graph.RefreshCardTitle(e.NodeId!);
+            }
+            else if (plan.RebuildCard)
+            {
+                // 한 카드의 줄만 바뀌었다 — 그 카드만 다시 짓는다(usability UX13).
+                Graph.RebuildCard(e.NodeId!);
             }
             else if (plan.RefreshGraphPositions)
             {
                 // 좌표만 바뀌었다. 카드를 다시 만들면 드래그가 끊긴다.
                 Graph.RefreshPositions();
+            }
+            else if (plan.RedrawChoices)
+            {
+                // 선택지 하나의 내용만 — 그 출발 카드의 철도만 다시 긋는다(usability UX16).
+                Graph.RedrawChoices(e.NodeId);
+            }
+            else if (plan.RefreshBranchConditions)
+            {
+                // 챕터 조건만 — 분기 카드의 조건 표만 다시 단다(usability UX16).
+                Graph.RefreshBranchConditions();
+            }
+            else if (plan.RefreshSceneFrames)
+            {
+                // 장면 이름표의 「메모」 표시만 — 판을 다시 짓지 않는다(에피소드 지시 · usability UX7).
+                Graph.RefreshSceneFrames();
             }
             else if (plan.RefreshAllCardWriting)
             {
@@ -299,14 +346,23 @@ public partial class MainWindow : Window
                     DialogueEditor.Rebuild();
                 }
             }
-            else if (plan.RefreshCardWriting && _session.SelectedNodeId is { } writtenNodeId)
+            else if (plan.RefreshCardWriting)
             {
-                Graph.RefreshWriting(writtenNodeId);
+                // 그 카드의 글 칸을 다시 채운다 — 어느 카드인지 모르면(화자 이름 바꾸기처럼 여러 카드의 글이 바뀌었다) 칸마다
+                // (usability UX18 · ⛔ 고른 카드의 칸만 — 다른 카드는 옛 화자 이름을 보이다가 그 칸을 고치면 옛 이름을 도로 넣었다).
+                if (e.NodeId is { } writtenNodeId)
+                {
+                    Graph.RefreshWriting(writtenNodeId);
+                }
+                else
+                {
+                    Graph.RefreshAllWriting();
+                }
 
                 // 카드 글 칸에서 고친 글이 곁기둥에도 바로 비친다.곁기둥에서 쓰는 중이면(초점이 그 안에 있다)
                 // 그대로 둔다 — 고친 곳이 거기다.
                 if (DialogueEditor.IsVisible &&
-                    string.Equals(DialogueEditor.NodeId, writtenNodeId, StringComparison.Ordinal) &&
+                    (e.NodeId is null || string.Equals(DialogueEditor.NodeId, e.NodeId, StringComparison.Ordinal)) &&
                     !DialogueEditor.IsKeyboardFocusWithin)
                 {
                     DialogueEditor.Rebuild();
@@ -507,8 +563,9 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 그 폴더에 새 프로젝트를 깐다 — 이미 프로젝트가 있는 폴더면 그것을 연다. 새 프로젝트는 [구성] 탭에서 시작한다: 탭 순서가
-    /// 작업 순서라(구성 → 대본) 뼈대를 짜는 자리가 첫걸음이다.
+    /// 그 폴더에 새 프로젝트를 깐다 — 이미 프로젝트가 있는 폴더면 그것을 연다. 새 프로젝트는 [대본] 탭에서 시작한다: 탭 순서가
+    /// 작업 순서라(대본 → 구성) 화를 만들고 쓰는 자리가 첫걸음이다(usability UX23 · ⛔ [구성]에서 시작했다 — 빈 [구성] 판의 첫 챕터 단추는
+    /// 어차피 [대본]으로 데려갔다).
     /// </summary>
     internal void CreateProjectIn(string folder)
     {
@@ -522,7 +579,7 @@ public partial class MainWindow : Window
         _session.NewProject();
         _session.Save(ProjectFolder.NewManifestPathIn(folder));
         RefreshShell();
-        MainTabs.SelectedItem = ChapterTabItem;
+        MainTabs.SelectedItem = GraphTabItem;
     }
 
     /// <summary>열기 = 폴더 고르기.폴더 안의 유일한 manifest를 찾는다 — 없거나 둘이면 사유를 말한다.</summary>

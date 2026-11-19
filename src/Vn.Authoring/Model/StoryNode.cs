@@ -51,6 +51,10 @@ public abstract class StoryNode
     // ⛔ `DefaultExitTargetNodeId`(기본 출구 — 노드가 끝난 뒤 이동할 노드 · 판 파일 `defaultExit`)는 2026-11-17에 걷혔다
     //    (`docs/work-orders/default-exit-orders.md`). 에피소드 사이의 흐름은 챕터 간선이, 분기 카드는 부른 자리로 돌아오는 것이 맡아
     //    쓰는 화면이 남지 않았다.
+
+    // ⛔ `BranchExits`(갈래 출구 — 조건 갈래가 끝나면 들를 카드 · 판 파일 전환의 `exit` · `anchor`)는 2026-11-19에 걷혔다(usability UX28).
+    //    대상을 가리지 않아 아무도 부르지 않는 분기 카드에 이으면 내보낸 Yarn이 없는 노드를 불러 게임이 멈췄고, 에피소드에 이으면 그
+    //    에피소드가 진행 기록 밖에서 재생됐다. 조건이 맞을 때만 들르는 것은 분기점 + 분기 카드의 첫머리 조건이 한다.
 }
 
 /// <summary>
@@ -163,9 +167,6 @@ public sealed class DialogueNode : StoryNode
     /// 실행 순서는 언제나 대본이 정한다.
     /// </summary>
     public List<DialogueLineExtension> LineExtensions { get; init; } = new();
-
-    /// <summary>갈래를 여는 줄의 Id → 그 갈래가 끝났을 때 이동할 노드.</summary>
-    public Dictionary<string, string> BranchExits { get; init; } = new(StringComparer.Ordinal);
 
     /// <summary>
     /// <b>마지막 줄 뒤에 남는 전환들</b> (2026-08-24 소유자 — 대사 없는 조건 블록).

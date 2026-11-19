@@ -35,9 +35,10 @@ public partial class GraphEditorView : UserControl
     private const double CardWidth = BoardSize.CardWidth;   // 판 크기 계산(BoardResize)과 같은 값 — 한 곳에서 정한다
 
     // 카드 크기는 사람이 가장자리를 끌어 키운다 — 오른쪽은 폭, 아래는 글 칸 높이, 오른쪽 아래 모서리는 둘 다. 기본보다 작게는
-    // 줄이지 않는다(머리 · 포트 줄이 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다).
-    private const double MaxCardWidth = 720;
-    private const double MaxWritingHeight = 900;
+    // 줄이지 않는다(머리 · 포트 줄이 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다). 끝은 판의 가장 작은 변이다 — 판보다 큰 카드는
+    // 쓸 데가 없다(2026-11-19 소유자 — 「크기 제한을 없애거나 더 늘릴 필요」 · usability UX4 · ⛔ 그 전에는 폭 720 · 글 칸 높이 900).
+    internal const double MaxCardWidth = BoardSize.Minimum;
+    internal const double MaxWritingHeight = BoardSize.Minimum;
     private const double ResizeGripWidth = 8;
     private const double ResizeCornerSize = 14;
 
@@ -49,6 +50,12 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>오른쪽 아래 모서리(폭과 높이) 손잡이의 표.</summary>
     internal const string ResizeCornerGripTag = "card-resize-corner:";
+
+    /// <summary>카드 제목 줄 오른쪽 끝의 「글에 맞춤」 단추의 표(<see cref="FitCardToWriting"/> · usability UX5).</summary>
+    internal const string FitButtonTag = "card-fit:";
+
+    /// <summary>글에 맞출 때 더하는 몫 — 커서 · 반올림에 줄이 꺾이지 않게.</summary>
+    private const double FitSlack = 4;
 
     // 카드 머리 = 제목 한 줄과 그 아래 틈. 포트 줄의 자리(PortAnchor)가 이 값으로 세므로 머리는 높이를 고정한다 —
     // 글꼴에 맡기면 선 끝이 점에서 비껴 닿는다(2026-10-29까지 부제를 둔 머리가 41px인데 46으로 세어 5px 아래에 닿았다).
@@ -468,12 +475,75 @@ public partial class GraphEditorView : UserControl
         base.OnAttachedToVisualTree(e);
         ScriptFont.Changed += ApplyScriptFont;
         ApplyScriptFont();   // 떨어져 있던 사이에 바뀌었을 수 있다
+
+        // 창을 떠나면(Windows 키 · Alt+Tab) 하던 끌기를 정리한다 — 놓음이 이 창으로 오지 않는다(usability UX20).
+        _window = TopLevel.GetTopLevel(this) as WindowBase;
+
+        if (_window is not null)
+        {
+            _window.Deactivated += OnWindowDeactivated;
+        }
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         ScriptFont.Changed -= ApplyScriptFont;
+
+        if (_window is not null)
+        {
+            _window.Deactivated -= OnWindowDeactivated;
+            _window = null;
+        }
+
         base.OnDetachedFromVisualTree(e);
+    }
+
+    /// <summary>판이 선 창 — 창을 떠나는 순간을 듣는다(<see cref="EndGestures"/>).</summary>
+    private WindowBase? _window;
+
+    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, "끌기 정리", EndGestures);
+
+    /// <summary>
+    /// <b>하던 끌기를 정리한다</b> — 창을 떠나면 놓음이 이 창으로 오지 않아 끌기가 「끄는 중」으로 남는다(2026-11-19 소유자 — 범위 사각형이 판에 남아
+    /// 쌓였다 · usability UX20). 범위 사각형과 잇는 점선은 거둔다 — 어디에 놓을지 정하지 않았으니 아무것도 바꾸지 않는다(⛔ 그대로 두면 돌아와
+    /// 누른 자리가 그 놓음이 되어, 빈 곳을 누르면 선택지가 끊겼다). 카드 · 무리 · 접은 상자 끌기와 크기 · 선 모양은 보이던 자리에서 놓은 것으로
+    /// 마무리한다(⛔ 그대로 두면 돌아와 단추 없이 움직여도 카드가 따라왔다). 가운데 단추로 판 옮기기는 멈춘다.
+    /// </summary>
+    internal void EndGestures()
+    {
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+            _rubberBand = null;
+        }
+
+        if (_connectingFrom is not null || _connectingLine is not null)
+        {
+            if (_connectingLine is not null)
+            {
+                GraphCanvas.Children.Remove(_connectingLine);
+                _connectingLine = null;
+            }
+
+            _connectingFrom = null;
+            SetHint(null);
+        }
+
+        if (_bending)
+        {
+            _bending = false;
+            EdgeShape? bent = _shapePreview;
+            _shapePreview = null;
+
+            if (bent is not null)
+            {
+                ApplyShape(bent);
+            }
+        }
+
+        _panning = false;
+        CommitResize();
+        CommitDrag();
     }
 
     /// <summary>서 있는 카드 글 칸이 모두 새 글꼴 · 크기 · 줄 간격을 입는다 — 판은 다시 짓지 않는다(writer-comfort WC5).</summary>
@@ -570,6 +640,7 @@ public partial class GraphEditorView : UserControl
     internal void Attach(AuthoringSession session)
     {
         _session = session;
+        _cardsGeneration = -1;   // 다른 세션의 카드는 그대로 두지 않는다
 
         // 단추가 <b>무엇을 지울지</b>는 고른 것에 달렸다 — 고를 때마다 이름을 맞춘다.
         session.SelectionChanged += (_, _) =>
@@ -756,12 +827,29 @@ public partial class GraphEditorView : UserControl
         // 카드 안 글 칸에 초점이 있었으면 다시 그린 뒤 그 칸으로 돌려준다(D4) — 판을 비우기 전에 잰다.
         WritingFocus? writing = CaptureWritingFocus();
 
+        _sceneRootNodeIds = SceneRootCards();
+        _branchEntries = BranchEntries(_projection);
+
+        // ⭐ 그대로인 카드는 판에 둔다(usability UX17) — 지금 지어도 똑같을 카드다(<see cref="CanKeep"/>). 판을 다시 그리는 값의 대부분은 카드를
+        //    떼고 새로 지은 카드의 글 칸을 다시 배치하는 데 든다(에피소드 160개에서 판 한 번에 1.3 ~ 2.3초 중 1초 남짓). 같은 프로젝트를
+        //    다시 그릴 때만이다 — 새로 열었으면 모두 새로 짓는다.
+        Dictionary<string, NodeCard> kept = _session.ProjectGeneration == _cardsGeneration
+            ? KeepableCards(_projection)
+            : new Dictionary<string, NodeCard>(StringComparer.Ordinal);
+        _cardsGeneration = _session.ProjectGeneration;
+        KeptCardCount = kept.Count;
+
         // 칸 목록을 먼저 비운다 — 판에서 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다
-        // (넣지 않은 글은 RestoreWritingFocus가 새 칸으로 옮긴다).
-        _writingBoxes.Clear();
-        GraphCanvas.Children.Clear();
-        _writingShown.Clear();
-        _writingLayouts.Clear();
+        // (넣지 않은 글은 RestoreWritingFocus가 새 칸으로 옮긴다). 그대로 둘 카드의 칸은 남긴다.
+        foreach (string nodeId in _writingBoxes.Keys.Where(id => !kept.ContainsKey(id)).ToList())
+        {
+            _writingBoxes.Remove(nodeId);
+            _writingShown.Remove(nodeId);
+            _writingLayouts.Remove(nodeId);
+        }
+
+        ClearBoardBut(kept.Values);
+        _railVisuals.Clear();
         _cards.Clear();
         _proxies.Clear();
         _edges.Clear();
@@ -782,13 +870,18 @@ public partial class GraphEditorView : UserControl
         // 여태 안 보였다).
         SetHint(null);
 
-        _sceneRootNodeIds = SceneRootCards();
-        _branchEntries = BranchEntries(_projection);
-
         foreach (GraphItemProjection item in _projection.Items)
         {
             switch (item)
             {
+                case ExpandedNodeProjection node when kept.TryGetValue(node.NodeId, out NodeCard? card):
+                    // 자리만 맞춘다 — 끌어 옮긴 카드는 제자리에서 옮겨졌고, 되돌리기는 옛 자리로 돌린다.
+                    Canvas.SetLeft(card.Visual, node.Position.X);
+                    Canvas.SetTop(card.Visual, node.Position.Y);
+                    PlaceLineKnobs(card);
+                    _cards.Add(card);
+                    break;
+
                 case ExpandedNodeProjection node:
                     _cards.Add(BuildCard(node));
                     break;
@@ -812,6 +905,7 @@ public partial class GraphEditorView : UserControl
         RefreshMinimap();
         FitNewProject();
         RestoreWritingFocus(writing);
+        _shownRevision = _session.Editor.Revision;
 
         // 고른 선이 판과 함께 사라졌다 — 인스펙터도 그 선을 내린다.
         if (hadLine)
@@ -1462,8 +1556,29 @@ public partial class GraphEditorView : UserControl
         RefreshMinimap();
     }
 
+    /// <summary>
+    /// 선택지 칸의 문구 칸을 열거나(<paramref name="slot"/>) 닫는다(null) — 카드는 그대로 두고 그 카드의 철도만 다시 긋는다(<see cref="RedrawChoices"/> —
+    /// 닫으며 넣은 문구도 새 투영으로 받는다). 다른 칸이 열려 있으면 그 칸을 먼저 Enter처럼 닫는다 — 딴 데를 누른 것과 같다(<see cref="FinishSlotLater"/>).
+    /// ⛔ 2026-11-19까지는 열 때와 닫을 때 판을 통째로 다시 지었다(에피소드 160개에서 한 번에 2.5초 · usability UX16) — 다른 칸을 누르면 열려 있던
+    /// 칸의 글은 버려졌다.
+    /// </summary>
+    private void EditSlot(GraphChoicePort? slot, string nodeId)
+    {
+        if (slot is not null)
+        {
+            _finishSlot?.Invoke();
+        }
+
+        _editingSlot = slot is null ? null : SlotKey(slot);
+        RedrawChoices(nodeId);
+    }
+
     /// <summary>그 묶음들만 지금 자리로 다시 긋는다 — 그림이 있던 캔버스 자리에 끼운다(겹침 차례를 지킨다).</summary>
-    private void RedrawRailGroups(List<RailGroup> stale, Dictionary<string, Rect> now)
+    /// <param name="arrivals">다시 그은 출발들이 도착 포트에 남기는 몫(출발 · 문구)을 받는다 — null이면 버린다(따라가기는 길이 그대로라 볼 일이 없다).</param>
+    private void RedrawRailGroups(
+        List<RailGroup> stale,
+        Dictionary<string, Rect> now,
+        Dictionary<string, List<(string From, string Label)>>? arrivals = null)
     {
         if (stale.Count == 0)
         {
@@ -1496,12 +1611,13 @@ public partial class GraphEditorView : UserControl
             {
                 // 이웃 출발의 도착 장부는 그대로다 — 도착 포트는 도착 카드에만 기대어 제 묶음으로 따라간다.
                 case RailOrigin.FromCard card:
-                    DrawRailsFromCard(board, card.EpisodeId, new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                    DrawRailsFromCard(board, card.EpisodeId,
+                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.FromRow row when board.Folded.TryGetValue(row.EpisodeId, out FoldedRow? folded):
                     DrawRailsFromRow(board.BoardName, row.EpisodeId, folded, board.Chapter.Edges, board.Spots, board.Folded,
-                        new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.Arrival arrival when board.Spots.TryGetValue(arrival.EpisodeId, out (DialogueNode Node, Rect Rect) spot):
@@ -1529,6 +1645,14 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>지금 판에 선 철도 그림 — 시험이 따라간 모습과 통째로 그은 모습을 견준다.</summary>
     internal IReadOnlyList<Control> RailVisuals => _railVisuals;
+
+    /// <summary>그 에피소드 카드의 도착 포트가 누르면 보이는 목록(출발 · 문구) — 시험이 본다.</summary>
+    internal IReadOnlyList<(string From, string Label)> ArrivalsInto(string episodeId) =>
+        _railGroups.Select(group => group.Origin)
+            .OfType<RailOrigin.Arrival>()
+            .Where(arrival => string.Equals(arrival.EpisodeId, episodeId, StringComparison.Ordinal))
+            .SelectMany(arrival => arrival.Incoming)
+            .ToList();
 
     /// <summary>
     /// 한 출발 카드의 줄기와 가지들 (T2, v9로 개정 2026-08-17).
@@ -1602,8 +1726,8 @@ public partial class GraphEditorView : UserControl
         // 넘어가는 순간 뒤집힌다.
         List<bool> lefts = branches
             .Select(branch => branch.Target is { } target
-                ? EdgeSide.GoesLeft(sourceRect.X, target.X)
-                : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, row.Left))
+                ? EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, target.X, target.Width)
+                : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, row.Left, row.Right - row.Left))
             .ToList();
 
         // 줄기는 <b>언제나 카드 가운데 아래</b>다 (2026-10-29 소유자: "항상 노드 중앙 아래쪽에 선택지가 있도록").
@@ -1674,7 +1798,9 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
-            bool left = EdgeSide.GoesLeft(row.Left, toRow?.Left ?? toCard!.Value.X);
+            bool left = toRow is { } arrival
+                ? EdgeSide.GoesLeft(row.Left, row.Right - row.Left, arrival.Left, arrival.Right - arrival.Left)
+                : EdgeSide.GoesLeft(row.Left, row.Right - row.Left, toCard!.Value.X, toCard.Value.Width);
             double toward = left ? -1 : 1;
             var from = new GraphPosition(left ? row.Left : row.Right, row.Y);
             double laneX = from.X + (toward * (RailLaneOut + ((left ? leftLane++ : rightLane++) * RailLaneGap)));
@@ -1922,8 +2048,7 @@ public partial class GraphEditorView : UserControl
             label.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
             {
                 args.Handled = true;
-                _editingSlot = SlotKey(slot);
-                Rebuild();
+                EditSlot(slot, nodeId);
             });
         }
 
@@ -1942,7 +2067,7 @@ public partial class GraphEditorView : UserControl
         line.Children.Insert(
             mirrored ? 0 : 1,
             string.Equals(_editingSlot, SlotKey(slot), StringComparison.Ordinal)
-                ? SlotEditor(slot)
+                ? SlotEditor(slot, nodeId)
                 : label);
 
         // 꺼진 점을 누르면 <b>켠다</b>, 켜진 점을 누르면 <b>끈다</b> — 손짓 하나가 한 가지 뜻이다.
@@ -1958,8 +2083,7 @@ public partial class GraphEditorView : UserControl
 
             // 꺼진 점을 누르면 <b>문구 칸을 연다</b> — 살리는 것은 적는 행위이지 누르는
             // 행위가 아니다(2026-09-17 소유자). 점도 문구도 같은 자리로 데려간다.
-            _editingSlot = SlotKey(slot);
-            Rebuild();
+            EditSlot(slot, nodeId);
         });
 
         return line;
@@ -2222,8 +2346,12 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 프로젝트를 새로 열었거나 새로 만들었으면 <b>첫 화면</b>을 활성 챕터에 맞춘다. 탭이 안 보일 때 열었으면(앱은 [구성] 탭에서 열린다)
+    /// 프로젝트를 새로 열었거나 새로 만들었으면 <b>첫 화면</b>을 활성 챕터에 맞춘다. 탭이 안 보일 때 열었으면([구성] 탭을 보던 중)
     /// [대본] 탭이 처음 보일 때 맞춘다. 되돌리기 · 다시 그리기로는 다시 맞추지 않는다.
+    /// 화면 크기를 이미 알면(켤 때 · 열기) <b>판을 지은 그 자리에서</b> 맞춘다 — 첫 배치와 첫 그리기가 맞춘 배율로 한 번이다(맞추기는 카드
+    /// 자리 · 폭과 어림 높이로 셈하고, 배율을 정하며 배치까지 한다 — <see cref="SetZoom"/>). ⛔ 2026-11-19까지는 늘 미뤄(배경 차례) 판이 100%로
+    /// 먼저 배치되고 그려진 뒤에 맞췄다 — 켜면 큰 배율로 섰다가 멈춘 듯 있다 전체 배율로 튀었다(에피소드 160개에서 100% 배치 2 ~ 3초 뒤 다시
+    /// 1초 · usability UX24). 첫 탭이 [대본]이 되며(UX23) 켤 때마다 보였다.
     /// </summary>
     private void FitNewProject()
     {
@@ -2233,8 +2361,592 @@ public partial class GraphEditorView : UserControl
         }
 
         _fittedGeneration = _session.ProjectGeneration;
-        RequestFit(new PendingFit(null));
+        _pendingFit = new PendingFit(null);
+
+        if (GraphScroll.Viewport.Width > 0 && GraphScroll.Viewport.Height > 0)
+        {
+            ApplyPendingFit();
+            return;
+        }
+
+        RequestFit(_pendingFit);
     }
+
+    /// <summary>카드를 지은 프로젝트의 세대 — 판을 다시 그릴 때 같은 세대면 그대로인 카드를 둔다(<see cref="Rebuild"/>).</summary>
+    private int _cardsGeneration = -1;
+
+    /// <summary>마지막으로 판을 다시 그릴 때 그대로 둔 카드의 수 — 시험이 「카드를 새로 짓지 않았다」를 본다.</summary>
+    internal int KeptCardCount { get; private set; }
+
+    /// <summary>카드를 하나도 그대로 두지 않고 판을 다시 그린다 — 시험이 「그대로 둔 판」을 「새로 지은 판」과 견준다.</summary>
+    internal void RebuildFresh()
+    {
+        _cardsGeneration = -1;
+        Rebuild();
+    }
+
+    /// <summary>새 투영의 카드 가운데 그대로 둘 수 있는 것 — 노드 Id로.</summary>
+    private Dictionary<string, NodeCard> KeepableCards(GraphProjection projection)
+    {
+        Dictionary<string, NodeCard> built = _cards.ToDictionary(card => card.NodeId, StringComparer.Ordinal);
+        var kept = new Dictionary<string, NodeCard>(StringComparer.Ordinal);
+
+        foreach (ExpandedNodeProjection node in projection.Items.OfType<ExpandedNodeProjection>())
+        {
+            if (built.TryGetValue(node.NodeId, out NodeCard? card) && CanKeep(card, node))
+            {
+                kept[node.NodeId] = card;
+            }
+        }
+
+        return kept;
+    }
+
+    /// <summary>
+    /// 그 카드를 판에 그대로 두어도 되는가 — <b>지금 지어도 똑같은가</b>(<see cref="BuildCard"/>가 읽는 것을 모두 본다). 지을 때 정해지는 것(종류 · 판 ·
+    /// 장면 시작점 · 분기 카드 · 분기 색 · 카드 안 포트 · 펼친 분기 무리)은 카드가 든 값과, 제자리에서 고쳐지는 것(제목 · 그 풍선 · 분기 조건 표 · 폭 ·
+    /// 글 칸 높이 · 글 칸의 글과 줄 자리)은 <b>지금 선 모습</b>과 견준다 — 제자리에서 고친 뒤 값이 되돌아와도 틀리지 않는다. 자리는 견주지 않는다(늘
+    /// 다시 놓는다). 넣지 않은 글이 든 칸은 초점이 없으면 새로 짓는다(지금까지처럼 모델의 글로 돌아간다 — 초점이 있으면 그 글을 지킨다).
+    /// ⚠ <see cref="BuildCard"/>가 새로 무엇을 읽게 되면 여기서도 본다 — 시험이 통째로 지은 판과 견준다.
+    /// 카드의 손잡이들은 값(노드 Id · 포트 열쇠)만 쥐고 누를 때 프로젝트에서 찾는다 — 되돌리기로 프로젝트의 객체가 모두 새것이어도 그대로 둘 수 있다.
+    /// </summary>
+    private bool CanKeep(NodeCard card, ExpandedNodeProjection node)
+    {
+        bool sceneRoot = _sceneRootNodeIds.Contains(node.NodeId);
+        bool branchCard = IsBranchCard(node.NodeId);
+        int? palette = _branchEntries.TryGetValue(node.NodeId, out int entry) ? entry : null;
+
+        if (card.NodeKind != node.NodeKind ||
+            !string.Equals(card.FileId, node.FileId, StringComparison.Ordinal) ||
+            card.SceneRoot != sceneRoot ||
+            card.BranchCard != branchCard ||
+            card.BranchPalette != palette ||
+            !card.Ports.SequenceEqual(node.OutputPorts.Where(port => port.Kind != GraphOutputPortKind.Choice)) ||
+            !string.Equals(card.Title.Text, ShownName(node.NodeId, node.NodeName), StringComparison.Ordinal) ||
+            !Equals(ToolTip.GetTip(card.Title), TitleTip(node.NodeId)) ||
+            Math.Abs(card.Visual.Width - WidthFor(node.NodeId)) > 0.01)
+        {
+            return false;
+        }
+
+        if (palette is not null &&
+            (card.TitleRow.Children.OfType<Border>().FirstOrDefault(border => border.Tag as string == BranchConditionChipTag + node.NodeId)
+                 ?.Child as TextBlock)?.Text != BranchChipText(node.NodeId))
+        {
+            return false;
+        }
+
+        foreach ((string group, IReadOnlyList<int> members) in card.LineGroups)
+        {
+            if (members.Count >= 2 &&
+                card.ExpandedGroups.Contains(group) != _expandedBranchGroups.Contains(BranchGroupId(card.NodeId, group)))
+            {
+                return false;
+            }
+        }
+
+        if (card.WritingBox is not { } box)
+        {
+            return node.NodeKind != GraphNodeKind.Dialogue;
+        }
+
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, node.NodeId);
+
+        return Math.Abs(box.Height - WritingHeightFor(node.NodeId)) <= 0.01 &&
+               string.Equals(_writingShown.GetValueOrDefault(card.NodeId), layout.Text, StringComparison.Ordinal) &&
+               _writingLayouts.GetValueOrDefault(card.NodeId) is { } shown &&
+               shown.RowOfLine.Count == layout.RowOfLine.Count &&
+               shown.RowOfLine.All(pair => layout.RowOfLine.TryGetValue(pair.Key, out int row) && row == pair.Value) &&
+               (box.IsFocused || string.Equals(box.Text ?? string.Empty, layout.Text, StringComparison.Ordinal));
+    }
+
+    /// <summary>판의 그림을 모두 뗀다 — 그대로 둘 카드(테두리 · 분기 점 · 공통 점)만 남긴다. 남길 것이 없으면 통째로 비운다.</summary>
+    private void ClearBoardBut(IEnumerable<NodeCard> keep)
+    {
+        var stay = new HashSet<Control>();
+
+        foreach (NodeCard card in keep)
+        {
+            stay.Add(card.Visual);
+            stay.UnionWith(card.LineKnobs.Values);
+
+            foreach (BranchHub hub in card.LineHubs.Values)
+            {
+                stay.Add(hub.Fan);
+                stay.Add(hub.Dot);
+            }
+        }
+
+        if (stay.Count == 0)
+        {
+            GraphCanvas.Children.Clear();
+            return;
+        }
+
+        GraphCanvas.Children.RemoveAll(GraphCanvas.Children.Where(child => !stay.Contains(child)).ToList());
+    }
+
+    /// <summary>
+    /// <b>카드 하나만 다시 짓는다</b> — 그 대사 노드의 줄이 생기거나 빠지거나 옮겨졌을 때(카드 글 칸에 새 줄 · usability UX13). 줄은 그 카드 안의
+    /// 일이다 — 글 칸 · 줄에 걸린 분기 점 · 포트 줄. 다른 카드 · 선 · 접은 상자가 그대로인지 새 투영으로 견주고(<see cref="OnlyCardChanged"/>),
+    /// 아니면(분기가 걸린 줄을 지워 선이 사라졌다 따위) 판을 통째로 짓는다. 쓰던 칸의 초점 · 커서 · 넣지 않은 글은 <see cref="Rebuild"/>와 같은
+    /// 길로 새 칸에 옮긴다. 철도는 따라간다 — 카드 크기가 바뀌었으면 그 카드에 기대는 묶음만 다시 긋는다.
+    /// ⛔ 2026-11-19까지는 판을 통째로 다시 지었다 — 에피소드 160개에서 새 줄 하나에 2초.
+    /// </summary>
+    internal void RebuildCard(string nodeId)
+    {
+        if (_session is null || _projection is null)
+        {
+            return;
+        }
+
+        GraphProjection fresh = GraphProjectionBuilder.Build(
+            _session.Project,
+            _session.ExpandedFileIds,
+            _session.CollapsedScenes);
+
+        if (FindCard(nodeId) is not { } old ||
+            fresh.Items.OfType<ExpandedNodeProjection>().FirstOrDefault(item =>
+                string.Equals(item.NodeId, nodeId, StringComparison.Ordinal)) is not { } node ||
+            !OnlyCardChanged(_projection, fresh, nodeId))
+        {
+            Rebuild();
+            return;
+        }
+
+        CardRebuildCount++;
+        WritingFocus? writing = CaptureWritingFocus();
+        _projection = fresh;
+        NodeCard card = ReplaceCard(old, node);
+        card.Visual.UpdateLayout();   // 글 칸 · 분기 점의 자리를 잰 뒤에 선을 잇는다
+
+        foreach (EdgeVisual edge in _edges)
+        {
+            edge.Connection = fresh.Connections.First(item => string.Equals(item.Key, edge.Connection.Key, StringComparison.Ordinal));
+            PositionEdge(edge);
+        }
+
+        DrawChapterFrames(followRails: true);
+        HighlightSelection();
+        RefreshMinimap();
+        RestoreWritingFocus(writing);
+    }
+
+    /// <summary>카드 하나만 다시 지은 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
+    internal int CardRebuildCount { get; private set; }
+
+    /// <summary>
+    /// 카드 하나를 새로 지어 그 자리에 넣는다 — 옛 카드의 그림(테두리 · 분기 점 · 공통 점)과 글 칸의 장부를 뗀다. 칸 목록에서 먼저 뺀다 —
+    /// 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다(<see cref="Rebuild"/>와 같은 규칙).
+    /// </summary>
+    private NodeCard ReplaceCard(NodeCard old, ExpandedNodeProjection node)
+    {
+        _writingBoxes.Remove(old.NodeId);
+        _writingShown.Remove(old.NodeId);
+        _writingLayouts.Remove(old.NodeId);
+        GraphCanvas.Children.Remove(old.Visual);
+
+        foreach (Ellipse knob in old.LineKnobs.Values)
+        {
+            GraphCanvas.Children.Remove(knob);
+        }
+
+        foreach (BranchHub hub in old.LineHubs.Values)
+        {
+            GraphCanvas.Children.Remove(hub.Fan);
+            GraphCanvas.Children.Remove(hub.Dot);
+        }
+
+        NodeCard card = BuildCard(node);
+        _cards[_cards.IndexOf(old)] = card;
+        return card;
+    }
+
+    /// <summary>카드 머리의 제목 글의 표.</summary>
+    internal const string CardTitleTag = "card-title";
+
+    /// <summary>
+    /// <b>카드 하나의 제목 글만 고친다</b> — 에피소드 · 분기 카드의 보이는 제목이 바뀌었을 때(usability UX15). 카드가 판에 펼쳐져 있지 않으면(접은
+    /// 장면 상자 · 접은 판의 줄에 이름이 선다) 판을 통째로 짓는다. ⛔ 2026-11-19까지는 늘 통째로 — 에피소드 160개에서 제목 하나에 2.5초.
+    /// </summary>
+    internal void RefreshCardTitle(string nodeId)
+    {
+        if (FindCard(nodeId)?.Visual.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(block => block.Tag as string == CardTitleTag) is not { } title)
+        {
+            Rebuild();
+            return;
+        }
+
+        title.Text = ShownName(nodeId, title.Text ?? nodeId);
+        CardTitleRefreshCount++;
+    }
+
+    /// <summary>제목 글만 고친 번 — 시험이 본다.</summary>
+    internal int CardTitleRefreshCount { get; private set; }
+
+    /// <summary>
+    /// 두 투영이 그 카드 말고는 같은가 — 항목(카드 · 접은 상자)의 차례와 자리, 다른 카드의 포트(키 · 쪽 · 글 · 이음), 선(연결)의 키. 그 카드의
+    /// 포트는 달라도 된다(카드를 다시 지으며 새로 선다) — 다만 선이 생기거나 사라지면 같지 않다.
+    /// </summary>
+    internal static bool OnlyCardChanged(GraphProjection before, GraphProjection after, string nodeId) =>
+        SameBoard(before, after, nodeId, choiceLabels: false);
+
+    /// <summary>
+    /// 두 투영이 선택지 칸의 문구 · 이음 말고는 같은가 — 선택지가 바뀌거나 생기거나 걷혔을 때(<see cref="RedrawChoices"/>). 선택지 칸은 카드 안에 서지
+    /// 않고 철도 위에 선다(카드의 포트 줄은 선택지를 빼고 짓는다). 칸의 수가 바뀌면(넷째 길) 같지 않다.
+    /// </summary>
+    internal static bool OnlyChoicesChanged(GraphProjection before, GraphProjection after) =>
+        SameBoard(before, after, exceptNodeId: null, choiceLabels: true);
+
+    /// <summary>
+    /// 두 투영이 같은 판인가 — <paramref name="exceptNodeId"/> 카드의 포트와, <paramref name="choiceLabels"/>이면 선택지 칸(열쇠 말고)은 달라도 된다.
+    /// </summary>
+    private static bool SameBoard(GraphProjection before, GraphProjection after, string? exceptNodeId, bool choiceLabels)
+    {
+        if (before.Items.Count != after.Items.Count ||
+            !before.Connections.Select(item => item.Key).OrderBy(key => key, StringComparer.Ordinal)
+                .SequenceEqual(after.Connections.Select(item => item.Key).OrderBy(key => key, StringComparer.Ordinal), StringComparer.Ordinal))
+        {
+            return false;
+        }
+
+        for (int index = 0; index < before.Items.Count; index++)
+        {
+            GraphItemProjection was = before.Items[index];
+            GraphItemProjection now = after.Items[index];
+
+            if (was.GetType() != now.GetType() || was.Position != now.Position || !string.Equals(was.FileId, now.FileId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (was is ExpandedNodeProjection card && now is ExpandedNodeProjection fresh)
+            {
+                if (!string.Equals(card.NodeId, fresh.NodeId, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                if (string.Equals(card.NodeId, exceptNodeId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!card.NodeName.Equals(fresh.NodeName, StringComparison.Ordinal) ||
+                    !card.OutputPorts.Select(PortShape).SequenceEqual(fresh.OutputPorts.Select(PortShape)))
+                {
+                    return false;
+                }
+            }
+            else if (!string.Equals(BoxShape(was), BoxShape(now), StringComparison.Ordinal))
+            {
+                return false;   // 접은 상자 — 이름 · 줄(노드와 그 들고 나는 수)까지 같아야 한다
+            }
+        }
+
+        return true;
+
+        // 접은 상자의 모습 — 레코드의 목록은 새 투영마다 새것이라 레코드끼리 견주면 늘 다르다.
+        static string BoxShape(GraphItemProjection item) => item switch
+        {
+            CollapsedSceneProjection scene => $"{scene.SceneId}|{scene.DisplayName}|{scene.InnerCount}|{Rows(scene.Nodes)}",
+            CollapsedFileProjection file => $"{file.FileName}|{file.RelativePath}|{Rows(file.Nodes)}|" +
+                                            string.Join(";", file.Scenes.Select(group => $"{group.SceneId}:{group.DisplayName}:{Rows(group.Entries)}")),
+            _ => item.GetType().Name
+        };
+
+        static string Rows(IEnumerable<CollapsedNodeEntry> rows) =>
+            string.Join(",", rows.Select(row => $"{row.NodeId}/{row.NodeName}/{row.IncomingCount}/{row.OutgoingCount}"));
+
+        (string Key, bool OnLeft, string Label, bool IsConnected, int Palette) PortShape(GraphOutputPortProjection port) =>
+            choiceLabels && port.Kind == GraphOutputPortKind.Choice
+                ? (port.Key, false, string.Empty, false, 0)
+                : (port.Key, port.OnLeft, port.Label, port.IsConnected, port.PaletteIndex);
+    }
+
+    /// <summary>새 투영을 받는다 — 판이 그대로일 때(<see cref="SameBoard"/>). 선은 같은 열쇠의 새 연결을 쥔다(자리는 그대로다).</summary>
+    private void AdoptProjection(GraphProjection fresh)
+    {
+        _projection = fresh;
+
+        foreach (EdgeVisual edge in _edges)
+        {
+            edge.Connection = fresh.Connections.First(item => string.Equals(item.Key, edge.Connection.Key, StringComparison.Ordinal));
+        }
+    }
+
+    /// <summary>
+    /// <b>선택지가 바뀌었다</b> — 내용(문구 · 스탯변화 · 조건 · 잠금 안내 · 자동 · usability UX16)이든 길(생겼다 · 걷혔다 · 도착이 옮겨졌다 · UX19)이든.
+    /// 카드는 그대로 두고 출발 카드(<paramref name="nodeId"/>)에서 나가는 철도와 도착 포트만 다시 긋는다. 길은 장면 시작점을 바꿀 수 있다(밖에서
+    /// 들어오는 자리) — 시작점 표가 바뀐 카드만 새로 짓는다(<see cref="CanKeep"/>). 판이 선택지 칸 말고도 바뀌었으면(<see cref="OnlyChoicesChanged"/> —
+    /// 접은 상자의 줄이 든 길 수 · 넷째 칸) 통째로 짓고, 출발을 모르거나 그 철도를 못 찾으면 철도만 통째로 긋는다(카드는 그대로).
+    /// 스탯변화 · 조건은 판에 서지 않지만 그 출발의 철도는 그래도 다시 긋는다 — 접은 장면의 줄은 문구를 투영이 아니라 챕터에서 읽어, 무엇이
+    /// 바뀌었는지 투영으로 가를 수 없다.
+    /// ⛔ 2026-11-19까지는 늘 판을 통째로 다시 지었다 — 에피소드 160개에서 선택지 문구 하나에 2.5초, 선택지 점을 끌어 이으면 두 번.
+    /// </summary>
+    internal void RedrawChoices(string? nodeId)
+    {
+        if (_session is null || _projection is null)
+        {
+            return;
+        }
+
+        GraphProjection fresh = GraphProjectionBuilder.Build(
+            _session.Project,
+            _session.ExpandedFileIds,
+            _session.CollapsedScenes);
+
+        if (!OnlyChoicesChanged(_projection, fresh))
+        {
+            Rebuild();
+            return;
+        }
+
+        ChoiceRedrawCount++;
+        AdoptProjection(fresh);
+        _shownRevision = _session.Editor.Revision;
+
+        // 장면 시작점이 바뀐 카드(색 · 머리 표) — 그 카드만 새로 짓는다.
+        HashSet<string> roots = SceneRootCards();
+
+        if (!roots.SetEquals(_sceneRootNodeIds))
+        {
+            _sceneRootNodeIds = roots;
+            WritingFocus? writing = CaptureWritingFocus();
+            Dictionary<string, ExpandedNodeProjection> nodes = fresh.Items.OfType<ExpandedNodeProjection>()
+                .ToDictionary(item => item.NodeId, StringComparer.Ordinal);
+
+            foreach (NodeCard card in _cards.ToList())
+            {
+                if (nodes.TryGetValue(card.NodeId, out ExpandedNodeProjection? node) && !CanKeep(card, node))
+                {
+                    ReplaceCard(card, node).Visual.UpdateLayout();
+                }
+            }
+
+            HighlightSelection();
+            RestoreWritingFocus(writing);
+        }
+
+        if (nodeId is null || !RedrawRailsFrom(nodeId))
+        {
+            DrawChapterFrames();
+            RefreshMinimap();
+        }
+    }
+
+    /// <summary>선택지가 바뀌어 카드를 그대로 둔 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
+    internal int ChoiceRedrawCount { get; private set; }
+
+    /// <summary>
+    /// 판이 마지막으로 받아 그린 프로젝트의 고친 번(<see cref="ProjectEditor.Revision"/>) — 선택지를 이은 손짓이 제 편집을 판이 이미 그렸는지 본다
+    /// (앱에서는 변경 알림이 먼저 그린다 · <see cref="DrawJoined"/>).
+    /// </summary>
+    private long _shownRevision = -1;
+
+    /// <summary>
+    /// 그 카드(펼친 카드든 접은 장면의 줄이든)에서 나가는 철도 묶음을 다시 긋고, 도착 포트의 목록(누르면 보이는 「출발 · 문구」)에서 그 출발의 몫을
+    /// 새것으로 갈아 끼워 바뀐 포트만 다시 긋는다 — 포트가 새로 서거나(처음 들어오는 길) 사라지기도(마지막 길이 걷혔다) 한다. 목록의 차례는 철도를
+    /// 통째로 그을 때와 같다(출발의 차례 — 카드, 그다음 접은 줄). 레인 자리는 출발마다 따로 세므로 다른 출발의 그림은 그대로 맞는다. 출발의
+    /// 묶음이 판에 없으면 false — 부른 쪽이 통째로 긋는다.
+    /// </summary>
+    private bool RedrawRailsFrom(string nodeId)
+    {
+        if (_session!.Project.FindNode(nodeId) is not DialogueNode { MarkedEpisodeId: { Length: > 0 } episodeId } ||
+            _session.Project.FindFileContainingNode(nodeId) is not { } file)
+        {
+            return false;
+        }
+
+        List<RailGroup> from = _railGroups.Where(group => group.Origin switch
+        {
+            RailOrigin.FromCard card => string.Equals(card.FileId, file.Id, StringComparison.Ordinal) &&
+                                        string.Equals(card.EpisodeId, episodeId, StringComparison.Ordinal),
+            RailOrigin.FromRow row => string.Equals(row.FileId, file.Id, StringComparison.Ordinal) &&
+                                      string.Equals(row.EpisodeId, episodeId, StringComparison.Ordinal),
+            _ => false
+        }).ToList();
+
+        if (from.Count == 0)
+        {
+            return false;
+        }
+
+        RailBoard board = RailBoardOf(file.Id);
+        Dictionary<string, Rect> now = RailAnchors();
+
+        // 기대는 자리도 새로 — 길이 생기거나 옮겨지면 그 출발이 기대는 도착이 바뀐다(끌기가 따라가는 열쇠다).
+        foreach (RailGroup group in from)
+        {
+            IEnumerable<string>? deps = group.Origin switch
+            {
+                RailOrigin.FromCard when board.Spots.TryGetValue(episodeId, out (DialogueNode Node, Rect Rect) spot) =>
+                    board.DepsFrom(spot.Node.Id, episodeId),
+                RailOrigin.FromRow when board.Folded.TryGetValue(episodeId, out FoldedRow? row) =>
+                    board.DepsFrom(RowAnchor(row.Proxy), episodeId),
+                _ => null
+            };
+
+            if (deps is null)
+            {
+                return false;
+            }
+
+            group.DrawnAt = deps.Distinct(StringComparer.Ordinal).Where(now.ContainsKey)
+                .ToDictionary(dep => dep, dep => now[dep], StringComparer.Ordinal);
+        }
+
+        var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
+        RedrawRailGroups(from, now, arrivals);
+
+        // 도착 포트 — 이 출발의 몫을 빼고 새 몫을 넣어, 출발의 차례(통째로 그을 때 도는 차례)로 다시 세운다.
+        var rank = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (string source in board.Spots.Keys.Concat(board.Folded.Keys))
+        {
+            rank.TryAdd(source, rank.Count);
+        }
+
+        Dictionary<string, RailGroup> ports = _railGroups
+            .Where(group => group.Origin is RailOrigin.Arrival arrival && string.Equals(arrival.FileId, file.Id, StringComparison.Ordinal))
+            .ToDictionary(group => ((RailOrigin.Arrival)group.Origin).EpisodeId, StringComparer.Ordinal);
+        var stale = new List<RailGroup>();
+
+        foreach (string target in ports.Keys.Union(arrivals.Keys, StringComparer.Ordinal).ToList())
+        {
+            List<(string From, string Label)> before = ports.TryGetValue(target, out RailGroup? port)
+                ? ((RailOrigin.Arrival)port.Origin).Incoming
+                : [];
+            List<(string From, string Label)> after = before
+                .Where(item => !string.Equals(item.From, episodeId, StringComparison.Ordinal))
+                .Concat(arrivals.GetValueOrDefault(target) ?? [])
+                .OrderBy(item => rank.GetValueOrDefault(item.From, int.MaxValue))
+                .ToList();
+
+            if (after.SequenceEqual(before))
+            {
+                continue;
+            }
+
+            if (port is null)
+            {
+                // 처음 들어오는 길 — 포트를 새로 세운다.
+                if (!board.Spots.TryGetValue(target, out (DialogueNode Node, Rect Rect) spot))
+                {
+                    return false;
+                }
+
+                var added = new RailGroup(
+                    new RailOrigin.Arrival(file.Id, target, after),
+                    new Dictionary<string, Rect>(StringComparer.Ordinal) { [spot.Node.Id] = spot.Rect },
+                    [],
+                    holdsSelected: false);
+                _railGroups.Add(added);
+                stale.Add(added);
+            }
+            else if (after.Count == 0)
+            {
+                // 마지막 길이 걷혔다 — 포트를 내린다.
+                foreach (Control visual in port.Visuals)
+                {
+                    GraphCanvas.Children.Remove(visual);
+                    _railVisuals.Remove(visual);
+                }
+
+                _railGroups.Remove(port);
+            }
+            else
+            {
+                before.Clear();
+                before.AddRange(after);
+                stale.Add(port);
+            }
+        }
+
+        RedrawRailGroups(stale, now);
+
+        // 고른 레인이 사라졌다(문구가 바뀌어 신원이 달라졌다 · 길이 걷혔다) — 통째로 그을 때처럼 고름을 놓는다(인스펙터가 새 신원으로 다시 고른다).
+        if (_selectedRail is not null && !_railGroups.Any(group => group.HoldsSelected))
+        {
+            _selectedRail = null;
+            _selectedRailDrawn = false;
+            HideShapeOverlay();
+            LineSelected?.Invoke(null);
+        }
+
+        DrawChapterFrames(followRails: true);
+        RefreshMinimap();
+        return true;
+    }
+
+    /// <summary>
+    /// 판의 선택지 점을 끌어 잇거나 끊은 뒤 — 판이 그 편집을 아직 안 그렸으면(앱에서는 변경 알림이 먼저 그린다) 그 출발의 철도만 다시 긋는다.
+    /// ⛔ 2026-11-19까지는 알림이 판을 통째로 다시 그린 뒤에 여기서 또 통째로 다시 그렸다.
+    /// </summary>
+    private void DrawJoined(string sourceNodeId)
+    {
+        if (_session is not null && _session.Editor.Revision != _shownRevision)
+        {
+            RedrawChoices(sourceNodeId);
+        }
+    }
+
+    /// <summary>
+    /// <b>분기 카드 머리의 조건 표만 다시 단다</b> — 챕터 조건이 생겼거나 식이 바뀌었을 때(「식 미정」 · usability UX16). 판이 그 밖에도
+    /// 바뀌었으면 통째로 짓는다. ⛔ 2026-11-19까지는 늘 통째로 — 에피소드 160개에서 조건 하나를 더하는 데 2.5초.
+    /// </summary>
+    internal void RefreshBranchConditions()
+    {
+        if (_session is null || _projection is null)
+        {
+            return;
+        }
+
+        GraphProjection fresh = GraphProjectionBuilder.Build(
+            _session.Project,
+            _session.ExpandedFileIds,
+            _session.CollapsedScenes);
+
+        if (!SameBoard(_projection, fresh, exceptNodeId: null, choiceLabels: false))
+        {
+            Rebuild();
+            return;
+        }
+
+        BranchConditionRefreshCount++;
+        AdoptProjection(fresh);
+
+        foreach (NodeCard card in _cards)
+        {
+            if (!_branchEntries.TryGetValue(card.NodeId, out int palette) ||
+                card.Visual.GetVisualDescendants().OfType<Border>().FirstOrDefault(border =>
+                    border.Tag as string == BranchConditionChipTag + card.NodeId) is not { Parent: Panel title } old)
+            {
+                continue;
+            }
+
+            Border chip = BranchConditionChip(card.NodeId, palette);
+            Grid.SetColumn(chip, Grid.GetColumn(old));
+            title.Children[title.Children.IndexOf(old)] = chip;
+        }
+    }
+
+    /// <summary>조건 표만 다시 단 번 — 시험이 본다.</summary>
+    internal int BranchConditionRefreshCount { get; private set; }
+
+    /// <summary>
+    /// 챕터 · 장면 테두리와 이름표만 다시 긋는다 — 카드 · 철도는 그대로다(철도는 따라가기만 하고, 아무것도 움직이지 않았으니 다시 긋지 않는다).
+    /// 장면 이름표의 「메모」 표시가 에피소드 지시를 따른다(usability UX7).
+    /// </summary>
+    internal void RefreshSceneFrames()
+    {
+        SceneFrameDrawCount++;
+        DrawChapterFrames(followRails: true);
+    }
+
+    /// <summary>테두리 · 이름표만 다시 그은 번 — 시험이 「판을 다시 짓지 않았다」를 본다.</summary>
+    internal int SceneFrameDrawCount { get; private set; }
 
     /// <summary>좌표만 바뀌었을 때. projection을 다시 계산하되 컨트롤은 유지한다.</summary>
     internal void RefreshPositions()
@@ -2259,7 +2971,10 @@ public partial class GraphEditorView : UserControl
         }
 
         bool boardChanged = ApplyBoardSize();
-        PlaceVisuals(_projection, followRails: _committingDrag);
+
+        // 끌기 · 크기 바꾸기를 적은 직후의 갱신은 철도를 통째로 긋지 않고 따라간다 — 움직이거나 크기가 바뀐 카드에 기대는 묶음만 다시 긋는다
+        // (FollowRails). ⛔ 크기는 2026-11-19까지 통째로 그어 에피소드 160개에서 끌어 놓기 0.8초 · 「글에 맞춤」 0.5초였다(usability UX8).
+        PlaceVisuals(_projection, followRails: _committingDrag || _committingResize);
 
         if (boardChanged)
         {
@@ -2395,6 +3110,31 @@ public partial class GraphEditorView : UserControl
     /// <summary>끌기가 자리를 적는 중이다 — 그 자리 갱신은 철도를 따라가게 한다(<see cref="FollowRails"/>).</summary>
     private bool _committingDrag;
 
+    /// <summary>
+    /// 화면의 카드를 이미 그 크기로 둔 채 크기를 적는 중이다(끌어 놓기 · 「글에 맞춤」) — 그 갱신은 철도를 따라가게 한다. 크기가 바뀐 카드에
+    /// 기대는 묶음은 사각형이 달라져 그 출발에서만 다시 긋는다(<see cref="FollowRails"/>).
+    /// </summary>
+    private bool _committingResize;
+
+    /// <summary>
+    /// 크기를 한 번 적는다 — 화면의 카드는 이미 그 크기다. 배치를 먼저 끝내 둔다 — 철도가 카드의 잰 높이에 기댄다(끄는 동안의 마지막 움직임이
+    /// 아직 배치되지 않았을 수 있다).
+    /// </summary>
+    private void WriteSize(NodeCard card, double? width, double? writingHeight)
+    {
+        card.Visual.UpdateLayout();
+        _committingResize = true;
+
+        try
+        {
+            _session?.Editor.ResizeNode(card.NodeId, width, writingHeight);
+        }
+        finally
+        {
+            _committingResize = false;
+        }
+    }
+
     /// <summary>그 노드의 카드 폭 — 사람이 넓힌 폭이 있으면 그것, 없으면 기본 폭이다.</summary>
     private double WidthFor(string nodeId) =>
         _session?.Project.FindNode(nodeId)?.Layout.Width is { } width
@@ -2501,6 +3241,91 @@ public partial class GraphEditorView : UserControl
         return grip;
     }
 
+    /// <summary>카드 제목 줄의 「글에 맞춤」 단추 — 초점을 가져가지 않는다(쓰던 글 칸이 그대로 쓰는 중이다).</summary>
+    private Button FitButton(string nodeId, CardStyle style)
+    {
+        var fit = new Button
+        {
+            Content = "⤢",
+            FontSize = 12,
+            Padding = new Thickness(3, 0),
+            MinHeight = 0,
+            Height = TitleHeight - 2,
+            VerticalAlignment = VerticalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(4, 0, 0, 0),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Foreground = new SolidColorBrush(style.Accent),
+            Focusable = false,
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Tag = FitButtonTag + nodeId
+        };
+        ToolTip.SetTip(fit, "글에 맞춤 — 지금 글꼴 · 글자 크기로 재서, 줄이 꺾이지 않게 폭을, 모든 줄이 보이게 글 칸 높이를 맞춥니다. " +
+                            "글을 고친 뒤 다시 누르면 다시 맞춥니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        fit.Click += (_, args) =>
+        {
+            args.Handled = true;
+            UiGuard.Run(_session, "글에 맞춤", () => FitCardToWriting(nodeId));
+        };
+        return fit;
+    }
+
+    /// <summary>
+    /// <b>「글에 맞춤」</b> (2026-11-19 소유자 — 「현재 글꼴과 글 크기를 고려해서 줄바꿈이 일어나지 않도록 가로의 길이를 자동으로 늘리고,
+    /// 세로길이역시 모든 줄이 바로 보이도록 … 다시 누른다면 변경된 내용에 맞춰 다시」 · usability UX5).
+    ///
+    /// 글 칸의 글(넣지 않은 글도)을 지금 글꼴 · 글자 크기 · 줄 간격(<see cref="ScriptFont"/>)으로 잰다 — 폭은 가장 긴 줄이 꺾이지 않게, 글 칸
+    /// 높이는 그 폭에서 모든 줄이 스크롤 없이 보이게. 카드 폭과 글이 놓이는 폭의 차(여백 · 테두리 · 등뼈 · 칸 안 여백)는 지금 배치에서 잰다 —
+    /// 산식으로 세면 테마가 바뀔 때 어긋난다. 기본보다 작게는 줄이지 않고(짧은 글은 기본 크기로 돌아간다) 끝(<see cref="MaxCardWidth"/> ·
+    /// <see cref="MaxWritingHeight"/>)을 넘지 않는다 — 폭이 끝에 걸리면 그 폭에서 꺾어 높이를 잰다.
+    ///
+    /// 끌어 키운 것(<see cref="CommitResize"/>)과 같은 길로 적는다 — 화면의 카드를 먼저 그 크기로 두고 <c>ResizeNode</c> 한 번(되돌리기 한 칸 ·
+    /// 같은 크기면 적지 않는다). 그래서 판을 다시 짓지 않는다.
+    /// </summary>
+    internal void FitCardToWriting(string nodeId)
+    {
+        if (_session is null ||
+            FindCard(nodeId) is not { WritingBox: { } box } card ||
+            box.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().FirstOrDefault() is not { } presenter ||
+            box.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is not { } scroll)
+        {
+            return;
+        }
+
+        _session.Select(nodeId);
+
+        // 폭 — 줄마다 꺾지 않고 잰 가장 긴 줄.
+        var typeface = new Typeface(box.FontFamily, box.FontStyle, box.FontWeight);
+        double longest = 0;
+
+        foreach (string line in (box.Text ?? string.Empty).ReplaceLineEndings("\n").Split('\n'))
+        {
+            using var measured = new Avalonia.Media.TextFormatting.TextLayout(
+                line, typeface, box.FontSize, foreground: null, lineHeight: box.LineHeight);
+            longest = Math.Max(longest, measured.WidthIncludingTrailingWhitespace);
+        }
+
+        // 카드 폭 − 글이 놓이는 폭. 지금 글이 넘쳐 세로 스크롤 막대가 자리를 먹었으면 그 몫은 뺀다 — 맞춘 뒤에는 막대가 없다(빼지 않으면 다시
+        // 누를 때마다 폭이 달라진다).
+        double around = card.Visual.Bounds.Width - (presenter.Bounds.Width + (scroll.Bounds.Width - scroll.Viewport.Width));
+        double width = Math.Clamp(Math.Ceiling(longest + around + FitSlack), CardWidth, MaxCardWidth);
+        card.Visual.Width = width;
+
+        // 높이 — 그 폭에서 실제로 배치된 글의 높이(글 자리가 칸을 채워 늘어나므로 그 자리가 아니라 배치된 줄들의 높이) + 칸의 위아래 몫.
+        // 재는 동안은 칸을 끝까지 키워 둔다 — 글이 넘쳐 스크롤 막대가 서면 그만큼 좁아져 줄이 꺾인 채로 잰다.
+        box.Height = MaxWritingHeight;
+        card.Visual.UpdateLayout();
+        double height = Math.Clamp(
+            Math.Ceiling(presenter.TextLayout.Height + (box.Bounds.Height - presenter.Bounds.Height)),
+            WritingBoxHeight,
+            MaxWritingHeight);
+        box.Height = height;
+        PlaceLineKnobs(card);
+
+        WriteSize(card, width <= CardWidth ? null : width, height <= WritingBoxHeight ? null : height);
+    }
+
     /// <summary>
     /// 크기 끌기를 놓는다 — 화면에서만 키우던 폭 · 글 칸 높이를 한 번 적는다. 기본까지 줄였으면 적어 둔 값을 걷는다. 눌렀다
     /// 놓기만 했으면 적을 것이 없다.
@@ -2536,8 +3361,8 @@ public partial class GraphEditorView : UserControl
             writing.Height = height;
         }
 
-        UiGuard.Run(_session, "카드 크기", () => _session?.Editor.ResizeNode(
-            card.NodeId,
+        UiGuard.Run(_session, "카드 크기", () => WriteSize(
+            card,
             width <= CardWidth ? null : width,
             card.WritingBox is null || height <= WritingBoxHeight ? null : height));
     }
@@ -2736,6 +3561,13 @@ public partial class GraphEditorView : UserControl
     /// 헷갈린다. 색은 그 분기 선의 색이다. <b>누르면 그 카드를 고른다</b>(카드를 누른 것과 같다 — 인스펙터 위쪽에 조건 칸이 선다,
     /// 2026-11-17 소유자). ⛔ 전에는 [구성] 탭의 그 분기로 갔다.
     /// </summary>
+    /// <summary>분기 조건 표의 글 — 지금 조건으로(<see cref="CanKeep"/>가 선 표와 견준다).</summary>
+    private string BranchChipText(string nodeId)
+    {
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId);
+        return BranchConditionNote.Chip(state, BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label));
+    }
+
     private Border BranchConditionChip(string nodeId, int palette)
     {
         BranchEntryCondition.State state = BranchEntryCondition.Read(_session!.Project, nodeId);
@@ -2832,22 +3664,16 @@ public partial class GraphEditorView : UserControl
         var titleName = new TextBlock
         {
             Text = ShownName(node.NodeId, node.NodeName),
+            Tag = CardTitleTag,   // 제목만 바뀌면 이 글만 고친다(RefreshCardTitle)
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
-            [ToolTip.TipProperty] = _session?.Project.FindNode(node.NodeId) switch
-            {
-                DialogueNode { MarkedEpisodeId: not null } episode =>
-                    $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다.",
-                DialogueNode { IsBranchCard: true } branch =>
-                    $"분기 카드 ID: {branch.Name} — ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.",
-                _ => null
-            }
+            [ToolTip.TipProperty] = TitleTip(node.NodeId)
         };
 
         var title = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"),
             Height = TitleHeight,
             Margin = new Thickness(0, 0, 0, HeaderGap)
         };
@@ -2856,11 +3682,21 @@ public partial class GraphEditorView : UserControl
         title.Children.Add(titleIcon);
         title.Children.Add(titleName);
 
-        if (_branchEntries.TryGetValue(node.NodeId, out int palette))
+        bool branchEntry = _branchEntries.TryGetValue(node.NodeId, out int palette);
+
+        if (branchEntry)
         {
             Control chip = BranchConditionChip(node.NodeId, palette);
             Grid.SetColumn(chip, 2);
             title.Children.Add(chip);
+        }
+
+        // 「글에 맞춤」 — 제목 줄 오른쪽 끝(글 칸이 있는 카드만 · 2026-11-19 소유자 · usability UX5).
+        if (node.NodeKind == GraphNodeKind.Dialogue)
+        {
+            Button fit = FitButton(node.NodeId, style);
+            Grid.SetColumn(fit, 3);
+            title.Children.Add(fit);
         }
 
         body.Children.Add(title);
@@ -2904,7 +3740,15 @@ public partial class GraphEditorView : UserControl
             .Where(port => port.Kind != GraphOutputPortKind.Choice)
             .ToList();
 
-        var visual = new NodeCard(node.NodeId, node.NodeKind, card, inCard, style);
+        var visual = new NodeCard(node.NodeId, node.NodeKind, card, inCard, style)
+        {
+            FileId = node.FileId,
+            SceneRoot = sceneRoot,
+            BranchCard = branchCard,
+            BranchPalette = branchEntry ? palette : null,
+            Title = titleName,
+            TitleRow = title
+        };
 
         // ⭐ 「조건 분기」 포트는 포트 줄에 서지 않는다 — 점이 글 칸의 <b>그 대사 높이</b>에 선다(아래 BuildLineKnob ·
         //    2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에 분기 점이 생성되도록"*).
@@ -4095,7 +4939,7 @@ public partial class GraphEditorView : UserControl
     /// 이미 이어진 길이면 <b>그 간선의 문구를 고치고</b>, 아직 안 이었으면 적어만 둔다.
     /// 어느 쪽이든 <b>챕터의 선택지 사전에 배운다</b> — 문구의 주인은 챕터다(v9).
     /// </summary>
-    private Control SlotEditor(GraphChoicePort choice)
+    private Control SlotEditor(GraphChoicePort choice, string nodeId)
     {
         // 폭을 정해 둔다 — 판은 칸 줄의 폭을 재서 레인이 나갈 자리를 정하는데(DrawRailBranch), 판에 붙기 전의 글자 칸은 틀이
         // 아직 없어 제 폭을 작게 잰다. 그러면 레인이 글자 칸 위를 지나간다. 지금 문구의 폭에 여유를 더한다(적는 동안 넘치면
@@ -4126,7 +4970,7 @@ public partial class GraphEditorView : UserControl
                 Relabel(choice, wanted);
             }
 
-            Rebuild();
+            EditSlot(null, nodeId);
         }
 
         box.KeyDown += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
@@ -5297,12 +6141,9 @@ public partial class GraphEditorView : UserControl
 
         GraphCanvas.Children.Add(_connectingLine);
         // 공급 포트 안내는 2026-08-22에 사라졌다 — 끌 수 있는 포트가 실행 출구뿐이다.
-        SetHint(port.ExecutionPort is { Kind: ExitPortKind.Detour } detour
-            ? detour.IsOpenDetour
-                ? "분기 카드 위에 놓으면 잇습니다. 빈 곳에 놓으면 그 자리에 새 분기 카드가 섭니다. 에피소드에는 잇지 않습니다."
-                : "분기 카드 위에 놓으면 그리로 옮겨 잇습니다. 빈 곳에 놓으면 연결만 끊기고 분기점은 남습니다."
-            : "연결할 실행 노드 또는 접힌 파일의 실행 노드 행 위에서 놓으세요. " +
-              "빈 곳에 놓으면 실행 연결이 끊어집니다.");
+        SetHint(port.ExecutionPort is { IsOpenDetour: true }
+            ? "분기 카드 위에 놓으면 잇습니다. 빈 곳에 놓으면 그 자리에 새 분기 카드가 섭니다. 에피소드에는 잇지 않습니다."
+            : "분기 카드 위에 놓으면 그리로 옮겨 잇습니다. 빈 곳에 놓으면 연결만 끊기고 분기점은 남습니다.");
 
         args.Handled = true;
     }
@@ -5330,6 +6171,12 @@ public partial class GraphEditorView : UserControl
         {
             _multiSelected.Clear();
             HighlightSelection();
+
+            // 앞의 사각형이 남아 있으면(놓음을 못 봤다) 걷고 새로 연다 — 남은 채 새것을 열면 옛것이 판에 쌓인다.
+            if (_rubberBand is not null)
+            {
+                GraphCanvas.Children.Remove(_rubberBand);
+            }
 
             _rubberStart = args.GetPosition(GraphCanvas);
             _rubberBand = RubberBand.Create(_rubberStart);
@@ -5796,20 +6643,15 @@ public partial class GraphEditorView : UserControl
             // ⚠ <b>UiGuard로 받는다.</b> 규칙 위반은 편집기가 예외로 거절하는데(신원 겹침 ·
             //    없는 에피소드), 놓임 처리기는 Avalonia가 부르는 자리라 그대로 터진다.
             //    거절은 상태줄로 가야 한다 — 이 저장소의 모든 편집 창구가 그 규약을 쓴다.
-            UiGuard.Run(_session, "선택지 잇기", () => JoinChoice(choice, SlotsOf(port.NodeId), target));
+            UiGuard.Run(_session, "선택지 잇기", () => JoinChoice(choice, port.NodeId, SlotsOf(port.NodeId), target));
             return;
         }
 
-        if (port.ExecutionPort is { Kind: ExitPortKind.Detour } detour)
+        // 실행 출구는 분기점뿐이다(⛔ 갈래 출구는 2026-11-19에 걷혔다 · usability UX28).
+        if (port.ExecutionPort is { } detour)
         {
             Point at = args.GetPosition(GraphCanvas);
             UiGuard.Run(_session, "분기 잇기", () => JoinBranch(detour, target, at));
-            return;
-        }
-
-        if (port.ExecutionPort is not null)
-        {
-            _session?.Editor.SetExitTarget(port.ExecutionPort, target);
         }
     }
 
@@ -5834,11 +6676,24 @@ public partial class GraphEditorView : UserControl
                 return;
             }
 
+            // 분기 카드의 분기점(그 전의 파일)에는 새 카드를 세우지 않는다 — 분기 카드는 분기를 내지 않는다(UX27).
+            if (!_session.Editor.CanBranchFrom(detour.NodeId))
+            {
+                _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 분기점은 줄의 ＋에서 지웁니다.");
+                return;
+            }
+
             if (_session.Editor.AddBranchCardAt(detour, ClampNodeX(at.X), ClampNodeY(at.Y - (TitleHeight / 2))) is { } created)
             {
                 _session.SetStatus($"분기 카드 '{created.Name}'{Josa.을를(created.Name)} 세우고 이었습니다 — 들러서 할 대사를 적으세요. {BranchConditionNote.Where}");
             }
 
+            return;
+        }
+
+        if (!_session.Editor.CanBranchFrom(detour.NodeId))
+        {
+            _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 분기는 빈 곳에 놓으면 끊깁니다.");
             return;
         }
 
@@ -5862,7 +6717,8 @@ public partial class GraphEditorView : UserControl
     /// [챕터 그래프]에도 그대로 보이고, 내보내기·도달성 증명·V1/V2 진단이 <b>하나도 안 바뀐
     /// 채</b> 그 값을 본다.
     /// </summary>
-    private void JoinChoice(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots, string? targetNodeId)
+    /// <param name="sourceNodeId">그 칸이 선 카드 — 이은 뒤 그 카드의 철도만 다시 긋는다.</param>
+    private void JoinChoice(GraphChoicePort choice, string sourceNodeId, IReadOnlyList<GraphChoicePort> slots, string? targetNodeId)
     {
         if (_session is null)
         {
@@ -5871,7 +6727,7 @@ public partial class GraphEditorView : UserControl
 
         if (targetNodeId is null)
         {
-            Unjoin(choice);
+            Unjoin(choice, sourceNodeId);
             return;
         }
 
@@ -5947,7 +6803,7 @@ public partial class GraphEditorView : UserControl
             ? $"'{choice.FromEpisodeId}' → '{episodeId}' 자동으로 이었습니다(문구 없이 지나갑니다)."
             : $"'{choice.FromEpisodeId}' → '{episodeId}' 선택지 '{label}'을 이었습니다.");
 
-        Rebuild();
+        DrawJoined(sourceNodeId);
     }
 
     /// <summary>
@@ -5959,7 +6815,7 @@ public partial class GraphEditorView : UserControl
     ///
     /// ⚠ 자동 길은 문구가 없으니 칸도 꺼진 채로 돌아온다.
     /// </summary>
-    private void Unjoin(GraphChoicePort choice)
+    private void Unjoin(GraphChoicePort choice, string sourceNodeId)
     {
         if (choice.IsEmpty)
         {
@@ -5984,7 +6840,7 @@ public partial class GraphEditorView : UserControl
             $"'{choice.FromEpisodeId}' → '{choice.ToEpisodeId}' 길을 걷었습니다." +
             (choice.Label.Length > 0 ? $" 문구 '{choice.Label}'은 칸에 남겨 뒀습니다." : string.Empty));
 
-        Rebuild();
+        DrawJoined(sourceNodeId);
     }
 
     /// <summary>
@@ -6439,6 +7295,16 @@ public partial class GraphEditorView : UserControl
     private string ShownName(string nodeId, string fallback) =>
         _session?.Project.FindNode(nodeId) is { } found ? EpisodeNaming.ShownNameOf(_session.Project, found) : fallback;
 
+    /// <summary>카드 제목의 풍선 — 에피소드ID · 분기 카드 ID는 여기서만 보인다(정하는 곳은 [구성] 탭).</summary>
+    private string? TitleTip(string nodeId) => _session?.Project.FindNode(nodeId) switch
+    {
+        DialogueNode { MarkedEpisodeId: not null } episode =>
+            $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다.",
+        DialogueNode { IsBranchCard: true } branch =>
+            $"분기 카드 ID: {branch.Name} — ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.",
+        _ => null
+    };
+
     /// <summary>그 챕터 에피소드의 보이는 제목 — 없으면 Id 그대로.</summary>
     private string EpisodeTitle(string chapterId, string episodeId) =>
         _session?.Editor.FindChapter(chapterId)?.Episodes.FirstOrDefault(episode =>
@@ -6537,6 +7403,26 @@ public partial class GraphEditorView : UserControl
 
         /// <summary>펼친 무리들.</summary>
         public HashSet<string> ExpandedGroups { get; } = new(StringComparer.Ordinal);
+
+        // ── 판을 다시 지을 때 이 카드를 그대로 둘지 가리는 재료(<see cref="CanKeep"/>) — 지을 때 정해져 제자리에서 바뀌지 않는 것들 ──
+
+        /// <summary>카드가 선 판.</summary>
+        public string FileId { get; init; } = string.Empty;
+
+        /// <summary>장면 시작점 카드인가 — 색과 머리 표의 풍선이 다르다.</summary>
+        public bool SceneRoot { get; init; }
+
+        /// <summary>분기 카드인가 — 색과 머리 표가 다르다.</summary>
+        public bool BranchCard { get; init; }
+
+        /// <summary>분기로 다녀오는 카드면 그 분기 선의 색 — 머리에 조건 표가 선다. 아니면 null.</summary>
+        public int? BranchPalette { get; init; }
+
+        /// <summary>머리의 제목 글 — 제목만 바뀌면 제자리에서 고친다(<see cref="RefreshCardTitle"/>).</summary>
+        public TextBlock Title { get; init; } = null!;
+
+        /// <summary>머리 줄 — 분기 조건 표가 여기 선다(조건이 바뀌면 제자리에서 바꿔 단다 · <see cref="RefreshBranchConditions"/>).</summary>
+        public Grid TitleRow { get; init; } = null!;
     }
 
     private sealed class FileProxyVisual

@@ -11,7 +11,10 @@ namespace Vn.Authoring.Editing;
 /// </summary>
 public sealed partial class ProjectEditor
 {
-    /// <summary>화자를 목록 끝에 더한다. 이름이 비었거나 이미 있으면 거절한다(예외).</summary>
+    /// <summary>
+    /// 화자를 목록 끝에 더한다. 이름이 비었거나 이미 있으면 거절한다(예외). 캐릭터 키는 <b>임시 키</b>로 선다 — <c>temp_</c> + 이름의 로마자
+    /// (<see cref="CharacterKey.NewTemp"/> · usability UX29 — ⛔ 전에는 빈 채로 섰다). 화자와 키가 되돌리기 한 칸이다.
+    /// </summary>
     public Speaker AddSpeaker(string name)
     {
         string typed = (name ?? string.Empty).Trim();
@@ -26,7 +29,7 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"화자 '{typed}'은 이미 있습니다.");
         }
 
-        var speaker = new Speaker(typed, string.Empty);
+        var speaker = new Speaker(typed, CharacterKey.NewTemp(typed, Project.Speakers.Select(item => item.CharacterId)));
         Mutate(ProjectChangeKind.Content, () => Project.Speakers.Add(speaker));
         return speaker;
     }

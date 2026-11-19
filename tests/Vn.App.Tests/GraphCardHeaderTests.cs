@@ -20,7 +20,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class GraphCardHeaderTests
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     [Fact]
     public void 카드에는_노드_종류도_대본_이름도_줄_수도_없다() => HeadlessUi.Run(() =>

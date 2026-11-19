@@ -225,7 +225,7 @@ public sealed class BranchGateWritingTests : IDisposable
     /// <summary>root의 첫 줄 앞에 분기를 두고, 다녀갈 카드에 대사 한 줄과 조건 「신뢰높음」을 건다.</summary>
     private (MainWindow Window, AuthoringSession Session, DialogueNode Branch, TextBox Box) Stage()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         DialogueNode root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
         Assert.True(session.Editor.ApplyScenarioText(root.Id, "하린: 첫 줄").Applied);
         DialogueNode branch = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);

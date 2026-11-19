@@ -12,9 +12,7 @@ public class SerializationTests
     public void 스냅샷은_프로젝트_전체를_한_문자열로_복원한다()
     {
         var sample = new Sample();
-        var (_, l1, _, l3, _, _, _) = sample.BuildSpecExample();
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, sample.TargetA.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l3, sample.TargetB.Id);
+        sample.BuildSpecExample();
         sample.Editor.MoveNode(sample.Dialogue.Id, 120, 340);
 
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
@@ -25,17 +23,76 @@ public class SerializationTests
         Assert.Equal(sample.File.RelativePath, reloadedFile.RelativePath);
         Assert.Equal(sample.Project.EnumerateNodes().Select(node => node.Id), reloaded.EnumerateNodes().Select(node => node.Id));
         Assert.Equal(DialogueScriptResolver.Resolve(sample.Project, sample.Dialogue).Lines.Select(line => line.LineId), DialogueScriptResolver.Resolve(reloaded, dialogue).Lines.Select(line => line.LineId));
-        Assert.Equal(sample.TargetA.Id, dialogue.BranchExits[l1]);
-        Assert.Equal(sample.TargetB.Id, dialogue.BranchExits[l3]);
         Assert.Equal(120, dialogue.Layout.X);
         Assert.Equal(340, dialogue.Layout.Y);
 
         DialogueFlow before = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
         DialogueFlow after = ConditionFlowResolver.Resolve(dialogue, reloaded);
         Assert.Equal(
-            before.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.ExitTargetNodeId, branch.LastLineIndex)),
-            after.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.ExitTargetNodeId, branch.LastLineIndex)));
+            before.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.LastLineIndex)),
+            after.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.LastLineIndex)));
     }
+
+    [Fact]
+    public void 그_전의_파일에_적힌_갈래_출구는_모르는_칸으로_지나가고_다음_저장에서_빠진다()
+    {
+        // 갈래 출구는 2026-11-19에 걷혔다(usability UX28) — 여는 전환의 `exit` · 꼬리 전환의 `anchor`가 남은 파일도 열린다(기본 출구
+        // `defaultExit`와 같은 처지). 대본 끝의 빈 블록으로 꼬리 전환을 만들고, 모든 여는 전환에 옛 칸을 적어 본다.
+        var sample = new Sample();
+        sample.BuildSpecExample();
+        sample.Editor.ApplyScenarioText(
+            sample.Dialogue.Id,
+            WorkingDialogueText(sample) + $"\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
+            confirmDeletes: true);
+        Assert.NotEmpty(sample.Dialogue.TrailingTransitions);
+
+        var root = System.Text.Json.Nodes.JsonNode.Parse(ProjectSnapshotCodec.Encode(sample.Project))!;
+        int opened = 0;
+
+        void Mark(System.Text.Json.Nodes.JsonNode? node)
+        {
+            switch (node)
+            {
+                case System.Text.Json.Nodes.JsonObject item:
+                    if (item["kind"]?.GetValue<string>() is "beginIf" or "beginElseIf")
+                    {
+                        item["exit"] = sample.TargetA.Id;
+                        item["anchor"] = "#끝";
+                        opened++;
+                    }
+
+                    foreach ((_, System.Text.Json.Nodes.JsonNode? child) in item.ToList())
+                    {
+                        Mark(child);
+                    }
+
+                    break;
+
+                case System.Text.Json.Nodes.JsonArray array:
+                    foreach (System.Text.Json.Nodes.JsonNode? child in array.ToList())
+                    {
+                        Mark(child);
+                    }
+
+                    break;
+            }
+        }
+
+        Mark(root);
+        Assert.True(opened >= 2);
+
+        StoryProject reloaded = ProjectSnapshotCodec.Decode(root.ToJsonString());
+        string saved = ProjectSnapshotCodec.Encode(reloaded);
+
+        Assert.DoesNotContain("\"exit\"", saved, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"anchor\"", saved, StringComparison.Ordinal);
+        Assert.Equal(
+            ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project).Branches.Select(branch => (branch.OpenLineId, branch.ConditionId)),
+            ConditionFlowResolver.Resolve(reloaded.FindDialogue(sample.Dialogue.Id)!, reloaded).Branches.Select(branch => (branch.OpenLineId, branch.ConditionId)));
+    }
+
+    private static string WorkingDialogueText(Sample sample) =>
+        Vn.Authoring.Rendering.WorkingDialoguePreview.ScenarioWriting(sample.Project, sample.Dialogue.Id).Text;
 
     [Fact]
     public void 에피소드_표식이_프로젝트와_함께_왕복한다()

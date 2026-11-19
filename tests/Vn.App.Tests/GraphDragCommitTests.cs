@@ -21,7 +21,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class GraphDragCommitTests
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     [Fact]
     public void 끄는_동안은_화면만_움직이고_놓을_때_한_번_적는다() => HeadlessUi.Run(() =>

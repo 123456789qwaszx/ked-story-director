@@ -63,10 +63,7 @@ public class ConditionSupplyTests
             flow.Problems,
             item => item.Kind == FlowProblemKind.UnavailableCondition);
         Assert.Equal(scriptLine.Id, problem.LineId);
-
-        ExitPort branch = NodeConnections.PortsOf(dialogue, project)
-            .Single(port => port.Kind == ExitPortKind.Branch);
-        Assert.Contains("사용할 수 없음", branch.Label, StringComparison.Ordinal);
+        // (⛔ 조건 갈래의 출구 포트 라벨에도 「사용할 수 없음」이 섰다 — 포트가 갈래 출구와 함께 걷혔다 · usability UX28.)
     }
 
 }

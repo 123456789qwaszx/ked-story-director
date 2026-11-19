@@ -24,7 +24,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class GraphBranchKnobTests
 {
-    private const int GraphTab = 1;
+    private const int GraphTab = MainTab.Script;
 
     [Fact]
     public void 분기_하나의_점은_그_대사_옆_카드_가장자리에_서고_선도_거기서_나간다() => HeadlessUi.Run(() =>
@@ -103,9 +103,15 @@ public sealed class GraphBranchKnobTests
             (path.Tag as string) == $"{GraphEditorView.BranchHubTag}{card.Id}:{lines[1]}:fan").IsVisible);
         Assert.All(knobs, knob => Assert.Single(ExecutionEdges(canvas), path => Leaves(path, knob, PortRadius)));
 
-        // 판을 다시 그려도(점 · 공통 점이 새로 선다) 펼친 채로 남는다.
+        // 판을 다시 그려도 펼친 채로 남는다 — 그대로인 카드는 그 점들 그대로 서고(usability UX17), 카드를 새로 지어도(폭이 바뀌었다 —
+        // 점 · 공통 점이 새로 선다) 펼친 채다.
         Ellipse before = Knobs(canvas, card.Id).First();
         window.FindControl<GraphEditorView>("Graph")!.Rebuild();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(before, Knobs(canvas, card.Id));
+        Assert.All(Knobs(canvas, card.Id), knob => Assert.True(knob.IsVisible));
+
+        session.Editor.ResizeNode(card.Id, BoardSize.CardWidth + 60, null);
         Dispatcher.UIThread.RunJobs();
         Assert.DoesNotContain(before, Knobs(canvas, card.Id));
         Assert.All(Knobs(canvas, card.Id), knob => Assert.True(knob.IsVisible));

@@ -27,7 +27,7 @@ public sealed class ChapterIdViewTests : IDisposable
     [Fact]
     public void ID로_보기를_끄면_하이어아키와_카드가_이름으로_서고_켜면_ID로_돌아간다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
 
         try
         {

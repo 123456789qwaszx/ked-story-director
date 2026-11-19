@@ -131,7 +131,7 @@ public sealed class ChapterInspectorBoxesTests : IDisposable
 
     private (MainWindow Window, AuthoringSession Session, ChapterGraphView View) Show()
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         return (window, session, window.FindControl<ChapterGraphView>("ChapterGraph")!);
     }
 

@@ -29,7 +29,7 @@ public sealed class ChapterAddTests : IDisposable
     [Fact]
     public void 챕터_추가는_이름_칸_없이_새_챕터를_바로_세우고_그_챕터를_고른다() => HeadlessUi.Run(() =>
     {
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         long before = session.Editor.Revision;
@@ -83,7 +83,7 @@ public sealed class ChapterAddTests : IDisposable
     {
         // 「챕터 추가」는 이제 장면 · 에피소드를 함께 세우지만, 그 전에 만든 빈 챕터는 파일에 남아 있다(읽기 규칙은 바꾸지 않았다) —
         // 「진행 JSON 미출력」이 서지 않고 그 챕터의 보고는 에피소드가 아직 없다고 말한다(2026-11-18 · R1).
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 0);
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
         ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         (string? chapterId, _) = session.CreateNamedChapter(null);
         chapterGraph.Refresh();
