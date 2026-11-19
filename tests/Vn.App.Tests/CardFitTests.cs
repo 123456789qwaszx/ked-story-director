@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Path = System.IO.Path;
@@ -15,6 +16,7 @@ namespace Vn.App.Tests;
 /// 늘리고, 세로길이역시 모든 줄이 바로 보이도록 … 다시 누른다면 변경된 내용에 맞춰 다시」 · usability UX5).
 ///
 /// 제목 줄 오른쪽 끝의 단추가 글을 재서 폭(줄이 꺾이지 않게) · 글 칸 높이(모든 줄이 보이게)를 맞춘다 — 되돌리기 한 칸, 같으면 적지 않는다.
+/// 이미 꼭 맞으면 단추가 「줄이기」가 되고 누르면 처음 크기로 돌아간다(usability UX33).
 /// </summary>
 public sealed class CardFitTests : IDisposable
 {
@@ -63,7 +65,7 @@ public sealed class CardFitTests : IDisposable
     });
 
     [Fact]
-    public void 다시_누르면_고친_글에_맞춰_다시_맞추고_그대로면_적지_않으며_짧아지면_기본_크기로_돌아간다() => HeadlessUi.Run(() =>
+    public void 고친_글에_다시_누르면_다시_맞추고_짧아지면_기본_크기로_돌아간다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
@@ -71,12 +73,7 @@ public sealed class CardFitTests : IDisposable
         Fit(graph, root);
         double first = session.Project.FindNode(root)!.Layout.Width!.Value;
 
-        // 그대로면 적지 않는다.
-        long revision = session.Editor.Revision;
-        Fit(graph, root);
-        Assert.Equal(revision, session.Editor.Revision);
-
-        // 더 긴 줄을 쓰고 누르면 그만큼 넓어진다.
+        // 더 긴 줄을 쓰고 누르면 그만큼 넓어진다(꼭 맞던 카드라도 글이 바뀌었으면 「줄이기」가 아니라 다시 맞춘다).
         Write(graph, session, root, [Long + " 그래도 참고 걸었다.", "윌로: 응."]);
         Fit(graph, root);
         Assert.True(session.Project.FindNode(root)!.Layout.Width > first);
@@ -160,8 +157,88 @@ public sealed class CardFitTests : IDisposable
         Button fit = FitButton(graph, CardId(session, "root"));
 
         Assert.Equal((24d, 24d), (fit.Bounds.Width, fit.Bounds.Height));
-        Assert.True(fit.FontSize >= 17);
+        Assert.Equal((16d, 16d), (Glyph(fit).Width, Glyph(fit).Height));   // 그림(바깥 화살표 · 안쪽 화살표 — UX33)
         Assert.Equal(20d, ((Grid)fit.Parent!).Bounds.Height);
+    });
+
+    [Fact]
+    public void 꼭_맞으면_단추가_줄이기가_되고_누르면_처음_크기로_돌아가며_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「이미 대본 글자에 정확히 맞춰진 상태라면 버튼의 아이콘이 축소로 바뀌고, 그 상태에서 누르면 최소 크기로」(usability UX33).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        Write(graph, session, root, [Long, "윌로: 응.", "라루: 가자."]);
+        Assert.False(Fitted(graph, root));
+        Geometry expand = Glyph(FitButton(graph, root)).Data!;
+
+        Fit(graph, root);
+        (double Width, double Height) fitted = (Card(graph, root).Width, WritingBox(graph, root).Height);
+        Assert.True(Fitted(graph, root));
+        Assert.NotSame(expand, Glyph(FitButton(graph, root)).Data);   // 그림이 「줄이기」로 바뀌었다
+        Assert.Contains("줄이기", ToolTip.GetTip(FitButton(graph, root)) as string, StringComparison.Ordinal);
+
+        long revision = session.Editor.Revision;
+        Fit(graph, root);
+
+        Assert.Equal(revision + 1, session.Editor.Revision);
+        Assert.Null(session.Project.FindNode(root)!.Layout.Width);
+        Assert.Null(session.Project.FindNode(root)!.Layout.WritingHeight);
+        Assert.Equal((DefaultWidth, DefaultHeight), (Card(graph, root).Width, WritingBox(graph, root).Height));
+        Assert.False(Fitted(graph, root));
+
+        // 되돌리면 꼭 맞던 크기로 — 다시 지은 카드도 꼭 맞음을 잰다.
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        graph.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(fitted, (Card(graph, root).Width, WritingBox(graph, root).Height));
+        Assert.True(Fitted(graph, root));
+    });
+
+    [Fact]
+    public void 짧은_글은_처음_크기가_곧_맞춘_크기라_줄이기가_서지_않는다() => HeadlessUi.Run(() =>
+    {
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        Write(graph, session, root, ["라루: 짧다."]);
+        long revision = session.Editor.Revision;
+
+        Fit(graph, root);
+
+        Assert.Equal(revision, session.Editor.Revision);   // 같은 크기 — 적지 않는다
+        Assert.False(Fitted(graph, root));
+    });
+
+    [Fact]
+    public void 꼭_맞던_카드의_글을_고치면_다시_글에_맞춤이다() => HeadlessUi.Run(() =>
+    {
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        Write(graph, session, root, [Long, "윌로: 응."]);
+        Fit(graph, root);
+        Assert.True(Fitted(graph, root));
+
+        Write(graph, session, root, [Long + " 그래도 참고 걸었다.", "윌로: 응."]);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(Fitted(graph, root));
+    });
+
+    [Fact]
+    public void 다시_연_프로젝트에서도_꼭_맞은_카드는_줄이기다() => HeadlessUi.Run(() =>
+    {
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        Write(graph, session, root, [Long, "윌로: 응."]);
+        Fit(graph, root);
+        session.Save();
+
+        session.Open(session.ProjectPath!);
+        Dispatcher.UIThread.RunJobs();
+        graph.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(Fitted(graph, root));
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -191,6 +268,10 @@ public sealed class CardFitTests : IDisposable
 
     private static Border Card(GraphEditorView graph, string nodeId) =>
         graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>().Single(card => card.Tag as string == nodeId);
+
+    private static bool Fitted(GraphEditorView graph, string nodeId) => FitButton(graph, nodeId).Classes.Contains(GraphEditorView.FittedClass);
+
+    private static Avalonia.Controls.Shapes.Path Glyph(Button button) => Assert.IsType<Avalonia.Controls.Shapes.Path>(button.Content);
 
     private static Button FitButton(GraphEditorView graph, string nodeId) =>
         Card(graph, nodeId).GetVisualDescendants().OfType<Button>().Single(button => button.Tag as string == GraphEditorView.FitButtonTag + nodeId);
