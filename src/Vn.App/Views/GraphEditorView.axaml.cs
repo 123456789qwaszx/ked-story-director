@@ -3240,20 +3240,32 @@ public partial class GraphEditorView : UserControl
         return grip;
     }
 
+    /// <summary>
+    /// 「글에 맞춤」 단추의 한 변 — 제목 줄(<see cref="TitleHeight"/>)보다 크다. 줄의 위아래로 2씩 넘쳐 서므로(카드 여백 · 머리 틈 안) 머리
+    /// 높이는 그대로다(2026-11-19 소유자 — 「엄청 자주 쓰게 될 텐데 조금만 크기를 키워 줘」 · usability UX32 · ⛔ 그 전에는 16 × 18, 글자 12).
+    /// </summary>
+    private const double FitButtonSize = 24;
+
     /// <summary>카드 제목 줄의 「글에 맞춤」 단추 — 초점을 가져가지 않는다(쓰던 글 칸이 그대로 쓰는 중이다).</summary>
     private Button FitButton(string nodeId, CardStyle style)
     {
+        double overflow = (FitButtonSize - TitleHeight) / 2;
         var fit = new Button
         {
             Content = "⤢",
-            FontSize = 12,
-            Padding = new Thickness(3, 0),
+            FontSize = 17,
+            Padding = new Thickness(0),
             MinHeight = 0,
-            Height = TitleHeight - 2,
+            MinWidth = 0,
+            Width = FitButtonSize,
+            Height = FitButtonSize,
             VerticalAlignment = VerticalAlignment.Center,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(4, 0, 0, 0),
-            Background = Brushes.Transparent,
+            Margin = new Thickness(4, -overflow, -overflow, -overflow),
+            CornerRadius = new CornerRadius(4),
+            // 누를 자리가 보이게 옅게 깐다 — 종 색 그대로(제목 줄의 표와 같은 색).
+            Background = new SolidColorBrush(Color.FromArgb(0x1F, style.Accent.R, style.Accent.G, style.Accent.B)),
             BorderThickness = new Thickness(0),
             Foreground = new SolidColorBrush(style.Accent),
             Focusable = false,

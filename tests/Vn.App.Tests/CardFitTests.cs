@@ -150,6 +150,20 @@ public sealed class CardFitTests : IDisposable
         }
     });
 
+    [Fact]
+    public void 단추는_누르기_좋은_크기이고_제목_줄_높이는_그대로다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「엄청 자주 쓰게 될 텐데 조금만 크기를 키워 줘」(usability UX32 · ⛔ 그 전에는 16 × 18 · 글자 12).
+        // 제목 줄은 높이를 지킨다 — 분기 점의 어림 자리와 카드 높이가 그 값으로 센다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        Dispatcher.UIThread.RunJobs();
+        Button fit = FitButton(graph, CardId(session, "root"));
+
+        Assert.Equal((24d, 24d), (fit.Bounds.Width, fit.Bounds.Height));
+        Assert.True(fit.FontSize >= 17);
+        Assert.Equal(20d, ((Grid)fit.Parent!).Bounds.Height);
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private (GraphEditorView Graph, AuthoringSession Session) Show()
