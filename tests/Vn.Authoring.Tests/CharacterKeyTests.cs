@@ -34,7 +34,6 @@ public sealed class CharacterKeyTests
         Speaker speaker = editor.AddSpeaker("하린");
 
         Assert.Equal(new Speaker("하린", "temp_harin"), speaker);
-        Assert.True(CharacterKey.IsTemp(speaker.CharacterId));
         Assert.Equal(start + 1, editor.Revision);
 
         editor.Undo();
@@ -72,6 +71,7 @@ public sealed class CharacterKeyTests
     [Fact]
     public void 임시_키는_앞머리로_가린다()
     {
+        // [구성] 「화자」 탭이 이것으로 ⚠를 붙인다 — 검증 보고는 짚지 않는다(usability UX30).
         Assert.True(CharacterKey.IsTemp("temp_harin"));
         Assert.False(CharacterKey.IsTemp("harin"));
         Assert.False(CharacterKey.IsTemp(string.Empty));

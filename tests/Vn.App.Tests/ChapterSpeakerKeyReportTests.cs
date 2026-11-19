@@ -52,14 +52,16 @@ public sealed class ChapterSpeakerKeyReportTests : IDisposable
     });
 
     [Fact]
-    public void 임시_키인_화자도_검증_보고와_화자_탭이_짚고_키를_바꾸면_걷힌다() => HeadlessUi.Run(() =>
+    public void 화자를_더할_때_선_임시_키는_검증_보고가_짚지_않고_화자_탭만_짚는다() => HeadlessUi.Run(() =>
     {
-        // 화자를 더하면 키가 temp_ + 이름의 로마자로 선다(usability UX29) — 그대로면 그림과 맞지 않는다.
+        // 소유자(usability UX30) — 「임시 키의 경고를 없애고 싶어서 그런 거다 · 구성 탭 검증 보고에서」, 「화자 탭의 경고는 남겨」.
         (ChapterGraphView view, AuthoringSession session) = Show(keepTempKey: true);
 
         Assert.Equal("temp_syatong", session.Project.FindSpeakerCharacterId("샤통"));
-        Assert.Contains("🟡", Header(view));
-        Assert.Contains(Lines(view), line => line.Contains("화자 '샤통'의 캐릭터 키가 아직 임시 키 'temp_syatong'입니다", StringComparison.Ordinal));
+        Assert.DoesNotContain(Lines(view), line => line.Contains("'샤통'", StringComparison.Ordinal));
+        Assert.DoesNotContain("🟡", Header(view));
+
+        // 화자 탭 — 바꿀 키가 남았다는 표.
         Assert.Equal("⚠ 임시 키(temp_)인 화자 1명 — 그림에 맞는 키로 바꿔 주세요.", MissingLine(view));
         Assert.Contains(view.FindControl<StackPanel>("SpeakerListPanel")!.GetLogicalDescendants().OfType<TextBlock>(),
             block => Equals(block.Tag, "speaker-name:샤통") && block.Text == "⚠ 샤통");
@@ -71,7 +73,6 @@ public sealed class ChapterSpeakerKeyReportTests : IDisposable
         key.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
         Dispatcher.UIThread.RunJobs();
 
-        Assert.DoesNotContain(Lines(view), line => line.Contains("'샤통'", StringComparison.Ordinal));
         Assert.Null(MissingLine(view));
     });
 

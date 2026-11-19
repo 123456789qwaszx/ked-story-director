@@ -71,18 +71,12 @@ public sealed class ChapterSpeakerKeyTests
     }
 
     [Fact]
-    public void 임시_키인_화자도_같은_경고로_짚고_키를_바꾸면_걷힌다()
+    public void 임시_키인_화자는_짚지_않는다()
     {
-        // 더할 때 선 임시 키(temp_ + 로마자 · usability UX29)는 아직 정하지 않은 키다 — 그림과 맞지 않는다.
+        // 더할 때 선 임시 키(temp_ + 로마자 · usability UX29)는 정한 키다 — 소유자(UX30): 「임시 키의 경고를 없애고 싶어서 그런 거다」.
         ProjectEditor editor = Editor();
         editor.SetSpeakerCharacterId("샤통", "temp_syatong");
 
-        ChapterDiagnostic temp = Missing(editor).First();
-        Assert.Equal(ChapterDiagnosticSeverity.Warning, temp.Severity);
-        Assert.Contains("화자 '샤통'의 캐릭터 키가 아직 임시 키 'temp_syatong'입니다", temp.Message);
-        Assert.Contains("대사 3줄(처음 나오는 곳 — 에피소드 「치즈 나초 한 접시」)", temp.Message);
-
-        editor.SetSpeakerCharacterId("샤통", "chatong");
         Assert.DoesNotContain(Missing(editor), item => item.Message.Contains("'샤통'", StringComparison.Ordinal));
     }
 
