@@ -82,6 +82,16 @@ internal static class ProjectRefreshPlanner
                 RebuildInspector: true,
                 RebuildCard: true),
 
+            // 카드 하나의 제목만 — 그 카드의 제목 글만 고친다(접은 상자 안이면 판이 스스로 통째로 짓는다 · usability UX15). 하이어아키는 [구성]의
+            // 다시 읽기로 따라온다.
+            // 카드를 골랐으면 그 대사 편집기의 이름 칸이 제가 고친 것이다(다시 세우면 쓰던 칸이 사라진다) — 장면 · 챕터 요약이 서 있으면 그 안의
+            // 에피소드 이름이 낡지 않게 다시 세운다(가볍다).
+            ProjectChangeKind.CardTitle => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: selectedNode is not DialogueNode,
+                RefreshCardTitle: true),
+
             // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
 
@@ -100,4 +110,5 @@ internal readonly record struct ProjectRefreshPlan(
     bool RefreshCardWriting = false,
     bool RefreshAllCardWriting = false,
     bool RefreshSceneFrames = false,
-    bool RebuildCard = false);
+    bool RebuildCard = false,
+    bool RefreshCardTitle = false);

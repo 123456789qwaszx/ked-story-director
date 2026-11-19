@@ -1446,6 +1446,9 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         _session.Editor.UpdateEpisode(chapter.ChapterId, episodeId, title: wanted);
+
+        // 제목은 카드의 곁 자료라 인스펙터를 다시 세우지 않는다(usability UX15) — 비웠으면 칸이 ID를 보이게 여기서 맞춘다(분기 카드와 같다).
+        NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindDialogue(node.Id) ?? node);
         _session.SetStatus(wanted.Length == 0
             ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'{Josa.이가(episodeId)} 보입니다."
             : $"제목을 '{wanted}'{Josa.으로(wanted)} 바꿨습니다. 에피소드ID '{episodeId}'{Josa.은는(episodeId)} 그대로입니다.");

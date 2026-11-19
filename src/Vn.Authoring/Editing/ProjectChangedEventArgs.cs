@@ -52,7 +52,14 @@ public enum ProjectChangeKind
     /// <see cref="ProjectChangedEventArgs.NodeId"/>다. 판은 그 카드만 다시 지을 수 있다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 카드에
     /// 새 줄을 넣을 때마다 [대본] 판을 통째로 다시 지었다(에피소드 160개에서 2초 · usability UX13).
     /// </summary>
-    DialogueLines
+    DialogueLines,
+
+    /// <summary>
+    /// 카드 하나의 보이는 제목(에피소드 제목 · 분기 카드 제목)만 바뀌었다 — 어느 카드인지는 <see cref="ProjectChangedEventArgs.NodeId"/>다. 판은 그 카드의
+    /// 제목 글만 고칠 수 있다. ⛔ 2026-11-19까지는 구조 · <see cref="NodeMetadata"/>여서 제목 하나에 [대본] 판을 통째로 다시 지었다(에피소드 160개에서
+    /// 2.5초 · usability UX15).
+    /// </summary>
+    CardTitle
 }
 
 public sealed class ProjectChangedEventArgs : EventArgs

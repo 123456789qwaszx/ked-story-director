@@ -78,6 +78,39 @@ public sealed class CardLinesRebuildTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 제목을_바꾸면_그_카드의_제목_글만_고치고_접은_상자_안이면_통째로_짓는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 속도 개선 ③(usability UX15). ⛔ 제목 하나에 판을 통째로 다시 지었다 — 에피소드 160개에서 2.5초.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: 1);
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        string a = Card(session, "a");
+        Border card = CardVisual(graph, a);
+        int rails = graph.RailDrawCount;
+        int titles = graph.CardTitleRefreshCount;
+
+        session.Editor.UpdateEpisode("ch01", "a", title: "골목의 끝");
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(titles + 1, graph.CardTitleRefreshCount);
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.Same(card, CardVisual(graph, a));
+        Assert.Equal("골목의 끝", card.GetVisualDescendants().OfType<TextBlock>().Single(block => block.Tag as string == GraphEditorView.CardTitleTag).Text);
+        Assert.Contains(graph.HierarchyView.Rows, row => row.Key == StoryHierarchy.EpisodeKey("ch01", "a") && row.Text == "골목의 끝");
+
+        // 접은 장면 상자 안의 카드 — 이름이 상자의 줄에 선다. 판을 통째로 짓는다.
+        session.SetSceneCollapsed(session.EnsureChapterBoard("ch01"), "opening", true);
+        Dispatcher.UIThread.RunJobs();
+        rails = graph.RailDrawCount;
+        session.Editor.UpdateEpisode("ch01", "a", title: "다시 고친 제목");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(rails + 1, graph.RailDrawCount);
+        Assert.Contains(graph.FindControl<Canvas>("GraphCanvas")!.GetVisualDescendants().OfType<TextBlock>(),
+            block => block.Text?.EndsWith("다시 고친 제목", StringComparison.Ordinal) == true);
+
+        window.Close();
+    });
+
     private static string Card(AuthoringSession session, string episodeId) =>
         EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id;
 

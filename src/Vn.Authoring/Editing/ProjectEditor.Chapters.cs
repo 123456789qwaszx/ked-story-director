@@ -196,12 +196,15 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
         }
 
-        Mutate(() => chapter.Episodes[index] = chapter.Episodes[index] with
+        // 제목만 바꾸면 그 카드의 제목 변경이다 — 판은 그 카드의 제목 글만 고친다(usability UX15 · ⛔ 구조 — 판을 통째로).
+        bool titleOnly = memo is null && sceneId is null && EpisodeNaming.CardFor(Project, chapterId, episodeId) is not null;
+
+        Mutate(titleOnly ? ProjectChangeKind.CardTitle : ProjectChangeKind.Structure, () => chapter.Episodes[index] = chapter.Episodes[index] with
         {
             Title = title ?? chapter.Episodes[index].Title,
             Memo = memo ?? chapter.Episodes[index].Memo,
             SceneId = sceneId?.Trim() ?? chapter.Episodes[index].SceneId
-        });
+        }, titleOnly ? EpisodeNaming.CardFor(Project, chapterId, episodeId)!.Id : null);
     }
 
     /// <summary>그 챕터의 판 — 규칙은 <see cref="EpisodeNaming.BoardOf"/> 하나다.</summary>

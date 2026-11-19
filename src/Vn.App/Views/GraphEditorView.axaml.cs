@@ -2313,6 +2313,29 @@ public partial class GraphEditorView : UserControl
     /// <summary>카드 하나만 다시 지은 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
     internal int CardRebuildCount { get; private set; }
 
+    /// <summary>카드 머리의 제목 글의 표.</summary>
+    internal const string CardTitleTag = "card-title";
+
+    /// <summary>
+    /// <b>카드 하나의 제목 글만 고친다</b> — 에피소드 · 분기 카드의 보이는 제목이 바뀌었을 때(usability UX15). 카드가 판에 펼쳐져 있지 않으면(접은
+    /// 장면 상자 · 접은 판의 줄에 이름이 선다) 판을 통째로 짓는다. ⛔ 2026-11-19까지는 늘 통째로 — 에피소드 160개에서 제목 하나에 2.5초.
+    /// </summary>
+    internal void RefreshCardTitle(string nodeId)
+    {
+        if (FindCard(nodeId)?.Visual.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(block => block.Tag as string == CardTitleTag) is not { } title)
+        {
+            Rebuild();
+            return;
+        }
+
+        title.Text = ShownName(nodeId, title.Text ?? nodeId);
+        CardTitleRefreshCount++;
+    }
+
+    /// <summary>제목 글만 고친 번 — 시험이 본다.</summary>
+    internal int CardTitleRefreshCount { get; private set; }
+
     /// <summary>
     /// 두 투영이 그 카드 말고는 같은가 — 항목(카드 · 접은 상자)의 차례와 자리, 다른 카드의 포트(키 · 쪽 · 글 · 이음), 선(연결)의 키. 그 카드의
     /// 포트는 달라도 된다(카드를 다시 지으며 새로 선다) — 다만 선이 생기거나 사라지면 같지 않다.
@@ -3100,6 +3123,7 @@ public partial class GraphEditorView : UserControl
         var titleName = new TextBlock
         {
             Text = ShownName(node.NodeId, node.NodeName),
+            Tag = CardTitleTag,   // 제목만 바뀌면 이 글만 고친다(RefreshCardTitle)
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,

@@ -26,6 +26,23 @@ public class ProjectRefreshPlannerTests
     }
 
     [Fact]
+    public void 줄_변경은_그_카드만_제목_변경은_제목_글만_다시_한다()
+    {
+        // usability UX13 · UX15 — 판을 통째로 짓지 않는다. 되돌리기는 구조로 받는다.
+        ProjectRefreshPlan lines = ProjectRefreshPlanner.Plan(ProjectChangeKind.DialogueLines, new DialogueNode(name: "장면"));
+        Assert.Equal((false, true, true), (lines.RebuildGraph, lines.RebuildCard, lines.RebuildInspector));
+
+        ProjectRefreshPlan title = ProjectRefreshPlanner.Plan(ProjectChangeKind.CardTitle, new DialogueNode(name: "장면"));
+        Assert.Equal((false, true, false), (title.RebuildGraph, title.RefreshCardTitle, title.RebuildInspector));   // 이름 칸이 제가 고쳤다
+
+        ProjectRefreshPlan titleWithSummary = ProjectRefreshPlanner.Plan(ProjectChangeKind.CardTitle, null);
+        Assert.True(titleWithSummary.RebuildInspector);   // 장면 · 챕터 요약이 서 있으면 그 안의 이름이 낡지 않게
+
+        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.DialogueLines, null, fromHistory: true).RebuildGraph);
+        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.CardTitle, null, fromHistory: true).RebuildGraph);
+    }
+
+    [Fact]
     public void 조건을_편집_중인_SetNode는_유지하고_그래프만_갱신한다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(

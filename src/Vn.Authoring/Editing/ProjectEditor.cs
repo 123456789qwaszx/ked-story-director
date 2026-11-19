@@ -433,7 +433,7 @@ public sealed partial class ProjectEditor
 
         if (Project.FindDialogue(nodeId) is { IsBranchCard: true } card && !string.Equals(card.Title, wanted, StringComparison.Ordinal))
         {
-            Mutate(ProjectChangeKind.NodeMetadata, () => card.Title = wanted);
+            Mutate(ProjectChangeKind.CardTitle, () => card.Title = wanted, card.Id);   // 그 카드의 제목 글만(usability UX15 · ⛔ NodeMetadata)
         }
     }
 

@@ -302,9 +302,14 @@ public partial class MainWindow : Window
         {
             ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(e.Kind, _session.SelectedNode, e.FromHistory);
 
-            if (plan.RebuildGraph || (plan.RebuildCard && e.NodeId is null))
+            if (plan.RebuildGraph || ((plan.RebuildCard || plan.RefreshCardTitle) && e.NodeId is null))
             {
                 Graph.Rebuild();
+            }
+            else if (plan.RefreshCardTitle)
+            {
+                // 카드 하나의 제목만 바뀌었다 — 그 제목 글만 고친다(usability UX15).
+                Graph.RefreshCardTitle(e.NodeId!);
             }
             else if (plan.RebuildCard)
             {

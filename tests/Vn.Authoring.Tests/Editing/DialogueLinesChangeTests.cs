@@ -57,5 +57,22 @@ public sealed class DialogueLinesChangeTests
         Assert.Equal((ProjectChangeKind.DialogueLines, Card("a")), (_raised[^1].Kind, _raised[^1].NodeId));
     }
 
+    [Fact]
+    public void 제목만_바꾸면_그_카드의_제목_변경이고_장면을_바꾸면_구조다()
+    {
+        // usability UX15 — 판은 그 카드의 제목 글만 고친다. ⛔ 구조로 알려 판을 통째로 다시 지었다.
+        _editor.UpdateEpisode("ch01", "a", title: "새 제목");
+        Assert.Equal((ProjectChangeKind.CardTitle, Card("a")), (_raised[^1].Kind, _raised[^1].NodeId));
+
+        _editor.UpdateEpisode("ch01", "a", sceneId: "t");
+        Assert.Equal((ProjectChangeKind.Structure, (string?)null), (_raised[^1].Kind, _raised[^1].NodeId));
+
+        // 분기 카드의 제목도 같다(⛔ NodeMetadata).
+        DialogueNode a = _editor.Project.FindDialogue(Card("a"))!;
+        DialogueNode branch = _editor.AddBranchMarker(a.Id, a.Script.ActiveLines.First().Id);
+        _editor.SetBranchCardTitle(branch.Id, "들렀다 온다");
+        Assert.Equal((ProjectChangeKind.CardTitle, branch.Id), (_raised[^1].Kind, _raised[^1].NodeId));
+    }
+
     private string Card(string episodeId) => EpisodeNaming.CardFor(_editor.Project, "ch01", episodeId)!.Id;
 }
