@@ -148,8 +148,10 @@ public sealed class BoardWorkAmountTests : IDisposable
         Assert.Equal(rails, graph.RailDrawCount);              // 통째로는 한 번도 긋지 않았다
         Assert.InRange(graph.RailFollowRedrawCount - redrawn, 1, 4 * 2 + 2);   // 무리 안팎을 잇는 a의 가지만 — 움직일 때마다 하나
 
-        // 따라간 모습 = 같은 카드로 통째로 그은 모습(끌기 밖의 자리 갱신은 통째로 긋는다) — 반 픽셀 안에서(새로 그은 그림은 배치가
-        // 픽셀에 맞추고, 옮긴 그림은 끈 만큼 그대로 간다).
+        // 따라간 모습 = 같은 카드로 통째로 그은 모습(끌기 밖의 자리 갱신은 통째로 긋는다) — 한 픽셀 안에서. 새로 그은 그림은 새 자리를
+        // 픽셀에 맞추고(반올림 한 번), 옮긴 그림은 옛 자리를 픽셀에 맞춘 데서 끈 만큼(배율 때문에 소수다) 그대로 간다(TranslateTransform) —
+        // 반올림이 두 번 다른 자리에서 일어나 차이는 1 픽셀 아래까지 난다(옛 자리 x.4 · 끈 만큼 0.2 → 0.2 대 1). ⛔ 그 전에는 0.6으로 보아
+        // 글꼴이 다른 맥에서 0.6이 났다(writer-app WA9).
         List<(string Kind, double[] At)> followed = Shapes(graph, canvas);
         graph.RefreshPositions();
         Dispatcher.UIThread.RunJobs();
@@ -162,7 +164,7 @@ public sealed class BoardWorkAmountTests : IDisposable
         {
             Assert.Equal(drawn[index].Kind, followed[index].Kind);
             Assert.Equal(drawn[index].At.Length, followed[index].At.Length);
-            Assert.True(drawn[index].At.Zip(followed[index].At).All(pair => Math.Abs(pair.First - pair.Second) <= 0.6),
+            Assert.True(drawn[index].At.Zip(followed[index].At).All(pair => Math.Abs(pair.First - pair.Second) < 1),
                 $"{drawn[index].Kind} 통째로 [{string.Join(", ", drawn[index].At.Select(value => value.ToString("F1", CultureInfo.InvariantCulture)))}] · " +
                 $"따라감 [{string.Join(", ", followed[index].At.Select(value => value.ToString("F1", CultureInfo.InvariantCulture)))}]");
         }
