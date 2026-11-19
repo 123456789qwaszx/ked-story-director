@@ -25,8 +25,11 @@ public sealed partial class ProjectEditor
     private readonly List<HistoryEntry> _undo = new();
     private readonly List<HistoryEntry> _redo = new();
 
-    /// <summary>되돌리기 기록 한 칸 — 그 편집 앞의 스냅샷과 그 편집의 변경 종류(되돌리기 · 다시 실행이 그 종류로 알린다).</summary>
-    private readonly record struct HistoryEntry(string Snapshot, ProjectChangeKind Kind);
+    /// <summary>
+    /// 되돌리기 기록 한 칸 — 그 편집 앞의 스냅샷, 그 편집의 변경 종류와 바뀐 노드(되돌리기 · 다시 실행이 그 종류 · 그 노드로 알린다 — 노드는
+    /// usability UX21).
+    /// </summary>
+    private readonly record struct HistoryEntry(string Snapshot, ProjectChangeKind Kind, string? NodeId = null);
     private readonly Func<string> _newLineId;
 
     /// <param name="newLineId">
@@ -992,7 +995,7 @@ public sealed partial class ProjectEditor
         HistoryEntry entry = _undo[^1];
         _undo.RemoveAt(_undo.Count - 1);
         _redo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
-        Restore(entry.Snapshot, entry.Kind, fromHistory: true);
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true, entry.NodeId);
     }
 
     public void Redo()
@@ -1005,7 +1008,7 @@ public sealed partial class ProjectEditor
         HistoryEntry entry = _redo[^1];
         _redo.RemoveAt(_redo.Count - 1);
         _undo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
-        Restore(entry.Snapshot, entry.Kind, fromHistory: true);
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true, entry.NodeId);
     }
 
     /// <summary>파일에서 새로 읽었을 때처럼, 기록을 버리고 통째로 갈아 끼운다.</summary>
@@ -1020,11 +1023,12 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 스냅샷으로 되돌린다 — 되돌리기 · 다시 실행은 <b>되돌린 그 편집의 종류</b>로 알린다(2026-11-18 · board-speed PF1). 글 한 줄을 되돌렸는데
     /// 구조가 바뀌었다고 알리면 화면이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 4초). ⛔ 그 전에는 늘 구조로 알렸다.
+    /// 바뀐 노드도 싣는다 — 노드 Id는 스냅샷을 건너도 그대로라, 이은 선 하나를 되돌리면 판이 그 출발의 선만 다시 그을 수 있다(usability UX21).
     /// </summary>
-    private void Restore(string snapshot, ProjectChangeKind kind, bool fromHistory)
+    private void Restore(string snapshot, ProjectChangeKind kind, bool fromHistory, string? nodeId = null)
     {
         Project = ProjectSnapshotCodec.Decode(snapshot);
-        Raise(kind, fromHistory);
+        Raise(kind, fromHistory, nodeId);
     }
 
     private void Mutate(Action change) => Mutate(ProjectChangeKind.Structure, change);
@@ -1036,7 +1040,7 @@ public sealed partial class ProjectEditor
         // 명령 수만큼 쪼개진다.
         if (_batchDepth == 0)
         {
-            PushUndo(new HistoryEntry(ProjectSnapshotCodec.Encode(Project), kind));
+            PushUndo(new HistoryEntry(ProjectSnapshotCodec.Encode(Project), kind, nodeId));
         }
 
         change();
@@ -1122,7 +1126,7 @@ public sealed partial class ProjectEditor
             {
                 if (completed)
                 {
-                    PushUndo(new HistoryEntry(before, changed));
+                    PushUndo(new HistoryEntry(before, changed, batchNodeId));
                     Raise(changed, nodeId: batchNodeId);
                 }
                 else

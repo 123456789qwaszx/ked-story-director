@@ -50,6 +50,25 @@ public sealed class ChoiceRouteRedrawTests : IDisposable
         Assert.Equal([("root", "간다")], graph.ArrivalsInto("b"));
         SameAsFresh(graph, session);
 
+        // 되돌리기 · 다시 실행도 그 출발의 선만 다시 긋는다(usability UX21 · ⛔ 판을 통째로 다시 그렸다).
+        rails = graph.RailDrawCount;
+        cards = CardVisuals(graph);
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("a", Assert.Single(Edges(session)).ToEpisodeId);
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.All(cards, pair => Assert.Same(pair.Value, CardVisuals(graph)[pair.Key]));
+        Assert.Equal([("root", "간다")], graph.ArrivalsInto("a"));
+        Assert.Empty(graph.ArrivalsInto("b"));
+        SameAsFresh(graph, session);
+
+        rails = graph.RailDrawCount;
+        session.Editor.Redo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("b", Assert.Single(Edges(session)).ToEpisodeId);
+        Assert.Equal(rails, graph.RailDrawCount);
+        SameAsFresh(graph, session);
+
         window.Close();
     });
 

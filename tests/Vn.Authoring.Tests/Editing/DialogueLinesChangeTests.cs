@@ -32,10 +32,10 @@ public sealed class DialogueLinesChangeTests
         _editor.ApplyScenarioText(Card("a"), "라루: 첫 줄!\n라루: 둘째 줄.");
         Assert.Equal(ProjectChangeKind.DialogueContent, _raised[^1].Kind);
 
-        // 되돌리기는 그 종류로 오되 노드는 싣지 않는다 — 되돌리면 객체가 모두 새것이라 화면이 스스로 정한다.
+        // 되돌리기도 그 종류 · 그 노드로 온다(usability UX21) — 받는 법은 화면이 정한다(줄 변경의 되돌리기는 구조로 받는다).
         _editor.Undo();
         _editor.Undo();
-        Assert.Equal((ProjectChangeKind.DialogueLines, true, (string?)null), (_raised[^1].Kind, _raised[^1].FromHistory, _raised[^1].NodeId));
+        Assert.Equal((ProjectChangeKind.DialogueLines, true, Card("a")), (_raised[^1].Kind, _raised[^1].FromHistory, _raised[^1].NodeId));
     }
 
     [Fact]

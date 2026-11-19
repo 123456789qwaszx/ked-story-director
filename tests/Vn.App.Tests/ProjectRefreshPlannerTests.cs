@@ -52,7 +52,9 @@ public class ProjectRefreshPlannerTests
         ProjectRefreshPlan condition = ProjectRefreshPlanner.Plan(ProjectChangeKind.ChapterCondition, null);
         Assert.Equal((false, true, true), (condition.RebuildGraph, condition.RefreshBranchConditions, condition.RebuildInspector));
 
-        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceDetail, null, fromHistory: true).RebuildGraph);
+        // 선택지의 되돌리기는 그 변경과 같은 길이다(usability UX21) — 조건의 되돌리기는 구조로 받는다.
+        Assert.Equal(choice, ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceDetail, new DialogueNode(name: "장면"), fromHistory: true));
+        Assert.Equal(choice, ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceRoute, new DialogueNode(name: "장면"), fromHistory: true));
         Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.ChapterCondition, null, fromHistory: true).RebuildGraph);
     }
 

@@ -15,7 +15,7 @@ internal static class ProjectRefreshPlanner
     /// <param name="fromHistory">
     /// 되돌리기 · 다시 실행에서 왔다(<see cref="ProjectChangedEventArgs.FromHistory"/>) — 프로젝트의 객체가 모두 새것이다. 그래서 가볍게 받는 것은
     /// 화면이 객체를 붙들지 않는 종류뿐이다(2026-11-18 · board-speed PF1): 글(카드의 글 칸들을 다시 채운다 — 되돌린 글이 고른 카드의 것이라는
-    /// 보장이 없다) · [구성] 자리 · 화자. 그 밖은 구조로 받는다 — 예컨대 접은 장면 상자는 지을 때의 판 객체로 끌기를 잰다. ⛔ 그 전에는
+    /// 보장이 없다) · [구성] 자리 · 화자 · 선택지(usability UX21). 그 밖은 구조로 받는다 — 화면이 무엇을 붙드는지 하나씩 확인한 종류만 가볍게 받는다. ⛔ 그 전에는
     /// 되돌리기가 늘 구조로 알려 글 한 줄을 되돌려도 판을 통째로 다시 지었다.
     /// </param>
     public static ProjectRefreshPlan Plan(ProjectChangeKind kind, StoryNode? selectedNode, bool fromHistory = false)
@@ -30,6 +30,10 @@ internal static class ProjectRefreshPlanner
                     RebuildInspector: false,
                     RefreshAllCardWriting: true),
                 ProjectChangeKind.ChapterLayout or ProjectChangeKind.Content => default,
+
+                // 선택지 — [대본] 판은 선택지 쪽에 객체를 붙들지 않는다(카드 · 철도 · 접은 상자는 값만 쥐고 누를 때 프로젝트에서 찾는다). 알림이 실은
+                // 출발 카드의 철도만 다시 긋는다 — 판이 다른 것도 바뀌었다고 보면 스스로 통째로 짓는다(usability UX21 · ⛔ 구조).
+                ProjectChangeKind.ChoiceDetail or ProjectChangeKind.ChoiceRoute => Plan(kind, selectedNode),
                 _ => Plan(ProjectChangeKind.Structure, selectedNode)
             };
         }

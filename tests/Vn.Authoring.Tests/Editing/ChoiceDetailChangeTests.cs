@@ -37,9 +37,11 @@ public sealed class ChoiceDetailChangeTests
         _editor.UpdateEdge("ch01", "a", "c", matchOptionLabel: "남는다", lockedMessage: "아직은 못 간다");
         Assert.Equal((ProjectChangeKind.ChoiceDetail, Card("a")), (_raised[^1].Kind, _raised[^1].NodeId));
 
-        // 되돌리기는 그 종류로 오되 노드는 싣지 않는다 — 화면이 스스로 정한다(되돌리면 객체가 모두 새것이다).
+        // 되돌리기도 그 종류 · 그 출발 카드로 온다(usability UX21) — 판은 그 출발의 선만 다시 긋는다.
         _editor.Undo();
-        Assert.Equal((ProjectChangeKind.ChoiceDetail, true, (string?)null), (_raised[^1].Kind, _raised[^1].FromHistory, _raised[^1].NodeId));
+        Assert.Equal((ProjectChangeKind.ChoiceDetail, true, Card("a")), (_raised[^1].Kind, _raised[^1].FromHistory, _raised[^1].NodeId));
+        _editor.Redo();
+        Assert.Equal((ProjectChangeKind.ChoiceDetail, true, Card("a")), (_raised[^1].Kind, _raised[^1].FromHistory, _raised[^1].NodeId));
     }
 
     [Fact]

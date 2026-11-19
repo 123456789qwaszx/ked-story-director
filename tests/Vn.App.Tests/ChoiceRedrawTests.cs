@@ -88,11 +88,14 @@ public sealed class ChoiceRedrawTests : IDisposable
         Assert.Equal("자동", SlotTexts(graph, "root")[0]);
         Assert.Equal([("root", "(진행)")], graph.ArrivalsInto("a"));
 
-        // 되돌리기는 판을 통째로 짓는다(되돌리면 객체가 모두 새것이다).
+        // 되돌리기도 그 출발의 선만 다시 긋는다(usability UX21 · ⛔ 판을 통째로 지었다).
         session.Editor.Undo();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(rails + 1, graph.RailDrawCount);
+        Assert.Equal(choices + 4, graph.ChoiceRedrawCount);
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.Same(card, CardVisual(graph, Card(session, "root")));
         Assert.Equal("간다", SlotTexts(graph, "root")[0]);
+        Assert.Equal([("root", "간다")], graph.ArrivalsInto("a"));
 
         window.Close();
     });

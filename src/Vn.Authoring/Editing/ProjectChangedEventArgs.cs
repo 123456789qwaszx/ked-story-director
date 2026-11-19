@@ -96,7 +96,8 @@ public sealed class ProjectChangedEventArgs : EventArgs
 
     /// <summary>
     /// 바뀐 노드가 하나로 정해지면 그 노드 — <see cref="ProjectChangeKind.DialogueLines"/> · <see cref="ProjectChangeKind.CardTitle"/> ·
-    /// <see cref="ProjectChangeKind.ChoiceDetail"/> · <see cref="ProjectChangeKind.ChoiceRoute"/>(출발 카드)가 싣는다. 모르거나 여럿이면 null.
+    /// <see cref="ProjectChangeKind.ChoiceDetail"/> · <see cref="ProjectChangeKind.ChoiceRoute"/>(출발 카드)가 싣는다. 모르거나 여럿이면 null. 되돌리기 ·
+    /// 다시 실행도 그 편집의 노드를 싣는다(노드 Id는 스냅샷을 건너도 그대로다 · usability UX21).
     /// </summary>
     public string? NodeId { get; }
 
