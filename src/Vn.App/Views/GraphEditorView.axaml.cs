@@ -35,7 +35,7 @@ public partial class GraphEditorView : UserControl
     private const double CardWidth = BoardSize.CardWidth;   // 판 크기 계산(BoardResize)과 같은 값 — 한 곳에서 정한다
 
     // 카드 크기는 사람이 가장자리를 끌어 키운다 — 오른쪽은 폭, 아래는 글 칸 높이, 오른쪽 아래 모서리는 둘 다. 기본보다 작게는
-    // 줄이지 않는다(머리 · 포트 줄이 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다). 끝은 판의 가장 작은 변이다 — 판보다 큰 카드는
+    // 줄이지 않는다(머리가 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다). 끝은 판의 가장 작은 변이다 — 판보다 큰 카드는
     // 쓸 데가 없다(2026-11-19 소유자 — 「크기 제한을 없애거나 더 늘릴 필요」 · usability UX4 · ⛔ 그 전에는 폭 720 · 글 칸 높이 900).
     internal const double MaxCardWidth = BoardSize.Minimum;
     internal const double MaxWritingHeight = BoardSize.Minimum;
@@ -57,13 +57,12 @@ public partial class GraphEditorView : UserControl
     /// <summary>글에 맞출 때 더하는 몫 — 커서 · 반올림에 줄이 꺾이지 않게.</summary>
     private const double FitSlack = 4;
 
-    // 카드 머리 = 제목 한 줄과 그 아래 틈. 포트 줄의 자리(PortAnchor)가 이 값으로 세므로 머리는 높이를 고정한다 —
+    // 카드 머리 = 제목 한 줄과 그 아래 틈. 아직 재지 않은 분기 점의 자리(LineAnchor)와 카드 높이가 이 값으로 세므로 머리는 높이를 고정한다 —
     // 글꼴에 맡기면 선 끝이 점에서 비껴 닿는다(2026-10-29까지 부제를 둔 머리가 41px인데 46으로 세어 5px 아래에 닿았다).
     // ⛔ 제목 아래의 부제(「대사 · 📄 에피소드 · {대본} · k줄」)는 2026-10-29에 걷혔다(소유자: "이 정보는 필요없으니까 치워").
     private const double TitleHeight = 20;
     private const double HeaderGap = 6;
     private const double HeaderHeight = TitleHeight + HeaderGap;
-    private const double PortRowHeight = 24;
     private const double CardPadding = 8;
     private const double CardBorder = 1;
     private const double PortRadius = 6;
@@ -2488,7 +2487,7 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// <b>카드 하나만 다시 짓는다</b> — 그 대사 노드의 줄이 생기거나 빠지거나 옮겨졌을 때(카드 글 칸에 새 줄 · usability UX13). 줄은 그 카드 안의
-    /// 일이다 — 글 칸 · 줄에 걸린 분기 점 · 포트 줄. 다른 카드 · 선 · 접은 상자가 그대로인지 새 투영으로 견주고(<see cref="OnlyCardChanged"/>),
+    /// 일이다 — 글 칸 · 줄에 걸린 분기 점. 다른 카드 · 선 · 접은 상자가 그대로인지 새 투영으로 견주고(<see cref="OnlyCardChanged"/>),
     /// 아니면(분기가 걸린 줄을 지워 선이 사라졌다 따위) 판을 통째로 짓는다. 쓰던 칸의 초점 · 커서 · 넣지 않은 글은 <see cref="Rebuild"/>와 같은
     /// 길로 새 칸에 옮긴다. 철도는 따라간다 — 카드 크기가 바뀌었으면 그 카드에 기대는 묶음만 다시 긋는다.
     /// ⛔ 2026-11-19까지는 판을 통째로 다시 지었다 — 에피소드 160개에서 새 줄 하나에 2초.
@@ -2594,7 +2593,7 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// 두 투영이 선택지 칸의 문구 · 이음 말고는 같은가 — 선택지가 바뀌거나 생기거나 걷혔을 때(<see cref="RedrawChoices"/>). 선택지 칸은 카드 안에 서지
-    /// 않고 철도 위에 선다(카드의 포트 줄은 선택지를 빼고 짓는다). 칸의 수가 바뀌면(넷째 길) 같지 않다.
+    /// 않고 철도 위에 선다(카드의 포트는 선택지를 빼고 짓는다). 칸의 수가 바뀌면(넷째 길) 같지 않다.
     /// </summary>
     internal static bool OnlyChoicesChanged(GraphProjection before, GraphProjection after) =>
         SameBoard(before, after, exceptNodeId: null, choiceLabels: true);
@@ -2961,7 +2960,7 @@ public partial class GraphEditorView : UserControl
             _session.ExpandedFileIds,
             _session.CollapsedScenes);
 
-        // 카드를 옮겨 분기의 도착이 출발 카드를 넘었으면 포트가 반대쪽으로 선다 — 포트 줄은 카드 안에 지어지므로 카드부터 다시 짓는다.
+        // 카드를 옮겨 분기의 도착이 출발 카드를 넘었으면 분기 점이 반대쪽 가장자리로 선다 — 점은 카드와 함께 지어지므로 카드부터 다시 짓는다.
         // 끌기 없이 크기만 바뀐 것(되돌리기 · 두 번 눌러 기본 크기)도 다시 짓는다 — 카드 높이는 배치가 끝나야 재므로 자리만
         // 고치면 레일이 옛 높이에 선다.
         if (PortSidesChanged(_projection) || SizesChanged())
@@ -3750,17 +3749,10 @@ public partial class GraphEditorView : UserControl
             TitleRow = title
         };
 
-        // ⭐ 「조건 분기」 포트는 포트 줄에 서지 않는다 — 점이 글 칸의 <b>그 대사 높이</b>에 선다(아래 BuildLineKnob ·
-        //    2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에 분기 점이 생성되도록"*).
-        for (int index = 0; index < inCard.Count; index++)
-        {
-            if (!visual.IsLinePort(index))
-            {
-                body.Children.Add(BuildPortRow(inCard[index], visual, index));
-            }
-        }
-
-        // 글 칸은 포트 줄들 <b>아래</b>에 선다 — 포트의 자리 계산(PortAnchor)이 머리 바로 밑부터 센다.
+        // ⭐ 카드의 포트는 「조건 분기」의 점뿐이다 — 카드 안 줄에 서지 않고 글 칸의 <b>그 대사 높이</b>에 선다(아래 BuildLineKnob ·
+        //    2026-10-30 소유자: *"어떤 대사에서 분기가 시작되는지, 대사의 정확한 위치에 분기 점이 생성되도록"*). ⛔ 머리 밑에 포트 줄을 세우던
+        //    것(`BuildPortRow` — 조건 갈래의 IF 포트)은 2026-11-19에 걷혔다 — 그 줄에 서던 갈래 출구가 UX28에서 걷혀 쓰는 포트가 없었다(UX31).
+        // 글 칸은 머리 바로 밑에 선다.
         if (node.NodeKind == GraphNodeKind.Dialogue)
         {
             TextBox box = BuildWritingBox(node.NodeId);
@@ -3770,7 +3762,7 @@ public partial class GraphEditorView : UserControl
             // 글 칸이 있는 카드만 아래로 늘린다 — 모서리가 맨 위에 얹혀 두 가장자리가 만나는 자리를 받는다.
             frame.Children.Add(BuildResizeGrip(visual, ResizeEdges.Bottom));
 
-            if (visual.HasLinePorts)
+            if (visual.Ports.Count > 0)
             {
                 // 칸이 배치를 마칠 때마다(처음 · 크기 · 스크롤 · 글이 바뀔 때) 분기 점의 높이를 다시 잰다.
                 box.LayoutUpdated += (_, _) => MeasureLineAnchors(visual);
@@ -3790,12 +3782,9 @@ public partial class GraphEditorView : UserControl
 
         for (int index = 0; index < inCard.Count; index++)
         {
-            if (visual.IsLinePort(index))
-            {
-                Ellipse knob = BuildLineKnob(inCard[index], visual, index);
-                visual.LineKnobs[inCard[index].Key] = knob;
-                GraphCanvas.Children.Add(knob);
-            }
+            Ellipse knob = BuildLineKnob(inCard[index], visual, index);
+            visual.LineKnobs[inCard[index].Key] = knob;
+            GraphCanvas.Children.Add(knob);
         }
 
         // 한 대사(의 같은 쪽)에 분기가 둘 이상이면 그 점들을 공통 점 하나로 접는다 — 누르면 펼친다.
@@ -4856,61 +4845,6 @@ public partial class GraphEditorView : UserControl
     private IBrush SlotDot(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
         !choice.IsEmpty ? SlotJoined : IsLive(choice, slots) ? SlotLive : SlotAsleep;
 
-    private Control BuildPortRow(GraphOutputPortProjection port, NodeCard card, int index)
-    {
-        bool branch = port.Kind == GraphOutputPortKind.ExecutionBranch;
-
-        var label = new TextBlock
-        {
-            Text = port.Label,
-            FontSize = 10,
-            FontWeight = branch ? FontWeight.SemiBold : FontWeight.Normal,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center,
-            HorizontalAlignment = port.OnLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right
-        };
-
-        IBrush portBrush = branch ? BranchPalette.Accent(port.PaletteIndex) : Brushes.DimGray;
-
-        // ⚠ 갈래가 아닐 때 Foreground를 null로 <b>적으면</b> 글이 사라진다 — 테마 값을 덮는다.
-        if (branch)
-        {
-            label.Foreground = portBrush;
-        }
-
-        var knob = new Ellipse
-        {
-            Width = PortRadius * 2,
-            Height = PortRadius * 2,
-            // 점의 가운데가 카드 가장자리에 걸린다 — 이 카드보다 왼쪽 카드로 가는 포트는 왼쪽 가장자리다(2026-10-29 소유자).
-            Margin = port.OnLeft
-                ? new Thickness(-CardPadding - SpineInset - PortRadius, 0, 6, 0)
-                : new Thickness(6, 0, -CardPadding - PortRadius, 0),
-            Fill = port.IsConnected ? portBrush : Brushes.Transparent,
-            Stroke = portBrush,
-            StrokeThickness = 2,
-            VerticalAlignment = VerticalAlignment.Center,
-            // 왼쪽 칸은 음수 여백이 넓어 열 폭이 0이 된다 — 가운데로 밀리지 않게 가장자리에 붙인다.
-            HorizontalAlignment = port.OnLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right,
-            Cursor = new Cursor(StandardCursorType.Hand)
-        };
-
-        knob.PointerPressed += (_, args) => OnPortPressed(port, card, index, args);
-
-        var row = new Grid
-        {
-            Height = PortRowHeight,
-            ColumnDefinitions = new ColumnDefinitions(port.OnLeft ? "Auto,*" : "*,Auto")
-        };
-
-        Grid.SetColumn(label, port.OnLeft ? 1 : 0);
-        Grid.SetColumn(knob, port.OnLeft ? 0 : 1);
-        row.Children.Add(label);
-        row.Children.Add(knob);
-
-        return row;
-    }
-
     /// <summary>지금 문구를 적고 있는 칸. 없으면 null.</summary>
     private string? _editingSlot;
 
@@ -5228,44 +5162,32 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 펼쳐진 노드 카드의 출력 포트 좌표 — 왼쪽 포트(<see cref="GraphOutputPortProjection.OnLeft"/>)면 왼쪽 가장자리다.
-    /// 포트 줄의 포트는 그 줄의 가운데, 「조건 분기」는 글 칸의 그 대사 높이다(<see cref="MeasureLineAnchors"/>).
+    /// 펼쳐진 노드 카드의 출력 포트 좌표 — 「조건 분기」의 점이고, 글 칸의 그 대사 높이 · 카드 가장자리다(<see cref="MeasureLineAnchors"/> ·
+    /// 왼쪽 포트(<see cref="GraphOutputPortProjection.OnLeft"/>)면 왼쪽 가장자리).
     /// </summary>
     private static Point PortAnchor(NodeCard card, int portIndex)
     {
-        double x = Canvas.GetLeft(card.Visual) + (card.Ports[portIndex].OnLeft ? 0 : card.Visual.Width);
+        Point line = LineAnchor(card, portIndex);
+        string group = card.GroupOf(portIndex);
+        IReadOnlyList<int> members = card.LineGroups[group];
 
-        if (card.IsLinePort(portIndex))
+        // 접혀 있으면(또는 혼자면) 그 대사 옆 — 공통 점에서 나간다. 펼쳤으면 카드 밖으로 갈라진 제 점에서.
+        if (members.Count < 2 || !card.ExpandedGroups.Contains(group))
         {
-            Point line = LineAnchor(card, portIndex);
-            string group = card.GroupOf(portIndex);
-            IReadOnlyList<int> members = card.LineGroups[group];
-
-            // 접혀 있으면(또는 혼자면) 그 대사 옆 — 공통 점에서 나간다. 펼쳤으면 카드 밖으로 갈라진 제 점에서.
-            if (members.Count < 2 || !card.ExpandedGroups.Contains(group))
-            {
-                return line;
-            }
-
-            int order = members.ToList().IndexOf(portIndex);
-            double outward = card.Ports[portIndex].OnLeft ? -1 : 1;
-
-            return new Point(
-                line.X + (outward * BranchFanOut),
-                line.Y + ((order - ((members.Count - 1) / 2.0)) * BranchFanStep));
+            return line;
         }
 
-        double y = Canvas.GetTop(card.Visual)
-            + CardBorder + CardPadding + HeaderHeight
-            + (card.RowOf(portIndex) * PortRowHeight) + (PortRowHeight / 2);
+        int order = members.ToList().IndexOf(portIndex);
+        double outward = card.Ports[portIndex].OnLeft ? -1 : 1;
 
-        return new Point(x, y);
+        return new Point(
+            line.X + (outward * BranchFanOut),
+            line.Y + ((order - ((members.Count - 1) / 2.0)) * BranchFanStep));
     }
 
     /// <summary>
     /// 「조건 분기」의 점 — 카드 가장자리, 글 칸의 그 대사 높이에 선다(<see cref="PlaceLineKnobs"/>). 카드 밖(판)에 서는
-    /// 까닭: 글 칸은 줄이 접히고 스크롤해서 높이가 배치를 마친 뒤에야 정해진다 — 포트 줄처럼 카드 안 줄로 지을 수 없다.
-    /// 누르면 포트 줄의 점과 같다(끌어 다른 카드로 잇는다).
+    /// 까닭: 글 칸은 줄이 접히고 스크롤해서 높이가 배치를 마친 뒤에야 정해진다 — 카드 안 줄로 지을 수 없다. 끌어 다른 카드로 잇는다.
     /// </summary>
     private Ellipse BuildLineKnob(GraphOutputPortProjection port, NodeCard card, int index)
     {
@@ -5298,8 +5220,7 @@ public partial class GraphEditorView : UserControl
         double x = Canvas.GetLeft(card.Visual) + (card.Ports[portIndex].OnLeft ? 0 : card.Visual.Width);
 
         // 아직 재지 않았으면(첫 배치 전) 글 칸의 위 끝이다.
-        double fallback = CardBorder + CardPadding + HeaderHeight + (card.RowCount * PortRowHeight) +
-                          WritingBoxGap + PortRadius + 2;
+        double fallback = CardBorder + CardPadding + HeaderHeight + WritingBoxGap + PortRadius + 2;
         string? lineId = card.Ports[portIndex].ExecutionPort?.BranchOpenLineId;
 
         return new Point(
@@ -6035,7 +5956,7 @@ public partial class GraphEditorView : UserControl
     {
         return card.Visual.Bounds.Height > 0
             ? card.Visual.Bounds.Height
-            : HeaderHeight + (card.RowCount * PortRowHeight) + ((CardPadding + CardBorder) * 2) +
+            : HeaderHeight + ((CardPadding + CardBorder) * 2) +
               (card.WritingBox is { } box ? WritingBoxGap + box.Height : 0);
     }
 
@@ -7350,19 +7271,8 @@ public partial class GraphEditorView : UserControl
                 : Ports.ToList().FindIndex(port => string.Equals(port.Key, key, StringComparison.Ordinal));
         }
 
-        /// <summary>
-        /// 글 칸 안 대사 높이에 서는 포트인가 — 대사 카드의 「조건 분기」다(2026-10-30). 포트 줄에 서지 않는다.
-        /// </summary>
-        public bool IsLinePort(int index) =>
-            NodeKind == GraphNodeKind.Dialogue && Ports[index].ExecutionPort?.Kind == ExitPortKind.Detour;
-
-        public bool HasLinePorts => Enumerable.Range(0, Ports.Count).Any(IsLinePort);
-
-        /// <summary>포트 줄의 수 — 분기 점은 줄을 차지하지 않는다.</summary>
-        public int RowCount => Enumerable.Range(0, Ports.Count).Count(index => !IsLinePort(index));
-
-        /// <summary>그 포트가 몇 번째 포트 줄인가.</summary>
-        public int RowOf(int index) => Enumerable.Range(0, index).Count(before => !IsLinePort(before));
+        // ⛔ 포트를 「글 칸 안 대사 높이의 점」과 「머리 밑 포트 줄」로 가르던 것(`IsLinePort` · `RowCount` · `RowOf`)은 2026-11-19에 걷혔다
+        //    (usability UX31) — 카드의 포트는 「조건 분기」의 점뿐이다(`Ports` — 선택지 칸은 따로 선다).
 
         /// <summary>카드의 글 칸. 대사 카드가 아니면 null.</summary>
         public TextBox? WritingBox { get; set; }
@@ -7377,9 +7287,8 @@ public partial class GraphEditorView : UserControl
         public Dictionary<string, Ellipse> LineKnobs { get; } = new(StringComparer.Ordinal);
 
         /// <summary>분기가 걸린 대사들(LineId) — 다녀오는 차례대로.</summary>
-        public IEnumerable<string> BranchLines => Enumerable.Range(0, Ports.Count)
-            .Where(IsLinePort)
-            .Select(index => Ports[index].ExecutionPort!.BranchOpenLineId)
+        public IEnumerable<string> BranchLines => Ports
+            .Select(port => port.ExecutionPort!.BranchOpenLineId)
             .OfType<string>()
             .Distinct(StringComparer.Ordinal);
 
@@ -7392,7 +7301,6 @@ public partial class GraphEditorView : UserControl
 
         /// <summary>무리마다 그 분기 점들의 포트 차례 — 다녀오는 차례대로(펼치면 위에서 아래로 선다).</summary>
         public IReadOnlyDictionary<string, IReadOnlyList<int>> LineGroups => _lineGroups ??= Enumerable.Range(0, Ports.Count)
-            .Where(IsLinePort)
             .GroupBy(GroupOf, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => (IReadOnlyList<int>)group.ToList(), StringComparer.Ordinal);
 

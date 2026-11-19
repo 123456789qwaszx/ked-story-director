@@ -19,14 +19,14 @@ public sealed record BoardSize(double Width, double Height)
 
     /// <summary>
     /// 카드 하나가 판에서 차지하는 기본 크기 — [대본] 판(<c>GraphEditorView</c>)이 그리는 값과 같다. 폭 · 글 칸 높이는 사람이 늘리면
-    /// <see cref="NodeLayout.Width"/> · <see cref="NodeLayout.WritingHeight"/>가 정하고, 높이는 카드 머리 · 포트 줄 · 아래 선택지 칸까지 친다.
+    /// <see cref="NodeLayout.Width"/> · <see cref="NodeLayout.WritingHeight"/>가 정하고, 높이는 카드 머리 · 아래 선택지 칸까지 친다.
     /// </summary>
     public const double CardWidth = 210;
 
     /// <summary>카드 글 칸의 기본 높이.</summary>
     public const double CardWritingHeight = 88;
 
-    /// <summary>카드 하나가 세로로 차지하는 기본 자리(글 칸이 기본 높이일 때 — 머리 · 포트 줄 · 아래 선택지 칸 포함).</summary>
+    /// <summary>카드 하나가 세로로 차지하는 기본 자리(글 칸이 기본 높이일 때 — 머리 · 아래 선택지 칸 포함 · 자리를 넉넉히 잡는 값이다).</summary>
     public const double CardHeight = 240;
 
     /// <summary>판을 따로 정하지 않은 프로젝트의 크기 — 2026-11-17 전의 고정값 그대로.</summary>
