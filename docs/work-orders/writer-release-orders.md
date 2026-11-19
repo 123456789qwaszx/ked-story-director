@@ -81,3 +81,8 @@
   ([`docs/project-repo/README.md`](../project-repo/README.md) 3절). 기본 가지는 소유자가 설정에서 `main`으로 바꾼다(이 세션의 GitHub 연결로는
   저장소 설정을 못 바꾼다).
 - `release.yml`의 머리 말 · 3절의 Target을 `main`으로 고쳤다. 4절의 4 · 5번을 zip 단계(5절)에 맞췄다.
+- **했다** — 합침 커밋 `3b80eb7`(부모 `f2a7bdc` · `6d8394c`, 트리는 `dev`와 같음)으로 `main` · `dev`를 앞감기했다(강제 밀기 없음 · 두 가지의
+  시험 작업 통과). 소유자가 기본 가지를 `main`으로 바꿨다.
+- **첫 릴리스** — 소유자가 `v0.1.0`(Target `main` · 「스토리 디렉터 0.1.0」)을 폈다. 릴리스 작업의 첫 실행이 통과했다(Windows · 맥 각각 시험 → 굽기 →
+  붙이기, 4분쯤) — `StoryDirector-0.1.0-windows.zip`(44.7MB) · `StoryDirector-0.1.0-mac.zip`(46.2MB)이 붙었다. WR4의 「끝까지 돌려 보지는 못했다」가
+  이것으로 풀렸다. 릴리스 페이지에 GitHub가 저절로 붙이는 「Source code」 둘은 코드 묶음이라 건네지 않는다.
