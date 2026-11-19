@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Views;
 using Vn.Authoring.Chapters;
 
 namespace Vn.App;
@@ -280,7 +281,7 @@ public partial class MainWindow
         box.LostFocus += (_, _) => Commit();
         box.AddHandler(KeyDownEvent, (_, args) =>
         {
-            if (args.Key == Key.Enter && args.KeyModifiers.HasFlag(KeyModifiers.Control))
+            if (args.Key == Key.Enter && PlatformKeys.HasCommand(args.KeyModifiers))   // 맥은 ⌘Enter도
             {
                 args.Handled = true;
                 Commit();

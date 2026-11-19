@@ -35,11 +35,12 @@
                         <MenuItem x:Name="OpenMenuItem" Header="열기…"
                                   ToolTip.Tip="프로젝트 폴더를 고릅니다." />
                         <Separator />
-                        <MenuItem x:Name="SaveMenuItem" Header="저장" InputGesture="Ctrl+S" />
+                        <!-- 단축키 글(Ctrl+S · 맥은 ⌘S)은 코드가 단다 — OS마다 갈리는 것은 PlatformKeys 한 벌이다(MainWindow.axaml.cs). -->
+                        <MenuItem x:Name="SaveMenuItem" Header="저장" />
                         <Separator />
-                        <MenuItem x:Name="UndoMenuItem" Header="되돌리기" InputGesture="Ctrl+Z"
+                        <MenuItem x:Name="UndoMenuItem" Header="되돌리기"
                                   ToolTip.Tip="방금 한 편집 하나를 되돌립니다." />
-                        <MenuItem x:Name="RedoMenuItem" Header="다시 실행" InputGesture="Ctrl+Y"
+                        <MenuItem x:Name="RedoMenuItem" Header="다시 실행"
                                   ToolTip.Tip="되돌린 편집을 다시 합니다." />
                     </MenuItem>
                 </Menu>

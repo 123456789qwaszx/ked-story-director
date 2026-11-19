@@ -802,7 +802,7 @@ internal sealed class SettingsWindow : Window
                 grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
                 Place(grid, new TextBlock
                 {
-                    Text = entry.Keys,
+                    Text = PlatformKeys.Label(entry.Keys),   // 맥에서는 ⌘ · ⌫로 보인다
                     FontSize = 11,
                     FontWeight = FontWeight.SemiBold,
                     TextWrapping = TextWrapping.Wrap,

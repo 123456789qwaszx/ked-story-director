@@ -6,6 +6,8 @@
 ///
 /// 원천은 이 표 한 벌이다. 키를 더하거나 바꾸면 여기와 <c>docs/writer-guide.md</c>를 함께 고친다. 실제로 듣는 것만 적는다 — 적어 두고 안
 /// 들으면 표가 거짓말을 한다(그래서 이 표를 만들며 하이어아키 화살표가 실제 앱에서 듣지 않던 것을 고쳤다).
+///
+/// 키는 「Ctrl+S」 · 「Delete」 꼴로 한 벌만 적는다 — 맥에서는 설정 창이 보일 때 ⌘ · ⌫로 바꾼다(<see cref="PlatformKeys.Label"/> · writer-app WA1).
 /// </summary>
 internal static class Shortcuts
 {
