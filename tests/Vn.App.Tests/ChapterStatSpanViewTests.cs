@@ -168,6 +168,24 @@ public sealed class ChapterStatSpanViewTests : IDisposable
         Assert.Equal(1, ((Control)row.KeyBlock.Parent!.Parent!).Opacity);
     });
 
+    [Fact]
+    public void 활성_비활성_스탯은_카드와_선_위에서_활성_비활성으로_읽는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「모두 활성 / 비활성으로 맞춰」(usability UX12). ⛔ 카드는 「참/거짓/참·거짓」, 선 위는 「→ 예/아니오」였다.
+        _editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("met", 0, 0, 1, ChapterStatType.Bool));
+        _editor.UpdateEdge("ch01", "ep1", "싼길", statChanges: "trust +1; met true");
+
+        Canvas canvas = Render();
+
+        Assert.Contains("met 활성", StatLine(canvas, "싼길"));
+        Assert.Contains("met 비활성", StatLine(canvas, "비싼길"));
+        Assert.Contains("met 활성·비활성", StatLine(canvas, "합류"));
+
+        List<ChapterStat> stats = _editor.FindChapter("ch01")!.Stats;
+        Assert.Equal("met → 활성", ChapterGraphView.DeltaText(stats, new StatDelta("met", 1, StatChangeKind.Set)));
+        Assert.Equal("met → 비활성", ChapterGraphView.DeltaText(stats, new StatDelta("met", 0, StatChangeKind.Set)));
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>그 카드에 붙은 스탯 줄 — 없으면 빈 글자.</summary>

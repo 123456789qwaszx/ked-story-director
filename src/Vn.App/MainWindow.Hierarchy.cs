@@ -748,7 +748,7 @@ public partial class MainWindow
             string snippet = ChapterStatScript.InlineRead(stat);
             string name = stat.Key;   // 스탯은 키만 있다(writer-fields W2)
             string range = stat.Type == ChapterStatType.Bool
-                ? "참/거짓(1/0) · 처음 " + (stat.Initial != 0 ? "참" : "거짓")
+                ? "활성/비활성(1/0) · 처음 " + (stat.Initial != 0 ? "활성" : "비활성")   // ⛔ 「참/거짓」(usability UX12)
                 : $"{stat.Minimum}~{stat.Maximum} · 처음 {stat.Initial}";
 
             table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));

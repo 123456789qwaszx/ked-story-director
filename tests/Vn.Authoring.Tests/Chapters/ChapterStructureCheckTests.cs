@@ -152,7 +152,7 @@ public sealed class ChapterStructureCheckTests
             stats: [new ChapterStat("met", 0, 0, 100, ChapterStatType.Bool)]).ToGraphModel("ch01");
 
         Assert.Contains(model.Errors, item =>
-            item.Code == ChapterDiagnosticCode.StatRangeInvalid && item.Message.Contains("예/아니오 스탯", StringComparison.Ordinal));
+            item.Code == ChapterDiagnosticCode.StatRangeInvalid && item.Message.Contains("활성/비활성 스탯", StringComparison.Ordinal));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

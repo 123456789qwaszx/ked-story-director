@@ -267,7 +267,7 @@ public sealed class ChapterSheetEditTests : IDisposable
         Assert.Contains("최대", labels);
 
         ComboBox type = TypeCombo(row);
-        Assert.Equal(["숫자", "예/아니오"], type.ItemsSource!.Cast<string>());
+        Assert.Equal(["숫자", "활성/비활성"], type.ItemsSource!.Cast<string>());
         Assert.Equal("숫자", type.SelectedItem);
 
         // 잘리지 않는다 — 종류 칸이 제 내용만큼 넓고, 두 줄의 끝([✕] · [최대] 칸)이 표 폭 안에 선다(인스펙터 기본 폭).
@@ -422,7 +422,7 @@ public sealed class ChapterSheetEditTests : IDisposable
         Assert.Equal(ChapterStatType.Bool, Stat(session).Type);
         Assert.Equal(["stat-key:trust"], Boxes(row).Select(box => (string?)box.Tag));   // 키 칸뿐 — 최소 · 최대가 없다(표시 이름 칸은 걷혔다)
         ComboBox initial = row.GetLogicalDescendants().OfType<ComboBox>().Single(combo => Equals(combo.Tag, "stat-initial"));
-        Assert.Equal(["아니오", "예"], initial.ItemsSource!.Cast<string>());
+        Assert.Equal(["비활성", "활성"], initial.ItemsSource!.Cast<string>());
 
         initial.SelectedIndex = 1;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

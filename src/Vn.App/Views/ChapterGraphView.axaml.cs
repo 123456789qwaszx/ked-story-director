@@ -1938,7 +1938,8 @@ public partial class ChapterGraphView : UserControl
         new() { Text = text, FontSize = size, Foreground = ink };
 
     /// <summary>
-    /// 스탯 변화 하나를 작가의 말로 — 키로 「trust +1」, 예/아니오 스탯은 「열쇠 → 예」. 오르면 초록, 내리면 빨강이다.
+    /// 스탯 변화 하나를 작가의 말로 — 키로 「trust +1」, 활성/비활성 스탯은 「열쇠 → 활성」(2026-11-19 · usability UX12 — ⛔ 「→ 예」 · 「→ 아니오」).
+    /// 오르면 초록, 내리면 빨강이다.
     /// </summary>
     private (string Text, IBrush Ink) DescribeDelta(StatDelta delta) =>
     (
@@ -1952,7 +1953,7 @@ public partial class ChapterGraphView : UserControl
         string name = delta.Key;
 
         return delta.IsSet
-            ? $"{name} → {(delta.Amount != 0 ? "예" : "아니오")}"
+            ? $"{name} → {(delta.Amount != 0 ? "활성" : "비활성")}"
             : $"{name} {delta.Amount.ToString("+0;-0;+0", System.Globalization.CultureInfo.InvariantCulture)}";
     }
 
@@ -2306,7 +2307,8 @@ public partial class ChapterGraphView : UserControl
                     : $"{span.Minimum}~{span.Maximum}";
             }
 
-            return span.IsFixed ? (span.Minimum == 1 ? "참" : "거짓") : "참·거짓";
+            // 활성/비활성 스탯의 말은 앱 전체가 하나다(2026-11-19 소유자 · usability UX12 — ⛔ 「참」 · 「거짓」 · 「참·거짓」).
+            return span.IsFixed ? (span.Minimum == 1 ? "활성" : "비활성") : "활성·비활성";
         }
 
         return (
@@ -3689,7 +3691,7 @@ public partial class ChapterGraphView : UserControl
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         ToolTip.SetTip(box, "이 조건의 식 — 스탯 키와 정수를 비교합니다(>= · <= · > · < · ==), 여럿이면 `;`로 잇습니다. " +
-                            "예/아니오 스탯은 `키 == true`. Enter나 다른 곳을 누르면 반영됩니다.");
+                            "활성/비활성 스탯은 `키 == true`(활성일 때). Enter나 다른 곳을 누르면 반영됩니다.");
 
         void Commit()
         {
@@ -4282,7 +4284,7 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>스탯 종류의 이름 — 작가가 읽는 말이다. 차례는 <see cref="ChapterStatType"/>의 Int · Bool과 같다.</summary>
-    internal static readonly string[] StatTypeNames = ["숫자", "예/아니오"];
+    internal static readonly string[] StatTypeNames = ["숫자", "활성/비활성"];   // ⛔ 「예/아니오」(usability UX12)
 
     /// <summary>
     /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 칸 · 종류 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
@@ -4333,7 +4335,7 @@ public partial class ChapterGraphView : UserControl
         ToolTip.SetTip(
             type,
             "종류 — 숫자: 호감도 · 점수처럼 오르내리는 값(처음 값 · 최소 · 최대). " +
-            "예/아니오: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
+            "활성/비활성: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
         type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 종류", () =>
             _session!.Editor.UpdateChapterStat(
                 _selectedChapterId!,
@@ -4383,12 +4385,12 @@ public partial class ChapterGraphView : UserControl
                 FontSize = 10,
                 MinHeight = 0,
                 Padding = new Thickness(8, 2, 4, 2),
-                ItemsSource = new[] { "아니오", "예" },
+                ItemsSource = new[] { "비활성", "활성" },   // ⛔ 「아니오」 · 「예」(usability UX12)
                 SelectedIndex = stat.Initial == 0 ? 0 : 1,
                 VerticalAlignment = VerticalAlignment.Center,
                 Tag = "stat-initial"
             };
-            ToolTip.SetTip(initial, "처음 값 — 챕터를 시작할 때 이 스탯이 켜져(예) 있는지 꺼져(아니오) 있는지입니다.");
+            ToolTip.SetTip(initial, "처음 값 — 챕터를 시작할 때 이 스탯이 활성인지 비활성인지입니다.");
             initial.SelectionChanged += (_, _) => UiGuard.Run(_session, "처음 값", () =>
                 _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: initial.SelectedIndex));
             Add(initial);

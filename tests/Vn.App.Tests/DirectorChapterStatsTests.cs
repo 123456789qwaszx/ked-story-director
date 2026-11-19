@@ -47,7 +47,7 @@ public sealed class DirectorChapterStatsTests : IDisposable
         List<string> texts = Texts(graph);
         Assert.Contains("trust", texts);   // 스탯은 키만 있다(writer-fields W2)
         Assert.Contains("0~5 · 처음 1", texts);
-        Assert.Contains("참/거짓(1/0) · 처음 거짓", texts);
+        Assert.Contains("활성/비활성(1/0) · 처음 비활성", texts);   // ⛔ 「참/거짓」(usability UX12)
 
         window.Close();
     });
