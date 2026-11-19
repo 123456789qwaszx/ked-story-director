@@ -436,6 +436,51 @@ public sealed class SettingsWindowTests : IDisposable
         }
     });
 
+    [Fact]
+    public void 기타_묶음의_휠로_판_옮기기는_처음_꺼져_있고_켜는_즉시_판의_휠이_따르며_다음에도_켜져_있다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 「트랙패드 수정」(writer-app WA3) — 이 PC의 앱 설정이고 누르는 즉시 반영한다(「기타」의 다른 체크와 같다).
+        // 처음 값은 이 OS의 손이다 — 맥이 아니면 꺼짐(맥은 켜짐 — BoardWheelTests).
+        BoardWheel.Set(null);
+
+        try
+        {
+            (MainWindow window, AuthoringSession session) = Open();
+
+            SettingsWindow settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("휠로 판 옮기기", settings.WheelPansCheck.Content);
+            Assert.False(settings.WheelPansCheck.IsChecked);
+            Assert.True(settings.WheelPansCheck.IsEffectivelyVisible);
+
+            settings.WheelPansCheck.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(BoardWheel.Pans);
+            Assert.True(AppSettingsService.LoadWheelPansBoard());
+            Assert.False(session.Editor.CanUndo);   // 프로젝트는 바뀌지 않는다
+
+            // [취소]로 돌아가지 않는다 · 다시 열면 켜진 채로 보인다.
+            settings.CancelButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(BoardWheel.Pans);
+            settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(settings.WheelPansCheck.IsChecked);
+
+            settings.WheelPansCheck.IsChecked = false;
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(BoardWheel.Pans);
+            Assert.False(AppSettingsService.LoadWheelPansBoard());
+            settings.Close();
+
+            window.Close();
+        }
+        finally
+        {
+            BoardWheel.Set(null);   // 스위치는 이 시험 프로세스가 함께 쓴다
+        }
+    });
+
     private (MainWindow Window, AuthoringSession Session) Open()
     {
         Directory.CreateDirectory(_directory);

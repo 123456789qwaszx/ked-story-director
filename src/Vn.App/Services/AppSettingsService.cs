@@ -193,6 +193,19 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>
+    /// 판 위의 휠이 판을 옮기는가 (설정 창 「기타」의 「휠로 판 옮기기」 — writer-app WA3). 고른 적이 없으면 null이다 — 그때는 이 OS의 손을
+    /// 따른다(<see cref="Views.BoardWheel.Pans"/>).
+    /// </summary>
+    public static bool? LoadWheelPansBoard() => Load(SettingsPath).WheelPansBoard;
+
+    public static void SaveWheelPansBoard(bool? pans)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.WheelPansBoard = pans;
+        Save(settings);
+    }
+
     /// <summary>설명을 간소화하는가 (설정 창 「기타」 — brief-guides G1). 처음에는 다 보인다.</summary>
     public static bool LoadBriefGuides() => Load(SettingsPath).BriefGuides;
 
@@ -365,6 +378,9 @@ internal static class AppSettingsService
 
         /// <summary>설명 간소화 — <see cref="LoadBriefGuides"/>. 처음에는 꺼져 있다(안내가 다 보인다).</summary>
         public bool BriefGuides { get; set; }
+
+        /// <summary>판 위의 휠이 판을 옮기는가 — <see cref="LoadWheelPansBoard"/>. null이면 고른 적이 없다(이 OS의 손을 따른다).</summary>
+        public bool? WheelPansBoard { get; set; }
 
         /// <summary>[대본] 카드 글 칸의 글꼴 이름 — <see cref="LoadScriptFont"/>. null이면 기본 글꼴.</summary>
         public string? ScriptFontFamily { get; set; }

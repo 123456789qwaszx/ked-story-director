@@ -539,6 +539,7 @@ public partial class GraphEditorView : UserControl
 
         // 그래프 내비게이션 (W40) — 휠 줌·중간 버튼 팬은 스크롤보다 먼저 가로챈다.
         GraphScroll.AddHandler(PointerWheelChangedEvent, OnGraphWheel, RoutingStrategies.Tunnel);
+        GraphScroll.AddHandler(PointerTouchPadGestureMagnifyEvent, OnGraphMagnify, RoutingStrategies.Bubble);   // 집기 신호는 버블로만 온다
         GraphCanvas.AddHandler(PointerWheelChangedEvent, OnWritingBoxWheel, RoutingStrategies.Bubble);
         GraphScroll.AddHandler(PointerPressedEvent, OnGraphPanPressed, RoutingStrategies.Tunnel);
         GraphScroll.AddHandler(PointerMovedEvent, OnGraphPanMoved, RoutingStrategies.Tunnel);
@@ -4733,8 +4734,9 @@ public partial class GraphEditorView : UserControl
     // ── 그래프 내비게이션 (W40): 줌·팬·미니맵 ─────────────────────────────
 
     /// <summary>
-    /// 휠 — 누른 키와 무관하게 배율이다 (2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다). 얼마나 움직이는가는 <see cref="BoardWheel"/> 한 벌 —
-    /// 신호의 크기에 비례하고, 가로 값은 판을 가로로 옮긴다.
+    /// 휠 — 배율이다(누른 키와 무관하게 · 2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다). 설정 「휠로 판 옮기기」를 켜면(맥은 처음부터) 판을 옮기고
+    /// 배율은 Ctrl(맥은 ⌘도)+휠이다. 무엇을 얼마나 하는가는 <see cref="BoardWheel"/> 한 벌 — 배율은 신호의 크기에 비례한다.
+    /// 옮기기도 여기서 한다(스크롤에 맡기지 않는다) — 고르지 않은 카드의 글 칸이 휠을 먹지 않게.
     /// </summary>
     private void OnGraphWheel(object? sender, PointerWheelEventArgs args)
     {
@@ -4757,6 +4759,13 @@ public partial class GraphEditorView : UserControl
                 Math.Max(0, GraphScroll.Offset.Y + move.Pan.Y));
         }
 
+        args.Handled = true;
+    }
+
+    /// <summary>트랙패드 집기(맥) — 늘 배율이다. 글 칸 위에서도 판의 것이다(집기로 글을 스크롤하지는 않는다).</summary>
+    private void OnGraphMagnify(object? sender, PointerDeltaEventArgs args)
+    {
+        ApplyZoom(_zoom * BoardWheel.Magnify(args.Delta), args.GetPosition(GraphScroll));
         args.Handled = true;
     }
 

@@ -509,6 +509,8 @@ public partial class ChapterGraphView : UserControl
         // 스크롤뷰가 먼저 먹어 버리면 휠이 배율이 아니라 그냥 스크롤이 된다.
         GraphScroll.AddHandler(
             PointerWheelChangedEvent, OnGraphWheel, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        GraphScroll.AddHandler(   // 집기 신호는 버블로만 온다
+            PointerTouchPadGestureMagnifyEvent, OnGraphMagnify, Avalonia.Interactivity.RoutingStrategies.Bubble);
         // 가운데 단추 끌기도 <b>터널</b>로 먼저 받는다 — [대본] 판과 같다. 선 · 문구 · 점 · 칩은 누름을 받아 먹으므로(Handled), 버블로
         // 받으면 그 위에서 시작한 끌기가 판을 못 움직였다(⛔ 2026-11-18까지 · 소유자 — inspector-boxes-pan J2). 가운데 단추가 아니면 그냥 지나간다.
         GraphScroll.AddHandler(PointerPressedEvent, OnGraphPanPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -983,6 +985,9 @@ public partial class ChapterGraphView : UserControl
     //
     // Ctrl을 요구하지 않는다 — 판 위에서 휠은 곧 배율이다.
     // 세로로 훑는 일은 가운데 단추 끌기가 맡는다.
+    //
+    // 설정 「휠로 판 옮기기」를 켜면(맥은 처음부터) 거꾸로다 — 휠이 판을 옮기고 배율은 Ctrl(맥은 ⌘도)+휠 · 트랙패드 집기다
+    // (BoardWheel 한 벌 · writer-app WA3).
 
     private const double MinZoom = 0.1;  // 큰 챕터도 [화면 맞춤]으로 한 화면에 들어오게
     private const double MaxZoom = 2.5;
@@ -993,8 +998,8 @@ public partial class ChapterGraphView : UserControl
     private Vector _panStartOffset;
 
     /// <summary>
-    /// 휠 — 누른 키와 무관하게 배율이다. 스크롤로 새지 않게 여기서 삼킨다. 얼마나 움직이는가는 <see cref="BoardWheel"/> 한 벌([대본]과 같다) —
-    /// 신호의 크기에 비례하고, 가로 값은 판을 가로로 옮긴다.
+    /// 휠 — 배율이거나(처음 값 · 누른 키와 무관하게) 판 옮기기다(설정 「휠로 판 옮기기」). 스크롤로 새지 않게 여기서 삼킨다. 무엇을 얼마나 하는가는
+    /// <see cref="BoardWheel"/> 한 벌([대본]과 같다) — 배율은 신호의 크기에 비례한다.
     /// </summary>
     private void OnGraphWheel(object? sender, Avalonia.Input.PointerWheelEventArgs args)
     {
@@ -1012,6 +1017,13 @@ public partial class ChapterGraphView : UserControl
                 Math.Max(0, GraphScroll.Offset.Y + move.Pan.Y));
         }
 
+        args.Handled = true;
+    }
+
+    /// <summary>트랙패드 집기(맥) — 늘 배율이다.</summary>
+    private void OnGraphMagnify(object? sender, Avalonia.Input.PointerDeltaEventArgs args)
+    {
+        ApplyZoom(_zoom * BoardWheel.Magnify(args.Delta), args.GetPosition(GraphScroll));
         args.Handled = true;
     }
 

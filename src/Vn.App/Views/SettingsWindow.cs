@@ -21,7 +21,7 @@ namespace Vn.App.Views;
 /// 「내보내기 (복제할 폴더 선택)」(형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
 /// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [대본 글 칸](이 PC의 앱 설정 — 카드 글 칸의 글꼴 ·
 /// 글자 크기 · 줄 간격, <see cref="ScriptFont"/> · writer-comfort WC5), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
-/// <c>docs/work-orders/side-fold-settings-orders.md</c> K3, 설명 간소화 · 같은 날 brief-guides G1).
+/// <c>docs/work-orders/side-fold-settings-orders.md</c> K3, 설명 간소화 · 같은 날 brief-guides G1, 휠로 판 옮기기 · 2026-11-19 writer-app WA3).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
 /// 칸 · 보낼 곳은 그 파일에 바로), [취소] · Esc는 버린다. 「대본 글 칸」과 「기타」는 [확인]을 기다리지 않고 고치는 즉시 앱 설정에 반영한다 — [취소]로
@@ -86,6 +86,20 @@ internal sealed class SettingsWindow : Window
         // 누르는 즉시 판에 반영한다(J3 · ⛔ 그 전에는 [확인]을 기다렸다).
         HideMinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "미니맵", () =>
             _session.SetShowMinimap(HideMinimapCheck.IsChecked != true));
+
+        // 휠로 판 옮기기 — 두 판([구성] · [대본])의 휠이 하는 일을 가른다(2026-11-19 소유자 「트랙패드 수정」 · writer-app WA3). 맥만 처음부터 켜져 있다.
+        // 누르는 즉시 — 다음 휠부터 따른다.
+        WheelPansCheck = new CheckBox
+        {
+            Content = "휠로 판 옮기기",
+            FontSize = 12,
+            IsChecked = BoardWheel.Pans
+        };
+        ToolTip.SetTip(WheelPansCheck,
+            "켜면 판 위의 휠(터치패드는 두 손가락 쓸기)이 판을 옮기고, 확대 · 축소는 Ctrl(맥은 ⌘)을 누른 채 휠입니다 — 맥 트랙패드는 두 손가락으로 집어도 됩니다. " +
+            "끄면 휠이 확대 · 축소입니다. 가운데 단추 끌기는 어느 쪽이든 판을 옮깁니다. 터치패드를 쓰면 켜 두세요.");
+        WheelPansCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "휠로 판 옮기기", () =>
+            BoardWheel.Set(WheelPansCheck.IsChecked == true));
 
         ScriptFontCombo = new ComboBox { FontSize = 12, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = FontNames() };
         ScriptFontSizeBox = new NumericUpDown
@@ -192,7 +206,7 @@ internal sealed class SettingsWindow : Window
                 ExportGroup,   // 접는 묶음은 제 테두리가 있다
                 ShortcutGroup,
                 Group("대본 글 칸", ScriptFontSection()),
-                Group("기타", new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck } }),
+                Group("기타", new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck, WheelPansCheck } }),
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
@@ -249,6 +263,9 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「기타」의 「미니맵 감추기」 — 켜면 [대본] 판의 지도가 걷힌다. 누르는 즉시 반영한다.</summary>
     internal CheckBox HideMinimapCheck { get; }
+
+    /// <summary>「기타」의 「휠로 판 옮기기」 — 켜면 두 판의 휠이 판을 옮긴다(<see cref="BoardWheel"/>). 누르는 즉시 반영한다.</summary>
+    internal CheckBox WheelPansCheck { get; }
 
     internal Button ConfirmButton { get; }
 
