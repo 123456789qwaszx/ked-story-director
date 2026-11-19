@@ -9,6 +9,8 @@
 > 아래 "문서" 표에서 **이력**이라 적은 것은 VnTool 시절(엑셀 워크플로 · 무대)을 설명한다 — 머리에 무엇이 걷혔는지 적혀 있다.
 
 비주얼 노벨 저작 도구. C#/.NET 10 + Avalonia, 한국어 코드베이스.
+작가에게 보이는 이름은 **「스토리 디렉터」**(실행 파일 `StoryDirector`)다 — 솔루션 · 프로젝트 · 네임스페이스(`VnTool.sln` · `Vn.App`)는 안의 이름이라
+그대로다(2026-11-19 · [`docs/work-orders/writer-app-orders.md`](docs/work-orders/writer-app-orders.md)).
 
 만들어 내는 것은 **원고(프로젝트 폴더)** 와 유니티 런타임(별도 저장소 `ked-presentation-runtime`)이 먹는 **`exported/{챕터}.progression.json`** 입니다.
 함께 **대사만 있는 Yarn**(`exported/yarn/` — 장면마다 한 파일, 메모는 주석, 연출 없음)이 나가 작가가 대사만으로 굴러가는지 봅니다(2026-11-17).
@@ -75,15 +77,31 @@ dotnet test .\VnTool.sln
 ```
 
 테스트 프로젝트는 둘(`Vn.Authoring.Tests` · `Vn.App.Tests` — Avalonia 헤드리스)입니다. 요약 줄이 둘인지 세어 보세요 —
-빌드에 실패한 프로젝트는 조용히 건너뜁니다. CI는 `windows-latest`가 정본입니다.
+빌드에 실패한 프로젝트는 조용히 건너뜁니다. CI는 `windows-latest`가 정본이고, `macos-latest`가 한 번 더 돌려 맥 꾸러미를 굽습니다.
 
-## 작가에게 전달할 Windows 휴대용 패키지
+## 작가에게 전달할 꾸러미
+
+Windows — `artifacts\StoryDirector-win-x64.zip`(실행 파일 `StoryDirector.exe` 하나):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 ```
 
-.NET 런타임을 함께 담으므로 받는 PC에 개발 환경이 필요 없습니다.
+맥 — `artifacts/StoryDirector-osx-arm64.zip`(`StoryDirector.app`). 맥에서 돌립니다 — 맥이 없으면 CI의 `macos` 작업이 구워 올려 둔 것을
+Actions의 실행 화면 아래 Artifacts에서 받습니다. 인텔 맥은 인자 `x64`:
+
+```bash
+./publish-macos.sh
+```
+
+둘 다 .NET 런타임을 함께 담으므로 받는 PC에 개발 환경이 필요 없습니다. 서명은 없습니다 — Windows는 파란 경고 창을, 맥은 「그래도 열기」를
+처음 한 번 지납니다([`docs/작가에게.txt`](docs/작가에게.txt)). 맥의 서명 · 공증은 하지 않았습니다(Apple 개발자 계정이 듭니다).
+
+아이콘은 원본 `src/Vn.App/Assets/app-icon.png`(1024) 하나에서 굽습니다 — 그림을 바꾸려면 원본을 갈고 다시 굽습니다(Pillow가 있어야 합니다):
+
+```bash
+python3 tools/make-app-icons.py
+```
 
 ## 문서
 

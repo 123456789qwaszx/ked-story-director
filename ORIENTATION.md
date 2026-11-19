@@ -132,6 +132,9 @@
   [`docs/work-orders/`](docs/work-orders/). 큰 것만: 이름(표시 이름 · 제목)은 [대본] · ID는 [구성](P · Q), 분기 카드(Z · AA),
   대사만 있는 Yarn(V), 보낼 곳과 저장할 때만 보내기(AC), 옛 모양을 읽을 때 거절(AF), 「에피소드 추가」는 길 없이(AH),
   [대본] [삭제] · 판 우클릭 · Delete(AJ · AK), 장면 파일 걷기(AP), 오른쪽 기둥 탭 셋과 접기(AS · AT), [⚙ 설정] 창(W · AT · AY).
+- 2026-11-19: 작가에게 건네는 앱으로 다듬었다(7절 BE · [`docs/work-orders/writer-app-orders.md`](docs/work-orders/writer-app-orders.md)) —
+  보이는 이름 「스토리 디렉터」(실행 파일 `StoryDirector` · 설정 폴더는 `VnTool` 그대로) · 아이콘 · 맥 최소 지원(⌘ · ⌫ · `.app` 꾸러미 · CI의
+  macOS 작업) · 설정 「휠로 판 옮기기」(트랙패드). ⚠ 맥에서는 아직 손으로 돌려 보지 못했다 — 지시서 진행 표의 「확인할 것」.
 - 다음 일은 정해져 있지 않다. 화면의 동작과 "다시 쓸 때 지킬 것"은 [`docs/design/two-graphs.md`](docs/design/two-graphs.md).
 
 ## 9. 빌드하고 돌리는 법
@@ -139,12 +142,14 @@
 ```powershell
 dotnet run  --project .\src\Vn.App\Vn.App.csproj     # 앱 실행
 dotnet test .\VnTool.sln                              # 전체 검증 (요약 줄 2개 확인!)
-powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1   # 작가 배포용 portable
+powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1   # 작가 배포용 portable (StoryDirector-win-x64.zip)
+./publish-macos.sh                                                # 맥 꾸러미 (StoryDirector.app — 맥에서)
 ```
 
 - .NET **10**, Avalonia **12**, 중앙 패키지 관리(`Directory.Packages.props`)
 - `TreatWarningsAsErrors=true`, `Nullable=enable` — 경고 하나가 빌드를 깬다
-- **CI는 `windows-latest`가 정본이다**(`.github/workflows/test.yml` — 빌드 · 테스트 · portable 실행 확인)
+- **CI는 `windows-latest`가 정본이다**(`.github/workflows/test.yml` — 빌드 · 테스트 · portable 실행 확인). `macos-latest`가 같은 것을 한 번 더 하고
+  맥 꾸러미를 올려 둔다
 
 ## 10. 읽는 순서 (추천)
 
