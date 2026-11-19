@@ -17,7 +17,7 @@ namespace Vn.Authoring.Chapters;
 /// <item>줄이 하나도 없는 분기 카드 → 오류. Yarn 컴파일러가 줄 없는 노드를 빼서 <c>&lt;&lt;detour&gt;&gt;</c>가 없는 노드를 부른다(에피소드의 「빈 씬」과 같은 까닭).</item>
 /// <item>분기 카드의 Yarn 노드 이름이 에피소드나 다른 분기 카드와 겹친다 → 오류. 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 컴파일이 깨진다 —
 ///   분기 카드는 [대본] 탭에서 이름을 자유롭게 고친다.</item>
-/// <item>분기 카드 안에 분기(분기점 · 갈래 출구)가 있다 → 오류(2026-11-19 소유자 · usability UX27 — <see cref="Editing.ProjectEditor.CanBranchFrom"/>).
+/// <item>분기 카드 안에 분기(분기점)가 있다 → 오류(2026-11-19 소유자 · usability UX27 — <see cref="Editing.ProjectEditor.CanBranchFrom"/>).
 ///   편집기는 만들지 않지만 그 전의 파일에는 있을 수 있다 — 읽되 내보내지 않는다. ⛔ 전에는 분기 카드의 분기도 사슬로 따랐다.</item>
 /// </list>
 /// </summary>
@@ -138,8 +138,8 @@ public static class ChapterBranchCards
                     $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}에 재생할 줄이 하나도 없습니다. [대본] 탭의 그 카드에 대사를 한 줄이라도 적어 주세요."));
             }
 
-            // ④ 분기 카드 안의 분기 — 분기점(이어졌든 아니든) · 이어진 갈래 출구. 판이 그 카드에 그리는 포트 그대로다.
-            if (NodeConnections.PortsOf(branch, project).Any(port => port.Kind == ExitPortKind.Detour || port.IsConnected))
+            // ④ 분기 카드 안의 분기 — 분기점(이어졌든 아니든). 판이 그 카드에 그리는 포트 그대로다.
+            if (NodeConnections.PortsOf(branch, project).Count > 0)
             {
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Error,
@@ -148,7 +148,7 @@ public static class ChapterBranchCards
                     ChapterSheetNames.Episodes,
                     at,
                     $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)} 안에 분기가 있습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳이라 그 안에서 다시 " +
-                    "갈라지지 않습니다. [대본] 판에서 그 카드의 분기를 지우고(줄의 ＋ → ✕ 분기 지우기) 갈래 출구의 선을 끊어 주세요(선을 고르고 Delete)."));
+                    "갈라지지 않습니다. [대본] 판에서 그 카드의 분기를 지워 주세요(줄의 ＋ → ✕ 분기 지우기, 또는 선을 고르고 Delete)."));
             }
         }
     }

@@ -16,8 +16,8 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>분기 카드는 분기를 내지 않는다 — 화면</b> (2026-11-19 소유자 · usability UX27). 분기 카드의 줄 ＋ 차림에는 [＋ 분기 추가]가 없고 까닭을
-/// 말한다. 갈래 출구 레일(「→ 분기 이후」)은 글이다 — ⛔ 분기 카드에서는 단추였고 누르면 대상 고르기가 열려 아무 카드에나 이어졌다. 판에서 그
-/// 전의 파일에 남은 분기 카드의 분기를 다른 카드로 끌어 놓으면 잇지 않고 상태줄이 까닭을 말한다.
+/// 말한다. 판에서 그 전의 파일에 남은 분기 카드의 분기를 다른 카드로 끌어 놓으면 잇지 않고 상태줄이 까닭을 말한다. (갈래 출구 레일이 글인지
+/// 보던 시험은 UX28에서 갈래 출구와 함께 걷혔다.)
 /// </summary>
 public sealed class BranchCardNoBranchUiTests : IDisposable
 {
@@ -51,23 +51,6 @@ public sealed class BranchCardNoBranchUiTests : IDisposable
         Assert.DoesNotContain(Buttons(panel), text => text == "＋ 분기 추가");
         Assert.Contains(panel.GetLogicalDescendants().OfType<TextBlock>(),
             block => block.Text?.StartsWith("분기 카드 안에서는 분기를 내지 않습니다", StringComparison.Ordinal) == true);
-
-        window.Close();
-    });
-
-    [Fact]
-    public void 갈래_출구_레일은_누를_수_없는_글이다() => HeadlessUi.Run(() =>
-    {
-        // 그 전의 파일 — 분기 카드의 첫머리 조건 갈래가 다른 분기 카드로 나간다.
-        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
-        (DialogueNode branch, DialogueNode other) = LegacyExit(session);
-        session.Select(branch.Id);
-        Dispatcher.UIThread.RunJobs();
-
-        TextBlock rail = Assert.Single(Editor(window).LineHost.GetVisualDescendants().OfType<TextBlock>(),
-            block => block.Text == $"→ 분기 이후: {other.Name}");
-        Assert.Null(rail.FindAncestorOfType<Button>());
-        Assert.Contains("Delete", (string)ToolTip.GetTip(rail)!, StringComparison.Ordinal);
 
         window.Close();
     });
@@ -115,23 +98,6 @@ public sealed class BranchCardNoBranchUiTests : IDisposable
 
     private static IEnumerable<string?> Buttons(StackPanel panel) =>
         panel.GetLogicalDescendants().OfType<Button>().Select(button => button.Content as string);
-
-    /// <summary>분기 카드(첫머리 조건 「신뢰높음」)의 그 갈래가 다른 분기 카드로 나간다 — 편집기는 만들지 않으니 모델에 바로 적는다.</summary>
-    private static (DialogueNode Branch, DialogueNode Other) LegacyExit(AuthoringSession session)
-    {
-        DialogueNode root = Card(session, "root");
-        DialogueNode branch = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);
-        DialogueNode other = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);
-
-        ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
-        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
-        session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
-        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음"));
-        branch.BranchExits[branch.Script.ActiveLines.First().Id] = other.Id;
-        session.Editor.SetScriptLineText(branch.Id, branch.Script.ActiveLines.First().Id, "하린", "한 줄");   // 다시 그리게
-        Dispatcher.UIThread.RunJobs();
-        return (branch, other);
-    }
 
     /// <summary>그 카드의 분기 점을 눌러 끌고, 다른 카드 위에 놓는다 — 사람이 하는 길 그대로.</summary>
     private static void DragKnob(GraphEditorView graph, string nodeId, string onto)

@@ -167,7 +167,6 @@ public sealed partial class ProjectEditor
             {
                 node.TrailingTransitions.Clear();
                 node.TrailingTransitions.AddRange(trailing);
-                PruneBranchExits(node);
             });
         }
     }
@@ -469,18 +468,13 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건 전환, 갈래 출구)도
+    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건 전환 · 분기)도
     /// 접는다 — 줄 카드가 없으면 편집 진입점이 없어 지울 수도 없는 유령이 된다.
     /// 연출 바인딩은 남긴다: 고아 연출은 지우지 않고 해석기가 알리는 기존 정책 그대로다.
     /// </summary>
     private static void PruneRetiredLineLogic(DialogueNode node, Func<string, bool> retired)
     {
         node.LineExtensions.RemoveAll(extension => retired(extension.LineId));
-
-        foreach (string exitLineId in node.BranchExits.Keys.Where(retired).ToList())
-        {
-            node.BranchExits.Remove(exitLineId);
-        }
     }
 
     public void MoveScriptLine(string dialogueNodeId, string lineId, int delta)

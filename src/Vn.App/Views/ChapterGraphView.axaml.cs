@@ -5121,18 +5121,6 @@ public partial class ChapterGraphView : UserControl
     /// <summary>머리글의 경고 표식 — <b>노랑</b>. 위 ⛔ 참조.</summary>
     private const string WarningMark = "🟡";
 
-    /// <summary>
-    /// 판 수준 경고 (2단계 가드레일) — 진행이 착지하는 카드로 향하는 출구. 막지 않고 크게 말한다.
-    ///
-    /// ⚠ 예전에는 엑셀 [대본 가져오기]를 누를 때만 셌다(2026-10-29 · D2에서 옮겼다). 그래서 연출
-    /// 그래프에서 출구를 고쳐도 가져오기를 다시 누를 때까지 경고가 남거나 안 떴다. 이제 그릴 때마다
-    /// 판에서 센다 — 판의 노드를 한 번 훑을 뿐이라 가볍다.
-    /// </summary>
-    private IReadOnlyList<ChapterDiagnostic> BoardWarnings(ChapterGraphModel model) =>
-        _session is not null && EpisodeNaming.BoardOf(_session.Project, model.ChapterId) is { } board
-            ? ChapterBoardSupply.WarnExitsIntoLandingCards(_session.Editor, board.Id, model)
-            : Array.Empty<ChapterDiagnostic>();
-
     private void DrawDiagnostics(ChapterGraphModel model)
     {
         // 모델 진단(구조 검사 포함) + 검증기(구조·교차·도달성) 진단을 한 목록으로 본다.
@@ -5141,7 +5129,6 @@ public partial class ChapterGraphView : UserControl
         // 챕터가 막혔거나 진행 코어가 거부한 까닭(검증 캐시에는 없다)이 여기 없으면 「아래 오류」가 아래에 없다. 줄마다 챕터 ID가 앞에 선다.
         List<ChapterDiagnostic> all = model.Diagnostics
             .Concat(_validation?.All ?? Enumerable.Empty<ChapterDiagnostic>())
-            .Concat(BoardWarnings(model))
             .Concat(_exportRun.RefusalErrors ?? [])
             .Distinct()
             .ToList();

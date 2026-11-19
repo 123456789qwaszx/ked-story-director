@@ -6,7 +6,6 @@ namespace Vn.Authoring.Results;
 /// 펼친 줄 하나. 그 순간의 화자·대사를 담아 대본 없이도 읽힌다 — 결과는 어디에서도 수정할 수 없다.
 /// </summary>
 /// <param name="Revision">펼친 순간 대본 줄의 개정 번호.</param>
-/// <param name="BranchExitTargetNodeId">이 줄이 연 갈래가 끝났을 때 이동할 노드.</param>
 public sealed record DialogueResultLine(
     int Index,
     string LineId,
@@ -14,7 +13,6 @@ public sealed record DialogueResultLine(
     string CharacterName,
     string Text,
     DialogueResultTransition? Transition = null,
-    string? BranchExitTargetNodeId = null,
     IReadOnlyList<DialogueResultTransition>? ExtraTransitions = null,
 
     /// <summary>
@@ -44,22 +42,13 @@ public sealed record DialogueResultLine(
 }
 
 /// <summary>
-/// 펼친 순간의 조건 전환. 조건 Id만이 아니라 이름과 식까지 함께 싣는다.
+/// 펼친 순간의 조건 전환. 조건 Id만이 아니라 이름과 식까지 함께 싣는다. (갈래 출구는 2026-11-19에 걷혔다 — usability UX28.)
 /// </summary>
-/// <param name="ExitTargetNodeId">
-/// 이 전환이 <b>여는</b> 갈래의 출구 (2026-08-24) — detour로 나간다.
-///
-/// 줄에도 <see cref="DialogueResultLine.BranchExitTargetNodeId"/>가 있지만 그것은
-/// <b>줄당 하나</b>다. 줄 없는 갈래(대본 끝의 빈 블록)에는 실을 줄 자체가 없어서, 출구가
-/// <b>전환에</b> 붙어야 결과 문서가 자기 완결이 된다. 줄에 실린 쪽은 그대로 두었다 —
-/// 옛 결과 파일이 그 칸으로 읽히기 때문이다.
-/// </param>
 public sealed record DialogueResultTransition(
     ConditionTransitionKind Kind,
     string? ConditionId,
     string? ConditionName,
-    string? Expression,
-    string? ExitTargetNodeId = null);
+    string? Expression);
 
 /// <summary>
 /// DialogueNode의 작업 상태를 펼친 <b>불변</b> 결과 — 합성기(<c>ResultDocumentComposer</c>)가 읽는

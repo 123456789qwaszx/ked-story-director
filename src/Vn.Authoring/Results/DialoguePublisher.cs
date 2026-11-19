@@ -17,9 +17,6 @@ public enum PublishProblemKind
     /// <summary>조건 구조가 성립하지 않는다(짝 없는 elseif·endif 등).</summary>
     InvalidConditionStructure,
 
-    /// <summary>출구가 없는 노드를 가리킨다.</summary>
-    MissingExitTarget,
-
     /// <summary>대본에서 사라진 줄에 대사 논리가 남아 있다. 막지 않는다.</summary>
     OrphanData
 }
@@ -113,8 +110,6 @@ public static class DialoguePublisher
                     IsBlocking: true));
             }
 
-            node.BranchExits.TryGetValue(line.LineId, out string? branchExit);
-
             lines.Add(new DialogueResultLine(
                 resolved.Index,
                 line.LineId,
@@ -122,7 +117,6 @@ public static class DialoguePublisher
                 line.Speaker,
                 line.Text,
                 Freeze(line.Transition, project, available),
-                line.Transition?.OpensBranch == true ? branchExit : null,
                 // 둘째 전환부터 — 겹쳐 닫기·연달아 열기가 여기 실린다 (2026-08-17).
                 line.Transitions.Count <= 1
                     ? null
@@ -166,41 +160,15 @@ public static class DialoguePublisher
             draft.TrailingTransitions);
     }
 
-    /// <summary>
-    /// 대본 끝의 줄 없는 갈래들을 얼린다 (2026-08-24) — 전환과 <b>그 갈래의 출구</b>를 함께.
-    ///
-    /// 출구가 전환에 붙는 이유: 실을 줄이 없다. 앵커는 흐름 해석과 같은 규칙으로 짓는다
-    /// (<see cref="Flow.BranchAnchor"/>) — 두 곳이 다르게 세면 매단 detour가 사라진다.
-    /// </summary>
+    /// <summary>대본 끝의 줄 없는 갈래들의 전환을 얼린다 (2026-08-24). (그 갈래의 출구를 함께 싣던 것은 2026-11-19에 걷혔다.)</summary>
     private static IReadOnlyList<DialogueResultTransition> FreezeTrailing(
         DialogueNode node,
         StoryProject project,
-        AvailableConditionCatalog available)
-    {
-        var frozen = new List<DialogueResultTransition>(node.TrailingTransitions.Count);
-        int opened = 0;
-
-        foreach (LineConditionTransition transition in node.TrailingTransitions)
-        {
-            if (Freeze(transition, project, available) is not { } item)
-            {
-                continue;
-            }
-
-            if (!transition.OpensBranch)
-            {
-                frozen.Add(item);
-                continue;
-            }
-
-            node.BranchExits.TryGetValue(
-                Flow.BranchAnchor.ForTrailing(opened++), out string? exit);
-
-            frozen.Add(item with { ExitTargetNodeId = exit });
-        }
-
-        return frozen;
-    }
+        AvailableConditionCatalog available) =>
+        node.TrailingTransitions
+            .Select(transition => Freeze(transition, project, available))
+            .OfType<DialogueResultTransition>()
+            .ToList();
 
     private static DialogueResultTransition? Freeze(
         LineConditionTransition? transition,
@@ -240,8 +208,6 @@ public static class DialoguePublisher
                 FlowProblemKind.ElseIfWithoutIf => (PublishProblemKind.InvalidConditionStructure, true),
                 FlowProblemKind.EndIfWithoutIf => (PublishProblemKind.InvalidConditionStructure, true),
                 FlowProblemKind.NestedCondition => (PublishProblemKind.InvalidConditionStructure, true),
-                FlowProblemKind.MissingExitTarget => (PublishProblemKind.MissingExitTarget, true),
-                FlowProblemKind.OrphanedBranchExit => (PublishProblemKind.OrphanData, false),
                 FlowProblemKind.OrphanedLineExtension => (PublishProblemKind.OrphanData, false),
                 _ => (PublishProblemKind.InvalidConditionStructure, true)
             };

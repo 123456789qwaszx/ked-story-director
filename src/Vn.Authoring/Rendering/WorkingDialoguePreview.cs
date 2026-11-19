@@ -74,7 +74,6 @@ public static class WorkingDialoguePreview
             scenario.IncludeLocalizedDialogue,
             scenario.IncludeSpeaker,
             scenario.IncludeLineId,
-            scenario.IncludeExecutionJumps,
             includeDiagnostics: false);
 
         RenderedDocument document = Compose(

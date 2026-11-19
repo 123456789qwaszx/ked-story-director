@@ -33,7 +33,6 @@ public sealed class DocumentOutputOptions
         bool includeLocalizedDialogue,
         bool includeSpeaker,
         bool includeLineId,
-        bool includeExecutionJumps,
         bool includeDiagnostics)
     {
         Format = format;
@@ -43,7 +42,6 @@ public sealed class DocumentOutputOptions
         IncludeLocalizedDialogue = includeLocalizedDialogue;
         IncludeSpeaker = includeSpeaker;
         IncludeLineId = includeLineId;
-        IncludeExecutionJumps = includeExecutionJumps;
         IncludeDiagnostics = includeDiagnostics;
     }
 
@@ -61,7 +59,8 @@ public sealed class DocumentOutputOptions
 
     public bool IncludeLineId { get; }
 
-    public bool IncludeExecutionJumps { get; }
+    // ⛔ `IncludeExecutionJumps`는 2026-11-19에 걷혔다 — 그것이 가리던 갈래 출구가 걷혔다(usability UX28). 분기점의 `<<detour>>`는
+    //    가린 적이 없다(글 칸은 분기를 글자가 아니라 점으로 보인다).
 
     public bool IncludeDiagnostics { get; }
 }
@@ -76,7 +75,7 @@ public sealed record OutputPreset(
 /// <summary>
 /// 기본 출력 프리셋 카탈로그.
 ///
-/// 1) Runtime Full = 재생 순서 그대로(조건 · LineId · 실행 출구) — 합성의 기본값이고 흐름 조각을 재는 자리,
+/// 1) Runtime Full = 재생 순서 그대로(조건 · LineId · 분기) — 합성의 기본값이고 흐름 조각을 재는 자리,
 /// 2) Scenario Only = 대본+조건 — 카드 글 칸이 쓰는 면.
 /// Direction Sheet(LineId+연출 테이블)는 2026-10-29에 연출과 함께 <c>ked-story-compositor</c>로 갔고,
 /// Recording/Localization Script(LineId+대본)는 같은 날 그것을 고르던 Script Preview 탭과 함께 걷혔다.
@@ -88,7 +87,7 @@ public static class OutputPresetCatalog
     public static OutputPreset RuntimeFull { get; } = new(
         OutputPresetId.RuntimeFull,
         "Runtime Full",
-        "조건, LineId와 실행 출구를 모두 포함한 Yarn 스타일 Preview",
+        "조건, LineId와 분기를 모두 포함한 Yarn 스타일 Preview",
         new DocumentOutputOptions(
             DocumentOutputFormat.YarnRuntime,
             includeStructure: true,
@@ -97,13 +96,12 @@ public static class OutputPresetCatalog
             includeLocalizedDialogue: false,
             includeSpeaker: true,
             includeLineId: true,
-            includeExecutionJumps: true,
             includeDiagnostics: true));
 
     public static OutputPreset ScenarioOnly { get; } = new(
         OutputPresetId.ScenarioOnly,
         "Scenario Only",
-        "조건과 화자·대사만 읽기 쉽게 표시하고 실행 출구는 숨김",
+        "조건과 화자·대사만 읽기 쉽게 표시",
         new DocumentOutputOptions(
             DocumentOutputFormat.Scenario,
 
@@ -118,6 +116,5 @@ public static class OutputPresetCatalog
             includeLocalizedDialogue: false,
             includeSpeaker: true,
             includeLineId: false,
-            includeExecutionJumps: false,
             includeDiagnostics: true));
 }

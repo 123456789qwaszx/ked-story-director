@@ -51,12 +51,8 @@ public static class ResultDocumentComposer
             options.IncludeSpeaker ||
             options.IncludeLineId;
 
-        // 갈래 출구는 여는 줄이 소유하지만(§4.2) 실행은 갈래의 끝에서 일어난다.
-        // 여는 줄 바로 뒤에 출구를 두면 갈래 본문이 그 아래 묻혀 실행되지 않는다.
-        // 그래서 다음 전환이 갈래를 닫는 순간에 내보낸다. 조건 갈래의 출구는 jump가 아니라
-        // detour다 — 커스텀 씬을 재생하고 갈래로 돌아와 나머지 대본을 계속한다.
-        // (선택지 출구의 jump는 대사 안 선택지와 함께 2026-11-04에 걷혔다.)
-        (RenderSourceReference Source, string Target)? pendingBranchJump = null;
+        // ⛔ 갈래 출구(조건 갈래가 닫히는 자리의 `<<detour>>`)는 2026-11-19에 걷혔다(usability UX28). (선택지 출구의 jump는 대사 안
+        //    선택지와 함께 2026-11-04에 걷혔다.)
 
         // 지금 몇 겹의 조건 안인가 (2026-08-17에 불리언에서 늘렸다).
         int conditionDepth = 0;
@@ -64,7 +60,7 @@ public static class ResultDocumentComposer
         // 줄들을 돈 <b>뒤에 한 번 더</b> 돈다 — 마지막이 <b>꼬리</b>다(줄 없는 자리).
         // 대사 없는 조건 블록이 대본의 끝이면 전환을 실을 줄이 없어서, 그 전환들은 결과의
         // `TrailingTransitions`에 산다. 여기서 <b>베끼지 않고 같은 루프로</b> 지나야 한다:
-        // 전환→세그먼트 규칙(깊이·들여쓰기·대기 중 출구)이 한 벌이어야
+        // 전환→세그먼트 규칙(깊이·들여쓰기)이 한 벌이어야
         // 두 자리가 갈리지 않는다. 흐름 해석도 같은 수를 쓴다.
         for (int lineIndex = 0; lineIndex <= dialogue.Lines.Count; lineIndex++)
         {
@@ -91,15 +87,6 @@ public static class ResultDocumentComposer
             // 없어서 겹쳐 닫기·연달아 열기가 전부 다음 대사 줄 앞에 쌓인다. 순서대로 재생한다.
             foreach (DialogueResultTransition transition in transitions)
             {
-                // 전환은 대기 중인 출구를 흘려보낸다 — 닫는 전환이 제 갈래의 출구를 내고, 그 밖의 전환도
-                // 어떤 대기든 닫는다(깨진 구조의 안전망 — 잃지 않고 낸다).
-                if (options.IncludeExecutionJumps && pendingBranchJump is { } pending)
-                {
-                    AddBranchExit(segments, project, pending.Source, pending.Target);
-                }
-
-                pendingBranchJump = null;
-
                 // 표지 자신은 <b>바깥</b> 깊이에 선다 — 감싸는 줄이 아니라 경계다.
                 // `<<if>>`는 열기 전 깊이, `<<endif>>`는 닫은 뒤 깊이, `<<elseif>>`는
                 // 자기 체인의 바깥(= 지금 깊이 한 겹 밖)이다.
@@ -124,18 +111,6 @@ public static class ResultDocumentComposer
                 if (options.IncludeConditions)
                 {
                     AddTransition(segments, source, transition, lineSource, markerIndent);
-                }
-
-                // 줄 없는 갈래의 출구 (2026-08-24) — 실을 줄이 없어 <b>전환에</b> 실려 온다.
-                // 줄에 매달린 출구는 아래(줄 단위)에서 대기시키므로 여기서 겹치지 않는다:
-                // 이 칸은 꼬리 전환에만 채워진다.
-                //
-                // 여는 전환에서 대기시켜야 <b>닫는 전환이 흘려보낸다</b> — 그래야
-                // `<<if>>` → `<<detour>>` → `<<endif>>` 순서가 나온다. 여는 자리에 바로
-                // 내면 갈래 본문보다 앞서 뛴다(같은 이유로 줄 쪽도 대기시킨다).
-                if (transition.ExitTargetNodeId is { } trailingTarget)
-                {
-                    pendingBranchJump = (lineSource, trailingTarget);
                 }
             }
 
@@ -182,19 +157,6 @@ public static class ResultDocumentComposer
                         : null,
                     Speaker: options.IncludeSpeaker ? line.CharacterName : null));
             }
-
-            if (line.BranchExitTargetNodeId is { } branchTarget)
-            {
-                // 갈래 출구의 소유자는 화면에 보이는 마지막 줄이 아니라 갈래를 여는 LineId다.
-                // 결과에서도 같은 규칙을 지켜야 Preview에서 원본으로 돌아갈 수 있다.
-                pendingBranchJump = (lineSource, branchTarget);
-            }
-        }
-
-        if (options.IncludeExecutionJumps && pendingBranchJump is { } lastPending)
-        {
-            // 문서 끝까지 열린 갈래의 출구가 여기로 온다 — 닫는 전환이 없어도 출구를 조용히 버리지 않는다.
-            AddBranchExit(segments, project, lastPending.Source, lastPending.Target);
         }
 
         // 문서 끝까지 열린 조건 블록을 닫는다 (2026-08-17 소유자 보고 —
@@ -220,26 +182,6 @@ public static class ResultDocumentComposer
         }
 
         return new RenderedDocument(dialogue.SourceNodeId, segments, options, presetId);
-    }
-
-    /// <summary>
-    /// 갈래 출구 하나 — 조건 갈래(IF)는 detour다: 커스텀 씬을 재생하고 갈래로 돌아와 나머지 대본을 계속한다.
-    /// (세그먼트 Id의 "jump"는 옛 이름 그대로 — 바꾸면 그 Id를 든 연출 바인딩이 어긋난다.)
-    /// </summary>
-    private static void AddBranchExit(
-        List<RenderedSegment> segments,
-        StoryProject? project,
-        RenderSourceReference source,
-        string targetNodeId)
-    {
-        segments.Add(new RenderedSegment(
-            Id: $"branch:{source.LineId}:jump",
-            Kind: RenderedSegmentKind.BranchDetour,
-            Layer: DocumentLayer.ExecutionJumps,
-            Source: source,
-            IndentLevel: 1,
-            TargetNodeId: targetNodeId,
-            TargetNodeName: project?.FindNode(targetNodeId)?.Name));
     }
 
     private static void AddTransition(

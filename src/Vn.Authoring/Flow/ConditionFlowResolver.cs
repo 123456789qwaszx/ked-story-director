@@ -197,12 +197,10 @@ public static class ConditionFlowResolver
                 depth,
                 branch,
                 before,
-                branch is not null && branch.HasExit && branch.LastLineIndex == index,
                 precedingDepth));
         }
 
         AddOrphanProblems(script, problems);
-        AddExitProblems(node, branches, project, problems);
 
         return new DialogueFlow(script, lines, branches, problems);
     }
@@ -265,9 +263,7 @@ public static class ConditionFlowResolver
     /// 실리므로, 빈 블록 뒤에 또 블록이 열리면 <b>같은 줄이 갈래 둘을 연다</b>. 신원이
     /// 겹치면 <see cref="Complete"/>의 사전이 터져 판이 아예 안 그려진다.
     ///
-    /// <b>첫째는 맨 이름 그대로 둔다.</b> 그 자리가 지금까지의 신원이고
-    /// <see cref="DialogueNode.BranchExits"/>가 그 글자로 출구를 붙들고 있다 — 접미를
-    /// 붙이면 이미 매달린 출구가 전부 고아가 된다. 둘째부터가 새 땅이다.
+    /// <b>첫째는 맨 이름 그대로다</b> — 둘째부터 접미가 붙는다(<see cref="BranchAnchor"/>).
     /// </summary>
     private static string AnchorFor(DialogueLine? line, List<BranchBuilder> builders)
     {
@@ -291,8 +287,6 @@ public static class ConditionFlowResolver
 
         foreach (BranchBuilder builder in builders)
         {
-            node.BranchExits.TryGetValue(builder.OpenLineId, out string? target);
-
             branches.Add(new ConditionBranch(
                 builder.OpenLineId,
                 builder.ConditionId,
@@ -300,8 +294,7 @@ public static class ConditionFlowResolver
                 builder.BranchIndexInChain,
                 builder.PaletteIndex,
                 builder.FirstLineIndex,
-                builder.LastLineIndex,
-                target));
+                builder.LastLineIndex));
         }
 
         return branches;
@@ -322,37 +315,6 @@ public static class ConditionFlowResolver
                 orphan.IsRetired
                     ? "대본에서 사라진 줄에 조건 전환이 남아 있습니다. 지우지 않고 그대로 둡니다."
                     : "이 대본에 없는 LineId에 조건 전환이 남아 있습니다. 대본을 바꾸었을 수 있습니다."));
-        }
-    }
-
-    private static void AddExitProblems(
-        DialogueNode node,
-        IReadOnlyList<ConditionBranch> branches,
-        StoryProject project,
-        List<FlowProblem> problems)
-    {
-        HashSet<string> openLines = branches
-            .Select(branch => branch.OpenLineId)
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach ((string lineId, string target) in node.BranchExits.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-        {
-            if (!openLines.Contains(lineId))
-            {
-                problems.Add(new FlowProblem(
-                    FlowProblemKind.OrphanedBranchExit,
-                    lineId,
-                    "더 이상 갈래를 열지 않는 줄에 조건 출구가 남아 있습니다."));
-                continue;
-            }
-
-            if (project.FindNode(target) is null)
-            {
-                problems.Add(new FlowProblem(
-                    FlowProblemKind.MissingExitTarget,
-                    lineId,
-                    "조건 출구가 가리키는 노드를 찾을 수 없습니다."));
-            }
         }
     }
 

@@ -6141,12 +6141,9 @@ public partial class GraphEditorView : UserControl
 
         GraphCanvas.Children.Add(_connectingLine);
         // 공급 포트 안내는 2026-08-22에 사라졌다 — 끌 수 있는 포트가 실행 출구뿐이다.
-        SetHint(port.ExecutionPort is { Kind: ExitPortKind.Detour } detour
-            ? detour.IsOpenDetour
-                ? "분기 카드 위에 놓으면 잇습니다. 빈 곳에 놓으면 그 자리에 새 분기 카드가 섭니다. 에피소드에는 잇지 않습니다."
-                : "분기 카드 위에 놓으면 그리로 옮겨 잇습니다. 빈 곳에 놓으면 연결만 끊기고 분기점은 남습니다."
-            : "연결할 실행 노드 또는 접힌 파일의 실행 노드 행 위에서 놓으세요. " +
-              "빈 곳에 놓으면 실행 연결이 끊어집니다.");
+        SetHint(port.ExecutionPort is { IsOpenDetour: true }
+            ? "분기 카드 위에 놓으면 잇습니다. 빈 곳에 놓으면 그 자리에 새 분기 카드가 섭니다. 에피소드에는 잇지 않습니다."
+            : "분기 카드 위에 놓으면 그리로 옮겨 잇습니다. 빈 곳에 놓으면 연결만 끊기고 분기점은 남습니다.");
 
         args.Handled = true;
     }
@@ -6650,23 +6647,11 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (port.ExecutionPort is { Kind: ExitPortKind.Detour } detour)
+        // 실행 출구는 분기점뿐이다(⛔ 갈래 출구는 2026-11-19에 걷혔다 · usability UX28).
+        if (port.ExecutionPort is { } detour)
         {
             Point at = args.GetPosition(GraphCanvas);
             UiGuard.Run(_session, "분기 잇기", () => JoinBranch(detour, target, at));
-            return;
-        }
-
-        if (port.ExecutionPort is not null && _session is not null)
-        {
-            // 분기 카드의 갈래 출구는 끊기만 한다 — 판이 이어진 것(그 전의 파일)만 그린다(UX27).
-            if (target is not null && !_session.Editor.CanBranchFrom(port.NodeId))
-            {
-                _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 선은 빈 곳에 놓으면 끊깁니다.");
-                return;
-            }
-
-            _session.Editor.SetExitTarget(port.ExecutionPort, target);
         }
     }
 
@@ -6708,7 +6693,7 @@ public partial class GraphEditorView : UserControl
 
         if (!_session.Editor.CanBranchFrom(detour.NodeId))
         {
-            _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 선은 빈 곳에 놓으면 끊깁니다.");
+            _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 분기는 빈 곳에 놓으면 끊깁니다.");
             return;
         }
 

@@ -13,7 +13,7 @@ namespace Vn.Authoring.Flow;
 /// <param name="ChainIndex">노드 안에서 몇 번째 조건 체인인지.</param>
 /// <param name="BranchIndexInChain">체인 안에서 몇 번째 갈래인지. 0이 <c>if</c>, 1부터 <c>elseif</c>.</param>
 /// <param name="PaletteIndex">노드 안에서 몇 번째로 나타난 갈래인지. 색을 고르는 데 쓴다.</param>
-/// <param name="LastLineIndex">이 갈래의 마지막 줄. 출구가 있다면 이 줄에 표시된다.</param>
+/// <param name="LastLineIndex">이 갈래의 마지막 줄.</param>
 public sealed record ConditionBranch(
     string OpenLineId,
     string ConditionId,
@@ -21,11 +21,7 @@ public sealed record ConditionBranch(
     int BranchIndexInChain,
     int PaletteIndex,
     int FirstLineIndex,
-    int LastLineIndex,
-    string? ExitTargetNodeId)
-{
-    public bool HasExit => ExitTargetNodeId is not null;
-}
+    int LastLineIndex);
 
 /// <summary>
 /// 줄 하나가 계산 결과 어디에 속하는지.
@@ -38,7 +34,6 @@ public sealed record ConditionBranch(
 /// 전환을 적용하기 <em>전</em>의 상태. 조건 드롭다운이 무엇을 제시할지는 이것으로 정해진다.
 /// </param>
 /// <param name="Depth">감싼 블록 수 — 바깥 0, 조건 안 1. (대사 안 선택지가 걷힌 2026-11-04부터 2는 없다.)</param>
-/// <param name="IsBranchExit">이 줄이 자기 갈래의 마지막이고 그 갈래에 출구가 있는지.</param>
 /// <param name="PrecedingDepth">전환 적용 전의 감싼 블록 수.</param>
 public sealed record ResolvedLine(
     DialogueLine Line,
@@ -46,7 +41,6 @@ public sealed record ResolvedLine(
     int Depth,
     ConditionBranch? Branch,
     ConditionBranch? PrecedingBranch,
-    bool IsBranchExit,
     int PrecedingDepth = 0);
 
 public enum FlowProblemKind
@@ -70,13 +64,7 @@ public enum FlowProblemKind
     UnknownCondition,
 
     /// <summary>조건 정의는 남아 있지만 현재 DialogueNode의 Settings 범위에는 없다.</summary>
-    UnavailableCondition,
-
-    /// <summary>더 이상 갈래를 열지 않는 줄에 조건 출구가 매달려 있다.</summary>
-    OrphanedBranchExit,
-
-    /// <summary>출구가 가리키는 노드가 프로젝트에 없다.</summary>
-    MissingExitTarget
+    UnavailableCondition
 }
 
 /// <param name="LineId">문제가 걸린 줄. 노드 전체의 문제면 null이다.</param>

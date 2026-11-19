@@ -334,11 +334,11 @@ public sealed partial class ProjectEditor
         ReferenceEquals(board, Project.FindFileContainingNode(fromNodeId));
 
     /// <summary>
-    /// 그 카드에서 <b>분기를 낼 수 있는가</b> — 분기점(<c>&lt;&lt;detour&gt;&gt;</c>로 들르는 곳)도 갈래 출구도. <b>분기 카드는 못 낸다</b>
+    /// 그 카드에서 <b>분기(분기점 — <c>&lt;&lt;detour&gt;&gt;</c>로 들르는 곳)를 낼 수 있는가</b>. <b>분기 카드는 못 낸다</b>
     /// (2026-11-19 소유자 · usability UX27): 분기 카드는 에피소드에서 들렀다 돌아오는 곳이라 그 안에서 다시 갈라지지 않는다 — 들르기가
-    /// 한 단계일 때 판을 읽을 수 있고, [구성]과 도달성 증명은 분기 카드를 보지 않는다. ⛔ 전에는 분기 카드의 분기도 사슬로 따랐고, 분기 카드의
-    /// 갈래 출구는 아무 카드에나 이어졌다 — 아무도 부르지 않는 분기 카드에 이으면 내보낸 Yarn이 없는 노드를 불러 게임이 멈췄고, 에피소드에
-    /// 이으면 그 에피소드가 진행 기록 밖에서 통째로 재생됐다. 이미 그런 파일은 읽되 챕터 검증이 오류로 짚는다(<see cref="Chapters.ChapterBranchCards"/>).
+    /// 한 단계일 때 판을 읽을 수 있고, [구성]과 도달성 증명은 분기 카드를 보지 않는다. ⛔ 전에는 분기 카드의 분기도 사슬로 따랐다. 이미 그런
+    /// 파일은 읽되 챕터 검증이 오류로 짚는다(<see cref="Chapters.ChapterBranchCards"/>). (분기 카드의 갈래 출구도 막았던 것은 UX28에서 갈래
+    /// 출구째 걷혔다.)
     /// </summary>
     public bool CanBranchFrom(string nodeId) => Project.FindNode(nodeId) is DialogueNode { IsBranchCard: false };
 
@@ -559,7 +559,6 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 이 줄에서 조건 흐름을 어떻게 바꿀지 정한다.
-    /// 갈래를 더 이상 열지 않게 되면 거기 매달려 있던 조건 출구도 함께 사라진다.
     ///
     /// 대본에 없는 LineId를 주면 아무것도 하지 않는다. 조건은 존재하는 줄에만 붙는다.
     /// </summary>
@@ -609,9 +608,6 @@ public sealed partial class ProjectEditor
         extension.Transitions.Clear();
         extension.Transitions.AddRange(resolved);
 
-        // 순서가 중요하다. 먼저 주인 없는 출구를 버리고, 그다음에 빈 항목을 버린다.
-        // 반대로 하면 아직 출구가 매달려 있어 빈 항목이 남는다.
-        PruneBranchExits(node);
         PruneLineExtensions(node);
     }
 
@@ -722,54 +718,19 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        if (node is not DialogueNode dialogue || branchOpenLineId is null)
+        if (branchOpenLineId is null)
         {
             return;
         }
 
-        // 「조건 분기」 표식의 목표는 <b>그 줄</b>이 진다 — 갈래 출구 장부에 적으면
-        // 여는 전환이 없는 고아가 되고, 저장할 때 그 칸이 전환 안에 있어 통째로 사라진다.
+        // 출구는 분기점뿐이다 — 그 목표는 <b>그 줄</b>이 진다(⛔ 갈래 출구 장부 `BranchExits`는 2026-11-19에 걷혔다 · usability UX28).
         //
         // 한 줄에 분기가 여럿일 수 있다. 줄만 주면 대상이 있으면 그 줄의 분기 끝에 하나를 <b>더하고</b>(이미 있으면
         // 그대로), 대상이 없으면 그 줄의 분기를 이어지지 않은 분기점까지 <b>모두</b> 걷는다. 분기 하나만 바꾸려면
         // 포트(<see cref="ExitPort"/>)로 부른다.
-        if (kind == ExitPortKind.Detour)
+        if (kind == ExitPortKind.Detour && (targetNodeId is null || CanBranchTo(nodeId, targetNodeId)))
         {
-            if (targetNodeId is null || CanBranchTo(nodeId, targetNodeId))
-            {
-                SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
-            }
-
-            return;
-        }
-
-        // 분기 카드의 갈래 출구는 잇지 않는다 — 끊기만 받는다(UX27 · CanBranchFrom).
-        if (targetNodeId is not null && !CanBranchFrom(nodeId))
-        {
-            return;
-        }
-
-        Mutate(() =>
-        {
-            if (targetNodeId is null)
-            {
-                dialogue.BranchExits.Remove(branchOpenLineId);
-            }
-            else
-            {
-                dialogue.BranchExits[branchOpenLineId] = targetNodeId;
-            }
-
-            ForgetShapeIfCut(dialogue, kind, branchOpenLineId, targetNodeId);
-        });
-    }
-
-    /// <summary>끊긴 출구의 선 모양은 걷는다 — 선이 없는데 모양만 파일에 남으면, 같은 자리를 다시 이을 때 옛 굽이가 되살아난다.</summary>
-    private static void ForgetShapeIfCut(StoryNode node, ExitPortKind kind, string? exitKey, string? targetNodeId)
-    {
-        if (targetNodeId is null)
-        {
-            node.EdgeShapes.Remove(EdgeShape.KeyOf(kind, exitKey));
+            SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
         }
     }
 
@@ -783,7 +744,7 @@ public sealed partial class ProjectEditor
     /// <item><c>from</c> 있음 · <c>to</c> 있음 — 그 분기를 제자리에서 다른 곳으로 잇는다(선 모양도 따라간다). <c>to</c>가
     ///   그 줄에 이미 있으면 둘이 같은 곳이 되므로 <c>from</c>을 걷는다.</item>
     /// </list>
-    /// 끊긴 분기의 선 모양은 걷는다(<see cref="ForgetShapeIfCut"/>와 같은 까닭).
+    /// 끊긴 분기의 선 모양은 걷는다 — 선이 없는데 모양만 파일에 남으면, 같은 자리를 다시 이을 때 옛 굽이가 되살아난다.
     /// </summary>
     private void SetDetourTarget(string nodeId, string lineId, string? from, string? to, bool keepPoint)
     {
@@ -1198,56 +1159,10 @@ public sealed partial class ProjectEditor
         Changed?.Invoke(this, new ProjectChangedEventArgs(kind, fromHistory, nodeId));
     }
 
-    /// <summary>
-    /// 주인 없는 출구를 버린다 — 갈래가 사라졌으면 거기 매달린 배선도 갈 곳이 없다.
-    /// 남겨 두면 그래프에 주인 없는 간선이 생기고, 그 간선은 어느 화면에서도 지울 수 없다.
-    ///
-    /// 대본에서 사라진 줄의 출구는 여기서 지우지 않는다. 그것은 <b>고아</b>이지 쓰레기가 아니다.
-    /// 대본을 되돌리면 살아나야 하고, 그때까지는 진단으로 보인다.
-    ///
-    /// <b>신원을 흐름 해석과 같은 규칙으로 짓는다</b>(<see cref="Flow.BranchAnchor"/>).
-    /// 첫 전환 하나만 보고 <b>맨 줄 Id</b>만 살리면 (ㄱ) 첫 전환이 여는 것이 아닌 줄의 출구가
-    /// 통째로 지워지고, (ㄴ) 한 줄이 갈래를 여럿 열 때 둘째부터의 출구가 매달자마자 사라진다.
-    /// </summary>
-    private static void PruneBranchExits(DialogueNode node)
-    {
-        var opening = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (DialogueLineExtension extension in node.LineExtensions)
-        {
-            int ordinal = 0;
-
-            foreach (LineConditionTransition transition in extension.Transitions)
-            {
-                if (transition.OpensBranch)
-                {
-                    opening.Add(Flow.BranchAnchor.ForLine(extension.LineId, ordinal++));
-                }
-            }
-        }
-
-        // 대본 끝의 줄 없는 갈래들.
-        int trailing = 0;
-
-        foreach (LineConditionTransition transition in node.TrailingTransitions)
-        {
-            if (transition.OpensBranch)
-            {
-                opening.Add(Flow.BranchAnchor.ForTrailing(trailing++));
-            }
-        }
-
-        foreach (string key in node.BranchExits.Keys.Where(key => !opening.Contains(key)).ToList())
-        {
-            node.BranchExits.Remove(key);
-        }
-    }
-
     /// <summary>아무것도 담지 않게 된 확장 항목을 버린다. 빈 항목은 파일만 시끄럽게 한다.</summary>
     private static void PruneLineExtensions(DialogueNode node)
     {
-        node.LineExtensions.RemoveAll(extension =>
-            extension.IsEmpty && !node.BranchExits.ContainsKey(extension.LineId));
+        node.LineExtensions.RemoveAll(extension => extension.IsEmpty);
     }
 
     private void RemoveReferencesToNode(string nodeId)
@@ -1258,14 +1173,6 @@ public sealed partial class ProjectEditor
             if (other is not DialogueNode dialogue)
             {
                 continue;
-            }
-
-            foreach (string key in dialogue.BranchExits
-                         .Where(pair => string.Equals(pair.Value, nodeId, StringComparison.Ordinal))
-                         .Select(pair => pair.Key)
-                         .ToList())
-            {
-                dialogue.BranchExits.Remove(key);
             }
 
             // 분기가 다녀가던 카드가 사라졌다 — 분기점은 이어지지 않은 채 제자리에 남는다(연결만 끊은 것과 같다).

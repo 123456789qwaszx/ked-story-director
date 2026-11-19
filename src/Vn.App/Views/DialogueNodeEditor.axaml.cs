@@ -56,10 +56,10 @@ public partial class DialogueNodeEditor : UserControl
     ///
     /// 참이어도 대본(본문·화자·줄 구성)은 잠그지 않는다 — 대본의 원본은 프로젝트다.
     ///
-    /// 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 셋뿐이고, 셋 다 대본이 아니다:
+    /// 뜻은 좁다 — <b>챕터(기획자 층)가 쥔 것</b>만이다. 둘뿐이고, 둘 다 대본이 아니다:
     /// ① 이름 칸 = 에피소드의 <b>보이는 제목</b> — EpisodeId는 [구성] 탭에서 정한다(<see cref="CommitName"/>)
     /// ② 스탯변화(챕터 간선의 것)
-    /// ③ 갈래 출구 배선(연출 그래프 카드의 IF 포트 하나 — 문은 하나)
+    /// (⛔ 셋째였던 갈래 출구 배선은 2026-11-19에 갈래 출구와 함께 걷혔다 · usability UX28.)
     /// </summary>
     private bool _chapterEpisode;
 
@@ -481,11 +481,6 @@ public partial class DialogueNodeEditor : UserControl
 
         body.Children.Add(BuildMainRow(node, script, resolved));
 
-        if (resolved.IsBranchExit && branch is not null)
-        {
-            body.Children.Add(BuildExitRail(node, branch));
-        }
-
         return new Border
         {
             // 조건 안이면 오른쪽으로 한 단계 들어가고 그 조건 팔레트의 색을 쓴다.
@@ -498,11 +493,7 @@ public partial class DialogueNodeEditor : UserControl
             BorderBrush = branch is null
                 ? new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
                 : BranchPalette.Accent(palette),
-            Background = resolved.IsBranchExit
-                ? BranchPalette.ExitBackground(palette)
-                : branch is null
-                    ? null
-                    : BranchPalette.Background(palette),
+            Background = branch is null ? null : BranchPalette.Background(palette),
             Child = body
         };
     }
@@ -1166,10 +1157,10 @@ public partial class DialogueNodeEditor : UserControl
         {
             panel.Children.Add(BuildAddBranchButton(node, resolved));
 
-            // 여기서 막는 것은 챕터의 것이다 —선택지와 스탯변화는 간선, 갈래 출구는 IF 포트.
+            // 여기서 막는 것은 챕터의 것이다 — 선택지와 스탯변화는 간선.
             panel.Children.Add(new TextBlock
             {
-                Text = "📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서, 갈래 출구는 카드의 IF 포트에서 고칩니다.",
+                Text = "📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서 고칩니다.",
                 FontSize = 10,
                 Opacity = 0.65,
                 TextWrapping = TextWrapping.Wrap,
@@ -1177,8 +1168,7 @@ public partial class DialogueNodeEditor : UserControl
             });
         }
 
-        // ⛔ 갈래 출구(이 갈래 끝에서 점프)는 여기에 두지 않는다(2026-11-19 소유자 · usability UX26 — 차림에서 걷었다). 잇고 떼는 자리는 판
-        //    카드의 IF 갈래 포트 하나다 — 에피소드 카드만(분기 카드는 출구를 두지 않는다 · UX27).
+        // ⛔ 갈래 출구(이 갈래 끝에서 점프)는 2026-11-19에 차림에서(usability UX26), 이어 통째로(UX28) 걷혔다.
 
         // ▲▼✕ 줄 이동 · 삭제의 진입점 — 행에는 단추를 두지 않고 여기서 한다.
         // 줄 구성의 주인은 프로젝트라 모든 노드에서 선다.
@@ -1288,35 +1278,6 @@ public partial class DialogueNodeEditor : UserControl
 
     /// <summary>마지막으로 연 줄의 ＋ 차림 — 화면 시험이 그 안의 단추를 누르는 손잡이다(차림은 따로 뜨는 창이라 판에서 안 찾인다).</summary>
     internal StackPanel? LineMetaPanel { get; private set; }
-
-    // ── 출구 레일 ───────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 갈래 출구가 있는 줄 아래의 출구 레일 — <b>표시뿐이다</b>. 어디로 가는지는 계속 보인다: 잠근 것은 고치는 길이지 정보가 아니다.
-    ///
-    /// 잇고 떼는 자리는 <b>[대본] 판 카드의 IF 갈래 포트</b> 하나다 — 같은 <c>SetExitTarget</c>을 부르는 문이 둘이면 어느 쪽이 정본인지 화면이
-    /// 말하지 못한다. 분기 카드는 출구를 두지 않는다(usability UX27) — 그 전의 파일에 남은 것은 판에서 끊는다. ⛔ 전에는 분기 카드에서
-    /// 이 레일이 단추였고 누르면 대상 고르기가 열렸다(아무 카드에나 이어졌다).
-    /// </summary>
-    private Control BuildExitRail(DialogueNode node, ConditionBranch branch)
-    {
-        StoryNode target = _session!.Project.FindNode(branch.ExitTargetNodeId)!;   // 출구 대상은 늘 있다 — 저장 검증이 지킨다
-
-        var caption = new TextBlock
-        {
-            Text = $"→ 분기 이후: {target.Name}",
-            FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = BranchPalette.Accent(PaletteOf(branch)),
-            Margin = new Thickness(30, 0, 0, 0),
-            Opacity = 0.8
-        };
-        ToolTip.SetTip(caption, _session.Editor.CanBranchFrom(node.Id)
-            ? "이 갈래의 출구는 [대본] 판 카드의 IF 갈래 포트에서 잇고 뗍니다."
-            : "분기 카드에는 출구를 두지 않습니다 — [대본] 판에서 이 선을 고르고 Delete로 끊으세요.");
-
-        return caption;
-    }
 
     /// <summary>
     /// 대본에서 사라진 줄에 남은 조건 데이터. 자동으로 지우지 않으므로 눈에 보여야 한다.

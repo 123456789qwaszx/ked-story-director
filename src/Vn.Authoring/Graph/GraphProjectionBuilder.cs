@@ -242,14 +242,8 @@ public static class GraphProjectionBuilder
         StoryFile file,
         StoryProject project)
     {
+        // 출구 포트는 분기점뿐이다 — 조건 갈래는 포트를 세우지 않는다(⛔ 갈래 출구는 2026-11-19에 걷혔다 · usability UX28).
         IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project);
-
-        // 분기 카드는 분기를 내지 않는다(usability UX27 · ProjectEditor.CanBranchFrom) — 조건 갈래(첫머리 조건도)에 출구 포트를 세우지 않는다.
-        // 이어 둔 것(그 전의 파일)만 선다 — 끊을 수 있게. ⛔ 전에는 첫머리 조건의 포트만 감췄고 다른 갈래는 아무 카드에나 이어졌다.
-        if (node is DialogueNode { IsBranchCard: true })
-        {
-            exits = exits.Where(exit => exit.Kind != ExitPortKind.Branch || exit.IsConnected);
-        }
 
         var ports = exits
             .Select(exit => new GraphOutputPortProjection(

@@ -162,26 +162,10 @@ public sealed class BranchEntryConditionTests
         (ProjectEditor editor, _, DialogueNode branch) = World();
         BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
 
-        // 흐름에는 그 갈래가 그대로 있다 — 판이 그리지 않을 뿐이다.
-        Assert.Single(NodeConnections.PortsOf(branch, editor.Project), port => port.Kind == ExitPortKind.Branch);
-
-        Assert.DoesNotContain(PortsOnBoard(editor, branch.Id), port => port.ExecutionPort?.Kind == ExitPortKind.Branch);
-    }
-
-    [Fact]
-    public void 아무도_부르지_않는_분기_카드의_갈래도_판에_출구_포트로_서지_않는다()
-    {
-        // 분기 카드는 분기를 내지 않는다(usability UX27) — ⛔ 전에는 부르는 분기점을 끊으면 첫머리 조건이 아니게 되어 갈래 포트가 섰고, 아무 카드에나 이어졌다.
-        (ProjectEditor editor, DialogueNode caller, DialogueNode branch) = World();
-        string branchId = branch.Id;
-        BranchEntryCondition.Set(editor, branchId, "신뢰높음");
-
-        // 부르던 분기점의 연결만 끊는다 — 카드는 남고, 더는 다녀오는 카드가 아니다.
-        ExitPort detour = NodeConnections.PortsOf(editor.Project.FindDialogue(caller.Id)!, editor.Project)
-            .Single(port => port.Kind == ExitPortKind.Detour);
-        editor.SetExitTarget(detour, null);
-
-        Assert.DoesNotContain(PortsOnBoard(editor, branchId), port => port.ExecutionPort?.Kind == ExitPortKind.Branch);
+        // 흐름에는 그 갈래가 그대로 있다 — 조건 갈래는 출구 포트를 세우지 않는다(⛔ 갈래 출구는 2026-11-19에 걷혔다 · usability UX28).
+        Assert.Single(ConditionFlowResolver.Resolve(branch, editor.Project).Branches);
+        Assert.Empty(NodeConnections.PortsOf(branch, editor.Project));
+        Assert.Empty(PortsOnBoard(editor, branch.Id));
     }
 
     /// <summary>[대본] 판이 그 카드에 세우는 출구 포트들.</summary>

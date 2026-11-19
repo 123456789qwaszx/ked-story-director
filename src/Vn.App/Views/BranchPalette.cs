@@ -37,19 +37,6 @@ internal static class BranchPalette
         return new SolidColorBrush(Color.FromArgb(28, color.R, color.G, color.B));
     }
 
-    /// <summary>
-    /// 조건 출구 카드의 배경. 갈래 기본색보다 확실히 진하다.
-    ///
-    /// 선택 상태를 뜻하는 색과 구분되어야 하므로 채도를 올리는 대신 불투명도를 크게 올린다.
-    /// 이 카드는 왼쪽 테두리로 자기 갈래 색을 계속 보여 주므로,
-    /// "어느 갈래인가"와 "출구인가"를 동시에 알 수 있다.
-    /// </summary>
-    public static IBrush ExitBackground(int paletteIndex)
-    {
-        Color color = AccentColor(paletteIndex);
-        return new SolidColorBrush(Color.FromArgb(92, color.R, color.G, color.B));
-    }
-
     private static Color AccentColor(int paletteIndex)
     {
         if (paletteIndex < 0)

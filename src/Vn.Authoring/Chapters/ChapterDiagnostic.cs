@@ -57,7 +57,7 @@ public enum ChapterDiagnosticCode
     /// <summary>분기 카드의 Yarn 노드 이름이 에피소드 · 다른 분기 카드와 겹친다 — 오류(<see cref="ChapterBranchCards"/>).</summary>
     BranchCardNameTaken,
 
-    /// <summary>분기 카드 안에 분기(분기점 · 갈래 출구)가 있다 — 오류(<see cref="ChapterBranchCards"/> · usability UX27).</summary>
+    /// <summary>분기 카드 안에 분기(분기점)가 있다 — 오류(<see cref="ChapterBranchCards"/> · usability UX27).</summary>
     BranchCardBranches,
 
     /// <summary>
@@ -66,7 +66,6 @@ public enum ChapterDiagnosticCode
     /// </summary>
     YarnNodeNameTaken,
     OptionEdgeMismatch,
-    ExitIntoLandingCard,
 
 
     /// <summary>

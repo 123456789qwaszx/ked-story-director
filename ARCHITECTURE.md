@@ -88,7 +88,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 |---|---|
 | `StoryProject.cs` · `Speaker.cs` | 프로젝트 — 판(카드와 그 대본) · 챕터 · **화자 목록**(이름 · 캐릭터 키 — 모든 챕터가 쓴다, 2026-11-17 · ⛔ 그 전에는 정의 파일 speakers) · [대본] 판 크기 |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
-| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리 · 갈래 출구(`BranchExits`) · 에피소드 표식(`MarkedEpisodeId`) · 분기 카드의 제목(`Title`)을 든다. ⛔ 기본 출구는 2026-11-17에 걷혔다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
+| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리(조건 전환 · 분기점) · 에피소드 표식(`MarkedEpisodeId`) · 분기 카드의 제목(`Title`)을 든다. ⛔ 기본 출구는 2026-11-17에, 갈래 출구(`BranchExits`)는 2026-11-19에 걷혔다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
 | `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeIds` — 한 줄에 여럿, 연결만 끊은 분기점은 `OpenDetourPositions`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
 | `EdgeShape.cs` | 사람이 고친 선 모양(꼴 · 굽이 — 자동 자리에서 옮긴 양) |
 | `Identifier.cs` | 식별자 형식 |
@@ -238,14 +238,15 @@ Line 5  EndIf                           Line 5
   `TrailingTransitions`가 닫는다.
 - 조건 안 조건(중첩)은 문제로 알린다. ⛔ 대사 안 선택 블록(조건 안 선택지 W54 · 결합 종료 W55 포함)은 2026-11-04에 걷혔다 — 선택지는 챕터 간선(에피소드 끝)에서만 선다. 옛 파일의 `beginChoice` 등은 모르는 전환 종류라 깨진 파일로 거절한다(2026-11-17 · §8 — ⛔ 그 전에는 알아보고 버리며 상태줄에 알렸다).
 
-### 4.2 조건 갈래 출구는 갈래를 *여는 줄*에 매단다
+### 4.2 실행 출구는 분기점 하나다
 
-마지막 줄에 매달면 줄을 하나 넣는 순간 출구가 갈래 중간에 파묻힌다. 여는 줄은 갈래 그 자체이므로 줄을 넣고 옮겨도 출구는 그
-갈래의 것으로 남는다.
+카드에서 나가는 실행 선은 **분기점**(줄 앞에서 분기 카드로 `<<detour>>` — `DialogueLineExtension.DetourTargetNodeIds`)뿐이다. 분기점은
+에피소드 카드에만 서고 분기 카드에만 잇는다(`ProjectEditor.CanBranchFrom` · `CanBranchTo`).
 
-**전환을 지우면** `ProjectEditor.PruneBranchExits`가 출구를 함께 버린다(남기면 어느 화면에서도 못 지우는 간선이 생긴다).
-**대본에서 줄이 빠지면** 출구를 버리지 않는다 — 그것은 **고아**이지 쓰레기가 아니다. 되돌리면 살아나야 하고, 그때까지는
-`FlowProblemKind.OrphanedLineExtension`으로 보인다.
+⛔ **조건 갈래 출구**(갈래를 여는 줄에 매달아 갈래 끝에서 들르던 카드 — `DialogueNode.BranchExits` · 판 파일 전환의 `exit` · 꼬리 전환의
+`anchor`)는 2026-11-19에 걷혔다(`docs/work-orders/usability-orders.md` UX28). 대상을 가리지 않아 아무도 부르지 않는 분기 카드에 이으면 내보낸
+Yarn이 없는 노드를 불러 게임이 멈췄고, 에피소드에 이으면 그 에피소드가 진행 기록 밖에서 재생됐다. 옛 칸은 모르는 칸으로 지나가 다음
+저장에서 빠진다. 갈래의 신원(`Flow.BranchAnchor`)은 흐름 해석이 갈래를 가르는 데 그대로 쓴다.
 
 ### 4.3 그래프 포트는 저장하지 않고 계산한다
 
@@ -315,8 +316,8 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 
 | 하고 싶은 일 | 여는 곳 |
 |---|---|
-| 출구를 어디에 저장하나 | `Model/StoryNode.cs`의 `DialogueNode.BranchExits` · 줄 확장의 분기점(`DialogueLineExtension`) |
-| 포트를 만드는 규칙 · 간선 문구 | `Flow/NodeConnections.cs`의 `PortsOf` · `LabelFor` |
+| 출구를 어디에 저장하나 | 줄 확장의 분기점(`Model/DialogueLineExtension.cs`) |
+| 포트를 만드는 규칙 | `Flow/NodeConnections.cs`의 `PortsOf` |
 | 연결 · 해제 | `ProjectEditor.SetExitTarget` |
 | 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs`(`IsHiddenPlumbing`) |
 | 선의 쪽 · 경로 · 사람이 고친 모양 | `Graph/EdgeSide.cs` · `OrthogonalEdgeRouter.cs` · `EdgeShapeRouter.cs` |
@@ -377,7 +378,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
    거는 열쇠라, 잘못 이으면 그쪽에서 조용히 틀린다.
 2. **조건 해석은 `ConditionFlowResolver` 하나만 쓴다.** 각자 계산하면 화면과 그래프가 다른 구조를 보인다.
 3. **색 · 좌표에서 조건을 거꾸로 추론하지 않는다.** 방향은 언제나 전환 데이터 → 갈래 계산 → 표시다. 색만으로 정보를 전하지도 않는다.
-4. **조건 갈래 출구는 여는 줄에 매단다**(§4.2).
+4. **실행 출구는 분기점 하나다**(§4.2) — 조건 갈래는 출구를 갖지 않는다.
 5. **모델 변경은 `ProjectEditor`만 한다.** 화면이 직접 만지면 되돌리기와 알림이 빠진다.
 6. **화면끼리 직접 이야기하지 않는다.** 그래프와 편집기는 세션만 보고, 그래프는 `GraphProjection`을 그린다.
 7. **파일 순서와 그래프 좌표는 별개다.** 새 노드는 판의 맨 뒤에 붙는다 — 좌표를 순서에 반영하면 diff가 흔들린다.

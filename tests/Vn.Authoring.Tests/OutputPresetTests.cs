@@ -55,10 +55,9 @@ public class OutputPresetTests
         Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.NodeHeader);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
         Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.DialogueLine);
-        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
-
         string text = DocumentPreviewFormatter.Format(document);
         Assert.DoesNotContain("[장면]", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("<<detour", text, StringComparison.Ordinal);   // 쓰는 면 — 분기는 글자가 아니라 판의 점으로 보인다
 
         // X11 — 조건은 대괄호 표기가 아니라 실제 Yarn 문법이다(표기=파싱 문법, X12 왕복 전제).
         Assert.Contains("<<if ", text, StringComparison.Ordinal);
@@ -111,11 +110,8 @@ public class OutputPresetTests
         // ⚠ 작가가 <b>줄에</b> 단 set — 2026-08-24부터 문서에 남는 set은 이것뿐이다.
         // 설정노드의 초기값은 선언으로만 나간다(작업지시 §4).
 
-        sample.Editor.SetExitTarget(
-            sample.Dialogue.Id,
-            ExitPortKind.Branch,
-            opening,
-            sample.TargetA.Id);
+        // 분기 하나 — 실행 층(`<<detour>>`)이다. ⛔ 2026-11-19 전에는 갈래 출구를 달았다(걷혔다 · usability UX28).
+        sample.Editor.AddBranchMarker(sample.Dialogue.Id, opening);
 
         return new PresetSample(sample, opening, sample.Unfold());
     }

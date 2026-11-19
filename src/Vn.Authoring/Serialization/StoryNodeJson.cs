@@ -198,11 +198,8 @@ internal static class StoryNodeJson
 
         foreach (DialogueLineExtension extension in node.LineExtensions)
         {
-            bool hasExit = extension.Transitions.Any(transition => transition.OpensBranch) &&
-                node.BranchExits.ContainsKey(extension.LineId);
-
             // 아무것도 담지 않은 확장은 저장하지 않는다. 파일이 조용해야 diff가 읽힌다.
-            if (extension.IsEmpty && !hasExit)
+            if (extension.IsEmpty)
             {
                 continue;
             }
@@ -214,7 +211,7 @@ internal static class StoryNodeJson
             // 나간다. 읽을 때는 둘 다 받는다(<see cref="Transitions"/>).
             if (extension.Transitions.Count == 1)
             {
-                lineJson["condition"] = TransitionJson(extension.Transitions[0], node, extension, hasExit);
+                lineJson["condition"] = TransitionJson(extension.Transitions[0]);
             }
             else if (extension.Transitions.Count > 1)
             {
@@ -222,7 +219,7 @@ internal static class StoryNodeJson
 
                 foreach (LineConditionTransition transition in extension.Transitions)
                 {
-                    array.Add(TransitionJson(transition, node, extension, hasExit));
+                    array.Add(TransitionJson(transition));
                 }
 
                 lineJson["conditions"] = array;
@@ -252,36 +249,13 @@ internal static class StoryNodeJson
         // 줄이 아니라 노드에 붙으므로 `lines` 밖에 선다. 없으면 칸도 안 만든다.
         if (node.TrailingTransitions.Count > 0)
         {
+            // ⛔ 여는 전환에 적던 `anchor`(갈래 신원)와 `exit`(갈래 출구)는 2026-11-19에 걷혔다(usability UX28) — 그 전의 파일에 있으면
+            //    모르는 칸으로 지나가고 다음 저장에서 빠진다(기본 출구 `defaultExit`와 같은 처지).
             var trailing = new JsonArray();
-
-            int opened = 0;
 
             foreach (LineConditionTransition transition in node.TrailingTransitions)
             {
-                var transitionJson = new JsonObject
-                {
-                    ["kind"] = KindName(transition.Kind)
-                };
-
-                if (transition.ConditionId is not null)
-                {
-                    transitionJson["condition"] = transition.ConditionId;
-                }
-
-                // 앵커를 <b>글자로 적어 둔다</b> — 규칙(몇 번째인가)이 나중에 바뀌어도
-                // 이미 매달린 출구가 제 갈래를 계속 찾는다. 읽는 쪽도 이 글자를 쓴다.
-                if (transition.OpensBranch)
-                {
-                    string anchor = BranchAnchor.ForTrailing(opened++);
-                    transitionJson["anchor"] = anchor;
-
-                    if (node.BranchExits.TryGetValue(anchor, out string? exit))
-                    {
-                        transitionJson["exit"] = exit;
-                    }
-                }
-
-                trailing.Add(transitionJson);
+                trailing.Add(TransitionJson(transition));
             }
 
             json["trailing"] = trailing;
@@ -336,16 +310,7 @@ internal static class StoryNodeJson
 
             foreach (JsonObject transitionJson in Transitions(lineJson, id))
             {
-                LineConditionTransition transition = ReadTransition(transitionJson, id);
-                extension.Transitions.Add(transition);
-
-                // 갈래 출구는 여는 전환에만 적는다 — 닫는 전환에 붙은 출구는 쓰는 모양이 아니다.
-                if (JsonSupport.OptionalString(transitionJson["exit"], $"DialogueNode '{id}'의 출구") is { } exit)
-                {
-                    node.BranchExits[lineId] = transition.OpensBranch
-                        ? exit
-                        : throw new InvalidDataException($"DialogueNode '{id}'의 줄 '{lineId}'에서 갈래를 열지 않는 전환에 출구가 있습니다.");
-                }
+                extension.Transitions.Add(ReadTransition(transitionJson, id));
             }
 
             extension.DetourTargetNodeIds.AddRange(DetourJson.Read(lineJson["detour"]));
@@ -356,22 +321,7 @@ internal static class StoryNodeJson
 
         foreach (JsonObject transitionJson in JsonSupport.Objects(json["trailing"], $"DialogueNode '{id}'의 trailing"))
         {
-            LineConditionTransition transition = ReadTransition(transitionJson, id);
-            node.TrailingTransitions.Add(transition);
-
-            // 끝의 빈 갈래도 출구(detour)를 가질 수 있다 — 열쇠는 그 갈래의 앵커다. 앵커는 여는 전환에만 적는다.
-            string? anchor = JsonSupport.OptionalString(transitionJson["anchor"], $"DialogueNode '{id}'의 꼬리 갈래 앵커");
-            string? exit = JsonSupport.OptionalString(transitionJson["exit"], $"DialogueNode '{id}'의 꼬리 갈래 출구");
-
-            if (transition.OpensBranch != (anchor is not null) || (exit is not null && anchor is null))
-            {
-                throw new InvalidDataException($"DialogueNode '{id}'의 꼬리 전환의 앵커 · 출구가 어긋났습니다(여는 전환에만 앵커가 있고 출구는 앵커에 매달립니다).");
-            }
-
-            if (anchor is not null && exit is not null)
-            {
-                node.BranchExits[anchor] = exit;
-            }
+            node.TrailingTransitions.Add(ReadTransition(transitionJson, id));
         }
 
         return node;
@@ -382,9 +332,8 @@ internal static class StoryNodeJson
         ParseKind(JsonSupport.RequiredText(json["kind"], $"DialogueNode '{nodeId}'의 전환 kind"), nodeId),
         JsonSupport.OptionalString(json["condition"], $"DialogueNode '{nodeId}'의 전환 condition"));
 
-    /// <summary>전환 하나를 JSON으로. 갈래 출구는 <b>여는 전환</b>에만 붙는다.</summary>
-    private static JsonObject TransitionJson(
-        LineConditionTransition transition, DialogueNode node, DialogueLineExtension extension, bool hasExit)
+    /// <summary>전환 하나를 JSON으로 — 종류와 조건 Id.</summary>
+    private static JsonObject TransitionJson(LineConditionTransition transition)
     {
         var json = new JsonObject
         {
@@ -394,11 +343,6 @@ internal static class StoryNodeJson
         if (transition.ConditionId is not null)
         {
             json["condition"] = transition.ConditionId;
-        }
-
-        if (hasExit && transition.OpensBranch)
-        {
-            json["exit"] = node.BranchExits[extension.LineId];
         }
 
         return json;

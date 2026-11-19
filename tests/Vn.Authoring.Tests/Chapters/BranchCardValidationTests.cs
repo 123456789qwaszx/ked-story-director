@@ -79,7 +79,7 @@ public sealed class BranchCardValidationTests
     }
 
     [Fact]
-    public void 분기_카드_안의_분기는_오류다_분기점이든_갈래_출구든()
+    public void 분기_카드_안의_분기점은_오류다()
     {
         // 편집기는 만들지 않는다(usability UX27) — 그 전의 파일에 남은 것을 그대로 지어 본다.
         (ProjectEditor editor, DialogueNode root) = World();
@@ -96,19 +96,6 @@ public sealed class BranchCardValidationTests
 
         // 분기점을 지우면(줄의 ＋ → ✕) 조용해진다 — 지우기는 받는다.
         Assert.NotNull(editor.RemoveBranchMarker(outer.Id, outer.Script.ActiveLines.First().Id, inner.Id));
-        Assert.DoesNotContain(Branch(Validate(editor)), item => item.Code == ChapterDiagnosticCode.BranchCardBranches);
-
-        // 이어진 갈래 출구도 같다 — 첫머리 조건의 갈래가 다른 카드로 나간다.
-        ChapterDocument chapter = editor.FindChapter("ch01")!;
-        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
-        editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
-        Assert.Null(BranchEntryCondition.Set(editor, outer.Id, "신뢰높음"));
-        outer.BranchExits[outer.Script.ActiveLines.First().Id] = inner.Id;
-
-        Assert.Single(Branch(Validate(editor)), item => item.Code == ChapterDiagnosticCode.BranchCardBranches);
-
-        // 걸린 조건만으로는 오류가 아니다 — 출구를 끊으면 조용해진다.
-        editor.SetExitTarget(outer.Id, Vn.Authoring.Flow.ExitPortKind.Branch, outer.Script.ActiveLines.First().Id, null);
         Assert.DoesNotContain(Branch(Validate(editor)), item => item.Code == ChapterDiagnosticCode.BranchCardBranches);
     }
 

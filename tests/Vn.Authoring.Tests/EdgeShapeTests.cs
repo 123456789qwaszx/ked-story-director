@@ -92,7 +92,7 @@ public sealed class EdgeShapeTests
     {
         ProjectEditor editor = Chapter();
         DialogueNode a = EpisodeNaming.CardFor(editor.Project, "ch01", "a")!;
-        var loose = new ExitPort(ExitPortKind.Branch, a.Id, "ln_none", "갈래", TargetNodeId: null, PaletteIndex: 0);
+        var loose = new ExitPort(ExitPortKind.Detour, a.Id, "ln_none", "분기", TargetNodeId: null, PaletteIndex: 0, OpenOrdinal: 0);
 
         editor.SetExitShape(loose, Curved);
 
