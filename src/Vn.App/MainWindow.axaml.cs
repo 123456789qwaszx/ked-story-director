@@ -136,8 +136,11 @@ public partial class MainWindow : Window
 
         // 두 하이어아키 · 탭 사이 선택 맞추기 (MainWindow.Hierarchy.cs).
         WireHierarchies();
-        // 프로젝트가 아직 없을 때는 [구성] 빈 판 한가운데의 [새 프로젝트]가 먼저다 — File 메뉴의 「새 프로젝트…」와 같은 길 하나를 지난다.
+        // 프로젝트가 아직 없을 때는 빈 판 한가운데의 단추가 먼저다 — File 메뉴의 「새 프로젝트…」 · 「열기…」와 같은 길 하나를 지난다
+        // ([대본]은 둘 다 · usability UX35, [구성]은 [새 프로젝트]).
         ChapterGraph.ProjectNewCenterButton.Click += OnNewClick;
+        Graph.ProjectNewCenterButton.Click += OnNewClick;
+        Graph.ProjectOpenCenterButton.Click += OnOpenClick;
         NewMenuItem.Click += OnNewClick;
         OpenMenuItem.Click += OnOpenClick;
         SaveMenuItem.Click += OnSaveClick;
@@ -591,7 +594,9 @@ public partial class MainWindow : Window
 
         _session.NewProject();
         _session.Save(ProjectFolder.NewManifestPathIn(folder));
+        _session.SetStatus("새 프로젝트를 만들었습니다 — 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.");
         RefreshShell();
+        RebuildFileList();   // 하이어아키의 빈 목록 안내도 「저장된 프로젝트」의 것으로
         MainTabs.SelectedItem = GraphTabItem;
     }
 
@@ -840,6 +845,9 @@ public partial class MainWindow : Window
         DirtyText.Text = dirty ? "● 저장되지 않은 변경" : string.Empty;
 
         Title = dirty ? $"* {BaseTitle} — {name}" : $"{BaseTitle} — {name}";
+
+        // 저장된 프로젝트가 생기거나(새 프로젝트 · 열기) 없어지면 [대본] 빈 판의 첫걸음이 바뀐다(usability UX35).
+        Graph.RefreshEmptyBoard();
     }
 
     private static string ProjectDisplayName(string path)

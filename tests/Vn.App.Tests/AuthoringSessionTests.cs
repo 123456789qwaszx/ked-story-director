@@ -11,12 +11,17 @@ public class AuthoringSessionTests : IDisposable
     public void 새_프로젝트는_판_없이_시작한다()
     {
         // 2026-11-17 소유자 — 낙서판(「기본 파일」)을 걷었다. 판은 챕터가 세운다 — 판 한가운데의 [＋ 첫 챕터 만들기]가 챕터 · 장면과 함께 세운다
-        // (2026-11-18 · first-chapter F3 — ⛔ 그 전에는 상태줄이 챕터 없이는 꺼져 있는 [＋ 에피소드]를 가리켰다).
+        // (2026-11-18 · first-chapter F3 — ⛔ 그 전에는 상태줄이 챕터 없이는 꺼져 있는 [＋ 에피소드]를 가리켰다). 저장 전의 새 프로젝트에서는
+        // 챕터를 만들 수 없어 상태줄은 판 한가운데의 [열기…] · [새 프로젝트…]를 가리킨다(usability UX35 — ⛔ 그 전에는 눌러도 안 되는
+        // [＋ 첫 챕터 만들기]를 가리켰다).
         var session = new AuthoringSession();
 
         Assert.Empty(session.Project.Files);
         Assert.Null(session.ActiveFile);
-        Assert.Contains("[＋ 첫 챕터 만들기]", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Null(session.ProjectPath);
+        Assert.Equal(AuthoringSession.NoProjectStatus, session.StatusMessage);
+        Assert.Contains("[열기…]", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("[새 프로젝트…]", session.StatusMessage, StringComparison.Ordinal);
     }
 
     [Fact]

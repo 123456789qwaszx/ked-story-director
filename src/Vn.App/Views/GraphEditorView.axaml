@@ -131,21 +131,41 @@
             </ScrollViewer>
 
             <!-- 빈 판의 첫걸음 — 챕터가 하나도 없으면 판 한가운데에 선다(2026-11-18 소유자 · first-chapter F1). [＋ 에피소드]는 활성 판이 없어
-                 꺼져 있고, 하이어아키 우클릭 「챕터 추가」는 알 길이 없었다. 누르면 그 「챕터 추가」와 같다(셸 — 장면 · 에피소드와 함께). -->
+                 꺼져 있고, 하이어아키 우클릭 「챕터 추가」는 알 길이 없었다. 누르면 그 「챕터 추가」와 같다(셸 — 장면 · 에피소드와 함께).
+                 저장된 프로젝트가 없으면(처음 켰을 때) 챕터를 만들 수 없다 — 그때는 [열기…] · [새 프로젝트…]가 선다(배선은 셸: File 메뉴와
+                 같은 길 · 2026-11-19 소유자 · usability UX35 — ⛔ 전에는 [＋ 첫 챕터 만들기]가 서서 눌러도 아래 상태줄에만 말이 떴다). -->
             <StackPanel Grid.Column="2"
                         x:Name="EmptyBoardPanel"
                         IsVisible="False"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Spacing="12">
-                <TextBlock Text="아직 챕터가 없습니다."
+                <TextBlock x:Name="EmptyBoardText"
+                           Text="아직 챕터가 없습니다."
                            HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="420"
                            Opacity="0.55" />
                 <Button x:Name="FirstChapterButton"
                         Content="＋ 첫 챕터 만들기"
                         HorizontalAlignment="Center"
                         Padding="16,6"
                         ToolTip.Tip="「새 챕터」를 장면 「새 장면」 · 에피소드 하나와 함께 세웁니다 — 하이어아키 우클릭 「챕터 추가」와 같습니다. 되돌리기(Ctrl+Z)가 됩니다." />
+                <StackPanel x:Name="EmptyProjectButtons"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Spacing="10"
+                            IsVisible="False">
+                    <Button x:Name="EmptyOpenProjectButton"
+                            Content="열기…"
+                            Padding="16,6"
+                            ToolTip.Tip="받은 프로젝트를 엽니다 — project.vnproject.json이 든 폴더를 고르세요. File → [열기…]와 같습니다." />
+                    <Button x:Name="EmptyNewProjectButton"
+                            Content="새 프로젝트…"
+                            Padding="16,6"
+                            ToolTip.Tip="처음부터 시작합니다 — 프로젝트를 둘 빈 폴더를 고르세요. File → [새 프로젝트…]와 같습니다." />
+                </StackPanel>
             </StackPanel>
 
             <!-- 미니맵 — 우측 하단에 전체 맵과 현재 배율. 클릭·드래그로 뷰포트 이동. 판과 같은 칸에 겹쳐 선다.

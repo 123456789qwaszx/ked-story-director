@@ -35,6 +35,7 @@ public sealed class FirstChapterTests : IDisposable
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         StackPanel empty = graph.FindControl<StackPanel>("EmptyBoardPanel")!;
         Assert.True(empty.IsVisible);
+        Assert.False(graph.FindControl<StackPanel>("EmptyProjectButtons")!.IsVisible);   // 프로젝트는 있다 — [열기…] · [새 프로젝트…]는 없다
         Assert.False(graph.FindControl<Button>("AddEpisodeButton")!.IsEnabled);   // [＋ 에피소드]는 꺼져 있다 — 이 단추가 첫걸음이다
         long before = session.Editor.Revision;
 
@@ -105,6 +106,59 @@ public sealed class FirstChapterTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 처음_켜서_프로젝트가_없으면_대본_빈_판에_열기와_새_프로젝트가_선다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「처음에 프로젝트 자체도 없을 때 대본탭에서 뭘 생성시켜 준다고는 하는데 아무 일도 안 일어나니까 헷갈릴 것 같아.
+        // 아래쪽 알림에서 프로젝트 생성부터 하라고 안내는 해 주는데 그거 확인하기가 힘들 것 같아」(usability UX35).
+        var window = new MainWindow { Width = 1400, Height = 900 };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        AuthoringSession session = window.SessionProbe;
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        Assert.Null(session.ProjectPath);
+
+        Assert.True(graph.FindControl<StackPanel>("EmptyBoardPanel")!.IsVisible);
+        Assert.StartsWith("아직 프로젝트가 없습니다.", graph.FindControl<TextBlock>("EmptyBoardText")!.Text, StringComparison.Ordinal);
+        Assert.False(graph.FindControl<Button>("FirstChapterButton")!.IsVisible);   // 눌러도 만들 수 없는 단추는 서지 않는다
+        Assert.True(graph.ProjectOpenCenterButton.IsEffectivelyVisible);
+        Assert.True(graph.ProjectNewCenterButton.IsEffectivelyVisible);
+        Assert.Equal(AuthoringSession.NoProjectStatus, session.StatusMessage);
+        Assert.Contains(HierarchyTexts(graph), text => text.StartsWith("프로젝트를 열거나 만들면", StringComparison.Ordinal));
+
+        // 두 단추는 File 메뉴와 같은 길이다 — 시험 자리에는 폴더 고르는 창이 없어 그 까닭을 말한다(곧 단추가 그 길에 걸려 있다).
+        Click(graph.ProjectOpenCenterButton);
+        Assert.Contains("폴더 선택 창", session.StatusMessage, StringComparison.Ordinal);
+        session.SetStatus(AuthoringSession.NoProjectStatus);
+        Click(graph.ProjectNewCenterButton);
+        Assert.Contains("폴더 선택 창", session.StatusMessage, StringComparison.Ordinal);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 새_프로젝트를_만들면_빈_판이_첫_챕터_단추로_바뀐다() => HeadlessUi.Run(() =>
+    {
+        var window = new MainWindow { Width = 1400, Height = 900 };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        AuthoringSession session = window.SessionProbe;
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        Directory.CreateDirectory(_directory);
+
+        window.CreateProjectIn(_directory);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.NotNull(session.ProjectPath);
+        Assert.Equal("아직 챕터가 없습니다.", graph.FindControl<TextBlock>("EmptyBoardText")!.Text);
+        Assert.True(graph.FindControl<Button>("FirstChapterButton")!.IsEffectivelyVisible);
+        Assert.False(graph.FindControl<StackPanel>("EmptyProjectButtons")!.IsVisible);
+        Assert.Contains("[＋ 첫 챕터 만들기]", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains(HierarchyTexts(graph), text => text.StartsWith("챕터가 없습니다.", StringComparison.Ordinal));
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>챕터 없는 프로젝트를 저장하고 창을 띄워 연다.</summary>
@@ -123,6 +177,10 @@ public sealed class FirstChapterTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         return (window, session);
     }
+
+    /// <summary>하이어아키에 선 글들 — 빈 목록의 안내를 본다.</summary>
+    private static IEnumerable<string> HierarchyTexts(GraphEditorView graph) =>
+        graph.HierarchyView.FindControl<StackPanel>("RowHost")!.Children.OfType<TextBlock>().Select(block => block.Text ?? string.Empty);
 
     private static void Click(Button button)
     {

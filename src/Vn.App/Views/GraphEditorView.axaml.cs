@@ -146,8 +146,30 @@ public partial class GraphEditorView : UserControl
     {
         _chapters = entries;
         RefreshChapterCombo();
-        EmptyBoardPanel.IsVisible = entries.Count == 0;   // 챕터가 없으면 판 한가운데 [＋ 첫 챕터 만들기](first-chapter F1)
+        RefreshEmptyBoard();
     }
+
+    /// <summary>
+    /// 빈 판의 첫걸음을 지금 상태에 맞춘다 — 챕터가 있으면 걷고, 저장된 프로젝트가 없으면 「아직 프로젝트가 없습니다」와 [열기…] ·
+    /// [새 프로젝트…], 있으면 「아직 챕터가 없습니다」와 [＋ 첫 챕터 만들기](first-chapter F1 · usability UX35). 챕터 목록이 올 때와 셸이 다시
+    /// 설 때(열기 · 새 프로젝트 저장) 부른다.
+    /// </summary>
+    internal void RefreshEmptyBoard()
+    {
+        bool saved = _session?.ProjectPath is not null;
+
+        EmptyBoardPanel.IsVisible = _chapters.Count == 0;
+        EmptyBoardText.Text = saved
+            ? "아직 챕터가 없습니다."
+            : "아직 프로젝트가 없습니다.\n받은 프로젝트가 있으면 [열기…]로 그 폴더를 고르고, 처음 시작하면 [새 프로젝트…]로 빈 폴더를 고르세요.";
+        FirstChapterButton.IsVisible = saved;
+        EmptyProjectButtons.IsVisible = !saved;
+    }
+
+    /// <summary>빈 판의 [열기…] · [새 프로젝트…] — 셸이 File 메뉴와 같은 길을 건다(usability UX35).</summary>
+    internal Button ProjectOpenCenterButton => EmptyOpenProjectButton;
+
+    internal Button ProjectNewCenterButton => EmptyNewProjectButton;
 
     /// <summary>선택을 비추는 동안에는 <c>SelectionChanged</c>가 선택을 바꾸지 않게 한다.</summary>
     private bool _syncingChapter;

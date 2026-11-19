@@ -104,7 +104,11 @@ internal sealed class AuthoringSession
 
     public StoryNode? SelectedNode => Project.FindNode(SelectedNodeId);
 
-    public string StatusMessage { get; private set; } = "새 프로젝트입니다. 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
+    public string StatusMessage { get; private set; } = NoProjectStatus;
+
+    /// <summary>저장된 프로젝트가 없을 때(처음 켰을 때)의 상태줄 — 판 한가운데의 두 단추를 가리킨다(usability UX35).</summary>
+    internal const string NoProjectStatus =
+        "아직 프로젝트가 없습니다 — 받은 프로젝트는 판 한가운데의 [열기…], 처음 시작하면 [새 프로젝트…]를 누르세요.";
 
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
@@ -192,7 +196,7 @@ internal sealed class AuthoringSession
         Destinations = ExportDestinations.None;
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
-        StatusMessage = "새 프로젝트입니다. 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
+        StatusMessage = NoProjectStatus;
 
         ResetFileGraphState(project);
         Editor.Replace(project);

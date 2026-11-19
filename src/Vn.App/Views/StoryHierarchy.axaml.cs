@@ -211,6 +211,9 @@ public partial class StoryHierarchy : UserControl
     private string _projectTitle = string.Empty;
     private IReadOnlyList<ChapterEntry> _chapters = [];
     private bool _hasProject;
+
+    /// <summary>프로젝트가 저장돼 있는가(<see cref="Rebuild"/>) — 빈 목록의 안내를 고른다.</summary>
+    private bool _saved = true;
     private readonly ContextMenu _emptyAreaMenu;
     private bool _readOnly;
 
@@ -313,9 +316,11 @@ public partial class StoryHierarchy : UserControl
     /// </summary>
     /// <param name="projectTitle">프로젝트 이름. null이면 프로젝트가 없다(빈 하이어아키).</param>
     /// <param name="chapters">챕터들 — 챕터 그래프가 읽은 그 목록 하나(두 곳이 따로 읽지 않는다).</param>
-    internal void Rebuild(string? projectTitle, IReadOnlyList<ChapterEntry> chapters)
+    /// <param name="saved">프로젝트가 저장돼 있는가 — 아니면(처음 켰을 때) 챕터를 만들 수 없어 빈 목록의 안내가 다르다(usability UX35).</param>
+    internal void Rebuild(string? projectTitle, IReadOnlyList<ChapterEntry> chapters, bool saved = true)
     {
         _hasProject = projectTitle is not null;
+        _saved = saved;
         _projectTitle = projectTitle ?? string.Empty;
         _chapters = chapters;
 
@@ -597,9 +602,13 @@ public partial class StoryHierarchy : UserControl
         {
             RowHost.Children.Add(new TextBlock
             {
-                Text = ReadOnly
-                    ? "챕터가 없습니다. [대본] 탭에서 만드세요."
-                    : "챕터가 없습니다. 우클릭 「챕터 추가」나 판 가운데의 [＋ 첫 챕터 만들기]로 만드세요.",
+                Text = !_saved
+                    ? ReadOnly
+                        ? "프로젝트를 열거나 만들면 여기에 챕터가 섭니다."
+                        : "프로젝트를 열거나 만들면 여기에 챕터가 섭니다 — 판 가운데의 [열기…] · [새 프로젝트…]."
+                    : ReadOnly
+                        ? "챕터가 없습니다. [대본] 탭에서 만드세요."
+                        : "챕터가 없습니다. 우클릭 「챕터 추가」나 판 가운데의 [＋ 첫 챕터 만들기]로 만드세요.",
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
                 FontSize = 11,

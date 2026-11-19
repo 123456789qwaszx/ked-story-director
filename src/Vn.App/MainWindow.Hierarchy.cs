@@ -369,8 +369,9 @@ public partial class MainWindow
     {
         _folds.Remember(_session.ProjectPath);   // 프로젝트가 바뀌었으면 그 프로젝트의 접힘을 읽는다
         string title = ProjectDisplayTitle();
-        ChapterGraph.HierarchyView.Rebuild(title, _chapters);
-        Graph.HierarchyView.Rebuild(title, _chapters);
+        bool saved = _session.ProjectPath is not null;
+        ChapterGraph.HierarchyView.Rebuild(title, _chapters, saved);
+        Graph.HierarchyView.Rebuild(title, _chapters, saved);
     }
 
     /// <summary>
