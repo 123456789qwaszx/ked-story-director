@@ -613,11 +613,12 @@ public sealed partial class ProjectEditor
             ? chapter.Edges.Count
             : RequireEdgeIndex(chapter, before.FromEpisodeId, before.ToEpisodeId, before.OptionLabel);
 
-        Mutate(() =>
+        // 출발은 그대로다 — 판은 그 출발의 철도만 다시 긋는다(usability UX19).
+        Mutate(ProjectChangeKind.ChoiceRoute, () =>
         {
             chapter.Edges.Insert(at, edge);
             LearnChoiceLabel(chapter, optionLabel);
-        });
+        }, EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
 
         return edge;
     }
@@ -665,11 +666,11 @@ public sealed partial class ProjectEditor
                 $"간선 {fromEpisodeId}→{newToEpisodeId}이 같은 선택지 문구로 이미 있습니다.");
         }
 
-        Mutate(() =>
+        Mutate(ProjectChangeKind.ChoiceRoute, () =>
         {
             chapter.Edges[index] = routed;
             LearnChoiceLabel(chapter, newOptionLabel);
-        });
+        }, EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
     }
 
     /// <summary>간선 한 줄의 속성 편집 — null이 아닌 것만 바꾼다 (관문 둘 포함, v8).</summary>
@@ -735,7 +736,7 @@ public sealed partial class ProjectEditor
         ChapterDocument chapter = RequireChapter(chapterId);
         int index = RequireEdgeIndex(chapter, fromEpisodeId, toEpisodeId, optionLabel);
 
-        Mutate(() => chapter.Edges.RemoveAt(index));
+        Mutate(ProjectChangeKind.ChoiceRoute, () => chapter.Edges.RemoveAt(index), EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
     }
 
     // ── 선택지 사전 · 조건 ──────────────────────────────────────────────────

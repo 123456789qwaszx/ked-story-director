@@ -53,13 +53,18 @@ public sealed class UndoChangeKindTests
         _editor.Undo();
         Assert.Equal((ProjectChangeKind.ChapterLayout, true), Last());
 
-        // 간선을 더한 것은 구조다.
+        // 간선을 더한 것은 선택지의 길이다(usability UX19) — 되돌리기도 그 종류로 온다(화면은 되돌리기를 구조로 받는다).
         _editor.AddEdge("ch01", "a", "b", optionLabel: "간다");
         _editor.Undo();
-        Assert.Equal((ProjectChangeKind.Structure, true), Last());
+        Assert.Equal((ProjectChangeKind.ChoiceRoute, true), Last());
         _editor.Redo();
-        Assert.Equal((ProjectChangeKind.Structure, true), Last());
+        Assert.Equal((ProjectChangeKind.ChoiceRoute, true), Last());
         Assert.Single(_editor.FindChapter("ch01")!.Edges);
+
+        // 에피소드를 더한 것은 구조다.
+        _editor.AddEpisode("ch01", "c", "c", 600, 0, sceneId: "s");
+        _editor.Undo();
+        Assert.Equal((ProjectChangeKind.Structure, true), Last());
     }
 
     private (ProjectChangeKind Kind, bool FromHistory) Last() => (_raised[^1].Kind, _raised[^1].FromHistory);

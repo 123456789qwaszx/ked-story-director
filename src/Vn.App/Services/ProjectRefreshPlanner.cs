@@ -94,7 +94,8 @@ internal static class ProjectRefreshPlanner
 
             // 선택지 하나의 내용 — 카드는 그대로 두고 그 출발 카드에서 나가는 철도(선택지 칸)만 다시 긋는다(판이 다른 것도 바뀌었다고 보면
             // 스스로 통째로 짓는다 · usability UX16). 인스펙터는 그 선택지를 보이고 있을 수 있어 다시 세운다(구조일 때와 같다).
-            ProjectChangeKind.ChoiceDetail => new ProjectRefreshPlan(
+            // 선택지가 생기거나 걷히거나 도착이 바뀌었다 — 같은 길이다(장면 시작점이 바뀐 카드는 판이 새로 짓는다 · usability UX19).
+            ProjectChangeKind.ChoiceDetail or ProjectChangeKind.ChoiceRoute => new ProjectRefreshPlan(
                 RebuildGraph: false,
                 RefreshGraphPositions: false,
                 RebuildInspector: true,

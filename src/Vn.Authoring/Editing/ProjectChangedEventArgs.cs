@@ -70,6 +70,14 @@ public enum ProjectChangeKind
     ChoiceDetail,
 
     /// <summary>
+    /// 선택지(챕터 간선) 하나가 생기거나 걷히거나 도착이 바뀌었다 — 출발은 그대로다. 출발 에피소드의 카드가 판에 있으면 그 카드가
+    /// <see cref="ProjectChangedEventArgs.NodeId"/>다. [대본] 판에서는 그 출발의 철도와 도착 포트, 장면 시작점(밖에서 들어오는 길로 정해진다)이 바뀐
+    /// 카드만 그것을 본다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 판의 선택지 점을 끌어 이을 때마다 판을 두 번 다시 그렸다(에피소드
+    /// 160개에서 한 번에 0.5 ~ 0.7초 · 카드를 그대로 두기 전에는 4초 남짓 · usability UX19).
+    /// </summary>
+    ChoiceRoute,
+
+    /// <summary>
     /// 챕터 조건이 생겼거나 그 식 · 설명이 바뀌었다(라벨은 그대로) — 판에 공급한 사본과 공급 노드(판에 서지 않는 배관)도 함께. [대본] 판에서는
     /// 분기 카드 머리의 조건 표(「식 미정」)만 그것을 본다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 조건 하나를 더하는 데 [대본] 판을
     /// 통째로 다시 지었다(에피소드 160개에서 2.5초 · usability UX16).
@@ -88,7 +96,7 @@ public sealed class ProjectChangedEventArgs : EventArgs
 
     /// <summary>
     /// 바뀐 노드가 하나로 정해지면 그 노드 — <see cref="ProjectChangeKind.DialogueLines"/> · <see cref="ProjectChangeKind.CardTitle"/> ·
-    /// <see cref="ProjectChangeKind.ChoiceDetail"/>(출발 카드)가 싣는다. 모르거나 여럿이면 null.
+    /// <see cref="ProjectChangeKind.ChoiceDetail"/> · <see cref="ProjectChangeKind.ChoiceRoute"/>(출발 카드)가 싣는다. 모르거나 여럿이면 null.
     /// </summary>
     public string? NodeId { get; }
 

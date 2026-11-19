@@ -842,6 +842,7 @@ public partial class GraphEditorView : UserControl
         RefreshMinimap();
         FitNewProject();
         RestoreWritingFocus(writing);
+        _shownRevision = _session.Editor.Revision;
 
         // 고른 선이 판과 함께 사라졌다 — 인스펙터도 그 선을 내린다.
         if (hadLine)
@@ -2441,26 +2442,7 @@ public partial class GraphEditorView : UserControl
         CardRebuildCount++;
         WritingFocus? writing = CaptureWritingFocus();
         _projection = fresh;
-
-        // 칸 목록에서 먼저 뺀다 — 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다(Rebuild와 같은 규칙).
-        _writingBoxes.Remove(nodeId);
-        _writingShown.Remove(nodeId);
-        _writingLayouts.Remove(nodeId);
-        GraphCanvas.Children.Remove(old.Visual);
-
-        foreach (Ellipse knob in old.LineKnobs.Values)
-        {
-            GraphCanvas.Children.Remove(knob);
-        }
-
-        foreach (BranchHub hub in old.LineHubs.Values)
-        {
-            GraphCanvas.Children.Remove(hub.Fan);
-            GraphCanvas.Children.Remove(hub.Dot);
-        }
-
-        _cards[_cards.IndexOf(old)] = BuildCard(node);
-        NodeCard card = _cards.First(item => string.Equals(item.NodeId, nodeId, StringComparison.Ordinal));
+        NodeCard card = ReplaceCard(old, node);
         card.Visual.UpdateLayout();   // 글 칸 · 분기 점의 자리를 잰 뒤에 선을 잇는다
 
         foreach (EdgeVisual edge in _edges)
@@ -2477,6 +2459,33 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>카드 하나만 다시 지은 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
     internal int CardRebuildCount { get; private set; }
+
+    /// <summary>
+    /// 카드 하나를 새로 지어 그 자리에 넣는다 — 옛 카드의 그림(테두리 · 분기 점 · 공통 점)과 글 칸의 장부를 뗀다. 칸 목록에서 먼저 뺀다 —
+    /// 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다(<see cref="Rebuild"/>와 같은 규칙).
+    /// </summary>
+    private NodeCard ReplaceCard(NodeCard old, ExpandedNodeProjection node)
+    {
+        _writingBoxes.Remove(old.NodeId);
+        _writingShown.Remove(old.NodeId);
+        _writingLayouts.Remove(old.NodeId);
+        GraphCanvas.Children.Remove(old.Visual);
+
+        foreach (Ellipse knob in old.LineKnobs.Values)
+        {
+            GraphCanvas.Children.Remove(knob);
+        }
+
+        foreach (BranchHub hub in old.LineHubs.Values)
+        {
+            GraphCanvas.Children.Remove(hub.Fan);
+            GraphCanvas.Children.Remove(hub.Dot);
+        }
+
+        NodeCard card = BuildCard(node);
+        _cards[_cards.IndexOf(old)] = card;
+        return card;
+    }
 
     /// <summary>카드 머리의 제목 글의 표.</summary>
     internal const string CardTitleTag = "card-title";
@@ -2509,14 +2518,14 @@ public partial class GraphEditorView : UserControl
         SameBoard(before, after, nodeId, choiceLabels: false);
 
     /// <summary>
-    /// 두 투영이 선택지 칸의 문구 말고는 같은가 — 선택지 하나의 내용만 바뀌었을 때(<see cref="RedrawChoices"/>). 선택지 칸은 카드 안에 서지 않고
-    /// 철도 위에 선다(카드의 포트 줄은 선택지를 빼고 짓는다).
+    /// 두 투영이 선택지 칸의 문구 · 이음 말고는 같은가 — 선택지가 바뀌거나 생기거나 걷혔을 때(<see cref="RedrawChoices"/>). 선택지 칸은 카드 안에 서지
+    /// 않고 철도 위에 선다(카드의 포트 줄은 선택지를 빼고 짓는다). 칸의 수가 바뀌면(넷째 길) 같지 않다.
     /// </summary>
     internal static bool OnlyChoicesChanged(GraphProjection before, GraphProjection after) =>
         SameBoard(before, after, exceptNodeId: null, choiceLabels: true);
 
     /// <summary>
-    /// 두 투영이 같은 판인가 — <paramref name="exceptNodeId"/> 카드의 포트와, <paramref name="choiceLabels"/>이면 선택지 칸의 문구는 달라도 된다.
+    /// 두 투영이 같은 판인가 — <paramref name="exceptNodeId"/> 카드의 포트와, <paramref name="choiceLabels"/>이면 선택지 칸(열쇠 말고)은 달라도 된다.
     /// </summary>
     private static bool SameBoard(GraphProjection before, GraphProjection after, string? exceptNodeId, bool choiceLabels)
     {
@@ -2576,8 +2585,9 @@ public partial class GraphEditorView : UserControl
             string.Join(",", rows.Select(row => $"{row.NodeId}/{row.NodeName}/{row.IncomingCount}/{row.OutgoingCount}"));
 
         (string Key, bool OnLeft, string Label, bool IsConnected, int Palette) PortShape(GraphOutputPortProjection port) =>
-            (port.Key, port.OnLeft, choiceLabels && port.Kind == GraphOutputPortKind.Choice ? string.Empty : port.Label,
-                port.IsConnected, port.PaletteIndex);
+            choiceLabels && port.Kind == GraphOutputPortKind.Choice
+                ? (port.Key, false, string.Empty, false, 0)
+                : (port.Key, port.OnLeft, port.Label, port.IsConnected, port.PaletteIndex);
     }
 
     /// <summary>새 투영을 받는다 — 판이 그대로일 때(<see cref="SameBoard"/>). 선은 같은 열쇠의 새 연결을 쥔다(자리는 그대로다).</summary>
@@ -2592,11 +2602,13 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// <b>선택지 하나의 내용이 바뀌었다</b>(문구 · 스탯변화 · 조건 · 잠금 안내 · 자동) — 카드는 그대로 두고 출발 카드(<paramref name="nodeId"/>)에서 나가는
-    /// 철도와, 그 문구를 목록에 든 도착 포트만 다시 긋는다(usability UX16). 판이 문구 말고도 바뀌었으면(<see cref="OnlyChoicesChanged"/>) 통째로
-    /// 짓고, 출발을 모르거나 그 철도를 못 찾으면 철도를 통째로 긋는다(카드는 그대로). 스탯변화 · 조건은 판에 서지 않지만 그 출발의 철도는 그래도
-    /// 다시 긋는다 — 접은 장면의 줄은 문구를 투영이 아니라 챕터에서 읽어, 무엇이 바뀌었는지 투영으로 가를 수 없다.
-    /// ⛔ 2026-11-19까지는 늘 판을 통째로 다시 지었다 — 에피소드 160개에서 선택지 문구 하나에 2.5초.
+    /// <b>선택지가 바뀌었다</b> — 내용(문구 · 스탯변화 · 조건 · 잠금 안내 · 자동 · usability UX16)이든 길(생겼다 · 걷혔다 · 도착이 옮겨졌다 · UX19)이든.
+    /// 카드는 그대로 두고 출발 카드(<paramref name="nodeId"/>)에서 나가는 철도와 도착 포트만 다시 긋는다. 길은 장면 시작점을 바꿀 수 있다(밖에서
+    /// 들어오는 자리) — 시작점 표가 바뀐 카드만 새로 짓는다(<see cref="CanKeep"/>). 판이 선택지 칸 말고도 바뀌었으면(<see cref="OnlyChoicesChanged"/> —
+    /// 접은 상자의 줄이 든 길 수 · 넷째 칸) 통째로 짓고, 출발을 모르거나 그 철도를 못 찾으면 철도만 통째로 긋는다(카드는 그대로).
+    /// 스탯변화 · 조건은 판에 서지 않지만 그 출발의 철도는 그래도 다시 긋는다 — 접은 장면의 줄은 문구를 투영이 아니라 챕터에서 읽어, 무엇이
+    /// 바뀌었는지 투영으로 가를 수 없다.
+    /// ⛔ 2026-11-19까지는 늘 판을 통째로 다시 지었다 — 에피소드 160개에서 선택지 문구 하나에 2.5초, 선택지 점을 끌어 이으면 두 번.
     /// </summary>
     internal void RedrawChoices(string? nodeId)
     {
@@ -2618,6 +2630,29 @@ public partial class GraphEditorView : UserControl
 
         ChoiceRedrawCount++;
         AdoptProjection(fresh);
+        _shownRevision = _session.Editor.Revision;
+
+        // 장면 시작점이 바뀐 카드(색 · 머리 표) — 그 카드만 새로 짓는다.
+        HashSet<string> roots = SceneRootCards();
+
+        if (!roots.SetEquals(_sceneRootNodeIds))
+        {
+            _sceneRootNodeIds = roots;
+            WritingFocus? writing = CaptureWritingFocus();
+            Dictionary<string, ExpandedNodeProjection> nodes = fresh.Items.OfType<ExpandedNodeProjection>()
+                .ToDictionary(item => item.NodeId, StringComparer.Ordinal);
+
+            foreach (NodeCard card in _cards.ToList())
+            {
+                if (nodes.TryGetValue(card.NodeId, out ExpandedNodeProjection? node) && !CanKeep(card, node))
+                {
+                    ReplaceCard(card, node).Visual.UpdateLayout();
+                }
+            }
+
+            HighlightSelection();
+            RestoreWritingFocus(writing);
+        }
 
         if (nodeId is null || !RedrawRailsFrom(nodeId))
         {
@@ -2626,12 +2661,20 @@ public partial class GraphEditorView : UserControl
         }
     }
 
-    /// <summary>선택지의 내용만 받아 카드를 그대로 둔 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
+    /// <summary>선택지가 바뀌어 카드를 그대로 둔 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
     internal int ChoiceRedrawCount { get; private set; }
 
     /// <summary>
-    /// 그 카드(펼친 카드든 접은 장면의 줄이든)에서 나가는 철도 묶음을 다시 긋고, 도착 포트의 목록에서 그 출발의 몫을 새 문구로 바꿔 그 포트를
-    /// 다시 긋는다. 길이 늘거나 줄었으면(목록의 수가 안 맞는다) false — 부른 쪽이 통째로 긋는다.
+    /// 판이 마지막으로 받아 그린 프로젝트의 고친 번(<see cref="ProjectEditor.Revision"/>) — 선택지를 이은 손짓이 제 편집을 판이 이미 그렸는지 본다
+    /// (앱에서는 변경 알림이 먼저 그린다 · <see cref="DrawJoined"/>).
+    /// </summary>
+    private long _shownRevision = -1;
+
+    /// <summary>
+    /// 그 카드(펼친 카드든 접은 장면의 줄이든)에서 나가는 철도 묶음을 다시 긋고, 도착 포트의 목록(누르면 보이는 「출발 · 문구」)에서 그 출발의 몫을
+    /// 새것으로 갈아 끼워 바뀐 포트만 다시 긋는다 — 포트가 새로 서거나(처음 들어오는 길) 사라지기도(마지막 길이 걷혔다) 한다. 목록의 차례는 철도를
+    /// 통째로 그을 때와 같다(출발의 차례 — 카드, 그다음 접은 줄). 레인 자리는 출발마다 따로 세므로 다른 출발의 그림은 그대로 맞는다. 출발의
+    /// 묶음이 판에 없으면 false — 부른 쪽이 통째로 긋는다.
     /// </summary>
     private bool RedrawRailsFrom(string nodeId)
     {
@@ -2655,54 +2698,100 @@ public partial class GraphEditorView : UserControl
             return false;
         }
 
+        RailBoard board = RailBoardOf(file.Id);
         Dictionary<string, Rect> now = RailAnchors();
-        var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
-        RedrawRailGroups(from, now, arrivals);
 
-        // 도착 포트의 목록은 출발마다의 문구를 든다 — 이 출발의 몫만 차례대로 새 문구로 바꾼다(목록의 차례는 그대로).
-        var ports = _railGroups.Where(group => group.Origin is RailOrigin.Arrival arrival &&
-                                               string.Equals(arrival.FileId, file.Id, StringComparison.Ordinal)).ToList();
-
-        if (arrivals.Keys.Any(to => !ports.Any(group => string.Equals(((RailOrigin.Arrival)group.Origin).EpisodeId, to, StringComparison.Ordinal))))
+        // 기대는 자리도 새로 — 길이 생기거나 옮겨지면 그 출발이 기대는 도착이 바뀐다(끌기가 따라가는 열쇠다).
+        foreach (RailGroup group in from)
         {
-            return false;
-        }
+            IEnumerable<string>? deps = group.Origin switch
+            {
+                RailOrigin.FromCard when board.Spots.TryGetValue(episodeId, out (DialogueNode Node, Rect Rect) spot) =>
+                    board.DepsFrom(spot.Node.Id, episodeId),
+                RailOrigin.FromRow when board.Folded.TryGetValue(episodeId, out FoldedRow? row) =>
+                    board.DepsFrom(RowAnchor(row.Proxy), episodeId),
+                _ => null
+            };
 
-        var stale = new List<RailGroup>();
-
-        foreach (RailGroup group in ports)
-        {
-            var arrival = (RailOrigin.Arrival)group.Origin;
-            List<(string From, string Label)> mine = arrivals.GetValueOrDefault(arrival.EpisodeId) ?? [];
-
-            if (arrival.Incoming.Count(item => string.Equals(item.From, episodeId, StringComparison.Ordinal)) != mine.Count)
+            if (deps is null)
             {
                 return false;
             }
 
-            bool changed = false;
-            int next = 0;
+            group.DrawnAt = deps.Distinct(StringComparer.Ordinal).Where(now.ContainsKey)
+                .ToDictionary(dep => dep, dep => now[dep], StringComparer.Ordinal);
+        }
 
-            for (int index = 0; index < arrival.Incoming.Count; index++)
+        var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
+        RedrawRailGroups(from, now, arrivals);
+
+        // 도착 포트 — 이 출발의 몫을 빼고 새 몫을 넣어, 출발의 차례(통째로 그을 때 도는 차례)로 다시 세운다.
+        var rank = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (string source in board.Spots.Keys.Concat(board.Folded.Keys))
+        {
+            rank.TryAdd(source, rank.Count);
+        }
+
+        Dictionary<string, RailGroup> ports = _railGroups
+            .Where(group => group.Origin is RailOrigin.Arrival arrival && string.Equals(arrival.FileId, file.Id, StringComparison.Ordinal))
+            .ToDictionary(group => ((RailOrigin.Arrival)group.Origin).EpisodeId, StringComparer.Ordinal);
+        var stale = new List<RailGroup>();
+
+        foreach (string target in ports.Keys.Union(arrivals.Keys, StringComparer.Ordinal).ToList())
+        {
+            List<(string From, string Label)> before = ports.TryGetValue(target, out RailGroup? port)
+                ? ((RailOrigin.Arrival)port.Origin).Incoming
+                : [];
+            List<(string From, string Label)> after = before
+                .Where(item => !string.Equals(item.From, episodeId, StringComparison.Ordinal))
+                .Concat(arrivals.GetValueOrDefault(target) ?? [])
+                .OrderBy(item => rank.GetValueOrDefault(item.From, int.MaxValue))
+                .ToList();
+
+            if (after.SequenceEqual(before))
             {
-                if (!string.Equals(arrival.Incoming[index].From, episodeId, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                changed |= arrival.Incoming[index] != mine[next];
-                arrival.Incoming[index] = mine[next++];
+                continue;
             }
 
-            if (changed)
+            if (port is null)
             {
-                stale.Add(group);
+                // 처음 들어오는 길 — 포트를 새로 세운다.
+                if (!board.Spots.TryGetValue(target, out (DialogueNode Node, Rect Rect) spot))
+                {
+                    return false;
+                }
+
+                var added = new RailGroup(
+                    new RailOrigin.Arrival(file.Id, target, after),
+                    new Dictionary<string, Rect>(StringComparer.Ordinal) { [spot.Node.Id] = spot.Rect },
+                    [],
+                    holdsSelected: false);
+                _railGroups.Add(added);
+                stale.Add(added);
+            }
+            else if (after.Count == 0)
+            {
+                // 마지막 길이 걷혔다 — 포트를 내린다.
+                foreach (Control visual in port.Visuals)
+                {
+                    GraphCanvas.Children.Remove(visual);
+                    _railVisuals.Remove(visual);
+                }
+
+                _railGroups.Remove(port);
+            }
+            else
+            {
+                before.Clear();
+                before.AddRange(after);
+                stale.Add(port);
             }
         }
 
         RedrawRailGroups(stale, now);
 
-        // 고른 레인의 문구가 바뀌었다 — 그 신원의 레인이 이제 없다. 통째로 그을 때처럼 고름을 놓는다(인스펙터가 새 신원으로 다시 고른다).
+        // 고른 레인이 사라졌다(문구가 바뀌어 신원이 달라졌다 · 길이 걷혔다) — 통째로 그을 때처럼 고름을 놓는다(인스펙터가 새 신원으로 다시 고른다).
         if (_selectedRail is not null && !_railGroups.Any(group => group.HoldsSelected))
         {
             _selectedRail = null;
@@ -2714,6 +2803,18 @@ public partial class GraphEditorView : UserControl
         DrawChapterFrames(followRails: true);
         RefreshMinimap();
         return true;
+    }
+
+    /// <summary>
+    /// 판의 선택지 점을 끌어 잇거나 끊은 뒤 — 판이 그 편집을 아직 안 그렸으면(앱에서는 변경 알림이 먼저 그린다) 그 출발의 철도만 다시 긋는다.
+    /// ⛔ 2026-11-19까지는 알림이 판을 통째로 다시 그린 뒤에 여기서 또 통째로 다시 그렸다.
+    /// </summary>
+    private void DrawJoined(string sourceNodeId)
+    {
+        if (_session is not null && _session.Editor.Revision != _shownRevision)
+        {
+            RedrawChoices(sourceNodeId);
+        }
     }
 
     /// <summary>
@@ -6464,7 +6565,7 @@ public partial class GraphEditorView : UserControl
             // ⚠ <b>UiGuard로 받는다.</b> 규칙 위반은 편집기가 예외로 거절하는데(신원 겹침 ·
             //    없는 에피소드), 놓임 처리기는 Avalonia가 부르는 자리라 그대로 터진다.
             //    거절은 상태줄로 가야 한다 — 이 저장소의 모든 편집 창구가 그 규약을 쓴다.
-            UiGuard.Run(_session, "선택지 잇기", () => JoinChoice(choice, SlotsOf(port.NodeId), target));
+            UiGuard.Run(_session, "선택지 잇기", () => JoinChoice(choice, port.NodeId, SlotsOf(port.NodeId), target));
             return;
         }
 
@@ -6530,7 +6631,8 @@ public partial class GraphEditorView : UserControl
     /// [챕터 그래프]에도 그대로 보이고, 내보내기·도달성 증명·V1/V2 진단이 <b>하나도 안 바뀐
     /// 채</b> 그 값을 본다.
     /// </summary>
-    private void JoinChoice(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots, string? targetNodeId)
+    /// <param name="sourceNodeId">그 칸이 선 카드 — 이은 뒤 그 카드의 철도만 다시 긋는다.</param>
+    private void JoinChoice(GraphChoicePort choice, string sourceNodeId, IReadOnlyList<GraphChoicePort> slots, string? targetNodeId)
     {
         if (_session is null)
         {
@@ -6539,7 +6641,7 @@ public partial class GraphEditorView : UserControl
 
         if (targetNodeId is null)
         {
-            Unjoin(choice);
+            Unjoin(choice, sourceNodeId);
             return;
         }
 
@@ -6615,7 +6717,7 @@ public partial class GraphEditorView : UserControl
             ? $"'{choice.FromEpisodeId}' → '{episodeId}' 자동으로 이었습니다(문구 없이 지나갑니다)."
             : $"'{choice.FromEpisodeId}' → '{episodeId}' 선택지 '{label}'을 이었습니다.");
 
-        Rebuild();
+        DrawJoined(sourceNodeId);
     }
 
     /// <summary>
@@ -6627,7 +6729,7 @@ public partial class GraphEditorView : UserControl
     ///
     /// ⚠ 자동 길은 문구가 없으니 칸도 꺼진 채로 돌아온다.
     /// </summary>
-    private void Unjoin(GraphChoicePort choice)
+    private void Unjoin(GraphChoicePort choice, string sourceNodeId)
     {
         if (choice.IsEmpty)
         {
@@ -6652,7 +6754,7 @@ public partial class GraphEditorView : UserControl
             $"'{choice.FromEpisodeId}' → '{choice.ToEpisodeId}' 길을 걷었습니다." +
             (choice.Label.Length > 0 ? $" 문구 '{choice.Label}'은 칸에 남겨 뒀습니다." : string.Empty));
 
-        Rebuild();
+        DrawJoined(sourceNodeId);
     }
 
     /// <summary>

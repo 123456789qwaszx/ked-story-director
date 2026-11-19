@@ -145,7 +145,7 @@ public sealed class ChoiceRedrawTests : IDisposable
     });
 
     [Fact]
-    public void 선택지_문구만_바뀐_판인지_가린다() => HeadlessUi.Run(() =>
+    public void 선택지만_바뀐_판인지_가린다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, GraphEditorView _) = Open();
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "간다");
@@ -157,7 +157,12 @@ public sealed class ChoiceRedrawTests : IDisposable
 
         before = Now();
         session.Editor.AddEdge("ch01", "root", "b", optionLabel: "기다린다");
-        Assert.False(GraphEditorView.OnlyChoicesChanged(before, Now()));     // 길이 하나 늘었다
+        Assert.True(GraphEditorView.OnlyChoicesChanged(before, Now()));      // 빈 칸에 길을 이었다 — 칸은 그대로 셋이다(UX19)
+
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "또 간다");
+        before = Now();
+        session.Editor.AddEdge("ch01", "root", "b", optionLabel: "다시 기다린다");
+        Assert.False(GraphEditorView.OnlyChoicesChanged(before, Now()));     // 넷째 길 — 칸이 하나 늘었다
 
         before = Now();
         session.Editor.MoveNode(Card(session, "a"), 900, 900);
