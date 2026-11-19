@@ -2,11 +2,14 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Model;
+using Vn.Authoring.Text;
 
 namespace Vn.App;
 
@@ -16,6 +19,8 @@ namespace Vn.App;
 ///
 /// 작가가 화자 이름을 더하고 고치고 지운다. 이름을 고치면 이미 쓰인 대사 줄의 화자가 따라간다. 캐릭터 키(초상화 · 표정)는 여기서
 /// 정하지 않는다 — [구성] 탭의 [화자] 탭이 잇는다. 규칙(빈 이름 · 같은 이름)은 <see cref="AuthoringSession"/>의 화자 창구 한 벌이다.
+///
+/// 목록 아래에는 <b>대본에만 있는 이름</b>(화자 칸에 바로 적었지만 목록에 없는 이름)이 모인다 — 거기서 목록에 올리거나 이름을 고친다(usability UX34).
 ///
 /// 칸은 초점이 떠날 때와 Enter에 넣고, Esc는 넣지 않은 글을 걷는다. 화자 목록은 프로젝트의 것이라(되돌리기 한 칸) 넣고 나면 —
 /// 되돌려도 — <see cref="AuthoringSession.SpeakersChanged"/>로 탭이 다시 선다.
@@ -87,6 +92,159 @@ public partial class MainWindow
         addRow.Children.Add(addBox);
         addRow.Children.Add(addButton);
         _sheet.Children.Add(addRow);
+
+        UnlistedSpeakerList();
+    }
+
+    /// <summary>
+    /// <b>대본에만 있는 이름</b>(2026-11-19 소유자 · usability UX34 — 「화자를 추가하지 않고도 그대로 대사에 speaker로 바로 쓰기도 합니다. 이런 등록되지
+    /// 않은 speaker들 역시 화자 탭에서 모아 둔 뒤에 관리하는 기능」). 대사의 화자 칸에 적혔는데 목록에 없는 이름(<see cref="UnlistedSpeakers"/>)마다
+    /// `[이름][N줄][등록]` 한 줄, 둘 이상이면 [모두 등록]. 이름을 고치면 그 줄들이 따라가고, 목록의 이름으로 고치면 그 화자로 합쳐진다(오타).
+    /// 없으면 칸이 서지 않는다. 대본이 바뀌어 이름 · 줄 수가 달라지면 <see cref="AuthoringSession.SpeakersChanged"/>로 다시 선다.
+    /// </summary>
+    private void UnlistedSpeakerList()
+    {
+        IReadOnlyList<UnlistedSpeakers.Entry> unlisted = UnlistedSpeakers.Of(_session.Project);
+
+        if (unlisted.Count == 0)
+        {
+            return;
+        }
+
+        _sheet.Children.Add(new TextBlock
+        {
+            Text = $"대본에만 있는 이름 {unlisted.Count}개",
+            FontSize = 12,
+            FontWeight = FontWeight.SemiBold,
+            Margin = new Thickness(0, 16, 0, 0),
+            Tag = "speaker-unlisted-header"
+        });
+        Guide("대사의 화자 칸에 바로 적었지만 위 목록에 없는 이름입니다. [등록]하면 목록에 서고(캐릭터 키는 임시 키), 이름을 고치면 그 이름의 " +
+              "대사 줄이 모두 따라갑니다 — 목록에 있는 이름으로 고치면 그 화자로 합쳐집니다(오타 고치기).",
+              "[등록] · 이름을 고치면 그 줄들이 따라갑니다.");
+
+        var rows = new StackPanel { Spacing = 3, Margin = new Thickness(0, 4, 0, 0) };
+
+        foreach (UnlistedSpeakers.Entry entry in unlisted)
+        {
+            rows.Children.Add(UnlistedSpeakerRow(entry));
+        }
+
+        _sheet.Children.Add(rows);
+
+        if (unlisted.Count < 2)
+        {
+            return;
+        }
+
+        var all = new Button
+        {
+            Content = "모두 등록",
+            FontSize = 11,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 6, 0, 0),
+            Tag = "speaker-register-all"
+        };
+        ToolTip.SetTip(all, $"위 {unlisted.Count}개 이름을 한꺼번에 화자 목록에 올립니다 — 캐릭터 키는 임시 키. 되돌리기(Ctrl+Z) 한 번에 모두 돌아갑니다.");
+        all.Click += (_, _) => UiGuard.Run(_session, "화자 모두 등록", () =>
+        {
+            // 누른 때의 대본으로 다시 본다 — 이름 칸을 고치던 중이면 초점이 떠나며 먼저 고쳐졌다.
+            if (_session.RegisterSpeakerNames(UnlistedSpeakers.Of(_session.Project).Select(entry => entry.Name)) is { } report)
+            {
+                _session.SetStatus(report);
+            }
+        });
+        _sheet.Children.Add(all);
+    }
+
+    /// <summary>대본에만 있는 이름 한 줄 — `[이름][N줄][등록]`. 이름 칸은 화자 줄의 칸처럼 초점이 떠날 때 · Enter에 넣고 Esc는 걷는다.</summary>
+    private Control UnlistedSpeakerRow(UnlistedSpeakers.Entry entry)
+    {
+        string speakerName = entry.Name;
+        var name = new TextBox { Text = speakerName, FontSize = 12, Tag = "speaker-unlisted:" + speakerName };
+        ToolTip.SetTip(name, $"고치면 '{speakerName}'{Josa.이가(speakerName)} 화자인 대사 {entry.Lines}줄이 모두 따라갑니다. 목록에 있는 이름으로 고치면 그 화자로 합쳐집니다.");
+
+        void Commit() => UiGuard.Run(_session, "대본의 화자 이름", () =>
+        {
+            string typed = (name.Text ?? string.Empty).Trim();
+
+            if (string.Equals(typed, speakerName, StringComparison.Ordinal))
+            {
+                name.Text = speakerName;   // 앞뒤 공백만 걷었다
+                return;
+            }
+
+            long before = _session.Editor.Revision;
+            string? report = _session.FixUnlistedSpeakerName(speakerName, typed);
+
+            if (_session.Editor.Revision == before)
+            {
+                name.Text = speakerName;   // 못 고쳤다 — 칸이 돌아온다
+            }
+
+            if (report is not null)
+            {
+                _session.SetStatus(report);
+            }
+        });
+
+        name.LostFocus += (_, _) => Commit();
+        name.AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = true;
+                Commit();
+            }
+            else if (args.Key == Key.Escape)
+            {
+                args.Handled = true;
+                name.Text = speakerName;
+            }
+        }, RoutingStrategies.Tunnel);
+
+        var lines = new TextBlock
+        {
+            Text = $"{entry.Lines}줄",
+            FontSize = 11,
+            Opacity = 0.65,
+            MinWidth = 34,
+            TextAlignment = TextAlignment.Right,   // 줄 수의 자릿수가 달라도 이름 칸 끝이 나란하다
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(6, 0, 0, 0),
+            Tag = "speaker-unlisted-lines:" + speakerName
+        };
+
+        var register = new Button
+        {
+            Content = "등록",
+            FontSize = 11,
+            Margin = new Thickness(6, 0, 0, 0),
+            Tag = "speaker-register:" + speakerName
+        };
+        ToolTip.SetTip(register, $"'{speakerName}'{Josa.을를(speakerName)} 화자 목록에 올립니다 — 캐릭터 키는 임시 키로 섭니다.");
+        register.Click += (_, _) => UiGuard.Run(_session, "화자 등록", () =>
+        {
+            // 그 칸을 고치던 중이면 초점이 떠나며 이름이 먼저 고쳐졌다 — 이제 아무 줄도 쓰지 않는 옛 이름은 올리지 않는다.
+            if (!UnlistedSpeakers.Of(_session.Project).Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal)))
+            {
+                return;
+            }
+
+            if (_session.RegisterSpeakerNames([speakerName]) is { } report)
+            {
+                _session.SetStatus(report);
+            }
+        });
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto") };
+        Grid.SetColumn(lines, 1);
+        Grid.SetColumn(register, 2);
+        row.Children.Add(name);
+        row.Children.Add(lines);
+        row.Children.Add(register);
+
+        return row;
     }
 
     /// <summary>화자 한 줄 — `[이름][✕]`. 이름을 비우는 것은 지우기가 아니다 — 지우기는 ✕ 하나다.</summary>

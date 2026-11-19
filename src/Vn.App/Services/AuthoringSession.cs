@@ -3,6 +3,7 @@ using Vn.Authoring.Editing;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Services;
 
@@ -125,8 +126,9 @@ internal sealed class AuthoringSession
     public event EventHandler? SelectionChanged;
 
     /// <summary>
-    /// 프로젝트의 화자 목록이 바뀌었다 — 화자 명령 · 되돌리기 · 열기 모두. <see cref="Changed"/> 뒤에 알린다. [대본] 탭의 「화자」 탭
-    /// (화자 이름)과 [구성] 탭의 「화자」 탭(캐릭터 키)이 듣고 목록을 다시 세운다 — 모든 변경마다 다시 세우지 않으려고 따로 둔다.
+    /// 프로젝트의 화자 목록이 바뀌었다 — 화자 명령 · 되돌리기 · 열기 모두. 대본에만 있는 이름(<see cref="UnlistedSpeakers"/> — 이름 · 줄 수)이
+    /// 바뀌어도 알린다(usability UX34). <see cref="Changed"/> 뒤에 알린다. [대본] 탭의 「화자」 탭(화자 이름)과 [구성] 탭의 「화자」 탭(캐릭터 키)이
+    /// 듣고 목록을 다시 세운다 — 모든 변경마다 다시 세우지 않으려고 따로 둔다.
     /// </summary>
     public event EventHandler? SpeakersChanged;
 
@@ -336,6 +338,67 @@ internal sealed class AuthoringSession
 
     /// <summary>화자를 목록에서 지운다 — [대본] 탭. 이미 대본에 적힌 이름은 그대로 남는다(화자 칸은 자유 입력).</summary>
     public bool RemoveSpeakerName(string name) => Editor.RemoveSpeaker(name);
+
+    /// <summary>
+    /// 대본에만 있는 이름(<see cref="UnlistedSpeakers"/>)들을 화자 목록에 올린다 — [대본] 「화자」 탭의 [등록] · [모두 등록](usability UX34).
+    /// 이름마다 임시 키가 서고, 여럿이어도 되돌리기 한 칸이다.
+    /// </summary>
+    /// <returns>상태줄에 세울 말. 올린 것이 없으면 null.</returns>
+    public string? RegisterSpeakerNames(IEnumerable<string> names)
+    {
+        IReadOnlyList<Speaker> added = Editor.AddSpeakers(names);
+
+        return added.Count switch
+        {
+            0 => null,
+            1 => $"'{added[0].Name}'{Josa.을를(added[0].Name)} 화자 목록에 올렸습니다 — 캐릭터 키는 임시로 '{added[0].CharacterId}' — [구성] 탭에서 그림에 맞게 바꿉니다.",
+            _ => $"화자 {added.Count}명을 목록에 올렸습니다 — 캐릭터 키는 임시 키(temp_…)입니다. [구성] 탭에서 그림에 맞게 바꿉니다."
+        };
+    }
+
+    /// <summary>
+    /// 대본에만 있는 이름을 고친다 — 그 이름이 화자인 줄이 모든 챕터에서 따라간다(<see cref="ProjectEditor.RenameSpeaker"/> · 되돌리기 한 칸).
+    /// 목록에 있는 이름으로 고치면 그 화자로 합쳐진다(오타 고치기 · usability UX34). 띄어쓰기가 든 새 이름은 목록에 있어야 한다 — 없으면 대본이
+    /// 그 줄을 화자로 읽지 않는다.
+    /// </summary>
+    /// <returns>상태줄에 세울 말 — 무엇이 따라갔는지, 또는 못 고친 이유. 같은 이름이면 null.</returns>
+    public string? FixUnlistedSpeakerName(string oldName, string? newName)
+    {
+        string typed = (newName ?? string.Empty).Trim();
+
+        if (string.Equals(oldName, typed, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (typed.Length == 0)
+        {
+            return "이름은 비울 수 없습니다 — 화자를 빼려면 그 줄들의 화자 칸을 비우세요.";
+        }
+
+        if (Project.FindSpeaker(oldName) is not null)
+        {
+            return $"'{oldName}'{Josa.은는(oldName)} 이미 목록에 있습니다 — 목록이 바뀌었습니다.";
+        }
+
+        bool listed = Project.FindSpeaker(typed) is not null;
+
+        if (!listed && typed.Any(char.IsWhiteSpace))
+        {
+            return $"띄어쓰기가 든 이름 '{typed}'{Josa.은는(typed)} 먼저 위에서 화자로 더한 뒤 고치세요 — 목록에 없으면 대본이 화자로 읽지 않습니다.";
+        }
+
+        int lines = Editor.RenameSpeaker(oldName, typed);
+
+        if (lines == 0)
+        {
+            return $"'{oldName}'{Josa.이가(oldName)} 화자인 줄이 없습니다 — 대본이 바뀌었습니다.";
+        }
+
+        return listed
+            ? $"'{oldName}'의 줄 {lines}개를 화자 '{typed}'{Josa.으로(typed)} 합쳤습니다."
+            : $"'{oldName}' → '{typed}' — 줄 {lines}개를 고쳤습니다. 아직 목록에 없는 이름입니다.";
+    }
 
     /// <summary>화자의 캐릭터 키 — [구성] 탭. 초상화 · 표정이 이 키로 붙는다. 같은 값이면 기록하지 않는다.</summary>
     public bool SetSpeakerCharacterId(string name, string? characterId) => Editor.SetSpeakerCharacterId(name, characterId);
@@ -586,7 +649,9 @@ internal sealed class AuthoringSession
             SelectionChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId));
+        // 대본에만 있는 이름(과 줄 수)도 싣는다 — [대본] 「화자」 탭이 그것도 모아 보인다(usability UX34).
+        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId)) + "\n\n" +
+                          string.Join('\n', UnlistedSpeakers.Of(Project).Select(entry => entry.Name + '\t' + entry.Lines));
         bool speakersChanged = !string.Equals(_speakerSignature, speakers, StringComparison.Ordinal);
         _speakerSignature = speakers;
 

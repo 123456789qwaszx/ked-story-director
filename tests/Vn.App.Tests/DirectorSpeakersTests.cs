@@ -163,6 +163,160 @@ public sealed class DirectorSpeakersTests : IDisposable
         window.Close();
     });
 
+    // ── 대본에만 있는 이름 (usability UX34) ─────────────────────────────────
+
+    [Fact]
+    public void 대본에만_있는_이름이_줄_수와_함께_모이고_등록하면_목록으로_올라간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「화자를 추가하지 않고도 그대로 대사에 speaker로 바로 쓰기도 합니다. 이런 등록되지 않은 speaker들 역시 화자 탭에서
+        // 모아 둔 뒤에 관리하는 기능」.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        session.SetSpeakers(("라루", "laru"));
+        WriteDialogue(session, "ch01", "root", "윌로: 안녕.\n라루: 응.\n윌로: 또 보자.");
+        GraphEditorView graph = PickProject(window);
+
+        Assert.Equal("대본에만 있는 이름 1개", ((TextBlock)Control(graph, "speaker-unlisted-header")).Text);
+        Assert.Equal("윌로", Box(graph, "speaker-unlisted:윌로").Text);
+        Assert.Equal("2줄", ((TextBlock)Control(graph, "speaker-unlisted-lines:윌로")).Text);
+        Assert.Null(Find(graph, "speaker-unlisted:라루"));      // 목록에 있는 이름은 모이지 않는다
+        Assert.Null(Find(graph, "speaker-register-all"));     // 하나뿐이면 [모두 등록]이 없다
+
+        long revision = session.Editor.Revision;
+        Click(Control(graph, "speaker-register:윌로"));
+
+        Assert.Equal(revision + 1, session.Editor.Revision);
+        Assert.Equal([new Speaker("라루", "laru"), new Speaker("윌로", "temp_willo")], session.Project.Speakers);
+        Assert.Contains("임시로 'temp_willo'", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("윌로", Box(graph, "speaker-name:윌로").Text);
+        Assert.Null(Find(graph, "speaker-unlisted-header"));   // 다 올라가면 칸이 걷힌다
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 모두_등록은_되돌리기_한_칸이고_되돌리면_다시_모인다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        WriteDialogue(session, "ch01", "root", "윌로: 안녕.");
+        WriteDialogue(session, "ch02", "x", "시구레: 누구야?");
+        GraphEditorView graph = PickProject(window);
+        Assert.Equal("대본에만 있는 이름 2개", ((TextBlock)Control(graph, "speaker-unlisted-header")).Text);
+
+        long revision = session.Editor.Revision;
+        Click(Control(graph, "speaker-register-all"));
+
+        Assert.Equal(revision + 1, session.Editor.Revision);
+        Assert.Equal(["시구레", "윌로"], session.Project.Speakers.Select(speaker => speaker.Name));   // 칸의 차례(가나다)대로
+        Assert.Contains("화자 2명", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Null(Find(graph, "speaker-unlisted-header"));
+
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(session.Project.Speakers);
+        Assert.NotNull(Find(graph, "speaker-unlisted:윌로"));
+        Assert.NotNull(Find(graph, "speaker-unlisted:시구레"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 오타를_목록의_이름으로_고치면_모든_챕터의_줄이_그_화자로_합쳐진다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        session.SetSpeakers(("윌로", "willo"));
+        WriteDialogue(session, "ch01", "root", "윌러: 오타다.\n윌로: 맞다.");
+        WriteDialogue(session, "ch02", "x", "윌러: 또 오타다.");
+        GraphEditorView graph = PickProject(window);
+        long revision = session.Editor.Revision;
+
+        TextBox typo = Box(graph, "speaker-unlisted:윌러");
+        typo.Text = "윌로";
+        Key(typo, Avalonia.Input.Key.Enter);
+
+        Assert.Equal(revision + 1, session.Editor.Revision);
+        Assert.Equal("윌로", FirstSpeaker(session, "ch01", "root"));
+        Assert.Equal("윌로", FirstSpeaker(session, "ch02", "x"));
+        Assert.Contains("줄 2개를 화자 '윌로'로 합쳤습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal([new Speaker("윌로", "willo")], session.Project.Speakers);
+        Assert.Null(Find(graph, "speaker-unlisted-header"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 대본에만_있는_이름은_비우거나_띄어쓴_새_이름으로_고치지_않고_칸이_돌아온다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        WriteDialogue(session, "ch01", "root", "상인: 어서 오게.");
+        GraphEditorView graph = PickProject(window);
+        long revision = session.Editor.Revision;
+
+        TextBox name = Box(graph, "speaker-unlisted:상인");
+        name.Text = "  ";
+        Key(name, Avalonia.Input.Key.Enter);
+        Assert.Contains("비울 수 없습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("상인", name.Text);
+
+        // 띄어쓴 이름은 목록에 있어야 대본이 화자로 읽는다 — 먼저 더하라고 말한다.
+        name.Text = "늙은 상인";
+        Key(name, Avalonia.Input.Key.Enter);
+        Assert.Contains("먼저 위에서 화자로 더한 뒤", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("상인", name.Text);
+
+        Assert.Equal(revision, session.Editor.Revision);
+        Assert.Equal("상인", FirstSpeaker(session, "ch01", "root"));
+
+        // 목록에 있는 띄어쓴 이름으로는 합쳐진다.
+        session.SetSpeakers(("늙은 상인", "merchant"));
+        Dispatcher.UIThread.RunJobs();
+        name = Box(graph, "speaker-unlisted:상인");
+        name.Text = "늙은 상인";
+        Key(name, Avalonia.Input.Key.Enter);
+        Assert.Equal("늙은 상인", FirstSpeaker(session, "ch01", "root"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 이름을_고친_뒤의_등록은_더는_쓰이지_않는_옛_이름을_올리지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 이름 칸을 고치다 바로 [등록]을 누르면 초점이 떠나며 먼저 고쳐진다 — 그 뒤 옛 이름의 [등록]은 할 일이 없다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        WriteDialogue(session, "ch01", "root", "윌러: 오타다.");
+        GraphEditorView graph = PickProject(window);
+        Button register = (Button)Control(graph, "speaker-register:윌러");
+
+        TextBox typo = Box(graph, "speaker-unlisted:윌러");
+        typo.Text = "윌로";
+        Key(typo, Avalonia.Input.Key.Enter);
+        long revision = session.Editor.Revision;
+
+        Click(register);
+
+        Assert.Equal(revision, session.Editor.Revision);
+        Assert.Empty(session.Project.Speakers);
+        Assert.NotNull(Find(graph, "speaker-unlisted:윌로"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 카드에_목록에_없는_화자를_쓰면_화자_탭에_바로_모인다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        GraphEditorView graph = PickProject(window);
+        Assert.Null(Find(graph, "speaker-unlisted-header"));
+
+        WriteDialogue(session, "ch01", "root", "시구레: 누구야?");
+        Assert.Equal("1줄", ((TextBlock)Control(graph, "speaker-unlisted-lines:시구레")).Text);
+
+        WriteDialogue(session, "ch02", "x", "시구레: 또 누구야?");
+        Assert.Equal("2줄", ((TextBlock)Control(graph, "speaker-unlisted-lines:시구레")).Text);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static GraphEditorView PickProject(MainWindow window)

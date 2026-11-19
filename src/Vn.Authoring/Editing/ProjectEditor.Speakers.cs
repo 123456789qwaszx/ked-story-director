@@ -34,6 +34,43 @@ public sealed partial class ProjectEditor
         return speaker;
     }
 
+    /// <summary>
+    /// 여러 화자를 <b>한 칸에</b> 목록 끝에 더한다 — [대본] 「화자」 탭의 [모두 등록](대본에만 있는 이름들 · <see cref="UnlistedSpeakers"/> ·
+    /// usability UX34). 이름마다 임시 키가 선다(<see cref="AddSpeaker"/>와 같고, 함께 더하는 이름끼리도 겹치지 않는다). 빈 이름 · 이미 있는 이름 ·
+    /// 겹친 이름은 건너뛴다. 더한 것이 없으면 기록하지 않는다.
+    /// </summary>
+    /// <returns>더한 화자들 — 준 차례대로.</returns>
+    public IReadOnlyList<Speaker> AddSpeakers(IEnumerable<string> names)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+
+        var keys = Project.Speakers.Select(item => item.CharacterId).ToList();
+        var added = new List<Speaker>();
+
+        foreach (string name in names)
+        {
+            string typed = (name ?? string.Empty).Trim();
+
+            if (typed.Length == 0 ||
+                Project.FindSpeaker(typed) is not null ||
+                added.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
+            var speaker = new Speaker(typed, CharacterKey.NewTemp(typed, keys));
+            keys.Add(speaker.CharacterId);
+            added.Add(speaker);
+        }
+
+        if (added.Count > 0)
+        {
+            Mutate(ProjectChangeKind.Content, () => Project.Speakers.AddRange(added));
+        }
+
+        return added;
+    }
+
     /// <summary>화자를 목록에서 지운다. 이미 대본에 적힌 이름은 그대로 남는다(화자 칸은 자유 입력). 없으면 false — 기록하지 않는다.</summary>
     public bool RemoveSpeaker(string name)
     {
@@ -79,7 +116,8 @@ public sealed partial class ProjectEditor
     /// 바뀌었으니 번역·녹음이 다시 보라"는 신호인데, 화자의 개명은 줄이 <em>말하는 내용</em>을
     /// 바꾸지 않는다. 올리면 화자 하나 고칠 때마다 그 화자의 모든 줄이 재작업 대상이 된다.
     ///
-    /// 새 이름이 이미 목록에 있으면 거절한다(예외) — 두 화자의 줄이 한 이름으로 합쳐진다.
+    /// 새 이름이 이미 목록에 있으면 거절한다(예외) — 두 화자의 줄이 한 이름으로 합쳐진다. 단 <b>목록에 없는 이름</b>(대본에만 있는 이름)은
+    /// 목록의 이름으로 고칠 수 있다 — 그 줄들이 그 화자로 합쳐진다(오타 고치기 · usability UX34).
     /// </summary>
     /// <returns>이름이 바뀐 줄 수(모든 대본·모든 locale 합계). 목록에도 줄에도 없으면 0이고 기록하지 않는다.</returns>
     public int RenameSpeaker(string oldName, string newName)
