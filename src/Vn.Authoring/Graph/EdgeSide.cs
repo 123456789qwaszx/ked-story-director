@@ -12,6 +12,11 @@ namespace Vn.Authoring.Graph;
 /// </summary>
 public static class EdgeSide
 {
-    /// <summary>카드 왼쪽 X끼리 잰다 — 카드 폭이 같아 가운데끼리 잰 것과 같다. 같은 X면 오른쪽(늘 쓰던 쪽)이다.</summary>
-    public static bool GoesLeft(double sourceX, double targetX) => targetX < sourceX;
+    /// <summary>
+    /// 두 카드의 <b>지금 폭으로 잰 가운데</b>끼리 잰다 — 도착의 가운데가 출발의 가운데보다 왼쪽이면 왼쪽. 같으면 오른쪽(늘 쓰던 쪽)이다
+    /// (2026-11-19 소유자 — 「에피소드의 현재 가로넓이를 기준으로」 · usability UX6). ⛔ 그 전에는 카드 왼쪽 X끼리 쟀다 — 「카드 폭이 같아
+    /// 가운데끼리 잰 것과 같다」던 규칙이라, 카드를 넓힐 수 있게 된 뒤로는 넓힌 카드 아래 한참 오른쪽의 도착도 「오른쪽」이었다.
+    /// </summary>
+    public static bool GoesLeft(double sourceLeft, double sourceWidth, double targetLeft, double targetWidth) =>
+        targetLeft + (targetWidth / 2) < sourceLeft + (sourceWidth / 2);
 }

@@ -118,6 +118,28 @@ public sealed class GraphChoiceSideTests : IDisposable
         Assert.Contains(Edges(graph), path => path.Data!.Bounds.Right <= sceneLeft + 1);
     });
 
+    [Fact]
+    public void 넓힌_카드는_지금_폭의_가운데로_쪽을_잰다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「선택지 좌우로 붙는 기준을 … 에피소드의 현재 가로넓이를 기준으로」(usability UX6). 넓힌 카드(800 ~ 1800 · 가운데 1300)
+        // 아래 왼쪽 반의 도착은 왼쪽, 오른쪽 반의 도착은 오른쪽이다. ⛔ 왼쪽 X끼리 재면 둘 다 오른쪽이었다.
+        (GraphEditorView graph, AuthoringSession session) = Show(
+            ("start", 2400, 0), ("scene", 800, 0), ("under-left", 900, 700), ("under-right", 1450, 700));
+        session.Editor.ResizeNode(Card(session, "scene").Id, 1000, null);
+        session.Editor.AddEdge("ch01", "scene", "under-left", optionLabel: "왼쪽 아래");
+        session.Editor.AddEdge("ch01", "scene", "under-right", optionLabel: "오른쪽 아래");
+        Redraw(graph);
+
+        double trunkX = CardX(graph, session, "scene") + 500;   // 줄기는 넓힌 카드의 가운데 아래다
+        StackPanel left = Row(graph, "scene", "왼쪽 아래");
+        StackPanel right = Row(graph, "scene", "오른쪽 아래");
+
+        Assert.Equal(trunkX - 14, Canvas.GetLeft(left) + left.DesiredSize.Width, precision: 3);
+        Assert.IsType<Ellipse>(left.Children[^1]);
+        Assert.Equal(trunkX + 14, Canvas.GetLeft(right), precision: 3);
+        Assert.IsType<Ellipse>(right.Children[0]);
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static DialogueNode Card(AuthoringSession session, string episodeId) =>

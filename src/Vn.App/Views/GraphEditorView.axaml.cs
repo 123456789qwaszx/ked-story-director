@@ -1609,8 +1609,8 @@ public partial class GraphEditorView : UserControl
         // 넘어가는 순간 뒤집힌다.
         List<bool> lefts = branches
             .Select(branch => branch.Target is { } target
-                ? EdgeSide.GoesLeft(sourceRect.X, target.X)
-                : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, row.Left))
+                ? EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, target.X, target.Width)
+                : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, row.Left, row.Right - row.Left))
             .ToList();
 
         // 줄기는 <b>언제나 카드 가운데 아래</b>다 (2026-10-29 소유자: "항상 노드 중앙 아래쪽에 선택지가 있도록").
@@ -1681,7 +1681,9 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
-            bool left = EdgeSide.GoesLeft(row.Left, toRow?.Left ?? toCard!.Value.X);
+            bool left = toRow is { } arrival
+                ? EdgeSide.GoesLeft(row.Left, row.Right - row.Left, arrival.Left, arrival.Right - arrival.Left)
+                : EdgeSide.GoesLeft(row.Left, row.Right - row.Left, toCard!.Value.X, toCard.Value.Width);
             double toward = left ? -1 : 1;
             var from = new GraphPosition(left ? row.Left : row.Right, row.Y);
             double laneX = from.X + (toward * (RailLaneOut + ((left ? leftLane++ : rightLane++) * RailLaneGap)));

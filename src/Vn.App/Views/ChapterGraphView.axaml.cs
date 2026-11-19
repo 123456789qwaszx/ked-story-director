@@ -1480,7 +1480,7 @@ public partial class ChapterGraphView : UserControl
     private bool GoesLeft(ChapterBranchMarkers.BranchPoint point) =>
         FromRect(point) is { } from &&
         ToRect(point) is { } target &&
-        Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, target.X);
+        Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, from.Width, target.X, target.Width);
 
     /// <summary>
     /// 이어진 분기의 점선 — 분기점에서 나가 도착(칩 · 카드)의 <b>가까운 세로 변</b> 가운데로 든다(둘이 가로로 겹쳐 서도 선이

@@ -263,7 +263,7 @@ public static class GraphProjectionBuilder
                 OnLeft: exit.TargetNodeId is { } targetId &&
                         file.Nodes.FirstOrDefault(other => string.Equals(other.Id, targetId, StringComparison.Ordinal))
                             is { } target &&
-                        EdgeSide.GoesLeft(node.Layout.X, target.Layout.X)))
+                        EdgeSide.GoesLeft(node.Layout.X, BoardSize.CardWidthOf(node), target.Layout.X, BoardSize.CardWidthOf(target))))
             .ToList();
 
         // 설정노드의 "이 챕터에 공급 중" 포트는 2026-08-22에 사라졌다 (소유자) —
