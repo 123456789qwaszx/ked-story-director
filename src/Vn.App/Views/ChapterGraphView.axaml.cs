@@ -992,10 +992,26 @@ public partial class ChapterGraphView : UserControl
     private Point _panStart;
     private Vector _panStartOffset;
 
-    /// <summary>휠 — 누른 키와 무관하게 배율이다. 스크롤로 새지 않게 여기서 삼킨다.</summary>
+    /// <summary>
+    /// 휠 — 누른 키와 무관하게 배율이다. 스크롤로 새지 않게 여기서 삼킨다. 얼마나 움직이는가는 <see cref="BoardWheel"/> 한 벌([대본]과 같다) —
+    /// 신호의 크기에 비례하고, 가로 값은 판을 가로로 옮긴다.
+    /// </summary>
     private void OnGraphWheel(object? sender, Avalonia.Input.PointerWheelEventArgs args)
     {
-        ApplyZoom(_zoom * (args.Delta.Y > 0 ? 1.15 : 1 / 1.15), args.GetPosition(GraphScroll));
+        BoardWheel.Move move = BoardWheel.Read(args);
+
+        if (move.Zoom != 1)
+        {
+            ApplyZoom(_zoom * move.Zoom, args.GetPosition(GraphScroll));
+        }
+
+        if (move.Pan != default)
+        {
+            GraphScroll.Offset = new Vector(
+                Math.Max(0, GraphScroll.Offset.X + move.Pan.X),
+                Math.Max(0, GraphScroll.Offset.Y + move.Pan.Y));
+        }
+
         args.Handled = true;
     }
 

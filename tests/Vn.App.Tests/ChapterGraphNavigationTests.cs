@@ -120,6 +120,42 @@ public sealed class ChapterGraphNavigationTests : IDisposable
     });
 
     [Fact]
+    public void 잔_휠은_그_크기만큼만_확대한다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 「트랙패드 수정」(writer-app WA2) — 트랙패드는 한 번 쓸 때 잔 신호를 수십 개 보낸다.
+        // ⛔ 신호 하나마다 크기를 보지 않고 ×1.15였다 — 한 번 쓸면 배율이 끝까지 튀었다.
+        (ChapterGraphView view, ScrollViewer scroll) = Show();
+
+        Wheel(scroll, new Vector(0, 0.25), KeyModifiers.None);
+        Assert.Equal(Math.Pow(1.15, 0.25), Scale(view), 3);
+
+        for (int index = 0; index < 3; index++)
+        {
+            Wheel(scroll, new Vector(0, 0.25), KeyModifiers.None);
+        }
+
+        Assert.Equal(1.15, Scale(view), 3);   // 잔 신호 넷 = 휠 한 칸
+    });
+
+    [Fact]
+    public void 가로_휠은_배율이_아니고_판을_가로로_옮긴다() => HeadlessUi.Run(() =>
+    {
+        // ⛔ 가로로 쓸면(세로 값 0) 「올림이 아니다」로 읽혀 축소됐다.
+        (ChapterGraphView view, ScrollViewer scroll) = Show();
+
+        Assert.True(scroll.Extent.Width > scroll.Viewport.Width, "판이 뷰포트보다 넓어야 한다");
+
+        Wheel(scroll, new Vector(-1, 0), KeyModifiers.None);
+
+        Assert.Equal(1, Scale(view), 3);
+        Assert.Equal(BoardWheel.PanStep, scroll.Offset.X, 1);
+
+        Wheel(scroll, new Vector(1, 0), KeyModifiers.None);
+
+        Assert.Equal(0, scroll.Offset.X, 1);
+    });
+
+    [Fact]
     public void 배율_단추를_누르면_100퍼센트로_돌아온다() => HeadlessUi.Run(() =>
     {
         (ChapterGraphView view, ScrollViewer scroll) = Show();
@@ -178,6 +214,9 @@ public sealed class ChapterGraphNavigationTests : IDisposable
             : 1;
 
     private static void Wheel(ScrollViewer scroll, double delta, KeyModifiers modifiers) =>
+        Wheel(scroll, new Vector(0, delta), modifiers);
+
+    private static void Wheel(ScrollViewer scroll, Vector delta, KeyModifiers modifiers) =>
         scroll.RaiseEvent(new PointerWheelEventArgs(
             scroll,
             new Pointer(0, PointerType.Mouse, true),
@@ -186,7 +225,7 @@ public sealed class ChapterGraphNavigationTests : IDisposable
             0,
             new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.Other),
             modifiers,
-            new Vector(0, delta))
+            delta)
         {
             RoutedEvent = InputElement.PointerWheelChangedEvent
         });

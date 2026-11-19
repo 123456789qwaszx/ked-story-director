@@ -4732,7 +4732,10 @@ public partial class GraphEditorView : UserControl
 
     // ── 그래프 내비게이션 (W40): 줌·팬·미니맵 ─────────────────────────────
 
-    /// <summary>휠 — 누른 키와 무관하게 배율이다 (2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다).</summary>
+    /// <summary>
+    /// 휠 — 누른 키와 무관하게 배율이다 (2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다). 얼마나 움직이는가는 <see cref="BoardWheel"/> 한 벌 —
+    /// 신호의 크기에 비례하고, 가로 값은 판을 가로로 옮긴다.
+    /// </summary>
     private void OnGraphWheel(object? sender, PointerWheelEventArgs args)
     {
         if (WheelBelongsToBox(args.Source))
@@ -4740,8 +4743,20 @@ public partial class GraphEditorView : UserControl
             return;   // 고른 카드의 글 칸 위다 — 칸이 스크롤한다
         }
 
-        double factor = args.Delta.Y > 0 ? 1.15 : 1 / 1.15;
-        ApplyZoom(_zoom * factor, args.GetPosition(GraphScroll));
+        BoardWheel.Move move = BoardWheel.Read(args);
+
+        if (move.Zoom != 1)
+        {
+            ApplyZoom(_zoom * move.Zoom, args.GetPosition(GraphScroll));
+        }
+
+        if (move.Pan != default)
+        {
+            GraphScroll.Offset = new Vector(
+                Math.Max(0, GraphScroll.Offset.X + move.Pan.X),
+                Math.Max(0, GraphScroll.Offset.Y + move.Pan.Y));
+        }
+
         args.Handled = true;
     }
 
