@@ -40,7 +40,7 @@ internal static class AppSettingsService
 
     private static readonly string DefaultSettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "VnTool",
+        AppIdentity.DataFolder,
         "settings.json");
 
     public static string? LoadRecentProject()

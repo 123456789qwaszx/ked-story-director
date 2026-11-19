@@ -26,8 +26,8 @@ jobs:
         run: |
           .\publish-windows.ps1
 
-          $exe = Join-Path $PWD "artifacts\VnTool-win-x64\Vn.App.exe"
-          $zip = Join-Path $PWD "artifacts\VnTool-win-x64.zip"
+          $exe = Join-Path $PWD "artifacts\StoryDirector-win-x64\StoryDirector.exe"
+          $zip = Join-Path $PWD "artifacts\StoryDirector-win-x64.zip"
           if (-not (Test-Path $exe)) { throw "portable exe was not produced" }
           if (-not (Test-Path $zip)) { throw "portable zip was not produced" }
 

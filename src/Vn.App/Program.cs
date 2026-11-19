@@ -21,7 +21,7 @@ class Program
         }
         catch (Exception exception)
         {
-            Report("VnTool 시작", exception);
+            Report($"{AppIdentity.Name} 시작", exception);
             return 1;
         }
     }
@@ -40,7 +40,7 @@ class Program
     {
         if (e.ExceptionObject is Exception exception)
         {
-            Report("VnTool 실행", exception);
+            Report($"{AppIdentity.Name} 실행", exception);
         }
     }
 
@@ -57,11 +57,11 @@ class Program
 
         try
         {
-            Console.Error.WriteLine($"[VnTool] {context} 실패: {exception}");
+            Console.Error.WriteLine($"[{AppIdentity.Name}] {context} 실패: {exception}");
 
             if (path is not null)
             {
-                Console.Error.WriteLine($"[VnTool] 로그: {path}");
+                Console.Error.WriteLine($"[{AppIdentity.Name}] 로그: {path}");
             }
         }
         catch (Exception)

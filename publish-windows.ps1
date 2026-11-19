@@ -11,8 +11,10 @@ Push-Location $root
 #   치를 이유가 없고(느리다), 묶는 것은 배포의 성질이지 프로젝트의 성질이 아니다.
 
 try {
-    $publishDirectory = Join-Path $root "artifacts\VnTool-win-x64"
-    $zipPath = Join-Path $root "artifacts\VnTool-win-x64.zip"
+    # 꾸러미 · 실행 파일의 이름은 작가에게 보이는 이름이다(스토리 디렉터 — 2026-11-19 · docs/work-orders/writer-app-orders.md WA4).
+    #   실행 파일 이름은 Vn.App.csproj의 AssemblyName이 정한다 — 여기와 CI(test.yml)가 그 이름을 찾는다.
+    $publishDirectory = Join-Path $root "artifacts\StoryDirector-win-x64"
+    $zipPath = Join-Path $root "artifacts\StoryDirector-win-x64.zip"
 
     Remove-Item $publishDirectory -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
@@ -28,7 +30,7 @@ try {
         -o $publishDirectory
 
     if ($LASTEXITCODE -ne 0) {
-        throw "VnTool publish failed with exit code $LASTEXITCODE."
+        throw "StoryDirector publish failed with exit code $LASTEXITCODE."
     }
 
     # ⛔ 지금은 <b>실행 파일만</b> 담는다 (2026-08-26 소유자: "읽어주세요와 견본 project는
@@ -41,14 +43,14 @@ try {
 
     Compress-Archive -Path (Join-Path $publishDirectory "*") -DestinationPath $zipPath
 
-    $exe = Join-Path $publishDirectory "Vn.App.exe"
+    $exe = Join-Path $publishDirectory "StoryDirector.exe"
     $sizeMb = [math]::Round((Get-Item $exe).Length / 1MB, 1)
 
     Write-Host ""
     Write-Host "꾸러미: $zipPath"
     Write-Host "실행 파일: $exe ($sizeMb MB)"
     Write-Host "담긴 것: 실행 파일 하나 (안내문·예제 프로젝트는 이번 꾸러미에 없습니다)"
-    Write-Host "받는 사람은 압축을 풀고 Vn.App.exe를 누르면 됩니다."
+    Write-Host "받는 사람은 압축을 풀고 StoryDirector.exe를 누르면 됩니다."
 }
 finally {
     Pop-Location

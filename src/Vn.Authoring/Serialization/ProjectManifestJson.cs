@@ -80,7 +80,7 @@ public static class ProjectManifestJson
         {
             throw new InvalidDataException(
                 $"이 프로젝트 manifest는 형식 버전 {version}입니다. " +
-                $"현재 VnTool은 {CurrentFormatVersion}까지 읽을 수 있습니다.");
+                $"이 툴은 {CurrentFormatVersion}까지 읽을 수 있습니다.");
         }
 
         // 앞의 형식은 옮기지 않는다(2026-11-17). 거절만 분명히 한다 — 아니면 「manifest가 아닙니다」로 엉뚱하게 거절된다.
@@ -92,7 +92,7 @@ public static class ProjectManifestJson
 
         if (version != CurrentFormatVersion || root["files"] is not JsonArray files)
         {
-            throw new InvalidDataException("VnTool 프로젝트 manifest가 아닙니다.");
+            throw new InvalidDataException("이 툴의 프로젝트 manifest가 아닙니다.");
         }
 
         HashSet<string> allPaths = new(StringComparer.OrdinalIgnoreCase);

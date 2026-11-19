@@ -5,8 +5,8 @@
         Width="1400"
         Height="880"
         MinWidth="1000"
-        MinHeight="640"
-        Title="VnTool">
+        MinHeight="640">
+    <!-- 창 제목(앱 이름 — 프로젝트 이름)은 코드가 단다(RefreshShell · AppIdentity.Name). -->
     <DockPanel>
         <!-- 위아래 여백은 4 — 위 띠 · 탭 줄 · 툴바 세 줄을 붙인다(2026-11-18 소유자 — 「불필요하게 공간을 활용」 · chrome-card-header U1, ⛔ 그 전에는 10). -->
         <Border DockPanel.Dock="Top"

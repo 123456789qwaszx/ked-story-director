@@ -211,7 +211,7 @@ internal static class StarterProject
         예제 프로젝트 — 돌아가는 최소 한 판
 
         [처음 할 일]
-        1. Vn.App.exe 를 켠다.
+        1. 스토리 디렉터(StoryDirector.exe)를 켠다.
         2. 이 폴더의 `예제.vnproject.json` 을 연다.
         3. 챕터 그래프 탭에서 ch01 을 고른다. 네모 넷과 그것을 잇는 길이 보인다.
 

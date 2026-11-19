@@ -13,6 +13,11 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+
+        // 맥의 메뉴 막대 첫 칸(앱 메뉴)에 서는 이름이다 — 다른 OS에서는 보이지 않는다. 앱 메뉴를 빈 것으로 주어, Avalonia가 대신 채우는
+        // 「About Avalonia」를 걷는다(가리기 · 종료 같은 맥의 기본 줄은 맥이 그대로 세운다). File 메뉴는 창 안에 그대로다(writer-app WA4).
+        Name = AppIdentity.Name;
+        NativeMenu.SetMenu(this, new NativeMenu());
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -61,7 +66,7 @@ public partial class App : Application
 
         return new Window
         {
-            Title = "VnTool — 시작하지 못했습니다",
+            Title = $"{AppIdentity.Name} — 시작하지 못했습니다",
             Width = 760,
             Height = 480,
             WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -74,7 +79,7 @@ public partial class App : Application
                     new TextBlock
                     {
                         // 작가용 메시지. 개발자용 상세 내용은 아래 상자와 로그 파일에 있다.
-                        Text = StartupLog.WriterMessage("VnTool을 시작하는"),
+                        Text = StartupLog.WriterMessage($"{AppIdentity.Name}를 시작하는"),
                         TextWrapping = TextWrapping.Wrap,
                         FontWeight = FontWeight.SemiBold
                     },
