@@ -100,7 +100,10 @@
              창을 열면 [구성]이 서고, 새 프로젝트를 만들어도 [구성]으로 온다.
              무대 프리뷰는 연출 층과 함께 ked-story-compositor의 몫이다.
              주의: 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
-        <TabControl x:Name="MainTabs" Padding="0">
+        <!-- 탭 줄은 머리만 진다 — 두 판은 그 아래 한 칸에 늘 붙어 서고 고른 탭의 판만 보인다(MainWindow.ShowTab · 2026-11-19 · usability UX14).
+             ⛔ 그 전에는 판이 탭 안에 들어 있어, 탭을 바꾸면 안 보이는 탭의 판이 화면 나무에서 떨어졌다가 돌아올 때 다시 붙었다 — 카드
+             160장의 글 칸이 모양(템플릿)을 다시 입고 다시 재느라 [대본] 탭으로 돌아오는 데 1초가 넘었다. -->
+        <TabControl x:Name="MainTabs" DockPanel.Dock="Top" Padding="0">
             <!-- 탭 글은 18 · 높이 34 — 테마 기본(24 · 48)은 위 띠 · 툴바 사이를 넓게 벌렸다(2026-11-18 소유자 · chrome-card-header U1).
                  「>」 자식 고르기 — 판 안 오른쪽 기둥의 탭(제 크기가 따로 있다)에는 닿지 않는다. -->
             <TabControl.Styles>
@@ -110,12 +113,13 @@
                     <Setter Property="Padding" Value="12,0" />
                 </Style>
             </TabControl.Styles>
-            <TabItem x:Name="ChapterTabItem" Header="구성">
-                <views:ChapterGraphView x:Name="ChapterGraph" />
-            </TabItem>
-            <TabItem x:Name="GraphTabItem" Header="대본">
-                <views:GraphEditorView x:Name="Graph" />
-            </TabItem>
+            <TabItem x:Name="ChapterTabItem" Header="구성" />
+            <TabItem x:Name="GraphTabItem" Header="대본" />
         </TabControl>
+
+        <Panel x:Name="TabBodies">
+            <views:ChapterGraphView x:Name="ChapterGraph" />
+            <views:GraphEditorView x:Name="Graph" IsVisible="False" />
+        </Panel>
     </DockPanel>
 </Window>

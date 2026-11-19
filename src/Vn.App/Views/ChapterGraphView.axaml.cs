@@ -428,6 +428,15 @@ public partial class ChapterGraphView : UserControl
         InitializeComponent();
         AttachedToVisualTree += (_, _) => UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
 
+        // 셸이 탭을 바꿀 때는 떼지 않고 보이기만 바꾼다(usability UX14) — 다시 보이는 순간 미뤄 둔 그리기를 한다.
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty && IsVisible)
+            {
+                UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
+            }
+        };
+
         // 하이어아키 기둥 접기 — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
             BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
@@ -913,12 +922,13 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 판 · 검증 보고 · 인스펙터를 다시 그린다 — <b>[구성] 탭이 가려져 있으면 보일 때까지 미룬다</b>(2026-11-18 · finishing FX3). [대본] 탭에서
     /// 글을 넣거나 카드를 옮길 때마다 다시 읽기가 돌고, 그때마다 보이지 않는 이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 0.3초).
-    /// 내보내기와 검증은 미루지 않는다 — 진행 JSON은 사람 손을 기다리지 않는다. 탭 안의 내용은 가려진 동안 화면 트리에서 떨어져 있다
-    /// (<see cref="TopLevel"/>이 없다) — 다시 붙는 순간 <see cref="OnShownAgain"/>이 그린다.
+    /// 내보내기와 검증은 미루지 않는다 — 진행 JSON은 사람 손을 기다리지 않는다. 가려졌다 = 화면 트리에 없거나(창에 붙기 전) 보이지 않는다
+    /// (셸이 고른 탭의 판만 보인다 — usability UX14 · ⛔ 그 전에는 탭 안에 들어 있어 가려지면 화면 트리에서 떨어졌다) — 다시 보이는 순간
+    /// <see cref="OnShownAgain"/>이 그린다.
     /// </summary>
     private void DrawWhenShown()
     {
-        if (TopLevel.GetTopLevel(this) is null)
+        if (TopLevel.GetTopLevel(this) is null || !IsVisible)
         {
             _drawPending = true;
             return;

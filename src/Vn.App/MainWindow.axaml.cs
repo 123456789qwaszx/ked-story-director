@@ -30,6 +30,17 @@ public partial class MainWindow : Window
     internal AuthoringSession SessionProbe => _session;
 
     /// <summary>[⚙ 설정] — 설정 창을 모달로 연다(<see cref="SettingsWindow"/>). 시험이 연 창을 잡도록 돌려준다.</summary>
+    /// <summary>
+    /// 고른 탭의 판만 보인다 — 두 판은 늘 화면 나무에 붙어 있고 보이기만 바꾼다(2026-11-19 · usability UX14). ⛔ 판이 탭 안에 들어 있던 때는
+    /// 탭을 바꾸면 안 보이는 판이 떨어졌다 다시 붙어, [대본] 탭으로 돌아오는 데 카드 160장에서 1초가 넘었다.
+    /// </summary>
+    private void ShowTab()
+    {
+        bool graph = ReferenceEquals(MainTabs.SelectedItem, GraphTabItem);
+        ChapterGraph.IsVisible = !graph;
+        Graph.IsVisible = graph;
+    }
+
     internal SettingsWindow OpenSettings()
     {
         var settings = new SettingsWindow(_session);
@@ -67,6 +78,10 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // 탭 줄은 머리만 — 고른 탭의 판만 보인다. 두 판은 늘 화면 나무에 붙어 있다(usability UX14).
+        MainTabs.SelectionChanged += (_, _) => ShowTab();
+        ShowTab();
         _sheet = DirectorSummary;   // 요약 조각은 보통 인스펙터에 선다 — 화자 · 조건 탭은 짓는 동안만(FillSheet)
 
         // 마지막 안전망 (공통 불변식 4). 개별 핸들러의 포획을 놓친 예외가 여기까지 오면

@@ -36,6 +36,37 @@ public sealed class MainChromeTests
     });
 
     [Fact]
+    public void 탭을_바꿔도_두_판은_화면에_붙어_있고_고른_판만_보인다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 속도 개선 ②(usability UX14). ⛔ 판이 탭 안에 들어 있어, 탭을 바꾸면 안 보이는 판이 떨어졌다 다시 붙었다 —
+        // [대본] 탭으로 돌아오는 데 카드 160장에서 1초가 넘었다.
+        var window = new MainWindow { Width = 1400, Height = 820 };
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        TabControl tabs = window.FindControl<TabControl>("MainTabs")!;
+        var chapter = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        var graph = window.FindControl<GraphEditorView>("Graph")!;
+        int detached = 0;
+        graph.DetachedFromVisualTree += (_, _) => detached++;
+        chapter.DetachedFromVisualTree += (_, _) => detached++;
+
+        Assert.Equal((true, false), (chapter.IsVisible, graph.IsVisible));   // 창을 열면 [구성]
+
+        tabs.SelectedIndex = 1;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal((false, true), (chapter.IsVisible, graph.IsVisible));
+
+        tabs.SelectedIndex = 0;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal((true, false), (chapter.IsVisible, graph.IsVisible));
+
+        Assert.Equal(0, detached);
+        Assert.True(graph.IsAttachedToVisualTree() && chapter.IsAttachedToVisualTree());
+
+        window.Close();
+    });
+
+    [Fact]
     public void File은_이웃_단추와_같은_모양이고_위_세_줄은_붙어_있다() => HeadlessUi.Run(() =>
     {
         // 2026-11-18 소유자 — 「File은 흰 바탕에 흰 배경이라서 글자만 보입니다」 · 「줄이 너무 떨어져있는데 조금 붙여주십시오」(chrome-card-header U1).
