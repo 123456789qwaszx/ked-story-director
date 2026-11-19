@@ -1080,7 +1080,14 @@ public sealed partial class ProjectEditor
     ///
     /// 묶음 안에서 아무것도 안 바뀌었으면 되돌리기 칸도 알림도 없다.
     /// </summary>
-    public void Batch(Action change)
+    public void Batch(Action change) => Batch(null, change);
+
+    /// <summary>
+    /// 묶음 — 안에서 무엇이 바뀌었든 <paramref name="kind"/>로 알린다(null이면 안의 알림들로 정한다 · 섞이면 구조). 묶음을 부르는 명령이 그 결과를
+    /// 알 때만 쓴다 — 예컨대 챕터 조건은 판에 서지 않는 공급 노드를 짓고 고치지만 판에는 조건만 바뀐 것이다(<see cref="ProjectChangeKind.ChapterCondition"/>).
+    /// 바깥 묶음 안에서 불리면 바깥 묶음이 정한다.
+    /// </summary>
+    private void Batch(ProjectChangeKind? kind, Action change)
     {
         ArgumentNullException.ThrowIfNull(change);
 
@@ -1105,13 +1112,13 @@ public sealed partial class ProjectEditor
         finally
         {
             _batchDepth--;
-            ProjectChangeKind? kind = _batchKind;
-            string? batchNodeId = _batchNodeId;
+            ProjectChangeKind? raised = _batchKind is null ? null : kind ?? _batchKind;
+            string? batchNodeId = kind is null ? _batchNodeId : null;
             _batchKind = null;
             _batchNodeId = null;
             _batchRaised = false;
 
-            if (kind is { } changed)
+            if (raised is { } changed)
             {
                 if (completed)
                 {

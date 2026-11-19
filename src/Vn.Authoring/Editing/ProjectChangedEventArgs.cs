@@ -59,7 +59,22 @@ public enum ProjectChangeKind
     /// 제목 글만 고칠 수 있다. ⛔ 2026-11-19까지는 구조 · <see cref="NodeMetadata"/>여서 제목 하나에 [대본] 판을 통째로 다시 지었다(에피소드 160개에서
     /// 2.5초 · usability UX15).
     /// </summary>
-    CardTitle
+    CardTitle,
+
+    /// <summary>
+    /// 선택지(챕터 간선) 하나의 내용만 바뀌었다 — 문구 · 스탯변화 · 표시 · 해금 조건 · 잠금 안내 · 자동. 어디서 어디로 잇는지는 그대로다.
+    /// 출발 에피소드의 카드가 판에 있으면 그 카드가 <see cref="ProjectChangedEventArgs.NodeId"/>다. [대본] 판에서는 그 카드에서 나가는 철도(선택지 칸)만
+    /// 그것을 본다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 선택지 문구 하나에 [대본] 판을 통째로 다시 지었다(에피소드 160개에서
+    /// 2.5초 · usability UX16).
+    /// </summary>
+    ChoiceDetail,
+
+    /// <summary>
+    /// 챕터 조건이 생겼거나 그 식 · 설명이 바뀌었다(라벨은 그대로) — 판에 공급한 사본과 공급 노드(판에 서지 않는 배관)도 함께. [대본] 판에서는
+    /// 분기 카드 머리의 조건 표(「식 미정」)만 그것을 본다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 조건 하나를 더하는 데 [대본] 판을
+    /// 통째로 다시 지었다(에피소드 160개에서 2.5초 · usability UX16).
+    /// </summary>
+    ChapterCondition
 }
 
 public sealed class ProjectChangedEventArgs : EventArgs
@@ -71,7 +86,10 @@ public sealed class ProjectChangedEventArgs : EventArgs
         NodeId = nodeId;
     }
 
-    /// <summary>바뀐 노드가 하나로 정해지면 그 노드 — <see cref="ProjectChangeKind.DialogueLines"/>가 싣는다. 모르거나 여럿이면 null.</summary>
+    /// <summary>
+    /// 바뀐 노드가 하나로 정해지면 그 노드 — <see cref="ProjectChangeKind.DialogueLines"/> · <see cref="ProjectChangeKind.CardTitle"/> ·
+    /// <see cref="ProjectChangeKind.ChoiceDetail"/>(출발 카드)가 싣는다. 모르거나 여럿이면 null.
+    /// </summary>
     public string? NodeId { get; }
 
     /// <summary>

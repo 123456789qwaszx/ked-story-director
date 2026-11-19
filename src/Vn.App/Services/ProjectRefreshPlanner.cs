@@ -92,6 +92,21 @@ internal static class ProjectRefreshPlanner
                 RebuildInspector: selectedNode is not DialogueNode,
                 RefreshCardTitle: true),
 
+            // 선택지 하나의 내용 — 카드는 그대로 두고 그 출발 카드에서 나가는 철도(선택지 칸)만 다시 긋는다(판이 다른 것도 바뀌었다고 보면
+            // 스스로 통째로 짓는다 · usability UX16). 인스펙터는 그 선택지를 보이고 있을 수 있어 다시 세운다(구조일 때와 같다).
+            ProjectChangeKind.ChoiceDetail => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: true,
+                RedrawChoices: true),
+
+            // 챕터 조건 — [대본] 판에서는 분기 카드의 조건 표만 다시 단다. 조건 요약 · 대사 편집기의 조건 고르기는 다시 세운다(usability UX16).
+            ProjectChangeKind.ChapterCondition => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: true,
+                RefreshBranchConditions: true),
+
             // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
 
@@ -111,4 +126,6 @@ internal readonly record struct ProjectRefreshPlan(
     bool RefreshAllCardWriting = false,
     bool RefreshSceneFrames = false,
     bool RebuildCard = false,
-    bool RefreshCardTitle = false);
+    bool RefreshCardTitle = false,
+    bool RedrawChoices = false,
+    bool RefreshBranchConditions = false);

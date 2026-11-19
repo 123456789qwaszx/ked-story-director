@@ -1469,8 +1469,29 @@ public partial class GraphEditorView : UserControl
         RefreshMinimap();
     }
 
+    /// <summary>
+    /// 선택지 칸의 문구 칸을 열거나(<paramref name="slot"/>) 닫는다(null) — 카드는 그대로 두고 그 카드의 철도만 다시 긋는다(<see cref="RedrawChoices"/> —
+    /// 닫으며 넣은 문구도 새 투영으로 받는다). 다른 칸이 열려 있으면 그 칸을 먼저 Enter처럼 닫는다 — 딴 데를 누른 것과 같다(<see cref="FinishSlotLater"/>).
+    /// ⛔ 2026-11-19까지는 열 때와 닫을 때 판을 통째로 다시 지었다(에피소드 160개에서 한 번에 2.5초 · usability UX16) — 다른 칸을 누르면 열려 있던
+    /// 칸의 글은 버려졌다.
+    /// </summary>
+    private void EditSlot(GraphChoicePort? slot, string nodeId)
+    {
+        if (slot is not null)
+        {
+            _finishSlot?.Invoke();
+        }
+
+        _editingSlot = slot is null ? null : SlotKey(slot);
+        RedrawChoices(nodeId);
+    }
+
     /// <summary>그 묶음들만 지금 자리로 다시 긋는다 — 그림이 있던 캔버스 자리에 끼운다(겹침 차례를 지킨다).</summary>
-    private void RedrawRailGroups(List<RailGroup> stale, Dictionary<string, Rect> now)
+    /// <param name="arrivals">다시 그은 출발들이 도착 포트에 남기는 몫(출발 · 문구)을 받는다 — null이면 버린다(따라가기는 길이 그대로라 볼 일이 없다).</param>
+    private void RedrawRailGroups(
+        List<RailGroup> stale,
+        Dictionary<string, Rect> now,
+        Dictionary<string, List<(string From, string Label)>>? arrivals = null)
     {
         if (stale.Count == 0)
         {
@@ -1503,12 +1524,13 @@ public partial class GraphEditorView : UserControl
             {
                 // 이웃 출발의 도착 장부는 그대로다 — 도착 포트는 도착 카드에만 기대어 제 묶음으로 따라간다.
                 case RailOrigin.FromCard card:
-                    DrawRailsFromCard(board, card.EpisodeId, new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                    DrawRailsFromCard(board, card.EpisodeId,
+                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.FromRow row when board.Folded.TryGetValue(row.EpisodeId, out FoldedRow? folded):
                     DrawRailsFromRow(board.BoardName, row.EpisodeId, folded, board.Chapter.Edges, board.Spots, board.Folded,
-                        new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.Arrival arrival when board.Spots.TryGetValue(arrival.EpisodeId, out (DialogueNode Node, Rect Rect) spot):
@@ -1536,6 +1558,14 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>지금 판에 선 철도 그림 — 시험이 따라간 모습과 통째로 그은 모습을 견준다.</summary>
     internal IReadOnlyList<Control> RailVisuals => _railVisuals;
+
+    /// <summary>그 에피소드 카드의 도착 포트가 누르면 보이는 목록(출발 · 문구) — 시험이 본다.</summary>
+    internal IReadOnlyList<(string From, string Label)> ArrivalsInto(string episodeId) =>
+        _railGroups.Select(group => group.Origin)
+            .OfType<RailOrigin.Arrival>()
+            .Where(arrival => string.Equals(arrival.EpisodeId, episodeId, StringComparison.Ordinal))
+            .SelectMany(arrival => arrival.Incoming)
+            .ToList();
 
     /// <summary>
     /// 한 출발 카드의 줄기와 가지들 (T2, v9로 개정 2026-08-17).
@@ -1931,8 +1961,7 @@ public partial class GraphEditorView : UserControl
             label.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
             {
                 args.Handled = true;
-                _editingSlot = SlotKey(slot);
-                Rebuild();
+                EditSlot(slot, nodeId);
             });
         }
 
@@ -1951,7 +1980,7 @@ public partial class GraphEditorView : UserControl
         line.Children.Insert(
             mirrored ? 0 : 1,
             string.Equals(_editingSlot, SlotKey(slot), StringComparison.Ordinal)
-                ? SlotEditor(slot)
+                ? SlotEditor(slot, nodeId)
                 : label);
 
         // 꺼진 점을 누르면 <b>켠다</b>, 켜진 점을 누르면 <b>끈다</b> — 손짓 하나가 한 가지 뜻이다.
@@ -1967,8 +1996,7 @@ public partial class GraphEditorView : UserControl
 
             // 꺼진 점을 누르면 <b>문구 칸을 연다</b> — 살리는 것은 적는 행위이지 누르는
             // 행위가 아니다(2026-09-17 소유자). 점도 문구도 같은 자리로 데려간다.
-            _editingSlot = SlotKey(slot);
-            Rebuild();
+            EditSlot(slot, nodeId);
         });
 
         return line;
@@ -2340,7 +2368,20 @@ public partial class GraphEditorView : UserControl
     /// 두 투영이 그 카드 말고는 같은가 — 항목(카드 · 접은 상자)의 차례와 자리, 다른 카드의 포트(키 · 쪽 · 글 · 이음), 선(연결)의 키. 그 카드의
     /// 포트는 달라도 된다(카드를 다시 지으며 새로 선다) — 다만 선이 생기거나 사라지면 같지 않다.
     /// </summary>
-    internal static bool OnlyCardChanged(GraphProjection before, GraphProjection after, string nodeId)
+    internal static bool OnlyCardChanged(GraphProjection before, GraphProjection after, string nodeId) =>
+        SameBoard(before, after, nodeId, choiceLabels: false);
+
+    /// <summary>
+    /// 두 투영이 선택지 칸의 문구 말고는 같은가 — 선택지 하나의 내용만 바뀌었을 때(<see cref="RedrawChoices"/>). 선택지 칸은 카드 안에 서지 않고
+    /// 철도 위에 선다(카드의 포트 줄은 선택지를 빼고 짓는다).
+    /// </summary>
+    internal static bool OnlyChoicesChanged(GraphProjection before, GraphProjection after) =>
+        SameBoard(before, after, exceptNodeId: null, choiceLabels: true);
+
+    /// <summary>
+    /// 두 투영이 같은 판인가 — <paramref name="exceptNodeId"/> 카드의 포트와, <paramref name="choiceLabels"/>이면 선택지 칸의 문구는 달라도 된다.
+    /// </summary>
+    private static bool SameBoard(GraphProjection before, GraphProjection after, string? exceptNodeId, bool choiceLabels)
     {
         if (before.Items.Count != after.Items.Count ||
             !before.Connections.Select(item => item.Key).OrderBy(key => key, StringComparer.Ordinal)
@@ -2366,7 +2407,7 @@ public partial class GraphEditorView : UserControl
                     return false;
                 }
 
-                if (string.Equals(card.NodeId, nodeId, StringComparison.Ordinal))
+                if (string.Equals(card.NodeId, exceptNodeId, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -2397,9 +2438,189 @@ public partial class GraphEditorView : UserControl
         static string Rows(IEnumerable<CollapsedNodeEntry> rows) =>
             string.Join(",", rows.Select(row => $"{row.NodeId}/{row.NodeName}/{row.IncomingCount}/{row.OutgoingCount}"));
 
-        static (string Key, bool OnLeft, string Label, bool IsConnected, int Palette) PortShape(GraphOutputPortProjection port) =>
-            (port.Key, port.OnLeft, port.Label, port.IsConnected, port.PaletteIndex);
+        (string Key, bool OnLeft, string Label, bool IsConnected, int Palette) PortShape(GraphOutputPortProjection port) =>
+            (port.Key, port.OnLeft, choiceLabels && port.Kind == GraphOutputPortKind.Choice ? string.Empty : port.Label,
+                port.IsConnected, port.PaletteIndex);
     }
+
+    /// <summary>새 투영을 받는다 — 판이 그대로일 때(<see cref="SameBoard"/>). 선은 같은 열쇠의 새 연결을 쥔다(자리는 그대로다).</summary>
+    private void AdoptProjection(GraphProjection fresh)
+    {
+        _projection = fresh;
+
+        foreach (EdgeVisual edge in _edges)
+        {
+            edge.Connection = fresh.Connections.First(item => string.Equals(item.Key, edge.Connection.Key, StringComparison.Ordinal));
+        }
+    }
+
+    /// <summary>
+    /// <b>선택지 하나의 내용이 바뀌었다</b>(문구 · 스탯변화 · 조건 · 잠금 안내 · 자동) — 카드는 그대로 두고 출발 카드(<paramref name="nodeId"/>)에서 나가는
+    /// 철도와, 그 문구를 목록에 든 도착 포트만 다시 긋는다(usability UX16). 판이 문구 말고도 바뀌었으면(<see cref="OnlyChoicesChanged"/>) 통째로
+    /// 짓고, 출발을 모르거나 그 철도를 못 찾으면 철도를 통째로 긋는다(카드는 그대로). 스탯변화 · 조건은 판에 서지 않지만 그 출발의 철도는 그래도
+    /// 다시 긋는다 — 접은 장면의 줄은 문구를 투영이 아니라 챕터에서 읽어, 무엇이 바뀌었는지 투영으로 가를 수 없다.
+    /// ⛔ 2026-11-19까지는 늘 판을 통째로 다시 지었다 — 에피소드 160개에서 선택지 문구 하나에 2.5초.
+    /// </summary>
+    internal void RedrawChoices(string? nodeId)
+    {
+        if (_session is null || _projection is null)
+        {
+            return;
+        }
+
+        GraphProjection fresh = GraphProjectionBuilder.Build(
+            _session.Project,
+            _session.ExpandedFileIds,
+            _session.CollapsedScenes);
+
+        if (!OnlyChoicesChanged(_projection, fresh))
+        {
+            Rebuild();
+            return;
+        }
+
+        ChoiceRedrawCount++;
+        AdoptProjection(fresh);
+
+        if (nodeId is null || !RedrawRailsFrom(nodeId))
+        {
+            DrawChapterFrames();
+            RefreshMinimap();
+        }
+    }
+
+    /// <summary>선택지의 내용만 받아 카드를 그대로 둔 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
+    internal int ChoiceRedrawCount { get; private set; }
+
+    /// <summary>
+    /// 그 카드(펼친 카드든 접은 장면의 줄이든)에서 나가는 철도 묶음을 다시 긋고, 도착 포트의 목록에서 그 출발의 몫을 새 문구로 바꿔 그 포트를
+    /// 다시 긋는다. 길이 늘거나 줄었으면(목록의 수가 안 맞는다) false — 부른 쪽이 통째로 긋는다.
+    /// </summary>
+    private bool RedrawRailsFrom(string nodeId)
+    {
+        if (_session!.Project.FindNode(nodeId) is not DialogueNode { MarkedEpisodeId: { Length: > 0 } episodeId } ||
+            _session.Project.FindFileContainingNode(nodeId) is not { } file)
+        {
+            return false;
+        }
+
+        List<RailGroup> from = _railGroups.Where(group => group.Origin switch
+        {
+            RailOrigin.FromCard card => string.Equals(card.FileId, file.Id, StringComparison.Ordinal) &&
+                                        string.Equals(card.EpisodeId, episodeId, StringComparison.Ordinal),
+            RailOrigin.FromRow row => string.Equals(row.FileId, file.Id, StringComparison.Ordinal) &&
+                                      string.Equals(row.EpisodeId, episodeId, StringComparison.Ordinal),
+            _ => false
+        }).ToList();
+
+        if (from.Count == 0)
+        {
+            return false;
+        }
+
+        Dictionary<string, Rect> now = RailAnchors();
+        var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
+        RedrawRailGroups(from, now, arrivals);
+
+        // 도착 포트의 목록은 출발마다의 문구를 든다 — 이 출발의 몫만 차례대로 새 문구로 바꾼다(목록의 차례는 그대로).
+        var ports = _railGroups.Where(group => group.Origin is RailOrigin.Arrival arrival &&
+                                               string.Equals(arrival.FileId, file.Id, StringComparison.Ordinal)).ToList();
+
+        if (arrivals.Keys.Any(to => !ports.Any(group => string.Equals(((RailOrigin.Arrival)group.Origin).EpisodeId, to, StringComparison.Ordinal))))
+        {
+            return false;
+        }
+
+        var stale = new List<RailGroup>();
+
+        foreach (RailGroup group in ports)
+        {
+            var arrival = (RailOrigin.Arrival)group.Origin;
+            List<(string From, string Label)> mine = arrivals.GetValueOrDefault(arrival.EpisodeId) ?? [];
+
+            if (arrival.Incoming.Count(item => string.Equals(item.From, episodeId, StringComparison.Ordinal)) != mine.Count)
+            {
+                return false;
+            }
+
+            bool changed = false;
+            int next = 0;
+
+            for (int index = 0; index < arrival.Incoming.Count; index++)
+            {
+                if (!string.Equals(arrival.Incoming[index].From, episodeId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                changed |= arrival.Incoming[index] != mine[next];
+                arrival.Incoming[index] = mine[next++];
+            }
+
+            if (changed)
+            {
+                stale.Add(group);
+            }
+        }
+
+        RedrawRailGroups(stale, now);
+
+        // 고른 레인의 문구가 바뀌었다 — 그 신원의 레인이 이제 없다. 통째로 그을 때처럼 고름을 놓는다(인스펙터가 새 신원으로 다시 고른다).
+        if (_selectedRail is not null && !_railGroups.Any(group => group.HoldsSelected))
+        {
+            _selectedRail = null;
+            _selectedRailDrawn = false;
+            HideShapeOverlay();
+            LineSelected?.Invoke(null);
+        }
+
+        DrawChapterFrames(followRails: true);
+        RefreshMinimap();
+        return true;
+    }
+
+    /// <summary>
+    /// <b>분기 카드 머리의 조건 표만 다시 단다</b> — 챕터 조건이 생겼거나 식이 바뀌었을 때(「식 미정」 · usability UX16). 판이 그 밖에도
+    /// 바뀌었으면 통째로 짓는다. ⛔ 2026-11-19까지는 늘 통째로 — 에피소드 160개에서 조건 하나를 더하는 데 2.5초.
+    /// </summary>
+    internal void RefreshBranchConditions()
+    {
+        if (_session is null || _projection is null)
+        {
+            return;
+        }
+
+        GraphProjection fresh = GraphProjectionBuilder.Build(
+            _session.Project,
+            _session.ExpandedFileIds,
+            _session.CollapsedScenes);
+
+        if (!SameBoard(_projection, fresh, exceptNodeId: null, choiceLabels: false))
+        {
+            Rebuild();
+            return;
+        }
+
+        BranchConditionRefreshCount++;
+        AdoptProjection(fresh);
+
+        foreach (NodeCard card in _cards)
+        {
+            if (!_branchEntries.TryGetValue(card.NodeId, out int palette) ||
+                card.Visual.GetVisualDescendants().OfType<Border>().FirstOrDefault(border =>
+                    border.Tag as string == BranchConditionChipTag + card.NodeId) is not { Parent: Panel title } old)
+            {
+                continue;
+            }
+
+            Border chip = BranchConditionChip(card.NodeId, palette);
+            Grid.SetColumn(chip, Grid.GetColumn(old));
+            title.Children[title.Children.IndexOf(old)] = chip;
+        }
+    }
+
+    /// <summary>조건 표만 다시 단 번 — 시험이 본다.</summary>
+    internal int BranchConditionRefreshCount { get; private set; }
 
     /// <summary>
     /// 챕터 · 장면 테두리와 이름표만 다시 긋는다 — 카드 · 철도는 그대로다(철도는 따라가기만 하고, 아무것도 움직이지 않았으니 다시 긋지 않는다).
@@ -4395,7 +4616,7 @@ public partial class GraphEditorView : UserControl
     /// 이미 이어진 길이면 <b>그 간선의 문구를 고치고</b>, 아직 안 이었으면 적어만 둔다.
     /// 어느 쪽이든 <b>챕터의 선택지 사전에 배운다</b> — 문구의 주인은 챕터다(v9).
     /// </summary>
-    private Control SlotEditor(GraphChoicePort choice)
+    private Control SlotEditor(GraphChoicePort choice, string nodeId)
     {
         // 폭을 정해 둔다 — 판은 칸 줄의 폭을 재서 레인이 나갈 자리를 정하는데(DrawRailBranch), 판에 붙기 전의 글자 칸은 틀이
         // 아직 없어 제 폭을 작게 잰다. 그러면 레인이 글자 칸 위를 지나간다. 지금 문구의 폭에 여유를 더한다(적는 동안 넘치면
@@ -4426,7 +4647,7 @@ public partial class GraphEditorView : UserControl
                 Relabel(choice, wanted);
             }
 
-            Rebuild();
+            EditSlot(null, nodeId);
         }
 
         box.KeyDown += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>

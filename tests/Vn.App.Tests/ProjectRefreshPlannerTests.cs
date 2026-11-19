@@ -43,6 +43,20 @@ public class ProjectRefreshPlannerTests
     }
 
     [Fact]
+    public void 선택지_내용은_철도만_챕터_조건은_조건_표만_다시_한다()
+    {
+        // usability UX16 — 판을 통째로 짓지 않는다. 인스펙터(선택지 · 조건 요약 · 조건 고르기)는 구조일 때처럼 다시 세운다. 되돌리기는 구조로 받는다.
+        ProjectRefreshPlan choice = ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceDetail, new DialogueNode(name: "장면"));
+        Assert.Equal((false, true, true), (choice.RebuildGraph, choice.RedrawChoices, choice.RebuildInspector));
+
+        ProjectRefreshPlan condition = ProjectRefreshPlanner.Plan(ProjectChangeKind.ChapterCondition, null);
+        Assert.Equal((false, true, true), (condition.RebuildGraph, condition.RefreshBranchConditions, condition.RebuildInspector));
+
+        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.ChoiceDetail, null, fromHistory: true).RebuildGraph);
+        Assert.True(ProjectRefreshPlanner.Plan(ProjectChangeKind.ChapterCondition, null, fromHistory: true).RebuildGraph);
+    }
+
+    [Fact]
     public void 조건을_편집_중인_SetNode는_유지하고_그래프만_갱신한다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(

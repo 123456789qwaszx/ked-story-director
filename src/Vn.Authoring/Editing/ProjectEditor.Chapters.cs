@@ -688,7 +688,8 @@ public sealed partial class ProjectEditor
         ChapterDocument chapter = RequireChapter(chapterId);
         int index = RequireEdgeIndex(chapter, fromEpisodeId, toEpisodeId, matchOptionLabel);
 
-        Mutate(() =>
+        // 이음(출발 · 도착)은 그대로다 — 선택지의 내용만(usability UX16). 판은 출발 카드에서 나가는 철도만 다시 긋는다.
+        Mutate(ProjectChangeKind.ChoiceDetail, () =>
         {
             ChapterEdge edge = chapter.Edges[index];
 
@@ -703,7 +704,7 @@ public sealed partial class ProjectEditor
             };
 
             LearnChoiceLabel(chapter, optionLabel);
-        });
+        }, EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
     }
 
     /// <summary>
@@ -754,7 +755,8 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"'{text}'는 이미 선택지 사전에 있습니다.");
         }
 
-        Mutate(() => LearnChoiceLabel(chapter, text));
+        // 사전은 [대본] 판에 서지 않는다 — 판 · 인스펙터가 다시 세울 것이 없다([구성]은 어느 변경에든 다시 읽는다).
+        Mutate(ProjectChangeKind.Content, () => LearnChoiceLabel(chapter, text));
     }
 
     /// <summary>
@@ -791,8 +793,8 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"조건 라벨 '{label}'이 이미 있습니다.");
         }
 
-        // 조건과 그 조건의 공급이 <b>한 변경</b>이다 — 되돌리기 한 번에 함께 간다.
-        Batch(() =>
+        // 조건과 그 조건의 공급이 <b>한 변경</b>이다 — 되돌리기 한 번에 함께 간다. 공급 노드는 판에 서지 않는 배관이라 판에는 조건만 바뀐 것이다(UX16).
+        Batch(ProjectChangeKind.ChapterCondition, () =>
         {
             Mutate(() => chapter.Conditions.Add(
                 new ChapterCondition(label, expression, description, Parsed: [], IsValid: false)));
@@ -811,7 +813,7 @@ public sealed partial class ProjectEditor
 
         int index = chapter.Conditions.IndexOf(condition);
 
-        Batch(() =>
+        Batch(ProjectChangeKind.ChapterCondition, () =>
         {
             Mutate(() => chapter.Conditions[index] = condition with
             {

@@ -321,6 +321,16 @@ public partial class MainWindow : Window
                 // 좌표만 바뀌었다. 카드를 다시 만들면 드래그가 끊긴다.
                 Graph.RefreshPositions();
             }
+            else if (plan.RedrawChoices)
+            {
+                // 선택지 하나의 내용만 — 그 출발 카드의 철도만 다시 긋는다(usability UX16).
+                Graph.RedrawChoices(e.NodeId);
+            }
+            else if (plan.RefreshBranchConditions)
+            {
+                // 챕터 조건만 — 분기 카드의 조건 표만 다시 단다(usability UX16).
+                Graph.RefreshBranchConditions();
+            }
             else if (plan.RefreshSceneFrames)
             {
                 // 장면 이름표의 「메모」 표시만 — 판을 다시 짓지 않는다(에피소드 지시 · usability UX7).
