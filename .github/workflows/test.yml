@@ -30,6 +30,8 @@ jobs:
           $zip = Join-Path $PWD "artifacts\StoryDirector-win-x64.zip"
           if (-not (Test-Path $exe)) { throw "portable exe was not produced" }
           if (-not (Test-Path $zip)) { throw "portable zip was not produced" }
+          $guide = Join-Path $PWD "artifacts\StoryDirector-win-x64\먼저 읽어주세요.txt"
+          if (-not (Test-Path $guide)) { throw "the writer guide was not packaged" }
 
           $process = Start-Process $exe -PassThru
           try {
@@ -66,6 +68,8 @@ jobs:
           zip="artifacts/StoryDirector-osx-arm64.zip"
           test -x "$app/Contents/MacOS/StoryDirector" || { echo "app executable was not produced"; exit 1; }
           test -f "$zip" || { echo "package zip was not produced"; exit 1; }
+          test -f "artifacts/StoryDirector-osx-arm64/먼저 읽어주세요.txt" || { echo "the writer guide was not packaged"; exit 1; }
+          unzip -l "$zip" | grep -q "StoryDirector.app/Contents/MacOS/StoryDirector" || { echo "the app is not at the zip root"; exit 1; }
 
           "$app/Contents/MacOS/StoryDirector" &
           pid=$!

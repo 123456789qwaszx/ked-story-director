@@ -22,7 +22,7 @@ namespace Vn.App;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private const string BaseTitle = AppIdentity.Name;
+    private static readonly string BaseTitle = AppIdentity.TitleName;
 
     private readonly AuthoringSession _session = new();
 
@@ -141,6 +141,11 @@ public partial class MainWindow : Window
         NewMenuItem.Click += OnNewClick;
         OpenMenuItem.Click += OnOpenClick;
         SaveMenuItem.Click += OnSaveClick;
+        OutsideReloadButton.Click += OnOutsideReloadClick;
+        OutsideOverwriteButton.Click += OnOutsideOverwriteClick;
+
+        // 창으로 돌아올 때 — 그 사이 다른 곳(GitHub Desktop의 받기 등)이 프로젝트 파일을 바꿨는지 본다(writer-release WR1).
+        Activated += (_, _) => UiGuard.Run(_session, "바뀐 파일 확인", CheckOutsideChanges);
         UndoMenuItem.Click += (_, _) => UndoOrRedo(redo: false);
         RedoMenuItem.Click += (_, _) => UndoOrRedo(redo: true);
         SettingsButton.Click += (_, _) => UiGuard.Run(_session, "설정", () => OpenSettings());
@@ -218,6 +223,14 @@ public partial class MainWindow : Window
         {
             if (_session.ProjectPath is not null && _session.IsDirty)
             {
+                // 다른 곳이 바꾼 파일은 자동 저장이 덮지 않는다 — 띠가 고르게 한다(writer-release WR1).
+                if (_session.ChangedOutside)
+                {
+                    ShowOutsideChangeBar();
+                    _session.SetStatus($"자동 저장을 멈췄습니다 ({DateTime.Now:HH:mm}) — 프로젝트 파일이 다른 곳에서 바뀌었습니다. 위 띠에서 고르세요.");
+                    return;
+                }
+
                 _session.Save();
                 _session.SetStatus($"자동 저장했습니다 ({DateTime.Now:HH:mm})");
             }
@@ -643,11 +656,73 @@ public partial class MainWindow : Window
             _session.Save();
             RefreshShell();
         }
+        catch (ProjectChangedOutsideException refused)
+        {
+            ShowOutsideChangeBar();
+            _session.SetStatus(refused.Message);
+        }
         catch (Exception exception)
         {
             Report("저장", exception);
         }
     }
+
+    // ── 바깥에서 바뀐 프로젝트 (writer-release WR1) ─────────────────────────
+
+    /// <summary>
+    /// <b>창으로 돌아왔을 때 프로젝트 파일이 다른 곳에서 바뀌었는가</b>(2026-11-19 소유자 — 작가와 프로젝트를 Git으로 주고받는다). GitHub
+    /// Desktop의 받기(Pull) 따위가 파일을 바꿨는데 이 창이 옛것을 들고 있으면, 다음 저장 · 10분 자동 저장이 받은 것을 말없이 덮는다. 그래서 —
+    /// <list type="bullet">
+    /// <item>여기서 고친 것이 없으면 <b>그대로 다시 읽는다</b>(띠 없이 · 상태줄로 알린다) — 받고 돌아오면 받은 것이 보인다.</item>
+    /// <item>고친 것이 남아 있으면 <b>위 띠</b>가 선다 — [다시 열기](받은 것을 읽고 여기서 고친 것은 버림) · [내 것으로 덮어쓰기]. 고를 때까지
+    ///   저장 · 자동 저장은 쓰지 않는다(<see cref="AuthoringSession.Save"/>가 거절한다).</item>
+    /// </list>
+    /// 카드 글 칸에 넣지 않은 글도 고친 것이다 — 먼저 넣고 견준다.
+    /// </summary>
+    internal void CheckOutsideChanges()
+    {
+        if (_session.ProjectPath is null || !_session.ChangedOutside)
+        {
+            OutsideChangeBar.IsVisible = false;
+            return;
+        }
+
+        Graph.FlushWriting();
+
+        if (_session.IsDirty)
+        {
+            ShowOutsideChangeBar();
+            _session.SetStatus("프로젝트 파일이 다른 곳에서 바뀌었습니다 — 이 창에 저장하지 않은 것이 있어 다시 읽지 않았습니다. 위 띠에서 고르세요.");
+            return;
+        }
+
+        ReopenFromDisk();
+        _session.SetStatus($"프로젝트 파일이 다른 곳에서 바뀌어 다시 읽었습니다 ({DateTime.Now:HH:mm}) — GitHub Desktop의 받기 등.");
+    }
+
+    private void ShowOutsideChangeBar() => OutsideChangeBar.IsVisible = true;
+
+    /// <summary>디스크의 프로젝트를 다시 연다 — 여기서 고친 것(되돌리기 기록 포함)은 버린다.</summary>
+    private void ReopenFromDisk()
+    {
+        OutsideChangeBar.IsVisible = false;
+        _session.Open(_session.ProjectPath!);
+    }
+
+    private void OnOutsideReloadClick(object? sender, RoutedEventArgs e) => UiGuard.Run(_session, "다시 열기", () =>
+    {
+        ReopenFromDisk();
+        _session.SetStatus("다른 곳에서 바뀐 프로젝트 파일을 다시 읽었습니다 — 여기서 저장하지 않았던 것은 버렸습니다.");
+    });
+
+    private void OnOutsideOverwriteClick(object? sender, RoutedEventArgs e) => UiGuard.Run(_session, "덮어쓰기", () =>
+    {
+        Graph.FlushWriting();
+        _session.Save(overwriteOutsideChanges: true);
+        OutsideChangeBar.IsVisible = false;
+        RefreshShell();
+        _session.SetStatus("이 창의 것으로 덮어썼습니다 — 다른 곳에서 바뀌었던 내용은 Git의 기록(History)에 남아 있습니다.");
+    });
 
     // ── 내보내기 ────────────────────────────────────────────────────────────
 

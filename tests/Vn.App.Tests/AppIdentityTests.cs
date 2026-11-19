@@ -12,16 +12,28 @@ namespace Vn.App.Tests;
 public sealed class AppIdentityTests
 {
     [Fact]
-    public void 창_제목은_앱_이름과_프로젝트_이름이다() => HeadlessUi.Run(() =>
+    public void 창_제목은_앱_이름과_판_번호와_프로젝트_이름이다() => HeadlessUi.Run(() =>
     {
         var window = new MainWindow();
         window.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.StartsWith("스토리 디렉터 — ", window.Title, StringComparison.Ordinal);
+        // 시험 빌드는 판 번호를 정하지 않았다(0.0.0) — 「개발판」(writer-release WR2).
+        Assert.StartsWith("스토리 디렉터 개발판 — ", window.Title, StringComparison.Ordinal);
 
         window.Close();
     });
+
+    [Theory]
+    [InlineData("0.1.0", "0.1.0")]
+    [InlineData("0.1.0+8202731abcdef", "0.1.0")]   // 빌드 도구가 붙이는 커밋 꼬리는 뗀다
+    [InlineData("1.2.3-beta.1+abc", "1.2.3-beta.1")]
+    [InlineData("0.0.0", "개발판")]
+    [InlineData("0.0.0+abc", "개발판")]
+    [InlineData("", "개발판")]
+    [InlineData(null, "개발판")]
+    public void 판_번호는_구울_때_정한_번호이고_정하지_않았으면_개발판이다(string? informational, string shown) =>
+        Assert.Equal(shown, AppIdentity.VersionOf(informational));
 
     [Fact]
     public void 실행_파일_이름은_StoryDirector다()

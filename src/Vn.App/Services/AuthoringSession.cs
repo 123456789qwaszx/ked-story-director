@@ -22,6 +22,9 @@ internal sealed class AuthoringSession
     private string _fileListSignature = string.Empty;
     private string _savedSnapshot;
 
+    /// <summary>열거나 저장한 때의 프로젝트 파일 지문 — 그 뒤 다른 곳이 파일을 바꿨는지 견준다(<see cref="ChangedOutside"/>). 저장 전이면 null.</summary>
+    private ProjectDiskStamp? _diskStamp;
+
     public AuthoringSession()
     {
         Editor = new ProjectEditor(NewProjectInstance());
@@ -183,6 +186,7 @@ internal sealed class AuthoringSession
         StoryProject project = NewProjectInstance();
 
         ProjectPath = null;
+        _diskStamp = null;
         Destinations = ExportDestinations.None;
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
@@ -203,6 +207,7 @@ internal sealed class AuthoringSession
         StoryProject project = loaded.Project;
 
         ProjectPath = loaded.ManifestPath;
+        _diskStamp = ProjectDiskStamp.Read(loaded.ManifestPath);
         ReloadDestinations();
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
@@ -224,14 +229,28 @@ internal sealed class AuthoringSession
             fileListChanged: true);
     }
 
-    public void Save(string? path = null)
+    /// <summary>
+    /// 프로젝트에 쓴다. <b>연 뒤에 다른 곳이 프로젝트 파일을 바꿨으면 쓰지 않는다</b>(<see cref="ProjectChangedOutsideException"/> ·
+    /// writer-release WR1) — Git으로 받은 것 · 다른 PC의 동기화를 말없이 덮지 않는다. 덮어쓰기로 정했으면
+    /// <paramref name="overwriteOutsideChanges"/>로 부른다. 다른 폴더에 처음 쓰는 저장(새 프로젝트)은 견주지 않는다.
+    /// </summary>
+    public void Save(string? path = null, bool overwriteOutsideChanges = false)
     {
         string target = path ?? ProjectPath
             ?? throw new InvalidOperationException("저장할 경로가 없습니다.");
 
+        bool samePlace = ProjectPath is not null &&
+                         string.Equals(Path.GetFullPath(target), ProjectPath, StringComparison.OrdinalIgnoreCase);
+
+        if (samePlace && !overwriteOutsideChanges && ChangedOutside)
+        {
+            throw new ProjectChangedOutsideException();
+        }
+
         ProjectStore.Save(target, Project);
 
         ProjectPath = Path.GetFullPath(target);
+        _diskStamp = ProjectDiskStamp.Read(ProjectPath);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Project);
         ReloadDestinations();
         _deliveryRequested = !Destinations.IsEmpty;
@@ -243,6 +262,12 @@ internal sealed class AuthoringSession
             (Destinations.IsEmpty ? string.Empty : " 고른 폴더에도 복제합니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
     }
+
+    /// <summary>
+    /// 연 뒤(또는 마지막 저장 뒤)에 <b>다른 곳이 프로젝트 파일을 바꿨는가</b> — 목차 · 판 파일의 내용으로 견준다(<see cref="ProjectDiskStamp"/>).
+    /// 저장한 적 없는 새 프로젝트는 늘 거짓이다.
+    /// </summary>
+    public bool ChangedOutside => ProjectPath is { } path && _diskStamp is { } stamp && !ProjectDiskStamp.Read(path).SameAs(stamp);
 
     public void SetStatus(string message)
     {
@@ -655,4 +680,16 @@ internal sealed class FileGraphStateChangedEventArgs : EventArgs
 
     /// <summary>파일 이름·경로·순서 또는 소유 노드 개수가 바뀌어 목록 행을 다시 만들어야 하는가.</summary>
     public bool FileListChanged { get; }
+}
+
+/// <summary>
+/// 연 뒤에 다른 곳(Git으로 받기 · 동기화 · 손으로 고침)이 프로젝트 파일을 바꿔 저장하지 않았다(writer-release WR1). 창이 「다시 열기」 ·
+/// 「내 것으로 덮어쓰기」를 묻는다.
+/// </summary>
+public sealed class ProjectChangedOutsideException : InvalidOperationException
+{
+    public ProjectChangedOutsideException()
+        : base("연 뒤에 다른 곳에서 프로젝트 파일이 바뀌어 저장하지 않았습니다(GitHub Desktop의 받기 등). 위 띠에서 [다시 열기] 또는 [내 것으로 덮어쓰기]를 고르세요.")
+    {
+    }
 }

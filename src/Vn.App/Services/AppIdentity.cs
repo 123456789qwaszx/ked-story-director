@@ -12,6 +12,30 @@ internal static class AppIdentity
     /// <summary>작가에게 보이는 이름 — 창 제목 · 시작 실패 창 · 로그의 말.</summary>
     internal const string Name = "스토리 디렉터";
 
+    /// <summary>판 번호를 정하지 않고 지은 빌드의 이름 — 개발 중 실행 · 시험.</summary>
+    internal const string DevelopmentVersion = "개발판";
+
+    /// <summary>
+    /// <b>판 번호</b>(2026-11-19 · writer-release WR2) — 작가가 「안 돼요」라고 할 때 어느 판인지 알 수 있게 창 제목에 선다. 꾸러미를 구울 때
+    /// 정한다(<c>-p:Version=0.1.0</c>). 손으로 지은 빌드(0.0.0)는 <see cref="DevelopmentVersion"/>.
+    /// </summary>
+    internal static string Version { get; } = VersionOf(
+        typeof(AppIdentity).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+            .FirstOrDefault()?.InformationalVersion);
+
+    /// <summary>창 제목의 앞 — 「스토리 디렉터 0.1.0」.</summary>
+    internal static string TitleName => $"{Name} {Version}";
+
+    /// <summary>
+    /// 빌드가 적은 판 번호를 보이는 번호로 — 빌드 도구가 붙이는 커밋 꼬리(<c>+abc123…</c>)는 떼고, 0.0.0 · 빈 값은 <see cref="DevelopmentVersion"/>이다.
+    /// </summary>
+    internal static string VersionOf(string? informational)
+    {
+        string number = (informational ?? string.Empty).Split('+')[0].Trim();
+        return number.Length == 0 || number == "0.0.0" ? DevelopmentVersion : number;
+    }
+
     /// <summary>
     /// 이 PC의 설정(<see cref="AppSettingsService"/>) · 로그(<see cref="StartupLog"/>)가 사는 폴더의 이름.
     ///
