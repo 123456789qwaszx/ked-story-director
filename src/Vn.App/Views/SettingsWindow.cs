@@ -731,18 +731,13 @@ internal sealed class SettingsWindow : Window
         AddRow(grid, 1, "글자 크기", ScriptFontSizeBox);
         AddRow(grid, 2, "줄 간격 (%)", ScriptLineSpacingBox);
 
+        // ⛔ 머리의 설명 한 줄(「[대본] 판의 카드에서 대본을 쓰는 칸의 글자입니다. 고치면 바로 바뀝니다 — …」)은 2026-11-19에 걷었다
+        //    (소유자 — 「이 설명 문구는 필요없으니 지워주십시오」 · usability UX2). 묶음 이름과 미리 보기가 말한다.
         return new StackPanel
         {
             Spacing = 6,
             Children =
             {
-                new TextBlock
-                {
-                    Text = "[대본] 판의 카드에서 대본을 쓰는 칸의 글자입니다. 고치면 바로 바뀝니다 — 이 PC에만 적용되고 프로젝트 파일은 바뀌지 않습니다.",
-                    FontSize = 11,
-                    Opacity = 0.7,
-                    TextWrapping = TextWrapping.Wrap
-                },
                 grid,
                 ScriptPreview,
                 ScriptFontDefaultButton

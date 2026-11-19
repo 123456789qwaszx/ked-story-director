@@ -555,6 +555,22 @@ public sealed class SettingsWindowTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 대본_글_칸_묶음에는_설명_글이_없다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「[대본] 판의 카드에서 대본을 쓰는 칸의 글자입니다 ~ 이 설명 문구는 필요없으니 지워주십시오」(usability UX2).
+        (MainWindow window, AuthoringSession _) = Open();
+        SettingsWindow settings = window.OpenSettings();
+        Dispatcher.UIThread.RunJobs();
+
+        var section = (StackPanel)settings.ScriptPreview.Parent!;
+        Assert.DoesNotContain(section.Children.OfType<TextBlock>(), block => block.Text?.Contains("대본을 쓰는 칸", StringComparison.Ordinal) == true);
+        Assert.Same(settings.ScriptPreview, section.Children[1]);   // 글꼴 · 크기 · 간격 표 바로 아래가 미리 보기다
+
+        settings.Close();
+        window.Close();
+    });
+
     /// <summary>그 칸이 창 안(위아래 모두)에 서 있다 — 스크롤에 가려지거나 창 밖으로 나가지 않았다.</summary>
     private static void AssertInside(Window window, Control control)
     {
