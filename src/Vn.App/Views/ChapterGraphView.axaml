@@ -148,8 +148,11 @@
                 <ScrollViewer x:Name="GraphScroll"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto">
-                    <LayoutTransformControl x:Name="ZoomHost">
-                        <Canvas x:Name="GraphCanvas" Background="Transparent" />
+                    <!-- 판이 화면보다 작으면(화면 맞춤 · 작은 챕터) 판을 화면 가운데에 둔다. 배율 칸은 판 크기 그대로 서야 한다 — 늘어나
+                         화면을 채우면 그 안에서 판을 가운데로 미는 거리가 배율로 줄지 않아, 판이 오른쪽 · 아래로 밀려 잘렸다(⛔ 2026-11-19까지 ·
+                         usability UX10 — [대본] 판의 같은 뿌리는 writer-comfort WC1에서 왼위에 붙여 고쳤다). -->
+                    <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Canvas x:Name="GraphCanvas" Background="Transparent" HorizontalAlignment="Left" VerticalAlignment="Top" />
                     </LayoutTransformControl>
                 </ScrollViewer>
 

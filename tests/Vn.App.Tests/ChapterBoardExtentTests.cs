@@ -106,6 +106,15 @@ public sealed class ChapterBoardExtentTests : IDisposable
                     Math.Abs((canvas.Height * scale) - scroll.Viewport.Height) < 0.5);
         Assert.Equal(default, scroll.Offset);
 
+        // 판이 그려진 자리 — 카드가 모두 화면 안에 다 보이고, 남는 쪽은 가운데에 선다(2026-11-19 소유자 — 「가로는 엉뚱한 곳을 비추고 있어서
+        // 오른쪽에 있는 것들 다수가 잘리는」 · usability UX10). ⛔ 배율 칸이 화면을 채워 늘어나 판을 배율로 줄지 않은 거리만큼 오른쪽으로 밀었다.
+        Avalonia.Point origin = Avalonia.VisualExtensions.TranslatePoint(canvas, default, scroll)!.Value;
+        Avalonia.Point end = Avalonia.VisualExtensions.TranslatePoint(canvas, new Avalonia.Point(canvas.Width, canvas.Height), scroll)!.Value;
+        Assert.True(origin.X >= -0.5 && origin.Y >= -0.5, $"판의 왼위 {origin}");
+        Assert.True(end.X <= scroll.Viewport.Width + 0.5 && end.Y <= scroll.Viewport.Height + 0.5, $"판의 오른아래 {end} · 화면 {scroll.Viewport}");
+        Assert.Equal(origin.X, scroll.Viewport.Width - end.X, 1.0);   // 가로가 남으면 양쪽이 같다(배치가 픽셀에 맞춘 만큼은 다르다)
+        Assert.Equal(origin.Y, scroll.Viewport.Height - end.Y, 1.0);
+
         // 작은 챕터 — 100%보다 키우지 않는다.
         view = Show(window, "ch01");
         fit.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
