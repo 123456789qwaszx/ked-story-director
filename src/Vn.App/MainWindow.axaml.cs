@@ -346,14 +346,23 @@ public partial class MainWindow : Window
                     DialogueEditor.Rebuild();
                 }
             }
-            else if (plan.RefreshCardWriting && _session.SelectedNodeId is { } writtenNodeId)
+            else if (plan.RefreshCardWriting)
             {
-                Graph.RefreshWriting(writtenNodeId);
+                // 그 카드의 글 칸을 다시 채운다 — 어느 카드인지 모르면(화자 이름 바꾸기처럼 여러 카드의 글이 바뀌었다) 칸마다
+                // (usability UX18 · ⛔ 고른 카드의 칸만 — 다른 카드는 옛 화자 이름을 보이다가 그 칸을 고치면 옛 이름을 도로 넣었다).
+                if (e.NodeId is { } writtenNodeId)
+                {
+                    Graph.RefreshWriting(writtenNodeId);
+                }
+                else
+                {
+                    Graph.RefreshAllWriting();
+                }
 
                 // 카드 글 칸에서 고친 글이 곁기둥에도 바로 비친다.곁기둥에서 쓰는 중이면(초점이 그 안에 있다)
                 // 그대로 둔다 — 고친 곳이 거기다.
                 if (DialogueEditor.IsVisible &&
-                    string.Equals(DialogueEditor.NodeId, writtenNodeId, StringComparison.Ordinal) &&
+                    (e.NodeId is null || string.Equals(DialogueEditor.NodeId, e.NodeId, StringComparison.Ordinal)) &&
                     !DialogueEditor.IsKeyboardFocusWithin)
                 {
                     DialogueEditor.Rebuild();

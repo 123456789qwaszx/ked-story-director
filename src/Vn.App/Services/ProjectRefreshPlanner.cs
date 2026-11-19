@@ -50,9 +50,9 @@ internal static class ProjectRefreshPlanner
                 RebuildGraph: false,
                 RefreshGraphPositions: false,
                 RebuildInspector: false,
-                // 곁기둥에서 고친 글이 카드의 글 칸에도 비친다 — 안 그러면 낡은 칸의 글이
-                // 다음 넣기에서 방금 고친 줄을 도로 덮는다.
-                RefreshCardWriting: selectedNode is DialogueNode),
+                // 고친 글이 카드의 글 칸에도 비친다 — 안 그러면 낡은 칸의 글이 다음 넣기에서 방금 고친 줄을 도로 덮는다. 어느 카드인지는
+                // 알림이 싣는다(모르면 — 화자 이름 바꾸기처럼 여러 카드면 — 칸마다 · usability UX18). ⛔ 고른 카드의 칸만 다시 채웠다.
+                RefreshCardWriting: true),
 
             ProjectChangeKind.ConditionDefinition => new ProjectRefreshPlan(
                 RebuildGraph: true,
