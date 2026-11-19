@@ -51,6 +51,12 @@ public partial class GraphEditorView : UserControl
     /// <summary>오른쪽 아래 모서리(폭과 높이) 손잡이의 표.</summary>
     internal const string ResizeCornerGripTag = "card-resize-corner:";
 
+    /// <summary>카드 제목 줄 오른쪽 끝의 「글에 맞춤」 단추의 표(<see cref="FitCardToWriting"/> · usability UX5).</summary>
+    internal const string FitButtonTag = "card-fit:";
+
+    /// <summary>글에 맞출 때 더하는 몫 — 커서 · 반올림에 줄이 꺾이지 않게.</summary>
+    private const double FitSlack = 4;
+
     // 카드 머리 = 제목 한 줄과 그 아래 틈. 포트 줄의 자리(PortAnchor)가 이 값으로 세므로 머리는 높이를 고정한다 —
     // 글꼴에 맡기면 선 끝이 점에서 비껴 닿는다(2026-10-29까지 부제를 둔 머리가 41px인데 46으로 세어 5px 아래에 닿았다).
     // ⛔ 제목 아래의 부제(「대사 · 📄 에피소드 · {대본} · k줄」)는 2026-10-29에 걷혔다(소유자: "이 정보는 필요없으니까 치워").
@@ -2502,6 +2508,92 @@ public partial class GraphEditorView : UserControl
         return grip;
     }
 
+    /// <summary>카드 제목 줄의 「글에 맞춤」 단추 — 초점을 가져가지 않는다(쓰던 글 칸이 그대로 쓰는 중이다).</summary>
+    private Button FitButton(string nodeId, CardStyle style)
+    {
+        var fit = new Button
+        {
+            Content = "⤢",
+            FontSize = 12,
+            Padding = new Thickness(3, 0),
+            MinHeight = 0,
+            Height = TitleHeight - 2,
+            VerticalAlignment = VerticalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(4, 0, 0, 0),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Foreground = new SolidColorBrush(style.Accent),
+            Focusable = false,
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Tag = FitButtonTag + nodeId
+        };
+        ToolTip.SetTip(fit, "글에 맞춤 — 지금 글꼴 · 글자 크기로 재서, 줄이 꺾이지 않게 폭을, 모든 줄이 보이게 글 칸 높이를 맞춥니다. " +
+                            "글을 고친 뒤 다시 누르면 다시 맞춥니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        fit.Click += (_, args) =>
+        {
+            args.Handled = true;
+            UiGuard.Run(_session, "글에 맞춤", () => FitCardToWriting(nodeId));
+        };
+        return fit;
+    }
+
+    /// <summary>
+    /// <b>「글에 맞춤」</b> (2026-11-19 소유자 — 「현재 글꼴과 글 크기를 고려해서 줄바꿈이 일어나지 않도록 가로의 길이를 자동으로 늘리고,
+    /// 세로길이역시 모든 줄이 바로 보이도록 … 다시 누른다면 변경된 내용에 맞춰 다시」 · usability UX5).
+    ///
+    /// 글 칸의 글(넣지 않은 글도)을 지금 글꼴 · 글자 크기 · 줄 간격(<see cref="ScriptFont"/>)으로 잰다 — 폭은 가장 긴 줄이 꺾이지 않게, 글 칸
+    /// 높이는 그 폭에서 모든 줄이 스크롤 없이 보이게. 카드 폭과 글이 놓이는 폭의 차(여백 · 테두리 · 등뼈 · 칸 안 여백)는 지금 배치에서 잰다 —
+    /// 산식으로 세면 테마가 바뀔 때 어긋난다. 기본보다 작게는 줄이지 않고(짧은 글은 기본 크기로 돌아간다) 끝(<see cref="MaxCardWidth"/> ·
+    /// <see cref="MaxWritingHeight"/>)을 넘지 않는다 — 폭이 끝에 걸리면 그 폭에서 꺾어 높이를 잰다.
+    ///
+    /// 끌어 키운 것(<see cref="CommitResize"/>)과 같은 길로 적는다 — 화면의 카드를 먼저 그 크기로 두고 <c>ResizeNode</c> 한 번(되돌리기 한 칸 ·
+    /// 같은 크기면 적지 않는다). 그래서 판을 다시 짓지 않는다.
+    /// </summary>
+    internal void FitCardToWriting(string nodeId)
+    {
+        if (_session is null ||
+            FindCard(nodeId) is not { WritingBox: { } box } card ||
+            box.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().FirstOrDefault() is not { } presenter ||
+            box.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is not { } scroll)
+        {
+            return;
+        }
+
+        _session.Select(nodeId);
+
+        // 폭 — 줄마다 꺾지 않고 잰 가장 긴 줄.
+        var typeface = new Typeface(box.FontFamily, box.FontStyle, box.FontWeight);
+        double longest = 0;
+
+        foreach (string line in (box.Text ?? string.Empty).ReplaceLineEndings("\n").Split('\n'))
+        {
+            using var measured = new Avalonia.Media.TextFormatting.TextLayout(
+                line, typeface, box.FontSize, foreground: null, lineHeight: box.LineHeight);
+            longest = Math.Max(longest, measured.WidthIncludingTrailingWhitespace);
+        }
+
+        // 카드 폭 − 글이 놓이는 폭. 지금 글이 넘쳐 세로 스크롤 막대가 자리를 먹었으면 그 몫은 뺀다 — 맞춘 뒤에는 막대가 없다(빼지 않으면 다시
+        // 누를 때마다 폭이 달라진다).
+        double around = card.Visual.Bounds.Width - (presenter.Bounds.Width + (scroll.Bounds.Width - scroll.Viewport.Width));
+        double width = Math.Clamp(Math.Ceiling(longest + around + FitSlack), CardWidth, MaxCardWidth);
+        card.Visual.Width = width;
+
+        // 높이 — 그 폭에서 실제로 배치된 글의 높이(글 자리가 칸을 채워 늘어나므로 그 자리가 아니라 배치된 줄들의 높이) + 칸의 위아래 몫.
+        // 재는 동안은 칸을 끝까지 키워 둔다 — 글이 넘쳐 스크롤 막대가 서면 그만큼 좁아져 줄이 꺾인 채로 잰다.
+        box.Height = MaxWritingHeight;
+        card.Visual.UpdateLayout();
+        double height = Math.Clamp(
+            Math.Ceiling(presenter.TextLayout.Height + (box.Bounds.Height - presenter.Bounds.Height)),
+            WritingBoxHeight,
+            MaxWritingHeight);
+        box.Height = height;
+        card.Visual.UpdateLayout();
+        PlaceLineKnobs(card);
+
+        _session.Editor.ResizeNode(nodeId, width <= CardWidth ? null : width, height <= WritingBoxHeight ? null : height);
+    }
+
     /// <summary>
     /// 크기 끌기를 놓는다 — 화면에서만 키우던 폭 · 글 칸 높이를 한 번 적는다. 기본까지 줄였으면 적어 둔 값을 걷는다. 눌렀다
     /// 놓기만 했으면 적을 것이 없다.
@@ -2848,7 +2940,7 @@ public partial class GraphEditorView : UserControl
 
         var title = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"),
             Height = TitleHeight,
             Margin = new Thickness(0, 0, 0, HeaderGap)
         };
@@ -2862,6 +2954,14 @@ public partial class GraphEditorView : UserControl
             Control chip = BranchConditionChip(node.NodeId, palette);
             Grid.SetColumn(chip, 2);
             title.Children.Add(chip);
+        }
+
+        // 「글에 맞춤」 — 제목 줄 오른쪽 끝(글 칸이 있는 카드만 · 2026-11-19 소유자 · usability UX5).
+        if (node.NodeKind == GraphNodeKind.Dialogue)
+        {
+            Button fit = FitButton(node.NodeId, style);
+            Grid.SetColumn(fit, 3);
+            title.Children.Add(fit);
         }
 
         body.Children.Add(title);
