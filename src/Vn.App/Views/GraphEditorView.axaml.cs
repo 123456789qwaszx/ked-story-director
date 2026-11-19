@@ -2281,7 +2281,10 @@ public partial class GraphEditorView : UserControl
         }
 
         bool boardChanged = ApplyBoardSize();
-        PlaceVisuals(_projection, followRails: _committingDrag);
+
+        // 끌기 · 크기 바꾸기를 적은 직후의 갱신은 철도를 통째로 긋지 않고 따라간다 — 움직이거나 크기가 바뀐 카드에 기대는 묶음만 다시 긋는다
+        // (FollowRails). ⛔ 크기는 2026-11-19까지 통째로 그어 에피소드 160개에서 끌어 놓기 0.8초 · 「글에 맞춤」 0.5초였다(usability UX8).
+        PlaceVisuals(_projection, followRails: _committingDrag || _committingResize);
 
         if (boardChanged)
         {
@@ -2416,6 +2419,31 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>끌기가 자리를 적는 중이다 — 그 자리 갱신은 철도를 따라가게 한다(<see cref="FollowRails"/>).</summary>
     private bool _committingDrag;
+
+    /// <summary>
+    /// 화면의 카드를 이미 그 크기로 둔 채 크기를 적는 중이다(끌어 놓기 · 「글에 맞춤」) — 그 갱신은 철도를 따라가게 한다. 크기가 바뀐 카드에
+    /// 기대는 묶음은 사각형이 달라져 그 출발에서만 다시 긋는다(<see cref="FollowRails"/>).
+    /// </summary>
+    private bool _committingResize;
+
+    /// <summary>
+    /// 크기를 한 번 적는다 — 화면의 카드는 이미 그 크기다. 배치를 먼저 끝내 둔다 — 철도가 카드의 잰 높이에 기댄다(끄는 동안의 마지막 움직임이
+    /// 아직 배치되지 않았을 수 있다).
+    /// </summary>
+    private void WriteSize(NodeCard card, double? width, double? writingHeight)
+    {
+        card.Visual.UpdateLayout();
+        _committingResize = true;
+
+        try
+        {
+            _session?.Editor.ResizeNode(card.NodeId, width, writingHeight);
+        }
+        finally
+        {
+            _committingResize = false;
+        }
+    }
 
     /// <summary>그 노드의 카드 폭 — 사람이 넓힌 폭이 있으면 그것, 없으면 기본 폭이다.</summary>
     private double WidthFor(string nodeId) =>
@@ -2603,10 +2631,9 @@ public partial class GraphEditorView : UserControl
             WritingBoxHeight,
             MaxWritingHeight);
         box.Height = height;
-        card.Visual.UpdateLayout();
         PlaceLineKnobs(card);
 
-        _session.Editor.ResizeNode(nodeId, width <= CardWidth ? null : width, height <= WritingBoxHeight ? null : height);
+        WriteSize(card, width <= CardWidth ? null : width, height <= WritingBoxHeight ? null : height);
     }
 
     /// <summary>
@@ -2644,8 +2671,8 @@ public partial class GraphEditorView : UserControl
             writing.Height = height;
         }
 
-        UiGuard.Run(_session, "카드 크기", () => _session?.Editor.ResizeNode(
-            card.NodeId,
+        UiGuard.Run(_session, "카드 크기", () => WriteSize(
+            card,
             width <= CardWidth ? null : width,
             card.WritingBox is null || height <= WritingBoxHeight ? null : height));
     }

@@ -168,6 +168,34 @@ public sealed class CardResizeTests : IDisposable
             (GraphEditorView.MaxCardWidth, GraphEditorView.MaxWritingHeight));
     });
 
+    [Fact]
+    public void 크기를_놓아도_철도를_통째로_긋지_않고_그_카드에_기대는_묶음만_다시_긋는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-19 소유자 — 「카드 크기를 끌어 놓거나 글에 맞춤을 누를 때 같은 것들도 거슬리니 최적화를」(usability UX8). ⛔ 놓을 때마다 판의
+        // 철도를 통째로 다시 그었다 — 에피소드 160개에서 0.8초.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        int rails = graph.RailDrawCount;
+        int followed = graph.RailFollowRedrawCount;
+        double trunkBefore = SlotLeft(graph, "root");
+
+        DragGrip(graph, root, GraphEditorView.ResizeGripTag, dx: 100, dy: 0);
+
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.True(graph.RailFollowRedrawCount > followed, "넓힌 카드의 철도 묶음은 다시 그어야 한다");
+        Assert.Equal(trunkBefore + 50, SlotLeft(graph, "root"), precision: 0);   // 그래도 줄기는 넓힌 카드의 가운데 아래다
+
+        // 「글에 맞춤」도 같다.
+        rails = graph.RailDrawCount;
+        session.Editor.ApplyScenarioText(root, "라루: 오늘따라 바람이 유난히 차가워서 겉옷을 챙겨 오지 않은 것을 몹시 후회했다.");
+        Dispatcher.UIThread.RunJobs();
+        rails = graph.RailDrawCount;
+        graph.FitCardToWriting(root);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.Equal(Card(graph, root).Width / 2, SlotLeft(graph, "root") - Canvas.GetLeft(Card(graph, root)) - 14, precision: 0);
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>진짜 창의 [대본] 탭 — 셸이 편집을 받아 판을 고치는 길까지 함께 돈다(<see cref="HierarchyFixture"/>).</summary>
