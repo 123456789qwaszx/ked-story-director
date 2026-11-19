@@ -2348,6 +2348,10 @@ public partial class GraphEditorView : UserControl
     /// <summary>
     /// 프로젝트를 새로 열었거나 새로 만들었으면 <b>첫 화면</b>을 활성 챕터에 맞춘다. 탭이 안 보일 때 열었으면([구성] 탭을 보던 중)
     /// [대본] 탭이 처음 보일 때 맞춘다. 되돌리기 · 다시 그리기로는 다시 맞추지 않는다.
+    /// 화면 크기를 이미 알면(켤 때 · 열기) <b>판을 지은 그 자리에서</b> 맞춘다 — 첫 배치와 첫 그리기가 맞춘 배율로 한 번이다(맞추기는 카드
+    /// 자리 · 폭과 어림 높이로 셈하고, 배율을 정하며 배치까지 한다 — <see cref="SetZoom"/>). ⛔ 2026-11-19까지는 늘 미뤄(배경 차례) 판이 100%로
+    /// 먼저 배치되고 그려진 뒤에 맞췄다 — 켜면 큰 배율로 섰다가 멈춘 듯 있다 전체 배율로 튀었다(에피소드 160개에서 100% 배치 2 ~ 3초 뒤 다시
+    /// 1초 · usability UX24). 첫 탭이 [대본]이 되며(UX23) 켤 때마다 보였다.
     /// </summary>
     private void FitNewProject()
     {
@@ -2357,7 +2361,15 @@ public partial class GraphEditorView : UserControl
         }
 
         _fittedGeneration = _session.ProjectGeneration;
-        RequestFit(new PendingFit(null));
+        _pendingFit = new PendingFit(null);
+
+        if (GraphScroll.Viewport.Width > 0 && GraphScroll.Viewport.Height > 0)
+        {
+            ApplyPendingFit();
+            return;
+        }
+
+        RequestFit(_pendingFit);
     }
 
     /// <summary>카드를 지은 프로젝트의 세대 — 판을 다시 그릴 때 같은 세대면 그대로인 카드를 둔다(<see cref="Rebuild"/>).</summary>
