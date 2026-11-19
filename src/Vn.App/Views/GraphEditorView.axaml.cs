@@ -2246,6 +2246,139 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
+    /// <b>카드 하나만 다시 짓는다</b> — 그 대사 노드의 줄이 생기거나 빠지거나 옮겨졌을 때(카드 글 칸에 새 줄 · usability UX13). 줄은 그 카드 안의
+    /// 일이다 — 글 칸 · 줄에 걸린 분기 점 · 포트 줄. 다른 카드 · 선 · 접은 상자가 그대로인지 새 투영으로 견주고(<see cref="OnlyCardChanged"/>),
+    /// 아니면(분기가 걸린 줄을 지워 선이 사라졌다 따위) 판을 통째로 짓는다. 쓰던 칸의 초점 · 커서 · 넣지 않은 글은 <see cref="Rebuild"/>와 같은
+    /// 길로 새 칸에 옮긴다. 철도는 따라간다 — 카드 크기가 바뀌었으면 그 카드에 기대는 묶음만 다시 긋는다.
+    /// ⛔ 2026-11-19까지는 판을 통째로 다시 지었다 — 에피소드 160개에서 새 줄 하나에 2초.
+    /// </summary>
+    internal void RebuildCard(string nodeId)
+    {
+        if (_session is null || _projection is null)
+        {
+            return;
+        }
+
+        GraphProjection fresh = GraphProjectionBuilder.Build(
+            _session.Project,
+            _session.ExpandedFileIds,
+            _session.CollapsedScenes);
+
+        if (FindCard(nodeId) is not { } old ||
+            fresh.Items.OfType<ExpandedNodeProjection>().FirstOrDefault(item =>
+                string.Equals(item.NodeId, nodeId, StringComparison.Ordinal)) is not { } node ||
+            !OnlyCardChanged(_projection, fresh, nodeId))
+        {
+            Rebuild();
+            return;
+        }
+
+        CardRebuildCount++;
+        WritingFocus? writing = CaptureWritingFocus();
+        _projection = fresh;
+
+        // 칸 목록에서 먼저 뺀다 — 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다(Rebuild와 같은 규칙).
+        _writingBoxes.Remove(nodeId);
+        _writingShown.Remove(nodeId);
+        _writingLayouts.Remove(nodeId);
+        GraphCanvas.Children.Remove(old.Visual);
+
+        foreach (Ellipse knob in old.LineKnobs.Values)
+        {
+            GraphCanvas.Children.Remove(knob);
+        }
+
+        foreach (BranchHub hub in old.LineHubs.Values)
+        {
+            GraphCanvas.Children.Remove(hub.Fan);
+            GraphCanvas.Children.Remove(hub.Dot);
+        }
+
+        _cards[_cards.IndexOf(old)] = BuildCard(node);
+        NodeCard card = _cards.First(item => string.Equals(item.NodeId, nodeId, StringComparison.Ordinal));
+        card.Visual.UpdateLayout();   // 글 칸 · 분기 점의 자리를 잰 뒤에 선을 잇는다
+
+        foreach (EdgeVisual edge in _edges)
+        {
+            edge.Connection = fresh.Connections.First(item => string.Equals(item.Key, edge.Connection.Key, StringComparison.Ordinal));
+            PositionEdge(edge);
+        }
+
+        DrawChapterFrames(followRails: true);
+        HighlightSelection();
+        RefreshMinimap();
+        RestoreWritingFocus(writing);
+    }
+
+    /// <summary>카드 하나만 다시 지은 번 — 시험이 「판을 통째로 짓지 않았다」를 본다.</summary>
+    internal int CardRebuildCount { get; private set; }
+
+    /// <summary>
+    /// 두 투영이 그 카드 말고는 같은가 — 항목(카드 · 접은 상자)의 차례와 자리, 다른 카드의 포트(키 · 쪽 · 글 · 이음), 선(연결)의 키. 그 카드의
+    /// 포트는 달라도 된다(카드를 다시 지으며 새로 선다) — 다만 선이 생기거나 사라지면 같지 않다.
+    /// </summary>
+    internal static bool OnlyCardChanged(GraphProjection before, GraphProjection after, string nodeId)
+    {
+        if (before.Items.Count != after.Items.Count ||
+            !before.Connections.Select(item => item.Key).OrderBy(key => key, StringComparer.Ordinal)
+                .SequenceEqual(after.Connections.Select(item => item.Key).OrderBy(key => key, StringComparer.Ordinal), StringComparer.Ordinal))
+        {
+            return false;
+        }
+
+        for (int index = 0; index < before.Items.Count; index++)
+        {
+            GraphItemProjection was = before.Items[index];
+            GraphItemProjection now = after.Items[index];
+
+            if (was.GetType() != now.GetType() || was.Position != now.Position || !string.Equals(was.FileId, now.FileId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (was is ExpandedNodeProjection card && now is ExpandedNodeProjection fresh)
+            {
+                if (!string.Equals(card.NodeId, fresh.NodeId, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                if (string.Equals(card.NodeId, nodeId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!card.NodeName.Equals(fresh.NodeName, StringComparison.Ordinal) ||
+                    !card.OutputPorts.Select(PortShape).SequenceEqual(fresh.OutputPorts.Select(PortShape)))
+                {
+                    return false;
+                }
+            }
+            else if (!string.Equals(BoxShape(was), BoxShape(now), StringComparison.Ordinal))
+            {
+                return false;   // 접은 상자 — 이름 · 줄(노드와 그 들고 나는 수)까지 같아야 한다
+            }
+        }
+
+        return true;
+
+        // 접은 상자의 모습 — 레코드의 목록은 새 투영마다 새것이라 레코드끼리 견주면 늘 다르다.
+        static string BoxShape(GraphItemProjection item) => item switch
+        {
+            CollapsedSceneProjection scene => $"{scene.SceneId}|{scene.DisplayName}|{scene.InnerCount}|{Rows(scene.Nodes)}",
+            CollapsedFileProjection file => $"{file.FileName}|{file.RelativePath}|{Rows(file.Nodes)}|" +
+                                            string.Join(";", file.Scenes.Select(group => $"{group.SceneId}:{group.DisplayName}:{Rows(group.Entries)}")),
+            _ => item.GetType().Name
+        };
+
+        static string Rows(IEnumerable<CollapsedNodeEntry> rows) =>
+            string.Join(",", rows.Select(row => $"{row.NodeId}/{row.NodeName}/{row.IncomingCount}/{row.OutgoingCount}"));
+
+        static (string Key, bool OnLeft, string Label, bool IsConnected, int Palette) PortShape(GraphOutputPortProjection port) =>
+            (port.Key, port.OnLeft, port.Label, port.IsConnected, port.PaletteIndex);
+    }
+
+    /// <summary>
     /// 챕터 · 장면 테두리와 이름표만 다시 긋는다 — 카드 · 철도는 그대로다(철도는 따라가기만 하고, 아무것도 움직이지 않았으니 다시 긋지 않는다).
     /// 장면 이름표의 「메모」 표시가 에피소드 지시를 따른다(usability UX7).
     /// </summary>

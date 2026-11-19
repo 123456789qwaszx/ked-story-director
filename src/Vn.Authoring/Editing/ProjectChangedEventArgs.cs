@@ -45,16 +45,27 @@ public enum ProjectChangeKind
     /// ⛔ 2026-11-19까지는 <see cref="NodeMetadata"/>여서 지시 카드를 붙이고 쓰고 뗄 때마다 [대본] 판을 통째로 다시 지었다(에피소드 160개에서
     /// 한 번에 2초 · usability UX7).
     /// </summary>
-    EpisodeNote
+    EpisodeNote,
+
+    /// <summary>
+    /// 대사 노드 하나의 줄이 생기거나 빠지거나 옮겨졌다(카드 글 칸에서 새 줄을 넣는 따위) — 어느 노드인지는
+    /// <see cref="ProjectChangedEventArgs.NodeId"/>다. 판은 그 카드만 다시 지을 수 있다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 카드에
+    /// 새 줄을 넣을 때마다 [대본] 판을 통째로 다시 지었다(에피소드 160개에서 2초 · usability UX13).
+    /// </summary>
+    DialogueLines
 }
 
 public sealed class ProjectChangedEventArgs : EventArgs
 {
-    public ProjectChangedEventArgs(ProjectChangeKind kind, bool fromHistory = false)
+    public ProjectChangedEventArgs(ProjectChangeKind kind, bool fromHistory = false, string? nodeId = null)
     {
         Kind = kind;
         FromHistory = fromHistory;
+        NodeId = nodeId;
     }
+
+    /// <summary>바뀐 노드가 하나로 정해지면 그 노드 — <see cref="ProjectChangeKind.DialogueLines"/>가 싣는다. 모르거나 여럿이면 null.</summary>
+    public string? NodeId { get; }
 
     /// <summary>
     /// 바뀐 것의 종류. 되돌리기 · 다시 실행이면 <b>되돌린 그 편집의 종류</b>다(2026-11-18 · board-speed PF1 — ⛔ 그 전에는 늘 <see cref="ProjectChangeKind.Structure"/>였다).

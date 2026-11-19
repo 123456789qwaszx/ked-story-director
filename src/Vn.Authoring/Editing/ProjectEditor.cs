@@ -1029,7 +1029,8 @@ public sealed partial class ProjectEditor
 
     private void Mutate(Action change) => Mutate(ProjectChangeKind.Structure, change);
 
-    private void Mutate(ProjectChangeKind kind, Action change)
+    /// <param name="nodeId">바뀐 노드가 하나로 정해지면 그 노드 — 알림에 싣는다(<see cref="ProjectChangedEventArgs.NodeId"/>).</param>
+    private void Mutate(ProjectChangeKind kind, Action change, string? nodeId = null)
     {
         // 묶음 안이면 스냅샷은 묶음이 처음에 한 번 떠 두었다 — 여기서 또 뜨면 되돌리기가
         // 명령 수만큼 쪼개진다.
@@ -1039,7 +1040,7 @@ public sealed partial class ProjectEditor
         }
 
         change();
-        Raise(kind);
+        Raise(kind, nodeId: nodeId);
     }
 
     private void PushUndo(HistoryEntry entry)
@@ -1059,6 +1060,12 @@ public sealed partial class ProjectEditor
 
     /// <summary>묶음 안에서 일어난 변경의 종류. 아무것도 안 바뀌었으면 null이다.</summary>
     private ProjectChangeKind? _batchKind;
+
+    /// <summary>묶음 안의 알림이 모두 같은 노드였으면 그 노드 — 다른 노드가 섞이면 null로 모른다.</summary>
+    private string? _batchNodeId;
+
+    /// <summary>묶음 안에서 알림이 한 번이라도 왔는가 — 첫 알림의 노드를 받는다.</summary>
+    private bool _batchRaised;
 
     /// <summary>
     /// 여러 명령을 <b>되돌리기 한 칸 · 알림 한 번</b>으로 묶는다.
@@ -1086,6 +1093,8 @@ public sealed partial class ProjectEditor
         string before = ProjectSnapshotCodec.Encode(Project);
         _batchDepth++;
         _batchKind = null;
+        _batchNodeId = null;
+        _batchRaised = false;
         bool completed = false;
 
         try
@@ -1097,14 +1106,17 @@ public sealed partial class ProjectEditor
         {
             _batchDepth--;
             ProjectChangeKind? kind = _batchKind;
+            string? batchNodeId = _batchNodeId;
             _batchKind = null;
+            _batchNodeId = null;
+            _batchRaised = false;
 
             if (kind is { } changed)
             {
                 if (completed)
                 {
                     PushUndo(new HistoryEntry(before, changed));
-                    Raise(changed);
+                    Raise(changed, nodeId: batchNodeId);
                 }
                 else
                 {
@@ -1127,18 +1139,26 @@ public sealed partial class ProjectEditor
     /// </summary>
     public long Revision { get; private set; }
 
-    private void Raise(ProjectChangeKind kind, bool fromHistory = false)
+    private void Raise(ProjectChangeKind kind, bool fromHistory = false, string? nodeId = null)
     {
         // 묶음 안이면 알림은 묶음이 끝날 때 한 번이다. 종류가 섞이면 구조로 올린다 —
-        // 덜 그려서 낡은 화면이 남는 것보다 한 번 더 그리는 편이 낫다.
+        // 덜 그려서 낡은 화면이 남는 것보다 한 번 더 그리는 편이 낫다. 노드가 섞여도 모른다(null) — 한 카드만 다시 지으면 다른 카드가 낡는다.
         if (_batchDepth > 0)
         {
             _batchKind = _batchKind is null || _batchKind == kind ? kind : ProjectChangeKind.Structure;
+            _batchNodeId = !_batchRaised ? nodeId : string.Equals(_batchNodeId, nodeId, StringComparison.Ordinal) ? nodeId : null;
+            _batchRaised = true;
+
+            if (_batchKind == ProjectChangeKind.DialogueLines && _batchNodeId is null)
+            {
+                _batchKind = ProjectChangeKind.Structure;   // 어느 카드인지 모르는 줄 변경은 구조다
+            }
+
             return;
         }
 
         Revision++;
-        Changed?.Invoke(this, new ProjectChangedEventArgs(kind, fromHistory));
+        Changed?.Invoke(this, new ProjectChangedEventArgs(kind, fromHistory, nodeId));
     }
 
     /// <summary>

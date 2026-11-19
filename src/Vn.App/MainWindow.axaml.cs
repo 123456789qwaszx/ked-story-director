@@ -287,9 +287,14 @@ public partial class MainWindow : Window
         {
             ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(e.Kind, _session.SelectedNode, e.FromHistory);
 
-            if (plan.RebuildGraph)
+            if (plan.RebuildGraph || (plan.RebuildCard && e.NodeId is null))
             {
                 Graph.Rebuild();
+            }
+            else if (plan.RebuildCard)
+            {
+                // 한 카드의 줄만 바뀌었다 — 그 카드만 다시 짓는다(usability UX13).
+                Graph.RebuildCard(e.NodeId!);
             }
             else if (plan.RefreshGraphPositions)
             {

@@ -74,6 +74,14 @@ internal static class ProjectRefreshPlanner
                 RebuildInspector: false,
                 RefreshSceneFrames: true),
 
+            // 한 카드의 줄이 바뀌었다 — 그 카드만 다시 짓는다(판이 다른 것도 바뀌었다고 보면 스스로 통째로 짓는다). 곁기둥의 줄 표는 줄이
+            // 늘고 줄었으니 다시 세운다(usability UX13 · ⛔ 구조 — 판을 통째로 다시 지었다).
+            ProjectChangeKind.DialogueLines => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: true,
+                RebuildCard: true),
+
             // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
 
@@ -91,4 +99,5 @@ internal readonly record struct ProjectRefreshPlan(
     bool RebuildInspector,
     bool RefreshCardWriting = false,
     bool RefreshAllCardWriting = false,
-    bool RefreshSceneFrames = false);
+    bool RefreshSceneFrames = false,
+    bool RebuildCard = false);

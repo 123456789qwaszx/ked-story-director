@@ -342,7 +342,8 @@ public sealed partial class ProjectEditor
                 .Select(entry => entry.LineId)
                 .SequenceEqual(script.ActiveLines.Select(line => line.Id), StringComparer.Ordinal);
 
-        Mutate(textOnly ? ProjectChangeKind.DialogueContent : ProjectChangeKind.Structure, () =>
+        // 줄이 생기거나 빠지거나 옮겨졌으면 그 노드의 줄 변경이다 — 판은 그 카드만 다시 지을 수 있다(usability UX13 · ⛔ 구조 — 판을 통째로).
+        Mutate(textOnly ? ProjectChangeKind.DialogueContent : ProjectChangeKind.DialogueLines, () =>
         {
             ScriptLocale locale = script.RequireLocale(plan.Locale);
             var byId = script.Lines.ToDictionary(line => line.Id, StringComparer.Ordinal);
@@ -386,7 +387,7 @@ public sealed partial class ProjectEditor
             script.Lines.AddRange(ordered);
             script.SourceRevision++;
             script.SourceContentHash = plan.SourceContentHash;
-        });
+        }, dialogueNodeId);
     }
 
     /// <summary>
