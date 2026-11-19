@@ -1,22 +1,21 @@
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[챕터] 탭의 스탯·조건 표가 편집 가능하다</b> (2026-09-17 소유자: *"이제 엑셀이 아닌
-/// 챕터그래프에서 직접 조건과 스탯을 정의"*).
-///
-/// ⚠ 전에는 읽기 전용이었고 *"편집은 챕터 엑셀의 시트에서"*라고 적혀 있었다. 그 안내는
-/// <b>R-F(2026-09-16)가 이미 낡게 만들었다</b> — 그날 워크북이 산출물이 되고 값의 주인이
-/// <c>ChapterDocument</c>로 넘어왔는데 글자만 남아 있었다.
+/// <b>[챕터] 탭의 스탯·조건 표가 편집 가능하다</b> — 조건과 스탯은 엑셀이 아니라
+/// 챕터 그래프에서 직접 정의한다. 값의 주인은 <c>ChapterDocument</c>다.
 /// </summary>
 public sealed class ChapterSheetEditTests : IDisposable
 {
@@ -28,7 +27,13 @@ public sealed class ChapterSheetEditTests : IDisposable
     public ChapterSheetEditTests()
     {
         Directory.CreateDirectory(_directory);
-        ProjectStore.Save(ManifestPath, new StoryProject { Title = "챕터 시트 편집" });
+
+        // [＋ 챕터](AuthoringSession.CreateChapter)와 같은 모양 — 챕터 · 스탯 `trust` · 판.
+        var editor = new ProjectEditor(new StoryProject { Title = "챕터 시트 편집" });
+        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", 0, 0, 100));
+        editor.EnsureChapterBoard("ch01");
+
+        ProjectStore.Save(ManifestPath, editor.Project);
     }
 
     public void Dispose()
@@ -42,29 +47,20 @@ public sealed class ChapterSheetEditTests : IDisposable
     [Fact]
     public void 스탯_표에_값_칸이_선다() => HeadlessUi.Run(() =>
     {
-        // 전에는 한 줄짜리 글자였다 — 이제 고칠 수 있는 칸이어야 한다.
+        // 한 줄짜리 글자가 아니라 고칠 수 있는 칸이어야 한다.
         (ChapterGraphView view, _) = Show();
 
-        // 표시이름 · 초기 · 최소 · 최대 — 키는 라벨(개명은 [✎]), 타입은 콤보다.
-        Assert.Equal(4, Boxes(Row(view, "stat:trust")).Count);
-    });
-
-    [Fact]
-    public void 표시이름을_고치면_모델에_써진다() => HeadlessUi.Run(() =>
-    {
-        (ChapterGraphView view, AuthoringSession session) = Show();
-
-        Commit(Boxes(Row(view, "stat:trust"))[0], "신뢰도");
-
-        Assert.Equal(
-            "신뢰도",
-            session.Editor.FindChapter("ch01")!.Stats.Single(stat => stat.Key == "trust").DisplayName);
+        // 키 · 처음 값 · 최소 · 최대 — 키도 칸이다(writer-comfort WC4 — ⛔ 그 전에는 읽기만 하고 [✎]로 바꿨다), 종류는 콤보다.
+        // 표시 이름 칸은 걷혔다(writer-fields W2).
+        IReadOnlyList<TextBox> boxes = Boxes(Row(view, "stat:trust"));
+        Assert.Equal(4, boxes.Count);
+        Assert.Equal(("stat-key:trust", "trust"), ((string?)boxes[0].Tag, boxes[0].Text));
     });
 
     [Fact]
     public void 숫자_칸에_글자를_적으면_조용히_안_버리고_말한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 조용히 버리면 사람은 적은 줄 알고 넘어간다.
+        // 조용히 버리면 사람은 적은 줄 알고 넘어간다.
         (ChapterGraphView view, AuthoringSession session) = Show();
 
         Commit(Boxes(Row(view, "stat:trust"))[1], "많이");
@@ -80,7 +76,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     {
         (ChapterGraphView view, AuthoringSession session) = Show();
 
-        Commit(Boxes(Row(view, "condition:신뢰높음"))[0], "trust >= 5");
+        Commit(Expression(view, "신뢰높음"), "trust >= 5");
 
         Assert.Equal(
             "trust >= 5",
@@ -91,7 +87,7 @@ public sealed class ChapterSheetEditTests : IDisposable
     [Fact]
     public void 쓰는_곳이_있는_스탯을_지우려_하면_어디인지_말한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ *"쓰이고 있습니다"*로 끝내면 사람이 챕터를 뒤져야 한다 — 거절이 곧 정리 안내다.
+        // *"쓰이고 있습니다"*로 끝내면 사람이 챕터를 뒤져야 한다 — 거절이 곧 정리 안내다.
         (ChapterGraphView view, AuthoringSession session) = Show();
 
         Press(Buttons(Row(view, "stat:trust")).Last());
@@ -112,8 +108,8 @@ public sealed class ChapterSheetEditTests : IDisposable
     {
         // ⭐ 다 — 간선은 그 항만 빠지고, 조건은 <b>식만 비고 남는다</b>.
         (ChapterGraphView view, AuthoringSession session) = Show();
-        session.Editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-        session.Editor.AddEpisode("ch01", "a", title: "a", 0, 0);
+        session.Editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        session.Editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다", statChanges: "trust +1");
         Redraw(view);
 
@@ -143,47 +139,335 @@ public sealed class ChapterSheetEditTests : IDisposable
     });
 
     [Fact]
-    public void 키_바꾸기는_세이브가_안_따라온다고_먼저_말한다() => HeadlessUi.Run(() =>
+    public void 키_칸에_들어서면_세이브가_안_따라온다고_먼저_말한다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>키는 세이브의 열쇠다</b> (런타임 회신 §6.2). 저쪽 `LocalSaveFile.Stats`가 이
-        //    글자로 저장하고, 복원은 키가 없으면 <b>초기값</b>으로 떨어진다 — 경고도 없다.
+        // <b>키는 세이브의 열쇠다</b> (런타임 회신 §6.2). 저쪽 `LocalSaveFile.Stats`가 이
+        //    글자로 저장하고, 복원은 키가 없으면 <b>처음 값</b>으로 떨어진다 — 경고도 없다.
         //    개명이 끌고 가는 다섯 자리는 프로젝트 안이고 <b>디스크의 세이브는 그 다섯에
-        //    없다</b>. 표시 이름만 고치려던 사람이 이 문을 열 수 있으므로, 경고가
-        //    <b>적기 전에</b> 서야 한다.
+        //    없다</b>. 그래서 경고가 <b>적기 전에</b> 서야 한다 — 키 칸에 들어서는 순간 그 줄에 선다(writer-comfort WC4).
         (ChapterGraphView view, _) = Show();
+        Panel row = Row(view, "stat:trust");
+        TextBlock caution = row.GetLogicalDescendants().OfType<TextBlock>().Single(block => Equals(block.Tag, "stat-key-caution"));
+        Assert.False(caution.IsVisible);
 
-        Press(Buttons(Row(view, "stat:trust")).First());
+        KeyBox(view, "trust").Focus();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        List<string> shown = Prompt(view).GetVisualDescendants().OfType<TextBlock>()
-            .Select(block => block.Text ?? string.Empty).ToList();
+        Assert.True(caution.IsVisible);
+        Assert.Contains("세이브의 열쇠", caution.Text, StringComparison.Ordinal);
+        Assert.Contains("처음 값", caution.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("표시 이름", caution.Text, StringComparison.Ordinal);
+    });
 
-        Assert.Contains(shown, text => text.Contains("세이브의 열쇠", StringComparison.Ordinal));
-        Assert.Contains(shown, text => text.Contains("초기값", StringComparison.Ordinal));
-        Assert.Contains(shown, text => text.Contains("표시이름", StringComparison.Ordinal));
+    [Fact]
+    public void 키_칸에서_고치면_참조가_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 「다른 화자이름 같은것처럼 편하게 고칠 수 있도록」(2026-11-18 소유자 · writer-comfort WC4) — 고치고 Enter.
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        long before = session.Editor.Revision;
+
+        Commit(KeyBox(view, "trust"), " 신뢰 ");
+
+        ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
+        Assert.Equal(["신뢰"], chapter.Stats.Select(stat => stat.Key));
+        Assert.Equal("신뢰 >= 3", chapter.Conditions.Single().Expression);   // 조건 식이 따라갔다
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.Contains("따라갔습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // 표가 새 키로 다시 선다.
+        Redraw(view);
+        Assert.Equal("신뢰", KeyBox(view, "신뢰").Text);
+
+        session.Editor.Undo();
+        Assert.Equal(["trust"], session.Editor.FindChapter("ch01")!.Stats.Select(stat => stat.Key));
+    });
+
+    [Fact]
+    public void 키_칸은_같은_키_빈_키_있는_키를_넣지_않고_Esc는_그만둔다() => HeadlessUi.Run(() =>
+    {
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        session.Editor.AddChapterStat("ch01", "anger");
+        Redraw(view);
+        long before = session.Editor.Revision;
+
+        // 같은 키 — 앞뒤 공백만 걷고 아무 일도 없다.
+        Commit(KeyBox(view, "trust"), " trust ");
+        Assert.Equal("trust", KeyBox(view, "trust").Text);
+
+        // 있는 키 — 거절하고 옛 키로 돌아온다. 상태줄이 까닭을 말한다.
+        Commit(KeyBox(view, "trust"), "anger");
+        Assert.Equal("trust", KeyBox(view, "trust").Text);
+        Assert.Contains("이미 있습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // 빈 키 — 지우기가 아니다.
+        Commit(KeyBox(view, "trust"), "  ");
+        Assert.Equal("trust", KeyBox(view, "trust").Text);
+        Assert.Contains("비어 있습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // Esc — 적던 글을 걷는다.
+        TextBox key = KeyBox(view, "trust");
+        key.Text = "용기";
+        key.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+        Assert.Equal("trust", key.Text);
+
+        Assert.Equal(before, session.Editor.Revision);
+        Assert.Equal(["trust", "anger"], session.Editor.FindChapter("ch01")!.Stats.Select(stat => stat.Key));
+    });
+
+    [Fact]
+    public void 스탯_표_아래_더하기_줄은_늘_서_있고_키만으로_숫자_스탯을_더한다() => HeadlessUi.Run(() =>
+    {
+        // 「ID를 쓰는 공간이 항상 있고, 그 오른쪽에 '+추가'를 눌러서」(2026-11-18 소유자 · writer-comfort WC4) — [대본] 탭의 화자 더하기와 같다.
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        StackPanel table = view.FindControl<StackPanel>("StatListPanel")!;
+        long before = session.Editor.Revision;
+
+        Grid addRow = Assert.IsType<Grid>(table.Children[^1]);
+        TextBox add = AddBox(view, "stat-add-name");
+        Button button = addRow.Children.OfType<Button>().Single();
+        Assert.Same(addRow, add.Parent);
+        Assert.Equal(("＋ 추가", "stat-add"), (button.Content as string, (string?)button.Tag));
+        Assert.True(Grid.GetColumn(button) > Grid.GetColumn(add));   // 칸의 오른쪽
+
+        add.Text = " courage ";
+        Press(button);
+
+        ChapterStat made = session.Editor.FindChapter("ch01")!.Stats.Single(stat => stat.Key == "courage");
+        Assert.Equal((ChapterStatType.Int, 0, 0, 100), (made.Type, made.Initial, made.Minimum, made.Maximum));
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.Contains("더했습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // 표에 그 줄이 서고, 더하기 줄은 늘 맨 아래 — 새 칸에 초점이 가 잇달아 더한다(Enter도 같다).
+        Assert.NotNull(Row(view, "stat:courage"));
+        Assert.IsType<Grid>(table.Children[^1]);
+        TextBox again = AddBox(view, "stat-add-name");
+        Assert.Same(again, TopLevel.GetTopLevel(view)!.FocusManager!.GetFocusedElement());
+        Commit(again, "anger");
+        Assert.Contains(session.Editor.FindChapter("ch01")!.Stats, stat => stat.Key == "anger");
+
+        // 빈 키 · 있는 키는 더하지 않는다.
+        long now = session.Editor.Revision;
+        Commit(AddBox(view, "stat-add-name"), "  ");
+        Assert.Contains("적어 주세요", session.StatusMessage, StringComparison.Ordinal);
+        Commit(AddBox(view, "stat-add-name"), "trust");
+        Assert.Contains("이미 있습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal(now, session.Editor.Revision);
+    });
+
+    [Fact]
+    public void 값_칸마다_이름이_붙고_종류는_작가의_말이며_줄이_인스펙터_폭_안에_선다() => HeadlessUi.Run(() =>
+    {
+        // 처음 보는 사람이 숫자 칸 셋이 무엇인지 알아야 한다 — 칸마다 「처음 값 · 최소 · 최대」가 붙는다.
+        (ChapterGraphView view, _) = Show();
+        Panel row = Row(view, "stat:trust");
+
+        List<string> labels = row.GetLogicalDescendants().OfType<TextBlock>().Select(text => text.Text ?? string.Empty).ToList();
+        Assert.Contains("처음 값", labels);
+        Assert.Contains("최소", labels);
+        Assert.Contains("최대", labels);
+
+        ComboBox type = TypeCombo(row);
+        Assert.Equal(["숫자", "활성/비활성"], type.ItemsSource!.Cast<string>());
+        Assert.Equal("숫자", type.SelectedItem);
+
+        // 잘리지 않는다 — 종류 칸이 제 내용만큼 넓고, 두 줄의 끝([✕] · [최대] 칸)이 표 폭 안에 선다(인스펙터 기본 폭).
+        double wanted = type.DesiredSize.Width - type.Margin.Left - type.Margin.Right;
+        Assert.True(type.Bounds.Width >= wanted - 0.5, $"종류 칸이 눌렸다: {type.Bounds.Width} < {wanted}");
+        StackPanel table = view.FindControl<StackPanel>("StatListPanel")!;
+        AssertInside(Buttons(row).Last(), table, "[✕]");
+
+        TextBox maximum = Boxes(row).Last();
+        AssertInside(maximum, table, "[최대] 칸");
+        Assert.True(maximum.Bounds.Width >= 30, $"[최대] 칸이 너무 좁다: {maximum.Bounds.Width}");
+    });
+
+    [Fact]
+    public void 조건_줄은_이름_칸과_식_칸이고_식_칸이_남은_폭을_채운다() => HeadlessUi.Run(() =>
+    {
+        // 지우는 것은 [대본] 탭이다(writer-fields W4) — 줄에는 지우기 단추가 없다. 이름은 칸에서 고친다(writer-comfort WC4 — ⛔ 그 전에는 읽기만 했다).
+        // 더하기는 표 아래 늘 서 있는 줄이다(⛔ 2026-11-18 side-tabs V2의 [＋ 조건] 플라이아웃은 WC4로 걷혔다).
+        (ChapterGraphView view, _) = Show();
+        Panel row = Row(view, "condition:신뢰높음");
+        StackPanel table = view.FindControl<StackPanel>("ConditionListPanel")!;
+
+        Assert.Empty(Buttons(row));
+        Assert.Equal("＋ 추가", Assert.IsType<Grid>(table.Children[^1]).Children.OfType<Button>().Single().Content);
+        Assert.Equal(["신뢰높음", "trust >= 3"], Boxes(row).Select(box => box.Text));
+        TextBox expression = Expression(view, "신뢰높음");
+        expression.Text = string.Empty;
+        Assert.Equal("⚠ 식 미정 — 항상 통과합니다", expression.PlaceholderText);
+        AssertInside(expression, table, "식 칸");
+        Assert.True(expression.Bounds.Width >= 120, $"식 칸이 너무 좁다: {expression.Bounds.Width}");
+
+        // 칸에 다 안 들어가는 이름은 마우스를 올리면 다 보인다.
+        Assert.StartsWith("신뢰높음", (string)ToolTip.GetTip(LabelBox(view, "신뢰높음"))!, StringComparison.Ordinal);
+    });
+
+    [Fact]
+    public void 조건_이름_칸에서_고치면_건_간선이_따라가고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        session.Editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        session.Editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다");
+        session.Editor.UpdateEdge("ch01", "root", "a", visibleConditionLabel: "신뢰높음", matchOptionLabel: "믿는다");
+        Redraw(view);
+        long before = session.Editor.Revision;
+
+        Commit(LabelBox(view, "신뢰높음"), "하린과 친해졌을 때");
+
+        ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
+        Assert.Equal(["하린과 친해졌을 때"], chapter.Conditions.Select(item => item.Label));
+        Assert.Equal("하린과 친해졌을 때", chapter.Edges.Single().VisibleConditionLabel);
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.Contains("간선 1개가 따라갔습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // 같은 이름 · Esc는 넣지 않는다.
+        Redraw(view);
+        Commit(LabelBox(view, "하린과 친해졌을 때"), "하린과 친해졌을 때 ");
+        TextBox label = LabelBox(view, "하린과 친해졌을 때");
+        label.Text = "멀어짐";
+        label.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
+        Assert.Equal("하린과 친해졌을 때", label.Text);
+        Assert.Equal(before + 1, session.Editor.Revision);
+
+        session.Editor.Undo();
+        Assert.Equal("신뢰높음", session.Editor.FindChapter("ch01")!.Edges.Single().VisibleConditionLabel);
+    });
+
+    [Fact]
+    public void 조건_표_아래_더하기_줄은_이름만으로_식_미정_조건을_더하고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 「추가할 때도 대본 탭에서 화자를 추가하는 것처럼 편하게」(2026-11-18 소유자 · writer-comfort WC4) — 식은 그 줄에서 채운다.
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        long before = session.Editor.Revision;
+
+        Commit(AddBox(view, "condition-add-name"), "  하린과 친해졌을 때 ");
+
+        ChapterCondition made = session.Editor.FindChapter("ch01")!.Conditions.Single(item => item.Label == "하린과 친해졌을 때");
+        Assert.Equal(string.Empty, made.Expression);
+        Assert.Equal(before + 1, session.Editor.Revision);
+        Assert.Contains("식 미정", session.StatusMessage, StringComparison.Ordinal);
+
+        // 표에 그 줄이 서고 더하기 줄은 늘 맨 아래 — 새 칸에 초점이 간다.
+        Assert.Equal(string.Empty, Expression(view, "하린과 친해졌을 때").Text);
+        Assert.IsType<Grid>(view.FindControl<StackPanel>("ConditionListPanel")!.Children[^1]);
+        Assert.Same(AddBox(view, "condition-add-name"), TopLevel.GetTopLevel(view)!.FocusManager!.GetFocusedElement());
+
+        // [＋ 추가]도 같다.
+        AddBox(view, "condition-add-name").Text = "아직 모름";
+        Press(view.FindControl<StackPanel>("ConditionListPanel")!.GetLogicalDescendants().OfType<Button>()
+            .Single(button => Equals(button.Tag, "condition-add")));
+        Assert.Contains(session.Editor.FindChapter("ch01")!.Conditions, item => item.Label == "아직 모름");
+
+        // 되돌리기 한 번에 사라진다.
+        session.Editor.Undo();
+        Assert.DoesNotContain(session.Editor.FindChapter("ch01")!.Conditions, item => item.Label == "아직 모름");
+    });
+
+    [Fact]
+    public void 빈_이름과_이미_있는_이름은_조건_더하기가_받지_않는다() => HeadlessUi.Run(() =>
+    {
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        long before = session.Editor.Revision;
+
+        Commit(AddBox(view, "condition-add-name"), "   ");
+        Assert.Contains("적어 주세요", session.StatusMessage, StringComparison.Ordinal);
+
+        Commit(AddBox(view, "condition-add-name"), "신뢰높음");
+        Assert.Contains("이미 있습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        Assert.Equal(before, session.Editor.Revision);
+        Assert.Equal(["신뢰높음"], session.Editor.FindChapter("ch01")!.Conditions.Select(item => item.Label));
+    });
+
+    [Fact]
+    public void 긴_조건_이름은_넓힌_칸_안에_서고_칸_어디에_손을_올려도_전체가_보인다() => HeadlessUi.Run(() =>
+    {
+        const string longLabel = "성실 3 미만 · 요령 3 미만 · 신뢰 높음 · 그리고 아주 긴 꼬리";
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        session.Editor.AddChapterCondition("ch01", longLabel, "trust < 3");
+        Redraw(view);
+
+        var row = (Grid)Row(view, "condition:" + longLabel);
+        Assert.Equal(ChapterGraphView.ConditionLabelWidth, row.ColumnDefinitions[0].Width.Value);
+        Assert.True(ChapterGraphView.ConditionLabelWidth >= 150);
+
+        // 이름 칸은 그 폭 안에 서고, 풍선이 전체를 말한다.
+        TextBox label = LabelBox(view, longLabel);
+        Assert.True(label.Bounds.Width <= ChapterGraphView.ConditionLabelWidth + 0.5);
+        Assert.StartsWith(longLabel, (string)ToolTip.GetTip(label)!, StringComparison.Ordinal);
+
+        // 칸 어디에 손을 올려도 이름 칸이 받는다 — 글자 획 사이 · 끝의 빈자리도.
+        Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();   // 손 닿는 자리는 그린 장면으로 잰다
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        // 창이 그 자리에서 고른 것이 이름 칸(또는 그 안)이다 — 풍선은 이름 칸에 붙어 있다.
+        TopLevel top = TopLevel.GetTopLevel(view)!;
+        foreach (Point corner in new[] { new Point(label.Bounds.Width - 2, 2), new Point(2, label.Bounds.Height - 2), new Point(label.Bounds.Width / 2, label.Bounds.Height / 2) })
+        {
+            var hit = (Visual)top.InputHitTest(label.TranslatePoint(corner, top)!.Value)!;
+            Assert.Contains(label, hit.GetSelfAndVisualAncestors());
+        }
+    });
+
+    [Fact]
+    public void 예_아니오로_바꾸면_범위_칸이_걷히고_처음_값을_예_아니오로_고른다() => HeadlessUi.Run(() =>
+    {
+        (ChapterGraphView view, AuthoringSession session) = Show();
+
+        TypeCombo(Row(view, "stat:trust")).SelectedIndex = 1;
+        Redraw(view);
+
+        Panel row = Row(view, "stat:trust");
+        Assert.Equal(ChapterStatType.Bool, Stat(session).Type);
+        Assert.Equal(["stat-key:trust"], Boxes(row).Select(box => (string?)box.Tag));   // 키 칸뿐 — 최소 · 최대가 없다(표시 이름 칸은 걷혔다)
+        ComboBox initial = row.GetLogicalDescendants().OfType<ComboBox>().Single(combo => Equals(combo.Tag, "stat-initial"));
+        Assert.Equal(["비활성", "활성"], initial.ItemsSource!.Cast<string>());
+
+        initial.SelectedIndex = 1;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(1, Stat(session).Initial);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// 열려 있는 입력 플라이아웃의 내용 — 경고와 칸이 함께 산다.
-    ///
-    /// ⚠ <b>자리표시 글자</b>로 찾는다. 표의 줄도 `TextBox`+`TextBlock`을 들고 있어서
-    /// 그것만으로 고르면 <b>조건 줄이 먼저 잡힌다</b>(한 번 잡혔다).
-    /// </summary>
-    private static Control Prompt(ChapterGraphView view) =>
-        (TopLevel.GetTopLevel(view) as Window)!.GetVisualDescendants()
-            .OfType<StackPanel>()
-            .First(panel => panel.Children.OfType<TextBox>()
-                .Any(box => !string.IsNullOrEmpty(box.PlaceholderText)));
+    private static ChapterStat Stat(AuthoringSession session) =>
+        session.Editor.FindChapter("ch01")!.Stats.Single(stat => stat.Key == "trust");
 
-    private static StackPanel Row(ChapterGraphView view, string tag) =>
-        view.GetVisualDescendants().OfType<StackPanel>().Single(panel => Equals(panel.Tag, tag));
+    private static ComboBox TypeCombo(Panel row) =>
+        row.GetLogicalDescendants().OfType<ComboBox>().Single(combo => Equals(combo.Tag, "stat-type"));
 
-    private static IReadOnlyList<TextBox> Boxes(StackPanel row) =>
-        row.Children.OfType<TextBox>().ToList();
+    /// <summary>표의 한 줄 — Tag가 「stat:키」나 「condition:라벨」이다.</summary>
+    private static Panel Row(ChapterGraphView view, string tag) =>
+        view.GetVisualDescendants().OfType<Panel>().Single(panel => Equals(panel.Tag, tag));
 
-    private static IReadOnlyList<Button> Buttons(StackPanel row) =>
-        row.Children.OfType<Button>().ToList();
+    /// <summary>그 줄의 글자 칸들 — 스탯이면 키 · 처음 값 · 최소 · 최대 차례(두 줄에 걸쳐 선다), 조건이면 이름 · 식.</summary>
+    private static IReadOnlyList<TextBox> Boxes(Panel row) =>
+        row.GetLogicalDescendants().OfType<TextBox>().ToList();
+
+    /// <summary>그 줄의 단추들 — 스탯이면 [✕] 하나, 조건이면 없다.</summary>
+    private static IReadOnlyList<Button> Buttons(Panel row) =>
+        row.GetLogicalDescendants().OfType<Button>().ToList();
+
+    /// <summary>칸의 오른쪽 끝이 표 폭 안에 서는가 — 넘으면 인스펙터가 그 끝을 잘라 먹는다.</summary>
+    private static void AssertInside(Control cell, StackPanel table, string name)
+    {
+        Point end = cell.TranslatePoint(new Point(cell.Bounds.Width, 0), table)!.Value;
+        Assert.True(end.X <= table.Bounds.Width + 0.5, $"{name}이(가) 표 밖으로 밀렸다: {end.X} > {table.Bounds.Width}");
+    }
+
+    /// <summary>스탯 키 칸 · 조건 이름 칸 · 식 칸 · 더하기 칸 — 「조건 및 스탯」 탭에서 Tag로 찾는다.</summary>
+    private static TextBox SheetBox(ChapterGraphView view, string tag) =>
+        view.FindControl<StackPanel>("ConditionSection")!.GetLogicalDescendants().OfType<TextBox>().Single(box => Equals(box.Tag, tag));
+
+    private static TextBox KeyBox(ChapterGraphView view, string key) => SheetBox(view, "stat-key:" + key);
+
+    private static TextBox LabelBox(ChapterGraphView view, string label) => SheetBox(view, "condition-label:" + label);
+
+    private static TextBox Expression(ChapterGraphView view, string label) => SheetBox(view, "condition-expression:" + label);
+
+    private static TextBox AddBox(ChapterGraphView view, string tag) => SheetBox(view, tag);
 
     /// <summary>Enter로 확정한다 — 초점을 잃는 길과 같은 자리로 간다.</summary>
     private static void Commit(TextBox box, string text)
@@ -208,23 +492,18 @@ public sealed class ChapterSheetEditTests : IDisposable
 
     private static void Redraw(ChapterGraphView view)
     {
-        view.RefreshFromDisk();
+        view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
     }
 
     /// <summary>
     /// 스탯 `trust`와 그것을 쓰는 조건 `신뢰높음`이 선 챕터.
     ///
-    /// ⚠ <b>워크북이 디스크에 있어야 한다</b> — 이 탭의 챕터 목록은 디스크를 읽은
-    /// <c>_entries</c>에서 오므로, 모델에만 세운 챕터는 고를 수가 없다. 조건은 그 뒤에
-    /// <b>편집기로</b> 더한다(= 사람이 이 탭에서 하는 길) — 표가 살아 있는 모델을 먼저
-    /// 보는지까지 함께 재게 된다.
+    /// 챕터와 스탯은 프로젝트에 실어 연다(생성자). 조건은 그 뒤에 <b>편집기로</b> 더한다
+    /// (= 사람이 이 탭에서 하는 길) — 표가 살아 있는 모델을 먼저 보는지까지 함께 재게 된다.
     /// </summary>
     private (ChapterGraphView View, AuthoringSession Session) Show()
     {
-        ChapterWorkbookWriter.EnsureChapterWorkbook(
-            Path.Combine(_directory, ChapterLibrary.FolderName), "ch01", [("trust", "신뢰")]);
-
         var session = new AuthoringSession();
         session.Open(ManifestPath);
 
@@ -232,11 +511,9 @@ public sealed class ChapterSheetEditTests : IDisposable
         var window = new Window { Width = 1400, Height = 800, Content = view };
         window.Show();
         view.Attach(session);
-        view.RefreshFromDisk();
 
-        // ⚠ 탭을 열어야 그 안의 컨트롤이 시각 트리에 올라온다 — 안 열면 표는 만들어져
-        //    있는데 찾을 수가 없다.
-        view.FindControl<TabItem>("ConditionTab")!.IsSelected = true;
+        // 인스펙터에 챕터를 세운다(하이어아키의 챕터 줄을 고른 것과 같다).
+        view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch01"));
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");

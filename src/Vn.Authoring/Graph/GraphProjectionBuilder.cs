@@ -1,8 +1,6 @@
 ﻿using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 
 namespace Vn.Authoring.Graph;
 
@@ -18,32 +16,33 @@ public static class GraphProjectionBuilder
     private const double EmptyProxyStartY = 80;
     private const double EmptyProxyGapX = 280;
 
+    /// <summary>
+    /// 카드를 그리지 않는 노드인가 — <b>설정노드</b>다. 설정노드는 판의 챕터 조건 공급 노드 하나뿐이고 배관이라 숨는다(까닭은
+    /// <see cref="Build"/> 안의 주석). ⛔ 옛 판의 「X 설정」 카드(작가 조건 · 변수)를 숨기던 일은 2026-11-18에 끝났다 — 그런 판은 받지 않는다.
+    /// </summary>
+    public static bool IsHiddenPlumbing(StoryNode node) => node is SetNode;
+
+    /// <param name="collapsedScenes">
+    /// 펼친 판 안에서 접어 둔 장면들 (2026-10-30 — 하이어아키의 눈). 그 장면의 노드는 카드 대신
+    /// <see cref="CollapsedSceneProjection"/>의 줄이 된다. 접힌 판 안의 장면 · 장면ID를 하나도 안 적은 챕터의 장면은 묻지 않는다
+    /// (앞은 판째 접혀 있고, 뒤는 하이어아키에 장면 단이 없다).
+    /// </param>
     public static GraphProjection Build(
         StoryProject project,
         IReadOnlySet<string> expandedFileIds,
-        GameDefinition? definition = null,
-        GraphFilter? filter = null)
+        IReadOnlySet<GraphSceneKey>? collapsedScenes = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(expandedFileIds);
 
-        filter ??= GraphFilter.All;
-
         var fileByNodeId = new Dictionary<string, StoryFile>(StringComparer.Ordinal);
         var rowIndexByNodeId = new Dictionary<string, int>(StringComparer.Ordinal);
-        var kindByNodeId = new Dictionary<string, GraphNodeKind>(StringComparer.Ordinal);
         var portsByNodeId = new Dictionary<string, IReadOnlyList<GraphOutputPortProjection>>(StringComparer.Ordinal);
 
-        // 배관 노드는 카드를 그리지 않는다:
-        // - A 계층 격리 (2026-08-15 소유자) — 챕터 조건 공급 설정노드는 동기화의 배관이지
-        //   작가의 데이터가 아니다. 식(스탯 변수)이 연출 그래프에 노출되면 안 된다.
-        //   공급 자체는 데이터에 살아 있어 조건 라벨과 <<if>> 역조회는 변함없다.
-        // - 연출 노드 (2026-08-21 소유자) — 발행·배선이 자동화됐다
-        //   (ProjectEditor.EnsurePresentationChannel). 입구는 무대 프리뷰의 선택기이고
-        //   그래프에는 카드도 결과·공급 배선도 그리지 않는다. 데이터는 그대로 산다.
-        // - 연출 공급 노드 (같은 날, 소유자: "연출 공급을 제거해") — 이 노드가 잇던
-        //   상대가 연출 노드인데 그쪽이 숨었다. 공급 데이터는 살아 있어 커맨드 범위·
-        //   프리셋 해석(AvailablePresentationCommandResolver)은 변함없이 돈다.
+        // 배관 노드는 카드를 그리지 않는다 — A 계층 격리 (2026-08-15 소유자): 챕터 조건 공급
+        // 설정노드는 동기화의 배관이지 작가의 데이터가 아니다. 식(스탯 변수)이 연출 그래프에
+        // 노출되면 안 된다. 공급 자체는 데이터에 살아 있어 조건 라벨과 <<if>> 역조회는 변함없다.
+        // (연출 노드 · 연출 공급 노드도 여기 숨던 배관이었는데 2026-10-29에 compositor로 갔다.)
         var hiddenPlumbingNodeIds = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (StoryFile file in project.Files)
@@ -53,11 +52,9 @@ public static class GraphProjectionBuilder
                 StoryNode node = file.Nodes[index];
                 fileByNodeId[node.Id] = file;
                 rowIndexByNodeId[node.Id] = index;
-                kindByNodeId[node.Id] = KindOf(node);
-                portsByNodeId[node.Id] = BuildPorts(node, file, project, definition);
+                portsByNodeId[node.Id] = BuildPorts(node, file, project);
 
-                if (node is PresentationNode or CommandSupplyNode ||
-                    Chapters.ChapterBoardSupply.IsConditionSupplyNode(node, file))
+                if (IsHiddenPlumbing(node))
                 {
                     hiddenPlumbingNodeIds.Add(node.Id);
                 }
@@ -70,16 +67,31 @@ public static class GraphProjectionBuilder
 
         var items = new List<GraphItemProjection>();
 
+        // 접은 장면에 든 노드 → 그 장면. 간선 끝을 정할 때 쓴다(상자 안의 줄 번호는 rowIndexByNodeId가 든다).
+        var foldedSceneByNodeId = new Dictionary<string, GraphSceneKey>(StringComparer.Ordinal);
+
         for (int fileIndex = 0; fileIndex < project.Files.Count; fileIndex++)
         {
             StoryFile file = project.Files[fileIndex];
 
             if (expandedFileIds.Contains(file.Id))
             {
+                SceneMap? folds = collapsedScenes is { Count: > 0 } && collapsedScenes.Any(key =>
+                    string.Equals(key.FileId, file.Id, StringComparison.Ordinal))
+                    ? ScenesOf(project, file)
+                    : null;
+
                 foreach (StoryNode node in file.Nodes)
                 {
-                    if (!filter.Shows(KindOf(node)) || hiddenPlumbingNodeIds.Contains(node.Id))
+                    if (hiddenPlumbingNodeIds.Contains(node.Id))
                     {
+                        continue;
+                    }
+
+                    if (folds?.SceneOf(project, node.Id, node.Name) is { } sceneId &&
+                        collapsedScenes!.Contains(new GraphSceneKey(file.Id, sceneId)))
+                    {
+                        foldedSceneByNodeId[node.Id] = new GraphSceneKey(file.Id, sceneId);
                         continue;
                     }
 
@@ -89,15 +101,19 @@ public static class GraphProjectionBuilder
                         node.Name,
                         KindOf(node),
                         new GraphPosition(node.Layout.X, node.Layout.Y),
-                        portsByNodeId[node.Id],
-                        BadgeFor(node, project)));
+                        portsByNodeId[node.Id]));
+                }
+
+                if (folds is not null)
+                {
+                    items.AddRange(FoldedScenes(file, folds, foldedSceneByNodeId, rawConnections, rowIndexByNodeId));
                 }
 
                 continue;
             }
 
             IReadOnlyList<CollapsedNodeEntry> entries = file.Nodes
-                .Where(node => filter.Shows(KindOf(node)) && !hiddenPlumbingNodeIds.Contains(node.Id))
+                .Where(node => !hiddenPlumbingNodeIds.Contains(node.Id))
                 .Select(node => new CollapsedNodeEntry(
                     node.Id,
                     node.Name,
@@ -113,16 +129,16 @@ public static class GraphProjectionBuilder
                 file.Name,
                 file.RelativePath,
                 ProxyPosition(file, fileIndex),
-                // ⚠ 묶음을 평평하게 편 것이 곧 행 순서다 — 묶으면서 순서가 바뀌므로
+                // 묶음을 평평하게 편 것이 곧 행 순서다 — 묶으면서 순서가 바뀌므로
                 //   `entries`를 그대로 두면 행 번호와 화면이 어긋난다.
                 scenes.SelectMany(scene => scene.Entries).ToList(),
                 scenes));
         }
 
-        // 접힌 파일의 행 번호는 필터로 남은 항목 기준이다. 원본 인덱스를 쓰면 간선 끝이
+        // 접힌 파일의 행 번호는 배관을 빼고 남은 항목 기준이다. 원본 인덱스를 쓰면 간선 끝이
         // 숨은 행을 가리켜 허공에 붙는다.
         //
-        // ⚠ <b>장면 머리글도 한 행을 차지한다</b> (R6 S-3). 머리글을 안 세면 그 아래 노드의
+        // <b>장면 머리글도 한 행을 차지한다</b> (R6 S-3). 머리글을 안 세면 그 아래 노드의
         //    간선이 한 칸씩 위로 붙는다 — 화면과 기하가 같은 셈법을 써야 한다.
         foreach (GraphItemProjection item in items)
         {
@@ -157,35 +173,54 @@ public static class GraphProjectionBuilder
                 continue;
             }
 
-            // 간선 정합: 한쪽 끝 노드가 필터나 배관 숨김으로 안 보이면 간선도 숨는다.
-            if (!filter.Shows(kindByNodeId[raw.SourceNodeId]) ||
-                !filter.Shows(kindByNodeId[raw.TargetNodeId]) ||
-                hiddenPlumbingNodeIds.Contains(raw.SourceNodeId) ||
+            // 간선 정합: 한쪽 끝 노드가 배관 숨김으로 안 보이면 간선도 숨는다.
+            if (hiddenPlumbingNodeIds.Contains(raw.SourceNodeId) ||
                 hiddenPlumbingNodeIds.Contains(raw.TargetNodeId))
             {
                 continue;
             }
 
-            bool sourceExpanded = expandedFileIds.Contains(sourceFile.Id);
-            bool targetExpanded = expandedFileIds.Contains(targetFile.Id);
+            // 한 접은 장면 안끼리의 간선은 상자 안에 그리지 않는다 — 상자 머리가 센다(InnerCount).
+            if (foldedSceneByNodeId.TryGetValue(raw.SourceNodeId, out GraphSceneKey sourceScene) &&
+                foldedSceneByNodeId.TryGetValue(raw.TargetNodeId, out GraphSceneKey targetScene) &&
+                sourceScene == targetScene)
+            {
+                continue;
+            }
 
-            var source = new GraphEndpointProjection(
-                sourceFile.Id,
-                raw.SourceNodeId,
-                sourceExpanded
-                    ? GraphEndpointKind.ExpandedNodeOutput
-                    : GraphEndpointKind.CollapsedFileNodeOutput,
-                sourceExpanded ? raw.PortKey : null,
-                sourceExpanded ? null : rowIndexByNodeId[raw.SourceNodeId]);
+            GraphEndpointProjection Endpoint(StoryFile file, string nodeId, bool output)
+            {
+                if (!expandedFileIds.Contains(file.Id))
+                {
+                    return new GraphEndpointProjection(
+                        file.Id,
+                        nodeId,
+                        output ? GraphEndpointKind.CollapsedFileNodeOutput : GraphEndpointKind.CollapsedFileNodeInput,
+                        null,
+                        rowIndexByNodeId[nodeId]);
+                }
 
-            var target = new GraphEndpointProjection(
-                targetFile.Id,
-                raw.TargetNodeId,
-                targetExpanded
-                    ? GraphEndpointKind.ExpandedNodeInput
-                    : GraphEndpointKind.CollapsedFileNodeInput,
-                null,
-                targetExpanded ? null : rowIndexByNodeId[raw.TargetNodeId]);
+                if (foldedSceneByNodeId.TryGetValue(nodeId, out GraphSceneKey scene))
+                {
+                    return new GraphEndpointProjection(
+                        file.Id,
+                        nodeId,
+                        output ? GraphEndpointKind.CollapsedSceneNodeOutput : GraphEndpointKind.CollapsedSceneNodeInput,
+                        null,
+                        rowIndexByNodeId[nodeId],
+                        scene.SceneId);
+                }
+
+                return new GraphEndpointProjection(
+                    file.Id,
+                    nodeId,
+                    output ? GraphEndpointKind.ExpandedNodeOutput : GraphEndpointKind.ExpandedNodeInput,
+                    output ? raw.PortKey : null,
+                    null);
+            }
+
+            GraphEndpointProjection source = Endpoint(sourceFile, raw.SourceNodeId, output: true);
+            GraphEndpointProjection target = Endpoint(targetFile, raw.TargetNodeId, output: false);
 
             connections.Add(new GraphConnectionProjection(
                 raw.Key,
@@ -194,7 +229,6 @@ public static class GraphProjectionBuilder
                 raw.TargetNodeId,
                 raw.Label,
                 raw.PaletteIndex,
-                raw.LinkId,
                 raw.ExecutionPort,
                 source,
                 target));
@@ -206,46 +240,30 @@ public static class GraphProjectionBuilder
     private static IReadOnlyList<GraphOutputPortProjection> BuildPorts(
         StoryNode node,
         StoryFile file,
-        StoryProject project,
-        GameDefinition? definition)
+        StoryProject project)
     {
-        IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project, definition);
-
-        // T2 (철도 배선) — 엑셀노드의 선택지 옵션 포트와 기본 출구는 카드가 아니라
-        // 짝 간선의 칩에 산다. IF 갈래 출구는 카드에 남는다(내부 곁가지는 간선과 무관).
-        //
-        // ⚠ <b>「조건 분기」 표식도 카드에 남는다</b> (R7 P-5 · 2026-09-17). 이것을 안 넣어
-        //    두면 「분기 추가」가 <b>안 보이는 포트를 뚫는다</b> — 소유자가 그린 그림의
-        //    핵심("연출그래프의 카드에 포트만 뚫리는데")이 통째로 빠진다. P-6 뒤로는 판의
-        //    카드가 전부 에피소드라 이 갈래에 <b>모두</b> 걸리므로 더 그렇다.
-        if (node is DialogueNode { MarkedEpisodeId: not null })
-        {
-            exits = exits.Where(exit =>
-                exit.Kind == Vn.Authoring.Flow.ExitPortKind.Detour ||
-                (exit.Kind == Vn.Authoring.Flow.ExitPortKind.Branch && !exit.IsChoice));
-        }
+        // 출구 포트는 분기점뿐이다 — 조건 갈래는 포트를 세우지 않는다(⛔ 갈래 출구는 2026-11-19에 걷혔다 · usability UX28).
+        IEnumerable<Vn.Authoring.Flow.ExitPort> exits = NodeConnections.PortsOf(node, project);
 
         var ports = exits
             .Select(exit => new GraphOutputPortProjection(
                 PortKey(exit),
-                exit.Kind == ExitPortKind.Default
-                    ? GraphOutputPortKind.ExecutionDefault
-                    : GraphOutputPortKind.ExecutionBranch,
+                GraphOutputPortKind.ExecutionBranch,
                 exit.NodeId,
                 exit.Label,
                 exit.PaletteIndex,
                 exit.IsConnected,
-                exit))
+                exit,
+                OnLeft: exit.TargetNodeId is { } targetId &&
+                        file.Nodes.FirstOrDefault(other => string.Equals(other.Id, targetId, StringComparison.Ordinal))
+                            is { } target &&
+                        EdgeSide.GoesLeft(node.Layout.X, BoardSize.CardWidthOf(node), target.Layout.X, BoardSize.CardWidthOf(target))))
             .ToList();
 
         // 설정노드의 "이 챕터에 공급 중" 포트는 2026-08-22에 사라졌다 (소유자) —
         // 공급 범위가 판 전체가 된 2026-08-17 이후로 이을 곳이 없어 <b>사실 표시</b>로만
         // 남아 있었다. 카드가 늘 켜진 포트를 달고 있으면 "여기서 무언가를 이을 수 있다"고
         // 말하는 셈이라 오히려 거짓말이었다. 공급은 같은 판에 선 것으로 이미 성립한다.
-        //
-        // 연출·연출 공급 노드의 포트와 대사 노드의 발행 결과 포트는 2026-08-21에 사라졌다 —
-        // 발행·배선이 자동이 되면서(EnsurePresentationChannel) 그 카드들이 배관으로 숨었고,
-        // 끌어서 잇던 포트들은 이을 주체가 없다.
 
         ports.AddRange(ChoiceSlots(node, file, project));
 
@@ -261,33 +279,31 @@ public static class GraphProjectionBuilder
     /// 앞칸부터 <b>이미 있는 간선</b>, 남은 칸은 빈 슬롯이다. 라벨을 적어야 살아나고
     /// (§2 ③), 이어 붙는 순간 고쳐지는 것은 <c>ChapterDocument.Edges</c>다(§2 ①).
     ///
-    /// ⚠ <b>간선이 셋을 넘으면 넘는 대로 전부 낸다.</b> 3은 <b>새로 만드는 칸</b>의 수이지
-    /// 상한이 아니다 — 엑셀에서 넷을 만든 챕터의 넷째를 화면이 숨기면 사람은 <b>사라진 줄</b>
+    /// <b>간선이 셋을 넘으면 넘는 대로 전부 낸다.</b> 3은 <b>새로 만드는 칸</b>의 수이지
+    /// 상한이 아니다 — 선택지를 넷 만든 챕터의 넷째를 화면이 숨기면 사람은 <b>사라진 줄</b>
     /// 안다. 상한을 모델에 박는 것은 v9가 없앤 `선택지수` 칸을 되살리는 일이다.
     ///
-    /// ⚠ <b>챕터 판의 대사 노드는 전부 낸다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는
-    /// 에피소드 노드만 냈지만 자유 씬이라는 종류가 없어졌다 — 카드를 세우는 것이 곧
-    /// 에피소드를 만드는 일이라 칸을 못 낼 노드가 없다. 챕터가 아닌 판(작가의 낙서판)에는
-    /// 여전히 칸이 없다.
+    /// <b>챕터 판의 대사 노드는 전부 낸다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 전에는
+    /// 에피소드 노드만 냈지만 자유 씬이라는 종류가 없어졌다 — 판의 카드는 에피소드이거나 분기 카드라
+    /// 칸을 못 낼 노드가 없다(분기 카드는 선택지가 없어 빼고).
     /// </summary>
     private static IEnumerable<GraphOutputPortProjection> ChoiceSlots(
         StoryNode node, StoryFile file, StoryProject project)
     {
-        if (node is not DialogueNode dialogue ||
-            project.Chapters.FirstOrDefault(item =>
-                string.Equals(item.ChapterId, file.Name, StringComparison.Ordinal)) is not { } chapter)
+        if (node is not DialogueNode dialogue)
         {
             yield break;
         }
 
-        // 노드 → 에피소드는 표식이 먼저고 없으면 이름이다 — 대본 탭·장면 묶기와 같은 규칙이다.
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(project, file);
+
+        // 분기 카드는 선택지 칸이 없다 — 에피소드 카드만(표식이 신원이다 · EpisodeNaming 한 벌).
+        if (dialogue.IsBranchCard)
+        {
+            yield break;
+        }
+
         string episodeId = EpisodeNaming.EpisodeIdOf(dialogue);
-
-        if (!chapter.Episodes.Any(episode =>
-                string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
-        {
-            yield break;
-        }
 
         int slot = 0;
 
@@ -325,7 +341,7 @@ public static class GraphProjectionBuilder
     /// <summary>
     /// 그 에피소드의 대사 노드 — <b>같은 판에서만</b> 찾는다.
     ///
-    /// ⚠ 프로젝트 전체를 이름으로 훑으면 다른 챕터의 같은 Id가 걸린다(개명이 그 함정을
+    /// 프로젝트 전체를 이름으로 훑으면 다른 챕터의 같은 Id가 걸린다(개명이 그 함정을
     /// 이미 한 번 밟았다 — 2026-08-25). 못 찾아도 간선은 있다: <b>대본이 없는 것과 길이
     /// 없는 것은 다르다.</b>
     /// </summary>
@@ -335,59 +351,6 @@ public static class GraphProjectionBuilder
                 EpisodeNaming.EpisodeIdOf(node),
                 episodeId,
                 StringComparison.Ordinal))?.Id;
-
-    /// <summary>
-    /// 카드에 붙는 짧은 부가 정보. 발행 버전과 읽는 버전을 즉시 알 수 있게 한다.
-    /// 모든 발행 버전을 카드로 펼치면 몇 번만 발행해도 그래프가 결과로 덮인다.
-    /// </summary>
-    private static string? BadgeFor(StoryNode node, StoryProject project)
-    {
-        switch (node)
-        {
-            case DialogueNode dialogue:
-            {
-                DialogueResult? latest = project.Results.DialogueResultsOf(dialogue.Id).LastOrDefault();
-                string script = project.FindScript(dialogue.ScriptId)?.Name ?? "대본 없음";
-                string badge = latest is null ? script : $"{script} · v{latest.Identity.Version} 발행";
-
-                // 챕터 에피소드 표식 — 카드만 봐도 자유 씬과 갈린다. 줄 수는 타임라인 읽기의
-                // 눈금이다(T1) — 어느 에피소드가 무거운지 카드에서 보인다.
-                //
-                // ⚠ 옛 문구는 "📄 엑셀"이었고 뜻은 <b>"이 본문은 엑셀 소유라 잠겼다"</b>였다.
-                //    2026-09-16에 그 잠금이 사라지면서(R-E) 남은 뜻은 <b>소속</b>뿐이다 —
-                //    "엑셀"이라고 적어 두면 카드가 없는 잠금을 계속 말하게 된다.
-                if (dialogue.MarkedEpisodeId is null)
-                {
-                    return badge;
-                }
-
-                int lineCount = project.FindScript(dialogue.ScriptId)?.ActiveLines.Count() ?? 0;
-                return $"📄 에피소드 · {badge} · {lineCount}줄";
-            }
-
-            case PresentationNode presentation:
-            {
-                if (presentation.Source is not { } source)
-                {
-                    return "입력 결과 없음";
-                }
-
-                DialogueResult? dialogueResult = project.Results.FindDialogue(
-                    source.ResultId,
-                    source.Version);
-
-                return dialogueResult is null
-                    ? $"{source.Label} (없음)"
-                    : $"{dialogueResult.SourceNodeName} v{source.Version} 읽는 중";
-            }
-
-            case CommandSupplyNode supply:
-                return $"{supply.Categories.Count}개 범주 · {supply.Presets.Count}개 프리셋";
-
-            default:
-                return null;
-        }
-    }
 
     private static IReadOnlyList<RawConnection> BuildRawConnections(
         StoryProject project,
@@ -408,28 +371,19 @@ public static class GraphProjectionBuilder
                 }
 
                 result.Add(new RawConnection(
-                    $"execution:{exit.NodeId}:{exit.Kind}:{exit.BranchOpenLineId ?? "default"}",
-                    exit.Kind == ExitPortKind.Default
-                        ? GraphConnectionKind.ExecutionDefault
-                        : GraphConnectionKind.ExecutionBranch,
+                    // 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
+                    //   줄만 쓰면 같은 줄의 분기 선들이 한 열쇠를 나눠 가져, 끄는 동안 선을 열쇠로 다시 찾는 화면이
+                    //   모두 첫 선의 경로를 받는다 — 나머지 분기가 끊긴 것처럼 보였다.
+                    $"execution:{exit.NodeId}:{exit.Kind}:{(exit.Kind == ExitPortKind.Detour ? exit.ExitKey : exit.BranchOpenLineId)}",
+                    GraphConnectionKind.ExecutionBranch,
                     node.Id,
                     targetNodeId,
                     port.Key,
                     port.Label,
                     port.PaletteIndex,
-                    null,
                     exit));
             }
         }
-
-        // 조건 공급선은 그리지 않는다 (2026-08-17 소유자 — "챕터 단위로 전역에 쓰이는거야").
-        // 범위가 판 전체이므로 선을 그리면 대사노드 수만큼 거미줄이 되고, 그 선이 무엇을
-        // 정하지도 않는다. 구판 프로젝트에 남은 Settings 링크 데이터는 조용히 무시된다.
-
-        // 커맨드 공급·연출 공급 링크와 결과 스냅샷 간선은 2026-08-21에 그리기를 멈췄다 —
-        // 연출·연출 공급 노드가 배관으로 숨어 양 끝 중 하나가 늘 없는 간선이었다.
-        // 데이터(링크·Source)는 그대로 살아 내보내기 짝(NodeExportResolver)과 커맨드
-        // 범위 해석(AvailablePresentationCommandResolver)이 계속 쓴다.
 
         return result;
     }
@@ -452,8 +406,6 @@ public static class GraphProjectionBuilder
         {
             DialogueNode => GraphNodeKind.Dialogue,
             SetNode => GraphNodeKind.Set,
-            PresentationNode => GraphNodeKind.Presentation,
-            CommandSupplyNode => GraphNodeKind.CommandSupply,
             _ => throw new NotSupportedException($"지원하지 않는 노드 타입입니다: {node.GetType().Name}")
         };
     }
@@ -461,57 +413,28 @@ public static class GraphProjectionBuilder
     /// <summary>
     /// 접힌 판의 행들을 <b>장면으로 묶는다</b> (R6 S-3 · 2026-09-16).
     ///
-    /// ⛔ <b>장면은 여기서도 엔티티가 아니다</b> — 노드에서 에피소드로, 에피소드에서
+    /// <b>장면은 여기서도 엔티티가 아니다</b> — 노드에서 에피소드로, 에피소드에서
     /// <c>SceneId</c>로 가는 투영이다. 판 이름이 챕터 Id와 같은 것이 그 다리이고, 그것이
     /// <c>EnsureChapterBoard</c>가 세우는 규약이다.
     ///
-    /// ⚠ <b>묶지 않는 경우 둘</b>: ① 챕터를 못 찾는 판(작가의 자유 판) ② 장면ID를 하나도
-    /// 안 적은 챕터. ②는 대본 탭 트리와 <b>같은 규칙</b>이다 — 그대로 묶으면 에피소드 수만큼
-    /// 장면 머리글이 생겨 프록시가 통째로 노이즈가 된다(<c>docs/plans/R6-explorer.md</c> §2).
+    /// <b>묶지 않는 경우</b>: 에피소드가 하나도 없는 챕터. 에피소드는 늘 장면에 속한다(old-shapes O7).
     ///
-    /// ⚠ <b>자유 씬은 장면 밖이다.</b> 에피소드가 아닌 대사노드·설정·연출 노드는 챕터의
-    /// 진행에 안 실리므로 장면 경계도 없다 — 맨 뒤 묶음으로 모은다.
+    /// <b>에피소드가 아닌 노드는 장면 밖이다</b> — 집이 없는 분기 카드 · 설정 노드는 챕터의
+    /// 진행에 안 실리므로 장면 경계도 없다. 맨 뒤 묶음으로 모은다.
     /// </summary>
     private static IReadOnlyList<CollapsedSceneGroup> SceneGroups(
         StoryProject project, StoryFile file, IReadOnlyList<CollapsedNodeEntry> entries)
     {
-        ChapterDocument? chapter = project.Chapters.FirstOrDefault(item =>
-            string.Equals(item.ChapterId, file.Name, StringComparison.Ordinal));
-
-        if (chapter is null)
+        if (ScenesOf(project, file) is not { } map)
         {
             return [Single(entries)];
         }
 
-        IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
-            chapter.ToGraphModel(chapter.ChapterId));
-
-        if (scenes.Count == 0 || scenes.All(scene => scene.IsDefault))
-        {
-            return [Single(entries)];
-        }
-
-        // 노드 → 에피소드는 이름이나 엑셀 표식으로 잇는다 — 대본 탭이 쓰는 규칙과 같아야
-        // 한다(아니면 같은 에피소드를 두 화면이 다르게 짚는다).
-        var sceneOf = new Dictionary<string, string>(StringComparer.Ordinal);
-
-        foreach (ChapterScene scene in scenes)
-        {
-            foreach (ChapterEpisode episode in scene.Episodes)
-            {
-                sceneOf[episode.EpisodeId] = scene.SceneId;
-            }
-        }
-
-        string? SceneFor(CollapsedNodeEntry entry) =>
-            project.FindNode(entry.NodeId) is DialogueNode { MarkedEpisodeId: { } episodeId } &&
-            sceneOf.TryGetValue(episodeId, out string? sceneId)
-                ? sceneId
-                : sceneOf.TryGetValue(entry.NodeName, out string? byName) ? byName : null;
+        string? SceneFor(CollapsedNodeEntry entry) => map.SceneOf(project, entry.NodeId, entry.NodeName);
 
         var groups = new List<CollapsedSceneGroup>();
 
-        foreach (ChapterScene scene in scenes)
+        foreach (ChapterScene scene in map.Scenes)
         {
             List<CollapsedNodeEntry> inScene = entries
                 .Where(entry => string.Equals(SceneFor(entry), scene.SceneId, StringComparison.Ordinal))
@@ -536,6 +459,134 @@ public static class GraphProjectionBuilder
     private static CollapsedSceneGroup Single(IReadOnlyList<CollapsedNodeEntry> entries) =>
         new(string.Empty, string.Empty, entries);
 
+    /// <summary>
+    /// 판의 노드를 장면으로 가르는 표 — 에피소드가 없는 챕터는 없다.
+    /// </summary>
+    private static SceneMap? ScenesOf(StoryProject project, StoryFile file)
+    {
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(project, file);
+        IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
+            chapter.ToGraphModel(chapter.ChapterId));
+
+        if (scenes.Count == 0)
+        {
+            return null;
+        }
+
+        var sceneOf = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (ChapterScene scene in scenes)
+        {
+            foreach (ChapterEpisode episode in scene.Episodes)
+            {
+                sceneOf[episode.EpisodeId] = scene.SceneId;
+            }
+        }
+
+        // 분기 카드는 집(부르는 에피소드)의 장면에 든다 — 저장하지 않고 연결에서 읽는다(2026-11-17).
+        var homeOf = ChapterBranchCards.HomesOf(project, chapter.ChapterId)
+            .ToDictionary(home => home.Card.Id, home => home.EpisodeId, StringComparer.Ordinal);
+
+        return new SceneMap(chapter, scenes, sceneOf, homeOf);
+    }
+
+    /// <summary>
+    /// 펼친 판의 접은 장면들을 상자로 (2026-10-30). 장면 순서는 챕터의 장면 순서, 줄 순서는 판의 노드 순서다.
+    ///
+    /// <b>들고 나는 수는 그려지는 것만 센다</b> — 밖과 잇는 실행 간선과 선택지 길. 장면 안끼리의 길은 줄에 선이 안 붙으므로
+    ///   점을 채우면 거짓말이고, 대신 상자 머리의 <see cref="CollapsedSceneProjection.InnerCount"/>가 된다.
+    /// </summary>
+    private static IEnumerable<CollapsedSceneProjection> FoldedScenes(
+        StoryFile file,
+        SceneMap map,
+        IReadOnlyDictionary<string, GraphSceneKey> foldedSceneByNodeId,
+        IReadOnlyList<RawConnection> rawConnections,
+        Dictionary<string, int> rowIndexByNodeId)
+    {
+        foreach (ChapterScene scene in map.Scenes)
+        {
+            var key = new GraphSceneKey(file.Id, scene.SceneId);
+            List<StoryNode> nodes = file.Nodes
+                .Where(node => foldedSceneByNodeId.TryGetValue(node.Id, out GraphSceneKey owner) && owner == key)
+                .ToList();
+
+            if (nodes.Count == 0)
+            {
+                continue;
+            }
+
+            var inside = nodes.Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+            bool Inside(string? episodeId) =>
+                episodeId is not null && map.SceneOfEpisode.TryGetValue(episodeId, out string? sceneId) &&
+                string.Equals(sceneId, scene.SceneId, StringComparison.Ordinal);
+
+            int inner =
+                rawConnections.Count(raw => inside.Contains(raw.SourceNodeId) && inside.Contains(raw.TargetNodeId)) +
+                map.Chapter.Edges.Count(edge => Inside(edge.FromEpisodeId) && Inside(edge.ToEpisodeId));
+
+            var entries = new List<CollapsedNodeEntry>();
+
+            foreach (StoryNode node in nodes)
+            {
+                string? episodeId = map.EpisodeOf(node);
+
+                int incoming =
+                    rawConnections.Count(raw => raw.TargetNodeId == node.Id && !inside.Contains(raw.SourceNodeId)) +
+                    (episodeId is null ? 0 : map.Chapter.Edges.Count(edge =>
+                        string.Equals(edge.ToEpisodeId, episodeId, StringComparison.Ordinal) && !Inside(edge.FromEpisodeId)));
+                int outgoing =
+                    rawConnections.Count(raw => raw.SourceNodeId == node.Id && !inside.Contains(raw.TargetNodeId)) +
+                    (episodeId is null ? 0 : map.Chapter.Edges.Count(edge =>
+                        string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal) && !Inside(edge.ToEpisodeId)));
+
+                rowIndexByNodeId[node.Id] = entries.Count;
+                entries.Add(new CollapsedNodeEntry(node.Id, node.Name, KindOf(node), incoming, outgoing));
+            }
+
+            yield return new CollapsedSceneProjection(
+                file.Id,
+                scene.SceneId,
+                scene.DisplayName,
+                new GraphPosition(nodes.Min(node => node.Layout.X), nodes.Min(node => node.Layout.Y)),
+                entries,
+                inner);
+        }
+    }
+
+    /// <summary>
+    /// 한 챕터 판의 장면 표 — 에피소드 → 장면ID.
+    ///
+    /// 노드 → 에피소드는 <b>표식이 먼저고 없으면 이름이다</b> — EpisodeNaming 한 벌과 같아야 한다(아니면 같은 에피소드를
+    ///   화면마다 다르게 짚는다).
+    /// </summary>
+    /// <param name="HomeOfBranchCard">분기 카드 → 집(부르는 에피소드) — <see cref="ChapterBranchCards.HomesOf"/>.</param>
+    private sealed record SceneMap(
+        ChapterDocument Chapter,
+        IReadOnlyList<ChapterScene> Scenes,
+        IReadOnlyDictionary<string, string> SceneOfEpisode,
+        IReadOnlyDictionary<string, string> HomeOfBranchCard)
+    {
+        public string? EpisodeOf(StoryNode node) => EpisodeOf(node as DialogueNode, node.Name);
+
+        /// <summary>그 카드가 든 장면 — 에피소드면 제 장면, 분기 카드면 집의 장면.</summary>
+        public string? SceneOf(StoryProject project, string nodeId, string nodeName)
+        {
+            DialogueNode? dialogue = project.FindNode(nodeId) as DialogueNode;
+            string? episodeId = dialogue is { IsBranchCard: true }
+                ? HomeOfBranchCard.GetValueOrDefault(nodeId)
+                : EpisodeOf(dialogue, nodeName);
+
+            return episodeId is not null ? SceneOfEpisode.GetValueOrDefault(episodeId) : null;
+        }
+
+        private string? EpisodeOf(DialogueNode? dialogue, string nodeName) =>
+            dialogue is { IsBranchCard: true }
+                ? null
+                : dialogue is { MarkedEpisodeId: { } marked } && SceneOfEpisode.ContainsKey(marked)
+                    ? marked
+                    : SceneOfEpisode.ContainsKey(nodeName) ? nodeName : null;
+    }
+
     private static GraphPosition ProxyPosition(StoryFile file, int fileIndex)
     {
         if (file.Nodes.Count == 0)
@@ -553,12 +604,12 @@ public static class GraphProjectionBuilder
 
     private static string PortKey(ExitPort exit)
     {
-        // ⚠ <b>「조건 분기」는 제 접두를 진다</b> (R7 P-5). 갈래와 표식은 열쇠가 둘 다 LineId라,
+        // <b>「조건 분기」는 제 접두를 진다</b> (R7 P-5). 갈래와 표식은 열쇠가 둘 다 LineId라,
         //    한 줄이 갈래도 열고 표식도 지면 열쇠가 겹쳐 <b>두 포트가 한 자리를 다툰다</b>.
         return exit.Kind switch
         {
-            ExitPortKind.Default => $"execution:{exit.NodeId}:default",
-            ExitPortKind.Detour => $"execution:{exit.NodeId}:detour:{exit.BranchOpenLineId}",
+            // 분기는 줄 하나에 여럿일 수 있다(2026-10-29) — 열쇠에 다녀갈 카드까지 든다(ExitPort.DetourKey).
+            ExitPortKind.Detour => $"execution:{exit.NodeId}:detour:{exit.ExitKey}",
             _ => $"execution:{exit.NodeId}:branch:{exit.BranchOpenLineId}"
         };
     }
@@ -572,6 +623,5 @@ public static class GraphProjectionBuilder
         string PortKey,
         string Label,
         int PaletteIndex,
-        string? LinkId,
         ExitPort? ExecutionPort);
 }

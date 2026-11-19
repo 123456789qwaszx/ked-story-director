@@ -68,43 +68,10 @@ public sealed class ChoiceSlotProjectionTests
         //    에피소드가 아닌 대사 노드에는 칸을 안 줬다. 자유 씬이라는 종류가 없어졌으므로
         //    그 규칙은 지킬 것이 없다 — 챕터 판의 대사 노드는 <b>전부</b> 에피소드다.
         ProjectEditor editor = World();
-        DialogueNode made = editor.AddDialogueNode(BoardOf(editor), name: "곁가지");
+        DialogueNode made = editor.AddDialogueNode(BoardOf(editor), "곁가지", name: "곁가지");
 
         Assert.Equal("곁가지", made.MarkedEpisodeId);
         Assert.Equal(3, SlotsOf(editor, "곁가지").Count);
-    }
-
-    [Fact]
-    public void 챕터가_아닌_판에는_칸이_없다()
-    {
-        var project = new StoryProject();
-        var editor = new ProjectEditor(project);
-
-        string fileId = editor.EnsureChapterBoard("작가의 판");   // 같은 이름의 챕터가 없다
-        editor.AddDialogueNode(fileId, name: "아무거나");
-
-        Assert.DoesNotContain(Ports(project), port => port.Kind == GraphOutputPortKind.Choice);
-    }
-
-    [Fact]
-    public void 대본이_아직_없는_에피소드로_가는_길도_산다()
-    {
-        // ⚠ 대본이 없는 것과 길이 없는 것은 다르다 — 도착 노드를 못 찾아도 간선은 있다.
-        //
-        // ⚠ <b>임포트의 모양으로 짓는다</b> (2026-09-18). 이제 저작 창구로는 카드 없는
-        //    에피소드가 안 생긴다 — 그 상태가 실제로 오는 길은 챕터 워크북 임포트뿐이고,
-        //    임포트는 이렇게 문서에 바로 넣는다. <b>그래서 이 테스트는 여전히 유효하다.</b>
-        ProjectEditor editor = World();
-        editor.FindChapter("ch01")!.Episodes.Add(new ChapterEpisode(
-            "아직안씀", "빈 자리", Index: string.Empty, DialogueEntry: "아직안씀",
-            0, 0, Memo: null, SourceRow: 0));
-        editor.AddEdge("ch01", "root", "아직안씀", optionLabel: "그쪽으로");
-
-        GraphChoicePort slot = SlotsOf(editor, "root")[0];
-
-        Assert.Equal("아직안씀", slot.ToEpisodeId);
-        Assert.Null(slot.ToNodeId);
-        Assert.False(slot.IsEmpty);
     }
 
     [Fact]
@@ -114,7 +81,7 @@ public sealed class ChoiceSlotProjectionTests
         // 슬롯이 그 사실을 따로 지고 있어야 한다.
         ProjectEditor editor = World();
         editor.FindChapter("ch01")!.Edges.Add(
-            new ChapterEdge("root", "a", null, null, null, 0) { Auto = true });
+            new ChapterEdge("root", "a", null, null, null) { Auto = true });
 
         GraphChoicePort slot = SlotsOf(editor, "root")[0];
 
@@ -166,7 +133,7 @@ public sealed class ChoiceSlotProjectionTests
         //    지금 그러면 <b>에피소드 하나에 카드가 둘</b> 선다.
         foreach (string episodeId in (string[])["root", "a", "b", "c", "d"])
         {
-            editor.AddEpisode("ch01", episodeId, title: episodeId, 0, 0);
+            editor.AddEpisode("ch01", episodeId, title: episodeId, 0, 0, sceneId: episodeId);
         }
 
         return editor;

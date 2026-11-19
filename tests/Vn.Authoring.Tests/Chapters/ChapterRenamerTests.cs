@@ -1,36 +1,36 @@
-using ClosedXML.Excel;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Chapters.Import;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
+using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>챕터 개명은 이름을 지고 있는 것 넷을 함께 옮긴다</b> (2026-08-24 소유자 보고:
+/// <b>챕터 개명은 이름을 지고 있는 것을 함께 옮긴다</b> (2026-08-24 소유자 보고:
 /// "챕터의 이름을 바꾸니까, 에피소드들의 대화가 없다고 나오고, 엑셀도 새로운게 열리네.
 /// 또 연출그래프에서도 조건노드가 이전의 챕터를 받고 있어").
 ///
-/// 옮겨야 하는 넷: <c>chapters/{Id}.xlsx</c> · <c>episodes/{Id}/</c> · 판 이름 ·
-/// 조건 공급 노드 <c>챕터 {Id} 조건</c>.
+/// 옮기는 셋: <c>Project.Chapters</c>의 Id · 판 이름 · 조건 공급 노드 <c>챕터 {Id} 조건</c>
+/// (`docs/plans/excel-boundary.md` C2). 한 변경이라 되돌리기 한 칸이다. 에피소드의 카드와 원고는
+/// 그 판 위에 서 있으므로 판과 함께 간다.
 ///
 /// ⚠ <b>이 파일의 첫 두 테스트가 신고 그 자체다.</b> 나머지는 고치면서 새로 생긴 사고
-/// 자리(반쯤 바뀐 챕터·이름 충돌)를 막는다.
+/// 자리(배관이 하나 더 서는 경우·이름 충돌)를 막는다.
+///
+/// (2026-10-29 · D2: 워크북·대본 폴더를 옮기던 일과 그 검사(잠김·폴더 충돌)는 엑셀 연동과 함께 걷혔다.)
 /// </summary>
 public sealed class ChapterRenamerTests : IDisposable
 {
     private const string OldId = "ch05";
     private const string NewId = "ch05_다시";
+    private const string EpisodeId = "main05.02";
 
     private readonly string _root = Path.Combine(
         Path.GetTempPath(), "vn-chapter-rename", Guid.NewGuid().ToString("N"));
 
     public ChapterRenamerTests() => Directory.CreateDirectory(_root);
 
-    // ⛔ 정적 캐시를 지우지 않는다 — 나란히 도는 다른 클래스의 것까지 지운다. 열쇠가
-    // 내용 해시라 지울 이유도 없다(파일을 쓰면 저절로 빗나간다).
     public void Dispose()
     {
         if (Directory.Exists(_root))
@@ -39,42 +39,41 @@ public sealed class ChapterRenamerTests : IDisposable
         }
     }
 
+    private string ProjectPath => Path.Combine(_root, "예제" + ProjectManifestJson.FileExtension);
+
     // ── 신고 ────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void 대본_폴더가_함께_옮겨진다()
+    public void 에피소드의_원고가_새_이름에서도_그대로다()
     {
-        // ⛔ 이것이 "에피소드들의 대화가 없다"의 정체다. 대본은 2026-08-16부터 챕터별
-        //    하위 폴더에 사는데 개명이 워크북 파일만 옮겼다 — 새 이름의 폴더가 비어 있으니
-        //    툴은 대사가 없다고 말하고, 노드를 더블클릭하면 <b>빈 워크북을 새로 만들어</b>
-        //    열었다. 원고는 옛 폴더에 그대로 살아 있는데도.
-        World world = Build();
+        // ⛔ 이것이 "에피소드들의 대화가 없다"의 정체였다. 개명이 이름을 지고 있는 것 하나만
+        //    옮기고 원고가 사는 자리는 옛 이름에 두었다 — 새 이름으로 찾으니 비어 있어 툴은
+        //    대사가 없다고 말했다. 원고는 옛 자리에 그대로 살아 있는데도.
+        ProjectEditor editor = Build();
 
-        Assert.True(ChapterRenamer.Rename(world.Editor, world.ProjectPath, OldId, NewId).Renamed);
+        Assert.True(ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId).Renamed);
 
-        string? folder = EpisodeLibrary.FolderFor(world.ProjectPath, NewId);
-
-        Assert.NotNull(EpisodeLibrary.FindExisting(folder!, "main05.02"));
-        Assert.False(Directory.Exists(EpisodeLibrary.FolderFor(world.ProjectPath, OldId)!));
+        DialogueNode card = EpisodeNaming.CardFor(editor.Project, NewId, EpisodeId)!;
+        Assert.Null(EpisodeNaming.CardFor(editor.Project, OldId, EpisodeId));
 
         // 원고가 그대로다 — 옮긴 것이지 새로 만든 것이 아니다.
-        EpisodeWorkbookModel model = EpisodeWorkbookReader.Read(
-            EpisodeLibrary.FindExisting(folder!, "main05.02")!);
-
-        Assert.Equal("복도는 조용했다", model.Rows.Single(row => row.IsLine).Text);
+        ScriptDocument script = card.Script;
+        Assert.Equal("복도는 조용했다", script.Text(script.ActiveLines.First().Id, script.PrimaryLocale).Text);
     }
 
     [Fact]
     public void 조건_공급_노드의_이름이_따라간다()
     {
         // ⛔ "연출그래프에서도 조건노드가 이전의 챕터를 받고 있어" — 옛 이름의 배관이 판에
-        //    남으면 다음 동기화가 새 이름으로 <b>하나 더</b> 만들어 조건이 둘로 갈린다.
-        World world = Build();
+        //    남으면 다음 공급이 새 이름으로 <b>하나 더</b> 만들어 조건이 둘로 갈린다.
+        ProjectEditor editor = Build();
 
-        Assert.True(ChapterRenamer.Rename(world.Editor, world.ProjectPath, OldId, NewId).Renamed);
+        ChapterRenamer.Result result = ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
 
-        List<string> supplies = world.Editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Where(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name))
+        Assert.True(result.Renamed, result.Failure);
+        Assert.True(result.SupplyRenamed);
+
+        List<string> supplies = editor.Project.EnumerateNodes().OfType<SetNode>()
             .Select(node => node.Name)
             .ToList();
 
@@ -82,199 +81,147 @@ public sealed class ChapterRenamerTests : IDisposable
     }
 
     [Fact]
-    public void 개명_뒤_동기화가_배관을_하나_더_만들지_않는다()
+    public void 개명_뒤_공급이_배관을_하나_더_만들지_않는다()
     {
-        // 위 둘을 이어 붙인 자리 — 이름만 맞춰 두고 동기화가 또 만들면 고친 것이 아니다.
-        World world = Build();
+        // 위 둘을 이어 붙인 자리 — 이름만 맞춰 두고 공급이 또 만들면 고친 것이 아니다.
+        // 공급은 조건을 고칠 때 돈다.
+        ProjectEditor editor = Build();
 
-        ChapterRenamer.Rename(world.Editor, world.ProjectPath, OldId, NewId);
+        ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
 
-        ChapterGraphModel chapter = ChapterWorkbookReader.Read(
-            Path.Combine(ChapterLibrary.FolderFor(world.ProjectPath)!, NewId + ".xlsx"));
+        editor.UpdateChapterCondition(NewId, "신뢰높음", "trust >= 4");
 
-        EpisodeWorkbookImporter.Run(
-            world.Editor, GameDefinition.Empty, world.FileId,
-            EpisodeLibrary.FolderFor(world.ProjectPath, NewId)!, chapter);
+        SetNode supply = Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 배관을 하나 더 만들지 않았다
 
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            world.Editor, GameDefinition.Empty, world.FileId, chapter);
-
-        Assert.Single(
-            world.Editor.Project.EnumerateNodes().OfType<SetNode>(),
-            node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+        Assert.Equal(ChapterBoardSupply.ConditionSupplyNodeName(NewId), supply.Name);
     }
 
     [Fact]
     public void 판_이름도_따라간다()
     {
         // 챕터 = 판 1:1 (G-1 v2). 판 이름이 곧 챕터 Id라, 어긋나면 배관 판정도 흔들린다.
-        World world = Build();
+        ProjectEditor editor = Build();
 
-        ChapterRenamer.Rename(world.Editor, world.ProjectPath, OldId, NewId);
+        ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
 
-        Assert.Contains(world.Editor.Project.Files, file => file.Name == NewId);
-        Assert.DoesNotContain(world.Editor.Project.Files, file => file.Name == OldId);
+        Assert.Contains(editor.Project.Files, file => file.Name == NewId);
+        Assert.DoesNotContain(editor.Project.Files, file => file.Name == OldId);
+    }
+
+    [Fact]
+    public void 챕터_모델의_Id가_바뀐다()
+    {
+        // ⛔ 2026-10-29까지 여기가 빠져 있었다 — 판·배관은 새 이름인데 Project.Chapters는
+        //    옛 이름이라, 저장하고 다시 열면 챕터 목록은 옛 이름이고 판만 새 이름이었다.
+        ProjectEditor editor = Build();
+
+        Assert.True(ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId).Renamed);
+
+        Assert.NotNull(editor.FindChapter(NewId));
+        Assert.Null(editor.FindChapter(OldId));
+        Assert.Contains(editor.FindChapter(NewId)!.Episodes, episode => episode.EpisodeId == EpisodeId);
+    }
+
+    [Fact]
+    public void 개명은_되돌리기_한_칸이다()
+    {
+        // 사용자 동작 하나 = 되돌리기 한 번. Id·판·배관이 각각 한 칸이면 Ctrl+Z 한 번에 셋이
+        // 어긋난 채 멈춘다.
+        ProjectEditor editor = Build();
+
+        ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
+        editor.Undo();
+
+        Assert.NotNull(editor.FindChapter(OldId));
+        Assert.Null(editor.FindChapter(NewId));
+        Assert.Contains(editor.Project.Files, file => file.Name == OldId);
+        Assert.Contains(
+            editor.Project.EnumerateNodes().OfType<SetNode>(),
+            node => node.Name == ChapterBoardSupply.ConditionSupplyNodeName(OldId));
+    }
+
+    [Fact]
+    public void 프로젝트에_없는_챕터는_개명하지_않는다()
+    {
+        ProjectEditor editor = Build();
+
+        ChapterRenamer.Result result = ChapterRenamer.Rename(editor, ProjectPath, "없는챕터", NewId);
+
+        Assert.False(result.Renamed);
+        Assert.Contains("프로젝트에 없습니다", result.Failure);
     }
 
     // ── 고치면서 생긴 사고 자리 ─────────────────────────────────────────────
 
     [Fact]
-    public void 대본_폴더를_못_옮기면_이름을_되돌린다()
+    public void 새_이름의_챕터가_이미_있으면_아무것도_건드리지_않는다()
     {
-        // ⛔ 반쯤 바뀐 챕터가 가장 나쁘다 — 워크북만 새 이름이면 그 챕터는 "대사가 하나도
-        //    없는 챕터"로 보이고, 노드를 열면 빈 워크북이 새로 생겨 원고가 둘로 갈린다.
-        //    이 건의 원래 증상 그대로다.
-        World world = Build();
+        // 겹치는 이름으로 옮기면 두 챕터가 판 하나를 두고 다툰다 — 거절하고, 거절은 아무것도
+        // 안 바꾼다.
+        ProjectEditor editor = Build();
+        editor.EnsureChapter(NewId);
+        long revision = editor.Revision;
 
-        string script = EpisodeLibrary.FindExisting(
-            EpisodeLibrary.FolderFor(world.ProjectPath, OldId)!, "main05.02")!;
-
-        // 엑셀이 대본을 잡고 있는 상태 — 폴더가 안 옮겨진다.
-        using (new FileStream(script, FileMode.Open, FileAccess.Read, FileShare.None))
-        {
-            ChapterRenamer.Result result =
-                ChapterRenamer.Rename(world.Editor, world.ProjectPath, OldId, NewId);
-
-            Assert.False(result.Renamed);
-            Assert.Contains("되돌렸습니다", result.Failure);
-        }
-
-        // 옛 이름 그대로 서 있다 — 워크북도, 대본 폴더도, 판도.
-        Assert.True(File.Exists(Path.Combine(ChapterLibrary.FolderFor(world.ProjectPath)!, OldId + ".xlsx")));
-        Assert.True(Directory.Exists(EpisodeLibrary.FolderFor(world.ProjectPath, OldId)!));
-        Assert.Contains(world.Editor.Project.Files, file => file.Name == OldId);
-    }
-
-    [Fact]
-    public void 새_이름의_대본_폴더가_이미_있으면_멈춘다()
-    {
-        // 덮어쓰면 남의 원고가 사라진다 — 옮기기 전에 본다.
-        World world = Build();
-        Directory.CreateDirectory(EpisodeLibrary.FolderFor(world.ProjectPath, NewId)!);
-
-        ChapterRenamer.Result result =
-            ChapterRenamer.Rename(world.Editor, world.ProjectPath, OldId, NewId);
+        ChapterRenamer.Result result = ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
 
         Assert.False(result.Renamed);
         Assert.Contains("이미 있습니다", result.Failure);
-
-        // 아무것도 안 건드렸다 — 워크북 이름도 그대로다.
-        Assert.True(File.Exists(Path.Combine(ChapterLibrary.FolderFor(world.ProjectPath)!, OldId + ".xlsx")));
+        Assert.Equal(revision, editor.Revision);
+        Assert.Contains(editor.Project.Files, file => file.Name == OldId);
     }
 
     [Fact]
-    public void 대본_폴더가_아직_없어도_개명은_된다()
+    public void 개명은_옛_이름의_진행_JSON을_건드리지_않고_이름을_말한다()
     {
-        // 에피소드를 하나도 안 쓴 챕터 — 옮길 폴더가 없는 것은 잘못이 아니다.
-        World world = Build();
-        Directory.Delete(EpisodeLibrary.FolderFor(world.ProjectPath, OldId)!, recursive: true);
+        // 개명은 모델만 바꾼다(되돌리기 한 칸). 새 이름의 파일은 바로 뒤의 내보내기가 쓰고 옛 이름의 파일은 같은
+        // 내보내기가 걷는다(ChapterExportService). 화면은 이 이름으로 걷혔는지 말한다.
+        ProjectEditor editor = Build();
 
-        ChapterRenamer.Result result =
-            ChapterRenamer.Rename(world.Editor, world.ProjectPath, OldId, NewId);
+        string export = ChapterExportService.ExportPathFor(ProjectPath, OldId);
+        Directory.CreateDirectory(Path.GetDirectoryName(export)!);
+        File.WriteAllText(export, "{}");
+
+        ChapterRenamer.Result result = ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
+
+        Assert.True(result.Renamed, result.Failure);
+        Assert.Equal(Path.GetFileName(export), result.StaleExport);
+        Assert.True(File.Exists(export));
+    }
+
+    [Fact]
+    public void 아직_저장하지_않은_프로젝트도_챕터를_개명한다()
+    {
+        // 원본은 프로젝트다 — 내보낸 파일을 볼 자리가 아직 없을 뿐, 개명을 막을 이유가 아니다.
+        ProjectEditor editor = Build();
+
+        ChapterRenamer.Result result = ChapterRenamer.Rename(editor, null, OldId, NewId);
 
         Assert.True(result.Renamed);
-        Assert.False(result.EpisodesMoved);
+        Assert.Null(result.StaleExport);
+        Assert.NotNull(editor.FindChapter(NewId));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    private sealed record World(ProjectEditor Editor, string ProjectPath, string FileId);
-
-    /// <summary>챕터 워크북 + 대본 하나 + 판 + 조건 배관이 선 프로젝트.</summary>
-    private World Build()
+    /// <summary>챕터(스탯·조건·에피소드 하나) + 판 + 원고가 든 카드 + 조건 배관이 선 프로젝트.</summary>
+    private static ProjectEditor Build()
     {
-        string projectPath = Path.Combine(_root, "예제.vnproject.json");
+        var editor = new ProjectEditor(new StoryProject { Title = "개명" });
 
-        var project = new StoryProject { Title = "개명" };
-        var board = new StoryFile("sf_ch05", OldId, "story/ch05.vnstory.json");
-        project.Files.Add(board);
-        ProjectStore.Save(projectPath, project);
+        ChapterDocument chapter = editor.EnsureChapter(OldId);
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 5));
 
-        var editor = new ProjectEditor(project);
+        // 에피소드를 세우면 판과 카드가 함께 서고, 판이 선 뒤의 조건은 판의 공급 노드로 간다.
+        editor.AddEpisode(OldId, EpisodeId, "조용한 복도", 0, 0, sceneId: EpisodeId);
+        editor.AddChapterCondition(OldId, "신뢰높음", "trust >= 3", "라루를 신뢰");
 
-        // 챕터 워크북 — 조건 하나(배관이 설 근거)와 에피소드 하나.
-        string chapters = ChapterLibrary.FolderFor(projectPath)!;
-        Directory.CreateDirectory(chapters);
-        WriteChapter(Path.Combine(chapters, OldId + ".xlsx"));
-
-        // 대본 — 그 조건을 쓰는 IF 하나와 대사 한 줄.
-        string episodes = EpisodeLibrary.FolderFor(projectPath, OldId)!;
-        Directory.CreateDirectory(episodes);
-        WriteScript(Path.Combine(episodes, "main05.02.xlsx"));
-
-        ChapterGraphModel chapter = ChapterWorkbookReader.Read(Path.Combine(chapters, OldId + ".xlsx"));
-
-        EpisodeWorkbookImporter.Run(
-            editor, GameDefinition.Empty, board.Id, episodes, chapter);
-
-        // v15 — 조건 공급 노드를 세우는 것은 <b>챕터 쪽</b>이다. 예전에는 대본의 `조건라벨`을
-        // 거두며 Sync가 함께 세웠는데 그 칸이 폐지됐다(EpisodeSyncRunner가 부르는 순서 그대로).
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, GameDefinition.Empty, board.Id, chapter);
+        DialogueNode card = EpisodeNaming.CardFor(editor.Project, OldId, EpisodeId)!;
+        ScriptDocument script = card.Script;
+        editor.SetScriptLineText(card.Id, script.ActiveLines.First().Id, "윌로", "복도는 조용했다");
 
         // 배관이 실제로 섰는지 확인하고 시작한다 — 없으면 위 두 테스트가 헛돈다.
-        Assert.Single(
-            editor.Project.EnumerateNodes().OfType<SetNode>(),
-            node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+        Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 설정 노드는 판의 공급 노드뿐이다
 
-        return new World(editor, projectPath, board.Id);
-    }
-
-    private static void WriteChapter(string path)
-    {
-        using var book = new XLWorkbook();
-
-        Sheet(book, ChapterSheetNames.Episodes,
-            ["EpisodeId", "대사엔트리", "제목", "이벤트키", "X", "Y"],
-            [["main05.02", "장면_1", "조용한 복도", null, "0", "0"]]);
-
-        Sheet(book, ChapterSheetNames.Edges,
-            ["출발", "도착", "스탯변화", "선택지", "표시조건", "해금조건"], []);
-
-        Sheet(book, ChapterSheetNames.Conditions,
-            ["라벨", "스탯", "연산자", "값", "설명"],
-            [["신뢰높음", "trust", ">=", "3", "라루를 신뢰"]]);
-
-        Sheet(book, ChapterSheetNames.Stats,
-            ["타입", "스탯키", "표시명", "초기값", "최소", "최대"],
-            [[null, "trust", "신뢰", "0", "0", "5"]]);
-
-        Sheet(book, ChapterSheetNames.Choices, ["인덱스", "대본", "메모"], []);
-
-        book.SaveAs(path);
-    }
-
-    private static void WriteScript(string path)
-    {
-        using var book = new XLWorkbook();
-
-        Sheet(book, "대본",
-            ["인덱스", "LineId", "화자", "내용"],
-            [
-                ["10", null, "윌로", "복도는 조용했다"]
-            ]);
-
-        book.SaveAs(path);
-    }
-
-    private static void Sheet(XLWorkbook book, string name, string[] headers, string?[][] rows)
-    {
-        IXLWorksheet sheet = book.AddWorksheet(name);
-
-        for (int column = 0; column < headers.Length; column++)
-        {
-            sheet.Cell(1, column + 1).SetValue(headers[column]);
-        }
-
-        for (int row = 0; row < rows.Length; row++)
-        {
-            for (int column = 0; column < rows[row].Length; column++)
-            {
-                if (rows[row][column] is { Length: > 0 } value)
-                {
-                    sheet.Cell(row + 2, column + 1).SetValue(value);
-                }
-            }
-        }
+        return editor;
     }
 }

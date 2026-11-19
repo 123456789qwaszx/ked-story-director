@@ -33,37 +33,63 @@ public sealed class ChapterExportServiceTests : IDisposable
     // ── 증명 캐시 ───────────────────────────────────────────────────────────
 
     [Fact]
-    public void 디스크가_그대로면_다시_증명하지_않는다()
+    public void 모델이_그대로면_다시_증명하지_않는다()
     {
-        // 챕터 하나 증명에 200ms 가까이 든다(에피소드마다 엑셀을 열고 상태공간을 훑는다).
-        // 화면은 갱신할 때마다 이것을 처음부터 다시 돌리고 있었다.
+        // 챕터 하나 증명에 상태공간을 훑는 값이 든다. 화면은 갱신할 때마다 이것을 처음부터
+        // 다시 돌리고 있었다.
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
-        service.ValidationFor(entry, ProjectPath);
-        service.ValidationFor(entry, ProjectPath);
-        service.ValidationFor(entry, ProjectPath);
+        service.ValidationFor(entry);
+        service.ValidationFor(entry);
+        service.ValidationFor(entry);
 
         Assert.Equal(1, service.ValidationComputeCount);
     }
 
     [Fact]
-    public void 워크북_내용이_바뀌면_다시_증명한다()
+    public void 모델_내용이_바뀌면_다시_증명한다()
     {
-        // ⚠ 지문이 시각·크기가 아니라 **내용 해시**인 이유가 여기 있다. 화면은 자기가
-        // 워크북을 쓰고 그 자리에서 곧바로 다시 읽는다 — 두 사건이 같은 시각 눈금에
-        // 들어가고 길이까지 같으면, 시각·크기 지문은 "안 바뀌었다"고 거짓말한다.
+        // 지문은 검증이 읽는 것 — 모델 — 의 내용이다. 간선 문구 하나가 달라도 다시 증명한다.
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
-        service.ValidationFor(entry, ProjectPath);
+        service.ValidationFor(entry);
 
-        // 길이는 같고 내용만 다르게 — 크기 지문이라면 여기서 속는다.
-        File.WriteAllBytes(entry.Path, [9, 9, 9, 9]);
+        ChapterGraphModel edited = new(
+            entry.ChapterId, string.Empty,
+            entry.Model!.Episodes,
+            [new ChapterEdge("ep1", "ep2", "다른 문구", null, null)],
+            [], entry.Model.Stats, [], []);
 
-        service.ValidationFor(entry, ProjectPath);
+        service.ValidationFor(entry with { Model = edited });
 
         Assert.Equal(2, service.ValidationComputeCount);
+    }
+
+    [Fact]
+    public void 간선의_스탯변화만_바뀌어도_다시_증명한다()
+    {
+        // 레코드의 글은 목록 내용을 싣지 않는다 — 스탯변화만 고친 간선이 같은 지문을 내면 옛 도착 스탯 · 도달성을 되쓴다.
+        // 편집기는 스탯변화를 늘 같은 꼴의 목록으로 적는다 — 그 안의 값만 다르다.
+        var service = new ChapterExportService();
+        ChapterEntry entry = Entry("ch01", Sound);
+
+        ChapterEntry WithTrust(int amount) => entry with
+        {
+            Model = new ChapterGraphModel(
+                entry.ChapterId, string.Empty,
+                entry.Model!.Episodes,
+                [entry.Model.Edges.Single() with { StatChanges = new List<StatDelta> { new("trust", amount) } }],
+                [], entry.Model.Stats, [], [])
+        };
+
+        ChapterValidationResult before = service.ValidationFor(WithTrust(1));
+        ChapterValidationResult after = service.ValidationFor(WithTrust(2));
+
+        Assert.Equal(2, service.ValidationComputeCount);
+        Assert.Equal(2, before.Reachability.SpansFor("ep2").Single(span => span.Key == "trust").Minimum);
+        Assert.Equal(3, after.Reachability.SpansFor("ep2").Single(span => span.Key == "trust").Minimum);
     }
 
     [Fact]
@@ -71,9 +97,9 @@ public sealed class ChapterExportServiceTests : IDisposable
     {
         var service = new ChapterExportService();
 
-        service.ValidationFor(Entry("ch01", Sound), ProjectPath);
-        service.ValidationFor(Entry("ch02", Sound), ProjectPath);
-        service.ValidationFor(Entry("ch01", Sound), ProjectPath);   // 이미 안다
+        service.ValidationFor(Entry("ch01", Sound));
+        service.ValidationFor(Entry("ch02", Sound));
+        service.ValidationFor(Entry("ch01", Sound));   // 이미 안다
 
         Assert.Equal(2, service.ValidationComputeCount);
     }
@@ -112,10 +138,26 @@ public sealed class ChapterExportServiceTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "{ \"한번은\": \"옳았던 판\" }");
 
-        ChapterExportRun run = service.ExportAll([Entry("ch01", Unreachable)], ProjectPath);
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Blocked)], ProjectPath);
 
         Assert.Contains("ch01", run.Refused);
         Assert.Equal("{ \"한번은\": \"옳았던 판\" }", File.ReadAllText(path));
+    }
+
+    [Fact]
+    public void 이어지지_않은_에피소드가_있어도_나가고_진행_JSON에_그대로_실린다()
+    {
+        // 2026-11-17 소유자 — 작업 중인(아직 안 이은) 에피소드는 내보내기를 막지 않는다. 게임에서는 거기 갈 길이 없을 뿐이다.
+        ChapterGraphModel model = Sound("ch01");
+        model = new ChapterGraphModel(
+            model.ChapterId, model.SourcePath,
+            [.. model.Episodes, new ChapterEpisode("ep9", "작업 중", "", 400, 0, null)],
+            model.Edges, model.Conditions, model.Stats, model.Fixtures, model.Diagnostics);
+
+        ChapterExportRun run = new ChapterExportService().ExportAll([new ChapterEntry("ch01", model)], ProjectPath);
+
+        Assert.True(run.AllExported, run.Notice);
+        Assert.Contains("\"EpisodeId\": \"ep9\"", File.ReadAllText(ChapterExportService.ExportPathFor(ProjectPath, "ch01")));
     }
 
     [Fact]
@@ -141,12 +183,31 @@ public sealed class ChapterExportServiceTests : IDisposable
     }
 
     [Fact]
+    public void 빈_챕터는_막힌_것이_아니라_낼_것이_없을_뿐이다()
+    {
+        // 2026-11-18 소유자 — 「빈 챕터를 띄운경우에는 보고할 것 없이 검증 오류만」. 진행 코어는 시작 에피소드가 빈 챕터를 거부하지만, 에피소드가
+        // 하나도 없는 챕터는 막힌 것이 아니다 — 결론을 세우지 않고, 옛 파일은 막혔을 때처럼 손대지 않는다.
+        string path = ChapterExportService.ExportPathFor(ProjectPath, "ch02");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "{ \"옛\": \"판\" }");
+
+        ChapterExportRun run = new ChapterExportService().ExportAll(
+            [Entry("ch01", Sound), Entry("ch02", id => new ChapterGraphModel(id, string.Empty, [], [], [], [], [], []))],
+            ProjectPath);
+
+        Assert.True(run.AllExported, run.Notice);
+        Assert.Null(run.Notice);
+        Assert.Equal([ChapterExportService.ExportPathFor(ProjectPath, "ch01")], run.Written);
+        Assert.Equal("{ \"옛\": \"판\" }", File.ReadAllText(path));
+    }
+
+    [Fact]
     public void 못_나간_것만_말한다()
     {
         var service = new ChapterExportService();
 
         ChapterExportRun run = service.ExportAll(
-            [Entry("ch01", Sound), Entry("ch02", Unreachable)],
+            [Entry("ch01", Sound), Entry("ch02", Blocked)],
             ProjectPath);
 
         Assert.Equal(["ch02"], run.Refused);
@@ -155,6 +216,12 @@ public sealed class ChapterExportServiceTests : IDisposable
         string notice = Assert.IsType<string>(run.Notice);
         Assert.Contains("ch02", notice);
         Assert.DoesNotContain("ch01", notice);   // 잘 나간 것은 말하지 않는다
+
+        // 막힌 까닭도 함께 싣는다 — 보고가 고른 챕터와 상관없이 「아래 오류」를 그린다(2026-11-18).
+        Assert.NotEmpty(run.RefusalErrors!);
+        Assert.Equal(
+            service.ValidationFor(Entry("ch02", Blocked)).All.Where(item => item.Severity == ChapterDiagnosticSeverity.Error),
+            run.RefusalErrors!);   // 막힌 ch02의 오류뿐 — 잘 나간 ch01의 것은 없다
     }
 
     [Fact]
@@ -176,7 +243,7 @@ public sealed class ChapterExportServiceTests : IDisposable
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
-        service.ValidationFor(entry, ProjectPath);
+        service.ValidationFor(entry);
         service.ExportAll([entry], ProjectPath);
 
         Assert.Equal(1, service.ValidationComputeCount);
@@ -197,94 +264,80 @@ public sealed class ChapterExportServiceTests : IDisposable
         Assert.Equal("ep1", document.RootElement.GetProperty("StartEpisodeId").GetString());
     }
 
-    // ── ⑧ 저작 관문 — `대사엔트리`가 실재하는 대사노드를 가리키나 ─────────────
+    // ── 지운 · 이름을 바꾼 챕터의 옛 파일 ─────────────────────────────────────
 
-    /// <summary>
-    /// ⛔ <b>2026-08-25에 계약이 뒤집혔다.</b> 예전에는 판이 없거나 비어 있으면 이 관문을
-    /// 통째로 건너뛰었다 — "아직 안 연 챕터를 잘못됐다고 하지 않는다"는 뜻이었다.
-    ///
-    /// 그 면제가 실제로 낸 사고: 그 챕터의 진행 JSON이 <b>그대로 나가고</b>, 유니티의
-    /// 사전 대조가 "부르는 노드가 하나도 없다"로 재생을 통째로 막았다. 저작에서는
-    /// 초록이고 게임에서만 죽는, 이 저장소가 가장 싫어하는 모양이다.
-    ///
-    /// <b>안 열었다는 것은 면제 사유가 못 된다</b> — 내보내는 순간에는 같은 사고다.
-    /// 판과 노드는 프로젝트 파일에 남으므로(세션 상태가 아니다) 한 번 연 챕터는 계속
-    /// 통과한다. 오탐 걱정이 향하던 자리는 그쪽이었다.
-    /// </summary>
     [Fact]
-    public void 한_번도_안_연_챕터는_거부하고_무엇을_하면_되는지_말한다()
+    public void 프로젝트에_없는_챕터의_진행_JSON은_걷는다()
     {
-        var editor = new ProjectEditor(new StoryProject());
+        // 2026-11-06 소유자 — 만들었다가 지운 챕터와 개명 전 이름의 JSON이 폴더에 그대로 남았다. 두면 게임이 없는
+        // 챕터를 계속 싣는다. exported/는 모델에서 짓는 산출물이라 걷어도 잃는 것이 없다(되돌리면 다시 나간다).
         var service = new ChapterExportService();
+        service.ExportAll([Entry("ch01", Sound), Entry("ch_old", Sound), Entry("ch_gone", Sound)], ProjectPath);
 
-        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound)], ProjectPath, editor.Project);
+        // ch_old → ch_new로 개명, ch_gone은 지웠다.
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound), Entry("ch_new", Sound)], ProjectPath);
 
-        Assert.Equal(["ch01"], run.Refused);
+        Assert.True(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch01")));
+        Assert.True(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch_new")));
+        Assert.False(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch_old")));
+        Assert.False(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch_gone")));
+        Assert.Equal(["ch_gone", "ch_old"], run.Removed!);
+        Assert.Contains("ch_old.progression.json", run.WhereNotice!, StringComparison.Ordinal);
+        Assert.Null(run.Notice);
 
-        ChapterDiagnostic problem = Assert.Single(
-            service.ValidationFor(Entry("ch01", Sound), ProjectPath, editor.Project).All,
-            item => item.Code == ChapterDiagnosticCode.DialogueEntryNodeMissing);
-
-        Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);
-        Assert.Contains("하나도 없습니다", problem.Message);
-        Assert.Contains("한 번 열어", problem.Message);   // 고치는 법까지 말한다
+        // 다음 내보내기에서는 걷을 것이 없다.
+        Assert.Empty(service.ExportAll([Entry("ch01", Sound), Entry("ch_new", Sound)], ProjectPath).Removed!);
     }
 
     [Fact]
-    public void 판은_섰지만_아직_동기화_전이어도_거부한다()
+    public void 검증에_걸려_못_나간_챕터의_파일은_걷지_않는다()
     {
-        // 챕터 목록을 클릭하면 판이 먼저 서고 노드는 동기화가 만든다. 그 사이에 내보내면
-        // 결과는 판이 아예 없을 때와 같다 — 부를 노드가 하나도 없다.
-        var editor = new ProjectEditor(new StoryProject());
-        editor.EnsureChapterBoard("ch01");
-
-        ChapterExportRun run = new ChapterExportService()
-            .ExportAll([Entry("ch01", Sound)], ProjectPath, editor.Project);
-
-        Assert.Equal(["ch01"], run.Refused);
-    }
-
-    [Fact]
-    public void 판에_노드가_있는데_하나가_빠지면_거부한다()
-    {
-        // 노드가 하나라도 있으면 그 챕터는 한 번은 동기화됐다는 뜻이고, 그때부터 빠진
-        // 이름은 진짜 빠진 것이다 — 이대로 내보내면 진행 JSON이 없는 노드를 부르고
-        // 로드·검증·증명은 통과하는데 재생만 안 된다.
-        var editor = new ProjectEditor(new StoryProject());
-        string fileId = editor.EnsureChapterBoard("ch01");
-        editor.AddDialogueNode(fileId, name: "ep1");     // ep2는 없다
-
+        // 프로젝트에 있는 챕터다 — 낡은 파일이라도 "한 번은 옳았던" 판이라 그대로 둔다(G8).
         var service = new ChapterExportService();
-        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound)], ProjectPath, editor.Project);
+        string path = ChapterExportService.ExportPathFor(ProjectPath, "ch01");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "{ \"한번은\": \"옳았던 판\" }");
 
-        Assert.Equal(["ch01"], run.Refused);
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Blocked)], ProjectPath);
 
-        ChapterDiagnostic problem = Assert.Single(
-            service.ValidationFor(Entry("ch01", Sound), ProjectPath, editor.Project).All,
-            item => item.Code == ChapterDiagnosticCode.DialogueEntryNodeMissing);
-
-        Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);
-        Assert.Contains("ep2", problem.Message);
-        Assert.Contains("이 챕터를 한 번 고르면", problem.Message);   // 고치는 법까지 말한다
+        Assert.True(File.Exists(path));
+        Assert.Empty(run.Removed!);
     }
+
+    [Fact]
+    public void 대소문자만_바꾼_개명은_새_파일을_걷지_않는다()
+    {
+        // 대소문자를 가리지 않는 파일 시스템은 방금 쓴 새 파일을 옛 이름으로 들고 있다 — 그것을 옛 파일로 보면 사라진다.
+        var service = new ChapterExportService();
+        service.ExportAll([Entry("Ch01", Sound)], ProjectPath);
+
+        ChapterExportRun run = service.ExportAll([Entry("ch01", Sound)], ProjectPath);
+
+        Assert.Empty(run.Removed!);
+        Assert.True(File.Exists(ChapterExportService.ExportPathFor(ProjectPath, "ch01")));
+    }
+
 
     [Fact]
     public void 노드가_생기면_캐시가_깨져_다시_증명한다()
     {
-        // ⛔ 이것이 없으면 **"고쳤는데 계속 거부한다"**가 된다. 지문이 파일만 보면 동기화가
-        // 노드를 만들어도 캐시가 옛 결론을 그대로 준다 — 캐시가 만드는 가장 나쁜 거짓말이
+        // ⛔ 이것이 없으면 **"고쳤는데 계속 거부한다"**가 된다. 지문이 파일만 보면 카드를
+        // 고쳐도 캐시가 옛 결론을 그대로 준다 — 캐시가 만드는 가장 나쁜 거짓말이
         // 여기서 한 번 더 나올 자리다.
         var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
         string fileId = editor.EnsureChapterBoard("ch01");
-        editor.AddDialogueNode(fileId, name: "ep1");
+        editor.AddDialogueNode(fileId, "ep1", name: "ep1");
+        DialogueNode second = editor.AddDialogueNode(fileId, "ep2", name: "ep2");
+        editor.RetireScriptLine(second.Id, second.Script.ActiveLines.Single().Id);   // 줄 없는 카드 — 빈 에피소드라 거부한다
 
         var service = new ChapterExportService();
         ChapterEntry entry = Entry("ch01", Sound);
 
         Assert.Contains("ch01", service.ExportAll([entry], ProjectPath, editor.Project).Refused);
 
-        // 동기화가 빠진 노드를 만든다 — 디스크는 한 글자도 안 바뀌었다.
-        editor.AddDialogueNode(fileId, name: "ep2");
+        // 카드에 줄을 다시 넣는다 — 디스크는 한 글자도 안 바뀌었다.
+        editor.InsertScriptLine(second.Id);
 
         ChapterExportRun after = service.ExportAll([entry], ProjectPath, editor.Project);
 
@@ -297,7 +350,8 @@ public sealed class ChapterExportServiceTests : IDisposable
     {
         // 콘솔·테스트처럼 판을 볼 수 없는 자리에서도 나머지 검증은 그대로 돌아야 한다.
         var editor = new ProjectEditor(new StoryProject());
-        editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), name: "ep1");
+        editor.EnsureChapter("ch01");   // 판은 챕터가 세운다
+        editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), "ep1", name: "ep1");
 
         Assert.True(new ChapterExportService()
             .ExportAll([Entry("ch01", Sound)], ProjectPath)
@@ -306,43 +360,45 @@ public sealed class ChapterExportServiceTests : IDisposable
 
     // ── 기반 ────────────────────────────────────────────────────────────────
     //
-    // 지문은 **디스크의 바이트**로, 검증은 **메모리의 모델**로 몬다. 둘이 갈라져 있어
-    // 캐시 동작과 내보내기 동작을 따로 흔들 수 있다 — 엑셀을 실제로 굽지 않으므로 빠르다.
+    // 지문도 검증도 **메모리의 모델**로 몬다(2026-10-29) — 챕터는 프로젝트에 살고 디스크에
+    // 읽을 파일이 없다.
 
-    private ChapterEntry Entry(string chapterId, Func<string, ChapterGraphModel> build)
-    {
-        string path = Path.Combine(_root, chapterId + ".xlsx");
-        File.WriteAllBytes(path, [1, 2, 3, 4]);
-
-        return new ChapterEntry(chapterId, path, build(chapterId), null);
-    }
+    private static ChapterEntry Entry(string chapterId, Func<string, ChapterGraphModel> build) =>
+        new(chapterId, build(chapterId));
 
     /// <summary>ep1 → ep2. 오류 없이 나간다.</summary>
     private static ChapterGraphModel Sound(string chapterId) => new(
         chapterId,
         string.Empty,
         [
-            new ChapterEpisode("ep1", "첫 화", "", "ep1", 0, 0, null, 2),
-            new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null, 3)
+            new ChapterEpisode("ep1", "첫 화", "", 0, 0, null),
+            new ChapterEpisode("ep2", "둘째", "", 200, 0, null)
         ],
-        [new ChapterEdge("ep1", "ep2", "다음", null, null, 2)],
+        [new ChapterEdge("ep1", "ep2", "다음", null, null)],
         [],
-        [new ChapterStat("trust", "신뢰", Initial: 1, Minimum: 0, Maximum: 5, SourceRow: 2)],
+        [new ChapterStat("trust", Initial: 1, Minimum: 0, Maximum: 5)],
         [],
         []);
 
-    /// <summary>ep3로 들어오는 길이 없다 — 도달성 증명이 오류로 잡는다(D3).</summary>
-    private static ChapterGraphModel Unreachable(string chapterId) => new(
+    /// <summary>
+    /// ep3로 가는 간선은 있지만 조건(trust ≥ 9)이 스탯 최대(5)를 넘어 못 닿는다 — 도달성 증명이 오류로 잡는다(D3). ⛔ 2026-11-17까지는
+    /// 「들어오는 길이 없다」였다 — 이제 그것은 작업 중(이어지지 않음 — 경고)이다.
+    /// </summary>
+    private static ChapterGraphModel Blocked(string chapterId) => new(
         chapterId,
         string.Empty,
         [
-            new ChapterEpisode("ep1", "첫 화", "", "ep1", 0, 0, null, 2),
-            new ChapterEpisode("ep2", "둘째", "", "ep2", 200, 0, null, 3),
-            new ChapterEpisode("ep3", "닿지 않는 화", "", "ep3", 400, 0, null, 4)
+            new ChapterEpisode("ep1", "첫 화", "", 0, 0, null),
+            new ChapterEpisode("ep2", "둘째", "", 200, 0, null),
+            new ChapterEpisode("ep3", "닿지 않는 화", "", 400, 0, null)
         ],
-        [new ChapterEdge("ep1", "ep2", "다음", null, null, 2)],
-        [],
-        [new ChapterStat("trust", "신뢰", Initial: 1, Minimum: 0, Maximum: 5, SourceRow: 2)],
+        [new ChapterEdge("ep1", "ep2", "다음", null, null), new ChapterEdge("ep2", "ep3", "올라간다", "높음", null)],
+        [
+            new ChapterCondition("높음", "trust >= 9", null,
+                [new ConditionTerm(ConditionTermKind.StatComparison, "trust", ConditionComparison.AtLeast, 9)],
+                IsValid: true)
+        ],
+        [new ChapterStat("trust", Initial: 1, Minimum: 0, Maximum: 5)],
         [],
         []);
 }

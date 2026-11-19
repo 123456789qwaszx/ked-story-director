@@ -8,8 +8,8 @@ namespace Vn.Authoring.Chapters;
 /// <b>지금은 하나뿐이다.</b> 그래도 열거형으로 남기는 이유는 코어와 같다 — 시나리오
 /// 수명의 상태([1] 영구 계층)가 제대로 서면 그때 갈래가 다시 늘어난다.
 ///
-/// ⚠ <c>EpisodeCleared</c>는 2026-08-25에 폐지됐다. 코어가 클리어 이력 추적을 걷으면서
-/// <c>ProgressionCondition</c>이 스탯 하나로 줄었고, 두 곳에 다른 어휘를 두면 저작에서
+/// 클리어 여부를 묻는 항은 없다. 코어가 클리어 이력을 추적하지 않아
+/// <c>ProgressionCondition</c>이 스탯 하나뿐이고, 두 곳에 다른 어휘를 두면 저작에서
 /// 통과한 조건이 게임에서 거부된다.
 /// </summary>
 public enum ConditionTermKind
@@ -29,10 +29,10 @@ public enum ConditionComparison
     AtMost,
     Exactly,
 
-    /// <summary><c>&gt;</c> (2026-08-16 소유자 개방 — &lt;·&gt; 드롭다운).</summary>
+    /// <summary><c>&gt;</c></summary>
     Above,
 
-    /// <summary><c>&lt;</c> (2026-08-16 소유자 개방).</summary>
+    /// <summary><c>&lt;</c></summary>
     Below
 }
 
@@ -49,13 +49,7 @@ public enum ConditionProblemKind
     TermMalformed,
     OperatorNotSupported,
     ValueNotInteger,
-    UnknownStatKey,
-
-    /// <summary>
-    /// 폐지된 <c>cleared:</c> 문법 (2026-08-25). 조용히 무시하지 않고 짚어서
-    /// <b>고치는 법까지</b> 말한다 — 무시하면 관문이 통째로 사라져 잠긴 길이 열린다.
-    /// </summary>
-    ClearedRetired
+    UnknownStatKey
 }
 
 /// <param name="Fragment">문제가 된 조각 원문. 사람이 셀에서 눈으로 찾을 수 있어야 한다.</param>
@@ -75,12 +69,12 @@ public sealed record ConditionParseResult(
 /// <summary>
 /// 조건식 파서 — <b>이 레이어에서 조건식을 읽는 유일한 자리다.</b>
 ///
-/// 챕터 워크북(`조건`·`표시조건`·`해금조건`·`간선`의 조건)과 에피소드 워크북(G2의 `조건라벨`이
-/// 가리키는 식)이 같은 문법을 쓴다. 규약 사본 금지(지시서 §2 승계 원칙) — 두 번째 구현이
+/// 챕터(조건 · 표시조건 · 해금조건 · 간선의 조건)와 대본(G2의 `조건라벨`이 가리키는 식)이 같은
+/// 문법을 쓴다. 규약 사본 금지(지시서 §2 승계 원칙) — 두 번째 구현이
 /// 생기면 한쪽만 고쳐지는 날이 오고, 그날 저작 시점 검증과 실행이 갈린다.
 ///
-/// <b>시트·행·열을 모른다.</b> 좌표는 호출자가 붙인다. 그래야 에피소드 워크북(G2)이 자기
-/// 좌표계로 같은 파서를 그대로 쓴다.
+/// <b>자리를 모른다.</b> 진단의 자리는 호출자가 붙인다. 그래야 부르는 쪽마다 자기 자리 이름으로
+/// 같은 파서를 그대로 쓴다.
 ///
 /// 문법 (§3.1):
 /// <code>
@@ -89,14 +83,10 @@ public sealed record ConditionParseResult(
 /// trust == 5
 /// A ; B                 AND
 /// </code>
-/// ⛔ <c>cleared:</c>는 2026-08-25에 폐지됐다 — 진행 코어가 클리어 이력을 기억하지 않는다.
-/// 같은 것을 <b>Bool 스탯</b>으로 적는다: 떠나는 간선에서 깃발을 켜고(<c>깃발 = 1</c>)
-/// 관문에서 읽는다(<c>깃발 == 1</c>). 문법은 알아보되 <b>오류로 짚고 고치는 법을 말한다</b>.
+/// 클리어 이력은 <b>Bool 스탯</b>으로 적는다: 떠나는 간선에서 깃발을 켜고(<c>깃발 = 1</c>) 관문에서 읽는다(<c>깃발 == 1</c>).
 /// </summary>
 public static class ConditionExpressionParser
 {
-    private const string ClearedPrefix = "cleared:";
-
     /// <summary>
     /// 소수점 금지의 자리 (G-3). 정수 고정이 경계값 버그(2.5 &gt;= 3)를 막고,
     /// 동시에 G7 도달성 증명의 유한 상태공간을 가능하게 한다.
@@ -132,25 +122,6 @@ public static class ConditionExpressionParser
                 continue;
             }
 
-            // ⛔ 폐지된 문법을 <b>이름으로 알아보고</b> 짚는다 (2026-08-25). 그냥 두면
-            // "비교 연산자를 찾지 못했습니다"로 떨어져서, 왜 안 되는지도 무엇으로 바꿔야
-            // 하는지도 안 보인다. 옛 워크북이 열리는 자리라 안내가 곧 이행 경로다.
-            if (term.StartsWith(ClearedPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                string episodeId = term[ClearedPrefix.Length..].Trim();
-
-                problems.Add(new ConditionParseProblem(
-                    ConditionProblemKind.ClearedRetired,
-                    term,
-                    $"'{term}' — cleared: 는 폐지됐습니다(2026-08-25). 진행 코어가 클리어 " +
-                    "이력을 더 이상 기억하지 않습니다. Bool 스탯으로 바꾸세요: `스탯` 시트에 " +
-                    $"깃발을 하나 만들고(예: `{Flag(episodeId)}`), " +
-                    $"'{(episodeId.Length == 0 ? "그 에피소드" : episodeId)}'에서 나가는 " +
-                    $"간선의 `스탯변화`에 `{Flag(episodeId)} = 1`을 적은 뒤, 여기에는 " +
-                    $"`{Flag(episodeId)} == 1`을 적습니다."));
-                continue;
-            }
-
             if (!TrySplitComparison(term, out string key, out ConditionComparison comparison, out string value))
             {
                 problems.Add(new ConditionParseProblem(
@@ -169,7 +140,7 @@ public static class ConditionExpressionParser
                 continue;
             }
 
-            // bool 리터럴 (2026-08-16) — bool 스탯의 조건은 `flag == true` 꼴이다.
+            // bool 리터럴 — bool 스탯의 조건은 `flag == true` 꼴이다.
             // 값 공간은 0/1 하나다: true = 1, false = 0. 등호 비교에서만 의미가 있다.
             if (TryParseBoolLiteral(value, out int boolValue))
             {
@@ -233,28 +204,13 @@ public static class ConditionExpressionParser
     }
 
     /// <summary>
-    /// 폐지 안내에 넣을 <b>깃발 이름 제안</b>. 스탯키에 쓸 수 없는 글자(`.`·공백)를 밑줄로
-    /// 바꾼다 — 안내문을 그대로 복사해 붙일 수 있어야 이행이 막히지 않는다.
+    /// 조건식 원문에서 <b>스탯키만</b> 갈아 끼운다 — 스탯 개명이 쓴다.
     ///
-    /// ⚠ <b>제안일 뿐 툴이 만들지 않는다.</b> 깃발을 켜는 간선을 사람이 골라야 하는데,
-    /// 그 자리를 툴이 추측하면 관문이 조용히 다른 뜻이 된다.
-    /// </summary>
-    private static string Flag(string episodeId) =>
-        episodeId.Length == 0
-            ? "cleared_그에피소드"
-            : "cleared_" + new string(episodeId
-                .Select(character => char.IsLetterOrDigit(character) ? character : '_')
-                .ToArray());
-
-    /// <summary>두 글자 연산자를 먼저 본다. <c>&gt;=</c>를 <c>&gt;</c>로 읽으면 의미가 달라진다.</summary>
-    /// <summary>
-    /// 조건식 원문에서 <b>스탯키만</b> 갈아 끼운다 — 스탯 개명이 쓴다 (2026-09-17).
-    ///
-    /// ⛔ <b>단순 문자열 치환이면 안 된다.</b> <c>trust</c>를 갈면 <c>trustworthy</c>의 앞부분도
+    /// <b>단순 문자열 치환이면 안 된다.</b> <c>trust</c>를 갈면 <c>trustworthy</c>의 앞부분도
     /// 갈리고, 값에 든 글자까지 바뀐다. 키가 어디서 끝나는지는 <b>비교 연산자가 정하고</b>,
     /// 그 문법을 아는 곳은 여기 하나다 — 그래서 개명기가 아니라 파서가 이 일을 진다.
     ///
-    /// ⚠ <b>연산자와 값은 원문 그대로 둔다.</b> 다시 조립하면 사람이 적은 띄어쓰기가
+    /// <b>연산자와 값은 원문 그대로 둔다.</b> 다시 조립하면 사람이 적은 띄어쓰기가
     /// 지워지고, 파서가 못 읽는 식(탈출구로 남겨 둔 원문)이 조용히 날아간다.
     /// 못 읽는 항은 <b>손대지 않고 지나간다</b>.
     /// </summary>
@@ -270,7 +226,7 @@ public static class ConditionExpressionParser
 
         var rebuilt = new List<string>();
 
-        // ⚠ 빈 항을 버리지 않는다 — 원문의 `;` 개수를 그대로 돌려줘야 한다.
+        // 빈 항을 버리지 않는다 — 원문의 `;` 개수를 그대로 돌려줘야 한다.
         foreach (string rawTerm in source.Split(';'))
         {
             if (!TrySplitComparison(rawTerm, out string key, out _, out _) ||
@@ -289,6 +245,7 @@ public static class ConditionExpressionParser
         return string.Join(";", rebuilt);
     }
 
+    /// <summary>두 글자 연산자를 먼저 본다. <c>&gt;=</c>를 <c>&gt;</c>로 읽으면 의미가 달라진다.</summary>
     private static bool TrySplitComparison(
         string term,
         out string key,
@@ -341,53 +298,5 @@ public static class ConditionExpressionParser
 
         mapped = 0;
         return false;
-    }
-
-    /// <summary>
-    /// 단일 항 조건식을 (스탯, 연산자, 값) 세 칸으로 분해한다 — `조건` 시트의 구조화 열
-    /// (2026-08-16)에 쓰기 위해서다. bool 항(<c>flag == true</c>)은 연산자 칸이 true/false가
-    /// 된다. 복합식(;)·cleared:·연산자 없는 원문은 분해하지 않는다(false) — 그런 식은
-    /// 스탯 칸에 원문 그대로 남는다(탈출구).
-    /// </summary>
-    public static bool TryDecomposeSingle(
-        string? expression, out string statKey, out string operatorText, out string valueText)
-    {
-        statKey = string.Empty;
-        operatorText = string.Empty;
-        valueText = string.Empty;
-
-        string source = (expression ?? string.Empty).Trim();
-
-        if (source.Length == 0 ||
-            source.Contains(';', StringComparison.Ordinal) ||
-            source.StartsWith(ClearedPrefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (!TrySplitComparison(source, out string key, out ConditionComparison comparison, out string value) ||
-            key.Length == 0 || value.Length == 0)
-        {
-            return false;
-        }
-
-        statKey = key;
-
-        if (TryParseBoolLiteral(value, out int boolValue) && comparison == ConditionComparison.Exactly)
-        {
-            operatorText = boolValue == 1 ? "true" : "false";
-            return true;
-        }
-
-        operatorText = comparison switch
-        {
-            ConditionComparison.AtLeast => ">=",
-            ConditionComparison.AtMost => "<=",
-            ConditionComparison.Above => ">",
-            ConditionComparison.Below => "<",
-            _ => "=="
-        };
-        valueText = value;
-        return true;
     }
 }

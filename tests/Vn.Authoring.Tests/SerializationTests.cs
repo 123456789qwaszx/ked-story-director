@@ -12,10 +12,7 @@ public class SerializationTests
     public void 스냅샷은_프로젝트_전체를_한_문자열로_복원한다()
     {
         var sample = new Sample();
-        var (_, l1, _, l3, _, _, _) = sample.BuildSpecExample();
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l1, sample.TargetA.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, l3, sample.TargetB.Id);
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Default, null, sample.TargetDefault.Id);
+        sample.BuildSpecExample();
         sample.Editor.MoveNode(sample.Dialogue.Id, 120, 340);
 
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
@@ -26,22 +23,76 @@ public class SerializationTests
         Assert.Equal(sample.File.RelativePath, reloadedFile.RelativePath);
         Assert.Equal(sample.Project.EnumerateNodes().Select(node => node.Id), reloaded.EnumerateNodes().Select(node => node.Id));
         Assert.Equal(DialogueScriptResolver.Resolve(sample.Project, sample.Dialogue).Lines.Select(line => line.LineId), DialogueScriptResolver.Resolve(reloaded, dialogue).Lines.Select(line => line.LineId));
-        Assert.Equal(sample.TargetA.Id, dialogue.BranchExits[l1]);
-        Assert.Equal(sample.TargetB.Id, dialogue.BranchExits[l3]);
-        Assert.Equal(sample.TargetDefault.Id, dialogue.DefaultExitTargetNodeId);
         Assert.Equal(120, dialogue.Layout.X);
         Assert.Equal(340, dialogue.Layout.Y);
-        NodeLink settings = Assert.Single(reloaded.Links);
-        Assert.Equal(NodeLinkKind.Settings, settings.Kind);
-        Assert.Equal(sample.SetNode.Id, settings.SourceNodeId);
-        Assert.Equal(sample.Dialogue.Id, settings.TargetNodeId);
 
         DialogueFlow before = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
         DialogueFlow after = ConditionFlowResolver.Resolve(dialogue, reloaded);
         Assert.Equal(
-            before.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.ExitTargetNodeId, branch.LastLineIndex)),
-            after.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.ExitTargetNodeId, branch.LastLineIndex)));
+            before.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.LastLineIndex)),
+            after.Branches.Select(branch => (branch.OpenLineId, branch.ConditionId, branch.LastLineIndex)));
     }
+
+    [Fact]
+    public void 그_전의_파일에_적힌_갈래_출구는_모르는_칸으로_지나가고_다음_저장에서_빠진다()
+    {
+        // 갈래 출구는 2026-11-19에 걷혔다(usability UX28) — 여는 전환의 `exit` · 꼬리 전환의 `anchor`가 남은 파일도 열린다(기본 출구
+        // `defaultExit`와 같은 처지). 대본 끝의 빈 블록으로 꼬리 전환을 만들고, 모든 여는 전환에 옛 칸을 적어 본다.
+        var sample = new Sample();
+        sample.BuildSpecExample();
+        sample.Editor.ApplyScenarioText(
+            sample.Dialogue.Id,
+            WorkingDialogueText(sample) + $"\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
+            confirmDeletes: true);
+        Assert.NotEmpty(sample.Dialogue.TrailingTransitions);
+
+        var root = System.Text.Json.Nodes.JsonNode.Parse(ProjectSnapshotCodec.Encode(sample.Project))!;
+        int opened = 0;
+
+        void Mark(System.Text.Json.Nodes.JsonNode? node)
+        {
+            switch (node)
+            {
+                case System.Text.Json.Nodes.JsonObject item:
+                    if (item["kind"]?.GetValue<string>() is "beginIf" or "beginElseIf")
+                    {
+                        item["exit"] = sample.TargetA.Id;
+                        item["anchor"] = "#끝";
+                        opened++;
+                    }
+
+                    foreach ((_, System.Text.Json.Nodes.JsonNode? child) in item.ToList())
+                    {
+                        Mark(child);
+                    }
+
+                    break;
+
+                case System.Text.Json.Nodes.JsonArray array:
+                    foreach (System.Text.Json.Nodes.JsonNode? child in array.ToList())
+                    {
+                        Mark(child);
+                    }
+
+                    break;
+            }
+        }
+
+        Mark(root);
+        Assert.True(opened >= 2);
+
+        StoryProject reloaded = ProjectSnapshotCodec.Decode(root.ToJsonString());
+        string saved = ProjectSnapshotCodec.Encode(reloaded);
+
+        Assert.DoesNotContain("\"exit\"", saved, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"anchor\"", saved, StringComparison.Ordinal);
+        Assert.Equal(
+            ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project).Branches.Select(branch => (branch.OpenLineId, branch.ConditionId)),
+            ConditionFlowResolver.Resolve(reloaded.FindDialogue(sample.Dialogue.Id)!, reloaded).Branches.Select(branch => (branch.OpenLineId, branch.ConditionId)));
+    }
+
+    private static string WorkingDialogueText(Sample sample) =>
+        Vn.Authoring.Rendering.WorkingDialoguePreview.ScenarioWriting(sample.Project, sample.Dialogue.Id).Text;
 
     [Fact]
     public void 에피소드_표식이_프로젝트와_함께_왕복한다()
@@ -50,30 +101,11 @@ public class SerializationTests
         //    (2026-09-17까지 이 테스트의 근거는 "엑셀 소유 대본의 잠금이 풀린다"였다 —
         //     그 잠금은 R-D에서, 자유 노드라는 종류는 P-6에서 없어졌다. 표식은 남았다.)
         var sample = new Sample();
-        sample.Dialogue.MarkedEpisodeId = "ep_hallway";
+        Assert.NotNull(sample.Dialogue.MarkedEpisodeId);   // 카드를 세우면 에피소드와 표식이 함께 선다
 
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
 
-        Assert.Equal("ep_hallway", reloaded.FindDialogue(sample.Dialogue.Id)!.MarkedEpisodeId);
-    }
-
-    [Fact]
-    public void 옛_이름의_에피소드_표식도_읽는다()
-    {
-        // 칸 이름이 `excelEpisode` → `episodeMark`로 바뀌었다 (2026-09-17). 이 표식은
-        // 파생값이 아니라 저장된 신원이라, 못 읽으면 되살릴 방법이 없다 — 그래서
-        // 옛 이름도 계속 읽는다. 다시 저장하면 새 이름으로 옮겨 앉는다.
-        var sample = new Sample();
-        sample.Dialogue.MarkedEpisodeId = "ep_hallway";
-
-        string snapshot = ProjectSnapshotCodec.Encode(sample.Project)
-            .Replace("\"episodeMark\"", "\"excelEpisode\"", StringComparison.Ordinal);
-
-        Assert.Contains("\"excelEpisode\"", snapshot, StringComparison.Ordinal);
-
-        StoryProject reloaded = ProjectSnapshotCodec.Decode(snapshot);
-
-        Assert.Equal("ep_hallway", reloaded.FindDialogue(sample.Dialogue.Id)!.MarkedEpisodeId);
+        Assert.Equal(sample.Dialogue.MarkedEpisodeId, reloaded.FindDialogue(sample.Dialogue.Id)!.MarkedEpisodeId);
     }
 
     // ⛔ `엑셀_행_신원_맵이_프로젝트와_함께_왕복한다`는 2026-09-16에 은퇴했다 (R-D).
@@ -83,46 +115,11 @@ public class SerializationTests
     //    ⚠ 구판 프로젝트 파일의 `excelLines`는 읽지 않고 지나간다 — 깨지지 않는다.
 
     [Fact]
-    public void 줄의_변수_변경은_순서와_연산자를_그대로_왕복한다()
-    {
-        var sample = new Sample();
-        string line = sample.Line("보수를 받는다");
-
-        StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
-        DialogueLineExtension extension = reloaded.FindDialogue(sample.Dialogue.Id)!
-            .FindExtension(line)!;
-
-        Assert.Equal(
-            Array.Empty<(string, SetOperatorKind, string)>(),
-            Array.Empty<(string, SetOperatorKind, string)>());
-    }
-
-    [Fact]
-    public void 연출_노드의_Setup_커맨드는_순서대로_왕복한다()
-    {
-        var sample = new Sample();
-        PresentationNode presentation = sample.Editor.AddPresentationNode(sample.File.Id, name: "연출");
-        sample.Editor.AddPresentationSetupCommand(
-            presentation.Id,
-            "char_rig_cast.slot",
-            new Dictionary<string, string> { ["layout"] = "2" });
-        sample.Editor.AddPresentationSetupCommand(presentation.Id, "char_rig_cast.cast");
-
-        StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
-        PresentationNode reloadedNode = reloaded.FindPresentation(presentation.Id)!;
-
-        Assert.Equal(
-            presentation.SetupCommands.Select(command => (command.Id, command.DefinitionId)),
-            reloadedNode.SetupCommands.Select(command => (command.Id, command.DefinitionId)));
-        Assert.Equal("2", reloadedNode.SetupCommands[0].Arguments["layout"]);
-    }
-
-    [Fact]
     public void 스냅샷은_결정적이고_LF이며_한글을_보존한다()
     {
         var sample = new Sample();
         string line = sample.Line("안녕하세요");
-        sample.Editor.SetScriptLineText(sample.Script.Id, line, "윌로", "안녕하세요");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line, "윌로", "안녕하세요");
 
         string first = ProjectSnapshotCodec.Encode(sample.Project);
         string second = ProjectSnapshotCodec.Encode(sample.Project);
@@ -159,13 +156,10 @@ public class SerializationTests
             var second = new StoryFile("sf_b", "B", "story/b.vnstory.json");
             project.Files.Add(first);
             project.Files.Add(second);
-            first.Nodes.Add(new DialogueNode("nd_a", "A 노드"));
-            second.Nodes.Add(new SetNode("nd_b", "B 노드"));
-            project.Links.Add(new NodeLink(
-                "lk_b_a",
-                NodeLinkKind.Settings,
-                sourceNodeId: "nd_b",
-                targetNodeId: "nd_a"));
+            project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+            project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
+            first.Nodes.Add(new DialogueNode("nd_a", "A 노드") { IsBranchCard = true });   // 에피소드가 아닌 카드는 분기 카드뿐이다
+            second.Nodes.Add(new SetNode("nd_b", global::Vn.Authoring.Chapters.ChapterBoardSupply.ConditionSupplyNodeName("B")));   // 설정 노드는 판의 공급 노드뿐이다
             project.StartNodeId = "nd_a";
 
             ProjectStore.Save(manifestPath, project);
@@ -176,18 +170,12 @@ public class SerializationTests
             string manifest = File.ReadAllText(manifestPath);
             string firstStory = File.ReadAllText(Path.Combine(directory, "story", "a.vnstory.json"));
             Assert.DoesNotContain("\"nodes\"", manifest);
-            Assert.Contains("\"links\"", manifest, StringComparison.Ordinal);
             Assert.Contains("\"nodes\"", firstStory, StringComparison.Ordinal);
-            Assert.DoesNotContain("\"links\"", firstStory);
 
             ProjectLoadResult loaded = ProjectStore.Load(manifestPath);
             Assert.Equal(new[] { "sf_a", "sf_b" }, loaded.Project.Files.Select(file => file.Id));
             Assert.Equal(new[] { "nd_a", "nd_b" }, loaded.Project.EnumerateNodes().Select(node => node.Id));
             Assert.Equal("story/b.vnstory.json", loaded.Project.Files[1].RelativePath);
-            NodeLink loadedLink = Assert.Single(loaded.Project.Links);
-            Assert.Equal("lk_b_a", loadedLink.Id);
-            Assert.Equal("nd_b", loadedLink.SourceNodeId);
-            Assert.Equal("nd_a", loadedLink.TargetNodeId);
         }
         finally
         {
@@ -223,28 +211,29 @@ public class SerializationTests
         string directory = TempDirectory();
         string manifestPath = Path.Combine(directory, "project" + ProjectManifestJson.FileExtension);
         var project = new StoryProject { Title = "부분 변경" };
-        var firstScript = new ScriptDocument("sc_a", "A 대본");
+        var firstScript = new ScriptDocument();
         firstScript.Lines.Add(new ScriptLine("ln_a"));
         firstScript.RequireLocale(firstScript.PrimaryLocale).Entries["ln_a"] = new LocalizedLine("", "처음");
-        var secondScript = new ScriptDocument("sc_b", "B 대본");
+        var secondScript = new ScriptDocument();
         secondScript.Lines.Add(new ScriptLine("ln_b"));
         secondScript.RequireLocale(secondScript.PrimaryLocale).Entries["ln_b"] = new LocalizedLine("", "고정");
-        project.Scripts.Add(firstScript);
-        project.Scripts.Add(secondScript);
 
         var first = new StoryFile("sf_a", "A", "story/a.vnstory.json");
         var second = new StoryFile("sf_b", "B", "story/b.vnstory.json");
-        first.Nodes.Add(new DialogueNode("nd_a", "A") { ScriptId = "sc_a" });
-        second.Nodes.Add(new DialogueNode("nd_b", "B") { ScriptId = "sc_b" });
+        first.Nodes.Add(new DialogueNode("nd_a", "A") { Script = firstScript, IsBranchCard = true });
+        second.Nodes.Add(new DialogueNode("nd_b", "B") { Script = secondScript, IsBranchCard = true });
         project.Files.Add(first);
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
 
         try
         {
             ProjectStore.Save(manifestPath, project);
             string manifestBefore = File.ReadAllText(manifestPath);
-            string firstPath = Path.Combine(directory, "script", "sc_a.vnscript.json");
-            string secondPath = Path.Combine(directory, "script", "sc_b.vnscript.json");
+            // 형식 4 — 대본은 카드와 함께 판 파일에 든다. 줄 하나를 고치면 그 카드의 판만 바뀐다.
+            string firstPath = Path.Combine(directory, "story", "a.vnstory.json");
+            string secondPath = Path.Combine(directory, "story", "b.vnstory.json");
             string firstBefore = File.ReadAllText(firstPath);
             string secondBefore = File.ReadAllText(secondPath);
 
@@ -262,16 +251,12 @@ public class SerializationTests
     }
 
     /// <summary>
-    /// 버전 2 이하는 화자·대사를 대사 노드가 직접 소유했고 연출이 편집 중인 노드를 실시간으로
-    /// 읽었다. 그 데이터를 새 의미로 자동 해석하면 어느 문장이 어느 LineId인지 도구가 임의로
-    /// 정하게 된다. <b>덮어써서 원고를 잃는 것보다 열지 않는 편이 낫다.</b>
-    ///
-    /// 이전에 있던 두 마이그레이션 테스트를 이 테스트로 교체했다.
-    /// 그 경로는 이제 존재하지 않으며, 존재하지 않아야 한다는 것이 새 불변 조건이다.
+    /// 형식 4 이전은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c>) — 한 줄로 분명히.
     /// </summary>
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
+    [InlineData(3)]
     public void 이전_형식_프로젝트는_열지_않고_이유를_알린다(int version)
     {
         string json = $$"""
@@ -285,8 +270,8 @@ public class SerializationTests
         InvalidDataException error = Assert.Throws<InvalidDataException>(
             () => ProjectManifestJson.Read(json));
 
-        Assert.Contains("더 이상 열 수 없습니다", error.Message, StringComparison.Ordinal);
-        Assert.Contains("대본을 가져오세요", error.Message, StringComparison.Ordinal);
+        Assert.Contains($"형식 버전 {version} 프로젝트는 열지 않습니다", error.Message, StringComparison.Ordinal);
+        Assert.Contains("형식 4만 엽니다", error.Message, StringComparison.Ordinal);
     }
 
     /// <summary>이전 형식 파일을 열려다 실패해도 그 파일은 그대로 남아 있어야 한다.</summary>
@@ -312,33 +297,12 @@ public class SerializationTests
     }
 
     [Fact]
-    public void 개별_대본_파일을_프로젝트로_잘못_열지_않는다()
-    {
-        string directory = TempDirectory();
-        string scriptPath = Path.Combine(directory, "chapter.vnscript.json");
-        File.WriteAllText(scriptPath, """
-            { "formatVersion": 1, "scriptId": "sc_chapter", "name": "1장", "lines": [], "locales": [] }
-            """);
-
-        try
-        {
-            InvalidDataException error = Assert.Throws<InvalidDataException>(
-                () => ProjectStore.Load(scriptPath));
-            Assert.Contains("manifest", error.Message, StringComparison.Ordinal);
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-    }
-
-    [Fact]
     public void 개별_StoryFile을_프로젝트로_잘못_열지_않는다()
     {
         string directory = TempDirectory();
         string storyPath = Path.Combine(directory, "chapter.vnstory.json");
         File.WriteAllText(storyPath, """
-            { "formatVersion": 1, "fileId": "sf_chapter", "name": "1장", "nodes": [] }
+            { "formatVersion": 2, "fileId": "sf_chapter", "name": "1장", "nodes": [] }
             """);
 
         try
@@ -359,12 +323,12 @@ public class SerializationTests
         Directory.CreateDirectory(Path.Combine(directory, "story"));
         string manifestPath = Path.Combine(directory, "project.vnproject.json");
         File.WriteAllText(manifestPath, """
-            { "formatVersion": 3, "scripts": [], "files": [
+            { "formatVersion": 4, "title": "다른 Id", "files": [
               { "id": "sf_manifest", "name": "A", "path": "story/a.vnstory.json" }
             ] }
             """);
         File.WriteAllText(Path.Combine(directory, "story", "a.vnstory.json"), """
-            { "formatVersion": 1, "fileId": "sf_actual", "name": "A", "nodes": [] }
+            { "formatVersion": 2, "fileId": "sf_actual", "name": "A", "nodes": [] }
             """);
 
         try
@@ -386,8 +350,41 @@ public class SerializationTests
     {
         var project = new StoryProject();
         project.Files.Add(new StoryFile("sf_a", "A", relativePath));
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
 
         Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+    }
+
+    /// <summary>판은 챕터의 판이다 — 챕터가 없는 판 · 한 챕터의 판 둘은 받지 않는다(2026-11-18 · old-shapes O3).</summary>
+    [Fact]
+    public void 챕터가_아닌_판은_저장하지_않는다()
+    {
+        var project = new StoryProject();
+        project.Files.Add(new StoryFile("sf_a", "A", "story/a.vnstory.json"));
+        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        ProjectManifestJson.Write(project);
+
+        project.Files.Add(new StoryFile("sf_a2", "A", "story/a2.vnstory.json"));
+        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+    }
+
+    /// <summary>설정 노드는 판의 챕터 조건 공급 노드 하나뿐이다 — 옛 「X 설정」 노드는 받지 않는다(2026-11-18 · old-shapes O6).</summary>
+    [Fact]
+    public void 공급_노드가_아닌_설정_노드는_저장하지_않는다()
+    {
+        var project = new StoryProject();
+        var board = new StoryFile("sf_a", "A", "story/a.vnstory.json");
+        project.Files.Add(board);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+
+        board.Nodes.Add(new SetNode("nd_set", "A 설정"));
+        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
+
+        board.Nodes.Clear();
+        board.Nodes.Add(new SetNode("nd_supply", global::Vn.Authoring.Chapters.ChapterBoardSupply.ConditionSupplyNodeName("A")));
+        ProjectManifestJson.Write(project);
     }
 
     [Fact]
@@ -396,49 +393,15 @@ public class SerializationTests
         var project = new StoryProject();
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
-        first.Nodes.Add(new DialogueNode("nd_same", "A"));
+        first.Nodes.Add(new DialogueNode("nd_same", "A") { IsBranchCard = true });
         second.Nodes.Add(new SetNode("nd_same", "B"));
         project.Files.Add(first);
         project.Files.Add(second);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
 
         Assert.Throws<InvalidDataException>(() => ProjectSnapshotCodec.Encode(project));
         Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
-    }
-
-    [Fact]
-    public void Settings_link의_노드_종류가_잘못되면_저장하지_않는다()
-    {
-        var project = new StoryProject();
-        var file = new StoryFile("sf_link", "링크");
-        var first = new DialogueNode("nd_first", "첫 장면");
-        var second = new DialogueNode("nd_second", "둘째 장면");
-        file.Nodes.Add(first);
-        file.Nodes.Add(second);
-        project.Files.Add(file);
-        project.Links.Add(new NodeLink(
-            "lk_invalid",
-            NodeLinkKind.Settings,
-            sourceNodeId: first.Id,
-            targetNodeId: second.Id));
-
-        Assert.Throws<InvalidDataException>(() => ProjectSnapshotCodec.Encode(project));
-        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
-    }
-
-    [Fact]
-    public void 같은_Settings_link가_중복되면_저장하지_않는다()
-    {
-        var project = new StoryProject();
-        var file = new StoryFile("sf_link", "링크");
-        var setNode = new SetNode("nd_set", "설정");
-        var dialogue = new DialogueNode("nd_dialogue", "장면");
-        file.Nodes.Add(setNode);
-        file.Nodes.Add(dialogue);
-        project.Files.Add(file);
-        project.Links.Add(new NodeLink("lk_one", NodeLinkKind.Settings, setNode.Id, dialogue.Id));
-        project.Links.Add(new NodeLink("lk_two", NodeLinkKind.Settings, setNode.Id, dialogue.Id));
-
-        Assert.Throws<InvalidDataException>(() => ProjectSnapshotCodec.Encode(project));
     }
 
     [Fact]
@@ -454,5 +417,21 @@ public class SerializationTests
         string directory = Path.Combine(Path.GetTempPath(), $"VnTool.Serialization.{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
         return directory;
+    }
+
+    [Theory]
+    [InlineData("beginChoice")]   // ⛔ 걷힌 대사 안 선택지 — 전에는 알아보고 버렸다
+    [InlineData("else")]          // ⛔ 전에는 모르는 이름을 endIf로 돌렸다
+    public void 모르는_조건_전환_종류는_깨진_파일이다(string kind)
+    {
+        var sample = new Sample();
+        sample.Line("갈래 안", new LineConditionTransition(ConditionTransitionKind.BeginIf, sample.ConditionA.Id));
+        string json = StoryFileJson.Write(sample.File);
+        Assert.Contains("\"beginIf\"", json, StringComparison.Ordinal);
+
+        InvalidDataException error = Assert.Throws<InvalidDataException>(
+            () => StoryFileJson.Read(json.Replace("\"beginIf\"", $"\"{kind}\"", StringComparison.Ordinal)));
+
+        Assert.Contains($"'{kind}'", error.Message, StringComparison.Ordinal);
     }
 }

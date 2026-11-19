@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
@@ -151,7 +153,7 @@ public class ScriptSyncTests
 
         // 적용을 거부하고 대본은 손대지 않는다.
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(
-            () => fixture.Editor.ApplyScriptSync(plan));
+            () => fixture.Editor.ApplyScriptSync(fixture.Dialogue.Id, plan));
         Assert.Contains("확인이 필요한", error.Message, StringComparison.Ordinal);
         Assert.Equal(before, fixture.LineIds());
         Assert.Equal("둘", fixture.Script.Text(before[1]).Text);
@@ -164,14 +166,14 @@ public class ScriptSyncTests
 
         Assert.Equal(1, fixture.Script.SourceRevision);
         Assert.Equal(
-            ScriptParser.Parse("윌로: 하나\n").ContentHash,
+            SyncFixture.Parse("윌로: 하나\n").ContentHash,
             fixture.Script.SourceContentHash);
 
         fixture.Sync("윌로: 하나\n라루: 둘\n");
 
         Assert.Equal(2, fixture.Script.SourceRevision);
         Assert.Equal(
-            ScriptParser.Parse("윌로: 하나\n라루: 둘\n").ContentHash,
+            SyncFixture.Parse("윌로: 하나\n라루: 둘\n").ContentHash,
             fixture.Script.SourceContentHash);
     }
 
@@ -210,21 +212,47 @@ internal sealed class SyncFixture
         var project = new StoryProject { Title = "동기화" };
         var file = new StoryFile("sf_sync", "동기화 파일");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "동기화 파일" });   // 카드는 챕터 판에만 선다
 
         Editor = new ProjectEditor(project, newLineId: () => $"ln_{++_nextLine:D3}");
-        Script = Editor.AddScript("동기화 대본");
-        Dialogue = Editor.AddDialogueNode(file.Id, name: "장면", scriptId: Script.Id);
+        Dialogue = Editor.AddDialogueNode(file.Id, "장면", name: "장면");
+
+        // 빈 대본에서 시작한다 — 카드가 들고 선 빈 첫 줄을 걷고 LineId 번호도 처음으로 되돌린다.
+        Script.Lines.Clear();
+        Script.RequireLocale(Script.PrimaryLocale).Entries.Clear();
+        _nextLine = 0;
 
         Sync(initialText);
     }
 
     public ProjectEditor Editor { get; }
 
-    public ScriptDocument Script { get; }
+    public ScriptDocument Script => Dialogue.Script;
 
     public DialogueNode Dialogue { get; }
 
-    public ScriptSyncPlan Plan(string text) => Editor.PlanScriptSync(Script.Id, text);
+    /// <summary>
+    /// <c>화자: 대사</c> 줄들을 동기화 입력으로 편다 — 일치 엔진만 재므로 문법은 이것으로 족하다.
+    /// (⛔ 평평한 대본 파일을 읽던 <c>ScriptParser</c>와 <c>PlanScriptSync</c>는 대본 가져오기와 함께
+    /// 걷혔다 · 2026-10-29 L5. 카드 글 칸은 <see cref="ProjectEditor.ApplyScenarioText"/>로 같은 엔진에 든다.)
+    /// </summary>
+    public static ParsedScript Parse(string text)
+    {
+        List<ParsedScriptLine> lines = text
+            .Split('\n')
+            .Where(raw => raw.Trim().Length > 0)
+            .Select((raw, index) =>
+            {
+                int colon = raw.IndexOf(':', StringComparison.Ordinal);
+                return new ParsedScriptLine(index + 1, raw[..colon].Trim(), raw[(colon + 1)..].Trim());
+            })
+            .ToList();
+
+        return new ParsedScript(lines, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))));
+    }
+
+    public ScriptSyncPlan Plan(string text) =>
+        ScriptSynchronizer.Plan(Script, Parse(text), newLineId: () => $"ln_{++_nextLine:D3}");
 
     public ScriptSyncPlan Sync(string text)
     {
@@ -232,7 +260,7 @@ internal sealed class SyncFixture
 
         if (!plan.HasConflicts)
         {
-            Editor.ApplyScriptSync(plan);
+            Editor.ApplyScriptSync(Dialogue.Id, plan);
         }
 
         return plan;

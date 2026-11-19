@@ -23,23 +23,7 @@ public sealed class StatRenameTests
         ChapterStat stat = Assert.Single(Chapter(editor).Stats,
             item => string.Equals(item.Key, "호감", StringComparison.Ordinal));
 
-        // 표시이름을 따로 안 정했으면(= 키와 같았으면) 그것도 따라간다.
-        Assert.Equal("호감", stat.DisplayName);
         Assert.DoesNotContain(Chapter(editor).Stats, item => item.Key == "trust");
-    }
-
-    [Fact]
-    public void 사람이_정한_표시이름은_안_건드린다()
-    {
-        ProjectEditor editor = World();
-        int at = Chapter(editor).Stats.FindIndex(stat => stat.Key == "trust");
-        Chapter(editor).Stats[at] = Chapter(editor).Stats[at] with { DisplayName = "신뢰도" };
-
-        editor.RenameChapterStat("ch01", "trust", "호감");
-
-        Assert.Equal(
-            "신뢰도",
-            Chapter(editor).Stats.Single(stat => stat.Key == "호감").DisplayName);
     }
 
     [Fact]
@@ -114,7 +98,7 @@ public sealed class StatRenameTests
         Chapter(editor).Fixtures.Add(new ChapterFixture(
             "높은신뢰", IsActive: true,
             Stats: new Dictionary<string, int> { ["trust"] = 7, ["fatigue"] = 1 },
-            Choices: [], SourceRow: 0));
+            Choices: []));
 
         StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "호감");
 
@@ -156,12 +140,11 @@ public sealed class StatRenameTests
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
-            new Vn.Authoring.Definition.GameDefinition(),
             editor.Project.Files.Single(file => file.Name == "ch01").Id,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Single(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+            .Single();   // 설정 노드는 판의 공급 노드뿐이다
 
         Assert.Equal(supplied.Id, Assert.Single(supply.Conditions).Id);
     }
@@ -187,7 +170,7 @@ public sealed class StatRenameTests
         //    정규화되던 것이 막던 근거였는데, `stat("키")`의 인자가 문자열 리터럴이 되면서
         //    정규화가 없어졌다 — 둘은 이제 게임에서도 서로 다른 스탯이다.
         ProjectEditor editor = World();
-        Chapter(editor).Stats.Add(new ChapterStat("호감_도", "호감_도", 0, 0, 10, SourceRow: 0));
+        Chapter(editor).Stats.Add(new ChapterStat("호감_도", 0, 0, 10));
 
         Assert.True(editor.RenameChapterStat("ch01", "trust", "호감 도").Applied);
         Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "호감 도");
@@ -245,11 +228,11 @@ public sealed class StatRenameTests
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("ch01");
 
-        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10, SourceRow: 0));
-        chapter.Stats.Add(new ChapterStat("fatigue", "fatigue", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("fatigue", 0, 0, 10));
 
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-        editor.AddEpisode("ch01", "a", title: "a", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
         editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다", statChanges: "trust +1");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 
@@ -264,12 +247,11 @@ public sealed class StatRenameTests
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
-            new Vn.Authoring.Definition.GameDefinition(),
             fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Single(node => ChapterBoardSupply.IsConditionSupplyNodeName(node.Name));
+            .Single();   // 설정 노드는 판의 공급 노드뿐이다
 
         return (editor, Assert.Single(supply.Conditions));
     }

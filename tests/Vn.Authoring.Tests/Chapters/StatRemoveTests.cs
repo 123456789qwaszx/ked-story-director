@@ -64,7 +64,7 @@ public sealed class StatRemoveTests
     {
         // 단순 포함 검사면 `trustworthy`가 `trust`를 쓰는 것으로 세어 못 지우게 막는다.
         ProjectEditor editor = World();
-        Chapter(editor).Stats.Add(new ChapterStat("solo", "solo", 0, 0, 10, SourceRow: 0));
+        Chapter(editor).Stats.Add(new ChapterStat("solo", 0, 0, 10));
         editor.AddChapterCondition("ch01", "닮은것", "solotype >= 1");
 
         Assert.Empty(editor.FindStatUses("ch01", "solo"));
@@ -78,7 +78,7 @@ public sealed class StatRemoveTests
         Chapter(editor).Fixtures.Add(new ChapterFixture(
             "판", IsActive: true,
             Stats: new Dictionary<string, int> { ["unused"] = 5, ["fatigue"] = 1 },
-            Choices: [], SourceRow: 0));
+            Choices: []));
 
         StatRemoveOutcome outcome = editor.RemoveChapterStat("ch01", "unused");
 
@@ -162,28 +162,30 @@ public sealed class StatRemoveTests
     [Fact]
     public void 빈_식은_검증이_짚어_사람이_채운다()
     {
-        // 비우고 끝내면 아무도 모른다 — 빈 식이 <b>할 일이 남았다</b>고 말해야 한다.
+        // 비우고 끝내면 아무도 모른다 — 빈 식이 <b>할 일이 남았다</b>고 말해야 한다. 식 미정은 경고다(writer-fields W1 — 항상 통과).
         ProjectEditor editor = World();
 
         editor.RemoveChapterStat("ch01", "trust", clearUses: true);
 
         Assert.Contains(
-            Chapter(editor).ToGraphModel("ch01", null).Diagnostics,
-            item => item.Message.Contains("비어 있습니다", StringComparison.Ordinal));
+            Chapter(editor).ToGraphModel("ch01").Diagnostics,
+            item => item.Code == ChapterDiagnosticCode.ConditionExpressionBlank &&
+                    item.Severity == ChapterDiagnosticSeverity.Warning &&
+                    item.Message.Contains("식 미정", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void 판에_공급된_사본도_Id를_지킨_채_비워진다()
+    public void 판에_공급된_사본도_Id를_지킨_채_식_미정이_된다()
     {
-        // ⚠ 갈래가 이 Id로 잇는다. 식이 비면 이미터가 `<<if false>>`로 내므로 갈래는
-        //    <b>서 있되 안 탄다</b> — 조용히 꺼져 있는 것이 사라지는 것보다 낫다.
+        // ⚠ 갈래가 이 Id로 잇는다. 챕터 조건이 식 미정이 됐으니 사본도 식 미정의 식(항상 통과)이다 — 간선과 같은 규칙
+        //    (2026-11-17 — 전에는 비워서 `<<if false>>`로 꺼 두었다).
         (ProjectEditor editor, ConditionDefinition supplied) = WorldWithSupply();
         string id = supplied.Id;
 
         editor.RemoveChapterStat("ch01", "trust", clearUses: true);
 
         Assert.Equal(id, supplied.Id);
-        Assert.Equal(string.Empty, supplied.Expression);
+        Assert.Equal(ChapterBoardSupply.UndecidedYarn, supplied.Expression);
     }
 
     [Fact]
@@ -216,9 +218,8 @@ public sealed class StatRemoveTests
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
-            new Vn.Authoring.Definition.GameDefinition(),
             fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         return (editor, editor.Project.EnumerateNodes().OfType<SetNode>()
             .SelectMany(node => node.Conditions).Single());
@@ -232,12 +233,12 @@ public sealed class StatRemoveTests
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("ch01");
 
-        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10, SourceRow: 0));
-        chapter.Stats.Add(new ChapterStat("fatigue", "fatigue", 0, 0, 10, SourceRow: 0));
-        chapter.Stats.Add(new ChapterStat("unused", "unused", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("fatigue", 0, 0, 10));
+        chapter.Stats.Add(new ChapterStat("unused", 0, 0, 10));
 
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-        editor.AddEpisode("ch01", "a", title: "a", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
         editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다", statChanges: "trust +1");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 

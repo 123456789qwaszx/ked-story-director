@@ -64,32 +64,14 @@ public sealed class EpisodeNamingLookupTests
     }
 
     [Fact]
-    public void 걷힌_카드는_더_이상_안_잡힌다()
-    {
-        // ⚠ 2026-09-18까지 이 자리는 <b>떼어내기</b>였다(표식을 비우고 이름을 바꿔 판에
-        //    남겼다). Ctrl+Z가 생기면서 그럴 이유가 없어졌고, 이제 그냥 걷는다.
-        (ProjectEditor editor, StoryFile board) = World();
-
-        var card = new DialogueNode(name: "ep01") { MarkedEpisodeId = "ep01" };
-        board.Nodes.Add(card);
-
-        editor.RemoveNode(card.Id);
-
-        Assert.Null(EpisodeNaming.CardFor(editor.Project, "ch01", "ep01"));
-    }
-
-    [Fact]
     public void 챕터와_판은_같은_한_줄로_서로를_찾는다()
     {
         (ProjectEditor editor, StoryFile board) = World();
 
         Assert.Same(board, EpisodeNaming.BoardOf(editor.Project, "ch01"));
-        Assert.Equal("ch01", EpisodeNaming.ChapterOfBoard(editor.Project, board)!.ChapterId);
+        Assert.Equal("ch01", EpisodeNaming.ChapterOfBoard(editor.Project, board).ChapterId);
 
-        // 챕터 아닌 판은 양쪽 다 null이다 — 새 프로젝트의 `기본 파일`이 그렇다.
-        StoryFile scratch = editor.AddStoryFile("낙서");
-
-        Assert.Null(EpisodeNaming.ChapterOfBoard(editor.Project, scratch));
+        // 판이 없는 챕터는 있다(아직 안 세웠다). 챕터가 없는 판은 저장 검증이 받지 않는다(2026-11-18 · old-shapes O3).
         Assert.Null(EpisodeNaming.BoardOf(editor.Project, "없는챕터"));
     }
 

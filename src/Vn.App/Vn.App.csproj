@@ -5,16 +5,28 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>Vn.App</RootNamespace>
+    <!-- 작가에게 보이는 이름(2026-11-19 · docs/work-orders/writer-app-orders.md WA4) — 실행 파일은 StoryDirector(.exe), 탐색기 · 작업 관리자에는
+         「스토리 디렉터」. 프로젝트 · 네임스페이스(Vn.App)는 안의 이름이라 그대로다. 창 제목의 이름은 Services/AppIdentity.cs. -->
+    <AssemblyName>StoryDirector</AssemblyName>
+    <AssemblyTitle>스토리 디렉터</AssemblyTitle>
+    <Product>스토리 디렉터</Product>
+    <!-- 실행 파일의 아이콘(Windows 탐색기 · 작업 표시줄). 창의 아이콘은 App.axaml.cs가 같은 파일로 단다. 그림을 바꾸려면 원본
+         Assets/app-icon.png를 갈고 tools/make-app-icons.py로 다시 굽는다(.ico · 맥의 .icns) — WA5. -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <!-- 판 번호 — 꾸러미를 구울 때 정한다(`-p:Version=0.1.0` · publish-windows.ps1 · publish-macos.sh · .github/workflows/release.yml). 손으로 짓는
+         빌드는 0.0.0이고 창 제목에 「개발판」으로 선다(Services/AppIdentity.cs · writer-release WR2). -->
+    <Version>0.0.0</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
-    <!-- 오디오 미리 듣기 (W62). 게임 런타임 오디오가 아니라 저작 확인용 재생이다. -->
-    <PackageReference Include="NAudio" />
-    <PackageReference Include="NAudio.Vorbis" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
@@ -23,34 +35,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Vn.Authoring\Vn.Authoring.csproj" />
-
-    <!-- Yarn 분석 (2026-08-23 소유자 결정 — ARCHITECTURE.md §161의 "두 세계가 갈라져
-         있다"를 여기서 의도적으로 넘는다).
-
-         그 분리가 지키려던 것은 "저작 도메인이 Yarn 컴파일러에 묶이지 않는다"이고,
-         그것은 그대로다 — Vn.Authoring은 여전히 Vn.Core를 모른다. 여기서 쓰는 자리는
-         도메인이 아니라 **출력 검증**이다: 이미터가 방금 쓴 산출물이 실제로 컴파일되는지
-         셸이 확인하고 그 사유를 사람에게 보인다.
-
-         왜 필요한가 — 이 검사는 테스트에만 꽂혀 있었다. 프로덕션 경로에서 컴파일러를
-         부르는 자리가 0건이라, 툴이 컴파일 안 되는 yarn을 써도 유니티까지 아무도 몰랐다.
-         2026-08-23의 이름 갈림과 같은 모양이다: 감지기는 있는데 정작 중요한 경로에 없다. -->
-    <ProjectReference Include="..\Vn.Core\Vn.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Vn.App.Tests" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- 기본 튜닝 (W46) — 런타임 실측 덤프의 스냅샷 데이터.
-         '기본 튜닝 생성' 버튼이 이 내용을 프로젝트 옆 ExportedTuning으로 쓴다. -->
-    <EmbeddedResource Include="Assets\DefaultTuning\**\*.json"
-                      LogicalName="DefaultTuning/%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-
   <!--
-    배포는 exe 하나로 (2026-08-17 — 비개발자에게 넘기기 위해).
+    배포는 exe 하나로 — 비개발자에게 넘기기 위해.
 
     <b>디버그 심볼은 배포물에 넣지 않는다.</b> SkiaSharp·HarfBuzz의 네이티브 .pdb가
     합쳐서 100MB인데, 그건 exe(78MB)보다 크면서 쓰는 사람에게는 아무 소용이 없다.

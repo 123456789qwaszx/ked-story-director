@@ -35,14 +35,12 @@ public sealed class ScriptLine
 
     /// <summary>대본에서 사라진 줄. 순서에서 빠지지만 Id는 재사용하지 않는다.</summary>
     public bool IsRetired { get; set; }
-
-    public ScriptLine Clone() => new(Id, Revision, IsRetired);
 }
 
 /// <summary>
 /// 한 locale의 LineId별 화자·대사 표.
 ///
-/// LineId를 키로 쓰는 덕분에 언어를 추가해도 Dialogue 논리와 Presentation binding이
+/// LineId를 키로 쓰는 덕분에 언어를 추가해도 Dialogue 논리(그리고 compositor의 연출 binding)가
 /// 가리키는 Id는 전혀 바뀌지 않는다.
 /// </summary>
 public sealed class ScriptLocale
@@ -60,18 +58,10 @@ public sealed class ScriptLocale
 
     public LocalizedLine Find(string lineId) =>
         Entries.TryGetValue(lineId, out LocalizedLine? line) ? line : LocalizedLine.Empty;
-
-    public ScriptLocale Clone()
-    {
-        return new ScriptLocale(Locale)
-        {
-            Entries = new Dictionary<string, LocalizedLine>(Entries, StringComparer.Ordinal)
-        };
-    }
 }
 
 /// <summary>
-/// 작가의 평평한 대본 하나에서 나온 저작 산출물.
+/// 대사 카드 하나의 대본 — 카드가 든다(<see cref="Model.DialogueNode.Script"/>).
 ///
 /// 두 가지를 함께 소유한다.
 ///   <b>줄 정체성과 순서</b> — <see cref="Lines"/>
@@ -81,30 +71,19 @@ public sealed class ScriptLocale
 /// 본문을 복사하지 않는다. 같은 문장을 고칠 수 있는 자리가 두 곳이 되면 어느 쪽이 진실인지
 /// 아무도 답할 수 없게 된다.
 ///
-/// 작가의 원본 파일은 <b>읽기 전용 가져오기 입력</b>이다. VnTool은 그 파일에 쓰지 않는다.
-/// 다시 읽어 들이는 것은 <see cref="ScriptSynchronizer"/>를 지나는 명시적인 동작이다.
+/// 글을 다시 넣는 것은 <see cref="ScriptSynchronizer"/>를 지나는 명시적인 동작이다(LineId를 잇는다).
+///
+/// 2026-10-29까지는 카드와 따로 선 문서였다 — 제 Id · 이름을 들고 <c>script/*.vnscript.json</c>에 따로 저장됐고 카드는
+/// Id로 가리켰다. 카드와 늘 1:1이 된 뒤로 카드가 직접 들고 카드와 함께 저장된다(<c>docs/plans/script-merge.md</c>).
 /// </summary>
 public sealed class ScriptDocument
 {
     public const string DefaultLocale = "ko-KR";
 
-    public ScriptDocument(string? id = null, string name = "새 대본")
-    {
-        Id = id ?? Identifier.Script();
-        Name = name;
-    }
-
-    public string Id { get; }
-
-    public string Name { get; set; }
-
-    /// <summary>마지막으로 가져온 작가 파일의 경로. 기록용이며 저장 위치를 결정하지 않는다.</summary>
-    public string? SourcePath { get; set; }
-
-    /// <summary>동기화를 적용할 때마다 1씩 오른다. 아직 한 번도 읽지 않았으면 0이다.</summary>
+    /// <summary>동기화(카드 글 반영)를 적용할 때마다 1씩 오른다. 아직 한 번도 반영하지 않았으면 0이다.</summary>
     public int SourceRevision { get; set; }
 
-    /// <summary>마지막으로 반영한 원본 텍스트의 해시. 같은 파일을 다시 읽었는지 알 수 있다.</summary>
+    /// <summary>마지막으로 반영한 원본 텍스트의 해시. 같은 글을 다시 넣었는지 알 수 있다.</summary>
     public string? SourceContentHash { get; set; }
 
     public string PrimaryLocale { get; set; } = DefaultLocale;
@@ -147,18 +126,5 @@ public sealed class ScriptDocument
     public LocalizedLine Text(string lineId, string? locale = null)
     {
         return FindLocale(locale ?? PrimaryLocale)?.Find(lineId) ?? LocalizedLine.Empty;
-    }
-
-    public ScriptDocument Clone()
-    {
-        return new ScriptDocument(Id, Name)
-        {
-            SourcePath = SourcePath,
-            SourceRevision = SourceRevision,
-            SourceContentHash = SourceContentHash,
-            PrimaryLocale = PrimaryLocale,
-            Lines = Lines.Select(line => line.Clone()).ToList(),
-            Locales = Locales.Select(locale => locale.Clone()).ToList()
-        };
     }
 }

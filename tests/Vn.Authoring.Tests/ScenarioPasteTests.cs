@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
@@ -12,21 +11,20 @@ namespace Vn.Authoring.Tests;
 /// </summary>
 public class ScenarioPasteTests
 {
-    private static readonly GameDefinition Definition = GameDefinition.Parse("""
-        { "speakers": [ { "name": "라루", "characterId": "laru" }, { "name": "윌로", "characterId": "willo" } ] }
-        """)!;
+    private static readonly Speaker[] Speakers = [new("라루", "laru"), new("윌로", "willo")];
 
     private static (ProjectEditor Editor, DialogueNode Node) BuildEditor()
     {
-        var project = new StoryProject();
+        var project = new StoryProject { Speakers = [.. Speakers] };
         var file = new StoryFile("sf_paste", "테스트", "story/paste.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "테스트" });   // 카드는 챕터 판에만 선다
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
-        DialogueNode node = editor.AddDialogueNode(file.Id, name: "장면");
+        DialogueNode node = editor.AddDialogueNode(file.Id, "장면", name: "장면");
 
         // 자동 생성된 첫 빈 줄은 붙여넣기 시 삭제 후보가 되므로 본문을 채워 시작한다.
-        editor.SetScriptLineText(node.ScriptId!, "ln_001", "라루", "첫 줄");
+        editor.SetScriptLineText(node.Id, "ln_001", "라루", "첫 줄");
         return (editor, node);
     }
 
@@ -51,10 +49,10 @@ public class ScenarioPasteTests
             마지막 지문.
             """;
 
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, text, Definition);
+        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, text);
 
         Assert.True(outcome.Applied);
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         List<(string Speaker, string Text)> lines = script.ActiveLines
             .Select(line => (script.Text(line.Id).Speaker, script.Text(line.Id).Text))
             .ToList();
@@ -73,15 +71,13 @@ public class ScenarioPasteTests
         // 실사례 — 화자 칸의 공백 있는 이름이 지문으로 합쳐져 "화자와 내용이 합쳐진다"로
         // 보였다. 등록된 이름과 다듬기 없이 정확히 일치할 때만 예외를 연다: 미등록 산문
         // ("그는 말했다: …")과 이름 뒤 공백("윌로 : …")은 여전히 지문이다.
-        GameDefinition definition = GameDefinition.Parse("""
-            { "speakers": [ { "name": "늙은 상인", "characterId": "merchant" } ] }
-            """)!;
+        Speaker[] speakers = [new("늙은 상인", "merchant")];
 
         ScenarioParseResult parsed = ScenarioTextParser.Parse("""
             늙은 상인: 어서 오게.
             그는 말했다: 이건 지문이다.
             늙은 상인 : 이름 뒤 공백은 지문이다.
-            """, definition);
+            """, speakers);
 
         Assert.Equal(("늙은 상인", "어서 오게."), (parsed.Lines[0].Speaker, parsed.Lines[0].Text));
         Assert.Equal(string.Empty, parsed.Lines[1].Speaker);
@@ -95,7 +91,6 @@ public class ScenarioPasteTests
         // (한 구간에 서로 다른 변경이 겹치면 Ambiguous로 적용을 거부하는 것이
         //  이 알고리즘의 설계다 — 그 거부는 아래 별도 테스트가 지킨다.)
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
-        string scriptId = node.ScriptId!;
 
         editor.ApplyScenarioText(node.Id, """
             라루: 첫 줄
@@ -106,9 +101,9 @@ public class ScenarioPasteTests
             윌로: 여섯째 줄
             라루: 일곱째 줄
             윌로: 여덟째 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
-        ScriptDocument script = editor.Project.FindScript(scriptId)!;
+        ScriptDocument script = node.Script;
         List<string> before = script.ActiveLines.Select(line => line.Id).ToList();
         Assert.Equal(8, before.Count);
 
@@ -121,7 +116,7 @@ public class ScenarioPasteTests
             라루: 다섯째 줄
             라루: 일곱째 줄
             윌로: 여덟째 줄 (고침)
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         Assert.True(outcome.Applied);
         List<string> after = script.ActiveLines.Select(line => line.Id).ToList();
@@ -147,14 +142,14 @@ public class ScenarioPasteTests
         // 불변식 1의 다른 반쪽 — 임의로 잇는 대신 통째로 거부한다.
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
         editor.ApplyScenarioText(
-            node.Id, "라루: 첫 줄\n윌로: 둘째 줄\n라루: 셋째 줄", Definition, confirmDeletes: true);
+            node.Id, "라루: 첫 줄\n윌로: 둘째 줄\n라루: 셋째 줄", confirmDeletes: true);
 
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         List<string> before = script.ActiveLines.Select(line => line.Id).ToList();
 
         // 인접한 두 줄을 동시에 고치면 어느 줄이 어느 줄의 수정인지 알 수 없다.
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(
-            node.Id, "라루: 완전히 새 문장 A\n윌로: 완전히 새 문장 B\n라루: 셋째 줄", Definition, confirmDeletes: true);
+            node.Id, "라루: 완전히 새 문장 A\n윌로: 완전히 새 문장 B\n라루: 셋째 줄", confirmDeletes: true);
 
         Assert.False(outcome.Applied);
         Assert.True(outcome.Plan!.HasConflicts);
@@ -165,17 +160,17 @@ public class ScenarioPasteTests
     public void 삭제는_확인_없이는_적용되지_않는다()
     {
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
-        editor.ApplyScenarioText(node.Id, "라루: 첫 줄\n윌로: 둘째 줄", Definition, confirmDeletes: true);
+        editor.ApplyScenarioText(node.Id, "라루: 첫 줄\n윌로: 둘째 줄", confirmDeletes: true);
 
-        ScenarioPasteOutcome first = editor.ApplyScenarioText(node.Id, "라루: 첫 줄", Definition);
+        ScenarioPasteOutcome first = editor.ApplyScenarioText(node.Id, "라루: 첫 줄");
 
         Assert.False(first.Applied);
         Assert.True(first.NeedsDeleteConfirmation);
-        Assert.Equal(2, editor.Project.FindScript(node.ScriptId)!.ActiveLines.Count()); // 그대로
+        Assert.Equal(2, node.Script.ActiveLines.Count()); // 그대로
 
-        ScenarioPasteOutcome second = editor.ApplyScenarioText(node.Id, "라루: 첫 줄", Definition, confirmDeletes: true);
+        ScenarioPasteOutcome second = editor.ApplyScenarioText(node.Id, "라루: 첫 줄", confirmDeletes: true);
         Assert.True(second.Applied);
-        Assert.Single(editor.Project.FindScript(node.ScriptId)!.ActiveLines);
+        Assert.Single(node.Script.ActiveLines);
     }
 
     [Fact]
@@ -184,35 +179,33 @@ public class ScenarioPasteTests
         // X11이 만든 전제: ScenarioOnly 표기 = 파싱 문법.
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
         var file = editor.Project.Files[0];
-        SetNode set = editor.AddSetNode(file.Id, name: "설정");
-        ConditionDefinition condition = editor.AddCondition(set.Id, "호감 높음", "favor >= 5");
-        editor.AddSettingsLink(set.Id, node.Id);
+        editor.AddChapterStat(file.Name, "favor", maximum: 10);
+        editor.AddChapterCondition(file.Name, "호감 높음", "favor >= 5");   // 조건은 챕터의 것 — 판의 공급 노드가 사본을 나른다
+        ConditionDefinition condition = file.Nodes.OfType<SetNode>().Single().Conditions.Single();
 
-        // 기존 첫 줄("라루: 첫 줄")이 닻으로 남고 나머지는 순수 삽입이다.
-        editor.ApplyScenarioText(node.Id, """
+        // 기존 첫 줄("라루: 첫 줄")이 닻으로 남고 나머지는 순수 삽입이다. 대본의 <<if>>는 그 사본의 식이다.
+        editor.ApplyScenarioText(node.Id, $"""
             라루: 첫 줄
-            <<if favor >= 5>>
+            <<if {condition.Expression}>>
             윌로: 갈래 안 줄
             <<endif>>
             라루: 갈래 뒤 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         List<string> ids = script.ActiveLines.Select(line => line.Id).ToList();
         Assert.Equal(3, ids.Count);
         Assert.Equal(ConditionTransitionKind.BeginIf, node.FindExtension(ids[1])!.Transition!.Kind);
         Assert.Equal(condition.Id, node.FindExtension(ids[1])!.Transition!.ConditionId);
         Assert.Equal(ConditionTransitionKind.EndIf, node.FindExtension(ids[2])!.Transition!.Kind);
 
-        // ScenarioOnly로 다시 펼친 텍스트를 그대로 붙여넣으면 완전한 무변경이다.
-        RenderedDocument document = WorkingDialoguePreview.ComposePreset(
-            editor.Project, node.Id, OutputPresetCatalog.ScenarioOnly, Definition);
-        string roundTrip = DocumentPreviewFormatter.Format(document);
+        // 카드 글 칸에 보이는 글(ScenarioOnly 표기)을 그대로 넣으면 완전한 무변경이다.
+        string roundTrip = WorkingDialoguePreview.ScenarioText(editor.Project, node.Id);
 
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, roundTrip, Definition, confirmDeletes: true);
+        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, roundTrip, confirmDeletes: true);
         Assert.True(outcome.Applied);
         Assert.True(outcome.Plan!.IsNoOp);
-        Assert.Equal(ids, editor.Project.FindScript(node.ScriptId)!.ActiveLines.Select(line => line.Id));
+        Assert.Equal(ids, node.Script.ActiveLines.Select(line => line.Id));
     }
 
     [Fact]
@@ -226,12 +219,12 @@ public class ScenarioPasteTests
             윌로: 갈래 줄
             <<endif>>
             라루: 뒤 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         Assert.True(outcome.Applied); // 대사는 들어온다
         Assert.Contains(outcome.Problems, problem => problem.Contains("미지의식", StringComparison.Ordinal));
 
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
+        ScriptDocument script = node.Script;
         string branchLineId = script.ActiveLines.Skip(1).First().Id;
         Assert.Null(node.FindExtension(branchLineId)?.Transition); // 추측해 잇지 않았다
     }
@@ -241,38 +234,17 @@ public class ScenarioPasteTests
     {
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
 
-        // 규칙 개정(G3-2): 옵션 줄(`->`)은 이제 이 파서의 범위다 — 엑셀 평평화 산출물이
-        // 옵션을 담고 오기 때문이다. 남은 미해석은 연출 커맨드와 장식 줄 둘이다.
+        // 미해석은 연출 커맨드와 장식 줄 둘이다. (옵션 줄 `->`도 2026-11-04부터 다시 미해석이다 —
+        // 대사 안 선택지가 걷혔다. LineIdRoundTripTests가 그쪽을 본다.)
         ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, """
             라루: 첫 줄
             <<camera_shake>>
             [주의] 장식 줄
             윌로: 둘째 줄
-            """, Definition, confirmDeletes: true);
+            """, confirmDeletes: true);
 
         Assert.True(outcome.Applied);
         Assert.Equal(2, outcome.Parsed.UnparsedLines.Count);
-        Assert.Equal(2, editor.Project.FindScript(node.ScriptId)!.ActiveLines.Count());
-    }
-
-    [Fact]
-    public void 선택_전환은_붙여넣기가_건드리지_않는다()
-    {
-        (ProjectEditor editor, DialogueNode node) = BuildEditor();
-        editor.ApplyScenarioText(node.Id, "라루: 첫 줄\n선택 라벨\n윌로: 갈래 줄", Definition, confirmDeletes: true);
-
-        ScriptDocument script = editor.Project.FindScript(node.ScriptId)!;
-        string labelId = script.ActiveLines.Skip(1).First().Id;
-        editor.SetLineTransition(node.Id, labelId, LineConditionTransition.BeginChoice("op_test"));
-
-        // 같은 본문을 다시 붙여넣어도(텍스트에는 선택 구조가 없다) 선택 전환은 남는다.
-        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(
-            node.Id, "라루: 첫 줄\n선택 라벨\n윌로: 갈래 줄", Definition, confirmDeletes: true);
-
-        Assert.True(outcome.Applied);
-        Assert.Equal(
-            ConditionTransitionKind.BeginChoice,
-            node.FindExtension(labelId)!.Transition!.Kind);
-        Assert.Equal("op_test", node.FindExtension(labelId)!.Transition!.OptionId);
+        Assert.Equal(2, node.Script.ActiveLines.Count());
     }
 }

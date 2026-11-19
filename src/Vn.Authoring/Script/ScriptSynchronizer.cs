@@ -49,33 +49,21 @@ public sealed record ScriptSyncEntry(
 public sealed class ScriptSyncPlan
 {
     public ScriptSyncPlan(
-        string scriptId,
         string locale,
         string sourceContentHash,
-        string? sourcePath,
-        IReadOnlyList<ScriptSyncEntry> entries,
-        IReadOnlyList<ScriptParseProblem> parseProblems)
+        IReadOnlyList<ScriptSyncEntry> entries)
     {
-        ScriptId = scriptId;
         Locale = locale;
         SourceContentHash = sourceContentHash;
-        SourcePath = sourcePath;
         Entries = entries;
-        ParseProblems = parseProblems;
     }
-
-    public string ScriptId { get; }
 
     public string Locale { get; }
 
     public string SourceContentHash { get; }
 
-    public string? SourcePath { get; }
-
     /// <summary>새 순서대로의 항목. 사라진 줄은 원래 있던 자리에 끼워 넣는다.</summary>
     public IReadOnlyList<ScriptSyncEntry> Entries { get; }
-
-    public IReadOnlyList<ScriptParseProblem> ParseProblems { get; }
 
     public IEnumerable<ScriptSyncEntry> Conflicts =>
         Entries.Where(entry => entry.Kind == ScriptSyncKind.Ambiguous);
@@ -139,7 +127,6 @@ public static class ScriptSynchronizer
         ScriptDocument document,
         ParsedScript parsed,
         string? locale = null,
-        string? sourcePath = null,
         Func<string>? newLineId = null)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -203,7 +190,7 @@ public static class ScriptSynchronizer
             previousNew = boundaryNew;
         }
 
-        return BuildPlan(document, targetLocale, oldLines, parsed, state, sourcePath, newLineId);
+        return BuildPlan(document, targetLocale, oldLines, parsed, state, newLineId);
     }
 
     private static ScriptSyncPlan BuildPlan(
@@ -212,7 +199,6 @@ public static class ScriptSynchronizer
         List<ScriptLine> oldLines,
         ParsedScript parsed,
         MatchState state,
-        string? sourcePath,
         Func<string> newLineId)
     {
         // 사라지거나 확정하지 못한 옛 줄은 바로 앞에서 짝이 맞은 새 줄 뒤에 끼워 넣는다.
@@ -302,12 +288,9 @@ public static class ScriptSynchronizer
         }
 
         return new ScriptSyncPlan(
-            document.Id,
             locale,
             parsed.ContentHash,
-            sourcePath ?? document.SourcePath,
-            entries,
-            parsed.Problems);
+            entries);
     }
 
     private static void MatchGap(
@@ -399,7 +382,7 @@ public static class ScriptSynchronizer
     ///
     /// <b>이것이 있으면 내용 기반 닻보다 언제나 낫다.</b> 내용 매칭은 "같은 문장이 양쪽에 정확히
     /// 한 번씩"일 때만 확신할 수 있어서, 비슷한 대사가 여러 줄이면 <c>Ambiguous</c>가 나고
-    /// 동기화가 통째로 거부된다. 엑셀 경로는 시트가 신원을 알고 있으므로 그 일이 일어나서는 안 된다.
+    /// 동기화가 통째로 거부된다. 입력이 신원을 알고 있으면(<c>#line:</c> 태그 — 엑셀 시절에는 시트의 열) 그 일이 일어나서는 안 된다.
     ///
     /// 신원을 아는 줄이 하나도 없으면 null을 돌려주고 호출자가 내용 기반으로 되돌아간다 —
     /// 평평한 대본 파일 가져오기는 지금까지와 똑같이 동작한다.

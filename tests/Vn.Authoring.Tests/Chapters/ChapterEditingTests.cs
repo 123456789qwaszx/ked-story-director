@@ -7,9 +7,9 @@ namespace Vn.Authoring.Tests.Chapters;
 /// <summary>
 /// <b>챕터를 고치는 일이 프로젝트 안에서 일어난다</b> (R-F · 2026-09-16, 지시서 §4.1).
 ///
-/// 옛 <see cref="ChapterWorkbookWriter"/>는 셀 하나를 고치는 외과수술이었다 — 열 번호와
+/// 옛 <c>ChapterWorkbookWriter</c>는 셀 하나를 고치는 외과수술이었다 — 열 번호와
 /// 시트 이름이 부르는 쪽까지 스며 있었고, 고친 결과를 보려면 파일을 다시 읽어야 했다.
-/// 이제 고치는 것은 모델이고 파일은 이미터가 통째로 낸다.
+/// 이제 고치는 것은 모델이다(2026-10-29 · D2에 워크북 출력도 걷혔다).
 ///
 /// ⛔ <b>이 묶음이 지키는 것은 "규칙이 안 사라졌다"이다.</b> 자리를 옮기는 변경에서 제일
 /// 흔한 손실이 <i>옛 코드에만 적혀 있던 규칙</i>이다 — 간선의 신원(v9), 개명이 참조를 끌고
@@ -24,34 +24,26 @@ public sealed class ChapterEditingTests
     public ChapterEditingTests()
     {
         _editor.EnsureChapter("ch01");
-        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0);
-        _editor.AddEpisode("ch01", "ep02", "옥상", 200, 0);
-    }
-
-    [Fact]
-    public void 에피소드를_세우면_대사엔트리가_Id와_같다()
-    {
-        // ⚠ v3 규약. 임포터와 [대본] 탭의 노드 이름 규칙이 같은 값을 보므로, 어긋나면
-        //    같은 에피소드에 대사노드가 둘이 된다.
-        Assert.Equal("ep01", Chapter.Episodes[0].DialogueEntry);
+        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0, sceneId: "ep01");
+        _editor.AddEpisode("ch01", "ep02", "옥상", 200, 0, sceneId: "ep02");
     }
 
     [Fact]
     public void 같은_Id로_두_번_세우지_못한다()
     {
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(
-            () => _editor.AddEpisode("ch01", "ep01", "또 복도", 0, 0));
+            () => _editor.AddEpisode("ch01", "ep01", "또 복도", 0, 0, sceneId: "ep01"));
 
         Assert.Contains("ep01", error.Message);
     }
 
     [Fact]
-    public void 다음_에피소드는_에피소드와_간선이_한_번에_선다()
+    public void 새_문구로_길을_이으면_사전에도_올라간다()
     {
-        // 분기 저작의 핵심 동작 — 둘 중 하나만 선 채로 남지 않는다.
-        _editor.AddNextEpisode("ch01", "ep02", "ep03", "복도 끝", 400, 0, optionLabel: "더 간다");
+        // ⛔ 에피소드와 간선을 한 번에 세우던 「다음 에피소드」(`AddNextEpisode`)는 2026-11-18에 걷혔다 — 에피소드는 길 없이 서고 잇기는 따로다.
+        _editor.AddEpisode("ch01", "ep03", "복도 끝", 400, 0, sceneId: "ep03");
+        _editor.AddEdge("ch01", "ep02", "ep03", optionLabel: "더 간다");
 
-        Assert.Contains(Chapter.Episodes, episode => episode.EpisodeId == "ep03");
         Assert.Contains(Chapter.Edges, edge =>
             edge.FromEpisodeId == "ep02" && edge.ToEpisodeId == "ep03" && edge.OptionLabel == "더 간다");
 
@@ -87,40 +79,13 @@ public sealed class ChapterEditingTests
         Chapter.Fixtures.Add(new ChapterFixture(
             "경로", IsActive: true,
             new Dictionary<string, int>(StringComparer.Ordinal),
-            [new ChapterFixtureChoice("ep01", "ep02")],
-            SourceRow: 0));
+            [new ChapterFixtureChoice("ep01", "ep02")]));
 
         _editor.RenameEpisode("ch01", "ep01", "ep0A");
 
         Assert.Equal(["ep0A", "ep02"], Chapter.Episodes.Select(episode => episode.EpisodeId));
         Assert.Equal("ep0A", Chapter.Edges[0].FromEpisodeId);
         Assert.Equal("ep0A", Chapter.Fixtures[0].Choices[0].From);
-
-        // 대사엔트리도 규약을 따르던 것이라 함께 갔다.
-        Assert.Equal("ep0A", Chapter.Episodes[0].DialogueEntry);
-    }
-
-    [Fact]
-    public void 사람이_따로_적은_대사엔트리는_개명이_안_건드린다()
-    {
-        _editor.UpdateEpisode("ch01", "ep01", dialogueEntry: "Story_손으로_적음");
-        _editor.RenameEpisode("ch01", "ep01", "ep0A");
-
-        Assert.Equal("Story_손으로_적음", Chapter.Episodes[0].DialogueEntry);
-    }
-
-    [Fact]
-    public void 폐지된_cleared_참조가_있으면_개명을_막는다()
-    {
-        // 식은 사람 소유라 툴이 고쳐 주지 않는다(자동 추측 금지) — 개명으로 참조만 더
-        // 낡게 만들 이유가 없다.
-        _editor.AddChapterCondition("ch01", "지난챕터", "cleared:ep01");
-
-        InvalidOperationException error = Assert.Throws<InvalidOperationException>(
-            () => _editor.RenameEpisode("ch01", "ep01", "ep0A"));
-
-        Assert.Contains("cleared:", error.Message);
-        Assert.Equal("ep01", Chapter.Episodes[0].EpisodeId);
     }
 
     [Fact]
@@ -140,20 +105,9 @@ public sealed class ChapterEditingTests
     }
 
     [Fact]
-    public void 사전에서_낱말을_지워도_그것을_쓰는_길은_산다()
-    {
-        // 사전은 어휘집이지 배선이 아니다 (v9).
-        _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다");
-        _editor.RemoveChoiceLabel("ch01", "간다");
-
-        Assert.Empty(Chapter.ChoiceOptions);
-        Assert.Equal("간다", Chapter.Edges[0].OptionLabel);
-    }
-
-    [Fact]
     public void 배선을_고치면_도착과_문구가_한_번에_바뀐다()
     {
-        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0);
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "위로");
 
         _editor.SetEdgeRoute("ch01", "ep01", "ep02", "위로", "ep03", "아래로");
@@ -162,6 +116,48 @@ public sealed class ChapterEditingTests
 
         Assert.Equal(("ep03", "아래로"), (edge.ToEpisodeId, edge.OptionLabel));
         Assert.Contains("아래로", Chapter.ChoiceOptions.Select(option => option.Text));
+    }
+
+    [Fact]
+    public void 배선을_고쳐도_목록의_자리와_관문이_남는다()
+    {
+        // D3 · two-graphs.md §6-3 — 간선 순서가 곧 런타임 OptionIndex다(§5-3). 걷고 새로 그으면
+        //    목록 끝으로 가고 관문을 잃는다.
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
+        _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "위로", conditionLabel: "신뢰높음");
+        _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "옆으로");
+
+        _editor.SetEdgeRoute("ch01", "ep01", "ep02", "위로", "ep03", "위로");
+
+        Assert.Equal(
+            [("ep03", "위로", "신뢰높음"), ("ep02", "옆으로", (string?)null)],
+            Chapter.Edges.Select(edge => (edge.ToEpisodeId, edge.OptionLabel, edge.ConditionLabel)));
+    }
+
+    [Fact]
+    public void 다른_간선과_겹치게_고치는_배선은_거절한다()
+    {
+        // 신원 (출발, 도착, 문구)가 겹치면 같은 버튼이 둘이다 — AddEdge와 같은 규칙.
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
+        _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다");
+        _editor.AddEdge("ch01", "ep01", "ep03", optionLabel: "간다");
+
+        Assert.Throws<InvalidOperationException>(() =>
+            _editor.SetEdgeRoute("ch01", "ep01", "ep02", "간다", "ep03", "간다"));
+
+        Assert.Equal(["ep02", "ep03"], Chapter.Edges.Select(edge => edge.ToEpisodeId));
+    }
+
+    [Fact]
+    public void 바뀌는_것이_없는_배선은_적지_않는다()
+    {
+        _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다");
+        int changes = 0;
+        _editor.Changed += (_, _) => changes++;
+
+        _editor.SetEdgeRoute("ch01", "ep01", "ep02", "간다", "ep02", "간다");
+
+        Assert.Equal(0, changes);
     }
 
     [Fact]
@@ -184,7 +180,7 @@ public sealed class ChapterEditingTests
     {
         // ⚠ 옛 경로에서는 셀에 원문이 남아 리더가 다음 읽기에 짚어 줬다. 이제 다시 읽는
         //    일이 없어 여기서 안 막으면 영영 사라진다.
-        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        Chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "간다", statChanges: "trust +3");
 
@@ -203,7 +199,7 @@ public sealed class ChapterEditingTests
     public void 조건은_해석을_담지_않고_식만_든다()
     {
         // 해석은 ToGraphModel이 식에서 다시 푼다 — 담아 두면 고친 식과 갈린다.
-        Chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 0));
+        Chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
         _editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3", "친해졌을 때");
         Assert.Empty(Chapter.Conditions[0].Parsed);
@@ -214,7 +210,7 @@ public sealed class ChapterEditingTests
         Assert.Equal("친해졌을 때", Chapter.Conditions[0].Description);   // 안 준 것은 그대로다
         Assert.Empty(Chapter.Conditions[0].Parsed);
 
-        ChapterGraphModel model = Chapter.ToGraphModel("ch01.xlsx");
+        ChapterGraphModel model = Chapter.ToGraphModel("ch01");
 
         Assert.True(model.Conditions[0].IsValid);
         Assert.Equal(["trust"], model.Conditions[0].Parsed.Select(term => term.Key));
@@ -229,7 +225,7 @@ public sealed class ChapterEditingTests
 
         _editor.MoveEpisode("ch01", "ep01", 12.3456, 67.891);
 
-        Assert.Equal(ProjectChangeKind.NodeMetadata, kind);
+        Assert.Equal(ProjectChangeKind.ChapterLayout, kind);
         Assert.Equal((12.35, 67.89), (Chapter.Episodes[0].X, Chapter.Episodes[0].Y));
     }
 
@@ -237,7 +233,7 @@ public sealed class ChapterEditingTests
     public void 되돌리면_챕터_편집도_되돌아간다()
     {
         // 워크북이 원본이던 시절에는 되돌릴 곳이 파일이라 여기 없었다 — 이제 있다.
-        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0);
+        _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
         Assert.Equal(3, Chapter.Episodes.Count);
 
         _editor.Undo();

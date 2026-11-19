@@ -1,32 +1,28 @@
-using System.Diagnostics;
 using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
-using IoPath = System.IO.Path;
 using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Chapters.Import;
-using Vn.Authoring.Definition;
-using Vn.Authoring.Model;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Views;
 
 /// <summary>
-/// 챕터·에피소드 그래프 뷰 (G4·G5). <b>별도 화면이고 기존 대사·연출 그래프는 손대지 않는다</b> (G-1).
+/// 챕터·에피소드 그래프 뷰. <b>별도 화면이고 기존 대사·연출 그래프는 손대지 않는다</b>.
 ///
-/// ⛔ <b>~~편집은 전부 엑셀 셀 쓰기다 (G-2 v2)~~</b> — 두 번 뒤집혔다. R-F(2026-09-16)가
-/// 원본을 엑셀에서 프로젝트로 옮겼고(워크북은 그 뒤로 산출물이다), v4(2026-09-18)가 자리를
-/// 사람에게 돌려줬다. 이 화면의 편집은 <c>ProjectEditor</c>를 거치고, 되돌리기도 거기서 온다.
+/// 원본은 프로젝트다. 이 화면의 편집은 <c>ProjectEditor</c>를 거치고, 되돌리기도 거기서 온다.
 ///
-/// <b>자리의 주인은 에피소드 제 X·Y다 (v4, 2026-09-18 소유자:</b> *"챕터그래프도 연출그래프와
-/// 동일하게 자유롭게 노드의 위치를 조절할 수 있게"*). <see cref="ChapterBranchPlanner"/>는
-/// 이제 <b>그리는 자리가 아니라 첫 자리</b>를 낸다 — 자세한 것은 그쪽 주석에 있다.
+/// <b>자리의 주인은 에피소드 제 X·Y다</b> — 연출 그래프와 같이 사람이 카드를 자유롭게 옮긴다.
+/// <see cref="ChapterBranchPlanner"/>는 <b>그리는 자리가 아니라 첫 자리</b>를 낸다 — 자세한 것은 그쪽 주석에 있다.
 ///
 /// 오류가 있어도 읽힌 데까지 그린다. 빈 화면 + "오류"보다, 그려진 그래프 옆에 무엇이 어디서
 /// 잘못됐는지 세워 두는 편이 고칠 자리를 알려 준다(규칙 14).
@@ -34,58 +30,39 @@ namespace Vn.App.Views;
 public partial class ChapterGraphView : UserControl
 {
     private const double CardWidth = 190;
+
+    /// <summary>
+    /// 카드의 높이 — 도착 스탯이 하나 이하인 카드(가장 낮은 카드). 스탯이 더 있으면 한 줄(<see cref="StatRowHeight"/>)씩 아래로 자란다
+    /// (2026-11-19 소유자 · usability UX3 · ⛔ 그 전에는 모든 카드가 74였고 스탯은 한 줄에서 「…」로 잘렸다). 카드마다의 높이는
+    /// <see cref="CardHeightOf"/> — 선택지 점 · 선 · 고르기 범위 · 판 크기가 그것을 따른다.
+    /// </summary>
     private const double CardHeight = 74;
+
+    /// <summary>스탯 줄 위까지 — 여백 · 칩 줄 · 이름 줄.</summary>
+    private const double CardHeadHeight = 58;
+
+    /// <summary>스탯 한 줄의 높이 — 글은 11이다.</summary>
+    internal const double StatRowHeight = 16;
+
     private const double CanvasMargin = 60;
 
     private readonly List<ChapterEntry> _entries = new();
-    /// <summary>이번 들여오기가 낸 진단. 거부면 그 사유가 여기 전부 있다.</summary>
-    private readonly List<ChapterDiagnostic> _importDiagnostics = new();
 
-    /// <summary>들여오기를 거부당한 챕터 — 전부 아니면 전무라 챕터 단위다 (§5.2).</summary>
-    private readonly List<string> _importRefusals = new();
-
-    /// <summary>판 수준 경고 (2단계 가드레일) — 진행이 착지하는 카드로 향하는 출구 등.</summary>
-    private readonly List<ChapterDiagnostic> _boardWarnings = new();
-
-    /// <summary>선택된 챕터의 구조 검증 + 도달성 증명 결과 (G7). 워크북을 읽을 때 갱신된다.</summary>
+    /// <summary>선택된 챕터의 구조 검증 + 도달성 증명 결과.다시 읽을 때 갱신된다.</summary>
     private ChapterValidationResult? _validation;
 
-    /// <summary>`스탯변화` 줄 편집기 둘 — 간선 패널의 것과 에피소드 노드 폼 안의 것.</summary>
+    /// <summary>`스탯변화` 줄 편집기 — 간선 패널의 것.</summary>
     private readonly StatChangeEditor _edgeStats = new();
-    private readonly StatChangeEditor _formStats = new();
 
     private AuthoringSession? _session;
-    private ChapterFolderWatcher? _watcher;
-    private ChapterFolderWatcher? _episodeWatcher;
     private string? _selectedChapterId;
     private bool _updatingCombo;
 
-    /// <summary>
-    /// 워크북을 여는 손. 기본은 OS 기본 연결이고, 화면 없는 검증이 실제 엑셀을
-    /// 띄우지 않도록 갈아끼울 수 있다.
-    /// </summary>
-    internal Action<string> OpenWorkbookFile { get; set; } = path =>
-        Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
-
-    /// <summary>
-    /// .xlsx 기본 앱의 실행 파일을 묻는 손. OS 연결을 맹신하면 엑셀 없는 기계에서
-    /// 엉뚱한 앱(실사례: 챗지피티)이 뜨므로, 열기 전에 이걸로 확인한다.
-    /// </summary>
-    internal Func<string?> WorkbookHandlerProbe { get; set; } =
-        SpreadsheetAssociation.ResolveXlsxHandler;
-
-    /// <summary>스프레드시트 앱이 없을 때의 대안 — 탐색기에서 파일을 선택해 보여 준다.</summary>
-    internal Action<string> RevealInFolder { get; set; } = path =>
-        Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
-        {
-            UseShellExecute = true
-        });
-
-    /// <summary>챕터 목록이 다시 읽혔다. 왼쪽 패널(MainWindow)이 이걸 듣고 목록을 다시 그린다.</summary>
+    /// <summary>챕터 목록이 다시 읽혔다. 셸(MainWindow)이 듣고 두 하이어아키 · [대본] 툴바 콤보 · 「조건 및 스탯」 탭을 다시 세운다.</summary>
     internal event Action<IReadOnlyList<ChapterEntry>>? EntriesReloaded;
 
-    /// <summary>폴더를 다시 훑고 감시를 다시 건다. 새 챕터를 만든 직후(폴더가 방금 생겼을 수 있다) 부른다.</summary>
-    internal void RefreshFromDisk() => WatchAndReload();
+    /// <summary>프로젝트를 다시 읽어 판을 다시 세운다. 셸이 챕터를 만들거나 지운 직후 부른다.</summary>
+    internal void Refresh() => Reload();
 
     /// <summary>
     /// 판을 실제로 다시 만든 횟수. <see cref="ValidationComputeCount"/>와 같은 종류의 창이다 —
@@ -94,14 +71,12 @@ public partial class ChapterGraphView : UserControl
     internal int CanvasDrawCount { get; private set; }
 
     /// <summary>
-    /// 챕터를 고른다 — <b>어디서 골랐든 이 길 하나를 지난다</b> (왼쪽 목록 클릭 · 위
-    /// 드롭다운 · 코드).
+    /// 챕터를 고른다 — <b>어디서 골랐든 이 길 하나를 지난다</b> (하이어아키 줄 · 툴바 콤보 ·
+    /// 「조건 및 스탯」 탭의 작은 드롭다운 · 코드).
     ///
-    /// 2026-08-17 소유자 보고 둘의 뿌리가 여기였다. 드롭다운은 이 길을 안 지나고
-    /// <c>Draw()</c>만 불렀다: ① 검증을 다시 안 돌려 <b>이전 챕터의 결과</b>로 그렸고 —
-    /// 그래서 도달 불가 빨간 테두리가 남고 도착 스탯이 안 보였다(Ctrl+S가 세션을 흔들어
-    /// 다시 읽히면 그제서야 맞았다) ② 판을 활성으로 바꾸지 않아 <b>왼쪽 챕터 목록의
-    /// 강조가 따라오지 않았다</b>.
+    /// 이 길을 건너뛰고 <c>Draw()</c>만 부르면: ① 검증을 다시 안 돌려 <b>이전 챕터의 결과</b>로
+    /// 그린다 — 도달 불가 빨간 테두리가 남고 도착 스탯이 안 보인다 ② 판을 활성으로 바꾸지 않아
+    /// <b>[대본] 툴바 콤보 · 「조건 및 스탯」 탭이 따라오지 않는다</b>(둘 다 활성 판을 본다).
     /// </summary>
     internal void SelectChapter(string chapterId)
     {
@@ -111,31 +86,27 @@ public partial class ChapterGraphView : UserControl
         }
 
         _selectedChapterId = chapterId;
+        _centerSheet = true;   // 다른 챕터의 판 — 가운데에 놓는다
         _updatingCombo = true;
         ChapterCombo.SelectedItem = chapterId;
+        ConditionChapterCombo.SelectedItem = chapterId;
         _updatingCombo = false;
 
         // 고른 챕터의 선택은 이전 챕터의 것이 아니다 — 들고 있으면 없는 간선을 가리킨다.
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
-        HideEdgeForm();
+        _grouped.Clear();
+        UnfoldChoices();
+        ShowInHierarchy(new HierarchyPick(HierarchyKind.Chapter, chapterId));
+        _inspector = InspectorMode.Chapter;   // 챕터를 골랐다 — 하이어아키의 그 줄을 고른 것과 같다
 
-        // 잠금도 이전 챕터의 것이 아니다 (2026-08-24) — 엑셀이 A를 잡고 있을 때 B로
-        // 옮기면 B는 잠기지 않은 채로 보여야 한다. ⚠ 그 물음을 여기 두지 않는다:
-        // 바로 아래 Draw()의 마지막 줄이 이미 묻는다
-        // (RefreshPropertyPanel → ApplyEditability → RefreshLockBanner). 한 줄 더 두면
-        // 같은 물음이 두 곳에 산다. 대신 규칙을 테스트가 붙든다
-        // (`ChapterEditGateTests.다른_챕터로_옮기면_그_챕터의_잠금을_다시_묻는다`) —
-        // Draw()의 그 줄이 사라지면 여기가 아니라 그 테스트가 먼저 말한다.
         Validate();
         Draw();
 
-        // ⛔ 여기서 대본을 따라잡던 호출은 2026-09-16에 걷혔다 (R-D). 챕터를 고르는 것은
-        //    <b>보는 일</b>이지 들여오는 일이 아니다 — 고를 때마다 워크북을 다시 읽으면
-        //    "임포트 뒤 다시 읽지 않는다"(§5.2)가 성립하지 않는다. 대본은 [대본 가져오기]로
-        //    들어온다.
+        // 챕터를 고르는 것은 <b>보는 일</b>이지 들여오는 일이 아니다 — 대본은 연출 그래프 카드의
+        //    글 칸에서 쓴다.
 
-        // 그 챕터의 판을 활성으로 — 왼쪽 목록의 강조가 이 값을 본다.
+        // 그 챕터의 판을 활성으로 — [대본] 툴바 콤보 · 「조건 및 스탯」 탭이 이 값을 본다.
         ChapterSelected?.Invoke(chapterId);
     }
 
@@ -145,35 +116,310 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     internal event Action<string>? ChapterSelected;
 
-    // ── 챕터 목록 자리 (2026-08-22 소유자 — 창 맨 왼쪽 열에서 이 기둥 위로 이사) ──────
+    // ── 하이어아키 (docs/plans/hierarchy.md) ──────────
     //
-    // 자리만 이 뷰가 내주고 <b>내용은 셸(MainWindow)이 짓는다</b>. 목록의 클릭 하나가
-    // 세션 전환(EnsureChapterBoard)·엑셀 열기·우클릭 메뉴와 얽혀 있어 여기로 옮기면
-    // 같은 배선이 두 벌이 된다 — 그 사본이야말로 이 코드베이스가 가장 경계하는 것이다.
+    // 내용(프로젝트 · 챕터 목록)과 접힘은 <b>셸(MainWindow)이 짓는다</b> — 두 탭의 하이어아키가 한 원천 · 한 접힘을 쓴다.
+    // 이 탭의 하이어아키는 <b>읽기 전용</b>이다(셸이 ReadOnly로 세운다 — 차림표 · 이름 고치기 · 끌어 옮기기가 없다. 더하고 지우고
+    // 고치는 것은 [대본] 탭). 줄을 고른 뒤 이 판에서 할 일(챕터 · 에피소드 고르기, 오른쪽 탭 바꾸기)은
+    // 이 뷰가 한다(<see cref="OnHierarchyPicked"/>).
 
-    /// <summary>챕터 줄이 쌓이는 자리.</summary>
-    internal Panel ChapterListHost => ChapterListPanel;
+    /// <summary>하이어아키 — 셸이 내용을 채우고 접힘을 맞춘다(읽기 전용).</summary>
+    internal StoryHierarchy HierarchyView => Hierarchy;
 
-    /// <summary>[＋] 새 챕터 — 셸이 클릭을 받고 플라이아웃의 과녁으로도 쓴다.</summary>
-    internal Button ChapterAddButton => AddChapterButton;
+    /// <summary>하이어아키 기둥 접기 —셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
+    internal ColumnDock HierarchyDock { get; }
+
+    /// <summary>오른쪽 기둥(탭 셋) 접기 — 셸이 두 탭을 맞추고 사용자 설정에 기억한다.</summary>
+    internal ColumnDock SideDock { get; }
+
+    /// <summary>하이어아키에서 고른 것을 처리하는 중 — 그동안은 판의 선택을 트리에 되비추지 않는다(이미 고른 줄이다).</summary>
+    private bool _fromHierarchy;
 
     /// <summary>
-    /// 판 한가운데의 [＋ 챕터] — 프로젝트는 있는데 챕터가 하나도 없을 때만 보인다.
-    /// 클릭의 뜻은 우측 기둥의 [＋]와 같으므로 배선도 같은 셸이 짓는다.
+    /// 하이어아키에서 줄을 골랐다 —챕터 · 에피소드를 판에서 고르고 오른쪽 기둥을 그것에 맞춘다: 프로젝트 → 「화자」 탭,
+    /// 챕터 → 「조건 및 스탯」 탭, 장면 · 에피소드 · 분기 → 「인스펙터」 탭.
     /// </summary>
-    internal Button ChapterAddCenterButton => EmptyAddChapterButton;
+    private void OnHierarchyPicked(HierarchyPick pick)
+    {
+        _fromHierarchy = true;
+
+        try
+        {
+            if (pick.ChapterId is { } chapterId)
+            {
+                SelectChapter(chapterId);
+
+                // 분기 카드 줄 — 그 칩을 고른다(부르는 곳 · 조건 · 대본).
+                if (pick.Kind == HierarchyKind.Branch)
+                {
+                    SelectBranchCard(pick.NodeId);
+                }
+                else
+                {
+                    SelectEpisode(pick.Kind == HierarchyKind.Episode ? pick.EpisodeId : null);
+                }
+            }
+
+            _inspector = pick.Kind switch
+            {
+                HierarchyKind.Project => InspectorMode.Project,
+                HierarchyKind.Chapter => InspectorMode.Chapter,
+                HierarchyKind.Scene => InspectorMode.Scene,
+                _ => InspectorMode.Selection
+            };
+            _inspectedSceneId = pick.SceneId;
+            ApplyInspector();
+
+            // 고른 것을 보이는 탭으로 간다 — 프로젝트는 화자, 챕터는 조건 및 스탯([구성]은 수치를 잡는 자리다), 그 밖은 인스펙터
+            // (2026-11-18 소유자 · side-tabs V1).
+            ShowSideTab(pick.Kind switch
+            {
+                HierarchyKind.Project => SideTab.Speakers,
+                HierarchyKind.Chapter => SideTab.Conditions,
+                _ => SideTab.Inspector
+            });
+        }
+        finally
+        {
+            _fromHierarchy = false;
+        }
+    }
+
+    /// <summary>
+    /// 하이어아키에서 고른 것처럼 인스펙터에 세운다 — 하이어아키 줄을 누른 것과 같은 길이다(트리도 그 줄을 비춘다).
+    /// 화면 시험과 장면 인스펙터의 에피소드 단추가 부른다.
+    /// </summary>
+    internal void Inspect(HierarchyPick pick)
+    {
+        OnHierarchyPicked(pick);
+        Hierarchy.Show(pick);
+    }
+
+    // ── 인스펙터 (docs/plans/hierarchy.md) ─────────────────────────────────
+
+    /// <summary>인스펙터가 무엇을 보이나 — 고른 하나(에피소드 · 길 · 분기)거나, 하이어아키의 프로젝트 · 챕터 · 장면 줄이다.</summary>
+    private enum InspectorMode
+    {
+        Selection,
+        Project,
+        Chapter,
+        Scene
+    }
+
+    private InspectorMode _inspector = InspectorMode.Selection;
+
+    /// <summary>장면 인스펙터가 보이는 장면(유효 장면ID).</summary>
+    private string? _inspectedSceneId;
+
+    /// <summary>오른쪽 기둥이 지금 보이는 탭 — 화면 시험의 손잡이.</summary>
+    internal SideTab ShownSideTab =>
+        ReferenceEquals(SideTabs.SelectedItem, SpeakerTabItem) ? SideTab.Speakers
+        : ReferenceEquals(SideTabs.SelectedItem, ConditionTabItem) ? SideTab.Conditions
+        : SideTab.Inspector;
+
+    /// <summary>오른쪽 기둥의 탭을 연다 — 고르기가 부르고, 화면 시험이 탭을 누른 것 대신 부른다.</summary>
+    internal void ShowSideTab(SideTab tab) => SideTabs.SelectedItem = tab switch
+    {
+        SideTab.Speakers => SpeakerTabItem,
+        SideTab.Conditions => ConditionTabItem,
+        _ => InspectorTabItem
+    };
+
+
+    /// <summary>인스펙터 탭의 칸 하나만 세우고 머리글을 맞춘다. 화자 · 조건 및 스탯은 제 탭에 늘 서 있다.</summary>
+    private void ApplyInspector()
+    {
+        SelectionSection.IsVisible = _inspector is InspectorMode.Selection or InspectorMode.Scene;
+        OverviewSection.IsVisible = _inspector is InspectorMode.Project or InspectorMode.Chapter;
+        ChapterIdGrid.IsVisible = _inspector == InspectorMode.Chapter;
+        OverviewText.Full = _inspector == InspectorMode.Chapter
+            ? "이 챕터의 조건 · 스탯은 「조건 및 스탯」 탭에서 정합니다."
+            : "화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.";
+        ScenePanel.IsVisible = _inspector == InspectorMode.Scene;
+
+        if (_inspector == InspectorMode.Scene)
+        {
+            NoSelectionText.IsVisible = false;   // 장면을 보고 있다 — "아무것도 안 골랐다" 안내가 아니다
+        }
+
+        ChapterGraphModel? model = SelectedModel;
+
+        (string title, string subtitle) = _inspector switch
+        {
+            InspectorMode.Project => ("프로젝트", string.Empty),
+            // 머리글은 표시 이름이다(비면 ID) — 장면 · 에피소드 머리글과 같다(2026-11-17 소유자). ID는 아래 「챕터ID」 칸이 보인다.
+            InspectorMode.Chapter => ($"챕터 · {model?.ShownName ?? _selectedChapterId}", string.Empty),
+            InspectorMode.Scene => SceneHeader(model),
+            _ when _selectedEpisodeId is { } episodeId => (EpisodeHeader(model, episodeId), string.Empty),
+            // 머리글은 문구(판의 선 이름표와 같은 글), 부제는 양 끝 에피소드의 보이는 제목(2026-11-17 소유자 — ⛔ 머리글의
+            // 「출발 → 도착」 ID는 걷었다. 문구를 따로 보이던 읽기 전용 칸이 고칠 수 있는 칸처럼 보여서다).
+            _ when _selectedEdgeKey is { } edge => ($"선택지 · {EdgeHeaderText(model, edge)}",
+                $"{model?.FindEpisode(edge.From)?.ShownTitle ?? edge.From} → {model?.FindEpisode(edge.To)?.ShownTitle ?? edge.To}"),
+            _ when _selectedBranchCardId is { } chipId => ($"⑂ 분기 카드 · {BranchCardName(chipId)}",
+                "들렀다 돌아오는 카드 — 조건은 여기서, 대본은 [대본] 탭에서 고칩니다"),
+            _ when _selectedSlot is { } slot => ($"선택지 칸 · {slot.Episode}", "아직 길이 없는 칸"),
+            _ => ("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다")
+        };
+
+        InspectorTitle.Text = title;
+        InspectorSubtitle.Text = subtitle;
+        InspectorSubtitle.IsVisible = subtitle.Length > 0;
+
+        if (_inspector == InspectorMode.Scene)
+        {
+            FillScenePanel(model);
+        }
+    }
+
+    /// <summary>고른 간선의 문구 — 판의 선 이름표와 같은 규칙(<see cref="EdgeOptionText"/>). 간선이 사라졌으면 고를 때의 문구.</summary>
+    private static string EdgeHeaderText(ChapterGraphModel? model, (string From, string To, string Label) key) =>
+        model?.Edges.FirstOrDefault(candidate =>
+                candidate.FromEpisodeId == key.From &&
+                candidate.ToEpisodeId == key.To &&
+                EdgeLabelKey(candidate) == key.Label) is { } edge
+            ? EdgeOptionText(edge)
+            : key.Label.Length > 0 ? key.Label : "⚠ 문구 없음";
+
+    /// <summary>선택지 간선의 문구 한 줄 — 자동 길은 「AUTO」, 문구가 비면 「⚠ 문구 없음」. 판의 이름표와 인스펙터 머리글이 같이 쓴다.</summary>
+    internal static string EdgeOptionText(ChapterEdge edge) =>
+        edge.Auto ? "AUTO"
+        : edge.HasNoOptionLabel ? "⚠ 문구 없음"
+        : edge.OptionLabel!;
+
+    /// <summary>
+    /// 에피소드 인스펙터의 머리글 — 「장면 - 제목」(<see cref="ChapterEpisode.SceneAndTitle"/>). EpisodeId는 바로 아래 칸이
+    /// 보인다. [대본] 탭의 머리글은 「{챕터} - {장면}」이다(제목은 그쪽 이름 칸이 보인다).
+    /// </summary>
+    private static string EpisodeHeader(ChapterGraphModel? model, string episodeId) =>
+        model?.FindEpisode(episodeId)?.SceneAndTitle ?? episodeId;
+
+    private (string Title, string Subtitle) SceneHeader(ChapterGraphModel? model) =>
+        InspectedScene(model) is { } scene
+            ? ($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}")
+            : ("장면", "이 장면이 사라졌습니다");
+
+    /// <summary>장면 인스펙터가 보이는 장면 — 이 챕터를 지금 묶어 본 것에서 찾는다(장면은 엔티티가 아니다).</summary>
+    private ChapterScene? InspectedScene(ChapterGraphModel? model) =>
+        model is null || _inspectedSceneId is null
+            ? null
+            : ChapterSceneGrouping.Of(model).FirstOrDefault(scene =>
+                string.Equals(scene.SceneId, _inspectedSceneId, StringComparison.Ordinal));
+
+    /// <summary>장면 인스펙터 — 안내 · 에피소드 단추들(이름은 머리글이 보인다).</summary>
+    private void FillScenePanel(ChapterGraphModel? model)
+    {
+        SceneEpisodesPanel.Children.Clear();
+
+        if (InspectedScene(model) is not { } scene)
+        {
+            SceneHintText.Set("이 장면이 사라졌습니다 — 하이어아키에서 다시 고르세요.", "이 장면이 사라졌습니다.");
+            return;
+        }
+
+        if (!SceneIdBox.IsFocused)
+        {
+            SceneIdBox.Text = scene.SceneId;
+        }
+
+        SceneHintText.Set(
+            $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 장면 이름은 [대본] 탭 하이어아키의 장면 줄에서 고칩니다. " +
+            "장면 시작점(⌂)은 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.",
+            brief: null);
+
+        foreach (ChapterEpisode episode in scene.Episodes)
+        {
+            string episodeId = episode.EpisodeId;
+            bool root = string.Equals(scene.RootEpisodeId, episodeId, StringComparison.Ordinal);
+            var link = new Button
+            {
+                Content = (root ? "⌂ " : "· ") + episodeId,
+                FontSize = 11,
+                Padding = new Thickness(6, 2),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Tag = "scene-episode:" + episodeId
+            };
+            link.Click += (_, _) => UiGuard.Run(_session, "에피소드 고르기", () =>
+                Inspect(new HierarchyPick(HierarchyKind.Episode, _selectedChapterId, scene.SceneId, episodeId)));
+            SceneEpisodesPanel.Children.Add(link);
+        }
+    }
+
+    /// <summary>
+    /// 에피소드를 골랐다 (2026-10-30 HY3) — 셸이 그 카드를 세션의 선택으로 삼는다(연출 그래프로 넘어가도 같은 것을 본다).
+    /// 밖의 선택을 비출 때(<see cref="ShowEpisode"/>)는 알리지 않는다.
+    /// </summary>
+    internal event Action<string, string>? EpisodePicked;
+
+    /// <summary>에피소드 카드를 두 번 눌렀다(챕터, 에피소드) — 셸이 [대본] 탭의 그 카드로 데려간다.</summary>
+    internal event Action<string, string>? EpisodeOpened;
+
+    /// <summary>
+    /// 분기 카드의 칩을 두 번 눌렀다(노드 Id) — 셸이 [대본] 탭의 그 분기 카드로 데려간다(에피소드 카드와 같다 — 2026-11-17 소유자 보고:
+    /// 칩은 두 번 눌러도 [대본]으로 가지 않았다).
+    /// </summary>
+    internal event Action<string>? BranchCardOpened;
+
+    /// <summary>선택지 간선을 두 번 눌렀다(챕터, 출발, 도착, 문구) — 셸이 [대본] 탭의 그 선택지 레인으로 데려간다.</summary>
+    internal event Action<string, string, string, string>? ChoiceOpened;
+
+    /// <summary>선택지 간선을 눌렀다 — 고르고, 두 번 누름이면 [대본] 탭으로 가자고 알린다.</summary>
+    private void PressChoice(string from, string to, string label, int clickCount)
+    {
+        SelectEdgeKey(from, to, label);
+
+        if (clickCount >= 2 && _selectedChapterId is { } chapterId)
+        {
+            ChoiceOpened?.Invoke(chapterId, from, to, label);
+        }
+    }
+
+    /// <summary>밖에서 고른 에피소드를 비추는 중 — 그동안은 <see cref="EpisodePicked"/>를 알리지 않는다.</summary>
+    private bool _showingOutside;
+
+    /// <summary>
+    /// 밖(연출 그래프)에서 고른 에피소드를 이 판에도 고른다 — 그 챕터로 넘어가고 그 에피소드를 인스펙터에 세우며 하이어아키가
+    /// 비춘다. 알리지는 않는다.
+    /// </summary>
+    internal void ShowEpisode(string chapterId, string episodeId)
+    {
+        if (string.Equals(_selectedChapterId, chapterId, StringComparison.Ordinal) &&
+            string.Equals(_selectedEpisodeId, episodeId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _showingOutside = true;
+
+        try
+        {
+            SelectChapter(chapterId);
+            SelectEpisode(episodeId);
+        }
+        finally
+        {
+            _showingOutside = false;
+        }
+    }
+
+    /// <summary>판에서 고른 것을 하이어아키에 비춘다 — 하이어아키가 부른 선택이면 하지 않는다.</summary>
+    private void ShowInHierarchy(HierarchyPick? pick)
+    {
+        if (!_fromHierarchy)
+        {
+            Hierarchy.Show(pick);
+        }
+    }
 
     /// <summary>
     /// 판 한가운데의 [새 프로젝트] — 프로젝트가 아직 없을 때만 보인다(챕터보다 먼저다).
-    /// 클릭의 뜻은 툴바의 [새로 만들기]와 같으므로 배선도 같은 셸이 짓는다.
+    /// 클릭의 뜻은 File 메뉴의 「새 프로젝트…」와 같으므로 배선도 같은 셸이 짓는다.
     /// </summary>
     internal Button ProjectNewCenterButton => EmptyNewProjectButton;
 
-    /// <summary>
-    /// 판 한가운데의 [＋ 에피소드] — 챕터는 열렸는데 에피소드가 하나도 없을 때만 보인다.
-    /// 앞의 둘과 달리 배선도 이 뷰의 것이다(툴바 [＋ 에피소드]와 같은 길).
-    /// </summary>
-    internal Button EpisodeAddCenterButton => EmptyAddEpisodeButton;
+    /// <summary>판 한가운데의 [＋ 첫 챕터 만들기] — 프로젝트는 있고 챕터가 없을 때만 보인다. 셸이 [대본] 탭으로 넘어가 거기서 만든다(F2).</summary>
+    internal event Action? FirstChapterRequested;
+
 
     /// <summary>머리글 아래 한 줄 — 지금 활성인 판의 요약.</summary>
     internal TextBlock ChapterSummaryText => ChapterSummary;
@@ -181,18 +427,52 @@ public partial class ChapterGraphView : UserControl
     public ChapterGraphView()
     {
         InitializeComponent();
+        AttachedToVisualTree += (_, _) => UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
 
-        // ⛔ [다시 읽기] 단추는 2026-08-24에 없앴다 (소유자: 한 번도 안 썼다). 감시자가
-        // 붙은 뒤로 화면이 스스로 따라오므로 손잡이가 할 일이 남지 않았다. <see cref="Reload"/>
-        // 자체는 그대로다 — 부르는 곳이 사람 손에서 감시자와 챕터 전환으로 옮겨갔을 뿐이다.
-        // ⛔ [폴더 열기]도 2026-08-26에 없앴다 (소유자) — 노드 더블클릭이 엑셀을 여는
-        // 길이 이미 있어, 폴더로 가는 손잡이는 상시로 자리만 먹었다.
+        // 창을 떠나면(Windows 키 · Alt+Tab) 하던 끌기를 정리한다 — 놓음이 이 창으로 오지 않는다(usability UX20).
+        AttachedToVisualTree += (_, _) =>
+        {
+            _window = TopLevel.GetTopLevel(this) as WindowBase;
 
-        // [화자] 탭 — 프로젝트 전체의 캐스트 (2026-08-23). 엔터로도 더한다: 이름을 여럿
-        // 적을 때 손이 마우스로 갔다 오지 않는다.
-        SpeakerAddButton.Click += (_, _) => UiGuard.Run(_session, "화자 추가", AddSpeaker);
-        SpeakerNameBox.KeyDown += (_, args) => CommitOnEnter(args, AddSpeaker);
-        SpeakerCharacterIdBox.KeyDown += (_, args) => CommitOnEnter(args, AddSpeaker);
+            if (_window is not null)
+            {
+                _window.Deactivated += OnWindowDeactivated;
+            }
+        };
+        DetachedFromVisualTree += (_, _) =>
+        {
+            if (_window is not null)
+            {
+                _window.Deactivated -= OnWindowDeactivated;
+                _window = null;
+            }
+        };
+
+        // 셸이 탭을 바꿀 때는 떼지 않고 보이기만 바꾼다(usability UX14) — 다시 보이는 순간 미뤄 둔 그리기를 한다.
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == IsVisibleProperty && IsVisible)
+            {
+                UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
+            }
+        };
+
+        // 하이어아키 기둥 접기 — 「‹」로 접고 띠를 눌러 편다.
+        HierarchyDock = new ColumnDock(
+            BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
+        FoldHierarchyButton.Click += (_, _) => HierarchyDock.Toggle(folded: true);
+        HierarchyStrip.Click += (_, _) => HierarchyDock.Toggle(folded: false);
+
+        // 오른쪽 기둥(탭 셋)도 같은 손짓으로 접는다(2026-11-18 소유자 · side-fold K1).
+        SideDock = new ColumnDock(
+            BoardColumns.ColumnDefinitions[4], BoardColumns.ColumnDefinitions[3], SideSplitter, SideOpen, SideStrip);
+        FoldSideButton.Click += (_, _) => SideDock.Toggle(folded: true);
+        SideStrip.Click += (_, _) => SideDock.Toggle(folded: false);
+
+        // [다시 읽기] 단추는 없다 — 화면이 스스로 따라온다. <see cref="Reload"/>는
+        // 세션의 변경 알림(QueueReload) · 붙이기(Attach) · 셸의 Refresh(챕터를 만들거나 지운 뒤)가 부른다.
+
+        // [화자] 탭은 캐릭터 키만 잇는다 — 이름을 더하는 폼은 [대본] 탭에 있다(writer-fields W3).
 
         ChapterCombo.SelectionChanged += (_, _) =>
         {
@@ -201,18 +481,39 @@ public partial class ChapterGraphView : UserControl
                 return;
             }
 
-            // 드롭다운도 왼쪽 목록 클릭과 같은 길을 지난다 (2026-08-17) — 여기서
-            // Draw()만 부르던 것이 "빨간 테두리가 안 사라진다"의 정체였다.
+            // 드롭다운도 하이어아키 줄 클릭과 같은 길을 지난다 — 여기서
+            // Draw()만 부르면 빨간 테두리가 안 사라진다.
             if (ChapterCombo.SelectedItem is string picked)
             {
                 UiGuard.Run(_session, "챕터 선택", () => SelectChapter(picked));
             }
         };
 
+        // 「조건 및 스탯」 탭의 작은 드롭다운 — 툴바 콤보와 같은 길이다. 탭은 그대로 둔다(보던 탭에서 챕터만 바뀐다).
+        ConditionChapterCombo.SelectionChanged += (_, _) =>
+        {
+            if (!_updatingCombo && ConditionChapterCombo.SelectedItem is string picked)
+            {
+                UiGuard.Run(_session, "챕터 선택", () => SelectChapter(picked));
+            }
+        };
 
-        // 편집 (G-2 v2) — 전부 엑셀 셀에 써지고, 저장 감시가 다시 읽어 화면이 따라온다.
-        // 2026-08-16 소유자 — [개명]·[적용] 단추 폐지: Id는 Enter로 개명하고, 조건 콤보는
-        // 고르는 순간 저장된다. 편집은 늘 열려 있고, 엑셀이 그 파일을 잡은 동안만 닫힌다.
+
+        // 편집 — 전부 편집기 명령으로 프로젝트에 가고, 세션의 변경 알림이 다시 읽어 화면이 따라온다.
+        // [개명]·[적용] 단추는 없다: Id는 Enter나 다른 곳을 누르면 개명하고(⛔ 2026-11-18까지는 Enter만 — side-boxes J1), 조건 콤보는
+        // 고르는 순간 저장된다. Esc는 지금 값으로 돌린다([대본]과 같다). 편집은 늘 열려 있다.
+        //
+        // ⚠ 초점을 잃을 때 바꾸려면 <b>그때의 대상이 적기 시작한 대상이어야 한다</b> — 판의 카드 · 선 · 점은 초점을 가져가지 않아
+        //    고름이 먼저 바뀔 수 있다. 고르기의 첫머리가 초점을 받이로 옮겨 먼저 낸다(FlushInspectorTyping).
+        IdBox.LostFocus += (_, _) => UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
+        ChapterIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "챕터 ID 바꾸기", RenameSelectedChapter);
+        SceneIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "장면 ID 바꾸기", RenameInspectedScene);
+        BranchIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "분기 카드 ID 바꾸기", RenameInspectedBranchCard);
+        EscToRevert.Wire(IdBox, () => _selectedEpisodeId);
+        EscToRevert.Wire(ChapterIdBox, () => _selectedChapterId);
+        EscToRevert.Wire(SceneIdBox, () => _inspectedSceneId);
+        EscToRevert.Wire(BranchIdBox, () => _session?.Project.FindDialogue(_selectedBranchCardId)?.Name);
+        EscToRevert.Wire(EdgeLockedMsgBox, () => SelectedEdge()?.LockedMessage);
         IdBox.KeyDown += (_, e) =>
         {
             if (e.Key == Avalonia.Input.Key.Enter)
@@ -221,50 +522,70 @@ public partial class ChapterGraphView : UserControl
                 UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
             }
         };
+        ChapterIdBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter)
+            {
+                e.Handled = true;
+                UiGuard.Run(_session, "챕터 ID 바꾸기", RenameSelectedChapter);
+            }
+        };
         SceneIdBox.KeyDown += (_, e) =>
         {
             if (e.Key == Avalonia.Input.Key.Enter)
             {
                 e.Handled = true;
-                UiGuard.Run(_session, "장면ID 저장", ApplyEpisodeFromPanel);
+                UiGuard.Run(_session, "장면 ID 바꾸기", RenameInspectedScene);
             }
         };
-        ApplySceneGroupButton.Click += (_, _) =>
-            UiGuard.Run(_session, "장면ID 일괄 저장", ApplySceneIdToGroup);
+        BranchIdBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter)
+            {
+                e.Handled = true;
+                UiGuard.Run(_session, "분기 카드 ID 바꾸기", RenameInspectedBranchCard);
+            }
+        };
+        Hierarchy.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnHierarchyPicked(pick));
         // 판 다루기 — 휠 확대·축소, 가운데 단추 끌어 이동. 휠은 <b>터널</b>로 받는다:
         // 스크롤뷰가 먼저 먹어 버리면 휠이 배율이 아니라 그냥 스크롤이 된다.
         GraphScroll.AddHandler(
             PointerWheelChangedEvent, OnGraphWheel, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        GraphScroll.PointerPressed += OnGraphPanPressed;
-        GraphScroll.PointerMoved += OnGraphPanMoved;
-        GraphScroll.PointerReleased += OnGraphPanReleased;
+        GraphScroll.AddHandler(   // 집기 신호는 버블로만 온다
+            PointerTouchPadGestureMagnifyEvent, OnGraphMagnify, Avalonia.Interactivity.RoutingStrategies.Bubble);
+        // 가운데 단추 끌기도 <b>터널</b>로 먼저 받는다 — [대본] 판과 같다. 선 · 문구 · 점 · 칩은 누름을 받아 먹으므로(Handled), 버블로
+        // 받으면 그 위에서 시작한 끌기가 판을 못 움직였다(⛔ 2026-11-18까지 · 소유자 — inspector-boxes-pan J2). 가운데 단추가 아니면 그냥 지나간다.
+        GraphScroll.AddHandler(PointerPressedEvent, OnGraphPanPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        GraphScroll.AddHandler(PointerMovedEvent, OnGraphPanMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         ZoomResetButton.Click += (_, _) => ApplyZoom(1, null);
+        FitChapterButton.Click += (_, _) => UiGuard.Run(_session, "화면 맞춤", FitChapter);
+        EmptyFirstChapterButton.Click += (_, _) => FirstChapterRequested?.Invoke();
 
-        // 스탯변화 줄 편집기를 두 자리에 꽂는다 — 간선 패널과 에피소드 노드의 선택지 폼.
+        // 스탯변화 줄 편집기 — 간선 패널.
         EdgeStatsHost.Children.Add(_edgeStats);
-        EdgeFormStatsHost.Children.Add(_formStats);
 
-        // 관문은 v8에서 간선으로 옮겨 갔다 — 에피소드 콤보는 감춰져 있고 저장도 안 한다.
-        AddNextEdgeButton.Click += (_, _) => UiGuard.Run(_session, "선택지 추가", AddChoiceSlotFromPanel);
-        AddEdgeButton.Click += (_, _) => UiGuard.Run(_session, "간선 연결·수정", SubmitEdgeForm);
-        DeleteEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 삭제", DeleteSelectedEpisode);
-        AddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
+        // 칼럼의 빈 곳을 누르면 Enter처럼 — 적던 글자 칸을 놓는다(초점을 잃을 때 낸다). 누른 것의 처리보다 먼저(터널) 낸다:
+        // 누른 것이 선택을 옮기는 고리면, 옮긴 뒤에 내면 글이 엉뚱한 자리로 간다.
+        ChapterRightRows.AddHandler(
+            PointerPressedEvent, (_, args) => ReleaseInspectorTyping(args.Source), RoutingStrategies.Tunnel, handledEventsToo: true);
+
         AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
-        ImportEpisodesButton.Click += (_, _) => UiGuard.Run(_session, "대본 가져오기", ImportEpisodes);
-        ImportChaptersButton.Click += (_, _) =>
-            UiGuard.Run(_session, "챕터 가져오기", () => ImportChapters());
-        // 빈 판 한가운데의 [＋ 에피소드]도 같은 길이다 — 선택이 없으니 홀로 선다.
-        EmptyAddEpisodeButton.Click += (_, _) => UiGuard.Run(_session, "에피소드 추가", AddEpisodeFromToolbar);
-        EdgeDeleteButton.Click += (_, _) => UiGuard.Run(_session, "간선 삭제", DeleteSelectedEdge);
+        HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+            _session?.SetHideEmptyChoices(HideEmptyChoicesCheck.IsChecked == true));
+        ShowIdsCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "ID로 보기", () =>
+            _session?.SetShowIds(ShowIdsCheck.IsChecked == true));
 
-        // 간선 패널은 고르는 순간 저장된다 (2026-08-17 소유자: "굳이 적용을 누르지 않아도
-        // 바로 반영되도록"). 에피소드 패널의 개명이 Enter로 확정되는 것과 같은 감각이다 —
+        // 간선 패널은 고르는 순간 저장된다. 에피소드 패널의 개명이 Enter로 확정되는 것과 같은 감각이다 —
         // [적용]이라는 문턱이 하나 더 있으면 "고쳤는데 왜 그대로지"가 생긴다.
         //
-        // 글자 칸만 초점을 잃을 때 낸다. 자판 하나마다 워크북을 열면 엑셀 파일을 쉼 없이
-        // 두드리고, 그 사이에 들어온 파일 사건이 칸을 다시 채워 쓰던 글을 끊는다.
-        EdgeLabelEditBox.SelectionChanged += (_, _) => AutoSaveEdge();
-        EdgeAutoCheck.IsCheckedChanged += (_, _) => AutoSaveEdge();
+        // 글자 칸만 초점을 잃을 때 낸다. 자판 하나마다 저장하면 되돌리기가 글자 수만큼 쪼개지고,
+        // 그 사이의 다시 그리기가 칸을 다시 채워 쓰던 글을 끊는다.
+        // 문구는 글자 칸이다 — 다른 글자 칸처럼 Enter나 초점을 잃을 때 낸다.
+        // 문구 칸은 읽기 전용이다 — 고치는 곳은 [대본] 탭(2026-11-17 소유자).
+        EdgeVisibleNewButton.Click += (_, _) => UiGuard.Run(_session, "새 조건", () => ShowNewConditionFlyout(EdgeVisibleNewButton, visible: true));
+        EdgeUnlockNewButton.Click += (_, _) => UiGuard.Run(_session, "새 조건", () => ShowNewConditionFlyout(EdgeUnlockNewButton, visible: false));
+
         EdgeVisibleCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         EdgeConditionCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         BranchConditionCombo.SelectionChanged += (_, _) =>
@@ -292,56 +613,101 @@ public partial class ChapterGraphView : UserControl
             DialogueToggle.Content = open ? "▾  대사" : "▸  대사";
         };
 
-        // 펼친 채로 시작한다 (2026-08-24 소유자: "대사 미리보기는, 펼쳐둔 걸 디폴트로").
-        // ⚠ XAML에서 IsChecked를 켜지 않는다 — 그러면 위 핸들러가 붙기 <b>전에</b> 켜져
+        // 펼친 채로 시작한다.
+        // 주의: XAML에서 IsChecked를 켜지 않는다 — 그러면 위 핸들러가 붙기 <b>전에</b> 켜져
         // 글자와 본문이 접힌 모양 그대로 남는다. 여기서 켜야 셋이 한 번에 맞는다.
         DialogueToggle.IsChecked = true;
 
-        // 처음 보이는 탭은 [편집]이다 (2026-08-16 소유자) — 손이 가는 곳은 지금 고른
-        // 하나이지 챕터 전체 표가 아니다. 그 뒤로는 사람이 고른 탭이 그대로 유지된다.
-        RightTabs.SelectedItem = EditTab;
-
-        // 빈 판 클릭 = 선택 해제. 카드·간선·라벨 핸들러가 각자 누름을 소비하므로(e.Handled)
-        // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다.
-        GraphCanvas.PointerPressed += (_, e) =>
+        // 빈 판 클릭 = 선택 해제, 끌면 범위 선택. 카드·간선·라벨 핸들러가 각자 누름을 소비하므로(e.Handled)
+        // 여기까지 흘러오는 왼쪽 누름은 진짜 빈 공간뿐이다. 판 바깥(BoardDesk)이 받는다 — 판 안의 빈 곳도 판 둘레도 같다(usability UX22).
+        // 자리는 늘 판 좌표다(판 밖이면 음수이거나 판 크기를 넘는다).
+        BoardDesk.PointerPressed += (_, e) =>
         {
             if (e.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
             {
                 SelectEpisode(null);
+                StartRubberBand(e);
             }
         };
 
-        // 카드 끌기 (v4) — 누름은 카드가 받고(e.Handled), 움직임과 놓음은 여기로 올라온다.
+        // 카드 끌기 —누름은 카드가 받고(e.Handled), 움직임과 놓음은 여기로 올라온다.
         // 연출 그래프와 같은 자리에 같은 손놀림이다.
-        GraphCanvas.PointerMoved += OnCanvasPointerMoved;
-        GraphCanvas.PointerReleased += OnCanvasPointerReleased;
+        BoardDesk.PointerMoved += OnCanvasPointerMoved;
+        BoardDesk.PointerReleased += OnCanvasPointerReleased;
+
+        // 화면 크기를 알게 되거나 바뀌면 판을 다시 놓는다 — 가운데로 놓기로 한 것이 남았으면 그때 가운데로. 창 · 칸의 크기가 바뀌었으면 판이 화면에
+        // 들어가면 들어가게 띄움을 줄인다. 스크롤 막대가 서거나 걷혀 바뀐 것(판이 넘쳤다 — 놓은 직후)에는 줄이지 않는다 — 놓은 카드가 밀린다.
+        GraphScroll.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == BoundsProperty)
+            {
+                PlaceSheet(keepInView: true);
+            }
+            else if (args.Property == ScrollViewer.ViewportProperty)
+            {
+                PlaceSheet();
+            }
+        };
     }
 
     internal void Attach(AuthoringSession session)
     {
-        DetachSession();   // 두 번 붙이면 구독도 감시도 두 벌이 된다
+        DetachSession();   // 두 번 붙이면 구독이 두 벌이 된다
 
         _session = session;
+        _centerSheet = true;   // 새 세션의 판 — 가운데에 놓는다
         _sessionChanged = (_, _) => QueueReload();
         session.Changed += _sessionChanged;
-        WatchAndReload();
+
+        // 「빈 선택지 숨기기」 — [구성] 판의 설정이다(앱 설정에 기억한다). 체크를 맞추고 판을 다시 그린다.
+        HideEmptyChoicesCheck.IsChecked = session.HideEmptyChoices;
+        _hideEmptyChanged = (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+        {
+            HideEmptyChoicesCheck.IsChecked = _session?.HideEmptyChoices == true;
+            Draw();
+        });
+        session.HideEmptyChoicesChanged += _hideEmptyChanged;
+
+        // 「ID로 보기」 — 켜면 ID, 끄면 이름(하이어아키는 [대본] 탭의 모양으로). 체크를 맞추고 하이어아키 · 판을 다시 세운다.
+        ApplyShowIds();
+        _showIdsChanged = (_, _) => UiGuard.Run(_session, "ID로 보기", () =>
+        {
+            ApplyShowIds();
+            Draw();
+        });
+        session.ShowIdsChanged += _showIdsChanged;
+
+        // 화자 목록이 바뀔 때만(명령 · 되돌리기 · 열기) [화자] 탭을 다시 그린다 — [대본] 탭이 이름을 더하면 여기 키 목록도 선다.
+        _speakersChanged = (_, _) => UiGuard.Run(_session, "화자", RebuildSpeakerTab);
+        session.SpeakersChanged += _speakersChanged;
+        Reload();
     }
 
     /// <summary>세션 구독을 끊을 수 있도록 들고 있는다 — 람다를 바로 걸면 뗄 수가 없다.</summary>
     private EventHandler<Vn.Authoring.Editing.ProjectChangedEventArgs>? _sessionChanged;
+    private EventHandler? _hideEmptyChanged;
+    private EventHandler? _showIdsChanged;
+    private EventHandler? _speakersChanged;
+
+    /// <summary>「ID로 보기」를 체크와 하이어아키에 비춘다 — 끄면 하이어아키가 [대본] 탭처럼 이름으로 선다(곁글 없음).</summary>
+    private void ApplyShowIds()
+    {
+        bool showIds = _session?.ShowIds != false;
+        ShowIdsCheck.IsChecked = showIds;
+        HierarchyView.ShowEpisodeTitles = !showIds;
+    }
 
     /// <summary>
-    /// 세션에서 손을 뗀다 — 구독을 끊고 감시자를 닫는다.
+    /// 세션에서 손을 뗀다 — 구독을 끊는다.
     ///
-    /// <b>왜 필요한가</b> (2026-08-18): 이 뷰는 붙기만 하고 떨어질 줄을 몰랐다. 앱에서는
+    /// <b>왜 필요한가</b>: 앱에서는
     /// 뷰가 프로세스와 수명이 같아 티가 안 나지만, 테스트에서는 한 어셈블리가 <b>디스패처
-    /// 하나</b>를 나눠 쓴다. 창을 안 닫고 끝낸 테스트의 뷰가 그대로 살아 있고, 그 감시자는
-    /// 이미 지워진 임시 폴더를 본다.
+    /// 하나</b>를 나눠 쓴다. 떼지 않으면 창을 안 닫고 끝낸 테스트의 뷰가 그대로 살아 그 세션의 알림을 계속 듣고,
+    /// 다른 세션에 다시 붙인 뷰는 옛 세션이 바뀔 때도 다시 읽는다.
     ///
-    /// 그 다음이 나쁘다 — 250ms 디바운스가 <b>타이머 스레드에서</b> 깨어나 없어진 디스패처에
-    /// <c>Post</c>를 하면 <c>NullReferenceException</c>이 나고, 그 자리는 잡을 사람이 없어
-    /// <b>프로세스가 내려간다.</b> 죽는 순간 돌고 있던 테스트가 실패로 찍히므로 매번 다른
-    /// 이름이 나왔고, 혼자 돌리면 통과했다.
+    /// ⛔ 폴더 감시자가 있던 때는 더 나빴다 — 남은 뷰의 감시자가 지워진 임시 폴더를 보고, 250ms 디바운스가 <b>타이머
+    /// 스레드에서</b> 깨어나 없어진 디스패처에 <c>Post</c>를 해 <b>프로세스가 내려갔다</b>(매번 다른 테스트가 실패로 찍히고,
+    /// 혼자 돌리면 통과했다). 감시자는 걷혔고 다시 읽기는 세션의 변경 알림이 부른다(<see cref="QueueReload"/>).
     ///
     /// 앱에서는 뷰가 하나뿐이라 새는 일이 없지만, <b>끊을 수 있다는 것 자체가 규격</b>이다 —
     /// 붙이는 길만 있고 떼는 길이 없으면 수명은 언제나 우연에 맡겨진다.
@@ -353,26 +719,38 @@ public partial class ChapterGraphView : UserControl
             _session.Changed -= _sessionChanged;
         }
 
-        _sessionChanged = null;
-        _session = null;
+        if (_session is not null && _hideEmptyChanged is not null)
+        {
+            _session.HideEmptyChoicesChanged -= _hideEmptyChanged;
+        }
 
-        _watcher?.Dispose();
-        _watcher = null;
-        _episodeWatcher?.Dispose();
-        _episodeWatcher = null;
+        if (_session is not null && _showIdsChanged is not null)
+        {
+            _session.ShowIdsChanged -= _showIdsChanged;
+        }
+
+        if (_session is not null && _speakersChanged is not null)
+        {
+            _session.SpeakersChanged -= _speakersChanged;
+        }
+
+        _sessionChanged = null;
+        _hideEmptyChanged = null;
+        _showIdsChanged = null;
+        _speakersChanged = null;
+        _session = null;
     }
 
     /// <summary>이미 예약된 재읽기가 있는가. 한 번의 UI 차례에 하나만 돈다.</summary>
     private bool _reloadQueued;
 
     /// <summary>
-    /// 재읽기 예약 — <b>몰려 오는 변경을 한 번으로 합친다</b> (2026-08-18).
+    /// 재읽기 예약 — <b>몰려 오는 변경을 한 번으로 합친다</b>.
     ///
-    /// 동기화 한 번이 프로젝트 변경을 수십 개 낸다(에피소드마다 노드·줄이 붙는다).
-    /// 예전에는 그 하나하나가 <see cref="WatchAndReload"/>를 예약했고, 그 한 번이
-    /// 챕터 워크북 전부를 다시 열어 읽고 진행 JSON을 쓰고 판을 통째로 다시 그렸다.
-    /// 노드 60개에서 <b>123번</b> 돌아 58초가 됐다 — 마지막 한 번 말고는 전부 버려질
-    /// 그림이었다.
+    /// 프로젝트 변경 알림은 한 UI 차례에 여럿 올 수 있다. 그 하나하나가 재읽기를 예약하면, 그 한 번마다
+    /// 챕터 전부를 다시 읽고 진행 JSON을 쓰고 판을 통째로 다시 그린다 — 마지막 한 번 말고는 전부 버려질
+    /// 그림이다. ⛔ 에피소드 동기화가 있던 때는 한 번이 변경을 수십 개 냈고(에피소드마다 노드·줄이 붙었다),
+    /// 노드 60개에서 <b>123번</b> 돌아 58초가 됐다.
     ///
     /// 예약 표시는 실제로 돌기 직전에 내린다: 재읽기가 도는 동안 들어온 변경은
     /// 다음 차례를 새로 예약한다(놓치지 않는다).
@@ -389,376 +767,16 @@ public partial class ChapterGraphView : UserControl
         Dispatcher.UIThread.Post(() =>
         {
             _reloadQueued = false;
-            WatchAndReload();
+            Reload();
         });
     }
 
-    // ── 읽기 ────────────────────────────────────────────────────────────────
-
-    /// <summary>이미 한 번 들여온 프로젝트 — 같은 프로젝트에서 두 번 자동으로 들이지 않는다.</summary>
-    private string? _importedFor;
-
-    /// <summary>
-    /// <b>구판 프로젝트를 위한 최초 1회 들여오기</b> (R-F · 지시서 §5.1).
-    ///
-    /// R-F 전에 만든 프로젝트는 챕터를 <c>chapters/*.xlsx</c>에만 들고 있다. 그 프로젝트를
-    /// 열면 판이 텅 비어 보이므로, <b>프로젝트에 챕터가 하나도 없고 폴더에 파일이 있을 때</b>
-    /// 한 번 들인다.
-    ///
-    /// ⚠ <b>자동은 여기까지다.</b> 들어온 뒤로는 프로젝트에 챕터가 있으므로 다시 안 돈다 —
-    /// 그래야 §5.2의 <i>"임포트 뒤 다시 읽지 않는다"</i>가 산다. 거부됐을 때 다시 시도하는
-    /// 길은 사람이 누르는 [챕터 가져오기]다.
-    ///
-    /// ⚠ 챕터를 전부 지운 프로젝트에서 되살아나지 않는다 — 챕터 삭제가 워크북도 함께 걷으므로
-    /// 들일 파일이 없다.
-    /// </summary>
-    private void ImportChaptersOnce()
-    {
-        if (_session is not { ProjectPath: { } projectPath } session ||
-            session.Project.Chapters.Count > 0 ||
-            string.Equals(_importedFor, projectPath, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        _importedFor = projectPath;
-        ImportChapters(automatic: true);
-    }
-
-    /// <summary>
-    /// <c>chapters/</c> 폴더를 프로젝트로 들여온다 — [챕터 가져오기]와 최초 1회가 같은 길이다.
-    ///
-    /// ⚠ 거부(§5.2)는 <b>전부 아니면 전무</b>다. 그래서 실패를 조용히 넘기지 않는다 —
-    /// 사람이 보기에는 "눌렀는데 아무 일도 없다"가 되기 때문이다.
-    /// </summary>
-    internal void ImportChapters(bool automatic = false)
-    {
-        if (_session is not { } session)
-        {
-            return;
-        }
-
-        ChapterProjectImport import = ChapterWorkbookImporter.Run(
-            session.Editor, session.ProjectPath, session.Definition);
-
-        foreach (string notice in import.Notices)
-        {
-            session.SetStatus(notice);
-        }
-
-        if (!import.Applied)
-        {
-            session.SetStatus(
-                $"챕터를 들여오지 않았습니다 — {import.Errors.FirstOrDefault()?.Message ?? "읽지 못했습니다."} " +
-                "하나라도 읽지 못하면 아무것도 들여오지 않습니다.");
-            return;
-        }
-
-        AbsorbLegacySpeakers(import.LegacySpeakers);
-
-        if (import.ChapterIds.Count > 0 || !automatic)
-        {
-            session.SetStatus(
-                $"챕터 {import.ChapterIds.Count}개를 들여왔습니다. " +
-                "이제 워크북은 산출물입니다 — 여기서 고친 것이 파일을 채웁니다.");
-        }
-    }
-
-    /// <summary>
-    /// 구판 `화자` 시트의 이름을 정의 파일로 옮긴다 (2026-08-23 폐지분의 이행).
-    ///
-    /// ⚠ <b>지우는 춤이 사라졌다</b> (R-F). 옛 경로는 <i>시트를 지우는 데 성공한 뒤에</i>
-    /// 정의 파일에 저장해야 했다 — 반대로 하면 잠겨서 못 지운 워크북이 다음 <b>재읽기</b>에서
-    /// 지운 이름을 되살렸기 때문이다. 이제 재읽기가 없고, 다음 출력이 워크북을 통째로 갈아
-    /// 끼우며 시트째 사라진다.
-    /// </summary>
-    private void AbsorbLegacySpeakers(IReadOnlyList<ChapterSpeaker> legacy)
-    {
-        if (_session is not { } session || legacy.Count == 0)
-        {
-            return;
-        }
-
-        List<SpeakerSpec> merged = session.Definition.Speakers.ToList();
-        bool changed = false;
-
-        foreach (ChapterSpeaker speaker in legacy)
-        {
-            string name = speaker.Name.Trim();
-
-            if (name.Length == 0 ||
-                merged.Any(item => string.Equals(item.Name, name, StringComparison.Ordinal)))
-            {
-                continue;
-            }
-
-            merged.Add(new SpeakerSpec
-            {
-                Name = name,
-                CharacterId = speaker.CharacterId?.Trim() ?? string.Empty
-            });
-
-            changed = true;
-        }
-
-        if (changed && session.SaveSpeakers(merged))
-        {
-            session.SetStatus(
-                $"챕터 엑셀의 `화자` 시트를 프로젝트 화자 목록으로 옮겼습니다({merged.Count}명) — " +
-                "이제 [화자] 탭에서 편집합니다.");
-        }
-    }
-
-    /// <summary>프로젝트가 바뀌면 감시 대상 폴더도 바뀐다.</summary>
-    private void WatchAndReload()
-    {
-        string? folder = ChapterLibrary.FolderFor(_session?.ProjectPath);
-        string? episodes = EpisodeLibrary.FolderFor(_session?.ProjectPath);
-
-        if (!string.Equals(_watcher?.Folder, folder, StringComparison.OrdinalIgnoreCase))
-        {
-            StartWatching(folder);
-        }
-
-        // 구판 프로젝트라면 여기서 한 번 들어온다 — 그 뒤로 워크북은 산출물이다 (R-F).
-        ImportChaptersOnce();
-
-        Reload();
-
-        // ⛔ 여기서 "밀린 저장을 따라잡던" 동기화는 2026-09-16에 걷혔다 (R-D).
-        //
-        //    그 호출은 <b>툴이 꺼진 사이 엑셀에 적힌 대사</b>를 켤 때 한 번 주워 오는
-        //    길이었다. 워크북이 원본이던 시절에는 그것이 없으면 글이 영영 안 들어왔지만,
-        //    이제 원본은 프로젝트다 — 주워 올 것이 없고, 켤 때마다 워크북을 다시 읽으면
-        //    사람이 툴에서 고친 것을 옛 엑셀이 덮는다. 들여오기는 사람이 누른다.
-    }
-
-    /// <summary>
-    /// <summary>
-    /// 엑셀 저장 → 뷰 즉시 갱신 (Gate A). 감시·디바운스는 <see cref="ChapterFolderWatcher"/>가
-    /// 하고, 여기서는 그 알림을 UI 스레드로 옮겨 다시 그리기만 한다.
-    /// </summary>
-    private void StartWatching(string? folder)
-    {
-        _watcher?.Dispose();
-        _watcher = null;
-
-        if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
-        {
-            return;
-        }
-
-        // 알림은 워커 스레드에서 온다 — 화면을 만지기 전에 반드시 UI 스레드로 건너간다.
-        _watcher = new ChapterFolderWatcher(
-            folder,
-            // ⛔ 저장 알림에는 <b>아무것도 하지 않는다</b> (R-F · 2026-09-16). 예전에는 여기서
-            //    폴더를 다시 읽어 판을 세웠고, 그것이 곧 워크북이 원본이라는 전제였다.
-            //    이제 그 파일은 우리가 낸 산출물이다 — 되읽으면 방금 낸 것을 되읽는 왕복이다.
-            onChanged: null,
-            debounce: null,
-            // 엑셀이 이 챕터를 <b>열거나 닫는</b> 순간 (2026-08-24). 저장이 아니므로 다시
-            // 읽지 않는다 — 내용은 그대로다. 바뀐 것은 <b>툴이 쓸 수 있는가</b>뿐이라
-            // 잠금만 다시 묻는다. 이 알림이 없으면 툴은 쓰기가 거부되고 나서야 알았다.
-            //
-            // ⚠ 이 알림이 <b>유일한 길은 아니다.</b> 엑셀이 잠금 파일을 지우는 것과 파일
-            // 핸들을 놓는 것 사이에 틈이 있으면(디바운스 250ms로도 못 덮는 경우) 여기서
-            // 물은 답이 아직 "잠김"일 수 있다. 그래도 갇히지 않는다: 그리기·패널 갱신이
-            // 모두 RefreshLockBanner를 지나므로 다음 클릭 한 번이면 풀린다.
-            onLockChanged: () => Dispatcher.UIThread.Post(
-                () => UiGuard.Run(_session, "엑셀 잠금 확인", RefreshLockState)));
-    }
-
-    // ⛔ `StartWatchingEpisodes`·`SyncEpisodesIfDiskChanged`는 2026-09-16에 걷혔다 (R-D).
-    //    `episodes/`를 감시해 저장을 0.25초 안에 따라가던 길인데, 그것이 곧 <b>워크북이
-    //    원본이라는 전제</b>였다. 이제 대본은 [대본 가져오기] 한 번으로 들어온다(§5.2:
-    //    "임포트는 명시적 동작이다. 파일 감시가 부르지 않는다").
-    //    되살리지 말 것 — 되살리는 순간 툴과 엑셀이 다시 서로를 덮어쓴다.
-
-    // ⛔ `ReloadIfDiskChanged`·`IfDiskChanged`·`DiskFingerprint`는 2026-09-16에 걷혔다
-    //    (R-F). 셋 다 <b>"감시자가 깨웠는데 정말 바뀐 것인가"</b>를 묻는 장치였고, 그 물음은
-    //    화면이 <b>디스크를 읽어 서던 시절</b>의 것이다. 이제 판은 프로젝트에서 오므로 파일
-    //    사건은 그릴 이유가 되지 않는다 — 견줄 지문도 필요 없다.
+    // ── [화자] 탭 = 캐릭터 키 ──────────────────────────
     //
-    //    함께 `WorkbookFolderFingerprint`도 쓰는 곳이 없어졌다 (지시서 §2의 삭제 목록,
-    //    R-D 인계서가 "R-F와 함께 간다"고 남긴 항목).
-    //
-    //    ⚠ 되살리지 말 것 — 되살리는 순간 워크북이 다시 화면의 원천이 된다.
+    // 화자는 챕터의 것이 아니라 프로젝트의 것이다(StoryProject.Speakers — 이름과 초상화 키가 한 줄). 이름은 [대본] 탭(작가)이
+    // 더하고 고치고 지운다. 여기는 그 이름마다 <b>캐릭터 키</b>를 잇는 자리다 — 초상화 · 표정이 이 키로 붙는다(writer-fields W3).
 
-    /// <summary>
-    /// 대본 워크북을 읽어 대사노드로 세운다 — <b>사람이 [대본 가져오기]를 눌렀을 때만</b>
-    /// 돈다 (R-D · 2026-09-16, §5.2).
-    ///
-    /// ⚠ 예전 이름은 `SyncEpisodes`였고 감시자가 저장마다 불렀다. 이름이 바뀐 것이 곧
-    /// 뜻이 바뀐 것이다: <b>동기화는 양쪽을 맞추는 일이고 임포트는 한쪽에서 가져오는
-    /// 일이다.</b> 맞출 상대가 없어졌으므로 맞춘다는 말도 없앤다.
-    /// </summary>
-    internal void ImportEpisodes()
-    {
-        _importDiagnostics.Clear();
-        _importRefusals.Clear();
-        _boardWarnings.Clear();
-
-        if (_session is null)
-        {
-            return;
-        }
-
-        ChapterEntry? entry = _entries.FirstOrDefault(item => item.ChapterId == _selectedChapterId);
-
-        // ⛔ <b>고른 챕터만 돌면 안 된다</b> (2026-08-24 소유자 보고: "챕터그래프에서
-        // 대사노드의 엑셀을 열어서 고칠 경우, 연출그래프의 동일한 엑셀노드에 반영이 안 되네").
-        //
-        // 연출 그래프는 <b>모든 판의 노드를 함께</b> 보여 준다. 그런데 반영은 고른 챕터
-        // 하나만 돌았으므로, 다른 챕터의 대사노드는 그 챕터를 다시 고르기 전까지 영영
-        // 낡은 글을 들고 있었다. 챕터가 둘 이상인 프로젝트에서는 늘 그랬다.
-        //
-        // ⚠ 이것이 <b>지금 감당되는</b> 이유: 같은 날 워크북 파싱을 내용 해시로 기억하게
-        // 했다(`WorkbookParseCache`). 안 바뀐 대본은 해시만 재고 지나가므로, 챕터를 전부
-        // 도는 값이 예전의 한 챕터보다 싸다. 그 전이었다면 이 고침은 못 했다.
-        foreach (ChapterEntry other in SyncTargets(entry))
-        {
-            RunEpisodeImport(other);
-        }
-
-        // 아래는 <b>화면</b>의 몫이다 — 고른 챕터가 없어도 내보내기·검증·그리기는 돈다.
-        AfterEpisodeSync();
-    }
-
-    /// <summary>
-    /// 이번에 따라잡을 챕터들 — 고른 챕터와 <b>이미 판이 선</b> 챕터 전부.
-    ///
-    /// 판이 없는 챕터는 대사노드도 없으므로 낡을 것이 없다. 그런 챕터까지 돌면
-    /// <see cref="ProjectEditor.EnsureChapterBoard"/>가 <b>판을 미리 만들어</b> 아무도
-    /// 안 연 챕터의 판이 프로젝트에 쌓인다 — 고치려던 것보다 큰 변화다.
-    /// </summary>
-    private IEnumerable<ChapterEntry> SyncTargets(ChapterEntry? selected)
-    {
-        if (selected is not null)
-        {
-            yield return selected;
-        }
-
-        if (_session is null)
-        {
-            yield break;
-        }
-
-        foreach (ChapterEntry candidate in _entries)
-        {
-            if (candidate.ChapterId == selected?.ChapterId || candidate.Model is null)
-            {
-                continue;
-            }
-
-            // 판 이름 = ChapterId (챕터=판 1:1, G-1 v2).
-            if (_session.Project.Files.Any(file =>
-                    string.Equals(file.Name, candidate.ChapterId, StringComparison.Ordinal)))
-            {
-                yield return candidate;
-            }
-        }
-    }
-
-    /// <summary>챕터 하나를 들여오고 그 결과를 보고 더미에 쌓는다.</summary>
-    private void RunEpisodeImport(ChapterEntry entry)
-    {
-        if (_session is null ||
-            entry.Model is not { } model ||
-            EpisodeLibrary.FolderFor(_session.ProjectPath, entry.ChapterId) is not { } folder)
-        {
-            return;
-        }
-
-        // 프로젝트가 실제로 바뀌었는지 재는 눈금 (2026-08-24 성능) — 아래 방송의 근거다.
-        long revisionBefore = _session.Editor.Revision;
-
-        // 새 노드가 들어갈 판 = 그 챕터의 판 (챕터=판 1:1, G-1 v2).
-        string fileId = _session.Editor.EnsureChapterBoard(entry.ChapterId);
-
-        EpisodeImport import = EpisodeWorkbookImporter.Run(
-            _session.Editor, _session.Definition, fileId, folder, model);
-
-        _importDiagnostics.AddRange(import.Diagnostics);
-
-        if (!import.Applied)
-        {
-            _importRefusals.Add(entry.ChapterId);
-        }
-
-        foreach (string notice in import.Notices)
-        {
-            _session.SetStatus(notice);
-        }
-
-        // 챕터 조건을 판의 모든 대사 노드에 공급한다 — 작가가 조건 드롭다운에서 A 계층
-        // 라벨을 바로 고른다. 멱등이라 매번 불러도 안전하다.
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            _session.Editor, _session.Definition, fileId, model);
-
-        // 판에 남은 옛 자유 씬을 에피소드로 올린다 (같은 결정 ⑤). ⚠ 위의 펴기 <b>다음</b>이다 —
-        // 간선에 매달렸던 씬은 거기서 진짜 간선을 받으므로 `도달불가 허용`이 필요 없다.
-        if (_session.Editor.LiftFreeScenes(entry.ChapterId) is { Count: > 0 } raised)
-        {
-            _session.SetStatus(
-                $"자유 씬 {raised.Count}개를 에피소드로 올렸습니다 — {string.Join(", ", raised)}.");
-        }
-
-        // 가드레일 — 진행이 착지하는 카드로 향하는 출구. 막지 않고 크게 말한다.
-        // ⛔ 「자유 노드의 스탯 set」 경고는 2026-09-17에 걷혔다 — 작가 변수가 없어져
-        //    대사에서 스탯에 `<<set>>`을 걸 길 자체가 사라졌다.
-        _boardWarnings.AddRange(
-            ChapterBoardSupply.WarnExitsIntoExcelNodes(_session.Editor, fileId, model));
-
-        // 무언가 <b>실제로 바뀌었으면</b> 열려 있는 편집 화면(줄 목록·그래프)을 다시
-        // 만들게 알린다 — 대사 수정은 "타이핑 보호" 경로로 전달되어 화면이 옛 줄을 그대로
-        // 들고 있었다(실사례).
-        if (_session.Editor.Revision != revisionBefore)
-        {
-            _session.NotifyExternalScriptChange();
-        }
-
-        if (!import.Applied)
-        {
-            _session.SetStatus(
-                $"'{entry.ChapterId}'의 대본을 들여오지 못했습니다 — 아래 검증 보고를 확인하세요.");
-        }
-    }
-
-    /// <summary>
-    /// 챕터를 <b>전부 돈 뒤</b> 한 번만 하는 일 — 내보내기·증명·그리기·지문.
-    ///
-    /// ⚠ 챕터마다 하면 안 된다. 내보내기와 증명은 <see cref="ChapterExportService"/>가
-    /// 이미 전 챕터를 도는 일이고, 그리기는 화면 하나를 다시 만드는 일이다 — 챕터 수만큼
-    /// 되풀이하면 그 값이 그대로 곱해진다.
-    /// </summary>
-    private void AfterEpisodeSync()
-    {
-        // ⚠ 반영이 판을 바꿨으면 **다시 내보낸다** (2026-08-23). `Reload()` 안의
-        // `AutoExport()`는 동기화보다 먼저 돌므로, 엑셀에서 방금 더한 에피소드의 대사노드는
-        // 그때 아직 없다 — 저작 관문(`DialogueEntryNodeMissing`)이 그것을 옳게 거부하고,
-        // 여기서 다시 내지 않으면 **노드가 선 뒤에도 거부가 남는다.**
-        //
-        // 되돌이는 없다: 감시자는 `chapters/`와 `episodes/`를 보고 내보내기는 `exported/`에
-        // 쓴다. 값도 잔잔하다 — 증명은 캐시가 받고, 글이 같은 파일은 다시 쓰지 않는다.
-        AutoExport();
-
-        // 에피소드가 바뀌면 스탯 증감량도 바뀐다 — 도달성을 다시 증명한다.
-        Validate();
-        Draw();
-    }
-
-    // ── [화자] 탭 = 프로젝트의 캐스트 (2026-08-23) ──────────────────────────
-    //
-    // 소유자: "챕터 엑셀을 눌러보면, 엑셀 내 어떤 것에서도 화자를 사용하지 않는다 … 화자는
-    // 툴 내부에서, 직접 정의해서 쓰는 게 맞는 것이였다." 확인해 보니 그대로였다 — `조건`
-    // 시트는 간선의 표시조건·해금조건이 실제로 가리키지만 `화자` 시트는 어느 시트도, 검증도,
-    // 도달성 증명도, 내보내기도 안 봤다. 툴이 대본 드롭다운에 쓰려고 남의 파일에 얹어 둔
-    // 사전이었고, 그래서 <b>챕터마다 따로 적어야 하는 값</b>만 치렀다.
-    //
-    // 이제 등록 창구는 이 탭 하나이고 값은 `game.definition.json`의 speakers에 산다
-    // (초상화 매핑과 같은 배열 — 화자의 집이 하나라는 뜻이다).
-
-    /// <summary>[화자] 탭을 지금 정의 파일의 목록으로 다시 그린다.</summary>
+    /// <summary>[화자] 탭을 지금 프로젝트의 화자 목록으로 다시 그린다.</summary>
     private void RebuildSpeakerTab()
     {
         SpeakerListPanel.Children.Clear();
@@ -768,14 +786,14 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        IReadOnlyList<SpeakerSpec> speakers = _session.Definition.Speakers;
+        IReadOnlyList<Vn.Authoring.Model.Speaker> speakers = _session.Project.Speakers;
 
         if (speakers.Count == 0)
         {
-            SpeakerListPanel.Children.Add(new TextBlock
+            SpeakerListPanel.Children.Add(new GuideLine
             {
-                Text = "아직 없습니다. 위에 이름을 적고 [＋ 추가]를 누르면 모든 챕터의 대본에서 " +
-                       "그 화자를 고를 수 있습니다.",
+                Full = "아직 화자가 없습니다 — 화자 이름은 [대본] 탭의 「화자」 탭에서 더합니다.",
+                Brief = "아직 화자가 없습니다.",   // 설명 간소화(brief-guides G1)
                 FontSize = 10,
                 Opacity = 0.55,
                 TextWrapping = TextWrapping.Wrap
@@ -783,163 +801,114 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        for (int index = 0; index < speakers.Count; index++)
+        int missing = speakers.Count(speaker => string.IsNullOrWhiteSpace(speaker.CharacterId));
+        int temporary = speakers.Count(speaker => Vn.Authoring.Model.CharacterKey.IsTemp(speaker.CharacterId));
+
+        if (missing + temporary > 0)
         {
-            SpeakerListPanel.Children.Add(BuildSpeakerRow(index, speakers[index]));
+            // 임시 키(temp_ — 화자를 더할 때 이름의 로마자로 선다 · UX29)도 아직 정하지 않은 키다.
+            SpeakerListPanel.Children.Add(new TextBlock
+            {
+                Text = (missing, temporary) switch
+                {
+                    (> 0, > 0) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 · 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요.",
+                    (> 0, _) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.",
+                    _ => $"⚠ 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요."
+                },
+                FontSize = 10,
+                Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
+                TextWrapping = TextWrapping.Wrap,
+                Tag = "speaker-missing-keys"
+            });
+        }
+
+        foreach (Vn.Authoring.Model.Speaker speaker in speakers)
+        {
+            SpeakerListPanel.Children.Add(BuildSpeakerRow(speaker));
         }
     }
 
     /// <summary>
-    /// 화자 한 줄 — `[이름][캐릭터키][✕]`. 고치면 그 자리에서 정의 파일에 저장된다
-    /// ([적용] 없음 — 챕터 편집 탭과 같은 규칙, 2026-08-17 소유자).
+    /// 화자 한 줄 — `이름 [캐릭터 키]`. 이름은 읽기만 한다([대본] 탭의 것). 키를 고치면 그 자리에서 프로젝트에 들어간다 — 되돌리기 한 칸
+    /// ([적용] 없음 — 챕터 편집 탭과 같은 규칙).
     /// </summary>
-    private Control BuildSpeakerRow(int index, SpeakerSpec speaker)
+    private Control BuildSpeakerRow(Vn.Authoring.Model.Speaker speaker)
     {
-        var name = new TextBox { Text = speaker.Name, FontSize = 12 };
+        string speakerName = speaker.Name;
+        bool missing = string.IsNullOrWhiteSpace(speaker.CharacterId);
+        bool temporary = Vn.Authoring.Model.CharacterKey.IsTemp(speaker.CharacterId);
+        var name = new TextBlock
+        {
+            Text = missing || temporary ? "⚠ " + speakerName : speakerName,
+            FontSize = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Tag = "speaker-name:" + speakerName
+        };
+        ToolTip.SetTip(name, missing
+            ? $"'{speakerName}' — 캐릭터 키가 없습니다. 이름은 [대본] 탭에서 고칩니다."
+            : temporary
+                ? $"'{speakerName}' — 캐릭터 키가 임시 키입니다(화자를 더할 때 이름의 로마자로 섰다). 그림에 맞는 키로 바꿔 주세요. 이름은 [대본] 탭에서 고칩니다."
+                : $"'{speakerName}' — 이름은 [대본] 탭에서 고칩니다.");
         var characterId = new TextBox
         {
             Text = speaker.CharacterId,
             Margin = new Thickness(6, 0, 0, 0),
             FontSize = 12,
-            PlaceholderText = "캐릭터키"
+            PlaceholderText = "캐릭터 키",
+            Tag = "speaker-key:" + speakerName
         };
 
         void Commit()
         {
-            List<SpeakerSpec> edited = _session!.Definition.Speakers.ToList();
+            if (_session is null)
+            {
+                return;
+            }
 
-            if (index >= edited.Count)
+            if (!_session.Project.Speakers.Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal)))
             {
                 return; // 그 사이 목록이 바뀌었다 — 다음 그리기가 정본이다.
             }
 
-            string typed = (name.Text ?? string.Empty).Trim();
+            string typed = (characterId.Text ?? string.Empty).Trim();
 
-            // 이름을 지워 빈칸으로 만드는 것은 삭제가 아니다 — 삭제는 ✕ 하나뿐이다.
-            // 빈 이름을 저장하면 목록에서 조용히 사라져 되돌릴 손잡이가 없어진다.
-            if (typed.Length == 0)
+            if (_session.SetSpeakerCharacterId(speakerName, typed))
             {
-                name.Text = edited[index].Name;
-                _session.SetStatus("이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.");
-                return;
-            }
-
-            string previous = edited[index].Name;
-
-            // 같은 이름이 이미 있으면 개명이 아니라 <b>합치기</b>다 — 목록이 신원이라
-            // 두 줄이 같은 이름을 가질 수 없다([＋ 추가]가 막는 것과 같은 규칙).
-            if (!string.Equals(previous, typed, StringComparison.Ordinal) &&
-                edited.Any(item => string.Equals(item.Name, typed, StringComparison.Ordinal)))
-            {
-                name.Text = previous;
-                _session.SetStatus($"화자 '{typed}'은 이미 있습니다.");
-                return;
-            }
-
-            // ⛔ 개명이 먼저다 (2026-08-24) — 이미 쓰인 이름을 못 끌고 가면 등록부도 갈지
-            //    않는다. 순서를 뒤집으면 엑셀이 잡고 있던 워크북이 다음 동기화에서 사람이
-            //    방금 바꾼 이름을 "미등록 화자"로 되살린다.
-            string? report = null;
-
-            if (!string.Equals(previous, typed, StringComparison.Ordinal) &&
-                !TryCarrySpeakerRename(previous, typed, out report))
-            {
-                name.Text = previous;
-                return;
-            }
-
-            edited[index] = new SpeakerSpec
-            {
-                Name = typed,
-                CharacterId = (characterId.Text ?? string.Empty).Trim()
-            };
-
-            SaveSpeakers(edited);
-
-            // 개명 보고는 저장 뒤에 세운다 — 어휘 밀기의 상태 줄이 덮어쓰지 않게.
-            if (report is not null)
-            {
-                _session.SetStatus(report);
+                _session.SetStatus(typed.Length == 0
+                    ? $"화자 '{speakerName}'의 캐릭터 키를 비웠습니다 — 초상화가 붙지 않습니다."
+                    : $"화자 '{speakerName}' — 캐릭터 키 '{typed}'.");
             }
         }
 
-        name.LostFocus += (_, _) => UiGuard.Run(_session, "화자 수정", Commit);
-        characterId.LostFocus += (_, _) => UiGuard.Run(_session, "화자 수정", Commit);
-        name.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        characterId.LostFocus += (_, _) => UiGuard.Run(_session, "캐릭터 키", Commit);
         characterId.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(characterId, () =>
+            _session?.Project.Speakers.FirstOrDefault(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal))?.CharacterId);
 
-        var remove = new Button
-        {
-            Content = "✕",
-            FontSize = 11,
-            Margin = new Thickness(6, 0, 0, 0),
-            [ToolTip.TipProperty] = $"'{speaker.Name}'를 목록에서 지웁니다. " +
-                                    "이미 대본에 적힌 이름은 그대로 남습니다(화자 칸은 자유 입력)."
-        };
-        remove.Click += (_, _) => UiGuard.Run(_session, "화자 삭제", () =>
-        {
-            List<SpeakerSpec> edited = _session!.Definition.Speakers.ToList();
-
-            if (index < edited.Count)
-            {
-                edited.RemoveAt(index);
-                SaveSpeakers(edited);
-            }
-        });
-
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,Auto") };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*") };
         Grid.SetColumn(name, 0);
         Grid.SetColumn(characterId, 1);
-        Grid.SetColumn(remove, 2);
         row.Children.Add(name);
         row.Children.Add(characterId);
-        row.Children.Add(remove);
 
         return row;
     }
 
     /// <summary>
-    /// 화자 개명을 <b>이미 쓰인 곳까지</b> 끌고 간다 — 대본 워크북의 화자 칸과 프로젝트
-    /// 대본의 줄들 (2026-08-24 소유자: "화자의 이름을 편집한 경우도 연결이 계속 이어지도록").
-    ///
-    /// 등록부만 갈면 그 이름을 쓰던 줄이 전부 <b>미등록</b>이 된다: 드롭다운에서 사라지고,
-    /// 초상화 매핑이 끊기고, 공백 있는 이름은 파서가 산문으로 읽어 대사와 합쳐진다.
+    /// 칼럼 안의 글자 칸에 초점이 있고 누른 곳이 글자 칸 · 스크롤 막대가 아니면, 초점을 받이로 옮겨 그 칸을 놓는다 — 칸은 초점을
+    /// 잃을 때 내므로 Enter와 같다(간선 패널의 문구 · 잠금 안내문 · 스탯변화 숫자).
     /// </summary>
-    /// <param name="report">
-    /// 저장 뒤에 세울 상태 줄. 여기서 바로 쓰면 이어지는 어휘 밀기의 메시지가 덮는다.
-    /// </param>
-    /// <returns>등록부를 갈아도 되는가. false면 아무것도 바뀌지 않았다(사유는 상태 줄에).</returns>
-    private bool TryCarrySpeakerRename(string previous, string renamed, out string? report)
+    private void ReleaseInspectorTyping(object? pressed)
     {
-        report = null;
-
-        if (_session is null)
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not TextBox typing ||
+            !typing.GetVisualAncestors().Contains(ChapterRightRows) ||
+            pressed is Visual visual && visual.GetSelfAndVisualAncestors().Any(item => item is TextBox or ScrollBar))
         {
-            return false;
+            return;
         }
 
-        SpeakerRenameOutcome outcome = SpeakerRenamer.Rename(
-            _session.Editor, _session.ProjectPath, _entries, previous, renamed);
-
-        string Blocked() => outcome.Blocked[0] +
-            (outcome.Blocked.Count > 1 ? $" (외 {outcome.Blocked.Count - 1}건)" : string.Empty);
-
-        if (!outcome.Applied)
-        {
-            _session.SetStatus(outcome.Blocked.Count > 0 ? Blocked() : "화자 이름을 바꾸지 못했습니다.");
-            return false;
-        }
-
-        // 빗장을 지난 뒤에 잠긴 파일이 있으면 나머지는 갔고 그 파일만 옛 이름이다.
-        // 조용히 넘어가지 않는다: 다음 동기화가 "미등록 화자"로 짚을 자리다.
-        report = outcome.Blocked.Count > 0
-            ? Blocked()
-            : outcome.WorkbookCells > 0 || outcome.ScriptLines > 0
-                ? $"화자 '{previous}' → '{renamed}' — 대본 {outcome.WorkbookFiles}개의 " +
-                  $"{outcome.WorkbookCells}칸, 줄 {outcome.ScriptLines}개가 따라갔습니다."
-                : null;
-
-        return true;
+        InspectorFocusSink.Focus();
     }
 
     private static void CommitOnEnter(Avalonia.Input.KeyEventArgs args, Action commit)
@@ -951,227 +920,80 @@ public partial class ChapterGraphView : UserControl
         }
     }
 
-    /// <summary>폼의 한 줄을 목록 끝에 더한다. 같은 이름은 거절한다(목록이 신원이다).</summary>
-    private void AddSpeaker()
-    {
-        if (_session is null)
-        {
-            return;
-        }
-
-        string name = (SpeakerNameBox.Text ?? string.Empty).Trim();
-
-        if (name.Length == 0)
-        {
-            _session.SetStatus("화자 이름을 적어 주세요.");
-            return;
-        }
-
-        List<SpeakerSpec> edited = _session.Definition.Speakers.ToList();
-
-        if (edited.Any(item => string.Equals(item.Name, name, StringComparison.Ordinal)))
-        {
-            _session.SetStatus($"화자 '{name}'은 이미 있습니다.");
-            return;
-        }
-
-        edited.Add(new SpeakerSpec
-        {
-            Name = name,
-            CharacterId = (SpeakerCharacterIdBox.Text ?? string.Empty).Trim()
-        });
-
-        if (SaveSpeakers(edited))
-        {
-            SpeakerNameBox.Text = string.Empty;
-            SpeakerCharacterIdBox.Text = string.Empty;
-            SpeakerNameBox.Focus();
-            _session.SetStatus($"화자 '{name}'을 더했습니다 — 모든 챕터의 대본에서 고를 수 있습니다.");
-        }
-    }
-
-    /// <summary>
-    /// 목록을 정의 파일에 통째로 쓰고, 그 결과를 <b>대본 워크북까지</b> 밀어 넣는다.
-    ///
-    /// 여기서 미는 것이 중요하다 — 저장만 하면 툴 화면은 새 목록을 보는데 엑셀 드롭다운은
-    /// 옛 목록을 들고 있다. 그 어긋남이 2026-08-23 소유자 보고("엑셀에 화자가 동기화가 잘
-    /// 안되네")의 절반이었다.
-    /// </summary>
-    private bool SaveSpeakers(IReadOnlyList<SpeakerSpec> speakers)
-    {
-        if (_session is null || !_session.SaveSpeakers(speakers))
-        {
-            return false;
-        }
-
-        RebuildSpeakerTab();
-
-        return true;
-    }
-
-    // ⛔ `ImportLegacySpeakerSheets`는 2026-09-16에 걷혔다 (R-F). 구판 `화자` 시트를 정의
-    //    파일로 옮기고 <b>그 시트를 지우던</b> 길인데, 둘 다 자리가 바뀌었다: 옮기는 일은
-    //    워크북을 읽는 그 한 번(임포터)의 것이 됐고, 지우는 일은 <b>안 해도 된다</b> —
-    //    다음 출력이 워크북을 통째로 갈아 끼우며 시트째 사라진다.
-    //
-    //    옛 규율("시트를 지운 뒤에 정의 파일에 저장한다")도 함께 사라졌다. 그것이 지키던
-    //    것은 <em>다음 재읽기</em>가 지운 이름을 되살리는 일이었는데, 재읽기가 없다.
-
-    // ⛔ `PushVocabularyToEpisodes`와 그 지문(`_pushedVocabularySignature`)은 2026-09-16에
-    //    걷혔다 (R-D, 지시서 §2: "읽기 전용 산출물엔 드롭다운이 없다").
-    //
-    //    챕터의 화자 목록이 바뀔 때마다 <b>대본 워크북을 전부 열어</b> 숨김 시트를 갈아
-    //    끼우던 길이다. 워크북이 원본이던 시절에는 사람이 그 드롭다운에서 골랐으니 값을
-    //    치를 이유가 있었지만, 이제 사람은 툴에서 고른다 — 산출물에 조언을 심을 이유가 없다.
-    //    (새로 만드는 워크북은 만들 때 목록을 받는다: `EpisodeLibrary.EnsureWorkbook`.)
-
-    /// <summary>
-    /// 새 대본이 받을 화자 — 챕터를 가리지 않는 프로젝트 목록 하나다.
-    /// 규칙은 <see cref="EpisodeLibrary.SpeakerNames"/>가 갖는다(동기화가 새 워크북을
-    /// 만들 때 쓰는 것과 <b>같은 목록</b>이어야 한다).
-    /// </summary>
-    private List<string> ProjectSpeakerNames() =>
-        _session is null ? [] : EpisodeLibrary.SpeakerNames(_session.Definition);
-
-    /// <summary>
-    /// 왼쪽 목록의 챕터 클릭 → 챕터 엑셀 열기 (2026-08-16 소유자 — 기본 동작이 "엑셀에서
-    /// 만진다"이므로 클릭이 곧 편집 창구를 연다). 스프레드시트 앱이 없으면 폴더에서 보여 준다.
-    /// </summary>
-    internal void OpenChapterWorkbook(string chapterId)
-    {
-        string? folder = ChapterLibrary.FolderFor(_session?.ProjectPath);
-
-        if (folder is null)
-        {
-            return;
-        }
-
-        string target = IoPath.Combine(folder, chapterId + ".xlsx");
-
-        // .xlsm으로 개명된 챕터(구글 시트)도 그 파일이 원본이다.
-        if (!File.Exists(target) && File.Exists(IoPath.Combine(folder, chapterId + ".xlsm")))
-        {
-            target = IoPath.Combine(folder, chapterId + ".xlsm");
-        }
-
-        if (!File.Exists(target))
-        {
-            return; // 목록에 있는데 파일이 없다 — 읽기 실패 챕터. 검증 보고가 사유를 든다.
-        }
-
-        if (!SpreadsheetAssociation.IsSpreadsheetHandler(WorkbookHandlerProbe()))
-        {
-            RevealInFolder(target);
-            _session?.SetStatus(".xlsx에 연결된 스프레드시트 앱이 없어 폴더에서 파일을 보여 줍니다.");
-            return;
-        }
-
-        OpenWorkbookFile(target);
-    }
-
-    /// <summary>
-    /// 노드 클릭 → 에피소드 엑셀 열기 (G5). 워크북이 없으면 §3.2 규격대로 만들어서 연다 —
-    /// 기획자가 머리글 11개를 손으로 칠 이유가 없다.
-    /// </summary>
-    internal void OpenEpisode(string episodeId)
-    {
-        // 대본은 그 챕터의 폴더에 산다 (2026-08-16) — 다른 챕터의 같은 이름과 섞이지 않는다.
-        string? folder = SelectedEpisodesFolder;
-
-        if (folder is null)
-        {
-            _session?.SetStatus("프로젝트를 먼저 저장하고 챕터를 골라야 대본 폴더 자리가 정해집니다.");
-            return;
-        }
-
-        // .xlsx는 없는데 같은 이름의 .xlsm·.ods가 있다면, 사람이 쓴 원고가 그리로 옮겨 간
-        // 것이다(구글 시트로 열어 저장하면 형식이 바뀌기도 한다). 그 위에 빈 워크북을 새로
-        // 만들면 원고가 화면에서 사라진 것처럼 보인다 — 만들지 않고 그 파일을 열어 준다.
-        if (EpisodeLibrary.FindExisting(folder, episodeId) is null &&
-            EpisodeLibrary.FindOtherFormat(folder, episodeId) is { } other)
-        {
-            _session?.SetStatus(
-                $"'{IoPath.GetFileName(other)}'가 있어 새 워크북을 만들지 않았습니다. " +
-                "툴은 .xlsx만 읽습니다 — 그 파일을 .xlsx로 저장(또는 이름 변경)해 주세요.");
-            OpenWorkbookFile(other);
-            return;
-        }
-
-        if (EpisodeLibrary.EnsureWorkbook(
-                folder,
-                episodeId,
-                ProjectSpeakerNames()))
-        {
-            _session?.SetStatus($"에피소드 워크북을 새로 만들었습니다: {EpisodeLibrary.PathFor(folder, episodeId)}");
-        }
-
-        // 이미 있는 파일이면 그 파일을 연다 — 이름이 정규화만 다른 경우에도 같은 파일이다.
-        string target = EpisodeLibrary.FindExisting(folder, episodeId)
-            ?? EpisodeLibrary.PathFor(folder, episodeId);
-        string? handler = WorkbookHandlerProbe();
-
-        if (!SpreadsheetAssociation.IsSpreadsheetHandler(handler))
-        {
-            // 편집할 수 없는 앱에 워크북을 던지지 않는다 — 폴더에서 보여 주고 사유를 말한다.
-            RevealInFolder(target);
-            _session?.SetStatus(handler is null
-                ? ".xlsx에 연결된 앱이 없어 폴더에서 파일을 보여 줍니다. 엑셀이나 LibreOffice Calc로 열어 주세요."
-                : $".xlsx의 기본 앱({IoPath.GetFileName(handler)})이 스프레드시트가 아니라서 폴더에서 보여 줍니다. " +
-                  "우클릭 → 연결 프로그램에서 스프레드시트 앱을 고르세요.");
-            return;
-        }
-
-        OpenWorkbookFile(target);
-    }
-
     private void Reload()
     {
-        // ⛔ <b>여기가 R-F의 뒤집힌 자리다</b> (2026-09-16). 예전에는 이 줄이
-        //    `ChapterImportService.Run(...)`이었다 — 다시 그릴 때마다 `chapters/` 폴더를
-        //    열어 읽었고, 그것이 곧 <b>워크북이 원본</b>이라는 전제였다.
-        //
-        //    이제 판은 프로젝트에서 온다. 워크북을 읽는 길은 [챕터 가져오기] 하나뿐이고
-        //    (§5.2), 그 뒤로 파일은 산출물이다.
+        // 판은 프로젝트에서 온다 — 파일을 읽지 않는다.
         _entries.Clear();
         _entries.AddRange(ChapterEntries());
 
         _updatingCombo = true;
+
+        // 항목은 ID(고르는 규칙 그대로), 보이는 글은 챕터 이름(비면 ID) — [대본] 콤보와 같다(2026-11-18 소유자 · ⛔ 그 전에는 ID가 보였다).
+        // 목록을 늘 새로 주므로 이름만 바뀌어도 다시 선다.
+        // 「조건 및 스탯」 탭 머리의 작은 드롭다운도 같은 목록 · 같은 선택이다(2026-11-18 소유자 · side-tabs V1).
+        ChapterCombo.ItemTemplate ??= new Avalonia.Controls.Templates.FuncDataTemplate<string>((id, _) => new TextBlock
+        {
+            Text = _entries.FirstOrDefault(entry => string.Equals(entry.ChapterId, id, StringComparison.Ordinal))?.Model.ShownName ?? id
+        });
+        ConditionChapterCombo.ItemTemplate ??= ChapterCombo.ItemTemplate;
         ChapterCombo.ItemsSource = _entries.Select(entry => entry.ChapterId).ToList();
+        ConditionChapterCombo.ItemsSource = _entries.Select(entry => entry.ChapterId).ToList();
 
         if (_selectedChapterId is null ||
             _entries.All(entry => entry.ChapterId != _selectedChapterId))
         {
             _selectedChapterId = _entries.FirstOrDefault()?.ChapterId;
+
+            // 저절로 고른 챕터도 하이어아키의 그 줄을 고른 것과 같다 — 인스펙터에 그 챕터가 선다.
+            _inspector = InspectorMode.Chapter;
+            ShowInHierarchy(_selectedChapterId is { } picked ? new HierarchyPick(HierarchyKind.Chapter, picked) : null);
         }
 
         ChapterCombo.SelectedItem = _selectedChapterId;
+        ConditionChapterCombo.SelectedItem = _selectedChapterId;
         _updatingCombo = false;
-
-        // ⛔ 구판 `화자` 시트 이행은 2026-09-16에 임포트 쪽으로 옮겼다 (R-F). 매번 부를 이유가
-        //    사라졌기 때문이다 — 그 시트를 볼 수 있는 것은 워크북을 읽는 그 한 번뿐이다.
 
         RebuildSpeakerTab();
 
-        AutoExport();        // 진행 JSON은 사람 손을 기다리지 않는다 (2026-08-17)
+        AutoExport();        // 진행 JSON은 사람 손을 기다리지 않는다
         Validate();
-        Draw();              // 못 나갔으면 그 결론이 검증 보고 맨 위에 선다
-        RefreshLockState(); // 엑셀을 열거나 닫으면 그 사실이 여기로 온다
-
-        // ⛔ 디스크 지문(`_diskFingerprint`)은 2026-09-16에 걷혔다 (R-F). "파일이 정말
-        //    바뀌었나"는 <b>파일을 다시 읽던 시절</b>의 물음이고, 이제 판은 프로젝트에서 온다.
+        DrawWhenShown();     // 못 나갔으면 그 결론이 검증 보고 맨 위에 선다
 
         EntriesReloaded?.Invoke(_entries);
     }
 
+    /// <summary>다시 읽은 뒤 아직 그리지 않았다 — [구성] 탭이 가려져 있었다. 탭이 다시 보이면 그린다.</summary>
+    private bool _drawPending;
+
     /// <summary>
-    /// 프로젝트가 든 챕터를 화면이 쓰는 모양으로 낸다.
-    ///
-    /// ⚠ <see cref="ChapterEntry.Path"/>는 이제 <b>읽은 자리가 아니라 낼 자리</b>다 —
-    /// 출력·잠금 확인이 이 경로를 본다.
-    ///
-    /// ⚠ <c>OpenFailure</c>는 늘 null이다. 열지 못할 파일이 없기 때문이다 — 못 여는 일은
-    /// 임포트에서만 일어나고, 그때는 <b>아무것도</b> 안 들여온다(§5.2).
+    /// 판 · 검증 보고 · 인스펙터를 다시 그린다 — <b>[구성] 탭이 가려져 있으면 보일 때까지 미룬다</b>(2026-11-18 · finishing FX3). [대본] 탭에서
+    /// 글을 넣거나 카드를 옮길 때마다 다시 읽기가 돌고, 그때마다 보이지 않는 이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 0.3초).
+    /// 내보내기와 검증은 미루지 않는다 — 진행 JSON은 사람 손을 기다리지 않는다. 가려졌다 = 화면 트리에 없거나(창에 붙기 전) 보이지 않는다
+    /// (셸이 고른 탭의 판만 보인다 — usability UX14 · ⛔ 그 전에는 탭 안에 들어 있어 가려지면 화면 트리에서 떨어졌다) — 다시 보이는 순간
+    /// <see cref="OnShownAgain"/>이 그린다.
     /// </summary>
+    private void DrawWhenShown()
+    {
+        if (TopLevel.GetTopLevel(this) is null || !IsVisible)
+        {
+            _drawPending = true;
+            return;
+        }
+
+        _drawPending = false;
+        Draw();
+    }
+
+    private void OnShownAgain()
+    {
+        if (_drawPending)
+        {
+            _drawPending = false;
+            Draw();
+        }
+    }
+
+    /// <summary>프로젝트가 든 챕터를 화면이 쓰는 모양으로 낸다.</summary>
     private IReadOnlyList<ChapterEntry> ChapterEntries()
     {
         if (_session is null)
@@ -1179,24 +1001,17 @@ public partial class ChapterGraphView : UserControl
             return Array.Empty<ChapterEntry>();
         }
 
-        string? folder = ChapterLibrary.FolderFor(_session.ProjectPath);
-
         return _session.Project.Chapters
-            .Select(chapter =>
-            {
-                string path = folder is null
-                    ? chapter.ChapterId + ".xlsx"
-                    : IoPath.Combine(folder, chapter.ChapterId + ".xlsx");
-
-                return new ChapterEntry(
-                    chapter.ChapterId, path, chapter.ToGraphModel(path, _session.Definition), null);
-            })
+            .Select(chapter => new ChapterEntry(
+                chapter.ChapterId,
+                chapter.ToGraphModel(chapter.ChapterId),
+                ChapterBranchCards.HomesOf(_session.Project, chapter.ChapterId)))
             .OrderBy(entry => entry.ChapterId, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
     /// <summary>
-    /// 구조 검증 + 도달성 증명 (G7). 워크북을 읽을 때마다 한 번 돌려 두고 화면은 그 결과를
+    /// 구조 검증 + 도달성 증명.모델을 다시 읽을 때마다 한 번 돌려 두고 화면은 그 결과를
     /// 그리기만 한다 — 픽스처를 바꿀 때마다 상태공간을 다시 훑을 이유가 없다.
     /// </summary>
     private void Validate()
@@ -1205,7 +1020,7 @@ public partial class ChapterGraphView : UserControl
 
         ChapterEntry? entry = _entries.FirstOrDefault(item => item.ChapterId == _selectedChapterId);
 
-        if (entry?.Model is null)
+        if (entry is null)
         {
             return;
         }
@@ -1214,12 +1029,12 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 증명과 내보내기 (2026-08-23에 이 파일에서 나갔다 — `Vn.Authoring.Chapters`).
+    /// 증명과 내보내기 — 규칙은 `Vn.Authoring.Chapters`에 산다.
     ///
-    /// 캐시·지문·거부 장부가 전부 저쪽에 있다. 여기 남은 것은 <b>언제 부르나</b>뿐이고,
-    /// 그것이 화면의 일이다. 규칙이 3,835줄 안에 살면 밖에서 보이지 않는다 — 실제로
-    /// 물렸다: "동기화는 고른 챕터만, 내보내기는 전 챕터"라는 사실이 여기 묻혀 있어
-    /// 저작 관문을 걸려던 시도가 뒤늦게 그것을 알았다.
+    /// 캐시·지문·거부 장부가 전부 저쪽에 있다. 여기 있는 것은 <b>언제 부르나</b>뿐이고,
+    /// 그것이 화면의 일이다. 규칙이 화면 파일 안에 살면 밖에서 보이지 않는다 — 예컨대
+    /// "동기화는 고른 챕터만, 내보내기는 전 챕터"라는 사실이 화면에 묻히면 저작 관문을
+    /// 걸려는 쪽이 그것을 모른다.
     /// </summary>
     private readonly ChapterExportService _export = new();
 
@@ -1230,32 +1045,20 @@ public partial class ChapterGraphView : UserControl
     internal int ValidationComputeCount => _export.ValidationComputeCount;
 
     private ChapterValidationResult ValidationFor(ChapterEntry entry) =>
-        _export.ValidationFor(entry, _session?.ProjectPath, _session?.Project);
+        _export.ValidationFor(entry, _session?.Project);
 
-    /// <summary>런타임 수입물이 나가는 자리. 에셋과 같은 규약 폴더 방식이다 — 매니페스트 없음.</summary>
-    /// <summary>
-    /// 툴이 길을 놓을 때 넣어 주는 문구 (v12). 빈 문구는 오류이므로 무언가는 있어야 하고,
-    /// 기획자가 바로 고쳐 쓸 수 있는 가장 짧은 말이다.
-    /// </summary>
-    internal const string DefaultOptionLabel = "계속";
-
-    /// <summary>진행 JSON 폴더 이름. 정본은 <see cref="ChapterExportService"/>에 있다.</summary>
-    public const string ExportFolderName = ChapterExportService.ExportFolderName;
-
-    /// <summary>
-    /// G8 — 런타임 수입용 JSON을 쓴다. <b>검증을 통과해야만 나간다</b>(Gate C 3번) —
-    /// 오류가 있으면 파일을 만들지 않고 사유를 보고 패널에 세운다. 쓰레기가 런타임으로
-    /// 넘어가는 것보다 내보내기가 실패하는 편이 낫다.
-    /// </summary>
-    // ── 판 다루기: 휠 확대·축소, 가운데 단추 끌어 이동 (2026-08-17 소유자) ──
+    // ── 판 다루기: 휠 확대·축소, 가운데 단추 끌어 이동 ──
     //
     // 연출 그래프(GraphEditorView)와 같은 손놀림·같은 산식이다. 판이 둘인데 다루는
     // 법이 다르면 손이 매번 헷갈린다.
     //
-    // 2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다 — 판 위에서 휠은 곧 배율이다.
+    // Ctrl을 요구하지 않는다 — 판 위에서 휠은 곧 배율이다.
     // 세로로 훑는 일은 가운데 단추 끌기가 맡는다.
+    //
+    // 설정 「휠로 판 옮기기」를 켜면(맥은 처음부터) 거꾸로다 — 휠이 판을 옮기고 배율은 Ctrl(맥은 ⌘도)+휠 · 트랙패드 집기다
+    // (BoardWheel 한 벌 · writer-app WA3).
 
-    private const double MinZoom = 0.3;
+    private const double MinZoom = 0.1;  // 큰 챕터도 [화면 맞춤]으로 한 화면에 들어오게
     private const double MaxZoom = 2.5;
 
     private double _zoom = 1;
@@ -1263,10 +1066,33 @@ public partial class ChapterGraphView : UserControl
     private Point _panStart;
     private Vector _panStartOffset;
 
-    /// <summary>휠 — 누른 키와 무관하게 배율이다. 스크롤로 새지 않게 여기서 삼킨다.</summary>
+    /// <summary>
+    /// 휠 — 배율이거나(처음 값 · 누른 키와 무관하게) 판 옮기기다(설정 「휠로 판 옮기기」). 스크롤로 새지 않게 여기서 삼킨다. 무엇을 얼마나 하는가는
+    /// <see cref="BoardWheel"/> 한 벌([대본]과 같다) — 배율은 신호의 크기에 비례한다.
+    /// </summary>
     private void OnGraphWheel(object? sender, Avalonia.Input.PointerWheelEventArgs args)
     {
-        ApplyZoom(_zoom * (args.Delta.Y > 0 ? 1.15 : 1 / 1.15), args.GetPosition(GraphScroll));
+        BoardWheel.Move move = BoardWheel.Read(args);
+
+        if (move.Zoom != 1)
+        {
+            ApplyZoom(_zoom * move.Zoom, args.GetPosition(GraphScroll));
+        }
+
+        if (move.Pan != default)
+        {
+            GraphScroll.Offset = new Vector(
+                Math.Max(0, GraphScroll.Offset.X + move.Pan.X),
+                Math.Max(0, GraphScroll.Offset.Y + move.Pan.Y));
+        }
+
+        args.Handled = true;
+    }
+
+    /// <summary>트랙패드 집기(맥) — 늘 배율이다.</summary>
+    private void OnGraphMagnify(object? sender, Avalonia.Input.PointerDeltaEventArgs args)
+    {
+        ApplyZoom(_zoom * BoardWheel.Magnify(args.Delta), args.GetPosition(GraphScroll));
         args.Handled = true;
     }
 
@@ -1276,20 +1102,46 @@ public partial class ChapterGraphView : UserControl
         Point pivot = anchor ?? new Point(
             GraphScroll.Viewport.Width / 2, GraphScroll.Viewport.Height / 2);
 
-        // 지금 pivot 아래에 있는 캔버스 좌표.
+        // 지금 pivot 아래에 있는 캔버스 좌표 — 판이 띄워 서 있으면 그만큼 뺀다(PlaceSheet).
         var content = new Point(
-            (GraphScroll.Offset.X + pivot.X) / _zoom,
-            (GraphScroll.Offset.Y + pivot.Y) / _zoom);
+            (GraphScroll.Offset.X + pivot.X - _sheetOffset.X) / _zoom,
+            (GraphScroll.Offset.Y + pivot.Y - _sheetOffset.Y) / _zoom);
 
         _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         ZoomHost.LayoutTransform = new ScaleTransform(_zoom, _zoom);
         ZoomText.Text = $"{Math.Round(_zoom * 100)}%";
         ZoomResetButton.IsVisible = Math.Abs(_zoom - 1) > 0.001;
+        _centerSheet = true;   // 배율이 바뀌면 판이 화면보다 작은 쪽은 가운데에 다시 선다
+        PlaceSheet();
         ZoomHost.UpdateLayout(); // 새 크기를 알아야 오프셋 상한이 맞는다
 
         GraphScroll.Offset = new Vector(
-            Math.Max(0, (content.X * _zoom) - pivot.X),
-            Math.Max(0, (content.Y * _zoom) - pivot.Y));
+            Math.Max(0, (content.X * _zoom) + _sheetOffset.X - pivot.X),
+            Math.Max(0, (content.Y * _zoom) + _sheetOffset.Y - pivot.Y));
+    }
+
+    /// <summary>
+    /// [화면 맞춤] — 이 챕터의 카드가 모두 한 화면에 들어오는 배율과 자리. 판은 이 챕터의 카드만 여백째 감싸므로
+    /// (<see cref="DisplayPlacement"/>) 판 전체를 화면에 맞춘다. 카드가 적다고 100%보다 키우지는 않는다.
+    /// </summary>
+    internal void FitChapter()
+    {
+        double width = GraphCanvas.Width;
+        double height = GraphCanvas.Height;
+
+        if (GraphScroll.Viewport.Width <= 0 || GraphScroll.Viewport.Height <= 0 ||
+            double.IsNaN(width) || double.IsNaN(height) || width <= 0 || height <= 0)
+        {
+            return;   // 레이아웃 전이거나 그릴 판이 없다
+        }
+
+        ApplyZoom(
+            Math.Min(1.0, Math.Min(GraphScroll.Viewport.Width / width, GraphScroll.Viewport.Height / height)),
+            anchor: null);
+
+        GraphScroll.Offset = new Vector(
+            Math.Max(0, ((width * _zoom) - GraphScroll.Viewport.Width) / 2),
+            Math.Max(0, ((height * _zoom) - GraphScroll.Viewport.Height) / 2));
     }
 
     private void OnGraphPanPressed(object? sender, Avalonia.Input.PointerPressedEventArgs args)
@@ -1339,13 +1191,128 @@ public partial class ChapterGraphView : UserControl
     /// 그 뒤로 동기화 보고까지 따라오므로, 상태줄에 얹으면 서로를 덮는다(실제로 덮였다).
     /// 못 나간 사유는 어차피 그 보고에 이미 서 있는 오류들이다 — 결론을 그 옆에 둔다.
     /// </summary>
-    private void AutoExport() =>
+    private void AutoExport()
+    {
         _exportRun = _export.ExportAll(_entries, _session?.ProjectPath, _session?.Project);
+
+        // 저장 직후에만 보낸다 — exported/를 방금 새로 쓴 뒤라 보낼 곳이 저장된 판과 같다(2026-11-17 · ExportDelivery).
+        if (_session is { ProjectPath: { } path } session && session.TakeDeliveryRequest())
+        {
+            _exportRun = _exportRun with { Delivery = ExportDelivery.Deliver(path, session.Destinations) };
+        }
+    }
 
     /// <summary>검증 보고 맨 위에 세울 내보내기 결론 — 못 나갔을 때만 있다.</summary>
     private string? ExportNotice() => _exportRun.Notice;
 
     // ── 그리기 ──────────────────────────────────────────────────────────────
+
+    /// <summary>다시 그리기 직전의 판 크기 — 끄는 동안은 판을 이 크기로 둔다(usability UX22).</summary>
+    private Size _heldBoardSize;
+
+    /// <summary>
+    /// 판(흰 종이)이 바탕 위에 띄워 선 거리(화면 px · usability UX22). 처음 · 챕터를 바꿀 때 · 화면 맞춤 · 배율을 바꿀 때는 판이 화면보다 작은 쪽을
+    /// 가운데로 띄우고, 그 밖에는 띄움을 그대로 둔다 — 편집으로 판이 넓어지거나 좁아져도 판은 제자리에 선다(넘치면 스크롤이 생긴다).
+    /// ⛔ 정렬로 늘 가운데에 두었을 때는 카드를 판 밖에 놓아 판이 넓어질 때마다 판이 그 반만큼 비켜 서 놓은 카드가 커서에서 밀렸다.
+    /// </summary>
+    private Vector _sheetOffset;
+
+    /// <summary>다음에 판을 놓을 때 가운데로 놓는가 — 화면 크기를 아직 모르면(배치 전) 알게 될 때 놓는다.</summary>
+    private bool _centerSheet = true;
+
+    /// <summary>
+    /// 판 오른쪽 · 아래에 덧붙인 바깥(화면 px) — 판을 왼쪽 · 위로 넓히며 카드를 화면 제자리에 두려면 그만큼 더 스크롤해야 하는데, 판이 화면보다
+    /// 조금만 넓으면 스크롤할 자리가 모자란다(usability UX25). 가운데로 다시 놓거나 창 크기가 바뀌면 걷는다.
+    /// </summary>
+    private Vector _sheetTrail;
+
+    /// <summary>
+    /// 판의 기준(가장 왼쪽 · 위 카드)이 옮겨진 거리(판 좌표) — 판을 다시 그린 뒤 그만큼 되돌린다(<see cref="CommitDrag"/>). 양수면 기준 카드를
+    /// 오른쪽 · 아래로 옮겨 카드가 모두 당겨진 것이고, 음수면 기준보다 왼쪽 · 위에 놓아 판이 그쪽으로 넓어지며 카드가 모두 밀린 것이다.
+    /// </summary>
+    private Vector _sheetNudge;
+
+    /// <summary>판을 바탕 위에 놓는다 — <see cref="_sheetOffset"/>.</summary>
+    /// <param name="keepInView">화면 크기가 바뀌었다(창 크기) — 판이 화면에 들어가면 들어가게 띄움을 줄인다. 편집으로 판 크기가 바뀔 때는 줄이지 않는다
+    /// (카드가 놓은 자리에서 밀리지 않게 — 넘치면 스크롤이 생긴다).</param>
+    /// <param name="redrawn">판을 막 다시 그렸다 — 기준이 옮겨진 만큼(<see cref="_sheetNudge"/>)을 이때만 되돌린다. 다시 그리기 전에 화면 크기가 바뀌어 불리면
+    /// 카드는 아직 옛 기준에 서 있다.</param>
+    private void PlaceSheet(bool keepInView = false, bool redrawn = false)
+    {
+        Size viewport = GraphScroll.Viewport;
+        double width = GraphCanvas.Width;
+        double height = GraphCanvas.Height;
+
+        if (viewport.Width <= 0 || viewport.Height <= 0 || double.IsNaN(width) || double.IsNaN(height) || width <= 0 || height <= 0)
+        {
+            return;   // 배치 전이거나 그릴 판이 없다 — 화면 크기와 판을 알게 되면 놓는다(⛔ 빈 판을 가운데로 놓아 버리면 그린 판이 반 화면 비켜 섰다)
+        }
+
+        Vector nudge = redrawn ? _sheetNudge * _zoom : default;
+
+        if (redrawn)
+        {
+            _sheetNudge = default;
+        }
+
+        Vector? scrollTo = null;
+
+        if (_centerSheet)
+        {
+            _sheetOffset = new Vector(
+                Math.Max(0, viewport.Width - (width * _zoom)) / 2,
+                Math.Max(0, viewport.Height - (height * _zoom)) / 2);
+            _sheetTrail = default;
+            _centerSheet = false;
+        }
+        else if (nudge != default)
+        {
+            // 카드가 화면에서 그 자리에 남게 한다 — 당겨졌으면(양수) 보던 자리를 그만큼 되돌리고 모자라면 판을 그만큼 띄우고, 밀렸으면(음수 —
+            // 판이 왼쪽 · 위로 넓어졌다) 판을 그만큼 덜 띄우고 모자라면 보던 자리를 그만큼 넘긴다.
+            (double marginX, double offsetX) = Absorb(nudge.X, _sheetOffset.X, GraphScroll.Offset.X);
+            (double marginY, double offsetY) = Absorb(nudge.Y, _sheetOffset.Y, GraphScroll.Offset.Y);
+            _sheetOffset = new Vector(marginX, marginY);
+
+            // 그만큼 스크롤하려면 판 오른쪽 · 아래로 바깥이 그만큼 있어야 한다 — 모자라면 덧붙인다.
+            _sheetTrail = new Vector(
+                Math.Max(0, offsetX + viewport.Width - (marginX + (width * _zoom))),
+                Math.Max(0, offsetY + viewport.Height - (marginY + (height * _zoom))));
+
+            if (Math.Abs(offsetX - GraphScroll.Offset.X) > 0.01 || Math.Abs(offsetY - GraphScroll.Offset.Y) > 0.01)
+            {
+                scrollTo = new Vector(offsetX, offsetY);
+            }
+        }
+
+        if (keepInView)
+        {
+            _sheetOffset = new Vector(
+                Math.Min(_sheetOffset.X, Math.Max(0, viewport.Width - (width * _zoom))),
+                Math.Min(_sheetOffset.Y, Math.Max(0, viewport.Height - (height * _zoom))));
+            _sheetTrail = default;
+        }
+
+        ZoomHost.Margin = new Thickness(_sheetOffset.X, _sheetOffset.Y, _sheetTrail.X, _sheetTrail.Y);
+
+        if (scrollTo is { } offset)
+        {
+            GraphScroll.UpdateLayout();   // 넓어진 판을 알아야 스크롤이 거기까지 간다
+            GraphScroll.Offset = offset;
+        }
+
+        // 한 축의 옮김을 띄움과 스크롤로 나눠 받는다 — (새 띄움, 새 스크롤).
+        static (double Margin, double Offset) Absorb(double nudge, double margin, double offset)
+        {
+            if (nudge >= 0)
+            {
+                double back = Math.Min(offset, nudge);
+                return (margin + nudge - back, offset - back);
+            }
+
+            double less = Math.Min(margin, -nudge);
+            return (margin - less, offset + (-nudge - less));
+        }
+    }
 
     private void Draw()
     {
@@ -1355,11 +1322,14 @@ public partial class ChapterGraphView : UserControl
         DiagnosticsPanel.Children.Clear();
         _cardById.Clear();
         _cardBase.Clear();
+        _emptySlotDots.Clear();
         _lineByEdge.Clear();
         _lineBase.Clear();
+        _labelRects.Clear();
 
         // 그릴 것이 없으면 판도 없다. 이걸 지우지 않으면 큰 챕터를 보다가 못 읽는 챕터로
-        // 넘어갔을 때 텅 빈 캔버스가 이전 크기 그대로 남아 스크롤만 넓어진다.
+        // 넘어갔을 때 텅 빈 캔버스가 이전 크기 그대로 남아 스크롤만 넓어진다. 끄는 동안은 그 크기를 아래에서 그대로 쓴다(UX22).
+        _heldBoardSize = new Size(GraphCanvas.Width, GraphCanvas.Height);
         GraphCanvas.Width = 0;
         GraphCanvas.Height = 0;
 
@@ -1367,20 +1337,27 @@ public partial class ChapterGraphView : UserControl
 
         if (entry is null)
         {
-            string? folder = ChapterLibrary.FolderFor(_session?.ProjectPath);
+            bool saved = _session?.ProjectPath is not null;
 
             EmptyText.IsVisible = true;
-            EmptyText.Text = folder is null
+            EmptyText.Text = !saved
                 ? "아직 프로젝트가 없습니다.\n새 프로젝트를 만들고 저장하면 여기에 챕터 판이 섭니다."
-                : $"챕터 워크북이 없습니다.\n{folder} 에 {{ChapterId}}.xlsx 를 넣으면 여기에 그려집니다.";
+                : _entries.Count == 0
+                    ? "아직 챕터가 없습니다.\n누르면 [대본] 탭으로 가서 첫 챕터를 만듭니다."
+                    : "하이어아키에서 챕터를 고르면 여기에 판이 섭니다.";
 
-            // 빈 판의 첫걸음은 둘 중 하나만 선다 (2026-08-26 소유자: "새 프로젝트를
-            // 만들지도 않았는데 +챕터버튼부터 나오니 오히려 헷갈려") — 순서가 곧 안내다:
-            // 프로젝트가 먼저고 챕터는 그 다음이다. 챕터 단추는 챕터가 하나도 없을 때만이다.
-            // 목록에는 있는데 아직 안 고른 경우는 아니다: 그때 할 일은 만들기가 아니라 고르기다.
-            EmptyNewProjectButton.IsVisible = folder is null;
-            EmptyAddChapterButton.IsVisible = folder is not null && _entries.Count == 0;
-            EmptyAddEpisodeButton.IsVisible = false;
+            // 빈 판의 첫걸음 — 프로젝트가 없으면 [새 프로젝트], 챕터가 없으면 [＋ 첫 챕터 만들기]([대본]으로 데려가 거기서 만든다 · F2).
+            EmptyNewProjectButton.IsVisible = !saved;
+            EmptyFirstChapterButton.IsVisible = saved && _entries.Count == 0;
+
+            // 챕터가 없으면 인스펙터는 프로젝트를 보인다 — 판을 그리지 않고 돌아가더라도 인스펙터는 다시 세운다. ⛔ 그 전에는 여기서
+            // 돌아가 마지막 챕터를 지워도 그 챕터의 이름 · 챕터ID가 인스펙터에 남았다(소유자 그림 · F2).
+            if (_entries.Count == 0)
+            {
+                _inspector = InspectorMode.Project;
+            }
+
+            ApplyInspector();
 
             DiagnosticsExpander.Header = "검증 보고";
             return;
@@ -1388,28 +1365,17 @@ public partial class ChapterGraphView : UserControl
 
         EmptyText.IsVisible = false;
         EmptyNewProjectButton.IsVisible = false;
-        EmptyAddChapterButton.IsVisible = false;
-        EmptyAddEpisodeButton.IsVisible = false;
-
-        if (entry.Model is null)
-        {
-            EmptyText.IsVisible = true;
-            EmptyText.Text = $"'{entry.ChapterId}'을 읽지 못했습니다.\n{entry.OpenFailure}";
-            DiagnosticsExpander.Header = "검증 보고 — 읽기 실패";
-            return;
-        }
+        EmptyFirstChapterButton.IsVisible = false;
 
         ChapterGraphModel model = entry.Model;
 
-        // 셋째 걸음 (2026-08-26 소유자: "챕터를 열었는데, 아무 에피소드가 없을 땐
-        // + 에피소드 버튼이 나오도록") — 새 챕터의 에피소드 시트는 머리글뿐이라
-        // 판이 그냥 텅 비어 있었다. 안내문과 단추만 세우고 나머지 그리기는 그대로
-        // 지나간다 — 그릴 것이 없을 뿐 검증·보고는 여느 챕터와 같다.
+        // 에피소드가 없는 챕터 — 판이 그냥 텅 비어 있지 않게 안내문만 세우고 나머지 그리기는 그대로 지나간다(그릴 것이 없을
+        // 뿐 검증 · 보고는 여느 챕터와 같다). 에피소드는 [대본] 탭에서 더한다.
         if (model.Episodes.Count == 0)
         {
             EmptyText.IsVisible = true;
-            EmptyText.Text = $"'{entry.ChapterId}'에 에피소드가 없습니다.\n첫 에피소드를 세우면 여기에 그려집니다.";
-            EmptyAddEpisodeButton.IsVisible = true;
+            EmptyText.Text = $"'{entry.ChapterId}'에 에피소드가 없습니다.\n[구성] 탭에서는 에피소드를 더하지 않습니다 — [대본] 탭의 [＋ 에피소드]나 " +
+                "[대본] 탭 하이어아키의 장면 줄 우클릭 「에피소드 추가」로 더하면 여기에 그려집니다.";
         }
 
         DrawCanvas(model);
@@ -1421,11 +1387,11 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// <b>판만</b> 다시 그린다 — 카드·포트·간선. 검증 보고와 속성 패널은 안 건드린다.
     ///
-    /// ⭐ <see cref="Draw"/>에서 떼어낸 이유는 <b>드래그</b>다 (v4, 2026-09-18). 카드를 끄는
+    /// <see cref="Draw"/>와 따로 둔 이유는 <b>드래그</b>다. 카드를 끄는
     /// 동안 매 프레임 필요한 것은 판뿐인데, <c>Draw</c>를 부르면 검증 보고 패널을 통째로
     /// 다시 세우고 속성 패널의 타이핑까지 건드린다 — 끄는 중에 낼 비용도, 낼 이유도 없다.
     ///
-    /// ⚠ 자리 계산이 여기 한 벌만 있어야 한다. 끄는 동안과 놓은 뒤가 다른 산식을 쓰면
+    /// 주의: 자리 계산이 여기 한 벌만 있어야 한다. 끄는 동안과 놓은 뒤가 다른 산식을 쓰면
     /// 놓는 순간 카드가 튄다.
     /// </summary>
     private void DrawCanvas(ChapterGraphModel model)
@@ -1433,39 +1399,70 @@ public partial class ChapterGraphView : UserControl
         GraphCanvas.Children.Clear();
         _cardById.Clear();
         _cardBase.Clear();
+        _emptySlotDots.Clear();
         _lineByEdge.Clear();
         _lineBase.Clear();
+        _labelRects.Clear();
+        _parts.Clear();
+        CanvasBuildCount++;
 
-        // 자리는 사람이 소유한다 (v4) — 에피소드가 제 X·Y를 지고 있고 드래그가 그것을
+        // 자리는 사람이 소유한다 — 에피소드가 제 X·Y를 지고 있고 드래그가 그것을
         // 고친다. 그리기는 <b>덮지 않는다</b>: 덮으면 옮긴 일이 아무 일도 아니게 된다.
         //
-        // ⚠ 끄는 중인 카드 하나만 임시 자리(`_dragPosition`)를 쓴다 — 아직 프로젝트에
+        // 주의: 끄는 중인 카드 하나만 임시 자리(`_dragPosition`)를 쓴다 — 아직 프로젝트에
         //   안 적은 자리다. 놓을 때 한 번 적는다(되돌리기 한 번 = 드래그 한 번).
-        _placed = DisplayPlacement(model).ToDictionary(
+        _storedPlacement = DisplayPlacement(model).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        _placed = _storedPlacement.ToDictionary(
             pair => pair.Key,
-            pair => string.Equals(pair.Key, _draggingEpisodeId, StringComparison.Ordinal) &&
-                    _dragPosition is { } dragged
-                ? (X: dragged.X + CanvasMargin, Y: dragged.Y + CanvasMargin)
-                : (X: pair.Value.X + CanvasMargin, Y: pair.Value.Y + CanvasMargin),
+            pair => DrawnAt(pair.Key, pair.Value),
             StringComparer.Ordinal);
 
-        GraphCanvas.Width = _placed.Count == 0
-            ? CanvasMargin * 2
-            : _placed.Values.Max(position => position.X) + CardWidth + CanvasMargin;
-        GraphCanvas.Height = _placed.Count == 0
-            ? CanvasMargin * 2
-            : _placed.Values.Max(position => position.Y) + CardHeight + CanvasMargin;
+        // 카드마다의 높이 — 스탯 줄 수로 정해진다. 선 · 점은 카드보다 먼저 그어지므로 여기서 먼저 센다(UX3).
+        _cardHeight.Clear();
+
+        foreach (ChapterEpisode episode in model.Episodes)
+        {
+            _cardHeight[episode.EpisodeId] = CardHeightFor(StatRows(episode).Rows.Count);
+        }
+
+        // 분기 카드 칩은 부르는 에피소드 곁에 붙는다 — 그 에피소드의 자리(끄는 중이면 임시 자리)를 따라간다.
+        PlaceBranchChips();
+
+        List<(double Right, double Bottom)> extents =
+        [
+            .. _placed.Select(pair => (pair.Value.X + CardWidth, pair.Value.Y + CardHeightOf(pair.Key))),
+            .. _chipPlaced.Values.Select(position => (position.X + BranchChipWidth, position.Y + BranchChipHeight))
+        ];
+
+        // 끄는 동안은 판 크기를 그대로 둔다 — 판 밖으로 끈 카드는 바깥 위에 선 채 따라오고(배율 칸이 판 밖을 자르지 않는다), 놓으면 판이
+        // 그만큼 넓어진다(usability UX22). 끄는 걸음은 판을 다시 그리지 않지만(MoveInPlace) 그 사이에 다시 읽기가 판을 그리면, 넓어진 판이
+        // 가운데로 다시 서며 카드가 커서에서 비켜 난다.
+        if (_draggingEpisodeId is not null && _heldBoardSize.Width > 0 && _heldBoardSize.Height > 0)
+        {
+            GraphCanvas.Width = _heldBoardSize.Width;
+            GraphCanvas.Height = _heldBoardSize.Height;
+        }
+        else
+        {
+            GraphCanvas.Width = extents.Count == 0
+                ? CanvasMargin * 2
+                : extents.Max(extent => extent.Right) + CanvasMargin;
+            GraphCanvas.Height = extents.Count == 0
+                ? CanvasMargin * 2
+                : extents.Max(extent => extent.Bottom) + CanvasMargin;
+        }
+
+        PlaceSheet(redrawn: true);
 
 
-        // 에피소드별 보이는 선택지 = 문구가 붙은 나가는 간선들 (v9 — 길 하나가 곧 선택지
+        // 에피소드별 보이는 선택지 = 문구가 붙은 나가는 간선들 (길 하나가 곧 선택지
         // 하나). 포트 그리기와 간선 그리기가 같은 목록 하나를 본다.
         _optionsByEpisode.Clear();
 
         foreach (ChapterEpisode episode in model.Episodes)
         {
-            // v12 (2026-08-24) — **나가는 길은 전부 포트를 받는다.** 예전에는 문구 없는
-            // 간선("보이지 않는 기본")을 걸러 내고 카드 중앙에서 직행선으로 그렸는데,
-            // 그 개념이 폐지됐다. 문구가 비어 있으면 그것은 종류가 아니라 **고칠 것**이고,
+            // **나가는 길은 전부 포트를 받는다.** 문구 없는 간선을 따로 걸러 내지 않는다 —
+            // 문구가 비어 있으면 그것은 종류가 아니라 **고칠 것**이고,
             // 판에서 그 자리를 보여 줘야 기획자가 고친다.
             _optionsByEpisode[episode.EpisodeId] = model.Edges
                 .Where(edge =>
@@ -1479,23 +1476,55 @@ public partial class ChapterGraphView : UserControl
 
         foreach (ChapterEpisode episode in model.Episodes)
         {
-            DrawEpisode(model, episode);
+            DrawPart([episode.EpisodeId], () => DrawEpisode(model, episode), redrawable: false);
         }
 
+        // 칩은 카드 위에 선다 — 카드 사이가 좁으면 옆 카드에 걸치는데, 그래도 읽히고 눌려야 한다(자리는 에피소드를 옮겨 낸다).
+        DrawBranchChips();
+
         ApplySelectionVisuals();
+
+        // 범위를 긋는 중에 판이 다시 서도 사각형은 남는다.
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Add(_rubberBand);
+        }
+    }
+
+    /// <summary>카드를 그릴 자리(여백 포함) — 끄는 중인 카드와 무리는 아직 프로젝트에 적지 않은 임시 자리다.</summary>
+    private (double X, double Y) DrawnAt(string episodeId, (double X, double Y) stored)
+    {
+        if (_groupStart is { } group && group.TryGetValue(episodeId, out (double X, double Y) start))
+        {
+            return (start.X + _groupDelta.X + CanvasMargin, start.Y + _groupDelta.Y + CanvasMargin);
+        }
+
+        if (string.Equals(episodeId, _draggingEpisodeId, StringComparison.Ordinal) && _dragPosition is { } dragged)
+        {
+            return (dragged.X + CanvasMargin, dragged.Y + CanvasMargin);
+        }
+
+        return (stored.X + CanvasMargin, stored.Y + CanvasMargin);
     }
 
     /// <summary>
-    /// <b>분기 표식</b>을 점선으로 그린다 (2026-09-18 소유자: *"챕터 그래프가 보면, 분기는
-    /// 선택지로 안 이어 주고 있거든?"*).
+    /// <b>분기점</b>을 카드 옆변에 세우고, 이어진 분기는 그 점에서 점선을 긋는다.
     ///
-    /// <b>선택지와 다른 종류의 선이다.</b> 문구도 스탯변화도 없고, 누를 수도 없다 — 뚫고 떼는
-    /// 것은 연출 그래프의 일이므로 여기서는 <b>읽기만</b> 한다. 점선인 것이 그 뜻이다:
-    /// 사람이 고르는 길(실선)이 아니라 <b>반드시 한 번 다녀오는 통로</b>다.
+    /// <b>선택지와 다른 종류의 선이다.</b> 문구도 스탯변화도 없다. 점선인 것이 그 뜻이다: 사람이 고르는 길(실선)이
+    /// 아니라 <b>반드시 한 번 다녀오는 통로</b>다. 분기점을 만들고 지우고 잇고 끊는 것은 [대본] 탭의 일이고, 여기서는
+    /// 그것을 <b>보이기만 한다</b> — 분기점 · 점선은 눌러도 아무 일이 없고, 분기(정보 · 조건)는 그 칩을 눌러 고른다(2026-11-17 소유자 ·
+    /// <see cref="BranchKnob"/> · <see cref="DrawBranchLine"/>). 연결만 끊은 분기점도 속 빈 점으로 남아 보인다. ⛔ 그 전에는 분기점 · 점선을
+    /// 누르면 그 분기의 정보와 조건이 열렸다.
     ///
-    /// ⚠ <b>오른쪽으로 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
-    /// 선택지처럼 우측으로 붙이되"*) — 연출 그래프와 같은 변이다. 선택지가 아래변의 칸을
-    /// 쓰므로 자리도 겹치지 않는다(포트 하나 = 선택지 하나, v9).
+    /// <b>다녀갈 곳은 분기 카드다</b>(2026-11-17 소유자) — 에피소드가 아니라 판에 따로 서지 않고, 부르는 에피소드 곁에 <b>작은 칩</b>으로
+    /// 붙는다(<see cref="PlaceBranchChips"/>). 점선은 분기점에서 그 칩으로 든다. 분기 카드가 또 들르면 칩의 옆변에도 분기점이 선다.
+    ///
+    /// ⚠ <b>옆변으로 나간다</b> (v5 · 2026-09-18 소유자: *"분기는 점선인 상태로, 현재
+    /// 선택지처럼 우측으로 붙이되"*) — 선택지가 아래변의 칸을 쓰므로 자리가 겹치지 않는다(포트 하나 =
+    /// 선택지 하나, v9). <b>다녀갈 카드가 왼쪽에 있으면 왼변으로</b> 나간다(2026-10-30 소유자: *"자기가 나온
+    /// 에피소드보다 왼쪽에 있어도 오른쪽으로만 나오는데, 그걸 연출그래프처럼 왼쪽에 있으면 왼쪽으로"*) —
+    /// 연출 그래프의 분기 포트와 같은 규칙 하나(<see cref="Vn.Authoring.Graph.EdgeSide.GoesLeft"/>)다. 칩은 집(먼저 부르는 에피소드)의
+    /// 오른쪽에 서므로, 다른 곳에서 같은 분기 카드를 부르는 분기점만 왼변으로 나갈 수 있다.
     /// </summary>
     private void DrawBranchMarkers()
     {
@@ -1504,62 +1533,244 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        _branchByLine.Clear();
+        _branchMarkers.Clear();
+        _branchChips.Clear();
+        _chipBase.Clear();
+        _branchPoints = [];
 
-        var stroke = new SolidColorBrush(Color.Parse("#7A6FB0"));
+        // 분기점은 카드 옆변에 선다 — 다녀갈 카드가 왼쪽이면 왼변, 아니면(이어지지 않은 분기점도) 오른변이다. 한 변에
+        // 여럿이면 옆변 가운데를 중심으로 세로로 늘어선다(대본의 분기점처럼 점에서 선이 나간다).
+        IReadOnlyList<ChapterBranchMarkers.BranchPoint> points =
+            ChapterBranchMarkers.PointsFor(_session.Editor.Project, chapterId);
 
-        foreach (ChapterBranchMarkers.Marker marker in
-                 ChapterBranchMarkers.For(_session.Editor.Project, chapterId))
+        foreach (IGrouping<(string From, bool Left), ChapterBranchMarkers.BranchPoint> side in points
+                     .Where(point => FromRect(point) is not null)
+                     .GroupBy(point => (point.FromNodeId, GoesLeft(point))))
         {
-            if (!_placed.TryGetValue(marker.FromEpisodeId, out (double X, double Y) from) ||
-                !_placed.TryGetValue(marker.ToEpisodeId, out (double X, double Y) to))
+            Rect from = FromRect(side.First())!.Value;
+            List<ChapterBranchMarkers.BranchPoint> stacked = side.ToList();
+
+            for (int index = 0; index < stacked.Count; index++)
+            {
+                ChapterBranchMarkers.BranchPoint point = stacked[index];
+                var at = new Point(
+                    side.Key.Left ? from.X : from.Right,
+                    from.Y + (from.Height / 2) + ((index - ((stacked.Count - 1) / 2.0)) * BranchPointGap));
+
+                IBrush accent = BranchPalette.Accent(point.Port.PaletteIndex);
+
+                // 분기점은 출발(카드 · 칩)에, 점선은 출발과 도착 칩에 기댄다 — 칩은 집 에피소드를 따라 선다.
+                DrawPart(
+                    [point.FromEpisodeId ?? _chipHome.GetValueOrDefault(point.FromNodeId),
+                     point.Port.TargetNodeId is { } target ? _chipHome.GetValueOrDefault(target) : null],
+                    () =>
+                    {
+                        if (point.Marker is { } marker && ToRect(point) is { } to)
+                        {
+                            DrawBranchLine(point, marker, at, to, accent);
+                        }
+
+                        GraphCanvas.Children.Add(BranchKnob(point, at, accent));
+                    },
+                    redrawable: false);
+            }
+        }
+
+        _branchPoints = points;
+    }
+
+    /// <summary>이번 그리기의 분기점들 — 칩의 색을 정할 때 다시 본다.</summary>
+    private IReadOnlyList<ChapterBranchMarkers.BranchPoint> _branchPoints = [];
+
+    /// <summary>분기 카드 칩들을 세운다 — 에피소드 카드를 그린 뒤에(위에) 선다.</summary>
+    private void DrawBranchChips()
+    {
+        foreach ((string nodeId, (double X, double Y) at) in _chipPlaced)
+        {
+            // 칩의 색은 그 분기 카드를 처음 부르는 분기점의 색이다 — [대본] 탭의 그 분기 포트 · 선과 같다.
+            int palette = _branchPoints.FirstOrDefault(point =>
+                string.Equals(point.Port.TargetNodeId, nodeId, StringComparison.Ordinal))?.Port.PaletteIndex ?? 0;
+            DrawPart([_chipHome.GetValueOrDefault(nodeId)], () => DrawBranchChip(nodeId, at, BranchPalette.Accent(palette)), redrawable: false);
+        }
+    }
+
+    /// <summary>
+    /// 분기 카드 칩의 자리 — 집(그 분기 카드를 먼저 부르는 에피소드 — <see cref="ChapterBranchCards.HomesOf"/>)의 오른쪽에 대본 차례로 세로로
+    /// 늘어선다. 자리를 저장하지 않는다 — 끌어 옮기지 않고 에피소드를 따라간다(소유자). ⛔ 분기 카드가 부르는 분기 카드를 한 칸 들여 세우던
+    /// 것은 2026-11-19에 걷혔다 — 분기 카드는 분기를 내지 않는다(usability UX27).
+    /// </summary>
+    private void PlaceBranchChips()
+    {
+        _chipPlaced = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+        _chipHome.Clear();
+
+        if (_session is null || _selectedChapterId is not { } chapterId)
+        {
+            return;
+        }
+
+        var count = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (BranchCardHome home in ChapterBranchCards.HomesOf(_session.Editor.Project, chapterId))
+        {
+            if (!_placed.TryGetValue(home.EpisodeId, out (double X, double Y) at))
             {
                 continue;
             }
 
-            // 오른변 가운데에서 나가, 도착 카드의 <b>가까운 세로 변</b>으로 들어간다 —
-            // 되돌아가는 분기(도착이 왼쪽)도 선이 카드를 관통하지 않는다.
-            var start = new Point(from.X + CardWidth, from.Y + (CardHeight / 2));
-            bool targetIsRight = start.X <= to.X;
+            int index = count.GetValueOrDefault(home.EpisodeId);
+            count[home.EpisodeId] = index + 1;
 
-            var line = new Line
-            {
-                StartPoint = start,
-                EndPoint = new Point(
-                    targetIsRight ? to.X : to.X + CardWidth,
-                    to.Y + (CardHeight / 2)),
-                Stroke = stroke,
-                StrokeThickness = 1.6,
-                StrokeDashArray = new AvaloniaList<double> { 5, 4 },
-                IsHitTestVisible = false,
-                // 화면 없는 검증이 "무엇이 그려졌는지"를 색·좌표로 역추론하지 않게 한다.
-                Tag = $"분기:{marker.FromEpisodeId}->{marker.ToEpisodeId}"
-            };
-
-            GraphCanvas.Children.Add(line);
-            _branchByLine[marker.LineId] = (marker, line);
-
-            // 1.6px 점선은 사람이 못 누른다 — 간선과 같은 수법으로 굵은 히트 선을 겹친다.
-            var hit = new Line
-            {
-                StartPoint = line.StartPoint,
-                EndPoint = line.EndPoint,
-                Stroke = Brushes.Transparent,
-                StrokeThickness = 14,
-                Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
-            };
-
-            string lineId = marker.LineId;
-
-            hit.PointerPressed += (_, e) =>
-            {
-                e.Handled = true; // 캔버스(빈 공간 = 선택 해제)까지 흘러가면 곧바로 풀린다
-                UiGuard.Run(_session, "분기 선택", () => SelectBranch(lineId));
-            };
-
-            GraphCanvas.Children.Add(hit);
+            _chipHome[home.Card.Id] = home.EpisodeId;
+            _chipPlaced[home.Card.Id] = (
+                at.X + CardWidth + BranchChipOffset,
+                at.Y + (index * (BranchChipHeight + BranchChipGap)));
         }
     }
+
+    /// <summary>분기점이 선 카드의 네모 — 에피소드 카드 또는 분기 카드 칩. 판에 없으면 <c>null</c>.</summary>
+    private Rect? FromRect(ChapterBranchMarkers.BranchPoint point) =>
+        point.FromEpisodeId is { } episode && _placed.TryGetValue(episode, out (double X, double Y) card)
+            ? new Rect(card.X, card.Y, CardWidth, CardHeightOf(episode))
+            : ChipRect(point.FromNodeId);
+
+    /// <summary>다녀갈 분기 카드의 칩 네모. 이어지지 않았거나 판에 없으면 <c>null</c>.</summary>
+    private Rect? ToRect(ChapterBranchMarkers.BranchPoint point) =>
+        point.Port.TargetNodeId is { } target ? ChipRect(target) : null;
+
+    private Rect? ChipRect(string nodeId) =>
+        _chipPlaced.TryGetValue(nodeId, out (double X, double Y) chip)
+            ? new Rect(chip.X, chip.Y, BranchChipWidth, BranchChipHeight)
+            : null;
+
+    /// <summary>분기점이 설 변 — 다녀갈 카드가 이 카드보다 왼쪽이면 왼변이다. 이어지지 않은 분기점은 오른변이다.</summary>
+    private bool GoesLeft(ChapterBranchMarkers.BranchPoint point) =>
+        FromRect(point) is { } from &&
+        ToRect(point) is { } target &&
+        Vn.Authoring.Graph.EdgeSide.GoesLeft(from.X, from.Width, target.X, target.Width);
+
+    /// <summary>
+    /// 이어진 분기의 점선 — 분기점에서 나가 도착(칩 · 카드)의 <b>가까운 세로 변</b> 가운데로 든다(둘이 가로로 겹쳐 서도 선이
+    /// 카드를 관통하지 않는다). <b>누르지 않는다</b>(2026-11-17 소유자) — 분기를 고르는 것은 칩이다(점선을 누른 것과 칩을 누른 것이
+    /// 같아졌다). ⛔ 전에는 굵은 누름 선을 겹쳐 누르면 그 분기를 골랐다(조건 칸).
+    /// </summary>
+    private void DrawBranchLine(
+        ChapterBranchMarkers.BranchPoint point, ChapterBranchMarkers.Marker marker, Point start, Rect to, IBrush accent)
+    {
+        bool goesLeft = GoesLeft(point);
+        double entryX = goesLeft
+            ? to.Right <= start.X ? to.Right : to.X
+            : start.X <= to.X ? to.X : to.Right;
+
+        var line = new Line
+        {
+            StartPoint = start,
+            EndPoint = new Point(entryX, to.Y + (to.Height / 2)),
+            Stroke = accent,
+            StrokeThickness = BranchThickness,
+            StrokeDashArray = new AvaloniaList<double> { 5, 4 },
+            IsHitTestVisible = false,
+            // 화면 없는 검증이 "무엇이 그려졌는지"를 색·좌표로 역추론하지 않게 한다.
+            Tag = $"분기:{marker.FromEpisodeId ?? marker.FromNodeId}->{marker.ToName}"
+        };
+
+        GraphCanvas.Children.Add(line);
+        _branchMarkers.Add(marker);
+    }
+
+    /// <summary>
+    /// 분기 카드 칩 — 「⑂ 이름」 한 줄. 누르면 인스펙터에 그 분기 카드(부르는 곳 · 조건 · 대본)가 선다. <b>읽기 전용</b>이다 — 끌어
+    /// 옮기지 않고(자리는 부르는 에피소드를 따라간다) 대본도 여기서 고치지 않는다. 고치는 것은 조건뿐이다(소유자).
+    /// </summary>
+    private void DrawBranchChip(string nodeId, (double X, double Y) at, IBrush accent)
+    {
+        if (_session?.Project.FindDialogue(nodeId) is not { } card)
+        {
+            return;
+        }
+
+        BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, nodeId);
+
+        var chip = new Border
+        {
+            Width = BranchChipWidth,
+            Height = BranchChipHeight,
+            Padding = new Thickness(7, 0),
+            CornerRadius = new CornerRadius(4),
+            BorderThickness = new Thickness(1.2),
+            BorderBrush = accent,
+            Background = new SolidColorBrush(Color.Parse("#F4F2FA")),
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+            Child = new TextBlock
+            {
+                Text = state.Label is { } label
+                    ? $"⑂ {EpisodeNaming.BranchTitleOf(card)} · {label}"
+                    : $"⑂ {EpisodeNaming.BranchTitleOf(card)}",
+                FontSize = 10.5,
+                Foreground = new SolidColorBrush(Color.Parse("#3B3F46")),
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            },
+            Tag = new BranchCardMark(nodeId, EpisodeNaming.BranchTitleOf(card))
+        };
+
+        ToolTip.SetTip(chip,
+            $"분기 카드 {EpisodeNaming.BranchLabelOf(card)} — 들렀다 돌아오는 카드입니다(선택지가 없고 진행 JSON에 실리지 않습니다). " +
+            BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label)) +
+            " 누르면 인스펙터에 조건과 대본이 열립니다. 대본은 [대본] 탭에서 고칩니다.");
+
+        chip.PointerPressed += (_, e) =>
+        {
+            if (!e.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
+            e.Handled = true; // 캔버스(빈 공간 = 선택 해제 · 범위 선택)까지 흘러가면 곧바로 풀린다
+            UiGuard.Run(_session, "분기 카드 선택", () => SelectBranchCard(nodeId));
+
+            // 두 번 누름 — 에피소드 카드처럼 셸에 알린다([대본] 탭의 그 분기 카드로).
+            if (e.ClickCount >= 2)
+            {
+                BranchCardOpened?.Invoke(nodeId);
+            }
+        };
+
+        _branchChips[nodeId] = chip;
+        _chipBase[nodeId] = (chip.BorderBrush, chip.BorderThickness);
+        Canvas.SetLeft(chip, at.X);
+        Canvas.SetTop(chip, at.Y);
+        GraphCanvas.Children.Add(chip);
+    }
+
+    /// <summary>
+    /// 분기점 — 이어진 분기는 속이 찬 점, 연결만 끊은 분기점은 속 빈 점이다. <b>보이기만 한다</b>(2026-11-17 소유자) — 마우스를 올리면
+    /// 어디로 가는지(이어지지 않았으면 [대본] 탭에서 잇는다는 것)를 말하고, 눌러도 아무 일이 없다(빈 판으로 흘려 선택을 풀지도 않는다).
+    /// 분기를 고르는 것은 칩이다. ⛔ 전에는 누르면 점선과 같은 분기 패널이 열렸다.
+    /// </summary>
+    private Ellipse BranchKnob(ChapterBranchMarkers.BranchPoint point, Point at, IBrush accent)
+    {
+        var knob = new Ellipse
+        {
+            Width = BranchKnobRadius * 2,
+            Height = BranchKnobRadius * 2,
+            Fill = point.ToName is null ? Brushes.Transparent : accent,
+            Stroke = accent,
+            StrokeThickness = 2,
+            ZIndex = 50,
+            Tag = BranchKnobTag + point.Key
+        };
+        Canvas.SetLeft(knob, at.X - BranchKnobRadius);
+        Canvas.SetTop(knob, at.Y - BranchKnobRadius);
+        ToolTip.SetTip(knob, point.ToName is { } to
+            ? $"분기 → {to} — 조건과 대본은 그 분기 카드(칩)를 눌러 봅니다."
+            : "이어지지 않은 분기점 — 다녀갈 곳이 없어 지나갑니다. [대본] 탭에서 이 분기점을 분기 카드에 잇거나 빈 곳에 놓아 새 분기 카드를 세웁니다.");
+
+        knob.PointerPressed += (_, e) => e.Handled = true;   // 아무 일도 없다 — 빈 판(선택 풀기 · 범위 선택)으로도 흘리지 않는다
+
+        return knob;
+    }
+
 
     // ⛔ 픽스처 (G6) — 2026-08-24에 화면에서 걷었다 (소유자: "꽤 오래 다뤘는데 단 한 번도
     // 안 썼어"). 여기 있던 것: `_selectedFixture`·`RefreshFixtureCombo`·`WalkSelectedFixture`,
@@ -1569,8 +1780,8 @@ public partial class ChapterGraphView : UserControl
     // 시트의 `활성` 픽스처만 남겨 두면 견본 챕터가 초록으로 켜진 채 <b>끄는 손잡이 없이</b>
     // 서 있게 된다. 그래서 화면 쪽은 통째로 걷는 것이 옳다.
     //
-    // ⚠ <b>엑셀의 `픽스처` 시트와 `ChapterFixtureWalker`는 안 지웠다</b> — 시트는 워크북
-    // 규격이라 지우면 남의 파일이 깨지고, 걷기는 저작 계층의 순수 함수다(제 테스트가 있다).
+    // ⚠ <b>`ChapterDocument.Fixtures`와 `ChapterFixtureWalker`는 안 지웠다</b> — 픽스처는 챕터의
+    // 데이터이고(옛 엑셀 `픽스처` 시트에서 왔다), 걷기는 저작 계층의 순수 함수다(제 테스트가 있다).
     // 되살릴 때 필요한 것은 콤보 하나와 이 자리의 걷기 호출뿐이다.
 
     /// <summary>
@@ -1585,11 +1796,40 @@ public partial class ChapterGraphView : UserControl
     /// <summary>포트 점의 반지름 — 카드 변 위에 걸터앉는다.</summary>
     private const double PortRadius = 4.5;
 
+    /// <summary>선택지 문구의 가장 넓은 폭 — 넘으면 「…」로 줄이고 마우스를 올리면 전체가 보인다.</summary>
+    private const double LabelMaxWidth = 160;
+
+    /// <summary>
+    /// 선택지 문구가 지는 표 — 화면 테스트가 이것으로 찾는다. 글자 표(string)가 아닌 것은 판의 카드가 글자 표(에피소드 Id)를
+    /// 지기 때문이다 — 「글자 표를 진 Border = 카드」를 깨지 않는다.
+    /// </summary>
+    internal sealed record EdgeLabelMark(string FromEpisodeId, string ToEpisodeId, string Label);
+
+    /// <summary>이번 그리기에서 이미 놓인 선택지 문구의 자리 — 다음 문구가 이것을 비켜 선다.</summary>
+    private readonly List<Rect> _labelRects = new();
+
+    /// <summary>빈 선택지 칸 점이 지는 표 — 화면 테스트가 이것으로 찾는다. 뒤에 「{에피소드}#{칸}」이 붙는다.</summary>
+    internal const string EmptySlotTag = "empty-slot:";
+
+    /// <summary>빈 선택지 칸 점의 테두리 — 고르면 파랗게 굵어지고 풀리면 이리 돌아온다.</summary>
+    private static readonly IBrush EmptySlotBrush = new SolidColorBrush(Color.Parse("#7F8A96"));
+
+    /// <summary>판에 선 빈 선택지 칸 점들 — (에피소드, 칸).</summary>
+    private readonly Dictionary<(string Episode, int Index), Ellipse> _emptySlotDots = new();
+
+    /// <summary>고른 빈 선택지 칸. 없으면 <c>null</c>.</summary>
+    private (string Episode, int Index)? _selectedSlot;
+
     /// <summary>에피소드 → 보이는 선택지(문구 붙은 나가는 간선). Draw가 채우고 카드·간선이 함께 본다.</summary>
     private readonly Dictionary<string, List<ChapterEdge>> _optionsByEpisode = new(StringComparer.Ordinal);
 
     /// <summary>이 에피소드가 낼 칸 수 — 언제나 셋 이상이고, 간선이 더 많으면 그만큼이다.</summary>
     private static int SlotsFor(int optionCount) => Math.Max(ChoiceSlots, optionCount);
+
+    /// <summary>
+    /// 판에 세울 칸 수 — 툴바의 「빈 선택지 숨기기」를 켜면 이은 칸만이다(빈 칸을 세지 않으니 이은 선택지가 카드 아래에 고르게 선다).
+    /// </summary>
+    private int ShownSlotsFor(int optionCount) => _session?.HideEmptyChoices == true ? optionCount : SlotsFor(optionCount);
 
     /// <summary>
     /// 선택지 포트의 가로 자리 — <b>카드 아래변</b>에 고르게 선다 (v5, 2026-09-18).
@@ -1624,23 +1864,18 @@ public partial class ChapterGraphView : UserControl
 
             List<ChapterEdge> options = _optionsByEpisode.GetValueOrDefault(episode.EpisodeId) ?? [];
 
-            if (!_placed.TryGetValue(episode.EpisodeId, out (double X, double Y) position))
-            {
-                // 자리를 못 잡은 카드 — 포트가 없으니 중앙 직행선으로라도 그린다.
-                foreach (ChapterEdge edge in edges)
-                {
-                    DrawDirectEdge(edge);
-                }
+            // 자리는 늘 있다 — 자리를 정하는 쪽(DisplayPlacement)이 에피소드마다 하나씩 낸다.
+            (double X, double Y) position = _placed[episode.EpisodeId];
 
-                continue;
-            }
-
-            int slots = SlotsFor(options.Count);
+            int slots = ShownSlotsFor(options.Count);
 
             for (int index = 0; index < options.Count; index++)
             {
-                DrawPortEdge(options[index],
-                    new Point(PortX(position.X, index, slots), position.Y + CardHeight + 5));
+                ChapterEdge edge = options[index];
+                int slot = index;
+
+                // 선은 두 카드에 기댄다 — 끄는 동안 한쪽만 움직였으면 그 선만 지금 자리로 다시 긋는다(PortOf가 그때의 자리를 읽는다).
+                DrawPart([edge.FromEpisodeId, edge.ToEpisodeId], () => DrawPortEdge(edge, PortOf(edge.FromEpisodeId, slot, slots)), redrawable: true);
             }
         }
     }
@@ -1702,7 +1937,7 @@ public partial class ChapterGraphView : UserControl
         Segment(port.X, port.Y, entry.X, entryY);
 
         // 화살촉은 진입하는 변을 향한다 — 위에서 아래로 꽂힌다(기본 방향이 아래다).
-        AddEdgeArrow(entry.X, entryY + 1, stroke, pointRight: false);
+        AddEdgeArrow(entry.X, entryY + 1, stroke);
 
         RegisterEdgeLines(edge, segments, stroke, thickness);
 
@@ -1721,27 +1956,21 @@ public partial class ChapterGraphView : UserControl
         hit.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "간선 선택", () => SelectEdgeKey(hitFrom, hitTo, hitLabel));
+            UiGuard.Run(_session, "간선 선택", () => PressChoice(hitFrom, hitTo, hitLabel, e.ClickCount));
         };
         GraphCanvas.Children.Add(hit);
 
         AddEdgeLabel(edge, port, new Point(entry.X, entryY));
     }
 
-    private void AddEdgeArrow(
-        double x, double y, IBrush fill, bool pointRight, bool pointUp = false, bool pointLeft = false)
+    /// <summary>아래로 드는 화살촉 — 도착 카드 위 가운데로 들어간다.</summary>
+    private void AddEdgeArrow(double x, double y, IBrush fill)
     {
         var arrow = new Avalonia.Controls.Shapes.Polygon
         {
             Fill = fill,
             IsHitTestVisible = false,
-            Points = pointLeft
-                ? [new Point(0, -4), new Point(-7, 0), new Point(0, 4)]
-                : pointRight
-                    ? [new Point(0, -4), new Point(7, 0), new Point(0, 4)]
-                    : pointUp
-                        ? [new Point(-4, 0), new Point(0, -7), new Point(4, 0)]
-                        : [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
+            Points = [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
         };
 
         Canvas.SetLeft(arrow, x);
@@ -1750,8 +1979,14 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 간선의 <b>문구</b>를 그 선 한가운데에 놓는다 — 사람이 간선을 누르려고 겨누는 바로
+    /// 간선의 <b>문구</b>를 그 선 위에 놓는다 — 사람이 간선을 누르려고 겨누는 바로
     /// 그 자리다. 누르면 그 간선이 선택된다.
+    ///
+    /// 자리는 선 한가운데가 먼저다. 이미 놓인 문구와 겹치면 <b>제 선을 따라</b> 위아래로 번갈아 비켜 빈자리를 찾는다
+    /// (<see cref="LabelSpots"/>) — 한 카드에서 나간 선택지 여럿이 같은 카드로 모이면 선 가운데가 거의 한 점이라 문구가
+    /// 하나로 포개졌다. 제 선 위에 있어야 어느 문구가 어느 선인지 헷갈리지 않는다. 빈자리가 없으면 가장 덜 겹치는 자리다.
+    /// 문구가 길면 <see cref="LabelMaxWidth"/>에서 줄이고(…) 마우스를 올리면 전체가 보인다. 문구 위에는 표시조건 · 해금조건이,
+    /// 아래에는 스탯변화가 선다(있을 때만) — 조건과 스탯은 줄이지 않는다.
     ///
     /// ⭐ <b>v5에서 문구가 여기로 왔다</b> (2026-09-18). 전에는 카드 오른변 안쪽에 포트마다
     /// 한 줄씩 적었는데, 포트가 아래변으로 내려가면서 한 칸에 남는 폭이 카드의 1/4이 됐다 —
@@ -1763,26 +1998,73 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void AddEdgeLabel(ChapterEdge edge, Point from, Point to)
     {
-        string option = edge.Auto ? "AUTO"
-            : edge.HasNoOptionLabel ? "⚠ 문구 없음"
-            : edge.OptionLabel!;
+        string option = EdgeOptionText(edge);
 
-        string label = edge.ConditionLabel is { } gate ? $"{option} [{gate}]" : option;
+        IBrush ink = new SolidColorBrush(Color.Parse(
+            edge.Auto ? "#3D7BD9" : edge.HasNoOptionLabel ? "#C0392B" : "#5A646E"));
+
+        // 세 줄이다 — 위는 이 선택지가 언제 보이고(표시조건) 언제 고를 수 있는지(해금조건), 가운데는 문구, 아래는 이 길을
+        // 건너면 바뀌는 스탯. 없는 줄은 서지 않는다. 줄이는 것은 문구뿐이다 — 조건과 스탯은 늘 다 보인다.
+        var rows = new StackPanel { Spacing = 1 };
+        List<string> tip = [option];
+
+        var gates = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center };
+
+        if (edge.VisibleConditionLabel is { } visible)
+        {
+            gates.Children.Add(LabelPart($"표시: {visible}", 9, VisibleConditionInk));
+            tip.Add($"표시조건: {visible} — 아니면 목록에 안 보인다");
+        }
+
+        if (edge.ConditionLabel is { } unlock)
+        {
+            gates.Children.Add(LabelPart($"해금: {unlock}", 9, UnlockConditionInk));
+            tip.Add($"해금조건: {unlock} — 아니면 잠긴 채 보인다");
+        }
+
+        if (gates.Children.Count > 0)
+        {
+            gates.Tag = EdgeLabelRow.Conditions;
+            rows.Children.Add(gates);
+        }
+
+        TextBlock optionText = LabelPart(option, 10, ink);
+        optionText.MaxWidth = LabelMaxWidth;
+        optionText.TextTrimming = TextTrimming.CharacterEllipsis;
+        optionText.HorizontalAlignment = HorizontalAlignment.Center;
+        optionText.Tag = EdgeLabelRow.Option;
+        rows.Children.Add(optionText);
+
+        if (edge.StatChanges.Count > 0)
+        {
+            var stats = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 6,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Tag = EdgeLabelRow.Stats
+            };
+
+            foreach (StatDelta delta in edge.StatChanges)
+            {
+                (string shown, IBrush colour) = DescribeDelta(delta);
+                stats.Children.Add(LabelPart(shown, 9, colour));
+            }
+
+            rows.Children.Add(stats);
+            tip.Add("스탯변화: " + string.Join(" · ", edge.StatChanges.Select(delta => DescribeDelta(delta).Text)));
+        }
 
         var text = new Border
         {
             Background = new SolidColorBrush(Color.Parse("#F0F4F6F8")),
             CornerRadius = new CornerRadius(3),
             Padding = new Thickness(4, 1),
-            Child = new TextBlock
-            {
-                Text = label,
-                FontSize = 10,
-                Foreground = new SolidColorBrush(Color.Parse(
-                    edge.Auto ? "#3D7BD9" : edge.HasNoOptionLabel ? "#C0392B" : "#5A646E"))
-            },
-            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
+            Child = rows,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
+            Tag = new EdgeLabelMark(edge.FromEpisodeId, edge.ToEpisodeId, EdgeLabelKey(edge))
         };
+        ToolTip.SetTip(text, string.Join("\n", tip));
 
         string fromId = edge.FromEpisodeId;
         string toId = edge.ToEpisodeId;
@@ -1792,13 +2074,76 @@ public partial class ChapterGraphView : UserControl
         text.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "간선 선택", () => SelectEdgeKey(fromId, toId, labelKey));
+            UiGuard.Run(_session, "간선 선택", () => PressChoice(fromId, toId, labelKey, e.ClickCount));
         };
 
         text.Measure(Size.Infinity);
-        Canvas.SetLeft(text, ((from.X + to.X) / 2) - (text.DesiredSize.Width / 2));
-        Canvas.SetTop(text, ((from.Y + to.Y) / 2) - (text.DesiredSize.Height / 2));
+        Size size = text.DesiredSize;
+        Rect spot = LabelSpots(from, to, size)
+            .Select(rect => (Rect: rect, Overlap: _labelRects.Sum(placed => OverlapArea(placed, rect))))
+            .Aggregate((best, next) => best.Overlap <= 0 || next.Overlap >= best.Overlap ? best : next)
+            .Rect;
+
+        _labelRects.Add(spot);
+        Canvas.SetLeft(text, spot.X);
+        Canvas.SetTop(text, spot.Y);
         GraphCanvas.Children.Add(text);
+    }
+
+    /// <summary>선택지 문구 상자의 줄 — 위(조건) · 가운데(문구) · 아래(스탯변화). 화면 테스트가 이것으로 줄을 가린다.</summary>
+    internal enum EdgeLabelRow
+    {
+        Conditions,
+        Option,
+        Stats
+    }
+
+    private static readonly IBrush VisibleConditionInk = new SolidColorBrush(Color.Parse("#7A6FB0"));
+    private static readonly IBrush UnlockConditionInk = new SolidColorBrush(Color.Parse("#B06A14"));
+
+    private static TextBlock LabelPart(string text, double size, IBrush ink) =>
+        new() { Text = text, FontSize = size, Foreground = ink };
+
+    /// <summary>
+    /// 스탯 변화 하나를 작가의 말로 — 키로 「trust +1」, 활성/비활성 스탯은 「열쇠 → 활성」(2026-11-19 · usability UX12 — ⛔ 「→ 예」 · 「→ 아니오」).
+    /// 오르면 초록, 내리면 빨강이다.
+    /// </summary>
+    private (string Text, IBrush Ink) DescribeDelta(StatDelta delta) =>
+    (
+        DeltaText(SelectedModel?.Stats, delta),
+        new SolidColorBrush(Color.Parse(delta.IsSet ? "#3D7BD9" : delta.Amount < 0 ? "#C0392B" : "#1F9D55"))
+    );
+
+    /// <summary>스탯 변화 하나의 글 — 스탯은 키만 있다(writer-fields W2). [대본] 탭 인스펙터도 같은 말을 쓴다.</summary>
+    internal static string DeltaText(IReadOnlyList<ChapterStat>? stats, StatDelta delta)
+    {
+        string name = delta.Key;
+
+        return delta.IsSet
+            ? $"{name} → {(delta.Amount != 0 ? "활성" : "비활성")}"
+            : $"{name} {delta.Amount.ToString("+0;-0;+0", System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
+    /// <summary>문구가 설 만한 자리들 — 선 한가운데부터 제 선을 따라 위아래로 번갈아 멀어진다(선의 15%~85%).</summary>
+    private static IEnumerable<Rect> LabelSpots(Point from, Point to, Size size)
+    {
+        foreach (double t in LabelStops)
+        {
+            var center = new Point(from.X + ((to.X - from.X) * t), from.Y + ((to.Y - from.Y) * t));
+            yield return new Rect(center.X - (size.Width / 2), center.Y - (size.Height / 2), size.Width, size.Height);
+        }
+    }
+
+    /// <summary>선 위에서 문구를 놓아 보는 차례 — 한가운데가 먼저, 겹치면 위(출발 쪽) · 아래(도착 쪽)로 번갈아.</summary>
+    private static readonly double[] LabelStops = [0.5, 0.38, 0.62, 0.26, 0.74, 0.15, 0.85];
+
+    /// <summary>두 문구가 겹친 넓이 — 사이에 2px 틈을 두어 붙어 서는 것도 겹친 것으로 친다.</summary>
+    private static double OverlapArea(Rect a, Rect b)
+    {
+        Rect widened = a.Inflate(2);
+        double width = Math.Min(widened.Right, b.Right) - Math.Max(widened.Left, b.Left);
+        double height = Math.Min(widened.Bottom, b.Bottom) - Math.Max(widened.Top, b.Top);
+        return width > 0 && height > 0 ? width * height : 0;
     }
 
     private void RegisterEdgeLines(ChapterEdge edge, List<Line> segments, IBrush stroke, double thickness)
@@ -1808,163 +2153,115 @@ public partial class ChapterGraphView : UserControl
         _lineBase[key] = (stroke, thickness);
     }
 
-    private void DrawDirectEdge(ChapterEdge edge)
-    {
-        if (!_placed.TryGetValue(edge.FromEpisodeId, out (double X, double Y) fromPos) ||
-            !_placed.TryGetValue(edge.ToEpisodeId, out (double X, double Y) toPos))
-        {
-            // 끝점이 없는 간선은 그리지 않는다. 이미 오류로 보고돼 있고, 허공에 매다는 편이 나쁘다.
-            return;
-        }
-
-        (double x1, double y1) = (fromPos.X + (CardWidth / 2), fromPos.Y + (CardHeight / 2));
-        (double x2, double y2) = (toPos.X + (CardWidth / 2), toPos.Y + (CardHeight / 2));
-
-        var line = new Line
-        {
-            StartPoint = new Point(x1, y1),
-            EndPoint = new Point(x2, y2),
-            Stroke = edge.ConditionLabel is null
-                ? new SolidColorBrush(Color.Parse("#8894A0"))
-                : new SolidColorBrush(Color.Parse("#C08A3E")),
-            StrokeThickness = 1.6
-        };
-
-
-
-        // 간선의 정체를 시각 요소에 남긴다. 화면 없는 렌더 검증(Gate A)이 "무엇이 그려졌는지"를
-        // 색·좌표로 역추론하지 않고 이름으로 확인할 수 있어야 한다.
-        line.Tag = EdgeTag(edge);
-        GraphCanvas.Children.Add(line);
-
-        // 선택 강조는 제자리에서 입힌다(ApplySelectionVisuals) — 여기서는 기본 모습만 등록한다.
-        string fromId = edge.FromEpisodeId;
-        string toId = edge.ToEpisodeId;
-        string labelKey = EdgeLabelKey(edge);
-        _lineByEdge[(fromId, toId, labelKey)] = [line];
-        _lineBase[(fromId, toId, labelKey)] = (line.Stroke, line.StrokeThickness);
-
-        // 1.6px 실선은 사람이 못 누른다 — 보이지 않는 굵은 히트 선을 위에 겹친다.
-        // Transparent는 히트 대상이다(null과 다르다). 카드가 나중에 그려져 그 위를 덮으므로
-        // 간선의 가운데 구간만 클릭된다 — 그게 맞다.
-        var hit = new Line
-        {
-            StartPoint = line.StartPoint,
-            EndPoint = line.EndPoint,
-            Stroke = Brushes.Transparent,
-            StrokeThickness = 14,
-            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
-        };
-
-        hit.PointerPressed += (_, e) =>
-        {
-            e.Handled = true; // 캔버스(빈 공간 = 선택 해제)까지 흘러가면 곧바로 풀려 버린다
-            UiGuard.Run(_session, "간선 선택", () => SelectEdgeKey(fromId, toId, labelKey));
-        };
-        GraphCanvas.Children.Add(hit);
-
-        AddEdgeLabel(edge, new Point(x1, y1), new Point(x2, y2));
-    }
-
     private void DrawEpisode(ChapterGraphModel model, ChapterEpisode episode)
     {
-        // 워크북의 오류든 도달 불가든 노드에는 같은 ⚠로 선다 — 기획자에게는 둘 다 "고칠 것"이다.
+        // 모델의 오류든 도달 불가든 노드에는 같은 ⚠로 선다 — 기획자에게는 둘 다 "고칠 것"이다.
         bool hasError = model.EpisodeHasError(episode) || IsUnreachable(episode);
 
+        // 머리는 두 줄이다 — 위는 칩(장면 시작점 · 장면 · 🔒 · ⚠), 아래는 에피소드 이름(2026-11-18 소유자 — 「에피소드 이름이 시작점과 새장면
+        // 아래쪽에」 · chrome-card-header U2). ⛔ 그 전에는 칩 뒤 같은 줄에 이름이 섰다.
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        bool showIds = _session?.ShowIds != false;   // 「ID로 보기」
 
         // 시작 에피소드(첫 행)가 곧 Root다 — 도달성의 씨앗이자 분기 저작의 출발점.
+        bool start = ReferenceEquals(model.StartEpisode, episode);
+
         if (model.IsSceneRoot(episode))
         {
-            var root = new Border
-            {
-                Background = new SolidColorBrush(Color.Parse("#3D7BD9")),
-                CornerRadius = new CornerRadius(3),
-                Padding = new Thickness(4, 0),
-                Child = new TextBlock
-                {
-                    Text = "SCENE ROOT",
-                    FontSize = 9,
-                    FontWeight = FontWeight.Bold,
-                    Foreground = Brushes.White
-                }
-            };
-            ToolTip.SetTip(root, ReferenceEquals(model.StartEpisode, episode)
-                ? "시작 에피소드이자 장면 루트입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
-                : "다른 장면에서 들어오는 장면 루트입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
+            // 「장면 시작점」(2026-11-18 소유자 — ⛔ 같은 날 H2에서 「시작점」으로 줄였다가 되돌렸다).
+            Border root = CardChip("장면 시작점", "#3D7BD9", FontWeight.Bold);
+            ToolTip.SetTip(root, start
+                ? "시작 에피소드이자 장면 시작점입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
+                : "다른 장면에서 들어오는 장면 시작점입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
             header.Children.Add(root);
         }
 
-        var scene = new Border
-        {
-            Background = new SolidColorBrush(Color.Parse("#6B5CA5")),
-            CornerRadius = new CornerRadius(3),
-            Padding = new Thickness(4, 0),
-            Child = new TextBlock
-            {
-                Text = string.IsNullOrWhiteSpace(episode.SceneId) ? "SCENE · 기본" : $"SCENE · {episode.SceneId.Trim()}",
-                FontSize = 9,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = Brushes.White
-            }
-        };
-        ToolTip.SetTip(scene, string.IsNullOrWhiteSpace(episode.SceneId)
-            ? "장면: 에피소드별 기본 장면(기존 워크북 호환)"
-            : $"장면: {episode.SceneId.Trim()} — 같은 장면ID끼리 저장·롤백 구간을 공유합니다.");
+        // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 「ID로 보기」를 끄면 장면 이름. 무엇인지는 툴팁이 말한다.
+        Border scene = CardChip(
+            showIds ? episode.SceneId : ChapterSceneNotes.NameOf(model.SceneNotes, episode.SceneId) is { Length: > 0 } sceneName
+                ? sceneName
+                : episode.SceneId,
+            "#6B5CA5",
+            FontWeight.SemiBold);
+        ToolTip.SetTip(scene, $"장면: {episode.SceneId} — 같은 장면ID끼리 저장·롤백 구간을 공유합니다.");
         header.Children.Add(scene);
 
         // 관문은 v8에서 길(간선)의 것이 됐다 — 카드는 "들어오는 길에 관문이 있다"를 표시한다.
         if (GatedIncoming(model, episode) is { Count: > 0 } gatedPaths)
         {
-            var lockMark = new TextBlock { Text = "🔒", FontSize = 11 };
+            var lockMark = new TextBlock { Text = "🔒", FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
             ToolTip.SetTip(lockMark, GateSummary(gatedPaths));
             header.Children.Add(lockMark);
         }
 
         if (hasError)
         {
-            header.Children.Add(new TextBlock { Text = "⚠", FontSize = 11, Foreground = Brushes.IndianRed });
+            header.Children.Add(new TextBlock
+            {
+                Text = "⚠",
+                FontSize = 11,
+                Foreground = Brushes.IndianRed,
+                VerticalAlignment = VerticalAlignment.Center
+            });
         }
-
-        bool hasTitle = !string.IsNullOrWhiteSpace(episode.Title);
-
-        header.Children.Add(new TextBlock
-        {
-            Text = hasTitle ? episode.Title : episode.EpisodeId,
-            FontWeight = FontWeight.SemiBold,
-            FontSize = 12,
-            TextTrimming = TextTrimming.CharacterEllipsis
-        });
 
         var body = new StackPanel { Spacing = 1 };
         body.Children.Add(header);
 
-        // 제목이 없으면 굵은 줄이 이미 Id다 — 같은 글자를 두 번 쓰지 않는다.
-        if (hasTitle)
+        // 이름 — 「ID로 보기」면 EpisodeId, 끄면 제목(비면 EpisodeId) · 2026-11-18 소유자. 칩과 같은 한글 먼저 글꼴이다.
+        // 글자는 14 · 굵게 · 진한 글색이다 — 카드에서 가장 먼저 읽는 줄이다(2026-11-19 소유자 — 「에피소드 제목이랑 이런 스탯 표기가 엄청 중요한
+        // 정보인데도 가독성이 떨어지는」 · UX3 · ⛔ 그 전에는 12 · SemiBold(반굵게가 없는 한글 글꼴에서는 보통 굵기로 그려졌다) · 테마 글색).
+        body.Children.Add(new TextBlock
         {
-            body.Children.Add(new TextBlock
-            {
-                Text = episode.EpisodeId,
-                FontSize = 10,
-                Opacity = 0.6,
-                TextTrimming = TextTrimming.CharacterEllipsis
-            });
-        }
+            Text = showIds ? episode.EpisodeId : episode.ShownTitle,
+            FontWeight = FontWeight.Bold,
+            FontSize = 14,
+            Foreground = CardNameBrush,
+            FontFamily = CardHeadFont,
+            Margin = new Thickness(0, 2, 0, 0),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Tag = CardNameTag
+        });
 
         // 여기 도착했을 때의 스탯 (2026-08-17 소유자: "간선을 따라 왔을 때 스탯의 변화량이
         // 노드에 표시되도록. 여러 루트가 있을 때는 스탯의 최소최대량을 표기"). 도달성 증명이
         // 이미 (에피소드, 스탯 벡터)로 걸으므로 그 결과를 읽기만 한다 — 따로 세지 않는다.
-        if (StatSpanText(episode) is { Length: > 0 } spans)
+        //
+        // 스탯 하나에 한 줄 — 왼쪽에 키, 오른쪽 끝에 값(굵게). 키가 길면 키만 줄고 값은 늘 보인다. 카드는 줄 수만큼 아래로 자란다
+        // (2026-11-19 소유자 — 「스탯 당 1줄씩만 차지하게 하며, 아래로 펼쳐지게」 · UX3 · ⛔ 그 전에는 「키 값 · 키 값」 한 줄(글자 9 · 흐리게)이
+        // 둘만 넘어도 「…」로 잘렸다).
+        if (StatRows(episode) is { Rows.Count: > 0 } stats)
         {
-            body.Children.Add(new TextBlock
+            var lines = new StackPanel { Margin = new Thickness(0, 3, 0, 0), Tag = StatLineTag };   // 검증이 이 묶음을 글자 짐작 없이 집는다
+
+            foreach ((string label, string value) in stats.Rows)
             {
-                Text = spans,
-                FontSize = 9,
-                Opacity = 0.75,
-                Foreground = new SolidColorBrush(Color.Parse("#3E7B9B")),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Tag = StatLineTag // 검증이 이 줄을 글자 짐작 없이 집는다
-            });
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Height = StatRowHeight };
+                row.Children.Add(new TextBlock
+                {
+                    Text = label,
+                    FontSize = 11,
+                    FontFamily = CardHeadFont,
+                    Foreground = StatKeyBrush,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+                var shown = new TextBlock
+                {
+                    Text = stats.Partial ? "≈ " + value : value,
+                    FontSize = 11,
+                    FontWeight = FontWeight.Bold,
+                    FontFamily = CardHeadFont,
+                    Foreground = StatValueBrush,
+                    Margin = new Thickness(6, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(shown, 1);
+                row.Children.Add(shown);
+                lines.Children.Add(row);
+            }
+
+            body.Children.Add(lines);
         }
 
         // 선택지 포트 (2026-08-15 소유자) — 연출 그래프의 조건 갈래 포트처럼 카드
@@ -1975,9 +2272,9 @@ public partial class ChapterGraphView : UserControl
         var card = new Border
         {
             Width = CardWidth,
-            // ⚠ 카드는 <b>안 자란다</b> (v5) — 포트가 아래변 위에 걸터앉으므로 칸 수만큼
-            //   키를 늘릴 이유가 없다. v4까지는 선택지 줄마다 18px씩 자랐다.
-            Height = CardHeight,
+            // ⚠ 카드는 선택지 칸 수로는 <b>안 자란다</b> (v5) — 포트가 아래변 위에 걸터앉으므로 칸 수만큼
+            //   키를 늘릴 이유가 없다. v4까지는 선택지 줄마다 18px씩 자랐다. 스탯 줄 수로는 자란다(UX3).
+            Height = CardHeightOf(episode.EpisodeId),
             Padding = new Thickness(9, 7),
             CornerRadius = new CornerRadius(5),
             BorderThickness = new Thickness(hasError ? 2 : 1),
@@ -1993,6 +2290,14 @@ public partial class ChapterGraphView : UserControl
 
         ToolTip.SetTip(card, Tooltip(model, episode) + StatSpanDetail(episode));
 
+        // 아직 이어지지 않았다 — 오류가 아니라 작업 중이라 흐리게만 세운다(내보내기를 막지 않는다).
+        if (IsNotConnected(episode))
+        {
+            card.Opacity = 0.55;
+            ToolTip.SetTip(card, "이어지지 않음 — 시작에서 이리로 오는 길이 아직 없습니다(작업 중이면 그대로 두어도 됩니다).\n" +
+                                 Tooltip(model, episode) + StatSpanDetail(episode));
+        }
+
         if (GatedIncoming(model, episode).Count > 0)
         {
             card.BorderThickness = new Thickness(1.6);
@@ -2000,8 +2305,8 @@ public partial class ChapterGraphView : UserControl
         }
 
 
-        // 클릭 = 선택(속성 패널) · 더블클릭 = 에피소드 엑셀 열기. 드래그는 없다(v3) —
-        // 배치는 깊이 레이아웃이 소유하고, 흐름을 바꾸면 자리가 따라온다.
+        // 클릭 = 선택(속성 패널) · 끌기 = 자리 옮기기(놓을 때 MoveEpisodes 한 번, v4).
+        // 더블클릭은 아무것도 안 한다(에피소드 엑셀을 열던 배선은 2026-10-29 D2에 걷혔다).
         WireCardInteraction(card, episode);
         card.Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand);
 
@@ -2014,24 +2319,27 @@ public partial class ChapterGraphView : UserControl
         Canvas.SetTop(card, y);
         GraphCanvas.Children.Add(card);
 
-        DrawOptionPorts(model, episode, options, x, y);
+        DrawOptionPorts(episode.EpisodeId, options, x, y,
+            hasIncoming: model.Edges.Any(edge => string.Equals(edge.ToEpisodeId, episode.EpisodeId, StringComparison.Ordinal)));
     }
 
     /// <summary>
     /// 카드 오른변의 선택지 포트들 — 문구(카드 안 오른쪽 정렬) + 테두리 위의 원.
     /// v9에서는 포트 하나가 곧 간선 하나다(문구가 붙은 길). 클릭하면 그 간선이 선택된다.
     /// </summary>
-    private void DrawOptionPorts(
-        ChapterGraphModel model, ChapterEpisode episode, IReadOnlyList<ChapterEdge> options, double x, double y)
+    private void DrawOptionPorts(string episodeId, IReadOnlyList<ChapterEdge> options, double x, double y, bool hasIncoming)
     {
-        // 들어오는 길이 모이는 점 하나 — 아래로 나가서 위로 들어온다.
-        GraphCanvas.Children.Add(Dot(
-            EntryDot(x, y),
-            new SolidColorBrush(Color.Parse("#7F8A96")),
-            filled: false,
-            tip: "이 에피소드로 들어오는 길이 여기로 모입니다."));
+        // 들어오는 길이 모이는 점 하나 — 아래로 나가서 위로 들어온다. 「빈 선택지 숨기기」를 켜면 들어오는 길이 없을 때 감춘다.
+        if (hasIncoming || _session?.HideEmptyChoices != true)
+        {
+            GraphCanvas.Children.Add(Dot(
+                EntryDot(x, y),
+                new SolidColorBrush(Color.Parse("#7F8A96")),
+                filled: false,
+                tip: "이 에피소드로 들어오는 길이 여기로 모입니다."));
+        }
 
-        int slots = SlotsFor(options.Count);
+        int slots = ShownSlotsFor(options.Count);
 
         for (int index = 0; index < slots; index++)
         {
@@ -2047,11 +2355,11 @@ public partial class ChapterGraphView : UserControl
                     : "#C06A14"));
 
             Ellipse port = Dot(
-                new Point(PortX(x, index, slots), y + CardHeight),
+                new Point(PortX(x, index, slots), y + CardHeightOf(episodeId)),
                 colour,
                 filled: wired is not null,
                 tip: wired is null
-                    ? "빈 선택지 칸입니다 — [연출 그래프]에서 문구를 적으면 살아납니다."
+                    ? "빈 선택지 칸입니다 — 누르면 이 칸의 정보와 길을 더하는 곳이 보입니다."
                     : PortTip(wired));
 
             if (wired is { } edge)
@@ -2061,6 +2369,18 @@ public partial class ChapterGraphView : UserControl
                     e.Handled = true;
                     UiGuard.Run(_session, "선택지 포트", () =>
                         SelectEdgeKey(edge.FromEpisodeId, edge.ToEpisodeId, EdgeLabelKey(edge)));
+                };
+            }
+            else
+            {
+                // 빈 칸도 누르면 정보가 선다 — 아직 길이 없다는 것과 길을 더하는 곳.
+                int slotIndex = index;
+                port.Tag = EmptySlotTag + episodeId + "#" + slotIndex;
+                _emptySlotDots[(episodeId, slotIndex)] = port;
+                port.PointerPressed += (_, e) =>
+                {
+                    e.Handled = true;
+                    UiGuard.Run(_session, "선택지 칸", () => SelectEmptySlot(episodeId, slotIndex));
                 };
             }
 
@@ -2111,18 +2431,18 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 카드에 세울 스탯 줄 — `신뢰 1~3 · 분노 0` (2026-08-17). 값은 <b>도착 직후</b>다
-    /// (그 노드로 들어오는 간선의 증감까지 커밋한 뒤). 루트가 하나면 값 하나, 갈래가
-    /// 여럿이면 최소~최대로 벌어진다.
+    /// 카드에 세울 스탯 줄들 — 스탯마다 (이름, 값) 한 줄: `신뢰 1~3` · `분노 0` (2026-08-17 · 한 줄씩은 2026-11-19 UX3). 값은 <b>도착 직후</b>다
+    /// (그 노드로 들어오는 간선의 증감까지 커밋한 뒤). 루트가 하나면 값 하나, 갈래가 여럿이면 최소~최대로 벌어진다.
+    /// <c>Partial</c> — 탐색이 상한에서 잘려 이 폭이 "적어도 이만큼"이다(확정처럼 보이면 안 된다 — 값 앞에 「≈」).
     ///
     /// 닿을 수 없는 에피소드에는 아무것도 안 쓴다 — 도착이 없으니 도착 시점 값도 없다.
     /// bool 스탯은 숫자 대신 참/거짓으로 읽는다(0·1이 무슨 뜻인지 카드에서 알 수 없다).
     /// </summary>
-    private string StatSpanText(ChapterEpisode episode)
+    private (List<(string Label, string Value)> Rows, bool Partial) StatRows(ChapterEpisode episode)
     {
         if (_validation is not { } validation || SelectedModel is not { } model)
         {
-            return string.Empty;
+            return ([], false);
         }
 
         // 챕터 어디에서도 움직이지 않는 스탯은 뺀다 — 모든 카드에 `분노 0`이 붙으면
@@ -2142,11 +2462,6 @@ public partial class ChapterGraphView : UserControl
             .Where(span => moved.Count == 0 || moved.Contains(span.Key))
             .ToList();
 
-        if (spans.Count == 0)
-        {
-            return string.Empty;
-        }
-
         string Value(ChapterStatSpan span)
         {
             bool isBool = model.Stats.FirstOrDefault(stat =>
@@ -2159,45 +2474,96 @@ public partial class ChapterGraphView : UserControl
                     : $"{span.Minimum}~{span.Maximum}";
             }
 
-            return span.IsFixed ? (span.Minimum == 1 ? "참" : "거짓") : "참·거짓";
+            // 활성/비활성 스탯의 말은 앱 전체가 하나다(2026-11-19 소유자 · usability UX12 — ⛔ 「참」 · 「거짓」 · 「참·거짓」).
+            return span.IsFixed ? (span.Minimum == 1 ? "활성" : "비활성") : "활성·비활성";
         }
 
-        string body = string.Join(" · ", spans.Select(span =>
-            $"{(span.DisplayName.Length > 0 ? span.DisplayName : span.Key)} {Value(span)}"));
-
-        // 탐색이 상한에서 잘렸으면 이 폭은 "적어도 이만큼"이다 — 확정처럼 보이면 안 된다.
-        return validation.Reachability.ExplorationComplete ? body : "≈ " + body;
+        return (
+            spans.Select(span => (span.DisplayName.Length > 0 ? span.DisplayName : span.Key, Value(span))).ToList(),
+            spans.Count > 0 && !validation.Reachability.ExplorationComplete);
     }
 
-    /// <summary>카드의 도착 스탯 줄에 붙는 표식 — 검증이 그 줄을 집는 손잡이다.</summary>
+    /// <summary>스탯 줄 수 → 카드의 높이. 하나 이하면 <see cref="CardHeight"/>, 그보다 많으면 한 줄씩 자란다.</summary>
+    internal static double CardHeightFor(int statRows) => Math.Max(CardHeight, CardHeadHeight + (statRows * StatRowHeight));
+
+    /// <summary>그 에피소드 카드의 높이 — 판을 그릴 때 센다(<see cref="DrawCanvas"/>). 모르면 가장 낮은 카드.</summary>
+    private double CardHeightOf(string episodeId) => _cardHeight.GetValueOrDefault(episodeId, CardHeight);
+
+    private readonly Dictionary<string, double> _cardHeight = new(StringComparer.Ordinal);
+
+    private static readonly IBrush CardNameBrush = new SolidColorBrush(Color.Parse("#1F2933"));
+    private static readonly IBrush StatKeyBrush = new SolidColorBrush(Color.Parse("#2B5D74"));
+    private static readonly IBrush StatValueBrush = new SolidColorBrush(Color.Parse("#123A4D"));
+
+    /// <summary>카드의 도착 스탯 줄들을 담은 묶음에 붙는 표식 — 검증이 그 줄들을 집는 손잡이다(줄마다 키 · 값 두 글).</summary>
     internal const string StatLineTag = "episode-stats";
 
-    /// <summary>카드 툴팁의 스탯 절 — 좁은 카드 줄이 잘려도 여기서는 다 읽힌다.</summary>
+    /// <summary>카드 머리의 이름 줄(「ID로 보기」면 EpisodeId, 끄면 제목) — 시험이 이 Tag로 집는다.</summary>
+    internal const string CardNameTag = "episode-name";
+
+    /// <summary>카드 머리 칩의 높이 — 칩 안 글의 글꼴이 무엇이든 상자가 같다(2026-11-18 소유자 · chrome-card-header U2).</summary>
+    internal const double CardChipHeight = 16;
+
+    /// <summary>
+    /// 카드 머리(칩 · 이름)의 글꼴 — <b>한글 먼저</b>(맑은 고딕 → Apple SD Gothic Neo → Noto Sans KR · CJK KR → 앱 기본). 앱 글꼴(Inter)에는 한글이
+    /// 없어 한글은 시스템 글꼴로, 라틴(장면ID · EpisodeId)은 Inter로 그려졌다 — 「ID로 보기」를 켜고 끌 때마다 글꼴과 줄 높이가 바뀌었다
+    /// (2026-11-18 소유자 — 「글자체자체도 다른 것 같은데」). 한글 글꼴은 라틴 글자도 그리므로 두 모드가 같은 글꼴이다. 앱 전체는 그대로다.
+    /// </summary>
+    internal static readonly FontFamily CardHeadFont =
+        new("Malgun Gothic, Apple SD Gothic Neo, Noto Sans KR, Noto Sans CJK KR, $Default");
+
+    /// <summary>카드 머리 칩 하나 — 높이를 박고(<see cref="CardChipHeight"/>) 글은 가운데에 선다.</summary>
+    private static Border CardChip(string text, string color, FontWeight weight) => new()
+    {
+        Background = new SolidColorBrush(Color.Parse(color)),
+        CornerRadius = new CornerRadius(3),
+        Padding = new Thickness(4, 0),
+        Height = CardChipHeight,
+        VerticalAlignment = VerticalAlignment.Center,
+        Child = new TextBlock
+        {
+            Text = text,
+            FontSize = 9,
+            FontWeight = weight,
+            FontFamily = CardHeadFont,
+            Foreground = Brushes.White,
+            VerticalAlignment = VerticalAlignment.Center
+        }
+    };
+
+    /// <summary>카드 툴팁의 스탯 절 — 카드의 줄과 같은 것에 범위가 무엇인지를 덧붙인다.</summary>
     private string StatSpanDetail(ChapterEpisode episode)
     {
-        string line = StatSpanText(episode);
+        (List<(string Label, string Value)> rows, bool partial) = StatRows(episode);
 
-        if (line.Length == 0)
+        if (rows.Count == 0)
         {
             return string.Empty;
         }
 
-        bool partial = line.StartsWith("≈ ", StringComparison.Ordinal);
-
         return "\n여기 도착했을 때의 스탯 —\n  "
-            + string.Join("\n  ", (partial ? line[2..] : line).Split(" · "))
+            + string.Join("\n  ", rows.Select(row => $"{row.Label} {row.Value}"))
             + "\n  (범위는 들어오는 루트가 여럿일 때 벌어집니다)"
             + (partial ? "\n  ≈ 탐색이 상한에서 멈춰 실제 폭은 더 넓을 수 있습니다." : string.Empty);
     }
 
     /// <summary>
-    /// 도달성 증명이 "닿을 수 없다"고 한 에피소드인가 (G7). `도달불가 허용`이 켜진 노드는
-    /// 의도된 것이므로 오류 표식을 달지 않는다 — 대신 그 사실이 진단 목록에 알림으로 선다(D3).
+    /// 도달성 증명이 "닿을 수 없다"고 한 에피소드인가 (G7) — 간선은 있는데 조건 때문에 못 닿는 것. 아직 이어지지 않은 것은 오류가
+    /// 아니라 작업 중이라 따로 흐리게 선다(<see cref="IsNotConnected"/>).
     /// </summary>
     private bool IsUnreachable(ChapterEpisode episode) =>
         _validation is { } validation &&
         !validation.Reachability.ReachableEpisodeIds.Contains(episode.EpisodeId) &&
-        !episode.AllowUnreachable;
+        !IsNotConnected(episode);
+
+    /// <summary>
+    /// 시작에서 아직 이어지지 않은 에피소드인가(2026-11-17) — 오류가 아니라 작업 중이다. 카드를 흐리게 세운다(⚠를 달지 않는다).
+    /// </summary>
+    private bool IsNotConnected(ChapterEpisode episode) =>
+        _validation is { } validation &&
+        validation.Reachability.Diagnostics.Any(item =>
+            item.Code == ChapterDiagnosticCode.EpisodeNotConnected &&
+            string.Equals(item.EpisodeId, episode.EpisodeId, StringComparison.Ordinal));
 
     // ── 편집 (v4: 자리는 사람이 소유한다 — 드래그가 에피소드의 X·Y를 고친다) ──────
 
@@ -2207,18 +2573,62 @@ public partial class ChapterGraphView : UserControl
     private IReadOnlyDictionary<string, (double X, double Y)> _placed =
         new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
 
-    /// <summary>
-    /// 고른 분기의 <b>줄</b> Id (2026-09-18). 한 에피소드가 분기를 여럿 가질 수 있어
-    /// 출발·도착만으로는 못 가른다 — 신원은 표식이 붙은 그 줄이다.
-    /// </summary>
-    private string? _selectedBranchLineId;
+    /// <summary>분기 점선의 굵기.</summary>
+    private const double BranchThickness = 1.6;
 
-    /// <summary>이번 그리기의 분기 선들 — 줄 Id로 찾는다(선택 강조와 패널이 같은 것을 본다).</summary>
-    private readonly Dictionary<string, (ChapterBranchMarkers.Marker Marker, Line Line)> _branchByLine =
-        new(StringComparer.Ordinal);
+    private const double BranchKnobRadius = 5;
+
+    /// <summary>한 변에 분기점이 여럿일 때 점 사이의 세로 간격.</summary>
+    private const double BranchPointGap = 14;
+
+    /// <summary>분기점이 지는 표 — 화면 테스트가 이것으로 찾는다. 뒤에 분기점의 열쇠(<see cref="ChapterBranchMarkers.BranchPoint.Key"/>)가 붙는다.</summary>
+    internal const string BranchKnobTag = "branch-knob:";
+
+    /// <summary>이번 그리기에서 점선을 그은 분기들 — 칩 인스펙터의 「부르는 곳」이 이것을 본다.</summary>
+    private readonly List<ChapterBranchMarkers.Marker> _branchMarkers = [];
+
+    /// <summary>분기 카드 칩의 크기 · 자리 (2026-11-17) — 부르는 에피소드 카드의 오른변에서 떨어져 세로로 늘어선다.</summary>
+    private const double BranchChipWidth = 150;
+    private const double BranchChipHeight = 24;
+    private const double BranchChipOffset = 34;
+    private const double BranchChipGap = 6;
+
+
+    /// <summary>
+    /// 분기 카드 칩이 지는 표 — 화면 테스트가 이것으로 찾는다. 글자 표가 아닌 것은 「글자 표를 진 Border = 에피소드 카드」를 깨지 않기
+    /// 위해서다(<see cref="EdgeLabelMark"/>와 같은 까닭).
+    /// </summary>
+    internal sealed record BranchCardMark(string NodeId, string Name);
+
+    /// <summary>이번 그리기의 분기 카드 칩 — 열쇠는 NodeId.</summary>
+    private readonly Dictionary<string, Border> _branchChips = new(StringComparer.Ordinal);
+
+    /// <summary>칩의 기본 테두리 — 선택이 풀리면 이리 돌아온다.</summary>
+    private readonly Dictionary<string, (IBrush? Brush, Thickness Thickness)> _chipBase = new(StringComparer.Ordinal);
+
+    /// <summary>이번 그리기의 칩 자리(여백 포함, 왼쪽 위). <see cref="PlaceBranchChips"/>가 채운다.</summary>
+    private Dictionary<string, (double X, double Y)> _chipPlaced = new(StringComparer.Ordinal);
+
+    /// <summary>고른 분기 카드(칩)의 NodeId.</summary>
+    private string? _selectedBranchCardId;
+
 
     /// <summary>지금 끌고 있는 카드. 없으면 <c>null</c>.</summary>
     private string? _draggingEpisodeId;
+
+    /// <summary>범위 선택 사각형 — 빈 판을 왼쪽 단추로 끄는 동안만 선다(<see cref="RubberBand"/>).</summary>
+    private Rectangle? _rubberBand;
+    private Point _rubberStart;
+
+    /// <summary>범위 선택으로 묶은 카드 — 그 가운데 하나를 끌면 함께 움직인다. 무리 밖을 고르면 풀린다.</summary>
+    private readonly HashSet<string> _grouped = new(StringComparer.Ordinal);
+
+    /// <summary>무리째 끄는 중이면 무리의 처음 자리(여백 뺀 값 = 에피소드에 적힐 값). 아니면 <c>null</c>.</summary>
+    private Dictionary<string, (double X, double Y)>? _groupStart;
+
+    /// <summary>무리를 잡은 자리와 지금까지 옮긴 양 — 놓을 때 한 번 적는다.</summary>
+    private Point _groupGrab;
+    private Vector _groupDelta;
 
     /// <summary>잡은 지점과 카드 왼위 모서리의 차 — 카드가 커서 아래에서 튀지 않게 한다.</summary>
     private Point _dragOffset;
@@ -2235,15 +2645,153 @@ public partial class ChapterGraphView : UserControl
     /// <summary>실제로 움직였나 — 그냥 누른 것과 끈 것을 가른다(안 움직였으면 안 적는다).</summary>
     private bool _dragMoved;
 
+    // ── 끄는 동안 제자리에서 옮기기 (2026-11-18 · board-speed PF3) ───────────────────────────────
+    //
+    // [구성] 판은 카드 · 점 · 선택지 선(선 · 화살촉 · 누르는 자리 · 문구) · 분기 표시 · 분기 칩을 그리는 단위(조각)마다 그 조각이 기대는 에피소드와
+    // 그었을 때의 자리를 적어 둔다. 끄는 동안에는 기대는 에피소드가 모두 같은 만큼 움직인 조각은 그림째 옮기고(<see cref="TranslateTransform"/>),
+    // 무리 안팎을 잇는 선택지 선만 지금 자리로 다시 긋는다. 무리 안팎을 잇는 분기 점선은 끄는 동안 감춘다(드물다). 놓으면 지금처럼 한 번 적고
+    // 통째로 다시 그린다(문구 자리 피하기 · 판 크기 · 검증은 그때). ⛔ 그 전에는 움직일 때마다 판을 통째로 다시 지었다(에피소드 60개 챕터에서
+    // 0.13초, 300개에서 0.6초).
+
+    /// <summary>판의 그림 조각 — 그 그림, 기대는 에피소드의 그었을 때 자리, 그때 더한 문구 자리, 다시 긋는 법(선택지 선만).</summary>
+    private sealed record CanvasPart(
+        List<Control> Visuals,
+        Dictionary<string, (double X, double Y)> DrawnAt,
+        List<Rect> Labels,
+        IReadOnlyList<string> Deps,
+        Action? Redraw);
+
+    private readonly List<CanvasPart> _parts = new();
+
+    /// <summary>분기 카드 칩 → 그 칩이 붙는 집 에피소드.</summary>
+    private readonly Dictionary<string, string> _chipHome = new(StringComparer.Ordinal);
+
+    /// <summary>이번 그리기의 저장된 자리(여백 전) — 끄는 동안 지금 자리를 다시 셈하는 바탕.</summary>
+    private Dictionary<string, (double X, double Y)> _storedPlacement = new(StringComparer.Ordinal);
+
+    /// <summary>판을 통째로 지은 횟수 — 시험이 「끄는 동안 다시 짓지 않았다」를 보는 창이다.</summary>
+    internal int CanvasBuildCount { get; private set; }
+
+    /// <summary>끄는 동안 다시 그은 선택지 선의 수.</summary>
+    internal int PartRedrawCount { get; private set; }
+
+    /// <summary>조각 하나를 그리고 적어 둔다 — 그리는 일은 캔버스 끝에 덧붙인다.</summary>
+    private void DrawPart(IEnumerable<string?> deps, Action draw, bool redrawable)
+    {
+        int start = GraphCanvas.Children.Count;
+        int labels = _labelRects.Count;
+        draw();
+
+        List<string> on = deps.OfType<string>().Distinct(StringComparer.Ordinal).ToList();
+        _parts.Add(new CanvasPart(
+            GraphCanvas.Children.Skip(start).ToList(),
+            on.Where(_placed.ContainsKey).ToDictionary(dep => dep, dep => _placed[dep], StringComparer.Ordinal),
+            _labelRects.Skip(labels).ToList(),
+            on,
+            redrawable ? draw : null));
+    }
+
+    /// <summary>그 에피소드의 선택지 점 자리 — 카드 아래 칸.</summary>
+    private Point PortOf(string episodeId, int index, int slots)
+    {
+        (double X, double Y) position = _placed[episodeId];
+        return new Point(PortX(position.X, index, slots), position.Y + CardHeightOf(episodeId) + 5);
+    }
+
+    /// <summary>끄는 동안의 한 걸음 — 판을 다시 짓지 않고 조각을 옮기거나(같이 움직였다) 다시 긋거나(한쪽만) 감춘다.</summary>
+    private void MoveInPlace()
+    {
+        _placed = _storedPlacement.ToDictionary(pair => pair.Key, pair => DrawnAt(pair.Key, pair.Value), StringComparer.Ordinal);
+        var stale = new List<CanvasPart>();
+
+        foreach (CanvasPart part in _parts)
+        {
+            Vector? shift = null;
+            bool rigid = true;
+
+            foreach ((string dep, (double X, double Y) drawn) in part.DrawnAt)
+            {
+                (double X, double Y) now = _placed[dep];
+                var moved = new Vector(now.X - drawn.X, now.Y - drawn.Y);
+
+                if (shift is { } first && (Math.Abs(first.X - moved.X) > 0.01 || Math.Abs(first.Y - moved.Y) > 0.01))
+                {
+                    rigid = false;
+                    break;
+                }
+
+                shift ??= moved;
+            }
+
+            if (rigid)
+            {
+                Vector by = shift ?? default;
+                bool still = Math.Abs(by.X) < 0.01 && Math.Abs(by.Y) < 0.01;
+
+                foreach (Control visual in part.Visuals)
+                {
+                    visual.RenderTransform = still ? null : new TranslateTransform(by.X, by.Y);
+                    visual.IsVisible = true;
+                }
+
+                continue;
+            }
+
+            if (part.Redraw is null)
+            {
+                foreach (Control visual in part.Visuals)
+                {
+                    visual.IsVisible = false;   // 무리 안팎을 잇는 분기 점선 — 놓으면 다시 선다
+                }
+
+                continue;
+            }
+
+            stale.Add(part);
+        }
+
+        foreach (CanvasPart part in stale)
+        {
+            int at = part.Visuals.Count > 0 ? GraphCanvas.Children.IndexOf(part.Visuals[0]) : -1;
+
+            foreach (Control visual in part.Visuals)
+            {
+                GraphCanvas.Children.Remove(visual);
+            }
+
+            foreach (Rect label in part.Labels)
+            {
+                _labelRects.Remove(label);
+            }
+
+            _parts.Remove(part);
+            DrawPart(part.Deps, part.Redraw!, redrawable: true);
+            PartRedrawCount++;
+
+            // 선은 카드 아래에 깔려야 한다 — 덧붙인 그림을 옛 자리로 옮긴다.
+            if (at >= 0)
+            {
+                CanvasPart redrawn = _parts[^1];
+
+                foreach (Control visual in redrawn.Visuals)
+                {
+                    GraphCanvas.Children.Remove(visual);
+                    GraphCanvas.Children.Insert(Math.Min(at++, GraphCanvas.Children.Count), visual);
+                }
+            }
+        }
+
+        if (stale.Count > 0)
+        {
+            ApplySelectionVisuals();
+        }
+    }
+
     /// <summary>
     /// 다시 그리기 예약 — <see cref="QueueReload"/>와 같은 수법이다. 포인터는 프레임보다
     /// 빨리 오므로, 들어오는 대로 판을 다시 그리면 대부분 버려질 그림을 그린다.
     /// </summary>
     private bool _dragRedrawQueued;
-
-    /// <summary>선택된 챕터의 워크북 경로. 편집이 쓰는 대상이다.</summary>
-    private string? SelectedChapterPath =>
-        _entries.FirstOrDefault(item => item.ChapterId == _selectedChapterId)?.Path;
 
     private ChapterGraphModel? SelectedModel =>
         _entries.FirstOrDefault(item => item.ChapterId == _selectedChapterId)?.Model;
@@ -2253,7 +2801,7 @@ public partial class ChapterGraphView : UserControl
     /// 디스크 스냅샷(<see cref="SelectedModel"/>)으로 물러난다.
     ///
     /// ⛔ <b>표를 편집 가능하게 만든 순간 스냅샷으로는 못 그린다</b> (2026-09-17).
-    /// <see cref="SelectedModel"/>은 워크북을 읽은 <c>_entries</c>에서 오므로, 방금 고친 값이
+    /// <see cref="SelectedModel"/>은 마지막으로 읽은 <c>_entries</c>(스냅샷)에서 오므로, 방금 고친 값이
     /// 저장·재읽기 전까지 <b>안 비친다</b> — 사람은 적었는데 안 들어갔다고 읽는다.
     /// R7에서 철도가 같은 자리를 겪었고 답도 같다: <b>살아 있는 것을 먼저 보고 스냅샷은
     /// 뒷받침</b>. 둘 다 같은 값을 말하므로 정본이 둘이 되는 것은 아니다.
@@ -2263,16 +2811,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private ChapterGraphModel? LiveSheetModel =>
         _selectedChapterId is { } id && _session?.Editor.FindChapter(id) is { } chapter
-            ? chapter.ToGraphModel(id, _session.Definition)
-            : null;
-
-    /// <summary>
-    /// 선택된 챕터의 대본 폴더 <c>episodes/{ChapterId}/</c> (2026-08-16 — 챕터별 격리).
-    /// EpisodeId는 챕터 안에서만 유일하므로, 파일을 찾는 모든 길이 이 범위를 지난다.
-    /// </summary>
-    private string? SelectedEpisodesFolder =>
-        _selectedChapterId is { } chapterId
-            ? EpisodeLibrary.FolderFor(_session?.ProjectPath, chapterId)
+            ? chapter.ToGraphModel(id)
             : null;
 
     private void WireCardInteraction(Border card, ChapterEpisode episode)
@@ -2288,6 +2827,17 @@ public partial class ChapterGraphView : UserControl
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제)로 흘러가면 방금 한 선택이 풀린다
             SelectEpisode(episode.EpisodeId);
 
+            // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다).
+            if (e.ClickCount >= 2)
+            {
+                if (_selectedChapterId is { } chapterId)
+                {
+                    EpisodeOpened?.Invoke(chapterId, episode.EpisodeId);
+                }
+
+                return;
+            }
+
             // 끌 채비 (v4). 아직 아무것도 안 적는다 — 움직여야 드래그다.
             Point position = e.GetPosition(GraphCanvas);
 
@@ -2296,13 +2846,48 @@ public partial class ChapterGraphView : UserControl
                 position.X - Canvas.GetLeft(card), position.Y - Canvas.GetTop(card));
             _dragPosition = null;
             _dragMoved = false;
+
+            // 범위 선택한 무리의 카드를 잡으면 무리가 함께 움직인다.
+            _groupStart = _grouped.Count > 1 && _grouped.Contains(episode.EpisodeId)
+                ? _grouped.Where(_placed.ContainsKey).ToDictionary(
+                    id => id,
+                    id => (X: _placed[id].X - CanvasMargin, Y: _placed[id].Y - CanvasMargin),
+                    StringComparer.Ordinal)
+                : null;
+            _groupGrab = position;
+            _groupDelta = default;
         };
 
-        card.DoubleTapped += (_, e) =>
+        // 카드를 두 번 누르면 [대본] 탭의 그 카드로 간다(EpisodeOpened — 셸이 데려간다). ⛔ 대본 엑셀을 열던 옛 배선은
+        // 2026-10-29(D2)에 엑셀 연동과 함께 걷혔다.
+    }
+
+    /// <summary>
+    /// 고른 카드가 화면 밖이면 그 카드가 가운데 오게 스크롤한다 — [대본] 탭에서 두 번 눌러 넘어왔을 때 그 카드가 보이게.
+    /// </summary>
+    internal void RevealEpisode(string episodeId)
+    {
+        if (!_cardById.TryGetValue(episodeId, out Border? card))
         {
-            e.Handled = true;
-            UiGuard.Run(_session, "에피소드 열기", () => OpenEpisode(episode.EpisodeId));
-        };
+            return;
+        }
+
+        var cardRect = new Rect(
+            Canvas.GetLeft(card), Canvas.GetTop(card),
+            card.Bounds.Width > 0 ? card.Bounds.Width : CardWidth,
+            card.Bounds.Height > 0 ? card.Bounds.Height : CardHeightOf(episodeId));
+        var viewRect = new Rect(
+            (GraphScroll.Offset.X - _sheetOffset.X) / _zoom, (GraphScroll.Offset.Y - _sheetOffset.Y) / _zoom,
+            GraphScroll.Viewport.Width / _zoom, GraphScroll.Viewport.Height / _zoom);
+
+        if (viewRect.Contains(cardRect))
+        {
+            return;
+        }
+
+        GraphScroll.Offset = new Vector(
+            Math.Max(0, (cardRect.Center.X * _zoom) + _sheetOffset.X - (GraphScroll.Viewport.Width / 2)),
+            Math.Max(0, (cardRect.Center.Y * _zoom) + _sheetOffset.Y - (GraphScroll.Viewport.Height / 2)));
     }
 
     /// <summary>
@@ -2313,6 +2898,12 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void OnCanvasPointerMoved(object? sender, Avalonia.Input.PointerEventArgs args)
     {
+        if (_rubberBand is not null)
+        {
+            RubberBand.Stretch(_rubberBand, _rubberStart, args.GetPosition(GraphCanvas));
+            return;
+        }
+
         if (_draggingEpisodeId is null)
         {
             return;
@@ -2327,26 +2918,128 @@ public partial class ChapterGraphView : UserControl
 
         Point position = args.GetPosition(GraphCanvas);
 
-        // 여백 안쪽(음수)으로는 못 나간다 — 스크롤이 닿지 않는 자리에 카드를 두면 못 찾는다.
+        // 판의 왼쪽 · 위로도 끈다 — 놓으면 판이 그쪽으로 넓어진다(판은 가장 왼쪽 · 위 카드를 기준으로 감싼다 · DisplayPlacement). 끄는 동안 판 밖의
+        // 카드는 바깥 위에 선다(usability UX25 · ⛔ 맨 왼쪽 · 맨 위 카드는 판 가장자리에서 막혀 판을 그쪽으로 넓힐 수 없었다).
+        // 무리는 모양을 지킨 채 함께 민다.
+        if (_groupStart is { } group)
+        {
+            _groupDelta = new Vector(position.X - _groupGrab.X, position.Y - _groupGrab.Y);
+            _dragMoved = true;
+            QueueDragRedraw();
+            return;
+        }
+
         _dragPosition = (
-            X: Math.Max(0, position.X - _dragOffset.X - CanvasMargin),
-            Y: Math.Max(0, position.Y - _dragOffset.Y - CanvasMargin));
+            X: position.X - _dragOffset.X - CanvasMargin,
+            Y: position.Y - _dragOffset.Y - CanvasMargin);
         _dragMoved = true;
 
         QueueDragRedraw();
     }
 
-    private void OnCanvasPointerReleased(
-        object? sender, Avalonia.Input.PointerReleasedEventArgs args) => CommitDrag();
+    private void OnCanvasPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs args)
+    {
+        if (_rubberBand is not null)
+        {
+            Point end = args.GetPosition(GraphCanvas);
+            Rect rect = RubberBand.Between(_rubberStart, end);
+            GraphCanvas.Children.Remove(_rubberBand);
+            _rubberBand = null;
+            args.Pointer.Capture(null);
+            UiGuard.Run(_session, "범위 선택", () => FinishRubberBand(rect, end));
+            return;
+        }
+
+        CommitDrag();
+    }
+
+    /// <summary>판이 선 창 — 창을 떠나는 순간을 듣는다(<see cref="EndGestures"/>).</summary>
+    private WindowBase? _window;
+
+    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, "끌기 정리", EndGestures);
+
+    /// <summary>
+    /// <b>하던 끌기를 정리한다</b> — 창을 떠나면 놓음이 이 창으로 오지 않아 끌기가 「끄는 중」으로 남는다(2026-11-19 소유자 — 범위 사각형이 판에 남아
+    /// 쌓였다 · usability UX20). 범위 사각형은 거두고(아무것도 고르지 않는다), 카드 끌기는 보이던 자리에서 놓은 것으로 마무리하고(놓음을 못 본
+    /// 끌기를 다음 움직임에서 마무리하는 규칙과 같다), 가운데 단추로 판 옮기기는 멈춘다.
+    /// </summary>
+    internal void EndGestures()
+    {
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+            _rubberBand = null;
+        }
+
+        _panning = false;
+        CommitDrag();
+    }
+
+    /// <summary>빈 판을 눌렀다 — 끄는 동안 범위 사각형이 선다.</summary>
+    private void StartRubberBand(Avalonia.Input.PointerPressedEventArgs args)
+    {
+        // 앞의 사각형이 남아 있으면(놓음을 못 봤다) 걷고 새로 연다 — 남은 채 새것을 열면 옛것이 판에 쌓인다.
+        if (_rubberBand is not null)
+        {
+            GraphCanvas.Children.Remove(_rubberBand);
+        }
+
+        _rubberStart = args.GetPosition(GraphCanvas);
+        _rubberBand = RubberBand.Create(_rubberStart);
+        GraphCanvas.Children.Add(_rubberBand);
+        args.Pointer.Capture(GraphCanvas);
+    }
+
+    /// <summary>
+    /// 범위 선택을 놓았다 — [대본] 탭과 같은 규칙이다. 카드가 걸렸으면 <b>카드만</b> 무리가 되고(함께 끌린다) 끌기 시작한
+    /// 자리에서 가장 가까운 카드를 고른다. 카드 없이 선(선택지 선 · 분기 점선)만 걸렸으면 <b>놓은 자리(포인터)에서 가장
+    /// 가까운 선 하나</b>를 고른다. 인스펙터는 고른 것을 보인다.
+    /// </summary>
+    private void FinishRubberBand(Rect rect, Point end)
+    {
+        var cards = new List<(double Distance, string EpisodeId)>();
+
+        foreach ((string episodeId, Border card) in _cardById)
+        {
+            var bounds = new Rect(Canvas.GetLeft(card), Canvas.GetTop(card), CardWidth, CardHeightOf(episodeId));
+
+            if (rect.Intersects(bounds))
+            {
+                cards.Add((RubberBand.DistanceTo(rect.Intersect(bounds), _rubberStart), episodeId));
+            }
+        }
+
+        if (cards.Count > 0)
+        {
+            _grouped.Clear();
+            _grouped.UnionWith(cards.Select(item => item.EpisodeId));
+            SelectEpisode(cards.MinBy(item => item.Distance).EpisodeId);
+            return;
+        }
+
+        var lines = new List<(double Distance, Action Pick)>();
+
+        foreach (((string from, string to, string label), List<Line> segments) in _lineByEdge)
+        {
+            if (segments.Select(segment => RubberBand.CaughtDistance(
+                    new LineGeometry(segment.StartPoint, segment.EndPoint), rect, end)).Min() is { } distance)
+            {
+                lines.Add((distance, () => SelectEdgeKey(from, to, label)));
+            }
+        }
+
+        if (lines.Count > 0)
+        {
+            lines.MinBy(item => item.Distance).Pick();
+        }
+    }
 
     /// <summary>
     /// 끌던 자리를 <b>한 번</b> 적는다. 안 움직였으면(그냥 누른 것) 아무것도 안 적는다 —
     /// 카드를 고르기만 해도 되돌리기가 쌓이면 Ctrl+Z가 아무 일도 안 하는 것처럼 보인다.
     ///
-    /// ⭐ <b>아직 자리가 없던 챕터라면 여기서 판 전체가 함께 적힌다</b>
-    /// (<see cref="DisplayPlacement"/>). 그때까지 보이던 자리는 빌린 것이라, 끈 카드 하나만
-    /// 적으면 나머지는 다음 그리기에서 <b>도로 한 점에 포개진다</b> — 사람 눈에는 카드 하나를
-    /// 옮겼더니 나머지가 사라진 것으로 보인다. 한 번의 변경이므로 되돌리기도 한 번이다.
+    /// ⭐ <b>판 전체가 보이던 자리로 함께 적힌다</b>(<see cref="DisplayPlacement"/> — 왼위를 (0,0)으로 민 자리). 끈 카드 하나만 그
+    /// 자리로 적으면 나머지와 기준이 갈린다. 한 번의 변경이므로 되돌리기도 한 번이다.
     /// </summary>
     private void CommitDrag()
     {
@@ -2357,13 +3050,16 @@ public partial class ChapterGraphView : UserControl
 
         (double X, double Y)? position = _dragPosition;
         bool moved = _dragMoved;
+        Dictionary<string, (double X, double Y)>? group = _groupStart;
+        Vector delta = _groupDelta;
 
         _draggingEpisodeId = null;
         _dragPosition = null;
         _dragMoved = false;
+        _groupStart = null;
+        _groupDelta = default;
 
-        if (!moved || position is not { } dropped ||
-            _selectedChapterId is not { } chapterId || SelectedModel is not { } model)
+        if (!moved || _selectedChapterId is not { } chapterId || SelectedModel is not { } model)
         {
             return;
         }
@@ -2372,17 +3068,40 @@ public partial class ChapterGraphView : UserControl
             DisplayPlacement(model).ToDictionary(pair => pair.Key, pair => pair.Value,
                 StringComparer.Ordinal);
 
-        places[episodeId] = dropped;
+        if (group is not null)
+        {
+            // 무리째 — 모두 같은 만큼, 한 번의 변경으로(되돌리기 한 칸).
+            foreach ((string member, (double X, double Y) start) in group)
+            {
+                places[member] = (start.X + delta.X, start.Y + delta.Y);
+            }
+        }
+        else if (position is { } dropped)
+        {
+            places[episodeId] = dropped;
+        }
+        else
+        {
+            return;
+        }
+
+        // 판은 가장 왼쪽 · 위 카드를 기준으로 감싼다(DisplayPlacement) — 그 카드를 오른쪽 · 아래로 옮겼으면 다시 그릴 때 모든 카드가 그만큼 당겨진다.
+        // 판을 놓을 때 그만큼 되돌려 카드가 화면에서 놓은 자리에 남게 한다(usability UX22).
+        Vector nudge = new(places.Values.Min(place => place.X), places.Values.Min(place => place.Y));
 
         UiGuard.Run(_session, "에피소드 자리", () =>
-            _session!.Editor.MoveEpisodes(chapterId, places));
+        {
+            _session!.Editor.MoveEpisodes(chapterId, places);
+            _sheetNudge = nudge;
+        });
     }
 
     /// <summary>
-    /// <b>[자동 정렬]</b> — 흐름 순서(왼쪽에서 오른쪽)로 전부 다시 세운다 (v4, 2026-09-18).
+    /// <b>[자동 정렬]</b> — <b>연출 그래프의 카드 자리를 본떠</b> 전부 다시 세운다 (2026-10-30 소유자: *"연출 그래프에
+    /// 배치된 노드들을 참고해서 그와 거의 같은 형태로"* — <see cref="ChapterBranchPlanner.LayoutLikeBoard"/>).
+    /// 연출 그래프에 카드가 하나도 없으면 흐름 순서(위에서 아래)다(v4, 2026-09-18 · 방향은 2026-10-29 D3).
     ///
-    /// 자리의 주인이 사람이 되면 <b>돌아올 길</b>이 있어야 한다. 그 길이 곧 v3까지 매번
-    /// 돌던 깊이 배치다 — 없앤 것이 아니라 <b>부를 때만 도는 것</b>으로 바뀌었다.
+    /// 자리의 주인이 사람이 되면 <b>돌아올 길</b>이 있어야 한다 — 손으로 옮기다 판이 엉키면 이것을 누른다.
     ///
     /// ⚠ 한 번의 변경이다(<c>MoveEpisodes</c>) — Ctrl+Z 한 번이면 정렬 전으로 돌아온다.
     /// </summary>
@@ -2394,33 +3113,39 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        _session!.Editor.MoveEpisodes(chapterId, ChapterBranchPlanner.Layout(model));
-        _session.SetStatus(
-            $"'{chapterId}'의 카드 {model.Episodes.Count}장을 흐름 순서로 다시 세웠습니다. " +
-            "되돌리기(Ctrl+Z)로 돌아옵니다.");
+        var board = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+
+        foreach (ChapterEpisode episode in model.Episodes)
+        {
+            if (EpisodeNaming.CardFor(_session!.Editor.Project, chapterId, episode.EpisodeId) is { } card)
+            {
+                board[episode.EpisodeId] = (card.Layout.X, card.Layout.Y);
+            }
+        }
+
+        _session!.Editor.MoveEpisodes(chapterId, ChapterBranchPlanner.LayoutLikeBoard(model, board));
+
+        int stray = model.Episodes.Count - board.Count;
+        _session.SetStatus(board.Count == 0
+            ? $"'{chapterId}'의 카드 {model.Episodes.Count}장을 흐름 순서로 다시 세웠습니다([대본] 탭에 카드가 없습니다). " +
+              "되돌리기(Ctrl+Z)로 돌아옵니다."
+            : $"'{chapterId}'의 카드 {model.Episodes.Count}장을 [대본] 탭의 모양대로 다시 세웠습니다" +
+              (stray > 0 ? $"([대본] 탭에 카드가 없는 {stray}장은 맨 아래 줄에)" : string.Empty) +
+              ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
     /// <summary>
-    /// <b>이 챕터를 어디에 그리나</b> — 에피소드의 X·Y가 원칙이고, <b>아직 자리가 없으면</b>
-    /// (카드가 한 점에 포개져 있으면) 깊이 배치를 빌려 쓴다 (v4, 2026-09-18).
+    /// <b>이 챕터를 어디에 그리나</b> — 에피소드의 X·Y다(v4, 2026-09-18 — 자리의 주인은 사람이다). ⛔ 카드가 한 점에 포개진 챕터(엑셀
+    /// 시절 — 전부 0,0)에 깊이 배치를 빌려 그리던 것은 2026-11-18에 걷혔다(old-shapes O9 — 툴은 늘 자리를 주어 세운다).
     ///
-    /// ⚠ <b>왜 빌리기만 하나:</b> v3까지 자리는 그릴 때마다 계산됐으므로 에피소드의 X·Y는
-    /// 아무도 안 채웠다 — 엑셀에서 들여온 챕터는 전부 (0,0)이고, 그대로 그리면 판이
-    /// <b>카드 한 장처럼</b> 보인다. 그렇다고 판을 열어 봤다는 이유로 프로젝트에 적으면,
-    /// ① 사람이 안 한 변경이 저장 대기에 오르고 ② 그것이 되돌리기 목록 맨 위에 앉아
-    /// <b>사람의 첫 Ctrl+Z가 카드를 도로 포갠다</b>. 둘 다 사람이 시킨 적 없는 일이다.
-    ///
-    /// ⭐ 그래서 <b>사람이 처음 카드를 옮길 때</b> 그 손과 함께 적힌다
-    /// (<see cref="CommitDrag"/>). 되돌리기 한 번이면 그 손 이전으로 돌아간다.
-    ///
-    /// ⚠ "전부 0"이 아니라 "겹친다"로 묻는 것이라, 사람이 카드 둘을 <b>정확히</b> 포개 놓아도
-    /// 빌린 배치로 보인다. 소수점 둘째 자리까지 맞아떨어져야 하니 손으로는 거의 안 일어나고,
-    /// 일어나도 다음 옮기기 한 번으로 풀린다.
-    ///
-    /// ⛔ <b>음수 자리도 여기서 걷는다.</b> v3의 깊이 배치는 언제나 0 이상을 냈지만, 손으로
-    /// 적은 워크북은 아니다 — 견본 챕터의 <c>branch05.02A</c>가 Y=−120이다. 그대로 그리면
-    /// 카드가 캔버스 위쪽 바깥에 서고 <b>스크롤이 닿지 않아 아예 못 만진다</b>. 왼위가
-    /// (0,0)이 되게 통째로 민다 — 서로의 거리는 그대로이므로 사람이 짠 모양은 안 바뀐다.
+    /// ⭐ <b>판은 이 챕터의 에피소드만 감싼다</b> — 왼위 에피소드가 (0,0)에 오게 통째로 민다. 서로의 거리는 그대로이므로
+    /// 사람이 짠 모양은 안 바뀐다. 민 자리는 판의 크기도 정한다(<see cref="DrawCanvas"/>).
+    /// <list type="bullet">
+    /// <item>음수 자리 — 끌어 위 · 왼쪽 바깥으로 옮긴 카드(시험 견본 ch05의 <c>branch05.02A</c>도 Y=−120이다). 그대로 그리면 카드가 캔버스 위쪽
+    /// 바깥에 서고 스크롤이 닿지 않아 못 만진다.</item>
+    /// <item>먼 양수 자리 — [대본] 탭에서 세운 카드의 에피소드는 그 카드 자리(그때 보던 화면 한가운데)를 받을 수 있다.
+    /// 그대로 그리면 판이 원점부터 그 자리까지를 다 잡아, 텅 빈 왼위가 다른 챕터의 자리처럼 보인다.</item>
+    /// </list>
     ///
     /// ⚠ 미는 양은 <b>모델</b>에서 나온다(끄는 중의 임시 자리가 아니라). 그래야 끄는 동안
     /// 기준이 안 흔들려 판 전체가 출렁이지 않는다.
@@ -2428,22 +3153,12 @@ public partial class ChapterGraphView : UserControl
     private IReadOnlyDictionary<string, (double X, double Y)> DisplayPlacement(
         ChapterGraphModel model)
     {
-        if (ChapterBranchPlanner.NeedsSeeding(model))
-        {
-            return ChapterBranchPlanner.Layout(model);
-        }
-
         double left = model.Episodes.Count == 0 ? 0 : model.Episodes.Min(episode => episode.X);
         double top = model.Episodes.Count == 0 ? 0 : model.Episodes.Min(episode => episode.Y);
 
-        // 왼위가 이미 안쪽이면 그대로 둔다 — 까닭 없이 판을 붙여 세우면 사람이 비워 둔
-        // 여백이 사라진다. 미는 것은 바깥으로 나간 만큼뿐이다.
-        double shiftX = Math.Min(0, left);
-        double shiftY = Math.Min(0, top);
-
         return model.Episodes.ToDictionary(
             episode => episode.EpisodeId,
-            episode => (X: episode.X - shiftX, Y: episode.Y - shiftY),
+            episode => (X: episode.X - left, Y: episode.Y - top),
             StringComparer.Ordinal);
     }
 
@@ -2465,9 +3180,9 @@ public partial class ChapterGraphView : UserControl
             {
                 _dragRedrawQueued = false;
 
-                if (_draggingEpisodeId is not null && SelectedModel is { } model)
+                if (_draggingEpisodeId is not null)
                 {
-                    DrawCanvas(model);
+                    UiGuard.Run(_session, "끌기", MoveInPlace);
                 }
             },
             DispatcherPriority.Render);
@@ -2496,36 +3211,104 @@ public partial class ChapterGraphView : UserControl
     // 편집이 필요하면 사람이 편집 탭을 누른다.
     internal void SelectEpisode(string? episodeId)
     {
+        FlushEdgeTyping();
+        episodeId = AfterRename(episodeId);   // 적던 ID를 낸 그 에피소드를 다시 누른 것이면 새 ID로
+
+        // 범위 선택 무리는 그 안의 카드를 고르는 동안만 남는다.
+        if (episodeId is null || !_grouped.Contains(episodeId))
+        {
+            _grouped.Clear();
+        }
+
         _selectedEpisodeId = episodeId;
         _selectedEdgeKey = null;
-        _selectedBranchLineId = null;
-        HideEdgeForm(); // 다른 노드로 넘어가면 열려 있던 연결 폼은 닫는다
+        _selectedBranchCardId = null;
+        _selectedSlot = null;
+        _inspector = InspectorMode.Selection;
+
+        if (episodeId is not null)
+        {
+            ShowSideTab(SideTab.Inspector);   // 고른 것을 보인다 — 고름을 놓는 것(null)은 탭을 바꾸지 않는다
+        }
+
+        UnfoldChoices(); // 다른 노드로 넘어가면 선택지는 다시 모두 펼쳐진다
         ApplySelectionVisuals();
         RefreshPropertyPanel();
+        ShowInHierarchy(episodeId is not null && _selectedChapterId is { } chapterId
+            ? new HierarchyPick(HierarchyKind.Episode, chapterId, EpisodeId: episodeId)
+            : null);
+
+        if (!_showingOutside && episodeId is not null && _selectedChapterId is { } picked)
+        {
+            EpisodePicked?.Invoke(picked, episodeId);
+        }
     }
 
     internal void SelectEdgeKey(string fromEpisodeId, string toEpisodeId, string optionLabel = "")
     {
-        _selectedEdgeKey = (fromEpisodeId, toEpisodeId, optionLabel.Trim());
+        FlushEdgeTyping();
+        _grouped.Clear();
+        _selectedEdgeKey = (AfterRename(fromEpisodeId)!, AfterRename(toEpisodeId)!, optionLabel.Trim());
         _selectedEpisodeId = null;
-        _selectedBranchLineId = null;
-        HideEdgeForm();
+        _selectedBranchCardId = null;
+        _selectedSlot = null;
+        _inspector = InspectorMode.Selection;
+        ShowSideTab(SideTab.Inspector);
+        UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
+        ShowInHierarchy(null);   // 길은 하이어아키에 없다
     }
 
     /// <summary>
-    /// 분기 하나를 고른다 — <b>신원은 줄</b>이다 (2026-09-18). 한 에피소드가 분기를 여럿
-    /// 가질 수 있어 출발·도착만으로는 못 가른다.
+    /// 분기 카드(칩) 하나를 고른다 — 인스펙터에 부르는 곳 · 조건(고친다) · 대본(읽기 전용)이 선다(2026-11-17 소유자).
     /// </summary>
-    internal void SelectBranch(string? lineId)
+    internal void SelectBranchCard(string? nodeId)
     {
-        _selectedBranchLineId = lineId;
+        FlushEdgeTyping();
+        _grouped.Clear();
+        _selectedBranchCardId = nodeId;
         _selectedEpisodeId = null;
         _selectedEdgeKey = null;
-        HideEdgeForm();
+        _selectedSlot = null;
+        _inspector = InspectorMode.Selection;
+
+        if (nodeId is not null)
+        {
+            ShowSideTab(SideTab.Inspector);
+        }
+        UnfoldChoices();
         ApplySelectionVisuals();
         RefreshPropertyPanel();
+        ShowInHierarchy(BranchPick(nodeId));
+    }
+
+    /// <summary>분기 카드의 하이어아키 줄 — 집(부르는 에피소드)이 없으면 줄도 없다.</summary>
+    private HierarchyPick? BranchPick(string? nodeId) =>
+        nodeId is not null &&
+        _entries.FirstOrDefault(entry => entry.ChapterId == _selectedChapterId) is { } entry &&
+        entry.BranchCards.FirstOrDefault(home => home.Card.Id == nodeId) is { } found
+            ? new HierarchyPick(HierarchyKind.Branch, entry.ChapterId, EpisodeId: found.EpisodeId, NodeId: nodeId)
+            : null;
+
+    /// <summary>
+    /// 빈 선택지 칸 하나를 고른다 — 카드 아래의 빈 점이다. 아직 이 칸에서 나가는 길이 없다는 것과 길을 더하는 곳을 보인다.
+    /// </summary>
+    /// <param name="index">카드 아래 칸의 차례(0부터) — 이어진 선택지들 뒤의 빈 칸이다.</param>
+    internal void SelectEmptySlot(string episodeId, int index)
+    {
+        FlushEdgeTyping();
+        _grouped.Clear();
+        _selectedSlot = (AfterRename(episodeId)!, index);
+        _selectedEpisodeId = null;
+        _selectedEdgeKey = null;
+        _selectedBranchCardId = null;
+        _inspector = InspectorMode.Selection;
+        ShowSideTab(SideTab.Inspector);
+        UnfoldChoices();
+        ApplySelectionVisuals();
+        RefreshPropertyPanel();
+        ShowInHierarchy(null);   // 칸은 하이어아키에 없다
     }
 
     /// <summary>모든 카드·간선을 기본 모습으로 되돌리고 선택된 것만 파랗게 강조한다.</summary>
@@ -2549,6 +3332,41 @@ public partial class ChapterGraphView : UserControl
             }
         }
 
+        foreach ((string id, Border chip) in _branchChips)
+        {
+            (IBrush? brush, Thickness thickness) = _chipBase[id];
+            chip.BorderBrush = brush;
+            chip.BorderThickness = thickness;
+        }
+
+        if (_selectedBranchCardId is { } chipId && _branchChips.TryGetValue(chipId, out Border? selectedChip))
+        {
+            selectedChip.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
+            selectedChip.BorderThickness = new Thickness(2.4);
+        }
+
+        foreach (Ellipse dot in _emptySlotDots.Values)
+        {
+            dot.Stroke = EmptySlotBrush;
+            dot.StrokeThickness = 1.6;
+        }
+
+        if (_selectedSlot is { } slot && _emptySlotDots.TryGetValue(slot, out Ellipse? selectedDot))
+        {
+            selectedDot.Stroke = new SolidColorBrush(Color.Parse("#3D7BD9"));
+            selectedDot.StrokeThickness = 3;
+        }
+
+        // 범위 선택 무리 — 고른 카드보다 한 단계 가늘다.
+        foreach (string member in _grouped)
+        {
+            if (_cardById.TryGetValue(member, out Border? grouped))
+            {
+                grouped.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
+                grouped.BorderThickness = new Thickness(2);
+            }
+        }
+
         if (_selectedEpisodeId is { } episodeId && _cardById.TryGetValue(episodeId, out Border? selected))
         {
             selected.BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9"));
@@ -2563,15 +3381,6 @@ public partial class ChapterGraphView : UserControl
                 line.StrokeThickness = 3.4;
             }
         }
-
-        // 분기는 점선인 채로 굵어진다 — 굵기만 바꾸고 점선을 안 풀어야 "이것은 선택지가
-        // 아니다"가 고른 뒤에도 남는다.
-        if (_selectedBranchLineId is { } branchLineId &&
-            _branchByLine.TryGetValue(branchLineId, out (ChapterBranchMarkers.Marker _, Line Line) branch))
-        {
-            branch.Line.Stroke = new SolidColorBrush(Color.Parse("#3D7BD9"));
-            branch.Line.StrokeThickness = 3.4;
-        }
     }
 
     /// <summary>편집 칸을 마지막으로 채운 선택. 같은 선택이면 다시 채우지 않는다.</summary>
@@ -2580,12 +3389,12 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 선택된 에피소드(또는 간선)의 현재 값으로 패널을 채운다. 원천은 언제나 방금 읽은 모델이다.
     ///
-    /// <b>편집 칸은 선택이 바뀔 때만 채운다.</b> 저장 감시는 언제든 울리는데(엑셀이 파일을
-    /// 건드리기만 해도) 그때마다 칸을 모델 값으로 되돌리면, 적어 두고 아직 [적용]하지 않은
+    /// <b>편집 칸은 선택이 바뀔 때만 채운다.</b> 다시 읽기는 언제든 도는데(프로젝트가 바뀔 때마다 —
+    /// 엑셀이 있던 때는 파일을 건드리기만 해도) 그때마다 칸을 모델 값으로 되돌리면, 적어 두고 아직 [적용]하지 않은
     /// 글자가 조용히 사라진다 — 사람 눈에는 "적용을 눌러도 안 바뀐다"로 보인다.
     /// 포커스가 어디 있는지로 판정하던 이전 방식은 콤보·체크박스를 만진 순간 뚫렸다.
     /// </summary>
-    /// <param name="preserveTyping">저장 감시가 부른 다시 그리기라면 참.</param>
+    /// <param name="preserveTyping">다시 읽은 뒤의 다시 그리기(Draw)나 선택지 접기라면 참 — 선택이 그대로면 칸을 다시 채우지 않는다.</param>
     private void RefreshPropertyPanel(bool preserveTyping = false)
     {
         ChapterGraphModel? model = SelectedModel;
@@ -2597,21 +3406,29 @@ public partial class ChapterGraphView : UserControl
                 EdgeLabelKey(candidate) == key.Label)
             : null;
 
-        ChapterBranchMarkers.Marker? branch =
-            _selectedBranchLineId is { } branchLineId &&
-            _branchByLine.TryGetValue(branchLineId, out (ChapterBranchMarkers.Marker Marker, Line _) found)
-                ? found.Marker
-                : null;
+        (string Episode, int Index)? slot = _selectedSlot is { } picked && model?.FindEpisode(picked.Episode) is not null
+            ? picked
+            : null;
+
+        // 고른 분기 카드(칩) — 판에서 사라졌으면(지웠다) 패널도 닫힌다.
+        string? branchCard = _selectedBranchCardId is { } chosen && _branchChips.ContainsKey(chosen) ? chosen : null;
 
         PropertyPanel.IsVisible = episode is not null;
         EdgePanel.IsVisible = edge is not null;
-        BranchPanel.IsVisible = branch is not null;
-        NoSelectionText.IsVisible = episode is null && edge is null && branch is null;
-        ApplyEditability();
+        BranchPanel.IsVisible = branchCard is not null;
+        SlotPanel.IsVisible = slot is not null;
+        NoSelectionText.IsVisible = episode is null && edge is null && slot is null &&
+                                    branchCard is null && _inspector != InspectorMode.Scene;
+        ApplyInspector();
 
-        if (branch is not null)
+        if (slot is { } shownSlot && model is not null)
         {
-            RefreshBranchPanel(model, branch);
+            RefreshSlotPanel(model, shownSlot.Episode, shownSlot.Index);
+        }
+
+        if (branchCard is not null)
+        {
+            RefreshBranchCardPanel(model, branchCard);
         }
 
         (string? Episode, (string From, string To, string Label)? Edge) selection =
@@ -2655,19 +3472,7 @@ public partial class ChapterGraphView : UserControl
             if (fill)
             {
                 IdBox.Text = episode.EpisodeId;
-                SceneIdBox.Text = episode.SceneId ?? string.Empty;
             }
-
-
-            SetItems(EdgeTargetCombo,
-                model.Episodes
-                    .Where(candidate => candidate.EpisodeId != episode.EpisodeId)
-                    .Select(candidate => candidate.EpisodeId)
-                    .ToList(),
-                EdgeTargetCombo.SelectedItem as string); // 도착 고르기는 언제나 사람 소유
-
-            // 문구 목록은 챕터 전체 사전이다 (v9) — 어느 에피소드에서든 다 고를 수 있다.
-            SetItems(EdgeLabelBox, ChoiceLabelItems(model), EdgeLabelBox.SelectedItem as string);
 
             RefreshEdgeList(model, episode);
         }
@@ -2683,218 +3488,20 @@ public partial class ChapterGraphView : UserControl
     // 2026-08-24 소유자 — "저걸 툴사용자가 체크하는 게 아니라, 엑셀이 켜지면 자동으로
     // 잠기면서 편집이 불가능하게 막는게 좋겠어."
     //
-    // 그래서 체크를 없앴다. 문을 잠그는 것은 <b>사실 하나</b>다: 엑셀이 이 챕터 파일을
-    // 잡고 있는가. 체크는 그 사실의 사본이었고, 사본이라 어긋날 수 있었다 — 체크가
-    // 풀려 있는데 엑셀이 열려 있으면 툴은 "편집 가능"인 척하다 쓰기에서 거부됐다.
-    // 이제 사실은 한 곳에만 산다.
+    // 그래서 체크를 없앴고(그때는 잠금이 곧 편집 가능 여부였다), 2026-10-29에는 그 잠금도
+    // 편집을 막지 않게 됐다(VnTool C6). 엑셀 잠금을 듣는 감시자와 배너는 같은 날 걷혔다.
 
     /// <summary>콤보·목록을 프로그램이 채우는 중 — 자동 저장 억제.</summary>
     private bool _fillingPanel;
 
     /// <summary>
-    /// 엑셀이 이 챕터를 잡고 있는가. <b>이 한 칸이 편집 가능 여부의 전부다</b> —
-    /// 사람이 돌릴 스위치는 없다. 답의 주인은 파일이고 이 칸은 마지막으로 물어본 답이다.
-    /// </summary>
-    private bool _excelHoldsChapter;
-
-    private bool ToolEditable => !_excelHoldsChapter;
-
-    /// <summary>
-    /// 엑셀이 잡고 있는지 묻는 손. 진짜 잠긴 파일은 <b>쓸 수도 없어서</b>, "잠기기 직전에
-    /// 낸다"를 실제 잠금으로는 검증할 수 없다 — 검증이 이 손을 갈아끼운다.
-    /// </summary>
-    internal Func<string?, bool> LockProbe { get; set; } = ChapterWorkbookWriter.IsLockedByAnotherApp;
-
-    /// <summary>
-    /// 엑셀이 이 챕터를 열고 있으면 배너로 말한다 (2026-08-16 실사례) — 그 상태에서는
-    /// 툴의 모든 쓰기가 거부되므로, 누르고 나서가 아니라 <b>누르기 전에</b> 보여야 한다.
-    /// 2026-08-24부터는 <b>말하는 데서 그치지 않는다</b>: 이 답이 곧 편집 가능 여부다.
-    /// </summary>
-    private void RefreshLockBanner()
-    {
-        bool locked = LockProbe(SelectedChapterPath);
-
-        LockBanner.IsVisible = locked;
-        LockBannerText.Text = locked
-            ? $"⚠ 엑셀이 '{_selectedChapterId}.xlsx'를 열고 있습니다 — 그동안 툴 편집은 잠깁니다. " +
-              "엑셀에서 그 파일을 닫으면 저절로 풀립니다."
-            : string.Empty;
-
-        ApplyLockGate(locked);
-    }
-
-    /// <summary>
-    /// 잠금을 다시 묻고, <b>답이 바뀌었으면 패널까지 그 답에 맞춘다</b>.
-    ///
-    /// <see cref="RefreshLockBanner"/>와 나눠 둔 이유가 있다: 저쪽은
-    /// <see cref="ApplyEditability"/>가 값을 읽기 <em>직전에</em> 부르는 자리라 되짚어
-    /// 부르면 스스로를 다시 부른다. 밖에서 들어오는 길(다시 읽기·쓰기 결과·감시자)은
-    /// 이쪽으로 온다 — 그때는 화면 전체가 따라와야 한다.
-    /// </summary>
-    private void RefreshLockState()
-    {
-        bool before = _excelHoldsChapter;
-
-        RefreshLockBanner();
-
-        if (_excelHoldsChapter == before)
-        {
-            return;
-        }
-
-        RefreshPropertyPanel(preserveTyping: true);
-
-        // ⛔ <b>미룬 것을 잊지 않는다</b> (§5.3). 엑셀이 파일을 놓은 그 순간이 다시 낼
-        //    자리다 — 사람이 아무것도 안 눌러도 파일이 프로젝트를 따라잡는다.
-        if (!_excelHoldsChapter && _session is { } session)
-        {
-            ChapterEmitRun caught = session.ChapterOutput.Retry(
-                session.Project, session.ProjectPath, session.Definition);
-
-            if (caught.Written.Count > 0)
-            {
-                session.SetStatus(
-                    $"엑셀이 닫혀 미뤄 둔 워크북 {caught.Written.Count}개를 다시 냈습니다.");
-            }
-        }
-    }
-
-    /// <summary>
-    /// 잠금 상태를 <b>받아 적는다</b>. 이 메서드는 판단하지 않는다 — 판단은
-    /// <see cref="LockProbe"/>가 파일에 물어 이미 끝냈고, 여기서는 그 답이 <em>바뀌었을 때</em>
-    /// 해야 할 일만 한다.
-    ///
-    /// 편집 중에 엑셀이 열리면 <b>아직 단추를 안 누른 값을 먼저 낸다</b> (2026-08-17 소유자:
-    /// "하는 중에 엑셀이 열리면 현재까지된걸 저장한 뒤에 잠그고"). 엑셀이 먼저 파일을
-    /// 잡았으면 그 쓰기는 거부되지만, 값은 패널에 그대로 남는다 — 엑셀을 닫고 다시 고르면
-    /// 된다. 낡은 값을 나중에 몰래 밀어 넣지는 않는다: 그 사이 엑셀에서 고쳤을 수 있고,
-    /// 그러면 사람이 방금 한 편집을 툴이 덮는다.
-    ///
-    /// ⚠ <b>바뀔 때만 움직인다.</b> 이 자리는 다시 그리기·쓰기·감시자 알림마다 불리므로,
-    /// 매번 상태줄에 말하면 "엑셀이 닫혔습니다"가 끝없이 흐른다.
-    /// </summary>
-    private void ApplyLockGate(bool locked)
-    {
-        // ⛔ 이 빗장을 빼면 <b>스택이 넘친다</b> — 지운 적이 있고 그 자리에서 확인했다
-        // (2026-08-24). 길은 이렇다: 여기서 부르는 FlushPendingEdits가 워크북을 쓰고,
-        // 쓰기 결과는 Report로 가고, Report는 "거부됐다면 대개 엑셀이 잡은 것"이라며
-        // 잠금을 다시 묻는다 — 그래서 여기로 돌아온다. 값이 아직 안 바뀐 채로.
-        if (_applyingLockGate || locked == _excelHoldsChapter)
-        {
-            return;
-        }
-
-        _applyingLockGate = true;
-
-        try
-        {
-            if (locked)
-            {
-                // 순서가 곧 규칙이다 — 잠갔다고 적기 <b>전에</b> 내야 그 쓰기가 열린
-                // 문으로 나간다. 뒤집으면 툴이 자기 관문에 스스로 막힌다.
-                FlushPendingEdits();
-                _excelHoldsChapter = true;
-                return;
-            }
-
-            _excelHoldsChapter = false;
-            _session?.SetStatus("엑셀이 닫혔습니다 — 툴 편집이 다시 열렸습니다.");
-        }
-        finally
-        {
-            _applyingLockGate = false;
-        }
-    }
-
-    /// <summary>잠금 반영이 자기 자신을 다시 부르지 않게 하는 빗장 — 위 ⛔ 참조.</summary>
-    private bool _applyingLockGate;
-
-    /// <summary>
-    /// 열려 있는 폼의 값을 낸다 — 잠기기 직전의 마지막 저장. 개명(IdBox)은 일부러 빼둔다:
-    /// Enter가 곧 확정인 칸이라, 치다 만 이름을 여기서 확정하면 사람이 안 시킨 개명이 된다.
-    /// </summary>
-    private void FlushPendingEdits()
-    {
-        if (_edgeFormIndex >= 0 && _edgeFormEdge is not null && EdgeTargetCombo.SelectedItem is string)
-        {
-            SubmitEdgeForm();
-            return;
-        }
-
-        if (EdgePanel.IsVisible && _selectedEdgeKey is not null)
-        {
-            ApplyEdgeFromPanel();
-        }
-    }
-
-    private void ApplyEditability()
-    {
-        // ⚠ 여기서는 배너 쪽만 부른다 — RefreshLockState는 되짚어 이 메서드를 부른다.
-        RefreshLockBanner();
-
-        bool editable = ToolEditable;
-
-        IdBox.IsEnabled = editable;
-        SceneIdBox.IsEnabled = editable;
-        ApplySceneGroupButton.IsEnabled = editable;
-
-        // 잠겨 있으면 **그 자리에서** 이유를 말한다 (2026-08-24). 비활성 칸이 아무 말도
-        // 없으면 "이 기능이 없다"로 읽힌다 — 실제로 그렇게 읽혔다.
-        //
-        // ⚠ 열려 있을 때는 <b>아무 말도 안 한다</b>(같은 날 소유자 — 상시 안내 제거).
-        // 잠금은 사람이 안 한 일이라 말해 줘야 하지만, 열린 것은 기본값이라 말할 것이 없다.
-        IdBoxHint.IsVisible = !editable;
-        IdBoxHint.Text = editable
-            ? string.Empty
-            : "이름 — 엑셀이 이 챕터를 열고 있어 잠겼습니다";
-        VisibleCombo.IsEnabled = editable;
-        UnlockCombo.IsEnabled = editable;
-        AddNextEdgeButton.IsVisible = editable;
-        // 삭제는 <b>늘 같은 자리에</b> 있고 상태만 바뀐다 (2026-08-16 소유자 보고) —
-        // 체크를 푸는 순간 단추가 튀어나오면 그 자리를 누르던 손이 삭제를 누른다.
-        // 평소엔 회색·비활성, 편집이 열리면 빨갛게 살아난다.
-        DeleteEpisodeButton.IsEnabled = editable;
-        DeleteEpisodeButton.Background = editable
-            ? new SolidColorBrush(Color.Parse("#C0392B"))
-            : new SolidColorBrush(Color.Parse("#E0E0E0"));
-        DeleteEpisodeButton.Foreground = editable ? Brushes.White : new SolidColorBrush(Color.Parse("#9A9A9A"));
-        AddEpisodeButton.IsEnabled = editable;
-
-        // 간선 패널(그래프에서 간선 클릭)도 같은 스위치를 탄다.
-        EdgeLabelEditBox.IsEnabled = editable;
-        EdgeVisibleCombo.IsEnabled = editable;
-        EdgeConditionCombo.IsEnabled = editable;
-
-        EdgeLockedMsgBox.IsEnabled = editable;
-        _edgeStats.Editable = editable;
-        _formStats.Editable = editable;
-        EdgeDeleteButton.IsVisible = editable;
-
-        if (!editable)
-        {
-            HideEdgeForm();
-        }
-    }
-
-    /// <summary>표시·해금 콤보의 자동 저장 — 고르는 순간 그 셀 하나가 써진다.</summary>
-    private void AutoSaveGates()
-    {
-        if (_fillingPanel || !ToolEditable)
-        {
-            return;
-        }
-
-        UiGuard.Run(_session, "조건 저장", ApplyEpisodeFromPanel);
-    }
-
-    /// <summary>
     /// 간선 패널의 자동 저장 (2026-08-17) — 고치는 순간 그 셀이 써진다. 패널을 채우는
-    /// 중(<see cref="_fillingPanel"/>)이나 읽기 전용일 때는 울리지 않는다: 화면을 채우는
-    /// 일이 저장을 부르면 아무것도 안 고쳤는데 파일이 계속 써진다.
+    /// 중(<see cref="_fillingPanel"/>)에는 울리지 않는다: 화면을 채우는 일이 저장을 부르면
+    /// 아무것도 안 고쳤는데 파일이 계속 써진다.
     /// </summary>
     private void AutoSaveEdge()
     {
-        if (_fillingPanel || !ToolEditable || _selectedEdgeKey is null)
+        if (_fillingPanel || _selectedEdgeKey is null)
         {
             return;
         }
@@ -2902,54 +3509,120 @@ public partial class ChapterGraphView : UserControl
         UiGuard.Run(_session, "간선 저장", ApplyEdgeFromPanel);
     }
 
+    /// <summary>고르기 첫머리(<see cref="FlushEdgeTyping"/>)에서 에피소드ID 칸을 내어 바뀐 이름 — 그 고르기가 옛 ID를 새 ID로 읽는다.</summary>
+    private (string Old, string New)? _episodeRenamed;
+
+    /// <summary>고르기 첫머리에서 바뀐 에피소드ID를 따라간다 — 옛 ID면 새 ID, 아니면 그대로.</summary>
+    private string? AfterRename(string? episodeId) =>
+        _episodeRenamed is { } renamed && string.Equals(episodeId, renamed.Old, StringComparison.Ordinal) ? renamed.New : episodeId;
+
+    /// <summary>고른 간선 — 사라졌으면 null.</summary>
+    private ChapterEdge? SelectedEdge() =>
+        _selectedEdgeKey is { } key
+            ? SelectedModel?.Edges.FirstOrDefault(candidate =>
+                candidate.FromEpisodeId == key.From &&
+                candidate.ToEpisodeId == key.To &&
+                EdgeLabelKey(candidate) == key.Label)
+            : null;
+
     /// <summary>
-    /// [대사] 탭 — 선택된 에피소드의 대사를 워크북에서 바로 읽어 세운다. 연출 그래프까지
-    /// 안 가도 챕터 그래프에서 방금 쓴 대사를 확인한다(소유자 요청). 읽기 전용이고 고치는
-    /// 곳은 엑셀이다. 선택이 없거나 대본이 비면 그 사실을 말한다.
+    /// 선택을 옮기기 전에 초점을 쥔 글 칸을 놓고(그 칸이 지금 대상에 낸다), 간선 패널의 글자 칸에 적던 것을 그 간선에 낸다 — 판의 선 · 점은 초점을 가져가지 않아, 적던 칸이
+    /// 초점을 잃지 않은 채 다른 것이 골라지면 적던 글이 사라지거나(칸을 새 선택의 값으로 채운다) 엉뚱한 간선에 들어간다.
+    /// </summary>
+    private void FlushEdgeTyping()
+    {
+        // 초점을 쥔 글 칸을 먼저 놓는다 — 초점을 잃을 때 내는 칸(ID · 식 · 스탯 표 · 캐릭터 키 · 잠금 안내문 · 스탯변화 숫자)이
+        // 고름이 바뀌기 전의 대상에 낸다(side-boxes J1). 칸이 지금 값과 같으면 아무것도 하지 않는다.
+        _episodeRenamed = null;
+
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox typing &&
+            typing.GetVisualAncestors().Contains(ChapterRightRows))
+        {
+            InspectorFocusSink.Focus();
+        }
+
+        if (!EdgePanel.IsVisible ||
+            _selectedEdgeKey is not { } key ||
+            SelectedModel?.Edges.FirstOrDefault(candidate =>
+                candidate.FromEpisodeId == key.From &&
+                candidate.ToEpisodeId == key.To &&
+                EdgeLabelKey(candidate) == key.Label) is not { } edge)
+        {
+            return;
+        }
+
+        bool messageTyped = !string.Equals(
+            EdgeLockedMsgBox.Text ?? string.Empty, edge.LockedMessage ?? string.Empty, StringComparison.Ordinal);
+
+        if (messageTyped)
+        {
+            AutoSaveEdge();
+        }
+
+        // 식 칸에 적던 것도 낸다 — 선택이 옮겨 가면 그 칸이 사라진다.
+        foreach (TextBox expression in new[] { EdgeVisibleExpressionHost, EdgeUnlockExpressionHost }
+                     .SelectMany(host => host.GetLogicalDescendants().OfType<TextBox>()))
+        {
+            if (expression.Tag is ExpressionCommit commit)
+            {
+                commit.Run();
+            }
+        }
+    }
+
+    /// <summary>
+    /// [대사] 탭 — 선택된 에피소드 카드의 대사를 프로젝트에서 읽어 세운다. 연출 그래프까지
+    /// 안 가도 챕터 그래프에서 방금 쓴 대사를 확인한다(소유자 요청). 읽기 전용이다.
+    ///
+    /// ⚠ 2026-10-29(D2)까지는 대본 엑셀을 읽었다. 엑셀 연동이 걷혀 원천은 카드의 대본 하나다.
     /// </summary>
     private void FillDialoguePreview(string? episodeId)
     {
         if (episodeId is null)
         {
-            DialoguePreviewHeader.Text = "에피소드를 선택하면 그 대사가 여기 보입니다.";
+            DialoguePreviewHeader.Set("에피소드를 선택하면 그 대사가 여기 보입니다.", brief: null);
             DialoguePreviewText.Text = string.Empty;
             return;
         }
 
-        string preview = string.Empty;
-        string? folder = SelectedEpisodesFolder;
+        string preview = DialogueOf(episodeId);
 
-        if (folder is not null && EpisodeLibrary.FindExisting(folder, episodeId) is { } path)
+        if (preview.Length > 0)
         {
-            try
-            {
-                preview = PreviewText(EpisodeWorkbookReader.Read(path).Rows);
-            }
-            catch (XlsxReadException exception)
-            {
-                preview = $"대본을 읽지 못했습니다: {exception.Message}";
-            }
+            DialoguePreviewHeader.Set(string.Empty, brief: null);
+        }
+        else
+        {
+            DialoguePreviewHeader.Set("아직 적힌 대사가 없습니다 — [대본] 탭의 카드에서 쓰세요", "아직 적힌 대사가 없습니다");
         }
 
-        DialoguePreviewHeader.Text = preview.Length > 0
-            ? "읽기 전용 · 고치는 곳은 엑셀 (노드 더블클릭)"
-            : "아직 적힌 대사가 없습니다 — 노드를 더블클릭해 엑셀에서 쓰세요";
         DialoguePreviewText.Text = preview;
     }
 
-    /// <summary>
-    /// 대본을 읽는 눈 기준으로 편다 (v10) — 조건 블록은 들여쓰기로 보인다. 시트에서는
-    /// IF와 END가 각자 한 행이지만, 읽을 때 중요한 것은 <b>어디까지가 조건 안인가</b>다.
-    /// </summary>
-    private static string PreviewText(IReadOnlyList<EpisodeRow> rows)
+    /// <summary>그 에피소드 카드의 대사를 「화자: 대사」 줄로 편다. 카드나 대본이 없으면 빈 글이다.</summary>
+    private string DialogueOf(string episodeId) =>
+        _session is not null &&
+        _selectedChapterId is { } chapterId &&
+        EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is { } card
+            ? DialogueOf(card)
+            : string.Empty;
+
+    /// <summary>분기 카드의 대본 — 인스펙터의 읽기 전용 칸. 비었으면 그렇다고 말한다(줄 없는 분기 카드는 검증 오류다).</summary>
+    private string ScriptOf(string nodeId) =>
+        _session?.Project.FindDialogue(nodeId) is { } card && DialogueOf(card) is { Length: > 0 } text
+            ? text
+            : "(아직 적힌 대사가 없습니다 — [대본] 탭의 그 카드에서 씁니다)";
+
+    private static string DialogueOf(Vn.Authoring.Model.DialogueNode card)
     {
-        // v15 (2026-09-16 — R-C) — 대본에는 조건이 없다. 들여쓰기도 깊이도 사라지고,
-        // 미리보기는 줄을 순서대로 적는 일이 됐다.
+        Vn.Authoring.Script.ScriptDocument script = card.Script;
+
         var lines = new List<string>();
 
-        foreach (EpisodeRow row in rows.Where(row => !row.IsBlank))
+        foreach (Vn.Authoring.Script.ScriptLine line in script.ActiveLines)
         {
-            string body = row.Speaker.Length > 0 ? $"{row.Speaker}: {row.Text}" : row.Text;
+            Vn.Authoring.Script.LocalizedLine text = script.Text(line.Id);
+            string body = text.Speaker.Length > 0 ? $"{text.Speaker}: {text.Text}" : text.Text;
 
             if (body.Length > 0)
             {
@@ -2960,11 +3633,6 @@ public partial class ChapterGraphView : UserControl
         return string.Join("\n", lines);
     }
 
-    /// <summary>
-    /// 엑셀이 소유한 값들을 한 덩어리로. 비어 있는 것은 줄에 세우지 않는다 —
-    /// "(없음)"만 늘어놓으면 읽을거리가 아니라 소음이 된다.
-    /// </summary>
-
     /// <summary>목록을 갈되 고른 값은 지킨다(그 값이 새 목록에 남아 있다면).</summary>
     private static void SetItems(ComboBox combo, IReadOnlyList<string> items, string? selected)
     {
@@ -2972,148 +3640,86 @@ public partial class ChapterGraphView : UserControl
         combo.SelectedItem = selected is not null && items.Contains(selected) ? selected : null;
     }
 
-    // ── 선택지 목록 + 잇기 폼 (v9, 2026-08-17 소유자) ────────────────────────
-    // 목록의 줄 = 이 에피소드에서 나가는 길 하나이고, 길 하나가 곧 선택지 하나다.
-    // 문구는 챕터 전체의 사전에서 고른다 — "모든 선택지 중에서 자유자재로."
+    // ── 선택지 목록 (v9, 2026-08-17 소유자) ────────────────────────────────
+    // 목록의 줄 = 이 에피소드에서 나가는 길 하나이고, 길 하나가 곧 선택지 하나다. 여기서는 확인만 한다 — 선택지를 잇고 끊는 것은
+    // [대본] 탭(카드 아래 칸), 문구 · 조건 · 스탯변화는 판에서 그 선을 눌러 여는 간선 패널이다.
 
-    /// <summary>문구 없는 길(보이지 않는 기본)을 드롭다운에서 가리키는 이름.</summary>
-    private const string PlainAdvanceItem = "(문구 없음)";
+    /// <summary>
+    /// 접은 선택지 줄들의 신원 (도착, 문구). 선택지 설명은 <b>기본으로 펼쳐져</b> 있고, 사람이 접은 줄만 여기 든다 — 줄마다
+    /// 따로 접고 편다.
+    /// </summary>
+    private readonly HashSet<(string To, string Label)> _foldedChoices = [];
 
-    /// <summary>폼이 붙은 간선의 신원 (도착, 문구). null이면 <b>새 선택지</b>를 여는 중이다.</summary>
-    private (string To, string Label)? _edgeFormEdge;
+    /// <summary>펼친 선택지 설명이 지는 표 — 화면 시험이 이것으로 찾는다.</summary>
+    internal const string ChoiceDetailTag = "choice-detail";
 
-    /// <summary>목록 안에서 폼이 설 자리. -1 = 닫힘.</summary>
-    private int _edgeFormIndex = -1;
+    /// <summary>선택지를 다시 모두 펼친다 — 다른 것을 고르면 부른다(접은 것은 그 에피소드를 보는 동안만이다).</summary>
+    private void UnfoldChoices() => _foldedChoices.Clear();
 
-    private void HideEdgeForm()
+    /// <summary>
+    /// 선택지 줄 클릭 — 펼쳐진 줄이면 그 설명을 접고, 접힌 줄이면 다시 편다. 다른 줄은 그대로다.
+    /// </summary>
+    internal void ToggleChoice(ChapterEdge edge)
     {
-        _edgeFormIndex = -1;
-        _edgeFormEdge = null;
-        EdgeFormHost.IsVisible = false;
-        EdgeFormPanel.IsVisible = false;
-    }
+        (string To, string Label) key = (edge.ToEpisodeId, EdgeLabelKey(edge));
 
-    /// <summary>[＋] — 빈 폼을 목록 끝에 연다. 문구와 도착을 고르면 그때 길이 생긴다.</summary>
-    private void AddChoiceSlotFromPanel()
-    {
-        if (_selectedEpisodeId is null || SelectedChapterPath is null)
+        if (!_foldedChoices.Remove(key))
         {
-            _session?.SetStatus("에피소드를 먼저 골라 주세요.");
-            return;
+            _foldedChoices.Add(key);
         }
 
-        // 이미 새 선택지 폼이 열려 있으면 접는다 — 여는 손과 닫는 손이 같다.
-        if (_edgeFormIndex >= 0 && _edgeFormEdge is null)
-        {
-            HideEdgeForm();
-            RefreshPropertyPanel(preserveTyping: true);
-            return;
-        }
-
-        OpenEdgeForm(edge: null, rowIndex: int.MaxValue - 1);
+        RefreshPropertyPanel(preserveTyping: true);
     }
 
     /// <summary>
-    /// 줄 클릭 — 그 길의 문구·도착을 고치는 폼이 줄 바로 아래에 열린다. 문구 드롭다운은
-    /// <b>챕터의 모든 문구</b>를 담는다 (2026-08-17 소유자: "자기 것만 고르는 게 아니라
-    /// 모든 선택지 중에서 자유자재로"). <paramref name="edge"/>가 null이면 새 선택지다.
+    /// 펼친 선택지의 설명 — 표시조건 · 해금조건(+잠금 안내문) · 스탯변화. <b>읽기 전용</b>이다. 문구와 도착은 바로 위
+    /// 줄이 보이므로 되풀이하지 않는다.
     /// </summary>
-    internal void OpenEdgeForm(ChapterEdge? edge, int rowIndex)
+    private static Border BuildChoiceDetail(ChapterGraphModel model, ChapterEdge edge)
     {
-        _edgeFormEdge = edge is null ? null : (edge.ToEpisodeId, EdgeLabelKey(edge));
-        _edgeFormIndex = rowIndex + 1;
-        RefreshPropertyPanel(preserveTyping: true);
+        var lines = new StackPanel { Spacing = 2 };
 
-        _fillingPanel = true;
-
-        try
+        void Line(string text) => lines.Children.Add(new TextBlock
         {
-            EdgeTargetCombo.SelectedItem = edge?.ToEpisodeId;
-            EdgeLabelBox.SelectedItem = edge is null
-                ? null
-                : edge.HasNoOptionLabel ? PlainAdvanceItem : edge.OptionLabel;
-            EdgeFormAutoCheck.IsChecked = edge?.Auto == true;
+            Text = text,
+            FontSize = 11,
+            TextWrapping = TextWrapping.Wrap
+        });
 
-            // 스탯변화도 여기서 만진다 (2026-08-17) — 새 길이면 빈 목록에서 시작한다.
-            _formStats.Editable = ToolEditable;
-            _formStats.Load(SelectedModel?.Stats ?? [], edge?.StatChanges ?? []);
-        }
-        finally
+        if (edge.VisibleConditionLabel is { } visible)
         {
-            _fillingPanel = false;
-        }
-    }
-
-    /// <summary>문구 드롭다운의 목록 — 챕터 사전 전체 + 보이지 않는 기본.</summary>
-    private static List<string> ChoiceLabelItems(ChapterGraphModel model)
-    {
-        var items = new List<string> { PlainAdvanceItem };
-        items.AddRange(model.ChoiceLabels);
-        return items;
-    }
-
-    /// <summary>폼의 [잇기]/[수정] — 이 길의 문구와 도착을 한 저장으로 정한다.</summary>
-    internal void SubmitEdgeForm()
-    {
-        if (_edgeFormIndex < 0 ||
-            _selectedEpisodeId is not { } from ||
-            _selectedChapterId is not { } chapterId)
-        {
-            _session?.SetStatus("선택지 줄을 다시 눌러 주세요. 선택이 풀렸습니다.");
-            return;
+            Line($"표시조건: {visible}");
         }
 
-        if (EdgeTargetCombo.SelectedItem is not string to)
+        if (edge.ConditionLabel is { } unlock)
         {
-            _session?.SetStatus("도착 에피소드를 골라 주세요.");
-            return;
-        }
+            Line($"해금조건: {unlock}");
 
-        bool auto = EdgeFormAutoCheck.IsChecked == true;
-
-        // 공백만으로 자동을 추측하지 않는다. 자동 체크가 명시된 경우에만 문구를 비운다.
-        string label = EdgeLabelBox.SelectedItem as string is { } picked && picked != PlainAdvanceItem
-            ? picked
-            : string.Empty;
-
-        // 배선과 증감이 한 저장으로 나간다 — 두 번 쓰면 그 사이에 엑셀이 파일을 잡을 수 있고,
-        // 반쪽만 적힌 길이 남는다.
-        string stats = auto ? string.Empty : _formStats.ToSheetText();
-        if (auto)
-        {
-            label = string.Empty;
-        }
-
-        ChapterEdit(
-            () =>
+            if (edge.LockedMessage is { Length: > 0 } locked)
             {
-                if (_edgeFormEdge is { } current)
-                {
-                    _session!.Editor.SetEdgeRoute(
-                        chapterId, from, current.To, current.Label, to, label, stats, auto);
-                }
-                else
-                {
-                    _session!.Editor.AddEdge(
-                        chapterId, from, to, optionLabel: label, statChanges: stats, auto: auto);
-                }
+                Line($"잠금 안내문: {locked}");
+            }
+        }
 
-                HideEdgeForm();
-            },
-            label.Length > 0
-                ? $"'{label}' → {to} 로 이었습니다."
-                : auto
-                    ? $"{from} → {to} 를 자동 진행으로 이었습니다."
-                    : $"{from} → {to} 를 문구 없는 일반 선택지로 이었습니다.");
+        Line(edge.StatChanges.Count > 0
+            ? "스탯변화: " + string.Join(" · ", edge.StatChanges.Select(delta => DeltaText(model.Stats, delta)))
+            : "스탯변화: 없음");
+
+        return new Border
+        {
+            Tag = ChoiceDetailTag,
+            Margin = new Thickness(22, 0, 0, 4),
+            Padding = new Thickness(8, 4),
+            BorderThickness = new Thickness(2, 0, 0, 0),
+            BorderBrush = new SolidColorBrush(Color.Parse("#3D7BD9")),
+            Child = lines
+        };
     }
 
     private void RefreshEdgeList(ChapterGraphModel model, ChapterEpisode episode)
     {
-        // 폼(EdgeFormPanel)은 axaml이 만든 단일 인스턴스다 — Clear는 트리에서 떼어낼 뿐이라
-        // 아래에서 원하는 자리에 다시 꽂는다.
         EdgeListPanel.Children.Clear();
 
-        bool editable = ToolEditable;
         List<ChapterEdge> edges = model.Edges
             .Where(candidate =>
                 string.Equals(candidate.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal))
@@ -3122,60 +3728,37 @@ public partial class ChapterGraphView : UserControl
 
         for (int rowIndex = 0; rowIndex < edges.Count; rowIndex++)
         {
-            EdgeListPanel.Children.Add(BuildEdgeRow(edges[rowIndex], rowIndex, editable));
+            ChapterEdge edge = edges[rowIndex];
+            EdgeListPanel.Children.Add(BuildEdgeRow(edge, rowIndex));
+
+            // 펼친 줄이면 바로 아래에 설명이 선다.
+            if (!_foldedChoices.Contains((edge.ToEpisodeId, EdgeLabelKey(edge))))
+            {
+                EdgeListPanel.Children.Add(BuildChoiceDetail(model, edge));
+            }
         }
 
         if (edges.Count == 0)
         {
-            EdgeListPanel.Children.Add(new TextBlock
+            EdgeListPanel.Children.Add(new GuideLine
             {
-                Text = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다. [＋]로 선택지를 엽니다.",
+                Full = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 잇습니다.",
+                Brief = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다.",
                 FontSize = 10,
                 Opacity = 0.5,
                 TextWrapping = TextWrapping.Wrap
             });
         }
-
-        // 폼을 제자리에 꽂는다 — 누른 줄 바로 아래(새 선택지면 목록 끝).
-        bool formOpen = editable && _edgeFormIndex >= 0;
-        EdgeFormHost.IsVisible = formOpen;
-        EdgeFormPanel.IsVisible = formOpen;
-
-        if (formOpen)
-        {
-            // 라벨은 둘뿐이다 — 있는 길은 [수정], 새로 여는 길은 [잇기].
-            AddEdgeButton.Content = _edgeFormEdge is null ? "잇기" : "수정";
-            EdgeTargetCombo.IsEnabled = true;
-
-            _fillingPanel = true;
-
-            try
-            {
-                // 문구 목록은 폼이 열릴 때마다 새로 깐다 — 엑셀에서 사전에 낱말을 더하면
-                // 다시 읽기 한 번으로 여기에 나타난다.
-                SetItems(EdgeLabelBox, ChoiceLabelItems(model), EdgeLabelBox.SelectedItem as string);
-            }
-            finally
-            {
-                _fillingPanel = false;
-            }
-
-            EdgeListPanel.Children.Insert(
-                Math.Min(_edgeFormIndex, EdgeListPanel.Children.Count), EdgeFormHost);
-        }
-        else
-        {
-            EdgeListPanel.Children.Add(EdgeFormHost); // 트리 밖에 두지 않는다 — 자리만 숨김
-        }
     }
 
     /// <summary>
-    /// 선택지 한 줄 — `문구 → 도착 [조건]`. 문구가 없으면 "(기본 · 보이지 않음)"이다.
-    /// 클릭 = 그 줄 아래에서 문구·도착 고치기, 다시 클릭 = 접기.
+    /// 선택지 한 줄 — `문구 → 도착`. 자동 길이면 「AUTO · 자동 진행」, 문구가 없으면 「⚠ 문구 없음」이다. 조건은 줄에 붙이지
+    /// 않는다 — 바로 아래 펼친 설명이 표시조건 · 해금조건을 보인다.
+    /// 클릭 = 그 줄 아래에 조건 · 스탯변화를 펼치기, 다시 클릭 = 접기.
     /// </summary>
-    private Control BuildEdgeRow(ChapterEdge edge, int rowIndex, bool editable)
+    private Control BuildEdgeRow(ChapterEdge edge, int rowIndex)
     {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
 
         // 순번 — 화면에 뜨는 차례다(간선 시트의 행 순서). 신원이 아니라 자리 표시다.
         row.Children.Add(new Border
@@ -3194,11 +3777,9 @@ public partial class ChapterGraphView : UserControl
         });
 
         string label = edge.Auto ? "AUTO · 자동 진행" : edge.HasNoOptionLabel ? "⚠ 문구 없음" : edge.OptionLabel!;
-        string condition = edge.ConditionLabel is { } gate ? $"  [{gate}]" : string.Empty;
-
         var text = new TextBlock
         {
-            Text = $"{label}   → {edge.ToEpisodeId}{condition}",
+            Text = $"{label}   → {edge.ToEpisodeId}",
             FontSize = 11,
             Opacity = edge.HasNoOptionLabel ? 0.7 : 1,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
@@ -3210,46 +3791,11 @@ public partial class ChapterGraphView : UserControl
         Grid.SetColumn(text, 1);
 
         // 툴팁 없음 (2026-08-16 소유자) — 목록 위에 뜨는 설명 상자가 화면을 가렸다.
-        if (editable)
-        {
-            (string To, string Label) key = (edge.ToEpisodeId, EdgeLabelKey(edge));
-            ChapterEdge captured = edge;
-            int capturedRow = rowIndex;
-            // 같은 줄을 다시 누르면 접힌다 (2026-08-16 소유자) — 여는 손과 닫는 손이 같다.
-            text.PointerPressed += (_, _) =>
-                UiGuard.Run(_session, "선택지 잇기 폼", () =>
-                {
-                    if (_edgeFormEdge == key)
-                    {
-                        HideEdgeForm();
-                        RefreshPropertyPanel(preserveTyping: true);
-                        return;
-                    }
+        // 같은 줄을 다시 누르면 접힌다 (2026-08-16 소유자) — 여는 손과 닫는 손이 같다.
+        text.PointerPressed += (_, _) => UiGuard.Run(_session, "선택지 펼치기", () => ToggleChoice(edge));
 
-                    OpenEdgeForm(captured, capturedRow);
-                });
-        }
-
+        // ✕(길 끊기)는 두지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다.
         row.Children.Add(text);
-
-        if (editable)
-        {
-            string from = edge.FromEpisodeId;
-            string to = edge.ToEpisodeId;
-            string optionLabel = EdgeLabelKey(edge);
-            var remove = new Button
-            {
-                Content = "✕",
-                FontSize = 10,
-                Padding = new Thickness(5, 1),
-                [ToolTip.TipProperty] = "이 길을 지웁니다. 선택지 문구는 사전에 남습니다."
-            };
-            Grid.SetColumn(remove, 2);
-            remove.Click += (_, _) => UiGuard.Run(_session, "선택지 삭제", () => ChapterEdit(
-                () => _session!.Editor.RemoveEdge(_selectedChapterId!, from, to, optionLabel),
-                $"{from} → {to} 를 지웠습니다."));
-            row.Children.Add(remove);
-        }
 
         return row;
     }
@@ -3260,76 +3806,325 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private void RefreshEdgePanel(ChapterGraphModel model, ChapterEdge edge, bool fill)
     {
-        EdgeFromToPanel.Children.Clear();
-        EdgeFromToPanel.Children.Add(EpisodeLink(model, edge.FromEpisodeId));
-        EdgeFromToPanel.Children.Add(new TextBlock
-        {
-            Text = "→",
-            FontSize = 11,
-            Opacity = 0.5,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-        });
-        EdgeFromToPanel.Children.Add(EpisodeLink(model, edge.ToEpisodeId));
-
         if (fill)
         {
-            EdgeAutoCheck.IsChecked = edge.Auto;
             EdgeLockedMsgBox.Text = edge.LockedMessage ?? string.Empty;
-            _edgeStats.Editable = ToolEditable;
             _edgeStats.Load(model.Stats, edge.StatChanges);
         }
 
-        // 이 길의 문구 (v9) — 챕터의 모든 문구 중에서 고른다. 목록·저장이 선택지 목록의
-        // 폼과 같은 규칙 하나를 쓴다(사본 금지): 안 고른 것과 "문구 없음"은 같은 뜻이다.
-        SetItems(EdgeLabelEditBox, ChoiceLabelItems(model),
-            fill
-                ? edge.HasNoOptionLabel ? PlainAdvanceItem : edge.OptionLabel
-                : EdgeLabelEditBox.SelectedItem as string);
+        // 자동 진행 길은 문구 · 조건 · 스탯변화를 갖지 않는다 — 그렇다고 말하고 칸을 잠근다(적어도 저장되지 않는다).
+        EdgeAutoNote.IsVisible = edge.Auto;
+        EdgeVisibleCombo.IsEnabled = !edge.Auto;
+        EdgeConditionCombo.IsEnabled = !edge.Auto;
+        EdgeVisibleNewButton.IsEnabled = !edge.Auto;
+        EdgeUnlockNewButton.IsEnabled = !edge.Auto;
+        EdgeLockedMsgBox.IsEnabled = !edge.Auto;
+        _edgeStats.IsEnabled = !edge.Auto;
 
-        var labels = new List<string> { "(없음)" };
+        var labels = new List<string> { NoGate };
         labels.AddRange(model.Conditions.Select(condition => condition.Label));
 
         // 관문 둘 — v8에서 에피소드에서 여기로 옮겨 왔다.
         SetItems(EdgeVisibleCombo, labels,
-            fill ? edge.VisibleConditionLabel ?? "(없음)" : EdgeVisibleCombo.SelectedItem as string);
+            fill ? edge.VisibleConditionLabel ?? NoGate : EdgeVisibleCombo.SelectedItem as string);
         SetItems(EdgeConditionCombo, labels,
-            fill ? edge.ConditionLabel ?? "(없음)" : EdgeConditionCombo.SelectedItem as string);
+            fill ? edge.ConditionLabel ?? NoGate : EdgeConditionCombo.SelectedItem as string);
+
+        string? visible = GateOf(EdgeVisibleCombo);
+        string? unlock = GateOf(EdgeConditionCombo);
+
+        FillExpressionHost(EdgeVisibleExpressionHost, model, edge, edge.Auto ? null : visible);
+        FillExpressionHost(EdgeUnlockExpressionHost, model, edge, edge.Auto ? null : unlock);
+
+        // 잠금 안내문은 해금조건에 딸린 칸이다 — 해금조건을 걸었을 때만 선다.
+        EdgeLockedMsgBox.IsVisible = !edge.Auto && unlock is not null;
+    }
+
+    /// <summary>마지막으로 연 [＋ 새 조건] 칸 — 화면 시험이 이것으로 찾는다(플라이아웃은 뷰의 논리 트리 밖에 선다).</summary>
+    internal StackPanel? NewConditionPanel { get; private set; }
+
+    /// <summary>관문 콤보의 「없음」 — 조건을 안 건 길.</summary>
+    private const string NoGate = "(없음)";
+
+    private static string? GateOf(ComboBox combo) =>
+        combo.SelectedItem is string label && !string.Equals(label, NoGate, StringComparison.Ordinal) ? label : null;
+
+    /// <summary>식 칸이 지는 표 — 칸의 값을 그 조건에 낸다(같은 값이면 아무것도 안 한다).</summary>
+    private sealed record ExpressionCommit(Action Run);
+
+    /// <summary>
+    /// 관문 콤보 바로 아래의 <b>식 칸</b> — 고른 조건의 수치를 여기서 바로 고친다(2026-11-17 소유자: [구성]은 수치를 잡는 자리다).
+    /// 고치면 챕터 조건의 식이 바뀐다 — 그 조건을 쓰는 다른 곳이 있으면 함께 바뀐다고 미리 말한다. 식이 비면 「식 미정」(항상 통과),
+    /// 못 읽는 식이면 그 까닭을 빨갛게 세운다. 조건을 안 걸었으면 아무것도 세우지 않는다.
+    ///
+    /// 적던 칸은 다시 세우지 않는다 — 다른 칸을 고쳐 판이 다시 그려져도 쓰던 식이 끊기지 않게.
+    /// </summary>
+    private void FillExpressionHost(StackPanel host, ChapterGraphModel model, ChapterEdge edge, string? label)
+    {
+        if (host.GetLogicalDescendants().OfType<TextBox>().FirstOrDefault() is { IsFocused: true } typing &&
+            Equals(host.DataContext, label) &&
+            label is not null &&
+            model.Conditions.FirstOrDefault(item => item.Label == label) is { } same &&
+            !string.Equals(typing.Text?.Trim() ?? string.Empty, same.Expression.Trim(), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        host.DataContext = label;
+        host.Children.Clear();
+
+        if (label is null ||
+            _session is null ||
+            _selectedChapterId is not { } chapterId ||
+            model.Conditions.FirstOrDefault(item => string.Equals(item.Label, label, StringComparison.Ordinal)) is not { } condition)
+        {
+            return;
+        }
+
+        string stored = condition.Expression.Trim();
+        var box = new TextBox
+        {
+            Text = stored,
+            FontSize = 11,
+            PlaceholderText = "⚠ 식 미정 — 항상 통과합니다 (예: trust >= 3)",
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        ToolTip.SetTip(box, "이 조건의 식 — 스탯 키와 정수를 비교합니다(>= · <= · > · < · ==), 여럿이면 `;`로 잇습니다. " +
+                            "활성/비활성 스탯은 `키 == true`(활성일 때). Enter나 다른 곳을 누르면 반영됩니다.");
+
+        void Commit()
+        {
+            string typed = box.Text?.Trim() ?? string.Empty;
+
+            if (string.Equals(typed, stored, StringComparison.Ordinal) || _session is null)
+            {
+                return;
+            }
+
+            UiGuard.Run(_session, "조건 식", () =>
+            {
+                _session.Editor.UpdateChapterCondition(chapterId, label, typed);
+                stored = typed;
+                _session.SetStatus(typed.Length == 0
+                    ? $"조건 '{label}'의 식을 비웠습니다 — 식 미정, 항상 통과합니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
+                    : $"조건 '{label}' — 식 '{typed}'. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            });
+        }
+
+        box.Tag = new ExpressionCommit(Commit);
+        box.LostFocus += (_, _) => Commit();
+        box.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(box, () => stored);
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(12, 0, 0, 0) };
+        row.Children.Add(new TextBlock
+        {
+            Text = "식",
+            FontSize = 10,
+            Opacity = 0.6,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        Grid.SetColumn(box, 1);
+        row.Children.Add(box);
+        host.Children.Add(row);
+
+        TextBlock Note(string text, IBrush? ink = null) => new()
+        {
+            Text = text,
+            FontSize = 10,
+            Opacity = ink is null ? 0.6 : 1,
+            Foreground = ink,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(12, 0, 0, 0)
+        };
+
+        string head = $"조건 '{label}' — ";
+
+        foreach (ChapterDiagnostic problem in model.Diagnostics.Where(item =>
+                     item.Severity == ChapterDiagnosticSeverity.Error &&
+                     item.Message.StartsWith(head, StringComparison.Ordinal)))
+        {
+            host.Children.Add(Note("✕ " + problem.Message[head.Length..], new SolidColorBrush(Color.Parse("#C0392B"))));
+        }
+
+        int others = _session.Editor.FindConditionUses(chapterId, label)
+            .Count(use => !(use.Kind == Vn.Authoring.Editing.ChapterUseKind.Edge && string.Equals(use.Where, edge.Where, StringComparison.Ordinal)));
+
+        if (others > 0)
+        {
+            host.Children.Add(Note($"이 조건은 다른 곳 {others}곳에서도 씁니다 — 식을 고치면 그곳들도 함께 바뀝니다."));
+        }
     }
 
     /// <summary>
-    /// 분기 패널 — <b>조건 한 칸</b>이 전부다 (2026-09-18).
+    /// [＋ 새 조건] — 이름과 식을 한 번에 만들고 이 선택지의 표시조건(또는 해금조건)으로 건다. 되돌리기 한 칸이다.
     ///
-    /// 문구도 스탯변화도 없다(소유자: *"분기로 이어지는 것은 선택지와 다르게 라벨이나
-    /// 스탯변화를 주지도 않을거야"*). 분기로는 <b>언제나 한 번 간다</b> — 이 조건이 막는
-    /// 것은 다녀간 뒤 그 에피소드가 <b>돌아가는가</b>이고, 그래서 조건이 적히는 자리도
-    /// 다녀갈 에피소드의 첫머리다(<see cref="BranchEntryCondition"/>).
-    ///
-    /// ⚠ 작가가 대사 편집기에서 지은 조건 구조는 <b>읽기만</b> 한다 — 덮으면 짝이 어긋난
-    /// 대본이 된다. 그때는 칸을 잠그고 사유를 세운다.
+    /// 간선에서 수치를 잡다가 조건이 없으면 탭을 오가야 해서 둔 자리다(2026-11-17 소유자). 이름 규칙은 조건 표의 더하기 줄과 같다
+    /// (<see cref="ShowConditionFlyout"/>).
     /// </summary>
-    private void RefreshBranchPanel(ChapterGraphModel? model, ChapterBranchMarkers.Marker marker)
+    private void ShowNewConditionFlyout(Button anchor, bool visible)
     {
+        if (_session is null || _selectedChapterId is not { } chapterId || _selectedEdgeKey is not { } key)
+        {
+            return;
+        }
+
+        ShowConditionFlyout(
+            anchor,
+            chapterId,
+            visible ? "새 조건 — 맞을 때만 이 선택지가 보입니다." : "새 조건 — 맞을 때만 이 선택지를 고를 수 있습니다.",
+            visible ? "만들고 표시조건으로 걸기" : "만들고 해금조건으로 걸기",
+            (label, typed) =>
+            {
+                if (SelectedModel?.Edges.FirstOrDefault(candidate =>
+                        candidate.FromEpisodeId == key.From &&
+                        candidate.ToEpisodeId == key.To &&
+                        EdgeLabelKey(candidate) == key.Label) is not { } edge)
+                {
+                    _session.SetStatus("간선을 다시 골라 주세요. 선택이 풀렸거나 그 간선이 사라졌습니다.");
+                    return false;
+                }
+
+                // 조건 만들기와 걸기가 한 변경이다 — 되돌리기 한 번에 함께 돌아간다.
+                _session.Editor.Batch(() =>
+                {
+                    _session.Editor.AddChapterCondition(chapterId, label, typed);
+                    _session.Editor.UpdateEdge(
+                        chapterId, key.From, key.To,
+                        visibleConditionLabel: visible ? label : null,
+                        conditionLabel: visible ? null : label,
+                        matchOptionLabel: EdgeLabelKey(edge));
+                });
+
+                _panelFilledFor = default;   // 다시 그릴 때 콤보를 모델 값(방금 건 조건)으로 채운다
+                _session.SetStatus($"조건 '{label}'을 만들어 {(visible ? "표시조건" : "해금조건")}으로 걸었습니다" +
+                                   (typed.Length == 0 ? " — 식 미정(항상 통과)입니다." : ".") + " 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                return true;
+            });
+    }
+
+    /// <summary>
+    /// 조건 이름과 식을 한 번에 받는 플라이아웃 — 간선의 [＋ 새 조건]. ⛔ 조건 표의 [＋ 조건]도 함께 썼는데 늘 서 있는 더하기 줄로 바뀌었다
+    /// (writer-comfort WC4). 이름 규칙은 [대본] 탭과 같다 —
+    /// 빈 이름 · 이미 있는 이름은 받지 않는다(상태줄이 말한다). 식은 비워도 된다(식 미정 — 항상 통과). 받으면(<paramref name="accept"/>가
+    /// 참) 닫힌다. 만들기 단추와 두 칸의 Enter가 같다.
+    /// </summary>
+    private void ShowConditionFlyout(
+        Button anchor, string chapterId, string intro, string createText, Func<string, string, bool> accept)
+    {
+        var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)", Tag = "new-condition-name" };
+        var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "식 — 비우면 식 미정 (예: trust >= 3)", Tag = "new-condition-expression" };
+        var create = new Button
+        {
+            Content = createText,
+            FontSize = 10,
+            Padding = new Thickness(7, 2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Tag = "new-condition-create"
+        };
+        var panel = new StackPanel
+        {
+            Spacing = 4,
+            MaxWidth = 340,
+            Children =
+            {
+                new TextBlock { Text = intro, FontSize = 10, TextWrapping = TextWrapping.Wrap },
+                name,
+                expression,
+                create
+            }
+        };
+        var flyout = new Flyout { Content = panel };
+        NewConditionPanel = panel;
+
+        void Create() => UiGuard.Run(_session, "새 조건", () =>
+        {
+            string label = name.Text?.Trim() ?? string.Empty;
+            string typed = expression.Text?.Trim() ?? string.Empty;
+
+            if (label.Length == 0)
+            {
+                _session!.SetStatus("조건 이름을 적어 주세요.");
+                return;
+            }
+
+            if (_session!.Editor.FindChapter(chapterId)?.Conditions.Any(item => string.Equals(item.Label, label, StringComparison.Ordinal)) == true)
+            {
+                _session.SetStatus($"조건 '{label}'{Josa.이가(label)} 이미 있습니다 — 콤보에서 고르세요.");
+                return;
+            }
+
+            if (accept(label, typed))
+            {
+                flyout.Hide();
+            }
+        });
+
+        create.Click += (_, _) => Create();
+        name.KeyDown += (_, args) => CommitOnEnter(args, Create);
+        expression.KeyDown += (_, args) => CommitOnEnter(args, Create);
+
+        flyout.ShowAt(anchor);
+        name.Focus();
+    }
+
+    /// <summary>
+    /// 분기 카드(칩)의 패널 — 부르는 곳 · 조건(고친다) · 대본(읽기 전용). 분기 선을 고른 것과 같은 조건 칸이다 — 조건은 분기마다가 아니라
+    /// 분기 카드의 첫머리에 산다(<see cref="BranchEntryCondition"/>).
+    /// </summary>
+    private void RefreshBranchCardPanel(ChapterGraphModel? model, string nodeId)
+    {
+        BranchIdBox.Text = _session?.Project.FindDialogue(nodeId)?.Name ?? string.Empty;
         BranchFromToPanel.Children.Clear();
+        BranchFromToPanel.Children.Add(new TextBlock
+        {
+            Text = "부르는 곳",
+            FontSize = 11,
+            Opacity = 0.6,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        });
+
+        List<ChapterBranchMarkers.Marker> callers = _branchMarkers
+            .Where(marker => string.Equals(marker.ToNodeId, nodeId, StringComparison.Ordinal))
+            .DistinctBy(marker => marker.FromNodeId)
+            .ToList();
 
         if (model is not null)
         {
-            BranchFromToPanel.Children.Add(EpisodeLink(model, marker.FromEpisodeId));
-            BranchFromToPanel.Children.Add(new TextBlock
+            foreach (ChapterBranchMarkers.Marker caller in callers)
             {
-                Text = "⤳",
-                FontSize = 12,
-                Opacity = 0.5,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-            });
-            BranchFromToPanel.Children.Add(EpisodeLink(model, marker.ToEpisodeId));
+                BranchFromToPanel.Children.Add(CardLink(model, caller.FromEpisodeId, caller.FromNodeId));
+            }
         }
 
+        if (callers.Count == 0)
+        {
+            BranchFromToPanel.Children.Add(new TextBlock
+            {
+                Text = "(없음 — 재생되지 않습니다)",
+                FontSize = 11,
+                Opacity = 0.6,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            });
+        }
+
+        FillBranchCondition(model, nodeId);
+        BranchScriptText.Text = ScriptOf(nodeId);
+    }
+
+    /// <summary>
+    /// 분기 카드의 조건 칸을 채운다 — 작가가 대사 편집기에서 지은 조건 구조는 <b>읽기만</b> 한다(덮으면 짝이 어긋난 대본이 된다).
+    /// 그때는 칸을 잠그고 사유를 세운다.
+    /// </summary>
+    private void FillBranchCondition(ChapterGraphModel? model, string nodeId)
+    {
         BranchEntryCondition.State state = BranchEntryCondition.Read(
-            _session!.Editor.Project, marker.ToNodeId, _session.Definition);
+            _session!.Editor.Project, nodeId);
 
         BranchBlockedText.Text = state.Blocked ?? string.Empty;
         BranchBlockedText.IsVisible = state.Blocked is not null;
-        BranchConditionCombo.IsEnabled = state.Editable && ToolEditable;
+        BranchConditionCombo.IsEnabled = state.Editable;
 
         var labels = new List<string> { BranchAlwaysItem };
         labels.AddRange(model?.Conditions.Select(condition => condition.Label) ?? []);
@@ -3347,14 +4142,115 @@ public partial class ChapterGraphView : UserControl
         }
     }
 
+    /// <summary>그 카드의 이름으로 건너뛰는 고리 — 에피소드면 그 에피소드를, 분기 카드면 그 칩을 고른다.</summary>
+    private Control CardLink(ChapterGraphModel model, string? episodeId, string nodeId) =>
+        episodeId is not null
+            ? EpisodeLink(model, episodeId)
+            : BranchCardLink(nodeId, BranchCardName(nodeId));
+
+    /// <summary>분기 카드의 이름 — 판에 없으면 NodeId.</summary>
+    /// <summary>
+    /// 분기 카드 ID 칸의 Enter — 카드 이름(= Yarn 노드 이름)을 바꾼다(되돌리기 한 칸). 부르는 쪽은 노드 Id로 이으므로 따라갈 것이 없다.
+    /// <b>비울 수 없고 프로젝트의 다른 노드가 쓰는 이름으로는 바꾸지 않는다</b> — Yarn 노드 이름은 프로젝트에서 하나다(2026-11-17).
+    /// </summary>
+    internal void RenameInspectedBranchCard()
+    {
+        if (_session is null || _selectedBranchCardId is not { } nodeId ||
+            _session.Project.FindDialogue(nodeId) is not { IsBranchCard: true } card)
+        {
+            return;
+        }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, card);
+
+        string wanted = BranchIdBox.Text?.Trim() ?? string.Empty;
+
+        if (string.Equals(wanted, card.Name, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        HashSet<string> taken = NewNames.TakenNames(_session.Project, chapter);
+        taken.Remove(card.Name);
+        taken.Remove(Vn.Authoring.Rendering.YarnNaming.StoryNodeTitleOf(card.Name, card.Id));
+
+        string? refusal = wanted.Length == 0
+            ? "분기 카드 ID는 비울 수 없습니다 — 게임의 Yarn 노드 이름입니다."
+            : taken.Contains(wanted) || taken.Contains(Vn.Authoring.Rendering.YarnNaming.StoryNodeTitleOf(wanted, card.Id))
+                ? $"'{wanted}'는 프로젝트의 다른 노드가 쓰는 이름입니다 — Yarn 노드 이름은 프로젝트에서 하나여야 합니다."
+                : null;
+
+        if (refusal is not null)
+        {
+            BranchIdBox.Text = card.Name;
+            _session.SetStatus(refusal);
+            return;
+        }
+
+        string old = card.Name;
+        _session.Editor.RenameNode(card.Id, wanted);
+        _session.SetStatus($"분기 카드 ID '{old}' → '{wanted}'. 제목 「{EpisodeNaming.BranchTitleOf(card)}」는 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+    }
+
+    private string BranchCardName(string nodeId) =>
+        _session?.Project.FindDialogue(nodeId) is { } card ? EpisodeNaming.BranchTitleOf(card) : nodeId;
+
+    /// <summary>분기 카드로 건너뛰는 고리 — 누르면 그 칩을 고른다(조건 · 대본).</summary>
+    private Control BranchCardLink(string nodeId, string name)
+    {
+        var link = new TextBlock
+        {
+            Text = $"⑂ {name}",
+            FontSize = 11,
+            TextDecorations = TextDecorations.Underline,
+            Foreground = new SolidColorBrush(Color.Parse("#6B5CA5")),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Background = Brushes.Transparent,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
+        };
+
+        ToolTip.SetTip(link, "이 분기 카드를 고릅니다 — 조건과 대본이 보입니다.");
+
+        link.PointerPressed += (_, e) =>
+        {
+            e.Handled = true;
+            UiGuard.Run(_session, "분기 카드 선택", () => SelectBranchCard(nodeId));
+        };
+
+        return link;
+    }
+
+    /// <summary>
+    /// 빈 선택지 칸의 패널 — 어느 에피소드의 몇째 칸인지, 아직 길이 없다는 것, 길을 더하는 곳을 말한다.
+    /// </summary>
+    private void RefreshSlotPanel(ChapterGraphModel model, string episodeId, int index)
+    {
+        int options = _optionsByEpisode.TryGetValue(episodeId, out List<ChapterEdge>? edges) ? edges.Count : 0;
+        int slots = SlotsFor(options);
+
+        SlotTitleText.Text = $"선택지 칸 {index + 1}/{slots} — 비어 있음";
+        SlotFromPanel.Children.Clear();
+        SlotFromPanel.Children.Add(EpisodeLink(model, episodeId));
+        SlotFromPanel.Children.Add(new TextBlock
+        {
+            Text = "→ (아직 길 없음)",
+            FontSize = 11,
+            Opacity = 0.6,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+        });
+        string slotState = options == 0
+            ? "이 에피소드에서 나가는 길이 아직 없습니다."
+            : $"이 에피소드에서 나가는 길은 {options}개이고, 이 칸은 비어 있습니다.";
+        SlotDetailText.Set(slotState + " [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이으면 이 칸이 길이 됩니다.", slotState);
+    }
+
     /// <summary>조건을 안 건 분기 — 언제나 재생된다. 「안 고름」과 같은 뜻이다.</summary>
     private const string BranchAlwaysItem = "(언제나)";
 
     /// <summary>고른 분기의 조건을 적는다. 고르는 순간 나간다 — 간선 패널과 같은 감각이다.</summary>
     private void SaveBranchCondition()
     {
-        if (_fillingPanel || _session is null || _selectedBranchLineId is not { } lineId ||
-            !_branchByLine.TryGetValue(lineId, out (ChapterBranchMarkers.Marker Marker, Line _) branch))
+        if (_fillingPanel || _session is null || SelectedBranchTarget() is not { } target)
         {
             return;
         }
@@ -3363,14 +4259,19 @@ public partial class ChapterGraphView : UserControl
 
         string? failure = BranchEntryCondition.Set(
             _session.Editor,
-            branch.Marker.ToNodeId,
-            string.Equals(label, BranchAlwaysItem, StringComparison.Ordinal) ? null : label,
-            _session.Definition);
+            target.NodeId,
+            string.Equals(label, BranchAlwaysItem, StringComparison.Ordinal) ? null : label);
 
         _session.SetStatus(failure ?? (label is null or BranchAlwaysItem
-            ? $"'{branch.Marker.ToEpisodeId}'의 조건을 걷었습니다 — 언제나 재생됩니다."
-            : $"'{branch.Marker.ToEpisodeId}'은 조건 '{label}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
+            ? $"분기 카드 「{BranchCardName(target.NodeId)}」의 조건을 걷었습니다 — 언제나 재생됩니다."
+            : $"분기 카드 「{BranchCardName(target.NodeId)}」은 조건 '{label}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
     }
+
+    /// <summary>조건 칸이 고치는 분기 카드 — 고른 칩.</summary>
+    private (string NodeId, string Name)? SelectedBranchTarget() =>
+        _selectedBranchCardId is { } nodeId && _branchChips.ContainsKey(nodeId)
+            ? (nodeId, BranchCardName(nodeId))
+            : null;
 
     /// <summary>
     /// 간선 패널에서 그 끝의 에피소드로 건너뛰는 고리. 누르면 그 에피소드가 선택되어
@@ -3425,18 +4326,10 @@ public partial class ChapterGraphView : UserControl
             return string.Equals(value, current ?? string.Empty, StringComparison.Ordinal) ? null : value;
         }
 
-        string? Gate(ComboBox combo) =>
-            combo.SelectedItem as string == "(없음)" ? string.Empty : combo.SelectedItem as string;
+        string Gate(ComboBox combo) => GateOf(combo) ?? string.Empty;
 
-        // 문구도 이 저장에 실린다 (v9) — 신원의 일부라, 찾을 때는 고치기 전 값을 쓴다.
-        bool auto = EdgeAutoCheck.IsChecked == true;
-        string pickedLabel = EdgeLabelEditBox.SelectedItem as string is { } picked && picked != PlainAdvanceItem
-            ? picked
-            : string.Empty;
-        if (auto)
-        {
-            pickedLabel = string.Empty;
-        }
+        // 문구는 여기서 고치지 않는다(읽기 전용 — 2026-11-17). 자동인지도 여기서 바꾸지 않는다.
+        bool auto = edge.Auto;
 
         ChapterEdit(
             () =>
@@ -3447,12 +4340,7 @@ public partial class ChapterGraphView : UserControl
                     conditionLabel: Changed(auto ? string.Empty : Gate(EdgeConditionCombo), edge.ConditionLabel ?? string.Empty),
                     lockedMessage: Changed(auto ? string.Empty : EdgeLockedMsgBox.Text, edge.LockedMessage ?? string.Empty),
                     statChanges: Changed(auto ? string.Empty : _edgeStats.ToSheetText(), StatChangesText(edge)),
-                    matchOptionLabel: EdgeLabelKey(edge),
-                    optionLabel: Changed(pickedLabel, EdgeLabelKey(edge)),
-                    auto: auto == edge.Auto ? null : auto);
-
-                // 문구를 바꿨으면 신원도 바뀌었다 — 선택이 풀리지 않게 열쇠를 따라 옮긴다.
-                _selectedEdgeKey = (key.From, key.To, pickedLabel);
+                    matchOptionLabel: EdgeLabelKey(edge));
             },
             $"간선 {key.From}→{key.To}을 저장했습니다.");
 
@@ -3466,75 +4354,93 @@ public partial class ChapterGraphView : UserControl
         .Select(delta => $"{delta.Key} {(delta.Amount >= 0 ? "+" : "")}{delta.Amount}"));
 
     /// <summary>
-    /// 에피소드 값 저장 — 지금 이 패널에서 툴이 쓰는 값은 없다. 제목·엔딩키·메모는 칸을
-    /// 뺐고(2026-08-16), 표시·해금조건은 v8에서 길(간선)로 옮겨 갔다. 개명은 Enter가,
-    /// 선택지는 목록이 맡는다. 라이터 경로는 살아 있으므로 필요하면 여기로 되돌아온다.
+    /// 챕터ID 칸의 Enter — 챕터 개명(<see cref="ChapterRenamer"/> — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 간다). [구성] 탭은 ID를
+    /// 다루고 챕터 이름은 [대본] 탭에서 고친다(display-names N4).
     /// </summary>
-    internal void ApplyEpisodeFromPanel()
+    internal void RenameSelectedChapter()
     {
-        if (_selectedEpisodeId is not { } episodeId || _selectedChapterId is not { } chapterId)
+        if (_session is null || _selectedChapterId is not { } oldId)
         {
-            _session?.SetStatus("에피소드를 다시 골라 주세요. 선택이 풀렸거나 그 에피소드가 사라졌습니다.");
             return;
         }
 
-        ChapterEdit(
-            () => _session!.Editor.UpdateEpisode(
-                chapterId, episodeId, sceneId: SceneIdBox.Text?.Trim() ?? string.Empty),
-            $"에피소드 '{episodeId}'의 장면ID를 저장했습니다.");
+        string newId = ChapterIdBox.Text?.Trim() ?? string.Empty;
+
+        if (newId.Length == 0 || string.Equals(newId, oldId, StringComparison.Ordinal))
+        {
+            ChapterIdBox.Text = oldId;
+            return;
+        }
+
+        ChapterRenamer.Result result = ChapterRenamer.Rename(_session.Editor, _session.ProjectPath, oldId, newId);
+
+        if (!result.Renamed)
+        {
+            ChapterIdBox.Text = oldId;   // 받지 않았으면 칸이 지금 값으로 돌아온다
+            _session.SetStatus(result.Failure!);
+            return;
+        }
+
+        Refresh();
+        SelectChapter(newId);
+        _session.SetStatus($"챕터 ID '{oldId}' → '{newId}' — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갔습니다.");
     }
 
-    /// <summary>현재 장면을 이루는 모든 에피소드의 안정 ID를 한 저장으로 바꾼다.</summary>
-    internal void ApplySceneIdToGroup()
+    /// <summary>
+    /// 장면ID 칸의 Enter — 그 장면의 에피소드 모두의 장면ID를 바꾼다(<see cref="ProjectEditor.RenameScene"/> — 장면 이름 · 메모가 함께
+    /// 간다, 되돌리기 한 칸). <b>다른 장면이 쓰는 ID로는 바꾸지 않는다</b> — 그러면 두 장면이 합쳐진다(합치기는 [대본] 탭에서 에피소드를
+    /// 끌어 옮긴다). 비울 수도 없다 — 에피소드는 늘 장면에 속한다.
+    /// </summary>
+    internal void RenameInspectedScene()
     {
-        if (_selectedEpisodeId is null || _selectedChapterId is not { } chapterId ||
-            SelectedModel?.FindEpisode(_selectedEpisodeId) is not { } selected)
-        {
-            _session?.SetStatus("일괄 변경할 장면의 에피소드를 다시 골라 주세요.");
-            return;
-        }
-
-        string sceneId = SceneIdBox.Text?.Trim() ?? string.Empty;
-        string[] episodeIds = SelectedModel.Episodes
-            .Where(episode => string.Equals(
-                episode.EffectiveSceneId, selected.EffectiveSceneId, StringComparison.Ordinal))
-            .Select(episode => episode.EpisodeId)
-            .ToArray();
-
-        ChapterEdit(
-            () => _session!.Editor.UpdateEpisodeScenes(chapterId, episodeIds, sceneId),
-            $"장면 에피소드 {episodeIds.Length}개의 장면ID를 저장했습니다.");
-    }
-
-    internal void DeleteSelectedEdge()
-    {
-        if (_selectedEdgeKey is not { } deleteKey || _selectedChapterId is not { } chapterId)
+        if (_session is null || _selectedChapterId is not { } chapterId || _inspectedSceneId is not { } oldId)
         {
             return;
         }
 
-        ChapterEdit(
-            () =>
-            {
-                _session!.Editor.RemoveEdge(chapterId, deleteKey.From, deleteKey.To, deleteKey.Label);
-                _selectedEdgeKey = null;
-            },
-            $"간선 {deleteKey.From}→{deleteKey.To}을 지웠습니다.");
+        string newId = SceneIdBox.Text?.Trim() ?? string.Empty;
+
+        if (string.Equals(newId, oldId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (newId.Length == 0)
+        {
+            SceneIdBox.Text = oldId;
+            _session.SetStatus("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
+            return;
+        }
+
+        if (_session.Editor.FindChapter(chapterId)?.Episodes.Any(episode =>
+                string.Equals(episode.SceneId, newId, StringComparison.Ordinal)) == true)
+        {
+            SceneIdBox.Text = oldId;
+            _session.SetStatus($"장면ID '{newId}'는 다른 장면이 씁니다 — 바꾸면 두 장면이 합쳐집니다. 합치려면 [대본] 탭에서 에피소드를 끌어 옮깁니다.");
+            return;
+        }
+
+        // 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 새 장면ID로 따라간다(AutoIdFollower — 같은 되돌리기 칸).
+        int moved = AutoIdFollower.RenameScene(_session.Editor, chapterId, oldId, newId);
+        _inspectedSceneId = newId;
+        _session.SetStatus($"장면 ID '{oldId}' → '{newId}' — 에피소드 {moved}개, 장면 이름 · 메모와 자동 ID가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
     }
 
 
     /// <summary>
-    /// <summary>
-    /// [챕터] 탭의 <b>스탯 표</b> — 2026-09-17부터 <b>편집 가능</b>하다 (소유자: *"이제 엑셀이
+    /// 「조건 및 스탯」 탭의 <b>스탯 표</b> — 2026-09-17부터 <b>편집 가능</b>하다 (소유자: *"이제 엑셀이
     /// 아닌 챕터그래프에서 직접 조건과 스탯을 정의"*).
     ///
     /// ⚠ 전에는 읽기 전용이었고 *"편집은 챕터 엑셀의 `스탯` 시트에서"*라고 적혀 있었다.
     /// 그 문장은 <b>R-F(2026-09-16)가 이미 낡게 만들었다</b> — 그날 워크북이 산출물이 되고
     /// 값의 주인이 <c>ChapterDocument</c>로 넘어왔는데 안내만 남아 있었다.
     ///
-    /// ⚠ <b>키 칸은 없다.</b> 키를 바꾸는 것은 간선·조건·픽스처·공급 조건을 함께 끌고 가는
-    /// 일이라 [✎]가 <see cref="ProjectEditor.RenameChapterStat"/>로 간다 — 칸으로 두면
-    /// 글자를 고치는 사이의 중간 상태가 전부 진짜 개명이 된다.
+    /// <b>키는 그 줄의 이름 칸에서 고친다</b>(2026-11-18 소유자 — 「다른 화자이름 같은것처럼 편하게」 · writer-comfort WC4). 키를 바꾸는 것은
+    /// 간선·조건·픽스처·공급 조건을 함께 끌고 가는 일이라 <see cref="ProjectEditor.RenameChapterStat"/>로 가고, 칸은 Enter와 칸을 떠날 때만 넣는다 —
+    /// 글자를 고치는 사이의 중간 상태는 개명이 되지 않는다. 키 칸에 초점이 있는 동안 그 줄에 세이브 경고가 선다(적기 전에 읽는다).
+    /// ⛔ 그 전에는 키가 읽기만 하는 글이고 [✎] → 플라이아웃으로만 바꿨다.
+    ///
+    /// 더하기는 표 아래에 늘 서 있는 줄이다 — 키 칸 + [＋ 추가](Enter도 같다). ⛔ [＋ 스탯] → 플라이아웃은 걷었다.
     ///
     /// ⛔ 픽스처 표는 2026-08-24에 걷었다 (소유자 — 한 번도 안 썼다).
     /// </summary>
@@ -3551,91 +4457,187 @@ public partial class ChapterGraphView : UserControl
 
         if (StatListPanel.Children.Count == 0)
         {
-            StatListPanel.Children.Add(new TextBlock
+            StatListPanel.Children.Add(new GuideLine
             {
-                Text = "스탯이 없습니다 — 아래 [＋ 스탯]으로 만듭니다.",
+                Full = "스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다.",
+                Brief = "스탯이 없습니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });
         }
 
-        StatListPanel.Children.Add(AddRowButton(
-            "＋ 스탯", "스탯 추가", StatAddFlyout, StatListPanel));
+        if (_selectedChapterId is { } chapterId)
+        {
+            StatListPanel.Children.Add(AddRow(
+                "stat-add",
+                "새 스탯 키 (예: courage)",
+                "Enter로도 더합니다. 숫자 0(0~100)으로 섭니다 — 종류 · 값은 그 줄에서 고칩니다.",
+                "스탯 추가",
+                key =>
+                {
+                    _session!.Editor.AddChapterStat(chapterId, key);
+                    _session.SetStatus($"스탯 '{key}'{Josa.을를(key)} 더했습니다 — 숫자 0(0~100)입니다. 종류 · 값은 그 줄에서 고칩니다. " +
+                                       "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                }));
+        }
     }
 
-    /// <summary>스탯 한 줄 — 키(고정) · 표시이름 · 초기 · 최소 · 최대 · 타입 · 개명 · 삭제.</summary>
+    /// <summary>스탯 종류의 이름 — 작가가 읽는 말이다. 차례는 <see cref="ChapterStatType"/>의 Int · Bool과 같다.</summary>
+    internal static readonly string[] StatTypeNames = ["숫자", "활성/비활성"];   // ⛔ 「예/아니오」(usability UX12)
+
+    /// <summary>
+    /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 칸 · 종류 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
+    /// 처음 값 하나). 값 칸마다 이름을 붙인다 — 이름 없는 숫자 칸 셋은 처음 보는 사람이 무엇인지 모른다. 한 줄에 다 세우면
+    /// 인스펙터 폭을 넘어 뒤쪽 칸이 밀린다. 아래 줄의 숫자 칸은 남은 폭을 셋이 나눠 가진다 — 고정 폭이면 좁은 인스펙터에서
+    /// 마지막 칸이 잘린다.
+    /// </summary>
     private Control StatRow(ChapterStat stat)
     {
-        var row = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 3,
-            Tag = $"stat:{stat.Key}"
-        };
+        bool isBool = stat.Type == ChapterStatType.Bool;
+        var row = new StackPanel { Spacing = 3, Margin = new Thickness(0, 0, 0, 6), Tag = $"stat:{stat.Key}" };
 
-        row.Children.Add(new SelectableTextBlock
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto") };
+        string chapterId = _selectedChapterId!;
+
+        TextBox key = NameBox(stat.Key, "stat-key", "스탯 키 바꾸기", to =>
         {
-            Text = stat.Key,
-            FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            Width = 96,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis
+            Vn.Authoring.Editing.StatRenameOutcome outcome = _session!.Editor.RenameChapterStat(chapterId, stat.Key, to);
+
+            if (!outcome.Applied)
+            {
+                return outcome.Refusal ?? "바꾸지 못했습니다.";
+            }
+
+            _session.SetStatus(
+                $"'{stat.Key}' → '{to}' — 간선 {outcome.Edges} · 조건 {outcome.Conditions} · " +
+                $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳이 " +
+                "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.");
+            return null;
         });
+        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다. 고치고 Enter(또는 칸을 떠나면) — " +
+                            "간선 · 조건의 참조가 따라갑니다. Esc는 그만두기.");
+        head.Children.Add(key);
 
-        row.Children.Add(SheetBox(
-            stat.DisplayName, 88, "표시이름 — 화면에만 쓴다. 세이브 열쇠는 왼쪽의 키다",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, displayName: value)));
-
-        row.Children.Add(NumberBox(stat.Initial, "초기",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: value)));
-        row.Children.Add(NumberBox(stat.Minimum, "최소",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, minimum: value)));
-        row.Children.Add(NumberBox(stat.Maximum, "최대",
-            value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, maximum: value)));
+        // 표시 이름 칸은 걷혔다 — 스탯은 키만 있다. 게임 화면의 글자는 게임 쪽이 키로 로컬라이즈한다(writer-fields W2).
 
         var type = new ComboBox
         {
             FontSize = 10,
-            Width = 62,
-            ItemsSource = new[] { "정수", "깃발" },
-            SelectedIndex = stat.Type == ChapterStatType.Bool ? 1 : 0,
-            VerticalAlignment = VerticalAlignment.Center
+            MinHeight = 0,
+            Padding = new Thickness(8, 2, 4, 2),
+            Margin = new Thickness(4, 0, 0, 0),
+            ItemsSource = StatTypeNames,
+            SelectedIndex = isBool ? 1 : 0,
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = "stat-type"
         };
-
-        type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 타입", () =>
+        ToolTip.SetTip(
+            type,
+            "종류 — 숫자: 호감도 · 점수처럼 오르내리는 값(처음 값 · 최소 · 최대). " +
+            "활성/비활성: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
+        type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 종류", () =>
             _session!.Editor.UpdateChapterStat(
                 _selectedChapterId!,
                 stat.Key,
                 type: type.SelectedIndex == 1 ? ChapterStatType.Bool : ChapterStatType.Int));
+        Grid.SetColumn(type, 1);
+        head.Children.Add(type);
 
-        row.Children.Add(type);
-
-        var rename = new Button { Content = "✎", FontSize = 10, Padding = new Thickness(5, 1) };
-        ToolTip.SetTip(
-            rename,
-            "키(세이브 열쇠)를 바꿉니다 — 간선·조건·픽스처의 참조가 함께 따라가지만, " +
-            "이미 저장된 세이브는 못 따라옵니다. 표시 이름만 고치려면 [표시이름] 칸을 쓰세요.");
-        rename.Click += (_, _) => ShowStatRenameFlyout(rename, stat.Key);
-        row.Children.Add(rename);
-
-        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1) };
+        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
         ToolTip.SetTip(remove, "지웁니다 — 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.");
         remove.Click += (_, _) => UiGuard.Run(_session, "스탯 삭제", () => RemoveStat(remove, stat.Key));
-        row.Children.Add(remove);
+        Grid.SetColumn(remove, 2);
+        head.Children.Add(remove);
 
+        row.Children.Add(head);
+
+        // ⚠ 세이브 경고 — 키 칸에 초점이 있는 동안만 선다. 적기 전에 읽는다(세이브는 되돌리기로 돌아오지 않는다 — 런타임 회신 §6.2).
+        var caution = new TextBlock
+        {
+            Text = "⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 처음 값으로 떨어집니다(경고 없이). " +
+                   "출시 전이면 괜찮지만, 이미 플레이한 세이브가 있으면 되도록 바꾸지 마세요.",
+            FontSize = 10,
+            Foreground = UnlockConditionInk,
+            TextWrapping = TextWrapping.Wrap,
+            IsVisible = false,
+            Tag = "stat-key-caution"
+        };
+        key.GotFocus += (_, _) => caution.IsVisible = true;
+        key.LostFocus += (_, _) => caution.IsVisible = false;
+        row.Children.Add(caution);
+
+        var values = new Grid { Margin = new Thickness(12, 0, 0, 0) };
+
+        void Add(Control cell)
+        {
+            Grid.SetColumn(cell, values.Children.Count);
+            values.Children.Add(cell);
+        }
+
+        if (isBool)
+        {
+            values.ColumnDefinitions = new ColumnDefinitions("Auto,Auto");
+            Add(ValueLabel("처음 값"));
+
+            var initial = new ComboBox
+            {
+                FontSize = 10,
+                MinHeight = 0,
+                Padding = new Thickness(8, 2, 4, 2),
+                ItemsSource = new[] { "비활성", "활성" },   // ⛔ 「아니오」 · 「예」(usability UX12)
+                SelectedIndex = stat.Initial == 0 ? 0 : 1,
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = "stat-initial"
+            };
+            ToolTip.SetTip(initial, "처음 값 — 챕터를 시작할 때 이 스탯이 활성인지 비활성인지입니다.");
+            initial.SelectionChanged += (_, _) => UiGuard.Run(_session, "처음 값", () =>
+                _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: initial.SelectedIndex));
+            Add(initial);
+        }
+        else
+        {
+            values.ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,*,Auto,*");
+            Add(ValueLabel("처음 값"));
+            Add(NumberBox(stat.Initial, "처음 값", "처음 값 — 챕터를 시작할 때 이 스탯의 값입니다.",
+                value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: value)));
+            Add(ValueLabel("최소"));
+            Add(NumberBox(stat.Minimum, "최소", "최소 — 이 스탯은 이보다 작아지지 않습니다.",
+                value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, minimum: value)));
+            Add(ValueLabel("최대"));
+            Add(NumberBox(stat.Maximum, "최대", "최대 — 이 스탯은 이보다 커지지 않습니다.",
+                value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, maximum: value)));
+        }
+
+        row.Children.Add(values);
         return row;
     }
 
+    /// <summary>값 칸 앞의 이름.</summary>
+    private static TextBlock ValueLabel(string text) => new()
+    {
+        Text = text,
+        FontSize = 10,
+        Opacity = 0.7,
+        Margin = new Thickness(6, 0, 3, 0),
+        VerticalAlignment = VerticalAlignment.Center
+    };
+
     /// <summary>
-    /// [챕터] 탭의 <b>조건 표</b> — 스탯 표와 같은 날 편집 가능해졌다.
-    /// 라벨과 식을 그 자리에서 고치고, [✕]가 <b>쓰는 곳을 세어</b> 거절한다.
+    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>이름</b>과 <b>식</b>을 고친다. 지우는 것은 [대본] 탭이다(writer-fields W4).
+    /// 더하기는 표 아래에 늘 서 있는 줄 — 이름 칸 + [＋ 추가](writer-comfort WC4 — ⛔ [＋ 조건] → 이름과 식을 함께 받는 플라이아웃은 걷었다 ·
+    /// 그 전 side-tabs V2). 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
     /// </summary>
     private void RefreshConditionList(ChapterGraphModel? snapshot)
     {
         RefreshChapterSheets(snapshot);
 
         ChapterGraphModel? model = LiveSheetModel ?? snapshot;
+
+        // 챕터ID는 이 표와 같은 자리에서 다시 채운다 — 손으로 적는 중이면 덮지 않는다.
+        if (!ChapterIdBox.IsFocused)
+        {
+            ChapterIdBox.Text = _selectedChapterId ?? string.Empty;
+        }
 
         ConditionListPanel.Children.Clear();
 
@@ -3646,56 +4648,90 @@ public partial class ChapterGraphView : UserControl
 
         if (ConditionListPanel.Children.Count == 0)
         {
-            ConditionListPanel.Children.Add(new TextBlock
+            ConditionListPanel.Children.Add(new GuideLine
             {
-                Text = "조건이 없습니다 — 아래 [＋ 조건]으로 만듭니다.",
+                Full = "조건이 없습니다 — 아래 칸에 이름을 적고 [＋ 추가]로 만듭니다.",
+                Brief = "조건이 없습니다.",
                 FontSize = 10,
                 Opacity = 0.5
             });
         }
 
-        ConditionListPanel.Children.Add(AddRowButton(
-            "＋ 조건", "조건 추가", ConditionAddFlyout, ConditionListPanel));
+        // 더하기는 여기서도 한다 — 스탯 표의 더하기 줄과 같은 결이다(2026-11-18 소유자 · side-tabs V2 · writer-comfort WC4).
+        if (_selectedChapterId is { } chapterId)
+        {
+            ConditionListPanel.Children.Add(AddRow(
+                "condition-add",
+                "새 조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)",
+                "Enter로도 더합니다. 식은 비어 있습니다(식 미정 — 항상 통과) — 그 줄의 식 칸에서 채웁니다.",
+                "조건 추가",
+                label =>
+                {
+                    _session!.Editor.AddChapterCondition(chapterId, label, string.Empty);
+                    _session.SetStatus($"조건 '{label}'{Josa.을를(label)} 더했습니다 — 식 미정(항상 통과)입니다. 식은 그 줄에서 채웁니다. " +
+                                       "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                }));
+        }
     }
 
-    /// <summary>조건 한 줄 — 라벨(고정) · 식 · 삭제.</summary>
+    /// <summary>
+    /// 조건 한 줄 — 이름 칸(고정 폭 <see cref="ConditionLabelWidth"/>) · 식. 식 칸은 남은 폭을 채운다. 지우기는 [대본] 탭의 일이다.
+    /// 이름은 그 자리에서 고친다 — 그 이름을 건 간선(표시조건 · 해금조건)이 따라간다(<see cref="ProjectEditor.RenameChapterCondition"/> ·
+    /// writer-comfort WC4 — ⛔ 그 전에는 읽기만 했다). 칸에 다 안 들어가는 이름은 마우스를 올리면 다 보인다.
+    /// </summary>
     private Control ConditionRow(ChapterCondition condition)
     {
-        var row = new StackPanel
+        var row = new Grid
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = 3,
+            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*"),
             Tag = $"condition:{condition.Label}"
         };
 
-        row.Children.Add(new SelectableTextBlock
+        string chapterId = _selectedChapterId!;
+        TextBox label = NameBox(condition.Label, "condition-label", "조건 이름", to =>
         {
-            Text = condition.Label,
-            FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            Width = 96,
-            VerticalAlignment = VerticalAlignment.Center,
-            TextTrimming = TextTrimming.CharacterEllipsis
+            Vn.Authoring.Editing.ChapterConditionRenameOutcome outcome = _session!.Editor.RenameChapterCondition(chapterId, condition.Label, to);
+
+            if (!outcome.Applied)
+            {
+                return outcome.Refusal ?? "바꾸지 못했습니다.";
+            }
+
+            _session.SetStatus(outcome.Edges == 0
+                ? $"조건 '{condition.Label}' → '{to}'."
+                : $"조건 '{condition.Label}' → '{to}' — 간선 {outcome.Edges}개가 따라갔습니다.");
+            return null;
         });
+        bool undecided = string.IsNullOrWhiteSpace(condition.Expression);
+        ToolTip.SetTip(label, condition.Label + " — 고치고 Enter(또는 칸을 떠나면). 이 이름을 건 간선이 따라갑니다. Esc는 그만두기.");
 
-        row.Children.Add(SheetBox(
-            condition.Expression, 232, "식 (예: trust >= 3; 깃발 == true)",
-            value => _session!.Editor.UpdateChapterCondition(_selectedChapterId!, condition.Label, value)));
+        if (undecided)
+        {
+            label.Foreground = UnlockConditionInk;   // 「아직 비었다」의 호박색 — 화자의 키 없음과 같다
+        }
 
-        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1) };
-        ToolTip.SetTip(remove, "지웁니다 — 쓰는 곳이 있으면 어디인지 말하고 거절합니다.");
-        remove.Click += (_, _) =>
-            UiGuard.Run(_session, "조건 삭제", () => RemoveCondition(condition.Label));
-        row.Children.Add(remove);
+        row.Children.Add(label);
+
+        TextBox expression = SheetBox(
+            condition.Expression, double.NaN, "식 (예: trust >= 3; 열쇠 == true)",
+            value => _session!.Editor.UpdateChapterCondition(_selectedChapterId!, condition.Label, value));
+        expression.Margin = new Thickness(3, 0, 0, 0);
+        expression.PlaceholderText = "⚠ 식 미정 — 항상 통과합니다";
+        expression.Tag = "condition-expression:" + condition.Label;
+        Grid.SetColumn(expression, 1);
+        row.Children.Add(expression);
 
         return row;
     }
+
+    /// <summary>조건 표의 이름 칸 폭 — 「성실 3 이상 · 요령 3 미만」쯤은 다 보인다. 더 길면 칸 안에서 흐르고 손을 올리면 다 보인다.</summary>
+    internal const double ConditionLabelWidth = 150;
 
     // ── 스탯·조건 편집의 잔손 ───────────────────────────────────────────────
 
     /// <summary>
     /// 표 안의 글자 칸. <b>초점을 잃을 때 저장한다</b> — 자판마다 쓰면 되돌리기가 글자 수만큼
-    /// 쌓이고 워크북이 매번 다시 나간다(엑셀노드 대사 칸이 배운 것과 같다). Enter도 확정이다.
+    /// 쌓이고 다시 읽기가 매번 돈다(옛 엑셀노드 대사 칸이 배운 것과 같다). Enter도 확정이다.
     /// </summary>
     private TextBox SheetBox(string value, double width, string hint, Action<string> commit)
     {
@@ -3723,156 +4759,137 @@ public partial class ChapterGraphView : UserControl
 
         box.LostFocus += (_, _) => Commit();
         box.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(box, () => value);
 
         return box;
     }
 
-    /// <summary>숫자 칸 — 못 읽는 글자는 <b>조용히 버리지 않고</b> 옛 값으로 되돌린다.</summary>
-    private TextBox NumberBox(int value, string hint, Action<int> commit)
+    /// <summary>
+    /// 숫자 칸 — 못 읽는 글자는 <b>조용히 버리지 않고</b> 옛 값으로 되돌린다. 폭은 놓인 칸을 채운다 — 테마의 글자 칸 최소 폭이
+    /// 셋이 나란히 서기에는 넓어 걷는다.
+    /// </summary>
+    /// <param name="hint">칸의 이름 — 못 읽을 때 말머리가 된다.</param>
+    /// <param name="tip">칸에 마우스를 올렸을 때의 풀이.</param>
+    private TextBox NumberBox(int value, string hint, string tip, Action<int> commit)
     {
         TextBox box = SheetBox(
-            value.ToString(System.Globalization.CultureInfo.InvariantCulture), 46, hint,
+            value.ToString(System.Globalization.CultureInfo.InvariantCulture), double.NaN, hint,
             text =>
             {
                 if (!int.TryParse(text.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int parsed))
                 {
-                    throw new InvalidOperationException($"{hint}에는 정수를 적습니다 — '{text}'는 못 읽습니다.");
+                    throw new InvalidOperationException($"{hint}에는 숫자(정수)를 적습니다 — '{text}'는 못 읽습니다.");
                 }
 
                 commit(parsed);
             });
 
+        box.MinWidth = 0;
+        ToolTip.SetTip(box, tip);
         return box;
     }
 
-    /// <summary>표 아래의 [＋] 한 줄.</summary>
-    private static Button AddRowButton(
-        string caption, string action, Action<Button> open, Panel host)
+    /// <summary>
+    /// 표 줄의 <b>이름 칸</b> — 스탯 키 · 조건 이름을 그 자리에서 고친다(writer-comfort WC4 — [대본] 탭의 화자 · 조건 이름 칸과 같은 손버릇).
+    /// Enter와 칸을 떠날 때 <paramref name="rename"/>으로 넣고(참조가 따라간다 · 되돌리기 한 칸), Esc는 그만둔다. 같은 이름이면 넣지 않는다.
+    /// 거절(빈 이름 · 이미 있는 이름 …)이면 옛 이름으로 돌리고 상태줄이 까닭을 말한다.
+    /// </summary>
+    /// <param name="rename">새 이름으로 바꾼다 — 거절이면 그 까닭, 바꿨으면 null.</param>
+    private TextBox NameBox(string name, string tag, string action, Func<string, string?> rename)
     {
-        var button = new Button
+        var box = new TextBox
         {
-            Content = caption,
+            Text = name,
             FontSize = 10,
-            Padding = new Thickness(7, 2),
-            Margin = new Thickness(0, 4, 0, 0),
-            HorizontalAlignment = HorizontalAlignment.Left
+            FontWeight = FontWeight.SemiBold,
+            MinHeight = 0,
+            MinWidth = 0,
+            Padding = new Thickness(4, 1),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = tag + ":" + name
         };
 
-        _ = action;
-        _ = host;
-        button.Click += (_, _) => open(button);
-
-        return button;
-    }
-
-    private void StatAddFlyout(Button anchor)
-    {
-        PromptFlyout(anchor, "스탯 키 (예: courage)", key =>
-            UiGuard.Run(_session, "스탯 추가", () =>
-            {
-                _session!.Editor.AddChapterStat(_selectedChapterId!, key);
-                Draw();
-            }));
-    }
-
-    private void ConditionAddFlyout(Button anchor)
-    {
-        PromptFlyout(anchor, "조건 라벨 (예: 신뢰높음)", label =>
-            UiGuard.Run(_session, "조건 추가", () =>
-            {
-                // 식은 빈 채로 만든다 — 진단이 "조건식이 비어 있습니다"로 짚어 주고,
-                // 사람은 방금 생긴 줄에서 바로 적는다. 라벨만 정하면 되는 것이 첫 손짓이다.
-                _session!.Editor.AddChapterCondition(_selectedChapterId!, label, string.Empty);
-                Draw();
-            }));
-    }
-
-    /// <summary>
-    /// 스탯의 <b>키</b>를 바꾼다 — 표시 이름이 아니다.
-    ///
-    /// ⛔ <b>키는 세이브의 열쇠다</b> (2026-09-17, 런타임 회신 §6.2가 짚었다).
-    /// 저쪽 <c>LocalSaveFile.Stats</c>가 이 글자로 저장하고, 복원은 키가 없으면 <b>초기값</b>으로
-    /// 떨어진다 — 오류도 경고도 없다. 개명이 끌고 가는 다섯 자리는 <b>프로젝트 안</b>이고,
-    /// <b>이미 디스크에 나간 세이브는 그 다섯에 없다.</b>
-    ///
-    /// ⚠ 그래서 경고가 <b>적기 전에</b> 선다. 표시 이름만 고치려는 사람이 이 문을 열면
-    /// 되돌릴 수 없는 일을 하게 되므로, 옆 칸을 쓰라고 말해 준다.
-    /// </summary>
-    private void ShowStatRenameFlyout(Control anchor, string key)
-    {
-        PromptFlyout(
-            anchor,
-            $"'{key}'의 새 키",
-            to => UiGuard.Run(_session, "스탯 키 바꾸기", () =>
-            {
-                Vn.Authoring.Editing.StatRenameOutcome outcome =
-                    _session!.Editor.RenameChapterStat(_selectedChapterId!, key, to);
-
-                if (!outcome.Applied)
-                {
-                    throw new InvalidOperationException(outcome.Refusal ?? "바꾸지 못했습니다.");
-                }
-
-                _session.SetStatus(
-                    $"'{key}' → '{to}' — 간선 {outcome.Edges} · 조건 {outcome.Conditions} · " +
-                    $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳이 " +
-                    "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 초기값으로 떨어집니다.");
-
-                Draw();
-            }),
-            caution:
-                "⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 " +
-                "초기값으로 떨어집니다(경고 없이). 표시 이름만 고치려면 닫고 옆의 " +
-                "[표시이름] 칸을 쓰세요.");
-    }
-
-    /// <summary>글자 하나를 받는 작은 플라이아웃 — [챕터 추가]와 같은 손버릇이다.</summary>
-    private static void PromptFlyout(
-        Control anchor, string placeholder, Action<string> accept, string? caution = null)
-    {
-        var box = new TextBox { PlaceholderText = placeholder, FontSize = 11, MinWidth = 200 };
-        var panel = new StackPanel { Spacing = 4, MaxWidth = 340 };
-
-        // ⚠ 경고가 <b>칸보다 위</b>에 선다 — 적고 나서 읽는 경고는 경고가 아니다.
-        if (caution is { Length: > 0 })
+        void Commit()
         {
-            panel.Children.Add(new TextBlock
+            string typed = (box.Text ?? string.Empty).Trim();
+
+            if (string.Equals(typed, name, StringComparison.Ordinal))
             {
-                Text = caution,
-                FontSize = 10,
-                Opacity = 0.8,
-                TextWrapping = TextWrapping.Wrap
-            });
-        }
-
-        panel.Children.Add(box);
-
-        var flyout = new Flyout { Content = panel };
-
-        void Accept()
-        {
-            string text = (box.Text ?? string.Empty).Trim();
-
-            if (text.Length == 0)
-            {
+                box.Text = name;   // 앞뒤 공백만 걷었다
                 return;
             }
 
-            flyout.Hide();
-            accept(text);
+            UiGuard.Run(_session, action, () =>
+            {
+                if (rename(typed) is { } refusal)
+                {
+                    box.Text = name;
+                    _session!.SetStatus(refusal);
+                }
+            });
         }
 
-        box.KeyDown += (_, args) =>
-        {
-            if (args.Key == Avalonia.Input.Key.Enter)
-            {
-                args.Handled = true;
-                Accept();
-            }
-        };
+        box.LostFocus += (_, _) => Commit();
+        box.KeyDown += (_, args) => CommitOnEnter(args, Commit);
+        EscToRevert.Wire(box, () => name);
 
-        flyout.ShowAt(anchor);
-        box.Focus();
+        return box;
+    }
+
+    /// <summary>
+    /// 표 아래에 <b>늘 서 있는 더하기 줄</b> — 이름 칸 + 그 오른쪽 [＋ 추가](Enter도 같다). [대본] 탭의 화자 · 조건 더하기 줄과 같은 모양이다
+    /// (2026-11-18 소유자 — 「ID를 쓰는 공간이 항상 있고, 그 오른쪽에 '+추가'를 눌러서」 · writer-comfort WC4). 빈 이름은 받지 않는다.
+    /// 더한 뒤에는 다시 선 표의 같은 칸에 초점을 준다 — 잇달아 더한다.
+    /// </summary>
+    /// <param name="tag">단추의 Tag — 칸은 「Tag-name」이다.</param>
+    private Grid AddRow(string tag, string placeholder, string tip, string action, Action<string> add)
+    {
+        var box = new TextBox
+        {
+            FontSize = 10,
+            MinHeight = 0,
+            Padding = new Thickness(4, 2),
+            PlaceholderText = placeholder,
+            Tag = tag + "-name"
+        };
+        var button = new Button
+        {
+            Content = "＋ 추가",
+            FontSize = 10,
+            Padding = new Thickness(7, 2),
+            Margin = new Thickness(4, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = tag
+        };
+        ToolTip.SetTip(button, tip);
+
+        void Add()
+        {
+            string typed = (box.Text ?? string.Empty).Trim();
+
+            if (typed.Length == 0)
+            {
+                _session?.SetStatus("이름을 적어 주세요.");
+                return;
+            }
+
+            if (UiGuard.Run(_session, action, () => add(typed)))
+            {
+                // 표는 넣기가 부른 다시 그리기에서 다시 선다 — 그 뒤에 새 칸에 초점을 준다.
+                Dispatcher.UIThread.Post(() => ConditionSection.GetLogicalDescendants().OfType<TextBox>()
+                    .FirstOrDefault(item => Equals(item.Tag, box.Tag))?.Focus());
+            }
+        }
+
+        button.Click += (_, _) => Add();
+        box.KeyDown += (_, args) => CommitOnEnter(args, Add);
+
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 4, 0, 0) };
+        Grid.SetColumn(button, 1);
+        row.Children.Add(box);
+        row.Children.Add(button);
+
+        return row;
     }
 
     /// <summary>
@@ -3978,25 +4995,11 @@ public partial class ChapterGraphView : UserControl
         flyout.ShowAt(anchor);
     }
 
-    private void RemoveCondition(string label)
-    {
-        Vn.Authoring.Editing.ChapterConditionRemoveOutcome outcome =
-            _session!.Editor.RemoveChapterCondition(_selectedChapterId!, label);
-
-        if (!outcome.Applied)
-        {
-            throw new InvalidOperationException(Explain(outcome.Refusal, outcome.Uses));
-        }
-
-        _session.SetStatus($"조건 '{label}'을 지웠습니다.");
-        Draw();
-    }
-
     /// <summary>
     /// 거절 사유 + <b>쓰는 자리 목록</b>. ⛔ *"쓰이고 있습니다"*로 끝내면 사람이 챕터를
     /// 뒤져야 한다 — 어디인지 말해야 거절이 정리 안내가 된다.
     /// </summary>
-    private static string Explain(string? refusal, IReadOnlyList<Vn.Authoring.Editing.ChapterUse> uses)
+    internal static string Explain(string? refusal, IReadOnlyList<Vn.Authoring.Editing.ChapterUse> uses)
     {
         if (uses.Count == 0)
         {
@@ -4006,13 +5009,12 @@ public partial class ChapterGraphView : UserControl
         return refusal + "  " + string.Join(" / ", uses.Select(use => $"{use.Where} — {use.Detail}"));
     }
 
-    /// <summary>속성 패널의 [적용]. 모델의 현재 값과 다른 필드만 셀에 쓴다.</summary>
     /// <summary>
     /// 속성 패널의 [적용] — 에피소드 개명.
     ///
     /// ⛔ <b>규율은 여기 없다</b> — <see cref="EpisodeRenamer"/>가 갖는다 (2026-09-16에
-    /// [대본] 탭 탐색기에서도 이름을 고치게 되면서 한 벌로 모았다). 여기 남은 것은
-    /// <b>이 화면이 그 뒤에 할 일</b>뿐이다: 선택을 새 이름으로 옮기고, 챕터를 다시 낸다.
+    /// 부르는 자리가 둘이 되면서 한 벌로 모았다). 여기 남은 것은
+    /// <b>이 화면이 그 뒤에 할 일</b>뿐이다: 선택을 새 이름으로 옮긴다.
     /// </summary>
     internal void RenameSelectedEpisode()
     {
@@ -4025,7 +5027,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         EpisodeRenamer.Result result =
-            EpisodeRenamer.Rename(_session.Editor, _session.ProjectPath, chapterId, oldId, newId);
+            EpisodeRenamer.Rename(_session.Editor, chapterId, oldId, newId);
 
         if (!result.Renamed)
         {
@@ -4035,205 +5037,37 @@ public partial class ChapterGraphView : UserControl
                 _session.SetStatus(result.Failure!);
             }
 
+            // 받지 않았으면 칸이 지금 값으로 돌아온다 — 다른 곳을 눌러 낸 경우 칸에 남은 글이 바뀐 것처럼 보이면 안 된다.
+            if (oldId.Length > 0)
+            {
+                IdBox.Text = oldId;
+            }
+
             return;
         }
 
         _selectedEpisodeId = newId;
-
-        ChapterEmitRun emitted = EmitSelectedChapter();
+        _episodeRenamed = (oldId, newId);   // 고르기 첫머리에서 낸 것이면, 그 고르기가 옛 ID를 새 ID로 읽는다
 
         _session.SetStatus(
-            $"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대본 파일·대사 노드가 함께 따라갔습니다." +
-            emitted.Notice());
-    }
-
-    /// <summary>도착만 주고 잇기 — 문구 없는 길(보이지 않는 기본)이 선다.</summary>
-    internal void AddEdgeFromPanel()
-    {
-        if (_selectedEpisodeId is not { } from ||
-            EdgeTargetCombo.SelectedItem is not string to ||
-            _selectedChapterId is not { } chapterId)
-        {
-            _session?.SetStatus("간선을 추가하려면 도착 에피소드를 골라 주세요.");
-            return;
-        }
-
-        // v12 — 문구 없이 길을 놓지 않는다.
-        ChapterEdit(
-            () => _session!.Editor.AddEdge(chapterId, from, to, optionLabel: DefaultOptionLabel),
-            $"간선 {from}→{to}을 '{DefaultOptionLabel}'로 더했습니다 — 문구는 그 줄을 눌러 고칩니다.");
+            $"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다.");
     }
 
     /// <summary>
-    /// [에피소드 삭제] — 규율은 <see cref="EpisodeDeleter"/> 하나다.
-    ///
-    /// ⛔ <b>2026-09-18까지 그 규율이 여기 살았다</b>(원고 밀기·행 지우기·카드 거두기
-    /// 100여 줄). [대본] 탭에 같은 기능을 붙이려면 사본을 뜨는 수밖에 없었고, 사본은
-    /// 갈린다 — 바로 앞의 「에피소드 만들기」가 그렇게 갈려 있었다. 화면에 남는 것은
-    /// <b>무엇을 골랐는가</b>와 <b>결과를 어떻게 말하는가</b>뿐이다.
-    /// </summary>
-    internal void DeleteSelectedEpisode()
-    {
-        if (_selectedEpisodeId is not { } episodeId || _selectedChapterId is not { } chapterId)
-        {
-            // 조용한 무동작 금지 — 단추가 늘 떠 있으므로(2026-08-16) 대상이 없다는 것을 말한다.
-            _session?.SetStatus("지울 에피소드를 판에서 먼저 골라 주세요.");
-            return;
-        }
-
-        EpisodeDeleter.Result result = EpisodeDeleter.Delete(
-            _session!.Editor, _session.ProjectPath, chapterId, episodeId);
-
-        if (!result.Ok)
-        {
-            _session.SetStatus(result.Failure!);
-            return;
-        }
-
-        _selectedEpisodeId = null;
-
-        ChapterEmitRun emitted = EmitSelectedChapter();
-        _session.SetStatus(result.Describe(episodeId) + emitted.Notice());
-    }
-
-    /// <summary>
-    /// [＋ 에피소드] — 에피소드가 선택돼 있으면 <b>그 자식으로</b> 만들어 간선까지 잇는다
-    /// (자리 = 부모 깊이 + 1 열, v3 소유자 지시). 선택이 없으면 홀로 선 노드다.
-    /// Id는 자동 발명하지 않되 빈 워크북을 부를 수는 없으니, 겹치지 않는 자리표시 Id를 주고
-    /// 사람이 패널의 [이름] 칸에서 고쳐 정하게 한다(Enter로 확정).
-    /// </summary>
-    internal void AddEpisodeFromToolbar()
-    {
-        if (_selectedChapterId is not { } chapterId || SelectedModel is not { } model)
-        {
-            _session?.SetStatus("챕터를 먼저 선택해 주세요.");
-            return;
-        }
-
-        // ⚠ Id 짓는 규칙은 편집기 하나다 — 화면마다 세면 하나가 다른 목록을 훑는다
-        //    (여기는 <b>워크북 모델</b>을, 대본 탭은 <b>챕터 문서</b>를 보고 있었다).
-        string episodeId = _session!.Editor.NextEpisodeId(chapterId);
-
-        // ⭐ v12 (2026-08-24 소유자) — **에피소드를 더하면 간선이 함께 선다.** 고른 것이
-        // 없으면 마지막 에피소드에서 잇는다: 떨어진 섬을 만들지 않는다(도달성 증명이 곧바로
-        // 오류로 짚을 자리이기도 하다). 챕터가 비어 있을 때만 간선 없이 첫 카드가 선다.
-        string? parent = _selectedEpisodeId is { } id && model.FindEpisode(id) is not null
-            ? id
-            : model.Episodes.Count > 0 ? model.Episodes[^1].EpisodeId : null;
-
-        if (parent is not null)
-        {
-            (double x, double y) = ChapterBranchPlanner.SuggestPlacement(model, parent);
-            // 문구를 함께 준다 — v12에서 모든 길은 선택지이고, 빈 문구는 오류다.
-            _session!.Editor.AddNextEpisode(
-                chapterId, parent, episodeId, title: string.Empty, x, y, optionLabel: DefaultOptionLabel);
-        }
-        else
-        {
-            double x = model.Episodes.Count == 0 ? 0 : model.Episodes.Max(episode => episode.X) + 220;
-            _session!.Editor.AddEpisode(chapterId, episodeId, title: string.Empty, x, 0);
-        }
-
-        {
-            _selectedEpisodeId = episodeId;
-
-            // 대본 워크북도 지금 만든다 (v4) — "노드를 클릭해야 생긴다"는 느슨함을 없앤다.
-            // 생성은 없던 파일을 만드는 것이라 단일 writer 원칙과 충돌하지 않고,
-            // 이후 툴은 이 파일을 다시는 쓰지 않는다.
-            //
-            // 첫 대사도 함께 심는다 (2026-08-26 소유자) — 빈 대본은 검증이 오류로 막으므로,
-            // 방금 더한 에피소드가 그 오류부터 들고 시작하지 않게 한다. 동기화가 만드는
-            // 워크북(엑셀에서 더한 에피소드)은 안 심는다 — 그쪽 기획자는 시트에서 적는다.
-            if (SelectedEpisodesFolder is { } episodesFolder)
-            {
-                if (EpisodeLibrary.EnsureWorkbook(
-                        episodesFolder,
-                        episodeId,
-                        ProjectSpeakerNames(),
-                        firstLine: EpisodeLibrary.DefaultFirstLine))
-                {
-                    // 만들기만 한다 — 감시는 더 서지 않는다 (R-D).
-                }
-                // 워크북이 이미 있었다 — 에피소드 삭제가 대본 파일을 남기므로, 지운 Id를
-                // 다시 더하면 빈 유물이 재사용된다. 완전히 비어 있을 때만 심는다(사람이
-                // 쓰다 만 대본에는 손대지 않는다).
-                else if (EpisodeLibrary.FindExisting(episodesFolder, episodeId) is { } existing)
-                {
-                    (ChapterWriteResult seed, _) = EpisodeWorkbookWriter.SeedFirstLineIfEmpty(
-                        existing, EpisodeLibrary.DefaultFirstLine);
-
-                    if (seed.Failure is { } failure)
-                    {
-                        _session?.SetStatus(failure);
-                    }
-                }
-            }
-
-            // ⛔ 여기 있던 `EnsureDialogueNodeFor`는 2026-09-18에 걷혔다. 화면이 에피소드를
-            //    만든 <b>뒤에</b> 카드를 한 줄 더 세우던 자리인데, 그 한 줄을 대본 탭이
-            //    잊어서 <b>작가의 탭에서 만든 에피소드만 쓸 자리가 없었다</b>.
-            //    이제 `AddEpisode`·`AddNextEpisode`가 카드까지 함께 만든다 — 창구가 잊을
-            //    자리 자체가 없어졌다.
-        }
-
-        ChapterEmitRun emitted = EmitSelectedChapter();
-
-        _session?.SetStatus(
-            $"'{episodeId}'을 더했습니다. Id와 대사엔트리를 패널에서 채워 주세요." +
-            emitted.Notice());
-    }
-
-    /// <summary>
-    /// 쓰기 결과를 상태줄로 + 성공이면 판을 다시 읽는다. 챕터 워크북을 바꾸는 길은
-    /// 전부 여기로 모인다 — 갱신을 한 자리에서 챙기려고 모아 둔 길목이다.
-    /// </summary>
-    /// <summary>
-    /// <b>챕터 편집 하나</b> — 프로젝트를 고치고 워크북을 다시 낸다 (R-F · 지시서 §4.1).
-    ///
-    /// ⛔ <b>순서가 규격이다.</b> 고치기가 먼저이고 출력이 나중이다 — 원본이 프로젝트이므로
-    /// 편집은 이미 안전하고, 못 낸 것은 <b>그 파일을 지금 갱신하는 일</b>뿐이다(§5.3).
-    /// 예전에는 반대였다: 셀에 쓰는 것이 곧 편집이라 파일이 잠기면 편집 자체가 없던 일이 됐다.
+    /// <b>챕터 편집 하나</b> — 프로젝트를 고치고 상태줄에 말한다 (R-F · 지시서 §4.1).
     ///
     /// ⚠ <b>다시 그리라고 여기서 말하지 않는다.</b> 편집이 프로젝트를 바꿨으므로 세션의
     /// 변경 알림이 <see cref="QueueReload"/>를 부른다 — 쓴 자리가 곧 아는 자리다.
     ///
-    /// ⚠ 고치기가 던지면(같은 Id·없는 간선·못 읽는 스탯변화) 출력까지 안 간다. 부르는 쪽의
+    /// ⚠ 고치기가 던지면(같은 Id·없는 간선·못 읽는 스탯변화) 부르는 쪽의
     /// <c>UiGuard</c>가 받아 상태줄에 말한다.
+    ///
+    /// (2026-10-29 · D2: 그 뒤에 따라 하던 챕터 워크북 재출력은 엑셀 연동과 함께 걷혔다.)
     /// </summary>
     private void ChapterEdit(Action change, string success)
     {
         change();
-
-        // 잘된 일은 조용하다 — 못 냈을 때만 그 사실이 성공 문구 뒤에 붙는다.
-        _session?.SetStatus(success + EmitSelectedChapter().Notice());
-
-        // 못 냈다면 대개 엑셀이 잡고 있어서다 — 그 사실을 배너로도 세운다(상태줄은 묻힌다).
-        RefreshLockState();
-    }
-
-    /// <summary>
-    /// 고른 챕터를 워크북으로 <b>통째로</b> 낸다 (§4.1·§4.2).
-    ///
-    /// ⚠ 셀 하나를 고치지 않는다 — 전체를 새로 쓰므로 행 삽입·삭제와 인덱스 충돌이라는
-    /// 난제가 이 경계에서 사라진다.
-    ///
-    /// ⚠ 내는 장치는 <b>세션의 것</b>이다 — 미룬 목록(§5.3)이 화면마다 갈리면 안 되고,
-    /// 화면을 지나지 않는 편집(되돌리기)도 같은 자리를 지나야 한다.
-    /// </summary>
-    private ChapterEmitRun EmitSelectedChapter() =>
-        _session is { } session && _selectedChapterId is { } chapterId
-            ? session.ChapterOutput.Emit(
-                session.Project, session.ProjectPath, chapterId, session.Definition)
-            : ChapterEmitRun.Empty;
-
-    /// <summary>
-    /// 옛 <c>Report</c> — 워크북에 <b>직접</b> 쓰던 시절의 창구다. 아직 파일을 직접 만지는
-    /// 자리(워크북 만들기·개명)만 여기를 지난다.
-    /// </summary>
-    private void Report(ChapterWriteResult result, string success)
-    {
-        _session?.SetStatus(result.Written ? success : result.Failure!);
-        RefreshLockState();
+        _session?.SetStatus(success);
     }
 
     /// <summary>간선 하나를 가리키는 표식. 화면 검증이 이 이름으로 간선을 찾는다.</summary>
@@ -4261,8 +5095,7 @@ public partial class ChapterGraphView : UserControl
     {
         var lines = new List<string>
         {
-            $"{episode.EpisodeId} ({episode.SourceRow}행)",
-            $"대사엔트리: {episode.DialogueEntry}",
+            episode.EpisodeId,
             $"위치: X={episode.X:0.##} Y={episode.Y:0.##}",
             $"선택지 {model.Edges.Count(edge => string.Equals(edge.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal))}개"
         };
@@ -4298,25 +5131,20 @@ public partial class ChapterGraphView : UserControl
     /// <summary>머리글의 경고 표식 — <b>노랑</b>. 위 ⛔ 참조.</summary>
     private const string WarningMark = "🟡";
 
-    /// <summary>
-    /// 에피소드 동기화 보고를 먼저, 그 뒤에 오류·경고·정보를 심각도 순으로. 동기화는 사람이
-    /// 방금 한 행동의 결과인데 목록 끝에 두면 알림 더미에 묻혀 스크롤 밖으로 나간다(실사례 —
-    /// "숫자는 2개라는데 볼 방법이 없어"). 각 줄이 파일·시트·행·열을 그대로 말하고,
-    /// 머리글의 표식이 오류·경고를 든다.
-    /// </summary>
     private void DrawDiagnostics(ChapterGraphModel model)
     {
-        // 워크북 읽기 진단 + 검증기(구조·교차·도달성) 진단을 한 목록으로 본다.
-        // 같은 진단이 두 곳에서 나올 수 있으므로(리더가 낸 것을 검증기가 다시 담는다) 겹은 지운다.
+        // 모델 진단(구조 검사 포함) + 검증기(구조·교차·도달성) 진단을 한 목록으로 본다.
+        // 같은 진단이 두 곳에서 나올 수 있으므로(모델이 낸 것을 검증기가 다시 담는다) 겹은 지운다.
+        // 막힌 챕터들의 오류도 더한다(2026-11-18 소유자 — 「진행 JSON 미출력인데 보고할 것이 없다」) — 결론은 전 챕터의 내보내기에서 오므로, 다른
+        // 챕터가 막혔거나 진행 코어가 거부한 까닭(검증 캐시에는 없다)이 여기 없으면 「아래 오류」가 아래에 없다. 줄마다 챕터 ID가 앞에 선다.
         List<ChapterDiagnostic> all = model.Diagnostics
             .Concat(_validation?.All ?? Enumerable.Empty<ChapterDiagnostic>())
-            .Concat(_boardWarnings)
+            .Concat(_exportRun.RefusalErrors ?? [])
             .Distinct()
             .ToList();
 
         int errors = all.Count(item => item.Severity == ChapterDiagnosticSeverity.Error);
         int warnings = all.Count(item => item.Severity == ChapterDiagnosticSeverity.Warning);
-        int rejected = _importRefusals.Count;
 
         string? exportNotice = ExportNotice();
 
@@ -4330,15 +5158,6 @@ public partial class ChapterGraphView : UserControl
         if (warnings > 0)
         {
             header.Append($" · {WarningMark} 경고 {warnings}");
-        }
-
-        // ⚠ "동기화 N건 반영"은 <b>더 이상 적지 않는다</b> (2026-08-24 소유자: "동기화가
-        // 몇개 반영됬는지 표기할 필요는 없어"). 여기는 <em>검증 보고</em>이고, 잘된 일의
-        // 개수는 검증할 것이 아니다 — 문제만 적힌 목록이라야 문제가 눈에 띈다.
-        // 거부·경고는 그대로 든다: 조용한 무반영이 최악이다(G3-1).
-        if (rejected > 0)
-        {
-            header.Append($" · {WarningMark} 대본 가져오기 거부 {rejected}건");
         }
 
         if (exportNotice is not null)
@@ -4371,6 +5190,17 @@ public partial class ChapterGraphView : UserControl
                 DiagnosticLine(exportNotice, Brushes.IndianRed, dim: false, bold: true));
         }
 
+        // 나간 자리 — 늘 보인다 (2026-11-04 소유자: "내보내기를 어떻게 하지?"). 자동이되 말한다.
+        if (_exportRun.WhereNotice is { } where)
+        {
+            DiagnosticsPanel.Children.Add(DiagnosticLine(where, null, dim: false));
+        }
+        else if (_session?.ProjectPath is not null && _exportRun.Notice is null)
+        {
+            DiagnosticsPanel.Children.Add(DiagnosticLine(
+                "진행 JSON — 아직 나간 챕터가 없습니다.", null, dim: true));
+        }
+
         // 서버는 이 문자열이 아니라 **파일 바이트**를 해시한다. 내보내기와 같은
         // ChapterExportBytes 경로에서 계산한 값을 보여 줘야 서버 버전 목록과 대조할 수 있다.
         if (_selectedChapterId is { } selected &&
@@ -4397,12 +5227,15 @@ public partial class ChapterGraphView : UserControl
         // ⚠ 세는 것은 <b>말할 것이 있는</b> 보고뿐이다 (2026-08-24). 예전에는 보고가
         // 하나라도 있으면 여기를 지나쳤는데, 이제 대부분의 보고가 아무 줄도 내지 않으므로
         // 그대로 두면 <b>텅 빈 상자</b>가 선다("보고할 것이 없습니다"조차 없이).
-        if (all.Count == 0 && _importRefusals.Count == 0 && _importDiagnostics.Count == 0 &&
+        if (all.Count == 0 &&
             !(_selectedChapterId is { } id && _exportRun.Checksums?.ContainsKey(id) == true))
         {
             DiagnosticsPanel.Children.Add(new TextBlock
             {
-                Text = "보고할 것이 없습니다.",
+                // 빈 챕터는 낼 것이 없을 뿐이다 — 막힌 것이 아니라고 말한다(2026-11-18).
+                Text = model.Episodes.Count == 0
+                    ? "에피소드가 아직 없습니다 — 첫 에피소드를 세우면 진행 JSON이 저절로 나갑니다."
+                    : "보고할 것이 없습니다.",
                 FontSize = 11,
                 Opacity = 0.55
             });
@@ -4410,12 +5243,9 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        DrawImportReport();
-
         foreach (ChapterDiagnostic diagnostic in all
                      .OrderByDescending(item => item.Severity)
-                     .ThenBy(item => item.Sheet, StringComparer.Ordinal)
-                     .ThenBy(item => item.Row ?? 0))
+                     .ThenBy(item => item.Sheet, StringComparer.Ordinal))
         {
             DiagnosticsPanel.Children.Add(DiagnosticLine(
                 diagnostic.Describe(),
@@ -4427,60 +5257,6 @@ public partial class ChapterGraphView : UserControl
                 },
                 dim: diagnostic.Severity == ChapterDiagnosticSeverity.Info));
         }
-
-        OfferStatRegistration(model, all);
-    }
-
-    /// <summary>
-    /// "스탯이 정의 파일에 없다" 경고 밑에 [등록] 단추를 세운다. 시트를 자동으로 믿고 쓰면
-    /// 오타까지 게임 어휘가 되므로, 정의 파일 쓰기는 사람이 이 단추를 누른 순간에만 일어난다.
-    /// </summary>
-    private void OfferStatRegistration(ChapterGraphModel model, List<ChapterDiagnostic> all)
-    {
-        if (_session?.ProjectPath is null ||
-            all.All(item => item.Code != ChapterDiagnosticCode.StatMissingFromGameDefinition))
-        {
-            return;
-        }
-
-        GameDefinition definition = _session.Definition;
-
-        VariableSpec[] missing = model.Stats
-            .Where(stat => !definition.Variables.Any(variable =>
-                string.Equals(variable.Name, stat.Key, StringComparison.Ordinal)))
-            .Select(stat => new VariableSpec
-            {
-                Name = stat.Key,
-                Type = "number",
-                Description = string.IsNullOrWhiteSpace(stat.DisplayName) ? null : stat.DisplayName
-            })
-            .ToArray();
-
-        if (missing.Length == 0)
-        {
-            return;
-        }
-
-        var register = new Button
-        {
-            Content = $"이 스탯 {missing.Length}개를 {GameDefinition.FileName}에 등록",
-            FontSize = 10,
-            Padding = new Thickness(8, 2),
-            Margin = new Thickness(0, 4, 0, 2)
-        };
-
-        ToolTip.SetTip(register,
-            "정의 파일의 variables에 없는 이름만 더합니다. 값(초기/최소/최대)은 계속 스탯 시트가 소유합니다.");
-
-        register.Click += (_, _) => UiGuard.Run(_session, "스탯 등록", () =>
-        {
-            if (_session.RegisterVariables(missing))
-            {
-                Reload(); // 새 정의로 다시 읽어 경고가 걷힌 화면을 보인다
-            }
-        });
-
-        DiagnosticsPanel.Children.Add(register);
     }
 
     /// <summary>
@@ -4511,39 +5287,6 @@ public partial class ChapterGraphView : UserControl
 
         await clipboard.SetTextAsync(string.Join(Environment.NewLine, lines));
         _session?.SetStatus($"검증 보고 {lines.Count}줄을 복사했습니다.");
-    }
-
-    /// <summary>
-    /// 대본 들여오기 결과. 거부와 그 사유를 <b>목록으로</b> 보인다 —
-    /// 조용한 무반영이 최악이다(G3-1).
-    ///
-    /// ⚠ <b>잘된 것은 아무 말도 하지 않는다</b> (2026-08-24 소유자: "몇개 반영됬는지
-    /// 표기할 필요는 없어"). 잘된 일의 개수가 목록을 채우면 정작 봐야 할 줄이 그 사이에
-    /// 묻힌다 — 이 상자의 존재 이유가 그 반대다("숫자는 2개라는데 볼 방법이 없어").
-    ///
-    /// ⚠ 거부가 <b>챕터 단위</b>인 것은 들여오기가 전부 아니면 전무이기 때문이다(§5.2).
-    /// 에피소드마다 성패가 갈리던 동기화 시절의 보고와 모양이 다른 이유가 그것이다.
-    /// </summary>
-    private void DrawImportReport()
-    {
-        foreach (string chapterId in _importRefusals)
-        {
-            DiagnosticsPanel.Children.Add(DiagnosticLine(
-                $"대본 가져오기 거부 — {chapterId} (아무것도 들여오지 않았습니다)",
-                Brushes.IndianRed, dim: false, bold: true));
-        }
-
-        foreach (ChapterDiagnostic diagnostic in _importDiagnostics
-                     .Where(item => item.Severity != ChapterDiagnosticSeverity.Info)
-                     .Distinct())
-        {
-            DiagnosticsPanel.Children.Add(DiagnosticLine(
-                $"  {diagnostic.Describe()}",
-                diagnostic.Severity == ChapterDiagnosticSeverity.Error
-                    ? Brushes.IndianRed
-                    : Brushes.DarkGoldenrod,
-                dim: false));
-        }
     }
 
     // SelectableTextBlock — [보고 복사]가 전체를 들고 가고, 드래그는 한 줄만 집어 간다.

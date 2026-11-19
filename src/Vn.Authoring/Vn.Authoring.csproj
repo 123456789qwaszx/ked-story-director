@@ -5,23 +5,14 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Vn.Authoring.Tests" />
+    <!-- 견본 챕터(tests/fixtures/chapter-samples)를 프로젝트 형식으로 읽는 도우미를 두 테스트가 나눠 쓴다. -->
+    <InternalsVisibleTo Include="Vn.App.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <!-- 챕터·에피소드 워크북 읽기·쓰기의 유일한 통로 (G1·G5). -->
-    <PackageReference Include="ClosedXML" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- 런타임에서 복사 반입한 연출 코어 (H-4). 무대 상태 계산은 이 한 벌만 쓴다 (H-2). -->
-    <ProjectReference Include="..\Ked.Presentation.Core\Ked.Presentation.Core.csproj" />
-
-    <!-- 진행 규칙 코어 (2026-08-23 반입 · 로드맵 T1). 툴과 런타임이 **같은 static 함수**로
+    <!-- 진행 규칙 코어. 툴과 런타임이 **같은 static 함수**로
          판정하게 하려고 있는 것이다 — 조건 평가·전이·도달성 증명이 양쪽에 각자 있으면
-         갈리고, 실제로 갈렸었다(계약서 §G7). 아직 이쪽 코드가 부르는 자리는 없다;
-         T2에서 계약 이름부터 이 타입들로 옮긴다. -->
+         갈린다(계약서 §G7). 여기서는 진행 JSON을 낸 뒤 코어 로더에 다시 실어
+         거부 사유를 챕터 자리로 옮기는 데 쓴다(ChapterProgressionExporter.CoreRefusals). -->
     <ProjectReference Include="..\Ked.Progression\Ked.Progression.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- 기본 연출 카탈로그. docs의 검증본이 유일한 원본이고, 여기서는 내장 리소스로 링크만 한다. -->
-    <EmbeddedResource Include="..\..\docs\game.definition.json" Link="Definition\game.definition.default.json" LogicalName="Vn.Authoring.Definition.game.definition.default.json" />
   </ItemGroup>
 </Project>

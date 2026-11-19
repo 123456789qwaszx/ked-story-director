@@ -2,7 +2,7 @@ name: test
 
 on:
   push:
-    branches: [master]
+    branches: [main, dev]
   pull_request:
 
 jobs:
@@ -21,20 +21,17 @@ jobs:
         run: dotnet build VnTool.sln --no-restore --configuration Release
       - name: Test
         run: dotnet test VnTool.sln --no-build --configuration Release --logger "console;verbosity=normal"
-      - name: Yarn sample smoke
-        run: >-
-          dotnet run --project .\src\Vn.Cli\Vn.Cli.csproj
-          --no-build --configuration Release --
-          .\samples\Valid\Demo.yarnproject .\samples\Valid\game.schema.json
       - name: Windows portable smoke
         shell: pwsh
         run: |
           .\publish-windows.ps1
 
-          $exe = Join-Path $PWD "artifacts\VnTool-win-x64\Vn.App.exe"
-          $zip = Join-Path $PWD "artifacts\VnTool-win-x64.zip"
+          $exe = Join-Path $PWD "artifacts\StoryDirector-win-x64\StoryDirector.exe"
+          $zip = Join-Path $PWD "artifacts\StoryDirector-win-x64.zip"
           if (-not (Test-Path $exe)) { throw "portable exe was not produced" }
           if (-not (Test-Path $zip)) { throw "portable zip was not produced" }
+          $guide = Join-Path $PWD "artifacts\StoryDirector-win-x64\먼저 읽어주세요.txt"
+          if (-not (Test-Path $guide)) { throw "the writer guide was not packaged" }
 
           $process = Start-Process $exe -PassThru
           try {
@@ -46,3 +43,47 @@ jobs:
           finally {
             if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
           }
+
+  macos:
+    # 맥 꾸러미(.app)는 맥에서 굽는다 — 실행 권한과 임시 서명이 맥의 도구를 거친다(publish-macos.sh). 테스트도 여기서 한 번 더 돌려
+    # Windows 밖에서 서는지 본다. 정본은 여전히 위의 Windows 작업이다.
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore
+        run: dotnet restore VnTool.sln
+      - name: Build
+        run: dotnet build VnTool.sln --no-restore --configuration Release
+      - name: Test
+        run: dotnet test VnTool.sln --no-build --configuration Release --logger "console;verbosity=normal"
+      - name: macOS package smoke
+        run: |
+          ./publish-macos.sh
+
+          app="artifacts/StoryDirector-osx-arm64/StoryDirector.app"
+          zip="artifacts/StoryDirector-osx-arm64.zip"
+          test -x "$app/Contents/MacOS/StoryDirector" || { echo "app executable was not produced"; exit 1; }
+          test -f "$zip" || { echo "package zip was not produced"; exit 1; }
+          test -f "artifacts/StoryDirector-osx-arm64/먼저 읽어주세요.txt" || { echo "the writer guide was not packaged"; exit 1; }
+          unzip -l "$zip" | grep -q "StoryDirector.app/Contents/MacOS/StoryDirector" || { echo "the app is not at the zip root"; exit 1; }
+
+          "$app/Contents/MacOS/StoryDirector" &
+          pid=$!
+          sleep 5
+          if ! kill -0 "$pid" 2>/dev/null; then
+            echo "app exited during startup"
+            exit 1
+          fi
+          kill "$pid"
+      # 맥 꾸러미는 맥이 있어야 구울 수 있으므로 여기서 올려 둔다 — Actions의 실행 화면 아래 Artifacts에서 받는다.
+      # zip째 올린다(받으면 zip 안의 zip이다) — 폴더로 올리면 실행 권한이 빠져 앱이 켜지지 않는다.
+      - name: Upload macOS package
+        uses: actions/upload-artifact@v4
+        with:
+          name: StoryDirector-osx-arm64
+          path: artifacts/StoryDirector-osx-arm64.zip
+          if-no-files-found: error

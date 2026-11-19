@@ -311,7 +311,7 @@ Assert.Equal("fade_trust", Option("ep1").GetProperty("ViaNodeId").GetString());
 ✅ **코퍼스 일곱 케이스에 지정이 하나도 없어 기존 답은 한 줄도 안 바뀐다.** 재확인만 하면
 된다. 새 케이스(깃발이 관문을 여는 그래프)가 필요하면 이쪽에서 떠서 보낸다.
 
-전체 규격: [`work-orders/bool-stat-orders.md`](work-orders/bool-stat-orders.md).
+전체 규격: `bool-stat-orders.md`(2026-11-18 닫고 걷음).
 
 **아직 안 정한 것 — 깃발의 수명.** 챕터를 넘으면 되돌아가나? 지금은 챕터 안에서만 산다.
 그쪽 D1(스탯 수명)과 같은 결정이다.
@@ -371,10 +371,8 @@ VnTool이 내던 트리오(`Story_*` / `Set_*` / `Pres_*`)가 **`{대사엔트�
 | 무엇 | 어디 (`java-start` 기준) |
 |---|---|
 | 계약 원문 | [`docs/runtime-contract.md`](runtime-contract.md) 2부·3부 |
-| **v11 규격 (엔딩·연출)** | [`docs/work-orders/edge-presentation-orders.md`](work-orders/edge-presentation-orders.md) |
+| **v11 규격 (엔딩·연출)** | `edge-presentation-orders.md`(2026-11-18 닫고 걷음) |
 | 내보내기 | `src/Vn.Authoring/Chapters/ChapterProgressionExporter.cs` |
-| 엔딩키 규칙 (한 곳) | `ChapterGraphModel.EndingKeyOf(episodeId)` |
-| 충돌 검사 | `ChapterWorkbookReader.VerifyEndingKeysAgree` |
 | 도달성 증명 (이관 원본) | `src/Vn.Authoring/Chapters/ChapterReachabilityProver.cs` |
 | 조건식 분해·조립 | `src/Vn.Authoring/Chapters/ConditionExpressionParser.cs` |
 | 표본을 붙드는 테스트 | `tests/Vn.Authoring.Tests/Chapters/ProgressionSampleGoldenTests.cs` |
@@ -384,11 +382,11 @@ VnTool이 내던 트리오(`Story_*` / `Set_*` / `Pres_*`)가 **`{대사엔트�
 
 ## 현행 표본 (R5)
 
-- 원천 워크북: [`ch01.contract-sample.xlsx`](ch01.contract-sample.xlsx)
+- 원천 챕터: [`ch01.chapter.json`](../tests/fixtures/chapter-samples/ch01.chapter.json) (프로젝트 형식 · 2026-10-29까지 `ch01.contract-sample.xlsx`)
 - 결정적 산출물: [`ch01.progression.sample.json`](ch01.progression.sample.json)
 - 재생성·필드·소비자 로더 검증:
   `ProgressionSampleGoldenTests`
 
-워크북은 같은 Scene 안의 여러 Episode, 명시적 Auto, 표시·해금조건,
-Number Add, Bool Set, 연출 그래프의 ViaNodeId, EventKey, 고정 NextOptions 순서를 한 흐름으로 보여 준다.
+원천 챕터는 같은 Scene 안의 여러 Episode, 명시적 Auto, 표시·해금조건,
+Number Add, Bool Set, EventKey, 고정 NextOptions 순서를 한 흐름으로 보여 준다(⛔ `ViaNodeId`는 2026-09-17에 걷혔다 — 위 추기).
 그 절이 이쪽 작업 목록이다.

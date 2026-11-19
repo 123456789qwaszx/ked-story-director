@@ -53,40 +53,6 @@ public sealed class CollapsedSceneGroupTests
         Assert.Equal(3, RowOf(projection, "ep02"));
     }
 
-    [Fact]
-    public void 장면ID를_하나도_안_적은_챕터는_묶음이_하나고_머리글이_없다()
-    {
-        // 대본 탭 트리와 <b>같은 규칙</b>이다(규격 §2) — 그대로 묶으면 에피소드 수만큼
-        // 머리글이 생겨 프록시가 통째로 노이즈가 된다.
-        StoryProject project = Project((null, "ep01"), (null, "ep02"));
-
-        CollapsedFileProjection proxy = Proxy(project);
-        CollapsedSceneGroup only = Assert.Single(proxy.Scenes);
-
-        Assert.False(only.HasHeader);
-        Assert.Equal(["ep01", "ep02"], only.Entries.Select(entry => entry.NodeName));
-
-        // 머리글이 없으니 행 번호도 안 밀린다.
-        GraphProjection projection = GraphProjectionBuilder.Build(project, new HashSet<string>(StringComparer.Ordinal));
-
-        Assert.Equal(0, RowOf(projection, "ep01"));
-        Assert.Equal(1, RowOf(projection, "ep02"));
-    }
-
-    [Fact]
-    public void 챕터를_못_찾는_판은_묶지_않는다()
-    {
-        // 작가의 자유 판 — 챕터가 아니므로 장면 경계가 없다.
-        var project = new StoryProject();
-        var file = new StoryFile { Name = "작가의 판" };
-        project.Files.Add(file);
-        file.Nodes.Add(new DialogueNode(name: "아무거나"));
-
-        CollapsedSceneGroup only = Assert.Single(Proxy(project).Scenes);
-
-        Assert.False(only.HasHeader);
-    }
-
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>그 노드가 선 화면 행 번호 — 투영이 간선 끝에 쓰는 그 값이다.</summary>
@@ -126,7 +92,7 @@ public sealed class CollapsedSceneGroupTests
         project.Files[0].Nodes.Add(new DialogueNode(name: name));
 
     /// <summary>챕터 하나와 그 판 — 판 이름이 챕터 Id인 것이 둘을 잇는 규약이다.</summary>
-    private static StoryProject Project(params (string? SceneId, string EpisodeId)[] episodes)
+    private static StoryProject Project(params (string SceneId, string EpisodeId)[] episodes)
     {
         var project = new StoryProject();
         var chapter = new ChapterDocument { ChapterId = "ch01" };
@@ -137,10 +103,10 @@ public sealed class CollapsedSceneGroupTests
 
         for (int index = 0; index < episodes.Length; index++)
         {
-            (string? sceneId, string episodeId) = episodes[index];
+            (string sceneId, string episodeId) = episodes[index];
 
             chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, 0, 0, null, index + 2)
+                episodeId, episodeId, string.Empty, 0, 0, null)
             {
                 SceneId = sceneId
             });

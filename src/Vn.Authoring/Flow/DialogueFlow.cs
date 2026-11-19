@@ -10,11 +10,10 @@ namespace Vn.Authoring.Flow;
 /// 같은 사실을 두 벌 들고 있게 되어 편집할 때마다 어긋나기 때문이다.
 /// </summary>
 /// <param name="OpenLineId">이 갈래를 여는 줄의 Id. 갈래의 정체성이자 출구를 매다는 자리다.</param>
-/// <param name="ChainIndex">노드 안에서 몇 번째 체인인지(조건·선택 공용 일련번호).</param>
-/// <param name="BranchIndexInChain">체인 안에서 몇 번째 갈래인지. 0이 <c>if</c>(또는 첫 옵션), 1부터 <c>elseif</c>(다음 옵션).</param>
+/// <param name="ChainIndex">노드 안에서 몇 번째 조건 체인인지.</param>
+/// <param name="BranchIndexInChain">체인 안에서 몇 번째 갈래인지. 0이 <c>if</c>, 1부터 <c>elseif</c>.</param>
 /// <param name="PaletteIndex">노드 안에서 몇 번째로 나타난 갈래인지. 색을 고르는 데 쓴다.</param>
-/// <param name="LastLineIndex">이 갈래의 마지막 줄. 출구가 있다면 이 줄에 표시된다.</param>
-/// <param name="OptionId">선택 갈래일 때만 있는 옵션의 안정 식별자.</param>
+/// <param name="LastLineIndex">이 갈래의 마지막 줄.</param>
 public sealed record ConditionBranch(
     string OpenLineId,
     string ConditionId,
@@ -22,15 +21,7 @@ public sealed record ConditionBranch(
     int BranchIndexInChain,
     int PaletteIndex,
     int FirstLineIndex,
-    int LastLineIndex,
-    string? ExitTargetNodeId,
-    string? OptionId = null)
-{
-    public bool HasExit => ExitTargetNodeId is not null;
-
-    /// <summary>선택 블록의 옵션 갈래인지. 조건 갈래와 같은 기계로 계산되지만 의미가 다르다.</summary>
-    public bool IsChoice => OptionId is not null;
-}
+    int LastLineIndex);
 
 /// <summary>
 /// 줄 하나가 계산 결과 어디에 속하는지.
@@ -42,22 +33,20 @@ public sealed record ConditionBranch(
 /// <param name="PrecedingBranch">
 /// 전환을 적용하기 <em>전</em>의 상태. 조건 드롭다운이 무엇을 제시할지는 이것으로 정해진다.
 /// </param>
-/// <param name="Depth">감싼 블록 수 — 바깥 0, 조건 또는 선택 안 1, 조건 안 선택지(W54) 안 2.</param>
-/// <param name="IsBranchExit">이 줄이 자기 갈래의 마지막이고 그 갈래에 출구가 있는지.</param>
-/// <param name="PrecedingDepth">전환 적용 전의 감싼 블록 수 — 드롭다운이 "조건 안 선택지인가"를 아는 근거 (W55).</param>
+/// <param name="Depth">감싼 블록 수 — 바깥 0, 조건 안 1. (대사 안 선택지가 걷힌 2026-11-04부터 2는 없다.)</param>
+/// <param name="PrecedingDepth">전환 적용 전의 감싼 블록 수.</param>
 public sealed record ResolvedLine(
     DialogueLine Line,
     int Index,
     int Depth,
     ConditionBranch? Branch,
     ConditionBranch? PrecedingBranch,
-    bool IsBranchExit,
     int PrecedingDepth = 0);
 
 public enum FlowProblemKind
 {
-    /// <summary>이 대사 노드가 읽을 대본을 아직 고르지 않았거나 대본이 사라졌다.</summary>
-    MissingScript,
+    // `MissingScript`(읽을 대본을 아직 고르지 않았거나 대본이 사라졌다)는 대본이 카드 안으로 들어오며
+    //    걷혔다(S2) — 카드는 언제나 제 대본을 든다.
 
     /// <summary>대본에 없는 LineId에 조건 전환이 남아 있다. 지우지 않고 알린다.</summary>
     OrphanedLineExtension,
@@ -71,24 +60,11 @@ public enum FlowProblemKind
     /// <summary>열린 조건이 없는데 <c>endif</c>가 나왔다.</summary>
     EndIfWithoutIf,
 
-    /// <summary>여는 전환이 가리키는 조건 정의가 프로젝트나 게임 정의에 없다.</summary>
+    /// <summary>여는 전환이 가리키는 조건 정의가 프로젝트에 없다.</summary>
     UnknownCondition,
 
     /// <summary>조건 정의는 남아 있지만 현재 DialogueNode의 Settings 범위에는 없다.</summary>
-    UnavailableCondition,
-
-    /// <summary>더 이상 갈래를 열지 않는 줄에 조건 출구가 매달려 있다.</summary>
-    OrphanedBranchExit,
-
-    /// <summary>출구가 가리키는 노드가 프로젝트에 없다.</summary>
-    MissingExitTarget,
-
-    /// <summary>선택 블록이 닫히기 전에 조건 전환이 나왔다. 조건 안 선택지(W54)는 정식
-    /// 구성이지만, 그 반대 방향과 미닫힘 교차는 지원하지 않는다.</summary>
-    MixedChain,
-
-    /// <summary>열린 선택 블록이 없는데 다음 옵션·선택 종료가 나왔다.</summary>
-    OptionWithoutChoice
+    UnavailableCondition
 }
 
 /// <param name="LineId">문제가 걸린 줄. 노드 전체의 문제면 null이다.</param>
@@ -121,10 +97,4 @@ public sealed class DialogueFlow
     public IReadOnlyList<ConditionBranch> Branches { get; }
 
     public IReadOnlyList<FlowProblem> Problems { get; }
-
-    public ConditionBranch? FindBranch(string openLineId)
-    {
-        return Branches.FirstOrDefault(
-            branch => string.Equals(branch.OpenLineId, openLineId, StringComparison.Ordinal));
-    }
 }

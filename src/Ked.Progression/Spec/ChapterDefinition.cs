@@ -22,13 +22,15 @@ namespace Ked.Progression
         // Stats: 챕터에서 어떤 스탯을 쓰는지 확인.
         // StatsByKey: 특정 스탯의 정의 및 수치 확인.
         private readonly Dictionary<string, StatDefinition> _statsByKey;
-
-        // 장면 루트 = 밖에서 들어오는 간선이 착지하는 자리(챕터 시작 포함). 불변식이 장면마다
-        // 하나임을 보장한다. 이어하기가 재개할 수 있는 자리는 이것뿐이다 — 무대 기준선이 여기 선다.
+        
+        // 각 Scene들의 시작점이 되는 EpisodeId
+        // 개별 Scene에 진입하는 유일한 통로들
         private readonly HashSet<string> _sceneRoots;
 
         public string ChapterId { get; }
         public string DisplayName { get; }
+        
+        // Chapter가 시작될 때처음 진입하는 Scene의 Root Episode
         public string StartEpisodeId { get; }
 
         public IReadOnlyList<EpisodeNode> Nodes { get; } // 챕터 내 에피소드들
@@ -69,10 +71,11 @@ namespace Ked.Progression
 
             _sceneRoots = CollectScenesRootEpisodeIds();
         }
-
+        
         public bool IsSceneRoot(string episodeId) =>
             episodeId != null && _sceneRoots.Contains(episodeId);
 
+        // 각 Scene들의 시작점이 되는 EpisodeId 수집
         private HashSet<string> CollectScenesRootEpisodeIds()
         {
             var roots = new HashSet<string>(StringComparer.Ordinal) { StartEpisodeId };
@@ -127,12 +130,8 @@ namespace Ked.Progression
         public string SceneIdOf(string episodeId) =>
             TryGetNode(episodeId, out EpisodeNode node) ? node.SceneId : null;
 
-        // 이 챕터에 들어설 때의 [2] 상태. 챕터 데이터가 챕터 수명 상태를 만든다.
-        //
-        // 실제 플레이와 도달성 증명이 같은 자리에서 출발한다 — 증명이 통과한 길은
-        // 플레이에서도 통과한다.
-        public ProgressionState CreateEntryState() =>
-            ProgressionState.CreateInitial(Stats, StartEpisodeId);
+        public ChapterState CreateEntryState() =>
+            ChapterState.CreateInitial(Stats, StartEpisodeId);
 
         public override string ToString() =>
             $"{ChapterId}(에피소드 {Nodes.Count}, 스탯 {Stats.Count})";

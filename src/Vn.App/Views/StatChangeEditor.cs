@@ -7,20 +7,20 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Views;
 
 /// <summary>
-/// `스탯변화` 줄 편집기 — <c>[스탯 ▾] [＋/－ ▾] [수치] [✕]</c> (2026-08-17 소유자:
-/// "엑셀에서 정의해둔 스탯을 드롭다운으로 선택하고 부호와 값을 넣는거야").
+/// `스탯변화` 줄 편집기 — <c>[스탯 ▾] [＋/－ ▾] [수치] [✕]</c>. 정의된 스탯을 드롭다운으로
+/// 고르고 부호와 값을 넣는다.
 ///
 /// 대사노드의 Set 편집기와 같은 감각이다 — 사람은 <b>고르고 누르지</b> 문법을 외우지
-/// 않는다. 원천은 여전히 챕터 엑셀 `간선` 시트의 `스탯변화` 칸이고, 이 편집기는 그
+/// 않는다. 원천은 챕터 간선의 스탯변화(`ChapterEdge.StatChanges`)이고, 이 편집기는 그
 /// 칸에 들어갈 글(<c>trust +1; anger -1</c>)을 만드는 손일 뿐이다 — 새 저장소가 아니다.
 ///
-/// <b>줄은 자리가 아니라 물건이다.</b> 처음엔 줄을 목록의 <i>번호</i>로 잡았는데, 다시
-/// 그릴 때마다 그 번호가 낡아 엉뚱한 줄을 고치거나 없는 줄을 짚었다(테스트가 둘 다 잡음).
-/// 지금은 줄 하나가 <see cref="Row"/> 하나이고, 사건 처리기는 그 물건을 잡는다 — 목록에서
+/// <b>줄은 자리가 아니라 물건이다.</b> 줄을 목록의 <i>번호</i>로 잡으면 다시
+/// 그릴 때마다 그 번호가 낡아 엉뚱한 줄을 고치거나 없는 줄을 짚는다(테스트가 둘 다 막는다).
+/// 그래서 줄 하나가 <see cref="Row"/> 하나이고, 사건 처리기는 그 물건을 잡는다 — 목록에서
 /// 빠진 줄의 처리기가 뒤늦게 울어도 고아 물건을 고칠 뿐 남의 줄을 건드리지 않는다.
 ///
 /// 수치는 <b>낼 때 컨트롤에서 읽는다.</b> 글자마다 모델을 좇으면 사건 순서에 기대게 되고,
-/// 그 기대가 깨지면 사람이 친 값이 조용히 사라진다(실제로 그렇게 깨졌다).
+/// 그 기대가 깨지면 사람이 친 값이 조용히 사라진다.
 /// </summary>
 internal sealed class StatChangeEditor : StackPanel
 {
@@ -48,9 +48,6 @@ internal sealed class StatChangeEditor : StackPanel
     /// </summary>
     public event EventHandler? Changed;
 
-    /// <summary>읽기 전용(엑셀이 그 챕터를 잡고 있음)이면 드롭다운·단추가 잠긴다.</summary>
-    public bool Editable { get; set; } = true;
-
     /// <summary>이 챕터의 스탯 목록과 지금 값으로 편집기를 채운다.</summary>
     public void Load(IReadOnlyList<ChapterStat> stats, IReadOnlyList<StatDelta> deltas)
     {
@@ -61,7 +58,7 @@ internal sealed class StatChangeEditor : StackPanel
         // 없애면 안 된다(리더가 오류로 지목하는 쪽이 옳다).
         foreach (StatDelta delta in deltas)
         {
-            // 지정은 값이 곧 켬(1)·끔(0)이다 — 줄의 씨앗은 부호로 그것을 담는다.
+            // 지정은 값이 곧 활성(1)·비활성(0)이다 — 줄의 씨앗은 부호로 그것을 담는다.
             _rows.Add(new Row
             {
                 Key = delta.Key,
@@ -81,11 +78,10 @@ internal sealed class StatChangeEditor : StackPanel
     }
 
     /// <summary>
-    /// 줄 하나를 시트 표기로. bool은 <b>켬/끔이 곧 true/false</b>다 (2026-08-19).
+    /// 줄 하나를 시트 표기로. bool은 <b>활성/비활성이 곧 true/false</b>다.
     ///
-    /// 여기가 오래 어긋나 있었다: 화면은 bool 줄에 켬·끔을 내놓는데 글로는 `+1`·`-1`을
-    /// 적었고, 리더는 그것을 "bool에 증감은 안 된다"며 오류로 잡았다 — <b>툴이 제 손으로
-    /// 만든 값을 제가 거부했다.</b>
+    /// bool 줄을 `+1`·`-1`로 적으면 리더가 "bool에 증감은 안 된다"며 오류로 잡는다 —
+    /// <b>툴이 제 손으로 만든 값을 제가 거부하게 된다.</b>
     /// </summary>
     private string Text(Row row)
     {
@@ -109,7 +105,7 @@ internal sealed class StatChangeEditor : StackPanel
 
             int sign = row.Sign.SelectedIndex == 1 ? -1 : 1;
 
-            // bool 스탯은 수치칸이 없다 — 부호가 곧 켬(+1)·끔(−1)이다.
+            // bool 스탯은 수치칸이 없다 — 부호가 곧 활성(+1)·비활성(−1)이다.
             int magnitude = row.Amount is { IsVisible: true } box
                 ? int.TryParse(
                     box.Text, System.Globalization.NumberStyles.None,
@@ -136,7 +132,7 @@ internal sealed class StatChangeEditor : StackPanel
 
             if (_stats.Count == 0)
             {
-                Children.Add(Hint("`스탯` 시트에 스탯이 없습니다 — 엑셀에서 먼저 선언하세요."));
+                Children.Add(Hint("이 챕터에 스탯이 없습니다 — 「조건 및 스탯」 탭의 스탯 표에서 먼저 선언하세요."));
                 return;
             }
 
@@ -156,9 +152,8 @@ internal sealed class StatChangeEditor : StackPanel
                 FontSize = 10,
                 Padding = new Thickness(7, 1),
                 HorizontalAlignment = HorizontalAlignment.Left,
-                IsEnabled = Editable,
                 [ToolTip.TipProperty] =
-                    "이 길을 건너는 순간 1회 반영됩니다. 스탯은 챕터 엑셀 `스탯` 시트에서 선언한 것만 고를 수 있습니다."
+                    "이 길을 건너는 순간 1회 반영됩니다. 스탯은 「조건 및 스탯」 탭에서 선언한 것만 고를 수 있습니다."
             };
 
             add.Click += (_, _) =>
@@ -201,7 +196,6 @@ internal sealed class StatChangeEditor : StackPanel
         {
             FontSize = 11,
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            IsEnabled = Editable,
             ItemsSource = _stats.Select(Display).ToList(),
             SelectedItem = stat is null ? null : Display(stat),
             PlaceholderText = row.Key // 시트에서 사라진 키도 무엇이었는지는 보인다
@@ -235,14 +229,13 @@ internal sealed class StatChangeEditor : StackPanel
         Grid.SetColumn(statCombo, 0);
         grid.Children.Add(statCombo);
 
-        // bool 스탯은 부호가 곧 켬/끔이다 — `+1`이라 적어 두면 무슨 뜻인지 알 수 없다.
+        // bool 스탯은 부호가 곧 활성/비활성이다 — `+1`이라 적어 두면 무슨 뜻인지 알 수 없다(2026-11-19 소유자 · usability UX11 · ⛔ 「켬」 · 「끔」).
         var signCombo = new ComboBox
         {
             FontSize = 11,
-            MinWidth = isBool ? 74 : 54,
+            MinWidth = isBool ? 84 : 54,
             Margin = new Thickness(4, 0, 0, 0),
-            IsEnabled = Editable,
-            ItemsSource = isBool ? new[] { "켬", "끔" } : ["＋", "－"],
+            ItemsSource = isBool ? new[] { "활성", "비활성" } : ["＋", "－"],
             SelectedIndex = row.Seed >= 0 ? 0 : 1
         };
         signCombo.SelectionChanged += (_, _) =>
@@ -260,11 +253,10 @@ internal sealed class StatChangeEditor : StackPanel
             FontSize = 11,
             Width = 56,
             Margin = new Thickness(4, 0, 0, 0),
-            IsEnabled = Editable,
             IsVisible = !isBool,
             Text = Math.Abs(row.Seed).ToString(System.Globalization.CultureInfo.InvariantCulture)
         };
-        // 초점을 잃을 때만 낸다 — 자판 하나마다 워크북을 열면 쓰던 숫자가 끊긴다.
+        // 초점을 잃을 때만 낸다 — 자판 하나마다 내면 되돌리기가 글자 수만큼 쌓이고 쓰던 숫자가 끊긴다.
         amountBox.LostFocus += (_, _) =>
         {
             if (!_rendering)
@@ -280,6 +272,7 @@ internal sealed class StatChangeEditor : StackPanel
                 Changed?.Invoke(this, EventArgs.Empty);
             }
         };
+        EscToRevert.Wire(amountBox, () => Math.Abs(row.Seed).ToString(System.Globalization.CultureInfo.InvariantCulture));   // [대본]과 같다(J1)
         Grid.SetColumn(amountBox, 2);
         grid.Children.Add(amountBox);
 
@@ -292,7 +285,6 @@ internal sealed class StatChangeEditor : StackPanel
             FontSize = 10,
             Padding = new Thickness(5, 1),
             Margin = new Thickness(4, 0, 0, 0),
-            IsEnabled = Editable,
             [ToolTip.TipProperty] = "이 줄을 지웁니다."
         };
         remove.Click += (_, _) =>
@@ -308,9 +300,6 @@ internal sealed class StatChangeEditor : StackPanel
         return grid;
     }
 
-    /// <summary>드롭다운에 보이는 이름 — 표시명이 있으면 그것, 없으면 키.</summary>
-    private static string Display(ChapterStat stat) =>
-        string.IsNullOrWhiteSpace(stat.DisplayName) || stat.DisplayName == stat.Key
-            ? stat.Key
-            : $"{stat.DisplayName} ({stat.Key})";
+    /// <summary>드롭다운에 보이는 이름 — 스탯은 키만 있다(writer-fields W2).</summary>
+    private static string Display(ChapterStat stat) => stat.Key;
 }

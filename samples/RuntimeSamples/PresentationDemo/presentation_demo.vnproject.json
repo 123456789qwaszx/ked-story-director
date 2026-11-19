@@ -1,0 +1,41 @@
+{
+  "formatVersion": 4,
+  "title": "연출 데모",
+  "startNode": "nd_pr4ssyke",
+  "files": [
+    {
+      "id": "sf_jqi49p9s",
+      "name": "presentation_demo",
+      "path": "story/sf_jqi49p9s.vnstory.json"
+    }
+  ],
+  "chapters": [
+    {
+      "chapterId": "presentation_demo",
+      "displayName": "연출 데모",
+      "episodes": [
+        {
+          "episodeId": "Demo_Presentation",
+          "x": 0,
+          "y": 0,
+          "title": "연출 데모",
+          "sceneId": "연출 데모"
+        }
+      ]
+    }
+  ],
+  "speakers": [
+    {
+      "name": "하린",
+      "characterId": "harin"
+    },
+    {
+      "name": "시구레",
+      "characterId": "sigure"
+    },
+    {
+      "name": "카스미",
+      "characterId": "kasmi"
+    }
+  ]
+}

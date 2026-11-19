@@ -1,0 +1,40 @@
+using Vn.Authoring.Chapters;
+
+namespace Vn.App.Views;
+
+/// <summary>
+/// 분기 조건을 사람에게 말하는 글 — 연출 그래프 카드의 표와 인스펙터의 분기 카드가 같은 말을 쓴다.
+///
+/// 조건은 분기 카드의 첫머리에 선다(<see cref="BranchEntryCondition"/>). 고르는 곳은 분기 카드 한 곳이다 — [대본] 탭은 그 카드의
+/// 대본 위쪽 칸(<see cref="BranchConditionPicker"/>), [구성] 탭은 그 칩의 인스펙터(2026-11-17). 지금 걸린 조건은 늘 보인다 — 안 보이면
+/// 조건 없는 분기와 조건 걸린 분기가 판에서 똑같아 보인다.
+/// </summary>
+internal static class BranchConditionNote
+{
+    /// <summary>어디서 정하는가.</summary>
+    internal const string Where = "조건은 분기 카드에서 고릅니다 — [대본] 탭은 그 카드를 골라 대본 위쪽 칸에서, [구성] 탭은 그 칩을 눌러서.";
+
+    /// <summary>그 분기(다녀갈 카드)에 걸린 조건이 <b>식 미정</b>인가 — 그 챕터의 그 이름 조건이 식이 비었다.</summary>
+    internal static bool IsUndecided(Vn.Authoring.Model.StoryProject project, string targetNodeId, string? label) =>
+        label is not null &&
+        project.FindNode(targetNodeId) is { } node &&
+        EpisodeNaming.ChapterOf(project, node).Conditions.FirstOrDefault(condition =>
+            string.Equals(condition.Label, label, StringComparison.Ordinal)) is { } found &&
+        string.IsNullOrWhiteSpace(found.Expression);
+
+    /// <summary>카드 머리에 다는 짧은 표.</summary>
+    internal static string Chip(BranchEntryCondition.State state, bool undecided = false) =>
+        state.Label is { } label
+            ? undecided ? $"⑂ 조건: {label} (식 미정)" : $"⑂ 조건: {label}"
+            : state.Blocked is not null ? "⑂ 조건: 직접 지음" : "⑂ 조건 없음";
+
+    /// <summary>지금 이 분기가 어떻게 도는가 — 한 문장.</summary>
+    internal static string Sentence(BranchEntryCondition.State state, bool undecided = false) =>
+        state.Label is { } label
+            ? undecided
+                ? $"조건 「{label}」 — 식 미정이라 지금은 늘 다녀옵니다. [구성] 탭에서 식을 채우면 그 식이 맞을 때만 재생합니다."
+                : $"조건 「{label}」일 때만 재생합니다 — 아니면 들렀다가 바로 돌아옵니다."
+            : state.Blocked is not null
+                ? "대사 편집기에서 직접 지은 조건이 있습니다 — [구성] 탭에서는 읽기만 합니다."
+                : "지금은 조건 없이 늘 다녀옵니다.";
+}

@@ -1,33 +1,19 @@
-using ClosedXML.Excel;
-
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
-using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 챕터의 에피소드가 <b>판의 어느 대사 노드로 재생되는가</b> — 계약의
-/// <c>DialogueEntryId</c>가 판을 따라가는가.
+/// 챕터의 에피소드가 <b>어느 대사 노드로 재생되는가</b> — 계약의 <c>DialogueEntryId</c>는 EpisodeId에서 짓는다(2026-11-18 · old-shapes O5 —
+/// ⛔ 그 전에는 판 카드의 이름에서 지었고 `대사엔트리` 칸이 따로 있었다).
 ///
 /// ⛔ 이 파일은 한때 <b>간선에 매달린 연출 씬</b>이 계약의 `ViaNodeId`로 나가는지를 쟀다.
 /// 그 칸은 2026-09-17에 <b>양쪽에서 걷혔고</b>(같은 재생 순서를 에피소드 한 칸으로 말할
 /// 수 있다), 옛 프로젝트 호환도 안 본다(소유자: *"이전의 프로젝트들은 모두 버리고"*).
-/// 남은 것은 <b>이름의 주인이 판이다</b>를 지키는 검사들이다.
+/// 남은 것은 빈 에피소드를 막는 검사와 이름 규칙이다.
 /// </summary>
-public sealed class ChapterDialogueEntryTests : IDisposable
+public sealed class ChapterDialogueEntryTests
 {
-    private readonly string _directory = Path.Combine(
-        Path.GetTempPath(), "vn-entry-" + Guid.NewGuid().ToString("N"));
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_directory))
-        {
-            Directory.Delete(_directory, recursive: true);
-        }
-    }
-
     [Fact]
     public void 비어_있는_에피소드도_오류로_막는다()
     {
@@ -51,7 +37,7 @@ public sealed class ChapterDialogueEntryTests : IDisposable
         project.Files.Add(file);
 
         ChapterValidationResult validation =
-            ChapterValidator.Validate(chapter, episodesFolder: null, project);
+            ChapterValidator.Validate(chapter, project);
 
         // 에피소드마다 제 행에서 선다 — 세 개가 비었으면 세 줄이다.
         Assert.Equal(
@@ -66,45 +52,16 @@ public sealed class ChapterDialogueEntryTests : IDisposable
         Assert.Equal(ChapterDiagnosticSeverity.Error, problem.Severity);
         Assert.Equal(ChapterSheetNames.Episodes, problem.Sheet);
         Assert.DoesNotContain("YarnProject", problem.Message);   // 사정은 코드 주석의 것이다
-        Assert.Contains("더블클릭", problem.Message);   // 고치는 법을 말한다
+        Assert.Contains("[대본] 탭의 그 카드", problem.Message);   // 고치는 법을 말한다
     }
 
     [Fact]
-    public void 판에서_노드를_개명해도_DialogueEntryId가_따라간다()
+    public void DialogueEntryId는_EpisodeId에서_짓는다()
     {
-        // ⛔ 이것이 "진행 JSON이 부르는 노드가 YarnProject에 없다"의 뿌리였다 (2026-08-25).
-        //    이름의 주인이 둘이었다 — 내보내기는 엑셀의 `대사엔트리` 글자로 짓고, .yarn은
-        //    판 노드의 이름으로 선다. 판에서 개명하는 순간 둘이 갈리고, 로드·검증·증명은
-        //    전부 통과하는데 재생만 안 된다.
-        ChapterGraphModel chapter = BuildChapter();
-
-        var project = new StoryProject();
-        var file = new StoryFile(name: chapter.ChapterId);
-        var excel = new DialogueNode(name: "Id를_바꿧음") { MarkedEpisodeId = "시작" };
-
-        file.Nodes.Add(excel);
-        project.Files.Add(file);
-
+        // 판을 안 봐도 같다 — 챕터 모델만으로 부르는 자리(CLI·테스트)도 같은 이름을 낸다(⛔ 2026-11-18까지는 판 카드의 이름에서 지었다 ·
+        // old-shapes O5).
         ChapterExportResult result =
-            ChapterProgressionExporter.Export(chapter, episodesFolder: null, project);
-
-        using var document = System.Text.Json.JsonDocument.Parse(result.Json!);
-
-        string entry = document.RootElement
-            .GetProperty("Nodes").EnumerateArray()
-            .Single(node => node.GetProperty("EpisodeId").GetString() == "시작")
-            .GetProperty("DialogueEntryId").GetString()!;
-
-        // 엑셀은 아직 `시작`이라고 적혀 있지만, 재생될 yarn 노드는 개명된 쪽이다.
-        Assert.Equal("Id를_바꿧음", entry);
-    }
-
-    [Fact]
-    public void 판을_못_보면_엑셀_글자로_되돌아간다()
-    {
-        // 챕터 모델만으로 부르는 자리(CLI·테스트)가 그대로 살아 있어야 한다.
-        ChapterExportResult result =
-            ChapterProgressionExporter.Export(BuildChapter(), episodesFolder: null);
+            ChapterProgressionExporter.Export(BuildChapter());
 
         using var document = System.Text.Json.JsonDocument.Parse(result.Json!);
 
@@ -116,72 +73,22 @@ public sealed class ChapterDialogueEntryTests : IDisposable
                 .GetProperty("DialogueEntryId").GetString());
     }
 
-    /// <summary>내보낸 JSON에서 그 길의 <c>ViaNodeId</c>를 꺼낸다.</summary>
-    private ChapterGraphModel BuildChapter() => ChapterWorkbookReader.Read(WriteWorkbook());
-
-    private string WriteWorkbook()
+    /// <summary>에피소드 셋(<c>시작</c> → <c>믿는길</c>/<c>혼자길</c>, 둘이 서로 오간다)짜리 챕터.</summary>
+    private static ChapterGraphModel BuildChapter() => new ChapterDocument
     {
-        Directory.CreateDirectory(_directory);
-
-        string path = Path.Combine(_directory, "ch01.xlsx");
-
-        if (File.Exists(path))
-        {
-            return path;
-        }
-
-        using var workbook = new XLWorkbook();
-
-        Sheet(workbook, ChapterSheetNames.Episodes,
-            ["EpisodeId", "대사엔트리", "제목", "이벤트키", "X", "Y", "메모"],
-            [
-                ["시작", "시작", "복도", null, "0", "0", null],
-                ["믿는길", "믿는길", "믿는다", null, "1", "0", null],
-                ["혼자길", "혼자길", "혼자 간다", null, "1", "1", null]
-            ]);
-
-        Sheet(workbook, ChapterSheetNames.Edges,
-            [
-                "출발", "도착", "스탯변화", "선택지", "표시조건", "해금조건",
-                "잠금 안내문"
-            ],
-            [
-                ["시작", "믿는길", null, "믿는다", null, null, null, null],
-                ["시작", "혼자길", null, "혼자 간다", null, null, null, null],
-                ["믿는길", "혼자길", null, "계속", null, null, null, null],
-                ["혼자길", "믿는길", null, "계속", null, null, null, null]
-            ]);
-
-        Sheet(workbook, ChapterSheetNames.Conditions, ["라벨", "스탯", "연산자", "값", "설명"], []);
-        Sheet(workbook, ChapterSheetNames.Stats,
-            ["타입", "스탯키", "표시명", "초기값", "최소", "최대"], []);
-        Sheet(workbook, ChapterSheetNames.Speakers, ["이름", "캐릭터키", "메모"], []);
-        Sheet(workbook, ChapterSheetNames.Choices, ["인덱스", "대본", "메모"], []);
-
-        workbook.SaveAs(path);
-
-        return path;
-    }
-
-    private static void Sheet(
-        XLWorkbook workbook, string name, string[] headers, string?[][] rows)
-    {
-        IXLWorksheet sheet = workbook.Worksheets.Add(name);
-
-        for (int column = 0; column < headers.Length; column++)
-        {
-            sheet.Cell(1, column + 1).SetValue(headers[column]);
-        }
-
-        for (int row = 0; row < rows.Length; row++)
-        {
-            for (int column = 0; column < rows[row].Length; column++)
-            {
-                if (rows[row][column] is { } value)
-                {
-                    sheet.Cell(row + 2, column + 1).SetValue(value);
-                }
-            }
-        }
-    }
+        ChapterId = "ch01",
+        Episodes =
+        [
+            new ChapterEpisode("시작", "복도", string.Empty, 0, 0, null),
+            new ChapterEpisode("믿는길", "믿는다", string.Empty, 1, 0, null),
+            new ChapterEpisode("혼자길", "혼자 간다", string.Empty, 1, 1, null)
+        ],
+        Edges =
+        [
+            new ChapterEdge("시작", "믿는길", "믿는다", null, null),
+            new ChapterEdge("시작", "혼자길", "혼자 간다", null, null),
+            new ChapterEdge("믿는길", "혼자길", "계속", null, null),
+            new ChapterEdge("혼자길", "믿는길", "계속", null, null)
+        ]
+    }.ToGraphModel("ch01");
 }

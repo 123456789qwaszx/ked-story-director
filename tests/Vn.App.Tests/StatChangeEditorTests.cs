@@ -12,11 +12,11 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class StatChangeEditorTests
 {
-    private static readonly ChapterStat Trust = new("trust", "신뢰", 0, 0, 10, 2);
-    private static readonly ChapterStat Anger = new("anger", "분노", 0, 0, 10, 3);
+    private static readonly ChapterStat Trust = new("trust", 0, 0, 10);
+    private static readonly ChapterStat Anger = new("anger", 0, 0, 10);
 
     private static readonly ChapterStat Key =
-        new("key", "열쇠", 0, 0, 1, 4, ChapterStatType.Bool);
+        new("key", 0, 0, 1, ChapterStatType.Bool);
 
     [Fact]
     public void 시트_글을_읽어_줄로_세우고_그대로_돌려준다() => HeadlessUi.Run(() =>
@@ -41,10 +41,10 @@ public sealed class StatChangeEditorTests
 
         // 드롭다운은 엑셀 `스탯` 시트에 선언된 것만 담는다.
         Assert.Equal(
-            ["신뢰 (trust)", "분노 (anger)"],
+            ["trust", "anger"],
             (IEnumerable<string>)StatCombo(editor, 0).ItemsSource!);
 
-        StatCombo(editor, 0).SelectedItem = "분노 (anger)";
+        StatCombo(editor, 0).SelectedItem = "anger";
         SignCombo(editor, 0).SelectedIndex = 1;  // －
         AmountBox(editor, 0).Text = "3";
 
@@ -60,22 +60,23 @@ public sealed class StatChangeEditorTests
 
         Add(editor);
 
-        Assert.Equal("분노 (anger)", StatCombo(editor, 1).SelectedItem);
+        Assert.Equal("anger", StatCombo(editor, 1).SelectedItem);
     });
 
     [Fact]
-    public void bool_스탯은_부호_대신_켬_끔이고_수치칸이_없다() => HeadlessUi.Run(() =>
+    public void bool_스탯은_부호_대신_활성_비활성이고_수치칸이_없다() => HeadlessUi.Run(() =>
     {
-        // 능력·소지품처럼 참/거짓뿐인 스탯에 `+5`를 적게 두면 뜻을 알 수 없다.
+        // 능력·소지품처럼 참/거짓뿐인 스탯에 `+5`를 적게 두면 뜻을 알 수 없다. 말은 「활성」 · 「비활성」(2026-11-19 소유자 · usability UX11 —
+        // ⛔ 「켬」 · 「끔」).
         var editor = new StatChangeEditor();
         editor.Load([Key], [new StatDelta("key", 1)]);
 
-        Assert.Equal(["켬", "끔"], (IEnumerable<string>)SignCombo(editor, 0).ItemsSource!);
+        Assert.Equal(["활성", "비활성"], (IEnumerable<string>)SignCombo(editor, 0).ItemsSource!);
         Assert.False(AmountBox(editor, 0).IsVisible);
 
         SignCombo(editor, 0).SelectedIndex = 1;
 
-        // 2026-08-19 — 이 기대값은 `key -1`이었다. 화면은 켬·끔을 보여 주면서 글로는 증감을
+        // 2026-08-19 — 이 기대값은 `key -1`이었다. 화면은 켬·끔(지금은 활성 · 비활성)을 보여 주면서 글로는 증감을
         // 적었고, 리더는 그 글을 "bool에 증감은 안 된다"며 오류로 잡았다. 툴이 제 손으로
         // 만든 값을 제가 거부하고 있었고, 이 테스트가 그 상태를 붙들고 있었다.
         Assert.Equal("key false", editor.ToSheetText());
@@ -88,7 +89,7 @@ public sealed class StatChangeEditorTests
         var editor = new StatChangeEditor();
         editor.Load([Trust, Key], [new StatDelta("trust", 5)]);
 
-        StatCombo(editor, 0).SelectedItem = "열쇠 (key)";
+        StatCombo(editor, 0).SelectedItem = "key";
 
         // bool로 바뀌었으므로 글도 깃발 표기가 된다 (2026-08-19).
         Assert.Equal("key true", editor.ToSheetText());
@@ -106,23 +107,12 @@ public sealed class StatChangeEditorTests
     });
 
     [Fact]
-    public void 읽기_전용이면_아무것도_못_누른다() => HeadlessUi.Run(() =>
-    {
-        // 엑셀이 그 챕터를 잡고 있으면 툴 편집이 잠긴다 — 그 스위치를 이 편집기도 같이 탄다.
-        var editor = new StatChangeEditor { Editable = false };
-        editor.Load([Trust], [new StatDelta("trust", 1)]);
-
-        Assert.False(StatCombo(editor, 0).IsEnabled);
-        Assert.False(AddButton(editor).IsEnabled);
-    });
-
-    [Fact]
-    public void 스탯이_하나도_선언되지_않았으면_엑셀로_보낸다() => HeadlessUi.Run(() =>
+    public void 스탯이_하나도_선언되지_않았으면_챕터_탭으로_보낸다() => HeadlessUi.Run(() =>
     {
         var editor = new StatChangeEditor();
         editor.Load([], []);
 
-        Assert.Contains("`스탯` 시트", editor.Children.OfType<TextBlock>().Single().Text!);
+        Assert.Contains("「조건 및 스탯」 탭", editor.Children.OfType<TextBlock>().Single().Text!);
         Assert.Equal(string.Empty, editor.ToSheetText());
     });
 

@@ -6,7 +6,9 @@ namespace Vn.Authoring.Serialization;
 /// <summary>StoryFile 하나와 그 파일이 소유하는 노드를 결정적으로 직렬화한다.</summary>
 public static class StoryFileJson
 {
-    public const int CurrentFormatVersion = 1;
+    /// <summary><b>2</b> — 카드의 대본이 카드 JSON 안에 든다(2026-10-29 · 프로젝트 형식 4). 이 버전만 읽는다.</summary>
+    public const int CurrentFormatVersion = 2;
+
     public const string FileExtension = ".vnstory.json";
 
     public static string Write(StoryFile file)
@@ -54,24 +56,20 @@ public static class StoryFileJson
             throw new InvalidDataException("StoryFile에 nodes 배열이 없습니다.");
         }
 
-        string id = (string?)root["fileId"]
-            ?? throw new InvalidDataException("StoryFile에 fileId가 없습니다.");
-        string name = (string?)root["name"] ?? "이름 없는 파일";
+        string id = JsonSupport.RequiredText(root["fileId"], "StoryFile의 fileId");
+        string name = JsonSupport.RequiredText(root["name"], $"StoryFile '{id}'의 name");
         var file = new StoryFile(id, name);
-
         HashSet<string> nodeIds = new(StringComparer.Ordinal);
-        foreach (JsonNode? item in nodes)
-        {
-            if (item is not JsonObject nodeJson)
-            {
-                continue;
-            }
 
+        foreach (JsonObject nodeJson in JsonSupport.Objects(nodes, $"StoryFile '{id}'의 nodes"))
+        {
             StoryNode node = StoryNodeJson.Read(nodeJson);
+
             if (!nodeIds.Add(node.Id))
             {
                 throw new InvalidDataException($"StoryFile '{id}' 안에서 노드 Id '{node.Id}'가 중복됩니다.");
             }
+
             file.Nodes.Add(node);
         }
 

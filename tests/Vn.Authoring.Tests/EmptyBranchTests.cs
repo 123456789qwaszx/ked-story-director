@@ -1,6 +1,5 @@
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Results;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Script;
 using Vn.Authoring.Flow;
@@ -85,7 +84,6 @@ public class EmptyBranchTests
         ScenarioPasteOutcome outcome = sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         Assert.True(outcome.Applied, string.Join(" / ", outcome.Problems));
@@ -105,7 +103,6 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
@@ -115,7 +112,7 @@ public class EmptyBranchTests
         Assert.Equal(sample.ConditionA.Id, branch.ConditionId);
 
         // 줄이 아니라 <b>꼬리</b>에 산다 — 신원이 그렇게 말한다.
-        Assert.True(BranchAnchor.IsTrailing(branch.OpenLineId));
+        Assert.StartsWith(BranchAnchor.TrailingRoot, branch.OpenLineId, StringComparison.Ordinal);
 
         // 그리고 어느 줄도 그 안에 없다.
         Assert.All(flow.Lines, line => Assert.Null(line.Branch));
@@ -131,13 +128,12 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
         Assert.NotEmpty(sample.Dialogue.TrailingTransitions);
 
         sample.Editor.ApplyScenarioText(
-            sample.Dialogue.Id, "복도는 조용했다\n", GameDefinition.Empty, confirmDeletes: true);
+            sample.Dialogue.Id, "복도는 조용했다\n", confirmDeletes: true);
 
         Assert.Empty(sample.Dialogue.TrailingTransitions);
     }
@@ -153,10 +149,9 @@ public class EmptyBranchTests
         sample.Editor.ApplyScenarioText(
             sample.Dialogue.Id,
             $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
             confirmDeletes: true);
 
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
+        DialogueResult result = sample.Unfold();
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
 
         // 마지막 대사 줄 <b>뒤에</b> 조건이 열리고 닫힌다.
@@ -179,66 +174,9 @@ public class EmptyBranchTests
         Assert.Single(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionEnd);
     }
 
-    [Fact]
-    public void 꼬리의_빈_갈래에_매단_detour가_산출물에_나간다()
-    {
-        // 소유자가 이 기능을 원한 <b>이유</b> — "연출그래프에서 커스텀 노드로 그 조건에서
-        // detour하도록 할 수 있거든". 빈 갈래에 매단 출구가 실제로 나가야 뜻이 있다.
-        var sample = new Sample();
-        sample.Line("복도는 조용했다");
-
-        sample.Editor.ApplyScenarioText(
-            sample.Dialogue.Id,
-            $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
-            confirmDeletes: true);
-
-        DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
-        ConditionBranch branch = Assert.Single(flow.Branches);
-
-        // 빈 갈래에 커스텀 씬을 매단다 — 신원은 줄이 아니라 꼬리 앵커다.
-        sample.Dialogue.BranchExits[branch.OpenLineId] = sample.TargetDefault.Id;
-
-        DialogueResult result = sample.Editor.PublishDialogue(sample.Dialogue.Id).Result;
-        RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
-
-        // 조건 갈래의 출구는 jump가 아니라 detour다 (2026-08-21).
-        RenderedSegment detour = Assert.Single(
-            document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
-
-        Assert.Equal(sample.TargetDefault.Id, detour.TargetNodeId);
-    }
-
-    [Fact]
-    public void 빈_갈래도_카드에_제_포트를_받는다()
-    {
-        // ⛔ 소유자가 매다는 <b>실제 자리</b>다 — "잇고 떼는 자리는 연출 그래프 카드의
-        //    IF 갈래 포트 하나"(2026-08-23). 포트가 안 서면 매달 방법이 없다.
-        var sample = new Sample();
-        sample.Line("복도는 조용했다");
-
-        sample.Editor.ApplyScenarioText(
-            sample.Dialogue.Id,
-            $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n<<endif>>\n",
-            GameDefinition.Empty,
-            confirmDeletes: true);
-
-        ExitPort port = Assert.Single(
-            NodeConnections.PortsOf(sample.Dialogue, sample.Project),
-            item => item.Kind == ExitPortKind.Branch);
-
-        Assert.True(BranchAnchor.IsTrailing(port.ExitKey));
-        Assert.Null(port.TargetNodeId);
-
-        // 포트로 매단다 — 카드에서 자유 씬을 고르는 것과 같은 길이다.
-        sample.Editor.SetExitTarget(port, sample.TargetDefault.Id);
-
-        ExitPort wired = Assert.Single(
-            NodeConnections.PortsOf(sample.Dialogue, sample.Project),
-            item => item.Kind == ExitPortKind.Branch);
-
-        Assert.Equal(sample.TargetDefault.Id, wired.TargetNodeId);
-    }
+    // ⛔ 「꼬리의 빈 갈래에 매단 detour가 산출물에 나간다」 · 「빈 갈래도 카드에 제 포트를 받는다」는 2026-11-19에 갈래 출구와 함께
+    //    걷혔다(usability UX28). 빈 갈래는 그대로 읽고 쓰지만 매달 출구가 없다 — 조건이 맞을 때만 들르는 것은 분기점 + 분기 카드의
+    //    첫머리 조건이 한다.
 
     [Fact]
     public void 짝이_안_맞는_여는_전환은_여전히_오류다()
@@ -248,7 +186,7 @@ public class EmptyBranchTests
         var sample = new Sample();
 
         ScenarioParseResult parsed = ScenarioTextParser.Parse(
-            $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n", GameDefinition.Empty);
+            $"복도는 조용했다\n<<if {sample.ConditionA.Expression}>>\n", []);
 
         Assert.Contains(parsed.UnparsedLines, problem => problem.Contains("붙일 곳이 없습니다"));
     }

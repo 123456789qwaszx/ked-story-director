@@ -24,14 +24,16 @@ public sealed class SceneFrameTests
         Chapter(session, ("opening", "ep01"), ("opening", "ep02"), ("classroom", "ep03"));
         graph.Rebuild();
 
-        Assert.Contains("장면 opening", SceneLabels(graph));
-        Assert.Contains("장면 classroom", SceneLabels(graph));
+        // 「⌄」 — 누르면 그 장면을 접는다(2026-10-30 SF1 · 챕터 이름표와 같은 손짓).
+        Assert.Contains("장면 opening ⌄", SceneLabels(graph));
+        Assert.Contains("장면 classroom ⌄", SceneLabels(graph));
 
         // 챕터 프레임과 같은 규율 — 카드보다 앞 인덱스(= 뒤에 깔림)다.
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         Border label = canvas.Children.OfType<Border>().First(border =>
             (border.Child as TextBlock)?.Text?.StartsWith("장면 ", StringComparison.Ordinal) == true);
-        Border card = canvas.Children.OfType<Border>().First(border => border.Tag is string);
+        Border card = canvas.Children.OfType<Border>().First(border =>
+            border.Tag is string tag && session.Project.FindNode(tag) is not null);
 
         Assert.True(
             canvas.Children.IndexOf(label) < canvas.Children.IndexOf(card),
@@ -39,28 +41,15 @@ public sealed class SceneFrameTests
     });
 
     [Fact]
-    public void 장면ID를_하나도_안_적은_챕터에는_안_그린다() => HeadlessUi.Run(() =>
+    public void 장면이_하나뿐이어도_그린다() => HeadlessUi.Run(() =>
     {
-        // 접힌 판과 <b>같은 규칙</b>이다(규격 §2) — 에피소드마다 제 장면인데 그대로 그리면
-        // 카드마다 테두리가 하나씩 생겨 판이 통째로 노이즈가 된다.
-        (GraphEditorView graph, AuthoringSession session) = Show();
-
-        Chapter(session, (null, "ep01"), (null, "ep02"));
-        graph.Rebuild();
-
-        Assert.Empty(SceneLabels(graph));
-    });
-
-    [Fact]
-    public void 장면이_하나뿐이면_안_그린다() => HeadlessUi.Run(() =>
-    {
-        // 챕터 프레임과 똑같은 자리에 겹쳐 그려 봐야 테두리만 두 겹이 된다.
+        // 2026-11-17 소유자 — 테두리가 있어야 그 장면을 눌러 고르고 접는다(전에는 챕터 프레임과 겹친다고 걷었다).
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         Chapter(session, ("opening", "ep01"), ("opening", "ep02"));
         graph.Rebuild();
 
-        Assert.Empty(SceneLabels(graph));
+        Assert.Single(SceneLabels(graph));
     });
 
     [Fact]
@@ -72,12 +61,12 @@ public sealed class SceneFrameTests
         ChapterDocument chapter = Chapter(
             session, ("opening", "root"), ("shared", "a"), ("shared", "b"));
 
-        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null, 0));
-        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null, 0));
+        chapter.Edges.Add(new ChapterEdge("root", "a", "A로", null, null));
+        chapter.Edges.Add(new ChapterEdge("root", "b", "B로", null, null));
 
         graph.Rebuild();
 
-        Assert.Contains("장면 shared ⚠", SceneLabels(graph));
+        Assert.Contains("장면 shared ⚠ ⌄", SceneLabels(graph));
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -91,22 +80,17 @@ public sealed class SceneFrameTests
 
     /// <summary>챕터 하나와 그 판의 카드들 — 판 이름이 챕터 Id인 것이 둘을 잇는 규약이다.</summary>
     private static ChapterDocument Chapter(
-        AuthoringSession session, params (string? SceneId, string EpisodeId)[] episodes)
+        AuthoringSession session, params (string SceneId, string EpisodeId)[] episodes)
     {
         ChapterDocument chapter = session.Editor.EnsureChapter("ch01");
-        string fileId = session.EnsureChapterBoard("ch01");
 
         for (int index = 0; index < episodes.Length; index++)
         {
-            (string? sceneId, string episodeId) = episodes[index];
+            (string sceneId, string episodeId) = episodes[index];
 
-            chapter.Episodes.Add(new ChapterEpisode(
-                episodeId, episodeId, string.Empty, episodeId, index * 260, 0, null, index + 2)
-            {
-                SceneId = sceneId
-            });
-
-            session.Editor.AddDialogueNode(fileId, index * 260, 0, episodeId).MarkedEpisodeId = episodeId;
+            // 에피소드와 카드가 한 칸에 선다 — 카드는 가로로 늘어놓는다.
+            session.Editor.AddEpisode("ch01", episodeId, episodeId, index * 260, 0, sceneId);
+            session.Editor.MoveNode(EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id, index * 260, 0);
         }
 
         return chapter;

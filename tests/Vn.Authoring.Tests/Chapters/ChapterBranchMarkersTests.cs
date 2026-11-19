@@ -21,14 +21,15 @@ public sealed class ChapterBranchMarkersTests
 
         Assert.Empty(ChapterBranchMarkers.For(editor.Project, "ch01"));
 
-        string lineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
+        string lineId = caller.Script.ActiveLines.First().Id;
         DialogueNode branch = editor.AddBranchMarker(caller.Id, lineId);
 
         ChapterBranchMarkers.Marker marker =
             Assert.Single(ChapterBranchMarkers.For(editor.Project, "ch01"));
 
         Assert.Equal("root", marker.FromEpisodeId);
-        Assert.Equal(EpisodeNaming.EpisodeIdOf(branch), marker.ToEpisodeId);
+        Assert.Equal(caller.Id, marker.FromNodeId);
+        Assert.Equal(branch.Name, marker.ToName);
         Assert.Equal(branch.Id, marker.ToNodeId);
         Assert.Equal(lineId, marker.LineId);
     }
@@ -39,10 +40,10 @@ public sealed class ChapterBranchMarkersTests
         // ⚠ 확장(LineExtensions)의 순서는 <b>손댄 차례</b>라 사람이 읽는 차례가 아니다.
         (ProjectEditor editor, DialogueNode caller) = World();
 
-        editor.InsertScriptLine(caller.ScriptId!);
-        editor.InsertScriptLine(caller.ScriptId!);
+        editor.InsertScriptLine(caller.Id);
+        editor.InsertScriptLine(caller.Id);
 
-        List<string> lines = editor.Project.FindScript(caller.ScriptId)!.ActiveLines
+        List<string> lines = caller.Script.ActiveLines
             .Select(line => line.Id).ToList();
 
         // 뒤에서 앞으로 뚫는다 — 순서가 손댄 차례라면 여기서 뒤집혀 나온다.
@@ -59,9 +60,9 @@ public sealed class ChapterBranchMarkersTests
     {
         (ProjectEditor editor, DialogueNode caller) = World();
 
-        editor.InsertScriptLine(caller.ScriptId!);
+        editor.InsertScriptLine(caller.Id);
 
-        List<string> lines = editor.Project.FindScript(caller.ScriptId)!.ActiveLines
+        List<string> lines = caller.Script.ActiveLines
             .Select(line => line.Id).ToList();
 
         editor.AddBranchMarker(caller.Id, lines[0]);
@@ -69,21 +70,6 @@ public sealed class ChapterBranchMarkersTests
 
         // 신원은 줄이다 — 출발·도착만으로는 둘을 못 가른다.
         Assert.Equal(2, ChapterBranchMarkers.For(editor.Project, "ch01").Count);
-    }
-
-    [Fact]
-    public void 다른_판의_노드를_가리키면_안_낸다()
-    {
-        // ⚠ 그릴 카드가 없는 선은 판이 거짓말을 하는 것이다 (구판 프로젝트의 자유 씬).
-        (ProjectEditor editor, DialogueNode caller) = World();
-
-        StoryFile elsewhere = editor.AddStoryFile("낙서");
-        DialogueNode outsider = editor.AddDialogueNode(elsewhere.Id, 0, 0, "바깥");
-
-        string lineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
-        caller.RequireExtension(lineId).DetourTargetNodeId = outsider.Id;
-
-        Assert.Empty(ChapterBranchMarkers.For(editor.Project, "ch01"));
     }
 
     [Fact]
@@ -100,7 +86,7 @@ public sealed class ChapterBranchMarkersTests
 
         editor.EnsureChapter("ch01");
         editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
 
         return (editor, EpisodeNaming.CardFor(editor.Project, "ch01", "root")!);
     }

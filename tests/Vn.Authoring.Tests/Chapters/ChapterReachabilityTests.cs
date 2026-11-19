@@ -1,4 +1,5 @@
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Tests.Fixtures;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -8,8 +9,8 @@ namespace Vn.Authoring.Tests.Chapters;
 /// </summary>
 public sealed class ChapterReachabilityTests
 {
-    private static string SamplePath => Path.GetFullPath(Path.Combine(
-        AppContext.BaseDirectory, "..", "..", "..", "..", "..", "docs", "chapter-graph-sample.xlsx"));
+    /// <summary>견본 챕터(ch05 복도) — <see cref="SampleChapters.Corridor"/>.</summary>
+    private static ChapterGraphModel Sample() => SampleChapters.Model(SampleChapters.Corridor);
 
     // ── 견본 — 전부 도달 가능 ───────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ public sealed class ChapterReachabilityTests
     {
         // 2026-08-14 개정 — 스탯 증감의 원천은 간선이다. 견본의 주 경로에는 스탯 관문이
         // 없으므로 전부 열린다.
-        ChapterGraphModel chapter = ChapterWorkbookReader.Read(SamplePath);
+        ChapterGraphModel chapter = Sample();
 
         ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
 
@@ -33,23 +34,23 @@ public sealed class ChapterReachabilityTests
         // ⚠ 2026-08-25 — `attach05.02s`는 이제 도달 <b>불가</b>다. 예전에는 종류가
         // `Attachment`라 증명기가 "간선이 아니라 관문 만족 가능성으로" 따로 통과시켰는데,
         // 코어가 `EpisodeKind`를 지우면서 그 특례가 함께 사라졌다. 들어오는 간선이 없는
-        // 섬은 이제 그냥 섬이고, 의도임은 `도달불가 허용`이 적는다 — 그래서 오류가 아니라
-        // 알림이다(D3).
+        // 섬은 이제 그냥 섬이고, 이어지지 않은 것이라 오류가 아니라 경고다(2026-11-17 — EpisodeNotConnected · ⛔ 그 전에는
+        // `도달불가 허용` 깃발이 알림으로 낮췄다).
         Assert.DoesNotContain("attach05.02s", result.ReachableEpisodeIds);
 
         ChapterDiagnostic island = Assert.Single(result.Diagnostics,
             item => item.Message.Contains("attach05.02s", StringComparison.Ordinal));
 
-        Assert.NotEqual(ChapterDiagnosticSeverity.Error, island.Severity);
+        Assert.Equal((ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.EpisodeNotConnected), (island.Severity, island.Code));
     }
 
     [Fact]
     public void 스탯_관문_분기는_증감_없는_간선들만으로는_도달_불가이고_원인이_지목된다()
     {
-        // 견본 간선에는 스탯변화가 없으므로 trust는 초기값 0에 머문다 → 신뢰높음(trust >= 3)
+        // 견본 간선에는 trust 변화가 없으므로 trust는 초기값 0에 머문다 → 신뢰높음(trust >= 3)
         // 관문은 영원히 닫혀 있고, 증명이 그 원인 조건까지 지목한다. 간선에 증감을 적으면
         // 그 값 그대로 전이해 판정이 바뀐다 — 이것이 수치 밸런스의 저작 루프다.
-        ChapterGraphModel chapter = ChapterWorkbookReader.Read(SamplePath);
+        ChapterGraphModel chapter = Sample();
 
         ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
 
@@ -75,9 +76,9 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("곁길", row: 3),
-                Episode("ep2", row: 4)
+                Episode("ep1"),
+                Episode("곁길"),
+                Episode("ep2")
             ],
             edges: [("ep1", "곁길", null, 1), ("ep1", "ep2", "신뢰높음", 0)],
             conditions: [("신뢰높음", "trust >= 3")]);
@@ -100,9 +101,9 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("ep2", row: 3),
-                Episode("ep3", row: 4)
+                Episode("ep1"),
+                Episode("ep2"),
+                Episode("ep3")
             ],
             edges: [("ep1", "ep2", null, 1), ("ep2", "ep1", null, 1), ("ep2", "ep3", "신뢰높음", 0)],
             conditions: [("신뢰높음", "trust >= 3")]);
@@ -125,9 +126,9 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("ep2", row: 3),
-                Episode("ep3", row: 4)
+                Episode("ep1"),
+                Episode("ep2"),
+                Episode("ep3")
             ],
             edges: [("ep1", "ep2", "관문", 0), ("ep1", "ep3", "완료조건", 0)],
             conditions: [("관문", "trust >= 5"), ("완료조건", "trust >= 1")]);
@@ -148,7 +149,7 @@ public sealed class ChapterReachabilityTests
     public void 들어오는_간선이_없는_에피소드는_그렇게_말한다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("고아", row: 3)],
+            episodes: [Episode("ep1"), Episode("고아")],
             edges: [],
             conditions: []);
 
@@ -159,24 +160,23 @@ public sealed class ChapterReachabilityTests
     }
 
     [Fact]
-    public void 도달불가_허용이_켜진_에피소드는_오류가_아니라_알림이다()
+    public void 이어지지_않은_에피소드는_경고고_그것만_부르는_섬도_같다()
     {
-        // D3 — 의도적 도달 불가(폐기 예정·미완성)는 명시 예외로 두되, 그 사실은 표시된다.
+        // 2026-11-17 소유자 — 막 만들어 아직 안 이은 에피소드 하나가 챕터의 내보내기를 통째로 막았다. 간선으로 이어지지 않은 것은
+        // 작업 중이라 경고다(EpisodeNotConnected). 간선은 있는데 조건 때문에 못 닿는 것은 그대로 오류다(아래 스탯 관문 시험들).
         ChapterGraphModel chapter = Chapter(
-            episodes:
-            [
-                Episode("ep1", row: 2),
-                Episode("보류", row: 3, allowUnreachable: true)
-            ],
-            edges: [],
+            episodes: [Episode("ep1"), Episode("섬"), Episode("섬의_끝")],
+            edges: [("섬", "섬의_끝", null, 0)],
             conditions: []);
 
         ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
 
-        ChapterDiagnostic notice = Assert.Single(result.Diagnostics);
-        Assert.Equal(ChapterDiagnosticSeverity.Info, notice.Severity);
-        Assert.Contains("도달불가 허용", notice.Message);
         Assert.False(result.HasErrors);
+        Assert.Equal(["섬", "섬의_끝"], result.Diagnostics
+            .Where(item => item.Code == ChapterDiagnosticCode.EpisodeNotConnected)
+            .Select(item => item.EpisodeId!));
+        Assert.All(result.Diagnostics, item => Assert.Equal(ChapterDiagnosticSeverity.Warning, item.Severity));
+        Assert.DoesNotContain(result.Diagnostics, item => item.Code == ChapterDiagnosticCode.EpisodeUnreachable);
     }
 
     [Fact]
@@ -186,8 +186,8 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("ep2", row: 3)
+                Episode("ep1"),
+                Episode("ep2")
             ],
             edges: [("ep1", "ep1", null, 1), ("ep1", "ep2", "신뢰높음", 0)],
             conditions: [("신뢰높음", "trust >= 3")],
@@ -209,14 +209,14 @@ public sealed class ChapterReachabilityTests
     public void 루트가_하나면_도착_스탯은_값_하나로_고정된다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("ep2", row: 3)],
+            episodes: [Episode("ep1"), Episode("ep2")],
             edges: [("ep1", "ep2", null, 2)],
             conditions: []);
 
         ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
 
         ChapterStatSpan span = Assert.Single(result.SpansFor("ep2"));
-        Assert.Equal("신뢰", span.DisplayName);
+        Assert.Equal("trust", span.DisplayName);   // 스탯은 키만 있다(writer-fields W2)
         Assert.True(span.IsFixed);
         Assert.Equal(2, span.Minimum);
         Assert.Equal(2, span.Maximum);
@@ -229,10 +229,10 @@ public sealed class ChapterReachabilityTests
         ChapterGraphModel chapter = Chapter(
             episodes:
             [
-                Episode("ep1", row: 2),
-                Episode("싼길", row: 3),
-                Episode("비싼길", row: 4),
-                Episode("합류", row: 5)
+                Episode("ep1"),
+                Episode("싼길"),
+                Episode("비싼길"),
+                Episode("합류")
             ],
             edges:
             [
@@ -259,7 +259,7 @@ public sealed class ChapterReachabilityTests
     public void 시작_에피소드는_스탯_초기값을_그대로_갖는다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("ep2", row: 3)],
+            episodes: [Episode("ep1"), Episode("ep2")],
             edges: [("ep1", "ep2", null, 1)],
             conditions: []);
 
@@ -274,7 +274,7 @@ public sealed class ChapterReachabilityTests
     public void 닿을_수_없는_에피소드에는_도착_스탯이_없다()
     {
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("고아", row: 3)],
+            episodes: [Episode("ep1"), Episode("고아")],
             edges: [],
             conditions: []);
 
@@ -288,7 +288,7 @@ public sealed class ChapterReachabilityTests
     {
         // ep1↔ep2를 오가면 trust가 계속 쌓인다 — 폭은 스탯 최대(경계)에서 멈춘다.
         ChapterGraphModel chapter = Chapter(
-            episodes: [Episode("ep1", row: 2), Episode("ep2", row: 3)],
+            episodes: [Episode("ep1"), Episode("ep2")],
             edges: [("ep1", "ep2", null, 1), ("ep2", "ep1", null, 1)],
             conditions: [],
             statMaximum: 4);
@@ -342,7 +342,7 @@ public sealed class ChapterReachabilityTests
     {
         // 언제나 뜨는 알림은 옆에 선 진짜 오류까지 안 읽히게 만든다 (StatCountOutOfRange가
         // 그렇게 폐지됐다). 상한에 안 걸렸으면 이 코드는 없어야 한다.
-        ChapterGraphModel chapter = ChapterWorkbookReader.Read(SamplePath);
+        ChapterGraphModel chapter = Sample();
 
         ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
 
@@ -371,36 +371,36 @@ public sealed class ChapterReachabilityTests
 
         for (int index = 0; index <= flags; index++)
         {
-            episodes.Add(Episode($"ep{index:00}", index + 2));
+            episodes.Add(Episode($"ep{index:00}"));
         }
 
         for (int index = 0; index < flags; index++)
         {
             stats.Add(new ChapterStat(
-                $"flag{index:00}", $"깃발{index:00}",
-                Initial: 0, Minimum: 0, Maximum: 1, SourceRow: index + 2));
+                $"flag{index:00}",
+                Initial: 0, Minimum: 0, Maximum: 1));
 
             string from = $"ep{index:00}";
             string to = $"ep{index + 1:00}";
 
-            edges.Add(new ChapterEdge(from, to, "켠다", null, null, edges.Count + 2)
+            edges.Add(new ChapterEdge(from, to, "켠다", null, null)
             {
                 StatChanges = [new StatDelta($"flag{index:00}", 1, StatChangeKind.Set)]
             });
 
-            edges.Add(new ChapterEdge(from, to, "안 켠다", null, null, edges.Count + 2));
+            edges.Add(new ChapterEdge(from, to, "안 켠다", null, null));
         }
 
         return new ChapterGraphModel(
-            "flags", "flags.xlsx", episodes, edges, [], stats,
+            "flags", "flags", episodes, edges, [], stats,
             Array.Empty<ChapterFixture>(), Array.Empty<ChapterDiagnostic>());
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>v8 — 관문은 에피소드가 아니라 들어오는 길이 갖는다(간선 조건으로 준다).</summary>
-    private static ChapterEpisode Episode(string id, int row, bool allowUnreachable = false) =>
-        new(id, id, "01", $"Story_{id}", 0, 0, null, row, allowUnreachable);
+    private static ChapterEpisode Episode(string id) =>
+        new(id, id, "01", 0, 0, null);
 
     /// <param name="edges">TrustDelta — 그 간선을 타는 순간 커밋되는 trust 증감 (2026-08-14 규칙).</param>
     private static ChapterGraphModel Chapter(
@@ -411,7 +411,7 @@ public sealed class ChapterReachabilityTests
     {
         var stats = new List<ChapterStat>
         {
-            new("trust", "신뢰", Initial: 0, Minimum: 0, Maximum: statMaximum, SourceRow: 2)
+            new("trust", Initial: 0, Minimum: 0, Maximum: statMaximum)
         };
 
         var statKeys = stats.Select(stat => stat.Key).ToHashSet(StringComparer.Ordinal);
@@ -421,14 +421,14 @@ public sealed class ChapterReachabilityTests
             {
                 ConditionParseResult result = ConditionExpressionParser.Parse(pair.Expression, statKeys);
                 return new ChapterCondition(
-                    pair.Label, pair.Expression, null, result.Terms, result.IsValid, index + 2);
+                    pair.Label, pair.Expression, null, result.Terms, result.IsValid);
             })
             .ToList();
 
         List<ChapterEdge> edgeList = edges
             .Select((edge, index) => new ChapterEdge(
                 edge.From, edge.To, null, edge.Condition,
-                null, index + 2)
+                null)
             {
                 StatChanges = edge.TrustDelta == 0
                     ? []
@@ -437,7 +437,7 @@ public sealed class ChapterReachabilityTests
             .ToList();
 
         return new ChapterGraphModel(
-            "test", "test.xlsx", episodes, edgeList, parsed, stats,
+            "test", "test", episodes, edgeList, parsed, stats,
             Array.Empty<ChapterFixture>(), Array.Empty<ChapterDiagnostic>());
     }
 }

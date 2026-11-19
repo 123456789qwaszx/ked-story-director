@@ -5,7 +5,7 @@
   "Stats": [
     {
       "Key": "trust",
-      "DisplayName": "신뢰",
+      "DisplayName": "trust",
       "Type": "Number",
       "Initial": 2,
       "Minimum": 0,
@@ -13,7 +13,7 @@
     },
     {
       "Key": "metLaru",
-      "DisplayName": "라루를 만남",
+      "DisplayName": "metLaru",
       "Type": "Bool",
       "Initial": 1,
       "Minimum": 0,
@@ -21,7 +21,7 @@
     },
     {
       "Key": "remembered",
-      "DisplayName": "기억함",
+      "DisplayName": "remembered",
       "Type": "Bool",
       "Initial": 0,
       "Minimum": 0,
@@ -33,7 +33,7 @@
       "EpisodeId": "root",
       "Title": "복도 진입",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_root",
+      "DialogueEntryId": "root",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -49,7 +49,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_hall",
-      "DesignerNote": "Scene root",
       "Position": {
         "X": 0,
         "Y": 0
@@ -59,7 +58,7 @@
       "EpisodeId": "hall",
       "Title": "닫힌 문 앞",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_hall",
+      "DialogueEntryId": "hall",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -75,7 +74,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_hall",
-      "DesignerNote": "Auto 중간 Episode",
       "Position": {
         "X": 240,
         "Y": 0
@@ -85,7 +83,7 @@
       "EpisodeId": "choice",
       "Title": "누구와 갈지",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_choice",
+      "DialogueEntryId": "choice",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -135,7 +133,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_hall",
-      "DesignerNote": "Scene 마지막 선택",
       "Position": {
         "X": 480,
         "Y": 0
@@ -145,7 +142,7 @@
       "EpisodeId": "trust_path",
       "Title": "함께 가는 길",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_trust",
+      "DialogueEntryId": "trust_path",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -161,7 +158,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_trust",
-      "DesignerNote": "Via 이후 도착",
       "Position": {
         "X": 720,
         "Y": -120
@@ -171,7 +167,7 @@
       "EpisodeId": "alone_path",
       "Title": "혼자 가는 길",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_alone",
+      "DialogueEntryId": "alone_path",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [
@@ -187,7 +183,6 @@
       ],
       "EventKey": "",
       "SceneId": "scene_alone",
-      "DesignerNote": "",
       "Position": {
         "X": 720,
         "Y": 120
@@ -197,13 +192,12 @@
       "EpisodeId": "true_end",
       "Title": "함께 문을 연다",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_true_end",
+      "DialogueEntryId": "true_end",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [],
       "EventKey": "ch01_true",
       "SceneId": "scene_true_end",
-      "DesignerNote": "",
       "Position": {
         "X": 960,
         "Y": -120
@@ -213,13 +207,12 @@
       "EpisodeId": "alone_end",
       "Title": "혼자 문을 연다",
       "IndexText": "",
-      "DialogueEntryId": "Story_ch01_alone_end",
+      "DialogueEntryId": "alone_end",
       "VisibleConditions": [],
       "UnlockConditions": [],
       "NextOptions": [],
       "EventKey": "ch01_alone",
       "SceneId": "scene_alone_end",
-      "DesignerNote": "",
       "Position": {
         "X": 960,
         "Y": 120

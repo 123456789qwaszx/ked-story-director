@@ -27,19 +27,17 @@ public readonly record struct GraphPosition(double X, double Y);
 
 public abstract record GraphItemProjection(string FileId, GraphPosition Position);
 
-/// <summary>펼쳐진 StoryFile 안에서 실제 노드 카드로 표시할 항목.</summary>
-/// <param name="Badge">
-/// 카드에 붙는 짧은 부가 정보. 대사 노드는 발행한 최신 버전을, 연출 노드는 읽고 있는
-/// 대사 결과 버전을 보여 준다. 표시용 문자열이며 여기서 데이터 의미를 역추론하지 않는다.
-/// </param>
+/// <summary>
+/// 펼쳐진 StoryFile 안에서 실제 노드 카드로 표시할 항목.
+/// (카드 부제로 나가던 <c>Badge</c> — 대본 이름 · 에피소드면 줄 수 — 는 2026-10-29에 걷혔다. 소유자: "이 정보는 필요없으니까 치워".)
+/// </summary>
 public sealed record ExpandedNodeProjection(
     string FileId,
     string NodeId,
     string NodeName,
     GraphNodeKind NodeKind,
     GraphPosition Position,
-    IReadOnlyList<GraphOutputPortProjection> OutputPorts,
-    string? Badge = null)
+    IReadOnlyList<GraphOutputPortProjection> OutputPorts)
     : GraphItemProjection(FileId, Position);
 
 /// <summary>접힌 StoryFile 하나를 대신하는 회색 프록시.</summary>
@@ -49,8 +47,8 @@ public sealed record ExpandedNodeProjection(
 /// </param>
 /// <param name="Scenes">
 /// 장면 묶음 (R6 S-3 · 2026-09-16). 판이 어느 챕터인지 알 때만 갈린다 — 이름이 챕터와 맞는
-/// 판이 아니거나 <b>장면ID를 하나도 안 적은 챕터</b>면 묶음 하나로 온다(대본 탭 트리와 같은
-/// 규칙 — <c>docs/plans/R6-explorer.md</c> §2).
+/// 판이 아니거나 <b>장면ID를 하나도 안 적은 챕터</b>면 묶음 하나로 온다
+/// (<c>docs/plans/R6-explorer.md</c> §2).
 /// </param>
 public sealed record CollapsedFileProjection(
     string FileId,
@@ -62,14 +60,38 @@ public sealed record CollapsedFileProjection(
     : GraphItemProjection(FileId, Position);
 
 /// <summary>
+/// 펼친 판 안에서 <b>접은 장면</b> 하나를 대신하는 상자 (2026-10-30 — 하이어아키의 눈, <c>docs/plans/hierarchy.md</c> SF).
+///
+/// 판은 펼친 채라 다른 장면의 카드는 그대로 서고 <b>이 장면만 줄 목록으로 간소화된다</b>(소유자: "챕터 내의 일부 장면만
+/// 접었을 경우, 접은 장면을 간소화"). 밖과 잇는 간선 · 선택지 길은 그 줄에 붙는다 — 접혀도 어디로 이어지는지 보여야
+/// 한다. 장면 안끼리의 길은 상자 안에 그리지 않고 <see cref="InnerCount"/>로 센다.
+/// </summary>
+/// <param name="Position">장면의 카드들이 서던 자리의 <b>왼쪽 위</b> — 접어도 그 자리에 선다(다른 카드는 안 움직인다).</param>
+/// <param name="Nodes">줄 순서 = 판의 노드 순서. 들고 나는 수는 <b>그려지는 것</b>(밖과 잇는 간선 · 선택지 길)만 센다.</param>
+/// <param name="InnerCount">장면 안끼리 잇는 간선 · 선택지 길의 수 — 상자 머리에 적는다.</param>
+public sealed record CollapsedSceneProjection(
+    string FileId,
+    string SceneId,
+    string DisplayName,
+    GraphPosition Position,
+    IReadOnlyList<CollapsedNodeEntry> Nodes,
+    int InnerCount)
+    : GraphItemProjection(FileId, Position);
+
+/// <summary>
+/// 접은 장면의 열쇠 — 판(<c>StoryFile.Id</c>)과 장면ID(<c>ChapterEpisode.SceneId</c>). 판 Id라 챕터 이름이
+/// 바뀌어도 따라간다. 저장 내용이 아니라 판 접기처럼 작업 상태다.
+/// </summary>
+public readonly record struct GraphSceneKey(string FileId, string SceneId);
+
+/// <summary>
 /// 접힌 판 안의 장면 묶음 하나.
 /// </summary>
 /// <param name="SceneId">
-/// 비교의 열쇠. <b>장면에 안 속한 노드</b>(에피소드가 아닌 자유 씬)는 빈 문자열이다 —
-/// 그쪽은 챕터의 진행에 안 실리므로 장면 경계도 없다.
+/// 비교의 열쇠. <b>장면 밖</b> 묶음(집 없는 분기 카드 — 챕터의 진행에 안 실린다)과 에피소드가 없는 판의 한 묶음은 빈 문자열이다.
 /// </param>
 /// <param name="DisplayName">
-/// 사람에게 보일 이름. 묶음이 하나뿐이면 <b>머리글을 안 그린다</b>(그릴 이유가 없다).
+/// 사람에게 보일 이름. 에피소드가 없는 판의 한 묶음은 비어 <b>머리글을 안 그린다</b>(그릴 이유가 없다).
 /// </param>
 public sealed record CollapsedSceneGroup(
     string SceneId,
@@ -79,7 +101,7 @@ public sealed record CollapsedSceneGroup(
     /// <summary>
     /// 머리글 줄을 그리는가 — 이름이 있을 때만.
     ///
-    /// ⛔ <b>이 규칙이 한 자리에 있어야 한다.</b> 머리글은 프록시에서 <b>한 행을 차지</b>하고,
+    /// <b>이 규칙이 한 자리에 있어야 한다.</b> 머리글은 프록시에서 <b>한 행을 차지</b>하고,
     /// 간선 끝점의 Y는 <c>머리글높이 + 행번호 × 행높이</c>로 계산된다 — 그리는 쪽과 행 번호를
     /// 매기는 쪽이 이 판단을 따로 하면 <b>간선이 허공에 붙는다</b>.
     /// </summary>
@@ -99,55 +121,17 @@ public sealed record CollapsedNodeEntry(
 public enum GraphNodeKind
 {
     Dialogue,
-    Set,
-    Presentation,
-
-    /// <summary>PresentationNode에 커맨드 범주·프리셋을 공급하는 노드.</summary>
-    CommandSupply
-}
-
-/// <summary>
-/// 그래프에 어떤 노드 종류를 그릴지. 화면이 아니라 투영이 거른다 — 무엇이 보이는지의
-/// 규칙이 그리는 코드 안에 섞이면 테스트할 자리가 사라진다.
-///
-/// <b>간선 정합 규칙:</b> 간선의 어느 한쪽 끝 노드가 필터로 숨으면 그 간선도 함께 숨는다.
-/// 허공에 매달린 간선을 그리지 않는다.
-///
-/// 고를 수 있는 것은 <b>대사·설정 둘</b>이다 (2026-08-21) — 연출·연출 공급 노드는 필터보다
-/// 먼저 배관으로 숨으므로(<see cref="GraphProjectionBuilder"/>) 토글이 정할 것이 없다.
-/// </summary>
-public sealed record GraphFilter(
-    bool ShowDialogue = true,
-    bool ShowSet = true)
-{
-    public static GraphFilter All { get; } = new();
-
-    /// <summary>DialogueNode만 남기는 흐름 보기.</summary>
-    public static GraphFilter FlowOnly { get; } = new(
-        ShowDialogue: true,
-        ShowSet: false);
-
-    public bool Shows(GraphNodeKind kind) => kind switch
-    {
-        GraphNodeKind.Dialogue => ShowDialogue,
-        GraphNodeKind.Set => ShowSet,
-        _ => true
-    };
+    Set
 }
 
 public enum GraphOutputPortKind
 {
-    ExecutionDefault,
     ExecutionBranch,
-    Settings,
-
-    /// <summary>이 대사 노드가 발행한 결과. 연출 노드가 그 결과를 입력으로 읽는다.</summary>
-    PublishedResult,
 
     /// <summary>
     /// <b>챕터 간선 슬롯</b> — 이 에피소드에서 나가는 선택지 하나 (R7 P-1 · 2026-09-16).
     ///
-    /// ⛔ 다른 포트와 달리 <b>연출 층의 것이 아니다.</b> 이어 붙는 순간 고쳐지는 것은
+    /// 다른 포트와 달리 <b>이 노드의 것이 아니다.</b> 이어 붙는 순간 고쳐지는 것은
     /// <c>ChapterDocument.Edges</c>이고, 그것이 내보내기·도달성 증명·런타임이 보는 그 값이다
     /// (<c>docs/plans/R7.md</c> §2 ①ᅳ 정본을 늘리지 않는다).
     /// </summary>
@@ -193,20 +177,19 @@ public sealed record GraphOutputPortProjection(
     ExitPort? ExecutionPort,
 
     /// <summary><see cref="GraphOutputPortKind.Choice"/>일 때만 있다 (R7 P-1).</summary>
-    GraphChoicePort? ChoicePort = null);
-
-public enum GraphConnectionKind
-{
-    ExecutionDefault,
-    ExecutionBranch,
-    Settings,
+    GraphChoicePort? ChoicePort = null,
 
     /// <summary>
-    /// 발행된 대사 결과가 연출 노드의 <b>읽기 전용 입력</b>이 되는 관계.
-    /// 실행 흐름이 아니라 저작 의존성이며, 데이터는 링크가 아니라
-    /// <c>PresentationNode.Source</c>가 소유한다.
+    /// 카드 <b>왼쪽</b>에 서는 포트인가 — 잇는 카드가 이 카드보다 왼쪽이다(<see cref="EdgeSide"/>, 2026-10-29 소유자:
+    /// "분기가 … 왼쪽에 위치하면 박스 왼쪽에"). 선도 왼쪽으로 나가 도착 카드의 오른쪽으로 든다. 다른 판의 노드로 가는
+    /// 포트와 아직 안 이은 포트는 오른쪽이다.
     /// </summary>
-    ResultSnapshot
+    bool OnLeft = false);
+
+/// <summary>실행 선의 종류 — 갈래 · 분기 출구(⛔ 기본 출구 <c>ExecutionDefault</c>는 2026-11-17에 걷혔다).</summary>
+public enum GraphConnectionKind
+{
+    ExecutionBranch
 }
 
 public enum GraphEndpointKind
@@ -214,7 +197,11 @@ public enum GraphEndpointKind
     ExpandedNodeOutput,
     ExpandedNodeInput,
     CollapsedFileNodeOutput,
-    CollapsedFileNodeInput
+    CollapsedFileNodeInput,
+
+    /// <summary>펼친 판 안의 접은 장면 상자의 줄 — <see cref="GraphEndpointProjection.SceneId"/>가 그 장면이다.</summary>
+    CollapsedSceneNodeOutput,
+    CollapsedSceneNodeInput
 }
 
 /// <summary>
@@ -226,7 +213,8 @@ public sealed record GraphEndpointProjection(
     string NodeId,
     GraphEndpointKind Kind,
     string? PortKey,
-    int? ProxyRowIndex);
+    int? ProxyRowIndex,
+    string? SceneId = null);
 
 public sealed record GraphConnectionProjection(
     string Key,
@@ -235,7 +223,6 @@ public sealed record GraphConnectionProjection(
     string TargetNodeId,
     string Label,
     int PaletteIndex,
-    string? LinkId,
     ExitPort? ExecutionPort,
     GraphEndpointProjection Source,
     GraphEndpointProjection Target);

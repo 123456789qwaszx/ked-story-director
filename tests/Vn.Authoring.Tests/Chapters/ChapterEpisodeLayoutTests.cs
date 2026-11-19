@@ -10,12 +10,8 @@ namespace Vn.Authoring.Tests.Chapters;
 ///
 /// v3까지는 그릴 때마다 깊이 배치를 다시 계산했고, 그 근거는 <i>"드래그가 없으므로 사람이
 /// 지킬 배치도 없다"</i>였다. 드래그가 생기면서 전제가 뒤집혔다 — 이 묶음이 재는 것은
-/// <b>뒤집힌 뒤에 새로 생긴 두 가지 의무</b>다:
-///
-/// <list type="number">
-///   <item>한 동작으로 여러 카드를 옮겼으면 <b>되돌리기도 한 번</b>이다</item>
-///   <item>아직 자리가 없는 챕터(엑셀에서 들여와 전부 0,0)는 <b>한 번 심어</b> 준다</item>
-/// </list>
+/// <b>뒤집힌 뒤에 새로 생긴 의무</b>다 — 한 동작으로 여러 카드를 옮겼으면 <b>되돌리기도 한 번</b>이다. ⛔ 자리가 없는 챕터(엑셀
+/// 시절 — 전부 0,0)에 한 번 심어 주던 것은 2026-11-18에 걷혔다(old-shapes O9 — 툴은 늘 자리를 주어 세운다).
 /// </summary>
 public sealed class ChapterEpisodeLayoutTests
 {
@@ -26,9 +22,9 @@ public sealed class ChapterEpisodeLayoutTests
     public ChapterEpisodeLayoutTests()
     {
         _editor.EnsureChapter("ch01");
-        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0);
-        _editor.AddEpisode("ch01", "ep02", "옥상", 0, 0);
-        _editor.AddEpisode("ch01", "ep03", "지하", 0, 0);
+        _editor.AddEpisode("ch01", "ep01", "복도", 0, 0, sceneId: "ep01");
+        _editor.AddEpisode("ch01", "ep02", "옥상", 0, 0, sceneId: "ep02");
+        _editor.AddEpisode("ch01", "ep03", "지하", 0, 0, sceneId: "ep03");
     }
 
     [Fact]
@@ -63,7 +59,7 @@ public sealed class ChapterEpisodeLayoutTests
             ["ep01"] = (1.239, 2.341)
         });
 
-        Assert.Equal(ProjectChangeKind.NodeMetadata, kind);
+        Assert.Equal(ProjectChangeKind.ChapterLayout, kind);   // [대본] 판은 다시 짓지 않는다(finishing FX3)
         Assert.Equal((1.24, 2.34), (Chapter.Episodes[0].X, Chapter.Episodes[0].Y));
     }
 
@@ -88,35 +84,5 @@ public sealed class ChapterEpisodeLayoutTests
 
         Assert.Equal(["ep01", "ep02"],
             _editor.FindChapter("ch01")!.Episodes.Select(episode => episode.EpisodeId));
-    }
-
-    [Fact]
-    public void 겹쳐_있으면_심을_자리다()
-    {
-        // 엑셀에서 들여온 챕터가 정확히 이 모양이다 — X·Y를 아무도 안 채웠다.
-        Assert.True(ChapterBranchPlanner.NeedsSeeding(Chapter.ToGraphModel("ch01.xlsx")));
-
-        _editor.MoveEpisodes("ch01", new Dictionary<string, (double X, double Y)>
-        {
-            ["ep01"] = (0, 0),
-            ["ep02"] = (220, 0),
-            ["ep03"] = (440, 0)
-        });
-
-        // ⭐ 한 번만 참이다 — 심고 나면 다시 심지 않는다. 그래야 사람이 옮긴 자리를
-        //    그리기가 덮지 않는다.
-        Assert.False(ChapterBranchPlanner.NeedsSeeding(Chapter.ToGraphModel("ch01.xlsx")));
-    }
-
-    [Fact]
-    public void 에피소드가_하나뿐이면_원점이어도_심지_않는다()
-    {
-        // (0,0)이 "안 채워졌다"는 뜻은 아니다 — 겹치는 것이 없으면 고칠 것도 없다.
-        var lone = new ProjectEditor(new StoryProject());
-        lone.EnsureChapter("ch02");
-        lone.AddEpisode("ch02", "ep01", "혼자", 0, 0);
-
-        Assert.False(ChapterBranchPlanner.NeedsSeeding(
-            lone.FindChapter("ch02")!.ToGraphModel("ch02.xlsx")));
     }
 }

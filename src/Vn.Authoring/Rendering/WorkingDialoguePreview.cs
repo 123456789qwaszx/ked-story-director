@@ -1,44 +1,31 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 using Vn.Authoring.Results;
 
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
-/// 아직 발행하지 않은 DialogueNode를 정식 출력과 <b>같은 합성기로</b> 펼쳐 보여 준다.
+/// DialogueNode의 작업 상태를 그대로 펼쳐 보여 준다 — 카드의 글 칸이 여기를 지난다.
+/// (곁기둥의 Script Preview는 2026-10-29에 걷혔다.)
 ///
-/// 미리 보기 전용 합성기를 따로 두면 화면에서 본 것과 발행된 것이 조금씩 다를 수 있고,
-/// 그 차이는 아무도 찾지 못한다. 그래서 여기서는 발행 초안을 만들고, 버전 0짜리
-/// 작업 중 결과로 감싼 다음, 정식 합성기에 그대로 넘긴다.
-///
-/// 결과는 <see cref="RenderedDocument.IsPublished"/>가 false다. 정식 결과와 헷갈릴 수 없고,
-/// 어떤 PresentationResult와도 짝지어지지 않는다. 연출은 <b>발행된</b> 대사 결과 위에서만
-/// 만들어지기 때문이다.
+/// 초안(<see cref="DialoguePublisher.Draft"/>)을 결과 모양으로 감싸 합성기에 넘기고, 초안의 문제는
+/// 진단 조각으로 끼운다.
 /// </summary>
 public static class WorkingDialoguePreview
 {
     public static RenderedDocument Compose(
         StoryProject project,
         string dialogueNodeId,
-        GameDefinition? definition = null,
         DocumentOutputOptions? options = null,
         OutputPresetId? presetId = null,
         ILocalizedLineProvider? localization = null,
-        string? locale = null,
-        DateTimeOffset? now = null)
+        string? locale = null)
     {
         ArgumentNullException.ThrowIfNull(project);
 
-        DialogueDraft draft = DialoguePublisher.Draft(project, dialogueNodeId, definition, locale);
-        DialogueResult working = DialoguePublisher.AsWorkingResult(
-            draft,
-            now ?? DateTimeOffset.UnixEpoch);
-
+        DialogueDraft draft = DialoguePublisher.Draft(project, dialogueNodeId, locale);
         RenderedDocument document = ResultDocumentComposer.Compose(
-            working,
-            presentation: null,
+            DialoguePublisher.AsResult(draft),
             project,
-            definition,
             options,
             presetId,
             localization);
@@ -50,34 +37,50 @@ public static class WorkingDialoguePreview
             return document;
         }
 
-        // 진단은 작업 중에만 의미가 있다. 발행된 결과에는 막는 문제가 남아 있을 수 없다.
         return new RenderedDocument(
             document.SourceNodeId,
-            document.DialogueResult,
-            document.PresentationResult,
             InsertProblems(document, draft),
             document.Options,
             document.PresetId);
     }
 
-    public static RenderedDocument ComposePreset(
-        StoryProject project,
-        string dialogueNodeId,
-        OutputPreset preset,
-        GameDefinition? definition = null,
-        ILocalizedLineProvider? localization = null,
-        string? locale = null)
-    {
-        ArgumentNullException.ThrowIfNull(preset);
+    /// <summary>
+    /// <b>대사 노드 카드의 글 칸에 보이는 글</b> (D4 · 2026-10-29) — 보는 면이 아니라 <b>쓰는 면</b>이다.
+    /// 넣을 때 <see cref="Editing.ProjectEditor.ApplyScenarioText"/>가 같은 문법으로 되읽으므로(ScenarioOnly 왕복, X12a)
+    /// 그 프리셋의 표기를 그대로 쓰되 <b>진단은 뺀다</b> — <c>[주의]</c> 줄은 파서가 해석 못 한 줄로 올려,
+    /// 넣을 때마다 제가 낸 글이 문제로 되돌아온다(머리글을 뺀 2026-09-18과 같은 이유).
+    /// 끝의 줄바꿈은 걷는다 — 빈 줄 하나뿐인 새 카드는 빈 칸으로 보인다.
+    /// </summary>
+    public static string ScenarioText(StoryProject project, string dialogueNodeId) =>
+        ScenarioWriting(project, dialogueNodeId).Text;
 
-        return Compose(
-            project,
-            dialogueNodeId,
-            definition,
-            preset.Options,
-            preset.Id,
-            localization,
-            locale);
+    /// <summary>
+    /// <see cref="ScenarioText"/>과 그 줄 짝 — 연출 그래프 카드가 분기 점을 글 칸의 그 대사 옆에 세우고, 글 칸이 고친 줄의
+    /// 신원을 잇는다(<see cref="Script.ScenarioLineIdentity"/>).
+    ///
+    /// 분기마다 그 대사 위에 빈 줄을 끼우던 것(2026-10-30 오전)은 같은 날 걷혔다 — 한 줄의 분기들은 이제 그 대사 옆의 점
+    /// 하나로 접히고 누르면 카드 밖으로 펼쳐지므로(소유자: *"특정 글자 옆쪽에 분기점 표시 하나만 공통으로 남기고, 그걸
+    /// 클릭하면 … 펼쳐지면서"*) 줄 사이에 자리가 필요 없다.
+    /// </summary>
+    public static ScenarioWritingLayout ScenarioWriting(
+        StoryProject project, string dialogueNodeId)
+    {
+        DocumentOutputOptions scenario = OutputPresetCatalog.ScenarioOnly.Options;
+        var writing = new DocumentOutputOptions(
+            scenario.Format,
+            scenario.IncludeStructure,
+            scenario.IncludeConditions,
+            scenario.IncludeDialogueText,
+            scenario.IncludeLocalizedDialogue,
+            scenario.IncludeSpeaker,
+            scenario.IncludeLineId,
+            includeDiagnostics: false);
+
+        RenderedDocument document = Compose(
+            project, dialogueNodeId, writing, OutputPresetId.ScenarioOnly);
+
+        (string text, IReadOnlyDictionary<string, int> rowOfLine) = DocumentPreviewFormatter.FormatWithRows(document);
+        return new ScenarioWritingLayout(text.TrimEnd('\n'), rowOfLine);
     }
 
     private static List<RenderedSegment> InsertProblems(RenderedDocument document, DialogueDraft draft)
@@ -106,3 +109,10 @@ public static class WorkingDialoguePreview
         return segments;
     }
 }
+
+/// <summary>카드 글 칸의 글과 그 줄 짝 (<see cref="WorkingDialoguePreview.ScenarioWriting"/>).</summary>
+/// <param name="Text">글 칸에 보이는 글.</param>
+/// <param name="RowOfLine">대본의 줄(LineId)마다 그 줄이 글의 몇 번째 줄인가(0부터). 대사 줄과 선택지 줄만 든다.</param>
+public sealed record ScenarioWritingLayout(
+    string Text,
+    IReadOnlyDictionary<string, int> RowOfLine);

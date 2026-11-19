@@ -20,16 +20,10 @@ public sealed class ChapterStatEditTests
         ProjectEditor editor = World();
 
         ChapterStat stat = editor.AddChapterStat(
-            "ch01", "courage", displayName: "용기", initial: 2, minimum: 0, maximum: 5);
+            "ch01", "courage", initial: 2, minimum: 0, maximum: 5);
 
-        Assert.Equal("용기", stat.DisplayName);
+        Assert.Equal("courage", stat.Key);
         Assert.Contains(Chapter(editor).Stats, item => item.Key == "courage");
-    }
-
-    [Fact]
-    public void 표시이름을_안_주면_키를_쓴다()
-    {
-        Assert.Equal("courage", World().AddChapterStat("ch01", "courage").DisplayName);
     }
 
     [Fact]
@@ -69,7 +63,7 @@ public sealed class ChapterStatEditTests
         Assert.Equal(
             "stat(\"호감도 (윌로우)\") >= 3",
             ConditionYarnTranslator.Translate(
-                Chapter(editor).ToGraphModel("ch01", null).Conditions.Single(item => item.Label == "친함")).Yarn);
+                Chapter(editor).ToGraphModel("ch01").Conditions.Single(item => item.Label == "친함")).Yarn);
     }
 
     [Fact]
@@ -83,19 +77,18 @@ public sealed class ChapterStatEditTests
 
         Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "이상함");
         Assert.Contains(
-            Chapter(editor).ToGraphModel("ch01", null).Diagnostics,
+            Chapter(editor).ToGraphModel("ch01").Diagnostics,
             item => item.Message.Contains("이상함", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void 값과_표시이름을_고친다()
+    public void 값을_고친다()
     {
         ProjectEditor editor = World();
 
-        editor.UpdateChapterStat("ch01", "trust", displayName: "신뢰도", maximum: 20);
+        editor.UpdateChapterStat("ch01", "trust", maximum: 20);
 
         ChapterStat stat = Chapter(editor).Stats.Single(item => item.Key == "trust");
-        Assert.Equal("신뢰도", stat.DisplayName);
         Assert.Equal(20, stat.Maximum);
 
         // 안 준 것은 그대로다 — `UpdateEpisode`와 같은 손버릇.
@@ -176,9 +169,8 @@ public sealed class ChapterStatEditTests
         ConditionDefinition supplied = editor.Project.EnumerateNodes().OfType<SetNode>()
             .SelectMany(node => node.Conditions).Single();
 
-        string fileId = editor.Project.Files.Single(file => file.Name == "ch01").Id;
-        DialogueNode node = editor.AddDialogueNode(fileId, 0, 0, "root");
-        string lineId = editor.Project.FindScript(node.ScriptId)!.ActiveLines.First().Id;
+        DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
+        string lineId = node.Script.ActiveLines.First().Id;
 
         editor.SetLineTransition(
             node.Id,
@@ -190,6 +182,10 @@ public sealed class ChapterStatEditTests
         Assert.False(outcome.Applied);
         ChapterUse use = Assert.Single(outcome.Uses, item => item.Kind == ChapterUseKind.DialogueBranch);
         Assert.Contains("root", use.Where, StringComparison.Ordinal);
+
+        // 줄은 차례로 가리킨다 — LineId는 화면에 보이지 않는다(2026-10-29 소유자).
+        Assert.Equal("1번째 줄의 갈래", use.Detail);
+        Assert.DoesNotContain(lineId, use.Detail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -213,10 +209,10 @@ public sealed class ChapterStatEditTests
         var editor = new ProjectEditor(new StoryProject());
         ChapterDocument chapter = editor.EnsureChapter("ch01");
 
-        chapter.Stats.Add(new ChapterStat("trust", "trust", 0, 0, 10, SourceRow: 0));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
 
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
-        editor.AddEpisode("ch01", "a", title: "a", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
+        editor.AddEpisode("ch01", "a", title: "a", 0, 0, sceneId: "a");
         editor.AddEdge("ch01", "root", "a", optionLabel: "믿는다");
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 
@@ -231,9 +227,8 @@ public sealed class ChapterStatEditTests
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
-            new Vn.Authoring.Definition.GameDefinition(),
             fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01", null));
+            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
 
         return editor;
     }

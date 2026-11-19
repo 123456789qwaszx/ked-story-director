@@ -6,7 +6,7 @@ namespace Vn.Authoring.Flow;
 /// <summary>
 /// 대본의 줄 하나와 그 줄에 얹힌 대사 논리를 합쳐 놓은 <b>읽기 전용</b> 투영.
 ///
-/// 저장되지 않는다. 화면·흐름 계산·발행이 모두 이 하나를 본다. 각자 대본과 확장 데이터를
+/// 저장되지 않는다. 화면·흐름 계산·미리보기가 모두 이 하나를 본다. 각자 대본과 확장 데이터를
 /// 따로 합치면 어느 쪽이 맞는지 알 수 없는 순간이 생긴다.
 /// </summary>
 public sealed record DialogueLine(
@@ -18,9 +18,21 @@ public sealed record DialogueLine(
     LineConditionTransition? Transition,
     IReadOnlyList<LineConditionTransition>? ExtraTransitions = null,
 
-    /// <summary>「조건 분기」 표식이 가리키는 노드 (R7 P-5) — 이 줄 앞에서 다녀온다.</summary>
-    string? DetourTargetNodeId = null)
+    /// <summary>「조건 분기」 표식이 가리키는 노드들 (R7 P-5) — 이 줄 앞에서 차례로 다녀온다.</summary>
+    IReadOnlyList<string>? Detours = null,
+
+    /// <summary>
+    /// 이어지지 않은 분기점까지 든 분기점 전부(<see cref="DialogueLineExtension.DetourSlots"/>) — 이어지지 않은 것은 <c>null</c>.
+    /// 없으면 <see cref="DetourTargetNodeIds"/>가 곧 분기점 전부다.
+    /// </summary>
+    IReadOnlyList<string?>? Slots = null)
 {
+    /// <summary>이 줄 앞에서 차례로 다녀올 노드들. 없으면 빈 목록이다.</summary>
+    public IReadOnlyList<string> DetourTargetNodeIds => Detours ?? Array.Empty<string>();
+
+    /// <summary>이 줄의 분기점 전부 — 차례대로, 이어지지 않은 것은 <c>null</c>이다. 다녀가는 것은 <see cref="DetourTargetNodeIds"/>뿐이다.</summary>
+    public IReadOnlyList<string?> DetourSlots => Slots ?? DetourTargetNodeIds;
+
     /// <summary>이 줄 앞의 전환들 — 순서가 곧 일어나는 순서다 (2026-08-17).</summary>
     public IReadOnlyList<LineConditionTransition> Transitions =>
         Transition is null
@@ -40,42 +52,26 @@ public sealed record OrphanLineExtension(
 /// </summary>
 public sealed class DialogueScript
 {
-    public static DialogueScript Empty { get; } = new(
-        null,
-        ScriptDocument.DefaultLocale,
-        false,
-        Array.Empty<DialogueLine>(),
-        Array.Empty<OrphanLineExtension>());
-
     public DialogueScript(
-        string? scriptId,
         string locale,
-        bool isResolved,
         IReadOnlyList<DialogueLine> lines,
         IReadOnlyList<OrphanLineExtension> orphans)
     {
-        ScriptId = scriptId;
         Locale = locale;
-        IsResolved = isResolved;
         Lines = lines;
         Orphans = orphans;
     }
 
-    /// <summary>노드가 읽겠다고 적어 둔 대본 Id. 그 대본이 실제로 있는지는 별개다.</summary>
-    public string? ScriptId { get; }
+    // 읽겠다고 적어 둔 대본 Id(`ScriptId`)와 그것을 찾았는지(`IsResolved`)는 대본이 카드 안으로 들어오며
+    //    걷혔다(S2) — 카드는 언제나 제 대본을 든다.
 
     public string Locale { get; }
-
-    /// <summary>적어 둔 대본을 프로젝트에서 실제로 찾았는지.</summary>
-    public bool IsResolved { get; }
 
     /// <summary>대본 순서 그대로. 은퇴한 줄은 들어 있지 않다.</summary>
     public IReadOnlyList<DialogueLine> Lines { get; }
 
     /// <summary>대본에서 사라진 줄에 남은 대사 논리. 자동으로 지우지 않는다.</summary>
     public IReadOnlyList<OrphanLineExtension> Orphans { get; }
-
-    public bool HasScript => ScriptId is not null && IsResolved;
 
     public DialogueLine? Find(string? lineId)
     {
@@ -101,21 +97,7 @@ public static class DialogueScriptResolver
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(node);
 
-        ScriptDocument? document = project.FindScript(node.ScriptId);
-
-        if (document is null)
-        {
-            // 대본을 아직 고르지 않았거나 대본이 사라졌다. 확장 데이터는 전부 고아다.
-            return new DialogueScript(
-                node.ScriptId,
-                locale ?? ScriptDocument.DefaultLocale,
-                isResolved: false,
-                Array.Empty<DialogueLine>(),
-                node.LineExtensions
-                    .Select(extension => new OrphanLineExtension(extension, IsRetired: false, null))
-                    .ToArray());
-        }
-
+        ScriptDocument document = node.Script;
         string targetLocale = locale ?? document.PrimaryLocale;
         var extensions = new Dictionary<string, DialogueLineExtension>(StringComparer.Ordinal);
 
@@ -142,7 +124,8 @@ public static class DialogueScriptResolver
                 text.Text,
                 extension?.Transition,
                 extension is { Transitions.Count: > 1 } ? extension.Transitions.Skip(1).ToList() : null,
-                extension?.DetourTargetNodeId));
+                extension is { DetourTargetNodeIds.Count: > 0 } ? [.. extension.DetourTargetNodeIds] : null,
+                extension is { OpenDetours: > 0 } ? extension.DetourSlots() : null));
         }
 
         var orphans = new List<OrphanLineExtension>();
@@ -161,6 +144,6 @@ public static class DialogueScriptResolver
                 retired is null ? null : document.Text(extension.LineId, targetLocale)));
         }
 
-        return new DialogueScript(document.Id, targetLocale, isResolved: true, lines, orphans);
+        return new DialogueScript(targetLocale, lines, orphans);
     }
 }

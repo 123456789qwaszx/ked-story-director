@@ -1,5 +1,14 @@
 # VNStoryEditor_avalonia — 외부 작업자용 시스템 안내와 런타임 정합성 점검
 
+> ⚠ **ked-story-director (2026-10-29 · D2):** 이 문서의 엑셀 관련 내용 — 챕터·대본 워크북, 옛 [대본] 탭(엑셀 대본 편집기 — 지금의 [대본] 탭과 다르다), [대본/챕터 가져오기],
+> 워크북 출력·잠금 — 은 이 저장소에서 걷혔다. 원본은 프로젝트 하나이고 대사는 연출 그래프의 카드에 산다.
+> 지금 동작의 정본은 [`docs/design/two-graphs.md`](design/two-graphs.md)다.
+>
+> ⛔ **같은 날 연출 층 전체**(무대 프리뷰 · 연출 노드 · 발행 · 게임용 Yarn 번들 · `Ked.Presentation.Core`)가
+> [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔다. 이 툴이 내는 것은 원고와 progression JSON이다
+> ([`docs/plans/presentation-removal.md`](plans/presentation-removal.md)) — 2026-11-17부터 연출 없는 대사 Yarn(`exported/yarn/`)도 함께 낸다
+> (게임 폴더로는 보내지 않는다 · [`design/two-graphs.md`](design/two-graphs.md) 7절 V).
+
 기준일: 2026-09-17 (R7 완료 · 계층을 하나로)
 
 검토 기준:
@@ -47,13 +56,16 @@ VNStoryEditor_avalonia
 
 ## 3. 저장소 안의 구역
 
+> ⛔ **이 표는 2026-09-17의 것이다.** 지금(ked-story-director) 구역은 `Vn.Authoring` · `Vn.App` · `Ked.Progression` 셋이다 —
+> `Vn.Core` · `Vn.Cli`는 2026-10-29 레거시 정리(L-D1 · [`plans/legacy-cleanup.md`](plans/legacy-cleanup.md))로, `Vn.Authoring`의 엑셀
+> 입출력은 같은 날 D2로 걷혔다. 지금의 지도는 [`ORIENTATION.md`](../ORIENTATION.md) §4.
+
 | 프로젝트 | 역할 | 경계 |
 |---|---|---|
 | `Vn.Authoring` | 저작 도메인, 엑셀 입출력, 검증, 내보내기 | 제품 핵심. 화면 없이 테스트 가능해야 한다 |
 | `Vn.App` | Avalonia 화면과 OS 연결 | 도메인 규칙을 소유하지 않는다 |
 | `Vn.Core` | Yarn 구문 분석과 실제 컴파일러 기반 진단 | 저작 모델·엑셀·UI를 모른다 |
 | `Vn.Cli` | `Vn.Core`의 콘솔 진입점 | 분석 자동화와 골든 검증용 |
-| `Ked.Presentation.Core` | 무대 상태 계산 | 런타임이 주인인 사본 |
 | `Ked.Progression` | 산출물을 실제 소비자 규칙으로 다시 읽는 검증 오라클 | 런타임 사본과 동기화되어야 한다 |
 
 에디터의 `Ked.Progression`이 런타임보다 낡으면 “에디터에서는 통과했지만 게임은 거부하는” 틈이 생긴다.
@@ -65,7 +77,7 @@ VNStoryEditor_avalonia
 | 에피소드·간선·선택지·조건·스탯 | `chapters/{id}.xlsx` — ⚠ **간선은 [연출 그래프]에서도 긋는다**(2026-09-17, R7): 카드 아래 3칸을 끌어다 놓으면 `ChapterDocument.Edges`를 그대로 고친다. **창구가 둘이지 정본은 하나**다 |
 | 대사 본문·화자·라인 구조 | `episodes/{chapter}/{episode}.xlsx` |
 | Yarn 진입 이름·인라인 연출 | 연출 그래프 |
-| 커맨드 어휘·초상화 매핑 | `game.definition.json` |
+| 커맨드 어휘 | `game.definition.json`(compositor) — ⛔ 초상화 매핑(화자 · 캐릭터 키)은 2026-11-17부터 프로젝트의 `speakers` |
 | 실제 런타임 입력 | 검증을 통과한 `exported/` 결과 |
 
 처리 순서:
@@ -112,7 +124,7 @@ StatChange
 
 ### 6.1 SceneId
 
-여러 Episode가 같은 연출·롤백·커밋·저장 범위임을 표현한다. 비어 있으면 런타임은 `__scene_{EpisodeId}`를 발급해 기존 콘텐츠를 “에피소드 하나 = 장면 하나”로 실행한다.
+여러 Episode가 같은 연출·롤백·커밋·저장 범위임을 표현한다. 비어 있으면 런타임은 `__scene_{EpisodeId}`를 발급해 기존 콘텐츠를 “에피소드 하나 = 장면 하나”로 실행한다. VnTool은 늘 채워 낸다(에피소드는 늘 장면에 속한다 · 2026-11-18).
 
 불변식:
 

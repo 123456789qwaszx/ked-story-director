@@ -1,3 +1,4 @@
+using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
@@ -5,98 +6,137 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>새 대사 노드가 설 자리</b> (R7 P-4 · `docs/plans/R7.md`).
+/// <b>새 카드가 연출 그래프에 설 자리 — 위에서 아래로</b> (D3 · 2026-10-29).
 ///
-/// ⛔ 지금까지 세 창구가 전부 자리를 안 주고 원점에 세웠다 — 판을 열면 카드가 <b>한 곳에
-/// 쌓여</b> 챕터 프레임도 장면 영역도 뜻을 잃었다. 규칙이 셋이면 갈리므로 한 벌이다.
+/// 소유자: *"챕터 그래프처럼 위에서 아래로 … 분기는 기존처럼 오른쪽으로."* 선택지로 가는 다음 에피소드는
+/// 부모 카드 아래, 분기로 다녀갈 카드는 원본 오른쪽이다.
 ///
-/// ⚠ <b>이미 선 카드는 안 옮긴다.</b> 자리는 사람이 끌어 정하는 것이고, 여는 때마다 줄을
-/// 다시 세우면 그 손이 지워진다.
+/// ⚠ <b>이미 선 카드는 안 옮긴다.</b> 자리는 사람이 끌어 정하는 것이다.
 /// </summary>
 public sealed class NodePlacementTests
 {
     [Fact]
-    public void 장면마다_제_줄에_선다()
+    public void 시작_카드는_빈_판의_원점에_선다()
     {
-        StoryProject project = World(("opening", "root"), ("classroom", "a"));
+        StoryProject project = World("root");
 
         Assert.Equal((0, 0), NodePlacement.For(project, "ch01", "root"));
-        Assert.Equal((0, NodePlacement.SceneRow), NodePlacement.For(project, "ch01", "a"));
     }
 
     [Fact]
-    public void 같은_장면의_다음_카드는_그_줄의_오른쪽에_선다()
+    public void 선택지로_가는_다음_카드는_부모_아래에_선다()
     {
-        StoryProject project = World(("opening", "root"), ("opening", "a"));
+        StoryProject project = World("root", "a");
+        Edge(project, "root", "a");
         Place(project, "root", 0, 0);
 
-        Assert.Equal((NodePlacement.Column, 0), NodePlacement.For(project, "ch01", "a"));
+        Assert.Equal((0, NodePlacement.Row), NodePlacement.For(project, "ch01", "a"));
     }
 
     [Fact]
-    public void 사람이_장면을_통째로_옮겨_뒀으면_그_줄을_따른다()
+    public void 부모_아래가_차_있으면_오른쪽으로_비켜_선다()
     {
-        // 자리는 사람이 정하는 것이다 — 새 카드가 저 혼자 원래 줄로 돌아가면 안 된다.
-        StoryProject project = World(("opening", "root"), ("opening", "a"));
+        StoryProject project = World("root", "a", "b");
+        Edge(project, "root", "a");
+        Edge(project, "root", "b");
+        Place(project, "root", 0, 0);
+        Place(project, "a", 0, NodePlacement.Row);
+
+        Assert.Equal((NodePlacement.Column, NodePlacement.Row), NodePlacement.For(project, "ch01", "b"));
+    }
+
+    [Fact]
+    public void 합류하는_카드는_가장_아래_부모의_밑에_선다()
+    {
+        // root → a → c,  root → c — c는 root가 아니라 a 밑에 서야 a의 레인이 위로 거슬러 오르지 않는다.
+        StoryProject project = World("root", "a", "c");
+        Edge(project, "root", "c");
+        Edge(project, "a", "c");
+        Place(project, "root", 0, 0);
+        Place(project, "a", 0, NodePlacement.Row);
+
+        Assert.Equal((0, 2 * NodePlacement.Row), NodePlacement.For(project, "ch01", "c"));
+    }
+
+    [Fact]
+    public void 사람이_부모를_옮겨_뒀으면_그_아래를_따른다()
+    {
+        // 자리는 사람이 정하는 것이다 — 새 카드가 저 혼자 원래 자리로 돌아가면 안 된다.
+        StoryProject project = World("root", "a");
+        Edge(project, "root", "a");
         Place(project, "root", 1000, 700);
 
-        Assert.Equal((1000 + NodePlacement.Column, 700), NodePlacement.For(project, "ch01", "a"));
+        Assert.Equal((1000, 700 + NodePlacement.Row), NodePlacement.For(project, "ch01", "a"));
     }
 
     [Fact]
-    public void 챕터에_없는_이름은_줄을_안_받고_판_오른쪽에_선다()
+    public void 부모가_없으면_판의_맨_아래_카드_밑에_선다()
     {
-        // 진행에 안 실리는 노드다 — 장면 줄을 주면 남의 장면 안에 서 버린다.
-        StoryProject project = World(("opening", "root"));
+        StoryProject project = World("root");
         Place(project, "root", 0, 0);
 
-        Assert.Equal((NodePlacement.Column, 0), NodePlacement.For(project, "ch01", "곁가지"));
+        Assert.Equal((0, NodePlacement.Row), NodePlacement.For(project, "ch01", "곁가지"));
     }
 
     [Fact]
-    public void 챕터가_아닌_판도_겹치지는_않게_둔다()
+    public void 분기로_다녀갈_카드는_원본_오른쪽에_선다()
     {
-        var project = new StoryProject();
-        var editor = new ProjectEditor(project);
+        var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");
+        editor.AddEpisode("ch01", "root", "복도", 0, 0, sceneId: "root");
 
-        string fileId = editor.EnsureChapterBoard("작가의 판");   // 같은 이름의 챕터가 없다
-        editor.AddDialogueNode(fileId, 0, 0, "아무거나");
+        DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
+        string lineId = caller.Script.ActiveLines.First().Id;
 
-        Assert.Equal((NodePlacement.Column, 0), NodePlacement.For(project, "작가의 판", "또 하나"));
+        DialogueNode branch = editor.AddBranchMarker(caller.Id, lineId);
+
+        Assert.Equal(
+            (caller.Layout.X + NodePlacement.Column, caller.Layout.Y),
+            (branch.Layout.X, branch.Layout.Y));
+
+        // 둘째 분기는 같은 열의 아래로 비켜 선다 — 오른쪽으로 비키면 원본에서 둘째로 가는 선이 첫째 카드를 가로지른다.
+        DialogueNode second = editor.AddBranchMarker(caller.Id, lineId);
+
+        Assert.Equal(
+            (caller.Layout.X + NodePlacement.Column, caller.Layout.Y + NodePlacement.Row),
+            (second.Layout.X, second.Layout.Y));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <summary>그 에피소드의 카드를 그 자리에 세운다 — 사람이 끌어다 둔 것과 같다.</summary>
+    /// <summary>
+    /// 그 에피소드의 카드를 그 자리에 세운다 — 사람이 끌어다 둔 것과 같다. 일부 에피소드에만 카드가 선 순간(새 에피소드의 카드 자리를 묻는
+    /// 순간)을 재는 시험이라 편집기를 지나지 않고 판에 직접 놓는다(편집기는 에피소드와 카드를 한 칸에 세운다).
+    /// </summary>
     private static void Place(StoryProject project, string episodeId, double x, double y)
     {
-        var editor = new ProjectEditor(project);
-
-        editor.AddDialogueNode(editor.EnsureChapterBoard("ch01"), x, y, episodeId)
-            .MarkedEpisodeId = episodeId;
+        StoryFile board = EpisodeNaming.BoardOf(project, "ch01") ?? Add(project, new StoryFile(name: "ch01"));
+        board.Nodes.Add(new DialogueNode(name: episodeId) { MarkedEpisodeId = episodeId, Layout = new NodeLayout { X = x, Y = y } });
     }
 
-    /// <summary>ch01과 그 판 — 에피소드는 챕터에 있고, 노드는 아직 없다.</summary>
-    private static StoryProject World(params (string SceneId, string EpisodeId)[] episodes)
+    private static StoryFile Add(StoryProject project, StoryFile board)
+    {
+        project.Files.Add(board);
+        return board;
+    }
+
+    private static void Edge(StoryProject project, string from, string to) =>
+        project.Chapters.Single().Edges.Add(new ChapterEdge(from, to, "간다", null, null));
+
+    /// <summary>ch01과 그 판 — 에피소드는 챕터에 있고, 카드는 아직 없다(엑셀에서 들여온 옛 프로젝트처럼).</summary>
+    private static StoryProject World(params string[] episodeIds)
     {
         var project = new StoryProject();
         var editor = new ProjectEditor(project);
 
-        Vn.Authoring.Chapters.ChapterDocument chapter = editor.EnsureChapter("ch01");
-        editor.EnsureChapterBoard("ch01");   // 노드는 자리를 물어본 뒤에 선다
+        ChapterDocument chapter = editor.EnsureChapter("ch01");
+        editor.EnsureChapterBoard("ch01");   // 카드는 자리를 물어본 뒤에 선다
 
-        // ⚠ <b>카드 없는 에피소드</b>를 짓는다 — 2026-09-18부터 `AddEpisode`는 카드까지
-        //    함께 만들므로, 그것으로는 이 질문(*"새 카드가 어디 서야 하나"*)의 대상이
-        //    애초에 안 생긴다. 카드 없는 에피소드가 <b>실제로</b> 오는 길은 임포트이고,
-        //    임포트는 이렇게 문서에 바로 넣는다.
-        foreach ((string sceneId, string episodeId) in episodes)
+        foreach (string episodeId in episodeIds)
         {
-            chapter.Episodes.Add(new Vn.Authoring.Chapters.ChapterEpisode(
-                episodeId, episodeId, Index: string.Empty, DialogueEntry: episodeId,
-                0, 0, Memo: null, SourceRow: 0)
-            {
-                SceneId = sceneId
-            });
+            chapter.Episodes.Add(new ChapterEpisode(
+                episodeId, episodeId, Index: string.Empty,
+                0, 0, Memo: null));
         }
 
         return project;

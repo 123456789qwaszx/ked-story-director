@@ -104,7 +104,7 @@ namespace Ked.Progression
             if (HasError(diagnostics))
                 return new ScenarioLoadResult(null, diagnostics);
             
-            ScenarioProgression scenario = new(scenarioId, displayName, startChapterId, chapters);
+            ScenarioDefinition scenario = new(scenarioId, displayName, startChapterId, chapters);
 
             return new ScenarioLoadResult(scenario, diagnostics);
         }
@@ -385,7 +385,7 @@ namespace Ked.Progression
 
         // ── enum 이름 ───────────────────────────────────────────────────────
         //
-        // §G1 — enum은 이름 문자열로 온다. Enum.TryParse를 쓰지 않는 이유가 둘 있다:
+        // enum은 이름 문자열로 온다. Enum.TryParse를 쓰지 않는 이유가 둘 있다:
         // 숫자 문자열("0")도 통과시키고, 없는 이름을 캐스팅해 넣는 오버로드가 섞이기 쉽다.
         // 명시 목록이면 "가능한 값"을 그대로 진단에 실을 수 있다.
 

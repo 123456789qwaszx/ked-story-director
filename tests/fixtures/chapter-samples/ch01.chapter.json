@@ -1,0 +1,154 @@
+{
+  "chapterId": "ch01",
+  "episodes": [
+    {
+      "episodeId": "root",
+      "x": 0,
+      "y": 0,
+      "title": "복도 진입",
+      "memo": "Scene root",
+      "sceneId": "scene_hall"
+    },
+    {
+      "episodeId": "hall",
+      "x": 240,
+      "y": 0,
+      "title": "닫힌 문 앞",
+      "memo": "Auto 중간 Episode",
+      "sceneId": "scene_hall"
+    },
+    {
+      "episodeId": "choice",
+      "x": 480,
+      "y": 0,
+      "title": "누구와 갈지",
+      "memo": "Scene 마지막 선택",
+      "sceneId": "scene_hall"
+    },
+    {
+      "episodeId": "trust_path",
+      "x": 720,
+      "y": -120,
+      "title": "함께 가는 길",
+      "memo": "Via 이후 도착",
+      "sceneId": "scene_trust"
+    },
+    {
+      "episodeId": "alone_path",
+      "x": 720,
+      "y": 120,
+      "title": "혼자 가는 길",
+      "sceneId": "scene_alone"
+    },
+    {
+      "episodeId": "true_end",
+      "x": 960,
+      "y": -120,
+      "title": "함께 문을 연다",
+      "eventKey": "ch01_true",
+      "sceneId": "scene_true_end"
+    },
+    {
+      "episodeId": "alone_end",
+      "x": 960,
+      "y": 120,
+      "title": "혼자 문을 연다",
+      "eventKey": "ch01_alone",
+      "sceneId": "scene_alone_end"
+    }
+  ],
+  "edges": [
+    {
+      "from": "root",
+      "to": "hall",
+      "auto": true
+    },
+    {
+      "from": "hall",
+      "to": "choice",
+      "auto": true
+    },
+    {
+      "from": "choice",
+      "to": "trust_path",
+      "optionLabel": "라루에게 맡긴다",
+      "conditionLabel": "trustHigh",
+      "visibleConditionLabel": "metLaru",
+      "lockedMessage": "아직 신뢰가 부족하다",
+      "statChanges": [
+        {
+          "key": "trust",
+          "amount": 1
+        },
+        {
+          "key": "remembered",
+          "amount": 1,
+          "kind": "Set"
+        }
+      ]
+    },
+    {
+      "from": "choice",
+      "to": "alone_path",
+      "optionLabel": "혼자 간다"
+    },
+    {
+      "from": "trust_path",
+      "to": "true_end",
+      "optionLabel": "문을 연다"
+    },
+    {
+      "from": "alone_path",
+      "to": "alone_end",
+      "optionLabel": "문을 연다"
+    }
+  ],
+  "conditions": [
+    {
+      "label": "metLaru",
+      "expression": "metLaru == true",
+      "description": "라루를 만났을 때만 표시"
+    },
+    {
+      "label": "trustHigh",
+      "expression": "trust >= 2",
+      "description": "신뢰 2 이상일 때 해금"
+    }
+  ],
+  "stats": [
+    {
+      "key": "trust",
+      "initial": 2,
+      "minimum": 0,
+      "maximum": 10
+    },
+    {
+      "key": "metLaru",
+      "initial": 1,
+      "minimum": 0,
+      "maximum": 1,
+      "type": "Bool"
+    },
+    {
+      "key": "remembered",
+      "initial": 0,
+      "minimum": 0,
+      "maximum": 1,
+      "type": "Bool"
+    }
+  ],
+  "choiceOptions": [
+    {
+      "text": "라루에게 맡긴다",
+      "index": "10"
+    },
+    {
+      "text": "혼자 간다",
+      "index": "20"
+    },
+    {
+      "text": "문을 연다",
+      "index": "30"
+    }
+  ]
+}

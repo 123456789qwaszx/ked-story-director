@@ -23,4 +23,10 @@
     <ProjectReference Include="..\..\src\Vn.App\Vn.App.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 견본 챕터를 읽는 도우미는 하나다 — 두 테스트가 같은 파일을 쓴다. -->
+    <Compile Include="..\Vn.Authoring.Tests\Fixtures\SampleChapters.cs" Link="Fixtures\SampleChapters.cs" />
+  </ItemGroup>
+
+
 </Project>

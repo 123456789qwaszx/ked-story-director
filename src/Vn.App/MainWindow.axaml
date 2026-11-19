@@ -5,58 +5,106 @@
         Width="1400"
         Height="880"
         MinWidth="1000"
-        MinHeight="640"
-        Title="VnTool">
+        MinHeight="640">
+    <!-- 창 제목(앱 이름 — 프로젝트 이름)은 코드가 단다(RefreshShell · AppIdentity.Name). -->
     <DockPanel>
+        <!-- 위아래 여백은 4 — 위 띠 · 탭 줄 · 툴바 세 줄을 붙인다(2026-11-18 소유자 — 「불필요하게 공간을 활용」 · chrome-card-header U1, ⛔ 그 전에는 10). -->
         <Border DockPanel.Dock="Top"
-                Padding="12,10"
+                Padding="12,4"
                 BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                 BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,16,Auto,Auto,16,Auto,Auto,Auto,Auto,16,*,Auto">
-                <Button Grid.Column="0" x:Name="NewButton" Content="새 프로젝트" />
-                <Button Grid.Column="1" x:Name="OpenButton" Content="열기…" Margin="6,0,0,0" />
-                <Button Grid.Column="2" x:Name="SaveButton" Content="저장" Margin="6,0,0,0" />
-                <Button Grid.Column="3" x:Name="SaveAsButton" Content="다른 이름으로…" Margin="6,0,0,0" />
+            <Grid x:Name="TopBar" ColumnDefinitions="Auto,16,Auto,Auto,*,Auto">
+                <!-- File 메뉴 (2026-11-17 소유자 — 유니티처럼 눌러 목록에서 고른다). 되돌리기 · 다시 실행도 여기 있다(2026-11-18 소유자 —
+                     「키보드를 안 쓰는 사람들을 위해서기도 하고, 중요한 기능이니만큼 단축키를 몰라도 사용할 수 있도록」 · finishing FX7) — 메뉴 글
+                     옆에 단축키를 적고, 누르면 그 키와 같은 일을 한다. ⛔ 2026-11-17에 위 띠의 [실행 취소] · [다시 실행] 단추를 걷으며 키로만 남겼다.
+                     프로젝트는 폴더다 — 새로/열기는 폴더를 고른다. [다른 이름으로…]는 두지 않는다: 복제는 탐색기, 버전은 git.
+                     manifest 이름은 사람이 짓지 않는다(ProjectFolder). -->
+                <!-- File은 이웃 단추([📂 작업 폴더] · [⚙ 설정])와 같은 모양이다 — 테마의 맨 윗 메뉴 항목은 바탕이 투명해 글자만 보였다
+                     (2026-11-18 소유자 · chrome-card-header U1). 단추의 바탕 · 모서리 · 여백을 그대로 빌린다 — 마우스를 올리면 테마의 메뉴
+                     강조가 그 위에 선다. -->
+                <!-- 높이 — File과 두 단추는 위 띠의 줄 높이를 함께 쓴다(셋 다 Stretch · 테마가 메뉴에 박는 높이 32는 걷는다 — Height="NaN").
+                     줄 높이는 셋 가운데 가장 큰 것이다. 셋의 제 높이는 글꼴이 정해 OS마다 다르다 — ⚙ · 📂 같은 그림 글자는 OS의 이모지 글꼴로
+                     그려 단추가 Windows에서는 34, Linux에서는 32였다. ⛔ 2026-11-18 ~ 11-19에는 메뉴가 32로 묶여 Windows에서만 File이 2px 낮았다
+                     (CI의 MainChromeTests가 Windows에서만 실패 · writer-app WA8). -->
+                <Menu Grid.Column="0" x:Name="MainMenu" VerticalAlignment="Stretch" Height="NaN">
+                    <MenuItem x:Name="FileMenu"
+                              Header="File"
+                              Background="{DynamicResource ButtonBackground}"
+                              Foreground="{DynamicResource ButtonForeground}"
+                              CornerRadius="{DynamicResource ControlCornerRadius}"
+                              Padding="{DynamicResource ButtonPadding}"
+                              MinHeight="32"
+                              VerticalAlignment="Stretch">
+                        <MenuItem x:Name="NewMenuItem" Header="새 프로젝트…"
+                                  ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/)." />
+                        <MenuItem x:Name="OpenMenuItem" Header="열기…"
+                                  ToolTip.Tip="프로젝트 폴더를 고릅니다." />
+                        <Separator />
+                        <!-- 단축키 글(Ctrl+S · 맥은 ⌘S)은 코드가 단다 — OS마다 갈리는 것은 PlatformKeys 한 벌이다(MainWindow.axaml.cs). -->
+                        <MenuItem x:Name="SaveMenuItem" Header="저장" />
+                        <Separator />
+                        <MenuItem x:Name="UndoMenuItem" Header="되돌리기"
+                                  ToolTip.Tip="방금 한 편집 하나를 되돌립니다." />
+                        <MenuItem x:Name="RedoMenuItem" Header="다시 실행"
+                                  ToolTip.Tip="되돌린 편집을 다시 합니다." />
+                    </MenuItem>
+                </Menu>
 
-                <Button Grid.Column="5" x:Name="UndoButton" Content="실행 취소" />
-                <Button Grid.Column="6" x:Name="RedoButton" Content="다시 실행" Margin="6,0,0,0" />
+                <!-- ⛔ [🎮 게임 폴더…]는 2026-11-17에 걷혔다 — 형식마다 보낼 곳은 [⚙ 설정]의 「내보내기」에서 정한다
+                     (docs/work-orders/export-destinations-orders.md). -->
 
                 <!--
-                  진행 JSON은 사람 손을 안 기다리고 저절로 나가므로(2026-08-17), 사람이 할
-                  일은 "가서 꺼내 오는 것"뿐이다. 그 자리를 몰라 못 꺼내 가던 것을 연다
-                  (2026-08-25 소유자 — 비개발자 작가에게 건네는 준비의 일부).
-
-                  ⚠ <b>이 무리에서 맨 왼쪽이다</b> (2026-08-26 소유자: "챕터진행이 좌측에
-                  있고 내보내기가 우측으로"). 저절로 나간 것을 꺼내 가는 일이 흔하고,
-                  손으로 내보내는 일이 드물다 — 자주 쓰는 것이 앞이다.
-                  ⚠ 뒤 셋(내보내기·CSV·양식)은 <b>한 가족</b>이라 붙여 둔다. 지금 CSV·양식은
-                  접혀 있지만(ApplyTabChrome), 되살아날 때 이 무리 안에서 서야 한다.
+                  진행 JSON · 대사 Yarn은 사람 손을 안 기다리고 저절로 나가므로, 사람이 할
+                  일은 "가서 꺼내 오는 것"뿐이다. 그 자리를 모르면 꺼내 갈 수 없으니 폴더를 연다.
+                  연출 든 게임용 Yarn은 ked-story-compositor가 낸다.
                 -->
-                <Button Grid.Column="8" x:Name="OpenExportFolderButton" Content="📂 챕터진행"
-                        ToolTip.Tip="exported/ 폴더를 엽니다 — 챕터별 진행 JSON이 여기 있습니다." />
-                <Button Grid.Column="9" x:Name="ExportButton" Content="내보내기…" Margin="6,0,0,0" />
-                <Button Grid.Column="10" x:Name="CsvExportButton" Content="CSV 내보내기…" Margin="6,0,0,0" />
-                <Button Grid.Column="11" x:Name="ExportFormatsButton" Content="양식…" Margin="6,0,0,0" />
+                <!-- ⛔ 2026-11-18까지 이름이 [📂 챕터진행]이었다(소유자 — 「작업 폴더로 바꿔주십시오」). -->
+                <Button Grid.Column="2" x:Name="WorkFolderButton" Content="📂 작업 폴더" VerticalAlignment="Stretch"
+                        ToolTip.Tip="작업 폴더(프로젝트 폴더의 exported/)를 엽니다 — 툴이 저절로 내는 챕터별 진행 JSON · 대사 Yarn(yarn/)이 여기 있습니다." />
 
-                <StackPanel Grid.Column="13" VerticalAlignment="Center" Margin="8,0">
+                <!-- 설정은 이 창 하나에 모은다(2026-11-17 · docs/work-orders/settings-orders.md). -->
+                <Button Grid.Column="3" x:Name="SettingsButton" Content="⚙ 설정" Margin="6,0,0,0" VerticalAlignment="Stretch"
+                        ToolTip.Tip="설정 — [대본] 판 크기 · 복제할 폴더(게임 폴더 등) · 단축키 · 미니맵 · 설명 간소화" />
+
+                <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock x:Name="ProjectNameText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                     <TextBlock x:Name="ProjectPathText" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
-                <!-- ⚠ <b>맨 끝 열(마지막 Auto)이 이 표시의 자리다.</b> 앞에 단추를 하나
+                <!-- 주의: <b>맨 끝 열(마지막 Auto)이 이 표시의 자리다.</b> 앞에 단추를 하나
                      더하면 열이 늘고, 그때 <c>*</c>(프로젝트 이름)와 이 칸이 <b>함께</b>
-                     밀려야 한다. `📂 챕터진행`을 더할 때 이름 칸만 12→13으로 옮기고 이쪽을
-                     안 옮겨서, 이 글이 <b>이름 위에 겹쳐</b> 섰다(2026-08-26 소유자 보고:
-                     "원래 우측상단 끝이였는데"). 열 번호는 둘이 한 쌍이다. -->
-                <TextBlock Grid.Column="14"
+                     밀려야 한다. 이름 칸만 옮기면 이 글이 <b>이름 위에 겹쳐</b> 선다.
+                     열 번호는 둘이 한 쌍이다. -->
+                <TextBlock Grid.Column="5"
                            x:Name="DirtyText"
                            VerticalAlignment="Center"
                            FontWeight="SemiBold" />
             </Grid>
         </Border>
 
-        <!-- 상태줄은 <b>곁눈으로 읽는 줄</b>이다 (2026-08-24 소유자: "저장했습니다,
-             로드했습니다 이런 문구의 크기를 줄여줘"). 기본 글자크기(14)에 위아래 8씩
+        <!-- 바깥에서 바뀐 프로젝트 — 연 뒤에 다른 곳(GitHub Desktop의 받기 등)이 프로젝트 파일을 바꿨는데 이 창에 고친 것이 남아 있을 때만 선다
+             (2026-11-19 · writer-release WR1). 고른 것이 없으면 저장 · 자동 저장이 덮어쓰지 않는다. 고친 것이 없으면 이 띠 없이 다시 읽는다
+             (MainWindow.CheckOutsideChanges). 창을 띄우지 않는다 — Ctrl+S 같은 키에는 붙을 자리가 없고, 띠는 읽던 판을 덮지 않는다. -->
+        <Border x:Name="OutsideChangeBar"
+                DockPanel.Dock="Top"
+                IsVisible="False"
+                Padding="12,6"
+                Background="#FFF4D6"
+                BorderBrush="#E0B84A"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto,8,Auto">
+                <TextBlock x:Name="OutsideChangeText"
+                           Grid.Column="0"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Foreground="#5A4300"
+                           Text="⚠ 이 프로젝트의 파일이 다른 곳에서 바뀌었습니다(GitHub Desktop의 받기 등). 이 창에 아직 저장하지 않은 것이 있어 저장을 멈췄습니다 — 어느 쪽을 남길지 고르세요." />
+                <Button x:Name="OutsideReloadButton" Grid.Column="1" Content="다시 열기 (여기서 고친 것 버림)" />
+                <Button x:Name="OutsideOverwriteButton" Grid.Column="3" Content="내 것으로 덮어쓰기" />
+            </Grid>
+        </Border>
+
+        <!-- 상태줄은 <b>곁눈으로 읽는 줄</b>이다. 기본 글자크기(14)에 위아래 8씩
              주면 36px을 늘 차지하는데, 여기 뜨는 말은 대부분 "됐다"이고 그것은 크게
              볼 것이 아니다. 이 저장소가 곁정보에 쓰는 11로 맞춘다. -->
         <Border DockPanel.Dock="Bottom"
@@ -66,31 +114,36 @@
             <TextBlock x:Name="StatusText" FontSize="11" TextWrapping="Wrap" />
         </Border>
 
-        <!-- 창은 이제 탭 하나뿐이다 (2026-08-22 소유자). 곁기둥 둘이 제 화면 안으로
-             들어갔다: <b>챕터 목록</b>은 챕터 그래프로, <b>노드 편집기 + 에셋 탐색기</b>는
-             연출 그래프로. 창이 들고 탭마다 접었다 펴던 시절에는 어느 화면의 것인지가
-             chrome 코드에만 적혀 있었고, 그래서 다른 화면의 발행·프리뷰가 소음으로 남았다.
-             이제 자리가 곧 소속이다 — 무대 프리뷰는 창 전체를 쓴다.
-             탭 순서가 곧 작업 순서다 (2026-08-18 팀장 미팅): ① 챕터 그래프에서 구조와
-             대사를 짜고, ② 연출 그래프에서 그 위에 연출을 얹고, ③ 무대에서 확인한다.
-             두 그래프는 데이터도 편집 경로도 공유하지 않는다 (G-1). -->
-        <TabControl x:Name="MainTabs" Padding="0">
-            <TabItem x:Name="ChapterTabItem" Header="챕터 그래프">
-                <views:ChapterGraphView x:Name="ChapterGraph" />
-            </TabItem>
-            <TabItem x:Name="GraphTabItem" Header="연출 그래프">
-                <views:GraphEditorView x:Name="Graph" />
-            </TabItem>
-            <!-- 무대 프리뷰 승격 (2026-08-20 소유자) — 우측 아래 조그만 패널이 아니라
-                 그래프들과 같은 급의 판이다. 분리 창(창으로 열기)은 이 탭이 대체한다. -->
-            <!-- 작가의 자리 (R-E · 지시서 §6.1: "탭은 곧 역할이다 … 작가만 제 탭이 없었다").
-                 ⚠ 앞 둘의 순서는 건드리지 않는다 — `MainChromeTests`가 고정하고 있다. -->
-            <TabItem x:Name="ScriptTabItem" Header="대본">
-                <views:ScriptView x:Name="Script" />
-            </TabItem>
-            <TabItem x:Name="StageTabItem" Header="무대 프리뷰">
-                <views:MiniStagePreview x:Name="StagePreview" />
-            </TabItem>
+        <!-- 탭 둘 — [대본](연출 그래프)과 [구성](챕터 그래프). 틀은 같다: 왼쪽 하이어아키 · 가운데 판 · 오른쪽 탭 셋(인스펙터 · 화자 ·
+             조건 및 스탯). 두 기둥은 접히고(ColumnDock) 두 탭이 함께 접힌다. 하이어아키의 접힘과 선택도 두 탭이 함께 쓴다.
+             하는 일은 나뉜다: [대본]은 챕터 · 장면 · 에피소드를 더하고 지우고 이름을 고치며, 카드를 잇고(선택지 · 분기) 대사를 쓴다.
+             [구성]은 ID · 조건 식 · 스탯 · 선택지의 표시/해금 조건과 스탯변화 · 캐릭터 키를 정한다(하이어아키는 읽기 전용).
+             둘 다 세션의 편집기 한 벌로 고친다.
+             탭 순서가 작업 순서다 — 먼저 [대본]에서 화를 만들고 쓰고 잇고, 그다음 [구성]에서 조건 · 스탯을 붙인다. 그래서 [대본]이 첫째이고 창을
+             열거나 새 프로젝트를 만들면 [대본]이 선다(2026-11-19 소유자 · usability UX23). ⛔ 2026-11-19까지는 [구성]이 첫째였다 — 이야기를
+             챕터 그래프에서 쓰던 때(run-log 「작업 순서가 곧 탭 순서」)의 순서로, 작가는 켤 때마다 [대본]을 눌러야 했다.
+             무대 프리뷰는 연출 층과 함께 ked-story-compositor의 몫이다.
+             주의: 둘의 순서는 `MainChromeTests`가 고정하고 있다 — 시험은 탭을 번호가 아니라 이름(MainTab)으로 고른다. -->
+        <!-- 탭 줄은 머리만 진다 — 두 판은 그 아래 한 칸에 늘 붙어 서고 고른 탭의 판만 보인다(MainWindow.ShowTab · 2026-11-19 · usability UX14).
+             ⛔ 그 전에는 판이 탭 안에 들어 있어, 탭을 바꾸면 안 보이는 탭의 판이 화면 나무에서 떨어졌다가 돌아올 때 다시 붙었다 — 카드
+             160장의 글 칸이 모양(템플릿)을 다시 입고 다시 재느라 [대본] 탭으로 돌아오는 데 1초가 넘었다. -->
+        <TabControl x:Name="MainTabs" DockPanel.Dock="Top" Padding="0">
+            <!-- 탭 글은 18 · 높이 34 — 테마 기본(24 · 48)은 위 띠 · 툴바 사이를 넓게 벌렸다(2026-11-18 소유자 · chrome-card-header U1).
+                 「>」 자식 고르기 — 판 안 오른쪽 기둥의 탭(제 크기가 따로 있다)에는 닿지 않는다. -->
+            <TabControl.Styles>
+                <Style Selector="TabControl#MainTabs > TabItem">
+                    <Setter Property="FontSize" Value="18" />
+                    <Setter Property="MinHeight" Value="34" />
+                    <Setter Property="Padding" Value="12,0" />
+                </Style>
+            </TabControl.Styles>
+            <TabItem x:Name="GraphTabItem" Header="대본" />
+            <TabItem x:Name="ChapterTabItem" Header="구성" />
         </TabControl>
+
+        <Panel x:Name="TabBodies">
+            <views:GraphEditorView x:Name="Graph" />
+            <views:ChapterGraphView x:Name="ChapterGraph" IsVisible="False" />
+        </Panel>
     </DockPanel>
 </Window>

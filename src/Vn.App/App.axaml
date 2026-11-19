@@ -1,24 +1,30 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Vn.App.App"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Light">
+             <!-- 늘 밝게 (2026-11-18 소유자 · docs/work-orders/light-theme-orders.md) — 판(카드 · 미니맵 · 선택지 칸)의 색은 코드에 밝게
+                  박혀 있어, 윈도우를 따라 어둡게 뜨면 틀만 어두워지고 카드 이름이 흰 바탕에 흰 글이 됐다. 진짜 다크 모드는
+                  docs/design/dark-mode-estimate.md의 (2)안 — 설정 창에서 고르게 할 때 이 줄을 앱 설정으로 바꾼다.
+                  ⛔ 그 전에는 "Default"(윈도우 설정을 따른다)였다. -->
 
     <Application.Styles>
         <FluentTheme />
     </Application.Styles>
 
-    <!-- ThemeBorderLowBrush는 Simple 테마의 키라 FluentTheme에는 없다 — 참조가 전부
-         null로 풀려 구분선이 조용히 사라졌다(그래프 캔버스 히트테스트 불능과 같은 뿌리).
-         화면 18곳이 이 키 하나를 참조하므로 여기 한 번만 정의해 전부 살린다. -->
+    <!-- ThemeBorderLowBrush · ThemeForegroundBrush는 Simple 테마의 키라 FluentTheme에는 없다 — 참조가 전부
+         null로 풀려 구분선이 조용히 사라진다(그래프 캔버스 히트테스트 불능과 같은 뿌리).
+         화면 18곳이 ThemeBorderLowBrush를, [구성] 인스펙터의 「▾ 대사」 접기 제목이 ThemeForegroundBrush를 부르므로 여기 한 번만
+         정의해 전부 살린다. ThemeForegroundBrush의 밝게 값은 정의 전에 풀리던 그 검정이다(밝은 화면의 색은 그대로). -->
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="ThemeBorderLowBrush" Color="#33555555" />
+                    <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#FF000000" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="ThemeBorderLowBrush" Color="#4DAAAAAA" />
+                    <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#FFFFFFFF" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

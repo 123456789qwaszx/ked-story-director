@@ -21,7 +21,7 @@ internal static class StartupLog
     /// </summary>
     public static string Directory { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "VnTool",
+        AppIdentity.DataFolder,
         "logs");
 
     public static string FilePath { get; } = Path.Combine(Directory, "startup-error.log");

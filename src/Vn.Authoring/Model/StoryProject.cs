@@ -1,5 +1,4 @@
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Model;
@@ -9,10 +8,15 @@ namespace Vn.Authoring.Model;
 ///
 /// 세 종류의 데이터가 한 지붕 아래 있고, 서로 겹치지 않는다.
 /// <code>
-/// Scripts       작가의 대본에서 나온 줄 정체성과 locale별 화자·대사   ← 대사 본문의 유일한 원본
-/// Files/Nodes   그 줄들에 얹는 대사 논리와 연출, 그리고 실행 흐름
-/// Results       얼어붙은 발행 결과와 그 조합                        ← 불변, 추가만 가능
+/// Files/Nodes   대사 카드 — 제 대본(줄 정체성과 locale별 화자·대사)과 그 줄들에 얹는 대사 논리 · 실행 흐름
+/// Chapters      기획자의 챕터 구조
 /// </code>
+///
+/// 대본은 2026-10-29까지 카드와 따로 선 목록(<c>Scripts</c>)이었고 카드가 Id로 가리켰다. 카드와 늘 1:1이 된 뒤로
+/// 카드가 제 대본을 직접 든다(<see cref="DialogueNode.Script"/> · <c>docs/plans/script-merge.md</c> S2).
+///
+/// <b>연출은 여기 없다</b> (2026-10-29). 연출 노드 · 명령 공급 · 발행 결과 · 곡선 · 빠른 명령 · 에셋
+/// 설정은 <c>ked-story-compositor</c>의 것이다 — 그 툴은 이 파일을 읽기만 하고 연출은 제 파일에 둔다.
 ///
 /// 프로젝트는 여러 <see cref="StoryFile"/>을 가지고, 각 파일이 노드를 소유한다.
 /// 프로젝트 전체 노드 순서가 필요할 때는 <see cref="EnumerateNodes"/>를 사용한다.
@@ -21,23 +25,12 @@ namespace Vn.Authoring.Model;
 public sealed class StoryProject
 {
     /// <summary>
-    /// 대본 산출물·발행 결과·RuntimeComposition을 도입한 형식 버전.
-    ///
-    /// 버전 2 이하는 화자·대사를 DialogueNode가 직접 소유했고 Presentation이 편집 중인
-    /// 노드를 실시간으로 읽었다. 그 데이터를 새 의미로 자동 해석하면 어느 줄이 어느 LineId인지
-    /// 도구가 임의로 정하게 된다. 그래서 <b>읽지 않고 명시적으로 거부한다.</b>
+    /// 지금 쓰는 형식 — <b>4</b>: 카드의 대본이 판 파일 안에 든다(2026-10-29 · <c>docs/plans/script-merge.md</c>).
+    /// <b>이 형식만 연다</b> — 그 앞의 형식은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c>).
     /// </summary>
-    public const int CurrentFormatVersion = 3;
-
-    /// <summary>이 버전 이하는 읽지 않는다.</summary>
-    public const int LastUnsupportedFormatVersion = 2;
-
-    public int FormatVersion { get; set; } = CurrentFormatVersion;
+    public const int CurrentFormatVersion = 4;
 
     public string Title { get; set; } = "새 프로젝트";
-
-    /// <summary>작가의 대본에서 나온 산출물. 화자·대사의 유일한 수정 가능한 원본이다.</summary>
-    public List<ScriptDocument> Scripts { get; init; } = new();
 
     public List<StoryFile> Files { get; init; } = new();
 
@@ -45,81 +38,47 @@ public sealed class StoryProject
     /// <b>기획자의 챕터 — 에피소드 구조·간선·선택지·조건·스탯</b> (R-F · 2026-09-16,
     /// 지시서 §1.1).
     ///
-    /// ⛔ 이 목록이 서기 전까지 그 값들의 주인은 <c>chapters/{Id}.xlsx</c>였다 — 툴은
-    /// 셀을 고치고 파일을 다시 읽었다. 이제 주인이 여기이고 워크북은 <b>산출물</b>이다.
+    /// 이 목록이 서기 전까지 그 값들의 주인은 <c>chapters/{Id}.xlsx</c>였다 — 툴은
+    /// 셀을 고치고 파일을 다시 읽었다. 이제 주인이 여기다(⛔ 워크북 산출은 2026-10-29에 엑셀 연동과 함께 걷혔다).
     ///
-    /// ⚠ <b>대본과 짝을 이룬다.</b> <see cref="Scripts"/>가 대사 본문의 원본이듯 이쪽이
+    /// <b>대본과 짝을 이룬다.</b> 카드의 대본(<see cref="DialogueNode.Script"/>)이 대사 본문의 원본이듯 이쪽이
     /// 구조의 원본이고, 둘을 잇는 것은 <c>DialogueNode.MarkedEpisodeId</c>다.
     /// </summary>
     public List<ChapterDocument> Chapters { get; init; } = new();
 
+    // ⛔ `Links`(조건 공급 연결 — 범위 결정에서는 2026-08-17에 빠졌다)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 조건 범위는
+    //    판이다(<see cref="Flow.ConnectedSetNodeResolver"/>) · docs/work-orders/legacy-read-orders.md L5. 유물이던 작가 화자
+    //    `WriterSpeakers`도 함께 걷혔다.
+
     /// <summary>
-    /// 실행 출구가 아닌 조건 공급 관계.
+    /// <b>화자 목록</b> — 대본의 화자 이름 ↔ 초상화 · 표정의 캐릭터 키. 챕터가 아니라 <b>프로젝트</b>의 것이다 — 모든 챕터가 같은 목록을 쓴다
+    /// (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S3). 이름은 겹치지 않고 비지 않는다.
     ///
-    /// ⚠ <b>범위 결정에는 더 이상 쓰이지 않는다</b> (2026-08-17) — 작가의 조건·변수는 판
-    /// (챕터) 단위 전역이라 링크 없이 미친다. 구판 프로젝트의 데이터를 지우지 않으려고
-    /// 남겨 둘 뿐이고, 그래프도 이 선을 그리지 않는다.
+    /// ⛔ 그 전에는 프로젝트 옆 <c>game.definition.json</c>의 <c>speakers</c>에 살아 되돌리기 밖이었고, 고칠 때 바로 디스크에 썼다.
     /// </summary>
-    public List<NodeLink> Links { get; init; } = new();
+    public List<Speaker> Speakers { get; init; } = new();
 
-    /// <summary>
-    /// ⚠ <b>유물이다</b> (2026-08-23 소유자: "작가가 더한 화자라는 개념도 없애는 게 맞을 것
-    /// 같아 — 이런 캐릭터는 컨셉과 배경이 꼼꼼히 정해져야 하는데 작가가 임의로 추가한다는
-    /// 게 좋아보이진 않아서"). 화자의 주인은 기획자 하나다: 챕터 `화자` 시트와
-    /// `game.definition.json`.
-    ///
-    /// <b>아무도 읽지 않는다</b> — 더하는 화면도, 고르는 목록도 사라졌다. 그래도 지우지
-    /// 않는 이유는 구판 프로젝트 파일의 값을 조용히 날리지 않기 위해서다(이 저장소의
-    /// "구판 데이터는 지우지 않고 무시한다" 규칙). 읽고 다시 쓰기만 한다.
-    /// </summary>
-    public List<WriterSpeaker> WriterSpeakers { get; init; } = new();
+    /// <summary>화자명에 잇는 캐릭터 키. 목록에 없거나 키가 비었으면 null.</summary>
+    public string? FindSpeakerCharacterId(string? speakerName) =>
+        FindSpeaker(speakerName) is { CharacterId: { Length: > 0 } characterId } ? characterId : null;
 
-    /// <summary>
-    /// 작가의 커스텀 이징 곡선 (W67 후속). 커맨드 다섯째 인자 <c>@이름</c>의 유일한 원천 —
-    /// 런타임용 <c>curves.json</c>은 내보내기가 여기서 만든다.
-    /// </summary>
-    public List<EaseCurve> EaseCurves { get; init; } = new();
+    /// <summary>그 이름의 화자 — 앞뒤 공백을 걷고 Ordinal로 찾는다. 없으면 null.</summary>
+    public Speaker? FindSpeaker(string? speakerName)
+    {
+        if (string.IsNullOrWhiteSpace(speakerName))
+        {
+            return null;
+        }
 
-    /// <summary>발행된 불변 결과. 추가만 되고 내용이 바뀌지 않는다.</summary>
-    public ResultRepository Results { get; init; } = new();
-
-    /// <summary>대사 결과와 연출 결과를 짝지어 둔 정식 출력 입력.</summary>
-    public List<RuntimeComposition> Compositions { get; init; } = new();
+        string name = speakerName.Trim();
+        return Speakers.FirstOrDefault(speaker => string.Equals(speaker.Name, name, StringComparison.Ordinal));
+    }
 
     /// <summary>이야기가 시작되는 노드. null이면 아직 정하지 않은 것이다.</summary>
     public string? StartNodeId { get; set; }
 
-    /// <summary>프리뷰 에셋 폴더 설정. 미설정이어도 저작은 계속된다.</summary>
-    public AssetRootSettings AssetRoots { get; init; } = new();
-
-    /// <summary>
-    /// 최근 사용한 연출 커맨드 정의 Id, 최신이 앞. 갤러리의 "최근" 섹션이 읽는다.
-    /// 프로젝트에 저장한다 — 이 프로젝트에서 자주 쓰는 어휘는 프로젝트의 것이다.
-    /// </summary>
-    public List<string> RecentCommandIds { get; init; } = new();
-
-    /// <summary>갤러리 "최근" 섹션이 다 보여 줄 수 있는 만큼만 남긴다.</summary>
-    public const int MaxRecentCommands = 8;
-
-    /// <summary>
-    /// 무대 조절창 [자주 쓰는] 칩 목록 (2026-08-22). <b>null이면 아직 손대지 않은 것</b>이라
-    /// <see cref="StageQuickCommands.Default"/>가 선다 — 사람이 전부 지운 <b>빈 목록과 다르다</b>.
-    /// 이 구분이 없으면 "기본으로 돌려놓기"와 "다 지웠으니 그대로 둬라"가 같은 데이터가 된다.
-    /// </summary>
-    public List<StageQuickCommand>? QuickCommands { get; set; }
-
-    /// <summary>지금 화면에 설 칩 목록 — 손대지 않았으면 기본 목록이다.</summary>
-    public IReadOnlyList<StageQuickCommand> EffectiveQuickCommands =>
-        QuickCommands ?? StageQuickCommands.Default;
-
-    /// <summary>내보내기 양식 선택 (X13). 기본 전부 켬.</summary>
-    public ExportFormatSelection ExportFormats { get; init; } = new();
-
-    /// <summary>
-    /// 라이브 CompositionNode 출력 폴더 (X12c, D-1). 프로젝트 기준 상대 경로,
-    /// null이면 라이브 출력 없음 — 편의 기능이 저작을 막지 않는다.
-    /// </summary>
-    public string? OutputPath { get; set; }
+    /// <summary>[대본] 판의 크기(2026-11-17) — [⚙ 설정]에서 고친다. 바꾸는 길은 <see cref="Editing.ProjectEditor.SetBoardSize"/> 하나다.</summary>
+    public BoardSize Board { get; set; } = BoardSize.Default;
 
     /// <summary>
     /// 프로젝트 전체 노드를 결정적인 순서로 펼친다.
@@ -155,44 +114,14 @@ public sealed class StoryProject
 
     public DialogueNode? FindDialogue(string? nodeId) => FindNode(nodeId) as DialogueNode;
 
-    public PresentationNode? FindPresentation(string? nodeId) => FindNode(nodeId) as PresentationNode;
-
-    public ScriptDocument? FindScript(string? scriptId)
-    {
-        return scriptId is null
-            ? null
-            : Scripts.FirstOrDefault(
-                script => string.Equals(script.Id, scriptId, StringComparison.Ordinal));
-    }
-
-    /// <summary>이 대사 노드가 읽는 대본. 노드가 없거나 대본을 고르지 않았으면 null이다.</summary>
-    public ScriptDocument? ScriptOf(string? dialogueNodeId) =>
-        FindScript(FindDialogue(dialogueNodeId)?.ScriptId);
-
-    public RuntimeComposition? FindComposition(string? compositionId)
-    {
-        return compositionId is null
-            ? null
-            : Compositions.FirstOrDefault(
-                item => string.Equals(item.Id, compositionId, StringComparison.Ordinal));
-    }
-
-    public NodeLink? FindLink(string? linkId)
-    {
-        return linkId is null
-            ? null
-            : Links.FirstOrDefault(link => string.Equals(link.Id, linkId, StringComparison.Ordinal));
-    }
-
-    public IEnumerable<NodeLink> EnumerateLinks(NodeLinkKind kind)
-    {
-        return Links.Where(link => link.Kind == kind);
-    }
+    /// <summary>모든 대사 카드의 대본 — 카드 순서대로. 화자 개명처럼 대본 전체를 훑는 일이 쓴다.</summary>
+    public IEnumerable<ScriptDocument> EnumerateScripts() =>
+        EnumerateNodes().OfType<DialogueNode>().Select(node => node.Script);
 
     /// <summary>
     /// 프로젝트 안의 모든 SetNode 조건. 파일 순서, SetNode 순서, 조건 순서를 지킨다.
     /// 편집·진단용 전체 조회이며 DialogueNode의 드롭다운 범위에는 사용하지 않는다.
-    /// Dialogue별 범위는 AvailableConditionResolver가 Settings link를 기준으로 계산한다.
+    /// Dialogue별 범위는 AvailableConditionResolver가 판을 기준으로 계산한다.
     /// </summary>
     public IEnumerable<ConditionDefinition> EnumerateConditions()
     {
@@ -205,27 +134,5 @@ public sealed class StoryProject
             ? null
             : EnumerateConditions()
                 .FirstOrDefault(item => string.Equals(item.Id, conditionId, StringComparison.Ordinal));
-    }
-
-    public StoryProject Clone()
-    {
-        return new StoryProject
-        {
-            FormatVersion = FormatVersion,
-            Title = Title,
-            StartNodeId = StartNodeId,
-            AssetRoots = AssetRoots.Clone(),
-            RecentCommandIds = new List<string>(RecentCommandIds),
-            QuickCommands = QuickCommands?.Select(chip => chip.Copy()).ToList(),
-            ExportFormats = ExportFormats.Clone(),
-            OutputPath = OutputPath,
-            Scripts = Scripts.Select(script => script.Clone()).ToList(),
-            Files = Files.Select(file => file.Clone()).ToList(),
-            Links = Links.Select(link => link.Clone()).ToList(),
-            WriterSpeakers = WriterSpeakers.Select(speaker => speaker.Clone()).ToList(),
-            EaseCurves = EaseCurves.Select(curve => curve.Clone()).ToList(),
-            Results = Results.Clone(),
-            Compositions = Compositions.Select(item => item.Clone()).ToList()
-        };
     }
 }

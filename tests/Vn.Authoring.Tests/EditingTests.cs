@@ -15,7 +15,7 @@ public class EditingTests
         string second = sample.Line("둘째");
         string third = sample.Line("셋째");
 
-        sample.Editor.MoveScriptLine(sample.Script.Id, third, -2);
+        sample.Editor.MoveScriptLine(sample.Dialogue.Id, third, -2);
 
         DialogueScript script = DialogueScriptResolver.Resolve(sample.Project, sample.Dialogue);
 
@@ -34,10 +34,9 @@ public class EditingTests
         sample.Line("바깥");
         string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         sample.Line("안쪽");
-        sample.Editor.SetExitTarget(sample.Dialogue.Id, ExitPortKind.Branch, opener, sample.TargetA.Id);
 
         // 여는 줄을 맨 위로 올리면 갈래의 시작도 맨 위가 된다.
-        sample.Editor.MoveScriptLine(sample.Script.Id, opener, -1);
+        sample.Editor.MoveScriptLine(sample.Dialogue.Id, opener, -1);
 
         DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
 
@@ -45,9 +44,33 @@ public class EditingTests
         Assert.NotNull(flow.Lines[0].Branch);
         Assert.NotNull(flow.Lines[1].Branch);
         Assert.NotNull(flow.Lines[2].Branch);
+    }
 
-        // 출구는 갈래에 매여 있으므로 이동에도 살아남는다.
-        Assert.Equal(sample.TargetA.Id, flow.Branches[0].ExitTargetNodeId);
+    [Fact]
+    public void 대본에서_줄이_빠지면_그_줄의_전환도_함께_접힌다()
+    {
+        // W47 (소유자 결정): 줄 카드가 없는 조건은 지울 진입점조차 없는 유령이 된다 — 고아로 남기는 대신 줄이 물러날 때 함께 정리한다.
+        // (그 줄의 갈래 출구도 함께 접던 것은 2026-11-19에 갈래 출구와 함께 걷혔다 — 옛 ExitTests에서 옮겼다.)
+        var sample = new Sample();
+        string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
+
+        sample.Editor.RetireScriptLine(sample.Dialogue.Id, opener);
+
+        Assert.Empty(sample.Dialogue.LineExtensions);
+        DialogueFlow flow = ConditionFlowResolver.Resolve(sample.Dialogue, sample.Project);
+        Assert.Empty(flow.Lines);
+        Assert.DoesNotContain(flow.Problems, problem => problem.Kind == FlowProblemKind.OrphanedLineExtension);
+    }
+
+    [Fact]
+    public void 전환을_지우면_빈_항목도_버린다()
+    {
+        var sample = new Sample();
+        string opener = sample.Line("if", LineConditionTransition.BeginIf(sample.ConditionA.Id));
+
+        sample.Editor.SetLineTransition(sample.Dialogue.Id, opener, null);
+
+        Assert.Empty(sample.Dialogue.LineExtensions);
     }
 
     [Fact]
@@ -58,7 +81,7 @@ public class EditingTests
 
         // 그래프에서 왼쪽 위에 놓아도 지정한 파일에서는 맨 뒤다.
         DialogueNode added = sample.Editor.AddDialogueNode(
-            sample.File.Id,
+            sample.File.Id, "나중에 만든 것",
             x: -500,
             y: -500,
             name: "나중에 만든 것");
@@ -74,9 +97,10 @@ public class EditingTests
         var project = new StoryProject();
         var file = new StoryFile("sf_start", "시작 파일");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "시작 파일" });   // 카드는 챕터 판에만 선다
         var editor = new ProjectEditor(project);
-        SetNode first = editor.AddSetNode(file.Id);
-        editor.AddDialogueNode(file.Id);
+        DialogueNode first = editor.AddDialogueNode(file.Id, "s1");
+        editor.AddDialogueNode(file.Id, "s1");
 
         Assert.Equal(first.Id, editor.Project.StartNodeId);
     }
@@ -99,7 +123,7 @@ public class EditingTests
         var sample = new Sample();
         string line = sample.Line("처음");
 
-        sample.Editor.SetScriptLineText(sample.Script.Id, line, "윌로", "고친 뒤");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line, "윌로", "고친 뒤");
         Assert.Equal("고친 뒤", TextOf(sample, line));
 
         sample.Editor.Undo();
@@ -110,17 +134,42 @@ public class EditingTests
     }
 
     [Fact]
-    public void 노드_이동은_되돌리기_기록을_더럽히지_않는다()
+    public void 끌어_놓은_무리는_되돌리기_한_칸으로_돌아온다()
     {
+        // D3 · §6-2 — 그래프는 끄는 동안 화면만 옮기고 놓을 때 MoveNodes를 한 번 부른다.
+        //    예전에는 포인터마다 기록 없이 적어서 끈 자리를 되돌릴 수 없었다.
+        var sample = new Sample();
+        (double X, double Y) dialogue = (sample.Dialogue.Layout.X, sample.Dialogue.Layout.Y);
+        (double X, double Y) target = (sample.TargetB.Layout.X, sample.TargetB.Layout.Y);
+        int notifications = 0;
+        sample.Editor.Changed += (_, _) => notifications++;
+
+        sample.Editor.MoveNodes(new Dictionary<string, (double X, double Y)>
+        {
+            [sample.Dialogue.Id] = (dialogue.X + 400, dialogue.Y + 300),
+            [sample.TargetB.Id] = (target.X + 400, target.Y + 300)
+        });
+
+        Assert.Equal(1, notifications);
+
+        sample.Editor.Undo();
+
+        // 되돌리기는 스냅샷을 새로 푼다 — 노드는 Id로 다시 찾는다(§5-11).
+        StoryNode restoredDialogue = sample.Project.FindNode(sample.Dialogue.Id)!;
+        StoryNode restoredTarget = sample.Project.FindNode(sample.TargetB.Id)!;
+        Assert.Equal(dialogue, (restoredDialogue.Layout.X, restoredDialogue.Layout.Y));
+        Assert.Equal(target, (restoredTarget.Layout.X, restoredTarget.Layout.Y));
+    }
+
+    [Fact]
+    public void 제자리에_놓은_끌기는_되돌리기에_남지_않는다()
+    {
+        // 카드를 눌렀다 놓기만 한 것(선택)이 되돌리기 한 칸을 먹으면 앞선 편집이 한 번 늦게 돌아온다.
         var sample = new Sample();
         string line = sample.Line("처음");
-        sample.Editor.SetScriptLineText(sample.Script.Id, line, string.Empty, "고친 뒤");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line, string.Empty, "고친 뒤");
 
-        // 드래그 한 번에 수십 번 불리는 값이다. 이것이 쌓이면 되돌리기가 쓸모없어진다.
-        for (int step = 0; step < 20; step++)
-        {
-            sample.Editor.MoveNode(sample.Dialogue.Id, step, step);
-        }
+        sample.Editor.MoveNode(sample.Dialogue.Id, sample.Dialogue.Layout.X, sample.Dialogue.Layout.Y);
 
         sample.Editor.Undo();
         Assert.Equal("처음", TextOf(sample, line));
@@ -133,8 +182,8 @@ public class EditingTests
         int notifications = 0;
         sample.Editor.Changed += (_, _) => notifications++;
 
-        ScriptLine line = sample.Editor.InsertScriptLine(sample.Script.Id);
-        sample.Editor.SetScriptLineText(sample.Script.Id, line.Id, "윌로", "안녕");
+        ScriptLine line = sample.Editor.InsertScriptLine(sample.Dialogue.Id);
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line.Id, "윌로", "안녕");
         sample.Editor.SetLineTransition(
             sample.Dialogue.Id,
             line.Id,
@@ -151,7 +200,7 @@ public class EditingTests
         int notifications = 0;
         sample.Editor.Changed += (_, _) => notifications++;
 
-        sample.Editor.SetScriptLineText(sample.Script.Id, line, string.Empty, "처음");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line, string.Empty, "처음");
 
         Assert.Equal(0, notifications);
     }
@@ -165,7 +214,7 @@ public class EditingTests
         var sample = new Sample();
         string line = sample.Line("처음");
 
-        sample.Editor.SetScriptLineText(sample.Script.Id, line, "윌로", "고친 뒤");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line, "윌로", "고친 뒤");
 
         Assert.Equal(new LocalizedLine("윌로", "고친 뒤"), sample.Script.Text(line));
 
@@ -173,33 +222,11 @@ public class EditingTests
         Assert.Empty(sample.Dialogue.LineExtensions);
     }
 
-    /// <summary>같은 대본을 두 노드가 읽어도 본문은 한 벌이다.</summary>
-    [Fact]
-    public void 같은_대본을_읽는_두_노드는_같은_본문을_본다()
-    {
-        var sample = new Sample();
-        sample.Line("공유");
-        DialogueNode other = sample.Editor.AddDialogueNode(
-            sample.File.Id,
-            name: "다른 장면",
-            scriptId: sample.Script.Id);
-
-        sample.Editor.SetScriptLineText(
-            sample.Script.Id,
-            sample.Script.Lines[0].Id,
-            "라루",
-            "한 곳만 바뀐다");
-
-        Assert.Equal(
-            "한 곳만 바뀐다",
-            DialogueScriptResolver.Resolve(sample.Project, sample.Dialogue).Lines[0].Text);
-        Assert.Equal(
-            "한 곳만 바뀐다",
-            DialogueScriptResolver.Resolve(sample.Project, other).Lines[0].Text);
-    }
+    // ⛔ `같은_대본을_읽는_두_노드는_같은_본문을_본다`는 대본이 카드 안으로 들어오며(S2) 걷혔다 — 대본을 나눠 쓰는
+    //    길이 없다. 카드마다 제 대본이다.
 
     private static string TextOf(Sample sample, string lineId) =>
-        sample.Project.FindScript(sample.Script.Id)!.Text(lineId).Text;
+        sample.Script.Text(lineId).Text;
     [Fact]
     public void 조건_이름과_식_수정은_구조_변경이_아니다()
     {
@@ -211,35 +238,10 @@ public class EditingTests
 
         Assert.NotNull(change);
         Assert.Equal(ProjectChangeKind.ConditionDefinition, change!.Kind);
-        Assert.False(change!.NeedsInspectorRebuild);
-        Assert.True(change!.NeedsGraphRebuild);
     }
 
-    [Fact]
-    public void 조건_수정은_그래프_라벨과_Dialogue_선택지에_즉시_반영된다()
-    {
-        var sample = new Sample();
-        string opener = sample.Line(
-            "조건 시작",
-            LineConditionTransition.BeginIf(sample.ConditionA.Id));
-        sample.Editor.SetExitTarget(
-            sample.Dialogue.Id,
-            ExitPortKind.Branch,
-            opener,
-            sample.TargetA.Id);
-
-        sample.Editor.UpdateCondition(sample.ConditionA.Id, "호감 매우 높음", "$favor >= 10");
-
-        ExitPort branchPort = Assert.Single(
-            NodeConnections.PortsOf(sample.Dialogue, sample.Project),
-            port => port.Kind == ExitPortKind.Branch);
-        Assert.Equal("호감 매우 높음", branchPort.Label);
-
-        ConditionChoice choice = Assert.Single(
-            ConditionChoices.For(preceding: null, sample.Dialogue, sample.Project),
-            item => string.Equals(item.ConditionId, sample.ConditionA.Id, StringComparison.Ordinal));
-        Assert.Equal("호감 매우 높음", choice.Label);
-    }
+    // ⛔ 「조건 수정은 그래프 라벨에 즉시 반영된다」는 2026-11-19에 걷혔다 — 조건 갈래의 출구 포트(라벨이 조건 이름)가 갈래 출구와 함께
+    //    걷혔다(usability UX28).
 
     // ⛔ <b>assignment 알림 검사 셋은 2026-09-17에 걷혔다</b> (작가 변수 폐지). 설정노드가
     //    변수를 들지 않으므로 `SetAssignments`라는 창구 자체가 없어졌다. 같은 자리의
@@ -254,11 +256,9 @@ public class EditingTests
         ProjectChangedEventArgs? change = null;
         sample.Editor.Changed += (_, args) => change = args;
 
-        sample.Editor.SetScriptLineText(sample.Script.Id, line, "라루", "수정");
+        sample.Editor.SetScriptLineText(sample.Dialogue.Id, line, "라루", "수정");
 
         Assert.Equal(ProjectChangeKind.DialogueContent, change!.Kind);
-        Assert.False(change.NeedsInspectorRebuild);
-        Assert.False(change.NeedsGraphRebuild);
     }
 
 }

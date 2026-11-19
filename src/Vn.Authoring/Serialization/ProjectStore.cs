@@ -1,22 +1,21 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Serialization;
 
 /// <summary>
-/// manifest·대본·StoryFile·발행 결과를 물리 파일로 읽고 쓴다.
+/// manifest · StoryFile을 물리 파일로 읽고 쓴다.
 /// StoryProject 자체는 경로 해석이나 파일 IO를 모른다.
 ///
-/// 디스크 배치:
+/// 디스크 배치(형식 4):
 /// <code>
 /// project.vnproject.json      목차와 파일을 넘나드는 관계
-/// script/&lt;scriptId&gt;.vnscript.json   대본 산출물 (줄 정체성 + locale별 본문)
-/// story/&lt;fileId&gt;.vnstory.json       노드
-/// results.vnresults.json      발행된 불변 결과
+/// story/&lt;fileId&gt;.vnstory.json       판 — 카드와 그 대본(줄 정체성 + locale별 본문)
 /// </code>
+///
+/// 저장은 목차에서 빠진 판 파일(지운 챕터의 판)을 걷는다 — 툴이 지은 이름만, 모든 쓰기가 끝난 뒤에(<see cref="RemoveStaleStoryFiles"/>).
 /// </summary>
 public static class ProjectStore
 {
@@ -24,7 +23,7 @@ public static class ProjectStore
     {
         string openedPath = Path.GetFullPath(path);
         string json = File.ReadAllText(openedPath, new UTF8Encoding(false));
-        JsonObject root = JsonSupport.ParseObject(json, "VnTool 프로젝트");
+        JsonObject root = JsonSupport.ParseObject(json, "프로젝트");
 
         if (LooksLikeStandaloneStoryFile(root))
         {
@@ -33,15 +32,9 @@ public static class ProjectStore
                 $"개별 {StoryFileJson.FileExtension} 대신 {ProjectManifestJson.FileExtension} manifest를 여세요.");
         }
 
-        if (LooksLikeStandaloneScript(root))
-        {
-            throw new InvalidDataException(
-                "이 파일은 프로젝트가 소유하는 대본입니다. " +
-                $"개별 {ScriptDocumentJson.FileExtension} 대신 {ProjectManifestJson.FileExtension} manifest를 여세요.");
-        }
+        ProjectManifest manifest = ProjectManifestJson.Read(json);
 
-        StoryProject project = LoadManifest(openedPath, ProjectManifestJson.Read(json));
-        return new ProjectLoadResult(project, openedPath);
+        return new ProjectLoadResult(LoadManifest(openedPath, manifest), openedPath);
     }
 
     public static void Save(string manifestPath, StoryProject project)
@@ -58,25 +51,11 @@ public static class ProjectStore
         // 한 파일의 데이터가 잘못됐다는 이유로 앞 파일만 새 내용으로 바뀌는 일을 줄인다.
         var writes = new List<PendingWrite>();
 
-        foreach (ScriptDocument script in project.Scripts)
-        {
-            writes.Add(new PendingWrite(
-                Resolve(rootDirectory, DefaultScriptPath(script.Id), ScriptDocumentJson.FileExtension),
-                ScriptDocumentJson.Write(script)));
-        }
-
         foreach (StoryFile file in project.Files)
         {
             writes.Add(new PendingWrite(
                 Resolve(rootDirectory, file.RelativePath, StoryFileJson.FileExtension),
                 StoryFileJson.Write(file)));
-        }
-
-        if (!project.Results.IsEmpty)
-        {
-            writes.Add(new PendingWrite(
-                Path.Combine(rootDirectory, ResultStoreJson.DefaultFileName),
-                ResultStoreJson.Write(project.Results)));
         }
 
         string manifestText = ProjectManifestJson.Write(project);
@@ -89,18 +68,83 @@ public static class ProjectStore
         }
 
         JsonSupport.WriteAtomic(fullManifestPath, manifestText);
+
+        // 목차에서 빠진 판 파일을 걷는다 — 쓰기가 모두 끝난 뒤라, 중간에 꺼져도 남는 것은 쓰지 않는 파일뿐이다.
+        RemoveStaleStoryFiles(rootDirectory, fullManifestPath, writes.Select(write => write.Path));
     }
 
-    public static string DefaultRelativePath(string fileId)
+    /// <summary>판 파일이 사는 폴더 — 새 판의 기본 자리(<see cref="StoryFile"/>의 <c>story/{Id}.vnstory.json</c>)다.</summary>
+    internal const string StoryFolderName = "story";
+
+    /// <summary>
+    /// <b>목차에서 빠진 판 파일을 지운다</b>(2026-11-18 소유자 — 챕터를 지운 뒤 저장해도 그 판 파일이 <c>story/</c>에 남아 쌓였다 ·
+    /// <c>docs/work-orders/stale-story-files-orders.md</c>). 지우는 것은 툴이 지은 것만이다 — <c>story/</c> 바로 안, 이름이
+    /// <see cref="IsToolMadeStoryFileName"/>인 것. 사람이 복사해 둔 파일 · 다른 이름 · 하위 폴더는 건드리지 않는다. 폴더에 다른 목차가 있으면
+    /// (두 목차가 <c>story/</c>를 함께 쓰던 옛 배치) 아무것도 지우지 않는다. 지우지 못한 파일은 남긴다 — 저장은 이미 끝났고 다음 저장이 다시 본다.
+    /// </summary>
+    /// <returns>지운 파일 수.</returns>
+    internal static int RemoveStaleStoryFiles(string rootDirectory, string manifestPath, IEnumerable<string> keptPaths)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
-        return $"story/{fileId}{StoryFileJson.FileExtension}";
+        string storyFolder = Path.Combine(rootDirectory, StoryFolderName);
+
+        if (!Directory.Exists(storyFolder))
+        {
+            return 0;
+        }
+
+        bool otherManifest = Directory.GetFiles(rootDirectory, "*" + ProjectManifestJson.FileExtension, SearchOption.TopDirectoryOnly)
+            .Any(path => !string.Equals(Path.GetFullPath(path), manifestPath, StringComparison.OrdinalIgnoreCase));
+
+        if (otherManifest)
+        {
+            return 0;
+        }
+
+        // 이름이 대소문자만 다른 파일도 남긴다 — 윈도우에서는 같은 파일이다.
+        var kept = new HashSet<string>(keptPaths.Select(Path.GetFullPath), StringComparer.OrdinalIgnoreCase);
+        int removed = 0;
+
+        foreach (string file in Directory.GetFiles(storyFolder, "*" + StoryFileJson.FileExtension, SearchOption.TopDirectoryOnly))
+        {
+            if (!IsToolMadeStoryFileName(Path.GetFileName(file)) || kept.Contains(Path.GetFullPath(file)))
+            {
+                continue;
+            }
+
+            try
+            {
+                File.Delete(file);
+                removed++;
+            }
+            catch (IOException)
+            {
+                // 잠겨 있다 — 남긴다. 목차가 가리키지 않으니 읽히지는 않는다.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // 권한이 없다 — 남긴다.
+            }
+        }
+
+        return removed;
     }
 
-    public static string DefaultScriptPath(string scriptId)
+    /// <summary>
+    /// 툴이 지은 판 파일 이름인가 — <c>sf_</c> + <see cref="Identifier"/>의 글자 8자 + <c>.vnstory.json</c>(<see cref="Identifier.File"/>의 모양).
+    /// </summary>
+    internal static bool IsToolMadeStoryFileName(string fileName)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(scriptId);
-        return $"script/{scriptId}{ScriptDocumentJson.FileExtension}";
+        const string prefix = "sf_";
+        const int idLength = 8;
+
+        if (!fileName.StartsWith(prefix, StringComparison.Ordinal) ||
+            !fileName.EndsWith(StoryFileJson.FileExtension, StringComparison.Ordinal) ||
+            fileName.Length != prefix.Length + idLength + StoryFileJson.FileExtension.Length)
+        {
+            return false;
+        }
+
+        return fileName.AsSpan(prefix.Length, idLength).ToString().All(Identifier.IsIdCharacter);
     }
 
     public static string NormalizeRelativeStoryPath(string relativePath) =>
@@ -143,45 +187,19 @@ public static class ProjectStore
         return normalized;
     }
 
-    private static StoryProject LoadManifest(string manifestPath, ProjectManifest manifest)
+    private static StoryProject LoadManifest(
+        string manifestPath,
+        ProjectManifest manifest)
     {
         string rootDirectory = Path.GetDirectoryName(manifestPath)
             ?? throw new InvalidDataException("프로젝트 manifest 디렉터리를 찾을 수 없습니다.");
         var project = new StoryProject
         {
-            FormatVersion = StoryProject.CurrentFormatVersion,
             Title = manifest.Title,
             StartNodeId = manifest.StartNodeId,
-            AssetRoots = manifest.AssetRoots.Clone(),
-            RecentCommandIds = manifest.RecentCommandIds.ToList(),
-            QuickCommands = manifest.QuickCommands?.Select(chip => chip.Copy()).ToList(),
-            ExportFormats = manifest.ExportFormats.Clone(),
-            OutputPath = manifest.OutputPath
+            Speakers = manifest.Speakers.ToList(),
+            Board = manifest.Board
         };
-
-        foreach (ScriptFileReference reference in manifest.Scripts)
-        {
-            string scriptPath = Resolve(rootDirectory, reference.RelativePath, ScriptDocumentJson.FileExtension);
-
-            if (!File.Exists(scriptPath))
-            {
-                throw new FileNotFoundException(
-                    $"프로젝트가 참조하는 대본을 찾을 수 없습니다: {reference.RelativePath}",
-                    scriptPath);
-            }
-
-            ScriptDocument script = ScriptDocumentJson.Read(
-                File.ReadAllText(scriptPath, new UTF8Encoding(false)));
-
-            if (!string.Equals(script.Id, reference.Id, StringComparison.Ordinal))
-            {
-                throw new InvalidDataException(
-                    $"manifest의 대본 Id '{reference.Id}'와 파일의 Id '{script.Id}'가 다릅니다.");
-            }
-
-            project.Scripts.Add(script);
-        }
-
         foreach (ProjectStoryFileReference reference in manifest.Files)
         {
             string storyPath = Resolve(rootDirectory, reference.RelativePath, StoryFileJson.FileExtension);
@@ -211,39 +229,8 @@ public static class ProjectStore
             project.Files.Add(file);
         }
 
-        if (manifest.ResultsRelativePath is { } resultsRelative)
-        {
-            string resultsPath = Resolve(rootDirectory, resultsRelative, ResultStoreJson.FileExtension);
-
-            if (!File.Exists(resultsPath))
-            {
-                throw new FileNotFoundException(
-                    $"프로젝트가 참조하는 발행 결과 파일을 찾을 수 없습니다: {resultsRelative}",
-                    resultsPath);
-            }
-
-            ResultRepository results = ResultStoreJson.Read(
-                File.ReadAllText(resultsPath, new UTF8Encoding(false)));
-
-            foreach (DialogueResult result in results.DialogueResults)
-            {
-                project.Results.Add(result);
-            }
-
-            foreach (PresentationResult result in results.PresentationResults)
-            {
-                project.Results.Add(result);
-            }
-        }
-
-        project.Links.AddRange(manifest.Links.Select(link => link.Clone()));
-
-        // ⚠ 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지
-        //    않는다(WriterSpeaker는 가변이라 복제한다).
+        // 복제하지 않는다 — 리더가 부를 때마다 새 객체를 만들고 매니페스트는 재사용되지 않는다.
         project.Chapters.AddRange(manifest.Chapters);
-        project.WriterSpeakers.AddRange(manifest.WriterSpeakers.Select(speaker => speaker.Clone()));
-        project.EaseCurves.AddRange(manifest.EaseCurves.Select(curve => curve.Clone()));
-        project.Compositions.AddRange(manifest.Compositions.Select(item => item.Clone()));
 
         JsonSupport.ValidateProject(project);
         return project;
@@ -251,16 +238,9 @@ public static class ProjectStore
 
     private static bool LooksLikeStandaloneStoryFile(JsonObject root)
     {
-        return (int?)root["formatVersion"] == StoryFileJson.CurrentFormatVersion &&
-            root["fileId"] is not null &&
+        // manifest에는 fileId가 없다.
+        return root["fileId"] is not null &&
             root["nodes"] is JsonArray;
-    }
-
-    private static bool LooksLikeStandaloneScript(JsonObject root)
-    {
-        return (int?)root["formatVersion"] == ScriptDocumentJson.CurrentFormatVersion &&
-            root["scriptId"] is not null &&
-            root["lines"] is JsonArray;
     }
 
     private sealed record PendingWrite(string Path, string Text);
@@ -284,4 +264,6 @@ public static class ProjectStore
     }
 }
 
-public sealed record ProjectLoadResult(StoryProject Project, string ManifestPath);
+public sealed record ProjectLoadResult(
+    StoryProject Project,
+    string ManifestPath);

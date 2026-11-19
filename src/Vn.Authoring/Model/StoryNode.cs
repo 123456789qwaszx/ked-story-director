@@ -1,13 +1,25 @@
+using Vn.Authoring.Flow;
+
 namespace Vn.Authoring.Model;
 
-/// <summary>그래프에 배치된 좌표. 파일 순서와는 아무 관계가 없다.</summary>
+/// <summary>그래프에 배치된 좌표와 폭. 파일 순서와는 아무 관계가 없다.</summary>
 public sealed class NodeLayout
 {
     public double X { get; set; }
 
     public double Y { get; set; }
 
-    public NodeLayout Clone() => new() { X = X, Y = Y };
+    /// <summary>
+    /// 사람이 [대본] 판에서 끌어 넓힌 카드 폭. <c>null</c>이면 판의 기본 폭이다 — 자리처럼 판의 모양이라 프로젝트에 싣는다.
+    /// </summary>
+    public double? Width { get; set; }
+
+    /// <summary>
+    /// 사람이 [대본] 판에서 끌어 늘린 카드 글 칸의 높이. <c>null</c>이면 판의 기본 높이다. 카드 전체가 아니라 글 칸의 높이인
+    /// 까닭은 카드의 나머지(머리)를 판이 정하기 때문이다 — 사람이 정하는 것은 글 칸의 높이다. (⛔ 머리 밑에서 갈래 수만큼 늘고 줄던 포트 줄은
+    /// 2026-11-19에 걷혔다 · usability UX31.)
+    /// </summary>
+    public double? WritingHeight { get; set; }
 }
 
 /// <summary>
@@ -32,25 +44,25 @@ public abstract class StoryNode
     public NodeLayout Layout { get; set; } = new();
 
     /// <summary>
-    /// 노드가 끝난 뒤 이동할 노드. null이면 이야기가 여기서 멈춘다.
-    ///
-    /// 실행 가능한 DialogueNode와 SetNode가 사용한다. PresentationNode는 실행 흐름에
-    /// 참여하지 않고 Presentation link만 가지므로 이 값을 사용하지 않는다.
+    /// 이 노드에서 나가는 실행 선의 모양 — 열쇠는 <see cref="EdgeShape.KeyOf(ExitPortKind, string?)"/>이다 (G3 · 2026-10-29).
+    /// 사람이 고친 선만 있다. 출구를 끊으면 그 선의 모양도 함께 걷힌다.
     /// </summary>
-    public string? DefaultExitTargetNodeId { get; set; }
+    public Dictionary<string, EdgeShape> EdgeShapes { get; init; } = new(StringComparer.Ordinal);
 
-    public abstract StoryNode Clone();
+    // ⛔ `DefaultExitTargetNodeId`(기본 출구 — 노드가 끝난 뒤 이동할 노드 · 판 파일 `defaultExit`)는 2026-11-17에 걷혔다
+    //    (`docs/work-orders/default-exit-orders.md`). 에피소드 사이의 흐름은 챕터 간선이, 분기 카드는 부른 자리로 돌아오는 것이 맡아
+    //    쓰는 화면이 남지 않았다.
+
+    // ⛔ `BranchExits`(갈래 출구 — 조건 갈래가 끝나면 들를 카드 · 판 파일 전환의 `exit` · `anchor`)는 2026-11-19에 걷혔다(usability UX28).
+    //    대상을 가리지 않아 아무도 부르지 않는 분기 카드에 이으면 내보낸 Yarn이 없는 노드를 불러 게임이 멈췄고, 에피소드에 이으면 그
+    //    에피소드가 진행 기록 밖에서 재생됐다. 조건이 맞을 때만 들르는 것은 분기점 + 분기 카드의 첫머리 조건이 한다.
 }
 
 /// <summary>
-/// 뒤따르는 노드들이 쓸 값과 조건을 준비하는 노드.
+/// <b>챕터 조건 공급 노드</b> — 판마다 하나, 이름은 <c>챕터 {판} 조건</c>(<see cref="Chapters.ChapterBoardSupply"/>). 챕터의 조건을 대본이
+/// 쓰는 식(<c>stat("키")</c>)으로 옮긴 사본을 들고, 대본의 줄 전환은 그 사본의 Id를 가리킨다. 공급만 세우고 고치며 판에는 그리지 않는다.
 ///
-/// 조건은 여기(또는 게임 정의 파일)에서만 만들어진다. 작가가 대사 줄마다 조건식을 직접
-/// 타이핑하지 않고 준비된 것 중에서 고르게 하려는 것이다. 그래야 같은 조건이 이름 하나로
-/// 묶이고, 그래프 간선에도 그 이름을 그대로 보여 줄 수 있다.
-///
-/// 변수 이름과 값의 의미는 게임마다 다르다. 그래서 이 클래스는 <c>favor</c> 같은 실제 이름을
-/// 하나도 알지 못한다. 무엇을 고를 수 있는지는 게임 정의 파일이 공급한다.
+/// ⛔ 옛 「X 설정」 노드(작가 조건 · 변수를 담던 자리)는 2026-11-18에 받지 않게 됐다 — 설정 노드는 공급 노드뿐이다(old-shapes O6).
 /// </summary>
 public sealed class SetNode : StoryNode
 {
@@ -61,100 +73,10 @@ public sealed class SetNode : StoryNode
 
     /// <summary>이 노드가 이후 대사 노드에 공급하는 조건들.</summary>
     public List<ConditionDefinition> Conditions { get; init; } = new();
-
-    public override StoryNode Clone()
-    {
-        return new SetNode(Id, Name)
-        {
-            Layout = Layout.Clone(),
-            DefaultExitTargetNodeId = DefaultExitTargetNodeId,
-            Conditions = Conditions.Select(item => item.Clone()).ToList()
-        };
-    }
 }
 
 /// <summary>
-/// PresentationNode에 커맨드 범주와 프리셋을 공급하는 노드.
-///
-/// 커맨드 전체를 평평한 드롭다운으로 주지 않고, "카메라 노드"·"캐릭터 연출 노드"처럼
-/// 역할 묶음을 연결해야 해당 커맨드군이 보이게 한다. 어떤 범주 묶음을 무엇이라 부를지는
-/// 데이터다 — 이 노드가 담는 것은 카탈로그의 범주 Id 집합이지 코드가 아는 이름이 아니다.
-///
-/// 조건이 SetNode에서 태어나듯, 커맨드 프리셋은 이 노드에서 태어난다.
-/// </summary>
-public sealed class CommandSupplyNode : StoryNode
-{
-    public CommandSupplyNode(string? id = null, string name = "새 연출 공급")
-        : base(id, name)
-    {
-    }
-
-    /// <summary>공급하는 범주 Id 집합(게임 정의의 presentationCommandCategories 참조).</summary>
-    public List<string> Categories { get; init; } = new();
-
-    /// <summary>이 노드가 소유한 커맨드 프리셋. 목록 순서가 드롭다운 순서다.</summary>
-    public List<CommandPreset> Presets { get; init; } = new();
-
-    public CommandPreset? FindPreset(string? presetId)
-    {
-        return presetId is null
-            ? null
-            : Presets.FirstOrDefault(preset =>
-                string.Equals(preset.Id, presetId, StringComparison.Ordinal));
-    }
-
-    public override StoryNode Clone()
-    {
-        return new CommandSupplyNode(Id, Name)
-        {
-            Layout = Layout.Clone(),
-            DefaultExitTargetNodeId = DefaultExitTargetNodeId,
-            Categories = new List<string>(Categories),
-            Presets = Presets.Select(preset => preset.Clone()).ToList()
-        };
-    }
-}
-
-/// <summary>
-/// 값이 세팅된 "정확한 연출종류" 하나. Yarn 인자로 노출되지 않는 하드코딩 기본값
-/// (계약서 E3의 b′층)의 이주지다. PresentationNode는 이것을 참조해 완성된 커맨드를 쓴다.
-///
-/// 발행 시에는 참조가 아니라 <b>해석된 최종 인자 값</b>이 결과에 얼어붙는다.
-/// 프리셋을 나중에 고쳐도 발행된 결과는 불변이다.
-/// </summary>
-public sealed class CommandPreset
-{
-    public CommandPreset(string? id = null)
-    {
-        Id = id ?? Identifier.Preset();
-    }
-
-    public string Id { get; }
-
-    public string DisplayName { get; set; } = string.Empty;
-
-    /// <summary>카탈로그의 커맨드 정의 Id.</summary>
-    public string CommandDefinitionId { get; set; } = string.Empty;
-
-    /// <summary>파라미터 이름 → 값. 출력 순서는 언제나 카탈로그의 파라미터 순서다.</summary>
-    public Dictionary<string, string> ArgumentValues { get; init; } = new(StringComparer.Ordinal);
-
-    public string? Note { get; set; }
-
-    public CommandPreset Clone()
-    {
-        return new CommandPreset(Id)
-        {
-            DisplayName = DisplayName,
-            CommandDefinitionId = CommandDefinitionId,
-            ArgumentValues = new Dictionary<string, string>(ArgumentValues, StringComparer.Ordinal),
-            Note = Note
-        };
-    }
-}
-
-/// <summary>
-/// 작가가 고를 수 있는 조건 하나.
+/// 공급 노드가 든 조건 사본 하나.
 ///
 /// <see cref="Name"/>은 작가가 읽는 이름이고 그래프 간선에도 이것이 표시된다.
 /// <see cref="Expression"/>은 게임이 평가할 식이며 VnTool은 내용을 해석하지 않는다.
@@ -172,25 +94,19 @@ public sealed class ConditionDefinition
     public string Name { get; set; } = string.Empty;
 
     public string Expression { get; set; } = string.Empty;
-
-    public ConditionDefinition Clone() =>
-        new(Id) { Name = Name, Expression = Expression };
 }
 
 /// <summary>
 /// 대본 하나를 읽어 그 줄들에 <b>대사 논리</b>를 얹는 노드.
 ///
-/// 줄 순서와 화자·대사는 여기 없다. <see cref="ScriptId"/>가 가리키는
-/// <see cref="Script.ScriptDocument"/>가 소유한다. 이 노드가 소유하는 것은
-/// LineId에 매달린 조건 전환과 출구뿐이다. 앞으로 선택지·변수 변경·인라인 이벤트도
-/// 같은 자리에 붙는다.
+/// 줄 순서와 화자·대사는 카드가 든 대본(<see cref="Script"/>)이 소유한다. 그 위에 카드가 소유하는 것은
+/// LineId에 매달린 조건 전환과 출구다.
 ///
 /// 이 분리 덕분에 대본을 다시 읽어 문구가 바뀌어도 조건 구조가 그대로 남고,
 /// 같은 문장을 고칠 수 있는 자리가 도구 안에 하나만 존재한다.
 ///
-/// 출구는 두 종류다.
-///   기본 출구   — 모든 줄과 조건 체인이 끝난 뒤 이동한다. 노드 전체가 소유한다.
-///   조건 갈래 출구 — 특정 조건 갈래를 지났을 때만 이동한다.
+/// 출구는 조건 갈래 출구(특정 조건 갈래를 지났을 때만 이동한다)와 분기점(들렀다 돌아온다)이다. 노드가 끝난 뒤의 흐름은 챕터
+/// 간선이 맡는다(에피소드) — 분기 카드는 부른 자리로 돌아온다.
 ///
 /// <b>조건 갈래 출구는 갈래를 여는 줄의 Id로 기억한다.</b> 갈래의 마지막 줄에 매달면
 /// 줄을 하나 추가하는 순간 출구가 갈래 중간에 파묻히고, 그 아래 대사가 실행되는
@@ -204,27 +120,46 @@ public sealed class DialogueNode : StoryNode
     {
     }
 
-    /// <summary>이 노드가 읽는 대본. null이면 아직 대본을 고르지 않은 것이다.</summary>
-    public string? ScriptId { get; set; }
+    /// <summary>
+    /// 이 카드의 대본 — 줄 신원(LineId) · 줄 개정 번호 · 은퇴한 줄 · locale별 화자 · 대사. 카드마다 하나다.
+    ///
+    /// 2026-10-29까지는 대본이 프로젝트에 따로 서고(<c>StoryProject.Scripts</c>) 카드는 <c>ScriptId</c>로 가리켰다.
+    /// 따로 둔 까닭(작가 대본 가져오기 · 대본 나눠 쓰기 · 엑셀 대본 워크북)이 모두 걷혀 카드가 직접 든다
+    /// (<c>docs/plans/script-merge.md</c> S2).
+    /// </summary>
+    public Script.ScriptDocument Script { get; set; } = new();
+
+    /// <summary>
+    /// <b>분기 카드인가</b> (2026-11-17 · <c>docs/work-orders/branch-card-orders.md</c>) — 다른 카드 대사 중의 분기점(<c>&lt;&lt;detour&gt;&gt;</c>)으로
+    /// 들렀다 <b>돌아오는</b> 카드. 챕터의 에피소드가 아니다 — 게임의 「지금 에피소드」가 되지 않으므로 선택지 칸이 없고 진행 JSON에 실리지 않는다
+    /// (Yarn 노드만). 「분기 추가」와 빈 곳에 놓은 분기점이 세운다. 만들 때 정하는 저장된 신원이다(판 파일의 <c>branchCard</c>).
+    /// ⛔ R7 결정 ⑤(2026-09-17 — 판의 카드는 전부 에피소드)를 분기 카드에 한해 뒤집었다: 분기로 들른 카드의 선택지는 게임에 나오지 않는다.
+    /// </summary>
+    public bool IsBranchCard { get; set; }
+
+    /// <summary>
+    /// <b>분기 카드의 보이는 제목</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c> I4) — [대본] 탭이 보이고 고친다(처음
+    /// 「새 분기」, 비면 이름이 보인다). 분기 카드의 <see cref="StoryNode.Name"/>은 ID(= Yarn 노드 이름)이고 [구성] 탭에서 정한다 — 에피소드의
+    /// 제목(<c>ChapterEpisode.Title</c>)과 EpisodeId가 갈린 것과 같다. 에피소드 카드에는 쓰지 않는다(제목은 챕터가 든다).
+    /// </summary>
+    public string? Title { get; set; }
 
     /// <summary>
     /// 이 노드가 <b>어느 에피소드인가</b>를 적어 둔 표식.
     ///
-    /// ⛔ <b>2026-09-17까지 이름이 <c>ExcelEpisodeId</c>였고, 그 이름이 두 번 거짓이 됐다.</b>
+    /// <b>2026-09-17까지 이름이 <c>ExcelEpisodeId</c>였고, 그 이름이 두 번 거짓이 됐다.</b>
     /// <list type="number">
     /// <item><b>엑셀은 주인이 아니다</b> (R-D·R-F, 2026-09-16). 옛 머리글은 <i>"본문·화자·줄
     ///   구성은 엑셀이 소유하고 툴에서는 읽기 전용 — 여기서 고쳐도 다음 동기화가 되돌린다"</i>
     ///   였는데, <b>그 동기화가 철거됐다.</b> 대본의 원본은 프로젝트다.</item>
     /// <item><b>null이 「자유 노드」를 뜻하지 않는다</b> (R7 P-6 · 결정 ⑤, 2026-09-17).
-    ///   자유 씬이라는 종류가 없어졌다 — 챕터 판의 카드는 <b>전부 에피소드</b>다.</item>
+    ///   자유 씬이라는 종류가 없어졌다 — 챕터 판의 카드는 에피소드이거나 분기 카드(2026-11-17)다.</item>
     /// </list>
     ///
-    /// <b>남은 뜻은 하나뿐이다: 노드 이름과 에피소드 Id가 <i>다를 때</i> 그 Id를 적어 둔다.</b>
-    /// 같으면 비어 있어도 된다 — 그래서 <b>이 값을 직접 읽으면 안 된다</b>. 답을 내는 자리는
-    /// <see cref="Chapters.EpisodeNaming"/> 하나다(표식이 있으면 표식, 없으면 이름).
+    /// <b>에피소드 카드에는 늘 있고 분기 카드에는 없다</b> — 이름도 그 EpisodeId다(저장 검증이 지킨다 · 2026-11-18 old-shapes O4 · O5 — ⛔ 그
+    /// 전에는 이름과 Id가 다를 때만 적었고, 없으면 이름으로 읽었다). 답을 내는 자리는 <see cref="Chapters.EpisodeNaming"/> 하나다.
     ///
-    /// ⚠ <b>파생값이 아니라 저장된 신원이다.</b> 이름을 바꿔도 끊기지 않으라고 두는 것이므로
-    /// 잃으면 어느 카드가 어느 에피소드였는지 <b>복원할 수 없다</b>.
+    /// <b>파생값이 아니라 저장된 신원이다.</b> 잃으면 어느 카드가 어느 에피소드였는지 <b>복원할 수 없다</b>.
     /// </summary>
     public string? MarkedEpisodeId { get; set; }
 
@@ -234,9 +169,6 @@ public sealed class DialogueNode : StoryNode
     /// </summary>
     public List<DialogueLineExtension> LineExtensions { get; init; } = new();
 
-    /// <summary>갈래를 여는 줄의 Id → 그 갈래가 끝났을 때 이동할 노드.</summary>
-    public Dictionary<string, string> BranchExits { get; init; } = new(StringComparer.Ordinal);
-
     /// <summary>
     /// <b>마지막 줄 뒤에 남는 전환들</b> (2026-08-24 소유자 — 대사 없는 조건 블록).
     ///
@@ -245,41 +177,18 @@ public sealed class DialogueNode : StoryNode
     /// 대본의 전부</b>일 수도 있다(조건이 서면 커스텀 씬으로 detour만 하는 에피소드).
     /// 그 블록이 살 자리가 여기다.
     ///
-    /// ⚠ 줄에 실린 전환과 <b>같은 종류의 목록</b>이고 순서도 같은 뜻이다 — 다른 것은
+    /// 줄에 실린 전환과 <b>같은 종류의 목록</b>이고 순서도 같은 뜻이다 — 다른 것은
     /// "어느 줄 앞"이 아니라 "모든 줄 뒤"라는 자리뿐이다. 그래서 흐름 해석은 줄을 다 돈
     /// 뒤 이 목록을 같은 기계에 한 번 더 먹인다.
     /// </summary>
     public List<LineConditionTransition> TrailingTransitions { get; init; } = new();
 
-    /// <summary>
-    /// <b>선택지 문구 → 그 선택지를 고른 뒤 거쳐 갈 자유 씬</b> (v9, 2026-08-17).
-    ///
-    /// v9에서 선택지의 주인은 챕터 `간선` 시트이고 대본에는 OPTION이 없다 — 그래서 작가의
-    /// 배선이 매달릴 자리도 대본의 줄이 아니라 <b>문구</b>다. <see cref="BranchExits"/>와
-    /// 달리 대본 편집으로 청소되지 않는다: 문구의 주인은 챕터라 대본이 바뀌어도 그대로다.
-    /// 간선이 사라지면 배선은 고아로 남는다(쓰레기가 아니라 되돌릴 수 있는 상태다).
-    /// </summary>
-    public Dictionary<string, string> ChoiceExits { get; init; } = new(StringComparer.Ordinal);
-    // ⛔ `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:
+    // ⛔ `ChoiceExits`(선택지 문구 → 거쳐 갈 자유 씬 — 2026-08-17)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 대사 안 선택지가
+    //    2026-11-04에 걷힌 뒤로 만드는 곳도 읽는 곳도 없이 파일을 오가기만 했다(docs/work-orders/legacy-read-orders.md L5).
+    // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:
     //    "툴이 LineId의 주인"). 워크북을 <b>다시 읽을 때</b> 어느 줄이 어느 줄인지
     //    맞추려고 들고 있던 표다 — 다시 읽지 않으면 맞출 상대가 없고, 신원은 이제
-    //    프로젝트가 그냥 갖는다. 구판 프로젝트 파일의 `excelLines`는 읽지 않고 지나간다.
-
-    /// <summary>
-    /// ⛔ <b>걷혔다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 이 속성은
-    /// <c>MarkedEpisodeId is null ? null : DefaultExitTargetNodeId</c>였다 — <b>커스텀(자유)
-    /// 노드에는 기본 출구가 없다</b>는 2026-08-21의 규칙이고, 그것이 곧 엑셀노드/자유노드의
-    /// 구분이었다.
-    ///
-    /// 그 구분이 없어졌다. 챕터 판의 대사 노드는 전부 에피소드라 관문이 언제나 열리고,
-    /// 챕터가 아닌 판(작가의 낙서판)에는 챕터 조건도 <c>&lt;&lt;detour&gt;&gt;</c>도 없어
-    /// 애초에 그 규칙이 말하던 상황이 아니다 — 거기서는 기본 출구가 노드를 잇는 유일한
-    /// 수단이라 막을 이유가 없다.
-    ///
-    /// 부르던 자리는 전부 <see cref="StoryNode.DefaultExitTargetNodeId"/>를 곧바로 본다.
-    /// </summary>
-    [Obsolete("R7 P-6: 엑셀노드/자유노드 구분이 없어져 DefaultExitTargetNodeId와 같다.", error: true)]
-    public string? EffectiveDefaultExit => DefaultExitTargetNodeId;
+    //    프로젝트가 그냥 갖는다.
 
     /// <summary>그 줄의 확장 — 없으면 만들어 붙인다. 빈 확장은 저장 때 알아서 빠진다.</summary>
     public DialogueLineExtension RequireExtension(string lineId)
@@ -301,20 +210,5 @@ public sealed class DialogueNode : StoryNode
             ? null
             : LineExtensions.FirstOrDefault(
                 item => string.Equals(item.LineId, lineId, StringComparison.Ordinal));
-    }
-
-    public override StoryNode Clone()
-    {
-        return new DialogueNode(Id, Name)
-        {
-            Layout = Layout.Clone(),
-            ScriptId = ScriptId,
-            MarkedEpisodeId = MarkedEpisodeId,
-            LineExtensions = LineExtensions.Select(item => item.Clone()).ToList(),
-            DefaultExitTargetNodeId = DefaultExitTargetNodeId,
-            BranchExits = new Dictionary<string, string>(BranchExits, StringComparer.Ordinal),
-            TrailingTransitions = [.. TrailingTransitions],
-            ChoiceExits = new Dictionary<string, string>(ChoiceExits, StringComparer.Ordinal)
-        };
     }
 }

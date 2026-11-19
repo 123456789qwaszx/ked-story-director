@@ -28,12 +28,4 @@ public sealed class StoryFile
 
     /// <summary>이 파일 안에서의 순서. 새 노드는 언제나 마지막에 추가된다.</summary>
     public List<StoryNode> Nodes { get; init; } = new();
-
-    public StoryFile Clone()
-    {
-        return new StoryFile(Id, Name, RelativePath)
-        {
-            Nodes = Nodes.Select(node => node.Clone()).ToList()
-        };
-    }
 }

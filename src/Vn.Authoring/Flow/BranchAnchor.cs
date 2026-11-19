@@ -17,9 +17,8 @@ namespace Vn.Authoring.Flow;
 ///   </item>
 /// </list>
 ///
-/// ⛔ <b>첫째 갈래는 맨 줄 Id 그대로다.</b> 그 글자가 지금까지의 신원이고
-/// <see cref="Model.DialogueNode.BranchExits"/>가 그것으로 출구를 붙들고 있다 — 규칙을
-/// 바꾸면서 접미를 붙이면 <b>이미 매달린 출구가 전부 고아가 된다.</b> 새 모양은 둘째부터다.
+/// <b>첫째 갈래는 맨 줄 Id 그대로다.</b> 새 모양은 둘째부터다. (신원으로 출구를 붙들던 갈래 출구는 2026-11-19에 걷혔다 — 신원은
+/// 흐름 해석이 갈래를 가르는 데 쓴다.)
 /// </summary>
 public static class BranchAnchor
 {
@@ -37,10 +36,4 @@ public static class BranchAnchor
     public static string ForTrailing(int ordinal) =>
         ordinal <= 0 ? TrailingRoot : $"{TrailingRoot}{Separator}{ordinal}";
 
-    /// <summary>
-    /// 이 신원이 <b>줄 없는 갈래</b>의 것인가. 줄에 매달린 청소(고아 출구 정리)가
-    /// 이것들까지 쓸어 가지 않게 가르는 자리다.
-    /// </summary>
-    public static bool IsTrailing(string? anchor) =>
-        anchor is not null && anchor.StartsWith(TrailingRoot, StringComparison.Ordinal);
 }

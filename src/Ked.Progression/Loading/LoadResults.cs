@@ -5,11 +5,11 @@ namespace Ked.Progression
 {
     public sealed class ScenarioLoadResult
     {
-        public ScenarioProgression Scenario { get; }
+        public ScenarioDefinition Scenario { get; }
         public IReadOnlyList<ProgressionDiagnostic> Diagnostics { get; }
 
         public ScenarioLoadResult(
-            ScenarioProgression scenario,
+            ScenarioDefinition scenario,
             IReadOnlyList<ProgressionDiagnostic> diagnostics)
         {
             Scenario = scenario;

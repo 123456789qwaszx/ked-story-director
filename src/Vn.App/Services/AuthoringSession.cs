@@ -1,12 +1,9 @@
-using Avalonia.Media.Imaging;
-using Vn.Authoring.Assets;
 using Vn.Authoring.Chapters;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Editing;
-using Vn.Authoring.Flow;
+using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
-using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Services;
 
@@ -21,8 +18,13 @@ internal sealed class AuthoringSession
 {
     private readonly HashSet<string> _expandedFileIds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _knownFileIds = new(StringComparer.Ordinal);
+    private readonly HashSet<GraphSceneKey> _collapsedScenes = [];
+    private readonly HashSet<string> _hiddenChoiceNodeIds = new(StringComparer.Ordinal);
     private string _fileListSignature = string.Empty;
     private string _savedSnapshot;
+
+    /// <summary>열거나 저장한 때의 프로젝트 파일 지문 — 그 뒤 다른 곳이 파일을 바꿨는지 견준다(<see cref="ChangedOutside"/>). 저장 전이면 null.</summary>
+    private ProjectDiskStamp? _diskStamp;
 
     public AuthoringSession()
     {
@@ -34,72 +36,10 @@ internal sealed class AuthoringSession
 
     public ProjectEditor Editor { get; }
 
-    /// <summary>
-    /// 챕터 워크북을 내는 자리 (R-F · 2026-09-16).
-    ///
-    /// ⚠ <b>세션이 든다.</b> 화면이 들면 화면을 지나지 않는 편집에서 파일이 낡는다 —
-    /// 되돌리기가 실제 사례다. 미룬 목록(§5.3)도 여기 함께 산다.
-    /// </summary>
-    public ChapterOutput ChapterOutput { get; } = new();
-
     public StoryProject Project => Editor.Project;
 
     /// <summary>현재 프로젝트 manifest 경로. 아직 저장하지 않았으면 null이다.</summary>
     public string? ProjectPath { get; private set; }
-
-    /// <summary>
-    /// `game.definition.json`의 내용 — 기획자가 소유하는 어휘(스탯·조건·화자·연출 카탈로그).
-    ///
-    /// ⚠ <b>바뀌면 스스로 알린다</b> (2026-08-26 소유자 보고: 챕터 그래프에서 화자를 지웠는데
-    /// 연출 그래프가 옛 목록을 계속 보였다). 예전에는 쓰는 자리마다 파일을 다시 읽고
-    /// <b>조용히</b> 이 칸만 갈아 끼웠고, 이미 그려진 화면은 그 사실을 알 길이 없어 제 노드를
-    /// 다시 고를 때까지 낡은 목록을 들고 있었다.
-    ///
-    /// <b>알림을 세터에 둔 이유</b>: 다시 읽는 자리가 다섯이라(열기·저장·화자 저장·변수 등록·
-    /// 새 프로젝트) 부르는 쪽마다 알림을 적으면 언젠가 한 곳이 빠진다. 값이 바뀌는 길이
-    /// 하나면 알림도 하나다.
-    /// </summary>
-    public GameDefinition Definition
-    {
-        get;
-
-        private set
-        {
-            field = value;
-            DefinitionChanged?.Invoke(this, EventArgs.Empty);
-        }
-    } = GameDefinition.Empty;
-
-    /// <summary>
-    /// <b>A계층(기획자) 스탯 키</b> — 챕터 `스탯` 시트가 등록한 것들 (2026-08-17 소유자:
-    /// "둘은 서로 완전히 다른 계층이야").
-    ///
-    /// 정의 파일의 `variables`는 두 계층의 변수를 <b>한 목록에</b> 담고 있어서, 작가의 변수
-    /// 후보를 그대로 쓰면 <c>trust</c>에 <c>&lt;&lt;set&gt;&gt;</c>을 걸 수 있게 된다 —
-    /// <b>스탯이 변하는 자리는 간선뿐</b>이라는 규칙이 화면에서 깨진다. 그래서 작가 화면은
-    /// 이 집합을 빼고 후보를 세운다.
-    ///
-    /// 원천은 챕터 그래프가 읽은 목록 하나다(두 곳이 따로 xlsx를 읽지 않는다).
-    /// </summary>
-    public IReadOnlySet<string> ChapterStatKeys { get; private set; } =
-        new HashSet<string>(StringComparer.Ordinal);
-
-    // ⚠ `ChapterSpeakerNames`·`ChapterSpeakerCharacterIds`는 2026-08-23에 사라졌다
-    // (소유자: "엑셀 내 어떤 것에서도 화자를 사용하지 않는다 … 화자는 툴 내부에서 직접
-    // 정의해서 쓰는 게 맞는 것이였다"). 챕터 `화자` 시트가 폐지되면서 챕터에서 오는 화자
-    // 어휘라는 것 자체가 없어졌다 — 화자의 유일한 원천은 <see cref="Definition"/>이다.
-
-    /// <summary>챕터 목록을 다시 읽을 때마다 A계층 어휘를 따라잡는다.</summary>
-    public void SupplyChapterVocabulary(IReadOnlyList<ChapterEntry> entries)
-    {
-        ArgumentNullException.ThrowIfNull(entries);
-
-        ChapterStatKeys = entries
-            .Where(entry => entry.Model is not null)
-            .SelectMany(entry => entry.Model!.Stats.Select(stat => stat.Key))
-            .Where(key => !string.IsNullOrWhiteSpace(key))
-            .ToHashSet(StringComparer.Ordinal);
-    }
 
     /// <summary>
     /// 새 노드가 추가될 현재 작업 파일.
@@ -119,419 +59,53 @@ internal sealed class AuthoringSession
     /// </summary>
     public IReadOnlySet<string> ExpandedFileIds => _expandedFileIds;
 
+    /// <summary>
+    /// 펼친 판 안에서 접어 둔 장면들 (하이어아키의 눈, <c>docs/plans/hierarchy.md</c>). 그 장면만 줄 목록
+    /// 상자로 간소화된다. <see cref="ExpandedFileIds"/>와 같은 작업 상태다 — 저장 · 되돌리기 대상이 아니다.
+    /// </summary>
+    public IReadOnlySet<GraphSceneKey> CollapsedScenes => _collapsedScenes;
+
+    /// <summary>
+    /// [대본] 탭에서 빈 선택지 칸을 감춘 카드들 (인스펙터의 「빈 선택지 숨기기」). 여기 든 카드는 <b>이은 선택지만</b> 세운다 —
+    /// 안 이은 칸은 자동 길 자리까지 감춘다. 여기 없는 카드는 칸이 셋 선다. 화면 편의라 프로젝트 파일이 아니라 사용자 설정에
+    /// 프로젝트별로 기억한다.
+    /// </summary>
+    public IReadOnlySet<string> HiddenChoiceNodeIds => _hiddenChoiceNodeIds;
+
+    /// <summary>
+    /// [구성] 탭에서 빈 선택지를 감추는가 — 그 탭 툴바의 「빈 선택지 숨기기」(하나다). 켜면 [구성] 카드는 빈 선택지 점과 들어오는
+    /// 길 없는 입구 점을 감춘다. [대본] 탭은 카드마다 정한다(<see cref="HiddenChoiceNodeIds"/>). 화면 편의라 프로젝트 파일이
+    /// 아니라 사용자 설정에 기억한다(앱 전체).
+    /// </summary>
+    public bool HideEmptyChoices { get; private set; } = AppSettingsService.LoadHideEmptyChoices();
+
+    /// <summary>[구성] 탭의 「빈 선택지 숨기기」가 바뀌었다 — [구성] 판이 다시 그린다.</summary>
+    public event EventHandler? HideEmptyChoicesChanged;
+
+    /// <summary>
+    /// [구성] 탭에서 ID로 보는가 — 그 탭 툴바의 「ID로 보기」(하나다 · 처음에는 켜져 있다 · 2026-11-18 소유자). 켜면 하이어아키 · 카드가 ID(챕터ID ·
+    /// 장면ID · EpisodeId)로, 끄면 [대본] 탭처럼 보이는 이름으로 선다. 화면 편의라 사용자 설정에 기억한다(앱 전체).
+    /// </summary>
+    public bool ShowIds { get; private set; } = AppSettingsService.LoadShowIds();
+
+    /// <summary>[구성] 탭의 「ID로 보기」가 바뀌었다 — [구성] 판 · 하이어아키가 다시 선다.</summary>
+    public event EventHandler? ShowIdsChanged;
+
+    /// <summary>
+    /// [대본] 판의 미니맵(우하단 지도)을 보이는가 — 설정 창 「기타」(처음에는 보인다 · 2026-11-18 소유자 · side-fold K3). 끄면 지도만 걷고 배율 줄은
+    /// 남는다. 화면 편의라 사용자 설정에 기억한다(앱 전체).
+    /// </summary>
+    public bool ShowMinimap { get; private set; } = AppSettingsService.LoadShowMinimap();
+
+    /// <summary>미니맵을 켜거나 껐다 — [대본] 판이 지도를 세우거나 걷는다.</summary>
+    public event EventHandler? ShowMinimapChanged;
+
     public string? SelectedNodeId { get; private set; }
 
     public StoryNode? SelectedNode => Project.FindNode(SelectedNodeId);
 
-    public string StatusMessage { get; private set; } = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
+    public string StatusMessage { get; private set; } = "새 프로젝트입니다. 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
-    // ── 프리뷰 에셋 ────────────────────────────────────────────────────────
-
-    private PreviewAssetLibrary? _assetLibrary;
-    private string _assetLibrarySignature = string.Empty;
-
-    /// <summary>
-    /// 프리뷰 에셋 인덱스. 에셋 루트 설정이 바뀌면(편집·되돌리기·열기) 자동으로 다시
-    /// 읽지만, 폴더 <b>내용</b>의 변경은 감지하지 않는다 — 그건 <see cref="RefreshAssets"/>
-    /// (명시적 새로 고침)만 반영한다.
-    /// </summary>
-    public PreviewAssetLibrary AssetLibrary
-    {
-        get
-        {
-            (string? backgrounds, string? portraits) = ResolveAssetRoots();
-            string signature = $"{backgrounds}{portraits}";
-
-            if (_assetLibrary is null ||
-                !string.Equals(_assetLibrarySignature, signature, StringComparison.Ordinal))
-            {
-                _assetLibrary = PreviewAssetLibrary.Load(backgrounds, portraits);
-                _assetLibrarySignature = signature;
-                ImageCache.Clear();
-            }
-
-            return _assetLibrary;
-        }
-    }
-
-    /// <summary>프리뷰 비트맵 캐시. 해석이 끝난 절대 경로가 키다.</summary>
-    public PreviewImageCache<Bitmap> ImageCache { get; } = new(path => new Bitmap(path));
-
-    /// <summary>
-    /// 프리뷰 갈래 선택 (W35) — "지금 어느 갈래를 보고 있는가". 뷰 상태라 저장하지 않고,
-    /// 프로젝트를 새로 열면 비워진다. 대사·연출 편집기가 같은 선택 하나를 본다(LineId 불변 덕).
-    /// </summary>
-    public StageBranchSelection BranchSelection { get; } = new();
-
-    /// <summary>
-    /// 조건 값 시뮬의 시작값 오버라이드 (W36-b) — 변수명 → "이 값으로 시작한다고 치자".
-    /// 뷰 상태라 저장하지 않는다. 비어 있으면 등록 초기값 그대로다.
-    /// </summary>
-    public Dictionary<string, string> SimulationValues { get; } = new(StringComparer.Ordinal);
-
-    // ── 런타임 tuning (W23) ────────────────────────────────────────────────
-
-    private RuntimeTuningLibrary? _tuningLibrary;
-    private string _tuningLibrarySignature = string.Empty;
-
-    /// <summary>
-    /// 런타임 tuning 덤프 인덱스. 경로 설정·정의 해상도가 바뀌면 다시 읽지만, 폴더
-    /// <b>내용</b>의 변경은 <see cref="RefreshAssets"/>(명시적 새로 고침)만 반영한다 —
-    /// <see cref="AssetLibrary"/>와 같은 규칙이다.
-    /// </summary>
-    public RuntimeTuningLibrary TuningLibrary
-    {
-        get
-        {
-            string? directory = ResolveTuningRoot();
-            (double Width, double Height) fallback = Definition.PreviewResolution;
-            string signature = $"{directory}{fallback.Width}x{fallback.Height}";
-
-            if (_tuningLibrary is null ||
-                !string.Equals(_tuningLibrarySignature, signature, StringComparison.Ordinal))
-            {
-                _tuningLibrary = RuntimeTuningLibrary.Load(directory, fallback);
-                _tuningLibrarySignature = signature;
-            }
-
-            return _tuningLibrary;
-        }
-    }
-
-    /// <summary>
-    /// tuning 폴더 해석 — 정의 파일의 재지정이 있으면 그 경로(없으면 경고가 남도록 그대로 전달),
-    /// 없으면 프로젝트 폴더의 <c>ExportedTuning</c> 규약 폴더(없으면 미수입 상태로 조용히 null —
-    /// 아직 아무것도 약속하지 않은 기본값이므로 경고가 아니라 안내 대상이다).
-    /// </summary>
-    private string? ResolveTuningRoot()
-    {
-        string basePath = ProjectPath
-            ?? Path.Combine(Environment.CurrentDirectory, "unsaved" + ProjectManifestJson.FileExtension);
-
-        if (!string.IsNullOrWhiteSpace(Definition.RuntimeTuningPath))
-        {
-            return AssetRootSettings.ResolveFrom(basePath, Definition.RuntimeTuningPath);
-        }
-
-        string? conventional = AssetRootSettings.ResolveFrom(basePath, RuntimeTuningLibrary.DefaultFolderName);
-        return conventional is not null && Directory.Exists(conventional) ? conventional : null;
-    }
-
-    /// <summary>해석된 초상화 루트 절대 경로 — 표정 스프라이트 복제(설정노드)가 쓴다.</summary>
-    public string? PortraitsRoot => ResolveAssetRoots().Portraits;
-
-    /// <summary>해석된 배경 루트 절대 경로 — 가져오기·폴더 열기(W48)가 쓴다.</summary>
-    public string? BackgroundsRoot => ResolveAssetRoots().Backgrounds;
-
-    /// <summary>해석된 BGM 루트 절대 경로 (W59). 파일명이 곧 clipKey다.</summary>
-    public string? BgmRoot => ResolvePath(Project.AssetRoots.BgmPath);
-
-    /// <summary>해석된 효과음 루트 절대 경로 (W59). 파일명이 곧 clipKey다.</summary>
-    public string? SfxRoot => ResolvePath(Project.AssetRoots.SfxPath);
-
-    /// <summary>오디오 파일 확장자 규약 (W59) — 이 셋만 clipKey 후보가 된다.</summary>
-    public static readonly string[] AudioExtensions = [".mp3", ".wav", ".ogg"];
-
-    /// <summary>루트 폴더의 오디오 clipKey 목록 (W59) — 파일명(확장자 제외)이 곧 키다.</summary>
-    public IReadOnlyList<string> AudioClipKeys(string? root)
-    {
-        if (root is null || !Directory.Exists(root))
-        {
-            return Array.Empty<string>();
-        }
-
-        return Directory.EnumerateFiles(root)
-            .Where(file => AudioExtensions.Contains(
-                Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
-            .Select(Path.GetFileNameWithoutExtension)
-            .Where(key => !string.IsNullOrEmpty(key))
-            .Select(key => key!)
-            .OrderBy(key => key, StringComparer.Ordinal)
-            .ToList();
-    }
-
-    /// <summary>
-    /// clipKey를 실제 파일 경로로 되찾는다 (W62 미리 듣기) — 파일명(확장자 제외)=키
-    /// 규약의 역방향. 없으면 null — 호출자가 사유를 상태줄로 알린다.
-    /// </summary>
-    public string? ResolveAudioClipPath(string? root, string clipKey)
-    {
-        if (root is null || string.IsNullOrWhiteSpace(clipKey) || !Directory.Exists(root))
-        {
-            return null;
-        }
-
-        return Directory.EnumerateFiles(root)
-            .Where(file => AudioExtensions.Contains(
-                Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
-            .FirstOrDefault(file => string.Equals(
-                Path.GetFileNameWithoutExtension(file), clipKey, StringComparison.OrdinalIgnoreCase));
-    }
-
-    /// <summary>
-    /// 아무 곳의 오디오 파일을 BGM/효과음 루트로 복제해 들여온다 (W59) — 배경 가져오기와
-    /// 같은 규약: 파일명이 곧 키, 같은 이름은 건너뛴다.
-    /// </summary>
-    public int ImportAudio(bool bgm, IEnumerable<string> files)
-    {
-        string kind = bgm ? "BGM" : "효과음";
-
-        if ((bgm ? BgmRoot : SfxRoot) is not { } root)
-        {
-            SetStatus($"{kind} 폴더가 없습니다 — 프로젝트를 저장하면 assets 아래 준비됩니다.");
-            return 0;
-        }
-
-        Directory.CreateDirectory(root);
-        int copied = 0;
-        var skipped = new List<string>();
-
-        foreach (string file in files.Where(item => AudioExtensions.Contains(
-            Path.GetExtension(item), StringComparer.OrdinalIgnoreCase)))
-        {
-            string destination = Path.Combine(root, Path.GetFileName(file));
-
-            if (File.Exists(destination))
-            {
-                skipped.Add(Path.GetFileName(file));
-                continue;
-            }
-
-            File.Copy(file, destination);
-            copied++;
-        }
-
-        RefreshAssets();
-        SetStatus($"{kind} {copied}개를 가져왔습니다." +
-            (skipped.Count > 0 ? $" 같은 이름이 있어 건너뜀: {string.Join(", ", skipped)}" : string.Empty));
-        return copied;
-    }
-
-    private string? ResolvePath(string? configured)
-    {
-        string basePath = ProjectPath
-            ?? Path.Combine(Environment.CurrentDirectory, "unsaved" + ProjectManifestJson.FileExtension);
-
-        return AssetRootSettings.ResolveFrom(basePath, configured);
-    }
-
-    /// <summary>
-    /// 앱에 내장된 기본 튜닝(런타임 실측 덤프의 스냅샷)을 프로젝트 옆 규약 폴더에 만든다 (W46).
-    /// 이미 내용이 있는 폴더는 덮어쓰지 않는다 — 교체는 <see cref="ConnectTuningFolder"/>가 한다.
-    /// </summary>
-    public void CreateDefaultTuning()
-    {
-        if (TuningTargetRoot() is not { } target)
-        {
-            return;
-        }
-
-        if (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any())
-        {
-            SetStatus(
-                $"튜닝 폴더가 이미 있습니다: {target} — 덮어쓰지 않습니다. " +
-                "교체하려면 '튜닝 폴더 연결…'로 다른 폴더를 복사해 오세요.");
-            return;
-        }
-
-        var assembly = typeof(AuthoringSession).Assembly;
-        const string prefix = "DefaultTuning/";
-        int written = 0;
-
-        foreach (string name in assembly.GetManifestResourceNames())
-        {
-            if (!name.StartsWith(prefix, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            // LogicalName의 경로 구분자는 빌드 OS를 따른다 — 양쪽 다 받아 준다.
-            string relative = name[prefix.Length..].Replace('\\', '/');
-            string path = Path.Combine(target, relative.Replace('/', Path.DirectorySeparatorChar));
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-
-            using Stream source = assembly.GetManifestResourceStream(name)
-                ?? throw new InvalidOperationException($"내장 기본 튜닝 리소스를 열 수 없습니다: {name}");
-            using FileStream file = File.Create(path);
-            source.CopyTo(file);
-            written++;
-        }
-
-        RefreshAssets();
-        SetStatus($"기본 튜닝 {written}개 파일을 만들었습니다: {target} · {TuningLibrary.Summary}");
-    }
-
-    /// <summary>
-    /// 기존 튜닝 폴더를 골라 프로젝트 옆 규약 폴더로 복사해 연결한다 (W46).
-    /// 같은 이름의 파일은 덮어쓴다 — "통째 교체"가 튜닝 관리 규약이다(io-reference §1-3).
-    /// </summary>
-    public void ConnectTuningFolder(string sourceDirectory)
-    {
-        if (TuningTargetRoot() is not { } target)
-        {
-            return;
-        }
-
-        string source = Path.GetFullPath(sourceDirectory);
-
-        if (!Directory.Exists(source))
-        {
-            SetStatus($"폴더를 찾을 수 없습니다: {source}");
-            return;
-        }
-
-        // 튜닝처럼 보이는지 최소 확인 — 엉뚱한 폴더를 통째로 복사하는 사고를 막는다.
-        bool looksLikeTuning =
-            File.Exists(Path.Combine(source, "base-resolution.json")) ||
-            File.Exists(Path.Combine(source, "rig-schemas.json")) ||
-            Directory.Exists(Path.Combine(source, "presets"));
-
-        if (!looksLikeTuning)
-        {
-            SetStatus(
-                "선택한 폴더에서 튜닝 파일을 찾지 못했습니다 " +
-                "(base-resolution.json · rig-schemas.json · presets/ 중 하나는 있어야 합니다).");
-            return;
-        }
-
-        if (string.Equals(source, Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase))
-        {
-            RefreshAssets(); // 이미 규약 자리다 — 다시 읽기만 한다
-            return;
-        }
-
-        int copied = 0;
-
-        foreach (string file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-        {
-            string destination = Path.Combine(target, Path.GetRelativePath(source, file));
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            File.Copy(file, destination, overwrite: true);
-            copied++;
-        }
-
-        RefreshAssets();
-        SetStatus($"튜닝 폴더를 연결했습니다({copied}개 파일 복사): {target} · {TuningLibrary.Summary}");
-    }
-
-    /// <summary>
-    /// 아무 곳의 배경 PNG를 배경 루트로 복제해 들여온다 (W48) — "폴더에 채워 넣는" 느낌의
-    /// 짧은 길. 파일명이 곧 키이므로 이름 그대로 복사하고, 같은 이름이 있으면 건너뛴다
-    /// (덮어쓰면 기존 배경이 소리 없이 바뀐다).
-    /// </summary>
-    public int ImportBackgrounds(IEnumerable<string> files)
-    {
-        if (ResolveAssetRoots().Backgrounds is not { } root)
-        {
-            SetStatus("배경 폴더가 없습니다 — 프로젝트를 저장하면 assets/backgrounds가 준비됩니다.");
-            return 0;
-        }
-
-        Directory.CreateDirectory(root);
-        int copied = 0;
-        var skipped = new List<string>();
-
-        foreach (string file in files.Where(item =>
-            string.Equals(Path.GetExtension(item), ".png", StringComparison.OrdinalIgnoreCase)))
-        {
-            string destination = Path.Combine(root, Path.GetFileName(file));
-
-            if (File.Exists(destination))
-            {
-                skipped.Add(Path.GetFileName(file));
-                continue;
-            }
-
-            File.Copy(file, destination);
-            copied++;
-        }
-
-        RefreshAssets();
-        SetStatus($"배경 {copied}개를 가져왔습니다." +
-            (skipped.Count > 0 ? $" 같은 이름이 있어 건너뜀: {string.Join(", ", skipped)}" : string.Empty));
-        return copied;
-    }
-
-    /// <summary>
-    /// 아무 곳의 PNG를 초상화 규약 자리({캐릭터}/{변형}/{표정 2자리}.png)로 복제해 들여온다
-    /// (W48). 표정 번호는 그 폴더의 빈 번호부터 차례로 붙는다 — 이름 규약을 몰라도
-    /// 채워 넣는 순서대로 01, 02…가 된다.
-    /// </summary>
-    public int ImportPortraits(string characterKey, char variant, IEnumerable<string> files)
-    {
-        if (ResolveAssetRoots().Portraits is not { } root)
-        {
-            SetStatus("초상화 폴더가 없습니다 — 프로젝트를 저장하면 assets/portraits가 준비됩니다.");
-            return 0;
-        }
-
-        string key = characterKey.Trim();
-
-        if (key.Length == 0)
-        {
-            SetStatus("캐릭터 키를 입력해야 초상화를 들여올 수 있습니다.");
-            return 0;
-        }
-
-        string folder = Path.Combine(root, key, char.ToLowerInvariant(variant).ToString());
-        Directory.CreateDirectory(folder);
-
-        // 다음 빈 표정 번호부터 — 이미 01·02가 있으면 03부터 붙는다.
-        int next = Directory.EnumerateFiles(folder, "*.png")
-            .Select(file => int.TryParse(Path.GetFileNameWithoutExtension(file), out int parsed) ? parsed : 0)
-            .DefaultIfEmpty(0)
-            .Max() + 1;
-
-        int copied = 0;
-
-        foreach (string file in files.Where(item =>
-            string.Equals(Path.GetExtension(item), ".png", StringComparison.OrdinalIgnoreCase)))
-        {
-            File.Copy(file, Path.Combine(folder, $"{next + copied:00}.png"));
-            copied++;
-        }
-
-        RefreshAssets();
-        SetStatus(copied > 0
-            ? $"{key}/{char.ToLowerInvariant(variant)}에 초상화 {copied}개를 {next:00}번부터 넣었습니다."
-            : "가져올 PNG가 없습니다.");
-        return copied;
-    }
-
-    /// <summary>튜닝이 놓일 규약 자리. 저장 전에는 기준 폴더가 없어 안내만 남기고 null.</summary>
-    private string? TuningTargetRoot()
-    {
-        if (ProjectPath is null)
-        {
-            SetStatus("튜닝은 프로젝트 폴더 옆에 놓입니다 — 프로젝트를 먼저 저장해 주세요.");
-            return null;
-        }
-
-        return Path.Combine(
-            Path.GetDirectoryName(ProjectPath)!,
-            RuntimeTuningLibrary.DefaultFolderName);
-    }
-
-    public void RefreshAssets()
-    {
-        _assetLibrary = null;
-        _tuningLibrary = null;
-        ImageCache.Clear();
-        SetStatus("프리뷰 에셋을 다시 읽었습니다." +
-            (TuningLibrary.IsLoaded ? $" · {TuningLibrary.Summary}" : string.Empty));
-    }
-
-    private (string? Backgrounds, string? Portraits) ResolveAssetRoots()
-    {
-        // 저장 전 프로젝트는 기준 디렉터리가 없어 상대 루트를 해석할 수 없다.
-        // 절대 경로 루트는 그대로 동작한다.
-        string basePath = ProjectPath
-            ?? Path.Combine(Environment.CurrentDirectory, "unsaved" + ProjectManifestJson.FileExtension);
-
-        return (
-            AssetRootSettings.ResolveFrom(basePath, Project.AssetRoots.BackgroundsPath),
-            AssetRootSettings.ResolveFrom(basePath, Project.AssetRoots.PortraitsPath));
-    }
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
     public bool IsDirty => !string.Equals(_savedSnapshot, ProjectSnapshotCodec.Encode(Project), StringComparison.Ordinal);
@@ -539,11 +113,11 @@ internal sealed class AuthoringSession
     public event EventHandler<ProjectChangedEventArgs>? Changed;
 
     /// <summary>
-    /// 상태줄 글자가 바뀌었을 때. <b><see cref="Changed"/>와 갈라 둔 이유가 성능이다</b>
-    /// (2026-08-18): 예전에는 <see cref="SetStatus"/>가 프로젝트 변경으로 방송돼서,
-    /// "에피소드 3개를 반영했습니다" 한 줄이 챕터 워크북 전체 재읽기 + 판 재구성을
-    /// 불렀다. 동기화가 상태를 여러 번 적으면 그만큼 되풀이됐고, 그 되풀이가 다시
-    /// 상태를 적어 스스로를 먹였다 — 노드 60개에서 첫 화면이 58초 걸리던 정체다.
+    /// 상태줄 글자가 바뀌었을 때. <b><see cref="Changed"/>와 갈라 둔 이유가 성능이다</b>:
+    /// <see cref="SetStatus"/>가 프로젝트 변경으로 방송되면,
+    /// "에피소드 3개를 반영했습니다" 한 줄이 챕터 전체 재읽기 + 판 재구성을
+    /// 부른다. 동기화가 상태를 여러 번 적으면 그만큼 되풀이되고, 그 되풀이가 다시
+    /// 상태를 적어 스스로를 먹인다 — 노드 60개에서 첫 화면이 58초 걸린다.
     ///
     /// 상태줄은 프로젝트가 아니다. 듣는 쪽은 글자만 갈아 끼운다.
     /// </summary>
@@ -552,13 +126,14 @@ internal sealed class AuthoringSession
     public event EventHandler? SelectionChanged;
 
     /// <summary>
-    /// <see cref="Definition"/>이 갈렸을 때 — 기획자의 어휘가 바뀌었다는 알림이다.
-    ///
-    /// ⚠ <b>프로젝트 변경(<see cref="Changed"/>)과 갈라 둔다.</b> 정의 파일은 프로젝트
-    /// 바깥에 살고, 저것으로 방송하면 워크북 재읽기·판 재구성이 딸려 온다(2026-08-18
-    /// 성능 항목의 그 고리다). 듣는 쪽은 <b>제가 그리는 목록만</b> 다시 세운다.
+    /// 프로젝트의 화자 목록이 바뀌었다 — 화자 명령 · 되돌리기 · 열기 모두. 대본에만 있는 이름(<see cref="UnlistedSpeakers"/> — 이름 · 줄 수)이
+    /// 바뀌어도 알린다(usability UX34). <see cref="Changed"/> 뒤에 알린다. [대본] 탭의 「화자」 탭(화자 이름)과 [구성] 탭의 「화자」 탭(캐릭터 키)이
+    /// 듣고 목록을 다시 세운다 — 모든 변경마다 다시 세우지 않으려고 따로 둔다.
     /// </summary>
-    public event EventHandler? DefinitionChanged;
+    public event EventHandler? SpeakersChanged;
+
+    /// <summary>마지막으로 알린 화자 목록의 지문 — <see cref="SpeakersChanged"/>를 바뀐 때만 낸다.</summary>
+    private string _speakerSignature = string.Empty;
 
     /// <summary>
     /// 현재 파일 또는 그래프 펼침 상태가 바뀌었을 때.
@@ -579,16 +154,45 @@ internal sealed class AuthoringSession
 
     // 상태를 모두 맞춘 뒤에 알린다. 알린 다음에 상태를 바꾸면
     // 화면은 방금 지나간 값을 그린 채로 남는다.
+    /// <summary>
+    /// 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>(<see cref="ExportDestinations"/>). 형식마다 <c>exported/</c> 밖에 한 벌 더 낼
+    /// 폴더이고, <b>저장할 때만</b> 거기로 보낸다(<see cref="TakeDeliveryRequest"/> — 2026-11-17 · ⛔ 그 전에는 게임 폴더 하나였고 바뀔 때마다 썼다).
+    /// </summary>
+    public ExportDestinations Destinations { get; private set; } = ExportDestinations.None;
+
+    public void ReloadDestinations() =>
+        Destinations = ProjectPath is { } path ? ExportDestinations.LoadBeside(path) : ExportDestinations.None;
+
+    private bool _deliveryRequested;
+
+    /// <summary>
+    /// 저장이 보내기를 부탁했는가 — 묻는 순간 부탁을 내린다. [구성]의 다시 읽기가 <c>exported/</c>를 새로 쓴 <b>뒤에</b> 묻고 보낸다 — 저장
+    /// 직후의 다시 읽기라 보낼 곳이 저장된 판과 같다(저장에서 곧바로 보내면 처음 저장한 프로젝트는 아직 <c>exported/</c>가 없다).
+    /// </summary>
+    public bool TakeDeliveryRequest()
+    {
+        bool requested = _deliveryRequested;
+        _deliveryRequested = false;
+        return requested;
+    }
+
+    /// <summary>상태줄의 한 마디 — 복제할 폴더가 있으면 어느 형식인지. 없으면 말하지 않는다(설정은 [⚙ 설정]에 있다).</summary>
+    private string DestinationsNote() => Destinations.IsEmpty
+        ? string.Empty
+        : " · 저장할 때 복제합니다: " + string.Join(" · ", ExportDestinations.Formats
+            .Where(format => Destinations.FolderOf(format) is not null)
+            .Select(ExportDestinations.LabelOf));
+
     public void NewProject()
     {
         StoryProject project = NewProjectInstance();
 
         ProjectPath = null;
-        Definition = GameDefinition.Empty;
-        BranchSelection.Clear();
-        SimulationValues.Clear();
+        _diskStamp = null;
+        Destinations = ExportDestinations.None;
+        _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
-        StatusMessage = "새 프로젝트입니다. 노드를 추가해 시작하세요.";
+        StatusMessage = "새 프로젝트입니다. 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.";
 
         ResetFileGraphState(project);
         Editor.Replace(project);
@@ -605,16 +209,13 @@ internal sealed class AuthoringSession
         StoryProject project = loaded.Project;
 
         ProjectPath = loaded.ManifestPath;
-        Definition = GameDefinition.LoadBeside(loaded.ManifestPath);
-        BranchSelection.Clear();
-        SimulationValues.Clear();
+        _diskStamp = ProjectDiskStamp.Read(loaded.ManifestPath);
+        ReloadDestinations();
+        _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
-        _tuningLibrary = null;
         StatusMessage =
-            $"{Path.GetFileName(ProjectPath)} · 대본 {project.Scripts.Count}개 · " +
-            $"노드 {project.EnumerateNodes().Count()}개 · " +
-            $"발행 결과 {project.Results.DialogueResults.Count + project.Results.PresentationResults.Count}개" +
-            (TuningLibrary.IsLoaded ? $" · {TuningLibrary.Summary}" : string.Empty);
+            $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
+            DestinationsNote();
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
 
@@ -630,196 +231,45 @@ internal sealed class AuthoringSession
             fileListChanged: true);
     }
 
-    public void Save(string? path = null)
+    /// <summary>
+    /// 프로젝트에 쓴다. <b>연 뒤에 다른 곳이 프로젝트 파일을 바꿨으면 쓰지 않는다</b>(<see cref="ProjectChangedOutsideException"/> ·
+    /// writer-release WR1) — Git으로 받은 것 · 다른 PC의 동기화를 말없이 덮지 않는다. 덮어쓰기로 정했으면
+    /// <paramref name="overwriteOutsideChanges"/>로 부른다. 다른 폴더에 처음 쓰는 저장(새 프로젝트)은 견주지 않는다.
+    /// </summary>
+    public void Save(string? path = null, bool overwriteOutsideChanges = false)
     {
         string target = path ?? ProjectPath
             ?? throw new InvalidOperationException("저장할 경로가 없습니다.");
-        bool firstSave = ProjectPath is null;
-        string? previousManifestPath = ProjectPath;
 
-        // 새 프로젝트의 첫 저장 (W48): 에셋 폴더 규약을 프로젝트에 미리 심는다 —
-        // 루트가 저장본에 들어가야 하므로 디스크에 쓰기 전에 지정한다. 오디오도 같은 구조 (W59).
-        if (firstSave && Project.AssetRoots.IsEmpty)
+        bool samePlace = ProjectPath is not null &&
+                         string.Equals(Path.GetFullPath(target), ProjectPath, StringComparison.OrdinalIgnoreCase);
+
+        if (samePlace && !overwriteOutsideChanges && ChangedOutside)
         {
-            Editor.SetAssetRoots("assets/backgrounds", "assets/portraits", "assets/bgm", "assets/sfx");
+            throw new ProjectChangedOutsideException();
         }
 
         ProjectStore.Save(target, Project);
 
         ProjectPath = Path.GetFullPath(target);
-        // 규약 데이터 이사는 정의 읽기보다 먼저다 — 이사해 온 game.definition.json을
-        // 바로 아래 LoadBeside가 읽어야 하고, EnsureProjectFolders가 빈 뼈대를 먼저
-        // 깔면 "있는 파일은 불가침"에 걸려 진짜 정의가 영영 못 들어온다.
-        int carried = CarryProjectData(previousManifestPath, ProjectPath);
+        _diskStamp = ProjectDiskStamp.Read(ProjectPath);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Project);
-        Definition = GameDefinition.LoadBeside(ProjectPath);
+        ReloadDestinations();
+        _deliveryRequested = !Destinations.IsEmpty;
         AppSettingsService.SaveRecentProject(ProjectPath);
 
-        bool provisioned = EnsureProjectFolders();
-
-        // ⛔ <b>저장 = 프로젝트에 저장 + 워크북 재출력</b> (지시서 §6.2 · R-F).
-        //
-        //    편집마다 내는 빠른 길이 따로 있지만, 그것만으로는 <b>화면을 지나지 않는
-        //    편집</b>에서 파일이 낡는다 — 되돌리기가 그렇다. 저장 때 전부 내는 것이
-        //    어느 길로 고쳤든 파일이 따라오게 하는 그물이다.
-        ChapterEmitRun emitted = ChapterOutput.EmitAll(Project, ProjectPath, Definition);
-
-        StatusMessage = $"{Path.GetFileName(ProjectPath)}에 저장했습니다." +
-            (carried > 0 ? $" 이전 폴더의 챕터·대본·정의·에셋 {carried}개 파일을 함께 복사했습니다." : string.Empty) +
-            (provisioned ? " 없던 에셋 폴더·기본 튜닝을 준비했습니다." : string.Empty) +
-            emitted.Notice();
+        // 저장은 프로젝트에 쓰는 일 하나다. "다른 이름으로 저장"은 없다 — 프로젝트는 폴더이고,
+        // 복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
+        StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
+            (Destinations.IsEmpty ? string.Empty : " 고른 폴더에도 복제합니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
     }
 
     /// <summary>
-    /// 다른 폴더로 저장 = 프로젝트 이사 (2026-08-21 소유자 보고). 매니페스트만 옮기면
-    /// 프로젝트가 찢어진다: 판(StoryFile)·대본·작가 화자는 매니페스트에 실려 따라오는데,
-    /// 챕터 워크북·에피소드 대본·정의 파일·에셋은 <b>폴더 규약</b>이라 옛 집에 남는다.
-    /// 그 반쪽 상태가 "새 프로젝트인데 연출 그래프에 이전 프로젝트의 챕터가 보인다"의
-    /// 정체였다 — 챕터 목록은 새(빈) chapters/를 읽어 비어 있는데, 옛 챕터의 판은 설정
-    /// 노드(조건·아이템·화자)까지 달고 그대로 서 있었다.
-    ///
-    /// 복사이지 이동이 아니다(옛 매니페스트는 계속 그 폴더에서 산다). 새 자리에 이미 있는
-    /// 파일은 불가침이고, 엑셀 잠금 임시 파일(~$)은 데이터가 아니라 거른다. `exported/`는
-    /// 산출물이라 안 옮긴다 — 다음 재읽기의 자동 내보내기가 새로 만든다.
+    /// 연 뒤(또는 마지막 저장 뒤)에 <b>다른 곳이 프로젝트 파일을 바꿨는가</b> — 목차 · 판 파일의 내용으로 견준다(<see cref="ProjectDiskStamp"/>).
+    /// 저장한 적 없는 새 프로젝트는 늘 거짓이다.
     /// </summary>
-    /// <returns>실제로 복사한 파일 수. 같은 폴더 재저장·첫 저장은 0이다.</returns>
-    private int CarryProjectData(string? previousManifestPath, string targetManifestPath)
-    {
-        if (previousManifestPath is null)
-        {
-            return 0;
-        }
-
-        string? fromRoot = Path.GetDirectoryName(Path.GetFullPath(previousManifestPath));
-        string? toRoot = Path.GetDirectoryName(targetManifestPath);
-
-        if (fromRoot is null || toRoot is null ||
-            string.Equals(fromRoot, toRoot, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0;
-        }
-
-        int copied = 0;
-
-        copied += CopyMissing(
-            ChapterLibrary.FolderFor(previousManifestPath), ChapterLibrary.FolderFor(targetManifestPath));
-        copied += CopyMissing(
-            EpisodeLibrary.FolderFor(previousManifestPath), EpisodeLibrary.FolderFor(targetManifestPath));
-        copied += CopyMissingFile(
-            GameDefinition.PathFor(previousManifestPath), GameDefinition.PathFor(targetManifestPath));
-
-        foreach (string? root in new[]
-        {
-            Project.AssetRoots.BackgroundsPath,
-            Project.AssetRoots.PortraitsPath,
-            Project.AssetRoots.BgmPath,
-            Project.AssetRoots.SfxPath,
-            string.IsNullOrWhiteSpace(Definition.RuntimeTuningPath)
-                ? RuntimeTuningLibrary.DefaultFolderName
-                : Definition.RuntimeTuningPath
-        })
-        {
-            // 절대 경로 루트는 이사와 무관하게 그대로 유효하다 — 옮길 것이 없다.
-            if (string.IsNullOrWhiteSpace(root) || Path.IsPathRooted(root))
-            {
-                continue;
-            }
-
-            copied += CopyMissing(
-                AssetRootSettings.ResolveFrom(previousManifestPath, root),
-                AssetRootSettings.ResolveFrom(targetManifestPath, root));
-        }
-
-        return copied;
-    }
-
-    private static int CopyMissing(string? sourceFolder, string? destinationFolder)
-    {
-        if (sourceFolder is null || destinationFolder is null || !Directory.Exists(sourceFolder))
-        {
-            return 0;
-        }
-
-        int copied = 0;
-
-        foreach (string file in Directory.EnumerateFiles(sourceFolder, "*", SearchOption.AllDirectories))
-        {
-            if (Path.GetFileName(file).StartsWith("~$", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            copied += CopyMissingFile(
-                file, Path.Combine(destinationFolder, Path.GetRelativePath(sourceFolder, file)));
-        }
-
-        return copied;
-    }
-
-    private static int CopyMissingFile(string source, string destination)
-    {
-        if (!File.Exists(source) || File.Exists(destination))
-        {
-            return 0;
-        }
-
-        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-        File.Copy(source, destination);
-        return 1;
-    }
-
-    /// <summary>
-    /// 프로젝트 폴더의 기본 살림 (W48·W60) — <b>매 저장마다</b> 없는 에셋 폴더를 만들고,
-    /// 튜닝 폴더가 통째로 없으면 기본 튜닝을 깐다. 첫 저장뿐 아니라 다른 이름으로 저장한
-    /// 새 위치, 실수로 폴더를 지운 경우까지 복구한다. 내용이 있는 폴더는 불가침이다.
-    /// 무언가 실제로 만들었을 때만 true — 조용한 저장이 시끄러워지지 않는다.
-    /// </summary>
-    private bool EnsureProjectFolders()
-    {
-        if (ProjectPath is null)
-        {
-            return false;
-        }
-
-        bool created = false;
-
-        foreach (string? root in new[] { BackgroundsRoot, PortraitsRoot, BgmRoot, SfxRoot })
-        {
-            if (root is not null && !Directory.Exists(root))
-            {
-                Directory.CreateDirectory(root);
-                created = true;
-            }
-        }
-
-        // 정의 파일 — 없으면 뼈대를 깐다. 손으로 만들어야 하는 파일이면 새 프로젝트마다
-        // 스탯 경고부터 맞는다(실사례). 있는 파일은 불가침.
-        if (GameDefinitionStore.EnsureBeside(ProjectPath))
-        {
-            created = true;
-        }
-
-        // 기본 튜닝 — 재지정(runtimeTuningPath)이 없고 규약 폴더가 비었을 때만.
-        if (string.IsNullOrWhiteSpace(Definition.RuntimeTuningPath))
-        {
-            string tuningRoot = Path.Combine(
-                Path.GetDirectoryName(ProjectPath)!, RuntimeTuningLibrary.DefaultFolderName);
-
-            if (!Directory.Exists(tuningRoot) || !Directory.EnumerateFileSystemEntries(tuningRoot).Any())
-            {
-                CreateDefaultTuning(); // 상태 메시지는 저장 요약이 덮는다
-                created = true;
-            }
-        }
-
-        if (created)
-        {
-            RefreshAssets();
-        }
-
-        return created;
-    }
+    public bool ChangedOutside => ProjectPath is { } path && _diskStamp is { } stamp && !ProjectDiskStamp.Read(path).SameAs(stamp);
 
     public void SetStatus(string message)
     {
@@ -827,103 +277,147 @@ internal sealed class AuthoringSession
         StatusChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>
-    /// 엑셀 동기화가 대본을 바꿨다 — 열려 있는 편집 화면(줄 목록·그래프)을 다시 만든다.
-    ///
-    /// 툴 안 타이핑은 편집 컨트롤을 보존해야 하지만(포커스가 날아간다), 바깥에서 온 변경은
-    /// 반대다: 보존하면 화면이 파일과 다른 거짓말을 한다 — "시트에서 고쳤는데 툴에
-    /// 반영이 안 된다"(실사례). 그래서 구조 변경으로 격상해 알린다.
-    /// </summary>
-    public void NotifyExternalScriptChange() =>
-        Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Structure));
+    // 화자의 집은 프로젝트다(<see cref="StoryProject.Speakers"/> · 2026-11-17 definition-split S3 — ⛔ 그 전에는 game.definition.json의 speakers).
+    // 화자 <b>이름</b>은 [대본] 탭(작가)이 더하고 고치고 지우며, <b>캐릭터 키</b>는 [구성] 탭(기획자)이 잇는다(writer-fields W3). 규칙(빈 이름 ·
+    // 같은 이름)은 아래 화자 창구 한 벌이고, 바꾸는 것은 편집기의 화자 명령이다 — 조작 하나 = 되돌리기 한 칸.
 
-    // 작가 화면에서 `game.definition.json`의 speakers를 갈아 끼우던 길은 폐지됐다
-    // (2026-08-17 소유자 — "이게 기획자가 쓰는 전용으로 되어야 하는데, 현재는 시나리오
-    // 작가가 한것까지 저기에 들어간다"). 작가가 더한 화자는 프로젝트에 산다
-    // (`ProjectEditor.SetWriterSpeakers`). 정의 파일에 쓰는 창구는 아래 [등록] 하나뿐이고,
-    // 그것도 기획자 화면(챕터 그래프의 검증 보고)에서만 불린다.
-
-    /// <summary>
-    /// 화자 목록을 <c>game.definition.json</c>에 통째로 쓴다 — 챕터 그래프 [화자] 탭 전용
-    /// (2026-08-23 소유자: "이 화자탭에서 화자 추가 삭제를 하는 것이 구조적으로 옳다.
-    /// 여기서 추가한 화자는 게임 project에 저장되며, 모든 챕터가 공유해서 쓴다").
-    ///
-    /// <b>통째로 쓰는 것이 규격이다</b> — 더하기만 하는 <see cref="RegisterVariables"/>와
-    /// 다르다. 탭에서 지운 이름이 파일에 남으면 목록이 화면과 갈리고, 그 순간부터 어느 쪽이
-    /// 진짜인지 아무도 모른다. 쓰고 나면 정의를 다시 읽어 드롭다운이 같은 목록을 본다.
-    ///
-    /// 초상화 매핑도 같은 배열이 진다(<c>characterId</c>) — 화자의 집이 하나라는 뜻이다.
-    /// </summary>
-    public bool SaveSpeakers(IReadOnlyList<SpeakerSpec> speakers)
+    /// <summary>화자 이름을 더한다 — [대본] 탭. 못 더했으면 그 이유(빈 이름 · 같은 이름).</summary>
+    public string? AddSpeakerName(string? name)
     {
-        ArgumentNullException.ThrowIfNull(speakers);
+        string typed = (name ?? string.Empty).Trim();
 
-        if (ProjectPath is null)
+        if (typed.Length == 0)
         {
-            SetStatus("화자는 game.definition.json에 저장됩니다. 프로젝트를 먼저 저장해 주세요.");
-            return false;
+            return "화자 이름을 적어 주세요.";
         }
 
-        GameDefinitionStore.SaveSpeakers(ProjectPath, speakers);
-        Definition = GameDefinition.LoadBeside(ProjectPath);
-        return true;
-    }
-
-    /// <summary>
-    /// 스탯 키를 <c>game.definition.json</c>의 variables에 더한다 — 검증 보고의 [등록] 단추 전용.
-    /// 존재의 원천은 정의 파일이므로(§3.1) 자동 쓰기가 아니라 사람이 누른 순간에만 쓰고,
-    /// 없는 이름만 더한다. 쓰고 나면 정의를 다시 읽어 챕터 검증이 새 원천을 본다.
-    /// </summary>
-    public bool RegisterVariables(IReadOnlyList<VariableSpec> variables)
-    {
-        if (ProjectPath is null)
+        if (Project.FindSpeaker(typed) is not null)
         {
-            SetStatus("스탯은 game.definition.json에 등록됩니다. 프로젝트를 먼저 저장해 주세요.");
-            return false;
+            return $"화자 '{typed}'은 이미 있습니다.";
         }
 
-        int added = GameDefinitionStore.AddVariables(ProjectPath, variables);
-        Definition = GameDefinition.LoadBeside(ProjectPath);
-
-        SetStatus(added > 0
-            ? $"{GameDefinition.FileName}에 변수 {added}개를 등록했습니다."
-            : "새로 등록할 변수가 없습니다 — 이미 정의 파일에 있습니다.");
-
-        return added > 0;
-    }
-
-    public bool IsFileExpanded(string fileId)
-    {
-        return _expandedFileIds.Contains(fileId);
-    }
-
-    public IEnumerable<StoryNode> EnumerateExpandedNodes()
-    {
-        return Project.Files
-            .Where(file => _expandedFileIds.Contains(file.Id))
-            .SelectMany(file => file.Nodes);
+        Editor.AddSpeaker(typed);
+        return null;
     }
 
     /// <summary>
-    /// 챕터의 판 (챕터 v2, G-1 v2 — 챕터 = 판 1:1). 이름이 챕터 Id와 같은 StoryFile이 그
-    /// 챕터의 판이고, 없으면 만든다. 왼쪽 챕터 목록 클릭과 에피소드 동기화가 같은 이 규칙
-    /// 하나를 쓴다 — 두 곳이 갈리면 노드가 엉뚱한 판에 생긴다.
+    /// 화자 이름을 바꾼다 — [대본] 탭. 이미 쓰인 대사 줄의 화자가 같은 칸에서 따라간다(<see cref="ProjectEditor.RenameSpeaker"/>), 캐릭터 키는 그대로다.
+    /// 비울 수 없고(지우기는 따로), 이미 있는 이름으로는 바꾸지 않는다(두 화자의 줄이 한 이름으로 합쳐진다).
     /// </summary>
+    /// <returns>상태줄에 세울 말 — 무엇이 따라갔는지, 또는 못 바꾼 이유. 같은 이름이면 null.</returns>
+    public string? RenameSpeakerName(string oldName, string? newName)
+    {
+        string typed = (newName ?? string.Empty).Trim();
+
+        if (string.Equals(oldName, typed, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (typed.Length == 0)
+        {
+            return "이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.";
+        }
+
+        if (Project.FindSpeaker(oldName) is null)
+        {
+            return $"화자 '{oldName}'이 없습니다 — 목록이 바뀌었습니다.";
+        }
+
+        if (Project.FindSpeaker(typed) is not null)
+        {
+            return $"화자 '{typed}'은 이미 있습니다.";
+        }
+
+        int lines = Editor.RenameSpeaker(oldName, typed);
+
+        return lines == 0
+            ? $"화자 '{oldName}' → '{typed}'."
+            : $"화자 '{oldName}' → '{typed}' — 줄 {lines}개가 따라갔습니다.";
+    }
+
+    /// <summary>화자를 목록에서 지운다 — [대본] 탭. 이미 대본에 적힌 이름은 그대로 남는다(화자 칸은 자유 입력).</summary>
+    public bool RemoveSpeakerName(string name) => Editor.RemoveSpeaker(name);
+
+    /// <summary>
+    /// 대본에만 있는 이름(<see cref="UnlistedSpeakers"/>)들을 화자 목록에 올린다 — [대본] 「화자」 탭의 [등록] · [모두 등록](usability UX34).
+    /// 이름마다 임시 키가 서고, 여럿이어도 되돌리기 한 칸이다.
+    /// </summary>
+    /// <returns>상태줄에 세울 말. 올린 것이 없으면 null.</returns>
+    public string? RegisterSpeakerNames(IEnumerable<string> names)
+    {
+        IReadOnlyList<Speaker> added = Editor.AddSpeakers(names);
+
+        return added.Count switch
+        {
+            0 => null,
+            1 => $"'{added[0].Name}'{Josa.을를(added[0].Name)} 화자 목록에 올렸습니다 — 캐릭터 키는 임시로 '{added[0].CharacterId}' — [구성] 탭에서 그림에 맞게 바꿉니다.",
+            _ => $"화자 {added.Count}명을 목록에 올렸습니다 — 캐릭터 키는 임시 키(temp_…)입니다. [구성] 탭에서 그림에 맞게 바꿉니다."
+        };
+    }
+
+    /// <summary>
+    /// 대본에만 있는 이름을 고친다 — 그 이름이 화자인 줄이 모든 챕터에서 따라간다(<see cref="ProjectEditor.RenameSpeaker"/> · 되돌리기 한 칸).
+    /// 목록에 있는 이름으로 고치면 그 화자로 합쳐진다(오타 고치기 · usability UX34). 띄어쓰기가 든 새 이름은 목록에 있어야 한다 — 없으면 대본이
+    /// 그 줄을 화자로 읽지 않는다.
+    /// </summary>
+    /// <returns>상태줄에 세울 말 — 무엇이 따라갔는지, 또는 못 고친 이유. 같은 이름이면 null.</returns>
+    public string? FixUnlistedSpeakerName(string oldName, string? newName)
+    {
+        string typed = (newName ?? string.Empty).Trim();
+
+        if (string.Equals(oldName, typed, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (typed.Length == 0)
+        {
+            return "이름은 비울 수 없습니다 — 화자를 빼려면 그 줄들의 화자 칸을 비우세요.";
+        }
+
+        if (Project.FindSpeaker(oldName) is not null)
+        {
+            return $"'{oldName}'{Josa.은는(oldName)} 이미 목록에 있습니다 — 목록이 바뀌었습니다.";
+        }
+
+        bool listed = Project.FindSpeaker(typed) is not null;
+
+        if (!listed && typed.Any(char.IsWhiteSpace))
+        {
+            return $"띄어쓰기가 든 이름 '{typed}'{Josa.은는(typed)} 먼저 위에서 화자로 더한 뒤 고치세요 — 목록에 없으면 대본이 화자로 읽지 않습니다.";
+        }
+
+        int lines = Editor.RenameSpeaker(oldName, typed);
+
+        if (lines == 0)
+        {
+            return $"'{oldName}'{Josa.이가(oldName)} 화자인 줄이 없습니다 — 대본이 바뀌었습니다.";
+        }
+
+        return listed
+            ? $"'{oldName}'의 줄 {lines}개를 화자 '{typed}'{Josa.으로(typed)} 합쳤습니다."
+            : $"'{oldName}' → '{typed}' — 줄 {lines}개를 고쳤습니다. 아직 목록에 없는 이름입니다.";
+    }
+
+    /// <summary>화자의 캐릭터 키 — [구성] 탭. 초상화 · 표정이 이 키로 붙는다. 같은 값이면 기록하지 않는다.</summary>
+    public bool SetSpeakerCharacterId(string name, string? characterId) => Editor.SetSpeakerCharacterId(name, characterId);
+
     /// <summary>
     /// 그 챕터의 판을 보장한다. <b>규칙은 <see cref="ProjectEditor.EnsureChapterBoard"/>가
-    /// 갖는다</b> (2026-08-23에 내려갔다 — 세션 상태를 하나도 안 보는 순수 편집 작업이었다).
-    /// 여기 남은 것은 부르는 자리 스물여덟을 안 건드리기 위한 이름 하나뿐이다.
+    /// 갖는다</b> — 세션 상태를 하나도 안 보는 순수 편집 작업이다.
+    /// 여기 있는 것은 부르는 자리 스물여덟을 안 건드리기 위한 이름 하나뿐이다.
     /// </summary>
     internal string EnsureChapterBoard(string chapterId) => Editor.EnsureChapterBoard(chapterId);
 
     /// <summary>
-    /// <b>챕터 하나를 세운다</b> — 이름을 받고, 스탯을 정의 파일에서 깔고, 판을 만들어 고른다.
+    /// <b>챕터 하나를 세운다</b> — 이름을 받고, 판을 만들어 고른다. <b>스탯 없이 시작한다</b> — 스탯은 챕터마다 [구성] 탭에서 더한다
+    /// (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S1 — ⛔ 그 전에는 정의 파일의 <c>variables</c>로 깔았다.
+    /// 그 목록은 더하기만 해서 지운 스탯이 새 챕터마다 되살아났다).
     ///
-    /// ⛔ <b>부르는 자리가 둘이다</b>: [챕터 그래프]의 [＋ 챕터]와 [대본] 탭 탐색기의 [＋].
-    /// 규칙이 두 벌이면 어느 쪽으로 만들었느냐에 따라 챕터가 달라진다 — 실제로 스탯을
-    /// 한쪽만 깔면 그 챕터는 도달성 증명의 탐색 경계가 없다.
+    /// <b>챕터를 세우는 규칙은 여기 한 벌이다.</b> 두 벌이면 어느 창구로 만들었느냐에 따라 챕터가 달라진다.
     ///
-    /// ⚠ <b>워크북을 만들지 않는다</b>(R-F). 챕터는 프로젝트가 들고, 파일은 첫 출력이 낸다.
+    /// 주의: 챕터는 프로젝트가 든다 — 만드는 파일은 없다.
     /// </summary>
     /// <returns>못 만든 이유. null이면 만들었다.</returns>
     internal string? CreateChapter(string chapterId)
@@ -937,7 +431,7 @@ internal sealed class AuthoringSession
 
         if (ProjectPath is null)
         {
-            return "프로젝트를 먼저 저장해야 챕터 폴더 자리가 정해집니다.";
+            return "프로젝트를 먼저 저장해 주세요 — 진행 JSON이 나갈 자리가 프로젝트 폴더에서 정해집니다.";
         }
 
         if (Editor.FindChapter(chapterId) is not null)
@@ -945,21 +439,46 @@ internal sealed class AuthoringSession
             return $"챕터 '{chapterId}'가 이미 있습니다.";
         }
 
-        // 스탯은 정의 파일의 변수에서 온다 — 옛 워크북 생성이 `스탯` 시트를 채우던 자리다.
-        ChapterDocument chapter = Editor.EnsureChapter(chapterId);
-
-        foreach (Vn.Authoring.Definition.VariableSpec variable in Definition.Variables)
+        // 챕터와 그 판이 한 되돌리기 칸이다(⛔ 2026-11-18까지는 둘로 쌓여 Ctrl+Z 한 번에 판만 물러났다).
+        string board = string.Empty;
+        Editor.Batch(() =>
         {
-            chapter.Stats.Add(new ChapterStat(
-                variable.Name, variable.Name, Initial: 0, Minimum: 0, Maximum: 100, SourceRow: 0));
-        }
-
-        SelectFile(EnsureChapterBoard(chapterId));
+            Editor.EnsureChapter(chapterId);
+            board = EnsureChapterBoard(chapterId);
+        });
+        SelectFile(board);
 
         return null;
     }
 
-    internal void SelectFile(string? fileId)
+    /// <summary>
+    /// 작가가 이름으로 새 챕터를 만든다 — ID는 자동(<see cref="NewNames.NextChapterId"/>, <c>ch01</c>…), 적은 이름은 표시 이름이다
+    /// (비우면 「새 챕터」). [대본] 탭 하이어아키의 「챕터 추가」와 [＋ 에피소드](챕터가 없을 때)가 부른다(display-names N2). 세우는 규칙은 <see cref="CreateChapter"/> 그대로다.
+    /// </summary>
+    /// <returns>만든 챕터의 ID, 못 만든 이유 — 둘 중 하나만 있다.</returns>
+    internal (string? ChapterId, string? Failure) CreateNamedChapter(string? name)
+    {
+        string chapterId = NewNames.NextChapterId(Project);
+        string? failure = null;
+
+        // 챕터 · 판 · 이름이 한 되돌리기 칸이다. 이름도 편집 명령으로 적는다(⛔ 2026-11-18까지는 모델에 바로 적었다).
+        Editor.Batch(() =>
+        {
+            failure = CreateChapter(chapterId);
+
+            if (failure is null)
+            {
+                Editor.UpdateChapterDisplayName(chapterId, string.IsNullOrWhiteSpace(name) ? NewNames.Chapter : name);
+            }
+        });
+
+        return failure is null ? (chapterId, null) : (null, failure);
+    }
+
+    /// <param name="reveal">
+    /// 접혀 있으면 편다(기본). 하이어아키에서 고를 때는 false다 — 보이기는 눈이 정한다.
+    /// </param>
+    internal void SelectFile(string? fileId, bool reveal = true)
     {
         if (fileId is not null && Project.FindFile(fileId) is null)
         {
@@ -973,10 +492,9 @@ internal sealed class AuthoringSession
 
         ActiveFileId = fileId;
 
-        // 선택과 펼침은 독립이다 — W43의 "선택=그 파일만 펼침" 자동 접힘은 실사용에서
-        // "여러 파일을 오가며 함께 본다"를 막아 헷갈린다는 소유자 판단으로 철회했다 (W49).
-        // 활성 파일이 접혀 있으면 펴 주기만 한다(고른 파일이 안 보이는 일은 없어야 한다).
-        bool expandedChanged = fileId is not null && _expandedFileIds.Add(fileId);
+        // 선택과 펼침은 독립이다 — 고를 때 다른 파일을 저절로 접으면 "여러 파일을 오가며
+        // 함께 본다"가 막힌다. 활성 파일이 접혀 있으면 펴 주기만 한다(고른 파일이 안 보이는 일은 없어야 한다).
+        bool expandedChanged = reveal && fileId is not null && _expandedFileIds.Add(fileId);
 
         RaiseFileGraphStateChanged(
             activeFileChanged: true,
@@ -1004,6 +522,88 @@ internal sealed class AuthoringSession
         }
     }
 
+    /// <summary>[대본] 탭에서 그 카드의 빈 선택지 칸을 감추거나(참) 다시 세운다 — 기억하고 판을 다시 세운다.</summary>
+    internal void SetHideEmptyChoices(string nodeId, bool hide)
+    {
+        bool changed = hide ? _hiddenChoiceNodeIds.Add(nodeId) : _hiddenChoiceNodeIds.Remove(nodeId);
+
+        if (!changed)
+        {
+            return;
+        }
+
+        if (ProjectPath is not null)
+        {
+            AppSettingsService.SaveHiddenChoices(ProjectPath, _hiddenChoiceNodeIds);
+        }
+
+        // 그 카드의 칸만 바뀌었다 — [대본] 판이 그 카드의 철도만 다시 긋는다(2026-11-18 · board-speed PF2). ⛔ 그 전에는 「펼친 판이 바뀌었다」로
+        // 알려 셸이 하이어아키 둘을 다시 세우고 판을 통째로 다시 지었다(에피소드 300개에서 3.5초).
+        HiddenChoicesChanged?.Invoke(nodeId);
+    }
+
+    /// <summary>[대본] 카드 하나의 「빈 선택지 숨기기」가 바뀌었다 — 그 카드의 노드 Id.</summary>
+    internal event Action<string>? HiddenChoicesChanged;
+
+    /// <summary>[구성] 탭에서 빈 선택지를 감추거나(참) 다시 세운다 — 기억하고 [구성] 판에 알린다.</summary>
+    internal void SetHideEmptyChoices(bool hide)
+    {
+        if (HideEmptyChoices == hide)
+        {
+            return;
+        }
+
+        HideEmptyChoices = hide;
+        AppSettingsService.SaveHideEmptyChoices(hide);
+        HideEmptyChoicesChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>[구성] 탭을 ID로(참) 또는 이름으로 본다 — 기억하고 [구성] 탭에 알린다.</summary>
+    internal void SetShowIds(bool show)
+    {
+        if (ShowIds == show)
+        {
+            return;
+        }
+
+        ShowIds = show;
+        AppSettingsService.SaveShowIds(show);
+        ShowIdsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>[대본] 판의 미니맵을 보이거나(참) 걷는다 — 기억하고 [대본] 판에 알린다.</summary>
+    internal void SetShowMinimap(bool show)
+    {
+        if (ShowMinimap == show)
+        {
+            return;
+        }
+
+        ShowMinimap = show;
+        AppSettingsService.SaveShowMinimap(show);
+        ShowMinimapChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>장면 하나를 접거나 편다 — 판 접기와 같은 알림으로 그래프 · 하이어아키가 다시 선다.</summary>
+    internal void SetSceneCollapsed(string fileId, string sceneId, bool collapsed)
+    {
+        if (Project.FindFile(fileId) is null)
+        {
+            return;
+        }
+
+        var key = new GraphSceneKey(fileId, sceneId);
+        bool changed = collapsed ? _collapsedScenes.Add(key) : _collapsedScenes.Remove(key);
+
+        if (changed)
+        {
+            RaiseFileGraphStateChanged(
+                activeFileChanged: false,
+                expandedFilesChanged: true,
+                fileListChanged: false);
+        }
+    }
+
     private void OnEditorChanged(object? sender, ProjectChangedEventArgs e)
     {
         bool activeChanged = false;
@@ -1021,6 +621,7 @@ internal sealed class AuthoringSession
         }
 
         expandedChanged |= _expandedFileIds.RemoveWhere(fileId => !validFileIds.Contains(fileId)) > 0;
+        expandedChanged |= _collapsedScenes.RemoveWhere(key => !validFileIds.Contains(key.FileId)) > 0;
         _knownFileIds.RemoveWhere(fileId => !validFileIds.Contains(fileId));
 
         // 새로 생긴 파일만 기본적으로 펼친다. 이미 존재하던 파일을 사용자가 접어 둔 상태는
@@ -1048,7 +649,18 @@ internal sealed class AuthoringSession
             SelectionChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        // 대본에만 있는 이름(과 줄 수)도 싣는다 — [대본] 「화자」 탭이 그것도 모아 보인다(usability UX34).
+        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId)) + "\n\n" +
+                          string.Join('\n', UnlistedSpeakers.Of(Project).Select(entry => entry.Name + '\t' + entry.Lines));
+        bool speakersChanged = !string.Equals(_speakerSignature, speakers, StringComparison.Ordinal);
+        _speakerSignature = speakers;
+
         Changed?.Invoke(this, e);
+
+        if (speakersChanged)
+        {
+            SpeakersChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         if (activeChanged || expandedChanged || fileListChanged)
         {
@@ -1056,12 +668,26 @@ internal sealed class AuthoringSession
         }
     }
 
+    /// <summary>
+    /// 프로젝트를 열거나 새로 만들 때마다 하나씩 는다 — 화면이 「새 프로젝트의 첫 화면」을 알아보는 열쇠다(되돌리기는 프로젝트 객체를
+    /// 갈아 끼우므로 객체로는 못 가린다).
+    /// </summary>
+    internal int ProjectGeneration { get; private set; }
+
     private void ResetFileGraphState(StoryProject project, string? activeFileId = null)
     {
+        ProjectGeneration++;
         ActiveFileId = activeFileId ?? project.Files.FirstOrDefault()?.Id;
 
         _expandedFileIds.Clear();
         _knownFileIds.Clear();
+        _collapsedScenes.Clear();
+        _hiddenChoiceNodeIds.Clear();
+
+        if (ProjectPath is not null)
+        {
+            _hiddenChoiceNodeIds.UnionWith(AppSettingsService.LoadHiddenChoices(ProjectPath));
+        }
 
         foreach (StoryFile file in project.Files)
         {
@@ -1095,11 +721,9 @@ internal sealed class AuthoringSession
 
     private static StoryProject NewProjectInstance()
     {
-        // 대본을 미리 만들지 않는다 (X4, D-3) — 대사 노드가 생성될 때 전용 대본이
-        // 함께 태어나므로, 미리 둔 대본은 아무도 안 읽는 빈 파일로 남을 뿐이다.
-        var project = new StoryProject { Title = "새 프로젝트" };
-        project.Files.Add(new StoryFile(name: "기본 파일"));
-        return project;
+        // 판을 미리 두지 않는다 — 판은 챕터가 세운다(챕터 = 판 1:1). 첫 [＋ 에피소드]가 「새 챕터」 · 「새 장면」과 함께 첫 카드를
+        // 세운다(2026-11-17 소유자). ⛔ 그 전에는 챕터가 아닌 판 「기본 파일」(낙서판)으로 시작했다.
+        return new StoryProject { Title = "새 프로젝트" };
     }
 }
 
@@ -1121,4 +745,16 @@ internal sealed class FileGraphStateChangedEventArgs : EventArgs
 
     /// <summary>파일 이름·경로·순서 또는 소유 노드 개수가 바뀌어 목록 행을 다시 만들어야 하는가.</summary>
     public bool FileListChanged { get; }
+}
+
+/// <summary>
+/// 연 뒤에 다른 곳(Git으로 받기 · 동기화 · 손으로 고침)이 프로젝트 파일을 바꿔 저장하지 않았다(writer-release WR1). 창이 「다시 열기」 ·
+/// 「내 것으로 덮어쓰기」를 묻는다.
+/// </summary>
+public sealed class ProjectChangedOutsideException : InvalidOperationException
+{
+    public ProjectChangedOutsideException()
+        : base("연 뒤에 다른 곳에서 프로젝트 파일이 바뀌어 저장하지 않았습니다(GitHub Desktop의 받기 등). 위 띠에서 [다시 열기] 또는 [내 것으로 덮어쓰기]를 고르세요.")
+    {
+    }
 }

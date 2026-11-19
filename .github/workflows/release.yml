@@ -1,0 +1,94 @@
+name: release
+
+# 작가에게 건넬 판을 굽는다(2026-11-19 · docs/work-orders/writer-release-orders.md WR4).
+#
+#   (dev를 main에 올린 뒤) GitHub 저장소 → Releases → Draft a new release → 태그 v0.1.0(Create new tag) · Target main → [Publish release]
+#
+# 릴리스를 펴면 이 작업이 그 태그의 코드로 Windows · 맥 꾸러미를 굽고(시험을 먼저 돌린다) 그 릴리스에 두 zip을 붙인다 — 10분쯤 걸린다.
+# 판 번호는 태그에서 온다(v0.1.0 → 0.1.0) — 앱의 창 제목에 선다(WR2).
+#
+# 릴리스를 펴는 것이 곧 실행이다 — 「Run workflow」 단추는 두지 않는다: 구운 꾸러미는 늘 릴리스(태그 · 판 번호)에 붙는다.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Version from tag
+        id: version
+        shell: pwsh
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if ($env:TAG -match '^v(\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?)$') {
+            "version=$($Matches[1])" >> $env:GITHUB_OUTPUT
+          } else {
+            throw "릴리스 태그는 v0.1.0 모양이어야 합니다: $env:TAG"
+          }
+      - name: Restore
+        run: dotnet restore VnTool.sln
+      - name: Build
+        run: dotnet build VnTool.sln --no-restore --configuration Release
+      - name: Test
+        run: dotnet test VnTool.sln --no-build --configuration Release
+      - name: Package
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          .\publish-windows.ps1 -Version $env:VERSION
+          Copy-Item artifacts\StoryDirector-win-x64.zip "artifacts\StoryDirector-$env:VERSION-windows.zip"
+      - name: Attach to release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release upload $env:TAG "artifacts\StoryDirector-$env:VERSION-windows.zip" --clobber --repo $env:GITHUB_REPOSITORY
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Version from tag
+        id: version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$ ]]; then
+            echo "릴리스 태그는 v0.1.0 모양이어야 합니다: $TAG" >&2
+            exit 1
+          fi
+          echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+      - name: Restore
+        run: dotnet restore VnTool.sln
+      - name: Build
+        run: dotnet build VnTool.sln --no-restore --configuration Release
+      - name: Test
+        run: dotnet test VnTool.sln --no-build --configuration Release
+      - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ./publish-macos.sh arm64 "$VERSION"
+          cp artifacts/StoryDirector-osx-arm64.zip "artifacts/StoryDirector-$VERSION-mac.zip"
+      - name: Attach to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release upload "$TAG" "artifacts/StoryDirector-$VERSION-mac.zip" --clobber --repo "$GITHUB_REPOSITORY"

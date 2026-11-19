@@ -1,5 +1,11 @@
 # 세 저장소 지도 — 역할 · 관계 · 하나의 방향
 
+> ⛔ **이력 — 2026-08-23의 스냅샷이다. 지금의 세 저장소 그림이 아니다.** 여기의 셋(`java-start`(VnTool) ·
+> `ked-presentation-runtime` · `ked-progression` UPM 패키지)과 `YarnBundleVerificationTests` 같은 이름은 그때의 것이다.
+> 지금의 셋은 **ked-story-director**(이 저장소 — 원고 · 검증 · 진행 JSON · 연출 없는 대사 Yarn) · **ked-story-compositor**(연출 ·
+> 게임용 Yarn) · **ked-presentation-runtime**(유니티 런타임 — 진행 코어의 정본, `src/Ked.Progression/UPSTREAM.md`)이고,
+> 그 관계는 [`ORIENTATION.md`](../ORIENTATION.md) §3에 있다. 아래 본문은 「왜 갈라져 있나」의 까닭으로만 읽는다.
+
 기준: 2026-08-23 · 세 저장소 실측
 
 > 이 문서는 **"우리가 왜 셋으로 갈라져 있나"**에 답한다. 각 저장소가 무엇을 하는지는

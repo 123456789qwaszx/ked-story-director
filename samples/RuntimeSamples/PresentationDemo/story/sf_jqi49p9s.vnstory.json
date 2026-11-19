@@ -1,0 +1,270 @@
+{
+  "formatVersion": 2,
+  "fileId": "sf_jqi49p9s",
+  "name": "presentation_demo",
+  "nodes": [
+    {
+      "id": "nd_pr4ssyke",
+      "kind": "dialogue",
+      "name": "Demo_Presentation",
+      "layout": {
+        "x": 0,
+        "y": 0
+      },
+      "script": {
+        "primaryLocale": "ko-KR",
+        "sourceRevision": 1,
+        "sourceContentHash": "6B52E43A4CC1B15E7690784E3302FBCDF2D74ADFC9306ADE4EC2D3BB1D10B342",
+        "lines": [
+          {
+            "id": "ln_7u3jtu6n",
+            "revision": 2
+          },
+          {
+            "id": "ln_2jfcj5dr",
+            "revision": 1
+          },
+          {
+            "id": "ln_cydaj9ym",
+            "revision": 1
+          },
+          {
+            "id": "ln_80fvnx4u",
+            "revision": 1
+          },
+          {
+            "id": "ln_a7r9k13x",
+            "revision": 1
+          },
+          {
+            "id": "ln_nf0ieq41",
+            "revision": 1
+          },
+          {
+            "id": "ln_k2xwcsb9",
+            "revision": 1
+          },
+          {
+            "id": "ln_4m8a87j3",
+            "revision": 1
+          },
+          {
+            "id": "ln_prgac1qy",
+            "revision": 1
+          },
+          {
+            "id": "ln_hdksazhc",
+            "revision": 1
+          },
+          {
+            "id": "ln_n44jexpj",
+            "revision": 1
+          },
+          {
+            "id": "ln_anizmf84",
+            "revision": 1
+          },
+          {
+            "id": "ln_xd9t914r",
+            "revision": 1
+          },
+          {
+            "id": "ln_f5fsqpgu",
+            "revision": 1
+          },
+          {
+            "id": "ln_nrmvr5n2",
+            "revision": 1
+          },
+          {
+            "id": "ln_cjzch0sn",
+            "revision": 1
+          },
+          {
+            "id": "ln_x8r45cck",
+            "revision": 1
+          },
+          {
+            "id": "ln_5ag43erq",
+            "revision": 1
+          },
+          {
+            "id": "ln_01mhdu3v",
+            "revision": 1
+          },
+          {
+            "id": "ln_9nyveem8",
+            "revision": 1
+          },
+          {
+            "id": "ln_jam87iua",
+            "revision": 1
+          },
+          {
+            "id": "ln_8bpnwdqw",
+            "revision": 1
+          },
+          {
+            "id": "ln_z94y5hi1",
+            "revision": 1
+          },
+          {
+            "id": "ln_nkr0mbcc",
+            "revision": 1
+          },
+          {
+            "id": "ln_6mq0fm7a",
+            "revision": 2
+          },
+          {
+            "id": "ln_nrhqqani",
+            "revision": 1,
+            "retired": true
+          },
+          {
+            "id": "ln_yy4tnzdq",
+            "revision": 1,
+            "retired": true
+          },
+          {
+            "id": "ln_awcnxgku",
+            "revision": 1,
+            "retired": true
+          },
+          {
+            "id": "ln_tzwkezwd",
+            "revision": 1,
+            "retired": true
+          },
+          {
+            "id": "ln_bvxtdk3u",
+            "revision": 1
+          }
+        ],
+        "locales": [
+          {
+            "locale": "ko-KR",
+            "entries": {
+              "ln_7u3jtu6n": {
+                "speaker": "하린",
+                "text": "배경이 들어오고, 음악이 깔리고, 내가 걸어 들어왔어."
+              },
+              "ln_2jfcj5dr": {
+                "speaker": "하린",
+                "text": "지금부터 보이는 건 전부 이 대본 한 장에 적힌 명령이야."
+              },
+              "ln_cydaj9ym": {
+                "speaker": "하린",
+                "text": "지금부터 보이는 건 전부 이 대본 한 장에 적힌 명령이야."
+              },
+              "ln_80fvnx4u": {
+                "speaker": "하린",
+                "text": "지금부터 보이는 건 전부 이 대본 한 장에 적힌 명령이야."
+              },
+              "ln_a7r9k13x": {
+                "text": "그녀의 편지에는 이렇게 적혀 있었다."
+              },
+              "ln_nf0ieq41": {
+                "text": "(하린 이리저리)"
+              },
+              "ln_k2xwcsb9": {
+                "text": "연출 컷신 앞뒤로 대사창 치우기."
+              },
+              "ln_4m8a87j3": {
+                "speaker": "시구레",
+                "text": "옆으로 미끄러져 들어오면, 먼저 있던 사람은 자리를 비켜 줘요."
+              },
+              "ln_prgac1qy": {
+                "speaker": "시구레",
+                "text": "한 걸음 앞으로. 크기는 거리를 말해요."
+              },
+              "ln_hdksazhc": {
+                "speaker": "하린",
+                "text": "겹칠 때 누가 앞에 설지도 정할 수 있어."
+              },
+              "ln_n44jexpj": {
+                "speaker": "하린",
+                "text": "표정은 이렇게 바꾸고,"
+              },
+              "ln_anizmf84": {
+                "speaker": "하린",
+                "text": "이렇게 겹쳐 가며 바꿀 수도 있어."
+              },
+              "ln_xd9t914r": {
+                "speaker": "시구레",
+                "text": "자세를 바꾸고, 가볍게 몸짓도."
+              },
+              "ln_f5fsqpgu": {
+                "speaker": "하린",
+                "text": "만들어 둔 모션(motions.json의 nod)은 이름만 불러."
+              },
+              "ln_nrmvr5n2": {
+                "speaker": "하린",
+                "text": "이건 숙인 채로 남는 모션(bow). 끝나도 자세가 그대로야. 셋째 인자가 relative(기본)·absolute를 정해."
+              },
+              "ln_cjzch0sn": {
+                "speaker": "하린",
+                "text": "자리를 옮겨도 숙인 채로 가. 장부가 기울기를 알아서 얼굴 자리가 맞아."
+              },
+              "ln_x8r45cck": {
+                "speaker": "하린",
+                "text": "같은 축을 다른 명령이 잡으면 그게 이어받아. 이제 똑바로."
+              },
+              "ln_5ag43erq": {
+                "speaker": "하린",
+                "text": "말하는 사람에게 빛을 모으고, 듣는 사람은 한 톤 낮춰."
+              },
+              "ln_01mhdu3v": {
+                "speaker": "하린",
+                "text": "배경을 흐리고, 카메라를 얼굴 쪽으로 당기면…"
+              },
+              "ln_9nyveem8": {
+                "speaker": "시구레",
+                "text": "다시 넓게. 원래 무대로 돌아왔어요."
+              },
+              "ln_jam87iua": {
+                "speaker": "시구레",
+                "text": "가장자리를 어둡게, 화면을 조금 거칠게 — 회상 같은 분위기."
+              },
+              "ln_8bpnwdqw": {
+                "speaker": "하린",
+                "text": "그리고 번쩍! 효과음과 함께."
+              },
+              "ln_z94y5hi1": {
+                "speaker": "카스미",
+                "text": "…장면이 넘어갔네. 해 질 녘 작업실이야."
+              },
+              "ln_nkr0mbcc": {
+                "speaker": "카스미",
+                "text": "무대는 그대로라서, 둘 다 아까 그 자리에 있어."
+              },
+              "ln_6mq0fm7a": {
+                "speaker": "시구레",
+                "text": "여기까지예요. 되감기(R)로 아무 줄이나 돌아갈 수 있고, 타이틀의 ‘이어하기’로 다시 올 수 있어요."
+              },
+              "ln_nrhqqani": {
+                "text": "조금 더 보고 갈래"
+              },
+              "ln_yy4tnzdq": {
+                "speaker": "하린",
+                "text": "좋아. 되감기(R)로 돌아가서 다른 쪽도 골라 봐."
+              },
+              "ln_awcnxgku": {
+                "text": "이제 됐어"
+              },
+              "ln_tzwkezwd": {
+                "speaker": "시구레",
+                "text": "그럼 여기까지. 타이틀에서 ‘이어하기’로 다시 올 수 있어요."
+              },
+              "ln_bvxtdk3u": {
+                "text": "캐릭터 퇴장"
+              }
+            }
+          }
+        ]
+      },
+      "episodeMark": "Demo_Presentation",
+      "lines": []
+    }
+  ]
+}

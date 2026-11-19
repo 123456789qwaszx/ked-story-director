@@ -1,4 +1,3 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Flow;
@@ -7,14 +6,14 @@ namespace Vn.Authoring.Flow;
 /// 줄에 적힌 전환만 보고 "지금 어떤 조건 갈래 안인가"를 앞에서부터 계산한다.
 ///
 /// 이 클래스가 조건 모델의 유일한 해석자다. 화면이 색을 칠할 때도, 그래프가 포트를 만들 때도,
-/// 결과를 발행할 때도 여기를 지난다. 해석이 두 벌 있으면 화면과 그래프가 다른 구조를
+/// 미리보기를 펼칠 때도 여기를 지난다. 해석이 두 벌 있으면 화면과 그래프가 다른 구조를
 /// 보여 주게 되고, 그때 작가는 어느 쪽이 맞는지 알 방법이 없다.
 ///
 /// 줄과 그 순서는 대본이 준다. 이 해석기는 <see cref="DialogueScriptResolver"/>가 합친
 /// 투영만 보고, 대본을 직접 열지 않는다.
 ///
-/// 조건의 존재 여부는 프로젝트 전체 목록이 아니라 현재 DialogueNode에 Settings link로 연결된
-/// SetNode와 게임 전역 조건을 합친 카탈로그로 검증한다. 연결이 끊겼을 때 Transition은 보존하고
+/// 조건의 존재 여부는 프로젝트 전체 목록이 아니라 현재 DialogueNode가 선 판의 SetNode
+/// (<see cref="ConnectedSetNodeResolver"/>)의 카탈로그로 검증한다. 연결이 끊겼을 때 Transition은 보존하고
 /// <see cref="FlowProblemKind.UnavailableCondition"/>으로 알린다.
 /// </summary>
 public static class ConditionFlowResolver
@@ -22,7 +21,6 @@ public static class ConditionFlowResolver
     public static DialogueFlow Resolve(
         DialogueNode node,
         StoryProject project,
-        GameDefinition? definition = null,
         string? locale = null)
     {
         ArgumentNullException.ThrowIfNull(node);
@@ -31,8 +29,7 @@ public static class ConditionFlowResolver
         return Resolve(
             node,
             DialogueScriptResolver.Resolve(project, node, locale),
-            project,
-            definition);
+            project);
     }
 
     /// <summary>
@@ -42,8 +39,7 @@ public static class ConditionFlowResolver
     public static DialogueFlow Resolve(
         DialogueNode node,
         DialogueScript script,
-        StoryProject project,
-        GameDefinition? definition = null)
+        StoryProject project)
     {
         ArgumentNullException.ThrowIfNull(node);
         ArgumentNullException.ThrowIfNull(script);
@@ -51,38 +47,19 @@ public static class ConditionFlowResolver
 
         AvailableConditionCatalog available = AvailableConditionResolver.Resolve(
             project,
-            node.Id,
-            definition);
+            node.Id);
         var problems = new List<FlowProblem>();
         var builders = new List<BranchBuilder>();
-
-        if (script.ScriptId is null)
-        {
-            problems.Add(new FlowProblem(
-                FlowProblemKind.MissingScript,
-                null,
-                "이 대사 노드가 읽을 대본이 없습니다. 대본을 만들고 노드에 연결하세요."));
-        }
-        else if (!script.IsResolved)
-        {
-            problems.Add(new FlowProblem(
-                FlowProblemKind.MissingScript,
-                null,
-                $"대본 '{script.ScriptId}'를 프로젝트에서 찾을 수 없습니다."));
-        }
 
         // 줄마다 (전환 적용 뒤 갈래, 적용 전 갈래, 깊이, 적용 전 깊이). 아직 완성되지 않은 갈래를 가리킨다.
         var perLine = new (BranchBuilder? Current, BranchBuilder? Preceding, int Depth, int PrecedingDepth)[script.Lines.Count];
 
-        // W54: 조건 갈래 <b>안의</b> 선택지를 지원한다 — 바깥 조건 하나 + 안 선택지 하나의
-        // 두 칸 스택이다. active = 안쪽(선택지가 열려 있으면 그것, 아니면 조건).
-        // 여전히 비지원(문제로 알림): 조건 안 조건, 선택지 안 조건, 선택지 안 선택지,
-        // 선택지가 닫히기 전의 조건 전환.
+        // 열린 조건 갈래는 하나뿐이다 — 조건 안 조건(중첩)은 문제로 알리고 같은 깊이로 다룬다.
+        // 대사 안 선택지(조건 안 선택지까지, W54·W55)는 2026-11-04에 걷혔다 — 두 칸 스택이 한 칸이 됐다.
         BranchBuilder? conditionActive = null;
-        BranchBuilder? choiceActive = null;
         int chainIndex = -1;
 
-        // ⚠ 줄들을 돈 <b>뒤에 한 번 더</b> 돈다 — 마지막이 <b>꼬리</b>다(줄 없는 자리).
+        // 줄들을 돈 <b>뒤에 한 번 더</b> 돈다 — 마지막이 <b>꼬리</b>다(줄 없는 자리).
         // 대사 없는 조건 블록이 대본의 끝에 있으면 전환을 실을 줄이 없어서, 그 전환들은
         // 노드의 `TrailingTransitions`에 산다. 같은 기계에 먹여야 갈래가 같은 뜻이 된다 —
         // 여기서 갈라 따로 세면 그때부터 두 벌이 어긋나기 시작한다.
@@ -94,11 +71,10 @@ public static class ConditionFlowResolver
             IReadOnlyList<LineConditionTransition> transitions =
                 tail ? node.TrailingTransitions : line!.Transitions;
 
-            BranchBuilder? active = choiceActive ?? conditionActive;
-            BranchBuilder? preceding = active;
-            int precedingDepth = (conditionActive is null ? 0 : 1) + (choiceActive is null ? 0 : 1);
+            BranchBuilder? preceding = conditionActive;
+            int precedingDepth = conditionActive is null ? 0 : 1;
 
-            // ⚠ <b>전환은 여럿일 수 있다</b> (2026-08-24 고침). 여기가 `line.Transition`
+            // <b>전환은 여럿일 수 있다</b> (2026-08-24 고침). 여기가 `line.Transition`
             // 하나만 보고 있었다 — 슬롯이 하나이던 시절의 이름이고, 2026-08-17에 목록이
             // 된 뒤로도 <b>이 자리만</b> 안 따라왔다. 그래서 한 줄에 실린 둘째·셋째 전환이
             // 조용히 사라졌다.
@@ -109,27 +85,6 @@ public static class ConditionFlowResolver
             // 들어갔다. "조건을 건 다음에 대사를 붙여야 한다"의 정체다.
             foreach (LineConditionTransition transition in transitions)
             {
-                active = choiceActive ?? conditionActive;
-                if (choiceActive is not null && !transition.IsChoiceKind)
-                {
-                    if (transition.Kind is ConditionTransitionKind.EndIf)
-                    {
-                        // 조건 종료는 열린 선택지도 함께 닫는다 (W55) — 한 줄로 둘 다 끝낸다.
-                        choiceActive = null;
-                    }
-                    else
-                    {
-                        // 그 밖의 조건 전환(elseif 등)은 여전히 중첩 위반 — 선택을 먼저 닫아야 한다.
-                        problems.Add(new FlowProblem(
-                            FlowProblemKind.MixedChain,
-                            line?.LineId,
-
-                            "선택 블록이 닫히기 전에 조건 전환이 나왔습니다. 선택지 끝을 먼저 넣으세요."));
-                        choiceActive = null;
-                    }
-                }
-                // 반대 방향(조건 안 선택 전환)은 정식 구성이다 (W54) — 문제로 알리지 않는다.
-
                 switch (transition.Kind)
                 {
                     case ConditionTransitionKind.BeginIf when conditionActive is null:
@@ -143,7 +98,6 @@ public static class ConditionFlowResolver
                             builders,
                             problems,
                             project,
-                            definition,
                             available);
                         break;
 
@@ -162,7 +116,6 @@ public static class ConditionFlowResolver
                             builders,
                             problems,
                             project,
-                            definition,
                             available);
                         break;
 
@@ -182,7 +135,6 @@ public static class ConditionFlowResolver
                             builders,
                             problems,
                             project,
-                            definition,
                             available);
                         break;
 
@@ -196,7 +148,6 @@ public static class ConditionFlowResolver
                             builders,
                             problems,
                             project,
-                            definition,
                             available);
                         break;
 
@@ -211,61 +162,6 @@ public static class ConditionFlowResolver
                     case ConditionTransitionKind.EndIf:
                         conditionActive = null;
                         break;
-
-                    case ConditionTransitionKind.BeginChoice when choiceActive is null:
-                        // 바깥이든 조건 갈래 안이든(W54) 새 선택 블록을 연다.
-                        chainIndex++;
-                        choiceActive = OpenOption(line, transition, chainIndex, 0, index, builders);
-                        break;
-
-                    case ConditionTransitionKind.BeginChoice:
-                        // 선택 블록 안에서 다시 블록을 열었다. 다음 옵션으로 다루되 알린다.
-                        problems.Add(new FlowProblem(
-                            FlowProblemKind.NestedCondition,
-                            line?.LineId,
-
-                            "선택 블록 안에서 새 선택 블록을 열었습니다. 같은 블록의 다음 옵션으로 다룹니다."));
-                        choiceActive = OpenOption(
-                            line,
-                            transition,
-                            choiceActive.ChainIndex,
-                            choiceActive.BranchIndexInChain + 1,
-                            index,
-                            builders);
-                        break;
-
-                    case ConditionTransitionKind.BeginNextOption when choiceActive is null:
-                        problems.Add(new FlowProblem(
-                            FlowProblemKind.OptionWithoutChoice,
-                            line?.LineId,
-
-                            "열린 선택 블록이 없는데 다음 옵션이 있습니다. 새 블록을 여는 것으로 다룹니다."));
-                        chainIndex++;
-                        choiceActive = OpenOption(line, transition, chainIndex, 0, index, builders);
-                        break;
-
-                    case ConditionTransitionKind.BeginNextOption:
-                        choiceActive = OpenOption(
-                            line,
-                            transition,
-                            choiceActive.ChainIndex,
-                            choiceActive.BranchIndexInChain + 1,
-                            index,
-                            builders);
-                        break;
-
-                    case ConditionTransitionKind.EndChoice when choiceActive is null:
-                        problems.Add(new FlowProblem(
-                            FlowProblemKind.OptionWithoutChoice,
-                            line?.LineId,
-
-                            "열린 선택 블록이 없는데 선택 종료가 있습니다. 무시합니다."));
-                        break;
-
-                    case ConditionTransitionKind.EndChoice:
-                        // 선택만 닫는다 — 조건 갈래 안이었다면 그 갈래로 돌아간다 (W54).
-                        choiceActive = null;
-                        break;
                 }
             }
 
@@ -275,12 +171,11 @@ public static class ConditionFlowResolver
                 continue;
             }
 
-            conditionActive?.Extend(index); // 바깥 조건 갈래는 안의 선택지 줄까지 덮는다
-            choiceActive?.Extend(index);
+            conditionActive?.Extend(index);
             perLine[index] = (
-                choiceActive ?? conditionActive,
+                conditionActive,
                 preceding,
-                (conditionActive is null ? 0 : 1) + (choiceActive is null ? 0 : 1),
+                conditionActive is null ? 0 : 1,
                 precedingDepth);
         }
 
@@ -302,12 +197,10 @@ public static class ConditionFlowResolver
                 depth,
                 branch,
                 before,
-                branch is not null && branch.HasExit && branch.LastLineIndex == index,
                 precedingDepth));
         }
 
         AddOrphanProblems(script, problems);
-        AddExitProblems(node, branches, project, problems);
 
         return new DialogueFlow(script, lines, branches, problems);
     }
@@ -321,7 +214,6 @@ public static class ConditionFlowResolver
         List<BranchBuilder> builders,
         List<FlowProblem> problems,
         StoryProject project,
-        GameDefinition? definition,
         AvailableConditionCatalog available)
     {
         string conditionId = transition.ConditionId ?? string.Empty;
@@ -330,7 +222,6 @@ public static class ConditionFlowResolver
         {
             AvailableCondition? known = AvailableConditionResolver.FindKnown(
                 project,
-                definition,
                 conditionId);
 
             if (known is null)
@@ -349,15 +240,13 @@ public static class ConditionFlowResolver
 
                     // 2026-08-17 — 범위가 판(챕터)이 됐다. "연결된 SetNode"는 더 이상 규칙이
                     // 아니므로 문구도 그 사실을 말한다: 다른 챕터에 있으면 여기서는 못 쓴다.
-                    $"조건 '{known.DisplayName}'은 이 챕터의 설정노드에도 게임 전역 조건에도 " +
-                    "없습니다 — 다른 챕터의 조건은 여기서 쓸 수 없습니다."));
+                    $"조건 '{known.DisplayName}'은 이 챕터에 없습니다 — 다른 챕터의 조건은 여기서 쓸 수 없습니다."));
             }
         }
 
         var builder = new BranchBuilder(
             AnchorFor(line, builders),
             conditionId,
-            optionId: null,
             chainIndex,
             branchIndexInChain,
             builders.Count,
@@ -374,9 +263,7 @@ public static class ConditionFlowResolver
     /// 실리므로, 빈 블록 뒤에 또 블록이 열리면 <b>같은 줄이 갈래 둘을 연다</b>. 신원이
     /// 겹치면 <see cref="Complete"/>의 사전이 터져 판이 아예 안 그려진다.
     ///
-    /// ⚠ <b>첫째는 맨 이름 그대로 둔다.</b> 그 자리가 지금까지의 신원이고
-    /// <see cref="DialogueNode.BranchExits"/>가 그 글자로 출구를 붙들고 있다 — 접미를
-    /// 붙이면 이미 매달린 출구가 전부 고아가 된다. 둘째부터가 새 땅이다.
+    /// <b>첫째는 맨 이름 그대로다</b> — 둘째부터 접미가 붙는다(<see cref="BranchAnchor"/>).
     /// </summary>
     private static string AnchorFor(DialogueLine? line, List<BranchBuilder> builders)
     {
@@ -392,33 +279,6 @@ public static class ConditionFlowResolver
             : BranchAnchor.ForLine(root, taken);
     }
 
-    /// <summary>
-    /// 옵션 갈래를 연다. 조건과 달리 카탈로그 검증이 없다 — 옵션의 정체성은
-    /// 밖에서 공급되는 것이 아니라 이 줄이 소유하는 OptionId다.
-    /// </summary>
-    private static BranchBuilder OpenOption(
-        DialogueLine? line,
-        LineConditionTransition transition,
-        int chainIndex,
-        int branchIndexInChain,
-        int lineIndex,
-        List<BranchBuilder> builders)
-    {
-        var builder = new BranchBuilder(
-            AnchorFor(line, builders),
-            conditionId: string.Empty,
-            // 손으로 고친 파일이라 OptionId가 없을 수 있다. 빈 값으로 두면
-            // 발행 검증이 잡는다 — 여기서 새로 발급하면 열 때마다 Id가 달라진다.
-            optionId: transition.OptionId ?? string.Empty,
-            chainIndex,
-            branchIndexInChain,
-            builders.Count,
-            lineIndex);
-
-        builders.Add(builder);
-        return builder;
-    }
-
     private static IReadOnlyList<ConditionBranch> Complete(
         DialogueNode node,
         List<BranchBuilder> builders)
@@ -427,8 +287,6 @@ public static class ConditionFlowResolver
 
         foreach (BranchBuilder builder in builders)
         {
-            node.BranchExits.TryGetValue(builder.OpenLineId, out string? target);
-
             branches.Add(new ConditionBranch(
                 builder.OpenLineId,
                 builder.ConditionId,
@@ -436,9 +294,7 @@ public static class ConditionFlowResolver
                 builder.BranchIndexInChain,
                 builder.PaletteIndex,
                 builder.FirstLineIndex,
-                builder.LastLineIndex,
-                target,
-                builder.OptionId));
+                builder.LastLineIndex));
         }
 
         return branches;
@@ -462,52 +318,11 @@ public static class ConditionFlowResolver
         }
     }
 
-    private static void AddExitProblems(
-        DialogueNode node,
-        IReadOnlyList<ConditionBranch> branches,
-        StoryProject project,
-        List<FlowProblem> problems)
-    {
-        HashSet<string> openLines = branches
-            .Select(branch => branch.OpenLineId)
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach ((string lineId, string target) in node.BranchExits.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-        {
-            if (!openLines.Contains(lineId))
-            {
-                problems.Add(new FlowProblem(
-                    FlowProblemKind.OrphanedBranchExit,
-                    lineId,
-                    "더 이상 갈래를 열지 않는 줄에 조건 출구가 남아 있습니다."));
-                continue;
-            }
-
-            if (project.FindNode(target) is null)
-            {
-                problems.Add(new FlowProblem(
-                    FlowProblemKind.MissingExitTarget,
-                    lineId,
-                    "조건 출구가 가리키는 노드를 찾을 수 없습니다."));
-            }
-        }
-
-        if (node.DefaultExitTargetNodeId is not null &&
-            project.FindNode(node.DefaultExitTargetNodeId) is null)
-        {
-            problems.Add(new FlowProblem(
-                FlowProblemKind.MissingExitTarget,
-                null,
-                "기본 출구가 가리키는 노드를 찾을 수 없습니다."));
-        }
-    }
-
     private sealed class BranchBuilder
     {
         public BranchBuilder(
             string openLineId,
             string conditionId,
-            string? optionId,
             int chainIndex,
             int branchIndexInChain,
             int paletteIndex,
@@ -515,7 +330,6 @@ public static class ConditionFlowResolver
         {
             OpenLineId = openLineId;
             ConditionId = conditionId;
-            OptionId = optionId;
             ChainIndex = chainIndex;
             BranchIndexInChain = branchIndexInChain;
             PaletteIndex = paletteIndex;
@@ -525,8 +339,6 @@ public static class ConditionFlowResolver
 
         public string OpenLineId { get; }
         public string ConditionId { get; }
-        public string? OptionId { get; }
-        public bool IsChoice => OptionId is not null;
         public int ChainIndex { get; }
         public int BranchIndexInChain { get; }
         public int PaletteIndex { get; }

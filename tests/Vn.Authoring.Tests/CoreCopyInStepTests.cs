@@ -4,7 +4,7 @@ using System.Text;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>코어 사본이 런타임과 발맞춰 있다</b> (T2 · `docs/plans/R6.md` §9).
+/// <b>코어 사본을 여기서 고치지 않았다</b> — 지문 (T2 · `docs/plans/R6.md` §9).
 ///
 /// ⛔ <c>src/Ked.Progression</c>은 <b>런타임의 사본</b>이다. 내보내기 관문이 이 사본으로
 /// 판정하고 게임은 저쪽 원본으로 판정하므로, 둘이 갈리면 <b>툴이 통과시킨 것을 게임이
@@ -14,20 +14,17 @@ namespace Vn.Authoring.Tests;
 /// (실제로 2026-09-16 대조에서 <c>ChapterDefinition.cs</c>의 차이는 주석·빈 줄뿐이었다).
 /// 글까지 같아야 한다고 하면 설명을 못 붙인다.
 ///
-/// 두 겹이다:
-/// <list type="number">
-/// <item><b>지문</b>(<see cref="ManifestName"/>) — 늘 돈다. 사본을 여기서 고치면 잡힌다.</item>
-/// <item><b>맞대조</b> — 런타임 저장소가 옆에 있을 때만. 저쪽이 바뀐 것을 잡는다.</item>
-/// </list>
+/// <b>지문</b>(<see cref="ManifestName"/>) — 이 저장소 안에서만 돈다. 사본을 여기서 고치면 잡힌다. 사본을 고치려면 반드시 지문을
+/// 갱신해야 하고, 지문을 갱신하는 것은 <b>옮겨 왔다는 선언</b>이다. 런타임(<c>ked-presentation-runtime</c> — 정본)이 바뀐 것은 옮겨 올 때
+/// 사람이 견준다(<c>src/Ked.Progression/UPSTREAM.md</c>의 「재반입 검산」).
 ///
-/// ⚠ 2번이 건너뛰어도 1번이 지키므로 <b>조용한 통과는 없다</b>: 사본을 고치려면 반드시
-/// 지문을 갱신해야 하고, 지문을 갱신하는 것은 <b>옮겨 왔다는 선언</b>이다.
+/// ⛔ 옆 폴더 런타임과 파일을 맞대던 <b>맞대조</b>는 2026-11-18에 걷혔다(소유자 — 이 저장소만 시나리오 작가에게 툴로 건네는 경우가 많다,
+/// <c>docs/work-orders/core-sync-orders.md</c> V2).
 /// </summary>
 public sealed class CoreCopyInStepTests
 {
     private const string ManifestName = "runtime-sync.txt";
     private const string CopyFolder = "src/Ked.Progression";
-    private const string RuntimeFolder = "Assets/Progression/Runtime";
 
     /// <summary>
     /// ⚠ 이쪽에만 있는 것 — <b>저작 전용</b>이라 런타임에 갈 이유가 없다. 도달성 증명은
@@ -59,41 +56,6 @@ public sealed class CoreCopyInStepTests
             $"코어 사본이 지문과 다릅니다. 이 폴더는 런타임의 사본이라 여기서 고치는 자리가 " +
             $"아닙니다 — 저쪽을 고치고 옮겨 온 것이라면 '{ManifestName}.actual'을 확인한 뒤 " +
             $"'{ManifestName}'으로 바꾸세요.\n\n지금 지문:\n{actual}");
-    }
-
-    [Fact]
-    public void 런타임_저장소가_옆에_있으면_맞대조한다()
-    {
-        if (RuntimeRoot is not { } runtime)
-        {
-            // ⚠ 건너뛰어도 위의 지문이 지킨다. 여기서 확인하는 것은 <b>저쪽이 바뀐 것</b>이라,
-            //    런타임을 안 받아 둔 기계에서는 잴 방법이 없다.
-            return;
-        }
-
-        var drifted = new List<string>();
-
-        foreach (string relative in SharedFiles())
-        {
-            string mine = Path.Combine(RepoRoot, CopyFolder, relative);
-            string theirs = Path.Combine(runtime, RuntimeFolder, relative);
-
-            if (!File.Exists(theirs))
-            {
-                drifted.Add($"{relative} — 런타임에 없습니다(저쪽에서 지웠거나 옮겼습니다).");
-                continue;
-            }
-
-            if (!string.Equals(Code(File.ReadAllText(mine)), Code(File.ReadAllText(theirs)),
-                    StringComparison.Ordinal))
-            {
-                drifted.Add($"{relative} — 코드가 다릅니다.");
-            }
-        }
-
-        Assert.True(drifted.Count == 0,
-            "코어 사본이 런타임과 갈렸습니다. 툴의 관문과 게임의 판정이 달라집니다:\n  " +
-            string.Join("\n  ", drifted));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -213,22 +175,4 @@ public sealed class CoreCopyInStepTests
 
     private static string RepoRoot =>
         Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-
-    /// <summary>런타임 저장소. 환경 변수가 먼저고, 없으면 <b>옆 폴더</b>다.</summary>
-    private static string? RuntimeRoot
-    {
-        get
-        {
-            string? named = Environment.GetEnvironmentVariable("KED_PROGRESSION_RUNTIME");
-
-            if (!string.IsNullOrWhiteSpace(named) && Directory.Exists(named))
-            {
-                return named;
-            }
-
-            string sibling = Path.GetFullPath(Path.Combine(RepoRoot, "..", "ked-progression-runtime"));
-
-            return Directory.Exists(Path.Combine(sibling, RuntimeFolder)) ? sibling : null;
-        }
-    }
 }

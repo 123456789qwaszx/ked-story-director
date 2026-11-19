@@ -1,5 +1,7 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
+using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 
@@ -43,7 +45,7 @@ public sealed class BranchEntryConditionTests
 
         BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
 
-        string firstLineId = editor.Project.FindScript(branch.ScriptId)!.ActiveLines.First().Id;
+        string firstLineId = branch.Script.ActiveLines.First().Id;
 
         LineConditionTransition opened =
             Assert.Single(branch.FindExtension(firstLineId)!.Transitions);
@@ -99,8 +101,9 @@ public sealed class BranchEntryConditionTests
         //    된다. 읽기만 하고 사유를 말한다.
         (ProjectEditor editor, _, DialogueNode branch) = World();
 
-        string firstLineId = editor.Project.FindScript(branch.ScriptId)!.ActiveLines.First().Id;
-        editor.SetLineTransitions(branch.Id, firstLineId, [LineConditionTransition.BeginChoice()]);
+        string firstLineId = branch.Script.ActiveLines.First().Id;
+        // 첫머리 조건 하나(BeginIf + 꼬리 EndIf)가 아닌 모양 — 첫 줄에 조건 종료가 얹힌 손 구조.
+        editor.SetLineTransitions(branch.Id, firstLineId, [LineConditionTransition.EndIf()]);
 
         BranchEntryCondition.State state = BranchEntryCondition.Read(editor.Project, branch.Id);
 
@@ -117,11 +120,12 @@ public sealed class BranchEntryConditionTests
 
         BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
 
-        string yarn = DocumentPreviewFormatter.Format(
-            WorkingDialoguePreview.Compose(editor.Project, caller.Id));
+        RenderedDocument document = WorkingDialoguePreview.Compose(editor.Project, caller.Id);
 
-        Assert.Contains($"<<detour {branch.Id}>>", yarn, StringComparison.Ordinal);
-        Assert.DoesNotContain("<<if", yarn, StringComparison.Ordinal);
+        // 문서 조각으로 잰다 — 게임용 Yarn은 ked-story-compositor가 이 조각을 그대로 옮겨 낸다.
+        Assert.Single(document.Segments, segment =>
+            segment.Kind == RenderedSegmentKind.BranchDetour && segment.TargetNodeId == branch.Id);
+        Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);
     }
 
     [Fact]
@@ -137,11 +141,11 @@ public sealed class BranchEntryConditionTests
 
         BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
 
-        string yarn = DocumentPreviewFormatter.Format(
-            WorkingDialoguePreview.Compose(editor.Project, branch.Id));
+        RenderedDocument document = WorkingDialoguePreview.Compose(editor.Project, branch.Id);
 
-        Assert.Contains("<<if stat(\"trust\") >= 3>>", yarn, StringComparison.Ordinal);
-        Assert.Contains("<<endif>>", yarn, StringComparison.Ordinal);
+        Assert.Single(document.Segments, segment =>
+            segment.Kind == RenderedSegmentKind.ConditionBegin && segment.Expression == "stat(\"trust\") >= 3");
+        Assert.Contains(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionEnd);
     }
 
     /// <summary>
@@ -151,24 +155,44 @@ public sealed class BranchEntryConditionTests
     /// (2026-09-18에 두 길이 하나로 합쳐졌다). 또 만들면 이름이 같은 카드가 두 장 서고,
     /// 이름으로 찾는 코드가 <b>다른 장</b>을 집는다.
     /// </summary>
+    [Fact]
+    public void 걸린_조건은_판에서_분기_카드의_출구_포트로_서지_않는다()
+    {
+        // 조건이 미달이면 곧바로 돌아올 뿐 다른 곳으로 가는 길이 아니다 — 카드 오른쪽에 갈래 포트가 서면 분기점처럼 보인다.
+        (ProjectEditor editor, _, DialogueNode branch) = World();
+        BranchEntryCondition.Set(editor, branch.Id, "신뢰높음");
+
+        // 흐름에는 그 갈래가 그대로 있다 — 조건 갈래는 출구 포트를 세우지 않는다(⛔ 갈래 출구는 2026-11-19에 걷혔다 · usability UX28).
+        Assert.Single(ConditionFlowResolver.Resolve(branch, editor.Project).Branches);
+        Assert.Empty(NodeConnections.PortsOf(branch, editor.Project));
+        Assert.Empty(PortsOnBoard(editor, branch.Id));
+    }
+
+    /// <summary>[대본] 판이 그 카드에 세우는 출구 포트들.</summary>
+    private static IReadOnlyList<GraphOutputPortProjection> PortsOnBoard(ProjectEditor editor, string nodeId) =>
+        GraphProjectionBuilder.Build(editor.Project, editor.Project.Files.Select(file => file.Id).ToHashSet())
+            .Items.OfType<ExpandedNodeProjection>()
+            .Single(item => item.NodeId == nodeId)
+            .OutputPorts;
+
     private static (ProjectEditor Editor, DialogueNode Caller, DialogueNode Branch) World()
     {
         var editor = new ProjectEditor(new StoryProject());
 
         editor.EnsureChapter("ch01");
         string fileId = editor.EnsureChapterBoard("ch01");
-        editor.AddEpisode("ch01", "root", title: "root", 0, 0);
+        editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
 
         ChapterDocument chapter = editor.FindChapter("ch01")!;
-        chapter.Stats.Add(new ChapterStat("trust", "신뢰", 0, 0, 10, SourceRow: 2));
+        chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, Definition.GameDefinition.Empty, fileId,
-            chapter.ToGraphModel("ch01.xlsx"));
+            editor, fileId,
+            chapter.ToGraphModel("ch01"));
 
         DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
-        string lineId = editor.Project.FindScript(caller.ScriptId)!.ActiveLines.First().Id;
+        string lineId = caller.Script.ActiveLines.First().Id;
 
         return (editor, caller, editor.AddBranchMarker(caller.Id, lineId));
     }

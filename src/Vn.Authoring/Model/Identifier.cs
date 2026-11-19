@@ -37,30 +37,12 @@ public static class Identifier
 
     public static string File() => Create("sf");
 
-    public static string Link() => Create("lk");
+    /// <summary>식별자 뒷부분에 쓰는 글자인가 — 툴이 지은 판 파일 이름을 알아볼 때 쓴다(<c>ProjectStore.RemoveStaleStoryFiles</c>).</summary>
+    internal static bool IsIdCharacter(char character) => Alphabet.Contains(character);
 
     public static string Node() => Create("nd");
 
     public static string Line() => Create("ln");
 
-    public static string PresentationCommand() => Create("pc");
-
     public static string Condition() => Create("cd");
-
-    /// <summary>선택지 옵션 하나. 라벨 문구가 바뀌어도 유지되는 정체성이다.</summary>
-    public static string Option() => Create("op");
-
-    /// <summary>커맨드 프리셋 하나. 공급 노드가 소유한다.</summary>
-    public static string Preset() => Create("pp");
-
-    /// <summary>대본 산출물 하나. 작가 파일의 이름이나 경로와 독립적이다.</summary>
-    public static string Script() => Create("sc");
-
-    /// <summary>
-    /// 발행 결과의 계보. 같은 노드에서 v1, v2로 이어지는 결과는 이 Id를 공유하고
-    /// 버전 번호로 구분한다.
-    /// </summary>
-    public static string Result() => Create("rs");
-
-    public static string Composition() => Create("rc");
 }

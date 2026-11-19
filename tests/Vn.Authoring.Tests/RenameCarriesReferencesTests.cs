@@ -1,4 +1,3 @@
-using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
@@ -23,25 +22,24 @@ public sealed class RenameCarriesReferencesTests
     private sealed record World(
         ProjectEditor Editor, StoryFile File, SetNode SetNode, DialogueNode Dialogue, string LineId);
 
-    /// <summary>설정노드 하나(아이템 `열쇠`) · 그것을 쓰는 조건 하나 · 그것을 쓰는 대사 줄 하나.</summary>
+    /// <summary>챕터 조건 하나(스탯 `열쇠` — 판의 공급 노드가 사본을 나른다) · 대사 줄 하나.</summary>
     private static World Build(bool ability = false)
     {
         var project = new StoryProject();
         var file = new StoryFile("sf_ch01", "ch01", "story/ch01.vnstory.json");
         project.Files.Add(file);
+        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "ch01" });   // 카드는 챕터 판에만 선다
 
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
 
-        SetNode setNode = editor.AddSetNode(file.Id, name: "ch01 설정");
+        editor.AddChapterStat("ch01", "열쇠", maximum: 1, type: ability ? global::Vn.Authoring.Chapters.ChapterStatType.Bool : global::Vn.Authoring.Chapters.ChapterStatType.Int);
+        editor.AddChapterCondition("ch01", "열쇠 있음", ability ? "열쇠 == true" : "열쇠 >= 1");
+        SetNode setNode = file.Nodes.OfType<SetNode>().Single();
 
-        editor.AddCondition(setNode.Id, "열쇠 있음", ability ? "$열쇠 == true" : "$열쇠 >= 1");
-
-        ScriptDocument script = editor.AddScript("본문");
-        ScriptLine line = editor.InsertScriptLine(script.Id);
-        editor.SetScriptLineText(script.Id, line.Id, "라루", "문을 연다");
-
-        DialogueNode dialogue = editor.AddDialogueNode(file.Id, name: "본문", scriptId: script.Id);
+        DialogueNode dialogue = editor.AddDialogueNode(file.Id, "본문", name: "본문");
+        ScriptLine line = dialogue.Script.ActiveLines.Single();   // 카드는 빈 첫 줄을 들고 선다
+        editor.SetScriptLineText(dialogue.Id, line.Id, "라루", "문을 연다");
 
         return new World(editor, file, setNode, dialogue, line.Id);
     }
@@ -57,7 +55,7 @@ public sealed class RenameCarriesReferencesTests
     [Fact]
     public void 조건_이름을_바꿔도_매달린_갈래는_그대로다()
     {
-        // 작가가 설정노드에서 고치는 조건 이름 — 줄에 매달린 전환은 <b>Id</b>로 잇는다.
+        // 조건 이름을 고친다 — 줄에 매달린 전환은 공급 사본의 <b>Id</b>로 잇는다(개명은 사본의 Id를 지킨다).
         // 이 성질이 깨지는 날은 조건에 Id가 없어진 날이고, 그러면 이름 한 글자에 그 조건을
         // 쓰던 갈래가 전부 "알 수 없는 조건"이 된다.
         World world = Build();
@@ -68,14 +66,14 @@ public sealed class RenameCarriesReferencesTests
             LineConditionTransition.EndIf()
         ]);
 
-        world.Editor.UpdateCondition(condition.Id, "보물열쇠 있음", condition.Expression);
+        world.Editor.RenameChapterCondition("ch01", "열쇠 있음", "보물열쇠 있음");
 
         Assert.Equal("보물열쇠 있음", world.SetNode.Conditions[0].Name);
         Assert.Equal(
             condition.Id,
             world.Dialogue.FindExtension(world.LineId)!.Transitions[0].ConditionId);
 
-        // 그리고 그 조건이 여전히 <b>고를 수 있는 목록</b>에 새 이름으로 서 있다.
+        // 그리고 그 조건이 여전히 카드가 보는 목록에 새 이름으로 서 있다.
         AvailableCondition? available = AvailableConditionResolver
             .Resolve(world.Editor.Project, world.Dialogue.Id)
             .Find(condition.Id);
@@ -92,7 +90,7 @@ public sealed class RenameCarriesReferencesTests
 
         Assert.Equal(1, world.Editor.RenameSpeaker("라루", "라루엘"));
 
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
         Assert.Equal("라루엘", script.Text(world.LineId, script.PrimaryLocale).Speaker);
     }
 
@@ -103,10 +101,10 @@ public sealed class RenameCarriesReferencesTests
         //   `ウィロー`면 그것은 이 개명의 대상이 아니고, 아직 번역 전이라 한국어 이름을
         //   그대로 들고 있는 locale은 자연히 함께 따라온다.
         World world = Build();
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
 
-        world.Editor.SetScriptLineText(script.Id, world.LineId, "ラル", "扉を開く", locale: "ja-JP");
-        world.Editor.SetScriptLineText(script.Id, world.LineId, "라루", "문을 연다", locale: "en-US");
+        world.Editor.SetScriptLineText(world.Dialogue.Id, world.LineId, "ラル", "扉を開く", locale: "ja-JP");
+        world.Editor.SetScriptLineText(world.Dialogue.Id, world.LineId, "라루", "문을 연다", locale: "en-US");
 
         world.Editor.RenameSpeaker("라루", "라루엘");
 
@@ -122,7 +120,7 @@ public sealed class RenameCarriesReferencesTests
         // 개명은 줄이 말하는 내용을 바꾸지 않는다 — 올리면 화자 하나에 그 화자의 모든 줄이
         // 재작업 대상이 된다.
         World world = Build();
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
         int before = script.FindLine(world.LineId)!.Revision;
 
         world.Editor.RenameSpeaker("라루", "라루엘");
@@ -134,12 +132,12 @@ public sealed class RenameCarriesReferencesTests
     public void 화자_개명은_되돌릴_수_있다()
     {
         World world = Build();
-        ScriptDocument script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        ScriptDocument script = world.Dialogue.Script;
 
         world.Editor.RenameSpeaker("라루", "라루엘");
         world.Editor.Undo();
 
-        script = world.Editor.Project.FindScript(world.Dialogue.ScriptId!)!;
+        script = world.Editor.Project.FindDialogue(world.Dialogue.Id)!.Script;   // 되돌리기는 프로젝트를 갈아 끼운다
         Assert.Equal("라루", script.Text(world.LineId, script.PrimaryLocale).Speaker);
     }
 }

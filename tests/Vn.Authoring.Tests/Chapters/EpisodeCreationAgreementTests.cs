@@ -11,7 +11,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 편집기 명령이 아니라 <b>화면에</b> 살았기 때문이다 — 챕터 그래프는 <c>AddEpisode</c> 뒤에
 /// 노드 만들기를 한 줄 더 불렀고, 대본 탭은 <b>그 한 줄이 없었다</b>. 그래서 작가의 탭에서
 /// 만든 에피소드만 쓸 자리가 없었다. Id 규약도 갈렸다: 연출 그래프는 <c>장면 3</c>,
-/// 나머지는 <c>new01</c>.
+/// 나머지는 <c>new01</c>(지금은 챕터 · 장면이 든 <c>ch01_scene01_new01</c> — <c>docs/work-orders/auto-id-orders.md</c>).
 ///
 /// ⚠ <b>이 파일이 다음 갈림을 막는다.</b> 창구가 하나 더 생겨도 같은 것을 만들어야 한다.
 /// </summary>
@@ -22,23 +22,10 @@ public sealed class EpisodeCreationAgreementTests
     {
         ProjectEditor editor = World();
 
-        ChapterEpisode episode = editor.AddEpisode("ch01", "ep01", title: string.Empty, 0, 0);
+        ChapterEpisode episode = editor.AddEpisode("ch01", "ep01", title: string.Empty, 0, 0, sceneId: "ep01");
 
         Assert.Equal("ep01", episode.EpisodeId);
         AssertWritable(editor, "ep01");
-    }
-
-    [Fact]
-    public void 다음_에피소드도_같은_것을_만든다()
-    {
-        // 분기 저작의 길 — 에피소드·카드·대본·간선이 한 변경이다.
-        ProjectEditor editor = World();
-        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0);
-
-        editor.AddNextEpisode("ch01", "root", "ep02", title: string.Empty, 260, 0, optionLabel: "다음");
-
-        AssertWritable(editor, "ep02");
-        Assert.Single(editor.FindChapter("ch01")!.Edges);
     }
 
     [Fact]
@@ -47,8 +34,8 @@ public sealed class EpisodeCreationAgreementTests
         // ⚠ 전에는 화면이 둘로 나눠 했으므로 <b>되돌리기가 두 걸음</b>이었다 — 한 번 누르면
         //    에피소드는 남고 카드만 사라지는 <b>반쪽 상태</b>가 진짜로 존재했다.
         ProjectEditor editor = World();
-        editor.AddNextEpisode(
-            "ch01", Seed(editor), "ep02", title: string.Empty, 260, 0, optionLabel: "다음");
+        Seed(editor);
+        editor.AddEpisode("ch01", "ep02", title: string.Empty, 260, 0, sceneId: "ep02");
 
         editor.Undo();
 
@@ -64,31 +51,17 @@ public sealed class EpisodeCreationAgreementTests
     [Fact]
     public void 판에_카드를_세우는_길도_같은_Id_규약을_쓴다()
     {
-        // ⛔ 연출 그래프의 [＋대사노드]는 이름을 안 주고 부른다. 그때 <c>장면 3</c>이 나오면
+        // ⛔ [대본] 탭의 [＋ 에피소드]는 이름을 안 주고 부른다. 그때 <c>장면 3</c>이 나오면
         //    그것이 곧 EpisodeId가 되고, <b>공백 든 Id가 대본 워크북의 파일 이름</b>으로
-        //    나간다. 다른 두 창구가 쓰던 `new01` 규약으로 맞춘다.
+        //    나간다. 다른 창구와 같은 규약(<see cref="NewNames.NextEpisodeId"/> — 챕터 · 장면이 든 자리표시)으로 맞춘다.
         ProjectEditor editor = World();
         string fileId = editor.EnsureChapterBoard("ch01");
 
-        DialogueNode created = editor.AddDialogueNode(fileId, 100, 100);
+        DialogueNode created = editor.AddDialogueNode(fileId, "scene01", 100, 100);
 
-        Assert.Equal("new01", EpisodeNaming.EpisodeIdOf(created));
-        AssertWritable(editor, "new01");
-    }
-
-    [Fact]
-    public void 챕터가_아닌_판에서는_에피소드가_안_선다()
-    {
-        // 작가의 낙서판에는 챕터가 없다 — 거기 세운 카드는 진행에 안 실린다.
-        var project = new StoryProject();
-        var editor = new ProjectEditor(project);
-        string fileId = editor.AddStoryFile("낙서").Id;
-
-        DialogueNode created = editor.AddDialogueNode(fileId, 0, 0);
-
-        Assert.StartsWith("장면", created.Name, StringComparison.Ordinal);
-        Assert.Null(created.MarkedEpisodeId);
-        Assert.Empty(project.Chapters);
+        Assert.Equal("ch01_scene01_new01", EpisodeNaming.EpisodeIdOf(created));
+        Assert.Equal("ch01_scene01_new02", editor.NextEpisodeId("ch01", "scene01"));   // 화면이 세는 길도 같은 규약이다
+        AssertWritable(editor, "ch01_scene01_new01");
     }
 
     /// <summary>에피소드가 <b>쓸 수 있는 상태</b>로 섰는가 — 카드와 대본이 붙어 있는가.</summary>
@@ -102,15 +75,11 @@ public sealed class EpisodeCreationAgreementTests
             editor.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => string.Equals(EpisodeNaming.EpisodeIdOf(node), episodeId, StringComparison.Ordinal));
 
-        Assert.NotNull(card.ScriptId);
-        Assert.NotNull(editor.Project.FindScript(card.ScriptId));
+        Assert.NotEmpty(card.Script.ActiveLines);   // 빈 첫 줄을 든 제 대본과 함께 선다
     }
 
-    private static string Seed(ProjectEditor editor)
-    {
-        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0);
-        return "root";
-    }
+    private static void Seed(ProjectEditor editor) =>
+        editor.AddEpisode("ch01", "root", title: string.Empty, 0, 0, sceneId: "root");
 
     private static ProjectEditor World()
     {

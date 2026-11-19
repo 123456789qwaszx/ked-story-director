@@ -1,118 +1,51 @@
-using System.Security.Cryptography;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Serialization;
+using Vn.Authoring.Tests.Fixtures;
 
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// G4 수용 기준 중 뷰가 아니라 <b>데이터가 지는 부분</b> — 챕터 폴더를 어떻게 훑는가,
-/// 그리고 읽기(+배치 계산)가 정말 읽기뿐인가. 배치 자체의 규칙(깊이 열)은
-/// <c>ChapterBranchPlannerTests</c>가 진다.
+/// G4 수용 기준 중 뷰가 아니라 <b>데이터가 지는 부분</b> — 챕터를 그래프 모델로 펴고 배치를
+/// 계산하는 일이 정말 읽기뿐인가. 배치 자체의 규칙(깊이 열)은 <c>ChapterBranchPlannerTests</c>가 진다.
+///
+/// (2026-10-29 · D2: 챕터 폴더를 훑던 검사(폴더 자리·잠금 파일·못 읽는 워크북)는 엑셀 연동과 함께 걷혔다.)
 /// </summary>
-public sealed class ChapterGraphViewModelTests : IDisposable
+public sealed class ChapterGraphViewModelTests
 {
-    private readonly string _directory = Path.Combine(
-        Path.GetTempPath(),
-        "vn-chapter-view-tests",
-        Guid.NewGuid().ToString("N"));
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_directory))
-        {
-            Directory.Delete(_directory, recursive: true);
-        }
-    }
-
-    private static string SamplePath => Path.GetFullPath(Path.Combine(
-        AppContext.BaseDirectory, "..", "..", "..", "..", "..", "docs", "chapter-graph-sample.xlsx"));
-
-    // ── 챕터 폴더 ───────────────────────────────────────────────────────────
-
-    [Fact]
-    public void 챕터_폴더는_프로젝트_파일_옆이다()
-    {
-        string folder = ChapterLibrary.FolderFor(Path.Combine(_directory, "story.vnproj.json"))!;
-
-        Assert.Equal(Path.Combine(_directory, "chapters"), folder);
-    }
-
-    [Fact]
-    public void 폴더가_없으면_빈_목록이고_폴더를_만들지_않는다()
-    {
-        string folder = Path.Combine(_directory, "chapters");
-
-        Assert.Empty(ChapterLibrary.Load(folder));
-        Assert.False(Directory.Exists(folder));
-    }
-
-    [Fact]
-    public void 엑셀이_열어_둔_잠금_파일은_챕터로_세지_않는다()
-    {
-        string folder = Path.Combine(_directory, "chapters");
-        Directory.CreateDirectory(folder);
-        File.Copy(SamplePath, Path.Combine(folder, "ch05.xlsx"));
-        File.WriteAllText(Path.Combine(folder, "~$ch05.xlsx"), "lock");
-
-        ChapterEntry entry = Assert.Single(ChapterLibrary.Load(folder));
-
-        Assert.Equal("ch05", entry.ChapterId);
-        Assert.True(entry.IsReadable);
-        Assert.False(entry.HasErrors);
-    }
-
-    [Fact]
-    public void 못_읽는_워크북이_있어도_나머지는_읽힌다()
-    {
-        string folder = Path.Combine(_directory, "chapters");
-        Directory.CreateDirectory(folder);
-        File.Copy(SamplePath, Path.Combine(folder, "ch05.xlsx"));
-        File.WriteAllText(Path.Combine(folder, "broken.xlsx"), "이건 xlsx가 아니다");
-
-        IReadOnlyList<ChapterEntry> entries = ChapterLibrary.Load(folder);
-
-        Assert.Equal(2, entries.Count);
-
-        ChapterEntry broken = entries.Single(entry => entry.ChapterId == "broken");
-        Assert.False(broken.IsReadable);
-        Assert.NotNull(broken.OpenFailure);
-
-        Assert.True(entries.Single(entry => entry.ChapterId == "ch05").IsReadable);
-    }
-
     // ── 읽기전용 (Gate A 4번) ───────────────────────────────────────────────
 
     [Fact]
-    public void 워크북을_읽어도_파일이_바뀌지_않는다()
+    public void 펴고_배치를_계산해도_챕터_값이_바뀌지_않는다()
     {
-        string folder = Path.Combine(_directory, "chapters");
-        Directory.CreateDirectory(folder);
-        string path = Path.Combine(folder, "ch05.xlsx");
-        File.Copy(SamplePath, path);
+        ChapterDocument chapter = SampleChapters.Load(SampleChapters.Corridor);
+        string before = Snapshot(chapter);
 
-        byte[] before = File.ReadAllBytes(path);
-        DateTime writtenAt = File.GetLastWriteTimeUtc(path);
-
-        // 읽기 → 배치 계산 → 다시 읽기. 뷰가 한 프레임에 하는 일 전부다.
+        // 펴기 → 배치 계산 → 다시 펴기. 뷰가 한 프레임에 하는 일 전부다.
         for (int pass = 0; pass < 3; pass++)
         {
-            ChapterGraphModel model = ChapterWorkbookReader.Read(path);
+            ChapterGraphModel model = chapter.ToGraphModel(chapter.ChapterId);
             _ = ChapterBranchPlanner.Layout(model);
         }
 
-        Assert.Equal(Hash(before), Hash(File.ReadAllBytes(path)));
-        Assert.Equal(writtenAt, File.GetLastWriteTimeUtc(path));
+        Assert.Equal(before, Snapshot(chapter));
     }
 
     [Fact]
-    public void 같은_워크북을_두_번_읽으면_같은_위치가_나온다()
+    public void 같은_챕터를_두_번_펴면_같은_위치가_나온다()
     {
-        ChapterGraphModel first = ChapterWorkbookReader.Read(SamplePath);
-        ChapterGraphModel second = ChapterWorkbookReader.Read(SamplePath);
+        ChapterGraphModel first = SampleChapters.Model(SampleChapters.Corridor);
+        ChapterGraphModel second = SampleChapters.Model(SampleChapters.Corridor);
 
         Assert.Equal(
             first.Episodes.Select(episode => (episode.EpisodeId, episode.X, episode.Y)),
             second.Episodes.Select(episode => (episode.EpisodeId, episode.X, episode.Y)));
+
+        Assert.Equal(
+            ChapterBranchPlanner.Layout(first).OrderBy(pair => pair.Key, StringComparer.Ordinal),
+            ChapterBranchPlanner.Layout(second).OrderBy(pair => pair.Key, StringComparer.Ordinal));
     }
 
-    private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
+    /// <summary>챕터의 저작 값 전부 — 프로젝트에 저장되는 모양 그대로.</summary>
+    private static string Snapshot(ChapterDocument chapter) =>
+        ChapterDocumentJson.Write([chapter])!.ToJsonString();
 }

@@ -1,32 +1,28 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
+using Avalonia.LogicalTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
-using Vn.Authoring.Serialization;
 
 namespace Vn.App.Tests;
 
 /// <summary>
-/// G-2 v2 — 그래프 편집이 엑셀 셀로 왕복한다. 패널의 [적용]·[개명]·간선·조건·＋에피소드와
-/// 드래그 커밋이 전부 워크북에 써지고, 다시 읽으면 그대로 나온다.
+/// 그래프 편집이 프로젝트의 챕터에 써진다. 패널의 [적용]·[개명]·간선·조건·＋에피소드가
+/// 전부 <c>ChapterDocument</c>에 남고, 모델을 다시 읽으면 그대로 나온다.
 /// </summary>
 public sealed class ChapterGraphEditingTests
 {
-    private static string SamplePath => Path.GetFullPath(Path.Combine(
-        AppContext.BaseDirectory, "..", "..", "..", "..", "..", "docs", "chapter-graph-sample.xlsx"));
-
     [Fact]
-    public void 길의_관문_콤보가_엑셀_셀로_왕복한다() => HeadlessUi.Run(() =>
+    public void 길의_관문_콤보가_간선에_써진다() => HeadlessUi.Run(() =>
     {
-        // v8 (2026-08-16 소유자) — "보일지 말지는 이제 간선이 정한다". 표시·해금조건이
-        // 에피소드에서 길(간선)로 옮겨 왔고, 편집도 간선 패널에서 한다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
-
+        // 보일지 말지는 간선이 정한다. 표시·해금조건은 에피소드가 아니라 길(간선)에 있고,
+        // 편집도 간선 패널에서 한다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -38,8 +34,7 @@ public sealed class ChapterGraphEditingTests
         view.FindControl<ComboBox>("EdgeVisibleCombo")!.SelectedItem = "지쳐있음";
         view.ApplyEdgeFromPanel();
 
-        ChapterEdge reread = ChapterWorkbookReader.Read(project.ChapterPath).Edges.Single(edge =>
-            edge.FromEpisodeId == "main05.02" && edge.ToEpisodeId == "branch05.02A");
+        ChapterEdge reread = Edge(session, "main05.02", "branch05.02A");
 
         Assert.Equal("지쳐있음", reread.VisibleConditionLabel);
         Assert.Equal("신뢰높음", reread.ConditionLabel); // 안 바꾼 값은 그대로
@@ -52,37 +47,35 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 간선_패널의_선택지도_챕터의_모든_문구에서_고른다() => HeadlessUi.Run(() =>
+    public void 간선_패널의_머리글이_선택지_문구이고_문구_칸은_없다() => HeadlessUi.Run(() =>
     {
-        // v9 (2026-08-17 소유자) — "간선에서도 선택지 드롭다운이 되도록." 그래프에서 길을
-        // 눌러 연 패널에서도 문구를 고르고, [적용] 한 번에 관문과 함께 저장된다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
+        // 2026-11-17 소유자 — [구성]은 수치를 잡는 자리다. 문구는 [대본] 탭에서 고치고, 여기서는 머리글에 보이기만 한다.
+        // ⛔ 같은 날 둔 읽기 전용 문구 칸은 고칠 수 있는 칸처럼 보여 걷었다. 머리글의 「출발 → 도착」 ID 자리에 문구가 선다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        var labels = view.FindControl<ComboBox>("EdgeLabelEditBox")!;
-        Assert.True(labels.IsEnabled); // 읽기 전용이 아니다 — 여기서 고친다
-        Assert.Equal("라루의 제안을 듣는다", labels.SelectedItem);
-        // 목록은 챕터 전체 사전이다 — 다른 에피소드가 쓰는 문구까지 담긴다.
-        Assert.Contains("혼자 문을 연다", (IEnumerable<string>)labels.ItemsSource!);
+        Assert.Equal("선택지 · 라루의 제안을 듣는다", view.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.Null(view.FindControl<TextBox>("EdgeLabelEditBox"));
+        Assert.Null(view.FindControl<TextBlock>("EdgeLabelWhereText"));
+        Assert.DoesNotContain(
+            view.FindControl<StackPanel>("EdgePanel")!.GetVisualDescendants().OfType<TextBox>(),
+            box => box.Text == "라루의 제안을 듣는다");
 
-        labels.SelectedItem = "혼자 문을 연다";
+        // 저장은 문구를 건드리지 않는다 — 관문만 실린다.
         view.FindControl<ComboBox>("EdgeVisibleCombo")!.SelectedItem = "지쳐있음";
         view.ApplyEdgeFromPanel();
 
-        ChapterEdge reread = ChapterWorkbookReader.Read(project.ChapterPath).Edges.Single(edge =>
-            edge.FromEpisodeId == "main05.02" && edge.ToEpisodeId == "branch05.02A");
-
-        Assert.Equal("혼자 문을 연다", reread.OptionLabel); // 문구가 한 저장에 함께 실렸다
+        ChapterEdge reread = Edge(session, "main05.02", "branch05.02A");
+        Assert.Equal("라루의 제안을 듣는다", reread.OptionLabel);
         Assert.Equal("지쳐있음", reread.VisibleConditionLabel);
         Assert.Equal("신뢰높음", reread.ConditionLabel);
 
-        // 문구는 신원의 일부다 — 바꿔도 선택이 풀리지 않고 그 길이 계속 열려 있다.
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
-        Assert.Equal("혼자 문을 연다", view.FindControl<ComboBox>("EdgeLabelEditBox")!.SelectedItem);
+        // 양 끝 에피소드 고리는 없다 — 부제(양 끝 제목)가 한 번 말한다.
+        Assert.Null(view.FindControl<StackPanel>("EdgeFromToPanel"));
+        Assert.Contains(" → ", view.FindControl<TextBlock>("InspectorSubtitle")!.Text, StringComparison.Ordinal);
     });
 
     [Fact]
@@ -90,13 +83,12 @@ public sealed class ChapterGraphEditingTests
     {
         // v9 — 사전은 챕터 전체의 어휘다. 에피소드 하나가 사라졌다고 낱말을 지우면
         // 다른 에피소드의 드롭다운에서도 사라진다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
+        using var project = new TempProject();
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
-        ChapterGraphModel reread = ChapterWorkbookReader.Read(project.ChapterPath);
+        ChapterGraphModel reread = Chapter(session);
 
         Assert.Null(reread.FindEpisode("branch05.02A"));
         Assert.DoesNotContain(reread.Edges, edge => edge.ToEpisodeId == "branch05.02A");
@@ -104,47 +96,24 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 에피소드를_지우면_대본_파일은_bak으로_밀린다() => HeadlessUi.Run(() =>
-    {
-        // 2026-08-26 소유자 — "에피소드를 삭제했는데 여전히 폴더에는 남아있는 버그."
-        // 지우는 종류의 작업은 직전 상태를 .bak으로 남긴다(챕터 삭제와 같은 규약).
-        // 파일이 남으면 같은 Id를 다시 더할 때 빈 유물이 재사용되기도 한다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
-
-        EpisodeLibrary.EnsureWorkbook(project.EpisodesFolder, "branch05.02A");
-        string workbook = EpisodeLibrary.FindExisting(project.EpisodesFolder, "branch05.02A")!;
-
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
-
-        Assert.Null(EpisodeLibrary.FindExisting(project.EpisodesFolder, "branch05.02A"));
-        Assert.True(File.Exists(workbook + ChapterDeleter.BackupSuffix));
-    });
-
-    [Fact]
     public void 에피소드를_지우면_연출_그래프의_빈_노드도_함께_지운다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 이것이 "번들 이름이 겹칩니다"의 뿌리였다 (2026-08-25). 워크북에서만 지우면
-        //    판에 <b>사라진 에피소드를 자기라고 주장하는 유령</b>이 남고, 같은 Id로 다시
-        //    만들면 같은 이름의 노드가 둘이 되어 내보내기가 통째로 막힌다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        // 챕터에서만 지우면 판에 <b>사라진 에피소드를 자기라고 주장하는 유령</b>이 남고,
+        //    같은 Id로 다시 만들면 같은 이름의 노드가 둘이 되어 내보내기가 통째로 막힌다
+        //    ("번들 이름이 겹칩니다").
+        using var project = new TempProject();
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
-        // 대본은 이제 사람이 들여온다 (R-D) — 유령 노드를 재려면 먼저 서 있어야 한다.
-        view.ImportEpisodes();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        // 판은 뷰를 붙이는 순간 이미 섰고 노드는 들여오기가 세웠다 — 여기서 또 만들면
+        // 판과 카드는 이미 섰다(견본을 세울 때 함께 — SampleChapters.StandCards) — 여기서 또 만들면
         // 같은 이름이 둘이 되어 실물이 아니라 사본을 재게 된다.
         DialogueNode ghost = session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => node.MarkedEpisodeId == "branch05.02A");
 
-        // 대본은 딸려 있어도 살아 있는 줄이 없으면 빈 노드다 — 재생할 것이 없다.
-        Assert.Empty(session.Project.FindScript(ghost.ScriptId)!.ActiveLines);
+        // 대본은 딸려 있어도 적힌 글이 없으면 빈 카드다 — 아무도 손대지 않은 자리다.
+        Vn.Authoring.Script.ScriptDocument blank = ghost.Script;
+        Assert.DoesNotContain(blank.ActiveLines, line => blank.Text(line.Id).Text.Length > 0);
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         Assert.Null(session.Project.FindNode(ghost.Id));
     });
@@ -152,30 +121,23 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 글이_든_노드도_함께_지우고_되돌리기로_돌아온다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>2026-09-18에 뒤집혔다</b> (소유자: *"노드가 지워지는게 아니라 떼어냄으로
-        //    변하는데?"*). 전에는 글이 든 카드를 지우지 않고 <c>(떼어냄)</c>으로 이름만
-        //    바꿔 판에 남겼다. 근거는 *"툴이 임의로 지우면 되돌릴 자리가 없다(판 편집에는
-        //    Ctrl+Z가 없다)"*였는데, <b>같은 날 Ctrl+Z가 붙어 그 전제가 없어졌다</b>.
+        // 글이 든 카드도 <c>(떼어냄)</c>으로 이름만 바꿔 판에 남기지 않고 지운다 — 판 편집에도
+        //    Ctrl+Z가 있어 되돌릴 자리가 있다.
         //
-        // ⚠ 글은 그래도 안 사라진다 — 대본은 원래 안 지우고, 되돌리면 카드가 다시 찾는다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        view.ImportEpisodes();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        // 글은 그래도 안 사라진다 — 카드가 대본을 들고 있어 되돌리면 카드와 함께 돌아온다.
+        using var project = new TempProject();
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         DialogueNode written = session.Project.EnumerateNodes().OfType<DialogueNode>()
             .Single(node => node.MarkedEpisodeId == "branch05.02A");
 
-        var script = new Vn.Authoring.Script.ScriptDocument(name: "남은 대본");
+        var script = new Vn.Authoring.Script.ScriptDocument();
         script.Lines.Add(new Vn.Authoring.Script.ScriptLine("ln_keep"));
         script.RequireLocale(script.PrimaryLocale).Entries["ln_keep"] =
             new Vn.Authoring.Script.LocalizedLine("윌로", "잃으면 안 되는 줄");
-        session.Project.Scripts.Add(script);
-        written.ScriptId = script.Id;
+        written.Script = script;
 
-        view.SelectEpisode("branch05.02A");
-        view.DeleteSelectedEpisode();
+        Assert.True(EpisodeDeleter.Delete(session.Editor, "ch05", "branch05.02A").Ok);
 
         // 카드가 <b>사라진다</b> — `(떼어냄)`이 판에 남지 않는다.
         Assert.Null(session.Project.FindNode(written.Id));
@@ -186,86 +148,33 @@ public sealed class ChapterGraphEditingTests
         session.Editor.Undo();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // 되돌리면 카드도 에피소드도 돌아오고, 글은 애초에 안 사라졌다.
-        Assert.NotNull(session.Project.FindNode(written.Id));
-        Assert.NotNull(session.Project.FindScript(script.Id));
+        // 되돌리면 카드도 에피소드도 돌아오고, 글도 카드에 든 채 돌아온다.
+        DialogueNode back = Assert.IsType<DialogueNode>(session.Project.FindNode(written.Id));
+        Assert.Equal("잃으면 안 되는 줄", back.Script.Text("ln_keep").Text);
     });
 
     [Fact]
-    public void 엑셀이_잡고_있으면_툴_편집_창구가_닫힌다() => HeadlessUi.Run(() =>
+    public void 편집이_열려_있다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 — "엑셀이 켜지면 자동으로 잠기면서 편집이 불가능하게 막는게
-        // 좋겠어." 예전에는 체크 하나가 문지기였고 기본이 켬이었다. 이제 문을 잠그는 것은
-        // 사람이 아니라 <b>엑셀이 그 파일을 잡았다는 사실</b>이다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project, locked: true);
-
-        view.SelectEpisode("main05.02");
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.True(view.FindControl<Border>("LockBanner")!.IsVisible);
-        Assert.False(view.FindControl<TextBox>("IdBox")!.IsEnabled);
-        Assert.False(view.FindControl<ComboBox>("VisibleCombo")!.IsEnabled);
-        Assert.False(view.FindControl<Button>("AddNextEdgeButton")!.IsVisible);
-        Assert.False(view.FindControl<Grid>("EdgeFormPanel")!.IsVisible);
-        // 삭제 단추는 늘 같은 자리에 있고 상태만 바뀐다 (2026-08-16 소유자 보고) —
-        // 잠금이 풀리는 순간 튀어나오면 그 자리를 누르던 손이 삭제를 누른다.
-        var delete = view.FindControl<Button>("DeleteEpisodeButton")!;
-        Assert.True(delete.IsVisible);
-        Assert.False(delete.IsEnabled);
-    });
-
-    [Fact]
-    public void 엑셀이_안_잡고_있으면_편집이_열려_있다() => HeadlessUi.Run(() =>
-    {
-        // ⚠ 이것이 2026-08-24에 뒤집힌 기본값이다 — 전에는 닫힌 채로 시작했다.
-        using var project = new TempProject(SamplePath);
+        // 편집은 열린 채로 시작한다 — 닫을 길(잠금) 자체가 없다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         view.SelectEpisode("main05.02");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.False(view.FindControl<Border>("LockBanner")!.IsVisible);
         Assert.True(view.FindControl<TextBox>("IdBox")!.IsEnabled);
-        Assert.True(view.FindControl<Button>("AddNextEdgeButton")!.IsVisible);
-
-        var delete = view.FindControl<Button>("DeleteEpisodeButton")!;
-        Assert.True(delete.IsVisible);
-        Assert.True(delete.IsEnabled);
-    });
-
-    [Fact]
-    public void 편집_폼은_선택지를_먼저_묻는다() => HeadlessUi.Run(() =>
-    {
-        // 2026-08-24 소유자 재지시 — 같은 날 오전의 "도착이 먼저" 결정을 되돌렸다.
-        // 목록의 줄이 `문구 → 도착`으로 읽히므로, 그 줄을 눌러 열리는 폼도 같은 순서여야
-        // 눈이 자리를 다시 찾지 않는다. 화살표도 →로 돌아온다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
-
-        Assert.Equal(0, Grid.GetColumn(view.FindControl<ComboBox>("EdgeLabelBox")!));
-        Assert.Equal(2, Grid.GetColumn(view.FindControl<ComboBox>("EdgeTargetCombo")!));
-
-        // 화살표가 관계를 말한다 — 칸만 바꾸고 ←를 남겨 두면 뜻이 거꾸로 읽힌다.
-        Assert.Equal("→", view.FindControl<Grid>("EdgeFormPanel")!
-            .Children.OfType<TextBlock>().Single().Text);
     });
 
     [Fact]
     public void 열려_있을_때는_이름_칸이_아무_말도_안_한다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 "이런 쓸모없는 설명들을 제거해줘" — 하루 전 이 자리에 붙였던
-        // "이름 — 고치고 Enter"를 걷었다. 개명 자리인 줄 알리는 몫은 툴팁이 진다.
-        //
-        // ⛔ 안내를 지우면서 <b>잠금 사유까지</b> 지우지 않는다 — 아래 짝 테스트가 그 반쪽을
-        //    붙든다. 기본값은 말할 것이 없고, 사람이 안 한 잠금은 말해 줘야 한다.
-        using var project = new TempProject(SamplePath);
+        // 이름 칸 곁에 "이름 — 고치고 Enter" 같은 상시 설명을 두지 않는다. 개명 자리인 줄
+        // 알리는 몫은 툴팁이 진다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
         view.SelectEpisode("main05.01");
 
-        TextBlock hint = view.FindControl<TextBlock>("IdBoxHint")!;
-
-        Assert.False(hint.IsVisible);
         Assert.True(view.FindControl<TextBox>("IdBox")!.IsEnabled);
 
         // 툴팁은 남는다 — 물을 때만 뜨고 자리를 안 먹는다.
@@ -276,9 +185,9 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 상시_안내들이_편집_패널에서_사라졌다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 — 머리글 "에피소드", 읽기 전용 값 줄(`대사엔트리: … · 엑셀 N행`),
-        // "길 하나 = 선택지 하나…" 셋을 걷었다. 고칠 수도 없는 글이 상시로 자리를 먹었다.
-        using var project = new TempProject(SamplePath);
+        // 머리글 "에피소드", 읽기 전용 값 줄(`대사엔트리: … · 엑셀 N행`), "길 하나 = 선택지
+        // 하나…" 셋은 두지 않는다. 고칠 수도 없는 글이 상시로 자리를 먹는다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
         view.SelectEpisode("main05.01");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -287,7 +196,6 @@ public sealed class ChapterGraphEditingTests
 
         string[] gone =
         [
-            "에피소드",
             "길 하나 = 선택지 하나",
             "대사엔트리"
         ];
@@ -304,337 +212,330 @@ public sealed class ChapterGraphEditingTests
             Assert.DoesNotContain(standing, text => text.Contains(phrase, StringComparison.Ordinal));
         }
 
-        // 남아야 하는 것 — 선택지 머리글은 표의 이름표라 안내가 아니다.
+        // 머리글 「에피소드」 — 칸 이름표 「에피소드ID」는 머리글이 아니라 무슨 칸인지 말하는 이름표다.
+        Assert.DoesNotContain("에피소드", standing);
+
+        // 남아야 하는 것 — 선택지 머리글과 칸 이름표는 표의 이름표라 안내가 아니다.
         Assert.Contains(standing, text => text.Contains("선택지", StringComparison.Ordinal));
+        Assert.Contains("에피소드ID", standing);
     });
 
     [Fact]
-    public void 잠겼을_때는_이름_칸이_왜_잠겼는지_말한다() => HeadlessUi.Run(() =>
+    public void 선택지_목록에는_길을_더하거나_끊는_단추가_없다() => HeadlessUi.Run(() =>
     {
-        // 비활성 칸이 아무 말도 없으면 "이 기능이 없다"로 읽힌다 — 실제로 그렇게 읽혔다.
-        // ⛔ "엑셀에서만 편집 체크를 푸세요"로는 돌아가지 않는다: 풀 체크가 없다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project, locked: true);
-        view.SelectEpisode("main05.01");
-
-        TextBlock hint = view.FindControl<TextBlock>("IdBoxHint")!;
-
-        Assert.True(hint.IsVisible);
-        Assert.Contains("엑셀", hint.Text);
-        Assert.False(view.FindControl<TextBox>("IdBox")!.IsEnabled);
-    });
-
-    [Fact]
-    public void 패널에서_간선을_더한다() => HeadlessUi.Run(() =>
-    {
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
-
-        view.SelectEpisode("main05.01");
-        view.FindControl<ComboBox>("EdgeTargetCombo")!.SelectedItem = "main05.end";
-        view.AddEdgeFromPanel();
-
-        ChapterGraphModel reread = ChapterWorkbookReader.Read(project.ChapterPath);
-
-        ChapterEdge edge = reread.Edges.Single(candidate =>
-            candidate.FromEpisodeId == "main05.01" && candidate.ToEpisodeId == "main05.end");
-        // v12 — 툴이 놓는 길에는 기본 문구가 들어간다. 문구는 그 줄을 눌러 고친다.
-        Assert.Equal("계속", edge.OptionLabel);
-    });
-
-    [Fact]
-    public void 선택지는_챕터의_모든_문구_중에서_고른다() => HeadlessUi.Run(() =>
-    {
-        // v9 (2026-08-17 소유자) — "자기 것만 고르는 게 아니라 모든 선택지 중에서 자유자재로."
-        // 견본의 사전에는 main05.02가 쓰는 문구 둘이 있고, main05.01에서도 그것을 고른다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
-
-        view.SelectEpisode("main05.01");
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        // [＋] — 빈 폼이 열린다. 아직 아무것도 안 쓴다.
-        view.FindControl<Button>("AddNextEdgeButton")!.RaiseEvent(
-            new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.True(view.FindControl<Grid>("EdgeFormPanel")!.IsVisible);
-        Assert.Equal("잇기", view.FindControl<Button>("AddEdgeButton")!.Content);
-
-        // 문구 드롭다운은 다른 에피소드가 쓰는 문구까지 전부 담는다.
-        var labels = view.FindControl<ComboBox>("EdgeLabelBox")!;
-        Assert.Contains("라루의 제안을 듣는다", (IEnumerable<string>)labels.ItemsSource!);
-
-        labels.SelectedItem = "라루의 제안을 듣는다";
-        view.FindControl<ComboBox>("EdgeTargetCombo")!.SelectedItem = "main05.end";
-        view.SubmitEdgeForm();
-
-        ChapterGraphModel reread = ChapterWorkbookReader.Read(project.ChapterPath);
-        ChapterEdge wired = reread.Edges.Single(candidate =>
-            candidate.FromEpisodeId == "main05.01" && candidate.ToEpisodeId == "main05.end");
-        Assert.Equal("라루의 제안을 듣는다", wired.OptionLabel);
-
-        // 같은 문구를 두 에피소드가 쓰고 있어도 사전에는 한 줄뿐이다.
-        Assert.Single(reread.ChoiceOptions, option => option.Text == "라루의 제안을 듣는다");
-    });
-
-    [Fact]
-    public void 선택지_줄을_클릭하면_그_아래에서_문구와_도착을_고친다() => HeadlessUi.Run(() =>
-    {
-        using var project = new TempProject(SamplePath);
+        // 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다 — 에피소드 칸의 [＋]와 줄마다의 ✕, 빈 칸 패널의 [＋]는 없다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         view.SelectEpisode("main05.02");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        ChapterGraphModel model = ChapterWorkbookReader.Read(project.ChapterPath);
-        ChapterEdge target = model.Edges.Single(edge =>
-            edge.FromEpisodeId == "main05.02" && edge.ToEpisodeId == "branch05.02A");
-
-        view.OpenEdgeForm(target, rowIndex: 0);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.True(view.FindControl<Grid>("EdgeFormPanel")!.IsVisible);
-        Assert.Equal("수정", view.FindControl<Button>("AddEdgeButton")!.Content);
-        Assert.Equal("라루의 제안을 듣는다", view.FindControl<ComboBox>("EdgeLabelBox")!.SelectedItem);
-
-        // 문구를 바꿔 저장 — 도착은 그대로다.
-        view.FindControl<ComboBox>("EdgeLabelBox")!.SelectedItem = "혼자 문을 연다";
-        view.SubmitEdgeForm();
-
-        ChapterGraphModel reread = ChapterWorkbookReader.Read(project.ChapterPath);
-        ChapterEdge moved = reread.Edges.Single(edge => edge.ToEpisodeId == "branch05.02A");
-        Assert.Equal("혼자 문을 연다", moved.OptionLabel);
-        Assert.Equal("신뢰높음", moved.ConditionLabel); // 관문은 길에 붙어 따라온다
+        Assert.Null(view.FindControl<Button>("AddNextEdgeButton"));
+        Assert.Null(view.FindControl<Button>("SlotAddChoiceButton"));
+        Assert.DoesNotContain(
+            view.FindControl<StackPanel>("EdgeListPanel")!.GetVisualDescendants().OfType<Button>(),
+            button => button.IsEffectivelyVisible && button.Content as string == "✕");
     });
 
     [Fact]
-    public void 에피소드_추가와_개명이_왕복한다() => HeadlessUi.Run(() =>
+    public void 간선_패널에는_길_끊기와_자동_진행_체크가_없고_자동_길이면_그렇다고_말하고_칸을_잠근다() => HeadlessUi.Run(() =>
     {
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
+        // 길을 잇고 끊고 자동으로 바꾸는 것은 [대본] 탭의 일이다 — [구성] 탭 간선 패널은 문구 · 조건 · 스탯변화만 고친다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar();
+        view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        ChapterGraphModel afterAdd = ChapterWorkbookReader.Read(project.ChapterPath);
-        Assert.NotNull(afterAdd.FindEpisode("new01"));
+        Assert.Null(view.FindControl<Button>("EdgeDeleteButton"));
+        Assert.Null(view.FindControl<CheckBox>("EdgeAutoCheck"));
+        Assert.False(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
+        Assert.True(view.FindControl<ComboBox>("EdgeConditionCombo")!.IsEnabled);
 
-        // 감시 대신 직접 다시 읽게 한 뒤 개명한다 — 자리표시 Id를 사람이 정한 이름으로.
-        view.SelectEpisode("new01");
+        // 자동 진행 길 — 안내가 서고 문구 · 조건 칸이 잠긴다. 저장해도 자동 그대로다.
+        session.Editor.UpdateEdge("ch05", "main05.01", "main05.02", matchOptionLabel: "계속", optionLabel: string.Empty, auto: true);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        view.SelectEdgeKey("main05.01", "main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.True(view.FindControl<TextBlock>("EdgeAutoNote")!.IsVisible);
+        Assert.Equal("선택지 · AUTO", view.FindControl<TextBlock>("InspectorTitle")!.Text);
+        Assert.False(view.FindControl<ComboBox>("EdgeConditionCombo")!.IsEnabled);
+        Assert.False(view.FindControl<Button>("EdgeVisibleNewButton")!.IsEnabled);
+
+        view.ApplyEdgeFromPanel();
+        Assert.True(Edge(session, "main05.01", "main05.02").Auto);
+    });
+
+    [Fact]
+    public void 선택지_설명은_기본으로_펼쳐져_있고_읽기_전용이며_누르면_접힌다() => HeadlessUi.Run(() =>
+    {
+        // 에피소드 칸은 확인하는 자리다 — 설명은 처음부터 펼쳐져 있고, 펼친 설명에는 고칠 칸이 없다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        List<ChapterEdge> edges = Chapter(session).Edges.Where(edge => edge.FromEpisodeId == "main05.02").ToList();
+        ChapterEdge target = Edge(session, "main05.02", "branch05.02A");
+        int row = edges.FindIndex(edge => edge.ToEpisodeId == target.ToEpisodeId && edge.OptionLabel == target.OptionLabel);
+        Assert.Equal(edges.Count, Details(view).Count);
+
+        // 줄은 「문구 → 도착」뿐이다 — 해금조건은 줄에 붙이지 않고 아래 설명이 보인다.
+        TextBlock line = view.FindControl<StackPanel>("EdgeListPanel")!.Children.OfType<Grid>().ElementAt(row)
+            .Children.OfType<TextBlock>().Last();
+        Assert.Equal($"{target.OptionLabel}   → {target.ToEpisodeId}", line.Text);
+        Assert.DoesNotContain("[", line.Text, StringComparison.Ordinal);
+
+        Border detail = DetailOf(view, row)!;
+        List<string?> lines = detail.GetVisualDescendants().OfType<TextBlock>().Select(text => text.Text).ToList();
+        Assert.Contains("해금조건: 신뢰높음", lines);
+        Assert.Contains(lines, line => line!.StartsWith("스탯변화: ", StringComparison.Ordinal));
+
+        // 문구와 도착은 바로 위 줄이 보인다 — 설명이 되풀이하지 않는다.
+        Assert.DoesNotContain(lines, line => line!.StartsWith("문구: ", StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, line => line!.StartsWith("도착: ", StringComparison.Ordinal));
+
+        // 고칠 칸이 없다 — 글자 칸 · 고르기 · 체크 · 단추 모두.
+        Assert.DoesNotContain(view.FindControl<StackPanel>("EdgeListPanel")!.GetVisualDescendants(),
+            control => control is TextBox or ComboBox or CheckBox or Button);
+        Assert.Null(view.FindControl<TextBox>("EdgeLabelBox"));
+        Assert.Null(view.FindControl<ComboBox>("EdgeTargetCombo"));
+
+        // 누르면 그 줄만 접히고, 다시 누르면 펼쳐진다.
+        view.ToggleChoice(target);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Null(DetailOf(view, row));
+        Assert.Equal(edges.Count - 1, Details(view).Count);
+
+        view.ToggleChoice(target);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(DetailOf(view, row));
+    });
+
+    [Fact]
+    public void 선택지를_접어도_다른_선택지는_그대로고_다른_에피소드로_넘어가면_다시_펼쳐진다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        List<ChapterEdge> edges = Chapter(session).Edges.Where(edge => edge.FromEpisodeId == "main05.02").ToList();
+        Assert.True(edges.Count >= 2);
+
+        // 처음부터 모두 펼쳐져 있다.
+        Assert.Equal(edges.Count, Details(view).Count);
+
+        // 첫째를 접으면 첫째만 접히고 둘째는 그대로다.
+        view.ToggleChoice(edges[0]);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Null(DetailOf(view, 0));
+        Assert.NotNull(DetailOf(view, 1));
+
+        // 둘째도 접는다.
+        view.ToggleChoice(edges[1]);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(edges.Count - 2, Details(view).Count);
+
+        // 다른 에피소드로 넘어가면 다시 모두 펼쳐진다.
+        view.SelectEpisode("main05.01");
+        view.SelectEpisode("main05.02");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(edges.Count, Details(view).Count);
+    });
+
+    [Fact]
+    public void 에피소드를_더하고_개명하면_챕터에_남는다() => HeadlessUi.Run(() =>
+    {
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        EpisodeAdder.Add(session, "ch05", "s1");
+
+        ChapterGraphModel afterAdd = Chapter(session);
+        Assert.NotNull(afterAdd.FindEpisode("ch05_s1_new01"));
+
+        // 다시 그린 판에서 골라 개명한다 — 자리표시 Id를 사람이 정한 이름으로.
+        view.SelectEpisode("ch05_s1_new01");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         view.FindControl<TextBox>("IdBox")!.Text = "main05.05";
         view.RenameSelectedEpisode();
 
-        ChapterGraphModel afterRename = ChapterWorkbookReader.Read(project.ChapterPath);
-        Assert.Null(afterRename.FindEpisode("new01"));
+        ChapterGraphModel afterRename = Chapter(session);
+        Assert.Null(afterRename.FindEpisode("ch05_s1_new01"));
         Assert.NotNull(afterRename.FindEpisode("main05.05"));
     });
 
     [Fact]
-    public void 개명하면_대본_파일과_대사_노드가_함께_따라간다() => HeadlessUi.Run(() =>
+    public void 개명하면_대사_노드가_함께_따라간다() => HeadlessUi.Run(() =>
     {
-        // 실사례 — 개명이 챕터 시트만 따라가서, 옛 이름의 .xlsm이 원고를 든 채 남고
-        // 새 이름으로 빈 워크북이 하나 더 생겼다.
-        using var project = new TempProject(SamplePath);
+        // 개명이 챕터만 따라가면 카드가 옛 이름에 남아 원고가 에피소드와 끊긴다.
+        using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        view.AddEpisodeFromToolbar(); // new01 + 대본 워크북 생성
-        view.RefreshFromDisk();
+        EpisodeAdder.Add(session, "ch05", "s1"); // ch05_s1_new01 + 카드
+        view.Refresh();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // ⚠ 대사 노드는 <b>동기화가 이미 세워 뒀다</b> (2026-08-22) — 예전에는 여기서
-        // 손으로 흉내내야 했다. 목록이 달라지면 재읽기가 동기화를 부르므로, 에피소드를
-        // 더한 그 자리에서 노드가 선다(그 전에는 엑셀 파일이 생겨 감시자가 울어야 했다).
+        // 대사 노드는 에피소드를 더한 그 자리에서 함께 섰다 — <c>AddNextEpisode</c>가 카드까지 만든다.
         Assert.Contains(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.MarkedEpisodeId == "new01");
+            node => node.MarkedEpisodeId == "ch05_s1_new01");
 
-        view.SelectEpisode("new01");
+        view.SelectEpisode("ch05_s1_new01");
         view.FindControl<TextBox>("IdBox")!.Text = "ep_renamed";
         view.RenameSelectedEpisode();
 
-        // 대본 파일이 새 이름으로 옮겨졌고, 옛 이름은 남지 않았다 (그 챕터 폴더 안에서).
-        Assert.NotNull(EpisodeLibrary.FindExisting(project.EpisodesFolder, "ep_renamed"));
-        Assert.Null(EpisodeLibrary.FindExisting(project.EpisodesFolder, "new01"));
-
         // 대사 노드도 새 이름이다 — 새로 만들지 않고 이름만 바꿔 연출·신원이 보존된다.
-        // 엑셀 표식(MarkedEpisodeId)도 함께 간다 — 옛 Id로 남으면 시나리오 그래프가
+        // 표식(MarkedEpisodeId)도 함께 간다 — 옛 Id로 남으면 시나리오 그래프가
         // 챕터 밖 노드로 보고 레일을 끊는다.
         Assert.Contains(session.Project.EnumerateNodes().OfType<DialogueNode>(),
             node => node.Name == "ep_renamed" && node.MarkedEpisodeId == "ep_renamed");
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.Name == "new01");
+            node => node.Name == "ch05_s1_new01");
     });
 
     /// <summary>
-    /// 2026-08-22 소유자 보고 — *"챕터그래프에서 에피소드를 추가했는데 그게 즉각적으로
-    /// 연출그래프에 반영이 안 돼. 노드를 더블클릭해서 엑셀을 열어서 엑셀파일을
-    /// 생성시켜야지 그제야 노드가 추가되는 버그."*
-    ///
-    /// 노드를 세우는 것은 동기화뿐인데 그것이 <b>대본 폴더가 바뀔 때만</b> 돌았다 —
-    /// 그래서 엑셀 파일이 새로 생겨 감시자가 우는 날에야 노드가 섰다. 이제 <b>에피소드
-    /// 목록이 달라지면</b> 폴더가 그대로여도 돈다.
+    /// 챕터 그래프에서 더한 에피소드는 곧바로 연출 그래프에 선다. 에피소드를 만드는
+    /// 명령(<c>AddEpisode</c>·<c>AddNextEpisode</c>)이 <b>카드까지 함께</b> 만든다 — 기다릴 것이 없다.
     /// </summary>
     [Fact]
     public void 에피소드를_더하면_그_자리에서_대사_노드가_선다() => HeadlessUi.Run(() =>
     {
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        using var project = new TempProject();
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
 
         Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.MarkedEpisodeId == "new01");
+            node => node.MarkedEpisodeId == "ch05_s1_new01");
 
-        view.AddEpisodeFromToolbar();
+        EpisodeAdder.Add(session, "ch05", "s1");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs(); // QueueReload 한 차례
 
-        // 엑셀을 열지 않았는데도 노드가 서 있다 — 목록이 달라진 것이 곧 동기화의 이유다.
+        // 더한 그 자리에서 노드가 서 있다 — 에피소드와 카드가 한 변경이다.
         DialogueNode node = Assert.Single(
             session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            item => item.MarkedEpisodeId == "new01");
+            item => item.MarkedEpisodeId == "ch05_s1_new01");
 
-        // 첫 대사도 함께 심어져 있다 (2026-08-26 소유자) — 빈 대본은 검증이 오류로
+        // 첫 대사도 함께 심어져 있다 — 빈 대본은 검증이 오류로
         // 막으므로, 방금 더한 에피소드가 그 오류부터 들고 시작하지 않는다.
         Assert.True(
-            session.Project.FindScript(node.ScriptId) is { } document &&
+            node.Script is { } document &&
             document.ActiveLines.Any(),
             "새 에피소드의 대사 노드에 기본 대사 한 줄이 있어야 한다");
     });
 
     [Fact]
-    public void 빈_유물_워크북이_남아_있어도_다시_더하면_첫_대사가_선다() => HeadlessUi.Run(() =>
+    public void 이어지지_않은_에피소드는_오류_없이_흐리게_서고_잇으면_또렷해진다() => HeadlessUi.Run(() =>
     {
-        // 에피소드 삭제는 대본 파일을 남긴다 — 지운 Id를 다시 더하면 EnsureWorkbook이
-        // 빈 유물을 그대로 재사용해 첫 대사가 안 심겼다(2026-08-26 소유자가 바로 밟았다:
-        // "여전히 기본 대사는 비어있는 상태야"). 비어 있을 때만 심고, 쓰다 만 대본에는
-        // 손대지 않는다.
-        using var project = new TempProject(SamplePath);
+        // 2026-11-17 소유자 — 막 만든 에피소드(아직 안 이음)는 작업 중이다. 오류 표식 없이 흐리게 서고, 내보내기를 막지 않는다.
+        using var project = new TempProject();
         (ChapterGraphView view, AuthoringSession session) = Show(project);
+        var canvas = view.FindControl<Avalonia.Controls.Canvas>("GraphCanvas")!;
 
-        EpisodeLibrary.EnsureWorkbook(project.EpisodesFolder, "new01");   // 기능 전의 빈 유물
-
-        view.AddEpisodeFromToolbar();
+        EpisodeAdder.Add(session, "ch05", "s1");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        DialogueNode node = Assert.Single(
-            session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            item => item.MarkedEpisodeId == "new01");
+        Border Card() => canvas.Children.OfType<Border>().Single(item => item.Tag as string == "ch05_s1_new01");
+        Assert.Equal(0.55, Card().Opacity, 3);
+        Assert.Equal(1, Card().BorderThickness.Left);   // ⚠ 오류 테두리가 아니다
 
-        Assert.True(
-            session.Project.FindScript(node.ScriptId) is { } document &&
-            document.ActiveLines.Any(),
-            "유물 워크북이어도 기본 대사 한 줄이 있어야 한다");
+        session.Editor.AddEdge("ch05", "main05.end", "ch05_s1_new01", optionLabel: "이어서");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, Card().Opacity, 3);
     });
 
     [Fact]
-    public void 잠긴_대본_파일이면_개명_전체가_멈춘다() => HeadlessUi.Run(() =>
+    public void 더한_에피소드는_길_없이_선다() => HeadlessUi.Run(() =>
     {
-        // 실사례 (2026-08-15) — 엑셀이 원고를 열어 둔 채 개명하면 챕터·노드만 새 이름이 되고
-        // 원고는 옛 이름에 남았다. 새 이름을 여는 순간 빈 워크북이 생겨 "파일이 새로
-        // 만들어진다"로 보였다. 파일을 못 옮기면 아무것도 바뀌지 않아야 한다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        // 2026-11-18 소유자 — 에피소드는 서로 떨어진 내용이고 잇기는 사람이 정한다. ⛔ 그 전에는 누른 에피소드 다음으로 「계속」 길을 이었다.
+        using var project = new TempProject();
+        (ChapterGraphView _, AuthoringSession session) = Show(project);
+        int edges = Chapter(session).Edges.Count;
 
-        view.AddEpisodeFromToolbar(); // new01 + 대본 워크북 생성
-        view.RefreshFromDisk();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        EpisodeAdder.Add(session, "ch05", "s1");
 
-        string fileId = session.EnsureChapterBoard("ch05");
-        session.Editor.AddDialogueNode(fileId, name: "new01");
-
-        string workbook = EpisodeLibrary.FindExisting(project.EpisodesFolder, "new01")!;
-
-        view.SelectEpisode("new01");
-        view.FindControl<TextBox>("IdBox")!.Text = "ep_locked";
-
-        // 엑셀이 잡고 있는 상황 — 공유 삭제 없이 연 핸들은 이동(File.Move)을 막는다.
-        using (File.Open(workbook, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        {
-            view.RenameSelectedEpisode();
-        }
-
-        // 전부 그대로다 — 챕터 시트도, 대사 노드도, 파일도.
-        ChapterGraphModel reread = ChapterWorkbookReader.Read(project.ChapterPath);
-        Assert.NotNull(reread.FindEpisode("new01"));
-        Assert.Null(reread.FindEpisode("ep_locked"));
-        Assert.NotNull(EpisodeLibrary.FindExisting(project.EpisodesFolder, "new01"));
-        Assert.Null(EpisodeLibrary.FindExisting(project.EpisodesFolder, "ep_locked"));
-        Assert.Contains(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.Name == "new01");
+        ChapterGraphModel reread = Chapter(session);
+        Assert.NotNull(reread.FindEpisode("ch05_s1_new01"));
+        Assert.Equal(edges, reread.Edges.Count);
+        Assert.DoesNotContain(reread.Edges, edge => edge.ToEpisodeId == "ch05_s1_new01");
     });
 
     [Fact]
-    public void 선택한_노드의_자식으로_에피소드가_생기고_간선이_이어진다() => HeadlessUi.Run(() =>
+    public void 오른쪽_기둥은_탭_셋이고_처음은_인스펙터에_챕터가_선다() => HeadlessUi.Run(() =>
     {
-        // v3 — [＋ 에피소드]는 선택된 노드의 다음으로 만든다. 흐름 연결이 기본값이다.
-        using var project = new TempProject(SamplePath);
+        // 오른쪽 기둥은 탭 셋이다 — 인스펙터 · 화자 · 조건 및 스탯(2026-11-18 소유자 · side-tabs V1). ⛔ 그 전에는 탭 없이
+        // 고른 것이 내용을 정해, 화자 · 조건이 하이어아키의 줄을 고르기 전에는 어디에도 보이지 않았다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
-        view.SelectEpisode("main05.end");
-        view.AddEpisodeFromToolbar();
+        TabControl tabs = view.FindControl<TabControl>("SideTabs")!;
+        Assert.Equal(["인스펙터", "화자", "조건 및 스탯"], tabs.Items.OfType<TabItem>().Select(item => (string?)item.Header));
+        Assert.Equal(SideTab.Inspector, view.ShownSideTab);
 
-        ChapterGraphModel reread = ChapterWorkbookReader.Read(project.ChapterPath);
-        ChapterEpisode added = reread.FindEpisode("new01")!;
+        // 처음 고른 것은 챕터다 — 인스펙터에는 챕터ID 칸과 옆 탭 안내가 선다.
+        Assert.Single(Sections(view), section => section.IsVisible);
+        Assert.True(view.FindControl<ScrollViewer>("OverviewSection")!.IsVisible);
+        Assert.True(view.FindControl<Grid>("ChapterIdGrid")!.IsVisible);
+        Assert.Equal("ch05", view.FindControl<TextBox>("ChapterIdBox")!.Text);
+        Assert.Contains("「조건 및 스탯」 탭", view.FindControl<TextBlock>("OverviewText")!.Text, StringComparison.Ordinal);
+        Assert.Equal("챕터 · ch05", view.FindControl<TextBlock>("InspectorTitle")!.Text);   // 표시 이름이 없으면 ID
 
-        // 간선이 함께 이어졌고, 대사엔트리는 EpisodeId로 자동이다.
-        Assert.Contains(reread.Edges, edge =>
-            edge.FromEpisodeId == "main05.end" && edge.ToEpisodeId == "new01");
-        Assert.Equal("new01", added.DialogueEntry);
-
-        // 새 노드가 선택되어 바로 [개명]할 수 있다 (감시 대신 직접 다시 읽게 한다).
-        view.RefreshFromDisk();
+        // 조건 탭은 머리에 챕터 단위임을 말하고, 작은 드롭다운이 지금 챕터를 비춘다.
+        view.ShowSideTab(SideTab.Conditions);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Equal("new01", view.FindControl<TextBox>("IdBox")!.Text);
+        Assert.Contains(
+            view.FindControl<TabItem>("ConditionTabItem")!.GetLogicalDescendants().OfType<TextBlock>(),
+            block => block.Text == "챕터 단위 조건 · 스탯");
+        Assert.Equal("ch05", view.FindControl<ComboBox>("ConditionChapterCombo")!.SelectedItem);
+        Assert.True(view.FindControl<StackPanel>("ConditionListPanel")!.IsEffectivelyVisible);
     });
 
     [Fact]
-    public void 탭_순서는_편집_화자_챕터다() => HeadlessUi.Run(() =>
+    public void 챕터_머리글은_표시_이름이고_ID는_챕터ID_칸에_있다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 "편집/화자/챕터가 되도록 챕터를 가장 뒤에 보내" — [편집]은
-        // 고른 하나를 다루는 자리라 첫째이고, [챕터]는 판 전체의 읽기 전용 표라 가장 뒤다.
-        //
-        // ⚠ 첫 화면은 순서가 아니라 `SelectedItem`이 정한다 — 아래 짝 테스트가 그것을
-        //    따로 붙든다. 둘을 한 테스트에 묶으면 순서를 바꾸는 날 무엇이 깨졌는지 흐려진다.
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
+        // 2026-11-17 소유자 — 장면 · 에피소드 머리글처럼 챕터 머리글도 보이는 이름이다. ID는 아래 「챕터ID」 칸이 보인다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        string[] headers = view.FindControl<TabControl>("RightTabs")!
-            .Items.OfType<TabItem>()
-            .Select(tab => (string)tab.Header!)
-            .ToArray();
+        session.Editor.UpdateChapterDisplayName("ch05", "다섯째 날");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(["편집", "화자", "챕터"], headers);
+        Assert.Equal("챕터 · 다섯째 날", view.FindControl<TextBlock>("InspectorTitle")!.Text);
     });
 
     [Fact]
     public void 툴바에서_다시_읽기와_픽스처가_사라졌다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-24 소유자 "꽤 오래 다뤘는데, 단 한 번도 안 썼어."
-        //
-        // [다시 읽기]는 감시자가 선 뒤로 할 일이 없었고(화면이 스스로 따라온다), 픽스처
-        // 콤보는 2026-08-16부터 숨어 있기만 했다. ⚠ 엑셀의 `픽스처` 시트와
-        // `ChapterFixtureWalker`는 안 지웠다 — 워크북 규격이라 지우면 남의 파일이 깨진다.
-        using var project = new TempProject(SamplePath);
+        // [다시 읽기]는 감시자가 있어 할 일이 없다(화면이 스스로 따라온다). 픽스처 콤보도
+        // 툴바에 두지 않는다. 주의: 챕터의 픽스처(<c>ChapterDocument.Fixtures</c>)와
+        // `ChapterFixtureWalker`는 남아 있다 — 화면에만 없다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         Assert.Null(view.FindControl<Button>("ReloadButton"));
         Assert.Null(view.FindControl<ComboBox>("FixtureCombo"));
         Assert.Null(view.FindControl<TextBlock>("FixtureStopText"));
-        // [폴더 열기]도 2026-08-26에 사라졌다 (소유자) — 노드 더블클릭이 엑셀을 연다.
+        // [폴더 열기]도 없다.
         Assert.Null(view.FindControl<Button>("OpenFolderButton"));
 
+        // [에피소드 삭제]도 없다 — 지우기는 하이어아키의 우클릭 「지우기」 하나다.
+        Assert.Null(view.FindControl<Button>("DeleteEpisodeButton"));
+
+        // [＋ 에피소드]도 없다 — 에피소드는 하이어아키의 우클릭 「에피소드 추가」로 더한다.
+        Assert.Null(view.FindControl<Button>("AddEpisodeButton"));
+
         // 남아야 하는 이웃 — 지우다 같이 쓸려 나가면 여기서 걸린다.
-        Assert.NotNull(view.FindControl<Button>("AddEpisodeButton"));
-        Assert.NotNull(view.FindControl<Button>("DeleteEpisodeButton"));
+        Assert.NotNull(view.FindControl<Button>("AutoArrangeButton"));
     });
 
     [Fact]
     public void 스탯_안내는_조건과_같은_말투로_어디서_고치는지_말한다() => HeadlessUi.Run(() =>
     {
         // 두 표가 같은 탭에 나란히 서 있으니 "어디서 고치나"의 대답도 같은 모양이어야
-        // 눈이 한 번에 읽는다 (2026-08-24 소유자).
-        //
-        // ⚠ <b>대답이 2026-09-17에 바뀌었다</b>: *"챕터 엑셀의 시트에서"* → <b>여기서</b>.
-        //    같은 말투여야 한다는 규칙은 그대로고, 가리키는 곳만 옮겨 왔다.
-        using var project = new TempProject(SamplePath);
+        // 눈이 한 번에 읽는다. 스탯은 <b>여기서</b>, 조건은 더하기 · 이름 · 식을 여기서, 지우기는 [대본] 탭에서다(writer-fields W4 · side-tabs V2 · writer-comfort WC4).
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         List<string> lines = view.FindControl<StackPanel>("ConditionSection")!
@@ -643,48 +544,60 @@ public sealed class ChapterGraphEditingTests
             .ToList();
 
         Assert.DoesNotContain(lines, text => text.Contains("엑셀", StringComparison.Ordinal));
-        Assert.Contains(lines, text => text.Contains("여기서 고칩니다", StringComparison.Ordinal));
+        Assert.Contains(lines, text => text.Contains("표 아래 칸에 이름을 적고 [＋ 추가]", StringComparison.Ordinal));
+        Assert.Contains(lines, text => text.Contains("지우는 것은 [대본] 탭에서 합니다", StringComparison.Ordinal));
         Assert.Contains(lines, text => text.Contains("여기서 만들고 고칩니다", StringComparison.Ordinal));
     });
 
     [Fact]
-    public void 처음_보이는_탭은_편집이고_선택이_탭을_끌고_다니지_않는다() => HeadlessUi.Run(() =>
+    public void 고른_것이_탭을_정한다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-16 소유자 — 처음 열었을 때 손이 가는 곳은 지금 고른 하나(편집)이지
-        // 챕터 전체 표가 아니다. 그리고 무언가를 골라도 보던 탭이 유지된다.
-        using var project = new TempProject(SamplePath);
+        // 판에서 고른 에피소드 · 길은 인스펙터 탭에 그 편집을, 하이어아키의 프로젝트 줄은 화자 탭을, 챕터 줄은 조건 및 스탯 탭을
+        // 연다([구성]은 수치를 잡는 자리다 — side-tabs V1). 인스펙터의 머리글이 무엇을 보는지 말한다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
+        TextBlock title = view.FindControl<TextBlock>("InspectorTitle")!;
 
-        var tabs = view.FindControl<TabControl>("RightTabs")!;
-        var conditionTab = view.FindControl<TabItem>("ConditionTab")!;
-        var editTab = view.FindControl<TabItem>("EditTab")!;
-
-        Assert.Same(editTab, tabs.SelectedItem);
-
-        // 노드를 골라도 탭은 그대로다.
         view.SelectEpisode("main05.02");
-        Assert.Same(editTab, tabs.SelectedItem);
+        Assert.Equal(SideTab.Inspector, view.ShownSideTab);
+        Assert.True(view.FindControl<ScrollViewer>("SelectionSection")!.IsVisible);
+        Assert.True(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
+        Assert.Equal("main05.02 - 조용한 복도", title.Text);   // 「장면 - 제목」
 
-        // 챕터 탭을 보며 다른 노드로 갈아타도 그대로다.
-        tabs.SelectedItem = conditionTab;
-        view.SelectEpisode("main05.01");
-        Assert.Same(conditionTab, tabs.SelectedItem);
+        view.Inspect(HierarchyPick.Project);
+        Assert.Equal(SideTab.Speakers, view.ShownSideTab);
+        Assert.Equal("프로젝트", title.Text);   // 인스펙터 탭은 옆 탭을 안내한다
+        Assert.True(view.FindControl<ScrollViewer>("OverviewSection")!.IsVisible);
+        Assert.False(view.FindControl<Grid>("ChapterIdGrid")!.IsVisible);
 
-        // 간선을 골라도 마찬가지다.
+        view.Inspect(new HierarchyPick(HierarchyKind.Chapter, "ch05"));
+        Assert.Equal(SideTab.Conditions, view.ShownSideTab);
+
+        // 고름을 놓는 것(빈 판)은 탭을 바꾸지 않는다.
+        view.SelectEpisode(null);
+        Assert.Equal(SideTab.Conditions, view.ShownSideTab);
+
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
-        Assert.Same(conditionTab, tabs.SelectedItem);
+        Assert.Equal(SideTab.Inspector, view.ShownSideTab);
+        Assert.True(view.FindControl<ScrollViewer>("SelectionSection")!.IsVisible);
+        Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
+        Assert.Equal("선택지 · 라루의 제안을 듣는다", title.Text);
+        Assert.Single(Sections(view), section => section.IsVisible);
     });
+
+    /// <summary>인스펙터 탭의 칸 — 하나만 선다.</summary>
+    private static IEnumerable<ScrollViewer> Sections(ChapterGraphView view) =>
+        new[] { "SelectionSection", "OverviewSection" }
+            .Select(name => view.FindControl<ScrollViewer>(name)!);
 
     [Fact]
     public void 대사는_선택지_아래에_펼쳐져_있다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-16 소유자 — 별도 탭이던 대사를 편집 탭의 선택지 아래로 합쳤다
-        // ("에피소드 노드의 정보량이 부족하다"). 접었다 펼 수 있다.
+        // 대사는 별도 탭이 아니라 편집 탭의 선택지 아래에 있다. 접었다 펼 수 있다.
         //
-        // 2026-08-24 소유자 "대사 미리보기는, 펼쳐둔 걸 디폴트로 보이도록 해줘" — 시작이
-        // 뒤집혔다. ⚠ 삼각형·본문·체크 셋이 <b>함께</b> 맞아야 한다. XAML에서 체크만 켜면
-        // 핸들러가 붙기 전이라 삼각형이 ▸로 남는다.
-        using var project = new TempProject(SamplePath);
+        // 대사 미리보기는 펼친 채로 시작한다. 주의: 삼각형·본문·체크 셋이 <b>함께</b> 맞아야
+        // 한다. XAML에서 체크만 켜면 핸들러가 붙기 전이라 삼각형이 ▸로 남는다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         Assert.Null(view.FindControl<TabItem>("DialogueTab"));       // 탭은 사라졌다
@@ -711,12 +624,14 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 대사는_한_덩어리로_흐르고_상자를_겹치지_않는다() => HeadlessUi.Run(() =>
     {
-        // 2026-08-16 소유자 재지시 — 줄마다 카드로 가르니 읽기가 더 나빠졌다(철회).
+        // 줄마다 카드로 가르면 읽기가 나빠진다.
         // 대사는 한 덩어리 글이고 화자는 줄 앞에 붙는다. 겹친 상자(탭 속 Expander·
-        // 테두리·안쪽 스크롤)도 걷어냈다 — 접기는 제목 토글 하나가 맡는다.
-        using var project = new TempProject(SamplePath);
-        WriteOptionsWorkbook(project.EpisodesFolder, "main05.02", "라루의 제안을 듣는다");
-        (ChapterGraphView view, _) = Show(project);
+        // 테두리·안쪽 스크롤)도 두지 않는다 — 접기는 제목 토글 하나가 맡는다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+
+        // 미리보기의 원천은 카드의 대본이다 — 대사 한 줄과 화자 없는 줄 하나를 적어 둔다.
+        WriteLines(session, "main05.02", ("윌로", "첫 줄"), ("", "라루의 제안을 듣는다"));
 
         view.SelectEpisode("main05.02");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
@@ -727,7 +642,7 @@ public sealed class ChapterGraphEditingTests
         var text = view.FindControl<SelectableTextBlock>("DialoguePreviewText")!;
         Assert.Contains("윌로: 첫 줄", text.Text!);
 
-        // 접기 토글 하나가 제목이자 스위치다 — 펼친 채로 시작한다(2026-08-24).
+        // 접기 토글 하나가 제목이자 스위치다 — 펼친 채로 시작한다.
         var toggle = view.FindControl<ToggleButton>("DialogueToggle")!;
         Assert.True(toggle.IsChecked);
         Assert.True(text.IsVisible);
@@ -738,31 +653,29 @@ public sealed class ChapterGraphEditingTests
     });
 
     [Fact]
-    public void 간선을_선택하면_패널이_차고_적용이_엑셀로_간다() => HeadlessUi.Run(() =>
+    public void 간선을_선택하면_패널이_차고_적용이_간선에_써진다() => HeadlessUi.Run(() =>
     {
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
 
         view.SelectEdgeKey("main05.02", "branch05.02A", "라루의 제안을 듣는다");
 
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
         Assert.False(view.FindControl<StackPanel>("PropertyPanel")!.IsVisible);
-        // 짝 칸이 읽기 전용으로 보인다 (v7 — 문구는 엑셀 `선택지` 시트에서 고친다).
-        Assert.Contains("라루의 제안을 듣는다",
-            (string)view.FindControl<ComboBox>("EdgeLabelEditBox")!.SelectedItem!);
+        // 머리글에 그 길의 문구가 선다.
+        Assert.Contains("라루의 제안을 듣는다", view.FindControl<TextBlock>("InspectorTitle")!.Text);
         Assert.Equal("신뢰높음", view.FindControl<ComboBox>("EdgeConditionCombo")!.SelectedItem);
 
-        // 안내문을 고쳐 적용 → 엑셀 셀로 간다.
+        // 안내문을 고쳐 적용 → 간선에 써진다.
         //
-        // ⛔ [해금 미달이면 숨김] 체크는 2026-08-24에 없앴다 (소유자) — 해금조건에 숨김을
-        //    더한 것은 그 식을 **표시조건**에 적은 것과 결과가 같다. 같은 말이 두 번 있었다.
+        // [해금 미달이면 숨김] 체크는 없다 — 해금조건에 숨김을
+        //    더한 것은 그 식을 **표시조건**에 적은 것과 결과가 같다. 같은 말이 두 번 있게 된다.
         Assert.Null(view.FindControl<CheckBox>("EdgeHideCheck"));
 
         view.FindControl<TextBox>("EdgeLockedMsgBox")!.Text = "신뢰를 더 쌓아야 한다";
         view.ApplyEdgeFromPanel();
 
-        ChapterEdge edge = ChapterWorkbookReader.Read(project.ChapterPath).Edges.Single(candidate =>
-            candidate.FromEpisodeId == "main05.02" && candidate.ToEpisodeId == "branch05.02A");
+        ChapterEdge edge = Edge(session, "main05.02", "branch05.02A");
 
         Assert.Equal("신뢰를 더 쌓아야 한다", edge.LockedMessage);
         Assert.Equal("신뢰높음", edge.ConditionLabel);  // 안 바꾼 필드는 그대로
@@ -771,24 +684,22 @@ public sealed class ChapterGraphEditingTests
     [Fact]
     public void 선택지_포트는_카드_아래에_가로로_선다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>v4까지 포트는 카드 오른변이었다</b>. 연출 그래프는 반대(선택지가 아래, 분기가
-        //    오른쪽)였고, 소유자가 2026-09-18에 그것을 짚었다: *"아래쪽으로 고정된 점 3개를
-        //    가로로 두고, 그 포트가 노드위쪽의 점 하나로 출입이 되도록."*
-        using var project = new TempProject(SamplePath);
+        // 연출 그래프와 같이 선택지 포트는 카드 아래쪽에 고정된 점 3개를 가로로 두고,
+        //    들어오는 길은 카드 위쪽의 점 하나로 드나든다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        // 셋째 길을 하나 더 낸다 — 문구는 간선의 `선택지` 칸에 그대로 적힌다.
-        ChapterWorkbookWriter.AddEdge(
-            project.ChapterPath, "main05.02", "main05.end", optionLabel: "셋째 길");
-
-        (ChapterGraphView view, _) = Show(project);
+        // 셋째 길을 하나 더 낸다.
+        session.Editor.AddEdge("ch05", "main05.02", "main05.end", optionLabel: "셋째 길");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var canvas = view.FindControl<Canvas>("GraphCanvas")!;
 
         // 문구는 간선 한가운데로 옮겼다 — 아래변의 한 칸에 남는 폭이 카드의 1/4뿐이다.
         List<Border> labels = canvas.Children.OfType<Border>()
-            .Where(border => border.Child is TextBlock text &&
-                             (text.Text ?? "").StartsWith("라루의 제안을 듣는다") ||
-                             (border.Child as TextBlock)?.Text is "혼자 문을 연다" or "셋째 길")
+            .Where(border => border.Tag is ChapterGraphView.EdgeLabelMark mark &&
+                             (mark.Label.StartsWith("라루의 제안을 듣는다", StringComparison.Ordinal) ||
+                              mark.Label is "혼자 문을 연다" or "셋째 길"))
             .ToList();
 
         Assert.Equal(3, labels.Count);
@@ -797,15 +708,15 @@ public sealed class ChapterGraphEditingTests
         // 길이 모이는 위변의 점 하나가 카드마다 더 붙는다.
         //
         // 견본 `ch05`는 에피소드 6장이고 어느 것도 나가는 길이 셋을 넘지 않는다 →
-        // 칸 6×3 = 18, 입구 6 = 24. ⚠ 넷을 넘기면 넷을 다 그린다(3은 상한이 아니다).
+        // 칸 6×3 = 18, 입구 6 = 24. 주의: 넷을 넘기면 넷을 다 그린다(3은 상한이 아니다).
         Assert.Equal(
             24, canvas.Children.OfType<Avalonia.Controls.Shapes.Ellipse>().Count(port => port.Width == 9));
 
         // 라벨 클릭 = 그 길 선택 (포트 점도 같은 길로 간다).
-        Press(labels.Single(border => ((TextBlock)border.Child!).Text!.StartsWith("라루의 제안을 듣는다")));
+        Press(labels.Single(border => ((ChapterGraphView.EdgeLabelMark)border.Tag!).Label.StartsWith("라루의 제안을 듣는다", StringComparison.Ordinal)));
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 
-        Press(labels.Single(border => ((TextBlock)border.Child!).Text == "셋째 길"));
+        Press(labels.Single(border => ((ChapterGraphView.EdgeLabelMark)border.Tag!).Label == "셋째 길"));
         Assert.True(view.FindControl<StackPanel>("EdgePanel")!.IsVisible);
 
         static void Press(Control control) => control.RaiseEvent(new Avalonia.Input.PointerPressedEventArgs(
@@ -819,17 +730,43 @@ public sealed class ChapterGraphEditingTests
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <param name="locked">
-    /// 엑셀이 그 챕터를 잡고 있는가 (2026-08-24). 진짜 잠긴 파일은 <b>쓸 수도 없어서</b>
-    /// 실제 잠금으로는 편집 규칙을 검증할 수 없다 — 그래서 손을 갈아 끼운다.
-    /// </param>
-    private static (ChapterGraphView View, AuthoringSession Session) Show(
-        TempProject project, bool locked = false)
+    /// <summary>프로젝트가 든 ch05 — 화면이 쓴 것이 남았는지 여기서 다시 읽는다.</summary>
+    private static ChapterGraphModel Chapter(AuthoringSession session) =>
+        session.Editor.FindChapter("ch05")!.ToGraphModel("ch05");
+
+    private static ChapterEdge Edge(AuthoringSession session, string from, string to) =>
+        Chapter(session).Edges.Single(edge => edge.FromEpisodeId == from && edge.ToEpisodeId == to);
+
+    /// <summary>
+    /// 그 에피소드 카드에 대사를 줄마다 적는다 — 작가가 카드에서 하는 일. 첫 줄은 카드가 설 때
+    /// 함께 선 빈 줄이다.
+    ///
+    /// 주의: 붙여넣기(<c>ApplyScenarioText</c>)로 한 번에 넣지 않는다 — 그 빈 줄이 고쳐진 것인지
+    /// 사라진 것인지 판정이 서지 않아 붙여넣기가 통째로 멈춘다.
+    /// </summary>
+    private static void WriteLines(
+        AuthoringSession session, string episodeId, params (string Speaker, string Text)[] lines)
+    {
+        DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch05", episodeId)!;
+
+        for (int index = 0; index < lines.Length; index++)
+        {
+            string lineId = index == 0
+                ? card.Script.ActiveLines.First().Id
+                : session.Editor.InsertScriptLine(card.Id).Id;
+
+            session.Editor.SetScriptLineText(card.Id, lineId, lines[index].Speaker, lines[index].Text);
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
+
+    private static (ChapterGraphView View, AuthoringSession Session) Show(TempProject project)
     {
         var session = new AuthoringSession();
         session.Open(project.ManifestPath);
 
-        var view = new ChapterGraphView { LockProbe = _ => locked };
+        var view = new ChapterGraphView();
         var window = new Window { Width = 1400, Height = 800, Content = view };
         window.Show();
         view.Attach(session);
@@ -842,38 +779,44 @@ public sealed class ChapterGraphEditingTests
         return (view, session);
     }
 
+    /// <summary>견본 챕터(ch05 복도)를 든 프로젝트. 판과 카드는 열 때 선다.</summary>
+    /// <summary>그 차례(0부터)의 선택지 줄 바로 아래에 펼쳐진 설명 — 접혀 있으면 null.</summary>
+    private static Border? DetailOf(ChapterGraphView view, int row)
+    {
+        List<Control> children = view.FindControl<StackPanel>("EdgeListPanel")!.Children.ToList();
+        List<int> rows = children.Select((child, index) => (child, index))
+            .Where(pair => pair.child is Grid)
+            .Select(pair => pair.index)
+            .ToList();
+        int next = rows[row] + 1;
+
+        return next < children.Count && children[next] is Border { Tag: ChapterGraphView.ChoiceDetailTag } detail ? detail : null;
+    }
+
+    /// <summary>에피소드 칸의 선택지 목록에 펼쳐진 설명들 — 위에서 아래 차례.</summary>
+    private static List<Border> Details(ChapterGraphView view) =>
+        view.FindControl<StackPanel>("EdgeListPanel")!.Children.OfType<Border>()
+            .Where(border => border.Tag as string == ChapterGraphView.ChoiceDetailTag)
+            .ToList();
+
     private sealed class TempProject : IDisposable
     {
-        private readonly string _directory;
+        private readonly string _directory = Path.Combine(
+            Path.GetTempPath(), "vn-chapter-editing", Guid.NewGuid().ToString("N"));
+
         /// <summary>이 테스트가 띄운 화면. 폴더를 지우기 <b>전에</b> 닫는다.</summary>
         public OpenChapterViews Ui { get; } = new();
 
-        public TempProject(string samplePath)
+        public TempProject()
         {
-            _directory = Path.Combine(
-                Path.GetTempPath(), "vn-chapter-editing", Guid.NewGuid().ToString("N"));
-
-            Directory.CreateDirectory(Path.Combine(_directory, ChapterLibrary.FolderName));
-            File.Copy(samplePath, ChapterPath);
-
-            ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);
-            var project = new StoryProject { Title = "편집 검증" };
-            project.Files.Add(new StoryFile("sf_main", "본편", "story/main.vnstory.json"));
-            ProjectStore.Save(ManifestPath, project);
+            ManifestPath = SampleProject.Corridor(_directory, "편집 검증");
         }
 
         public string ManifestPath { get; }
 
-        public string ChapterPath =>
-            Path.Combine(_directory, ChapterLibrary.FolderName, "ch05.xlsx");
-
-        /// <summary>그 챕터의 대본 폴더 — episodes/{ChapterId}/ (2026-08-16 챕터별 격리).</summary>
-        public string EpisodesFolder => Path.Combine(_directory, "episodes", "ch05");
-
         public void Dispose()
         {
-            // 순서가 규칙이다 — 감시자를 먼저 닫고 폴더를 지운다. 거꾸로 하면 그 삭제가
-            // 사건이 되어 다음 테스트의 RunJobs()에서 깨어난다.
+            // 순서가 규칙이다 — 화면을 먼저 닫고 폴더를 지운다.
             Ui.CloseAll();
 
             if (Directory.Exists(_directory))
@@ -881,37 +824,5 @@ public sealed class ChapterGraphEditingTests
                 Directory.Delete(_directory, recursive: true);
             }
         }
-    }
-
-    /// <summary>라벨 드롭다운의 원천 — 그 에피소드 대본에 CHOICE/OPTION을 깔아 준다.</summary>
-    internal static void WriteOptionsWorkbook(string episodesFolder, string episodeId, params string[] options)
-    {
-        Directory.CreateDirectory(episodesFolder);
-
-        using var workbook = new ClosedXML.Excel.XLWorkbook();
-        ClosedXML.Excel.IXLWorksheet sheet = workbook.AddWorksheet("대본");
-        // v15 4열 — 인덱스(1) LineId(2) 화자(3) 내용(4). 모든 행이 대사다.
-        //
-        // ⚠ 이 헬퍼는 v14 6열이었고 `CHOICE`·`OPTION` 행을 세우고 있었다. R-C에서 안
-        //    걸린 이유는 <b>동기화가 읽기 전에 이행을 태워 주고 있었기</b> 때문이다 —
-        //    그 이행이 사라지자(R-D) 비로소 드러났다. 선택지의 주인은 챕터 `간선` 시트이고,
-        //    여기 남는 것은 그 문구가 적힌 <b>대사 줄</b>뿐이다.
-        string[] headers = ["인덱스", "LineId", "화자", "내용"];
-
-        for (int column = 1; column <= headers.Length; column++)
-        {
-            sheet.Cell(1, column).SetValue(headers[column - 1]);
-        }
-
-        sheet.Cell(2, 1).SetValue(10); sheet.Cell(2, 3).SetValue("윌로"); sheet.Cell(2, 4).SetValue("첫 줄");
-
-        for (int index = 0; index < options.Length; index++)
-        {
-            int row = 3 + index;
-            sheet.Cell(row, 1).SetValue(20 + index * 10);
-            sheet.Cell(row, 4).SetValue(options[index]);
-        }
-
-        workbook.SaveAs(Path.Combine(episodesFolder, episodeId + ".xlsx"));
     }
 }

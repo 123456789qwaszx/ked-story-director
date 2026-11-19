@@ -3,17 +3,17 @@ using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 
 namespace Vn.App.Tests;
 
 /// <summary>
-/// 챕터를 바꿔도 화면이 이전 챕터의 결과를 들고 있지 않다 (2026-08-17 소유자 보고:
-/// "Ctrl+S를 눌러야 노드를 감싼 빨간 경고가 사라지면서 스탯이 그제서야 보여" ·
-/// "드롭다운으로 챕터를 선택할 때 왼쪽 챕터목록이 실시간으로 반영이 안 된다").
+/// 챕터를 바꿔도 화면이 이전 챕터의 결과를 들고 있지 않다 — 저장하지 않아도 경고와 스탯이
+/// 새 챕터의 것으로 서고, 드롭다운으로 고른 챕터가 왼쪽 챕터 목록에도 곧바로 반영된다.
 ///
-/// 뿌리는 하나였다 — 드롭다운이 왼쪽 목록 클릭과 <b>다른 길</b>을 갔다.
+/// 드롭다운은 왼쪽 목록 클릭과 <b>같은 길</b>을 간다.
 /// </summary>
 public sealed class ChapterSwitchTests : IDisposable
 {
@@ -22,28 +22,25 @@ public sealed class ChapterSwitchTests : IDisposable
 
     private string ManifestPath => Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);
 
-    private string ChapterFolder => Path.Combine(_directory, ChapterLibrary.FolderName);
-
     public ChapterSwitchTests()
     {
         Directory.CreateDirectory(_directory);
 
+        var editor = new ProjectEditor(new StoryProject { Title = "챕터 전환 검증" });
+
         // ch01 — 고아 에피소드가 있어 도달 불가 오류가 난다.
-        ChapterWorkbookWriter.EnsureChapterWorkbook(ChapterFolder, "ch01", [("trust", "신뢰")]);
-        string first = Path.Combine(ChapterFolder, "ch01.xlsx");
-        ChapterWorkbookWriter.AddEpisode(first, "시작", title: "", 0, 0);
-        ChapterWorkbookWriter.AddEpisode(first, "고아", title: "", 1, 1);
+        editor.EnsureChapter("ch01").Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        editor.AddEpisode("ch01", "시작", title: "", 0, 0, sceneId: "시작");
+        editor.AddEpisode("ch01", "고아", title: "", 1, 1, sceneId: "고아");
 
         // ch02 — 깨끗하고, 간선에 증감이 있어 도착 스탯이 카드에 떠야 한다.
-        ChapterWorkbookWriter.EnsureChapterWorkbook(ChapterFolder, "ch02", [("trust", "신뢰")]);
-        string second = Path.Combine(ChapterFolder, "ch02.xlsx");
-        ChapterWorkbookWriter.AddEpisode(second, "둘시작", title: "", 0, 0);
-        ChapterWorkbookWriter.AddEpisode(second, "둘끝", title: "", 1, 0);
-        ChapterWorkbookWriter.AddEdge(second, "둘시작", "둘끝");
-        ChapterWorkbookWriter.UpdateEdge(second, "둘시작", "둘끝", statChanges: "trust +2");
+        editor.EnsureChapter("ch02").Stats.Add(new ChapterStat("trust", 0, 0, 10));
+        editor.AddEpisode("ch02", "둘시작", title: "", 0, 0, sceneId: "둘시작");
+        editor.AddEpisode("ch02", "둘끝", title: "", 1, 0, sceneId: "둘끝");
+        editor.AddEdge("ch02", "둘시작", "둘끝");
+        editor.UpdateEdge("ch02", "둘시작", "둘끝", statChanges: "trust +2");
 
-        var project = new StoryProject { Title = "챕터 전환 검증" };
-        ProjectStore.Save(ManifestPath, project);
+        ProjectStore.Save(ManifestPath, editor.Project);
     }
 
     public void Dispose()
@@ -57,8 +54,8 @@ public sealed class ChapterSwitchTests : IDisposable
     [Fact]
     public void 드롭다운으로_바꾸면_그_챕터로_검증도_다시_돈다() => HeadlessUi.Run(() =>
     {
-        // 전에는 드롭다운이 Draw()만 불렀다 — 이전 챕터(ch01)의 도달성 결과로 ch02를
-        // 그려서, ch02의 에피소드가 전부 "도달 불가"로 붉게 섰다.
+        // 드롭다운이 Draw()만 부르면 이전 챕터(ch01)의 도달성 결과로 ch02를
+        // 그려서, ch02의 에피소드가 전부 "도달 불가"로 붉게 선다.
         (ChapterGraphView view, Canvas canvas) = Show();
 
         Assert.Equal("ch01", view.FindControl<ComboBox>("ChapterCombo")!.SelectedItem);
@@ -80,8 +77,8 @@ public sealed class ChapterSwitchTests : IDisposable
         view.FindControl<ComboBox>("ChapterCombo")!.SelectedItem = "ch02";
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("신뢰 2", StatLine(canvas, "둘끝"));
-        Assert.Equal("신뢰 0", StatLine(canvas, "둘시작"));
+        Assert.Equal("trust 2", StatLine(canvas, "둘끝"));
+        Assert.Equal("trust 0", StatLine(canvas, "둘시작"));
     });
 
     [Fact]
@@ -124,10 +121,7 @@ public sealed class ChapterSwitchTests : IDisposable
     {
         Border card = Cards(canvas).Single(border => (string)border.Tag! == episodeId);
 
-        return ((StackPanel)card.Child!).Children
-            .OfType<TextBlock>()
-            .FirstOrDefault(block => block.Tag as string == ChapterGraphView.StatLineTag)
-            ?.Text ?? string.Empty;
+        return ChapterCardStats.Of(card);
     }
 
     private (ChapterGraphView View, Canvas Canvas) Show()

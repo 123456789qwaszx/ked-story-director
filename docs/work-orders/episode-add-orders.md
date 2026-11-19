@@ -1,0 +1,34 @@
+# 「에피소드 추가」는 장면 줄에서, 길 없이 · 예제 festival_eve를 걷는다 (K0–K2) — 2026-11-18
+
+**소유자**:
+- 「에피소드를 우클릭해서 에피소드 추가를 하는 건 별로 좋지 않은 선택 같네요.」 「에피소드 추가를 자동 길로 잇는 것은 기본값이 아니라 … 이게 적절한
+  경우가 없어보입니다. 자동길 외에도 선택지라는 개념이 있는데 이걸 자동으로 연결해준다는 게 그렇게 편해보이진 않네요.」 「각각의 에피소드의 내용은
+  서로 분리되어 있기 때문에 굳이 연결성을 줘야하나 싶습니다.」 → **장면 줄에만, 길 없이**.
+- 「festival_eve 예제를 없앱시다. 불필요합니다.」 → **예제를 걷고 원고는 시험 재료로 옮긴다** · **툴 쪽만**(런타임의 예제는 그대로 — 이제 툴이 다시 내지
+  않으므로 런타임이 직접 든다).
+
+> **상태: 끝 (2026-11-18).**
+
+## 1. 지금
+
+- [대본] 하이어아키의 에피소드 줄 우클릭 「에피소드 추가」는 그 에피소드에서 「계속」 길을 이어 새 에피소드를 세운다(`EpisodeAdder` →
+  `AddNextEpisode`). 같은 에피소드에서 여러 번 누르면 「계속」 선택지가 셋을 넘어 늘어난다. 장면 줄의 「에피소드 추가」도 그 장면의 마지막
+  에피소드에서 길을 잇는다.
+- `samples/RuntimeSamples/FestivalEve`는 런타임 예제 `festival_eve`의 원고다(보낼 곳으로 런타임의 `ChapterProgression/`에 진행 JSON을 냈다).
+  내보내기 시험 여럿(대사 Yarn · 장면 파일 · 장면 메모 · 설정의 최근 프로젝트)이 이것을 재료로 쓴다.
+
+## 2. 단계
+
+| # | 일 | 자리 |
+|---|---|---|
+| K0 | 지시서 | 이 문서 |
+| K1 | **「에피소드 추가」는 장면 줄에서, 길 없이** — 에피소드 줄의 차림표에서 걷는다. 장면 줄의 것은 그 장면에 길을 잇지 않은 에피소드를 세운다(잇기는 [대본] 판에서 선택지 칸을 끌어서). 이 명령만 쓰던 `ProjectEditor.AddNextEpisode` · `ChapterBranchPlanner.SuggestPlacement` · 문구 「계속」(`EpisodeAdder.DefaultOptionLabel`) · 카드 자리의 부모 인자(`NodePlacement.For`의 `parentEpisodeId`)를 걷는다. 시험 · 문서 | `StoryHierarchy` · `MainWindow.HierarchyEdit` · `EpisodeAdder` · `ProjectEditor.Chapters` · `ChapterBranchPlanner` · `NodePlacement` |
+| K2 | **예제 festival_eve를 걷는다** — `samples/RuntimeSamples/FestivalEve`의 예제로서의 것(보낼 곳 · 연출 파일 · 결과 · Yarn · 산출물)을 걷고, 원고(매니페스트 · 판)만 `tests/fixtures`로 옮겨 시험 재료로 쓴다. 예제 시험(`RuntimeSampleTests`의 festival_eve 줄)과 README · 문서의 예제 안내 | `samples/RuntimeSamples` · `tests/fixtures` · 시험 · 문서 |
+
+## 3. 진행 기록
+
+| 날 | 단계 | 커밋 | 메모 |
+|---|---|---|---|
+| 11-18 | K0 | (이 커밋) | 지시서 — 소유자의 결정 셋(장면 줄에만 길 없이 · 시험 재료로 옮긴다 · 툴 쪽만) |
+| 11-18 | K1 | (이 커밋) | 「에피소드 추가」는 장면 줄에만 서고 그 장면에 길 없이 세운다(`EpisodeAdder` — 챕터 그래프에서는 맨 오른쪽). 에피소드 줄의 차림표에서 걷었다. 이 명령만 쓰던 `ProjectEditor.AddNextEpisode` · `ChapterBranchPlanner.SuggestPlacement` · 문구 「계속」(`EpisodeAdder.DefaultOptionLabel`) · `NodePlacement.For`의 부모 인자를 걷었다. 챕터를 만든 뒤의 안내(「챕터 줄 우클릭 「에피소드 추가」」 — 챕터 줄에는 그 항목이 없었다)를 「장면 추가」로. 시험 — 에피소드 줄 추가 · 다음 에피소드 · 자리 제안 · 부모 인자를 보던 다섯을 지웠고, 「다음으로 더하면 간선이 이어진다」를 「길 없이 선다」로, 길이 있어야 하던 준비물은 길을 따로 잇는다. 문서 — 작가 가이드 · 챕터 층 안내 · 두 그래프 설계(7절 AH 새로). Authoring 651 · App 442 |
+| 11-18 | K2 | (이 커밋) | 예제 `samples/RuntimeSamples/FestivalEve`를 걷었다 — 보낼 곳(`runtime.target.json`) · 연출 파일(`*.vncompose.json` · `ExportedTuning/` · `assets/`) · 결과 · Yarn · `exported/`. 원고(매니페스트 · 판)는 `tests/fixtures/festival-eve`로 옮겨 시험 재료로 쓴다(대사 Yarn · 장면 파일 · 장면 메모 · 설정의 최근 프로젝트). 예제 시험(`RuntimeSampleTests`)의 festival_eve 둘과 축제 전날의 조건 분기 시험을 지웠고, 재료의 `exported/`를 읽던 장면 파일 시험은 먼저 내보내고 견준다. README(예제는 연출 데모 하나) · 두 그래프 설계 7절 AH. Authoring 648 · App 442 |

@@ -1,7 +1,5 @@
-using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Results;
 using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Editing;
@@ -44,14 +42,6 @@ public sealed record ScenarioPasteOutcome(
 /// </summary>
 public sealed partial class ProjectEditor
 {
-    public ScriptDocument AddScript(string? name = null)
-    {
-        var script = new ScriptDocument(name: name ?? NextScriptName());
-        script.RequireLocale(script.PrimaryLocale);
-
-        Mutate(() => Project.Scripts.Add(script));
-        return script;
-    }
 
     /// <summary>
     /// ScenarioOnly 텍스트를 대사 노드에 반영한다 (X12a). <b>전량 재생성은 없다</b> —
@@ -60,20 +50,32 @@ public sealed partial class ProjectEditor
     /// 있으면 아무것도 바꾸지 않는다. 삭제는 <paramref name="confirmDeletes"/>로 확인받는다.
     ///
     /// 조건 구조(<c>&lt;&lt;if&gt;&gt;</c>…)는 diff 뒤 해당 라인의 전환으로 반영하되, 식은 이 노드가
-    /// 쓸 수 있는 조건과 <b>정확 일치</b>로만 역조회한다(보정 금지). 선택 전환은 파서
-    /// 비범위이므로 건드리지 않는다. 해석 못 한 것은 전부 Problems로 남는다(규칙 14).
+    /// 쓸 수 있는 조건과 <b>정확 일치</b>로만 역조회한다(보정 금지). 해석 못 한 것은 전부 Problems로
+    /// 남는다(규칙 14). <c>-&gt;</c> 줄은 해석하지 않는다 — 선택지는 에피소드 끝 간선에서만.
+    ///
+    /// <b>넣기 한 번이 되돌리기 한 칸이다</b> — 줄 동기화와 전환 맞추기를
+    /// <see cref="Batch"/>로 묶는다. 둘이 따로 Mutate면 한 번 물렀을 때 줄은 돌아오고 전환만
+    /// 남거나 그 반대가 된다(two-graphs.md §5-7).
+    ///
+    /// <b>새 카드의 빈 첫 줄</b> — 대사 노드는 빈 줄 하나를 들고 태어난다. 그 줄과 새 글의 줄들은
+    /// 서로 다른 문장이 한 구간에 남는 꼴이라 그대로 두면 동기화가 "확인 필요"로 거절한다(여러 줄을
+    /// 처음 넣을 때 늘). 살아 있는 줄이 빈 줄 하나뿐이면 그 줄이 새 글의 첫 줄이 된다 — 빈 줄은 아직 아무것도
+    /// 아니므로 잇는 데 확신이 필요 없다.
     /// </summary>
+    /// <param name="strict">
+    /// 참이면 <b>문제가 하나라도 있을 때 아무것도 넣지 않는다</b>(해석 못 한 줄 · 못 세운 조건). 카드의 글 칸이 쓴다 — 넣은 뒤 칸은 모델의 모습으로 다시 그려지므로, 반쯤 넣으면 넣지 못한 줄이
+    /// 사람이 쓴 글에서 조용히 사라진다. 거짓이면 예전처럼 넣을 수 있는 것은 넣고 나머지를 Problems로 보인다.
+    /// </param>
     public ScenarioPasteOutcome ApplyScenarioText(
         string dialogueNodeId,
         string text,
-        GameDefinition definition,
-        bool confirmDeletes = false)
+        bool confirmDeletes = false,
+        bool strict = false)
     {
-        ArgumentNullException.ThrowIfNull(definition);
         DialogueNode node = RequireDialogue(dialogueNodeId);
-        ScriptDocument script = EnsureDialogueScript(node.Id);
+        ScriptDocument script = node.Script;
 
-        ScenarioParseResult parsed = ScenarioTextParser.Parse(text, definition);
+        ScenarioParseResult parsed = ScenarioTextParser.Parse(text, Project.Speakers);
         var problems = new List<string>(parsed.UnparsedLines);
 
         if (parsed.Lines.Count == 0)
@@ -86,9 +88,10 @@ public sealed partial class ProjectEditor
                 // 파서가 떼어낸 #line: 신원을 그대로 넘긴다. 여기서 버리면 동기화가 ID를 못 보고
                 // 내용 추정으로 되돌아간다 — 엑셀 경로에서는 그게 통째 거부의 원인이 된다.
                 .Select((line, index) =>
-                    new ParsedScriptLine(index + 1, line.Speaker, line.Text, line.LineId))
+                    new ParsedScriptLine(
+                        index + 1, line.Speaker, line.Text,
+                        line.LineId ?? (index == 0 ? BlankOnlyLineIdOf(script) : null)))
                 .ToList(),
-            Array.Empty<ScriptParseProblem>(),
             Convert.ToHexString(
                 System.Security.Cryptography.SHA256.HashData(
                     System.Text.Encoding.UTF8.GetBytes(text ?? string.Empty))));
@@ -106,26 +109,83 @@ public sealed partial class ProjectEditor
             return new ScenarioPasteOutcome(parsed, plan, Applied: false, NeedsDeleteConfirmation: true, problems);
         }
 
-        ApplyScriptSync(plan);
-        ApplyScenarioTransitions(node, parsed, plan, definition, problems);
+        // 전환은 넣기 <b>전에</b> 계획한다 — 그래야 엄격한 넣기가 문제를 보고 아무것도 안 바꾼 채 물러설 수 있다.
+        // 남는 줄의 전환은 동기화가 건드리지 않으므로(은퇴한 줄만 접힌다) 넣기 전에 읽어도 같다.
+        ScenarioTransitionPlan transitions = PlanScenarioTransitions(node, parsed, plan, problems);
+
+        if (strict && problems.Count > 0)
+        {
+            return new ScenarioPasteOutcome(parsed, plan, Applied: false, NeedsDeleteConfirmation: false, problems);
+        }
+
+        // 줄도 전환도 그대로면 아무것도 적지 않는다(§5-8) — 글이 모양만 다를 때다(띄어쓰기 · 빈 줄).
+        // 출처 해시도 안 고친다: 그 해시는 "바꿀 것이 없음"을 빨리 알려는 표지일 뿐이다(ChangesNothing).
+        if (plan.IsNoOp && transitions.Lines.Count == 0 && transitions.Trailing is null)
+        {
+            return new ScenarioPasteOutcome(parsed, plan, Applied: true, NeedsDeleteConfirmation: false, problems);
+        }
+
+        Batch(() =>
+        {
+            ApplyScriptSync(node.Id, plan);
+            ApplyScenarioTransitions(node, transitions);
+        });
 
         return new ScenarioPasteOutcome(parsed, plan, Applied: true, NeedsDeleteConfirmation: false, problems);
     }
 
-    /// <summary>diff가 확정한 LineId 위로 조건 전환을 맞춘다. 선택 전환은 보호한다.</summary>
-    private void ApplyScenarioTransitions(
+    /// <summary>살아 있는 줄이 <b>빈 줄 하나뿐</b>이면 그 줄의 Id — 새로 선 대사 노드의 모습이다.</summary>
+    private static string? BlankOnlyLineIdOf(ScriptDocument script)
+    {
+        List<ScriptLine> active = script.ActiveLines.Take(2).ToList();
+
+        return active.Count == 1 && script.Text(active[0].Id) is { } only &&
+               string.IsNullOrWhiteSpace(only.Speaker) && string.IsNullOrWhiteSpace(only.Text)
+            ? active[0].Id
+            : null;
+    }
+
+    /// <summary>
+    /// 넣기가 바꿀 전환 — 줄마다 바뀌는 것만(<see cref="Lines"/>), 그리고 마지막 줄 뒤의 꼬리(<see cref="Trailing"/>,
+    /// null이면 그대로 둔다).
+    /// </summary>
+    private sealed record ScenarioTransitionPlan(
+        IReadOnlyList<(string LineId, List<LineConditionTransition> Desired)> Lines,
+        List<LineConditionTransition>? Trailing);
+
+    /// <summary>계획한 전환을 앉힌다 — 줄 동기화 <b>뒤</b>에 부른다(새로 끼운 줄이 있어야 거기 앉는다).</summary>
+    private void ApplyScenarioTransitions(DialogueNode node, ScenarioTransitionPlan transitions)
+    {
+        foreach ((string lineId, List<LineConditionTransition> desired) in transitions.Lines)
+        {
+            SetLineTransitions(node.Id, lineId, desired);
+        }
+
+        if (transitions.Trailing is { } trailing)
+        {
+            Mutate(() =>
+            {
+                node.TrailingTransitions.Clear();
+                node.TrailingTransitions.AddRange(trailing);
+            });
+        }
+    }
+
+    /// <summary>diff가 확정한 LineId 위로 조건 전환을 맞출 계획. 아무것도 바꾸지 않는다.</summary>
+    private ScenarioTransitionPlan PlanScenarioTransitions(
         DialogueNode node,
         ScenarioParseResult parsed,
         ScriptSyncPlan plan,
-        GameDefinition definition,
         List<string> problems)
     {
-        AvailableConditionCatalog conditions = AvailableConditionResolver.Resolve(Project, node.Id, definition);
+        AvailableConditionCatalog conditions = AvailableConditionResolver.Resolve(Project, node.Id);
 
         // 새 순서 인덱스 → 확정 LineId (사라진 줄 항목은 NewIndex가 없다).
         Dictionary<int, string> lineIdByNewIndex = plan.Entries
             .Where(entry => entry is { NewIndex: not null, LineId: not null })
             .ToDictionary(entry => entry.NewIndex!.Value, entry => entry.LineId!);
+
+        var lines = new List<(string LineId, List<LineConditionTransition> Desired)>();
 
         for (int index = 0; index < parsed.Lines.Count; index++)
         {
@@ -134,49 +194,28 @@ public sealed partial class ProjectEditor
                 continue;
             }
 
-            // 한 줄에 전환이 여럿일 수 있다 (2026-08-17) — 겹쳐 닫기·연달아 열기.
+            // 한 줄에 전환이 여럿일 수 있다 — 겹쳐 닫기·연달아 열기.
             IReadOnlyList<ScenarioStructureIntent> intents = parsed.Lines[index].Transitions;
             IReadOnlyList<LineConditionTransition> current =
                 node.FindExtension(lineId)?.Transitions ?? [];
-
-            bool intentIsChoice = intents.Any(item => item.Kind
-                is ConditionTransitionKind.BeginChoice
-                or ConditionTransitionKind.BeginNextOption
-                or ConditionTransitionKind.EndChoice);
-
-            // 텍스트에 선택 전환이 안 보였다고 기존 것을 지우지 않는다 — 손으로 쓴 대본
-            // 붙여넣기 한 번에 선택지 구조가 조용히 무너진다. 조건 전환을 얹으려는 것만 막는다.
-            if (current.Any(item => item.IsChoiceKind) && !intentIsChoice)
-            {
-                if (intents.Count > 0)
-                {
-                    problems.Add(
-                        $"'{parsed.Lines[index].Text}' 줄은 선택 전환을 갖고 있어 조건 전환을 얹을 수 없습니다.");
-                }
-
-                continue;
-            }
 
             if (Translate(intents, conditions, problems) is not { } desired)
             {
                 continue;
             }
 
-            // 선택 전환은 Kind만 비교한다 — 텍스트에는 옵션의 안정 식별자(op_)가 없으므로,
-            // 같은 종류면 기존 OptionId를 그대로 둔다. 지우면 순서 변경 감지(C3 경고)가 죽는다.
             bool same = current.Count == desired.Count &&
                 current.Zip(desired).All(pair =>
                     pair.First.Kind == pair.Second.Kind &&
-                    (pair.Second.IsChoiceKind ||
-                     string.Equals(pair.First.ConditionId, pair.Second.ConditionId, StringComparison.Ordinal)));
+                    string.Equals(pair.First.ConditionId, pair.Second.ConditionId, StringComparison.Ordinal));
 
             if (!same)
             {
-                SetLineTransitions(node.Id, lineId, desired);
+                lines.Add((lineId, desired));
             }
         }
 
-        ApplyTrailingTransitions(node, parsed, conditions, problems);
+        return new ScenarioTransitionPlan(lines, PlanTrailingTransitions(node, parsed, conditions, problems));
     }
 
     /// <summary>
@@ -196,20 +235,6 @@ public sealed partial class ProjectEditor
             {
                 case ConditionTransitionKind.EndIf:
                     desired.Add(LineConditionTransition.EndIf());
-                    break;
-
-                // 옵션 줄(->)이 파서를 지나 여기 온다 (G3-2). OptionId는 만들지 않는다 —
-                // 텍스트에는 옵션의 안정 식별자가 없고, 있던 것은 부르는 쪽 비교가 보존한다.
-                case ConditionTransitionKind.BeginChoice:
-                    desired.Add(LineConditionTransition.BeginChoice());
-                    break;
-
-                case ConditionTransitionKind.BeginNextOption:
-                    desired.Add(LineConditionTransition.BeginNextOption());
-                    break;
-
-                case ConditionTransitionKind.EndChoice:
-                    desired.Add(LineConditionTransition.EndChoice());
                     break;
 
                 default:
@@ -239,13 +264,13 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 마지막 줄 <b>뒤에</b> 남은 전환을 노드에 얹는다 (2026-08-24) — 대사 없는 조건 블록이
+    /// 마지막 줄 <b>뒤에</b> 남은 전환을 노드에 얹는다 — 대사 없는 조건 블록이
     /// 대본의 끝일 때 사는 자리다.
     ///
-    /// ⚠ 텍스트에 꼬리가 없으면 <b>비운다</b>. 줄에 실린 전환과 달리 이쪽은 대본이 유일한
+    /// 텍스트에 꼬리가 없으면 <b>비운다</b>. 줄에 실린 전환과 달리 이쪽은 대본이 유일한
     /// 원천이라, 안 지우면 지운 블록이 산출물에 계속 남는다.
     /// </summary>
-    private void ApplyTrailingTransitions(
+    private static List<LineConditionTransition>? PlanTrailingTransitions(
         DialogueNode node,
         ScenarioParseResult parsed,
         AvailableConditionCatalog conditions,
@@ -257,7 +282,7 @@ public sealed partial class ProjectEditor
 
         if (desired is null)
         {
-            return; // 못 세운 것이 있으면 지금 것을 그대로 둔다 — 위 Translate가 사유를 적었다.
+            return null; // 못 세운 것이 있으면 지금 것을 그대로 둔다 — 위 Translate가 사유를 적었다.
         }
 
         bool same = node.TrailingTransitions.Count == desired.Count &&
@@ -265,106 +290,19 @@ public sealed partial class ProjectEditor
                 pair.First.Kind == pair.Second.Kind &&
                 string.Equals(pair.First.ConditionId, pair.Second.ConditionId, StringComparison.Ordinal));
 
-        if (same)
-        {
-            return;
-        }
-
-        Mutate(() =>
-        {
-            node.TrailingTransitions.Clear();
-            node.TrailingTransitions.AddRange(desired);
-            PruneBranchExits(node);
-        });
+        return same ? null : desired;
     }
 
     /// <summary>
-    /// 대본 없는 대사 노드(가져오기 시절의 옛 프로젝트)에 전용 대본을 만들어 잇는다 (X4).
-    /// 이미 대본이 있으면 그대로 돌려준다.
-    /// </summary>
-    public ScriptDocument EnsureDialogueScript(string dialogueNodeId)
-    {
-        DialogueNode node = RequireDialogue(dialogueNodeId);
-
-        if (Project.FindScript(node.ScriptId) is { } existing)
-        {
-            return existing;
-        }
-
-        var script = new ScriptDocument(name: $"{node.Name} 대본");
-        script.RequireLocale(script.PrimaryLocale);
-
-        Mutate(() =>
-        {
-            Project.Scripts.Add(script);
-            node.ScriptId = script.Id;
-        });
-
-        return script;
-    }
-
-    public void RenameScript(string scriptId, string name)
-    {
-        if (Project.FindScript(scriptId) is { } script &&
-            !string.Equals(script.Name, name, StringComparison.Ordinal))
-        {
-            Mutate(ProjectChangeKind.NodeMetadata, () => script.Name = name);
-        }
-    }
-
-    /// <summary>
-    /// 대본을 지운다. 그 대본을 읽던 DialogueNode의 조건 구조는 남겨 둔다.
-    /// 지우면 작가가 만든 갈래가 조용히 무너지고, 대본을 다시 붙여도 되살아나지 않는다.
-    /// </summary>
-    public void RemoveScript(string scriptId)
-    {
-        if (Project.FindScript(scriptId) is not { } script)
-        {
-            return;
-        }
-
-        Mutate(() =>
-        {
-            Project.Scripts.Remove(script);
-
-            foreach (DialogueNode node in Project.EnumerateNodes().OfType<DialogueNode>())
-            {
-                if (string.Equals(node.ScriptId, scriptId, StringComparison.Ordinal))
-                {
-                    node.ScriptId = null;
-                }
-            }
-        });
-    }
-
-    /// <summary>
-    /// 작가의 평평한 대본 텍스트를 읽어 동기화 계획을 세운다. 아무것도 바꾸지 않는다.
-    /// 적용은 <see cref="ApplyScriptSync"/>가 한다.
-    /// </summary>
-    public ScriptSyncPlan PlanScriptSync(
-        string scriptId,
-        string rawText,
-        string? sourcePath = null,
-        string? locale = null)
-    {
-        ScriptDocument script = RequireScript(scriptId);
-        return ScriptSynchronizer.Plan(
-            script,
-            ScriptParser.Parse(rawText),
-            locale,
-            sourcePath,
-            _newLineId);
-    }
-
-    /// <summary>
-    /// 계획을 적용한다. <see cref="ScriptSyncPlan.HasConflicts"/>면 아무것도 하지 않고 거부한다.
+    /// 그 카드의 대본에 계획을 적용한다. <see cref="ScriptSyncPlan.HasConflicts"/>면 아무것도 하지 않고 거부한다.
     /// 도구가 대신 고르는 순간 작가가 쓰지 않은 연출이 다른 대사에 붙는다.
     /// </summary>
-    public void ApplyScriptSync(ScriptSyncPlan plan)
+    public void ApplyScriptSync(string dialogueNodeId, ScriptSyncPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
 
-        ScriptDocument script = RequireScript(plan.ScriptId);
+        DialogueNode node = RequireDialogue(dialogueNodeId);
+        ScriptDocument script = node.Script;
 
         if (plan.HasConflicts)
         {
@@ -375,18 +313,17 @@ public sealed partial class ProjectEditor
                     plan.Conflicts.Select(entry => "• " + (entry.Message ?? entry.LineId))));
         }
 
-        // 바꿀 것이 하나도 없으면 <b>손대지 않는다</b> (2026-08-24 성능).
+        // 바꿀 것이 하나도 없으면 <b>손대지 않는다</b> (성능).
         //
-        // 예전에는 계획이 전부 "그대로"여도 아래 Mutate가 돌았다. Mutate 한 번은
-        // <b>프로젝트 전체를 되돌리기용으로 직렬화</b>하고 변경을 방송한다 — 그 방송이
-        // 열려 있는 편집 화면을 통째로 다시 만들어서, 감시자가 250ms 뒤 깨어날 때마다
-        // 사람이 <b>타이핑하던 칸이 파괴됐다.</b>
+        // Mutate 한 번은 <b>프로젝트 전체를 되돌리기용으로 직렬화</b>하고 변경을 방송한다 —
+        // 그 방송이 열려 있는 편집 화면을 통째로 다시 만들어서, 계획이 전부 "그대로"여도
+        // 돌리면 사람이 <b>타이핑하던 칸이 파괴된다.</b>
         //
-        // 값도 작지 않다: 에피소드 동기화는 워크북 하나마다 이 길을 지나므로, 대본 64개
+        // 값도 작지 않다: 에피소드 동기화는 대본 하나마다 이 길을 지나므로, 대본 64개
         // 프로젝트에서 아무것도 안 바뀐 저장 한 번이 전체 직렬화를 64번 시킨다.
         //
-        // ⚠ <b>동기화가 대본을 되돌리는 힘은 그대로다.</b> 여기서 거르는 것은 "결과가
-        // 이미 그 모습인 경우"뿐이다 — 노드가 워크북과 다르면 아래 항목들이 그것을
+        // <b>동기화가 대본을 되돌리는 힘은 그대로다.</b> 여기서 거르는 것은 "결과가
+        // 이미 그 모습인 경우"뿐이다 — 노드가 원본 글과 다르면 아래 항목들이 그것을
         // Modified·Deleted로 들고 오고, 그러면 이 관문을 지나간다
         // (`EpisodeLineEditorTests.노드만_고치면_다음_동기화가_지운다`가 그 힘을 붙든다).
         if (ChangesNothing(script, plan))
@@ -394,7 +331,18 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(() =>
+        // 글자만 바뀌었으면(줄이 생기거나 빠지거나 옮겨지지 않았다) 대사 내용의 변경이다 — 화면 구조는 그대로라 판을
+        // 통째로 다시 그리지 않는다. 카드 글 칸에서 바로바로 넣는 동안 쓰던 칸이 흔들리지 않는다.
+        bool textOnly =
+            plan.Entries.All(entry => entry.Kind is ScriptSyncKind.Unchanged or ScriptSyncKind.Modified) &&
+            plan.Entries
+                .Where(entry => entry.NewIndex is not null)
+                .OrderBy(entry => entry.NewIndex!.Value)
+                .Select(entry => entry.LineId)
+                .SequenceEqual(script.ActiveLines.Select(line => line.Id), StringComparer.Ordinal);
+
+        // 줄이 생기거나 빠지거나 옮겨졌으면 그 노드의 줄 변경이다 — 판은 그 카드만 다시 지을 수 있다(usability UX13 · ⛔ 구조 — 판을 통째로).
+        Mutate(textOnly ? ProjectChangeKind.DialogueContent : ProjectChangeKind.DialogueLines, () =>
         {
             ScriptLocale locale = script.RequireLocale(plan.Locale);
             var byId = script.Lines.ToDictionary(line => line.Id, StringComparer.Ordinal);
@@ -430,35 +378,29 @@ public sealed partial class ProjectEditor
                 ordered.Add(line);
             }
 
-            // 은퇴한 줄이 소유하던 대사 논리는 함께 접는다 (W47) — 카드가 없는 줄의
+            // 은퇴한 줄이 소유하던 대사 논리는 함께 접는다 — 카드가 없는 줄의
             // 조건은 지울 진입점조차 없는 유령이 된다.
-            PruneRetiredLineLogic(script.Id, lineId => !kept.Contains(lineId));
+            PruneRetiredLineLogic(node, lineId => !kept.Contains(lineId));
 
             script.Lines.Clear();
             script.Lines.AddRange(ordered);
             script.SourceRevision++;
             script.SourceContentHash = plan.SourceContentHash;
-
-            if (plan.SourcePath is not null)
-            {
-                script.SourcePath = plan.SourcePath;
-            }
-        });
+        }, dialogueNodeId);
     }
 
     /// <summary>
-    /// 이 계획을 적용해도 <b>대본이 지금 모습 그대로인가</b> (2026-08-24 성능).
+    /// 이 계획을 적용해도 <b>대본이 지금 모습 그대로인가</b> (성능).
     ///
-    /// ⛔ <b>여기서 틀리면 조용히 틀린다</b> — 반영이 안 됐는데 됐다고 넘어가면 "엑셀에서
+    /// <b>여기서 틀리면 조용히 틀린다</b> — 반영이 안 됐는데 됐다고 넘어가면 "대본을
     /// 고쳤는데 툴이 그대로"가 된다. 그래서 <b>바꿀 것이 없음이 확실할 때만</b> 참이고,
     /// 조금이라도 애매하면 거짓이다(그러면 평소대로 적용할 뿐 손해가 없다).
     ///
-    /// 네 가지를 전부 만족해야 한다:
+    /// 세 가지를 전부 만족해야 한다:
     ///   ① 원본 글이 지난번 반영한 것과 같은 해시
     ///   ② 모든 항목이 <c>Unchanged</c> — 하나라도 고침·끼움·지움이면 적용한다
     ///   ③ 살아 있는 줄의 <b>목록과 순서</b>가 계획이 남길 것과 정확히 같다
     ///      (은퇴한 줄이 되살아나야 하는 경우와 그 반대를 여기서 잡는다)
-    ///   ④ 원본 경로가 그대로
     /// </summary>
     private static bool ChangesNothing(ScriptDocument script, ScriptSyncPlan plan)
     {
@@ -470,13 +412,6 @@ public sealed partial class ProjectEditor
 
         // ② 고침·끼움·지움·이동이 하나라도 있으면 적용한다.
         if (plan.Entries.Any(entry => entry.Kind != ScriptSyncKind.Unchanged))
-        {
-            return false;
-        }
-
-        // ④ 원본 경로가 새로 붙거나 바뀌면 그것도 기록해야 한다.
-        if (plan.SourcePath is not null &&
-            !string.Equals(script.SourcePath, plan.SourcePath, StringComparison.Ordinal))
         {
             return false;
         }
@@ -494,10 +429,10 @@ public sealed partial class ProjectEditor
         return next.SequenceEqual(now, StringComparer.Ordinal);
     }
 
-    /// <summary>대본에 빈 줄 하나를 끼워 넣는다. 새 LineId를 발급한다.</summary>
-    public ScriptLine InsertScriptLine(string scriptId, int? index = null, string? locale = null)
+    /// <summary>그 카드의 대본에 빈 줄 하나를 끼워 넣는다. 새 LineId를 발급한다.</summary>
+    public ScriptLine InsertScriptLine(string dialogueNodeId, int? index = null, string? locale = null)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        ScriptDocument script = RequireDialogue(dialogueNodeId).Script;
         var line = new ScriptLine(_newLineId());
         string targetLocale = locale ?? script.PrimaryLocale;
 
@@ -515,9 +450,10 @@ public sealed partial class ProjectEditor
     /// 대본에서 줄을 은퇴시킨다. 물리적으로 지우지 않는다.
     /// 지우면 그 LineId를 가리키던 연출이 왜 고아가 되었는지 물을 수조차 없게 된다.
     /// </summary>
-    public void RetireScriptLine(string scriptId, string lineId)
+    public void RetireScriptLine(string dialogueNodeId, string lineId)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        DialogueNode node = RequireDialogue(dialogueNodeId);
+        ScriptDocument script = node.Script;
 
         if (script.FindLine(lineId) is not { IsRetired: false } line)
         {
@@ -527,32 +463,23 @@ public sealed partial class ProjectEditor
         Mutate(() =>
         {
             line.IsRetired = true;
-            PruneRetiredLineLogic(scriptId, id => string.Equals(id, lineId, StringComparison.Ordinal));
+            PruneRetiredLineLogic(node, id => string.Equals(id, lineId, StringComparison.Ordinal));
         });
     }
 
     /// <summary>
-    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건·선택 전환, set, 갈래 출구)도
-    /// 접는다 (W47) — 줄 카드가 없으면 편집 진입점이 없어 지울 수도 없는 유령이 된다.
+    /// 줄이 대본에서 물러나면 그 줄이 소유하던 대사 논리(조건 전환 · 분기)도
+    /// 접는다 — 줄 카드가 없으면 편집 진입점이 없어 지울 수도 없는 유령이 된다.
     /// 연출 바인딩은 남긴다: 고아 연출은 지우지 않고 해석기가 알리는 기존 정책 그대로다.
     /// </summary>
-    private void PruneRetiredLineLogic(string scriptId, Func<string, bool> retired)
+    private static void PruneRetiredLineLogic(DialogueNode node, Func<string, bool> retired)
     {
-        foreach (DialogueNode node in Project.EnumerateNodes().OfType<DialogueNode>()
-            .Where(item => string.Equals(item.ScriptId, scriptId, StringComparison.Ordinal)))
-        {
-            node.LineExtensions.RemoveAll(extension => retired(extension.LineId));
-
-            foreach (string exitLineId in node.BranchExits.Keys.Where(retired).ToList())
-            {
-                node.BranchExits.Remove(exitLineId);
-            }
-        }
+        node.LineExtensions.RemoveAll(extension => retired(extension.LineId));
     }
 
-    public void MoveScriptLine(string scriptId, string lineId, int delta)
+    public void MoveScriptLine(string dialogueNodeId, string lineId, int delta)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        ScriptDocument script = RequireDialogue(dialogueNodeId).Script;
         List<ScriptLine> active = script.ActiveLines.ToList();
         int from = active.FindIndex(line => string.Equals(line.Id, lineId, StringComparison.Ordinal));
 
@@ -586,13 +513,13 @@ public sealed partial class ProjectEditor
     /// 내용만 바뀌므로 편집 컨트롤을 다시 만들지 않는다.
     /// </summary>
     public void SetScriptLineText(
-        string scriptId,
+        string dialogueNodeId,
         string lineId,
         string speaker,
         string text,
         string? locale = null)
     {
-        ScriptDocument script = RequireScript(scriptId);
+        ScriptDocument script = RequireDialogue(dialogueNodeId).Script;
 
         if (script.FindLine(lineId) is not { } line)
         {
@@ -619,83 +546,4 @@ public sealed partial class ProjectEditor
             }
         });
     }
-
-    /// <summary>
-    /// 화자 개명을 <b>이미 쓰인 대사 줄까지</b> 끌고 간다 (2026-08-24 소유자 — "화자의 이름을
-    /// 편집한 경우도 연결이 이어지도록").
-    ///
-    /// 화자의 신원은 <b>[화자] 탭 목록의 그 줄</b>이고 이름은 그것의 표시다. 그런데 대사 줄이
-    /// 붙드는 것은 이름 문자열 하나뿐이라(대본 엑셀 E열과 같은 값), 등록부에서만 이름을 갈면
-    /// 그 줄들이 전부 <b>미등록 화자</b>가 된다 — 초상화 매핑이 끊기고, 공백 있는 이름은
-    /// 파서가 산문으로 읽어 대사와 합쳐지기까지 한다.
-    ///
-    /// <b>⚠ locale마다 따로 본다</b> (로컬라이징 대비). <see cref="LocalizedLine.Speaker"/>는
-    /// locale별 값이라, 일본어 판이 이미 <c>ウィロー</c>로 번역돼 있으면 그것은 이 개명의
-    /// 대상이 아니다 — <b>옛 이름과 글자가 같은 항목만</b> 갈아 끼운다. 아직 번역 전이라
-    /// 한국어 이름을 그대로 들고 있는 locale은 자연히 함께 따라온다.
-    ///
-    /// <b>⚠ <see cref="ScriptLine.Revision"/>은 올리지 않는다.</b> 그것은 "이 줄의 문구가
-    /// 바뀌었으니 번역·녹음이 다시 보라"는 신호인데, 등록부의 개명은 줄이 <em>말하는 내용</em>을
-    /// 바꾸지 않는다. 올리면 화자 하나 고칠 때마다 그 화자의 모든 줄이 재작업 대상이 된다.
-    /// </summary>
-    /// <returns>이름이 바뀐 줄 수(모든 대본·모든 locale 합계).</returns>
-    public int RenameSpeaker(string oldName, string newName)
-    {
-        string from = (oldName ?? string.Empty).Trim();
-        string to = (newName ?? string.Empty).Trim();
-
-        if (from.Length == 0 || to.Length == 0 ||
-            string.Equals(from, to, StringComparison.Ordinal))
-        {
-            return 0;
-        }
-
-        List<(ScriptLocale Locale, string LineId, LocalizedLine Line)> hits = Project.Scripts
-            .SelectMany(script => script.Locales)
-            .SelectMany(locale => locale.Entries
-                .Where(entry => string.Equals(entry.Value.Speaker, from, StringComparison.Ordinal))
-                .Select(entry => (Locale: locale, LineId: entry.Key, Line: entry.Value)))
-            .ToList();
-
-        if (hits.Count == 0)
-        {
-            return 0;
-        }
-
-        Mutate(ProjectChangeKind.DialogueContent, () =>
-        {
-            foreach ((ScriptLocale locale, string lineId, LocalizedLine line) in hits)
-            {
-                locale.Entries[lineId] = line with { Speaker = to };
-            }
-        });
-
-        return hits.Count;
-    }
-
-    /// <summary>이 대사 노드가 읽을 대본을 정한다. 조건 구조는 LineId 기준으로 그대로 남는다.</summary>
-    public void SetDialogueScript(string dialogueNodeId, string? scriptId)
-    {
-        DialogueNode node = RequireDialogue(dialogueNodeId);
-
-        if (scriptId is not null && Project.FindScript(scriptId) is null)
-        {
-            throw new InvalidOperationException($"대본 '{scriptId}'를 찾을 수 없습니다.");
-        }
-
-        if (string.Equals(node.ScriptId, scriptId, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        Mutate(() => node.ScriptId = scriptId);
-    }
-
-    private ScriptDocument RequireScript(string scriptId)
-    {
-        return Project.FindScript(scriptId)
-            ?? throw new InvalidOperationException($"대본 '{scriptId}'를 찾을 수 없습니다.");
-    }
-
-    private string NextScriptName() => $"대본 {Project.Scripts.Count + 1}";
 }

@@ -1,6 +1,6 @@
-using ClosedXML.Excel;
 using Vn.Authoring.Chapters;
-using Path = System.IO.Path;
+using Vn.Authoring.Editing;
+using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Tests.Chapters;
 
@@ -15,23 +15,10 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 고른 답은 <b>지정(Set)</b>이다. 증감은 깃발에 맞는 낱말이 아니다 — `met_willow +1`은
 /// "만난 횟수"로 읽히고 `+2`는 뜻이 없는데도 조용히 같은 결과가 된다.
 ///
-/// 규격: <c>docs/work-orders/bool-stat-orders.md</c>.
+/// 규격: <c>docs/runtime-contract.md</c> G-6(깃발 지정).
 /// </summary>
-public sealed class BoolStatSetTests : IDisposable
+public sealed class BoolStatSetTests
 {
-    private readonly string _directory = Path.Combine(
-        Path.GetTempPath(), "vn-bool-stat", Guid.NewGuid().ToString("N"));
-
-    public BoolStatSetTests() => Directory.CreateDirectory(_directory);
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_directory))
-        {
-            Directory.Delete(_directory, recursive: true);
-        }
-    }
-
     // ── 문법 ────────────────────────────────────────────────────────────────
 
     [Theory]
@@ -74,6 +61,10 @@ public sealed class BoolStatSetTests : IDisposable
     }
 
     // ── 규칙 ────────────────────────────────────────────────────────────────
+    //
+    // 2026-10-29 · D2 — 아래 셋은 리더(`VerifyBoolStatUsage`)가 저작 중에 짚던 것이다. 그 검사는
+    // 엑셀 연동과 함께 빠졌고(대신 쓸 말을 알려 주던 안내도 함께), 지금은 내보내기 관문 —
+    // 코어의 §G4 — 이 막는다. 그래서 여기서는 관문이 막는지를 잰다.
 
     [Fact]
     public void bool에_증감을_쓰면_대신_쓸_말을_알려_준다()
@@ -185,7 +176,7 @@ public sealed class BoolStatSetTests : IDisposable
         ChapterGraphModel model = Read("trust +1");
 
         Assert.False(
-            ChapterProgressionExporter.Export(model, episodesFolder: null).Refused);
+            ChapterProgressionExporter.Export(model).Refused);
 
         // ⚠ 정수 증감은 `Add`를 **비우지 않고 명시**한다 — 저쪽은 빈 문자열도 더하기로
         // 읽지만(구 JSON 호환), 적어 두면 "아무도 안 정한 것"과 "더하기로 정한 것"이
@@ -232,7 +223,7 @@ public sealed class BoolStatSetTests : IDisposable
     /// <summary>내보내기 — 거부되면 사유를 그대로 들고 넘어진다.</summary>
     private static System.Text.Json.JsonDocument Exported(ChapterGraphModel model)
     {
-        ChapterExportResult result = ChapterProgressionExporter.Export(model, episodesFolder: null);
+        ChapterExportResult result = ChapterProgressionExporter.Export(model);
 
         Assert.False(result.Refused,
             string.Join(" / ", result.Validation.All.Select(item => item.Message)));
@@ -241,81 +232,39 @@ public sealed class BoolStatSetTests : IDisposable
     }
 
     /// <summary>ep1 → 끝 간선 하나에 그 스탯변화를 적은 챕터.</summary>
-    private ChapterGraphModel Read(string statChange) =>
-        Build(
-            [["ep1", "끝", statChange, "계속", null, null, "FALSE", null, null]],
-            conditions: []);
-
-    /// <summary>ep1 →(관문) 끝. 관문은 깃발이 켜져 있어야 열린다.</summary>
-    private ChapterGraphModel ReadWithGate(string? statChange, string gateLabel) =>
-        Build(
-            [
-                ["ep1", "중간", statChange, "간다", null, null, "FALSE", null, null],
-                ["중간", "끝", null, "계속", null, gateLabel, "FALSE", null, null]
-            ],
-            conditions: [[gateLabel, "met", "true", null, null]],
-            episodes: ["ep1", "중간", "끝"]);
-
-    private ChapterGraphModel Build(
-        string?[][] edgeRows,
-        string?[][] conditions,
-        string[]? episodes = null)
+    private static ChapterGraphModel Read(string statChange)
     {
-        string path = Path.Combine(_directory, $"ch{Guid.NewGuid():N}.xlsx");
-        string[] ids = episodes ?? ["ep1", "끝"];
+        ProjectEditor editor = World("ep1", "끝");
+        editor.AddEdge("ch01", "ep1", "끝", optionLabel: "계속", statChanges: statChange);
 
-        using (var workbook = new XLWorkbook())
-        {
-            Sheet(workbook, ChapterSheetNames.Episodes,
-                ["EpisodeId", "대사엔트리", "제목", "이벤트키", "X", "Y", "메모"],
-                [.. ids.Select((id, index) =>
-                    new string?[] { id, $"Story_{index}", id, null, $"{index * 200}", "0", null })]);
-
-            Sheet(workbook, ChapterSheetNames.Edges,
-                [
-                    "출발", "도착", "스탯변화", "선택지", "표시조건", "해금조건",
-                    "잠금시 숨김", "잠금 안내문", "엔딩키"
-                ],
-                edgeRows);
-
-            Sheet(workbook, ChapterSheetNames.Conditions,
-                ["라벨", "스탯", "연산자", "값", "설명"], conditions);
-
-            // `met`은 bool, `trust`는 정수 — 두 규칙이 갈리는 자리를 한 챕터에서 본다.
-            Sheet(workbook, ChapterSheetNames.Stats,
-                ["타입", "스탯키", "표시명", "초기값", "최소", "최대"],
-                [
-                    ["bool", "met", "만났음", "0", "0", "1"],
-                    [null, "trust", "신뢰", "0", "0", "5"]
-                ]);
-
-            Sheet(workbook, ChapterSheetNames.Choices, ["인덱스", "대본", "메모"], []);
-
-            workbook.SaveAs(path);
-        }
-
-        return ChapterWorkbookReader.Read(path);
+        return editor.FindChapter("ch01")!.ToGraphModel("ch01");
     }
 
-    private static void Sheet(
-        XLWorkbook workbook, string name, string?[] headers, IReadOnlyList<string?[]> rows)
+    /// <summary>ep1 →(관문) 끝. 관문은 깃발이 켜져 있어야 열린다.</summary>
+    private static ChapterGraphModel ReadWithGate(string? statChange, string gateLabel)
     {
-        IXLWorksheet sheet = workbook.AddWorksheet(name);
+        ProjectEditor editor = World("ep1", "중간", "끝");
+        editor.AddChapterCondition("ch01", gateLabel, "met == true");
+        editor.AddEdge("ch01", "ep1", "중간", optionLabel: "간다", statChanges: statChange);
+        editor.AddEdge("ch01", "중간", "끝", conditionLabel: gateLabel, optionLabel: "계속");
 
-        for (int column = 0; column < headers.Length; column++)
+        return editor.FindChapter("ch01")!.ToGraphModel("ch01");
+    }
+
+    private static ProjectEditor World(params string[] episodeIds)
+    {
+        var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");
+
+        // `met`은 bool, `trust`는 정수 — 두 규칙이 갈리는 자리를 한 챕터에서 본다.
+        editor.AddChapterStat("ch01", "met", initial: 0, minimum: 0, maximum: 1, type: ChapterStatType.Bool);
+        editor.AddChapterStat("ch01", "trust", initial: 0, minimum: 0, maximum: 5);
+
+        for (int index = 0; index < episodeIds.Length; index++)
         {
-            sheet.Cell(1, column + 1).SetValue(headers[column]);
+            editor.AddEpisode("ch01", episodeIds[index], episodeIds[index], index * 200, 0, sceneId: episodeIds[index]);
         }
 
-        for (int row = 0; row < rows.Count; row++)
-        {
-            for (int column = 0; column < rows[row].Length; column++)
-            {
-                if (rows[row][column] is { } value)
-                {
-                    sheet.Cell(row + 2, column + 1).SetValue(value);
-                }
-            }
-        }
+        return editor;
     }
 }

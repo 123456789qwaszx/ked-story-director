@@ -1,15 +1,11 @@
-using System.Text.Json.Nodes;
-using Vn.Authoring.Definition;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Script;
-using Vn.Authoring.Serialization;
 
 namespace Vn.Authoring.Results;
 
 public enum PublishProblemKind
 {
-    /// <summary>읽을 대본이 없다.</summary>
+    /// <summary>카드의 대본에 살아 있는 줄이 없다.</summary>
     MissingScript,
 
     /// <summary>같은 LineId가 결과 안에서 두 번 나온다.</summary>
@@ -21,39 +17,11 @@ public enum PublishProblemKind
     /// <summary>조건 구조가 성립하지 않는다(짝 없는 elseif·endif 등).</summary>
     InvalidConditionStructure,
 
-    /// <summary>출구가 없는 노드를 가리킨다.</summary>
-    MissingExitTarget,
-
-    /// <summary>변수 이름이 비어 있는 등 성립하지 않는 변수 변경.</summary>
-    InvalidSetOperation,
-
-    /// <summary>옵션 라벨에 안정 Id가 없거나 선택 구조가 성립하지 않는다.</summary>
-    InvalidChoiceOption,
-
-    /// <summary>
-    /// 발행된 최신 결과와 비교해 옵션 순서가 바뀌었거나 기존 옵션 위에 삽입되었다.
-    /// 선택지 리플레이는 위치 기반이므로(계약서 C3) 출시된 세이브가 다른 선택지를 리플레이하게 된다.
-    /// 발행을 막지는 않는다 — 출시 전에는 자유롭게 고친다.
-    /// </summary>
-    ChoiceOrderChanged,
-
-    /// <summary>미리보기 태그 생성에 관한 알림(대문자 변수 소문자화 등). 발행은 막지 않는다.</summary>
-    ChoicePreviewNotice,
-
-    /// <summary>대본에서 사라진 줄에 대사 논리나 연출이 남아 있다. 발행은 막지 않는다.</summary>
-    OrphanData,
-
-    /// <summary>연출이 읽을 대사 결과를 아직 고르지 않았다.</summary>
-    MissingSourceResult,
-
-    /// <summary>커맨드가 참조하는 프리셋을 찾을 수 없거나 연결된 공급 범위에 없다.</summary>
-    UnknownPreset,
-
-    /// <summary>고른 대사 결과를 찾을 수 없거나 내용이 달라졌다.</summary>
-    StaleSourceResult
+    /// <summary>대본에서 사라진 줄에 대사 논리가 남아 있다. 막지 않는다.</summary>
+    OrphanData
 }
 
-/// <param name="IsBlocking">true면 이 문제를 안고 발행할 수 없다.</param>
+/// <param name="IsBlocking">true면 이 노드가 성립하지 않는다 — 미리보기와 글 칸이 그대로 보여 주되 문제로 짚는다.</param>
 public sealed record PublishProblem(
     PublishProblemKind Kind,
     string? LineId,
@@ -61,43 +29,34 @@ public sealed record PublishProblem(
     bool IsBlocking);
 
 /// <summary>
-/// 아직 identity가 없는 결과 본문. 검증 결과가 함께 들어 있다.
+/// 대사 노드 하나를 펼친 본문과 그 검증 결과.
 ///
-/// 발행 전 미리 보기와 실제 발행이 <b>같은 코드로</b> 만들어지도록 하는 자리이기도 하다.
-/// 미리 보기를 따로 합성하면 화면에서 본 것과 발행된 것이 다를 수 있고, 그 차이는
-/// 아무도 찾지 못한다.
+/// 이름의 "발행"은 남은 이름이다 — 발행(고정본 <c>vN</c>)은 2026-10-29에 연출과 함께
+/// <c>ked-story-compositor</c>로 갔다. 여기서는 미리보기 · 카드 글 칸 · 흐름 해석이 같은 펼침을 읽는다.
 /// </summary>
 public sealed class DialogueDraft
 {
     public DialogueDraft(
         string sourceNodeId,
         string sourceNodeName,
-        string? sourceScriptId,
         int sourceScriptRevision,
         string locale,
         IReadOnlyList<DialogueResultLine> lines,
-        IReadOnlyList<DialogueResultAssignment> assignments,
-        string? defaultExitTargetNodeId,
         IReadOnlyList<PublishProblem> problems,
         IReadOnlyList<DialogueResultTransition>? trailingTransitions = null)
     {
         TrailingTransitions = trailingTransitions ?? Array.Empty<DialogueResultTransition>();
         SourceNodeId = sourceNodeId;
         SourceNodeName = sourceNodeName;
-        SourceScriptId = sourceScriptId;
         SourceScriptRevision = sourceScriptRevision;
         Locale = locale;
         Lines = lines;
-        Assignments = assignments;
-        DefaultExitTargetNodeId = defaultExitTargetNodeId;
         Problems = problems;
     }
 
     public string SourceNodeId { get; }
 
     public string SourceNodeName { get; }
-
-    public string? SourceScriptId { get; }
 
     public int SourceScriptRevision { get; }
 
@@ -108,35 +67,19 @@ public sealed class DialogueDraft
     /// <summary>마지막 줄 뒤의 전환들 — 대사 없는 조건 블록이 대본의 끝일 때 (2026-08-24).</summary>
     public IReadOnlyList<DialogueResultTransition> TrailingTransitions { get; }
 
-    public IReadOnlyList<DialogueResultAssignment> Assignments { get; }
-
-    public string? DefaultExitTargetNodeId { get; }
-
     public IReadOnlyList<PublishProblem> Problems { get; }
 
-    public bool CanPublish => !Problems.Any(problem => problem.IsBlocking);
-
-    public string BlockingSummary() => string.Join(
-        Environment.NewLine,
-        Problems.Where(problem => problem.IsBlocking).Select(problem => "• " + problem.Message));
 }
 
 /// <summary>
-/// DialogueNode의 작업 상태를 불변 결과로 얼린다.
-///
-/// 얼리는 것은 대사 본문까지 포함한다. 결과가 대본을 참조만 하면 나중에 대본을 고쳤을 때
-/// v1이 함께 바뀌고, 그러면 애초에 버전을 매길 이유가 없다.
-///
-/// 같은 내용을 다시 발행하면 <b>새 버전을 만들지 않고 기존 버전을 돌려준다.</b>
-/// 저장 버튼을 두 번 눌렀다는 이유로 v2, v3이 쌓이면 어느 것이 의미 있는 버전인지
-/// 알 수 없게 된다. 판정 기준은 내용 해시 하나다.
+/// DialogueNode의 작업 상태를 <see cref="DialogueResult"/> 모양으로 펼친다 — 대본의 화자·대사,
+/// 조건 전환(조건 Id가 아니라 이름과 식), 갈래 출구, 꼬리 전환까지.
 /// </summary>
 public static class DialoguePublisher
 {
     public static DialogueDraft Draft(
         StoryProject project,
         string dialogueNodeId,
-        GameDefinition? definition = null,
         string? locale = null)
     {
         ArgumentNullException.ThrowIfNull(project);
@@ -145,11 +88,10 @@ public static class DialoguePublisher
             ?? throw new InvalidOperationException($"'{dialogueNodeId}'는 대사 노드가 아닙니다.");
 
         DialogueScript script = DialogueScriptResolver.Resolve(project, node, locale);
-        DialogueFlow flow = ConditionFlowResolver.Resolve(node, script, project, definition);
+        DialogueFlow flow = ConditionFlowResolver.Resolve(node, script, project);
         AvailableConditionCatalog available = AvailableConditionResolver.Resolve(
             project,
-            node.Id,
-            definition);
+            node.Id);
 
         var problems = new List<PublishProblem>();
         var lines = new List<DialogueResultLine>();
@@ -168,305 +110,74 @@ public static class DialoguePublisher
                     IsBlocking: true));
             }
 
-            node.BranchExits.TryGetValue(line.LineId, out string? branchExit);
-
-            if (line.Transition is { OpensOption: true } optionTransition)
-            {
-                if (string.IsNullOrWhiteSpace(optionTransition.OptionId))
-                {
-                    problems.Add(new PublishProblem(
-                        PublishProblemKind.InvalidChoiceOption,
-                        line.LineId,
-                        $"옵션 라벨 라인 '{line.LineId}'에 안정 OptionId가 없습니다. " +
-                        "전환을 다시 지정해 Id를 발급받으세요.",
-                        IsBlocking: true));
-                }
-
-            }
-
             lines.Add(new DialogueResultLine(
                 resolved.Index,
                 line.LineId,
                 line.Revision,
                 line.Speaker,
                 line.Text,
-                Freeze(line.Transition, project, definition, available),
-                line.Transition?.OpensBranch == true ? branchExit : null,
-                null,
+                Freeze(line.Transition, project, available),
                 // 둘째 전환부터 — 겹쳐 닫기·연달아 열기가 여기 실린다 (2026-08-17).
                 line.Transitions.Count <= 1
                     ? null
                     : line.Transitions
                         .Skip(1)
-                        .Select(transition => Freeze(transition, project, definition, available))
+                        .Select(transition => Freeze(transition, project, available))
                         .OfType<DialogueResultTransition>()
                         .ToArray(),
-                line.DetourTargetNodeId));
+                line.Detours));
         }
 
         AddFlowProblems(flow, problems);
-        AddScriptProblems(project, node, problems);
-        AddChoiceOrderProblems(project, node, lines, problems);
+        AddScriptProblems(node, problems);
 
-        // 선택지로 끝나는 노드는 정상이다 (2단계 포트 규칙, 2026-08-14 소유자 승인) —
-        // 옵션들이 곧 노드의 끝이고, 이어진 옵션은 출구로 점프, 안 이은 옵션은 에피소드
-        // 종료다. 합성기가 문서 끝에서 블록을 닫는다. 다만 "잊고 안 닫은" 경우와 화면상
-        // 구분이 안 되므로, 막지 않고 알리기만 한다.
-        bool choiceOpen = false;
-
-        foreach (DialogueResultLine line in lines)
-        {
-            choiceOpen = line.Transition?.Kind switch
-            {
-                ConditionTransitionKind.BeginChoice or ConditionTransitionKind.BeginNextOption => true,
-                // 조건 종료는 열린 선택지도 함께 닫는다 (W55) — 합성기가 암묵 ChoiceEnd를 낸다.
-                ConditionTransitionKind.EndChoice or ConditionTransitionKind.EndIf => false,
-                _ => choiceOpen
-            };
-        }
-
-        if (choiceOpen)
-        {
-            problems.Add(new PublishProblem(
-                PublishProblemKind.InvalidChoiceOption,
-                null,
-                "선택 블록이 문서 끝까지 열려 있습니다 — 이 옵션들이 노드의 끝입니다. " +
-                "이어지는 줄을 두려면 블록 뒤 첫 일반 줄에 '선택지 끝'을 지정하세요.",
-                IsBlocking: false));
-        }
-
-        // ⛔ 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지) — 설정노드는
-        //    이제 <b>조건만</b> 공급한다. 결과에 실을 배정이 없다.
-        var assignments = new List<DialogueResultAssignment>();
-
+        // 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지) — 설정노드는
+        //    이제 <b>조건만</b> 공급한다. 결과의 배정 칸(`Assignments`)은 L5(2026-10-29)에 걷혔다.
         return new DialogueDraft(
             node.Id,
             node.Name,
-            script.ScriptId,
-            project.FindScript(script.ScriptId)?.SourceRevision ?? 0,
+            node.Script.SourceRevision,
             script.Locale,
             lines,
-            assignments,
-            // 커스텀 노드는 기본 출구 없이 발행된다 — detour의 복귀가 그 자리를 맡는다.
-            node.DefaultExitTargetNodeId,
             problems,
             // 마지막 줄 뒤의 전환 (2026-08-24) — 대사 없는 조건 블록이 대본의 끝일 때.
             // 줄에 실린 것과 <b>같은 얼리기</b>를 지난다: 조건 Id가 아니라 <b>식</b>이
             // 결과에 굳어야 산출물이 자기 완결이 된다.
-            FreezeTrailing(node, project, definition, available));
+            FreezeTrailing(node, project, available));
     }
 
-    /// <summary>
-    /// 초안에 identity를 붙여 결과로 만든다. 저장소에 넣는 것은 호출자(편집기)가 한다.
-    /// 같은 내용의 최신 버전이 이미 있으면 그것을 그대로 돌려준다.
-    /// </summary>
-    public static DialogueResult Publish(
-        ResultRepository results,
-        DialogueDraft draft,
-        string resultId,
-        DateTimeOffset publishedAt,
-        out bool created)
-    {
-        ArgumentNullException.ThrowIfNull(results);
-        ArgumentNullException.ThrowIfNull(draft);
-
-        if (!draft.CanPublish)
-        {
-            throw new InvalidOperationException(
-                $"'{draft.SourceNodeName}'을 발행할 수 없습니다.{Environment.NewLine}{draft.BlockingSummary()}");
-        }
-
-        string hash = ResultHash.Compute(DialogueResultJson.WriteBody(draft));
-        DialogueResult? latest = results.LatestDialogue(resultId);
-
-        if (latest is not null &&
-            string.Equals(latest.Identity.ContentHash, hash, StringComparison.Ordinal) &&
-            latest.Identity.SchemaVersion == DialogueResult.CurrentSchemaVersion)
-        {
-            created = false;
-            return latest;
-        }
-
-        var identity = new ResultIdentity(
-            resultId,
-            results.NextDialogueVersion(resultId),
-            DialogueResult.CurrentSchemaVersion,
-            hash);
-
-        var result = new DialogueResult(
-            identity,
-            draft.SourceNodeId,
-            draft.SourceNodeName,
-            draft.SourceScriptId,
-            draft.SourceScriptRevision,
-            draft.Locale,
-            draft.Lines,
-            draft.Assignments,
-            draft.DefaultExitTargetNodeId,
-            publishedAt,
-            draft.TrailingTransitions);
-
-        results.Add(result);
-        created = true;
-        return result;
-    }
-
-    /// <summary>
-    /// 발행하지 않은 채 결과 모양으로 감싼다. 작업 중 미리 보기가 정식 출력과 <b>같은 합성기</b>를
-    /// 지나게 하려는 것이다. Version 0이므로 어떤 PresentationResult와도 호환되지 않는다.
-    /// </summary>
-    public static DialogueResult AsWorkingResult(DialogueDraft draft, DateTimeOffset now)
+    /// <summary>초안을 결과 모양으로 감싼다 — 미리보기 합성기와 흐름 해석이 이 모양을 읽는다.</summary>
+    public static DialogueResult AsResult(DialogueDraft draft)
     {
         ArgumentNullException.ThrowIfNull(draft);
 
         return new DialogueResult(
-            ResultIdentity.Working(
-                DialogueResult.CurrentSchemaVersion,
-                ResultHash.Compute(DialogueResultJson.WriteBody(draft))),
             draft.SourceNodeId,
             draft.SourceNodeName,
-            draft.SourceScriptId,
             draft.SourceScriptRevision,
             draft.Locale,
             draft.Lines,
-            draft.Assignments,
-            draft.DefaultExitTargetNodeId,
-            now,
             draft.TrailingTransitions);
     }
 
-    /// <summary>
-    /// 선택 블록의 옵션 순서를 발행된 최신 결과와 비교한다 (계약서 C3).
-    /// 리플레이는 {블록 서수, 옵션 인덱스}이므로 순서 변경·중간 삽입·삭제는 전부
-    /// 기존 세이브가 다른 선택지를 고르게 만든다. 경고만 하고 막지 않는다.
-    /// </summary>
-    private static void AddChoiceOrderProblems(
-        StoryProject project,
-        DialogueNode node,
-        IReadOnlyList<DialogueResultLine> lines,
-        List<PublishProblem> problems)
-    {
-        DialogueResult? latest = project.Results.DialogueResults
-            .LastOrDefault(result => string.Equals(
-                result.SourceNodeId,
-                node.Id,
-                StringComparison.Ordinal));
-
-        if (latest is null)
-        {
-            return;
-        }
-
-        IReadOnlyList<IReadOnlyList<string>> before = OptionSequences(latest.Lines);
-        IReadOnlyList<IReadOnlyList<string>> after = OptionSequences(lines);
-
-        for (int ordinal = 0; ordinal < Math.Min(before.Count, after.Count); ordinal++)
-        {
-            IReadOnlyList<string> old = before[ordinal];
-            IReadOnlyList<string> now = after[ordinal];
-
-            string[] survivors = now.Where(id => old.Contains(id)).ToArray();
-            bool reorderedOrRemoved = !survivors.SequenceEqual(old, StringComparer.Ordinal);
-
-            int lastSurvivor = now.ToList().FindLastIndex(id => old.Contains(id));
-            bool insertedAbove = now
-                .Where((id, index) => !old.Contains(id) && index < lastSurvivor)
-                .Any();
-
-            if (reorderedOrRemoved || insertedAbove)
-            {
-                problems.Add(new PublishProblem(
-                    PublishProblemKind.ChoiceOrderChanged,
-                    null,
-                    $"선택 블록 {ordinal + 1}의 옵션 순서가 발행본(v{latest.Identity.Version})과 다릅니다. " +
-                    "선택지 리플레이는 위치 기반이라 출시된 세이브가 다른 선택지를 리플레이하게 됩니다. " +
-                    "출시 후에는 옵션을 기존 항목 위에 삽입하거나 순서를 바꾸지 마세요.",
-                    IsBlocking: false));
-            }
-        }
-    }
-
-    /// <summary>블록 서수 순서대로, 각 블록의 OptionId 목록.</summary>
-    private static IReadOnlyList<IReadOnlyList<string>> OptionSequences(
-        IReadOnlyList<DialogueResultLine> lines)
-    {
-        var blocks = new List<IReadOnlyList<string>>();
-        List<string>? current = null;
-
-        foreach (DialogueResultLine line in lines)
-        {
-            switch (line.Transition?.Kind)
-            {
-                case ConditionTransitionKind.BeginChoice:
-                    current = new List<string> { line.Transition.OptionId ?? string.Empty };
-                    blocks.Add(current);
-                    break;
-
-                case ConditionTransitionKind.BeginNextOption:
-                    current?.Add(line.Transition.OptionId ?? string.Empty);
-                    break;
-
-                case ConditionTransitionKind.EndChoice:
-                    current = null;
-                    break;
-            }
-        }
-
-        return blocks;
-    }
-
-    /// <summary>
-    /// 대본 끝의 줄 없는 갈래들을 얼린다 (2026-08-24) — 전환과 <b>그 갈래의 출구</b>를 함께.
-    ///
-    /// 출구가 전환에 붙는 이유: 실을 줄이 없다. 앵커는 흐름 해석과 같은 규칙으로 짓는다
-    /// (<see cref="Flow.BranchAnchor"/>) — 두 곳이 다르게 세면 매단 detour가 사라진다.
-    /// </summary>
+    /// <summary>대본 끝의 줄 없는 갈래들의 전환을 얼린다 (2026-08-24). (그 갈래의 출구를 함께 싣던 것은 2026-11-19에 걷혔다.)</summary>
     private static IReadOnlyList<DialogueResultTransition> FreezeTrailing(
         DialogueNode node,
         StoryProject project,
-        GameDefinition? definition,
-        AvailableConditionCatalog available)
-    {
-        var frozen = new List<DialogueResultTransition>(node.TrailingTransitions.Count);
-        int opened = 0;
-
-        foreach (LineConditionTransition transition in node.TrailingTransitions)
-        {
-            if (Freeze(transition, project, definition, available) is not { } item)
-            {
-                continue;
-            }
-
-            if (!transition.OpensBranch)
-            {
-                frozen.Add(item);
-                continue;
-            }
-
-            node.BranchExits.TryGetValue(
-                Flow.BranchAnchor.ForTrailing(opened++), out string? exit);
-
-            frozen.Add(item with { ExitTargetNodeId = exit });
-        }
-
-        return frozen;
-    }
+        AvailableConditionCatalog available) =>
+        node.TrailingTransitions
+            .Select(transition => Freeze(transition, project, available))
+            .OfType<DialogueResultTransition>()
+            .ToList();
 
     private static DialogueResultTransition? Freeze(
         LineConditionTransition? transition,
         StoryProject project,
-        GameDefinition? definition,
         AvailableConditionCatalog available)
     {
         if (transition is null)
         {
             return null;
-        }
-
-        if (transition.IsChoiceKind)
-        {
-            // 선택 전환은 조건 카탈로그와 무관하다. 옵션의 정체성만 얼린다.
-            return new DialogueResultTransition(transition.Kind, null, null, null, transition.OptionId);
         }
 
         if (transition.Kind == ConditionTransitionKind.EndIf)
@@ -475,7 +186,7 @@ public static class DialoguePublisher
         }
 
         AvailableCondition? condition = available.Find(transition.ConditionId)
-            ?? AvailableConditionResolver.FindKnown(project, definition, transition.ConditionId);
+            ?? AvailableConditionResolver.FindKnown(project, transition.ConditionId);
 
         return new DialogueResultTransition(
             transition.Kind,
@@ -490,20 +201,13 @@ public static class DialoguePublisher
         {
             (PublishProblemKind kind, bool blocking) = problem.Kind switch
             {
-                // ⚠ 발행에서는 <b>막는다</b>. 발행은 사람이 "이걸로 굳힌다"고 선언하는
-                //    행위라 빈 것을 굳힐 이유가 없다. 반면 <b>내보내기</b>는 지금 상태를
-                //    그대로 게임에 보내는 것이라 빈 씬도 나가야 한다 — 그 완화는
-                //    <see cref="LiveNodeComposer"/> 한 곳에서만 한다(2026-08-25).
-                FlowProblemKind.MissingScript => (PublishProblemKind.MissingScript, true),
+                // 여기서는 <b>막는 문제</b>로 짚는다 — 미리보기가 [주의]로 보여 준다. 게임으로
+                //    내보낼 때 빈 씬을 완화하는 것은 compositor의 몫이다(지금 상태를 그대로 보낸다).
                 FlowProblemKind.UnknownCondition => (PublishProblemKind.UnknownCondition, true),
                 FlowProblemKind.UnavailableCondition => (PublishProblemKind.UnknownCondition, true),
                 FlowProblemKind.ElseIfWithoutIf => (PublishProblemKind.InvalidConditionStructure, true),
                 FlowProblemKind.EndIfWithoutIf => (PublishProblemKind.InvalidConditionStructure, true),
                 FlowProblemKind.NestedCondition => (PublishProblemKind.InvalidConditionStructure, true),
-                FlowProblemKind.MissingExitTarget => (PublishProblemKind.MissingExitTarget, true),
-                FlowProblemKind.MixedChain => (PublishProblemKind.InvalidChoiceOption, true),
-                FlowProblemKind.OptionWithoutChoice => (PublishProblemKind.InvalidChoiceOption, true),
-                FlowProblemKind.OrphanedBranchExit => (PublishProblemKind.OrphanData, false),
                 FlowProblemKind.OrphanedLineExtension => (PublishProblemKind.OrphanData, false),
                 _ => (PublishProblemKind.InvalidConditionStructure, true)
             };
@@ -513,25 +217,21 @@ public static class DialoguePublisher
     }
 
     private static void AddScriptProblems(
-        StoryProject project,
         DialogueNode node,
         List<PublishProblem> problems)
     {
-        if (project.FindScript(node.ScriptId) is not { } document)
-        {
-            return;
-        }
+        Script.ScriptDocument document = node.Script;
 
         if (document.Lines.Count > 0 && document.ActiveLines.Any())
         {
             return;
         }
 
-        // 발행에서는 막는다. 내보내기에서만 완화된다 — 위 `AddFlowProblems`의 같은 이유다.
+        // 막는 문제로 짚는다 — 위 `AddFlowProblems`와 같은 이유다.
         problems.Add(new PublishProblem(
             PublishProblemKind.MissingScript,
             null,
-            $"대본 '{document.Name}'에 살아 있는 줄이 없습니다. " +
+            "이 카드에 살아 있는 줄이 없습니다. " +
             "연출만 매다는 씬이면 정상이고, 아니라면 대사를 적어 주세요.",
             IsBlocking: true));
     }

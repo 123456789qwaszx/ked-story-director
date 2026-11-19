@@ -94,7 +94,6 @@ public sealed class ConditionYarnTranslationTests
             Expression: expression,
             Description: null,
             Parsed: parsed.Terms,
-            IsValid: parsed.IsValid,
-            SourceRow: 0));
+            IsValid: parsed.IsValid));
     }
 }

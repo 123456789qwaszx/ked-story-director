@@ -1,9 +1,9 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
-using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Text;
 
 namespace Vn.Authoring.Editing;
 
@@ -22,22 +22,24 @@ public sealed partial class ProjectEditor
 {
     private const int MaxHistory = 100;
 
-    private readonly List<string> _undo = new();
-    private readonly List<string> _redo = new();
-    private readonly Func<DateTimeOffset> _now;
+    private readonly List<HistoryEntry> _undo = new();
+    private readonly List<HistoryEntry> _redo = new();
+
+    /// <summary>
+    /// 되돌리기 기록 한 칸 — 그 편집 앞의 스냅샷, 그 편집의 변경 종류와 바뀐 노드(되돌리기 · 다시 실행이 그 종류 · 그 노드로 알린다 — 노드는
+    /// usability UX21).
+    /// </summary>
+    private readonly record struct HistoryEntry(string Snapshot, ProjectChangeKind Kind, string? NodeId = null);
     private readonly Func<string> _newLineId;
 
-    /// <param name="now">발행 시각의 출처. 테스트가 고정된 시각을 넣을 수 있게 주입한다.</param>
     /// <param name="newLineId">
     /// 새 LineId 발급기. 동기화 계획을 테스트에서 읽으려면 Id가 예측 가능해야 한다.
     /// </param>
     public ProjectEditor(
         StoryProject project,
-        Func<DateTimeOffset>? now = null,
         Func<string>? newLineId = null)
     {
         Project = project ?? throw new ArgumentNullException(nameof(project));
-        _now = now ?? (() => DateTimeOffset.UtcNow);
         _newLineId = newLineId ?? Identifier.Line;
     }
 
@@ -58,115 +60,22 @@ public sealed partial class ProjectEditor
 
     // ── 파일과 노드 ────────────────────────────────────────────────────────
 
-    public StoryFile AddStoryFile(string? name = null)
+    /// <summary>
+    /// 챕터의 판을 하나 세운다 — 판은 챕터가 세운다(챕터 = 판 1:1, 이름이 챕터 Id). 부르는 곳은 <see cref="EnsureChapterBoard"/> 하나다.
+    /// ⛔ 2026-11-17까지는 아무 판(낙서판)이나 세우는 공개 명령이었다 — 낙서판을 걷으며 들였다.
+    /// </summary>
+    private StoryFile AddChapterBoardFile(string chapterId)
     {
-        var file = new StoryFile(name: name ?? NextFileName());
+        var file = new StoryFile(name: chapterId);
 
         Mutate(() => Project.Files.Add(file));
         return file;
     }
 
     /// <summary>
-    /// 다른 프로젝트의 <c>.vnstory.json</c> 하나를 이 프로젝트의 파일(판)로 들여온다 (W51).
-    ///
-    /// 대사 노드가 참조하는 대본은 관례 위치(<c>../script/&lt;scriptId&gt;.vnscript.json</c>)에서
-    /// 함께 들여오고, 못 찾으면 경고로 남긴다(조용히 버리지 않는다 — 규칙 14).
-    /// Id가 이미 이 프로젝트에 있으면(같은 파일 재수입) 명확히 거부한다 — Id를 다시
-    /// 발급하면 노드 간 연결·LineId 계약이 소리 없이 끊어진다.
-    /// 다른 파일의 노드를 가리키던 실행 출구는 대상이 없으면 흐름 해석기가 알린다.
-    /// </summary>
-    public StoryFileImportOutcome ImportStoryFile(string storyJsonPath)
-    {
-        string fullPath = Path.GetFullPath(storyJsonPath);
-        StoryFile imported = StoryFileJson.Read(File.ReadAllText(fullPath));
-
-        if (Project.FindFile(imported.Id) is not null)
-        {
-            throw new InvalidOperationException(
-                $"파일 '{imported.Name}'({imported.Id})은 이미 이 프로젝트에 있습니다 — 같은 파일을 두 번 가져올 수 없습니다.");
-        }
-
-        foreach (StoryNode node in imported.Nodes)
-        {
-            if (Project.FindNode(node.Id) is not null)
-            {
-                throw new InvalidOperationException(
-                    $"노드 '{node.Name}'({node.Id})이 이미 이 프로젝트에 있습니다 — 같은 파일을 두 번 가져올 수 없습니다.");
-            }
-        }
-
-        // 저장 시 이 프로젝트의 story/ 관례 자리로 다시 쓰인다 — 원본 파일은 건드리지 않는다.
-        imported.RelativePath = ProjectStore.DefaultRelativePath(imported.Id);
-
-        // 딸린 대본 — 원본 프로젝트의 관례 자리(story/의 형제 script/)에서 찾는다.
-        string? sourceRoot = Path.GetDirectoryName(Path.GetDirectoryName(fullPath));
-        var scripts = new List<ScriptDocument>();
-        var warnings = new List<string>();
-
-        foreach (DialogueNode dialogue in imported.Nodes.OfType<DialogueNode>())
-        {
-            if (dialogue.ScriptId is not { } scriptId || Project.FindScript(scriptId) is not null ||
-                scripts.Any(script => string.Equals(script.Id, scriptId, StringComparison.Ordinal)))
-            {
-                continue;
-            }
-
-            string? scriptPath = sourceRoot is null
-                ? null
-                : Path.Combine(sourceRoot, ProjectStore.DefaultScriptPath(scriptId).Replace('/', Path.DirectorySeparatorChar));
-
-            if (scriptPath is not null && File.Exists(scriptPath))
-            {
-                scripts.Add(ScriptDocumentJson.Read(File.ReadAllText(scriptPath)));
-            }
-            else
-            {
-                warnings.Add(
-                    $"'{dialogue.Name}'의 대본({scriptId})을 찾지 못했습니다 — 원본 프로젝트의 script 폴더가 옆에 있어야 합니다.");
-            }
-        }
-
-        Mutate(() =>
-        {
-            foreach (ScriptDocument script in scripts)
-            {
-                Project.Scripts.Add(script);
-            }
-
-            Project.Files.Add(imported);
-        });
-
-        return new StoryFileImportOutcome(imported, scripts.Count, warnings);
-    }
-
-    /// <summary>
-    /// 시나리오 파일(판)을 통째로 제거한다 (W61). 안의 노드가 맺던 연결·출구는
-    /// 노드 삭제와 같은 규칙 하나(<see cref="RemoveReferencesToNode"/>)로 정리된다.
-    /// 대본·발행 결과는 지우지 않는다 — 발행본은 불변이고, 대본은 지우면 고아 연출의
-    /// 사유를 물을 수 없게 된다. 한 번의 되돌리기로 통째로 복구된다.
-    /// </summary>
-    public void RemoveStoryFile(string fileId)
-    {
-        StoryFile? file = Project.FindFile(fileId);
-
-        if (file is null)
-        {
-            return;
-        }
-
-        if (Project.Files.Count <= 1)
-        {
-            throw new InvalidOperationException(
-                "마지막 시나리오 파일은 제거할 수 없습니다 — 새 노드가 갈 곳이 없어집니다.");
-        }
-
-        Mutate(() => RemoveFileCore(file));
-    }
-
-    /// <summary>
     /// 판 하나를 걷는 <b>알맹이</b> — <see cref="Mutate"/> 밖이다.
     ///
-    /// ⚠ 챕터를 지울 때 판과 챕터가 <b>한 번의 변경</b>이어야 해서 갈라 뒀다
+    /// 챕터를 지울 때 판과 챕터가 <b>한 번의 변경</b>이어야 해서 갈라 뒀다
     /// (<see cref="RemoveChapterWithBoard"/>). 되돌리기 한 번에 둘 중 하나만 돌아오면
     /// 챕터는 있는데 판이 없는(또는 그 반대) 상태가 남는다.
     /// </summary>
@@ -182,17 +91,7 @@ public sealed partial class ProjectEditor
         if (file.Nodes.Any(node =>
             string.Equals(Project.StartNodeId, node.Id, StringComparison.Ordinal)))
         {
-            Project.StartNodeId = Project.EnumerateNodes()
-                .FirstOrDefault(candidate => candidate is not PresentationNode)
-                ?.Id;
-        }
-    }
-
-    public void RenameStoryFile(string fileId, string name)
-    {
-        if (Project.FindFile(fileId) is { } file && !string.Equals(file.Name, name, StringComparison.Ordinal))
-        {
-            Mutate(ProjectChangeKind.NodeMetadata, () => file.Name = name);
+            Project.StartNodeId = Project.EnumerateNodes().FirstOrDefault()?.Id;
         }
     }
 
@@ -212,58 +111,42 @@ public sealed partial class ProjectEditor
         Mutate(() =>
         {
             file.Nodes.Add(node);
-
-            // PresentationNode는 실행 흐름의 시작점이 아니다. 프로젝트에 연출 노드만 먼저
-            // 만들어져도 이후 처음 추가되는 실행 노드가 정상적으로 시작 노드가 되어야 한다.
-            if (node is not PresentationNode)
-            {
-                Project.StartNodeId ??= node.Id;
-            }
+            Project.StartNodeId ??= node.Id;
         });
 
         return node;
     }
 
     /// <summary>
-    /// 대사 노드를 만든다. scriptId를 주지 않으면 <b>전용 대본을 함께 만들어 잇는다</b> (X4, D-3)
-    /// — 노드는 생성 즉시 편집 대상이고, 첫 빈 줄까지 준비되어 바로 타이핑할 수 있다.
-    /// 노드·대본·첫 줄이 한 번의 편집이라 되돌리기 한 번에 함께 사라진다.
+    /// 대사 노드를 만든다 — <b>제 대본과 첫 빈 줄까지</b> 함께 선다. 노드는 생성 즉시 편집 대상이라
+    /// 바로 타이핑할 수 있다. 노드 · 대본 · 첫 줄이 한 번의 편집이라 되돌리기 한 번에 함께 사라진다.
+    /// 대본은 카드 안에 있으므로 이미 있는 대본을 주어 잇지 않는다. 판의 카드는 에피소드라 <paramref name="sceneId"/>(그 에피소드의
+    /// 장면)를 꼭 받는다(old-shapes O7).
     /// </summary>
     public DialogueNode AddDialogueNode(
         string fileId,
+        string sceneId,
         double x = 0,
         double y = 0,
         string? name = null,
-        string? scriptId = null,
-        string? sceneId = null)
+        string? title = null)
     {
-        if (scriptId is null)
-        {
-            (DialogueNode created, _, Action attach) = NewDialogueNodeCore(fileId, x, y, name, sceneId);
-            Mutate(attach);
+        (DialogueNode created, _, Action attach) = NewDialogueNodeCore(fileId, x, y, name, sceneId, title: title);
+        Mutate(attach);
 
-            return created;
-        }
-
-        var node = new DialogueNode(name: name ?? NextName("장면"))
-        {
-            Layout = new NodeLayout { X = x, Y = y },
-            ScriptId = scriptId
-        };
-
-        return AddNode(fileId, node);
+        return created;
     }
 
     /// <summary>
     /// 대사 노드와 그 전용 대본을 <b>짓기만</b> 한다 — <see cref="Mutate"/> 밖이다.
     ///
-    /// ⚠ 다른 변경과 <b>한 번에</b> 묶어야 할 때 쓴다(「분기 추가」는 노드·대본·표식이 한
+    /// 다른 변경과 <b>한 번에</b> 묶어야 할 때 쓴다(「분기 추가」는 노드·대본·표식이 한
     /// 동작이라 되돌리기 한 번에 셋이 함께 돌아와야 한다). <c>Mutate</c> 안에서 다른 명령을
     /// 부르면 변경이 겹쳐 쌓여 되돌리기가 반쪽이 된다 — 그래서 <b>짓는 것</b>과 <b>붙이는
     /// 것</b>을 갈라 둔다.
     ///
-    /// ⭐ <b>챕터 판에 세우면 에피소드도 함께 선다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17).
-    /// 자유 씬이라는 종류가 없어졌으므로 <b>판의 대사 노드는 전부 에피소드</b>다 — 카드를
+    /// <b>챕터 판에 세우면 에피소드도 함께 선다</b>.
+    /// 자유 씬이라는 종류가 없으므로 <b>판의 대사 노드는 에피소드이거나 분기 카드</b>다 — 에피소드 카드를
     /// 세우는 것이 곧 에피소드를 만드는 일이고, 그래서 어긋난 이름이 애초에 안 생긴다.
     /// </summary>
     private (DialogueNode Created, ChapterEpisode? Episode, Action Attach) NewDialogueNodeCore(
@@ -272,22 +155,25 @@ public sealed partial class ProjectEditor
         double y,
         string? name,
         string? sceneId = null,
-        bool allowUnreachable = false,
         string? title = null,
-        (double X, double Y)? episodePosition = null)
+        (double X, double Y)? episodePosition = null,
+        bool branchCard = false)
     {
         StoryFile file = RequireFile(fileId);
 
-        // ⭐ <b>이름을 고르는 규칙도 여기 하나다</b> (2026-09-18). 챕터 판에서는 이 이름이
-        //    곧 EpisodeId가 되므로 <c>장면 3</c> 같은 <b>공백 든 Id</b>가 나오면 안 된다 —
-        //    그 Id는 대본 워크북의 파일 이름으로 나간다. 다른 창구가 이미 쓰던 `new01`
-        //    규약으로 맞춘다.
-        var created = new DialogueNode(
-            name: name ?? (ChapterOfBoard(file) is { } board
-                ? NextEpisodeId(board)
-                : NextName("장면")))
+        ChapterDocument board = ChapterOfBoard(file);
+
+        // <b>이름을 고르는 규칙은 NewNames 하나다</b>. 이 이름이 곧 EpisodeId · Yarn 노드 이름이 되므로 챕터와 장면이 든 자리표시로
+        //    프로젝트에서 겹치지 않게 짓는다(`ch01_scene01_new01` · 분기 카드 `ch01_scene01_branch01`).
+        var created = new DialogueNode(name: name ?? (branchCard
+            ? NewNames.NextBranchName(Project, board, sceneId)
+            : NewNames.NextEpisodeId(Project, board, sceneId)))
         {
-            Layout = new NodeLayout { X = x, Y = y }
+            Layout = new NodeLayout { X = x, Y = y },
+            IsBranchCard = branchCard,
+
+            // 분기 카드는 제목을 따로 든다(에피소드의 제목은 챕터가 든다) — 작가는 제목을, 개발자는 [구성]에서 ID(이름)를 본다.
+            Title = branchCard ? title ?? NewNames.Branch : null
         };
 
         if (Project.FindNode(created.Id) is not null)
@@ -295,18 +181,18 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"노드 Id '{created.Id}'가 프로젝트 안에서 중복됩니다.");
         }
 
-        var script = new ScriptDocument(name: $"{created.Name} 대본");
+        ScriptDocument script = created.Script;
         var firstLine = new ScriptLine(_newLineId());
-        created.ScriptId = script.Id;
 
-        (ChapterDocument? chapter, ChapterEpisode? episode) =
-            NewEpisodeFor(file, created, sceneId, allowUnreachable, title, episodePosition);
+        // 분기 카드는 에피소드가 아니다 — 챕터에 에피소드를 짓지 않는다(장면도 부르는 에피소드를 따라 읽는다).
+        (ChapterDocument? chapter, ChapterEpisode? episode) = branchCard
+            ? (null, null)
+            : NewEpisodeFor(file, board, created, sceneId, title, episodePosition);
 
         return (created, episode, () =>
         {
             script.Lines.Add(firstLine);
             script.RequireLocale(script.PrimaryLocale).Entries[firstLine.Id] = LocalizedLine.Empty;
-            Project.Scripts.Add(script);
             file.Nodes.Add(created);
             Project.StartNodeId ??= created.Id;
 
@@ -317,89 +203,80 @@ public sealed partial class ProjectEditor
         });
     }
 
-    /// <summary>
-    /// 이 노드가 선 <b>장면</b>. 챕터 판이 아니거나 아직 에피소드가 없으면 <c>null</c>이다.
-    /// </summary>
-    private string? SceneOfNode(StoryFile file, DialogueNode node) =>
-        ChapterOfBoard(file) is { } chapter && EpisodeNaming.EpisodeFor(chapter, node) is { } episode
-            ? episode.SceneId
-            : null;
-
     /// <summary>이 판이 곧 챕터라면 그 챕터 — 규칙은 <see cref="EpisodeNaming"/>이 갖는다.</summary>
-    private ChapterDocument? ChapterOfBoard(StoryFile file) =>
+    private ChapterDocument ChapterOfBoard(StoryFile file) =>
         EpisodeNaming.ChapterOfBoard(Project, file);
 
     /// <summary>
-    /// 이 노드가 질 <b>에피소드</b>를 짓는다 (R7 P-6). 챕터 판이 아니면 둘 다 <c>null</c>이다 —
-    /// 작가의 낙서판에는 챕터가 없고, 거기 세운 노드는 진행에 안 실린다.
-    ///
-    /// ⚠ <b>이미 있는 에피소드면 짓지 않고 표식만 붙인다.</b> 챕터 그래프에서 먼저 만든
-    /// 에피소드에 대본을 다는 것이(그리고 워크북 임포터가 노드를 세우는 것이) 정확히 그
-    /// 자리다 — 거기서 또 지으면 에피소드 하나에 카드가 둘 선다.
-    ///
-    /// ⚠ 임포터는 노드를 <b>EpisodeId가 아니라 `대사엔트리`로</b> 짓는다. 그래서 찾는 일은
-    /// <see cref="EpisodeNaming.EpisodeFor"/>에 맡긴다 — 여기서 이름만 맞춰 보면 `대사엔트리`가
-    /// 따로 적힌 챕터마다 에피소드가 <b>두 배로 불어난다</b>(2026-09-17에 겪었다).
+    /// 이 노드가 질 <b>에피소드</b>를 짓는다 — 에피소드와 카드는 한 칸에 선다. 그 이름의 에피소드가 이미 있으면 거절한다(에피소드 하나에 카드가
+    /// 둘 설 수 없다). ⛔ 그 전에는 이미 있는 에피소드에 표식만 붙였다 — 열 때 카드 없는 에피소드에 빈 카드를 세우던 판 맞추기의 뒷길이었다
+    /// (2026-11-18 · old-shapes O4).
     /// </summary>
     /// <param name="episodePosition">
-    /// 챕터 그래프에서의 자리. ⚠ <b>카드의 자리와 다른 판이다</b> — 연출 판의 좌표를 그대로
-    /// 챕터 그래프에 넣으면 사람이 맞춰 둔 배치가 흐트러진다. 안 주면 카드 자리를 따른다
-    /// (연출 그래프에서 카드부터 세우는 길이 그렇다 — 거기서는 그 자리가 유일한 정보다).
+    /// 챕터 그래프에서의 자리. <b>카드의 자리와 다른 판이다</b> — 연출 판의 좌표를 그대로
+    /// 챕터 그래프에 넣으면 사람이 맞춰 둔 배치가 흐트러진다. 안 주면(연출 그래프에서 카드부터 세우는 길) 같은 챕터의
+    /// 가장 가까운 카드를 기준으로 그 에피소드 곁에 놓는다(<see cref="ChapterBranchPlanner.PlaceLikeBoard"/>).
     /// </param>
     private (ChapterDocument? Chapter, ChapterEpisode? Episode) NewEpisodeFor(
-        StoryFile file, DialogueNode created, string? sceneId, bool allowUnreachable,
+        StoryFile file, ChapterDocument chapter, DialogueNode created, string? sceneId,
         string? title = null, (double X, double Y)? episodePosition = null)
     {
-        if (ChapterOfBoard(file) is not { } chapter)
+        // 에피소드는 늘 장면에 속한다 — 장면 없이 세우지 않는다(old-shapes O7).
+        if (string.IsNullOrWhiteSpace(sceneId))
         {
-            return (null, null);
+            throw new InvalidOperationException("에피소드는 장면에 속합니다 — 장면을 주세요.");
         }
 
-        if (EpisodeNaming.EpisodeFor(chapter, created) is { } standing)
+        if (FindEpisode(chapter, created.Name) is not null)
         {
-            // 표식이 신원이다 — 이름은 사람이 고치는 글자라 개명 때마다 끊긴다(P-6 결정).
-            created.MarkedEpisodeId = standing.EpisodeId;
-
-            return (null, null);
+            throw new InvalidOperationException($"EpisodeId '{created.Name}'가 이미 있습니다.");
         }
 
         created.MarkedEpisodeId = created.Name;
+
+        (double X, double Y) position = episodePosition ?? ChapterBranchPlanner.PlaceLikeBoard(
+            (created.Layout.X, created.Layout.Y), BoardNeighbors(file, chapter));
 
         return (chapter, new ChapterEpisode(
             created.Name,
             title ?? created.Name,
             Index: string.Empty,
-            DialogueEntry: created.Name,
-            Math.Round(episodePosition?.X ?? created.Layout.X, 2),
-            Math.Round(episodePosition?.Y ?? created.Layout.Y, 2),
-            Memo: null,
-            SourceRow: 0,
-            AllowUnreachable: allowUnreachable)
+            Math.Round(position.X, 2),
+            Math.Round(position.Y, 2),
+            Memo: null)
         {
-            SceneId = sceneId
+            SceneId = sceneId.Trim()
         });
     }
 
+    /// <summary>그 판에 이미 선 카드들 — 판 자리와 그 에피소드의 챕터 그래프 자리(에피소드가 있는 카드만).</summary>
+    private static List<((double X, double Y) Card, (double X, double Y) Episode)> BoardNeighbors(
+        StoryFile file, ChapterDocument chapter) =>
+        [.. file.Nodes.OfType<DialogueNode>()
+            .Select(node => (Node: node, Episode: EpisodeNaming.EpisodeFor(chapter, node)))
+            .Where(pair => pair.Episode is not null)
+            .Select(pair => ((pair.Node.Layout.X, pair.Node.Layout.Y), (pair.Episode!.X, pair.Episode.Y)))];
+
     /// <summary>
-    /// <b>「분기 추가」</b> (R7 P-5 · 2026-09-17 소유자) — 그 줄 <b>앞</b>에 분기 표식을 두고,
-    /// 다녀올 <b>자유 씬</b>을 함께 세워 잇는다.
+    /// <b>「분기 추가」</b> — 그 줄 <b>앞</b>에 분기 표식을 두고,
+    /// 다녀올 <b>카드</b>를 함께 세워 잇는다.
     ///
-    /// ⛔ <b>조건을 걸지 않는다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든
+    /// <b>조건을 걸지 않는다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든
     /// 말든 다녀오고, 다녀온 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다.
     ///
-    /// ⭐ <b>조건을 채우는 창구는 챕터 그래프다</b> (2026-09-18에 섰다 — 그전에는 "이후의
-    /// 다른 탭"이라고만 적혀 있었다). 판의 점선을 누르면 오른쪽에 조건 한 칸이 열리고,
+    /// <b>조건을 채우는 창구는 챕터 그래프다</b>. 판의 점선을 누르면 오른쪽에 조건 한 칸이 열리고,
     /// 그 값은 <b>다녀갈 에피소드의 첫머리</b>에 적힌다
     /// (<see cref="Chapters.BranchEntryCondition"/>). 부르는 쪽 대본은 그대로다.
     ///
-    /// ⚠ <b>그냥 에피소드다</b> (R7 P-6 · 결정 ⑤가 2026-09-17에 뒤집었다 — 전에는 자유 씬).
-    /// 대본 탭 트리에 나오고 진행에도 실리며, 아래에 선택지 3칸이 뚫린다. <b>출발과 같은
-    /// 장면</b>에 둔다 — 곁가지는 제 본줄 옆에 있어야 판에서 읽힌다.
+    /// 다녀올 카드는 <b>분기 카드</b>다(<see cref="DialogueNode.IsBranchCard"/> — 2026-11-17). 에피소드가 아니라 진행에 실리지 않고 선택지 칸이
+    /// 없다 — 들렀다 돌아오는 카드라 게임의 「지금 에피소드」가 되지 않는다. 장면은 저장하지 않고 부르는 에피소드를 따라 읽는다.
+    /// ⛔ 2026-09-17(R7 ⑤)부터 이날까지는 「그냥 에피소드」였다(선택지 3칸, 진행에 실림).
     ///
-    /// ⚠ 노드·대본·표식이 <b>한 번의 변경</b>이다. 갈라 두면 되돌리기 한 번에 표식만 사라져
+    /// 노드·대본·표식이 <b>한 번의 변경</b>이다. 갈라 두면 되돌리기 한 번에 표식만 사라져
     /// <b>아무도 안 부르는 씬</b>이 판에 남는다.
     /// </summary>
-    /// <param name="beforeLineId">이 줄 앞에서 갈라진다. 그 줄에 이미 표식이 있으면 거절한다.</param>
+    /// <param name="beforeLineId">이 줄 앞에서 갈라진다. 그 줄에 이미 분기가 있으면 그 뒤에 하나 더 선다.
+    /// 차례로 다녀온다.</param>
     public DialogueNode AddBranchMarker(string nodeId, string beforeLineId, string? name = null)
     {
         if (Project.FindNode(nodeId) is not DialogueNode source)
@@ -407,88 +284,133 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("분기는 대사 노드에만 둘 수 있습니다.");
         }
 
+        if (!CanBranchFrom(nodeId))
+        {
+            throw new InvalidOperationException(BranchCardBranchesRefusal);
+        }
+
         if (Project.FindFileContainingNode(nodeId) is not { } file)
         {
             throw new InvalidOperationException("판에 서 있지 않은 노드입니다.");
         }
 
-        if (Project.FindScript(source.ScriptId) is not { } script ||
-            script.ActiveLines.All(line =>
+        if (source.Script.ActiveLines.All(line =>
                 !string.Equals(line.Id, beforeLineId, StringComparison.Ordinal)))
         {
             throw new InvalidOperationException("그 줄이 이 노드의 대본에 없습니다.");
         }
 
-        if (source.FindExtension(beforeLineId)?.DetourTargetNodeId is not null)
-        {
-            throw new InvalidOperationException(
-                "그 자리에는 이미 분기가 있습니다 — 한 자리에 하나만 둘 수 있습니다.");
-        }
+        // 분기로 다녀갈 카드는 원본의 <b>오른쪽</b>에 선다. 아래는 선택지로 가는 다음 에피소드의 자리다.
+        (double x, double y) = Graph.NodePlacement.BesideOf(file, source);
 
+        // 분기 카드 — 에피소드를 짓지 않는다. ⛔ 전에는 에피소드로 세우고 `도달불가 허용` 깃발을 달아 「경로 없음」을 낮췄다 —
+        //    만들 때 붙는 깃발이라 실제 연결과 따로 놀았다(2026-11-17 소유자 보고).
         (DialogueNode created, _, Action attach) = NewDialogueNodeCore(
             file.Id,
-            source.Layout.X,
-            source.Layout.Y + Graph.NodePlacement.SceneRow,
-            name ?? NextName("분기"),
-            SceneOfNode(file, source),
-            // ⛔ 들어오는 간선이 없다 — 챕터 진행이 아니라 대본의 `<<detour>>`로 들어간다.
-            //    그래서 도달성 증명은 이것을 <b>정확히 도달 불가로</b> 판정하고, 그 판정이
-            //    맞다. 증명기를 고치지 않는 이유는 그것이 저쪽 런타임의 <b>오라클</b>이기
-            //    때문이다(코퍼스로 고정돼 있어 여기서 답을 바꾸면 둘이 조용히 갈린다).
-            //    이미 있는 `도달불가 허용`이 정확히 이 자리를 위한 칸이다 — 오류가 알림으로
-            //    낮아지고, 그래도 판에는 표시된다.
-            allowUnreachable: true);
+            x,
+            y,
+            name,
+            SceneOfCard(source),
+            branchCard: true);
 
         Mutate(() =>
         {
             attach();
-            source.RequireExtension(beforeLineId).DetourTargetNodeId = created.Id;
+            source.RequireExtension(beforeLineId).DetourTargetNodeIds.Add(created.Id);
         });
 
         return created;
     }
 
-    public SetNode AddSetNode(
-        string fileId,
-        double x = 0,
-        double y = 0,
-        string? name = null)
-    {
-        var node = new SetNode(name: name ?? NextName("설정"))
-        {
-            Layout = new NodeLayout { X = x, Y = y }
-        };
+    /// <summary>
+    /// <paramref name="fromNodeId"/>의 분기점을 그 카드에 이을 수 있는가 — <b>같은 판의 분기 카드에만</b>(2026-11-17 · 판은 2026-11-18
+    /// old-shapes O8 — ⛔ 그 전에는 판을 안 봐 [대본]에서 다른 챕터의 분기 카드에도 이어졌고, [구성]은 그 분기를 그릴 카드가 없어 뺐다).
+    /// 화면은 이것으로 받을지 정하고 못 받으면 까닭을 말한다(<see cref="IsBranchCardElsewhere"/>).
+    /// </summary>
+    public bool CanBranchTo(string fromNodeId, string nodeId) =>
+        CanBranchFrom(fromNodeId) &&
+        Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } &&
+        Project.FindFileContainingNode(nodeId) is { } board &&
+        ReferenceEquals(board, Project.FindFileContainingNode(fromNodeId));
 
-        return AddNode(fileId, node);
+    /// <summary>
+    /// 그 카드에서 <b>분기(분기점 — <c>&lt;&lt;detour&gt;&gt;</c>로 들르는 곳)를 낼 수 있는가</b>. <b>분기 카드는 못 낸다</b>
+    /// (2026-11-19 소유자 · usability UX27): 분기 카드는 에피소드에서 들렀다 돌아오는 곳이라 그 안에서 다시 갈라지지 않는다 — 들르기가
+    /// 한 단계일 때 판을 읽을 수 있고, [구성]과 도달성 증명은 분기 카드를 보지 않는다. ⛔ 전에는 분기 카드의 분기도 사슬로 따랐다. 이미 그런
+    /// 파일은 읽되 챕터 검증이 오류로 짚는다(<see cref="Chapters.ChapterBranchCards"/>). (분기 카드의 갈래 출구도 막았던 것은 UX28에서 갈래
+    /// 출구째 걷혔다.)
+    /// </summary>
+    public bool CanBranchFrom(string nodeId) => Project.FindNode(nodeId) is DialogueNode { IsBranchCard: false };
+
+    /// <summary>분기 카드에서 분기를 내려 할 때 하는 말 — 편집기의 거절 · 화면의 상태줄이 같은 글을 쓴다.</summary>
+    public const string BranchCardBranchesRefusal =
+        "분기 카드 안에서는 분기를 내지 않습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳입니다. 갈라야 하면 그 에피소드에 분기를 하나 더 두세요.";
+
+    /// <summary>그 카드가 다른 판의 분기 카드인가 — 놓기를 거절할 때 까닭을 고른다.</summary>
+    public bool IsBranchCardElsewhere(string fromNodeId, string nodeId) =>
+        Project.FindNode(nodeId) is DialogueNode { IsBranchCard: true } && !CanBranchTo(fromNodeId, nodeId);
+
+    /// <summary>
+    /// <b>이어지지 않은 분기점을 판의 빈 곳에 놓았다</b> — 그 자리에 새 분기 카드를 세우고 잇는다(2026-11-17 소유자). 카드와 연결이 되돌리기 한
+    /// 칸이다. 분기 카드를 지운 뒤 다시 이을 때 「분기 추가」로 분기점을 하나 더 만들지 않아도 된다.
+    /// </summary>
+    /// <returns>세운 카드. 그 포트가 이어지지 않은 분기점이 아니면 <c>null</c>.</returns>
+    public DialogueNode? AddBranchCardAt(ExitPort openPoint, double x, double y)
+    {
+        ArgumentNullException.ThrowIfNull(openPoint);
+
+        if (!openPoint.IsOpenDetour ||
+            !CanBranchFrom(openPoint.NodeId) ||
+            openPoint.BranchOpenLineId is not { } lineId ||
+            Project.FindFileContainingNode(openPoint.NodeId) is not { } file)
+        {
+            return null;
+        }
+
+        DialogueNode? created = null;
+
+        Batch(() =>
+        {
+            (DialogueNode card, _, Action attach) = NewDialogueNodeCore(
+                file.Id, x, y, name: null, SceneOfCard(Project.FindDialogue(openPoint.NodeId)), branchCard: true);
+            Mutate(attach);
+            ConnectOpenDetour(openPoint.NodeId, lineId, openPoint.OpenOrdinal!.Value, card.Id);
+            created = card;
+        });
+
+        return created;
     }
 
-    public PresentationNode AddPresentationNode(
-        string fileId,
-        double x = 0,
-        double y = 0,
-        string? name = null)
+    /// <summary>
+    /// <b>「분기 지우기」</b> — 그 줄 앞의 분기 하나(줄과 다녀갈 카드 — 한 줄에 여럿일 수 있다)의 <b>분기점과 선만</b> 걷는다.
+    /// <b>다녀가던 카드는 어떤 경우에도 남긴다</b> (2026-11-17 소유자).
+    ///
+    /// 전에는(2026-10-29) 「분기 추가」가 함께 세운 카드를 다른 곳이 쓰지 않으면 함께 걷었다. 같은 단추가 카드의 출신(함께 선
+    /// 것인가 · 사람이 이은 것인가 — 화면에 안 보인다)에 따라 카드를 지우기도 남기기도 해서 결과를 미리 알 수 없었다. 이제 규칙은
+    /// 하나다: 분기 지우기는 분기만 지운다. 카드를 없애려면 그 카드를 고르고 [분기 카드 삭제]를 누른다. 방금 더한 분기를 물리려면
+    /// 되돌리기(Ctrl+Z)가 분기와 카드를 함께 걷는다.
+    /// </summary>
+    /// <param name="targetNodeId">그 분기가 다녀가는 카드 — 한 줄의 분기들 가운데 어느 것인지 가린다.</param>
+    /// <returns>지운 것. 그 자리에 그 분기가 없었으면 <c>null</c>이다.</returns>
+    public BranchMarkerRemoval? RemoveBranchMarker(string nodeId, string beforeLineId, string targetNodeId)
     {
-        var node = new PresentationNode(name: name ?? NextName("연출"))
+        if (Project.FindNode(nodeId) is not DialogueNode source ||
+            source.FindExtension(beforeLineId)?.DetourTargetNodeIds.Contains(targetNodeId) != true)
         {
-            Layout = new NodeLayout { X = x, Y = y }
-        };
+            return null;
+        }
 
-        return AddNode(fileId, node);
+        string? kept = Project.FindNode(targetNodeId) is { } target
+            ? Chapters.EpisodeNaming.ShownNameOf(Project, target)
+            : null;
+
+        SetDetourTarget(nodeId, beforeLineId, from: targetNodeId, to: null, keepPoint: false);
+
+        return new BranchMarkerRemoval(kept);
     }
 
-    public CommandSupplyNode AddCommandSupplyNode(
-        string fileId,
-        double x = 0,
-        double y = 0,
-        string? name = null)
-    {
-        var node = new CommandSupplyNode(name: name ?? NextName("연출 공급"))
-        {
-            Layout = new NodeLayout { X = x, Y = y }
-        };
-
-        return AddNode(fileId, node);
-    }
+    /// <summary>판의 챕터 조건 공급 노드를 세운다 — 공급(<see cref="Chapters.ChapterBoardSupply"/>)만 부른다(설정 노드는 그것뿐이다 · old-shapes O6).</summary>
+    internal SetNode AddSetNode(string fileId, string name) => AddNode(fileId, new SetNode(name: name));
 
     public void RemoveNode(string nodeId)
     {
@@ -500,79 +422,117 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        Mutate(() =>
+        // 에피소드 카드는 에피소드와 함께만 지운다(EpisodeDeleter — 행을 먼저 걷고 카드를 걷는다). 카드만 걷으면 카드 없는 에피소드가 남는다
+        //    — 저장 검증이 받지 않는 모양이다(old-shapes O4).
+        if (node is DialogueNode { MarkedEpisodeId: { } episodeId } &&
+            Chapters.EpisodeNaming.ChapterOfBoard(Project, owner).Episodes.Any(episode =>
+                string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
         {
-            owner.Nodes.Remove(node);
-            RemoveReferencesToNode(nodeId);
+            throw new InvalidOperationException($"'{episodeId}'{Josa.은는(episodeId)} 에피소드 카드입니다 — 에피소드와 함께 지웁니다.");
+        }
 
-            if (string.Equals(Project.StartNodeId, nodeId, StringComparison.Ordinal))
-            {
-                Project.StartNodeId = Project.EnumerateNodes()
-                    .FirstOrDefault(candidate => candidate is not PresentationNode)
-                    ?.Id;
-            }
-        });
+        Mutate(() => RemoveNodeCore(owner, node));
+    }
+
+    /// <summary>노드 하나를 걷는 <b>알맹이</b> — <see cref="Mutate"/> 밖이다(에피소드 지우기가 행과 카드를 한 칸에 걷는다).</summary>
+    private void RemoveNodeCore(StoryFile owner, StoryNode node)
+    {
+        owner.Nodes.Remove(node);
+        RemoveReferencesToNode(node.Id);   // 카드의 대본은 카드 안이라 함께 간다
+
+        if (string.Equals(Project.StartNodeId, node.Id, StringComparison.Ordinal))
+        {
+            Project.StartNodeId = Project.EnumerateNodes().FirstOrDefault()?.Id;
+        }
     }
 
     /// <summary>
-    /// 노드를 다른 StoryFile로 옮긴다. 같은 파일을 주면 그 파일 안에서 순서를 바꾼다.
-    /// 노드의 Id와 그래프 좌표, 연결은 그대로 유지된다.
+    /// 분기 카드의 보이는 제목을 고친다(<see cref="DialogueNode.Title"/>) — [대본] 탭. 앞뒤 빈칸은 걷고, 비우면 이름(ID)이 보인다.
+    /// 되돌리기 한 칸, 같은 값이면 칸을 쓰지 않는다. 분기 카드가 아니면 아무것도 하지 않는다.
     /// </summary>
-    public void MoveNodeToFile(string nodeId, string targetFileId, int? targetIndex = null)
+    public void SetBranchCardTitle(string nodeId, string? title)
     {
-        StoryFile? source = Project.FindFileContainingNode(nodeId);
-        StoryFile target = RequireFile(targetFileId);
-        StoryNode? node = Project.FindNode(nodeId);
+        string? wanted = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
 
-        if (source is null || node is null)
+        if (Project.FindDialogue(nodeId) is { IsBranchCard: true } card && !string.Equals(card.Title, wanted, StringComparison.Ordinal))
         {
-            return;
+            Mutate(ProjectChangeKind.CardTitle, () => card.Title = wanted, card.Id);   // 그 카드의 제목 글만(usability UX15 · ⛔ NodeMetadata)
         }
-
-        int sourceIndex = source.Nodes.IndexOf(node);
-        int requested = Math.Clamp(targetIndex ?? target.Nodes.Count, 0, target.Nodes.Count);
-        int insertionIndex = requested;
-
-        if (ReferenceEquals(source, target))
-        {
-            // targetIndex는 이동 전 목록을 기준으로 받는다. 앞의 항목을 제거하면 뒤쪽 위치가 하나 줄어든다.
-            insertionIndex = requested > sourceIndex ? requested - 1 : requested;
-            insertionIndex = Math.Clamp(insertionIndex, 0, source.Nodes.Count - 1);
-
-            if (insertionIndex == sourceIndex)
-            {
-                return;
-            }
-        }
-
-        Mutate(() =>
-        {
-            source.Nodes.Remove(node);
-            int at = Math.Clamp(insertionIndex, 0, target.Nodes.Count);
-            target.Nodes.Insert(at, node);
-        });
     }
 
+    /// <summary>
+    /// 노드 이름을 바꾼다 — 분기 카드(이름 = 분기 카드 ID · Yarn 노드 이름)와 설정 노드. 에피소드 카드의 이름은 늘 EpisodeId라 여기서 바꾸지 않는다
+    /// (<see cref="RenameEpisode"/>가 함께 옮긴다 · old-shapes O5).
+    /// </summary>
     public void RenameNode(string nodeId, string name)
     {
+        if (Project.FindNode(nodeId) is DialogueNode { MarkedEpisodeId: { } episodeId })
+        {
+            throw new InvalidOperationException($"'{episodeId}'{Josa.은는(episodeId)} 에피소드 카드입니다 — 이름은 에피소드 이름 바꾸기가 함께 옮깁니다.");
+        }
+
         if (Project.FindNode(nodeId) is { } node && !string.Equals(node.Name, name, StringComparison.Ordinal))
         {
             Mutate(ProjectChangeKind.NodeMetadata, () => node.Name = name);
         }
     }
 
+    /// <summary>노드 하나의 자리를 옮긴다 — <see cref="MoveNodes"/>의 한 칸짜리다.</summary>
+    public void MoveNode(string nodeId, double x, double y) =>
+        MoveNodes(new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal) { [nodeId] = (x, y) });
+
     /// <summary>
-    /// 그래프에서 노드를 끌어 놓은 결과. 되돌리기 기록을 남기지 않는다.
-    /// 드래그 한 번에 수십 번 불리는 값이라 기록에 쌓으면 되돌리기가 좌표 이동으로 가득 찬다.
+    /// 여러 노드의 자리를 <b>한 번의 변경으로</b> 옮긴다 — 끌기를 놓을 때 쓴다
+    /// (<c>docs/design/two-graphs.md</c> §6-2).
+    ///
+    /// <b>되돌리기 한 칸이다.</b> 포인터가 움직일 때마다 기록 없이 적으면 끈 자리는 되돌릴 수 없고,
+    /// 앞선 편집을 되돌리면 끈 자리까지 조용히 돌아간다. 그래서 그래프는
+    /// 끄는 동안 화면만 옮기고 놓을 때 여기를 한 번 부른다(챕터 그래프의 <c>MoveEpisodes</c>와 같다).
+    ///
+    /// 없는 노드는 건너뛰고, 실제로 달라진 자리가 없으면 아무것도 적지 않는다(§5-8).
     /// </summary>
-    public void MoveNode(string nodeId, double x, double y)
+    public void MoveNodes(IReadOnlyDictionary<string, (double X, double Y)> positions)
     {
-        if (Project.FindNode(nodeId) is { } node)
+        ArgumentNullException.ThrowIfNull(positions);
+
+        List<(StoryNode Node, double X, double Y)> moves = positions
+            .Select(pair => (Node: Project.FindNode(pair.Key), pair.Value.X, pair.Value.Y))
+            .Where(move => move.Node is not null && (move.Node.Layout.X != move.X || move.Node.Layout.Y != move.Y))
+            .Select(move => (move.Node!, move.X, move.Y))
+            .ToList();
+
+        if (moves.Count == 0)
         {
-            node.Layout.X = x;
-            node.Layout.Y = y;
-            Raise(ProjectChangeKind.Layout);
+            return;
         }
+
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            foreach ((StoryNode node, double x, double y) in moves)
+            {
+                node.Layout.X = x;
+                node.Layout.Y = y;
+            }
+        });
+    }
+
+    /// <summary>
+    /// 카드 크기를 바꾼다 — 폭과 글 칸 높이(<see cref="NodeLayout.WritingHeight"/>)를 함께 받고, <c>null</c>이면 판의 기본값으로
+    /// 돌아간다. 끌기를 놓을 때 한 번 부르므로 되돌리기 한 칸이다. 없는 노드거나 크기가 그대로면 아무것도 적지 않는다.
+    /// </summary>
+    public void ResizeNode(string nodeId, double? width, double? writingHeight)
+    {
+        if (Project.FindNode(nodeId) is not { } node ||
+            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            node.Layout.Width = width;
+            node.Layout.WritingHeight = writingHeight;
+        });
     }
 
     // ── 줄에 얹는 대사 논리 ────────────────────────────────────────────────
@@ -581,8 +541,24 @@ public sealed partial class ProjectEditor
     // ProjectEditor.Scripts.cs에 있다. 여기서는 이미 있는 LineId에 논리를 붙인다.
 
     /// <summary>
+    /// <b>[대본] 판 크기를 바꾼다</b>(2026-11-17 · <see cref="Graph.BoardResize"/>) — 늘리면 크기만, 줄여서 판 밖으로 나가는 카드가 있으면
+    /// 카드 전체의 자리와 선 꺾임을 같은 비율로 다시 적는다. 크기 · 자리 · 꺾임이 <b>되돌리기 한 칸</b>이다(Ctrl+Z 한 번에 그대로 돌아온다).
+    /// 결과가 지금과 같으면 적지 않는다. 값은 범위(<see cref="BoardSize.Minimum"/> ~ <see cref="BoardSize.Maximum"/>) 안으로 들인다.
+    /// </summary>
+    public void SetBoardSize(double width, double height)
+    {
+        Graph.BoardResizePlan plan = Graph.BoardResize.Plan(Project, width, height);
+
+        if (plan.Size == Project.Board && plan.Positions.Count == 0)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () => Graph.BoardResize.Apply(Project, plan));
+    }
+
+    /// <summary>
     /// 이 줄에서 조건 흐름을 어떻게 바꿀지 정한다.
-    /// 갈래를 더 이상 열지 않게 되면 거기 매달려 있던 조건 출구도 함께 사라진다.
     ///
     /// 대본에 없는 LineId를 주면 아무것도 하지 않는다. 조건은 존재하는 줄에만 붙는다.
     /// </summary>
@@ -590,7 +566,7 @@ public sealed partial class ProjectEditor
         SetLineTransitions(nodeId, lineId, transition is null ? [] : [transition]);
 
     /// <summary>
-    /// 이 줄 앞의 전환들을 통째로 바꾼다 (2026-08-17) — 목록 순서가 곧 일어나는 순서다.
+    /// 이 줄 앞의 전환들을 통째로 바꾼다 — 목록 순서가 곧 일어나는 순서다.
     /// 빈 목록이면 전환이 없는 줄이다. 대본에 없는 LineId를 주면 아무것도 하지 않는다.
     /// </summary>
     public void SetLineTransitions(
@@ -600,7 +576,7 @@ public sealed partial class ProjectEditor
 
         DialogueNode node = RequireDialogue(nodeId);
 
-        if (Project.FindScript(node.ScriptId)?.FindLine(lineId) is not { IsRetired: false })
+        if (node.Script.FindLine(lineId) is not { IsRetired: false })
         {
             return;
         }
@@ -612,20 +588,7 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        // 옵션 라벨 전환은 안정 Id를 가져야 한다 — 아래 루프가 그 자리에서 잇는다.
-        var resolved = new List<LineConditionTransition>(transitions.Count);
-
-        foreach (LineConditionTransition item in transitions)
-        {
-            resolved.Add(item is { OpensOption: true, OptionId: null }
-                ? new LineConditionTransition(
-                    item.Kind,
-                    optionId: existing?.Transitions.FirstOrDefault(candidate => candidate.OpensOption)?.OptionId
-                        ?? Identifier.Option())
-                : item);
-        }
-
-        Mutate(() => WriteLineTransitions(node, lineId, existing, resolved));
+        Mutate(() => WriteLineTransitions(node, lineId, existing, transitions));
     }
 
     /// <summary>전환을 그 줄에 앉힌다. <b>스냅샷을 쌓지 않는다</b> — 부르는 쪽이 <c>Mutate</c> 안이다.</summary>
@@ -645,37 +608,32 @@ public sealed partial class ProjectEditor
         extension.Transitions.Clear();
         extension.Transitions.AddRange(resolved);
 
-        // 순서가 중요하다. 먼저 주인 없는 출구를 버리고, 그다음에 빈 항목을 버린다.
-        // 반대로 하면 아직 출구가 매달려 있어 빈 항목이 남는다.
-        PruneBranchExits(node);
         PruneLineExtensions(node);
     }
 
     /// <summary>
     /// <b>이 노드가 통째로 도는 조건</b>을 건다 — 첫 줄에 <c>BeginIf</c>, 마지막 줄 뒤에
-    /// <c>EndIf</c> (2026-09-18). <c>null</c>이면 걷는다.
+    /// <c>EndIf</c>. <c>null</c>이면 걷는다.
     ///
-    /// <b>분기 에피소드의 첫머리 조건</b>이 사는 자리다 (R7 P-5 · 2026-09-18 소유자:
-    /// *"Detour로 조건 분기가 일어나는 마커를 끼워두고 그곳에서 조건과 내용을 추가한다는게
-    /// 유지보수 측면에서 얼마나 유리한지"*). 부르는 쪽 대본에는 <c>&lt;&lt;detour&gt;&gt;</c>
+    /// <b>분기 에피소드의 첫머리 조건</b>이 사는 자리다. 부르는 쪽 대본에는 <c>&lt;&lt;detour&gt;&gt;</c>
     /// 한 줄뿐이고 <b>조건과 내용이 다녀올 곳에 함께</b> 있다 — 짝 맞출 <c>If</c>/<c>EndIf</c>가
     /// 남의 대본에 흩어지지 않는다.
     ///
-    /// ⭐ <b>성립하면 돈다</b>(허가). 조건이 거짓이면 본문이 통째로 건너뛰이고, 노드 끝이
+    /// <b>성립하면 돈다</b>(허가). 조건이 거짓이면 본문이 통째로 건너뛰이고, 노드 끝이
     /// 곧 <c>&lt;&lt;return&gt;&gt;</c>이라 곧바로 돌아간다. 모델에 부정(<c>not</c>)이 없으므로
     /// 이 극성이 곧 저장 형태다.
     ///
-    /// ⚠ <b>한 번의 변경이다.</b> 줄과 꼬리를 따로 쓰면 되돌리기가 둘로 쪼개져, 한 번 물렀을 때
+    /// <b>한 번의 변경이다.</b> 줄과 꼬리를 따로 쓰면 되돌리기가 둘로 쪼개져, 한 번 물렀을 때
     /// <c>BeginIf</c>만 남은 <b>짝 없는 상태</b>가 판에 선다.
     ///
-    /// ⚠ 첫 줄의 기존 전환은 <b>덮는다</b>. 덮어도 되는 모양인지는 부르는 쪽
+    /// 첫 줄의 기존 전환은 <b>덮는다</b>. 덮어도 되는 모양인지는 부르는 쪽
     /// (<see cref="Chapters.BranchEntryCondition"/>)이 먼저 재고 온다.
     /// </summary>
     public void SetEntryCondition(string nodeId, string? conditionId)
     {
         DialogueNode node = RequireDialogue(nodeId);
 
-        if (Project.FindScript(node.ScriptId)?.ActiveLines.FirstOrDefault() is not { } first)
+        if (node.Script.ActiveLines.FirstOrDefault() is not { } first)
         {
             throw new InvalidOperationException(
                 "대본이 비어 있어 조건을 걸 자리가 없습니다 — 첫 줄을 먼저 쓰세요.");
@@ -700,58 +658,39 @@ public sealed partial class ProjectEditor
         });
     }
 
-    private void SetLineTransitionLegacy(string nodeId, string lineId, LineConditionTransition? transition)
-    {
-        DialogueNode node = RequireDialogue(nodeId);
-
-        if (Project.FindScript(node.ScriptId)?.FindLine(lineId) is not { IsRetired: false })
-        {
-            return;
-        }
-
-        DialogueLineExtension? existing = node.FindExtension(lineId);
-
-        if (existing?.Transition is null && transition is null)
-        {
-            return;
-        }
-
-        // 옵션 라벨 전환은 안정 Id를 가져야 한다. 이미 이 줄이 옵션이었다면 그 Id를 잇는다 —
-        // 라벨 전환 종류를 바꿨다고 정체성이 바뀌면 순서 경고(C3)가 성립하지 않는다.
-        if (transition is { OpensOption: true, OptionId: null })
-        {
-            transition = new LineConditionTransition(
-                transition.Kind,
-                optionId: existing?.Transition?.OptionId ?? Identifier.Option());
-        }
-
-        Mutate(() =>
-        {
-            DialogueLineExtension extension = existing ?? new DialogueLineExtension(lineId);
-
-            if (existing is null)
-            {
-                node.LineExtensions.Add(extension);
-            }
-
-            extension.Transition = transition;
-
-            // 순서가 중요하다. 먼저 주인 없는 출구를 버리고, 그다음에 빈 항목을 버린다.
-            // 반대로 하면 아직 출구가 매달려 있어 빈 항목이 남는다.
-            PruneBranchExits(node);
-            PruneLineExtensions(node);
-        });
-    }
-
     // ── 출구 ────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// 포트 하나의 대상 노드를 정한다. null이면 연결을 끊는다.
     /// 그래프에서 간선을 끌든 노드 화면에서 드롭다운을 고르든 결국 이 하나를 부른다.
+    ///
+    /// 분기 포트를 끊으면 <b>연결만</b> 끊긴다 — 분기점은 이어지지 않은 채 그 자리에 남는다
+    /// (<see cref="DialogueLineExtension.OpenDetourPositions"/>). 이어지지 않은 분기점을 카드에 이으면 그 자리에서 분기가 된다.
+    /// 분기점째 걷는 것은 <see cref="RemoveBranchMarker"/> · <see cref="RemoveOpenDetour"/>다.
     /// </summary>
     public void SetExitTarget(ExitPort port, string? targetNodeId)
     {
         ArgumentNullException.ThrowIfNull(port);
+
+        // 분기는 줄 하나에 여럿이라 <b>그 분기</b>(지금 가는 곳)를 바꾼다 — 줄만 주면 어느 것인지 모른다.
+        if (port.Kind == ExitPortKind.Detour && port.BranchOpenLineId is { } lineId)
+        {
+            // 분기점은 분기 카드에만 잇는다(2026-11-17) — 에피소드에 이으면 들렀다 돌아오는 동안 그 에피소드의 선택지가 게임에 안 나온다.
+            if (targetNodeId is not null && !CanBranchTo(port.NodeId, targetNodeId))
+            {
+                return;
+            }
+
+            if (port.IsOpenDetour)
+            {
+                ConnectOpenDetour(port.NodeId, lineId, port.OpenOrdinal!.Value, targetNodeId);
+                return;
+            }
+
+            SetDetourTarget(port.NodeId, lineId, port.TargetNodeId, targetNodeId, keepPoint: true);
+            return;
+        }
+
         SetExitTarget(port.NodeId, port.Kind, port.ExitKey, targetNodeId);
     }
 
@@ -770,8 +709,7 @@ public sealed partial class ProjectEditor
 
         if (node is not DialogueNode)
         {
-            // 실행 출구는 DialogueNode만 가진다. SetNode·CommandSupplyNode는 공급자이고
-            // PresentationNode는 결과 소비자다 — 어느 쪽도 실행 흐름을 정하지 않는다.
+            // 실행 출구는 DialogueNode만 가진다. SetNode는 공급자라 실행 흐름을 정하지 않는다.
             return;
         }
 
@@ -780,1230 +718,201 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        if (kind == ExitPortKind.Default)
+        if (branchOpenLineId is null)
         {
-            // ⛔ ~~커스텀(자유) 노드의 기본 출구 쓰기는 조용히 거절한다~~ (2026-08-21) —
-            //    <b>걷혔다</b> (R7 P-6 · 결정 ⑤ · 2026-09-17). 그 거절이 곧 엑셀노드/자유노드의
-            //    구분이었고, 같은 규칙이 `NodeConnections`와 `EffectiveDefaultExit`에도
-            //    한 벌씩 더 있었다 — 셋을 함께 걷었다.
-            if (!string.Equals(node.DefaultExitTargetNodeId, targetNodeId, StringComparison.Ordinal))
+            return;
+        }
+
+        // 출구는 분기점뿐이다 — 그 목표는 <b>그 줄</b>이 진다(⛔ 갈래 출구 장부 `BranchExits`는 2026-11-19에 걷혔다 · usability UX28).
+        //
+        // 한 줄에 분기가 여럿일 수 있다. 줄만 주면 대상이 있으면 그 줄의 분기 끝에 하나를 <b>더하고</b>(이미 있으면
+        // 그대로), 대상이 없으면 그 줄의 분기를 이어지지 않은 분기점까지 <b>모두</b> 걷는다. 분기 하나만 바꾸려면
+        // 포트(<see cref="ExitPort"/>)로 부른다.
+        if (kind == ExitPortKind.Detour && (targetNodeId is null || CanBranchTo(nodeId, targetNodeId)))
+        {
+            SetDetourTarget(nodeId, branchOpenLineId, from: null, targetNodeId, keepPoint: false);
+        }
+    }
+
+    /// <summary>
+    /// 그 줄의 분기 하나를 바꾼다(한 줄에 분기가 여럿일 수 있다). <paramref name="from"/>은 지금 가는 곳이다.
+    /// <list type="bullet">
+    /// <item><c>from</c> 없음 · <c>to</c> 있음 — 그 줄 분기 끝에 더한다(이미 있으면 그대로).</item>
+    /// <item><c>from</c> 없음 · <c>to</c> 없음 — 그 줄의 분기를 이어지지 않은 분기점까지 모두 걷는다.</item>
+    /// <item><c>from</c> 있음 · <c>to</c> 없음 — 그 분기 하나를 끊는다. <paramref name="keepPoint"/>면 분기점은 이어지지 않은
+    ///   채 제자리에 남고(<see cref="DialogueLineExtension.OpenDetourPositions"/>), 아니면 분기점째 걷힌다.</item>
+    /// <item><c>from</c> 있음 · <c>to</c> 있음 — 그 분기를 제자리에서 다른 곳으로 잇는다(선 모양도 따라간다). <c>to</c>가
+    ///   그 줄에 이미 있으면 둘이 같은 곳이 되므로 <c>from</c>을 걷는다.</item>
+    /// </list>
+    /// 끊긴 분기의 선 모양은 걷는다 — 선이 없는데 모양만 파일에 남으면, 같은 자리를 다시 이을 때 옛 굽이가 되살아난다.
+    /// </summary>
+    private void SetDetourTarget(string nodeId, string lineId, string? from, string? to, bool keepPoint)
+    {
+        if (Project.FindNode(nodeId) is not DialogueNode dialogue ||
+            (to is not null && Project.FindNode(to) is null))
+        {
+            return;
+        }
+
+        // 분기점 전부(이어지지 않은 것은 null)를 차례대로 다룬다 — 끊은 분기점이 제자리에 남아야 다른 분기의 자리와 색이
+        // 그대로다.
+        List<string?> current = dialogue.FindExtension(lineId)?.DetourSlots() ?? [];
+        List<string?> next = [.. current];
+        int at = from is null ? -1 : next.IndexOf(from);
+        string? movedTo = null;
+
+        if (from is not null && at < 0)
+        {
+            return;   // 그 분기가 없다 — 이미 바뀌었다
+        }
+
+        if (to is null)
+        {
+            if (from is null)
             {
-                Mutate(() => node.DefaultExitTargetNodeId = targetNodeId);
+                next.Clear();                // 줄째 걷기 — 이어지지 않은 분기점도 함께
             }
-
-            return;
-        }
-
-        if (node is not DialogueNode dialogue || branchOpenLineId is null)
-        {
-            return;
-        }
-
-        // 「조건 분기」 표식의 목표는 <b>그 줄</b>이 진다 (R7 P-5) — 갈래 출구 장부에 적으면
-        // 여는 전환이 없는 고아가 되고, 저장할 때 그 칸이 전환 안에 있어 통째로 사라진다.
-        if (kind == ExitPortKind.Detour)
-        {
-            DialogueLineExtension extension = dialogue.RequireExtension(branchOpenLineId);
-
-            if (!string.Equals(extension.DetourTargetNodeId, targetNodeId, StringComparison.Ordinal))
+            else if (keepPoint)
             {
-                Mutate(() => extension.DetourTargetNodeId = targetNodeId);
-            }
-
-            return;
-        }
-
-        // 선택지 출구(v9)는 문구가 열쇠다 — 대본의 줄에 매이지 않는다.
-        Dictionary<string, string> exits =
-            kind == ExitPortKind.Choice ? dialogue.ChoiceExits : dialogue.BranchExits;
-
-        Mutate(() =>
-        {
-            if (targetNodeId is null)
-            {
-                exits.Remove(branchOpenLineId);
+                next[at] = null;             // 연결만 끊는다 — 분기점은 제자리에
             }
             else
             {
-                exits[branchOpenLineId] = targetNodeId;
-            }
-        });
-    }
-
-    // ── 설정 공급 연결 ──────────────────────────────────────────────────────
-
-    /// <summary>
-    /// SetNode가 DialogueNode에 조건과 assignment를 공급하는 Settings link를 만든다.
-    /// 실행 순서는 바꾸지 않는다. 같은 소스와 대상의 링크가 이미 있으면 그것을 돌려준다.
-    /// </summary>
-    public NodeLink AddSettingsLink(string setNodeId, string dialogueNodeId)
-    {
-        if (Project.FindNode(setNodeId) is not SetNode)
-        {
-            throw new InvalidOperationException($"'{setNodeId}'는 설정 노드가 아닙니다.");
-        }
-
-        if (Project.FindNode(dialogueNodeId) is not DialogueNode)
-        {
-            throw new InvalidOperationException($"'{dialogueNodeId}'는 대사 노드가 아닙니다.");
-        }
-
-        NodeLink? existing = Project.Links.FirstOrDefault(link =>
-            link.Kind == NodeLinkKind.Settings &&
-            string.Equals(link.SourceNodeId, setNodeId, StringComparison.Ordinal) &&
-            string.Equals(link.TargetNodeId, dialogueNodeId, StringComparison.Ordinal));
-
-        if (existing is not null)
-        {
-            if (!existing.IsEnabled)
-            {
-                Mutate(ProjectChangeKind.Connections, () => existing.IsEnabled = true);
-            }
-
-            return existing;
-        }
-
-        int nextOrder = Project.Links
-            .Where(link =>
-                link.Kind == NodeLinkKind.Settings &&
-                string.Equals(link.TargetNodeId, dialogueNodeId, StringComparison.Ordinal))
-            .Select(link => link.Order)
-            .DefaultIfEmpty(-1)
-            .Max() + 1;
-
-        var link = new NodeLink(
-            kind: NodeLinkKind.Settings,
-            sourceNodeId: setNodeId,
-            targetNodeId: dialogueNodeId)
-        {
-            Order = nextOrder
-        };
-
-        Mutate(ProjectChangeKind.Connections, () => Project.Links.Add(link));
-        return link;
-    }
-
-    /// <summary>
-    /// CommandSupplyNode가 PresentationNode에 커맨드 범주와 프리셋을 공급하는 link를 만든다.
-    /// Settings link와 동형이다. 같은 소스와 대상의 링크가 이미 있으면 그것을 돌려준다.
-    /// </summary>
-    public NodeLink AddCommandSupplyLink(string supplyNodeId, string presentationNodeId)
-    {
-        if (Project.FindNode(supplyNodeId) is not CommandSupplyNode)
-        {
-            throw new InvalidOperationException($"'{supplyNodeId}'는 연출 공급 노드가 아닙니다.");
-        }
-
-        if (Project.FindNode(presentationNodeId) is not PresentationNode)
-        {
-            throw new InvalidOperationException($"'{presentationNodeId}'는 연출 노드가 아닙니다.");
-        }
-
-        NodeLink? existing = Project.Links.FirstOrDefault(link =>
-            link.Kind == NodeLinkKind.CommandSupply &&
-            string.Equals(link.SourceNodeId, supplyNodeId, StringComparison.Ordinal) &&
-            string.Equals(link.TargetNodeId, presentationNodeId, StringComparison.Ordinal));
-
-        if (existing is not null)
-        {
-            if (!existing.IsEnabled)
-            {
-                Mutate(ProjectChangeKind.Connections, () => existing.IsEnabled = true);
-            }
-
-            return existing;
-        }
-
-        int nextOrder = Project.Links
-            .Where(link =>
-                link.Kind == NodeLinkKind.CommandSupply &&
-                string.Equals(link.TargetNodeId, presentationNodeId, StringComparison.Ordinal))
-            .Select(link => link.Order)
-            .DefaultIfEmpty(-1)
-            .Max() + 1;
-
-        var link = new NodeLink(
-            kind: NodeLinkKind.CommandSupply,
-            sourceNodeId: supplyNodeId,
-            targetNodeId: presentationNodeId)
-        {
-            Order = nextOrder
-        };
-
-        Mutate(ProjectChangeKind.Connections, () => Project.Links.Add(link));
-        return link;
-    }
-
-    /// <summary>
-    /// 이 연출 노드가 발행한 결과를 공급할 대사 노드를 정한다. null이면 연결을 끊는다.
-    ///
-    /// 짝은 한 쌍이다 — 연출 하나가 여러 대사에, 대사 하나가 여러 연출에 걸리면
-    /// 내보내기가 어느 짝을 골라야 할지 답할 수 없으므로 양쪽의 기존 공급을 걷어낸다.
-    /// </summary>
-    public NodeLink? SetPresentationSupplyTarget(string presentationNodeId, string? dialogueNodeId)
-    {
-        if (Project.FindPresentation(presentationNodeId) is null)
-        {
-            throw new InvalidOperationException($"'{presentationNodeId}'는 연출 노드가 아닙니다.");
-        }
-
-        if (dialogueNodeId is not null && Project.FindDialogue(dialogueNodeId) is null)
-        {
-            throw new InvalidOperationException($"'{dialogueNodeId}'는 대사 노드가 아닙니다.");
-        }
-
-        NodeLink? existing = Project.Links.FirstOrDefault(link =>
-            link.Kind == NodeLinkKind.PresentationSupply &&
-            string.Equals(link.SourceNodeId, presentationNodeId, StringComparison.Ordinal));
-
-        if (dialogueNodeId is null && existing is null)
-        {
-            return null;
-        }
-
-        if (existing is not null &&
-            string.Equals(existing.TargetNodeId, dialogueNodeId, StringComparison.Ordinal))
-        {
-            if (!existing.IsEnabled)
-            {
-                Mutate(ProjectChangeKind.Connections, () => existing.IsEnabled = true);
-            }
-
-            return existing;
-        }
-
-        NodeLink? created = null;
-
-        Mutate(ProjectChangeKind.Connections, () =>
-        {
-            Project.Links.RemoveAll(link =>
-                link.Kind == NodeLinkKind.PresentationSupply &&
-                (string.Equals(link.SourceNodeId, presentationNodeId, StringComparison.Ordinal) ||
-                 (dialogueNodeId is not null &&
-                  string.Equals(link.TargetNodeId, dialogueNodeId, StringComparison.Ordinal))));
-
-            if (dialogueNodeId is not null)
-            {
-                created = new NodeLink(
-                    kind: NodeLinkKind.PresentationSupply,
-                    sourceNodeId: presentationNodeId,
-                    targetNodeId: dialogueNodeId);
-                Project.Links.Add(created);
-            }
-        });
-
-        return created;
-    }
-
-    // ── 연출 공급 노드 ──────────────────────────────────────────────────────
-
-    /// <summary>공급 범주 집합을 통째로 바꾼다. 어떤 묶음을 무엇이라 부를지는 데이터다.</summary>
-    public void SetSupplyCategories(string supplyNodeId, IReadOnlyList<string> categoryIds)
-    {
-        CommandSupplyNode node = RequireSupply(supplyNodeId);
-
-        if (node.Categories.SequenceEqual(categoryIds, StringComparer.Ordinal))
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            node.Categories.Clear();
-            node.Categories.AddRange(categoryIds);
-        });
-    }
-
-    public CommandPreset AddCommandPreset(
-        string supplyNodeId,
-        string commandDefinitionId,
-        string? displayName = null,
-        IReadOnlyDictionary<string, string>? argumentValues = null,
-        string? note = null)
-    {
-        CommandSupplyNode node = RequireSupply(supplyNodeId);
-        var preset = new CommandPreset
-        {
-            DisplayName = displayName ?? string.Empty,
-            CommandDefinitionId = commandDefinitionId,
-            Note = note
-        };
-
-        if (argumentValues is not null)
-        {
-            foreach ((string key, string value) in argumentValues)
-            {
-                preset.ArgumentValues[key] = value;
+                next.RemoveAt(at);
             }
         }
-
-        Mutate(ProjectChangeKind.PresentationContent, () => node.Presets.Add(preset));
-        return preset;
-    }
-
-    public void UpdateCommandPreset(
-        string supplyNodeId,
-        string presetId,
-        string? displayName = null,
-        string? commandDefinitionId = null,
-        IReadOnlyDictionary<string, string>? argumentValues = null,
-        string? note = null)
-    {
-        CommandSupplyNode node = RequireSupply(supplyNodeId);
-
-        if (node.FindPreset(presetId) is not { } preset)
+        else if (next.Contains(to))
         {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            preset.DisplayName = displayName ?? preset.DisplayName;
-            preset.CommandDefinitionId = commandDefinitionId ?? preset.CommandDefinitionId;
-            preset.Note = note ?? preset.Note;
-
-            if (argumentValues is not null)
+            if (from is not null && !string.Equals(from, to, StringComparison.Ordinal))
             {
-                preset.ArgumentValues.Clear();
-
-                foreach ((string key, string value) in argumentValues)
-                {
-                    preset.ArgumentValues[key] = value;
-                }
-            }
-        });
-    }
-
-    /// <summary>
-    /// 프리셋을 지운다. 이 프리셋을 참조하던 연출 binding은 건드리지 않는다 —
-    /// 발행 검증이 "프리셋을 찾을 수 없음"으로 알린다. 말없이 다른 값으로 갈아 끼우지 않는다.
-    /// </summary>
-    public void RemoveCommandPreset(string supplyNodeId, string presetId)
-    {
-        CommandSupplyNode node = RequireSupply(supplyNodeId);
-
-        if (node.FindPreset(presetId) is { } preset)
-        {
-            Mutate(ProjectChangeKind.PresentationContent, () => node.Presets.Remove(preset));
-        }
-    }
-
-    private CommandSupplyNode RequireSupply(string nodeId)
-    {
-        return Project.FindNode(nodeId) as CommandSupplyNode
-            ?? throw new InvalidOperationException($"'{nodeId}'는 연출 공급 노드가 아닙니다.");
-    }
-
-    public void RemoveLink(string linkId)
-    {
-        NodeLink? link = Project.FindLink(linkId);
-
-        if (link is not null)
-        {
-            // Dialogue의 LineConditionTransition은 건드리지 않는다. 연결이 끊긴 뒤에는
-            // ConditionFlowResolver가 사용할 수 없는 조건으로 표시한다.
-            Mutate(ProjectChangeKind.Connections, () => Project.Links.Remove(link));
-        }
-    }
-
-    public void SetLinkEnabled(string linkId, bool enabled)
-    {
-        NodeLink? link = Project.FindLink(linkId);
-
-        if (link is not null && link.IsEnabled != enabled)
-        {
-            Mutate(ProjectChangeKind.Connections, () => link.IsEnabled = enabled);
-        }
-    }
-
-    // ── Presentation command ────────────────────────────────────────────────
-
-    public PresentationLineBinding AddPresentationBinding(
-        string presentationNodeId,
-        string lineId)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationLineBinding? existing = node.Bindings.FirstOrDefault(binding =>
-            string.Equals(binding.LineId, lineId, StringComparison.Ordinal));
-
-        if (existing is not null)
-        {
-            return existing;
-        }
-
-        var binding = new PresentationLineBinding(lineId);
-        Mutate(ProjectChangeKind.PresentationContent, () => node.Bindings.Add(binding));
-        return binding;
-    }
-
-    public PresentationCommandInstance AddPresentationCommand(
-        string presentationNodeId,
-        string lineId,
-        string definitionId,
-        IReadOnlyDictionary<string, string>? arguments = null,
-        string? note = null,
-        string? presetId = null)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationLineBinding? existingBinding = node.Bindings.FirstOrDefault(item =>
-            string.Equals(item.LineId, lineId, StringComparison.Ordinal));
-        PresentationLineBinding binding = existingBinding ?? new PresentationLineBinding(lineId);
-        var command = new PresentationCommandInstance(definitionId: definitionId)
-        {
-            Note = note,
-            PresetId = presetId
-        };
-
-        if (arguments is not null)
-        {
-            foreach ((string key, string value) in arguments)
-            {
-                command.Arguments[key] = value;
+                next.RemoveAt(at);
             }
         }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
+        else if (from is null)
         {
-            if (existingBinding is null)
-            {
-                node.Bindings.Add(binding);
-            }
-
-            binding.Commands.Add(command);
-            RecordRecentCommand(definitionId);
-        });
-
-        return command;
-    }
-
-    /// <summary>
-    /// 갤러리의 "최근" 섹션 재료. 추가와 같은 mutate 안에서 움직이므로 별도 undo 단계를
-    /// 만들지 않고, 되돌리면 최근 목록도 함께 돌아간다.
-    /// </summary>
-    private void RecordRecentCommand(string definitionId)
-    {
-        if (string.IsNullOrWhiteSpace(definitionId))
-        {
-            return;
-        }
-
-        Project.RecentCommandIds.RemoveAll(id => string.Equals(id, definitionId, StringComparison.Ordinal));
-        Project.RecentCommandIds.Insert(0, definitionId);
-
-        if (Project.RecentCommandIds.Count > StoryProject.MaxRecentCommands)
-        {
-            Project.RecentCommandIds.RemoveRange(
-                StoryProject.MaxRecentCommands,
-                Project.RecentCommandIds.Count - StoryProject.MaxRecentCommands);
-        }
-    }
-
-    // ── 자주 쓰는 칩 (2026-08-22) ────────────────────────────────────────────
-
-    /// <summary>
-    /// 칩 하나를 [자주 쓰는] 목록 맨 뒤에 담는다. 목록에 처음 손대는 것이면
-    /// <b>기본 목록을 먼저 실체화한다</b> — 안 그러면 담는 순간 기본 열한 개가 사라진다.
-    /// 정의도 인자도 똑같은 칩이 이미 있으면 아무 일도 안 한다(같은 것을 두 번 담는 것은
-    /// 의도가 아니라 실수다). 담긴 자리를 돌려준다 — 이미 있었으면 그 자리다.
-    /// </summary>
-    public int PinQuickCommand(StageQuickCommand chip)
-    {
-        ArgumentNullException.ThrowIfNull(chip);
-
-        IReadOnlyList<StageQuickCommand> chips = Project.EffectiveQuickCommands;
-
-        for (int index = 0; index < chips.Count; index++)
-        {
-            if (chips[index].SameStepsAs(chip))
-            {
-                return index;
-            }
-        }
-
-        Mutate(ProjectChangeKind.Content, () => MaterializeQuickCommands().Add(chip.Copy()));
-        return chips.Count;
-    }
-
-    /// <summary>
-    /// <b>빈 묶음 칩</b>을 만들고 그 자리를 돌려준다 (2026-08-24 소유자: "커맨드 칩 생성을
-    /// 하면, 여기에 원하는 커맨드들을 골라담도록").
-    ///
-    /// <b>담기의 출발점이 뒤집혔다.</b> 예전에는 커맨드를 집으면 칩이 따라 생겨서 묶음이
-    /// 부산물이었다. 이제는 <b>그릇을 먼저 만들고 골라 담는다</b> — 사람이 "이제부터 묶음
-    /// 하나를 만든다"고 말할 수 있어야 담는 동안의 화면이 그 사실을 계속 보여 줄 수 있다.
-    ///
-    /// 그래서 <b>단계 없는 칩이 정상 상태다</b>(막 만든 그릇). 눌러서 낼 것이 없으므로
-    /// 화면은 평소 모드에서 그리지 않고, 편집을 마칠 때 <see cref="RemoveEmptyQuickCommands"/>가
-    /// 걷는다 — 만들다 만 그릇을 저장물에 남기지 않는다.
-    /// </summary>
-    public int CreateQuickBundle(string? displayName = null)
-    {
-        int index = Project.EffectiveQuickCommands.Count;
-        string name = UniqueQuickCommandName(
-            string.IsNullOrWhiteSpace(displayName) ? DefaultQuickBundleName : displayName.Trim());
-
-        Mutate(ProjectChangeKind.Content, () => MaterializeQuickCommands().Add(new StageQuickCommand(name, [])));
-        return index;
-    }
-
-    /// <summary>막 만든 묶음의 이름 — 담는 동안 이름 칸에서 고친다.</summary>
-    public const string DefaultQuickBundleName = "새 묶음";
-
-    /// <summary>
-    /// 단계가 하나도 없는 칩을 걷는다 — [완료]가 부른다. 걷을 것이 없으면 아무 일도 안 한다
-    /// (빈 <c>Mutate</c>는 undo 스택에 뜻 없는 단계를 쌓는다).
-    /// </summary>
-    public void RemoveEmptyQuickCommands()
-    {
-        if (Project.QuickCommands is null || !Project.QuickCommands.Any(chip => chip.Steps.Count == 0))
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () =>
-            MaterializeQuickCommands().RemoveAll(chip => chip.Steps.Count == 0));
-    }
-
-    /// <summary>이미 있는 칩 이름과 안 겹치는 이름 — 겹치면 뒤에 번호를 단다.</summary>
-    public string UniqueQuickCommandName(string baseName)
-    {
-        IReadOnlyList<StageQuickCommand> chips = Project.EffectiveQuickCommands;
-        string candidate = baseName;
-        int suffix = 2;
-
-        while (chips.Any(chip => string.Equals(chip.DisplayName, candidate, StringComparison.Ordinal)))
-        {
-            candidate = $"{baseName} {suffix++}";
-        }
-
-        return candidate;
-    }
-
-    /// <summary>
-    /// 단계 여럿을 칩 하나의 <b>맨 뒤에</b> 붙인다 — 이것이 묶음이 자라는 유일한 통로다
-    /// (2026-08-24 소유자: "여러개의 커맨드 단위로 커스텀").
-    ///
-    /// 붙이는 자리가 맨 뒤인 이유는 <b>순서가 곧 뜻</b>이기 때문이다: 터미널에서 집는
-    /// 순서가 곧 무대에 붙는 순서다. 중간에 끼우고 싶으면 붙인 뒤 ▲▼로 옮긴다
-    /// (<see cref="MoveQuickCommandStep"/>) — 담는 순간에 자리까지 묻지 않는다.
-    ///
-    /// 같은 것을 두 번 붙이는 것은 막지 않는다. 묶음 안의 같은 커맨드·같은 대상은 적용에서
-    /// 뒤의 것이 이기므로 해가 없고, 값을 달리해 두 번 거는 것이 정상 쓰임이다.
-    /// </summary>
-    public void AppendQuickCommandSteps(int index, IReadOnlyList<StageQuickStep> steps)
-    {
-        ArgumentNullException.ThrowIfNull(steps);
-
-        if (index < 0 || index >= Project.EffectiveQuickCommands.Count || steps.Count == 0)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () =>
-        {
-            List<StageQuickCommand> chips = MaterializeQuickCommands();
-            chips[index] = chips[index] with
-            {
-                Steps = [.. chips[index].Steps, .. steps.Select(step => step.Copy())]
-            };
-        });
-    }
-
-    /// <summary>
-    /// 단계 하나를 뺀다. 다 빼면 <b>빈 그릇으로 남는다</b> — 칩째 지우지 않는 이유는
-    /// 담는 도중에 잘못 담은 것을 하나씩 빼는 일이 정상이기 때문이다. 그릇째 없애는 것은
-    /// 칩 줄의 ✕(<see cref="RemoveQuickCommandAt"/>)이고, 끝내 비어 있으면 [완료]가 걷는다.
-    /// </summary>
-    public void RemoveQuickCommandStepAt(int index, int stepIndex)
-    {
-        IReadOnlyList<StageQuickCommand> chips = Project.EffectiveQuickCommands;
-
-        if (index < 0 || index >= chips.Count ||
-            stepIndex < 0 || stepIndex >= chips[index].Steps.Count)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () =>
-        {
-            List<StageQuickCommand> materialized = MaterializeQuickCommands();
-            List<StageQuickStep> steps = [.. materialized[index].Steps];
-            steps.RemoveAt(stepIndex);
-            materialized[index] = materialized[index] with { Steps = steps };
-        });
-    }
-
-    /// <summary>
-    /// 단계 하나를 위/아래로 옮긴다(<paramref name="delta"/> = -1/+1). 순서가 뜻이므로
-    /// 옮기기는 값 편집과 같은 급이다. 목록 밖으로 나가는 이동은 아무 일도 안 한다 —
-    /// 끝에서 한 번 더 누른 것이 목록을 감아 돌면 사람이 방금 무슨 일이 났는지 놓친다.
-    /// </summary>
-    public void MoveQuickCommandStep(int index, int stepIndex, int delta)
-    {
-        IReadOnlyList<StageQuickCommand> chips = Project.EffectiveQuickCommands;
-
-        if (index < 0 || index >= chips.Count ||
-            stepIndex < 0 || stepIndex >= chips[index].Steps.Count)
-        {
-            return;
-        }
-
-        int target = stepIndex + delta;
-
-        if (delta == 0 || target < 0 || target >= chips[index].Steps.Count)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () =>
-        {
-            List<StageQuickCommand> materialized = MaterializeQuickCommands();
-            List<StageQuickStep> steps = [.. materialized[index].Steps];
-            (steps[stepIndex], steps[target]) = (steps[target], steps[stepIndex]);
-            materialized[index] = materialized[index] with { Steps = steps };
-        });
-    }
-
-    /// <summary>칩 하나를 뺀다. 전부 빼면 <b>빈 목록</b>이 남는다 — 기본으로 되돌아가지 않는다.</summary>
-    public void RemoveQuickCommandAt(int index)
-    {
-        if (index < 0 || index >= Project.EffectiveQuickCommands.Count)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () => MaterializeQuickCommands().RemoveAt(index));
-    }
-
-    /// <summary>
-    /// 칩 이름만 고친다. 담기는 정의 이름을 자동으로 붙이므로(터미널에서 집는 순간 이름을
-    /// 물어보면 흐름이 끊긴다) <b>이름을 나중에 고칠 길</b>이 있어야 한다 — 같은 커맨드를
-    /// 값만 달리해 여럿 담는 것이 이 판의 정상 쓰임이라 이름이 유일한 구분이다.
-    /// </summary>
-    public void RenameQuickCommandAt(int index, string displayName)
-    {
-        IReadOnlyList<StageQuickCommand> chips = Project.EffectiveQuickCommands;
-
-        if (index < 0 || index >= chips.Count)
-        {
-            return;
-        }
-
-        string trimmed = displayName?.Trim() ?? string.Empty;
-
-        if (trimmed.Length == 0 || string.Equals(chips[index].DisplayName, trimmed, StringComparison.Ordinal))
-        {
-            return; // 빈 이름은 칩을 이름 없는 단추로 만든다 — 고치지 않은 것으로 친다
-        }
-
-        Mutate(ProjectChangeKind.Content, () =>
-        {
-            List<StageQuickCommand> materialized = MaterializeQuickCommands();
-            materialized[index] = materialized[index] with { DisplayName = trimmed };
-        });
-    }
-
-    /// <summary>
-    /// 칩이 담아 둔 인자 하나를 고친다 (2026-08-22 소유자: "편집시에 개별 커맨드의 세부
-    /// 수치를 조절할 수 있게 … 터미널 아래에서 그랬던 것 처럼"). 칩은 발행 결과가 아니라
-    /// 프로젝트의 값 한 벌이라 커맨드 인자 수정과 같은 통로를 못 쓴다 — 이것이 그 통로다.
-    /// </summary>
-    public void SetQuickCommandArgument(int index, string argumentName, string value) =>
-        SetQuickCommandArgument(index, stepIndex: 0, argumentName, value);
-
-    /// <inheritdoc cref="SetQuickCommandArgument(int, string, string)"/>
-    public void SetQuickCommandArgument(int index, int stepIndex, string argumentName, string value)
-    {
-        IReadOnlyList<StageQuickCommand> chips = Project.EffectiveQuickCommands;
-
-        if (index < 0 || index >= chips.Count ||
-            stepIndex < 0 || stepIndex >= chips[index].Steps.Count ||
-            string.IsNullOrWhiteSpace(argumentName))
-        {
-            return;
-        }
-
-        if (chips[index].Steps[stepIndex].Arguments.TryGetValue(argumentName, out string? current) &&
-            string.Equals(current, value, StringComparison.Ordinal))
-        {
-            return; // 같은 값 = 편집이 아니다(undo 스택에 빈 단계를 쌓지 않는다)
-        }
-
-        Mutate(ProjectChangeKind.Content, () =>
-        {
-            List<StageQuickCommand> materialized = MaterializeQuickCommands();
-            List<StageQuickStep> steps = [.. materialized[index].Steps];
-
-            steps[stepIndex] = steps[stepIndex] with
-            {
-                Arguments = new Dictionary<string, string>(steps[stepIndex].Arguments, StringComparer.Ordinal)
-                {
-                    [argumentName] = value
-                }
-            };
-
-            materialized[index] = materialized[index] with { Steps = steps };
-        });
-    }
-
-    /// <summary>목록을 기본으로 돌린다 — 저장물에서 <c>quickCommands</c> 키가 아예 사라진다.</summary>
-    public void ResetQuickCommands()
-    {
-        if (Project.QuickCommands is null)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () => Project.QuickCommands = null);
-    }
-
-    /// <summary>
-    /// null(손대지 않음)을 기본 목록의 사본으로 바꾼다. <b>Mutate 안</b>에서만 부른다 —
-    /// 스냅샷이 먼저 찍혀야 되돌리기가 "손대지 않은 상태"로 정확히 돌아간다.
-    /// </summary>
-    private List<StageQuickCommand> MaterializeQuickCommands()
-    {
-        return Project.QuickCommands ??=
-            StageQuickCommands.Default.Select(chip => chip.Copy()).ToList();
-    }
-
-    /// <summary>
-    /// LineId 없는 노드 수준 Setup 커맨드를 목록 맨 뒤에 붙인다.
-    /// 장면 준비(슬롯·캐스팅·배경 스폰·리셋)는 대사 줄이 아니라 노드에 속한다.
-    /// </summary>
-    public PresentationCommandInstance AddPresentationSetupCommand(
-        string presentationNodeId,
-        string definitionId,
-        IReadOnlyDictionary<string, string>? arguments = null,
-        string? note = null,
-        string? presetId = null)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        var command = new PresentationCommandInstance(definitionId: definitionId)
-        {
-            Note = note,
-            PresetId = presetId
-        };
-
-        if (arguments is not null)
-        {
-            foreach ((string key, string value) in arguments)
-            {
-                command.Arguments[key] = value;
-            }
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            node.SetupCommands.Add(command);
-            RecordRecentCommand(definitionId);
-        });
-        return command;
-    }
-
-    /// <summary>
-    /// 커맨드 여러 개를 한 라인에 <b>한 번의 편집으로</b> 붙인다. 캐스팅 시퀀스처럼
-    /// 하나의 조작이 커맨드 여러 개가 되는 경우다 — 되돌리기 한 번에 전부 원복되어야
-    /// "조작 하나 = 편집 하나"가 지켜진다. 커맨드는 매크로가 아니라 개별로 저장된다.
-    /// </summary>
-    public IReadOnlyList<PresentationCommandInstance> AddPresentationCommands(
-        string presentationNodeId,
-        string lineId,
-        IReadOnlyList<(string DefinitionId, IReadOnlyDictionary<string, string> Arguments)> commands)
-    {
-        ArgumentNullException.ThrowIfNull(commands);
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationLineBinding? existingBinding = node.Bindings.FirstOrDefault(item =>
-            string.Equals(item.LineId, lineId, StringComparison.Ordinal));
-        PresentationLineBinding binding = existingBinding ?? new PresentationLineBinding(lineId);
-
-        var created = new List<PresentationCommandInstance>(commands.Count);
-
-        foreach ((string definitionId, IReadOnlyDictionary<string, string> arguments) in commands)
-        {
-            var command = new PresentationCommandInstance(definitionId: definitionId);
-
-            foreach ((string key, string value) in arguments)
-            {
-                command.Arguments[key] = value;
-            }
-
-            created.Add(command);
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            if (existingBinding is null)
-            {
-                node.Bindings.Add(binding);
-            }
-
-            foreach (PresentationCommandInstance command in created)
-            {
-                binding.Commands.Add(command);
-                RecordRecentCommand(command.DefinitionId);
-            }
-        });
-
-        return created;
-    }
-
-    /// <summary>
-    /// 배치 편집 한 항목 — <see cref="CommandId"/>가 있으면 그 커맨드의 인자를 덮어쓰고,
-    /// 없으면 새 커맨드를 라인 끝에 붙인다. 무엇이 "이미 있는 것"인지 고르는 판정은
-    /// 카탈로그를 아는 <c>PresentationStageActions</c>의 몫이고, 여기는 그 결정을 실행한다.
-    /// </summary>
-    public readonly record struct PresentationCommandEdit(
-        string? CommandId,
-        string DefinitionId,
-        IReadOnlyDictionary<string, string> Arguments);
-
-    /// <summary>
-    /// 추가와 수정이 섞인 편집 여러 개를 <b>한 번의 편집으로</b> 라인에 반영한다
-    /// (2026-08-24 — 자주 쓰는 칩이 묶음이 되면서 생긴 통로).
-    ///
-    /// <b>왜 한 번인가</b>: 단추 하나를 누른 것은 조작 하나다. 단계마다 <c>Mutate</c>를
-    /// 지나면 다섯 단계짜리 칩을 되돌리는 데 Ctrl+Z를 다섯 번 눌러야 한다 —
-    /// "조작 하나 = 편집 하나"가 그 자리에서 깨진다.
-    /// </summary>
-    public IReadOnlyList<PresentationCommandInstance> ApplyPresentationCommandBatch(
-        string presentationNodeId,
-        string lineId,
-        IReadOnlyList<PresentationCommandEdit> edits)
-    {
-        ArgumentNullException.ThrowIfNull(edits);
-        PresentationNode node = RequirePresentation(presentationNodeId);
-
-        PresentationLineBinding? existingBinding = node.Bindings.FirstOrDefault(item =>
-            string.Equals(item.LineId, lineId, StringComparison.Ordinal));
-        PresentationLineBinding binding = existingBinding ?? new PresentationLineBinding(lineId);
-
-        // 대상을 먼저 전부 잡아 둔다 — Mutate 안에서 못 찾는 커맨드가 나오면 스냅샷은
-        // 이미 찍혔는데 편집은 절반만 도는 상태가 된다.
-        var touched = new List<(PresentationCommandInstance Command, IReadOnlyDictionary<string, string> Arguments, bool IsNew)>(edits.Count);
-
-        foreach (PresentationCommandEdit edit in edits)
-        {
-            if (edit.CommandId is { } commandId)
-            {
-                PresentationCommandInstance target = FindPresentationCommand(node, commandId)
-                    ?? throw new InvalidOperationException($"커맨드 '{commandId}'를 찾을 수 없습니다.");
-                touched.Add((target, edit.Arguments, IsNew: false));
-                continue;
-            }
-
-            touched.Add((new PresentationCommandInstance(definitionId: edit.DefinitionId), edit.Arguments, IsNew: true));
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            if (existingBinding is null && touched.Any(item => item.IsNew))
-            {
-                node.Bindings.Add(binding);
-            }
-
-            foreach ((PresentationCommandInstance command, IReadOnlyDictionary<string, string> arguments, bool isNew) in touched)
-            {
-                foreach ((string key, string value) in arguments)
-                {
-                    command.Arguments[key] = value;
-                }
-
-                if (!isNew)
-                {
-                    continue;
-                }
-
-                binding.Commands.Add(command);
-                RecordRecentCommand(command.DefinitionId);
-            }
-        });
-
-        return touched.Select(item => item.Command).ToList();
-    }
-
-    /// <summary>
-    /// 커맨드의 인자 여러 개를 <b>한 번의 편집으로</b> 덮어쓴다(주지 않은 키는 유지).
-    /// 직접 조작의 "같은 종류는 수정"이 이 통로를 지난다 — 인자마다 undo 단계가
-    /// 쪼개지면 되돌리기 한 번으로 조작 하나가 원복되지 않는다.
-    /// </summary>
-    public void UpdatePresentationCommandArguments(
-        string presentationNodeId,
-        string commandId,
-        IReadOnlyDictionary<string, string> arguments)
-    {
-        ArgumentNullException.ThrowIfNull(arguments);
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationCommandInstance command = FindPresentationCommand(node, commandId)
-            ?? throw new InvalidOperationException($"커맨드 '{commandId}'를 찾을 수 없습니다.");
-
-        bool same = arguments.All(pair =>
-            command.Arguments.TryGetValue(pair.Key, out string? current) &&
-            string.Equals(current, pair.Value, StringComparison.Ordinal));
-
-        if (same)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            foreach ((string key, string value) in arguments)
-            {
-                command.Arguments[key] = value;
-            }
-        });
-    }
-
-    /// <summary>
-    /// 커맨드 인자 하나를 바꾼다. 빈 값은 인자를 지워 카탈로그 기본값으로 되돌린다.
-    /// 칩 편집·직접 조작이 전부 이 통로를 지난다.
-    /// </summary>
-    public void SetPresentationCommandArgument(
-        string presentationNodeId,
-        string commandId,
-        string argumentName,
-        string? value)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(argumentName);
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationCommandInstance command = FindPresentationCommand(node, commandId)
-            ?? throw new InvalidOperationException($"커맨드 '{commandId}'를 찾을 수 없습니다.");
-
-        string? next = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        string? current = command.Arguments.TryGetValue(argumentName, out string? existing) ? existing : null;
-
-        if (string.Equals(current, next, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            if (next is null)
-            {
-                command.Arguments.Remove(argumentName);
-            }
-            else
-            {
-                command.Arguments[argumentName] = next;
-            }
-        });
-    }
-
-    private static PresentationCommandInstance? FindPresentationCommand(
-        PresentationNode node,
-        string commandId)
-    {
-        return node.SetupCommands
-            .Concat(node.Bindings.SelectMany(binding => binding.Commands))
-            .FirstOrDefault(command => string.Equals(command.Id, commandId, StringComparison.Ordinal));
-    }
-
-    /// <summary>
-    /// 라인 하나의 인라인 동기화 마커 목록을 통째로 바꾼다. 문자 오프셋 순으로 정렬해 둔다.
-    /// 빈 목록이면 마커 없는 기존 동작이다.
-    /// </summary>
-    public void SetPresentationLineMarkers(
-        string presentationNodeId,
-        string lineId,
-        IReadOnlyList<PresentationLineMarker>? markers)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationLineBinding? existing = node.Bindings.FirstOrDefault(item =>
-            string.Equals(item.LineId, lineId, StringComparison.Ordinal));
-        bool empty = markers is null || markers.Count == 0;
-
-        if ((existing is null || existing.Markers.Count == 0) && empty)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            PresentationLineBinding binding = existing ?? new PresentationLineBinding(lineId);
-
-            if (existing is null)
-            {
-                node.Bindings.Add(binding);
-            }
-
-            binding.Markers.Clear();
-
-            if (markers is not null)
-            {
-                binding.Markers.AddRange(markers
-                    .OrderBy(marker => marker.CharacterOffset)
-                    .ThenBy(marker => marker.FirstCommandIndex)
-                    .Select(marker => marker.Clone()));
-            }
-
-            if (binding.Commands.Count == 0 && binding.Markers.Count == 0)
-            {
-                node.Bindings.Remove(binding);
-            }
-        });
-    }
-
-    public void MovePresentationSetupCommand(
-        string presentationNodeId,
-        string commandId,
-        int delta)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        int from = node.SetupCommands.FindIndex(command =>
-            string.Equals(command.Id, commandId, StringComparison.Ordinal));
-
-        if (from < 0)
-        {
-            return;
-        }
-
-        int to = Math.Clamp(from + delta, 0, node.SetupCommands.Count - 1);
-
-        if (to == from)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            PresentationCommandInstance command = node.SetupCommands[from];
-            node.SetupCommands.RemoveAt(from);
-            node.SetupCommands.Insert(to, command);
-        });
-    }
-
-    public void MovePresentationCommand(
-        string presentationNodeId,
-        string commandId,
-        int delta)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationLineBinding? binding = node.Bindings.FirstOrDefault(item =>
-            item.Commands.Any(command => string.Equals(command.Id, commandId, StringComparison.Ordinal)));
-
-        if (binding is null)
-        {
-            return;
-        }
-
-        int from = binding.Commands.FindIndex(command =>
-            string.Equals(command.Id, commandId, StringComparison.Ordinal));
-
-        if (from < 0)
-        {
-            return;
-        }
-
-        int to = Math.Clamp(from + delta, 0, binding.Commands.Count - 1);
-
-        if (from == to)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            PresentationCommandInstance command = binding.Commands[from];
-            binding.Commands.RemoveAt(from);
-            binding.Commands.Insert(to, command);
-        });
-    }
-
-    /// <summary>
-    /// 커맨드 하나를 다른 자리로 옮긴다 (2026-08-20 소유자: "드래그해서 위치를 자유롭게") —
-    /// 같은 라인 안 재배열, 라인 사이 이동, Setup ↔ 라인 이동 전부 이 통로 하나다.
-    /// <paramref name="targetLineId"/>가 null이면 Setup, 아니면 그 라인의 바인딩
-    /// (없으면 만든다). <paramref name="insertIndex"/>는 대상 목록 기준이고 범위를
-    /// 벗어나면 끝에 붙는다. <b>한 번의 mutate</b>라 되돌리기 한 번이 이동 하나를 원복한다.
-    /// </summary>
-    public void MovePresentationCommand(
-        string presentationNodeId, string commandId, string? targetLineId, int insertIndex)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-
-        List<PresentationCommandInstance>? source = null;
-
-        if (node.SetupCommands.Any(command => string.Equals(command.Id, commandId, StringComparison.Ordinal)))
-        {
-            source = node.SetupCommands;
+            next.Add(to);
         }
         else
         {
-            source = node.Bindings.FirstOrDefault(item => item.Commands.Any(command =>
-                string.Equals(command.Id, commandId, StringComparison.Ordinal)))?.Commands;
+            next[at] = to;
+            movedTo = to;
         }
 
-        if (source is null)
+        if (next.SequenceEqual(current, StringComparer.Ordinal))
         {
-            throw new InvalidOperationException($"커맨드 '{commandId}'를 찾을 수 없습니다.");
+            return;
         }
 
-        PresentationCommandInstance moving = source.First(command =>
-            string.Equals(command.Id, commandId, StringComparison.Ordinal));
-        int sourceIndex = source.IndexOf(moving);
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
+        Mutate(() =>
         {
-            source.Remove(moving);
-
-            List<PresentationCommandInstance> target;
-
-            if (targetLineId is null)
+            foreach (string gone in current.OfType<string>().Where(target => !next.Contains(target)))
             {
-                target = node.SetupCommands;
-            }
-            else
-            {
-                PresentationLineBinding? binding = node.FindBinding(targetLineId);
+                string goneKey = EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, gone));
 
-                if (binding is null)
+                if (movedTo is not null && dialogue.EdgeShapes.Remove(goneKey, out EdgeShape? kept))
                 {
-                    binding = new PresentationLineBinding(targetLineId);
-                    node.Bindings.Add(binding);
+                    dialogue.EdgeShapes[EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, movedTo))] = kept;
                 }
-
-                target = binding.Commands;
+                else
+                {
+                    dialogue.EdgeShapes.Remove(goneKey);
+                }
             }
 
-            // 같은 목록 안에서 앞자리에서 뽑혀 나갔으면 목표가 한 칸 당겨졌다 —
-            // 호출자는 "제거 전 화면"의 자리를 말하므로 여기서 보정한다.
-            int adjusted = ReferenceEquals(source, target) && sourceIndex < insertIndex
-                ? insertIndex - 1
-                : insertIndex;
-
-            target.Insert(Math.Clamp(adjusted, 0, target.Count), moving);
+            dialogue.RequireExtension(lineId).SetDetourSlots(next);
         });
     }
 
     /// <summary>
-    /// 커맨드 하나를 <b>바로 뒤에</b> 복제한다 (2026-08-21 소유자: 터미널 Ctrl+D) —
-    /// Setup·라인 어느 목록이든 원본이 있는 그 자리 다음이다. 새 Id를 받으므로 원본과
-    /// 독립으로 편집된다. 한 번의 mutate라 되돌리기 한 번이 복제 하나를 원복한다.
+    /// 이어지지 않은 분기점 하나를 카드에 잇는다 — 그 점이 <b>그 자리에서</b> 분기가 된다. 그 줄이 이미 그 카드로 가면
+    /// (같은 줄에 같은 곳은 두 번 들지 않는다) 아무것도 바꾸지 않는다. 대상이 없으면 이미 끊긴 점이라 할 일이 없다.
     /// </summary>
-    public PresentationCommandInstance DuplicatePresentationCommand(
-        string presentationNodeId, string commandId)
+    /// <param name="position">그 분기점의 자리 — 그 줄 분기점 전체에서 몇째인가(<see cref="ExitPort.OpenOrdinal"/>).</param>
+    private void ConnectOpenDetour(string nodeId, string lineId, int position, string? to)
     {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-
-        List<PresentationCommandInstance>? list =
-            node.SetupCommands.Any(command => string.Equals(command.Id, commandId, StringComparison.Ordinal))
-                ? node.SetupCommands
-                : node.Bindings.FirstOrDefault(item => item.Commands.Any(command =>
-                    string.Equals(command.Id, commandId, StringComparison.Ordinal)))?.Commands;
-
-        if (list is null)
+        if (to is null ||
+            Project.FindNode(to) is null ||
+            Project.FindNode(nodeId) is not DialogueNode dialogue ||
+            dialogue.FindExtension(lineId) is not { } extension)
         {
-            throw new InvalidOperationException($"커맨드 '{commandId}'를 찾을 수 없습니다.");
+            return;
         }
 
-        PresentationCommandInstance original = list.First(command =>
-            string.Equals(command.Id, commandId, StringComparison.Ordinal));
+        List<string?> slots = extension.DetourSlots();
 
-        var copy = new PresentationCommandInstance(definitionId: original.DefinitionId)
+        if (position < 0 || position >= slots.Count || slots[position] is not null || slots.Contains(to))
         {
-            PresetId = original.PresetId,
-            IsEnabled = original.IsEnabled,
-            Arguments = new Dictionary<string, string>(original.Arguments, StringComparer.Ordinal),
-            Note = original.Note
-        };
+            return;
+        }
 
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-            list.Insert(list.IndexOf(original) + 1, copy));
-
-        return copy;
+        slots[position] = to;
+        Mutate(() => extension.SetDetourSlots(slots));
     }
 
-    public void RemovePresentationCommand(string presentationNodeId, string commandId)
+    /// <summary>
+    /// 이어지지 않은 분기점 하나를 걷는다 — 분기점째 지운다. 자리를 안 주면 그 줄의 마지막 것이다. 이어진 분기를 지우는 것은
+    /// <see cref="RemoveBranchMarker"/>다. 그 자리에 이어지지 않은 분기점이 없으면 아무것도 하지 않는다.
+    /// </summary>
+    /// <param name="position">그 분기점의 자리 — 그 줄 분기점 전체에서 몇째인가(<see cref="ExitPort.OpenOrdinal"/>).</param>
+    public void RemoveOpenDetour(string nodeId, string lineId, int? position = null)
     {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-
-        if (node.SetupCommands.Any(command =>
-                string.Equals(command.Id, commandId, StringComparison.Ordinal)))
-        {
-            Mutate(ProjectChangeKind.PresentationContent, () => node.SetupCommands.RemoveAll(
-                command => string.Equals(command.Id, commandId, StringComparison.Ordinal)));
-            return;
-        }
-
-        PresentationLineBinding? binding = node.Bindings.FirstOrDefault(item =>
-            item.Commands.Any(command => string.Equals(command.Id, commandId, StringComparison.Ordinal)));
-
-        if (binding is null)
+        if (Project.FindNode(nodeId) is not DialogueNode dialogue ||
+            dialogue.FindExtension(lineId) is not { OpenDetours: > 0 } extension)
         {
             return;
         }
 
-        Mutate(ProjectChangeKind.PresentationContent, () => binding.Commands.RemoveAll(command =>
-            string.Equals(command.Id, commandId, StringComparison.Ordinal)));
+        List<string?> slots = extension.DetourSlots();
+        int at = position ?? slots.FindLastIndex(slot => slot is null);
+
+        if (at < 0 || at >= slots.Count || slots[at] is not null)
+        {
+            return;
+        }
+
+        slots.RemoveAt(at);
+        Mutate(() => extension.SetDetourSlots(slots));
     }
 
-    public void SetPresentationCommandEnabled(
-        string presentationNodeId,
-        string commandId,
-        bool enabled)
+    /// <summary>
+    /// <b>실행 선의 모양을 정한다</b>.
+    /// 꼴을 바꾸거나 손잡이를 끌어 놓을 때 한 번 — 되돌리기 한 칸이다. null이나 기본 모양이면 자동으로 돌아간다.
+    /// 이어지지 않은 출구는 그을 선이 없어 아무것도 적지 않고, 바뀌는 것이 없어도 적지 않는다.
+    /// </summary>
+    public void SetExitShape(ExitPort exit, EdgeShape? shape)
     {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationCommandInstance? command = node.SetupCommands
-            .Concat(node.Bindings.SelectMany(binding => binding.Commands))
-            .FirstOrDefault(item => string.Equals(item.Id, commandId, StringComparison.Ordinal));
+        ArgumentNullException.ThrowIfNull(exit);
 
-        if (command is not null && command.IsEnabled != enabled)
-        {
-            Mutate(ProjectChangeKind.PresentationContent, () => command.IsEnabled = enabled);
-        }
-    }
-
-    public void SetPresentationCommandDefinition(
-        string presentationNodeId,
-        string commandId,
-        string definitionId,
-        IReadOnlyDictionary<string, string>? defaultArguments = null,
-        string? presetId = null)
-    {
-        PresentationNode node = RequirePresentation(presentationNodeId);
-        PresentationCommandInstance? command = node.SetupCommands
-            .Concat(node.Bindings.SelectMany(binding => binding.Commands))
-            .FirstOrDefault(item => string.Equals(item.Id, commandId, StringComparison.Ordinal));
-
-        if (command is null)
+        if (!exit.IsConnected || Project.FindNode(exit.NodeId) is not { } node)
         {
             return;
         }
 
-        bool sameDefinition = string.Equals(command.DefinitionId, definitionId, StringComparison.Ordinal);
-        bool samePreset = string.Equals(command.PresetId, presetId, StringComparison.Ordinal);
-        bool sameArguments = defaultArguments is null ||
-            (command.Arguments.Count == defaultArguments.Count &&
-             command.Arguments.All(pair =>
-                 defaultArguments.TryGetValue(pair.Key, out string? value) &&
-                 string.Equals(value, pair.Value, StringComparison.Ordinal)));
+        string key = EdgeShape.KeyOf(exit);
+        EdgeShape? wanted = shape is null || shape.IsDefault ? null : shape;
 
-        if (sameDefinition && samePreset && sameArguments)
+        if (Equals(node.EdgeShapes.GetValueOrDefault(key), wanted))
         {
             return;
         }
 
-        Mutate(ProjectChangeKind.PresentationContent, () =>
+        Mutate(ProjectChangeKind.Layout, () =>
         {
-            command.DefinitionId = definitionId;
-            command.PresetId = presetId;
-
-            if (defaultArguments is not null)
+            if (wanted is null)
             {
-                command.Arguments.Clear();
-                foreach ((string key, string value) in defaultArguments)
-                {
-                    command.Arguments[key] = value;
-                }
+                node.EdgeShapes.Remove(key);
+            }
+            else
+            {
+                node.EdgeShapes[key] = wanted;
             }
         });
     }
 
     // ── 조건 ────────────────────────────────────────────────────────────────
+    // 공급 노드의 조건 사본 — 공급(<see cref="Chapters.ChapterBoardSupply"/>)만 부른다. 조건의 주인은 챕터다.
 
-    public ConditionDefinition AddCondition(string setNodeId, string name, string expression)
+    internal ConditionDefinition AddCondition(string setNodeId, string name, string expression)
     {
         var setNode = Project.FindNode(setNodeId) as SetNode
             ?? throw new InvalidOperationException($"'{setNodeId}'는 설정 노드가 아닙니다.");
@@ -2013,7 +922,7 @@ public sealed partial class ProjectEditor
         return condition;
     }
 
-    public void UpdateCondition(string conditionId, string name, string expression)
+    internal void UpdateCondition(string conditionId, string name, string expression)
     {
         ConditionDefinition? condition = Project.FindCondition(conditionId);
 
@@ -2035,216 +944,30 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 조건을 지운다. 그 조건을 쓰던 줄의 전환은 남겨 둔다.
-    /// 지우면 작가가 쓴 갈래 구조가 조용히 무너지기 때문이다.
-    /// 대신 <see cref="ConditionFlowResolver"/>가 "알 수 없는 조건"으로 알린다.
-    /// </summary>
-    public void RemoveCondition(string conditionId)
-    {
-        SetNode? owner = Project.EnumerateNodes().OfType<SetNode>()
-            .FirstOrDefault(node => node.Conditions.Any(
-                item => string.Equals(item.Id, conditionId, StringComparison.Ordinal)));
-
-        if (owner is null)
-        {
-            return;
-        }
-
-        Mutate(() => owner.Conditions.RemoveAll(
-            item => string.Equals(item.Id, conditionId, StringComparison.Ordinal)));
-    }
-
-    /// <summary>
-    /// 그 판(챕터)의 <b>설정 노드</b>를 보장한다 (2026-08-17 소유자: "조건 노드라기보다는
-    /// 챕터별로 자동으로 저장되는 컨트롤러에 가까운 것 같아. 챕터 하나에 저런 설정을 담아두는
-    /// 노드가 상시로 뜨는거지").
+    /// 그 챕터의 <b>판</b>을 보장한다 — 없으면 만들어 돌려준다 (챕터 = 판 1:1, G-1 v2).
     ///
-    /// 공급 범위가 판 전체가 된 뒤로 설정노드는 <b>여러 개일 이유가 없다</b> — 어차피 다 같은
-    /// 곳에 미치므로 나눠 놓으면 "어디에 적었더라"만 생긴다. 그래서 챕터당 하나가 자동으로
-    /// 서고, 작가는 그 안을 채울 뿐 노드를 만들거나 지우지 않는다.
-    /// </summary>
-    /// <returns>그 판의 설정 노드. 이미 있으면 그대로 돌려준다(파일을 건드리지 않는다).</returns>
-    public SetNode EnsureChapterSettingsNode(string fileId)
-    {
-        StoryFile file = RequireFile(fileId);
-
-        // 챕터 조건 공급 노드(A계층 배관)는 세지 않는다 — 그건 기획자 자료를 나르는 자리다.
-        SetNode? existing = file.Nodes.OfType<SetNode>()
-            .FirstOrDefault(node => !Chapters.ChapterBoardSupply.IsConditionSupplyNode(node, file));
-
-        return existing ?? AddSetNode(fileId, name: ChapterSettingsNodeName(file.Name));
-    }
-
-    /// <summary>챕터 설정 노드의 이름 규약. 판 이름 = 챕터 Id다.</summary>
-    public static string ChapterSettingsNodeName(string chapterId) => $"{chapterId} 설정";
-
-    /// <summary>
-    /// 그 챕터의 <b>판</b>을 보장한다 — 없으면 만들고, 설정 노드까지 세워 돌려준다
-    /// (챕터 = 판 1:1, G-1 v2).
+    /// <b>왜 여기 있나</b> — 이 함수는 <b>세션 상태를 하나도 안 본다.</b> 열려 있는 파일도,
+    /// 선택도, 저장 여부도 안 묻고 <see cref="Project"/>와 자기 자신만 쓰는 순수한 편집 작업이다.
+    /// 세션에 두면 도메인이 셸의 메서드를 불러야 한다.
     ///
-    /// <b>왜 여기 있나 (2026-08-23)</b> — 이 함수는 오래 `AuthoringSession`에 살았는데,
-    /// <b>세션 상태를 하나도 안 본다.</b> 열려 있는 파일도, 선택도, 저장 여부도 안 묻고
-    /// <see cref="Project"/>와 자기 자신만 쓴다. 세션에 주차돼 있던 순수한 편집 작업이라,
-    /// 에피소드 동기화를 화면 밖으로 꺼내려던 시도가 여기서 막혔다 — 도메인이 셸의
-    /// 메서드를 불러야 했기 때문이다.
-    ///
-    /// 왼쪽 챕터 목록 클릭과 에피소드 동기화가 <b>같은 규칙 하나</b>를 쓴다.
+    /// 챕터를 고르는 곳(하이어아키 · 콤보 · 챕터 만들기)이 모두 <b>같은 규칙 하나</b>를 쓴다.
     /// </summary>
     /// <returns>그 챕터 판의 파일 Id. 이미 있으면 그대로다.</returns>
     public string EnsureChapterBoard(string chapterId)
     {
-        StoryFile board =
-            Chapters.EpisodeNaming.BoardOf(Project, chapterId) ?? AddStoryFile(chapterId);
+        // 판은 챕터가 세운다 — 챕터가 없는 판(낙서판)은 세우지 않는다(2026-11-17).
+        RequireChapter(chapterId);
+        StoryFile? standing = Chapters.EpisodeNaming.BoardOf(Project, chapterId);
+        StoryFile board = standing ?? AddChapterBoardFile(chapterId);
 
-        // 챕터마다 설정 노드 하나가 상시로 선다 (2026-08-17 소유자) — 작가가 만들고 지우는
-        // 것이 아니라 챕터에 딸린 자리다.
-        EnsureChapterSettingsNode(board.Id);
+        // 판이 <b>막 섰으면</b> 챕터 조건이 함께 공급된다 — 조건을 먼저 적고 에피소드를
+        // 나중에 만든 챕터는 여기서 받지 않으면 대사 노드의 조건 목록이 비어 있게 된다.
+        if (standing is null)
+        {
+            SupplyChapterConditions(chapterId);
+        }
 
         return board.Id;
-    }
-
-    /// <summary>
-    /// 커스텀 이징 곡선 하나를 넣거나 고친다 (W67 후속) — 같은 이름이 있으면 키를
-    /// 교체한다. 검증은 저작이 1차 방어다: 이름·키 규칙 위반은 예외로 막는다
-    /// (런타임 로더는 같은 위반을 경고 로그 + 무시로 물러선다 — 조용한 어긋남을
-    /// 이쪽에서 끊는 것이 싸다).
-    /// </summary>
-    public void SetEaseCurve(
-        string name,
-        IReadOnlyList<Ked.Presentation.Core.CurveKey> keys,
-        string? ownerCommandId = null)
-    {
-        ArgumentNullException.ThrowIfNull(keys);
-
-        if (!EaseCurve.IsValidName(name))
-        {
-            throw new InvalidOperationException(
-                $"곡선 이름 '{name}'이 규칙에 맞지 않습니다 — 소문자·숫자·언더스코어만 됩니다 (커맨드 토큰에 실립니다).");
-        }
-
-        if (EaseCurve.ValidateKeys(keys) is { } violation)
-        {
-            throw new InvalidOperationException($"곡선 '{name}'의 키가 잘못됐습니다 — {violation}");
-        }
-
-        EaseCurve? existing = Project.EaseCurves.FirstOrDefault(curve =>
-            string.Equals(curve.Name, name, StringComparison.Ordinal));
-
-        if (existing is not null &&
-            string.Equals(existing.OwnerCommandId, ownerCommandId, StringComparison.Ordinal) &&
-            existing.Keys.Count == keys.Count &&
-            existing.Keys.Zip(keys).All(pair => pair.First.Equals(pair.Second)))
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () =>
-        {
-            if (existing is null)
-            {
-                Project.EaseCurves.Add(new EaseCurve
-                {
-                    Name = name,
-                    Keys = new List<Ked.Presentation.Core.CurveKey>(keys),
-                    OwnerCommandId = ownerCommandId
-                });
-            }
-            else
-            {
-                existing.Keys = new List<Ked.Presentation.Core.CurveKey>(keys);
-                existing.OwnerCommandId = ownerCommandId;
-            }
-        });
-    }
-
-    /// <summary>곡선 하나를 지운다. 참조하던 커맨드는 내보내기 검증이 짚는다 — 조용히 안 없어진다.</summary>
-    public void RemoveEaseCurve(string name)
-    {
-        EaseCurve? existing = Project.EaseCurves.FirstOrDefault(curve =>
-            string.Equals(curve.Name, name, StringComparison.Ordinal));
-
-        if (existing is null)
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.PresentationContent, () => Project.EaseCurves.Remove(existing));
-    }
-
-
-    // ── 프로젝트 설정 ──────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 프리뷰 에셋 루트 두 곳을 바꾼다. null은 미설정이다.
-    /// 프로젝트 이동 내성을 위해 상대 경로를 권장하지만 강제하지는 않는다 —
-    /// 에셋이 다른 드라이브에 있으면 상대 경로가 존재하지 않는다.
-    /// </summary>
-    public void SetAssetRoots(
-        string? backgroundsPath,
-        string? portraitsPath,
-        string? bgmPath = null,
-        string? sfxPath = null)
-    {
-        string? backgrounds = AssetRootSettings.NormalizePath(backgroundsPath);
-        string? portraits = AssetRootSettings.NormalizePath(portraitsPath);
-        // 오디오 루트 (W59) — 넘기지 않으면(null) 기존 값을 유지한다: 배경/초상화만
-        // 바꾸는 기존 호출(폴더 지정 UI)이 오디오 설정을 지우면 안 된다.
-        string? bgm = AssetRootSettings.NormalizePath(bgmPath) ?? Project.AssetRoots.BgmPath;
-        string? sfx = AssetRootSettings.NormalizePath(sfxPath) ?? Project.AssetRoots.SfxPath;
-
-        if (string.Equals(Project.AssetRoots.BackgroundsPath, backgrounds, StringComparison.Ordinal) &&
-            string.Equals(Project.AssetRoots.PortraitsPath, portraits, StringComparison.Ordinal) &&
-            string.Equals(Project.AssetRoots.BgmPath, bgm, StringComparison.Ordinal) &&
-            string.Equals(Project.AssetRoots.SfxPath, sfx, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () =>
-        {
-            Project.AssetRoots.BackgroundsPath = backgrounds;
-            Project.AssetRoots.PortraitsPath = portraits;
-            Project.AssetRoots.BgmPath = bgm;
-            Project.AssetRoots.SfxPath = sfx;
-        });
-    }
-
-    /// <summary>라이브 출력 폴더를 바꾼다 (X12c). null은 라이브 출력 없음이다.</summary>
-    public void SetOutputPath(string? outputPath)
-    {
-        string? next = AssetRootSettings.NormalizePath(outputPath);
-
-        if (string.Equals(Project.OutputPath, next, StringComparison.Ordinal))
-        {
-            return;
-        }
-
-        Mutate(ProjectChangeKind.Content, () => Project.OutputPath = next);
-    }
-
-    /// <summary>내보내기 양식 선택을 바꾼다 (X13). 프로젝트에 저장되고 되돌릴 수 있다.</summary>
-    public void SetExportFormats(ExportFormatSelection formats)
-    {
-        ArgumentNullException.ThrowIfNull(formats);
-        ExportFormatSelection current = Project.ExportFormats;
-
-        if (current.YarnTrio == formats.YarnTrio &&
-            current.ScriptCsv == formats.ScriptCsv &&
-            current.ReviewCsv == formats.ReviewCsv &&
-            current.DirectionCsv == formats.DirectionCsv)
-        {
-            return;
-        }
-
-        ExportFormatSelection next = formats.Clone();
-
-        Mutate(ProjectChangeKind.Content, () =>
-        {
-            Project.ExportFormats.YarnTrio = next.YarnTrio;
-            Project.ExportFormats.ScriptCsv = next.ScriptCsv;
-            Project.ExportFormats.ReviewCsv = next.ReviewCsv;
-            Project.ExportFormats.DirectionCsv = next.DirectionCsv;
-        });
     }
 
     // ── 되돌리기 ────────────────────────────────────────────────────────────
@@ -2256,9 +979,10 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        _redo.Add(ProjectSnapshotCodec.Encode(Project));
-        Restore(_undo[^1]);
+        HistoryEntry entry = _undo[^1];
         _undo.RemoveAt(_undo.Count - 1);
+        _redo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true, entry.NodeId);
     }
 
     public void Redo()
@@ -2268,34 +992,13 @@ public sealed partial class ProjectEditor
             return;
         }
 
-        _undo.Add(ProjectSnapshotCodec.Encode(Project));
-        Restore(_redo[^1]);
+        HistoryEntry entry = _redo[^1];
         _redo.RemoveAt(_redo.Count - 1);
+        _undo.Add(entry with { Snapshot = ProjectSnapshotCodec.Encode(Project) });
+        Restore(entry.Snapshot, entry.Kind, fromHistory: true, entry.NodeId);
     }
 
     /// <summary>파일에서 새로 읽었을 때처럼, 기록을 버리고 통째로 갈아 끼운다.</summary>
-    /// <summary>
-    /// 프로젝트가 든 챕터를 통째로 갈아 끼운다 — <b>임포트의 마지막 한 걸음</b>
-    /// (R-F · 2026-09-16, 지시서 §5).
-    ///
-    /// ⛔ <b>합치지 않는다.</b> 같은 Id를 행 단위로 맞추려면 신원 매칭이 필요하고, 그것이 곧
-    /// <c>EpisodeSyncService</c>가 하던 일이다(R-D에서 철거한 그 기계). 임포트는 <b>한 번</b>이라
-    /// 맞출 상대가 없어야 맞다.
-    ///
-    /// ⚠ 되돌리기에 실린다 — 잘못 들여온 것을 되돌릴 길이 그것뿐이다(워크북은 곧 산출물이라
-    /// 거기서 다시 가져오는 것은 되돌리기가 아니다).
-    /// </summary>
-    public void ReplaceChapters(IReadOnlyList<ChapterDocument> chapters)
-    {
-        ArgumentNullException.ThrowIfNull(chapters);
-
-        Mutate(() =>
-        {
-            Project.Chapters.Clear();
-            Project.Chapters.AddRange(chapters);
-        });
-    }
-
     public void Replace(StoryProject project)
     {
         Project = project ?? throw new ArgumentNullException(nameof(project));
@@ -2304,17 +1007,36 @@ public sealed partial class ProjectEditor
         Raise(ProjectChangeKind.Structure);
     }
 
-    private void Restore(string snapshot)
+    /// <summary>
+    /// 스냅샷으로 되돌린다 — 되돌리기 · 다시 실행은 <b>되돌린 그 편집의 종류</b>로 알린다(2026-11-18 · board-speed PF1). 글 한 줄을 되돌렸는데
+    /// 구조가 바뀌었다고 알리면 화면이 판을 통째로 다시 지었다(에피소드 300개에서 한 번에 4초). ⛔ 그 전에는 늘 구조로 알렸다.
+    /// 바뀐 노드도 싣는다 — 노드 Id는 스냅샷을 건너도 그대로라, 이은 선 하나를 되돌리면 판이 그 출발의 선만 다시 그을 수 있다(usability UX21).
+    /// </summary>
+    private void Restore(string snapshot, ProjectChangeKind kind, bool fromHistory, string? nodeId = null)
     {
         Project = ProjectSnapshotCodec.Decode(snapshot);
-        Raise(ProjectChangeKind.Structure);
+        Raise(kind, fromHistory, nodeId);
     }
 
     private void Mutate(Action change) => Mutate(ProjectChangeKind.Structure, change);
 
-    private void Mutate(ProjectChangeKind kind, Action change)
+    /// <param name="nodeId">바뀐 노드가 하나로 정해지면 그 노드 — 알림에 싣는다(<see cref="ProjectChangedEventArgs.NodeId"/>).</param>
+    private void Mutate(ProjectChangeKind kind, Action change, string? nodeId = null)
     {
-        _undo.Add(ProjectSnapshotCodec.Encode(Project));
+        // 묶음 안이면 스냅샷은 묶음이 처음에 한 번 떠 두었다 — 여기서 또 뜨면 되돌리기가
+        // 명령 수만큼 쪼개진다.
+        if (_batchDepth == 0)
+        {
+            PushUndo(new HistoryEntry(ProjectSnapshotCodec.Encode(Project), kind, nodeId));
+        }
+
+        change();
+        Raise(kind, nodeId: nodeId);
+    }
+
+    private void PushUndo(HistoryEntry entry)
+    {
+        _undo.Add(entry);
 
         if (_undo.Count > MaxHistory)
         {
@@ -2322,121 +1044,150 @@ public sealed partial class ProjectEditor
         }
 
         _redo.Clear();
-        change();
-        Raise(kind);
+    }
+
+    /// <summary>지금 열려 있는 묶음의 깊이. 0이면 묶음 밖이다.</summary>
+    private int _batchDepth;
+
+    /// <summary>묶음 안에서 일어난 변경의 종류. 아무것도 안 바뀌었으면 null이다.</summary>
+    private ProjectChangeKind? _batchKind;
+
+    /// <summary>묶음 안의 알림이 모두 같은 노드였으면 그 노드 — 다른 노드가 섞이면 null로 모른다.</summary>
+    private string? _batchNodeId;
+
+    /// <summary>묶음 안에서 알림이 한 번이라도 왔는가 — 첫 알림의 노드를 받는다.</summary>
+    private bool _batchRaised;
+
+    /// <summary>
+    /// 여러 명령을 <b>되돌리기 한 칸 · 알림 한 번</b>으로 묶는다.
+    ///
+    /// <b>왜 필요한가</b> — 챕터 조건을 판에 공급하는 일은 <b>조건을 고치는 그 명령</b> 안에서
+    /// 일어난다. 조건 하나를 고쳤는데 되돌리기가 두 번이어야 하면 사람은 첫 번째에서
+    /// "안 돌아갔다"고 본다. 공급은 남의 명령(<see cref="AddSetNode"/>·<see cref="AddCondition"/>)을
+    /// 부르므로, 짓기와 붙이기를 가르는 방식(<c>NewDialogueNodeCore</c>)으로는 감당이 안 된다.
+    ///
+    /// 안에서 예외가 나면 <b>묶음 전 상태로 되돌리고</b> 다시 던진다 — 반쯤 된 묶음이 남으면
+    /// 되돌리기 한 칸이 무엇을 되돌리는지 아무도 모른다.
+    ///
+    /// 묶음 안에서 아무것도 안 바뀌었으면 되돌리기 칸도 알림도 없다.
+    /// </summary>
+    public void Batch(Action change) => Batch(null, change);
+
+    /// <summary>
+    /// 묶음 — 안에서 무엇이 바뀌었든 <paramref name="kind"/>로 알린다(null이면 안의 알림들로 정한다 · 섞이면 구조). 묶음을 부르는 명령이 그 결과를
+    /// 알 때만 쓴다 — 예컨대 챕터 조건은 판에 서지 않는 공급 노드를 짓고 고치지만 판에는 조건만 바뀐 것이다(<see cref="ProjectChangeKind.ChapterCondition"/>).
+    /// 바깥 묶음 안에서 불리면 바깥 묶음이 정한다.
+    /// </summary>
+    private void Batch(ProjectChangeKind? kind, Action change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+
+        if (_batchDepth > 0)
+        {
+            change();
+            return;
+        }
+
+        string before = ProjectSnapshotCodec.Encode(Project);
+        _batchDepth++;
+        _batchKind = null;
+        _batchNodeId = null;
+        _batchRaised = false;
+        bool completed = false;
+
+        try
+        {
+            change();
+            completed = true;
+        }
+        finally
+        {
+            _batchDepth--;
+            ProjectChangeKind? raised = _batchKind is null ? null : kind ?? _batchKind;
+            string? batchNodeId = kind is null ? _batchNodeId : null;
+            _batchKind = null;
+            _batchNodeId = null;
+            _batchRaised = false;
+
+            if (raised is { } changed)
+            {
+                if (completed)
+                {
+                    PushUndo(new HistoryEntry(before, changed, batchNodeId));
+                    Raise(changed, nodeId: batchNodeId);
+                }
+                else
+                {
+                    Restore(before, ProjectChangeKind.Structure, fromHistory: false);
+                }
+            }
+        }
     }
 
     /// <summary>
-    /// 프로젝트가 <b>실제로 바뀐 횟수</b> (2026-08-24 성능). 두 시점의 값이 같으면 그
+    /// 프로젝트가 <b>실제로 바뀐 횟수</b> (성능). 두 시점의 값이 같으면 그
     /// 사이에 아무 일도 없었다 — 무슨 일이 있었는지는 몰라도 <em>없었다</em>는 것은 안다.
     ///
-    /// <b>왜 필요했나</b> — 에피소드 동기화는 워크북을 반영할 때마다 셸에 "다시 그려라"고
-    /// 알렸는데, 그 근거로 쓰던 <c>EpisodeSyncReport.Applied</c>는 <b>"반영을 돌렸다"</b>는
-    /// 뜻이지 <b>"뭔가 달라졌다"</b>는 뜻이 아니다(`ChapterBoardSupplyTests`의
-    /// `같은_워크북을_두_번_동기화하면_두_번째는_변경이_없다`가 그 사실을 이미 못 박아
-    /// 두었다 — 두 번째도 <c>Applied</c>가 참이다). 그래서 아무것도 안 바뀐 동기화가
-    /// 매번 전체 다시 그리기를 방송했고, 그 순간 사람이 <b>타이핑하던 칸이 파괴됐다.</b>
+    /// <b>왜 필요한가</b> — "반영을 돌렸다"는 <b>"뭔가 달라졌다"</b>는 뜻이 아니다. 그것을
+    /// 근거로 다시 그리기를 방송하면 아무것도 안 바뀐 동기화가 매번 전체 다시 그리기를 일으키고,
+    /// 그 순간 사람이 <b>타이핑하던 칸이 파괴된다.</b>
     ///
     /// 각 변경을 일일이 세는 대신 여기 하나를 둔다: 새 편집 명령이 생겨도 <c>Mutate</c>를
     /// 지나는 한 저절로 세어진다. 빠뜨릴 수 있는 목록을 만들지 않는다.
     /// </summary>
     public long Revision { get; private set; }
 
-    private void Raise(ProjectChangeKind kind)
+    private void Raise(ProjectChangeKind kind, bool fromHistory = false, string? nodeId = null)
     {
+        // 묶음 안이면 알림은 묶음이 끝날 때 한 번이다. 종류가 섞이면 구조로 올린다 —
+        // 덜 그려서 낡은 화면이 남는 것보다 한 번 더 그리는 편이 낫다. 노드가 섞여도 모른다(null) — 한 카드만 다시 지으면 다른 카드가 낡는다.
+        if (_batchDepth > 0)
+        {
+            _batchKind = _batchKind is null || _batchKind == kind ? kind : ProjectChangeKind.Structure;
+            _batchNodeId = !_batchRaised ? nodeId : string.Equals(_batchNodeId, nodeId, StringComparison.Ordinal) ? nodeId : null;
+            _batchRaised = true;
+
+            if (_batchKind == ProjectChangeKind.DialogueLines && _batchNodeId is null)
+            {
+                _batchKind = ProjectChangeKind.Structure;   // 어느 카드인지 모르는 줄 변경은 구조다
+            }
+
+            return;
+        }
+
         Revision++;
-        Changed?.Invoke(this, new ProjectChangedEventArgs(kind));
-    }
-
-    /// <summary>
-    /// 더 이상 갈래를 열지 않는 줄에 매달린 조건 출구를 버린다.
-    /// 남겨 두면 그래프에 주인 없는 간선이 생기고, 그 간선은 어느 화면에서도 지울 수 없다.
-    ///
-    /// 대본에서 사라진 줄의 출구는 여기서 지우지 않는다. 그것은 <b>고아</b>이지 쓰레기가 아니다.
-    /// 대본을 되돌리면 살아나야 하고, 그때까지는 진단으로 보인다.
-    /// </summary>
-    /// <summary>
-    /// 주인 없는 출구를 버린다 — 갈래가 사라졌으면 거기 매달린 배선도 갈 곳이 없다.
-    ///
-    /// ⚠ <b>신원을 흐름 해석과 같은 규칙으로 짓는다</b>(<see cref="Flow.BranchAnchor"/>).
-    /// 예전에는 여기가 <c>extension.Transition</c>(첫 전환) 하나만 보고 <b>맨 줄 Id</b>만
-    /// 살렸다. 그래서 (ㄱ) 첫 전환이 여는 것이 아닌 줄의 출구가 통째로 지워졌고,
-    /// (ㄴ) 한 줄이 갈래를 여럿 열 때 둘째부터의 출구가 매달자마자 사라졌다.
-    /// </summary>
-    private static void PruneBranchExits(DialogueNode node)
-    {
-        var opening = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (DialogueLineExtension extension in node.LineExtensions)
-        {
-            int ordinal = 0;
-
-            foreach (LineConditionTransition transition in extension.Transitions)
-            {
-                if (transition.OpensBranch)
-                {
-                    opening.Add(Flow.BranchAnchor.ForLine(extension.LineId, ordinal++));
-                }
-            }
-        }
-
-        // 대본 끝의 줄 없는 갈래들 (2026-08-24).
-        int trailing = 0;
-
-        foreach (LineConditionTransition transition in node.TrailingTransitions)
-        {
-            if (transition.OpensBranch)
-            {
-                opening.Add(Flow.BranchAnchor.ForTrailing(trailing++));
-            }
-        }
-
-        foreach (string key in node.BranchExits.Keys.Where(key => !opening.Contains(key)).ToList())
-        {
-            node.BranchExits.Remove(key);
-        }
+        Changed?.Invoke(this, new ProjectChangedEventArgs(kind, fromHistory, nodeId));
     }
 
     /// <summary>아무것도 담지 않게 된 확장 항목을 버린다. 빈 항목은 파일만 시끄럽게 한다.</summary>
     private static void PruneLineExtensions(DialogueNode node)
     {
-        node.LineExtensions.RemoveAll(extension =>
-            extension.IsEmpty && !node.BranchExits.ContainsKey(extension.LineId));
+        node.LineExtensions.RemoveAll(extension => extension.IsEmpty);
     }
 
     private void RemoveReferencesToNode(string nodeId)
     {
         // 사라진 노드를 가리키던 출구를 남겨 두면 그래프에 끊어진 간선이 생긴다.
-        Project.Links.RemoveAll(link =>
-            string.Equals(link.SourceNodeId, nodeId, StringComparison.Ordinal) ||
-            string.Equals(link.TargetNodeId, nodeId, StringComparison.Ordinal));
-
         foreach (StoryNode other in Project.EnumerateNodes())
         {
-            if (string.Equals(other.DefaultExitTargetNodeId, nodeId, StringComparison.Ordinal))
-            {
-                other.DefaultExitTargetNodeId = null;
-            }
-
             if (other is not DialogueNode dialogue)
             {
                 continue;
             }
 
-            foreach (string key in dialogue.BranchExits
-                         .Where(pair => string.Equals(pair.Value, nodeId, StringComparison.Ordinal))
-                         .Select(pair => pair.Key)
-                         .ToList())
+            // 분기가 다녀가던 카드가 사라졌다 — 분기점은 이어지지 않은 채 제자리에 남는다(연결만 끊은 것과 같다).
+            foreach (DialogueLineExtension extension in dialogue.LineExtensions)
             {
-                dialogue.BranchExits.Remove(key);
-            }
+                List<string?> slots = extension.DetourSlots();
+                int at = slots.IndexOf(nodeId);
 
-            foreach (string key in dialogue.ChoiceExits
-                         .Where(pair => string.Equals(pair.Value, nodeId, StringComparison.Ordinal))
-                         .Select(pair => pair.Key)
-                         .ToList())
-            {
-                dialogue.ChoiceExits.Remove(key);
+                if (at >= 0)
+                {
+                    slots[at] = null;
+                    extension.SetDetourSlots(slots);
+                    dialogue.EdgeShapes.Remove(
+                        EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(extension.LineId, nodeId)));
+                }
             }
         }
     }
@@ -2453,53 +1204,25 @@ public sealed partial class ProjectEditor
             ?? throw new InvalidOperationException($"'{nodeId}'는 대사 노드가 아닙니다.");
     }
 
-    private PresentationNode RequirePresentation(string nodeId)
-    {
-        return Project.FindNode(nodeId) as PresentationNode
-            ?? throw new InvalidOperationException($"'{nodeId}'는 연출 노드가 아닙니다.");
-    }
-
-    private string NextFileName()
-    {
-        return $"파일 {Project.Files.Count + 1}";
-    }
-
-    private string NextName(string prefix)
-    {
-        int count = Project.EnumerateNodes().Count(node =>
-            node.Name.StartsWith(prefix, StringComparison.Ordinal)) + 1;
-
-        return $"{prefix} {count}";
-    }
+    /// <summary>
+    /// 그 챕터 · 장면의 다음 자리표시 EpisodeId(<see cref="NewNames.NextEpisodeId"/>). <b>화면이 손수 세지 않게</b> 열어 둔다 — 세는 규칙이
+    /// 화면마다 있으면 하나가 다른 목록을 훑다가 겹치는 Id를 내고, 그러면 <c>AddEpisode</c>가 *"이미 있습니다"*로 던진다.
+    /// </summary>
+    public string NextEpisodeId(string chapterId, string? sceneId) =>
+        NewNames.NextEpisodeId(Project, RequireChapter(chapterId), sceneId);
 
     /// <summary>
-    /// 그 챕터에서 <b>아직 안 쓰인 자리표시 EpisodeId</b> — <c>new01</c>, <c>new02</c>…
-    ///
-    /// ⛔ 이 규약은 2026-09-18까지 <b>화면 둘에 손으로 복사돼</b> 있었고(챕터 그래프·대본 탭),
-    /// 연출 그래프는 아예 다른 규약(<c>장면 3</c>)을 썼다 — 같은 행동이 창구마다 다른 Id를
-    /// 만들었다. EpisodeId는 대본 워크북의 <b>파일 이름</b>으로 나가므로 공백이 든 Id는
-    /// 특히 나쁘다.
-    ///
-    /// ⚠ 사람이 고칠 것을 전제한 이름이다 — 이름을 정하는 것은 기획자의 일이고, 여기서는
-    /// <b>겹치지 않는 자리</b>만 준다.
+    /// 분기를 낸 에피소드 카드의 장면 — 새 분기 카드의 자동 이름이 쓴다. 분기를 내는 것은 에피소드 카드뿐이다(<see cref="CanBranchFrom"/> ·
+    /// ⛔ 분기 카드에서 낸 분기는 집(처음 부르는 에피소드)의 장면을 따랐다 — 2026-11-19에 걷혔다).
     /// </summary>
-    /// <summary>
-    /// 그 챕터의 다음 자리표시 Id. <b>화면이 손수 세지 않게</b> 열어 둔다 — 세는 규칙이
-    /// 화면마다 있으면 하나가 다른 목록을 훑다가 겹치는 Id를 내고, 그러면 <c>AddEpisode</c>가
-    /// *"이미 있습니다"*로 던진다.
-    /// </summary>
-    public string NextEpisodeId(string chapterId) => NextEpisodeId(RequireChapter(chapterId));
-
-    private static string NextEpisodeId(Chapters.ChapterDocument chapter)
+    private string? SceneOfCard(DialogueNode? card)
     {
-        int number = 1;
-
-        while (chapter.Episodes.Any(episode =>
-                   string.Equals(episode.EpisodeId, $"new{number:D2}", StringComparison.Ordinal)))
+        if (card is null)
         {
-            number++;
+            return null;
         }
 
-        return $"new{number:D2}";
+        ChapterDocument chapter = EpisodeNaming.ChapterOf(Project, card);
+        return EpisodeNaming.EpisodeFor(chapter, card)?.EpisodeId is { } episodeId ? FindEpisode(chapter, episodeId)?.SceneId : null;
     }
 }

@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.Authoring.Editing;
@@ -6,162 +7,40 @@ using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Tests.Fixtures;
 
 namespace Vn.App.Tests;
 
 /// <summary>
-/// G5의 화면 배선 — 노드 클릭이 워크북을 만들어 열고, 에피소드 저장이 대사노드 반영과
-/// 보고 패널·배지로 이어진다. 실제 엑셀은 띄우지 않는다(여는 손을 갈아끼운다).
+/// 챕터 그래프가 읽어 보여 주는 것 — 고른 에피소드의 대사 미리보기, [챕터] 탭의 스탯 표, 그리고
+/// 검증 보고와 진행 JSON 자동 내보내기.
 /// </summary>
 public sealed class ChapterGraphSyncViewTests
 {
-    private static string SamplePath => Path.GetFullPath(Path.Combine(
-        AppContext.BaseDirectory, "..", "..", "..", "..", "..", "docs", "chapter-graph-sample.xlsx"));
-
-    [Fact]
-    public void 노드를_열면_워크북이_규격대로_생기고_여는_손이_호출된다() => HeadlessUi.Run(() =>
-    {
-        using var project = new TempProject(SamplePath);
-        (ChapterGraphView view, _) = Show(project);
-
-        var opened = new List<string>();
-        view.OpenWorkbookFile = opened.Add;
-        view.WorkbookHandlerProbe = () => @"C:\Program Files\Microsoft Office\EXCEL.EXE";
-
-        view.OpenEpisode("main05.03");
-
-        string expected = Path.Combine(project.EpisodesFolder, "main05.03.xlsx");
-        Assert.Equal(expected, Assert.Single(opened));
-        Assert.True(File.Exists(expected));
-
-        // 두 번째 열기는 만들지 않고 그대로 연다 — 기존 파일은 절대 덮어쓰지 않는다.
-        byte[] before = File.ReadAllBytes(expected);
-        view.OpenEpisode("main05.03");
-        Assert.Equal(2, opened.Count);
-        Assert.Equal(before, File.ReadAllBytes(expected));
-    });
-
-    [Fact]
-    public void 에피소드_동기화가_대사노드로_이어진다() => HeadlessUi.Run(() =>
-    {
-        using var project = new TempProject(SamplePath);
-
-        // 견본 워크북을 에피소드로도 배치한다 — 리더가 머리글로 시트를 찾으므로 그대로 통한다.
-        Directory.CreateDirectory(project.EpisodesFolder);
-        File.Copy(SamplePath, Path.Combine(project.EpisodesFolder, "main05.02.xlsx"));
-
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        view.ImportEpisodes();
-
-        // 대사노드가 챕터의 대사엔트리 이름으로 생겼다.
-        Assert.Contains(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.Name == "Story_ch05_02");
-    });
-
-    [Fact]
-    public void 잘된_동기화는_검증_보고에_아무_말도_안_한다() => HeadlessUi.Run(() =>
-    {
-        // 2026-08-24 소유자 — "동기화가 몇개 반영됬는지 표기할 필요는 없어. 그런 동기화
-        // 문구들은 굳이 표시가 안 되도록." 여기는 <b>검증</b> 보고이고, 잘된 일의 개수는
-        // 검증할 것이 아니다 — 그것이 목록을 채우면 정작 봐야 할 줄이 그 사이에 묻힌다.
-        using var project = new TempProject(SamplePath);
-        Directory.CreateDirectory(project.EpisodesFolder);
-        File.Copy(SamplePath, Path.Combine(project.EpisodesFolder, "main05.02.xlsx"));
-
-        (ChapterGraphView view, _) = Show(project);
-
-        view.ImportEpisodes();
-
-        var expander = view.FindControl<Expander>("DiagnosticsExpander")!;
-        Assert.DoesNotContain("반영", (string)expander.Header!);
-
-        List<string> texts = view.FindControl<StackPanel>("DiagnosticsPanel")!
-            .Children.OfType<TextBlock>()
-            .Select(block => block.Text ?? string.Empty)
-            .ToList();
-
-        // ⚠ 동기화 보고의 이름표는 <b>정확히</b> "에피소드 {Id}"다. 부분일치로 재면
-        // 진단 줄이 파일 경로에 그 이름을 달고 있어 헛물을 켠다 — 처음 쓴 판이 그래서
-        // 필터를 꺼도 통과했다.
-        Assert.DoesNotContain(texts, text => text.Trim() == "에피소드 main05.02");
-        Assert.DoesNotContain(texts, text => text.Contains("반영됨"));
-        Assert.DoesNotContain(texts, text => text.Contains("LineId를 발급"));
-
-        // ⛔ 거부는 이 침묵에 휩쓸리지 않는다 — 조용한 무반영이 최악이다(G3-1).
-        // 그쪽은 `깨진_에피소드는_거부가_배지와_패널에_보인다`가 지킨다.
-    });
-
-    [Fact]
-    public void 잘된_동기화는_상태줄에도_아무_말도_안_한다() => HeadlessUi.Run(() =>
-    {
-        // 검증 보고와 <b>같은 선</b>이다 (2026-08-24). 동기화는 사람이 시켜서 도는 일이
-        // 아니라 챕터를 고르거나 워크북이 저장될 때마다 저절로 도는데, 잘됐다고 매번
-        // 상태줄을 차지하면 사람이 방금 누른 것에 대한 답이 그 아래 깔린다.
-        using var project = new TempProject(SamplePath);
-        Directory.CreateDirectory(project.EpisodesFolder);
-        File.Copy(SamplePath, Path.Combine(project.EpisodesFolder, "main05.02.xlsx"));
-
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        session.SetStatus("사람이 방금 누른 것의 답");
-
-        view.ImportEpisodes();
-
-        Assert.Equal("사람이 방금 누른 것의 답", session.StatusMessage);
-    });
-
-    [Fact]
-    public void 거부는_이름표와_함께_맨_위에_선다() => HeadlessUi.Run(() =>
-    {
-        // 잘된 것을 지웠다고 <b>짚을 것까지 지우면 안 된다.</b> 그리고 그 줄들은 여전히
-        // 목록 맨 위다 — 사람이 방금 한 행동의 결과를 알림 더미 아래 스크롤 밖에 묻지
-        // 않는다(실사례: "숫자는 2개라는데 볼 방법이 없어").
-        //
-        // ⚠ 이름표가 <b>챕터</b>인 것은 들여오기가 전부 아니면 전무이기 때문이다(§5.2).
-        //    에피소드마다 성패가 갈리던 동기화 시절에는 에피소드 이름이 붙었다.
-        using var project = new TempProject(SamplePath);
-        Directory.CreateDirectory(project.EpisodesFolder);
-
-        EpisodeLibrary.EnsureWorkbook(project.EpisodesFolder, "main05.01");
-        BreakWorkbook(Path.Combine(project.EpisodesFolder, "main05.01.xlsx"));
-
-        (ChapterGraphView view, _) = Show(project);
-
-        view.ImportEpisodes();
-
-        List<string> texts = view.FindControl<StackPanel>("DiagnosticsPanel")!
-            .Children.OfType<TextBlock>()
-            .Select(block => block.Text ?? string.Empty)
-            .ToList();
-
-        int refusalIndex = texts.FindIndex(text => text.Contains("대본 가져오기 거부"));
-        Assert.True(refusalIndex >= 0, "거부했으면 어느 챕터인지 이름표가 있어야 한다");
-        Assert.Contains("ch05", texts[refusalIndex]);
-
-        int firstDiagnosticIndex = texts.FindIndex(text => text.Contains(".xlsx ·"));
-        Assert.True(firstDiagnosticIndex < 0 || refusalIndex < firstDiagnosticIndex,
-            $"거부 줄({refusalIndex})이 진단({firstDiagnosticIndex})보다 아래에 있습니다.");
-    });
-
     [Fact]
     public void 에피소드를_고르면_대사_탭에서_대사가_읽힌다() => HeadlessUi.Run(() =>
     {
-        // 소유자 요청 — 시나리오 그래프까지 안 가도, 챕터 그래프의 [대사] 탭에서
-        // 고른 에피소드의 대사가 (읽기 전용으로) 보여야 한다.
-        using var project = new TempProject(SamplePath);
-        Directory.CreateDirectory(project.EpisodesFolder);
-        File.Copy(SamplePath, Path.Combine(project.EpisodesFolder, "main05.02.xlsx"));
+        // 시나리오 그래프까지 안 가도, 챕터 그래프의 [대사] 탭에서
+        // 고른 에피소드의 대사가 (읽기 전용으로) 보여야 한다. 원천은 그 에피소드 카드의 대본이다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
 
-        (ChapterGraphView view, _) = Show(project);
+        WriteLines(
+            session,
+            "main05.02",
+            ("윌로", "복도는 조용했다."),
+            ("라루", "여기서 기다릴까?"),
+            ("윌로", "너를 믿어."),
+            ("라루", "다리가 무거워."),
+            ("라루", "아직도 화가 나."),
+            ("윌로", "문이 열렸다."));
 
         view.SelectEpisode("main05.02");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         var preview = view.FindControl<SelectableTextBlock>("DialoguePreviewText")!;
 
-        // v15 — 조건 블록이 폐지되면서 미리보기에서 깊이·들여쓰기가 함께 사라졌다.
-        // 견본의 블록 행은 이행기가 걷었고, 그 안에 있던 대사는 <b>남는다</b>.
+        // 깊이·들여쓰기 없이 「화자: 대사」 줄이 차례로 선다.
         Assert.Equal(
             """
             윌로: 복도는 조용했다.
@@ -173,7 +52,10 @@ public sealed class ChapterGraphSyncViewTests
             """.ReplaceLineEndings("\n"),
             preview.Text!.ReplaceLineEndings("\n"));
 
-        // 아직 대본 없는 에피소드는 빈 화면 대신 그 사실을 말한다.
+        // 대사가 있으면 머리 옆에 안내문을 달지 않는다(「읽기 전용 · 고치는 곳은 …」은 걷혔다).
+        Assert.Equal(string.Empty, view.FindControl<TextBlock>("DialoguePreviewHeader")!.Text);
+
+        // 아직 대사를 안 적은 에피소드는 빈 화면 대신 그 사실을 말한다.
         view.SelectEpisode("main05.01");
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Assert.Equal(string.Empty, preview.Text);
@@ -184,146 +66,40 @@ public sealed class ChapterGraphSyncViewTests
     [Fact]
     public void 챕터_탭이_스탯을_고칠_수_있게_세운다() => HeadlessUi.Run(() =>
     {
-        // 소유자 점검 — 스탯은 어디에서도 값이 안 보이던 표다. [챕터] 탭이 조건 아래에 세운다.
+        // 스탯 표는 [챕터] 탭이 조건 아래에 세운다.
         // 에피소드·간선은 그래프가 이미 그린다.
         //
-        // ⚠ <b>2026-09-17에 읽기 전용이 아니게 됐다</b> (소유자 — 계층을 하나로 합치면서):
-        //    *"이제 엑셀이 아닌 챕터그래프에서 직접 조건과 스탯을 정의하려고 합니다"*.
-        //    R-F가 워크북을 산출물로 만든 뒤로 *"편집은 엑셀에서"*는 이미 낡은 안내였다.
+        // <b>읽기 전용이 아니다</b> — 조건과 스탯은 엑셀이 아니라 챕터 그래프에서 직접 정의한다.
         //
-        // 2026-08-24 소유자 — 나란히 서 있던 픽스처 표는 걷었다("한 번도 안 썼어").
-        // 엑셀의 `픽스처` 시트는 그대로다: 화면만 없앴다.
-        using var project = new TempProject(SamplePath);
+        // 픽스처 표는 세우지 않는다. 챕터의 픽스처는 그대로다: 화면만 없다.
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         StackPanel row = view.FindControl<StackPanel>("StatListPanel")!
             .Children.OfType<StackPanel>()
             .Single(panel => Equals(panel.Tag, "stat:trust"));
 
-        // 값 칸 넷(표시이름·초기·최소·최대) + 개명 · 삭제.
-        Assert.Equal(4, row.Children.OfType<TextBox>().Count());
-        Assert.Equal(2, row.Children.OfType<Button>().Count());
+        // 칸 넷(키 · 처음 값 · 최소 · 최대) + 삭제. 표시 이름 칸은 걷혔고(W2), 키는 [✎] 대신 칸에서 고친다(writer-comfort WC4).
+        Assert.Equal(4, row.GetLogicalDescendants().OfType<TextBox>().Count());
+        Assert.Single(row.GetLogicalDescendants().OfType<Button>());
 
         Assert.Null(view.FindControl<StackPanel>("FixtureListPanel"));
     });
 
-    [Fact]
-    public void 열었다고_대본이_저절로_들어오지는_않는다() => HeadlessUi.Run(() =>
-    {
-        // ⛔ <b>이 테스트는 뒤집혔다</b> (R-D · 2026-09-16). 앞선 판은
-        //    `툴이_꺼진_사이_적힌_대사도_열면_바로_노드로_선다`였다 — 프로젝트를 열면
-        //    툴이 워크북을 따라잡는다는 계약이었고, 워크북이 원본이던 시절에는 그것이
-        //    없으면 시트에 쓴 글이 영영 안 들어왔다.
-        //
-        //    이제 원본은 프로젝트다. 열 때마다 워크북을 따라잡으면 <b>툴에서 고친 글을
-        //    옛 엑셀이 덮는다</b> — 뒤집기가 막으려는 바로 그 사고다. 들여오기는 사람이
-        //    누른다(§5.2 "임포트는 명시적 동작이다").
-        using var project = new TempProject(SamplePath);
-        Directory.CreateDirectory(project.EpisodesFolder);
-        File.Copy(SamplePath, Path.Combine(project.EpisodesFolder, "main05.02.xlsx"));
-
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.Name == "Story_ch05_02");
-
-        // 누르면 그때 들어온다 — 길이 막힌 것이 아니라 방아쇠가 손으로 옮겨 온 것이다.
-        view.ImportEpisodes();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        Assert.Contains(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.Name == "Story_ch05_02");
-    });
-
-    [Fact]
-    public void 동기화가_반영되면_구조_변경으로_알려_열린_편집_화면이_다시_선다() => HeadlessUi.Run(() =>
-    {
-        // 실사례 — 시트에서 대사를 고치면 모델은 바뀌는데 열려 있는 줄 목록은 옛 줄을
-        // 들고 있었다. 대사 수정이 "타이핑 보호"(편집 컨트롤 보존) 경로로 전달됐기 때문이다.
-        // 바깥(엑셀)에서 온 변경은 구조 변경으로 격상해 화면을 다시 만들게 한다.
-        using var project = new TempProject(SamplePath);
-        Directory.CreateDirectory(project.EpisodesFolder);
-        File.Copy(SamplePath, Path.Combine(project.EpisodesFolder, "main05.02.xlsx"));
-
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        // ⚠ <b>실제로 무언가를 바꿔야 한다</b> (2026-08-24). 예전에는 그냥 SyncEpisodes를
-        // 한 번 더 부르면 됐다 — 아무것도 안 바뀌어도 방송이 나갔기 때문이다. 그 방송이
-        // 타이핑하던 칸을 파괴해서 지금은 <b>바뀐 때만</b> 나간다
-        // (`ChapterGraphWorkAmountTests.아무것도_안_바뀐_동기화는_다시_그리라고_방송하지_않는다`).
-        // 그래서 여기서도 작가가 시트에서 고친 것과 같은 일을 한다 — 이 테스트가 원래
-        // 지키려던 것이 바로 그 경우다("시트에서 대사를 고치면").
-        WriteFirstLine(
-            Path.Combine(project.EpisodesFolder, "main05.02.xlsx"),
-            "라루", "시트에서 고친 대사");
-
-        var kinds = new List<ProjectChangeKind>();
-        session.Changed += (_, args) => kinds.Add(args.Kind);
-
-        view.ImportEpisodes();
-
-        Assert.Contains(ProjectChangeKind.Structure, kinds);
-    });
-
-    /// <summary>대본 워크북의 첫 데이터 행에 한 줄 적는다 — 작가가 엑셀에서 하는 일.</summary>
-    private static void WriteFirstLine(string path, string speaker, string text)
-    {
-        using var workbook = new ClosedXML.Excel.XLWorkbook(path);
-
-        // Show가 이미 이행을 태웠으므로 이 파일은 v15 4열이다 — 첫 칸이 `인덱스`다.
-        ClosedXML.Excel.IXLWorksheet sheet = workbook.Worksheets
-            .First(candidate => candidate.Cell(1, 1).GetString().Trim() == "인덱스");
-
-        sheet.Cell(2, 3).SetValue(speaker);   // C · 화자
-        sheet.Cell(2, 4).SetValue(text);      // D · 내용
-
-        workbook.SaveAs(path);
-    }
-
-    [Fact]
-    public void 깨진_에피소드는_거부가_배지와_패널에_보인다() => HeadlessUi.Run(() =>
-    {
-        using var project = new TempProject(SamplePath);
-        Directory.CreateDirectory(project.EpisodesFolder);
-
-        // IN이 가리키는 구간이 없는 깨진 에피소드 (§3.3 규칙 1 위반).
-        EpisodeLibrary.EnsureWorkbook(project.EpisodesFolder, "main05.01");
-        BreakWorkbook(Path.Combine(project.EpisodesFolder, "main05.01.xlsx"));
-
-        (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        view.ImportEpisodes();
-
-        // ⚠ 2026-08-24 — <b>저절로 펼치지 않는다</b>. 알림은 머리글의 표식이 든다
-        // (소유자: "그것까지 꺼줘. 대신에 … 시각적인 이모티콘을 붙여놓기만 해").
-        var expander = view.FindControl<Expander>("DiagnosticsExpander")!;
-        Assert.Contains("대본 가져오기 거부", (string)expander.Header!);
-        Assert.Contains("🟡", (string)expander.Header!);   // 경고 = 노랑
-        Assert.False(expander.IsExpanded);
-
-        var panel = view.FindControl<StackPanel>("DiagnosticsPanel")!;
-        Assert.Contains(panel.Children.OfType<TextBlock>(),
-            block => block.Text?.Contains("대본 가져오기 거부") == true);
-
-        // 깨진 표는 노드를 만들지 않는다.
-        Assert.DoesNotContain(session.Project.EnumerateNodes().OfType<DialogueNode>(),
-            node => node.Name == "Story_ch05_01");
-    });
-
-    // ── G8 내보내기 — 사람 손을 기다리지 않는다 (2026-08-17) ────────────────
+    // ── 내보내기 — 사람 손을 기다리지 않는다 ────────────────
 
     [Fact]
     public void 검증_오류가_있으면_JSON이_안_나가고_사유를_말한다() => HeadlessUi.Run(() =>
     {
-        // 견본 챕터는 에피소드 워크북 없이는 branch05.02A가 도달 불가다 → 거부.
+        // 견본 챕터의 branch05.02A는 도달 불가다 — 신뢰를 올리는 길이 없어 `신뢰높음`이 안 선다 → 거부.
         // 쓰레기가 런타임으로 넘어가는 것보다 파일이 안 나가는 편이 낫다(G8).
-        using var project = new TempProject(SamplePath);
+        using var project = new TempProject();
         (ChapterGraphView view, _) = Show(project);
 
         Assert.False(Directory.Exists(project.ExportFolder));
 
-        // 사유는 상태줄이 아니라 검증 보고에 선다 — 상태줄은 동기화 보고가 곧 덮는다.
-        // ⚠ 접힌 채로도 <b>머리글이 말한다</b> — 런타임으로 나갈 것이 안 나간 상태다.
+        // 사유는 상태줄이 아니라 검증 보고에 선다 — 상태줄은 다음 동작의 보고가 곧 덮는다.
+        // 접힌 채로도 <b>머리글이 말한다</b> — 런타임으로 나갈 것이 안 나간 상태다.
         var expander = view.FindControl<Expander>("DiagnosticsExpander")!;
         Assert.Contains("진행 JSON 미출력", (string)expander.Header!);
         Assert.Contains("🔴", (string)expander.Header!);   // 안 나간 것은 오류 급 = 빨강
@@ -338,17 +114,11 @@ public sealed class ChapterGraphSyncViewTests
     [Fact]
     public void 검증을_통과하면_규약_폴더에_JSON이_저절로_나간다() => HeadlessUi.Run(() =>
     {
-        // 도달 불가를 `도달불가 허용`(D3)으로 명시 예외 처리하면 검증을 통과한다.
-        // 단추를 누르지 않는다 — 챕터를 읽는 그 순간 나간다.
-        using var project = new TempProject(SamplePath);
-        AllowUnreachable(project.ChapterPath, "branch05.02A");
-        EpisodeWorkbookFixture.Fill(project.EpisodesFolder);   // 빈 노드는 이제 오류다
+        // 견본의 의도된 오류(신뢰를 올려 주는 길이 없어 branch05.02A에 못 닿는다)를 고치면 검증을 통과한다.
+        // 단추를 누르지 않는다 — 프로젝트를 여는 그 순간 나간다.
+        using var project = new TempProject(passing: true);
 
         (ChapterGraphView view, _) = Show(project);
-
-        // 대본은 이제 사람이 들여온다 (R-D) — 노드가 서야 검증이 통과한다.
-        view.ImportEpisodes();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         string path = Path.Combine(project.ExportFolder, "ch05.progression.json");
         Assert.True(File.Exists(path));
@@ -365,58 +135,54 @@ public sealed class ChapterGraphSyncViewTests
     [Fact]
     public void 툴에서_고치면_JSON도_따라_갱신된다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>이 테스트는 2026-09-16에 뒤집혔다</b> (R-F). 옛 이름은
-        //    `엑셀을_고치면_JSON도_따라_갱신된다`였고, 워크북에 행을 더한 뒤
-        //    <c>RefreshFromDisk()</c>로 다시 읽혀 JSON이 따라오는지를 봤다.
-        //
-        //    이제 읽는 길이 없다 — 엑셀을 고쳐도 아무 일도 안 일어난다(아래 짝 테스트).
-        //    그러니 재야 할 것은 <b>반대쪽</b>이다: 툴에서 고친 것이 JSON까지 가는가.
-        //    자동 내보내기(2026-08-17)가 사람 손을 기다리지 않는다는 규율은 그대로다.
-        using var project = new TempProject(SamplePath);
-        AllowUnreachable(project.ChapterPath, "branch05.02A");
-        EpisodeWorkbookFixture.Fill(project.EpisodesFolder);   // 빈 노드는 이제 오류다
+        // 툴에서 고친 것이 JSON까지 간다 — 자동 내보내기는 사람 손을 기다리지 않는다.
+        using var project = new TempProject(passing: true);
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        // 대본은 이제 사람이 들여온다 (R-D) — 노드가 서야 검증이 통과한다.
-        view.ImportEpisodes();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         string path = Path.Combine(project.ExportFolder, "ch05.progression.json");
         Assert.DoesNotContain("새로판길", File.ReadAllText(path));
 
-        // ⚠ 문구를 준다 (2026-08-23). 문구 없는 간선은 에피소드당 하나뿐인데 main05.01에
+        // 문구를 준다. 문구 없는 간선은 에피소드당 하나뿐인데 main05.01에
         //    이미 있다. 둘이 되면 진행 코어가 그 챕터를 못 싣고 내보내기가 옳게 거부한다 —
         //    이 테스트가 재려는 것은 "고치면 JSON이 따라오는가"이지 그쪽이 아니다.
-        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1);
+        //
+        // 새 에피소드는 카드와 첫 줄이 함께 선다 — 빈 노드 오류에 걸리지 않는다.
+        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1, sceneId: "새로판길");
         session.Editor.AddEdge("ch05", "main05.01", "새로판길", optionLabel: "새로 판 길로");
-
-        // 새 에피소드도 대본이 있어야 노드가 살아남는다 — 빈 노드는 오류다.
-        EpisodeWorkbookFixture.Fill(project.EpisodesFolder, "새로판길");
-        view.ImportEpisodes();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.Contains("새로판길", File.ReadAllText(path));
     });
 
     [Fact]
-    public void 엑셀을_고쳐도_아무_일도_일어나지_않는다() => HeadlessUi.Run(() =>
+    public void 보낼_곳에는_고칠_때가_아니라_저장할_때_보낸다() => HeadlessUi.Run(() =>
     {
-        // ⛔ <b>뒤집기의 반대편이다</b> (R-F · §5.2). 워크북은 산출물이라 툴이 다시 읽지
-        //    않는다 — 읽는 길이 하나라도 남으면 툴과 엑셀이 서로를 덮어쓰던 자리로 돌아간다.
-        using var project = new TempProject(SamplePath);
-        AllowUnreachable(project.ChapterPath, "branch05.02A");
-        EpisodeWorkbookFixture.Fill(project.EpisodesFolder);
+        // 2026-11-17 소유자 — exported/는 바뀔 때마다, 보낼 곳(게임 폴더 등)은 저장할 때만(export-destinations G1).
+        using var project = new TempProject(passing: true);
+        string game = Path.Combine(Path.GetDirectoryName(project.ManifestPath)!, "game");
+        Directory.CreateDirectory(game);
+        ExportDestinations.SaveBeside(project.ManifestPath, ExportDestinations.None.With(ExportFormat.Progression, "game"));
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
+        string sent = Path.Combine(game, "ch05.progression.json");
+        Assert.False(File.Exists(sent));   // 열기만 해서는 보내지 않는다
 
-        int episodes = session.Project.Chapters.Single().Episodes.Count;
+        session.Editor.AddEpisode("ch05", "새로판길", title: string.Empty, 3, 1, sceneId: "새로판길");
+        session.Editor.AddEdge("ch05", "main05.01", "새로판길", optionLabel: "새로 판 길로");
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Contains("새로판길", File.ReadAllText(Path.Combine(project.ExportFolder, "ch05.progression.json")));
+        Assert.False(File.Exists(sent));   // 고치기만 해서는 보내지 않는다
 
-        ChapterWorkbookWriter.AddEpisode(project.ChapterPath, "밖에서온것", title: "", 3, 1);
-        view.RefreshFromDisk();
+        session.Save();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(episodes, session.Project.Chapters.Single().Episodes.Count);
+        Assert.Equal(
+            File.ReadAllBytes(Path.Combine(project.ExportFolder, "ch05.progression.json")),
+            File.ReadAllBytes(sent));
+        Assert.Contains(
+            view.FindControl<StackPanel>("DiagnosticsPanel")!.GetLogicalDescendants().OfType<TextBlock>(),
+            line => line.Text?.Contains("복제한 곳 → 진행 JSON game", StringComparison.Ordinal) == true);
     });
 
     [Fact]
@@ -424,23 +190,11 @@ public sealed class ChapterGraphSyncViewTests
     {
         // 고른 챕터만 내보내면 나머지는 누른 순간의 낡은 판으로 굳는다 — 사람 손을
         // 없앤 이유가 그것이다.
-        using var project = new TempProject(SamplePath);
-        AllowUnreachable(project.ChapterPath, "branch05.02A");
-        EpisodeWorkbookFixture.Fill(project.EpisodesFolder);   // 빈 노드는 이제 오류다
-
-        string second = Path.Combine(
-            Path.GetDirectoryName(project.ChapterPath)!, "ch99.xlsx");
-        File.Copy(project.ChapterPath, second);
-
-        // 둘째 챕터도 자기 대본 폴더가 있어야 한다 — 에피소드 Id는 같으므로 같은 목록이다.
-        EpisodeWorkbookFixture.Fill(
-            Path.Combine(Path.GetDirectoryName(project.EpisodesFolder)!, "ch99"));
+        //
+        // 둘째 챕터도 판과 카드가 서 있다(견본을 세울 때 두 챕터 모두에 세운다).
+        using var project = new TempProject(passing: true, "ch05", "ch99");
 
         (ChapterGraphView view, AuthoringSession session) = Show(project);
-
-        // 대본은 이제 사람이 들여온다 (R-D) — 노드가 서야 검증이 통과한다.
-        view.ImportEpisodes();
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
         Assert.True(File.Exists(Path.Combine(project.ExportFolder, "ch05.progression.json")));
         Assert.True(
@@ -451,12 +205,12 @@ public sealed class ChapterGraphSyncViewTests
     /// <summary>안 나간 사유를 실패 메시지에 담는다 — "왜"가 없으면 이 테스트는 못 고친다.</summary>
     private static string Reasons(TempProject project, string chapterId, StoryProject board)
     {
-        ChapterGraphModel model = ChapterWorkbookReader.Read(
-            Path.Combine(Path.GetDirectoryName(project.ChapterPath)!, chapterId + ".xlsx"));
+        ChapterGraphModel model = board.Chapters
+            .Single(chapter => chapter.ChapterId == chapterId)
+            .ToGraphModel(chapterId);
 
-        // ⚠ 내보내기까지 돌린다 — 검증만 보면 코어 관문(CoreRefusals)이 낸 거부가 안 보인다.
-        ChapterExportResult result = ChapterProgressionExporter.Export(
-            model, Path.Combine(Path.GetDirectoryName(project.EpisodesFolder)!, chapterId), board);
+        // 내보내기까지 돌린다 — 검증만 보면 코어 관문(CoreRefusals)이 낸 거부가 안 보인다.
+        ChapterExportResult result = ChapterProgressionExporter.Export(model, board);
 
         string errors = string.Join(" || ", result.Validation.All
             .Where(item => item.Severity == ChapterDiagnosticSeverity.Error)
@@ -469,41 +223,31 @@ public sealed class ChapterGraphSyncViewTests
         return $"거부={result.Refused} / 오류={(errors.Length == 0 ? "(없음)" : errors)} / 나간 것={files}";
     }
 
-    /// <summary>
-    /// `도달불가 허용` 열을 켠다 — D3의 명시 예외.
-    ///
-    /// ⚠ <b>자리를 못 박지 않는다.</b> 이 열은 규격 칸 뒤에 붙는 선택 열이라 앞 열이
-    /// 걷힐 때마다 옮겨 간다(2026-08-25 `종류` 폐지가 그랬다). 번호를 적어 두면 이미
-    /// 있는 머리글 <b>옆에</b> 하나를 더 세우고, 리더는 앞의 것을 읽어 이 켜기가
-    /// 조용히 안 듣는다. 리더와 같은 규칙으로 <b>이름을 찾아</b> 쓴다.
-    /// </summary>
-    private static void AllowUnreachable(string chapterPath, string episodeId)
-    {
-        using var memory = new MemoryStream(File.ReadAllBytes(chapterPath));
-        using var workbook = new ClosedXML.Excel.XLWorkbook(memory);
-        ClosedXML.Excel.IXLWorksheet sheet = workbook.Worksheet("에피소드");
-
-        int column = Enumerable.Range(7, 6).FirstOrDefault(
-            candidate => sheet.Cell(1, candidate).GetString().Trim() == "도달불가 허용");
-
-        if (column == 0)
-        {
-            column = (sheet.LastColumnUsed()?.ColumnNumber() ?? 6) + 1;
-            sheet.Cell(1, column).SetValue("도달불가 허용");
-        }
-
-        foreach (ClosedXML.Excel.IXLRow row in sheet.RowsUsed().Skip(1))
-        {
-            if (row.Cell(1).GetString() == episodeId)
-            {
-                row.Cell(column).SetValue("TRUE");
-            }
-        }
-
-        workbook.SaveAs(chapterPath);
-    }
-
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// 그 에피소드 카드에 대사를 줄마다 적는다 — 작가가 카드에서 하는 일. 첫 줄은 카드가 설 때
+    /// 함께 선 빈 줄이다.
+    ///
+    /// 붙여넣기(<c>ApplyScenarioText</c>)로 한 번에 넣지 않는다 — 그 빈 줄이 고쳐진 것인지
+    /// 사라진 것인지 판정이 서지 않아 붙여넣기가 통째로 멈춘다.
+    /// </summary>
+    private static void WriteLines(
+        AuthoringSession session, string episodeId, params (string Speaker, string Text)[] lines)
+    {
+        DialogueNode card = EpisodeNaming.CardFor(session.Project, "ch05", episodeId)!;
+
+        for (int index = 0; index < lines.Length; index++)
+        {
+            string lineId = index == 0
+                ? card.Script.ActiveLines.First().Id
+                : session.Editor.InsertScriptLine(card.Id).Id;
+
+            session.Editor.SetScriptLineText(card.Id, lineId, lines[index].Speaker, lines[index].Text);
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+    }
 
     private static (ChapterGraphView View, AuthoringSession Session) Show(TempProject project)
     {
@@ -519,48 +263,57 @@ public sealed class ChapterGraphSyncViewTests
         return (view, session);
     }
 
-    private static void BreakWorkbook(string path)
-    {
-        using var memory = new MemoryStream(File.ReadAllBytes(path));
-        using var workbook = new ClosedXML.Excel.XLWorkbook(memory);
-        ClosedXML.Excel.IXLWorksheet sheet = workbook.Worksheets.First();
-        // v14 자리 — 유형(1)이 IF인데 화자·내용을 적었다. 블록 행은 흐름만 그린다.
-        sheet.Cell(2, 1).SetValue("IF");
-        sheet.Cell(2, 5).SetValue("신뢰높음");
-        sheet.Cell(2, 6).SetValue(900);   // 없는 구간을 가리킨다
-        workbook.SaveAs(path);
-    }
-
+    /// <summary>견본 챕터(ch05 복도)를 든 프로젝트. 판과 카드는 열 때 선다.</summary>
     private sealed class TempProject : IDisposable
     {
-        private readonly string _directory;
+        private readonly string _directory = Path.Combine(
+            Path.GetTempPath(), "vn-chapter-sync-view", Guid.NewGuid().ToString("N"));
 
-        public TempProject(string samplePath)
+        /// <param name="passing">
+        /// 견본의 의도된 오류를 고친다 — <c>branch05.02A</c>의 관문(신뢰높음 = trust ≥ 3)에 닿게 <c>main05.01 → main05.02</c>에서
+        /// trust +3. 검증을 통과해 진행 JSON이 나가는 모양(⛔ 2026-11-17까지는 `도달불가 허용` 깃발로 오류를 낮췄다 — 그 깃발은 걷혔다).
+        /// </param>
+        /// <param name="chapterIds">견본을 세울 챕터 Id들. 비우면 <c>ch05</c> 하나다.</param>
+        public TempProject(bool passing = false, params string[] chapterIds)
         {
-            _directory = Path.Combine(
-                Path.GetTempPath(), "vn-chapter-sync-view", Guid.NewGuid().ToString("N"));
+            string[] ids = chapterIds.Length > 0 ? chapterIds : [SampleChapters.Corridor];
 
-            Directory.CreateDirectory(Path.Combine(_directory, ChapterLibrary.FolderName));
-            File.Copy(samplePath, Path.Combine(_directory, ChapterLibrary.FolderName, "ch05.xlsx"));
+            ManifestPath = SampleProject.Create(
+                _directory,
+                "검증 보고",
+                ids.Select(id => (SampleChapters.Corridor, id)),
+                project =>
+                {
+                    var editor = new ProjectEditor(project);
 
-            ManifestPath = Path.Combine(_directory, "project" + ProjectManifestJson.FileExtension);
+                    // 견본 하나를 여러 챕터에 세우면 EpisodeId · 카드 이름이 같다 — Yarn 노드 이름은 프로젝트에서 하나여야 하므로
+                    // (2026-11-17 · ChapterYarnNames) 둘째 챕터부터 그 Id를 앞에 붙인다(카드 이름도 따라간다).
+                    foreach (string id in ids.Skip(1))
+                    {
+                        foreach (ChapterEpisode episode in editor.FindChapter(id)!.Episodes.ToList())
+                        {
+                            Assert.True(EpisodeRenamer.Rename(editor, id, episode.EpisodeId, EpisodeIdIn(ids, id, episode.EpisodeId)).Renamed);
+                        }
+                    }
 
-            // 실제 프로젝트의 모양 — 시나리오 파일이 하나는 있다. 동기화가 만든 노드가 여기 담긴다.
-            var project = new StoryProject { Title = "동기화 검증" };
-            project.Files.Add(new StoryFile("sf_main", "본편", "story/main.vnstory.json"));
-            ProjectStore.Save(ManifestPath, project);
+                    if (passing)
+                    {
+                        foreach (string id in ids)
+                        {
+                            editor.UpdateEdge(
+                                id, EpisodeIdIn(ids, id, "main05.01"), EpisodeIdIn(ids, id, "main05.02"),
+                                statChanges: "trust +3", matchOptionLabel: "계속");
+                        }
+                    }
+                });
         }
 
         public string ManifestPath { get; }
 
-        /// <summary>그 챕터의 대본 폴더 — episodes/{ChapterId}/ (2026-08-16 챕터별 격리).</summary>
-        public string EpisodesFolder =>
-            Path.Combine(_directory, EpisodeLibrary.FolderName, "ch05");
+        private static string EpisodeIdIn(string[] ids, string chapterId, string episodeId) =>
+            chapterId == ids[0] ? episodeId : $"{chapterId}.{episodeId}";
 
-        public string ExportFolder => Path.Combine(_directory, ChapterGraphView.ExportFolderName);
-
-        public string ChapterPath =>
-            Path.Combine(_directory, ChapterLibrary.FolderName, "ch05.xlsx");
+        public string ExportFolder => Path.Combine(_directory, ChapterExportService.ExportFolderName);
 
         public void Dispose()
         {
