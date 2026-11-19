@@ -35,9 +35,10 @@ public partial class GraphEditorView : UserControl
     private const double CardWidth = BoardSize.CardWidth;   // 판 크기 계산(BoardResize)과 같은 값 — 한 곳에서 정한다
 
     // 카드 크기는 사람이 가장자리를 끌어 키운다 — 오른쪽은 폭, 아래는 글 칸 높이, 오른쪽 아래 모서리는 둘 다. 기본보다 작게는
-    // 줄이지 않는다(머리 · 포트 줄이 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다).
-    private const double MaxCardWidth = 720;
-    private const double MaxWritingHeight = 900;
+    // 줄이지 않는다(머리 · 포트 줄이 기본 폭에, 분기 점이 글 칸 기본 높이에 맞춰 섰다). 끝은 판의 가장 작은 변이다 — 판보다 큰 카드는
+    // 쓸 데가 없다(2026-11-19 소유자 — 「크기 제한을 없애거나 더 늘릴 필요」 · usability UX4 · ⛔ 그 전에는 폭 720 · 글 칸 높이 900).
+    internal const double MaxCardWidth = BoardSize.Minimum;
+    internal const double MaxWritingHeight = BoardSize.Minimum;
     private const double ResizeGripWidth = 8;
     private const double ResizeCornerSize = 14;
 
