@@ -136,6 +136,29 @@ internal static class WriterMarksJson
 
     public static string ColorName(WriterColor color) => color.ToString().ToLowerInvariant();
 
+    /// <summary>카드의 처음 글꼴 · 크기 — <c>{ "font": "맑은 고딕", "size": 11 }</c>(기본 글꼴이면 <c>font</c>는 빈 글).</summary>
+    public static JsonObject WriteBase(WriterBase value) => new()
+    {
+        ["font"] = value.Font,
+        ["size"] = value.Size
+    };
+
+    /// <summary>너그럽게 읽는다 — 크기가 숫자가 아니거나 0 이하면 안 적힌 카드로 둔다(열 때 그 PC의 설정으로 다시 적힌다).</summary>
+    public static WriterBase? ReadBase(JsonNode? json)
+    {
+        if (json is not JsonObject value ||
+            value["size"] is not JsonValue size ||
+            !size.TryGetValue(out double points) ||
+            !double.IsFinite(points) ||
+            points <= 0)
+        {
+            return null;
+        }
+
+        string font = value["font"] is JsonValue name && name.TryGetValue(out string? text) ? text.Trim() : string.Empty;
+        return new WriterBase(font, points);
+    }
+
     private static WriterColor? Color(JsonNode? json) =>
         Text(json) is { } name && Enum.TryParse(name, ignoreCase: true, out WriterColor color) && Enum.IsDefined(color) &&
         !int.TryParse(name, out _)

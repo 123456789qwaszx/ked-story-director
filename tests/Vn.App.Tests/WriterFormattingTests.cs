@@ -297,6 +297,26 @@ public sealed class WriterFormattingTests
         window.Close();
     });
 
+    /// <summary>크기 숫자는 그 카드의 처음 크기(writer-formatting WF-D13)에 서식의 크기 차를 더한 것이다 — 설정의 지금 크기가 아니다.</summary>
+    [Fact]
+    public void 크기_숫자는_그_카드의_처음_크기에서_센다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어");
+        GraphEditorView graph = Graph(window);
+        session.Project.FindDialogue(card.Id)!.WriterBase = new WriterBase(string.Empty, 16);
+        graph.RebuildCard(card.Id);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(16, Box(window, card.Id).FontSize);
+
+        Select(Box(window, card.Id), "긴 하루");
+        Assert.Equal("16", graph.FormatToolbarState.Size);
+        Click(window, "글자 크게");
+        Assert.Equal("17", graph.FormatToolbarState.Size);
+        Assert.Equal(16, Box(window, card.Id).FontSize);   // 칸의 바탕 크기는 그대로 — 고른 글자만 커졌다
+
+        window.Close();
+    });
+
     /// <summary>글꼴 고르기를 펼쳤다가 고르지 않고 닫으면 칸이 초점과 범위를 다시 쥐고, 그 칸을 떠나면 범위가 걷힌다(붙든 채 남지 않는다).</summary>
     [Fact]
     public void 글꼴_고르기를_그냥_닫으면_범위가_돌아오고_칸을_떠나면_걷힌다() => HeadlessUi.Run(() =>

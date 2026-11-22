@@ -29,10 +29,10 @@ public enum WriterAlign
 /// <summary>
 /// <b>글자 한 토막의 모양</b> — 작가가 보기 위한 것이다(WF-D1 · 게임에 나가지 않는다).
 /// </summary>
-/// <param name="Font">글꼴 이름 — null이면 설정의 「대본 글 칸」 글꼴. 그 글꼴이 없는 PC에서는 기본 글꼴로 보인다.</param>
+/// <param name="Font">글꼴 이름 — null이면 카드의 처음 글꼴(<see cref="DialogueNode.WriterBase"/>). 그 글꼴이 없는 PC에서는 기본 글꼴로 보인다.</param>
 /// <param name="Grow">
-/// 글자 크기 차(pt) — 설정의 글자 크기에 더한다. 크기를 그대로 적지 않는 까닭: 글자 크기는 PC마다 다른 설정이라(<c>ScriptFont</c>), 「남보다 크게」가
-/// 어느 PC에서나 같은 뜻이어야 한다.
+/// 글자 크기 차(pt) — 카드의 처음 크기(<see cref="DialogueNode.WriterBase"/>)에 더한다. 「남보다 크게」라는 뜻을 적는다 — 처음 크기가 안 적힌 옛 카드는
+/// 그 PC의 설정 크기에 더한다.
 /// </param>
 public sealed record WriterLook(
     bool Bold = false,
@@ -48,6 +48,15 @@ public sealed record WriterLook(
 
     public bool IsPlain => this == Plain;
 }
+
+/// <summary>
+/// <b>카드 글 칸의 처음 글꼴 · 글자 크기</b>(2026-11-23 소유자 — 「설정 내부에 대본 글칸속의 글꼴과 글자 크기는 이제 처음 생성시에 기본값으로만 사용하는
+/// 게 맞겠습니다. 지금처럼 즉각 갱신되는게 아니라요」) — 카드를 만들 때 그 PC의 설정 「대본 글 칸」 값을 적어 두고, 뒤에 설정을 바꿔도 그 카드는 그대로다.
+/// 줄 간격은 적지 않는다(이 PC의 설정을 따른다).
+/// </summary>
+/// <param name="Font">글꼴 이름 — 빈 글이면 테마의 기본 글꼴. 그 글꼴이 없는 PC에서는 기본 글꼴로 보인다.</param>
+/// <param name="Size">글자 크기(pt).</param>
+public sealed record WriterBase(string Font, double Size);
 
 /// <summary>대사 글의 한 구간 <c>[Start, Start + Length)</c>에 입힌 모양 — 자리는 그 줄 기본 언어 <c>Text</c>의 UTF-16 자리다(화자는 밖이다).</summary>
 public sealed record WriterSpan(int Start, int Length, WriterLook Look)
@@ -86,6 +95,31 @@ public enum WriterStyleKind
 public sealed record WriterStyleChange(WriterStyleKind Kind, WriterColor? Color = null, string? Font = null, int Step = 0)
 {
     public static WriterStyleChange Toggle(WriterStyleKind kind) => new(kind);
+}
+
+/// <summary>
+/// 처음 글꼴 · 크기가 안 적힌 카드(<see cref="DialogueNode.WriterBase"/>가 null — 그 값이 생기기 전에 만든 카드)에 그 값을 적는다. 앱이 파일을 열 때 ·
+/// 새 프로젝트를 만들 때 그 PC의 설정으로 부른다 — 되돌리기 기록 없이, 프로젝트를 편집기에 넘기기 전에(열자마자 「저장 안 한 변경」이 되지 않는다).
+/// 적은 값은 다음 저장에 파일로 간다(writer-formatting WF-D13 — 2026-11-23 소유자: 기존 카드는 「지금 설정으로 굳힘」).
+/// </summary>
+public static class WriterBaseFill
+{
+    /// <summary>적은 카드 수.</summary>
+    public static int Fill(StoryProject project, WriterBase value)
+    {
+        int filled = 0;
+
+        foreach (DialogueNode node in project.EnumerateNodes().OfType<DialogueNode>())
+        {
+            if (node.WriterBase is null)
+            {
+                node.WriterBase = value;
+                filled++;
+            }
+        }
+
+        return filled;
+    }
 }
 
 /// <summary>

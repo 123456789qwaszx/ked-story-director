@@ -89,15 +89,15 @@ public sealed class CardFitTests : IDisposable
     });
 
     [Fact]
-    public void 설정의_글자_크기와_줄_간격으로_잰다() => HeadlessUi.Run(() =>
+    public void 카드의_글자_크기와_설정의_줄_간격으로_잰다() => HeadlessUi.Run(() =>
     {
-        // 「현재 글꼴과 글 크기를 고려해서」 — 설정 「대본 글 칸」을 키우면 같은 글이 더 넓고 높게 맞춰진다.
+        // 「현재 글꼴과 글 크기를 고려해서」 — 카드의 처음 글자 크기(카드를 만들 때의 설정 · writer-formatting WF-D13)와 설정의 줄 간격으로 잰다.
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
-        string[] lines = [Long, "윌로: 응.", "라루: 가자."];
+        string[] lines = [Long, "윌로: 응.", "라루: 가자.", "윌로: 어디로?", "라루: 바다로.", "윌로: 좋아."];
         Write(graph, session, root, lines);
         Fit(graph, root);
-        (double Width, double Height) small = (session.Project.FindNode(root)!.Layout.Width!.Value, session.Project.FindNode(root)!.Layout.WritingHeight ?? DefaultHeight);
+        (double Width, double Height) small = (session.Project.FindNode(root)!.Layout.Width!.Value, session.Project.FindNode(root)!.Layout.WritingHeight!.Value);
 
         ScriptFont.Set(null, 20, 180);
 
@@ -105,12 +105,26 @@ public sealed class CardFitTests : IDisposable
         {
             Dispatcher.UIThread.RunJobs();
             graph.UpdateLayout();
-            Fit(graph, root);
 
-            Assert.True(session.Project.FindNode(root)!.Layout.Width > small.Width);
+            // 서 있는 카드는 줄 간격만 따른다 — 같은 폭에서 더 높게 맞춰진다.
+            Fit(graph, root);
+            Assert.Equal(small.Width, session.Project.FindNode(root)!.Layout.Width);
             Assert.True(session.Project.FindNode(root)!.Layout.WritingHeight > small.Height);
             Assert.Equal(lines.Length, VisualLines(graph, root));
             AssertAllVisible(graph, root);
+
+            // 지금 만든 카드는 새 글자 크기로 선다 — 같은 글이 더 넓고 높게 맞춰진다.
+            session.Editor.AddEpisode("ch01", "big", title: "big", 0, 600, sceneId: "opening");
+            Dispatcher.UIThread.RunJobs();
+            graph.UpdateLayout();
+            string big = CardId(session, "big");
+            Write(graph, session, big, lines);
+            Fit(graph, big);
+
+            Assert.True(session.Project.FindNode(big)!.Layout.Width > small.Width);
+            Assert.True(session.Project.FindNode(big)!.Layout.WritingHeight > session.Project.FindNode(root)!.Layout.WritingHeight);
+            Assert.Equal(lines.Length, VisualLines(graph, big));
+            AssertAllVisible(graph, big);
         }
         finally
         {

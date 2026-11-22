@@ -24,6 +24,9 @@ internal static class StoryNodeJson
     /// <summary><see cref="DialogueNode.WriterAlign"/>이 앉는 칸 — 왼쪽(기본)이 아닐 때만 쓴다.</summary>
     private const string WriterAlignKey = "writerAlign";
 
+    /// <summary><see cref="DialogueNode.WriterBase"/>(카드의 처음 글꼴 · 크기)가 앉는 칸 — 적혀 있을 때만 쓴다.</summary>
+    private const string WriterBaseKey = "writerBase";
+
     public static JsonObject Write(StoryNode node)
     {
         string kind = node switch
@@ -277,6 +280,11 @@ internal static class StoryNodeJson
         {
             json[WriterAlignKey] = WriterMarksJson.AlignName(node.WriterAlign);
         }
+
+        if (node.WriterBase is { } writerBase)
+        {
+            json[WriterBaseKey] = WriterMarksJson.WriteBase(writerBase);
+        }
     }
 
     private static SetNode ReadSetNode(JsonObject json, string id, string name)
@@ -344,6 +352,7 @@ internal static class StoryNodeJson
         // 작가용 글 서식은 너그럽게 읽는다 — 서식 때문에 프로젝트가 안 열리는 일은 없다(writer-formatting 5절 ③).
         WriterMarksJson.Read(node, json[WriterMarksKey]);
         node.WriterAlign = WriterMarksJson.ReadAlign(json[WriterAlignKey]);
+        node.WriterBase = WriterMarksJson.ReadBase(json[WriterBaseKey]);
 
         return node;
     }

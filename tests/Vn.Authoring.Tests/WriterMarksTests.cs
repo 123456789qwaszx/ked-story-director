@@ -263,6 +263,7 @@ public sealed class WriterMarksTests
             }
 
             editor.SetWriterAlign(card.Id, WriterAlign.Center);
+            editor.Project.FindDialogue(card.Id)!.WriterBase = new WriterBase("Noto Serif", 17);   // 카드의 처음 글꼴 · 크기도
             Assert.NotEmpty(editor.Project.FindDialogue(card.Id)!.WriterMarks);
 
             Dictionary<string, byte[]> marked = Export(editor, manifest);
@@ -281,6 +282,76 @@ public sealed class WriterMarksTests
         {
             Directory.Delete(root, recursive: true);
         }
+    }
+
+    // ── 카드의 처음 글꼴 · 크기(WF-D13) ─────────────────
+
+    [Fact]
+    public void 처음_글꼴_크기는_적혀_있을_때만_저장되고_다시_읽으면_그대로다()
+    {
+        (ProjectEditor editor, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어");
+        Assert.Null(card.WriterBase);
+        Assert.DoesNotContain("writerBase", ProjectSnapshotCodec.Encode(editor.Project), StringComparison.Ordinal);
+
+        card.WriterBase = new WriterBase("맑은 고딕", 14);
+        StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project));
+        Assert.Equal(new WriterBase("맑은 고딕", 14), reloaded.FindDialogue(card.Id)!.WriterBase);
+
+        // 기본 글꼴은 빈 글로 적힌다.
+        card.WriterBase = new WriterBase(string.Empty, 11);
+        Assert.Equal(new WriterBase(string.Empty, 11), ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project)).FindDialogue(card.Id)!.WriterBase);
+    }
+
+    [Theory]
+    [InlineData("{\"font\": \"맑은 고딕\", \"size\": \"크다\"}")]
+    [InlineData("{\"font\": \"맑은 고딕\", \"size\": 0}")]
+    [InlineData("{\"font\": \"맑은 고딕\"}")]
+    public void 크기가_이상한_처음_값은_안_적힌_카드로_읽는다(string broken)
+    {
+        (ProjectEditor editor, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어");
+        card.WriterBase = new WriterBase("맑은 고딕", 14);
+        StoryProject opened = ProjectSnapshotCodec.Decode(ReplaceObject(ProjectSnapshotCodec.Encode(editor.Project), "\"writerBase\"", broken));
+        Assert.Null(opened.FindDialogue(card.Id)!.WriterBase);
+    }
+
+    [Fact]
+    public void 새_카드는_만들_때_댄_처음_글꼴_크기를_적고_되돌려도_다시_해도_그대로다()
+    {
+        var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");
+        var given = new WriterBase("Noto Serif", 15);
+        editor.NewCardWriterBase = () => given;
+        editor.AddEpisode("ch01", "ep01", "첫", 0, 0, sceneId: "ep01");
+        DialogueNode card = EpisodeNaming.CardFor(editor.Project, "ch01", "ep01")!;
+        Assert.Equal(given, card.WriterBase);
+
+        // 대는 값이 바뀌어도(설정을 바꿨다) 서 있는 카드는 그대로다.
+        given = new WriterBase(string.Empty, 20);
+        editor.AddEpisode("ch01", "ep02", "둘", 300, 0, sceneId: "ep01");
+        Assert.Equal(new WriterBase("Noto Serif", 15), EpisodeNaming.CardFor(editor.Project, "ch01", "ep01")!.WriterBase);
+        Assert.Equal(new WriterBase(string.Empty, 20), EpisodeNaming.CardFor(editor.Project, "ch01", "ep02")!.WriterBase);
+
+        editor.Undo();
+        editor.Redo();
+        Assert.Equal(new WriterBase(string.Empty, 20), EpisodeNaming.CardFor(editor.Project, "ch01", "ep02")!.WriterBase);
+        Assert.Equal(new WriterBase("Noto Serif", 15), EpisodeNaming.CardFor(editor.Project, "ch01", "ep01")!.WriterBase);
+    }
+
+    [Fact]
+    public void 처음_값이_없는_카드에만_적는다()
+    {
+        var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");
+        editor.AddEpisode("ch01", "ep01", "첫", 0, 0, sceneId: "ep01");
+        editor.AddEpisode("ch01", "ep02", "둘", 300, 0, sceneId: "ep01");
+        DialogueNode first = EpisodeNaming.CardFor(editor.Project, "ch01", "ep01")!;
+        DialogueNode second = EpisodeNaming.CardFor(editor.Project, "ch01", "ep02")!;
+        first.WriterBase = new WriterBase("Noto Serif", 15);
+
+        Assert.Equal(1, WriterBaseFill.Fill(editor.Project, new WriterBase(string.Empty, 12)));
+        Assert.Equal(new WriterBase("Noto Serif", 15), first.WriterBase);
+        Assert.Equal(new WriterBase(string.Empty, 12), second.WriterBase);
+        Assert.Equal(0, WriterBaseFill.Fill(editor.Project, new WriterBase(string.Empty, 30)));
     }
 
     // ── 글 칸 한 줄의 대사 자리 ─────────────────────────

@@ -194,6 +194,12 @@ public sealed class DialogueNode : StoryNode
     /// <summary>카드 글 칸의 좌우 정렬(작가용 서식) — 카드 하나에 하나. 기본은 왼쪽이고 그때는 저장하지 않는다.</summary>
     public WriterAlign WriterAlign { get; set; }
 
+    /// <summary>
+    /// 카드 글 칸의 처음 글꼴 · 글자 크기(작가용 서식 · <see cref="Model.WriterBase"/>) — 만들 때 그 PC의 설정 값이 적힌다. 서식의 크기는 이것에 더한다.
+    /// null이면 아직 안 적힌 카드다(이 값이 생기기 전에 만든 카드) — 앱이 파일을 열 때 그 PC의 설정으로 적는다(<see cref="WriterBaseFill"/>). 내보내기는 읽지 않는다.
+    /// </summary>
+    public WriterBase? WriterBase { get; set; }
+
     // ⛔ `ChoiceExits`(선택지 문구 → 거쳐 갈 자유 씬 — 2026-08-17)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 대사 안 선택지가
     //    2026-11-04에 걷힌 뒤로 만드는 곳도 읽는 곳도 없이 파일을 오가기만 했다(docs/work-orders/legacy-read-orders.md L5).
     // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:

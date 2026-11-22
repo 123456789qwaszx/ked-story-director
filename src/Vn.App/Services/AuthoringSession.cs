@@ -28,7 +28,12 @@ internal sealed class AuthoringSession
 
     public AuthoringSession()
     {
-        Editor = new ProjectEditor(NewProjectInstance());
+        Editor = new ProjectEditor(NewProjectInstance())
+        {
+            // 새 카드 글 칸의 처음 글꼴 · 크기는 그때의 설정 「대본 글 칸」(writer-formatting WF-D13).
+            NewCardWriterBase = () => Views.ScriptFont.CardBase
+        };
+        WriterBaseFill.Fill(Editor.Project, Views.ScriptFont.CardBase);
         ResetFileGraphState(Editor.Project);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Editor.Project);
         Editor.Changed += OnEditorChanged;
@@ -190,6 +195,7 @@ internal sealed class AuthoringSession
     public void NewProject()
     {
         StoryProject project = NewProjectInstance();
+        WriterBaseFill.Fill(project, Views.ScriptFont.CardBase);
 
         ProjectPath = null;
         _diskStamp = null;
@@ -211,6 +217,10 @@ internal sealed class AuthoringSession
     {
         ProjectLoadResult loaded = ProjectStore.Load(path);
         StoryProject project = loaded.Project;
+
+        // 처음 글꼴 · 크기가 안 적힌 카드(그 값이 생기기 전에 만든 카드)는 지금 이 PC의 설정으로 굳힌다 — 저장 기준(아래 스냅샷)을 뜨기 전에 적어
+        // 「저장 안 한 변경」이 되지 않는다. 다음 저장에 파일로 간다(writer-formatting WF-D13).
+        WriterBaseFill.Fill(project, Views.ScriptFont.CardBase);
 
         ProjectPath = loaded.ManifestPath;
         _diskStamp = ProjectDiskStamp.Read(loaded.ManifestPath);

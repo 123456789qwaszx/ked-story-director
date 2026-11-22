@@ -316,7 +316,7 @@ public partial class GraphEditorView
             Width = 132,
             FontSize = 11,
             PlaceholderText = "글꼴",
-            [ToolTip.TipProperty] = "글꼴 — 고른 글자에. 「기본 글꼴」은 설정의 「대본 글 칸」 글꼴입니다. 그 글꼴이 없는 PC에서는 기본 글꼴로 보입니다."
+            [ToolTip.TipProperty] = "글꼴 — 고른 글자에. 「기본 글꼴」은 이 카드의 처음 글꼴(카드를 만들 때 설정의 「대본 글 칸」 글꼴)입니다. 그 글꼴이 없는 PC에서는 기본 글꼴로 보입니다."
         };
         _fontItems = FontNames();
         _fontBox.ItemsSource = _fontItems;
@@ -339,7 +339,7 @@ public partial class GraphEditorView
             FontSize = 11,
             TextAlignment = TextAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            [ToolTip.TipProperty] = "고른 글자의 크기(pt) — 설정의 글자 크기에 더한 값입니다. 크기가 섞였으면 비어 있습니다."
+            [ToolTip.TipProperty] = "고른 글자의 크기(pt) — 이 카드의 처음 크기에 더한 값입니다. 크기가 섞였으면 비어 있습니다."
         };
         bar.Children.Add(_sizeText);
         bar.Children.Add(FormatButton("+", "글자 크게 — 고른 글자를 1pt 키웁니다", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: 1))));
@@ -733,7 +733,8 @@ public partial class GraphEditorView
             _strikeButton!.IsChecked = All(look => look.Strike);
 
             List<int> grows = chosen.Select(look => look.Grow).Distinct().ToList();
-            _sizeText!.Text = target is null ? string.Empty : grows.Count == 1 ? $"{ScriptFont.Size + grows[0]:0}" : chosen.Count == 0 ? $"{ScriptFont.Size:0}" : string.Empty;
+            double cardSize = target?.Box.FontSize ?? ScriptFont.Size;   // 그 카드의 처음 크기(칸이 입고 있다)
+            _sizeText!.Text = target is null ? string.Empty : grows.Count == 1 ? $"{cardSize + grows[0]:0}" : chosen.Count == 0 ? $"{cardSize:0}" : string.Empty;
 
             List<string?> fonts = chosen.Select(look => look.Font).Distinct().ToList();
 

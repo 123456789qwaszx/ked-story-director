@@ -19,8 +19,8 @@ namespace Vn.App.Views;
 /// 묶음은 넷이다 — ⛔ 묶음마다 어디에 저장되는가를 머리에 적던 것(C3)은 2026-11-18에 걷었다(소유자 — 「이런 설명은 필요없어」 ·
 /// <c>docs/work-orders/settings-wording-orders.md</c> Z2). [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
 /// 「내보내기 (복제할 폴더 선택)」(형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
-/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [대본 글 칸](이 PC의 앱 설정 — 카드 글 칸의 글꼴 ·
-/// 글자 크기 · 줄 간격, <see cref="ScriptFont"/> · writer-comfort WC5), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
+/// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [대본 글 칸](이 PC의 앱 설정 — 새 카드 글 칸의 글꼴 ·
+/// 글자 크기와 모든 칸의 줄 간격, <see cref="ScriptFont"/> · writer-comfort WC5 · writer-formatting WF-D13), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
 /// <c>docs/work-orders/side-fold-settings-orders.md</c> K3, 설명 간소화 · 같은 날 brief-guides G1, 휠로 판 옮기기 · 2026-11-19 writer-app WA3).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
@@ -126,7 +126,9 @@ internal sealed class SettingsWindow : Window
             FontSize = 12,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        ToolTip.SetTip(ScriptLineSpacingBox, "글자 크기에 대한 % — 100이면 줄이 붙고, 160이면 워드 프로세서의 「줄 간격 160%」와 같습니다.");
+        ToolTip.SetTip(ScriptLineSpacingBox, "글자 크기에 대한 % — 100이면 줄이 붙고, 160이면 워드 프로세서의 「줄 간격 160%」와 같습니다. 모든 카드에 바로 따릅니다.");
+        ToolTip.SetTip(ScriptFontCombo, "새로 만드는 카드의 글꼴입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 글꼴은 [대본] 위쪽 서식 도구로 바꿉니다).");
+        ToolTip.SetTip(ScriptFontSizeBox, "새로 만드는 카드의 글자 크기입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 크기는 [대본] 위쪽 서식 도구로 바꿉니다).");
         ScriptPreview = new TextBox
         {
             Text = "윌로: 오늘따라 바람이 차네.\n라루: 그러게. 겉옷 챙겨 올 걸 그랬어.\n두 사람은 말없이 언덕을 오른다.",
@@ -136,7 +138,7 @@ internal sealed class SettingsWindow : Window
             MaxHeight = 170,   // 세 줄이 다 보이게 글에 맞춰 자라되, 아주 큰 글자에서는 칸 안에서 흐른다(미리 보기가 묶음을 다 먹지 않게)
             Padding = new Thickness(4, 3)
         };
-        ToolTip.SetTip(ScriptPreview, "미리 보기 — [대본] 판의 카드 글 칸이 이렇게 보입니다.");
+        ToolTip.SetTip(ScriptPreview, "미리 보기 — 새로 만드는 카드의 글 칸이 이렇게 보입니다.");
         ScriptFontDefaultButton = new Button
         {
             Content = $"기본값으로 (기본 글꼴 · {ScriptFont.DefaultSize:0} · {ScriptFont.DefaultLineSpacing}%)",
@@ -144,7 +146,8 @@ internal sealed class SettingsWindow : Window
         };
         FillScriptFont();
 
-        // 고치는 즉시 판의 카드 글 칸에 반영한다 — 「기타」의 체크와 같은 규칙([취소]로 돌아가지 않는다 · 되돌리기 없음 — 이 PC의 앱 설정이다).
+        // 고치는 즉시 앱 설정에 넣는다 — 「기타」의 체크와 같은 규칙([취소]로 돌아가지 않는다 · 되돌리기 없음 — 이 PC의 앱 설정이다). 판의 카드 글 칸은
+        // 줄 간격만 바로 따르고, 글꼴 · 글자 크기는 새로 만드는 카드의 처음 값이 된다(writer-formatting WF-D13).
         ScriptFontCombo.SelectionChanged += (_, _) => OnScriptFontEdited();
         ScriptFontSizeBox.ValueChanged += (_, _) => OnScriptFontEdited();
         ScriptLineSpacingBox.ValueChanged += (_, _) => OnScriptFontEdited();

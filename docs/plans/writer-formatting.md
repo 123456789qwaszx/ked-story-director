@@ -35,6 +35,7 @@
 | WF-D10 | 그리기는 **Avalonia TextBox 그대로, 글자를 놓는 겹만 바꾼다**(3.4) — 편집기 교체(AvaloniaEdit)는 버렸다 | 시험판(가지 `proto/writer-editor`)에서 한글 조합 중 글자가 안 보이고 Enter 뒤 첫 글자가 끊겼다. 한글 입력을 새로 만들지 않는 길을 골랐다 |
 | WF-D11 | **정렬은 카드 단위**, **크기는 설정 글자 크기에 더하는 차(pt)**, **색은 정해 둔 열 가지** | 대본은 줄 목록이라 줄마다 정렬은 뜻이 적다. 글자 크기는 PC마다 다른 설정이라 차로 적어야 어느 PC에서나 같은 뜻이다 |
 | WF-D12 | **한글은 기울지 않는다** — 받아들였다 | 한글 글꼴(맑은 고딕 등)에 기울임꼴이 없다(시험판에서 소유자가 확인 — 「한글은 안 기우는게 맞네요」) |
+| WF-D13 | **설정의 글꼴 · 글자 크기는 새 카드의 처음 값이다** — 카드를 만들 때 카드에 적고(`writerBase` · 프로젝트 파일), 뒤에 설정을 바꿔도 서 있는 카드는 그대로다. 값이 안 적힌 옛 카드는 열 때 그 PC의 지금 설정으로 굳힌다. 줄 간격은 이 PC의 설정 그대로 모든 칸이 바로 따른다. 서식의 크기 차는 카드의 처음 크기에 더한다 | 2026-11-23 소유자 — 「설정 내부에 대본 글칸속의 글꼴과 글자 크기는 이제 처음 생성시에 기본값으로만 사용하는 게 맞겠습니다. 지금처럼 즉각 갱신되는게 아니라요」 · 옛 카드는 「지금 설정으로 굳힘」(고른 답). ⛔ 그 전에는 셋 다 이 PC의 설정이라 모든 칸이 바로 따랐다(writer-comfort WC5) |
 
 **하지 않는 것** — 게임용 서식 표기(Yarn 마크업), 줄 형광펜, 테두리, 셀 병합, 줄마다 다른 정렬, 화자 이름에 서식, 인스펙터 줄 표 · 하이어아키 ·
 접은 장면 줄 목록에 서식 보이기.
@@ -44,7 +45,8 @@
 | 무엇 | 어디 |
 |---|---|
 | 모델 | `Vn.Authoring/Model/WriterMarks.cs` — `WriterColor`(열 가지) · `WriterAlign` · `WriterLook`(굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 글꼴 · 크기 차) · `WriterSpan` · `WriterRange` · `WriterStyleChange` · `WriterMarkMath`(순수 셈). `DialogueNode.WriterMarks`(LineId → 구간들) · `DialogueNode.WriterAlign` |
-| 저장 · 읽기 | `Serialization/WriterMarksJson.cs` — 대사 노드 JSON의 `writerMarks` · `writerAlign` 칸(`StoryNodeJson`이 부른다) |
+| 저장 · 읽기 | `Serialization/WriterMarksJson.cs` — 대사 노드 JSON의 `writerMarks` · `writerAlign` · `writerBase` 칸(`StoryNodeJson`이 부른다) |
+| 카드의 처음 글꼴 · 크기 | `DialogueNode.WriterBase` · `WriterBase`(모델) · 만들 때 `ProjectEditor.NewCardWriterBase`(앱이 설정을 댄다) · 열 때 `WriterBaseFill.Fill`(`AuthoringSession` — 저장 기준을 뜨기 전에) · 칸에 입히기 `ScriptFont.Apply(box, card)` (WF-D13) |
 | 편집 | `Editing/ProjectEditor.WriterMarks.cs` — `ApplyWriterStyle` · `SetWriterAlign` · 글이 바뀔 때의 자리 옮기기(`RebaseWriterMarks` — `ApplyScriptSync` · `SetScriptLineText` 안에서) |
 | 변경 알림 | `ProjectChangeKind.WriterMarks` + 그 카드 → `ProjectRefreshPlanner`의 `RefreshWriterMarks`(보통 · 되돌리기 두 갈래) → `MainWindow` → `GraphEditorView.RefreshWriterMarks`. `ChapterGraphView`는 이 알림에 다시 읽지 않는다(되돌리기는 읽는다) |
 | 칸 한 줄의 대사 자리 | `ScenarioTextParser.DialogueBodyRange`(파서와 한 벌의 규칙) · 칸의 줄 → 대본 줄은 `ScenarioLineIdentity.RowLineIds`(글 넣기와 같은 짝) |
@@ -62,13 +64,16 @@
 "writerMarks": {
   "ln_ab12": [ { "start": 3, "length": 4, "bold": true, "color": "red", "fill": "yellow", "font": "맑은 고딕", "grow": 2 } ]
 },
-"writerAlign": "center"
+"writerAlign": "center",
+"writerBase": { "font": "맑은 고딕", "size": 11 }
 ```
 
 - 비었으면 칸을 쓰지 않는다 — **서식 없는 프로젝트의 파일은 바이트까지 그대로다.** 줄은 LineId 차례, 구간은 자리 차례(결정적 출력). 모양은 켜진 것만 적는다.
 - 구간 목록은 늘 정규형 — 겹치지 않고 자리 차례, 모양 없는 구간이 없고, 이웃한 같은 모양은 합친다.
 - **읽기는 너그럽다** — 모르는 색 · 숫자가 아닌 자리 · 글 밖 · 겹침은 버리거나 잘라 정규형으로 읽는다. 서식 때문에 프로젝트가 안 열리는 일이 없다.
 - 은퇴한 줄의 서식도 본문처럼 남는다 — 되살아나면 돌아온다. 다른 언어의 글이 바뀌어도 서식은 그대로다.
+- `writerBase` — 카드의 처음 글꼴 · 글자 크기(WF-D13). 기본 글꼴이면 `font`가 빈 글이다. 크기가 숫자가 아니거나 0 이하면 안 적힌 카드로 읽는다(열 때 다시
+  적힌다). 서식의 `grow`는 이 크기에 더하고, `font`가 없는 구간은 이 글꼴이다.
 - 글 안의 표기(`[b]…[/b]`)가 아닌 까닭 — 표기를 섞으면 내보내기 · 글자 수 세기 · 화자 이름 바꾸기 · 줄 맞추기가 모두 그 표기를 걸러야 하고, 하나라도 놓치면
   게임에 샌다(WF-D2). 밖에 두면 새는 길이 없다.
 
