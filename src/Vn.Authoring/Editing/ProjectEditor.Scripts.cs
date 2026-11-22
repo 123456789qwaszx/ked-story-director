@@ -365,7 +365,9 @@ public sealed partial class ProjectEditor
                 }
 
                 line.IsRetired = false;
-                locale.Entries[lineId] = entry.Next ?? LocalizedLine.Empty;
+                LocalizedLine next = entry.Next ?? LocalizedLine.Empty;
+                RebaseWriterMarks(node, plan.Locale, lineId, locale.Find(lineId).Text, next.Text);
+                locale.Entries[lineId] = next;
                 ordered.Add(line);
                 kept.Add(lineId);
             }
@@ -537,6 +539,7 @@ public sealed partial class ProjectEditor
 
         Mutate(ProjectChangeKind.DialogueContent, () =>
         {
+            RebaseWriterMarks(RequireDialogue(dialogueNodeId), targetLocale, lineId, current.Text, next.Text);
             script.RequireLocale(targetLocale).Entries[lineId] = next;
 
             // 기준 locale의 문구가 바뀌면 번역·녹음이 다시 봐야 한다는 뜻이다.

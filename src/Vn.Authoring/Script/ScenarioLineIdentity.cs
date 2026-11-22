@@ -24,10 +24,45 @@ public static class ScenarioLineIdentity
     /// <param name="edited">사람이 고친 글.</param>
     public static string CarryLineIds(string shown, IReadOnlyDictionary<string, int> rowOfLine, string edited)
     {
+        string[] after = Rows(edited);
+        string?[] carried = Carry(shown, rowOfLine, after);
+
+        for (int row = 0; row < after.Length; row++)
+        {
+            if (carried[row] is { } lineId && IsLineRow(after[row]) && !after[row].Contains(Tag, StringComparison.Ordinal))
+            {
+                after[row] = after[row].TrimEnd() + Tag + lineId;
+            }
+        }
+
+        return string.Join('\n', after);
+    }
+
+    /// <summary>
+    /// 고친 글의 줄마다 그 줄이 잇는 대본 줄(LineId) — 새 줄 · 빈 줄 · 조건 줄은 null. <see cref="CarryLineIds"/>와 같은 짝짓기다 — 작가용 글 서식이 글 칸의
+    /// 줄을 대본 줄에 잇는 데 쓴다(넣기 전의 글에서도 넣은 뒤와 같은 줄을 가리킨다).
+    /// </summary>
+    public static IReadOnlyList<string?> RowLineIds(string shown, IReadOnlyDictionary<string, int> rowOfLine, string edited)
+    {
+        string[] after = Rows(edited);
+        string?[] carried = Carry(shown, rowOfLine, after);
+
+        for (int row = 0; row < after.Length; row++)
+        {
+            if (!IsLineRow(after[row]))
+            {
+                carried[row] = null;
+            }
+        }
+
+        return carried;
+    }
+
+    private static string?[] Carry(string shown, IReadOnlyDictionary<string, int> rowOfLine, string[] after)
+    {
         ArgumentNullException.ThrowIfNull(rowOfLine);
 
         string[] before = Rows(shown);
-        string[] after = Rows(edited);
         var idOfRow = new Dictionary<int, string>();
 
         foreach ((string lineId, int row) in rowOfLine)
@@ -54,15 +89,7 @@ public static class ScenarioLineIdentity
             lastAfter = newRow;
         }
 
-        for (int row = 0; row < after.Length; row++)
-        {
-            if (carried[row] is { } lineId && IsLineRow(after[row]) && !after[row].Contains(Tag, StringComparison.Ordinal))
-            {
-                after[row] = after[row].TrimEnd() + Tag + lineId;
-            }
-        }
-
-        return string.Join('\n', after);
+        return carried;
     }
 
     /// <summary>고친 구간 — 처음 글의 대본 줄들을 고친 글의 대사 줄들에 앞에서부터 하나씩 잇는다. 남는 쪽은 은퇴 · 새 줄이다.</summary>
