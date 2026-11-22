@@ -291,41 +291,30 @@ public sealed class WriterTextPresenter : TextPresenter
             face,
             Math.Max(1, FontSize + look.Grow),
             decorations,
-            selectionForeground ?? (look.Color is { } color ? WriterPalette.Text(color) : Foreground),
-            look.Fill is { } fill ? WriterPalette.Fill(fill) : null,
+            selectionForeground ?? (look.Color is { } color ? WriterPalette.Brush(color) : Foreground),
+            look.Fill is { } fill ? WriterPalette.Brush(fill) : null,
             cultureInfo: culture,
             fontFeatures: FontFeatures);
     }
 }
 
 /// <summary>
-/// <b>작가용 글 서식의 색</b> — 정해 둔 목록(<see cref="WriterColor"/>)의 실제 색. 글자색은 흰 카드 바탕에서 읽히는 진한 색, 바탕색은 검은 글자가 읽히는 옅은 색이다.
+/// <b>작가용 글 서식의 색</b> — RGB 값(<see cref="WriterRgb"/>)의 붓. 같은 색은 한 붓을 쓴다. 정해 둔 열 가지(이름 · 글자색 · 바탕색)는 모델의
+/// <see cref="WriterSwatch"/>에 있다 — 파일에 RGB를 적으므로 옛 이름을 읽을 때도 그 값이 필요하다(writer-formatting WF-D14).
 /// </summary>
 internal static class WriterPalette
 {
-    private static readonly Dictionary<WriterColor, (string Name, Color Text, Color Fill)> Colors = new()
+    private static readonly Dictionary<WriterRgb, IBrush> Brushes = new();
+
+    public static Color ColorOf(WriterRgb rgb) => Color.FromRgb(rgb.R, rgb.G, rgb.B);
+
+    public static IBrush Brush(WriterRgb rgb)
     {
-        [WriterColor.Red] = ("빨강", Color.FromRgb(0xD3, 0x2F, 0x2F), Color.FromRgb(0xFF, 0xCD, 0xD2)),
-        [WriterColor.Orange] = ("주황", Color.FromRgb(0xE6, 0x5C, 0x00), Color.FromRgb(0xFF, 0xE0, 0xB2)),
-        [WriterColor.Yellow] = ("노랑", Color.FromRgb(0xB2, 0x8A, 0x00), Color.FromRgb(0xFF, 0xF5, 0x9D)),
-        [WriterColor.Green] = ("초록", Color.FromRgb(0x2E, 0x7D, 0x32), Color.FromRgb(0xC8, 0xE6, 0xC9)),
-        [WriterColor.Teal] = ("청록", Color.FromRgb(0x00, 0x79, 0x6B), Color.FromRgb(0xB2, 0xEB, 0xF2)),
-        [WriterColor.Blue] = ("파랑", Color.FromRgb(0x15, 0x65, 0xC0), Color.FromRgb(0xBB, 0xDE, 0xFB)),
-        [WriterColor.Purple] = ("보라", Color.FromRgb(0x6A, 0x1B, 0x9A), Color.FromRgb(0xE1, 0xBE, 0xE7)),
-        [WriterColor.Pink] = ("분홍", Color.FromRgb(0xC2, 0x18, 0x5B), Color.FromRgb(0xF8, 0xBB, 0xD0)),
-        [WriterColor.Brown] = ("갈색", Color.FromRgb(0x6D, 0x4C, 0x41), Color.FromRgb(0xD7, 0xCC, 0xC8)),
-        [WriterColor.Gray] = ("회색", Color.FromRgb(0x75, 0x75, 0x75), Color.FromRgb(0xE0, 0xE0, 0xE0))
-    };
+        if (!Brushes.TryGetValue(rgb, out IBrush? brush))
+        {
+            Brushes[rgb] = brush = new ImmutableSolidColorBrush(ColorOf(rgb));
+        }
 
-    private static readonly Dictionary<WriterColor, IBrush> TextBrushes = Colors.ToDictionary(pair => pair.Key, pair => (IBrush)new ImmutableSolidColorBrush(pair.Value.Text));
-
-    private static readonly Dictionary<WriterColor, IBrush> FillBrushes = Colors.ToDictionary(pair => pair.Key, pair => (IBrush)new ImmutableSolidColorBrush(pair.Value.Fill));
-
-    public static IReadOnlyList<WriterColor> All { get; } = Enum.GetValues<WriterColor>();
-
-    public static string Name(WriterColor color) => Colors[color].Name;
-
-    public static IBrush Text(WriterColor color) => TextBrushes[color];
-
-    public static IBrush Fill(WriterColor color) => FillBrushes[color];
+        return brush;
+    }
 }

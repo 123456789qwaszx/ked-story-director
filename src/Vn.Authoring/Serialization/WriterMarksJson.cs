@@ -6,7 +6,7 @@ namespace Vn.Authoring.Serialization;
 /// <summary>
 /// <b>작가용 글 서식의 저장 · 읽기</b> — 대사 노드 JSON의 <c>writerMarks</c> 칸(writer-formatting 3.1).
 /// <code>
-/// "writerMarks": { "line_ab12": [ { "start": 3, "length": 4, "bold": true, "color": "red", "fill": "yellow", "font": "맑은 고딕", "grow": 2 } ] }
+/// "writerMarks": { "line_ab12": [ { "start": 3, "length": 4, "bold": true, "color": "#D32F2F", "fill": "#FFF59D", "font": "맑은 고딕", "grow": 2 } ] }
 /// </code>
 /// 줄은 LineId 차례, 구간은 자리 차례로 쓴다(결정적 출력). 모양의 칸은 켜진 것만 적는다.
 /// <b>읽기는 너그럽다</b> — 모르는 색 · 숫자가 아닌 자리 · 글 밖의 구간 · 겹친 구간은 버리거나 잘라 정규형으로 만들고 계속한다. 글과 논리는 깨진 파일을
@@ -49,12 +49,12 @@ internal static class WriterMarksJson
 
                 if (look.Color is { } color)
                 {
-                    item["color"] = ColorName(color);
+                    item["color"] = color.Hex;
                 }
 
                 if (look.Fill is { } fill)
                 {
-                    item["fill"] = ColorName(fill);
+                    item["fill"] = fill.Hex;
                 }
 
                 if (look.Font is { Length: > 0 } font)
@@ -104,8 +104,8 @@ internal static class WriterMarksJson
                         Bold: Bool(span["bold"]),
                         Italic: Bool(span["italic"]),
                         Strike: Bool(span["strike"]),
-                        Color: Color(span["color"]),
-                        Fill: Color(span["fill"]),
+                        Color: Color(span["color"], fill: false),
+                        Fill: Color(span["fill"], fill: true),
                         Font: Text(span["font"]),
                         Grow: Math.Clamp(Int(span["grow"]) ?? 0, WriterMarkMath.MinGrow, WriterMarkMath.MaxGrow))));
                 }
@@ -134,7 +134,6 @@ internal static class WriterMarksJson
         _ => "left"
     };
 
-    public static string ColorName(WriterColor color) => color.ToString().ToLowerInvariant();
 
     /// <summary>카드의 처음 글꼴 · 크기 — <c>{ "font": "맑은 고딕", "size": 11 }</c>(기본 글꼴이면 <c>font</c>는 빈 글).</summary>
     public static JsonObject WriteBase(WriterBase value) => new()
@@ -159,11 +158,17 @@ internal static class WriterMarksJson
         return new WriterBase(font, points);
     }
 
-    private static WriterColor? Color(JsonNode? json) =>
-        Text(json) is { } name && Enum.TryParse(name, ignoreCase: true, out WriterColor color) && Enum.IsDefined(color) &&
-        !int.TryParse(name, out _)
-            ? color
-            : null;
+    /// <summary><c>"#RRGGBB"</c>. 옛 파일의 색 이름(<c>"red"</c> — WF-D14 전)은 정해 둔 열 가지의 그 색(글자색 · 바탕색)으로 읽는다. 모르는 것은 버린다.</summary>
+    private static WriterRgb? Color(JsonNode? json, bool fill)
+    {
+        if (Text(json) is not { } text)
+        {
+            return null;
+        }
+
+        return WriterRgb.Parse(text) ??
+               WriterSwatch.All.FirstOrDefault(swatch => string.Equals(swatch.Key, text, StringComparison.OrdinalIgnoreCase))?.Of(fill);
+    }
 
     private static string? Text(JsonNode? json) =>
         json is JsonValue value && value.TryGetValue(out string? text) && !string.IsNullOrWhiteSpace(text) ? text.Trim() : null;

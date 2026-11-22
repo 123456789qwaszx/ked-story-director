@@ -21,6 +21,10 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class WriterFormattingTests
 {
+    private static readonly WriterRgb Red = new(0xD3, 0x2F, 0x2F);
+    private static readonly WriterRgb Yellow = new(0xFF, 0xF5, 0x9D);
+    private static readonly WriterRgb Blue = new(0x15, 0x65, 0xC0);
+
     [Fact]
     public void 고른_글자에_굵게를_입히면_대사_글_기준으로_적히고_칸에_그려지며_판은_그대로다() => HeadlessUi.Run(() =>
     {
@@ -85,16 +89,16 @@ public sealed class WriterFormattingTests
         (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어");
         GraphEditorView graph = Graph(window);
         Select(Box(window, card.Id), "오늘은");
-        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Red));
+        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Color, Color: Red));
         Dispatcher.UIThread.RunJobs();
-        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Fill, Color: WriterColor.Yellow));
+        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Fill, Color: Yellow));
         graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Font, Font: "Noto Serif"));
         Click(window, "글자 크게");
         Click(window, "글자 크게");
         Click(window, "가운데 정렬");
         Dispatcher.UIThread.RunJobs();
 
-        var expected = new WriterLook(Color: WriterColor.Red, Fill: WriterColor.Yellow, Font: "Noto Serif", Grow: 2);
+        var expected = new WriterLook(Color: Red, Fill: Yellow, Font: "Noto Serif", Grow: 2);
         Assert.Equal([new WriterSpan(0, 3, expected)], session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]]);
         Assert.Equal(WriterAlign.Center, session.Project.FindDialogue(card.Id)!.WriterAlign);
         Assert.Equal(TextAlignment.Center, Box(window, card.Id).TextAlignment);
@@ -109,11 +113,11 @@ public sealed class WriterFormattingTests
         }
 
         Assert.NotEqual(TextAlignment.Center, Box(window, card.Id).TextAlignment);
-        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: WriterColor.Red))], Looks(window, card.Id));
+        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: Red))], Looks(window, card.Id));
 
         session.Editor.Redo();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: WriterColor.Red, Fill: WriterColor.Yellow))], Looks(window, card.Id));
+        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: Red, Fill: Yellow))], Looks(window, card.Id));
 
         window.Close();
     });
@@ -216,9 +220,9 @@ public sealed class WriterFormattingTests
         Click(window, "굵게");
         TextBox box = Box(window, card.Id);
         Select(box, "긴 하루");
-        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Red));
+        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Color, Color: Red));
         Select(box, "낯선 바람");
-        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Fill, Color: WriterColor.Yellow));
+        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Fill, Color: Yellow));
         Select(box, "열리고");
         Click(window, "취소선");
         Select(box, "quick");
@@ -349,7 +353,72 @@ public sealed class WriterFormattingTests
         window.Close();
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「글자 색깔과 바탕색의 종류가 조금 제한 적인게 아쉬운데, 사용한 색깔과 더불어서 RGB를 원하는 걸 선택할 수 있는 것도」(writer-formatting
+    /// WF-D14). 색 차림에서 RGB를 직접 골라 입히고, 그 색이 「이 프로젝트에 쓴 색」에 서며(정해 둔 열 가지는 서지 않는다), 그 견본으로 다른 글자에 또 입힌다.
+    /// </summary>
+    [Fact]
+    public void 색_차림에서_RGB를_골라_입히고_그_색이_이_프로젝트에_쓴_색에_선다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
+        GraphEditorView graph = Graph(window);
+        GraphEditorView.ColorMenu menu = graph.ColorMenuOf(WriterStyleKind.Color);
+
+        // 정해 둔 빨강을 한 군데 입혀 둔다 — 「이 프로젝트에 쓴 색」에는 서지 않는다.
+        Select(Box(window, card.Id), "문이");
+        graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Color, Color: Red));
+        Dispatcher.UIThread.RunJobs();
+
+        Select(Box(window, card.Id), "긴 하루");
+        OpenColorMenu(window, "글자색");
+        Assert.True(menu.Flyout.IsOpen);
+        Assert.False(menu.UsedTitle.IsVisible);   // 정해 둔 색만 썼다
+        Assert.Equal((8, 12), (Box(window, card.Id).SelectionStart, Box(window, card.Id).SelectionEnd));   // 펼친 동안에도 범위가 남는다
+
+        // 16진수를 적으면 막대와 미리 보기가 따르고, 막대를 옮기면 16진수가 따른다.
+        menu.Hex.Text = "#123456";
+        Dispatcher.UIThread.RunJobs();   // 글 바뀜 알림은 한 박자 뒤에 온다(Avalonia)
+        Assert.Equal([0x12, 0x34, 0x56], menu.Channels.Select(channel => (int)channel.Value));
+        menu.Channels[0].Value = 0x9A;
+        Assert.Equal("#9A3456", menu.Hex.Text);
+
+        menu.Apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var picked = new WriterRgb(0x9A, 0x34, 0x56);
+        Assert.False(menu.Flyout.IsOpen);
+        Assert.Equal(new WriterSpan(4, 4, new WriterLook(Color: picked)), session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]].Single());
+        Assert.True(Box(window, card.Id).IsFocused);
+        Assert.Equal((8, 12), (Box(window, card.Id).SelectionStart, Box(window, card.Id).SelectionEnd));
+
+        // 다시 열면 그 색이 「이 프로젝트에 쓴 색」에 서고, 직접 고르기는 그 색에서 시작한다 — 그 견본으로 다른 글자에 입힌다.
+        Select(Box(window, card.Id), "열린다");
+        OpenColorMenu(window, "글자색");
+        Assert.True(menu.UsedTitle.IsVisible);
+        Button reuse = Assert.Single(menu.Used.Children.OfType<Button>());
+        Assert.Equal(picked, reuse.Tag);
+        Assert.Equal("#9A3456", menu.Hex.Text);
+        reuse.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(session.Project.FindDialogue(card.Id)!.WriterMarks[ids[1]], span => span.Look.Color == picked);
+
+        window.Close();
+    });
+
     // ── 도움 ──────────────────────────────────────────
+
+    /// <summary>도구 막대의 색 단추를 마우스로 눌러 색 차림을 연다 — 풍선 글의 머리로 찾는다.</summary>
+    private static void OpenColorMenu(MainWindow window, string tipHead)
+    {
+        StackPanel bar = Graph(window).FindControl<StackPanel>("WriterToolbar")!;
+        Button button = bar.GetVisualDescendants().OfType<Button>()
+            .Single(item => (ToolTip.GetTip(item) as string)?.StartsWith(tipHead, StringComparison.Ordinal) == true);
+        Point center = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
 
     private static void TextPresenterWidths(TextBox box, out double width) =>
         width = ((WriterTextBox)box).Presenter!.TextLayout.WidthIncludingTrailingWhitespace;

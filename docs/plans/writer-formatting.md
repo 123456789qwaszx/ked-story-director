@@ -33,8 +33,9 @@
 | WF-D8 | **「줄 형광펜」은 없다** — 첫 판의 F1을 소유자가 걷었다 | 소유자가 청하지 않은 기능이었다 |
 | WF-D9 | 도구 막대 = 구글 시트의 막대에서 **테두리 · 셀 병합을 뺀 전부** — 글꼴 · 크기 −/+ · 굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 좌우 정렬 | 소유자가 그림으로 보였다 |
 | WF-D10 | 그리기는 **Avalonia TextBox 그대로, 글자를 놓는 겹만 바꾼다**(3.4) — 편집기 교체(AvaloniaEdit)는 버렸다 | 시험판(가지 `proto/writer-editor`)에서 한글 조합 중 글자가 안 보이고 Enter 뒤 첫 글자가 끊겼다. 한글 입력을 새로 만들지 않는 길을 골랐다 |
-| WF-D11 | **정렬은 카드 단위**, **크기는 설정 글자 크기에 더하는 차(pt)**, **색은 정해 둔 열 가지** | 대본은 줄 목록이라 줄마다 정렬은 뜻이 적다. 글자 크기는 PC마다 다른 설정이라 차로 적어야 어느 PC에서나 같은 뜻이다 |
+| WF-D11 | **정렬은 카드 단위**, **크기는 처음 크기에 더하는 차(pt)**, ~~색은 정해 둔 열 가지~~(→ WF-D14) | 대본은 줄 목록이라 줄마다 정렬은 뜻이 적다. 크기는 차로 적어 카드의 처음 크기(WF-D13)를 따른다 |
 | WF-D12 | **한글은 기울지 않는다** — 받아들였다 | 한글 글꼴(맑은 고딕 등)에 기울임꼴이 없다(시험판에서 소유자가 확인 — 「한글은 안 기우는게 맞네요」) |
+| WF-D14 | **색은 RGB 값이다**(`"#RRGGBB"`) — 색 차림 = 정해 둔 열 가지 · 「없음」 · **이 프로젝트에 쓴 색**(정해 둔 열 가지 밖 · 글자색과 바탕색 따로 · 많이 쓴 차례 열 개) · **직접 고르기**(16진수 칸 · R · G · B 막대 · 미리 보기 · [입히기]). 옛 파일의 색 이름(`"red"`)은 정해 둔 그 색으로 읽는다 | 2026-11-23 소유자 — 「글자 색깔과 바탕색의 종류가 조금 제한 적인게 아쉬운데, 사용한 색깔과 더불어서 RGB를 원하는 걸 선택할 수 있는 것도 해주십시오」 · 「사용한 색깔」 = 이 프로젝트에 쓰인 색(고른 답 — 같이 쓰는 사람이 쓴 색도 보인다). 색 고르기 패키지(Avalonia.Controls.ColorPicker)는 들이지 않았다 — 작업 공간에서 받을 수 없고, 막대 셋이면 된다 |
 | WF-D13 | **설정의 글꼴 · 글자 크기는 새 카드의 처음 값이다** — 카드를 만들 때 카드에 적고(`writerBase` · 프로젝트 파일), 뒤에 설정을 바꿔도 서 있는 카드는 그대로다. 값이 안 적힌 옛 카드는 열 때 그 PC의 지금 설정으로 굳힌다. 줄 간격은 이 PC의 설정 그대로 모든 칸이 바로 따른다. 서식의 크기 차는 카드의 처음 크기에 더한다 | 2026-11-23 소유자 — 「설정 내부에 대본 글칸속의 글꼴과 글자 크기는 이제 처음 생성시에 기본값으로만 사용하는 게 맞겠습니다. 지금처럼 즉각 갱신되는게 아니라요」 · 옛 카드는 「지금 설정으로 굳힘」(고른 답). ⛔ 그 전에는 셋 다 이 PC의 설정이라 모든 칸이 바로 따랐다(writer-comfort WC5) |
 
 **하지 않는 것** — 게임용 서식 표기(Yarn 마크업), 줄 형광펜, 테두리, 셀 병합, 줄마다 다른 정렬, 화자 이름에 서식, 인스펙터 줄 표 · 하이어아키 ·
@@ -44,7 +45,7 @@
 
 | 무엇 | 어디 |
 |---|---|
-| 모델 | `Vn.Authoring/Model/WriterMarks.cs` — `WriterColor`(열 가지) · `WriterAlign` · `WriterLook`(굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 글꼴 · 크기 차) · `WriterSpan` · `WriterRange` · `WriterStyleChange` · `WriterMarkMath`(순수 셈). `DialogueNode.WriterMarks`(LineId → 구간들) · `DialogueNode.WriterAlign` |
+| 모델 | `Vn.Authoring/Model/WriterMarks.cs` — `WriterRgb`(색 — `#RRGGBB`) · `WriterSwatch`(정해 둔 열 가지 — 옛 색 이름도) · `WriterAlign` · `WriterLook`(굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 글꼴 · 크기 차) · `WriterSpan` · `WriterRange` · `WriterStyleChange` · `WriterMarkMath`(순수 셈). `DialogueNode.WriterMarks`(LineId → 구간들) · `DialogueNode.WriterAlign` |
 | 저장 · 읽기 | `Serialization/WriterMarksJson.cs` — 대사 노드 JSON의 `writerMarks` · `writerAlign` · `writerBase` 칸(`StoryNodeJson`이 부른다) |
 | 카드의 처음 글꼴 · 크기 | `DialogueNode.WriterBase` · `WriterBase`(모델) · 만들 때 `ProjectEditor.NewCardWriterBase`(앱이 설정을 댄다) · 열 때 `WriterBaseFill.Fill`(`AuthoringSession` — 저장 기준을 뜨기 전에) · 칸에 입히기 `ScriptFont.Apply(box, card)` (WF-D13) |
 | 편집 | `Editing/ProjectEditor.WriterMarks.cs` — `ApplyWriterStyle` · `SetWriterAlign` · 글이 바뀔 때의 자리 옮기기(`RebaseWriterMarks` — `ApplyScriptSync` · `SetScriptLineText` 안에서) |
@@ -62,7 +63,7 @@
 
 ```json
 "writerMarks": {
-  "ln_ab12": [ { "start": 3, "length": 4, "bold": true, "color": "red", "fill": "yellow", "font": "맑은 고딕", "grow": 2 } ]
+  "ln_ab12": [ { "start": 3, "length": 4, "bold": true, "color": "#D32F2F", "fill": "#FFF59D", "font": "맑은 고딕", "grow": 2 } ]
 },
 "writerAlign": "center",
 "writerBase": { "font": "맑은 고딕", "size": 11 }
@@ -122,7 +123,9 @@
 빈 줄 · 아직 대본 줄이 아닌 새 줄에는 서식이 붙지 않는다.
 
 **도구 막대** — [대본] 위쪽 줄의 [삭제] 오른쪽: 글꼴(「기본 글꼴」 + 이 PC의 글꼴 · 서식에 든 글꼴이 이 PC에 없으면 그 이름도 더해 보인다) · − 크기 + ·
-**B** · *I* · S · 가(글자색 ▾) · 펜(바탕색 ▾) · 정렬 셋.
+**B** · *I* · S · 가(글자색 ▾) · 펜(바탕색 ▾) · 정렬 셋. 색 차림(WF-D14)은 정해 둔 열 가지 · 「없음」 · 「이 프로젝트에 쓴 색」(열 때마다 다시 센다 —
+`WriterMarkMath.UsedColors`) · 「직접 고르기 (RGB)」 — 16진수 칸(Enter로 입힌다)과 R · G · B 막대가 서로 따르고, 막대는 초점을 받지 않는다(초점이 막대에
+있으면 글 칸 밖의 Delete가 고른 카드를 지운다). 직접 고르기는 마지막에 고른 색에서 시작한다.
 
 - 입힐 곳 = **마지막으로 초점을 쥔 카드 글 칸과 그 고른 범위**. 판의 빈 곳 · 카드 머리를 누르거나 다른 것을 고르면 놓고 도구가 꺼진다.
 - 단추는 초점을 받지 않는다 — 칸이 초점과 고른 범위를 쥔 채 입힌다. 초점을 가져가는 것(글꼴 고르기 · 색 차림)은 고른 범위를 붙들어 두었다가 닫힌 뒤 칸에

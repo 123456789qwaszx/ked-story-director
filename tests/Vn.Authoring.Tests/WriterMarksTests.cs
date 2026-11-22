@@ -13,6 +13,10 @@ namespace Vn.Authoring.Tests;
 /// </summary>
 public sealed class WriterMarksTests
 {
+    private static readonly WriterRgb Red = new(0xD3, 0x2F, 0x2F);
+    private static readonly WriterRgb Yellow = new(0xFF, 0xF5, 0x9D);
+    private static readonly WriterRgb Blue = new(0x15, 0x65, 0xC0);
+
     private static readonly WriterLook Bold = new(Bold: true);
 
     // ── 구간 셈 ──────────────────────────────────────────
@@ -24,9 +28,9 @@ public sealed class WriterMarksTests
         Assert.Equal([new WriterSpan(2, 4, Bold)], bold);
 
         // 가운데에 색을 더하면 셋으로 쪼개진다.
-        List<WriterSpan> colored = WriterMarkMath.Apply(bold, 10, 3, 5, look => look with { Color = WriterColor.Red });
+        List<WriterSpan> colored = WriterMarkMath.Apply(bold, 10, 3, 5, look => look with { Color = Red });
         Assert.Equal(
-            [new WriterSpan(2, 1, Bold), new WriterSpan(3, 2, Bold with { Color = WriterColor.Red }), new WriterSpan(5, 1, Bold)],
+            [new WriterSpan(2, 1, Bold), new WriterSpan(3, 2, Bold with { Color = Red }), new WriterSpan(5, 1, Bold)],
             colored);
 
         // 색을 걷으면 다시 하나다.
@@ -120,20 +124,20 @@ public sealed class WriterMarksTests
         int notified = 0;
         editor.Changed += (_, _) => notified++;
 
-        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Red));
-        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Fill, Color: WriterColor.Yellow));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Color, Color: Red));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Fill, Color: Yellow));
         editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Font, Font: "Noto Serif"));
         editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Grow, Step: 2));
         editor.SetWriterAlign(card.Id, WriterAlign.Center);
 
         Assert.Equal(
-            [new WriterSpan(0, 3, new WriterLook(Color: WriterColor.Red, Fill: WriterColor.Yellow, Font: "Noto Serif", Grow: 2))],
+            [new WriterSpan(0, 3, new WriterLook(Color: Red, Fill: Yellow, Font: "Noto Serif", Grow: 2))],
             Marks(editor, card)[ids[0]]);
         Assert.Equal(WriterAlign.Center, editor.Project.FindDialogue(card.Id)!.WriterAlign);
         Assert.Equal(5, notified);
 
         // 같은 색 · 같은 정렬 · 빈 범위 · 은퇴한 줄 — 적지 않는다.
-        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Red));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Color, Color: Red));
         editor.SetWriterAlign(card.Id, WriterAlign.Center);
         editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 2, 0)], WriterStyleChange.Toggle(WriterStyleKind.Bold));
         editor.ApplyWriterStyle(card.Id, [new WriterRange("없는 줄", 0, 3)], WriterStyleChange.Toggle(WriterStyleKind.Bold));
@@ -195,7 +199,7 @@ public sealed class WriterMarksTests
         Assert.DoesNotContain("writerAlign", plain, StringComparison.Ordinal);
 
         editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 4, 4)], WriterStyleChange.Toggle(WriterStyleKind.Bold));
-        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Blue));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Color, Color: Blue));
         editor.SetWriterAlign(card.Id, WriterAlign.Right);
 
         StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project));
@@ -254,8 +258,8 @@ public sealed class WriterMarksTests
             foreach (WriterStyleChange change in new[]
                      {
                          WriterStyleChange.Toggle(WriterStyleKind.Bold), WriterStyleChange.Toggle(WriterStyleKind.Italic),
-                         WriterStyleChange.Toggle(WriterStyleKind.Strike), new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Red),
-                         new WriterStyleChange(WriterStyleKind.Fill, Color: WriterColor.Yellow), new WriterStyleChange(WriterStyleKind.Font, Font: "Noto Serif"),
+                         WriterStyleChange.Toggle(WriterStyleKind.Strike), new WriterStyleChange(WriterStyleKind.Color, Color: Red),
+                         new WriterStyleChange(WriterStyleKind.Fill, Color: Yellow), new WriterStyleChange(WriterStyleKind.Font, Font: "Noto Serif"),
                          new WriterStyleChange(WriterStyleKind.Grow, Step: 4)
                      })
             {
@@ -282,6 +286,48 @@ public sealed class WriterMarksTests
         {
             Directory.Delete(root, recursive: true);
         }
+    }
+
+    // ── 색(WF-D14) ──────────────────────────────────────
+
+    [Fact]
+    public void 색은_RGB로_적고_옛_색_이름은_정해_둔_그_색으로_읽는다()
+    {
+        (ProjectEditor editor, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어");
+        var custom = new WriterRgb(0x12, 0xAB, 0x34);
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Color, Color: custom));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 3)], new WriterStyleChange(WriterStyleKind.Fill, Color: Yellow));
+        string saved = ProjectSnapshotCodec.Encode(editor.Project);
+        Assert.Contains("\"#12AB34\"", saved, StringComparison.Ordinal);
+        Assert.Equal(new WriterLook(Color: custom, Fill: Yellow), ProjectSnapshotCodec.Decode(saved).FindDialogue(card.Id)!.WriterMarks[ids[0]].Single().Look);
+
+        // 옛 파일(WF-D14 전)의 색 이름 — 글자색은 진한 그 색, 바탕색은 옅은 그 색. 16진수는 대소문자 · # 없이도 읽고, 모르는 것은 버린다.
+        foreach ((string color, string fill, WriterLook expected) in new[]
+                 {
+                     ("red", "yellow", new WriterLook(Color: WriterSwatch.All[0].Text, Fill: WriterSwatch.All[2].Fill)),
+                     ("#12ab34", "12AB34", new WriterLook(Color: custom, Fill: custom)),
+                     ("#12AB3", "mauve", WriterLook.Plain)
+                 })
+        {
+            string old = ReplaceObject(saved, "\"writerMarks\"",
+                $"{{\"{ids[0]}\": [ {{\"start\": 0, \"length\": 3, \"color\": \"{color}\", \"fill\": \"{fill}\"}} ] }}");
+            DialogueNode read = ProjectSnapshotCodec.Decode(old).FindDialogue(card.Id)!;
+            Assert.Equal(expected, read.WriterMarks.TryGetValue(ids[0], out IReadOnlyList<WriterSpan>? spans) ? spans.Single().Look : WriterLook.Plain);
+        }
+    }
+
+    [Fact]
+    public void 이_프로젝트에_쓴_색은_글자색과_바탕색을_따로_많이_쓴_차례로_센다()
+    {
+        (ProjectEditor editor, DialogueNode card, string[] ids) = Stage("하린: 오늘은 정말 긴 하루였어");
+        var green = new WriterRgb(0, 0x80, 0);
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 2)], new WriterStyleChange(WriterStyleKind.Color, Color: Blue));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 3, 6)], new WriterStyleChange(WriterStyleKind.Color, Color: green));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 4)], new WriterStyleChange(WriterStyleKind.Fill, Color: Yellow));
+
+        IReadOnlyList<DialogueNode> nodes = [editor.Project.FindDialogue(card.Id)!];
+        Assert.Equal([green, Blue], WriterMarkMath.UsedColors(nodes, fill: false));
+        Assert.Equal([Yellow], WriterMarkMath.UsedColors(nodes, fill: true));
     }
 
     // ── 카드의 처음 글꼴 · 크기(WF-D13) ─────────────────

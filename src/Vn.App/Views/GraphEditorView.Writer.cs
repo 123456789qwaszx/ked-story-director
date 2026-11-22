@@ -465,14 +465,62 @@ public partial class GraphEditorView
         return button;
     }
 
-    /// <summary>글자색 · 바탕색 — 단추 밑의 색 띠가 마지막에 쓴 색이고, 누르면 색 차림(「없음」 포함)이 열린다.</summary>
+    /// <summary>
+    /// 색 차림 하나(글자색 · 바탕색) — 정해 둔 열 가지 · 「없음」 · <b>이 프로젝트에 쓴 색</b> · <b>직접 고르기(RGB)</b>(2026-11-23 소유자 — 「글자 색깔과 바탕색의
+    /// 종류가 조금 제한 적인게 아쉬운데, 사용한 색깔과 더불어서 RGB를 원하는 걸 선택할 수 있는 것도」 · writer-formatting WF-D14). 시험이 들여다본다.
+    /// </summary>
+    internal sealed class ColorMenu
+    {
+        internal required Flyout Flyout { get; init; }
+
+        /// <summary>단추 밑의 색 띠 — 마지막에 고른 색.</summary>
+        internal required Border Bar { get; init; }
+
+        /// <summary>이 프로젝트에 쓴 색(정해 둔 열 가지 밖) — 차림을 열 때마다 다시 센다. 없으면 머리와 함께 숨는다.</summary>
+        internal required WrapPanel Used { get; init; }
+
+        internal required TextBlock UsedTitle { get; init; }
+
+        /// <summary>직접 고르기 — <c>#RRGGBB</c> 칸 · R · G · B 막대 · 미리 보기 · [입히기].</summary>
+        internal required TextBox Hex { get; init; }
+
+        internal required Slider[] Channels { get; init; }
+
+        internal required Border Preview { get; init; }
+
+        internal required Button Apply { get; init; }
+
+        /// <summary>마지막에 고른 색 — 직접 고르기가 이 색에서 시작한다.</summary>
+        internal WriterRgb Last { get; set; }
+    }
+
+    private readonly Dictionary<WriterStyleKind, ColorMenu> _colorMenus = new();
+
+    /// <summary>시험이 본다 — 글자색(<see cref="WriterStyleKind.Color"/>) · 바탕색(<see cref="WriterStyleKind.Fill"/>)의 색 차림.</summary>
+    internal ColorMenu ColorMenuOf(WriterStyleKind kind) => _colorMenus[kind];
+
+    /// <summary>글자색 · 바탕색 — 단추 밑의 색 띠가 마지막에 쓴 색이고, 누르면 색 차림이 열린다.</summary>
     private (Button Button, Border Bar) ColorButton(string? glyph, string tip, WriterStyleKind kind)
     {
-        var bar = new Border { Height = 3, Margin = new Thickness(0, 1, 0, 0), Background = kind == WriterStyleKind.Color ? WriterPalette.Text(WriterColor.Red) : WriterPalette.Fill(WriterColor.Yellow) };
-        var panel = new WrapPanel { Orientation = Orientation.Horizontal, MaxWidth = 5 * 28 };
-        var flyout = new Flyout { Content = panel, Placement = PlacementMode.BottomEdgeAlignedLeft };
+        bool fill = kind == WriterStyleKind.Fill;
+        WriterRgb first = WriterSwatch.All[fill ? 2 : 0].Of(fill);   // 바탕은 노랑, 글자는 빨강부터
+        var bar = new Border { Height = 3, Margin = new Thickness(0, 1, 0, 0), Background = WriterPalette.Brush(first) };
+        var flyout = new Flyout { Placement = PlacementMode.BottomEdgeAlignedLeft };
 
-        foreach (WriterColor color in WriterPalette.All)
+        // 고른 색을 입힌다 — 차림을 닫고(닫힌 뒤 칸에 초점과 범위가 돌아온다) 띠가 그 색이 된다.
+        void Pick(WriterRgb? rgb)
+        {
+            if (rgb is { } picked)
+            {
+                bar.Background = WriterPalette.Brush(picked);
+                _colorMenus[kind].Last = picked;
+            }
+
+            flyout.Hide();
+            ApplyFormat(new WriterStyleChange(kind, Color: rgb));
+        }
+
+        Button Swatch(WriterRgb rgb, string name)
         {
             var swatch = new Button
             {
@@ -481,16 +529,19 @@ public partial class GraphEditorView
                 Margin = new Thickness(2),
                 Padding = new Thickness(0),
                 Focusable = false,
-                Background = kind == WriterStyleKind.Color ? WriterPalette.Text(color) : WriterPalette.Fill(color),
-                [ToolTip.TipProperty] = WriterPalette.Name(color)
+                Background = WriterPalette.Brush(rgb),
+                Tag = rgb,
+                [ToolTip.TipProperty] = name
             };
-            swatch.Click += (_, _) =>
-            {
-                bar.Background = swatch.Background;
-                flyout.Hide();
-                ApplyFormat(new WriterStyleChange(kind, Color: color));
-            };
-            panel.Children.Add(swatch);
+            swatch.Click += (_, _) => Pick(rgb);
+            return swatch;
+        }
+
+        var palette = new WrapPanel { Orientation = Orientation.Horizontal, MaxWidth = 5 * 28 };
+
+        foreach (WriterSwatch swatch in WriterSwatch.All)
+        {
+            palette.Children.Add(Swatch(swatch.Of(fill), swatch.Name));
         }
 
         var none = new Button
@@ -499,14 +550,163 @@ public partial class GraphEditorView
             FontSize = 11,
             Margin = new Thickness(2),
             Focusable = false,
-            [ToolTip.TipProperty] = kind == WriterStyleKind.Color ? "글자색을 걷습니다" : "바탕색을 걷습니다"
+            [ToolTip.TipProperty] = fill ? "바탕색을 걷습니다" : "글자색을 걷습니다"
         };
-        none.Click += (_, _) =>
+        none.Click += (_, _) => Pick(null);
+        palette.Children.Add(none);
+
+        var usedTitle = new TextBlock { Text = "이 프로젝트에 쓴 색", FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7 };
+        var used = new WrapPanel { Orientation = Orientation.Horizontal, MaxWidth = 5 * 28 };
+
+        // 직접 고르기 — 막대는 초점을 받지 않는다(초점이 막대에 있으면 Delete가 고른 카드를 지운다 · 글 칸 밖의 Delete). 16진수 칸은 글 칸이라 괜찮다.
+        var preview = new Border
         {
-            flyout.Hide();
-            ApplyFormat(new WriterStyleChange(kind, Color: null));
+            Width = 26,
+            Height = 26,
+            CornerRadius = new CornerRadius(3),
+            BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x55, 0, 0, 0)),
+            Background = WriterPalette.Brush(first)
         };
-        panel.Children.Add(none);
+        var hex = new TextBox
+        {
+            Width = 86,
+            FontSize = 12,
+            Text = first.Hex,
+            [ToolTip.TipProperty] = "#RRGGBB — 16진수로 적고 Enter로 입힙니다"
+        };
+        var channels = new Slider[3];
+        var values = new TextBlock[3];
+        var rows = new StackPanel { Spacing = 0 };
+        bool syncing = false;
+
+        WriterRgb FromChannels() => new((byte)Math.Round(channels[0].Value), (byte)Math.Round(channels[1].Value), (byte)Math.Round(channels[2].Value));
+
+        void Show(WriterRgb rgb, bool keepHex)
+        {
+            syncing = true;
+
+            try
+            {
+                byte[] parts = [rgb.R, rgb.G, rgb.B];
+
+                for (int index = 0; index < 3; index++)
+                {
+                    channels[index].Value = parts[index];
+                    values[index].Text = parts[index].ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+
+                if (!keepHex)
+                {
+                    hex.Text = rgb.Hex;
+                }
+
+                preview.Background = WriterPalette.Brush(rgb);
+            }
+            finally
+            {
+                syncing = false;
+            }
+        }
+
+        foreach ((int index, string label) in new[] { (0, "R"), (1, "G"), (2, "B") })
+        {
+            channels[index] = new Slider
+            {
+                Minimum = 0,
+                Maximum = 255,
+                Width = 96,
+                SmallChange = 1,
+                LargeChange = 16,
+                IsSnapToTickEnabled = true,
+                TickFrequency = 1,
+                Focusable = false,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            values[index] = new TextBlock { Width = 26, FontSize = 11, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            channels[index].ValueChanged += (_, _) =>
+            {
+                if (!syncing)
+                {
+                    Show(FromChannels(), keepHex: false);
+                }
+            };
+            rows.Children.Add(new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 4,
+                Children = { new TextBlock { Text = label, Width = 10, FontSize = 11, VerticalAlignment = VerticalAlignment.Center }, channels[index], values[index] }
+            });
+        }
+
+        hex.TextChanged += (_, _) =>
+        {
+            if (!syncing && WriterRgb.Parse(hex.Text) is { } typed)
+            {
+                Show(typed, keepHex: true);
+            }
+        };
+
+        var apply = new Button { Content = "입히기", FontSize = 11, Focusable = false, [ToolTip.TipProperty] = "고른 글자에 이 색을 입힙니다" };
+        apply.Click += (_, _) => Pick(WriterRgb.Parse(hex.Text) ?? FromChannels());
+        hex.KeyDown += (_, args) =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = true;
+                Pick(WriterRgb.Parse(hex.Text) ?? FromChannels());
+            }
+        };
+
+        flyout.Content = new StackPanel
+        {
+            Spacing = 2,
+            Children =
+            {
+                palette,
+                usedTitle,
+                used,
+                new TextBlock { Text = "직접 고르기 (RGB)", FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7 },
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(2, 0), Children = { preview, hex, apply } },
+                rows
+            }
+        };
+
+        var menu = new ColorMenu
+        {
+            Flyout = flyout,
+            Bar = bar,
+            Used = used,
+            UsedTitle = usedTitle,
+            Hex = hex,
+            Channels = channels,
+            Preview = preview,
+            Apply = apply,
+            Last = first
+        };
+        _colorMenus[kind] = menu;
+        Show(first, keepHex: false);
+
+        // 열 때마다 — 이 프로젝트에 쓴 색을 다시 세고(정해 둔 열 가지 밖 · 많이 쓴 차례 열 개), 직접 고르기는 마지막에 고른 색에서 시작한다.
+        flyout.Opening += (_, _) =>
+        {
+            used.Children.Clear();
+
+            if (_session is { } session)
+            {
+                HashSet<WriterRgb> standard = WriterSwatch.All.Select(swatch => swatch.Of(fill)).ToHashSet();
+
+                foreach (WriterRgb rgb in WriterMarkMath.UsedColors(session.Project.EnumerateNodes().OfType<DialogueNode>(), fill)
+                             .Where(rgb => !standard.Contains(rgb))
+                             .Take(10))
+                {
+                    used.Children.Add(Swatch(rgb, rgb.Hex));
+                }
+            }
+
+            usedTitle.IsVisible = used.IsVisible = used.Children.Count > 0;
+            Show(menu.Last, keepHex: false);
+        };
         flyout.Closed += (_, _) => RestoreFormatFocusLater();
         _formatFlyouts.Add(flyout);
 

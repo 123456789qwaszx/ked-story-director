@@ -1,21 +1,53 @@
 namespace Vn.Authoring.Model;
 
 /// <summary>
-/// <b>작가용 글 서식의 색</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — 정해 둔 목록에서만 고른다. 같은 이름이 글자색에서는
-/// 진한 색, 바탕색에서는 옅은 색이다(실제 색 값은 화면이 정한다 — <c>Vn.App.Views.WriterPalette</c>).
+/// <b>작가용 글 서식의 색</b> — 실제 RGB 값이다(2026-11-23 소유자 — 「글자 색깔과 바탕색의 종류가 조금 제한 적인게 아쉬운데, 사용한 색깔과 더불어서
+/// RGB를 원하는 걸 선택할 수 있는 것도 해주십시오」 · writer-formatting WF-D14). 파일에는 <c>"#RRGGBB"</c>로 적는다. ⛔ 그 전에는 정해 둔 열 가지의
+/// 이름(<c>"red"</c>)만 적었다 — 그 이름은 읽을 때 <see cref="WriterSwatch"/>의 값으로 바꾼다.
 /// </summary>
-public enum WriterColor
+public readonly record struct WriterRgb(byte R, byte G, byte B)
 {
-    Red,
-    Orange,
-    Yellow,
-    Green,
-    Teal,
-    Blue,
-    Purple,
-    Pink,
-    Brown,
-    Gray
+    /// <summary><c>#RRGGBB</c>(대문자).</summary>
+    public string Hex => $"#{R:X2}{G:X2}{B:X2}";
+
+    public override string ToString() => Hex;
+
+    /// <summary><c>#RRGGBB</c> · <c>RRGGBB</c>(대소문자 무관) — 그 밖은 null.</summary>
+    public static WriterRgb? Parse(string? text)
+    {
+        string hex = (text ?? string.Empty).Trim().TrimStart('#');
+
+        if (hex.Length != 6 || !uint.TryParse(hex, System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture, out uint value))
+        {
+            return null;
+        }
+
+        return new WriterRgb((byte)(value >> 16), (byte)(value >> 8), (byte)value);
+    }
+}
+
+/// <summary>
+/// 색 차림의 <b>정해 둔 열 가지</b> — 같은 이름이 글자색에서는 진한 색(흰 카드 바탕에서 읽힌다), 바탕색에서는 옅은 색(검은 글자가 읽힌다)이다.
+/// <see cref="Key"/>는 옛 파일의 색 이름이다(WF-D14 전).
+/// </summary>
+public sealed record WriterSwatch(string Key, string Name, WriterRgb Text, WriterRgb Fill)
+{
+    public static IReadOnlyList<WriterSwatch> All { get; } =
+    [
+        new("red", "빨강", new(0xD3, 0x2F, 0x2F), new(0xFF, 0xCD, 0xD2)),
+        new("orange", "주황", new(0xE6, 0x5C, 0x00), new(0xFF, 0xE0, 0xB2)),
+        new("yellow", "노랑", new(0xB2, 0x8A, 0x00), new(0xFF, 0xF5, 0x9D)),
+        new("green", "초록", new(0x2E, 0x7D, 0x32), new(0xC8, 0xE6, 0xC9)),
+        new("teal", "청록", new(0x00, 0x79, 0x6B), new(0xB2, 0xEB, 0xF2)),
+        new("blue", "파랑", new(0x15, 0x65, 0xC0), new(0xBB, 0xDE, 0xFB)),
+        new("purple", "보라", new(0x6A, 0x1B, 0x9A), new(0xE1, 0xBE, 0xE7)),
+        new("pink", "분홍", new(0xC2, 0x18, 0x5B), new(0xF8, 0xBB, 0xD0)),
+        new("brown", "갈색", new(0x6D, 0x4C, 0x41), new(0xD7, 0xCC, 0xC8)),
+        new("gray", "회색", new(0x75, 0x75, 0x75), new(0xE0, 0xE0, 0xE0))
+    ];
+
+    /// <summary>글자색이면 <see cref="Text"/>, 바탕색이면 <see cref="Fill"/>.</summary>
+    public WriterRgb Of(bool fill) => fill ? Fill : Text;
 }
 
 /// <summary>카드 글 칸의 좌우 정렬 — 카드 하나에 하나(줄마다가 아니다). 왼쪽이 기본이다.</summary>
@@ -38,8 +70,8 @@ public sealed record WriterLook(
     bool Bold = false,
     bool Italic = false,
     bool Strike = false,
-    WriterColor? Color = null,
-    WriterColor? Fill = null,
+    WriterRgb? Color = null,
+    WriterRgb? Fill = null,
     string? Font = null,
     int Grow = 0)
 {
@@ -92,7 +124,7 @@ public enum WriterStyleKind
     Grow
 }
 
-public sealed record WriterStyleChange(WriterStyleKind Kind, WriterColor? Color = null, string? Font = null, int Step = 0)
+public sealed record WriterStyleChange(WriterStyleKind Kind, WriterRgb? Color = null, string? Font = null, int Step = 0)
 {
     public static WriterStyleChange Toggle(WriterStyleKind kind) => new(kind);
 }
@@ -395,4 +427,33 @@ public static class WriterMarkMath
         WriterStyleKind.Strike => look.Strike,
         _ => false
     };
+
+    /// <summary>
+    /// 그 카드들의 서식에 쓰인 글자색(<paramref name="fill"/>이 거짓) · 바탕색 — 많이 쓴 차례(글자 수), 같으면 값 차례. 색 차림의 「이 프로젝트에 쓴 색」이다
+    /// (writer-formatting WF-D14 — 같이 쓰는 사람이 쓴 색도 보인다).
+    /// </summary>
+    public static IReadOnlyList<WriterRgb> UsedColors(IEnumerable<DialogueNode> nodes, bool fill)
+    {
+        var counts = new Dictionary<WriterRgb, int>();
+
+        foreach (DialogueNode node in nodes)
+        {
+            foreach (IReadOnlyList<WriterSpan> spans in node.WriterMarks.Values)
+            {
+                foreach (WriterSpan span in spans)
+                {
+                    if ((fill ? span.Look.Fill : span.Look.Color) is { } rgb)
+                    {
+                        counts[rgb] = counts.GetValueOrDefault(rgb) + span.Length;
+                    }
+                }
+            }
+        }
+
+        return counts
+            .OrderByDescending(pair => pair.Value)
+            .ThenBy(pair => pair.Key.Hex, StringComparer.Ordinal)
+            .Select(pair => pair.Key)
+            .ToList();
+    }
 }
