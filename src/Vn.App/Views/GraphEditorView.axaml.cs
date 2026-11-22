@@ -3999,18 +3999,17 @@ public partial class GraphEditorView : UserControl
         _writingShown[nodeId] = shown;
         _writingLayouts[nodeId] = layout;
 
-        // 작가용 글 서식을 그리는 글 칸(writer-formatting) — 입력 · 커서 · 한글 조합은 TextBox 그대로이고 글자를 놓는 겹만 서식을 입힌다.
-        var box = new WriterTextBox
-        {
-            Text = shown,
-            AcceptsReturn = true,
-            TextWrapping = TextWrapping.Wrap,
-            Height = WritingHeightFor(nodeId),
-            Margin = new Thickness(0, WritingBoxGap, 0, 0),
-            Padding = new Thickness(4, 3),
-            PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄",
-            Tag = WritingTag + nodeId
-        };
+        // 서식이 든 카드만 서식을 그리는 글 칸(WriterTextBox)을 받는다 — 서식 없는 카드는 dev와 같은 보통 TextBox다(writer-formatting · 2026-11-22
+        // 소유자 보고: 윈도에서 Enter를 치면 칸이 맨 위로 스크롤됐다 — dev에는 없음). 서식이 생기거나 다 걷히면 그 카드를 다시 지어 칸을 바꾼다(UpdateLooks).
+        TextBox box = WantsWriterBox(nodeId) ? new WriterTextBox() : new TextBox();
+        box.Text = shown;
+        box.AcceptsReturn = true;
+        box.TextWrapping = TextWrapping.Wrap;
+        box.Height = WritingHeightFor(nodeId);
+        box.Margin = new Thickness(0, WritingBoxGap, 0, 0);
+        box.Padding = new Thickness(4, 3);
+        box.PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄";
+        box.Tag = WritingTag + nodeId;
         ScrollViewer.SetVerticalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
 
         // 글꼴 · 글자 크기 · 줄 간격은 설정 창 「대본 글 칸」의 것(writer-comfort WC5 — ⛔ 그 전에는 11 · 줄 높이 15로 굳었다). 분기 점은 실제 글자

@@ -27,35 +27,53 @@ public sealed class WriterFormattingTests
         GraphEditorView graph = Graph(window);
         Assert.False(graph.FormatToolbarEnabled);
 
-        WriterTextBox box = Box(window, card.Id);
+        // 서식 없는 카드는 보통 TextBox다(dev와 같은 칸).
+        TextBox plain = Box(window, card.Id);
+        Assert.IsNotType<WriterTextBox>(plain);
         int rails = graph.RailDrawCount;
         int reloads = window.FindControl<ChapterGraphView>("ChapterGraph")!.ReloadCount;
 
         // 「긴 하루」를 고른다 — 칸의 글에서는 「하린: 」 뒤라 8..12.
-        Select(box, "긴 하루");
+        Select(plain, "긴 하루");
         Assert.True(graph.FormatToolbarEnabled);
         Click(window, "굵게");
 
         DialogueNode now = session.Project.FindDialogue(card.Id)!;
         Assert.Equal([new WriterSpan(4, 4, new WriterLook(Bold: true))], now.WriterMarks[ids[0]]);
-        Assert.Equal([new BoxLook(8, 4, new WriterLook(Bold: true))], box.Looks);
-        Assert.Equal((true, false, false), (graph.FormatToolbarState.Bold, graph.FormatToolbarState.Italic, graph.FormatToolbarState.Strike));
 
-        // 판도 칸도 그대로다 — 철도를 다시 긋지 않았고 칸이 같은 객체로 초점과 고른 범위를 쥐고 있다. [구성]은 다시 읽지 않았다.
-        Assert.Same(box, Box(window, card.Id));
-        Assert.Equal(rails, graph.RailDrawCount);
-        Assert.Equal(reloads, window.FindControl<ChapterGraphView>("ChapterGraph")!.ReloadCount);
+        // 첫 서식 — 그 카드만 서식을 그리는 칸으로 다시 지었다. 초점과 고른 범위는 새 칸이 이어 쥔다.
+        TextBox box = Box(window, card.Id);
+        Assert.IsType<WriterTextBox>(box);
+        Assert.Equal([new BoxLook(8, 4, new WriterLook(Bold: true))], Looks(window, card.Id));
         Assert.True(box.IsFocused);
         Assert.Equal((8, 12), (box.SelectionStart, box.SelectionEnd));
+        Assert.Equal((true, false, false), (graph.FormatToolbarState.Bold, graph.FormatToolbarState.Italic, graph.FormatToolbarState.Strike));
+
+        // 판은 그대로다 — 철도를 통째로 다시 긋지 않았다. [구성]은 다시 읽지 않았다.
+        Assert.Equal(rails, graph.RailDrawCount);
+        Assert.Equal(reloads, window.FindControl<ChapterGraphView>("ChapterGraph")!.ReloadCount);
+
+        // 이제 서식 칸이다 — 더 입혀도 칸이 그대로다.
+        Select(box, "문이");
+        Click(window, "기울임");
+        Assert.Same(box, Box(window, card.Id));
+        Assert.True(box.IsFocused);
 
         // 굵은 글자는 실제로 더 넓게 놓인다 — 글자 배치가 서식을 입었다(커서 · 누른 자리도 이 배치를 쓴다).
         TextPresenterWidths(box, out double boldWidth);
         Assert.True(boldWidth > 0);
 
         // 모두 굵다 — 한 번 더 누르면 푼다.
+        Select(box, "긴 하루");
         Click(window, "굵게");
         Assert.False(session.Project.FindDialogue(card.Id)!.WriterMarks.ContainsKey(ids[0]));
-        Assert.Empty(box.Looks);
+        Assert.DoesNotContain(Looks(window, card.Id), look => look.Look.Bold);
+
+        // 서식을 다 걷으면 다시 보통 TextBox다.
+        Select(Box(window, card.Id), "문이");
+        Click(window, "기울임");
+        Assert.Empty(session.Project.FindDialogue(card.Id)!.WriterMarks);
+        Assert.IsNotType<WriterTextBox>(Box(window, card.Id));
 
         window.Close();
     });
@@ -65,10 +83,9 @@ public sealed class WriterFormattingTests
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어");
         GraphEditorView graph = Graph(window);
-        WriterTextBox box = Box(window, card.Id);
-
-        Select(box, "오늘은");
+        Select(Box(window, card.Id), "오늘은");
         graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Red));
+        Dispatcher.UIThread.RunJobs();
         graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Fill, Color: WriterColor.Yellow));
         graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Font, Font: "Noto Serif"));
         Click(window, "글자 크게");
@@ -79,7 +96,7 @@ public sealed class WriterFormattingTests
         var expected = new WriterLook(Color: WriterColor.Red, Fill: WriterColor.Yellow, Font: "Noto Serif", Grow: 2);
         Assert.Equal([new WriterSpan(0, 3, expected)], session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]]);
         Assert.Equal(WriterAlign.Center, session.Project.FindDialogue(card.Id)!.WriterAlign);
-        Assert.Equal(TextAlignment.Center, box.TextAlignment);
+        Assert.Equal(TextAlignment.Center, Box(window, card.Id).TextAlignment);
         Assert.Equal($"{ScriptFont.Size + 2:0}", graph.FormatToolbarState.Size);
         Assert.Equal("Noto Serif", graph.FormatToolbarState.Font);
 
@@ -90,12 +107,12 @@ public sealed class WriterFormattingTests
             Dispatcher.UIThread.RunJobs();
         }
 
-        Assert.Equal(TextAlignment.Left, Box(window, card.Id).TextAlignment);
-        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: WriterColor.Red))], Box(window, card.Id).Looks);
+        Assert.NotEqual(TextAlignment.Center, Box(window, card.Id).TextAlignment);
+        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: WriterColor.Red))], Looks(window, card.Id));
 
         session.Editor.Redo();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: WriterColor.Red, Fill: WriterColor.Yellow))], Box(window, card.Id).Looks);
+        Assert.Equal([new BoxLook(4, 3, new WriterLook(Color: WriterColor.Red, Fill: WriterColor.Yellow))], Looks(window, card.Id));
 
         window.Close();
     });
@@ -104,28 +121,27 @@ public sealed class WriterFormattingTests
     public void 쓰는_동안_서식이_같은_글자를_따라가고_넣으면_모델도_같다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
-        WriterTextBox box = Box(window, card.Id);
-        Select(box, "긴 하루");
+        Select(Box(window, card.Id), "긴 하루");
         Click(window, "굵게");
+        TextBox box = Box(window, card.Id);
 
         // 앞에 「아, 」를 끼우고 굵은 「하루」 끝에 「들」을 이어 친다 — 넣기 전에도 칸의 꾸밈이 따라간다.
         box.Text = "하린: 아, 오늘은 긴 하루들였어\n문이 열린다.";
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal([new BoxLook(11, 5, new WriterLook(Bold: true))], box.Looks);
+        Assert.Equal([new BoxLook(11, 5, new WriterLook(Bold: true))], Looks(window, card.Id));
 
         // 넣으면(쓰다 멈춤) 모델도 같은 글자다.
         Graph(window).CommitLiveWriting();
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("아, 오늘은 긴 하루들였어", session.Project.FindDialogue(card.Id)!.Script.Text(ids[0]).Text);
         Assert.Equal([new WriterSpan(7, 5, new WriterLook(Bold: true))], session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]]);
-        Assert.Equal([new BoxLook(11, 5, new WriterLook(Bold: true))], Box(window, card.Id).Looks);
+        Assert.Equal([new BoxLook(11, 5, new WriterLook(Bold: true))], Looks(window, card.Id));
 
         // 위에 줄을 새로 넣어 카드를 다시 지어도 서식은 그 줄을 따라간다.
         Box(window, card.Id).Text = "새 줄\n하린: 아, 오늘은 긴 하루들였어\n문이 열린다.";
         Graph(window).CommitLiveWriting();
         Dispatcher.UIThread.RunJobs();
-        WriterTextBox rebuilt = Box(window, card.Id);
-        Assert.Equal([new BoxLook(4 + 11, 5, new WriterLook(Bold: true))], rebuilt.Looks);
+        Assert.Equal([new BoxLook(4 + 11, 5, new WriterLook(Bold: true))], Looks(window, card.Id));
 
         window.Close();
     });
@@ -134,7 +150,7 @@ public sealed class WriterFormattingTests
     public void 넣지_않은_글이_있으면_먼저_넣고_서식을_입히며_화자와_여러_줄을_가른다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, _) = Stage("하린: 첫 줄", "둘째 줄");
-        WriterTextBox box = Box(window, card.Id);
+        TextBox box = Box(window, card.Id);
 
         // 새 줄을 쓰고(아직 안 넣었다) 처음부터 끝까지 고른다 — 화자 「하린: 」은 빠지고 세 줄의 대사 글에 입는다.
         box.Focus();
@@ -169,7 +185,7 @@ public sealed class WriterFormattingTests
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어");
         GraphEditorView graph = Graph(window);
-        WriterTextBox box = Box(window, card.Id);
+        TextBox box = Box(window, card.Id);
 
         box.Focus();
         box.CaretIndex = 3;
@@ -194,10 +210,10 @@ public sealed class WriterFormattingTests
     {
         (MainWindow window, AuthoringSession session, DialogueNode card, _) = Stage("하린: 오늘은 정말 긴 하루였어", "문이 열리고 낯선 바람이 들어온다.", "윌로: OK, the quick brown fox");
         GraphEditorView graph = Graph(window);
-        WriterTextBox box = Box(window, card.Id);
 
-        Select(box, "정말");
+        Select(Box(window, card.Id), "정말");
         Click(window, "굵게");
+        TextBox box = Box(window, card.Id);
         Select(box, "긴 하루");
         graph.ApplyFormat(new WriterStyleChange(WriterStyleKind.Color, Color: WriterColor.Red));
         Select(box, "낯선 바람");
@@ -219,25 +235,29 @@ public sealed class WriterFormattingTests
 #pragma warning restore CS0618
         Point at = box.TranslatePoint(new Point(0, 0), window)!.Value;
         File.WriteAllText("/tmp/ae/writer.txt", $"{at.X} {at.Y} {box.Bounds.Width} {box.Bounds.Height}");
-        Assert.Equal(6, box.Looks.Count);
+        Assert.Equal(6, Looks(window, card.Id).Count);
 
         window.Close();
     });
 
     // ── 도움 ──────────────────────────────────────────
 
-    private static void TextPresenterWidths(WriterTextBox box, out double width) =>
-        width = box.Presenter!.TextLayout.WidthIncludingTrailingWhitespace;
+    private static void TextPresenterWidths(TextBox box, out double width) =>
+        width = ((WriterTextBox)box).Presenter!.TextLayout.WidthIncludingTrailingWhitespace;
 
     private static GraphEditorView Graph(MainWindow window) => window.FindControl<GraphEditorView>("Graph")!;
 
-    private static WriterTextBox Box(MainWindow window, string nodeId) =>
+    private static TextBox Box(MainWindow window, string nodeId) =>
         Graph(window).FindControl<Canvas>("GraphCanvas")!
-            .GetLogicalDescendants().OfType<WriterTextBox>()
+            .GetLogicalDescendants().OfType<TextBox>()
             .Single(box => (box.Tag as string) == "writing:" + nodeId);
 
+    /// <summary>그 카드 글 칸의 꾸밈 — 서식 없는 카드는 보통 TextBox라 없다.</summary>
+    private static IReadOnlyList<BoxLook> Looks(MainWindow window, string nodeId) =>
+        (Box(window, nodeId) as WriterTextBox)?.Looks ?? [];
+
     /// <summary>칸에 초점을 주고 그 글자들을 고른다.</summary>
-    private static void Select(WriterTextBox box, string text)
+    private static void Select(TextBox box, string text)
     {
         box.Focus();
         int start = box.Text!.IndexOf(text, StringComparison.Ordinal);
@@ -261,6 +281,7 @@ public sealed class WriterFormattingTests
         }
 
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
         Dispatcher.UIThread.RunJobs();
     }
 

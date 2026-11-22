@@ -74,24 +74,52 @@ public partial class GraphEditorView
         RefreshFormatToolbar();
     }
 
-    /// <summary>한 글 칸의 꾸밈과 정렬을 지금 모델과 칸의 글로.</summary>
+    /// <summary>이 카드가 서식을 그리는 글 칸을 받는가 — 서식(글자 구간이나 왼쪽이 아닌 정렬)이 있을 때만.</summary>
+    private bool WantsWriterBox(string nodeId) =>
+        _session?.Project.FindDialogue(nodeId) is { } node && (node.WriterMarks.Count > 0 || node.WriterAlign != WriterAlign.Left);
+
+    /// <summary>
+    /// 한 글 칸의 꾸밈과 정렬을 지금 모델과 칸의 글로. 칸의 종류가 서식 유무와 맞지 않으면(서식이 처음 생겼다 · 다 걷혔다) 그 카드를 다시 지어 칸을 바꾼다 —
+    /// 다시 짓기가 쓰던 글 · 커서 · 초점을 지킨다(RebuildCard). 지금 도는 처리가 끝난 뒤에 한다.
+    /// </summary>
     private void UpdateLooks(string nodeId, TextBox box)
     {
-        if (box is not WriterTextBox writer || _session?.Project.FindDialogue(nodeId) is not { } node)
+        if (_session?.Project.FindDialogue(nodeId) is not { } node)
         {
             return;
         }
 
-        TextAlignment align = node.WriterAlign switch
+        if ((box is WriterTextBox) != WantsWriterBox(nodeId))
         {
-            WriterAlign.Center => TextAlignment.Center,
-            WriterAlign.Right => TextAlignment.Right,
-            _ => TextAlignment.Left
-        };
+            Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "글 칸 바꾸기", () =>
+            {
+                if (ReferenceEquals(_writingBoxes.GetValueOrDefault(nodeId), box) && (box is WriterTextBox) != WantsWriterBox(nodeId))
+                {
+                    RebuildCard(nodeId);
+                    RefreshFormatToolbar();
+                }
+            }));
+            return;
+        }
 
-        if (writer.TextAlignment != align)
+        if (box is not WriterTextBox writer)
         {
-            writer.TextAlignment = align;
+            return;
+        }
+
+        // 왼쪽은 값을 두지 않는다 — 보통 글 칸(dev)과 같은 기본값이다.
+        if (node.WriterAlign == WriterAlign.Left)
+        {
+            writer.ClearValue(TextBox.TextAlignmentProperty);
+        }
+        else
+        {
+            TextAlignment align = node.WriterAlign == WriterAlign.Center ? TextAlignment.Center : TextAlignment.Right;
+
+            if (writer.TextAlignment != align)
+            {
+                writer.TextAlignment = align;
+            }
         }
 
         writer.Looks = node.WriterMarks.Count == 0
@@ -213,9 +241,16 @@ public partial class GraphEditorView
             return;
         }
 
+        // 글자를 칠 때마다 커서가 옮겨 범위가 바뀐다 — 빈 범위에서 빈 범위로(치는 중)는 도구 막대의 모습이 같으니 맞추지 않는다.
+        bool sameLook = string.Equals(_formatNodeId, nodeId, StringComparison.Ordinal) &&
+                        _formatSelection.Start == _formatSelection.End && selection.Item1 == selection.Item2;
         _formatNodeId = nodeId;
         _formatSelection = selection;
-        RefreshFormatToolbarLater();
+
+        if (!sameLook)
+        {
+            RefreshFormatToolbarLater();
+        }
     }
 
     /// <summary>도구 막대를 맞추는 일이 미뤄져 있는가 — 한 번만 돈다.</summary>
