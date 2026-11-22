@@ -2,8 +2,8 @@
 
 > **이야기의 뼈대와 대사를 쓰는 툴.** 2026-10-29에 VnTool(`VNStoryEditor_avalonia` `dev` @ `f2a7bdc`)에서 이력째 갈라졌다.
 > 옛 대본 탭(엑셀 대본 편집기 — 지금의 [대본] 탭과 다른 것)과 엑셀 연동을 걷었고(D2), 연출 그래프를 위→아래로 세웠고(D3), 대사를 카드 안에서 직접 쓴다(D4).
-> **연출(무대 프리뷰 · 연출 명령 · 게임용 Yarn · 발행)은 [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로
-> 갔다** — 그 툴은 이 툴의 프로젝트 파일을 원고로 읽고, 연출은 제 파일에 둔다. 계획과 단계는
+> **연출(무대 프리뷰 · 연출 명령 · 게임용 Yarn · 발행)은 이 툴에 없다** — 2026-10-29에 걷었다. 그 일을 받았던 `ked-story-compositor`는
+> 2026-11-22에 **버렸다**(소유자) — 이 툴은 그쪽이 프로젝트 파일을 어떻게 읽는지 고려하지 않는다. 걷은 계획과 단계는
 > [`docs/plans/director-split.md`](docs/plans/director-split.md) · [`docs/plans/presentation-removal.md`](docs/plans/presentation-removal.md),
 > 그 뒤의 레거시 정리는 [`docs/plans/legacy-cleanup.md`](docs/plans/legacy-cleanup.md), 지금 동작의 정본은 [`docs/design/two-graphs.md`](docs/design/two-graphs.md).
 > 아래 "문서" 표에서 **이력**이라 적은 것은 VnTool 시절(엑셀 워크플로 · 무대)을 설명한다 — 머리에 무엇이 걷혔는지 적혀 있다.
@@ -14,7 +14,7 @@
 
 만들어 내는 것은 **원고(프로젝트 폴더)** 와 유니티 런타임(별도 저장소 `ked-presentation-runtime`)이 먹는 **`exported/{챕터}.progression.json`** 입니다.
 함께 **대사만 있는 Yarn**(`exported/yarn/` — 장면마다 한 파일, 메모는 주석, 연출 없음)이 나가 작가가 대사만으로 굴러가는지 봅니다(2026-11-17).
-내보내는 것은 진행 JSON과 이 대사 Yarn 둘뿐입니다. 연출 든 게임용 Yarn 묶음은 compositor가 이 원고와 제 연출을 합쳐 냅니다.
+내보내는 것은 진행 JSON과 이 대사 Yarn 둘뿐입니다. 연출은 이 툴 밖의 일입니다.
 
 ## 두 그래프
 
@@ -52,7 +52,7 @@
 ```text
 MyStory/
 ├─ project.vnproject.json      매니페스트(형식 4) — 목차 · 챕터 · 화자 · 파일을 넘나드는 관계. 폴더에 하나뿐이어야 한다
-├─ game.definition.json        (있으면) compositor의 연출 커맨드 어휘 — 이 툴은 읽지도 쓰지도 않는다
+├─ game.definition.json        (옛 프로젝트에 있으면) 버린 compositor의 연출 커맨드 어휘 — 이 툴은 읽지도 쓰지도 않는다
 ├─ story/sf_xxxxxxxx.vnstory.json  판(챕터마다 하나)과 그 위의 카드·노드 — 카드는 제 대본(줄 신원 + 본문)을 든다
 ├─ runtime.target.json         (있으면) 복제할 폴더 — gameFolder(진행 JSON) · dialogueYarnFolder(대사 Yarn). 저장할 때 exported/를 거기로 복제한다([⚙ 설정]의 「내보내기」가 적는다)
 └─ exported/                   툴의 작업 사본 — 고칠 때마다 저절로 나간다
@@ -114,13 +114,14 @@ python3 tools/make-app-icons.py
 | [`ORIENTATION.md`](ORIENTATION.md) | **처음 보는 사람의 지도.** 프로젝트 · 폴더 · 데이터 흐름 · 지뢰 · 읽는 순서 |
 | [`docs/design/two-graphs.md`](docs/design/two-graphs.md) | **지금 동작의 정본.** 두 그래프의 기능 · 사용자 동작 · 다시 쓸 때 지킬 것 · 7절의 결정 기록(D2부터 — 끝이 가장 새 것) |
 | [`docs/plans/legacy-cleanup.md`](docs/plans/legacy-cleanup.md) | 레거시 정리 L0~L8 — 걷은 것 · 남긴 것과 그 까닭 · 걷다가 찾은 결함 |
+| [`docs/plans/writer-formatting.md`](docs/plans/writer-formatting.md) | **계획(시작 전).** 작가용 글 서식 F0 ~ F3 — 게임에 나가지 않는 줄 형광펜 · 글자 서식의 설계 · 완료 조건 · 클라우드 작업 공간에서 빌드하는 법(부록 A) |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 코드 구조 — "이 기능은 어느 파일" |
 | [`docs/external-overview.md`](docs/external-overview.md) | **이력**(2026-09-17 기준). 외부 작업자용 책임 · 데이터 흐름 · 런타임 영향 |
 | [`docs/plans/PLAN.md`](docs/plans/PLAN.md) | **이력.** 런타임 정렬 R0~R5 순서 · 결정 지점 · 완료 기준 |
 | [`docs/handoff/current-state.md`](docs/handoff/current-state.md) | **이력**(2026-08까지). 계층 규칙과 결정의 까닭 |
 | [`docs/run-log.md`](docs/run-log.md) | **이력**(VnTool 시절 결정의 정본). 한 일 · 근거 · 되돌리는 법 |
 | [`docs/handoff/architecture-decisions.md`](docs/handoff/architecture-decisions.md) | 확정된 설계와 **그 이유** |
-| [`docs/runtime-contract.md`](docs/runtime-contract.md) | 유니티 런타임과의 계약 (Gate D) — 이 툴의 몫은 2부(진행 JSON). 1부(연출 · 게임용 Yarn)는 compositor의 몫이다 |
+| [`docs/runtime-contract.md`](docs/runtime-contract.md) | 유니티 런타임과의 계약 (Gate D) — 이 툴의 몫은 2부(진행 JSON). 1부(연출 · 게임용 Yarn)는 이 툴 밖이다(맡던 compositor는 2026-11-22에 버렸다) |
 | [`docs/progression-handoff.md`](docs/progression-handoff.md) | 진행 코어 교환 이력·현행 상대·표본 JSON 안내 |
 | [`tests/fixtures/chapter-samples/`](tests/fixtures/chapter-samples/) | 견본 챕터 둘 — `ch05`(복도) · `ch01`(Scene·Auto·조건·스탯·EventKey를 담은 계약 표본). 2026-10-29까지 `docs/*.xlsx`였다 |
 | [`docs/work-orders/chapter-graph-orders.md`](docs/work-orders/chapter-graph-orders.md) | 챕터 계층 규격 원본 |
