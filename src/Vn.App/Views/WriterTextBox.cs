@@ -1,9 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
-using Avalonia.Controls.Templates;
-using Avalonia.Data;
-using Avalonia.Layout;
 using Avalonia.Styling;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
@@ -24,9 +21,9 @@ internal readonly record struct BoxLook(int Start, int Length, WriterLook Look)
 /// 입력 · 커서 · 고른 범위 · 한글 조합 · 되돌리기는 손대지 않고, 글자를 배치하는 겹(<see cref="WriterTextPresenter"/>)만 바꿔 구간마다 굵게 · 색 · 글꼴 ·
 /// 크기를 입힌다. Avalonia가 조합 중인 글자에 밑줄을 긋는 바로 그 길(글자 배치에 넘기는 구간별 모양)이다.
 ///
-/// 틀(템플릿)은 Fluent 테마의 TextBox 틀(Avalonia 12.1.1 <c>Themes.Fluent/Controls/TextBox.xaml</c>)을 코드로 옮긴 것이고, 글자 겹만 다르다. 부분의 이름
-/// (<c>PART_BorderElement</c> · <c>PART_ScrollViewer</c> · <c>PART_TextPresenter</c> …)을 지켜 테마의 모양(마우스 올림 · 초점 · 꺼짐)이 그대로 붙는다.
-/// 테마 키는 <see cref="TextBox"/>라 모양은 다른 글 칸과 같다.
+/// 틀(템플릿)은 App.axaml의 <c>WriterTextBoxTheme</c> — Fluent 테마의 TextBox 틀(Avalonia 12.1.1 <c>Themes.Fluent/Controls/TextBox.xaml</c>)을 XAML 그대로
+/// 옮기고 글자 겹만 바꿨다. 바탕 테마(BasedOn)에서 모양(마우스 올림 · 초점 · 꺼짐)을 이어 받는다. ⛔ 첫 판(2026-11-22)은 이 틀을 코드로 지었는데 윈도에서
+/// Enter 뒤 첫 한글을 칠 때 칸이 맨 위로 스크롤됐다(소유자 — dev에는 없음). 스타일 선택자가 <see cref="TextBox"/>로 보게 스타일 키는 TextBox다.
 /// </summary>
 internal sealed class WriterTextBox : TextBox
 {
@@ -34,7 +31,11 @@ internal sealed class WriterTextBox : TextBox
 
     public WriterTextBox()
     {
-        Template = BoxTemplate;
+        // 틀은 App.axaml의 「WriterTextBoxTheme」 — Fluent TextBox 틀을 그대로 옮기고 글자 겹만 바꾼 것(코드로 지은 틀은 윈도 한글 입력에서 칸이 맨 위로 튀었다).
+        if (Application.Current?.TryGetResource("WriterTextBoxTheme", null, out object? theme) == true && theme is ControlTheme writerTheme)
+        {
+            Theme = writerTheme;
+        }
     }
 
     protected override Type StyleKeyOverride => typeof(TextBox);
@@ -68,119 +69,6 @@ internal sealed class WriterTextBox : TextBox
 
         base.OnApplyTemplate(e);
     }
-
-    private static readonly FuncControlTemplate<TextBox> BoxTemplate = new((box, scope) =>
-    {
-        var border = new Border { Name = "PART_BorderElement" };
-        border.Bind(Border.BackgroundProperty, new TemplateBinding(BackgroundProperty));
-        border.Bind(Border.BorderBrushProperty, new TemplateBinding(BorderBrushProperty));
-        border.Bind(Border.BorderThicknessProperty, new TemplateBinding(BorderThicknessProperty));
-        border.Bind(Border.CornerRadiusProperty, new TemplateBinding(CornerRadiusProperty));
-        border.Bind(MinWidthProperty, new TemplateBinding(MinWidthProperty));
-        border.Bind(MinHeightProperty, new TemplateBinding(MinHeightProperty));
-        border.RegisterInNameScope(scope);
-
-        var left = new ContentPresenter();
-        Grid.SetColumn(left, 0);
-        left.Bind(ContentPresenter.VerticalContentAlignmentProperty, new TemplateBinding(VerticalContentAlignmentProperty));
-        left.Bind(ContentPresenter.ContentProperty, new TemplateBinding(InnerLeftContentProperty));
-
-        var right = new ContentPresenter();
-        Grid.SetColumn(right, 2);
-        right.Bind(ContentPresenter.VerticalContentAlignmentProperty, new TemplateBinding(VerticalContentAlignmentProperty));
-        right.Bind(ContentPresenter.ContentProperty, new TemplateBinding(InnerRightContentProperty));
-
-        var floating = new TextBlock { Name = "PART_FloatingPlaceholder", IsVisible = false };
-        DockPanel.SetDock(floating, Dock.Top);
-        floating.Bind(TextBlock.ForegroundProperty, new TemplateBinding(PlaceholderForegroundProperty));
-        floating.Bind(TextBlock.TextProperty, new TemplateBinding(PlaceholderTextProperty));
-        floating.RegisterInNameScope(scope);
-
-        var placeholder = new TextBlock { Name = "PART_Placeholder" };
-        placeholder.Bind(TextBlock.ForegroundProperty, new TemplateBinding(PlaceholderForegroundProperty));
-        placeholder.Bind(OpacityProperty, placeholder.GetResourceObservable("TextControlPlaceholderOpacity"));
-        placeholder.Bind(TextBlock.TextProperty, new TemplateBinding(PlaceholderTextProperty));
-        placeholder.Bind(TextBlock.TextAlignmentProperty, new TemplateBinding(TextAlignmentProperty));
-        placeholder.Bind(TextBlock.TextWrappingProperty, new TemplateBinding(TextWrappingProperty));
-        placeholder.Bind(HorizontalAlignmentProperty, new TemplateBinding(HorizontalContentAlignmentProperty));
-        placeholder.Bind(VerticalAlignmentProperty, new TemplateBinding(VerticalContentAlignmentProperty));
-        placeholder.RegisterInNameScope(scope);
-
-        var presenter = new WriterTextPresenter { Name = "PART_TextPresenter" };
-        presenter.Bind(TextPresenter.TextProperty, new TemplateBinding(TextProperty) { Mode = BindingMode.TwoWay });
-        presenter.Bind(TextPresenter.CaretBlinkIntervalProperty, new TemplateBinding(CaretBlinkIntervalProperty));
-        presenter.Bind(TextPresenter.CaretIndexProperty, new TemplateBinding(CaretIndexProperty));
-        presenter.Bind(TextPresenter.SelectionStartProperty, new TemplateBinding(SelectionStartProperty));
-        presenter.Bind(TextPresenter.SelectionEndProperty, new TemplateBinding(SelectionEndProperty));
-        presenter.Bind(TextPresenter.TextAlignmentProperty, new TemplateBinding(TextAlignmentProperty));
-        presenter.Bind(TextPresenter.TextWrappingProperty, new TemplateBinding(TextWrappingProperty));
-        presenter.Bind(TextPresenter.LineHeightProperty, new TemplateBinding(LineHeightProperty));
-        presenter.Bind(TextPresenter.LetterSpacingProperty, new TemplateBinding(LetterSpacingProperty));
-        presenter.Bind(TextPresenter.PasswordCharProperty, new TemplateBinding(PasswordCharProperty));
-        presenter.Bind(TextPresenter.RevealPasswordProperty, new TemplateBinding(RevealPasswordProperty));
-        presenter.Bind(TextPresenter.SelectionBrushProperty, new TemplateBinding(SelectionBrushProperty));
-        presenter.Bind(TextPresenter.SelectionForegroundBrushProperty, new TemplateBinding(SelectionForegroundBrushProperty));
-        presenter.Bind(TextPresenter.CaretBrushProperty, new TemplateBinding(CaretBrushProperty));
-        presenter.Bind(HorizontalAlignmentProperty, new TemplateBinding(HorizontalContentAlignmentProperty));
-        presenter.Bind(VerticalAlignmentProperty, new TemplateBinding(VerticalContentAlignmentProperty));
-        presenter.RegisterInNameScope(scope);
-
-        // 자리 표시 글 — 글도 조합 중인 글자도 없을 때만(테마 틀의 MultiBinding과 같다).
-        void Placeholder() => placeholder.IsVisible = string.IsNullOrEmpty(presenter.PreeditText) && string.IsNullOrEmpty(box.Text);
-        presenter.PropertyChanged += (_, args) =>
-        {
-            if (args.Property == TextPresenter.PreeditTextProperty || args.Property == TextPresenter.TextProperty)
-            {
-                Placeholder();
-            }
-        };
-        Placeholder();
-
-        var scroll = new ScrollViewer
-        {
-            Name = "PART_ScrollViewer",
-            Content = new Panel { Children = { placeholder, presenter } }
-        };
-        scroll.Bind(ScrollViewer.HorizontalScrollBarVisibilityProperty, new TemplateBinding(ScrollViewer.HorizontalScrollBarVisibilityProperty));
-        scroll.Bind(ScrollViewer.VerticalScrollBarVisibilityProperty, new TemplateBinding(ScrollViewer.VerticalScrollBarVisibilityProperty));
-        scroll.Bind(ScrollViewer.IsScrollChainingEnabledProperty, new TemplateBinding(ScrollViewer.IsScrollChainingEnabledProperty));
-        scroll.Bind(ScrollViewer.AllowAutoHideProperty, new TemplateBinding(ScrollViewer.AllowAutoHideProperty));
-        scroll.Bind(ScrollViewer.BringIntoViewOnFocusChangeProperty, new TemplateBinding(ScrollViewer.BringIntoViewOnFocusChangeProperty));
-        scroll.Styles.Add(new Style(selector => selector.OfType<ScrollContentPresenter>().Name("PART_ContentPresenter"))
-        {
-            Setters = { new Setter(CursorProperty, new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Ibeam)) }
-        });
-        scroll.RegisterInNameScope(scope);
-
-        var dock = new DockPanel { Name = "PART_InnerDockPanel", Children = { floating, scroll } };
-        Grid.SetColumn(dock, 1);
-        dock.Bind(MarginProperty, new TemplateBinding(PaddingProperty));
-        dock.RegisterInNameScope(scope);
-
-        var inner = new Border
-        {
-            Child = new Grid
-            {
-                ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
-                Children = { left, dock, right }
-            }
-        };
-        inner.Bind(MarginProperty, new TemplateBinding(BorderThicknessProperty) { Converter = ThicknessAsMargin.Instance });
-
-        return new DataValidationErrors { Content = new Panel { Children = { border, inner } } };
-    });
-
-    /// <summary>테두리 두께를 바깥 여백으로 — 테마 틀의 <c>Margin="{TemplateBinding BorderThickness}"</c>.</summary>
-    private sealed class ThicknessAsMargin : Avalonia.Data.Converters.IValueConverter
-    {
-        public static readonly ThicknessAsMargin Instance = new();
-
-        public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture) =>
-            value is Thickness thickness ? thickness : default(Thickness);
-
-        public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture) =>
-            throw new NotSupportedException();
-    }
 }
 
 /// <summary>
@@ -188,7 +76,7 @@ internal sealed class WriterTextBox : TextBox
 /// 바이트까지 같은 배치). 모양이 있으면 같은 글 · 같은 폭 · 같은 줄 높이로 짓되, 구간마다 굵기 · 기울임 · 취소선 · 글자색 · 바탕색 · 글꼴 · 크기를 넘긴다.
 /// 고른 글자의 글자색(테마가 주면)과 조합 중인 글자의 밑줄은 바탕과 같이 위에 얹는다. 커서 · 고르기 · 누른 자리는 이 배치를 그대로 쓰므로 굵은 글자도 맞는다.
 /// </summary>
-internal sealed class WriterTextPresenter : TextPresenter
+public sealed class WriterTextPresenter : TextPresenter
 {
     private IReadOnlyList<BoxLook> _looks = [];
 

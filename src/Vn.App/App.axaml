@@ -1,5 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:Vn.App.Views"
              x:Class="Vn.App.App"
              RequestedThemeVariant="Light">
              <!-- 늘 밝게 (2026-11-18 소유자 · docs/work-orders/light-theme-orders.md) — 판(카드 · 미니맵 · 선택지 칸)의 색은 코드에 밝게
@@ -27,6 +28,102 @@
                     <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#FFFFFFFF" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+
+            <!-- 카드 글 칸(작가용 글 서식 · docs/plans/writer-formatting.md) — Fluent 테마의 TextBox 틀(Avalonia 12.1.1 Themes.Fluent/Controls/TextBox.xaml)을
+                 그대로 옮기고 글자를 놓는 겹(PART_TextPresenter)만 서식을 그리는 WriterTextPresenter로 바꿨다. 모양 · 마우스 올림 · 초점은 바탕 틀에서 이어 받는다.
+                 ⚠ 틀을 코드로 지었을 때(2026-11-22 첫 판) 윈도에서 Enter 뒤 첫 한글을 칠 때 칸이 맨 위로 스크롤됐다(dev에는 없음) — 테마 틀과 바이트까지 같게 둔다.
+                 Avalonia를 올리면 새 판의 TextBox.xaml과 견줘 다시 옮긴다. -->
+            <ControlTheme x:Key="WriterTextBoxTheme" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                <Setter Property="Template">
+                  <ControlTemplate>
+                    <DataValidationErrors>
+                      <Panel>
+                        <Border
+                        Name="PART_BorderElement"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        MinWidth="{TemplateBinding MinWidth}"
+                        MinHeight="{TemplateBinding MinHeight}">
+                        </Border>
+
+                        <Border
+                        Margin="{TemplateBinding BorderThickness}">
+                          <Grid ColumnDefinitions="Auto,*,Auto" >
+                            <ContentPresenter Grid.Column="0"
+                                              Grid.ColumnSpan="1"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Content="{TemplateBinding InnerLeftContent}"/>
+                            <DockPanel x:Name="PART_InnerDockPanel"
+                                       Grid.Column="1"
+                                       Grid.ColumnSpan="1"
+                                       Margin="{TemplateBinding Padding}">
+                              <TextBlock Name="PART_FloatingPlaceholder"
+                                         Foreground="{TemplateBinding PlaceholderForeground}"
+                                         IsVisible="False"
+                                         Text="{TemplateBinding PlaceholderText}"
+                                         DockPanel.Dock="Top" />
+
+                              <ScrollViewer Name="PART_ScrollViewer"
+                                            HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                            VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}"
+                                            IsScrollChainingEnabled="{TemplateBinding (ScrollViewer.IsScrollChainingEnabled)}"
+                                            AllowAutoHide="{TemplateBinding (ScrollViewer.AllowAutoHide)}"
+                                            BringIntoViewOnFocusChange="{TemplateBinding (ScrollViewer.BringIntoViewOnFocusChange)}">
+                                <Panel>
+                                  <TextBlock Name="PART_Placeholder"
+                                             Foreground="{TemplateBinding PlaceholderForeground}"
+                                             Opacity="{DynamicResource TextControlPlaceholderOpacity}"
+                                             Text="{TemplateBinding PlaceholderText}"
+                                             TextAlignment="{TemplateBinding TextAlignment}"
+                                             TextWrapping="{TemplateBinding TextWrapping}"
+                                             HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                    <TextBlock.IsVisible>
+                                      <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding ElementName="PART_TextPresenter" Path="PreeditText" Converter="{x:Static StringConverters.IsNullOrEmpty}"/>
+                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Text" Converter="{x:Static StringConverters.IsNullOrEmpty}"/>
+                                      </MultiBinding>
+                                    </TextBlock.IsVisible>
+                                  </TextBlock>
+
+                                  <views:WriterTextPresenter Name="PART_TextPresenter"
+                                                 Text="{TemplateBinding Text, Mode=TwoWay}"
+                                                 CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
+                                                 CaretIndex="{TemplateBinding CaretIndex}"
+                                                 SelectionStart="{TemplateBinding SelectionStart}"
+                                                 SelectionEnd="{TemplateBinding SelectionEnd}"
+                                                 TextAlignment="{TemplateBinding TextAlignment}"
+                                                 TextWrapping="{TemplateBinding TextWrapping}"
+                                                 LineHeight="{TemplateBinding LineHeight}"
+                                                 LetterSpacing="{TemplateBinding LetterSpacing}"
+                                                 PasswordChar="{TemplateBinding PasswordChar}"
+                                                 RevealPassword="{TemplateBinding RevealPassword}"
+                                                 SelectionBrush="{TemplateBinding SelectionBrush}"
+                                                 SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
+                                                 CaretBrush="{TemplateBinding CaretBrush}"
+                                                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                 VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Panel>
+                                <ScrollViewer.Styles>
+                                  <Style Selector="ScrollContentPresenter#PART_ContentPresenter">
+                                    <Setter Property="Cursor" Value="IBeam" />
+                                  </Style>
+                                </ScrollViewer.Styles>
+                              </ScrollViewer>
+                            </DockPanel>
+                            <ContentPresenter Grid.Column="2"
+                                              Grid.ColumnSpan="1"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Content="{TemplateBinding InnerRightContent}"/>
+                          </Grid>
+                        </Border>
+                      </Panel>
+                    </DataValidationErrors>
+                  </ControlTemplate>
+                </Setter>
+            </ControlTheme>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

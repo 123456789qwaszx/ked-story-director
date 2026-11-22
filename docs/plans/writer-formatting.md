@@ -48,7 +48,7 @@
 | 편집 | `Editing/ProjectEditor.WriterMarks.cs` — `ApplyWriterStyle` · `SetWriterAlign` · 글이 바뀔 때의 자리 옮기기(`RebaseWriterMarks` — `ApplyScriptSync` · `SetScriptLineText` 안에서) |
 | 변경 알림 | `ProjectChangeKind.WriterMarks` + 그 카드 → `ProjectRefreshPlanner`의 `RefreshWriterMarks`(보통 · 되돌리기 두 갈래) → `MainWindow` → `GraphEditorView.RefreshWriterMarks`. `ChapterGraphView`는 이 알림에 다시 읽지 않는다(되돌리기는 읽는다) |
 | 칸 한 줄의 대사 자리 | `ScenarioTextParser.DialogueBodyRange`(파서와 한 벌의 규칙) · 칸의 줄 → 대본 줄은 `ScenarioLineIdentity.RowLineIds`(글 넣기와 같은 짝) |
-| 글 칸 | `Vn.App/Views/WriterTextBox.cs` — `WriterTextBox`(TextBox 그대로 · 틀은 Fluent TextBox 틀을 코드로 옮긴 것) · `WriterTextPresenter`(글자 배치) · `WriterPalette`(색 값) |
+| 글 칸 | `Vn.App/Views/WriterTextBox.cs` — `WriterTextBox`(TextBox 그대로 · 틀은 `App.axaml`의 `WriterTextBoxTheme` — Fluent TextBox 틀을 XAML 그대로 옮긴 것) · `WriterTextPresenter`(글자 배치) · `WriterPalette`(색 값) |
 | 꾸밈 · 도구 막대 | `Vn.App/Views/GraphEditorView.Writer.cs` · 자리는 `GraphEditorView.axaml`의 `WriterToolbar`(위쪽 줄 [삭제] 오른쪽) |
 | 시험 | `tests/Vn.Authoring.Tests/WriterMarksTests.cs` · `tests/Vn.App.Tests/WriterFormattingTests.cs` |
 
@@ -98,8 +98,10 @@
 글자 배치에 넘긴다. Avalonia가 조합 중인 글자에 밑줄을 긋는 바로 그 길이라, 커서 · 고르기 · 누른 자리 · 분기 점 높이 · 「글에 맞춤」이 서식 입은 배치를 그대로
 쓴다. 서식이 없는 칸은 바탕의 배치 그대로다.
 
-- 틀은 Fluent 테마의 TextBox 틀(Avalonia 12.1.1 `Themes.Fluent/Controls/TextBox.xaml`)을 코드로 옮긴 것이다 — 부분 이름(`PART_BorderElement` · `PART_ScrollViewer` ·
-  `PART_TextPresenter` …)을 지켜 테마의 모양이 그대로 붙는다. **Avalonia를 올리면 이 틀과 테마 틀을 견줘 본다.**
+- 틀은 `App.axaml`의 `WriterTextBoxTheme` — Fluent 테마의 TextBox 틀(Avalonia 12.1.1 `Themes.Fluent/Controls/TextBox.xaml`)을 **XAML 그대로** 옮기고 글자 겹만
+  `WriterTextPresenter`로 바꿨다(모양은 바탕 테마에서 이어 받는다). ⛔ 첫 판은 이 틀을 코드로 지었는데, 윈도에서 Enter 뒤 첫 한글을 칠 때 칸이 맨 위로
+  스크롤됐다(소유자 · 같은 동작이 dev에는 없었다 — 헤드리스에서는 재현되지 않는다). 그래서 테마 틀과 같게 둔다. **Avalonia를 올리면 새 판의 TextBox.xaml과 견줘
+  다시 옮긴다.** 도구 막대가 칸의 커서를 따라 상태를 맞추는 일도 칸의 입력 처리가 끝난 뒤로 미룬다(`RefreshFormatToolbarLater`).
 - 크기를 키운 글자가 있는 칸은 줄 높이(설정의 줄 간격 — 고정)를 가장 큰 글자의 비율로 칸 전체에서 키운다(줄마다 다른 높이는 TextBox 배치가 받지 않는다).
 - ⚠ **한글 굵게** — 주 글꼴(Inter)에 한글이 없어 한글은 대체 글꼴(맑은 고딕 · Noto Sans CJK)로 그려지는데, Avalonia는 바로 앞 구간이 쓴 대체 글꼴이 그 글자를
   그릴 수 있으면 그것을 다시 쓴다. 그대로 두면 보통 글 다음의 굵은 한글이 보통 굵기로, 굵은 글 다음의 보통 한글이 굵게 나온다. 한글은 앞 구간과 **문화권이

@@ -215,7 +215,29 @@ public partial class GraphEditorView
 
         _formatNodeId = nodeId;
         _formatSelection = selection;
-        RefreshFormatToolbar();
+        RefreshFormatToolbarLater();
+    }
+
+    /// <summary>도구 막대를 맞추는 일이 미뤄져 있는가 — 한 번만 돈다.</summary>
+    private bool _toolbarRefreshQueued;
+
+    /// <summary>
+    /// 칸이 커서 · 고른 범위를 옮길 때마다(글자를 칠 때마다) 도구 막대를 맞추는 것은 <b>칸의 입력 처리가 다 끝난 뒤</b>에 한 번만 한다 — 글 칸이 글자를 넣고
+    /// 커서를 옮기는 도중(한글 조합 포함)에 다른 컨트롤을 건드리지 않는다.
+    /// </summary>
+    private void RefreshFormatToolbarLater()
+    {
+        if (_toolbarRefreshQueued)
+        {
+            return;
+        }
+
+        _toolbarRefreshQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _toolbarRefreshQueued = false;
+            RefreshFormatToolbar();
+        }, DispatcherPriority.Background);
     }
 
     /// <summary>입힐 칸을 놓는다 — 판의 빈 곳 · 카드 머리를 눌렀다.</summary>
