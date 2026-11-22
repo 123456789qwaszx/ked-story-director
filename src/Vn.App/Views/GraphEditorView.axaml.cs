@@ -3360,6 +3360,10 @@ public partial class GraphEditorView : UserControl
     /// 「글에 맞춤」이 줄 크기 — 카드 폭 · 글 칸 높이(기본과 끝 사이). 글 칸의 글(넣지 않은 글도)을 지금 글꼴 · 글자 크기 · 줄 간격(<see cref="ScriptFont"/>)으로
     /// 잰다 — 폭은 가장 긴 줄이 꺾이지 않게, 높이는 그 폭에서 모든 줄이 스크롤 없이 보이게. 높이는 실제로 배치해 잰다 — 재는 동안 카드를 그 폭 · 끝 높이로
     /// 잠시 두었다가 <b>원래대로 되돌린다</b>(재기만 한다 — <see cref="RefreshFitIcon"/>도 쓴다). 칸을 이루는 몫을 못 찾으면(아직 배치 전) null.
+    ///
+    /// ⚠ 칸 안의 스크롤 자리도 되돌린다(usability UX39) — 칸을 끝 높이로 키우면 글이 다 들어가 스크롤이 맨 위로 깎이고, 크기만 되돌려서는 깎인 자리가
+    /// 돌아오지 않는다. ⛔ 그 전에는 크기를 정한 카드에서 쓰다 줄이 늘 때마다(카드를 새로 지으며 이 재기를 부른다) 쓰던 칸이 맨 위로 튀어 다음 글자를
+    /// 칠 때까지 거기 있었다.
     /// </summary>
     private (double Width, double Height)? FitSizeOf(NodeCard card)
     {
@@ -3396,6 +3400,7 @@ public partial class GraphEditorView : UserControl
         // 재는 동안은 칸을 끝까지 키워 둔다 — 글이 넘쳐 스크롤 막대가 서면 그만큼 좁아져 줄이 꺾인 채로 잰다.
         double shownWidth = card.Visual.Width;
         double shownHeight = box.Height;
+        Vector shownScroll = scroll.Offset;
         card.Visual.Width = width;
         box.Height = MaxWritingHeight;
         card.Visual.UpdateLayout();
@@ -3407,6 +3412,7 @@ public partial class GraphEditorView : UserControl
         card.Visual.Width = shownWidth;
         box.Height = shownHeight;
         card.Visual.UpdateLayout();
+        scroll.Offset = shownScroll;
 
         return (width, height);
     }
@@ -4165,8 +4171,8 @@ public partial class GraphEditorView : UserControl
 
             if (live)
             {
-                // 쓰는 중에는 재지 않는다(재느라 칸을 잠시 키우면 쓰던 칸의 스크롤이 튄다) — 글이 바뀌었으니 「글에 맞춤」으로 둔다. 눌렀을 때는 늘
-                // 새로 재므로 그림이 틀려도 하는 일은 맞다(UX33).
+                // 쓰는 중에는 재지 않는다(재기는 칸을 잠시 키워 배치를 두 번 돈다 — ⛔ 그때 쓰던 칸의 스크롤이 맨 위로 깎이던 것은 UX39에서 고쳤다) —
+                // 글이 바뀌었으니 「글에 맞춤」으로 둔다. 눌렀을 때는 늘 새로 재므로 그림이 틀려도 하는 일은 맞다(UX33).
                 if (FindCard(nodeId) is { } typing)
                 {
                     ShowFitIcon(typing, fitted: false);
@@ -4519,8 +4525,8 @@ public partial class GraphEditorView : UserControl
     private static bool InWritingBox(object? source) =>
         (source as Visual)?.FindAncestorOfType<TextBox>(includeSelf: true) is not null;
 
-    /// <summary>판을 다시 그리기 전, 초점이 있던 글 칸 — 노드 · 글 · 커서. 넣지 않은 글이면 <see cref="Dirty"/>다.</summary>
-    private sealed record WritingFocus(string NodeId, string Text, int SelectionStart, int SelectionEnd, bool Dirty);
+    /// <summary>판을 다시 그리기 전, 초점이 있던 글 칸 — 노드 · 글 · 커서 · 칸 안의 스크롤 자리. 넣지 않은 글이면 <see cref="Dirty"/>다.</summary>
+    private sealed record WritingFocus(string NodeId, string Text, int SelectionStart, int SelectionEnd, bool Dirty, Vector Scroll);
 
     private WritingFocus? CaptureWritingFocus()
     {
@@ -4535,12 +4541,21 @@ public partial class GraphEditorView : UserControl
 
         return new WritingFocus(
             nodeId, text, box.SelectionStart, box.SelectionEnd,
-            Dirty: !string.Equals(text, _writingShown.GetValueOrDefault(nodeId), StringComparison.Ordinal));
+            Dirty: !string.Equals(text, _writingShown.GetValueOrDefault(nodeId), StringComparison.Ordinal),
+            Scroll: WritingScrollOf(box)?.Offset ?? default);
     }
+
+    /// <summary>글 칸 안의 스크롤 — TextBox 틀의 <c>PART_ScrollViewer</c>다. 아직 틀이 서지 않았으면 null.</summary>
+    private static ScrollViewer? WritingScrollOf(TextBox box) =>
+        box.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
 
     /// <summary>
     /// 다시 그린 뒤 그 노드의 새 칸으로 초점과 커서를 돌려준다. 넣지 않은 글이 있었으면 그 글도 옮긴다 —
     /// 마지막으로 보인 글은 새 모델의 것이라, 다음 초점 이탈이 그 글을 넣는다.
+    ///
+    /// 칸 안의 스크롤 자리도 옮긴다(usability UX39) — 새 칸은 맨 위에서 시작하고, Avalonia가 커서를 보이려고 미뤄 두는 스크롤은 한 번 그린 뒤에야
+    /// 돈다. 옮기지 않으면 쓰다 줄이 늘 때마다(카드를 새로 짓는다) 칸이 맨 위를 한 번 비춘다. 아직 배치 전인 칸(판을 통째로 다시 지었다)은 지금
+    /// 배치해 잰다 — 글 길이를 모르는 칸에서는 스크롤 자리가 맨 위로 깎인다.
     /// </summary>
     private void RestoreWritingFocus(WritingFocus? focus)
     {
@@ -4558,6 +4573,16 @@ public partial class GraphEditorView : UserControl
         box.Focus();
         box.SelectionStart = Math.Clamp(focus.SelectionStart, 0, length);
         box.SelectionEnd = Math.Clamp(focus.SelectionEnd, 0, length);
+
+        if (focus.Scroll != default)
+        {
+            box.UpdateLayout();
+
+            if (WritingScrollOf(box) is { } scroll)
+            {
+                scroll.Offset = focus.Scroll;
+            }
+        }
     }
 
     private FileProxyVisual BuildFileProxy(CollapsedFileProjection file)
