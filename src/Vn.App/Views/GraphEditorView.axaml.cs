@@ -547,6 +547,7 @@ public partial class GraphEditorView : UserControl
             }
 
             _connectingFrom = null;
+            ClearChoiceDropFeedback();
             SetHint(null);
         }
 
@@ -2024,9 +2025,13 @@ public partial class GraphEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Cursor = new Cursor(StandardCursorType.Hand),
             [ToolTip.TipProperty] = slot.IsEmpty
-                ? live ? "끌어서 다음 에피소드에 놓으세요." : "선택지 문구를 적으면 끌 수 있습니다."
-                : "이어져 있습니다. 빈 곳에 끌어다 놓으면 끊깁니다."
+                ? live ? "끌어서 같은 챕터의 에피소드 카드에 놓으면 잇습니다." : "선택지 문구를 적으면 끌 수 있습니다."
+                : "이어져 있습니다. 끌어서 다른 에피소드 카드에 놓으면 옮겨 잇고, 빈 곳에 놓으면 끊깁니다."
         };
+
+        // 포인터를 올리면 점이 커지고 꼬리표가 할 수 있는 일을 말한다 — 풍선은 늦게 뜬다(2026-11-22 소유자 · usability UX36).
+        knob.PointerEntered += (_, _) => UiGuard.Run(_session, "선택지", () => HoverKnob(knob, slot, live));
+        knob.PointerExited += (_, _) => UiGuard.Run(_session, "선택지", () => LeaveKnob(knob));
 
         // 빈 칸(자동 자리가 아니고 문구가 없다)은 <b>적는 칸 모양</b>이다(2026-11-18 소유자 — 「무엇을 입력할 수 있다는 걸 모르는 것 같습니다」):
         // 네모 칸에 회색 「빈 선택지」. 폭은 문구 칸(SlotEditor)의 가장 좁은 폭과 같아 누르면 그 자리에서 칸이 열린다. ⛔ 그 전의 「＋ 선택지」는
@@ -2206,7 +2211,9 @@ public partial class GraphEditorView : UserControl
         };
 
         GraphCanvas.Children.Add(_connectingLine);
-        SetHint("이을 에피소드 노드 위에서 놓으세요. 빈 곳에 놓으면 길이 걷힙니다.");
+
+        // 놓으면 무엇이 되는지를 끄는 동안 보인다 — 꼬리표 · 선의 색 · 아래 띠 · 놓을 카드의 테두리(usability UX36 · ChoiceDrop).
+        BeginChoiceDropFeedback(slot, nodeId, start);
     }
 
     private void DrawRailBranch(
@@ -6600,6 +6607,13 @@ public partial class GraphEditorView : UserControl
         if (_connectingLine is not null)
         {
             _connectingLine.EndPoint = position;
+
+            // 선택지 점이면 포인터 아래를 판정해 보인다(usability UX36). 분기점은 그대로다.
+            if (_connectingFrom?.ChoicePort is { } dragging)
+            {
+                ShowChoiceDrop(dragging, _connectingFrom.NodeId, position);
+            }
+
             return;
         }
 
@@ -6706,6 +6720,7 @@ public partial class GraphEditorView : UserControl
 
         GraphOutputPortProjection port = _connectingFrom;
         _connectingFrom = null;
+        ClearChoiceDropFeedback();
 
         if (_connectingLine is not null)
         {
@@ -6842,6 +6857,14 @@ public partial class GraphEditorView : UserControl
         if (string.Equals(choice.ToEpisodeId, episodeId, StringComparison.Ordinal))
         {
             return;   // 이어져 있던 그 카드에 도로 놓았다 — 바뀐 것이 없다(§5-8)
+        }
+
+        // 장면 입구를 둘로 만드는 잇기는 받지 않는다 — 검증 오류가 날 길을 손짓 하나로 만들지 않는다(2026-11-22 소유자 · usability UX36).
+        // 끄는 동안의 판정(JudgeChoiceDrop)과 같은 것을 부른다.
+        if (SceneEntryRefusal(choice, chapterId, episodeId) is { } refusal)
+        {
+            _session.SetStatus(refusal);
+            return;
         }
 
         if (!choice.IsEmpty)

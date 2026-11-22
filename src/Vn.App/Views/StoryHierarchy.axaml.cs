@@ -1140,8 +1140,100 @@ public partial class StoryHierarchy : UserControl
     /// <summary>끌어다 놓았다 — 에피소드를 다른 장면에. 셸이 그 에피소드의 장면ID를 바꾼다.</summary>
     internal event Action<HierarchyRow, HierarchyRow>? Dropped;
 
+    /// <summary>
+    /// 받을 자리(<see cref="Accepts"/>)인데도 옮기지 못하는 까닭 — 옮겨도 되면 null. 셸이 건다(<c>SceneMoveGuard</c> — 옮기면 장면 입구가
+    /// 둘이 되는 이동 · 2026-11-22 소유자 · usability UX37). 없으면 받을 자리는 모두 받는다.
+    /// </summary>
+    internal Func<HierarchyRow, HierarchyRow, string?>? MoveRefusal { get; set; }
+
+    /// <summary>못 옮기는 자리 위를 지나거나 거기 놓았다 — 까닭. 셸이 상태줄에도 말한다.</summary>
+    internal event Action<string>? MoveRefused;
+
+    /// <summary>테스트의 손잡이 — 지금 떠 있는 「못 옮기는 까닭」 풍선의 글. 없으면 null.</summary>
+    internal string? RefusalTip => _refusalTipOn is null ? null : _refusalTipText;
+
+    /// <summary>까닭 풍선을 띄워 둔 줄 단추.</summary>
+    private Button? _refusalTipOn;
+    private string? _refusalTipText;
+
     /// <summary>끌고 있는 줄.</summary>
     private string? _dragKey;
+
+    // ── 끄는 잔상 (2026-11-22 소유자 — 「마야 · 유니티처럼 반투명한 잔상을 포인터에」 · usability UX38) ──
+    //
+    // 누른 채 조금(DragThreshold) 움직이면 그 줄의 이름을 든 반투명 딱지가 포인터를 따라다니고 끌던 줄은 흐려진다 — 「지금 끄는 중」이 보인다.
+    // 딱지의 테두리가 놓을 자리를 말한다: 받는 장면 줄 위면 파랑, 못 받는 줄(장면 입구가 둘이 된다) 위면 빨강, 그 밖은 회색.
+    // 창의 덧겹(OverlayLayer)에 서서 하이어아키 밖으로 나가도 잘리지 않고, 히트를 받지 않는다. 놓거나 포인터를 잃으면 걷는다.
+
+    /// <summary>이만큼 움직여야 끌기다 — 그냥 누르기(고르기)에 잔상이 번쩍이지 않게.</summary>
+    private const double DragThreshold = 4;
+
+    private Point _dragStart;
+    private Border? _dragGhost;
+    private TextBlock? _dragGhostText;
+
+    /// <summary>테스트의 손잡이 — 지금 포인터를 따라다니는 잔상의 글. 없으면 null.</summary>
+    internal string? DragGhostText => _dragGhost is null ? null : _dragGhostText?.Text;
+
+    /// <summary>테스트의 손잡이 — 잔상의 테두리 붓.</summary>
+    internal IBrush? DragGhostBorder => _dragGhost?.BorderBrush;
+
+    private static readonly IBrush GhostIdle = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF));
+    private static readonly IBrush GhostAccept = new SolidColorBrush(Color.FromRgb(0x3D, 0x7B, 0xD9));
+    private static readonly IBrush GhostRefuse = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+
+    /// <summary>끄는 동안 포인터를 따라간다 — 문턱을 넘으면 잔상을 세운다.</summary>
+    private void FollowGhost(HierarchyRow row, Avalonia.Input.PointerEventArgs args)
+    {
+        if (_dragGhost is null)
+        {
+            Point now = args.GetPosition(this);
+
+            if (Math.Abs(now.X - _dragStart.X) < DragThreshold && Math.Abs(now.Y - _dragStart.Y) < DragThreshold)
+            {
+                return;
+            }
+
+            if (Avalonia.Controls.Primitives.OverlayLayer.GetOverlayLayer(this) is not { } layer)
+            {
+                return;
+            }
+
+            _dragGhostText = new TextBlock { Text = row.Text, FontSize = 12, FontWeight = FontWeight.SemiBold };
+            _dragGhost = new Border
+            {
+                Child = _dragGhostText,
+                Padding = new Thickness(8, 3),
+                CornerRadius = new CornerRadius(4),
+                Background = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
+                BorderBrush = GhostIdle,
+                BorderThickness = new Thickness(1.5),
+                Opacity = 0.8,
+                IsHitTestVisible = false
+            };
+            layer.Children.Add(_dragGhost);
+            Paint();   // 끌던 줄을 흐리게
+        }
+
+        if (_dragGhost.Parent is Visual host)
+        {
+            Point at = args.GetPosition(host);
+            Canvas.SetLeft(_dragGhost, at.X + 12);
+            Canvas.SetTop(_dragGhost, at.Y + 10);
+        }
+    }
+
+    private void HideGhost()
+    {
+        if (_dragGhost is null)
+        {
+            return;
+        }
+
+        (_dragGhost.Parent as Panel)?.Children.Remove(_dragGhost);
+        _dragGhost = null;
+        _dragGhostText = null;
+    }
 
     /// <summary>끌고 지나가는 중인 줄 — 받아 줄 자리면 테두리가 뜬다.</summary>
     private string? _hoverKey;
@@ -1176,6 +1268,7 @@ public partial class StoryHierarchy : UserControl
         HierarchyRow? source = DragSource();
         _dragKey = null;
         _hoverKey = null;
+        HideGhost();
 
         if (source is null || target is null || !Accepts(source, target))
         {
@@ -1183,6 +1276,15 @@ public partial class StoryHierarchy : UserControl
             return;
         }
 
+        // 옮기면 장면 입구가 둘이 되는 자리 — 옮기지 않고 까닭을 말한다(끄는 동안 붉은 테두리와 풍선으로 미리 말한 그대로).
+        if (MoveRefusal?.Invoke(source, target) is { } refusal)
+        {
+            Paint();
+            MoveRefused?.Invoke(refusal);
+            return;
+        }
+
+        Paint();   // 흐려 둔 끌던 줄을 되돌린다 — 옮긴 뒤 줄이 다시 서지 않는 경우에도
         Dropped?.Invoke(source, target);
     }
 
@@ -1211,6 +1313,8 @@ public partial class StoryHierarchy : UserControl
                 ? row.Key
                 : null;
             _hoverKey = null;
+            _dragStart = args.GetPosition(this);
+            HideGhost();
         }, both, handledEventsToo: true);
 
         button.AddHandler(PointerMovedEvent, (_, args) => UiGuard.Run(null, "옮기기", () =>
@@ -1219,6 +1323,8 @@ public partial class StoryHierarchy : UserControl
             {
                 return;
             }
+
+            FollowGhost(row, args);
 
             string? wanted = RowAt(args.GetPosition(RowHost))?.Key;
 
@@ -1236,12 +1342,29 @@ public partial class StoryHierarchy : UserControl
                 Release(RowAt(args.GetPosition(RowHost)) ?? row);
             }
         }), both, handledEventsToo: true);
+
+        // 놓음을 못 받고 포인터를 잃었다(창을 떠났다) — 잔상이 화면에 남지 않게 걷고 끌기를 그만둔다.
+        button.PointerCaptureLost += (_, _) => UiGuard.Run(null, "옮기기", () =>
+        {
+            if (_dragGhost is null)
+            {
+                return;
+            }
+
+            _dragKey = null;
+            _hoverKey = null;
+            HideGhost();
+            Paint();
+        });
     }
 
     /// <summary>고른 줄만 다시 칠한다 — 줄을 다시 세우지 않는다.</summary>
     private void Paint()
     {
         string? selected = Selection?.Key;
+        Button? refusedOn = null;
+        string? refusedWhy = null;
+        bool accepting = false;
 
         for (int index = 0; index < _rows.Count && index < RowHost.Children.Count; index++)
         {
@@ -1254,9 +1377,66 @@ public partial class StoryHierarchy : UserControl
                 // 끌고 지나가는 동안 받아 줄 자리에 테두리 — 아무 표시가 없으면 놓아도 되는지 모른 채 손을 놓는다.
                 bool landing = string.Equals(_rows[index].Key, _hoverKey, StringComparison.Ordinal) &&
                                DragSource() is { } dragged && Accepts(dragged, _rows[index]);
+
+                // 받을 자리지만 옮기면 장면 입구가 둘이 된다 — 붉은 테두리, 까닭은 풍선으로(아래).
+                string? why = landing ? MoveRefusal?.Invoke(DragSource()!, _rows[index]) : null;
+
+                if (why is not null)
+                {
+                    refusedOn = button;
+                    refusedWhy = why;
+                }
+
+                accepting |= landing && why is null;
+
+                // 끄는 중인 줄은 흐리게 — 잔상이 그 줄을 들고 나간 것처럼 보인다.
+                host.Opacity = _dragGhost is not null && string.Equals(_rows[index].Key, _dragKey, StringComparison.Ordinal) ? 0.4 : 1;
+
                 button.BorderThickness = new Thickness(landing ? 1 : 0);
-                button.BorderBrush = landing ? new SolidColorBrush(Color.FromArgb(220, 61, 123, 217)) : Brushes.Transparent;
+                button.BorderBrush = !landing
+                    ? Brushes.Transparent
+                    : why is null
+                        ? new SolidColorBrush(Color.FromArgb(220, 61, 123, 217))
+                        : new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
             }
         }
+
+        if (_dragGhost is not null)
+        {
+            _dragGhost.BorderBrush = refusedWhy is not null ? GhostRefuse : accepting ? GhostAccept : GhostIdle;
+        }
+
+        ShowRefusalTip(refusedOn, refusedWhy);
+    }
+
+    /// <summary>
+    /// 못 옮기는 까닭을 그 장면 줄 옆에 풍선으로 띄운다 — 붉은 테두리만으로는 왜인지 모른다(2026-11-22 소유자 — 「그냥 안 되게 하기보다 왜 안
+    /// 되는지 설명을」). 자리를 떠나거나 놓으면 걷는다. 줄 단추에는 본디 풍선이 없다.
+    /// </summary>
+    private void ShowRefusalTip(Button? on, string? why)
+    {
+        if (ReferenceEquals(on, _refusalTipOn) && string.Equals(why, _refusalTipText, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (_refusalTipOn is { } old)
+        {
+            ToolTip.SetIsOpen(old, false);
+            ToolTip.SetTip(old, null);
+        }
+
+        _refusalTipOn = on;
+        _refusalTipText = why;
+
+        if (on is null || why is null)
+        {
+            return;
+        }
+
+        ToolTip.SetTip(on, new TextBlock { Text = "✕ " + why, TextWrapping = TextWrapping.Wrap, MaxWidth = 380, FontSize = 12 });
+        ToolTip.SetPlacement(on, PlacementMode.Right);
+        ToolTip.SetIsOpen(on, true);
+        MoveRefused?.Invoke(why);
     }
 }

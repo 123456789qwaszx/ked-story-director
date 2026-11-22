@@ -175,6 +175,16 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// 그 에피소드를 그 장면 줄로 옮기지 못하는 까닭 — 옮기면 옛 장면이나 새 장면의 입구가 늘어 둘 이상이 된다(<see cref="SceneMoveGuard"/>).
+    /// 옮겨도 되면 null.
+    /// </summary>
+    private string? HierarchyMoveRefusal(HierarchyRow source, HierarchyRow target) =>
+        source.ChapterId is { } chapterId && source.EpisodeId is { } episodeId && target.SceneId is { } sceneId &&
+        _session.Editor.FindChapter(chapterId) is { } chapter
+            ? SceneMoveGuard.Refusal(chapter, episodeId, sceneId)
+            : null;
+
+    /// <summary>
     /// 에피소드를 끌어 놓았다 — 다른 장면 줄이면 그 장면으로(장면ID가 그 장면의 것이 된다). 되돌리기 한 칸. 장면 줄에만 놓는다
     /// (<see cref="StoryHierarchy.Accepts"/>).
     /// </summary>

@@ -219,6 +219,10 @@ public partial class MainWindow
                 UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(tree, row, name));
             tree.Dropped += (source, target) =>
                 UiGuard.Run(_session, "장면 옮기기", () => OnHierarchyDropped(source, target));
+
+            // 옮기면 장면 입구가 둘이 되는 이동은 받지 않고 까닭을 말한다(usability UX37 — SceneMoveGuard). 끄는 동안과 놓을 때 같은 판정이다.
+            tree.MoveRefusal = HierarchyMoveRefusal;
+            tree.MoveRefused += reason => UiGuard.Run(_session, "장면 옮기기", () => _session.SetStatus(reason));
         }
 
         // 카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다.
