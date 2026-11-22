@@ -656,7 +656,15 @@ public partial class ChapterGraphView : UserControl
 
         _session = session;
         _centerSheet = true;   // 새 세션의 판 — 가운데에 놓는다
-        _sessionChanged = (_, _) => QueueReload();
+        // 작가용 글 서식만 바뀐 것은 다시 읽지 않는다 — [구성]에 보이지 않고 내보내기에도 나가지 않는다(writer-formatting). 되돌리기 · 다시 실행은 프로젝트가
+        // 통째로 새것이라 다시 읽는다.
+        _sessionChanged = (_, args) =>
+        {
+            if (args.Kind != Vn.Authoring.Editing.ProjectChangeKind.WriterMarks || args.FromHistory)
+            {
+                QueueReload();
+            }
+        };
         session.Changed += _sessionChanged;
 
         // 「빈 선택지 숨기기」 — [구성] 판의 설정이다(앱 설정에 기억한다). 체크를 맞추고 판을 다시 그린다.
@@ -920,8 +928,13 @@ public partial class ChapterGraphView : UserControl
         }
     }
 
+    /// <summary>다시 읽은 횟수 — 시험이 「서식만 바꾸면 [구성]을 다시 읽지 않는다」를 본다(writer-formatting).</summary>
+    internal int ReloadCount { get; private set; }
+
     private void Reload()
     {
+        ReloadCount++;
+
         // 판은 프로젝트에서 온다 — 파일을 읽지 않는다.
         _entries.Clear();
         _entries.AddRange(ChapterEntries());

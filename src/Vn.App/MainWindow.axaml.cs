@@ -347,6 +347,11 @@ public partial class MainWindow : Window
                 // 챕터 조건만 — 분기 카드의 조건 표만 다시 단다(usability UX16).
                 Graph.RefreshBranchConditions();
             }
+            else if (plan.RefreshWriterMarks)
+            {
+                // 작가용 글 서식만 — 그 카드의 글 칸 꾸밈만 다시 입힌다(writer-formatting).
+                Graph.RefreshWriterMarks(e.NodeId);
+            }
             else if (plan.RefreshSceneFrames)
             {
                 // 장면 이름표의 「메모」 표시만 — 판을 다시 짓지 않는다(에피소드 지시 · usability UX7).

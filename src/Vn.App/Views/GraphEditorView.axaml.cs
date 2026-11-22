@@ -580,6 +580,7 @@ public partial class GraphEditorView : UserControl
     public GraphEditorView()
     {
         InitializeComponent();
+        BuildFormatToolbar();
 
         // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
@@ -667,6 +668,15 @@ public partial class GraphEditorView : UserControl
         // 단추가 <b>무엇을 지울지</b>는 고른 것에 달렸다 — 고를 때마다 이름을 맞춘다.
         session.SelectionChanged += (_, _) =>
             UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
+
+        // 다른 것을 고르면(하이어아키 · 다른 카드) 서식 도구 막대가 입힐 칸을 놓는다 — 고른 카드의 글 칸에 초점이 오면 다시 잡는다(writer-formatting).
+        session.SelectionChanged += (_, _) => UiGuard.Run(_session, "서식 칸 놓기", () =>
+        {
+            if (_formatNodeId is not null && !string.Equals(_session?.SelectedNodeId, _formatNodeId, StringComparison.Ordinal))
+            {
+                ReleaseFormatTarget();
+            }
+        });
 
         // 카드를 고르면 고른 선은 놓는다 — 인스펙터는 그 카드를 보인다(셸이 선택을 보고 맞춘다).
         session.SelectionChanged += (_, _) => UiGuard.Run(_session, "선 놓기", () =>
@@ -3374,6 +3384,12 @@ public partial class GraphEditorView : UserControl
         // 카드 폭 − 글이 놓이는 폭. 지금 글이 넘쳐 세로 스크롤 막대가 자리를 먹었으면 그 몫은 뺀다 — 맞춘 뒤에는 막대가 없다(빼지 않으면 다시
         // 누를 때마다 폭이 달라진다).
         double around = card.Visual.Bounds.Width - (presenter.Bounds.Width + (scroll.Bounds.Width - scroll.Viewport.Width));
+        // 서식(굵게 · 크기 · 글꼴)이 든 칸은 그 모양으로 잰 가장 긴 줄이다(writer-formatting).
+        if (box is WriterTextBox { Presenter: { Looks.Count: > 0 } writer })
+        {
+            longest = Math.Max(longest, writer.UnwrappedWidth());
+        }
+
         double width = Math.Clamp(Math.Ceiling(longest + around + FitSlack), CardWidth, MaxCardWidth);
 
         // 높이 — 그 폭에서 실제로 배치된 글의 높이(글 자리가 칸을 채워 늘어나므로 그 자리가 아니라 배치된 줄들의 높이) + 칸의 위아래 몫.
@@ -3983,7 +3999,8 @@ public partial class GraphEditorView : UserControl
         _writingShown[nodeId] = shown;
         _writingLayouts[nodeId] = layout;
 
-        var box = new TextBox
+        // 작가용 글 서식을 그리는 글 칸(writer-formatting) — 입력 · 커서 · 한글 조합은 TextBox 그대로이고 글자를 놓는 겹만 서식을 입힌다.
+        var box = new WriterTextBox
         {
             Text = shown,
             AcceptsReturn = true,
@@ -4000,12 +4017,24 @@ public partial class GraphEditorView : UserControl
         // 배치로 그 대사 높이를 재므로(MeasureLineAnchors) 어느 줄 간격에도 따라간다 — 줄 간격을 아주 좁히면 이웃 대사의 분기 점이 맞닿을 수 있다.
         ScriptFont.Apply(box);
         _writingBoxes[nodeId] = box;
+        UpdateLooks(nodeId, box);
 
         box.GotFocus += (_, _) =>
         {
             if (!string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal))
             {
                 _session?.Select(nodeId);
+            }
+
+            // 서식 도구 막대가 입힐 칸이다(writer-formatting).
+            TrackFormatTarget(nodeId, box);
+        };
+
+        box.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == TextBox.SelectionStartProperty || args.Property == TextBox.SelectionEndProperty)
+            {
+                TrackFormatTarget(nodeId, box);
             }
         };
 
@@ -4038,6 +4067,9 @@ public partial class GraphEditorView : UserControl
                 _liveWriting.Stop();
                 _liveWriting.Start();
             }
+
+            // 서식은 쓰는 대로 같은 글자를 따라간다 — 넣을 때와 같은 셈으로 칸의 글에 다시 놓는다(writer-formatting).
+            UpdateLooks(nodeId, box);
         };
 
         box.KeyDown += (_, args) =>
@@ -4422,6 +4454,7 @@ public partial class GraphEditorView : UserControl
         _writingShown[nodeId] = layout.Text;
         _writingLayouts[nodeId] = layout;
         box.Text = layout.Text;
+        UpdateLooks(nodeId, box);   // 글이 그대로여도 서식은 되돌렸을 수 있다(writer-formatting)
 
         // 글이 바뀌었으면 꼭 맞던 카드도 더는 꼭 맞지 않을 수 있다 — 단추 그림을 다시 잰다(UX33).
         if (FindCard(nodeId) is { } card)
@@ -4441,6 +4474,9 @@ public partial class GraphEditorView : UserControl
         {
             WritingFocusSink.Focus();
         }
+
+        // 서식 도구 막대도 놓는다 — 입힐 글 칸이 없다(writer-formatting).
+        ReleaseFormatTarget();
 
         // 열린 선택지 문구 칸도 딴 데를 누르면 닫는다 — 빈 판 · 카드는 초점을 받지 않아 칸이 초점을 쥔 채 남는다.
         FinishSlotLater();

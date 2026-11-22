@@ -114,7 +114,7 @@ python3 tools/make-app-icons.py
 | [`ORIENTATION.md`](ORIENTATION.md) | **처음 보는 사람의 지도.** 프로젝트 · 폴더 · 데이터 흐름 · 지뢰 · 읽는 순서 |
 | [`docs/design/two-graphs.md`](docs/design/two-graphs.md) | **지금 동작의 정본.** 두 그래프의 기능 · 사용자 동작 · 다시 쓸 때 지킬 것 · 7절의 결정 기록(D2부터 — 끝이 가장 새 것) |
 | [`docs/plans/legacy-cleanup.md`](docs/plans/legacy-cleanup.md) | 레거시 정리 L0~L8 — 걷은 것 · 남긴 것과 그 까닭 · 걷다가 찾은 결함 |
-| [`docs/plans/writer-formatting.md`](docs/plans/writer-formatting.md) | **계획(시작 전).** 작가용 글 서식 F0 ~ F3 — 게임에 나가지 않는 줄 형광펜 · 글자 서식의 설계 · 완료 조건 · 클라우드 작업 공간에서 빌드하는 법(부록 A) |
+| [`docs/plans/writer-formatting.md`](docs/plans/writer-formatting.md) | **만듦(가지 `writer-formatting` · 확인 대기).** 작가용 글 서식 — 게임에 나가지 않는 글꼴 · 크기 · 굵게 · 기울임 · 취소선 · 색 · 정렬의 설계 · 완료 조건 · 클라우드 작업 공간에서 빌드하는 법(부록 A) |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 코드 구조 — "이 기능은 어느 파일" |
 | [`docs/external-overview.md`](docs/external-overview.md) | **이력**(2026-09-17 기준). 외부 작업자용 책임 · 데이터 흐름 · 런타임 영향 |
 | [`docs/plans/PLAN.md`](docs/plans/PLAN.md) | **이력.** 런타임 정렬 R0~R5 순서 · 결정 지점 · 완료 기준 |

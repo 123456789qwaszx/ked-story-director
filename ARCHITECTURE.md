@@ -145,6 +145,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `ProjectEditor.Scripts.cs` | 대본 줄(`InsertScriptLine` · `RetireScriptLine` · `MoveScriptLine` · `SetScriptLineText`) · 카드 글 반영(`ApplyScenarioText` — 화자 가르기는 프로젝트의 화자 목록을 본다) |
 | `ProjectEditor.Speakers.cs` | 화자 목록(`AddSpeaker` · `RemoveSpeaker` · `SetSpeakerCharacterId`) · 화자 개명(`RenameSpeaker` — 목록과 이미 쓴 줄을 한 칸에) |
 | `ProjectEditor.Chapters.cs` | 챕터 · 에피소드(장면을 꼭 받는다 — 카드와 한 칸에 서고 함께 지워진다) · 간선(`AddEdge(before:)` — 줄 자리에 끼운다) · 조건 · 스탯(개명 · 삭제 — 그 챕터의 공급 노드만) |
+| `ProjectEditor.WriterMarks.cs` | 작가용 글 서식(`ApplyWriterStyle` · `SetWriterAlign`) — 대사 글 밖(`DialogueNode.WriterMarks`)에 서고 글이 바뀌면 같은 글자를 따라간다(`ApplyScriptSync` · `SetScriptLineText` 안에서). **내보내기가 읽지 않는다**(`docs/plans/writer-formatting.md`) |
 | `ProjectChangedEventArgs.cs` | 변경의 종류(`ProjectChangeKind`) — 화면이 무엇을 다시 그릴지(`Vn.App/Services/ProjectRefreshPlanner`)의 근거 |
 
 ### 3.7 `Vn.Authoring/Rendering` · `Results` — 평평한 글로 펴기
@@ -341,6 +342,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 분기 카드(집 · 검증) | `Chapters/ChapterBranchCards.cs` — 분기 카드(`DialogueNode.IsBranchCard`)는 에피소드가 아니라 증명(`ChapterReachabilityProver`, 간선만 — 런타임의 오라클) 밖이다. `HomesOf` = 분기 카드의 집(먼저 부르는 에피소드 — 장면 · Yarn 파일 · [구성] 칩이 같은 규칙), `Verify` = 분기점이 에피소드에(오류) · 아무도 안 부름 · 도달 불가에서만 불림(경고) · 줄 없음(오류) · Yarn 노드 이름 겹침(오류). 부르는 곳 `ChapterValidator.Validate`(프로젝트를 줄 때) |
 | [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs`(묶음: 이 프로젝트 · 내보내기 · 단축키 — 표 `Views/Shortcuts.cs` · 기타 — 미니맵 감추기 · 설명 간소화 · 휠로 판 옮기기) |
+| 작가용 글 서식 | 모델 · 셈 `Model/WriterMarks.cs`, 저장 `Serialization/WriterMarksJson.cs`(대사 노드의 `writerMarks` · `writerAlign`), 명령 `ProjectEditor.WriterMarks.cs`, 알림 `ProjectChangeKind.WriterMarks`, 글 칸 `App/Views/WriterTextBox.cs`(TextBox 그대로 — 글자 배치만), 도구 막대 `App/Views/GraphEditorView.Writer.cs`. 내보내기에 나가지 않는다 — `docs/plans/writer-formatting.md` |
 | 대사 Yarn(`exported/yarn/`) | 글 짓기 `Chapters/ChapterYarnExporter.cs`(타이틀은 `ChapterProgressionExporter.DialogueEntryIdOf`), 쓰기 · 낡은 파일 걷기 `ChapterExportService.ExportAll`, 컴파일 확인은 시험 `ChapterYarnExportTests`(앱은 컴파일러를 싣지 않는다) |
 
 **편집 · 저장 · 화면**

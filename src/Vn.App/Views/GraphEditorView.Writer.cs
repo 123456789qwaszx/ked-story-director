@@ -1,0 +1,643 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Threading;
+using Vn.App.Services;
+using Vn.Authoring.Model;
+using Vn.Authoring.Rendering;
+using Vn.Authoring.Script;
+
+namespace Vn.App.Views;
+
+/// <summary>
+/// <b>작가용 글 서식</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — [대본] 위쪽 줄의 서식 도구 막대와 카드 글 칸의 꾸밈.
+///
+/// <list type="bullet">
+/// <item><b>꾸밈</b> — 모델의 서식(<see cref="DialogueNode.WriterMarks"/> · 줄의 대사 글 기준)을 글 칸 좌표로 옮겨 <see cref="WriterTextBox.Looks"/>에 준다. 칸의 줄은
+/// 처음 보인 글과의 줄 짝(<see cref="ScenarioLineIdentity.RowLineIds"/>)으로 대본 줄에 잇고, 줄 안의 대사 글 자리는 파서와 같은 규칙
+/// (<see cref="ScenarioTextParser.DialogueBodyRange"/>)으로 잰다. 넣지 않은 글을 쓰는 동안에는 모델의 글에서 칸의 글로 자리를 옮겨(넣을 때와 같은 셈 —
+/// <see cref="WriterMarkMath.Rebase"/>) 쓰는 대로 따라간다.</item>
+/// <item><b>도구 막대</b> — 글꼴 · 크기 −/+ · 굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 정렬. 마지막으로 쓴 글 칸과 그 고른 범위에 입힌다. 단추는 초점을 받지 않고,
+/// 초점을 가져가는 것(글꼴 고르기 · 색 차림)을 쓴 뒤에는 그 칸에 초점과 고른 범위를 되돌린다. 넣지 않은 글이 있으면 먼저 넣는다(줄 신원이 서야 자리를 센다).</item>
+/// </list>
+/// 서식은 작가가 보기 위한 것이다 — 내보내기(대사 Yarn · 진행 JSON)에 나가지 않는다(WF-D1 · D2).
+/// </summary>
+public partial class GraphEditorView
+{
+    /// <summary>서식을 입힐 글 칸 — 마지막으로 초점을 쥔 카드 글 칸의 노드. 판의 빈 곳 · 카드 머리를 누르면 놓는다.</summary>
+    private string? _formatNodeId;
+
+    /// <summary>그 칸에서 마지막으로 고른 범위(글 칸 좌표) — 초점을 가져가는 도구를 쓰는 동안에도 붙들어 둔다.</summary>
+    private (int Start, int End) _formatSelection;
+
+    /// <summary>도구 막대의 상태를 맞추는 중 — 글꼴 고르기의 바뀜 알림을 사람의 고르기로 받지 않는다.</summary>
+    private bool _syncingToolbar;
+
+    private ToggleButton? _boldButton;
+    private ToggleButton? _italicButton;
+    private ToggleButton? _strikeButton;
+    private ComboBox? _fontBox;
+
+    /// <summary>글꼴 고르기의 목록 — 이 PC에 없는 글꼴이 서식에 들어 있으면(같이 쓰는 사람이 고른 것) 그 이름도 더해 보인다.</summary>
+    private List<string> _fontItems = new();
+    private TextBlock? _sizeText;
+    private Border? _colorBar;
+    private Border? _fillBar;
+    private readonly Dictionary<WriterAlign, ToggleButton> _alignButtons = new();
+    private readonly List<Control> _formatControls = new();
+
+    /// <summary>글꼴 고르기의 첫 칸 — 설정의 「대본 글 칸」 글꼴로 되돌린다.</summary>
+    private const string DefaultFontItem = "기본 글꼴";
+
+    /// <summary>시험이 본다 — 서식 도구 막대가 켜져 있는가(입힐 글 칸이 있는가).</summary>
+    internal bool FormatToolbarEnabled => _formatNodeId is not null;
+
+    // ── 꾸밈 ──────────────────────────────────────────
+
+    /// <summary>
+    /// 그 카드(모르면 모든 카드) 글 칸의 꾸밈과 정렬을 모델로 다시 입힌다 — 서식이 바뀌었을 때(<see cref="Vn.Authoring.Editing.ProjectChangeKind.WriterMarks"/>) 셸이
+    /// 부른다. 판도 칸의 글도 그대로다.
+    /// </summary>
+    internal void RefreshWriterMarks(string? nodeId)
+    {
+        foreach ((string id, TextBox box) in _writingBoxes)
+        {
+            if (nodeId is null || string.Equals(id, nodeId, StringComparison.Ordinal))
+            {
+                UpdateLooks(id, box);
+            }
+        }
+
+        RefreshFormatToolbar();
+    }
+
+    /// <summary>한 글 칸의 꾸밈과 정렬을 지금 모델과 칸의 글로.</summary>
+    private void UpdateLooks(string nodeId, TextBox box)
+    {
+        if (box is not WriterTextBox writer || _session?.Project.FindDialogue(nodeId) is not { } node)
+        {
+            return;
+        }
+
+        TextAlignment align = node.WriterAlign switch
+        {
+            WriterAlign.Center => TextAlignment.Center,
+            WriterAlign.Right => TextAlignment.Right,
+            _ => TextAlignment.Left
+        };
+
+        if (writer.TextAlignment != align)
+        {
+            writer.TextAlignment = align;
+        }
+
+        writer.Looks = node.WriterMarks.Count == 0
+            ? []
+            : LooksOf(node, writer.Text ?? string.Empty, _writingLayouts.GetValueOrDefault(nodeId), _session.Project.Speakers);
+    }
+
+    /// <summary>
+    /// 모델의 서식을 글 칸 좌표로 — 칸의 줄마다 잇는 대본 줄을 찾고, 그 줄의 대사 글 자리에 서식을 놓는다. 칸의 대사 글이 모델의 글과 다르면(넣지 않은 글)
+    /// 모델의 글에서 칸의 글로 자리를 옮긴다.
+    /// </summary>
+    internal static List<BoxLook> LooksOf(DialogueNode node, string text, ScenarioWritingLayout? layout, IReadOnlyList<Speaker> speakers)
+    {
+        var looks = new List<BoxLook>();
+
+        if (layout is null || node.WriterMarks.Count == 0)
+        {
+            return looks;
+        }
+
+        List<(int Start, string Text)> rows = Rows(text);
+        IReadOnlyList<string?> ids = ScenarioLineIdentity.RowLineIds(layout.Text, layout.RowOfLine, text);
+
+        for (int row = 0; row < rows.Count && row < ids.Count; row++)
+        {
+            if (ids[row] is not { } lineId ||
+                !node.WriterMarks.TryGetValue(lineId, out IReadOnlyList<WriterSpan>? spans) ||
+                ScenarioTextParser.DialogueBodyRange(rows[row].Text, speakers) is not { } body)
+            {
+                continue;
+            }
+
+            string model = node.Script.Text(lineId).Text;
+            string shown = rows[row].Text.Substring(body.Start, body.Length);
+            IReadOnlyList<WriterSpan> placed = string.Equals(model, shown, StringComparison.Ordinal)
+                ? spans
+                : WriterMarkMath.Rebase(spans, model, shown);
+            int offset = rows[row].Start + body.Start;
+
+            foreach (WriterSpan span in placed)
+            {
+                looks.Add(new BoxLook(offset + span.Start, span.Length, span.Look));
+            }
+        }
+
+        return looks;
+    }
+
+    /// <summary>
+    /// 글 칸의 고른 범위 <c>[start, end)</c>를 대본 줄의 구간들로 — 줄마다, 대사 글 부분만(화자 · 조건 줄 · 빈 줄은 빠진다). 칸의 대사 글이 모델의 글과 같은
+    /// 줄만 든다(넣지 못한 줄 · 아직 대본 줄이 아닌 새 줄은 자리를 셀 수 없다).
+    /// </summary>
+    internal static List<WriterRange> RangesOf(DialogueNode node, string text, ScenarioWritingLayout layout, IReadOnlyList<Speaker> speakers, int start, int end)
+    {
+        var ranges = new List<WriterRange>();
+        List<(int Start, string Text)> rows = Rows(text);
+        IReadOnlyList<string?> ids = ScenarioLineIdentity.RowLineIds(layout.Text, layout.RowOfLine, text);
+
+        for (int row = 0; row < rows.Count && row < ids.Count; row++)
+        {
+            if (ids[row] is not { } lineId ||
+                ScenarioTextParser.DialogueBodyRange(rows[row].Text, speakers) is not { } body)
+            {
+                continue;
+            }
+
+            int bodyStart = rows[row].Start + body.Start;
+            int from = Math.Max(start, bodyStart);
+            int to = Math.Min(end, bodyStart + body.Length);
+
+            if (to <= from ||
+                !string.Equals(node.Script.Text(lineId).Text, rows[row].Text.Substring(body.Start, body.Length), StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            ranges.Add(new WriterRange(lineId, from - bodyStart, to - from));
+        }
+
+        return ranges;
+    }
+
+    /// <summary>칸의 글을 줄로 — 줄마다 칸 안의 시작 자리와 줄의 글(줄 끝 <c>\r</c>은 뺀다).</summary>
+    private static List<(int Start, string Text)> Rows(string text)
+    {
+        var rows = new List<(int Start, string Text)>();
+        int start = 0;
+
+        while (true)
+        {
+            int newline = text.IndexOf('\n', start);
+            int end = newline < 0 ? text.Length : newline;
+            string row = text[start..end];
+            rows.Add((start, row.EndsWith('\r') ? row[..^1] : row));
+
+            if (newline < 0)
+            {
+                return rows;
+            }
+
+            start = newline + 1;
+        }
+    }
+
+    // ── 입힐 칸 ──────────────────────────────────────────
+
+    /// <summary>글 칸이 초점을 받거나 고른 범위가 바뀌었다 — 그 칸이 입힐 곳이다.</summary>
+    private void TrackFormatTarget(string nodeId, TextBox box)
+    {
+        if (!box.IsFocused || !ReferenceEquals(_writingBoxes.GetValueOrDefault(nodeId), box))
+        {
+            return;
+        }
+
+        (int, int) selection = (Math.Min(box.SelectionStart, box.SelectionEnd), Math.Max(box.SelectionStart, box.SelectionEnd));
+
+        if (string.Equals(_formatNodeId, nodeId, StringComparison.Ordinal) && _formatSelection == selection)
+        {
+            return;
+        }
+
+        _formatNodeId = nodeId;
+        _formatSelection = selection;
+        RefreshFormatToolbar();
+    }
+
+    /// <summary>입힐 칸을 놓는다 — 판의 빈 곳 · 카드 머리를 눌렀다.</summary>
+    private void ReleaseFormatTarget()
+    {
+        if (_formatNodeId is null)
+        {
+            return;
+        }
+
+        _formatNodeId = null;
+        RefreshFormatToolbar();
+    }
+
+    // ── 도구 막대 ──────────────────────────────────────────
+
+    /// <summary>위쪽 줄에 서식 도구 막대를 세운다(한 번).</summary>
+    private void BuildFormatToolbar()
+    {
+        Panel bar = WriterToolbar;
+        bar.Children.Clear();
+
+        _fontBox = new ComboBox
+        {
+            Width = 132,
+            FontSize = 11,
+            PlaceholderText = "글꼴",
+            [ToolTip.TipProperty] = "글꼴 — 고른 글자에. 「기본 글꼴」은 설정의 「대본 글 칸」 글꼴입니다. 그 글꼴이 없는 PC에서는 기본 글꼴로 보입니다."
+        };
+        _fontItems = FontNames();
+        _fontBox.ItemsSource = _fontItems;
+        _fontBox.SelectionChanged += (_, _) =>
+        {
+            if (_syncingToolbar || _fontBox.SelectedItem is not string picked)
+            {
+                return;
+            }
+
+            ApplyFormat(new WriterStyleChange(WriterStyleKind.Font, Font: picked == DefaultFontItem ? null : picked));
+        };
+        _fontBox.DropDownClosed += (_, _) => Dispatcher.UIThread.Post(RestoreFormatFocus);
+        bar.Children.Add(_fontBox);
+
+        bar.Children.Add(FormatButton("−", "글자 작게 — 고른 글자를 1pt 줄입니다", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: -1))));
+        _sizeText = new TextBlock
+        {
+            MinWidth = 22,
+            FontSize = 11,
+            TextAlignment = TextAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            [ToolTip.TipProperty] = "고른 글자의 크기(pt) — 설정의 글자 크기에 더한 값입니다. 크기가 섞였으면 비어 있습니다."
+        };
+        bar.Children.Add(_sizeText);
+        bar.Children.Add(FormatButton("+", "글자 크게 — 고른 글자를 1pt 키웁니다", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: 1))));
+        bar.Children.Add(Separator());
+
+        _boldButton = ToggleFormat(new TextBlock { Text = "B", FontWeight = FontWeight.Bold }, "굵게 — 고른 글자가 모두 굵으면 풉니다", WriterStyleKind.Bold);
+        _italicButton = ToggleFormat(new TextBlock { Text = "I", FontStyle = FontStyle.Italic }, "기울임 — 한글 글꼴은 대부분 기울지 않습니다(영문은 기웁니다)", WriterStyleKind.Italic);
+        _strikeButton = ToggleFormat(new TextBlock { Text = "S", TextDecorations = TextDecorations.Strikethrough }, "취소선 — 고른 글자에 줄을 긋습니다", WriterStyleKind.Strike);
+        bar.Children.Add(_boldButton);
+        bar.Children.Add(_italicButton);
+        bar.Children.Add(_strikeButton);
+
+        (Button colorButton, _colorBar) = ColorButton("가", "글자색 — 고른 글자에", WriterStyleKind.Color);
+        (Button fillButton, _fillBar) = ColorButton(null, "바탕색 — 고른 글자 뒤에", WriterStyleKind.Fill);
+        bar.Children.Add(colorButton);
+        bar.Children.Add(fillButton);
+        bar.Children.Add(Separator());
+
+        foreach ((WriterAlign align, string tip) in new[]
+                 {
+                     (WriterAlign.Left, "왼쪽 정렬 — 이 카드의 글 전체"),
+                     (WriterAlign.Center, "가운데 정렬 — 이 카드의 글 전체"),
+                     (WriterAlign.Right, "오른쪽 정렬 — 이 카드의 글 전체")
+                 })
+        {
+            var button = new ToggleButton
+            {
+                Content = AlignIcon(align),
+                Focusable = false,
+                Padding = new Thickness(6, 1),
+                MinWidth = 26,
+                [ToolTip.TipProperty] = tip
+            };
+            button.Click += (_, _) => ApplyAlign(align);
+            _alignButtons[align] = button;
+            _formatControls.Add(button);
+            bar.Children.Add(button);
+        }
+
+        _formatControls.Add(_fontBox);
+        RefreshFormatToolbar();
+    }
+
+    /// <summary>정렬 그림 — 긴 줄과 짧은 줄이 번갈아 그 쪽에 붙는다(문서 도구의 그 그림).</summary>
+    private static Control AlignIcon(WriterAlign align)
+    {
+        var lines = new System.Text.StringBuilder();
+
+        for (int row = 0; row < 4; row++)
+        {
+            double length = row % 2 == 0 ? 12 : 7;
+            double left = align switch
+            {
+                WriterAlign.Center => (12 - length) / 2,
+                WriterAlign.Right => 12 - length,
+                _ => 0
+            };
+            double y = 1.5 + (row * 3);
+            lines.Append(System.FormattableString.Invariant($"M{left},{y} H{left + length} "));
+        }
+
+        return new Avalonia.Controls.Shapes.Path
+        {
+            Data = Geometry.Parse(lines.ToString()),
+            Stroke = Brushes.Black,
+            StrokeThickness = 1.3,
+            Width = 12,
+            Height = 12,
+            Margin = new Thickness(0, 2)
+        };
+    }
+
+    /// <summary>바탕색 그림 — 형광 펜(비스듬한 펜 끝).</summary>
+    private static Control MarkerIcon() => new Avalonia.Controls.Shapes.Path
+    {
+        Data = Geometry.Parse("M3,10 L8,3 L11,5.5 L6,12 L3,12 Z M8,3 L9.5,1 L12.5,3.5 L11,5.5"),
+        Stroke = Brushes.Black,
+        StrokeThickness = 1.1,
+        StrokeLineCap = PenLineCap.Round,
+        StrokeJoin = PenLineJoin.Round,
+        Width = 13,
+        Height = 13,
+        HorizontalAlignment = HorizontalAlignment.Center
+    };
+
+    private static Border Separator() => new() { Width = 1, Margin = new Thickness(4, 2), Background = new SolidColorBrush(Color.FromArgb(0x33, 0x55, 0x55, 0x55)) };
+
+    private Button FormatButton(string glyph, string tip, Action run)
+    {
+        var button = new Button
+        {
+            Content = glyph,
+            Focusable = false,
+            Padding = new Thickness(6, 1),
+            MinWidth = 24,
+            FontSize = 12,
+            [ToolTip.TipProperty] = tip
+        };
+        button.Click += (_, _) => run();
+        _formatControls.Add(button);
+        return button;
+    }
+
+    private ToggleButton ToggleFormat(TextBlock glyph, string tip, WriterStyleKind kind)
+    {
+        glyph.FontSize = 12;
+        var button = new ToggleButton
+        {
+            Content = glyph,
+            Focusable = false,
+            Padding = new Thickness(6, 1),
+            MinWidth = 26,
+            [ToolTip.TipProperty] = tip
+        };
+
+        // 눌린 모습은 고른 글자의 모양이 정한다 — 단추가 제멋대로 켜지고 꺼지지 않게 입힌 뒤 다시 맞춘다.
+        button.Click += (_, _) =>
+        {
+            ApplyFormat(WriterStyleChange.Toggle(kind));
+            RefreshFormatToolbar();
+        };
+        _formatControls.Add(button);
+        return button;
+    }
+
+    /// <summary>글자색 · 바탕색 — 단추 밑의 색 띠가 마지막에 쓴 색이고, 누르면 색 차림(「없음」 포함)이 열린다.</summary>
+    private (Button Button, Border Bar) ColorButton(string? glyph, string tip, WriterStyleKind kind)
+    {
+        var bar = new Border { Height = 3, Margin = new Thickness(0, 1, 0, 0), Background = kind == WriterStyleKind.Color ? WriterPalette.Text(WriterColor.Red) : WriterPalette.Fill(WriterColor.Yellow) };
+        var panel = new WrapPanel { Orientation = Orientation.Horizontal, MaxWidth = 5 * 28 };
+        var flyout = new Flyout { Content = panel, Placement = PlacementMode.BottomEdgeAlignedLeft };
+
+        foreach (WriterColor color in WriterPalette.All)
+        {
+            var swatch = new Button
+            {
+                Width = 24,
+                Height = 24,
+                Margin = new Thickness(2),
+                Padding = new Thickness(0),
+                Focusable = false,
+                Background = kind == WriterStyleKind.Color ? WriterPalette.Text(color) : WriterPalette.Fill(color),
+                [ToolTip.TipProperty] = WriterPalette.Name(color)
+            };
+            swatch.Click += (_, _) =>
+            {
+                bar.Background = swatch.Background;
+                flyout.Hide();
+                ApplyFormat(new WriterStyleChange(kind, Color: color));
+            };
+            panel.Children.Add(swatch);
+        }
+
+        var none = new Button
+        {
+            Content = "없음",
+            FontSize = 11,
+            Margin = new Thickness(2),
+            Focusable = false,
+            [ToolTip.TipProperty] = kind == WriterStyleKind.Color ? "글자색을 걷습니다" : "바탕색을 걷습니다"
+        };
+        none.Click += (_, _) =>
+        {
+            flyout.Hide();
+            ApplyFormat(new WriterStyleChange(kind, Color: null));
+        };
+        panel.Children.Add(none);
+        flyout.Closed += (_, _) => Dispatcher.UIThread.Post(RestoreFormatFocus);
+
+        var button = new Button
+        {
+            Focusable = false,
+            Padding = new Thickness(6, 1),
+            MinWidth = 26,
+            Flyout = flyout,
+            Content = new StackPanel
+            {
+                Children =
+                {
+                    glyph is null ? MarkerIcon() : new TextBlock { Text = glyph, FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center },
+                    bar
+                }
+            },
+            [ToolTip.TipProperty] = tip
+        };
+        _formatControls.Add(button);
+        return (button, bar);
+    }
+
+    /// <summary>글꼴 고르기의 목록 — 「기본 글꼴」 다음에 이 PC의 글꼴(이름 차례).</summary>
+    private static List<string> FontNames()
+    {
+        var names = new List<string> { DefaultFontItem };
+
+        try
+        {
+            names.AddRange(FontManager.Current.SystemFonts
+                .Select(family => family.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name) && !name.StartsWith('$'))
+                .Distinct(StringComparer.Ordinal)
+                .Order(StringComparer.CurrentCulture));
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException)
+        {
+            // 글꼴 목록을 못 읽는 환경 — 기본 글꼴만 둔다.
+        }
+
+        return names;
+    }
+
+    /// <summary>
+    /// 지금 입힐 칸과 고른 범위 — 칸이 판을 다시 지어 바뀌었으면 새 칸이다. 고른 범위는 붙들어 둔 것(초점을 가져가는 도구를 쓰는 동안 칸이 범위를 잃어도)이다.
+    /// </summary>
+    private (string NodeId, TextBox Box, int Start, int End)? FormatTarget()
+    {
+        if (_formatNodeId is not { } nodeId || _session is null || !_writingBoxes.TryGetValue(nodeId, out TextBox? box))
+        {
+            return null;
+        }
+
+        int length = box.Text?.Length ?? 0;
+        int start = Math.Clamp(_formatSelection.Start, 0, length);
+        int end = Math.Clamp(_formatSelection.End, start, length);
+
+        // 칸이 초점을 쥐고 있으면 칸의 범위가 지금 것이다.
+        if (box.IsFocused)
+        {
+            start = Math.Min(box.SelectionStart, box.SelectionEnd);
+            end = Math.Max(box.SelectionStart, box.SelectionEnd);
+        }
+
+        return (nodeId, box, start, end);
+    }
+
+    /// <summary>
+    /// 고른 글자에 한 가지 모양을 입힌다 — 넣지 않은 글을 먼저 넣고(줄 신원이 서야 자리를 센다), 고른 범위를 대본 줄의 구간들로 바꿔 편집기에 넘긴다.
+    /// 편집기가 켜고 끄기를 판정한다(모두 켜져 있으면 끈다). 끝나면 칸에 초점과 고른 범위를 되돌린다.
+    /// </summary>
+    internal void ApplyFormat(WriterStyleChange change)
+    {
+        UiGuard.Run(_session, "글 서식", () =>
+        {
+            if (FormatTarget() is not { } target || _session is not { } session)
+            {
+                return;
+            }
+
+            if (target.End <= target.Start)
+            {
+                session.SetStatus("서식을 입힐 글자를 먼저 고르세요 — 글 칸에서 글자를 끌어 고릅니다.");
+                return;
+            }
+
+            (string nodeId, TextBox box, int start, int end) = target;
+
+            if (PendingWriting(nodeId, box) is { } pending)
+            {
+                _liveWriting.Stop();
+                ApplyWriting(nodeId, box, pending, live: true);
+                box = _writingBoxes.GetValueOrDefault(nodeId) ?? box;
+            }
+
+            if (session.Project.FindDialogue(nodeId) is not { } node || _writingLayouts.GetValueOrDefault(nodeId) is not { } layout)
+            {
+                return;
+            }
+
+            List<WriterRange> ranges = RangesOf(node, box.Text ?? string.Empty, layout, session.Project.Speakers, start, end);
+
+            if (ranges.Count == 0)
+            {
+                session.SetStatus("고른 범위에 서식을 입힐 대사 글이 없습니다 — 화자 이름 · 조건 줄에는 입히지 않고, 넣지 못한 줄은 넣은 뒤에 입힙니다.");
+                return;
+            }
+
+            session.Editor.ApplyWriterStyle(nodeId, ranges, change);
+            _formatSelection = (start, end);
+            RestoreFormatFocus();
+        });
+    }
+
+    /// <summary>카드 글 칸의 좌우 정렬 — 고른 글자가 없어도 그 칸이면 된다.</summary>
+    private void ApplyAlign(WriterAlign align)
+    {
+        UiGuard.Run(_session, "글 정렬", () =>
+        {
+            if (FormatTarget() is { } target)
+            {
+                _session?.Editor.SetWriterAlign(target.NodeId, align);
+                RestoreFormatFocus();
+            }
+
+            RefreshFormatToolbar();
+        });
+    }
+
+    /// <summary>입힐 칸에 초점과 고른 범위를 되돌린다 — 초점을 가져간 도구(글꼴 고르기 · 색 차림)를 닫은 뒤.</summary>
+    private void RestoreFormatFocus()
+    {
+        if (FormatTarget() is not { } target || target.Box.IsFocused)
+        {
+            return;
+        }
+
+        (int start, int end) = (target.Start, target.End);
+        target.Box.Focus();
+        target.Box.SelectionStart = start;
+        target.Box.SelectionEnd = end;
+    }
+
+    /// <summary>도구 막대가 고른 글자의 지금 모양을 보인다 — 모두 굵으면 B가 눌려 있고, 크기 · 글꼴이 하나면 그것을 보인다.</summary>
+    private void RefreshFormatToolbar()
+    {
+        if (_fontBox is null)
+        {
+            return;
+        }
+
+        (string NodeId, TextBox Box, int Start, int End)? target = FormatTarget();
+
+        foreach (Control control in _formatControls)
+        {
+            control.IsEnabled = target is not null;
+        }
+
+        WriterToolbar.SetValue(ToolTip.TipProperty, target is null ? "카드의 글 칸에서 글자를 고르면 켜집니다" : null);
+
+        IReadOnlyList<BoxLook> looks = target?.Box is WriterTextBox writer ? writer.Looks : [];
+        List<WriterLook> chosen = target is { } picked && picked.End > picked.Start
+            ? Enumerable.Range(picked.Start, picked.End - picked.Start)
+                .Select(at => looks.LastOrDefault(look => at >= look.Start && at < look.End).Look ?? WriterLook.Plain)
+                .ToList()
+            : [];
+
+        bool All(Func<WriterLook, bool> has) => chosen.Count > 0 && chosen.All(has);
+
+        _syncingToolbar = true;
+
+        try
+        {
+            _boldButton!.IsChecked = All(look => look.Bold);
+            _italicButton!.IsChecked = All(look => look.Italic);
+            _strikeButton!.IsChecked = All(look => look.Strike);
+
+            List<int> grows = chosen.Select(look => look.Grow).Distinct().ToList();
+            _sizeText!.Text = target is null ? string.Empty : grows.Count == 1 ? $"{ScriptFont.Size + grows[0]:0}" : chosen.Count == 0 ? $"{ScriptFont.Size:0}" : string.Empty;
+
+            List<string?> fonts = chosen.Select(look => look.Font).Distinct().ToList();
+
+            if (fonts is [{ } missing] && !_fontItems.Contains(missing, StringComparer.Ordinal))
+            {
+                _fontItems = [.. _fontItems, missing];
+                _fontBox.ItemsSource = _fontItems;
+            }
+
+            _fontBox.SelectedItem = fonts.Count == 1 ? fonts[0] ?? DefaultFontItem : chosen.Count == 0 && target is not null ? DefaultFontItem : null;
+
+            WriterAlign align = target is { } shown && _session?.Project.FindDialogue(shown.NodeId) is { } node ? node.WriterAlign : WriterAlign.Left;
+
+            foreach ((WriterAlign key, ToggleButton button) in _alignButtons)
+            {
+                button.IsChecked = target is not null && key == align;
+            }
+        }
+        finally
+        {
+            _syncingToolbar = false;
+        }
+    }
+
+    /// <summary>시험이 본다 — 도구 막대의 단추 상태(굵게 · 기울임 · 취소선 · 크기 글).</summary>
+    internal (bool? Bold, bool? Italic, bool? Strike, string? Size, string? Font) FormatToolbarState =>
+        (_boldButton?.IsChecked, _italicButton?.IsChecked, _strikeButton?.IsChecked, _sizeText?.Text, _fontBox?.SelectedItem as string);
+}

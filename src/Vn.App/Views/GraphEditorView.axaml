@@ -30,6 +30,11 @@
                 <!-- [삭제] — 고른 것을 지운다(2026-11-18 소유자): 아무것도 안 골랐으면 꺼진 「삭제」, 챕터 · 장면 · 에피소드 · 분기 카드를 고르면 그 이름
                      (「챕터 삭제」 …). 하이어아키 차림표의 「챕터 지우기」 · 「장면 지우기」를 갈음한다. -->
                 <Button x:Name="DeleteButton" Content="삭제" IsEnabled="False" ToolTip.ShowOnDisabled="True" />
+                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                <!-- 작가용 글 서식 도구 막대(2026-11-22 소유자 — 한컴 · 엑셀처럼 위에서 글꼴 · 크기 · 굵게 · 기울임 · 취소선 · 색 · 정렬) — 작가가 보기 위한
+                     것이라 내보내기에 나가지 않는다. 내용은 코드가 짓는다(GraphEditorView.Writer · docs/plans/writer-formatting.md). -->
+                <StackPanel x:Name="WriterToolbar" Orientation="Horizontal" Spacing="2" Background="Transparent"
+                            ToolTip.ShowOnDisabled="True" />
                 <!-- 빈 선택지 숨기기는 툴바에 두지 않는다 — [대본] 탭은 카드마다 인스펙터(대사 편집기)의 체크로 정한다. -->
             </StackPanel>
         </Border>
