@@ -2491,6 +2491,12 @@ public partial class GraphEditorView : UserControl
             return node.NodeKind != GraphNodeKind.Dialogue;
         }
 
+        // 칸의 종류 — 서식 · 이름 색을 정한 화자가 생기거나 걷히면 칸을 바꿔야 한다(writer-formatting · 화자 이름 색 하나가 여러 카드를 바꾼다).
+        if ((box is WriterTextBox) != WantsWriterBox(node.NodeId))
+        {
+            return false;
+        }
+
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, node.NodeId);
 
         return Math.Abs(box.Height - WritingHeightFor(node.NodeId)) <= 0.01 &&

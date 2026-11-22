@@ -664,7 +664,7 @@ internal sealed class AuthoringSession
         }
 
         // 대본에만 있는 이름(과 줄 수)도 싣는다 — [대본] 「화자」 탭이 그것도 모아 보인다(usability UX34).
-        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId)) + "\n\n" +
+        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId + '\t' + speaker.Color?.Hex)) + "\n\n" +
                           string.Join('\n', UnlistedSpeakers.Of(Project).Select(entry => entry.Name + '\t' + entry.Lines));
         bool speakersChanged = !string.Equals(_speakerSignature, speakers, StringComparison.Ordinal);
         _speakerSignature = speakers;

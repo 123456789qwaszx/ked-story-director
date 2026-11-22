@@ -100,6 +100,22 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// 화자의 이름 색(작가용 · writer-formatting WF-D15) — [대본] 카드 글 칸에서 그 화자의 이름이 이 색으로 보인다. null이면 걷는다. 없는 화자이거나 같은 값이면
+    /// false — 기록하지 않는다. 글 칸의 꾸밈만 바뀌므로 서식과 같은 종류로 알린다(판 · 철도 · [구성]은 그대로).
+    /// </summary>
+    public bool SetSpeakerColor(string name, WriterRgb? color)
+    {
+        if (Project.FindSpeaker(name) is not { } speaker || speaker.Color == color)
+        {
+            return false;
+        }
+
+        int index = Project.Speakers.IndexOf(speaker);
+        Mutate(ProjectChangeKind.WriterMarks, () => Project.Speakers[index] = speaker with { Color = color });
+        return true;
+    }
+
+    /// <summary>
     /// 화자 개명을 <b>목록과 이미 쓰인 대사 줄까지 한 칸에</b> 끌고 간다 — 화자의 이름을 고쳐도 연결이 이어진다. 캐릭터 키는 그대로다.
     ///
     /// 화자의 신원은 <b>목록의 그 줄</b>이고 이름은 그것의 표시다. 그런데 대사 줄이

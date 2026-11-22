@@ -372,17 +372,17 @@ public sealed class WriterFormattingTests
         Select(Box(window, card.Id), "긴 하루");
         OpenColorMenu(window, "글자색");
         Assert.True(menu.Flyout.IsOpen);
-        Assert.False(menu.UsedTitle.IsVisible);   // 정해 둔 색만 썼다
+        Assert.False(menu.Chooser.UsedTitle.IsVisible);   // 정해 둔 색만 썼다
         Assert.Equal((8, 12), (Box(window, card.Id).SelectionStart, Box(window, card.Id).SelectionEnd));   // 펼친 동안에도 범위가 남는다
 
         // 16진수를 적으면 막대와 미리 보기가 따르고, 막대를 옮기면 16진수가 따른다.
-        menu.Hex.Text = "#123456";
+        menu.Chooser.Hex.Text = "#123456";
         Dispatcher.UIThread.RunJobs();   // 글 바뀜 알림은 한 박자 뒤에 온다(Avalonia)
-        Assert.Equal([0x12, 0x34, 0x56], menu.Channels.Select(channel => (int)channel.Value));
-        menu.Channels[0].Value = 0x9A;
-        Assert.Equal("#9A3456", menu.Hex.Text);
+        Assert.Equal([0x12, 0x34, 0x56], menu.Chooser.Channels.Select(channel => (int)channel.Value));
+        menu.Chooser.Channels[0].Value = 0x9A;
+        Assert.Equal("#9A3456", menu.Chooser.Hex.Text);
 
-        menu.Apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        menu.Chooser.Apply.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         Dispatcher.UIThread.RunJobs();
 
@@ -395,10 +395,10 @@ public sealed class WriterFormattingTests
         // 다시 열면 그 색이 「이 프로젝트에 쓴 색」에 서고, 직접 고르기는 그 색에서 시작한다 — 그 견본으로 다른 글자에 입힌다.
         Select(Box(window, card.Id), "열린다");
         OpenColorMenu(window, "글자색");
-        Assert.True(menu.UsedTitle.IsVisible);
-        Button reuse = Assert.Single(menu.Used.Children.OfType<Button>());
+        Assert.True(menu.Chooser.UsedTitle.IsVisible);
+        Button reuse = Assert.Single(menu.Chooser.Used.Children.OfType<Button>());
         Assert.Equal(picked, reuse.Tag);
-        Assert.Equal("#9A3456", menu.Hex.Text);
+        Assert.Equal("#9A3456", menu.Chooser.Hex.Text);
         reuse.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         Assert.Contains(session.Project.FindDialogue(card.Id)!.WriterMarks[ids[1]], span => span.Look.Color == picked);

@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
@@ -317,7 +318,65 @@ public sealed class DirectorSpeakersTests : IDisposable
         window.Close();
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「화자탭에서 그 화자별로 원하는 색상을 지정 한 뒤에, 에피소드 탭 내부에서 그 화자를 사용할 때, 자동으로 그 색상으로 이름이
+    /// 바뀌도록」(writer-formatting WF-D15). 화자 줄의 색 단추로 색을 고르면 그 화자의 대사가 든 카드들의 글 칸에서 이름이 그 색이 된다 — 여러 카드의
+    /// 칸이 서식 칸으로 바뀌어도 판은 한 번에 다시 짓고 상관없는 카드는 그대로 둔다. 다른 화자 · 대사 글은 그대로다. 저장되고, 되돌리면 돌아간다.
+    /// </summary>
+    [Fact]
+    public void 화자의_이름_색을_고르면_대본_칸의_그_이름이_그_색이_된다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        session.SetSpeakers(("라루", "laru"), ("윌로", "willo"));
+        WriteDialogue(session, "ch01", "root", "라루: 안녕\n윌로: 응");
+        WriteDialogue(session, "ch01", "a", "라루: 가자");
+        GraphEditorView graph = PickProject(window);
+        TextBox other = WritingBox(graph, session, "b");
+        Assert.IsNotType<WriterTextBox>(WritingBox(graph, session, "root"));
+        int cardRebuilds = graph.CardRebuildCount;
+
+        // 라루의 색 단추 → 직접 고르기에 #AA3300을 적고 [입히기].
+        var button = (Button)Control(graph, "speaker-color:라루");
+        button.Flyout!.ShowAt(button);
+        Dispatcher.UIThread.RunJobs();
+        var menu = (Control)((Flyout)button.Flyout).Content!;
+        menu.GetLogicalDescendants().OfType<TextBox>().Single().Text = "#AA3300";
+        Click(menu.GetLogicalDescendants().OfType<Button>().Single(item => Equals(item.Content, "입히기")));
+        Dispatcher.UIThread.RunJobs();
+
+        var color = new WriterRgb(0xAA, 0x33, 0x00);
+        Assert.Equal(color, session.Project.FindSpeaker("라루")!.Color);
+        Assert.Null(session.Project.FindSpeaker("윌로")!.Color);
+
+        // 라루가 말하는 두 카드의 칸이 서식 칸이 되어 「라루」(콜론 앞)만 그 색이다. 라루가 없는 카드는 그대로다 — 판은 한 번 다시 지었다(카드마다가 아니다).
+        var root = Assert.IsType<WriterTextBox>(WritingBox(graph, session, "root"));
+        Assert.Equal([new BoxLook(0, 2, new WriterLook(Color: color))], root.Looks);
+        Assert.Equal([new BoxLook(0, 2, new WriterLook(Color: color))], Assert.IsType<WriterTextBox>(WritingBox(graph, session, "a")).Looks);
+        Assert.Same(other, WritingBox(graph, session, "b"));
+        Assert.Equal(cardRebuilds, graph.CardRebuildCount);
+        Assert.Equal("#AA3300 ", ((Border)((Button)Control(graph, "speaker-color:라루")).Content!).Background is ISolidColorBrush brush
+            ? $"#{brush.Color.R:X2}{brush.Color.G:X2}{brush.Color.B:X2} " : null);   // 탭이 다시 서서 단추가 그 색이다
+
+        // 저장된다. 되돌리면 색이 걷히고 칸이 보통 칸으로 돌아간다.
+        session.Save();
+        Assert.Contains("\"#AA3300\"", File.ReadAllText(session.ProjectPath!), StringComparison.Ordinal);
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(session.Project.FindSpeaker("라루")!.Color);
+        Assert.IsNotType<WriterTextBox>(WritingBox(graph, session, "root"));
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    /// <summary>[대본] 판에서 그 에피소드 카드의 글 칸.</summary>
+    private static TextBox WritingBox(GraphEditorView graph, AuthoringSession session, string episodeId)
+    {
+        string cardId = EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id;
+        return graph.FindControl<Canvas>("GraphCanvas")!.GetLogicalDescendants().OfType<TextBox>()
+            .Single(box => box.Tag as string == GraphEditorView.WritingTag + cardId);
+    }
 
     private static GraphEditorView PickProject(MainWindow window)
     {

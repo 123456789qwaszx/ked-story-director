@@ -150,7 +150,15 @@ public static class ProjectManifestJson
 
         foreach (Speaker speaker in speakers)
         {
-            array.Add(new JsonObject { ["name"] = speaker.Name, ["characterId"] = speaker.CharacterId });
+            var item = new JsonObject { ["name"] = speaker.Name, ["characterId"] = speaker.CharacterId };
+
+            // 이름 색(작가용 · WF-D15) — 정했을 때만 적는다.
+            if (speaker.Color is { } color)
+            {
+                item["color"] = color.Hex;
+            }
+
+            array.Add(item);
         }
 
         return array;
@@ -164,7 +172,9 @@ public static class ProjectManifestJson
         JsonSupport.Objects(node, "speakers")
             .Select(item => new Speaker(
                 JsonSupport.RequiredString(item["name"], "화자의 name"),
-                JsonSupport.RequiredString(item["characterId"], "화자의 characterId")))
+                JsonSupport.RequiredString(item["characterId"], "화자의 characterId"),
+                // 이름 색은 너그럽게 — 읽지 못하면 색 없이 선다(작가용 표시라 프로젝트를 막지 않는다).
+                item["color"] is JsonValue color && color.TryGetValue(out string? hex) ? WriterRgb.Parse(hex) : null))
             .ToList();
 
     /// <summary>

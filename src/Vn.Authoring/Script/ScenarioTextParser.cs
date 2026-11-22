@@ -235,6 +235,31 @@ public static class ScenarioTextParser
         return (lead + bodyStart, tagless.Length - bodyStart);
     }
 
+    /// <summary>
+    /// <b>글 칸 한 줄에서 화자 이름이 앉은 자리</b>와 그 이름(화자 이름 색 · writer-formatting WF-D15) — <see cref="Parse"/>가 그 줄에서 읽는 화자다. 콜론은 밖이다.
+    /// 대사 줄이 아니거나 화자가 없으면 null. 규칙은 <see cref="DialogueBodyRange"/>와 한 벌이다.
+    /// </summary>
+    public static (int Start, int Length, string Name)? SpeakerNameRange(string? row, IReadOnlyList<Speaker> speakers)
+    {
+        if (DialogueBodyRange(row, speakers) is null)
+        {
+            return null;
+        }
+
+        string raw = row ?? string.Empty;
+        string line = raw.Trim();
+        int lead = raw.Length - raw.TrimStart().Length;
+        (string tagless, _) = SplitLineTag(line);
+
+        if (BodyStart(tagless, speakers) == 0)
+        {
+            return null;
+        }
+
+        int colon = tagless.IndexOf(':');
+        return (lead, colon, tagless[..colon]);
+    }
+
     /// <summary>첫 콜론 기준, 접두에 공백이 없을 때만 화자다.</summary>
     private static (string Speaker, string Text) SplitSpeaker(string line, IReadOnlyList<Speaker> speakers)
     {

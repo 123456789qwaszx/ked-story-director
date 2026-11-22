@@ -35,10 +35,11 @@
 | WF-D10 | 그리기는 **Avalonia TextBox 그대로, 글자를 놓는 겹만 바꾼다**(3.4) — 편집기 교체(AvaloniaEdit)는 버렸다 | 시험판(가지 `proto/writer-editor`)에서 한글 조합 중 글자가 안 보이고 Enter 뒤 첫 글자가 끊겼다. 한글 입력을 새로 만들지 않는 길을 골랐다 |
 | WF-D11 | **정렬은 카드 단위**, **크기는 처음 크기에 더하는 차(pt)**, ~~색은 정해 둔 열 가지~~(→ WF-D14) | 대본은 줄 목록이라 줄마다 정렬은 뜻이 적다. 크기는 차로 적어 카드의 처음 크기(WF-D13)를 따른다 |
 | WF-D12 | **한글은 기울지 않는다** — 받아들였다 | 한글 글꼴(맑은 고딕 등)에 기울임꼴이 없다(시험판에서 소유자가 확인 — 「한글은 안 기우는게 맞네요」) |
-| WF-D14 | **색은 RGB 값이다**(`"#RRGGBB"`) — 색 차림 = 정해 둔 열 가지 · 「없음」 · **이 프로젝트에 쓴 색**(정해 둔 열 가지 밖 · 글자색과 바탕색 따로 · 많이 쓴 차례 열 개) · **직접 고르기**(16진수 칸 · R · G · B 막대 · 미리 보기 · [입히기]). 옛 파일의 색 이름(`"red"`)은 정해 둔 그 색으로 읽는다 | 2026-11-23 소유자 — 「글자 색깔과 바탕색의 종류가 조금 제한 적인게 아쉬운데, 사용한 색깔과 더불어서 RGB를 원하는 걸 선택할 수 있는 것도 해주십시오」 · 「사용한 색깔」 = 이 프로젝트에 쓰인 색(고른 답 — 같이 쓰는 사람이 쓴 색도 보인다). 색 고르기 패키지(Avalonia.Controls.ColorPicker)는 들이지 않았다 — 작업 공간에서 받을 수 없고, 막대 셋이면 된다 |
 | WF-D13 | **설정의 글꼴 · 글자 크기는 새 카드의 처음 값이다** — 카드를 만들 때 카드에 적고(`writerBase` · 프로젝트 파일), 뒤에 설정을 바꿔도 서 있는 카드는 그대로다. 값이 안 적힌 옛 카드는 열 때 그 PC의 지금 설정으로 굳힌다. 줄 간격은 이 PC의 설정 그대로 모든 칸이 바로 따른다. 서식의 크기 차는 카드의 처음 크기에 더한다 | 2026-11-23 소유자 — 「설정 내부에 대본 글칸속의 글꼴과 글자 크기는 이제 처음 생성시에 기본값으로만 사용하는 게 맞겠습니다. 지금처럼 즉각 갱신되는게 아니라요」 · 옛 카드는 「지금 설정으로 굳힘」(고른 답). ⛔ 그 전에는 셋 다 이 PC의 설정이라 모든 칸이 바로 따랐다(writer-comfort WC5) |
+| WF-D14 | **색은 RGB 값이다**(`"#RRGGBB"`) — 색 차림 = 정해 둔 열 가지 · 「없음」 · **이 프로젝트에 쓴 색**(정해 둔 열 가지 밖 · 글자색과 바탕색 따로 · 많이 쓴 차례 열 개) · **직접 고르기**(16진수 칸 · R · G · B 막대 · 미리 보기 · [입히기]). 옛 파일의 색 이름(`"red"`)은 정해 둔 그 색으로 읽는다 | 2026-11-23 소유자 — 「글자 색깔과 바탕색의 종류가 조금 제한 적인게 아쉬운데, 사용한 색깔과 더불어서 RGB를 원하는 걸 선택할 수 있는 것도 해주십시오」 · 「사용한 색깔」 = 이 프로젝트에 쓰인 색(고른 답 — 같이 쓰는 사람이 쓴 색도 보인다). 색 고르기 패키지(Avalonia.Controls.ColorPicker)는 들이지 않았다 — 작업 공간에서 받을 수 없고, 막대 셋이면 된다 |
+| WF-D15 | **화자마다 이름 색** — 「화자」 탭의 화자 줄 앞 색 단추(같은 색 차림)로 정하면 [대본] 카드 글 칸에서 그 화자의 이름(콜론 앞)이 그 색으로 보인다. 화자 목록에 적고(`speakers[].color` · 프로젝트 파일 · 되돌리기 한 칸), 넣기 전의 줄에도 선다(칸의 글을 그대로 읽는다). 내보내기는 읽지 않는다. 이름 색을 정한 화자의 대사가 든 카드는 서식 칸을 받는다 — 여러 카드의 칸이 바뀌면 판을 한 번 다시 짓고 상관없는 카드는 둔다 | 2026-11-23 소유자 — 「화자탭에서 그 화자별로 원하는 색상을 지정 한 뒤에, 에피소드 탭 내부에서 그 화자를 사용할 때, 자동으로 그 색상으로 이름이 바뀌도록 하는 기능을 추가하여 주십시오」 |
 
-**하지 않는 것** — 게임용 서식 표기(Yarn 마크업), 줄 형광펜, 테두리, 셀 병합, 줄마다 다른 정렬, 화자 이름에 서식, 인스펙터 줄 표 · 하이어아키 ·
+**하지 않는 것** — 게임용 서식 표기(Yarn 마크업), 줄 형광펜, 테두리, 셀 병합, 줄마다 다른 정렬, 화자 이름에 서식(이름 색은 화자마다 — WF-D15), 인스펙터 줄 표 · 하이어아키 ·
 접은 장면 줄 목록에 서식 보이기.
 
 ## 2. 코드 자리
@@ -52,8 +53,9 @@
 | 변경 알림 | `ProjectChangeKind.WriterMarks` + 그 카드 → `ProjectRefreshPlanner`의 `RefreshWriterMarks`(보통 · 되돌리기 두 갈래) → `MainWindow` → `GraphEditorView.RefreshWriterMarks`. `ChapterGraphView`는 이 알림에 다시 읽지 않는다(되돌리기는 읽는다) |
 | 칸 한 줄의 대사 자리 | `ScenarioTextParser.DialogueBodyRange`(파서와 한 벌의 규칙) · 칸의 줄 → 대본 줄은 `ScenarioLineIdentity.RowLineIds`(글 넣기와 같은 짝) |
 | 글 칸 | `Vn.App/Views/WriterTextBox.cs` — `WriterTextBox`(TextBox 그대로 · 틀은 `App.axaml`의 `WriterTextBoxTheme` — Fluent TextBox 틀을 XAML 그대로 옮긴 것) · `WriterTextPresenter`(글자 배치) · `WriterPalette`(색 값) |
-| 꾸밈 · 도구 막대 | `Vn.App/Views/GraphEditorView.Writer.cs` · 자리는 `GraphEditorView.axaml`의 `WriterToolbar`(위쪽 줄 [삭제] 오른쪽) |
-| 시험 | `tests/Vn.Authoring.Tests/WriterMarksTests.cs` · `tests/Vn.App.Tests/WriterFormattingTests.cs` |
+| 꾸밈 · 도구 막대 | `Vn.App/Views/GraphEditorView.Writer.cs` · 자리는 `GraphEditorView.axaml`의 `WriterToolbar`(위쪽 줄 [삭제] 오른쪽) · 색 차림은 `Vn.App/Views/WriterColorChooser.cs`(도구 막대와 「화자」 탭이 같이 쓴다 · WF-D14) |
+| 화자 이름 색 | `Speaker.Color`(모델) · `ProjectManifestJson`의 `speakers[].color` · `ProjectEditor.SetSpeakerColor`(서식과 같은 알림 — `ProjectChangeKind.WriterMarks`, 카드 없이) · 칸의 이름 자리는 `ScenarioTextParser.SpeakerNameRange`(파서와 한 벌) · 색 단추는 `MainWindow.Speakers.cs`의 `SpeakerColorButton` · 칸 바꾸기 묶음은 `GraphEditorView.SwapWritingBoxesLater` (WF-D15) |
+| 시험 | `tests/Vn.Authoring.Tests/WriterMarksTests.cs` · `tests/Vn.App.Tests/WriterFormattingTests.cs` · 처음 글꼴은 `ScriptFontTests` · `CardFitTests`, 화자 이름 색은 `DirectorSpeakersTests` |
 
 ## 3. 설계
 

@@ -268,6 +268,7 @@ public sealed class WriterMarksTests
 
             editor.SetWriterAlign(card.Id, WriterAlign.Center);
             editor.Project.FindDialogue(card.Id)!.WriterBase = new WriterBase("Noto Serif", 17);   // 카드의 처음 글꼴 · 크기도
+            Assert.True(editor.SetSpeakerColor("하린", new WriterRgb(0xAA, 0x33, 0x00)));          // 화자 이름 색도(WF-D15)
             Assert.NotEmpty(editor.Project.FindDialogue(card.Id)!.WriterMarks);
 
             Dictionary<string, byte[]> marked = Export(editor, manifest);
@@ -329,6 +330,48 @@ public sealed class WriterMarksTests
         Assert.Equal([green, Blue], WriterMarkMath.UsedColors(nodes, fill: false));
         Assert.Equal([Yellow], WriterMarkMath.UsedColors(nodes, fill: true));
     }
+
+    // ── 화자 이름 색(WF-D15) ────────────────────────────
+
+    [Fact]
+    public void 화자_이름_색은_정했을_때만_저장되고_되돌리기_한_칸이다()
+    {
+        (ProjectEditor editor, _, _) = Stage("하린: 오늘은 긴 하루였어");
+        Assert.DoesNotContain("\"color\"", ProjectSnapshotCodec.Encode(editor.Project), StringComparison.Ordinal);
+
+        var color = new WriterRgb(0xAA, 0x33, 0x00);
+        Assert.True(editor.SetSpeakerColor("하린", color));
+        Assert.False(editor.SetSpeakerColor("하린", color));   // 같은 값은 기록하지 않는다
+        Assert.False(editor.SetSpeakerColor("없는 화자", color));
+        Assert.Equal(color, ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project)).FindSpeaker("하린")!.Color);
+
+        // 이름을 바꿔도 색은 따라간다. 되돌리면 걷힌다.
+        editor.RenameSpeaker("하린", "하린이");
+        Assert.Equal(color, editor.Project.FindSpeaker("하린이")!.Color);
+        editor.Undo();
+        editor.Undo();
+        Assert.Null(editor.Project.FindSpeaker("하린")!.Color);
+
+        // 읽지 못하는 색은 색 없이 선다.
+        Assert.True(editor.SetSpeakerColor("하린", color));
+        string broken = ProjectSnapshotCodec.Encode(editor.Project).Replace("\"#AA3300\"", "\"주황빛\"", StringComparison.Ordinal);
+        Assert.Null(ProjectSnapshotCodec.Decode(broken).FindSpeaker("하린")!.Color);
+    }
+
+    [Theory]
+    [InlineData("하린: 오늘은", 0, 2, "하린")]
+    [InlineData("  하린:오늘은", 2, 2, "하린")]
+    [InlineData("늙은 상인: 어서 오게", 0, 5, "늙은 상인")]
+    public void 글_칸_한_줄에서_화자_이름의_자리를_파서와_같은_규칙으로_잰다(string row, int start, int length, string name) =>
+        Assert.Equal((start, length, name), ScenarioTextParser.SpeakerNameRange(row, [new Speaker("하린", "harin"), new Speaker("늙은 상인", "merchant")]));
+
+    [Theory]
+    [InlineData("오늘은 맑다")]
+    [InlineData("그는 말했다: 가자")]
+    [InlineData("<<if $met>>")]
+    [InlineData("")]
+    public void 화자가_없는_줄은_이름_자리가_없다(string row) =>
+        Assert.Null(ScenarioTextParser.SpeakerNameRange(row, [new Speaker("하린", "harin")]));
 
     // ── 카드의 처음 글꼴 · 크기(WF-D13) ─────────────────
 
