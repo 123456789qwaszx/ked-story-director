@@ -122,13 +122,14 @@ internal static class ScriptFont
 
     private static void Apply(TextBox box, string family, double size, bool bold, WriterRgb? color)
     {
-        if (family.Length == 0)
+        // 이 PC에 없는 글꼴(같이 쓰는 사람이 고른 것 · 지운 글꼴)은 기본 글꼴로 — 이름을 넘기지 않는다(InstalledFonts · WF-D17).
+        if (InstalledFonts.Named(family) is { } installed)
         {
-            box.ClearValue(TextBox.FontFamilyProperty);
+            box.FontFamily = new FontFamily(installed);
         }
         else
         {
-            box.FontFamily = new FontFamily(family);
+            box.ClearValue(TextBox.FontFamilyProperty);
         }
 
         box.FontSize = size;

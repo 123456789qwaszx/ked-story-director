@@ -271,9 +271,10 @@ public sealed class WriterTextPresenter : TextPresenter
 
     private GenericTextRunProperties Properties(WriterLook look, Typeface typeface, bool preedit, IBrush? selectionForeground, System.Globalization.CultureInfo? culture)
     {
+        // 이 PC에 없는 글꼴은 이름을 넘기지 않고 칸의 글꼴로 그린다(InstalledFonts — 넘기면 리눅스에서 메모리가 샜다 · WF-D17).
         Typeface face = look.Bold || look.Italic || look.Font is not null
             ? new Typeface(
-                look.Font is { } font ? new FontFamily(font) : typeface.FontFamily,
+                InstalledFonts.Named(look.Font) is { } font ? new FontFamily(font) : typeface.FontFamily,
                 look.Italic ? FontStyle.Italic : typeface.Style,
                 look.Bold ? FontWeight.Bold : typeface.Weight,
                 typeface.Stretch)

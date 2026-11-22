@@ -395,7 +395,7 @@ public partial class GraphEditorView
         bar.Children.Add(Separator());
 
         _boldButton = ToggleFormat(new TextBlock { Text = "B", FontWeight = FontWeight.Bold }, "굵게 — 고른 글자가 모두 굵으면 풉니다", WriterStyleKind.Bold);
-        _italicButton = ToggleFormat(new TextBlock { Text = "I", FontStyle = FontStyle.Italic }, "기울임 — 한글 글꼴은 대부분 기울지 않습니다(영문은 기웁니다)", WriterStyleKind.Italic);
+        _italicButton = ToggleFormat(new TextBlock { Text = "I", FontStyle = FontStyle.Italic }, "기울임 — 고른 글자를 기울입니다(한글은 기울임꼴이 없어 글자를 비스듬히 눕혀 그립니다)", WriterStyleKind.Italic);
         _strikeButton = ToggleFormat(new TextBlock { Text = "S", TextDecorations = TextDecorations.Strikethrough }, "취소선 — 고른 글자에 줄을 긋습니다", WriterStyleKind.Strike);
         bar.Children.Add(_boldButton);
         bar.Children.Add(_italicButton);

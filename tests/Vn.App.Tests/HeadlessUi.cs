@@ -78,5 +78,6 @@ public static class TestAppBuilder
         //    (32GB 메모리의 90%까지 찬다). 대본 한 편에 빈 줄이 없을
         //    수는 없으니 언젠가 반드시 밟는다.
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-        .UseSkia();
+        .UseSkia()
+        .With(Vn.App.Views.HangulFonts.Options);   // 앱과 같은 한글 글꼴 맡기기(writer-formatting WF-D17)
 }
