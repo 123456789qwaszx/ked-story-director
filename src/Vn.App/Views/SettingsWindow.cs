@@ -139,6 +139,41 @@ internal sealed class SettingsWindow : Window
             Padding = new Thickness(4, 3)
         };
         ToolTip.SetTip(ScriptPreview, "미리 보기 — 새로 만드는 카드의 글 칸이 이렇게 보입니다.");
+        // 굵게 · 글자색 — 새로 만드는 카드의 글(2026-11-23 소유자 — 「설정 창에서 원한다면, Bold로써 굵게 하는 걸 기본값으로 쓸 수도 있게 해줘. 글자 색깔도
+        // 같이 조정할 수 있으면 좋겠고」 · writer-formatting WF-D16). 글꼴 · 크기처럼 이미 있는 카드는 그대로다.
+        ScriptBoldCheck = new CheckBox { Content = "굵게", FontSize = 12 };
+        ToolTip.SetTip(ScriptBoldCheck, "새로 만드는 카드의 글을 모두 굵게 씁니다 — 이미 있는 카드는 그대로입니다.");
+        ScriptColorChooser = new WriterColorChooser(fill: false, "글자색을 걷습니다 — 테마의 글자색으로 씁니다");
+        var colorFlyout = new Flyout { Content = ScriptColorChooser.Content, Placement = PlacementMode.BottomEdgeAlignedLeft };
+        ScriptColorButton = new Button
+        {
+            Flyout = colorFlyout,
+            Padding = new Thickness(6, 2),
+            Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { _scriptColorSwatch, _scriptColorText } }
+        };
+        ToolTip.SetTip(ScriptColorButton, "새로 만드는 카드의 글자색입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 색은 [대본] 위쪽 서식 도구로 바꿉니다).");
+        colorFlyout.Opening += (_, _) => ScriptColorChooser.Prepare(GraphEditorView.ProjectColors(_session.Project, fill: false), ScriptFont.Color);
+        ScriptColorChooser.Picked += picked =>
+        {
+            colorFlyout.Hide();
+            UiGuard.Run(_session, "대본 글 칸", () =>
+            {
+                ScriptFont.SetLook(ScriptFont.Bold, picked);
+                FillScriptFont();
+            });
+        };
+        ScriptBoldCheck.IsCheckedChanged += (_, _) =>
+        {
+            if (!_fillingScript)
+            {
+                UiGuard.Run(_session, "대본 글 칸", () =>
+                {
+                    ScriptFont.SetLook(ScriptBoldCheck.IsChecked == true, ScriptFont.Color);
+                    FillScriptFont();
+                });
+            }
+        };
+
         ScriptFontDefaultButton = new Button
         {
             Content = $"기본값으로 (기본 글꼴 · {ScriptFont.DefaultSize:0} · {ScriptFont.DefaultLineSpacing}%)",
@@ -282,6 +317,26 @@ internal sealed class SettingsWindow : Window
     internal TextBox ScriptPreview { get; }
 
     internal Button ScriptFontDefaultButton { get; }
+
+    /// <summary>「대본 글 칸」의 굵게 — 새로 만드는 카드의 글(writer-formatting WF-D16).</summary>
+    internal CheckBox ScriptBoldCheck { get; }
+
+    /// <summary>「대본 글 칸」의 글자색 단추 — 누르면 색 차림(<see cref="ScriptColorChooser"/>)이 열린다. 단추 안의 네모가 지금 색이다(WF-D16).</summary>
+    internal Button ScriptColorButton { get; }
+
+    internal WriterColorChooser ScriptColorChooser { get; }
+
+    private readonly Border _scriptColorSwatch = new()
+    {
+        Width = 14,
+        Height = 14,
+        CornerRadius = new CornerRadius(2),
+        BorderThickness = new Thickness(1),
+        BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0)),
+        VerticalAlignment = VerticalAlignment.Center
+    };
+
+    private readonly TextBlock _scriptColorText = new() { FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
 
     /// <summary>글꼴 칸의 맨 위 — 테마의 글꼴을 그대로 쓴다.</summary>
     internal const string DefaultFontName = "기본";
@@ -725,7 +780,7 @@ internal sealed class SettingsWindow : Window
         var grid = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("Auto,*"),
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto"),
             ColumnSpacing = 10,
             RowSpacing = 6
         };
@@ -733,6 +788,8 @@ internal sealed class SettingsWindow : Window
         AddRow(grid, 0, "글꼴", ScriptFontCombo);
         AddRow(grid, 1, "글자 크기", ScriptFontSizeBox);
         AddRow(grid, 2, "줄 간격 (%)", ScriptLineSpacingBox);
+        AddRow(grid, 3, "굵기", ScriptBoldCheck);
+        AddRow(grid, 4, "글자색", ScriptColorButton);
 
         // ⛔ 머리의 설명 한 줄(「[대본] 판의 카드에서 대본을 쓰는 칸의 글자입니다. 고치면 바로 바뀝니다 — …」)은 2026-11-19에 걷었다
         //    (소유자 — 「이 설명 문구는 필요없으니 지워주십시오」 · usability UX2). 묶음 이름과 미리 보기가 말한다.
@@ -758,6 +815,9 @@ internal sealed class SettingsWindow : Window
             ScriptFontCombo.SelectedItem = ScriptFont.Family.Length == 0 ? DefaultFontName : ScriptFont.Family;
             ScriptFontSizeBox.Value = (decimal)ScriptFont.Size;
             ScriptLineSpacingBox.Value = ScriptFont.LineSpacing;
+            ScriptBoldCheck.IsChecked = ScriptFont.Bold;
+            _scriptColorSwatch.Background = ScriptFont.Color is { } color ? WriterPalette.Brush(color) : Brushes.Transparent;
+            _scriptColorText.Text = ScriptFont.Color?.Hex ?? "기본";
             ScriptFont.Apply(ScriptPreview);
         }
         finally

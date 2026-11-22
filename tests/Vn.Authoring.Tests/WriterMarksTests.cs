@@ -389,6 +389,13 @@ public sealed class WriterMarksTests
         // 기본 글꼴은 빈 글로 적힌다.
         card.WriterBase = new WriterBase(string.Empty, 11);
         Assert.Equal(new WriterBase(string.Empty, 11), ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project)).FindDialogue(card.Id)!.WriterBase);
+        Assert.DoesNotContain("\"bold\"", ProjectSnapshotCodec.Encode(editor.Project), StringComparison.Ordinal);
+
+        // 굵게 · 글자색(WF-D16) — 정했을 때만 적는다.
+        card.WriterBase = new WriterBase("맑은 고딕", 12, Bold: true, Color: new WriterRgb(0x20, 0x40, 0x80));
+        string saved = ProjectSnapshotCodec.Encode(editor.Project);
+        Assert.Contains("\"#204080\"", saved, StringComparison.Ordinal);
+        Assert.Equal(card.WriterBase, ProjectSnapshotCodec.Decode(saved).FindDialogue(card.Id)!.WriterBase);
     }
 
     [Theory]

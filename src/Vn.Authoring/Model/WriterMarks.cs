@@ -88,7 +88,12 @@ public sealed record WriterLook(
 /// </summary>
 /// <param name="Font">글꼴 이름 — 빈 글이면 테마의 기본 글꼴. 그 글꼴이 없는 PC에서는 기본 글꼴로 보인다.</param>
 /// <param name="Size">글자 크기(pt).</param>
-public sealed record WriterBase(string Font, double Size);
+/// <param name="Bold">
+/// 카드 글 전체를 굵게(2026-11-23 소유자 — 「설정 창에서 원한다면, Bold로써 굵게 하는 걸 기본값으로 쓸 수도 있게」 · WF-D16). 서식의 굵게(<see cref="WriterLook.Bold"/>)는
+/// 이 위에 더하는 것이라, 처음부터 굵은 카드에서 일부만 가늘게 할 수는 없다.
+/// </param>
+/// <param name="Color">카드 글의 기본 글자색(같은 날 — 「글자 색깔도 같이」) — 없으면 테마의 글자색. 서식의 글자색 · 화자 이름 색이 그 위에 선다.</param>
+public sealed record WriterBase(string Font, double Size, bool Bold = false, WriterRgb? Color = null);
 
 /// <summary>대사 글의 한 구간 <c>[Start, Start + Length)</c>에 입힌 모양 — 자리는 그 줄 기본 언어 <c>Text</c>의 UTF-16 자리다(화자는 밖이다).</summary>
 public sealed record WriterSpan(int Start, int Length, WriterLook Look)

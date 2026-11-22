@@ -135,12 +135,30 @@ internal static class WriterMarksJson
     };
 
 
-    /// <summary>카드의 처음 글꼴 · 크기 — <c>{ "font": "맑은 고딕", "size": 11 }</c>(기본 글꼴이면 <c>font</c>는 빈 글).</summary>
-    public static JsonObject WriteBase(WriterBase value) => new()
+    /// <summary>
+    /// 카드의 처음 글꼴 · 크기 — <c>{ "font": "맑은 고딕", "size": 11, "bold": true, "color": "#334455" }</c>(기본 글꼴이면 <c>font</c>는 빈 글 · 굵게 · 글자색은
+    /// 정했을 때만).
+    /// </summary>
+    public static JsonObject WriteBase(WriterBase value)
     {
-        ["font"] = value.Font,
-        ["size"] = value.Size
-    };
+        var json = new JsonObject
+        {
+            ["font"] = value.Font,
+            ["size"] = value.Size
+        };
+
+        if (value.Bold)
+        {
+            json["bold"] = true;
+        }
+
+        if (value.Color is { } color)
+        {
+            json["color"] = color.Hex;
+        }
+
+        return json;
+    }
 
     /// <summary>너그럽게 읽는다 — 크기가 숫자가 아니거나 0 이하면 안 적힌 카드로 둔다(열 때 그 PC의 설정으로 다시 적힌다).</summary>
     public static WriterBase? ReadBase(JsonNode? json)
@@ -155,7 +173,7 @@ internal static class WriterMarksJson
         }
 
         string font = value["font"] is JsonValue name && name.TryGetValue(out string? text) ? text.Trim() : string.Empty;
-        return new WriterBase(font, points);
+        return new WriterBase(font, points, Bool(value["bold"]), WriterRgb.Parse(Text(value["color"])));
     }
 
     /// <summary><c>"#RRGGBB"</c>. 옛 파일의 색 이름(<c>"red"</c> — WF-D14 전)은 정해 둔 열 가지의 그 색(글자색 · 바탕색)으로 읽는다. 모르는 것은 버린다.</summary>

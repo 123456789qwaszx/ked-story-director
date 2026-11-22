@@ -116,6 +116,77 @@ public sealed class ScriptFontTests : IDisposable
     });
 
     /// <summary>
+    /// 2026-11-23 소유자 — 「설정 창에서 원한다면, Bold로써 굵게 하는 걸 기본값으로 쓸 수도 있게 해줘. 글자 색깔도 같이 조정할 수 있으면 좋겠고」(writer-formatting
+    /// WF-D16). 굵게 · 글자색도 새로 만드는 카드의 처음 값이다 — 미리 보기가 따르고, 서 있는 카드는 그대로다. 처음부터 굵은 카드에서 서식의 굵게는 일부만 가늘게
+    /// 하지 못한다고 말한다.
+    /// </summary>
+    [Fact]
+    public void 굵게와_글자색도_새_카드의_처음_값이다() => HeadlessUi.Run(() =>
+    {
+        try
+        {
+            ScriptFont.Reset();
+            (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
+            TextBox box = WritingBox(window, session);
+            IBrush? themeForeground = box.Foreground;
+
+            SettingsWindow settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(settings.ScriptBoldCheck.IsChecked);
+            settings.ScriptBoldCheck.IsChecked = true;
+            settings.ScriptColorChooser.Hex.Text = "#204080";
+            settings.ScriptColorChooser.Apply.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+
+            var blue = new WriterRgb(0x20, 0x40, 0x80);
+            Assert.Equal((true, "#204080"), AppSettingsService.LoadScriptLook());
+            Assert.Equal(FontWeight.Bold, settings.ScriptPreview.FontWeight);
+            Assert.Equal(Color.FromRgb(0x20, 0x40, 0x80), Assert.IsAssignableFrom<ISolidColorBrush>(settings.ScriptPreview.Foreground).Color);
+
+            // 서 있는 카드는 그대로다.
+            Assert.Same(box, WritingBox(window, session));
+            Assert.False(box.IsSet(TextBox.FontWeightProperty));
+            Assert.Same(themeForeground, box.Foreground);   // 테마의 글자색 그대로
+            Assert.Equal(new WriterBase(string.Empty, 11), Card(session).WriterBase);
+
+            // 새로 만든 카드는 굵고 그 색이다 — 카드에 적힌다.
+            settings.Close();
+            session.Editor.AddEpisode("ch01", "z", title: "z", 0, 0, sceneId: "a");
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(new WriterBase(string.Empty, 11, Bold: true, Color: blue), Card(session, "z").WriterBase);
+            TextBox fresh = WritingBox(window, session, "z");
+            Assert.Equal(FontWeight.Bold, fresh.FontWeight);
+            Assert.Equal(Color.FromRgb(0x20, 0x40, 0x80), Assert.IsAssignableFrom<ISolidColorBrush>(fresh.Foreground).Color);
+
+            // 처음부터 굵은 카드 — 서식 도구의 B는 눌려 보이고, 누르면 일부만 가늘게 할 수 없다고 말한다(서식은 그대로).
+            session.Editor.ApplyScenarioText(Card(session, "z").Id, "오늘은 맑다");
+            Dispatcher.UIThread.RunJobs();
+            fresh = WritingBox(window, session, "z");
+            fresh.Focus();
+            fresh.SelectionStart = 0;
+            fresh.SelectionEnd = 3;
+            Dispatcher.UIThread.RunJobs();
+            GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+            Assert.True(graph.FormatToolbarState.Bold);
+            graph.ApplyFormat(WriterStyleChange.Toggle(WriterStyleKind.Bold));
+            Assert.Contains("처음부터 굵게", session.StatusMessage, StringComparison.Ordinal);
+            Assert.Empty(Card(session, "z").WriterMarks);
+
+            // 기본값으로 — 설정은 돌아가고 카드는 그대로다.
+            ScriptFont.Reset();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal((false, (string?)null), AppSettingsService.LoadScriptLook());
+            Assert.Equal(FontWeight.Bold, WritingBox(window, session, "z").FontWeight);
+
+            window.Close();
+        }
+        finally
+        {
+            ScriptFont.Reset();
+        }
+    });
+
+    /// <summary>
     /// 처음 글꼴 · 크기가 안 적힌 옛 카드(그 값이 생기기 전에 만든 프로젝트)는 열 때 그 PC의 지금 설정으로 굳는다(2026-11-23 소유자 — 「지금 설정으로 굳힘」).
     /// 연 것만으로는 「저장 안 한 변경」이 아니고, 저장하면 파일에 적혀 다시 열 때 그 PC의 설정과 상관없이 그 값이다.
     /// </summary>

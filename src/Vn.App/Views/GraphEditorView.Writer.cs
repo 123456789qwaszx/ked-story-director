@@ -650,6 +650,13 @@ public partial class GraphEditorView
 
             (string nodeId, TextBox box, int start, int end) = target;
 
+            // 처음부터 굵은 카드(WF-D16)에서는 일부만 가늘게 할 수 없다 — 서식의 굵게는 그 위에 더하는 것이다.
+            if (change.Kind == WriterStyleKind.Bold && session.Project.FindDialogue(nodeId)?.WriterBase is { Bold: true })
+            {
+                session.SetStatus("이 카드는 처음부터 굵게입니다(설정 「대본 글 칸」의 굵게로 만든 카드) — 일부만 가늘게 할 수는 없습니다.");
+                return;
+            }
+
             if (PendingWriting(nodeId, box) is { } pending)
             {
                 _liveWriting.Stop();
@@ -782,7 +789,9 @@ public partial class GraphEditorView
 
         try
         {
-            _boldButton!.IsChecked = All(look => look.Bold);
+            // 처음부터 굵은 카드(설정의 굵게로 만든 카드 · WF-D16)는 모두 굵다.
+            bool cardBold = target is { } bolded && (int)bolded.Box.FontWeight >= (int)FontWeight.SemiBold;
+            _boldButton!.IsChecked = All(look => look.Bold || cardBold);
             _italicButton!.IsChecked = All(look => look.Italic);
             _strikeButton!.IsChecked = All(look => look.Strike);
 
