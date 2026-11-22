@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -21,7 +22,8 @@ namespace Vn.App.Views;
 /// (<see cref="ScenarioTextParser.DialogueBodyRange"/>)으로 잰다. 넣지 않은 글을 쓰는 동안에는 모델의 글에서 칸의 글로 자리를 옮겨(넣을 때와 같은 셈 —
 /// <see cref="WriterMarkMath.Rebase"/>) 쓰는 대로 따라간다.</item>
 /// <item><b>도구 막대</b> — 글꼴 · 크기 −/+ · 굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 정렬. 마지막으로 쓴 글 칸과 그 고른 범위에 입힌다. 단추는 초점을 받지 않고,
-/// 초점을 가져가는 것(글꼴 고르기 · 색 차림)을 쓴 뒤에는 그 칸에 초점과 고른 범위를 되돌린다. 넣지 않은 글이 있으면 먼저 넣는다(줄 신원이 서야 자리를 센다).</item>
+/// 초점을 가져가는 것(글꼴 고르기 · 색 차림)을 쓰는 동안에는 칸의 고른 범위를 붙들어 두고(옅게 칠한 채 남는다), 다 쓰면 그 칸에 초점과 고른 범위를 되돌린다.
+/// 넣지 않은 글이 있으면 먼저 넣는다(줄 신원이 서야 자리를 센다).</item>
 /// </list>
 /// 서식은 작가가 보기 위한 것이다 — 내보내기(대사 Yarn · 진행 JSON)에 나가지 않는다(WF-D1 · D2).
 /// </summary>
@@ -48,6 +50,15 @@ public partial class GraphEditorView
     private Border? _fillBar;
     private readonly Dictionary<WriterAlign, ToggleButton> _alignButtons = new();
     private readonly List<Control> _formatControls = new();
+
+    /// <summary>초점을 가져가는 도구 — 색 차림들(글꼴 고르기는 <see cref="_fontBox"/>).</summary>
+    private readonly List<FlyoutBase> _formatFlyouts = new();
+
+    /// <summary>
+    /// 도구 막대를 쓰는 동안 고른 범위를 붙든 글 칸 — 초점을 가져가는 도구가 열려 칸이 초점을 잃어도 범위를 지우지 않는다(Avalonia는 초점을 잃은 칸의 범위를
+    /// 지운다 · 붙든 동안은 옅게 칠한 채 남는다). 칸에 초점을 되돌리면 놓는다(<see cref="ReleaseFormatSelection"/>).
+    /// </summary>
+    private TextBox? _selectionHold;
 
     /// <summary>글꼴 고르기의 첫 칸 — 설정의 「대본 글 칸」 글꼴로 되돌린다.</summary>
     private const string DefaultFontItem = "기본 글꼴";
@@ -278,6 +289,8 @@ public partial class GraphEditorView
     /// <summary>입힐 칸을 놓는다 — 판의 빈 곳 · 카드 머리를 눌렀다.</summary>
     private void ReleaseFormatTarget()
     {
+        ReleaseFormatSelection();
+
         if (_formatNodeId is null)
         {
             return;
@@ -294,6 +307,9 @@ public partial class GraphEditorView
     {
         Panel bar = WriterToolbar;
         bar.Children.Clear();
+
+        // 도구를 누르는 순간 칸의 고른 범위를 붙든다 — 누르기가 초점을 옮기기 전에(터널).
+        bar.AddHandler(PointerPressedEvent, (_, _) => HoldFormatSelection(), RoutingStrategies.Tunnel, handledEventsToo: true);
 
         _fontBox = new ComboBox
         {
@@ -313,7 +329,7 @@ public partial class GraphEditorView
 
             ApplyFormat(new WriterStyleChange(WriterStyleKind.Font, Font: picked == DefaultFontItem ? null : picked));
         };
-        _fontBox.DropDownClosed += (_, _) => Dispatcher.UIThread.Post(RestoreFormatFocus);
+        _fontBox.DropDownClosed += (_, _) => RestoreFormatFocusLater();
         bar.Children.Add(_fontBox);
 
         bar.Children.Add(FormatButton("−", "글자 작게 — 고른 글자를 1pt 줄입니다", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: -1))));
@@ -491,7 +507,8 @@ public partial class GraphEditorView
             ApplyFormat(new WriterStyleChange(kind, Color: null));
         };
         panel.Children.Add(none);
-        flyout.Closed += (_, _) => Dispatcher.UIThread.Post(RestoreFormatFocus);
+        flyout.Closed += (_, _) => RestoreFormatFocusLater();
+        _formatFlyouts.Add(flyout);
 
         var button = new Button
         {
@@ -601,8 +618,10 @@ public partial class GraphEditorView
 
             session.Editor.ApplyWriterStyle(nodeId, ranges, change);
             _formatSelection = (start, end);
-            RestoreFormatFocus();
         });
+
+        // 입혔든 못 입혔든 칸에 초점과 범위를 되돌린다(붙든 범위도 놓는다 — 도구가 아직 열려 있으면 닫힐 때).
+        RestoreFormatFocus();
     }
 
     /// <summary>카드 글 칸의 좌우 정렬 — 고른 글자가 없어도 그 칸이면 된다.</summary>
@@ -620,19 +639,64 @@ public partial class GraphEditorView
         });
     }
 
-    /// <summary>입힐 칸에 초점과 고른 범위를 되돌린다 — 초점을 가져간 도구(글꼴 고르기 · 색 차림)를 닫은 뒤.</summary>
+    /// <summary>
+    /// 입힐 칸에 초점과 고른 범위를 되돌린다 — 도구 막대를 쓴 뒤. 초점을 가져가는 도구가 다 닫혔으면 붙든 범위도 놓는다.
+    /// </summary>
     private void RestoreFormatFocus()
     {
-        if (FormatTarget() is not { } target || target.Box.IsFocused)
+        if (FormatTarget() is { } target && !target.Box.IsFocused)
+        {
+            (int start, int end) = (target.Start, target.End);
+            target.Box.Focus();
+            target.Box.SelectionStart = start;
+            target.Box.SelectionEnd = end;
+        }
+
+        if (!FormatToolOpen)
+        {
+            ReleaseFormatSelection();
+        }
+    }
+
+    /// <summary>
+    /// 초점을 가져간 도구(글꼴 고르기 · 색 차림)를 닫은 뒤 — 칸에 초점과 범위를 되돌리는 일은 <b>입력 처리가 다 끝난 뒤</b>에 한다. 윈도에서는 도구의 창이
+    /// 닫히며 생기는 초점 알림이 입력으로 늦게 오는데, 그보다 먼저 되돌리면 그 알림이 칸의 초점을 다시 가져가 범위가 풀렸다(2026-11-23 소유자 — 「여러 글자를
+    /// 드래그 한 뒤에 글꼴을 바꾸면, 드래그 했던게 모두 풀리는 버그」). 그사이 사람이 다른 칸을 눌렀으면 입힐 칸이 그 칸으로 바뀌어 있어 끌어오지 않는다.
+    /// </summary>
+    private void RestoreFormatFocusLater() => Dispatcher.UIThread.Post(RestoreFormatFocus, DispatcherPriority.Background);
+
+    /// <summary>초점을 가져가는 도구가 열려 있는가.</summary>
+    private bool FormatToolOpen => _fontBox?.IsDropDownOpen == true || _formatFlyouts.Exists(flyout => flyout.IsOpen);
+
+    /// <summary>도구 막대를 누른다 — 입힐 칸이 초점을 쥐고 있으면 그 고른 범위를 붙든다(<see cref="_selectionHold"/>).</summary>
+    private void HoldFormatSelection()
+    {
+        if (FormatTarget() is { Box: { IsFocused: true } box })
+        {
+            box.ClearSelectionOnLostFocus = false;
+            _selectionHold = box;
+        }
+    }
+
+    /// <summary>붙든 범위를 놓는다 — 칸이 초점을 쥐지 않았으면(사람이 다른 데로 갔다) 보통 칸처럼 범위를 걷는다.</summary>
+    private void ReleaseFormatSelection()
+    {
+        if (_selectionHold is not { } box)
         {
             return;
         }
 
-        (int start, int end) = (target.Start, target.End);
-        target.Box.Focus();
-        target.Box.SelectionStart = start;
-        target.Box.SelectionEnd = end;
+        _selectionHold = null;
+        box.ClearValue(TextBox.ClearSelectionOnLostFocusProperty);
+
+        if (!box.IsFocused)
+        {
+            box.ClearSelection();
+        }
     }
+
+    /// <summary>시험이 본다 — 도구 막대가 칸의 고른 범위를 붙들고 있는가.</summary>
+    internal bool HoldsFormatSelection => _selectionHold is not null;
 
     /// <summary>도구 막대가 고른 글자의 지금 모양을 보인다 — 모두 굵으면 B가 눌려 있고, 크기 · 글꼴이 하나면 그것을 보인다.</summary>
     private void RefreshFormatToolbar()

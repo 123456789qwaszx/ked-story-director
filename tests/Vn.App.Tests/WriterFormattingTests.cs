@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
@@ -236,6 +237,94 @@ public sealed class WriterFormattingTests
         Point at = box.TranslatePoint(new Point(0, 0), window)!.Value;
         File.WriteAllText("/tmp/ae/writer.txt", $"{at.X} {at.Y} {box.Bounds.Width} {box.Bounds.Height}");
         Assert.Equal(6, Looks(window, card.Id).Count);
+
+        window.Close();
+    });
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 「여러 글자를 드래그 한 뒤에 글꼴을 바꾸면, 드래그 했던게 모두 풀리는 버그」. 글꼴 고르기는 펼칠 때 초점을 가져가고, 초점을 잃은 칸은
+    /// 고른 범위를 지운다. 윈도에서는 목록 창이 닫히며 생기는 초점 알림이 입력으로 늦게 와서, 그보다 먼저 되돌린 초점 · 범위를 다시 가져갔다 — 그 늦은 알림을
+    /// 입력 차례의 일로 끼워 흉내 낸다. 펼친 동안에도 범위는 남고(옅게 칠한 채), 고른 뒤에는 칸이 초점과 그 범위를 다시 쥔다.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void 여러_글자를_고른_채_글꼴을_골라도_고른_범위가_남는다(bool formatted) => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
+        GraphEditorView graph = Graph(window);
+
+        if (formatted)
+        {
+            session.Editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[1], 0, 2)], WriterStyleChange.Toggle(WriterStyleKind.Bold));
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        TextBox box = Box(window, card.Id);
+        Select(box, "긴 하루");
+        Assert.Equal((8, 12), (box.SelectionStart, box.SelectionEnd));
+
+        // 글꼴 고르기를 누른다 — 목록이 초점을 가져가도 칸의 범위는 남는다.
+        ComboBox fonts = Graph(window).FindControl<StackPanel>("WriterToolbar")!.GetVisualDescendants().OfType<ComboBox>().Single();
+        Point center = fonts.TranslatePoint(new Point(fonts.Bounds.Width / 2, fonts.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(fonts.IsDropDownOpen);
+        Assert.False(box.IsFocused);
+        Assert.Equal((8, 12), (box.SelectionStart, box.SelectionEnd));
+        Assert.True(graph.HoldsFormatSelection);
+
+        // 글꼴 하나를 누른다 — 목록의 누르기는 고르고 나서 목록을 닫는다(그 두 걸음). 목록 창이 닫히며 생기는 초점 알림은 입력 차례로 늦게 온다.
+        // (헤드리스의 마우스 흉내는 누를 때마다 밀린 일을 다 돌려 그 틈이 없다 — 두 걸음을 바로 밟는다.)
+        string picked = (string)((ComboBoxItem)fonts.ContainerFromIndex(1)!).Content!;
+        fonts.SelectedItem = picked;
+        fonts.IsDropDownOpen = false;
+        Dispatcher.UIThread.Post(() => graph.FindControl<Border>("WritingFocusSink")!.Focus(), DispatcherPriority.Input);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(fonts.IsDropDownOpen);
+        Assert.Equal(picked, session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]].Single(span => span.Look.Font is not null).Look.Font);
+        TextBox now = Box(window, card.Id);
+        Assert.IsType<WriterTextBox>(now);
+        Assert.True(now.IsFocused);
+        Assert.Equal((8, 12), (now.SelectionStart, now.SelectionEnd));
+
+        // 다 썼다 — 붙든 범위를 놓았다. 이제 칸을 떠나면 보통 칸처럼 범위가 걷힌다.
+        Assert.False(graph.HoldsFormatSelection);
+        Assert.True(now.ClearSelectionOnLostFocus);
+
+        window.Close();
+    });
+
+    /// <summary>글꼴 고르기를 펼쳤다가 고르지 않고 닫으면 칸이 초점과 범위를 다시 쥐고, 그 칸을 떠나면 범위가 걷힌다(붙든 채 남지 않는다).</summary>
+    [Fact]
+    public void 글꼴_고르기를_그냥_닫으면_범위가_돌아오고_칸을_떠나면_걷힌다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
+        GraphEditorView graph = Graph(window);
+        TextBox box = Box(window, card.Id);
+        Select(box, "긴 하루");
+
+        ComboBox fonts = graph.FindControl<StackPanel>("WriterToolbar")!.GetVisualDescendants().OfType<ComboBox>().Single();
+        Point center = fonts.TranslatePoint(new Point(fonts.Bounds.Width / 2, fonts.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(fonts.IsDropDownOpen);
+
+        fonts.IsDropDownOpen = false;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(box, Box(window, card.Id));
+        Assert.True(box.IsFocused);
+        Assert.Equal((8, 12), (box.SelectionStart, box.SelectionEnd));
+        Assert.False(graph.HoldsFormatSelection);
+        Assert.Empty(session.Project.FindDialogue(card.Id)!.WriterMarks);
+
+        // 칸을 떠난다 — 보통 칸처럼 범위가 걷힌다.
+        graph.FindControl<Border>("WritingFocusSink")!.Focus();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(box.SelectionStart, box.SelectionEnd);
 
         window.Close();
     });
