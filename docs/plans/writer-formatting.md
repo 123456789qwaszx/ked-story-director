@@ -40,6 +40,7 @@
 | WF-D15 | **화자마다 이름 색** — 「화자」 탭의 화자 줄 앞 색 단추(같은 색 차림)로 정하면 [대본] 카드 글 칸에서 그 화자의 이름(콜론 앞)이 그 색으로 보인다. 화자 목록에 적고(`speakers[].color` · 프로젝트 파일 · 되돌리기 한 칸), 넣기 전의 줄에도 선다(칸의 글을 그대로 읽는다). 내보내기는 읽지 않는다. 이름 색을 정한 화자의 대사가 든 카드는 서식 칸을 받는다 — 여러 카드의 칸이 바뀌면 판을 한 번 다시 짓고 상관없는 카드는 둔다 | 2026-11-23 소유자 — 「화자탭에서 그 화자별로 원하는 색상을 지정 한 뒤에, 에피소드 탭 내부에서 그 화자를 사용할 때, 자동으로 그 색상으로 이름이 바뀌도록 하는 기능을 추가하여 주십시오」 |
 | WF-D16 | **설정 「대본 글 칸」에 굵게 · 글자색** — 글꼴 · 크기처럼 새로 만드는 카드의 처음 값이다(`writerBase`의 `bold` · `color` · 정했을 때만 적는다). 서 있는 카드는 그대로다. 서식의 글자색 · 화자 이름 색은 그 위에 선다. 처음부터 굵은 카드에서 서식의 굵게로 일부만 가늘게 할 수는 없다 — B는 눌려 보이고, 누르면 상태줄이 말한다 | 2026-11-23 소유자 — 「설정 창에서 원한다면, Bold로써 굵게 하는 걸 기본값으로 쓸 수도 있게 해줘. 글자 색깔도 같이 조정할 수 있으면 좋겠고」. 가늘게 풀기까지 하려면 서식의 굵게가 「켬 · 끔 · 물려받음」 셋이 되어야 해 하지 않았다 |
 | WF-D17 | **한글도 기운다** — 앱을 세울 때 한글 범위(자모 · 음절)를 한글 글꼴에 먼저 맡긴다(`FontManagerOptions.FontFallbacks` — 맑은 고딕 · Apple SD 산돌고딕 Neo · Noto Sans KR · Noto Sans CJK KR · 나눔고딕, 그 PC의 것을 앞에). 그러면 한글이 이름으로 찾는 길을 타서 기울임을 청한 한글은 비스듬히(Skia의 가짜 기울임), 굵은꼴이 없는 글꼴은 가짜 굵게로 그려진다. 보통 한글은 전과 같은 글꼴이다. **그 PC에 있는 글꼴만, 시스템이 쓰는 이름 그대로** 맡기고(`HangulFonts.Installed`), 서식 · 카드의 처음 글꼴이 그 PC에 없으면 이름을 넘기지 않고 기본 글꼴로 그린다(`InstalledFonts`) — ⛔ 없는 이름을 넘기면 리눅스는 비슷한 글꼴을 대신 내주고, Avalonia가 그 어긋남 때문에 기울임 · 굵게를 번갈아 그릴 때마다 가짜 기울임 글꼴을 다시 지어 메모리가 끝없이 늘었다(화면 시험 전체가 메모리 부족으로 죽었다 · 시험이 못 박는다) | 2026-11-23 소유자 — 「한글 글꼴이 기울여 지지 않는 건 어쩔 수 없는걸까?」 → 까닭: 기본 글꼴(Inter)에 한글이 없어 한글은 늘 대체 글꼴로 그려지는데, Avalonia 12.1.1은 대체 글꼴에는 가짜 기울임을 일부러 하지 않는다(`FontCollectionBase.BuildTypefaceWithSynthesis` — .ttc 묶음 글꼴 걱정). 이름으로 찾은 글꼴에는 한다 — 픽셀로 잰 시험(`HangulFontTests`)이 못 박는다. **Avalonia를 올리면 다시 본다** |
+| WF-D18 | **크기를 키운 글자가 든 줄만 높아진다** — 그 위아래 줄과 다른 줄은 설정의 줄 높이 그대로다. 큰 글자가 있는 칸은 줄 높이를 정하지 않고(줄마다 자연 높이), 문단의 기본 글자를 **자연 높이가 설정의 줄 높이와 같은 크기**로 둔 받침대로 쓴다(화면에 나오지 않는다 — 글자는 모두 제 크기를 따로 입는다 · `WriterTextPresenter.StrutSize`). 줄 간격을 좁혀 한글 한 줄의 자연 높이가 설정보다 크면, 그 칸의 보통 줄은 한글 한 줄의 자연 높이다(설정보다 조금 높다 — 줄끼리는 같다). ⛔ 그 전에는 칸 전체의 줄 높이를 가장 큰 글자의 비율로 키웠다 | 2026-11-23 소유자 — 「한줄에서 특정 글자의 글자 크기를 늘렸는데도, 그 줄의 위아래가 아닌 카드 내의 전체의 줄 간격이 늘어나는 게 살짝 아쉬운데 고칠 수 있을까?」. Avalonia 12.1.1은 줄 높이를 정하면 모든 줄을 그 높이로 고정하고, 정하지 않으면 줄마다 「문단의 기본 글자와 그 줄의 글자들」의 자연 높이를 쓴다(`TextLineImpl.CreateLineMetrics`) — 그 사이에 줄마다 높이를 정하는 길이 없어 받침대로 맞췄다. 시험 `WriterLineHeightTests`. **Avalonia를 올리면 다시 본다** |
 
 **하지 않는 것** — 게임용 서식 표기(Yarn 마크업), 줄 형광펜, 테두리, 셀 병합, 줄마다 다른 정렬, 화자 이름에 서식(이름 색은 화자마다 — WF-D15), 인스펙터 줄 표 · 하이어아키 ·
 접은 장면 줄 목록에 서식 보이기.
@@ -58,7 +59,7 @@
 | 꾸밈 · 도구 막대 | `Vn.App/Views/GraphEditorView.Writer.cs` · 자리는 `GraphEditorView.axaml`의 `WriterToolbar`(위쪽 줄 [삭제] 오른쪽) · 색 차림은 `Vn.App/Views/WriterColorChooser.cs`(도구 막대와 「화자」 탭이 같이 쓴다 · WF-D14) |
 | 한글 글꼴 맡기기 | `Vn.App/Views/HangulFonts.cs` — `HangulFonts`(범위 · 후보 · 이 PC에 있는 것 · 설정)와 `InstalledFonts`(없는 글꼴은 기본 글꼴로 — `WriterTextPresenter` · `ScriptFont.Apply`가 쓴다). `Program.BuildAvaloniaApp`과 시험의 `TestAppBuilder`가 같은 설정을 넣는다. 시험 `HangulFontTests`(픽셀로 기울기 · 굵기 · 메모리) (WF-D17) |
 | 화자 이름 색 | `Speaker.Color`(모델) · `ProjectManifestJson`의 `speakers[].color` · `ProjectEditor.SetSpeakerColor`(서식과 같은 알림 — `ProjectChangeKind.WriterMarks`, 카드 없이) · 칸의 이름 자리는 `ScenarioTextParser.SpeakerNameRange`(파서와 한 벌) · 색 단추는 `MainWindow.Speakers.cs`의 `SpeakerColorButton` · 칸 바꾸기 묶음은 `GraphEditorView.SwapWritingBoxesLater` (WF-D15) |
-| 시험 | `tests/Vn.Authoring.Tests/WriterMarksTests.cs` · `tests/Vn.App.Tests/WriterFormattingTests.cs` · 처음 글꼴은 `ScriptFontTests` · `CardFitTests`, 화자 이름 색은 `DirectorSpeakersTests` |
+| 시험 | `tests/Vn.Authoring.Tests/WriterMarksTests.cs` · `tests/Vn.App.Tests/WriterFormattingTests.cs` · 처음 글꼴은 `ScriptFontTests` · `CardFitTests`, 화자 이름 색은 `DirectorSpeakersTests`, 큰 글자 줄 높이는 `WriterLineHeightTests` |
 
 ## 3. 설계
 
@@ -118,7 +119,8 @@
   `WriterTextPresenter`로 바꿨다(모양은 바탕 테마에서 이어 받는다). 첫 판은 이 틀을 코드로 지었다 — 위의 칸이 튀는 것을 이 틀 탓으로 의심해 테마 틀 그대로
   옮겼다(까닭은 UX39였다). 바탕 TextBox와 가장 같은 길이라 그대로 둔다. **Avalonia를 올리면 새 판의 TextBox.xaml과 견줘 다시 옮긴다.** 도구 막대가 칸의 커서를 따라 상태를 맞추는 일도 칸의 입력 처리가 끝난 뒤로 미루고(`RefreshFormatToolbarLater`), 글자를 치는 동안(고른 범위가 빈 채로
 커서만 옮겨 간다)에는 아예 하지 않는다.
-- 크기를 키운 글자가 있는 칸은 줄 높이(설정의 줄 간격 — 고정)를 가장 큰 글자의 비율로 칸 전체에서 키운다(줄마다 다른 높이는 TextBox 배치가 받지 않는다).
+- 크기를 키운 글자가 있는 칸은 그 글자가 든 줄만 높아진다(WF-D18) — 줄 높이를 정하지 않고 문단의 기본 글자를 받침대로 쓴다(`StrutSize`). ⛔ 첫 판은 줄 높이를
+  가장 큰 글자의 비율로 칸 전체에서 키웠다.
 - ⚠ **한글 굵게** — 주 글꼴(Inter)에 한글이 없어 한글은 대체 글꼴(맑은 고딕 · Noto Sans CJK)로 그려지는데, Avalonia는 바로 앞 구간이 쓴 대체 글꼴이 그 글자를
   그릴 수 있으면 그것을 다시 쓴다. 그대로 두면 보통 글 다음의 굵은 한글이 보통 굵기로, 굵은 글 다음의 보통 한글이 굵게 나온다. 한글은 앞 구간과 **문화권이
   다르면** 물려받지 않으므로 글꼴 모양(굵기 · 기울임 · 글꼴)마다 다른 문화권을 준다(`WriterTextPresenter.CultureOf`). **Avalonia를 올리면 이 동작을 다시 본다**

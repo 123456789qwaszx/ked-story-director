@@ -95,10 +95,47 @@ public sealed class WriterTextPresenter : TextPresenter
         }
     }
 
-    /// <summary>
-    /// 이 칸 안에서 가장 큰 글자 차 — 줄 높이를 그만큼 키운다. 줄 높이가 고정(설정의 줄 간격)이라 큰 글자 줄만 키울 수 없어 칸 전체가 그 비율이다.
-    /// </summary>
+    /// <summary>이 칸 안에서 가장 큰 글자 차 — 0보다 크면 줄마다 높이를 따로 잡는다(<see cref="StrutSize"/>).</summary>
     private int MaxGrow => _looks.Count == 0 ? 0 : Math.Max(0, _looks.Max(look => look.Look.Grow));
+
+    /// <summary>
+    /// <b>큰 글자가 든 줄만 높인다</b>(2026-11-23 소유자 — 「한줄에서 특정 글자의 글자 크기를 늘렸는데도, 그 줄의 위아래가 아닌 카드 내의 전체의 줄 간격이 늘어나는
+    /// 게 살짝 아쉬운데」 · writer-formatting WF-D18). Avalonia 12.1.1은 줄 높이를 정하면 모든 줄을 그 높이로 고정하고(큰 글자는 위아래 줄과 겹친다), 정하지
+    /// 않으면 줄마다 「문단의 기본 글자와 그 줄의 글자들 가운데 가장 큰 것」의 자연 높이를 쓴다. 그래서 큰 글자가 있는 칸은 줄 높이를 정하지 않고, 문단의 기본
+    /// 글자를 <b>자연 높이가 설정의 줄 높이와 꼭 같은 크기</b>로 둔다 — 화면에 나오지 않는 받침대다(글자는 모두 제 크기를 따로 입는다 · <see cref="Overrides"/>).
+    /// 보통 줄은 받침대 높이(= 설정의 줄 높이)이고, 큰 글자가 든 줄만 그 글자의 자연 높이로 높아진다. ⛔ 그 전에는 칸 전체의 줄 높이를 가장 큰 글자의 비율로
+    /// 키웠다. 받침대 크기를 못 재면(글꼴을 못 찾았다) null — 그때는 전처럼 칸 전체를 키운다.
+    ///
+    /// 받침대 높이는 설정의 줄 높이와 <b>보통 크기 한글 · 영문 한 줄의 자연 높이</b> 가운데 큰 쪽이다 — 한글 글꼴의 자연 높이가 설정의 줄 높이보다 크면(줄 간격을
+    /// 좁혔다 · 리눅스의 Noto CJK) 한글 줄만 높아져 보통 줄끼리 높이가 어긋난다. 그때 그 칸의 보통 줄은 설정보다 조금 높다(줄 높이를 정한 칸은 글자가 위아래로
+    /// 넘쳐 겹친다).
+    /// </summary>
+    private double? StrutSize(Typeface typeface)
+    {
+        if (!double.IsFinite(LineHeight) || LineHeight <= 0 || FontSize <= 0 ||
+            !FontManager.Current.TryGetGlyphTypeface(typeface, out GlyphTypeface? glyphs))
+        {
+            return null;
+        }
+
+        FontMetrics metrics = glyphs.Metrics;
+        double natural = (metrics.Descent - metrics.Ascent + metrics.LineGap) / (double)metrics.DesignEmHeight;
+        return natural > 0 ? Math.Max(LineHeight, PlainLineHeight(typeface, FontSize)) / natural : null;
+    }
+
+    private static readonly Dictionary<(Typeface, double), double> PlainLineHeights = new();
+
+    /// <summary>보통 크기 한글 · 영문 한 줄의 자연 높이(줄 높이를 정하지 않은) — 글꼴 · 크기마다 한 번 잰다.</summary>
+    private static double PlainLineHeight(Typeface typeface, double size)
+    {
+        if (!PlainLineHeights.TryGetValue((typeface, size), out double height))
+        {
+            using var probe = new TextLayout("가A", typeface, size, null);
+            PlainLineHeights[(typeface, size)] = height = probe.Height;
+        }
+
+        return height;
+    }
 
     protected override TextLayout CreateTextLayout()
     {
@@ -125,9 +162,18 @@ public sealed class WriterTextPresenter : TextPresenter
         var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
 
         double lineHeight = LineHeight;
+        double paragraphSize = FontSize;
+        bool strut = false;
         int grow = MaxGrow;
 
-        if (grow > 0 && double.IsFinite(lineHeight) && lineHeight > 0 && FontSize > 0)
+        if (grow > 0 && StrutSize(typeface) is { } strutSize)
+        {
+            // 큰 글자가 든 줄만 높인다 — 줄 높이를 정하지 않고 문단의 기본 글자를 받침대로(StrutSize).
+            lineHeight = double.NaN;
+            paragraphSize = strutSize;
+            strut = true;
+        }
+        else if (grow > 0 && double.IsFinite(lineHeight) && lineHeight > 0 && FontSize > 0)
         {
             lineHeight = Math.Round(lineHeight * (FontSize + grow) / FontSize, 1);
         }
@@ -135,7 +181,7 @@ public sealed class WriterTextPresenter : TextPresenter
         return new TextLayout(
             shown,
             typeface,
-            FontSize,
+            paragraphSize,
             Foreground,
             TextAlignment,
             TextWrapping,
@@ -148,7 +194,7 @@ public sealed class WriterTextPresenter : TextPresenter
             LetterSpacing,
             0,
             FontFeatures,
-            Overrides(text.Length, caret, preeditLength, typeface));
+            Overrides(text.Length, caret, preeditLength, typeface, coverPlain: strut));
     }
 
     /// <summary>「글에 맞춤」이 잰다 — 줄을 꺾지 않고 모양을 입혀 놓았을 때 가장 긴 줄의 폭.</summary>
@@ -168,7 +214,8 @@ public sealed class WriterTextPresenter : TextPresenter
     /// <summary>
     /// 구간마다의 모양 — 겹치지 않고 자리 차례. 조합 중인 글자는 그 앞 글자의 모양을 잇는다(넣으면 그렇게 된다 — 구간 끝에 이어 친 글자).
     /// </summary>
-    private List<ValueSpan<TextRunProperties>> Overrides(int textLength, int caret, int preeditLength, Typeface typeface)
+    /// <param name="coverPlain">보통 글자에도 제 크기를 입힌다 — 문단의 기본 글자가 받침대일 때(<see cref="StrutSize"/>).</param>
+    private List<ValueSpan<TextRunProperties>> Overrides(int textLength, int caret, int preeditLength, Typeface typeface, bool coverPlain = false)
     {
         var looks = new WriterLook[textLength];
         Array.Fill(looks, WriterLook.Plain);
@@ -220,7 +267,7 @@ public sealed class WriterTextPresenter : TextPresenter
             bool preedit = Preedit(run);
             bool selected = Selected(run);
 
-            if (!look.IsPlain || preedit || selected)
+            if (!look.IsPlain || preedit || selected || coverPlain)
             {
                 spans.Add(new ValueSpan<TextRunProperties>(run, at - run, Properties(look, typeface, preedit, selected ? selectionForeground : null, CultureOf(look, cultures))));
             }
