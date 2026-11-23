@@ -77,6 +77,140 @@ public sealed partial class ProjectEditor
         }, nodeId);
     }
 
+    /// <summary>
+    /// <b>카드들의 글 전체</b>에 한 가지 모양을 입힌다 — 하이어아키 · 판에서 카드(여러 장도)만 골랐을 때의 서식 도구(2026-11-23 소유자 — 「도구 막대 전부」 ·
+    /// writer-formatting WF-D21). 카드마다 은퇴하지 않은 모든 줄의 대사 글 전체가 구간이다(화자 이름 · 조건 줄은 대사 글이 아니라 들지 않는다). 켜고 끄는 것은
+    /// <b>모든 카드를 하나로</b> 판정한다 — 모두 이미 그 모양이면 끄고, 하나라도 아니면 모두 켠다. 굵게는 처음부터 굵은 카드(<see cref="WriterBase.Bold"/>)를 이미
+    /// 굵은 것으로 센다. 되돌리기 한 칸이고, 바뀐 것이 없으면 적지 않는다. 크기(<see cref="WriterStyleKind.Grow"/> · <see cref="WriterStyleKind.Size"/>)는 여기서도
+    /// 글자마다의 차다 — 카드의 기본 크기는 <see cref="SetWriterBase"/>.
+    /// </summary>
+    public void ApplyWriterStyleToCards(IReadOnlyList<string> nodeIds, WriterStyleChange change)
+    {
+        ArgumentNullException.ThrowIfNull(nodeIds);
+        ArgumentNullException.ThrowIfNull(change);
+
+        var cards = new List<(DialogueNode Node, List<(string LineId, int Length)> Lines)>();
+
+        foreach (string nodeId in nodeIds.Distinct(StringComparer.Ordinal))
+        {
+            DialogueNode node = RequireDialogue(nodeId);
+            List<(string, int)> lines = node.Script.ActiveLines
+                .Select(line => (line.Id, node.Script.Text(line.Id).Text.Length))
+                .Where(line => line.Length > 0)
+                .ToList();
+
+            if (lines.Count > 0)
+            {
+                cards.Add((node, lines));
+            }
+        }
+
+        if (cards.Count == 0)
+        {
+            return;
+        }
+
+        bool on = WriterMarkMath.IsToggle(change.Kind) &&
+                  !cards.All(card =>
+                      (change.Kind == WriterStyleKind.Bold && card.Node.WriterBase is { Bold: true }) ||
+                      card.Lines.All(line => WriterMarkMath.IsAll(
+                          card.Node.WriterMarks.GetValueOrDefault(line.LineId), line.Length, 0, line.Length,
+                          look => WriterMarkMath.Has(look, change.Kind))));
+
+        var next = new List<(DialogueNode Node, string LineId, List<WriterSpan> Spans)>();
+
+        foreach ((DialogueNode node, List<(string LineId, int Length)> lines) in cards)
+        {
+            foreach ((string lineId, int length) in lines)
+            {
+                List<WriterSpan> spans = WriterMarkMath.Apply(
+                    node.WriterMarks.GetValueOrDefault(lineId) ?? [], length, 0, length, look => WriterMarkMath.Change(look, change, on));
+
+                if (!SameSpans(node.WriterMarks.GetValueOrDefault(lineId), spans))
+                {
+                    next.Add((node, lineId, spans));
+                }
+            }
+        }
+
+        if (next.Count == 0)
+        {
+            return;
+        }
+
+        string? only = next.Select(item => item.Node.Id).Distinct(StringComparer.Ordinal).Count() == 1 ? next[0].Node.Id : null;
+        Mutate(ProjectChangeKind.WriterMarks, () =>
+        {
+            foreach ((DialogueNode node, string lineId, List<WriterSpan> spans) in next)
+            {
+                SetLineMarks(node, lineId, spans);
+            }
+        }, only);
+    }
+
+    /// <summary>
+    /// 카드들의 처음 값(<see cref="DialogueNode.WriterBase"/> — 기본 크기 · 줄 간격 등)을 한 번에 바꾼다 — 서식 도구가 카드(여러 장도)를 골랐을 때(WF-D21).
+    /// 카드마다 <paramref name="change"/>가 새 값을 낸다. 처음 값이 안 적힌 카드는 새 카드의 처음 값(<see cref="NewCardWriterBase"/>) 위에서 — 그것도 없으면
+    /// 건너뛴다. 되돌리기 한 칸이고, 바뀐 것이 없으면 적지 않는다.
+    /// </summary>
+    public void SetWriterBase(IReadOnlyList<string> nodeIds, Func<WriterBase, WriterBase> change)
+    {
+        ArgumentNullException.ThrowIfNull(nodeIds);
+        ArgumentNullException.ThrowIfNull(change);
+
+        var next = new List<(DialogueNode Node, WriterBase Value)>();
+
+        foreach (string nodeId in nodeIds.Distinct(StringComparer.Ordinal))
+        {
+            DialogueNode node = RequireDialogue(nodeId);
+
+            if ((node.WriterBase ?? NewCardWriterBase?.Invoke()) is not { } basis)
+            {
+                continue;
+            }
+
+            WriterBase value = change(basis);
+
+            if (node.WriterBase is null || value != node.WriterBase)
+            {
+                next.Add((node, value));
+            }
+        }
+
+        if (next.Count == 0)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.WriterMarks, () =>
+        {
+            foreach ((DialogueNode node, WriterBase value) in next)
+            {
+                node.WriterBase = value;
+            }
+        }, next.Count == 1 ? next[0].Node.Id : null);
+    }
+
+    /// <summary>카드들의 좌우 정렬을 한 번에(WF-D21) — 되돌리기 한 칸. 같은 카드는 적지 않는다.</summary>
+    public void SetWriterAlign(IReadOnlyList<string> nodeIds, WriterAlign align)
+    {
+        ArgumentNullException.ThrowIfNull(nodeIds);
+        List<DialogueNode> changing = nodeIds.Distinct(StringComparer.Ordinal).Select(RequireDialogue).Where(node => node.WriterAlign != align).ToList();
+
+        if (changing.Count == 0)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.WriterMarks, () =>
+        {
+            foreach (DialogueNode node in changing)
+            {
+                node.WriterAlign = align;
+            }
+        }, changing.Count == 1 ? changing[0].Id : null);
+    }
+
     /// <summary>카드 글 칸의 좌우 정렬. 같으면 적지 않는다.</summary>
     public void SetWriterAlign(string nodeId, WriterAlign align)
     {

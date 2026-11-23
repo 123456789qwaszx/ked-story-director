@@ -435,7 +435,7 @@ public sealed class WriterFormattingTests
         int start = session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing!.Value;   // 만들 때의 설정
         Assert.Equal(ScriptFont.LineSpacing, start);
         double otherHeight = Box(window, other.Id).LineHeight;
-        Assert.Equal(string.Empty, graph.FormatLineSpacingText);   // 입힐 칸이 없다
+        Assert.Equal($"{start}%", graph.FormatLineSpacingText);   // 카드를 골랐다 — 글 칸을 누르지 않아도 그 카드다(WF-D21)
 
         TextBox box = Box(window, card.Id);
         Assert.IsNotType<WriterTextBox>(box);

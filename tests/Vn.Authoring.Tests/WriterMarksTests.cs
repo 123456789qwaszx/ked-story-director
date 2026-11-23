@@ -476,6 +476,54 @@ public sealed class WriterMarksTests
         Assert.Equal(0, WriterBaseFill.Fill(editor.Project, new WriterBase(string.Empty, 30)));
     }
 
+    // ── 카드 여러 장에 한 번에(WF-D21) ─────────────────────────
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 카드만 골랐을 때 서식 도구가 「도구 막대 전부」를 고른 카드들에. 글 전체에 입히는 켜고 끄기는 모든 카드를 하나로 판정하고(처음부터
+    /// 굵은 카드는 이미 굵다), 처음 값 · 정렬도 카드 모두에 한 번에 — 되돌리기 한 칸이고 바뀐 것이 없으면 적지 않는다.
+    /// </summary>
+    [Fact]
+    public void 카드_여러_장의_글_전체와_처음_값을_한_번에_바꾸고_되돌리기_한_칸이다()
+    {
+        (ProjectEditor editor, DialogueNode first, string[] ids) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
+        DialogueNode second = editor.AddDialogueNode("sf_test", "둘째", name: "둘째");
+        Assert.True(editor.ApplyScenarioText(second.Id, "바람이 분다.").Applied);
+        DialogueNode empty = editor.AddDialogueNode("sf_test", "빈", name: "빈");
+        first.WriterBase = new WriterBase(string.Empty, 11, Bold: true, LineSpacing: 140);
+        second.WriterBase = new WriterBase(string.Empty, 12, LineSpacing: 160);
+        editor.ApplyWriterStyle(first.Id, [new WriterRange(ids[0], 0, 2)], WriterStyleChange.Toggle(WriterStyleKind.Italic));
+        int changes = 0;
+        editor.Changed += (_, change) => changes += change.Kind == ProjectChangeKind.WriterMarks ? 1 : 0;
+
+        // 굵게 — 처음부터 굵은 카드는 이미 굵다고 세므로, 둘째 카드만 굵지 않아 모두 켠다. 빈 카드는 건너뛴다.
+        editor.ApplyWriterStyleToCards([first.Id, second.Id, empty.Id], WriterStyleChange.Toggle(WriterStyleKind.Bold));
+        Assert.Equal(1, changes);
+        Assert.True(WriterMarkMath.IsAll(Marks(editor, second)[second.Script.ActiveLines.Single().Id], 6, 0, 6, look => look.Bold));
+        Assert.Equal(new WriterLook(Bold: true, Italic: true), Marks(editor, first)[ids[0]][0].Look);   // 기울임은 그대로
+
+        // 다시 누르면 모두 굵다 — 끈다(처음부터 굵은 카드의 바탕 굵기는 그대로).
+        editor.ApplyWriterStyleToCards([first.Id, second.Id], WriterStyleChange.Toggle(WriterStyleKind.Bold));
+        Assert.DoesNotContain(Marks(editor, second).Values.SelectMany(spans => spans), span => span.Look.Bold);
+        Assert.True(editor.Project.FindDialogue(first.Id)!.WriterBase!.Bold);
+
+        // 처음 값 · 정렬 — 카드 모두에, 한 칸씩.
+        editor.SetWriterBase([first.Id, second.Id], basis => basis with { Size = 16 });
+        editor.SetWriterAlign([first.Id, second.Id], WriterAlign.Right);
+        Assert.Equal((16d, 16d), (first.WriterBase!.Size, editor.Project.FindDialogue(second.Id)!.WriterBase!.Size));
+        Assert.Equal(160, editor.Project.FindDialogue(second.Id)!.WriterBase!.LineSpacing);   // 나머지는 그대로
+        Assert.All(new[] { first.Id, second.Id }, id => Assert.Equal(WriterAlign.Right, editor.Project.FindDialogue(id)!.WriterAlign));
+        Assert.Equal(4, changes);
+
+        editor.SetWriterBase([first.Id, second.Id], basis => basis with { Size = 16 });   // 같다
+        editor.SetWriterAlign([first.Id, second.Id], WriterAlign.Right);
+        Assert.Equal(4, changes);
+
+        editor.Undo();
+        Assert.All(new[] { first.Id, second.Id }, id => Assert.Equal(WriterAlign.Left, editor.Project.FindDialogue(id)!.WriterAlign));
+        editor.Undo();
+        Assert.Equal((11d, 12d), (editor.Project.FindDialogue(first.Id)!.WriterBase!.Size, editor.Project.FindDialogue(second.Id)!.WriterBase!.Size));
+    }
+
     // ── 카드의 줄 간격(WF-D19) ─────────────────────────
 
     /// <summary>

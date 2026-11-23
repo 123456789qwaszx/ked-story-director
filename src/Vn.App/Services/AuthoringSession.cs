@@ -556,6 +556,31 @@ internal sealed class AuthoringSession
         HiddenChoicesChanged?.Invoke(nodeId);
     }
 
+    /// <summary>
+    /// 여러 카드의 「빈 선택지 숨기기」를 한 번에(2026-11-23 소유자 — 「선택 된것들 모두 일괄적으로 키고 꺼지도록」) — 한 번 기억하고, 바뀐 카드마다 알린다.
+    /// </summary>
+    internal void SetHideEmptyChoices(IReadOnlyCollection<string> nodeIds, bool hide)
+    {
+        List<string> changed = nodeIds.Distinct(StringComparer.Ordinal)
+            .Where(nodeId => hide ? _hiddenChoiceNodeIds.Add(nodeId) : _hiddenChoiceNodeIds.Remove(nodeId))
+            .ToList();
+
+        if (changed.Count == 0)
+        {
+            return;
+        }
+
+        if (ProjectPath is not null)
+        {
+            AppSettingsService.SaveHiddenChoices(ProjectPath, _hiddenChoiceNodeIds);
+        }
+
+        foreach (string nodeId in changed)
+        {
+            HiddenChoicesChanged?.Invoke(nodeId);
+        }
+    }
+
     /// <summary>[대본] 카드 하나의 「빈 선택지 숨기기」가 바뀌었다 — 그 카드의 노드 Id.</summary>
     internal event Action<string>? HiddenChoicesChanged;
 

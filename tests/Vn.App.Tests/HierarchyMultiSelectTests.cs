@@ -5,9 +5,13 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Path = System.IO.Path;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Model;
 
 namespace Vn.App.Tests;
 
@@ -111,7 +115,175 @@ public sealed class HierarchyMultiSelectTests : IDisposable
         window.Close();
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「글자 서식의 크기 줄 간격 숫자 입력역시 에피소드가 아니라 텍스트 박스를 정확히 눌러야 활성화 되다보니 현재는 조정이 사실상
+    /// 불가능한 상태입니다」 → 고른 답 「카드의 기본 크기」 · 「도구 막대 전부」(writer-formatting WF-D21). 하이어아키에서 카드만 골라도(여러 줄 · 챕터째도)
+    /// 서식 도구가 켜지고, 고른 줄들에 든 카드 모두에 입힌다 — 굵게는 글 전체, 크기는 카드의 기본 크기(일부만 키운 글자는 차를 지킨다), 줄 간격 · 정렬은 카드
+    /// 마다. 되돌리기 한 번에 모두 돌아온다.
+    /// </summary>
+    [Fact]
+    public void 카드만_골라도_서식_도구가_켜지고_고른_카드들_모두에_입힌다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, GraphEditorView graph, StoryHierarchy tree) = Open();
+        string a = Card(session, "ch01", "a");
+        string b = Card(session, "ch01", "b");
+        string x = Card(session, "ch02", "x");
+        string y = Card(session, "ch02", "y");
+
+        foreach (string card in new[] { a, b, x })
+        {
+            Assert.True(session.Editor.ApplyScenarioText(card, "문이 열린다.\n바람이 분다.").Applied);
+        }
+
+        session.Editor.ApplyWriterStyle(a, [new WriterRange(session.Project.FindDialogue(a)!.Script.ActiveLines.First().Id, 0, 2)],
+            new WriterStyleChange(WriterStyleKind.Grow, Step: 3));   // 「문이」만 +3
+        Dispatcher.UIThread.RunJobs();
+
+        // 에피소드 줄 하나 — 글 칸을 누르지 않아도 켜진다.
+        Press(window, tree, StoryHierarchy.EpisodeKey("ch01", "a"));
+        Assert.True(Bar(graph, "굵게").IsEnabled);
+        Assert.Equal("11", graph.FormatToolbarState.Size);
+        Assert.Equal("140%", graph.FormatLineSpacingText);
+
+        // 에피소드 b와 챕터 ch02(x · y)를 더한다 — 카드 넷.
+        Press(window, tree, StoryHierarchy.EpisodeKey("ch01", "b"), RawInputModifiers.Control);
+        Press(window, tree, StoryHierarchy.ChapterKey("ch02"), RawInputModifiers.Control);
+        Assert.Equal([a, b, x, y], graph.PickedCards().Select(card => card.Id));
+        Assert.True(Bar(graph, "굵게").IsEnabled);
+
+        // 굵게 — 글이 든 카드 셋의 글 전체.
+        Bar(graph, "굵게").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.All(new[] { a, b, x }, card => Assert.All(Lines(session, card), line =>
+            Assert.True(WriterMarkMath.IsAll(line.Spans, line.Length, 0, line.Length, look => look.Bold))));
+        Assert.True(graph.FormatToolbarState.Bold);
+        Assert.Contains("4장", session.StatusMessage, StringComparison.Ordinal);
+
+        // 크기 16 — 카드의 기본 크기. 「문이」는 +3 그대로.
+        TypeInto(window, graph.FormatValueEntries.Size!, "16");
+        Assert.All(new[] { a, b, x, y }, card => Assert.Equal(16, session.Project.FindDialogue(card)!.WriterBase!.Size));
+        Assert.Equal(3, session.Project.FindDialogue(a)!.WriterMarks.Values.SelectMany(spans => spans).Max(span => span.Look.Grow));
+        Assert.Equal(16, WritingBox(graph, a).FontSize);
+        Assert.Equal("16", graph.FormatToolbarState.Size);
+        Assert.False(graph.FormatValueEntries.Size!.IsFocused);   // 하이어아키로 돌아갔다 — 다른 카드를 고르면 칸이 따라온다
+
+        // 크기 − · 줄 간격 · 정렬 — 카드마다.
+        Bar(graph, "글자 작게").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        TypeInto(window, graph.FormatValueEntries.LineSpacing!, "180");
+        Bar(graph, "가운데 정렬").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.All(new[] { a, b, x, y }, card =>
+        {
+            DialogueNode node = session.Project.FindDialogue(card)!;
+            Assert.Equal((15d, 180, WriterAlign.Center), (node.WriterBase!.Size, node.WriterBase.LineSpacing!.Value, node.WriterAlign));
+        });
+
+        // 되돌리기 — 한 번에 한 가지씩, 카드 모두(정렬 → 줄 간격 → 크기 − → 크기 16 → 굵게).
+        session.Editor.Undo();
+        Assert.All(new[] { a, b, x, y }, card => Assert.Equal(WriterAlign.Left, session.Project.FindDialogue(card)!.WriterAlign));
+        session.Editor.Undo();
+        session.Editor.Undo();
+        session.Editor.Undo();
+        Assert.All(new[] { a, b, x, y }, card => Assert.Equal(11, session.Project.FindDialogue(card)!.WriterBase!.Size));
+        Assert.All(new[] { a, b, x }, card => Assert.True(Lines(session, card).All(line => WriterMarkMath.IsAll(line.Spans, line.Length, 0, line.Length, look => look.Bold))));
+        session.Editor.Undo();
+        Assert.All(new[] { b, x }, card => Assert.Empty(session.Project.FindDialogue(card)!.WriterMarks));
+
+        window.Close();
+    });
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 「빈 선택지 숨기기를 하더라도, 그 마지막 것만 빈 선택지 숨기기 체크가 되는데, 선택 된것들 모두 일괄적으로 키고 꺼지도록」. 인스펙터의
+    /// 체크가 고른 줄들에 든 에피소드 카드 모두를 켜고 끈다. 섞였으면 반쯤이고 누르면 모두 켠다. 그냥 누르면 다시 그 카드 하나다.
+    /// </summary>
+    [Fact]
+    public void 빈_선택지_숨기기는_고른_에피소드_모두를_한꺼번에_켜고_끈다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, GraphEditorView graph, StoryHierarchy tree) = Open();
+        string root = Card(session, "ch01", "root");
+        string a = Card(session, "ch01", "a");
+        string b = Card(session, "ch01", "b");
+
+        Press(window, tree, StoryHierarchy.EpisodeKey("ch01", "root"));
+        Press(window, tree, StoryHierarchy.SceneKey("ch01", "hall"), RawInputModifiers.Control);   // 장면 hall = b
+        Press(window, tree, StoryHierarchy.EpisodeKey("ch01", "a"), RawInputModifiers.Control);
+        CheckBox hide = HideBox(window);
+        Assert.False(hide.IsChecked);
+
+        ClickBox(window, hide);
+        Assert.All(new[] { root, a, b }, card => Assert.Contains(card, session.HiddenChoiceNodeIds));
+        Assert.True(hide.IsChecked);
+
+        // 하나만 풀면 섞인다 — 반쯤. 누르면 모두 켠다.
+        session.SetHideEmptyChoices(root, false);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(hide.IsChecked);
+        ClickBox(window, hide);
+        Assert.All(new[] { root, a, b }, card => Assert.Contains(card, session.HiddenChoiceNodeIds));
+
+        // 끄면 모두 끈다.
+        ClickBox(window, hide);
+        Assert.All(new[] { root, a, b }, card => Assert.DoesNotContain(card, session.HiddenChoiceNodeIds));
+
+        // 그냥 누르면 그 카드 하나다.
+        Press(window, tree, StoryHierarchy.EpisodeKey("ch01", "a"));
+        ClickBox(window, HideBox(window));
+        Assert.Contains(a, session.HiddenChoiceNodeIds);
+        Assert.DoesNotContain(b, session.HiddenChoiceNodeIds);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    private static CheckBox HideBox(MainWindow window) =>
+        window.GetLogicalDescendants().OfType<DialogueNodeEditor>().Distinct().Single().FindControl<CheckBox>("HideEmptyChoicesBox")!;
+
+    private static void ClickBox(MainWindow window, CheckBox box)
+    {
+        Assert.True(box.IsEffectivelyVisible);
+        box.BringIntoView();
+        Dispatcher.UIThread.RunJobs();
+        Point center = box.TranslatePoint(new Point(8, box.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>도구 막대의 단추 — 풍선 글의 머리로 찾는다.</summary>
+    private static Button Bar(GraphEditorView graph, string tipHead) =>
+        graph.FindControl<StackPanel>("WriterToolbar")!.GetVisualDescendants().OfType<Button>()
+            .First(item => (ToolTip.GetTip(item) as string)?.StartsWith(tipHead, StringComparison.Ordinal) == true);
+
+    /// <summary>도구 막대의 값 칸을 마우스로 눌러 글을 적고 Enter.</summary>
+    private static void TypeInto(MainWindow window, TextBox entry, string text)
+    {
+        Point center = entry.TranslatePoint(new Point(entry.Bounds.Width / 2, entry.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(entry.IsFocused);
+        entry.Text = text;
+        window.KeyPress(Key.Enter, RawInputModifiers.None, PhysicalKey.Enter, null);
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static TextBox WritingBox(GraphEditorView graph, string nodeId) =>
+        graph.FindControl<Canvas>("GraphCanvas")!.GetLogicalDescendants().OfType<TextBox>()
+            .Single(box => box.Tag as string == GraphEditorView.WritingTag + nodeId);
+
+    /// <summary>카드의 줄마다 — 대사 글 길이 · 서식 구간 · 그 줄의 가장 큰 크기 차.</summary>
+    private static List<(int Length, IReadOnlyList<WriterSpan> Spans, int Grow)> Lines(AuthoringSession session, string nodeId)
+    {
+        DialogueNode node = session.Project.FindDialogue(nodeId)!;
+        return node.Script.ActiveLines.Select(line =>
+        {
+            IReadOnlyList<WriterSpan> spans = node.WriterMarks.GetValueOrDefault(line.Id) ?? [];
+            return (node.Script.Text(line.Id).Text.Length, spans, spans.Count == 0 ? 0 : spans.Max(span => span.Look.Grow));
+        }).ToList();
+    }
+
 
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph, StoryHierarchy Tree) Open()
     {

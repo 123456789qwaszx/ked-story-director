@@ -589,6 +589,10 @@ public partial class GraphEditorView : UserControl
         // 하이어아키에서 고른 줄이 여럿이 되거나 하나로 돌아오면 [삭제]를 맞춘다(여럿이면 끈다 · 2026-11-23).
         Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
 
+        // 하이어아키에서 줄을 누르면 서식 도구는 글 칸이 아니라 고른 줄들의 카드에 입힌다(WF-D21 — 같은 카드의 줄을 눌러도). 고른 줄이 바뀌면 모습을 맞춘다.
+        Hierarchy.Picked += _ => UiGuard.Run(_session, "서식 칸 놓기", ReleaseFormatTarget);
+        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, "서식 도구 맞추기", RefreshFormatToolbarLater);
+
         // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
             BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
@@ -683,6 +687,9 @@ public partial class GraphEditorView : UserControl
             {
                 ReleaseFormatTarget();
             }
+
+            // 글 칸이 아니라 카드를 골랐으면 도구 막대가 그 카드들에 입힌다(WF-D21) — 모습을 맞춘다.
+            RefreshFormatToolbarLater();
         });
 
         // 카드를 고르면 고른 선은 놓는다 — 인스펙터는 그 카드를 보인다(셸이 선택을 보고 맞춘다).

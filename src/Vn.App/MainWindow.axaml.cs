@@ -116,6 +116,10 @@ public partial class MainWindow : Window
         });
         ChapterGraph.Attach(_session);
         DialogueEditor.Attach(_session);
+
+        // 인스펙터의 「빈 선택지 숨기기」는 하이어아키에서 고른 줄들에 든 에피소드 모두에 한 번에(2026-11-23 소유자) — 고른 줄이 바뀌면 체크를 맞춘다.
+        DialogueEditor.BatchCards = Graph.PickedCards;
+        Graph.HierarchyView.SelectionsChanged += () => UiGuard.Run(_session, "선택지 칸", DialogueEditor.RefreshHideEmpty);
         _session.Changed += OnSessionChanged;
         _session.SpeakersChanged += OnSpeakersChanged;
         // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 — 판을 다시 그리거나

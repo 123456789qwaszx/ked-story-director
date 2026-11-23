@@ -69,12 +69,18 @@ public partial class DialogueNodeEditor : UserControl
 
         NameBox.LostFocus += (_, _) => CommitName();
 
+        // 하이어아키에서 여러 줄을 골랐으면 그 에피소드 카드 모두를 한 번에 켜고 끈다(2026-11-23 소유자 — 「선택 된것들 모두 일괄적으로 키고 꺼지도록」).
+        // 섞여 있으면(일부만 켜짐) 체크가 반쯤이고, 누르면 모두 켠다.
         HideEmptyChoicesBox.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "선택지 칸", () =>
         {
-            if (!_building && _nodeId is not null)
+            if (_building || _nodeId is null || _session is null)
             {
-                _session?.SetHideEmptyChoices(_nodeId, HideEmptyChoicesBox.IsChecked == true);
+                return;
             }
+
+            bool hide = _hideMixed || HideEmptyChoicesBox.IsChecked == true;
+            _session.SetHideEmptyChoices(HideTargets(), hide);
+            RefreshHideEmpty();
         });
 
         // Enter = 바꾸기, Esc = 그만두기 — 하이어아키의 이름 칸과 같은 손짓.
@@ -175,7 +181,62 @@ public partial class DialogueNodeEditor : UserControl
     internal void Attach(AuthoringSession session)
     {
         _session = session;
+        session.HiddenChoicesChanged += _ => UiGuard.Run(_session, "선택지 칸", RefreshHideEmpty);
     }
+
+    /// <summary>
+    /// 한꺼번에 바꿀 카드들 — 셸이 준다(하이어아키에서 고른 줄들에 든 카드 · <see cref="GraphEditorView.PickedCards"/>). 없거나 이 카드가 들지 않았으면 이 카드만이다.
+    /// </summary>
+    internal Func<IReadOnlyList<DialogueNode>>? BatchCards { get; set; }
+
+    /// <summary>「빈 선택지 숨기기」를 바꿀 카드 Id — 고른 카드들(에피소드 카드만 — 선택지 칸은 그 카드에만 선다)에 이 카드가 들었으면 그 모두, 아니면 이 카드.</summary>
+    private IReadOnlyList<string> HideTargets()
+    {
+        List<string> batch = BatchCards?.Invoke()
+            .Where(card => card.MarkedEpisodeId is not null)
+            .Select(card => card.Id)
+            .ToList() ?? [];
+
+        return _nodeId is not null && batch.Count > 1 && batch.Contains(_nodeId, StringComparer.Ordinal) ? batch : _nodeId is null ? [] : [_nodeId];
+    }
+
+    /// <summary>체크가 반쯤인가 — 고른 카드들의 「빈 선택지 숨기기」가 섞였다.</summary>
+    private bool _hideMixed;
+
+    /// <summary>
+    /// 「빈 선택지 숨기기」 체크를 고른 카드들에 맞춘다 — 모두 켜졌으면 켬, 모두 꺼졌으면 끔, 섞였으면 반쯤(누르면 모두 켠다). 셸이 하이어아키의 고른 줄이 바뀔 때도
+    /// 부른다.
+    /// </summary>
+    internal void RefreshHideEmpty()
+    {
+        if (_session is null || _nodeId is null)
+        {
+            return;
+        }
+
+        IReadOnlyList<string> targets = HideTargets();
+        int hidden = targets.Count(id => _session.HiddenChoiceNodeIds.Contains(id));
+        bool wasBuilding = _building;
+        _building = true;
+
+        try
+        {
+            _hideMixed = hidden > 0 && hidden < targets.Count;
+            HideEmptyChoicesBox.IsChecked = _hideMixed ? null : hidden > 0;
+            ToolTip.SetTip(HideEmptyChoicesBox, targets.Count > 1
+                ? $"고른 에피소드 카드 {targets.Count}장 모두에 — 켜면 [대본] 탭에서 카드 아래에 이어진 선택지만 보입니다(안 이은 칸은 자동 칸까지 감춥니다)." +
+                  (_hideMixed ? " 지금은 일부만 켜져 있습니다 — 누르면 모두 켭니다." : string.Empty)
+                : HideEmptyTip);
+        }
+        finally
+        {
+            _building = wasBuilding;
+        }
+    }
+
+    private const string HideEmptyTip =
+        "켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요. " +
+        "하이어아키에서 여러 개를 고르면(Ctrl · Shift+클릭) 그 에피소드 모두에 한 번에 켜고 끕니다.";
 
     /// <summary>어떤 노드를 편집할지 정하고 화면을 만든다.</summary>
     internal void Show(string? nodeId)
@@ -216,7 +277,7 @@ public partial class DialogueNodeEditor : UserControl
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
             HideEmptyChoicesBox.IsVisible = _chapterEpisode;
-            HideEmptyChoicesBox.IsChecked = _session.HiddenChoiceNodeIds.Contains(node.Id);
+            RefreshHideEmpty();
 
             FillBranchCondition(node);
 
