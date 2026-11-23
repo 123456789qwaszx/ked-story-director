@@ -556,9 +556,9 @@ public sealed class WriterFormattingTests
         Assert.Equal($"{spacing}%", graph.FormatLineSpacingText);
         box = Assert.IsType<WriterTextBox>(Box(window, card.Id));
         var typeface = new Typeface(box.FontFamily, box.FontStyle, box.FontWeight);
-        double plain = ScriptFont.PlainLine(typeface, box.FontSize).Height;   // 화자 이름이 든 줄 — 처음 크기 글자의 자연 높이(가장 낮은 줄 높이와 거의 같다)
         double[] after = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
-        Assert.InRange(after[0], plain - 0.05, before[0] + 0.05);
+        Assert.Equal(OwnHeight(box.Presenter.TextLayout.TextLines[0]), after[0], 1);   // 화자 이름이 든 줄 — 그 줄 글자들의 자연 높이에서 멈춘다
+        Assert.True(after[0] <= before[0] + 0.05);
         Assert.Equal(Math.Round(box.FontSize * spacing / 100.0, 1), after[1], 1);
         Assert.Equal(after[1], after[2], 2);
         // 또렷이 낮아졌다 — 10%는 11pt에서 1.1px이지만 줄 높이를 0.1 단위로 반올림해 1.0px일 수 있다(Windows 135 → 125%: 14.8 → 13.8 · ⛔ 「1px 넘게」는
@@ -574,7 +574,8 @@ public sealed class WriterFormattingTests
         Assert.Equal("최소 줄 간격입니다.", session.StatusMessage);
         box = Assert.IsType<WriterTextBox>(Box(window, card.Id));
         after = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
-        Assert.InRange(after[0], plain - 0.05, before[0] + 0.05);
+        Assert.Equal(OwnHeight(box.Presenter.TextLayout.TextLines[0]), after[0], 1);
+        Assert.True(after[0] <= before[0] + 0.05);
         Assert.True(after[1] >= ScriptFont.MinLineHeight(typeface, box.FontSize - 4) - 1e-6);
 
         // 줄인 글자를 되돌리면 처음 크기의 가장 좁은 값으로 보이고, 줄도 그 높이다.
@@ -702,6 +703,26 @@ public sealed class WriterFormattingTests
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
         Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>
+    /// 그 줄에 놓인 글자 조각들의 자연 높이 — 가장 높은 윗몫 + 가장 깊은 아랫몫 + 줄 사이 몫(줄바꿈 조각은 뺀다 — 받침대 크기다). 처음 크기 글자가 든 줄은
+    /// 줄 간격을 그 아래로 좁히면 이 높이에서 멈춘다(WF-D24). 「가A」 한 줄의 높이로 재면 한글만으로 그려진 줄이 글꼴에 따라 그보다 낮아 어긋난다
+    /// (Windows 맑은 고딕 — 2026-11-23 CI).
+    /// </summary>
+    private static double OwnHeight(Avalonia.Media.TextFormatting.TextLine line)
+    {
+        double ascent = 0, descent = 0, gap = 0;
+
+        foreach (Avalonia.Media.TextFormatting.ShapedTextRun run in line.TextRuns.OfType<Avalonia.Media.TextFormatting.ShapedTextRun>()
+                     .Where(run => !ScriptFont.IsLineBreak(run.Text.Span)))
+        {
+            ascent = Math.Max(ascent, -run.TextMetrics.Ascent);
+            descent = Math.Max(descent, run.TextMetrics.Descent);
+            gap = Math.Max(gap, run.TextMetrics.LineGap);
+        }
+
+        return ascent + descent + gap;
     }
 
     private static (MainWindow Window, AuthoringSession Session, DialogueNode Card, string[] Ids) Stage(params string[] lines)

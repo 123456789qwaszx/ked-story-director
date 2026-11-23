@@ -150,7 +150,6 @@ public sealed class WriterLineHeightTests
         ScriptFont.Apply(box, basis with { LineSpacing = lowest });
         Dispatcher.UIThread.RunJobs();
         double low = Math.Round(Size * lowest / 100.0, 1);
-        double plain = ScriptFont.PlainLine(face, Size).Height;
         TextLayout layout = box.Presenter.TextLayout;
         Assert.True(layout.TextLines.Count >= 6, $"줄 {layout.TextLines.Count}");   // 첫 줄이 꺾였다
 
@@ -160,11 +159,21 @@ public sealed class WriterLineHeightTests
 
             if (shown.Contains("하린", StringComparison.Ordinal) || shown.Contains("보통", StringComparison.Ordinal))
             {
-                // 처음 크기 글자의 자연 높이 — 그 줄의 글자대로다. 한글만 든 줄은 한글 글꼴만의 높이라 「가A」(영문 글꼴이 섞인 한 줄)보다 낮을 수
-                // 있다(Windows 맑은 고딕 18.62 · 「가A」 18.75 — 리눅스 Noto는 영문 글꼴보다 위아래 모두 커서 같다 · ⛔ 2026-11-23 CI). 줄인 줄의
-                // 높이(low)까지는 내려가지 않는다.
-                using var natural = new TextLayout(shown.TrimEnd('\n'), face, Size, null);
-                Assert.InRange(line.Height, Math.Min(plain, natural.Height) - 0.05, baseFloor + 0.05);
+                // 처음 크기 글자의 자연 높이 — 그 줄에 놓인 글자 조각들의 가장 높은 윗몫 + 가장 깊은 아랫몫 + 줄 사이 몫(줄바꿈 조각은 뺀다 — 받침대
+                // 크기다). 한글만 든 줄은 한글 글꼴만의 높이라 「가A」(영문 글꼴이 섞인 한 줄)보다 낮을 수 있다(Windows 맑은 고딕 18.62 · 「가A」
+                // 18.75 — 리눅스 Noto는 영문 글꼴보다 위아래 모두 커서 같다). ⛔ 2026-11-23 CI — 처음에는 「가A」로, 다음에는 그 글을 따로 배치해
+                // 쟀는데 따로 배치하면 문단의 기본 글꼴(Inter) 높이가 섞여 Windows에서 어긋났다. 줄인 줄의 높이(low)까지는 내려가지 않는다.
+                double ascent = 0, descent = 0, gap = 0;
+
+                foreach (ShapedTextRun run in line.TextRuns.OfType<ShapedTextRun>().Where(run => !ScriptFont.IsLineBreak(run.Text.Span)))
+                {
+                    ascent = Math.Max(ascent, -run.TextMetrics.Ascent);
+                    descent = Math.Max(descent, run.TextMetrics.Descent);
+                    gap = Math.Max(gap, run.TextMetrics.LineGap);
+                }
+
+                Assert.Equal(ascent + descent + gap, line.Height, 1);
+                Assert.True(line.Height <= baseFloor + 0.05, $"처음 크기 줄 {line.Height:0.00} · 가장 낮은 줄 높이 {baseFloor:0.00}");
                 Assert.True(line.Height > low + 1, $"처음 크기 줄 {line.Height:0.00} · 줄인 줄 {low:0.00}");
             }
             else
