@@ -561,7 +561,9 @@ public sealed class WriterFormattingTests
         Assert.InRange(after[0], plain - 0.05, before[0] + 0.05);
         Assert.Equal(Math.Round(box.FontSize * spacing / 100.0, 1), after[1], 1);
         Assert.Equal(after[1], after[2], 2);
-        Assert.True(after[1] < before[1] - 1, $"줄인 줄 {before[1]:0.0} → {after[1]:0.0}");
+        // 또렷이 낮아졌다 — 10%는 11pt에서 1.1px이지만 줄 높이를 0.1 단위로 반올림해 1.0px일 수 있다(Windows 135 → 125%: 14.8 → 13.8 · ⛔ 「1px 넘게」는
+        // 리눅스에서만 통과했다 — 2026-11-23 CI).
+        Assert.True(after[1] < before[1] - 0.5, $"줄인 줄 {before[1]:0.0} → {after[1]:0.0}");
 
         // 그 카드의 가장 좁은 값(줄인 글자의 가장 낮은 줄 높이)에서 멈춘다 — 숫자로 더 좁게 적어도.
         int cardNarrowest = ScriptFont.MinLineSpacingOf(basis, ScriptFont.MinLineHeight(typeface, box.FontSize - 4));
