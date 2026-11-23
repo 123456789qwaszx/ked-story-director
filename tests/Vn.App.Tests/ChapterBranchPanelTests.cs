@@ -55,6 +55,41 @@ public sealed class ChapterBranchPanelTests
     private const double CardHeight = 74;
 
     [Fact]
+    public void 조건이_걸린_칩은_높아져_위에_조건_아래에_이름이고_밑의_칩은_그만큼_내려선다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-23 소유자 — 「오른쪽에 ...으로 보이게 잘리는 대신, ID 위쪽으로 조건문을 보여주는 건 어때? 분기 칩 자체의 높이를 늘리고」.
+        // ⛔ 그 전에는 「⑂ 이름 · 라벨」 한 줄이라 ID(「ID로 보기」) 뒤의 조건이 말줄임으로 잘렸다.
+        using var project = new TempProject();
+        (ChapterGraphView view, AuthoringSession session) = Show(project);
+        var canvas = view.FindControl<Canvas>("GraphCanvas")!;
+        DialogueNode caller = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+        DialogueNode second = session.Editor.AddBranchMarker(caller.Id, project.BranchLineId);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // 조건이 없으면 한 줄 — 둘이 같은 높이로 늘어선다.
+        Border first = Chip(canvas, project.BranchNodeId);
+        Assert.Equal([$"⑂ {project.BranchName}"], ChipLines(first));
+        double low = first.Height;
+        double gap = Canvas.GetTop(Chip(canvas, second.Id)) - (Canvas.GetTop(first) + low);
+        Assert.True(gap >= 0, $"칩 사이 {gap}");
+
+        // 첫 칩에 조건을 건다 — 높아져 두 줄이 되고, 밑의 칩이 그만큼 내려선다(겹치지 않는다).
+        Assert.Null(BranchEntryCondition.Set(session.Editor, project.BranchNodeId, "신뢰높음"));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        first = Chip(canvas, project.BranchNodeId);
+        Assert.Equal(["조건: 신뢰높음", $"⑂ {project.BranchName}"], ChipLines(first));
+        Assert.True(first.Height > low + 10, $"칩 높이 {low} → {first.Height}");
+        Assert.Equal(Canvas.GetTop(first) + first.Height + gap, Canvas.GetTop(Chip(canvas, second.Id)), 3);
+        Assert.Equal([$"⑂ {second.Name}"], ChipLines(Chip(canvas, second.Id)));
+
+        // 「ID로 보기」를 꺼도 같은 꼴 — 아래 줄이 제목이다.
+        session.SetShowIds(false);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal(["조건: 신뢰높음", $"⑂ {TempProject.BranchTitle}"], ChipLines(Chip(canvas, project.BranchNodeId)));
+        session.SetShowIds(true);   // 같은 프로세스의 다른 시험이 처음 상태로 보게
+    });
+
+    [Fact]
     public void 분기_카드는_부르는_에피소드_곁에_작은_칩으로_붙어_그_에피소드를_따라간다() => HeadlessUi.Run(() =>
     {
         // 소유자(2026-11-17): "구성탭에서도 점선으로 붙은 작은 카드로써 읽기 전용으로 둡시다." 에피소드가 아니라 판에 따로 서지 않는다.
@@ -159,8 +194,8 @@ public sealed class ChapterBranchPanelTests
         Assert.Equal("신뢰높음", BranchEntryCondition.Read(session.Project, project.BranchNodeId).Label);
         Assert.Equal(before + 1, session.Editor.Revision);
 
-        // 칩에 조건이 보인다.
-        Assert.Contains("신뢰높음", ((TextBlock)Chip(canvas, project.BranchNodeId).Child!).Text, StringComparison.Ordinal);
+        // 칩에 조건이 보인다 — 위 줄(2026-11-23).
+        Assert.Equal(["조건: 신뢰높음", $"⑂ {project.BranchName}"], ChipLines(Chip(canvas, project.BranchNodeId)));
 
         // 빈 판을 누르면 풀린다.
         Press(canvas);
@@ -423,6 +458,14 @@ public sealed class ChapterBranchPanelTests
     private static Border Chip(Canvas canvas, string nodeId) =>
         canvas.Children.OfType<Border>().Single(border =>
             border.Tag is ChapterGraphView.BranchCardMark mark && mark.NodeId == nodeId);
+
+    /// <summary>칩의 글 줄들 — 위에서 아래로(조건이 있으면 「조건: 라벨」, 「⑂ 이름」).</summary>
+    private static List<string?> ChipLines(Border chip) => chip.Child switch
+    {
+        TextBlock line => [line.Text],
+        StackPanel lines => lines.Children.OfType<TextBlock>().Select(line => line.Text).ToList(),
+        _ => []
+    };
 
     private static List<Ellipse> Knobs(Canvas canvas) =>
         canvas.Children.OfType<Ellipse>()

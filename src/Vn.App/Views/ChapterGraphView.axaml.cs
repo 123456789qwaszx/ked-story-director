@@ -1182,7 +1182,7 @@ public partial class ChapterGraphView : UserControl
 
         if (_selectedBranchCardId is { } chipId && _chipPlaced.TryGetValue(chipId, out (double X, double Y) chip))
         {
-            CenterAt(new Rect(chip.X, chip.Y, BranchChipWidth, BranchChipHeight).Center, zoom: 1);
+            CenterAt(new Rect(chip.X, chip.Y, BranchChipWidth, ChipHeightOf(chipId)).Center, zoom: 1);
             return true;
         }
 
@@ -1549,7 +1549,7 @@ public partial class ChapterGraphView : UserControl
         List<(double Right, double Bottom)> extents =
         [
             .. _placed.Select(pair => (pair.Value.X + CardWidth, pair.Value.Y + CardHeightOf(pair.Key))),
-            .. _chipPlaced.Values.Select(position => (position.X + BranchChipWidth, position.Y + BranchChipHeight))
+            .. _chipPlaced.Select(pair => (pair.Value.X + BranchChipWidth, pair.Value.Y + ChipHeightOf(pair.Key)))
         ];
 
         // 끄는 동안은 판 크기를 그대로 둔다 — 판 밖으로 끈 카드는 바깥 위에 선 채 따라오고(배율 칸이 판 밖을 자르지 않는다), 놓으면 판이
@@ -1715,11 +1715,13 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 분기 카드 칩의 자리 — 집(그 분기 카드를 먼저 부르는 에피소드 — <see cref="ChapterBranchCards.HomesOf"/>)의 오른쪽에 대본 차례로 세로로
     /// 늘어선다. 자리를 저장하지 않는다 — 끌어 옮기지 않고 에피소드를 따라간다(소유자). ⛔ 분기 카드가 부르는 분기 카드를 한 칸 들여 세우던
-    /// 것은 2026-11-19에 걷혔다 — 분기 카드는 분기를 내지 않는다(usability UX27).
+    /// 것은 2026-11-19에 걷혔다 — 분기 카드는 분기를 내지 않는다(usability UX27). 조건이 걸린 칩은 두 줄이라 높고(<see cref="BranchChipTallHeight"/>),
+    /// 그 아래 칩은 그만큼 내려선다.
     /// </summary>
     private void PlaceBranchChips()
     {
         _chipPlaced = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
+        _chipHeight.Clear();
         _chipHome.Clear();
 
         if (_session is null || _selectedChapterId is not { } chapterId)
@@ -1727,7 +1729,7 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        var count = new Dictionary<string, int>(StringComparer.Ordinal);
+        var below = new Dictionary<string, double>(StringComparer.Ordinal);   // 에피소드마다 다음 칩이 설 높이(카드 위변에서)
 
         foreach (BranchCardHome home in ChapterBranchCards.HomesOf(_session.Editor.Project, chapterId))
         {
@@ -1736,13 +1738,13 @@ public partial class ChapterGraphView : UserControl
                 continue;
             }
 
-            int index = count.GetValueOrDefault(home.EpisodeId);
-            count[home.EpisodeId] = index + 1;
+            double top = below.GetValueOrDefault(home.EpisodeId);
+            double height = BranchEntryCondition.Read(_session.Editor.Project, home.Card.Id).Label is null ? BranchChipHeight : BranchChipTallHeight;
+            below[home.EpisodeId] = top + height + BranchChipGap;
 
             _chipHome[home.Card.Id] = home.EpisodeId;
-            _chipPlaced[home.Card.Id] = (
-                at.X + CardWidth + BranchChipOffset,
-                at.Y + (index * (BranchChipHeight + BranchChipGap)));
+            _chipHeight[home.Card.Id] = height;
+            _chipPlaced[home.Card.Id] = (at.X + CardWidth + BranchChipOffset, at.Y + top);
         }
     }
 
@@ -1758,7 +1760,7 @@ public partial class ChapterGraphView : UserControl
 
     private Rect? ChipRect(string nodeId) =>
         _chipPlaced.TryGetValue(nodeId, out (double X, double Y) chip)
-            ? new Rect(chip.X, chip.Y, BranchChipWidth, BranchChipHeight)
+            ? new Rect(chip.X, chip.Y, BranchChipWidth, ChipHeightOf(nodeId))
             : null;
 
     /// <summary>분기점이 설 변 — 다녀갈 카드가 이 카드보다 왼쪽이면 왼변이다. 이어지지 않은 분기점은 오른변이다.</summary>
@@ -1801,6 +1803,8 @@ public partial class ChapterGraphView : UserControl
     /// 옮기지 않고(자리는 부르는 에피소드를 따라간다) 대본도 여기서 고치지 않는다. 고치는 것은 조건뿐이다(소유자).
     /// 이름은 에피소드 카드 머리와 같이 「ID로 보기」를 따른다 — 켜면 분기 카드 ID(= Yarn 노드 이름), 끄면 제목(2026-11-23 소유자 — 「분기 칩도 ID로
     /// 보이게 해주십시오」 · ⛔ 그 전에는 체크와 상관없이 제목). 툴팁은 늘 「제목」(ID) 둘 다다.
+    /// 조건이 걸리면 칩이 높아져 위 줄에 「조건: 라벨」, 아래 줄에 「⑂ 이름」이다(같은 날 소유자 — 「오른쪽에 ...으로 보이게 잘리는 대신, ID 위쪽으로
+    /// 조건문을 보여주는 건 어때? 분기 칩 자체의 높이를 늘리고」 · ⛔ 그 전에는 「⑂ 이름 · 라벨」 한 줄이라 ID 뒤의 조건이 말줄임으로 잘렸다).
     /// </summary>
     private void DrawBranchChip(string nodeId, (double X, double Y) at, IBrush accent)
     {
@@ -1815,21 +1819,14 @@ public partial class ChapterGraphView : UserControl
         var chip = new Border
         {
             Width = BranchChipWidth,
-            Height = BranchChipHeight,
+            Height = ChipHeightOf(nodeId),
             Padding = new Thickness(7, 0),
             CornerRadius = new CornerRadius(4),
             BorderThickness = new Thickness(1.2),
             BorderBrush = accent,
             Background = new SolidColorBrush(Color.Parse("#F4F2FA")),
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
-            Child = new TextBlock
-            {
-                Text = state.Label is { } label ? $"⑂ {name} · {label}" : $"⑂ {name}",
-                FontSize = 10.5,
-                Foreground = new SolidColorBrush(Color.Parse("#3B3F46")),
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis
-            },
+            Child = BranchChipText(name, state.Label),
             Tag = new BranchCardMark(nodeId, EpisodeNaming.BranchTitleOf(card))
         };
 
@@ -1860,6 +1857,41 @@ public partial class ChapterGraphView : UserControl
         Canvas.SetLeft(chip, at.X);
         Canvas.SetTop(chip, at.Y);
         GraphCanvas.Children.Add(chip);
+    }
+
+    /// <summary>칩의 글 — 「⑂ 이름」 한 줄, 조건이 있으면 그 위에 작은 글로 「조건: 라벨」 한 줄을 더한다. 넘치면 말줄임(툴팁에 온전히 있다).</summary>
+    private static Control BranchChipText(string name, string? condition)
+    {
+        var nameLine = new TextBlock
+        {
+            Text = $"⑂ {name}",
+            FontSize = 10.5,
+            Foreground = new SolidColorBrush(Color.Parse("#3B3F46")),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+
+        if (condition is null)
+        {
+            return nameLine;
+        }
+
+        return new StackPanel
+        {
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            Spacing = 1,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = $"조건: {condition}",
+                    FontSize = 9.5,
+                    Foreground = new SolidColorBrush(Color.Parse("#6B6F76")),
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                },
+                nameLine
+            }
+        };
     }
 
     /// <summary>
@@ -2712,6 +2744,9 @@ public partial class ChapterGraphView : UserControl
     private const double BranchChipOffset = 34;
     private const double BranchChipGap = 6;
 
+    /// <summary>조건이 걸린 칩의 높이 — 위에 조건, 아래에 「⑂ 이름」 두 줄이다(2026-11-23 · <see cref="DrawBranchChip"/>).</summary>
+    private const double BranchChipTallHeight = 38;
+
 
     /// <summary>
     /// 분기 카드 칩이 지는 표 — 화면 테스트가 이것으로 찾는다. 글자 표가 아닌 것은 「글자 표를 진 Border = 에피소드 카드」를 깨지 않기
@@ -2727,6 +2762,11 @@ public partial class ChapterGraphView : UserControl
 
     /// <summary>이번 그리기의 칩 자리(여백 포함, 왼쪽 위). <see cref="PlaceBranchChips"/>가 채운다.</summary>
     private Dictionary<string, (double X, double Y)> _chipPlaced = new(StringComparer.Ordinal);
+
+    /// <summary>이번 그리기의 칩 높이 — 조건이 걸린 칩은 두 줄이라 높다. <see cref="PlaceBranchChips"/>가 채운다.</summary>
+    private readonly Dictionary<string, double> _chipHeight = new(StringComparer.Ordinal);
+
+    private double ChipHeightOf(string nodeId) => _chipHeight.GetValueOrDefault(nodeId, BranchChipHeight);
 
     /// <summary>고른 분기 카드(칩)의 NodeId.</summary>
     private string? _selectedBranchCardId;

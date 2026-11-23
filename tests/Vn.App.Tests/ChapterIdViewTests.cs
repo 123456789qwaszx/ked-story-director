@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Path = System.IO.Path;
@@ -103,8 +104,9 @@ public sealed class ChapterIdViewTests : IDisposable
 
             string key = StoryHierarchy.BranchKey("ch01", branch.Id);
             HierarchyRow Row() => view.HierarchyView.Rows.Single(row => row.Key == key);
-            string? Chip() => ((TextBlock)view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
-                .Single(border => border.Tag is ChapterGraphView.BranchCardMark mark && mark.NodeId == branch.Id).Child!).Text;
+            string Chip() => string.Join('\n', view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
+                .Single(border => border.Tag is ChapterGraphView.BranchCardMark mark && mark.NodeId == branch.Id)
+                .GetLogicalDescendants().OfType<TextBlock>().Select(text => text.Text));
             Assert.NotEqual("교무실 회상", branch.Name);
 
             Assert.True(check.IsChecked);
