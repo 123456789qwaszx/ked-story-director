@@ -58,6 +58,31 @@ internal sealed class WriterTextBox : TextBox
     /// <summary>글자 겹 — 틀이 서기 전에는 null.</summary>
     internal WriterTextPresenter? Presenter { get; private set; }
 
+    private double _wantedLineHeight = double.NaN;
+
+    /// <summary>
+    /// 카드의 줄 간격 그대로의 줄 높이(px · <see cref="ScriptFont.Apply(TextBox, WriterBase?)"/>가 준다) — 칸의 줄 높이(<see cref="TextBlock.LineHeight"/>)는
+    /// 카드 글꼴의 가장 낮은 줄 높이 밑으로 내려가지 않는데, 글자를 줄인 줄은 이 높이까지 내려간다(WF-D24). NaN이면 칸의 줄 높이 그대로다.
+    /// </summary>
+    internal double WantedLineHeight
+    {
+        get => _wantedLineHeight;
+        set
+        {
+            if (_wantedLineHeight.Equals(value))
+            {
+                return;
+            }
+
+            _wantedLineHeight = value;
+
+            if (Presenter is { } presenter)
+            {
+                presenter.WantedLineHeight = value;
+            }
+        }
+    }
+
     protected override void OnApplyTemplate(Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
     {
         Presenter = e.NameScope.Find<WriterTextPresenter>("PART_TextPresenter");
@@ -65,6 +90,7 @@ internal sealed class WriterTextBox : TextBox
         if (Presenter is not null)
         {
             Presenter.Looks = _looks;
+            Presenter.WantedLineHeight = _wantedLineHeight;
         }
 
         base.OnApplyTemplate(e);
@@ -98,6 +124,47 @@ public sealed class WriterTextPresenter : TextPresenter
     /// <summary>이 칸 안에서 가장 큰 글자 차 — 0보다 크면 줄마다 높이를 따로 잡는다(<see cref="StrutSize"/>).</summary>
     private int MaxGrow => _looks.Count == 0 ? 0 : Math.Max(0, _looks.Max(look => look.Look.Grow));
 
+    /// <summary>이 칸 안에서 가장 작은 글자 차 — 0보다 작으면 줄인 글자가 있다(WF-D24).</summary>
+    private int MinGrow => _looks.Count == 0 ? 0 : Math.Min(0, _looks.Min(look => look.Look.Grow));
+
+    private double _wantedLineHeight = double.NaN;
+
+    /// <summary>카드의 줄 간격 그대로의 줄 높이 — <see cref="WriterTextBox.WantedLineHeight"/>.</summary>
+    internal double WantedLineHeight
+    {
+        get => _wantedLineHeight;
+        set
+        {
+            if (_wantedLineHeight.Equals(value))
+            {
+                return;
+            }
+
+            _wantedLineHeight = value;
+
+            if (MinGrow < 0)
+            {
+                InvalidateTextLayout();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 이 칸에서 가장 낮게 내려갈 수 있는 줄의 높이(px · WF-D24) — 줄인 글자만 든 줄이 있으면 그 줄의 높이(<see cref="ScriptFont.NarrowestLine"/>), 없으면 null
+    /// (카드 글꼴의 가장 낮은 줄 높이 그대로다). 서식 도구가 그 카드의 가장 좁은 줄 간격을 잰다. 줄 높이는 줄이 꺾이는 자리를 바꾸지 않아 지금 배치로 잰다.
+    /// </summary>
+    internal double? NarrowestLine()
+    {
+        if (MinGrow >= 0 || FontSize <= 0)
+        {
+            return null;
+        }
+
+        var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
+        double floor = ScriptFont.MinLineHeight(typeface, FontSize);
+        return ScriptFont.NarrowestLine(TextLayout, typeface) is { } narrowest && narrowest < floor ? narrowest : null;
+    }
+
     /// <summary>
     /// <b>큰 글자가 든 줄만 높인다</b>(2026-11-23 소유자 — 「한줄에서 특정 글자의 글자 크기를 늘렸는데도, 그 줄의 위아래가 아닌 카드 내의 전체의 줄 간격이 늘어나는
     /// 게 살짝 아쉬운데」 · writer-formatting WF-D18). Avalonia 12.1.1은 줄 높이를 정하면 모든 줄을 그 높이로 고정하고(큰 글자는 위아래 줄과 겹친다), 정하지
@@ -109,16 +176,19 @@ public sealed class WriterTextPresenter : TextPresenter
     /// 글 칸의 줄 높이는 그 글꼴 · 크기의 가장 낮은 줄 높이(<see cref="ScriptFont.MinLineHeight"/> · WF-D19) 이상이라, 받침대가 보통 크기 한글 · 영문의 윗몫 ·
     /// 아랫몫을 다 덮는다 — 보통 줄과 빈 줄이 줄 높이 그대로이고, 키운 칸과 안 키운 칸의 보통 줄 간격이 같다(소유자가 확인한 어긋남 — 줄 간격이 한글 한 줄
     /// 높이보다 좁으면 키운 칸의 보통 줄만 높았다). 손으로 줄 높이를 그보다 낮춘 칸은 한글이 든 줄이 조금 높다.
+    ///
+    /// 줄인 글자가 있는 칸(WF-D24)은 받침대를 카드의 줄 간격 그대로의 높이(<see cref="WantedLineHeight"/>)로 낮춘다 — 받침대는 줄마다 「적어도 이 높이」라,
+    /// 줄인 글자만 든 줄은 거기까지 내려가고 기본 크기 글자(화자 이름 · 안 줄인 글)가 든 줄은 그 글자의 자연 높이에서 멈춘다.
     /// </summary>
-    private double? StrutSize(Typeface typeface)
+    private double? StrutSize(Typeface typeface, double lineHeight)
     {
-        if (!double.IsFinite(LineHeight) || LineHeight <= 0 || FontSize <= 0 ||
+        if (!double.IsFinite(lineHeight) || lineHeight <= 0 || FontSize <= 0 ||
             ScriptFont.Shares(typeface) is not { } share || share.Up + share.Down + share.Gap <= 0)
         {
             return null;
         }
 
-        return LineHeight / (share.Up + share.Down + share.Gap);
+        return lineHeight / (share.Up + share.Down + share.Gap);
     }
 
     protected override TextLayout CreateTextLayout()
@@ -145,24 +215,7 @@ public sealed class WriterTextPresenter : TextPresenter
         string shown = preeditLength > 0 ? text[..caret] + preedit + text[caret..] : text;
         var typeface = new Typeface(FontFamily, FontStyle, FontWeight, FontStretch);
 
-        double lineHeight = LineHeight;
-        double paragraphSize = FontSize;
-        bool strut = false;
-        int grow = MaxGrow;
-
-        if (grow > 0 && StrutSize(typeface) is { } strutSize)
-        {
-            // 큰 글자가 든 줄만 높인다 — 줄 높이를 정하지 않고 문단의 기본 글자를 받침대로(StrutSize).
-            lineHeight = double.NaN;
-            paragraphSize = strutSize;
-            strut = true;
-        }
-        else if (grow > 0 && double.IsFinite(lineHeight) && lineHeight > 0 && FontSize > 0)
-        {
-            lineHeight = Math.Round(lineHeight * (FontSize + grow) / FontSize, 1);
-        }
-
-        return new TextLayout(
+        TextLayout Build(double lineHeight, double paragraphSize, bool strut) => new(
             shown,
             typeface,
             paragraphSize,
@@ -178,7 +231,41 @@ public sealed class WriterTextPresenter : TextPresenter
             LetterSpacing,
             0,
             FontFeatures,
-            Overrides(text.Length, caret, preeditLength, typeface, coverPlain: strut));
+            Overrides(shown, text.Length, caret, preeditLength, typeface, coverPlain: strut));
+
+        int grow = MaxGrow;
+        double line = LineHeight;
+
+        // 줄인 글자가 있으면 받침대를 카드의 줄 간격 그대로까지 낮춘다(WF-D24) — 칸의 줄 높이는 카드 글꼴의 가장 낮은 줄 높이에서 멈춰 있다. 가장 낮게
+        // 내려갈 수 있는 줄보다는 낮추지 않는다(그보다 낮추면 빈 줄만 낮아진다 — 줄 간격 숫자도 거기서 멈춘다). 줄 높이는 꺾이는 자리를 바꾸지 않으므로 한 번
+        // 배치해 재고, 모자라면 그 높이로 다시 짓는다.
+        if (MinGrow < 0 && double.IsFinite(line) && double.IsFinite(WantedLineHeight) && WantedLineHeight > 0 && WantedLineHeight < line &&
+            StrutSize(typeface, WantedLineHeight) is { } lowStrut)
+        {
+            TextLayout low = Build(double.NaN, lowStrut, strut: true);
+            double floor = Math.Min(line, ScriptFont.NarrowestLine(low, typeface) ?? line);
+
+            if (WantedLineHeight >= floor - 1e-6)
+            {
+                return low;
+            }
+
+            low.Dispose();
+            line = floor;
+        }
+
+        if ((grow > 0 || line < LineHeight) && StrutSize(typeface, line) is { } strutSize)
+        {
+            // 큰 글자가 든 줄만 높인다 · 줄인 글자만 든 줄은 낮춘다 — 줄 높이를 정하지 않고 문단의 기본 글자를 받침대로(StrutSize).
+            return Build(double.NaN, strutSize, strut: true);
+        }
+
+        if (grow > 0 && double.IsFinite(line) && line > 0 && FontSize > 0)
+        {
+            line = Math.Round(line * (FontSize + grow) / FontSize, 1);
+        }
+
+        return Build(line, FontSize, strut: false);
     }
 
     /// <summary>「글에 맞춤」이 잰다 — 줄을 꺾지 않고 모양을 입혀 놓았을 때 가장 긴 줄의 폭.</summary>
@@ -190,7 +277,7 @@ public sealed class WriterTextPresenter : TextPresenter
         using var layout = new TextLayout(
             text, typeface, FontSize, Foreground, TextAlignment.Left, TextWrapping.NoWrap, null, null, FlowDirection,
             double.PositiveInfinity, double.PositiveInfinity, LineHeight, LetterSpacing, 0, FontFeatures,
-            Overrides(text.Length, 0, 0, typeface));
+            Overrides(text, text.Length, 0, 0, typeface));
 
         return layout.WidthIncludingTrailingWhitespace;
     }
@@ -198,8 +285,12 @@ public sealed class WriterTextPresenter : TextPresenter
     /// <summary>
     /// 구간마다의 모양 — 겹치지 않고 자리 차례. 조합 중인 글자는 그 앞 글자의 모양을 잇는다(넣으면 그렇게 된다 — 구간 끝에 이어 친 글자).
     /// </summary>
-    /// <param name="coverPlain">보통 글자에도 제 크기를 입힌다 — 문단의 기본 글자가 받침대일 때(<see cref="StrutSize"/>).</param>
-    private List<ValueSpan<TextRunProperties>> Overrides(int textLength, int caret, int preeditLength, Typeface typeface, bool coverPlain = false)
+    /// <param name="shown">배치하는 글(조합 중인 글자 포함).</param>
+    /// <param name="coverPlain">
+    /// 보통 글자에도 제 크기를 입힌다 — 문단의 기본 글자가 받침대일 때(<see cref="StrutSize"/>). 줄바꿈 글자는 빼서 받침대로 둔다 — 보이지 않고, 제 크기를 입으면
+    /// 줄인 글자만 든 줄도 기본 크기 높이가 된다(WF-D24 — 대사에 입힌 서식은 줄바꿈에 닿지 않는다).
+    /// </param>
+    private List<ValueSpan<TextRunProperties>> Overrides(string shown, int textLength, int caret, int preeditLength, Typeface typeface, bool coverPlain = false)
     {
         var looks = new WriterLook[textLength];
         Array.Fill(looks, WriterLook.Plain);
@@ -236,13 +327,15 @@ public sealed class WriterTextPresenter : TextPresenter
 
         bool Selected(int shownIndex) => selectionForeground is not null && shownIndex >= start && shownIndex < end;
 
+        bool Break(int shownIndex) => coverPlain && shownIndex < shown.Length && shown[shownIndex] is ('\n' or '\r');
+
         var spans = new List<ValueSpan<TextRunProperties>>();
         var cultures = new Dictionary<(bool, bool, string?), System.Globalization.CultureInfo?> { [(false, false, null)] = null };
         int run = 0;
 
         for (int at = 1; at <= shownLength; at++)
         {
-            if (at < shownLength && LookAt(at) == LookAt(run) && Preedit(at) == Preedit(run) && Selected(at) == Selected(run))
+            if (at < shownLength && LookAt(at) == LookAt(run) && Preedit(at) == Preedit(run) && Selected(at) == Selected(run) && Break(at) == Break(run))
             {
                 continue;
             }
@@ -251,7 +344,11 @@ public sealed class WriterTextPresenter : TextPresenter
             bool preedit = Preedit(run);
             bool selected = Selected(run);
 
-            if (!look.IsPlain || preedit || selected || coverPlain)
+            if (Break(run))
+            {
+                // 받침대 크기 그대로 — 고른 범위의 줄바꿈도(보이지 않는다 · 고르는 동안 줄이 튀지 않게).
+            }
+            else if (!look.IsPlain || preedit || selected || coverPlain)
             {
                 spans.Add(new ValueSpan<TextRunProperties>(run, at - run, Properties(look, typeface, preedit, selected ? selectionForeground : null, CultureOf(look, cultures))));
             }

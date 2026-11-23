@@ -41,8 +41,8 @@ public sealed class WriterLineHeightTests
         double scaledAll = 3 * Math.Round(lineHeight * (Size + 10) / Size, 1);
         Assert.True(box.Presenter!.TextLayout.Height < scaledAll - 10, $"칸 {box.Presenter.TextLayout.Height:0.0} · 전처럼 {scaledAll:0.0}");
 
-        // 보통 글자는 제 크기로 그려진다(받침대 크기가 아니다).
-        foreach (ShapedTextRun run in box.Presenter.TextLayout.TextLines[0].TextRuns.OfType<ShapedTextRun>())
+        // 보통 글자는 제 크기로 그려진다(받침대 크기가 아니다 — 보이지 않는 줄바꿈만 받침대 크기다 · WF-D24).
+        foreach (ShapedTextRun run in box.Presenter.TextLayout.TextLines[0].TextRuns.OfType<ShapedTextRun>().Where(run => !ScriptFont.IsLineBreak(run.Text.Span)))
         {
             Assert.Equal(Size, run.Properties.FontRenderingEmSize);
         }
@@ -104,6 +104,75 @@ public sealed class WriterLineHeightTests
         Assert.All(Heights(plain.GetVisualDescendants().OfType<TextPresenter>().Single().TextLayout), height => Assert.Equal(line, height, 2));
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「특정 에피소드내에서 글자 크기를 작게 줄여놨는데도, 줄 간격은 처음 생성될때 기준으로 가장 좁은 수치가 결정되어있다보니, 엄청 답답한
+    /// 감이 있네」(writer-formatting WF-D24). 카드의 줄 간격은 줄마다 「적어도 이 높이」다 — 줄인 글자만 든 줄(꺾여 내려간 대사 · 줄인 영문 줄)과 빈 줄은 카드의
+    /// 줄 간격까지 내려가고, 처음 크기 글자(화자 이름 · 안 줄인 줄)가 든 줄은 그 글자의 자연 높이에서 멈춘다. 그 카드에서 가장 낮게 내려갈 수 있는 줄은 줄인
+    /// 크기의 가장 낮은 줄 높이이고, 그보다 좁은 줄 간격은 그 높이다.
+    /// </summary>
+    [Fact]
+    public void 줄인_글자만_든_줄은_카드의_줄_간격까지_낮아지고_처음_크기_글자가_든_줄은_제_높이에서_멈춘다() => HeadlessUi.Run(() =>
+    {
+        const int shrink = -5;
+        const string text = "하린: 작은 대사가 아주 길게 이어져서 줄이 꺾여 둘째 줄로 내려간다 작은 대사가 길게 이어진다 작은 대사가 아주 길게 이어져서 줄이 꺾여 " +
+            "셋째 줄까지 내려간다 작은 대사가 길게 이어진다\n\n작은 글만 든 줄\nabc small\n보통 크기 줄";
+        int body = text.IndexOf('작');
+        BoxLook Small(int start, int end) => new(start, end - start, new WriterLook(Grow: shrink));
+        List<BoxLook> looks =
+        [
+            Small(body, text.IndexOf('\n')),
+            Small(text.IndexOf("작은 글만"), text.IndexOf("\nabc")),
+            Small(text.IndexOf("abc"), text.IndexOf("\n보통"))
+        ];
+        var basis = new WriterBase(string.Empty, Size, LineSpacing: 170);
+        var box = (WriterTextBox)Show(text, basis, looks, wrap: true);
+        var face = new Typeface(box.FontFamily);
+        double baseFloor = ScriptFont.MinLineHeight(face, Size);
+        double smallFloor = ScriptFont.MinLineHeight(face, Size + shrink);
+
+        // 줄 간격이 넉넉하면 전과 같다 — 모든 줄이 줄 간격의 높이.
+        Assert.True(box.LineHeight > baseFloor);
+        Assert.All(Heights(box), height => Assert.Equal(box.LineHeight, height, 1));
+
+        // 가장 낮게 내려갈 수 있는 줄 = 줄인 크기의 가장 낮은 줄 높이.
+        Assert.Equal(smallFloor, box.Presenter!.NarrowestLine()!.Value, 1);
+        int lowest = ScriptFont.MinLineSpacingOf(basis, box.Presenter.NarrowestLine());
+        Assert.True(lowest < ScriptFont.MinLineSpacingOf(basis) - 20, $"{lowest}% · 처음 크기 {ScriptFont.MinLineSpacingOf(basis)}%");
+
+        // 그 값으로 — 줄인 글자만 든 줄 · 빈 줄은 그 높이, 처음 크기 글자가 든 줄은 그 글자의 자연 높이.
+        ScriptFont.Apply(box, basis with { LineSpacing = lowest });
+        Dispatcher.UIThread.RunJobs();
+        double low = Math.Round(Size * lowest / 100.0, 1);
+        double plain = ScriptFont.PlainLine(face, Size).Height;
+        TextLayout layout = box.Presenter.TextLayout;
+        Assert.True(layout.TextLines.Count >= 6, $"줄 {layout.TextLines.Count}");   // 첫 줄이 꺾였다
+
+        foreach (TextLine line in layout.TextLines)
+        {
+            string shown = text.Substring(line.FirstTextSourceIndex, Math.Min(line.Length, text.Length - line.FirstTextSourceIndex));
+
+            if (shown.Contains("하린", StringComparison.Ordinal) || shown.Contains("보통", StringComparison.Ordinal))
+            {
+                Assert.InRange(line.Height, plain - 0.05, baseFloor + 0.05);
+            }
+            else
+            {
+                Assert.Equal(low, line.Height, 1);
+            }
+        }
+
+        // 그보다 좁게 적힌 값은 가장 낮게 내려갈 수 있는 줄의 높이다(줄 간격 숫자도 거기서 멈춘다 — 처음 크기의 가장 낮은 줄 높이와 같은 규칙).
+        ScriptFont.Apply(box, basis with { LineSpacing = ScriptFont.LowestCardLineSpacing });
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(smallFloor, box.Presenter.TextLayout.TextLines[1].Height, 1);
+
+        // 줄인 글자를 걷으면 전처럼 처음 크기의 가장 낮은 줄 높이다.
+        box.Looks = [];
+        Dispatcher.UIThread.RunJobs();
+        Assert.All(Heights(box), height => Assert.Equal(baseFloor, height, 1));
+        Assert.Null(box.Presenter.NarrowestLine());
+    });
+
     /// <summary>줄 높이를 손으로 정한 서식 칸.</summary>
     private static WriterTextBox Show(string text, double lineHeight, IReadOnlyList<BoxLook> looks)
     {
@@ -114,19 +183,19 @@ public sealed class WriterLineHeightTests
     }
 
     /// <summary>카드의 처음 값을 입은 칸 — 모양이 있으면 서식 칸, null이면 보통 TextBox(서식 없는 카드).</summary>
-    private static TextBox Show(string text, WriterBase basis, IReadOnlyList<BoxLook>? looks)
+    private static TextBox Show(string text, WriterBase basis, IReadOnlyList<BoxLook>? looks, bool wrap = false)
     {
         TextBox box = looks is null ? new TextBox() : new WriterTextBox { Looks = looks };
         ScriptFont.Apply(box, basis);
-        Place(box, text);
+        Place(box, text, wrap);
         return box;
     }
 
-    private static void Place(TextBox box, string text)
+    private static void Place(TextBox box, string text, bool wrap = false)
     {
         box.Text = text;
         box.AcceptsReturn = true;
-        box.TextWrapping = TextWrapping.NoWrap;
+        box.TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
         box.Width = 400;
         box.Height = 220;
 

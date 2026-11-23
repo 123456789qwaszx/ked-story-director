@@ -641,8 +641,8 @@ public partial class GraphEditorView
             return;
         }
 
-        bool narrowed = cards.Any(card => LineSpacingWithin(card.WriterBase, percent) > percent);
-        session.Editor.SetWriterBase(cards.Select(card => card.Id).ToList(), basis => basis with { LineSpacing = LineSpacingWithin(basis, percent) });
+        bool narrowed = cards.Any(card => LineSpacingWithin(card, card.WriterBase, percent) > percent);
+        session.Editor.SetWriterBase(cards.Select(card => card.Id).ToList(), (card, basis) => basis with { LineSpacing = LineSpacingWithin(card, basis, percent) });
 
         if (narrowed)
         {
@@ -973,7 +973,7 @@ public partial class GraphEditorView
             if (FormatTarget() is { } target && _session?.Project.FindDialogue(target.NodeId) is { } node)
             {
                 int now = CardLineSpacing(node);
-                int next = LineSpacingWithin(node.WriterBase, now + step);
+                int next = LineSpacingWithin(node, node.WriterBase, now + step);
 
                 if (next != node.WriterBase?.LineSpacing)
                 {
@@ -990,10 +990,10 @@ public partial class GraphEditorView
             else if (CardTargets() is { Count: > 0 } cards)
             {
                 // 카드마다 제 줄 간격(보이는 값)에서 한 칸 — 그 카드에서 가장 좁은 값에서 멈춘다(WF-D21 · WF-D23).
-                bool stopped = step < 0 && cards.All(card => CardLineSpacing(card) == ScriptFont.MinLineSpacingOf(card.WriterBase));
-                _session?.Editor.SetWriterBase(cards.Select(card => card.Id).ToList(), basis => basis with
+                bool stopped = step < 0 && cards.All(card => CardLineSpacing(card) == ScriptFont.MinLineSpacingOf(card.WriterBase, NarrowestLineOf(card)));
+                _session?.Editor.SetWriterBase(cards.Select(card => card.Id).ToList(), (card, basis) => basis with
                 {
-                    LineSpacing = LineSpacingWithin(basis, ScriptFont.ShownLineSpacing(basis) + step)
+                    LineSpacing = LineSpacingWithin(card, basis, ScriptFont.ShownLineSpacing(basis, NarrowestLineOf(card)) + step)
                 });
 
                 if (stopped)
@@ -1006,20 +1006,28 @@ public partial class GraphEditorView
         });
     }
 
-    /// <summary>카드의 줄 간격(%) — 보이는 값(그 카드에서 가장 좁은 값 아래로 내려가지 않는다 · <see cref="ScriptFont.ShownLineSpacing"/> · WF-D23).</summary>
-    private static int CardLineSpacing(DialogueNode node) => ScriptFont.ShownLineSpacing(node.WriterBase);
+    /// <summary>카드의 줄 간격(%) — 보이는 값(그 카드에서 가장 좁은 값 아래로 내려가지 않는다 · <see cref="ScriptFont.ShownLineSpacing"/> · WF-D23 · WF-D24).</summary>
+    private int CardLineSpacing(DialogueNode node) => ScriptFont.ShownLineSpacing(node.WriterBase, NarrowestLineOf(node));
 
-    /// <summary>그 카드에서 줄 간격을 <paramref name="wanted"/>(%)로 — 그 카드에서 가장 좁은 값 ~ 설정의 끝으로 당긴다(WF-D23).</summary>
-    private static int LineSpacingWithin(WriterBase? card, int wanted) =>
-        Math.Clamp(wanted, ScriptFont.MinLineSpacingOf(card), ScriptFont.MaxLineSpacing);
+    /// <summary>
+    /// 그 카드에서 줄 간격을 <paramref name="wanted"/>(%)로 — 그 카드에서 가장 좁은 값 ~ 설정의 끝으로 당긴다(WF-D23). 가장 좁은 값은 판에 선 그 카드 글 칸의
+    /// 가장 낮게 내려갈 수 있는 줄로 잰다 — 글자를 줄인 줄이 있으면 더 좁다(WF-D24).
+    /// </summary>
+    private int LineSpacingWithin(DialogueNode node, WriterBase? basis, int wanted) =>
+        Math.Clamp(wanted, ScriptFont.MinLineSpacingOf(basis, NarrowestLineOf(node)), ScriptFont.MaxLineSpacing);
 
-    /// <summary>가장 좁은 값에서 멈췄다고 말한다 — 카드 하나면 그 값, 여럿이면 카드마다 다르다고.</summary>
-    private void SayNarrowest(IReadOnlyList<DialogueNode> cards)
-    {
-        _session?.SetStatus(cards.Count == 1
-            ? $"이 카드의 글꼴 · 크기에서는 줄 간격 {ScriptFont.MinLineSpacingOf(cards[0].WriterBase)}%가 가장 좁습니다 — 더 좁히면 숫자만 내려가고 화면은 그대로라 여기서 멈춥니다."
-            : "줄 간격은 카드마다 그 글꼴 · 크기에서 가장 좁은 값에서 멈췄습니다 — 더 좁히면 숫자만 내려가고 화면은 그대로입니다.");
-    }
+    /// <summary>
+    /// 판에 선 그 카드 글 칸에서 가장 낮게 내려갈 수 있는 줄의 높이(px · <see cref="WriterTextPresenter.NarrowestLine"/>) — 줄인 글자만 든 줄이 없거나 칸이 서
+    /// 있지 않으면(접힌 장면) null — 그 카드의 처음 크기로 잰다.
+    /// </summary>
+    private double? NarrowestLineOf(DialogueNode node) =>
+        _writingBoxes.GetValueOrDefault(node.Id) is WriterTextBox { Presenter: { } presenter } ? presenter.NarrowestLine() : null;
+
+    /// <summary>
+    /// 가장 좁은 값에서 멈췄다고 말한다 — 「최소 줄 간격입니다」(2026-11-23 소유자 — 「이 카드의 글꼴, 크기에서는 줄 간격 135%가 가장 좁습니다 이 문구를,
+    /// 그냥 최소 줄 간격입니다로 고쳐줘」). ⛔ 그 전에는 그 값과 까닭(숫자만 내려가고 화면은 그대로)을 말했다.
+    /// </summary>
+    private void SayNarrowest(IReadOnlyList<DialogueNode> cards) => _session?.SetStatus("최소 줄 간격입니다.");
 
     /// <summary>
     /// 입힐 칸에 초점과 고른 범위를 되돌린다 — 도구 막대를 쓴 뒤. 초점을 가져가는 도구가 다 닫혔으면 붙든 범위도 놓는다.

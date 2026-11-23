@@ -509,7 +509,7 @@ public sealed class WriterFormattingTests
         Dispatcher.UIThread.RunJobs();
         Click(window, "줄 간격 좁게");
         Assert.Equal(narrowest, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
-        Assert.Contains($"{narrowest}%가 가장 좁습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("최소 줄 간격입니다.", session.StatusMessage);   // 2026-11-23 소유자 — 「그냥 최소 줄 간격입니다로 고쳐줘」
 
         // 위로 한 칸 뒤 다시 −는 그 값으로. 숫자로 더 좁게 적어도 그 값이다.
         Click(window, "줄 간격 넓게");
@@ -518,7 +518,70 @@ public sealed class WriterFormattingTests
         Type(window, graph.FormatValueEntries.LineSpacing!, "100");
         Assert.Equal(narrowest, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
         Assert.Equal($"{narrowest}%", graph.FormatLineSpacingText);
-        Assert.Contains("가장 좁습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("최소 줄 간격입니다.", session.StatusMessage);
+        window.Close();
+    });
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 「특정 에피소드내에서 글자 크기를 작게 줄여놨는데도, 줄 간격은 처음 생성될때 기준으로 가장 좁은 수치가 결정되어있다보니, 엄청 답답한
+    /// 감이 있네」(writer-formatting WF-D24). 대사를 줄인 카드는 줄 간격 −가 처음 크기의 가장 좁은 값을 지나 더 내려가고, 줄인 글자만 든 줄이 실제로 낮아진다.
+    /// 화자 이름(서식이 닿지 않아 처음 크기)이 든 줄은 제 높이에서 멈춘다. 그 카드의 가장 좁은 값에서 멈추고 「최소 줄 간격입니다」. 줄인 글자를 되돌리면
+    /// 처음 크기의 가장 좁은 값으로 보인다.
+    /// </summary>
+    [Fact]
+    public void 글자를_줄인_카드는_줄_간격을_그_글자에_맞춰_더_좁힐_수_있다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.", "바람이 분다.");
+        GraphEditorView graph = Graph(window);
+        WriterBase basis = session.Project.FindDialogue(card.Id)!.WriterBase!;
+        int baseNarrowest = ScriptFont.MinLineSpacingOf(basis);
+        session.Editor.SetWriterLineSpacing(card.Id, baseNarrowest);
+
+        // 대사 셋을 모두 4pt 줄인다(화자 이름은 그대로).
+        session.Editor.ApplyWriterStyle(card.Id, ids.Select(id => new WriterRange(id, 0, session.Project.FindDialogue(card.Id)!.Script.Text(id).Text.Length)).ToList(),
+            new WriterStyleChange(WriterStyleKind.Grow, Step: -4));
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+        var box = Assert.IsType<WriterTextBox>(Box(window, card.Id));
+        double[] before = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
+        Assert.Equal($"{baseNarrowest}%", graph.FormatLineSpacingText);
+
+        // − 가 처음 크기의 가장 좁은 값 아래로 내려간다 — 줄인 글자만 든 줄(둘째 · 셋째)이 낮아지고, 화자 이름이 든 첫 줄은 그대로다.
+        box.Focus();
+        box.SelectionStart = box.SelectionEnd = box.Text!.IndexOf('문');
+        Dispatcher.UIThread.RunJobs();
+        Click(window, "줄 간격 좁게");
+        int spacing = session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing!.Value;
+        Assert.Equal(baseNarrowest - 10, spacing);
+        Assert.Equal($"{spacing}%", graph.FormatLineSpacingText);
+        box = Assert.IsType<WriterTextBox>(Box(window, card.Id));
+        var typeface = new Typeface(box.FontFamily, box.FontStyle, box.FontWeight);
+        double plain = ScriptFont.PlainLine(typeface, box.FontSize).Height;   // 화자 이름이 든 줄 — 처음 크기 글자의 자연 높이(가장 낮은 줄 높이와 거의 같다)
+        double[] after = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
+        Assert.InRange(after[0], plain - 0.05, before[0] + 0.05);
+        Assert.Equal(Math.Round(box.FontSize * spacing / 100.0, 1), after[1], 1);
+        Assert.Equal(after[1], after[2], 2);
+        Assert.True(after[1] < before[1] - 1, $"줄인 줄 {before[1]:0.0} → {after[1]:0.0}");
+
+        // 그 카드의 가장 좁은 값(줄인 글자의 가장 낮은 줄 높이)에서 멈춘다 — 숫자로 더 좁게 적어도.
+        int cardNarrowest = ScriptFont.MinLineSpacingOf(basis, ScriptFont.MinLineHeight(typeface, box.FontSize - 4));
+        Assert.True(cardNarrowest < baseNarrowest - 10);
+        Type(window, graph.FormatValueEntries.LineSpacing!, "40");
+        Assert.Equal(cardNarrowest, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Equal($"{cardNarrowest}%", graph.FormatLineSpacingText);
+        Assert.Equal("최소 줄 간격입니다.", session.StatusMessage);
+        box = Assert.IsType<WriterTextBox>(Box(window, card.Id));
+        after = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
+        Assert.InRange(after[0], plain - 0.05, before[0] + 0.05);
+        Assert.True(after[1] >= ScriptFont.MinLineHeight(typeface, box.FontSize - 4) - 1e-6);
+
+        // 줄인 글자를 되돌리면 처음 크기의 가장 좁은 값으로 보이고, 줄도 그 높이다.
+        session.Editor.Undo();   // 숫자로 적은 줄 간격
+        session.Editor.Undo();   // −
+        session.Editor.Undo();   // 줄인 글자
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal($"{baseNarrowest}%", graph.FormatLineSpacingText);
         window.Close();
     });
 

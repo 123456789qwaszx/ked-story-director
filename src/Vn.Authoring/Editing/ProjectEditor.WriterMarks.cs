@@ -155,6 +155,16 @@ public sealed partial class ProjectEditor
     /// </summary>
     public void SetWriterBase(IReadOnlyList<string> nodeIds, Func<WriterBase, WriterBase> change)
     {
+        ArgumentNullException.ThrowIfNull(change);
+        SetWriterBase(nodeIds, (_, basis) => change(basis));
+    }
+
+    /// <summary>
+    /// <see cref="SetWriterBase(IReadOnlyList{string}, Func{WriterBase, WriterBase})"/>와 같고, 새 값을 낼 때 그 카드를 함께 본다 — 카드마다 끝이 다른 값(그 카드의
+    /// 가장 좁은 줄 간격 · WF-D24)을 당길 때.
+    /// </summary>
+    public void SetWriterBase(IReadOnlyList<string> nodeIds, Func<DialogueNode, WriterBase, WriterBase> change)
+    {
         ArgumentNullException.ThrowIfNull(nodeIds);
         ArgumentNullException.ThrowIfNull(change);
 
@@ -169,7 +179,7 @@ public sealed partial class ProjectEditor
                 continue;
             }
 
-            WriterBase value = change(basis);
+            WriterBase value = change(node, basis);
 
             if (node.WriterBase is null || value != node.WriterBase)
             {
