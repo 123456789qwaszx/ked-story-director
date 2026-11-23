@@ -14,7 +14,7 @@
                  Classes="clearButton"
                  Margin="4,4,4,0"
                  FontSize="12"
-                 Watermark="찾기 — 이름 · ID"
+                 PlaceholderText="찾기 — 이름 · ID"
                  ToolTip.Tip="에피소드 · 장면 · 챕터를 이름이나 ID로 찾습니다 — 자음만 쳐도 됩니다(「ㅅㅌ」). 치는 동안 맞는 줄과 그 위 줄만 남습니다. Enter · ↓는 첫 줄로, Esc는 지웁니다." />
 
         <ScrollViewer x:Name="TreeScroll"
