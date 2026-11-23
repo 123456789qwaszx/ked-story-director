@@ -160,7 +160,12 @@ public sealed class WriterLineHeightTests
 
             if (shown.Contains("하린", StringComparison.Ordinal) || shown.Contains("보통", StringComparison.Ordinal))
             {
-                Assert.InRange(line.Height, plain - 0.05, baseFloor + 0.05);
+                // 처음 크기 글자의 자연 높이 — 그 줄의 글자대로다. 한글만 든 줄은 한글 글꼴만의 높이라 「가A」(영문 글꼴이 섞인 한 줄)보다 낮을 수
+                // 있다(Windows 맑은 고딕 18.62 · 「가A」 18.75 — 리눅스 Noto는 영문 글꼴보다 위아래 모두 커서 같다 · ⛔ 2026-11-23 CI). 줄인 줄의
+                // 높이(low)까지는 내려가지 않는다.
+                using var natural = new TextLayout(shown.TrimEnd('\n'), face, Size, null);
+                Assert.InRange(line.Height, Math.Min(plain, natural.Height) - 0.05, baseFloor + 0.05);
+                Assert.True(line.Height > low + 1, $"처음 크기 줄 {line.Height:0.00} · 줄인 줄 {low:0.00}");
             }
             else
             {
