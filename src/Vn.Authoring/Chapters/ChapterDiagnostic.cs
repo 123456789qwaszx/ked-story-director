@@ -34,6 +34,12 @@ public enum ChapterDiagnosticCode
     StatKeyUnknown,
     StatValueNotInteger,
     StatRangeInvalid,
+
+    /// <summary>
+    /// 스탯 키가 영어가 아니다(한글 · 빈칸 · 기호) — 경고다(내보내기를 막지 않는다). 키는 Yarn에 그대로 들어가는 statKey라 영어로 적는다(2026-11-23 소유자 ·
+    /// <see cref="StatKeyRule"/>). 새로 만들거나 바꾸는 키는 편집기가 받지 않으므로, 이것은 옛 프로젝트 · 손으로 고친 파일에서 온다.
+    /// </summary>
+    StatKeyNotEnglish,
     EdgeEndpointUnknown,
     EdgeEndpointBlank,
     EpisodeUnreachable,
@@ -141,6 +147,13 @@ public sealed record ChapterDiagnostic(
     string? EpisodeId,
     string Message)
 {
+    /// <summary>
+    /// 고치는 법 — 메시지 아래에 따로 서는 여러 줄 글(예시 포함). 없으면 null. 지금은 식이 성립하지 않는 조건만 단다
+    /// (<see cref="ConditionExpressionHelp"/> · 2026-11-23 소유자 — 「검증 보고쪽에 식이 성립하지 않는 다고 띄워주고, 구체적인 예시까지 보기좋게 설명」).
+    /// <see cref="Describe"/>에는 들지 않는다 — 상태줄은 한 줄이다.
+    /// </summary>
+    public string? Help { get; init; }
+
     /// <summary>
     /// "챕터 · 자리 — 메시지" 한 줄. 상태줄·목록이 그대로 쓴다.
     ///

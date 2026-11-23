@@ -72,6 +72,33 @@ public sealed class ChapterSheetEditTests : IDisposable
     });
 
     [Fact]
+    public void 성립하지_않는_식을_적으면_검증_보고가_까닭과_고치는_법을_보인다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-23 소유자 — 「식을 잘못 적었을 경우, 구성탭에서 검증 보고쪽에 식이 성립하지 않는 다고 띄워주고, 구체적인 예시까지 보기좋게 설명」.
+        (ChapterGraphView view, AuthoringSession session) = Show();
+        var panel = view.FindControl<StackPanel>("DiagnosticsPanel")!;
+
+        Commit(Expression(view, "신뢰높음"), "trust => 5");
+
+        Assert.Contains("오류", (string)view.FindControl<Expander>("DiagnosticsExpander")!.Header!, StringComparison.Ordinal);
+        TextBlock line = panel.Children.OfType<TextBlock>().Single(block =>
+            block.Text?.Contains("조건 '신뢰높음' — 식이 성립하지 않습니다: 'trust => 5' — '=>'는 순서가 거꾸로입니다. '>='로 씁니다.", StringComparison.Ordinal) == true);
+
+        // 바로 아래에 고치는 법 — 이 챕터의 스탯(trust 0~100)으로 든 예시가 고정폭 글꼴의 상자에 선다.
+        Border help = Assert.IsType<Border>(panel.Children[panel.Children.IndexOf(line) + 1]);
+        Assert.Equal(ChapterGraphView.DiagnosticHelpTag, help.Tag);
+        string text = ((TextBlock)help.Child!).Text!;
+        Assert.Contains("trust >= 50", text, StringComparison.Ordinal);
+        Assert.Contains("trust 값이 50 이상일 때", text, StringComparison.Ordinal);
+        Assert.Contains("Mono", ((TextBlock)help.Child!).FontFamily.Name, StringComparison.Ordinal);
+
+        // 고치면 둘 다 걷힌다.
+        Commit(Expression(view, "신뢰높음"), "trust >= 5");
+        Assert.DoesNotContain(panel.Children.OfType<TextBlock>(), block => block.Text?.Contains("식이 성립하지 않습니다", StringComparison.Ordinal) == true);
+        Assert.DoesNotContain(panel.Children.OfType<Border>(), border => Equals(border.Tag, ChapterGraphView.DiagnosticHelpTag));
+    });
+
+    [Fact]
     public void 조건_식을_고치면_모델에_써진다() => HeadlessUi.Run(() =>
     {
         (ChapterGraphView view, AuthoringSession session) = Show();
@@ -130,12 +157,12 @@ public sealed class ChapterSheetEditTests : IDisposable
     public void 아무_데서도_안_쓰는_스탯은_지워진다() => HeadlessUi.Run(() =>
     {
         (ChapterGraphView view, AuthoringSession session) = Show();
-        session.Editor.AddChapterStat("ch01", "여분");
+        session.Editor.AddChapterStat("ch01", "spare");
         Redraw(view);
 
-        Press(Buttons(Row(view, "stat:여분")).Last());
+        Press(Buttons(Row(view, "stat:spare")).Last());
 
-        Assert.DoesNotContain(session.Editor.FindChapter("ch01")!.Stats, stat => stat.Key == "여분");
+        Assert.DoesNotContain(session.Editor.FindChapter("ch01")!.Stats, stat => stat.Key == "spare");
     });
 
     [Fact]
@@ -166,17 +193,17 @@ public sealed class ChapterSheetEditTests : IDisposable
         (ChapterGraphView view, AuthoringSession session) = Show();
         long before = session.Editor.Revision;
 
-        Commit(KeyBox(view, "trust"), " 신뢰 ");
+        Commit(KeyBox(view, "trust"), " faith ");
 
         ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
-        Assert.Equal(["신뢰"], chapter.Stats.Select(stat => stat.Key));
-        Assert.Equal("신뢰 >= 3", chapter.Conditions.Single().Expression);   // 조건 식이 따라갔다
+        Assert.Equal(["faith"], chapter.Stats.Select(stat => stat.Key));
+        Assert.Equal("faith >= 3", chapter.Conditions.Single().Expression);   // 조건 식이 따라갔다
         Assert.Equal(before + 1, session.Editor.Revision);
         Assert.Contains("따라갔습니다", session.StatusMessage, StringComparison.Ordinal);
 
         // 표가 새 키로 다시 선다.
         Redraw(view);
-        Assert.Equal("신뢰", KeyBox(view, "신뢰").Text);
+        Assert.Equal("faith", KeyBox(view, "faith").Text);
 
         session.Editor.Undo();
         Assert.Equal(["trust"], session.Editor.FindChapter("ch01")!.Stats.Select(stat => stat.Key));
@@ -252,6 +279,21 @@ public sealed class ChapterSheetEditTests : IDisposable
         Commit(AddBox(view, "stat-add-name"), "trust");
         Assert.Contains("이미 있습니다", session.StatusMessage, StringComparison.Ordinal);
         Assert.Equal(now, session.Editor.Revision);
+
+        // 한글 · 빈칸이 든 키도 더하지 않는다 — 까닭을 말하고 적은 글은 칸에 그대로다(2026-11-23 소유자 — 「Yarn쪽에 바로 들어가는 statKey이므로
+        // 한글을 허용하지 않고 영어로 작성해야 한다는 제한을 분명히」).
+        Commit(AddBox(view, "stat-add-name"), "호감");
+        Assert.Contains("한글이 들었습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("영어로 적습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("호감", AddBox(view, "stat-add-name").Text);
+        Commit(AddBox(view, "stat-add-name"), "favor level");
+        Assert.Contains("쓸 수 없습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal(now, session.Editor.Revision);
+
+        // 칸과 키 칸이 그 제한을 먼저 말한다.
+        Assert.Contains("영어로", AddBox(view, "stat-add-name").PlaceholderText, StringComparison.Ordinal);
+        Assert.Contains("영어로 적습니다", (string)ToolTip.GetTip(Row(view, "stat:trust")!.GetLogicalDescendants().OfType<TextBox>()
+            .First(box => Equals(box.Tag, "stat-key:trust")))!, StringComparison.Ordinal);
     });
 
     [Fact]
@@ -267,8 +309,8 @@ public sealed class ChapterSheetEditTests : IDisposable
         Assert.Contains("최대", labels);
 
         ComboBox type = TypeCombo(row);
-        Assert.Equal(["숫자", "활성/비활성"], type.ItemsSource!.Cast<string>());
-        Assert.Equal("숫자", type.SelectedItem);
+        Assert.Equal(["숫자(정수)", "활성/비활성"], type.ItemsSource!.Cast<string>());   // ⛔ 「숫자」(2026-11-23 소유자 — 「숫자(정수)라고」)
+        Assert.Equal("숫자(정수)", type.SelectedItem);
 
         // 잘리지 않는다 — 종류 칸이 제 내용만큼 넓고, 두 줄의 끝([✕] · [최대] 칸)이 표 폭 안에 선다(인스펙터 기본 폭).
         double wanted = type.DesiredSize.Width - type.Margin.Left - type.Margin.Right;

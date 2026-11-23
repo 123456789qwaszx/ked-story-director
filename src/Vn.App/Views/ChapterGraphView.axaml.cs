@@ -4629,20 +4629,27 @@ public partial class ChapterGraphView : UserControl
         {
             StatListPanel.Children.Add(AddRow(
                 "stat-add",
-                "새 스탯 키 (예: courage)",
-                "Enter로도 더합니다. 숫자 0(0~100)으로 섭니다 — 종류 · 값은 그 줄에서 고칩니다.",
+                "새 스탯 키 — 영어로 (예: courage)",
+                $"Enter로도 더합니다. 키는 {StatKeyRule.Rule} — Yarn에 그대로 들어가는 statKey입니다. 숫자(정수) 0(0~100)으로 섭니다 — 종류 · 값은 그 줄에서 고칩니다.",
                 "스탯 추가",
                 key =>
                 {
+                    // 영어로만 — 받지 않으면 까닭을 말하고 적은 글은 칸에 그대로 둔다(2026-11-23 소유자 · StatKeyRule).
+                    if (StatKeyRule.Problem(key) is { } refused)
+                    {
+                        _session!.SetStatus(refused);
+                        return;
+                    }
+
                     _session!.Editor.AddChapterStat(chapterId, key);
-                    _session.SetStatus($"스탯 '{key}'{Josa.을를(key)} 더했습니다 — 숫자 0(0~100)입니다. 종류 · 값은 그 줄에서 고칩니다. " +
+                    _session.SetStatus($"스탯 '{key}'{Josa.을를(key)} 더했습니다 — 숫자(정수) 0(0~100)입니다. 종류 · 값은 그 줄에서 고칩니다. " +
                                        "되돌리기(Ctrl+Z)로 돌아옵니다.");
                 }));
         }
     }
 
     /// <summary>스탯 종류의 이름 — 작가가 읽는 말이다. 차례는 <see cref="ChapterStatType"/>의 Int · Bool과 같다.</summary>
-    internal static readonly string[] StatTypeNames = ["숫자", "활성/비활성"];   // ⛔ 「예/아니오」(usability UX12)
+    internal static readonly string[] StatTypeNames = ["숫자(정수)", "활성/비활성"];   // ⛔ 「예/아니오」(usability UX12) · 「숫자」(2026-11-23 소유자 — 「그냥 숫자 대신에 숫자(정수)라고」)
 
     /// <summary>
     /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 칸 · 종류 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
@@ -4673,8 +4680,8 @@ public partial class ChapterGraphView : UserControl
                 "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.");
             return null;
         });
-        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다. 고치고 Enter(또는 칸을 떠나면) — " +
-                            "간선 · 조건의 참조가 따라갑니다. Esc는 그만두기.");
+        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다(Yarn에 그대로 들어가는 statKey). " +
+                            $"{StatKeyRule.Rule}. 고치고 Enter(또는 칸을 떠나면) — 간선 · 조건의 참조가 따라갑니다. Esc는 그만두기.");
         head.Children.Add(key);
 
         // 표시 이름 칸은 걷혔다 — 스탯은 키만 있다. 게임 화면의 글자는 게임 쪽이 키로 로컬라이즈한다(writer-fields W2).
@@ -4692,7 +4699,7 @@ public partial class ChapterGraphView : UserControl
         };
         ToolTip.SetTip(
             type,
-            "종류 — 숫자: 호감도 · 점수처럼 오르내리는 값(처음 값 · 최소 · 최대). " +
+            "종류 — 숫자(정수): 호감도 · 점수처럼 오르내리는 정수 값(처음 값 · 최소 · 최대). " +
             "활성/비활성: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
         type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 종류", () =>
             _session!.Editor.UpdateChapterStat(
@@ -5415,8 +5422,39 @@ public partial class ChapterGraphView : UserControl
                     _ => null
                 },
                 dim: diagnostic.Severity == ChapterDiagnosticSeverity.Info));
+
+            if (diagnostic.Help is { } help)
+            {
+                DiagnosticsPanel.Children.Add(DiagnosticHelp(help));
+            }
         }
     }
+
+    /// <summary>
+    /// 진단 아래의 고치는 법(<see cref="ChapterDiagnostic.Help"/>) — 연한 바탕의 상자에 고정폭 글꼴로, 예시의 식이 한 칸으로 줄을 선다(2026-11-23 소유자 —
+    /// 「구체적인 예시까지 보기좋게 설명」). 고를 수 있고 [보고 복사]에도 든다.
+    /// </summary>
+    private static Border DiagnosticHelp(string help) => new()
+    {
+        Tag = DiagnosticHelpTag,
+        Margin = new Thickness(14, 1, 0, 6),
+        Padding = new Thickness(8, 5),
+        CornerRadius = new CornerRadius(4),
+        BorderThickness = new Thickness(2, 0, 0, 0),
+        BorderBrush = new SolidColorBrush(Color.Parse("#C9A227")),
+        Background = new SolidColorBrush(Color.Parse("#14808080")),
+        Child = new SelectableTextBlock
+        {
+            Text = help,
+            FontSize = 11,
+            FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
+            TextWrapping = TextWrapping.Wrap,
+            FontFeatures = AsTyped
+        }
+    };
+
+    /// <summary>고치는 법 상자가 지는 표 — 화면 시험이 찾는다.</summary>
+    internal const string DiagnosticHelpTag = "diagnostic-help";
 
     /// <summary>
     /// 보고를 텍스트 그대로 클립보드에 — 협업자나 세션에 붙여넣는 통로. 화면에 그려진
@@ -5432,8 +5470,12 @@ public partial class ChapterGraphView : UserControl
         }
 
         lines.AddRange(DiagnosticsPanel.Children
-            .OfType<TextBlock>()
-            .Select(block => block.Text ?? string.Empty)
+            .Select(child => child switch
+            {
+                TextBlock block => block.Text,
+                Border { Child: TextBlock help } => help.Text,   // 고치는 법 상자
+                _ => null
+            } ?? string.Empty)
             .Where(text => text.Length > 0));
 
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
@@ -5457,6 +5499,12 @@ public partial class ChapterGraphView : UserControl
         TextWrapping = TextWrapping.Wrap,
         Foreground = foreground,
         FontWeight = bold ? FontWeight.SemiBold : FontWeight.Normal,
-        Opacity = dim ? 0.6 : 1
+        Opacity = dim ? 0.6 : 1,
+        FontFeatures = AsTyped
     };
+
+    /// <summary>
+    /// 적은 글자 그대로 — 글꼴의 합자를 끈다. Inter는 「=&gt;」를 「⇒」로 그려서, 잘못 적은 식을 짚는 보고가 사람이 적지 않은 글자를 보였다(2026-11-23).
+    /// </summary>
+    private static readonly FontFeatureCollection AsTyped = [FontFeature.Parse("-calt"), FontFeature.Parse("-liga")];
 }

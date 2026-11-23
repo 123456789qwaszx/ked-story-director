@@ -893,6 +893,12 @@ public sealed partial class ProjectEditor
             return StatRenameOutcome.Refuse("같은 이름입니다 — 바꿀 것이 없습니다.");
         }
 
+        // 새 키도 영어로만 — 옛 한글 키를 영어로 고치는 것은 받는다(2026-11-23 소유자 · StatKeyRule).
+        if (StatKeyRule.Problem(to) is { } keyProblem)
+        {
+            return StatRenameOutcome.Refuse(keyProblem);
+        }
+
         int index = chapter.Stats.FindIndex(stat =>
             string.Equals(stat.Key, from, StringComparison.Ordinal));
 
@@ -1258,6 +1264,12 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException("스탯 키가 비어 있습니다.");
         }
 
+        // 영어로만(2026-11-23 소유자 — Yarn에 그대로 들어가는 statKey다 · StatKeyRule).
+        if (StatKeyRule.Problem(target) is { } keyProblem)
+        {
+            throw new InvalidOperationException(keyProblem);
+        }
+
         RequireStatKeyFree(chapter, target, replacing: null);
 
         var stat = BoolBounded(new ChapterStat(
@@ -1267,7 +1279,13 @@ public sealed partial class ProjectEditor
             maximum,
             type));
 
-        Mutate(() => chapter.Stats.Add(stat));
+        // 스탯과 판의 조건 사본이 한 변경이다 — 이 스탯을 기다리던 식(아직 없는 스탯을 적어 둔 조건)이 이제 읽혀 사본이 따라간다. ⛔ 2026-11-23 전에는
+        // 조건을 고칠 때만 공급해, 스탯을 나중에 더하면 사본이 옛 식(식 미정이면 「항상 통과」)에 머물렀다.
+        Batch(ProjectChangeKind.Structure, () =>
+        {
+            Mutate(() => chapter.Stats.Add(stat));
+            SupplyChapterConditions(chapterId);
+        });
 
         return stat;
     }
@@ -1299,13 +1317,18 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException($"스탯 '{target}'이 이 챕터에 없습니다.");
         }
 
-        Mutate(() => chapter.Stats[index] = BoolBounded(chapter.Stats[index] with
+        // 종류(정수 · 활성/비활성)가 바뀌면 식이 읽히는 모양도 바뀐다 — 판의 조건 사본도 함께(AddChapterStat과 같다 · 2026-11-23).
+        Batch(ProjectChangeKind.Structure, () =>
         {
-            Initial = initial ?? chapter.Stats[index].Initial,
-            Minimum = minimum ?? chapter.Stats[index].Minimum,
-            Maximum = maximum ?? chapter.Stats[index].Maximum,
-            Type = type ?? chapter.Stats[index].Type
-        }));
+            Mutate(() => chapter.Stats[index] = BoolBounded(chapter.Stats[index] with
+            {
+                Initial = initial ?? chapter.Stats[index].Initial,
+                Minimum = minimum ?? chapter.Stats[index].Minimum,
+                Maximum = maximum ?? chapter.Stats[index].Maximum,
+                Type = type ?? chapter.Stats[index].Type
+            }));
+            SupplyChapterConditions(chapterId);
+        });
     }
 
     /// <summary>

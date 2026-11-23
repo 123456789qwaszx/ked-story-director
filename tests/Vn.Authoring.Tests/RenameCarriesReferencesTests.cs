@@ -22,7 +22,7 @@ public sealed class RenameCarriesReferencesTests
     private sealed record World(
         ProjectEditor Editor, StoryFile File, SetNode SetNode, DialogueNode Dialogue, string LineId);
 
-    /// <summary>챕터 조건 하나(스탯 `열쇠` — 판의 공급 노드가 사본을 나른다) · 대사 줄 하나.</summary>
+    /// <summary>챕터 조건 하나(스탯 `has_key` — 판의 공급 노드가 사본을 나른다) · 대사 줄 하나.</summary>
     private static World Build(bool ability = false)
     {
         var project = new StoryProject();
@@ -33,8 +33,8 @@ public sealed class RenameCarriesReferencesTests
         int next = 0;
         var editor = new ProjectEditor(project, newLineId: () => $"ln_{++next:D3}");
 
-        editor.AddChapterStat("ch01", "열쇠", maximum: 1, type: ability ? global::Vn.Authoring.Chapters.ChapterStatType.Bool : global::Vn.Authoring.Chapters.ChapterStatType.Int);
-        editor.AddChapterCondition("ch01", "열쇠 있음", ability ? "열쇠 == true" : "열쇠 >= 1");
+        editor.AddChapterStat("ch01", "has_key", maximum: 1, type: ability ? global::Vn.Authoring.Chapters.ChapterStatType.Bool : global::Vn.Authoring.Chapters.ChapterStatType.Int);
+        editor.AddChapterCondition("ch01", "열쇠 있음", ability ? "has_key == true" : "has_key >= 1");
         SetNode setNode = file.Nodes.OfType<SetNode>().Single();
 
         DialogueNode dialogue = editor.AddDialogueNode(file.Id, "본문", name: "본문");

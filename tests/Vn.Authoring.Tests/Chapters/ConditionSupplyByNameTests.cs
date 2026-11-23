@@ -91,6 +91,27 @@ public sealed class ConditionSupplyByNameTests
         Assert.Equal("stat(\"trust\") >= 3", Supplied(editor).Single().Expression);
     }
 
+    [Fact]
+    public void 아직_없는_스탯을_적은_식은_그_스탯을_더하면_사본이_따라간다()
+    {
+        // 2026-11-23 소유자 보고(「뒤늦게 구성 탭에서 조건 및 스탯쪽에서 식을 추가하더라도, 대본탭에서는 그 식이 즉시 반영이 안되네」)를 따라가다
+        // 찾은 것 — 식을 먼저 적고 스탯을 나중에 더하면 사본이 옛 식(식 미정이면 「항상 통과」)에 머물렀다. 스탯을 더하는 그 변경이 공급한다.
+        ProjectEditor editor = World();
+        editor.AddChapterCondition("ch01", "용기있음", string.Empty);
+        editor.UpdateChapterCondition("ch01", "용기있음", "courage >= 2");   // courage는 아직 없다 — 식이 안 읽혀 사본은 그대로다
+        Assert.Equal(ChapterBoardSupply.UndecidedYarn, Supplied(editor).Single().Expression);
+        string id = Supplied(editor).Single().Id;
+
+        editor.AddChapterStat("ch01", "courage", initial: 0, minimum: 0, maximum: 5);
+
+        Assert.Equal((id, "stat(\"courage\") >= 2"), (Supplied(editor).Single().Id, Supplied(editor).Single().Expression));
+
+        // 스탯과 사본은 되돌리기 한 칸에 함께 돌아간다.
+        editor.Undo();
+        Assert.Equal(ChapterBoardSupply.UndecidedYarn, Supplied(editor).Single().Expression);
+        Assert.DoesNotContain(editor.FindChapter("ch01")!.Stats, stat => stat.Key == "courage");
+    }
+
     private static ProjectEditor World()
     {
         var editor = new ProjectEditor(new StoryProject());

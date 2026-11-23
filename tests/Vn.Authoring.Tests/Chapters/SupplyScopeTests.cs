@@ -18,10 +18,10 @@ public sealed class SupplyScopeTests
     {
         ProjectEditor editor = TwoChapters();
 
-        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "호감");
+        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "favor");
 
         Assert.Equal(1, outcome.SuppliedConditions);
-        Assert.Equal("stat(\"호감\") >= 3", Supplied(editor, "ch01").Expression);
+        Assert.Equal("stat(\"favor\") >= 3", Supplied(editor, "ch01").Expression);
         Assert.Equal("stat(\"trust\") >= 3", Supplied(editor, "ch02").Expression);
     }
 

@@ -122,6 +122,14 @@ public static class ConditionExpressionParser
                 continue;
             }
 
+            // 흔히 틀리는 꼴은 그 까닭을 바로 말한다(2026-11-23 소유자 — 「식을 잘못 적었을 경우 … 구체적인 예시까지 보기좋게 설명」). 그냥 두면
+            // 「=>」는 「>」로 읽혀 「'trust ='는 없는 스탯키」처럼 엉뚱한 말이 나온다.
+            if (Mistake(term) is { } mistake)
+            {
+                problems.Add(new ConditionParseProblem(mistake.Kind, term, $"'{term}' — {mistake.Reason}"));
+                continue;
+            }
+
             if (!TrySplitComparison(term, out string key, out ConditionComparison comparison, out string value))
             {
                 problems.Add(new ConditionParseProblem(
@@ -136,7 +144,16 @@ public static class ConditionExpressionParser
                 problems.Add(new ConditionParseProblem(
                     ConditionProblemKind.TermMalformed,
                     term,
-                    $"'{term}' — 비교 왼쪽에 스탯키가 없습니다."));
+                    $"'{term}' — 비교 왼쪽에 스탯 키가 없습니다. 「키 >= 3」처럼 키를 먼저 적습니다."));
+                continue;
+            }
+
+            if (key.StartsWith('$'))
+            {
+                problems.Add(new ConditionParseProblem(
+                    ConditionProblemKind.TermMalformed,
+                    term,
+                    $"'{term}' — 스탯 키 앞에 $를 붙이지 않습니다. '{key.TrimStart('$')}'처럼 키만 적습니다."));
                 continue;
             }
 
@@ -155,11 +172,7 @@ public static class ConditionExpressionParser
 
                 if (!knownStatKeys.Contains(key))
                 {
-                    problems.Add(new ConditionParseProblem(
-                        ConditionProblemKind.UnknownStatKey,
-                        term,
-                        $"'{key}'는 `스탯` 시트에 없는 스탯키입니다. " +
-                        $"선언된 키: {(knownStatKeys.Count == 0 ? "(없음)" : string.Join(", ", knownStatKeys))}"));
+                    problems.Add(UnknownKey(term, key, knownStatKeys));
                     continue;
                 }
 
@@ -173,19 +186,17 @@ public static class ConditionExpressionParser
                 problems.Add(new ConditionParseProblem(
                     ConditionProblemKind.ValueNotInteger,
                     term,
-                    value.Contains('.', StringComparison.Ordinal)
-                        ? $"'{term}' — 스탯 비교 값은 정수만 됩니다. 소수점은 쓸 수 없습니다(G-3)."
-                        : $"'{term}' — 스탯 비교 값 '{value}'이 정수가 아닙니다."));
+                    value.Length == 0
+                        ? $"'{term}' — 비교 오른쪽에 값이 없습니다. 「{key} >= 3」처럼 정수를 적습니다."
+                        : value.Contains('.', StringComparison.Ordinal)
+                            ? $"'{term}' — 스탯 비교 값은 정수만 됩니다. 소수점은 쓸 수 없습니다(G-3)."
+                            : $"'{term}' — 비교 값 '{value}'이 정수가 아닙니다. 값은 정수(활성/비활성 스탯은 true · false)만 적습니다."));
                 continue;
             }
 
             if (!knownStatKeys.Contains(key))
             {
-                problems.Add(new ConditionParseProblem(
-                    ConditionProblemKind.UnknownStatKey,
-                    term,
-                    $"'{key}'는 `스탯` 시트에 없는 스탯키입니다. " +
-                    $"선언된 키: {(knownStatKeys.Count == 0 ? "(없음)" : string.Join(", ", knownStatKeys))}"));
+                problems.Add(UnknownKey(term, key, knownStatKeys));
                 continue;
             }
 
@@ -243,6 +254,58 @@ public static class ConditionExpressionParser
         }
 
         return string.Join(";", rebuilt);
+    }
+
+    /// <summary>스탯 표에 없는 키 — 있는 키를 함께 말한다(없으면 스탯부터 더하라고).</summary>
+    private static ConditionParseProblem UnknownKey(string term, string key, IReadOnlyCollection<string> knownStatKeys) => new(
+        ConditionProblemKind.UnknownStatKey,
+        term,
+        knownStatKeys.Count == 0
+            ? $"'{key}'는 스탯 표에 없는 키입니다 — 이 챕터에는 스탯이 아직 없습니다. 「조건 및 스탯」의 스탯 표에서 먼저 더합니다."
+            : $"'{key}'는 스탯 표에 없는 키입니다. 있는 키: {string.Join(", ", knownStatKeys)}");
+
+    /// <summary>
+    /// 흔히 틀리는 꼴과 그 까닭 — 연산자를 거꾸로 적었거나(<c>=&gt;</c> · <c>=&lt;</c>), 「같음」을 <c>=</c> 하나로 적었거나, 없는 비교
+    /// (<c>!=</c> · <c>&lt;&gt;</c>)나 「그리고 · 또는」(<c>&amp;&amp;</c> · <c>||</c> · <c>and</c> · <c>or</c> · <c>,</c>)을 썼다. 아니면 null.
+    /// </summary>
+    private static (ConditionProblemKind Kind, string Reason)? Mistake(string term)
+    {
+        if (term.Contains("=>", StringComparison.Ordinal))
+        {
+            return (ConditionProblemKind.OperatorNotSupported, "'=>'는 순서가 거꾸로입니다. '>='로 씁니다.");
+        }
+
+        if (term.Contains("=<", StringComparison.Ordinal))
+        {
+            return (ConditionProblemKind.OperatorNotSupported, "'=<'는 순서가 거꾸로입니다. '<='로 씁니다.");
+        }
+
+        if (term.Contains("!=", StringComparison.Ordinal) || term.Contains("<>", StringComparison.Ordinal))
+        {
+            return (ConditionProblemKind.OperatorNotSupported,
+                "「같지 않다」(!= · <>)는 쓸 수 없습니다. 쓸 수 있는 것은 >= · <= · == · > · < 입니다(예: 「키 > 0」 · 「키 < 0」).");
+        }
+
+        if (term.Contains("&&", StringComparison.Ordinal) || term.Contains("||", StringComparison.Ordinal) ||
+            term.Contains(',', StringComparison.Ordinal) ||
+            System.Text.RegularExpressions.Regex.IsMatch(term, @"\s(and|or|AND|OR)\s"))
+        {
+            return (ConditionProblemKind.TermMalformed,
+                "여러 조건은 ';'로 잇습니다(모두 맞아야 통과). && · || · and · or · 쉼표는 쓸 수 없고, 「또는」은 조건을 둘로 나눠 만듭니다.");
+        }
+
+        // 「=」 하나 — 「==」 · 「>=」 · 「<=」의 =가 아닌 것.
+        for (int i = 0; i < term.Length; i++)
+        {
+            if (term[i] == '=' &&
+                (i == 0 || term[i - 1] is not ('=' or '>' or '<' or '!')) &&
+                (i + 1 >= term.Length || term[i + 1] != '='))
+            {
+                return (ConditionProblemKind.OperatorNotSupported, "「같다」는 '='가 아니라 '=='로 씁니다.");
+            }
+        }
+
+        return null;
     }
 
     /// <summary>두 글자 연산자를 먼저 본다. <c>&gt;=</c>를 <c>&gt;</c>로 읽으면 의미가 달라진다.</summary>

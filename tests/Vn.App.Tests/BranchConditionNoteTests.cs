@@ -124,10 +124,15 @@ public sealed class BranchConditionNoteTests : IDisposable
         Assert.Contains(Texts(BranchCard(window, root, branch)), text => text.Contains("식 미정이라 지금은 늘 다녀옵니다", StringComparison.Ordinal));
 
         // [구성]에서 식을 채우면 그 분기가 그대로 그 식을 따른다 — 표에서 (식 미정)이 걷힌다.
+        Assert.StartsWith("<<if true>>", Writing(window, branch), StringComparison.Ordinal);   // 식 미정 — 항상 통과
         session.Editor.UpdateChapterCondition("ch01", "아직모름", "trust >= 7");
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("아직모름", BranchEntryCondition.Read(session.Project, branch.Id).Label);
         Assert.Equal("⑂ 조건: 아직모름", ChipText(window, branch));
+
+        // 카드 글 칸의 조건 줄도 바로 그 식이다 — 조건을 다시 고르지 않아도(2026-11-23 소유자 보고 — ⛔ 그 전에는 <<if true>>로 남았다).
+        Assert.StartsWith("<<if stat(\"trust\") >= 7>>", Writing(window, branch), StringComparison.Ordinal);
+        Assert.Contains(Picker(window, session, branch).Items.OfType<ComboBoxItem>(), item => Equals(item.Content, "아직모름"));   // (식 미정)이 걷혔다
 
         window.Close();
     });
@@ -197,6 +202,11 @@ public sealed class BranchConditionNoteTests : IDisposable
             .Single(border => border.Tag as string == GraphEditorView.BranchConditionChipTag + branch.Id);
 
     private static string? ChipText(MainWindow window, DialogueNode branch) => ((TextBlock)Chip(window, branch).Child!).Text;
+
+    /// <summary>[대본] 판에서 그 카드의 글 칸 글.</summary>
+    private static string Writing(MainWindow window, DialogueNode card) =>
+        window.FindControl<GraphEditorView>("Graph")!.FindControl<Canvas>("GraphCanvas")!.GetVisualDescendants().OfType<TextBox>()
+            .Single(box => box.Tag as string == GraphEditorView.WritingTag + card.Id).Text ?? string.Empty;
 
     private static Control BranchCard(MainWindow window, DialogueNode caller, DialogueNode branch) =>
         Editor(window).LineHost.Children.Single(child =>

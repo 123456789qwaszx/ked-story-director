@@ -37,17 +37,39 @@ public sealed class ChapterStatEditTests
     }
 
     [Fact]
-    public void 공백만_다른_키는_이제_서로_다른_스탯이다()
+    public void 스탯_키는_영어로만_만든다()
     {
-        // ⚠ <b>뒤집혔다</b> (2026-09-17, 런타임 회신 §6.1). `호감 도`와 `호감_도`는 한때
-        //    내보낼 때 정규화돼 게임에서 하나가 됐고, 그래서 막았다. `stat("키")`의 인자가
-        //    <b>문자열 리터럴</b>이 되면서 정규화가 없어졌으니 막을 이유도 없다.
+        // 2026-11-23 소유자 — 「이건 Yarn쪽에 바로 들어가는 statKey이므로 한글을 허용하지 않고 영어로 작성해야 한다는 제한을 분명히」(StatKeyRule).
+        // ⛔ 2026-09-17(런타임 회신 §6.1)부터는 `호감 도` · `호감_도` 모두 받았다 — `stat("키")`의 인자가 문자열 리터럴이라 막을 까닭이 없었다.
         ProjectEditor editor = World();
-        editor.AddChapterStat("ch01", "호감_도");
 
-        editor.AddChapterStat("ch01", "호감 도");
+        InvalidOperationException korean = Assert.Throws<InvalidOperationException>(() => editor.AddChapterStat("ch01", "호감_도"));
+        Assert.Contains("한글이 들었습니다", korean.Message, StringComparison.Ordinal);
+        Assert.Contains("영어로 적습니다", korean.Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => editor.AddChapterStat("ch01", "favor level"));
+        Assert.Throws<InvalidOperationException>(() => editor.AddChapterStat("ch01", "favor-level"));
+        Assert.Throws<InvalidOperationException>(() => editor.AddChapterStat("ch01", "_favor"));
+        Assert.DoesNotContain(Chapter(editor).Stats, stat => stat.Key != "trust");
 
-        Assert.Equal(2, Chapter(editor).Stats.Count(stat => stat.Key.StartsWith("호감", StringComparison.Ordinal)));
+        editor.AddChapterStat("ch01", "favor_level2");
+        editor.AddChapterStat("ch01", "metHarin");
+        Assert.Equal(["trust", "favor_level2", "metHarin"], Chapter(editor).Stats.Select(stat => stat.Key));
+    }
+
+    [Fact]
+    public void 옛_파일의_한글_키는_검증_보고가_경고한다()
+    {
+        // 편집기는 받지 않지만 옛 프로젝트 · 손으로 고친 파일에는 있을 수 있다 — 내보내기는 막지 않고 경고로 짚는다.
+        ProjectEditor editor = World();
+        Chapter(editor).Stats.Add(new ChapterStat("호감", 0, 0, 10));
+
+        ChapterDiagnostic warning = Assert.Single(Chapter(editor).ToGraphModel("ch01").Diagnostics,
+            item => item.Code == ChapterDiagnosticCode.StatKeyNotEnglish);
+        Assert.Equal(ChapterDiagnosticSeverity.Warning, warning.Severity);
+        Assert.Contains("'호감'", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("키 칸에서 고치면", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Chapter(editor).ToGraphModel("ch01").Diagnostics,
+            item => item.Code == ChapterDiagnosticCode.StatKeyNotEnglish && item.Message.Contains("'trust'", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -57,7 +79,7 @@ public sealed class ChapterStatEditTests
         //    산출도 컴파일도 통과한 뒤 <b>그 대사가 재생될 때</b> 런타임에서 터진다
         //    (런타임 회신 §6.1이 잡았다).
         ProjectEditor editor = World();
-        editor.AddChapterStat("ch01", "호감도 (윌로우)");
+        Chapter(editor).Stats.Add(new ChapterStat("호감도 (윌로우)", 0, 0, 100));   // 옛 파일의 키 — 편집기로는 이제 못 만든다(StatKeyRule)
         editor.AddChapterCondition("ch01", "친함", "호감도 (윌로우) >= 3");
 
         Assert.Equal(
@@ -73,12 +95,12 @@ public sealed class ChapterStatEditTests
         //    읽은 것이 <b>서로 다른 규칙</b>을 살게 되고, 값을 채워 가는 중에 막힌다.
         ProjectEditor editor = World();
 
-        editor.AddChapterStat("ch01", "이상함", initial: 9, minimum: 3, maximum: 1);
+        editor.AddChapterStat("ch01", "odd", initial: 9, minimum: 3, maximum: 1);
 
-        Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "이상함");
+        Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "odd");
         Assert.Contains(
             Chapter(editor).ToGraphModel("ch01").Diagnostics,
-            item => item.Message.Contains("이상함", StringComparison.Ordinal));
+            item => item.Message.Contains("'odd'", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -107,6 +107,13 @@ public sealed class ChapterDocument
 
         foreach (ChapterStat stat in Stats)
         {
+            if (StatKeyRule.Problem(stat.Key) is { } keyProblem)
+            {
+                diagnostics.Add(Stat(
+                    ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.StatKeyNotEnglish, path,
+                    keyProblem + " 「조건 및 스탯」의 스탯 표 키 칸에서 고치면 간선 · 조건이 따라갑니다."));
+            }
+
             if (stat.Minimum > stat.Maximum)
             {
                 diagnostics.Add(Stat(
@@ -155,16 +162,23 @@ public sealed class ChapterDocument
                 continue;
             }
 
-            foreach (ConditionParseProblem problem in
-                     ConditionExpressionParser.Parse(condition.Expression, keys).Problems)
+            // 성립하지 않는 식 — 까닭마다 한 줄이고, 고치는 법(이 챕터의 스탯으로 든 예시)은 그 조건의 첫 줄 아래에 한 번 선다(2026-11-23 소유자 —
+            // 「식을 적을 때, 식은 사실 일정한 양식이 있을 텐데, 이거 만약 잘못 적었을 경우, 구성탭에서 검증 보고쪽에 식이 성립하지 않는 다고 띄워주고,
+            // 구체적인 예시까지 보기좋게 설명을 하는 방식으로」).
+            IReadOnlyList<ConditionParseProblem> problems = ConditionExpressionParser.Parse(condition.Expression, keys).Problems;
+
+            for (int index = 0; index < problems.Count; index++)
             {
                 diagnostics.Add(new ChapterDiagnostic(
                     ChapterDiagnosticSeverity.Error,
-                    ChapterDiagnostics.CodeFor(problem.Kind),
+                    ChapterDiagnostics.CodeFor(problems[index].Kind),
                     path,
                     ChapterSheetNames.Conditions,
                     null,
-                    $"조건 '{condition.Label}' — {problem.Message}"));
+                    $"조건 '{condition.Label}' — 식이 성립하지 않습니다: {problems[index].Message}")
+                {
+                    Help = index == 0 ? ConditionExpressionHelp.Examples(Stats) : null
+                });
             }
         }
 

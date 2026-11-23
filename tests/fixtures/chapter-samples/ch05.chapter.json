@@ -63,7 +63,7 @@
       "lockedMessage": "신뢰가 부족하다",
       "statChanges": [
         {
-          "key": "복도지남",
+          "key": "passed_corridor",
           "amount": 1,
           "kind": "Set"
         }
@@ -75,7 +75,7 @@
       "optionLabel": "혼자 문을 연다",
       "statChanges": [
         {
-          "key": "복도지남",
+          "key": "passed_corridor",
           "amount": 1,
           "kind": "Set"
         }
@@ -110,7 +110,7 @@
     },
     {
       "label": "복도완료",
-      "expression": "복도지남 == true",
+      "expression": "passed_corridor == true",
       "description": "복도(main05.02)를 지났는가 — 폐지된 cleared: 를 대신하는 깃발"
     }
   ],
@@ -134,7 +134,7 @@
       "maximum": 10
     },
     {
-      "key": "복도지남",
+      "key": "passed_corridor",
       "initial": 0,
       "minimum": 0,
       "maximum": 1,

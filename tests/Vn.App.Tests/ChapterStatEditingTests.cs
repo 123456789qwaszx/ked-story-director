@@ -29,7 +29,7 @@ public sealed class ChapterStatEditingTests
 
         StatChangeEditor editor = Editor(view, "EdgeStatsHost");
 
-        // 이 길에도 견본의 `복도지남 true`가 이미 걸려 있다 — 새 줄은 그 뒤에 선다.
+        // 이 길에도 견본의 `passed_corridor true`가 이미 걸려 있다 — 새 줄은 그 뒤에 선다.
         int added = Rows(editor);
         Add(editor);
         StatCombo(editor, added).SelectedItem = Display(stat);
@@ -72,7 +72,7 @@ public sealed class ChapterStatEditingTests
         view.ApplyEdgeFromPanel();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
 
-        // 줄에는 챕터의 스탯이 전부 선다 — 견본에는 `복도지남` 깃발도 있어
+        // 줄에는 챕터의 스탯이 전부 선다 — 견본에는 `passed_corridor` 깃발도 있어
         // 뒤가 따라붙는다. 여기서 재는 것은 맨 앞의 그 수치다.
         Assert.StartsWith($"{stat.Key} 2", StatLine(view, "main05.02"));
 

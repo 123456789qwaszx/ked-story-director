@@ -18,10 +18,10 @@ public sealed class StatRenameTests
     {
         ProjectEditor editor = World();
 
-        Assert.True(editor.RenameChapterStat("ch01", "trust", "호감").Applied);
+        Assert.True(editor.RenameChapterStat("ch01", "trust", "favor").Applied);
 
         ChapterStat stat = Assert.Single(Chapter(editor).Stats,
-            item => string.Equals(item.Key, "호감", StringComparison.Ordinal));
+            item => string.Equals(item.Key, "favor", StringComparison.Ordinal));
 
         Assert.DoesNotContain(Chapter(editor).Stats, item => item.Key == "trust");
     }
@@ -31,12 +31,12 @@ public sealed class StatRenameTests
     {
         ProjectEditor editor = World();
 
-        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "호감");
+        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "favor");
 
         Assert.Equal(1, outcome.Edges);
         Assert.Contains(
             Chapter(editor).Edges.SelectMany(edge => edge.StatChanges),
-            delta => string.Equals(delta.Key, "호감", StringComparison.Ordinal));
+            delta => string.Equals(delta.Key, "favor", StringComparison.Ordinal));
         Assert.DoesNotContain(
             Chapter(editor).Edges.SelectMany(edge => edge.StatChanges),
             delta => string.Equals(delta.Key, "trust", StringComparison.Ordinal));
@@ -47,10 +47,10 @@ public sealed class StatRenameTests
     {
         ProjectEditor editor = World();
 
-        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "호감");
+        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "favor");
 
         Assert.Equal(1, outcome.Conditions);
-        Assert.Equal("호감 >= 3", Condition(editor, "신뢰높음").Expression);
+        Assert.Equal("favor >= 3", Condition(editor, "신뢰높음").Expression);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class StatRenameTests
         // ⚠ 옛 해석을 들고 있으면 검증이 <b>고치기 전 값</b>으로 참을 말한다.
         ProjectEditor editor = World();
 
-        editor.RenameChapterStat("ch01", "trust", "호감");
+        editor.RenameChapterStat("ch01", "trust", "favor");
 
         Assert.False(Condition(editor, "신뢰높음").IsValid);
         Assert.Empty(Condition(editor, "신뢰높음").Parsed);
@@ -72,7 +72,7 @@ public sealed class StatRenameTests
         ProjectEditor editor = World();
         editor.AddChapterCondition("ch01", "닮은것", "trustworthy >= 1");
 
-        editor.RenameChapterStat("ch01", "trust", "호감");
+        editor.RenameChapterStat("ch01", "trust", "favor");
 
         Assert.Equal("trustworthy >= 1", Condition(editor, "닮은것").Expression);
     }
@@ -83,9 +83,9 @@ public sealed class StatRenameTests
         ProjectEditor editor = World();
         editor.AddChapterCondition("ch01", "둘", "trust >= 3; fatigue <= 2");
 
-        editor.RenameChapterStat("ch01", "trust", "호감");
+        editor.RenameChapterStat("ch01", "trust", "favor");
 
-        Assert.Equal("호감 >= 3; fatigue <= 2", Condition(editor, "둘").Expression);
+        Assert.Equal("favor >= 3; fatigue <= 2", Condition(editor, "둘").Expression);
     }
 
     [Fact]
@@ -100,12 +100,12 @@ public sealed class StatRenameTests
             Stats: new Dictionary<string, int> { ["trust"] = 7, ["fatigue"] = 1 },
             Choices: []));
 
-        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "호감");
+        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "favor");
 
         Assert.Equal(1, outcome.Fixtures);
 
         IReadOnlyDictionary<string, int> stats = Chapter(editor).Fixtures.Single().Stats;
-        Assert.Equal(7, stats["호감"]);
+        Assert.Equal(7, stats["favor"]);
         Assert.False(stats.ContainsKey("trust"));
         Assert.Equal(1, stats["fatigue"]);
     }
@@ -121,11 +121,11 @@ public sealed class StatRenameTests
         (ProjectEditor editor, ConditionDefinition supplied) = WorldWithBoard();
         string id = supplied.Id;
 
-        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "호감");
+        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "favor");
 
         Assert.Equal(1, outcome.SuppliedConditions);
         Assert.Equal(id, supplied.Id);
-        Assert.Equal("stat(\"호감\") >= 3", supplied.Expression);
+        Assert.Equal("stat(\"favor\") >= 3", supplied.Expression);
     }
 
     [Fact]
@@ -133,10 +133,10 @@ public sealed class StatRenameTests
     {
         // 위의 결과를 <b>끝까지</b> 확인한다 — 식이 맞아야 동기화가 있는 것을 알아본다.
         (ProjectEditor editor, ConditionDefinition supplied) = WorldWithBoard();
-        editor.RenameChapterStat("ch01", "trust", "호감");
+        editor.RenameChapterStat("ch01", "trust", "favor");
 
         // 개명된 식을 해석해야 번역이 서므로 조건을 다시 저장한다(사람이 하는 길과 같다).
-        editor.UpdateChapterCondition("ch01", "신뢰높음", "호감 >= 3");
+        editor.UpdateChapterCondition("ch01", "신뢰높음", "favor >= 3");
 
         ChapterBoardSupply.SupplyChapterConditionsToBoard(
             editor,
@@ -164,23 +164,30 @@ public sealed class StatRenameTests
     }
 
     [Fact]
-    public void 공백만_다른_이름으로_바꿀_수_있다()
+    public void 한글_빈칸_기호가_든_키로는_바꾸지_않고_옛_한글_키는_영어로_고친다()
     {
-        // ⚠ <b>뒤집혔다</b> (2026-09-17, 런타임 회신 §6.1). 내보낼 때 Yarn 식별자로
-        //    정규화되던 것이 막던 근거였는데, `stat("키")`의 인자가 문자열 리터럴이 되면서
-        //    정규화가 없어졌다 — 둘은 이제 게임에서도 서로 다른 스탯이다.
+        // 2026-11-23 소유자 — 「스탯 역시, 이건 Yarn쪽에 바로 들어가는 statKey이므로 한글을 허용하지 않고 영어로 작성해야 한다는 제한을 분명히」
+        // (StatKeyRule). ⛔ 2026-09-17(런타임 회신 §6.1)부터는 `stat("키")`의 인자가 문자열 리터럴이라 「호감 도」 · 「호감_도」 모두 받았다.
         ProjectEditor editor = World();
-        Chapter(editor).Stats.Add(new ChapterStat("호감_도", 0, 0, 10));
+        string before = Vn.Authoring.Serialization.ProjectSnapshotCodec.Encode(editor.Project);
 
-        Assert.True(editor.RenameChapterStat("ch01", "trust", "호감 도").Applied);
-        Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "호감 도");
-        Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "호감_도");
+        StatRenameOutcome korean = editor.RenameChapterStat("ch01", "trust", "호감");
+        Assert.False(korean.Applied);
+        Assert.Contains("한글이 들었습니다", korean.Refusal!, StringComparison.Ordinal);
+        Assert.False(editor.RenameChapterStat("ch01", "trust", "favor level").Applied);
+        Assert.False(editor.RenameChapterStat("ch01", "trust", "2favor").Applied);
+        Assert.Equal(before, Vn.Authoring.Serialization.ProjectSnapshotCodec.Encode(editor.Project));
+
+        // 옛 파일의 한글 키는 영어로 고친다 — 참조가 따라간다.
+        Chapter(editor).Stats.Add(new ChapterStat("호감", 0, 0, 10));
+        Assert.True(editor.RenameChapterStat("ch01", "호감", "favor_level").Applied);
+        Assert.Contains(Chapter(editor).Stats, stat => stat.Key == "favor_level");
     }
 
     [Fact]
     public void 없는_스탯은_거절한다()
     {
-        Assert.False(World().RenameChapterStat("ch01", "없는키", "호감").Applied);
+        Assert.False(World().RenameChapterStat("ch01", "missing", "favor").Applied);
     }
 
     [Fact]
@@ -203,7 +210,7 @@ public sealed class StatRenameTests
         // ⛔ 갈라 두면 정의만 바뀌고 간선은 옛 키를 가리키는 <b>반쪽</b>이 생긴다.
         (ProjectEditor editor, _) = WorldWithBoard();
 
-        editor.RenameChapterStat("ch01", "trust", "호감");
+        editor.RenameChapterStat("ch01", "trust", "favor");
         editor.Undo();
 
         // ⚠ `Restore`는 `Project`를 통째로 갈아 끼운다 — 되돌린 뒤에 다시 읽는다.

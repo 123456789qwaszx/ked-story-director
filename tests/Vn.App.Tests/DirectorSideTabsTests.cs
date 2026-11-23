@@ -36,7 +36,7 @@ public sealed class DirectorSideTabsTests : IDisposable
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
-        session.Editor.AddChapterStat("ch01", "성실", initial: 1, minimum: 0, maximum: 5);
+        session.Editor.AddChapterStat("ch01", "diligence", initial: 1, minimum: 0, maximum: 5);
         Dispatcher.UIThread.RunJobs();
 
         TabControl tabs = graph.FindControl<TabControl>("SideTabs")!;
@@ -64,7 +64,7 @@ public sealed class DirectorSideTabsTests : IDisposable
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
-        session.Editor.AddChapterStat("ch01", "성실", initial: 1, minimum: 0, maximum: 5);
+        session.Editor.AddChapterStat("ch01", "diligence", initial: 1, minimum: 0, maximum: 5);
         Dispatcher.UIThread.RunJobs();
 
         // 프로젝트 줄 → 화자 탭.
@@ -85,20 +85,20 @@ public sealed class DirectorSideTabsTests : IDisposable
         // 조건 탭의 작은 드롭다운으로 챕터를 바꾸면 그 챕터로 가고 탭은 그대로다 — 툴바 콤보가 따라온다.
         graph.ShowSideTab(SideTab.Conditions);
         Dispatcher.UIThread.RunJobs();
-        Assert.Contains(Shown(graph), control => (string?)control.Tag == "stat-snippet:성실");
+        Assert.Contains(Shown(graph), control => (string?)control.Tag == "stat-snippet:diligence");
         graph.FindControl<ComboBox>("ConditionChapterCombo")!.SelectedItem = "ch02";
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("ch02", session.ActiveFile?.Name);
         Assert.Equal("ch02", graph.FindControl<ComboBox>("ChapterCombo")!.SelectedItem);
         Assert.Equal(SideTab.Conditions, graph.ShownSideTab);
-        Assert.DoesNotContain(Shown(graph), control => (string?)control.Tag == "stat-snippet:성실");   // ch02에는 스탯이 없다
+        Assert.DoesNotContain(Shown(graph), control => (string?)control.Tag == "stat-snippet:diligence");   // ch02에는 스탯이 없다
 
         // 툴바 콤보로 바꿔도 탭은 그대로다 — 작은 드롭다운과 내용이 따라온다.
         graph.FindControl<ComboBox>("ChapterCombo")!.SelectedItem = "ch01";
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("ch01", graph.FindControl<ComboBox>("ConditionChapterCombo")!.SelectedItem);
         Assert.Equal(SideTab.Conditions, graph.ShownSideTab);
-        Assert.Contains(Shown(graph), control => (string?)control.Tag == "stat-snippet:성실");
+        Assert.Contains(Shown(graph), control => (string?)control.Tag == "stat-snippet:diligence");
 
         window.Close();
     });

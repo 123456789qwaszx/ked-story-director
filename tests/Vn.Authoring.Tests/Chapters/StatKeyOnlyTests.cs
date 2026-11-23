@@ -30,12 +30,12 @@ public sealed class StatKeyOnlyTests : IDisposable
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.AddEpisode("ch01", "ep01", "", 0, 0, sceneId: "ep01");
-        editor.AddChapterStat("ch01", "마이나의 신뢰도", maximum: 10);
+        editor.AddChapterStat("ch01", "mina_trust", maximum: 10);
 
         ChapterExportResult export = ChapterProgressionExporter.Export(editor.FindChapter("ch01")!.ToGraphModel("ch01"));
         JsonElement stat = JsonDocument.Parse(export.Json!).RootElement.GetProperty("Stats")[0];
 
-        Assert.Equal(("마이나의 신뢰도", "마이나의 신뢰도"),
+        Assert.Equal(("mina_trust", "mina_trust"),
             (stat.GetProperty("Key").GetString(), stat.GetProperty("DisplayName").GetString()));
     }
 }

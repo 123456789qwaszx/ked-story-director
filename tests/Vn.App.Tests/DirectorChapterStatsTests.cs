@@ -33,14 +33,14 @@ public sealed class DirectorChapterStatsTests : IDisposable
     public void 챕터를_고르면_스탯_표와_대사에_붙일_글이_선다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
-        session.Editor.AddChapterStat("ch01", "성실", initial: 1, minimum: 0, maximum: 5);
+        session.Editor.AddChapterStat("ch01", "diligence", initial: 1, minimum: 0, maximum: 5);
         session.Editor.AddChapterStat("ch01", "trust", initial: 0, minimum: 0, maximum: 10);
         session.Editor.AddChapterStat("ch01", "met", type: ChapterStatType.Bool, maximum: 1);
         Dispatcher.UIThread.RunJobs();
 
         GraphEditorView graph = Pick(window, "ch01");
 
-        Assert.Equal("{stat(\"성실\")}", Snippet(graph, "성실").Text);
+        Assert.Equal("{stat(\"diligence\")}", Snippet(graph, "diligence").Text);
         Assert.Equal("{stat(\"trust\")}", Snippet(graph, "trust").Text);   // 표시 이름이 달라도 대본에는 키가 들어간다
         Assert.Equal("{stat(\"met\")}", Snippet(graph, "met").Text);
 
@@ -56,15 +56,15 @@ public sealed class DirectorChapterStatsTests : IDisposable
     public void 복사를_누르면_그_글이_클립보드에_든다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
-        session.Editor.AddChapterStat("ch01", "성실", maximum: 5);
+        session.Editor.AddChapterStat("ch01", "diligence", maximum: 5);
         Dispatcher.UIThread.RunJobs();
 
         GraphEditorView graph = Pick(window, "ch01");
-        Control("stat-copy:성실", graph).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Control("stat-copy:diligence", graph).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("{stat(\"성실\")}", window.Clipboard!.TryGetTextAsync().GetAwaiter().GetResult());
-        Assert.Contains("{stat(\"성실\")}를 복사했습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal("{stat(\"diligence\")}", window.Clipboard!.TryGetTextAsync().GetAwaiter().GetResult());
+        Assert.Contains("{stat(\"diligence\")}를 복사했습니다", session.StatusMessage, StringComparison.Ordinal);
 
         window.Close();
     });
