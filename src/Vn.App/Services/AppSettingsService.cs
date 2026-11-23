@@ -206,6 +206,16 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>[대본] 판에 새로 잇는 선의 꼴(설정 창 「기타」의 「새로 잇는 선」 · <see cref="Views.BoardLines"/>) — 「curve」 · 「straight」, null이면 직각.</summary>
+    public static string? LoadNewLineShape() => Load(SettingsPath).NewLineShape;
+
+    public static void SaveNewLineShape(string? shape)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.NewLineShape = shape;
+        Save(settings);
+    }
+
     /// <summary>설명을 간소화하는가 (설정 창 「기타」 — brief-guides G1). 처음에는 다 보인다.</summary>
     public static bool LoadBriefGuides() => Load(SettingsPath).BriefGuides;
 
@@ -396,6 +406,9 @@ internal static class AppSettingsService
 
         /// <summary>판 위의 휠이 판을 옮기는가 — <see cref="LoadWheelPansBoard"/>. null이면 고른 적이 없다(이 OS의 손을 따른다).</summary>
         public bool? WheelPansBoard { get; set; }
+
+        /// <summary>[대본] 판에 새로 잇는 선의 꼴 — <see cref="LoadNewLineShape"/>. null이면 직각.</summary>
+        public string? NewLineShape { get; set; }
 
         /// <summary>[대본] 카드 글 칸의 글꼴 이름 — <see cref="LoadScriptFont"/>. null이면 기본 글꼴.</summary>
         public string? ScriptFontFamily { get; set; }

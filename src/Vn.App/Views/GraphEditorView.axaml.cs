@@ -7936,18 +7936,28 @@ public partial class GraphEditorView : UserControl
         _shapeButtons.Children.Add(Choice("곡선", "부드러운 곡선 — 손잡이로 굽이를 옮깁니다.", EdgeShapeKind.Curve));
         _shapeButtons.Children.Add(Choice("직선", "두 끝을 곧게 잇습니다.", EdgeShapeKind.Straight));
 
+        // 「↺ 자동」은 설정의 「새로 잇는 선」 꼴의 처음 자리로(2026-11-23 — 새로 잇는 선이 곡선이면 곡선으로 · BoardLines). 직각이면 전처럼 모양을 걷는다.
+        EdgeShape fresh = BoardLines.Default;
         var reset = new Button
         {
             Content = "↺ 자동",
             FontSize = 10,
             Padding = new Thickness(6, 1),
             MinHeight = 0,
-            IsEnabled = !stored.IsDefault,
-            [ToolTip.TipProperty] = "고친 모양을 걷고 처음 자리로 되돌립니다."
+            IsEnabled = !stored.Equals(fresh),
+            [ToolTip.TipProperty] = $"고친 모양을 걷고 처음 자리로 되돌립니다 — 설정 「새로 잇는 선」의 꼴({BoardLineName(fresh.Kind)})입니다."
         };
-        reset.Click += (_, _) => UiGuard.Run(_session, "선 모양", () => ApplyShape(null));
+        reset.Click += (_, _) => UiGuard.Run(_session, "선 모양", () => ApplyShape(fresh.IsDefault ? null : fresh));
         _shapeButtons.Children.Add(reset);
     }
+
+    /// <summary>선 꼴의 이름 — 선 위의 차림 · 설정과 같다.</summary>
+    private static string BoardLineName(EdgeShapeKind kind) => kind switch
+    {
+        EdgeShapeKind.Curve => "곡선",
+        EdgeShapeKind.Straight => "직선",
+        _ => "직각"
+    };
 
     /// <summary>고른 선에 모양을 적는다 — 실행 선은 노드에, 선택지 레인은 간선에.</summary>
     private void ApplyShape(EdgeShape? shape)

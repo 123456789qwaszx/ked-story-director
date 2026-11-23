@@ -144,6 +144,42 @@ public sealed class GraphEdgeShapeTests : IDisposable
         window.Close();
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게」. 설정의 「새로 잇는 선」이 곡선이면 새로 이은
+    /// 길이 곡선으로 생기고(이미 있던 길은 그대로), 그 선의 「↺ 자동」은 곡선의 처음 자리로 되돌린다(직각으로 바꾸지 않는다).
+    /// </summary>
+    [Fact]
+    public void 새로_잇는_선이_곡선이면_새_길이_곡선으로_생기고_자동도_곡선이다() => HeadlessUi.Run(() =>
+    {
+        (Window window, GraphEditorView graph, AuthoringSession session) = Show();   // a→b — 설정 전에 생긴 길
+
+        try
+        {
+            BoardLines.Set(EdgeShapeKind.Curve);
+            Assert.Equal("curve", AppSettingsService.LoadNewLineShape());
+
+            // 이미 있는 길은 그대로다 — 「↺ 자동」은 곡선의 처음 자리로.
+            Assert.Null(Edge(session).Shape);
+            Click(window, Canvas(graph), LanePoint(graph));
+            Assert.True(BarButton(graph, "자동").IsEnabled);   // 지금은 직각 — 곡선이 처음 모양이다
+            Press(window, BarButton(graph, "자동"));
+            Assert.Equal(new EdgeShape(EdgeShapeKind.Curve), Edge(session).Shape);
+
+            // 새로 이은 길은 곡선으로 생긴다.
+            session.Editor.AddEpisode("ch01", "c", "c", 0, 0, sceneId: "c");
+            session.Editor.AddEdge("ch01", "a", "c", optionLabel: "돌아간다");
+            Assert.Equal(new EdgeShape(EdgeShapeKind.Curve),
+                session.Editor.FindChapter("ch01")!.Edges.Single(edge => edge.ToEpisodeId == "c").Shape);
+        }
+        finally
+        {
+            BoardLines.Set(EdgeShapeKind.Elbow);   // 이 PC의 앱 설정은 시험 프로세스가 함께 쓴다
+        }
+
+        Assert.Null(AppSettingsService.LoadNewLineShape());
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static Canvas Canvas(GraphEditorView graph) => graph.FindControl<Canvas>("GraphCanvas")!;

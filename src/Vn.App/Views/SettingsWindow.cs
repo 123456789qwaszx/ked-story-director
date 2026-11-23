@@ -107,6 +107,24 @@ internal sealed class SettingsWindow : Window
         WheelPansCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "휠로 판 옮기기", () =>
             BoardWheel.Set(WheelPansCheck.IsChecked == true));
 
+        // 새로 잇는 선 — [대본] 판에 선택지 길 · 분기 선이 생길 때의 꼴(2026-11-23 소유자 · BoardLines). 누르는 즉시 — 다음에 잇는 선부터 따른다.
+        NewLineShapeCombo = new ComboBox
+        {
+            FontSize = 12,
+            ItemsSource = LineShapeNames.Select(item => item.Name).ToList(),
+            SelectedIndex = Array.FindIndex(LineShapeNames, item => item.Kind == BoardLines.Kind)
+        };
+        ToolTip.SetTip(NewLineShapeCombo,
+            "[대본] 판에 새로 잇는 선(선택지 길 · 분기 선)의 꼴입니다 — 이미 있는 선은 그대로입니다(선을 고르면 선 위의 차림으로 바꿉니다). " +
+            "선의 「↺ 자동」도 이 꼴의 처음 모양으로 되돌립니다.");
+        NewLineShapeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, "새로 잇는 선", () =>
+        {
+            if (NewLineShapeCombo.SelectedIndex is >= 0 and var index && index < LineShapeNames.Length)
+            {
+                BoardLines.Set(LineShapeNames[index].Kind);
+            }
+        });
+
         ScriptFontCombo = new ComboBox { FontSize = 12, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = FontNames() };
         ScriptFontSizeBox = new NumericUpDown
         {
@@ -253,7 +271,23 @@ internal sealed class SettingsWindow : Window
                     ExportGroup,   // 접는 묶음은 제 테두리가 있다
                     ShortcutGroup,
                     Group("대본 글 칸", ScriptFontSection()),
-                    Group("기타", new StackPanel { Spacing = 4, Children = { HideMinimapCheck, BriefGuidesCheck, WheelPansCheck } })
+                    Group("기타", new StackPanel
+                    {
+                        Spacing = 4,
+                        Children =
+                        {
+                            HideMinimapCheck,
+                            BriefGuidesCheck,
+                            WheelPansCheck,
+                            new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Spacing = 8,
+                                Margin = new Thickness(0, 4, 0, 0),
+                                Children = { new TextBlock { Text = "새로 잇는 선", FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
+                            }
+                        }
+                    })
                 }
             }
         };
@@ -351,6 +385,17 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「기타」의 「휠로 판 옮기기」 — 켜면 두 판의 휠이 판을 옮긴다(<see cref="BoardWheel"/>). 누르는 즉시 반영한다.</summary>
     internal CheckBox WheelPansCheck { get; }
+
+    /// <summary>「기타」의 「새로 잇는 선」 — [대본] 판에 새로 잇는 선의 꼴(<see cref="BoardLines"/>). 누르는 즉시 반영한다.</summary>
+    internal ComboBox NewLineShapeCombo { get; }
+
+    /// <summary>「새로 잇는 선」의 차림 — 선 위의 꼴 단추와 같은 이름 · 차례.</summary>
+    internal static readonly (string Name, Vn.Authoring.Model.EdgeShapeKind Kind)[] LineShapeNames =
+    [
+        ("직각", Vn.Authoring.Model.EdgeShapeKind.Elbow),
+        ("곡선", Vn.Authoring.Model.EdgeShapeKind.Curve),
+        ("직선", Vn.Authoring.Model.EdgeShapeKind.Straight)
+    ];
 
     /// <summary>묶음들 — [취소] · [확인]을 뺀 창의 몸통이 이 안에서 스크롤한다(UX1).</summary>
     internal ScrollViewer Body { get; }

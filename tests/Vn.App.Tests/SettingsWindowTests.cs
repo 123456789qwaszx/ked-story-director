@@ -437,6 +437,45 @@ public sealed class SettingsWindowTests : IDisposable
         }
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게」. 「기타」의 「새로 잇는 선」 — 처음은 직각, 고르는
+    /// 즉시 앱 설정에 들어가고 프로젝트는 그대로이며, 그 뒤 생기는 선이 그 꼴이다. 다시 열면 고른 것이 보인다.
+    /// </summary>
+    [Fact]
+    public void 기타_묶음의_새로_잇는_선은_처음_직각이고_고르면_새_선이_그_꼴로_생긴다() => HeadlessUi.Run(() =>
+    {
+        BoardLines.Set(Vn.Authoring.Model.EdgeShapeKind.Elbow);
+
+        try
+        {
+            (MainWindow window, AuthoringSession session) = Open();
+
+            SettingsWindow settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(["직각", "곡선", "직선"], settings.NewLineShapeCombo.Items.Cast<string>());
+            Assert.Equal("직각", settings.NewLineShapeCombo.SelectedItem);
+            Assert.True(settings.NewLineShapeCombo.IsEffectivelyVisible);
+
+            settings.NewLineShapeCombo.SelectedItem = "직선";
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(Vn.Authoring.Model.EdgeShapeKind.Straight, BoardLines.Kind);
+            Assert.Equal("straight", AppSettingsService.LoadNewLineShape());
+            Assert.False(session.Editor.CanUndo);   // 프로젝트는 바뀌지 않는다
+            Assert.Equal(Vn.Authoring.Model.EdgeShapeKind.Straight, session.Editor.NewLineShape!());
+
+            settings.Close();
+            settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("직선", settings.NewLineShapeCombo.SelectedItem);
+            settings.Close();
+            window.Close();
+        }
+        finally
+        {
+            BoardLines.Set(Vn.Authoring.Model.EdgeShapeKind.Elbow);
+        }
+    });
+
     [Fact]
     public void 기타_묶음의_휠로_판_옮기기는_처음_꺼져_있고_켜는_즉시_판의_휠이_따르며_다음에도_켜져_있다() => HeadlessUi.Run(() =>
     {

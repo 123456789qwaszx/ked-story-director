@@ -608,7 +608,8 @@ public sealed partial class ProjectEditor
         ChapterEdge? before = null)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
-        ChapterEdge edge = NewEdge(chapter, fromEpisodeId, toEpisodeId, optionLabel, conditionLabel, statChanges, auto);
+        // 새로 잇는 선의 꼴(설정 · NewLineShape) — 직각이면 적지 않는다.
+        ChapterEdge edge = NewEdge(chapter, fromEpisodeId, toEpisodeId, optionLabel, conditionLabel, statChanges, auto) with { Shape = NewLineShapeOrNull() };
         int at = before is null
             ? chapter.Edges.Count
             : RequireEdgeIndex(chapter, before.FromEpisodeId, before.ToEpisodeId, before.OptionLabel);

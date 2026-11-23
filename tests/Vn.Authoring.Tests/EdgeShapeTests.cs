@@ -122,6 +122,50 @@ public sealed class EdgeShapeTests
             ((DialogueNode)loaded.FindNode(a.Id)!).EdgeShapes[$"detour:{lineId}>{made.Id}"]);
     }
 
+    // ── 새로 잇는 선의 꼴(설정) ─────────────────────────────────────────────
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게」. 앱이 대는 꼴(<see cref="ProjectEditor.NewLineShape"/>)이
+    /// 선이 <b>생길 때</b> 적힌다 — 선택지 길 · 분기 추가 · 이어지지 않은 분기점 잇기 · 분기를 다른 카드로 옮기기(옮기면 굽이째 따라간다). 이미 있는 선은
+    /// 그대로이고, 직각이면 적지 않는다. 생기는 것과 한 칸이라 되돌리면 함께 걷힌다.
+    /// </summary>
+    [Fact]
+    public void 새로_잇는_선은_설정의_꼴로_생기고_이미_있는_선은_그대로다()
+    {
+        ProjectEditor editor = Chapter();   // a→b 「간다」 — 설정 전에 생긴 길
+        EdgeShapeKind kind = EdgeShapeKind.Curve;
+        editor.NewLineShape = () => kind;
+
+        // 선택지 길.
+        editor.AddEpisode("ch01", "c", "c", 0, 0, sceneId: "c");
+        editor.AddEdge("ch01", "a", "c", optionLabel: "돌아간다");
+        Assert.Equal(new EdgeShape(EdgeShapeKind.Curve), editor.FindChapter("ch01")!.Edges.Single(edge => edge.ToEpisodeId == "c").Shape);
+        Assert.Null(editor.FindChapter("ch01")!.Edges.Single(edge => edge.ToEpisodeId == "b").Shape);
+
+        // 분기 추가 — 분기 선도.
+        DialogueNode a = EpisodeNaming.CardFor(editor.Project, "ch01", "a")!;
+        string lineId = a.Script.ActiveLines.First().Id;
+        DialogueNode made = editor.AddBranchMarker(a.Id, lineId);
+        Assert.Equal(new EdgeShape(EdgeShapeKind.Curve), Node(editor, a.Id).EdgeShapes[$"detour:{lineId}>{made.Id}"]);
+
+        // 끊은 분기점을 다시 이으면 — 그때의 꼴(직선)로.
+        kind = EdgeShapeKind.Straight;
+        editor.SetExitTarget(DetourOf(editor, a.Id), null);   // 분기점은 제자리에 남는다
+        ExitPort open = NodeConnections.PortsOf(Node(editor, a.Id), editor.Project).Single(port => port.IsOpenDetour);
+        editor.SetExitTarget(open, made.Id);
+        Assert.Equal(new EdgeShape(EdgeShapeKind.Straight), Node(editor, a.Id).EdgeShapes[$"detour:{lineId}>{made.Id}"]);
+
+        // 직각이면 적지 않는다. 되돌리면 생긴 선과 꼴이 함께 걷힌다.
+        kind = EdgeShapeKind.Elbow;
+        editor.AddEpisode("ch01", "d", "d", 0, 0, sceneId: "d");
+        editor.AddEdge("ch01", "a", "d", optionLabel: "멈춘다");
+        Assert.Null(editor.FindChapter("ch01")!.Edges.Single(edge => edge.ToEpisodeId == "d").Shape);
+        editor.Undo();   // 길 a→d
+        editor.Undo();   // 에피소드 d
+        editor.Undo();   // 분기점 다시 잇기
+        Assert.Empty(Node(editor, a.Id).EdgeShapes);
+    }
+
     // ── 선 긋기 ─────────────────────────────────────────────────────────────
 
     [Fact]

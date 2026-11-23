@@ -203,7 +203,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `Services/AuthoringSession.cs` | 열린 프로젝트 · 경로 · 저장 여부 · 선택 · 화자 창구 · 보낼 곳 · 화면 편의 상태 · 상태줄 |
 | `Services/ProjectRefreshPlanner.cs` | 변경 종류 → 그래프 · 곁기둥 중 무엇을 다시 만들지 |
 | `Services/WorkFolder.cs` | 작업 폴더(`exported/`)를 찾고, 그 형식의 파일을 고른 채 탐색기를 연다 |
-| `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 · 설명 간소화(`Views/GuideLine.cs`) · 휠로 판 옮기기(`Views/BoardWheel.cs`) — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
+| `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 · 설명 간소화(`Views/GuideLine.cs`) · 휠로 판 옮기기(`Views/BoardWheel.cs`) · 새로 잇는 선(`Views/BoardLines.cs`) — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
 
 ---
 
@@ -341,7 +341,7 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
 | 보이는 이름 · 새 ID | 챕터 `ChapterDocument.ShownName` · 장면 `ChapterSceneGrouping`(`ChapterScene.DisplayName`) · 에피소드 `ShownTitle`, 새 ID와 처음 이름 `Chapters/NewNames.cs` |
 | 분기 카드(집 · 검증) | `Chapters/ChapterBranchCards.cs` — 분기 카드(`DialogueNode.IsBranchCard`)는 에피소드가 아니라 증명(`ChapterReachabilityProver`, 간선만 — 런타임의 오라클) 밖이다. `HomesOf` = 분기 카드의 집(먼저 부르는 에피소드 — 장면 · Yarn 파일 · [구성] 칩이 같은 규칙), `Verify` = 분기점이 에피소드에(오류) · 아무도 안 부름 · 도달 불가에서만 불림(경고) · 줄 없음(오류) · Yarn 노드 이름 겹침(오류). 부르는 곳 `ChapterValidator.Validate`(프로젝트를 줄 때) |
-| [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs`(묶음: 이 프로젝트 · 내보내기 · 단축키 — 표 `Views/Shortcuts.cs` · 기타 — 미니맵 감추기 · 설명 간소화 · 휠로 판 옮기기) |
+| [대본] 판 크기 · [⚙ 설정] | 값 `Model/BoardSize.cs`(범위 · 카드 차지 자리), 줄이기 `Graph/BoardResize.cs`(전체 비율 · 비키기 · 꺾임), 명령 `ProjectEditor.SetBoardSize`, 저장 `ProjectManifestJson.WriteBoard/ReadBoard`(스냅숏도 같은 것), 판 `GraphEditorView.ApplyBoardSize`, 창 `App/Views/SettingsWindow.cs`(묶음: 이 프로젝트 · 내보내기 · 단축키 — 표 `Views/Shortcuts.cs` · 기타 — 미니맵 감추기 · 설명 간소화 · 휠로 판 옮기기 · 새로 잇는 선) |
 | 작가용 글 서식 | 모델 · 셈 `Model/WriterMarks.cs`, 저장 `Serialization/WriterMarksJson.cs`(대사 노드의 `writerMarks` · `writerAlign`), 명령 `ProjectEditor.WriterMarks.cs`, 알림 `ProjectChangeKind.WriterMarks`, 글 칸 `App/Views/WriterTextBox.cs`(TextBox 그대로 — 글자 배치만), 도구 막대 `App/Views/GraphEditorView.Writer.cs`. 내보내기에 나가지 않는다 — `docs/plans/writer-formatting.md` |
 | 대사 Yarn(`exported/yarn/`) | 글 짓기 `Chapters/ChapterYarnExporter.cs`(타이틀은 `ChapterProgressionExporter.DialogueEntryIdOf`), 쓰기 · 낡은 파일 걷기 `ChapterExportService.ExportAll`, 컴파일 확인은 시험 `ChapterYarnExportTests`(앱은 컴파일러를 싣지 않는다) |
 

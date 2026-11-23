@@ -60,6 +60,26 @@ public sealed partial class ProjectEditor
     /// </summary>
     public Func<WriterBase?>? NewCardWriterBase { get; set; }
 
+    /// <summary>
+    /// 새로 잇는 선의 꼴을 대는 곳 — 앱이 그 PC의 설정 「새로 잇는 선」(직각 · 곡선 · 직선)을 댄다(2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선,
+    /// 곡선, 직각 중에 기본 생성을 선택할 수 있게」). 선택지 길(<see cref="AddEdge"/>)과 분기 선(분기 추가 · 분기점 잇기)이 <b>생길 때</b> 그 꼴을 적는다 —
+    /// 이미 있는 선은 그대로다. 직각(기본 · <see cref="EdgeShape.IsDefault"/>)이면 적지 않는다. 없으면 직각이다.
+    /// </summary>
+    public Func<EdgeShapeKind>? NewLineShape { get; set; }
+
+    /// <summary>새로 잇는 선에 적을 모양 — 직각이면 null(적지 않는다).</summary>
+    private EdgeShape? NewLineShapeOrNull() =>
+        NewLineShape?.Invoke() is { } kind && kind != EdgeShapeKind.Elbow ? new EdgeShape(kind) : null;
+
+    /// <summary>새로 이은 분기 선(그 줄 · 그 카드)에 처음 모양을 적는다 — 이미 모양이 있으면(옮겨 온 굽이) 그대로. 변경(Mutate) 안에서 부른다.</summary>
+    private void ShapeNewDetour(DialogueNode dialogue, string lineId, string target)
+    {
+        if (NewLineShapeOrNull() is { } shape)
+        {
+            dialogue.EdgeShapes.TryAdd(EdgeShape.KeyOf(ExitPortKind.Detour, ExitPort.DetourKey(lineId, target)), shape);
+        }
+    }
+
     public bool CanUndo => _undo.Count > 0;
 
     public bool CanRedo => _redo.Count > 0;
@@ -326,6 +346,7 @@ public sealed partial class ProjectEditor
         {
             attach();
             source.RequireExtension(beforeLineId).DetourTargetNodeIds.Add(created.Id);
+            ShapeNewDetour(source, beforeLineId, created.Id);   // 새로 잇는 선의 꼴(설정)
         });
 
         return created;
@@ -829,6 +850,12 @@ public sealed partial class ProjectEditor
             }
 
             dialogue.RequireExtension(lineId).SetDetourSlots(next);
+
+            // 새로 이은 분기 선 — 설정의 꼴로(옮겨 온 굽이는 위에서 이미 옮겼다).
+            foreach (string added in next.OfType<string>().Where(target => !current.Contains(target)))
+            {
+                ShapeNewDetour(dialogue, lineId, added);
+            }
         });
     }
 
@@ -855,7 +882,11 @@ public sealed partial class ProjectEditor
         }
 
         slots[position] = to;
-        Mutate(() => extension.SetDetourSlots(slots));
+        Mutate(() =>
+        {
+            extension.SetDetourSlots(slots);
+            ShapeNewDetour(dialogue, lineId, to);   // 새로 잇는 선의 꼴(설정)
+        });
     }
 
     /// <summary>
