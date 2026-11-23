@@ -34,6 +34,7 @@ class Program
             .WithDeveloperTools()
 #endif
             .WithInterFont()
+            .With(Views.HangulFonts.Options)   // 한글은 이름으로 찾은 한글 글꼴로 — 기울임을 청한 한글도 기운다(writer-formatting WF-D17)
             .LogToTrace();
 
     private static void OnUnhandledException(object? sender, UnhandledExceptionEventArgs e)

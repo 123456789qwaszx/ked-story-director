@@ -232,6 +232,21 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>새 카드 글의 굵게 · 기본 글자색(설정 창 「대본 글 칸」 — writer-formatting WF-D16). 글자색이 없으면 테마의 것.</summary>
+    public static (bool Bold, string? Color) LoadScriptLook()
+    {
+        AppSettings settings = Load(SettingsPath);
+        return (settings.ScriptFontBold, settings.ScriptFontColor);
+    }
+
+    public static void SaveScriptLook(bool bold, string? color)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.ScriptFontBold = bold;
+        settings.ScriptFontColor = color;
+        Save(settings);
+    }
+
     /// <summary>하이어아키 기둥을 접어 두었는가 (두 그래프가 함께 쓴다).</summary>
     public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
 
@@ -390,6 +405,12 @@ internal static class AppSettingsService
 
         /// <summary>[대본] 카드 글 칸의 줄 간격 — 글자 크기에 대한 %, 처음에는 140.</summary>
         public int ScriptLineSpacing { get; set; } = Views.ScriptFont.DefaultLineSpacing;
+
+        /// <summary>새 카드 글을 굵게 — <see cref="LoadScriptLook"/>.</summary>
+        public bool ScriptFontBold { get; set; }
+
+        /// <summary>새 카드 글의 기본 글자색(<c>#RRGGBB</c>) — null이면 테마의 글자색.</summary>
+        public string? ScriptFontColor { get; set; }
     }
 
     /// <summary>

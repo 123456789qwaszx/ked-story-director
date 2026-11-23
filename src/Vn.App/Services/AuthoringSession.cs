@@ -28,7 +28,12 @@ internal sealed class AuthoringSession
 
     public AuthoringSession()
     {
-        Editor = new ProjectEditor(NewProjectInstance());
+        Editor = new ProjectEditor(NewProjectInstance())
+        {
+            // 새 카드 글 칸의 처음 글꼴 · 크기는 그때의 설정 「대본 글 칸」(writer-formatting WF-D13).
+            NewCardWriterBase = () => Views.ScriptFont.CardBase
+        };
+        WriterBaseFill.Fill(Editor.Project, Views.ScriptFont.CardBase);
         ResetFileGraphState(Editor.Project);
         _savedSnapshot = ProjectSnapshotCodec.Encode(Editor.Project);
         Editor.Changed += OnEditorChanged;
@@ -190,6 +195,7 @@ internal sealed class AuthoringSession
     public void NewProject()
     {
         StoryProject project = NewProjectInstance();
+        WriterBaseFill.Fill(project, Views.ScriptFont.CardBase);
 
         ProjectPath = null;
         _diskStamp = null;
@@ -211,6 +217,10 @@ internal sealed class AuthoringSession
     {
         ProjectLoadResult loaded = ProjectStore.Load(path);
         StoryProject project = loaded.Project;
+
+        // 처음 글꼴 · 크기가 안 적힌 카드(그 값이 생기기 전에 만든 카드)는 지금 이 PC의 설정으로 굳힌다 — 저장 기준(아래 스냅샷)을 뜨기 전에 적어
+        // 「저장 안 한 변경」이 되지 않는다. 다음 저장에 파일로 간다(writer-formatting WF-D13).
+        WriterBaseFill.Fill(project, Views.ScriptFont.CardBase);
 
         ProjectPath = loaded.ManifestPath;
         _diskStamp = ProjectDiskStamp.Read(loaded.ManifestPath);
@@ -546,6 +556,31 @@ internal sealed class AuthoringSession
         HiddenChoicesChanged?.Invoke(nodeId);
     }
 
+    /// <summary>
+    /// 여러 카드의 「빈 선택지 숨기기」를 한 번에(2026-11-23 소유자 — 「선택 된것들 모두 일괄적으로 키고 꺼지도록」) — 한 번 기억하고, 바뀐 카드마다 알린다.
+    /// </summary>
+    internal void SetHideEmptyChoices(IReadOnlyCollection<string> nodeIds, bool hide)
+    {
+        List<string> changed = nodeIds.Distinct(StringComparer.Ordinal)
+            .Where(nodeId => hide ? _hiddenChoiceNodeIds.Add(nodeId) : _hiddenChoiceNodeIds.Remove(nodeId))
+            .ToList();
+
+        if (changed.Count == 0)
+        {
+            return;
+        }
+
+        if (ProjectPath is not null)
+        {
+            AppSettingsService.SaveHiddenChoices(ProjectPath, _hiddenChoiceNodeIds);
+        }
+
+        foreach (string nodeId in changed)
+        {
+            HiddenChoicesChanged?.Invoke(nodeId);
+        }
+    }
+
     /// <summary>[대본] 카드 하나의 「빈 선택지 숨기기」가 바뀌었다 — 그 카드의 노드 Id.</summary>
     internal event Action<string>? HiddenChoicesChanged;
 
@@ -654,7 +689,7 @@ internal sealed class AuthoringSession
         }
 
         // 대본에만 있는 이름(과 줄 수)도 싣는다 — [대본] 「화자」 탭이 그것도 모아 보인다(usability UX34).
-        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId)) + "\n\n" +
+        string speakers = string.Join('\n', Project.Speakers.Select(speaker => speaker.Name + '\t' + speaker.CharacterId + '\t' + speaker.Color?.Hex + '\t' + speaker.Fill?.Hex)) + "\n\n" +
                           string.Join('\n', UnlistedSpeakers.Of(Project).Select(entry => entry.Name + '\t' + entry.Lines));
         bool speakersChanged = !string.Equals(_speakerSignature, speakers, StringComparison.Ordinal);
         _speakerSignature = speakers;

@@ -116,6 +116,10 @@ public partial class MainWindow : Window
         });
         ChapterGraph.Attach(_session);
         DialogueEditor.Attach(_session);
+
+        // 인스펙터의 「빈 선택지 숨기기」는 하이어아키에서 고른 줄들에 든 에피소드 모두에 한 번에(2026-11-23 소유자) — 고른 줄이 바뀌면 체크를 맞춘다.
+        DialogueEditor.BatchCards = Graph.PickedCards;
+        Graph.HierarchyView.SelectionsChanged += () => UiGuard.Run(_session, "선택지 칸", DialogueEditor.RefreshHideEmpty);
         _session.Changed += OnSessionChanged;
         _session.SpeakersChanged += OnSpeakersChanged;
         // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 — 판을 다시 그리거나
@@ -181,13 +185,22 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // F = [대본] 탭에서 고른 것에 화면 맞추기(2026-11-18 소유자 · writer-comfort WC2) — 글 칸 · 콤보에서는 그 칸의 것이다.
+            // F = 고른 것에 화면 맞추기 — [대본] 탭(2026-11-18 소유자 · writer-comfort WC2)과 [구성] 탭(2026-11-23 소유자 — 「구성탭에서도 F를 눌러서」).
+            //    글 칸 · 콤보에서는 그 칸의 것이다.
             if (args.Key == Avalonia.Input.Key.F && args.KeyModifiers == Avalonia.Input.KeyModifiers.None &&
-                ReferenceEquals(MainTabs.SelectedItem, GraphTabItem) &&
                 FocusManager?.GetFocusedElement() is not (TextBox or ComboBox))
             {
-                UiGuard.Run(_session, "화면 맞추기", () => args.Handled = Graph.FocusSelection());
-                return;
+                if (ReferenceEquals(MainTabs.SelectedItem, GraphTabItem))
+                {
+                    UiGuard.Run(_session, "화면 맞추기", () => args.Handled = Graph.FocusSelection());
+                    return;
+                }
+
+                if (ReferenceEquals(MainTabs.SelectedItem, ChapterTabItem))
+                {
+                    UiGuard.Run(_session, "화면 맞추기", () => args.Handled = ChapterGraph.FocusSelection());
+                    return;
+                }
             }
 
             if (!PlatformKeys.HasCommand(args.KeyModifiers))
@@ -346,6 +359,11 @@ public partial class MainWindow : Window
             {
                 // 챕터 조건만 — 분기 카드의 조건 표만 다시 단다(usability UX16).
                 Graph.RefreshBranchConditions();
+            }
+            else if (plan.RefreshWriterMarks)
+            {
+                // 작가용 글 서식만 — 그 카드의 글 칸 꾸밈만 다시 입힌다(writer-formatting).
+                Graph.RefreshWriterMarks(e.NodeId);
             }
             else if (plan.RefreshSceneFrames)
             {

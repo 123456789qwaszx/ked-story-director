@@ -34,6 +34,9 @@ internal static class ProjectRefreshPlanner
                 // 선택지 — [대본] 판은 선택지 쪽에 객체를 붙들지 않는다(카드 · 철도 · 접은 상자는 값만 쥐고 누를 때 프로젝트에서 찾는다). 알림이 실은
                 // 출발 카드의 철도만 다시 긋는다 — 판이 다른 것도 바뀌었다고 보면 스스로 통째로 짓는다(usability UX21 · ⛔ 구조).
                 ProjectChangeKind.ChoiceDetail or ProjectChangeKind.ChoiceRoute => Plan(kind, selectedNode),
+
+                // 작가용 글 서식 — [대본] 판은 서식 쪽에 객체를 붙들지 않는다(칸마다 그릴 때 프로젝트에서 읽는다). 그 카드의 꾸밈만 다시 입힌다(writer-formatting).
+                ProjectChangeKind.WriterMarks => Plan(kind, selectedNode),
                 _ => Plan(ProjectChangeKind.Structure, selectedNode)
             };
         }
@@ -112,6 +115,14 @@ internal static class ProjectRefreshPlanner
                 RebuildInspector: true,
                 RefreshBranchConditions: true),
 
+            // 작가용 글 서식(굵게 · 색 · 글꼴 · 크기 · 정렬) — 그 카드의 글 칸 꾸밈만 다시 입힌다. 판 · 철도 · 곁기둥 · [구성]은 그대로다 — 서식은 그쪽에
+            // 보이지 않고 내보내기에도 나가지 않는다(writer-formatting).
+            ProjectChangeKind.WriterMarks => new ProjectRefreshPlan(
+                RebuildGraph: false,
+                RefreshGraphPositions: false,
+                RebuildInspector: false,
+                RefreshWriterMarks: true),
+
             // 셸 상태 · 상태줄 알림 — 다시 만들 화면이 없다.
             ProjectChangeKind.Content => default,
 
@@ -133,4 +144,5 @@ internal readonly record struct ProjectRefreshPlan(
     bool RebuildCard = false,
     bool RefreshCardTitle = false,
     bool RedrawChoices = false,
-    bool RefreshBranchConditions = false);
+    bool RefreshBranchConditions = false,
+    bool RefreshWriterMarks = false);

@@ -54,6 +54,12 @@ public sealed partial class ProjectEditor
     /// </summary>
     public event EventHandler<ProjectChangedEventArgs>? Changed;
 
+    /// <summary>
+    /// 새 카드 글 칸의 처음 글꼴 · 크기를 대는 곳(<see cref="DialogueNode.WriterBase"/> · writer-formatting WF-D13) — 앱이 그 PC의 설정 「대본 글 칸」을
+    /// 댄다. 없으면 적지 않는다(그 카드는 다음에 열 때 적힌다).
+    /// </summary>
+    public Func<WriterBase?>? NewCardWriterBase { get; set; }
+
     public bool CanUndo => _undo.Count > 0;
 
     public bool CanRedo => _redo.Count > 0;
@@ -171,6 +177,9 @@ public sealed partial class ProjectEditor
         {
             Layout = new NodeLayout { X = x, Y = y },
             IsBranchCard = branchCard,
+
+            // 카드 글 칸의 처음 글꼴 · 크기 — 지금 그 PC의 설정(writer-formatting WF-D13). 뒤에 설정을 바꿔도 이 카드는 그대로다.
+            WriterBase = NewCardWriterBase?.Invoke(),
 
             // 분기 카드는 제목을 따로 든다(에피소드의 제목은 챕터가 든다) — 작가는 제목을, 개발자는 [구성]에서 ID(이름)를 본다.
             Title = branchCard ? title ?? NewNames.Branch : null

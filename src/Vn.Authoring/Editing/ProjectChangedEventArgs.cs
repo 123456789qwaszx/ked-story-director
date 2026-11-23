@@ -82,7 +82,13 @@ public enum ProjectChangeKind
     /// 분기 카드 머리의 조건 표(「식 미정」)만 그것을 본다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 조건 하나를 더하는 데 [대본] 판을
     /// 통째로 다시 지었다(에피소드 160개에서 2.5초 · usability UX16).
     /// </summary>
-    ChapterCondition
+    ChapterCondition,
+
+    /// <summary>
+    /// 카드 하나의 <b>작가용 글 서식</b>(굵게 · 색 · 글꼴 · 크기 · 정렬)만 바뀌었다 — 어느 카드인지는 <see cref="ProjectChangedEventArgs.NodeId"/>다.
+    /// 글도 줄도 그대로라 [대본] 판은 그 카드의 글 칸 꾸밈만 다시 입히고, [구성]은 다시 읽지 않는다(서식은 내보내기에 나가지 않는다 · writer-formatting).
+    /// </summary>
+    WriterMarks
 }
 
 public sealed class ProjectChangedEventArgs : EventArgs

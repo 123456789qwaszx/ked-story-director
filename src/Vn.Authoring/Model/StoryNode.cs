@@ -183,6 +183,23 @@ public sealed class DialogueNode : StoryNode
     /// </summary>
     public List<LineConditionTransition> TrailingTransitions { get; init; } = new();
 
+    /// <summary>
+    /// <b>작가용 글 서식</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — LineId → 그 줄 대사 글(기본 언어 <c>Text</c>)의 서식 구간들.
+    /// 작가가 보기 위한 것이라 <b>내보내기(대사 Yarn · 진행 JSON)가 읽지 않는다</b>(WF-D1 · D2). 대사 논리(<see cref="LineExtensions"/>)와 섞지 않는다.
+    /// 목록은 늘 정규형이고(<see cref="WriterMarkMath"/>) 빈 목록은 두지 않는다. 은퇴한 줄의 서식도 본문처럼 남긴다 — 되살아나면 돌아온다.
+    /// 대사 글이 바뀌면 편집기가 자리를 옮긴다(<see cref="WriterMarkMath.Rebase"/>).
+    /// </summary>
+    public Dictionary<string, IReadOnlyList<WriterSpan>> WriterMarks { get; init; } = new(StringComparer.Ordinal);
+
+    /// <summary>카드 글 칸의 좌우 정렬(작가용 서식) — 카드 하나에 하나. 기본은 왼쪽이고 그때는 저장하지 않는다.</summary>
+    public WriterAlign WriterAlign { get; set; }
+
+    /// <summary>
+    /// 카드 글 칸의 처음 글꼴 · 글자 크기(작가용 서식 · <see cref="Model.WriterBase"/>) — 만들 때 그 PC의 설정 값이 적힌다. 서식의 크기는 이것에 더한다.
+    /// null이면 아직 안 적힌 카드다(이 값이 생기기 전에 만든 카드) — 앱이 파일을 열 때 그 PC의 설정으로 적는다(<see cref="WriterBaseFill"/>). 내보내기는 읽지 않는다.
+    /// </summary>
+    public WriterBase? WriterBase { get; set; }
+
     // ⛔ `ChoiceExits`(선택지 문구 → 거쳐 갈 자유 씬 — 2026-08-17)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 대사 안 선택지가
     //    2026-11-04에 걷힌 뒤로 만드는 곳도 읽는 곳도 없이 파일을 오가기만 했다(docs/work-orders/legacy-read-orders.md L5).
     // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:

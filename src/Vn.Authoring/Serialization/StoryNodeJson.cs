@@ -18,6 +18,15 @@ internal static class StoryNodeJson
     /// <summary><see cref="DialogueNode.Title"/>(분기 카드의 보이는 제목)이 앉는 칸 — 있을 때만 쓴다.</summary>
     private const string TitleKey = "title";
 
+    /// <summary><see cref="DialogueNode.WriterMarks"/>(작가용 글 서식)가 앉는 칸 — 서식이 있을 때만 쓴다.</summary>
+    private const string WriterMarksKey = "writerMarks";
+
+    /// <summary><see cref="DialogueNode.WriterAlign"/>이 앉는 칸 — 왼쪽(기본)이 아닐 때만 쓴다.</summary>
+    private const string WriterAlignKey = "writerAlign";
+
+    /// <summary><see cref="DialogueNode.WriterBase"/>(카드의 처음 글꼴 · 크기)가 앉는 칸 — 적혀 있을 때만 쓴다.</summary>
+    private const string WriterBaseKey = "writerBase";
+
     public static JsonObject Write(StoryNode node)
     {
         string kind = node switch
@@ -260,6 +269,22 @@ internal static class StoryNodeJson
 
             json["trailing"] = trailing;
         }
+
+        // 작가용 글 서식(2026-11-22) — 있을 때만 적는다. 서식 없는 프로젝트의 파일은 그대로다.
+        if (WriterMarksJson.Write(node) is { } marks)
+        {
+            json[WriterMarksKey] = marks;
+        }
+
+        if (node.WriterAlign != WriterAlign.Left)
+        {
+            json[WriterAlignKey] = WriterMarksJson.AlignName(node.WriterAlign);
+        }
+
+        if (node.WriterBase is { } writerBase)
+        {
+            json[WriterBaseKey] = WriterMarksJson.WriteBase(writerBase);
+        }
     }
 
     private static SetNode ReadSetNode(JsonObject json, string id, string name)
@@ -323,6 +348,11 @@ internal static class StoryNodeJson
         {
             node.TrailingTransitions.Add(ReadTransition(transitionJson, id));
         }
+
+        // 작가용 글 서식은 너그럽게 읽는다 — 서식 때문에 프로젝트가 안 열리는 일은 없다(writer-formatting 5절 ③).
+        WriterMarksJson.Read(node, json[WriterMarksKey]);
+        node.WriterAlign = WriterMarksJson.ReadAlign(json[WriterAlignKey]);
+        node.WriterBase = WriterMarksJson.ReadBase(json[WriterBaseKey]);
 
         return node;
     }

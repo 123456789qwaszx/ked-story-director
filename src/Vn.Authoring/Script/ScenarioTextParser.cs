@@ -206,14 +206,76 @@ public static class ScenarioTextParser
         return (line[..at].TrimEnd(), id);
     }
 
+    /// <summary>
+    /// <b>글 칸 한 줄에서 대사 글이 앉은 자리</b> (작가용 글 서식 · writer-formatting 3.4) — <see cref="Parse"/>가 그 줄에서 읽는 대사 글(<see cref="ScenarioLine.Text"/>)이
+    /// 줄의 어디서 시작해 몇 글자인가. 대사 줄이 아니면(빈 줄 · 조건 줄 · 선택지 · 해석 못 한 줄) null. 화자 · 줄 앞뒤 공백 · 줄 ID 꼬리는 밖이다.
+    /// 규칙은 <see cref="Parse"/>와 한 벌이다(같은 함수를 부른다) — 화면이 따로 콜론을 찾지 않는다.
+    /// </summary>
+    /// <param name="row">글 칸의 한 줄(줄바꿈 없이).</param>
+    public static (int Start, int Length)? DialogueBodyRange(string? row, IReadOnlyList<Speaker> speakers)
+    {
+        ArgumentNullException.ThrowIfNull(speakers);
+
+        string raw = row ?? string.Empty;
+        string line = raw.Trim();
+
+        if (line.Length == 0 ||
+            TryParseStructure(line, out _) ||
+            line.StartsWith(OptionMarker, StringComparison.Ordinal) ||
+            line.StartsWith("<<", StringComparison.Ordinal) ||
+            line.StartsWith("[", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        int lead = raw.Length - raw.TrimStart().Length;
+        (string tagless, _) = SplitLineTag(line);
+        int bodyStart = BodyStart(tagless, speakers);
+
+        return (lead + bodyStart, tagless.Length - bodyStart);
+    }
+
+    /// <summary>
+    /// <b>글 칸 한 줄에서 화자 이름이 앉은 자리</b>와 그 이름(화자 이름 색 · writer-formatting WF-D15) — <see cref="Parse"/>가 그 줄에서 읽는 화자다. 콜론은 밖이다.
+    /// 대사 줄이 아니거나 화자가 없으면 null. 규칙은 <see cref="DialogueBodyRange"/>와 한 벌이다.
+    /// </summary>
+    public static (int Start, int Length, string Name)? SpeakerNameRange(string? row, IReadOnlyList<Speaker> speakers)
+    {
+        if (DialogueBodyRange(row, speakers) is null)
+        {
+            return null;
+        }
+
+        string raw = row ?? string.Empty;
+        string line = raw.Trim();
+        int lead = raw.Length - raw.TrimStart().Length;
+        (string tagless, _) = SplitLineTag(line);
+
+        if (BodyStart(tagless, speakers) == 0)
+        {
+            return null;
+        }
+
+        int colon = tagless.IndexOf(':');
+        return (lead, colon, tagless[..colon]);
+    }
+
     /// <summary>첫 콜론 기준, 접두에 공백이 없을 때만 화자다.</summary>
     private static (string Speaker, string Text) SplitSpeaker(string line, IReadOnlyList<Speaker> speakers)
+    {
+        int bodyStart = BodyStart(line, speakers);
+
+        return bodyStart == 0 ? (string.Empty, line) : (line[..line.IndexOf(':')], line[bodyStart..]);
+    }
+
+    /// <summary>대사 글이 시작하는 자리 — 화자가 없으면 0, 있으면 콜론 뒤 공백을 건넌 자리.</summary>
+    private static int BodyStart(string line, IReadOnlyList<Speaker> speakers)
     {
         int colon = line.IndexOf(':');
 
         if (colon <= 0)
         {
-            return (string.Empty, line);
+            return 0;
         }
 
         string prefix = line[..colon];
@@ -224,10 +286,17 @@ public static class ScenarioTextParser
         // 기존 규칙이 그대로 산다. 등록부는 명시적 어휘라 산문과 헷갈릴 일이 없다.
         if (prefix.Any(char.IsWhiteSpace) && !IsListed(speakers, prefix))
         {
-            return (string.Empty, line);
+            return 0;
         }
 
-        return (prefix, line[(colon + 1)..].TrimStart());
+        int start = colon + 1;
+
+        while (start < line.Length && char.IsWhiteSpace(line[start]))
+        {
+            start++;
+        }
+
+        return start;
     }
 
     private static bool IsListed(IReadOnlyList<Speaker> speakers, string name) =>

@@ -656,7 +656,15 @@ public partial class ChapterGraphView : UserControl
 
         _session = session;
         _centerSheet = true;   // 새 세션의 판 — 가운데에 놓는다
-        _sessionChanged = (_, _) => QueueReload();
+        // 작가용 글 서식만 바뀐 것은 다시 읽지 않는다 — [구성]에 보이지 않고 내보내기에도 나가지 않는다(writer-formatting). 되돌리기 · 다시 실행은 프로젝트가
+        // 통째로 새것이라 다시 읽는다.
+        _sessionChanged = (_, args) =>
+        {
+            if (args.Kind != Vn.Authoring.Editing.ProjectChangeKind.WriterMarks || args.FromHistory)
+            {
+                QueueReload();
+            }
+        };
         session.Changed += _sessionChanged;
 
         // 「빈 선택지 숨기기」 — [구성] 판의 설정이다(앱 설정에 기억한다). 체크를 맞추고 판을 다시 그린다.
@@ -920,8 +928,13 @@ public partial class ChapterGraphView : UserControl
         }
     }
 
+    /// <summary>다시 읽은 횟수 — 시험이 「서식만 바꾸면 [구성]을 다시 읽지 않는다」를 본다(writer-formatting).</summary>
+    internal int ReloadCount { get; private set; }
+
     private void Reload()
     {
+        ReloadCount++;
+
         // 판은 프로젝트에서 온다 — 파일을 읽지 않는다.
         _entries.Clear();
         _entries.AddRange(ChapterEntries());
@@ -1142,6 +1155,111 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.Offset = new Vector(
             Math.Max(0, ((width * _zoom) - GraphScroll.Viewport.Width) / 2),
             Math.Max(0, ((height * _zoom) - GraphScroll.Viewport.Height) / 2));
+    }
+
+    /// <summary>
+    /// <b>F — 고른 것에 화면을 맞춘다</b>(2026-11-23 소유자 — 「구성탭에서도 F를 눌러서 원하는 노드로 바로 화면이동이 되도록」 · [대본] 판의 F와 같은 손짓 ·
+    /// writer-comfort WC2). 에피소드 카드 · 분기 칩 · 빈 선택지 칸을 골랐으면 100%로 그것을 화면 가운데에, 길(간선)이면 그 두 카드가, 장면이면 그 장면의
+    /// 카드들이 들어오게(100%보다 키우지는 않는다), 챕터 · 프로젝트면 [화면 맞춤]과 같다. 고른 것이 없으면 거짓이다.
+    /// </summary>
+    internal bool FocusSelection()
+    {
+        if (GraphScroll.Viewport.Width <= 0 || GraphScroll.Viewport.Height <= 0)
+        {
+            return false;
+        }
+
+        Rect? CardRect(string? episodeId) =>
+            episodeId is not null && _placed.TryGetValue(episodeId, out (double X, double Y) at)
+                ? new Rect(at.X, at.Y, CardWidth, CardHeightOf(episodeId))
+                : null;
+
+        if (CardRect(_selectedEpisodeId) is { } card)
+        {
+            CenterAt(card.Center, zoom: 1);
+            return true;
+        }
+
+        if (_selectedBranchCardId is { } chipId && _chipPlaced.TryGetValue(chipId, out (double X, double Y) chip))
+        {
+            CenterAt(new Rect(chip.X, chip.Y, BranchChipWidth, BranchChipHeight).Center, zoom: 1);
+            return true;
+        }
+
+        if (_selectedSlot is { } slot && CardRect(slot.Episode) is { } slotCard)
+        {
+            CenterAt(slotCard.Center, zoom: 1);
+            return true;
+        }
+
+        if (_selectedEdgeKey is { } edge && CardRect(edge.From) is { } from && CardRect(edge.To) is { } to)
+        {
+            FitArea(from.Union(to));
+            return true;
+        }
+
+        if (_inspector == InspectorMode.Scene && InspectedScene(SelectedModel) is { } scene)
+        {
+            Rect? area = null;
+
+            foreach (ChapterEpisode episode in scene.Episodes)
+            {
+                if (CardRect(episode.EpisodeId) is { } rect)
+                {
+                    area = area is { } union ? union.Union(rect) : rect;
+                }
+            }
+
+            if (area is { } found)
+            {
+                FitArea(found);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (_inspector is InspectorMode.Chapter or InspectorMode.Project)
+        {
+            FitChapter();
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 그 배율로 판의 그 점(판 좌표)을 화면 가운데에. [구성] 판은 카드만 여백째 감싸서 끝의 카드는 스크롤만으로는 가운데에 못 온다 — 모자란 만큼 판을
+    /// 바탕 위에서 더 띄우거나(왼쪽 · 위) 판 바깥을 덧붙인다(오른쪽 · 아래 · <see cref="_sheetTrail"/> — 판을 넓힐 때와 같은 길 · usability UX22 · UX25).
+    /// </summary>
+    private void CenterAt(Point content, double zoom)
+    {
+        ApplyZoom(zoom, anchor: null);
+        Size viewport = GraphScroll.Viewport;
+        double wantX = (content.X * _zoom) + _sheetOffset.X - (viewport.Width / 2);
+        double wantY = (content.Y * _zoom) + _sheetOffset.Y - (viewport.Height / 2);
+
+        if (wantX < 0 || wantY < 0)
+        {
+            _sheetOffset = new Vector(_sheetOffset.X + Math.Max(0, -wantX), _sheetOffset.Y + Math.Max(0, -wantY));
+            wantX = Math.Max(0, wantX);
+            wantY = Math.Max(0, wantY);
+        }
+
+        _sheetTrail = new Vector(
+            Math.Max(_sheetTrail.X, wantX + viewport.Width - (_sheetOffset.X + (GraphCanvas.Width * _zoom))),
+            Math.Max(_sheetTrail.Y, wantY + viewport.Height - (_sheetOffset.Y + (GraphCanvas.Height * _zoom))));
+        ZoomHost.Margin = new Thickness(_sheetOffset.X, _sheetOffset.Y, _sheetTrail.X, _sheetTrail.Y);
+        GraphScroll.UpdateLayout();   // 넓어진 바깥을 알아야 스크롤이 거기까지 간다
+        GraphScroll.Offset = new Vector(wantX, wantY);
+    }
+
+    /// <summary>판의 그 넓이(판 좌표)가 여백째 화면에 들어오게 — 100%보다 키우지 않는다.</summary>
+    private void FitArea(Rect area)
+    {
+        Rect padded = area.Inflate(40);
+        double zoom = Math.Min(1.0, Math.Min(GraphScroll.Viewport.Width / padded.Width, GraphScroll.Viewport.Height / padded.Height));
+        CenterAt(padded.Center, zoom);
     }
 
     private void OnGraphPanPressed(object? sender, Avalonia.Input.PointerPressedEventArgs args)

@@ -6,4 +6,12 @@ namespace Vn.Authoring.Model;
 /// </summary>
 /// <param name="Name">대본에 적히는 화자명 그대로. Ordinal 정확 일치로 찾는다.</param>
 /// <param name="CharacterId">초상화 매니페스트의 캐릭터 키. 비어 있으면 초상화가 붙지 않는다(오류가 아니다).</param>
-public sealed record Speaker(string Name, string CharacterId);
+/// <param name="Color">
+/// 이름 색(작가용 — 2026-11-23 소유자 · writer-formatting WF-D15) — [대본] 카드 글 칸에서 이 화자의 이름이 이 색으로 보인다. 없으면 보통 글자색이다.
+/// 작가가 보기 위한 것이라 내보내기(대사 Yarn · 진행 JSON)는 읽지 않는다.
+/// </param>
+/// <param name="Fill">
+/// 이름 바탕색(작가용 — 2026-11-23 소유자 「캐릭터의 글자 바탕색도 조정할 수 있게」 · writer-formatting WF-D22) — [대본] 카드 글 칸에서 이 화자의 이름 뒤에 이
+/// 색이 깔린다. 없으면 바탕이 없다. 이름 색과 따로 정하고, 내보내기는 읽지 않는다.
+/// </param>
+public sealed record Speaker(string Name, string CharacterId, WriterRgb? Color = null, WriterRgb? Fill = null);

@@ -568,18 +568,30 @@ public partial class GraphEditorView : UserControl
         CommitDrag();
     }
 
-    /// <summary>서 있는 카드 글 칸이 모두 새 글꼴 · 크기 · 줄 간격을 입는다 — 판은 다시 짓지 않는다(writer-comfort WC5).</summary>
+    /// <summary>
+    /// 설정 「대본 글 칸」이 바뀌었다 — 서 있는 카드는 그대로다: 글꼴 · 크기 · 굵게 · 글자색 · 줄 간격 모두 카드마다 적힌 처음 값이다(writer-formatting
+    /// WF-D13 · WF-D16 · WF-D19 — ⛔ 그 전에는 모든 칸이 새 글꼴 · 크기를, WF-D19 전에는 새 줄 간격을 바로 입었다). 처음 값이 안 적힌 칸(프로젝트를 열기
+    /// 전에 선 칸)만 새 설정을 입는다.
+    /// </summary>
     private void ApplyScriptFont()
     {
-        foreach (TextBox box in _writingBoxes.Values)
+        foreach ((string nodeId, TextBox box) in _writingBoxes)
         {
-            ScriptFont.Apply(box);
+            ScriptFont.Apply(box, _session?.Project.FindDialogue(nodeId)?.WriterBase);
         }
     }
 
     public GraphEditorView()
     {
         InitializeComponent();
+        BuildFormatToolbar();
+
+        // 하이어아키에서 고른 줄이 여럿이 되거나 하나로 돌아오면 [삭제]를 맞춘다(여럿이면 끈다 · 2026-11-23).
+        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
+
+        // 하이어아키에서 줄을 누르면 서식 도구는 글 칸이 아니라 고른 줄들의 카드에 입힌다(WF-D21 — 같은 카드의 줄을 눌러도). 고른 줄이 바뀌면 모습을 맞춘다.
+        Hierarchy.Picked += _ => UiGuard.Run(_session, "서식 칸 놓기", ReleaseFormatTarget);
+        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, "서식 도구 맞추기", RefreshFormatToolbarLater);
 
         // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
@@ -668,6 +680,18 @@ public partial class GraphEditorView : UserControl
         session.SelectionChanged += (_, _) =>
             UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
 
+        // 다른 것을 고르면(하이어아키 · 다른 카드) 서식 도구 막대가 입힐 칸을 놓는다 — 고른 카드의 글 칸에 초점이 오면 다시 잡는다(writer-formatting).
+        session.SelectionChanged += (_, _) => UiGuard.Run(_session, "서식 칸 놓기", () =>
+        {
+            if (_formatNodeId is not null && !string.Equals(_session?.SelectedNodeId, _formatNodeId, StringComparison.Ordinal))
+            {
+                ReleaseFormatTarget();
+            }
+
+            // 글 칸이 아니라 카드를 골랐으면 도구 막대가 그 카드들에 입힌다(WF-D21) — 모습을 맞춘다.
+            RefreshFormatToolbarLater();
+        });
+
         // 카드를 고르면 고른 선은 놓는다 — 인스펙터는 그 카드를 보인다(셸이 선택을 보고 맞춘다).
         session.SelectionChanged += (_, _) => UiGuard.Run(_session, "선 놓기", () =>
         {
@@ -738,6 +762,11 @@ public partial class GraphEditorView : UserControl
     /// <summary>[삭제]를 고른 챕터 · 장면에 눌렀다 — 셸이 단추 옆에 확인 칸을 띄우고 지운다. 에피소드 · 분기 카드는 이 뷰가 지운다.</summary>
     internal event Action<HierarchyPick, Control>? RemoveRequested;
 
+    /// <summary>하이어아키에서 여러 줄을 골랐는가 — 그동안 [삭제] · Delete 키는 지우지 않는다.</summary>
+    private bool SeveralPicked => Hierarchy.Selections.Count > 1;
+
+    private const string SeveralPickedReason = "하이어아키에서 여러 개를 골랐습니다 — 지우려면 하나만 고르세요(여러 개를 한꺼번에 지우지는 않습니다).";
+
     /// <summary>[삭제]가 지울 것.</summary>
     private enum DeleteTarget
     {
@@ -802,6 +831,16 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private void RefreshDeleteButton()
     {
+        // 하이어아키에서 여러 줄을 골랐다 — [삭제]는 끈다(2026-11-23 소유자가 고른 답 「마지막 줄을 따르고 [삭제]는 끔」 — 한 줄만 지워져 헷갈리거나 여러 개가
+        //    한꺼번에 지워지는 실수를 막는다).
+        if (SeveralPicked)
+        {
+            DeleteButton.IsEnabled = false;
+            DeleteButton.Content = "삭제";
+            ToolTip.SetTip(DeleteButton, SeveralPickedReason);
+            return;
+        }
+
         DeleteTarget target = TargetToDelete();
         string? kept = KeptReason(target);
 
@@ -2478,6 +2517,12 @@ public partial class GraphEditorView : UserControl
             return node.NodeKind != GraphNodeKind.Dialogue;
         }
 
+        // 칸의 종류 — 서식 · 이름 색을 정한 화자가 생기거나 걷히면 칸을 바꿔야 한다(writer-formatting · 화자 이름 색 하나가 여러 카드를 바꾼다).
+        if ((box is WriterTextBox) != WantsWriterBox(node.NodeId))
+        {
+            return false;
+        }
+
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, node.NodeId);
 
         return Math.Abs(box.Height - WritingHeightFor(node.NodeId)) <= 0.01 &&
@@ -3378,6 +3423,12 @@ public partial class GraphEditorView : UserControl
         // 카드 폭 − 글이 놓이는 폭. 지금 글이 넘쳐 세로 스크롤 막대가 자리를 먹었으면 그 몫은 뺀다 — 맞춘 뒤에는 막대가 없다(빼지 않으면 다시
         // 누를 때마다 폭이 달라진다).
         double around = card.Visual.Bounds.Width - (presenter.Bounds.Width + (scroll.Bounds.Width - scroll.Viewport.Width));
+        // 서식(굵게 · 크기 · 글꼴)이 든 칸은 그 모양으로 잰 가장 긴 줄이다(writer-formatting).
+        if (box is WriterTextBox { Presenter: { Looks.Count: > 0 } writer })
+        {
+            longest = Math.Max(longest, writer.UnwrappedWidth());
+        }
+
         double width = Math.Clamp(Math.Ceiling(longest + around + FitSlack), CardWidth, MaxCardWidth);
 
         // 높이 — 그 폭에서 실제로 배치된 글의 높이(글 자리가 칸을 채워 늘어나므로 그 자리가 아니라 배치된 줄들의 높이) + 칸의 위아래 몫.
@@ -3989,29 +4040,42 @@ public partial class GraphEditorView : UserControl
         _writingShown[nodeId] = shown;
         _writingLayouts[nodeId] = layout;
 
-        var box = new TextBox
-        {
-            Text = shown,
-            AcceptsReturn = true,
-            TextWrapping = TextWrapping.Wrap,
-            Height = WritingHeightFor(nodeId),
-            Margin = new Thickness(0, WritingBoxGap, 0, 0),
-            Padding = new Thickness(4, 3),
-            PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄",
-            Tag = WritingTag + nodeId
-        };
+        // 서식이 든 카드만 서식을 그리는 글 칸(WriterTextBox)을 받는다 — 서식 없는 카드는 dev와 같은 보통 TextBox다(writer-formatting · 2026-11-22
+        // 소유자 보고: 윈도에서 Enter를 치면 칸이 맨 위로 스크롤됐다 — dev에는 없음). 서식이 생기거나 다 걷히면 그 카드를 다시 지어 칸을 바꾼다(UpdateLooks).
+        TextBox box = WantsWriterBox(nodeId) ? new WriterTextBox() : new TextBox();
+        box.Text = shown;
+        box.AcceptsReturn = true;
+        box.TextWrapping = TextWrapping.Wrap;
+        box.Height = WritingHeightFor(nodeId);
+        box.Margin = new Thickness(0, WritingBoxGap, 0, 0);
+        box.Padding = new Thickness(4, 3);
+        box.PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄";
+        box.Tag = WritingTag + nodeId;
         ScrollViewer.SetVerticalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
 
-        // 글꼴 · 글자 크기 · 줄 간격은 설정 창 「대본 글 칸」의 것(writer-comfort WC5 — ⛔ 그 전에는 11 · 줄 높이 15로 굳었다). 분기 점은 실제 글자
-        // 배치로 그 대사 높이를 재므로(MeasureLineAnchors) 어느 줄 간격에도 따라간다 — 줄 간격을 아주 좁히면 이웃 대사의 분기 점이 맞닿을 수 있다.
-        ScriptFont.Apply(box);
+        // 글꼴 · 글자 크기 · 줄 간격은 카드에 적힌 처음 값(카드를 만들 때의 설정 · writer-formatting WF-D13 · WF-D19 — ⛔ 그 전에는 11 · 줄 높이 15로
+        // 굳었고, 그 뒤 WC5부터 WF-D19 전까지 줄 간격은 설정 창의 것을 모든 칸이 따랐다). 분기 점은 실제 글자 배치로 그 대사 높이를 재므로
+        // (MeasureLineAnchors) 어느 줄 간격에도 따라간다.
+        ScriptFont.Apply(box, _session?.Project.FindDialogue(nodeId)?.WriterBase);
         _writingBoxes[nodeId] = box;
+        UpdateLooks(nodeId, box);
 
         box.GotFocus += (_, _) =>
         {
             if (!string.Equals(_session?.SelectedNodeId, nodeId, StringComparison.Ordinal))
             {
                 _session?.Select(nodeId);
+            }
+
+            // 서식 도구 막대가 입힐 칸이다(writer-formatting).
+            TrackFormatTarget(nodeId, box);
+        };
+
+        box.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == TextBox.SelectionStartProperty || args.Property == TextBox.SelectionEndProperty)
+            {
+                TrackFormatTarget(nodeId, box);
             }
         };
 
@@ -4044,6 +4108,9 @@ public partial class GraphEditorView : UserControl
                 _liveWriting.Stop();
                 _liveWriting.Start();
             }
+
+            // 서식은 쓰는 대로 같은 글자를 따라간다 — 넣을 때와 같은 셈으로 칸의 글에 다시 놓는다(writer-formatting).
+            UpdateLooks(nodeId, box);
         };
 
         box.KeyDown += (_, args) =>
@@ -4428,6 +4495,7 @@ public partial class GraphEditorView : UserControl
         _writingShown[nodeId] = layout.Text;
         _writingLayouts[nodeId] = layout;
         box.Text = layout.Text;
+        UpdateLooks(nodeId, box);   // 글이 그대로여도 서식은 되돌렸을 수 있다(writer-formatting)
 
         // 글이 바뀌었으면 꼭 맞던 카드도 더는 꼭 맞지 않을 수 있다 — 단추 그림을 다시 잰다(UX33).
         if (FindCard(nodeId) is { } card)
@@ -4447,6 +4515,9 @@ public partial class GraphEditorView : UserControl
         {
             WritingFocusSink.Focus();
         }
+
+        // 서식 도구 막대도 놓는다 — 입힐 글 칸이 없다(writer-formatting).
+        ReleaseFormatTarget();
 
         // 열린 선택지 문구 칸도 딴 데를 누르면 닫는다 — 빈 판 · 카드는 초점을 받지 않아 칸이 초점을 쥔 채 남는다.
         FinishSlotLater();
@@ -7274,6 +7345,12 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
+        if (SeveralPicked)
+        {
+            _session.SetStatus(SeveralPickedReason);
+            return;
+        }
+
         DeleteTarget target = TargetToDelete();
 
         // 단추는 그때 꺼져 있다 — 다시 그리기 전에 눌렸을 때를 위해 한 번 더 본다.
@@ -7328,6 +7405,13 @@ public partial class GraphEditorView : UserControl
     /// <returns>지웠으면 참 — 셸이 키를 처리한 것으로 적는다.</returns>
     internal bool DeleteSelectedCard()
     {
+        // 하이어아키에서 여러 줄을 골랐으면 Delete 키도 지우지 않는다 — 키는 받고 까닭을 말한다.
+        if (SeveralPicked && _session is not null)
+        {
+            _session.SetStatus(SeveralPickedReason);
+            return true;
+        }
+
         DeleteTarget target = TargetToDelete();
 
         // 챕터의 마지막 에피소드는 남는다 — 키는 받되 까닭을 말한다(2026-11-18 · ChapterMinimum).
