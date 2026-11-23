@@ -363,7 +363,8 @@ public sealed class ChapterReachabilityTests
     /// ⚠ 어느 간선도 이 깃발들을 <b>안 읽는다</b>. 그래서 도달 가능 집합에는 아무 영향이
     /// 없는데 상태공간만 부푼다 — 이것이 벡터 축소 제안이 겨냥하는 바로 그 모양이다.
     /// </summary>
-    private static ChapterGraphModel FlagChain(int flags)
+    /// <param name="loopAtEnd">마지막 에피소드에 제자리로 오는 길 하나(나갈 길이 없는 고리)를 건다.</param>
+    private static ChapterGraphModel FlagChain(int flags, bool loopAtEnd = false)
     {
         var stats = new List<ChapterStat>();
         var episodes = new List<ChapterEpisode>();
@@ -391,9 +392,122 @@ public sealed class ChapterReachabilityTests
             edges.Add(new ChapterEdge(from, to, "안 켠다", null, null));
         }
 
+        if (loopAtEnd)
+        {
+            edges.Add(new ChapterEdge($"ep{flags:00}", $"ep{flags:00}", "또", null, null));
+        }
+
         return new ChapterGraphModel(
             "flags", "flags", episodes, edges, [], stats,
             Array.Empty<ChapterFixture>(), Array.Empty<ChapterDiagnostic>());
+    }
+
+    // ── 나갈 길이 없는 고리 (2026-11-23) ────────────────────────────────────
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 「장면 진입점 에피소드에다가, 장면 진입점이 아닌 에피소드 연결이 가능한데 이거 그러면 무한히 뺑뺑이 도는거야?」 →
+    /// 「네 검증 보고에 그 경고만 넣어주십시오」(<see cref="ChapterDiagnosticCode.LoopWithoutExit"/>). 「다시 묻는다」처럼 되돌아가는 길이 있어도 나가는
+    /// 선택지가 있으면 말하지 않는다.
+    /// </summary>
+    [Fact]
+    public void 되돌아가는_고리도_나갈_길이_있으면_경고하지_않는다()
+    {
+        ChapterGraphModel chapter = Chapter(
+            episodes: [Episode("ep1"), Episode("ep2"), Episode("ep3")],
+            edges: [("ep1", "ep2", null, 0), ("ep2", "ep1", null, 0), ("ep2", "ep3", null, 0)],
+            conditions: []);
+
+        ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
+
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public void 나갈_길이_없는_고리는_시작에서_가장_가까운_에피소드에_경고한다()
+    {
+        // ep1 → ep2 ↔ ep3 — 들어가면 끝이 없다. 고리 밖의 ep1은 고리에 들지 않는다.
+        ChapterGraphModel chapter = Chapter(
+            episodes: [Episode("ep1"), Episode("ep2"), Episode("ep3")],
+            edges: [("ep1", "ep2", null, 0), ("ep2", "ep3", null, 0), ("ep3", "ep2", null, 0)],
+            conditions: []);
+
+        ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
+
+        ChapterDiagnostic loop = Assert.Single(result.Diagnostics);
+        Assert.Equal((ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.LoopWithoutExit, "ep2"), (loop.Severity, loop.Code, loop.EpisodeId));
+        Assert.Contains("나갈 길이 없는 고리입니다 — 'ep2' · 'ep3'에 들어오면 어떤 선택지를 골라도", loop.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("ep1", loop.Message, StringComparison.Ordinal);
+        Assert.False(result.HasErrors);   // 경고다 — 내보내기를 막지 않는다
+    }
+
+    [Fact]
+    public void 스탯에_따라서만_갇히는_고리는_그렇게_말한다()
+    {
+        // 고리 밖으로 가는 길은 trust >= 3일 때만 열리고 고리는 trust를 주지 않는다 — +5로 들어오면 나가고, 그냥 들어오면 갇힌다.
+        ChapterGraphModel chapter = Chapter(
+            episodes: [Episode("ep0"), Episode("ep1"), Episode("ep2"), Episode("ep3")],
+            edges: [("ep0", "ep1", null, 0), ("ep0", "ep1", null, 5), ("ep1", "ep2", null, 0), ("ep2", "ep1", null, 0), ("ep2", "ep3", "신뢰높음", 0)],
+            conditions: [("신뢰높음", "trust >= 3")]);
+
+        ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
+
+        ChapterDiagnostic loop = Assert.Single(result.Diagnostics);
+        Assert.Equal((ChapterDiagnosticCode.LoopWithoutExit, "ep1"), (loop.Code, loop.EpisodeId));
+        Assert.Contains("'ep1' · 'ep2'에 들어오면 스탯에 따라서는 어떤 선택지를 골라도", loop.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void 스탯이_쌓이면_열리는_길이_있는_고리는_경고하지_않는다()
+    {
+        // 고리가 한 바퀴마다 trust +1 — 언젠가 나가는 길이 열린다(위 「스탯이_쌓이면_열리는_관문은_도달_가능하다」와 같은 모양).
+        ChapterGraphModel chapter = Chapter(
+            episodes: [Episode("ep1"), Episode("ep2"), Episode("ep3")],
+            edges: [("ep1", "ep2", null, 1), ("ep2", "ep1", null, 0), ("ep2", "ep3", "신뢰높음", 0)],
+            conditions: [("신뢰높음", "trust >= 3")]);
+
+        Assert.DoesNotContain(ChapterReachabilityProver.Prove(chapter).Diagnostics, item => item.Code == ChapterDiagnosticCode.LoopWithoutExit);
+    }
+
+    [Fact]
+    public void 고를_수_있는_길이_없으면_챕터가_끝나므로_고리가_아니다()
+    {
+        // 되돌아가는 길이 잠기는 순간 고를 것이 없다 — 게임은 거기서 챕터를 끝낸다(코어 ChapterTransition.Resolve).
+        ChapterGraphModel chapter = Chapter(
+            episodes: [Episode("ep1"), Episode("ep2")],
+            edges: [("ep1", "ep2", "아직", 1), ("ep2", "ep1", "아직", 1)],
+            conditions: [("아직", "trust < 3")]);
+
+        Assert.DoesNotContain(ChapterReachabilityProver.Prove(chapter).Diagnostics, item => item.Code == ChapterDiagnosticCode.LoopWithoutExit);
+    }
+
+    [Fact]
+    public void 자동_길만으로_된_고리는_묻지_않고_돈다고_말한다()
+    {
+        ChapterEdge Auto(string from, string to) => new(from, to, null, null, null) { Auto = true };
+        var chapter = new ChapterGraphModel(
+            "test", "test",
+            [Episode("ep1"), Episode("ep2"), Episode("ep3"), Episode("끝")],
+            [new ChapterEdge("ep1", "ep2", "간다", null, null), new ChapterEdge("ep1", "끝", "그만", null, null), Auto("ep2", "ep3"), Auto("ep3", "ep2")],
+            [], [new ChapterStat("trust", Initial: 0, Minimum: 0, Maximum: 10)],
+            Array.Empty<ChapterFixture>(), Array.Empty<ChapterDiagnostic>());
+
+        ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
+
+        ChapterDiagnostic loop = Assert.Single(result.Diagnostics);
+        Assert.Equal((ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.LoopWithoutExit, "ep2"), (loop.Severity, loop.Code, loop.EpisodeId));
+        Assert.StartsWith("자동 길만으로 된 고리입니다 — ep2 → ep3 → ep2를 묻지 않고 끝없이 돌아", loop.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void 탐색이_상한에서_멈추면_고리를_단정하지_않는다()
+    {
+        // 깃발 20개 — 상한을 넘는다. 마지막 에피소드에 제자리 고리를 걸어도 말하지 않는다(다 걷지 못했다).
+        ChapterGraphModel chapter = FlagChain(20, loopAtEnd: true);
+
+        ChapterReachabilityResult result = ChapterReachabilityProver.Prove(chapter);
+
+        Assert.False(result.ExplorationComplete);
+        Assert.DoesNotContain(result.Diagnostics, item => item.Code == ChapterDiagnosticCode.LoopWithoutExit);
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

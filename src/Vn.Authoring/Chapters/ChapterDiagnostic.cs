@@ -113,7 +113,14 @@ public enum ChapterDiagnosticCode
     /// 그 챕터의 대사에 나오는 화자에게 <b>캐릭터 키가 없다</b> — 그 화자의 대사에는 초상화 · 표정이 붙지 않는다. 경고다 — 내보내기를 막지
     /// 않는다(<see cref="ChapterSpeakerKeys"/> · 2026-11-18 writer-comfort WC6).
     /// </summary>
-    SpeakerCharacterKeyMissing
+    SpeakerCharacterKeyMissing,
+
+    /// <summary>
+    /// <b>나갈 길이 없는 고리</b> — 들어오면 어떤 선택지를 골라도 그 안만 돌아 챕터를 끝낼 수 없다(자동 길만으로 된 고리는 묻지도 않고 끝없이
+    /// 돈다). 경고다 — 내보내기를 막지 않는다(2026-11-23 소유자 — 「네 검증 보고에 그 경고만 넣어주십시오」 · 도달성 증명이 걸은 (에피소드, 스탯)
+    /// 상태에서 잰다 — <see cref="ChapterReachabilityProver"/>). 고를 수 있는 선택지가 없는 자리는 게임이 챕터를 끝내므로 막다른 곳은 여기 들지 않는다.
+    /// </summary>
+    LoopWithoutExit
 }
 
 /// <summary>

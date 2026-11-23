@@ -102,7 +102,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `ChapterDiagnostic.cs` | 진단 하나 — 심각도 · 코드 · 자리(`Sheet`) · 대상 에피소드(`EpisodeId`) · 메시지 |
 | `ChapterStructureCheck.cs` · `ChapterAutoEdgeCheck.cs` · `ChapterSceneEntryCheck.cs` | **모델 검사** — 값의 흠(빈 · 겹친 Id, 끝점, 관문 라벨, 문구, 스탯 어휘, 자동 길 규칙, 장면 진입점) |
 | `ChapterValidator.cs` | 모델 검사 + **판과 맞대는 검사**(재생할 줄이 있나) + 도달성 증명을 한 벌로 |
-| `ChapterReachabilityProver.cs` | (에피소드, 스탯 벡터) 상태공간을 끝까지 걸어 "닿을 수 있는가"를 증명. 도착 스탯 폭도 걷는 김에 적는다 |
+| `ChapterReachabilityProver.cs` | (에피소드, 스탯 벡터) 상태공간을 끝까지 걸어 "닿을 수 있는가"를 증명. 도착 스탯 폭도 걷는 김에 적는다. 걸음도 적어 두고 끝으로 갈 길이 없는 상태가 도는 고리를 경고한다(나갈 길이 없는 고리 · 자동 길만의 고리 — `LoopWithoutExit`) |
 | `ChapterProgressionExporter.cs` | 진행 JSON. 낸 것을 `Ked.Progression.ProgressionLoader`에 다시 실어 보고 거부 사유를 에피소드 · 간선으로 옮긴다(`CoreRefusals`) |
 | `ChapterExportService.cs` | 검증 캐시(지문 = 챕터 모델 + 판의 노드 이름) · 전 챕터 자동 내보내기(`exported/`만) · 거부 장부 |
 | `ExportDelivery.cs` | 저장할 때 `exported/`를 형식마다 보낼 곳으로 비춘다 — 보낸 기록으로 이 툴이 보낸 그대로인 지난 파일만 걷는다 |

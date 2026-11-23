@@ -122,10 +122,12 @@ public static class ChapterReachabilityProver
         // 한 번만 걷는다. 조건이 참조하는 것은 스탯뿐이고, 스탯은 걷는 도중에 정해지므로
         // 두 번째 바퀴가 새로 찾을 것이 없다.
         int visited;
-        (reachable, complete, visited) = Explore(chapter, start, maxSeen, minSeen, spans);
+        StateGraph walked;
+        (reachable, complete, visited, walked) = Explore(chapter, start, maxSeen, minSeen, spans);
 
         ReportIncompleteExploration(chapter, complete, visited, diagnostics);
         ReportUnreachable(chapter, reachable, ConnectedFromStart(chapter, start), maxSeen, minSeen, complete, diagnostics);
+        ReportLoopsWithoutExit(chapter, walked, complete, diagnostics);
 
         return new ChapterReachabilityResult(
             reachable, diagnostics, complete, BuildSpans(chapter, spans), visited);
@@ -168,7 +170,24 @@ public static class ChapterReachabilityProver
 
     // ── 탐색 ────────────────────────────────────────────────────────────────
 
-    private static (HashSet<string> Reachable, bool Complete, int Visited) Explore(
+    /// <summary>
+    /// 걸은 상태(에피소드, 스탯 벡터)와 그 사이의 걸음 — 상태 번호는 걸은 차례다(시작이 0 · 너비 우선이라 시작에서 가까운 것이 앞). 나갈 길이 없는
+    /// 고리를 찾는다(<see cref="ReportLoopsWithoutExit"/>).
+    /// </summary>
+    private sealed class StateGraph
+    {
+        public readonly List<string> Episode = [];
+        public readonly List<List<(int To, bool Auto)>> Next = [];
+
+        public int Add(string episodeId)
+        {
+            Episode.Add(episodeId);
+            Next.Add([]);
+            return Episode.Count - 1;
+        }
+    }
+
+    private static (HashSet<string> Reachable, bool Complete, int Visited, StateGraph Walked) Explore(
         ChapterGraphModel chapter,
         ChapterEpisode start,
         int[] maxSeen,
@@ -176,8 +195,9 @@ public static class ChapterReachabilityProver
         Dictionary<string, (int[] Min, int[] Max)> spans)
     {
         var reachable = new HashSet<string>(StringComparer.Ordinal) { start.EpisodeId };
-        var visited = new HashSet<string>(StringComparer.Ordinal);
-        var queue = new Queue<(string EpisodeId, int[] Stats)>();
+        var visited = new Dictionary<string, int>(StringComparer.Ordinal);
+        var queue = new Queue<(int State, string EpisodeId, int[] Stats)>();
+        var walked = new StateGraph();
 
         // 출발지별 간선 목록을 <b>한 번</b> 만든다. 상태를 하나 꺼낼 때마다 `chapter.Edges`
         //    전체를 문자열 비교로 훑으면 상태 25만 × 간선 수만큼의 비교가 된다.
@@ -196,8 +216,9 @@ public static class ChapterReachabilityProver
         }
 
         int[] initial = chapter.Stats.Select(stat => stat.Initial).ToArray();
-        queue.Enqueue((start.EpisodeId, initial));
-        visited.Add(StateKey(start.EpisodeId, initial));
+        int first = walked.Add(start.EpisodeId);
+        queue.Enqueue((first, start.EpisodeId, initial));
+        visited.Add(StateKey(start.EpisodeId, initial), first);
         Observe(initial, maxSeen, minSeen);
         ObserveAt(start.EpisodeId, initial, spans);
 
@@ -205,10 +226,10 @@ public static class ChapterReachabilityProver
         {
             if (visited.Count > StateLimit)
             {
-                return (reachable, false, visited.Count);
+                return (reachable, false, visited.Count, walked);
             }
 
-            (string episodeId, int[] stats) = queue.Dequeue();
+            (int state, string episodeId, int[] stats) = queue.Dequeue();
 
             foreach (ChapterEdge edge in
                      outgoing.TryGetValue(episodeId, out List<ChapterEdge>? edges) ? edges : [])
@@ -236,14 +257,253 @@ public static class ChapterReachabilityProver
                 reachable.Add(target.EpisodeId);
                 string key = StateKey(target.EpisodeId, next);
 
-                if (visited.Add(key))
+                if (!visited.TryGetValue(key, out int to))
                 {
-                    queue.Enqueue((target.EpisodeId, next));
+                    to = walked.Add(target.EpisodeId);
+                    visited.Add(key, to);
+                    queue.Enqueue((to, target.EpisodeId, next));
+                }
+
+                walked.Next[state].Add((to, edge.Auto));
+            }
+        }
+
+        return (reachable, true, visited.Count, walked);
+    }
+
+    /// <summary>
+    /// <b>나갈 길이 없는 고리</b>를 경고한다(2026-11-23 소유자 — 「장면 진입점 에피소드에다가, 장면 진입점이 아닌 에피소드 연결이 가능한데 이거 그러면
+    /// 무한히 뺑뺑이 도는거야? 게임상으로?」 → 「네 검증 보고에 그 경고만 넣어주십시오」 · <see cref="ChapterDiagnosticCode.LoopWithoutExit"/>).
+    ///
+    /// 게임은 고를 수 있는 길이 없는 자리에서 챕터를 끝낸다(코어 <c>ChapterTransition.Resolve</c> — 잠긴 것만 남아도 끝) — 증명이 지나갈 수 있는 간선만
+    /// 걸었으므로 <b>걸음이 없는 상태가 끝</b>이다. 끝으로 가는 걸음이 하나도 없는 상태가 갇힌 상태이고, 그 상태들이 도는 고리(강한 연결 요소)를 에피소드가
+    /// 겹치는 것끼리 묶어 하나씩 말한다 — 시작에서 가장 가까운 에피소드에 붙인다. 고리를 도는 것 자체는 괜찮다(「다시 묻는다」 · 스탯이 차면 열리는 길) —
+    /// 나갈 길이 <b>아예</b> 없을 때만이다. 스탯에 따라서만 갇히면 그렇게 말한다. 자동 길만으로 된 고리는 묻지도 않고 돌므로 따로 말한다.
+    /// 다 걷지 못했으면(상한) 단정하지 않는다 — 말하지 않는다.
+    /// </summary>
+    private static void ReportLoopsWithoutExit(
+        ChapterGraphModel chapter,
+        StateGraph walked,
+        bool complete,
+        List<ChapterDiagnostic> diagnostics)
+    {
+        if (!complete)
+        {
+            return;
+        }
+
+        int count = walked.Episode.Count;
+        var canEnd = new bool[count];
+        var before = new List<int>?[count];
+        var ending = new Queue<int>();
+
+        for (int state = 0; state < count; state++)
+        {
+            if (walked.Next[state].Count == 0)
+            {
+                canEnd[state] = true;
+                ending.Enqueue(state);
+            }
+
+            foreach ((int to, _) in walked.Next[state])
+            {
+                (before[to] ??= []).Add(state);
+            }
+        }
+
+        while (ending.TryDequeue(out int state))
+        {
+            foreach (int from in before[state] ?? [])
+            {
+                if (!canEnd[from])
+                {
+                    canEnd[from] = true;
+                    ending.Enqueue(from);
                 }
             }
         }
 
-        return (reachable, true, visited.Count);
+        if (Array.TrueForAll(canEnd, value => value))
+        {
+            return;
+        }
+
+        // 에피소드마다 — 걸은 상태가 모두 갇혔는가(스탯과 상관없이 갇힌다).
+        var alwaysTrapped = new Dictionary<string, bool>(StringComparer.Ordinal);
+
+        for (int state = 0; state < count; state++)
+        {
+            alwaysTrapped[walked.Episode[state]] = alwaysTrapped.GetValueOrDefault(walked.Episode[state], true) && !canEnd[state];
+        }
+
+        // 갇힌 고리들 — 에피소드가 겹치면 한 묶음.
+        var groups = new List<(HashSet<string> Episodes, List<int> States)>();
+
+        foreach (List<int> loop in TrappedLoops(walked, canEnd))
+        {
+            var episodes = loop.Select(state => walked.Episode[state]).ToHashSet(StringComparer.Ordinal);
+            var merged = (Episodes: episodes, States: loop);
+
+            for (int index = groups.Count - 1; index >= 0; index--)
+            {
+                if (groups[index].Episodes.Overlaps(merged.Episodes))
+                {
+                    merged.Episodes.UnionWith(groups[index].Episodes);
+                    merged.States.AddRange(groups[index].States);
+                    groups.RemoveAt(index);
+                }
+            }
+
+            groups.Add(merged);
+        }
+
+        foreach ((HashSet<string> episodes, List<int> states) in groups.OrderBy(group => group.States.Min()))
+        {
+            int anchor = states.Min();
+            var inGroup = states.ToHashSet();
+
+            // 자동 길만 — 고리의 상태마다 걸음이 자동 길 하나뿐이다.
+            bool autoOnly = states.All(state => walked.Next[state].All(step => step.Auto));
+
+            string where;
+
+            if (autoOnly)
+            {
+                // 자동 길은 하나뿐이라 시작에서 가장 가까운 자리부터 따라가면 고리가 그대로 나온다.
+                var path = new List<string> { walked.Episode[anchor] };
+                var seen = new HashSet<int> { anchor };
+                bool closed = false;
+                int at = anchor;
+
+                while (walked.Next[at] is [var step] && inGroup.Contains(step.To) && path.Count <= 8)
+                {
+                    path.Add(walked.Episode[step.To]);
+
+                    if (!seen.Add(step.To))
+                    {
+                        closed = true;
+                        break;
+                    }
+
+                    at = step.To;
+                }
+
+                where = string.Join(" → ", path) + (closed ? string.Empty : " → …");
+                diagnostics.Add(new ChapterDiagnostic(
+                    ChapterDiagnosticSeverity.Warning,
+                    ChapterDiagnosticCode.LoopWithoutExit,
+                    chapter.SourcePath,
+                    ChapterSheetNames.Edges,
+                    walked.Episode[anchor],
+                    $"자동 길만으로 된 고리입니다 — {where}{Vn.Authoring.Text.Josa.을를(closed ? path[^1] : "…")} 묻지 않고 끝없이 돌아 챕터가 끝나지 않습니다. 고리 안의 카드 하나에 " +
+                    "선택지 문구를 적고 고리 밖으로 가는 길을 더하세요."));
+                continue;
+            }
+
+            List<string> ordered = episodes
+                .OrderBy(episode => states.Where(state => walked.Episode[state] == episode).Min())
+                .ToList();
+            where = string.Join(" · ", ordered.Take(8).Select(episode => $"'{episode}'")) + (ordered.Count > 8 ? $" 외 {ordered.Count - 8}개" : string.Empty);
+            bool always = ordered.All(episode => alwaysTrapped[episode]);
+
+            diagnostics.Add(new ChapterDiagnostic(
+                ChapterDiagnosticSeverity.Warning,
+                ChapterDiagnosticCode.LoopWithoutExit,
+                chapter.SourcePath,
+                ChapterSheetNames.Edges,
+                walked.Episode[anchor],
+                $"나갈 길이 없는 고리입니다 — {where}에 들어오면{(always ? string.Empty : " 스탯에 따라서는")} 어떤 선택지를 골라도 그 안만 돌아 챕터를 끝낼 수 " +
+                "없습니다. 고리 밖으로 가는 선택지를 더하거나, 이미 있으면 그 선택지의 표시조건 · 해금조건이 열리는지 보세요."));
+        }
+    }
+
+    /// <summary>
+    /// 갇힌 상태들이 도는 고리 — 갇힌 상태끼리의 강한 연결 요소 가운데 실제로 도는 것(둘 이상이거나 제자리로 오는 것). 갇힌 상태의 걸음은 모두 갇힌
+    /// 상태로 가므로 그 안에서만 본다. 되풀이(재귀) 없이 — 상태가 25만 개까지다.
+    /// </summary>
+    private static List<List<int>> TrappedLoops(StateGraph walked, bool[] canEnd)
+    {
+        int count = walked.Episode.Count;
+        var order = new int[count];
+        var low = new int[count];
+        var onStack = new bool[count];
+        Array.Fill(order, -1);
+        var stack = new Stack<int>();
+        var loops = new List<List<int>>();
+        int counter = 0;
+
+        for (int root = 0; root < count; root++)
+        {
+            if (canEnd[root] || order[root] >= 0)
+            {
+                continue;
+            }
+
+            var work = new Stack<(int State, int Step)>();
+            work.Push((root, 0));
+            order[root] = low[root] = counter++;
+            stack.Push(root);
+            onStack[root] = true;
+
+            while (work.Count > 0)
+            {
+                (int state, int step) = work.Pop();
+                List<(int To, bool Auto)> next = walked.Next[state];
+
+                if (step < next.Count)
+                {
+                    work.Push((state, step + 1));
+                    int to = next[step].To;
+
+                    if (canEnd[to])
+                    {
+                        continue;
+                    }
+
+                    if (order[to] < 0)
+                    {
+                        order[to] = low[to] = counter++;
+                        stack.Push(to);
+                        onStack[to] = true;
+                        work.Push((to, 0));
+                    }
+                    else if (onStack[to])
+                    {
+                        low[state] = Math.Min(low[state], order[to]);
+                    }
+
+                    continue;
+                }
+
+                if (work.TryPeek(out (int State, int Step) parent))
+                {
+                    low[parent.State] = Math.Min(low[parent.State], low[state]);
+                }
+
+                if (low[state] != order[state])
+                {
+                    continue;
+                }
+
+                var component = new List<int>();
+                int popped;
+
+                do
+                {
+                    popped = stack.Pop();
+                    onStack[popped] = false;
+                    component.Add(popped);
+                }
+                while (popped != state);
+
+                if (component.Count > 1 || next.Any(step2 => step2.To == state))
+                {
+                    loops.Add(component);
+                }
+            }
+        }
+
+        return loops;
     }
 
     /// <summary>
