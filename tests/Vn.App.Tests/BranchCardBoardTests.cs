@@ -127,7 +127,8 @@ public sealed class BranchCardBoardTests : IDisposable
         StoryHierarchy chapter = window.FindControl<ChapterGraphView>("ChapterGraph")!.HierarchyView;
         string key = StoryHierarchy.BranchKey("ch01", branch.Id);
 
-        foreach (StoryHierarchy tree in new[] { director, chapter })
+        // [대본]은 제목, [구성]은 「ID로 보기」(처음 켜짐)라 ID(= Yarn 노드 이름)로 선다(2026-11-23 — 에피소드 줄과 같다 · ChapterIdViewTests).
+        foreach ((StoryHierarchy tree, string text) in new[] { (director, $"⑂ {EpisodeNaming.BranchTitleOf(branch)}"), (chapter, $"⑂ {branch.Name}") })
         {
             tree.Show(new HierarchyPick(HierarchyKind.Episode, "ch01", EpisodeId: "root"));   // 그 길을 편다
             Dispatcher.UIThread.RunJobs();
@@ -135,7 +136,7 @@ public sealed class BranchCardBoardTests : IDisposable
             List<HierarchyRow> rows = tree.Rows.ToList();
             int root = rows.FindIndex(row => row.Kind == HierarchyKind.Episode && row.EpisodeId == "root");
             HierarchyRow row = rows[root + 1];
-            Assert.Equal((HierarchyKind.Branch, key, $"⑂ {EpisodeNaming.BranchTitleOf(branch)}"), (row.Kind, row.Key, row.Text));
+            Assert.Equal((HierarchyKind.Branch, key, text), (row.Kind, row.Key, row.Text));
             Assert.Equal(rows[root].Depth + 1, row.Depth);
         }
 

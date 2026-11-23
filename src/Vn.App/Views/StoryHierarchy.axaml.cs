@@ -609,26 +609,30 @@ public partial class StoryHierarchy : UserControl
 
     /// <summary>
     /// 그 에피소드가 부르는 분기 카드들 — 에피소드 밑에 「⑂ 이름」 줄로, 대본 차례로(2026-11-17 소유자 — 두 탭 같다). 에피소드 줄은 접지
-    /// 않으므로 늘 보인다. 분기 카드가 부르는 분기 카드도 같은 집이라 같은 자리에 선다.
+    /// 않으므로 늘 보인다. 분기 카드가 부르는 분기 카드도 같은 집이라 같은 자리에 선다. 이름은 에피소드 줄과 같은 규칙이다 — [대본] 탭은 제목,
+    /// [구성] 탭(「ID로 보기」)은 분기 카드 ID(= Yarn 노드 이름 · <c>DialogueNode.Name</c>)에 곁글로 제목(2026-11-23 소유자 — 「구성탭에서 분기 노드의
+    /// 경우 하이어아키에서 ID로 보기 체크여부랑 상관없이 항상 DisplayName으로만 표기가 되네요」 · ⛔ 그 전에는 두 탭 모두 늘 제목이었다).
     /// </summary>
-    private static void AddBranches(List<HierarchyRow> rows, ChapterEntry chapter, ChapterScene scene, ChapterEpisode episode, int depth)
+    private void AddBranches(List<HierarchyRow> rows, ChapterEntry chapter, ChapterScene scene, ChapterEpisode episode, int depth)
     {
         foreach (BranchCardHome home in chapter.BranchCards.Where(home =>
                      string.Equals(home.EpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
         {
+            string title = EpisodeNaming.BranchTitleOf(home.Card);
+
             rows.Add(new HierarchyRow(
                 HierarchyKind.Branch,
                 BranchKey(chapter.ChapterId, home.Card.Id),
                 chapter.ChapterId,
                 scene.SceneId,
                 episode.EpisodeId,
-                "⑂ " + EpisodeNaming.BranchTitleOf(home.Card),
-                Detail: null,
+                "⑂ " + (ShowEpisodeTitles ? title : home.Card.Name),
+                Detail: ShowEpisodeTitles ? null : NameBeside(home.Card.Name, home.Card.Title),
                 depth,
                 IsSceneRoot: false,
                 HasWarning: false,
                 NodeId: home.Card.Id,
-                Find: Findable(EpisodeNaming.BranchTitleOf(home.Card), home.Card.Id)));
+                Find: Findable(home.Card.Name, title, home.Card.Id)));
         }
     }
 

@@ -4,6 +4,8 @@ using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
+using Vn.Authoring.Chapters;
+using Vn.Authoring.Model;
 
 namespace Vn.App.Tests;
 
@@ -75,6 +77,50 @@ public sealed class ChapterIdViewTests : IDisposable
         finally
         {
             session.SetShowIds(true);   // 같은 프로세스의 다른 시험이 처음 상태로 보게
+            window.Close();
+        }
+    });
+
+    [Fact]
+    public void 분기_카드_줄도_ID로_보기를_따른다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-23 소유자 — 「구성탭에서 분기 노드의 경우 하이어아키에서 ID로 보기 체크여부랑 상관없이 항상 DisplayName으로만 표기가 되네요」.
+        // 에피소드 줄과 같다 — 켜면 「⑂ ID」(= Yarn 노드 이름)에 곁글로 제목, 끄면 「⑂ 제목」.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
+
+        try
+        {
+            ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+            CheckBox check = view.FindControl<CheckBox>("ShowIdsCheck")!;
+            DialogueNode root = EpisodeNaming.CardFor(session.Project, "ch01", "root")!;
+            DialogueNode branch = session.Editor.AddBranchMarker(root.Id, root.Script.ActiveLines.First().Id);
+            session.Editor.SetBranchCardTitle(branch.Id, "교무실 회상");
+            view.HierarchyView.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+            view.HierarchyView.Fold(StoryHierarchy.SceneKey("ch01", "opening"), collapse: false);
+            view.SelectChapter("ch01");
+            view.Refresh();
+            Dispatcher.UIThread.RunJobs();
+
+            string key = StoryHierarchy.BranchKey("ch01", branch.Id);
+            HierarchyRow Row() => view.HierarchyView.Rows.Single(row => row.Key == key);
+            Assert.NotEqual("교무실 회상", branch.Name);
+
+            Assert.True(check.IsChecked);
+            Assert.Equal(($"⑂ {branch.Name}", "교무실 회상"), (Row().Text, Row().Detail));
+
+            check.IsChecked = false;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(("⑂ 교무실 회상", null), (Row().Text, Row().Detail));
+
+            // 제목이 없으면 ID만 — 곁글이 없다.
+            check.IsChecked = true;
+            session.Editor.SetBranchCardTitle(branch.Id, null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(($"⑂ {branch.Name}", null), (Row().Text, Row().Detail));
+        }
+        finally
+        {
+            session.SetShowIds(true);
             window.Close();
         }
     });
