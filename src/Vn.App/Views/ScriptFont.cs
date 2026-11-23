@@ -67,6 +67,45 @@ internal static class ScriptFont
 
     private static double LineHeightOf(double size, int lineSpacing) => Math.Round(size * lineSpacing / 100.0, 1);
 
+    /// <summary>
+    /// 그 카드에서 가장 좁은 줄 간격(%) — 이보다 좁으면 줄 높이가 그 글꼴의 가장 낮은 줄 높이(<see cref="MinLineHeight"/>)에서 멈춰 숫자만 내려가고 화면은
+    /// 그대로다. 서식 도구 · 설정의 줄 간격은 여기서 멈춘다(2026-11-23 소유자 — 「줄 사이 간격을 일정 수준 이하로 줄일 떄는, 숫자만 내려가고 동작 변화가 없는데」 →
+    /// 「숫자가 최소값에서 멈추게 해주십시오」 · writer-formatting WF-D23). 처음 값이 안 적힌 카드는 지금 설정의 글꼴 · 크기 · 굵게로 잰다.
+    /// </summary>
+    internal static int MinLineSpacingOf(WriterBase? card) =>
+        card is null
+            ? MinLineSpacingFor(Family, Size, Bold)
+            : MinLineSpacingFor(card.Font, Math.Clamp(Math.Round(card.Size), MinSize, MaxSize), card.Bold);
+
+    /// <summary>그 글꼴 · 크기 · 굵게에서 가장 좁은 줄 간격(%) — 그 %의 줄 높이가 가장 낮은 줄 높이 이상인 가장 작은 정수(설정의 범위 안).</summary>
+    internal static int MinLineSpacingFor(string family, double size, bool bold)
+    {
+        if (!double.IsFinite(size) || size <= 0)
+        {
+            return MinLineSpacing;
+        }
+
+        // 칸이 입는 것과 같은 글꼴로 잰다(Apply) — 이 PC에 없는 글꼴은 기본 글꼴이다(InstalledFonts · WF-D17).
+        var typeface = new Typeface(
+            InstalledFonts.Named(family) is { } installed ? new FontFamily(installed) : FontFamily.Default,
+            FontStyle.Normal,
+            bold ? FontWeight.Bold : FontWeight.Normal);
+        double lowest = MinLineHeight(typeface, size);
+        int percent = Math.Max(MinLineSpacing, (int)Math.Ceiling((lowest * 100 / size) - 1e-9));
+
+        // 줄 높이는 0.1 단위로 반올림한다 — 모자라면 한 칸 더.
+        while (percent < MaxLineSpacing && LineHeightOf(size, percent) < lowest)
+        {
+            percent++;
+        }
+
+        return Math.Min(percent, MaxLineSpacing);
+    }
+
+    /// <summary>카드의 줄 간격(%) — 보이는 값: 적힌 값(안 적힌 카드는 지금 설정)을 설정의 범위와 그 카드에서 가장 좁은 값(<see cref="MinLineSpacingOf"/>)으로 당긴다.</summary>
+    internal static int ShownLineSpacing(WriterBase? card) =>
+        Math.Clamp(Math.Max(card?.LineSpacing ?? LineSpacing, MinLineSpacingOf(card)), MinLineSpacing, MaxLineSpacing);
+
     /// <summary>글 칸의 줄 높이 — 줄 간격의 높이와 <see cref="MinLineHeight"/> 가운데 큰 쪽(WF-D19).</summary>
     internal static double LineHeightFor(Typeface typeface, double size, int lineSpacing) =>
         Math.Max(LineHeightOf(size, lineSpacing), MinLineHeight(typeface, size));

@@ -128,7 +128,7 @@ internal sealed class SettingsWindow : Window
         };
         ToolTip.SetTip(ScriptLineSpacingBox,
             "새로 만드는 카드의 줄 간격입니다 — 글자 크기에 대한 %(160이면 워드 프로세서의 「줄 간격 160%」). 이미 있는 카드는 그대로입니다(카드의 줄 간격은 " +
-            "[대본] 위쪽 서식 도구로 바꿉니다). 그 글꼴의 한글 한 줄 높이보다 좁게는 되지 않습니다.");
+            "[대본] 위쪽 서식 도구로 바꿉니다). 고른 글꼴 · 크기에서 가장 좁은 값(한글 한 줄 높이)에서 멈춥니다 — 더 좁히면 숫자만 내려가고 화면은 그대로라서.");
         ToolTip.SetTip(ScriptFontCombo, "새로 만드는 카드의 글꼴입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 글꼴은 [대본] 위쪽 서식 도구로 바꿉니다).");
         ToolTip.SetTip(ScriptFontSizeBox, "새로 만드는 카드의 글자 크기입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 크기는 [대본] 위쪽 서식 도구로 바꿉니다).");
         ScriptPreview = new TextBox
@@ -816,7 +816,10 @@ internal sealed class SettingsWindow : Window
         {
             ScriptFontCombo.SelectedItem = ScriptFont.Family.Length == 0 ? DefaultFontName : ScriptFont.Family;
             ScriptFontSizeBox.Value = (decimal)ScriptFont.Size;
-            ScriptLineSpacingBox.Value = ScriptFont.LineSpacing;
+            // 줄 간격은 그 글꼴 · 크기 · 굵게에서 가장 좁은 값에서 멈춘다 — 그보다 좁으면 숫자만 내려가고 미리 보기 · 카드는 그대로다(WF-D23).
+            int narrowest = ScriptFont.MinLineSpacingFor(ScriptFont.Family, ScriptFont.Size, ScriptFont.Bold);
+            ScriptLineSpacingBox.Minimum = narrowest;
+            ScriptLineSpacingBox.Value = Math.Max(ScriptFont.LineSpacing, narrowest);
             ScriptBoldCheck.IsChecked = ScriptFont.Bold;
             _scriptColorSwatch.Background = ScriptFont.Color is { } color ? WriterPalette.Brush(color) : Brushes.Transparent;
             _scriptColorText.Text = ScriptFont.Color?.Hex ?? "기본";

@@ -143,7 +143,7 @@ public sealed class HierarchyMultiSelectTests : IDisposable
         Press(window, tree, StoryHierarchy.EpisodeKey("ch01", "a"));
         Assert.True(Bar(graph, "굵게").IsEnabled);
         Assert.Equal("11", graph.FormatToolbarState.Size);
-        Assert.Equal("140%", graph.FormatLineSpacingText);
+        Assert.Equal($"{ScriptFont.ShownLineSpacing(session.Project.FindDialogue(a)!.WriterBase)}%", graph.FormatLineSpacingText);
 
         // 에피소드 b와 챕터 ch02(x · y)를 더한다 — 카드 넷.
         Press(window, tree, StoryHierarchy.EpisodeKey("ch01", "b"), RawInputModifiers.Control);

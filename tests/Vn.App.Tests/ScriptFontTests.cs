@@ -48,7 +48,10 @@ public sealed class ScriptFontTests : IDisposable
         Assert.Equal(SettingsWindow.DefaultFontName, settings.ScriptFontCombo.Items[0]);
         Assert.Equal(11m, settings.ScriptFontSizeBox.Value);
         Assert.Equal(48m, settings.ScriptFontSizeBox.Maximum);   // 2026-11-23 소유자 — 28에서 올렸다
-        Assert.Equal(140m, settings.ScriptLineSpacingBox.Value);
+        // 줄 간격 칸은 그 글꼴 · 크기에서 가장 좁은 값에서 멈춘다(WF-D23) — 기본 140 %가 그보다 좁은 PC(리눅스 Noto CJK)에서는 그 값으로 보인다.
+        int narrowest = ScriptFont.MinLineSpacingFor(string.Empty, 11, bold: false);
+        Assert.Equal((decimal)narrowest, settings.ScriptLineSpacingBox.Minimum);
+        Assert.Equal((decimal)Math.Max(140, narrowest), settings.ScriptLineSpacingBox.Value);
         settings.Close();
         window.Close();
     });
@@ -105,7 +108,7 @@ public sealed class ScriptFontTests : IDisposable
             Assert.False(WritingBox(window, session).IsSet(TextBox.FontFamilyProperty));
             fresh = WritingBox(window, session, "z");
             Assert.Equal((16d, Expected(fresh, 180), font), (fresh.FontSize, fresh.LineHeight, fresh.FontFamily.Name));
-            Assert.Equal((SettingsWindow.DefaultFontName, 11m, 140m),
+            Assert.Equal((SettingsWindow.DefaultFontName, 11m, (decimal)Math.Max(140, ScriptFont.MinLineSpacingFor(string.Empty, 11, bold: false))),
                 (settings.ScriptFontCombo.SelectedItem, settings.ScriptFontSizeBox.Value, settings.ScriptLineSpacingBox.Value));
             Assert.Equal((string.Empty, 11d, 140), AppSettingsService.LoadScriptFont());
 

@@ -432,8 +432,9 @@ public sealed class WriterFormattingTests
         GraphEditorView graph = Graph(window);
         DialogueNode other = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, "다른", name: "다른");
         Dispatcher.UIThread.RunJobs();
-        int start = session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing!.Value;   // 만들 때의 설정
-        Assert.Equal(ScriptFont.LineSpacing, start);
+        int stored = session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing!.Value;   // 만들 때의 설정
+        Assert.Equal(ScriptFont.LineSpacing, stored);
+        int start = ScriptFont.ShownLineSpacing(session.Project.FindDialogue(card.Id)!.WriterBase);   // 보이는 값 — 그 글꼴에서 가장 좁은 값 아래로는 안 간다(WF-D23)
         double otherHeight = Box(window, other.Id).LineHeight;
         Assert.Equal($"{start}%", graph.FormatLineSpacingText);   // 카드를 골랐다 — 글 칸을 누르지 않아도 그 카드다(WF-D21)
 
@@ -453,7 +454,7 @@ public sealed class WriterFormattingTests
         Assert.Equal($"{start + 20}%", graph.FormatLineSpacingText);
         Assert.True(box.IsFocused);
         Assert.Equal(otherHeight, Box(window, other.Id).LineHeight);
-        Assert.Equal(start, session.Project.FindDialogue(other.Id)!.WriterBase!.LineSpacing);
+        Assert.Equal(stored, session.Project.FindDialogue(other.Id)!.WriterBase!.LineSpacing);
 
         // 되돌리기 — 한 칸씩.
         session.Editor.Undo();
@@ -462,7 +463,7 @@ public sealed class WriterFormattingTests
         Assert.Equal($"{start + 10}%", graph.FormatLineSpacingText);
         session.Editor.Undo();
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(start, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Equal(stored, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
 
         // 끝에서 멈춘다 — 되돌리기 칸도 쌓이지 않는다.
         session.Editor.SetWriterLineSpacing(card.Id, ScriptFont.MaxLineSpacing);
@@ -472,7 +473,52 @@ public sealed class WriterFormattingTests
         Click(window, "줄 간격 넓게");
         Assert.Equal(ScriptFont.MaxLineSpacing, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
         session.Editor.Undo();
-        Assert.Equal(start, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Equal(stored, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        window.Close();
+    });
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 「줄 사이 간격을 일정 수준 이하로 줄일 떄는, 숫자만 내려가고 동작 변화가 없는데」 → 「숫자가 최소값에서 멈추게 해주십시오」
+    /// (writer-formatting WF-D23). 그 카드의 글꼴 · 크기에서 가장 좁은 값(그 %의 줄 높이가 그 글꼴의 가장 낮은 줄 높이 이상인 가장 작은 정수)에서 −도 숫자도
+    /// 멈추고 상태줄이 말한다. 그 아래로 적힌 옛 값도 그 값으로 보인다. 그 값의 한 칸 아래는 화면이 같다 — 멈추는 자리가 맞다.
+    /// </summary>
+    [Fact]
+    public void 줄_간격은_그_글꼴에서_가장_좁은_값에서_멈춘다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
+        GraphEditorView graph = Graph(window);
+        WriterBase basis = session.Project.FindDialogue(card.Id)!.WriterBase!;
+        int narrowest = ScriptFont.MinLineSpacingOf(basis);
+        Assert.InRange(narrowest, ScriptFont.MinLineSpacing + 1, ScriptFont.MaxLineSpacing);   // 한글 한 줄은 100 %보다 높다
+
+        // 멈추는 자리가 맞다 — 그 값에서 줄 높이가 바뀌기 시작한다.
+        TextBox box = Box(window, card.Id);
+        var typeface = new Typeface(box.FontFamily, box.FontStyle, box.FontWeight);
+        Assert.Equal(ScriptFont.LineHeightFor(typeface, box.FontSize, narrowest - 1), ScriptFont.LineHeightFor(typeface, box.FontSize, ScriptFont.MinLineSpacing));
+        Assert.True(ScriptFont.LineHeightFor(typeface, box.FontSize, narrowest + 1) > ScriptFont.LineHeightFor(typeface, box.FontSize, narrowest - 1));
+
+        // 그 아래로 적힌 옛 값은 그 값으로 보인다.
+        session.Editor.SetWriterLineSpacing(card.Id, ScriptFont.MinLineSpacing);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal($"{narrowest}%", graph.FormatLineSpacingText);
+
+        // − 는 거기서 멈추고 말한다 — 적힌 값은 보이는 값으로 맞춰진다.
+        box = Box(window, card.Id);
+        box.Focus();
+        box.SelectionStart = box.SelectionEnd = 2;
+        Dispatcher.UIThread.RunJobs();
+        Click(window, "줄 간격 좁게");
+        Assert.Equal(narrowest, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Contains($"{narrowest}%가 가장 좁습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // 위로 한 칸 뒤 다시 −는 그 값으로. 숫자로 더 좁게 적어도 그 값이다.
+        Click(window, "줄 간격 넓게");
+        Click(window, "줄 간격 좁게");
+        Assert.Equal(narrowest, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Type(window, graph.FormatValueEntries.LineSpacing!, "100");
+        Assert.Equal(narrowest, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Equal($"{narrowest}%", graph.FormatLineSpacingText);
+        Assert.Contains("가장 좁습니다", session.StatusMessage, StringComparison.Ordinal);
         window.Close();
     });
 
