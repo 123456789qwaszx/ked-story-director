@@ -45,8 +45,11 @@ public partial class GraphEditorView
 
     /// <summary>글꼴 고르기의 목록 — 이 PC에 없는 글꼴이 서식에 들어 있으면(같이 쓰는 사람이 고른 것) 그 이름도 더해 보인다.</summary>
     private List<string> _fontItems = new();
-    private TextBlock? _sizeText;
-    private TextBlock? _lineSpacingText;
+    /// <summary>크기 칸 — 고른 글자의 크기를 보이고, 숫자를 적어 Enter면 그 크기로(WF-D20).</summary>
+    private TextBox? _sizeEntry;
+
+    /// <summary>줄 간격 칸 — 카드의 줄 간격(%)을 보이고, 숫자를 적어 Enter면 그 값으로(WF-D20).</summary>
+    private TextBox? _lineSpacingEntry;
 
     /// <summary>서식 도구의 줄 간격 한 칸(%) — −/+ 한 번에.</summary>
     private const int LineSpacingStep = 10;
@@ -389,15 +392,12 @@ public partial class GraphEditorView
         bar.Children.Add(_fontBox);
 
         bar.Children.Add(FormatButton("−", "글자 작게 — 고른 글자를 1pt 줄입니다", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: -1))));
-        _sizeText = new TextBlock
-        {
-            MinWidth = 22,
-            FontSize = 11,
-            TextAlignment = TextAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            [ToolTip.TipProperty] = "고른 글자의 크기(pt) — 이 카드의 처음 크기에 더한 값입니다. 크기가 섞였으면 비어 있습니다."
-        };
-        bar.Children.Add(_sizeText);
+        _sizeEntry = ValueEntry(
+            36,
+            "고른 글자의 크기(pt) — 숫자를 적고 Enter면 고른 글자가 모두 그 크기가 됩니다(Esc는 그만두기). 이 카드의 처음 크기에 더한 차로 적히고, " +
+            "크기가 섞였으면 비어 있습니다.",
+            ApplyTypedSize);
+        bar.Children.Add(_sizeEntry);
         bar.Children.Add(FormatButton("+", "글자 크게 — 고른 글자를 1pt 키웁니다", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: 1))));
         bar.Children.Add(Separator());
 
@@ -439,16 +439,12 @@ public partial class GraphEditorView
         bar.Children.Add(Separator());
         bar.Children.Add(LineSpacingIcon());
         bar.Children.Add(FormatButton("−", "줄 간격 좁게 — 이 카드의 글 전체를 10%씩", () => ApplyLineSpacing(-LineSpacingStep)));
-        _lineSpacingText = new TextBlock
-        {
-            MinWidth = 34,
-            FontSize = 11,
-            TextAlignment = TextAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            [ToolTip.TipProperty] = "이 카드의 줄 간격 — 글자 크기에 대한 %. 처음 값은 카드를 만들 때 설정 「대본 글 칸」의 줄 간격입니다. " +
-                                    "그 글꼴의 한글 한 줄 높이보다 좁게는 되지 않습니다(더 작은 값은 그 높이로 보입니다)."
-        };
-        bar.Children.Add(_lineSpacingText);
+        _lineSpacingEntry = ValueEntry(
+            48,
+            "이 카드의 줄 간격 — 글자 크기에 대한 %. 숫자를 적고 Enter면 그 값이 됩니다(100 ~ 250 · Esc는 그만두기). 처음 값은 카드를 만들 때 설정 " +
+            "「대본 글 칸」의 줄 간격입니다. 그 글꼴의 한글 한 줄 높이보다 좁게는 되지 않습니다(더 작은 값은 그 높이로 보입니다).",
+            ApplyTypedLineSpacing);
+        bar.Children.Add(_lineSpacingEntry);
         bar.Children.Add(FormatButton("+", "줄 간격 넓게 — 이 카드의 글 전체를 10%씩", () => ApplyLineSpacing(LineSpacingStep)));
 
         _formatControls.Add(_fontBox);
@@ -482,6 +478,130 @@ public partial class GraphEditorView
             Height = 12,
             Margin = new Thickness(0, 2)
         };
+    }
+
+    /// <summary>
+    /// 값을 적는 칸(크기 · 줄 간격 · WF-D20 — 2026-11-23 소유자 「정확히 텍스트 입력을 해서 특정값으로 변경하는 것도 필요하겠습니다」). 누르면 칸의 고른 범위를
+    /// 붙든 채 초점을 받고 글이 모두 골라진다. Enter면 <paramref name="commit"/>이 적은 글을 받아 입히고 칸으로 초점을 돌려준다. Esc나 다른 데를 누르면 적던
+    /// 것은 버리고 지금 값을 다시 보인다.
+    /// </summary>
+    private TextBox ValueEntry(double width, string tip, Action<string> commit)
+    {
+        var entry = new TextBox
+        {
+            Width = width,
+            MinWidth = 0,
+            FontSize = 11,
+            Padding = new Thickness(4, 2),
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            AcceptsReturn = false,
+            [ToolTip.TipProperty] = tip
+        };
+
+        entry.GotFocus += (_, _) => Dispatcher.UIThread.Post(entry.SelectAll, DispatcherPriority.Background);
+        entry.AddHandler(KeyDownEvent, (_, args) =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = true;
+                string typed = entry.Text ?? string.Empty;
+                UiGuard.Run(_session, "서식 값", () => commit(typed));
+                RefreshFormatToolbar();
+                RestoreFormatFocus();
+            }
+            else if (args.Key == Key.Escape)
+            {
+                args.Handled = true;
+                RefreshFormatToolbar();
+                RestoreFormatFocus();
+            }
+        }, RoutingStrategies.Tunnel);
+
+        // 다른 데로 갔다 — 적던 것은 버리고, 칸에 돌아가지 않았으면 붙든 범위를 놓는다(초점이 옮겨 간 뒤에 본다).
+        entry.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "서식 값", () =>
+        {
+            if (entry.IsFocused)
+            {
+                return;
+            }
+
+            RefreshFormatToolbar();
+
+            if (!FormatToolOpen && FormatTarget() is not { Box.IsFocused: true })
+            {
+                ReleaseFormatSelection();
+            }
+        }), DispatcherPriority.Background);
+
+        _formatControls.Add(entry);
+        return entry;
+    }
+
+    /// <summary>적은 글에서 숫자 하나 — 「12」 · 「12pt」 · 「150%」 · 「12.5」(반올림). 숫자가 아니면 null.</summary>
+    internal static int? TypedNumber(string typed)
+    {
+        string text = typed.Trim().TrimEnd('%').Trim();
+
+        if (text.EndsWith("pt", StringComparison.OrdinalIgnoreCase))
+        {
+            text = text[..^2].Trim();
+        }
+
+        return double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double value) &&
+               double.IsFinite(value) && Math.Abs(value) < 100000
+            ? (int)Math.Round(value)
+            : null;
+    }
+
+    /// <summary>크기 칸에 적은 값 — 고른 글자 모두를 그 크기(pt)로. 서식의 크기 차는 카드의 처음 크기에 대한 차라 그 차로 바꾸고, 끝(처음 크기 −6 ~ +36)으로 당긴다.</summary>
+    private void ApplyTypedSize(string typed)
+    {
+        if (FormatTarget() is not { } target || _session is not { } session)
+        {
+            return;
+        }
+
+        if (TypedNumber(typed) is not { } points)
+        {
+            session.SetStatus($"「{typed.Trim()}」는 크기가 아닙니다 — 숫자(pt)를 적으세요.");
+            return;
+        }
+
+        int cardSize = (int)Math.Round(target.Box.FontSize);
+        int grow = Math.Clamp(points - cardSize, WriterMarkMath.MinGrow, WriterMarkMath.MaxGrow);
+
+        if (cardSize + grow != points)
+        {
+            session.SetStatus($"이 카드의 글자 크기는 {cardSize + WriterMarkMath.MinGrow} ~ {cardSize + WriterMarkMath.MaxGrow}pt입니다 — {cardSize + grow}pt로 맞췄습니다.");
+        }
+
+        ApplyFormat(new WriterStyleChange(WriterStyleKind.Size, Step: grow));
+    }
+
+    /// <summary>줄 간격 칸에 적은 값 — 그 카드의 줄 간격(%)을 그 값으로, 설정과 같은 범위(100 ~ 250%)로 당긴다.</summary>
+    private void ApplyTypedLineSpacing(string typed)
+    {
+        if (FormatTarget() is not { } target || _session is not { } session)
+        {
+            return;
+        }
+
+        if (TypedNumber(typed) is not { } percent)
+        {
+            session.SetStatus($"「{typed.Trim()}」는 줄 간격이 아닙니다 — 숫자(%)를 적으세요.");
+            return;
+        }
+
+        int next = Math.Clamp(percent, ScriptFont.MinLineSpacing, ScriptFont.MaxLineSpacing);
+
+        if (next != percent)
+        {
+            session.SetStatus($"줄 간격은 {ScriptFont.MinLineSpacing} ~ {ScriptFont.MaxLineSpacing}%입니다 — {next}%로 맞췄습니다.");
+        }
+
+        session.Editor.SetWriterLineSpacing(target.NodeId, next);
     }
 
     /// <summary>줄 간격 그림 — 세 줄과 그 왼쪽의 위아래 화살표(문서 도구의 그 그림).</summary>
@@ -794,7 +914,8 @@ public partial class GraphEditorView
     private void RestoreFormatFocusLater() => Dispatcher.UIThread.Post(RestoreFormatFocus, DispatcherPriority.Background);
 
     /// <summary>초점을 가져가는 도구가 열려 있는가.</summary>
-    private bool FormatToolOpen => _fontBox?.IsDropDownOpen == true || _formatFlyouts.Exists(flyout => flyout.IsOpen);
+    private bool FormatToolOpen =>
+        _fontBox?.IsDropDownOpen == true || _formatFlyouts.Exists(flyout => flyout.IsOpen) || _sizeEntry?.IsFocused == true || _lineSpacingEntry?.IsFocused == true;
 
     /// <summary>도구 막대를 누른다 — 입힐 칸이 초점을 쥐고 있으면 그 고른 범위를 붙든다(<see cref="_selectionHold"/>).</summary>
     private void HoldFormatSelection()
@@ -864,7 +985,11 @@ public partial class GraphEditorView
 
             List<int> grows = chosen.Select(look => look.Grow).Distinct().ToList();
             double cardSize = target?.Box.FontSize ?? ScriptFont.Size;   // 그 카드의 처음 크기(칸이 입고 있다)
-            _sizeText!.Text = target is null ? string.Empty : grows.Count == 1 ? $"{cardSize + grows[0]:0}" : chosen.Count == 0 ? $"{cardSize:0}" : string.Empty;
+            // 적는 중인 칸은 건드리지 않는다(그사이 다른 알림이 와도 적던 글이 지워지지 않게).
+            if (!_sizeEntry!.IsFocused)
+            {
+                _sizeEntry.Text = target is null ? string.Empty : grows.Count == 1 ? $"{cardSize + grows[0]:0}" : chosen.Count == 0 ? $"{cardSize:0}" : string.Empty;
+            }
 
             List<string?> fonts = chosen.Select(look => look.Font).Distinct().ToList();
 
@@ -884,7 +1009,10 @@ public partial class GraphEditorView
                 button.IsChecked = target is not null && key == align;
             }
 
-            _lineSpacingText!.Text = card is null ? string.Empty : $"{CardLineSpacing(card)}%";
+            if (!_lineSpacingEntry!.IsFocused)
+            {
+                _lineSpacingEntry.Text = card is null ? string.Empty : $"{CardLineSpacing(card)}%";
+            }
         }
         finally
         {
@@ -893,9 +1021,12 @@ public partial class GraphEditorView
     }
 
     /// <summary>시험이 본다 — 도구 막대의 줄 간격 글(「140%」 · 입힐 칸이 없으면 빈 글).</summary>
-    internal string? FormatLineSpacingText => _lineSpacingText?.Text;
+    internal string? FormatLineSpacingText => _lineSpacingEntry?.Text;
+
+    /// <summary>시험이 쓴다 — 도구 막대의 크기 칸 · 줄 간격 칸.</summary>
+    internal (TextBox? Size, TextBox? LineSpacing) FormatValueEntries => (_sizeEntry, _lineSpacingEntry);
 
     /// <summary>시험이 본다 — 도구 막대의 단추 상태(굵게 · 기울임 · 취소선 · 크기 글).</summary>
     internal (bool? Bold, bool? Italic, bool? Strike, string? Size, string? Font) FormatToolbarState =>
-        (_boldButton?.IsChecked, _italicButton?.IsChecked, _strikeButton?.IsChecked, _sizeText?.Text, _fontBox?.SelectedItem as string);
+        (_boldButton?.IsChecked, _italicButton?.IsChecked, _strikeButton?.IsChecked, _sizeEntry?.Text, _fontBox?.SelectedItem as string);
 }

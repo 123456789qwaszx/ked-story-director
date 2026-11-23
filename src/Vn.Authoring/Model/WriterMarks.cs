@@ -130,7 +130,13 @@ public enum WriterStyleKind
     Font,
 
     /// <summary>크기 — 글자마다 <see cref="WriterStyleChange.Step"/>만큼 키우거나 줄인다.</summary>
-    Grow
+    Grow,
+
+    /// <summary>
+    /// 크기를 정한 값으로 — 고른 글자 모두의 크기 차를 <see cref="WriterStyleChange.Step"/>으로 맞춘다(카드의 처음 크기에 대한 차 · 끝으로 당긴다). 도구 막대의
+    /// 크기 칸에 숫자를 적어 넣을 때다(2026-11-23 소유자 — 「정확히 텍스트 입력을 해서 특정값으로 변경하는 것도 필요하겠습니다」 · WF-D20).
+    /// </summary>
+    Size
 }
 
 public sealed record WriterStyleChange(WriterStyleKind Kind, WriterRgb? Color = null, string? Font = null, int Step = 0)
@@ -427,6 +433,7 @@ public static class WriterMarkMath
         WriterStyleKind.Fill => look with { Fill = change.Color },
         WriterStyleKind.Font => look with { Font = string.IsNullOrWhiteSpace(change.Font) ? null : change.Font.Trim() },
         WriterStyleKind.Grow => look with { Grow = Math.Clamp(look.Grow + change.Step, MinGrow, MaxGrow) },
+        WriterStyleKind.Size => look with { Grow = Math.Clamp(change.Step, MinGrow, MaxGrow) },
         _ => look
     };
 

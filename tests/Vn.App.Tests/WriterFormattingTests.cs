@@ -476,6 +476,80 @@ public sealed class WriterFormattingTests
         window.Close();
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「현재는 글자서식에서 글자 크기와 줄을 +, -로 밖에 조절 못하는데 정확히 텍스트 입력을 해서 특정값으로 변경하는 것도 필요하겠습니다」
+    /// (writer-formatting WF-D20). 크기 칸 · 줄 간격 칸을 마우스로 눌러 숫자를 적고 Enter — 고른 글자가 그 크기가, 카드가 그 줄 간격이 된다. 칸은 고른 범위를
+    /// 지킨 채 초점을 되찾는다. Esc · 숫자가 아닌 글은 아무것도 바꾸지 않고, 범위 밖은 끝으로 당기며 상태줄이 말한다.
+    /// </summary>
+    [Fact]
+    public void 크기와_줄_간격을_숫자로_적어_입힌다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
+        GraphEditorView graph = Graph(window);
+        (TextBox size, TextBox spacing) = (graph.FormatValueEntries.Size!, graph.FormatValueEntries.LineSpacing!);
+        TextBox box = Box(window, card.Id);
+        double cardSize = box.FontSize;
+
+        // 크기 — 「긴 하루」를 20pt로.
+        Select(box, "긴 하루");
+        Type(window, size, "20");
+        Assert.Equal([new WriterSpan(4, 4, new WriterLook(Grow: 20 - (int)cardSize))], session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]]);
+        box = Box(window, card.Id);
+        Assert.True(box.IsFocused);
+        Assert.Equal((8, 12), (box.SelectionStart, box.SelectionEnd));
+        Assert.Equal("20", graph.FormatToolbarState.Size);
+
+        // 범위 밖 — 끝으로 당기고 말한다. 숫자가 아니면 그대로다.
+        Type(window, size, "200");
+        Assert.Equal(WriterMarkMath.MaxGrow, session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]].Single().Look.Grow);
+        Assert.Contains("맞췄습니다", session.StatusMessage, StringComparison.Ordinal);
+        Type(window, Graph(window).FormatValueEntries.Size!, "크게");
+        Assert.Contains("크기가 아닙니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Equal(WriterMarkMath.MaxGrow, session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]].Single().Look.Grow);
+        Assert.Equal($"{cardSize + WriterMarkMath.MaxGrow:0}", graph.FormatToolbarState.Size);   // 적은 글은 버리고 지금 값
+
+        // Esc — 그만둔다.
+        Type(window, size, "12", Key.Escape);
+        Assert.Equal(WriterMarkMath.MaxGrow, session.Project.FindDialogue(card.Id)!.WriterMarks[ids[0]].Single().Look.Grow);
+
+        // 줄 간격 — 「175%」 · 「175」 모두. 범위 밖은 끝으로.
+        Type(window, spacing, "175%");
+        Assert.Equal(175, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Equal("175%", graph.FormatLineSpacingText);
+        Type(window, spacing, "300");
+        Assert.Equal(ScriptFont.MaxLineSpacing, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.True(Box(window, card.Id).IsFocused);
+
+        // 되돌리기 — 한 번에 한 칸.
+        session.Editor.Undo();
+        Assert.Equal(175, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        window.Close();
+    });
+
+    [Theory]
+    [InlineData("12", 12)]
+    [InlineData(" 150% ", 150)]
+    [InlineData("12pt", 12)]
+    [InlineData("12.6", 13)]
+    [InlineData("크게", null)]
+    [InlineData("", null)]
+    public void 적은_글에서_숫자를_읽는다(string typed, int? expected) => Assert.Equal(expected, GraphEditorView.TypedNumber(typed));
+
+    /// <summary>도구 막대의 값 칸을 마우스로 눌러(칸의 고른 범위를 붙든다) 글을 적고 그 키를 누른다.</summary>
+    private static void Type(MainWindow window, TextBox entry, string text, Key key = Key.Enter)
+    {
+        Point center = entry.TranslatePoint(new Point(entry.Bounds.Width / 2, entry.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(entry.IsFocused);
+        entry.Text = text;
+        Dispatcher.UIThread.RunJobs();
+        window.KeyPress(key, RawInputModifiers.None, key == Key.Enter ? PhysicalKey.Enter : PhysicalKey.Escape, null);
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+    }
+
     private static void TextPresenterWidths(TextBox box, out double width) =>
         width = ((WriterTextBox)box).Presenter!.TextLayout.WidthIncludingTrailingWhitespace;
 

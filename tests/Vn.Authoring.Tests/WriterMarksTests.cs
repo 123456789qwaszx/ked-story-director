@@ -152,6 +152,32 @@ public sealed class WriterMarksTests
         Assert.Equal(WriterMarkMath.MaxGrow, Marks(editor, card)[ids[0]][0].Look.Grow);
     }
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「정확히 텍스트 입력을 해서 특정값으로 변경하는 것도 필요하겠습니다」(WF-D20). 크기 차가 섞인 글자들도 한 번에 그 값이 된다 — 다른
+    /// 모양은 그대로, 끝으로 당기고, 0이면 크기 차가 걷힌다. 되돌리기 한 칸이다.
+    /// </summary>
+    [Fact]
+    public void 크기를_정한_값으로_맞추면_섞인_크기가_그_값이_되고_끝으로_당긴다()
+    {
+        (ProjectEditor editor, DialogueNode card, string[] ids) = Stage("하린: 오늘은 긴 하루였어");
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 2)], new WriterStyleChange(WriterStyleKind.Grow, Step: 2));
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 2, 2)], WriterStyleChange.Toggle(WriterStyleKind.Bold));
+
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 4)], new WriterStyleChange(WriterStyleKind.Size, Step: 5));
+        Assert.Equal(
+            [new WriterSpan(0, 2, new WriterLook(Grow: 5)), new WriterSpan(2, 2, new WriterLook(Bold: true, Grow: 5))],
+            Marks(editor, card)[ids[0]]);
+
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 4)], new WriterStyleChange(WriterStyleKind.Size, Step: 500));
+        Assert.All(Marks(editor, card)[ids[0]], span => Assert.Equal(WriterMarkMath.MaxGrow, span.Look.Grow));
+
+        editor.ApplyWriterStyle(card.Id, [new WriterRange(ids[0], 0, 4)], new WriterStyleChange(WriterStyleKind.Size, Step: 0));
+        Assert.Equal([new WriterSpan(2, 2, new WriterLook(Bold: true))], Marks(editor, card)[ids[0]]);
+
+        editor.Undo();
+        Assert.All(Marks(editor, card)[ids[0]], span => Assert.Equal(WriterMarkMath.MaxGrow, span.Look.Grow));
+    }
+
     [Fact]
     public void 글_칸에서_고쳐도_곁기둥에서_고쳐도_서식이_같은_글자를_따라간다()
     {
