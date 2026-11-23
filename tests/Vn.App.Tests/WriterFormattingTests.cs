@@ -557,12 +557,14 @@ public sealed class WriterFormattingTests
         box = Assert.IsType<WriterTextBox>(Box(window, card.Id));
         var typeface = new Typeface(box.FontFamily, box.FontStyle, box.FontWeight);
         double[] after = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
-        Assert.Equal(OwnHeight(box.Presenter.TextLayout.TextLines[0]), after[0], 1);   // 화자 이름이 든 줄 — 그 줄 글자들의 자연 높이에서 멈춘다
+        double wanted = ScriptFont.LineHeightOf(box.FontSize, spacing);
+        // 줄마다 받침대(카드 글꼴 · 카드의 줄 간격 그대로의 높이)에 그 줄의 글자 조각을 겹친 높이다(OnStrut). 화자 이름이 든 첫 줄은 처음 크기 글자가
+        // 받침대보다 커서 그 글자 쪽에서 멈추고(리눅스 · Windows는 그 글자들의 자연 높이 그대로 · 맥은 받침대가 윗몫이나 아랫몫 한쪽을 더 덮어 자연 높이
+        // 13.2보다 높은 13.54), 줄인 글자만 든 둘째 · 셋째 줄은 받침대 높이다. ⛔ 2026-11-23 CI — 첫 줄을 「그 줄 글자들의 자연 높이」로 쟀더니 맥에서만
+        // 어긋났다.
+        Assert.Equal(OnStrut(box.Presenter.TextLayout.TextLines[0], typeface, wanted), after[0], 1);
         Assert.True(after[0] <= before[0] + 0.05);
-        // 줄인 글자만 든 줄 — 받침대(카드 글꼴 · 카드의 줄 간격 그대로의 높이)에 그 줄의 글자 조각을 겹친 높이다. 받침대 글꼴(Inter)은 줄 사이 몫이 0이라 한글
-        // 대체 글꼴에 줄 사이 몫이 있으면 그만큼 높다 — 맥에서 13.2 → 13.54(리눅스 · Windows는 줄 간격 그대로). ⛔ 2026-11-23 CI — 「줄 간격 그대로」로
-        // 쟀더니 맥에서만 어긋났다(같은 일을 리눅스에서 줄 사이 몫이 있는 한글 글꼴 WenQuanYi Zen Hei로 재현했다 — 7pt에서 13.2 → 13.83).
-        Assert.Equal(OnStrut(box.Presenter.TextLayout.TextLines[1], typeface, ScriptFont.LineHeightOf(box.FontSize, spacing)), after[1], 1);
+        Assert.Equal(OnStrut(box.Presenter.TextLayout.TextLines[1], typeface, wanted), after[1], 1);
         Assert.Equal(after[1], after[2], 2);
         // 또렷이 낮아졌다 — 10%는 11pt에서 1.1px이지만 줄 높이를 0.1 단위로 반올림해 1.0px일 수 있다(Windows 135 → 125%: 14.8 → 13.8 · ⛔ 「1px 넘게」는
         // 리눅스에서만 통과했다 — 2026-11-23 CI).
@@ -577,7 +579,7 @@ public sealed class WriterFormattingTests
         Assert.Equal("최소 줄 간격입니다.", session.StatusMessage);
         box = Assert.IsType<WriterTextBox>(Box(window, card.Id));
         after = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
-        Assert.Equal(OwnHeight(box.Presenter.TextLayout.TextLines[0]), after[0], 1);
+        Assert.Equal(OnStrut(box.Presenter.TextLayout.TextLines[0], typeface, ScriptFont.LineHeightOf(box.FontSize, cardNarrowest)), after[0], 1);
         Assert.True(after[0] <= before[0] + 0.05);
         Assert.True(after[1] >= ScriptFont.MinLineHeight(typeface, box.FontSize - 4) - 1e-6);
 
@@ -709,29 +711,12 @@ public sealed class WriterFormattingTests
     }
 
     /// <summary>
-    /// 그 줄에 놓인 글자 조각들의 자연 높이 — 가장 높은 윗몫 + 가장 깊은 아랫몫 + 줄 사이 몫(줄바꿈 조각은 뺀다 — 받침대 크기다). 처음 크기 글자가 든 줄은
-    /// 줄 간격을 그 아래로 좁히면 이 높이에서 멈춘다(WF-D24). 「가A」 한 줄의 높이로 재면 한글만으로 그려진 줄이 글꼴에 따라 그보다 낮아 어긋난다
-    /// (Windows 맑은 고딕 — 2026-11-23 CI).
-    /// </summary>
-    private static double OwnHeight(Avalonia.Media.TextFormatting.TextLine line)
-    {
-        double ascent = 0, descent = 0, gap = 0;
-
-        foreach (Avalonia.Media.TextFormatting.ShapedTextRun run in line.TextRuns.OfType<Avalonia.Media.TextFormatting.ShapedTextRun>()
-                     .Where(run => !ScriptFont.IsLineBreak(run.Text.Span)))
-        {
-            ascent = Math.Max(ascent, -run.TextMetrics.Ascent);
-            descent = Math.Max(descent, run.TextMetrics.Descent);
-            gap = Math.Max(gap, run.TextMetrics.LineGap);
-        }
-
-        return ascent + descent + gap;
-    }
-
-    /// <summary>
     /// 받침대에 그 줄의 글자 조각을 겹친 높이 — 받침대는 <paramref name="strutFace"/>를 자연 높이가 <paramref name="lineHeight"/>인 크기로 둔 문단의 기본
-    /// 글자다(WF-D18 · WF-D24). Avalonia는 줄마다 가장 높은 윗몫 + 가장 깊은 아랫몫 + 가장 큰 줄 사이 몫을 쓴다 — 받침대가 덮지 못한 몫(받침대 글꼴에 없는 줄 사이
-    /// 몫 같은)은 그 줄의 글자 조각에서 온다. 받침대가 윗몫 · 아랫몫을 다 덮으면 <paramref name="lineHeight"/>에 줄 사이 몫의 차이만 더해진다.
+    /// 글자다(WF-D18 · WF-D24 · 줄바꿈 조각은 받침대 크기라 뺀다). Avalonia는 줄마다 가장 높은 윗몫 + 가장 깊은 아랫몫 + 가장 큰 줄 사이 몫을 쓴다 — 몫마다
+    /// 받침대와 그 줄의 글자 조각 가운데 큰 쪽이다. 글자가 받침대를 다 넘으면 그 글자들의 자연 높이, 받침대가 다 덮으면 <paramref name="lineHeight"/>(받침대
+    /// 글꼴에 없는 줄 사이 몫은 글자에서 더해진다 — 리눅스에서 줄 사이 몫이 있는 한글 글꼴 WenQuanYi Zen Hei 7pt로 13.2 → 13.83을 확인했다)이고, 그 사이도
+    /// 있다(맥 화자 이름 줄 — 2026-11-23 CI). ⛔ 처음 크기 줄을 「가A」 한 줄의 높이로 재다가(Windows 맑은 고딕에서 어긋났다), 그 줄 글자들의 자연 높이로
+    /// 재다가(맥에서 어긋났다) 이것으로 왔다.
     /// </summary>
     private static double OnStrut(Avalonia.Media.TextFormatting.TextLine line, Typeface strutFace, double lineHeight)
     {
