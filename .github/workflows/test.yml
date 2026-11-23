@@ -32,6 +32,8 @@ jobs:
           if (-not (Test-Path $zip)) { throw "portable zip was not produced" }
           $guide = Join-Path $PWD "artifacts\StoryDirector-win-x64\먼저 읽어주세요.txt"
           if (-not (Test-Path $guide)) { throw "the writer guide was not packaged" }
+          $notices = Join-Path $PWD "artifacts\StoryDirector-win-x64\THIRD-PARTY-NOTICES.txt"  # ← 더한 줄
+          if (-not (Test-Path $notices)) { throw "the third-party notices were not packaged" }  # ← 더한 줄
 
           $process = Start-Process $exe -PassThru
           try {
@@ -69,6 +71,8 @@ jobs:
           test -x "$app/Contents/MacOS/StoryDirector" || { echo "app executable was not produced"; exit 1; }
           test -f "$zip" || { echo "package zip was not produced"; exit 1; }
           test -f "artifacts/StoryDirector-osx-arm64/먼저 읽어주세요.txt" || { echo "the writer guide was not packaged"; exit 1; }
+          test -f "artifacts/StoryDirector-osx-arm64/THIRD-PARTY-NOTICES.txt" || { echo "the third-party notices were not packaged"; exit 1; }  # ← 더한 줄
+          unzip -l "$zip" | grep -q "THIRD-PARTY-NOTICES.txt" || { echo "the third-party notices are not in the zip"; exit 1; }  # ← 더한 줄
           unzip -l "$zip" | grep -q "StoryDirector.app/Contents/MacOS/StoryDirector" || { echo "the app is not at the zip root"; exit 1; }
 
           "$app/Contents/MacOS/StoryDirector" &
