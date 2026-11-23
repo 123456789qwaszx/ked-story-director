@@ -92,6 +92,67 @@ public sealed class DirectorFitTests : IDisposable
         window.Close();
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「구성탭에서도 F를 눌러서 원하는 노드로 바로 화면이동이 되도록 해줘」. [구성] 판에서도 같은 손짓이다 — 에피소드 카드를 골랐으면 100%로
+    /// 그 카드가 화면 가운데에, 장면을 골랐으면 그 카드들이 화면 안에, 고른 것이 없으면 키를 받지 않는다. 글 칸(이름 칸)에서는 글자다.
+    /// </summary>
+    [Fact]
+    public void 구성_판에서도_F를_누르면_고른_에피소드가_화면_가운데에_선다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
+        session.Editor.MoveEpisode("ch01", "b", 3000, 2000);   // 멀리 — 가장자리에 막히지 않게
+        ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
+        chapterGraph.SelectChapter("ch01");
+        Dispatcher.UIThread.RunJobs();
+        ScrollViewer scroll = chapterGraph.FindControl<ScrollViewer>("GraphScroll")!;
+
+        chapterGraph.SelectEpisode("b");
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(PressF(window));
+        Assert.Equal("100%", chapterGraph.FindControl<TextBlock>("ZoomText")!.Text);
+        Border card = ChapterCard(chapterGraph, "b");
+        Point center = card.TranslatePoint(new Point(card.Bounds.Width / 2, card.Bounds.Height / 2), scroll)!.Value;
+        Assert.Equal(scroll.Viewport.Width / 2, center.X, 0.5);
+        Assert.Equal(scroll.Viewport.Height / 2, center.Y, 0.5);
+
+        // 판 끝(왼쪽 위)의 카드도 가운데에 — 판이 카드만 감싸 스크롤만으로는 못 간다(판을 더 띄운다).
+        chapterGraph.SelectEpisode("root");
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(PressF(window));
+        Border root = ChapterCard(chapterGraph, "root");
+        center = root.TranslatePoint(new Point(root.Bounds.Width / 2, root.Bounds.Height / 2), scroll)!.Value;
+        Assert.Equal(scroll.Viewport.Width / 2, center.X, 0.5);
+        Assert.Equal(scroll.Viewport.Height / 2, center.Y, 0.5);
+
+        // 장면 hall(b 하나)을 하이어아키에서 고르면 — 그 카드가 화면 안에.
+        scroll.Offset = default;
+        Dispatcher.UIThread.RunJobs();
+        chapterGraph.HierarchyView.Fold(StoryHierarchy.ChapterKey("ch01"), collapse: false);
+        chapterGraph.HierarchyView.RowButton(StoryHierarchy.SceneKey("ch01", "hall"))!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(PressF(window));
+        Point topLeft = card.TranslatePoint(default, scroll)!.Value;
+        Point bottomRight = card.TranslatePoint(new Point(card.Bounds.Width, card.Bounds.Height), scroll)!.Value;
+        Assert.InRange(topLeft.X, 0, scroll.Viewport.Width);
+        Assert.InRange(topLeft.Y, 0, scroll.Viewport.Height);
+        Assert.InRange(bottomRight.X, 0, scroll.Viewport.Width);
+        Assert.InRange(bottomRight.Y, 0, scroll.Viewport.Height);
+
+        // 이름 칸에서는 F가 글자다.
+        chapterGraph.SelectEpisode("b");
+        Dispatcher.UIThread.RunJobs();
+        chapterGraph.FindControl<TextBox>("IdBox")!.Focus();
+        Dispatcher.UIThread.RunJobs();
+        Vector offset = scroll.Offset;
+        Assert.False(PressF(window));
+        Assert.Equal(offset, scroll.Offset);
+
+        window.Close();
+    });
+
+    private static Border ChapterCard(ChapterGraphView view, string episodeId) =>
+        view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>().Single(border => border.Tag as string == episodeId);
+
     private static bool PressF(MainWindow window)
     {
         var args = new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.F, Source = window };
