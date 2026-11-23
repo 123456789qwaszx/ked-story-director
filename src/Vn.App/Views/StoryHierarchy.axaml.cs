@@ -181,6 +181,12 @@ internal sealed record HierarchyRow(
 /// 주의: <b>편집하지 않는다</b> — 우클릭 차림표(<see cref="CommandRequested"/>) · 두 번 눌러 이름 고치기(<see cref="RenameRequested"/>) ·
 /// 끌어 다른 장면으로(<see cref="Dropped"/>)는 알리기만 한다(만들기 · 지우기 · 개명 규칙은 셸 쪽 편집기 한 벌이다). 접힘은 두
 /// 탭이 함께 쓰고 프로젝트별로 기억한다(<see cref="HierarchyFolds"/>). 키보드 ↑↓←→로 고르고 접는다.
+///
+/// ⭐ <b>여러 줄 고르기</b>(2026-11-23 소유자 — 「여러개를 shift + 우클릭으로 한번에 선택하는게 가능할까요?」 → 고른 답 「Ctrl+클릭 · Shift+클릭」 ·
+/// 「섞어 고를 수 있음」 · 「마지막 줄을 따르고 [삭제]는 끔」 · <c>docs/plans/hierarchy.md</c> §5). Ctrl(맥 ⌘)+클릭은 그 줄을 더하고 빼고, Shift+클릭은
+/// 기준 줄(마지막으로 그냥 · Ctrl로 누른 줄)부터 그 줄까지 보이는 줄을 모두 고른다. 챕터 · 장면 · 에피소드가 섞여도 된다. 판 · 인스펙터는 마지막에 누른 줄
+/// (<see cref="Selection"/>)만 따르고, 고른 줄 모두는 <see cref="Selections"/>다 — 나중에 「고른 것에 든 에피소드」를 한꺼번에 바꾸는 데 쓴다(소유자 — 빈 선택지
+/// 숨기기 · 글 서식). 그냥 누르기 · 화살표 · 밖에서 고른 다른 것은 다시 한 줄이다.
 /// </summary>
 public partial class StoryHierarchy : UserControl
 {
@@ -293,8 +299,42 @@ public partial class StoryHierarchy : UserControl
     /// </summary>
     private bool _drawing;
 
-    /// <summary>지금 고른 것. 없으면 null.</summary>
+    /// <summary>지금 고른 것 — 여러 줄을 골랐으면 마지막에 누른 줄(판 · 인스펙터가 따르는 것). 없으면 null.</summary>
     internal HierarchyPick? Selection { get; private set; }
+
+    /// <summary>고른 줄 모두 — 고른 차례이고 <see cref="Selection"/>이 마지막이다. 한 줄만 골랐으면 그 하나, 없으면 빈 목록.</summary>
+    internal IReadOnlyList<HierarchyPick> Selections => _picks;
+
+    private readonly List<HierarchyPick> _picks = [];
+
+    /// <summary>Shift+클릭의 기준 줄 — 마지막으로 그냥 · Ctrl로 누른 줄.</summary>
+    private string? _anchorKey;
+
+    /// <summary>줄 단추를 누를 때의 보조 키 — 누름(터널)에서 적고 Click이 읽는다(Click은 보조 키를 싣지 않는다).</summary>
+    private Avalonia.Input.KeyModifiers _pressModifiers;
+
+    /// <summary>고른 줄들이 바뀌었다(수 · 무엇) — 셸이 [삭제]를 맞춘다. 사람이 눌렀을 때도, 밖에서 고른 것을 비출 때도.</summary>
+    internal event Action? SelectionsChanged;
+
+    /// <summary>고른 줄들을 한 줄로(없으면 비운다) — 바뀌었으면 알린다.</summary>
+    private void PickOnly(HierarchyPick? pick)
+    {
+        bool changed = _picks.Count != (pick is null ? 0 : 1) ||
+                       (pick is not null && !string.Equals(_picks[0].Key, pick.Key, StringComparison.Ordinal));
+        _picks.Clear();
+
+        if (pick is not null)
+        {
+            _picks.Add(pick);
+        }
+
+        Selection = pick;
+
+        if (changed)
+        {
+            SelectionsChanged?.Invoke();
+        }
+    }
 
     /// <summary>지금 보이는 줄들.</summary>
     internal IReadOnlyList<HierarchyRow> Rows => _rows;
@@ -326,7 +366,11 @@ public partial class StoryHierarchy : UserControl
 
         if (Selection is { } pick && !Exists(pick))
         {
-            Selection = null;
+            PickOnly(null);
+        }
+        else if (_picks.RemoveAll(other => !Exists(other)) > 0)
+        {
+            SelectionsChanged?.Invoke();   // 함께 고른 줄 가운데 사라진 것만 놓는다
         }
 
         Refresh();
@@ -343,7 +387,22 @@ public partial class StoryHierarchy : UserControl
             return;
         }
 
-        Selection = pick;
+        // 사람이 누른 것을 셸이 처리하는 동안(Picked) 잠깐 비우는 것(챕터 줄 — 카드 선택을 놓는다)은 받지 않는다 — 받으면 함께 고른 줄들이 풀린다.
+        if (pick is null && _pressing)
+        {
+            return;
+        }
+
+        // 마지막에 누른 그 줄이면(셸이 같은 것을 다시 비춘다 — 열쇠는 같고 장면 칸만 다를 수 있다) 함께 고른 줄들을 지킨다. 다른 것이면 한 줄이다.
+        if (pick is not null && Selection is not null && string.Equals(pick.Key, Selection.Key, StringComparison.Ordinal) && _picks.Count > 0)
+        {
+            _picks[^1] = pick;
+            Selection = pick;
+        }
+        else
+        {
+            PickOnly(pick);
+        }
 
         // 드러낸 길은 편 채로 남긴다 — 고른 것을 따라 저절로 펴진 마디가 고르기를 부모로 옮기는 순간 다시 접히면, 사람
         // 눈에는 줄이 제멋대로 사라진다(유니티도 드러낸 길을 편 채로 둔다). 기억(Save)은 사람이 접고 펼 때만 한다.
@@ -684,7 +743,15 @@ public partial class StoryHierarchy : UserControl
             Tag = row.Key
         };
 
-        button.Click += (_, _) => UiGuard.Run(null, "하이어아키", () => Press(row));
+        // 누를 때의 보조 키(Ctrl · ⌘ · Shift)를 적어 둔다 — 여러 줄 고르기(Press).
+        button.AddHandler(PointerPressedEvent, (_, args) => _pressModifiers = args.KeyModifiers,
+            Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+        button.Click += (_, _) => UiGuard.Run(null, "하이어아키", () =>
+        {
+            Avalonia.Input.KeyModifiers modifiers = _pressModifiers;
+            _pressModifiers = Avalonia.Input.KeyModifiers.None;
+            Press(row, modifiers);
+        });
 
         // 분기 카드 줄은 고르기만 한다 — 만들고 지우고 이름을 고치는 것은 [대본] 판의 일이다.
         if (!ReadOnly && row.Kind != HierarchyKind.Branch)
@@ -1054,13 +1121,86 @@ public partial class StoryHierarchy : UserControl
     /// <summary>접힘이 다른 자리에서 바뀌었다 — 보이는 줄을 맞춘다.</summary>
     internal void RefreshFolds() => Refresh();
 
-    private void Press(HierarchyRow row)
+    /// <summary>
+    /// 줄을 눌렀다 — 보조 키가 없으면 그 줄 하나, Ctrl(⌘)이면 그 줄을 더하거나 빼고, Shift면 기준 줄부터 그 줄까지(Ctrl+Shift는 그 범위를 더한다).
+    /// 판 · 인스펙터는 마지막에 누른 줄을 따른다(<see cref="Picked"/>) — Ctrl로 뺀 줄이 마지막 줄이 아니었으면 알리지 않는다.
+    /// </summary>
+    private void Press(HierarchyRow row, Avalonia.Input.KeyModifiers modifiers = Avalonia.Input.KeyModifiers.None)
     {
         Focus();   // 키보드(↑↓←→)가 하이어아키로 온다
-        Selection = row.Pick;
+
+        bool toggle = modifiers.HasFlag(Avalonia.Input.KeyModifiers.Control) || modifiers.HasFlag(Avalonia.Input.KeyModifiers.Meta);
+        int anchor = modifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift) && _anchorKey is { } anchorKey
+            ? _rows.FindIndex(item => string.Equals(item.Key, anchorKey, StringComparison.Ordinal))
+            : -1;
+        HierarchyPick? before = Selection;
+
+        if (anchor >= 0)
+        {
+            // 범위 — 보이는 줄 차례로 기준 줄부터 누른 줄까지. 누른 줄이 마지막(판이 따른다)이다. 기준 줄은 그대로다(Shift로 범위를 다시 잡는다).
+            int at = _rows.IndexOf(row);
+            IEnumerable<HierarchyPick> range = _rows.Skip(Math.Min(anchor, at)).Take(Math.Abs(at - anchor) + 1).Select(item => item.Pick);
+
+            if (!toggle)
+            {
+                _picks.Clear();
+            }
+
+            foreach (HierarchyPick pick in range.Where(pick => !string.Equals(pick.Key, row.Key, StringComparison.Ordinal)))
+            {
+                _picks.RemoveAll(other => string.Equals(other.Key, pick.Key, StringComparison.Ordinal));
+                _picks.Add(pick);
+            }
+
+            _picks.RemoveAll(other => string.Equals(other.Key, row.Key, StringComparison.Ordinal));
+            _picks.Add(row.Pick);
+            Selection = row.Pick;
+        }
+        else if (toggle && _picks.Exists(other => string.Equals(other.Key, row.Key, StringComparison.Ordinal)))
+        {
+            // 빼기 — 하나 남은 줄은 빼지 않는다(아무것도 안 고른 하이어아키는 인스펙터가 빈다). 마지막 줄을 뺐으면 그 앞의 줄이 마지막이 된다.
+            if (_picks.Count > 1)
+            {
+                _picks.RemoveAll(other => string.Equals(other.Key, row.Key, StringComparison.Ordinal));
+                Selection = _picks[^1];
+            }
+
+            _anchorKey = row.Key;
+        }
+        else if (toggle)
+        {
+            _picks.Add(row.Pick);
+            Selection = row.Pick;
+            _anchorKey = row.Key;
+        }
+        else
+        {
+            _picks.Clear();
+            _picks.Add(row.Pick);
+            Selection = row.Pick;
+            _anchorKey = row.Key;
+        }
+
         Paint();
-        Picked?.Invoke(row.Pick);
+        SelectionsChanged?.Invoke();
+
+        if (!toggle || !string.Equals(before?.Key, Selection?.Key, StringComparison.Ordinal))
+        {
+            _pressing = true;
+
+            try
+            {
+                Picked?.Invoke(Selection!);
+            }
+            finally
+            {
+                _pressing = false;
+            }
+        }
     }
+
+    /// <summary>사람이 누른 것을 알리는 중인가(<see cref="Picked"/> 안) — 그사이 셸이 잠깐 비우는 것을 받지 않는다(<see cref="Show"/>).</summary>
+    private bool _pressing;
 
     // ── 키보드 ───────────────────────────────────
 
@@ -1361,7 +1501,13 @@ public partial class StoryHierarchy : UserControl
     /// <summary>고른 줄만 다시 칠한다 — 줄을 다시 세우지 않는다.</summary>
     private void Paint()
     {
-        string? selected = Selection?.Key;
+        var selected = new HashSet<string>(_picks.Select(pick => pick.Key), StringComparer.Ordinal);
+
+        if (Selection is { } primary)
+        {
+            selected.Add(primary.Key);
+        }
+
         Button? refusedOn = null;
         string? refusedWhy = null;
         bool accepting = false;
@@ -1370,7 +1516,7 @@ public partial class StoryHierarchy : UserControl
         {
             if (RowHost.Children[index] is DockPanel host && host.Children.OfType<Button>().FirstOrDefault() is { } button)
             {
-                button.Background = string.Equals(_rows[index].Key, selected, StringComparison.Ordinal)
+                button.Background = selected.Contains(_rows[index].Key)
                     ? new SolidColorBrush(Color.FromArgb(48, 61, 123, 217))
                     : Brushes.Transparent;
 

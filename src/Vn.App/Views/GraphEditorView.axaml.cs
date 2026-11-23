@@ -586,6 +586,9 @@ public partial class GraphEditorView : UserControl
         InitializeComponent();
         BuildFormatToolbar();
 
+        // 하이어아키에서 고른 줄이 여럿이 되거나 하나로 돌아오면 [삭제]를 맞춘다(여럿이면 끈다 · 2026-11-23).
+        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
+
         // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
             BoardColumns.ColumnDefinitions[0], BoardColumns.ColumnDefinitions[1], HierarchySplitter, HierarchyOpen, HierarchyStrip);
@@ -752,6 +755,11 @@ public partial class GraphEditorView : UserControl
     /// <summary>[삭제]를 고른 챕터 · 장면에 눌렀다 — 셸이 단추 옆에 확인 칸을 띄우고 지운다. 에피소드 · 분기 카드는 이 뷰가 지운다.</summary>
     internal event Action<HierarchyPick, Control>? RemoveRequested;
 
+    /// <summary>하이어아키에서 여러 줄을 골랐는가 — 그동안 [삭제] · Delete 키는 지우지 않는다.</summary>
+    private bool SeveralPicked => Hierarchy.Selections.Count > 1;
+
+    private const string SeveralPickedReason = "하이어아키에서 여러 개를 골랐습니다 — 지우려면 하나만 고르세요(여러 개를 한꺼번에 지우지는 않습니다).";
+
     /// <summary>[삭제]가 지울 것.</summary>
     private enum DeleteTarget
     {
@@ -816,6 +824,16 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private void RefreshDeleteButton()
     {
+        // 하이어아키에서 여러 줄을 골랐다 — [삭제]는 끈다(2026-11-23 소유자가 고른 답 「마지막 줄을 따르고 [삭제]는 끔」 — 한 줄만 지워져 헷갈리거나 여러 개가
+        //    한꺼번에 지워지는 실수를 막는다).
+        if (SeveralPicked)
+        {
+            DeleteButton.IsEnabled = false;
+            DeleteButton.Content = "삭제";
+            ToolTip.SetTip(DeleteButton, SeveralPickedReason);
+            return;
+        }
+
         DeleteTarget target = TargetToDelete();
         string? kept = KeptReason(target);
 
@@ -7320,6 +7338,12 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
+        if (SeveralPicked)
+        {
+            _session.SetStatus(SeveralPickedReason);
+            return;
+        }
+
         DeleteTarget target = TargetToDelete();
 
         // 단추는 그때 꺼져 있다 — 다시 그리기 전에 눌렸을 때를 위해 한 번 더 본다.
@@ -7374,6 +7398,13 @@ public partial class GraphEditorView : UserControl
     /// <returns>지웠으면 참 — 셸이 키를 처리한 것으로 적는다.</returns>
     internal bool DeleteSelectedCard()
     {
+        // 하이어아키에서 여러 줄을 골랐으면 Delete 키도 지우지 않는다 — 키는 받고 까닭을 말한다.
+        if (SeveralPicked && _session is not null)
+        {
+            _session.SetStatus(SeveralPickedReason);
+            return true;
+        }
+
         DeleteTarget target = TargetToDelete();
 
         // 챕터의 마지막 에피소드는 남는다 — 키는 받되 까닭을 말한다(2026-11-18 · ChapterMinimum).
