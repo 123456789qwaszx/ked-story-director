@@ -20,7 +20,7 @@ namespace Vn.App.Views;
 /// <c>docs/work-orders/settings-wording-orders.md</c> Z2). [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
 /// 「내보내기 (복제할 폴더 선택)」(형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
 /// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [대본 글 칸](이 PC의 앱 설정 — 새 카드 글 칸의 글꼴 ·
-/// 글자 크기와 모든 칸의 줄 간격, <see cref="ScriptFont"/> · writer-comfort WC5 · writer-formatting WF-D13), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
+/// 글자 크기 · 줄 간격 · 굵기 · 글자색, <see cref="ScriptFont"/> · writer-comfort WC5 · writer-formatting WF-D13 · WF-D16 · WF-D19), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
 /// <c>docs/work-orders/side-fold-settings-orders.md</c> K3, 설명 간소화 · 같은 날 brief-guides G1, 휠로 판 옮기기 · 2026-11-19 writer-app WA3).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
@@ -126,7 +126,9 @@ internal sealed class SettingsWindow : Window
             FontSize = 12,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        ToolTip.SetTip(ScriptLineSpacingBox, "글자 크기에 대한 % — 100이면 줄이 붙고, 160이면 워드 프로세서의 「줄 간격 160%」와 같습니다. 모든 카드에 바로 따릅니다.");
+        ToolTip.SetTip(ScriptLineSpacingBox,
+            "새로 만드는 카드의 줄 간격입니다 — 글자 크기에 대한 %(160이면 워드 프로세서의 「줄 간격 160%」). 이미 있는 카드는 그대로입니다(카드의 줄 간격은 " +
+            "[대본] 위쪽 서식 도구로 바꿉니다). 그 글꼴의 한글 한 줄 높이보다 좁게는 되지 않습니다.");
         ToolTip.SetTip(ScriptFontCombo, "새로 만드는 카드의 글꼴입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 글꼴은 [대본] 위쪽 서식 도구로 바꿉니다).");
         ToolTip.SetTip(ScriptFontSizeBox, "새로 만드는 카드의 글자 크기입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 크기는 [대본] 위쪽 서식 도구로 바꿉니다).");
         ScriptPreview = new TextBox
@@ -181,8 +183,8 @@ internal sealed class SettingsWindow : Window
         };
         FillScriptFont();
 
-        // 고치는 즉시 앱 설정에 넣는다 — 「기타」의 체크와 같은 규칙([취소]로 돌아가지 않는다 · 되돌리기 없음 — 이 PC의 앱 설정이다). 판의 카드 글 칸은
-        // 줄 간격만 바로 따르고, 글꼴 · 글자 크기는 새로 만드는 카드의 처음 값이 된다(writer-formatting WF-D13).
+        // 고치는 즉시 앱 설정에 넣는다 — 「기타」의 체크와 같은 규칙([취소]로 돌아가지 않는다 · 되돌리기 없음 — 이 PC의 앱 설정이다). 모두 새로 만드는
+        // 카드의 처음 값이 되고, 서 있는 카드는 그대로다(writer-formatting WF-D13 · WF-D19 — ⛔ 그 전에는 줄 간격만 모든 칸이 바로 따랐다).
         ScriptFontCombo.SelectionChanged += (_, _) => OnScriptFontEdited();
         ScriptFontSizeBox.ValueChanged += (_, _) => OnScriptFontEdited();
         ScriptLineSpacingBox.ValueChanged += (_, _) => OnScriptFontEdited();

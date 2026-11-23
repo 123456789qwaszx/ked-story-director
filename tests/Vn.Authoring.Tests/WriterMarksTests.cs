@@ -450,6 +450,71 @@ public sealed class WriterMarksTests
         Assert.Equal(0, WriterBaseFill.Fill(editor.Project, new WriterBase(string.Empty, 30)));
     }
 
+    // ── 카드의 줄 간격(WF-D19) ─────────────────────────
+
+    /// <summary>
+    /// 2026-11-23 소유자 — 「줄 간격을 새 카드의 기본값으로 바꿉시다」. 줄 간격도 카드의 처음 값에 적힌다(정했을 때만 · 다시 읽으면 그대로). 줄 간격이 처음 값이
+    /// 되기 전에 적힌 카드(글꼴 · 크기만)는 열 때 줄 간격만 그 PC의 설정으로 적힌다 — 글꼴 · 크기는 그대로다. 이상한 값은 안 적힌 것으로 읽는다.
+    /// </summary>
+    [Fact]
+    public void 줄_간격은_처음_값에_적히고_줄_간격만_없는_옛_카드는_줄_간격만_채운다()
+    {
+        (ProjectEditor editor, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어");
+        card.WriterBase = new WriterBase("맑은 고딕", 14, LineSpacing: 160);
+        string saved = ProjectSnapshotCodec.Encode(editor.Project);
+        Assert.Contains("\"lineSpacing\": 160", saved, StringComparison.Ordinal);
+        Assert.Equal(card.WriterBase, ProjectSnapshotCodec.Decode(saved).FindDialogue(card.Id)!.WriterBase);
+
+        // 줄 간격이 없는 옛 처음 값 — 줄 간격만 채운다.
+        card.WriterBase = new WriterBase("맑은 고딕", 14);
+        Assert.DoesNotContain("lineSpacing", ProjectSnapshotCodec.Encode(editor.Project), StringComparison.Ordinal);
+        int empty = editor.Project.EnumerateNodes().OfType<DialogueNode>().Count(node => node.WriterBase is null);   // 처음 값이 아예 없는 다른 카드
+        Assert.Equal(empty + 1, WriterBaseFill.Fill(editor.Project, new WriterBase(string.Empty, 11, Bold: true, LineSpacing: 140)));
+        Assert.Equal(new WriterBase("맑은 고딕", 14, LineSpacing: 140), card.WriterBase);
+        Assert.Equal(0, WriterBaseFill.Fill(editor.Project, new WriterBase(string.Empty, 11, LineSpacing: 200)));
+
+        // 이상한 값 — 안 적힌 것으로 읽는다(처음 값의 나머지는 그대로).
+        foreach (string broken in new[] { "\"넓게\"", "0", "-20" })
+        {
+            string json = ProjectSnapshotCodec.Encode(editor.Project).Replace("\"lineSpacing\": 140", "\"lineSpacing\": " + broken, StringComparison.Ordinal);
+            Assert.Equal(new WriterBase("맑은 고딕", 14), ProjectSnapshotCodec.Decode(json).FindDialogue(card.Id)!.WriterBase);
+        }
+    }
+
+    /// <summary>
+    /// 같은 날 — 「서식도구에 줄 간격 조절을 새로 넣는게 맞습니다」. 카드 하나의 줄 간격을 바꾼다 — 처음 값의 나머지(글꼴 · 크기 · 굵게 · 글자색)는 그대로이고,
+    /// 같은 값이면 적지 않으며, 되돌리기 한 번에 돌아간다. 처음 값이 아예 없는 카드는 새 카드의 처음 값 위에 적는다.
+    /// </summary>
+    [Fact]
+    public void 카드의_줄_간격을_바꾸면_그_카드만_바뀌고_되돌리기가_돌린다()
+    {
+        (ProjectEditor editor, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어");
+        var blue = new WriterRgb(0x20, 0x40, 0x80);
+        card.WriterBase = new WriterBase("맑은 고딕", 14, Bold: true, Color: blue, LineSpacing: 140);
+        var changes = new List<ProjectChangedEventArgs>();
+        editor.Changed += (_, change) => changes.Add(change);
+
+        editor.SetWriterLineSpacing(card.Id, 180);
+        Assert.Equal(new WriterBase("맑은 고딕", 14, Bold: true, Color: blue, LineSpacing: 180), editor.Project.FindDialogue(card.Id)!.WriterBase);
+        Assert.Equal((ProjectChangeKind.WriterMarks, card.Id), (changes.Single().Kind, changes.Single().NodeId));
+
+        editor.SetWriterLineSpacing(card.Id, 180);   // 같은 값
+        Assert.Single(changes);
+
+        editor.Undo();
+        Assert.Equal(140, editor.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        editor.Redo();
+        Assert.Equal(180, editor.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+
+        // 처음 값이 없는 카드 — 새 카드의 처음 값 위에. 그것도 없으면 적을 수 없다.
+        editor.Project.FindDialogue(card.Id)!.WriterBase = null;
+        Assert.Throws<InvalidOperationException>(() => editor.SetWriterLineSpacing(card.Id, 150));
+        editor.NewCardWriterBase = () => new WriterBase(string.Empty, 11, LineSpacing: 140);
+        editor.SetWriterLineSpacing(card.Id, 150);
+        Assert.Equal(new WriterBase(string.Empty, 11, LineSpacing: 150), editor.Project.FindDialogue(card.Id)!.WriterBase);
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetWriterLineSpacing(card.Id, 0));
+    }
+
     // ── 글 칸 한 줄의 대사 자리 ─────────────────────────
 
     [Theory]

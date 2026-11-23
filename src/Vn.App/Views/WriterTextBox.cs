@@ -106,35 +106,19 @@ public sealed class WriterTextPresenter : TextPresenter
     /// 보통 줄은 받침대 높이(= 설정의 줄 높이)이고, 큰 글자가 든 줄만 그 글자의 자연 높이로 높아진다. ⛔ 그 전에는 칸 전체의 줄 높이를 가장 큰 글자의 비율로
     /// 키웠다. 받침대 크기를 못 재면(글꼴을 못 찾았다) null — 그때는 전처럼 칸 전체를 키운다.
     ///
-    /// 받침대 높이는 설정의 줄 높이와 <b>보통 크기 한글 · 영문 한 줄의 자연 높이</b> 가운데 큰 쪽이다 — 한글 글꼴의 자연 높이가 설정의 줄 높이보다 크면(줄 간격을
-    /// 좁혔다 · 리눅스의 Noto CJK) 한글 줄만 높아져 보통 줄끼리 높이가 어긋난다. 그때 그 칸의 보통 줄은 설정보다 조금 높다(줄 높이를 정한 칸은 글자가 위아래로
-    /// 넘쳐 겹친다).
+    /// 글 칸의 줄 높이는 그 글꼴 · 크기의 가장 낮은 줄 높이(<see cref="ScriptFont.MinLineHeight"/> · WF-D19) 이상이라, 받침대가 보통 크기 한글 · 영문의 윗몫 ·
+    /// 아랫몫을 다 덮는다 — 보통 줄과 빈 줄이 줄 높이 그대로이고, 키운 칸과 안 키운 칸의 보통 줄 간격이 같다(소유자가 확인한 어긋남 — 줄 간격이 한글 한 줄
+    /// 높이보다 좁으면 키운 칸의 보통 줄만 높았다). 손으로 줄 높이를 그보다 낮춘 칸은 한글이 든 줄이 조금 높다.
     /// </summary>
     private double? StrutSize(Typeface typeface)
     {
         if (!double.IsFinite(LineHeight) || LineHeight <= 0 || FontSize <= 0 ||
-            !FontManager.Current.TryGetGlyphTypeface(typeface, out GlyphTypeface? glyphs))
+            ScriptFont.Shares(typeface) is not { } share || share.Up + share.Down + share.Gap <= 0)
         {
             return null;
         }
 
-        FontMetrics metrics = glyphs.Metrics;
-        double natural = (metrics.Descent - metrics.Ascent + metrics.LineGap) / (double)metrics.DesignEmHeight;
-        return natural > 0 ? Math.Max(LineHeight, PlainLineHeight(typeface, FontSize)) / natural : null;
-    }
-
-    private static readonly Dictionary<(Typeface, double), double> PlainLineHeights = new();
-
-    /// <summary>보통 크기 한글 · 영문 한 줄의 자연 높이(줄 높이를 정하지 않은) — 글꼴 · 크기마다 한 번 잰다.</summary>
-    private static double PlainLineHeight(Typeface typeface, double size)
-    {
-        if (!PlainLineHeights.TryGetValue((typeface, size), out double height))
-        {
-            using var probe = new TextLayout("가A", typeface, size, null);
-            PlainLineHeights[(typeface, size)] = height = probe.Height;
-        }
-
-        return height;
+        return LineHeight / (share.Up + share.Down + share.Gap);
     }
 
     protected override TextLayout CreateTextLayout()

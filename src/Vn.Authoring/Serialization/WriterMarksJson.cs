@@ -157,6 +157,11 @@ internal static class WriterMarksJson
             json["color"] = color.Hex;
         }
 
+        if (value.LineSpacing is { } spacing)
+        {
+            json["lineSpacing"] = spacing;
+        }
+
         return json;
     }
 
@@ -173,7 +178,13 @@ internal static class WriterMarksJson
         }
 
         string font = value["font"] is JsonValue name && name.TryGetValue(out string? text) ? text.Trim() : string.Empty;
-        return new WriterBase(font, points, Bool(value["bold"]), WriterRgb.Parse(Text(value["color"])));
+
+        // 줄 간격(%)은 0보다 큰 정수만 — 아니면 안 적힌 것으로 둔다(열 때 그 PC의 설정으로 적힌다 · WF-D19).
+        int? spacing = value["lineSpacing"] is JsonValue line && line.TryGetValue(out double percent) && double.IsFinite(percent) && percent > 0
+            ? (int)Math.Round(percent)
+            : null;
+
+        return new WriterBase(font, points, Bool(value["bold"]), WriterRgb.Parse(Text(value["color"])), spacing);
     }
 
     /// <summary><c>"#RRGGBB"</c>. 옛 파일의 색 이름(<c>"red"</c> — WF-D14 전)은 정해 둔 열 가지의 그 색(글자색 · 바탕색)으로 읽는다. 모르는 것은 버린다.</summary>

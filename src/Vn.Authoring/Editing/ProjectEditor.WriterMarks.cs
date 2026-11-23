@@ -91,6 +91,31 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// 카드 글 칸의 줄 간격(글자 크기에 대한 %) — 그 카드의 처음 값(<see cref="DialogueNode.WriterBase"/>)을 바꾼다(writer-formatting WF-D19). 같으면 적지
+    /// 않는다. 처음 값이 안 적힌 카드는 새 카드의 처음 값(<see cref="NewCardWriterBase"/>) 위에 적는다.
+    /// </summary>
+    public void SetWriterLineSpacing(string nodeId, int lineSpacing)
+    {
+        DialogueNode node = RequireDialogue(nodeId);
+
+        if (lineSpacing <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lineSpacing), lineSpacing, "줄 간격은 0보다 커야 합니다.");
+        }
+
+        WriterBase basis = node.WriterBase ?? NewCardWriterBase?.Invoke() ??
+            throw new InvalidOperationException($"카드 '{nodeId}'에 처음 글꼴 · 크기가 없어 줄 간격을 적을 수 없습니다.");
+
+        if (node.WriterBase is not null && basis.LineSpacing == lineSpacing)
+        {
+            return;
+        }
+
+        WriterBase next = basis with { LineSpacing = lineSpacing };
+        Mutate(ProjectChangeKind.WriterMarks, () => node.WriterBase = next, nodeId);
+    }
+
+    /// <summary>
     /// 대사 글이 바뀌는 두 자리(<see cref="ApplyScriptSync"/> · <see cref="SetScriptLineText"/>)가 <b>같은 변경 안에서</b> 부른다 — 서식이 같은 글자를 따라간다.
     /// 기본 언어의 글일 때만이다(서식은 기본 언어의 글에 붙는다).
     /// </summary>

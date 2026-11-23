@@ -84,7 +84,7 @@ public sealed record WriterLook(
 /// <summary>
 /// <b>카드 글 칸의 처음 글꼴 · 글자 크기</b>(2026-11-23 소유자 — 「설정 내부에 대본 글칸속의 글꼴과 글자 크기는 이제 처음 생성시에 기본값으로만 사용하는
 /// 게 맞겠습니다. 지금처럼 즉각 갱신되는게 아니라요」) — 카드를 만들 때 그 PC의 설정 「대본 글 칸」 값을 적어 두고, 뒤에 설정을 바꿔도 그 카드는 그대로다.
-/// 줄 간격은 적지 않는다(이 PC의 설정을 따른다).
+/// 줄 간격도 같다(WF-D19).
 /// </summary>
 /// <param name="Font">글꼴 이름 — 빈 글이면 테마의 기본 글꼴. 그 글꼴이 없는 PC에서는 기본 글꼴로 보인다.</param>
 /// <param name="Size">글자 크기(pt).</param>
@@ -93,7 +93,11 @@ public sealed record WriterLook(
 /// 이 위에 더하는 것이라, 처음부터 굵은 카드에서 일부만 가늘게 할 수는 없다.
 /// </param>
 /// <param name="Color">카드 글의 기본 글자색(같은 날 — 「글자 색깔도 같이」) — 없으면 테마의 글자색. 서식의 글자색 · 화자 이름 색이 그 위에 선다.</param>
-public sealed record WriterBase(string Font, double Size, bool Bold = false, WriterRgb? Color = null);
+/// <param name="LineSpacing">
+/// 줄 간격 — 글자 크기에 대한 %(같은 날 소유자 — 「줄 간격을 새 카드의 기본값으로 바꿉시다」 · 「서식도구에 줄 간격 조절을 새로 넣는게 맞습니다」 · WF-D19).
+/// 카드를 만들 때 설정의 값이 적히고, 서식 도구로 그 카드만 바꾼다. null은 그 값이 생기기 전에 적힌 카드다 — 열 때 그 PC의 설정으로 적힌다(<see cref="WriterBaseFill"/>).
+/// </param>
+public sealed record WriterBase(string Font, double Size, bool Bold = false, WriterRgb? Color = null, int? LineSpacing = null);
 
 /// <summary>대사 글의 한 구간 <c>[Start, Start + Length)</c>에 입힌 모양 — 자리는 그 줄 기본 언어 <c>Text</c>의 UTF-16 자리다(화자는 밖이다).</summary>
 public sealed record WriterSpan(int Start, int Length, WriterLook Look)
@@ -141,7 +145,7 @@ public sealed record WriterStyleChange(WriterStyleKind Kind, WriterRgb? Color = 
 /// </summary>
 public static class WriterBaseFill
 {
-    /// <summary>적은 카드 수.</summary>
+    /// <summary>적은 카드 수 — 처음 값이 아예 없는 카드와, 줄 간격만 없는 카드(줄 간격이 처음 값이 되기 전에 적힌 카드 · WF-D19 — 줄 간격만 적는다).</summary>
     public static int Fill(StoryProject project, WriterBase value)
     {
         int filled = 0;
@@ -151,6 +155,11 @@ public static class WriterBaseFill
             if (node.WriterBase is null)
             {
                 node.WriterBase = value;
+                filled++;
+            }
+            else if (node.WriterBase.LineSpacing is null && value.LineSpacing is { } spacing)
+            {
+                node.WriterBase = node.WriterBase with { LineSpacing = spacing };
                 filled++;
             }
         }

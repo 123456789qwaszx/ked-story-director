@@ -569,8 +569,9 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 설정 「대본 글 칸」이 바뀌었다 — 서 있는 카드 글 칸이 새 줄 간격을 입는다(판은 다시 짓지 않는다 · writer-comfort WC5). 글꼴 · 크기는 카드마다 적힌
-    /// 처음 값이라 그대로다(writer-formatting WF-D13 — ⛔ 그 전에는 모든 칸이 새 글꼴 · 크기도 입었다).
+    /// 설정 「대본 글 칸」이 바뀌었다 — 서 있는 카드는 그대로다: 글꼴 · 크기 · 굵게 · 글자색 · 줄 간격 모두 카드마다 적힌 처음 값이다(writer-formatting
+    /// WF-D13 · WF-D16 · WF-D19 — ⛔ 그 전에는 모든 칸이 새 글꼴 · 크기를, WF-D19 전에는 새 줄 간격을 바로 입었다). 처음 값이 안 적힌 칸(프로젝트를 열기
+    /// 전에 선 칸)만 새 설정을 입는다.
     /// </summary>
     private void ApplyScriptFont()
     {
@@ -4027,9 +4028,9 @@ public partial class GraphEditorView : UserControl
         box.Tag = WritingTag + nodeId;
         ScrollViewer.SetVerticalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
 
-        // 글꼴 · 글자 크기는 카드에 적힌 처음 값(카드를 만들 때의 설정 · writer-formatting WF-D13), 줄 간격은 설정 창 「대본 글 칸」의 것(writer-comfort
-        // WC5 — ⛔ 그 전에는 11 · 줄 높이 15로 굳었다). 분기 점은 실제 글자 배치로 그 대사 높이를 재므로(MeasureLineAnchors) 어느 줄 간격에도
-        // 따라간다 — 줄 간격을 아주 좁히면 이웃 대사의 분기 점이 맞닿을 수 있다.
+        // 글꼴 · 글자 크기 · 줄 간격은 카드에 적힌 처음 값(카드를 만들 때의 설정 · writer-formatting WF-D13 · WF-D19 — ⛔ 그 전에는 11 · 줄 높이 15로
+        // 굳었고, 그 뒤 WC5부터 WF-D19 전까지 줄 간격은 설정 창의 것을 모든 칸이 따랐다). 분기 점은 실제 글자 배치로 그 대사 높이를 재므로
+        // (MeasureLineAnchors) 어느 줄 간격에도 따라간다.
         ScriptFont.Apply(box, _session?.Project.FindDialogue(nodeId)?.WriterBase);
         _writingBoxes[nodeId] = box;
         UpdateLooks(nodeId, box);

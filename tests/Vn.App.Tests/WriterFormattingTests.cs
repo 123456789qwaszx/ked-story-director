@@ -420,6 +420,62 @@ public sealed class WriterFormattingTests
         Dispatcher.UIThread.RunJobs();
     }
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「서식도구에 줄 간격 조절을 새로 넣는게 맞습니다」 · 「줄 간격을 새 카드의 기본값으로 바꿉시다」(writer-formatting WF-D19). 글자를
+    /// 고르지 않아도 그 칸에 커서가 있으면 된다. 그 카드의 처음 값만 바뀌고(서식이 없는 카드는 보통 칸 그대로 · 같은 칸이 새 줄 간격을 입는다), 다른 카드는
+    /// 그대로이며, 되돌리기 한 번에 한 칸씩 돌아간다. 설정의 범위(100 ~ 250%)에서 멈춘다.
+    /// </summary>
+    [Fact]
+    public void 서식_도구의_줄_간격은_그_카드만_바꾸고_되돌리기가_돌린다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, _) = Stage("하린: 오늘은 긴 하루였어", "문이 열린다.");
+        GraphEditorView graph = Graph(window);
+        DialogueNode other = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, "다른", name: "다른");
+        Dispatcher.UIThread.RunJobs();
+        int start = session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing!.Value;   // 만들 때의 설정
+        Assert.Equal(ScriptFont.LineSpacing, start);
+        double otherHeight = Box(window, other.Id).LineHeight;
+        Assert.Equal(string.Empty, graph.FormatLineSpacingText);   // 입힐 칸이 없다
+
+        TextBox box = Box(window, card.Id);
+        Assert.IsNotType<WriterTextBox>(box);
+        box.Focus();
+        box.SelectionStart = box.SelectionEnd = 3;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal($"{start}%", graph.FormatLineSpacingText);
+
+        Click(window, "줄 간격 넓게");
+        Click(window, "줄 간격 넓게");
+
+        Assert.Equal(start + 20, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Same(box, Box(window, card.Id));   // 서식 없는 카드는 보통 칸 그대로 — 같은 칸이 새 줄 간격을 입는다
+        Assert.Equal(Math.Round(box.FontSize * (start + 20) / 100.0, 1), box.LineHeight);
+        Assert.Equal($"{start + 20}%", graph.FormatLineSpacingText);
+        Assert.True(box.IsFocused);
+        Assert.Equal(otherHeight, Box(window, other.Id).LineHeight);
+        Assert.Equal(start, session.Project.FindDialogue(other.Id)!.WriterBase!.LineSpacing);
+
+        // 되돌리기 — 한 칸씩.
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(start + 10, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        Assert.Equal($"{start + 10}%", graph.FormatLineSpacingText);
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(start, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+
+        // 끝에서 멈춘다 — 되돌리기 칸도 쌓이지 않는다.
+        session.Editor.SetWriterLineSpacing(card.Id, ScriptFont.MaxLineSpacing);
+        Dispatcher.UIThread.RunJobs();
+        Box(window, card.Id).Focus();
+        Dispatcher.UIThread.RunJobs();
+        Click(window, "줄 간격 넓게");
+        Assert.Equal(ScriptFont.MaxLineSpacing, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        session.Editor.Undo();
+        Assert.Equal(start, session.Project.FindDialogue(card.Id)!.WriterBase!.LineSpacing);
+        window.Close();
+    });
+
     private static void TextPresenterWidths(TextBox box, out double width) =>
         width = ((WriterTextBox)box).Presenter!.TextLayout.WidthIncludingTrailingWhitespace;
 

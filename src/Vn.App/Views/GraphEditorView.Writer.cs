@@ -46,6 +46,10 @@ public partial class GraphEditorView
     /// <summary>글꼴 고르기의 목록 — 이 PC에 없는 글꼴이 서식에 들어 있으면(같이 쓰는 사람이 고른 것) 그 이름도 더해 보인다.</summary>
     private List<string> _fontItems = new();
     private TextBlock? _sizeText;
+    private TextBlock? _lineSpacingText;
+
+    /// <summary>서식 도구의 줄 간격 한 칸(%) — −/+ 한 번에.</summary>
+    private const int LineSpacingStep = 10;
     private Border? _colorBar;
     private Border? _fillBar;
     private readonly Dictionary<WriterAlign, ToggleButton> _alignButtons = new();
@@ -157,6 +161,9 @@ public partial class GraphEditorView
         {
             return false;
         }
+
+        // 카드의 바탕 꼴 — 줄 간격을 서식 도구로 바꾸면 여기서 입는다(WF-D19 · 서식이 없는 칸도).
+        ScriptFont.Apply(box, node.WriterBase);
 
         if (box is not WriterTextBox writer)
         {
@@ -428,6 +435,22 @@ public partial class GraphEditorView
             bar.Children.Add(button);
         }
 
+        // 줄 간격 — 카드 단위(정렬처럼 · 2026-11-23 소유자 「서식도구에 줄 간격 조절을 새로 넣는게 맞습니다」 · WF-D19).
+        bar.Children.Add(Separator());
+        bar.Children.Add(LineSpacingIcon());
+        bar.Children.Add(FormatButton("−", "줄 간격 좁게 — 이 카드의 글 전체를 10%씩", () => ApplyLineSpacing(-LineSpacingStep)));
+        _lineSpacingText = new TextBlock
+        {
+            MinWidth = 34,
+            FontSize = 11,
+            TextAlignment = TextAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            [ToolTip.TipProperty] = "이 카드의 줄 간격 — 글자 크기에 대한 %. 처음 값은 카드를 만들 때 설정 「대본 글 칸」의 줄 간격입니다. " +
+                                    "그 글꼴의 한글 한 줄 높이보다 좁게는 되지 않습니다(더 작은 값은 그 높이로 보입니다)."
+        };
+        bar.Children.Add(_lineSpacingText);
+        bar.Children.Add(FormatButton("+", "줄 간격 넓게 — 이 카드의 글 전체를 10%씩", () => ApplyLineSpacing(LineSpacingStep)));
+
         _formatControls.Add(_fontBox);
         RefreshFormatToolbar();
     }
@@ -460,6 +483,21 @@ public partial class GraphEditorView
             Margin = new Thickness(0, 2)
         };
     }
+
+    /// <summary>줄 간격 그림 — 세 줄과 그 왼쪽의 위아래 화살표(문서 도구의 그 그림).</summary>
+    private static Control LineSpacingIcon() => new Avalonia.Controls.Shapes.Path
+    {
+        Data = Geometry.Parse("M2.5,1.5 V11.5 M0.5,3.5 L2.5,1.5 L4.5,3.5 M0.5,9.5 L2.5,11.5 L4.5,9.5 M7,2.5 H13 M7,6.5 H13 M7,10.5 H13"),
+        Stroke = Brushes.Black,
+        StrokeThickness = 1.1,
+        StrokeLineCap = PenLineCap.Round,
+        StrokeJoin = PenLineJoin.Round,
+        Width = 14,
+        Height = 13,
+        Margin = new Thickness(2, 0),
+        VerticalAlignment = VerticalAlignment.Center,
+        [ToolTip.TipProperty] = "줄 간격 — 이 카드의 글 전체"
+    };
 
     /// <summary>바탕색 그림 — 형광 펜(비스듬한 펜 끝).</summary>
     private static Control MarkerIcon() => new Avalonia.Controls.Shapes.Path
@@ -701,6 +739,35 @@ public partial class GraphEditorView
     }
 
     /// <summary>
+    /// 카드 글 칸의 줄 간격을 한 칸 좁히거나 넓힌다 — 그 카드의 처음 값(<see cref="DialogueNode.WriterBase"/>)을 바꾼다(WF-D19). 고른 글자가 없어도 그 칸이면
+    /// 된다. 설정과 같은 범위(100 ~ 250%)로 당긴다.
+    /// </summary>
+    private void ApplyLineSpacing(int step)
+    {
+        UiGuard.Run(_session, "줄 간격", () =>
+        {
+            if (FormatTarget() is { } target && _session?.Project.FindDialogue(target.NodeId) is { } node)
+            {
+                int now = CardLineSpacing(node);
+                int next = Math.Clamp(now + step, ScriptFont.MinLineSpacing, ScriptFont.MaxLineSpacing);
+
+                if (next != now || node.WriterBase?.LineSpacing is null)
+                {
+                    _session.Editor.SetWriterLineSpacing(target.NodeId, next);
+                }
+
+                RestoreFormatFocus();
+            }
+
+            RefreshFormatToolbar();
+        });
+    }
+
+    /// <summary>카드의 줄 간격(%) — 적힌 값(설정의 범위로 당긴다). 안 적힌 카드는 이 PC의 설정.</summary>
+    private static int CardLineSpacing(DialogueNode node) =>
+        Math.Clamp(node.WriterBase?.LineSpacing ?? ScriptFont.LineSpacing, ScriptFont.MinLineSpacing, ScriptFont.MaxLineSpacing);
+
+    /// <summary>
     /// 입힐 칸에 초점과 고른 범위를 되돌린다 — 도구 막대를 쓴 뒤. 초점을 가져가는 도구가 다 닫혔으면 붙든 범위도 놓는다.
     /// </summary>
     private void RestoreFormatFocus()
@@ -809,18 +876,24 @@ public partial class GraphEditorView
 
             _fontBox.SelectedItem = fonts.Count == 1 ? fonts[0] ?? DefaultFontItem : chosen.Count == 0 && target is not null ? DefaultFontItem : null;
 
-            WriterAlign align = target is { } shown && _session?.Project.FindDialogue(shown.NodeId) is { } node ? node.WriterAlign : WriterAlign.Left;
+            DialogueNode? card = target is { } shown ? _session?.Project.FindDialogue(shown.NodeId) : null;
+            WriterAlign align = card?.WriterAlign ?? WriterAlign.Left;
 
             foreach ((WriterAlign key, ToggleButton button) in _alignButtons)
             {
                 button.IsChecked = target is not null && key == align;
             }
+
+            _lineSpacingText!.Text = card is null ? string.Empty : $"{CardLineSpacing(card)}%";
         }
         finally
         {
             _syncingToolbar = false;
         }
     }
+
+    /// <summary>시험이 본다 — 도구 막대의 줄 간격 글(「140%」 · 입힐 칸이 없으면 빈 글).</summary>
+    internal string? FormatLineSpacingText => _lineSpacingText?.Text;
 
     /// <summary>시험이 본다 — 도구 막대의 단추 상태(굵게 · 기울임 · 취소선 · 크기 글).</summary>
     internal (bool? Bold, bool? Italic, bool? Strike, string? Size, string? Font) FormatToolbarState =>
