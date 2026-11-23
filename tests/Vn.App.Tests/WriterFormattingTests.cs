@@ -559,7 +559,10 @@ public sealed class WriterFormattingTests
         double[] after = box.Presenter!.TextLayout.TextLines.Select(line => line.Height).ToArray();
         Assert.Equal(OwnHeight(box.Presenter.TextLayout.TextLines[0]), after[0], 1);   // 화자 이름이 든 줄 — 그 줄 글자들의 자연 높이에서 멈춘다
         Assert.True(after[0] <= before[0] + 0.05);
-        Assert.Equal(Math.Round(box.FontSize * spacing / 100.0, 1), after[1], 1);
+        // 줄인 글자만 든 줄 — 받침대(카드 글꼴 · 카드의 줄 간격 그대로의 높이)에 그 줄의 글자 조각을 겹친 높이다. 받침대 글꼴(Inter)은 줄 사이 몫이 0이라 한글
+        // 대체 글꼴에 줄 사이 몫이 있으면 그만큼 높다 — 맥에서 13.2 → 13.54(리눅스 · Windows는 줄 간격 그대로). ⛔ 2026-11-23 CI — 「줄 간격 그대로」로
+        // 쟀더니 맥에서만 어긋났다(같은 일을 리눅스에서 줄 사이 몫이 있는 한글 글꼴 WenQuanYi Zen Hei로 재현했다 — 7pt에서 13.2 → 13.83).
+        Assert.Equal(OnStrut(box.Presenter.TextLayout.TextLines[1], typeface, ScriptFont.LineHeightOf(box.FontSize, spacing)), after[1], 1);
         Assert.Equal(after[1], after[2], 2);
         // 또렷이 낮아졌다 — 10%는 11pt에서 1.1px이지만 줄 높이를 0.1 단위로 반올림해 1.0px일 수 있다(Windows 135 → 125%: 14.8 → 13.8 · ⛔ 「1px 넘게」는
         // 리눅스에서만 통과했다 — 2026-11-23 CI).
@@ -723,6 +726,28 @@ public sealed class WriterFormattingTests
         }
 
         return ascent + descent + gap;
+    }
+
+    /// <summary>
+    /// 받침대에 그 줄의 글자 조각을 겹친 높이 — 받침대는 <paramref name="strutFace"/>를 자연 높이가 <paramref name="lineHeight"/>인 크기로 둔 문단의 기본
+    /// 글자다(WF-D18 · WF-D24). Avalonia는 줄마다 가장 높은 윗몫 + 가장 깊은 아랫몫 + 가장 큰 줄 사이 몫을 쓴다 — 받침대가 덮지 못한 몫(받침대 글꼴에 없는 줄 사이
+    /// 몫 같은)은 그 줄의 글자 조각에서 온다. 받침대가 윗몫 · 아랫몫을 다 덮으면 <paramref name="lineHeight"/>에 줄 사이 몫의 차이만 더해진다.
+    /// </summary>
+    private static double OnStrut(Avalonia.Media.TextFormatting.TextLine line, Typeface strutFace, double lineHeight)
+    {
+        (double up, double down, double gap) = ScriptFont.Shares(strutFace)!.Value;
+        double size = lineHeight / (up + down + gap);
+        double ascent = size * up, descent = size * down, lineGap = size * gap;
+
+        foreach (Avalonia.Media.TextFormatting.ShapedTextRun run in line.TextRuns.OfType<Avalonia.Media.TextFormatting.ShapedTextRun>()
+                     .Where(run => !ScriptFont.IsLineBreak(run.Text.Span)))
+        {
+            ascent = Math.Max(ascent, -run.TextMetrics.Ascent);
+            descent = Math.Max(descent, run.TextMetrics.Descent);
+            lineGap = Math.Max(lineGap, run.TextMetrics.LineGap);
+        }
+
+        return ascent + descent + lineGap;
     }
 
     private static (MainWindow Window, AuthoringSession Session, DialogueNode Card, string[] Ids) Stage(params string[] lines)
