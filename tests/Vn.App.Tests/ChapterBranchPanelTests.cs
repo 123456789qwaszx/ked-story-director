@@ -67,7 +67,7 @@ public sealed class ChapterBranchPanelTests
         Border chip = Chip(canvas, project.BranchNodeId);
         Assert.True(Canvas.GetLeft(chip) > Canvas.GetLeft(root) + CardWidth, "칩이 카드 오른쪽에 선다");
         Assert.Equal(Canvas.GetTop(root), Canvas.GetTop(chip), 3);
-        Assert.Contains(TempProject.BranchTitle, ((TextBlock)chip.Child!).Text, StringComparison.Ordinal);
+        Assert.Contains(project.BranchName, ((TextBlock)chip.Child!).Text, StringComparison.Ordinal);   // 「ID로 보기」(처음 켜짐) — 제목이 아니라 ID(2026-11-23)
         Assert.True(chip.Height < CardHeight);
 
         // 에피소드를 옮기면 칩이 따라간다 — 칩의 자리는 저장하지 않는다.

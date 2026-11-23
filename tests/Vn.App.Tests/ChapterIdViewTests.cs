@@ -82,10 +82,10 @@ public sealed class ChapterIdViewTests : IDisposable
     });
 
     [Fact]
-    public void 분기_카드_줄도_ID로_보기를_따른다() => HeadlessUi.Run(() =>
+    public void 분기_카드_줄과_칩도_ID로_보기를_따른다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-23 소유자 — 「구성탭에서 분기 노드의 경우 하이어아키에서 ID로 보기 체크여부랑 상관없이 항상 DisplayName으로만 표기가 되네요」.
-        // 에피소드 줄과 같다 — 켜면 「⑂ ID」(= Yarn 노드 이름)에 곁글로 제목, 끄면 「⑂ 제목」.
+        // 2026-11-23 소유자 — 「구성탭에서 분기 노드의 경우 하이어아키에서 ID로 보기 체크여부랑 상관없이 항상 DisplayName으로만 표기가 되네요」 ·
+        // 「분기 칩도 ID로 보이게 해주십시오」. 에피소드 줄 · 카드 머리와 같다 — 켜면 「⑂ ID」(= Yarn 노드 이름 · 줄은 곁글로 제목), 끄면 「⑂ 제목」.
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Structure);
 
         try
@@ -103,14 +103,20 @@ public sealed class ChapterIdViewTests : IDisposable
 
             string key = StoryHierarchy.BranchKey("ch01", branch.Id);
             HierarchyRow Row() => view.HierarchyView.Rows.Single(row => row.Key == key);
+            string? Chip() => ((TextBlock)view.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
+                .Single(border => border.Tag is ChapterGraphView.BranchCardMark mark && mark.NodeId == branch.Id).Child!).Text;
             Assert.NotEqual("교무실 회상", branch.Name);
 
             Assert.True(check.IsChecked);
             Assert.Equal(($"⑂ {branch.Name}", "교무실 회상"), (Row().Text, Row().Detail));
+            Assert.StartsWith($"⑂ {branch.Name}", Chip(), StringComparison.Ordinal);
+            Assert.DoesNotContain("교무실 회상", Chip(), StringComparison.Ordinal);
 
             check.IsChecked = false;
             Dispatcher.UIThread.RunJobs();
             Assert.Equal(("⑂ 교무실 회상", null), (Row().Text, Row().Detail));
+            Assert.StartsWith("⑂ 교무실 회상", Chip(), StringComparison.Ordinal);
+            Assert.DoesNotContain(branch.Name, Chip(), StringComparison.Ordinal);
 
             // 제목이 없으면 ID만 — 곁글이 없다.
             check.IsChecked = true;

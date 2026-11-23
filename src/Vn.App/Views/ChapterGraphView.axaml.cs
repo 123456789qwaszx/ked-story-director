@@ -1799,6 +1799,8 @@ public partial class ChapterGraphView : UserControl
     /// <summary>
     /// 분기 카드 칩 — 「⑂ 이름」 한 줄. 누르면 인스펙터에 그 분기 카드(부르는 곳 · 조건 · 대본)가 선다. <b>읽기 전용</b>이다 — 끌어
     /// 옮기지 않고(자리는 부르는 에피소드를 따라간다) 대본도 여기서 고치지 않는다. 고치는 것은 조건뿐이다(소유자).
+    /// 이름은 에피소드 카드 머리와 같이 「ID로 보기」를 따른다 — 켜면 분기 카드 ID(= Yarn 노드 이름), 끄면 제목(2026-11-23 소유자 — 「분기 칩도 ID로
+    /// 보이게 해주십시오」 · ⛔ 그 전에는 체크와 상관없이 제목). 툴팁은 늘 「제목」(ID) 둘 다다.
     /// </summary>
     private void DrawBranchChip(string nodeId, (double X, double Y) at, IBrush accent)
     {
@@ -1808,6 +1810,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, nodeId);
+        string name = _session.ShowIds ? card.Name : EpisodeNaming.BranchTitleOf(card);   // 「ID로 보기」
 
         var chip = new Border
         {
@@ -1821,9 +1824,7 @@ public partial class ChapterGraphView : UserControl
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),
             Child = new TextBlock
             {
-                Text = state.Label is { } label
-                    ? $"⑂ {EpisodeNaming.BranchTitleOf(card)} · {label}"
-                    : $"⑂ {EpisodeNaming.BranchTitleOf(card)}",
+                Text = state.Label is { } label ? $"⑂ {name} · {label}" : $"⑂ {name}",
                 FontSize = 10.5,
                 Foreground = new SolidColorBrush(Color.Parse("#3B3F46")),
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,

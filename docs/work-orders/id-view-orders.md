@@ -10,6 +10,7 @@
 
 - [구성] 하이어아키는 ID로 서고 곁글에 이름(H1 — 챕터 · 장면 · 에피소드 · 분기 카드 — 분기 카드 줄은 2026-11-23에 더했다).
 - [구성] 카드 머리: 칩(「시작점」 · 장면ID) 뒤에 굵은 글로 제목(비었으면 EpisodeId), 제목이 있으면 그 아래 작은 글로 EpisodeId.
+- [구성] 분기 카드 칩: 「ID로 보기」면 「⑂ 분기 카드 ID」, 끄면 「⑂ 제목」(2026-11-23에 더했다).
 
 ## 2. 단계
 
@@ -25,3 +26,4 @@
 | 11-18 | I0 | (이 커밋) | 지시서 |
 | 11-18 | I1 | (이 커밋) | 앱 설정 `ShowIds`(처음 참 — 칸이 없는 옛 설정 파일도 참) · `AuthoringSession.ShowIds` · `SetShowIds` · `ShowIdsChanged`. [구성] 툴바 `ShowIdsCheck` — 바꾸면 `ApplyShowIds`(하이어아키 `ShowEpisodeTitles` = 끔 — 그 값이 바뀌면 하이어아키가 줄을 다시 세운다) 뒤 판을 다시 그린다. 카드 머리 한 줄(`CardNameTag`) = EpisodeId 또는 제목, 장면 칩 = 장면ID 또는 장면 이름. 제목 아래 EpisodeId 둘째 줄을 걷었다. 시험 — 처음 켜짐 · 하이어아키 줄과 곁글 · 카드 머리 · 칩 · 끄면 이름으로 · 앱 설정 · 다시 켜면 ID로. 눈으로 — 켬 · 끔. 문서 — 두 그래프 설계(툴바 · 7절 AR) · 챕터 층 안내. Authoring 645 · App 462 |
 | 11-23 | 고침 | (이 커밋) | 소유자 보고 — 「구성탭에서 분기 노드의 경우 하이어아키에서 ID로 보기 체크여부랑 상관없이 항상 DisplayName으로만 표기가 되네요」. 분기 카드 줄도 에피소드 줄과 같은 규칙 — 켜면 「⑂ 분기 카드 ID」(= Yarn 노드 이름)에 곁글로 제목(비었거나 ID와 같으면 없다), 끄면 「⑂ 제목」(`StoryHierarchy.AddBranches`). [대본] 탭은 그대로 제목. 찾기는 ID · 제목 둘 다. 시험 `ChapterIdViewTests.분기_카드_줄도_ID로_보기를_따른다` · `BranchCardBoardTests` |
+| 11-23 | 고침 | (이 커밋) | 소유자 — 「분기 칩도 ID로 보이게 해주십시오」. [구성] 판의 분기 카드 칩도 켜면 「⑂ 분기 카드 ID」(조건이 있으면 「 · 조건」), 끄면 「⑂ 제목」(`ChapterGraphView.DrawBranchChip`). 툴팁은 그대로 「제목」(ID) 둘 다. 칩 폭(150)은 그대로 — 자동 ID(`ch01_scene01_branch01`)는 맞게 들어가지만 조건이 붙으면 조건이 말줄임으로 잘린다. 시험 `ChapterIdViewTests.분기_카드_줄과_칩도_ID로_보기를_따른다` · `ChapterBranchPanelTests` |
