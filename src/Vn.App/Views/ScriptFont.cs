@@ -29,7 +29,8 @@ internal static class ScriptFont
     internal const double DefaultSize = 11;
     internal const int DefaultLineSpacing = 140;
     internal const double MinSize = 9;
-    internal const double MaxSize = 28;
+    /// <summary>글자 크기의 끝(pt) — 2026-11-23 소유자 「설정에서 시작 글 크기를 28로 제한되어있는데 조금 더 상한을 높혀 주시겠습니까?」로 48(⛔ 그 전에는 28).</summary>
+    internal const double MaxSize = 48;
     internal const int MinLineSpacing = 100;
     internal const int MaxLineSpacing = 250;
 

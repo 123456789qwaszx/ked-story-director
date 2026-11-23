@@ -174,7 +174,7 @@ public static class WriterBaseFill
 /// </summary>
 public static class WriterMarkMath
 {
-    /// <summary>크기 차의 끝 — 설정 크기(9 ~ 28)에 더해 너무 작거나 크지 않게.</summary>
+    /// <summary>크기 차의 끝 — 설정 크기(9 ~ 48)에 더해 너무 작거나 크지 않게.</summary>
     public const int MinGrow = -6;
 
     public const int MaxGrow = 36;

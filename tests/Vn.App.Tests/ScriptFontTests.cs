@@ -47,6 +47,7 @@ public sealed class ScriptFontTests : IDisposable
         Assert.Equal(SettingsWindow.DefaultFontName, settings.ScriptFontCombo.SelectedItem);
         Assert.Equal(SettingsWindow.DefaultFontName, settings.ScriptFontCombo.Items[0]);
         Assert.Equal(11m, settings.ScriptFontSizeBox.Value);
+        Assert.Equal(48m, settings.ScriptFontSizeBox.Maximum);   // 2026-11-23 소유자 — 28에서 올렸다
         Assert.Equal(140m, settings.ScriptLineSpacingBox.Value);
         settings.Close();
         window.Close();
