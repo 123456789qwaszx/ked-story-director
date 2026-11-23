@@ -21,15 +21,22 @@ public sealed class WriterLineHeightTests
 {
     private const double Size = 14;
 
+    /// <summary>
+    /// 키우는 폭(pt) — 큰 글자의 줄이 넉넉한 줄 간격(170 · 200%)보다도 또렷이(5px 넘게) 높아질 만큼. 한글 한 줄 높이는 글꼴마다 다르다 — 리눅스 Noto
+    /// Sans CJK는 글자 크기의 1.45배쯤, Windows 맑은 고딕은 1.33배, 맥 애플 산돌고딕은 1.2배다. ⛔ 2026-11-23까지 +10이었다 — 리눅스에서만 통과하고 Windows ·
+    /// 맥 CI에서 큰 줄이 5px을 못 넘었다(24pt가 맑은 고딕 31.92 · 산돌고딕 28.8 — 줄 높이 28 · 23.8). 동작은 맞았다(큰 줄은 높아졌다).
+    /// </summary>
+    private const int Grow = 20;
+
     [Fact]
     public void 한_줄의_글자를_키우면_그_줄만_높아지고_다른_줄은_설정의_줄_높이다() => HeadlessUi.Run(() =>
     {
-        // 14 × 170 % — 한글 글꼴(맑은 고딕 · Noto Sans CJK)의 한 줄 높이보다 넉넉하다. 좁으면 아래 시험.
+        // 14 × 170 % — 한글 글꼴(맑은 고딕 · 애플 산돌고딕 · Noto Sans CJK)의 한 줄 높이보다 넉넉하다. 좁으면 아래 시험.
         const double lineHeight = 23.8;
         const string text = "첫 줄 가나다 abc\n둘째 줄 큰 글자\n셋째 줄 마지막";
         int big = text.IndexOf('큰');
 
-        WriterTextBox box = Show(text, lineHeight, [new BoxLook(big, 1, new WriterLook(Grow: 10))]);
+        WriterTextBox box = Show(text, lineHeight, [new BoxLook(big, 1, new WriterLook(Grow: Grow))]);
         double[] heights = Heights(box);
 
         Assert.Equal(3, heights.Length);
@@ -37,8 +44,8 @@ public sealed class WriterLineHeightTests
         Assert.Equal(lineHeight, heights[2], 1);
         Assert.True(heights[1] > lineHeight + 5, $"큰 글자 줄 {heights[1]:0.0}");
 
-        // 칸 전체는 큰 줄 몫만큼만 높다 — ⛔ 전처럼 모든 줄을 키웠다면 줄마다 (14 + 10) / 14배였다.
-        double scaledAll = 3 * Math.Round(lineHeight * (Size + 10) / Size, 1);
+        // 칸 전체는 큰 줄 몫만큼만 높다 — ⛔ 전처럼 모든 줄을 키웠다면 줄마다 (14 + 20) / 14배였다.
+        double scaledAll = 3 * Math.Round(lineHeight * (Size + Grow) / Size, 1);
         Assert.True(box.Presenter!.TextLayout.Height < scaledAll - 10, $"칸 {box.Presenter.TextLayout.Height:0.0} · 전처럼 {scaledAll:0.0}");
 
         // 보통 글자는 제 크기로 그려진다(받침대 크기가 아니다 — 보이지 않는 줄바꿈만 받침대 크기다 · WF-D24).
@@ -47,7 +54,7 @@ public sealed class WriterLineHeightTests
             Assert.Equal(Size, run.Properties.FontRenderingEmSize);
         }
 
-        Assert.Contains(box.Presenter.TextLayout.TextLines[1].TextRuns.OfType<ShapedTextRun>(), run => run.Properties.FontRenderingEmSize == Size + 10);
+        Assert.Contains(box.Presenter.TextLayout.TextLines[1].TextRuns.OfType<ShapedTextRun>(), run => run.Properties.FontRenderingEmSize == Size + Grow);
     });
 
     [Fact]
@@ -76,7 +83,7 @@ public sealed class WriterLineHeightTests
         const string text = "abc only\n\n둘째 줄 큰 글자\n셋째 줄 한글\nxyz";
         var basis = new WriterBase(string.Empty, Size, LineSpacing: lineSpacing);
 
-        var grown = (WriterTextBox)Show(text, basis, [new BoxLook(text.IndexOf('큰'), 1, new WriterLook(Grow: 10))]);
+        var grown = (WriterTextBox)Show(text, basis, [new BoxLook(text.IndexOf('큰'), 1, new WriterLook(Grow: Grow))]);
         var bolded = (WriterTextBox)Show(text, basis, [new BoxLook(text.IndexOf('셋'), 2, new WriterLook(Bold: true))]);
         TextBox plain = Show(text, basis, looks: null);
 
