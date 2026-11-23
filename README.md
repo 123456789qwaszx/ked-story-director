@@ -82,13 +82,13 @@ dotnet test .\VnTool.sln
 
 ## 작가에게 전달할 꾸러미
 
-Windows — `artifacts\StoryDirector-win-x64.zip`(실행 파일 `StoryDirector.exe` 하나):
+Windows — `artifacts\StoryDirector-win-x64.zip`(실행 파일 `StoryDirector.exe` · 「먼저 읽어주세요.txt」 · `THIRD-PARTY-NOTICES.txt`):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 ```
 
-맥 — `artifacts/StoryDirector-osx-arm64.zip`(`StoryDirector.app`). 맥에서 돌립니다 — 맥이 없으면 CI의 `macos` 작업이 구워 올려 둔 것을
+맥 — `artifacts/StoryDirector-osx-arm64.zip`(`StoryDirector.app` · 안내문 · 고지문). 맥에서 돌립니다 — 맥이 없으면 CI의 `macos` 작업이 구워 올려 둔 것을
 Actions의 실행 화면 아래 Artifacts에서 받습니다. 인텔 맥은 인자 `x64`:
 
 ```bash
@@ -97,6 +97,9 @@ Actions의 실행 화면 아래 Artifacts에서 받습니다. 인텔 맥은 인�
 
 둘 다 .NET 런타임을 함께 담으므로 받는 PC에 개발 환경이 필요 없습니다. 서명은 없습니다 — Windows는 파란 경고 창을, 맥은 「그래도 열기」를
 처음 한 번 지납니다([`docs/작가에게.txt`](docs/작가에게.txt)). 맥의 서명 · 공증은 하지 않았습니다(Apple 개발자 계정이 듭니다).
+
+`THIRD-PARTY-NOTICES.txt`(저장소 맨 위)는 함께 담기는 오픈소스와 글꼴(Inter)의 저작권 고지 · 라이선스 원문입니다. 패키지 판을 올리면 다시
+옮깁니다 — 시험(`ThirdPartyNoticesTests`)이 알립니다([`docs/work-orders/writer-release-orders.md`](docs/work-orders/writer-release-orders.md) 8절).
 
 아이콘은 원본 `src/Vn.App/Assets/app-icon.png`(1024) 하나에서 굽습니다 — 그림을 바꾸려면 원본을 갈고 다시 굽습니다(Pillow가 있어야 합니다):
 

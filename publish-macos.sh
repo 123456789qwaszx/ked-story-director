@@ -89,6 +89,9 @@ chmod +x "$app/Contents/MacOS/StoryDirector"
 # 안내문 — 앱 곁에(2026-11-19 · writer-release WR3 · Windows 꾸러미와 같은 글).
 cp "docs/작가에게.txt" "$out/먼저 읽어주세요.txt"
 
+# 제3자 소프트웨어 고지 — 함께 묶이는 오픈소스와 글꼴(Inter)의 저작권 고지 · 라이선스 원문(2026-11-23 소유자 · Windows 꾸러미와 같은 파일).
+cp "THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES.txt"
+
 # 임시 서명(ad-hoc) — Apple 칩 맥은 서명이 아예 없는 코드를 실행하지 않는다. 신원을 증명하는 서명이 아니다(위 ⛔).
 if command -v codesign > /dev/null; then
     codesign --force --deep --sign - "$app"
@@ -96,16 +99,16 @@ else
     echo "⚠ codesign이 없습니다(맥이 아님) — 서명 없이 묶습니다. 건넬 꾸러미는 맥에서 구우세요." >&2
 fi
 
-# zip — 실행 권한을 지켜야 한다(권한이 빠지면 앱이 켜지지 않는다). 맥은 ditto가 꾸러미를 제대로 싼다. 폴더째가 아니라 그 안(앱 · 안내문)을 싼다.
+# zip — 실행 권한을 지켜야 한다(권한이 빠지면 앱이 켜지지 않는다). 맥은 ditto가 꾸러미를 제대로 싼다. 폴더째가 아니라 그 안(앱 · 안내문 · 고지문)을 싼다.
 if command -v ditto > /dev/null; then
     ditto -c -k "$out" "$zip"
 else
-    (cd "$out" && zip -qry "../$(basename "$zip")" StoryDirector.app "먼저 읽어주세요.txt")
+    (cd "$out" && zip -qry "../$(basename "$zip")" StoryDirector.app "먼저 읽어주세요.txt" "THIRD-PARTY-NOTICES.txt")
 fi
 
 echo
 echo "꾸러미: $zip"
 echo "판 번호: $version"
-echo "앱: $app ($(du -sh "$app" | cut -f1)) · 먼저 읽어주세요.txt"
+echo "앱: $app ($(du -sh "$app" | cut -f1)) · 먼저 읽어주세요.txt · THIRD-PARTY-NOTICES.txt"
 echo "받는 사람은 압축을 풀고 StoryDirector.app을 「응용 프로그램」 폴더로 옮긴 뒤 엽니다."
 echo "처음 한 번은 「시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기」를 지나야 합니다(서명 · 공증이 없습니다)."

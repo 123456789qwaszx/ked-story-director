@@ -473,3 +473,4 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1
 | `Vn.App.Tests/ChapterGraphWorkAmountTests` | 갱신 경로의 일의 횟수 |
 | `Vn.App.Tests/ChapterRailTests` · `ChoiceSlotTests` · `GraphChoiceSideTests` · `GraphEdgeShapeTests` | 선택지 줄 · 줄 차례 · 쪽 · 선 고치기(헤드리스) |
 | `Vn.App.Tests/ShellUndoTests` · `TestProcessIsolation` | 셸 되돌리기 · 테스트가 사용자 설정을 건드리지 않는다 |
+| `Vn.App.Tests/ThirdPartyNoticesTests` | 꾸러미의 제3자 고지문(`THIRD-PARTY-NOTICES.txt`)이 싣는 패키지의 지금 판을 말한다 |

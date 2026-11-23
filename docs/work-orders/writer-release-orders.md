@@ -86,3 +86,21 @@
 - **첫 릴리스** — 소유자가 `v0.1.0`(Target `main` · 「스토리 디렉터 0.1.0」)을 폈다. 릴리스 작업의 첫 실행이 통과했다(Windows · 맥 각각 시험 → 굽기 →
   붙이기, 4분쯤) — `StoryDirector-0.1.0-windows.zip`(44.7MB) · `StoryDirector-0.1.0-mac.zip`(46.2MB)이 붙었다. WR4의 「끝까지 돌려 보지는 못했다」가
   이것으로 풀렸다. 릴리스 페이지에 GitHub가 저절로 붙이는 「Source code」 둘은 코드 묶음이라 건네지 않는다.
+
+## 8. 제3자 소프트웨어 고지 (2026-11-23 소유자)
+
+소유자 — 릴리스(v0.2.0) 준비 중 「다국어 지원(특히 영어)랑, 글꼴같은거 관련해서 법적으로 문제될 여지 있는지 점검해줘」 → 점검 결과(꾸러미에 오픈소스
+고지문이 없다) → 「THIRD-PARTY-NOTICES.txt 넣어주십시오」.
+
+- **점검한 것** — Release로 구워 실제로 나가는 것: Avalonia 12.1.1(MIT · 그 안의 글꼴 Inter 3.019 — SIL OFL 1.1) · SkiaSharp 3.119.4 · HarfBuzzSharp
+  8.3.1.3(MIT — 네이티브 라이브러리에 Skia · HarfBuzz 등) · ANGLE(`av_libglesv2.dll` · BSD) · MicroCom.Runtime · Tmds.DBus.Protocol(MIT) · .NET 런타임(MIT).
+  모두 고지문을 함께 담으라고 한다 — 꾸러미에는 실행 파일과 안내문뿐이었다. 개발 도구(`AvaloniaUI.DiagnosticsSupport`)는 Debug에서만 쓰여 꾸러미에 없다.
+  맑은 고딕 · 애플 산돌고딕 · Noto · 나눔고딕 · Consolas 등은 담지 않는다(그 PC의 글꼴을 이름으로 부를 뿐). 작가가 고른 글꼴은 이름만 프로젝트에 적히고
+  게임(Yarn · 진행 JSON)에는 나가지 않는다. 앱은 네트워크를 쓰지 않는다. 다국어 — 화면은 한국어 전용(문구가 코드에 있다 · 언어 리소스 없음)이고 대본
+  데이터는 언어별 칸이 있다(기본 `ko-KR`) · 영문 대사는 지금도 쓴다. 영어 지원에서 따로 생기는 법적 쟁점은 찾지 못했다.
+- **한 것** — 저장소 맨 위에 `THIRD-PARTY-NOTICES.txt`(목록 · MIT · OFL · ANGLE BSD 원문 · SkiaSharp/HarfBuzzSharp 네이티브의 THIRD-PARTY-NOTICES ·
+  .NET의 LICENSE · ThirdPartyNotices — 각 패키지 · 설치본의 원문을 고치지 않고 옮겼다). `publish-windows.ps1` · `publish-macos.sh`가 꾸러미에 함께 담는다.
+  시험 `ThirdPartyNoticesTests` — 고지문이 싣는 패키지의 지금 판을 말한다. CI(`test.yml`)의 꾸러미 확인에 「고지문이 들었는가」 몇 줄을 더하는 것은
+  소유자가 손으로 한다(작업 파일 `.github/workflows/`는 개발 세션의 원격 도구로 고치지 못한다).
+- **고칠 때** — 패키지 판을 올리면 그 시험이 깨진다: 새 판 패키지의 `LICENSE` · `THIRD-PARTY-NOTICES.txt`(NuGet 캐시의 그 패키지 폴더)를 다시 옮기고
+  목록의 판 번호를 고친다. 새 패키지가 꾸러미에 실리면 목록과 시험의 `Shipped`에 더한다.

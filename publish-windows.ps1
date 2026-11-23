@@ -45,6 +45,10 @@ try {
     #   ⛔ 2026-08-26부터는 실행 파일만 담았다(그때의 안내문 · 견본이 며칠 사이 굴러간 옛 규격을 말해서).
     Copy-Item (Join-Path $root "docs\작가에게.txt") (Join-Path $publishDirectory "먼저 읽어주세요.txt")
 
+    # 제3자 소프트웨어 고지 — 함께 묶이는 오픈소스(Avalonia · SkiaSharp · HarfBuzz · ANGLE · .NET 런타임)와 글꼴(Inter)의 저작권 고지 · 라이선스 원문
+    #   (2026-11-23 소유자 — 「THIRD-PARTY-NOTICES.txt 넣어주십시오」). MIT · BSD · OFL이 배포할 때 함께 담으라고 한다.
+    Copy-Item (Join-Path $root "THIRD-PARTY-NOTICES.txt") (Join-Path $publishDirectory "THIRD-PARTY-NOTICES.txt")
+
     Compress-Archive -Path (Join-Path $publishDirectory "*") -DestinationPath $zipPath
 
     $exe = Join-Path $publishDirectory "StoryDirector.exe"
@@ -54,7 +58,7 @@ try {
     Write-Host "꾸러미: $zipPath"
     Write-Host "실행 파일: $exe ($sizeMb MB)"
     Write-Host "판 번호: $Version"
-    Write-Host "담긴 것: StoryDirector.exe · 먼저 읽어주세요.txt"
+    Write-Host "담긴 것: StoryDirector.exe · 먼저 읽어주세요.txt · THIRD-PARTY-NOTICES.txt"
     Write-Host "받는 사람은 압축을 풀고 StoryDirector.exe를 누르면 됩니다."
 }
 finally {
