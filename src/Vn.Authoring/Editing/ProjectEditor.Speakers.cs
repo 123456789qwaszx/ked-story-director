@@ -116,6 +116,22 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// 화자의 이름 바탕색(작가용 · writer-formatting WF-D22 — 2026-11-23 소유자 「캐릭터의 글자 바탕색도 조정할 수 있게」) — [대본] 카드 글 칸에서 그 화자의 이름 뒤에
+    /// 이 색이 깔린다. null이면 걷는다. 이름 색(<see cref="SetSpeakerColor"/>)과 같은 규칙이다 — 없는 화자이거나 같은 값이면 false, 되돌리기 한 칸.
+    /// </summary>
+    public bool SetSpeakerFill(string name, WriterRgb? fill)
+    {
+        if (Project.FindSpeaker(name) is not { } speaker || speaker.Fill == fill)
+        {
+            return false;
+        }
+
+        int index = Project.Speakers.IndexOf(speaker);
+        Mutate(ProjectChangeKind.WriterMarks, () => Project.Speakers[index] = speaker with { Fill = fill });
+        return true;
+    }
+
+    /// <summary>
     /// 화자 개명을 <b>목록과 이미 쓰인 대사 줄까지 한 칸에</b> 끌고 간다 — 화자의 이름을 고쳐도 연결이 이어진다. 캐릭터 키는 그대로다.
     ///
     /// 화자의 신원은 <b>목록의 그 줄</b>이고 이름은 그것의 표시다. 그런데 대사 줄이

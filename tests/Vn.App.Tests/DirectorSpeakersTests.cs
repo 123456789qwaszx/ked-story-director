@@ -368,6 +368,60 @@ public sealed class DirectorSpeakersTests : IDisposable
         window.Close();
     });
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「화자탭에서 현재는 캐릭터의 글자색만 바꿀 수 있는데, 여기다가 캐릭터의 글자 바탕색도 조정할 수 있게 해줄래?」(writer-formatting WF-D22).
+    /// 화자 줄의 바탕색 단추(이름 색 단추 옆)로 고르면 그 화자의 이름 뒤에 그 색이 깔린다 — 이름 색과 함께 · 따로. 단추는 이름이 보일 모습(이름 색의 「가」가 그
+    /// 바탕 위)이고, 바탕색 차림의 「이 프로젝트에 쓴 색」에 그 색이 든다. 저장되고, 되돌리면 돌아간다.
+    /// </summary>
+    [Fact]
+    public void 화자의_이름_바탕색을_고르면_대본_칸의_그_이름_뒤에_깔린다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        session.SetSpeakers(("라루", "laru"), ("윌로", "willo"));
+        WriteDialogue(session, "ch01", "root", "라루: 안녕\n윌로: 응");
+        GraphEditorView graph = PickProject(window);
+        var color = new WriterRgb(0xAA, 0x33, 0x00);
+        var fill = new WriterRgb(0xFF, 0xF5, 0x9D);
+
+        // 바탕색만 — 이름 색 없이도 서식 칸이 되어 「라루」 뒤에 깔린다.
+        Pick(graph, "speaker-fill:라루", "#FFF59D");
+        Assert.Equal(fill, session.Project.FindSpeaker("라루")!.Fill);
+        Assert.Null(session.Project.FindSpeaker("라루")!.Color);
+        Assert.Equal([new BoxLook(0, 2, new WriterLook(Fill: fill))], Assert.IsType<WriterTextBox>(WritingBox(graph, session, "root")).Looks);
+
+        // 이름 색도 — 둘이 함께. 바탕색 단추의 「가」가 이름 색이고 바탕이 그 색이다.
+        Pick(graph, "speaker-color:라루", "#AA3300");
+        Assert.Equal([new BoxLook(0, 2, new WriterLook(Color: color, Fill: fill))], Assert.IsType<WriterTextBox>(WritingBox(graph, session, "root")).Looks);
+        var preview = (Border)((Button)Control(graph, "speaker-fill:라루")).Content!;
+        Assert.Equal(Color.FromRgb(0xFF, 0xF5, 0x9D), Assert.IsAssignableFrom<ISolidColorBrush>(preview.Background).Color);
+        Assert.Equal(Color.FromRgb(0xAA, 0x33, 0x00), Assert.IsAssignableFrom<ISolidColorBrush>(((TextBlock)preview.Child!).Foreground).Color);
+        Assert.Contains(fill, GraphEditorView.ProjectColors(session.Project, fill: true));
+
+        // 저장된다. 되돌리면 이름 색 → 바탕색 차례로 걷힌다.
+        session.Save();
+        Assert.Contains("\"fill\": \"#FFF59D\"", File.ReadAllText(session.ProjectPath!), StringComparison.Ordinal);
+        session.Editor.Undo();
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(session.Project.FindSpeaker("라루")!.Fill);
+        Assert.IsNotType<WriterTextBox>(WritingBox(graph, session, "root"));
+
+        window.Close();
+    });
+
+    /// <summary>화자 줄의 색 단추를 열어 직접 고르기에 그 색을 적고 [입히기].</summary>
+    private static void Pick(GraphEditorView graph, string tag, string hex)
+    {
+        var button = (Button)Control(graph, tag);
+        button.Flyout!.ShowAt(button);
+        Dispatcher.UIThread.RunJobs();
+        var menu = (Control)((Flyout)button.Flyout).Content!;
+        menu.GetLogicalDescendants().OfType<TextBox>().Single().Text = hex;
+        Dispatcher.UIThread.RunJobs();
+        Click(menu.GetLogicalDescendants().OfType<Button>().Single(item => Equals(item.Content, "입히기")));
+        Dispatcher.UIThread.RunJobs();
+    }
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>[대본] 판에서 그 에피소드 카드의 글 칸.</summary>

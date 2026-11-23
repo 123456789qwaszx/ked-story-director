@@ -105,8 +105,11 @@ public partial class GraphEditorView
 
     /// <summary>이 카드에 이름 색을 정한 화자의 대사가 있는가.</summary>
     private static bool SpeaksInColor(StoryProject project, DialogueNode node) =>
-        project.Speakers.Any(speaker => speaker.Color is not null) &&
-        node.Script.ActiveLines.Any(line => project.FindSpeaker(node.Script.Text(line.Id).Speaker)?.Color is not null);
+        project.Speakers.Any(Dressed) &&
+        node.Script.ActiveLines.Any(line => project.FindSpeaker(node.Script.Text(line.Id).Speaker) is { } speaker && Dressed(speaker));
+
+    /// <summary>이름을 꾸민 화자인가 — 이름 색(WF-D15)이나 이름 바탕색(WF-D22)을 정했다.</summary>
+    private static bool Dressed(Speaker speaker) => speaker.Color is not null || speaker.Fill is not null;
 
     /// <summary>
     /// 칸의 종류가 서식 유무와 맞지 않는 카드들을 다시 지어 칸을 바꾼다 — 지금 도는 처리가 끝난 뒤에. 하나면 그 카드만(RebuildCard), 여럿이면(화자 이름 색 하나가 여러
@@ -204,15 +207,17 @@ public partial class GraphEditorView
         IReadOnlyList<string?> ids = layout is null || node.WriterMarks.Count == 0
             ? []
             : ScenarioLineIdentity.RowLineIds(layout.Text, layout.RowOfLine, text);
-        bool colored = speakers.Any(speaker => speaker.Color is not null);
+        bool colored = speakers.Any(Dressed);
 
         for (int row = 0; row < rows.Count; row++)
         {
+            // 화자 이름 — 이름 색 · 이름 바탕색(WF-D15 · WF-D22).
             if (colored &&
                 ScenarioTextParser.SpeakerNameRange(rows[row].Text, speakers) is { } name &&
-                speakers.FirstOrDefault(speaker => string.Equals(speaker.Name, name.Name, StringComparison.Ordinal))?.Color is { } speakerColor)
+                speakers.FirstOrDefault(speaker => string.Equals(speaker.Name, name.Name, StringComparison.Ordinal)) is { } speaker &&
+                Dressed(speaker))
             {
-                looks.Add(new BoxLook(rows[row].Start + name.Start, name.Length, new WriterLook(Color: speakerColor)));
+                looks.Add(new BoxLook(rows[row].Start + name.Start, name.Length, new WriterLook(Color: speaker.Color, Fill: speaker.Fill)));
             }
 
             if (row >= ids.Count ||
@@ -727,12 +732,12 @@ public partial class GraphEditorView
     internal ColorMenu ColorMenuOf(WriterStyleKind kind) => _colorMenus[kind];
 
     /// <summary>
-    /// 이 프로젝트에 쓴 색 — 서식의 글자색(화자 이름 색도 글자색이다 · WF-D15) 또는 바탕색. 색 차림의 「이 프로젝트에 쓴 색」(WF-D14).
+    /// 이 프로젝트에 쓴 색 — 서식의 글자색(화자 이름 색도 글자색이다 · WF-D15) 또는 바탕색(화자 이름 바탕색도 · WF-D22). 색 차림의 「이 프로젝트에 쓴 색」(WF-D14).
     /// </summary>
     internal static IEnumerable<WriterRgb> ProjectColors(StoryProject project, bool fill)
     {
         IEnumerable<WriterRgb> marks = WriterMarkMath.UsedColors(project.EnumerateNodes().OfType<DialogueNode>(), fill);
-        return fill ? marks : marks.Concat(project.Speakers.Select(speaker => speaker.Color).OfType<WriterRgb>()).Distinct();
+        return marks.Concat(project.Speakers.Select(speaker => fill ? speaker.Fill : speaker.Color).OfType<WriterRgb>()).Distinct();
     }
 
     /// <summary>글자색 · 바탕색 — 단추 밑의 색 띠가 마지막에 쓴 색이고, 누르면 색 차림이 열린다(WF-D14).</summary>

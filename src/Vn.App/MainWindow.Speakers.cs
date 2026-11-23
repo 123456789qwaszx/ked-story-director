@@ -252,45 +252,70 @@ public partial class MainWindow
     /// 화자의 이름 색 단추(2026-11-23 소유자 — 「화자탭에서 그 화자별로 원하는 색상을 지정 한 뒤에, 에피소드 탭 내부에서 그 화자를 사용할 때, 자동으로 그 색상으로
     /// 이름이 바뀌도록」 · writer-formatting WF-D15). 정한 색이면 그 색 네모, 없으면 빈 네모. 누르면 색 차림(<see cref="WriterColorChooser"/> — 정해 둔 열 가지 ·
     /// 없음 · 이 프로젝트에 쓴 색 · 직접 고르기)이 열린다. 고르면 되돌리기 한 칸이고, [대본] 카드 글 칸의 그 이름이 그 색이 된다.
+    ///
+    /// <paramref name="fill"/>이면 <b>이름 바탕색</b> 단추다(2026-11-23 소유자 — 「여기다가 캐릭터의 글자 바탕색도 조정할 수 있게 해줄래?」 · WF-D22) — 「가」가
+    /// 그 화자의 이름 색으로 그 바탕 위에 선다(이름이 칸에서 보일 모습). 바탕색 차림이다(정해 둔 연한 열 가지).
     /// </summary>
-    private Button SpeakerColorButton(Speaker speaker)
+    private Button SpeakerColorButton(Speaker speaker, bool fill = false)
     {
         string speakerName = speaker.Name;
-        var chooser = new WriterColorChooser(fill: false, "이름 색을 걷습니다 — 보통 글자색으로 보입니다");
+        WriterRgb? now = fill ? speaker.Fill : speaker.Color;
+        string what = fill ? "이름 바탕색" : "이름 색";
+        var chooser = new WriterColorChooser(fill, fill ? "이름 바탕색을 걷습니다 — 바탕 없이 보입니다" : "이름 색을 걷습니다 — 보통 글자색으로 보입니다");
         var flyout = new Flyout { Content = chooser.Content, Placement = Avalonia.Controls.PlacementMode.BottomEdgeAlignedLeft };
         var swatch = new Border
         {
-            Width = 14,
-            Height = 14,
+            Width = fill ? 18 : 14,
+            Height = fill ? 16 : 14,
             CornerRadius = new CornerRadius(2),
             BorderThickness = new Thickness(1),
             BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0)),
-            Background = speaker.Color is { } color ? WriterPalette.Brush(color) : Brushes.Transparent
+            Background = now is { } color ? WriterPalette.Brush(color) : Brushes.Transparent
         };
+
+        // 바탕색 단추는 이름이 보일 모습 — 이름 색의 「가」가 그 바탕 위에.
+        if (fill)
+        {
+            var glyph = new TextBlock
+            {
+                Text = "가",
+                FontSize = 10,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            if (speaker.Color is { } nameColor)
+            {
+                glyph.Foreground = WriterPalette.Brush(nameColor);
+            }
+
+            swatch.Child = glyph;
+        }
+
         var button = new Button
         {
             Content = swatch,
             Padding = new Thickness(4),
-            Margin = new Thickness(0, 0, 6, 0),
+            Margin = new Thickness(0, 0, fill ? 6 : 2, 0),
             VerticalAlignment = VerticalAlignment.Center,
             Flyout = flyout,
-            Tag = "speaker-color:" + speakerName
+            Tag = (fill ? "speaker-fill:" : "speaker-color:") + speakerName
         };
-        ToolTip.SetTip(button, speaker.Color is { } shown
-            ? $"대본 칸에서 '{speakerName}' 이름의 색 — {shown.Hex}. 누르면 바꿉니다(게임에는 나가지 않습니다)."
-            : $"대본 칸에서 '{speakerName}' 이름의 색 — 정하지 않았습니다. 누르면 고릅니다(게임에는 나가지 않습니다).");
+        ToolTip.SetTip(button, now is { } shown
+            ? $"대본 칸에서 '{speakerName}' {what} — {shown.Hex}. 누르면 바꿉니다(게임에는 나가지 않습니다)."
+            : $"대본 칸에서 '{speakerName}' {what} — 정하지 않았습니다. 누르면 고릅니다(게임에는 나가지 않습니다).");
 
-        flyout.Opening += (_, _) => chooser.Prepare(GraphEditorView.ProjectColors(_session.Project, fill: false), speaker.Color);
+        flyout.Opening += (_, _) => chooser.Prepare(GraphEditorView.ProjectColors(_session.Project, fill), now);
         chooser.Picked += picked =>
         {
             flyout.Hide();
-            UiGuard.Run(_session, "화자 이름 색", () =>
+            UiGuard.Run(_session, "화자 " + what, () =>
             {
-                if (_session.Editor.SetSpeakerColor(speakerName, picked))
+                if (fill ? _session.Editor.SetSpeakerFill(speakerName, picked) : _session.Editor.SetSpeakerColor(speakerName, picked))
                 {
                     _session.SetStatus(picked is { } rgb
-                        ? $"화자 '{speakerName}'의 이름 색을 {rgb.Hex}로 정했습니다 — 대본 칸에서 그 색으로 보입니다. 되돌리기 한 번이면 돌아갑니다."
-                        : $"화자 '{speakerName}'의 이름 색을 걷었습니다.");
+                        ? $"화자 '{speakerName}'의 {what}을 {rgb.Hex}로 정했습니다 — 대본 칸에서 그 이름이 그렇게 보입니다. 되돌리기 한 번이면 돌아갑니다."
+                        : $"화자 '{speakerName}'의 {what}을 걷었습니다.");
                 }
             });
         };
@@ -298,7 +323,7 @@ public partial class MainWindow
         return button;
     }
 
-    /// <summary>화자 한 줄 — `[색][이름][✕]`. 이름을 비우는 것은 지우기가 아니다 — 지우기는 ✕ 하나다.</summary>
+    /// <summary>화자 한 줄 — `[이름 색][이름 바탕색][이름][✕]`. 이름을 비우는 것은 지우기가 아니다 — 지우기는 ✕ 하나다.</summary>
     private Control SpeakerRow(Speaker speaker)
     {
         string speakerName = speaker.Name;
@@ -360,11 +385,15 @@ public partial class MainWindow
             }
         });
 
+        // [이름 색][이름 바탕색][이름][✕] — 바탕색은 2026-11-23(WF-D22).
         Button color = SpeakerColorButton(speaker);
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
-        Grid.SetColumn(name, 1);
-        Grid.SetColumn(remove, 2);
+        Button fill = SpeakerColorButton(speaker, fill: true);
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,Auto,*,Auto") };
+        Grid.SetColumn(fill, 1);
+        Grid.SetColumn(name, 2);
+        Grid.SetColumn(remove, 3);
         row.Children.Add(color);
+        row.Children.Add(fill);
         row.Children.Add(name);
         row.Children.Add(remove);
 

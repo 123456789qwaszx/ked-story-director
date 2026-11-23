@@ -384,6 +384,37 @@ public sealed class WriterMarksTests
         Assert.Null(ProjectSnapshotCodec.Decode(broken).FindSpeaker("하린")!.Color);
     }
 
+    /// <summary>
+    /// 2026-11-23 소유자 — 「화자탭에서 현재는 캐릭터의 글자색만 바꿀 수 있는데, 여기다가 캐릭터의 글자 바탕색도 조정할 수 있게」(WF-D22). 이름 바탕색은 이름
+    /// 색과 따로 — 정했을 때만 저장되고, 이름을 바꿔도 따라가고, 되돌리기 한 칸이며, 읽지 못하면 바탕 없이 선다.
+    /// </summary>
+    [Fact]
+    public void 화자_이름_바탕색은_이름_색과_따로_저장되고_되돌리기_한_칸이다()
+    {
+        (ProjectEditor editor, _, _) = Stage("하린: 오늘은 긴 하루였어");
+        var color = new WriterRgb(0xAA, 0x33, 0x00);
+        var fill = new WriterRgb(0xFF, 0xF5, 0x9D);
+        Assert.True(editor.SetSpeakerColor("하린", color));
+        Assert.DoesNotContain("\"fill\"", ProjectSnapshotCodec.Encode(editor.Project), StringComparison.Ordinal);
+
+        Assert.True(editor.SetSpeakerFill("하린", fill));
+        Assert.False(editor.SetSpeakerFill("하린", fill));
+        Assert.False(editor.SetSpeakerFill("없는 화자", fill));
+        Assert.Equal(new Speaker("하린", editor.Project.FindSpeaker("하린")!.CharacterId, color, fill),
+            ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(editor.Project)).FindSpeaker("하린"));
+
+        editor.RenameSpeaker("하린", "하린이");
+        Assert.Equal(fill, editor.Project.FindSpeaker("하린이")!.Fill);
+        editor.Undo();
+        editor.Undo();
+        Assert.Equal((color, (WriterRgb?)null), (editor.Project.FindSpeaker("하린")!.Color, editor.Project.FindSpeaker("하린")!.Fill));
+
+        Assert.True(editor.SetSpeakerFill("하린", fill));
+        string broken = ProjectSnapshotCodec.Encode(editor.Project).Replace("\"#FFF59D\"", "\"연노랑\"", StringComparison.Ordinal);
+        Assert.Null(ProjectSnapshotCodec.Decode(broken).FindSpeaker("하린")!.Fill);
+        Assert.Equal(color, ProjectSnapshotCodec.Decode(broken).FindSpeaker("하린")!.Color);
+    }
+
     [Theory]
     [InlineData("하린: 오늘은", 0, 2, "하린")]
     [InlineData("  하린:오늘은", 2, 2, "하린")]
