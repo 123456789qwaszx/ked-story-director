@@ -7,9 +7,21 @@
          TreeView를 쓰지 않는다. 접기는 삼각형만 하고 이름 쪽은 고르기(뒤에 끌기 · 두 번 눌러 이름 고치기)를
             받아야 하는데, TreeView는 줄을 누르면 접고 펴는 손짓과 고르는 손짓이 한 줄에 엉킨다. 줄을 직접
             세운다. -->
-    <ScrollViewer x:Name="TreeScroll"
-                  HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <StackPanel x:Name="RowHost" Margin="2,4" />
-    </ScrollViewer>
+    <Grid RowDefinitions="Auto,*">
+        <!-- 찾기 — 두 탭 같다(2026-11-23 소유자 — 「구성과 대본의 하이어아키에 검색기능만 추가합시다」). 치는 동안 줄을 거른다(SearchBox). -->
+        <TextBox x:Name="SearchBox"
+                 Grid.Row="0"
+                 Classes="clearButton"
+                 Margin="4,4,4,0"
+                 FontSize="12"
+                 Watermark="찾기 — 이름 · ID"
+                 ToolTip.Tip="에피소드 · 장면 · 챕터를 이름이나 ID로 찾습니다 — 자음만 쳐도 됩니다(「ㅅㅌ」). 치는 동안 맞는 줄과 그 위 줄만 남습니다. Enter · ↓는 첫 줄로, Esc는 지웁니다." />
+
+        <ScrollViewer x:Name="TreeScroll"
+                      Grid.Row="1"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="RowHost" Margin="2,4" />
+        </ScrollViewer>
+    </Grid>
 </UserControl>

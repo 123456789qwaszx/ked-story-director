@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Text;
 
 namespace Vn.App.Views;
 
@@ -149,6 +150,7 @@ internal sealed record HierarchyPick(
 /// 하이어아키에 보이는 줄 하나 — <b>검증의 손잡이</b>이기도 하다(그려진 컨트롤이 아니라 이 목록으로 구조를 잰다).
 /// </summary>
 /// <param name="Key">그 줄의 신원 — 접힘과 선택을 다시 그린 뒤에도 같은 줄에 잇는다(줄 번호는 편집 한 번에 바뀐다).</param>
+/// <param name="Find">찾기가 견주는 글 — ID와 이름(줄마다 하나 · <c>\n</c>으로 가른다). 보이는 글이 ID든 이름이든 둘 다로 찾는다. null이면 보이는 글.</param>
 internal sealed record HierarchyRow(
     HierarchyKind Kind,
     string Key,
@@ -161,7 +163,8 @@ internal sealed record HierarchyRow(
     bool IsSceneRoot,
     bool HasWarning,
     HierarchyEye Eye = HierarchyEye.None,
-    string? NodeId = null)
+    string? NodeId = null,
+    string? Find = null)
 {
     public HierarchyPick Pick => new(Kind, ChapterId, SceneId, EpisodeId, NodeId);
 }
@@ -187,6 +190,11 @@ internal sealed record HierarchyRow(
 /// 기준 줄(마지막으로 그냥 · Ctrl로 누른 줄)부터 그 줄까지 보이는 줄을 모두 고른다. 챕터 · 장면 · 에피소드가 섞여도 된다. 판 · 인스펙터는 마지막에 누른 줄
 /// (<see cref="Selection"/>)만 따르고, 고른 줄 모두는 <see cref="Selections"/>다 — 나중에 「고른 것에 든 에피소드」를 한꺼번에 바꾸는 데 쓴다(소유자 — 빈 선택지
 /// 숨기기 · 글 서식). 그냥 누르기 · 화살표 · 밖에서 고른 다른 것은 다시 한 줄이다.
+///
+/// ⭐ <b>찾기</b>(2026-11-23 소유자 — 「구성과 대본의 하이어아키에 검색기능만 추가합시다. 이게 생각보다 에피소드가 많을 때, 특정 에피소드 찾는게 힘들더라고요」 ·
+/// <c>docs/plans/hierarchy.md</c> §6). 위의 찾기 칸에 치는 동안 <b>맞는 줄과 그 위 줄(챕터 · 장면)만</b> 남긴다 — 접어 둔 챕터 · 장면 안도 찾는다(찾는 동안은
+/// 접힘을 보지 않고, 접힘은 그대로 둔다). 챕터 · 장면 · 에피소드 · 분기 카드를 ID와 이름 둘 다로, 화자 칸 자동완성과 같은 규칙(<see cref="Hangul.Matches"/> — 들어
+/// 있으면 · 자음만 쳐도)으로 찾는다. 줄을 누르면 늘 그대로 고른다(판이 따른다). Enter · ↓는 첫 맞는 줄로, Esc는 지운다 — 지우면 고른 줄이 보이게 돌아간다.
 /// </summary>
 public partial class StoryHierarchy : UserControl
 {
@@ -237,6 +245,96 @@ public partial class StoryHierarchy : UserControl
             ItemsSource = new[] { MenuItemFor("챕터 추가", HierarchyCommand.AddChapter, row: null, anchor: TreeScroll) }
         };
         TreeScroll.ContextMenu = _emptyAreaMenu;
+
+        SearchBox.TextChanged += (_, _) => UiGuard.Run(null, "하이어아키 찾기", () => Search(SearchBox.Text));
+        SearchBox.KeyDown += (_, args) => UiGuard.Run(null, "하이어아키 찾기", () => SearchKey(args));
+    }
+
+    // ── 찾기 ────────────────────────────────────────────────────────────────
+
+    private string _query = string.Empty;
+
+    /// <summary>찾는 중인가 — 찾기 칸에 글이 있다.</summary>
+    internal bool Searching => _query.Length > 0;
+
+    /// <summary>지금 찾는 말에 맞는 줄 수(그 위 줄은 빼고) — 찾지 않으면 0.</summary>
+    internal int SearchHits { get; private set; }
+
+    private void Search(string? text)
+    {
+        string query = (text ?? string.Empty).Trim();
+
+        if (string.Equals(query, _query, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        bool ended = Searching && query.Length == 0;
+        _query = query;
+        Refresh();
+
+        // 찾기를 걷으면 고른 줄이 보이게 — 찾다가 누른 줄이 접힘이 돌아온 그루 어디에 섰는지 바로 보인다.
+        if (ended && Selection is { } pick)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => RowButton(pick.Key)?.BringIntoView());
+        }
+    }
+
+    /// <summary>찾기 칸의 키 — Enter · ↓는 첫 맞는 줄을 고르고(초점이 하이어아키로 와 ↑↓로 이어 고른다), Esc는 지운다.</summary>
+    private void SearchKey(Avalonia.Input.KeyEventArgs args)
+    {
+        switch (args.Key)
+        {
+            case Avalonia.Input.Key.Enter or Avalonia.Input.Key.Down when Searching:
+                args.Handled = true;
+
+                if (_rows.FirstOrDefault(Matches) is { } first)
+                {
+                    Press(first);
+                    RowButton(first.Key)?.BringIntoView();
+                }
+
+                break;
+
+            case Avalonia.Input.Key.Escape when Searching:
+                args.Handled = true;
+                SearchBox.Text = string.Empty;
+                break;
+        }
+    }
+
+    /// <summary>그 줄이 찾는 말에 맞는가 — ID와 이름(<see cref="HierarchyRow.Find"/>)과 보이는 글 가운데 하나라도. 프로젝트 줄은 늘 서는 뿌리라 세지 않는다.</summary>
+    private bool Matches(HierarchyRow row) =>
+        Searching && row.Kind != HierarchyKind.Project &&
+        (row.Find ?? row.Text).Split('\n').Append(row.Text).Any(text => Hangul.Matches(text, _query));
+
+    /// <summary>
+    /// 찾는 동안 남길 줄 — 맞는 줄과 그 위 줄(그 줄을 품은 챕터 · 장면 · 에피소드)만, 차례 그대로. 줄은 깊이 차례(앞 → 뒤)로 서 있으므로 뒤에서부터 「아래에
+    /// 남는 줄이 있는가」를 깊이마다 들고 온다. 프로젝트 줄은 늘 남는다.
+    /// </summary>
+    private List<HierarchyRow> Filtered(List<HierarchyRow> rows)
+    {
+        SearchHits = 0;
+
+        if (!Searching || rows.Count == 0)
+        {
+            return rows;
+        }
+
+        var below = new bool[rows.Max(row => row.Depth) + 2];
+        var keep = new bool[rows.Count];
+
+        for (int index = rows.Count - 1; index >= 0; index--)
+        {
+            int depth = rows[index].Depth;
+            bool hit = Matches(rows[index]);
+            SearchHits += hit ? 1 : 0;
+            keep[index] = rows[index].Kind == HierarchyKind.Project || hit || below[depth + 1];
+            Array.Clear(below, depth + 1, below.Length - depth - 1);
+            below[depth] |= keep[index];
+        }
+
+        return rows.Where((_, index) => keep[index]).ToList();
     }
 
     /// <summary>
@@ -420,7 +518,7 @@ public partial class StoryHierarchy : UserControl
     /// <summary>보일 줄들 — 눈 기둥이 있으면 줄마다 눈을 물어 담는다(눈이 바뀌어도 줄이 다시 선다).</summary>
     private List<HierarchyRow> BuildRows()
     {
-        List<HierarchyRow> rows = BuildTree();
+        List<HierarchyRow> rows = Filtered(BuildTree());
 
         if (EyeOf is { } eyeOf)
         {
@@ -471,7 +569,8 @@ public partial class StoryHierarchy : UserControl
             // 스탯」 · 「에피소드 N」은 같은 날 걷혔다.
             HierarchyKind.Chapter, key, chapterId, null, null, ShowEpisodeTitles ? chapter.Model.ShownName : chapterId,
             Detail: ShowEpisodeTitles ? null : NameBeside(chapterId, chapter.Model.DisplayName),
-            Depth: 1, IsSceneRoot: false, HasWarning: chapter.HasErrors));
+            Depth: 1, IsSceneRoot: false, HasWarning: chapter.HasErrors,
+            Find: Findable(chapterId, chapter.Model.DisplayName, chapter.Model.ShownName)));
 
         if (!IsExpanded(key))
         {
@@ -492,7 +591,8 @@ public partial class StoryHierarchy : UserControl
                     ShowEpisodeTitles ? null : NameBeside(scene.SceneId, scene.DisplayName),
                     ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? "메모" : null
                 }.OfType<string>()) is { Length: > 0 } sceneDetail ? sceneDetail : null,
-                Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry));
+                Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry,
+                Find: Findable(scene.SceneId, scene.DisplayName)));
 
             if (!IsExpanded(sceneKey))
             {
@@ -527,9 +627,14 @@ public partial class StoryHierarchy : UserControl
                 depth,
                 IsSceneRoot: false,
                 HasWarning: false,
-                NodeId: home.Card.Id));
+                NodeId: home.Card.Id,
+                Find: Findable(EpisodeNaming.BranchTitleOf(home.Card), home.Card.Id)));
         }
     }
+
+    /// <summary>찾기가 견줄 글들 — 빈 것은 뺀다(<see cref="HierarchyRow.Find"/>).</summary>
+    private static string Findable(params string?[] texts) =>
+        string.Join('\n', texts.Where(text => !string.IsNullOrWhiteSpace(text)).Select(text => text!.Trim()).Distinct(StringComparer.Ordinal));
 
     /// <summary>ID로 선 줄의 곁글 이름 — 비었거나 ID와 같으면 없다(에피소드 제목과 같은 규칙).</summary>
     private static string? NameBeside(string id, string? name) =>
@@ -546,7 +651,8 @@ public partial class StoryHierarchy : UserControl
             Detail: ShowEpisodeTitles ? null : NameBeside(episode.EpisodeId, episode.Title),
             depth,
             IsSceneRoot: string.Equals(scene.RootEpisodeId, episode.EpisodeId, StringComparison.Ordinal),
-            HasWarning: false);
+            HasWarning: false,
+            Find: Findable(episode.EpisodeId, episode.Title, episode.ShownTitle));
 
     /// <summary>
     /// 이 마디가 펴져 있는가 — 사람이 접지 않았고, 사람이 폈거나 <b>고른 것이 그 안에 있을 때</b>다(처음 열면 고른 것이
@@ -554,6 +660,7 @@ public partial class StoryHierarchy : UserControl
     /// 있다. 고른 마디 <b>자신</b>은 펴지 않는다 — 챕터를 골랐다고 그 챕터가 펼쳐지면 고르는 손짓이 줄을 다시 세운다.
     /// </summary>
     private bool IsExpanded(string key) =>
+        Searching ||   // 찾는 동안은 접힘을 보지 않는다 — 접어 둔 챕터 · 장면 안도 찾는다
         !Folds.Collapsed.Contains(key) &&
         (key == ProjectKey || Folds.Expanded.Contains(key) || PathOf(Selection).Contains(key));
 
@@ -646,6 +753,18 @@ public partial class StoryHierarchy : UserControl
 
         RenameBox?.Focus();
         RenameBox?.SelectAll();
+
+        if (_hasProject && _chapters.Count > 0 && Searching && SearchHits == 0)
+        {
+            RowHost.Children.Add(new TextBlock
+            {
+                Text = $"「{_query}」에 맞는 것이 없습니다.",
+                Margin = new Thickness(26, 6),
+                Opacity = 0.55,
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap
+            });
+        }
 
         if (!_hasProject)
         {
@@ -1086,11 +1205,15 @@ public partial class StoryHierarchy : UserControl
             return arrow;
         }
 
-        arrow[ToolTip.TipProperty] = "접었다 폅니다";
+        arrow[ToolTip.TipProperty] = Searching ? "찾는 동안은 모두 펴서 보입니다 — 찾기를 지우면 접어 둔 대로 돌아갑니다." : "접었다 폅니다";
         arrow.PointerPressed += (_, args) => UiGuard.Run(null, "접기", () =>
         {
             args.Handled = true;
-            Fold(row.Key, collapse: IsExpanded(row.Key));
+
+            if (!Searching)
+            {
+                Fold(row.Key, collapse: IsExpanded(row.Key));
+            }
         });
 
         return arrow;
@@ -1212,7 +1335,9 @@ public partial class StoryHierarchy : UserControl
     {
         base.OnKeyDown(e);
 
-        if (e.Handled || _renamingKey is not null || _rows.Count == 0)
+        // 찾기 칸의 키는 그 칸의 것이다(Enter · ↓ · Esc는 SearchKey가 받는다).
+        if (e.Handled || _renamingKey is not null || _rows.Count == 0 ||
+            e.Source is Avalonia.Visual source && Avalonia.VisualTree.VisualExtensions.GetSelfAndVisualAncestors(source).Contains(SearchBox))
         {
             return;
         }
@@ -1227,7 +1352,7 @@ public partial class StoryHierarchy : UserControl
         {
             Avalonia.Input.Key.Down => _rows[Math.Min(_rows.Count - 1, index + 1)],
             Avalonia.Input.Key.Up => _rows[Math.Max(0, index - 1)],
-            Avalonia.Input.Key.Left when expandable && IsExpanded(current!.Key) => Folding(current, collapse: true),
+            Avalonia.Input.Key.Left when expandable && !Searching && IsExpanded(current!.Key) => Folding(current, collapse: true),
             Avalonia.Input.Key.Left when current is not null => ParentOf(index),
             Avalonia.Input.Key.Right when expandable && !IsExpanded(current!.Key) => Folding(current, collapse: false),
             Avalonia.Input.Key.Right when current is not null && index + 1 < _rows.Count &&
