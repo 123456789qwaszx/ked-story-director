@@ -2148,6 +2148,25 @@ public partial class GraphEditorView : UserControl
                     : "눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다."
             };
 
+        // 이어졌는데 문구가 없는 선택지(자동 길이 두 번째 길에 밀려 선택지가 됐다 — auto-to-choice A2)는 빨갛게 「문구를 적어 주세요」다 — 문구를 적을 때까지
+        // 검증 오류(OptionLabelBlank)라 그 챕터의 진행 JSON이 나가지 않는다. 누르면 그 자리에서 적는다.
+        if (!slot.IsEmpty && !auto && text.Length == 0)
+        {
+            label = new Border
+            {
+                Padding = new Thickness(4, 1),
+                BorderThickness = new Thickness(1),
+                BorderBrush = SlotNeedsLabelInk,
+                CornerRadius = new CornerRadius(3),
+                Background = Brushes.White,
+                VerticalAlignment = VerticalAlignment.Center,
+                Cursor = new Cursor(StandardCursorType.Ibeam),
+                Tag = SlotNeedsLabelTag,
+                Child = new TextBlock { Text = SlotNeedsLabelText, FontSize = 10, FontWeight = FontWeight.SemiBold, Foreground = SlotNeedsLabelInk },
+                [ToolTip.TipProperty] = "문구가 없는 선택지입니다 — 자동 길이었는데 다른 길을 이어 선택지가 됐습니다. 눌러서 문구를 적으세요. 적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다."
+            };
+        }
+
         if (!slot.IsAuto)
         {
             label.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
@@ -5274,6 +5293,14 @@ public partial class GraphEditorView : UserControl
     /// <summary>빈 선택지 칸(네모)의 Tag — 칸 줄 안에서 글자 대신 선 그 칸을 찾는다.</summary>
     internal const string SlotPlaceholderTag = "slot-placeholder";
 
+    /// <summary>이어졌는데 문구가 없는 선택지 칸의 글(auto-to-choice A2) — 빨갛다.</summary>
+    internal const string SlotNeedsLabelText = "문구를 적어 주세요";
+
+    /// <summary>이어졌는데 문구가 없는 선택지 칸의 표 — 시험의 손잡이다.</summary>
+    internal const string SlotNeedsLabelTag = "slot-needs-label";
+
+    private static readonly IBrush SlotNeedsLabelInk = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+
     private static readonly IBrush SlotPlaceholderInk = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF));
     private static readonly IBrush SlotPlaceholderBorder = new SolidColorBrush(Color.FromRgb(0xB8, 0xBC, 0xC4));
 
@@ -7250,6 +7277,7 @@ public partial class GraphEditorView : UserControl
         // 문구가 없는 채로 살아 있는 칸은 <b>자동 길</b> 자리다 (§2 ③-a). 이미 이어진 자동 길을 옮기면
         // 자동 길 그대로다. 자동 길은 장면을 넘어도 된다(⛔ 2026-11-18까지는 같은 장면 안에서만이라 여기서 먼저 거절했다).
         bool auto = choice.IsEmpty ? label.Length == 0 : choice.IsAuto;
+        bool turnedAuto = false;
 
         if (string.Equals(choice.ToEpisodeId, episodeId, StringComparison.Ordinal))
         {
@@ -7289,6 +7317,9 @@ public partial class GraphEditorView : UserControl
             ChoiceRow? was = PendingText(choice) is { } written ? new ChoiceRow.Written(written) : null;
             SetRow(choice, new ChoiceRow.Joined());
 
+            // 자동 길이 있는 에피소드에 두 번째 길을 이으면 자동 길이 문구가 빈 선택지가 된다(모델이 한다 — auto-to-choice) — 상태줄로 알린다.
+            turnedAuto = !auto && _session.Editor.HasAutoEdge(choice.ChapterId, choice.FromEpisodeId);
+
             try
             {
                 _session.Editor.AddEdge(
@@ -7306,7 +7337,10 @@ public partial class GraphEditorView : UserControl
 
         _session.SetStatus(auto
             ? $"'{choice.FromEpisodeId}' → '{episodeId}' 자동으로 이었습니다(문구 없이 지나갑니다)."
-            : $"'{choice.FromEpisodeId}' → '{episodeId}' 선택지 '{label}'을 이었습니다.");
+            : turnedAuto
+                ? $"'{choice.FromEpisodeId}' → '{episodeId}' 선택지 '{label}'을 이었습니다 — 자동 길이 선택지가 됐습니다. 빨간 칸에 문구를 적으세요" +
+                  "(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다."
+                : $"'{choice.FromEpisodeId}' → '{episodeId}' 선택지 '{label}'을 이었습니다.");
 
         DrawJoined(sourceNodeId);
     }

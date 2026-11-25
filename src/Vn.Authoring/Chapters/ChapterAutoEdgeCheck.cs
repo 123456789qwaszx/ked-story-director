@@ -51,7 +51,8 @@ public static class ChapterAutoEdgeCheck
             if (outgoing.GetValueOrDefault(edge.FromEpisodeId) != 1)
             {
                 Error(ChapterDiagnosticCode.AutoEdgeHasSiblings,
-                    $"자동 길 '{edge.FromEpisodeId}'→'{edge.ToEpisodeId}'은 그 에피소드의 유일한 간선이어야 합니다.");
+                    $"자동 길 '{edge.FromEpisodeId}'→'{edge.ToEpisodeId}'은 그 에피소드의 유일한 간선이어야 합니다. " +
+                    "자동 길에 문구를 적으면 선택지가 됩니다(또는 한쪽 길을 지웁니다).");
             }
 
             if (edge.HasGate)

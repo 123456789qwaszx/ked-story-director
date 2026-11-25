@@ -617,12 +617,49 @@ public sealed partial class ProjectEditor
         // 출발은 그대로다 — 판은 그 출발의 철도만 다시 긋는다(usability UX19).
         Mutate(ProjectChangeKind.ChoiceRoute, () =>
         {
+            // 자동 길이 있는 에피소드에 두 번째 길 — 자동 길을 지우지 않고 문구가 빈 선택지로 바꾼다. 도착 · 자리는 그대로다(2026-11-23 소유자 — 「다른 칸에
+            // 두 번째 길을 이어 놓는 순간, 원래 자동 길을 지우지 않고, 문구가 빈 선택지로 바뀌는 게 맞겠네요. 도착은 그대로 두고요」 · auto-to-choice A1).
+            // 새 길과 한 되돌리기 칸이다. 반대(길이 하나만 남음)는 저절로 자동으로 되돌리지 않는다 — 문구를 비울 때만 자동이 된다.
+            if (!auto)
+            {
+                TurnAutoIntoChoice(chapter, fromEpisodeId);
+            }
+
             chapter.Edges.Insert(at, edge);
             LearnChoiceLabel(chapter, optionLabel);
         }, EpisodeNaming.CardFor(Project, chapterId, fromEpisodeId)?.Id);
 
         return edge;
     }
+
+    /// <summary>
+    /// 그 에피소드의 자동 길을 문구가 빈 선택지로 — 도착 · 자리 · 신원(문구 없음)은 그대로, 자동만 끈다(auto-to-choice A1). 자동 길에는 조건 · 스탯변화가
+    /// 없으니 옮길 것도 없다. 바꾼 길이 있으면 참. <c>Mutate</c> 안에서만 부른다.
+    /// </summary>
+    private static bool TurnAutoIntoChoice(ChapterDocument chapter, string fromEpisodeId)
+    {
+        bool turned = false;
+
+        for (int index = 0; index < chapter.Edges.Count; index++)
+        {
+            if (chapter.Edges[index] is { Auto: true } edge &&
+                string.Equals(edge.FromEpisodeId, fromEpisodeId, StringComparison.Ordinal))
+            {
+                chapter.Edges[index] = edge with { Auto = false };
+                turned = true;
+            }
+        }
+
+        return turned;
+    }
+
+    /// <summary>
+    /// 그 에피소드에서 다른 길을 이으면 자동 길이 선택지로 바뀌는가 — 그 에피소드에 자동 길이 있다(<see cref="AddEdge"/>가 바꾼다 · auto-to-choice). 판이 이을
+    /// 때 상태줄로 알리려고 묻는다.
+    /// </summary>
+    public bool HasAutoEdge(string chapterId, string fromEpisodeId) =>
+        FindChapter(chapterId)?.Edges.Any(edge =>
+            edge.Auto && string.Equals(edge.FromEpisodeId, fromEpisodeId, StringComparison.Ordinal)) == true;
 
     /// <summary>
     /// 선택지 한 줄의 배선을 고친다 — 문구와 도착을 한 변경으로.

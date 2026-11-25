@@ -118,5 +118,5 @@
 - 꾸러미 두 개가 붙었는지 · 창 제목의 판 번호 · zip 안의 고지문은 소유자가 릴리스 페이지에서 확인한다.
 - **다음 판(0.3.0)으로 미룬 것** — 영어 화면([`english-ui-orders.md`](english-ui-orders.md) — 범위는 전부 · 처음 언어는 아직 안 정했다),
   스탯 키를 바꾸면 대사의 `{stat("키")}`도 따라가게([`stat-read-rename-orders.md`](stat-read-rename-orders.md)), 자동 길이 있는 에피소드에 두 번째
-  길을 이으면 자동 길이 빈 문구 선택지가 되게([`auto-to-choice-orders.md`](auto-to-choice-orders.md)).
+  길을 이으면 자동 길이 빈 문구 선택지가 되게([`auto-to-choice-orders.md`](auto-to-choice-orders.md)) — **2026-11-25 끝**.
 - 옛 한글 스탯 키는 🟡 경고로 둔다 — 같은 날 소유자 「경고로만 둡시다」(`two-graphs.md` 7절 BH).

@@ -94,6 +94,48 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
+    public void 자동_길이_있는데_다른_칸을_이으면_자동_길이_빨간_빈_문구_선택지가_되고_적으면_고쳐진다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-23 소유자 — 「다른 칸에 두 번째 길을 이어 놓는 순간, 원래 자동 길을 지우지 않고, 문구가 빈 선택지로 바뀌는 게 맞겠네요. 도착은 그대로
+        // 두고요」(auto-to-choice A2). 바뀐 칸은 빨갛게 「문구를 적어 주세요」로 서고 상태줄이 말한다. 새 길과 바꾼 것이 한 되돌리기 칸이다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        session.Editor.AddEdge("ch01", "root", "a", auto: true);
+        graph.Rebuild();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("자동", TextOf(Labels(graph, "root")[0]));
+
+        Write(graph, "root", slot: 1, "다른 길");
+        Drag(graph, session, "root", slot: 1, onto: "a");
+
+        List<ChapterEdge> edges = session.Editor.FindChapter("ch01")!.Edges.Where(edge => edge.FromEpisodeId == "root").ToList();
+        Assert.Equal(2, edges.Count);
+        Assert.All(edges, edge => Assert.False(edge.Auto));
+        Assert.Contains(edges, edge => edge.HasNoOptionLabel && edge.ToEpisodeId == "a");
+        Assert.Contains("자동 길이 선택지가 됐습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        Border needs = Assert.Single(Rows(graph, "root").SelectMany(row => row.Children.OfType<Border>()),
+            face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag);
+        Assert.Equal(GraphEditorView.SlotNeedsLabelText, TextOf(needs));
+
+        // 되돌리기 한 번 — 새 길과 바꾼 것이 함께 돌아간다.
+        session.Editor.Undo();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.True(Assert.Single(session.Editor.FindChapter("ch01")!.Edges).Auto);
+
+        // 다시 하고 빨간 칸을 눌러 문구를 적으면 선택지가 된다.
+        session.Editor.Redo();
+        graph.Rebuild();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Press(Rows(graph, "root").SelectMany(row => row.Children.OfType<Border>()).Single(face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag));
+        Assert.NotNull(graph.SlotLabelBox);
+        graph.SlotLabelBox!.Text = "그대로 간다";
+        Key(graph.SlotLabelBox, Avalonia.Input.Key.Enter);
+
+        Assert.DoesNotContain(session.Editor.FindChapter("ch01")!.Edges, edge => edge.HasNoOptionLabel);
+        Assert.Contains(session.Editor.FindChapter("ch01")!.Edges, edge => edge.OptionLabel == "그대로 간다" && edge.ToEpisodeId == "a");
+    });
+
+    [Fact]
     public void 이어진_칸은_초록이다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();

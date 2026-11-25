@@ -128,7 +128,8 @@ public sealed class ChapterRailTests
 
         Assert.Equal("라루를 믿는다", order[0]);
         Assert.Equal("의심한다", order[1]);
-        Assert.Equal(GraphEditorView.SlotPlaceholderText, order[2]);   // 문구 없는 진행 — 적을 칸이 선다(2026-11-18)
+        // 문구 없는 진행(자동이 아닌 이은 길) — 빨갛게 「문구를 적어 주세요」다(2026-11-25 auto-to-choice A2 · ⛔ 2026-11-18부터는 회색 「빈 선택지」).
+        Assert.Equal(GraphEditorView.SlotNeedsLabelText, order[2]);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
