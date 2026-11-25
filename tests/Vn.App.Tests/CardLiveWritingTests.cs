@@ -93,7 +93,7 @@ public sealed class CardLiveWritingTests
 
         Assert.Equal(["하나", "둘째 줄", "셋째 줄"], Said(card));
         Assert.Equal(ids, card.Script.ActiveLines.Select(line => line.Id));
-        Assert.Equal([ids[1], ids[2]], session.PendingLineRemovalsOf(card.Id).Order());
+        Assert.Equal(new[] { ids[1], ids[2] }.Order(), session.PendingLineRemovalsOf(card.Id).Order());   // 신원은 무작위 — 차례 없이 견준다
         Assert.Equal([branch.Id], card.FindExtension(ids[2])!.DetourTargetNodeIds);
         Assert.Null(ToolTip.GetTip(Box(window, card.Id)));
 

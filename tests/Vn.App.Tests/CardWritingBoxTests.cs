@@ -270,6 +270,7 @@ public sealed class CardWritingBoxTests : IDisposable
         // 대다수」). 넘치는 글은 칸의 스크롤 막대를 끌거나 세로 글 맞춤으로 본다.
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        session.Editor.SetNodeFit(first.Id, fitWidth: false, fitHeight: false);   // 넘치는 칸 — 세로 맞춤이 켜져 있으면 쓰는 대로 칸이 늘어 넘치지 않는다
         session.Select(first.Id);
         Dispatcher.UIThread.RunJobs();
 

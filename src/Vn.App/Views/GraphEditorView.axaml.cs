@@ -963,6 +963,11 @@ public partial class GraphEditorView : UserControl
 
         // 칸 목록을 먼저 비운다 — 판에서 떼어 낼 때 초점을 쥔 칸이 초점 이탈을 받는데, 그 칸은 이제 넣을 곳이 아니다
         // (넣지 않은 글은 RestoreWritingFocus가 새 칸으로 옮긴다). 그대로 둘 카드의 칸은 남긴다.
+        foreach (string nodeId in _liveFitted.Keys.Where(id => !kept.ContainsKey(id)).ToList())
+        {
+            _liveFitted.Remove(nodeId);   // 새로 짓는 카드는 모델의 크기로 선다
+        }
+
         foreach (string nodeId in _writingBoxes.Keys.Where(id => !kept.ContainsKey(id)).ToList())
         {
             _writingBoxes.Remove(nodeId);
@@ -2586,7 +2591,7 @@ public partial class GraphEditorView : UserControl
             !card.Ports.SequenceEqual(node.OutputPorts.Where(port => port.Kind != GraphOutputPortKind.Choice)) ||
             !string.Equals(card.Title.Text, ShownName(node.NodeId, node.NodeName), StringComparison.Ordinal) ||
             !Equals(ToolTip.GetTip(card.Title), TitleTip(node.NodeId)) ||
-            Math.Abs(card.Visual.Width - WidthFor(node.NodeId)) > 0.01)
+            (Math.Abs(card.Visual.Width - WidthFor(node.NodeId)) > 0.01 && !IsLiveFitted(card)))
         {
             return false;
         }
@@ -2620,7 +2625,7 @@ public partial class GraphEditorView : UserControl
 
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, node.NodeId);
 
-        return Math.Abs(box.Height - WritingHeightFor(node.NodeId)) <= 0.01 &&
+        return (Math.Abs(box.Height - WritingHeightFor(node.NodeId)) <= 0.01 || IsLiveFitted(card)) &&
                string.Equals(_writingShown.GetValueOrDefault(card.NodeId), BoxText(layout), StringComparison.Ordinal) &&
                _writingLayouts.GetValueOrDefault(card.NodeId) is { } shown &&
                shown.RowOfLine.Count == layout.RowOfLine.Count &&
@@ -2709,6 +2714,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private NodeCard ReplaceCard(NodeCard old, ExpandedNodeProjection node)
     {
+        _liveFitted.Remove(old.NodeId);   // 새 카드는 모델의 크기로 선다
         _writingBoxes.Remove(old.NodeId);
         _writingShown.Remove(old.NodeId);
         _writingLayouts.Remove(old.NodeId);
@@ -3202,10 +3208,23 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 선 카드들의 크기가 프로젝트의 것과 다른가 — 폭과 글 칸 높이.</summary>
     private bool SizesChanged() => _cards.Any(SizeDiffers);
 
-    /// <summary>그 카드의 화면 크기(폭 · 글 칸 높이)가 모델과 다른가.</summary>
+    /// <summary>그 카드의 화면 크기(폭 · 글 칸 높이)가 모델과 다른가 — 쓰는 동안 화면에서만 맞춘 크기(<see cref="LiveFit"/>)는 다르지 않다.</summary>
     private bool SizeDiffers(NodeCard card) =>
-        Math.Abs(card.Visual.Width - WidthFor(card.NodeId)) > 0.5 ||
-        (card.WritingBox is { } box && Math.Abs(box.Height - WritingHeightFor(card.NodeId)) > 0.5);
+        !IsLiveFitted(card) &&
+        (Math.Abs(card.Visual.Width - WidthFor(card.NodeId)) > 0.5 ||
+         (card.WritingBox is { } box && Math.Abs(box.Height - WritingHeightFor(card.NodeId)) > 0.5));
+
+    /// <summary>
+    /// 쓰는 동안 화면에서만 맞춘 크기(아직 적지 않았다 — 넣을 때 <see cref="AutoFit"/>이 적는다). 그 카드가 이 크기로 서 있으면 모델과 달라도 「지금 모습
+    /// 그대로」다 — 그래야 그 사이에 판을 다시 그려도 쓰던 칸을 새로 짓지 않는다(조합 중인 글자 · 커서가 남는다).
+    /// </summary>
+    private readonly Dictionary<string, (double Width, double Height)> _liveFitted = new(StringComparer.Ordinal);
+
+    private bool IsLiveFitted(NodeCard card) =>
+        _liveFitted.TryGetValue(card.NodeId, out (double Width, double Height) size) &&
+        card.WritingBox is { } box &&
+        Math.Abs(card.Visual.Width - size.Width) <= 0.5 &&
+        Math.Abs(box.Height - size.Height) <= 0.5;
 
     /// <summary>지금 선 카드들의 포트 쪽(<see cref="GraphOutputPortProjection.OnLeft"/>)이 새 투영과 다른가.</summary>
     private bool PortSidesChanged(GraphProjection projection) =>
@@ -3719,6 +3738,62 @@ public partial class GraphEditorView : UserControl
     private void QueueAutoFit(string nodeId) =>
         Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Board_FitToText, () => AutoFit(nodeId)), DispatcherPriority.Background);
 
+    /// <summary>쓰는 동안의 맞춤을 기다리는 카드 — 칠 때마다 쌓지 않고 배치가 끝난 뒤 한 번 잰다.</summary>
+    private string? _liveFitNodeId;
+
+    private void QueueLiveFit(string nodeId)
+    {
+        if (string.Equals(_liveFitNodeId, nodeId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _liveFitNodeId = nodeId;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_liveFitNodeId is { } waiting)
+            {
+                _liveFitNodeId = null;
+                UiGuard.Run(_session, Ui.Board_FitToText, () => LiveFit(waiting));
+            }
+        }, DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// <b>쓰는 동안의 글 맞춤 — 화면의 카드만</b>(2026-11-26 소유자 — 「글을 한 단어씩 쓸 때 크기가 바로 반영되지 않고 엔터까지 쳐야 반영된다」). 칠 때마다(조합 중인
+    /// 글자도) 켠 쪽을 지금 칸의 글에 맞춰 화면의 카드 크기를 바꾸고 선 · 테두리 · 철도가 따라온다. 크기를 <b>적는</b> 것은 지금처럼 글을 넣을 때다(<see cref="AutoFit"/>
+    /// — 그 넣기의 되돌리기 칸에 든다) — 칠 때마다 적으면 되돌리기 칸이 글자마다 쌓인다. 카드를 다시 짓지 않고 크기만 바꾸므로 조합 중인 글자가 남는다.
+    /// ⛔ 그 전에는 넣을 때만 맞췄다 — 한글은 조합하는 동안 넣기를 미루므로(<see cref="CommitLiveWriting"/>) 띄어쓰기 · Enter 뒤에 멈춰야 맞았다.
+    /// </summary>
+    private void LiveFit(string nodeId)
+    {
+        if (_session?.Project.FindNode(nodeId)?.Layout is not { } layout ||
+            !(layout.FitWidth || layout.FitHeight) ||
+            layout.Minimized ||
+            _resizingCard is not null ||
+            _projection is null ||
+            FindCard(nodeId) is not { WritingBox: { } box } card ||
+            !_cards.Contains(card))
+        {
+            return;
+        }
+
+        card.Visual.UpdateLayout();
+
+        if (FitSizeOf(card, layout.FitWidth, layout.FitHeight) is not { } fit ||
+            (Math.Abs(card.Visual.Width - fit.Width) < 0.5 && Math.Abs(box.Height - fit.Height) < 0.5))
+        {
+            return;
+        }
+
+        card.Visual.Width = fit.Width;
+        box.Height = fit.Height;
+        _liveFitted[nodeId] = (fit.Width, fit.Height);
+        PlaceLineKnobs(card);
+        card.Visual.UpdateLayout();
+        PlaceVisuals(_projection, followRails: true);   // 자리는 그대로 — 선 · 테두리 · 이 카드에 기대는 철도만 따라온다
+    }
+
     /// <summary>
     /// <b>글 맞춤을 켠 쪽을 지금 글에 맞춘다</b>(2026-11-25) — 글 칸의 글(넣지 않은 글도)을 지금 모양으로 재서(<see cref="FitSizeOf"/>) 켠 쪽만 바꾼다. 화면의
     /// 카드를 먼저 그 크기로 두고 <see cref="Vn.Authoring.Editing.ProjectEditor.FitNodeSize"/>로 적는다 — 제 되돌리기 칸 없이 바로 앞의 넣기 · 맞춤 켜기 칸에
@@ -3745,6 +3820,7 @@ public partial class GraphEditorView : UserControl
 
         card.Visual.Width = fit.Width;
         box.Height = fit.Height;
+        _liveFitted.Remove(nodeId);   // 이제 적는다
         PlaceLineKnobs(card);
         card.Visual.UpdateLayout();
         _committingResize = true;
@@ -3790,7 +3866,16 @@ public partial class GraphEditorView : UserControl
             var typeface = new Typeface(box.FontFamily, box.FontStyle, box.FontWeight);
             double longest = 0;
 
-            foreach (string line in (box.Text ?? string.Empty).ReplaceLineEndings("\n").Split('\n'))
+            // 조합 중인 글자도 잰다 — 쓰는 동안의 맞춤(LiveFit)이 한글을 치는 대로 따라가게.
+            string measuredText = box.Text ?? string.Empty;
+
+            if (presenter.PreeditText is { Length: > 0 } composing)
+            {
+                int at = Math.Clamp(presenter.CaretIndex, 0, measuredText.Length);
+                measuredText = measuredText[..at] + composing + measuredText[at..];
+            }
+
+            foreach (string line in measuredText.ReplaceLineEndings("\n").Split('\n'))
             {
                 using var measured = new Avalonia.Media.TextFormatting.TextLayout(
                     line, typeface, box.FontSize, foreground: null, lineHeight: box.LineHeight);
@@ -4483,10 +4568,26 @@ public partial class GraphEditorView : UserControl
                 _liveWritingNodeId = nodeId;
                 _liveWriting.Stop();
                 _liveWriting.Start();
+                QueueLiveFit(nodeId);
             }
 
             // 서식은 쓰는 대로 같은 글자를 따라간다 — 넣을 때와 같은 셈으로 칸의 글에 다시 놓는다(writer-formatting).
             UpdateLooks(nodeId, box);
+        };
+
+        // 조합 중인 글자도 화면의 크기를 따라가게 한다(한글은 다음 글자를 칠 때까지 칸의 글이 아니다).
+        box.TemplateApplied += (_, applied) =>
+        {
+            if (applied.NameScope.Find<Avalonia.Controls.Presenters.TextPresenter>("PART_TextPresenter") is { } presenter)
+            {
+                presenter.PropertyChanged += (_, change) =>
+                {
+                    if (change.Property == Avalonia.Controls.Presenters.TextPresenter.PreeditTextProperty && box.IsFocused)
+                    {
+                        QueueLiveFit(nodeId);
+                    }
+                };
+            }
         };
 
         box.KeyDown += (_, args) =>

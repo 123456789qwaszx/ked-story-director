@@ -90,6 +90,68 @@ public sealed class CardFitTests : IDisposable
     });
 
     [Fact]
+    public void 넣기_전에도_쓰는_대로_화면의_카드가_글에_맞고_크기는_넣을_때_적힌다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「글을 한 단어씩 쓸 때 크기가 바로 반영되지 않고 엔터까지 쳐야 반영된다」. 화면의 카드는 칠 때마다 따라오고, 크기를
+        // 적는 것은 넣을 때다(그 넣기의 되돌리기 칸) — 글자마다 되돌리기 칸이 쌓이지 않는다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        string[] lines = [Long, .. Enumerable.Range(1, 11).Select(index => $"윌로: {index}번째 대답이다.")];
+        long before = session.Editor.Revision;
+
+        TextBox box = WritingBox(graph, root);
+        box.Focus();
+        box.Text = string.Join('\n', lines);
+        Settle(graph);
+
+        Assert.True(box.Height > DefaultHeight);
+        AssertAllVisible(graph, root);
+        Assert.Null(session.Project.FindNode(root)!.Layout.WritingHeight);   // 아직 적지 않았다
+        Assert.Equal(before, session.Editor.Revision);
+
+        // 그 사이에 판을 다시 그려도 쓰던 칸은 그 칸 그대로 · 맞춘 크기 그대로다(새로 지으면 조합 중인 글자가 사라진다).
+        double fitted = box.Height;
+        graph.Rebuild();
+        Settle(graph);
+        Assert.Same(box, WritingBox(graph, root));
+        Assert.Equal(fitted, box.Height);
+
+        graph.CommitLiveWriting();
+        Settle(graph);
+
+        Assert.Equal(box.Height, session.Project.FindNode(root)!.Layout.WritingHeight);
+
+        // 넣기와 맞춘 크기가 한 칸이다 — 한 번 되돌리면 글도 크기도 처음이다.
+        session.Editor.Undo();
+        Settle(graph);
+        Assert.Null(session.Project.FindNode(root)!.Layout.WritingHeight);
+        Assert.DoesNotContain(session.Project.FindDialogue(root)!.Script.ActiveLines,
+            line => session.Project.FindDialogue(root)!.Script.Text(line.Id).Text.Contains("번째 대답", StringComparison.Ordinal));
+    });
+
+    [Fact]
+    public void 조합_중인_글자도_가로_맞춤이_곧바로_따라온다() => HeadlessUi.Run(() =>
+    {
+        // 한글은 다음 글자를 칠 때까지 칸의 글이 아니다 — 조합 중인 글자까지 재야 치는 대로 넓어진다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        Click(graph, root, width: true);
+        double width = Card(graph, root).Width;
+        double? saved = session.Project.FindNode(root)!.Layout.Width;
+
+        TextBox box = WritingBox(graph, root);
+        box.Focus();
+        box.CaretIndex = 0;
+        TextPresenter presenter = box.GetVisualDescendants().OfType<TextPresenter>().Single();
+        presenter.SetCurrentValue(TextPresenter.PreeditTextProperty, Long + Long);
+        Settle(graph);
+
+        Assert.True(Card(graph, root).Width > width, $"{Card(graph, root).Width} > {width}");
+        Assert.Equal(saved, session.Project.FindNode(root)!.Layout.Width);   // 화면만 — 적지 않았다
+        Assert.Equal(Long + Long, presenter.PreeditText);                      // 크기를 바꿔도 조합 중인 글자가 남는다
+    });
+
+    [Fact]
     public void 가로를_켜면_곧바로_줄이_꺾이지_않게_넓어지고_켜기와_맞춤이_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
