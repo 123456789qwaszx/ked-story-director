@@ -51,6 +51,9 @@ public static class ChapterValidator
 
             // 대사에 나오는데 캐릭터 키가 없는 화자 — 경고(2026-11-18 writer-comfort WC6).
             ChapterSpeakerKeys.Verify(chapter, project, diagnostics);
+
+            // 대사의 {stat("키")}가 이 챕터에 없는 스탯을 읽는다 — 경고(2026-11-25 stat-read-rename S3).
+            ChapterStatReads.Verify(chapter, project, diagnostics);
         }
 
         return new ChapterValidationResult(diagnostics, reachability);

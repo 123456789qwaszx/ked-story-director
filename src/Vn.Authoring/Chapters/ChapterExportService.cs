@@ -160,7 +160,8 @@ public sealed class ChapterExportService
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        string fingerprint = Fingerprint(entry.Model, BoardNames(project, entry.ChapterId)) + SpeakerKeys(project, entry.Model);
+        string fingerprint = Fingerprint(entry.Model, BoardNames(project, entry.ChapterId)) + SpeakerKeys(project, entry.Model) +
+                             StatReads(project, entry.Model);
 
         if (_cache.TryGetValue(entry.ChapterId, out var cached) &&
             string.Equals(cached.Fingerprint, fingerprint, StringComparison.Ordinal))
@@ -530,6 +531,15 @@ public sealed class ChapterExportService
         project is null
             ? string.Empty
             : "화자키|" + string.Join('\u001f', ChapterSpeakerKeys.MissingOf(chapter, project)) + "\n";
+
+    /// <summary>
+    /// 지문에 실을 <b>없는 스탯을 읽는 대사</b>(<see cref="ChapterStatReads.MissingOf"/>) — 대사 글은 챕터 모델 · 판 이름에 없다. 싣지 않으면 대사의
+    /// <c>{stat("키")}</c>를 고쳐도 옛 경고가 남고, 새로 적어도 경고가 안 선다(stat-read-rename S3).
+    /// </summary>
+    private static string StatReads(StoryProject? project, ChapterGraphModel chapter) =>
+        project is null
+            ? string.Empty
+            : "스탯읽기|" + string.Join('\u001f', ChapterStatReads.MissingOf(chapter, project)) + "\n";
 
     /// <summary>
     /// 지문에 실을 <b>판의 상태</b> — 그 챕터 판의 대사노드(이름·표식·줄이 있는지). 판이 없으면

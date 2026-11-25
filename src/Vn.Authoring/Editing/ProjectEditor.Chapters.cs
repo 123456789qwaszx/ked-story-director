@@ -1,5 +1,6 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Script;
 
 namespace Vn.Authoring.Editing;
 
@@ -903,6 +904,9 @@ public sealed partial class ProjectEditor
     /// <item><b>판에 공급된 조건</b> — 아래.</item>
     /// <item><c>픽스처</c>의 시작값 — 키로 든 사전이라 안 갈면 그 값이 <b>조용히 사라지고</b>
     /// 워커가 초기값으로 되돌아간다.</item>
+    /// <item><b>대사 글의 <c>{stat("키")}</c></b> — 그 챕터 대본의 줄, 언어마다(2026-11-23 소유자 — 「키를 바꿀 때 대사 글의 같은 스탯도 바꾸는게
+    /// 맞고」 · stat-read-rename S1). 화자 개명(<see cref="RenameSpeaker"/>)처럼 줄의 개정판(<see cref="ScriptLine.Revision"/>)을 올리지 않는다 —
+    /// 키는 줄이 말하는 내용이 아니라서 번역 · 녹음이 낡지 않는다. ⛔ 0.2.0까지는 대사 글이 옛 키를 들고 남아 게임에서 없는 스탯을 읽었다.</item>
     /// </list>
     ///
     /// <b>넷째를 빠뜨리면 대사 갈래가 통째로 고아가 된다.</b> 판의 공급 노드는 챕터 조건을
@@ -1018,10 +1022,17 @@ public sealed partial class ProjectEditor
         }
 
         List<ConditionDefinition> supplied = SuppliedConditionsReading(chapterId, from);
+        (List<(ScriptLocale Locale, string LineId, LocalizedLine Line)> reads, int readLines) =
+            DialogueStatReadsRenamed(chapterId, chapter, from, to);
 
         Mutate(() =>
         {
             chapter.Stats[index] = renamed;
+
+            foreach ((ScriptLocale locale, string lineId, LocalizedLine line) in reads)
+            {
+                locale.Entries[lineId] = line;   // 개정판은 그대로 — 화자 개명과 같은 규칙
+            }
 
             foreach ((int at, ChapterFixture fixture) in fixtures)
             {
@@ -1049,7 +1060,50 @@ public sealed partial class ProjectEditor
         });
 
         return new StatRenameOutcome(
-            true, edges.Count, conditions.Count, supplied.Count, fixtures.Count, null);
+            true, edges.Count, conditions.Count, supplied.Count, fixtures.Count, null, readLines);
+    }
+
+    /// <summary>
+    /// 그 챕터 대본에서 <c>{stat("옛 키")}</c>를 새 키로 바꾼 글들 — 언어마다 · 은퇴한 줄도(되살아나도 옛 키가 없게). 바꾸는 것은 부르는 쪽의
+    /// 변경 안에서다. 수는 바뀐 <b>살아 있는</b> 줄(언어가 여럿이어도 한 줄은 하나)이다 — 상태줄이 센다.
+    /// </summary>
+    private (List<(ScriptLocale Locale, string LineId, LocalizedLine Line)> Rewrites, int Lines) DialogueStatReadsRenamed(
+        string chapterId, ChapterDocument chapter, string from, string to)
+    {
+        var rewrites = new List<(ScriptLocale Locale, string LineId, LocalizedLine Line)>();
+        var lines = new HashSet<string>(StringComparer.Ordinal);
+
+        if (EpisodeNaming.BoardOf(Project, chapterId) is null)
+        {
+            return (rewrites, 0);
+        }
+
+        foreach ((DialogueNode node, _) in ChapterScripts.PlacesOf(chapter.ToGraphModel(chapterId), Project))
+        {
+            var active = new HashSet<string>(node.Script.ActiveLines.Select(line => line.Id), StringComparer.Ordinal);
+
+            foreach (ScriptLocale locale in node.Script.Locales)
+            {
+                foreach ((string lineId, LocalizedLine line) in locale.Entries)
+                {
+                    string text = ChapterStatReads.Replace(line.Text, from, to);
+
+                    if (string.Equals(text, line.Text, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    rewrites.Add((locale, lineId, line with { Text = text }));
+
+                    if (active.Contains(lineId))
+                    {
+                        lines.Add(node.Id + "\u0000" + lineId);
+                    }
+                }
+            }
+        }
+
+        return (rewrites, lines.Count);
     }
 
     /// <summary>
@@ -1110,6 +1164,10 @@ public sealed partial class ProjectEditor
         }
 
         IReadOnlyList<ChapterUse> uses = FindStatUses(chapterId, target);
+
+        // 대사 글의 읽기는 비우지 않고 남긴다 — 검증 보고가 짚는다(2026-11-25 소유자 — 「남겨 두고 검증이 짚기」 · stat-read-rename S2).
+        //    글을 툴이 지우면 작가가 쓴 문장이 바뀐다(「신뢰가 {stat("trust")}이다」의 빈자리).
+        int readsLeft = uses.Count(use => use.Kind == ChapterUseKind.DialogueRead);
 
         if (uses.Count > 0 && !clearUses)
         {
@@ -1212,11 +1270,12 @@ public sealed partial class ProjectEditor
         });
 
         return new StatRemoveOutcome(
-            true, fixtures.Count, edges.Count, conditions.Count, [], null);
+            true, fixtures.Count, edges.Count, conditions.Count, [], null, readsLeft);
     }
 
     /// <summary>
-    /// 이 스탯을 <b>쓰는 곳</b>을 전부 찾는다 — 간선의 <c>스탯변화</c>와 챕터 <c>조건</c>의 식.
+    /// 이 스탯을 <b>쓰는 곳</b>을 전부 찾는다 — 간선의 <c>스탯변화</c>와 챕터 <c>조건</c>의 식, 그리고 대사 글의 <c>{stat("키")}</c>(줄마다 ·
+    /// stat-read-rename S2 — 지우기가 비우지는 않고 목록에만 보인다).
     ///
     /// <b>사람이 찾아갈 수 있게</b> 적는다. *"쓰이고 있습니다"*로 끝내면 챕터를 뒤져야 한다.
     ///
@@ -1265,6 +1324,15 @@ public sealed partial class ProjectEditor
                     $"조건 '{condition.Label}'",
                     condition.Expression));
             }
+        }
+
+        // 대사 글의 {stat("키")} — 줄마다 하나(stat-read-rename S2). ⛔ 0.2.0까지는 여기 없어 지워도 대사의 읽기가 말없이 남았다.
+        foreach (ChapterStatReads.Line read in ChapterStatReads.LinesReading(chapter.ToGraphModel(chapterId), Project, target))
+        {
+            uses.Add(new ChapterUse(
+                ChapterUseKind.DialogueRead,
+                $"대사 {read.Place} {read.Number}번째 줄",
+                read.Node.Script.Text(read.ScriptLine.Id).Text));
         }
 
         return uses;
@@ -1793,13 +1861,15 @@ public sealed partial class ProjectEditor
 /// </param>
 /// <param name="Fixtures">시작값을 갈아 끼운 픽스처 수 — 안 갈면 그 값이 조용히 사라진다.</param>
 /// <param name="Refusal">거절 사유. <paramref name="Applied"/>가 false일 때만 있다.</param>
+/// <param name="DialogueLines">대사 글의 <c>{stat("키")}</c>가 새 키로 바뀐 줄 수(살아 있는 줄 · 언어가 여럿이어도 한 줄은 하나).</param>
 public sealed record StatRenameOutcome(
     bool Applied,
     int Edges,
     int Conditions,
     int SuppliedConditions,
     int Fixtures,
-    string? Refusal)
+    string? Refusal,
+    int DialogueLines = 0)
 {
     public static StatRenameOutcome Refuse(string reason) => new(false, 0, 0, 0, 0, reason);
 }
@@ -1823,7 +1893,10 @@ public enum ChapterUseKind
     Condition,
 
     /// <summary>대사 줄의 갈래가 쓴다 — 판에 공급된 조건을 Id로 붙들고 있다.</summary>
-    DialogueBranch
+    DialogueBranch,
+
+    /// <summary>대사 글의 <c>{stat("키")}</c>가 읽는다(stat-read-rename S2) — 지우기는 이것을 비우지 않고 남긴다(검증 보고가 짚는다).</summary>
+    DialogueRead
 }
 
 /// <summary>
@@ -1837,13 +1910,15 @@ public enum ChapterUseKind
 /// 거절의 <b>근거</b>. 여기가 비어 있지 않으면 그 자리를 먼저 비워야 지울 수 있다.
 /// </param>
 /// <param name="Refusal">거절 사유. <paramref name="Applied"/>가 false일 때만 있다.</param>
+/// <param name="DialogueReadsLeft">지운 뒤에도 그 스탯을 읽는 채 남은 대사 줄 수 — 비우지 않는다(검증 보고가 짚는다).</param>
 public sealed record StatRemoveOutcome(
     bool Applied,
     int Fixtures,
     int EdgesCleared,
     int ConditionsCleared,
     IReadOnlyList<ChapterUse> Uses,
-    string? Refusal)
+    string? Refusal,
+    int DialogueReadsLeft = 0)
 {
     public static StatRemoveOutcome Refuse(string reason, IReadOnlyList<ChapterUse> uses) =>
         new(false, 0, 0, 0, uses, reason);

@@ -126,7 +126,13 @@ public enum ChapterDiagnosticCode
     /// 돈다). 경고다 — 내보내기를 막지 않는다(2026-11-23 소유자 — 「네 검증 보고에 그 경고만 넣어주십시오」 · 도달성 증명이 걸은 (에피소드, 스탯)
     /// 상태에서 잰다 — <see cref="ChapterReachabilityProver"/>). 고를 수 있는 선택지가 없는 자리는 게임이 챕터를 끝내므로 막다른 곳은 여기 들지 않는다.
     /// </summary>
-    LoopWithoutExit
+    LoopWithoutExit,
+
+    /// <summary>
+    /// 대사 글의 <c>{stat("키")}</c>가 <b>그 챕터에 없는 스탯</b>을 읽는다 — 게임에서 그 줄이 나오면 없는 스탯을 읽는다. 경고다 — 내보내기를 막지
+    /// 않는다(<see cref="ChapterStatReads"/> · 2026-11-25 소유자 — 「🟡 경고로 짚기」 · stat-read-rename S3).
+    /// </summary>
+    StatReadUnknown
 }
 
 /// <summary>

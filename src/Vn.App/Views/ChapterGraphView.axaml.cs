@@ -4676,12 +4676,12 @@ public partial class ChapterGraphView : UserControl
 
             _session.SetStatus(
                 $"'{stat.Key}' → '{to}' — 간선 {outcome.Edges} · 조건 {outcome.Conditions} · " +
-                $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳이 " +
+                $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳 · 대사 {outcome.DialogueLines}줄이 " +
                 "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.");
             return null;
         });
         ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다(Yarn에 그대로 들어가는 statKey). " +
-                            $"{StatKeyRule.Rule}. 고치고 Enter(또는 칸을 떠나면) — 간선 · 조건의 참조가 따라갑니다. Esc는 그만두기.");
+                            $"{StatKeyRule.Rule}. 고치고 Enter(또는 칸을 떠나면) — 간선 · 조건 · 이 챕터 대사의 {{stat(\"키\")}}가 따라갑니다. Esc는 그만두기.");
         head.Children.Add(key);
 
         // 표시 이름 칸은 걷혔다 — 스탯은 키만 있다. 게임 화면의 글자는 게임 쪽이 키로 로컬라이즈한다(writer-fields W2).
@@ -5118,7 +5118,10 @@ public partial class ChapterGraphView : UserControl
         panel.Children.Add(new TextBlock
         {
             Text = "비우면 간선에서는 그 항만 빠지고, 조건은 식만 비고 남습니다 " +
-                   "(검증이 빈 식을 짚어 줍니다).",
+                   "(검증이 빈 식을 짚어 줍니다)." +
+                   (refused.Uses.Any(use => use.Kind == Vn.Authoring.Editing.ChapterUseKind.DialogueRead)
+                       ? " 대사의 {stat(\"" + key + "\")}는 고치지 않고 남습니다 — 검증 보고가 없는 스탯을 읽는 대사로 짚어 줍니다."
+                       : string.Empty),
             FontSize = 10,
             Opacity = 0.6,
             TextWrapping = TextWrapping.Wrap,
@@ -5151,7 +5154,10 @@ public partial class ChapterGraphView : UserControl
 
                 _session.SetStatus(
                     $"스탯 '{key}'를 지웠습니다 — 간선 {done.EdgesCleared}곳의 항을 빼고 " +
-                    $"조건 {done.ConditionsCleared}곳의 식을 비웠습니다.");
+                    $"조건 {done.ConditionsCleared}곳의 식을 비웠습니다." +
+                    (done.DialogueReadsLeft > 0
+                        ? $" 이 스탯을 읽는 대사 {done.DialogueReadsLeft}줄은 남았습니다 — 검증 보고가 짚습니다."
+                        : string.Empty));
 
                 Draw();
             });
