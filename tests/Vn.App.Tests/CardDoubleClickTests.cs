@@ -115,6 +115,49 @@ public sealed class CardDoubleClickTests : IDisposable
     });
 
     [Fact]
+    public void 제목_칸은_글만큼_서고_쓰는_대로_늘어_제목_자리에서_멈춘다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 「텍스트 박스의 크기가 현재는 노드의 가로길이 만큼 생성되는 데 … 보통 에피소드 Display이름을 그렇게까지 길게하진 않다보니 그
+        //    영역을 적절하게 조절해줘」. 넓힌 카드에서 본다 — 전에는 칸이 카드만큼 섰다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, DirectorTab);
+        DialogueNode node = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        session.Editor.ResizeNode(node.Id, 600, null, fitWidth: false);
+        Dispatcher.UIThread.RunJobs();
+        graph.UpdateLayout();
+
+        PressTitle(CardOf(graph, node.Id), clicks: 2);
+        TextBox box = TitleBox(CardOf(graph, node.Id));
+        box.Text = "짧은 제목";
+        graph.UpdateLayout();
+
+        double room = ((Grid)box.Parent!).ColumnDefinitions[Grid.GetColumn(box)].ActualWidth;
+        Assert.True(room > 400, $"제목 자리 {room}");
+        Assert.InRange(box.Bounds.Width, GraphEditorView.CardTitleEditMinWidth, 160);
+        Assert.Equal(TitleText(CardOf(graph, node.Id)).Bounds.X, box.Bounds.X, 0.5);   // 제목 글의 자리 — 왼쪽에 붙는다
+        double shortWidth = box.Bounds.Width;
+
+        // 쓰는 대로 는다 — 제목 자리에서 멈춘다.
+        box.Text = "조금 더 긴 제목";
+        graph.UpdateLayout();
+        Assert.True(box.Bounds.Width > shortWidth);
+
+        box.Text = string.Concat(Enumerable.Repeat("아주 긴 제목 ", 20));
+        graph.UpdateLayout();
+        Assert.True(box.Bounds.Width <= room + 0.5, $"칸 {box.Bounds.Width} · 자리 {room}");
+        Assert.True(box.Bounds.Width > room - 1, "긴 제목은 자리를 다 쓴다");
+
+        // 빈 칸도 고칠 자리가 있다.
+        box.Text = string.Empty;
+        graph.UpdateLayout();
+        Assert.True(box.Bounds.Width >= GraphEditorView.CardTitleEditMinWidth);
+
+        Key(box, Avalonia.Input.Key.Escape);
+        Assert.False(graph.IsRenamingCard);
+        window.Close();
+    });
+
+    [Fact]
     public void 제목_칸이_열린_채_빈_판이나_카드의_빈_곳이나_다른_칸을_누르면_바꾸지_않고_닫힌다() => HeadlessUi.Run(() =>
     {
         // 2026-11-25 소유자 — 「빈공간을 눌러도 여전히 텍스트 공간이 열려있는 게 불편 … 장면이나, 챕터영역, 에피소드 카드의 빈공간을 포함한 다른 공간을

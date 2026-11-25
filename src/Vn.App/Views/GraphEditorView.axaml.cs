@@ -6631,6 +6631,9 @@ public partial class GraphEditorView : UserControl
     /// <summary>카드 머리의 제목 칸에 다는 Tag — 시험의 손잡이다.</summary>
     internal const string CardTitleEditTag = "card-title-edit";
 
+    /// <summary>카드 제목 칸의 가장 작은 폭 — 짧은 제목도 고칠 자리가 있게(한글 여덟 자 남짓).</summary>
+    internal const double CardTitleEditMinWidth = 96;
+
     /// <summary>지금 열린 카드 제목 칸 — 하나뿐이다.</summary>
     private (string NodeId, TextBox Box, TextBlock Title)? _cardRename;
 
@@ -6641,6 +6644,10 @@ public partial class GraphEditorView : UserControl
     /// 되도록」 · 하이어아키 이름 칸과 같은 손짓). 바꾸는 길은 인스펙터의 이름 칸과 같다(<see cref="CardTitles.Rename"/> — ID는 그대로다). 접힌 판 · 장면
     /// 안이라 카드가 판에 없으면 아무것도 하지 않는다. ⛔ 처음(같은 날)에는 칸 밖 누르기가 바꾸기였고, 판 · 카드는 초점을 받지 않아 빈 곳을 눌러도 칸이
     /// 닫히지 않았다.
+    ///
+    /// <b>칸은 글만큼</b>(같은 날 소유자 — 「보통 에피소드 Display이름을 그렇게까지 길게하진 않다보니 그 영역을 적절하게 조절해줘」) — 제목 글의 자리에서
+    /// 왼쪽에 붙어 글 폭에 조금의 여유를 더한 만큼 서고(<see cref="CardTitleEditMinWidth"/> 이상), 쓰는 대로 늘어 제목 자리(카드 폭에서 단추 · 표를 뺀
+    /// 칸)에서 멈춘다 — 그 뒤로는 칸 안에서 밀린다. ⛔ 그 전에는 제목 자리를 늘 다 채워, 넓힌 카드에서는 카드만큼 긴 칸이 섰다.
     /// </summary>
     internal void BeginCardRename(string nodeId)
     {
@@ -6662,7 +6669,11 @@ public partial class GraphEditorView : UserControl
             FontSize = title.FontSize,
             MinHeight = 0,
             Height = TitleHeight,
-            Padding = new Thickness(3, 0),
+            // 글만큼 — 왼쪽에 붙고 글 폭(+ 오른쪽 여유)으로 선다. 제목 자리(칸)를 넘지 않는다 — 칸이 자리만큼만 재어 준다.
+            HorizontalAlignment = HorizontalAlignment.Left,
+            // 제목 자리가 그보다 좁으면(기본 폭의 분기 카드에 조건 표가 섰다) 자리만큼 — 칸이 표 위로 넘치지 않는다.
+            MinWidth = Math.Min(CardTitleEditMinWidth, row.ColumnDefinitions[Grid.GetColumn(title)].ActualWidth),
+            Padding = new Thickness(3, 0, 12, 0),
             VerticalContentAlignment = VerticalAlignment.Center,
             PlaceholderText = node.IsBranchCard ? Ui.Board_TitleEmptyShowsBranchCard : Ui.Board_TitleEmptyShowsEpisodeID
         };

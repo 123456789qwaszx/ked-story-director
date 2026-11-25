@@ -193,6 +193,22 @@ public sealed class BranchConditionNoteTests : IDisposable
         Assert.True(chip.Bounds.Right <= toggles.Bounds.Left + 0.5, "표가 글 맞춤 단추를 덮지 않는다");
         Assert.Equal("⑂ 조건: " + Long, ((TextBlock)chip.Child!).Text);   // 글은 그대로 — 줄임표는 그리기만 줄인다
 
+        // 제목을 고치는 동안에도 — 칸은 글만큼 서고(2026-11-25) 제목 자리를 넘어 표를 덮지 않는다.
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        graph.BeginCardRename(branch.Id);
+        Dispatcher.UIThread.RunJobs();
+        graph.UpdateLayout();
+
+        TextBox box = row.Children.OfType<TextBox>().Single(child => child.Tag as string == GraphEditorView.CardTitleEditTag);
+        Assert.True(box.Bounds.Right <= chip.Bounds.Left + 0.5, $"칸 끝 {box.Bounds.Right:0} · 표 처음 {chip.Bounds.Left:0}");
+        Assert.True(box.Bounds.Width > 20, $"칸 {box.Bounds.Width:0}");
+        Assert.True(chip.Bounds.Width > 0);
+
+        box.Text = "짧게";
+        graph.UpdateLayout();
+        Assert.True(box.Bounds.Right <= chip.Bounds.Left + 0.5);
+        Assert.True(chip.Bounds.Right <= toggles.Bounds.Left + 0.5);
+
         window.Close();
     });
 

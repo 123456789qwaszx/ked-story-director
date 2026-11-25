@@ -51,11 +51,12 @@ internal sealed class CardTitleRow : Grid
             }
         }
 
-        // 제목 칸의 글 — 제목을 고치는 동안은 제목 글이 숨고 칸(TextBox)이 선다. 그때는 칸이 남은 폭을 다 원한다고 본다.
+        // 제목 칸의 글 — 제목을 고치는 동안은 제목 글이 숨고 칸(TextBox)이 선다. 칸도 제 글만큼만 원한다(글만큼 서는 칸 — 2026-11-25).
+        // ⛔ 그 전에는 칸이 남은 폭을 다 원한다고 보아, 고치는 동안 분기 조건 표가 늘 반으로 줄었다.
         double room = Math.Max(0, width - others);
         double titleWants = Children
             .Where(child => GetColumn(child) == TitleColumn && child.IsVisible)
-            .Select(child => child is TextBlock ? Natural(child) : room)
+            .Select(Natural)
             .DefaultIfEmpty(0)
             .Max();
 
