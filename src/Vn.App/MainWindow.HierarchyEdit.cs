@@ -177,18 +177,28 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 그 에피소드를 그 장면 줄로 옮기지 못하는 까닭 — 옮기면 옛 장면이나 새 장면의 입구가 늘어 둘 이상이 된다(<see cref="SceneMoveGuard"/>).
-    /// 옮겨도 되면 null.
+    /// 그 에피소드를 그 장면 줄로 옮기지 못하는 까닭 — 장면 입구가 둘이 되게 하는 선을 끊어도 입구가 둘인 이동(챕터 시작을 시작점이 있는 장면으로 ·
+    /// <see cref="SceneMoveGuard"/>). 옮겨도 되면(끊을 선이 있어도) null.
     /// </summary>
     private string? HierarchyMoveRefusal(HierarchyRow source, HierarchyRow target) =>
+        HierarchyMovePlan(source, target)?.Refusal;
+
+    /// <summary>옮기면 끊을 선을 미리 말한다 — 끊을 선이 없거나 옮기지 못하면 null(2026-11-26).</summary>
+    private string? HierarchyMoveNote(HierarchyRow source, HierarchyRow target) =>
+        HierarchyMovePlan(source, target) is { Refusal: null, Cuts.Count: > 0 } plan &&
+        _session.Editor.FindChapter(source.ChapterId!) is { } chapter
+            ? SceneMoveGuard.CutNote(chapter, plan.Cuts, done: false)
+            : null;
+
+    private SceneMovePlan? HierarchyMovePlan(HierarchyRow source, HierarchyRow target) =>
         source.ChapterId is { } chapterId && source.EpisodeId is { } episodeId && target.SceneId is { } sceneId &&
         _session.Editor.FindChapter(chapterId) is { } chapter
-            ? SceneMoveGuard.Refusal(chapter, episodeId, sceneId)
+            ? SceneMoveGuard.Plan(chapter, episodeId, sceneId)
             : null;
 
     /// <summary>
-    /// 에피소드를 끌어 놓았다 — 다른 장면 줄이면 그 장면으로(장면ID가 그 장면의 것이 된다). 되돌리기 한 칸. 장면 줄에만 놓는다
-    /// (<see cref="StoryHierarchy.Accepts"/>).
+    /// 에피소드를 끌어 놓았다 — 다른 장면 줄이면 그 장면으로(장면ID가 그 장면의 것이 된다). 장면 입구가 둘이 되게 하는 선은 끊고(2026-11-26 ·
+    /// <see cref="SceneMoveGuard.Plan"/>) 그 문구는 출발 카드 칸에 적힌 채 남는다. 되돌리기 한 칸. 장면 줄에만 놓는다(<see cref="StoryHierarchy.Accepts"/>).
     /// </summary>
     private void OnHierarchyDropped(HierarchyRow source, HierarchyRow target)
     {
@@ -202,11 +212,33 @@ public partial class MainWindow
             return;
         }
 
+        if (_session.Editor.FindChapter(chapterId) is not { } chapter)
+        {
+            return;
+        }
+
+        SceneMovePlan plan = SceneMoveGuard.Plan(chapter, episodeId, sceneId);
+
+        if (plan.Refusal is { } refusal)
+        {
+            _session.SetStatus(refusal);
+            return;
+        }
+
+        // 끊을 선의 문구는 출발 카드 칸에 적힌 채 남긴다 — 선을 걷기 전에(빈 곳에 놓아 끊기와 같다).
+        string note = SceneMoveGuard.CutNote(chapter, plan.Cuts, done: true);
+        Graph.KeepCutChoiceTexts(chapterId, plan.Cuts);
+
         // 자동 모양 그대로인 ID는 새 장면의 이름으로 따라간다(분기 카드도 — AutoIdFollower, 같은 되돌리기 칸).
-        string moved = AutoIdFollower.MoveEpisodeToScene(_session.Editor, chapterId, episodeId, sceneId);
-        _session.SetStatus(moved == episodeId
-            ? string.Format(Ui.Side_MovedToSceneUndoCtrl, episodeId, sceneId)
-            : string.Format(Ui.Side_MovedToSceneItsEpisode, episodeId, sceneId, moved));
+        string moved = AutoIdFollower.MoveEpisodeToScene(_session.Editor, chapterId, episodeId, sceneId).EpisodeId;
+        Graph.FollowChoiceRows(chapterId, episodeId, moved);
+        _session.SetStatus(note.Length == 0
+            ? moved == episodeId
+                ? string.Format(Ui.Side_MovedToSceneUndoCtrl, episodeId, sceneId)
+                : string.Format(Ui.Side_MovedToSceneItsEpisode, episodeId, sceneId, moved)
+            : moved == episodeId
+                ? string.Format(Ui.Side_MovedToSceneCut, episodeId, sceneId, note)
+                : string.Format(Ui.Side_MovedToSceneItsEpisodeCut, episodeId, sceneId, moved, note));
     }
 
     /// <summary>

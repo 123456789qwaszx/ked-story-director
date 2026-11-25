@@ -3991,4 +3991,12 @@
     <value>'{0}'{1} 가는 문구 없는 길이 이 에피소드에 이미 있어 잇지 않았습니다 — 그 길의 문구부터 적거나 다른 에피소드에 이으세요.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
+  <data name="Side_MovedToSceneCut" xml:space="preserve">
+    <value>'{0}'를 장면 '{1}'로 옮겼습니다. {2} 끊은 선택지의 문구는 그 칸에 적힌 채 남습니다. 되돌리기(Ctrl+Z) 한 번이면 모두 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_MovedToSceneItsEpisodeCut" xml:space="preserve">
+    <value>'{0}'를 장면 '{1}'로 옮겼습니다(에피소드ID는 '{2}'로 따라갔습니다). {3} 끊은 선택지의 문구는 그 칸에 적힌 채 남습니다. 되돌리기(Ctrl+Z) 한 번이면 모두 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
 </root>

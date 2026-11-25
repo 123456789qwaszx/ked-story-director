@@ -5586,6 +5586,57 @@ public partial class GraphEditorView : UserControl
         return rows;
     }
 
+    /// <summary>
+    /// 하이어아키가 에피소드를 다른 장면으로 옮기며 끊을 선(<see cref="SceneMoveGuard.Plan"/>)의 문구를 그 출발 카드의 칸에 <b>적힌 채로</b> 남긴다 —
+    /// 빈 곳에 놓아 끊기(<see cref="Unjoin"/>)와 같다(2026-11-26 — 다시 이을 때 안 친다). 선을 걷기 <b>전에</b> 부른다(줄 차례를 먼저 바꾼다).
+    /// 판에 펼쳐 선 카드만 — 저장하지 않는 것도 끊기와 같다.
+    /// </summary>
+    internal void KeepCutChoiceTexts(string chapterId, IReadOnlyList<ChapterEdge> cuts)
+    {
+        if (_session is null)
+        {
+            return;
+        }
+
+        foreach (IGrouping<string, ChapterEdge> group in cuts
+                     .Where(cut => !cut.HasNoOptionLabel)
+                     .GroupBy(cut => cut.FromEpisodeId, StringComparer.Ordinal))
+        {
+            if (EpisodeNaming.CardFor(_session.Project, chapterId, group.Key) is not { } card)
+            {
+                continue;
+            }
+
+            // 칸은 한 번에 찾고 나서 바꾼다 — 바꾼 뒤에 다시 찾으면 이은 줄 수를 간선 수에 맞추느라 차례가 흔들린다(RowsOf).
+            IReadOnlyList<GraphChoicePort> slots = SlotsOf(card.Id);
+            List<(GraphChoicePort Slot, string Text)> found = group
+                .Select(cut => (Slot: slots.FirstOrDefault(slot =>
+                    !slot.IsEmpty &&
+                    string.Equals(slot.ToEpisodeId, cut.ToEpisodeId, StringComparison.Ordinal) &&
+                    string.Equals(slot.Label, cut.OptionLabel, StringComparison.Ordinal)), Text: cut.OptionLabel!))
+                .Where(pair => pair.Slot is not null)
+                .Select(pair => (pair.Slot!, pair.Text))
+                .ToList();
+
+            foreach ((GraphChoicePort slot, string text) in found)
+            {
+                SetRow(slot, new ChoiceRow.Written(text));
+            }
+        }
+    }
+
+    /// <summary>에피소드 ID가 따라갔다(장면 옮기기 — 자동 모양 ID) — 그 에피소드의 줄 차례(적어 둔 문구)도 새 열쇠로 옮긴다.</summary>
+    internal void FollowChoiceRows(string chapterId, string oldEpisodeId, string newEpisodeId)
+    {
+        if (string.Equals(oldEpisodeId, newEpisodeId, StringComparison.Ordinal) ||
+            !_rows.Remove(RowsKey(chapterId, oldEpisodeId), out List<ChoiceRow?>? rows))
+        {
+            return;
+        }
+
+        _rows[RowsKey(chapterId, newEpisodeId)] = rows;
+    }
+
     /// <summary>꼬리의 빈 칸은 들고 있을 이유가 없다 — 다 비면 열쇠째 걷는다.</summary>
     private void Keep(string key, List<ChoiceRow?> rows)
     {

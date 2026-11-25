@@ -3003,4 +3003,10 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   <data name="Board_SamePathNotConnected" xml:space="preserve">
     <value>Not connected — this episode already has a path without text going to '{0}'. Write that path's text first, or connect it to another episode.</value>
   </data>
+  <data name="Side_MovedToSceneCut" xml:space="preserve">
+    <value>Moved '{0}' to scene '{1}'. {2} The text of the cut choices stays written in their slots. One undo (Ctrl+Z) brings everything back.</value>
+  </data>
+  <data name="Side_MovedToSceneItsEpisodeCut" xml:space="preserve">
+    <value>Moved '{0}' to scene '{1}' (its episode ID followed to '{2}'). {3} The text of the cut choices stays written in their slots. One undo (Ctrl+Z) brings everything back.</value>
+  </data>
 </root>

@@ -1411,20 +1411,34 @@ public partial class StoryHierarchy : UserControl
     internal event Action<HierarchyRow, HierarchyRow>? Dropped;
 
     /// <summary>
-    /// 받을 자리(<see cref="Accepts"/>)인데도 옮기지 못하는 까닭 — 옮겨도 되면 null. 셸이 건다(<c>SceneMoveGuard</c> — 옮기면 장면 입구가
-    /// 둘이 되는 이동 · 2026-11-22 소유자 · usability UX37). 없으면 받을 자리는 모두 받는다.
+    /// 받을 자리(<see cref="Accepts"/>)인데도 옮기지 못하는 까닭 — 옮겨도 되면 null. 셸이 건다(<c>SceneMoveGuard</c> — 장면 입구가 둘이 되게 하는
+    /// 선을 끊어도 입구가 둘인 이동: 챕터 시작을 시작점이 있는 장면으로 · 2026-11-26. ⛔ 2026-11-22(usability UX37)부터 그날까지는 입구가 둘이 되는
+    /// 이동을 모두 거절했다). 없으면 받을 자리는 모두 받는다.
     /// </summary>
     internal Func<HierarchyRow, HierarchyRow, string?>? MoveRefusal { get; set; }
 
     /// <summary>못 옮기는 자리 위를 지나거나 거기 놓았다 — 까닭. 셸이 상태줄에도 말한다.</summary>
     internal event Action<string>? MoveRefused;
 
-    /// <summary>테스트의 손잡이 — 지금 떠 있는 「못 옮기는 까닭」 풍선의 글. 없으면 null.</summary>
-    internal string? RefusalTip => _refusalTipOn is null ? null : _refusalTipText;
+    /// <summary>
+    /// 받는 자리에서 옮기면 함께 일어나는 일 — 장면 입구가 둘이 되지 않게 끊을 선(2026-11-26 · <c>SceneMoveGuard.CutNote</c>). 없으면 null. 셸이 건다.
+    /// 끄는 동안 그 장면 줄 옆 풍선으로 말하고(<see cref="MoveNoted"/>로 상태줄에도), 놓으면 셸이 끊고 옮긴다.
+    /// </summary>
+    internal Func<HierarchyRow, HierarchyRow, string?>? MoveNote { get; set; }
 
-    /// <summary>까닭 풍선을 띄워 둔 줄 단추.</summary>
+    /// <summary>옮기면 선이 끊기는 자리 위를 지난다 — 그 말. 셸이 상태줄에도 말한다.</summary>
+    internal event Action<string>? MoveNoted;
+
+    /// <summary>테스트의 손잡이 — 지금 떠 있는 「못 옮기는 까닭」 풍선의 글. 없으면 null.</summary>
+    internal string? RefusalTip => _refusalTipOn is null || !_tipRefuses ? null : _refusalTipText;
+
+    /// <summary>테스트의 손잡이 — 지금 떠 있는 「옮기면 끊을 선」 풍선의 글. 없으면 null.</summary>
+    internal string? NoteTip => _refusalTipOn is null || _tipRefuses ? null : _refusalTipText;
+
+    /// <summary>풍선을 띄워 둔 줄 단추 — 못 옮기는 까닭이거나(<see cref="_tipRefuses"/>) 옮기면 끊을 선이다.</summary>
     private Button? _refusalTipOn;
     private string? _refusalTipText;
+    private bool _tipRefuses;
 
     /// <summary>끌고 있는 줄.</summary>
     private string? _dragKey;
@@ -1640,6 +1654,8 @@ public partial class StoryHierarchy : UserControl
 
         Button? refusedOn = null;
         string? refusedWhy = null;
+        Button? notedOn = null;
+        string? noted = null;
         bool accepting = false;
 
         for (int index = 0; index < _rows.Count && index < RowHost.Children.Count; index++)
@@ -1662,6 +1678,12 @@ public partial class StoryHierarchy : UserControl
                     refusedOn = button;
                     refusedWhy = why;
                 }
+                else if (landing && MoveNote?.Invoke(DragSource()!, _rows[index]) is { } note)
+                {
+                    // 받는 자리지만 옮기면 선이 끊긴다 — 테두리는 파랗고, 끊을 선을 풍선으로 미리 말한다(2026-11-26).
+                    notedOn = button;
+                    noted = note;
+                }
 
                 accepting |= landing && why is null;
 
@@ -1682,16 +1704,24 @@ public partial class StoryHierarchy : UserControl
             _dragGhost.BorderBrush = refusedWhy is not null ? GhostRefuse : accepting ? GhostAccept : GhostIdle;
         }
 
-        ShowRefusalTip(refusedOn, refusedWhy);
+        if (refusedWhy is not null)
+        {
+            ShowRefusalTip(refusedOn, refusedWhy, refuses: true);
+        }
+        else
+        {
+            ShowRefusalTip(notedOn, noted, refuses: false);
+        }
     }
 
     /// <summary>
     /// 못 옮기는 까닭을 그 장면 줄 옆에 풍선으로 띄운다 — 붉은 테두리만으로는 왜인지 모른다(2026-11-22 소유자 — 「그냥 안 되게 하기보다 왜 안
     /// 되는지 설명을」). 자리를 떠나거나 놓으면 걷는다. 줄 단추에는 본디 풍선이 없다.
     /// </summary>
-    private void ShowRefusalTip(Button? on, string? why)
+    /// <param name="refuses">참이면 못 옮기는 까닭(✕), 거짓이면 옮기면 함께 일어나는 일(끊을 선 · ↪).</param>
+    private void ShowRefusalTip(Button? on, string? why, bool refuses)
     {
-        if (ReferenceEquals(on, _refusalTipOn) && string.Equals(why, _refusalTipText, StringComparison.Ordinal))
+        if (ReferenceEquals(on, _refusalTipOn) && string.Equals(why, _refusalTipText, StringComparison.Ordinal) && refuses == _tipRefuses)
         {
             return;
         }
@@ -1704,15 +1734,24 @@ public partial class StoryHierarchy : UserControl
 
         _refusalTipOn = on;
         _refusalTipText = why;
+        _tipRefuses = refuses;
 
         if (on is null || why is null)
         {
             return;
         }
 
-        ToolTip.SetTip(on, new TextBlock { Text = "✕ " + why, TextWrapping = TextWrapping.Wrap, MaxWidth = 380, FontSize = 12 });
+        ToolTip.SetTip(on, new TextBlock { Text = (refuses ? "✕ " : "↪ ") + why, TextWrapping = TextWrapping.Wrap, MaxWidth = 380, FontSize = 12 });
         ToolTip.SetPlacement(on, PlacementMode.Right);
         ToolTip.SetIsOpen(on, true);
-        MoveRefused?.Invoke(why);
+
+        if (refuses)
+        {
+            MoveRefused?.Invoke(why);
+        }
+        else
+        {
+            MoveNoted?.Invoke(why);
+        }
     }
 }

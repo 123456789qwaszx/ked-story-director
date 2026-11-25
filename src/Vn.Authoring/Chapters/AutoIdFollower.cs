@@ -17,18 +17,31 @@ namespace Vn.Authoring.Chapters;
 public static class AutoIdFollower
 {
     /// <summary>
-    /// 에피소드를 다른 장면으로 옮긴다 — 자동 모양이면 ID가 새 장면의 다음 번호로, 그 집의 분기 카드도 함께.
+    /// 에피소드를 다른 장면으로 옮긴다 — 자동 모양이면 ID가 새 장면의 다음 번호로, 그 집의 분기 카드도 함께. 장면 입구가 둘이 되게 하는 선은
+    /// 먼저 끊는다(<see cref="SceneMoveGuard.Plan"/> · 2026-11-26). 모두 한 되돌리기 칸이다. 옮기지 못하는 이동(챕터 시작을 시작점이 있는
+    /// 장면으로)은 그 까닭으로 던진다 — 부르는 쪽이 먼저 묻는다.
     /// </summary>
-    /// <returns>옮긴 뒤의 EpisodeId(따라가지 않았으면 그대로).</returns>
-    public static string MoveEpisodeToScene(ProjectEditor editor, string chapterId, string episodeId, string sceneId)
+    public static SceneMoveResult MoveEpisodeToScene(ProjectEditor editor, string chapterId, string episodeId, string sceneId)
     {
         ArgumentNullException.ThrowIfNull(editor);
 
         string? oldSceneId = RequireEpisode(editor, chapterId, episodeId).SceneId;
         string current = episodeId;
+        SceneMovePlan plan = SceneMoveGuard.Plan(editor.FindChapter(chapterId)!, episodeId, sceneId);
+
+        if (plan.Refusal is { } refusal)
+        {
+            throw new InvalidOperationException(refusal);
+        }
 
         editor.Batch(() =>
         {
+            // 선부터 걷는다 — 아래에서 ID가 따라가면 선의 신원(출발 · 도착)도 바뀐다.
+            foreach (ChapterEdge cut in plan.Cuts)
+            {
+                editor.RemoveEdge(chapterId, cut.FromEpisodeId, cut.ToEpisodeId, cut.OptionLabel);
+            }
+
             List<string> branches = BranchesHomedAt(editor, chapterId, [episodeId]);
             editor.UpdateEpisode(chapterId, episodeId, sceneId: sceneId);
 
@@ -40,7 +53,7 @@ public static class AutoIdFollower
                 NewNames.BranchPrefix(chapterId, oldSceneId), NewNames.BranchPrefix(chapterId, sceneId), keepNumber: false);
         });
 
-        return current;
+        return new SceneMoveResult(current, plan.Cuts);
     }
 
     /// <summary>
@@ -159,3 +172,6 @@ public static class AutoIdFollower
             string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))
         ?? throw new InvalidOperationException(string.Format(Msg.Edit_ChapterHasNoEpisode, chapterId, episodeId));
 }
+
+/// <summary>장면 옮기기의 결과 — 옮긴 뒤의 EpisodeId(따라가지 않았으면 그대로)와 끊은 선(옮기기 전의 신원).</summary>
+public sealed record SceneMoveResult(string EpisodeId, IReadOnlyList<ChapterEdge> Cut);

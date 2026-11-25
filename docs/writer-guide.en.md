@@ -81,8 +81,10 @@ This one document takes you from getting started to handing over your work.
    - Chapter IDs are assigned automatically — rename by double-clicking the row.
    - **Drag an episode onto another scene row in the same chapter** to move it into that scene. It doesn't move to other chapters.
      While you drag, a translucent tag with the episode's name follows the pointer — a blue border means you can drop there, red means you can't.
-     **A move that would give a scene two entrances isn't accepted** — while you drag, that scene row gets a red border and a balloon (and the status bar below) says which scene
-     would get which entrance and why. Episodes with connected paths usually hit this: disconnect the path the balloon names first, then reconnect after moving.
+     Paths (choice lines) that would give a scene two entrances are **cut, and the episode moves** — while you drag, a balloon beside that scene row (and the status bar below)
+     says in advance which lines get cut. Lines that end up inside one scene · lines that go into that scene's start stay. The text of a cut choice stays written in its slot, so you
+     don't retype it when reconnecting, and one Ctrl+Z brings back both the lines and the place. Only moving the chapter's start episode into a scene that already has a start isn't
+     accepted (a red border and a balloon say why — the chapter's start is always its scene's entrance).
      There's no way to take an episode out of scenes — an episode always belongs to a scene.
 2. **Write** — in an episode card's writing box, write `Speaker: dialogue` one line at a time. One line is one line of dialogue; leave out the speaker for narration.
    **There's no button to press** — it's applied when you pause for a moment or leave the box. Deleted lines are removed when you leave the box (or press Ctrl+S);

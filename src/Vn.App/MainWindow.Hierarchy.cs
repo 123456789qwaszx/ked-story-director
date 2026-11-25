@@ -222,9 +222,12 @@ public partial class MainWindow
             tree.Dropped += (source, target) =>
                 UiGuard.Run(_session, Ui.Side_MoveScene, () => OnHierarchyDropped(source, target));
 
-            // 옮기면 장면 입구가 둘이 되는 이동은 받지 않고 까닭을 말한다(usability UX37 — SceneMoveGuard). 끄는 동안과 놓을 때 같은 판정이다.
+            // 옮기면 장면 입구가 둘이 되는 선은 끊고 옮긴다 — 끄는 동안 그 선을 미리 말한다(2026-11-26 — SceneMoveGuard). 끊어도 입구가 둘인 이동
+            // (챕터 시작을 시작점이 있는 장면으로)만 받지 않고 까닭을 말한다(usability UX37). 끄는 동안과 놓을 때 같은 판정이다.
             tree.MoveRefusal = HierarchyMoveRefusal;
+            tree.MoveNote = HierarchyMoveNote;
             tree.MoveRefused += reason => UiGuard.Run(_session, Ui.Side_MoveScene, () => _session.SetStatus(reason));
+            tree.MoveNoted += note => UiGuard.Run(_session, Ui.Side_MoveScene, () => _session.SetStatus(note));
         }
 
         // 카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다.

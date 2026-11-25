@@ -1385,10 +1385,6 @@
     <value>'{0}'{1} 장면 '{2}'{3} 옮길 수 없습니다. </value>
     <comment>SceneMoveGuard.cs</comment>
   </data>
-  <data name="Edit_SceneMustStartInOne" xml:space="preserve">
-    <value> 장면은 한 자리에서만 시작해야 합니다(롤백이 되돌아가고 이어하기가 재개하는 자리). 옮기려면 먼저 위에 적힌 길을 끊거나 그 장면의 시작점으로 돌려 잇고, 옮긴 뒤 다시 이으세요.</value>
-    <comment>SceneMoveGuard.cs</comment>
-  </data>
   <data name="Edit_ChapterStart" xml:space="preserve">
     <value>챕터 시작</value>
     <comment>SceneMoveGuard.cs</comment>
@@ -1738,5 +1734,25 @@
   </data>
   <data name="File_PinnedWidthOnlyWithoutPinnedToBase" xml:space="preserve">
     <value>노드 '{0}'은 기본 크기로 고정하지 않았는데 가로만 고정했다(layout.pinnedWidthOnly)고 적혀 있습니다.</value>
+  </data>
+  <data name="Edit_ChapterStartIsAlwaysEntrance" xml:space="preserve">
+    <value> 챕터 시작 에피소드는 늘 그 장면의 입구라서, 이미 시작점이 있는 장면으로는 옮길 수 없습니다(장면은 한 자리에서만 시작해야 합니다 — 롤백이 되돌아가고 이어하기가 재개하는 자리).</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_MoveCutsPaths" xml:space="preserve">
+    <value>옮기면 장면 입구가 둘이 되지 않게 선 {0}개를 끊습니다 — {1}. 되돌리기(Ctrl+Z) 한 번이면 함께 돌아옵니다.</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_CutPaths" xml:space="preserve">
+    <value>장면 입구가 둘이 되지 않게 선 {0}개를 끊었습니다 — {1}.</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_CutPathItem" xml:space="preserve">
+    <value>'{0}'→'{1}'</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_CutPathItemWithText" xml:space="preserve">
+    <value>'{0}'→'{1}' 「{2}」</value>
+    <comment>SceneMoveGuard.cs</comment>
   </data>
 </root>

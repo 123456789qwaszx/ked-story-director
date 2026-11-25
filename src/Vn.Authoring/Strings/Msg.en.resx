@@ -1043,9 +1043,6 @@
   <data name="Edit_CanTMoveToScene" xml:space="preserve">
     <value>Can't move '{0}' to scene '{2}'. </value>
   </data>
-  <data name="Edit_SceneMustStartInOne" xml:space="preserve">
-    <value> A scene must start in one place (where rollback returns and Continue resumes). To move it, first disconnect the paths listed above or reconnect them to that scene's start, and reconnect them after moving.</value>
-  </data>
   <data name="Edit_ChapterStart" xml:space="preserve">
     <value>chapter start</value>
   </data>
@@ -1309,5 +1306,20 @@
   </data>
   <data name="File_PinnedWidthOnlyWithoutPinnedToBase" xml:space="preserve">
     <value>Node '{0}' isn't pinned to base size, but it says only the width is pinned (layout.pinnedWidthOnly).</value>
+  </data>
+  <data name="Edit_ChapterStartIsAlwaysEntrance" xml:space="preserve">
+    <value> The chapter's start episode is always its scene's entrance, so it can't move to a scene that already has a start (a scene must start in one place — where rollback returns and Continue resumes).</value>
+  </data>
+  <data name="Edit_MoveCutsPaths" xml:space="preserve">
+    <value>Moving it cuts {0:path|paths} so no scene gets two entrances — {1}. One undo (Ctrl+Z) brings them back.</value>
+  </data>
+  <data name="Edit_CutPaths" xml:space="preserve">
+    <value>Cut {0:path|paths} so no scene gets two entrances — {1}.</value>
+  </data>
+  <data name="Edit_CutPathItem" xml:space="preserve">
+    <value>'{0}'→'{1}'</value>
+  </data>
+  <data name="Edit_CutPathItemWithText" xml:space="preserve">
+    <value>'{0}'→'{1}' “{2}”</value>
   </data>
 </root>
