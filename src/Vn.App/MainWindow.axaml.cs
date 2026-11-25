@@ -215,6 +215,13 @@ public partial class MainWindow : Window
                     OnSaveClick(this, new RoutedEventArgs());
                     break;
 
+                // Ctrl+F(맥은 ⌘F) = [대본] 판의 찾기 띠(2026-11-25 소유자 — 「대본의 그래프뷰에서 Ctrl+F 기능이 있으면 좋겠다」). 글 칸에서 쓰는 중이어도
+                //    연다 — 글 칸은 Ctrl+F를 쓰지 않는다.
+                case Avalonia.Input.Key.F when ReferenceEquals(MainTabs.SelectedItem, GraphTabItem):
+                    args.Handled = true;
+                    UiGuard.Run(_session, "찾기", Graph.OpenFind);
+                    break;
+
                 // [대본] 카드 글 칸은 예외다 — 칸은 쓰다 멈출 때마다 글을 넣고(되돌리기 한 칸) 줄이 늘고 줄면 새 칸이 되어
                 //    칸 자체의 되돌리기 기록이 비어 있다. 그래서 거기서는 프로젝트 되돌리기 · 다시 실행이다(넣지 않은 글이
                 //    있으면 그것부터 걷는다).

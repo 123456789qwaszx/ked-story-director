@@ -636,6 +636,9 @@ public partial class GraphEditorView : UserControl
         });
         DeleteButton.Click += (_, _) => UiGuard.Run(_session, "삭제", DeleteSelected);
 
+        // 찾기 띠(Ctrl+F · 2026-11-25 소유자 · GraphEditorView.Find).
+        WireFind();
+
         // 고른 챕터의 판을 활성으로 — 그 뒤의 [+ 에피소드]가 거기에 선다.
         // ⚠ 다시 그리기가 콤보를 맞출 때는 안 돈다(_syncingChapter) — 안 그러면
         //    선택을 비추는 일이 선택을 바꾸는 일이 되어 서로를 부른다.
