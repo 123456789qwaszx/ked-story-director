@@ -231,4 +231,6 @@ New versions · when something goes wrong
 · The window title shows the version number (e.g. Story Director 0.1.0 — project).
 · When you get a new version, unzip it and replace the old StoryDirector.exe with it.
   Recent projects, fonts and settings stay (they're stored separately on this PC).
+· A new version may not open a project made with an earlier version (a message mentioning the
+  "format version" appears). Don't edit that project — tell the developer.
 · If something goes wrong, tell the developer the version number and what you were doing when it happened.

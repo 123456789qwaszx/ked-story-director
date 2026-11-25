@@ -281,7 +281,8 @@ These are things you can't do from the writer's screen, or that we decided write
 - **Linking character keys** (to attach portraits · expressions to a new speaker — speaker names you add yourself in the [Script] tab)
 - **Filling in condition expressions · creating stats** (when you have "Undecided" conditions or need a new stat)
 - **Tool updates** (the administrator sends new versions — don't get other versions on your own). The window title shows the version number (e.g. "Story Director 0.1.0").
-  For a new version, unzip it and replace the old `StoryDirector.exe` with it — recent projects and settings stay
+  For a new version, unzip it and replace the old `StoryDirector.exe` with it — recent projects and settings stay.
+  A new version may not open a project made with an earlier version (a message mentioning the "format version" appears) — don't edit that project; tell the administrator
 
 ## 7. When something goes wrong
 
