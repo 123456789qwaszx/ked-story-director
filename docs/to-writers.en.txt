@@ -104,15 +104,15 @@ Everyday tasks
                           to another scene, only onto that scene's start ⌂ card).
                           While you drag, a tag beside the pointer tells you in advance: connect · disconnect · can't connect.
                           Drop a connected point on empty space to disconnect it.
-                          The shape of new lines (elbow · curve · straight) is in [⚙ Settings] → "Other" → "New lines".
+                          The shape of choice lines (elbow · curve · straight) is in [⚙ Settings] → "Other" → "Choice lines".
 · A detour in dialogue  — select a card, and in the line table on the right, use that line's ＋ → "＋ Add branch".
                           Inside a card you visit and return from (a branch card), you can't branch again.
 · Find an episode       — type a name or ID in the box at the top of the Hierarchy (for Korean names, initial consonants alone work — "ㅅㅌ").
                           Only matching rows remain; Enter goes to the first one. Esc clears it.
-· Minimize a card       — in a card's header, double-click the empty space right of the title (or click the button
-                          left of the fit buttons) and the card shrinks to the new-card size with fitting paused.
-                          Double-click again to bring it back. Change the new-card size in [⚙ Settings] →
-                          "[Script] new cards".
+· Pin to base size      — in a card's header, double-click the empty space right of the title (or click the button
+                          left of the fit buttons) and the card returns to the base size with fitting paused.
+                          Double-click again to unpin. Change the base size in [⚙ Settings] →
+                          "[Script] Card base size".
 · Rename                — double-click a row in the Hierarchy. Only the shown name changes; the ID inside the game
                           stays the same, so feel free to polish names.
 · Select several rows   — in the Hierarchy, Ctrl (⌘ on Mac)+click adds them one by one, Shift+click selects everything in between.
@@ -195,7 +195,7 @@ Getting around the board
 · Move the board    — drag with the middle mouse button (the wheel) held down, or click the minimap at the bottom right.
 · Show the selection — select a card or scene and press F.
 
-If you use a laptop touchpad, turn on [⚙ Settings] at the top → "Other" → "Wheel pans the board".
+If you use a laptop touchpad, turn on [⚙ Settings] at the top → "Other" → "Wheel pans the board (for touchpads)".
 Swipe with two fingers to move the board; to zoom, swipe while holding Ctrl.
 (On a Mac it's on from the start. Turn it off if you want to zoom with a wheel mouse.)
 

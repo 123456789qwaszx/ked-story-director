@@ -306,7 +306,7 @@
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_WhenOnHowToHints" xml:space="preserve">
-    <value>켜면 인스펙터 · 화자 · 조건 및 스탯의 쓰는 법 안내글을 걷고, 「스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다」 같은 줄은 앞부분만 남깁니다. 칸 이름 · 제목 · 경고는 그대로입니다.</value>
+    <value>켜면 인스펙터 · 화자 · 조건 및 스탯 · 설정 창의 쓰는 법 안내글을 걷고, 「스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다」 같은 줄은 앞부분만 남깁니다. 칸 이름 · 제목 · 경고는 그대로입니다.</value>
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_Minimap" xml:space="preserve">
@@ -314,19 +314,19 @@
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_WheelPansBoard" xml:space="preserve">
-    <value>휠로 판 옮기기</value>
+    <value>휠로 판 옮기기 (터치패드용)</value>
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_WhenOnWheelOverBoard" xml:space="preserve">
     <value>켜면 판 위의 휠(터치패드는 두 손가락 쓸기)이 판을 옮기고, 확대 · 축소는 Ctrl(맥은 ⌘)을 누른 채 휠입니다 — 맥 트랙패드는 두 손가락으로 집어도 됩니다. 끄면 휠이 확대 · 축소입니다. 가운데 단추 끌기는 어느 쪽이든 판을 옮깁니다. 터치패드를 쓰면 켜 두세요.</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_ShapeOfNewLinesDrawn" xml:space="preserve">
-    <value>[대본] 판에 새로 잇는 선(선택지 길 · 분기 선)의 꼴입니다 — 이미 있는 선은 그대로입니다(선을 고르면 선 위의 차림으로 바꿉니다). 선의 「↺ 자동」도 이 꼴의 처음 모양으로 되돌립니다.</value>
+  <data name="Settings_ChoiceLineShapeTip" xml:space="preserve">
+    <value>[대본] 판에 새로 잇는 선택지 선(분기 선도)의 꼴입니다 — 이미 있는 선은 그대로입니다(선을 고르면 선 위의 차림으로 바꿉니다). 선의 「↺ 자동」도 이 꼴의 처음 모양으로 되돌립니다.</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_NewLines" xml:space="preserve">
-    <value>새로 잇는 선</value>
+  <data name="Settings_ChoiceLines" xml:space="preserve">
+    <value>선택지 선</value>
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_Language" xml:space="preserve">
@@ -371,32 +371,32 @@
     <value>새로 만드는 카드의 글자색입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 색은 [대본] 위쪽 서식 도구로 바꿉니다).</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_NewCard" xml:space="preserve">
-    <value>[대본] 새 카드</value>
+  <data name="Settings_CardBaseSize" xml:space="preserve">
+    <value>[대본] 카드 기본 크기</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_NewCardWidth" xml:space="preserve">
+  <data name="Settings_BaseWidth" xml:space="preserve">
     <value>가로</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_NewCardWritingHeight" xml:space="preserve">
+  <data name="Settings_BaseWritingHeight" xml:space="preserve">
     <value>글 칸 높이</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_NewCardSizeTip" xml:space="preserve">
-    <value>새로 만드는 카드의 크기입니다 — 서 있는 카드는 그대로입니다. 최소화한 카드와, 크기 손잡이를 두 번 눌러 돌아가는 크기도 이것입니다. 가장 작은 크기는 {0} × {1}입니다.</value>
+  <data name="Settings_BaseSizeTip" xml:space="preserve">
+    <value>카드의 기본 크기입니다 — 새 카드가 이 크기로 서고, 카드를 기본 크기로 고정하거나 크기 손잡이를 두 번 누르면 이 크기로 돌아갑니다. 바꿔도 서 있는 카드의 크기는 그대로입니다. 가장 작은 크기는 {0} × {1}입니다.</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_FitKeepsNewCardSize" xml:space="preserve">
+  <data name="Settings_FitKeepsBaseSize" xml:space="preserve">
     <value>글 맞춤이 이 크기보다 작게 줄이지 않는다</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_FitKeepsNewCardSizeTip" xml:space="preserve">
+  <data name="Settings_FitKeepsBaseSizeTip" xml:space="preserve">
     <value>켜면 가로 · 세로 글 맞춤이 글이 짧아도 카드를 이 크기 밑으로 줄이지 않습니다. 끄면 가장 작은 크기({0} × {1})까지 줄입니다.</value>
     <comment>SettingsWindow.cs</comment>
   </data>
-  <data name="Settings_ResetNewCardSize" xml:space="preserve">
-    <value>기본으로 ({0} × {1})</value>
+  <data name="Settings_ResetBaseSize" xml:space="preserve">
+    <value>처음 값으로 ({0} × {1})</value>
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_ScriptWritingBox" xml:space="preserve">
@@ -1168,28 +1168,28 @@
     <value>카드 크기</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_Minimize" xml:space="preserve">
-    <value>최소화</value>
+  <data name="Board_BasePin" xml:space="preserve">
+    <value>기본 크기로 고정</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_MinimizeTip" xml:space="preserve">
-    <value>최소화 — 카드를 새 카드 크기({0} × {1})로 접고 글 맞춤을 쉽니다. 머리의 빈 곳을 두 번 눌러도 됩니다.</value>
+  <data name="Board_BasePinTip" xml:space="preserve">
+    <value>기본 크기로 고정 — 카드를 기본 크기({0} × {1})로 두고 글 맞춤을 쉽니다(글을 더 써도 크기가 그대로입니다). 머리의 빈 곳을 두 번 눌러도 됩니다. 기본 크기는 [⚙ 설정] 「[대본] 카드 기본 크기」에서 바꿉니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_MinimizedClickToRestore" xml:space="preserve">
-    <value>최소화했습니다 — 누르면 접기 전 크기로 돌아가고 켜 둔 글 맞춤이 다시 맞춥니다(머리의 빈 곳을 두 번 눌러도 됩니다).</value>
+  <data name="Board_BasePinnedClickToUnpin" xml:space="preserve">
+    <value>기본 크기로 고정했습니다 — 누르면 고정을 풀고, 고정하기 전 크기로 돌아가 켜 둔 글 맞춤이 다시 맞춥니다(머리의 빈 곳을 두 번 눌러도 됩니다).</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_FitRestsWhileMinimized" xml:space="preserve">
-    <value>최소화한 동안 글 맞춤은 쉽니다 — 최소화를 풀면 다시 맞춥니다.</value>
+  <data name="Board_FitRestsWhileBasePinned" xml:space="preserve">
+    <value>기본 크기로 고정한 동안 글 맞춤은 쉽니다 — 고정을 풀면 다시 맞춥니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_MinimizedCard" xml:space="preserve">
-    <value>카드를 최소화했습니다({0} × {1}) — 글 맞춤은 쉽니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+  <data name="Board_BasePinnedCard" xml:space="preserve">
+    <value>카드를 기본 크기({0} × {1})로 고정했습니다 — 글 맞춤은 쉽니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_RestoredCard" xml:space="preserve">
-    <value>최소화를 풀었습니다 — 켜 둔 글 맞춤이 다시 맞춥니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+  <data name="Board_UnpinnedCard" xml:space="preserve">
+    <value>기본 크기 고정을 풀었습니다 — 켜 둔 글 맞춤이 다시 맞춥니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_FitWidth" xml:space="preserve">
@@ -1201,11 +1201,11 @@
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_FitWidthWhileOnCard" xml:space="preserve">
-    <value>가로 글 맞춤 — 켜 두면 글을 쓰는 대로 가장 긴 줄이 꺾이지 않게 카드 폭이 맞춰집니다(줄어드는 끝은 [⚙ 설정] 「[대본] 새 카드」가 정합니다). </value>
+    <value>가로 글 맞춤 — 켜 두면 글을 쓰는 대로 가장 긴 줄이 꺾이지 않게 카드 폭이 맞춰집니다(줄어드는 끝은 [⚙ 설정] 「[대본] 카드 기본 크기」가 정합니다). </value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_FitHeightWhileOnWriting" xml:space="preserve">
-    <value>세로 글 맞춤 — 켜 두면 글을 쓰는 대로 모든 줄이 스크롤 없이 보이게 글 칸 높이가 맞춰집니다(줄어드는 끝은 [⚙ 설정] 「[대본] 새 카드」가 정합니다). </value>
+    <value>세로 글 맞춤 — 켜 두면 글을 쓰는 대로 모든 줄이 스크롤 없이 보이게 글 칸 높이가 맞춰집니다(줄어드는 끝은 [⚙ 설정] 「[대본] 카드 기본 크기」가 정합니다). </value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_OnNowClickToTurn" xml:space="preserve">
@@ -3937,5 +3937,14 @@
   <data name="Dialogue_PendingRemovalTip" xml:space="preserve">
     <value>카드 글 칸에서 지운 줄입니다. 칸을 나오거나 Ctrl+S를 누르면 지워집니다 — 그때까지는 줄의 신원과 거기 붙은 분기가 남아 있어, 그 자리에 다시 쓰면 그 줄로 이어집니다.</value>
     <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Settings_BaseSizeGuide" xml:space="preserve">
+    <value>카드가 돌아가 서는 크기입니다. 이 크기가 쓰이는 곳:
+• 기본 크기로 고정 — 카드 제목 줄 오른쪽 끝, 글 맞춤 단추(↔ · ↕) 왼쪽의 단추를 누르거나 카드 머리의 빈 곳을 두 번 누르면, 카드가 이 크기로 돌아가고 글 맞춤을 쉽니다(글을 더 써도 크기가 그대로입니다). 한 번 더 누르면 고정을 풀고, 고정하기 전 크기로 돌아가 켜 둔 글 맞춤이 다시 맞춥니다.
+• 새 카드 — 새로 만드는 카드가 이 크기로 섭니다.
+• 크기 손잡이 두 번 누르기 — 그 손잡이가 맡은 쪽(폭 · 높이)이 이 크기로 돌아갑니다.
+• 글 맞춤의 아래 끝 — 아래 체크가 켜져 있으면 가로 · 세로 글 맞춤이 글이 짧아도 카드를 이 크기보다 작게 줄이지 않습니다.
+바꿔도 서 있는 카드의 크기는 그대로입니다(글 맞춤이 켜진 카드는 곧바로 다시 맞춥니다).</value>
+    <comment>SettingsWindow.cs</comment>
   </data>
 </root>

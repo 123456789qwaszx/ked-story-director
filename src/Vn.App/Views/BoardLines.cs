@@ -5,7 +5,7 @@ namespace Vn.App.Views;
 
 /// <summary>
 /// <b>[대본] 판에 새로 잇는 선의 꼴</b> — 직각 · 곡선 · 직선(2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게
-/// 하여 주십시오」 · 설정 창 「기타」의 「새로 잇는 선」). 이 PC의 앱 설정이다(<see cref="AppSettingsService.LoadNewLineShape"/>). 선택지 길 · 분기 선이 <b>생길 때</b> 그
+/// 하여 주십시오」 · 설정 창 「기타」의 「선택지 선」). 이 PC의 앱 설정이다(<see cref="AppSettingsService.LoadNewLineShape"/>). 선택지 길 · 분기 선이 <b>생길 때</b> 그
 /// 꼴이 선에 적히고(프로젝트 파일 · 같이 쓰는 사람에게도 같다), 뒤에 바꿔도 이미 있는 선은 그대로다(<see cref="Vn.Authoring.Editing.ProjectEditor.NewLineShape"/>).
 /// 선의 「↺ 자동」도 이 꼴의 처음 자리로 되돌린다. 처음 값은 직각(그 전의 모습)이다.
 /// </summary>

@@ -59,10 +59,10 @@ public partial class GraphEditorView : UserControl
     /// <summary>카드 제목 줄 오른쪽 끝의 「세로 글 맞춤」 단추의 표(<see cref="ToggleFit"/> · 2026-11-25).</summary>
     internal const string FitHeightToggleTag = "card-fit-height:";
 
-    /// <summary>카드 제목 줄의 「최소화」 단추의 표 — 글 맞춤 단추 왼쪽(<see cref="ToggleMinimize"/> · 2026-11-25).</summary>
-    internal const string MinimizeToggleTag = "card-minimize:";
+    /// <summary>카드 제목 줄의 「기본 크기로 고정」 단추의 표 — 글 맞춤 단추 왼쪽(<see cref="ToggleBasePin"/> · 2026-11-25).</summary>
+    internal const string BasePinToggleTag = "card-base-pin:";
 
-    /// <summary>켜진 글 맞춤 단추 · 최소화한 카드의 최소화 단추가 지는 class — 화면 시험의 손잡이다.</summary>
+    /// <summary>켜진 글 맞춤 단추 · 기본 크기로 고정한 카드의 기본 크기 고정 단추가 지는 class — 화면 시험의 손잡이다.</summary>
     internal const string FitOnClass = "fit-on";
 
     /// <summary>글에 맞출 때 더하는 몫 — 커서 · 반올림에 줄이 꺾이지 않게.</summary>
@@ -588,14 +588,14 @@ public partial class GraphEditorView : UserControl
     /// 전에 선 칸)만 새 설정을 입는다.
     /// </summary>
     /// <summary>
-    /// 「[대본] 새 카드」 설정이 바뀌었다 — 글 맞춤이 지키는 크기가 바뀌었을 수 있으니 판의 카드 가운데 글 맞춤이 켜진 것을 다시 맞춘다(최소화한 카드는 쉰다).
+    /// 「[대본] 카드 기본 크기」 설정이 바뀌었다 — 글 맞춤이 지키는 크기가 바뀌었을 수 있으니 판의 카드 가운데 글 맞춤이 켜진 것을 다시 맞춘다(기본 크기로 고정한 카드는 쉰다).
     /// 맞춘 크기는 글을 넣을 때처럼 적는다(<see cref="Vn.Authoring.Editing.ProjectEditor.FitNodeSize"/>).
     /// </summary>
     private void RefitAll()
     {
         foreach (NodeCard card in _cards.ToList())
         {
-            if (_session?.Project.FindNode(card.NodeId)?.Layout is { Minimized: false } layout && (layout.FitWidth || layout.FitHeight))
+            if (_session?.Project.FindNode(card.NodeId)?.Layout is { PinnedToBase: false } layout && (layout.FitWidth || layout.FitHeight))
             {
                 QueueAutoFit(card.NodeId);
             }
@@ -3421,8 +3421,8 @@ public partial class GraphEditorView : UserControl
 
             if (args.ClickCount >= 2)
             {
-                // 그 손잡이가 맡은 크기만 기본으로 — 다른 쪽 크기는 그대로 둔다. 기본은 새 카드 크기다(설정 「[대본] 새 카드」 · 2026-11-25 — ⛔ 그 전에는
-                // 가장 작은 크기였다). 최소화한 카드면 최소화가 풀린다.
+                // 그 손잡이가 맡은 크기만 기본으로 — 다른 쪽 크기는 그대로 둔다. 기본은 기본 크기다(설정 「[대본] 카드 기본 크기」 · 2026-11-25 — ⛔ 그 전에는
+                // 가장 작은 크기였다). 기본 크기로 고정한 카드면 기본 크기 고정이 풀린다.
                 _resizingCard = null;
                 UiGuard.Run(_session, Ui.Board_CardSize, () =>
                 {
@@ -3472,10 +3472,10 @@ public partial class GraphEditorView : UserControl
     /// (<see cref="AutoFit"/>). 초점을 가져가지 않는다(쓰던 글 칸이 그대로 쓰는 중이다). ⛔ 그 전에는 「글에 맞춤 / 줄이기」 단추 하나였다(2026-11-19 · UX5 ·
     /// UX33 — 누를 때마다 폭 · 높이를 함께 맞추고, 꼭 맞으면 처음 크기로 줄였다).
     /// </summary>
-    private StackPanel FitToggles(string nodeId, CardStyle style, out Button minimize, out Button fitWidth, out Button fitHeight)
+    private StackPanel FitToggles(string nodeId, CardStyle style, out Button basePin, out Button fitWidth, out Button fitHeight)
     {
         double overflow = (FitButtonSize - TitleHeight) / 2;
-        minimize = MinimizeToggle(nodeId, style);
+        basePin = BasePinToggle(nodeId, style);
         fitWidth = FitToggle(nodeId, style, width: true);
         fitHeight = FitToggle(nodeId, style, width: false);
 
@@ -3486,25 +3486,25 @@ public partial class GraphEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(4, -overflow, -overflow, -overflow)
         };
-        toggles.Children.Add(minimize);
+        toggles.Children.Add(basePin);
         toggles.Children.Add(fitWidth);
         toggles.Children.Add(fitHeight);
         return toggles;
     }
 
-    /// <summary>최소화 — 안으로 모이는 네 귀퉁이.</summary>
-    private static readonly Geometry MinimizeGlyph = Geometry.Parse(
+    /// <summary>기본 크기 고정 — 안으로 모이는 네 귀퉁이.</summary>
+    private static readonly Geometry BasePinGlyph = Geometry.Parse(
         "M2.5,6 H6 V2.5 M13.5,6 H10 V2.5 M2.5,10 H6 V13.5 M13.5,10 H10 V13.5");
 
     /// <summary>
-    /// <b>최소화 단추</b> — 글 맞춤 단추 왼쪽(2026-11-25 소유자 — 「이것은 가로 세로 맞춤버튼 왼쪽에 별개로 같이 존재해야」). 누르면 최소화하고 풀기를 오간다
-    /// (<see cref="ToggleMinimize"/>) — 머리의 빈 곳을 두 번 누른 것과 같다. 초점을 가져가지 않는다.
+    /// <b>기본 크기 고정 단추</b> — 글 맞춤 단추 왼쪽(2026-11-25 소유자 — 「이것은 가로 세로 맞춤버튼 왼쪽에 별개로 같이 존재해야」). 누르면 기본 크기로 고정하고 풀기를 오간다
+    /// (<see cref="ToggleBasePin"/>) — 머리의 빈 곳을 두 번 누른 것과 같다. 초점을 가져가지 않는다.
     /// </summary>
-    private Button MinimizeToggle(string nodeId, CardStyle style)
+    private Button BasePinToggle(string nodeId, CardStyle style)
     {
         var toggle = new Button
         {
-            Content = FitGlyph(MinimizeGlyph, style.Accent),
+            Content = FitGlyph(BasePinGlyph, style.Accent),
             Padding = new Thickness(0),
             MinHeight = 0,
             MinWidth = 0,
@@ -3516,12 +3516,12 @@ public partial class GraphEditorView : UserControl
             BorderThickness = new Thickness(1),
             Focusable = false,
             Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = MinimizeToggleTag + nodeId
+            Tag = BasePinToggleTag + nodeId
         };
         toggle.Click += (_, args) =>
         {
             args.Handled = true;
-            UiGuard.Run(_session, Ui.Board_Minimize, () => ToggleMinimize(nodeId));
+            UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePin(nodeId));
         };
         return toggle;
     }
@@ -3556,30 +3556,30 @@ public partial class GraphEditorView : UserControl
     private void ShowFitToggles(NodeCard card)
     {
         NodeLayout? layout = _session?.Project.FindNode(card.NodeId)?.Layout;
-        bool minimized = layout?.Minimized == true;
+        bool basePinned = layout?.PinnedToBase == true;
         ShowFitToggle(card.FitWidthToggle, card.Style.Accent, layout?.FitWidth == true, width: true);
         ShowFitToggle(card.FitHeightToggle, card.Style.Accent, layout?.FitHeight == true, width: false);
-        ShowToggleLook(card.MinimizeToggle, card.Style.Accent, minimized);
+        ShowToggleLook(card.BasePinToggle, card.Style.Accent, basePinned);
 
-        if (card.MinimizeToggle is { } toggle)
+        if (card.BasePinToggle is { } toggle)
         {
             ToolTip.SetTip(toggle, string.Format(
-                minimized ? Ui.Board_MinimizedClickToRestore : Ui.Board_MinimizeTip,
+                basePinned ? Ui.Board_BasePinnedClickToUnpin : Ui.Board_BasePinTip,
                 CardDefaults.Width,
                 CardDefaults.WritingHeight));
         }
 
-        // 최소화한 동안 글 맞춤은 쉰다 — 단추는 켜진 것을 비추되 누를 수 없다(풀면 다시 맞춘다).
+        // 기본 크기로 고정한 동안 글 맞춤은 쉰다 — 단추는 켜진 것을 비추되 누를 수 없다(풀면 다시 맞춘다).
         foreach (Button? fit in new[] { card.FitWidthToggle, card.FitHeightToggle })
         {
             if (fit is not null)
             {
-                fit.IsEnabled = !minimized;
+                fit.IsEnabled = !basePinned;
 
-                if (minimized)
+                if (basePinned)
                 {
                     fit.Opacity = 0.3;
-                    ToolTip.SetTip(fit, Ui.Board_FitRestsWhileMinimized);
+                    ToolTip.SetTip(fit, Ui.Board_FitRestsWhileBasePinned);
                 }
             }
         }
@@ -3598,30 +3598,30 @@ public partial class GraphEditorView : UserControl
         toggle.Opacity = on ? 1 : 0.5;
     }
 
-    /// <summary>새 카드 크기의 폭을 카드에 적는 값 — 가장 작은 폭과 같으면 적지 않는다(null).</summary>
+    /// <summary>기본 크기의 폭을 카드에 적는 값 — 가장 작은 폭과 같으면 적지 않는다(null).</summary>
     private static double? DefaultWidthValue => CardDefaults.Width > CardWidth ? CardDefaults.Width : null;
 
-    /// <summary>새 카드 크기의 글 칸 높이를 카드에 적는 값 — 가장 작은 높이와 같으면 적지 않는다(null).</summary>
+    /// <summary>기본 크기의 글 칸 높이를 카드에 적는 값 — 가장 작은 높이와 같으면 적지 않는다(null).</summary>
     private static double? DefaultWritingHeightValue =>
         CardDefaults.WritingHeight > WritingBoxHeight ? CardDefaults.WritingHeight : null;
 
     /// <summary>
-    /// <b>최소화하고 풀기를 오간다</b>(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈 공간을 더블 클릭 했을 시에, 이런 가로 세로 크기 맞춤을
+    /// <b>기본 크기로 고정하고 풀기를 오간다</b>(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈 공간을 더블 클릭 했을 시에, 이런 가로 세로 크기 맞춤을
     /// 무시 + 기본크기로 돌려보내는 일종의 최소화 모드 / 반대로 그 상태에서 다시 더블 클릭하면 가로 세로 크기맞춤의 영향을 받도록」) — 되돌리기 한 칸.
-    /// 최소화하면 카드가 새 카드 크기(설정 「[대본] 새 카드」)로 서고 글 맞춤은 켜진 채 쉰다(<see cref="Vn.Authoring.Editing.ProjectEditor.MinimizeNode"/>).
-    /// 풀면 접을 때의 크기로 돌아가고 켜진 맞춤이 곧바로 다시 맞춘다(그 크기도 같은 칸에 든다). 화면의 카드를 먼저 그 크기로 두고 적는다 — 판을 다시 짓지 않고
+    /// 기본 크기로 고정하면 카드가 기본 크기(설정 「[대본] 카드 기본 크기」)로 서고 글 맞춤은 켜진 채 쉰다(<see cref="Vn.Authoring.Editing.ProjectEditor.PinToBaseSize"/>).
+    /// 풀면 고정할 때의 크기로 돌아가고 켜진 맞춤이 곧바로 다시 맞춘다(그 크기도 같은 칸에 든다). 화면의 카드를 먼저 그 크기로 두고 적는다 — 판을 다시 짓지 않고
     /// 철도만 따라간다(크기 손잡이와 같다).
     /// </summary>
-    internal void ToggleMinimize(string nodeId)
+    internal void ToggleBasePin(string nodeId)
     {
         if (_session?.Project.FindNode(nodeId)?.Layout is not { } layout)
         {
             return;
         }
 
-        bool minimize = !layout.Minimized;
-        double? width = minimize ? DefaultWidthValue : layout.ExpandedWidth;
-        double? writingHeight = minimize ? DefaultWritingHeightValue : layout.ExpandedWritingHeight;
+        bool basePin = !layout.PinnedToBase;
+        double? width = basePin ? DefaultWidthValue : layout.UnpinnedWidth;
+        double? writingHeight = basePin ? DefaultWritingHeightValue : layout.UnpinnedWritingHeight;
 
         if (FindCard(nodeId) is { } card && _cards.Contains(card))
         {
@@ -3640,13 +3640,13 @@ public partial class GraphEditorView : UserControl
 
         try
         {
-            if (minimize)
+            if (basePin)
             {
-                _session.Editor.MinimizeNode(nodeId, width, writingHeight);
+                _session.Editor.PinToBaseSize(nodeId, width, writingHeight);
             }
             else
             {
-                _session.Editor.RestoreNode(nodeId);
+                _session.Editor.UnpinBaseSize(nodeId);
             }
         }
         finally
@@ -3659,14 +3659,14 @@ public partial class GraphEditorView : UserControl
             ShowFitToggles(shown);
         }
 
-        if (!minimize)
+        if (!basePin)
         {
             AutoFit(nodeId);
         }
 
-        _session.SetStatus(minimize
-            ? string.Format(Ui.Board_MinimizedCard, CardDefaults.Width, CardDefaults.WritingHeight)
-            : Ui.Board_RestoredCard);
+        _session.SetStatus(basePin
+            ? string.Format(Ui.Board_BasePinnedCard, CardDefaults.Width, CardDefaults.WritingHeight)
+            : Ui.Board_UnpinnedCard);
     }
 
     private static void ShowFitToggle(Button? toggle, Color accent, bool on, bool width)
@@ -3769,7 +3769,7 @@ public partial class GraphEditorView : UserControl
     {
         if (_session?.Project.FindNode(nodeId)?.Layout is not { } layout ||
             !(layout.FitWidth || layout.FitHeight) ||
-            layout.Minimized ||
+            layout.PinnedToBase ||
             _resizingCard is not null ||
             _projection is null ||
             FindCard(nodeId) is not { WritingBox: { } box } card ||
@@ -3803,7 +3803,7 @@ public partial class GraphEditorView : UserControl
     {
         if (_session?.Project.FindNode(nodeId)?.Layout is not { } layout ||
             !(layout.FitWidth || layout.FitHeight) ||
-            layout.Minimized ||
+            layout.PinnedToBase ||
             FindCard(nodeId) is not { WritingBox: { } box } card ||
             !_cards.Contains(card))
         {
@@ -3892,7 +3892,7 @@ public partial class GraphEditorView : UserControl
                 longest = Math.Max(longest, writer.UnwrappedWidth());
             }
 
-            // 줄이는 끝은 새 카드 크기다 — 설정 「글 맞춤이 기본 크기를 지킨다」가 켜져 있으면(2026-11-25 소유자), 아니면 가장 작은 폭.
+            // 줄이는 끝은 기본 크기다 — 설정 「글 맞춤이 기본 크기를 지킨다」가 켜져 있으면(2026-11-25 소유자), 아니면 가장 작은 폭.
             width = Math.Clamp(Math.Ceiling(longest + around + FitSlack), CardDefaults.FitFloorWidth, MaxCardWidth);
         }
 
@@ -4323,15 +4323,15 @@ public partial class GraphEditorView : UserControl
             title.Children.Add(chip);
         }
 
-        // 최소화 · 가로 · 세로 글 맞춤 — 제목 줄 오른쪽 끝(글 칸이 있는 카드만 · 2026-11-25 소유자 · ⛔ 그 전에는 「글에 맞춤 / 줄이기」 단추 하나 — UX5).
-        Button? minimize = null;
+        // 기본 크기 고정 · 가로 · 세로 글 맞춤 — 제목 줄 오른쪽 끝(글 칸이 있는 카드만 · 2026-11-25 소유자 · ⛔ 그 전에는 「글에 맞춤 / 줄이기」 단추 하나 — UX5).
+        Button? basePin = null;
         Button? fitWidth = null;
         Button? fitHeight = null;
 
         if (node.NodeKind == GraphNodeKind.Dialogue)
         {
-            StackPanel toggles = FitToggles(node.NodeId, style, out Button minimizeToggle, out Button widthToggle, out Button heightToggle);
-            (minimize, fitWidth, fitHeight) = (minimizeToggle, widthToggle, heightToggle);
+            StackPanel toggles = FitToggles(node.NodeId, style, out Button basePinToggle, out Button widthToggle, out Button heightToggle);
+            (basePin, fitWidth, fitHeight) = (basePinToggle, widthToggle, heightToggle);
             Grid.SetColumn(toggles, CardTitleRow.TogglesColumn);
             title.Children.Add(toggles);
         }
@@ -4385,7 +4385,7 @@ public partial class GraphEditorView : UserControl
             BranchPalette = branchEntry ? palette : null,
             Title = titleName,
             TitleRow = title,
-            MinimizeToggle = minimize,
+            BasePinToggle = basePin,
             FitWidthToggle = fitWidth,
             FitHeightToggle = fitHeight
         };
@@ -6317,7 +6317,7 @@ public partial class GraphEditorView : UserControl
     // ── 그래프 내비게이션 (W40): 줌·팬·미니맵 ─────────────────────────────
 
     /// <summary>
-    /// 휠 — 배율이다(누른 키와 무관하게 · 2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다). 설정 「휠로 판 옮기기」를 켜면(맥은 처음부터) 판을 옮기고
+    /// 휠 — 배율이다(누른 키와 무관하게 · 2026-08-18 팀장 미팅에서 Ctrl 요구가 빠졌다). 설정 「휠로 판 옮기기 (터치패드용)」를 켜면(맥은 처음부터) 판을 옮기고
     /// 배율은 Ctrl(맥은 ⌘도)+휠이다. 무엇을 얼마나 하는가는 <see cref="BoardWheel"/> 한 벌 — 배율은 신호의 크기에 비례한다.
     /// 옮기기도 여기서 한다(스크롤에 맡기지 않는다) — 고르지 않은 카드의 글 칸이 휠을 먹지 않게.
     /// </summary>
@@ -6800,12 +6800,12 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        // 두 번 누름 — 머리 줄에서 제목 글자 오른쪽의 빈 곳이면 최소화하고 풀기를 오간다(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈
+        // 두 번 누름 — 머리 줄에서 제목 글자 오른쪽의 빈 곳이면 기본 크기로 고정하고 풀기를 오간다(2026-11-25 소유자 — 「노드의 머리부분 중, 제목영역이 아닌 우측 빈
         // 공간을 더블 클릭 했을 시에」). 글 칸이 있는 카드만이다.
         if (args.ClickCount >= 2 && pressed.IsLeftButtonPressed && card.WritingBox is not null && OnHeaderBlank(card, args))
         {
             args.Handled = true;
-            UiGuard.Run(_session, Ui.Board_Minimize, () => ToggleMinimize(card.NodeId));
+            UiGuard.Run(_session, Ui.Board_BasePin, () => ToggleBasePin(card.NodeId));
             return;
         }
 
@@ -8355,8 +8355,8 @@ public partial class GraphEditorView : UserControl
         /// <summary>카드의 글 칸. 대사 카드가 아니면 null.</summary>
         public TextBox? WritingBox { get; set; }
 
-        /// <summary>제목 줄의 「최소화」 단추(<see cref="ShowFitToggles"/>). 대사 카드가 아니면 null.</summary>
-        public Button? MinimizeToggle { get; init; }
+        /// <summary>제목 줄의 「기본 크기로 고정」 단추(<see cref="ShowFitToggles"/>). 대사 카드가 아니면 null.</summary>
+        public Button? BasePinToggle { get; init; }
 
         /// <summary>제목 줄의 「가로 글 맞춤」 단추(<see cref="ShowFitToggles"/>). 대사 카드가 아니면 null.</summary>
         public Button? FitWidthToggle { get; init; }
@@ -8724,7 +8724,7 @@ public partial class GraphEditorView : UserControl
         _shapeButtons.Children.Add(Choice(Ui.Settings_Curve, Ui.Board_SmoothCurveMoveBendWith, EdgeShapeKind.Curve));
         _shapeButtons.Children.Add(Choice(Ui.Settings_Straight, Ui.Board_ConnectsTwoEndsStraight, EdgeShapeKind.Straight));
 
-        // 「↺ 자동」은 설정의 「새로 잇는 선」 꼴의 처음 자리로(2026-11-23 — 새로 잇는 선이 곡선이면 곡선으로 · BoardLines). 직각이면 전처럼 모양을 걷는다.
+        // 「↺ 자동」은 설정의 「선택지 선」 꼴의 처음 자리로(2026-11-23 — 새로 잇는 선이 곡선이면 곡선으로 · BoardLines). 직각이면 전처럼 모양을 걷는다.
         EdgeShape fresh = BoardLines.Default;
         var reset = new Button
         {

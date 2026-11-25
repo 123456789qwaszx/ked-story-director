@@ -234,22 +234,22 @@
     <value>Fewer hints</value>
   </data>
   <data name="Settings_WhenOnHowToHints" xml:space="preserve">
-    <value>When on, the how-to hints in the Inspector · Speakers · Conditions &amp; stats are hidden, and lines like “No stats yet — type a key in the box below and press [＋ Add]” keep only their first part. Field names, titles and warnings stay.</value>
+    <value>When on, the how-to hints in the Inspector · Speakers · Conditions &amp; stats · Settings are hidden, and lines like “No stats yet — type a key in the box below and press [＋ Add]” keep only their first part. Field names, titles and warnings stay.</value>
   </data>
   <data name="Settings_Minimap" xml:space="preserve">
     <value>Minimap</value>
   </data>
   <data name="Settings_WheelPansBoard" xml:space="preserve">
-    <value>Wheel pans the board</value>
+    <value>Wheel pans the board (for touchpads)</value>
   </data>
   <data name="Settings_WhenOnWheelOverBoard" xml:space="preserve">
     <value>When on, the wheel over the board (two-finger swipe on a touchpad) pans the board, and zooming is Ctrl (⌘ on Mac) + wheel — on a Mac trackpad you can also pinch. When off, the wheel zooms. Dragging with the middle button pans either way. Turn this on if you use a touchpad.</value>
   </data>
-  <data name="Settings_ShapeOfNewLinesDrawn" xml:space="preserve">
-    <value>The shape of new lines drawn on the [Script] board (choice paths · branch lines) — existing lines stay as they are (select a line to change it from the menu on the line). A line's “↺ Auto” also returns to this shape's default.</value>
+  <data name="Settings_ChoiceLineShapeTip" xml:space="preserve">
+    <value>The shape of choice lines (branch lines too) newly drawn on the [Script] board — existing lines stay as they are (select a line to change it from the menu on the line). A line’s “↺ Auto” also returns to this shape’s default.</value>
   </data>
-  <data name="Settings_NewLines" xml:space="preserve">
-    <value>New lines</value>
+  <data name="Settings_ChoiceLines" xml:space="preserve">
+    <value>Choice lines</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Language</value>
@@ -283,25 +283,25 @@ The two climb the hill without a word.</value>
   <data name="Settings_TextColorForNewCards" xml:space="preserve">
     <value>Text color for new cards — existing cards stay as they are (change the color of selected text with the formatting toolbar at the top of [Script]).</value>
   </data>
-  <data name="Settings_NewCard" xml:space="preserve">
-    <value>[Script] new cards</value>
+  <data name="Settings_CardBaseSize" xml:space="preserve">
+    <value>[Script] Card base size</value>
   </data>
-  <data name="Settings_NewCardWidth" xml:space="preserve">
+  <data name="Settings_BaseWidth" xml:space="preserve">
     <value>Width</value>
   </data>
-  <data name="Settings_NewCardWritingHeight" xml:space="preserve">
+  <data name="Settings_BaseWritingHeight" xml:space="preserve">
     <value>Writing box height</value>
   </data>
-  <data name="Settings_NewCardSizeTip" xml:space="preserve">
-    <value>The size of new cards — existing cards stay as they are. Minimized cards, and double-clicking a resize handle, also use this size. The smallest size is {0} × {1}.</value>
+  <data name="Settings_BaseSizeTip" xml:space="preserve">
+    <value>The base size of cards — new cards are this size, and pinning a card to base size or double-clicking a resize handle returns it to this size. Changing it leaves existing cards as they are. The smallest size is {0} × {1}.</value>
   </data>
-  <data name="Settings_FitKeepsNewCardSize" xml:space="preserve">
+  <data name="Settings_FitKeepsBaseSize" xml:space="preserve">
     <value>Fit never shrinks a card below this size</value>
   </data>
-  <data name="Settings_FitKeepsNewCardSizeTip" xml:space="preserve">
+  <data name="Settings_FitKeepsBaseSizeTip" xml:space="preserve">
     <value>When on, Fit width · Fit height don't shrink a card below this size even for short text. When off, they shrink down to the smallest size ({0} × {1}).</value>
   </data>
-  <data name="Settings_ResetNewCardSize" xml:space="preserve">
+  <data name="Settings_ResetBaseSize" xml:space="preserve">
     <value>Reset to default ({0} × {1})</value>
   </data>
   <data name="Settings_ScriptWritingBox" xml:space="preserve">
@@ -881,23 +881,23 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_CardSize" xml:space="preserve">
     <value>Card size</value>
   </data>
-  <data name="Board_Minimize" xml:space="preserve">
-    <value>Minimize</value>
+  <data name="Board_BasePin" xml:space="preserve">
+    <value>Pin to base size</value>
   </data>
-  <data name="Board_MinimizeTip" xml:space="preserve">
-    <value>Minimize — folds the card to the new-card size ({0} × {1}) and pauses fitting. Double-clicking the empty part of the header does the same.</value>
+  <data name="Board_BasePinTip" xml:space="preserve">
+    <value>Pin to base size — sets the card to the base size ({0} × {1}) and pauses fitting (it keeps that size as you write). Double-clicking the empty part of the header does the same. Change the base size in [⚙ Settings] “[Script] Card base size”.</value>
   </data>
-  <data name="Board_MinimizedClickToRestore" xml:space="preserve">
-    <value>Minimized — click to return to the size before folding; any fit that's on fits again (or double-click the empty part of the header).</value>
+  <data name="Board_BasePinnedClickToUnpin" xml:space="preserve">
+    <value>Pinned to base size — click to unpin: the card returns to its size before pinning and any fit that’s on fits again (or double-click the empty part of the header).</value>
   </data>
-  <data name="Board_FitRestsWhileMinimized" xml:space="preserve">
-    <value>Fitting is paused while the card is minimized — it fits again when you restore it.</value>
+  <data name="Board_FitRestsWhileBasePinned" xml:space="preserve">
+    <value>Fitting is paused while the card is pinned to base size — it fits again when you unpin it.</value>
   </data>
-  <data name="Board_MinimizedCard" xml:space="preserve">
-    <value>Minimized the card ({0} × {1}) — fitting is paused. Undo (Ctrl+Z) brings it back.</value>
+  <data name="Board_BasePinnedCard" xml:space="preserve">
+    <value>Pinned the card to base size ({0} × {1}) — fitting is paused. Undo (Ctrl+Z) brings it back.</value>
   </data>
-  <data name="Board_RestoredCard" xml:space="preserve">
-    <value>Restored the card — any fit that's on fits again. Undo (Ctrl+Z) brings it back.</value>
+  <data name="Board_UnpinnedCard" xml:space="preserve">
+    <value>Unpinned the card — any fit that’s on fits again. Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Board_FitWidth" xml:space="preserve">
     <value>Fit width</value>
@@ -906,10 +906,10 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Fit height</value>
   </data>
   <data name="Board_FitWidthWhileOnCard" xml:space="preserve">
-    <value>Fit width — while on, the card widens as you write so the longest line doesn't wrap (how far it shrinks is set in [⚙ Settings] “[Script] new cards”). </value>
+    <value>Fit width — while on, the card widens as you write so the longest line doesn't wrap (how far it shrinks is set in [⚙ Settings] “[Script] Card base size”). </value>
   </data>
   <data name="Board_FitHeightWhileOnWriting" xml:space="preserve">
-    <value>Fit height — while on, the writing box grows as you write so every line shows without scrolling (how far it shrinks is set in [⚙ Settings] “[Script] new cards”). </value>
+    <value>Fit height — while on, the writing box grows as you write so every line shows without scrolling (how far it shrinks is set in [⚙ Settings] “[Script] Card base size”). </value>
   </data>
   <data name="Board_OnNowClickToTurn" xml:space="preserve">
     <value>On now — click to turn it off (the size stays). Dragging an edge to resize also turns it off.</value>
@@ -2961,5 +2961,13 @@ Chapters · scenes · episodes are added, deleted and edited in the [Script] tab
   </data>
   <data name="Dialogue_PendingRemovalTip" xml:space="preserve">
     <value>You deleted this line in the card’s writing box. It’s removed when you leave the box or press Ctrl+S — until then the line keeps its identity and any branch on it, so writing in its place again continues this line.</value>
+  </data>
+  <data name="Settings_BaseSizeGuide" xml:space="preserve">
+    <value>The size cards return to. Where it is used:
+• Pin to base size — click the button at the right end of a card’s title row, left of the fit buttons (↔ · ↕), or double-click the empty part of the card’s header: the card returns to this size and fitting pauses (it keeps this size as you write). Click again to unpin: the card returns to its size before pinning and any fit that’s on fits again.
+• New cards — new cards are this size.
+• Double-clicking a resize handle — the side that handle controls (width · height) returns to this size.
+• The lower limit of fitting — with the checkbox below on, Fit width · Fit height never shrink a card below this size, even for short text.
+Changing it leaves existing cards as they are (cards with fitting on refit right away).</value>
   </data>
 </root>

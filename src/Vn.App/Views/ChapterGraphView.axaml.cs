@@ -1069,7 +1069,7 @@ public partial class ChapterGraphView : UserControl
     // Ctrl을 요구하지 않는다 — 판 위에서 휠은 곧 배율이다.
     // 세로로 훑는 일은 가운데 단추 끌기가 맡는다.
     //
-    // 설정 「휠로 판 옮기기」를 켜면(맥은 처음부터) 거꾸로다 — 휠이 판을 옮기고 배율은 Ctrl(맥은 ⌘도)+휠 · 트랙패드 집기다
+    // 설정 「휠로 판 옮기기 (터치패드용)」를 켜면(맥은 처음부터) 거꾸로다 — 휠이 판을 옮기고 배율은 Ctrl(맥은 ⌘도)+휠 · 트랙패드 집기다
     // (BoardWheel 한 벌 · writer-app WA3).
 
     private const double MinZoom = 0.1;  // 큰 챕터도 [화면 맞춤]으로 한 화면에 들어오게
@@ -1081,7 +1081,7 @@ public partial class ChapterGraphView : UserControl
     private Vector _panStartOffset;
 
     /// <summary>
-    /// 휠 — 배율이거나(처음 값 · 누른 키와 무관하게) 판 옮기기다(설정 「휠로 판 옮기기」). 스크롤로 새지 않게 여기서 삼킨다. 무엇을 얼마나 하는가는
+    /// 휠 — 배율이거나(처음 값 · 누른 키와 무관하게) 판 옮기기다(설정 「휠로 판 옮기기 (터치패드용)」). 스크롤로 새지 않게 여기서 삼킨다. 무엇을 얼마나 하는가는
     /// <see cref="BoardWheel"/> 한 벌([대본]과 같다) — 배율은 신호의 크기에 비례한다.
     /// </summary>
     private void OnGraphWheel(object? sender, Avalonia.Input.PointerWheelEventArgs args)

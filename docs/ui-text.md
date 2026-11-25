@@ -132,7 +132,10 @@
 | 상태줄 | Status bar | |
 | 설정 | Settings | 「⚙ 설정」 → *⚙ Settings* |
 | 설명 간소화 | Fewer hints | |
-| 휠로 판 옮기기 | Wheel pans the board | |
+| 휠로 판 옮기기 (터치패드용) | Wheel pans the board (for touchpads) | |
+| 선택지 선 | Choice lines | 설정 「기타」 — 새로 잇는 선택지 선 · 분기 선의 꼴 |
+| [대본] 카드 기본 크기 | [Script] Card base size | 설정 |
+| 기본 크기로 고정 | Pin to base size | 카드 머리의 단추 · 빈 곳 두 번 누르기 — *Unpin* |
 | [대본] 판 크기 | [Script] board size | |
 | 복제할 폴더 | Mirror folder | 게임 폴더 등 |
 | 단축키 | Shortcuts | |

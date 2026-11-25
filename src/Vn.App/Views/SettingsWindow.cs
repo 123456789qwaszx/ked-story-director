@@ -107,7 +107,7 @@ internal sealed class SettingsWindow : Window
         WheelPansCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_WheelPansBoard, () =>
             BoardWheel.Set(WheelPansCheck.IsChecked == true));
 
-        // 새로 잇는 선 — [대본] 판에 선택지 길 · 분기 선이 생길 때의 꼴(2026-11-23 소유자 · BoardLines). 누르는 즉시 — 다음에 잇는 선부터 따른다.
+        // 선택지 선 — [대본] 판에 선택지 길 · 분기 선이 생길 때의 꼴(2026-11-26 소유자 — 이름을 「새로 잇는 선」에서)(2026-11-23 소유자 · BoardLines). 누르는 즉시 — 다음에 잇는 선부터 따른다.
         NewLineShapeCombo = new ComboBox
         {
             FontSize = 12,
@@ -115,8 +115,8 @@ internal sealed class SettingsWindow : Window
             SelectedIndex = Array.FindIndex(LineShapeNames, item => item.Kind == BoardLines.Kind)
         };
         ToolTip.SetTip(NewLineShapeCombo,
-            Ui.Settings_ShapeOfNewLinesDrawn);
-        NewLineShapeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_NewLines, () =>
+            Ui.Settings_ChoiceLineShapeTip);
+        NewLineShapeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_ChoiceLines, () =>
         {
             if (NewLineShapeCombo.SelectedIndex is >= 0 and var index && index < LineShapeNames.Length)
             {
@@ -241,26 +241,26 @@ internal sealed class SettingsWindow : Window
             FillScriptFont();
         });
 
-        // 「[대본] 새 카드」 — 새 카드의 크기와 「글 맞춤이 이 크기를 지킨다」(2026-11-25 소유자 — 「생성 시에 세팅해주는 기본크기는 별개여야 … 가로 세로 크기
+        // 「[대본] 카드 기본 크기」 — 새 카드의 크기와 「글 맞춤이 이 크기를 지킨다」(2026-11-25 소유자 — 「생성 시에 세팅해주는 기본크기는 별개여야 … 가로 세로 크기
         // 맞춤은 이 기본 크기는 지켜주도록 세팅이 가능해야」). 「대본 글 칸」과 같은 규칙: 고치는 즉시 앱 설정에 넣는다.
-        string sizeTip = string.Format(Ui.Settings_NewCardSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight);
-        NewCardWidthBox = CardSizeBox(CardDefaults.MinWidth, CardDefaults.MaxWidth, sizeTip);
-        NewCardHeightBox = CardSizeBox(CardDefaults.MinWritingHeight, CardDefaults.MaxWritingHeight, sizeTip);
-        FitKeepsSizeCheck = new CheckBox { Content = Ui.Settings_FitKeepsNewCardSize, FontSize = 12 };
-        ToolTip.SetTip(FitKeepsSizeCheck, string.Format(Ui.Settings_FitKeepsNewCardSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight));
-        NewCardDefaultButton = new Button
+        string sizeTip = string.Format(Ui.Settings_BaseSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight);
+        BaseWidthBox = CardSizeBox(CardDefaults.MinWidth, CardDefaults.MaxWidth, sizeTip);
+        BaseHeightBox = CardSizeBox(CardDefaults.MinWritingHeight, CardDefaults.MaxWritingHeight, sizeTip);
+        FitKeepsSizeCheck = new CheckBox { Content = Ui.Settings_FitKeepsBaseSize, FontSize = 12 };
+        ToolTip.SetTip(FitKeepsSizeCheck, string.Format(Ui.Settings_FitKeepsBaseSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight));
+        BaseSizeDefaultButton = new Button
         {
-            Content = string.Format(Ui.Settings_ResetNewCardSize, CardDefaults.DefaultWidth, CardDefaults.DefaultWritingHeight),
+            Content = string.Format(Ui.Settings_ResetBaseSize, CardDefaults.DefaultWidth, CardDefaults.DefaultWritingHeight),
             FontSize = 11
         };
-        FillNewCard();
-        NewCardWidthBox.ValueChanged += (_, _) => OnNewCardEdited();
-        NewCardHeightBox.ValueChanged += (_, _) => OnNewCardEdited();
-        FitKeepsSizeCheck.IsCheckedChanged += (_, _) => OnNewCardEdited();
-        NewCardDefaultButton.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_NewCard, () =>
+        FillBaseSize();
+        BaseWidthBox.ValueChanged += (_, _) => OnBaseSizeEdited();
+        BaseHeightBox.ValueChanged += (_, _) => OnBaseSizeEdited();
+        FitKeepsSizeCheck.IsCheckedChanged += (_, _) => OnBaseSizeEdited();
+        BaseSizeDefaultButton.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_CardBaseSize, () =>
         {
             CardDefaults.Reset();
-            FillNewCard();
+            FillBaseSize();
         });
 
         ConfirmButton = new Button { Content = Ui.Settings_OK, IsDefault = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
@@ -322,7 +322,7 @@ internal sealed class SettingsWindow : Window
                     ExportGroup,   // 접는 묶음은 제 테두리가 있다
                     ShortcutGroup,
                     Group(Ui.Settings_ScriptWritingBox, ScriptFontSection()),
-                    Group(Ui.Settings_NewCard, NewCardSection()),
+                    Group(Ui.Settings_CardBaseSize, BaseSizeSection()),
                     Group(Ui.Settings_Other, new StackPanel
                     {
                         Spacing = 4,
@@ -336,7 +336,7 @@ internal sealed class SettingsWindow : Window
                                 Orientation = Orientation.Horizontal,
                                 Spacing = 8,
                                 Margin = new Thickness(0, 4, 0, 0),
-                                Children = { new TextBlock { Text = Ui.Settings_NewLines, FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
+                                Children = { new TextBlock { Text = Ui.Settings_ChoiceLines, FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
                             },
                             new StackPanel
                             {
@@ -418,16 +418,28 @@ internal sealed class SettingsWindow : Window
 
     internal Button ScriptFontDefaultButton { get; }
 
-    /// <summary>「[대본] 새 카드」의 폭.</summary>
-    internal NumericUpDown NewCardWidthBox { get; }
+    /// <summary>
+    /// 「[대본] 카드 기본 크기」가 어디에 쓰이는지 — 기본 크기로 고정 · 새 카드 · 크기 손잡이 두 번 누르기 · 글 맞춤의 아래 끝(2026-11-26 소유자 — 「동작에 대한
+    /// 설명 역시 필요합니다. 설명 간소화를 하지 않을 때는 구체적으로 어떤 동작인지 설명」). 설명 간소화를 켜면 걷힌다(<see cref="GuideLine"/>).
+    /// </summary>
+    internal GuideLine BaseSizeGuide { get; } = new()
+    {
+        Full = Ui.Settings_BaseSizeGuide,
+        FontSize = 11,
+        Opacity = 0.75,
+        TextWrapping = TextWrapping.Wrap
+    };
 
-    /// <summary>「[대본] 새 카드」의 글 칸 높이.</summary>
-    internal NumericUpDown NewCardHeightBox { get; }
+    /// <summary>「[대본] 카드 기본 크기」의 폭.</summary>
+    internal NumericUpDown BaseWidthBox { get; }
 
-    /// <summary>「[대본] 새 카드」의 「글 맞춤이 이 크기보다 작게 줄이지 않는다」.</summary>
+    /// <summary>「[대본] 카드 기본 크기」의 글 칸 높이.</summary>
+    internal NumericUpDown BaseHeightBox { get; }
+
+    /// <summary>「[대본] 카드 기본 크기」의 「글 맞춤이 이 크기보다 작게 줄이지 않는다」.</summary>
     internal CheckBox FitKeepsSizeCheck { get; }
 
-    internal Button NewCardDefaultButton { get; }
+    internal Button BaseSizeDefaultButton { get; }
 
     /// <summary>「대본 글 칸」의 굵게 — 새로 만드는 카드의 글(writer-formatting WF-D16).</summary>
     internal CheckBox ScriptBoldCheck { get; }
@@ -458,10 +470,10 @@ internal sealed class SettingsWindow : Window
     /// <summary>「기타」의 「미니맵 감추기」 — 켜면 [대본] 판의 지도와 배율 단추가 걷히고 지금 배율 글자만 남는다. 누르는 즉시 반영한다.</summary>
     internal CheckBox HideMinimapCheck { get; }
 
-    /// <summary>「기타」의 「휠로 판 옮기기」 — 켜면 두 판의 휠이 판을 옮긴다(<see cref="BoardWheel"/>). 누르는 즉시 반영한다.</summary>
+    /// <summary>「기타」의 「휠로 판 옮기기 (터치패드용)」 — 켜면 두 판의 휠이 판을 옮긴다(<see cref="BoardWheel"/>). 누르는 즉시 반영한다.</summary>
     internal CheckBox WheelPansCheck { get; }
 
-    /// <summary>「기타」의 「새로 잇는 선」 — [대본] 판에 새로 잇는 선의 꼴(<see cref="BoardLines"/>). 누르는 즉시 반영한다.</summary>
+    /// <summary>「기타」의 「선택지 선」 — [대본] 판에 새로 잇는 선의 꼴(<see cref="BoardLines"/>). 누르는 즉시 반영한다.</summary>
     internal ComboBox NewLineShapeCombo { get; }
 
     /// <summary>「기타」의 언어 칸 — PC 언어 따라 · 한국어 · English(<see cref="UiLanguage"/>). 고르는 즉시 앱 설정에 들고 다시 켤 때 바뀐다.</summary>
@@ -485,7 +497,7 @@ internal sealed class SettingsWindow : Window
         _ => 0
     };
 
-    /// <summary>「새로 잇는 선」의 차림 — 선 위의 꼴 단추와 같은 이름 · 차례.</summary>
+    /// <summary>「선택지 선」의 차림 — 선 위의 꼴 단추와 같은 이름 · 차례.</summary>
     internal static readonly (string Name, Vn.Authoring.Model.EdgeShapeKind Kind)[] LineShapeNames =
     [
         (Ui.Settings_Elbow, Vn.Authoring.Model.EdgeShapeKind.Elbow),
@@ -943,8 +955,8 @@ internal sealed class SettingsWindow : Window
         };
     }
 
-    /// <summary>「[대본] 새 카드」 — 가로 · 글 칸 높이 · 글 맞춤이 이 크기를 지킨다.</summary>
-    private Control NewCardSection()
+    /// <summary>「[대본] 카드 기본 크기」 — 가로 · 글 칸 높이 · 글 맞춤이 이 크기를 지킨다.</summary>
+    private Control BaseSizeSection()
     {
         var grid = new Grid
         {
@@ -954,17 +966,18 @@ internal sealed class SettingsWindow : Window
             RowSpacing = 6
         };
 
-        AddRow(grid, 0, Ui.Settings_NewCardWidth, NewCardWidthBox);
-        AddRow(grid, 1, Ui.Settings_NewCardWritingHeight, NewCardHeightBox);
+        AddRow(grid, 0, Ui.Settings_BaseWidth, BaseWidthBox);
+        AddRow(grid, 1, Ui.Settings_BaseWritingHeight, BaseHeightBox);
 
         return new StackPanel
         {
             Spacing = 6,
             Children =
             {
+                BaseSizeGuide,
                 grid,
                 FitKeepsSizeCheck,
-                NewCardDefaultButton
+                BaseSizeDefaultButton
             }
         };
     }
@@ -984,40 +997,40 @@ internal sealed class SettingsWindow : Window
         return box;
     }
 
-    /// <summary>「[대본] 새 카드」의 칸들을 지금 설정으로 채운다 — 채우는 동안의 바뀜은 넣기로 치지 않는다.</summary>
-    private void FillNewCard()
+    /// <summary>「[대본] 카드 기본 크기」의 칸들을 지금 설정으로 채운다 — 채우는 동안의 바뀜은 넣기로 치지 않는다.</summary>
+    private void FillBaseSize()
     {
-        _fillingNewCard = true;
+        _fillingBaseSize = true;
 
         try
         {
-            NewCardWidthBox.Value = (decimal)CardDefaults.Width;
-            NewCardHeightBox.Value = (decimal)CardDefaults.WritingHeight;
+            BaseWidthBox.Value = (decimal)CardDefaults.Width;
+            BaseHeightBox.Value = (decimal)CardDefaults.WritingHeight;
             FitKeepsSizeCheck.IsChecked = CardDefaults.FitKeepsSize;
         }
         finally
         {
-            _fillingNewCard = false;
+            _fillingBaseSize = false;
         }
     }
 
-    private bool _fillingNewCard;
+    private bool _fillingBaseSize;
 
-    /// <summary>「[대본] 새 카드」의 칸 하나를 고쳤다 — 셋을 함께 넣는다(범위 밖은 끝으로 당겨진다). 비운 숫자 칸은 기본값이다.</summary>
-    private void OnNewCardEdited()
+    /// <summary>「[대본] 카드 기본 크기」의 칸 하나를 고쳤다 — 셋을 함께 넣는다(범위 밖은 끝으로 당겨진다). 비운 숫자 칸은 기본값이다.</summary>
+    private void OnBaseSizeEdited()
     {
-        if (_fillingNewCard)
+        if (_fillingBaseSize)
         {
             return;
         }
 
-        UiGuard.Run(_session, Ui.Settings_NewCard, () =>
+        UiGuard.Run(_session, Ui.Settings_CardBaseSize, () =>
         {
             CardDefaults.Set(
-                (double)(NewCardWidthBox.Value ?? (decimal)CardDefaults.DefaultWidth),
-                (double)(NewCardHeightBox.Value ?? (decimal)CardDefaults.DefaultWritingHeight),
+                (double)(BaseWidthBox.Value ?? (decimal)CardDefaults.DefaultWidth),
+                (double)(BaseHeightBox.Value ?? (decimal)CardDefaults.DefaultWritingHeight),
                 FitKeepsSizeCheck.IsChecked == true);
-            FillNewCard();
+            FillBaseSize();
         });
     }
 

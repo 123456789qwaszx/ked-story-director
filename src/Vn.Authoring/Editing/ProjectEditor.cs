@@ -69,7 +69,7 @@ public sealed partial class ProjectEditor
     public Func<(double Width, double WritingHeight)>? NewCardSize { get; set; }
 
     /// <summary>
-    /// 새로 잇는 선의 꼴을 대는 곳 — 앱이 그 PC의 설정 「새로 잇는 선」(직각 · 곡선 · 직선)을 댄다(2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선,
+    /// 새로 잇는 선의 꼴을 대는 곳 — 앱이 그 PC의 설정 「선택지 선」(직각 · 곡선 · 직선)을 댄다(2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선,
     /// 곡선, 직각 중에 기본 생성을 선택할 수 있게」). 선택지 길(<see cref="AddEdge"/>)과 분기 선(분기 추가 · 분기점 잇기)이 <b>생길 때</b> 그 꼴을 적는다 —
     /// 이미 있는 선은 그대로다. 직각(기본 · <see cref="EdgeShape.IsDefault"/>)이면 적지 않는다. 없으면 직각이다.
     /// </summary>
@@ -564,68 +564,68 @@ public sealed partial class ProjectEditor
             (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight &&
              (fitWidth ?? node.Layout.FitWidth) == node.Layout.FitWidth &&
              (fitHeight ?? node.Layout.FitHeight) == node.Layout.FitHeight &&
-             !node.Layout.Minimized))
+             !node.Layout.PinnedToBase))
         {
             return;
         }
 
-        // 손으로 정한 크기다 — 최소화도 풀린다(펴면 돌아갈 크기는 버린다 · 2026-11-25).
+        // 손으로 정한 크기다 — 기본 크기 고정도 풀린다(풀면 돌아갈 크기는 버린다 · 2026-11-25).
         Mutate(ProjectChangeKind.Layout, () =>
         {
             node.Layout.Width = width;
             node.Layout.WritingHeight = writingHeight;
             node.Layout.FitWidth = fitWidth ?? node.Layout.FitWidth;
             node.Layout.FitHeight = fitHeight ?? node.Layout.FitHeight;
-            ClearMinimized(node.Layout);
+            ClearBasePin(node.Layout);
         });
     }
 
     /// <summary>
-    /// <b>카드를 최소화한다</b>(<see cref="NodeLayout.Minimized"/> · 2026-11-25 소유자) — 지금 크기를 펴면 돌아갈 크기로 적어 두고 카드를
+    /// <b>카드를 기본 크기로 고정한다</b>(<see cref="NodeLayout.PinnedToBase"/> · 2026-11-25 소유자) — 지금 크기를 풀면 돌아갈 크기로 적어 두고 카드를
     /// <paramref name="width"/> · <paramref name="writingHeight"/>(앱이 대는 그 PC의 새 카드 크기 · <c>null</c>이면 가장 작은 크기)로 둔다. 글 맞춤은 켜진 채 쉰다.
-    /// 되돌리기 한 칸. 없는 노드거나 이미 최소화했으면 아무것도 적지 않는다.
+    /// 되돌리기 한 칸. 없는 노드거나 이미 기본 크기로 고정했으면 아무것도 적지 않는다.
     /// </summary>
-    public void MinimizeNode(string nodeId, double? width, double? writingHeight)
+    public void PinToBaseSize(string nodeId, double? width, double? writingHeight)
     {
-        if (Project.FindNode(nodeId) is not { } node || node.Layout.Minimized)
+        if (Project.FindNode(nodeId) is not { } node || node.Layout.PinnedToBase)
         {
             return;
         }
 
         Mutate(ProjectChangeKind.Layout, () =>
         {
-            node.Layout.ExpandedWidth = node.Layout.Width;
-            node.Layout.ExpandedWritingHeight = node.Layout.WritingHeight;
+            node.Layout.UnpinnedWidth = node.Layout.Width;
+            node.Layout.UnpinnedWritingHeight = node.Layout.WritingHeight;
             node.Layout.Width = width;
             node.Layout.WritingHeight = writingHeight;
-            node.Layout.Minimized = true;
+            node.Layout.PinnedToBase = true;
         }, nodeId);
     }
 
     /// <summary>
-    /// <b>최소화를 푼다</b> — 접을 때 적어 둔 크기로 돌아간다. 켜진 글 맞춤은 앱이 곧바로 다시 맞춰 <see cref="FitNodeSize"/>로 적는다(이 칸에 든다).
-    /// 되돌리기 한 칸. 없는 노드거나 최소화하지 않았으면 아무것도 적지 않는다.
+    /// <b>기본 크기 고정을 푼다</b> — 고정할 때 적어 둔 크기로 돌아간다. 켜진 글 맞춤은 앱이 곧바로 다시 맞춰 <see cref="FitNodeSize"/>로 적는다(이 칸에 든다).
+    /// 되돌리기 한 칸. 없는 노드거나 기본 크기로 고정하지 않았으면 아무것도 적지 않는다.
     /// </summary>
-    public void RestoreNode(string nodeId)
+    public void UnpinBaseSize(string nodeId)
     {
-        if (Project.FindNode(nodeId) is not { } node || !node.Layout.Minimized)
+        if (Project.FindNode(nodeId) is not { } node || !node.Layout.PinnedToBase)
         {
             return;
         }
 
         Mutate(ProjectChangeKind.Layout, () =>
         {
-            node.Layout.Width = node.Layout.ExpandedWidth;
-            node.Layout.WritingHeight = node.Layout.ExpandedWritingHeight;
-            ClearMinimized(node.Layout);
+            node.Layout.Width = node.Layout.UnpinnedWidth;
+            node.Layout.WritingHeight = node.Layout.UnpinnedWritingHeight;
+            ClearBasePin(node.Layout);
         }, nodeId);
     }
 
-    private static void ClearMinimized(NodeLayout layout)
+    private static void ClearBasePin(NodeLayout layout)
     {
-        layout.Minimized = false;
-        layout.ExpandedWidth = null;
-        layout.ExpandedWritingHeight = null;
+        layout.PinnedToBase = false;
+        layout.UnpinnedWidth = null;
+        layout.UnpinnedWritingHeight = null;
     }
 
     /// <summary>새 카드의 자리와 크기 — 세로 글 맞춤만 켜고, 크기는 <see cref="NewCardSize"/>(가장 작은 크기와 같은 쪽은 적지 않는다).</summary>
@@ -669,9 +669,9 @@ public sealed partial class ProjectEditor
     /// </summary>
     public void FitNodeSize(string nodeId, double? width, double? writingHeight)
     {
-        // 최소화한 카드의 맞춤은 쉰다 — 크기는 접을 때의 기본 크기 그대로다(2026-11-25).
+        // 기본 크기로 고정한 카드의 맞춤은 쉰다 — 크기는 고정할 때의 기본 크기 그대로다(2026-11-25).
         if (Project.FindNode(nodeId) is not { } node ||
-            node.Layout.Minimized ||
+            node.Layout.PinnedToBase ||
             (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
         {
             return;

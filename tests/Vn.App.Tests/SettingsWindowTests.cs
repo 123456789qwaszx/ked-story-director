@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -454,7 +455,7 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     /// <summary>
-    /// 2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게」. 「기타」의 「새로 잇는 선」 — 처음은 직각, 고르는
+    /// 2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선, 곡선, 직각 중에 기본 생성을 선택할 수 있게」. 「기타」의 「선택지 선」(2026-11-26 — ⛔ 「새로 잇는 선」) — 처음은 직각, 고르는
     /// 즉시 앱 설정에 들어가고 프로젝트는 그대로이며, 그 뒤 생기는 선이 그 꼴이다. 다시 열면 고른 것이 보인다.
     /// </summary>
     [Fact]
@@ -471,6 +472,7 @@ public sealed class SettingsWindowTests : IDisposable
             Assert.Equal(["직각", "곡선", "직선"], settings.NewLineShapeCombo.Items.Cast<string>());
             Assert.Equal("직각", settings.NewLineShapeCombo.SelectedItem);
             Assert.True(settings.NewLineShapeCombo.IsEffectivelyVisible);
+            Assert.Contains(settings.GetVisualDescendants().OfType<TextBlock>(), block => block.Text == "선택지 선");
 
             settings.NewLineShapeCombo.SelectedItem = "직선";
             Dispatcher.UIThread.RunJobs();
@@ -493,6 +495,41 @@ public sealed class SettingsWindowTests : IDisposable
     });
 
     [Fact]
+    public void 카드_기본_크기_묶음은_이름이_그것이고_설명_간소화를_끄면_쓰이는_곳을_풀어_보인다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「새 카드라는 용어는 헷갈리게 하고 본질을 흐립니다 … 동작에 대한 설명 역시 필요합니다. 설명 간소화를 하지 않을 때는 구체적으로
+        // 어떤 동작인지」. 묶음 이름은 「[대본] 카드 기본 크기」(⛔ 「[대본] 새 카드」)이고, 설명은 간소화를 켜면 걷힌다.
+        bool brief = GuideMode.Brief;
+
+        try
+        {
+            GuideMode.Set(false);
+            (MainWindow window, _) = Open();
+
+            SettingsWindow settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            List<string?> texts = settings.GetVisualDescendants().OfType<TextBlock>().Select(block => block.Text).ToList();
+            Assert.Contains("[대본] 카드 기본 크기", texts);
+            Assert.DoesNotContain(texts, text => text?.Contains("새 카드」", StringComparison.Ordinal) == true || text == "[대본] 새 카드");
+            Assert.True(settings.BaseSizeGuide.IsEffectivelyVisible);
+            Assert.Contains("기본 크기로 고정", settings.BaseSizeGuide.Text, StringComparison.Ordinal);
+            Assert.Contains("새 카드", settings.BaseSizeGuide.Text, StringComparison.Ordinal);
+            Assert.Contains("두 번", settings.BaseSizeGuide.Text, StringComparison.Ordinal);
+
+            settings.BriefGuidesCheck.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(settings.BaseSizeGuide.IsVisible);
+
+            settings.Close();
+            window.Close();
+        }
+        finally
+        {
+            GuideMode.Set(brief);
+        }
+    });
+
+    [Fact]
     public void 기타_묶음의_휠로_판_옮기기는_처음_꺼져_있고_켜는_즉시_판의_휠이_따르며_다음에도_켜져_있다() => HeadlessUi.Run(() =>
     {
         // 2026-11-19 소유자 「트랙패드 수정」(writer-app WA3) — 이 PC의 앱 설정이고 누르는 즉시 반영한다(「기타」의 다른 체크와 같다).
@@ -505,7 +542,7 @@ public sealed class SettingsWindowTests : IDisposable
 
             SettingsWindow settings = window.OpenSettings();
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal("휠로 판 옮기기", settings.WheelPansCheck.Content);
+            Assert.Equal("휠로 판 옮기기 (터치패드용)", settings.WheelPansCheck.Content);   // 2026-11-26 소유자 — 터치패드용임을 이름에
             Assert.False(settings.WheelPansCheck.IsChecked);
             Assert.True(settings.WheelPansCheck.IsEffectivelyVisible);
 

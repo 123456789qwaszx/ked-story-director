@@ -265,17 +265,17 @@
   <data name="File_LayoutFitHeightOfNode" xml:space="preserve">
     <value>layout.fitHeight of node '{0}'</value>
   </data>
-  <data name="File_LayoutMinimizedOfNode" xml:space="preserve">
-    <value>layout.minimized of node '{0}'</value>
+  <data name="File_LayoutPinnedToBaseOfNode" xml:space="preserve">
+    <value>layout.pinnedToBase of node '{0}'</value>
   </data>
-  <data name="File_LayoutExpandedWidthOfNode" xml:space="preserve">
-    <value>layout.expandedWidth of node '{0}'</value>
+  <data name="File_LayoutUnpinnedWidthOfNode" xml:space="preserve">
+    <value>layout.unpinnedWidth of node '{0}'</value>
   </data>
-  <data name="File_LayoutExpandedWritingHeightOfNode" xml:space="preserve">
-    <value>layout.expandedWritingHeight of node '{0}'</value>
+  <data name="File_LayoutUnpinnedWritingHeightOfNode" xml:space="preserve">
+    <value>layout.unpinnedWritingHeight of node '{0}'</value>
   </data>
-  <data name="File_ExpandedSizeWithoutMinimized" xml:space="preserve">
-    <value>Node '{0}' isn't minimized, but it has a size to restore (layout.expandedWidth · expandedWritingHeight).</value>
+  <data name="File_UnpinnedSizeWithoutPinnedToBase" xml:space="preserve">
+    <value>Node '{0}' isn't pinned to base size, but it has a size to return to (layout.unpinnedWidth · unpinnedWritingHeight).</value>
   </data>
   <data name="File_EdgeShapesOfNode" xml:space="preserve">
     <value>edgeShapes of node '{0}'</value>

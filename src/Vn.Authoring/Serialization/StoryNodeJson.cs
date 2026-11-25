@@ -74,20 +74,20 @@ internal static class StoryNodeJson
             ((JsonObject)json["layout"]!)["fitHeight"] = true;
         }
 
-        // 최소화(2026-11-25) — 접힌 카드만 적는다. 펴면 돌아갈 크기는 사람이 바꾼 쪽만 적는다(폭 · 높이와 같은 규칙).
-        if (node.Layout.Minimized)
+        // 기본 크기 고정(2026-11-25) — 고정한 카드만 적는다. 풀면 돌아갈 크기는 사람이 바꾼 쪽만 적는다(폭 · 높이와 같은 규칙).
+        if (node.Layout.PinnedToBase)
         {
             var layoutJson = (JsonObject)json["layout"]!;
-            layoutJson["minimized"] = true;
+            layoutJson["pinnedToBase"] = true;
 
-            if (node.Layout.ExpandedWidth is { } expandedWidth)
+            if (node.Layout.UnpinnedWidth is { } unpinnedWidth)
             {
-                layoutJson["expandedWidth"] = Math.Round(expandedWidth, 2);
+                layoutJson["unpinnedWidth"] = Math.Round(unpinnedWidth, 2);
             }
 
-            if (node.Layout.ExpandedWritingHeight is { } expandedHeight)
+            if (node.Layout.UnpinnedWritingHeight is { } unpinnedHeight)
             {
-                layoutJson["expandedWritingHeight"] = Math.Round(expandedHeight, 2);
+                layoutJson["unpinnedWritingHeight"] = Math.Round(unpinnedHeight, 2);
             }
         }
 
@@ -139,21 +139,21 @@ internal static class StoryNodeJson
             WritingHeight = JsonSupport.OptionalNumber(layout["writingHeight"], string.Format(Msg.File_LayoutWritingHeightOfNode, id)),
             FitWidth = JsonSupport.Flag(layout["fitWidth"], string.Format(Msg.File_LayoutFitWidthOfNode, id)),
             FitHeight = JsonSupport.Flag(layout["fitHeight"], string.Format(Msg.File_LayoutFitHeightOfNode, id)),
-            Minimized = JsonSupport.Flag(layout["minimized"], string.Format(Msg.File_LayoutMinimizedOfNode, id))
+            PinnedToBase = JsonSupport.Flag(layout["pinnedToBase"], string.Format(Msg.File_LayoutPinnedToBaseOfNode, id))
         };
 
-        // 펴면 돌아갈 크기는 접힌 카드에만 있다 — 접히지 않은 카드에 적혀 있으면 툴이 만들지 않는 모양이다.
-        double? expandedWidth = JsonSupport.OptionalNumber(layout["expandedWidth"], string.Format(Msg.File_LayoutExpandedWidthOfNode, id));
-        double? expandedWritingHeight = JsonSupport.OptionalNumber(
-            layout["expandedWritingHeight"], string.Format(Msg.File_LayoutExpandedWritingHeightOfNode, id));
+        // 풀면 돌아갈 크기는 고정한 카드에만 있다 — 고정하지 않은 카드에 적혀 있으면 툴이 만들지 않는 모양이다.
+        double? unpinnedWidth = JsonSupport.OptionalNumber(layout["unpinnedWidth"], string.Format(Msg.File_LayoutUnpinnedWidthOfNode, id));
+        double? unpinnedWritingHeight = JsonSupport.OptionalNumber(
+            layout["unpinnedWritingHeight"], string.Format(Msg.File_LayoutUnpinnedWritingHeightOfNode, id));
 
-        if (!node.Layout.Minimized && (expandedWidth is not null || expandedWritingHeight is not null))
+        if (!node.Layout.PinnedToBase && (unpinnedWidth is not null || unpinnedWritingHeight is not null))
         {
-            throw new InvalidDataException(string.Format(Msg.File_ExpandedSizeWithoutMinimized, id));
+            throw new InvalidDataException(string.Format(Msg.File_UnpinnedSizeWithoutPinnedToBase, id));
         }
 
-        node.Layout.ExpandedWidth = expandedWidth;
-        node.Layout.ExpandedWritingHeight = expandedWritingHeight;
+        node.Layout.UnpinnedWidth = unpinnedWidth;
+        node.Layout.UnpinnedWritingHeight = unpinnedWritingHeight;
 
         if (json["edgeShapes"] is { } shapes)
         {

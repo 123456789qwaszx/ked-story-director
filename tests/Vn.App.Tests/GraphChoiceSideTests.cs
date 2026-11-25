@@ -22,7 +22,7 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class GraphChoiceSideTests : IDisposable
 {
-    /// <summary>카드 폭 — 시험의 카드는 새 카드 크기로 선다(설정 「[대본] 새 카드」).</summary>
+    /// <summary>카드 폭 — 시험의 카드는 기본 크기로 선다(설정 「[대본] 카드 기본 크기」).</summary>
     private static double CardWidth => CardDefaults.Width;
 
     private readonly string _directory = Path.Combine(

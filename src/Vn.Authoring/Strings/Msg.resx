@@ -348,20 +348,20 @@
     <value>노드 '{0}'의 layout.fitHeight</value>
     <comment>StoryNodeJson.cs</comment>
   </data>
-  <data name="File_LayoutMinimizedOfNode" xml:space="preserve">
-    <value>노드 '{0}'의 layout.minimized</value>
+  <data name="File_LayoutPinnedToBaseOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.pinnedToBase</value>
     <comment>StoryNodeJson.cs</comment>
   </data>
-  <data name="File_LayoutExpandedWidthOfNode" xml:space="preserve">
-    <value>노드 '{0}'의 layout.expandedWidth</value>
+  <data name="File_LayoutUnpinnedWidthOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.unpinnedWidth</value>
     <comment>StoryNodeJson.cs</comment>
   </data>
-  <data name="File_LayoutExpandedWritingHeightOfNode" xml:space="preserve">
-    <value>노드 '{0}'의 layout.expandedWritingHeight</value>
+  <data name="File_LayoutUnpinnedWritingHeightOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.unpinnedWritingHeight</value>
     <comment>StoryNodeJson.cs</comment>
   </data>
-  <data name="File_ExpandedSizeWithoutMinimized" xml:space="preserve">
-    <value>노드 '{0}'은 최소화하지 않았는데 펴면 돌아갈 크기(layout.expandedWidth · expandedWritingHeight)가 적혀 있습니다.</value>
+  <data name="File_UnpinnedSizeWithoutPinnedToBase" xml:space="preserve">
+    <value>노드 '{0}'은 기본 크기로 고정하지 않았는데 풀면 돌아갈 크기(layout.unpinnedWidth · unpinnedWritingHeight)가 적혀 있습니다.</value>
     <comment>StoryNodeJson.cs</comment>
   </data>
   <data name="File_EdgeShapesOfNode" xml:space="preserve">

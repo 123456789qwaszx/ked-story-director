@@ -36,7 +36,7 @@ internal sealed class AuthoringSession
             NewCardWriterBase = () => Views.ScriptFont.CardBase,
             NewCardSize = () => (Views.CardDefaults.Width, Views.CardDefaults.WritingHeight),
 
-            // 새로 잇는 선의 꼴은 그때의 설정 「기타」의 「새로 잇는 선」(2026-11-23 소유자).
+            // 새로 잇는 선의 꼴은 그때의 설정 「기타」의 「선택지 선」(2026-11-23 소유자).
             NewLineShape = () => Views.BoardLines.Kind
         };
         WriterBaseFill.Fill(Editor.Project, Views.ScriptFont.CardBase);

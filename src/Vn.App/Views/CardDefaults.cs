@@ -4,13 +4,14 @@ using Vn.Authoring.Model;
 namespace Vn.App.Views;
 
 /// <summary>
-/// <b>[대본] 판 새 카드의 크기</b>(2026-11-25 소유자 — 「새 에피소드를 처음 만들었을 때, 줄일 수있는 최소 한도크기와는 별개로, 생성 시에 세팅해주는
-/// 기본크기는 별개여야 한다 … 가로 세로 크기 맞춤은 이 기본 크기는 지켜주도록 세팅이 가능해야」).
+/// <b>[대본] 판 카드의 기본 크기</b>(2026-11-25 소유자 — 「새 에피소드를 처음 만들었을 때, 줄일 수있는 최소 한도크기와는 별개로, 생성 시에 세팅해주는
+/// 기본크기는 별개여야 한다 … 가로 세로 크기 맞춤은 이 기본 크기는 지켜주도록 세팅이 가능해야」 · 2026-11-26 소유자 — 「새 카드를 만들 때라기 보다는, 카드를
+/// 최소화 했을 때 어느 크기를 가질 것인지를 결정하는 개념에 가깝습니다」 — 설정 창의 이름을 「[대본] 새 카드」에서 「[대본] 카드 기본 크기」로).
 ///
-/// 이 PC의 앱 설정이다(<see cref="AppSettingsService.LoadNewCardSize"/> · 설정 창 「[대본] 새 카드」). <see cref="ScriptFont"/>와 같은 꼴: 처음 읽을 때 앱
+/// 이 PC의 앱 설정이다(<see cref="AppSettingsService.LoadNewCardSize"/> · 설정 창 「[대본] 카드 기본 크기」). <see cref="ScriptFont"/>와 같은 꼴: 처음 읽을 때 앱
 /// 설정에서 가져오고, 바꾸면 기억하고 알린다.
 /// <list type="bullet">
-/// <item><b>기본 크기</b>(<see cref="Width"/> · <see cref="WritingHeight"/>) — 카드를 만들 때 카드에 적힌다(뒤에 바꿔도 서 있는 카드는 그대로다). 최소화한 카드가
+/// <item><b>기본 크기</b>(<see cref="Width"/> · <see cref="WritingHeight"/>) — 카드를 만들 때 카드에 적힌다(뒤에 바꿔도 서 있는 카드는 그대로다). 기본 크기로 고정한 카드가
 /// 서는 크기 · 크기 손잡이를 두 번 눌러 돌아가는 크기도 이것이다.</item>
 /// <item><b>가장 작은 크기</b>(<see cref="MinWidth"/> · <see cref="MinWritingHeight"/>) — 손잡이 · 글 맞춤으로 줄일 수 있는 끝. 설정이 아니다.</item>
 /// <item><b>글 맞춤이 기본 크기를 지킨다</b>(<see cref="FitKeepsSize"/>) — 켜면 가로 · 세로 글 맞춤이 기본 크기보다 작게 줄이지 않는다(처음에는 켜져 있다).</item>
@@ -36,10 +37,10 @@ internal static class CardDefaults
 
     private static (double Width, double WritingHeight, bool FitKeeps) Now => _now ??= Clamp(AppSettingsService.LoadNewCardSize());
 
-    /// <summary>새 카드의 폭.</summary>
+    /// <summary>기본 크기의 폭 — 새 카드 · 기본 크기로 고정한 카드가 이 폭으로 선다.</summary>
     internal static double Width => Now.Width;
 
-    /// <summary>새 카드의 글 칸 높이.</summary>
+    /// <summary>기본 크기의 글 칸 높이.</summary>
     internal static double WritingHeight => Now.WritingHeight;
 
     /// <summary>글 맞춤이 기본 크기보다 작게 줄이지 않는가.</summary>
