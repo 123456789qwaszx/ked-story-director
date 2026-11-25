@@ -448,8 +448,9 @@ public partial class GraphEditorView : UserControl
     internal void RevealSelected() => ScrollToSelected();
 
     /// <summary>
-    /// 카드를 두 번 눌렀다(글 칸 · 포트 · 선택지 칸 밖 — 글 칸의 두 번 누르기는 낱말 고르기다). 셸이 [구성] 탭의 그 에피소드로
-    /// 데려간다.
+    /// 카드 우클릭 차림표의 「[구성] 탭에서 보기」를 눌렀다 — 셸이 [구성] 탭의 그 에피소드(분기 카드면 그 분기 카드)로 데려간다(2026-11-25 소유자 — 「구성탭에서
+    /// 대본탭으로 오는 경우는 흔한데, 반대로 대본탭에서 더블클릭해서 구성탭으로 가려는 경우는 드물어」). ⛔ 그 전에는 카드를 두 번 누르면 데려갔다 — 두 번
+    /// 누르기는 이제 제목 고치기다(<see cref="BeginCardRename"/>).
     /// </summary>
     internal event Action<string>? CardOpened;
 
@@ -4065,7 +4066,8 @@ public partial class GraphEditorView : UserControl
 
         card.PointerPressed += (_, args) => OnCardPressed(visual, args);
 
-        // 카드 더블클릭 = [구성] 탭의 그 에피소드로 간다(OnCardPressed → CardOpened — 첫 누름이 시작한 끌기는 놓을 때 끝난다).
+        // 카드 더블클릭 = 제목 고치기(BeginCardRename) · 우클릭 = 차림표(제목 고치기 · [구성] 탭에서 보기 — CardOpened) — 2026-11-25 소유자. ⛔ 그 전에는
+        // 더블클릭이 [구성] 탭의 그 에피소드로 데려갔다.
         // ⛔ 옛 「무대에서 본다」는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다.
 
         return visual;
@@ -6280,11 +6282,22 @@ public partial class GraphEditorView : UserControl
         ReleaseWritingFocus();
         _session?.Select(card.NodeId);
 
-        // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다).
-        if (args.ClickCount >= 2 && args.GetCurrentPoint(card.Visual).Properties.IsLeftButtonPressed)
+        PointerPointProperties pressed = args.GetCurrentPoint(card.Visual).Properties;
+
+        // 우클릭 — 카드 차림표(제목 고치기 · [구성] 탭에서 보기). 끌기를 시작하지 않는다(2026-11-25 소유자).
+        if (pressed.IsRightButtonPressed)
         {
             args.Handled = true;
-            CardOpened?.Invoke(card.NodeId);
+            ShowCardMenu(card.NodeId);
+            return;
+        }
+
+        // 두 번 누름 — 그 자리에서 제목을 고친다(2026-11-25 소유자 · ⛔ 그 전에는 [구성] 탭으로 데려갔다). 끌기를 시작하지 않는다(첫 누름이 시작한
+        // 끌기는 놓을 때 끝났다).
+        if (args.ClickCount >= 2 && pressed.IsLeftButtonPressed)
+        {
+            args.Handled = true;
+            BeginCardRename(card.NodeId);
             return;
         }
 
@@ -6456,6 +6469,122 @@ public partial class GraphEditorView : UserControl
         BoardMenu.ItemsSource = new[] { item };
         BoardMenu.Open(GraphCanvas);
     }
+
+    /// <summary>
+    /// <b>카드 우클릭 차림표</b>(2026-11-25 소유자) — 「제목 고치기」(두 번 누르기와 같다) · 「[구성] 탭에서 보기」(⛔ 그 전에는 두 번 누르기가 했다). 판의 빈 곳
+    /// 차림표와 같은 한 벌을 쓴다(<see cref="BoardMenu"/> — 겹겹이 뜨지 않는다).
+    /// </summary>
+    private void ShowCardMenu(string nodeId)
+    {
+        var rename = new MenuItem { Header = "제목 고치기", Tag = "card-rename" };
+        rename.Click += (_, _) =>
+        {
+            BoardMenu?.Close();
+
+            // 차림표가 닫히며 초점을 돌려준 뒤에 칸을 연다 — 바로 열면 닫히는 차림표가 칸의 초점을 앗아 칸이 곧장 닫힌다.
+            Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "제목 고치기", () => BeginCardRename(nodeId)), DispatcherPriority.Input);
+        };
+
+        var open = new MenuItem { Header = "[구성] 탭에서 보기", Tag = "card-open-chapter" };
+        open.Click += (_, _) =>
+        {
+            BoardMenu?.Close();
+            CardOpened?.Invoke(nodeId);
+        };
+
+        BoardMenu ??= NewBoardMenu();
+        BoardMenu.Close();
+        BoardMenu.ItemsSource = new[] { rename, open };
+        BoardMenu.Open(GraphCanvas);
+    }
+
+    /// <summary>카드 머리의 제목 칸에 다는 Tag — 시험의 손잡이다.</summary>
+    internal const string CardTitleEditTag = "card-title-edit";
+
+    /// <summary>지금 열린 카드 제목 칸 — 하나뿐이다.</summary>
+    private (string NodeId, TextBox Box, TextBlock Title)? _cardRename;
+
+    /// <summary>
+    /// <b>카드 머리에서 제목을 고친다</b>(2026-11-25 소유자 — 「에피소드의 제목을 바꾸려고 하거나 … 더블클릭을 했다가 원하지 않게 구성탭으로 이동이 되버리는
+    /// 경우가 많더라고」) — 제목 글 자리에 칸이 서고 글이 모두 골라진다. Enter · 칸 밖 누르기 = 바꾸기, Esc = 그만두기(하이어아키 · 인스펙터의 이름 칸과
+    /// 같은 손짓 · 같은 길 <see cref="CardTitles.Rename"/> — ID는 그대로다). 접힌 판 · 장면 안이라 카드가 판에 없으면 아무것도 하지 않는다.
+    /// </summary>
+    internal void BeginCardRename(string nodeId)
+    {
+        FinishCardRename(commit: true);
+
+        if (_session?.Project.FindDialogue(nodeId) is not { } node ||
+            FindCard(nodeId)?.Visual.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(block => block.Tag as string == CardTitleTag) is not { } title ||
+            title.Parent is not Grid row)
+        {
+            return;
+        }
+
+        var box = new TextBox
+        {
+            Text = EpisodeNaming.ShownNameOf(_session.Project, node),
+            Tag = CardTitleEditTag,
+            FontWeight = FontWeight.SemiBold,
+            FontSize = title.FontSize,
+            MinHeight = 0,
+            Height = TitleHeight,
+            Padding = new Thickness(3, 0),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            PlaceholderText = node.IsBranchCard ? "제목 (비우면 분기 카드 ID)" : "제목 (비우면 에피소드ID)"
+        };
+        ToolTip.SetTip(box, "제목을 고치고 Enter — Esc는 그만두기. 비우면 ID가 보입니다(ID는 [구성] 탭에서 정합니다).");
+        Grid.SetColumn(box, Grid.GetColumn(title));
+        title.IsVisible = false;
+        row.Children.Add(box);
+        _cardRename = (nodeId, box, title);
+
+        box.KeyDown += (_, args) =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                args.Handled = true;
+                FinishCardRename(commit: true);
+            }
+            else if (args.Key == Key.Escape)
+            {
+                args.Handled = true;
+                FinishCardRename(commit: false);
+            }
+        };
+        box.LostFocus += (_, _) => FinishCardRename(commit: true);
+
+        box.Focus();
+        box.SelectAll();
+    }
+
+    /// <summary>열린 카드 제목 칸을 닫는다 — <paramref name="commit"/>이면 고친 제목을 넣는다(같으면 아무것도 안 적는다). 열린 칸이 없으면 아무것도 하지 않는다.</summary>
+    private void FinishCardRename(bool commit)
+    {
+        if (_cardRename is not { } open)
+        {
+            return;
+        }
+
+        // 먼저 비운다 — 칸을 떼어 내면 초점 이탈이 다시 불린다.
+        _cardRename = null;
+        string wanted = open.Box.Text ?? string.Empty;
+
+        if (open.Box.Parent is Panel panel)
+        {
+            panel.Children.Remove(open.Box);
+        }
+
+        open.Title.IsVisible = true;
+
+        if (commit && _session is { } session)
+        {
+            UiGuard.Run(session, "제목 고치기", () => CardTitles.Rename(session, open.NodeId, wanted));
+        }
+    }
+
+    /// <summary>카드 제목 칸이 열려 있는가 — 시험이 본다.</summary>
+    internal bool IsRenamingCard => _cardRename is not null;
 
     /// <summary>
     /// 판 차림표 한 벌. 떠 있는 동안 붙은 창의 누름을 스스로 본다 — 차림표 밖을 누르면 닫는다(확인 칸 <see cref="ConfirmFlyout"/>과 같은 까닭: 팝업의

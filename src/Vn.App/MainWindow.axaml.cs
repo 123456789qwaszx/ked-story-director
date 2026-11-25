@@ -337,8 +337,10 @@ public partial class MainWindow : Window
             }
             else if (plan.RefreshCardTitle)
             {
-                // 카드 하나의 제목만 바뀌었다 — 그 제목 글만 고친다(usability UX15).
+                // 카드 하나의 제목만 바뀌었다 — 그 제목 글만 고친다(usability UX15). 카드 머리에서 고쳤으면 인스펙터의 이름 칸도 따라온다(2026-11-25 —
+                // 인스펙터는 다시 세우지 않는다 · 거기서 쓰는 중이면 그대로).
                 Graph.RefreshCardTitle(e.NodeId!);
+                DialogueEditor.RefreshName();
             }
             else if (plan.RebuildCard)
             {

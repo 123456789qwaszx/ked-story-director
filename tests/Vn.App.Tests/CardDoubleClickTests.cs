@@ -13,9 +13,10 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>카드 · 선택지 간선을 두 번 누르면 다른 탭의 같은 것으로 간다</b>. 선택지 간선은 [구성]의 간선 ↔ [대본]의 선택지 레인이다.
-/// <b>카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다</b> — [구성] 판의 카드는 [대본] 탭의 그 카드로(그 판을 열고 고른다),
-/// [대본] 판의 카드는 [구성] 탭의 그 에피소드로(그 챕터를 열고 고른다). 한 번 누르기는 고르기일 뿐이고, [대본] 카드의 글
-/// 칸 안에서 두 번 누르는 것은 낱말 고르기라 탭을 바꾸지 않는다.
+/// [구성] 판의 카드를 두 번 누르면 [대본] 탭의 그 카드로 간다(그 판을 열고 고른다). <b>[대본] 판의 카드는 두 번 누르면 그 자리에서 제목을 고치고</b>,
+/// [구성] 탭의 그 에피소드로는 <b>우클릭 차림표의 「[구성] 탭에서 보기」</b>로 간다(2026-11-25 소유자 — 「구성탭에서 대본탭으로 오는 경우는 흔한데, 반대로
+/// … 드물어. 오히려 에피소드의 제목을 바꾸려고 하거나 … 원하지 않게 구성탭으로 이동이 되버리는 경우가 많더라고」 · ⛔ 그 전에는 두 번 누르기가 데려갔다).
+/// 한 번 누르기는 고르기일 뿐이고, [대본] 카드의 글 칸 안에서 두 번 누르는 것은 낱말 고르기다.
 /// </summary>
 public sealed class CardDoubleClickTests : IDisposable
 {
@@ -58,24 +59,76 @@ public sealed class CardDoubleClickTests : IDisposable
     });
 
     [Fact]
-    public void 대본_탭의_카드를_두_번_누르면_구성_탭의_그_에피소드로_간다() => HeadlessUi.Run(() =>
+    public void 대본_탭의_카드를_두_번_누르면_그_자리에서_제목을_고치고_탭은_그대로다() => HeadlessUi.Run(() =>
     {
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, DirectorTab);
         DialogueNode node = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
-        Border card = graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>().Single(item => item.Tag as string == node.Id);
+        Border card = CardOf(graph, node.Id);
 
-        // 글 칸 안의 두 번 누르기는 낱말 고르기다 — 탭이 그대로다.
+        // 글 칸 안의 두 번 누르기는 낱말 고르기다 — 제목 칸이 서지 않는다.
         TextBox writing = card.GetVisualDescendants().OfType<TextBox>().First();
         Press(writing, clicks: 2);
-        Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
+        Assert.False(graph.IsRenamingCard);
 
         // 한 번 — 고르기만 한다.
         Press(card, clicks: 1);
+        Assert.False(graph.IsRenamingCard);
+
+        // 두 번 — 제목 칸이 서고 지금 제목이 골라져 있다. 탭은 그대로다.
+        Press(card, clicks: 2);
+        Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
+        TextBox title = TitleBox(card);
+        Assert.True(title.IsFocused);
+        Assert.Equal(EpisodeNaming.ShownNameOf(session.Project, node), title.Text);
+        Assert.Equal(title.Text!.Length, title.SelectionEnd - title.SelectionStart);
+
+        // Enter — 바꾼다. ID는 그대로고 카드 · 인스펙터의 이름 칸이 따라온다. 되돌리기 한 칸이다.
+        title.Text = "  새 제목 ";
+        Key(title, Avalonia.Input.Key.Enter);
+        Assert.False(graph.IsRenamingCard);
+        Assert.Equal("새 제목", EpisodeNaming.ShownNameOf(session.Project, session.Project.FindDialogue(node.Id)!));
+        Assert.Equal("b", EpisodeNaming.EpisodeIdOf(session.Project.FindDialogue(node.Id)!));
+        Assert.Contains(card.GetVisualDescendants().OfType<TextBlock>(), block => block.Tag as string == GraphEditorView.CardTitleTag && block.Text == "새 제목" && block.IsVisible);
+        Assert.Equal("새 제목", InspectorName(window, node.Id).Text);
+
+        // Esc — 그만둔다.
+        Press(CardOf(graph, node.Id), clicks: 2);
+        TextBox again = TitleBox(CardOf(graph, node.Id));
+        again.Text = "버릴 제목";
+        Key(again, Avalonia.Input.Key.Escape);
+        Assert.False(graph.IsRenamingCard);
+        Assert.Equal("새 제목", EpisodeNaming.ShownNameOf(session.Project, session.Project.FindDialogue(node.Id)!));
+
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(EpisodeNaming.ShownNameOf(session.Project, session.Project.FindDialogue(node.Id)!), InspectorName(window, node.Id).Text);
+        Assert.NotEqual("새 제목", InspectorName(window, node.Id).Text);
         Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
 
-        // 두 번 — [구성] 탭의 그 에피소드다.
-        Press(card, clicks: 2);
+        window.Close();
+    });
+
+    [Fact]
+    public void 대본_탭의_카드를_우클릭하면_구성_탭에서_보기로_그_에피소드에_가고_제목_고치기도_있다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, DirectorTab);
+        DialogueNode node = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+
+        // 「제목 고치기」 — 두 번 누르기와 같은 칸이 선다.
+        RightPress(CardOf(graph, node.Id));
+        Assert.Equal(node.Id, session.SelectedNodeId);
+        Assert.Equal(["제목 고치기", "[구성] 탭에서 보기"], MenuItems(graph).Select(item => item.Header as string));
+        MenuItems(graph)[0].RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(graph.IsRenamingCard);
+        Key(TitleBox(CardOf(graph, node.Id)), Avalonia.Input.Key.Escape);
+
+        // 「[구성] 탭에서 보기」 — [구성] 탭의 그 에피소드다.
+        RightPress(CardOf(graph, node.Id));
+        MenuItems(graph)[1].RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
         Assert.Equal("b", view.FindControl<TextBox>("IdBox")!.Text);
@@ -113,17 +166,27 @@ public sealed class CardDoubleClickTests : IDisposable
     });
 
     [Fact]
-    public void 대본_탭의_분기_카드를_두_번_누르면_구성_탭의_그_칩으로_간다() => HeadlessUi.Run(() =>
+    public void 대본_탭의_분기_카드는_우클릭_구성_탭에서_보기로_그_칩에_가고_두_번_누르면_제목을_고친다() => HeadlessUi.Run(() =>
     {
-        // ⛔ 2026-11-17까지는 집 에피소드를 골랐다 — 이제 그 분기 카드의 칩을 고른다.
+        // ⛔ 2026-11-17까지는 집 에피소드를 골랐다 — 이제 그 분기 카드의 칩을 고른다. ⛔ 2026-11-25까지는 두 번 누르기가 데려갔다.
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, DirectorTab);
         DialogueNode home = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
         DialogueNode branch = session.Editor.AddBranchMarker(home.Id, home.Script.ActiveLines.First().Id);
         Dispatcher.UIThread.RunJobs();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
-        Border card = graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>().Single(item => item.Tag as string == branch.Id);
+        Border card = CardOf(graph, branch.Id);
 
+        // 두 번 — 분기 카드의 보이는 제목을 고친다(ID는 그대로).
         Press(card, clicks: 2);
+        TextBox title = TitleBox(card);
+        title.Text = "들른 곳";
+        Key(title, Avalonia.Input.Key.Enter);
+        Assert.Equal("들른 곳", session.Project.FindDialogue(branch.Id)!.Title);
+        Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
+
+        RightPress(CardOf(graph, branch.Id));
+        MenuItems(graph)[1].RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
 
         ChapterGraphView view = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         Assert.Equal(ChapterTab, Tabs(window).SelectedIndex);
@@ -187,6 +250,42 @@ public sealed class CardDoubleClickTests : IDisposable
     });
 
     private static TabControl Tabs(MainWindow window) => window.FindControl<TabControl>("MainTabs")!;
+
+    private static Border CardOf(GraphEditorView graph, string nodeId) =>
+        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>().Single(item => item.Tag as string == nodeId);
+
+    private static TextBox TitleBox(Border card) =>
+        card.GetVisualDescendants().OfType<TextBox>().Single(box => box.Tag as string == GraphEditorView.CardTitleEditTag);
+
+    private static List<MenuItem> MenuItems(GraphEditorView graph) =>
+        ((IEnumerable<object>)graph.BoardMenu!.ItemsSource!).OfType<MenuItem>().ToList();
+
+    /// <summary>오른쪽 [대본] 기둥의 그 카드의 이름 칸(대사 노드 편집기).</summary>
+    private static TextBox InspectorName(MainWindow window, string nodeId) =>
+        Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(window).OfType<DialogueNodeEditor>().Distinct()
+            .Single(editor => editor.IsVisible && editor.NodeId == nodeId)
+            .FindControl<TextBox>("NameBox")!;
+
+    private static void Key(Control target, Avalonia.Input.Key key)
+    {
+        target.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = key, Source = target });
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>오른쪽 단추로 누른다.</summary>
+    private static void RightPress(Control target)
+    {
+        target.RaiseEvent(new PointerPressedEventArgs(
+            target,
+            new Pointer(0, PointerType.Mouse, true),
+            (Visual)TopLevel.GetTopLevel(target)!,
+            target.TranslatePoint(new Point(10, 10), TopLevel.GetTopLevel(target)!) ?? default,
+            0,
+            new PointerPointProperties(RawInputModifiers.RightMouseButton, PointerUpdateKind.RightButtonPressed),
+            KeyModifiers.None,
+            1));
+        Dispatcher.UIThread.RunJobs();
+    }
 
     /// <summary>왼쪽 단추로 누른다 — <paramref name="clicks"/>가 2면 두 번 누름의 둘째 누름이다.</summary>
     private static void Press(Control target, int clicks)

@@ -1406,50 +1406,29 @@ public partial class DialogueNodeEditor : UserControl
 
     private void CommitName()
     {
-        if (_building || _session?.Project.FindDialogue(_nodeId) is not { } node)
+        if (_building || _session is null || _nodeId is null)
         {
             return;
         }
 
-        // 분기 카드 — 이름 칸은 보이는 제목이다(2026-11-17). ID(= Yarn 노드 이름)는 [구성] 탭에서 정한다.
-        if (node.IsBranchCard)
+        // 이름 칸은 보이는 제목이다 — 카드 머리의 제목 칸과 같은 길(CardTitles · ID는 그대로).
+        if (CardTitles.Rename(_session, _nodeId, NameBox.Text))
         {
-            string title = (NameBox.Text ?? string.Empty).Trim();
-
-            if (string.Equals(title, EpisodeNaming.ShownNameOf(_session.Project, node), StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            _session.Editor.SetBranchCardTitle(node.Id, title);
-
-            // 제목은 노드의 곁 자료라 인스펙터를 다시 세우지 않는다 — 비웠으면 칸이 ID를 보이게 여기서 맞춘다.
-            NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindDialogue(node.Id) ?? node);
-            _session.SetStatus(title.Length == 0
-                ? $"제목을 비웠습니다 — 분기 카드 ID '{node.Name}'{Josa.이가(node.Name)} 보입니다."
-                : $"제목을 '{title}'{Josa.으로(title)} 바꿨습니다. 분기 카드 ID '{node.Name}'{Josa.은는(node.Name)} 그대로입니다.");
-            return;
+            // 제목은 카드의 곁 자료라 인스펙터를 다시 세우지 않는다(usability UX15) — 비웠으면 칸이 ID를 보이게 여기서 맞춘다.
+            RefreshName(force: true);
         }
+    }
 
-        // 에피소드 카드다(분기 카드는 위에서 돌아갔다 — 그 밖의 카드는 없다).
-        ChapterDocument chapter = EpisodeNaming.ChapterOf(_session.Project, node);
-
-        // 에피소드 카드 — 이름 칸은 보이는 제목이다. EpisodeId는 그대로 두고 제목만 고친다(비우면 EpisodeId가 보인다).
-        string wanted = (NameBox.Text ?? string.Empty).Trim();
-        string episodeId = EpisodeNaming.EpisodeIdOf(node);
-
-        if (string.Equals(wanted, EpisodeNaming.ShownNameOf(_session.Project, node), StringComparison.Ordinal))
+    /// <summary>
+    /// 이름 칸을 지금 제목으로 — 카드 머리에서 제목을 고쳤을 때 셸이 부른다(제목만 바뀌면 인스펙터를 다시 세우지 않는다 · usability UX15). 이 칸에서 쓰는
+    /// 중이면 건드리지 않는다.
+    /// </summary>
+    internal void RefreshName(bool force = false)
+    {
+        if (_session?.Project.FindDialogue(_nodeId) is { } node && (force || !NameBox.IsFocused))
         {
-            return;
+            NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, node);
         }
-
-        _session.Editor.UpdateEpisode(chapter.ChapterId, episodeId, title: wanted);
-
-        // 제목은 카드의 곁 자료라 인스펙터를 다시 세우지 않는다(usability UX15) — 비웠으면 칸이 ID를 보이게 여기서 맞춘다(분기 카드와 같다).
-        NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindDialogue(node.Id) ?? node);
-        _session.SetStatus(wanted.Length == 0
-            ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'{Josa.이가(episodeId)} 보입니다."
-            : $"제목을 '{wanted}'{Josa.으로(wanted)} 바꿨습니다. 에피소드ID '{episodeId}'{Josa.은는(episodeId)} 그대로입니다.");
     }
 
     /// <summary>분기로 다녀오는 카드의 첫머리 조건 — 그 갈래를 여는 줄(첫 줄)과 그 분기의 색 번호. 아니면 null.</summary>
