@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -294,6 +295,90 @@ public sealed class SceneAreaPickTests : IDisposable
 
         window.Close();
     });
+
+    [Fact]
+    public void 차림표가_떠_있을_때_다른_곳을_우클릭하면_닫히고_그_자리의_차림표가_곧바로_뜬다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 「다른 영역을 다시 우클릭하면 기능 목록이 나오는 대신 기존 목록이 꺼진다 … 끄는 것과 동시에 바로 기능 목록이
+        // 나오도록」. 창에 실제로 누른다 — 떠 있는 차림표의 바깥 누름 받이를 거쳐야 그 일이 재현된다.
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Show();
+        int episodes = session.Editor.FindChapter("ch01")!.Episodes.Count;
+
+        // 장면 hall 테두리의 아래 가장자리 바로 안은 장면 안, 그 아래는 장면 밖 · 챕터 안이다(챕터 테두리가 장면 테두리보다 40 더 나와 있다).
+        Border hallLabel = Canvas(graph).Children.OfType<Border>()
+            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "hall");
+        Border hallFrame = Canvas(graph).Children.OfType<Border>().Single(border =>
+            border.Child is null && !border.IsHitTestVisible && border.CornerRadius.TopLeft == 8 &&
+            Avalonia.Controls.Canvas.GetLeft(border) == Avalonia.Controls.Canvas.GetLeft(hallLabel) - 10 &&
+            Avalonia.Controls.Canvas.GetTop(border) == Avalonia.Controls.Canvas.GetTop(hallLabel) - 6);
+        double hallBottom = Avalonia.Controls.Canvas.GetTop(hallFrame) + hallFrame.Height;
+        double hallLeft = Avalonia.Controls.Canvas.GetLeft(hallFrame);
+        var inHall = new Point(hallLeft + 30, hallBottom - 4);
+        var inChapter = new Point(hallLeft + 30, hallBottom + 24);
+        Rect card = Bounds(graph, CardId(session, "b"));
+        var onCard = new Point(card.X + 30, card.Y + 12);
+
+        // 그 자리들이 판의 보이는 곳에 오게 둔다 — 창에 누르는 것이라 가려져 있으면 다른 것이 받는다.
+        var scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
+        Point corner = Canvas(graph).TranslatePoint(new Point(card.X - 60, card.Y - 60), scroll)!.Value;
+        scroll.Offset += new Vector(corner.X, corner.Y);
+        Dispatcher.UIThread.RunJobs();
+
+        void RightClickOnWindow(Point onCanvas)
+        {
+            window.MouseDown(At(graph, onCanvas), MouseButton.Right);
+            window.MouseUp(At(graph, onCanvas), MouseButton.Right);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        // 차림표는 누른 자리에서 오른쪽 아래로 뜬다 — 다음 우클릭은 그 차림표 밖(위쪽)에 한다.
+        RightClickOnWindow(inChapter);
+        ContextMenu menu = graph.BoardMenu!;
+        Assert.True(menu.IsOpen);
+        Assert.Equal("장면 추가", Assert.Single(MenuItems(graph)).Header);
+
+        // 떠 있는 채로 장면 안을 우클릭 — 한 번에 그 자리의 차림표로 바뀐다.
+        RightClickOnWindow(inHall);
+        Assert.True(menu.IsOpen);
+        Assert.Equal("에피소드 추가", Assert.Single(MenuItems(graph)).Header);
+
+        // 카드 위로도 — 카드 차림표로 바뀐다.
+        RightClickOnWindow(onCard);
+        Assert.True(menu.IsOpen);
+        Assert.Contains(MenuItems(graph), item => item.Header as string == "제목 고치기");
+
+        // 다시 빈 곳으로 — 판 차림표로 돌아온다.
+        RightClickOnWindow(inChapter);
+        Assert.True(menu.IsOpen);
+        Assert.Equal("장면 추가", Assert.Single(MenuItems(graph)).Header);
+
+        // 왼쪽 하이어아키 줄로도 — 판 차림표가 닫히고 그 줄의 차림표가 뜬다. 거꾸로 줄 차림표가 떠 있을 때 판을 우클릭하면 판 차림표가 뜬다.
+        Button row = graph.HierarchyView.GetVisualDescendants().OfType<Button>()
+            .First(button => button.ContextMenu is not null && button.IsEffectivelyVisible && button.Bounds.Width > 0);
+        Point onRow = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(onRow, MouseButton.Right);
+        window.MouseUp(onRow, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(menu.IsOpen);
+        Assert.True(row.ContextMenu!.IsOpen);
+
+        RightClickOnWindow(inHall);
+        Assert.False(row.ContextMenu!.IsOpen);
+        Assert.True(menu.IsOpen);
+        Assert.Equal("에피소드 추가", Assert.Single(MenuItems(graph)).Header);
+
+        // 바깥 좌클릭은 지금처럼 닫기만 한다.
+        window.MouseDown(new Point(100, 700), MouseButton.Left);
+        window.MouseUp(new Point(100, 700), MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(menu.IsOpen);
+        Assert.Equal(episodes, session.Editor.FindChapter("ch01")!.Episodes.Count);   // 우클릭만으로는 아무것도 더하지 않는다
+
+        window.Close();
+    });
+
+    private static List<MenuItem> MenuItems(GraphEditorView graph) =>
+        ((IEnumerable<object>)graph.BoardMenu!.ItemsSource!).OfType<MenuItem>().ToList();
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 

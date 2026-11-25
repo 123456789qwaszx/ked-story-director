@@ -6786,10 +6786,7 @@ public partial class GraphEditorView : UserControl
             UiGuard.Run(_session, header, act);
         };
 
-        BoardMenu ??= NewBoardMenu();
-        BoardMenu.Close();
-        BoardMenu.ItemsSource = new[] { item };
-        BoardMenu.Open(GraphCanvas);
+        OpenBoardMenu(new[] { item });
     }
 
     /// <summary>
@@ -6814,10 +6811,28 @@ public partial class GraphEditorView : UserControl
             CardOpened?.Invoke(nodeId);
         };
 
-        BoardMenu ??= NewBoardMenu();
-        BoardMenu.Close();
-        BoardMenu.ItemsSource = new[] { rename, open };
-        BoardMenu.Open(GraphCanvas);
+        OpenBoardMenu(new[] { rename, open });
+    }
+
+    /// <summary>
+    /// 차림표 한 벌을 이 항목들로 띄운다 — 떠 있던 것은 곧장 닫고 항목을 갈아 끼운 뒤, <b>이 누름이 다 지나간 다음에</b> 연다(2026-11-25 소유자 —
+    /// 「차림표가 떠 있을 때 다른 곳을 우클릭하면 닫히기만 하고, 다시 우클릭해야 떴다」). 떠 있는 차림표 밖의 우클릭은 차림표가 닫히며 그 아래(판 ·
+    /// 카드)로 건네지는데(<see cref="NewBoardMenu"/>), 팝업은 건넨 뒤에도 열려 있으면 닫으므로 건넨 누름 안에서 바로 열면 곧장 다시 닫힌다.
+    /// 여러 번 빠르게 눌러도 열리는 것은 마지막 항목들 하나다(앞의 것은 항목이 갈렸으면 열지 않는다).
+    /// </summary>
+    private void OpenBoardMenu(MenuItem[] items)
+    {
+        ContextMenu menu = BoardMenu ??= NewBoardMenu();
+        menu.Close();
+        menu.ItemsSource = items;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ReferenceEquals(menu.ItemsSource, items) && !menu.IsOpen && TopLevel.GetTopLevel(GraphCanvas) is not null)
+            {
+                menu.Open(GraphCanvas);
+            }
+        });
     }
 
     /// <summary>누른 자리가 카드 제목 글자 위인가 — 제목 글은 글자만큼만 선다(줄임표까지).</summary>
@@ -6980,10 +6995,20 @@ public partial class GraphEditorView : UserControl
 
         void OnPress(object? sender, PointerPressedEventArgs args)
         {
-            if (args.Source is not Visual source || !(ReferenceEquals(source, menu) || menu.IsVisualAncestorOf(source)))
+            if (args.Source is Visual source && (ReferenceEquals(source, menu) || menu.IsVisualAncestorOf(source)))
             {
-                menu.Close();
+                return;
             }
+
+            // 바깥 <b>우클릭</b>이 팝업의 바깥 누름 받이(창 내용 위에 덮인 층)에 떨어졌으면 팝업에 맡긴다 — 팝업이 닫히며 그 누름을 아래(판 · 카드)로
+            // 건네고, 받은 쪽이 그 자리의 차림표를 새로 띄운다(2026-11-25 소유자 — ⛔ 전에는 여기서 먼저 닫아 팝업의 건네기 손잡이가 떨어졌고, 누름은
+            // 받이에서 사라졌다). 좌클릭은 지금처럼 닫기만 한다(그 누름으로 카드를 고르거나 끌지 않는다).
+            if (IsWindowLayer(args.Source) && args.GetCurrentPoint(null).Properties.IsRightButtonPressed)
+            {
+                return;
+            }
+
+            menu.Close();
         }
 
         TopLevel? window = null;
@@ -7001,6 +7026,15 @@ public partial class GraphEditorView : UserControl
 
         return menu;
     }
+
+    /// <summary>
+    /// 창 내용 위에 덮인 층인가(팝업의 바깥 누름 받이 등) — 창의 층 관리자 바로 밑에 있되 그 내용이 아닌 것. 받이의 형식은 Avalonia 안쪽 것이라
+    /// 이름으로 못 부른다.
+    /// </summary>
+    private static bool IsWindowLayer(object? source) =>
+        source is Visual visual &&
+        visual.GetVisualParent() is Avalonia.Controls.Primitives.VisualLayerManager manager &&
+        !ReferenceEquals(visual, manager.Child);
 
     /// <summary>
     /// 누른 자리에 에피소드 카드를 세운다 — <paramref name="sceneId"/>의 장면에, 없으면 새 장면(「새 장면」)과 함께. 카드 · 장면 이름이 한 되돌리기
