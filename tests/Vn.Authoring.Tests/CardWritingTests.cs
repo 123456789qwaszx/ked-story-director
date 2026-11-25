@@ -165,10 +165,96 @@ public sealed class CardWritingTests
         editor.ApplyScenarioText(node.Id, "라루: 하나\n윌로: 둘");
         long revision = editor.Revision;
 
-        ScenarioPasteOutcome again = editor.ApplyScenarioText(node.Id, "\n라루: 하나\n\n윌로: 둘\n\n");
+        // 첫 줄 앞 · 끝의 빈 줄 · 화자 띄어쓰기는 모양이다. ⛔ 줄 사이의 빈 줄은 2026-11-25부터 모양이 아니다(작가가 띄운 줄 사이 — 아래 시험).
+        ScenarioPasteOutcome again = editor.ApplyScenarioText(node.Id, "\n\n라루:하나\n윌로:  둘\n\n");
 
         Assert.True(again.Applied);
         Assert.Equal(revision, editor.Revision);
+    }
+
+    [Fact]
+    public void 줄_사이에_띄운_빈_줄은_넣어도_남는다()
+    {
+        // 2026-11-25 소유자 — 「줄과 줄사이에 빈 공간을 두면서 작성하고 싶을 때가 있는데, 현재는 저장이 되면서 자동으로 저게 붙어 버리는 규칙입니다」.
+        // 띄운 수 그대로 남고(두 줄이면 두 줄), 첫 줄 앞 · 끝의 빈 줄은 전처럼 걷힌다. 줄은 셋 그대로다 — 빈 줄은 대본 줄이 아니다.
+        (ProjectEditor editor, DialogueNode node) = NewCard();
+
+        Assert.True(editor.ApplyScenarioText(node.Id, "\n라루: 하나\n\n윌로: 둘\n\n\n라루: 셋\n\n").Applied);
+
+        ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(editor.Project, node.Id);
+        string[] lines = Lines(editor, node).Select(line => line.Id).ToArray();
+
+        Assert.Equal("라루: 하나\n\n윌로: 둘\n\n\n라루: 셋", layout.Text);
+        Assert.Equal(3, lines.Length);
+        Assert.Equal([0, 2, 5], lines.Select(line => layout.RowOfLine[line]));
+
+        // 보인 글을 그대로 넣으면 아무것도 바뀌지 않는다(왕복).
+        long revision = editor.Revision;
+        Assert.True(editor.ApplyScenarioText(node.Id, layout.Text).Applied);
+        Assert.Equal(revision, editor.Revision);
+    }
+
+    [Fact]
+    public void 빈_줄만_더하거나_걷어도_넣기_한_번이_되돌리기_한_칸이다()
+    {
+        // 줄 사이만 바뀐 글도 바뀐 글이다 — 넣고, 되돌리면 붙은 모습으로 돌아간다. 줄의 신원은 그대로다.
+        (ProjectEditor editor, DialogueNode node) = NewCard();
+        editor.ApplyScenarioText(node.Id, "라루: 하나\n윌로: 둘");
+        string[] before = Lines(editor, node).Select(line => line.Id).ToArray();
+        long revision = editor.Revision;
+
+        Assert.True(editor.ApplyScenarioText(node.Id, "라루: 하나\n\n윌로: 둘").Applied);
+
+        Assert.Equal(revision + 1, editor.Revision);
+        Assert.Equal(before, Lines(editor, node).Select(line => line.Id));
+        Assert.Equal("라루: 하나\n\n윌로: 둘", WorkingDialoguePreview.ScenarioText(editor.Project, node.Id));
+
+        editor.Undo();
+        Assert.Equal("라루: 하나\n윌로: 둘", WorkingDialoguePreview.ScenarioText(editor.Project, node.Id));
+
+        editor.Redo();
+        Assert.True(editor.ApplyScenarioText(node.Id, "라루: 하나\n윌로: 둘").Applied);
+        Assert.Equal("라루: 하나\n윌로: 둘", WorkingDialoguePreview.ScenarioText(editor.Project, node.Id));
+        Assert.Empty(editor.Project.FindDialogue(node.Id)!.WriterGaps);
+    }
+
+    [Fact]
+    public void 띄운_빈_줄은_여는_조건_줄_앞_닫는_조건_줄_뒤에_선다()
+    {
+        // 문단 사이가 갈래 사이다 — 빈 줄은 <<if>> 위, <<endif>> 아래에 선다. 그 모양으로 쓴 글은 그대로 되돌아온다.
+        (ProjectEditor editor, DialogueNode node) = NewCard();
+        ConditionDefinition condition = Condition(editor);
+        string[] written =
+        [
+            "라루: 처음",
+            "",
+            $"<<if {condition.Expression}>>",
+            "윌로: 갈래 안",
+            "<<endif>>",
+            "",
+            "라루: 끝"
+        ];
+
+        ScenarioPasteOutcome outcome = editor.ApplyScenarioText(node.Id, string.Join('\n', written));
+
+        Assert.True(outcome.Applied);
+        Assert.Empty(outcome.Problems);
+        Assert.Equal(written, WorkingDialoguePreview.ScenarioText(editor.Project, node.Id).Split('\n'));
+    }
+
+    [Fact]
+    public void 띄운_빈_줄은_저장하고_다시_읽어도_남고_없으면_칸을_적지_않는다()
+    {
+        (ProjectEditor editor, DialogueNode node) = NewCard();
+        editor.ApplyScenarioText(node.Id, "라루: 하나\n윌로: 둘");
+
+        Assert.DoesNotContain("writerGaps", global::Vn.Authoring.Serialization.ProjectSnapshotCodec.Encode(editor.Project), StringComparison.Ordinal);
+
+        editor.ApplyScenarioText(node.Id, "라루: 하나\n\n\n윌로: 둘");
+        StoryProject reread = global::Vn.Authoring.Serialization.ProjectSnapshotCodec.Decode(
+            global::Vn.Authoring.Serialization.ProjectSnapshotCodec.Encode(editor.Project));
+
+        Assert.Equal("라루: 하나\n\n\n윌로: 둘", WorkingDialoguePreview.ScenarioText(reread, node.Id));
     }
 
     [Fact]

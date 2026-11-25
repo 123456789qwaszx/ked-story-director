@@ -120,11 +120,12 @@ public sealed class CardWritingBoxTests : IDisposable
 
         TextBox box = Box(window, first.Id);
         box.Focus();
-        box.Text = "라루:하나\n\n윌로:  둘";
+        // 줄 사이에 띄운 빈 줄은 남는다(2026-11-25 소유자 — ⛔ 그 전에는 걷혀 붙었다). 첫 줄 앞 · 끝의 빈 줄과 화자 띄어쓰기는 정돈된다.
+        box.Text = "\n라루:하나\n\n윌로:  둘\n";
         Box(window, second.Id).Focus();
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("라루: 하나\n윌로: 둘", Box(window, first.Id).Text);
+        Assert.Equal("라루: 하나\n\n윌로: 둘", Box(window, first.Id).Text);
         long revision = session.Editor.Revision;
 
         Box(window, first.Id).Focus();

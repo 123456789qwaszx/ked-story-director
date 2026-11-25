@@ -120,6 +120,44 @@ internal static class WriterMarksJson
         }
     }
 
+    /// <summary>작가가 띄운 줄 사이의 가장 큰 수 — 손으로 고친 파일의 값은 여기로 당긴다.</summary>
+    public const int MaxGap = 99;
+
+    /// <summary>
+    /// 작가가 띄운 줄 사이(<see cref="DialogueNode.WriterGaps"/>) — <c>{ "line_ab12": 1 }</c>(그 줄 앞의 빈 줄 수). 줄은 LineId 차례(결정적 출력). 없으면 null.
+    /// </summary>
+    public static JsonObject? WriteGaps(DialogueNode node)
+    {
+        var lines = new JsonObject();
+
+        foreach ((string lineId, int gap) in node.WriterGaps.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            if (gap > 0)
+            {
+                lines[lineId] = gap;
+            }
+        }
+
+        return lines.Count > 0 ? lines : null;
+    }
+
+    /// <summary>너그럽게 읽는다 — 1 이상의 정수만(끝은 <see cref="MaxGap"/>), 나머지는 버린다. 서식처럼 줄 사이 때문에 프로젝트가 안 열리는 일은 없다.</summary>
+    public static void ReadGaps(DialogueNode node, JsonNode? json)
+    {
+        if (json is not JsonObject lines)
+        {
+            return;
+        }
+
+        foreach ((string lineId, JsonNode? value) in lines)
+        {
+            if (!string.IsNullOrWhiteSpace(lineId) && Int(value) is { } gap && gap > 0)
+            {
+                node.WriterGaps[lineId] = Math.Min(gap, MaxGap);
+            }
+        }
+    }
+
     public static WriterAlign ReadAlign(JsonNode? json) => Text(json) switch
     {
         "center" => WriterAlign.Center,

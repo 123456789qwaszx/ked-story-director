@@ -200,6 +200,15 @@ public sealed class DialogueNode : StoryNode
     /// </summary>
     public WriterBase? WriterBase { get; set; }
 
+    /// <summary>
+    /// <b>작가가 띄운 줄 사이</b> (2026-11-25 소유자 — 「줄과 줄사이에 빈 공간을 두면서 작성하고 싶을 때가 있는데, 현재는 저장이 되면서 자동으로 저게 붙어
+    /// 버리는 규칙입니다. 저걸 작가입장에서는 분리를 하고 싶다」) — LineId → 카드 글 칸에서 그 줄 <b>앞</b>에 둔 빈 줄 수(1 이상만 둔다). 글 칸이 쓰고 그린다
+    /// (<see cref="Rendering.WorkingDialoguePreview.ScenarioWriting"/>). 작가용 글 서식(<see cref="WriterMarks"/>)과 같은 처지다 — 작가가 보기 위한 것이라
+    /// <b>내보내기(대사 Yarn · 진행 JSON)가 읽지 않는다</b>. 첫 줄 앞 · 마지막 줄 뒤의 빈 줄은 두지 않는다(전처럼 걷는다). 은퇴한 줄의 것은 넣을 때 걷는다.
+    /// ⛔ 그 전에는 줄 사이의 빈 줄을 늘 걷었다(넣으면 붙었다).
+    /// </summary>
+    public Dictionary<string, int> WriterGaps { get; init; } = new(StringComparer.Ordinal);
+
     // ⛔ `ChoiceExits`(선택지 문구 → 거쳐 갈 자유 씬 — 2026-08-17)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 대사 안 선택지가
     //    2026-11-04에 걷힌 뒤로 만드는 곳도 읽는 곳도 없이 파일을 오가기만 했다(docs/work-orders/legacy-read-orders.md L5).
     // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:

@@ -80,7 +80,80 @@ public static class WorkingDialoguePreview
             project, dialogueNodeId, writing, OutputPresetId.ScenarioOnly);
 
         (string text, IReadOnlyDictionary<string, int> rowOfLine) = DocumentPreviewFormatter.FormatWithRows(document);
-        return new ScenarioWritingLayout(text.TrimEnd('\n'), rowOfLine);
+        (string spaced, IReadOnlyDictionary<string, int> spacedRows) = WithWriterGaps(project.FindDialogue(dialogueNodeId), text.TrimEnd('\n'), rowOfLine);
+        return new ScenarioWritingLayout(spaced, spacedRows);
+    }
+
+    /// <summary>
+    /// <b>작가가 띄운 줄 사이를 글 칸에 되살린다</b> (2026-11-25 · <see cref="DialogueNode.WriterGaps"/>) — 줄마다 그 앞에 둔 빈 줄을 끼우고, 줄 짝(몇 번째
+    /// 줄인가)을 그만큼 민다. 빈 줄은 앞 대사 줄과 이 줄 사이의 <b>여는</b> 조건 줄(<c>&lt;&lt;if&gt;&gt;</c> · <c>&lt;&lt;elseif&gt;&gt;</c>) 앞에 선다 — 앞 갈래를
+    /// 닫는 <c>&lt;&lt;endif&gt;&gt;</c>는 빈 줄 위에 남는다(문단 사이가 갈래 사이다). 첫 줄 앞에는 끼우지 않는다.
+    /// </summary>
+    private static (string Text, IReadOnlyDictionary<string, int> RowOfLine) WithWriterGaps(
+        DialogueNode? node, string text, IReadOnlyDictionary<string, int> rowOfLine)
+    {
+        if (node is null || node.WriterGaps.Count == 0 || rowOfLine.Count < 2)
+        {
+            return (text, rowOfLine);
+        }
+
+        string[] rows = text.Split('\n');
+        List<KeyValuePair<string, int>> ordered = rowOfLine
+            .Where(pair => pair.Value >= 0 && pair.Value < rows.Length)
+            .OrderBy(pair => pair.Value)
+            .ToList();
+
+        // 몇 번째 줄 앞에 빈 줄 몇 개.
+        var blanksBefore = new Dictionary<int, int>();
+
+        for (int index = 1; index < ordered.Count; index++)
+        {
+            if (!node.WriterGaps.TryGetValue(ordered[index].Key, out int gap) || gap <= 0)
+            {
+                continue;
+            }
+
+            int previous = ordered[index - 1].Value;
+            int at = ordered[index].Value;
+
+            while (at - 1 > previous && OpensCondition(rows[at - 1]))
+            {
+                at--;
+            }
+
+            blanksBefore[at] = blanksBefore.GetValueOrDefault(at) + gap;
+        }
+
+        if (blanksBefore.Count == 0)
+        {
+            return (text, rowOfLine);
+        }
+
+        var spaced = new List<string>(rows.Length + blanksBefore.Values.Sum());
+        int[] moved = new int[rows.Length];
+
+        for (int row = 0; row < rows.Length; row++)
+        {
+            spaced.AddRange(Enumerable.Repeat(string.Empty, blanksBefore.GetValueOrDefault(row)));
+            moved[row] = spaced.Count;
+            spaced.Add(rows[row]);
+        }
+
+        var spacedRows = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach ((string lineId, int row) in rowOfLine)
+        {
+            spacedRows[lineId] = row >= 0 && row < rows.Length ? moved[row] : row;
+        }
+
+        return (string.Join('\n', spaced), spacedRows);
+    }
+
+    /// <summary>갈래를 여는 조건 줄인가 — <c>&lt;&lt;if …&gt;&gt;</c> · <c>&lt;&lt;elseif …&gt;&gt;</c>.</summary>
+    private static bool OpensCondition(string row)
+    {
+        string trimmed = row.TrimStart();
+        return trimmed.StartsWith("<<if", StringComparison.Ordinal) || trimmed.StartsWith("<<elseif", StringComparison.Ordinal);
     }
 
     private static List<RenderedSegment> InsertProblems(RenderedDocument document, DialogueDraft draft)

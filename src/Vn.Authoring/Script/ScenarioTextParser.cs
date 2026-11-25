@@ -10,12 +10,17 @@ public sealed record ScenarioStructureIntent(ConditionTransitionKind Kind, strin
 /// 줄 끝의 <c>#line:</c> 태그에서 떼어낸 신원 (계약서 C1). 태그가 없으면 null이고,
 /// 그때는 동기화가 <b>내용으로</b> 짝을 찾는다. 있으면 <b>ID로</b> 찾는다 — 그쪽이 확실하다.
 /// </param>
+/// <param name="GapBefore">
+/// 앞 대사 줄과 이 줄 사이에 작가가 둔 <b>빈 줄 수</b>(2026-11-25 — 그 사이의 조건 줄은 세지 않는다). 첫 대사 줄은 늘 0이다 — 첫 줄 앞 · 마지막 줄 뒤의 빈 줄은
+/// 걷는다. 넣으면 카드의 <see cref="DialogueNode.WriterGaps"/>에 앉는다.
+/// </param>
 public sealed record ScenarioLine(
     string Speaker,
     string Text,
     bool SpeakerUnregistered,
     IReadOnlyList<ScenarioStructureIntent> Transitions,
-    string? LineId = null)
+    string? LineId = null,
+    int GapBefore = 0)
 {
     /// <summary>
     /// 첫 전환 — 슬롯이 하나뿐이던 시절의 이름이다. 한 줄에 전환이 하나인 흔한 경우에
@@ -74,12 +79,21 @@ public static class ScenarioTextParser
         var unparsed = new List<string>();
         var pending = new List<ScenarioStructureIntent>();
 
+        // 앞 대사 줄 뒤로 지나온 빈 줄 — 다음 대사 줄이 들고 간다(2026-11-25 · DialogueNode.WriterGaps).
+        int blanks = 0;
+
         foreach (string raw in (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'))
         {
             string line = raw.Trim();
 
             if (line.Length == 0)
             {
+                // 첫 대사 줄 앞의 빈 줄은 세지 않는다(걷는다). 마지막 줄 뒤의 것은 실을 줄이 없어 저절로 걷힌다.
+                if (lines.Count > 0)
+                {
+                    blanks++;
+                }
+
                 continue;
             }
 
@@ -110,8 +124,9 @@ public static class ScenarioTextParser
             (string speaker, string body) = SplitSpeaker(tagless, speakers);
             bool unregistered = speaker.Length > 0 && !IsListed(speakers, speaker);
 
-            lines.Add(new ScenarioLine(speaker, body, unregistered, [.. pending], lineId));
+            lines.Add(new ScenarioLine(speaker, body, unregistered, [.. pending], lineId, blanks));
             pending.Clear();
+            blanks = 0;
         }
 
         // 끝에 남은 <b>닫는</b> 전환은 잘못이 아니다 (2026-08-17 소유자 보고) — 조건

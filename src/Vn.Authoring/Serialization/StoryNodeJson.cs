@@ -27,6 +27,9 @@ internal static class StoryNodeJson
     /// <summary><see cref="DialogueNode.WriterBase"/>(카드의 처음 글꼴 · 크기)가 앉는 칸 — 적혀 있을 때만 쓴다.</summary>
     private const string WriterBaseKey = "writerBase";
 
+    /// <summary><see cref="DialogueNode.WriterGaps"/>(작가가 띄운 줄 사이)가 앉는 칸 — 띄운 줄이 있을 때만 쓴다.</summary>
+    private const string WriterGapsKey = "writerGaps";
+
     public static JsonObject Write(StoryNode node)
     {
         string kind = node switch
@@ -285,6 +288,12 @@ internal static class StoryNodeJson
         {
             json[WriterBaseKey] = WriterMarksJson.WriteBase(writerBase);
         }
+
+        // 작가가 띄운 줄 사이(2026-11-25) — 있을 때만 적는다. 띄운 줄이 없는 카드의 파일은 그대로다.
+        if (WriterMarksJson.WriteGaps(node) is { } gaps)
+        {
+            json[WriterGapsKey] = gaps;
+        }
     }
 
     private static SetNode ReadSetNode(JsonObject json, string id, string name)
@@ -353,6 +362,7 @@ internal static class StoryNodeJson
         WriterMarksJson.Read(node, json[WriterMarksKey]);
         node.WriterAlign = WriterMarksJson.ReadAlign(json[WriterAlignKey]);
         node.WriterBase = WriterMarksJson.ReadBase(json[WriterBaseKey]);
+        WriterMarksJson.ReadGaps(node, json[WriterGapsKey]);
 
         return node;
     }

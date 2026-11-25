@@ -112,15 +112,16 @@ public sealed partial class ProjectEditor
         // 전환은 넣기 <b>전에</b> 계획한다 — 그래야 엄격한 넣기가 문제를 보고 아무것도 안 바꾼 채 물러설 수 있다.
         // 남는 줄의 전환은 동기화가 건드리지 않으므로(은퇴한 줄만 접힌다) 넣기 전에 읽어도 같다.
         ScenarioTransitionPlan transitions = PlanScenarioTransitions(node, parsed, plan, problems);
+        List<(string LineId, int Gap)> gaps = PlanWriterGaps(node, parsed, plan);
 
         if (strict && problems.Count > 0)
         {
             return new ScenarioPasteOutcome(parsed, plan, Applied: false, NeedsDeleteConfirmation: false, problems);
         }
 
-        // 줄도 전환도 그대로면 아무것도 적지 않는다(§5-8) — 글이 모양만 다를 때다(띄어쓰기 · 빈 줄).
+        // 줄도 전환도 줄 사이(빈 줄)도 그대로면 아무것도 적지 않는다(§5-8) — 글이 모양만 다를 때다(띄어쓰기 · 첫 줄 앞 · 끝의 빈 줄).
         // 출처 해시도 안 고친다: 그 해시는 "바꿀 것이 없음"을 빨리 알려는 표지일 뿐이다(ChangesNothing).
-        if (plan.IsNoOp && transitions.Lines.Count == 0 && transitions.Trailing is null)
+        if (plan.IsNoOp && transitions.Lines.Count == 0 && transitions.Trailing is null && gaps.Count == 0)
         {
             return new ScenarioPasteOutcome(parsed, plan, Applied: true, NeedsDeleteConfirmation: false, problems);
         }
@@ -129,9 +130,65 @@ public sealed partial class ProjectEditor
         {
             ApplyScriptSync(node.Id, plan);
             ApplyScenarioTransitions(node, transitions);
+            ApplyWriterGaps(node, gaps);
         });
 
         return new ScenarioPasteOutcome(parsed, plan, Applied: true, NeedsDeleteConfirmation: false, problems);
+    }
+
+    /// <summary>
+    /// 넣기가 바꿀 <b>줄 사이</b>(<see cref="DialogueNode.WriterGaps"/> · 2026-11-25) — 글에 남는 줄마다 그 앞의 빈 줄 수가 지금과 다르면 그 수(0이면 걷는다),
+    /// 글에서 빠지는 줄(은퇴)의 것은 걷는다. 아무것도 바꾸지 않는다.
+    /// </summary>
+    private static List<(string LineId, int Gap)> PlanWriterGaps(DialogueNode node, ScenarioParseResult parsed, ScriptSyncPlan plan)
+    {
+        var changes = new List<(string LineId, int Gap)>();
+
+        foreach (ScriptSyncEntry entry in plan.Entries)
+        {
+            if (entry.LineId is not { } lineId)
+            {
+                continue;
+            }
+
+            int wanted = entry.NewIndex is { } index && index >= 0 && index < parsed.Lines.Count
+                ? Math.Max(0, parsed.Lines[index].GapBefore)
+                : 0;
+
+            if (node.WriterGaps.GetValueOrDefault(lineId) != wanted)
+            {
+                changes.Add((lineId, wanted));
+            }
+        }
+
+        return changes;
+    }
+
+    /// <summary>
+    /// 계획한 줄 사이를 앉힌다 — 줄 동기화 <b>뒤</b>에 부른다(새로 끼운 줄의 Id가 있어야 한다). 줄 사이만 바뀌었으면 대사 내용의 변경으로 알린다(칸이 다시
+    /// 채워지고 되돌리기가 그 칸을 다시 채운다). 묶음에 이미 든 변경이 있으면 그 종류를 따른다 — 종류가 섞이면 구조로 올라 판을 통째로 다시 짓는다.
+    /// </summary>
+    private void ApplyWriterGaps(DialogueNode node, IReadOnlyList<(string LineId, int Gap)> gaps)
+    {
+        if (gaps.Count == 0)
+        {
+            return;
+        }
+
+        Mutate(_batchKind ?? ProjectChangeKind.DialogueContent, () =>
+        {
+            foreach ((string lineId, int gap) in gaps)
+            {
+                if (gap > 0)
+                {
+                    node.WriterGaps[lineId] = gap;
+                }
+                else
+                {
+                    node.WriterGaps.Remove(lineId);
+                }
+            }
+        }, node.Id);
     }
 
     /// <summary>살아 있는 줄이 <b>빈 줄 하나뿐</b>이면 그 줄의 Id — 새로 선 대사 노드의 모습이다.</summary>

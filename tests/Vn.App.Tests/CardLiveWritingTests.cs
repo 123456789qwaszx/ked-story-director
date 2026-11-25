@@ -255,6 +255,29 @@ public sealed class CardLiveWritingTests
         window.Close();
     });
 
+    [Fact]
+    public void 줄_사이에_빈_줄을_띄우고_멈춰도_붙지_않고_쓰던_칸이_그대로다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 줄과 줄 사이에 빈 공간을 두고 쓰고 싶다(⛔ 그 전에는 넣으면 붙었다). 줄 사이만 바뀌었다 — 판을 다시 그리지 않는다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("첫 줄", "둘째 줄");
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄\n\n둘째 줄";
+        Pause(window);
+
+        Assert.Equal("첫 줄\n\n둘째 줄", Vn.Authoring.Rendering.WorkingDialoguePreview.ScenarioText(session.Project, card.Id));
+        Assert.Equal(ids, Now(session, card).Script.ActiveLines.Select(line => line.Id));
+        Assert.Same(box, Box(window, card.Id));
+        Assert.True(box.IsFocused);
+
+        Release(window);
+
+        Assert.Equal("첫 줄\n\n둘째 줄", Box(window, card.Id).Text);
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>되돌리기는 프로젝트를 스냅샷에서 새로 세운다 — 카드는 지금 프로젝트에서 다시 찾는다.</summary>
