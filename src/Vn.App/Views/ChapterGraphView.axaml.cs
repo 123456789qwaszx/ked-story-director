@@ -13,6 +13,7 @@ using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -233,8 +234,8 @@ public partial class ChapterGraphView : UserControl
         OverviewSection.IsVisible = _inspector is InspectorMode.Project or InspectorMode.Chapter;
         ChapterIdGrid.IsVisible = _inspector == InspectorMode.Chapter;
         OverviewText.Full = _inspector == InspectorMode.Chapter
-            ? "이 챕터의 조건 · 스탯은 「조건 및 스탯」 탭에서 정합니다."
-            : "화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.";
+            ? Ui.Structure_ThisChapterSConditionsStats
+            : Ui.Side_SpeakersAreInSpeakersTab;
         ScenePanel.IsVisible = _inspector == InspectorMode.Scene;
 
         if (_inspector == InspectorMode.Scene)
@@ -246,19 +247,19 @@ public partial class ChapterGraphView : UserControl
 
         (string title, string subtitle) = _inspector switch
         {
-            InspectorMode.Project => ("프로젝트", string.Empty),
+            InspectorMode.Project => (Ui.Side_Project, string.Empty),
             // 머리글은 표시 이름이다(비면 ID) — 장면 · 에피소드 머리글과 같다(2026-11-17 소유자). ID는 아래 「챕터ID」 칸이 보인다.
-            InspectorMode.Chapter => ($"챕터 · {model?.ShownName ?? _selectedChapterId}", string.Empty),
+            InspectorMode.Chapter => (string.Format(Ui.Structure_Chapter, model?.ShownName ?? _selectedChapterId), string.Empty),
             InspectorMode.Scene => SceneHeader(model),
             _ when _selectedEpisodeId is { } episodeId => (EpisodeHeader(model, episodeId), string.Empty),
             // 머리글은 문구(판의 선 이름표와 같은 글), 부제는 양 끝 에피소드의 보이는 제목(2026-11-17 소유자 — ⛔ 머리글의
             // 「출발 → 도착」 ID는 걷었다. 문구를 따로 보이던 읽기 전용 칸이 고칠 수 있는 칸처럼 보여서다).
-            _ when _selectedEdgeKey is { } edge => ($"선택지 · {EdgeHeaderText(model, edge)}",
+            _ when _selectedEdgeKey is { } edge => (string.Format(Ui.Structure_Choice, EdgeHeaderText(model, edge)),
                 $"{model?.FindEpisode(edge.From)?.ShownTitle ?? edge.From} → {model?.FindEpisode(edge.To)?.ShownTitle ?? edge.To}"),
-            _ when _selectedBranchCardId is { } chipId => ($"⑂ 분기 카드 · {BranchCardName(chipId)}",
-                "들렀다 돌아오는 카드 — 조건은 여기서, 대본은 [대본] 탭에서 고칩니다"),
-            _ when _selectedSlot is { } slot => ($"선택지 칸 · {slot.Episode}", "아직 길이 없는 칸"),
-            _ => ("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다")
+            _ when _selectedBranchCardId is { } chipId => (string.Format(Ui.Structure_BranchCard, BranchCardName(chipId)),
+                Ui.Structure_CardVisitedAndReturnedFrom),
+            _ when _selectedSlot is { } slot => (string.Format(Ui.Structure_ChoiceSlot, slot.Episode), Ui.Structure_SlotWithNoPathYet),
+            _ => (Ui.Board_Inspector, Ui.Side_SelectSomethingInHierarchyOr)
         };
 
         InspectorTitle.Text = title;
@@ -278,12 +279,12 @@ public partial class ChapterGraphView : UserControl
                 candidate.ToEpisodeId == key.To &&
                 EdgeLabelKey(candidate) == key.Label) is { } edge
             ? EdgeOptionText(edge)
-            : key.Label.Length > 0 ? key.Label : "⚠ 문구 없음";
+            : key.Label.Length > 0 ? key.Label : Ui.Structure_NoText;
 
     /// <summary>선택지 간선의 문구 한 줄 — 자동 길은 「AUTO」, 문구가 비면 「⚠ 문구 없음」. 판의 이름표와 인스펙터 머리글이 같이 쓴다.</summary>
     internal static string EdgeOptionText(ChapterEdge edge) =>
         edge.Auto ? "AUTO"
-        : edge.HasNoOptionLabel ? "⚠ 문구 없음"
+        : edge.HasNoOptionLabel ? Ui.Structure_NoText
         : edge.OptionLabel!;
 
     /// <summary>
@@ -295,8 +296,8 @@ public partial class ChapterGraphView : UserControl
 
     private (string Title, string Subtitle) SceneHeader(ChapterGraphModel? model) =>
         InspectedScene(model) is { } scene
-            ? ($"장면 · {scene.DisplayName}", $"에피소드 {scene.Episodes.Count}")
-            : ("장면", "이 장면이 사라졌습니다");
+            ? (string.Format(Ui.Structure_Scene, scene.DisplayName), string.Format(Ui.Structure_Episodes, scene.Episodes.Count))
+            : (Ui.Structure_Scene2, Ui.Structure_ThisSceneIsGone);
 
     /// <summary>장면 인스펙터가 보이는 장면 — 이 챕터를 지금 묶어 본 것에서 찾는다(장면은 엔티티가 아니다).</summary>
     private ChapterScene? InspectedScene(ChapterGraphModel? model) =>
@@ -312,7 +313,7 @@ public partial class ChapterGraphView : UserControl
 
         if (InspectedScene(model) is not { } scene)
         {
-            SceneHintText.Set("이 장면이 사라졌습니다 — 하이어아키에서 다시 고르세요.", "이 장면이 사라졌습니다.");
+            SceneHintText.Set(Ui.Structure_ThisSceneIsGoneSelect, Ui.Structure_ThisSceneIsGone2);
             return;
         }
 
@@ -322,8 +323,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         SceneHintText.Set(
-            $"이 장면ID를 든 에피소드 {scene.Episodes.Count}개의 묶음입니다. 장면 이름은 [대본] 탭 하이어아키의 장면 줄에서 고칩니다. " +
-            "장면 시작점(⌂)은 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.",
+            string.Format(Ui.Structure_GroupOfEpisodesWithThis, scene.Episodes.Count),
             brief: null);
 
         foreach (ChapterEpisode episode in scene.Episodes)
@@ -339,7 +339,7 @@ public partial class ChapterGraphView : UserControl
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 Tag = "scene-episode:" + episodeId
             };
-            link.Click += (_, _) => UiGuard.Run(_session, "에피소드 고르기", () =>
+            link.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_SelectEpisode, () =>
                 Inspect(new HierarchyPick(HierarchyKind.Episode, _selectedChapterId, scene.SceneId, episodeId)));
             SceneEpisodesPanel.Children.Add(link);
         }
@@ -427,7 +427,7 @@ public partial class ChapterGraphView : UserControl
     public ChapterGraphView()
     {
         InitializeComponent();
-        AttachedToVisualTree += (_, _) => UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
+        AttachedToVisualTree += (_, _) => UiGuard.Run(_session, Ui.Structure_DrawStructureBoard, OnShownAgain);
 
         // 창을 떠나면(Windows 키 · Alt+Tab) 하던 끌기를 정리한다 — 놓음이 이 창으로 오지 않는다(usability UX20).
         AttachedToVisualTree += (_, _) =>
@@ -453,7 +453,7 @@ public partial class ChapterGraphView : UserControl
         {
             if (args.Property == IsVisibleProperty && IsVisible)
             {
-                UiGuard.Run(_session, "[구성] 판 그리기", OnShownAgain);
+                UiGuard.Run(_session, Ui.Structure_DrawStructureBoard, OnShownAgain);
             }
         };
 
@@ -485,7 +485,7 @@ public partial class ChapterGraphView : UserControl
             // Draw()만 부르면 빨간 테두리가 안 사라진다.
             if (ChapterCombo.SelectedItem is string picked)
             {
-                UiGuard.Run(_session, "챕터 선택", () => SelectChapter(picked));
+                UiGuard.Run(_session, Ui.Main_SelectChapter, () => SelectChapter(picked));
             }
         };
 
@@ -494,7 +494,7 @@ public partial class ChapterGraphView : UserControl
         {
             if (!_updatingCombo && ConditionChapterCombo.SelectedItem is string picked)
             {
-                UiGuard.Run(_session, "챕터 선택", () => SelectChapter(picked));
+                UiGuard.Run(_session, Ui.Main_SelectChapter, () => SelectChapter(picked));
             }
         };
 
@@ -505,10 +505,10 @@ public partial class ChapterGraphView : UserControl
         //
         // ⚠ 초점을 잃을 때 바꾸려면 <b>그때의 대상이 적기 시작한 대상이어야 한다</b> — 판의 카드 · 선 · 점은 초점을 가져가지 않아
         //    고름이 먼저 바뀔 수 있다. 고르기의 첫머리가 초점을 받이로 옮겨 먼저 낸다(FlushInspectorTyping).
-        IdBox.LostFocus += (_, _) => UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
-        ChapterIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "챕터 ID 바꾸기", RenameSelectedChapter);
-        SceneIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "장면 ID 바꾸기", RenameInspectedScene);
-        BranchIdBox.LostFocus += (_, _) => UiGuard.Run(_session, "분기 카드 ID 바꾸기", RenameInspectedBranchCard);
+        IdBox.LostFocus += (_, _) => UiGuard.Run(_session, Ui.Structure_RenameEpisode, RenameSelectedEpisode);
+        ChapterIdBox.LostFocus += (_, _) => UiGuard.Run(_session, Ui.Structure_ChangeChapterID, RenameSelectedChapter);
+        SceneIdBox.LostFocus += (_, _) => UiGuard.Run(_session, Ui.Structure_ChangeSceneID, RenameInspectedScene);
+        BranchIdBox.LostFocus += (_, _) => UiGuard.Run(_session, Ui.Structure_ChangeBranchCardID, RenameInspectedBranchCard);
         EscToRevert.Wire(IdBox, () => _selectedEpisodeId);
         EscToRevert.Wire(ChapterIdBox, () => _selectedChapterId);
         EscToRevert.Wire(SceneIdBox, () => _inspectedSceneId);
@@ -519,7 +519,7 @@ public partial class ChapterGraphView : UserControl
             if (e.Key == Avalonia.Input.Key.Enter)
             {
                 e.Handled = true;
-                UiGuard.Run(_session, "에피소드 개명", RenameSelectedEpisode);
+                UiGuard.Run(_session, Ui.Structure_RenameEpisode, RenameSelectedEpisode);
             }
         };
         ChapterIdBox.KeyDown += (_, e) =>
@@ -527,7 +527,7 @@ public partial class ChapterGraphView : UserControl
             if (e.Key == Avalonia.Input.Key.Enter)
             {
                 e.Handled = true;
-                UiGuard.Run(_session, "챕터 ID 바꾸기", RenameSelectedChapter);
+                UiGuard.Run(_session, Ui.Structure_ChangeChapterID, RenameSelectedChapter);
             }
         };
         SceneIdBox.KeyDown += (_, e) =>
@@ -535,7 +535,7 @@ public partial class ChapterGraphView : UserControl
             if (e.Key == Avalonia.Input.Key.Enter)
             {
                 e.Handled = true;
-                UiGuard.Run(_session, "장면 ID 바꾸기", RenameInspectedScene);
+                UiGuard.Run(_session, Ui.Structure_ChangeSceneID, RenameInspectedScene);
             }
         };
         BranchIdBox.KeyDown += (_, e) =>
@@ -543,10 +543,10 @@ public partial class ChapterGraphView : UserControl
             if (e.Key == Avalonia.Input.Key.Enter)
             {
                 e.Handled = true;
-                UiGuard.Run(_session, "분기 카드 ID 바꾸기", RenameInspectedBranchCard);
+                UiGuard.Run(_session, Ui.Structure_ChangeBranchCardID, RenameInspectedBranchCard);
             }
         };
-        Hierarchy.Picked += pick => UiGuard.Run(_session, "하이어아키", () => OnHierarchyPicked(pick));
+        Hierarchy.Picked += pick => UiGuard.Run(_session, Ui.Keys_Hierarchy, () => OnHierarchyPicked(pick));
         // 판 다루기 — 휠 확대·축소, 가운데 단추 끌어 이동. 휠은 <b>터널</b>로 받는다:
         // 스크롤뷰가 먼저 먹어 버리면 휠이 배율이 아니라 그냥 스크롤이 된다.
         GraphScroll.AddHandler(
@@ -559,7 +559,7 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.AddHandler(PointerMovedEvent, OnGraphPanMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         ZoomResetButton.Click += (_, _) => ApplyZoom(1, null);
-        FitChapterButton.Click += (_, _) => UiGuard.Run(_session, "화면 맞춤", FitChapter);
+        FitChapterButton.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_FitToScreen, FitChapter);
         EmptyFirstChapterButton.Click += (_, _) => FirstChapterRequested?.Invoke();
 
         // 스탯변화 줄 편집기 — 간선 패널.
@@ -570,10 +570,10 @@ public partial class ChapterGraphView : UserControl
         ChapterRightRows.AddHandler(
             PointerPressedEvent, (_, args) => ReleaseInspectorTyping(args.Source), RoutingStrategies.Tunnel, handledEventsToo: true);
 
-        AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, "자동 정렬", AutoArrange);
-        HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+        AutoArrangeButton.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_AutoLayout, AutoArrange);
+        HideEmptyChoicesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, Ui.Dialogue_HideEmptyChoices, () =>
             _session?.SetHideEmptyChoices(HideEmptyChoicesCheck.IsChecked == true));
-        ShowIdsCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "ID로 보기", () =>
+        ShowIdsCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, Ui.Structure_ShowIDs, () =>
             _session?.SetShowIds(ShowIdsCheck.IsChecked == true));
 
         // 간선 패널은 고르는 순간 저장된다. 에피소드 패널의 개명이 Enter로 확정되는 것과 같은 감각이다 —
@@ -583,13 +583,13 @@ public partial class ChapterGraphView : UserControl
         // 그 사이의 다시 그리기가 칸을 다시 채워 쓰던 글을 끊는다.
         // 문구는 글자 칸이다 — 다른 글자 칸처럼 Enter나 초점을 잃을 때 낸다.
         // 문구 칸은 읽기 전용이다 — 고치는 곳은 [대본] 탭(2026-11-17 소유자).
-        EdgeVisibleNewButton.Click += (_, _) => UiGuard.Run(_session, "새 조건", () => ShowNewConditionFlyout(EdgeVisibleNewButton, visible: true));
-        EdgeUnlockNewButton.Click += (_, _) => UiGuard.Run(_session, "새 조건", () => ShowNewConditionFlyout(EdgeUnlockNewButton, visible: false));
+        EdgeVisibleNewButton.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_NewCondition, () => ShowNewConditionFlyout(EdgeVisibleNewButton, visible: true));
+        EdgeUnlockNewButton.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_NewCondition, () => ShowNewConditionFlyout(EdgeUnlockNewButton, visible: false));
 
         EdgeVisibleCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         EdgeConditionCombo.SelectionChanged += (_, _) => AutoSaveEdge();
         BranchConditionCombo.SelectionChanged += (_, _) =>
-            UiGuard.Run(_session, "분기 조건", SaveBranchCondition);
+            UiGuard.Run(_session, Ui.Branch_BranchCondition, SaveBranchCondition);
 
         EdgeLockedMsgBox.LostFocus += (_, _) => AutoSaveEdge();
         EdgeLockedMsgBox.KeyDown += (_, e) =>
@@ -602,7 +602,7 @@ public partial class ChapterGraphView : UserControl
         };
         _edgeStats.Changed += (_, _) => AutoSaveEdge();
         CopyDiagnosticsButton.Click += async (_, _) =>
-            await UiGuard.RunAsync(_session, "보고 복사", CopyDiagnosticsAsync);
+            await UiGuard.RunAsync(_session, Ui.Structure_CopyReport, CopyDiagnosticsAsync);
 
         // 대사 접기 — 토글이 곧 제목이다(상자 없이). 삼각형이 상태를 말한다
         // (▸ 접힘 · ▾ 펼침).
@@ -610,7 +610,7 @@ public partial class ChapterGraphView : UserControl
         {
             bool open = DialogueToggle.IsChecked == true;
             DialoguePreviewText.IsVisible = open;
-            DialogueToggle.Content = open ? "▾  대사" : "▸  대사";
+            DialogueToggle.Content = open ? Ui.Structure_Dialogue : Ui.Structure_Dialogue2;
         };
 
         // 펼친 채로 시작한다.
@@ -669,7 +669,7 @@ public partial class ChapterGraphView : UserControl
 
         // 「빈 선택지 숨기기」 — [구성] 판의 설정이다(앱 설정에 기억한다). 체크를 맞추고 판을 다시 그린다.
         HideEmptyChoicesCheck.IsChecked = session.HideEmptyChoices;
-        _hideEmptyChanged = (_, _) => UiGuard.Run(_session, "빈 선택지 숨기기", () =>
+        _hideEmptyChanged = (_, _) => UiGuard.Run(_session, Ui.Dialogue_HideEmptyChoices, () =>
         {
             HideEmptyChoicesCheck.IsChecked = _session?.HideEmptyChoices == true;
             Draw();
@@ -678,7 +678,7 @@ public partial class ChapterGraphView : UserControl
 
         // 「ID로 보기」 — 켜면 ID, 끄면 이름(하이어아키는 [대본] 탭의 모양으로). 체크를 맞추고 하이어아키 · 판을 다시 세운다.
         ApplyShowIds();
-        _showIdsChanged = (_, _) => UiGuard.Run(_session, "ID로 보기", () =>
+        _showIdsChanged = (_, _) => UiGuard.Run(_session, Ui.Structure_ShowIDs, () =>
         {
             ApplyShowIds();
             Draw();
@@ -686,7 +686,7 @@ public partial class ChapterGraphView : UserControl
         session.ShowIdsChanged += _showIdsChanged;
 
         // 화자 목록이 바뀔 때만(명령 · 되돌리기 · 열기) [화자] 탭을 다시 그린다 — [대본] 탭이 이름을 더하면 여기 키 목록도 선다.
-        _speakersChanged = (_, _) => UiGuard.Run(_session, "화자", RebuildSpeakerTab);
+        _speakersChanged = (_, _) => UiGuard.Run(_session, Ui.Board_Speakers, RebuildSpeakerTab);
         session.SpeakersChanged += _speakersChanged;
         Reload();
     }
@@ -800,8 +800,8 @@ public partial class ChapterGraphView : UserControl
         {
             SpeakerListPanel.Children.Add(new GuideLine
             {
-                Full = "아직 화자가 없습니다 — 화자 이름은 [대본] 탭의 「화자」 탭에서 더합니다.",
-                Brief = "아직 화자가 없습니다.",   // 설명 간소화(brief-guides G1)
+                Full = Ui.Structure_NoSpeakersYetSpeakerNames,
+                Brief = Ui.Speakers_NoSpeakersYet,   // 설명 간소화(brief-guides G1)
                 FontSize = 10,
                 Opacity = 0.55,
                 TextWrapping = TextWrapping.Wrap
@@ -819,9 +819,9 @@ public partial class ChapterGraphView : UserControl
             {
                 Text = (missing, temporary) switch
                 {
-                    (> 0, > 0) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 · 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요.",
-                    (> 0, _) => $"⚠ 캐릭터 키가 없는 화자 {missing}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.",
-                    _ => $"⚠ 임시 키(temp_)인 화자 {temporary}명 — 그림에 맞는 키로 바꿔 주세요."
+                    (> 0, > 0) => string.Format(Ui.Structure_SpeakersWithoutCharacterKeySpeakers, missing, temporary),
+                    (> 0, _) => string.Format(Ui.Structure_SpeakersWithoutCharacterKeyTheir, missing),
+                    _ => string.Format(Ui.Structure_SpeakersWithTemporaryKeyTemp, temporary)
                 },
                 FontSize = 10,
                 Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
@@ -854,16 +854,16 @@ public partial class ChapterGraphView : UserControl
             Tag = "speaker-name:" + speakerName
         };
         ToolTip.SetTip(name, missing
-            ? $"'{speakerName}' — 캐릭터 키가 없습니다. 이름은 [대본] 탭에서 고칩니다."
+            ? string.Format(Ui.Structure_NoCharacterKeyNameIs, speakerName)
             : temporary
-                ? $"'{speakerName}' — 캐릭터 키가 임시 키입니다(화자를 더할 때 이름의 로마자로 섰다). 그림에 맞는 키로 바꿔 주세요. 이름은 [대본] 탭에서 고칩니다."
-                : $"'{speakerName}' — 이름은 [대본] 탭에서 고칩니다.");
+                ? string.Format(Ui.Structure_CharacterKeyIsTemporaryMade, speakerName)
+                : string.Format(Ui.Structure_NameIsEditedInScript, speakerName));
         var characterId = new TextBox
         {
             Text = speaker.CharacterId,
             Margin = new Thickness(6, 0, 0, 0),
             FontSize = 12,
-            PlaceholderText = "캐릭터 키",
+            PlaceholderText = Ui.Structure_CharacterKey,
             Tag = "speaker-key:" + speakerName
         };
 
@@ -884,12 +884,12 @@ public partial class ChapterGraphView : UserControl
             if (_session.SetSpeakerCharacterId(speakerName, typed))
             {
                 _session.SetStatus(typed.Length == 0
-                    ? $"화자 '{speakerName}'의 캐릭터 키를 비웠습니다 — 초상화가 붙지 않습니다."
-                    : $"화자 '{speakerName}' — 캐릭터 키 '{typed}'.");
+                    ? string.Format(Ui.Structure_ClearedCharacterKeyOfSpeaker, speakerName)
+                    : string.Format(Ui.Structure_SpeakerCharacterKey, speakerName, typed));
             }
         }
 
-        characterId.LostFocus += (_, _) => UiGuard.Run(_session, "캐릭터 키", Commit);
+        characterId.LostFocus += (_, _) => UiGuard.Run(_session, Ui.Structure_CharacterKey, Commit);
         characterId.KeyDown += (_, args) => CommitOnEnter(args, Commit);
         EscToRevert.Wire(characterId, () =>
             _session?.Project.Speakers.FirstOrDefault(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal))?.CharacterId);
@@ -1459,10 +1459,10 @@ public partial class ChapterGraphView : UserControl
 
             EmptyText.IsVisible = true;
             EmptyText.Text = !saved
-                ? "아직 프로젝트가 없습니다.\n새 프로젝트를 만들고 저장하면 여기에 챕터 판이 섭니다."
+                ? Ui.Structure_NoProjectYetCreateNew
                 : _entries.Count == 0
-                    ? "아직 챕터가 없습니다.\n누르면 [대본] 탭으로 가서 첫 챕터를 만듭니다."
-                    : "하이어아키에서 챕터를 고르면 여기에 판이 섭니다.";
+                    ? Ui.Structure_NoChaptersYetClickTo
+                    : Ui.Structure_SelectChapterInHierarchyAnd;
 
             // 빈 판의 첫걸음 — 프로젝트가 없으면 [새 프로젝트], 챕터가 없으면 [＋ 첫 챕터 만들기]([대본]으로 데려가 거기서 만든다 · F2).
             EmptyNewProjectButton.IsVisible = !saved;
@@ -1477,7 +1477,7 @@ public partial class ChapterGraphView : UserControl
 
             ApplyInspector();
 
-            DiagnosticsExpander.Header = "검증 보고";
+            DiagnosticsExpander.Header = Ui.Structure_ValidationReport;
             return;
         }
 
@@ -1492,8 +1492,7 @@ public partial class ChapterGraphView : UserControl
         if (model.Episodes.Count == 0)
         {
             EmptyText.IsVisible = true;
-            EmptyText.Text = $"'{entry.ChapterId}'에 에피소드가 없습니다.\n[구성] 탭에서는 에피소드를 더하지 않습니다 — [대본] 탭의 [＋ 에피소드]나 " +
-                "[대본] 탭 하이어아키의 장면 줄 우클릭 「에피소드 추가」로 더하면 여기에 그려집니다.";
+            EmptyText.Text = string.Format(Ui.Structure_HasNoEpisodesEpisodesAren, entry.ChapterId);
         }
 
         DrawCanvas(model);
@@ -1831,9 +1830,9 @@ public partial class ChapterGraphView : UserControl
         };
 
         ToolTip.SetTip(chip,
-            $"분기 카드 {EpisodeNaming.BranchLabelOf(card)} — 들렀다 돌아오는 카드입니다(선택지가 없고 진행 JSON에 실리지 않습니다). " +
+            string.Format(Ui.Structure_BranchCardCardVisitedAnd, EpisodeNaming.BranchLabelOf(card)) +
             BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, nodeId, state.Label)) +
-            " 누르면 인스펙터에 조건과 대본이 열립니다. 대본은 [대본] 탭에서 고칩니다.");
+            Ui.Structure_ClickToOpenItsCondition);
 
         chip.PointerPressed += (_, e) =>
         {
@@ -1843,7 +1842,7 @@ public partial class ChapterGraphView : UserControl
             }
 
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제 · 범위 선택)까지 흘러가면 곧바로 풀린다
-            UiGuard.Run(_session, "분기 카드 선택", () => SelectBranchCard(nodeId));
+            UiGuard.Run(_session, Ui.Structure_SelectBranchCard, () => SelectBranchCard(nodeId));
 
             // 두 번 누름 — 에피소드 카드처럼 셸에 알린다([대본] 탭의 그 분기 카드로).
             if (e.ClickCount >= 2)
@@ -1884,7 +1883,7 @@ public partial class ChapterGraphView : UserControl
             {
                 new TextBlock
                 {
-                    Text = $"조건: {condition}",
+                    Text = string.Format(Ui.Structure_Condition, condition),
                     FontSize = 9.5,
                     Foreground = new SolidColorBrush(Color.Parse("#6B6F76")),
                     TextTrimming = TextTrimming.CharacterEllipsis
@@ -1914,8 +1913,8 @@ public partial class ChapterGraphView : UserControl
         Canvas.SetLeft(knob, at.X - BranchKnobRadius);
         Canvas.SetTop(knob, at.Y - BranchKnobRadius);
         ToolTip.SetTip(knob, point.ToName is { } to
-            ? $"분기 → {to} — 조건과 대본은 그 분기 카드(칩)를 눌러 봅니다."
-            : "이어지지 않은 분기점 — 다녀갈 곳이 없어 지나갑니다. [대본] 탭에서 이 분기점을 분기 카드에 잇거나 빈 곳에 놓아 새 분기 카드를 세웁니다.");
+            ? string.Format(Ui.Structure_BranchClickThatBranchCard, to)
+            : Ui.Structure_UnconnectedBranchPointThereS);
 
         knob.PointerPressed += (_, e) => e.Handled = true;   // 아무 일도 없다 — 빈 판(선택 풀기 · 범위 선택)으로도 흘리지 않는다
 
@@ -2107,7 +2106,7 @@ public partial class ChapterGraphView : UserControl
         hit.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "간선 선택", () => PressChoice(hitFrom, hitTo, hitLabel, e.ClickCount));
+            UiGuard.Run(_session, Ui.Structure_SelectPath, () => PressChoice(hitFrom, hitTo, hitLabel, e.ClickCount));
         };
         GraphCanvas.Children.Add(hit);
 
@@ -2163,14 +2162,14 @@ public partial class ChapterGraphView : UserControl
 
         if (edge.VisibleConditionLabel is { } visible)
         {
-            gates.Children.Add(LabelPart($"표시: {visible}", 9, VisibleConditionInk));
-            tip.Add($"표시조건: {visible} — 아니면 목록에 안 보인다");
+            gates.Children.Add(LabelPart(string.Format(Ui.Structure_Show, visible), 9, VisibleConditionInk));
+            tip.Add(string.Format(Ui.Structure_ShowConditionOtherwiseItIsn, visible));
         }
 
         if (edge.ConditionLabel is { } unlock)
         {
-            gates.Children.Add(LabelPart($"해금: {unlock}", 9, UnlockConditionInk));
-            tip.Add($"해금조건: {unlock} — 아니면 잠긴 채 보인다");
+            gates.Children.Add(LabelPart(string.Format(Ui.Structure_Unlock, unlock), 9, UnlockConditionInk));
+            tip.Add(string.Format(Ui.Structure_UnlockConditionOtherwiseItS, unlock));
         }
 
         if (gates.Children.Count > 0)
@@ -2203,7 +2202,7 @@ public partial class ChapterGraphView : UserControl
             }
 
             rows.Children.Add(stats);
-            tip.Add("스탯변화: " + string.Join(" · ", edge.StatChanges.Select(delta => DescribeDelta(delta).Text)));
+            tip.Add(Ui.Structure_StatChange + string.Join(" · ", edge.StatChanges.Select(delta => DescribeDelta(delta).Text)));
         }
 
         var text = new Border
@@ -2225,7 +2224,7 @@ public partial class ChapterGraphView : UserControl
         text.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "간선 선택", () => PressChoice(fromId, toId, labelKey, e.ClickCount));
+            UiGuard.Run(_session, Ui.Structure_SelectPath, () => PressChoice(fromId, toId, labelKey, e.ClickCount));
         };
 
         text.Measure(Size.Infinity);
@@ -2271,7 +2270,7 @@ public partial class ChapterGraphView : UserControl
         string name = delta.Key;
 
         return delta.IsSet
-            ? $"{name} → {(delta.Amount != 0 ? "활성" : "비활성")}"
+            ? delta.Amount != 0 ? string.Format(Ui.Structure_On, name) : string.Format(Ui.Structure_Off, name)
             : $"{name} {delta.Amount.ToString("+0;-0;+0", System.Globalization.CultureInfo.InvariantCulture)}";
     }
 
@@ -2320,10 +2319,10 @@ public partial class ChapterGraphView : UserControl
         if (model.IsSceneRoot(episode))
         {
             // 「장면 시작점」(2026-11-18 소유자 — ⛔ 같은 날 H2에서 「시작점」으로 줄였다가 되돌렸다).
-            Border root = CardChip("장면 시작점", "#3D7BD9", FontWeight.Bold);
+            Border root = CardChip(Ui.Structure_SceneStart, "#3D7BD9", FontWeight.Bold);
             ToolTip.SetTip(root, start
-                ? "시작 에피소드이자 장면 시작점입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다."
-                : "다른 장면에서 들어오는 장면 시작점입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.");
+                ? Ui.Structure_StartingEpisodeAndSceneStart
+                : Ui.Structure_SceneStartEnteredFromAnother);
             header.Children.Add(root);
         }
 
@@ -2334,7 +2333,7 @@ public partial class ChapterGraphView : UserControl
                 : episode.SceneId,
             "#6B5CA5",
             FontWeight.SemiBold);
-        ToolTip.SetTip(scene, $"장면: {episode.SceneId} — 같은 장면ID끼리 저장·롤백 구간을 공유합니다.");
+        ToolTip.SetTip(scene, string.Format(Ui.Structure_SceneEpisodesWithSameScene, episode.SceneId));
         header.Children.Add(scene);
 
         // 관문은 v8에서 길(간선)의 것이 됐다 — 카드는 "들어오는 길에 관문이 있다"를 표시한다.
@@ -2445,7 +2444,7 @@ public partial class ChapterGraphView : UserControl
         if (IsNotConnected(episode))
         {
             card.Opacity = 0.55;
-            ToolTip.SetTip(card, "이어지지 않음 — 시작에서 이리로 오는 길이 아직 없습니다(작업 중이면 그대로 두어도 됩니다).\n" +
+            ToolTip.SetTip(card, Ui.Structure_NotConnectedThereSNo +
                                  Tooltip(model, episode) + StatSpanDetail(episode));
         }
 
@@ -2487,7 +2486,7 @@ public partial class ChapterGraphView : UserControl
                 EntryDot(x, y),
                 new SolidColorBrush(Color.Parse("#7F8A96")),
                 filled: false,
-                tip: "이 에피소드로 들어오는 길이 여기로 모입니다."));
+                tip: Ui.Structure_PathsIntoThisEpisodeGather));
         }
 
         int slots = ShownSlotsFor(options.Count);
@@ -2510,7 +2509,7 @@ public partial class ChapterGraphView : UserControl
                 colour,
                 filled: wired is not null,
                 tip: wired is null
-                    ? "빈 선택지 칸입니다 — 누르면 이 칸의 정보와 길을 더하는 곳이 보입니다."
+                    ? Ui.Structure_EmptyChoiceSlotClickTo
                     : PortTip(wired));
 
             if (wired is { } edge)
@@ -2518,7 +2517,7 @@ public partial class ChapterGraphView : UserControl
                 port.PointerPressed += (_, e) =>
                 {
                     e.Handled = true;
-                    UiGuard.Run(_session, "선택지 포트", () =>
+                    UiGuard.Run(_session, Ui.Structure_ChoicePort, () =>
                         SelectEdgeKey(edge.FromEpisodeId, edge.ToEpisodeId, EdgeLabelKey(edge)));
                 };
             }
@@ -2531,7 +2530,7 @@ public partial class ChapterGraphView : UserControl
                 port.PointerPressed += (_, e) =>
                 {
                     e.Handled = true;
-                    UiGuard.Run(_session, "선택지 칸", () => SelectEmptySlot(episodeId, slotIndex));
+                    UiGuard.Run(_session, Ui.Structure_ChoiceSlot2, () => SelectEmptySlot(episodeId, slotIndex));
                 };
             }
 
@@ -2570,15 +2569,14 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     private static string PortTip(ChapterEdge edge)
     {
-        string option = edge.Auto ? "자동 진행"
-            : edge.HasNoOptionLabel ? "⚠ 문구가 없습니다 — 자동 진행이 아니면 고칠 자리입니다"
+        string option = edge.Auto ? Ui.Structure_Auto
+            : edge.HasNoOptionLabel ? Ui.Structure_NoTextFixThisUnless
             : edge.OptionLabel!;
 
-        string gate = edge.ConditionLabel is { } unlock ? $"\n해금조건: {unlock}" : string.Empty;
-        string visible = edge.VisibleConditionLabel is { } show ? $"\n표시조건: {show}" : string.Empty;
+        string gate = edge.ConditionLabel is { } unlock ? string.Format(Ui.Structure_UnlockCondition, unlock) : string.Empty;
+        string visible = edge.VisibleConditionLabel is { } show ? string.Format(Ui.Structure_ShowCondition, show) : string.Empty;
 
-        return $"{option} → {edge.ToEpisodeId}{visible}{gate}" +
-               "\n\n클릭하면 이 간선의 조건·해금·스탯변화를 편집합니다.";
+        return string.Format(Ui.Structure_ClickToEditThisPath, option, edge.ToEpisodeId, visible, gate);
     }
 
     /// <summary>
@@ -2626,7 +2624,7 @@ public partial class ChapterGraphView : UserControl
             }
 
             // 활성/비활성 스탯의 말은 앱 전체가 하나다(2026-11-19 소유자 · usability UX12 — ⛔ 「참」 · 「거짓」 · 「참·거짓」).
-            return span.IsFixed ? (span.Minimum == 1 ? "활성" : "비활성") : "활성·비활성";
+            return span.IsFixed ? (span.Minimum == 1 ? Ui.Side_On : Ui.Side_Off) : Ui.Structure_OnOff;
         }
 
         return (
@@ -2692,10 +2690,10 @@ public partial class ChapterGraphView : UserControl
             return string.Empty;
         }
 
-        return "\n여기 도착했을 때의 스탯 —\n  "
+        return Ui.Structure_StatsOnArrival
             + string.Join("\n  ", rows.Select(row => $"{row.Label} {row.Value}"))
-            + "\n  (범위는 들어오는 루트가 여럿일 때 벌어집니다)"
-            + (partial ? "\n  ≈ 탐색이 상한에서 멈춰 실제 폭은 더 넓을 수 있습니다." : string.Empty);
+            + Ui.Structure_RangesWidenWhenSeveralRoutes
+            + (partial ? Ui.Structure_SearchStoppedAtItsLimit : string.Empty);
     }
 
     /// <summary>
@@ -3105,7 +3103,7 @@ public partial class ChapterGraphView : UserControl
             GraphCanvas.Children.Remove(_rubberBand);
             _rubberBand = null;
             args.Pointer.Capture(null);
-            UiGuard.Run(_session, "범위 선택", () => FinishRubberBand(rect, end));
+            UiGuard.Run(_session, Ui.Structure_SelectArea, () => FinishRubberBand(rect, end));
             return;
         }
 
@@ -3115,7 +3113,7 @@ public partial class ChapterGraphView : UserControl
     /// <summary>판이 선 창 — 창을 떠나는 순간을 듣는다(<see cref="EndGestures"/>).</summary>
     private WindowBase? _window;
 
-    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, "끌기 정리", EndGestures);
+    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, Ui.Board_CleanUpDrag, EndGestures);
 
     /// <summary>
     /// <b>하던 끌기를 정리한다</b> — 창을 떠나면 놓음이 이 창으로 오지 않아 끌기가 「끄는 중」으로 남는다(2026-11-19 소유자 — 범위 사각형이 판에 남아
@@ -3248,7 +3246,7 @@ public partial class ChapterGraphView : UserControl
         // 판을 놓을 때 그만큼 되돌려 카드가 화면에서 놓은 자리에 남게 한다(usability UX22).
         Vector nudge = new(places.Values.Min(place => place.X), places.Values.Min(place => place.Y));
 
-        UiGuard.Run(_session, "에피소드 자리", () =>
+        UiGuard.Run(_session, Ui.Structure_EpisodePosition, () =>
         {
             _session!.Editor.MoveEpisodes(chapterId, places);
             _sheetNudge = nudge;
@@ -3286,11 +3284,10 @@ public partial class ChapterGraphView : UserControl
 
         int stray = model.Episodes.Count - board.Count;
         _session.SetStatus(board.Count == 0
-            ? $"'{chapterId}'의 카드 {model.Episodes.Count}장을 흐름 순서로 다시 세웠습니다([대본] 탭에 카드가 없습니다). " +
-              "되돌리기(Ctrl+Z)로 돌아옵니다."
-            : $"'{chapterId}'의 카드 {model.Episodes.Count}장을 [대본] 탭의 모양대로 다시 세웠습니다" +
-              (stray > 0 ? $"([대본] 탭에 카드가 없는 {stray}장은 맨 아래 줄에)" : string.Empty) +
-              ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            ? string.Format(Ui.Structure_ReLaidOutCardsOf, chapterId, model.Episodes.Count)
+            : stray > 0
+                ? string.Format(Ui.Structure_ReLaidOutCardsOf2, chapterId, model.Episodes.Count, stray)
+                : string.Format(Ui.Structure_ReLaidOutCardsOf3, chapterId, model.Episodes.Count));
     }
 
     /// <summary>
@@ -3341,7 +3338,7 @@ public partial class ChapterGraphView : UserControl
 
                 if (_draggingEpisodeId is not null)
                 {
-                    UiGuard.Run(_session, "끌기", MoveInPlace);
+                    UiGuard.Run(_session, Ui.Structure_Drag, MoveInPlace);
                 }
             },
             DispatcherPriority.Render);
@@ -3665,7 +3662,7 @@ public partial class ChapterGraphView : UserControl
             return;
         }
 
-        UiGuard.Run(_session, "간선 저장", ApplyEdgeFromPanel);
+        UiGuard.Run(_session, Ui.Structure_SavePath, ApplyEdgeFromPanel);
     }
 
     /// <summary>고르기 첫머리(<see cref="FlushEdgeTyping"/>)에서 에피소드ID 칸을 내어 바뀐 이름 — 그 고르기가 옛 ID를 새 ID로 읽는다.</summary>
@@ -3739,7 +3736,7 @@ public partial class ChapterGraphView : UserControl
     {
         if (episodeId is null)
         {
-            DialoguePreviewHeader.Set("에피소드를 선택하면 그 대사가 여기 보입니다.", brief: null);
+            DialoguePreviewHeader.Set(Ui.Structure_SelectEpisodeToSeeIts, brief: null);
             DialoguePreviewText.Text = string.Empty;
             return;
         }
@@ -3752,7 +3749,7 @@ public partial class ChapterGraphView : UserControl
         }
         else
         {
-            DialoguePreviewHeader.Set("아직 적힌 대사가 없습니다 — [대본] 탭의 카드에서 쓰세요", "아직 적힌 대사가 없습니다");
+            DialoguePreviewHeader.Set(Ui.Structure_NoDialogueWrittenYetWrite, Ui.Structure_NoDialogueWrittenYet);
         }
 
         DialoguePreviewText.Text = preview;
@@ -3770,7 +3767,7 @@ public partial class ChapterGraphView : UserControl
     private string ScriptOf(string nodeId) =>
         _session?.Project.FindDialogue(nodeId) is { } card && DialogueOf(card) is { Length: > 0 } text
             ? text
-            : "(아직 적힌 대사가 없습니다 — [대본] 탭의 그 카드에서 씁니다)";
+            : Ui.Structure_NoDialogueWrittenYetWrite2;
 
     private static string DialogueOf(Vn.Authoring.Model.DialogueNode card)
     {
@@ -3847,22 +3844,22 @@ public partial class ChapterGraphView : UserControl
 
         if (edge.VisibleConditionLabel is { } visible)
         {
-            Line($"표시조건: {visible}");
+            Line(string.Format(Ui.Structure_ShowCondition2, visible));
         }
 
         if (edge.ConditionLabel is { } unlock)
         {
-            Line($"해금조건: {unlock}");
+            Line(string.Format(Ui.Structure_UnlockCondition2, unlock));
 
             if (edge.LockedMessage is { Length: > 0 } locked)
             {
-                Line($"잠금 안내문: {locked}");
+                Line(string.Format(Ui.Structure_LockedHint, locked));
             }
         }
 
         Line(edge.StatChanges.Count > 0
-            ? "스탯변화: " + string.Join(" · ", edge.StatChanges.Select(delta => DeltaText(model.Stats, delta)))
-            : "스탯변화: 없음");
+            ? Ui.Structure_StatChange + string.Join(" · ", edge.StatChanges.Select(delta => DeltaText(model.Stats, delta)))
+            : Ui.Structure_StatChangeNone);
 
         return new Border
         {
@@ -3883,7 +3880,7 @@ public partial class ChapterGraphView : UserControl
             .Where(candidate =>
                 string.Equals(candidate.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal))
             .ToList();
-        ChoiceHeaderText.Text = edges.Count > 0 ? $"선택지 ({edges.Count})" : "선택지";
+        ChoiceHeaderText.Text = edges.Count > 0 ? string.Format(Ui.Structure_Choices, edges.Count) : Ui.Structure_Choices2;
 
         for (int rowIndex = 0; rowIndex < edges.Count; rowIndex++)
         {
@@ -3901,8 +3898,8 @@ public partial class ChapterGraphView : UserControl
         {
             EdgeListPanel.Children.Add(new GuideLine
             {
-                Full = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 잇습니다.",
-                Brief = "나가는 길이 없습니다 — 여기서 챕터가 끝납니다.",
+                Full = Ui.Structure_ThereSNoWayOut,
+                Brief = Ui.Structure_ThereSNoWayOut2,
                 FontSize = 10,
                 Opacity = 0.5,
                 TextWrapping = TextWrapping.Wrap
@@ -3935,7 +3932,7 @@ public partial class ChapterGraphView : UserControl
             }
         });
 
-        string label = edge.Auto ? "AUTO · 자동 진행" : edge.HasNoOptionLabel ? "⚠ 문구 없음" : edge.OptionLabel!;
+        string label = edge.Auto ? Ui.Structure_AUTOAutoPath : edge.HasNoOptionLabel ? Ui.Structure_NoText : edge.OptionLabel!;
         var text = new TextBlock
         {
             Text = $"{label}   → {edge.ToEpisodeId}",
@@ -3951,7 +3948,7 @@ public partial class ChapterGraphView : UserControl
 
         // 툴팁 없음 (2026-08-16 소유자) — 목록 위에 뜨는 설명 상자가 화면을 가렸다.
         // 같은 줄을 다시 누르면 접힌다 (2026-08-16 소유자) — 여는 손과 닫는 손이 같다.
-        text.PointerPressed += (_, _) => UiGuard.Run(_session, "선택지 펼치기", () => ToggleChoice(edge));
+        text.PointerPressed += (_, _) => UiGuard.Run(_session, Ui.Structure_ExpandChoices, () => ToggleChoice(edge));
 
         // ✕(길 끊기)는 두지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다.
         row.Children.Add(text);
@@ -4003,7 +4000,7 @@ public partial class ChapterGraphView : UserControl
     internal StackPanel? NewConditionPanel { get; private set; }
 
     /// <summary>관문 콤보의 「없음」 — 조건을 안 건 길.</summary>
-    private const string NoGate = "(없음)";
+    private static string NoGate => Ui.Structure_None;
 
     private static string? GateOf(ComboBox combo) =>
         combo.SelectedItem is string label && !string.Equals(label, NoGate, StringComparison.Ordinal) ? label : null;
@@ -4045,11 +4042,10 @@ public partial class ChapterGraphView : UserControl
         {
             Text = stored,
             FontSize = 11,
-            PlaceholderText = "⚠ 식 미정 — 항상 통과합니다 (예: trust >= 3)",
+            PlaceholderText = Ui.Structure_UndecidedAlwaysPassesEG,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        ToolTip.SetTip(box, "이 조건의 식 — 스탯 키와 정수를 비교합니다(>= · <= · > · < · ==), 여럿이면 `;`로 잇습니다. " +
-                            "활성/비활성 스탯은 `키 == true`(활성일 때). Enter나 다른 곳을 누르면 반영됩니다.");
+        ToolTip.SetTip(box, Ui.Structure_ThisConditionSExpressionCompares);
 
         void Commit()
         {
@@ -4060,13 +4056,13 @@ public partial class ChapterGraphView : UserControl
                 return;
             }
 
-            UiGuard.Run(_session, "조건 식", () =>
+            UiGuard.Run(_session, Ui.Structure_ConditionExpression, () =>
             {
                 _session.Editor.UpdateChapterCondition(chapterId, label, typed);
                 stored = typed;
                 _session.SetStatus(typed.Length == 0
-                    ? $"조건 '{label}'의 식을 비웠습니다 — 식 미정, 항상 통과합니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
-                    : $"조건 '{label}' — 식 '{typed}'. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                    ? string.Format(Ui.Structure_ClearedExpressionOfConditionUndecided, label)
+                    : string.Format(Ui.Structure_ConditionExpressionUndoCtrlZ, label, typed));
             });
         }
 
@@ -4078,7 +4074,7 @@ public partial class ChapterGraphView : UserControl
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(12, 0, 0, 0) };
         row.Children.Add(new TextBlock
         {
-            Text = "식",
+            Text = Ui.Structure_Expression,
             FontSize = 10,
             Opacity = 0.6,
             Margin = new Thickness(0, 0, 6, 0),
@@ -4112,7 +4108,7 @@ public partial class ChapterGraphView : UserControl
 
         if (others > 0)
         {
-            host.Children.Add(Note($"이 조건은 다른 곳 {others}곳에서도 씁니다 — 식을 고치면 그곳들도 함께 바뀝니다."));
+            host.Children.Add(Note(string.Format(Ui.Structure_ThisConditionIsAlsoUsed, others)));
         }
     }
 
@@ -4132,8 +4128,8 @@ public partial class ChapterGraphView : UserControl
         ShowConditionFlyout(
             anchor,
             chapterId,
-            visible ? "새 조건 — 맞을 때만 이 선택지가 보입니다." : "새 조건 — 맞을 때만 이 선택지를 고를 수 있습니다.",
-            visible ? "만들고 표시조건으로 걸기" : "만들고 해금조건으로 걸기",
+            visible ? Ui.Structure_NewConditionThisChoiceShows : Ui.Structure_NewConditionThisChoiceCan,
+            visible ? Ui.Structure_CreateAndSetAsShow : Ui.Structure_CreateAndSetAsUnlock,
             (label, typed) =>
             {
                 if (SelectedModel?.Edges.FirstOrDefault(candidate =>
@@ -4141,7 +4137,7 @@ public partial class ChapterGraphView : UserControl
                         candidate.ToEpisodeId == key.To &&
                         EdgeLabelKey(candidate) == key.Label) is not { } edge)
                 {
-                    _session.SetStatus("간선을 다시 골라 주세요. 선택이 풀렸거나 그 간선이 사라졌습니다.");
+                    _session.SetStatus(Ui.Structure_PleaseSelectPathAgainSelection);
                     return false;
                 }
 
@@ -4157,8 +4153,13 @@ public partial class ChapterGraphView : UserControl
                 });
 
                 _panelFilledFor = default;   // 다시 그릴 때 콤보를 모델 값(방금 건 조건)으로 채운다
-                _session.SetStatus($"조건 '{label}'을 만들어 {(visible ? "표시조건" : "해금조건")}으로 걸었습니다" +
-                                   (typed.Length == 0 ? " — 식 미정(항상 통과)입니다." : ".") + " 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                _session.SetStatus(visible
+                    ? typed.Length == 0
+                        ? string.Format(Ui.Structure_CreatedConditionAndSetIt, label)
+                        : string.Format(Ui.Structure_CreatedConditionAndSetIt2, label)
+                    : typed.Length == 0
+                        ? string.Format(Ui.Structure_CreatedConditionAndSetIt3, label)
+                        : string.Format(Ui.Structure_CreatedConditionAndSetIt4, label));
                 return true;
             });
     }
@@ -4172,8 +4173,8 @@ public partial class ChapterGraphView : UserControl
     private void ShowConditionFlyout(
         Button anchor, string chapterId, string intro, string createText, Func<string, string, bool> accept)
     {
-        var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)", Tag = "new-condition-name" };
-        var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = "식 — 비우면 식 미정 (예: trust >= 3)", Tag = "new-condition-expression" };
+        var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = Ui.Structure_ConditionNameByMeaningE, Tag = "new-condition-name" };
+        var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = Ui.Structure_ExpressionEmptyMeansUndecidedE, Tag = "new-condition-expression" };
         var create = new Button
         {
             Content = createText,
@@ -4197,20 +4198,20 @@ public partial class ChapterGraphView : UserControl
         var flyout = new Flyout { Content = panel };
         NewConditionPanel = panel;
 
-        void Create() => UiGuard.Run(_session, "새 조건", () =>
+        void Create() => UiGuard.Run(_session, Ui.Structure_NewCondition, () =>
         {
             string label = name.Text?.Trim() ?? string.Empty;
             string typed = expression.Text?.Trim() ?? string.Empty;
 
             if (label.Length == 0)
             {
-                _session!.SetStatus("조건 이름을 적어 주세요.");
+                _session!.SetStatus(Ui.Side_TypeConditionName);
                 return;
             }
 
             if (_session!.Editor.FindChapter(chapterId)?.Conditions.Any(item => string.Equals(item.Label, label, StringComparison.Ordinal)) == true)
             {
-                _session.SetStatus($"조건 '{label}'{Josa.이가(label)} 이미 있습니다 — 콤보에서 고르세요.");
+                _session.SetStatus(string.Format(Ui.Structure_ConditionAlreadyExistsPickIt, label, Josa.이가(label)));
                 return;
             }
 
@@ -4238,7 +4239,7 @@ public partial class ChapterGraphView : UserControl
         BranchFromToPanel.Children.Clear();
         BranchFromToPanel.Children.Add(new TextBlock
         {
-            Text = "부르는 곳",
+            Text = Ui.Structure_CalledFrom,
             FontSize = 11,
             Opacity = 0.6,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
@@ -4261,7 +4262,7 @@ public partial class ChapterGraphView : UserControl
         {
             BranchFromToPanel.Children.Add(new TextBlock
             {
-                Text = "(없음 — 재생되지 않습니다)",
+                Text = Ui.Structure_NoneNotPlayed,
                 FontSize = 11,
                 Opacity = 0.6,
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
@@ -4334,9 +4335,9 @@ public partial class ChapterGraphView : UserControl
         taken.Remove(Vn.Authoring.Rendering.YarnNaming.StoryNodeTitleOf(card.Name, card.Id));
 
         string? refusal = wanted.Length == 0
-            ? "분기 카드 ID는 비울 수 없습니다 — 게임의 Yarn 노드 이름입니다."
+            ? Ui.Structure_BranchCardIDCanT
             : taken.Contains(wanted) || taken.Contains(Vn.Authoring.Rendering.YarnNaming.StoryNodeTitleOf(wanted, card.Id))
-                ? $"'{wanted}'는 프로젝트의 다른 노드가 쓰는 이름입니다 — Yarn 노드 이름은 프로젝트에서 하나여야 합니다."
+                ? string.Format(Ui.Structure_IsAlreadyUsedByAnother, wanted)
                 : null;
 
         if (refusal is not null)
@@ -4348,7 +4349,7 @@ public partial class ChapterGraphView : UserControl
 
         string old = card.Name;
         _session.Editor.RenameNode(card.Id, wanted);
-        _session.SetStatus($"분기 카드 ID '{old}' → '{wanted}'. 제목 「{EpisodeNaming.BranchTitleOf(card)}」는 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        _session.SetStatus(string.Format(Ui.Structure_BranchCardIDTitleStays, old, wanted, EpisodeNaming.BranchTitleOf(card)));
     }
 
     private string BranchCardName(string nodeId) =>
@@ -4368,12 +4369,12 @@ public partial class ChapterGraphView : UserControl
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
         };
 
-        ToolTip.SetTip(link, "이 분기 카드를 고릅니다 — 조건과 대본이 보입니다.");
+        ToolTip.SetTip(link, Ui.Structure_SelectsThisBranchCardShows);
 
         link.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "분기 카드 선택", () => SelectBranchCard(nodeId));
+            UiGuard.Run(_session, Ui.Structure_SelectBranchCard, () => SelectBranchCard(nodeId));
         };
 
         return link;
@@ -4387,24 +4388,24 @@ public partial class ChapterGraphView : UserControl
         int options = _optionsByEpisode.TryGetValue(episodeId, out List<ChapterEdge>? edges) ? edges.Count : 0;
         int slots = SlotsFor(options);
 
-        SlotTitleText.Text = $"선택지 칸 {index + 1}/{slots} — 비어 있음";
+        SlotTitleText.Text = string.Format(Ui.Structure_ChoiceSlotEmpty, index + 1, slots);
         SlotFromPanel.Children.Clear();
         SlotFromPanel.Children.Add(EpisodeLink(model, episodeId));
         SlotFromPanel.Children.Add(new TextBlock
         {
-            Text = "→ (아직 길 없음)",
+            Text = Ui.Structure_NoPathYet,
             FontSize = 11,
             Opacity = 0.6,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         });
         string slotState = options == 0
-            ? "이 에피소드에서 나가는 길이 아직 없습니다."
-            : $"이 에피소드에서 나가는 길은 {options}개이고, 이 칸은 비어 있습니다.";
-        SlotDetailText.Set(slotState + " [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이으면 이 칸이 길이 됩니다.", slotState);
+            ? Ui.Structure_ThisEpisodeHasNoWay
+            : string.Format(Ui.Structure_ThisEpisodeHasWaysOut, options);
+        SlotDetailText.Set(slotState + Ui.Structure_InScriptTabWriteText, slotState);
     }
 
     /// <summary>조건을 안 건 분기 — 언제나 재생된다. 「안 고름」과 같은 뜻이다.</summary>
-    private const string BranchAlwaysItem = "(언제나)";
+    private static string BranchAlwaysItem => Ui.Branch_Always;
 
     /// <summary>고른 분기의 조건을 적는다. 고르는 순간 나간다 — 간선 패널과 같은 감각이다.</summary>
     private void SaveBranchCondition()
@@ -4421,9 +4422,9 @@ public partial class ChapterGraphView : UserControl
             target.NodeId,
             string.Equals(label, BranchAlwaysItem, StringComparison.Ordinal) ? null : label);
 
-        _session.SetStatus(failure ?? (label is null or BranchAlwaysItem
-            ? $"분기 카드 「{BranchCardName(target.NodeId)}」의 조건을 걷었습니다 — 언제나 재생됩니다."
-            : $"분기 카드 「{BranchCardName(target.NodeId)}」은 조건 '{label}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
+        _session.SetStatus(failure ?? (label is null || label == BranchAlwaysItem
+            ? string.Format(Ui.Structure_RemovedConditionOfBranchCard, BranchCardName(target.NodeId))
+            : string.Format(Ui.Structure_BranchCardPlaysWhenCondition, BranchCardName(target.NodeId), label)));
     }
 
     /// <summary>조건 칸이 고치는 분기 카드 — 고른 칩.</summary>
@@ -4454,12 +4455,12 @@ public partial class ChapterGraphView : UserControl
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
         };
 
-        ToolTip.SetTip(link, "이 에피소드를 선택합니다 — 이름·제목은 거기서 고칩니다.");
+        ToolTip.SetTip(link, Ui.Structure_SelectsThisEpisodeItsName);
 
         link.PointerPressed += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Run(_session, "에피소드 선택", () => SelectEpisode(episodeId));
+            UiGuard.Run(_session, Ui.Structure_SelectEpisode2, () => SelectEpisode(episodeId));
         };
 
         return link;
@@ -4475,7 +4476,7 @@ public partial class ChapterGraphView : UserControl
                 EdgeLabelKey(candidate) == key.Label) is not { } edge)
         {
             // 조용한 무동작 금지 — 사람에게는 "눌러도 아무 일이 없다"가 된다.
-            _session?.SetStatus("간선을 다시 골라 주세요. 선택이 풀렸거나 그 간선이 사라졌습니다.");
+            _session?.SetStatus(Ui.Structure_PleaseSelectPathAgainSelection);
             return;
         }
 
@@ -4501,7 +4502,7 @@ public partial class ChapterGraphView : UserControl
                     statChanges: Changed(auto ? string.Empty : _edgeStats.ToSheetText(), StatChangesText(edge)),
                     matchOptionLabel: EdgeLabelKey(edge));
             },
-            $"간선 {key.From}→{key.To}을 저장했습니다.");
+            string.Format(Ui.Structure_SavedPath, key.From, key.To));
 
         // ⛔ 여기 있던 `Reload()`는 2026-09-16에 걷혔다 (R-F). 손에 든 모델이 낡는 것을
         //    막으려던 줄인데, 이제 판이 프로젝트에서 오므로 편집이 곧 그 판이다 —
@@ -4542,7 +4543,7 @@ public partial class ChapterGraphView : UserControl
 
         Refresh();
         SelectChapter(newId);
-        _session.SetStatus($"챕터 ID '{oldId}' → '{newId}' — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갔습니다.");
+        _session.SetStatus(string.Format(Ui.Structure_ChapterIDBoardConditionNode, oldId, newId));
     }
 
     /// <summary>
@@ -4567,7 +4568,7 @@ public partial class ChapterGraphView : UserControl
         if (newId.Length == 0)
         {
             SceneIdBox.Text = oldId;
-            _session.SetStatus("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
+            _session.SetStatus(Ui.Structure_SceneIDCanTBe);
             return;
         }
 
@@ -4575,14 +4576,14 @@ public partial class ChapterGraphView : UserControl
                 string.Equals(episode.SceneId, newId, StringComparison.Ordinal)) == true)
         {
             SceneIdBox.Text = oldId;
-            _session.SetStatus($"장면ID '{newId}'는 다른 장면이 씁니다 — 바꾸면 두 장면이 합쳐집니다. 합치려면 [대본] 탭에서 에피소드를 끌어 옮깁니다.");
+            _session.SetStatus(string.Format(Ui.Structure_SceneIDIsUsedBy, newId));
             return;
         }
 
         // 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 새 장면ID로 따라간다(AutoIdFollower — 같은 되돌리기 칸).
         int moved = AutoIdFollower.RenameScene(_session.Editor, chapterId, oldId, newId);
         _inspectedSceneId = newId;
-        _session.SetStatus($"장면 ID '{oldId}' → '{newId}' — 에피소드 {moved}개, 장면 이름 · 메모와 자동 ID가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        _session.SetStatus(string.Format(Ui.Structure_SceneIDEpisodesSceneName, oldId, newId, moved));
     }
 
 
@@ -4618,8 +4619,8 @@ public partial class ChapterGraphView : UserControl
         {
             StatListPanel.Children.Add(new GuideLine
             {
-                Full = "스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다.",
-                Brief = "스탯이 없습니다.",
+                Full = Ui.Structure_NoStatsTypeKeyIn,
+                Brief = Ui.Structure_NoStats,
                 FontSize = 10,
                 Opacity = 0.5
             });
@@ -4629,9 +4630,9 @@ public partial class ChapterGraphView : UserControl
         {
             StatListPanel.Children.Add(AddRow(
                 "stat-add",
-                "새 스탯 키 — 영어로 (예: courage)",
-                $"Enter로도 더합니다. 키는 {StatKeyRule.Rule} — Yarn에 그대로 들어가는 statKey입니다. 숫자(정수) 0(0~100)으로 섭니다 — 종류 · 값은 그 줄에서 고칩니다.",
-                "스탯 추가",
+                Ui.Structure_NewStatKeyInEnglish,
+                string.Format(Ui.Structure_EnterAlsoAddsKeyIs, StatKeyRule.Rule),
+                Ui.Structure_AddStat,
                 key =>
                 {
                     // 영어로만 — 받지 않으면 까닭을 말하고 적은 글은 칸에 그대로 둔다(2026-11-23 소유자 · StatKeyRule).
@@ -4642,14 +4643,13 @@ public partial class ChapterGraphView : UserControl
                     }
 
                     _session!.Editor.AddChapterStat(chapterId, key);
-                    _session.SetStatus($"스탯 '{key}'{Josa.을를(key)} 더했습니다 — 숫자(정수) 0(0~100)입니다. 종류 · 값은 그 줄에서 고칩니다. " +
-                                       "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                    _session.SetStatus(string.Format(Ui.Structure_AddedStatNumberInteger0, key, Josa.을를(key)));
                 }));
         }
     }
 
     /// <summary>스탯 종류의 이름 — 작가가 읽는 말이다. 차례는 <see cref="ChapterStatType"/>의 Int · Bool과 같다.</summary>
-    internal static readonly string[] StatTypeNames = ["숫자(정수)", "활성/비활성"];   // ⛔ 「예/아니오」(usability UX12) · 「숫자」(2026-11-23 소유자 — 「그냥 숫자 대신에 숫자(정수)라고」)
+    internal static readonly string[] StatTypeNames = [Ui.Structure_NumberInteger, Ui.Structure_OnOff2];   // ⛔ 「예/아니오」(usability UX12) · 「숫자」(2026-11-23 소유자 — 「그냥 숫자 대신에 숫자(정수)라고」)
 
     /// <summary>
     /// 스탯 하나 — 두 줄이다. 위는 무엇인가(키 칸 · 종류 · 삭제), 아래는 값(숫자면 처음 값 · 최소 · 최대, 예/아니오면
@@ -4665,23 +4665,20 @@ public partial class ChapterGraphView : UserControl
         var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto") };
         string chapterId = _selectedChapterId!;
 
-        TextBox key = NameBox(stat.Key, "stat-key", "스탯 키 바꾸기", to =>
+        TextBox key = NameBox(stat.Key, "stat-key", Ui.Structure_RenameStatKey, to =>
         {
             Vn.Authoring.Editing.StatRenameOutcome outcome = _session!.Editor.RenameChapterStat(chapterId, stat.Key, to);
 
             if (!outcome.Applied)
             {
-                return outcome.Refusal ?? "바꾸지 못했습니다.";
+                return outcome.Refusal ?? Ui.Side_CouldnTRenameIt;
             }
 
             _session.SetStatus(
-                $"'{stat.Key}' → '{to}' — 간선 {outcome.Edges} · 조건 {outcome.Conditions} · " +
-                $"공급 조건 {outcome.SuppliedConditions} · 픽스처 {outcome.Fixtures}곳 · 대사 {outcome.DialogueLines}줄이 " +
-                "따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.");
+                string.Format(Ui.Structure_PathsConditionsSuppliedConditionsTest, stat.Key, to, outcome.Edges, outcome.Conditions, outcome.SuppliedConditions, outcome.Fixtures, outcome.DialogueLines));
             return null;
         });
-        ToolTip.SetTip(key, "키 — 세이브의 열쇠이자 조건 식 · 대사의 {stat(\"키\")}에 쓰는 이름입니다(Yarn에 그대로 들어가는 statKey). " +
-                            $"{StatKeyRule.Rule}. 고치고 Enter(또는 칸을 떠나면) — 간선 · 조건 · 이 챕터 대사의 {{stat(\"키\")}}가 따라갑니다. Esc는 그만두기.");
+        ToolTip.SetTip(key, string.Format(Ui.Structure_KeyKeyInSaveData, StatKeyRule.Rule));
         head.Children.Add(key);
 
         // 표시 이름 칸은 걷혔다 — 스탯은 키만 있다. 게임 화면의 글자는 게임 쪽이 키로 로컬라이즈한다(writer-fields W2).
@@ -4699,9 +4696,8 @@ public partial class ChapterGraphView : UserControl
         };
         ToolTip.SetTip(
             type,
-            "종류 — 숫자(정수): 호감도 · 점수처럼 오르내리는 정수 값(처음 값 · 최소 · 최대). " +
-            "활성/비활성: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).");
-        type.SelectionChanged += (_, _) => UiGuard.Run(_session, "스탯 종류", () =>
+            Ui.Structure_TypeNumberIntegerValueThat);
+        type.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Structure_StatType, () =>
             _session!.Editor.UpdateChapterStat(
                 _selectedChapterId!,
                 stat.Key,
@@ -4710,8 +4706,8 @@ public partial class ChapterGraphView : UserControl
         head.Children.Add(type);
 
         var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
-        ToolTip.SetTip(remove, "지웁니다 — 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.");
-        remove.Click += (_, _) => UiGuard.Run(_session, "스탯 삭제", () => RemoveStat(remove, stat.Key));
+        ToolTip.SetTip(remove, Ui.Structure_DeletesItIfItS);
+        remove.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_DeleteStat, () => RemoveStat(remove, stat.Key));
         Grid.SetColumn(remove, 2);
         head.Children.Add(remove);
 
@@ -4720,8 +4716,7 @@ public partial class ChapterGraphView : UserControl
         // ⚠ 세이브 경고 — 키 칸에 초점이 있는 동안만 선다. 적기 전에 읽는다(세이브는 되돌리기로 돌아오지 않는다 — 런타임 회신 §6.2).
         var caution = new TextBlock
         {
-            Text = "⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 처음 값으로 떨어집니다(경고 없이). " +
-                   "출시 전이면 괜찮지만, 이미 플레이한 세이브가 있으면 되도록 바꾸지 마세요.",
+            Text = Ui.Structure_KeyIsKeyInSave,
             FontSize = 10,
             Foreground = UnlockConditionInk,
             TextWrapping = TextWrapping.Wrap,
@@ -4743,34 +4738,34 @@ public partial class ChapterGraphView : UserControl
         if (isBool)
         {
             values.ColumnDefinitions = new ColumnDefinitions("Auto,Auto");
-            Add(ValueLabel("처음 값"));
+            Add(ValueLabel(Ui.Structure_Initial));
 
             var initial = new ComboBox
             {
                 FontSize = 10,
                 MinHeight = 0,
                 Padding = new Thickness(8, 2, 4, 2),
-                ItemsSource = new[] { "비활성", "활성" },   // ⛔ 「아니오」 · 「예」(usability UX12)
+                ItemsSource = new[] { Ui.Side_Off2, Ui.Side_On2 },   // ⛔ 「아니오」 · 「예」(usability UX12)
                 SelectedIndex = stat.Initial == 0 ? 0 : 1,
                 VerticalAlignment = VerticalAlignment.Center,
                 Tag = "stat-initial"
             };
-            ToolTip.SetTip(initial, "처음 값 — 챕터를 시작할 때 이 스탯이 활성인지 비활성인지입니다.");
-            initial.SelectionChanged += (_, _) => UiGuard.Run(_session, "처음 값", () =>
+            ToolTip.SetTip(initial, Ui.Structure_InitialWhetherThisStatIs);
+            initial.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Structure_Initial, () =>
                 _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: initial.SelectedIndex));
             Add(initial);
         }
         else
         {
             values.ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,*,Auto,*");
-            Add(ValueLabel("처음 값"));
-            Add(NumberBox(stat.Initial, "처음 값", "처음 값 — 챕터를 시작할 때 이 스탯의 값입니다.",
+            Add(ValueLabel(Ui.Structure_Initial));
+            Add(NumberBox(stat.Initial, Ui.Structure_Initial, Ui.Structure_InitialThisStatSValue,
                 value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, initial: value)));
-            Add(ValueLabel("최소"));
-            Add(NumberBox(stat.Minimum, "최소", "최소 — 이 스탯은 이보다 작아지지 않습니다.",
+            Add(ValueLabel(Ui.Structure_Min));
+            Add(NumberBox(stat.Minimum, Ui.Structure_Min, Ui.Structure_MinThisStatNeverGoes,
                 value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, minimum: value)));
-            Add(ValueLabel("최대"));
-            Add(NumberBox(stat.Maximum, "최대", "최대 — 이 스탯은 이보다 커지지 않습니다.",
+            Add(ValueLabel(Ui.Structure_Max));
+            Add(NumberBox(stat.Maximum, Ui.Structure_Max, Ui.Structure_MaxThisStatNeverGoes,
                 value => _session!.Editor.UpdateChapterStat(_selectedChapterId!, stat.Key, maximum: value)));
         }
 
@@ -4816,8 +4811,8 @@ public partial class ChapterGraphView : UserControl
         {
             ConditionListPanel.Children.Add(new GuideLine
             {
-                Full = "조건이 없습니다 — 아래 칸에 이름을 적고 [＋ 추가]로 만듭니다.",
-                Brief = "조건이 없습니다.",
+                Full = Ui.Structure_NoConditionsTypeNameIn,
+                Brief = Ui.Structure_NoConditions,
                 FontSize = 10,
                 Opacity = 0.5
             });
@@ -4828,14 +4823,13 @@ public partial class ChapterGraphView : UserControl
         {
             ConditionListPanel.Children.Add(AddRow(
                 "condition-add",
-                "새 조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)",
-                "Enter로도 더합니다. 식은 비어 있습니다(식 미정 — 항상 통과) — 그 줄의 식 칸에서 채웁니다.",
-                "조건 추가",
+                Ui.Structure_NewConditionNameByMeaning,
+                Ui.Structure_EnterAlsoAddsExpressionStarts,
+                Ui.Side_AddCondition,
                 label =>
                 {
                     _session!.Editor.AddChapterCondition(chapterId, label, string.Empty);
-                    _session.SetStatus($"조건 '{label}'{Josa.을를(label)} 더했습니다 — 식 미정(항상 통과)입니다. 식은 그 줄에서 채웁니다. " +
-                                       "되돌리기(Ctrl+Z)로 돌아옵니다.");
+                    _session.SetStatus(string.Format(Ui.Structure_AddedConditionUndecidedAlwaysPasses, label, Josa.을를(label)));
                 }));
         }
     }
@@ -4854,22 +4848,22 @@ public partial class ChapterGraphView : UserControl
         };
 
         string chapterId = _selectedChapterId!;
-        TextBox label = NameBox(condition.Label, "condition-label", "조건 이름", to =>
+        TextBox label = NameBox(condition.Label, "condition-label", Ui.Side_ConditionName, to =>
         {
             Vn.Authoring.Editing.ChapterConditionRenameOutcome outcome = _session!.Editor.RenameChapterCondition(chapterId, condition.Label, to);
 
             if (!outcome.Applied)
             {
-                return outcome.Refusal ?? "바꾸지 못했습니다.";
+                return outcome.Refusal ?? Ui.Side_CouldnTRenameIt;
             }
 
             _session.SetStatus(outcome.Edges == 0
-                ? $"조건 '{condition.Label}' → '{to}'."
-                : $"조건 '{condition.Label}' → '{to}' — 간선 {outcome.Edges}개가 따라갔습니다.");
+                ? string.Format(Ui.Side_Condition, condition.Label, to)
+                : string.Format(Ui.Side_ConditionPathsFollowed, condition.Label, to, outcome.Edges));
             return null;
         });
         bool undecided = string.IsNullOrWhiteSpace(condition.Expression);
-        ToolTip.SetTip(label, condition.Label + " — 고치고 Enter(또는 칸을 떠나면). 이 이름을 건 간선이 따라갑니다. Esc는 그만두기.");
+        ToolTip.SetTip(label, condition.Label + Ui.Structure_EditAndPressEnterOr);
 
         if (undecided)
         {
@@ -4879,10 +4873,10 @@ public partial class ChapterGraphView : UserControl
         row.Children.Add(label);
 
         TextBox expression = SheetBox(
-            condition.Expression, double.NaN, "식 (예: trust >= 3; 열쇠 == true)",
+            condition.Expression, double.NaN, Ui.Structure_ExpressionEGTrust3,
             value => _session!.Editor.UpdateChapterCondition(_selectedChapterId!, condition.Label, value));
         expression.Margin = new Thickness(3, 0, 0, 0);
-        expression.PlaceholderText = "⚠ 식 미정 — 항상 통과합니다";
+        expression.PlaceholderText = Ui.Side_UndecidedAlwaysPasses;
         expression.Tag = "condition-expression:" + condition.Label;
         Grid.SetColumn(expression, 1);
         row.Children.Add(expression);
@@ -4944,7 +4938,7 @@ public partial class ChapterGraphView : UserControl
             {
                 if (!int.TryParse(text.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int parsed))
                 {
-                    throw new InvalidOperationException($"{hint}에는 숫자(정수)를 적습니다 — '{text}'는 못 읽습니다.");
+                    throw new InvalidOperationException(string.Format(Ui.Structure_TakesNumberIntegerCanT, hint, text));
                 }
 
                 commit(parsed);
@@ -5020,7 +5014,7 @@ public partial class ChapterGraphView : UserControl
         };
         var button = new Button
         {
-            Content = "＋ 추가",
+            Content = Ui.Speakers_Add,
             FontSize = 10,
             Padding = new Thickness(7, 2),
             Margin = new Thickness(4, 0, 0, 0),
@@ -5035,7 +5029,7 @@ public partial class ChapterGraphView : UserControl
 
             if (typed.Length == 0)
             {
-                _session?.SetStatus("이름을 적어 주세요.");
+                _session?.SetStatus(Ui.Structure_TypeName);
                 return;
             }
 
@@ -5067,7 +5061,7 @@ public partial class ChapterGraphView : UserControl
 
         if (outcome.Applied)
         {
-            _session.SetStatus($"스탯 '{key}'를 지웠습니다.");
+            _session.SetStatus(string.Format(Ui.Structure_DeletedStat, key));
             Draw();
 
             return;
@@ -5075,7 +5069,7 @@ public partial class ChapterGraphView : UserControl
 
         if (outcome.Uses.Count == 0)
         {
-            throw new InvalidOperationException(outcome.Refusal ?? "지우지 못했습니다.");
+            throw new InvalidOperationException(outcome.Refusal ?? Ui.Structure_CouldnTDeleteIt);
         }
 
         // ⭐ <b>한 번 더 묻는다</b> (2026-09-17 소유자 — 「가부터 만들고 다로 확장하자」).
@@ -5117,10 +5111,9 @@ public partial class ChapterGraphView : UserControl
 
         panel.Children.Add(new TextBlock
         {
-            Text = "비우면 간선에서는 그 항만 빠지고, 조건은 식만 비고 남습니다 " +
-                   "(검증이 빈 식을 짚어 줍니다)." +
+            Text = Ui.Structure_ClearingRemovesJustThatTerm +
                    (refused.Uses.Any(use => use.Kind == Vn.Authoring.Editing.ChapterUseKind.DialogueRead)
-                       ? " 대사의 {stat(\"" + key + "\")}는 고치지 않고 남습니다 — 검증 보고가 없는 스탯을 읽는 대사로 짚어 줍니다."
+                       ? string.Format(Ui.Structure_StatInDialogueIsnT, key)
                        : string.Empty),
             FontSize = 10,
             Opacity = 0.6,
@@ -5130,7 +5123,7 @@ public partial class ChapterGraphView : UserControl
 
         var clear = new Button
         {
-            Content = "모두 비우고 지우기",
+            Content = Ui.Structure_ClearAllAndDelete,
             FontSize = 10,
             Padding = new Thickness(7, 2),
             HorizontalAlignment = HorizontalAlignment.Left
@@ -5142,21 +5135,20 @@ public partial class ChapterGraphView : UserControl
         {
             flyout.Hide();
 
-            UiGuard.Run(_session, "스탯 비우고 삭제", () =>
+            UiGuard.Run(_session, Ui.Structure_ClearAndDeleteStat, () =>
             {
                 Vn.Authoring.Editing.StatRemoveOutcome done =
                     _session!.Editor.RemoveChapterStat(_selectedChapterId!, key, clearUses: true);
 
                 if (!done.Applied)
                 {
-                    throw new InvalidOperationException(done.Refusal ?? "지우지 못했습니다.");
+                    throw new InvalidOperationException(done.Refusal ?? Ui.Structure_CouldnTDeleteIt);
                 }
 
                 _session.SetStatus(
-                    $"스탯 '{key}'를 지웠습니다 — 간선 {done.EdgesCleared}곳의 항을 빼고 " +
-                    $"조건 {done.ConditionsCleared}곳의 식을 비웠습니다." +
+                    string.Format(Ui.Structure_DeletedStatRemovedItsTerm, key, done.EdgesCleared, done.ConditionsCleared) +
                     (done.DialogueReadsLeft > 0
-                        ? $" 이 스탯을 읽는 대사 {done.DialogueReadsLeft}줄은 남았습니다 — 검증 보고가 짚습니다."
+                        ? string.Format(Ui.Structure_DialogueLinesReadingThisStat, done.DialogueReadsLeft)
                         : string.Empty));
 
                 Draw();
@@ -5175,7 +5167,7 @@ public partial class ChapterGraphView : UserControl
     {
         if (uses.Count == 0)
         {
-            return refusal ?? "지우지 못했습니다.";
+            return refusal ?? Ui.Structure_CouldnTDeleteIt;
         }
 
         return refusal + "  " + string.Join(" / ", uses.Select(use => $"{use.Where} — {use.Detail}"));
@@ -5222,7 +5214,7 @@ public partial class ChapterGraphView : UserControl
         _episodeRenamed = (oldId, newId);   // 고르기 첫머리에서 낸 것이면, 그 고르기가 옛 ID를 새 ID로 읽는다
 
         _session.SetStatus(
-            $"'{oldId}' → '{newId}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다.");
+            string.Format(Ui.Structure_RenamedPathsTestStartsDialogue, oldId, newId));
     }
 
     /// <summary>
@@ -5259,8 +5251,8 @@ public partial class ChapterGraphView : UserControl
         gated.Select(edge => string.Join(" · ", new[]
         {
             $"{edge.FromEpisodeId} →",
-            edge.VisibleConditionLabel is null ? null : $"표시: {edge.VisibleConditionLabel}",
-            edge.ConditionLabel is null ? null : $"해금: {edge.ConditionLabel}"
+            edge.VisibleConditionLabel is null ? null : string.Format(Ui.Structure_Show, edge.VisibleConditionLabel),
+            edge.ConditionLabel is null ? null : string.Format(Ui.Structure_Unlock, edge.ConditionLabel)
         }.Where(part => part is not null))));
 
     private static string Tooltip(ChapterGraphModel model, ChapterEpisode episode)
@@ -5268,21 +5260,21 @@ public partial class ChapterGraphView : UserControl
         var lines = new List<string>
         {
             episode.EpisodeId,
-            $"위치: X={episode.X:0.##} Y={episode.Y:0.##}",
-            $"선택지 {model.Edges.Count(edge => string.Equals(edge.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal))}개"
+            string.Format(Ui.Structure_PositionXY, episode.X, episode.Y),
+            string.Format(Ui.Structure_Choices3, model.Edges.Count(edge => string.Equals(edge.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
         };
 
         string gate = GateSummary(GatedIncoming(model, episode));
 
         if (gate.Length > 0)
         {
-            lines.Add("들어오는 길의 관문 —");
+            lines.Add(Ui.Structure_GateOfIncomingPaths);
             lines.Add(gate);
         }
 
         if (!string.IsNullOrWhiteSpace(episode.Memo))
         {
-            lines.Add($"메모: {episode.Memo}");
+            lines.Add(string.Format(Ui.Structure_Note, episode.Memo));
         }
 
         return string.Join("\n", lines);
@@ -5320,27 +5312,27 @@ public partial class ChapterGraphView : UserControl
 
         string? exportNotice = ExportNotice();
 
-        var header = new System.Text.StringBuilder("검증 보고");
+        var header = new System.Text.StringBuilder(Ui.Structure_ValidationReport);
 
         if (errors > 0)
         {
-            header.Append($" · {ErrorMark} 오류 {errors}");
+            header.Append(string.Format(Ui.Structure_Errors, ErrorMark, errors));
         }
 
         if (warnings > 0)
         {
-            header.Append($" · {WarningMark} 경고 {warnings}");
+            header.Append(string.Format(Ui.Structure_Warnings, WarningMark, warnings));
         }
 
         if (exportNotice is not null)
         {
             // 접혀 있어도 보여야 한다 — 런타임으로 나갈 것이 안 나간 상태다.
-            header.Append($" · {ErrorMark} 진행 JSON 미출력");
+            header.Append(string.Format(Ui.Structure_ProgressionJSONNotWritten, ErrorMark));
         }
 
-        if (header.Length == "검증 보고".Length)
+        if (header.Length == Ui.Structure_ValidationReport.Length)
         {
-            header.Append($" — 오류 없음 (알림 {all.Count}건)");
+            header.Append(string.Format(Ui.Structure_NoErrorsNotices, all.Count));
         }
 
         DiagnosticsExpander.Header = header.ToString();
@@ -5370,7 +5362,7 @@ public partial class ChapterGraphView : UserControl
         else if (_session?.ProjectPath is not null && _exportRun.Notice is null)
         {
             DiagnosticsPanel.Children.Add(DiagnosticLine(
-                "진행 JSON — 아직 나간 챕터가 없습니다.", null, dim: true));
+                Ui.Structure_ProgressionJSONNoChapterWritten, null, dim: true));
         }
 
         // 서버는 이 문자열이 아니라 **파일 바이트**를 해시한다. 내보내기와 같은
@@ -5379,7 +5371,7 @@ public partial class ChapterGraphView : UserControl
             _exportRun.Checksums?.TryGetValue(selected, out string? checksum) == true)
         {
             DiagnosticsPanel.Children.Add(DiagnosticLine(
-                $"진행 JSON SHA-256: {checksum}", null, dim: true));
+                string.Format(Ui.Structure_ProgressionJSONSHA256, checksum), null, dim: true));
         }
 
         // 탐색이 상한에서 멈췄으면 "도달 불가"가 단정이 아니라는 사실을 먼저 말한다.
@@ -5406,8 +5398,8 @@ public partial class ChapterGraphView : UserControl
             {
                 // 빈 챕터는 낼 것이 없을 뿐이다 — 막힌 것이 아니라고 말한다(2026-11-18).
                 Text = model.Episodes.Count == 0
-                    ? "에피소드가 아직 없습니다 — 첫 에피소드를 세우면 진행 JSON이 저절로 나갑니다."
-                    : "보고할 것이 없습니다.",
+                    ? Ui.Structure_NoEpisodesYetOnceYou
+                    : Ui.Structure_NothingToReport,
                 FontSize = 11,
                 Opacity = 0.55
             });
@@ -5488,12 +5480,12 @@ public partial class ChapterGraphView : UserControl
 
         if (clipboard is null)
         {
-            _session?.SetStatus("클립보드에 접근할 수 없습니다.");
+            _session?.SetStatus(Ui.Structure_CanTAccessClipboard);
             return;
         }
 
         await clipboard.SetTextAsync(string.Join(Environment.NewLine, lines));
-        _session?.SetStatus($"검증 보고 {lines.Count}줄을 복사했습니다.");
+        _session?.SetStatus(string.Format(Ui.Structure_CopiedLinesOfValidationReport, lines.Count));
     }
 
     // SelectableTextBlock — [보고 복사]가 전체를 들고 가고, 드래그는 한 줄만 집어 간다.

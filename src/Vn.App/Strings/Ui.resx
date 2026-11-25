@@ -2920,4 +2920,938 @@
     <value>챕터 '{0}'가 없습니다.</value>
     <comment>EpisodeAdder.cs</comment>
   </data>
+  <data name="Structure_ThisChapterSConditionsStats" xml:space="preserve">
+    <value>이 챕터의 조건 · 스탯은 「조건 및 스탯」 탭에서 정합니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Chapter" xml:space="preserve">
+    <value>챕터 · {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Choice" xml:space="preserve">
+    <value>선택지 · {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_BranchCard" xml:space="preserve">
+    <value>⑂ 분기 카드 · {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CardVisitedAndReturnedFrom" xml:space="preserve">
+    <value>들렀다 돌아오는 카드 — 조건은 여기서, 대본은 [대본] 탭에서 고칩니다</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChoiceSlot" xml:space="preserve">
+    <value>선택지 칸 · {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SlotWithNoPathYet" xml:space="preserve">
+    <value>아직 길이 없는 칸</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoText" xml:space="preserve">
+    <value>⚠ 문구 없음</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Scene" xml:space="preserve">
+    <value>장면 · {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Episodes" xml:space="preserve">
+    <value>에피소드 {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Scene2" xml:space="preserve">
+    <value>장면</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThisSceneIsGone" xml:space="preserve">
+    <value>이 장면이 사라졌습니다</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThisSceneIsGoneSelect" xml:space="preserve">
+    <value>이 장면이 사라졌습니다 — 하이어아키에서 다시 고르세요.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThisSceneIsGone2" xml:space="preserve">
+    <value>이 장면이 사라졌습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_GroupOfEpisodesWithThis" xml:space="preserve">
+    <value>이 장면ID를 든 에피소드 {0}개의 묶음입니다. 장면 이름은 [대본] 탭 하이어아키의 장면 줄에서 고칩니다. 장면 시작점(⌂)은 밖에서 들어오는 자리 — 롤백이 되돌아가고 이어하기가 재개하는 곳입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectEpisode" xml:space="preserve">
+    <value>에피소드 고르기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_DrawStructureBoard" xml:space="preserve">
+    <value>[구성] 판 그리기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_RenameEpisode" xml:space="preserve">
+    <value>에피소드 개명</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChangeChapterID" xml:space="preserve">
+    <value>챕터 ID 바꾸기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChangeSceneID" xml:space="preserve">
+    <value>장면 ID 바꾸기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChangeBranchCardID" xml:space="preserve">
+    <value>분기 카드 ID 바꾸기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_FitToScreen" xml:space="preserve">
+    <value>화면 맞춤</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_AutoLayout" xml:space="preserve">
+    <value>자동 정렬</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ShowIDs" xml:space="preserve">
+    <value>ID로 보기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NewCondition" xml:space="preserve">
+    <value>새 조건</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CopyReport" xml:space="preserve">
+    <value>보고 복사</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Dialogue" xml:space="preserve">
+    <value>▾  대사</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Dialogue2" xml:space="preserve">
+    <value>▸  대사</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoSpeakersYetSpeakerNames" xml:space="preserve">
+    <value>아직 화자가 없습니다 — 화자 이름은 [대본] 탭의 「화자」 탭에서 더합니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SpeakersWithoutCharacterKeySpeakers" xml:space="preserve">
+    <value>⚠ 캐릭터 키가 없는 화자 {0}명 · 임시 키(temp_)인 화자 {1}명 — 그림에 맞는 키로 바꿔 주세요.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SpeakersWithoutCharacterKeyTheir" xml:space="preserve">
+    <value>⚠ 캐릭터 키가 없는 화자 {0}명 — 그 화자의 대사에는 초상화 · 표정이 붙지 않습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SpeakersWithTemporaryKeyTemp" xml:space="preserve">
+    <value>⚠ 임시 키(temp_)인 화자 {0}명 — 그림에 맞는 키로 바꿔 주세요.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoCharacterKeyNameIs" xml:space="preserve">
+    <value>'{0}' — 캐릭터 키가 없습니다. 이름은 [대본] 탭에서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CharacterKeyIsTemporaryMade" xml:space="preserve">
+    <value>'{0}' — 캐릭터 키가 임시 키입니다(화자를 더할 때 이름의 로마자로 섰다). 그림에 맞는 키로 바꿔 주세요. 이름은 [대본] 탭에서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NameIsEditedInScript" xml:space="preserve">
+    <value>'{0}' — 이름은 [대본] 탭에서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CharacterKey" xml:space="preserve">
+    <value>캐릭터 키</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ClearedCharacterKeyOfSpeaker" xml:space="preserve">
+    <value>화자 '{0}'의 캐릭터 키를 비웠습니다 — 초상화가 붙지 않습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SpeakerCharacterKey" xml:space="preserve">
+    <value>화자 '{0}' — 캐릭터 키 '{1}'.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoProjectYetCreateNew" xml:space="preserve">
+    <value>아직 프로젝트가 없습니다.
+새 프로젝트를 만들고 저장하면 여기에 챕터 판이 섭니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoChaptersYetClickTo" xml:space="preserve">
+    <value>아직 챕터가 없습니다.
+누르면 [대본] 탭으로 가서 첫 챕터를 만듭니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectChapterInHierarchyAnd" xml:space="preserve">
+    <value>하이어아키에서 챕터를 고르면 여기에 판이 섭니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ValidationReport" xml:space="preserve">
+    <value>검증 보고</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_HasNoEpisodesEpisodesAren" xml:space="preserve">
+    <value>'{0}'에 에피소드가 없습니다.
+[구성] 탭에서는 에피소드를 더하지 않습니다 — [대본] 탭의 [＋ 에피소드]나 [대본] 탭 하이어아키의 장면 줄 우클릭 「에피소드 추가」로 더하면 여기에 그려집니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_BranchCardCardVisitedAnd" xml:space="preserve">
+    <value>분기 카드 {0} — 들렀다 돌아오는 카드입니다(선택지가 없고 진행 JSON에 실리지 않습니다). </value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ClickToOpenItsCondition" xml:space="preserve">
+    <value> 누르면 인스펙터에 조건과 대본이 열립니다. 대본은 [대본] 탭에서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectBranchCard" xml:space="preserve">
+    <value>분기 카드 선택</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Condition" xml:space="preserve">
+    <value>조건: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_BranchClickThatBranchCard" xml:space="preserve">
+    <value>분기 → {0} — 조건과 대본은 그 분기 카드(칩)를 눌러 봅니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_UnconnectedBranchPointThereS" xml:space="preserve">
+    <value>이어지지 않은 분기점 — 다녀갈 곳이 없어 지나갑니다. [대본] 탭에서 이 분기점을 분기 카드에 잇거나 빈 곳에 놓아 새 분기 카드를 세웁니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectPath" xml:space="preserve">
+    <value>간선 선택</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Show" xml:space="preserve">
+    <value>표시: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ShowConditionOtherwiseItIsn" xml:space="preserve">
+    <value>표시조건: {0} — 아니면 목록에 안 보인다</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Unlock" xml:space="preserve">
+    <value>해금: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_UnlockConditionOtherwiseItS" xml:space="preserve">
+    <value>해금조건: {0} — 아니면 잠긴 채 보인다</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_StatChange" xml:space="preserve">
+    <value>스탯변화: </value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_On" xml:space="preserve">
+    <value>{0} → 활성</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Off" xml:space="preserve">
+    <value>{0} → 비활성</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SceneStart" xml:space="preserve">
+    <value>장면 시작점</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_StartingEpisodeAndSceneStart" xml:space="preserve">
+    <value>시작 에피소드이자 장면 시작점입니다. 도달성 증명과 내보내기의 StartEpisodeId가 됩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SceneStartEnteredFromAnother" xml:space="preserve">
+    <value>다른 장면에서 들어오는 장면 시작점입니다. 이곳부터 저장·롤백 경계가 새로 시작됩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SceneEpisodesWithSameScene" xml:space="preserve">
+    <value>장면: {0} — 같은 장면ID끼리 저장·롤백 구간을 공유합니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NotConnectedThereSNo" xml:space="preserve">
+    <value>이어지지 않음 — 시작에서 이리로 오는 길이 아직 없습니다(작업 중이면 그대로 두어도 됩니다).
+</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_PathsIntoThisEpisodeGather" xml:space="preserve">
+    <value>이 에피소드로 들어오는 길이 여기로 모입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_EmptyChoiceSlotClickTo" xml:space="preserve">
+    <value>빈 선택지 칸입니다 — 누르면 이 칸의 정보와 길을 더하는 곳이 보입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChoicePort" xml:space="preserve">
+    <value>선택지 포트</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChoiceSlot2" xml:space="preserve">
+    <value>선택지 칸</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Auto" xml:space="preserve">
+    <value>자동 진행</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoTextFixThisUnless" xml:space="preserve">
+    <value>⚠ 문구가 없습니다 — 자동 진행이 아니면 고칠 자리입니다</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_UnlockCondition" xml:space="preserve">
+    <value>
+해금조건: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ShowCondition" xml:space="preserve">
+    <value>
+표시조건: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ClickToEditThisPath" xml:space="preserve">
+    <value>{0} → {1}{2}{3}
+
+클릭하면 이 간선의 조건·해금·스탯변화를 편집합니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_OnOff" xml:space="preserve">
+    <value>활성·비활성</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_StatsOnArrival" xml:space="preserve">
+    <value>
+여기 도착했을 때의 스탯 —
+  </value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_RangesWidenWhenSeveralRoutes" xml:space="preserve">
+    <value>
+  (범위는 들어오는 루트가 여럿일 때 벌어집니다)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SearchStoppedAtItsLimit" xml:space="preserve">
+    <value>
+  ≈ 탐색이 상한에서 멈춰 실제 폭은 더 넓을 수 있습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectArea" xml:space="preserve">
+    <value>범위 선택</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_EpisodePosition" xml:space="preserve">
+    <value>에피소드 자리</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ReLaidOutCardsOf" xml:space="preserve">
+    <value>'{0}'의 카드 {1}장을 흐름 순서로 다시 세웠습니다([대본] 탭에 카드가 없습니다). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ReLaidOutCardsOf2" xml:space="preserve">
+    <value>'{0}'의 카드 {1}장을 [대본] 탭의 모양대로 다시 세웠습니다([대본] 탭에 카드가 없는 {2}장은 맨 아래 줄에). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ReLaidOutCardsOf3" xml:space="preserve">
+    <value>'{0}'의 카드 {1}장을 [대본] 탭의 모양대로 다시 세웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Drag" xml:space="preserve">
+    <value>끌기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SavePath" xml:space="preserve">
+    <value>간선 저장</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectEpisodeToSeeIts" xml:space="preserve">
+    <value>에피소드를 선택하면 그 대사가 여기 보입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoDialogueWrittenYetWrite" xml:space="preserve">
+    <value>아직 적힌 대사가 없습니다 — [대본] 탭의 카드에서 쓰세요</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoDialogueWrittenYet" xml:space="preserve">
+    <value>아직 적힌 대사가 없습니다</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoDialogueWrittenYetWrite2" xml:space="preserve">
+    <value>(아직 적힌 대사가 없습니다 — [대본] 탭의 그 카드에서 씁니다)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ShowCondition2" xml:space="preserve">
+    <value>표시조건: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_UnlockCondition2" xml:space="preserve">
+    <value>해금조건: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_LockedHint" xml:space="preserve">
+    <value>잠금 안내문: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_StatChangeNone" xml:space="preserve">
+    <value>스탯변화: 없음</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Choices" xml:space="preserve">
+    <value>선택지 ({0})</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Choices2" xml:space="preserve">
+    <value>선택지</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThereSNoWayOut" xml:space="preserve">
+    <value>나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 잇습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThereSNoWayOut2" xml:space="preserve">
+    <value>나가는 길이 없습니다 — 여기서 챕터가 끝납니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_AUTOAutoPath" xml:space="preserve">
+    <value>AUTO · 자동 진행</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ExpandChoices" xml:space="preserve">
+    <value>선택지 펼치기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_None" xml:space="preserve">
+    <value>(없음)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_UndecidedAlwaysPassesEG" xml:space="preserve">
+    <value>⚠ 식 미정 — 항상 통과합니다 (예: trust &gt;= 3)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThisConditionSExpressionCompares" xml:space="preserve">
+    <value>이 조건의 식 — 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==), 여럿이면 `;`로 잇습니다. 활성/비활성 스탯은 `키 == true`(활성일 때). Enter나 다른 곳을 누르면 반영됩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ConditionExpression" xml:space="preserve">
+    <value>조건 식</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ClearedExpressionOfConditionUndecided" xml:space="preserve">
+    <value>조건 '{0}'의 식을 비웠습니다 — 식 미정, 항상 통과합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ConditionExpressionUndoCtrlZ" xml:space="preserve">
+    <value>조건 '{0}' — 식 '{1}'. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Expression" xml:space="preserve">
+    <value>식</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThisConditionIsAlsoUsed" xml:space="preserve">
+    <value>이 조건은 다른 곳 {0}곳에서도 씁니다 — 식을 고치면 그곳들도 함께 바뀝니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NewConditionThisChoiceShows" xml:space="preserve">
+    <value>새 조건 — 맞을 때만 이 선택지가 보입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NewConditionThisChoiceCan" xml:space="preserve">
+    <value>새 조건 — 맞을 때만 이 선택지를 고를 수 있습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CreateAndSetAsShow" xml:space="preserve">
+    <value>만들고 표시조건으로 걸기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CreateAndSetAsUnlock" xml:space="preserve">
+    <value>만들고 해금조건으로 걸기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_PleaseSelectPathAgainSelection" xml:space="preserve">
+    <value>간선을 다시 골라 주세요. 선택이 풀렸거나 그 간선이 사라졌습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt" xml:space="preserve">
+    <value>조건 '{0}'을 만들어 표시조건으로 걸었습니다 — 식 미정(항상 통과)입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt2" xml:space="preserve">
+    <value>조건 '{0}'을 만들어 표시조건으로 걸었습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt3" xml:space="preserve">
+    <value>조건 '{0}'을 만들어 해금조건으로 걸었습니다 — 식 미정(항상 통과)입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt4" xml:space="preserve">
+    <value>조건 '{0}'을 만들어 해금조건으로 걸었습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ConditionNameByMeaningE" xml:space="preserve">
+    <value>조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ExpressionEmptyMeansUndecidedE" xml:space="preserve">
+    <value>식 — 비우면 식 미정 (예: trust &gt;= 3)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ConditionAlreadyExistsPickIt" xml:space="preserve">
+    <value>조건 '{0}'{1} 이미 있습니다 — 콤보에서 고르세요.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CalledFrom" xml:space="preserve">
+    <value>부르는 곳</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoneNotPlayed" xml:space="preserve">
+    <value>(없음 — 재생되지 않습니다)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_BranchCardIDCanT" xml:space="preserve">
+    <value>분기 카드 ID는 비울 수 없습니다 — 게임의 Yarn 노드 이름입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_IsAlreadyUsedByAnother" xml:space="preserve">
+    <value>'{0}'는 프로젝트의 다른 노드가 쓰는 이름입니다 — Yarn 노드 이름은 프로젝트에서 하나여야 합니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_BranchCardIDTitleStays" xml:space="preserve">
+    <value>분기 카드 ID '{0}' → '{1}'. 제목 「{2}」는 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectsThisBranchCardShows" xml:space="preserve">
+    <value>이 분기 카드를 고릅니다 — 조건과 대본이 보입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChoiceSlotEmpty" xml:space="preserve">
+    <value>선택지 칸 {0}/{1} — 비어 있음</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoPathYet" xml:space="preserve">
+    <value>→ (아직 길 없음)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThisEpisodeHasNoWay" xml:space="preserve">
+    <value>이 에피소드에서 나가는 길이 아직 없습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ThisEpisodeHasWaysOut" xml:space="preserve">
+    <value>이 에피소드에서 나가는 길은 {0}개이고, 이 칸은 비어 있습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_InScriptTabWriteText" xml:space="preserve">
+    <value> [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이으면 이 칸이 길이 됩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_RemovedConditionOfBranchCard" xml:space="preserve">
+    <value>분기 카드 「{0}」의 조건을 걷었습니다 — 언제나 재생됩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_BranchCardPlaysWhenCondition" xml:space="preserve">
+    <value>분기 카드 「{0}」은 조건 '{1}'일 때 재생됩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectsThisEpisodeItsName" xml:space="preserve">
+    <value>이 에피소드를 선택합니다 — 이름·제목은 거기서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SelectEpisode2" xml:space="preserve">
+    <value>에피소드 선택</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SavedPath" xml:space="preserve">
+    <value>간선 {0}→{1}을 저장했습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ChapterIDBoardConditionNode" xml:space="preserve">
+    <value>챕터 ID '{0}' → '{1}' — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갔습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SceneIDCanTBe" xml:space="preserve">
+    <value>장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SceneIDIsUsedBy" xml:space="preserve">
+    <value>장면ID '{0}'는 다른 장면이 씁니다 — 바꾸면 두 장면이 합쳐집니다. 합치려면 [대본] 탭에서 에피소드를 끌어 옮깁니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_SceneIDEpisodesSceneName" xml:space="preserve">
+    <value>장면 ID '{0}' → '{1}' — 에피소드 {2}개, 장면 이름 · 메모와 자동 ID가 함께 따라갔습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoStatsTypeKeyIn" xml:space="preserve">
+    <value>스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoStats" xml:space="preserve">
+    <value>스탯이 없습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NewStatKeyInEnglish" xml:space="preserve">
+    <value>새 스탯 키 — 영어로 (예: courage)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_EnterAlsoAddsKeyIs" xml:space="preserve">
+    <value>Enter로도 더합니다. 키는 {0} — Yarn에 그대로 들어가는 statKey입니다. 숫자(정수) 0(0~100)으로 섭니다 — 종류 · 값은 그 줄에서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_AddStat" xml:space="preserve">
+    <value>스탯 추가</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_AddedStatNumberInteger0" xml:space="preserve">
+    <value>스탯 '{0}'{1} 더했습니다 — 숫자(정수) 0(0~100)입니다. 종류 · 값은 그 줄에서 고칩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NumberInteger" xml:space="preserve">
+    <value>숫자(정수)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_OnOff2" xml:space="preserve">
+    <value>활성/비활성</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_RenameStatKey" xml:space="preserve">
+    <value>스탯 키 바꾸기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_PathsConditionsSuppliedConditionsTest" xml:space="preserve">
+    <value>'{0}' → '{1}' — 간선 {2} · 조건 {3} · 공급 조건 {4} · 픽스처 {5}곳 · 대사 {6}줄이 따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_KeyKeyInSaveData" xml:space="preserve">
+    <value>키 — 세이브의 열쇠이자 조건 식 · 대사의 {{stat("키")}}에 쓰는 이름입니다(Yarn에 그대로 들어가는 statKey). {0}. 고치고 Enter(또는 칸을 떠나면) — 간선 · 조건 · 이 챕터 대사의 {{stat("키")}}가 따라갑니다. Esc는 그만두기.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_TypeNumberIntegerValueThat" xml:space="preserve">
+    <value>종류 — 숫자(정수): 호감도 · 점수처럼 오르내리는 정수 값(처음 값 · 최소 · 최대). 활성/비활성: 했다 · 안 했다처럼 켜고 끄는 값(처음 값만).</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_StatType" xml:space="preserve">
+    <value>스탯 종류</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_DeletesItIfItS" xml:space="preserve">
+    <value>지웁니다 — 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_DeleteStat" xml:space="preserve">
+    <value>스탯 삭제</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_KeyIsKeyInSave" xml:space="preserve">
+    <value>⚠ 키는 세이브의 열쇠입니다 — 바꾸면 이미 저장된 회차에서 이 스탯이 처음 값으로 떨어집니다(경고 없이). 출시 전이면 괜찮지만, 이미 플레이한 세이브가 있으면 되도록 바꾸지 마세요.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Initial" xml:space="preserve">
+    <value>처음 값</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_InitialWhetherThisStatIs" xml:space="preserve">
+    <value>처음 값 — 챕터를 시작할 때 이 스탯이 활성인지 비활성인지입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_InitialThisStatSValue" xml:space="preserve">
+    <value>처음 값 — 챕터를 시작할 때 이 스탯의 값입니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Min" xml:space="preserve">
+    <value>최소</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_MinThisStatNeverGoes" xml:space="preserve">
+    <value>최소 — 이 스탯은 이보다 작아지지 않습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Max" xml:space="preserve">
+    <value>최대</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_MaxThisStatNeverGoes" xml:space="preserve">
+    <value>최대 — 이 스탯은 이보다 커지지 않습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoConditionsTypeNameIn" xml:space="preserve">
+    <value>조건이 없습니다 — 아래 칸에 이름을 적고 [＋ 추가]로 만듭니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoConditions" xml:space="preserve">
+    <value>조건이 없습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NewConditionNameByMeaning" xml:space="preserve">
+    <value>새 조건 이름 — 뜻으로 (예: 하린과 친해졌을 때)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_EnterAlsoAddsExpressionStarts" xml:space="preserve">
+    <value>Enter로도 더합니다. 식은 비어 있습니다(식 미정 — 항상 통과) — 그 줄의 식 칸에서 채웁니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_AddedConditionUndecidedAlwaysPasses" xml:space="preserve">
+    <value>조건 '{0}'{1} 더했습니다 — 식 미정(항상 통과)입니다. 식은 그 줄에서 채웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_EditAndPressEnterOr" xml:space="preserve">
+    <value> — 고치고 Enter(또는 칸을 떠나면). 이 이름을 건 간선이 따라갑니다. Esc는 그만두기.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ExpressionEGTrust3" xml:space="preserve">
+    <value>식 (예: trust &gt;= 3; 열쇠 == true)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_TakesNumberIntegerCanT" xml:space="preserve">
+    <value>{0}에는 숫자(정수)를 적습니다 — '{1}'는 못 읽습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_TypeName" xml:space="preserve">
+    <value>이름을 적어 주세요.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_DeletedStat" xml:space="preserve">
+    <value>스탯 '{0}'를 지웠습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CouldnTDeleteIt" xml:space="preserve">
+    <value>지우지 못했습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ClearingRemovesJustThatTerm" xml:space="preserve">
+    <value>비우면 간선에서는 그 항만 빠지고, 조건은 식만 비고 남습니다 (검증이 빈 식을 짚어 줍니다).</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_StatInDialogueIsnT" xml:space="preserve">
+    <value> 대사의 {{stat("{0}")}}는 고치지 않고 남습니다 — 검증 보고가 없는 스탯을 읽는 대사로 짚어 줍니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ClearAllAndDelete" xml:space="preserve">
+    <value>모두 비우고 지우기</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ClearAndDeleteStat" xml:space="preserve">
+    <value>스탯 비우고 삭제</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_DeletedStatRemovedItsTerm" xml:space="preserve">
+    <value>스탯 '{0}'를 지웠습니다 — 간선 {1}곳의 항을 빼고 조건 {2}곳의 식을 비웠습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_DialogueLinesReadingThisStat" xml:space="preserve">
+    <value> 이 스탯을 읽는 대사 {0}줄은 남았습니다 — 검증 보고가 짚습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_RenamedPathsTestStartsDialogue" xml:space="preserve">
+    <value>'{0}' → '{1}' 개명했습니다. 간선·픽스처·대사 노드가 함께 따라갔습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_PositionXY" xml:space="preserve">
+    <value>위치: X={0:0.##} Y={1:0.##}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Choices3" xml:space="preserve">
+    <value>선택지 {0}개</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_GateOfIncomingPaths" xml:space="preserve">
+    <value>들어오는 길의 관문 —</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Note" xml:space="preserve">
+    <value>메모: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Errors" xml:space="preserve">
+    <value> · {0} 오류 {1}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_Warnings" xml:space="preserve">
+    <value> · {0} 경고 {1}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ProgressionJSONNotWritten" xml:space="preserve">
+    <value> · {0} 진행 JSON 미출력</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoErrorsNotices" xml:space="preserve">
+    <value> — 오류 없음 (알림 {0}건)</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ProgressionJSONNoChapterWritten" xml:space="preserve">
+    <value>진행 JSON — 아직 나간 챕터가 없습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ProgressionJSONSHA256" xml:space="preserve">
+    <value>진행 JSON SHA-256: {0}</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NoEpisodesYetOnceYou" xml:space="preserve">
+    <value>에피소드가 아직 없습니다 — 첫 에피소드를 세우면 진행 JSON이 저절로 나갑니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_NothingToReport" xml:space="preserve">
+    <value>보고할 것이 없습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CanTAccessClipboard" xml:space="preserve">
+    <value>클립보드에 접근할 수 없습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_CopiedLinesOfValidationReport" xml:space="preserve">
+    <value>검증 보고 {0}줄을 복사했습니다.</value>
+    <comment>ChapterGraphView.axaml.cs</comment>
+  </data>
+  <data name="Structure_ReLaysOutEveryCard" xml:space="preserve">
+    <value>모든 카드를 [대본] 탭에 놓인 모양대로 다시 세웁니다. 손으로 옮긴 자리는 사라집니다 — 되돌리기(Ctrl+Z) 한 번으로 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_SetsZoomAndPositionSo" xml:space="preserve">
+    <value>이 챕터의 카드가 모두 한 화면에 들어오게 배율과 위치를 맞춥니다. 카드가 적으면 100%보다 키우지는 않습니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_WhenOnHidesUnconnectedEmpty" xml:space="preserve">
+    <value>켜면 이 판의 모든 카드에서 이어지지 않은 빈 선택지 점과 들어오는 길 없는 입구 점을 감춥니다. [대본] 탭의 선택지 칸은 카드마다 따로 정합니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_WhenOnHierarchyAndCards" xml:space="preserve">
+    <value>켜면 하이어아키와 카드가 챕터ID · 장면ID · 에피소드ID로 보입니다(이름은 하이어아키 곁글에). 끄면 [대본] 탭처럼 보이는 이름으로 봅니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ResetsZoomTo100Zoom" xml:space="preserve">
+    <value>배율을 100%로 되돌립니다. 휠로 확대·축소, 가운데 단추를 끌어 이동합니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_GoesToScriptTabAnd" xml:space="preserve">
+    <value>[대본] 탭으로 가서 「새 챕터」를 장면 「새 장면」 · 에피소드 하나와 함께 세웁니다 — [대본] 하이어아키 우클릭 「챕터 추가」와 같습니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_CreatesAndSavesNewProject" xml:space="preserve">
+    <value>새 프로젝트를 만들고 저장합니다 — 저장돼야 챕터가 살 폴더가 정해집니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ClickNodeSelectClickLine" xml:space="preserve">
+    <value>노드 클릭 = 선택
+선(길) 클릭 = 표시·해금조건과 스탯변화 편집
+챕터 · 장면 · 에피소드는 [대본] 탭에서 더하고 지우고 고칩니다</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_SceneID" xml:space="preserve">
+    <value>장면ID</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_EditAndPressEnterTo" xml:space="preserve">
+    <value>고치고 Enter를 누르면 이 장면의 에피소드 모두의 장면ID가 바뀝니다 — 장면 이름 · 메모가 함께 따라갑니다. 다른 장면이 쓰는 ID로는 바꾸지 않습니다(합치기는 [대본] 탭에서 에피소드를 끌어 옮깁니다).</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_Episode" xml:space="preserve">
+    <value>에피소드</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_EpisodeID" xml:space="preserve">
+    <value>에피소드ID</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ChangesWhenYouPressEnter" xml:space="preserve">
+    <value>고치고 Enter를 누르거나 칸을 떠나면 바뀝니다(Esc는 그만두기) — 간선 · 픽스처 · [대본] 판의 카드가 함께 따라갑니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_AutoPathMovesOnWithout" xml:space="preserve">
+    <value>자동 진행 길입니다 — 플레이어 입력 없이 넘어갑니다. 문구 · 조건 · 스탯변화를 갖지 않습니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ShowConditionThisChoiceShows" xml:space="preserve">
+    <value>표시조건 — 맞을 때만 이 선택지가 보입니다</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_IfNotMetChoiceDoesn" xml:space="preserve">
+    <value>미달이면 선택지가 목록에 아예 안 뜹니다. (없음)이면 언제나 보입니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_NewCondition2" xml:space="preserve">
+    <value>＋ 새 조건</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_CreatesNameAndExpressionAt" xml:space="preserve">
+    <value>이름과 식을 한 번에 만들고 이 선택지의 표시조건으로 겁니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_UnlockConditionCanBePicked" xml:space="preserve">
+    <value>해금조건 — 맞을 때만 고를 수 있습니다(아니면 잠긴 채 보입니다)</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_IfNotMetItS" xml:space="preserve">
+    <value>미달이면 잠긴 채 보이고 아래 안내문이 뜹니다. 아예 안 보이게 하려면 표시조건에 거세요.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_CreatesNameAndExpressionAt2" xml:space="preserve">
+    <value>이름과 식을 한 번에 만들고 이 선택지의 해금조건으로 겁니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_LockedHintShownWhileLocked" xml:space="preserve">
+    <value>잠금 안내문 — 잠긴 채 보일 때 (예: 신뢰가 부족하다)</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_StatChangeWhenThisPath" xml:space="preserve">
+    <value>스탯변화 — 이 길을 고르면</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_EditsApplyRightAwayAnd" xml:space="preserve">
+    <value>고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다. 파일에는 File → 저장(Ctrl+S) · 자동 저장이 씁니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_BranchDetourThatSAlways" xml:space="preserve">
+    <value>분기 — 반드시 한 번 다녀오는 통로</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_BranchCardID" xml:space="preserve">
+    <value>분기 카드 ID</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_BranchCardSIDGame" xml:space="preserve">
+    <value>분기 카드의 ID — 게임의 Yarn 노드 이름입니다. 고치고 Enter. 프로젝트의 다른 노드가 쓰는 이름으로는 바꾸지 않습니다. 제목은 [대본] 탭에서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_BranchCardSContentPlays" xml:space="preserve">
+    <value>이 조건일 때 분기 카드의 내용이 돈다</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_BranchIsAlwaysVisitedOnce" xml:space="preserve">
+    <value>분기로는 언제나 한 번 갑니다 — 막는 것은 다녀온 쪽입니다. 조건이 미달이면 그 분기 카드가 아무것도 재생하지 않고 곧바로 돌아옵니다. 비우면 언제나 재생됩니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ConditionIsWrittenAtTop" xml:space="preserve">
+    <value>조건은 분기 카드의 첫머리에 적힙니다 — 부르는 쪽 대본은 그대로입니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ScriptReadOnlyEditIt" xml:space="preserve">
+    <value>대본 — 읽기 전용 (고치는 곳은 [대본] 탭)</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ChapterID" xml:space="preserve">
+    <value>챕터ID</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_EditAndPressEnterTo2" xml:space="preserve">
+    <value>고치고 Enter를 누르면 챕터 ID가 바뀝니다 — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갑니다. 챕터 이름은 [대본] 탭 하이어아키에서 고칩니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_LinkCharacterKeyToEach" xml:space="preserve">
+    <value>화자마다 캐릭터 키를 잇습니다 — 초상화 · 표정이 이 키로 붙습니다. 화자 이름은 [대본] 탭에서 더하고 고칩니다. 모든 챕터가 같은 목록을 씁니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_ConditionsNameExpression" xml:space="preserve">
+    <value>조건 (이름 → 식)</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_SetExpressionForEachCondition" xml:space="preserve">
+    <value>조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 칸에 이름을 적고 [＋ 추가](또는 Enter)로 만들고, 식은 그 줄에서 채웁니다. 이름은 줄의 이름 칸에서 고칩니다 — 그 이름을 건 선택지가 따라갑니다. 지우는 것은 [대본] 탭에서 합니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_Stats" xml:space="preserve">
+    <value>스탯</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_CreateAndEditThemHere" xml:space="preserve">
+    <value>여기서 만들고 고칩니다. 종류는 둘입니다 — 숫자(정수)(호감도 · 점수처럼 오르내리는 정수 값: 처음 값 · 최소 · 최대)와 활성/비활성(했다 · 안 했다처럼 켜고 끄는 값: 처음 값만). 스탯은 키 하나로 부릅니다 — 조건 식, 대사의 {stat("키")}, 게임 화면의 글자(게임이 키로 정합니다)가 모두 이 키를 씁니다. 키는 Yarn에 그대로 들어가는 statKey라 영어로 적습니다 — 영문자로 시작하고 영문자 · 숫자 · _만(예: courage · met_harin). 한글 · 빈칸 · 기호는 받지 않습니다. 더하기는 표 아래 칸에 키를 적고 [＋ 추가](또는 Enter), 키는 줄의 키 칸에서 고칩니다. ⚠ 키는 세이브에 저장되는 이름이라 바꾸면 이미 저장된 회차의 그 스탯이 처음 값으로 돌아갑니다. [✕]는 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
+  <data name="Structure_CopiesWholeListBelowTo" xml:space="preserve">
+    <value>아래 목록 전체를 클립보드로 복사합니다. 줄 하나만 필요하면 드래그로 선택해도 됩니다.</value>
+    <comment>ChapterGraphView.axaml</comment>
+  </data>
 </root>

@@ -2195,4 +2195,708 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Side_ChapterDoesnTExist" xml:space="preserve">
     <value>Chapter '{0}' doesn't exist.</value>
   </data>
+  <data name="Structure_ThisChapterSConditionsStats" xml:space="preserve">
+    <value>This chapter's conditions · stats are set in the “Conditions &amp; stats” tab.</value>
+  </data>
+  <data name="Structure_Chapter" xml:space="preserve">
+    <value>Chapter · {0}</value>
+  </data>
+  <data name="Structure_Choice" xml:space="preserve">
+    <value>Choice · {0}</value>
+  </data>
+  <data name="Structure_BranchCard" xml:space="preserve">
+    <value>⑂ Branch card · {0}</value>
+  </data>
+  <data name="Structure_CardVisitedAndReturnedFrom" xml:space="preserve">
+    <value>A card visited and returned from — conditions here, script in the [Script] tab</value>
+  </data>
+  <data name="Structure_ChoiceSlot" xml:space="preserve">
+    <value>Choice slot · {0}</value>
+  </data>
+  <data name="Structure_SlotWithNoPathYet" xml:space="preserve">
+    <value>A slot with no path yet</value>
+  </data>
+  <data name="Structure_NoText" xml:space="preserve">
+    <value>⚠ No text</value>
+  </data>
+  <data name="Structure_Scene" xml:space="preserve">
+    <value>Scene · {0}</value>
+  </data>
+  <data name="Structure_Episodes" xml:space="preserve">
+    <value>{0} episodes</value>
+  </data>
+  <data name="Structure_Scene2" xml:space="preserve">
+    <value>Scene</value>
+  </data>
+  <data name="Structure_ThisSceneIsGone" xml:space="preserve">
+    <value>This scene is gone</value>
+  </data>
+  <data name="Structure_ThisSceneIsGoneSelect" xml:space="preserve">
+    <value>This scene is gone — select again in the Hierarchy.</value>
+  </data>
+  <data name="Structure_ThisSceneIsGone2" xml:space="preserve">
+    <value>This scene is gone.</value>
+  </data>
+  <data name="Structure_GroupOfEpisodesWithThis" xml:space="preserve">
+    <value>A group of {0} episodes with this scene ID. Rename the scene on its row in the [Script] tab's Hierarchy. The scene start (⌂) is the entrance from outside — where rollback returns and Continue resumes.</value>
+  </data>
+  <data name="Structure_SelectEpisode" xml:space="preserve">
+    <value>Select episode</value>
+  </data>
+  <data name="Structure_DrawStructureBoard" xml:space="preserve">
+    <value>Draw [Structure] board</value>
+  </data>
+  <data name="Structure_RenameEpisode" xml:space="preserve">
+    <value>Rename episode</value>
+  </data>
+  <data name="Structure_ChangeChapterID" xml:space="preserve">
+    <value>Change chapter ID</value>
+  </data>
+  <data name="Structure_ChangeSceneID" xml:space="preserve">
+    <value>Change scene ID</value>
+  </data>
+  <data name="Structure_ChangeBranchCardID" xml:space="preserve">
+    <value>Change branch card ID</value>
+  </data>
+  <data name="Structure_FitToScreen" xml:space="preserve">
+    <value>Fit to screen</value>
+  </data>
+  <data name="Structure_AutoLayout" xml:space="preserve">
+    <value>Auto layout</value>
+  </data>
+  <data name="Structure_ShowIDs" xml:space="preserve">
+    <value>Show IDs</value>
+  </data>
+  <data name="Structure_NewCondition" xml:space="preserve">
+    <value>New condition</value>
+  </data>
+  <data name="Structure_CopyReport" xml:space="preserve">
+    <value>Copy report</value>
+  </data>
+  <data name="Structure_Dialogue" xml:space="preserve">
+    <value>▾  Dialogue</value>
+  </data>
+  <data name="Structure_Dialogue2" xml:space="preserve">
+    <value>▸  Dialogue</value>
+  </data>
+  <data name="Structure_NoSpeakersYetSpeakerNames" xml:space="preserve">
+    <value>No speakers yet — speaker names are added in the “Speakers” tab of the [Script] tab.</value>
+  </data>
+  <data name="Structure_SpeakersWithoutCharacterKeySpeakers" xml:space="preserve">
+    <value>⚠ {0} speakers without a character key · {1} speakers with a temporary key (temp_) — change them to keys that match the art.</value>
+  </data>
+  <data name="Structure_SpeakersWithoutCharacterKeyTheir" xml:space="preserve">
+    <value>⚠ {0} speakers without a character key — their dialogue gets no portrait · expressions.</value>
+  </data>
+  <data name="Structure_SpeakersWithTemporaryKeyTemp" xml:space="preserve">
+    <value>⚠ {0} speakers with a temporary key (temp_) — change them to keys that match the art.</value>
+  </data>
+  <data name="Structure_NoCharacterKeyNameIs" xml:space="preserve">
+    <value>'{0}' — no character key. The name is edited in the [Script] tab.</value>
+  </data>
+  <data name="Structure_CharacterKeyIsTemporaryMade" xml:space="preserve">
+    <value>'{0}' — the character key is temporary (made from the romanized name when the speaker was added). Change it to a key that matches the art. The name is edited in the [Script] tab.</value>
+  </data>
+  <data name="Structure_NameIsEditedInScript" xml:space="preserve">
+    <value>'{0}' — the name is edited in the [Script] tab.</value>
+  </data>
+  <data name="Structure_CharacterKey" xml:space="preserve">
+    <value>Character key</value>
+  </data>
+  <data name="Structure_ClearedCharacterKeyOfSpeaker" xml:space="preserve">
+    <value>Cleared the character key of speaker '{0}' — no portrait is attached.</value>
+  </data>
+  <data name="Structure_SpeakerCharacterKey" xml:space="preserve">
+    <value>Speaker '{0}' — character key '{1}'.</value>
+  </data>
+  <data name="Structure_NoProjectYetCreateNew" xml:space="preserve">
+    <value>No project yet.
+Create a new project and save it, and the chapter board appears here.</value>
+  </data>
+  <data name="Structure_NoChaptersYetClickTo" xml:space="preserve">
+    <value>No chapters yet.
+Click to go to the [Script] tab and create the first chapter.</value>
+  </data>
+  <data name="Structure_SelectChapterInHierarchyAnd" xml:space="preserve">
+    <value>Select a chapter in the Hierarchy and its board appears here.</value>
+  </data>
+  <data name="Structure_ValidationReport" xml:space="preserve">
+    <value>Validation report</value>
+  </data>
+  <data name="Structure_HasNoEpisodesEpisodesAren" xml:space="preserve">
+    <value>'{0}' has no episodes.
+Episodes aren't added in the [Structure] tab — add one with [＋ Episode] in the [Script] tab or right-click a scene row in the [Script] tab's Hierarchy → “Add episode”, and it's drawn here.</value>
+  </data>
+  <data name="Structure_BranchCardCardVisitedAnd" xml:space="preserve">
+    <value>Branch card {0} — a card visited and returned from (it has no choices and isn't in the progression JSON). </value>
+  </data>
+  <data name="Structure_ClickToOpenItsCondition" xml:space="preserve">
+    <value> Click to open its condition and script in the Inspector. The script is edited in the [Script] tab.</value>
+  </data>
+  <data name="Structure_SelectBranchCard" xml:space="preserve">
+    <value>Select branch card</value>
+  </data>
+  <data name="Structure_Condition" xml:space="preserve">
+    <value>Condition: {0}</value>
+  </data>
+  <data name="Structure_BranchClickThatBranchCard" xml:space="preserve">
+    <value>Branch → {0} — click that branch card (chip) to see its condition and script.</value>
+  </data>
+  <data name="Structure_UnconnectedBranchPointThereS" xml:space="preserve">
+    <value>Unconnected branch point — there's nowhere to visit, so it's skipped. In the [Script] tab, connect this branch point to a branch card or drop it on empty space to create a new branch card.</value>
+  </data>
+  <data name="Structure_SelectPath" xml:space="preserve">
+    <value>Select path</value>
+  </data>
+  <data name="Structure_Show" xml:space="preserve">
+    <value>Show: {0}</value>
+  </data>
+  <data name="Structure_ShowConditionOtherwiseItIsn" xml:space="preserve">
+    <value>Show condition: {0} — otherwise it isn't listed</value>
+  </data>
+  <data name="Structure_Unlock" xml:space="preserve">
+    <value>Unlock: {0}</value>
+  </data>
+  <data name="Structure_UnlockConditionOtherwiseItS" xml:space="preserve">
+    <value>Unlock condition: {0} — otherwise it's shown locked</value>
+  </data>
+  <data name="Structure_StatChange" xml:space="preserve">
+    <value>Stat change: </value>
+  </data>
+  <data name="Structure_On" xml:space="preserve">
+    <value>{0} → on</value>
+  </data>
+  <data name="Structure_Off" xml:space="preserve">
+    <value>{0} → off</value>
+  </data>
+  <data name="Structure_SceneStart" xml:space="preserve">
+    <value>Scene start</value>
+  </data>
+  <data name="Structure_StartingEpisodeAndSceneStart" xml:space="preserve">
+    <value>The starting episode and the scene start. It becomes StartEpisodeId for the reachability proof and export.</value>
+  </data>
+  <data name="Structure_SceneStartEnteredFromAnother" xml:space="preserve">
+    <value>A scene start entered from another scene. A new save · rollback boundary begins here.</value>
+  </data>
+  <data name="Structure_SceneEpisodesWithSameScene" xml:space="preserve">
+    <value>Scene: {0} — episodes with the same scene ID share a save · rollback span.</value>
+  </data>
+  <data name="Structure_NotConnectedThereSNo" xml:space="preserve">
+    <value>Not connected — there's no path here from the start yet (fine to leave while you're working).
+</value>
+  </data>
+  <data name="Structure_PathsIntoThisEpisodeGather" xml:space="preserve">
+    <value>Paths into this episode gather here.</value>
+  </data>
+  <data name="Structure_EmptyChoiceSlotClickTo" xml:space="preserve">
+    <value>An empty choice slot — click to see this slot's info and where to add a path.</value>
+  </data>
+  <data name="Structure_ChoicePort" xml:space="preserve">
+    <value>Choice port</value>
+  </data>
+  <data name="Structure_ChoiceSlot2" xml:space="preserve">
+    <value>Choice slot</value>
+  </data>
+  <data name="Structure_Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="Structure_NoTextFixThisUnless" xml:space="preserve">
+    <value>⚠ No text — fix this unless it's an auto path</value>
+  </data>
+  <data name="Structure_UnlockCondition" xml:space="preserve">
+    <value>
+Unlock condition: {0}</value>
+  </data>
+  <data name="Structure_ShowCondition" xml:space="preserve">
+    <value>
+Show condition: {0}</value>
+  </data>
+  <data name="Structure_ClickToEditThisPath" xml:space="preserve">
+    <value>{0} → {1}{2}{3}
+
+Click to edit this path's conditions · unlock · stat changes.</value>
+  </data>
+  <data name="Structure_OnOff" xml:space="preserve">
+    <value>on·off</value>
+  </data>
+  <data name="Structure_StatsOnArrival" xml:space="preserve">
+    <value>
+Stats on arrival —
+  </value>
+  </data>
+  <data name="Structure_RangesWidenWhenSeveralRoutes" xml:space="preserve">
+    <value>
+  (ranges widen when several routes come in)</value>
+  </data>
+  <data name="Structure_SearchStoppedAtItsLimit" xml:space="preserve">
+    <value>
+  ≈ The search stopped at its limit, so the real range may be wider.</value>
+  </data>
+  <data name="Structure_SelectArea" xml:space="preserve">
+    <value>Select area</value>
+  </data>
+  <data name="Structure_EpisodePosition" xml:space="preserve">
+    <value>Episode position</value>
+  </data>
+  <data name="Structure_ReLaidOutCardsOf" xml:space="preserve">
+    <value>Re-laid out {1} cards of '{0}' in flow order (there are no cards in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_ReLaidOutCardsOf2" xml:space="preserve">
+    <value>Re-laid out {1} cards of '{0}' as they are in the [Script] tab (the {2} cards not in the [Script] tab go on the bottom row). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_ReLaidOutCardsOf3" xml:space="preserve">
+    <value>Re-laid out {1} cards of '{0}' as they are in the [Script] tab. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_Drag" xml:space="preserve">
+    <value>Drag</value>
+  </data>
+  <data name="Structure_SavePath" xml:space="preserve">
+    <value>Save path</value>
+  </data>
+  <data name="Structure_SelectEpisodeToSeeIts" xml:space="preserve">
+    <value>Select an episode to see its dialogue here.</value>
+  </data>
+  <data name="Structure_NoDialogueWrittenYetWrite" xml:space="preserve">
+    <value>No dialogue written yet — write it in the card in the [Script] tab</value>
+  </data>
+  <data name="Structure_NoDialogueWrittenYet" xml:space="preserve">
+    <value>No dialogue written yet</value>
+  </data>
+  <data name="Structure_NoDialogueWrittenYetWrite2" xml:space="preserve">
+    <value>(No dialogue written yet — write it in that card in the [Script] tab)</value>
+  </data>
+  <data name="Structure_ShowCondition2" xml:space="preserve">
+    <value>Show condition: {0}</value>
+  </data>
+  <data name="Structure_UnlockCondition2" xml:space="preserve">
+    <value>Unlock condition: {0}</value>
+  </data>
+  <data name="Structure_LockedHint" xml:space="preserve">
+    <value>Locked hint: {0}</value>
+  </data>
+  <data name="Structure_StatChangeNone" xml:space="preserve">
+    <value>Stat change: none</value>
+  </data>
+  <data name="Structure_Choices" xml:space="preserve">
+    <value>Choices ({0})</value>
+  </data>
+  <data name="Structure_Choices2" xml:space="preserve">
+    <value>Choices</value>
+  </data>
+  <data name="Structure_ThereSNoWayOut" xml:space="preserve">
+    <value>There's no way out — the chapter ends here. Choices are made in the [Script] tab by writing text in the slots under a card and dragging to connect.</value>
+  </data>
+  <data name="Structure_ThereSNoWayOut2" xml:space="preserve">
+    <value>There's no way out — the chapter ends here.</value>
+  </data>
+  <data name="Structure_AUTOAutoPath" xml:space="preserve">
+    <value>AUTO · auto path</value>
+  </data>
+  <data name="Structure_ExpandChoices" xml:space="preserve">
+    <value>Expand choices</value>
+  </data>
+  <data name="Structure_None" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+  <data name="Structure_UndecidedAlwaysPassesEG" xml:space="preserve">
+    <value>⚠ Undecided — always passes (e.g. trust &gt;= 3)</value>
+  </data>
+  <data name="Structure_ThisConditionSExpressionCompares" xml:space="preserve">
+    <value>This condition's expression — compares a stat key with an integer (&gt;= · &lt;= · &gt; · &lt; · ==); join several with `;`. For on/off stats use `key == true` (when on). Applied on Enter or when you click elsewhere.</value>
+  </data>
+  <data name="Structure_ConditionExpression" xml:space="preserve">
+    <value>Condition expression</value>
+  </data>
+  <data name="Structure_ClearedExpressionOfConditionUndecided" xml:space="preserve">
+    <value>Cleared the expression of condition '{0}' — Undecided, always passes. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_ConditionExpressionUndoCtrlZ" xml:space="preserve">
+    <value>Condition '{0}' — expression '{1}'. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_Expression" xml:space="preserve">
+    <value>Expression</value>
+  </data>
+  <data name="Structure_ThisConditionIsAlsoUsed" xml:space="preserve">
+    <value>This condition is also used in {0} other places — editing the expression changes them too.</value>
+  </data>
+  <data name="Structure_NewConditionThisChoiceShows" xml:space="preserve">
+    <value>New condition — this choice shows only when it holds.</value>
+  </data>
+  <data name="Structure_NewConditionThisChoiceCan" xml:space="preserve">
+    <value>New condition — this choice can be picked only when it holds.</value>
+  </data>
+  <data name="Structure_CreateAndSetAsShow" xml:space="preserve">
+    <value>Create and set as show condition</value>
+  </data>
+  <data name="Structure_CreateAndSetAsUnlock" xml:space="preserve">
+    <value>Create and set as unlock condition</value>
+  </data>
+  <data name="Structure_PleaseSelectPathAgainSelection" xml:space="preserve">
+    <value>Please select the path again. The selection was cleared or the path is gone.</value>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt" xml:space="preserve">
+    <value>Created condition '{0}' and set it as the show condition — Undecided (always passes). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt2" xml:space="preserve">
+    <value>Created condition '{0}' and set it as the show condition. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt3" xml:space="preserve">
+    <value>Created condition '{0}' and set it as the unlock condition — Undecided (always passes). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_CreatedConditionAndSetIt4" xml:space="preserve">
+    <value>Created condition '{0}' and set it as the unlock condition. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_ConditionNameByMeaningE" xml:space="preserve">
+    <value>Condition name — by meaning (e.g. when you've become close to Harin)</value>
+  </data>
+  <data name="Structure_ExpressionEmptyMeansUndecidedE" xml:space="preserve">
+    <value>Expression — empty means Undecided (e.g. trust &gt;= 3)</value>
+  </data>
+  <data name="Structure_ConditionAlreadyExistsPickIt" xml:space="preserve">
+    <value>Condition '{0}' already exists — pick it from the combo.</value>
+  </data>
+  <data name="Structure_CalledFrom" xml:space="preserve">
+    <value>Called from</value>
+  </data>
+  <data name="Structure_NoneNotPlayed" xml:space="preserve">
+    <value>(none — not played)</value>
+  </data>
+  <data name="Structure_BranchCardIDCanT" xml:space="preserve">
+    <value>The branch card ID can't be empty — it's the game's Yarn node name.</value>
+  </data>
+  <data name="Structure_IsAlreadyUsedByAnother" xml:space="preserve">
+    <value>'{0}' is already used by another node in the project — Yarn node names must be unique in the project.</value>
+  </data>
+  <data name="Structure_BranchCardIDTitleStays" xml:space="preserve">
+    <value>Branch card ID '{0}' → '{1}'. The title “{2}” stays the same. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_SelectsThisBranchCardShows" xml:space="preserve">
+    <value>Selects this branch card — shows its condition and script.</value>
+  </data>
+  <data name="Structure_ChoiceSlotEmpty" xml:space="preserve">
+    <value>Choice slot {0}/{1} — empty</value>
+  </data>
+  <data name="Structure_NoPathYet" xml:space="preserve">
+    <value>→ (no path yet)</value>
+  </data>
+  <data name="Structure_ThisEpisodeHasNoWay" xml:space="preserve">
+    <value>This episode has no way out yet.</value>
+  </data>
+  <data name="Structure_ThisEpisodeHasWaysOut" xml:space="preserve">
+    <value>This episode has {0} ways out, and this slot is empty.</value>
+  </data>
+  <data name="Structure_InScriptTabWriteText" xml:space="preserve">
+    <value> In the [Script] tab, write text in a slot under the card and drag to connect, and this slot becomes a path.</value>
+  </data>
+  <data name="Structure_RemovedConditionOfBranchCard" xml:space="preserve">
+    <value>Removed the condition of branch card “{0}” — it always plays.</value>
+  </data>
+  <data name="Structure_BranchCardPlaysWhenCondition" xml:space="preserve">
+    <value>Branch card “{0}” plays when condition '{1}' holds. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_SelectsThisEpisodeItsName" xml:space="preserve">
+    <value>Selects this episode — its name · title are edited there.</value>
+  </data>
+  <data name="Structure_SelectEpisode2" xml:space="preserve">
+    <value>Select episode</value>
+  </data>
+  <data name="Structure_SavedPath" xml:space="preserve">
+    <value>Saved path {0}→{1}.</value>
+  </data>
+  <data name="Structure_ChapterIDBoardConditionNode" xml:space="preserve">
+    <value>Chapter ID '{0}' → '{1}' — the board · condition node · progression JSON file name followed.</value>
+  </data>
+  <data name="Structure_SceneIDCanTBe" xml:space="preserve">
+    <value>The scene ID can't be empty — an episode always belongs to a scene.</value>
+  </data>
+  <data name="Structure_SceneIDIsUsedBy" xml:space="preserve">
+    <value>Scene ID '{0}' is used by another scene — changing it would merge the two scenes. To merge, drag episodes in the [Script] tab.</value>
+  </data>
+  <data name="Structure_SceneIDEpisodesSceneName" xml:space="preserve">
+    <value>Scene ID '{0}' → '{1}' — {2} episodes, the scene name · note and automatic IDs followed. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_NoStatsTypeKeyIn" xml:space="preserve">
+    <value>No stats — type a key in the box below and press [＋ Add].</value>
+  </data>
+  <data name="Structure_NoStats" xml:space="preserve">
+    <value>No stats.</value>
+  </data>
+  <data name="Structure_NewStatKeyInEnglish" xml:space="preserve">
+    <value>New stat key — in English (e.g. courage)</value>
+  </data>
+  <data name="Structure_EnterAlsoAddsKeyIs" xml:space="preserve">
+    <value>Enter also adds. The key is {0} — the statKey that goes into Yarn as is. It starts as a number (integer) 0 (0~100) — change the type · values on its row.</value>
+  </data>
+  <data name="Structure_AddStat" xml:space="preserve">
+    <value>Add stat</value>
+  </data>
+  <data name="Structure_AddedStatNumberInteger0" xml:space="preserve">
+    <value>Added stat '{0}' — a number (integer) 0 (0~100). Change the type · values on its row. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_NumberInteger" xml:space="preserve">
+    <value>Number (integer)</value>
+  </data>
+  <data name="Structure_OnOff2" xml:space="preserve">
+    <value>On/Off</value>
+  </data>
+  <data name="Structure_RenameStatKey" xml:space="preserve">
+    <value>Rename stat key</value>
+  </data>
+  <data name="Structure_PathsConditionsSuppliedConditionsTest" xml:space="preserve">
+    <value>'{0}' → '{1}' — {2} paths · {3} conditions · {4} supplied conditions · {5} test starts · {6} dialogue lines followed. ⚠ This stat drops to its initial value in saves already made.</value>
+  </data>
+  <data name="Structure_KeyKeyInSaveData" xml:space="preserve">
+    <value>Key — the key in save data and the name used in condition expressions · {{stat("key")}} in dialogue (the statKey that goes into Yarn as is). {0}. Edit and press Enter (or leave the box) — paths · conditions · {{stat("key")}} in this chapter's dialogue follow. Esc cancels.</value>
+  </data>
+  <data name="Structure_TypeNumberIntegerValueThat" xml:space="preserve">
+    <value>Type — Number (integer): a value that goes up and down, like affection or score (initial · min · max). On/Off: a value that's switched on or off, like did · didn't (initial only).</value>
+  </data>
+  <data name="Structure_StatType" xml:space="preserve">
+    <value>Stat type</value>
+  </data>
+  <data name="Structure_DeletesItIfItS" xml:space="preserve">
+    <value>Deletes it — if it's used somewhere, shows where and asks once more.</value>
+  </data>
+  <data name="Structure_DeleteStat" xml:space="preserve">
+    <value>Delete stat</value>
+  </data>
+  <data name="Structure_KeyIsKeyInSave" xml:space="preserve">
+    <value>⚠ The key is the key in save data — changing it drops this stat to its initial value in playthroughs already saved (without warning). Fine before release, but if saves have been played, avoid changing it.</value>
+  </data>
+  <data name="Structure_Initial" xml:space="preserve">
+    <value>Initial</value>
+  </data>
+  <data name="Structure_InitialWhetherThisStatIs" xml:space="preserve">
+    <value>Initial — whether this stat is on or off when the chapter starts.</value>
+  </data>
+  <data name="Structure_InitialThisStatSValue" xml:space="preserve">
+    <value>Initial — this stat's value when the chapter starts.</value>
+  </data>
+  <data name="Structure_Min" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="Structure_MinThisStatNeverGoes" xml:space="preserve">
+    <value>Min — this stat never goes below this.</value>
+  </data>
+  <data name="Structure_Max" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="Structure_MaxThisStatNeverGoes" xml:space="preserve">
+    <value>Max — this stat never goes above this.</value>
+  </data>
+  <data name="Structure_NoConditionsTypeNameIn" xml:space="preserve">
+    <value>No conditions — type a name in the box below and press [＋ Add].</value>
+  </data>
+  <data name="Structure_NoConditions" xml:space="preserve">
+    <value>No conditions.</value>
+  </data>
+  <data name="Structure_NewConditionNameByMeaning" xml:space="preserve">
+    <value>New condition name — by meaning (e.g. when you've become close to Harin)</value>
+  </data>
+  <data name="Structure_EnterAlsoAddsExpressionStarts" xml:space="preserve">
+    <value>Enter also adds. The expression starts empty (Undecided — always passes) — fill it in the expression box on its row.</value>
+  </data>
+  <data name="Structure_AddedConditionUndecidedAlwaysPasses" xml:space="preserve">
+    <value>Added condition '{0}' — Undecided (always passes). Fill in the expression on its row. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Structure_EditAndPressEnterOr" xml:space="preserve">
+    <value> — edit and press Enter (or leave the box). Paths using this name follow. Esc cancels.</value>
+  </data>
+  <data name="Structure_ExpressionEGTrust3" xml:space="preserve">
+    <value>Expression (e.g. trust &gt;= 3; key == true)</value>
+  </data>
+  <data name="Structure_TakesNumberIntegerCanT" xml:space="preserve">
+    <value>{0} takes a number (integer) — '{1}' can't be read.</value>
+  </data>
+  <data name="Structure_TypeName" xml:space="preserve">
+    <value>Type a name.</value>
+  </data>
+  <data name="Structure_DeletedStat" xml:space="preserve">
+    <value>Deleted stat '{0}'.</value>
+  </data>
+  <data name="Structure_CouldnTDeleteIt" xml:space="preserve">
+    <value>Couldn't delete it.</value>
+  </data>
+  <data name="Structure_ClearingRemovesJustThatTerm" xml:space="preserve">
+    <value>Clearing removes just that term from paths, and empties only the expression of conditions, which stay (validation flags the empty expressions).</value>
+  </data>
+  <data name="Structure_StatInDialogueIsnT" xml:space="preserve">
+    <value> {{stat("{0}")}} in dialogue isn't changed and stays — the validation report flags it as dialogue reading a missing stat.</value>
+  </data>
+  <data name="Structure_ClearAllAndDelete" xml:space="preserve">
+    <value>Clear all and delete</value>
+  </data>
+  <data name="Structure_ClearAndDeleteStat" xml:space="preserve">
+    <value>Clear and delete stat</value>
+  </data>
+  <data name="Structure_DeletedStatRemovedItsTerm" xml:space="preserve">
+    <value>Deleted stat '{0}' — removed its term from {1} paths and emptied the expression of {2} conditions.</value>
+  </data>
+  <data name="Structure_DialogueLinesReadingThisStat" xml:space="preserve">
+    <value> {0} dialogue lines reading this stat remain — the validation report flags them.</value>
+  </data>
+  <data name="Structure_RenamedPathsTestStartsDialogue" xml:space="preserve">
+    <value>Renamed '{0}' → '{1}'. Paths · test starts · dialogue nodes followed.</value>
+  </data>
+  <data name="Structure_PositionXY" xml:space="preserve">
+    <value>Position: X={0:0.##} Y={1:0.##}</value>
+  </data>
+  <data name="Structure_Choices3" xml:space="preserve">
+    <value>{0} choices</value>
+  </data>
+  <data name="Structure_GateOfIncomingPaths" xml:space="preserve">
+    <value>Gate of incoming paths —</value>
+  </data>
+  <data name="Structure_Note" xml:space="preserve">
+    <value>Note: {0}</value>
+  </data>
+  <data name="Structure_Errors" xml:space="preserve">
+    <value> · {0} errors {1}</value>
+  </data>
+  <data name="Structure_Warnings" xml:space="preserve">
+    <value> · {0} warnings {1}</value>
+  </data>
+  <data name="Structure_ProgressionJSONNotWritten" xml:space="preserve">
+    <value> · {0} progression JSON not written</value>
+  </data>
+  <data name="Structure_NoErrorsNotices" xml:space="preserve">
+    <value> — no errors ({0} notices)</value>
+  </data>
+  <data name="Structure_ProgressionJSONNoChapterWritten" xml:space="preserve">
+    <value>Progression JSON — no chapter written yet.</value>
+  </data>
+  <data name="Structure_ProgressionJSONSHA256" xml:space="preserve">
+    <value>Progression JSON SHA-256: {0}</value>
+  </data>
+  <data name="Structure_NoEpisodesYetOnceYou" xml:space="preserve">
+    <value>No episodes yet — once you add the first episode, the progression JSON is written automatically.</value>
+  </data>
+  <data name="Structure_NothingToReport" xml:space="preserve">
+    <value>Nothing to report.</value>
+  </data>
+  <data name="Structure_CanTAccessClipboard" xml:space="preserve">
+    <value>Can't access the clipboard.</value>
+  </data>
+  <data name="Structure_CopiedLinesOfValidationReport" xml:space="preserve">
+    <value>Copied {0} lines of the validation report.</value>
+  </data>
+  <data name="Structure_ReLaysOutEveryCard" xml:space="preserve">
+    <value>Re-lays out every card as it's placed in the [Script] tab. Positions moved by hand are lost — one undo (Ctrl+Z) brings them back.</value>
+  </data>
+  <data name="Structure_SetsZoomAndPositionSo" xml:space="preserve">
+    <value>Sets zoom and position so all of this chapter's cards fit on one screen. With few cards it doesn't zoom above 100%.</value>
+  </data>
+  <data name="Structure_WhenOnHidesUnconnectedEmpty" xml:space="preserve">
+    <value>When on, hides unconnected empty choice points and entrance points with no incoming path on every card of this board. Choice slots in the [Script] tab are set per card.</value>
+  </data>
+  <data name="Structure_WhenOnHierarchyAndCards" xml:space="preserve">
+    <value>When on, the Hierarchy and cards show chapter ID · scene ID · episode ID (names appear beside them in the Hierarchy). When off, they show names, like the [Script] tab.</value>
+  </data>
+  <data name="Structure_ResetsZoomTo100Zoom" xml:space="preserve">
+    <value>Resets zoom to 100%. Zoom with the wheel; pan by dragging with the middle button.</value>
+  </data>
+  <data name="Structure_GoesToScriptTabAnd" xml:space="preserve">
+    <value>Goes to the [Script] tab and creates “새 챕터” with scene “새 장면” and one episode — same as right-click “Add chapter” in the [Script] Hierarchy.</value>
+  </data>
+  <data name="Structure_CreatesAndSavesNewProject" xml:space="preserve">
+    <value>Creates and saves a new project — once saved, the folder where chapters live is set.</value>
+  </data>
+  <data name="Structure_ClickNodeSelectClickLine" xml:space="preserve">
+    <value>Click a node = select
+Click a line (path) = edit show · unlock conditions and stat changes
+Chapters · scenes · episodes are added, deleted and edited in the [Script] tab</value>
+  </data>
+  <data name="Structure_SceneID" xml:space="preserve">
+    <value>Scene ID</value>
+  </data>
+  <data name="Structure_EditAndPressEnterTo" xml:space="preserve">
+    <value>Edit and press Enter to change the scene ID of every episode in this scene — the scene name · note follow. It won't change to an ID another scene uses (to merge, drag episodes in the [Script] tab).</value>
+  </data>
+  <data name="Structure_Episode" xml:space="preserve">
+    <value>Episode</value>
+  </data>
+  <data name="Structure_EpisodeID" xml:space="preserve">
+    <value>Episode ID</value>
+  </data>
+  <data name="Structure_ChangesWhenYouPressEnter" xml:space="preserve">
+    <value>Changes when you press Enter or leave the box (Esc cancels) — paths · test starts · cards on the [Script] board follow.</value>
+  </data>
+  <data name="Structure_AutoPathMovesOnWithout" xml:space="preserve">
+    <value>An auto path — moves on without player input. It has no text · conditions · stat changes.</value>
+  </data>
+  <data name="Structure_ShowConditionThisChoiceShows" xml:space="preserve">
+    <value>Show condition — this choice shows only when it holds</value>
+  </data>
+  <data name="Structure_IfNotMetChoiceDoesn" xml:space="preserve">
+    <value>If not met, the choice doesn't appear in the list at all. (none) means it always shows.</value>
+  </data>
+  <data name="Structure_NewCondition2" xml:space="preserve">
+    <value>＋ New condition</value>
+  </data>
+  <data name="Structure_CreatesNameAndExpressionAt" xml:space="preserve">
+    <value>Creates the name and expression at once and sets it as this choice's show condition.</value>
+  </data>
+  <data name="Structure_UnlockConditionCanBePicked" xml:space="preserve">
+    <value>Unlock condition — can be picked only when it holds (otherwise shown locked)</value>
+  </data>
+  <data name="Structure_IfNotMetItS" xml:space="preserve">
+    <value>If not met, it's shown locked with the hint below. To hide it completely, use the show condition.</value>
+  </data>
+  <data name="Structure_CreatesNameAndExpressionAt2" xml:space="preserve">
+    <value>Creates the name and expression at once and sets it as this choice's unlock condition.</value>
+  </data>
+  <data name="Structure_LockedHintShownWhileLocked" xml:space="preserve">
+    <value>Locked hint — shown while locked (e.g. Not enough trust)</value>
+  </data>
+  <data name="Structure_StatChangeWhenThisPath" xml:space="preserve">
+    <value>Stat change — when this path is picked</value>
+  </data>
+  <data name="Structure_EditsApplyRightAwayAnd" xml:space="preserve">
+    <value>Edits apply right away and can be undone (Ctrl+Z). File → Save (Ctrl+S) · autosave write them to the file.</value>
+  </data>
+  <data name="Structure_BranchDetourThatSAlways" xml:space="preserve">
+    <value>Branch — a detour that's always visited once</value>
+  </data>
+  <data name="Structure_BranchCardID" xml:space="preserve">
+    <value>Branch card ID</value>
+  </data>
+  <data name="Structure_BranchCardSIDGame" xml:space="preserve">
+    <value>The branch card's ID — the game's Yarn node name. Edit and press Enter. It won't change to a name another node in the project uses. The title is edited in the [Script] tab.</value>
+  </data>
+  <data name="Structure_BranchCardSContentPlays" xml:space="preserve">
+    <value>The branch card's content plays under this condition</value>
+  </data>
+  <data name="Structure_BranchIsAlwaysVisitedOnce" xml:space="preserve">
+    <value>The branch is always visited once — what's gated is the visit itself. If the condition isn't met, the branch card plays nothing and returns right away. Empty means it always plays.</value>
+  </data>
+  <data name="Structure_ConditionIsWrittenAtTop" xml:space="preserve">
+    <value>The condition is written at the top of the branch card — the calling script stays as is.</value>
+  </data>
+  <data name="Structure_ScriptReadOnlyEditIt" xml:space="preserve">
+    <value>Script — read-only (edit it in the [Script] tab)</value>
+  </data>
+  <data name="Structure_ChapterID" xml:space="preserve">
+    <value>Chapter ID</value>
+  </data>
+  <data name="Structure_EditAndPressEnterTo2" xml:space="preserve">
+    <value>Edit and press Enter to change the chapter ID — the board · condition node · progression JSON file name follow. The chapter name is edited in the [Script] tab's Hierarchy.</value>
+  </data>
+  <data name="Structure_LinkCharacterKeyToEach" xml:space="preserve">
+    <value>Link a character key to each speaker — portraits · expressions attach by this key. Speaker names are added and edited in the [Script] tab. Every chapter uses the same list.</value>
+  </data>
+  <data name="Structure_ConditionsNameExpression" xml:space="preserve">
+    <value>Conditions (name → expression)</value>
+  </data>
+  <data name="Structure_SetExpressionForEachCondition" xml:space="preserve">
+    <value>Set an expression for each condition. An expression compares a stat key with an integer, like `trust &gt;= 3` (&gt;= · &lt;= · &gt; · &lt; · ==). Join several with `;`; all must hold to pass. For yes/no stats use `key == true` · `key == false`. An empty expression is “Undecided” — it always passes and only shows a warning in the validation report. Create one by typing a name in the box below the table and pressing [＋ Add] (or Enter), then fill in the expression on its row. Rename it in the row's name box — choices using that name follow. Deleting is done in the [Script] tab. Edits apply right away and can be undone (Ctrl+Z).</value>
+  </data>
+  <data name="Structure_Stats" xml:space="preserve">
+    <value>Stats</value>
+  </data>
+  <data name="Structure_CreateAndEditThemHere" xml:space="preserve">
+    <value>Create and edit them here. There are two types — Number (integer) (a value that goes up and down, like affection or score: initial · min · max) and On/Off (a value switched on or off, like did · didn't: initial only). A stat is called by one key — condition expressions, {stat("key")} in dialogue, and the text on the game screen (the game decides it by key) all use this key. The key is the statKey that goes into Yarn as is, so write it in English — start with a letter and use only letters · digits · _ (e.g. courage · met_harin). Hangul · spaces · symbols aren't accepted. Add one by typing a key in the box below the table and pressing [＋ Add] (or Enter); edit the key in the row's key box. ⚠ The key is the name stored in saves, so changing it returns that stat to its initial value in playthroughs already saved. [✕] shows where it's used, if anywhere, and asks once more.</value>
+  </data>
+  <data name="Structure_CopiesWholeListBelowTo" xml:space="preserve">
+    <value>Copies the whole list below to the clipboard. If you only need one line, you can select it by dragging.</value>
+  </data>
 </root>

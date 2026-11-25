@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:Vn.App.Strings"
              xmlns:views="using:Vn.App.Views"
              x:Class="Vn.App.Views.ChapterGraphView">
     <Grid RowDefinitions="Auto,*,Auto">
@@ -16,7 +17,7 @@
                      짝: `GraphEditorView.axaml`의 툴바 — 한쪽을 고치면 둘 다 고친다.
                      (콤보 치수가 한 쌍인 것도 같은 이유다.) -->
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="챕터"
+                    <TextBlock Text="{x:Static s:Ui.Board_Chapter2}"
                                FontSize="11"
                                Opacity="0.6"
                                VerticalAlignment="Center"
@@ -34,19 +35,19 @@
                          연출 그래프의 카드 자리를 본뜬다(`ChapterBranchPlanner.LayoutLikeBoard`).
                          주의: 한 번의 변경이라 Ctrl+Z 한 번이면 옮기기 전으로 돌아온다. -->
                     <Button x:Name="AutoArrangeButton"
-                            Content="자동 정렬"
-                            ToolTip.Tip="모든 카드를 [대본] 탭에 놓인 모양대로 다시 세웁니다. 손으로 옮긴 자리는 사라집니다 — 되돌리기(Ctrl+Z) 한 번으로 돌아옵니다." />
+                            Content="{x:Static s:Ui.Structure_AutoLayout}"
+                            ToolTip.Tip="{x:Static s:Ui.Structure_ReLaysOutEveryCard}" />
                     <!-- 화면 맞춤 — 화면(배율 · 스크롤)만 맞춘다. 카드 자리는 그대로다. ⛔ 2026-11-18까지 이름이 「전체 보기」였다(소유자). -->
                     <Button x:Name="FitChapterButton"
-                            Content="화면 맞춤"
-                            ToolTip.Tip="이 챕터의 카드가 모두 한 화면에 들어오게 배율과 위치를 맞춥니다. 카드가 적으면 100%보다 키우지는 않습니다." />
+                            Content="{x:Static s:Ui.Structure_FitToScreen}"
+                            ToolTip.Tip="{x:Static s:Ui.Structure_SetsZoomAndPositionSo}" />
                     <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                     <!-- 빈 선택지 숨기기 — [구성] 판 전체에 하나다. [대본] 탭은 카드마다 인스펙터의 체크로 정한다. -->
-                    <CheckBox x:Name="HideEmptyChoicesCheck" Content="빈 선택지 숨기기" FontSize="11" VerticalAlignment="Center"
-                              ToolTip.Tip="켜면 이 판의 모든 카드에서 이어지지 않은 빈 선택지 점과 들어오는 길 없는 입구 점을 감춥니다. [대본] 탭의 선택지 칸은 카드마다 따로 정합니다." />
+                    <CheckBox x:Name="HideEmptyChoicesCheck" Content="{x:Static s:Ui.Dialogue_HideEmptyChoices}" FontSize="11" VerticalAlignment="Center"
+                              ToolTip.Tip="{x:Static s:Ui.Structure_WhenOnHidesUnconnectedEmpty}" />
                     <!-- ID로 보기 — 켜면(처음) 하이어아키 · 카드가 ID로, 끄면 [대본] 탭처럼 이름으로 선다(2026-11-18 소유자). 앱 설정에 기억한다. -->
-                    <CheckBox x:Name="ShowIdsCheck" Content="ID로 보기" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"
-                              ToolTip.Tip="켜면 하이어아키와 카드가 챕터ID · 장면ID · 에피소드ID로 보입니다(이름은 하이어아키 곁글에). 끄면 [대본] 탭처럼 보이는 이름으로 봅니다." />
+                    <CheckBox x:Name="ShowIdsCheck" Content="{x:Static s:Ui.Structure_ShowIDs}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"
+                              ToolTip.Tip="{x:Static s:Ui.Structure_WhenOnHierarchyAndCards}" />
                 </StackPanel>
 
                 <!-- 픽스처(재생루트 하이라이트)는 화면에 세우지 않는다.
@@ -90,7 +91,7 @@
                              [＋ 첫 챕터 만들기]가 선다(이 탭의 것은 [대본]으로 데려가 거기서 만든다 — first-chapter F2). -->
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="2">
-                                <TextBlock Text="하이어아키" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontWeight="SemiBold" />
                                 <TextBlock x:Name="ChapterSummary"
                                            FontSize="11"
                                            Opacity="0.65"
@@ -104,7 +105,7 @@
                                     Margin="4,0,0,0"
                                     VerticalAlignment="Top"
                                     Background="Transparent"
-                                    ToolTip.Tip="하이어아키를 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다." />
+                                    ToolTip.Tip="{x:Static s:Ui.Board_CollapseHierarchyBoardGetsWider}" />
                         </Grid>
                     </Border>
 
@@ -121,14 +122,14 @@
                             Padding="0,6"
                             Background="Transparent"
                             BorderThickness="0"
-                            ToolTip.Tip="하이어아키를 펼칩니다">
+                            ToolTip.Tip="{x:Static s:Ui.Board_ExpandHierarchy}">
                         <StackPanel Spacing="8">
                             <TextBlock Text="›" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
                             <LayoutTransformControl>
                                 <LayoutTransformControl.LayoutTransform>
                                     <RotateTransform Angle="90" />
                                 </LayoutTransformControl.LayoutTransform>
-                                <TextBlock Text="하이어아키" FontSize="11" Opacity="0.7" />
+                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontSize="11" Opacity="0.7" />
                             </LayoutTransformControl>
                         </StackPanel>
                     </Button>
@@ -172,7 +173,7 @@
                         Padding="8,3"
                         FontSize="11"
                         IsVisible="False"
-                        ToolTip.Tip="배율을 100%로 되돌립니다. 휠로 확대·축소, 가운데 단추를 끌어 이동합니다.">
+                        ToolTip.Tip="{x:Static s:Ui.Structure_ResetsZoomTo100Zoom}">
                     <TextBlock x:Name="ZoomText" />
                 </Button>
 
@@ -189,17 +190,17 @@
                          「새 프로젝트…」와 같은 길). 프로젝트는 있고 챕터가 없으면 [＋ 첫 챕터 만들기] — [대본] 탭으로 데려가 거기서 만든다
                          (2026-11-18 소유자 · first-chapter F2 · ⛔ 그 전에는 이 탭에 챕터 단추를 두지 않고 안내문만 [대본]으로 데려갔다). -->
                     <Button x:Name="EmptyFirstChapterButton"
-                            Content="＋ 첫 챕터 만들기"
+                            Content="{x:Static s:Ui.Board_CreateFirstChapter}"
                             HorizontalAlignment="Center"
                             Padding="16,6"
                             IsVisible="False"
-                            ToolTip.Tip="[대본] 탭으로 가서 「새 챕터」를 장면 「새 장면」 · 에피소드 하나와 함께 세웁니다 — [대본] 하이어아키 우클릭 「챕터 추가」와 같습니다." />
+                            ToolTip.Tip="{x:Static s:Ui.Structure_GoesToScriptTabAnd}" />
                     <Button x:Name="EmptyNewProjectButton"
-                            Content="새 프로젝트"
+                            Content="{x:Static s:Ui.Main_NewProject}"
                             HorizontalAlignment="Center"
                             Padding="16,6"
                             IsVisible="False"
-                            ToolTip.Tip="새 프로젝트를 만들고 저장합니다 — 저장돼야 챕터가 살 폴더가 정해집니다." />
+                            ToolTip.Tip="{x:Static s:Ui.Structure_CreatesAndSavesNewProject}" />
                 </StackPanel>
             </Grid>
 
@@ -229,7 +230,7 @@
                         </Style>
                     </TabControl.Styles>
 
-                <TabItem x:Name="InspectorTabItem" Header="인스펙터">
+                <TabItem x:Name="InspectorTabItem" Header="{x:Static s:Ui.Board_Inspector}">
                 <!-- 인스펙터: 하이어아키나 판에서 고른 것을 보인다. 장면 → 장면ID, 에피소드 · 선택지(길) · 분기 → 그 편집, 챕터 →
                      챕터ID, 프로젝트 → 옆 탭 안내. 머리글이 무엇을 보는지 말한다. -->
                 <Grid RowDefinitions="Auto,*">
@@ -239,7 +240,7 @@
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
                             <!-- 줄을 넘긴다 — 선택지 간선은 문구가 머리글이다(2026-11-17), 긴 문구도 다 보여야 한다. -->
-                            <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock x:Name="InspectorTitle" Text="{x:Static s:Ui.Board_Inspector}" FontWeight="SemiBold" TextWrapping="Wrap" />
                             <TextBlock x:Name="InspectorSubtitle"
                                        FontSize="11"
                                        Opacity="0.65"
@@ -254,7 +255,7 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="6">
                     <TextBlock x:Name="NoSelectionText"
-                               Text="노드 클릭 = 선택&#x0A;선(길) 클릭 = 표시·해금조건과 스탯변화 편집&#x0A;챕터 · 장면 · 에피소드는 [대본] 탭에서 더하고 지우고 고칩니다"
+                               Text="{x:Static s:Ui.Structure_ClickNodeSelectClickLine}"
                                FontSize="11"
                                Opacity="0.55"
                                TextWrapping="Wrap" />
@@ -266,12 +267,12 @@
                         <!-- 장면ID 칸 — 런타임 저장 · 롤백 경계. 고치고 Enter(RenameScene — 장면 이름 · 메모가 함께 간다). 장면 이름은
                              [대본] 탭에서 고친다(display-names N4). -->
                         <Grid x:Name="SceneIdGrid" ColumnDefinitions="70,*">
-                            <TextBlock Text="장면ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Static s:Ui.Structure_SceneID}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                             <TextBox Grid.Column="1" x:Name="SceneIdBox" FontSize="11"
-                                     ToolTip.Tip="고치고 Enter를 누르면 이 장면의 에피소드 모두의 장면ID가 바뀝니다 — 장면 이름 · 메모가 함께 따라갑니다. 다른 장면이 쓰는 ID로는 바꾸지 않습니다(합치기는 [대본] 탭에서 에피소드를 끌어 옮깁니다)." />
+                                     ToolTip.Tip="{x:Static s:Ui.Structure_EditAndPressEnterTo}" />
                         </Grid>
                         <views:GuideLine x:Name="SceneHintText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
-                        <TextBlock Text="에피소드" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_Episode}" FontWeight="SemiBold" FontSize="12" Margin="0,6,0,0" />
                         <StackPanel x:Name="SceneEpisodesPanel" Spacing="2" />
                     </StackPanel>
 
@@ -280,14 +281,14 @@
                              카드가 함께 따라간다). 제목은 머리글(「장면 - 제목」)이 보이고 [대본] 탭에서 고친다. 장면은 여기서
                              정하지 않는다 — 하이어아키에서 에피소드를 장면 줄로 끌고, 장면 줄에서 이름을 바꾼다. -->
                         <Grid x:Name="EpisodeFieldsGrid" ColumnDefinitions="70,*" RowDefinitions="Auto">
-                            <TextBlock Grid.Row="0" Text="에피소드ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="0" Text="{x:Static s:Ui.Structure_EpisodeID}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                             <TextBox Grid.Row="0" Grid.Column="1" x:Name="IdBox" FontSize="11"
-                                     ToolTip.Tip="고치고 Enter를 누르거나 칸을 떠나면 바뀝니다(Esc는 그만두기) — 간선 · 픽스처 · [대본] 판의 카드가 함께 따라갑니다." />
+                                     ToolTip.Tip="{x:Static s:Ui.Structure_ChangesWhenYouPressEnter}" />
                         </Grid>
 
                         <!-- 선택지 — 이 에피소드에서 나가는 길들. 길 하나 = 선택지 하나. 줄이 문구와 도착을 보인다.
                              여기서는 길을 더하거나 끊지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭(카드 아래 칸)에서 한다. -->
-                        <TextBlock x:Name="ChoiceHeaderText" Text="선택지" FontWeight="SemiBold" FontSize="12"
+                        <TextBlock x:Name="ChoiceHeaderText" Text="{x:Static s:Ui.Board_Choice}" FontWeight="SemiBold" FontSize="12"
                                    Margin="0,10,0,0" />
                         <!-- 선택지 줄 — 누르면 그 줄 아래에 조건 · 스탯변화가 펼쳐진다(읽기 전용). 다시 누르면 접힌다. -->
                         <StackPanel x:Name="EdgeListPanel" Spacing="3" />
@@ -309,7 +310,7 @@
                                     <!-- 삼각형이 접힘/펼침을 말한다 —
                                          ▸ 접힘 · ▾ 펼침. 코드가 상태에 맞춰 글자를 바꾼다. -->
                                     <ToggleButton x:Name="DialogueToggle"
-                                                  Content="▸  대사"
+                                                  Content="{x:Static s:Ui.Structure_Dialogue2}"
                                                   FontSize="12"
                                                   FontWeight="SemiBold"
                                                   Padding="0"
@@ -379,27 +380,27 @@
                         <!-- 자동 진행 길이면 그렇다고 말하고 칸을 잠근다 — 자동 길은 문구 · 조건 · 스탯변화를 갖지 않는다.
                              자동인지는 여기서 정하지 않는다([대본] 탭에서 문구 없이 이은 길이다). -->
                         <TextBlock x:Name="EdgeAutoNote" FontSize="10" Opacity="0.7" TextWrapping="Wrap" IsVisible="False"
-                                   Text="자동 진행 길입니다 — 플레이어 입력 없이 넘어갑니다. 문구 · 조건 · 스탯변화를 갖지 않습니다." />
+                                   Text="{x:Static s:Ui.Structure_AutoPathMovesOnWithout}" />
 
-                        <TextBlock Text="조건" FontWeight="SemiBold" FontSize="12" />
-                        <TextBlock Text="표시조건 — 맞을 때만 이 선택지가 보입니다" FontSize="10" Opacity="0.6" />
+                        <TextBlock Text="{x:Static s:Ui.Side_Conditions}" FontWeight="SemiBold" FontSize="12" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_ShowConditionThisChoiceShows}" FontSize="10" Opacity="0.6" />
                         <Grid ColumnDefinitions="*,Auto">
                             <ComboBox x:Name="EdgeVisibleCombo" FontSize="11" HorizontalAlignment="Stretch"
-                                      ToolTip.Tip="미달이면 선택지가 목록에 아예 안 뜹니다. (없음)이면 언제나 보입니다." />
-                            <Button x:Name="EdgeVisibleNewButton" Grid.Column="1" Content="＋ 새 조건" FontSize="10"
+                                      ToolTip.Tip="{x:Static s:Ui.Structure_IfNotMetChoiceDoesn}" />
+                            <Button x:Name="EdgeVisibleNewButton" Grid.Column="1" Content="{x:Static s:Ui.Structure_NewCondition2}" FontSize="10"
                                     Padding="6,2" Margin="4,0,0,0" VerticalAlignment="Center"
-                                    ToolTip.Tip="이름과 식을 한 번에 만들고 이 선택지의 표시조건으로 겁니다." />
+                                    ToolTip.Tip="{x:Static s:Ui.Structure_CreatesNameAndExpressionAt}" />
                         </Grid>
                         <StackPanel x:Name="EdgeVisibleExpressionHost" Spacing="2" />
 
-                        <TextBlock Text="해금조건 — 맞을 때만 고를 수 있습니다(아니면 잠긴 채 보입니다)" FontSize="10" Opacity="0.6"
+                        <TextBlock Text="{x:Static s:Ui.Structure_UnlockConditionCanBePicked}" FontSize="10" Opacity="0.6"
                                    TextWrapping="Wrap" Margin="0,4,0,0" />
                         <Grid ColumnDefinitions="*,Auto">
                             <ComboBox x:Name="EdgeConditionCombo" FontSize="11" HorizontalAlignment="Stretch"
-                                      ToolTip.Tip="미달이면 잠긴 채 보이고 아래 안내문이 뜹니다. 아예 안 보이게 하려면 표시조건에 거세요." />
-                            <Button x:Name="EdgeUnlockNewButton" Grid.Column="1" Content="＋ 새 조건" FontSize="10"
+                                      ToolTip.Tip="{x:Static s:Ui.Structure_IfNotMetItS}" />
+                            <Button x:Name="EdgeUnlockNewButton" Grid.Column="1" Content="{x:Static s:Ui.Structure_NewCondition2}" FontSize="10"
                                     Padding="6,2" Margin="4,0,0,0" VerticalAlignment="Center"
-                                    ToolTip.Tip="이름과 식을 한 번에 만들고 이 선택지의 해금조건으로 겁니다." />
+                                    ToolTip.Tip="{x:Static s:Ui.Structure_CreatesNameAndExpressionAt2}" />
                         </Grid>
                         <StackPanel x:Name="EdgeUnlockExpressionHost" Spacing="2" />
 
@@ -407,17 +408,17 @@
                              해금조건 + 숨김은 그 식을 **표시조건**에 적은 것과 결과가 같다.
                              잠금 안내문은 해금조건에 딸린 칸이라 해금조건을 걸었을 때만 그 아래에 선다. -->
                         <TextBox x:Name="EdgeLockedMsgBox" FontSize="11" Margin="12,0,0,0"
-                                 PlaceholderText="잠금 안내문 — 잠긴 채 보일 때 (예: 신뢰가 부족하다)" />
+                                 PlaceholderText="{x:Static s:Ui.Structure_LockedHintShownWhileLocked}" />
 
                         <!-- 스탯이 변하는 유일한 자리 — 이 간선을 타는 순간 1회 커밋.
                              문법을 외우는 칸이 아니라 고르는 줄이다. 스탯은
                              챕터에 선언한 것(「조건 및 스탯」 탭의 스탯 표)만 드롭다운에 온다. -->
-                        <TextBlock Text="스탯변화 — 이 길을 고르면" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_StatChangeWhenThisPath}" FontWeight="SemiBold" FontSize="12" Margin="0,8,0,0" />
                         <StackPanel x:Name="EdgeStatsHost" Spacing="3" />
 
                         <!-- [적용] 단추는 없다 — 고르는 순간 반영된다. 글자 칸만 초점을 잃거나 Enter일 때 낸다.
                              길을 끊거나 자동으로 바꾸는 것은 여기서 하지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭이다. -->
-                        <views:GuideLine Full="고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다. 파일에는 File → 저장(Ctrl+S) · 자동 저장이 씁니다."
+                        <views:GuideLine Full="{x:Static s:Ui.Structure_EditsApplyRightAwayAnd}"
                                    FontSize="10" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
                     </StackPanel>
 
@@ -428,20 +429,20 @@
                          그래프의 일이다. 이 패널이 쓰는 것은 다녀올 에피소드의 첫머리 조건
                          하나뿐이다. -->
                     <StackPanel x:Name="BranchPanel" Spacing="6" IsVisible="False">
-                        <TextBlock Text="분기 — 반드시 한 번 다녀오는 통로" FontWeight="SemiBold" FontSize="12" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_BranchDetourThatSAlways}" FontWeight="SemiBold" FontSize="12" />
 
                         <!-- 분기 카드 ID 칸 — 카드 이름(= Yarn 노드 이름). 고치고 Enter. 부르는 쪽은 노드 Id로 이으므로 이름만 바뀐다.
                              제목(머리글)은 [대본] 탭에서 고친다(2026-11-17 · auto-id-orders I4). -->
                         <Grid x:Name="BranchIdGrid" ColumnDefinitions="80,*">
-                            <TextBlock Text="분기 카드 ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Static s:Ui.Structure_BranchCardID}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                             <TextBox Grid.Column="1" x:Name="BranchIdBox" FontSize="11"
-                                     ToolTip.Tip="분기 카드의 ID — 게임의 Yarn 노드 이름입니다. 고치고 Enter. 프로젝트의 다른 노드가 쓰는 이름으로는 바꾸지 않습니다. 제목은 [대본] 탭에서 고칩니다." />
+                                     ToolTip.Tip="{x:Static s:Ui.Structure_BranchCardSIDGame}" />
                         </Grid>
                         <WrapPanel x:Name="BranchFromToPanel" Orientation="Horizontal" ItemSpacing="4" LineSpacing="2" />
 
-                        <TextBlock Text="이 조건일 때 분기 카드의 내용이 돈다" FontSize="10" Opacity="0.6" Margin="0,4,0,0" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_BranchCardSContentPlays}" FontSize="10" Opacity="0.6" Margin="0,4,0,0" />
                         <ComboBox x:Name="BranchConditionCombo" FontSize="11" HorizontalAlignment="Stretch"
-                                  ToolTip.Tip="분기로는 언제나 한 번 갑니다 — 막는 것은 다녀온 쪽입니다. 조건이 미달이면 그 분기 카드가 아무것도 재생하지 않고 곧바로 돌아옵니다. 비우면 언제나 재생됩니다." />
+                                  ToolTip.Tip="{x:Static s:Ui.Structure_BranchIsAlwaysVisitedOnce}" />
 
                         <TextBlock x:Name="BranchBlockedText"
                                    FontSize="10"
@@ -449,10 +450,10 @@
                                    TextWrapping="Wrap"
                                    IsVisible="False" />
 
-                        <views:GuideLine Full="조건은 분기 카드의 첫머리에 적힙니다 — 부르는 쪽 대본은 그대로입니다."
+                        <views:GuideLine Full="{x:Static s:Ui.Structure_ConditionIsWrittenAtTop}"
                                    FontSize="10" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
 
-                        <TextBlock Text="대본 — 읽기 전용 (고치는 곳은 [대본] 탭)" FontSize="10" Opacity="0.6" Margin="0,8,0,0" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_ScriptReadOnlyEditIt}" FontSize="10" Opacity="0.6" Margin="0,8,0,0" />
                         <TextBlock x:Name="BranchScriptText" FontSize="11" TextWrapping="Wrap" />
                     </StackPanel>
 
@@ -474,9 +475,9 @@
                             <!-- 챕터ID 칸 — [구성] 탭은 ID를 다룬다(챕터 이름은 [대본] 탭에서 — display-names N4). 고치고 Enter면
                                  개명이다(ChapterRenamer — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 간다). -->
                             <Grid x:Name="ChapterIdGrid" ColumnDefinitions="70,*">
-                                <TextBlock Text="챕터ID" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Static s:Ui.Structure_ChapterID}" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
                                 <TextBox Grid.Column="1" x:Name="ChapterIdBox" FontSize="11"
-                                         ToolTip.Tip="고치고 Enter를 누르면 챕터 ID가 바뀝니다 — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 따라갑니다. 챕터 이름은 [대본] 탭 하이어아키에서 고칩니다." />
+                                         ToolTip.Tip="{x:Static s:Ui.Structure_EditAndPressEnterTo2}" />
                             </Grid>
                             <views:GuideLine x:Name="OverviewText" FontSize="10" Opacity="0.55" TextWrapping="Wrap" />
                         </StackPanel>
@@ -487,15 +488,15 @@
 
                 <!-- 화자 — 프로젝트 전체의 캐스트다. 값은 프로젝트의 화자 목록에 산다(되돌리기 한 칸).
                      이름은 [대본] 탭(작가)이 더하고 고치고 지운다. 여기는 이름마다 캐릭터 키를 잇는 자리다(writer-fields W3). -->
-                <TabItem x:Name="SpeakerTabItem" Header="화자">
+                <TabItem x:Name="SpeakerTabItem" Header="{x:Static s:Ui.Board_Speakers}">
                 <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
                             BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
-                            <TextBlock Text="프로젝트 단위 화자" FontWeight="SemiBold" />
-                            <views:GuideLine Full="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Static s:Ui.Board_SpeakersForWholeProject}" FontWeight="SemiBold" />
+                            <views:GuideLine Full="{x:Static s:Ui.Board_EveryChapterUsesSameList}" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </Border>
                     <ScrollViewer Grid.Row="1"
@@ -504,7 +505,7 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10" Spacing="4">
                             <views:GuideLine x:Name="SpeakerHintText"
-                                       Full="화자마다 캐릭터 키를 잇습니다 — 초상화 · 표정이 이 키로 붙습니다. 화자 이름은 [대본] 탭에서 더하고 고칩니다. 모든 챕터가 같은 목록을 씁니다."
+                                       Full="{x:Static s:Ui.Structure_LinkCharacterKeyToEach}"
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap"
@@ -519,7 +520,7 @@
                 <!-- 조건 및 스탯 — 챕터 단위다. 판 전체에 걸린 표들 — 조건의 식과 스탯을 여기서 정한다(조건 이름 고치기 · 지우기는 [대본] 탭 —
                      writer-fields W4). 머리가 챕터 단위임을 말하고, 오른쪽 위 작은 드롭다운이 지금 챕터를 비춘다 — 고르면 툴바 콤보로 고른 것과
                      같다(2026-11-18 소유자). 에피소드·간선은 그래프가 이미 그리므로 여기 반복하지 않는다. -->
-                <TabItem x:Name="ConditionTabItem" Header="조건 및 스탯">
+                <TabItem x:Name="ConditionTabItem" Header="{x:Static s:Ui.Board_ConditionsStats}">
                 <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
@@ -527,8 +528,8 @@
                             BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="1" VerticalAlignment="Center">
-                                <TextBlock Text="챕터 단위 조건 · 스탯" FontWeight="SemiBold" />
-                                <views:GuideLine Full="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Static s:Ui.Board_ConditionsStatsForThisChapter}" FontWeight="SemiBold" />
+                                <views:GuideLine Full="{x:Static s:Ui.Board_UsedOnlyInThisChapter}" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                             <ComboBox Grid.Column="1"
                                       x:Name="ConditionChapterCombo"
@@ -538,7 +539,7 @@
                                       Padding="6,0"
                                       Margin="8,0,0,0"
                                       VerticalAlignment="Top"
-                                      ToolTip.Tip="이 탭이 보이는 챕터 — 지금 챕터를 따라갑니다. 고르면 그 챕터로 갑니다(툴바의 챕터 콤보와 같습니다)." />
+                                      ToolTip.Tip="{x:Static s:Ui.Board_ChapterThisTabShowsFollows}" />
                         </Grid>
                     </Border>
                     <ScrollViewer Grid.Row="1"
@@ -547,23 +548,23 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConditionSection" Margin="10" Spacing="4">
                             <!-- 조건의 이름과 식은 여기서 고친다 — 더하기는 표 아래 늘 서 있는 이름 칸 + [＋ 추가](writer-comfort WC4), 지우기는 [대본] 탭. -->
-                            <TextBlock Text="조건 (이름 → 식)"
+                            <TextBlock Text="{x:Static s:Ui.Structure_ConditionsNameExpression}"
                                        FontWeight="SemiBold"
                                        FontSize="12" />
-                            <views:GuideLine Full="조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 칸에 이름을 적고 [＋ 추가](또는 Enter)로 만들고, 식은 그 줄에서 채웁니다. 이름은 줄의 이름 칸에서 고칩니다 — 그 이름을 건 선택지가 따라갑니다. 지우는 것은 [대본] 탭에서 합니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다."
+                            <views:GuideLine Full="{x:Static s:Ui.Structure_SetExpressionForEachCondition}"
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,4" />
                             <StackPanel x:Name="ConditionListPanel" Spacing="2" />
 
-                            <TextBlock Text="스탯"
+                            <TextBlock Text="{x:Static s:Ui.Structure_Stats}"
                                        FontWeight="SemiBold"
                                        FontSize="12"
                                        Margin="0,14,0,0" />
                             <!-- 조건 줄과 같은 결로 적는다 — 두 표가 같은 자리에 서 있으니
                                  "어디서 고치나"의 대답도 같은 모양이어야 눈이 한 번에 읽는다. -->
-                            <views:GuideLine Full="여기서 만들고 고칩니다. 종류는 둘입니다 — 숫자(정수)(호감도 · 점수처럼 오르내리는 정수 값: 처음 값 · 최소 · 최대)와 활성/비활성(했다 · 안 했다처럼 켜고 끄는 값: 처음 값만). 스탯은 키 하나로 부릅니다 — 조건 식, 대사의 {stat(&quot;키&quot;)}, 게임 화면의 글자(게임이 키로 정합니다)가 모두 이 키를 씁니다. 키는 Yarn에 그대로 들어가는 statKey라 영어로 적습니다 — 영문자로 시작하고 영문자 · 숫자 · _만(예: courage · met_harin). 한글 · 빈칸 · 기호는 받지 않습니다. 더하기는 표 아래 칸에 키를 적고 [＋ 추가](또는 Enter), 키는 줄의 키 칸에서 고칩니다. ⚠ 키는 세이브에 저장되는 이름이라 바꾸면 이미 저장된 회차의 그 스탯이 처음 값으로 돌아갑니다. [✕]는 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다."
+                            <views:GuideLine Full="{x:Static s:Ui.Structure_CreateAndEditThemHere}"
                                        FontSize="10"
                                        Opacity="0.55"
                                        TextWrapping="Wrap" />
@@ -582,7 +583,7 @@
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
                             Background="Transparent"
-                            ToolTip.Tip="오른쪽 기둥(인스펙터 · 화자 · 조건 및 스탯)을 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다." />
+                            ToolTip.Tip="{x:Static s:Ui.Board_CollapseSidePanelInspectorSpeakers}" />
                 </Panel>
 
                 <!-- 접힌 오른쪽 기둥 — 세로 띠 하나. 누르면 편다(ColumnDock). -->
@@ -595,14 +596,14 @@
                         Padding="0,6"
                         Background="Transparent"
                         BorderThickness="0"
-                        ToolTip.Tip="오른쪽 기둥을 펼칩니다">
+                        ToolTip.Tip="{x:Static s:Ui.Board_ExpandSidePanel}">
                     <StackPanel Spacing="8">
                         <TextBlock Text="‹" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <LayoutTransformControl>
                             <LayoutTransformControl.LayoutTransform>
                                 <RotateTransform Angle="90" />
                             </LayoutTransformControl.LayoutTransform>
-                            <TextBlock Text="인스펙터 · 화자 · 조건 및 스탯" FontSize="11" Opacity="0.7" />
+                            <TextBlock Text="{x:Static s:Ui.Board_InspectorSpeakersConditionsStats}" FontSize="11" Opacity="0.7" />
                         </LayoutTransformControl>
                     </StackPanel>
                 </Button>
@@ -632,7 +633,7 @@
                  거기는 기획자가 실제로 읽고 좌표를 짚는 자리다(줄들이 제 FontSize를
                  직접 들고 있어 이 FontSize가 그 위를 덮지 않는다). -->
             <Expander x:Name="DiagnosticsExpander"
-                      Header="검증 보고"
+                      Header="{x:Static s:Ui.Structure_ValidationReport}"
                       Padding="0"
                       FontSize="11"
                       HorizontalAlignment="Stretch">
@@ -645,12 +646,12 @@
                     <!-- 보고를 그대로 들고 나갈 수 있어야 한다 — 협업자·세션에 붙여넣는 용도. -->
                     <Button Grid.Row="0"
                             x:Name="CopyDiagnosticsButton"
-                            Content="보고 복사"
+                            Content="{x:Static s:Ui.Structure_CopyReport}"
                             FontSize="10"
                             Padding="8,2"
                             Margin="10,4,10,0"
                             HorizontalAlignment="Right"
-                            ToolTip.Tip="아래 목록 전체를 클립보드로 복사합니다. 줄 하나만 필요하면 드래그로 선택해도 됩니다." />
+                            ToolTip.Tip="{x:Static s:Ui.Structure_CopiesWholeListBelowTo}" />
                     <!-- AllowAutoHide=False — 목록이 길 때 "아래 더 있다"가 보여야 한다.
                          숨는 오버레이 스크롤바는 동기화 보고가 묻혀 있다는 사실 자체를 숨겼다(실사례). -->
                     <ScrollViewer Grid.Row="1"
