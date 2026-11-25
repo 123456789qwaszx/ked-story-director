@@ -13,9 +13,9 @@
 - **검증 보고 · 거절 사유** — 한국어와 같은 규칙: **무엇이 · 어디서 · 어떻게 고치는지**를 한 문장씩. 「~할 수 없습니다」는 *Can't …* 보다 *… isn't possible because …*
   처럼 까닭을 앞세운다. 오류 = **Error**, 경고 = **Warning**.
 - **조사(`Josa`)를 쓰던 문장**은 영어에서 문장을 새로 짓는다 — 단수 · 복수(`1 line` / `3 lines`)를 꼭 맞춘다.
-- **데이터와 내보내기는 한국어 그대로**(2026-11-25 소유자): 새로 만든 것의 처음 이름(「새 에피소드」 · 「새 장면」 · 「새 챕터」 · 「새 분기」), 진단의 자리 이름
-  (「에피소드」 · 「간선」 · 「조건」 · 「스탯」), Yarn 주석, 프로젝트 저장소 견본. 영어 화면에서도 이 낱말은 한국어로 보인다 — 화면이 그 낱말을 **가리킬** 때만
-  영어로 풀어 준다(예: 검증 보고의 시트 칸).
+- **만들어지는 글도 화면 언어로**(2026-11-25 소유자 바로잡음 · E8): 새로 만든 것의 처음 이름(아래 2절), 검증 보고의 자리 이름(5절), 대사 Yarn 주석의
+  머리말 · 툴이 쓰는 JSON의 안내 칸(6절)은 만들 때 · 내보낼 때의 화면 언어로 적힌다. **이미 적힌 이름 · 작가가 적은 글은 바꾸지 않는다.** 숨은 신원(조건
+  공급 노드의 이름 같은)은 언어와 상관없이 그대로다. ⛔ E0–E7은 「한국어 그대로」였다(잘못 알아들었다).
 
 ## 2. 이야기의 짜임
 
@@ -33,6 +33,7 @@
 | 분기 — 반드시 한 번 다녀오는 통로 | Branch — a detour that always comes back | 분기 카드 부제 「들렀다 돌아오는 카드」 → *A detour card* · 판의 분기 선 이름표 → *Branch* |
 | 분기 카드 ID | Branch card ID | Yarn 노드 이름 |
 | 조건 없음 (분기 카드 머리의 표) | Always | 「⑂ Always」 — [구성] 조건 칸의 *(always)*와 같은 말. 카드 머리가 좁아 *No condition* 대신(E7) |
+| 새 에피소드 · 새 장면 · 새 챕터 · 새 분기 (처음 이름) | New episode · New scene · New chapter · New branch | 만들 때의 화면 언어로 적힌다(E8) |
 | 장면 시작점(⌂) | Scene start | |
 | 선택지 | Choice | |
 | 선택지 문구 | Choice text | 「문구를 적어 주세요」 → *Write the choice text* |
@@ -95,6 +96,7 @@
 | 「조건 및 스탯」 탭 | “Conditions & stats” tab | |
 | 「화자」 탭 | “Speakers” tab | |
 | 검증 보고 | Validation report | 「보고 복사」 → *Copy report* |
+| 검증 보고의 자리 — 에피소드 · 간선 · 조건 · 스탯 · 선택지 · 장면 메모 · 화자 | Episodes · Paths · Conditions · Stats · Choices · Scene notes · Speakers | 「ch01 · 간선 — …」 → *ch01 · Paths — …*(E8) |
 | 오류 · 경고 | Error · Warning | 🔴 · 🟡 표는 그대로 |
 | 고치는 법 | How to fix | |
 | 미니맵 | Minimap | |
@@ -125,6 +127,8 @@
 | 내보내기 | Export | |
 | 진행 JSON | Progression JSON | |
 | 대사 Yarn | Yarn dialogue | |
+| Yarn 주석의 머리말 — 장면 · 에피소드 · 분기 카드(「…」에서 들른다) | Scene · Episode · Branch card (visited from “…”) | 내보낼 때의 화면 언어로(E8) |
+| 안내 칸(툴이 쓰는 JSON) | `_note` | 한국어는 `_안내`(E8) |
 | 다시 열기 (여기서 고친 것 버림) | Reload (discard changes here) | 바깥에서 파일이 바뀌었을 때 |
 | 내 것으로 덮어쓰기 | Overwrite with mine | |
 | 삭제 · 지우기 | Delete | |

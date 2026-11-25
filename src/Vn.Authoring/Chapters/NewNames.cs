@@ -1,5 +1,6 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -10,22 +11,26 @@ namespace Vn.Authoring.Chapters;
 /// (챕터 <c>ch01</c> · 장면 <c>scene01</c> · 에피소드 <c>ch01_scene01_new01</c> · 분기 카드 <c>ch01_scene01_branch01</c>), 이름은 처음
 /// 이름이 채워진다. 같은 이름이 여럿이어도 ID가 달라 문제없다. ID는 개발자가 [구성] 탭에서 바꾼다.
 ///
+/// <b>처음 이름은 만들 때의 화면 언어로 적힌다</b>(문구 표 <c>Msg</c> — 2026-11-25 소유자 · english-ui E8). 이미 만든 이름은 언어를 바꿔도 그대로다
+/// — 이름은 작가의 데이터이고, 처음 이름을 알아보는 곳은 없다(자동 ID만 앞머리로 알아본다 — <see cref="IsAuto"/>).
+/// ⛔ E0–E7에는 「데이터 낱말이라 한국어 그대로」였다 — 소유자의 뜻을 잘못 알아들었다.
+///
 /// <b>에피소드 · 분기 카드의 ID에는 챕터와 장면이 든다</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c>) — 그 ID가 곧 Yarn 노드
 /// 이름이고, 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 프로젝트에서 하나여야 한다. ⛔ 전에는 챕터마다 <c>new01</c>부터 셌다.
 /// </summary>
 public static class NewNames
 {
     /// <summary>새 에피소드의 처음 제목.</summary>
-    public const string Episode = "새 에피소드";
+    public static string Episode => Msg.Name_NewEpisode;
 
     /// <summary>새 장면의 처음 이름.</summary>
-    public const string Scene = "새 장면";
+    public static string Scene => Msg.Name_NewScene;
 
     /// <summary>새 챕터의 처음 이름 — 작가가 이름을 비워 만들었을 때.</summary>
-    public const string Chapter = "새 챕터";
+    public static string Chapter => Msg.Name_NewChapter;
 
     /// <summary>새 분기 카드의 처음 제목(<see cref="DialogueNode.Title"/>).</summary>
-    public const string Branch = "새 분기";
+    public static string Branch => Msg.Name_NewBranch;
 
     /// <summary>
     /// 에피소드ID 자동 앞머리 — <c>{챕터}_{장면}_new</c>(장면이 없으면 <c>{챕터}_new</c>). Yarn 노드 이름 정규화를 지난 글자다 — 장면ID에 공백이

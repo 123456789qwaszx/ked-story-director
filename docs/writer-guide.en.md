@@ -8,8 +8,8 @@ This one document takes you from getting started to handing over your work.
 > see the [Chapter layer guide](chapter-layer-guide.en.md).
 >
 > The screen language follows your PC's language (Korean on a Korean PC, English otherwise). To change it: [⚙ Settings] →
-> "Other" → "Language (언어)" — it takes effect the next time you start the app. Data words such as the starting names of new items
-> ("새 챕터", "새 장면", "새 에피소드") stay in Korean in either language.
+> "Other" → "Language (언어)" — it takes effect the next time you start the app. New items get their starting names ("New chapter",
+> "New scene", "New episode") in the screen language at the time they're made — names you've given are never changed by the language.
 
 ## 1. The first time only
 
@@ -51,12 +51,12 @@ This one document takes you from getting started to handing over your work.
      All the keys are collected in [⚙ Settings] → "Shortcuts".
    - What you collapse **stays collapsed**. It's still collapsed after you restart the app.
 1-1. **If there's no place yet** — you can make one here. **An episode always belongs to a chapter and a scene.**
-   - If this is your first time and there are no chapters, press **[＋ Create first chapter]** in the middle of the board — "새 챕터" and "새 장면" are created together with the first card.
+   - If this is your first time and there are no chapters, press **[＋ Create first chapter]** in the middle of the board — "New chapter" and "New scene" are created together with the first card.
      The same button in the [Structure] tab takes you to the [Script] tab and creates it there. (While there are no chapters, [＋ Episode] is off.)
    - **[＋ Episode]** in the toolbar adds to the chapter shown in the toolbar's "Chapter" combo — in the selected scene, or else in the selected card's scene.
-     If nothing is selected, it also creates a "새 장면".
+     If nothing is selected, it also creates a "New scene".
    - New chapter = **right-click the project row (or empty space) in the Hierarchy → `Add chapter`**, or **right-click empty space outside chapters on the board → `Add chapter`**.
-     A "새 챕터" is created right away with a "새 장면" scene and one episode, and is selected (if you right-clicked on the board, the card goes where you clicked; from the Hierarchy, to the right of the board's
+     A "New chapter" is created right away with a "New scene" scene and one episode, and is selected (if you right-clicked on the board, the card goes where you clicked; from the Hierarchy, to the right of the board's
      other cards).
    - **Right-click a chapter row** → `Add scene` (with its first episode) · `Rename`
    - **Right-click a scene row** → `Add episode` (in that scene — no path is connected; connecting is step 3 below) · `Rename`
@@ -73,7 +73,7 @@ This one document takes you from getting started to handing over your work.
    - Renaming opens a name box right in the row, for any row. Selecting a chapter opens the "Conditions & stats" tab on the right with the chapter name box at the top,
      and selecting a scene puts a name box at the top of the Inspector on the right, so you can edit there too
      (just like an episode card's name box — edit and press Enter, Esc cancels, empty shows the ID). Anything deleted comes back with one undo (Ctrl+Z).
-   - New items are named "새 챕터" · "새 장면" · "새 에피소드" — rename them by double-clicking, as below.
+   - New items are named "New chapter" · "New scene" · "New episode" — rename them by double-clicking, as below.
 1-2. **Renaming · moving** — done right in the Hierarchy.
    - **Double-click** a row to rename it. `Enter` confirms; `Esc` or clicking elsewhere cancels.
      **Only the shown name changes** — the ID inside the game stays the same, so feel free to polish names.
@@ -189,7 +189,7 @@ A branch point appears before that line, and a **branch card** (purple · header
   were removed on 2026-11-19 — if an old project has them, they're quietly dropped when it opens.
 - If you delete a branch card ([Delete branch card]), its branch point remains unconnected — **drag that branch point onto empty space** to create a new branch
   card there.
-- A branch card belongs to the calling episode's scene, and in the explorer it shows as a "⑂ title" row under that episode. Its title starts as "새 분기";
+- A branch card belongs to the calling episode's scene, and in the explorer it shows as a "⑂ title" row under that episode. Its title starts as "New branch";
   select the card and edit it in the name box at the top of the Inspector (empty shows the branch card ID). The ID is set in the [Structure] tab.
 - The condition is chosen in the "⑂ Condition" box that appears **above the script in the Inspector when the branch card is selected** (clicking the "⑂ Condition" label on the card's header also selects that card).
   The branch is always visited, and the branch card checks the condition at its start — its dialogue plays only when it holds; otherwise it returns as soon as it's visited. The calling card's

@@ -1323,7 +1323,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>＋ Create first chapter</value>
   </data>
   <data name="Board_CreatesWithSceneAndOne" xml:space="preserve">
-    <value>Creates “새 챕터” with scene “새 장면” and one episode — same as “Add chapter” in the Hierarchy's right-click menu. Undo (Ctrl+Z) works.</value>
+    <value>Creates “New chapter” with scene “New scene” and one episode — same as “Add chapter” in the Hierarchy's right-click menu. Undo (Ctrl+Z) works.</value>
   </data>
   <data name="Board_OpensProjectYouReceivedChoose" xml:space="preserve">
     <value>Opens a project you received — choose the folder containing project.vnproject.json. Same as File → [Open…].</value>
@@ -2097,7 +2097,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Find — name · ID</value>
   </data>
   <data name="Hierarchy_FindsEpisodesScenesChaptersBy" xml:space="preserve">
-    <value>Finds episodes · scenes · chapters by name or ID — typing only the initial consonants works too (“ㅅㅌ”). While you type, only matching rows and their parents remain. Enter · ↓ go to the first row; Esc clears.</value>
+    <value>Finds episodes · scenes · chapters by name or ID — for Korean names, typing only the initial consonants works too (“ㅅㅌ”). While you type, only matching rows and their parents remain. Enter · ↓ go to the first row; Esc clears.</value>
   </data>
   <data name="Branch_ConditionsAreChosenOnBranch" xml:space="preserve">
     <value>Conditions are chosen on the branch card — in the [Script] tab select that card and use the box above the script; in the [Structure] tab click its chip.</value>
@@ -2796,7 +2796,7 @@ Stats on arrival —
     <value>Resets zoom to 100%. Zoom with the wheel; pan by dragging with the middle button.</value>
   </data>
   <data name="Structure_GoesToScriptTabAnd" xml:space="preserve">
-    <value>Goes to the [Script] tab and creates “새 챕터” with scene “새 장면” and one episode — same as right-click “Add chapter” in the [Script] Hierarchy.</value>
+    <value>Goes to the [Script] tab and creates “New chapter” with scene “New scene” and one episode — same as right-click “Add chapter” in the [Script] Hierarchy.</value>
   </data>
   <data name="Structure_CreatesAndSavesNewProject" xml:space="preserve">
     <value>Creates and saves a new project — once saved, the folder where chapters live is set.</value>
@@ -2898,5 +2898,23 @@ Chapters · scenes · episodes are added, deleted and edited in the [Script] tab
   </data>
   <data name="Structure_CopiesWholeListBelowTo" xml:space="preserve">
     <value>Copies the whole list below to the clipboard. If you only need one line, you can select it by dragging.</value>
+  </data>
+  <data name="App_LogCreateMainWindow" xml:space="preserve">
+    <value>Creating the main window</value>
+  </data>
+  <data name="App_LogRestoreRecentProject" xml:space="preserve">
+    <value>Restoring the recent project</value>
+  </data>
+  <data name="App_LogStart" xml:space="preserve">
+    <value>{0} startup</value>
+  </data>
+  <data name="App_LogRun" xml:space="preserve">
+    <value>{0} running</value>
+  </data>
+  <data name="App_ConsoleFailed" xml:space="preserve">
+    <value>[{0}] {1} failed: {2}</value>
+  </data>
+  <data name="App_ConsoleLog" xml:space="preserve">
+    <value>[{0}] Log: {1}</value>
   </data>
 </root>

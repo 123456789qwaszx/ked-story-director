@@ -327,7 +327,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            StartupLog.TryWrite("최근 프로젝트 복원", exception);
+            StartupLog.TryWrite(Ui.App_LogRestoreRecentProject, exception);
             _session.SetStatus(
                 string.Format(Ui.Main_CouldnTOpenProjectYou, exception.Message));
         }

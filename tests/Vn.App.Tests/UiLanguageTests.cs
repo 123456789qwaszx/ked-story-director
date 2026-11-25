@@ -115,6 +115,16 @@ public sealed class UiLanguageTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 영어_표에는_언어_칸의_이름_말고_한글이_없다()
+    {
+        // 언어 칸의 이름(「Language (언어)」)은 두 언어로 적는다 — 읽지 못하는 언어로 켜졌어도 찾게(E1). 하이어아키 찾기의 「ㅅㅌ」는 한국어 이름을
+        // 자음으로 찾는 예다. 그 밖에 영어 칸에 남은 한글은 영어 화면에 한국어로 보인다(english-ui E8 — ⛔ E7까지 「새 챕터」 · 「새 장면」이 남아 있었다).
+        Assert.Equal(
+            ["Hierarchy_FindsEpisodesScenesChaptersBy", "Settings_LanguageLabel"],
+            Table("Ui.en.resx").Where(pair => Regex.IsMatch(pair.Value, "[가-힣ㄱ-ㅎㅏ-ㅣ]")).Select(pair => pair.Key).Order(StringComparer.Ordinal));
+    }
+
     private static Dictionary<string, string> Table(string file) =>
         XDocument.Load(Path.Combine(StringsFolder, file)).Root!.Elements("data")
             .ToDictionary(data => (string)data.Attribute("name")!, data => (string?)data.Element("value") ?? string.Empty, StringComparer.Ordinal);

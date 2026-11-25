@@ -171,7 +171,7 @@ public sealed record ChapterDiagnostic(
 
         if (!string.IsNullOrEmpty(Sheet))
         {
-            parts.Add(Sheet);
+            parts.Add(ChapterSheetNames.Display(Sheet)!);   // 화면 언어로(english-ui E8) — Sheet는 가르는 열쇠 그대로
         }
 
         return $"{string.Join(" · ", parts)} — {Message}";

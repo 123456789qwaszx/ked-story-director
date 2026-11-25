@@ -323,7 +323,10 @@ public sealed class ChapterGraphModel
             string.Equals(item.EpisodeId, episode.EpisodeId, StringComparison.Ordinal));
 }
 
-/// <summary>시트 이름 한 곳. 리더와 뷰·테스트가 같은 문자열을 본다.</summary>
+/// <summary>
+/// 시트 이름 한 곳. 리더와 뷰·테스트가 같은 문자열을 본다. 상수는 진단의 <b>자리를 가르는 열쇠</b>라 언어와 상관없이 그대로고, 사람에게
+/// 보일 때만 <see cref="Display"/>가 화면 언어로 옮긴다(english-ui E8).
+/// </summary>
 public static class ChapterSheetNames
 {
     public const string Episodes = "에피소드";
@@ -335,4 +338,17 @@ public static class ChapterSheetNames
 
     /// <summary>화자 — 프로젝트의 화자 목록과 그 캐릭터 키(<see cref="ChapterSpeakerKeys"/>).</summary>
     public const string Speakers = "화자";
+
+    /// <summary>사람에게 보이는 자리 이름 — 검증 보고 한 줄의 머리(「ch01 · 에피소드 — …」 · <see cref="ChapterDiagnostic.Describe"/>). 모르는 것은 그대로.</summary>
+    public static string? Display(string? sheet) => sheet switch
+    {
+        Episodes => Msg.Place_Episodes,
+        Edges => Msg.Place_Edges,
+        Conditions => Msg.Place_Conditions,
+        Stats => Msg.Place_Stats,
+        Choices => Msg.Place_Choices,
+        SceneNotes => Msg.Place_SceneNotes,
+        Speakers => Msg.Place_Speakers,
+        _ => sheet
+    };
 }

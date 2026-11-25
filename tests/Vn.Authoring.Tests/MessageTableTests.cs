@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Vn.Authoring.Chapters;
 using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Tests;
@@ -56,6 +57,33 @@ public sealed class MessageTableTests
         Assert.NotEmpty(heads);
         Assert.All(heads, key => Assert.StartsWith(english["Diag_ConditionHead"], english[key], StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void 영어_표에는_한글이_없다()
+    {
+        // 2026-11-25 소유자 — 만들어지는 글(새 이름 · Yarn 주석 · 설정 파일의 안내 · 검증 보고의 자리 이름)도 영어 화면이면 영어다(english-ui E8).
+        //   ⛔ E7까지 영어 칸에 옛 시트 이름(`간선` · `스탯` · `조건`)이 남아 있었다.
+        Assert.Empty(Table("Msg.en.resx").Where(pair => Hangul.IsMatch(pair.Value)).Select(pair => $"{pair.Key}: {pair.Value}"));
+    }
+
+    [Fact]
+    public void 만들어지는_글은_화면_언어를_따르고_한국어로는_전과_같다()
+    {
+        // 처음 이름 · 자리 이름은 표에서 온다 — 한국어 화면에서는 E7까지와 같은 글이다. 자리를 가르는 열쇠(ChapterSheetNames의 상수)는 그대로다.
+        Assert.Equal(("새 에피소드", "새 장면", "새 챕터", "새 분기"), (NewNames.Episode, NewNames.Scene, NewNames.Chapter, NewNames.Branch));
+        Assert.Equal("간선", ChapterSheetNames.Edges);
+        Assert.Equal("간선", ChapterSheetNames.Display(ChapterSheetNames.Edges));
+        Assert.Equal("ch01.json", ChapterSheetNames.Display("ch01.json"));   // 모르는 자리는 그대로
+        Assert.Null(ChapterSheetNames.Display(null));
+
+        CultureInfo english = CultureInfo.GetCultureInfo("en");
+        Assert.Equal(
+            ["New episode", "New scene", "New chapter", "New branch", "Paths", "// Episode: {0}", "_note"],
+            new[] { "Name_NewEpisode", "Name_NewScene", "Name_NewChapter", "Name_NewBranch", "Place_Edges", "Yarn_EpisodeComment", "Export_NoteKey" }
+                .Select(key => Msg.ResourceManager.GetString(key, english)));
+    }
+
+    private static readonly Regex Hangul = new("[가-힣ㄱ-ㅎㅏ-ㅣ]");
 
     private static Dictionary<string, string> Table(string file) =>
         XDocument.Load(Path.Combine(StringsFolder, file)).Root!.Elements("data")

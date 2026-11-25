@@ -8,8 +8,8 @@
 > **Screen names (2026-11-05):** the tabs are **[Structure]** (formerly [Chapter graph]) and **[Script]** (formerly [Staging graph]). The non-Excel screen descriptions (§0 ·
 > §2–§5 · §9 · §10) were updated to the screens of 2026-11-18.
 >
-> This is the English version of `chapter-layer-guide.md`. Screen names follow the English UI; data words such as sheet names (`에피소드`, `간선`, `조건`, `스탯`)
-> and the starting names of new items stay in Korean in either language.
+> This is the English version of `chapter-layer-guide.md`. Screen names follow the English UI, and new items get their starting names in the screen
+> language. The record of the workbook days below keeps the Korean sheet and column names as they appeared in the files.
 
 How to use the layer where chapters (episode structure · branches · conditions) are built. It's a different layer from the
 [Writer's guide](writer-guide.en.md), where you write dialogue line by line — **the Writer's guide covers the [Script] tab (dialogue · choices · branches);
@@ -274,7 +274,7 @@ aren't in the progression JSON.
 
 It's made in the [Script] tab — right-click the project row · empty space in the Hierarchy → **"Add chapter"**, or right-click empty space outside chapters on the board → "Add chapter".
 If there are no chapters, **[＋ Create first chapter]** appears in the middle of the board (the same button in [Structure] takes you to the [Script] tab and creates it there).
-A "새 챕터" (ID automatic — `ch01` …) is created with a "새 장면" scene and one episode, and selected — one undo step (2026-11-18).
+A "New chapter" (ID automatic — `ch01` …) is created with a "New scene" scene and one episode, and selected — one undo step (2026-11-18).
 The chapter name is edited in the [Script] tab (the `Chapter name` box at the top of the "Conditions & stats" tab · double-click in the Hierarchy), and the chapter ID in the
 `Chapter ID` box of the [Structure] "Inspector". ⛔ The route of [＋] on the left → chapter Id → `chapters/{Id}.xlsx` being created was removed (workbooks in D2, the [＋] at the top of the Hierarchy on 2026-11-18).
 A new chapter starts **without stats** — stats belong to the chapter and are added in the [Structure] tab (2026-11-17 · ⛔ before that they were filled from the variables of `game.definition.json`,

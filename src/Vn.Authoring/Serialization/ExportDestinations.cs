@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vn.Authoring.Strings;
@@ -32,7 +33,19 @@ public sealed record ExportDestinations(string? Progression, string? DialogueYar
 
     private const string ProgressionKey = "gameFolder";
     private const string DialogueYarnKey = "dialogueYarnFolder";
-    private const string NoteKey = "_안내";
+
+    /// <summary>안내 칸의 이름 — 적을 때의 화면 언어로(「_안내」 · 「_note」 · english-ui E8). 읽을 때는 보지 않는다.</summary>
+    private static string NoteKey => Msg.Export_NoteKey;
+
+    /// <summary>
+    /// 두 언어의 안내 칸 이름 — 다시 적을 때 둘 다 걷는다. 다른 언어로 적힌 옛 칸이 「모르는 칸」으로 남아 지켜지면 안내가 둘이 되고, 아무 곳도
+    /// 안 정했을 때 파일이 걷히지 않는다.
+    /// </summary>
+    private static IEnumerable<string> NoteKeys =>
+        new[] { "ko", "en" }
+            .Select(language => Msg.ResourceManager.GetString(nameof(Msg.Export_NoteKey), CultureInfo.GetCultureInfo(language)))
+            .OfType<string>()
+            .Distinct(StringComparer.Ordinal);
 
     private static readonly JsonSerializerOptions WriteOptions = new()
     {
@@ -114,7 +127,10 @@ public sealed record ExportDestinations(string? Progression, string? DialogueYar
             root = new JsonObject();   // 깨진 파일은 고쳐 쓴다 — 읽을 때도 없는 것으로 봤다
         }
 
-        root.Remove(NoteKey);
+        foreach (string key in NoteKeys)
+        {
+            root.Remove(key);
+        }
         Put(root, ProgressionKey, destinations.Progression);
         Put(root, DialogueYarnKey, destinations.DialogueYarn);
 
@@ -130,8 +146,7 @@ public sealed record ExportDestinations(string? Progression, string? DialogueYar
 
         var written = new JsonObject
         {
-            [NoteKey] = "복제할 폴더 — 프로젝트 폴더 기준 상대 경로 또는 절대 경로. director는 저장할 때 진행 JSON을 gameFolder로, 대사 Yarn을 " +
-                        "dialogueYarnFolder로 복제한다. compositor는 gameFolder를 읽어 제 Yarn을 쓴다."
+            [NoteKey] = Msg.Export_TargetNote
         };
 
         foreach ((string key, JsonNode? value) in root.ToList())

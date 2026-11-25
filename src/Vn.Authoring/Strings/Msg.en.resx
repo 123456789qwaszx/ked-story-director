@@ -867,7 +867,7 @@
     <value>Couldn't find a route to '{0}' (the search stopped at its limit)</value>
   </data>
   <data name="Diag_ThereSNoPathInto" xml:space="preserve">
-    <value>There's no path into this episode in the `간선` sheet.</value>
+    <value>There's no path into this episode.</value>
   </data>
   <data name="Diag_UnreachableFromSourcesOfIts" xml:space="preserve">
     <value>Unreachable from the sources of its incoming paths ({0}).</value>
@@ -1107,10 +1107,10 @@
     <value>'{0}' — the change '{1}' isn't an integer.</value>
   </data>
   <data name="Expr_IsnTStatKeyIn" xml:space="preserve">
-    <value>'{0}' isn't a stat key in the `스탯` sheet. Declared keys: (none)</value>
+    <value>'{0}' isn't one of this chapter's stat keys. Declared keys: (none)</value>
   </data>
   <data name="Expr_IsnTStatKeyIn2" xml:space="preserve">
-    <value>'{0}' isn't a stat key in the `스탯` sheet. Declared keys: {1}</value>
+    <value>'{0}' isn't one of this chapter's stat keys. Declared keys: {1}</value>
   </data>
   <data name="Diag_OfChapter" xml:space="preserve">
     <value>{1} of chapter “{0}”</value>
@@ -1155,7 +1155,7 @@
     <value>There are lines written outside the condition lines (&lt;&lt;if&gt;&gt; · &lt;&lt;endif&gt;&gt;) or several conditions, so it can't be edited here. Edit this card's writing box in the [Script] tab and the outside lines move inside the condition, so you can edit it again.</value>
   </data>
   <data name="Edit_ConditionIsnTSuppliedTo" xml:space="preserve">
-    <value>Condition '{0}' isn't supplied to this board — check that it's in the chapter's `조건` sheet and that its expression is a form the tool can translate.</value>
+    <value>Condition '{0}' isn't supplied to this board — check that it's among the chapter's conditions and that its expression is a form the tool can translate.</value>
   </data>
   <data name="Diag_LineIdAppearsTwiceInResult" xml:space="preserve">
     <value>LineId '{0}' appears twice in the result.</value>
@@ -1252,5 +1252,65 @@
   </data>
   <data name="Board_BranchLine" xml:space="preserve">
     <value>Branch</value>
+  </data>
+  <data name="Name_NewEpisode" xml:space="preserve">
+    <value>New episode</value>
+  </data>
+  <data name="Name_NewScene" xml:space="preserve">
+    <value>New scene</value>
+  </data>
+  <data name="Name_NewChapter" xml:space="preserve">
+    <value>New chapter</value>
+  </data>
+  <data name="Name_NewBranch" xml:space="preserve">
+    <value>New branch</value>
+  </data>
+  <data name="Place_Episodes" xml:space="preserve">
+    <value>Episodes</value>
+  </data>
+  <data name="Place_Edges" xml:space="preserve">
+    <value>Paths</value>
+  </data>
+  <data name="Place_Conditions" xml:space="preserve">
+    <value>Conditions</value>
+  </data>
+  <data name="Place_Stats" xml:space="preserve">
+    <value>Stats</value>
+  </data>
+  <data name="Place_Choices" xml:space="preserve">
+    <value>Choices</value>
+  </data>
+  <data name="Place_SceneNotes" xml:space="preserve">
+    <value>Scene notes</value>
+  </data>
+  <data name="Place_Speakers" xml:space="preserve">
+    <value>Speakers</value>
+  </data>
+  <data name="Yarn_SceneComment" xml:space="preserve">
+    <value>// Scene: {0}</value>
+  </data>
+  <data name="Yarn_EpisodeComment" xml:space="preserve">
+    <value>// Episode: {0}</value>
+  </data>
+  <data name="Yarn_BranchCardComment" xml:space="preserve">
+    <value>// Branch card: {0} — visited from “{1}”</value>
+  </data>
+  <data name="Diag_UnknownWarning" xml:space="preserve">
+    <value>Unknown warning</value>
+  </data>
+  <data name="Export_NoteKey" xml:space="preserve">
+    <value>_note</value>
+  </data>
+  <data name="Export_TargetNote" xml:space="preserve">
+    <value>Mirror folders — relative to the project folder, or absolute. When saving, director copies the progression JSON to gameFolder and the Yarn dialogue to dialogueYarnFolder. compositor reads gameFolder and writes its own Yarn.</value>
+  </data>
+  <data name="Export_RecordNote" xml:space="preserve">
+    <value>Files this tool copied when saving — a file not copied this time is removed only when its bytes match this fingerprint.</value>
+  </data>
+  <data name="Doc_SceneHeader" xml:space="preserve">
+    <value>[Scene] {0}</value>
+  </data>
+  <data name="Doc_WarningLine" xml:space="preserve">
+    <value>[Warning] {0}</value>
   </data>
 </root>

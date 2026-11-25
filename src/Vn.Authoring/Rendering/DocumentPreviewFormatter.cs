@@ -1,4 +1,5 @@
 using System.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Rendering;
 
@@ -48,10 +49,9 @@ public static class DocumentPreviewFormatter
             switch (segment.Kind)
             {
                 case RenderedSegmentKind.NodeHeader:
-                    builder.Append("[장면] ")
-                        .Append(string.IsNullOrWhiteSpace(segment.Text)
-                            ? segment.Source.NodeId
-                            : segment.Text)
+                    builder.Append(string.Format(
+                            Msg.Doc_SceneHeader,
+                            string.IsNullOrWhiteSpace(segment.Text) ? segment.Source.NodeId : segment.Text))
                         .Append('\n');
                     break;
 
@@ -77,7 +77,7 @@ public static class DocumentPreviewFormatter
                     break;
 
                 case RenderedSegmentKind.Warning:
-                    builder.Append("[주의] ").Append(segment.Text).Append('\n');
+                    builder.Append(string.Format(Msg.Doc_WarningLine, segment.Text)).Append('\n');
                     break;
 
                 case RenderedSegmentKind.NodeFooter:

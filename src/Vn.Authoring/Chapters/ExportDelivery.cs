@@ -233,7 +233,7 @@ public static class ExportDelivery
 
             JsonSupport.WriteAtomic(path, JsonSupport.ToDeterministicText(new JsonObject
             {
-                ["_안내"] = "이 툴이 저장할 때 복제한 파일 — 이번에 복제하지 않은 파일은 바이트가 이 지문과 같을 때만 걷는다.",
+                [Msg.Export_NoteKey] = Msg.Export_RecordNote,   // 적을 때의 화면 언어로(english-ui E8) — 읽을 때는 보지 않는다
                 ["files"] = files
             }));
         }

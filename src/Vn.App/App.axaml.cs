@@ -63,7 +63,7 @@ public partial class App : Application
         }
         catch (Exception exception)
         {
-            StartupLog.TryWrite("주 창 만들기", exception);
+            StartupLog.TryWrite(Ui.App_LogCreateMainWindow, exception);
             return CreateStartupFailureWindow(exception);
         }
     }

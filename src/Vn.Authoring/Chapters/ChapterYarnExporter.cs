@@ -122,20 +122,17 @@ public static class ChapterYarnExporter
         var text = new StringBuilder();
 
         // ── 파일 머리: 장면 이름과 장면 메모 ────────────────────────────────────
-        text.Append("// 장면: ").Append(OneLine(scene.DisplayName));
-
-        if (!string.Equals(scene.DisplayName, scene.SceneId, StringComparison.Ordinal))
-        {
-            text.Append(" (").Append(OneLine(scene.SceneId)).Append(')');
-        }
-
-        text.Append('\n');
+        // 주석의 머리말은 내보낼 때의 화면 언어로 적힌다(english-ui E8) — 이름 · 메모는 작가가 적은 그대로다.
+        string sceneName = string.Equals(scene.DisplayName, scene.SceneId, StringComparison.Ordinal)
+            ? OneLine(scene.DisplayName)
+            : $"{OneLine(scene.DisplayName)} ({OneLine(scene.SceneId)})";
+        text.Append(string.Format(Msg.Yarn_SceneComment, sceneName)).Append('\n');
         AppendComment(text, ChapterSceneNotes.TextOf(chapter.SceneNotes, scene.SceneId));
 
         foreach (ChapterEpisode episode in scene.Episodes)
         {
             text.Append('\n');
-            text.Append("// 에피소드: ").Append(OneLine(episode.ShownTitle)).Append('\n');
+            text.Append(string.Format(Msg.Yarn_EpisodeComment, OneLine(episode.ShownTitle))).Append('\n');
             AppendComment(text, episode.Memo);
 
             string title = ChapterProgressionExporter.DialogueEntryIdOf(episode);
@@ -149,8 +146,8 @@ public static class ChapterYarnExporter
             foreach (BranchCardHome home in homes.Where(home => string.Equals(home.EpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
             {
                 text.Append('\n');
-                text.Append("// 분기 카드: ").Append(OneLine(EpisodeNaming.BranchTitleOf(home.Card)))
-                    .Append(" — 「").Append(OneLine(episode.ShownTitle)).Append("」에서 들른다\n");
+                text.Append(string.Format(Msg.Yarn_BranchCardComment, OneLine(EpisodeNaming.BranchTitleOf(home.Card)), OneLine(episode.ShownTitle)))
+                    .Append('\n');
                 text.Append("title: ").Append(YarnNaming.StoryNodeTitleOf(home.Card.Name, home.Card.Id)).Append("\n---\n");
                 AppendBody(text, episode.EpisodeId, home.Card, project, problems);
                 text.Append("===\n");
@@ -225,7 +222,7 @@ public static class ChapterYarnExporter
 
                 case RenderedSegmentKind.Warning:
                     problems.Add(new ChapterYarnProblem(
-                        segment.Text ?? "알 수 없는 경고", IsBlocking: false, episodeId, segment.Source.LineId));
+                        segment.Text ?? Msg.Diag_UnknownWarning, IsBlocking: false, episodeId, segment.Source.LineId));
                     break;
             }
         }

@@ -123,6 +123,16 @@ public sealed class ProjectFolderTests
             ExportDestinations.SaveBeside(manifest, ExportDestinations.None);
             Assert.False(File.Exists(ExportDestinations.PathFor(manifest)));
 
+            // 안내 칸은 적을 때의 화면 언어로 선다 — 다른 언어로 적힌 옛 안내(「_note」)는 다시 적을 때 걷힌다. 모르는 칸으로 남아 지켜지면 안내가 둘이
+            // 되고, 아무 곳도 안 정했을 때 파일이 걷히지 않는다(english-ui E8).
+            File.WriteAllText(ExportDestinations.PathFor(manifest), "{ \"_note\": \"Mirror folders\", \"gameFolder\": \"../g\" }");
+            ExportDestinations.SaveBeside(manifest, ExportDestinations.None.With(ExportFormat.Progression, "../g"));
+            string noted = File.ReadAllText(ExportDestinations.PathFor(manifest));
+            Assert.Contains("\"_안내\"", noted, StringComparison.Ordinal);
+            Assert.DoesNotContain("_note", noted, StringComparison.Ordinal);
+            ExportDestinations.SaveBeside(manifest, ExportDestinations.None);
+            Assert.False(File.Exists(ExportDestinations.PathFor(manifest)));
+
             // 깨진 파일은 "없음"이다 — 설정 하나 때문에 프로젝트를 못 열면 안 된다.
             File.WriteAllText(ExportDestinations.PathFor(manifest), "{ not json");
             Assert.True(ExportDestinations.LoadBeside(manifest).IsEmpty);

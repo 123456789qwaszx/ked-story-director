@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using System.Text.RegularExpressions;
 using Path = System.IO.Path;
 using Vn.App.Services;
 using Vn.App.Views;
@@ -25,6 +26,8 @@ namespace Vn.App.Tests;
 /// 보고는 보이는 글 가운데 <b>칸보다 긴 것</b>이다: <c>W</c> 한 줄 글이 칸보다 넓다(줄임표 「…」로 잘리거나 넘친다) · <c>H</c> 줄을 넘기는 글이
 /// 칸 높이를 넘는다 · <c>CLIP</c> 조상이 글의 일부를 가린다(가로 스크롤이 있는 자리 — 검증 보고 — 는 괜찮다) · <c>HIDDEN</c> 창 밖으로 밀렸다.
 /// 판(카드 · 선택지 칸) 위의 글은 판이 움직여 보는 자리라 가림은 세지 않는다(제 칸보다 넓은 것만 센다).
+/// 영어로 돌리면 둘을 더 적는다(english-ui E8): <c>KO</c> 화면에 보이는 한글(점검 프로젝트의 데이터는 모두 영어라 한글은 표에서 온 것이다 —
+/// 언어 칸의 「한국어」 · 「(언어)」는 뺀다) · <c>FILE-KO</c> 저장하며 내보낸 파일(진행 JSON · 대사 Yarn · 그 밖의 툴이 쓴 파일)에 든 한글.
 ///
 /// <code>
 /// $env:VN_UI_PROBE="en"; dotnet test tests/Vn.App.Tests --filter "FullyQualifiedName~UiTextFitProbe"; Remove-Item Env:VN_UI_PROBE
@@ -126,8 +129,37 @@ public sealed class UiTextFitProbe
 
         Look(settings, settings, "30-settings", output, report);
         settings.Close();
+
+        // 내보낸 파일 — 저장하면 진행 JSON · 대사 Yarn을 낸다. 영어 화면이면 툴이 적은 글(주석 · 안내)도 영어다(english-ui E8).
+        session.Save();
+        Dispatcher.UIThread.RunJobs();
+
+        if (UiLanguage.Current == UiLanguage.English)
+        {
+            string folder = Path.GetDirectoryName(manifest)!;
+
+            foreach (string file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+            {
+                string[] lines = File.ReadAllLines(file);
+
+                for (int at = 0; at < lines.Length; at++)
+                {
+                    if (Hangul.IsMatch(lines[at]))
+                    {
+                        report.Add($"files\tFILE-KO\t{Path.GetRelativePath(folder, file)}:{at + 1}\t{lines[at].Trim()}");
+                    }
+                }
+            }
+        }
+
         window.Close();
     }
+
+    private static readonly Regex Hangul = new("[가-힣ㄱ-ㅎㅏ-ㅣ]");
+
+    /// <summary>영어 화면에서도 한글로 두는 글 — 언어 칸의 언어 이름.</summary>
+    private static bool LanguageName(string text) =>
+        text.Contains("한국어", StringComparison.Ordinal) || text.Contains("(언어)", StringComparison.Ordinal);
 
     /// <summary>챕터 하나(장면 둘 · 에피소드 셋) · 스탯 하나 · 조건 하나 · 선택지 둘(하나는 조건 · 스탯변화) · 분기 카드 하나.</summary>
     private static string SaveProject(string directory, out string branchId)
@@ -141,7 +173,7 @@ public sealed class UiTextFitProbe
         editor.AddEpisode("ch01", "a", title: "a", 260, 0, sceneId: "opening");
         editor.AddEpisode("ch01", "b", title: "b", 520, 0, sceneId: "hall");
         editor.FindChapter("ch01")!.Stats.Add(new ChapterStat("trust", 0, 0, 10));
-        editor.AddChapterCondition("ch01", "close_to_harin", "trust >= 3");
+        editor.AddChapterCondition("ch01", "close_to_harin", "trust >= 0");   // 닿는 조건 — 검증이 막지 않아야 저장할 때 진행 JSON · Yarn이 나간다
         editor.AddEdge("ch01", "root", "a", optionLabel: "Follow Laru down the long hallway", statChanges: "trust +1");
         editor.AddEdge("ch01", "root", "b", conditionLabel: "close_to_harin", optionLabel: "Stay");
 
@@ -169,15 +201,23 @@ public sealed class UiTextFitProbe
 
         foreach (TextBlock block in root.GetVisualDescendants().OfType<TextBlock>())
         {
-            if (!block.IsEffectivelyVisible || string.IsNullOrEmpty(block.Text) || block.Bounds.Width <= 0 ||
-                Problem(block, shot) is not { } problem)
+            if (!block.IsEffectivelyVisible || string.IsNullOrEmpty(block.Text) || block.Bounds.Width <= 0)
+            {
+                continue;
+            }
+
+            string? problem = Problem(block, shot);
+            bool korean = UiLanguage.Current == UiLanguage.English && Hangul.IsMatch(block.Text) && !LanguageName(block.Text);
+
+            if (problem is null && !korean)
             {
                 continue;
             }
 
             Point at = block.TranslatePoint(default, shot) ?? default;
             string text = block.Text.Replace("\n", " ⏎ ", StringComparison.Ordinal);
-            report.Add($"{name}\t{problem}\t@{at.X:0},{at.Y:0}\t{text}");
+            string kind = string.Join(" · ", new[] { problem, korean ? "KO" : null }.OfType<string>());
+            report.Add($"{name}\t{kind}\t@{at.X:0},{at.Y:0}\t{text}");
         }
     }
 

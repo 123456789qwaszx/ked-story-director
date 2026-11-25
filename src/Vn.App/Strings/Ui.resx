@@ -3854,4 +3854,28 @@
     <value>아래 목록 전체를 클립보드로 복사합니다. 줄 하나만 필요하면 드래그로 선택해도 됩니다.</value>
     <comment>ChapterGraphView.axaml</comment>
   </data>
+  <data name="App_LogCreateMainWindow" xml:space="preserve">
+    <value>주 창 만들기</value>
+    <comment>App.axaml.cs — 시작 로그(startup-error.log)의 머리</comment>
+  </data>
+  <data name="App_LogRestoreRecentProject" xml:space="preserve">
+    <value>최근 프로젝트 복원</value>
+    <comment>MainWindow.axaml.cs — 시작 로그의 머리</comment>
+  </data>
+  <data name="App_LogStart" xml:space="preserve">
+    <value>{0} 시작</value>
+    <comment>Program.cs — 시작 로그의 머리({0} 앱 이름)</comment>
+  </data>
+  <data name="App_LogRun" xml:space="preserve">
+    <value>{0} 실행</value>
+    <comment>Program.cs — 시작 로그의 머리({0} 앱 이름)</comment>
+  </data>
+  <data name="App_ConsoleFailed" xml:space="preserve">
+    <value>[{0}] {1} 실패: {2}</value>
+    <comment>Program.cs — 콘솔(터미널에서 켰을 때)</comment>
+  </data>
+  <data name="App_ConsoleLog" xml:space="preserve">
+    <value>[{0}] 로그: {1}</value>
+    <comment>Program.cs — 콘솔(터미널에서 켰을 때)</comment>
+  </data>
 </root>

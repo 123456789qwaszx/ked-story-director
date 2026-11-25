@@ -1,5 +1,6 @@
 using Avalonia;
 using Vn.App.Services;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -24,7 +25,7 @@ class Program
         }
         catch (Exception exception)
         {
-            Report($"{AppIdentity.Name} 시작", exception);
+            Report(string.Format(Ui.App_LogStart, AppIdentity.Name), exception);
             return 1;
         }
     }
@@ -44,7 +45,7 @@ class Program
     {
         if (e.ExceptionObject is Exception exception)
         {
-            Report($"{AppIdentity.Name} 실행", exception);
+            Report(string.Format(Ui.App_LogRun, AppIdentity.Name), exception);
         }
     }
 
@@ -61,11 +62,11 @@ class Program
 
         try
         {
-            Console.Error.WriteLine($"[{AppIdentity.Name}] {context} 실패: {exception}");
+            Console.Error.WriteLine(string.Format(Ui.App_ConsoleFailed, AppIdentity.Name, context, exception));
 
             if (path is not null)
             {
-                Console.Error.WriteLine($"[{AppIdentity.Name}] 로그: {path}");
+                Console.Error.WriteLine(string.Format(Ui.App_ConsoleLog, AppIdentity.Name, path));
             }
         }
         catch (Exception)
