@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Model;
@@ -146,6 +147,44 @@ public sealed class CardLiveWritingTests
         Pause(window);
 
         Assert.Equal(["첫 줄", "둘째 줄", "새로 쓰는 줄이다"], Said(card));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 글자를_조합하는_중에는_멈춰도_넣지_않아_새_줄에서_조합하던_글자가_사라지지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 새 줄의 첫 단어를 쓸 때 두 번째 글자가 화면에서 사라졌다(「이런」을 쳤는데 「이」만, Enter를 치면 그제야 들어왔다).
+        // 「런」을 치기 시작하면 「이」가 칸에 들어오고 멈춤 시계가 도는데, 「런」을 조합하는 도중에 시계가 다 가 넣었다 — 새 줄이라 카드를 새로 지어
+        // 칸이 바뀌고, 조합하던 글자가 옛 칸과 함께 사라졌다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) = Stage("첫 줄");
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄\n이";
+        box.CaretIndex = box.Text.Length;
+        Avalonia.Controls.Presenters.TextPresenter presenter = box.GetVisualDescendants()
+            .OfType<Avalonia.Controls.Presenters.TextPresenter>().First();
+        presenter.SetCurrentValue(Avalonia.Controls.Presenters.TextPresenter.PreeditTextProperty, "런");   // 입력기가 「런」을 조합하는 중
+        Assert.True(GraphEditorView.IsComposing(box));
+        Pause(window);
+
+        Assert.Equal(["첫 줄"], Said(card));            // 조합하는 동안은 넣지 않는다
+        Assert.Same(box, Box(window, card.Id));         // 칸이 그대로다 — 조합하던 글자가 그 칸에 남는다
+        Assert.Equal("런", presenter.PreeditText);
+
+        // 조합을 마쳐 「이런」이 칸에 들어오면 멈출 때 넣는다(새 줄이라 카드를 새로 짓고 초점 · 커서는 새 칸으로 간다).
+        box.Text = "첫 줄\n이런";
+        box.CaretIndex = box.Text.Length;
+        Assert.False(GraphEditorView.IsComposing(box));
+        Pause(window);
+
+        Assert.Equal(["첫 줄", "이런"], Said(card));
+        Assert.Equal(ids[0], card.Script.ActiveLines.First().Id);
+        TextBox now = Box(window, card.Id);
+        Assert.True(now.IsFocused);
+        Assert.Equal("첫 줄\n이런", now.Text);
+        Assert.Equal(now.Text!.Length, now.CaretIndex);
 
         window.Close();
     });

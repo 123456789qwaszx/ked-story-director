@@ -4728,6 +4728,11 @@ public partial class GraphEditorView : UserControl
     /// <summary>
     /// 쓰다가 멈춘 글 칸의 글을 넣는다(<see cref="LiveWritingDelay"/>가 지나면 저절로 — 화면 시험은 이것을 바로 부른다).
     /// 넣지 않은 글이 없으면 아무것도 하지 않는다.
+    ///
+    /// <b>글자를 조합하는 중이면 미룬다</b>(2026-11-26 소유자 — 「새 줄의 첫 단어를 쓸 때 두 번째 글자가 화면에서 아예 사라진다 … 「이런」을 쳤는데
+    /// 「이」만」). 한글은 다음 글자를 치기 시작할 때 앞 글자가 들어오고(그때 멈춤 시계가 돈다) 다음 글자는 조합하는 동안 칸의 글이 아니라서 시계를
+    /// 다시 감지 않는다 — 그래서 둘째 글자를 조합하는 도중에 시계가 다 가 넣었고, 새 줄의 첫 글자는 줄을 늘려 카드를 새로 지으므로(<see cref="RebuildCard"/>)
+    /// 조합 중인 글자가 옛 칸과 함께 사라졌다(입력기는 계속 조합하다 Enter에야 새 칸에 넣었다). 조합이 끝나 칸의 글이 되면 다시 멈출 때 넣는다.
     /// </summary>
     internal void CommitLiveWriting()
     {
@@ -4737,9 +4742,22 @@ public partial class GraphEditorView : UserControl
             _writingBoxes.TryGetValue(nodeId, out TextBox? box) &&
             PendingWriting(nodeId, box) is { } text)
         {
+            if (IsComposing(box))
+            {
+                _liveWriting.Start();
+                return;
+            }
+
             ApplyWriting(nodeId, box, text, live: true);
         }
     }
+
+    /// <summary>
+    /// 글 칸이 글자를 조합하는 중인가(한글 · 일본어 입력기) — 칸의 글자 겹이 아직 칸의 글이 아닌 조합 글자를 들고 있다. 글자 겹은 칸의 글이나 커서가
+    /// 바뀌면 조합 글자를 지운다(입력기가 곧 다시 준다).
+    /// </summary>
+    internal static bool IsComposing(TextBox box) =>
+        box.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.TextPresenter>().FirstOrDefault()?.PreeditText is { Length: > 0 };
 
     /// <summary>
     /// 저장 전에 — 초점이 있는 글 칸의 넣지 않은 글을 먼저 넣는다(Ctrl+S도 넣는 때다, §7 D4).
