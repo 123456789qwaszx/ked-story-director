@@ -74,7 +74,7 @@ Option : { TargetEpisodeId, ChoiceLabel, Auto, VisibleConditions[], Conditions[]
 | `Node.EventKey` | `EpisodeNode.EventKey` | 해석 없이 실어 나른다. 장면 끝 확정에서 시청 보고의 열쇠가 된다 |
 | `Node.SceneId` | `EpisodeNode.SceneId` | 에피소드의 장면ID — 늘 채운다(§1 ②) |
 | `NextOptions[]` | `EpisodeOption` | 간선 하나 = 하나. **배열 순서 = 화면 순서 = 서버 이력의 `OptionIndex`**(§3). 정렬하지 않는다 |
-| `Option.ChoiceLabel` · `Option.Auto` | `EpisodeOption` | 자동 길은 `Auto: true` · 빈 문구. 그 밖의 길은 문구가 있어야 한다 |
+| `Option.ChoiceLabel` · `Option.Auto` | `EpisodeOption` | 자동 길은 `Auto: true` · 빈 문구. 그 밖의 길은 문구가 있어야 한다 — 저작에서 문구가 빈 선택지(검증 경고)는 임시 문구 `[TODO] Missing choice text -> {TargetEpisodeId}`로 나간다(영어 한 벌 · ASCII · 2026-11-26) |
 | `Option.VisibleConditions` · `Option.Conditions` | | 표시조건 · 해금조건. 조건 이름은 나가지 않고 그 식이 항으로 펴져 나간다. 식 미정이면 빈 배열(관문 없음) |
 | `Option.LockedReasonText` | | 잠금 안내문 |
 | `Option.StatChanges` | | 스탯변화. `Op`는 늘 적는다 — `"Add"`(정수 증감) · `"Set"`(깃발 지정, 값 0/1) |

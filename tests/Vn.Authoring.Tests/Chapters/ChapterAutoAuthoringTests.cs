@@ -39,6 +39,32 @@ public sealed class ChapterAutoAuthoringTests
     }
 
     [Fact]
+    public void 문구가_빈_선택지는_막지_않고_임시_문구로_내보내며_순서는_그대로다()
+    {
+        // 2026-11-26 소유자 — 먼저 잇고 나중에 적는 동안 그 챕터를 게임에서 시험할 수 있어야 한다. 임시 문구는 「경고 + 이유 + 도착 에피소드 ID」
+        // (`[TODO] Missing choice text -> ep2` — 영어 한 벌 · ASCII). 자동 길이 선택지로 바뀐 자리(첫째)가 그대로 첫째다(= OptionIndex 0).
+        _editor.AddEpisode("auto", "ep3", "셋째", 400, 0, sceneId: "scene-a");
+        _editor.AddEdge("auto", "ep1", "ep2", auto: true);
+        _editor.AddEdge("auto", "ep1", "ep3");   // 문구 없이 — 자동 길도 문구가 빈 선택지가 된다
+
+        ChapterGraphModel model = Model();
+        Assert.Empty(model.Errors);
+
+        ChapterExportResult export = ChapterProgressionExporter.Export(model);
+        Assert.False(export.Refused, string.Join(" / ", export.Validation.All.Select(item => item.Message)));
+
+        using JsonDocument json = JsonDocument.Parse(export.Json!);
+        JsonElement[] options = json.RootElement.GetProperty("Nodes").EnumerateArray()
+            .Single(node => node.GetProperty("EpisodeId").GetString() == "ep1")
+            .GetProperty("NextOptions").EnumerateArray().ToArray();
+        Assert.Equal(
+            ["[TODO] Missing choice text -> ep2", "[TODO] Missing choice text -> ep3"],
+            options.Select(option => option.GetProperty("ChoiceLabel").GetString()));
+        Assert.All(options, option => Assert.False(option.GetProperty("Auto").GetBoolean()));
+        Assert.Equal(MissingChoiceText.For("ep2"), options[0].GetProperty("ChoiceLabel").GetString());
+    }
+
+    [Fact]
     public void 자동_불변식은_위반마다_서로_다른_진단을_낸다()
     {
         _editor.FindChapter("auto")!.Stats.Add(new ChapterStat("trust", 0, 0, 10));
@@ -83,11 +109,13 @@ public sealed class ChapterAutoAuthoringTests
 
         ChapterDiagnosticCode[] codes = model.Errors.Select(item => item.Code).ToArray();
         Assert.DoesNotContain(ChapterDiagnosticCode.AutoEdgeHasSiblings, codes);
-        Assert.Contains(ChapterDiagnosticCode.OptionLabelBlank, codes);   // 문구를 채울 때까지 잠깐 오류다(받아들인다)
+        Assert.Empty(codes);   // 문구를 채울 때까지는 경고다 — 게임에는 임시 문구로 나간다(2026-11-26 · ⛔ 그 전에는 잠깐 오류였다)
+        Assert.Contains(model.Diagnostics, item =>
+            item.Code == ChapterDiagnosticCode.OptionLabelBlank && item.Severity == ChapterDiagnosticSeverity.Warning);
 
-        // 문구를 적으면 오류가 걷힌다.
+        // 문구를 적으면 경고가 걷힌다.
         _editor.SetEdgeRoute("auto", "ep1", "ep2", null, "ep2", "그대로 간다");
-        Assert.DoesNotContain(Model().Errors, item => item.Code == ChapterDiagnosticCode.OptionLabelBlank);
+        Assert.DoesNotContain(Model().Diagnostics, item => item.Code == ChapterDiagnosticCode.OptionLabelBlank);
 
         // 되돌리기 — 문구 적기 · 그다음 한 번에 새 길과 바꾼 것이 함께 돌아간다.
         _editor.Undo();

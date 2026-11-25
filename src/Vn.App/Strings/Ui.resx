@@ -1133,7 +1133,7 @@
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_ThisChoiceHasNoText" xml:space="preserve">
-    <value>문구가 없는 선택지입니다 — 자동 길이었는데 다른 길을 이어 선택지가 됐습니다. 눌러서 문구를 적으세요. 적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다.</value>
+    <value>문구가 없는 선택지입니다. 눌러서 문구를 적으세요 — 적을 때까지 게임에는 임시 문구로 나갑니다: {0}</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_ChoiceText" xml:space="preserve">
@@ -1417,7 +1417,7 @@
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_ConnectedWithChoiceAutoPath" xml:space="preserve">
-    <value>'{0}' → '{1}' 선택지 '{2}'을 이었습니다 — 자동 길이 선택지가 됐습니다. 빨간 칸에 문구를 적으세요(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다.</value>
+    <value>'{0}' → '{1}' 선택지 '{2}'을 이었습니다 — 자동 길이 선택지가 됐습니다. 빨간 칸에 문구를 적으세요(적을 때까지 게임에는 임시 문구로 나갑니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_ConnectedWithChoice" xml:space="preserve">
@@ -2565,7 +2565,7 @@
     <comment>MainWindow.LineInspector.cs</comment>
   </data>
   <data name="Side_NoTextChoiceNeedsText" xml:space="preserve">
-    <value>⚠ 문구 없음 — 선택지에는 문구가 있어야 합니다.</value>
+    <value>⚠ 문구 없음 — 적을 때까지 게임에는 임시 문구로 나갑니다: {0}</value>
     <comment>MainWindow.LineInspector.cs</comment>
   </data>
   <data name="Side_TextWasnTClearedChoices" xml:space="preserve">
@@ -3976,11 +3976,11 @@
     <comment>GraphEditorView.ChoiceDrop.cs</comment>
   </data>
   <data name="Board_ConnectedBlankChoice" xml:space="preserve">
-    <value>'{0}' → '{1}' 문구가 빈 선택지로 이었습니다. 빨간 칸에 문구를 적으세요(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다).</value>
+    <value>'{0}' → '{1}' 문구가 빈 선택지로 이었습니다. 빨간 칸에 문구를 적으세요(적을 때까지 게임에는 임시 문구로 나갑니다).</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_ConnectedBlankChoiceAutoPath" xml:space="preserve">
-    <value>'{0}' → '{1}' 문구가 빈 선택지로 이었습니다 — 자동 길도 선택지가 됐습니다. 빨간 칸들에 문구를 적으세요(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다.</value>
+    <value>'{0}' → '{1}' 문구가 빈 선택지로 이었습니다 — 자동 길도 선택지가 됐습니다. 빨간 칸들에 문구를 적으세요(적을 때까지 게임에는 임시 문구로 나갑니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_SameChoiceNotConnected" xml:space="preserve">

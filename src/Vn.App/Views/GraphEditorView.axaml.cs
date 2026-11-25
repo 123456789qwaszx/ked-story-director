@@ -2201,8 +2201,9 @@ public partial class GraphEditorView : UserControl
                     : Ui.Board_ClickToWriteChoiceText
             };
 
-        // 이어졌는데 문구가 없는 선택지(자동 길이 두 번째 길에 밀려 선택지가 됐다 — auto-to-choice A2)는 빨갛게 「문구를 적어 주세요」다 — 문구를 적을 때까지
-        // 검증 오류(OptionLabelBlank)라 그 챕터의 진행 JSON이 나가지 않는다. 누르면 그 자리에서 적는다.
+        // 이어졌는데 문구가 없는 선택지(자동 길이 두 번째 길에 밀려 선택지가 됐다 — auto-to-choice A2 · 회색 칸을 문구 없이 먼저 이었다 — 2026-11-26)는
+        // 빨갛게 「문구를 적어 주세요」다 — 문구를 적을 때까지 검증 경고(OptionLabelBlank)이고 게임에는 임시 문구(MissingChoiceText)로 나간다
+        // (⛔ 2026-11-26 전에는 오류라 그 챕터의 진행 JSON이 나가지 않았다). 누르면 그 자리에서 적는다.
         if (!slot.IsEmpty && !auto && text.Length == 0)
         {
             label = new Border
@@ -2216,7 +2217,7 @@ public partial class GraphEditorView : UserControl
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotNeedsLabelTag,
                 Child = new TextBlock { Text = SlotNeedsLabelText, FontSize = 10, FontWeight = FontWeight.SemiBold, Foreground = SlotNeedsLabelInk },
-                [ToolTip.TipProperty] = Ui.Board_ThisChoiceHasNoText
+                [ToolTip.TipProperty] = string.Format(Ui.Board_ThisChoiceHasNoText, MissingChoiceText.For(slot.ToEpisodeId ?? string.Empty))
             };
         }
 

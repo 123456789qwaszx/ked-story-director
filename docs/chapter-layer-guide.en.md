@@ -88,7 +88,7 @@ Except for `release-baselines/`, the tool builds and edits all of them — you n
   - **Ways out are below the card, ways in are above it** — on the bottom edge **three points stand in a row**, and those paths go into **one point on the top edge**
     of the target card. The same handling as the [Script] tab.
     - Three points is **the minimum** — with four paths, all four are drawn. Empty slots are **hollow points**.
-    - Point colors: **orange** = connected choice · **blue** = auto-advance · **red** = no text (needs fixing) · **gray hollow** = a slot not used yet.
+    - Point colors: **orange** = connected choice · **blue** = auto-advance · **red** = no text (to be written — until then it goes to the game with placeholder text) · **gray hollow** = a slot not used yet.
     - **Branches** don't appear here — they leave as purple **dotted lines** from the branch point on the card's side edge (the side visited) and go into a small chip of the
       branch card (§4 branches).
 - **Right** — three tabs: **"Inspector" · "Speakers" · "Conditions & stats"**. "›" at the end of the tab row folds the whole panel.
@@ -174,7 +174,7 @@ In other words, **everything can be taken back within a scene, and it's committe
 | Go edit the choice text | **Double-click** a choice line or its text → goes to that choice in the [Script] tab (the text is edited there) |
 | Select an area | **Drag** on empty board → the cards caught become a group, and dragging any card of the group moves them together (one undo step when dropped) |
 | Clear the selection | **Click empty** board |
-| **Connect · disconnect** (in the [Script] tab only) | **Write text** in one of the slots under a card and **drag its point onto another card** to make a choice path (connecting without text makes an auto path). To disconnect, drop it on empty space. What's made there shows in [Structure] as **the same path**. [Structure] doesn't connect or disconnect paths; it only edits their conditions · stat changes |
+| **Connect · disconnect** (in the [Script] tab only) | **Write text** in one of the slots under a card and **drag its point onto another card** to make a choice path. You can also connect first without text — the first slot of a card whose slots are all empty makes an auto path, any other slot makes a choice without text (write it later). To disconnect, drop it on empty space. What's made there shows in [Structure] as **the same path**. [Structure] doesn't connect or disconnect paths; it only edits their conditions · stat changes |
 
 **People decide positions.** **Drag** cards to move them, and the position you drop them at is saved as is — the same handling as the [Script] tab.
 If you moved one by mistake, one **Ctrl+Z** (one drag is one undo). Zoom with the wheel, drag with the middle button to move the board, and the
@@ -254,7 +254,7 @@ The hands that build branches are in **the [Script] tab**. [Structure] is the pl
 2. The toolbar's **[＋ Episode]** (it goes in the selected card's scene) or **right-click** a scene row in the Hierarchy **→ "Add episode"** → it's created with no path, with a
    placeholder Id (`ch01_scene01_new01`… — containing the chapter · scene).
 3. Write text (e.g. "Follow Laru") in a choice slot under the starting card, and **drag** its point onto the new card to create a choice path. Connecting without text makes
-   an auto path.
+   an auto path (the first slot of a card whose slots are all empty) or a choice without text (any other slot — write the text later).
 4. Names: the title is set in the [Script] tab (the Inspector's name box · double-click in the Hierarchy), and the episode ID in the `Episode ID` box of the [Structure] "Inspector".
 
 Connecting to an existing episode (merging · looping) works the same — drag the choice point onto that card.
@@ -377,7 +377,7 @@ When the player chooses, the staging plays, then it goes on to B without asking.
 
 ### Auto paths — going on without asking
 
-A path connected without text is an **auto path** (`AUTO`). Three rules — breaking them is an error:
+A path connected without text from the first slot of a card whose slots are all empty is an **auto path** (`AUTO`). Three rules — breaking them is an error:
 
 - It must be the **only** path of that episode — if there's something to choose, it's a choice that asks.
 - **It can't have conditions** — auto-advance must always give the same result.
@@ -486,7 +486,7 @@ In a card's writing box, a condition is a **block** in Yarn syntax — `<<if exp
 |---|---|
 | A chapter with validation errors | Doesn't write that chapter's file, and reports every reason |
 | Missing stat key · decimals · comparisons not accepted | Error. No automatic correction |
-| Empty choice text | An error unless it's an auto path — the only path without text is an auto path (the episode's only path · no conditions · no stat changes). If you connected a path without text alongside choices, write its text or remove the other paths |
+| Empty choice text | A 🟡 warning unless it's an auto path — it isn't blocked; it's written with the placeholder `[TODO] Missing choice text -> destination ID` (2026-11-26 · an error before that). The runtime doesn't accept empty text as is, and dropping the choice would shift the OptionIndex of the choices after it. It goes away once you write the text in the [Script] tab |
 | Two entrances into a scene from outside | Error — points to the path that made the second entrance |
 | A line with empty dialogue | Warning — it's exported filled with one invisible character. Normal for a line that only runs staging |
 | A project in a shape the tool doesn't make · a project in a format before 5 | **Refused when opening**, with the reason — it isn't patched on the way in |

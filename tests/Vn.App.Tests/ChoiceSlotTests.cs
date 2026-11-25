@@ -284,6 +284,9 @@ public sealed class ChoiceSlotTests : IDisposable
         Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
         Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[0]);
 
+        // 적을 때까지 게임에는 임시 문구로 나간다 — 칸의 풍선이 그 문구를 그대로 보인다(2026-11-26 · MissingChoiceText).
+        Assert.Contains("[TODO] Missing choice text -> a", ToolTip.GetTip(needs) as string, StringComparison.Ordinal);
+
         // 나중에 빨간 칸을 눌러 적으면 그 길의 문구가 된다.
         Press(needs);
         Assert.NotNull(graph.SlotLabelBox);

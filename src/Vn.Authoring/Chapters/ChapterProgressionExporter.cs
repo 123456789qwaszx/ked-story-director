@@ -255,10 +255,12 @@ public static class ChapterProgressionExporter
             .Select(edge => new NextOptionJson
             {
                 TargetEpisodeId = edge.ToEpisodeId,
-                // <b>비면 자동 진행으로 읽힌다</b> — 간선의 종류를 따로 적는 칸은 계약에
-                // 없고, 문구의 유무가 그 자리를 대신한다. 저작에서는 빈 문구가 오류이므로
-                // 여기까지 빈 값이 오지 않는다.
-                ChoiceLabel = edge.OptionLabel ?? string.Empty,
+                // 자동 길은 빈 문구다(계약). 자동 길이 아닌 길에 문구가 없으면(검증 경고 OptionLabelBlank) <b>임시 문구</b>로 낸다 —
+                // `[TODO] Missing choice text -> 도착ID`(2026-11-26 소유자). 빈 문구 그대로는 코어가 받지 않고, 빼면 뒤 선택지의
+                // OptionIndex가 밀린다. ⛔ 그 전에는 빈 문구가 오류라 여기까지 오지 않았다.
+                ChoiceLabel = !edge.Auto && edge.HasNoOptionLabel
+                    ? MissingChoiceText.For(edge.ToEpisodeId)
+                    : edge.OptionLabel ?? string.Empty,
                 Auto = edge.Auto,
                 VisibleConditions = Conditions(chapter, edge.VisibleConditionLabel),
                 Conditions = Conditions(chapter, edge.ConditionLabel),

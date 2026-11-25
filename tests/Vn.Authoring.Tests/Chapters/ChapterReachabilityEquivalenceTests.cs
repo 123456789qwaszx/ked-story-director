@@ -112,43 +112,37 @@ public sealed class ChapterReachabilityEquivalenceTests
     // ── ⚠ 대조하다 드러난 갈림 — 증명기가 아니라 **검증 심각도**다 ────────────
 
     [Fact]
-    public void 코어가_못_싣는_챕터는_내보내기가_거부한다()
+    public void 문구_없는_관문_길은_임시_문구로_나가_코어가_싣는다()
     {
-        // 이 케이스가 구멍을 드러냈다: 문구 없는 간선(보이지 않는 기본)에 관문이 걸리면
-        // 툴 검증은 **경고**로 넘기는데 코어 로더는 **오류**로 거부한다. 그대로 나가면
-        // 게임에서 그 챕터가 시작되지 않는다 — 툴이 "실을 수 없는 것을 내보내던" 자리다.
+        // 이 케이스가 구멍을 드러냈었다: 문구 없는 간선(보이지 않는 기본)에 관문이 걸리면 툴 검증은 넘기는데 코어 로더는 빈 문구를
+        // 자동 길로 읽어 거부했다 — 툴이 "실을 수 없는 것을 내보내던" 자리다. 그래서 내보내기가 **낸 JSON을 코어 로더에 실어 본다**
+        // (그 거부를 받는 길은 ChapterExportAndFixtureTests · ChapterSceneAuthoringTests가 고정한다).
         //
-        // ⚠ 고친 방법이 중요하다. 툴의 심각도를 오류로 올리는 길은 **버렸다** — 그러면
-        // 정상적인 편집 흐름이 막히고(`AddEdge`는 문구 없이도 길을 놓는다), 무엇보다
-        // 같은 규칙을 두 곳에 적는 것이라 저쪽이 하나 늘릴 때마다 또 갈린다.
-        // 대신 내보내기가 **낸 JSON을 코어 로더에 실어 본다** — 저쪽 판정을 그대로 받는다.
-        // ⚠ 관문이 **열리는** 모양이어야 한다. 안 열리면 도달 불가가 먼저 오류로 잡혀
-        // 검증 관문에서 걸리고, 그러면 이 테스트가 재려는 자리(코어 관문)에 닿지 못한다.
+        // 이제 자동 길이 아닌 길에 문구가 없으면 **임시 문구**로 낸다(2026-11-26 소유자 — `[TODO] Missing choice text -> 도착ID` ·
+        // MissingChoiceText) — 코어는 그 문구를 여느 선택지로 싣는다. ⛔ 그 전에는 이 챕터를 코어가 거부했다(「Auto」를 짚었다).
+        // ⚠ 관문이 **열리는** 모양이어야 한다. 안 열리면 도달 불가가 먼저 오류로 잡힌다.
         ChapterGraphModel chapter = Chapter(
             [Episode("시작"), Episode("중간"), Episode("끝")],
             [("시작", "중간", null, 5), ("중간", "끝", "신뢰5이상", 0)],
             [("신뢰5이상", "trust >= 5")],
             plainAdvance: true);
 
-        // 툴 검증만 보면 오류가 없다 — 옛 관문은 여기서 통과시켰다.
         ChapterValidationResult validation = ChapterValidator.Validate(chapter);
 
         Assert.DoesNotContain(
             validation.All, item => item.Severity == ChapterDiagnosticSeverity.Error);
 
-        // 그런데 내보내기는 거부한다 — 코어가 못 싣기 때문이다.
         ChapterExportResult export = ChapterProgressionExporter.ExportValidated(chapter, validation);
 
-        Assert.True(export.Refused, "코어가 거부한 챕터가 나가면 안 된다");
+        Assert.False(export.Refused, string.Join(" / ", export.Validation.All.Select(item => item.Message)));
+        Assert.DoesNotContain(export.Validation.All, item => item.Code == ChapterDiagnosticCode.CoreRefusedChapter);
 
-        ChapterDiagnostic refusal = Assert.Single(
-            export.Validation.All,
-            item => item.Code == ChapterDiagnosticCode.CoreRefusedChapter);
-
-        // ⛔ "어딘가 잘못됐다"로 떨어지면 실패다 — 기획자가 고칠 간선까지 짚는다.
-        Assert.Equal(ChapterSheetNames.Edges, refusal.Sheet);
-        Assert.Contains("간선 중간 → 끝", refusal.Message);
-        Assert.Contains("Auto", refusal.Message);
+        using System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(export.Json!);
+        System.Text.Json.JsonElement option = document.RootElement.GetProperty("Nodes").EnumerateArray()
+            .Single(node => node.GetProperty("EpisodeId").GetString() == "중간")
+            .GetProperty("NextOptions").EnumerateArray().Single();
+        Assert.Equal("[TODO] Missing choice text -> 끝", option.GetProperty("ChoiceLabel").GetString());
+        Assert.False(option.GetProperty("Auto").GetBoolean());
     }
 
     // ── 대조 ────────────────────────────────────────────────────────────────

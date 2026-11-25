@@ -96,12 +96,13 @@ public static class ChapterStructureCheck
                     path, string.Format(Msg.Diag_StatChangeOnPathIsn, edge.FromEpisodeId, edge.ToEpisodeId, delta.Key)));
             }
 
-            // 문구는 반드시 있다 — "보이지 않는 기본"은 없다.
-            //    문구 없는 길은 명시한 자동 진행뿐이다(그 규칙은 ChapterAutoEdgeCheck가 본다).
+            // 문구는 반드시 있다 — "보이지 않는 기본"은 없다(문구 없는 길은 명시한 자동 진행뿐 · 그 규칙은 ChapterAutoEdgeCheck가 본다).
+            //    자동 길이 아닌 길에 문구가 없으면 <b>경고</b>다 — 게임에는 임시 문구(MissingChoiceText)로 나간다(2026-11-26 소유자 — 먼저 잇고
+            //    나중에 적는 동안 그 챕터를 막지 않는다). ⛔ 그 전에는 오류라 그 챕터의 진행 JSON · 대사 Yarn이 통째로 나가지 않았다.
             if (edge.HasNoOptionLabel && !edge.Auto)
             {
-                diagnostics.Add(Edge(ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.OptionLabelBlank,
-                    path, string.Format(Msg.Diag_PathHasNoChoiceText, edge.FromEpisodeId, edge.ToEpisodeId)));
+                diagnostics.Add(Edge(ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.OptionLabelBlank,
+                    path, string.Format(Msg.Diag_PathHasNoChoiceText, edge.FromEpisodeId, edge.ToEpisodeId, MissingChoiceText.For(edge.ToEpisodeId))));
             }
         }
 

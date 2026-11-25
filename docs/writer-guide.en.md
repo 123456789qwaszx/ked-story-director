@@ -125,7 +125,7 @@ This one document takes you from getting started to handing over your work.
 3. **Connect choices** — choice slots appear under an episode card (a point and a text).
    - Click a gray **"Empty choice"** slot, write the choice text (Enter), then drag the point (now red) onto the next episode card to connect it. A connected point is green.
    - **You can connect first and write the text later** — drag a gray point straight onto a card without writing anything, and it connects as a red **"Write the choice text"** slot.
-     Click that slot to write the text (until you do, the chapter has an error and isn't written to the game). Clicking a gray point without dragging opens the text box.
+     Click that slot to write the text (until you do, it stays a 🟡 warning in the "Validation report" and goes to the game with the placeholder `[TODO] Missing choice text -> destination episode ID`). Clicking a gray point without dragging opens the text box.
    - On a card with no choice text yet, the first slot is **"Auto"** — drag and drop its point without writing text to make a path that moves on without asking.
      Writing any choice text closes the auto slot. If a card has an auto path and you connect another slot, the auto path becomes a red "Write the choice text"
      choice in its own place.

@@ -759,7 +759,7 @@
     <value>Stat change '{2}' on path '{0}'→'{1}' isn't a stat of this chapter.</value>
   </data>
   <data name="Diag_PathHasNoChoiceText" xml:space="preserve">
-    <value>Path '{0}'→'{1}' has no choice text. Write text for regular choices.</value>
+    <value>Path '{0}'→'{1}' has no choice text. Write it in that choice slot in the [Script] tab — until you do, it goes to the game with a placeholder: {2}</value>
   </data>
   <data name="Diag_ThereAreSeveralPathsWith" xml:space="preserve">
     <value>There are several {0}→{1} paths with the same choice text — make the text different or delete one.</value>

@@ -160,7 +160,8 @@ public sealed class DirectorHierarchyTests : IDisposable
         (MainWindow window, AuthoringSession session) = Show();
         ChapterGraphView chapterGraph = window.FindControl<ChapterGraphView>("ChapterGraph")!;
         chapterGraph.SelectChapter("ch01");
-        session.Editor.AddEdge("ch02", "x", "y");   // 문구 없는 길 — ch02가 막힌다
+        // 문구를 단 자동 길 — ch02가 막힌다(AutoEdgeHasChoiceLabel). ⛔ 2026-11-26까지는 문구 없는 길로 막았다(이제 경고 · 임시 문구로 나간다).
+        session.Editor.AddEdge("ch02", "x", "y", optionLabel: "간다", auto: true);
         Dispatcher.UIThread.RunJobs();
 
         // 보고는 [구성] 탭에 선다 — 가려진 동안의 그리기는 탭이 보일 때 한다(finishing FX3).

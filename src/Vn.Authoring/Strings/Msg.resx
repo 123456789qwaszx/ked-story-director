@@ -1006,7 +1006,7 @@
     <comment>ChapterStructureCheck.cs</comment>
   </data>
   <data name="Diag_PathHasNoChoiceText" xml:space="preserve">
-    <value>'{0}'→'{1}' 길에 선택지 문구가 없습니다. 일반 선택지에는 문구를 적으세요.</value>
+    <value>'{0}'→'{1}' 길에 선택지 문구가 없습니다. [대본] 탭에서 그 선택지 칸에 문구를 적으세요 — 적을 때까지 게임에는 임시 문구로 나갑니다: {2}</value>
     <comment>ChapterStructureCheck.cs</comment>
   </data>
   <data name="Diag_ThereAreSeveralPathsWith" xml:space="preserve">

@@ -48,10 +48,11 @@ public sealed class ChapterStructureCheckTests
     }
 
     [Fact]
-    public void 일반_길에_문구가_없으면_오류다()
+    public void 일반_길에_문구가_없으면_경고이고_게임에는_임시_문구로_나간다고_말한다()
     {
         // ⛔ 문구 없는 "보이지 않는 기본"은 2026-08-24에 폐지됐다 — 문구 없는 길은 명시한 자동 진행뿐이다.
-        //    빈 문구를 자동으로 추측하지 않는다.
+        //    빈 문구를 자동으로 추측하지 않는다. 문구가 빈 선택지는 경고다(2026-11-26 소유자 — 먼저 잇고 나중에 적는 동안 그 챕터를 막지
+        //    않는다) — 게임에는 임시 문구로 나가고, 경고가 그 문구를 그대로 보인다. ⛔ 그 전에는 오류였다.
         var editor = new ProjectEditor(new StoryProject());
         editor.EnsureChapter("ch01");
         editor.AddEpisode("ch01", "ep1", "복도", 0, 0, sceneId: "ep1");
@@ -60,7 +61,10 @@ public sealed class ChapterStructureCheckTests
 
         ChapterGraphModel model = editor.FindChapter("ch01")!.ToGraphModel("ch01");
 
-        Assert.Contains(model.Errors, item => item.Code == ChapterDiagnosticCode.OptionLabelBlank);
+        ChapterDiagnostic warning = Assert.Single(model.Diagnostics, item => item.Code == ChapterDiagnosticCode.OptionLabelBlank);
+        Assert.Equal(ChapterDiagnosticSeverity.Warning, warning.Severity);
+        Assert.DoesNotContain(model.Errors, item => item.Code == ChapterDiagnosticCode.OptionLabelBlank);
+        Assert.Contains("[TODO] Missing choice text -> ep2", warning.Message, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -156,7 +156,7 @@ public partial class MainWindow
         }
         else if (edge.HasNoOptionLabel)
         {
-            Note(Ui.Side_NoTextChoiceNeedsText);
+            Note(string.Format(Ui.Side_NoTextChoiceNeedsText, MissingChoiceText.For(edge.ToEpisodeId)));
         }
 
         bool applied = false;

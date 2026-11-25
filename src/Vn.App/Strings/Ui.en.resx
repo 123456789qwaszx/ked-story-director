@@ -855,7 +855,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Auto path — moves on without choice text. Writing any choice text closes this slot.</value>
   </data>
   <data name="Board_ThisChoiceHasNoText" xml:space="preserve">
-    <value>This choice has no text — it was an auto path that became a choice when another path was connected. Click to write the text. This chapter's progression JSON isn't written until you do.</value>
+    <value>This choice has no text. Click to write it — until you do, it goes to the game with a placeholder: {0}</value>
   </data>
   <data name="Board_ChoiceText" xml:space="preserve">
     <value>Choice text</value>
@@ -1068,7 +1068,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Connected '{0}' → '{1}' as an auto path (moves on without text).</value>
   </data>
   <data name="Board_ConnectedWithChoiceAutoPath" xml:space="preserve">
-    <value>Connected '{0}' → '{1}' with choice '{2}' — the auto path became a choice. Write its text in the red slot (this chapter's progression JSON isn't written until you do). One undo (Ctrl+Z) brings both back.</value>
+    <value>Connected '{0}' → '{1}' with choice '{2}' — the auto path became a choice. Write its text in the red slot (until you do, it goes to the game with placeholder text). One undo (Ctrl+Z) brings both back.</value>
   </data>
   <data name="Board_ConnectedWithChoice" xml:space="preserve">
     <value>Connected '{0}' → '{1}' with choice '{2}'.</value>
@@ -1929,7 +1929,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>AUTO — moves on without player input.</value>
   </data>
   <data name="Side_NoTextChoiceNeedsText" xml:space="preserve">
-    <value>⚠ No text — a choice needs text.</value>
+    <value>⚠ No text — until you write it, it goes to the game with a placeholder: {0}</value>
   </data>
   <data name="Side_TextWasnTClearedChoices" xml:space="preserve">
     <value>The text wasn't cleared — choices of an episode with two or more paths need text. Only a single path can be an auto path (AUTO).</value>
@@ -2992,10 +2992,10 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
     <value>Dropping here sends the choice without text to '{1}' instead of '{0}' (conditions · stat changes stay).</value>
   </data>
   <data name="Board_ConnectedBlankChoice" xml:space="preserve">
-    <value>Connected '{0}' → '{1}' as a choice without text. Write its text in the red slot (this chapter's progression JSON isn't written until you do).</value>
+    <value>Connected '{0}' → '{1}' as a choice without text. Write its text in the red slot (until you do, it goes to the game with placeholder text).</value>
   </data>
   <data name="Board_ConnectedBlankChoiceAutoPath" xml:space="preserve">
-    <value>Connected '{0}' → '{1}' as a choice without text — the auto path became a choice too. Write their text in the red slots (this chapter's progression JSON isn't written until you do). One undo (Ctrl+Z) brings both back.</value>
+    <value>Connected '{0}' → '{1}' as a choice without text — the auto path became a choice too. Write their text in the red slots (until you do, they go to the game with placeholder text). One undo (Ctrl+Z) brings both back.</value>
   </data>
   <data name="Board_SameChoiceNotConnected" xml:space="preserve">
     <value>Not connected — this episode already has the choice “{2}” going to '{0}'. Change the text or connect it to another episode.</value>

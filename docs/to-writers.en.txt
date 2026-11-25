@@ -145,16 +145,20 @@ play in the game, and by then the cause would be much harder to find.
 Each error line says which chapter and which place (episode · path · condition · stat),
 and names the episode or path. Fix that place and the error disappears by itself.
 
-Two you'll see often:
+One you'll see often:
 
 · "... has no lines to play"
   → Write at least one line of dialogue in that episode. The game can't read an empty episode.
 
-· "... has no choice text"
-  → In the [Script] tab, write text in that path's choice slot. A single word like "Continue" is fine.
+🟡 Warnings don't stop anything from going out to the game. Two you'll see often:
 
-🟡 Warnings don't stop anything from going out to the game. One of them, "A loop with no way out",
-is a path where the chapter never ends once you enter — add one more choice that leads out of the loop.
+· "... has no choice text"
+  → A choice you connected first and haven't written yet. Until you do, it goes to the game with the
+    placeholder [TODO] Missing choice text -> (destination episode ID).
+    In the [Script] tab, write text in that red slot. A single word like "Continue" is fine.
+
+· "A loop with no way out"
+  → A path where the chapter never ends once you enter — add one more choice that leads out of the loop.
 
 
 Scene notes
