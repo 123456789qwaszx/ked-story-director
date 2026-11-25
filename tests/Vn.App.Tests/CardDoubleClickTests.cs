@@ -75,8 +75,13 @@ public sealed class CardDoubleClickTests : IDisposable
         Press(card, clicks: 1);
         Assert.False(graph.IsRenamingCard);
 
-        // 두 번 — 제목 칸이 서고 지금 제목이 골라져 있다. 탭은 그대로다.
-        Press(card, clicks: 2);
+        // 제목 글자 밖(머리 줄의 빈 곳)을 두 번 — 아무 칸도 서지 않는다(2026-11-25 소유자 — 「글자가 있는 부분까지만으로」).
+        TextBlock titleText = TitleText(card);
+        PressAt(titleText, new Point(titleText.Bounds.Width + 30, 8), clicks: 2);
+        Assert.False(graph.IsRenamingCard);
+
+        // 제목 글자 위를 두 번 — 제목 칸이 서고 지금 제목이 골라져 있다. 탭은 그대로다.
+        PressTitle(card, clicks: 2);
         Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
         TextBox title = TitleBox(card);
         Assert.True(title.IsFocused);
@@ -93,7 +98,7 @@ public sealed class CardDoubleClickTests : IDisposable
         Assert.Equal("새 제목", InspectorName(window, node.Id).Text);
 
         // Esc — 그만둔다.
-        Press(CardOf(graph, node.Id), clicks: 2);
+        PressTitle(CardOf(graph, node.Id), clicks: 2);
         TextBox again = TitleBox(CardOf(graph, node.Id));
         again.Text = "버릴 제목";
         Key(again, Avalonia.Input.Key.Escape);
@@ -105,6 +110,50 @@ public sealed class CardDoubleClickTests : IDisposable
         Assert.Equal(EpisodeNaming.ShownNameOf(session.Project, session.Project.FindDialogue(node.Id)!), InspectorName(window, node.Id).Text);
         Assert.NotEqual("새 제목", InspectorName(window, node.Id).Text);
         Assert.Equal(DirectorTab, Tabs(window).SelectedIndex);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 제목_칸이_열린_채_빈_판이나_카드의_빈_곳이나_다른_칸을_누르면_바꾸지_않고_닫힌다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 「빈공간을 눌러도 여전히 텍스트 공간이 열려있는 게 불편 … 장면이나, 챕터영역, 에피소드 카드의 빈공간을 포함한 다른 공간을
+        // 누르는 경우에 취소가 되도록」. Enter만 바꾼다(하이어아키 이름 칸과 같은 손짓).
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, DirectorTab);
+        DialogueNode node = EpisodeNaming.CardFor(session.Project, "ch01", "b")!;
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        string before = EpisodeNaming.ShownNameOf(session.Project, node);
+        long revision = session.Editor.Revision;
+
+        // 빈 판.
+        PressTitle(CardOf(graph, node.Id), clicks: 2);
+        TitleBox(CardOf(graph, node.Id)).Text = "버릴 제목";
+        PressAt(graph.FindControl<Canvas>("GraphCanvas")!, new Point(3000, 3000), clicks: 1);
+        Assert.False(graph.IsRenamingCard);
+
+        // 카드의 빈 곳(제목 줄 밖 — 등뼈 쪽).
+        PressTitle(CardOf(graph, node.Id), clicks: 2);
+        TitleBox(CardOf(graph, node.Id)).Text = "버릴 제목";
+        PressAt(CardOf(graph, node.Id), new Point(4, 4), clicks: 1);
+        Assert.False(graph.IsRenamingCard);
+
+        // 다른 칸(다른 카드의 글 칸).
+        PressTitle(CardOf(graph, node.Id), clicks: 2);
+        TitleBox(CardOf(graph, node.Id)).Text = "버릴 제목";
+        DialogueNode other = EpisodeNaming.CardFor(session.Project, "ch01", "a")!;
+        TextBox writing = CardOf(graph, other.Id).GetVisualDescendants().OfType<TextBox>().First();
+        Press(writing, clicks: 1);
+        writing.Focus();
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(graph.IsRenamingCard);
+
+        Assert.Equal(before, EpisodeNaming.ShownNameOf(session.Project, session.Project.FindDialogue(node.Id)!));
+        Assert.Equal(revision, session.Editor.Revision);
+
+        // 칸 안을 누르는 것은 닫지 않는다(커서 옮기기).
+        PressTitle(CardOf(graph, node.Id), clicks: 2);
+        Press(TitleBox(CardOf(graph, node.Id)), clicks: 1);
+        Assert.True(graph.IsRenamingCard);
 
         window.Close();
     });
@@ -177,7 +226,7 @@ public sealed class CardDoubleClickTests : IDisposable
         Border card = CardOf(graph, branch.Id);
 
         // 두 번 — 분기 카드의 보이는 제목을 고친다(ID는 그대로).
-        Press(card, clicks: 2);
+        PressTitle(card, clicks: 2);
         TextBox title = TitleBox(card);
         title.Text = "들른 곳";
         Key(title, Avalonia.Input.Key.Enter);
@@ -254,6 +303,12 @@ public sealed class CardDoubleClickTests : IDisposable
     private static Border CardOf(GraphEditorView graph, string nodeId) =>
         graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>().Single(item => item.Tag as string == nodeId);
 
+    private static TextBlock TitleText(Border card) =>
+        card.GetVisualDescendants().OfType<TextBlock>().Single(block => block.Tag as string == GraphEditorView.CardTitleTag);
+
+    /// <summary>카드 제목 글자 위를 누른다(두 번 누르기는 글자 위에서만 제목 칸을 연다).</summary>
+    private static void PressTitle(Border card, int clicks) => PressAt(TitleText(card), new Point(2, 8), clicks);
+
     private static TextBox TitleBox(Border card) =>
         card.GetVisualDescendants().OfType<TextBox>().Single(box => box.Tag as string == GraphEditorView.CardTitleEditTag);
 
@@ -288,13 +343,16 @@ public sealed class CardDoubleClickTests : IDisposable
     }
 
     /// <summary>왼쪽 단추로 누른다 — <paramref name="clicks"/>가 2면 두 번 누름의 둘째 누름이다.</summary>
-    private static void Press(Control target, int clicks)
+    private static void Press(Control target, int clicks) => PressAt(target, new Point(10, 10), clicks);
+
+    /// <summary>그 칸의 <paramref name="at"/>(칸 좌표)을 왼쪽 단추로 누른다.</summary>
+    private static void PressAt(Control target, Point at, int clicks)
     {
         target.RaiseEvent(new PointerPressedEventArgs(
             target,
             new Pointer(0, PointerType.Mouse, true),
             (Visual)TopLevel.GetTopLevel(target)!,
-            target.TranslatePoint(new Point(10, 10), TopLevel.GetTopLevel(target)!) ?? default,
+            target.TranslatePoint(at, TopLevel.GetTopLevel(target)!) ?? default,
             0,
             new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
             KeyModifiers.None,
@@ -303,7 +361,7 @@ public sealed class CardDoubleClickTests : IDisposable
             target,
             new Pointer(0, PointerType.Mouse, true),
             (Visual)TopLevel.GetTopLevel(target)!,
-            target.TranslatePoint(new Point(10, 10), TopLevel.GetTopLevel(target)!) ?? default,
+            target.TranslatePoint(at, TopLevel.GetTopLevel(target)!) ?? default,
             0,
             new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
             KeyModifiers.None,

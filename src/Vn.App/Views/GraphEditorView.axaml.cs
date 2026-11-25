@@ -3992,6 +3992,9 @@ public partial class GraphEditorView : UserControl
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
+            // 글자만큼만 선다(칸은 넘치면 줄임표) — 두 번 눌러 제목 고치기는 이 글자 위에서만이다(2026-11-25 소유자 — 「머릿영역 전체 가로부분을 제목 수정용
+            // 더블클릭 영역으로 잡히는 대신 … 글자가 있는 부분까지만으로」).
+            HorizontalAlignment = HorizontalAlignment.Left,
             [ToolTip.TipProperty] = TitleTip(node.NodeId)
         };
 
@@ -6373,9 +6376,9 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        // 두 번 누름 — 그 자리에서 제목을 고친다(2026-11-25 소유자 · ⛔ 그 전에는 [구성] 탭으로 데려갔다). 끌기를 시작하지 않는다(첫 누름이 시작한
-        // 끌기는 놓을 때 끝났다).
-        if (args.ClickCount >= 2 && pressed.IsLeftButtonPressed)
+        // 두 번 누름 — 제목 글자 위면 그 자리에서 제목을 고친다(2026-11-25 소유자 · ⛔ 그 전에는 [구성] 탭으로 데려갔다 · 같은 날 머리 줄 전체에서 글자
+        // 위로 줄였다). 끌기를 시작하지 않는다(첫 누름이 시작한 끌기는 놓을 때 끝났다). 글자 밖의 두 번 누름은 한 번 누름과 같다.
+        if (args.ClickCount >= 2 && pressed.IsLeftButtonPressed && OnTitleText(card, args))
         {
             args.Handled = true;
             BeginCardRename(card.NodeId);
@@ -6579,6 +6582,10 @@ public partial class GraphEditorView : UserControl
         BoardMenu.Open(GraphCanvas);
     }
 
+    /// <summary>누른 자리가 카드 제목 글자 위인가 — 제목 글은 글자만큼만 선다(줄임표까지).</summary>
+    private static bool OnTitleText(NodeCard card, PointerEventArgs args) =>
+        card.Title.IsVisible && new Rect(card.Title.Bounds.Size).Contains(args.GetPosition(card.Title));
+
     /// <summary>카드 머리의 제목 칸에 다는 Tag — 시험의 손잡이다.</summary>
     internal const string CardTitleEditTag = "card-title-edit";
 
@@ -6587,8 +6594,11 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// <b>카드 머리에서 제목을 고친다</b>(2026-11-25 소유자 — 「에피소드의 제목을 바꾸려고 하거나 … 더블클릭을 했다가 원하지 않게 구성탭으로 이동이 되버리는
-    /// 경우가 많더라고」) — 제목 글 자리에 칸이 서고 글이 모두 골라진다. Enter · 칸 밖 누르기 = 바꾸기, Esc = 그만두기(하이어아키 · 인스펙터의 이름 칸과
-    /// 같은 손짓 · 같은 길 <see cref="CardTitles.Rename"/> — ID는 그대로다). 접힌 판 · 장면 안이라 카드가 판에 없으면 아무것도 하지 않는다.
+    /// 경우가 많더라고」) — 제목 글 자리에 칸이 서고 글이 모두 골라진다. <b>Enter = 바꾸기</b>, Esc · <b>칸 밖 어디든 누르기 = 그만두기</b>(빈 판 · 장면 ·
+    /// 챕터 테두리 · 카드의 빈 곳 · 다른 칸 — 같은 날 소유자 「빈공간을 눌러도 여전히 텍스트 공간이 열려있는 게 불편 … 다른 공간을 누르는 경우에 취소가
+    /// 되도록」 · 하이어아키 이름 칸과 같은 손짓). 바꾸는 길은 인스펙터의 이름 칸과 같다(<see cref="CardTitles.Rename"/> — ID는 그대로다). 접힌 판 · 장면
+    /// 안이라 카드가 판에 없으면 아무것도 하지 않는다. ⛔ 처음(같은 날)에는 칸 밖 누르기가 바꾸기였고, 판 · 카드는 초점을 받지 않아 빈 곳을 눌러도 칸이
+    /// 닫히지 않았다.
     /// </summary>
     internal void BeginCardRename(string nodeId)
     {
@@ -6633,10 +6643,29 @@ public partial class GraphEditorView : UserControl
                 FinishCardRename(commit: false);
             }
         };
-        box.LostFocus += (_, _) => FinishCardRename(commit: true);
+        box.LostFocus += (_, _) => FinishCardRename(commit: false);
+
+        // 칸 밖 누르기 — 판 · 카드는 초점을 받지 않아 초점 이탈이 오지 않는다. 창의 누름을 터널로 먼저 본다(눌린 것이 그 누름을 끝내도).
+        if (TopLevel.GetTopLevel(this) is { } window)
+        {
+            window.AddHandler(PointerPressedEvent, OnPressWhileRenaming, RoutingStrategies.Tunnel, handledEventsToo: true);
+            _renameWindow = window;
+        }
 
         box.Focus();
         box.SelectAll();
+    }
+
+    /// <summary>제목 칸이 열려 있는 동안 창의 누름을 보는 곳 — 칸 밖이면 그만둔다.</summary>
+    private TopLevel? _renameWindow;
+
+    private void OnPressWhileRenaming(object? sender, PointerPressedEventArgs args)
+    {
+        if (_cardRename is { } open &&
+            !(args.Source is Visual source && (ReferenceEquals(source, open.Box) || open.Box.IsVisualAncestorOf(source))))
+        {
+            FinishCardRename(commit: false);
+        }
     }
 
     /// <summary>열린 카드 제목 칸을 닫는다 — <paramref name="commit"/>이면 고친 제목을 넣는다(같으면 아무것도 안 적는다). 열린 칸이 없으면 아무것도 하지 않는다.</summary>
@@ -6649,6 +6678,8 @@ public partial class GraphEditorView : UserControl
 
         // 먼저 비운다 — 칸을 떼어 내면 초점 이탈이 다시 불린다.
         _cardRename = null;
+        _renameWindow?.RemoveHandler(PointerPressedEvent, OnPressWhileRenaming);
+        _renameWindow = null;
         string wanted = open.Box.Text ?? string.Empty;
 
         if (open.Box.Parent is Panel panel)
