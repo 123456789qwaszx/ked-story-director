@@ -4598,7 +4598,7 @@ public partial class ChapterGraphView : UserControl
     /// 값의 주인이 <c>ChapterDocument</c>로 넘어왔는데 안내만 남아 있었다.
     ///
     /// <b>키는 그 줄의 이름 칸에서 고친다</b>(2026-11-18 소유자 — 「다른 화자이름 같은것처럼 편하게」 · writer-comfort WC4). 키를 바꾸는 것은
-    /// 간선·조건·픽스처·공급 조건을 함께 끌고 가는 일이라 <see cref="ProjectEditor.RenameChapterStat"/>로 가고, 칸은 Enter와 칸을 떠날 때만 넣는다 —
+    /// 간선·조건·픽스처·대사 글을 함께 끌고 가는 일이라 <see cref="ProjectEditor.RenameChapterStat"/>로 가고, 칸은 Enter와 칸을 떠날 때만 넣는다 —
     /// 글자를 고치는 사이의 중간 상태는 개명이 되지 않는다. 키 칸에 초점이 있는 동안 그 줄에 세이브 경고가 선다(적기 전에 읽는다).
     /// ⛔ 그 전에는 키가 읽기만 하는 글이고 [✎] → 플라이아웃으로만 바꿨다.
     ///
@@ -4677,7 +4677,7 @@ public partial class ChapterGraphView : UserControl
             }
 
             _session.SetStatus(
-                Plural.Format(Ui.Structure_PathsConditionsSuppliedConditionsTest, stat.Key, to, outcome.Edges, outcome.Conditions, outcome.SuppliedConditions, outcome.Fixtures, outcome.DialogueLines));
+                Plural.Format(Ui.Structure_StatRenamedFollowed, stat.Key, to, outcome.Edges, outcome.Conditions, outcome.Fixtures, outcome.DialogueLines));
             return null;
         });
         ToolTip.SetTip(key, string.Format(Ui.Structure_KeyKeyInSaveData, StatKeyRule.Rule));

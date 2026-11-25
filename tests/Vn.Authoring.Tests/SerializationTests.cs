@@ -159,7 +159,7 @@ public class SerializationTests
             project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
             project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
             first.Nodes.Add(new DialogueNode("nd_a", "A 노드") { IsBranchCard = true });   // 에피소드가 아닌 카드는 분기 카드뿐이다
-            second.Nodes.Add(new SetNode("nd_b", global::Vn.Authoring.Chapters.ChapterBoardSupply.ConditionSupplyNodeName("B")));   // 설정 노드는 판의 공급 노드뿐이다
+            second.Nodes.Add(new DialogueNode("nd_b", "B 노드") { IsBranchCard = true });
             project.StartNodeId = "nd_a";
 
             ProjectStore.Save(manifestPath, project);
@@ -251,12 +251,14 @@ public class SerializationTests
     }
 
     /// <summary>
-    /// 형식 4 이전은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c>) — 한 줄로 분명히.
+    /// 지금 형식 이전은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c>) — 한 줄로 분명히. 형식 4(0.3.x — 조건 공급
+    /// 노드가 있던 판)도 2026-11-25부터 거절한다(condition-supply C1 — 소유자 「옛날 프로젝트의 호환을 신경써야해?」).
     /// </summary>
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
+    [InlineData(4)]
     public void 이전_형식_프로젝트는_열지_않고_이유를_알린다(int version)
     {
         string json = $$"""
@@ -271,7 +273,7 @@ public class SerializationTests
             () => ProjectManifestJson.Read(json));
 
         Assert.Contains($"형식 버전 {version} 프로젝트는 열지 않습니다", error.Message, StringComparison.Ordinal);
-        Assert.Contains("형식 4만 엽니다", error.Message, StringComparison.Ordinal);
+        Assert.Contains($"형식 {ProjectManifestJson.CurrentFormatVersion}만 엽니다", error.Message, StringComparison.Ordinal);
     }
 
     /// <summary>이전 형식 파일을 열려다 실패해도 그 파일은 그대로 남아 있어야 한다.</summary>
@@ -323,12 +325,12 @@ public class SerializationTests
         Directory.CreateDirectory(Path.Combine(directory, "story"));
         string manifestPath = Path.Combine(directory, "project.vnproject.json");
         File.WriteAllText(manifestPath, """
-            { "formatVersion": 4, "title": "다른 Id", "files": [
+            { "formatVersion": 5, "title": "다른 Id", "files": [
               { "id": "sf_manifest", "name": "A", "path": "story/a.vnstory.json" }
             ] }
             """);
         File.WriteAllText(Path.Combine(directory, "story", "a.vnstory.json"), """
-            { "formatVersion": 2, "fileId": "sf_actual", "name": "A", "nodes": [] }
+            { "formatVersion": 3, "fileId": "sf_actual", "name": "A", "nodes": [] }
             """);
 
         try
@@ -370,21 +372,18 @@ public class SerializationTests
         Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
     }
 
-    /// <summary>설정 노드는 판의 챕터 조건 공급 노드 하나뿐이다 — 옛 「X 설정」 노드는 받지 않는다(2026-11-18 · old-shapes O6).</summary>
+    /// <summary>
+    /// 설정 노드(<c>"kind": "set"</c>)가 든 판은 열지 않는다 — 챕터 조건 공급 노드는 2026-11-25에 걷혔다(condition-supply C1 · 옛 「X 설정」 노드는
+    /// 2026-11-18 · old-shapes O6). 형식 판이 먼저 거절하지만(<see cref="StoryFileJson.CurrentFormatVersion"/>), 판이 맞아도 모르는 종류다.
+    /// </summary>
     [Fact]
-    public void 공급_노드가_아닌_설정_노드는_저장하지_않는다()
+    public void 설정_노드가_든_판은_열지_않는다()
     {
-        var project = new StoryProject();
-        var board = new StoryFile("sf_a", "A", "story/a.vnstory.json");
-        project.Files.Add(board);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });
+        var sample = new Sample();
+        string json = StoryFileJson.Write(sample.File);
 
-        board.Nodes.Add(new SetNode("nd_set", "A 설정"));
-        Assert.Throws<InvalidDataException>(() => ProjectManifestJson.Write(project));
-
-        board.Nodes.Clear();
-        board.Nodes.Add(new SetNode("nd_supply", global::Vn.Authoring.Chapters.ChapterBoardSupply.ConditionSupplyNodeName("A")));
-        ProjectManifestJson.Write(project);
+        Assert.Throws<InvalidDataException>(
+            () => StoryFileJson.Read(json.Replace("\"kind\": \"dialogue\"", "\"kind\": \"set\"", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -394,7 +393,7 @@ public class SerializationTests
         var first = new StoryFile("sf_a", "A");
         var second = new StoryFile("sf_b", "B");
         first.Nodes.Add(new DialogueNode("nd_same", "A") { IsBranchCard = true });
-        second.Nodes.Add(new SetNode("nd_same", "B"));
+        second.Nodes.Add(new DialogueNode("nd_same", "B") { IsBranchCard = true });
         project.Files.Add(first);
         project.Files.Add(second);
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "A" });

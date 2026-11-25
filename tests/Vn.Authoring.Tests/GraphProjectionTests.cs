@@ -9,13 +9,12 @@ public class GraphProjectionTests
     [Fact]
     public void 펼친_파일은_실제_노드이고_접힌_파일은_FileProxy다()
     {
-        var (project, fileA, fileB, setA, _, dialogueB) = BuildProject();
+        var (project, fileA, fileB, _, dialogueB) = BuildProject();
 
         GraphProjection projection = GraphProjectionBuilder.Build(
             project,
             new HashSet<string>(new[] { fileA.Id }, StringComparer.Ordinal));
 
-        // 설정노드(setA)는 카드가 없다 (2026-10-29 · L6) — 펼친 판에는 대사 노드 하나만 선다.
         Assert.Collection(
             projection.Items,
             first => Assert.Equal("nd_a", Assert.IsType<ExpandedNodeProjection>(first).NodeId),
@@ -25,14 +24,14 @@ public class GraphProjectionTests
                 Assert.Equal(fileB.Id, proxy.FileId);
                 CollapsedNodeEntry row = Assert.Single(proxy.Nodes);
                 Assert.Equal(dialogueB.Id, row.NodeId);
-                Assert.Equal(1, row.IncomingCount); // 실행 간선 하나 — 조건 공급선은 안 그린다
+                Assert.Equal(1, row.IncomingCount); // 실행 간선 하나
             });
     }
 
     [Fact]
     public void 펼친_노드에서_접힌_파일로_가는_간선은_실제_NodeId를_유지한다()
     {
-        var (project, fileA, _, setA, _, dialogueB) = BuildProject();
+        var (project, fileA, _, _, dialogueB) = BuildProject();
 
         GraphProjection projection = GraphProjectionBuilder.Build(
             project,
@@ -46,13 +45,12 @@ public class GraphProjectionTests
         Assert.Equal(GraphEndpointKind.ExpandedNodeOutput, execution.Source.Kind);
         Assert.Equal(GraphEndpointKind.CollapsedFileNodeInput, execution.Target.Kind);
         Assert.Equal(0, execution.Target.ProxyRowIndex);
-        _ = setA;
     }
 
     [Fact]
     public void 소스_파일이_접히면_간선_시작점도_그_노드_행으로_투영된다()
     {
-        var (project, _, fileB, setA, _, dialogueB) = BuildProject();
+        var (project, _, fileB, _, dialogueB) = BuildProject();
 
         GraphProjection projection = GraphProjectionBuilder.Build(
             project,
@@ -64,15 +62,14 @@ public class GraphProjectionTests
         Assert.Equal("nd_a", execution.SourceNodeId);
         Assert.Equal(dialogueB.Id, execution.TargetNodeId);
         Assert.Equal(GraphEndpointKind.CollapsedFileNodeOutput, execution.Source.Kind);
-        Assert.Equal(0, execution.Source.ProxyRowIndex); // 숨은 설정노드는 행을 차지하지 않는다
+        Assert.Equal(0, execution.Source.ProxyRowIndex);
         Assert.Equal(GraphEndpointKind.ExpandedNodeInput, execution.Target.Kind);
-        _ = setA;
     }
 
     [Fact]
     public void 두_파일이_모두_접혀도_각_FileProxy의_실제_노드_행끼리_연결된다()
     {
-        var (project, _, _, setA, _, dialogueB) = BuildProject();
+        var (project, _, _, _, dialogueB) = BuildProject();
 
         GraphProjection projection = GraphProjectionBuilder.Build(
             project,
@@ -85,25 +82,6 @@ public class GraphProjectionTests
         Assert.Equal(dialogueB.Id, execution.Target.NodeId);
         Assert.Equal(GraphEndpointKind.CollapsedFileNodeOutput, execution.Source.Kind);
         Assert.Equal(GraphEndpointKind.CollapsedFileNodeInput, execution.Target.Kind);
-        _ = setA;
-    }
-
-    [Fact]
-    public void SetNode는_카드가_없다()
-    {
-        // SetNode는 조건 공급자다 — 실행 출구 포트가 애초에 없고, 남아 있던
-        // "이 챕터에 공급 중" 포트도 2026-08-22에 사라졌다 (소유자). 2026-10-29(L6)부터는
-        // 카드째 숨는다: 그 안을 채우던 편집기가 걷혀 눌러도 빈 칸이었다. 데이터는 그대로다.
-        var (project, fileA, _, setA, _, _) = BuildProject();
-
-        GraphProjection projection = GraphProjectionBuilder.Build(
-            project,
-            new HashSet<string>(new[] { fileA.Id }, StringComparer.Ordinal));
-
-        Assert.DoesNotContain(
-            projection.Items.OfType<ExpandedNodeProjection>(),
-            item => item.NodeId == setA.Id);
-        Assert.Contains(project.EnumerateNodes(), node => node.Id == setA.Id);
     }
 
     [Fact]
@@ -173,7 +151,6 @@ public class GraphProjectionTests
         StoryProject Project,
         StoryFile FileA,
         StoryFile FileB,
-        SetNode SetA,
         DialogueNode DialogueA,
         DialogueNode DialogueB) BuildProject()
     {
@@ -182,11 +159,7 @@ public class GraphProjectionTests
         project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "B" });
         var fileA = new StoryFile("sf_a", "A", "story/a.vnstory.json");
         var fileB = new StoryFile("sf_b", "B", "story/b.vnstory.json");
-        var setA = new SetNode("nd_set", "설정")
-        {
-            Layout = new NodeLayout { X = 80, Y = 100 }
-        };
-        // 실행 흐름은 DialogueNode만 정한다. SetNode는 조건 공급자일 뿐이다.
+        // 실행 흐름은 DialogueNode만 정한다.
         // 간선의 매개는 분기다 — 카드 간선을 만드는 출구는 분기뿐이다(기본 출구는 2026-11-17에, 갈래 출구는 2026-11-19에 걷혔다).
         var script = new ScriptDocument();
         script.Lines.Add(new ScriptLine("ln_a1"));
@@ -208,12 +181,11 @@ public class GraphProjectionTests
             Layout = new NodeLayout { X = 650, Y = 260 }
         };
 
-        fileA.Nodes.Add(setA);
         fileA.Nodes.Add(dialogueA);
         fileB.Nodes.Add(dialogueB);
         project.Files.Add(fileA);
         project.Files.Add(fileB);
 
-        return (project, fileA, fileB, setA, dialogueA, dialogueB);
+        return (project, fileA, fileB, dialogueA, dialogueB);
     }
 }

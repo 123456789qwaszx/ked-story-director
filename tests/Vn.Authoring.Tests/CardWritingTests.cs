@@ -90,7 +90,7 @@ public sealed class CardWritingTests
     {
         // 줄 동기화와 조건 전환이 따로 Mutate이던 때는 한 번 물렀을 때 반쪽이 남았다(§5-7).
         (ProjectEditor editor, DialogueNode node) = NewCard();
-        ConditionDefinition condition = Condition(editor);
+        var condition = Condition(editor);
         int changes = 0;
         editor.Changed += (_, _) => changes++;
 
@@ -120,7 +120,7 @@ public sealed class CardWritingTests
     {
         // 쓰는 면은 왕복해야 한다 — 보인 글을 손대지 않고 넣었는데 줄이 고쳐지거나 조건이 풀리면 안 된다.
         (ProjectEditor editor, DialogueNode node) = NewCard();
-        ConditionDefinition condition = Condition(editor);
+        var condition = Condition(editor);
         editor.ApplyScenarioText(node.Id, $"""
             라루: 처음
             <<if {condition.Expression}>>
@@ -223,7 +223,7 @@ public sealed class CardWritingTests
     {
         // 문단 사이가 갈래 사이다 — 빈 줄은 <<if>> 위, <<endif>> 아래에 선다. 그 모양으로 쓴 글은 그대로 되돌아온다.
         (ProjectEditor editor, DialogueNode node) = NewCard();
-        ConditionDefinition condition = Condition(editor);
+        var condition = Condition(editor);
         string[] written =
         [
             "라루: 처음",
@@ -278,13 +278,13 @@ public sealed class CardWritingTests
         return (editor, editor.AddDialogueNode(file.Id, "장면", name: "장면"));
     }
 
-    /// <summary>챕터 조건 「호감 높음」(favor >= 5) — 판의 공급 노드가 나른 사본을 돌려준다(대본의 <c>&lt;&lt;if&gt;&gt;</c>는 그 식이다).</summary>
-    private static ConditionDefinition Condition(ProjectEditor editor)
+    /// <summary>챕터 조건 「호감 높음」(favor >= 5) — 대사가 보는 모양(대본의 <c>&lt;&lt;if&gt;&gt;</c>는 그 식이다)으로 돌려준다.</summary>
+    private static global::Vn.Authoring.Flow.AvailableCondition Condition(ProjectEditor editor)
     {
         StoryFile board = editor.Project.Files[0];
         editor.AddChapterStat(board.Name, "favor", maximum: 10);
         editor.AddChapterCondition(board.Name, "호감 높음", "favor >= 5");
-        return board.Nodes.OfType<SetNode>().Single().Conditions.Single();
+        return global::Vn.Authoring.Flow.AvailableConditionResolver.Of(editor.FindChapter(board.Name)!).Conditions.Single();
     }
 
     // 지금 프로젝트에서 다시 찾는다 — 되돌리기는 프로젝트를 새 객체로 갈아 끼운다.

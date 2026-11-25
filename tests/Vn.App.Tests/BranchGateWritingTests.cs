@@ -234,8 +234,6 @@ public sealed class BranchGateWritingTests : IDisposable
         ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         session.Editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, chapter.ToGraphModel("ch01"));
         Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, "신뢰높음"));
         Dispatcher.UIThread.RunJobs();
 

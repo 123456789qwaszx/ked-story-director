@@ -82,15 +82,14 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 챕터 Id를 바꾸고, 그 이름을 지고 있는 모델 둘 — 판(<c>StoryFile.Name</c>, 챕터 = 판 1:1)과
-    /// 조건 공급 설정노드(<c>챕터 {Id} 조건</c>) — 를 <b>한 번의 변경</b>으로 함께 바꾼다.
-    /// 되돌리기 한 번에 셋이 돌아온다.
+    /// 챕터 Id를 바꾸고, 그 이름을 지고 있는 판(<c>StoryFile.Name</c>, 챕터 = 판 1:1)을 <b>한 번의 변경</b>으로 함께 바꾼다.
+    /// 되돌리기 한 번에 둘이 돌아온다.
     ///
-    /// <b>개명의 주인은 모델이다</b>. <c>Project.Chapters</c>의 Id와 판·배관이 함께 바뀌어야
+    /// <b>개명의 주인은 모델이다</b>. <c>Project.Chapters</c>의 Id와 판이 함께 바뀌어야
     /// 저장하고 다시 열었을 때 챕터와 판의 이름이 갈리지 않는다. 파일 이름 바꾸기는 후속 출력의 일이다.
-    ///
+    /// ⛔ 조건 공급 노드(<c>챕터 {Id} 조건</c>)의 이름도 함께 바꿨다 — 2026-11-25에 그 노드가 걷혔다(condition-supply C1).
     /// </summary>
-    /// <returns>판·배관의 이름이 실제로 따라갔는가(없었으면 거짓).</returns>
+    /// <returns>판의 이름이 실제로 따라갔는가(없었으면 거짓).</returns>
     public ChapterRenameEffect RenameChapter(string oldId, string newId)
     {
         ChapterDocument chapter = RequireChapter(oldId);
@@ -102,11 +101,6 @@ public sealed partial class ProjectEditor
 
         StoryFile? board = EpisodeNaming.BoardOf(Project, oldId);
 
-        string newSupplyName = ChapterBoardSupply.ConditionSupplyNodeName(newId);
-
-        // 그 판의 공급 노드(설정 노드는 그것 하나뿐이다 — 저장 검증이 지킨다).
-        SetNode? supply = board?.Nodes.OfType<SetNode>().SingleOrDefault();
-
         Mutate(() =>
         {
             chapter.ChapterId = newId;
@@ -115,14 +109,9 @@ public sealed partial class ProjectEditor
             {
                 board.Name = newId;
             }
-
-            if (supply is not null)
-            {
-                supply.Name = newSupplyName;
-            }
         });
 
-        return new ChapterRenameEffect(board is not null, supply is not null);
+        return new ChapterRenameEffect(board is not null);
     }
 
     // ── 에피소드 ────────────────────────────────────────────────────────────
@@ -818,12 +807,9 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 챕터 조건 하나 — 간선의 표시조건·해금조건이 라벨로 가리킨다.
-    ///
-    /// <b>이름에 "Chapter"가 붙은 이유</b>: <c>AddCondition</c>은 이미 <b>설정노드</b>의
-    /// 창구다. 둘은 다른 것이다 — 저쪽은 대사 안의 [3] 조건이 태어나는 자리이고, 이쪽은
-    /// 챕터 간선이 보는 [2] 진행 스탯이다(지시서 §3.2). 같은 이름으로 두면 인자 개수만
-    /// 다른 호출이 <b>조용히 저쪽으로 간다</b> — 실제로 이 테스트를 쓰다 한 번 물렸다.
+    /// 챕터 조건 하나 — 간선의 표시조건·해금조건과 대사의 줄 전환 · 분기 카드 머리가 라벨로 가리킨다.
+    /// 조건은 이것 하나뿐이다 — 대사 노드가 고르는 목록은 이 챕터 조건에서 바로 계산한다(<see cref="Flow.AvailableConditionResolver"/>).
+    /// ⛔ 2026-11-25까지는 판에 서지 않는 공급 노드(<c>챕터 {Id} 조건</c>)에 사본을 만들어 대사가 그 사본의 Id를 가리켰다(condition-supply C1).
     /// </summary>
     public void AddChapterCondition(string chapterId, string label, string expression, string? description = null)
     {
@@ -834,17 +820,11 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException(string.Format(Msg.Edit_ConditionLabelAlreadyExists, label));
         }
 
-        // 조건과 그 조건의 공급이 <b>한 변경</b>이다 — 되돌리기 한 번에 함께 간다. 공급 노드는 판에 서지 않는 배관이라 판에는 조건만 바뀐 것이다(UX16).
-        Batch(ProjectChangeKind.ChapterCondition, () =>
-        {
-            Mutate(() => chapter.Conditions.Add(
-                new ChapterCondition(label, expression, description, Parsed: [], IsValid: false)));
-
-            SupplyChapterConditions(chapterId);
-        });
+        Mutate(ProjectChangeKind.ChapterCondition, () => chapter.Conditions.Add(
+            new ChapterCondition(label, expression, description, Parsed: [], IsValid: false)));
     }
 
-    /// <summary>챕터 조건의 식·설명을 고친다 — 설정노드의 <c>UpdateCondition</c>과 다른 것이다.</summary>
+    /// <summary>챕터 조건의 식·설명을 고친다. 대사가 보는 식도 함께 바뀐다 — 대사는 라벨만 쥐고 식은 그릴 때 챕터에서 읽는다.</summary>
     public void UpdateChapterCondition(string chapterId, string label, string expression, string? description = null)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
@@ -854,41 +834,19 @@ public sealed partial class ProjectEditor
 
         int index = chapter.Conditions.IndexOf(condition);
 
-        Batch(ProjectChangeKind.ChapterCondition, () =>
+        Mutate(ProjectChangeKind.ChapterCondition, () => chapter.Conditions[index] = condition with
         {
-            Mutate(() => chapter.Conditions[index] = condition with
-            {
-                Expression = expression,
-                Description = description ?? condition.Description,
+            Expression = expression,
+            Description = description ?? condition.Description,
 
-                // 해석은 담지 않는다 — ToGraphModel이 식에서 다시 푼다. 여기서 옛 해석을
-                //    들고 있으면 검증이 고치기 전 값으로 참을 말한다.
-                Parsed = [],
-                IsValid = false
-            });
-
-            // 사본은 이름으로 짝짓는다 — 같은 이름의 사본이 Id를 지킨 채 새 식을 받는다(식 미정 ↔ 식 채움도 같다).
-            SupplyChapterConditions(chapterId);
+            // 해석은 담지 않는다 — ToGraphModel이 식에서 다시 푼다. 여기서 옛 해석을
+            //    들고 있으면 검증이 고치기 전 값으로 참을 말한다.
+            Parsed = [],
+            IsValid = false
         });
     }
 
-    // ── 판에 공급하는 챕터 조건 ─────────────────────────────────────────────
-    //
-    // 챕터 조건은 판의 공급 노드(`챕터 {Id} 조건`)로 건너간다. 따로 누르는 단추가 있으면
-    //    그것을 안 누른 동안 대사 노드의 조건 목록이 옛것이 되므로,
-    //    <b>조건이 바뀌는 그 명령</b>(<see cref="AddChapterCondition"/>·<see cref="UpdateChapterCondition"/>)과
-    //    <b>판이 서는 순간</b>(<see cref="EnsureChapterBoard"/>)이 공급을 부른다.
-
-    /// <summary>판이 있으면 챕터 조건을 그 판의 공급 노드로 보낸다. 멱등이다 — 바뀔 것이 없으면 안 건드린다.</summary>
-    private void SupplyChapterConditions(string chapterId)
-    {
-        if (FindChapter(chapterId) is { } chapter &&
-            EpisodeNaming.BoardOf(Project, chapterId) is { } board)
-        {
-            ChapterBoardSupply.SupplyChapterConditionsToBoard(
-                this, board.Id, chapter.ToGraphModel(string.Empty));
-        }
-    }
+    // ⛔ `SupplyChapterConditions`(챕터 조건을 판의 공급 노드로 보내기)는 2026-11-25에 공급 노드와 함께 걷혔다(condition-supply C1).
 
     /// <summary>
     /// <b>스탯 개명이 참조를 끌고 간다</b>.
@@ -902,7 +860,6 @@ public sealed partial class ProjectEditor
     /// <item><c>스탯</c> 정의 행 — 표시이름이 키와 같았으면 그것도 따라간다(안 정한 이름이다).</item>
     /// <item>간선의 <c>스탯변화</c> — 해석된 채로 살아서 키만 갈면 된다.</item>
     /// <item>챕터 <c>조건</c> 식 — 원문이라 문법을 아는 <see cref="ConditionExpressionParser.ReplaceStatKey"/>가 간다.</item>
-    /// <item><b>판에 공급된 조건</b> — 아래.</item>
     /// <item><c>픽스처</c>의 시작값 — 키로 든 사전이라 안 갈면 그 값이 <b>조용히 사라지고</b>
     /// 워커가 초기값으로 되돌아간다.</item>
     /// <item><b>대사 글의 <c>{stat("키")}</c></b> — 그 챕터 대본의 줄, 언어마다(2026-11-23 소유자 — 「키를 바꿀 때 대사 글의 같은 스탯도 바꾸는게
@@ -910,12 +867,8 @@ public sealed partial class ProjectEditor
     /// 키는 줄이 말하는 내용이 아니라서 번역 · 녹음이 낡지 않는다. ⛔ 0.2.0까지는 대사 글이 옛 키를 들고 남아 게임에서 없는 스탯을 읽었다.</item>
     /// </list>
     ///
-    /// <b>넷째를 빠뜨리면 대사 갈래가 통째로 고아가 된다.</b> 판의 공급 노드는 챕터 조건을
-    /// 번역해 들고 있고(<c>stat("trust") &gt;= 3</c>), 줄에 매달린 전환은 그 조건의 <b>Id</b>로
-    /// 잇는다. 그런데 <c>ChapterBoardSupply.RenameSuppliedCondition</c>은 <b>식으로 짝을
-    /// 찾는다</b> — 스탯을 갈면 식이 달라져 짝을 못 찾고, 다음 동기화가 <b>새 Id로 다시
-    /// 만든다</b>. 그 자리 주석이 경고하는 바로 그 고아다. 그래서 여기서 <b>Id를 지킨 채</b>
-    /// 식만 갈아 끼운다.
+    /// 대사의 줄 전환은 조건을 <b>라벨</b>로 가리키고 식은 그릴 때 챕터 조건에서 읽으므로 따로 갈 것이 없다.
+    /// ⛔ 2026-11-25까지는 판의 공급 노드가 번역한 식 사본을 들고 있어 그것도 Id를 지킨 채 갈았다(condition-supply C1).
     /// </summary>
     /// <returns>바꾼 자리의 수. 거절되면 <c>Applied</c>가 false이고 아무것도 안 건드렸다.</returns>
     public StatRenameOutcome RenameChapterStat(string chapterId, string oldKey, string newKey)
@@ -1022,7 +975,6 @@ public sealed partial class ProjectEditor
             fixtures.Add((i, chapter.Fixtures[i] with { Stats = stats }));
         }
 
-        List<ConditionDefinition> supplied = SuppliedConditionsReading(chapterId, from);
         (List<(ScriptLocale Locale, string LineId, LocalizedLine Line)> reads, int readLines) =
             DialogueStatReadsRenamed(chapterId, chapter, from, to);
 
@@ -1049,19 +1001,10 @@ public sealed partial class ProjectEditor
             {
                 chapter.Conditions[at] = condition;
             }
-
-            foreach (ConditionDefinition condition in supplied)
-            {
-                // Id를 지킨 채 식만 간다 — 줄에 매달린 전환이 이 Id로 잇는다.
-                condition.Expression = condition.Expression.Replace(
-                    Rendering.YarnSyntax.StatRead(from),
-                    Rendering.YarnSyntax.StatRead(to),
-                    StringComparison.Ordinal);
-            }
         });
 
         return new StatRenameOutcome(
-            true, edges.Count, conditions.Count, supplied.Count, fixtures.Count, null, readLines);
+            true, edges.Count, conditions.Count, fixtures.Count, null, readLines);
     }
 
     /// <summary>
@@ -1105,20 +1048,6 @@ public sealed partial class ProjectEditor
         }
 
         return (rewrites, lines.Count);
-    }
-
-    /// <summary>
-    /// 그 챕터 판의 공급 노드가 들고 있는 조건 중 <b>이 스탯을 읽는</b> 것들.
-    /// 판이 없거나 공급 노드가 아직 없으면 빈 목록이다.
-    /// </summary>
-    private List<ConditionDefinition> SuppliedConditionsReading(string chapterId, string statKey)
-    {
-        string read = Rendering.YarnSyntax.StatRead(statKey);
-
-        return SupplyNodesOf(chapterId)
-            .SelectMany(node => node.Conditions)
-            .Where(condition => condition.Expression.Contains(read, StringComparison.Ordinal))
-            .ToList();
     }
 
     /// <summary>
@@ -1179,7 +1108,6 @@ public sealed partial class ProjectEditor
 
         var edges = new List<(int Index, ChapterEdge Edge)>();
         var conditions = new List<(int Index, ChapterCondition Condition)>();
-        var emptied = new List<ConditionDefinition>();
 
         if (clearUses)
         {
@@ -1213,15 +1141,13 @@ public sealed partial class ProjectEditor
                 // <b>식만 비우고 조건은 남긴다</b>. 조건을 통째로 지우면
                 //    그것을 쓰는 간선의 표시/해금이 함께 풀려 <b>연쇄가 한 단계 더</b> 간다 —
                 //    지우는 사람이 안 본 자리까지 바뀐다. 빈 식은 검증이 짚어 사람이 채운다.
+                //    대사의 줄 전환은 식 미정의 식(항상 통과)을 읽는다 — 간선과 같은 규칙이다(writer-fields W1 · 2026-11-17).
                 conditions.Add((i, chapter.Conditions[i] with
                 {
                     Expression = string.Empty,
                     Parsed = [],
                     IsValid = false
                 }));
-
-                emptied.AddRange(SuppliedNamed(chapterId, chapter.Conditions[i].Label)
-                    .Select(pair => pair.Condition));
             }
         }
 
@@ -1256,14 +1182,6 @@ public sealed partial class ProjectEditor
                 chapter.Conditions[at] = condition;
             }
 
-            foreach (ConditionDefinition supplied in emptied)
-            {
-                // <b>Id는 지킨다</b> — 줄에 매달린 갈래가 이 Id로 잇는다. 챕터 조건은 식 미정이 됐으므로 사본도
-                //    식 미정의 식(항상 통과)이 된다 — 간선과 같은 규칙이다(writer-fields W1 · 2026-11-17).
-                //    전에는 비워서 `<<if false>>`로 꺼 두었다.
-                supplied.Expression = ChapterBoardSupply.UndecidedYarn;
-            }
-
             foreach ((int at, ChapterFixture fixture) in fixtures)
             {
                 chapter.Fixtures[at] = fixture;
@@ -1281,8 +1199,7 @@ public sealed partial class ProjectEditor
     /// <b>사람이 찾아갈 수 있게</b> 적는다. *"쓰이고 있습니다"*로 끝내면 챕터를 뒤져야 한다.
     ///
     /// 픽스처는 세지 않는다 — 막을 이유가 없어 삭제가 함께 치운다(위).
-    /// 판에 공급된 조건도 세지 않는다 — 챕터 조건에서 <b>파생</b>된 것이라, 원본 조건이
-    /// 막고 있으면 여기까지 올 일이 없다.
+    /// 대사의 줄 전환도 세지 않는다 — 조건을 라벨로 가리키므로, 그 조건이 막고 있으면 여기까지 올 일이 없다.
     /// </summary>
     public IReadOnlyList<ChapterUse> FindStatUses(string chapterId, string key)
     {
@@ -1385,13 +1302,9 @@ public sealed partial class ProjectEditor
             maximum,
             type));
 
-        // 스탯과 판의 조건 사본이 한 변경이다 — 이 스탯을 기다리던 식(아직 없는 스탯을 적어 둔 조건)이 이제 읽혀 사본이 따라간다. ⛔ 2026-11-23 전에는
-        // 조건을 고칠 때만 공급해, 스탯을 나중에 더하면 사본이 옛 식(식 미정이면 「항상 통과」)에 머물렀다.
-        Batch(ProjectChangeKind.Structure, () =>
-        {
-            Mutate(() => chapter.Stats.Add(stat));
-            SupplyChapterConditions(chapterId);
-        });
+        // 이 스탯을 기다리던 식(아직 없는 스탯을 적어 둔 조건)은 대사가 그릴 때 챕터에서 다시 읽으므로 따로 고칠 것이 없다.
+        // ⛔ 2026-11-25까지는 판의 조건 사본을 함께 공급했다(condition-supply C1).
+        Mutate(() => chapter.Stats.Add(stat));
 
         return stat;
     }
@@ -1423,18 +1336,14 @@ public sealed partial class ProjectEditor
             throw new InvalidOperationException(string.Format(Msg.Edit_StatIsnTInThis, target));
         }
 
-        // 종류(정수 · 활성/비활성)가 바뀌면 식이 읽히는 모양도 바뀐다 — 판의 조건 사본도 함께(AddChapterStat과 같다 · 2026-11-23).
-        Batch(ProjectChangeKind.Structure, () =>
+        // 종류(정수 · 활성/비활성)가 바뀌면 식이 읽히는 모양도 바뀐다 — 대사는 그릴 때 챕터에서 다시 읽는다(AddChapterStat과 같다).
+        Mutate(() => chapter.Stats[index] = BoolBounded(chapter.Stats[index] with
         {
-            Mutate(() => chapter.Stats[index] = BoolBounded(chapter.Stats[index] with
-            {
-                Initial = initial ?? chapter.Stats[index].Initial,
-                Minimum = minimum ?? chapter.Stats[index].Minimum,
-                Maximum = maximum ?? chapter.Stats[index].Maximum,
-                Type = type ?? chapter.Stats[index].Type
-            }));
-            SupplyChapterConditions(chapterId);
-        });
+            Initial = initial ?? chapter.Stats[index].Initial,
+            Minimum = minimum ?? chapter.Stats[index].Minimum,
+            Maximum = maximum ?? chapter.Stats[index].Maximum,
+            Type = type ?? chapter.Stats[index].Type
+        }));
     }
 
     /// <summary>
@@ -1475,9 +1384,8 @@ public sealed partial class ProjectEditor
     /// <list type="bullet">
     /// <item><b>간선</b> — 표시조건·해금조건에 라벨로 적는다. 지우면
     /// <c>ConditionLabelUndefined</c>로 울지만 그 문구는 <b>오타를 가정</b>한다.</item>
-    /// <item><b>대사 줄의 갈래</b> — 판에 공급된 조건을 <b>Id</b>로 붙든다. 챕터 조건이
-    /// 사라지면 동기화가 그 공급 조건을 <b>지우지도 갱신하지도 않아</b> 옛 식을 든 채 남는다.
-    /// 갈래는 계속 살아 있고, 무엇을 묻는지는 아무 데도 없다.</item>
+    /// <item><b>대사 줄의 갈래</b>(분기 카드의 첫머리 조건도) — 그 챕터 판의 카드가 줄 전환에 라벨로 적는다. 지우면 갈래는 살아 있는데
+    /// 무엇을 묻는지는 아무 데도 없다.</item>
     /// </list>
     /// </summary>
     public ChapterConditionRemoveOutcome RemoveChapterCondition(string chapterId, string label)
@@ -1501,29 +1409,17 @@ public sealed partial class ProjectEditor
                 Plural.Format(Msg.Edit_CanTDeleteConditionIt, target, uses.Count), uses);
         }
 
-        // 아무도 안 부르면 판에 공급된 사본도 함께 걷는다 — 남겨 두면 정의 없는 조건이
-        // 드롭다운에 계속 보인다.
-        List<(SetNode Node, ConditionDefinition Condition)> supplied = SuppliedNamed(chapterId, target);
+        Mutate(() => chapter.Conditions.Remove(condition));
 
-        Mutate(() =>
-        {
-            chapter.Conditions.Remove(condition);
-
-            foreach ((SetNode node, ConditionDefinition item) in supplied)
-            {
-                node.Conditions.Remove(item);
-            }
-        });
-
-        return new ChapterConditionRemoveOutcome(true, supplied.Count, [], null);
+        return new ChapterConditionRemoveOutcome(true, [], null);
     }
 
     /// <summary>
     /// 챕터 조건의 <b>라벨</b>을 바꾼다 — [대본] 탭(작가가 「하린과 친해졌을 때」처럼 뜻으로 부르는 이름, writer-fields W4). 식은 그대로다.
     ///
-    /// 라벨은 이름이 아니라 <b>참조 열쇠</b>다 — 간선의 표시조건 · 해금조건이 이 글자로 가리킨다. 그래서 그 자리들이 함께 간다.
-    /// 판에 공급된 사본(대사 줄의 갈래가 <b>Id</b>로 붙든다)은 공급이 식으로 짝을 찾아 이름만 따라간다 — Id가 그대로라 갈래도 그대로다.
-    /// 비울 수 없고, 이미 있는 라벨로는 바꾸지 않는다(두 조건이 한 라벨로 합쳐진다). 되돌리기 한 칸이다.
+    /// 라벨은 이름이 아니라 <b>참조 열쇠</b>다 — 간선의 표시조건 · 해금조건과 그 챕터 판의 카드 줄 전환(대사 갈래 · 분기 카드 첫머리)이 이 글자로
+    /// 가리킨다. 그래서 그 자리들이 함께 간다. 비울 수 없고, 이미 있는 라벨로는 바꾸지 않는다(두 조건이 한 라벨로 합쳐진다). 되돌리기 한 칸이다.
+    /// ⛔ 2026-11-25까지는 판의 공급 노드 사본이 이름만 따라가고 줄 전환은 사본의 Id를 붙들었다(condition-supply C1).
     /// </summary>
     public ChapterConditionRenameOutcome RenameChapterCondition(string chapterId, string oldLabel, string newLabel)
     {
@@ -1570,25 +1466,42 @@ public sealed partial class ProjectEditor
             }
         }
 
-        Batch(() =>
+        var transitions = new List<(List<LineConditionTransition> List, int Index, LineConditionTransition Transition)>();
+
+        void Collect(List<LineConditionTransition> list)
         {
-            Mutate(() =>
+            for (int i = 0; i < list.Count; i++)
             {
-                chapter.Conditions[index] = condition with { Label = to };
-
-                foreach ((int at, ChapterEdge edge) in edges)
+                if (string.Equals(list[i].ConditionId, from, StringComparison.Ordinal))
                 {
-                    chapter.Edges[at] = edge;
+                    transitions.Add((list, i, new LineConditionTransition(list[i].Kind, to)));
                 }
-            });
+            }
+        }
 
-            // 공급 사본의 이름을 먼저 옮긴다(Id 보존 = 매달린 분기 보존) — 공급은 이름으로 짝을 찾는다.
-            foreach ((SetNode _, ConditionDefinition copy) in SuppliedNamed(chapterId, from))
+        foreach (DialogueNode node in BoardDialoguesOf(chapterId))
+        {
+            foreach (DialogueLineExtension extension in node.LineExtensions)
             {
-                UpdateCondition(copy.Id, to, copy.Expression);
+                Collect(extension.Transitions);
             }
 
-            SupplyChapterConditions(chapterId);
+            Collect(node.TrailingTransitions);
+        }
+
+        Mutate(() =>
+        {
+            chapter.Conditions[index] = condition with { Label = to };
+
+            foreach ((int at, ChapterEdge edge) in edges)
+            {
+                chapter.Edges[at] = edge;
+            }
+
+            foreach ((List<LineConditionTransition> list, int at, LineConditionTransition transition) in transitions)
+            {
+                list[at] = transition;
+            }
         });
 
         return new ChapterConditionRenameOutcome(true, edges.Count, null);
@@ -1623,20 +1536,12 @@ public sealed partial class ProjectEditor
                 unlock && visible ? Msg.Edit_ShowConditionUnlockCondition : unlock ? Msg.Edit_UnlockCondition : Msg.Edit_ShowCondition));
         }
 
-        var ids = new HashSet<string>(
-            SuppliedNamed(chapterId, target).Select(pair => pair.Condition.Id), StringComparer.Ordinal);
-
-        if (ids.Count == 0)
-        {
-            return uses;
-        }
-
-        foreach (DialogueNode node in Project.EnumerateNodes().OfType<DialogueNode>())
+        foreach (DialogueNode node in BoardDialoguesOf(chapterId))
         {
             foreach (DialogueLineExtension extension in node.LineExtensions)
             {
                 if (!extension.Transitions.Any(transition =>
-                        transition.ConditionId is { } id && ids.Contains(id)))
+                        string.Equals(transition.ConditionId, target, StringComparison.Ordinal)))
                 {
                     continue;
                 }
@@ -1657,28 +1562,14 @@ public sealed partial class ProjectEditor
         return uses;
     }
 
-    /// <summary>그 챕터 판의 공급 노드가 이 이름으로 들고 있는 조건들.</summary>
-    private List<(SetNode Node, ConditionDefinition Condition)> SuppliedNamed(string chapterId, string label) =>
-        SupplyNodesOf(chapterId)
-            .SelectMany(node => node.Conditions.Select(condition => (Node: node, Condition: condition)))
-            .Where(pair => string.Equals(pair.Condition.Name, label, StringComparison.Ordinal))
-            .ToList();
-
     /// <summary>
-    /// <b>그 챕터의</b> 공급 노드 — 공급(<see cref="ChapterBoardSupply.SupplyChapterConditionsToBoard"/>)이
-    /// 찾는 것과 같은 이름 규약이다.
+    /// <b>그 챕터 판의</b> 대사 카드들 — 줄 전환이 그 챕터의 조건을 라벨로 가리킨다.
     ///
-    /// 이름 모양(<c>챕터 … 조건</c>)만 보고 <b>모든 챕터의</b> 공급 노드를 훑으면 안 된다.
-    /// 스탯·조건은 챕터마다 따로라서, ch01의 <c>trust</c>를 고치거나 조건을 지우면
-    /// 같은 이름을 쓰는 ch02의 공급 사본까지 바뀌거나 걷힌다.
+    /// 모든 판의 카드를 훑으면 안 된다. 조건은 챕터마다 따로라서, ch01의 조건 이름을 바꾸거나 지울 때 같은 이름을 쓰는 ch02의 갈래까지
+    /// 바뀌거나 막힌다.
     /// </summary>
-    private IEnumerable<SetNode> SupplyNodesOf(string chapterId)
-    {
-        string name = ChapterBoardSupply.ConditionSupplyNodeName(chapterId);
-
-        return Project.EnumerateNodes().OfType<SetNode>()
-            .Where(node => string.Equals(node.Name, name, StringComparison.Ordinal));
-    }
+    private IEnumerable<DialogueNode> BoardDialoguesOf(string chapterId) =>
+        EpisodeNaming.BoardOf(Project, chapterId)?.Nodes.OfType<DialogueNode>() ?? [];
 
     // ── 잔손 ────────────────────────────────────────────────────────────────
 
@@ -1856,10 +1747,6 @@ public sealed partial class ProjectEditor
 /// <param name="Applied">개명했는가. false면 <b>아무것도 안 건드렸다</b>.</param>
 /// <param name="Edges">`스탯변화`가 바뀐 간선 수.</param>
 /// <param name="Conditions">식이 바뀐 챕터 조건 수.</param>
-/// <param name="SuppliedConditions">
-/// 판에 공급된 조건 중 식이 바뀐 수 — <b>Id를 지킨 채</b> 갈았다. 이걸 빠뜨리면 다음
-/// 동기화가 새 Id로 다시 만들어 줄에 매달린 갈래가 전부 고아가 된다.
-/// </param>
 /// <param name="Fixtures">시작값을 갈아 끼운 픽스처 수 — 안 갈면 그 값이 조용히 사라진다.</param>
 /// <param name="Refusal">거절 사유. <paramref name="Applied"/>가 false일 때만 있다.</param>
 /// <param name="DialogueLines">대사 글의 <c>{stat("키")}</c>가 새 키로 바뀐 줄 수(살아 있는 줄 · 언어가 여럿이어도 한 줄은 하나).</param>
@@ -1867,12 +1754,11 @@ public sealed record StatRenameOutcome(
     bool Applied,
     int Edges,
     int Conditions,
-    int SuppliedConditions,
     int Fixtures,
     string? Refusal,
     int DialogueLines = 0)
 {
-    public static StatRenameOutcome Refuse(string reason) => new(false, 0, 0, 0, 0, reason);
+    public static StatRenameOutcome Refuse(string reason) => new(false, 0, 0, 0, reason);
 }
 
 /// <summary>
@@ -1893,7 +1779,7 @@ public enum ChapterUseKind
     /// <summary>챕터 `조건`의 식이 쓴다.</summary>
     Condition,
 
-    /// <summary>대사 줄의 갈래가 쓴다 — 판에 공급된 조건을 Id로 붙들고 있다.</summary>
+    /// <summary>대사 줄의 갈래(분기 카드 첫머리도)가 쓴다 — 줄 전환에 조건 라벨을 적어 두었다.</summary>
     DialogueBranch,
 
     /// <summary>대사 글의 <c>{stat("키")}</c>가 읽는다(stat-read-rename S2) — 지우기는 이것을 비우지 않고 남긴다(검증 보고가 짚는다).</summary>
@@ -1927,17 +1813,15 @@ public sealed record StatRemoveOutcome(
 
 /// <summary>챕터 조건 삭제 한 판의 결과.</summary>
 /// <param name="Applied">지웠는가. false면 <b>아무것도 안 건드렸다</b>.</param>
-/// <param name="SuppliedRemoved">판에서 함께 걷은 공급 조건 수.</param>
 /// <param name="Uses">거절의 <b>근거</b> — 먼저 비워야 할 자리들.</param>
 /// <param name="Refusal">거절 사유. <paramref name="Applied"/>가 false일 때만 있다.</param>
 public sealed record ChapterConditionRemoveOutcome(
     bool Applied,
-    int SuppliedRemoved,
     IReadOnlyList<ChapterUse> Uses,
     string? Refusal)
 {
     public static ChapterConditionRemoveOutcome Refuse(string reason, IReadOnlyList<ChapterUse> uses) =>
-        new(false, 0, uses, reason);
+        new(false, uses, reason);
 }
 
 /// <summary>챕터 조건 라벨 바꾸기 한 판의 결과 — <see cref="ProjectEditor.RenameChapterCondition"/>.</summary>
@@ -1951,6 +1835,5 @@ public sealed record ChapterConditionRenameOutcome(bool Applied, int Edges, stri
 
 /// <summary>챕터 개명이 모델에서 함께 바꾼 것 — <see cref="ProjectEditor.RenameChapter"/>의 결과.</summary>
 /// <param name="BoardRenamed">판 이름이 따라갔는가(판이 아직 없었으면 거짓).</param>
-/// <param name="SupplyRenamed">조건 공급 노드의 이름이 따라갔는가.</param>
-public sealed record ChapterRenameEffect(bool BoardRenamed, bool SupplyRenamed);
+public sealed record ChapterRenameEffect(bool BoardRenamed);
 

@@ -7,7 +7,7 @@ namespace Vn.App.Services;
 /// 도메인 변경 한 번이 각 화면에 어떤 갱신을 요구하는지 결정한다.
 ///
 /// 이 판단을 MainWindow의 switch 안에 흩어 놓으면 변경 종류를 추가할 때마다
-/// SetNode 편집 컨트롤을 불필요하게 다시 만드는 회귀가 생긴다. 특히 조건 TextBox의
+/// 편집 컨트롤을 불필요하게 다시 만드는 회귀가 생긴다. 특히 TextBox의
 /// LostFocus 커밋은 다음 클릭이 도착하기 전에 컨트롤을 교체해서 두 번째 칸을 클릭할 수 없게 했다.
 /// </summary>
 internal static class ProjectRefreshPlanner
@@ -60,13 +60,6 @@ internal static class ProjectRefreshPlanner
                 // 고친 글이 카드의 글 칸에도 비친다 — 안 그러면 낡은 칸의 글이 다음 넣기에서 방금 고친 줄을 도로 덮는다. 어느 카드인지는
                 // 알림이 싣는다(모르면 — 화자 이름 바꾸기처럼 여러 카드면 — 칸마다 · usability UX18). ⛔ 고른 카드의 칸만 다시 채웠다.
                 RefreshCardWriting: true),
-
-            ProjectChangeKind.ConditionDefinition => new ProjectRefreshPlan(
-                RebuildGraph: true,
-                RefreshGraphPositions: false,
-                // 조건을 편집 중인 SetNode는 그대로 둔다. DialogueNode가 선택되어 있다면
-                // 드롭다운과 갈래 라벨을 새 조건 이름으로 다시 계산한다.
-                RebuildInspector: selectedNode is DialogueNode),
 
             ProjectChangeKind.NodeMetadata => new ProjectRefreshPlan(
                 RebuildGraph: true,

@@ -4,18 +4,16 @@ using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// 챕터 개명의 <b>유일한 자리</b>. 이름이 한 곳만 바뀌면 에피소드들의 대화가 없다고 나오거나
-/// 연출 그래프의 조건 노드가 옛 챕터를 받는다.
+/// 챕터 개명의 <b>유일한 자리</b>. 이름이 한 곳만 바뀌면 에피소드들의 대화가 없다고 나온다.
 ///
-/// 개명은 <see cref="ProjectEditor.RenameChapter"/> 한 번이다: <c>Project.Chapters</c>의 Id · 판 이름 ·
-/// 조건 공급 노드 이름이 한 변경으로 바뀌고 되돌리기 한 번에 돌아온다.
+/// 개명은 <see cref="ProjectEditor.RenameChapter"/> 한 번이다: <c>Project.Chapters</c>의 Id · 판 이름이 한 변경으로 바뀌고
+/// 되돌리기 한 번에 돌아온다.
 ///
 /// 따라 바뀌어야 할 파일은 진행 JSON 하나이고, 여기서는 옮기지 않고 이름만 말한다 — 새 이름의 파일은 바로 뒤의
 /// 내보내기가 쓰고, 옛 이름의 파일은 같은 내보내기가 걷는다(<see cref="ChapterExportService"/>).
 /// </summary>
 public static class ChapterRenamer
 {
-    /// <param name="SupplyRenamed">조건 공급 노드의 이름이 따라갔으면 참.</param>
     /// <param name="StaleExport">
     /// 옛 이름으로 내보낸 진행 JSON이 남아 있으면 그 파일 이름. 여기서는 지우지 않는다 — 개명은 모델만 바꾸고(되돌리기
     /// 한 칸), 파일은 바로 뒤의 내보내기가 걷는다. 화면은 이 이름으로 걷혔는지 말한다. <see cref="ChapterDeleter"/>도 같다.
@@ -23,7 +21,6 @@ public static class ChapterRenamer
     public sealed record Result(
         bool Renamed,
         string? Failure,
-        bool SupplyRenamed = false,
         string? StaleExport = null)
     {
         public static Result Fail(string reason) => new(false, reason);
@@ -61,12 +58,10 @@ public static class ChapterRenamer
             return Result.Fail(string.Format(Msg.Edit_ChapterAlreadyExists, newId));
         }
 
-        // 챕터 Id · 판 · 배관이 한 변경으로 — 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 같은 칸에서 따라간다(2026-11-17).
-        ChapterRenameEffect effect = default!;
-
+        // 챕터 Id · 판이 한 변경으로 — 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 같은 칸에서 따라간다(2026-11-17).
         editor.Batch(() =>
         {
-            effect = editor.RenameChapter(oldId, newId);
+            editor.RenameChapter(oldId, newId);
             AutoIdFollower.FollowChapter(editor, oldId, newId);
         });
 
@@ -76,7 +71,6 @@ public static class ChapterRenamer
 
         return new Result(
             true, null,
-            effect.SupplyRenamed,
             stale is not null && File.Exists(stale) ? Path.GetFileName(stale) : null);
     }
 }

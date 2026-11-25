@@ -1,5 +1,6 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Tests.Chapters;
@@ -110,43 +111,24 @@ public sealed class StatRenameTests
         Assert.Equal(1, stats["fatigue"]);
     }
 
-    // ── 공급된 조건 — 빠뜨리면 갈래가 고아가 된다 ──────────────────────────
+    // ── 대사의 갈래 — 조건을 이름으로 가리키므로 새 식을 곧바로 읽는다 ──────
 
     [Fact]
-    public void 판에_공급된_조건이_Id를_지킨_채_따라간다()
+    public void 대사의_갈래가_새_식을_읽는다()
     {
-        // ⛔ 여기가 이 명령이 존재하는 진짜 이유다. 줄에 매달린 전환은 조건의 <b>Id</b>로
-        //    잇는데, `ChapterBoardSupply.RenameSuppliedCondition`은 <b>식으로 짝을 찾는다</b> —
-        //    식이 달라지면 짝을 못 찾고 다음 동기화가 <b>새 Id로 다시 만든다</b>.
-        (ProjectEditor editor, ConditionDefinition supplied) = WorldWithBoard();
-        string id = supplied.Id;
+        // 줄에 매달린 전환은 조건의 <b>이름</b>을 들고 식은 그릴 때 챕터에서 읽는다 — 스탯을 갈면 갈래가 새 식을 묻는다.
+        // ⛔ 2026-11-25까지는 판의 공급 사본이 식을 들고 있어 그것도 Id를 지킨 채 갈아야 했다(빠뜨리면 갈래가 고아가 됐다 · condition-supply C1).
+        ProjectEditor editor = World();
+        editor.EnsureChapterBoard("ch01");
+        DialogueNode root = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
+        editor.SetLineTransition(root.Id, root.Script.ActiveLines.First().Id, LineConditionTransition.BeginIf("신뢰높음"));
 
-        StatRenameOutcome outcome = editor.RenameChapterStat("ch01", "trust", "favor");
+        Assert.True(editor.RenameChapterStat("ch01", "trust", "favor").Applied);
 
-        Assert.Equal(1, outcome.SuppliedConditions);
-        Assert.Equal(id, supplied.Id);
-        Assert.Equal("stat(\"favor\") >= 3", supplied.Expression);
-    }
-
-    [Fact]
-    public void 다시_동기화해도_조건이_새로_안_생긴다()
-    {
-        // 위의 결과를 <b>끝까지</b> 확인한다 — 식이 맞아야 동기화가 있는 것을 알아본다.
-        (ProjectEditor editor, ConditionDefinition supplied) = WorldWithBoard();
-        editor.RenameChapterStat("ch01", "trust", "favor");
-
-        // 개명된 식을 해석해야 번역이 서므로 조건을 다시 저장한다(사람이 하는 길과 같다).
-        editor.UpdateChapterCondition("ch01", "신뢰높음", "favor >= 3");
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor,
-            editor.Project.Files.Single(file => file.Name == "ch01").Id,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
-
-        SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Single();   // 설정 노드는 판의 공급 노드뿐이다
-
-        Assert.Equal(supplied.Id, Assert.Single(supply.Conditions).Id);
+        DialogueNode after = editor.Project.FindDialogue(root.Id)!;
+        Assert.Equal("신뢰높음", after.FindExtension(after.Script.ActiveLines.First().Id)!.Transition!.ConditionId);
+        Assert.Equal("stat(\"favor\") >= 3", AvailableConditionResolver.Resolve(editor.Project, root.Id).Find("신뢰높음")!.Expression);
+        Assert.Empty(ConditionFlowResolver.Resolve(after, editor.Project).Problems);
     }
 
     // ── 거절 ────────────────────────────────────────────────────────────────
@@ -205,10 +187,11 @@ public sealed class StatRenameTests
     }
 
     [Fact]
-    public void 되돌리기_한_번에_넷이_함께_돌아간다()
+    public void 되돌리기_한_번에_함께_돌아간다()
     {
         // ⛔ 갈라 두면 정의만 바뀌고 간선은 옛 키를 가리키는 <b>반쪽</b>이 생긴다.
-        (ProjectEditor editor, _) = WorldWithBoard();
+        ProjectEditor editor = World();
+        editor.EnsureChapterBoard("ch01");
 
         editor.RenameChapterStat("ch01", "trust", "favor");
         editor.Undo();
@@ -246,20 +229,4 @@ public sealed class StatRenameTests
         return editor;
     }
 
-    /// <summary>위에 더해, 판과 공급된 조건까지 선 상태.</summary>
-    private static (ProjectEditor Editor, ConditionDefinition Supplied) WorldWithBoard()
-    {
-        ProjectEditor editor = World();
-        string fileId = editor.EnsureChapterBoard("ch01");
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor,
-            fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
-
-        SetNode supply = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Single();   // 설정 노드는 판의 공급 노드뿐이다
-
-        return (editor, Assert.Single(supply.Conditions));
-    }
 }

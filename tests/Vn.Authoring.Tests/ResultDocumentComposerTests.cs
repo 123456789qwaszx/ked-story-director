@@ -65,30 +65,33 @@ public class ResultDocumentComposerTests
         var sample = new Sample();
         sample.Line("조건 대사", LineConditionTransition.BeginIf(sample.ConditionA.Id));
         DialogueResult result = sample.Unfold();
+        string id = sample.ConditionA.Id;
         string expression = sample.ConditionA.Expression;
 
-        sample.Editor.RemoveNode(sample.SetNode.Id);   // 공급 노드째 — 조건 사본이 사라진다
+        sample.DropCondition(id);
 
         RenderedDocument document = ResultDocumentComposer.Compose(result, project: sample.Project);
         RenderedSegment condition = Assert.Single(document.Segments, segment =>
             segment.Kind == RenderedSegmentKind.ConditionBegin);
 
         Assert.Equal(expression, condition.Expression);
-        Assert.Equal(sample.ConditionA.Id, condition.Source.ConditionId);
+        Assert.Equal(id, condition.Source.ConditionId);
     }
 
     [Fact]
     public void 작업_중_미리보기는_사용할_수_없는_조건을_경고로_알린다()
     {
         // 범위가 판(챕터)이 된 뒤로 "못 쓴다"는 <b>다른 챕터에 있다</b>는 뜻이다 (2026-08-17).
-        // 설정노드를 다른 판으로 옮기면 그 판의 대사는 조건을 잃는다.
+        // 조건이 다른 챕터에만 있으면 이 판의 대사는 그 조건을 잃는다.
         var sample = new Sample();
-        string opening = sample.Line("조건 대사", LineConditionTransition.BeginIf(sample.ConditionA.Id));
+        string id = sample.ConditionA.Id;
+        string opening = sample.Line("조건 대사", LineConditionTransition.BeginIf(id));
 
-        var otherFile = new StoryFile("sf_other", "다른 챕터");
-        sample.Project.Files.Add(otherFile);
-        sample.File.Nodes.Remove(sample.SetNode);
-        otherFile.Nodes.Add(sample.SetNode);
+        var other = new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "다른 챕터" };
+        other.Conditions.Add(sample.Project.Chapters.Single(chapter => chapter.ChapterId == "test").Conditions.Single(item => item.Label == id));
+        sample.Project.Chapters.Add(other);
+        sample.Project.Files.Add(new StoryFile("sf_other", "다른 챕터"));
+        sample.DropCondition(id);
 
         RenderedDocument document = WorkingDialoguePreview.Compose(sample.Project, sample.Dialogue.Id);
 
@@ -99,7 +102,7 @@ public class ResultDocumentComposerTests
 
         // 작가가 고른 조건은 그대로 남는다.
         Assert.Equal(
-            sample.ConditionA.Id,
+            id,
             sample.Dialogue.FindExtension(opening)!.Transition!.ConditionId);
 
         // 그리고 그 상태는 막는 문제다.

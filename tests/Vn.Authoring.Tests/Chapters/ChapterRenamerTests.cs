@@ -16,7 +16,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 그 판 위에 서 있으므로 판과 함께 간다.
 ///
 /// ⚠ <b>이 파일의 첫 두 테스트가 신고 그 자체다.</b> 나머지는 고치면서 새로 생긴 사고
-/// 자리(배관이 하나 더 서는 경우·이름 충돌)를 막는다.
+/// 자리(이름 충돌)를 막는다.
 ///
 /// (2026-10-29 · D2: 워크북·대본 폴더를 옮기던 일과 그 검사(잠김·폴더 충돌)는 엑셀 연동과 함께 걷혔다.)
 /// </summary>
@@ -62,44 +62,30 @@ public sealed class ChapterRenamerTests : IDisposable
     }
 
     [Fact]
-    public void 조건_공급_노드의_이름이_따라간다()
+    public void 개명_뒤에도_대사의_갈래가_그_챕터의_조건을_읽는다()
     {
-        // ⛔ "연출그래프에서도 조건노드가 이전의 챕터를 받고 있어" — 옛 이름의 배관이 판에
-        //    남으면 다음 공급이 새 이름으로 <b>하나 더</b> 만들어 조건이 둘로 갈린다.
+        // ⛔ "연출그래프에서도 조건노드가 이전의 챕터를 받고 있어" — 공급 노드 시절에는 옛 이름의 배관이 판에 남으면 조건이 둘로 갈렸다.
+        //    이제 카드는 제 판의 이름(= 챕터 Id)으로 챕터를 찾으므로 판 이름이 따라가면 끝이다(condition-supply C1).
         ProjectEditor editor = Build();
+        DialogueNode card = EpisodeNaming.CardFor(editor.Project, OldId, EpisodeId)!;
+        editor.SetLineTransition(card.Id, card.Script.ActiveLines.First().Id, LineConditionTransition.BeginIf("신뢰높음"));
 
         ChapterRenamer.Result result = ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
-
         Assert.True(result.Renamed, result.Failure);
-        Assert.True(result.SupplyRenamed);
-
-        List<string> supplies = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Select(node => node.Name)
-            .ToList();
-
-        Assert.Equal([ChapterBoardSupply.ConditionSupplyNodeName(NewId)], supplies);
-    }
-
-    [Fact]
-    public void 개명_뒤_공급이_배관을_하나_더_만들지_않는다()
-    {
-        // 위 둘을 이어 붙인 자리 — 이름만 맞춰 두고 공급이 또 만들면 고친 것이 아니다.
-        // 공급은 조건을 고칠 때 돈다.
-        ProjectEditor editor = Build();
-
-        ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
 
         editor.UpdateChapterCondition(NewId, "신뢰높음", "trust >= 4");
 
-        SetNode supply = Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 배관을 하나 더 만들지 않았다
-
-        Assert.Equal(ChapterBoardSupply.ConditionSupplyNodeName(NewId), supply.Name);
+        Assert.Equal(
+            "stat(\"trust\") >= 4",
+            Vn.Authoring.Flow.AvailableConditionResolver.Resolve(editor.Project, card.Id).Find("신뢰높음")!.Expression);
+        Assert.Empty(Vn.Authoring.Flow.ConditionFlowResolver.Resolve(editor.Project.FindDialogue(card.Id)!, editor.Project).Problems);
+        Assert.All(editor.Project.EnumerateNodes(), node => Assert.IsType<DialogueNode>(node));
     }
 
     [Fact]
     public void 판_이름도_따라간다()
     {
-        // 챕터 = 판 1:1 (G-1 v2). 판 이름이 곧 챕터 Id라, 어긋나면 배관 판정도 흔들린다.
+        // 챕터 = 판 1:1 (G-1 v2). 판 이름이 곧 챕터 Id라, 어긋나면 카드가 제 챕터(조건 목록)를 못 찾는다.
         ProjectEditor editor = Build();
 
         ChapterRenamer.Rename(editor, ProjectPath, OldId, NewId);
@@ -111,7 +97,7 @@ public sealed class ChapterRenamerTests : IDisposable
     [Fact]
     public void 챕터_모델의_Id가_바뀐다()
     {
-        // ⛔ 2026-10-29까지 여기가 빠져 있었다 — 판·배관은 새 이름인데 Project.Chapters는
+        // ⛔ 2026-10-29까지 여기가 빠져 있었다 — 판은 새 이름인데 Project.Chapters는
         //    옛 이름이라, 저장하고 다시 열면 챕터 목록은 옛 이름이고 판만 새 이름이었다.
         ProjectEditor editor = Build();
 
@@ -125,7 +111,7 @@ public sealed class ChapterRenamerTests : IDisposable
     [Fact]
     public void 개명은_되돌리기_한_칸이다()
     {
-        // 사용자 동작 하나 = 되돌리기 한 번. Id·판·배관이 각각 한 칸이면 Ctrl+Z 한 번에 셋이
+        // 사용자 동작 하나 = 되돌리기 한 번. Id·판이 각각 한 칸이면 Ctrl+Z 한 번에 둘이
         // 어긋난 채 멈춘다.
         ProjectEditor editor = Build();
 
@@ -135,9 +121,6 @@ public sealed class ChapterRenamerTests : IDisposable
         Assert.NotNull(editor.FindChapter(OldId));
         Assert.Null(editor.FindChapter(NewId));
         Assert.Contains(editor.Project.Files, file => file.Name == OldId);
-        Assert.Contains(
-            editor.Project.EnumerateNodes().OfType<SetNode>(),
-            node => node.Name == ChapterBoardSupply.ConditionSupplyNodeName(OldId));
     }
 
     [Fact]
@@ -203,7 +186,7 @@ public sealed class ChapterRenamerTests : IDisposable
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <summary>챕터(스탯·조건·에피소드 하나) + 판 + 원고가 든 카드 + 조건 배관이 선 프로젝트.</summary>
+    /// <summary>챕터(스탯·조건·에피소드 하나) + 판 + 원고가 든 카드가 선 프로젝트.</summary>
     private static ProjectEditor Build()
     {
         var editor = new ProjectEditor(new StoryProject { Title = "개명" });
@@ -211,16 +194,13 @@ public sealed class ChapterRenamerTests : IDisposable
         ChapterDocument chapter = editor.EnsureChapter(OldId);
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 5));
 
-        // 에피소드를 세우면 판과 카드가 함께 서고, 판이 선 뒤의 조건은 판의 공급 노드로 간다.
+        // 에피소드를 세우면 판과 카드가 함께 선다.
         editor.AddEpisode(OldId, EpisodeId, "조용한 복도", 0, 0, sceneId: EpisodeId);
         editor.AddChapterCondition(OldId, "신뢰높음", "trust >= 3", "라루를 신뢰");
 
         DialogueNode card = EpisodeNaming.CardFor(editor.Project, OldId, EpisodeId)!;
         ScriptDocument script = card.Script;
         editor.SetScriptLineText(card.Id, script.ActiveLines.First().Id, "윌로", "복도는 조용했다");
-
-        // 배관이 실제로 섰는지 확인하고 시작한다 — 없으면 위 두 테스트가 헛돈다.
-        Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 설정 노드는 판의 공급 노드뿐이다
 
         return editor;
     }

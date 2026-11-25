@@ -81,8 +81,7 @@ public static class NodeConnections
 
         if (node is not DialogueNode)
         {
-            // 실행 출구는 DialogueNode만 가진다. SetNode는 조건을 주는 공급자라 실행 순서를
-            // 결정하지 않는다. 공급 포트는 GraphProjection이 별도로 계산한다.
+            // 실행 출구는 DialogueNode만 가진다.
             return ports;
         }
 

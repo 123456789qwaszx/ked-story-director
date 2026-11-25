@@ -17,9 +17,8 @@ namespace Vn.Authoring.Chapters;
 /// (<see cref="ChapterBranchMarkers"/>), 막는 것은 다녀온 쪽이다 — 통로로 갔더니 조건으로
 /// 막혀 있는 편이 논리상 맞고 이해하기 쉽다.
 ///
-/// <b>어휘는 챕터의 것</b>이다. 기획자가 고르는 것은 <c>조건</c> 시트의 라벨이고, 그것이
-/// 줄에 적히는 조건 Id로 바뀌는 길은 <see cref="ChapterBoardSupply"/>가 이미 깔아 둔
-/// 공급 설정노드다 — 여기서 새 배관을 만들지 않는다.
+/// <b>어휘는 챕터의 것</b>이다. 기획자가 고르는 것은 <c>조건</c> 시트의 라벨이고, 줄 전환에도 그 라벨이 그대로 적힌다
+/// (<see cref="AvailableConditionResolver"/>). ⛔ 2026-11-25까지는 판의 공급 설정노드가 든 사본의 Id가 적혔다(condition-supply C1).
 /// </summary>
 public static class BranchEntryCondition
 {
@@ -69,7 +68,7 @@ public static class BranchEntryCondition
                 Msg.Edit_ThereAreLinesWrittenOutside);
         }
 
-        // 공급된 조건의 `이름`이 곧 챕터 조건의 라벨이다 (ChapterBoardSupply).
+        // 줄 전환에 적힌 것이 곧 챕터 조건의 라벨이다.
         return new State(
             AvailableConditionResolver.Resolve(project, nodeId).Find(conditionId)?.Name
                 ?? conditionId,
@@ -146,7 +145,7 @@ public static class BranchEntryCondition
 
         if (condition is null)
         {
-            return string.Format(Msg.Edit_ConditionIsnTSuppliedTo, label);
+            return string.Format(Msg.Edit_ConditionIsnTInThis, label);
         }
 
         editor.SetEntryCondition(nodeId, condition.Id);

@@ -9,8 +9,8 @@ namespace Vn.Authoring.Graph;
 /// <param name="Size">실제로 설 판 크기 — 비키다 넘치면 적은 값보다 크다.</param>
 /// <param name="RatioX">카드 자리에 곱한 가로 비율. 줄이지 않으면 1.</param>
 /// <param name="RatioY">카드 자리에 곱한 세로 비율. 줄이지 않으면 1.</param>
-/// <param name="Positions">자리가 바뀌는 노드 — 숨은 배관 노드도 함께 줄인다(그리지는 않는다).</param>
-/// <param name="MovedCards">자리가 바뀌는 카드(그려지는 노드) 수 — 설정 창이 미리 말한다.</param>
+/// <param name="Positions">자리가 바뀌는 노드.</param>
+/// <param name="MovedCards">자리가 바뀌는 카드 수 — 설정 창이 미리 말한다.</param>
 public sealed record BoardResizePlan(
     BoardSize Size,
     double RatioX,
@@ -48,7 +48,7 @@ public static class BoardResize
         ArgumentNullException.ThrowIfNull(project);
 
         BoardSize wanted = new BoardSize(width, height).Clamped();
-        List<StoryNode> cards = project.EnumerateNodes().Where(node => !GraphProjectionBuilder.IsHiddenPlumbing(node)).ToList();
+        List<StoryNode> cards = project.EnumerateNodes().ToList();
 
         double ratioX = Ratio(cards, wanted.Width, node => node.Layout.X, BoardSize.CardWidthOf);
         double ratioY = Ratio(cards, wanted.Height, node => node.Layout.Y, BoardSize.CardHeightOf);
@@ -58,7 +58,7 @@ public static class BoardResize
             return new BoardResizePlan(wanted, 1, 1, new Dictionary<string, (double X, double Y)>(), 0);
         }
 
-        // 모든 노드의 자리를 같은 비율로 — 숨은 배관 노드도(판 밖에 남지 않게).
+        // 모든 카드의 자리를 같은 비율로.
         var positions = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
 
         // 줄이는 축은 정수로 내린다 — 곱셈의 끝자리 오차(3760.0000000000005)로 카드 끝이 새 판을 머리카락만큼 넘으면 판이 1 넓어진다.

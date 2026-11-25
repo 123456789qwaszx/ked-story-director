@@ -7,8 +7,11 @@ namespace Vn.Authoring.Serialization;
 /// <summary>StoryFile 하나와 그 파일이 소유하는 노드를 결정적으로 직렬화한다.</summary>
 public static class StoryFileJson
 {
-    /// <summary><b>2</b> — 카드의 대본이 카드 JSON 안에 든다(2026-10-29 · 프로젝트 형식 4). 이 버전만 읽는다.</summary>
-    public const int CurrentFormatVersion = 2;
+    /// <summary>
+    /// <b>3</b> — 조건 공급 노드(<c>"kind": "set"</c>)가 없고, 줄 전환의 <c>condition</c>이 챕터 조건의 이름이다(2026-11-25 · 프로젝트 형식 5 ·
+    /// condition-supply C1). 2는 카드의 대본이 카드 JSON 안에 든 형식이었다(2026-10-29 · 프로젝트 형식 4). 이 버전만 읽는다.
+    /// </summary>
+    public const int CurrentFormatVersion = 3;
 
     public const string FileExtension = ".vnstory.json";
 

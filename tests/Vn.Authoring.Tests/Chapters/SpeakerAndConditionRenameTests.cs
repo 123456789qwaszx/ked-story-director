@@ -11,9 +11,9 @@ namespace Vn.Authoring.Tests.Chapters;
 ///
 /// 둘은 끊어지는 자리가 다르다.
 /// <list type="bullet">
-///   <item><b>조건</b> — 줄에 매달린 전환은 <c>ConditionId</c>로 잇는다. 그래서 라벨이 바뀌었을
-///     때 조건을 <em>새로</em> 만들면 Id가 갈려 이미 매달린 갈래가 전부 고아가 된다. 라벨을 바꾸는 명령
-///     (<see cref="ProjectEditor.RenameChapterCondition"/>)이 판 사본의 <b>이름만</b> 갈아 끼운다(<c>ConditionRenameTests</c>).</item>
+///   <item><b>조건</b> — 줄에 매달린 전환은 조건의 <b>라벨</b>로 잇는다. 그래서 라벨을 바꾸는 명령
+///     (<see cref="ProjectEditor.RenameChapterCondition"/>)이 그 챕터 판의 전환을 함께 갈아 끼운다(<c>ConditionRenameTests</c>).
+///     ⛔ 2026-11-25까지는 판의 공급 사본이 Id를 지킨 채 이름만 갈았다(condition-supply C1).</item>
 ///   <item><b>화자</b> — 붙드는 것이 이름 문자열 하나뿐이다(<c>LocalizedLine.Speaker</c>).
 ///     등록부에서만 갈면 그 줄들이 전부 미등록이 된다. 그래서 개명이 <b>프로젝트의 줄</b>을
 ///     함께 바꾼다(<see cref="ProjectEditor.RenameSpeaker"/>).</item>
@@ -23,46 +23,8 @@ namespace Vn.Authoring.Tests.Chapters;
 /// </summary>
 public sealed class SpeakerAndConditionRenameTests
 {
-    // ── 조건 라벨 ───────────────────────────────────────────────────────────
-
-    /// <summary>스탯 하나를 견주는 챕터 조건 하나짜리 모델. 라벨만 갈아 끼울 수 있다.</summary>
-    private static ChapterGraphModel ChapterWith(string label) => new(
-        chapterId: "ch01",
-        sourcePath: "ch01",
-        episodes: [],
-        edges: [],
-        conditions: [
-            new ChapterCondition(
-                label,
-                "trust >= 3",
-                Description: null,
-                Parsed: [new ConditionTerm(ConditionTermKind.StatComparison, "trust", ConditionComparison.AtLeast, 3)],
-                IsValid: true)
-        ],
-        stats: [],
-        fixtures: [],
-        diagnostics: []);
-
-    [Fact]
-    public void 라벨이_그대로면_조건에_손대지_않는다()
-    {
-        // 같은 값을 다시 쓰면 되돌리기 기록이 쌓이고 화면이 다시 그려진다.
-        var project = new StoryProject();
-        var file = new StoryFile("sf_ch01", "ch01", "story/ch01.vnstory.json");
-        project.Files.Add(file);
-        project.Chapters.Add(new global::Vn.Authoring.Chapters.ChapterDocument { ChapterId = "ch01" });   // 카드는 챕터 판에만 선다
-        var editor = new ProjectEditor(project);
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, file.Id, ChapterWith("신뢰 높음"));
-
-        long revision = editor.Revision;
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, file.Id, ChapterWith("신뢰 높음"));
-
-        Assert.Equal(revision, editor.Revision);
-    }
+    // ── 조건 라벨 — ConditionRenameTests가 지킨다 ──────────────────────────
+    //    ⛔ 「라벨이 그대로면 공급 사본에 손대지 않는다」는 공급 노드와 함께 걷혔다(2026-11-25 · condition-supply C1).
 
     // ── 화자 ────────────────────────────────────────────────────────────────
 

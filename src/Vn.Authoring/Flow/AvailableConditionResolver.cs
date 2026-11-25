@@ -1,18 +1,20 @@
+using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Flow;
 
 /// <summary>
-/// 카드가 볼 수 있는 조건 하나의 읽기 모델 — 그 판의 챕터 조건 공급 노드가 나른 챕터 조건이다. 편집 화면과 흐름 해석기는 이 중립적인 형태만 본다.
+/// 카드가 볼 수 있는 조건 하나의 읽기 모델 — <b>그 카드의 챕터 조건</b>이다. 편집 화면과 흐름 해석기는 이 중립적인 형태만 본다.
+/// <see cref="Id"/>는 챕터 조건의 이름이다 — 대본의 줄 전환이 이 글자로 가리킨다(이름을 바꾸면 전환도 함께 간다 · <c>ProjectEditor.RenameChapterCondition</c>).
+/// <see cref="Expression"/>은 대사 안에서 묻는 Yarn 식(<c>stat("trust") &gt;= 3</c>)이다.
 /// ⛔ 조건의 출처(<c>SourceKind</c> — 옛 「X 설정」 노드의 작가 조건 · 게임 전역 조건)를 가르던 칸은 걷혔다 — 조건의 자리는 챕터 하나다
 /// (<c>docs/work-orders/old-shapes-orders.md</c> O6 · <c>definition-split-orders.md</c> S2).
 /// </summary>
 public sealed record AvailableCondition(
     string Id,
     string Name,
-    string Expression,
-    string? SourceNodeId)
+    string Expression)
 {
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Id : Name;
 }
@@ -38,72 +40,98 @@ public sealed class AvailableConditionCatalog
 }
 
 /// <summary>
-/// DialogueNode가 사용할 수 있는 조건의 범위를 계산한다.
+/// 대사 카드가 쓸 수 있는 조건 — <b>그 카드가 선 판의 챕터 조건</b>이다(범위는 챕터 · 2026-08-17 소유자: "시나리오 작가가 만든 조건, 변수 등은
+/// 챕터 단위로 기록이 되어서 사용됐으면 해").
 ///
-/// 조건은 <b>그 대사 노드와 같은 판</b>의 SetNode 것만 들어온다(<see cref="ConnectedSetNodeResolver"/> — 범위는 챕터다). 같은 Id가
-/// 여러 곳에서 공급되면 먼저 나온 하나만 사용한다. 순서는 판 안의 노드 순서 → SetNode 내부 순서다.
+/// <b>사본이 없다</b> — 조건은 [구성] 탭의 챕터 조건 하나뿐이고, 대사가 묻는 Yarn 식은 쓸 때마다 그 식에서 옮긴다
+/// (<see cref="ConditionYarnTranslator"/>). 그래서 식을 고치면 다음에 그리거나 내보낼 때 그대로 따라간다.
+/// ⛔ 2026-11-25까지는 판마다 숨은 「조건 공급 노드」(<c>SetNode</c> — 이름 「챕터 {판} 조건」)가 옮긴 사본을 들고, 줄 전환은 그 사본의 Id를
+/// 가리켰다. 두 벌을 코드가 맞추느라 식을 고쳐도 사본이 옛 식에 머무는 버그가 났다(condition-supply C1 — 소유자 「이 노드가 필요한가?」).
 /// </summary>
 public static class AvailableConditionResolver
 {
+    /// <summary>
+    /// <b>식 미정</b>인 조건이 대사에서 서는 식 — 항상 통과한다(writer-fields W1의 규칙: 식이 빈 조건은 관문이 없는 것과 같다).
+    /// 빈 식을 그대로 내면 <c>&lt;&lt;if &gt;&gt;</c>가 되어 Yarn 문법 오류다.
+    /// </summary>
+    public const string UndecidedYarn = "true";
+
     public static AvailableConditionCatalog Resolve(
         StoryProject project,
         string dialogueNodeId)
     {
         ArgumentNullException.ThrowIfNull(project);
 
-        if (project.FindDialogue(dialogueNodeId) is null)
+        if (project.FindDialogue(dialogueNodeId) is not { } node ||
+            project.FindFileContainingNode(node.Id) is not { } board ||
+            project.Chapters.FirstOrDefault(chapter =>
+                string.Equals(chapter.ChapterId, board.Name, StringComparison.Ordinal)) is not { } chapter)
         {
             return new AvailableConditionCatalog(Array.Empty<AvailableCondition>());
         }
 
+        return Of(chapter);
+    }
+
+    /// <summary>그 챕터의 조건 전부 — 챕터에 적힌 순서. 이름이 비었거나 겹치는 행은 뺀다(검증이 짚는다).</summary>
+    public static AvailableConditionCatalog Of(ChapterDocument chapter)
+    {
+        ArgumentNullException.ThrowIfNull(chapter);
+
         var conditions = new List<AvailableCondition>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
-        foreach (ConnectedSetNode connected in ConnectedSetNodeResolver.Resolve(project, dialogueNodeId))
+        foreach (ChapterCondition condition in chapter.Conditions)
         {
-            foreach (ConditionDefinition condition in connected.Node.Conditions)
-            {
-                if (string.IsNullOrWhiteSpace(condition.Id) || !seen.Add(condition.Id))
-                {
-                    continue;
-                }
+            string label = condition.Label?.Trim() ?? string.Empty;
 
-                conditions.Add(new AvailableCondition(
-                    condition.Id,
-                    condition.Name,
-                    condition.Expression,
-                    connected.Node.Id));
+            if (label.Length == 0 || !seen.Add(label))
+            {
+                continue;
             }
+
+            conditions.Add(new AvailableCondition(label, label, YarnOf(chapter, condition)));
         }
 
         return new AvailableConditionCatalog(conditions);
     }
 
     /// <summary>
-    /// 현재 Dialogue 범위와 무관하게 조건 Id가 어디엔가 정의되어 있는지 찾는다.
-    /// 범위 밖(다른 판)에 있는 조건과 완전히 삭제된 조건을 구분하는 데 사용한다.
+    /// 대사 안에서 묻는 식 — 식 미정이면 <see cref="UndecidedYarn"/>, 옮길 수 있으면 Yarn 식, 틀린 식이면 적힌 그대로다(검증 보고가 짚고, 진행
+    /// JSON · Yarn은 막힌다 — 글 칸에는 작가가 적은 글자가 보인다).
+    /// </summary>
+    public static string YarnOf(ChapterDocument chapter, ChapterCondition condition)
+    {
+        ArgumentNullException.ThrowIfNull(chapter);
+        ArgumentNullException.ThrowIfNull(condition);
+
+        if (string.IsNullOrWhiteSpace(condition.Expression))
+        {
+            return UndecidedYarn;
+        }
+
+        return ConditionYarnTranslator.Translate(chapter.Reparse(condition)).Yarn ?? condition.Expression.Trim();
+    }
+
+    /// <summary>
+    /// 그 카드의 챕터와 상관없이 그 이름의 조건이 어느 챕터에든 있는지 찾는다 — 다른 챕터에 있는 조건과 아예 없는 조건을 가른다.
     /// </summary>
     public static AvailableCondition? FindKnown(
         StoryProject project,
         string? conditionId)
     {
+        ArgumentNullException.ThrowIfNull(project);
+
         if (string.IsNullOrEmpty(conditionId))
         {
             return null;
         }
 
-        foreach (SetNode setNode in project.EnumerateNodes().OfType<SetNode>())
+        foreach (ChapterDocument chapter in project.Chapters)
         {
-            ConditionDefinition? local = setNode.Conditions.FirstOrDefault(
-                condition => string.Equals(condition.Id, conditionId, StringComparison.Ordinal));
-
-            if (local is not null)
+            if (Of(chapter).Find(conditionId) is { } found)
             {
-                return new AvailableCondition(
-                    local.Id,
-                    local.Name,
-                    local.Expression,
-                    setNode.Id);
+                return found;
             }
         }
 

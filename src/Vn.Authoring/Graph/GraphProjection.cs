@@ -120,8 +120,9 @@ public sealed record CollapsedNodeEntry(
 
 public enum GraphNodeKind
 {
-    Dialogue,
-    Set
+    Dialogue
+
+    // ⛔ `Set`(챕터 조건 공급 노드)은 2026-11-25에 걷혔다(condition-supply C1).
 }
 
 public enum GraphOutputPortKind

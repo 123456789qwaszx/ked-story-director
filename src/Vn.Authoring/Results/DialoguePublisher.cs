@@ -132,8 +132,8 @@ public static class DialoguePublisher
         AddFlowProblems(flow, problems);
         AddScriptProblems(node, problems);
 
-        // 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지) — 설정노드는
-        //    이제 <b>조건만</b> 공급한다. 결과의 배정 칸(`Assignments`)은 L5(2026-10-29)에 걷혔다.
+        // 설정노드의 변수 배정은 2026-09-17에 폐지됐다 (작가 변수 폐지). 결과의 배정 칸(`Assignments`)은 L5(2026-10-29)에 걷혔고,
+        //    설정노드 자체(챕터 조건 공급)도 2026-11-25에 걷혔다(condition-supply C1).
         return new DialogueDraft(
             node.Id,
             node.Name,

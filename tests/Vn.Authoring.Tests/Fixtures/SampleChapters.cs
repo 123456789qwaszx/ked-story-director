@@ -47,7 +47,7 @@ internal static class SampleChapters
     /// <summary>
     /// 견본 챕터에 <b>판과 카드</b>를 세운다. 툴은 에피소드와 카드를 한 칸에 세우는데(저장 검증이 지킨다) 견본 파일은 챕터만 든다 — 열 때
     /// 카드를 맞추던 길은 걷혔으므로(2026-11-18 · old-shapes O4) 시험이 대신 세운다. 에피소드마다 표식 카드 하나(빈 줄 하나, 판 자리는
-    /// <see cref="NodePlacement"/> — 흐름 차례로 세워 부모 아래에 선다), 그리고 판마다 챕터 조건 공급.
+    /// <see cref="NodePlacement"/> — 흐름 차례로 세워 부모 아래에 선다).
     /// </summary>
     public static void StandCards(StoryProject project)
     {
@@ -75,15 +75,7 @@ internal static class SampleChapters
             }
         }
 
-        var editor = new ProjectEditor(project);
-
-        foreach (ChapterDocument chapter in project.Chapters)
-        {
-            if (EpisodeNaming.BoardOf(project, chapter.ChapterId) is { } board)
-            {
-                ChapterBoardSupply.SupplyChapterConditionsToBoard(editor, board.Id, chapter.ToGraphModel(string.Empty));
-            }
-        }
+        // ⛔ 판마다 조건 공급 노드를 세우던 일은 2026-11-25에 걷혔다(condition-supply C1) — 대사는 챕터 조건을 이름으로 바로 쓴다.
     }
 
     private static StoryFile AddBoard(StoryProject project, string chapterId)

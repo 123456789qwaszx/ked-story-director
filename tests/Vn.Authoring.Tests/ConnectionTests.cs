@@ -20,20 +20,6 @@ public class ConnectionTests
     }
 
     [Fact]
-    public void 설정_노드는_실행_출구를_가지지_않는다()
-    {
-        // SetNode는 조건 공급자다. 실행 흐름은 DialogueNode만 정한다.
-        var sample = new Sample();
-
-        Assert.Empty(NodeConnections.PortsOf(sample.SetNode, sample.Project));
-
-        // 실행 출구를 억지로 지정해도 조용히 무시된다.
-        long before = sample.Editor.Revision;
-        sample.Editor.SetExitTarget(sample.SetNode.Id, ExitPortKind.Detour, "ln_x", sample.Dialogue.Id);
-        Assert.Equal(before, sample.Editor.Revision);
-    }
-
-    [Fact]
     public void 없는_노드로는_연결되지_않는다()
     {
         var sample = new Sample();

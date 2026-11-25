@@ -180,10 +180,11 @@ public class ScenarioPasteTests
         (ProjectEditor editor, DialogueNode node) = BuildEditor();
         var file = editor.Project.Files[0];
         editor.AddChapterStat(file.Name, "favor", maximum: 10);
-        editor.AddChapterCondition(file.Name, "호감 높음", "favor >= 5");   // 조건은 챕터의 것 — 판의 공급 노드가 사본을 나른다
-        ConditionDefinition condition = file.Nodes.OfType<SetNode>().Single().Conditions.Single();
+        editor.AddChapterCondition(file.Name, "호감 높음", "favor >= 5");   // 조건은 챕터의 것 — 줄 전환은 그 이름을 든다
+        global::Vn.Authoring.Flow.AvailableCondition condition =
+            global::Vn.Authoring.Flow.AvailableConditionResolver.Of(editor.FindChapter(file.Name)!).Conditions.Single();
 
-        // 기존 첫 줄("라루: 첫 줄")이 닻으로 남고 나머지는 순수 삽입이다. 대본의 <<if>>는 그 사본의 식이다.
+        // 기존 첫 줄("라루: 첫 줄")이 닻으로 남고 나머지는 순수 삽입이다. 대본의 <<if>>는 그 조건을 Yarn으로 옮긴 식이다.
         editor.ApplyScenarioText(node.Id, $"""
             라루: 첫 줄
             <<if {condition.Expression}>>

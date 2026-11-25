@@ -3027,7 +3027,7 @@ public partial class GraphEditorView : UserControl
     /// <b>분기 카드 머리의 조건 표만 다시 단다</b> — 챕터 조건이 생겼거나 식이 바뀌었을 때(「식 미정」 · usability UX16). 판이 그 밖에도
     /// 바뀌었으면 통째로 짓는다. ⛔ 2026-11-19까지는 늘 통째로 — 에피소드 160개에서 조건 하나를 더하는 데 2.5초.
     ///
-    /// 글 칸의 조건 줄(<c>&lt;&lt;if …&gt;&gt;</c>)도 다시 채운다 — 글 칸은 그 조건의 식(판에 공급된 사본의 Yarn 식)을 그대로 보인다(2026-11-23 소유자
+    /// 글 칸의 조건 줄(<c>&lt;&lt;if …&gt;&gt;</c>)도 다시 채운다 — 글 칸은 그 조건의 식(챕터 조건을 옮긴 Yarn 식)을 그대로 보인다(2026-11-23 소유자
     /// 보고 — 「이미 대본 탭에서 조건을 설정해둔 상태일때, 뒤늦게 구성 탭에서 조건 및 스탯쪽에서 식을 추가하더라도, 대본탭에서는 그 식이 즉시 반영이
     /// 안되네」 · ⛔ 그 전에는 표만 갈고 글 칸은 <c>&lt;&lt;if true&gt;&gt;</c>(식 미정)로 남아, 조건을 다시 골라 카드가 새로 서야 바뀌었다). 조건 줄이 든
     /// 칸만 견주고, 모델의 글과 다를 때만 채운다 — 쓰는 중인 칸은 그대로다(<see cref="RefreshWriting"/>).
@@ -3144,7 +3144,7 @@ public partial class GraphEditorView : UserControl
         double width = _session.Project.Board.Width;
         double height = _session.Project.Board.Height;
 
-        foreach (StoryNode node in _session.Project.EnumerateNodes().Where(node => !GraphProjectionBuilder.IsHiddenPlumbing(node)))
+        foreach (StoryNode node in _session.Project.EnumerateNodes())
         {
             width = Math.Max(width, node.Layout.X + BoardSize.CardWidthOf(node));
             height = Math.Max(height, node.Layout.Y + BoardSize.CardHeightOf(node));
@@ -7694,7 +7694,7 @@ public partial class GraphEditorView : UserControl
 
         switch (target)
         {
-            // 챕터 · 장면은 셸이 묻고 지운다 — 챕터 지우기(판 · 조건 배관 · 진행 JSON)와 장면 지우기는 셸의 일이다.
+            // 챕터 · 장면은 셸이 묻고 지운다 — 챕터 지우기(판 · 진행 JSON)와 장면 지우기는 셸의 일이다.
             case DeleteTarget.Chapter or DeleteTarget.Scene:
                 RemoveRequested?.Invoke(_summaryPick!, DeleteButton);
                 return;

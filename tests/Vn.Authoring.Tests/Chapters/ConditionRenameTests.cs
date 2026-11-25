@@ -1,13 +1,14 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
 /// <b>조건 이름 바꾸기</b> (2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W4) — [대본] 탭에서 작가가 조건을 뜻으로 부르는 이름을
-/// 고친다. 라벨은 참조 열쇠라 간선의 표시조건 · 해금조건이 따라가고, 판에 공급된 사본은 Id를 지킨 채 이름만 간다(대사 줄의 갈래가
-/// 그 Id를 붙든다). 식은 그대로다. 비울 수 없고, 이미 있는 이름으로는 바꾸지 않는다. 되돌리기 한 칸이다.
+/// 고친다. 라벨은 참조 열쇠라 간선의 표시조건 · 해금조건과 그 챕터 판의 줄 전환(대사 갈래 · 분기 카드 첫머리)이 따라간다. 식은 그대로다.
+/// 비울 수 없고, 이미 있는 이름으로는 바꾸지 않는다. 되돌리기 한 칸이다. ⛔ 2026-11-25까지는 판의 공급 사본이 Id를 지킨 채 이름만 갔다.
 /// </summary>
 public sealed class ConditionRenameTests
 {
@@ -47,17 +48,30 @@ public sealed class ConditionRenameTests
     }
 
     [Fact]
-    public void 판에_공급된_사본은_Id를_지킨_채_이름만_간다()
+    public void 대사_줄의_갈래와_분기_카드_첫머리가_따라간다()
     {
         ProjectEditor editor = World();
         editor.EnsureChapterBoard("ch01");
-        ConditionDefinition before = Supplied(editor).Single();
-        Assert.Equal("신뢰높음", before.Name);
+        DialogueNode root = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
+        string first = root.Script.ActiveLines.First().Id;
+        editor.SetLineTransition(root.Id, first, LineConditionTransition.BeginIf("신뢰높음"));
+        DialogueNode branch = editor.AddBranchMarker(root.Id, first);
+        Assert.Null(BranchEntryCondition.Set(editor, branch.Id, "신뢰높음"));
+        Assert.Equal(2, editor.FindConditionUses("ch01", "신뢰높음").Count(use => use.Kind == ChapterUseKind.DialogueBranch));
 
         Assert.True(editor.RenameChapterCondition("ch01", "신뢰높음", "친해짐").Applied);
 
-        ConditionDefinition after = Supplied(editor).Single();
-        Assert.Equal((before.Id, "친해짐"), (after.Id, after.Name));
+        Assert.Equal("친해짐", Transition(editor, root.Id).ConditionId);
+        Assert.Equal(ConditionTransitionKind.BeginIf, Transition(editor, root.Id).Kind);
+        Assert.Equal("친해짐", BranchEntryCondition.Read(editor.Project, branch.Id).Label);
+        Assert.Equal("stat(\"trust\") >= 3", AvailableConditionResolver.Resolve(editor.Project, root.Id).Find("친해짐")!.Expression);
+        Assert.Empty(editor.FindConditionUses("ch01", "신뢰높음"));
+        Assert.Empty(ConditionFlowResolver.Resolve(editor.Project.FindDialogue(root.Id)!, editor.Project).Problems);
+
+        // 되돌리기 한 칸에 전환도 함께 돌아온다.
+        editor.Undo();
+        Assert.Equal("신뢰높음", Transition(editor, root.Id).ConditionId);
+        Assert.Equal("신뢰높음", BranchEntryCondition.Read(editor.Project, branch.Id).Label);
     }
 
     [Fact]
@@ -113,8 +127,9 @@ public sealed class ConditionRenameTests
     private static ChapterEdge Edge(ProjectEditor editor, string to) =>
         Chapter(editor).Edges.Single(edge => edge.FromEpisodeId == "root" && edge.ToEpisodeId == to);
 
-    private static IEnumerable<ConditionDefinition> Supplied(ProjectEditor editor) =>
-        editor.Project.EnumerateNodes().OfType<SetNode>()
-            .Where(node => node.Name == ChapterBoardSupply.ConditionSupplyNodeName("ch01"))
-            .SelectMany(node => node.Conditions);
+    private static LineConditionTransition Transition(ProjectEditor editor, string nodeId)
+    {
+        DialogueNode node = editor.Project.FindDialogue(nodeId)!;
+        return node.FindExtension(node.Script.ActiveLines.First().Id)!.Transition!;
+    }
 }

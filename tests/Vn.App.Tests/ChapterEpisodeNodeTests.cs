@@ -172,18 +172,12 @@ public sealed class ChapterEpisodeNodeTests
     [Fact]
     public void 자유_노드가_챕터_조건을_바로_쓴다() => HeadlessUi.Run(() =>
     {
-        // 작가가 설정노드를 손으로 잇지 않아도, 판 위의 자유 노드가
-        // 조건 드롭다운에서 챕터 라벨(A 계층)을 바로 고를 수 있어야 한다.
-        // (챕터 판에 세운 노드는 에피소드 카드가 된다 — 공급은 판 전체가 본다.)
+        // 판 위의 노드는 조건 드롭다운에서 그 챕터의 조건(라벨)을 바로 고른다 — 공급할 것도 이을 것도 없다.
+        // (챕터 판에 세운 노드는 에피소드 카드가 된다.) ⛔ 2026-11-25까지는 판의 숨은 공급 노드가 사본을 날랐다(condition-supply C1).
         (_, AuthoringSession session, _) = ShowEpisodeCard();
 
         string fileId = session.EnsureChapterBoard("ch05");
         DialogueNode free = session.Editor.AddDialogueNode(fileId, "자유씬", name: "자유씬");
-
-        ChapterGraphModel chapter = Chapter(session);
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, fileId, chapter);
 
         Vn.Authoring.Flow.AvailableConditionCatalog available =
             Vn.Authoring.Flow.AvailableConditionResolver.Resolve(
@@ -191,58 +185,8 @@ public sealed class ChapterEpisodeNodeTests
 
         Assert.Contains(available.Conditions, condition => condition.Name == "신뢰높음");
 
-        // 멱등 — 두 번 불러도 공급 노드·조건이 늘지 않는다.
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, fileId, chapter);
-
-        Assert.Single(session.Project.EnumerateNodes().OfType<SetNode>(),
-            node => node.Name == "챕터 ch05 조건");
-    });
-
-    [Fact]
-    public void 챕터_조건_공급노드는_시나리오_그래프에_보이지_않는다() => HeadlessUi.Run(() =>
-    {
-        // A 계층 격리 — 챕터의 조건 식(스탯 변수)은 기획자의 자료다.
-        // 공급 설정노드가 시나리오 그래프에 카드·링크로 서 있으면 작가에게 노출된다.
-        // 데이터(공급·드롭다운 라벨)는 살아 있되, 화면에서는 존재하지 않는다.
-        (_, AuthoringSession session, _) = ShowEpisodeCard();
-
-        string fileId = session.EnsureChapterBoard("ch05");
-        DialogueNode free = session.Editor.AddDialogueNode(fileId, "자유씬", name: "자유씬");
-
-        ChapterGraphModel chapter = Chapter(session);
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, fileId, chapter);
-
-        SetNode supply = session.Project.EnumerateNodes().OfType<SetNode>()
-            .Single(node => node.Name == "챕터 ch05 조건");
-
-        // 펼친 판 — 카드도, 조건 공급 간선도 없다.
-        Vn.Authoring.Graph.GraphProjection expanded = Vn.Authoring.Graph.GraphProjectionBuilder.Build(
-            session.Project,
-            session.Project.Files.Select(file => file.Id).ToHashSet(StringComparer.Ordinal));
-
-        Assert.DoesNotContain(expanded.Items.OfType<Vn.Authoring.Graph.ExpandedNodeProjection>(),
-            item => item.NodeId == supply.Id);
-        Assert.DoesNotContain(expanded.Connections,
-            connection => connection.SourceNodeId == supply.Id || connection.TargetNodeId == supply.Id);
-
-        // 접힌 파일 프록시의 행 목록에도 없다.
-        Vn.Authoring.Graph.GraphProjection collapsed = Vn.Authoring.Graph.GraphProjectionBuilder.Build(
-            session.Project, new HashSet<string>(StringComparer.Ordinal));
-
-        Assert.DoesNotContain(
-            collapsed.Items.OfType<Vn.Authoring.Graph.CollapsedFileProjection>()
-                .SelectMany(proxy => proxy.Nodes),
-            entry => entry.NodeId == supply.Id);
-
-        // 공급 자체는 살아 있다 — 작가는 라벨만 본다.
-        Vn.Authoring.Flow.AvailableConditionCatalog available =
-            Vn.Authoring.Flow.AvailableConditionResolver.Resolve(
-                session.Project, free.Id);
-
-        Assert.Contains(available.Conditions, condition => condition.Name == "신뢰높음");
+        // 판에는 카드만 선다 — 연출 그래프에 숨길 배관이 없다.
+        Assert.All(session.Project.EnumerateNodes(), node => Assert.IsType<DialogueNode>(node));
     });
 
     /// <summary>

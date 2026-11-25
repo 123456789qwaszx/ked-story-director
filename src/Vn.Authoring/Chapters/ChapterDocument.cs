@@ -196,8 +196,10 @@ public sealed class ChapterDocument
     ///
     /// <b>식이 빈 조건은 「식 미정」이고 항상 통과한다</b>(유효, 항 없음 — 관문이 없는 것과 같다). 작가가 [대본]에서 라벨만 먼저 걸고
     /// 개발자가 [구성]에서 식을 나중에 채우는 흐름이다(2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W1). 진단은 경고다.
+    ///
+    /// 대사의 조건 목록(<see cref="Flow.AvailableConditionResolver"/>)이 Yarn 식으로 옮길 때도 이 해석을 쓴다.
     /// </summary>
-    private ChapterCondition Reparse(ChapterCondition condition)
+    public ChapterCondition Reparse(ChapterCondition condition)
     {
         if (string.IsNullOrWhiteSpace(condition.Expression))
         {

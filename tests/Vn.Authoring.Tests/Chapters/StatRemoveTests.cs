@@ -1,5 +1,6 @@
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 
@@ -175,17 +176,22 @@ public sealed class StatRemoveTests
     }
 
     [Fact]
-    public void 판에_공급된_사본도_Id를_지킨_채_식_미정이_된다()
+    public void 대사의_갈래는_남고_식_미정의_식을_읽는다()
     {
-        // ⚠ 갈래가 이 Id로 잇는다. 챕터 조건이 식 미정이 됐으니 사본도 식 미정의 식(항상 통과)이다 — 간선과 같은 규칙
+        // 갈래는 조건 이름으로 잇는다. 챕터 조건이 식 미정이 됐으니 대사가 묻는 식도 식 미정의 식(항상 통과)이다 — 간선과 같은 규칙
         //    (2026-11-17 — 전에는 비워서 `<<if false>>`로 꺼 두었다).
-        (ProjectEditor editor, ConditionDefinition supplied) = WorldWithSupply();
-        string id = supplied.Id;
+        ProjectEditor editor = World();
+        editor.EnsureChapterBoard("ch01");
+        DialogueNode root = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
+        editor.SetLineTransition(root.Id, root.Script.ActiveLines.First().Id, LineConditionTransition.BeginIf("신뢰높음"));
 
         editor.RemoveChapterStat("ch01", "trust", clearUses: true);
 
-        Assert.Equal(id, supplied.Id);
-        Assert.Equal(ChapterBoardSupply.UndecidedYarn, supplied.Expression);
+        DialogueNode after = editor.Project.FindDialogue(root.Id)!;
+        Assert.Equal("신뢰높음", after.FindExtension(after.Script.ActiveLines.First().Id)!.Transition!.ConditionId);
+        Assert.Equal(
+            AvailableConditionResolver.UndecidedYarn,
+            AvailableConditionResolver.Resolve(editor.Project, root.Id).Find("신뢰높음")!.Expression);
     }
 
     [Fact]
@@ -209,21 +215,6 @@ public sealed class StatRemoveTests
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────
-
-    /// <summary>위에 더해, 판과 공급된 조건까지 선 상태.</summary>
-    private static (ProjectEditor Editor, ConditionDefinition Supplied) WorldWithSupply()
-    {
-        ProjectEditor editor = World();
-        string fileId = editor.EnsureChapterBoard("ch01");
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor,
-            fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
-
-        return (editor, editor.Project.EnumerateNodes().OfType<SetNode>()
-            .SelectMany(node => node.Conditions).Single());
-    }
 
     private static ChapterDocument Chapter(ProjectEditor editor) => editor.FindChapter("ch01")!;
 

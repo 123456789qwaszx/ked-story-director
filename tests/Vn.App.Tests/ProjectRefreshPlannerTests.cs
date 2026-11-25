@@ -5,9 +5,7 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// SetNode의 TextBox가 LostFocus에서 값을 커밋해도 그 TextBox 자체를 다시 만들지 않는다는 계약.
-/// 그래프와 Dialogue 조건 선택지는 새 조건 이름을 읽어야 하므로 조건 정의 변경은
-/// 단순 Content와도, 전체 Structure 변경과도 다르게 처리한다.
+/// 변경 종류마다 화면이 다시 만드는 것의 계약 — TextBox가 LostFocus에서 값을 커밋해도 그 TextBox 자체를 다시 만들지 않는다.
 /// </summary>
 public class ProjectRefreshPlannerTests
 {
@@ -59,34 +57,11 @@ public class ProjectRefreshPlannerTests
     }
 
     [Fact]
-    public void 조건을_편집_중인_SetNode는_유지하고_그래프만_갱신한다()
-    {
-        ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(
-            ProjectChangeKind.ConditionDefinition,
-            new SetNode(name: "설정"));
-
-        Assert.True(plan.RebuildGraph);
-        Assert.False(plan.RefreshGraphPositions);
-        Assert.False(plan.RebuildInspector);
-    }
-
-    [Fact]
-    public void Dialogue가_선택되어_있으면_조건_드롭다운도_다시_계산한다()
-    {
-        ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(
-            ProjectChangeKind.ConditionDefinition,
-            new DialogueNode(name: "장면"));
-
-        Assert.True(plan.RebuildGraph);
-        Assert.True(plan.RebuildInspector);
-    }
-
-    [Fact]
-    public void assignment_내용_변경은_컨트롤을_재생성하지_않는다()
+    public void 내용_변경은_컨트롤을_재생성하지_않는다()
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(
             ProjectChangeKind.Content,
-            new SetNode(name: "설정"));
+            new DialogueNode(name: "장면"));
 
         Assert.False(plan.RebuildGraph);
         Assert.False(plan.RefreshGraphPositions);
@@ -118,7 +93,7 @@ public class ProjectRefreshPlannerTests
         Assert.Equal(default, ProjectRefreshPlanner.Plan(ProjectChangeKind.Content, null, fromHistory: true));
 
         // 자리 · 이름 · 조건은 구조로 — 접은 장면 상자처럼 지을 때의 객체로 일하는 화면이 있다.
-        foreach (ProjectChangeKind kind in new[] { ProjectChangeKind.Layout, ProjectChangeKind.NodeMetadata, ProjectChangeKind.ConditionDefinition })
+        foreach (ProjectChangeKind kind in new[] { ProjectChangeKind.Layout, ProjectChangeKind.NodeMetadata })
         {
             Assert.Equal(
                 ProjectRefreshPlanner.Plan(ProjectChangeKind.Structure, null),
@@ -154,7 +129,7 @@ public class ProjectRefreshPlannerTests
     {
         ProjectRefreshPlan plan = ProjectRefreshPlanner.Plan(
             ProjectChangeKind.Structure,
-            new SetNode(name: "설정"));
+            new DialogueNode(name: "장면"));
 
         Assert.True(plan.RebuildGraph);
         Assert.True(plan.RebuildInspector);

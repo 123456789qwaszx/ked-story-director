@@ -13,8 +13,8 @@ namespace Vn.Authoring.Flow;
 /// 줄과 그 순서는 대본이 준다. 이 해석기는 <see cref="DialogueScriptResolver"/>가 합친
 /// 투영만 보고, 대본을 직접 열지 않는다.
 ///
-/// 조건의 존재 여부는 프로젝트 전체 목록이 아니라 현재 DialogueNode가 선 판의 SetNode
-/// (<see cref="ConnectedSetNodeResolver"/>)의 카탈로그로 검증한다. 연결이 끊겼을 때 Transition은 보존하고
+/// 조건의 존재 여부는 프로젝트 전체가 아니라 현재 DialogueNode가 선 챕터의 조건
+/// (<see cref="AvailableConditionResolver"/>)으로 검증한다. 다른 챕터의 조건이면 Transition은 보존하고
 /// <see cref="FlowProblemKind.UnavailableCondition"/>으로 알린다.
 /// </summary>
 public static class ConditionFlowResolver
@@ -239,8 +239,7 @@ public static class ConditionFlowResolver
                     FlowProblemKind.UnavailableCondition,
                     line?.LineId,
 
-                    // 2026-08-17 — 범위가 판(챕터)이 됐다. "연결된 SetNode"는 더 이상 규칙이
-                    // 아니므로 문구도 그 사실을 말한다: 다른 챕터에 있으면 여기서는 못 쓴다.
+                    // 2026-08-17 — 범위가 판(챕터)이 됐다: 다른 챕터에 있으면 여기서는 못 쓴다.
                     string.Format(Msg.Diag_ConditionIsnTInThis, known.DisplayName)));
             }
         }

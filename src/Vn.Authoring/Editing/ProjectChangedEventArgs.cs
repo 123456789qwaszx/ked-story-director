@@ -20,11 +20,8 @@ public enum ProjectChangeKind
     /// </summary>
     DialogueContent,
 
-    /// <summary>
-    /// 조건의 작가용 이름이나 평가식이 바뀌었다.
-    /// SetNode의 편집 행 구조는 그대로지만 그래프 조건 라벨과 Dialogue 조건 선택지는 새 값을 읽어야 한다.
-    /// </summary>
-    ConditionDefinition,
+    // ⛔ `ConditionDefinition`(공급 노드 조건 사본의 이름 · 식 고침)은 2026-11-25에 공급 노드와 함께 걷혔다(condition-supply C1) — 챕터 조건은
+    //    `ChapterCondition`으로 알린다.
 
     /// <summary>
     /// 노드의 이름처럼 그래프와 참조 표시에는 영향을 주지만 현재 편집 행을 다시 만들 필요는 없는 값이 바뀌었다.
@@ -78,7 +75,7 @@ public enum ProjectChangeKind
     ChoiceRoute,
 
     /// <summary>
-    /// 챕터 조건이 생겼거나 그 식 · 설명이 바뀌었다(라벨은 그대로) — 판에 공급한 사본과 공급 노드(판에 서지 않는 배관)도 함께. [대본] 판에서는
+    /// 챕터 조건이 생겼거나 그 식 · 설명이 바뀌었다(라벨은 그대로). [대본] 판에서는
     /// 분기 카드 머리의 조건 표(「식 미정」)만 그것을 본다. ⛔ 2026-11-19까지는 <see cref="Structure"/>여서 조건 하나를 더하는 데 [대본] 판을
     /// 통째로 다시 지었다(에피소드 160개에서 2.5초 · usability UX16).
     /// </summary>

@@ -33,9 +33,9 @@ internal static class StoryNodeJson
 
     public static JsonObject Write(StoryNode node)
     {
+        // ⛔ 「set」(챕터 조건 공급 노드)은 2026-11-25에 걷혔다(condition-supply C1) — 그런 노드가 든 파일은 모르는 종류로 거절한다.
         string kind = node switch
         {
-            SetNode => "set",
             DialogueNode => "dialogue",
             _ => throw new InvalidDataException(string.Format(Msg.File_UnsupportedNodeKind, node.GetType().Name))
         };
@@ -90,14 +90,9 @@ internal static class StoryNodeJson
             json["edgeShapes"] = shapes;
         }
 
-        switch (node)
+        if (node is DialogueNode dialogue)
         {
-            case SetNode setNode:
-                WriteSetNode(setNode, json);
-                break;
-            case DialogueNode dialogue:
-                WriteDialogueNode(dialogue, json);
-                break;
+            WriteDialogueNode(dialogue, json);
         }
 
         return json;
@@ -114,7 +109,6 @@ internal static class StoryNodeJson
 
         StoryNode node = kind switch
         {
-            "set" => ReadSetNode(json, id, name),
             "dialogue" => ReadDialogueNode(json, id, name),
             _ => throw new InvalidDataException(string.Format(Msg.File_UnsupportedNodeKind, kind))
         };
@@ -140,24 +134,6 @@ internal static class StoryNodeJson
         }
 
         return node;
-    }
-
-    private static void WriteSetNode(SetNode node, JsonObject json)
-    {
-        if (node.Conditions.Count > 0)
-        {
-            var conditions = new JsonArray();
-            foreach (ConditionDefinition condition in node.Conditions)
-            {
-                conditions.Add(new JsonObject
-                {
-                    ["id"] = condition.Id,
-                    ["name"] = condition.Name,
-                    ["expression"] = condition.Expression
-                });
-            }
-            json["conditions"] = conditions;
-        }
     }
 
     /// <summary>
@@ -308,22 +284,6 @@ internal static class StoryNodeJson
         {
             json[WriterGapsKey] = gaps;
         }
-    }
-
-    private static SetNode ReadSetNode(JsonObject json, string id, string name)
-    {
-        var node = new SetNode(id, name);
-
-        foreach (JsonObject condition in JsonSupport.Objects(json["conditions"], string.Format(Msg.File_ConditionsOfSetNode, id)))
-        {
-            node.Conditions.Add(new ConditionDefinition(JsonSupport.RequiredText(condition["id"], string.Format(Msg.File_ConditionIdOfSetNode, id)))
-            {
-                Name = JsonSupport.RequiredString(condition["name"], string.Format(Msg.File_ConditionNameOfSetNode, id)),
-                Expression = JsonSupport.RequiredString(condition["expression"], string.Format(Msg.File_ConditionExpressionOfSetNode, id))
-            });
-        }
-
-        return node;
     }
 
     /// <summary>카드의 대본 — 카드 JSON의 <c>script</c> 칸. 늘 쓰이므로 없으면 깨진 파일이다.</summary>

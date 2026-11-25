@@ -84,7 +84,7 @@ public class StoryFileTests
         editor.AddNode(first.Id, new DialogueNode("nd_same", "첫 노드"));
 
         InvalidOperationException error = Assert.Throws<InvalidOperationException>(
-            () => editor.AddNode(second.Id, new SetNode("nd_same", "중복 노드")));
+            () => editor.AddNode(second.Id, new DialogueNode("nd_same", "중복 노드")));
 
         Assert.Contains("중복", error.Message, StringComparison.Ordinal);
         Assert.Empty(second.Nodes);

@@ -4,7 +4,8 @@
 「이 노드가 필요한가? 구조를 깔끔하게 하는데 필요해?」 → (필요 없다 — 걷으면 더 깔끔하다 · 파일 형식이 바뀌니 다음 판으로) → 「좋습니다. 두 문구만
 영어로 바꾸고, v0.4.0을 만들 때 합시다.」
 
-> **상태: 0.4.0 — 시작 전.** 견적과 할 일의 안만 적었다. 0.3.0은 그대로 낸다.
+> **상태: 0.4.0 — C1 끝(2026-11-25 · `dev`).** 남은 것 C4(진행 코어 문장 — 정본 저장소에서) · C5(두 언어 점검 · 설명서 · 릴리스 노트).
+> 0.3.0은 그대로 냈다(2026-11-25). 결정은 4절, 기록은 5절.
 
 ## 1. 지금
 
@@ -24,8 +25,8 @@
 | # | 일 |
 |---|---|
 | C1 | 분기 카드의 조건이 챕터 조건을 바로 가리킨다 — 조건 이름으로(이름을 바꾸면 분기 카드의 참조도 같은 변경 안에서 따라간다 — 스탯 키 바꾸기 S1과 같은 꼴). 식은 보일 때 · 내보낼 때 챕터 조건에서 읽는다 |
-| C2 | 열기 — 옛 파일의 공급 노드를 어떻게 받을지(아래 3절) · 저장은 새 모양만 |
-| C3 | 사본 · 동기화 · 숨김 · 이름 찾기를 걷는다 — `ChapterBoardSupply`의 공급 · `ConnectedSetNodeResolver` · `AvailableConditionResolver`의 설정 노드 길 · 열기 검사. 시험 약 80곳 |
+| C2 | 열기 — 옛 파일의 공급 노드를 어떻게 받을지(아래 3절) · 저장은 새 모양만 — **결정: 거절**(4절) · C1에 함께 했다 |
+| C3 | 사본 · 동기화 · 숨김 · 이름 찾기를 걷는다 — `ChapterBoardSupply`의 공급 · `ConnectedSetNodeResolver` · `AvailableConditionResolver`의 설정 노드 길 · 열기 검사. 시험 약 80곳 — C1에 함께 했다 |
 | C4 | 진행 코어의 거절 문장을 영어로 — **정본**(`ked-presentation-runtime`의 `Assets/Ked.Progression/Core`)에서 고치고 이 저장소에 다시 들인다(`src/Ked.Progression/UPSTREAM.md`의 재반입 · 지문 `runtime-sync.txt`). 이 저장소의 사본은 여기서 고치지 않는다 |
 | C5 | 두 언어로 점검(`UiTextFitProbe` — 영어로 돌려 `FILE-KO` · `KO`가 없다) · 설명서 · 릴리스 노트 |
 
@@ -35,3 +36,17 @@
   「옮기기 없이 거절」이었지만, 지금은 작가가 0.2.0 · 0.3.0으로 쓴 프로젝트가 있다.
 - **코어 문장의 「영어로」** — 영어 한 벌로 바꿀지, 두 언어로 둘지. 코어는 게임(런타임)의 로그에도 쓰인다.
 - **0.3.0과 섞어 쓰기** — 0.4.0이 저장한 프로젝트(공급 노드 없음)를 0.3.0이 열면 어떻게 되는지 보고 릴리스 노트에 적는다.
+
+## 4. 결정 (2026-11-25 소유자)
+
+- **옛 프로젝트는 옮기지 않고 거절한다** — 「옛날 프로젝트의 호환을 신경써야해? 아직 본 작업에 들어가진 않아서 굳이 불필요한 형식을 신경쓰고 싶지
+  않아.」 프로젝트 형식 4 → **5**, 판(StoryFile) 형식 2 → **3**. 0.4.0은 형식 4(0.3.x까지)를 열지 않고(「형식 버전 4 프로젝트는 열지 않습니다 — 이
+  툴은 형식 5만 엽니다.」), 0.3.x는 형식 5를 열지 않는다(「…형식 버전 5입니다. 이 툴은 4까지 읽을 수 있습니다.」) — 서로 거절한다. 판 형식이 맞아도
+  `"kind": "set"` 노드는 모르는 종류로 거절한다.
+- **코어 문장은 영어 한 벌로**(C4) — 정본(`ked-presentation-runtime`)에서 고친다.
+
+## 5. 기록
+
+| 날 | # | 한 일 |
+|---|---|---|
+| 11-25 | C1 · C2 · C3 | **조건 공급 노드를 걷었다.** `SetNode` · `ConditionDefinition` · `ChapterBoardSupply` · `ConnectedSetNodeResolver` · `IsHiddenPlumbing` · `GraphNodeKind.Set` · `ProjectChangeKind.ConditionDefinition` · `AddSetNode` · `AddCondition` · `UpdateCondition` · `StoryProject.EnumerateConditions` / `FindCondition`이 없다. 줄 전환(`LineConditionTransition.ConditionId` — 대사 갈래 · 분기 카드 첫머리)이 **챕터 조건의 이름**을 든다. 대사가 고르는 목록은 카드가 선 판의 챕터 조건에서 바로 계산하고(`AvailableConditionResolver.Of` — 이름 = 열쇠 · 식은 `ConditionYarnTranslator`로 그때마다 · 식 미정은 `true` · 틀린 식은 적힌 글자 그대로), 다른 챕터의 이름이면 「사용할 수 없음」, 어디에도 없으면 「찾을 수 없음」이다. **조건 이름 바꾸기**가 간선 · 그 챕터 판의 줄 전환을 한 변경으로 고친다(되돌리기 한 칸). 쓰임 찾기 · 지우기 거절은 그 챕터 판의 카드만 본다. 스탯 개명 · 스탯 지우기 · 스탯 더하기는 대사 쪽에 고칠 것이 없다(식은 그릴 때 읽는다). 글 칸 넣기는 같은 식의 조건이 여럿이면(식 미정은 모두 `true`) **지금 걸린 쪽**을 고른다 — 안 그러면 넣을 때마다 갈래가 같은 식의 첫 조건으로 조용히 바뀐다. 스탯 개명 상태줄에서 「공급 조건 N」을 뺐다(`Structure_StatRenamedFollowed`). 문구 7개 걷음(`Edit_IsnTSetNode` · `Edit_ConditionIsnTSuppliedTo` → `Edit_ConditionIsnTInThis` · `File_BoardHasSetNodeThat` · `File_*OfSetNode` 넷). 형식 5 / 3(4절) — 시험 고정물 `festival-eve`(공급 노드 · 조건 Id 5곳 → 이름 · 시작 노드 → `Festival_Classroom`)와 `samples/RuntimeSamples/PresentationDemo`(판만 올림)를 새 형식으로 옮겼다. 시험: 공급을 재던 것은 이름 참조를 재는 것으로 바꿨다(`ConditionReferenceTests` · `Chapters/ConditionScopeTests` · `Chapters/ChapterConditionCatalogTests` · `ConditionRenameTests`의 줄 전환 · 분기 첫머리 · 되돌리기). 영어 화면에 남은 한국어 ①(공급 노드의 이름)이 사라졌다. |

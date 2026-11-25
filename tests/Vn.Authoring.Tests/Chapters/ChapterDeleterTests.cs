@@ -77,8 +77,7 @@ public sealed class ChapterDeleterTests : IDisposable
     [Fact]
     public void 판과_그_위의_노드가_함께_걷힌다()
     {
-        // "연출그래프에 있던 것도 모두 자동으로 제거되도록" — 에피소드 노드도, 조건 공급
-        // 배관도 그 판에 서 있으므로 판이 걷히면 함께 간다.
+        // "연출그래프에 있던 것도 모두 자동으로 제거되도록" — 에피소드 노드가 그 판에 서 있으므로 판이 걷히면 함께 간다.
         ProjectEditor editor = Build();
 
         ChapterDeleter.Result result = ChapterDeleter.Delete(editor, ProjectPath, Doomed);
@@ -88,12 +87,6 @@ public sealed class ChapterDeleterTests : IDisposable
 
         Assert.DoesNotContain(editor.Project.Files, file =>
             string.Equals(file.Name, Doomed, StringComparison.Ordinal));
-
-        // 배관이 프로젝트 어디에도 안 남는다 — 남으면 다음 공급이 옛 챕터를 되살린다.
-        Assert.DoesNotContain(
-            editor.Project.EnumerateNodes().OfType<SetNode>(),
-            node => string.Equals(
-                node.Name, ChapterBoardSupply.ConditionSupplyNodeName(Doomed), StringComparison.Ordinal));
 
         // 남긴 챕터는 안 건드린다 — 같은 EpisodeId의 카드도 그 판에 그대로 있다.
         Assert.Contains(editor.Project.Files, file =>
@@ -218,9 +211,6 @@ public sealed class ChapterDeleterTests : IDisposable
             editor.EnsureChapter(Kept);
             editor.AddEpisode(Kept, EpisodeId, "다른 복도", 0, 0, sceneId: EpisodeId);
         }
-
-        // 배관이 실제로 섰는지 확인하고 시작한다 — 없으면 첫 테스트가 헛돈다.
-        Assert.Single(editor.Project.EnumerateNodes().OfType<SetNode>());   // 설정 노드는 판의 공급 노드뿐이다
 
         return editor;
     }

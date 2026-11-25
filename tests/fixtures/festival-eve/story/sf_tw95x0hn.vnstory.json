@@ -1,49 +1,8 @@
 {
-  "formatVersion": 2,
+  "formatVersion": 3,
   "fileId": "sf_tw95x0hn",
   "name": "festival_eve",
   "nodes": [
-    {
-      "id": "nd_5ccte9k4",
-      "kind": "set",
-      "name": "챕터 festival_eve 조건",
-      "layout": {
-        "x": 0,
-        "y": 0
-      },
-      "conditions": [
-        {
-          "id": "cd_mve2qtqv",
-          "name": "성실 2 이상",
-          "expression": "stat(\"성실\") >= 2"
-        },
-        {
-          "id": "cd_n4indpmw",
-          "name": "요령 2 이상",
-          "expression": "stat(\"요령\") >= 2"
-        },
-        {
-          "id": "cd_6k0ncjjb",
-          "name": "성실 2 미만",
-          "expression": "stat(\"성실\") < 2"
-        },
-        {
-          "id": "cd_ph2tezn2",
-          "name": "요령 3 이상",
-          "expression": "stat(\"요령\") >= 3"
-        },
-        {
-          "id": "cd_cte029np",
-          "name": "성실 3 이상 · 요령 3 미만",
-          "expression": "stat(\"성실\") >= 3 && stat(\"요령\") < 3"
-        },
-        {
-          "id": "cd_c07qymhp",
-          "name": "성실 3 미만 · 요령 3 미만",
-          "expression": "stat(\"성실\") < 3 && stat(\"요령\") < 3"
-        }
-      ]
-    },
     {
       "id": "nd_ushhar34",
       "kind": "dialogue",
@@ -432,7 +391,7 @@
           "lineId": "ln_s7tk0up3",
           "condition": {
             "kind": "beginIf",
-            "condition": "cd_mve2qtqv"
+            "condition": "성실 2 이상"
           }
         }
       ],
@@ -478,7 +437,7 @@
           "lineId": "ln_v9rdek8z",
           "condition": {
             "kind": "beginIf",
-            "condition": "cd_6k0ncjjb"
+            "condition": "성실 2 미만"
           }
         }
       ],
@@ -532,7 +491,7 @@
           "lineId": "ln_m208n5x2",
           "condition": {
             "kind": "beginIf",
-            "condition": "cd_ph2tezn2"
+            "condition": "요령 3 이상"
           }
         }
       ],
@@ -586,7 +545,7 @@
           "lineId": "ln_pq4uwryp",
           "condition": {
             "kind": "beginIf",
-            "condition": "cd_cte029np"
+            "condition": "성실 3 이상 · 요령 3 미만"
           }
         }
       ],
@@ -632,7 +591,7 @@
           "lineId": "ln_as37pa6a",
           "condition": {
             "kind": "beginIf",
-            "condition": "cd_c07qymhp"
+            "condition": "성실 3 미만 · 요령 3 미만"
           }
         }
       ],

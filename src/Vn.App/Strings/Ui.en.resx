@@ -2642,8 +2642,8 @@ Stats on arrival —
   <data name="Structure_RenameStatKey" xml:space="preserve">
     <value>Rename stat key</value>
   </data>
-  <data name="Structure_PathsConditionsSuppliedConditionsTest" xml:space="preserve">
-    <value>'{0}' → '{1}' — {2:path|paths} · {3:condition|conditions} · {4:supplied condition|supplied conditions} · {5:test start|test starts} · {6:dialogue line|dialogue lines} followed. ⚠ This stat drops to its initial value in saves already made.</value>
+  <data name="Structure_StatRenamedFollowed" xml:space="preserve">
+    <value>'{0}' → '{1}' — {2:path|paths} · {3:condition|conditions} · {4:test start|test starts} · {5:dialogue line|dialogue lines} followed. ⚠ This stat drops to its initial value in saves already made.</value>
   </data>
   <data name="Structure_KeyKeyInSaveData" xml:space="preserve">
     <value>Key — the key in save data and the name used in condition expressions · {{stat("key")}} in dialogue (the statKey that goes into Yarn as is). {0}. Edit and press Enter (or leave the box) — paths · conditions · {{stat("key")}} in this chapter's dialogue follow. Esc cancels.</value>

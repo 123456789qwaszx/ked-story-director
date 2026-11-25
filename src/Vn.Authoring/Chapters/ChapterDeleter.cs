@@ -11,8 +11,7 @@ namespace Vn.Authoring.Chapters;
 ///
 /// <list type="number">
 ///   <item>챕터 자체 — <c>Project.Chapters</c>의 그 항목</item>
-///   <item>판(<c>StoryFile</c>)과 그 위의 노드 전부 — 에피소드 카드도, 조건 공급 노드(<c>챕터 {Id} 조건</c>)도
-///     이 판에 서 있다.</item>
+///   <item>판(<c>StoryFile</c>)과 그 위의 노드 전부 — 에피소드 카드도 분기 카드도 이 판에 서 있다.</item>
 /// </list>
 ///
 /// 되돌리기 한 번에 둘이 함께 돌아온다.

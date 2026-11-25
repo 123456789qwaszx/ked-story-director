@@ -25,10 +25,12 @@ namespace Vn.Authoring.Model;
 public sealed class StoryProject
 {
     /// <summary>
-    /// 지금 쓰는 형식 — <b>4</b>: 카드의 대본이 판 파일 안에 든다(2026-10-29 · <c>docs/plans/script-merge.md</c>).
-    /// <b>이 형식만 연다</b> — 그 앞의 형식은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c>).
+    /// 지금 쓰는 형식 — <b>5</b>: 조건 공급 노드가 없고 대본의 줄 전환이 챕터 조건을 이름으로 가리킨다(2026-11-25 · condition-supply C1).
+    /// 4는 카드의 대본이 판 파일 안에 든 형식이었다(2026-10-29 · <c>docs/plans/script-merge.md</c>).
+    /// <b>이 형식만 연다</b> — 그 앞의 형식은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c> — 2026-11-25 소유자
+    /// 「아직 본 작업에 들어가진 않아서 굳이 불필요한 형식을 신경쓰고 싶지 않아」).
     /// </summary>
-    public const int CurrentFormatVersion = 4;
+    public const int CurrentFormatVersion = 5;
 
     public string Title { get; set; } = "새 프로젝트";
 
@@ -47,7 +49,7 @@ public sealed class StoryProject
     public List<ChapterDocument> Chapters { get; init; } = new();
 
     // ⛔ `Links`(조건 공급 연결 — 범위 결정에서는 2026-08-17에 빠졌다)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 조건 범위는
-    //    판이다(<see cref="Flow.ConnectedSetNodeResolver"/>) · docs/work-orders/legacy-read-orders.md L5. 유물이던 작가 화자
+    //    그 카드의 챕터다(<see cref="Flow.AvailableConditionResolver"/>) · docs/work-orders/legacy-read-orders.md L5. 유물이던 작가 화자
     //    `WriterSpeakers`도 함께 걷혔다.
 
     /// <summary>
@@ -118,21 +120,5 @@ public sealed class StoryProject
     public IEnumerable<ScriptDocument> EnumerateScripts() =>
         EnumerateNodes().OfType<DialogueNode>().Select(node => node.Script);
 
-    /// <summary>
-    /// 프로젝트 안의 모든 SetNode 조건. 파일 순서, SetNode 순서, 조건 순서를 지킨다.
-    /// 편집·진단용 전체 조회이며 DialogueNode의 드롭다운 범위에는 사용하지 않는다.
-    /// Dialogue별 범위는 AvailableConditionResolver가 판을 기준으로 계산한다.
-    /// </summary>
-    public IEnumerable<ConditionDefinition> EnumerateConditions()
-    {
-        return EnumerateNodes().OfType<SetNode>().SelectMany(node => node.Conditions);
-    }
-
-    public ConditionDefinition? FindCondition(string? conditionId)
-    {
-        return conditionId is null
-            ? null
-            : EnumerateConditions()
-                .FirstOrDefault(item => string.Equals(item.Id, conditionId, StringComparison.Ordinal));
-    }
+    // ⛔ `EnumerateConditions` · `FindCondition`(공급 노드의 조건 사본 — 프로젝트 전체)은 2026-11-25에 공급 노드와 함께 걷혔다(condition-supply C1).
 }

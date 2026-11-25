@@ -3512,8 +3512,8 @@
     <value>스탯 키 바꾸기</value>
     <comment>ChapterGraphView.axaml.cs</comment>
   </data>
-  <data name="Structure_PathsConditionsSuppliedConditionsTest" xml:space="preserve">
-    <value>'{0}' → '{1}' — 간선 {2} · 조건 {3} · 공급 조건 {4} · 픽스처 {5}곳 · 대사 {6}줄이 따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.</value>
+  <data name="Structure_StatRenamedFollowed" xml:space="preserve">
+    <value>'{0}' → '{1}' — 간선 {2} · 조건 {3} · 픽스처 {4}곳 · 대사 {5}줄이 따라갔습니다. ⚠ 이미 저장된 세이브의 이 스탯은 처음 값으로 떨어집니다.</value>
     <comment>ChapterGraphView.axaml.cs</comment>
   </data>
   <data name="Structure_KeyKeyInSaveData" xml:space="preserve">

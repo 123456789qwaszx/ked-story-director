@@ -23,8 +23,8 @@ public sealed class ChapterBoardEditorTests
         StoryFile board = editor.Project.FindFile(fileId)!;
         Assert.Equal("ch01", board.Name);
 
-        // ⛔ 「ch01 설정」 노드는 2026-10-29(L6)부터 세우지 않는다 — 그 안을 채우던 편집기가 걷혔다.
-        Assert.Empty(board.Nodes.OfType<SetNode>());
+        // ⛔ 「ch01 설정」 노드는 2026-10-29(L6)부터, 조건 공급 노드는 2026-11-25(condition-supply C1)부터 세우지 않는다.
+        Assert.Empty(board.Nodes);
     }
 
     [Fact]

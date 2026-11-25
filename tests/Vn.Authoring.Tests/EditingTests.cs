@@ -228,16 +228,16 @@ public class EditingTests
     private static string TextOf(Sample sample, string lineId) =>
         sample.Script.Text(lineId).Text;
     [Fact]
-    public void 조건_이름과_식_수정은_구조_변경이_아니다()
+    public void 조건_식_수정은_구조_변경이_아니다()
     {
         var sample = new Sample();
         ProjectChangedEventArgs? change = null;
         sample.Editor.Changed += (_, args) => change = args;
 
-        sample.Editor.UpdateCondition(sample.ConditionA.Id, "새 이름", "$favor >= 10");
+        sample.Editor.UpdateChapterCondition("test", sample.ConditionA.Id, "favor >= 10");
 
         Assert.NotNull(change);
-        Assert.Equal(ProjectChangeKind.ConditionDefinition, change!.Kind);
+        Assert.Equal(ProjectChangeKind.ChapterCondition, change!.Kind);
     }
 
     // ⛔ 「조건 수정은 그래프 라벨에 즉시 반영된다」는 2026-11-19에 걷혔다 — 조건 갈래의 출구 포트(라벨이 조건 이름)가 갈래 출구와 함께

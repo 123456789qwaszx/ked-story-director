@@ -72,43 +72,9 @@ public abstract class StoryNode
     //    에피소드가 진행 기록 밖에서 재생됐다. 조건이 맞을 때만 들르는 것은 분기점 + 분기 카드의 첫머리 조건이 한다.
 }
 
-/// <summary>
-/// <b>챕터 조건 공급 노드</b> — 판마다 하나, 이름은 <c>챕터 {판} 조건</c>(<see cref="Chapters.ChapterBoardSupply"/>). 챕터의 조건을 대본이
-/// 쓰는 식(<c>stat("키")</c>)으로 옮긴 사본을 들고, 대본의 줄 전환은 그 사본의 Id를 가리킨다. 공급만 세우고 고치며 판에는 그리지 않는다.
-///
-/// ⛔ 옛 「X 설정」 노드(작가 조건 · 변수를 담던 자리)는 2026-11-18에 받지 않게 됐다 — 설정 노드는 공급 노드뿐이다(old-shapes O6).
-/// </summary>
-public sealed class SetNode : StoryNode
-{
-    public SetNode(string? id = null, string name = "새 설정")
-        : base(id, name)
-    {
-    }
-
-    /// <summary>이 노드가 이후 대사 노드에 공급하는 조건들.</summary>
-    public List<ConditionDefinition> Conditions { get; init; } = new();
-}
-
-/// <summary>
-/// 공급 노드가 든 조건 사본 하나.
-///
-/// <see cref="Name"/>은 작가가 읽는 이름이고 그래프 간선에도 이것이 표시된다.
-/// <see cref="Expression"/>은 게임이 평가할 식이며 VnTool은 내용을 해석하지 않는다.
-/// 이 분리가 있어야 게임마다 다른 식을 쓰면서도 저작 화면은 똑같이 동작한다.
-/// </summary>
-public sealed class ConditionDefinition
-{
-    public ConditionDefinition(string? id = null)
-    {
-        Id = id ?? Identifier.Condition();
-    }
-
-    public string Id { get; }
-
-    public string Name { get; set; } = string.Empty;
-
-    public string Expression { get; set; } = string.Empty;
-}
+// ⛔ `SetNode`(챕터 조건 공급 노드 — 판마다 하나, 챕터 조건의 Yarn 사본)와 `ConditionDefinition`(그 사본 하나)은 2026-11-25에 걷혔다
+//    (condition-supply C1). 대본의 줄 전환은 챕터 조건을 <b>이름</b>으로 가리키고, 식은 쓸 때 챕터 조건에서 옮긴다
+//    (<see cref="Flow.AvailableConditionResolver"/>). 옛 「X 설정」 노드는 2026-11-18에 먼저 걷혔다(old-shapes O6).
 
 /// <summary>
 /// 대본 하나를 읽어 그 줄들에 <b>대사 논리</b>를 얹는 노드.

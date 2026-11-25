@@ -17,11 +17,8 @@ public static class GraphProjectionBuilder
     private const double EmptyProxyStartY = 80;
     private const double EmptyProxyGapX = 280;
 
-    /// <summary>
-    /// 카드를 그리지 않는 노드인가 — <b>설정노드</b>다. 설정노드는 판의 챕터 조건 공급 노드 하나뿐이고 배관이라 숨는다(까닭은
-    /// <see cref="Build"/> 안의 주석). ⛔ 옛 판의 「X 설정」 카드(작가 조건 · 변수)를 숨기던 일은 2026-11-18에 끝났다 — 그런 판은 받지 않는다.
-    /// </summary>
-    public static bool IsHiddenPlumbing(StoryNode node) => node is SetNode;
+    // ⛔ `IsHiddenPlumbing`(카드를 그리지 않는 설정노드 — 챕터 조건 공급 노드)은 2026-11-25에 그 노드와 함께 걷혔다(condition-supply C1). 판의
+    //    노드는 모두 카드다.
 
     /// <param name="collapsedScenes">
     /// 펼친 판 안에서 접어 둔 장면들 (2026-10-30 — 하이어아키의 눈). 그 장면의 노드는 카드 대신
@@ -40,12 +37,6 @@ public static class GraphProjectionBuilder
         var rowIndexByNodeId = new Dictionary<string, int>(StringComparer.Ordinal);
         var portsByNodeId = new Dictionary<string, IReadOnlyList<GraphOutputPortProjection>>(StringComparer.Ordinal);
 
-        // 배관 노드는 카드를 그리지 않는다 — A 계층 격리 (2026-08-15 소유자): 챕터 조건 공급
-        // 설정노드는 동기화의 배관이지 작가의 데이터가 아니다. 식(스탯 변수)이 연출 그래프에
-        // 노출되면 안 된다. 공급 자체는 데이터에 살아 있어 조건 라벨과 <<if>> 역조회는 변함없다.
-        // (연출 노드 · 연출 공급 노드도 여기 숨던 배관이었는데 2026-10-29에 compositor로 갔다.)
-        var hiddenPlumbingNodeIds = new HashSet<string>(StringComparer.Ordinal);
-
         foreach (StoryFile file in project.Files)
         {
             for (int index = 0; index < file.Nodes.Count; index++)
@@ -54,11 +45,6 @@ public static class GraphProjectionBuilder
                 fileByNodeId[node.Id] = file;
                 rowIndexByNodeId[node.Id] = index;
                 portsByNodeId[node.Id] = BuildPorts(node, file, project);
-
-                if (IsHiddenPlumbing(node))
-                {
-                    hiddenPlumbingNodeIds.Add(node.Id);
-                }
             }
         }
 
@@ -84,11 +70,6 @@ public static class GraphProjectionBuilder
 
                 foreach (StoryNode node in file.Nodes)
                 {
-                    if (hiddenPlumbingNodeIds.Contains(node.Id))
-                    {
-                        continue;
-                    }
-
                     if (folds?.SceneOf(project, node.Id, node.Name) is { } sceneId &&
                         collapsedScenes!.Contains(new GraphSceneKey(file.Id, sceneId)))
                     {
@@ -114,7 +95,6 @@ public static class GraphProjectionBuilder
             }
 
             IReadOnlyList<CollapsedNodeEntry> entries = file.Nodes
-                .Where(node => !hiddenPlumbingNodeIds.Contains(node.Id))
                 .Select(node => new CollapsedNodeEntry(
                     node.Id,
                     node.Name,
@@ -136,8 +116,8 @@ public static class GraphProjectionBuilder
                 scenes));
         }
 
-        // 접힌 파일의 행 번호는 배관을 빼고 남은 항목 기준이다. 원본 인덱스를 쓰면 간선 끝이
-        // 숨은 행을 가리켜 허공에 붙는다.
+        // 접힌 파일의 행 번호는 화면에 선 항목 기준이다 — 장면으로 묶으며 순서가 바뀌므로 원본 인덱스를 쓰면 간선 끝이
+        // 다른 행을 가리킨다.
         //
         // <b>장면 머리글도 한 행을 차지한다</b> (R6 S-3). 머리글을 안 세면 그 아래 노드의
         //    간선이 한 칸씩 위로 붙는다 — 화면과 기하가 같은 셈법을 써야 한다.
@@ -170,13 +150,6 @@ public static class GraphProjectionBuilder
         {
             if (!fileByNodeId.TryGetValue(raw.SourceNodeId, out StoryFile? sourceFile) ||
                 !fileByNodeId.TryGetValue(raw.TargetNodeId, out StoryFile? targetFile))
-            {
-                continue;
-            }
-
-            // 간선 정합: 한쪽 끝 노드가 배관 숨김으로 안 보이면 간선도 숨는다.
-            if (hiddenPlumbingNodeIds.Contains(raw.SourceNodeId) ||
-                hiddenPlumbingNodeIds.Contains(raw.TargetNodeId))
             {
                 continue;
             }
@@ -264,7 +237,7 @@ public static class GraphProjectionBuilder
         // 설정노드의 "이 챕터에 공급 중" 포트는 2026-08-22에 사라졌다 (소유자) —
         // 공급 범위가 판 전체가 된 2026-08-17 이후로 이을 곳이 없어 <b>사실 표시</b>로만
         // 남아 있었다. 카드가 늘 켜진 포트를 달고 있으면 "여기서 무언가를 이을 수 있다"고
-        // 말하는 셈이라 오히려 거짓말이었다. 공급은 같은 판에 선 것으로 이미 성립한다.
+        // 말하는 셈이라 오히려 거짓말이었다. (설정노드 자체도 2026-11-25에 걷혔다 · condition-supply C1.)
 
         ports.AddRange(ChoiceSlots(node, file, project));
 
@@ -406,7 +379,6 @@ public static class GraphProjectionBuilder
         return node switch
         {
             DialogueNode => GraphNodeKind.Dialogue,
-            SetNode => GraphNodeKind.Set,
             _ => throw new NotSupportedException(string.Format(Msg.Board_UnsupportedNodeType, node.GetType().Name))
         };
     }
@@ -420,7 +392,7 @@ public static class GraphProjectionBuilder
     ///
     /// <b>묶지 않는 경우</b>: 에피소드가 하나도 없는 챕터. 에피소드는 늘 장면에 속한다(old-shapes O7).
     ///
-    /// <b>에피소드가 아닌 노드는 장면 밖이다</b> — 집이 없는 분기 카드 · 설정 노드는 챕터의
+    /// <b>에피소드가 아닌 노드는 장면 밖이다</b> — 집이 없는 분기 카드는 챕터의
     /// 진행에 안 실리므로 장면 경계도 없다. 맨 뒤 묶음으로 모은다.
     /// </summary>
     private static IReadOnlyList<CollapsedSceneGroup> SceneGroups(

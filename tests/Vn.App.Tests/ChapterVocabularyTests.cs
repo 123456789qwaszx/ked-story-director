@@ -8,8 +8,8 @@ namespace Vn.App.Tests;
 /// <summary>
 /// 챕터 판의 설정 노드 (계층 분리).
 ///
-/// 판마다 「X 설정」 노드를 세우지 않는다 — 그 안을 채울 편집기가 없어 눌러도 빈 칸이 된다.
-/// 옛 판에 남은 것은 데이터째 두고 연출 그래프에서만 숨긴다.
+/// 판마다 「X 설정」 노드를 세우지 않는다 — 그 안을 채울 편집기가 없어 눌러도 빈 칸이 된다. 챕터 조건 공급 노드도
+/// 2026-11-25에 걷혔다(condition-supply C1) — 판에는 카드만 선다.
 /// </summary>
 public sealed class ChapterVocabularyTests
 {
@@ -21,7 +21,7 @@ public sealed class ChapterVocabularyTests
         string fileId = session.EnsureChapterBoard("ch01");
         session.EnsureChapterBoard("ch01");
 
-        Assert.Empty(session.Project.FindFile(fileId)!.Nodes.OfType<SetNode>());
+        Assert.Empty(session.Project.FindFile(fileId)!.Nodes);
     }
 
 }

@@ -180,16 +180,12 @@ public sealed class BranchEntryConditionTests
         var editor = new ProjectEditor(new StoryProject());
 
         editor.EnsureChapter("ch01");
-        string fileId = editor.EnsureChapterBoard("ch01");
+        editor.EnsureChapterBoard("ch01");
         editor.AddEpisode("ch01", "root", title: "root", 0, 0, sceneId: "root");
 
         ChapterDocument chapter = editor.FindChapter("ch01")!;
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         editor.AddChapterCondition("ch01", "신뢰높음", "trust >= 3");
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor, fileId,
-            chapter.ToGraphModel("ch01"));
 
         DialogueNode caller = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
         string lineId = caller.Script.ActiveLines.First().Id;

@@ -54,15 +54,16 @@ public sealed class ChoiceDetailChangeTests
     }
 
     [Fact]
-    public void 조건을_더하고_식을_고치면_공급까지_한_칸의_챕터_조건_변경이다()
+    public void 조건을_더하고_식을_고치면_한_칸의_챕터_조건_변경이다()
     {
         long revision = _editor.Revision;
 
-        // 처음 더하는 조건 — 공급 노드(판에 서지 않는 배관)를 지으며 사본을 붙인다. 그래도 알림은 하나, 되돌리기도 한 칸이다.
+        // 알림은 하나, 되돌리기도 한 칸이다. 판에는 아무것도 서지 않는다(⛔ 2026-11-25까지는 숨은 공급 노드를 지었다 · condition-supply C1).
+        int nodes = _editor.Project.EnumerateNodes().Count();
         _editor.AddChapterCondition("ch01", "믿음", "trust >= 3");
         Assert.Equal(revision + 1, _editor.Revision);
         Assert.Equal((ProjectChangeKind.ChapterCondition, (string?)null), (_raised[^1].Kind, _raised[^1].NodeId));
-        Assert.Contains(_editor.Project.EnumerateNodes().OfType<SetNode>(), node => node.Conditions.Any(condition => condition.Name == "믿음"));
+        Assert.Equal(nodes, _editor.Project.EnumerateNodes().Count());
 
         _editor.UpdateChapterCondition("ch01", "믿음", "trust >= 5");
         Assert.Equal(ProjectChangeKind.ChapterCondition, _raised[^1].Kind);
@@ -70,7 +71,6 @@ public sealed class ChoiceDetailChangeTests
         _editor.Undo();
         _editor.Undo();
         Assert.Empty(_editor.FindChapter("ch01")!.Conditions);
-        Assert.DoesNotContain(_editor.Project.EnumerateNodes().OfType<SetNode>(), node => node.Conditions.Any(condition => condition.Name == "믿음"));
     }
 
     [Fact]

@@ -15,14 +15,14 @@ namespace Vn.Authoring.Tests;
 /// 움직이는가</b>이다.
 ///
 /// 반대편 빗장도 함께 지킨다: <b>추측해서 잇지 않는다</b>. 줄이 생기거나 사라졌을 때,
-/// 이름이 비슷하기만 할 때, A계층 공급 노드의 식일 때는 손대지 않는다.
+/// 이름이 비슷하기만 할 때는 손대지 않는다.
 /// </summary>
 public sealed class RenameCarriesReferencesTests
 {
     private sealed record World(
-        ProjectEditor Editor, StoryFile File, SetNode SetNode, DialogueNode Dialogue, string LineId);
+        ProjectEditor Editor, StoryFile File, DialogueNode Dialogue, string LineId);
 
-    /// <summary>챕터 조건 하나(스탯 `has_key` — 판의 공급 노드가 사본을 나른다) · 대사 줄 하나.</summary>
+    /// <summary>챕터 조건 하나(스탯 `has_key`) · 대사 줄 하나.</summary>
     private static World Build(bool ability = false)
     {
         var project = new StoryProject();
@@ -35,13 +35,12 @@ public sealed class RenameCarriesReferencesTests
 
         editor.AddChapterStat("ch01", "has_key", maximum: 1, type: ability ? global::Vn.Authoring.Chapters.ChapterStatType.Bool : global::Vn.Authoring.Chapters.ChapterStatType.Int);
         editor.AddChapterCondition("ch01", "열쇠 있음", ability ? "has_key == true" : "has_key >= 1");
-        SetNode setNode = file.Nodes.OfType<SetNode>().Single();
 
         DialogueNode dialogue = editor.AddDialogueNode(file.Id, "본문", name: "본문");
         ScriptLine line = dialogue.Script.ActiveLines.Single();   // 카드는 빈 첫 줄을 들고 선다
         editor.SetScriptLineText(dialogue.Id, line.Id, "라루", "문을 연다");
 
-        return new World(editor, file, setNode, dialogue, line.Id);
+        return new World(editor, file, dialogue, line.Id);
     }
 
     // ⛔ <b>변수 개명 전파 검사는 2026-09-17에 통째로 걷혔다</b> (소유자: *"작가 변수라는
@@ -53,30 +52,28 @@ public sealed class RenameCarriesReferencesTests
     // ── 조건 ────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void 조건_이름을_바꿔도_매달린_갈래는_그대로다()
+    public void 조건_이름을_바꾸면_매달린_갈래가_새_이름을_따라간다()
     {
-        // 조건 이름을 고친다 — 줄에 매달린 전환은 공급 사본의 <b>Id</b>로 잇는다(개명은 사본의 Id를 지킨다).
-        // 이 성질이 깨지는 날은 조건에 Id가 없어진 날이고, 그러면 이름 한 글자에 그 조건을
-        // 쓰던 갈래가 전부 "알 수 없는 조건"이 된다.
+        // 조건 이름을 고친다 — 줄에 매달린 전환은 조건의 <b>이름</b>으로 잇고, 개명이 그 전환을 함께 고친다.
+        // 이 성질이 깨지는 날은 이름 한 글자에 그 조건을 쓰던 갈래가 전부 "알 수 없는 조건"이 된다.
+        // ⛔ 2026-11-25까지는 공급 사본의 Id로 이어 개명이 사본의 Id를 지켰다(condition-supply C1).
         World world = Build();
-        ConditionDefinition condition = world.SetNode.Conditions[0];
 
         world.Editor.SetLineTransitions(world.Dialogue.Id, world.LineId, [
-            LineConditionTransition.BeginIf(condition.Id),
+            LineConditionTransition.BeginIf("열쇠 있음"),
             LineConditionTransition.EndIf()
         ]);
 
         world.Editor.RenameChapterCondition("ch01", "열쇠 있음", "보물열쇠 있음");
 
-        Assert.Equal("보물열쇠 있음", world.SetNode.Conditions[0].Name);
         Assert.Equal(
-            condition.Id,
+            "보물열쇠 있음",
             world.Dialogue.FindExtension(world.LineId)!.Transitions[0].ConditionId);
 
-        // 그리고 그 조건이 여전히 카드가 보는 목록에 새 이름으로 서 있다.
+        // 그리고 그 조건이 카드가 보는 목록에 새 이름으로 서 있다.
         AvailableCondition? available = AvailableConditionResolver
             .Resolve(world.Editor.Project, world.Dialogue.Id)
-            .Find(condition.Id);
+            .Find("보물열쇠 있음");
 
         Assert.Equal("보물열쇠 있음", available?.DisplayName);
     }

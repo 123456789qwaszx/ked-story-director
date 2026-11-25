@@ -199,9 +199,6 @@
   <data name="File_StoryFilePathIsDuplicated" xml:space="preserve">
     <value>StoryFile path '{0}' is duplicated.</value>
   </data>
-  <data name="File_BoardHasSetNodeThat" xml:space="preserve">
-    <value>Board '{0}' has a set node that isn't the chapter condition supply node, or has two supply nodes.</value>
-  </data>
   <data name="File_NodeIdIsDuplicatedAcross" xml:space="preserve">
     <value>Node Id '{0}' is duplicated across the project.</value>
   </data>
@@ -282,18 +279,6 @@
   </data>
   <data name="File_OpenDetoursPositionsOfAreOut" xml:space="preserve">
     <value>The openDetours positions of {0} are out of order (they must be ascending within the {1:branch point|branch points}).</value>
-  </data>
-  <data name="File_ConditionsOfSetNode" xml:space="preserve">
-    <value>conditions of set node '{0}'</value>
-  </data>
-  <data name="File_ConditionIdOfSetNode" xml:space="preserve">
-    <value>condition id of set node '{0}'</value>
-  </data>
-  <data name="File_ConditionNameOfSetNode" xml:space="preserve">
-    <value>condition name of set node '{0}'</value>
-  </data>
-  <data name="File_ConditionExpressionOfSetNode" xml:space="preserve">
-    <value>condition expression of set node '{0}'</value>
   </data>
   <data name="File_DialogueNodeHasNoScript" xml:space="preserve">
     <value>DialogueNode '{0}' has no script.</value>
@@ -663,9 +648,6 @@
   </data>
   <data name="Edit_ScriptIsEmptySoThere" xml:space="preserve">
     <value>The script is empty, so there's nowhere to put a condition — write the first line first.</value>
-  </data>
-  <data name="Edit_IsnTSetNode" xml:space="preserve">
-    <value>'{0}' isn't a set node.</value>
   </data>
   <data name="Edit_CanTFindStoryFile" xml:space="preserve">
     <value>Can't find StoryFile '{0}'.</value>
@@ -1153,9 +1135,6 @@
   </data>
   <data name="Edit_ThereAreLinesWrittenOutside" xml:space="preserve">
     <value>There are lines written outside the condition lines (&lt;&lt;if&gt;&gt; · &lt;&lt;endif&gt;&gt;) or several conditions, so it can't be edited here. Edit this card's writing box in the [Script] tab and the outside lines move inside the condition, so you can edit it again.</value>
-  </data>
-  <data name="Edit_ConditionIsnTSuppliedTo" xml:space="preserve">
-    <value>Condition '{0}' isn't supplied to this board — check that it's among the chapter's conditions and that its expression is a form the tool can translate.</value>
   </data>
   <data name="Diag_LineIdAppearsTwiceInResult" xml:space="preserve">
     <value>LineId '{0}' appears twice in the result.</value>

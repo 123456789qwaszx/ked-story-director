@@ -229,8 +229,6 @@ public sealed class BranchConditionNoteTests : IDisposable
         ChapterDocument chapter = session.Editor.FindChapter("ch01")!;
         chapter.Stats.Add(new ChapterStat("trust", 0, 0, 10));
         session.Editor.AddChapterCondition("ch01", label, "trust >= 3");
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            session.Editor, EpisodeNaming.BoardOf(session.Project, "ch01")!.Id, chapter.ToGraphModel("ch01"));
     }
 
     private static Border Chip(MainWindow window, DialogueNode branch) =>

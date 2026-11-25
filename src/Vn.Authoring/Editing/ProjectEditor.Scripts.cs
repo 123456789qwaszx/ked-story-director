@@ -257,7 +257,7 @@ public sealed partial class ProjectEditor
             IReadOnlyList<LineConditionTransition> current =
                 node.FindExtension(lineId)?.Transitions ?? [];
 
-            if (Translate(intents, conditions, problems) is not { } desired)
+            if (Translate(intents, conditions, problems, current) is not { } desired)
             {
                 continue;
             }
@@ -280,11 +280,19 @@ public sealed partial class ProjectEditor
     /// 전환 뜻(텍스트) → 전환(모델). 못 세우는 것이 하나라도 있으면 <b>통째로</b> 물린다
     /// (널) — 한 자리의 전환은 묶음이라, 하나를 빠뜨리고 나머지만 반영하면 짝이 어긋난다.
     /// </summary>
+    /// <param name="current">
+    /// 그 자리에 지금 걸린 전환 — 같은 식의 조건이 둘 이상이면(식 미정인 조건은 모두 <c>true</c>다) 지금 걸린 쪽을 고른다. 안 그러면 글을 고쳐 넣을
+    /// 때마다 갈래가 같은 식의 첫 조건으로 조용히 바뀐다.
+    /// </param>
     private static List<LineConditionTransition>? Translate(
         IReadOnlyList<ScenarioStructureIntent> intents,
         AvailableConditionCatalog conditions,
-        List<string> problems)
+        List<string> problems,
+        IReadOnlyList<LineConditionTransition> current)
     {
+        var held = new HashSet<string>(
+            current.Select(transition => transition.ConditionId).OfType<string>(), StringComparer.Ordinal);
+
         var desired = new List<LineConditionTransition>(intents.Count);
 
         foreach (ScenarioStructureIntent intent in intents)
@@ -297,12 +305,13 @@ public sealed partial class ProjectEditor
 
                 default:
                 {
-                    AvailableCondition? condition = conditions.Conditions.FirstOrDefault(item =>
-                        string.Equals(item.Expression.Trim(), intent.Expression, StringComparison.Ordinal));
+                    List<AvailableCondition> same = conditions.Conditions.Where(item =>
+                        string.Equals(item.Expression.Trim(), intent.Expression, StringComparison.Ordinal)).ToList();
+                    AvailableCondition? condition = same.FirstOrDefault(item => held.Contains(item.Id)) ?? same.FirstOrDefault();
 
                     if (condition is null)
                     {
-                        // 비슷한 식을 추측해 잇지 않는다. 조건은 설정노드에서 먼저 만들어야 한다.
+                        // 비슷한 식을 추측해 잇지 않는다. 조건은 [구성] 탭의 챕터 조건에서 먼저 만들어야 한다.
                         problems.Add(
                             string.Format(Msg.Edit_NoneOfConditionsThisNode, (intent.Kind == ConditionTransitionKind.BeginIf ? "if" : "elseif"), intent.Expression));
 
@@ -335,7 +344,7 @@ public sealed partial class ProjectEditor
     {
         List<LineConditionTransition>? desired = parsed.Trailing.Count == 0
             ? []
-            : Translate(parsed.Trailing, conditions, problems);
+            : Translate(parsed.Trailing, conditions, problems, node.TrailingTransitions);
 
         if (desired is null)
         {

@@ -12,7 +12,7 @@ namespace Vn.App.Views;
 /// [구성] 탭 칩 인스펙터의 콤보와 같은 일을 한다 — 규칙은 <see cref="BranchEntryCondition"/> 하나다.
 ///
 /// 목록은 「(언제나)」와 그 챕터의 조건 이름이다. <b>식 미정인 조건도 고른다</b> — 식을 채울 때까지 항상 통과하고(간선과 같은 규칙),
-/// [구성] 탭에서 식을 채우면 그 분기가 저절로 새 식을 따른다(사본은 이름으로 짝짓는다 — <see cref="ChapterBoardSupply"/>).
+/// [구성] 탭에서 식을 채우면 그 분기가 저절로 새 식을 따른다(분기는 조건 이름만 쥐고 식은 그릴 때 챕터에서 읽는다 — <see cref="Vn.Authoring.Flow.AvailableConditionResolver"/>).
 ///
 /// 고르는 순간 나간다(되돌리기 한 칸). 고르기가 끝난 뒤에 넣는다 — 고르는 중에 화면을 다시 세우면 고르기가 엉킨다.
 /// </summary>

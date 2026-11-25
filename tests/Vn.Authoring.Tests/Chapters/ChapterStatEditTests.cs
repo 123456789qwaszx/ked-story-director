@@ -168,28 +168,23 @@ public sealed class ChapterStatEditTests
     }
 
     [Fact]
-    public void 아무도_안_쓰면_판의_공급_사본도_함께_걷는다()
+    public void 아무도_안_쓰면_대사의_조건_목록에서도_사라진다()
     {
-        // 남겨 두면 <b>정의 없는 조건</b>이 드롭다운에 계속 보인다.
+        // 목록은 챕터 조건에서 바로 계산한다 — 걷을 사본이 없다(⛔ 2026-11-25까지는 판의 공급 사본을 함께 걷었다 · condition-supply C1).
         ProjectEditor editor = WorldWithBoard();
+        DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
 
         ChapterConditionRemoveOutcome outcome = editor.RemoveChapterCondition("ch01", "신뢰높음");
 
         Assert.True(outcome.Applied);
-        Assert.Equal(1, outcome.SuppliedRemoved);
-        Assert.Empty(editor.Project.EnumerateNodes().OfType<SetNode>()
-            .SelectMany(node => node.Conditions));
+        Assert.Empty(Vn.Authoring.Flow.AvailableConditionResolver.Resolve(editor.Project, node.Id).Conditions);
     }
 
     [Fact]
     public void 대사_갈래가_붙들고_있으면_거절한다()
     {
-        // ⭐ 여기가 진단이 못 잡는 자리다. 챕터 조건이 사라져도 공급 조건은 남고, 갈래는
-        //    계속 살아 있는데 <b>무엇을 묻는지는 아무 데도 없다</b>.
+        // ⭐ 지우면 갈래는 계속 살아 있는데 <b>무엇을 묻는지는 아무 데도 없다</b>.
         ProjectEditor editor = WorldWithBoard();
-
-        ConditionDefinition supplied = editor.Project.EnumerateNodes().OfType<SetNode>()
-            .SelectMany(node => node.Conditions).Single();
 
         DialogueNode node = EpisodeNaming.CardFor(editor.Project, "ch01", "root")!;
         string lineId = node.Script.ActiveLines.First().Id;
@@ -197,7 +192,7 @@ public sealed class ChapterStatEditTests
         editor.SetLineTransition(
             node.Id,
             lineId,
-            new LineConditionTransition(ConditionTransitionKind.BeginIf, supplied.Id));
+            new LineConditionTransition(ConditionTransitionKind.BeginIf, "신뢰높음"));
 
         ChapterConditionRemoveOutcome outcome = editor.RemoveChapterCondition("ch01", "신뢰높음");
 
@@ -241,17 +236,11 @@ public sealed class ChapterStatEditTests
         return editor;
     }
 
-    /// <summary>위에 더해, 판과 공급된 조건까지 선 상태.</summary>
+    /// <summary>위에 더해, 판까지 선 상태.</summary>
     private static ProjectEditor WorldWithBoard()
     {
         ProjectEditor editor = World();
-        string fileId = editor.EnsureChapterBoard("ch01");
-
-        ChapterBoardSupply.SupplyChapterConditionsToBoard(
-            editor,
-            fileId,
-            editor.FindChapter("ch01")!.ToGraphModel("ch01"));
-
+        editor.EnsureChapterBoard("ch01");
         return editor;
     }
 }

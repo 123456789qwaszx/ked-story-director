@@ -441,8 +441,7 @@ public sealed partial class ProjectEditor
         return new BranchMarkerRemoval(kept);
     }
 
-    /// <summary>판의 챕터 조건 공급 노드를 세운다 — 공급(<see cref="Chapters.ChapterBoardSupply"/>)만 부른다(설정 노드는 그것뿐이다 · old-shapes O6).</summary>
-    internal SetNode AddSetNode(string fileId, string name) => AddNode(fileId, new SetNode(name: name));
+    // ⛔ `AddSetNode`(판의 챕터 조건 공급 노드)는 2026-11-25에 공급 노드와 함께 걷혔다(condition-supply C1).
 
     public void RemoveNode(string nodeId)
     {
@@ -493,7 +492,7 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 노드 이름을 바꾼다 — 분기 카드(이름 = 분기 카드 ID · Yarn 노드 이름)와 설정 노드. 에피소드 카드의 이름은 늘 EpisodeId라 여기서 바꾸지 않는다
+    /// 노드 이름을 바꾼다 — 분기 카드(이름 = 분기 카드 ID · Yarn 노드 이름). 에피소드 카드의 이름은 늘 EpisodeId라 여기서 바꾸지 않는다
     /// (<see cref="RenameEpisode"/>가 함께 옮긴다 · old-shapes O5).
     /// </summary>
     public void RenameNode(string nodeId, string name)
@@ -794,7 +793,7 @@ public sealed partial class ProjectEditor
 
         if (node is not DialogueNode)
         {
-            // 실행 출구는 DialogueNode만 가진다. SetNode는 공급자라 실행 흐름을 정하지 않는다.
+            // 실행 출구는 DialogueNode만 가진다.
             return;
         }
 
@@ -1004,39 +1003,8 @@ public sealed partial class ProjectEditor
         });
     }
 
-    // ── 조건 ────────────────────────────────────────────────────────────────
-    // 공급 노드의 조건 사본 — 공급(<see cref="Chapters.ChapterBoardSupply"/>)만 부른다. 조건의 주인은 챕터다.
-
-    internal ConditionDefinition AddCondition(string setNodeId, string name, string expression)
-    {
-        var setNode = Project.FindNode(setNodeId) as SetNode
-            ?? throw new InvalidOperationException(string.Format(Msg.Edit_IsnTSetNode, setNodeId));
-
-        var condition = new ConditionDefinition { Name = name, Expression = expression };
-        Mutate(() => setNode.Conditions.Add(condition));
-        return condition;
-    }
-
-    internal void UpdateCondition(string conditionId, string name, string expression)
-    {
-        ConditionDefinition? condition = Project.FindCondition(conditionId);
-
-        if (condition is null ||
-            (string.Equals(condition.Name, name, StringComparison.Ordinal) &&
-             string.Equals(condition.Expression, expression, StringComparison.Ordinal)))
-        {
-            return;
-        }
-
-        // 조건 행의 개수나 순서는 그대로다. 현재 SetNode 입력 컨트롤을 다시 만들면
-        // LostFocus로 커밋하는 순간 다음 클릭 대상이 사라진다. 대신 조건 이름을 사용하는
-        // 그래프 라벨과 Dialogue 드롭다운만 새 값을 읽도록 별도 변경 종류를 알린다.
-        Mutate(ProjectChangeKind.ConditionDefinition, () =>
-        {
-            condition.Name = name;
-            condition.Expression = expression;
-        });
-    }
+    // ⛔ `AddCondition` · `UpdateCondition`(공급 노드의 조건 사본)은 2026-11-25에 공급 노드와 함께 걷혔다(condition-supply C1). 조건은 챕터의 것
+    //    하나뿐이다 — `AddChapterCondition` · `UpdateChapterCondition` · `RenameChapterCondition`.
 
     /// <summary>
     /// 그 챕터의 <b>판</b>을 보장한다 — 없으면 만들어 돌려준다 (챕터 = 판 1:1, G-1 v2).
@@ -1054,13 +1022,6 @@ public sealed partial class ProjectEditor
         RequireChapter(chapterId);
         StoryFile? standing = Chapters.EpisodeNaming.BoardOf(Project, chapterId);
         StoryFile board = standing ?? AddChapterBoardFile(chapterId);
-
-        // 판이 <b>막 섰으면</b> 챕터 조건이 함께 공급된다 — 조건을 먼저 적고 에피소드를
-        // 나중에 만든 챕터는 여기서 받지 않으면 대사 노드의 조건 목록이 비어 있게 된다.
-        if (standing is null)
-        {
-            SupplyChapterConditions(chapterId);
-        }
 
         return board.Id;
     }
@@ -1156,10 +1117,9 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 여러 명령을 <b>되돌리기 한 칸 · 알림 한 번</b>으로 묶는다.
     ///
-    /// <b>왜 필요한가</b> — 챕터 조건을 판에 공급하는 일은 <b>조건을 고치는 그 명령</b> 안에서
-    /// 일어난다. 조건 하나를 고쳤는데 되돌리기가 두 번이어야 하면 사람은 첫 번째에서
-    /// "안 돌아갔다"고 본다. 공급은 남의 명령(<see cref="AddSetNode"/>·<see cref="AddCondition"/>)을
-    /// 부르므로, 짓기와 붙이기를 가르는 방식(<c>NewDialogueNodeCore</c>)으로는 감당이 안 된다.
+    /// <b>왜 필요한가</b> — 한 손짓이 여러 명령을 부를 때(예: 챕터 개명이 판 이름과 자동 모양 그대로인 에피소드ID를 함께 고친다 · <see cref="Chapters.ChapterRenamer"/>) 되돌리기가 여러 번이어야
+    /// 하면 사람은 첫 번째에서 "안 돌아갔다"고 본다. 남의 명령을 부르므로, 짓기와 붙이기를 가르는 방식(<c>NewDialogueNodeCore</c>)으로는 감당이
+    /// 안 된다.
     ///
     /// 안에서 예외가 나면 <b>묶음 전 상태로 되돌리고</b> 다시 던진다 — 반쯤 된 묶음이 남으면
     /// 되돌리기 한 칸이 무엇을 되돌리는지 아무도 모른다.
@@ -1170,8 +1130,7 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 묶음 — 안에서 무엇이 바뀌었든 <paramref name="kind"/>로 알린다(null이면 안의 알림들로 정한다 · 섞이면 구조). 묶음을 부르는 명령이 그 결과를
-    /// 알 때만 쓴다 — 예컨대 챕터 조건은 판에 서지 않는 공급 노드를 짓고 고치지만 판에는 조건만 바뀐 것이다(<see cref="ProjectChangeKind.ChapterCondition"/>).
-    /// 바깥 묶음 안에서 불리면 바깥 묶음이 정한다.
+    /// 알 때만 종류를 준다. 바깥 묶음 안에서 불리면 바깥 묶음이 정한다.
     /// </summary>
     private void Batch(ProjectChangeKind? kind, Action change)
     {

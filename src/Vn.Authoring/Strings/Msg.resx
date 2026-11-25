@@ -260,10 +260,6 @@
     <value>StoryFile 경로 '{0}'가 중복됩니다.</value>
     <comment>JsonSupport.cs</comment>
   </data>
-  <data name="File_BoardHasSetNodeThat" xml:space="preserve">
-    <value>판 '{0}'에 챕터 조건 공급 노드가 아닌 설정 노드가 있거나 공급 노드가 둘입니다.</value>
-    <comment>JsonSupport.cs</comment>
-  </data>
   <data name="File_NodeIdIsDuplicatedAcross" xml:space="preserve">
     <value>노드 Id '{0}'가 프로젝트 전체에서 중복됩니다.</value>
     <comment>JsonSupport.cs</comment>
@@ -370,22 +366,6 @@
   </data>
   <data name="File_OpenDetoursPositionsOfAreOut" xml:space="preserve">
     <value>{0}의 openDetours 자리가 어긋났습니다(분기점 {1}개 안에서 오름차순이어야 합니다).</value>
-    <comment>StoryNodeJson.cs</comment>
-  </data>
-  <data name="File_ConditionsOfSetNode" xml:space="preserve">
-    <value>설정 노드 '{0}'의 conditions</value>
-    <comment>StoryNodeJson.cs</comment>
-  </data>
-  <data name="File_ConditionIdOfSetNode" xml:space="preserve">
-    <value>설정 노드 '{0}'의 조건 id</value>
-    <comment>StoryNodeJson.cs</comment>
-  </data>
-  <data name="File_ConditionNameOfSetNode" xml:space="preserve">
-    <value>설정 노드 '{0}'의 조건 name</value>
-    <comment>StoryNodeJson.cs</comment>
-  </data>
-  <data name="File_ConditionExpressionOfSetNode" xml:space="preserve">
-    <value>설정 노드 '{0}'의 조건 expression</value>
     <comment>StoryNodeJson.cs</comment>
   </data>
   <data name="File_DialogueNodeHasNoScript" xml:space="preserve">
@@ -878,10 +858,6 @@
   </data>
   <data name="Edit_ScriptIsEmptySoThere" xml:space="preserve">
     <value>대본이 비어 있어 조건을 걸 자리가 없습니다 — 첫 줄을 먼저 쓰세요.</value>
-    <comment>ProjectEditor.cs</comment>
-  </data>
-  <data name="Edit_IsnTSetNode" xml:space="preserve">
-    <value>'{0}'는 설정 노드가 아닙니다.</value>
     <comment>ProjectEditor.cs</comment>
   </data>
   <data name="Edit_CanTFindStoryFile" xml:space="preserve">
@@ -1531,10 +1507,6 @@
   </data>
   <data name="Edit_ThereAreLinesWrittenOutside" xml:space="preserve">
     <value>조건 줄(&lt;&lt;if&gt;&gt; · &lt;&lt;endif&gt;&gt;) 바깥에 쓴 줄이 있거나 조건이 여럿이라 여기서 고칠 수 없습니다. [대본] 탭에서 이 카드의 글 칸을 고치면 바깥 줄이 조건 안쪽으로 모여 다시 고칠 수 있습니다.</value>
-    <comment>BranchEntryCondition.cs</comment>
-  </data>
-  <data name="Edit_ConditionIsnTSuppliedTo" xml:space="preserve">
-    <value>조건 '{0}'이 이 판에 공급되지 않았습니다 — 챕터의 `조건` 시트에 있는지, 식이 툴이 옮길 수 있는 모양인지 확인하세요.</value>
     <comment>BranchEntryCondition.cs</comment>
   </data>
   <data name="Diag_LineIdAppearsTwiceInResult" xml:space="preserve">
