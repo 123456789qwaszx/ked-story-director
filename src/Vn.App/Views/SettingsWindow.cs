@@ -37,7 +37,7 @@ internal sealed class SettingsWindow : Window
         _session = session;
         _destinations = session.Destinations;
 
-        Title = "설정";
+        Title = Ui.Main_Settings;
         Width = 560;
 
         // 크기 — 끌어서 바꾼다(2026-11-19 소유자 · usability UX1 · ⛔ 그 전에는 고정이었다). 처음 세로는 내용에 맞추되 화면을 넘지 않는다
@@ -57,7 +57,7 @@ internal sealed class SettingsWindow : Window
 
         DefaultButton = new Button
         {
-            Content = $"기본값으로 ({BoardSize.Default.Width:N0} × {BoardSize.Default.Height:N0})",
+            Content = string.Format(Ui.Settings_ResetToDefault, BoardSize.Default.Width, BoardSize.Default.Height),
             FontSize = 11,
             Margin = new Thickness(0, 2, 0, 0)
         };
@@ -71,41 +71,39 @@ internal sealed class SettingsWindow : Window
         // 보이기」가 처음 켜져 있었다). 앱 설정은 그대로 ShowMinimap이고 체크가 거꾸로 비춘다.
         HideMinimapCheck = new CheckBox
         {
-            Content = "미니맵 감추기",
+            Content = Ui.Settings_HideMinimap,
             FontSize = 12,
             IsChecked = !session.ShowMinimap
         };
-        ToolTip.SetTip(HideMinimapCheck, "[대본] 판 오른쪽 아래의 전체 지도와 배율 단추를 감춥니다. 지금 배율(예: 28%)만 연한 글자로 남고, 그 자리를 눌러도 밑의 글 칸이 눌립니다.");
+        ToolTip.SetTip(HideMinimapCheck, Ui.Settings_HidesOverviewMapAndZoom);
 
         // 설명 간소화 — 오른쪽 기둥의 안내글을 걷고 「없습니다 — …」 줄은 상태만 남긴다(2026-11-18 소유자 · brief-guides G1). 누르는 즉시.
         BriefGuidesCheck = new CheckBox
         {
-            Content = "설명 간소화",
+            Content = Ui.Settings_FewerHints,
             FontSize = 12,
             IsChecked = GuideMode.Brief
         };
         ToolTip.SetTip(BriefGuidesCheck,
-            "켜면 인스펙터 · 화자 · 조건 및 스탯의 쓰는 법 안내글을 걷고, 「스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다」 같은 줄은 앞부분만 남깁니다. " +
-            "칸 이름 · 제목 · 경고는 그대로입니다.");
-        BriefGuidesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "설명 간소화", () =>
+            Ui.Settings_WhenOnHowToHints);
+        BriefGuidesCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_FewerHints, () =>
             GuideMode.Set(BriefGuidesCheck.IsChecked == true));
 
         // 누르는 즉시 판에 반영한다(J3 · ⛔ 그 전에는 [확인]을 기다렸다).
-        HideMinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "미니맵", () =>
+        HideMinimapCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_Minimap, () =>
             _session.SetShowMinimap(HideMinimapCheck.IsChecked != true));
 
         // 휠로 판 옮기기 — 두 판([구성] · [대본])의 휠이 하는 일을 가른다(2026-11-19 소유자 「트랙패드 수정」 · writer-app WA3). 맥만 처음부터 켜져 있다.
         // 누르는 즉시 — 다음 휠부터 따른다.
         WheelPansCheck = new CheckBox
         {
-            Content = "휠로 판 옮기기",
+            Content = Ui.Settings_WheelPansBoard,
             FontSize = 12,
             IsChecked = BoardWheel.Pans
         };
         ToolTip.SetTip(WheelPansCheck,
-            "켜면 판 위의 휠(터치패드는 두 손가락 쓸기)이 판을 옮기고, 확대 · 축소는 Ctrl(맥은 ⌘)을 누른 채 휠입니다 — 맥 트랙패드는 두 손가락으로 집어도 됩니다. " +
-            "끄면 휠이 확대 · 축소입니다. 가운데 단추 끌기는 어느 쪽이든 판을 옮깁니다. 터치패드를 쓰면 켜 두세요.");
-        WheelPansCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "휠로 판 옮기기", () =>
+            Ui.Settings_WhenOnWheelOverBoard);
+        WheelPansCheck.IsCheckedChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_WheelPansBoard, () =>
             BoardWheel.Set(WheelPansCheck.IsChecked == true));
 
         // 새로 잇는 선 — [대본] 판에 선택지 길 · 분기 선이 생길 때의 꼴(2026-11-23 소유자 · BoardLines). 누르는 즉시 — 다음에 잇는 선부터 따른다.
@@ -116,9 +114,8 @@ internal sealed class SettingsWindow : Window
             SelectedIndex = Array.FindIndex(LineShapeNames, item => item.Kind == BoardLines.Kind)
         };
         ToolTip.SetTip(NewLineShapeCombo,
-            "[대본] 판에 새로 잇는 선(선택지 길 · 분기 선)의 꼴입니다 — 이미 있는 선은 그대로입니다(선을 고르면 선 위의 차림으로 바꿉니다). " +
-            "선의 「↺ 자동」도 이 꼴의 처음 모양으로 되돌립니다.");
-        NewLineShapeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, "새로 잇는 선", () =>
+            Ui.Settings_ShapeOfNewLinesDrawn);
+        NewLineShapeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_NewLines, () =>
         {
             if (NewLineShapeCombo.SelectedIndex is >= 0 and var index && index < LineShapeNames.Length)
             {
@@ -136,7 +133,7 @@ internal sealed class SettingsWindow : Window
         };
         ToolTip.SetTip(LanguageCombo, Ui.Settings_LanguageTip);
         LanguageNote = new TextBlock { FontSize = 11, Opacity = 0.75, TextWrapping = TextWrapping.Wrap, IsVisible = false };
-        LanguageCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, "언어", () =>
+        LanguageCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_Language, () =>
         {
             string? chosen = LanguageCombo.SelectedIndex switch
             {
@@ -177,25 +174,24 @@ internal sealed class SettingsWindow : Window
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         ToolTip.SetTip(ScriptLineSpacingBox,
-            "새로 만드는 카드의 줄 간격입니다 — 글자 크기에 대한 %(160이면 워드 프로세서의 「줄 간격 160%」). 이미 있는 카드는 그대로입니다(카드의 줄 간격은 " +
-            "[대본] 위쪽 서식 도구로 바꿉니다). 고른 글꼴 · 크기에서 가장 좁은 값(한글 한 줄 높이)에서 멈춥니다 — 더 좁히면 숫자만 내려가고 화면은 그대로라서.");
-        ToolTip.SetTip(ScriptFontCombo, "새로 만드는 카드의 글꼴입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 글꼴은 [대본] 위쪽 서식 도구로 바꿉니다).");
-        ToolTip.SetTip(ScriptFontSizeBox, "새로 만드는 카드의 글자 크기입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 크기는 [대본] 위쪽 서식 도구로 바꿉니다).");
+            Ui.Settings_LineSpacingForNewCards);
+        ToolTip.SetTip(ScriptFontCombo, Ui.Settings_FontForNewCardsExisting);
+        ToolTip.SetTip(ScriptFontSizeBox, Ui.Settings_FontSizeForNewCards);
         ScriptPreview = new TextBox
         {
-            Text = "윌로: 오늘따라 바람이 차네.\n라루: 그러게. 겉옷 챙겨 올 걸 그랬어.\n두 사람은 말없이 언덕을 오른다.",
+            Text = Ui.Settings_WillowWindSColdToday,
             IsReadOnly = true,
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
             MaxHeight = 170,   // 세 줄이 다 보이게 글에 맞춰 자라되, 아주 큰 글자에서는 칸 안에서 흐른다(미리 보기가 묶음을 다 먹지 않게)
             Padding = new Thickness(4, 3)
         };
-        ToolTip.SetTip(ScriptPreview, "미리 보기 — 새로 만드는 카드의 글 칸이 이렇게 보입니다.");
+        ToolTip.SetTip(ScriptPreview, Ui.Settings_PreviewThisIsHowWriting);
         // 굵게 · 글자색 — 새로 만드는 카드의 글(2026-11-23 소유자 — 「설정 창에서 원한다면, Bold로써 굵게 하는 걸 기본값으로 쓸 수도 있게 해줘. 글자 색깔도
         // 같이 조정할 수 있으면 좋겠고」 · writer-formatting WF-D16). 글꼴 · 크기처럼 이미 있는 카드는 그대로다.
-        ScriptBoldCheck = new CheckBox { Content = "굵게", FontSize = 12 };
-        ToolTip.SetTip(ScriptBoldCheck, "새로 만드는 카드의 글을 모두 굵게 씁니다 — 이미 있는 카드는 그대로입니다.");
-        ScriptColorChooser = new WriterColorChooser(fill: false, "글자색을 걷습니다 — 테마의 글자색으로 씁니다");
+        ScriptBoldCheck = new CheckBox { Content = Ui.Settings_Bold, FontSize = 12 };
+        ToolTip.SetTip(ScriptBoldCheck, Ui.Settings_WritesAllTextOfNew);
+        ScriptColorChooser = new WriterColorChooser(fill: false, Ui.Settings_ClearTextColorUseTheme);
         var colorFlyout = new Flyout { Content = ScriptColorChooser.Content, Placement = PlacementMode.BottomEdgeAlignedLeft };
         ScriptColorButton = new Button
         {
@@ -203,12 +199,12 @@ internal sealed class SettingsWindow : Window
             Padding = new Thickness(6, 2),
             Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { _scriptColorSwatch, _scriptColorText } }
         };
-        ToolTip.SetTip(ScriptColorButton, "새로 만드는 카드의 글자색입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 색은 [대본] 위쪽 서식 도구로 바꿉니다).");
+        ToolTip.SetTip(ScriptColorButton, Ui.Settings_TextColorForNewCards);
         colorFlyout.Opening += (_, _) => ScriptColorChooser.Prepare(GraphEditorView.ProjectColors(_session.Project, fill: false), ScriptFont.Color);
         ScriptColorChooser.Picked += picked =>
         {
             colorFlyout.Hide();
-            UiGuard.Run(_session, "대본 글 칸", () =>
+            UiGuard.Run(_session, Ui.Settings_ScriptWritingBox, () =>
             {
                 ScriptFont.SetLook(ScriptFont.Bold, picked);
                 FillScriptFont();
@@ -218,7 +214,7 @@ internal sealed class SettingsWindow : Window
         {
             if (!_fillingScript)
             {
-                UiGuard.Run(_session, "대본 글 칸", () =>
+                UiGuard.Run(_session, Ui.Settings_ScriptWritingBox, () =>
                 {
                     ScriptFont.SetLook(ScriptBoldCheck.IsChecked == true, ScriptFont.Color);
                     FillScriptFont();
@@ -228,7 +224,7 @@ internal sealed class SettingsWindow : Window
 
         ScriptFontDefaultButton = new Button
         {
-            Content = $"기본값으로 (기본 글꼴 · {ScriptFont.DefaultSize:0} · {ScriptFont.DefaultLineSpacing}%)",
+            Content = string.Format(Ui.Settings_ResetToDefaultDefaultFont, ScriptFont.DefaultSize, ScriptFont.DefaultLineSpacing),
             FontSize = 11
         };
         FillScriptFont();
@@ -238,14 +234,14 @@ internal sealed class SettingsWindow : Window
         ScriptFontCombo.SelectionChanged += (_, _) => OnScriptFontEdited();
         ScriptFontSizeBox.ValueChanged += (_, _) => OnScriptFontEdited();
         ScriptLineSpacingBox.ValueChanged += (_, _) => OnScriptFontEdited();
-        ScriptFontDefaultButton.Click += (_, _) => UiGuard.Run(_session, "대본 글 칸", () =>
+        ScriptFontDefaultButton.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_ScriptWritingBox, () =>
         {
             ScriptFont.Reset();
             FillScriptFont();
         });
 
-        ConfirmButton = new Button { Content = "확인", IsDefault = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
-        CancelButton = new Button { Content = "취소", IsCancel = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
+        ConfirmButton = new Button { Content = Ui.Settings_OK, IsDefault = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
+        CancelButton = new Button { Content = Ui.Settings_Cancel, IsCancel = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
         ConfirmButton.Click += (_, _) => Confirm();
         CancelButton.Click += (_, _) => Close(false);
 
@@ -267,7 +263,7 @@ internal sealed class SettingsWindow : Window
                     new TextBlock
                     {
                         // 무엇이 「복제」인지만 말한다 — 저장 위치(runtime.target.json)는 걷었다(Z2).
-                        Text = "작업 폴더(exported/)에는 늘 쓰고, 고른 폴더에는 저장(Ctrl+S)할 때 복제합니다.",
+                        Text = Ui.Settings_AlwaysWrittenToWorkFolder,
                         FontSize = 11,
                         Opacity = 0.6,
                         TextWrapping = TextWrapping.Wrap
@@ -281,7 +277,7 @@ internal sealed class SettingsWindow : Window
         // 스크롤했다(side-fold K2) — 창이 스크롤하게 되면서 스크롤 안의 스크롤이 되어 걷었다).
         ShortcutGroup = new Expander
         {
-            Header = new TextBlock { Text = "단축키", FontWeight = FontWeight.SemiBold, FontSize = 14 },
+            Header = new TextBlock { Text = Ui.Settings_Shortcuts, FontWeight = FontWeight.SemiBold, FontSize = 14 },
             IsExpanded = false,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Content = ShortcutSection()
@@ -299,11 +295,11 @@ internal sealed class SettingsWindow : Window
                 Spacing = 12,
                 Children =
                 {
-                    Group("이 프로젝트", BoardSection()),
+                    Group(Ui.Settings_ThisProject, BoardSection()),
                     ExportGroup,   // 접는 묶음은 제 테두리가 있다
                     ShortcutGroup,
-                    Group("대본 글 칸", ScriptFontSection()),
-                    Group("기타", new StackPanel
+                    Group(Ui.Settings_ScriptWritingBox, ScriptFontSection()),
+                    Group(Ui.Settings_Other, new StackPanel
                     {
                         Spacing = 4,
                         Children =
@@ -316,7 +312,7 @@ internal sealed class SettingsWindow : Window
                                 Orientation = Orientation.Horizontal,
                                 Spacing = 8,
                                 Margin = new Thickness(0, 4, 0, 0),
-                                Children = { new TextBlock { Text = "새로 잇는 선", FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
+                                Children = { new TextBlock { Text = Ui.Settings_NewLines, FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
                             },
                             new StackPanel
                             {
@@ -376,7 +372,7 @@ internal sealed class SettingsWindow : Window
     internal Expander ExportGroup { get; }
 
     /// <summary>「내보내기」 머리의 글 — 무엇을 고르는 묶음인지 말한다(Z2).</summary>
-    internal const string ExportTitle = "내보내기 (복제할 폴더 선택)";
+    internal static string ExportTitle => Ui.Settings_ExportTitle;
 
     /// <summary>「내보내기」 머리 — <see cref="ExportTitle"/>.</summary>
     internal TextBlock ExportHeader { get; } = new() { Text = ExportTitle, FontWeight = FontWeight.SemiBold, FontSize = 14 };
@@ -419,7 +415,7 @@ internal sealed class SettingsWindow : Window
     private readonly TextBlock _scriptColorText = new() { FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
 
     /// <summary>글꼴 칸의 맨 위 — 테마의 글꼴을 그대로 쓴다.</summary>
-    internal const string DefaultFontName = "기본";
+    internal static string DefaultFontName => Ui.Settings_DefaultFont;
 
     /// <summary>「기타」의 「설명 간소화」 — 누르는 즉시 반영한다(<see cref="GuideMode"/>).</summary>
     internal CheckBox BriefGuidesCheck { get; }
@@ -457,9 +453,9 @@ internal sealed class SettingsWindow : Window
     /// <summary>「새로 잇는 선」의 차림 — 선 위의 꼴 단추와 같은 이름 · 차례.</summary>
     internal static readonly (string Name, Vn.Authoring.Model.EdgeShapeKind Kind)[] LineShapeNames =
     [
-        ("직각", Vn.Authoring.Model.EdgeShapeKind.Elbow),
-        ("곡선", Vn.Authoring.Model.EdgeShapeKind.Curve),
-        ("직선", Vn.Authoring.Model.EdgeShapeKind.Straight)
+        (Ui.Settings_Elbow, Vn.Authoring.Model.EdgeShapeKind.Elbow),
+        (Ui.Settings_Curve, Vn.Authoring.Model.EdgeShapeKind.Curve),
+        (Ui.Settings_Straight, Vn.Authoring.Model.EdgeShapeKind.Straight)
     ];
 
     /// <summary>묶음들 — [취소] · [확인]을 뺀 창의 몸통이 이 안에서 스크롤한다(UX1).</summary>
@@ -497,7 +493,7 @@ internal sealed class SettingsWindow : Window
         catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
         {
             RefreshDestinations();
-            return ShowRefusal($"경로를 읽지 못했습니다 — {typed}");
+            return ShowRefusal(string.Format(Ui.Settings_CouldnTReadPath, typed));
         }
 
         if (string.Equals(wanted, current, StringComparison.OrdinalIgnoreCase))
@@ -527,15 +523,14 @@ internal sealed class SettingsWindow : Window
     {
         if (_session.ProjectPath is not { } projectPath)
         {
-            return "프로젝트를 먼저 저장해야 복제할 폴더를 정할 수 있습니다.";
+            return Ui.Settings_SaveProjectFirstToChoose;
         }
 
         ExportDestinations wanted = _destinations.With(
             format, absoluteFolder is null ? null : ExportDestinations.Relativize(projectPath, absoluteFolder));
 
         string? refusal = SameFolder(wanted, projectPath)
-            ? "대사 Yarn은 게임 폴더(진행 JSON을 복제할 폴더)와 같은 곳으로 복제하지 않습니다 — 게임의 Yarn 프로젝트가 compositor의 연출 든 Yarn과 " +
-              "같은 노드 이름을 둘 읽어 컴파일이 깨집니다."
+            ? Ui.Settings_YarnDialogueIsnTCopied
             : null;
 
         if (refusal is null)
@@ -569,7 +564,7 @@ internal sealed class SettingsWindow : Window
         }
 
         (double width, double height) = WantedBoard();
-        UiGuard.Run(_session, "설정", () =>
+        UiGuard.Run(_session, Ui.Main_Settings, () =>
         {
             _session.Editor.SetBoardSize(width, height);
 
@@ -578,8 +573,8 @@ internal sealed class SettingsWindow : Window
                 ExportDestinations.SaveBeside(projectPath, _destinations);
                 _session.ReloadDestinations();
                 _session.SetStatus(_destinations.IsEmpty
-                    ? "복제할 폴더를 모두 껐습니다 — exported/에만 냅니다."
-                    : "복제할 폴더를 바꿨습니다 — 다음 저장(Ctrl+S)부터 거기로 복제합니다.");
+                    ? Ui.Settings_TurnedOffAllMirrorFolders
+                    : Ui.Settings_ChangedMirrorFoldersCopiesGo);
             }
         });
         Close(true);
@@ -615,8 +610,8 @@ internal sealed class SettingsWindow : Window
         {
             string label = ExportDestinations.LabelOf(format);
             ExportNote.Text = _session.ProjectPath is null
-                ? "프로젝트를 먼저 저장해야 작업 폴더가 정해집니다."
-                : $"아직 작업 폴더에 나간 {label}{Josa.이가(label)} 없습니다 — 검증을 통과한 챕터가 생기면 저절로 나갑니다.";
+                ? Ui.Main_SaveProjectFirstToSet
+                : string.Format(Ui.Settings_NoHasBeenWrittenTo, label, Josa.이가(label));
             ExportNote.IsVisible = true;
             return;
         }
@@ -629,11 +624,9 @@ internal sealed class SettingsWindow : Window
     private static string WhatIs(ExportFormat format) => format switch
     {
         ExportFormat.Progression =>
-            $"챕터마다 하나 — 에피소드 · 선택지 · 조건이 든 게임 진행 파일({{챕터}}{ChapterExportService.ExportFileSuffix}). 게임(런타임)이 싣습니다. " +
-            "복제할 폴더는 게임의 ChapterProgression 폴더입니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.",
+            string.Format(Ui.Settings_OnePerChapterGameProgression, ChapterExportService.ExportFileSuffix),
         _ =>
-            $"장면마다 하나 — 연출 없이 대사 · 조건 · 분기만 든 Yarn({ChapterYarnExporter.FolderName}/{{챕터}}_{{장면}}.yarn). 대사만으로 굴러가는지 볼 때 " +
-            $"씁니다. 누르면 작업 폴더의 {ChapterYarnExporter.FolderName}/ 폴더를 엽니다."
+            string.Format(Ui.Settings_OnePerSceneYarnWith, ChapterYarnExporter.FolderName)
     };
 
     private Control ExportSection()
@@ -644,7 +637,7 @@ internal sealed class SettingsWindow : Window
         {
             panel.Children.Add(new TextBlock
             {
-                Text = "프로젝트를 먼저 저장해야 복제할 폴더를 정할 수 있습니다(경로는 프로젝트 폴더 기준으로 적힙니다).",
+                Text = Ui.Settings_SaveProjectFirstToChoose2,
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap
             });
@@ -675,7 +668,7 @@ internal sealed class SettingsWindow : Window
                 Tag = $"export-show:{format}"
             };
             ToolTip.SetTip(label, WhatIs(format));
-            label.Click += (_, _) => UiGuard.Run(_session, "작업 폴더에서 보기", () => ShowInWorkFolder(format));
+            label.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_ShowInWorkFolder, () => ShowInWorkFolder(format));
             _formatLinks[format] = label;
 
             // 보낼 곳은 탐색기의 주소 칸처럼 — 경로가 보이고, 적거나 붙여 넣고, [찾아보기…]로 고른다(2026-11-18 소유자 — 「(보내지 않음)으로는 뭐가뭔지
@@ -686,8 +679,8 @@ internal sealed class SettingsWindow : Window
                 FontSize = 11,
                 VerticalAlignment = VerticalAlignment.Center,
                 PlaceholderText = format == ExportFormat.Progression
-                    ? "복제하지 않음 — 게임의 ChapterProgression 폴더를 찾아보거나 경로를 붙여 넣으세요"
-                    : "복제하지 않음 — 복제할 폴더를 찾아보거나 경로를 붙여 넣으세요",
+                    ? Ui.Settings_NotCopiedBrowseToGame
+                    : Ui.Settings_NotCopiedBrowseToMirror,
                 Tag = $"export-path:{format}"
             };
             box.Classes.Add("clearButton");
@@ -701,10 +694,10 @@ internal sealed class SettingsWindow : Window
                 }
             };
 
-            var browse = new Button { Content = "찾아보기…", FontSize = 11, Tag = $"export-browse:{format}" };
+            var browse = new Button { Content = Ui.Settings_Browse, FontSize = 11, Tag = $"export-browse:{format}" };
             browse.Click += async (_, _) =>
             {
-                if (await PickFolderAsync($"복제할 폴더 — {ExportDestinations.LabelOf(format)}", format) is { } folder)
+                if (await PickFolderAsync(string.Format(Ui.Settings_MirrorFolder, ExportDestinations.LabelOf(format)), format) is { } folder)
                 {
                     SetDestination(format, folder);
                 }
@@ -733,8 +726,7 @@ internal sealed class SettingsWindow : Window
         panel.Children.Add(grid);
         panel.Children.Add(new TextBlock
         {
-            Text = "진행 JSON을 복제할 폴더는 런타임의 ChapterProgression 폴더(게임 폴더)이고 compositor도 이 칸을 읽어 Yarn을 씁니다. 대사 Yarn은 게임 " +
-                   "폴더와 같은 곳으로 복제하지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다). 없는 폴더는 만들지 않습니다.",
+            Text = Ui.Settings_MirrorFolderForProgressionJSON,
             FontSize = 11,
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
@@ -755,7 +747,7 @@ internal sealed class SettingsWindow : Window
 
             box.Text = full ?? string.Empty;
             ToolTip.SetTip(box, full);   // 긴 경로는 칸에서 잘린다 — 다 보이게
-            _missingNotes[format].Text = missing ? "⚠ 없는 폴더입니다 — 만들지 않습니다. 폴더를 만든 뒤 다시 찾아보세요." : string.Empty;
+            _missingNotes[format].Text = missing ? Ui.Settings_ThisFolderDoesnTExist : string.Empty;
             _missingNotes[format].IsVisible = missing;
         }
     }
@@ -773,7 +765,7 @@ internal sealed class SettingsWindow : Window
     {
         if (!StorageProvider.CanPickFolder)
         {
-            ExportNote.Text = "이 환경에서는 폴더 선택 창을 열 수 없습니다.";
+            ExportNote.Text = Ui.Main_FolderPickerCanTBe;
             ExportNote.IsVisible = true;
             return null;
         }
@@ -810,19 +802,18 @@ internal sealed class SettingsWindow : Window
             RowSpacing = 6
         };
 
-        AddRow(grid, 0, "가로", BoardWidthBox);
-        AddRow(grid, 1, "세로", BoardHeightBox);
+        AddRow(grid, 0, Ui.Settings_Width, BoardWidthBox);
+        AddRow(grid, 1, Ui.Settings_Height, BoardHeightBox);
 
         return new StackPanel
         {
             Spacing = 6,
             Children =
             {
-                new TextBlock { Text = "[대본] 판 크기", FontWeight = FontWeight.SemiBold, FontSize = 12 },
+                new TextBlock { Text = Ui.Settings_ScriptBoardSize, FontWeight = FontWeight.SemiBold, FontSize = 12 },
                 new TextBlock
                 {
-                    Text = $"모든 챕터의 카드가 한 판에 섭니다. 대본이 많아지면 늘리세요. 한 변 {BoardSize.Minimum:N0} ~ {BoardSize.Maximum:N0}, " +
-                           "왼쪽 위에서 오른쪽 · 아래로 늘어납니다. 줄여서 판 밖으로 나가는 카드가 있으면 카드 전체의 자리를 같은 비율로 줄여 판 안에 들입니다.",
+                    Text = string.Format(Ui.Settings_AllChaptersCardsSitOn, BoardSize.Minimum, BoardSize.Maximum),
                     FontSize = 11,
                     Opacity = 0.7,
                     TextWrapping = TextWrapping.Wrap
@@ -854,7 +845,7 @@ internal sealed class SettingsWindow : Window
 
         if (plan.MovedCards > 0)
         {
-            notes.Add($"⚠ 카드 {plan.MovedCards}장이 판 밖으로 나갑니다 — 카드 전체의 자리를 같은 비율로 줄여 안으로 모읍니다. 되돌리기(Ctrl+Z) 한 번이면 돌아옵니다.");
+            notes.Add(string.Format(Ui.Settings_CardsWouldGoOffBoard, plan.MovedCards));
         }
 
         // 적은 값(범위 안으로 들인 것)보다 실제 크기가 크면 비켜 서느라 넓어진 것이다.
@@ -862,7 +853,7 @@ internal sealed class SettingsWindow : Window
 
         if (plan.Size.Width > wanted.Width || plan.Size.Height > wanted.Height)
         {
-            notes.Add($"카드가 비켜 서느라 판이 {plan.Size.Width:N0} × {plan.Size.Height:N0}으로 섭니다.");
+            notes.Add(string.Format(Ui.Settings_BoardWillBeToMake, plan.Size.Width, plan.Size.Height));
         }
 
         BoardNote.Text = string.Join("\n", notes);
@@ -897,11 +888,11 @@ internal sealed class SettingsWindow : Window
             RowSpacing = 6
         };
 
-        AddRow(grid, 0, "글꼴", ScriptFontCombo);
-        AddRow(grid, 1, "글자 크기", ScriptFontSizeBox);
-        AddRow(grid, 2, "줄 간격 (%)", ScriptLineSpacingBox);
-        AddRow(grid, 3, "굵기", ScriptBoldCheck);
-        AddRow(grid, 4, "글자색", ScriptColorButton);
+        AddRow(grid, 0, Ui.Settings_Font, ScriptFontCombo);
+        AddRow(grid, 1, Ui.Settings_FontSize, ScriptFontSizeBox);
+        AddRow(grid, 2, Ui.Settings_LineSpacing, ScriptLineSpacingBox);
+        AddRow(grid, 3, Ui.Settings_Weight, ScriptBoldCheck);
+        AddRow(grid, 4, Ui.Settings_TextColor, ScriptColorButton);
 
         // ⛔ 머리의 설명 한 줄(「[대본] 판의 카드에서 대본을 쓰는 칸의 글자입니다. 고치면 바로 바뀝니다 — …」)은 2026-11-19에 걷었다
         //    (소유자 — 「이 설명 문구는 필요없으니 지워주십시오」 · usability UX2). 묶음 이름과 미리 보기가 말한다.
@@ -932,7 +923,7 @@ internal sealed class SettingsWindow : Window
             ScriptLineSpacingBox.Value = Math.Max(ScriptFont.LineSpacing, narrowest);
             ScriptBoldCheck.IsChecked = ScriptFont.Bold;
             _scriptColorSwatch.Background = ScriptFont.Color is { } color ? WriterPalette.Brush(color) : Brushes.Transparent;
-            _scriptColorText.Text = ScriptFont.Color?.Hex ?? "기본";
+            _scriptColorText.Text = ScriptFont.Color?.Hex ?? Ui.Settings_Default;
             ScriptFont.Apply(ScriptPreview);
         }
         finally
@@ -951,7 +942,7 @@ internal sealed class SettingsWindow : Window
             return;
         }
 
-        UiGuard.Run(_session, "대본 글 칸", () =>
+        UiGuard.Run(_session, Ui.Settings_ScriptWritingBox, () =>
         {
             string family = ScriptFontCombo.SelectedItem as string ?? DefaultFontName;
             ScriptFont.Set(

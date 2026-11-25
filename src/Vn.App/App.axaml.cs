@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Styling;
 using Vn.App.Services;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -85,7 +86,7 @@ public partial class App : Application
 
         return new Window
         {
-            Title = $"{AppIdentity.Name} — 시작하지 못했습니다",
+            Title = string.Format(Ui.Startup_CouldnTStart, AppIdentity.Name),
             Width = 760,
             Height = 480,
             WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -98,13 +99,13 @@ public partial class App : Application
                     new TextBlock
                     {
                         // 작가용 메시지. 개발자용 상세 내용은 아래 상자와 로그 파일에 있다.
-                        Text = StartupLog.WriterMessage($"{AppIdentity.Name}를 시작하는"),
+                        Text = StartupLog.WriterMessage(string.Format(Ui.Startup_Starting, AppIdentity.Name)),
                         TextWrapping = TextWrapping.Wrap,
                         FontWeight = FontWeight.SemiBold
                     },
                     new TextBlock
                     {
-                        Text = "아래 내용을 그대로 개발자에게 전달해 주세요.",
+                        Text = Ui.Startup_PleaseSendTextBelowTo,
                         TextWrapping = TextWrapping.Wrap,
                         Opacity = 0.7
                     },

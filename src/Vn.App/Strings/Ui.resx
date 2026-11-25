@@ -32,4 +32,919 @@
     <value>다시 켜면 {0}로 바뀝니다.</value>
     <comment>언어를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 언어 이름.</comment>
   </data>
+  <data name="Main_SelectNodeToEditIt" xml:space="preserve">
+    <value>노드를 선택하면 여기서 편집합니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ScreenAction" xml:space="preserve">
+    <value>화면 동작</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_SelectChapter" xml:space="preserve">
+    <value>챕터 선택</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ChoiceSlots" xml:space="preserve">
+    <value>선택지 칸</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_CheckChangedFiles" xml:space="preserve">
+    <value>바뀐 파일 확인</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Settings" xml:space="preserve">
+    <value>설정</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_OpenWorkFolder" xml:space="preserve">
+    <value>작업 폴더 열기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Delete" xml:space="preserve">
+    <value>지우기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_FitToScreen" xml:space="preserve">
+    <value>화면 맞추기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Find" xml:space="preserve">
+    <value>찾기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Autosave" xml:space="preserve">
+    <value>자동 저장</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_AutosaveStoppedProjectFileWas" xml:space="preserve">
+    <value>자동 저장을 멈췄습니다 ({0:HH:mm}) — 프로젝트 파일이 다른 곳에서 바뀌었습니다. 위 띠에서 고르세요.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Autosaved" xml:space="preserve">
+    <value>자동 저장했습니다 ({0:HH:mm})</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_CouldnTOpenProjectYou" xml:space="preserve">
+    <value>마지막에 열었던 프로젝트를 열지 못했습니다. '열기…'로 다시 시도해 주세요. ({0})</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_CouldnTCreateChapter" xml:space="preserve">
+    <value>챕터를 만들지 못했습니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_CreatedChapterWithSceneRename" xml:space="preserve">
+    <value>챕터 「{0}」를 장면 「{1}」 · 「{2}」와 함께 만들었습니다 — 이름은 오른쪽 「조건 및 스탯」 탭 맨 위나 하이어아키에서 고칩니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_CouldnTRemoveOldProgression" xml:space="preserve">
+    <value> ⚠ 옛 진행 JSON '{0}'을 걷지 못했습니다 — 다른 프로그램에 잡혀 있는지 확인하세요.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_RemovedOldProgressionJSONSame" xml:space="preserve">
+    <value> 옛 진행 JSON '{0}'은 걷었습니다(복제할 폴더의 같은 파일은 다음 저장 때 걷습니다).</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ChapterWillBeRemovedAlong" xml:space="preserve">
+    <value>챕터 「{0}」와 그 장면 · 에피소드 · [대본] 탭의 카드가 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_DeleteChapter" xml:space="preserve">
+    <value>챕터 지우기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_DeletedChapterAndCardsIn" xml:space="preserve">
+    <value>챕터 「{0}」를 지웠습니다([대본] 탭의 카드 {1}장도 함께). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_FolderForNewProject" xml:space="preserve">
+    <value>새 프로젝트를 깔 폴더</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_NewProject" xml:space="preserve">
+    <value>새 프로젝트</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_CreatedNewProjectPressCreate" xml:space="preserve">
+    <value>새 프로젝트를 만들었습니다 — 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_OpenProjectFolder" xml:space="preserve">
+    <value>프로젝트 폴더 열기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_OpenProject" xml:space="preserve">
+    <value>프로젝트 열기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_FolderPickerCanTBe" xml:space="preserve">
+    <value>이 환경에서는 폴더 선택 창을 열 수 없습니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ThereIsNoProjectFolder" xml:space="preserve">
+    <value>프로젝트 폴더가 없습니다 — File 메뉴의 [새 프로젝트…]로 폴더를 고르세요.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Save" xml:space="preserve">
+    <value>저장</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ProjectFileWasChangedElsewhere" xml:space="preserve">
+    <value>프로젝트 파일이 다른 곳에서 바뀌었습니다 — 이 창에 저장하지 않은 것이 있어 다시 읽지 않았습니다. 위 띠에서 고르세요.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ProjectFileWasChangedElsewhere2" xml:space="preserve">
+    <value>프로젝트 파일이 다른 곳에서 바뀌어 다시 읽었습니다 ({0:HH:mm}) — GitHub Desktop의 받기 등.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Reload" xml:space="preserve">
+    <value>다시 열기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ReloadedProjectFileChangedElsewhere" xml:space="preserve">
+    <value>다른 곳에서 바뀐 프로젝트 파일을 다시 읽었습니다 — 여기서 저장하지 않았던 것은 버렸습니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Overwrite" xml:space="preserve">
+    <value>덮어쓰기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_OverwroteWithThisWindowS" xml:space="preserve">
+    <value>이 창의 것으로 덮어썼습니다 — 다른 곳에서 바뀌었던 내용은 Git의 기록(History)에 남아 있습니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_SaveProjectFirstToSet" xml:space="preserve">
+    <value>프로젝트를 먼저 저장해야 작업 폴더가 정해집니다.</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_ThereIsNoWorkFolder" xml:space="preserve">
+    <value>작업 폴더가 아직 없습니다 — 검증을 통과한 챕터가 생기면 진행 JSON이 저절로 여기 나갑니다: {0}</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Redo" xml:space="preserve">
+    <value>다시 실행</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Undo" xml:space="preserve">
+    <value>되돌리기</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_NotSaved" xml:space="preserve">
+    <value>저장되지 않음</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_Current" xml:space="preserve">
+    <value>현재: {0}</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_NoCurrentFile" xml:space="preserve">
+    <value>현재 작업 파일 없음</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_UnsavedChanges" xml:space="preserve">
+    <value>● 저장되지 않은 변경</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_CouldnTComplete" xml:space="preserve">
+    <value>{0}하지 못했습니다. {1}</value>
+    <comment>MainWindow.axaml.cs</comment>
+  </data>
+  <data name="Main_NewProject2" xml:space="preserve">
+    <value>새 프로젝트…</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_ChooseFolderToCreateProject" xml:space="preserve">
+    <value>폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/).</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_Open" xml:space="preserve">
+    <value>열기…</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_ChooseProjectFolder" xml:space="preserve">
+    <value>프로젝트 폴더를 고릅니다.</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_UndoesYourLastEdit" xml:space="preserve">
+    <value>방금 한 편집 하나를 되돌립니다.</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_RedoesEditYouUndid" xml:space="preserve">
+    <value>되돌린 편집을 다시 합니다.</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_WorkFolder" xml:space="preserve">
+    <value>📂 작업 폴더</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_OpensWorkFolderExportedIn" xml:space="preserve">
+    <value>작업 폴더(프로젝트 폴더의 exported/)를 엽니다 — 툴이 저절로 내는 챕터별 진행 JSON · 대사 Yarn(yarn/)이 여기 있습니다.</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_Settings2" xml:space="preserve">
+    <value>⚙ 설정</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_SettingsScriptBoardSizeMirror" xml:space="preserve">
+    <value>설정 — [대본] 판 크기 · 복제할 폴더(게임 폴더 등) · 단축키 · 미니맵 · 설명 간소화</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_ThisProjectSFilesWere" xml:space="preserve">
+    <value>⚠ 이 프로젝트의 파일이 다른 곳에서 바뀌었습니다(GitHub Desktop의 받기 등). 이 창에 아직 저장하지 않은 것이 있어 저장을 멈췄습니다 — 어느 쪽을 남길지 고르세요.</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_ReloadDiscardChangesHere" xml:space="preserve">
+    <value>다시 열기 (여기서 고친 것 버림)</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_OverwriteWithMine" xml:space="preserve">
+    <value>내 것으로 덮어쓰기</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_Script" xml:space="preserve">
+    <value>대본</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_Structure" xml:space="preserve">
+    <value>구성</value>
+    <comment>MainWindow.axaml</comment>
+  </data>
+  <data name="Main_SomethingWentWrongInSo" xml:space="preserve">
+    <value>{0} 중 오류가 발생해 동작을 취소했습니다: {1}</value>
+    <comment>UiGuard.cs</comment>
+  </data>
+  <data name="Startup_CouldnTStart" xml:space="preserve">
+    <value>{0} — 시작하지 못했습니다</value>
+    <comment>App.axaml.cs</comment>
+  </data>
+  <data name="Startup_Starting" xml:space="preserve">
+    <value>{0}를 시작하는</value>
+    <comment>App.axaml.cs</comment>
+  </data>
+  <data name="Startup_PleaseSendTextBelowTo" xml:space="preserve">
+    <value>아래 내용을 그대로 개발자에게 전달해 주세요.</value>
+    <comment>App.axaml.cs</comment>
+  </data>
+  <data name="Startup_SomethingWentWrongWhileDetails" xml:space="preserve">
+    <value>{0} 중에 문제가 생겼습니다. 자세한 내용은 다음 파일에 저장했습니다.
+{1}</value>
+    <comment>StartupLog.cs</comment>
+  </data>
+  <data name="Settings_ResetToDefault" xml:space="preserve">
+    <value>기본값으로 ({0:N0} × {1:N0})</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_HideMinimap" xml:space="preserve">
+    <value>미니맵 감추기</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_HidesOverviewMapAndZoom" xml:space="preserve">
+    <value>[대본] 판 오른쪽 아래의 전체 지도와 배율 단추를 감춥니다. 지금 배율(예: 28%)만 연한 글자로 남고, 그 자리를 눌러도 밑의 글 칸이 눌립니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_FewerHints" xml:space="preserve">
+    <value>설명 간소화</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_WhenOnHowToHints" xml:space="preserve">
+    <value>켜면 인스펙터 · 화자 · 조건 및 스탯의 쓰는 법 안내글을 걷고, 「스탯이 없습니다 — 아래 칸에 키를 적고 [＋ 추가]로 만듭니다」 같은 줄은 앞부분만 남깁니다. 칸 이름 · 제목 · 경고는 그대로입니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Minimap" xml:space="preserve">
+    <value>미니맵</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_WheelPansBoard" xml:space="preserve">
+    <value>휠로 판 옮기기</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_WhenOnWheelOverBoard" xml:space="preserve">
+    <value>켜면 판 위의 휠(터치패드는 두 손가락 쓸기)이 판을 옮기고, 확대 · 축소는 Ctrl(맥은 ⌘)을 누른 채 휠입니다 — 맥 트랙패드는 두 손가락으로 집어도 됩니다. 끄면 휠이 확대 · 축소입니다. 가운데 단추 끌기는 어느 쪽이든 판을 옮깁니다. 터치패드를 쓰면 켜 두세요.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ShapeOfNewLinesDrawn" xml:space="preserve">
+    <value>[대본] 판에 새로 잇는 선(선택지 길 · 분기 선)의 꼴입니다 — 이미 있는 선은 그대로입니다(선을 고르면 선 위의 차림으로 바꿉니다). 선의 「↺ 자동」도 이 꼴의 처음 모양으로 되돌립니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_NewLines" xml:space="preserve">
+    <value>새로 잇는 선</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>언어</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_LineSpacingForNewCards" xml:space="preserve">
+    <value>새로 만드는 카드의 줄 간격입니다 — 글자 크기에 대한 %(160이면 워드 프로세서의 「줄 간격 160%」). 이미 있는 카드는 그대로입니다(카드의 줄 간격은 [대본] 위쪽 서식 도구로 바꿉니다). 고른 글꼴 · 크기에서 가장 좁은 값(한글 한 줄 높이)에서 멈춥니다 — 더 좁히면 숫자만 내려가고 화면은 그대로라서.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_FontForNewCardsExisting" xml:space="preserve">
+    <value>새로 만드는 카드의 글꼴입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 글꼴은 [대본] 위쪽 서식 도구로 바꿉니다).</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_FontSizeForNewCards" xml:space="preserve">
+    <value>새로 만드는 카드의 글자 크기입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 크기는 [대본] 위쪽 서식 도구로 바꿉니다).</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_WillowWindSColdToday" xml:space="preserve">
+    <value>윌로: 오늘따라 바람이 차네.
+라루: 그러게. 겉옷 챙겨 올 걸 그랬어.
+두 사람은 말없이 언덕을 오른다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_PreviewThisIsHowWriting" xml:space="preserve">
+    <value>미리 보기 — 새로 만드는 카드의 글 칸이 이렇게 보입니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Bold" xml:space="preserve">
+    <value>굵게</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_WritesAllTextOfNew" xml:space="preserve">
+    <value>새로 만드는 카드의 글을 모두 굵게 씁니다 — 이미 있는 카드는 그대로입니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ClearTextColorUseTheme" xml:space="preserve">
+    <value>글자색을 걷습니다 — 테마의 글자색으로 씁니다</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_TextColorForNewCards" xml:space="preserve">
+    <value>새로 만드는 카드의 글자색입니다 — 이미 있는 카드는 그대로입니다(고른 글자의 색은 [대본] 위쪽 서식 도구로 바꿉니다).</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ScriptWritingBox" xml:space="preserve">
+    <value>대본 글 칸</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ResetToDefaultDefaultFont" xml:space="preserve">
+    <value>기본값으로 (기본 글꼴 · {0:0} · {1}%)</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_OK" xml:space="preserve">
+    <value>확인</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Cancel" xml:space="preserve">
+    <value>취소</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_AlwaysWrittenToWorkFolder" xml:space="preserve">
+    <value>작업 폴더(exported/)에는 늘 쓰고, 고른 폴더에는 저장(Ctrl+S)할 때 복제합니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Shortcuts" xml:space="preserve">
+    <value>단축키</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ThisProject" xml:space="preserve">
+    <value>이 프로젝트</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Other" xml:space="preserve">
+    <value>기타</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Elbow" xml:space="preserve">
+    <value>직각</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Curve" xml:space="preserve">
+    <value>곡선</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Straight" xml:space="preserve">
+    <value>직선</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_CouldnTReadPath" xml:space="preserve">
+    <value>경로를 읽지 못했습니다 — {0}</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_SaveProjectFirstToChoose" xml:space="preserve">
+    <value>프로젝트를 먼저 저장해야 복제할 폴더를 정할 수 있습니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_YarnDialogueIsnTCopied" xml:space="preserve">
+    <value>대사 Yarn은 게임 폴더(진행 JSON을 복제할 폴더)와 같은 곳으로 복제하지 않습니다 — 게임의 Yarn 프로젝트가 compositor의 연출 든 Yarn과 같은 노드 이름을 둘 읽어 컴파일이 깨집니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_TurnedOffAllMirrorFolders" xml:space="preserve">
+    <value>복제할 폴더를 모두 껐습니다 — exported/에만 냅니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ChangedMirrorFoldersCopiesGo" xml:space="preserve">
+    <value>복제할 폴더를 바꿨습니다 — 다음 저장(Ctrl+S)부터 거기로 복제합니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_NoHasBeenWrittenTo" xml:space="preserve">
+    <value>아직 작업 폴더에 나간 {0}{1} 없습니다 — 검증을 통과한 챕터가 생기면 저절로 나갑니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_OnePerChapterGameProgression" xml:space="preserve">
+    <value>챕터마다 하나 — 에피소드 · 선택지 · 조건이 든 게임 진행 파일({{챕터}}{0}). 게임(런타임)이 싣습니다. 복제할 폴더는 게임의 ChapterProgression 폴더입니다. 누르면 작업 폴더에서 지금 챕터의 파일을 보여 줍니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_OnePerSceneYarnWith" xml:space="preserve">
+    <value>장면마다 하나 — 연출 없이 대사 · 조건 · 분기만 든 Yarn({0}/{{챕터}}_{{장면}}.yarn). 대사만으로 굴러가는지 볼 때 씁니다. 누르면 작업 폴더의 {0}/ 폴더를 엽니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_SaveProjectFirstToChoose2" xml:space="preserve">
+    <value>프로젝트를 먼저 저장해야 복제할 폴더를 정할 수 있습니다(경로는 프로젝트 폴더 기준으로 적힙니다).</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ShowInWorkFolder" xml:space="preserve">
+    <value>작업 폴더에서 보기</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_NotCopiedBrowseToGame" xml:space="preserve">
+    <value>복제하지 않음 — 게임의 ChapterProgression 폴더를 찾아보거나 경로를 붙여 넣으세요</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_NotCopiedBrowseToMirror" xml:space="preserve">
+    <value>복제하지 않음 — 복제할 폴더를 찾아보거나 경로를 붙여 넣으세요</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Browse" xml:space="preserve">
+    <value>찾아보기…</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_MirrorFolder" xml:space="preserve">
+    <value>복제할 폴더 — {0}</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_MirrorFolderForProgressionJSON" xml:space="preserve">
+    <value>진행 JSON을 복제할 폴더는 런타임의 ChapterProgression 폴더(게임 폴더)이고 compositor도 이 칸을 읽어 Yarn을 씁니다. 대사 Yarn은 게임 폴더와 같은 곳으로 복제하지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다). 없는 폴더는 만들지 않습니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ThisFolderDoesnTExist" xml:space="preserve">
+    <value>⚠ 없는 폴더입니다 — 만들지 않습니다. 폴더를 만든 뒤 다시 찾아보세요.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Width" xml:space="preserve">
+    <value>가로</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Height" xml:space="preserve">
+    <value>세로</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_ScriptBoardSize" xml:space="preserve">
+    <value>[대본] 판 크기</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_AllChaptersCardsSitOn" xml:space="preserve">
+    <value>모든 챕터의 카드가 한 판에 섭니다. 대본이 많아지면 늘리세요. 한 변 {0:N0} ~ {1:N0}, 왼쪽 위에서 오른쪽 · 아래로 늘어납니다. 줄여서 판 밖으로 나가는 카드가 있으면 카드 전체의 자리를 같은 비율로 줄여 판 안에 들입니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_CardsWouldGoOffBoard" xml:space="preserve">
+    <value>⚠ 카드 {0}장이 판 밖으로 나갑니다 — 카드 전체의 자리를 같은 비율로 줄여 안으로 모읍니다. 되돌리기(Ctrl+Z) 한 번이면 돌아옵니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_BoardWillBeToMake" xml:space="preserve">
+    <value>카드가 비켜 서느라 판이 {0:N0} × {1:N0}으로 섭니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Font" xml:space="preserve">
+    <value>글꼴</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_FontSize" xml:space="preserve">
+    <value>글자 크기</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_LineSpacing" xml:space="preserve">
+    <value>줄 간격 (%)</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Weight" xml:space="preserve">
+    <value>굵기</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_TextColor" xml:space="preserve">
+    <value>글자색</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_Default" xml:space="preserve">
+    <value>기본</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Keys_AnywhereInWindow" xml:space="preserve">
+    <value>창 어디서나</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_UndoAlsoInFileMenu" xml:space="preserve">
+    <value>되돌리기(File 메뉴에도 있다) — 글 칸 안에서는 그 칸의 글자 되돌리기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RedoAlsoInFileMenu" xml:space="preserve">
+    <value>다시 실행(File 메뉴에도 있다) — 글 칸 안에서는 그 칸이 먼저 받는다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_CloseDeleteConfirmationClickingOutside" xml:space="preserve">
+    <value>지우기 확인 칸 닫기 — 바깥을 눌러도 닫힌다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ScriptBoard" xml:space="preserve">
+    <value>[대본] 판</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_MouseWheel" xml:space="preserve">
+    <value>마우스 휠</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ZoomWithWheelPansBoard" xml:space="preserve">
+    <value>확대 · 축소 — 설정 「휠로 판 옮기기」를 켜면(맥은 처음부터) 판 옮기기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_CtrlMouseWheelTrackpadPinch" xml:space="preserve">
+    <value>Ctrl+마우스 휠 · 트랙패드 집기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ZoomWhetherWheelPansBoard" xml:space="preserve">
+    <value>확대 · 축소 — 「휠로 판 옮기기」를 켜도 꺼도</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_MiddleButtonDrag" xml:space="preserve">
+    <value>가운데 단추 끌기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_PanBoard" xml:space="preserve">
+    <value>판 옮기기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DragOnEmptySpace" xml:space="preserve">
+    <value>빈 곳 끌기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_SelectAreaDraggingAnySelected" xml:space="preserve">
+    <value>범위로 고르기 — 고른 무리의 카드를 끌면 함께 움직인다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RightClickEmptySpace" xml:space="preserve">
+    <value>빈 곳 우클릭</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_AddChapterSceneEpisodeDepending" xml:space="preserve">
+    <value>누른 자리에 따라 챕터 · 장면 · 에피소드 추가</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DeleteSelectedCardEpisodeBranch" xml:space="preserve">
+    <value>고른 카드(에피소드 · 분기 카드) 지우기 — 묻지 않는다, 되돌리기 한 칸(글 칸 밖에서)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_FindDialogueSpeakersCardTitles" xml:space="preserve">
+    <value>찾기 — 대사 · 화자 · 카드 제목. Enter 다음 · Shift+Enter 앞 · Esc 닫고 찾은 대사에서 이어 쓰기(접힌 장면 · 챕터는 펼친다)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_FitSelectionToScreenEpisodes" xml:space="preserve">
+    <value>고른 것에 화면 맞추기 — 에피소드 · 분기 카드는 100%로 가운데, 장면 · 챕터는 테두리가 들어오게(글 칸 밖에서)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickCardSTitle" xml:space="preserve">
+    <value>카드 제목 글자 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RenameTitleInPlaceEnter" xml:space="preserve">
+    <value>그 자리에서 제목 고치기 — Enter 바꾸기 · Esc나 다른 곳 누르기는 그만두기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RightClickCard" xml:space="preserve">
+    <value>카드 우클릭</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RenameShowInStructureTab" xml:space="preserve">
+    <value>제목 고치기 · [구성] 탭에서 보기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickChoiceLine" xml:space="preserve">
+    <value>선택지 선 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_GoToThatChoiceIn" xml:space="preserve">
+    <value>[구성] 탭의 그 선택지로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ClickChapterSceneLabel" xml:space="preserve">
+    <value>챕터 · 장면 이름표 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_SelectsEveryCardInsideDrag" xml:space="preserve">
+    <value>그 안의 카드를 모두 고른다 — 그대로 끌면 함께 옮긴다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickLabel" xml:space="preserve">
+    <value>이름표 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_CollapseDoubleClickCollapsedLabel" xml:space="preserve">
+    <value>접기 — 접힌 표 · 장면을 두 번 누르면 편다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickSizeHandle" xml:space="preserve">
+    <value>크기 손잡이 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ResetThatSizeToDefault" xml:space="preserve">
+    <value>그 크기를 기본으로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ClickDragMinimap" xml:space="preserve">
+    <value>미니맵 누르기 · 끌기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_MoveViewThere" xml:space="preserve">
+    <value>그 자리로 화면 옮기기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ScriptCardWritingBox" xml:space="preserve">
+    <value>[대본] 카드 글 칸</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_NewLineOneLineIs" xml:space="preserve">
+    <value>줄바꿈 — 한 줄이 대사 한 줄(화자: 대사). 쓰다 멈추거나 칸을 떠나면 넣는다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DiscardTextNotYetApplied" xml:space="preserve">
+    <value>넣지 않은 글을 걷는다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_UndoRedoProjectTextNot" xml:space="preserve">
+    <value>프로젝트 되돌리기 · 다시 실행 — 넣지 않은 글이 있으면 그것부터 걷는다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_MouseWheelTrackpad" xml:space="preserve">
+    <value>마우스 휠 · 트랙패드</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_BoardSWheelWorksOver" xml:space="preserve">
+    <value>글 칸 위에서도 판의 휠(확대 · 축소 — 「휠로 판 옮기기」를 켜면 판 옮기기). 넘치는 글은 칸의 스크롤 막대나 세로 글 맞춤으로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ScriptDialogueEditor" xml:space="preserve">
+    <value>[대본] 대사 편집기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_NextFieldPreviousFieldSpeaker" xml:space="preserve">
+    <value>다음 칸 · 앞 칸 — 화자 → ▾ → 대사 → ＋ → 다음 줄</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ToPreviousFieldSameAs" xml:space="preserve">
+    <value>앞 칸으로(Shift+Tab과 같다) — 쓰다가 이전 줄로 돌아간다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_AddLineBelowInLine" xml:space="preserve">
+    <value>줄의 ＋ 차림의 [아래에 줄 추가] — 그 줄 아래에 새 줄이 서고 새 줄의 화자 칸에서 바로 쓴다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_StructureBoard" xml:space="preserve">
+    <value>[구성] 판</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_PanBoardEvenWhenStarting" xml:space="preserve">
+    <value>판 옮기기 — 카드 · 선 · 문구 위에서 시작해도</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ClickDragEmptySpace" xml:space="preserve">
+    <value>빈 곳 누르기 · 끌기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ClearSelectionSelectArea" xml:space="preserve">
+    <value>고름 놓기 · 범위로 고르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_FitSelectionToScreenEpisode" xml:space="preserve">
+    <value>고른 것에 화면 맞추기 — 에피소드 카드 · 분기 칩은 100%로 가운데, 길은 두 카드, 장면은 그 카드들, 챕터는 [화면 맞춤](글 칸 밖에서)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickEpisodeCard" xml:space="preserve">
+    <value>에피소드 카드 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_GoToThatCardIn" xml:space="preserve">
+    <value>[대본] 탭의 그 카드로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickBranchChip" xml:space="preserve">
+    <value>분기 칩 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_GoToThatBranchCard" xml:space="preserve">
+    <value>[대본] 탭의 그 분기 카드로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickChoiceLineChoice" xml:space="preserve">
+    <value>선택지 선 · 문구 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_GoToThatChoiceIn2" xml:space="preserve">
+    <value>[대본] 탭의 그 선택지로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_Hierarchy" xml:space="preserve">
+    <value>하이어아키</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_MoveBetweenVisibleRowsSide" xml:space="preserve">
+    <value>보이는 줄 사이로 고르기 — 오른쪽 기둥이 따라온다(줄을 한 번 누른 뒤)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_CollapseIfAlreadyCollapsedOr" xml:space="preserve">
+    <value>접기 — 이미 접혔거나 에피소드면 부모로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ExpandIfAlreadyExpandedGo" xml:space="preserve">
+    <value>펴기 — 이미 폈으면 첫 자식으로</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_CtrlClick" xml:space="preserve">
+    <value>Ctrl+누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_AddOrRemoveThatRow" xml:space="preserve">
+    <value>그 줄을 더하고 빼기 — 여러 줄 고르기(판 · 오른쪽 기둥은 마지막에 누른 줄)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ShiftClick" xml:space="preserve">
+    <value>Shift+누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_SelectEveryRowFromOne" xml:space="preserve">
+    <value>앞서 누른 줄부터 그 줄까지 모두 고르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DoubleClickRow" xml:space="preserve">
+    <value>줄 두 번 누르기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RenameEnterAppliesEscClicking" xml:space="preserve">
+    <value>이름 바꾸기 — Enter 넣기, Esc · 다른 곳 누르기는 없던 일([대본] 탭)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RightClick" xml:space="preserve">
+    <value>우클릭</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_AddRenameDeleteScriptTab" xml:space="preserve">
+    <value>추가 · 이름 바꾸기 · 지우기([대본] 탭)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DragEpisodeRow" xml:space="preserve">
+    <value>에피소드 줄 끌기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_DropItOnAnotherScene" xml:space="preserve">
+    <value>같은 챕터의 다른 장면 줄에 놓으면 그 장면으로 옮긴다([대본] 탭)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_FindBoxEnter" xml:space="preserve">
+    <value>찾기 칸 — Enter · ↓</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_SelectFirstMatchThenMove" xml:space="preserve">
+    <value>맞는 첫 줄 고르기 — 이어서 ↑ · ↓로 찾은 줄 사이를 고른다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_FindBoxEsc" xml:space="preserve">
+    <value>찾기 칸 — Esc</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ClearSearchTreeReturnsTo" xml:space="preserve">
+    <value>찾기 지우기 — 접어 둔 대로 돌아오고 고른 줄이 보인다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_TextFields" xml:space="preserve">
+    <value>글 칸</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ApplyClickingElsewhereAlsoApplies" xml:space="preserve">
+    <value>넣기 — 다른 곳을 눌러도 넣는다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_RevertToValueBeforeApplying" xml:space="preserve">
+    <value>넣기 전 값으로 되돌리기 — 초점은 그대로(두 탭 모두)</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_ApplySceneNoteEpisodeDirection" xml:space="preserve">
+    <value>장면 메모 · 에피소드 지시 넣기 — 이 두 칸은 Enter가 줄바꿈이다</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_LineTableOfDialogueEditor" xml:space="preserve">
+    <value>대사 편집기의 줄 표 — 줄 추가 · 지우기</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Keys_SettingsWindowOKCancel" xml:space="preserve">
+    <value>설정 창 — 확인 · 취소</value>
+    <comment>Shortcuts.cs</comment>
+  </data>
+  <data name="Session_CopiedOnSaveTo" xml:space="preserve">
+    <value> · 저장할 때 복제합니다: </value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_Nodes" xml:space="preserve">
+    <value>{0}/ · 노드 {1}개</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_ThereSNoPathTo" xml:space="preserve">
+    <value>저장할 경로가 없습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_SavedTo" xml:space="preserve">
+    <value>{0}/ 에 저장했습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_AlsoCopyingToChosenFolders" xml:space="preserve">
+    <value> 고른 폴더에도 복제합니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_TypeSpeakerName" xml:space="preserve">
+    <value>화자 이름을 적어 주세요.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_SpeakerAlreadyExists" xml:space="preserve">
+    <value>화자 '{0}'은 이미 있습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_NameCanTBeEmpty" xml:space="preserve">
+    <value>이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_SpeakerDoesnTExistList" xml:space="preserve">
+    <value>화자 '{0}'이 없습니다 — 목록이 바뀌었습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_Speaker" xml:space="preserve">
+    <value>화자 '{0}' → '{1}'.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_SpeakerLinesFollowed" xml:space="preserve">
+    <value>화자 '{0}' → '{1}' — 줄 {2}개가 따라갔습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_AddedToSpeakerListIts" xml:space="preserve">
+    <value>'{0}'{1} 화자 목록에 올렸습니다 — 캐릭터 키는 임시로 '{2}' — [구성] 탭에서 그림에 맞게 바꿉니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_AddedSpeakersToListTheir" xml:space="preserve">
+    <value>화자 {0}명을 목록에 올렸습니다 — 캐릭터 키는 임시 키(temp_…)입니다. [구성] 탭에서 그림에 맞게 바꿉니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_NameCanTBeEmpty2" xml:space="preserve">
+    <value>이름은 비울 수 없습니다 — 화자를 빼려면 그 줄들의 화자 칸을 비우세요.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_IsAlreadyInListList" xml:space="preserve">
+    <value>'{0}'{1} 이미 목록에 있습니다 — 목록이 바뀌었습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_AddNameWithSpaceAs" xml:space="preserve">
+    <value>띄어쓰기가 든 이름 '{0}'{1} 먼저 위에서 화자로 더한 뒤 고치세요 — 목록에 없으면 대본이 화자로 읽지 않습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_NoLineHasAsIts" xml:space="preserve">
+    <value>'{0}'{1} 화자인 줄이 없습니다 — 대본이 바뀌었습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_MergedLinesOfIntoSpeaker" xml:space="preserve">
+    <value>'{0}'의 줄 {1}개를 화자 '{2}'{3} 합쳤습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_ChangedLinesThisNameIsn" xml:space="preserve">
+    <value>'{0}' → '{1}' — 줄 {2}개를 고쳤습니다. 아직 목록에 없는 이름입니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_TypeChapterID" xml:space="preserve">
+    <value>챕터 Id를 적어 주세요.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_SaveProjectFirstPlaceWhere" xml:space="preserve">
+    <value>프로젝트를 먼저 저장해 주세요 — 진행 JSON이 나갈 자리가 프로젝트 폴더에서 정해집니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_ChapterAlreadyExists" xml:space="preserve">
+    <value>챕터 '{0}'가 이미 있습니다.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="Session_ProjectFileWasChangedElsewhere" xml:space="preserve">
+    <value>연 뒤에 다른 곳에서 프로젝트 파일이 바뀌어 저장하지 않았습니다(GitHub Desktop의 받기 등). 위 띠에서 [다시 열기] 또는 [내 것으로 덮어쓰기]를 고르세요.</value>
+    <comment>AuthoringSession.cs</comment>
+  </data>
+  <data name="App_Name" xml:space="preserve">
+    <value>스토리 디렉터</value>
+    <comment>AppIdentity.cs — 창 제목 · 맥 메뉴 막대 · 시작 실패 창</comment>
+  </data>
+  <data name="App_DevBuild" xml:space="preserve">
+    <value>개발판</value>
+    <comment>AppIdentity.cs — 판 번호 없이 지은 빌드(창 제목)</comment>
+  </data>
+  <data name="Settings_ExportTitle" xml:space="preserve">
+    <value>내보내기 (복제할 폴더 선택)</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_DefaultFont" xml:space="preserve">
+    <value>기본</value>
+    <comment>SettingsWindow.cs — 글꼴 칸의 첫 차림(기본 글꼴)</comment>
+  </data>
+  <data name="Session_NoProjectYet" xml:space="preserve">
+    <value>아직 프로젝트가 없습니다 — 받은 프로젝트는 판 한가운데의 [열기…], 처음 시작하면 [새 프로젝트…]를 누르세요.</value>
+    <comment>AuthoringSession.cs — 처음 켰을 때의 상태줄</comment>
+  </data>
 </root>

@@ -1,4 +1,5 @@
 using System.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Services;
 
@@ -28,7 +29,7 @@ internal static class StartupLog
 
     /// <summary>작가에게 보여줄 한 문장. 개발자용 상세 내용은 파일에 있다.</summary>
     public static string WriterMessage(string context) =>
-        $"{context} 중에 문제가 생겼습니다. 자세한 내용은 다음 파일에 저장했습니다.\n{FilePath}";
+        string.Format(Ui.Startup_SomethingWentWrongWhileDetails, context, FilePath);
 
     /// <summary>
     /// 예외를 기록하고 로그 경로를 돌려준다. 기록하지 못하면 null.

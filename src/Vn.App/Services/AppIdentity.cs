@@ -1,3 +1,5 @@
+using Vn.App.Strings;
+
 namespace Vn.App.Services;
 
 /// <summary>
@@ -10,16 +12,17 @@ namespace Vn.App.Services;
 internal static class AppIdentity
 {
     /// <summary>작가에게 보이는 이름 — 창 제목 · 시작 실패 창 · 로그의 말.</summary>
-    internal const string Name = "스토리 디렉터";
+    internal static string Name => Ui.App_Name;
 
     /// <summary>판 번호를 정하지 않고 지은 빌드의 이름 — 개발 중 실행 · 시험.</summary>
-    internal const string DevelopmentVersion = "개발판";
+    internal static string DevelopmentVersion => Ui.App_DevBuild;
 
     /// <summary>
     /// <b>판 번호</b>(2026-11-19 · writer-release WR2) — 작가가 「안 돼요」라고 할 때 어느 판인지 알 수 있게 창 제목에 선다. 꾸러미를 구울 때
     /// 정한다(<c>-p:Version=0.1.0</c>). 손으로 지은 빌드(0.0.0)는 <see cref="DevelopmentVersion"/>.
     /// </summary>
-    internal static string Version { get; } = VersionOf(
+    /// 화면 언어를 따르는 「개발판」이 들 수 있어 그때그때 읽는다 — 켤 때 언어를 정하기 전에 이 클래스가 먼저 실린다(english-ui E2).
+    internal static string Version => VersionOf(
         typeof(AppIdentity).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
             .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
             .FirstOrDefault()?.InformationalVersion);

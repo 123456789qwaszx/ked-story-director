@@ -1,3 +1,4 @@
+using Vn.App.Strings;
 namespace Vn.App.Services;
 
 /// <summary>
@@ -40,6 +41,6 @@ internal static class UiGuard
     public static void Report(AuthoringSession? session, string context, Exception exception)
     {
         StartupLog.TryWrite(context, exception);
-        session?.SetStatus($"{context} 중 오류가 발생해 동작을 취소했습니다: {exception.Message}");
+        session?.SetStatus(string.Format(Ui.Main_SomethingWentWrongInSo, context, exception.Message));
     }
 }

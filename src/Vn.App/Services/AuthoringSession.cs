@@ -4,6 +4,7 @@ using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Services;
 
@@ -115,8 +116,7 @@ internal sealed class AuthoringSession
     public string StatusMessage { get; private set; } = NoProjectStatus;
 
     /// <summary>저장된 프로젝트가 없을 때(처음 켰을 때)의 상태줄 — 판 한가운데의 두 단추를 가리킨다(usability UX35).</summary>
-    internal const string NoProjectStatus =
-        "아직 프로젝트가 없습니다 — 받은 프로젝트는 판 한가운데의 [열기…], 처음 시작하면 [새 프로젝트…]를 누르세요.";
+    internal static string NoProjectStatus => Ui.Session_NoProjectYet;
 
 
     /// <summary>저장한 뒤로 바뀐 것이 있는지. 실제 내용을 비교하므로 되돌리기로 원상복구하면 깨끗해진다.</summary>
@@ -191,7 +191,7 @@ internal sealed class AuthoringSession
     /// <summary>상태줄의 한 마디 — 복제할 폴더가 있으면 어느 형식인지. 없으면 말하지 않는다(설정은 [⚙ 설정]에 있다).</summary>
     private string DestinationsNote() => Destinations.IsEmpty
         ? string.Empty
-        : " · 저장할 때 복제합니다: " + string.Join(" · ", ExportDestinations.Formats
+        : Ui.Session_CopiedOnSaveTo + string.Join(" · ", ExportDestinations.Formats
             .Where(format => Destinations.FolderOf(format) is not null)
             .Select(ExportDestinations.LabelOf));
 
@@ -231,7 +231,7 @@ internal sealed class AuthoringSession
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
-            $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ · 노드 {project.EnumerateNodes().Count()}개" +
+            string.Format(Ui.Session_Nodes, Path.GetFileName(Path.GetDirectoryName(ProjectPath)), project.EnumerateNodes().Count()) +
             DestinationsNote();
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
@@ -256,7 +256,7 @@ internal sealed class AuthoringSession
     public void Save(string? path = null, bool overwriteOutsideChanges = false)
     {
         string target = path ?? ProjectPath
-            ?? throw new InvalidOperationException("저장할 경로가 없습니다.");
+            ?? throw new InvalidOperationException(Ui.Session_ThereSNoPathTo);
 
         bool samePlace = ProjectPath is not null &&
                          string.Equals(Path.GetFullPath(target), ProjectPath, StringComparison.OrdinalIgnoreCase);
@@ -277,8 +277,8 @@ internal sealed class AuthoringSession
 
         // 저장은 프로젝트에 쓰는 일 하나다. "다른 이름으로 저장"은 없다 — 프로젝트는 폴더이고,
         // 복제는 탐색기 · 버전은 git이 한다(ProjectFolder).
-        StatusMessage = $"{Path.GetFileName(Path.GetDirectoryName(ProjectPath))}/ 에 저장했습니다." +
-            (Destinations.IsEmpty ? string.Empty : " 고른 폴더에도 복제합니다 — 결과는 [구성] 탭의 검증 보고에 섭니다.");
+        StatusMessage = string.Format(Ui.Session_SavedTo, Path.GetFileName(Path.GetDirectoryName(ProjectPath))) +
+            (Destinations.IsEmpty ? string.Empty : Ui.Session_AlsoCopyingToChosenFolders);
         Changed?.Invoke(this, new ProjectChangedEventArgs(ProjectChangeKind.Content));
     }
 
@@ -305,12 +305,12 @@ internal sealed class AuthoringSession
 
         if (typed.Length == 0)
         {
-            return "화자 이름을 적어 주세요.";
+            return Ui.Session_TypeSpeakerName;
         }
 
         if (Project.FindSpeaker(typed) is not null)
         {
-            return $"화자 '{typed}'은 이미 있습니다.";
+            return string.Format(Ui.Session_SpeakerAlreadyExists, typed);
         }
 
         Editor.AddSpeaker(typed);
@@ -333,24 +333,24 @@ internal sealed class AuthoringSession
 
         if (typed.Length == 0)
         {
-            return "이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.";
+            return Ui.Session_NameCanTBeEmpty;
         }
 
         if (Project.FindSpeaker(oldName) is null)
         {
-            return $"화자 '{oldName}'이 없습니다 — 목록이 바뀌었습니다.";
+            return string.Format(Ui.Session_SpeakerDoesnTExistList, oldName);
         }
 
         if (Project.FindSpeaker(typed) is not null)
         {
-            return $"화자 '{typed}'은 이미 있습니다.";
+            return string.Format(Ui.Session_SpeakerAlreadyExists, typed);
         }
 
         int lines = Editor.RenameSpeaker(oldName, typed);
 
         return lines == 0
-            ? $"화자 '{oldName}' → '{typed}'."
-            : $"화자 '{oldName}' → '{typed}' — 줄 {lines}개가 따라갔습니다.";
+            ? string.Format(Ui.Session_Speaker, oldName, typed)
+            : string.Format(Ui.Session_SpeakerLinesFollowed, oldName, typed, lines);
     }
 
     /// <summary>화자를 목록에서 지운다 — [대본] 탭. 이미 대본에 적힌 이름은 그대로 남는다(화자 칸은 자유 입력).</summary>
@@ -368,8 +368,8 @@ internal sealed class AuthoringSession
         return added.Count switch
         {
             0 => null,
-            1 => $"'{added[0].Name}'{Josa.을를(added[0].Name)} 화자 목록에 올렸습니다 — 캐릭터 키는 임시로 '{added[0].CharacterId}' — [구성] 탭에서 그림에 맞게 바꿉니다.",
-            _ => $"화자 {added.Count}명을 목록에 올렸습니다 — 캐릭터 키는 임시 키(temp_…)입니다. [구성] 탭에서 그림에 맞게 바꿉니다."
+            1 => string.Format(Ui.Session_AddedToSpeakerListIts, added[0].Name, Josa.을를(added[0].Name), added[0].CharacterId),
+            _ => string.Format(Ui.Session_AddedSpeakersToListTheir, added.Count)
         };
     }
 
@@ -390,31 +390,31 @@ internal sealed class AuthoringSession
 
         if (typed.Length == 0)
         {
-            return "이름은 비울 수 없습니다 — 화자를 빼려면 그 줄들의 화자 칸을 비우세요.";
+            return Ui.Session_NameCanTBeEmpty2;
         }
 
         if (Project.FindSpeaker(oldName) is not null)
         {
-            return $"'{oldName}'{Josa.은는(oldName)} 이미 목록에 있습니다 — 목록이 바뀌었습니다.";
+            return string.Format(Ui.Session_IsAlreadyInListList, oldName, Josa.은는(oldName));
         }
 
         bool listed = Project.FindSpeaker(typed) is not null;
 
         if (!listed && typed.Any(char.IsWhiteSpace))
         {
-            return $"띄어쓰기가 든 이름 '{typed}'{Josa.은는(typed)} 먼저 위에서 화자로 더한 뒤 고치세요 — 목록에 없으면 대본이 화자로 읽지 않습니다.";
+            return string.Format(Ui.Session_AddNameWithSpaceAs, typed, Josa.은는(typed));
         }
 
         int lines = Editor.RenameSpeaker(oldName, typed);
 
         if (lines == 0)
         {
-            return $"'{oldName}'{Josa.이가(oldName)} 화자인 줄이 없습니다 — 대본이 바뀌었습니다.";
+            return string.Format(Ui.Session_NoLineHasAsIts, oldName, Josa.이가(oldName));
         }
 
         return listed
-            ? $"'{oldName}'의 줄 {lines}개를 화자 '{typed}'{Josa.으로(typed)} 합쳤습니다."
-            : $"'{oldName}' → '{typed}' — 줄 {lines}개를 고쳤습니다. 아직 목록에 없는 이름입니다.";
+            ? string.Format(Ui.Session_MergedLinesOfIntoSpeaker, oldName, lines, typed, Josa.으로(typed))
+            : string.Format(Ui.Session_ChangedLinesThisNameIsn, oldName, typed, lines);
     }
 
     /// <summary>화자의 캐릭터 키 — [구성] 탭. 초상화 · 표정이 이 키로 붙는다. 같은 값이면 기록하지 않는다.</summary>
@@ -443,17 +443,17 @@ internal sealed class AuthoringSession
 
         if (chapterId.Length == 0)
         {
-            return "챕터 Id를 적어 주세요.";
+            return Ui.Session_TypeChapterID;
         }
 
         if (ProjectPath is null)
         {
-            return "프로젝트를 먼저 저장해 주세요 — 진행 JSON이 나갈 자리가 프로젝트 폴더에서 정해집니다.";
+            return Ui.Session_SaveProjectFirstPlaceWhere;
         }
 
         if (Editor.FindChapter(chapterId) is not null)
         {
-            return $"챕터 '{chapterId}'가 이미 있습니다.";
+            return string.Format(Ui.Session_ChapterAlreadyExists, chapterId);
         }
 
         // 챕터와 그 판이 한 되돌리기 칸이다(⛔ 2026-11-18까지는 둘로 쌓여 Ctrl+Z 한 번에 판만 물러났다).
@@ -765,7 +765,7 @@ internal sealed class AuthoringSession
     {
         // 판을 미리 두지 않는다 — 판은 챕터가 세운다(챕터 = 판 1:1). 첫 [＋ 에피소드]가 「새 챕터」 · 「새 장면」과 함께 첫 카드를
         // 세운다(2026-11-17 소유자). ⛔ 그 전에는 챕터가 아닌 판 「기본 파일」(낙서판)으로 시작했다.
-        return new StoryProject { Title = "새 프로젝트" };
+        return new StoryProject { Title = Ui.Main_NewProject };
     }
 }
 
@@ -796,7 +796,7 @@ internal sealed class FileGraphStateChangedEventArgs : EventArgs
 public sealed class ProjectChangedOutsideException : InvalidOperationException
 {
     public ProjectChangedOutsideException()
-        : base("연 뒤에 다른 곳에서 프로젝트 파일이 바뀌어 저장하지 않았습니다(GitHub Desktop의 받기 등). 위 띠에서 [다시 열기] 또는 [내 것으로 덮어쓰기]를 고르세요.")
+        : base(Ui.Session_ProjectFileWasChangedElsewhere)
     {
     }
 }

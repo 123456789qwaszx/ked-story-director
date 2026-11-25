@@ -11,6 +11,7 @@ using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -64,7 +65,7 @@ public partial class MainWindow : Window
 
     private readonly TextBlock EmptyText = new()
     {
-        Text = "노드를 선택하면 여기서 편집합니다.",
+        Text = Ui.Main_SelectNodeToEditIt,
         HorizontalAlignment = HorizontalAlignment.Center,
         VerticalAlignment = VerticalAlignment.Center,
         Opacity = 0.5
@@ -90,7 +91,7 @@ public partial class MainWindow : Window
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
             e.Handled = true;
-            UiGuard.Report(_session, "화면 동작", e.Exception);
+            UiGuard.Report(_session, Ui.Main_ScreenAction, e.Exception);
         };
 
         // 곁기둥을 제 화면에 건다 — Attach보다 먼저여야 첫 그리기부터 자리가 서 있다.
@@ -109,7 +110,7 @@ public partial class MainWindow : Window
             FillConditionTab();   // 스탯 표는 이 목록의 모델을 본다
         };
         // [구성] 툴바 콤보로 골라도 하이어아키의 강조가 따라온다 — 하이어아키에서 고를 때 하는 일(판 활성 + 다시 그리기)을 여기서도 한다.
-        ChapterGraph.ChapterSelected += chapterId => UiGuard.Run(_session, "챕터 선택", () =>
+        ChapterGraph.ChapterSelected += chapterId => UiGuard.Run(_session, Ui.Main_SelectChapter, () =>
         {
             _session.SelectFile(_session.EnsureChapterBoard(chapterId));
             RebuildFileList();
@@ -119,7 +120,7 @@ public partial class MainWindow : Window
 
         // 인스펙터의 「빈 선택지 숨기기」는 하이어아키에서 고른 줄들에 든 에피소드 모두에 한 번에(2026-11-23 소유자) — 고른 줄이 바뀌면 체크를 맞춘다.
         DialogueEditor.BatchCards = Graph.PickedCards;
-        Graph.HierarchyView.SelectionsChanged += () => UiGuard.Run(_session, "선택지 칸", DialogueEditor.RefreshHideEmpty);
+        Graph.HierarchyView.SelectionsChanged += () => UiGuard.Run(_session, Ui.Main_ChoiceSlots, DialogueEditor.RefreshHideEmpty);
         _session.Changed += OnSessionChanged;
         _session.SpeakersChanged += OnSpeakersChanged;
         // 상태줄만 바뀐 경우는 셸 갱신 하나로 끝난다 — 판을 다시 그리거나
@@ -152,12 +153,12 @@ public partial class MainWindow : Window
         OutsideOverwriteButton.Click += OnOutsideOverwriteClick;
 
         // 창으로 돌아올 때 — 그 사이 다른 곳(GitHub Desktop의 받기 등)이 프로젝트 파일을 바꿨는지 본다(writer-release WR1).
-        Activated += (_, _) => UiGuard.Run(_session, "바뀐 파일 확인", CheckOutsideChanges);
+        Activated += (_, _) => UiGuard.Run(_session, Ui.Main_CheckChangedFiles, CheckOutsideChanges);
         UndoMenuItem.Click += (_, _) => UndoOrRedo(redo: false);
         RedoMenuItem.Click += (_, _) => UndoOrRedo(redo: true);
-        SettingsButton.Click += (_, _) => UiGuard.Run(_session, "설정", () => OpenSettings());
+        SettingsButton.Click += (_, _) => UiGuard.Run(_session, Ui.Main_Settings, () => OpenSettings());
         WorkFolderButton.Click += (_, _) =>
-            UiGuard.Run(_session, "작업 폴더 열기", OpenWorkFolder);
+            UiGuard.Run(_session, Ui.Main_OpenWorkFolder, OpenWorkFolder);
 
         Opened += OnOpened;
 
@@ -181,7 +182,7 @@ public partial class MainWindow : Window
                 ReferenceEquals(MainTabs.SelectedItem, GraphTabItem) &&
                 FocusManager?.GetFocusedElement() is not TextBox)
             {
-                UiGuard.Run(_session, "지우기", () => args.Handled = Graph.DeleteSelectedCard());
+                UiGuard.Run(_session, Ui.Main_Delete, () => args.Handled = Graph.DeleteSelectedCard());
                 return;
             }
 
@@ -192,13 +193,13 @@ public partial class MainWindow : Window
             {
                 if (ReferenceEquals(MainTabs.SelectedItem, GraphTabItem))
                 {
-                    UiGuard.Run(_session, "화면 맞추기", () => args.Handled = Graph.FocusSelection());
+                    UiGuard.Run(_session, Ui.Main_FitToScreen, () => args.Handled = Graph.FocusSelection());
                     return;
                 }
 
                 if (ReferenceEquals(MainTabs.SelectedItem, ChapterTabItem))
                 {
-                    UiGuard.Run(_session, "화면 맞추기", () => args.Handled = ChapterGraph.FocusSelection());
+                    UiGuard.Run(_session, Ui.Main_FitToScreen, () => args.Handled = ChapterGraph.FocusSelection());
                     return;
                 }
             }
@@ -219,7 +220,7 @@ public partial class MainWindow : Window
                 //    연다 — 글 칸은 Ctrl+F를 쓰지 않는다.
                 case Avalonia.Input.Key.F when ReferenceEquals(MainTabs.SelectedItem, GraphTabItem):
                     args.Handled = true;
-                    UiGuard.Run(_session, "찾기", Graph.OpenFind);
+                    UiGuard.Run(_session, Ui.Main_Find, Graph.OpenFind);
                     break;
 
                 // [대본] 카드 글 칸은 예외다 — 칸은 쓰다 멈출 때마다 글을 넣고(되돌리기 한 칸) 줄이 늘고 줄면 새 칸이 되어
@@ -242,7 +243,7 @@ public partial class MainWindow : Window
 
         // 10분 자동 저장 —저장 경로가 있고 바뀐 것이 있을 때만, 상태줄로 알린다.
         _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(10) };
-        _autoSaveTimer.Tick += (_, _) => UiGuard.Run(_session, "자동 저장", () =>
+        _autoSaveTimer.Tick += (_, _) => UiGuard.Run(_session, Ui.Main_Autosave, () =>
         {
             if (_session.ProjectPath is not null && _session.IsDirty)
             {
@@ -250,12 +251,12 @@ public partial class MainWindow : Window
                 if (_session.ChangedOutside)
                 {
                     ShowOutsideChangeBar();
-                    _session.SetStatus($"자동 저장을 멈췄습니다 ({DateTime.Now:HH:mm}) — 프로젝트 파일이 다른 곳에서 바뀌었습니다. 위 띠에서 고르세요.");
+                    _session.SetStatus(string.Format(Ui.Main_AutosaveStoppedProjectFileWas, DateTime.Now));
                     return;
                 }
 
                 _session.Save();
-                _session.SetStatus($"자동 저장했습니다 ({DateTime.Now:HH:mm})");
+                _session.SetStatus(string.Format(Ui.Main_Autosaved, DateTime.Now));
             }
         });
         _autoSaveTimer.Start();
@@ -328,7 +329,7 @@ public partial class MainWindow : Window
         {
             StartupLog.TryWrite("최근 프로젝트 복원", exception);
             _session.SetStatus(
-                $"마지막에 열었던 프로젝트를 열지 못했습니다. '열기…'로 다시 시도해 주세요. ({exception.Message})");
+                string.Format(Ui.Main_CouldnTOpenProjectYou, exception.Message));
         }
     }
 
@@ -499,7 +500,7 @@ public partial class MainWindow : Window
 
         if (failure is not null || chapterId is null)
         {
-            _session.SetStatus(failure ?? "챕터를 만들지 못했습니다.");
+            _session.SetStatus(failure ?? Ui.Main_CouldnTCreateChapter);
             return;
         }
 
@@ -510,7 +511,7 @@ public partial class MainWindow : Window
         OnDirectorHierarchyPicked(new HierarchyPick(HierarchyKind.Chapter, chapterId));
         Graph.GoToBoard(_session.EnsureChapterBoard(chapterId));   // 「챕터 추가」는 [대본]에 있다 — 만든 챕터로 간다
         _session.SetStatus(
-            $"챕터 「{NewNames.Chapter}」를 장면 「{NewNames.Scene}」 · 「{NewNames.Episode}」와 함께 만들었습니다 — 이름은 오른쪽 「조건 및 스탯」 탭 맨 위나 하이어아키에서 고칩니다.");
+            string.Format(Ui.Main_CreatedChapterWithSceneRename, NewNames.Chapter, NewNames.Scene, NewNames.Episode));
     }
 
     /// <summary>
@@ -539,8 +540,8 @@ public partial class MainWindow : Window
         }
 
         return File.Exists(ChapterExportService.ExportPathFor(projectPath, chapterId))
-            ? $" ⚠ 옛 진행 JSON '{stale}'을 걷지 못했습니다 — 다른 프로그램에 잡혀 있는지 확인하세요."
-            : $" 옛 진행 JSON '{stale}'은 걷었습니다(복제할 폴더의 같은 파일은 다음 저장 때 걷습니다).";
+            ? string.Format(Ui.Main_CouldnTRemoveOldProgression, stale)
+            : string.Format(Ui.Main_RemovedOldProgressionJSONSame, stale);
     }
 
     /// <summary>
@@ -556,8 +557,8 @@ public partial class MainWindow : Window
         RemoveConfirmButton = ConfirmFlyout.Show(
             anchor,
             _session,
-            $"챕터 「{shown}」와 그 장면 · 에피소드 · [대본] 탭의 카드가 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
-            "챕터 지우기",
+            string.Format(Ui.Main_ChapterWillBeRemovedAlong, shown),
+            Ui.Main_DeleteChapter,
             () =>
             {
                 ChapterDeleter.Result result = ChapterDeleter.Delete(_session.Editor, _session.ProjectPath, chapterId);
@@ -572,7 +573,7 @@ public partial class MainWindow : Window
                 ForgetRemovedPick();
                 RefreshShell();
                 _session.SetStatus(
-                    $"챕터 「{shown}」를 지웠습니다([대본] 탭의 카드 {result.NodesRemoved}장도 함께). 되돌리기(Ctrl+Z)로 돌아옵니다." +
+                    string.Format(Ui.Main_DeletedChapterAndCardsIn, shown, result.NodesRemoved) +
                     StaleExportNote(result.StaleExport, chapterId));
             },
             closed: () => RemoveConfirmButton = null);
@@ -592,7 +593,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (await PickFolderAsync("새 프로젝트를 깔 폴더") is not { } folder)
+            if (await PickFolderAsync(Ui.Main_FolderForNewProject) is not { } folder)
             {
                 return;
             }
@@ -601,7 +602,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            Report("새 프로젝트", exception);
+            Report(Ui.Main_NewProject, exception);
         }
     }
 
@@ -621,7 +622,7 @@ public partial class MainWindow : Window
 
         _session.NewProject();
         _session.Save(ProjectFolder.NewManifestPathIn(folder));
-        _session.SetStatus("새 프로젝트를 만들었습니다 — 판 한가운데의 [＋ 첫 챕터 만들기]를 누르면 첫 챕터 · 장면과 함께 카드가 섭니다.");
+        _session.SetStatus(Ui.Main_CreatedNewProjectPressCreate);
         RefreshShell();
         RebuildFileList();   // 하이어아키의 빈 목록 안내도 「저장된 프로젝트」의 것으로
         MainTabs.SelectedItem = GraphTabItem;
@@ -632,14 +633,14 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (await PickFolderAsync("프로젝트 폴더 열기") is { } folder)
+            if (await PickFolderAsync(Ui.Main_OpenProjectFolder) is { } folder)
             {
                 OpenFolder(folder);
             }
         }
         catch (Exception exception)
         {
-            Report("프로젝트 열기", exception);
+            Report(Ui.Main_OpenProject, exception);
         }
     }
 
@@ -662,7 +663,7 @@ public partial class MainWindow : Window
 
         if (storage is null || !storage.CanPickFolder)
         {
-            _session.SetStatus("이 환경에서는 폴더 선택 창을 열 수 없습니다.");
+            _session.SetStatus(Ui.Main_FolderPickerCanTBe);
             return null;
         }
 
@@ -681,7 +682,7 @@ public partial class MainWindow : Window
 
             if (_session.ProjectPath is null)
             {
-                _session.SetStatus("프로젝트 폴더가 없습니다 — File 메뉴의 [새 프로젝트…]로 폴더를 고르세요.");
+                _session.SetStatus(Ui.Main_ThereIsNoProjectFolder);
                 return;
             }
 
@@ -695,7 +696,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
-            Report("저장", exception);
+            Report(Ui.Main_Save, exception);
         }
     }
 
@@ -724,12 +725,12 @@ public partial class MainWindow : Window
         if (_session.IsDirty)
         {
             ShowOutsideChangeBar();
-            _session.SetStatus("프로젝트 파일이 다른 곳에서 바뀌었습니다 — 이 창에 저장하지 않은 것이 있어 다시 읽지 않았습니다. 위 띠에서 고르세요.");
+            _session.SetStatus(Ui.Main_ProjectFileWasChangedElsewhere);
             return;
         }
 
         ReopenFromDisk();
-        _session.SetStatus($"프로젝트 파일이 다른 곳에서 바뀌어 다시 읽었습니다 ({DateTime.Now:HH:mm}) — GitHub Desktop의 받기 등.");
+        _session.SetStatus(string.Format(Ui.Main_ProjectFileWasChangedElsewhere2, DateTime.Now));
     }
 
     private void ShowOutsideChangeBar() => OutsideChangeBar.IsVisible = true;
@@ -741,19 +742,19 @@ public partial class MainWindow : Window
         _session.Open(_session.ProjectPath!);
     }
 
-    private void OnOutsideReloadClick(object? sender, RoutedEventArgs e) => UiGuard.Run(_session, "다시 열기", () =>
+    private void OnOutsideReloadClick(object? sender, RoutedEventArgs e) => UiGuard.Run(_session, Ui.Main_Reload, () =>
     {
         ReopenFromDisk();
-        _session.SetStatus("다른 곳에서 바뀐 프로젝트 파일을 다시 읽었습니다 — 여기서 저장하지 않았던 것은 버렸습니다.");
+        _session.SetStatus(Ui.Main_ReloadedProjectFileChangedElsewhere);
     });
 
-    private void OnOutsideOverwriteClick(object? sender, RoutedEventArgs e) => UiGuard.Run(_session, "덮어쓰기", () =>
+    private void OnOutsideOverwriteClick(object? sender, RoutedEventArgs e) => UiGuard.Run(_session, Ui.Main_Overwrite, () =>
     {
         Graph.FlushWriting();
         _session.Save(overwriteOutsideChanges: true);
         OutsideChangeBar.IsVisible = false;
         RefreshShell();
-        _session.SetStatus("이 창의 것으로 덮어썼습니다 — 다른 곳에서 바뀌었던 내용은 Git의 기록(History)에 남아 있습니다.");
+        _session.SetStatus(Ui.Main_OverwroteWithThisWindowS);
     });
 
     // ── 내보내기 ────────────────────────────────────────────────────────────
@@ -773,7 +774,7 @@ public partial class MainWindow : Window
     {
         if (_session?.ProjectPath is not { } projectPath)
         {
-            _session?.SetStatus("프로젝트를 먼저 저장해야 작업 폴더가 정해집니다.");
+            _session?.SetStatus(Ui.Main_SaveProjectFirstToSet);
             return;
         }
 
@@ -782,8 +783,7 @@ public partial class MainWindow : Window
         if (!Directory.Exists(folder))
         {
             _session.SetStatus(
-                $"작업 폴더가 아직 없습니다 — 검증을 통과한 챕터가 생기면 진행 JSON이 저절로 " +
-                $"여기 나갑니다: {folder}");
+                string.Format(Ui.Main_ThereIsNoWorkFolder, folder));
             return;
         }
 
@@ -801,7 +801,7 @@ public partial class MainWindow : Window
 
         DialogueEditor.IsVisible = !summary && node is DialogueNode;
         EmptyText.IsVisible = !summary && node is null;
-        EmptyText.Text = "노드를 선택하면 여기서 편집합니다.";
+        EmptyText.Text = Ui.Main_SelectNodeToEditIt;
 
         if (!summary && node is DialogueNode)
         {
@@ -835,7 +835,7 @@ public partial class MainWindow : Window
     /// 메뉴로 가 칸이 쓰던 글을 먼저 넣으므로, 메뉴의 되돌리기는 그 글부터 되돌린다 — 키와 같은 결과다.
     /// </summary>
     private void UndoOrRedo(bool redo) =>
-        UiGuard.Run(_session, redo ? "다시 실행" : "되돌리기", () =>
+        UiGuard.Run(_session, redo ? Ui.Main_Redo : Ui.Main_Undo, () =>
         {
             if (Graph.IsWritingFocused)
             {
@@ -862,14 +862,14 @@ public partial class MainWindow : Window
         string name = ProjectDisplayTitle();
 
         ProjectNameText.Text = name;
-        ProjectPathText.Text = _session.ProjectPath ?? "저장되지 않음";
+        ProjectPathText.Text = _session.ProjectPath ?? Ui.Main_NotSaved;
         ChapterGraph.ChapterSummaryText.Text = _session.ActiveFile is { } activeFile
-            ? $"현재: {activeFile.Name}"
-            : "현재 작업 파일 없음";
+            ? string.Format(Ui.Main_Current, activeFile.Name)
+            : Ui.Main_NoCurrentFile;
         StatusText.Text = _session.StatusMessage;
 
         bool dirty = _session.IsDirty;
-        DirtyText.Text = dirty ? "● 저장되지 않은 변경" : string.Empty;
+        DirtyText.Text = dirty ? Ui.Main_UnsavedChanges : string.Empty;
 
         Title = dirty ? $"* {BaseTitle} — {name}" : $"{BaseTitle} — {name}";
 
@@ -888,7 +888,7 @@ public partial class MainWindow : Window
     private void Report(string action, Exception exception)
     {
         StartupLog.TryWrite(action, exception);
-        _session.SetStatus($"{action}하지 못했습니다. {exception.Message}");
+        _session.SetStatus(string.Format(Ui.Main_CouldnTComplete, action, exception.Message));
         RefreshShell();
     }
 }

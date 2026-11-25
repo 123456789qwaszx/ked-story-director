@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:Vn.App.Strings"
         xmlns:views="using:Vn.App.Views"
         x:Class="Vn.App.MainWindow"
         Width="1400"
@@ -35,18 +36,18 @@
                               Padding="{DynamicResource ButtonPadding}"
                               MinHeight="32"
                               VerticalAlignment="Stretch">
-                        <MenuItem x:Name="NewMenuItem" Header="새 프로젝트…"
-                                  ToolTip.Tip="폴더를 고르면 그 안에 프로젝트를 깝니다(project.vnproject.json · story/)." />
-                        <MenuItem x:Name="OpenMenuItem" Header="열기…"
-                                  ToolTip.Tip="프로젝트 폴더를 고릅니다." />
+                        <MenuItem x:Name="NewMenuItem" Header="{x:Static s:Ui.Main_NewProject2}"
+                                  ToolTip.Tip="{x:Static s:Ui.Main_ChooseFolderToCreateProject}" />
+                        <MenuItem x:Name="OpenMenuItem" Header="{x:Static s:Ui.Main_Open}"
+                                  ToolTip.Tip="{x:Static s:Ui.Main_ChooseProjectFolder}" />
                         <Separator />
                         <!-- 단축키 글(Ctrl+S · 맥은 ⌘S)은 코드가 단다 — OS마다 갈리는 것은 PlatformKeys 한 벌이다(MainWindow.axaml.cs). -->
-                        <MenuItem x:Name="SaveMenuItem" Header="저장" />
+                        <MenuItem x:Name="SaveMenuItem" Header="{x:Static s:Ui.Main_Save}" />
                         <Separator />
-                        <MenuItem x:Name="UndoMenuItem" Header="되돌리기"
-                                  ToolTip.Tip="방금 한 편집 하나를 되돌립니다." />
-                        <MenuItem x:Name="RedoMenuItem" Header="다시 실행"
-                                  ToolTip.Tip="되돌린 편집을 다시 합니다." />
+                        <MenuItem x:Name="UndoMenuItem" Header="{x:Static s:Ui.Main_Undo}"
+                                  ToolTip.Tip="{x:Static s:Ui.Main_UndoesYourLastEdit}" />
+                        <MenuItem x:Name="RedoMenuItem" Header="{x:Static s:Ui.Main_Redo}"
+                                  ToolTip.Tip="{x:Static s:Ui.Main_RedoesEditYouUndid}" />
                     </MenuItem>
                 </Menu>
 
@@ -59,12 +60,12 @@
                   연출 든 게임용 Yarn은 ked-story-compositor가 낸다.
                 -->
                 <!-- ⛔ 2026-11-18까지 이름이 [📂 챕터진행]이었다(소유자 — 「작업 폴더로 바꿔주십시오」). -->
-                <Button Grid.Column="2" x:Name="WorkFolderButton" Content="📂 작업 폴더" VerticalAlignment="Stretch"
-                        ToolTip.Tip="작업 폴더(프로젝트 폴더의 exported/)를 엽니다 — 툴이 저절로 내는 챕터별 진행 JSON · 대사 Yarn(yarn/)이 여기 있습니다." />
+                <Button Grid.Column="2" x:Name="WorkFolderButton" Content="{x:Static s:Ui.Main_WorkFolder}" VerticalAlignment="Stretch"
+                        ToolTip.Tip="{x:Static s:Ui.Main_OpensWorkFolderExportedIn}" />
 
                 <!-- 설정은 이 창 하나에 모은다(2026-11-17 · docs/work-orders/settings-orders.md). -->
-                <Button Grid.Column="3" x:Name="SettingsButton" Content="⚙ 설정" Margin="6,0,0,0" VerticalAlignment="Stretch"
-                        ToolTip.Tip="설정 — [대본] 판 크기 · 복제할 폴더(게임 폴더 등) · 단축키 · 미니맵 · 설명 간소화" />
+                <Button Grid.Column="3" x:Name="SettingsButton" Content="{x:Static s:Ui.Main_Settings2}" Margin="6,0,0,0" VerticalAlignment="Stretch"
+                        ToolTip.Tip="{x:Static s:Ui.Main_SettingsScriptBoardSizeMirror}" />
 
                 <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock x:Name="ProjectNameText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
@@ -98,9 +99,9 @@
                            VerticalAlignment="Center"
                            TextWrapping="Wrap"
                            Foreground="#5A4300"
-                           Text="⚠ 이 프로젝트의 파일이 다른 곳에서 바뀌었습니다(GitHub Desktop의 받기 등). 이 창에 아직 저장하지 않은 것이 있어 저장을 멈췄습니다 — 어느 쪽을 남길지 고르세요." />
-                <Button x:Name="OutsideReloadButton" Grid.Column="1" Content="다시 열기 (여기서 고친 것 버림)" />
-                <Button x:Name="OutsideOverwriteButton" Grid.Column="3" Content="내 것으로 덮어쓰기" />
+                           Text="{x:Static s:Ui.Main_ThisProjectSFilesWere}" />
+                <Button x:Name="OutsideReloadButton" Grid.Column="1" Content="{x:Static s:Ui.Main_ReloadDiscardChangesHere}" />
+                <Button x:Name="OutsideOverwriteButton" Grid.Column="3" Content="{x:Static s:Ui.Main_OverwriteWithMine}" />
             </Grid>
         </Border>
 
@@ -137,8 +138,8 @@
                     <Setter Property="Padding" Value="12,0" />
                 </Style>
             </TabControl.Styles>
-            <TabItem x:Name="GraphTabItem" Header="대본" />
-            <TabItem x:Name="ChapterTabItem" Header="구성" />
+            <TabItem x:Name="GraphTabItem" Header="{x:Static s:Ui.Main_Script}" />
+            <TabItem x:Name="ChapterTabItem" Header="{x:Static s:Ui.Main_Structure}" />
         </TabControl>
 
         <Panel x:Name="TabBodies">

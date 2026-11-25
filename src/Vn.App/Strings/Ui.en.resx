@@ -28,4 +28,691 @@
   <data name="Settings_LanguageRestart" xml:space="preserve">
     <value>Restart the app to switch to {0}.</value>
   </data>
+  <data name="Main_SelectNodeToEditIt" xml:space="preserve">
+    <value>Select a node to edit it here.</value>
+  </data>
+  <data name="Main_ScreenAction" xml:space="preserve">
+    <value>Screen action</value>
+  </data>
+  <data name="Main_SelectChapter" xml:space="preserve">
+    <value>Select chapter</value>
+  </data>
+  <data name="Main_ChoiceSlots" xml:space="preserve">
+    <value>Choice slots</value>
+  </data>
+  <data name="Main_CheckChangedFiles" xml:space="preserve">
+    <value>Check changed files</value>
+  </data>
+  <data name="Main_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Main_OpenWorkFolder" xml:space="preserve">
+    <value>Open work folder</value>
+  </data>
+  <data name="Main_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Main_FitToScreen" xml:space="preserve">
+    <value>Fit to screen</value>
+  </data>
+  <data name="Main_Find" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="Main_Autosave" xml:space="preserve">
+    <value>Autosave</value>
+  </data>
+  <data name="Main_AutosaveStoppedProjectFileWas" xml:space="preserve">
+    <value>Autosave stopped ({0:HH:mm}) — the project file was changed elsewhere. Choose in the bar above.</value>
+  </data>
+  <data name="Main_Autosaved" xml:space="preserve">
+    <value>Autosaved ({0:HH:mm})</value>
+  </data>
+  <data name="Main_CouldnTOpenProjectYou" xml:space="preserve">
+    <value>Couldn't open the project you had open last time. Try again with “Open…”. ({0})</value>
+  </data>
+  <data name="Main_CouldnTCreateChapter" xml:space="preserve">
+    <value>Couldn't create the chapter.</value>
+  </data>
+  <data name="Main_CreatedChapterWithSceneRename" xml:space="preserve">
+    <value>Created chapter “{0}” with scene “{1}” · “{2}”. Rename them at the top of the “Conditions &amp; stats” tab on the right or in the Hierarchy.</value>
+  </data>
+  <data name="Main_CouldnTRemoveOldProgression" xml:space="preserve">
+    <value> ⚠ Couldn't remove the old progression JSON '{0}' — check whether another program has it open.</value>
+  </data>
+  <data name="Main_RemovedOldProgressionJSONSame" xml:space="preserve">
+    <value> Removed the old progression JSON '{0}' (the same file in the mirror folder is removed on the next save).</value>
+  </data>
+  <data name="Main_ChapterWillBeRemovedAlong" xml:space="preserve">
+    <value>Chapter “{0}” will be removed along with its scenes, episodes, and its cards in the [Script] tab. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Main_DeleteChapter" xml:space="preserve">
+    <value>Delete chapter</value>
+  </data>
+  <data name="Main_DeletedChapterAndCardsIn" xml:space="preserve">
+    <value>Deleted chapter “{0}” (and {1} cards in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Main_FolderForNewProject" xml:space="preserve">
+    <value>Folder for the new project</value>
+  </data>
+  <data name="Main_NewProject" xml:space="preserve">
+    <value>New project</value>
+  </data>
+  <data name="Main_CreatedNewProjectPressCreate" xml:space="preserve">
+    <value>Created a new project — press [＋ Create first chapter] in the middle of the board to add the first chapter and scene with a card.</value>
+  </data>
+  <data name="Main_OpenProjectFolder" xml:space="preserve">
+    <value>Open project folder</value>
+  </data>
+  <data name="Main_OpenProject" xml:space="preserve">
+    <value>Open project</value>
+  </data>
+  <data name="Main_FolderPickerCanTBe" xml:space="preserve">
+    <value>The folder picker can't be opened in this environment.</value>
+  </data>
+  <data name="Main_ThereIsNoProjectFolder" xml:space="preserve">
+    <value>There is no project folder — choose a folder with [New project…] in the File menu.</value>
+  </data>
+  <data name="Main_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Main_ProjectFileWasChangedElsewhere" xml:space="preserve">
+    <value>The project file was changed elsewhere — it wasn't reloaded because this window has unsaved changes. Choose in the bar above.</value>
+  </data>
+  <data name="Main_ProjectFileWasChangedElsewhere2" xml:space="preserve">
+    <value>The project file was changed elsewhere and has been reloaded ({0:HH:mm}) — e.g. a pull in GitHub Desktop.</value>
+  </data>
+  <data name="Main_Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="Main_ReloadedProjectFileChangedElsewhere" xml:space="preserve">
+    <value>Reloaded the project file changed elsewhere — unsaved changes made here were discarded.</value>
+  </data>
+  <data name="Main_Overwrite" xml:space="preserve">
+    <value>Overwrite</value>
+  </data>
+  <data name="Main_OverwroteWithThisWindowS" xml:space="preserve">
+    <value>Overwrote with this window's version — the changes made elsewhere remain in Git's History.</value>
+  </data>
+  <data name="Main_SaveProjectFirstToSet" xml:space="preserve">
+    <value>Save the project first to set its work folder.</value>
+  </data>
+  <data name="Main_ThereIsNoWorkFolder" xml:space="preserve">
+    <value>There is no work folder yet — once a chapter passes validation, its progression JSON is written here automatically: {0}</value>
+  </data>
+  <data name="Main_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Main_Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="Main_NotSaved" xml:space="preserve">
+    <value>Not saved</value>
+  </data>
+  <data name="Main_Current" xml:space="preserve">
+    <value>Current: {0}</value>
+  </data>
+  <data name="Main_NoCurrentFile" xml:space="preserve">
+    <value>No current file</value>
+  </data>
+  <data name="Main_UnsavedChanges" xml:space="preserve">
+    <value>● Unsaved changes</value>
+  </data>
+  <data name="Main_CouldnTComplete" xml:space="preserve">
+    <value>Couldn't complete “{0}”. {1}</value>
+  </data>
+  <data name="Main_NewProject2" xml:space="preserve">
+    <value>New project…</value>
+  </data>
+  <data name="Main_ChooseFolderToCreateProject" xml:space="preserve">
+    <value>Choose a folder to create the project in (project.vnproject.json · story/).</value>
+  </data>
+  <data name="Main_Open" xml:space="preserve">
+    <value>Open…</value>
+  </data>
+  <data name="Main_ChooseProjectFolder" xml:space="preserve">
+    <value>Choose a project folder.</value>
+  </data>
+  <data name="Main_UndoesYourLastEdit" xml:space="preserve">
+    <value>Undoes your last edit.</value>
+  </data>
+  <data name="Main_RedoesEditYouUndid" xml:space="preserve">
+    <value>Redoes the edit you undid.</value>
+  </data>
+  <data name="Main_WorkFolder" xml:space="preserve">
+    <value>📂 Work folder</value>
+  </data>
+  <data name="Main_OpensWorkFolderExportedIn" xml:space="preserve">
+    <value>Opens the work folder (exported/ in the project folder) — the per-chapter progression JSON and Yarn dialogue (yarn/) that the tool writes automatically are here.</value>
+  </data>
+  <data name="Main_Settings2" xml:space="preserve">
+    <value>⚙ Settings</value>
+  </data>
+  <data name="Main_SettingsScriptBoardSizeMirror" xml:space="preserve">
+    <value>Settings — [Script] board size · mirror folders (game folder etc.) · shortcuts · minimap · fewer hints</value>
+  </data>
+  <data name="Main_ThisProjectSFilesWere" xml:space="preserve">
+    <value>⚠ This project's files were changed elsewhere (e.g. a pull in GitHub Desktop). Saving has stopped because this window has unsaved changes — choose which to keep.</value>
+  </data>
+  <data name="Main_ReloadDiscardChangesHere" xml:space="preserve">
+    <value>Reload (discard changes here)</value>
+  </data>
+  <data name="Main_OverwriteWithMine" xml:space="preserve">
+    <value>Overwrite with mine</value>
+  </data>
+  <data name="Main_Script" xml:space="preserve">
+    <value>Script</value>
+  </data>
+  <data name="Main_Structure" xml:space="preserve">
+    <value>Structure</value>
+  </data>
+  <data name="Main_SomethingWentWrongInSo" xml:space="preserve">
+    <value>Something went wrong in “{0}”, so the action was canceled: {1}</value>
+  </data>
+  <data name="Startup_CouldnTStart" xml:space="preserve">
+    <value>{0} — couldn't start</value>
+  </data>
+  <data name="Startup_Starting" xml:space="preserve">
+    <value>starting {0}</value>
+  </data>
+  <data name="Startup_PleaseSendTextBelowTo" xml:space="preserve">
+    <value>Please send the text below to the developer as is.</value>
+  </data>
+  <data name="Startup_SomethingWentWrongWhileDetails" xml:space="preserve">
+    <value>Something went wrong while {0}. The details were saved to this file.
+{1}</value>
+  </data>
+  <data name="Settings_ResetToDefault" xml:space="preserve">
+    <value>Reset to default ({0:N0} × {1:N0})</value>
+  </data>
+  <data name="Settings_HideMinimap" xml:space="preserve">
+    <value>Hide minimap</value>
+  </data>
+  <data name="Settings_HidesOverviewMapAndZoom" xml:space="preserve">
+    <value>Hides the overview map and zoom buttons at the bottom right of the [Script] board. Only the current zoom (e.g. 28%) stays as faint text, and clicking there reaches the writing box underneath.</value>
+  </data>
+  <data name="Settings_FewerHints" xml:space="preserve">
+    <value>Fewer hints</value>
+  </data>
+  <data name="Settings_WhenOnHowToHints" xml:space="preserve">
+    <value>When on, the how-to hints in the Inspector · Speakers · Conditions &amp; stats are hidden, and lines like “No stats yet — type a key in the box below and press [＋ Add]” keep only their first part. Field names, titles and warnings stay.</value>
+  </data>
+  <data name="Settings_Minimap" xml:space="preserve">
+    <value>Minimap</value>
+  </data>
+  <data name="Settings_WheelPansBoard" xml:space="preserve">
+    <value>Wheel pans the board</value>
+  </data>
+  <data name="Settings_WhenOnWheelOverBoard" xml:space="preserve">
+    <value>When on, the wheel over the board (two-finger swipe on a touchpad) pans the board, and zooming is Ctrl (⌘ on Mac) + wheel — on a Mac trackpad you can also pinch. When off, the wheel zooms. Dragging with the middle button pans either way. Turn this on if you use a touchpad.</value>
+  </data>
+  <data name="Settings_ShapeOfNewLinesDrawn" xml:space="preserve">
+    <value>The shape of new lines drawn on the [Script] board (choice paths · branch lines) — existing lines stay as they are (select a line to change it from the menu on the line). A line's “↺ Auto” also returns to this shape's default.</value>
+  </data>
+  <data name="Settings_NewLines" xml:space="preserve">
+    <value>New lines</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Settings_LineSpacingForNewCards" xml:space="preserve">
+    <value>Line spacing for new cards — a % of the font size (160 means “line spacing 160%” in a word processor). Existing cards stay as they are (change a card's line spacing with the formatting toolbar at the top of [Script]). It stops at the narrowest value for the chosen font and size (the height of one line of Hangul) — going lower would only lower the number, not the screen.</value>
+  </data>
+  <data name="Settings_FontForNewCardsExisting" xml:space="preserve">
+    <value>Font for new cards — existing cards stay as they are (change the font of selected text with the formatting toolbar at the top of [Script]).</value>
+  </data>
+  <data name="Settings_FontSizeForNewCards" xml:space="preserve">
+    <value>Font size for new cards — existing cards stay as they are (change the size of selected text with the formatting toolbar at the top of [Script]).</value>
+  </data>
+  <data name="Settings_WillowWindSColdToday" xml:space="preserve">
+    <value>Willow: The wind's cold today.
+Laru: Right? I should've brought a jacket.
+The two climb the hill without a word.</value>
+  </data>
+  <data name="Settings_PreviewThisIsHowWriting" xml:space="preserve">
+    <value>Preview — this is how the writing box of a new card looks.</value>
+  </data>
+  <data name="Settings_Bold" xml:space="preserve">
+    <value>Bold</value>
+  </data>
+  <data name="Settings_WritesAllTextOfNew" xml:space="preserve">
+    <value>Writes all text of new cards in bold — existing cards stay as they are.</value>
+  </data>
+  <data name="Settings_ClearTextColorUseTheme" xml:space="preserve">
+    <value>Clear the text color — use the theme's text color</value>
+  </data>
+  <data name="Settings_TextColorForNewCards" xml:space="preserve">
+    <value>Text color for new cards — existing cards stay as they are (change the color of selected text with the formatting toolbar at the top of [Script]).</value>
+  </data>
+  <data name="Settings_ScriptWritingBox" xml:space="preserve">
+    <value>Script writing box</value>
+  </data>
+  <data name="Settings_ResetToDefaultDefaultFont" xml:space="preserve">
+    <value>Reset to default (default font · {0:0} · {1}%)</value>
+  </data>
+  <data name="Settings_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Settings_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Settings_AlwaysWrittenToWorkFolder" xml:space="preserve">
+    <value>Always written to the work folder (exported/), and copied to the chosen folders when you save (Ctrl+S).</value>
+  </data>
+  <data name="Settings_Shortcuts" xml:space="preserve">
+    <value>Shortcuts</value>
+  </data>
+  <data name="Settings_ThisProject" xml:space="preserve">
+    <value>This project</value>
+  </data>
+  <data name="Settings_Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Settings_Elbow" xml:space="preserve">
+    <value>Elbow</value>
+  </data>
+  <data name="Settings_Curve" xml:space="preserve">
+    <value>Curve</value>
+  </data>
+  <data name="Settings_Straight" xml:space="preserve">
+    <value>Straight</value>
+  </data>
+  <data name="Settings_CouldnTReadPath" xml:space="preserve">
+    <value>Couldn't read the path — {0}</value>
+  </data>
+  <data name="Settings_SaveProjectFirstToChoose" xml:space="preserve">
+    <value>Save the project first to choose a mirror folder.</value>
+  </data>
+  <data name="Settings_YarnDialogueIsnTCopied" xml:space="preserve">
+    <value>Yarn dialogue isn't copied to the same place as the game folder (the progression JSON mirror folder) — the game's Yarn project would read node names twice alongside the compositor's staged Yarn and fail to compile.</value>
+  </data>
+  <data name="Settings_TurnedOffAllMirrorFolders" xml:space="preserve">
+    <value>Turned off all mirror folders — output goes to exported/ only.</value>
+  </data>
+  <data name="Settings_ChangedMirrorFoldersCopiesGo" xml:space="preserve">
+    <value>Changed the mirror folders — copies go there from the next save (Ctrl+S).</value>
+  </data>
+  <data name="Settings_NoHasBeenWrittenTo" xml:space="preserve">
+    <value>No {0} has been written to the work folder yet — it's written automatically once a chapter passes validation.</value>
+  </data>
+  <data name="Settings_OnePerChapterGameProgression" xml:space="preserve">
+    <value>One per chapter — the game progression file with episodes · choices · conditions ({{chapter}}{0}). The game (runtime) loads it. Its mirror folder is the game's ChapterProgression folder. Click to show the current chapter's file in the work folder.</value>
+  </data>
+  <data name="Settings_OnePerSceneYarnWith" xml:space="preserve">
+    <value>One per scene — Yarn with only dialogue · conditions · branches, no staging ({0}/{{chapter}}_{{scene}}.yarn). Use it to check that the dialogue runs on its own. Click to open the {0}/ folder in the work folder.</value>
+  </data>
+  <data name="Settings_SaveProjectFirstToChoose2" xml:space="preserve">
+    <value>Save the project first to choose a mirror folder (paths are written relative to the project folder).</value>
+  </data>
+  <data name="Settings_ShowInWorkFolder" xml:space="preserve">
+    <value>Show in work folder</value>
+  </data>
+  <data name="Settings_NotCopiedBrowseToGame" xml:space="preserve">
+    <value>Not copied — browse to the game's ChapterProgression folder or paste a path</value>
+  </data>
+  <data name="Settings_NotCopiedBrowseToMirror" xml:space="preserve">
+    <value>Not copied — browse to a mirror folder or paste a path</value>
+  </data>
+  <data name="Settings_Browse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="Settings_MirrorFolder" xml:space="preserve">
+    <value>Mirror folder — {0}</value>
+  </data>
+  <data name="Settings_MirrorFolderForProgressionJSON" xml:space="preserve">
+    <value>The mirror folder for progression JSON is the runtime's ChapterProgression folder (the game folder), and the compositor also reads this field to write Yarn. Yarn dialogue isn't copied to the same place as the game folder (its node names would clash with the staged Yarn). Folders that don't exist aren't created.</value>
+  </data>
+  <data name="Settings_ThisFolderDoesnTExist" xml:space="preserve">
+    <value>⚠ This folder doesn't exist — it won't be created. Create the folder, then browse again.</value>
+  </data>
+  <data name="Settings_Width" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="Settings_Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="Settings_ScriptBoardSize" xml:space="preserve">
+    <value>[Script] board size</value>
+  </data>
+  <data name="Settings_AllChaptersCardsSitOn" xml:space="preserve">
+    <value>All chapters' cards sit on one board. Make it bigger as the script grows. Each side is {0:N0} ~ {1:N0} and grows from the top left to the right and down. If shrinking pushes cards off the board, all card positions are scaled down by the same ratio to fit.</value>
+  </data>
+  <data name="Settings_CardsWouldGoOffBoard" xml:space="preserve">
+    <value>⚠ {0} cards would go off the board — all card positions will be scaled down by the same ratio to bring them in. One undo (Ctrl+Z) brings them back.</value>
+  </data>
+  <data name="Settings_BoardWillBeToMake" xml:space="preserve">
+    <value>The board will be {0:N0} × {1:N0} to make room for the cards.</value>
+  </data>
+  <data name="Settings_Font" xml:space="preserve">
+    <value>Font</value>
+  </data>
+  <data name="Settings_FontSize" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+  <data name="Settings_LineSpacing" xml:space="preserve">
+    <value>Line spacing (%)</value>
+  </data>
+  <data name="Settings_Weight" xml:space="preserve">
+    <value>Weight</value>
+  </data>
+  <data name="Settings_TextColor" xml:space="preserve">
+    <value>Text color</value>
+  </data>
+  <data name="Settings_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Keys_AnywhereInWindow" xml:space="preserve">
+    <value>Anywhere in the window</value>
+  </data>
+  <data name="Keys_UndoAlsoInFileMenu" xml:space="preserve">
+    <value>Undo (also in the File menu) — inside a writing box, undoes that box's typing</value>
+  </data>
+  <data name="Keys_RedoAlsoInFileMenu" xml:space="preserve">
+    <value>Redo (also in the File menu) — inside a writing box, that box takes it first</value>
+  </data>
+  <data name="Keys_CloseDeleteConfirmationClickingOutside" xml:space="preserve">
+    <value>Close the delete confirmation — clicking outside also closes it</value>
+  </data>
+  <data name="Keys_ScriptBoard" xml:space="preserve">
+    <value>[Script] board</value>
+  </data>
+  <data name="Keys_MouseWheel" xml:space="preserve">
+    <value>Mouse wheel</value>
+  </data>
+  <data name="Keys_ZoomWithWheelPansBoard" xml:space="preserve">
+    <value>Zoom — with “Wheel pans the board” on in Settings (on from the start on Mac), pans the board</value>
+  </data>
+  <data name="Keys_CtrlMouseWheelTrackpadPinch" xml:space="preserve">
+    <value>Ctrl+mouse wheel · trackpad pinch</value>
+  </data>
+  <data name="Keys_ZoomWhetherWheelPansBoard" xml:space="preserve">
+    <value>Zoom — whether “Wheel pans the board” is on or off</value>
+  </data>
+  <data name="Keys_MiddleButtonDrag" xml:space="preserve">
+    <value>Middle-button drag</value>
+  </data>
+  <data name="Keys_PanBoard" xml:space="preserve">
+    <value>Pan the board</value>
+  </data>
+  <data name="Keys_DragOnEmptySpace" xml:space="preserve">
+    <value>Drag on empty space</value>
+  </data>
+  <data name="Keys_SelectAreaDraggingAnySelected" xml:space="preserve">
+    <value>Select an area — dragging any selected card moves them together</value>
+  </data>
+  <data name="Keys_RightClickEmptySpace" xml:space="preserve">
+    <value>Right-click empty space</value>
+  </data>
+  <data name="Keys_AddChapterSceneEpisodeDepending" xml:space="preserve">
+    <value>Add a chapter · scene · episode, depending on where you click</value>
+  </data>
+  <data name="Keys_DeleteSelectedCardEpisodeBranch" xml:space="preserve">
+    <value>Delete the selected card (episode · branch card) — no confirmation, one undo step (outside a writing box)</value>
+  </data>
+  <data name="Keys_FindDialogueSpeakersCardTitles" xml:space="preserve">
+    <value>Find — dialogue · speakers · card titles. Enter next · Shift+Enter previous · Esc closes and keeps writing at the found line (folded scenes · chapters unfold)</value>
+  </data>
+  <data name="Keys_FitSelectionToScreenEpisodes" xml:space="preserve">
+    <value>Fit the selection to the screen — episodes · branch cards centered at 100%, scenes · chapters so their frame fits (outside a writing box)</value>
+  </data>
+  <data name="Keys_DoubleClickCardSTitle" xml:space="preserve">
+    <value>Double-click a card's title text</value>
+  </data>
+  <data name="Keys_RenameTitleInPlaceEnter" xml:space="preserve">
+    <value>Rename the title in place — Enter applies · Esc or clicking elsewhere cancels</value>
+  </data>
+  <data name="Keys_RightClickCard" xml:space="preserve">
+    <value>Right-click a card</value>
+  </data>
+  <data name="Keys_RenameShowInStructureTab" xml:space="preserve">
+    <value>Rename · Show in [Structure] tab</value>
+  </data>
+  <data name="Keys_DoubleClickChoiceLine" xml:space="preserve">
+    <value>Double-click a choice line</value>
+  </data>
+  <data name="Keys_GoToThatChoiceIn" xml:space="preserve">
+    <value>Go to that choice in the [Structure] tab</value>
+  </data>
+  <data name="Keys_ClickChapterSceneLabel" xml:space="preserve">
+    <value>Click a chapter · scene label</value>
+  </data>
+  <data name="Keys_SelectsEveryCardInsideDrag" xml:space="preserve">
+    <value>Selects every card inside — drag right away to move them together</value>
+  </data>
+  <data name="Keys_DoubleClickLabel" xml:space="preserve">
+    <value>Double-click a label</value>
+  </data>
+  <data name="Keys_CollapseDoubleClickCollapsedLabel" xml:space="preserve">
+    <value>Collapse — double-click a collapsed label · scene to expand</value>
+  </data>
+  <data name="Keys_DoubleClickSizeHandle" xml:space="preserve">
+    <value>Double-click a size handle</value>
+  </data>
+  <data name="Keys_ResetThatSizeToDefault" xml:space="preserve">
+    <value>Reset that size to the default</value>
+  </data>
+  <data name="Keys_ClickDragMinimap" xml:space="preserve">
+    <value>Click · drag the minimap</value>
+  </data>
+  <data name="Keys_MoveViewThere" xml:space="preserve">
+    <value>Move the view there</value>
+  </data>
+  <data name="Keys_ScriptCardWritingBox" xml:space="preserve">
+    <value>[Script] card writing box</value>
+  </data>
+  <data name="Keys_NewLineOneLineIs" xml:space="preserve">
+    <value>New line — one line is one dialogue line (Speaker: dialogue). Applied when you pause typing or leave the box</value>
+  </data>
+  <data name="Keys_DiscardTextNotYetApplied" xml:space="preserve">
+    <value>Discard text not yet applied</value>
+  </data>
+  <data name="Keys_UndoRedoProjectTextNot" xml:space="preserve">
+    <value>Undo · redo the project — text not yet applied is discarded first</value>
+  </data>
+  <data name="Keys_MouseWheelTrackpad" xml:space="preserve">
+    <value>Mouse wheel · trackpad</value>
+  </data>
+  <data name="Keys_BoardSWheelWorksOver" xml:space="preserve">
+    <value>The board's wheel works over writing boxes too (zoom — pans with “Wheel pans the board” on). For overflowing text use the box's scroll bar or Fit height</value>
+  </data>
+  <data name="Keys_ScriptDialogueEditor" xml:space="preserve">
+    <value>[Script] dialogue editor</value>
+  </data>
+  <data name="Keys_NextFieldPreviousFieldSpeaker" xml:space="preserve">
+    <value>Next field · previous field — speaker → ▾ → dialogue → ＋ → next line</value>
+  </data>
+  <data name="Keys_ToPreviousFieldSameAs" xml:space="preserve">
+    <value>To the previous field (same as Shift+Tab) — go back to the previous line while writing</value>
+  </data>
+  <data name="Keys_AddLineBelowInLine" xml:space="preserve">
+    <value>[Add line below] in the line's ＋ menu — a new line appears below and you write right away in its speaker field</value>
+  </data>
+  <data name="Keys_StructureBoard" xml:space="preserve">
+    <value>[Structure] board</value>
+  </data>
+  <data name="Keys_PanBoardEvenWhenStarting" xml:space="preserve">
+    <value>Pan the board — even when starting over a card · line · choice text</value>
+  </data>
+  <data name="Keys_ClickDragEmptySpace" xml:space="preserve">
+    <value>Click · drag empty space</value>
+  </data>
+  <data name="Keys_ClearSelectionSelectArea" xml:space="preserve">
+    <value>Clear selection · select an area</value>
+  </data>
+  <data name="Keys_FitSelectionToScreenEpisode" xml:space="preserve">
+    <value>Fit the selection to the screen — episode cards · branch chips centered at 100%, a path shows both cards, a scene its cards, a chapter uses [Fit to screen] (outside a writing box)</value>
+  </data>
+  <data name="Keys_DoubleClickEpisodeCard" xml:space="preserve">
+    <value>Double-click an episode card</value>
+  </data>
+  <data name="Keys_GoToThatCardIn" xml:space="preserve">
+    <value>Go to that card in the [Script] tab</value>
+  </data>
+  <data name="Keys_DoubleClickBranchChip" xml:space="preserve">
+    <value>Double-click a branch chip</value>
+  </data>
+  <data name="Keys_GoToThatBranchCard" xml:space="preserve">
+    <value>Go to that branch card in the [Script] tab</value>
+  </data>
+  <data name="Keys_DoubleClickChoiceLineChoice" xml:space="preserve">
+    <value>Double-click a choice line · choice text</value>
+  </data>
+  <data name="Keys_GoToThatChoiceIn2" xml:space="preserve">
+    <value>Go to that choice in the [Script] tab</value>
+  </data>
+  <data name="Keys_Hierarchy" xml:space="preserve">
+    <value>Hierarchy</value>
+  </data>
+  <data name="Keys_MoveBetweenVisibleRowsSide" xml:space="preserve">
+    <value>Move between visible rows — the side panel follows (after clicking a row once)</value>
+  </data>
+  <data name="Keys_CollapseIfAlreadyCollapsedOr" xml:space="preserve">
+    <value>Collapse — if already collapsed or an episode, go to the parent</value>
+  </data>
+  <data name="Keys_ExpandIfAlreadyExpandedGo" xml:space="preserve">
+    <value>Expand — if already expanded, go to the first child</value>
+  </data>
+  <data name="Keys_CtrlClick" xml:space="preserve">
+    <value>Ctrl+click</value>
+  </data>
+  <data name="Keys_AddOrRemoveThatRow" xml:space="preserve">
+    <value>Add or remove that row — select several rows (the board · side panel show the last row clicked)</value>
+  </data>
+  <data name="Keys_ShiftClick" xml:space="preserve">
+    <value>Shift+click</value>
+  </data>
+  <data name="Keys_SelectEveryRowFromOne" xml:space="preserve">
+    <value>Select every row from the one clicked before to this one</value>
+  </data>
+  <data name="Keys_DoubleClickRow" xml:space="preserve">
+    <value>Double-click a row</value>
+  </data>
+  <data name="Keys_RenameEnterAppliesEscClicking" xml:space="preserve">
+    <value>Rename — Enter applies, Esc · clicking elsewhere cancels ([Script] tab)</value>
+  </data>
+  <data name="Keys_RightClick" xml:space="preserve">
+    <value>Right-click</value>
+  </data>
+  <data name="Keys_AddRenameDeleteScriptTab" xml:space="preserve">
+    <value>Add · rename · delete ([Script] tab)</value>
+  </data>
+  <data name="Keys_DragEpisodeRow" xml:space="preserve">
+    <value>Drag an episode row</value>
+  </data>
+  <data name="Keys_DropItOnAnotherScene" xml:space="preserve">
+    <value>Drop it on another scene row in the same chapter to move it into that scene ([Script] tab)</value>
+  </data>
+  <data name="Keys_FindBoxEnter" xml:space="preserve">
+    <value>Find box — Enter · ↓</value>
+  </data>
+  <data name="Keys_SelectFirstMatchThenMove" xml:space="preserve">
+    <value>Select the first match — then ↑ · ↓ move between the matches</value>
+  </data>
+  <data name="Keys_FindBoxEsc" xml:space="preserve">
+    <value>Find box — Esc</value>
+  </data>
+  <data name="Keys_ClearSearchTreeReturnsTo" xml:space="preserve">
+    <value>Clear the search — the tree returns to how you folded it and the selected row stays visible</value>
+  </data>
+  <data name="Keys_TextFields" xml:space="preserve">
+    <value>Text fields</value>
+  </data>
+  <data name="Keys_ApplyClickingElsewhereAlsoApplies" xml:space="preserve">
+    <value>Apply — clicking elsewhere also applies</value>
+  </data>
+  <data name="Keys_RevertToValueBeforeApplying" xml:space="preserve">
+    <value>Revert to the value before applying — focus stays (both tabs)</value>
+  </data>
+  <data name="Keys_ApplySceneNoteEpisodeDirection" xml:space="preserve">
+    <value>Apply a scene note · episode direction — in these two fields Enter is a new line</value>
+  </data>
+  <data name="Keys_LineTableOfDialogueEditor" xml:space="preserve">
+    <value>Line table of the dialogue editor — add · delete line</value>
+  </data>
+  <data name="Keys_SettingsWindowOKCancel" xml:space="preserve">
+    <value>Settings window — OK · Cancel</value>
+  </data>
+  <data name="Session_CopiedOnSaveTo" xml:space="preserve">
+    <value> · Copied on save to: </value>
+  </data>
+  <data name="Session_Nodes" xml:space="preserve">
+    <value>{0}/ · {1} nodes</value>
+  </data>
+  <data name="Session_ThereSNoPathTo" xml:space="preserve">
+    <value>There's no path to save to.</value>
+  </data>
+  <data name="Session_SavedTo" xml:space="preserve">
+    <value>Saved to {0}/.</value>
+  </data>
+  <data name="Session_AlsoCopyingToChosenFolders" xml:space="preserve">
+    <value> Also copying to the chosen folders — the result appears in the validation report in the [Structure] tab.</value>
+  </data>
+  <data name="Session_TypeSpeakerName" xml:space="preserve">
+    <value>Type a speaker name.</value>
+  </data>
+  <data name="Session_SpeakerAlreadyExists" xml:space="preserve">
+    <value>Speaker '{0}' already exists.</value>
+  </data>
+  <data name="Session_NameCanTBeEmpty" xml:space="preserve">
+    <value>The name can't be empty — press ✕ to remove it.</value>
+  </data>
+  <data name="Session_SpeakerDoesnTExistList" xml:space="preserve">
+    <value>Speaker '{0}' doesn't exist — the list has changed.</value>
+  </data>
+  <data name="Session_Speaker" xml:space="preserve">
+    <value>Speaker '{0}' → '{1}'.</value>
+  </data>
+  <data name="Session_SpeakerLinesFollowed" xml:space="preserve">
+    <value>Speaker '{0}' → '{1}' — {2} lines followed.</value>
+  </data>
+  <data name="Session_AddedToSpeakerListIts" xml:space="preserve">
+    <value>Added '{0}' to the speaker list — its character key is temporarily '{2}'. Change it to match the art in the [Structure] tab.</value>
+  </data>
+  <data name="Session_AddedSpeakersToListTheir" xml:space="preserve">
+    <value>Added {0} speakers to the list — their character keys are temporary keys (temp_…). Change them to match the art in the [Structure] tab.</value>
+  </data>
+  <data name="Session_NameCanTBeEmpty2" xml:space="preserve">
+    <value>The name can't be empty — to drop the speaker, clear the speaker field of those lines.</value>
+  </data>
+  <data name="Session_IsAlreadyInListList" xml:space="preserve">
+    <value>'{0}' is already in the list — the list has changed.</value>
+  </data>
+  <data name="Session_AddNameWithSpaceAs" xml:space="preserve">
+    <value>Add the name with a space '{0}' as a speaker above first, then rename — names not in the list aren't read as speakers in the script.</value>
+  </data>
+  <data name="Session_NoLineHasAsIts" xml:space="preserve">
+    <value>No line has '{0}' as its speaker — the script has changed.</value>
+  </data>
+  <data name="Session_MergedLinesOfIntoSpeaker" xml:space="preserve">
+    <value>Merged {1} lines of '{0}' into speaker '{2}'.</value>
+  </data>
+  <data name="Session_ChangedLinesThisNameIsn" xml:space="preserve">
+    <value>'{0}' → '{1}' — changed {2} lines. This name isn't in the list yet.</value>
+  </data>
+  <data name="Session_TypeChapterID" xml:space="preserve">
+    <value>Type a chapter ID.</value>
+  </data>
+  <data name="Session_SaveProjectFirstPlaceWhere" xml:space="preserve">
+    <value>Save the project first — the place where progression JSON goes is set from the project folder.</value>
+  </data>
+  <data name="Session_ChapterAlreadyExists" xml:space="preserve">
+    <value>Chapter '{0}' already exists.</value>
+  </data>
+  <data name="Session_ProjectFileWasChangedElsewhere" xml:space="preserve">
+    <value>The project file was changed elsewhere after it was opened, so it wasn't saved (e.g. a pull in GitHub Desktop). Choose [Reload] or [Overwrite with mine] in the bar above.</value>
+  </data>
+  <data name="App_Name" xml:space="preserve">
+    <value>Story Director</value>
+  </data>
+  <data name="App_DevBuild" xml:space="preserve">
+    <value>dev build</value>
+  </data>
+  <data name="Settings_ExportTitle" xml:space="preserve">
+    <value>Export (choose mirror folders)</value>
+  </data>
+  <data name="Settings_DefaultFont" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Session_NoProjectYet" xml:space="preserve">
+    <value>No project yet — press [Open…] in the middle of the board for a project you received, or [New project…] to start fresh.</value>
+  </data>
 </root>
