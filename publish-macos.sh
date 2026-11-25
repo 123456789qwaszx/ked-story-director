@@ -91,6 +91,7 @@ chmod +x "$app/Contents/MacOS/StoryDirector"
 
 # 안내문 — 앱 곁에(2026-11-19 · writer-release WR3 · Windows 꾸러미와 같은 글).
 cp "docs/작가에게.txt" "$out/먼저 읽어주세요.txt"
+cp "docs/to-writers.en.txt" "$out/Read me first.txt"   # 영어판(2026-11-25 · english-ui E6)
 
 # 제3자 소프트웨어 고지 — 함께 묶이는 오픈소스와 글꼴(Inter)의 저작권 고지 · 라이선스 원문(2026-11-23 소유자 · Windows 꾸러미와 같은 파일).
 cp "THIRD-PARTY-NOTICES.txt" "$out/THIRD-PARTY-NOTICES.txt"
@@ -106,12 +107,12 @@ fi
 if command -v ditto > /dev/null; then
     ditto -c -k "$out" "$zip"
 else
-    (cd "$out" && zip -qry "../$(basename "$zip")" StoryDirector.app "먼저 읽어주세요.txt" "THIRD-PARTY-NOTICES.txt")
+    (cd "$out" && zip -qry "../$(basename "$zip")" StoryDirector.app "먼저 읽어주세요.txt" "Read me first.txt" "THIRD-PARTY-NOTICES.txt")
 fi
 
 echo
 echo "꾸러미: $zip"
 echo "판 번호: $version"
-echo "앱: $app ($(du -sh "$app" | cut -f1)) · 먼저 읽어주세요.txt · THIRD-PARTY-NOTICES.txt"
+echo "앱: $app ($(du -sh "$app" | cut -f1)) · 먼저 읽어주세요.txt · Read me first.txt · THIRD-PARTY-NOTICES.txt"
 echo "받는 사람은 압축을 풀고 StoryDirector.app을 「응용 프로그램」 폴더로 옮긴 뒤 엽니다."
 echo "처음 한 번은 「시스템 설정 → 개인정보 보호 및 보안 → 그래도 열기」를 지나야 합니다(서명 · 공증이 없습니다)."

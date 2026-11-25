@@ -1,0 +1,234 @@
+Story Director — Getting started
+========================================
+
+There's nothing to install. In the folder you unzipped, double-click StoryDirector.exe to open it.
+(Don't run it from inside the zip file — unzip it first.)
+
+⚠ The first time you run it, a blue window ("Windows protected your PC") may appear.
+   Click [More info] → [Run anyway]. It appears because the program isn't signed,
+   and once you allow it, it won't appear again.
+
+The screen language follows your PC's language (Korean PCs get Korean, everything else gets English).
+To change it: [⚙ Settings] at the top → "Other" → "Language (언어)". The change takes effect the next time you start the app.
+(The Korean version of this guide is "먼저 읽어주세요.txt", in the same package.)
+
+
+On a Mac
+----------------------------------------
+
+Unzipping gives you the StoryDirector app. Move it to the Applications folder, then open it.
+
+⚠ The first time you open it, a window says it "can't be opened". It appears because the program isn't signed.
+   Close that window → System Settings → "Privacy & Security" → [Open Anyway] near the bottom → enter your password.
+   After that it won't appear again.
+
+· Shortcuts written as "Ctrl+" in this guide are pressed with ⌘ on a Mac — ⌘S save · ⌘Z undo · ⌘⇧Z redo.
+  (Ctrl works too.)
+· The Delete key for deleting cards is the Mac's delete (⌫) key.
+· Trackpad — swipe with two fingers to move the board, pinch with two fingers to zoom in and out.
+
+
+The first time
+----------------------------------------
+
+1. When you first start it, [Open…] and [New project…] appear in the middle of the board (the File menu has
+   the same). A project is one folder.
+
+   · If you have a project you received (a folder you unzipped from the developer — see "Sending projects back and forth"
+     below), choose [Open…] → that project folder (a folder, not a file).
+   · To start fresh on your own, choose [New project…] → an empty folder to put the project in.
+     project.vnproject.json and a story folder are created inside it.
+
+   From then on, starting the tool reopens the project you had open last.
+
+2. There are two tabs at the top.
+
+   ① Script     — make episodes, write dialogue in cards, and connect choices and branches. This is the writer's place.
+                  The tool opens on this tab.
+   ② Structure  — see the skeleton of the story at a glance: which episodes there are and where they split.
+                  Condition expressions, stats, and the conditions on each choice are set here by the developer.
+
+3. Write dialogue right in the cards on the [Script] tab. In a card's writing box, write "Speaker: dialogue" one line at a time —
+   it's applied automatically when you pause for a moment or leave the box. There's no button to press.
+   If there are no chapters yet, press [＋ Create first chapter] in the middle of the [Script] board.
+
+
+Sending projects back and forth
+----------------------------------------
+
+For now, projects are exchanged as zip files.
+
+When you receive one
+  1. Right-click the project zip from the developer → [Extract All]. Extract it somewhere easy to find, like the Desktop or Documents.
+  2. Story Director → File → [Open…] → the extracted folder (the folder that contains project.vnproject.json).
+     From then on, starting the tool reopens this project.
+
+When you send it back
+  1. Save in Story Director (Ctrl+S).
+  2. In File Explorer, right-click the project folder → [Send to → Compressed (zipped) folder].
+     Adding the date to the name avoids confusion (e.g. ourgame-1120.zip).
+  3. Send that zip to the developer. You can leave out the exported folder or include it.
+
+Rules when working together
+  · Don't edit the same project at the same time as the developer — after you send it, don't edit that project
+    until the developer sends you a new version. Changes the two of you make separately aren't merged.
+  · When you receive a new version, don't delete the old folder; add the date to the end of its name (a backup). Then [Open…] the new folder.
+
+When a yellow bar appears
+  If a file in the project folder is changed elsewhere while Story Director is open (another program, a synced folder, etc.),
+  the tool notices when you come back to the window.
+  · If you have no unsaved changes — it reloads the changed files automatically and says so in the status bar at the bottom.
+  · If you have unsaved changes — a yellow bar appears at the top, and saving and autosave stop until you choose.
+      [Reload (discard changes here)]  Reads the changed files. What you hadn't saved is lost.
+      [Overwrite with mine]           Saves what's on screen now. The changes made elsewhere are lost.
+  If you're not sure which to pick, ask the developer before choosing.
+
+Later — when you switch to Git (GitHub Desktop)
+  Once you're working together in earnest, you'll exchange projects with GitHub Desktop instead of zips (every past version
+  is kept, and sending and receiving is one button). The developer will explain the setup and how to use it then.
+
+
+Everyday tasks
+----------------------------------------
+
+· Make a new episode    — in the [Script] tab, select a scene (or one of its cards) and press [＋ Episode].
+                          Right-clicking a scene row in the Hierarchy on the left → "Add episode" also works.
+· Write dialogue        — "Speaker: dialogue", one line at a time, in a card's writing box.
+· Text formatting       — select text in a writing box and use the tools on the right of the top row of [Script]: font · size · bold ·
+                          italic · strikethrough · text color · background color · alignment · line spacing. They're marks for writers,
+                          so they don't go into the game (people you work with can see them).
+· Speaker name color    — pick a color with the color button before a name in the "Speakers" tab, and that name shows in that color in the script.
+                          The "A" button beside it is the name background — that color goes behind the name.
+· Make a fork           — click the gray "Empty choice" slot under a card, write the choice text,
+                          then drag its point onto the next episode's card (only within the same chapter ·
+                          to another scene, only onto that scene's start ⌂ card).
+                          While you drag, a tag beside the pointer tells you in advance: connect · disconnect · can't connect.
+                          Drop a connected point on empty space to disconnect it.
+                          The shape of new lines (elbow · curve · straight) is in [⚙ Settings] → "Other" → "New lines".
+· A detour in dialogue  — select a card, and in the line table on the right, use that line's ＋ → "＋ Add branch".
+                          Inside a card you visit and return from (a branch card), you can't branch again.
+· Find an episode       — type a name or ID in the box at the top of the Hierarchy (for Korean names, initial consonants alone work — "ㅅㅌ").
+                          Only matching rows remain; Enter goes to the first one. Esc clears it.
+· Rename                — double-click a row in the Hierarchy. Only the shown name changes; the ID inside the game
+                          stays the same, so feel free to polish names.
+· Select several rows   — in the Hierarchy, Ctrl (⌘ on Mac)+click adds them one by one, Shift+click selects everything in between.
+                          The board and Inspector follow the last row you clicked, and "Hide empty choices" and
+                          the formatting tools apply to every episode in the selection at once.
+· Delete                — select it and press [Delete] in the [Script] toolbar. Chapters and scenes ask once more.
+                          Cards can also be deleted by selecting them and pressing the Delete key.
+· Check that it works   — "Validation report" at the bottom of the [Structure] tab
+
+
+Saving and undo
+----------------------------------------
+
+Save with [Save] in the File menu or Ctrl+S. If anything has changed, it also saves automatically every 10 minutes.
+
+If you make a mistake, Ctrl+Z (undo); to redo, Ctrl+Y. Even deletions come back with one Ctrl+Z.
+Instead of the keyboard, you can also use "Undo" and "Redo" in the File menu at the far left of the top bar.
+
+
+When a red line appears
+----------------------------------------
+
+If the "Validation report" at the bottom of the [Structure] tab has a 🔴 error, nothing goes out to the game.
+It isn't blocking you — it's protecting you. If it went out as is, that episode wouldn't
+play in the game, and by then the cause would be much harder to find.
+
+Each error line says which chapter and which place (episode · path · condition · stat),
+and names the episode or path. Fix that place and the error disappears by itself.
+
+Two you'll see often:
+
+· "... has no lines to play"
+  → Write at least one line of dialogue in that episode. The game can't read an empty episode.
+
+· "... has no choice text"
+  → In the [Script] tab, write text in that path's choice slot. A single word like "Continue" is fine.
+
+🟡 Warnings don't stop anything from going out to the game. One of them, "A loop with no way out",
+is a path where the chapter never ends once you enter — add one more choice that leads out of the loop.
+
+
+Scene notes
+----------------------------------------
+
+Click a scene row in the [Script] tab and note boxes appear on the right.
+
+· Scene note           — write freely about the scene: what to show, each character's feelings (start → end),
+                         the line where the feeling turns, who's on stage · place · time.
+· Episode direction    — use the "＋ Episode" box to attach one of the scene's episodes, and write what applies only to that episode.
+                         The card stays even if the direction is empty; it's removed only when you press [Remove].
+· Applying             — click elsewhere or press Ctrl+Enter. Enter is a new line; Esc reverts.
+
+Don't write staging (entrances · expression names · camera). Write only the scene's situation,
+and the staging side decides how things move. Notes don't go into the game.
+
+
+Speakers · condition names
+----------------------------------------
+
+The side panel on the right of the [Script] tab has three tabs — "Inspector" · "Speakers" · "Conditions & stats".
+
+· Speakers tab          — the speaker list (shared by every chapter). Add names ([＋ Add]), rename them, and delete them (✕).
+                          Renaming also updates dialogue already written.
+                          Names typed straight into cards without adding a speaker gather below under "names only
+                          in the script", with their line counts — put them in the list with [Register] · [Register all],
+                          and renaming them updates those lines (renaming to a name in the list merges them into
+                          that speaker — for fixing typos).
+· Conditions & stats    — the condition list under the current chapter's stat table. Name conditions by meaning
+                          (e.g. when you've become close to Harin).
+
+A new condition is "Undecided" — what it checks (its expression) is filled in by the developer in the [Structure] tab,
+and until then it always passes. Only a yellow warning appears in the validation report.
+Speakers' character keys (portrait · expressions) and stats are also set by the developer in the [Structure] tab.
+
+
+Getting around the board
+----------------------------------------
+
+· Zoom              — mouse wheel.
+· Move the board    — drag with the middle mouse button (the wheel) held down, or click the minimap at the bottom right.
+· Show the selection — select a card or scene and press F.
+
+If you use a laptop touchpad, turn on [⚙ Settings] at the top → "Other" → "Wheel pans the board".
+Swipe with two fingers to move the board; to zoom, swipe while holding Ctrl.
+(On a Mac it's on from the start. Turn it off if you want to zoom with a wheel mouse.)
+
+
+When the board runs out of room
+----------------------------------------
+
+All chapters' cards sit on one [Script] board. If the board runs out of room as the script grows,
+increase the width · height in [⚙ Settings] at the top → "[Script] board size".
+The board grows to the right and down, and you can undo it (Ctrl+Z).
+If shrinking would push cards off the board, all cards are gathered in by the same ratio.
+Before you press [OK], it tells you how many cards will move, and one Ctrl+Z puts them back.
+
+
+The work folder (exported)
+----------------------------------------
+
+To give your work to the developer, just zip the whole project folder (see "Sending projects back and forth" above). There are no separate files to hand over.
+
+Press [📂 Work folder] in the top bar to open the work folder (exported, inside the project folder).
+People don't make these files — they're written automatically once validation passes (and the developer regenerates the same files when saving).
+
+· {chapter}.progression.json — progression JSON. This is the file that goes into the game.
+· .yarn files in the yarn folder — the script with dialogue only. One per scene; scene notes and episode directions
+                                   are included as lines starting with //. Use them to check that the story runs on dialogue alone.
+                                   They don't go into the game.
+  If a line starts with -> or === without a speaker, or has an unmatched {, that scene's file isn't written and
+  the validation report says which scene at the top.
+
+[⚙ Settings] → "Export (choose mirror folders)" is the developer's setting — writers can leave it empty.
+(Every time you save, it copies to the chosen folders. Progression JSON goes to the game folder, and Yarn dialogue to a separately chosen folder.)
+
+
+New versions · when something goes wrong
+----------------------------------------
+
+· The window title shows the version number (e.g. Story Director 0.1.0 — project).
+· When you get a new version, unzip it and replace the old StoryDirector.exe with it.
+  Recent projects, fonts and settings stay (they're stored separately on this PC).
+· If something goes wrong, tell the developer the version number and what you were doing when it happened.

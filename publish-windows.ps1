@@ -51,6 +51,8 @@ try {
     #   담지 않는다 — 실제 프로젝트는 Git(GitHub Desktop)으로 받는다(안내문에 그 절이 있다).
     #   ⛔ 2026-08-26부터는 실행 파일만 담았다(그때의 안내문 · 견본이 며칠 사이 굴러간 옛 규격을 말해서).
     Copy-Item (Join-Path $root "docs\작가에게.txt") (Join-Path $publishDirectory "먼저 읽어주세요.txt")
+    # 영어판도 곁에 — 화면 언어가 PC 언어를 따르므로 영어 화면의 작가도 읽을 안내가 있어야 한다(2026-11-25 · english-ui E6).
+    Copy-Item (Join-Path $root "docs\to-writers.en.txt") (Join-Path $publishDirectory "Read me first.txt")
 
     # 제3자 소프트웨어 고지 — 함께 묶이는 오픈소스(Avalonia · SkiaSharp · HarfBuzz · ANGLE · .NET 런타임)와 글꼴(Inter)의 저작권 고지 · 라이선스 원문
     #   (2026-11-23 소유자 — 「THIRD-PARTY-NOTICES.txt 넣어주십시오」). MIT · BSD · OFL이 배포할 때 함께 담으라고 한다.
@@ -65,7 +67,7 @@ try {
     Write-Host "꾸러미: $zipPath"
     Write-Host "실행 파일: $exe ($sizeMb MB)"
     Write-Host "판 번호: $Version"
-    Write-Host "담긴 것: StoryDirector.exe · 먼저 읽어주세요.txt · THIRD-PARTY-NOTICES.txt"
+    Write-Host "담긴 것: StoryDirector.exe · 먼저 읽어주세요.txt · Read me first.txt · THIRD-PARTY-NOTICES.txt"
     Write-Host "받는 사람은 압축을 풀고 StoryDirector.exe를 누르면 됩니다."
 }
 finally {
