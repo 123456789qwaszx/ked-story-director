@@ -85,7 +85,8 @@ This one document takes you from getting started to handing over your work.
      would get which entrance and why. Episodes with connected paths usually hit this: disconnect the path the balloon names first, then reconnect after moving.
      There's no way to take an episode out of scenes — an episode always belongs to a scene.
 2. **Write** — in an episode card's writing box, write `Speaker: dialogue` one line at a time. One line is one line of dialogue; leave out the speaker for narration.
-   **There's no button to press** — it's applied when you pause for a moment or leave the box (deleted lines are applied when you leave the box).
+   **There's no button to press** — it's applied when you pause for a moment or leave the box. Deleted lines are removed when you leave the box (or press Ctrl+S);
+   until then the "Inspector" on the right shows them struck through with "Removed on leaving the box" — writing in their place again continues that line (with any branch on it).
    Discard text not yet applied with `Esc`.
    - To space out lines, leave blank lines — they stay as you spaced them. Blank lines are for reading only and don't go into the dialogue sent to the game.
    - There's always one blank line at the bottom of the writing box — even after going elsewhere, click that line and keep writing (no need to press Enter first).

@@ -2956,4 +2956,10 @@ Chapters · scenes · episodes are added, deleted and edited in the [Script] tab
   <data name="App_ConsoleLog" xml:space="preserve">
     <value>[{0}] Log: {1}</value>
   </data>
+  <data name="Dialogue_PendingRemoval" xml:space="preserve">
+    <value>Removed on leaving the box</value>
+  </data>
+  <data name="Dialogue_PendingRemovalTip" xml:space="preserve">
+    <value>You deleted this line in the card’s writing box. It’s removed when you leave the box or press Ctrl+S — until then the line keeps its identity and any branch on it, so writing in its place again continues this line.</value>
+  </data>
 </root>

@@ -184,6 +184,15 @@ public partial class DialogueNodeEditor : UserControl
     {
         _session = session;
         session.HiddenChoicesChanged += _ => UiGuard.Run(_session, Ui.Main_ChoiceSlots, RefreshHideEmpty);
+
+        // 카드 글 칸에서 지운 줄(칸을 나오면 지워진다)이 바뀌면 그 줄을 취소선으로 다시 보인다.
+        session.PendingLineRemovalsChanged += nodeId =>
+        {
+            if (string.Equals(nodeId, _nodeId, StringComparison.Ordinal))
+            {
+                UiGuard.Run(_session, Ui.Dialogue_PendingRemoval, Rebuild);
+            }
+        };
     }
 
     /// <summary>
@@ -310,13 +319,17 @@ public partial class DialogueNodeEditor : UserControl
 
             // 선택지는 대사 안에 서지 않는다 — 챕터 간선에서만 선다.
 
+            IReadOnlySet<string> pendingRemovals = _session.PendingLineRemovalsOf(node.Id);
+
             foreach (ResolvedLine line in flow.Lines)
             {
                 // 「조건 분기」 카드는 <b>줄 사이에</b> 낀다 —
                 // 그 줄에 붙은 것이 아니라 그 줄 <b>앞에서</b> 갈라진다는 표식이다. 여럿이면 다녀오는 차례로 쌓인다.
                 IReadOnlyList<Control> markers = BuildBranchMarkerCards(node, line.Line.LineId, detourPalette);
 
-                Control card = WrapForLineSelection(BuildCard(node, script, line), line.Line.LineId);
+                Control card = WrapForLineSelection(
+                    pendingRemovals.Contains(line.Line.LineId) ? BuildPendingRemovalCard(line) : BuildCard(node, script, line),
+                    line.Line.LineId);
 
                 LineHost.Children.AddRange(markers);
                 LineHost.Children.Add(card);
@@ -558,6 +571,71 @@ public partial class DialogueNodeEditor : UserControl
             Child = body
         };
     }
+
+    /// <summary>
+    /// <b>지울 줄</b>(2026-11-26 소유자 — 「쓴 줄을 지운 다음에 우측 인스펙터에 반영이 느리다」) — 카드 글 칸에서 지웠고 칸을 나오면(또는 Ctrl+S) 지워질
+    /// 줄. 그때까지는 대본에 남아 있으므로 자리는 지키되 취소선으로 보이고 고칠 칸을 세우지 않는다. 쓰는 동안 줄을 바로 지우지 않는 까닭은 다 지우고
+    /// 새로 쓰는 도중에 줄이 은퇴하면 그 줄의 신원(LineId)과 거기 붙은 분기 · 번역 · 연출이 떨어져 나가기 때문이다.
+    /// </summary>
+    private static Control BuildPendingRemovalCard(ResolvedLine resolved)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("30,*,Auto") };
+
+        var index = new TextBlock
+        {
+            Text = resolved.Index.ToString(),
+            FontSize = 10,
+            Opacity = 0.45,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        row.Children.Add(index);
+
+        string speaker = resolved.Line.Speaker;
+        var said = new TextBlock
+        {
+            Text = speaker.Length > 0 ? $"{speaker}: {resolved.Line.Text}" : resolved.Line.Text,
+            TextDecorations = TextDecorations.Strikethrough,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            FontSize = 12,
+            Opacity = 0.55,
+            MinHeight = 26,
+            Padding = new Thickness(6, 5),
+            Margin = new Thickness(4, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(said, 1);
+        row.Children.Add(said);
+
+        var chip = new TextBlock
+        {
+            Text = Ui.Dialogue_PendingRemoval,
+            FontSize = 10,
+            Foreground = PendingRemovalBrush,
+            Margin = new Thickness(6, 0, 2, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(chip, 2);
+        row.Children.Add(chip);
+
+        var card = new Border
+        {
+            Margin = new Thickness(resolved.Depth * 20, 0, 0, 0),
+            Padding = new Thickness(6, 3),
+            CornerRadius = new CornerRadius(4),
+            BorderThickness = new Thickness(1),
+            BorderBrush = PendingRemovalBrush,
+            Tag = PendingRemovalTag,
+            Child = row
+        };
+        ToolTip.SetTip(card, Ui.Dialogue_PendingRemovalTip);
+
+        return card;
+    }
+
+    /// <summary>지울 줄 카드의 표 — 시험이 찾는다.</summary>
+    internal const string PendingRemovalTag = "pending-removal";
+
+    private static readonly IBrush PendingRemovalBrush = new SolidColorBrush(Color.FromArgb(170, 0xDC, 0x26, 0x26));
 
     /// <summary>Index | 화자 | 대사 | ＋ 의 메인 행. 높이는 한 줄로 고정이다.</summary>
     private Control BuildMainRow(DialogueNode node, DialogueScript script, ResolvedLine resolved)

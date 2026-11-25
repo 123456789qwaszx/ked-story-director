@@ -4461,10 +4461,15 @@ public partial class GraphEditorView : UserControl
             {
                 Dispatcher.UIThread.Post(() => ApplyWriting(nodeId, box, text, live: false));
             }
-            else if (_writingShown.TryGetValue(nodeId, out string? shownNow) && !string.Equals(box.Text ?? string.Empty, shownNow, StringComparison.Ordinal))
+            else
             {
-                // 넣을 것은 없지만 모양이 다르다(쓰는 동안 들어가 끝의 빈 줄이 없다) — 보인 글로 다시 채운다(끝의 빈 줄 · BoxText).
-                box.Text = shownNow;
+                _session?.SetPendingLineRemovals(nodeId, []);
+
+                if (_writingShown.TryGetValue(nodeId, out string? shownNow) && !string.Equals(box.Text ?? string.Empty, shownNow, StringComparison.Ordinal))
+                {
+                    // 넣을 것은 없지만 모양이 다르다(쓰는 동안 들어가 끝의 빈 줄이 없다) — 보인 글로 다시 채운다(끝의 빈 줄 · BoxText).
+                    box.Text = shownNow;
+                }
             }
         };
 
@@ -4488,9 +4493,10 @@ public partial class GraphEditorView : UserControl
         {
             if (args.Key == Key.Escape)
             {
-                // 넣지 않은 글을 버리고 마지막으로 넣은 글로 돌아간다.
+                // 넣지 않은 글을 버리고 마지막으로 넣은 글로 돌아간다 — 지운 줄도 칸에 되돌아온다(지울 줄 표시를 걷는다).
                 box.Text = _writingShown.GetValueOrDefault(nodeId, shown);
                 MarkWriting(box, problem: null);
+                _session?.SetPendingLineRemovals(nodeId, []);
                 args.Handled = true;
             }
         };
@@ -4550,6 +4556,19 @@ public partial class GraphEditorView : UserControl
             string? before = _writingShown.GetValueOrDefault(nodeId);
             ScenarioPasteOutcome outcome = session.Editor.ApplyScenarioText(
                 nodeId, withIds, confirmDeletes: !live, strict: true);
+            IReadOnlyList<string> pendingRemovals = [];
+
+            // 쓰는 동안 지운 줄은 대본에 남겨 두고 나머지(고친 글 · 새 줄)는 넣는다(2026-11-26 소유자 — 「쓴 줄을 지운 다음에 인스펙터에 반영이
+            // 느리다」 · ⛔ 그 전에는 지운 줄이 하나라도 있으면 통째로 칸을 나올 때까지 미뤘다). 지운 줄은 칸을 나올 때 지워지고, 그때까지 인스펙터가
+            // 취소선으로 보인다.
+            if (live &&
+                outcome is { Applied: false, NeedsDeleteConfirmation: true, Plan: { } plan } &&
+                shownLayout is not null &&
+                KeepRemovedLines(session.Project.FindDialogue(nodeId)!, shownLayout, withIds, plan) is { } keeping)
+            {
+                outcome = session.Editor.ApplyScenarioText(nodeId, keeping.Text, confirmDeletes: false, strict: true);
+                pendingRemovals = keeping.Removed;
+            }
 
             if (!outcome.Applied && live)
             {
@@ -4566,6 +4585,8 @@ public partial class GraphEditorView : UserControl
                 session.SetStatus(string.Format(Ui.Board_CouldnTApplyTextText, problems[0]));
                 return;
             }
+
+            session.SetPendingLineRemovals(nodeId, pendingRemovals);
 
             // 기준(처음 보인 글과 그 줄 짝)을 지금 모델의 글로 옮긴다 — 다음 넣기가 이 줄 짝으로 신원을 잇는다. 판이 다시
             // 그려졌으면 새 칸이 이미 그 기준을 들고 있다.
@@ -4602,6 +4623,51 @@ public partial class GraphEditorView : UserControl
                 session.SetStatus(Ui.Board_KeptBranchConditionLinesRestored);
             }
         });
+    }
+
+    /// <summary>
+    /// 쓰는 동안 넣을 글 — 칸에서 지운 줄을 <b>마지막으로 보인 자리에 되돌려 넣은</b> 글과 그 줄들(2026-11-26 소유자). 되돌린 줄은 제 신원(<c>#line:</c>)을
+    /// 달고 바로 앞 줄(칸에 남은 줄) 뒤에 선다 — 남은 줄 사이의 빈 줄은 그대로라 남은 줄의 자리 · 줄 사이는 칸의 글 그대로다. 줄을 은퇴시키지 않으므로
+    /// 다 지우고 새로 쓰는 도중에도 그 줄의 신원과 분기가 남고, 그 자리에 다시 쓰면 그 줄로 이어진다(<see cref="ScenarioLineIdentity.CarryLineIds"/>).
+    /// 지운 줄에 조건이 걸려 있으면 null — 조건은 글의 조건 줄에서 다시 읽는데 되돌린 줄 둘레에는 그 조건 줄이 없어 조건이 바뀐다. 그때는 전처럼
+    /// 칸을 나올 때 한꺼번에 넣는다.
+    /// </summary>
+    internal static (string Text, IReadOnlyList<string> Removed)? KeepRemovedLines(
+        DialogueNode node, ScenarioWritingLayout shown, string withIds, ScriptSyncPlan plan)
+    {
+        List<string> removed = plan.Entries
+            .Where(entry => entry is { Kind: ScriptSyncKind.Deleted, LineId: not null })
+            .Select(entry => entry.LineId!)
+            .ToList();
+
+        if (removed.Count == 0 ||
+            removed.Any(lineId => node.FindExtension(lineId)?.Transitions is { Count: > 0 }) ||
+            removed.Any(lineId => !shown.RowOfLine.ContainsKey(lineId)))
+        {
+            return null;
+        }
+
+        const string tag = " #line:";
+        string[] shownRows = shown.Text.Split('\n');
+        var rows = withIds.Split('\n').ToList();
+        var removedSet = new HashSet<string>(removed, StringComparer.Ordinal);
+        int at = 0;
+
+        foreach ((string lineId, int row) in shown.RowOfLine.OrderBy(pair => pair.Value))
+        {
+            int survivor = rows.FindIndex(item => item.EndsWith(tag + lineId, StringComparison.Ordinal));
+
+            if (survivor >= 0)
+            {
+                at = survivor + 1;
+            }
+            else if (removedSet.Contains(lineId) && row < shownRows.Length)
+            {
+                rows.Insert(at++, shownRows[row].TrimEnd() + tag + lineId);
+            }
+        }
+
+        return (string.Join('\n', rows), removed);
     }
 
     /// <summary>
@@ -4801,6 +4867,7 @@ public partial class GraphEditorView : UserControl
                 box.Text = _writingShown.GetValueOrDefault(focus.NodeId, box.Text ?? string.Empty);
                 MarkWriting(box, problem: null);
                 PlaceCaret(box, focus);
+                session.SetPendingLineRemovals(focus.NodeId, []);   // 지운 줄도 칸에 되돌아왔다
             }
 
             return;

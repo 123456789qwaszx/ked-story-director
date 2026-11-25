@@ -589,6 +589,42 @@ internal sealed class AuthoringSession
     /// <summary>[대본] 카드 하나의 「빈 선택지 숨기기」가 바뀌었다 — 그 카드의 노드 Id.</summary>
     internal event Action<string>? HiddenChoicesChanged;
 
+    private readonly Dictionary<string, IReadOnlySet<string>> _pendingLineRemovals = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 그 카드의 <b>지울 줄</b> — 카드 글 칸에서 지웠지만 칸을 나올 때(또는 Ctrl+S) 지워질 줄의 LineId(2026-11-26 소유자). 쓰는 동안 고친 글 · 새 줄은
+    /// 바로 들어가고 지운 줄만 대본에 남아 있다 — 인스펙터가 이 줄을 취소선으로 보인다. 화면의 일이라 저장하지 않는다.
+    /// </summary>
+    internal IReadOnlySet<string> PendingLineRemovalsOf(string? nodeId) =>
+        nodeId is not null && _pendingLineRemovals.TryGetValue(nodeId, out IReadOnlySet<string>? lineIds) ? lineIds : EmptyLineIds;
+
+    private static readonly IReadOnlySet<string> EmptyLineIds = new HashSet<string>(StringComparer.Ordinal);
+
+    /// <summary>그 카드의 지울 줄을 정한다(비우면 걷는다) — 바뀌었으면 알린다.</summary>
+    internal void SetPendingLineRemovals(string nodeId, IReadOnlyCollection<string> lineIds)
+    {
+        IReadOnlySet<string> before = PendingLineRemovalsOf(nodeId);
+
+        if (before.Count == lineIds.Count && lineIds.All(before.Contains))
+        {
+            return;
+        }
+
+        if (lineIds.Count == 0)
+        {
+            _pendingLineRemovals.Remove(nodeId);
+        }
+        else
+        {
+            _pendingLineRemovals[nodeId] = new HashSet<string>(lineIds, StringComparer.Ordinal);
+        }
+
+        PendingLineRemovalsChanged?.Invoke(nodeId);
+    }
+
+    /// <summary>그 카드의 지울 줄이 바뀌었다 — 그 카드의 노드 Id.</summary>
+    internal event Action<string>? PendingLineRemovalsChanged;
+
     /// <summary>[구성] 탭에서 빈 선택지를 감추거나(참) 다시 세운다 — 기억하고 [구성] 판에 알린다.</summary>
     internal void SetHideEmptyChoices(bool hide)
     {
@@ -727,6 +763,7 @@ internal sealed class AuthoringSession
         _knownFileIds.Clear();
         _collapsedScenes.Clear();
         _hiddenChoiceNodeIds.Clear();
+        _pendingLineRemovals.Clear();
 
         if (ProjectPath is not null)
         {

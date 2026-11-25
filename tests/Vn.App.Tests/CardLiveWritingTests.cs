@@ -80,23 +80,81 @@ public sealed class CardLiveWritingTests
         TextBox box = Box(window, card.Id);
         box.Focus();
 
-        // 다 지웠다 · 첫 줄만 새로 썼다 — 아직 쓰는 중이다. 줄이 줄어드는 넣기는 미룬다(칸도 붉히지 않는다).
-        foreach (string partial in new[] { string.Empty, "하나" })
-        {
-            box.Text = partial;
-            Pause(window);
+        // 다 지웠다 — 빈 칸은 넣지 않는다(칸도 붉히지 않는다).
+        box.Text = string.Empty;
+        Pause(window);
+        Assert.Equal(["첫 줄", "둘째 줄", "셋째 줄"], Said(card));
+        Assert.Null(ToolTip.GetTip(Box(window, card.Id)));
 
-            Assert.Equal(["첫 줄", "둘째 줄", "셋째 줄"], Said(card));
-            Assert.Null(ToolTip.GetTip(Box(window, card.Id)));
-        }
+        // 첫 줄만 새로 썼다 — 아직 쓰는 중이다. 쓴 줄은 들어가고(2026-11-26 소유자 — 인스펙터에 바로 비친다), 지운 줄은 은퇴시키지 않고 지울 줄로
+        // 남는다 — 신원도 분기도 그대로다.
+        box.Text = "하나";
+        Pause(window);
 
-        // 세 줄을 다 채웠다 — 들어가고, 셋째 줄의 분기도 그 줄에 남는다.
+        Assert.Equal(["하나", "둘째 줄", "셋째 줄"], Said(card));
+        Assert.Equal(ids, card.Script.ActiveLines.Select(line => line.Id));
+        Assert.Equal([ids[1], ids[2]], session.PendingLineRemovalsOf(card.Id).Order());
+        Assert.Equal([branch.Id], card.FindExtension(ids[2])!.DetourTargetNodeIds);
+        Assert.Null(ToolTip.GetTip(Box(window, card.Id)));
+
+        // 세 줄을 다 채웠다 — 지운 자리에 다시 쓴 줄은 그 줄로 이어지고, 셋째 줄의 분기도 그 줄에 남는다.
         Box(window, card.Id).Text = "하나\n둘\n셋";
         Pause(window);
 
         Assert.Equal(["하나", "둘", "셋"], Said(card));
         Assert.Equal(ids, card.Script.ActiveLines.Select(line => line.Id));
         Assert.Equal([branch.Id], card.FindExtension(ids[2])!.DetourTargetNodeIds);
+        Assert.Empty(session.PendingLineRemovalsOf(card.Id));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 조건이_걸린_줄을_지우면_전처럼_칸을_나올_때_한꺼번에_넣는다() => HeadlessUi.Run(() =>
+    {
+        // 조건은 글의 조건 줄에서 다시 읽는다 — 지운 줄을 대본에 되돌려 두면 그 둘레에 조건 줄이 없어 조건이 바뀐다. 그래서 그런 줄을 지운 글은
+        // 쓰는 동안 넣지 않는다.
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) =
+            Stage("첫 줄", "둘째 줄", "셋째 줄");
+        session.Project.FindDialogue(card.Id)!.RequireExtension(ids[1]).Transitions.Add(LineConditionTransition.EndIf());
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄 고침\n셋째 줄";
+        Pause(window);
+
+        Assert.Equal(["첫 줄", "둘째 줄", "셋째 줄"], Said(card));
+        Assert.Empty(session.PendingLineRemovalsOf(card.Id));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 지울_줄이_있을_때_Esc는_지운_줄까지_칸에_되돌리고_표시를_걷는다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, DialogueNode card, string[] ids) =
+            Stage("첫 줄", "둘째 줄", "셋째 줄");
+
+        TextBox box = Box(window, card.Id);
+        box.Focus();
+        box.Text = "첫 줄\n셋째 줄";
+        Pause(window);
+        Assert.Equal([ids[1]], session.PendingLineRemovalsOf(card.Id));
+
+        Box(window, card.Id).RaiseEvent(new Avalonia.Input.KeyEventArgs
+        {
+            RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+            Key = Avalonia.Input.Key.Escape,
+            Source = Box(window, card.Id)
+        });
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("첫 줄\n둘째 줄\n셋째 줄\n", Box(window, card.Id).Text);
+        Assert.Empty(session.PendingLineRemovalsOf(card.Id));
+        Assert.Empty(PendingRemovalRows(window, card.Id));
+
+        Release(window);
+        Assert.Equal(["첫 줄", "둘째 줄", "셋째 줄"], Said(card));
 
         window.Close();
     });
@@ -112,12 +170,28 @@ public sealed class CardLiveWritingTests
         box.Text = "첫 줄\n셋째 줄";
         Pause(window);
 
+        // 멈춰도 지운 줄은 대본에 남는다 — 인스펙터가 그 줄을 「칸을 나오면 지워짐」으로 취소선을 그어 보인다(2026-11-26 소유자).
         Assert.Equal(["첫 줄", "둘째 줄", "셋째 줄"], Said(card));
+        Assert.Equal([ids[1]], session.PendingLineRemovalsOf(card.Id));
+        Assert.Equal([ids[1]], PendingRemovalRows(window, card.Id));
+
+        // 지운 뒤에 고친 글 · 새 줄은 멈추면 바로 들어간다 — ⛔ 전에는 지운 줄이 있으면 이것까지 칸을 나올 때까지 미뤘다.
+        box.Text = "첫 줄 고침\n셋째 줄\n넷째 줄";
+        Pause(window);
+
+        Assert.Equal(["첫 줄 고침", "둘째 줄", "셋째 줄", "넷째 줄"], Said(card));
+        Assert.Equal([ids[0], ids[1], ids[2]], card.Script.ActiveLines.Take(3).Select(line => line.Id));
+        Assert.Equal([ids[1]], PendingRemovalRows(window, card.Id));
+        TextBox now = Box(window, card.Id);
+        Assert.True(now.IsFocused);
+        Assert.Equal("첫 줄 고침\n셋째 줄\n넷째 줄", now.Text);   // 칸은 쓴 그대로다 — 지운 줄이 되살아나지 않는다
 
         Release(window);
 
-        Assert.Equal(["첫 줄", "셋째 줄"], Said(card));
-        Assert.Equal([ids[0], ids[2]], card.Script.ActiveLines.Select(line => line.Id));
+        Assert.Equal(["첫 줄 고침", "셋째 줄", "넷째 줄"], Said(card));
+        Assert.Equal([ids[0], ids[2]], card.Script.ActiveLines.Take(2).Select(line => line.Id));
+        Assert.Empty(session.PendingLineRemovalsOf(card.Id));
+        Assert.Empty(PendingRemovalRows(window, card.Id));
 
         window.Close();
     });
@@ -334,6 +408,22 @@ public sealed class CardLiveWritingTests
             Source = target
         });
         Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>인스펙터(대사 노드 편집기)에 「칸을 나오면 지워짐」으로 선 줄의 LineId.</summary>
+    private static List<string> PendingRemovalRows(MainWindow window, string nodeId)
+    {
+        DialogueNodeEditor editor = window.GetLogicalDescendants().OfType<DialogueNodeEditor>().Distinct()
+            .Single(item => item.IsVisible && item.NodeId == nodeId);
+        DialogueNode node = window.SessionProbe.Project.FindDialogue(nodeId)!;
+        List<string> active = node.Script.ActiveLines.Select(line => line.Id).ToList();
+
+        // 줄 카드는 줄 차례로 선다 — 지울 줄 카드의 차례로 LineId를 읽는다.
+        return editor.GetLogicalDescendants().OfType<Border>()
+            .Where(border => border.Tag as string is DialogueNodeEditor.PendingRemovalTag)
+            .Select(border => border.GetLogicalDescendants().OfType<TextBlock>().First().Text!)
+            .Select(index => active[int.Parse(index, System.Globalization.CultureInfo.InvariantCulture)])
+            .ToList();
     }
 
     private static List<string> Said(DialogueNode card) =>

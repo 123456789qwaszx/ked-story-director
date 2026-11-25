@@ -3930,4 +3930,12 @@
     <value>[{0}] 로그: {1}</value>
     <comment>Program.cs — 콘솔(터미널에서 켰을 때)</comment>
   </data>
+  <data name="Dialogue_PendingRemoval" xml:space="preserve">
+    <value>칸을 나오면 지워짐</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_PendingRemovalTip" xml:space="preserve">
+    <value>카드 글 칸에서 지운 줄입니다. 칸을 나오거나 Ctrl+S를 누르면 지워집니다 — 그때까지는 줄의 신원과 거기 붙은 분기가 남아 있어, 그 자리에 다시 쓰면 그 줄로 이어집니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
 </root>
