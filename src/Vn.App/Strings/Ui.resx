@@ -456,7 +456,7 @@
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_NotCopiedBrowseToGame" xml:space="preserve">
-    <value>복제하지 않음 — 게임의 ChapterProgression 폴더를 찾아보거나 경로를 붙여 넣으세요</value>
+    <value>복제하지 않음 — 게임의 ChapterProgression 폴더를 고르세요</value>
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_NotCopiedBrowseToMirror" xml:space="preserve">

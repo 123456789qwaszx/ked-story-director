@@ -159,6 +159,41 @@ public sealed class BranchConditionNoteTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 조건_표가_길어도_카드_제목은_남은_폭의_절반을_갖고_표가_줄어든다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 영어 화면 E7 — 표가 Auto 칸이라 제 폭을 먼저 가져가, 기본 폭의 분기 카드에서 조건 이름이 길면 제목이 0이 되어 사라졌다
+        // (영어는 「⑂ Condition: …」라 조건이 없어도). 이제 둘이 함께 넘치면 제목이 남은 폭의 절반 이상을 갖고 표가 줄임표로 줄어든다.
+        (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, GraphTab);
+        DialogueNode root = Card(session, "root");
+        DialogueNode branch = AddBranchThroughMenu(window, session, root);
+        session.Editor.SetBranchCardTitle(branch.Id, "짧게");
+        Dispatcher.UIThread.RunJobs();
+
+        // 둘 다 들면 표는 제 폭 그대로다.
+        Assert.True(double.IsPositiveInfinity(Chip(window, branch).MaxWidth));
+
+        const string Long = "하린과_아주_가까워졌을_때_열리는_조건";
+        session.Editor.SetBranchCardTitle(branch.Id, "들렀다 가는 아주 긴 이름의 길");
+        AddCondition(session, Long);
+        Assert.Null(BranchEntryCondition.Set(session.Editor, branch.Id, Long));
+        session.Select(root.Id);
+        Dispatcher.UIThread.RunJobs();
+
+        Border chip = Chip(window, branch);
+        var row = Assert.IsType<CardTitleRow>(chip.Parent);
+        TextBlock title = row.Children.OfType<TextBlock>().Single(block => block.Tag as string == GraphEditorView.CardTitleTag);
+        Control toggles = row.Children.Single(child => Grid.GetColumn(child) == CardTitleRow.TogglesColumn);
+
+        Assert.True(title.Bounds.Width >= chip.Bounds.Width, $"제목 {title.Bounds.Width:0} · 표 {chip.Bounds.Width:0}");
+        Assert.True(title.Bounds.Width > 40, $"제목 {title.Bounds.Width:0}");
+        Assert.True(chip.Bounds.Width > 0);
+        Assert.True(chip.Bounds.Right <= toggles.Bounds.Left + 0.5, "표가 글 맞춤 단추를 덮지 않는다");
+        Assert.Equal("⑂ 조건: " + Long, ((TextBlock)chip.Child!).Text);   // 글은 그대로 — 줄임표는 그리기만 줄인다
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static DialogueNode Card(AuthoringSession session, string episodeId) =>

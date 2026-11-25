@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Flow;
 
@@ -101,8 +102,8 @@ public static class NodeConnections
                 for (int slot = 0; slot < line.DetourSlots.Count; slot++)
                 {
                     ports.Add(line.DetourSlots[slot] is { } detour
-                        ? new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", detour, palette++)
-                        : new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, "분기", null, palette++, OpenOrdinal: slot));
+                        ? new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, Msg.Board_BranchLine, detour, palette++)
+                        : new ExitPort(ExitPortKind.Detour, dialogue.Id, line.LineId, Msg.Board_BranchLine, null, palette++, OpenOrdinal: slot));
                 }
             }
         }

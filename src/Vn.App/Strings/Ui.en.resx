@@ -347,10 +347,10 @@ The two climb the hill without a word.</value>
     <value>Show in work folder</value>
   </data>
   <data name="Settings_NotCopiedBrowseToGame" xml:space="preserve">
-    <value>Not copied — browse to the game's ChapterProgression folder or paste a path</value>
+    <value>Not copied — pick the ChapterProgression folder</value>
   </data>
   <data name="Settings_NotCopiedBrowseToMirror" xml:space="preserve">
-    <value>Not copied — browse to a mirror folder or paste a path</value>
+    <value>Not copied — browse to a folder or paste a path</value>
   </data>
   <data name="Settings_Browse" xml:space="preserve">
     <value>Browse…</value>
@@ -1365,7 +1365,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Conditions · stats for this chapter</value>
   </data>
   <data name="Board_UsedOnlyInThisChapter" xml:space="preserve">
-    <value>Used only in this chapter — each chapter has its own</value>
+    <value>Only for this chapter — each has its own</value>
   </data>
   <data name="Board_ChapterThisTabShowsFollows" xml:space="preserve">
     <value>The chapter this tab shows — follows the current chapter. Choosing one goes to that chapter (same as the chapter combo in the toolbar).</value>
@@ -2112,7 +2112,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>⑂ Condition: written by hand</value>
   </data>
   <data name="Branch_NoCondition" xml:space="preserve">
-    <value>⑂ No condition</value>
+    <value>⑂ Always</value>
   </data>
   <data name="Branch_ConditionItSUndecidedSo" xml:space="preserve">
     <value>Condition “{0}” — it's undecided, so for now it's always visited. Fill in the expression in the [Structure] tab and it plays only when that holds.</value>
@@ -2208,7 +2208,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>⑂ Branch card · {0}</value>
   </data>
   <data name="Structure_CardVisitedAndReturnedFrom" xml:space="preserve">
-    <value>A card visited and returned from — conditions here, script in the [Script] tab</value>
+    <value>A detour card — condition here, script in the [Script] tab</value>
   </data>
   <data name="Structure_ChoiceSlot" xml:space="preserve">
     <value>Choice slot · {0}</value>
@@ -2457,7 +2457,7 @@ Stats on arrival —
     <value>Select an episode to see its dialogue here.</value>
   </data>
   <data name="Structure_NoDialogueWrittenYetWrite" xml:space="preserve">
-    <value>No dialogue written yet — write it in the card in the [Script] tab</value>
+    <value>No dialogue yet — write it in the [Script] tab</value>
   </data>
   <data name="Structure_NoDialogueWrittenYet" xml:space="preserve">
     <value>No dialogue written yet</value>
@@ -2691,7 +2691,7 @@ Stats on arrival —
     <value>No conditions.</value>
   </data>
   <data name="Structure_NewConditionNameByMeaning" xml:space="preserve">
-    <value>New condition name — by meaning (e.g. when you've become close to Harin)</value>
+    <value>New condition — by meaning (e.g. close to Harin)</value>
   </data>
   <data name="Structure_EnterAlsoAddsExpressionStarts" xml:space="preserve">
     <value>Enter also adds. The expression starts empty (Undecided — always passes) — fill it in the expression box on its row.</value>
@@ -2846,7 +2846,7 @@ Chapters · scenes · episodes are added, deleted and edited in the [Script] tab
     <value>Creates the name and expression at once and sets it as this choice's unlock condition.</value>
   </data>
   <data name="Structure_LockedHintShownWhileLocked" xml:space="preserve">
-    <value>Locked hint — shown while locked (e.g. Not enough trust)</value>
+    <value>Locked hint (e.g. Not enough trust)</value>
   </data>
   <data name="Structure_StatChangeWhenThisPath" xml:space="preserve">
     <value>Stat change — when this path is picked</value>

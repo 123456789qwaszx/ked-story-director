@@ -1250,4 +1250,7 @@
   <data name="Diag_ConditionHead" xml:space="preserve">
     <value>Condition '{0}' — </value>
   </data>
+  <data name="Board_BranchLine" xml:space="preserve">
+    <value>Branch</value>
+  </data>
 </root>

@@ -4030,14 +4030,14 @@ public partial class GraphEditorView : UserControl
             [ToolTip.TipProperty] = TitleTip(node.NodeId)
         };
 
-        var title = new Grid
+        // 칸: 표 · 제목 · 분기 조건 표 · 글 맞춤 단추. 제목과 조건 표가 함께 넘치면 표가 줄어든다(CardTitleRow · 2026-11-25 영어 화면 E7).
+        var title = new CardTitleRow
         {
-            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto,Auto"),
             Height = TitleHeight,
             Margin = new Thickness(0, 0, 0, HeaderGap)
         };
-        Grid.SetColumn(titleIcon, 0);
-        Grid.SetColumn(titleName, 1);
+        Grid.SetColumn(titleIcon, CardTitleRow.IconColumn);
+        Grid.SetColumn(titleName, CardTitleRow.TitleColumn);
         title.Children.Add(titleIcon);
         title.Children.Add(titleName);
 
@@ -4046,7 +4046,7 @@ public partial class GraphEditorView : UserControl
         if (branchEntry)
         {
             Control chip = BranchConditionChip(node.NodeId, palette);
-            Grid.SetColumn(chip, 2);
+            Grid.SetColumn(chip, CardTitleRow.ChipColumn);
             title.Children.Add(chip);
         }
 
@@ -4058,7 +4058,7 @@ public partial class GraphEditorView : UserControl
         {
             StackPanel toggles = FitToggles(node.NodeId, style, out Button widthToggle, out Button heightToggle);
             (fitWidth, fitHeight) = (widthToggle, heightToggle);
-            Grid.SetColumn(toggles, 3);
+            Grid.SetColumn(toggles, CardTitleRow.TogglesColumn);
             title.Children.Add(toggles);
         }
 

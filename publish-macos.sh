@@ -53,6 +53,13 @@ dotnet publish src/Vn.App/Vn.App.csproj \
 # 독 · Finder의 그림 — tools/make-app-icons.py가 원본(Assets/app-icon.png)에서 굽는다.
 cp src/Vn.App/Assets/app.icns "$app/Contents/Resources/app.icns"
 
+# 앱 이름의 언어판 — 메뉴 막대 · 독 · Finder에 서는 이름(2026-11-25 · english-ui E7). 맥이 제 언어(시스템 설정의 언어)로 고른다 — 한국어 맥이면
+#   ko.lproj, 그 밖은 en.lproj(아래 Info.plist의 CFBundleDevelopmentRegion). 앱 안의 화면 언어 설정과는 따로다 — 그것은 창 안의 글만 바꾼다.
+#   ⛔ 그 전에는 Info.plist 한 벌(「스토리 디렉터」)이라 영어 맥에서도 메뉴 막대가 한국어였다.
+mkdir -p "$app/Contents/Resources/ko.lproj" "$app/Contents/Resources/en.lproj"
+printf 'CFBundleName = "스토리 디렉터";\nCFBundleDisplayName = "스토리 디렉터";\n' > "$app/Contents/Resources/ko.lproj/InfoPlist.strings"
+printf 'CFBundleName = "Story Director";\nCFBundleDisplayName = "Story Director";\n' > "$app/Contents/Resources/en.lproj/InfoPlist.strings"
+
 # 꾸러미의 신원. 이름(CFBundleName)은 메뉴 막대와 독에 선다. 판 번호는 위의 번호다 — 「어느 판을 쓰세요?」에 창 제목과 Finder의 「정보 가져오기」가
 # 같은 번호로 답한다. ⛔ 2026-11-19까지는 구운 날(2026.11.19)이었고 창에는 번호가 없었다.
 
@@ -61,6 +68,10 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>LSHasLocalizedDisplayName</key>
+    <true/>
     <key>CFBundleName</key>
     <string>스토리 디렉터</string>
     <key>CFBundleDisplayName</key>

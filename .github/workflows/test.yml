@@ -36,6 +36,10 @@ jobs:
           if (-not (Test-Path $guideEn)) { throw "the English writer guide was not packaged" }
           $notices = Join-Path $PWD "artifacts\StoryDirector-win-x64\THIRD-PARTY-NOTICES.txt"  # ← 더한 줄
           if (-not (Test-Path $notices)) { throw "the third-party notices were not packaged" }  # ← 더한 줄
+          # 영어 표(위성 어셈블리)가 꾸러미에 든다 — 단일 exe 안에 묶이거나(묶음 목록에 그 경로가 적힌다) 곁의 en 폴더로(english-ui E7).
+          $satellite = 'en[\\/]StoryDirector\.resources\.dll'
+          $besideExe = Join-Path $PWD "artifacts\StoryDirector-win-x64\en\StoryDirector.resources.dll"
+          if (-not (Select-String -Path $exe -Pattern $satellite -Quiet) -and -not (Test-Path $besideExe)) { throw "the English UI table was not packaged" }
 
           $process = Start-Process $exe -PassThru
           try {
@@ -77,6 +81,8 @@ jobs:
           test -f "artifacts/StoryDirector-osx-arm64/THIRD-PARTY-NOTICES.txt" || { echo "the third-party notices were not packaged"; exit 1; }  # ← 더한 줄
           unzip -l "$zip" | grep -q "THIRD-PARTY-NOTICES.txt" || { echo "the third-party notices are not in the zip"; exit 1; }  # ← 더한 줄
           unzip -l "$zip" | grep -q "StoryDirector.app/Contents/MacOS/StoryDirector" || { echo "the app is not at the zip root"; exit 1; }
+          test -f "$app/Contents/MacOS/en/StoryDirector.resources.dll" || { echo "the English UI table was not packaged"; exit 1; }  # english-ui E7
+          grep -q "Story Director" "$app/Contents/Resources/en.lproj/InfoPlist.strings" || { echo "the English app name was not packaged"; exit 1; }  # english-ui E7
 
           "$app/Contents/MacOS/StoryDirector" &
           pid=$!

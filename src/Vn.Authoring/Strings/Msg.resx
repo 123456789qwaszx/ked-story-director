@@ -1661,4 +1661,8 @@
     <value>조건 '{0}' — </value>
     <comment>ChapterDocument.cs의 조건 진단 머리 — [구성] 간선 패널이 이 머리로 그 조건의 진단을 고른다(ChapterGraphView). 진단 문장의 앞과 글자가 같아야 한다</comment>
   </data>
+  <data name="Board_BranchLine" xml:space="preserve">
+    <value>분기</value>
+    <comment>NodeConnections.cs — [대본] 판 분기 선의 이름표(분기점 포트 이름)</comment>
+  </data>
 </root>

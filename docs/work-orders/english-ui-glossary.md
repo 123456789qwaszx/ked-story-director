@@ -30,8 +30,9 @@
 | (카드) 제목 | Title | |
 | 카드 · 대사 카드 | Card | 「노드」는 개발 문서에만 — 화면은 Card |
 | 분기 카드 | Branch card | |
-| 분기 — 반드시 한 번 다녀오는 통로 | Branch — a detour that always comes back | |
+| 분기 — 반드시 한 번 다녀오는 통로 | Branch — a detour that always comes back | 분기 카드 부제 「들렀다 돌아오는 카드」 → *A detour card* · 판의 분기 선 이름표 → *Branch* |
 | 분기 카드 ID | Branch card ID | Yarn 노드 이름 |
+| 조건 없음 (분기 카드 머리의 표) | Always | 「⑂ Always」 — [구성] 조건 칸의 *(always)*와 같은 말. 카드 머리가 좁아 *No condition* 대신(E7) |
 | 장면 시작점(⌂) | Scene start | |
 | 선택지 | Choice | |
 | 선택지 문구 | Choice text | 「문구를 적어 주세요」 → *Write the choice text* |
