@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Vn.App.Services;
+using Vn.App.Strings;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
@@ -122,6 +123,37 @@ internal sealed class SettingsWindow : Window
             if (NewLineShapeCombo.SelectedIndex is >= 0 and var index && index < LineShapeNames.Length)
             {
                 BoardLines.Set(LineShapeNames[index].Kind);
+            }
+        });
+
+        // 언어 — 툴 화면의 언어(2026-11-25 소유자 · english-ui E1 — 처음은 PC 언어, 바꾸면 다시 켤 때). 고르는 즉시 앱 설정에 넣고 화면은 그대로다 —
+        // 칸 아래와 상태줄이 다시 켜면 바뀐다고 말한다.
+        LanguageCombo = new ComboBox
+        {
+            FontSize = 12,
+            ItemsSource = LanguageItems(),
+            SelectedIndex = LanguageIndex(AppSettingsService.LoadLanguage())
+        };
+        ToolTip.SetTip(LanguageCombo, Ui.Settings_LanguageTip);
+        LanguageNote = new TextBlock { FontSize = 11, Opacity = 0.75, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        LanguageCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, "언어", () =>
+        {
+            string? chosen = LanguageCombo.SelectedIndex switch
+            {
+                1 => UiLanguage.Korean,
+                2 => UiLanguage.English,
+                _ => null
+            };
+            AppSettingsService.SaveLanguage(chosen);
+
+            string next = UiLanguage.Resolve(chosen, UiLanguage.OsCulture);
+            bool changes = next != UiLanguage.Current;
+            LanguageNote.Text = changes ? string.Format(Ui.Settings_LanguageRestart, UiLanguage.NameOf(next)) : string.Empty;
+            LanguageNote.IsVisible = changes;
+
+            if (changes)
+            {
+                _session.SetStatus(LanguageNote.Text);
             }
         });
 
@@ -285,7 +317,19 @@ internal sealed class SettingsWindow : Window
                                 Spacing = 8,
                                 Margin = new Thickness(0, 4, 0, 0),
                                 Children = { new TextBlock { Text = "새로 잇는 선", FontSize = 12, VerticalAlignment = VerticalAlignment.Center }, NewLineShapeCombo }
-                            }
+                            },
+                            new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Spacing = 8,
+                                Margin = new Thickness(0, 4, 0, 0),
+                                Children =
+                                {
+                                    new TextBlock { Text = Ui.Settings_LanguageLabel, FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
+                                    LanguageCombo
+                                }
+                            },
+                            LanguageNote
                         }
                     })
                 }
@@ -388,6 +432,27 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「기타」의 「새로 잇는 선」 — [대본] 판에 새로 잇는 선의 꼴(<see cref="BoardLines"/>). 누르는 즉시 반영한다.</summary>
     internal ComboBox NewLineShapeCombo { get; }
+
+    /// <summary>「기타」의 언어 칸 — PC 언어 따라 · 한국어 · English(<see cref="UiLanguage"/>). 고르는 즉시 앱 설정에 들고 다시 켤 때 바뀐다.</summary>
+    internal ComboBox LanguageCombo { get; }
+
+    /// <summary>언어 칸 아래 — 고른 언어가 지금 화면과 다르면 「다시 켜면 … 바뀝니다」.</summary>
+    internal TextBlock LanguageNote { get; }
+
+    /// <summary>언어 칸의 차림 — 첫째는 PC 언어 따라(지금 그것이 정하는 언어를 붙인다), 그다음 언어마다 그 언어로 적은 이름.</summary>
+    private static List<string> LanguageItems() =>
+    [
+        string.Format(Ui.Settings_LanguageAuto, UiLanguage.NameOf(UiLanguage.OsLanguage(UiLanguage.OsCulture))),
+        UiLanguage.NameOf(UiLanguage.Korean),
+        UiLanguage.NameOf(UiLanguage.English)
+    ];
+
+    private static int LanguageIndex(string? language) => language switch
+    {
+        UiLanguage.Korean => 1,
+        UiLanguage.English => 2,
+        _ => 0
+    };
 
     /// <summary>「새로 잇는 선」의 차림 — 선 위의 꼴 단추와 같은 이름 · 차례.</summary>
     internal static readonly (string Name, Vn.Authoring.Model.EdgeShapeKind Kind)[] LineShapeNames =

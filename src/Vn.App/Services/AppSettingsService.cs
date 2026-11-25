@@ -216,6 +216,19 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>
+    /// 툴 화면의 언어 (설정 창 「기타」의 언어 칸 — english-ui E1 · <see cref="UiLanguage"/>) — 「ko」 · 「en」, null이면 PC 언어를 따른다.
+    /// 다시 켤 때 반영한다.
+    /// </summary>
+    public static string? LoadLanguage() => UiLanguage.Normalize(Load(SettingsPath).Language);
+
+    public static void SaveLanguage(string? language)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.Language = UiLanguage.Normalize(language);
+        Save(settings);
+    }
+
     /// <summary>설명을 간소화하는가 (설정 창 「기타」 — brief-guides G1). 처음에는 다 보인다.</summary>
     public static bool LoadBriefGuides() => Load(SettingsPath).BriefGuides;
 
@@ -424,6 +437,9 @@ internal static class AppSettingsService
 
         /// <summary>새 카드 글의 기본 글자색(<c>#RRGGBB</c>) — null이면 테마의 글자색.</summary>
         public string? ScriptFontColor { get; set; }
+
+        /// <summary>툴 화면의 언어 — <see cref="LoadLanguage"/>. null이면 PC 언어를 따른다.</summary>
+        public string? Language { get; set; }
     }
 
     /// <summary>

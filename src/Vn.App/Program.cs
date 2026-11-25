@@ -16,6 +16,9 @@ class Program
 
         try
         {
+            // 화면 언어 — 창을 짓기 전에 한 번(앱 설정 · 없으면 PC 언어 · english-ui E1). 켜 있는 동안은 바꾸지 않는다.
+            UiLanguage.ApplyAtStartup();
+
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
             return 0;
         }

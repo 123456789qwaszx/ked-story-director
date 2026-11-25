@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  화면 문구 표 — 한국어(기본). 영어는 같은 키로 Ui.en.resx에. 영어 칸이 비면 이 한국어가 대신 보인다.
+  고치는 법은 docs/work-orders/english-ui-orders.md 「문구 표 고치기」.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Settings_LanguageLabel" xml:space="preserve">
+    <value>언어 (Language)</value>
+    <comment>설정 창 「기타」 — 언어 칸의 이름. 어느 언어로 켜졌어도 찾게 두 언어를 함께 적는다.</comment>
+  </data>
+  <data name="Settings_LanguageAuto" xml:space="preserve">
+    <value>PC 언어 따라 — 지금 {0}</value>
+    <comment>설정 창 언어 칸의 첫 차림. {0} = PC 언어로 정해지는 언어 이름(한국어 · English).</comment>
+  </data>
+  <data name="Settings_LanguageTip" xml:space="preserve">
+    <value>툴 화면의 언어입니다 — 대사와 프로젝트 데이터의 언어와는 따로입니다. 바꾸면 다시 켤 때 바뀝니다.</value>
+    <comment>설정 창 언어 칸의 풍선.</comment>
+  </data>
+  <data name="Settings_LanguageRestart" xml:space="preserve">
+    <value>다시 켜면 {0}로 바뀝니다.</value>
+    <comment>언어를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 언어 이름.</comment>
+  </data>
+</root>

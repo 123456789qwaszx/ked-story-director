@@ -22,6 +22,18 @@
     <AvaloniaResource Include="Assets\app.ico" />
   </ItemGroup>
 
+  <!-- 화면 문구 표(2026-11-25 · docs/work-orders/english-ui-orders.md E1) — Strings/Ui.resx(한국어 · 기본)와 Ui.en.resx(영어). 빌드가 표에서
+       Vn.App.Strings.Ui 클래스를 짓는다(키마다 속성 — 없는 키를 쓰면 빌드가 멈춘다). 영어 표는 en/StoryDirector.resources.dll로 따로 구워진다. -->
+  <ItemGroup>
+    <EmbeddedResource Update="Strings\Ui.resx">
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedClassName>Ui</StronglyTypedClassName>
+      <StronglyTypedNamespace>Vn.App.Strings</StronglyTypedNamespace>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Ui.g.cs</StronglyTypedFileName>
+      <PublicClass>true</PublicClass>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />

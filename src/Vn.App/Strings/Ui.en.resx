@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  화면 문구 표 — 영어. 키는 Ui.resx(한국어)와 같다.
+  고치는 법은 docs/work-orders/english-ui-orders.md 「문구 표 고치기」.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Settings_LanguageLabel" xml:space="preserve">
+    <value>Language (언어)</value>
+  </data>
+  <data name="Settings_LanguageAuto" xml:space="preserve">
+    <value>Follow PC language — now {0}</value>
+  </data>
+  <data name="Settings_LanguageTip" xml:space="preserve">
+    <value>The language of the tool's screens — separate from the dialogue and project data. Changes take effect the next time you start the app.</value>
+  </data>
+  <data name="Settings_LanguageRestart" xml:space="preserve">
+    <value>Restart the app to switch to {0}.</value>
+  </data>
+</root>
