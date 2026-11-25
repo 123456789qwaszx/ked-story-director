@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   Vn.Authoring 문구 표 — 한국어(기본) · 검증 보고 · 고치는 법 · 거절 사유 · 파일 읽기 오류. 영어는 같은 키로 Msg.en.resx에.
-  고치는 법은 docs/work-orders/english-ui-orders.md 「문구 표 고치기」.
+  고치는 법은 english-ui 「문구 표 고치기」.
 -->
 <root>
   <resheader name="resmimetype">
@@ -1702,7 +1702,7 @@
     <comment>ExportDestinations.cs · ExportDelivery.cs — 툴이 쓰는 JSON 파일의 안내 칸 이름(읽을 때는 보지 않는다 · 두 언어의 칸을 함께 걷는다)</comment>
   </data>
   <data name="Export_TargetNote" xml:space="preserve">
-    <value>복제할 폴더 — 프로젝트 폴더 기준 상대 경로 또는 절대 경로. director는 저장할 때 진행 JSON을 gameFolder로, 대사 Yarn을 dialogueYarnFolder로 복제한다. compositor는 gameFolder를 읽어 제 Yarn을 쓴다.</value>
+    <value>복제할 폴더 — 프로젝트 폴더 기준 상대 경로 또는 절대 경로. director는 저장할 때 진행 JSON을 gameFolder로, 대사 Yarn을 dialogueYarnFolder로 복제한다.</value>
     <comment>ExportDestinations.cs — runtime.target.json의 안내</comment>
   </data>
   <data name="Export_RecordNote" xml:space="preserve">

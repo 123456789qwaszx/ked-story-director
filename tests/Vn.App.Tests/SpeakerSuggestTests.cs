@@ -12,7 +12,7 @@ using Path = System.IO.Path;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>화자 칸의 자동완성 — 첫 글자 · 자음부터</b>(<c>docs/work-orders/writer-comfort-orders.md</c> WC3).
+/// <b>화자 칸의 자동완성 — 첫 글자 · 자음부터</b>(writer-comfort WC3).
 ///
 /// 한글은 조합 중인 글자가 칸의 글에 들어가지 않는다 — 그래서 둘째 글자를 쳐야 자동완성이 움직였다(⛔).
 /// 칸 안의 글 표시기가 든 조합 중인 글(<see cref="TextPresenter.PreeditText"/>)을 직접 걸어, 사람이 「ㅅ」 한 자를 누른 때를 흉내 낸다.

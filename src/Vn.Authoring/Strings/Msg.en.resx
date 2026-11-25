@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   Vn.Authoring 문구 표 — 영어. 키는 Msg.resx(한국어)와 같다.
-  고치는 법은 docs/work-orders/english-ui-orders.md 「문구 표 고치기」.
+  고치는 법은 english-ui 「문구 표 고치기」.
 -->
 <root>
   <resheader name="resmimetype">
@@ -1281,7 +1281,7 @@
     <value>_note</value>
   </data>
   <data name="Export_TargetNote" xml:space="preserve">
-    <value>Mirror folders — relative to the project folder, or absolute. When saving, director copies the progression JSON to gameFolder and the Yarn dialogue to dialogueYarnFolder. compositor reads gameFolder and writes its own Yarn.</value>
+    <value>Mirror folders — relative to the project folder, or absolute. When saving, director copies the progression JSON to gameFolder and the Yarn dialogue to dialogueYarnFolder.</value>
   </data>
   <data name="Export_RecordNote" xml:space="preserve">
     <value>Files this tool copied when saving — a file not copied this time is removed only when its bytes match this fingerprint.</value>

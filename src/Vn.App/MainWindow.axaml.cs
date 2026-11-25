@@ -517,7 +517,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 하이어아키를 다시 세운다 (docs/plans/hierarchy.md). 원천은 챕터 그래프 뷰가 읽은
+    /// 하이어아키를 다시 세운다 (hierarchy). 원천은 챕터 그래프 뷰가 읽은
     /// 챕터 목록 하나다. 고른 것은 하이어아키가 들고 있다가 다시 세운 뒤에도 잇는다. 챕터가 없는 판은 하이어아키에 없다.
     /// </summary>
     private void RebuildFileList()

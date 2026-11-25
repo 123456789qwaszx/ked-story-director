@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   화면 문구 표 — 영어. 키는 Ui.resx(한국어)와 같다.
-  고치는 법은 docs/work-orders/english-ui-orders.md 「문구 표 고치기」.
+  고치는 법은 english-ui 「문구 표 고치기」.
 -->
 <root>
   <resheader name="resmimetype">
@@ -323,7 +323,7 @@ The two climb the hill without a word.</value>
     <value>Save the project first to choose a mirror folder.</value>
   </data>
   <data name="Settings_YarnDialogueIsnTCopied" xml:space="preserve">
-    <value>Yarn dialogue isn't copied to the same place as the game folder (the progression JSON mirror folder) — the game's Yarn project would read node names twice alongside the compositor's staged Yarn and fail to compile.</value>
+    <value>Yarn dialogue isn't copied to the same place as the game folder (the progression JSON mirror folder) — the game's Yarn project would read node names twice alongside the staged Yarn and fail to compile.</value>
   </data>
   <data name="Settings_TurnedOffAllMirrorFolders" xml:space="preserve">
     <value>Turned off all mirror folders — output goes to exported/ only.</value>
@@ -359,7 +359,7 @@ The two climb the hill without a word.</value>
     <value>Mirror folder — {0}</value>
   </data>
   <data name="Settings_MirrorFolderForProgressionJSON" xml:space="preserve">
-    <value>The mirror folder for progression JSON is the runtime's ChapterProgression folder (the game folder), and the compositor also reads this field to write Yarn. Yarn dialogue isn't copied to the same place as the game folder (its node names would clash with the staged Yarn). Folders that don't exist aren't created.</value>
+    <value>The mirror folder for progression JSON is the runtime's ChapterProgression folder (the game folder). Yarn dialogue isn't copied to the same place as the game folder (its node names would clash with the staged Yarn). Folders that don't exist aren't created.</value>
   </data>
   <data name="Settings_ThisFolderDoesnTExist" xml:space="preserve">
     <value>⚠ This folder doesn't exist — it won't be created. Create the folder, then browse again.</value>

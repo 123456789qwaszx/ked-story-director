@@ -8,7 +8,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>작가용 글 서식</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — 작가가 보기 위한 굵게 · 기울임 · 취소선 · 색 · 글꼴 · 크기 · 정렬.
+/// <b>작가용 글 서식</b> (2026-11-22 소유자 · writer-formatting) — 작가가 보기 위한 굵게 · 기울임 · 취소선 · 색 · 글꼴 · 크기 · 정렬.
 /// 대사 글 밖(<see cref="DialogueNode.WriterMarks"/>)에 서고, 글이 바뀌면 같은 글자를 따라가며, <b>내보내기에 나가지 않는다</b>.
 /// </summary>
 public sealed class WriterMarksTests

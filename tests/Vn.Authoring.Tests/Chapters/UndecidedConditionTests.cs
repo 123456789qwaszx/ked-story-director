@@ -4,7 +4,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 식 미정 조건 (2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W1). 작가가 [대본]에서 라벨만 먼저 걸고 개발자가 [구성]에서
+/// 식 미정 조건 (2026-11-16 · writer-fields W1). 작가가 [대본]에서 라벨만 먼저 걸고 개발자가 [구성]에서
 /// 식을 나중에 채운다 — 식이 빈 조건은 <b>항상 통과</b>하고(관문이 없는 것과 같다), 검증은 <b>경고</b>로 할 일이 남았다고 말한다.
 /// 식이 틀린 것(모르는 스탯 키)은 지금처럼 오류다.
 /// </summary>

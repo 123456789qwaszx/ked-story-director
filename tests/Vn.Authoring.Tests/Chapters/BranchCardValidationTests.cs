@@ -7,7 +7,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>분기 카드 검증</b> (2026-11-17 · <c>docs/work-orders/branch-card-orders.md</c> B2) — 분기 카드는 도달성 증명(런타임의 오라클 — 에피소드와
+/// <b>분기 카드 검증</b> (2026-11-17 · branch-card B2) — 분기 카드는 도달성 증명(런타임의 오라클 — 에피소드와
 /// 간선만) 밖이라 따로 본다. ① 분기점이 에피소드에 이어져 있다 → 오류(옛 데이터), ② 아무도 부르지 않거나 도달할 수 없는 곳만 부른다 → 경고
 /// (진행 JSON에 없어 게임을 깨지 않는다 — 소유자), ③ 줄이 없다 → 오류(Yarn이 줄 없는 노드를 빼 <c>&lt;&lt;detour&gt;&gt;</c>가 없는 노드를 부른다),
 /// ④ 분기 카드 안에 분기가 있다 → 오류(그 전의 파일 — usability UX27).

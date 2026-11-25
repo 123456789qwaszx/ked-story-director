@@ -5,7 +5,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>접힌 판 → 장면 → 노드</b> (R6 S-3 · `docs/plans/R6-explorer.md` §5).
+/// <b>접힌 판 → 장면 → 노드</b> (R6 S-3 · R6-explorer §5).
 ///
 /// ⛔ 못 박는 것 중 제일 중요한 것은 <b>행 번호가 장면 머리글을 센다</b>는 것이다.
 /// 간선 끝점의 Y가 <c>머리글높이 + 행번호 × 행높이</c>라, 안 세면 머리글 아래 노드의

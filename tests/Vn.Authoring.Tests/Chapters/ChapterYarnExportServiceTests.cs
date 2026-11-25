@@ -7,7 +7,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 대사 Yarn이 <b>저절로 나가는 길</b> (<c>docs/design/two-graphs.md</c> 7절 V) — <see cref="ChapterExportService.ExportAll"/>.
+/// 대사 Yarn이 <b>저절로 나가는 길</b> (<c>docs/design/two-graphs.md</c> §3.3) — <see cref="ChapterExportService.ExportAll"/>.
 /// 지키는 것: 진행 JSON과 같은 때 <c>exported/yarn/</c>에 장면마다 나간다 · <b>게임 폴더에는 쓰지 않는다</b>(연출 든 Yarn을 덮지 않게) ·
 /// 막힌 장면 · 거부된 챕터의 옛 파일은 그대로 · 지운 장면 · 챕터의 파일은 걷히고 남의 챕터 파일은 안 걷는다.
 /// </summary>

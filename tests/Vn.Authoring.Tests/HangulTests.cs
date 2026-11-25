@@ -3,7 +3,7 @@
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>이름 고르기의 한글 맞추기</b> — 화자 자동완성이 첫 글자 · 자음부터 걸러 낸다(2026-11-18 소유자 · <c>docs/work-orders/writer-comfort-orders.md</c>
+/// <b>이름 고르기의 한글 맞추기</b> — 화자 자동완성이 첫 글자 · 자음부터 걸러 낸다(2026-11-18 소유자 · writer-comfort
 /// WC3). 글로 들어 있음 · 초성 · 조합 중인 마지막 음절 · 맞지 않는 것을 못 박는다.
 /// </summary>
 public sealed class HangulTests

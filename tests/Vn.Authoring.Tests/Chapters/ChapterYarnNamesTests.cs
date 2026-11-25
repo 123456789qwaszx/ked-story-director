@@ -5,7 +5,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>Yarn 노드 이름은 프로젝트에서 하나다</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c> I2) — 게임은 모든 챕터의 Yarn을 한
+/// <b>Yarn 노드 이름은 프로젝트에서 하나다</b> (2026-11-17 · auto-id I2) — 게임은 모든 챕터의 Yarn을 한
 /// 프로젝트로 컴파일하므로 다른 챕터의 노드와 이름이 겹치면 오류다(<see cref="ChapterYarnNames"/>).
 /// </summary>
 public sealed class ChapterYarnNamesTests

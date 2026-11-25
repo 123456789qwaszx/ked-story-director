@@ -41,7 +41,7 @@ public static class ResultDocumentComposer
         }
 
         // <b>설정노드의 할당은 노드 머리의 `set`으로 내지 않는다</b> (2026-08-24,
-        // `docs/work-orders/chapter-scope-variables-orders.md` §4). 그 할당은 챕터의 <b>선언</b>이라
+        // chapter-scope-variables §4). 그 할당은 챕터의 <b>선언</b>이라
         // 노드마다 되밟으면 초기화의 수명이 에피소드가 된다. 작가가 대본 <b>줄에</b> 단 set은
         // 그대로 낸다(아래 line.Sets) — 그건 이야기 도중의 변화다.
 

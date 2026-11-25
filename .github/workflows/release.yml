@@ -1,6 +1,6 @@
 name: release
 
-# 작가에게 건넬 판을 굽는다(2026-11-19 · docs/work-orders/writer-release-orders.md WR4).
+# 작가에게 건넬 판을 굽는다(2026-11-19 · writer-release WR4).
 #
 #   (dev를 main에 올린 뒤) GitHub 저장소 → Releases → Draft a new release → 태그 v0.1.0(Create new tag) · Target main → [Publish release]
 #

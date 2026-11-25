@@ -5,7 +5,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>자동 모양 그대로인 ID는 자리를 따라간다</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c> I3) — 에피소드를 다른 장면으로
+/// <b>자동 모양 그대로인 ID는 자리를 따라간다</b> (2026-11-17 · auto-id I3) — 에피소드를 다른 장면으로
 /// 옮기거나 장면ID · 챕터ID를 바꾸면 새 자리의 이름으로. 사람이 고친 ID는 그대로다. 분기 카드는 집을 따른다. 되돌리기 한 칸.
 /// </summary>
 public sealed class AutoIdFollowerTests

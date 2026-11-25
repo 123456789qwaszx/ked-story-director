@@ -5,7 +5,7 @@
 #   ./publish-macos.sh x64            인텔 맥용
 #   ./publish-macos.sh arm64 0.1.0    판 번호를 정해 굽는다(릴리스 — .github/workflows/release.yml). 정하지 않으면 「개발판」
 #
-# publish-windows.ps1의 맥판이다(2026-11-19 · docs/work-orders/writer-app-orders.md WA6). 받는 사람에게 없는 것을 전제하지 않는다 —
+# publish-windows.ps1의 맥판이다(2026-11-19 · writer-app WA6). 받는 사람에게 없는 것을 전제하지 않는다 —
 # .NET을 함께 담으므로(self-contained) 받는 맥에 설치할 것이 없다.
 #
 # ⚠ 맥에서 돌린다(CI의 macOS 작업이 돌린다 — .github/workflows/test.yml). 다른 OS에서도 폴더는 만들어지지만 맥의 서명 도구(codesign)를

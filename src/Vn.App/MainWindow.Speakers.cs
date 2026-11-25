@@ -16,7 +16,7 @@ using Vn.Authoring.Strings;
 namespace Vn.App;
 
 /// <summary>
-/// [대본] 탭의 <b>화자 목록</b> — 오른쪽 기둥의 「화자」 탭에 늘 선다(<c>docs/work-orders/writer-fields-orders.md</c> W3 · side-tabs V3 — ⛔ 그 전에는
+/// [대본] 탭의 <b>화자 목록</b> — 오른쪽 기둥의 「화자」 탭에 늘 선다(writer-fields W3 · side-tabs V3 — ⛔ 그 전에는
 /// 하이어아키의 프로젝트 줄을 골라야 인스펙터에 섰다).
 ///
 /// 작가가 화자 이름을 더하고 고치고 지운다. 이름을 고치면 이미 쓰인 대사 줄의 화자가 따라간다. 캐릭터 키(초상화 · 표정)는 여기서

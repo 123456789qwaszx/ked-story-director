@@ -6,7 +6,7 @@ namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
 /// <b>챕터에 쓴 글의 양</b>(2026-11-18 소유자 — 「챕터에 작성해둔 글자 수를 표기해주면 작가들이 좋아할 것입니다. 자기의 작업량을 알 수
-/// 있으니까요」 · <c>docs/work-orders/writer-comfort-orders.md</c> WC7). 대사 · 지문의 글만 — 화자 이름 · 빈 줄 · 다른 챕터는 세지 않는다.
+/// 있으니까요」 · writer-comfort WC7). 대사 · 지문의 글만 — 화자 이름 · 빈 줄 · 다른 챕터는 세지 않는다.
 /// </summary>
 public sealed class ChapterTextCountTests
 {

@@ -17,7 +17,7 @@ Push-Location $root
 #   치를 이유가 없고(느리다), 묶는 것은 배포의 성질이지 프로젝트의 성질이 아니다.
 
 try {
-    # 꾸러미 · 실행 파일의 이름은 작가에게 보이는 이름이다(스토리 디렉터 — 2026-11-19 · docs/work-orders/writer-app-orders.md WA4).
+    # 꾸러미 · 실행 파일의 이름은 작가에게 보이는 이름이다(스토리 디렉터 — 2026-11-19 · writer-app WA4).
     #   실행 파일 이름은 Vn.App.csproj의 AssemblyName이 정한다 — 여기와 CI(test.yml)가 그 이름을 찾는다.
     $publishDirectory = Join-Path $root "artifacts\StoryDirector-win-x64"
     $zipPath = Join-Path $root "artifacts\StoryDirector-win-x64.zip"

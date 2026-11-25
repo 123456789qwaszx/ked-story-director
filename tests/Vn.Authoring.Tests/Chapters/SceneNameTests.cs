@@ -7,7 +7,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 장면 이름 (2026-11-16 · <c>docs/work-orders/display-names-orders.md</c> N1). 작가가 [대본] 탭에서 붙이는 이름이고 SceneId(런타임 저장 ·
+/// 장면 이름 (2026-11-16 · display-names N1). 작가가 [대본] 탭에서 붙이는 이름이고 SceneId(런타임 저장 ·
 /// 롤백 경계)와 따로다 — 장면 메모 항목의 <c>name</c>. 지키는 것: 같은 이름의 장면이 합쳐지지 않는다 · 보이는 이름은 이름, 비면 SceneId ·
 /// 이름과 메모를 따로 고친다 · 저장을 왕복하고 비면 쓰지 않는다 · 장면ID를 바꾸면 이름이 따라간다.
 /// </summary>

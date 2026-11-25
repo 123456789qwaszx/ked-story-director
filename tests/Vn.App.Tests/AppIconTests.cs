@@ -6,7 +6,7 @@ using Vn.App.Views;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>앱의 아이콘</b> (2026-11-19 소유자 — 「아이콘 그림을 당신이 먼저 어울리는 것으로」 · <c>docs/work-orders/writer-app-orders.md</c> WA5).
+/// <b>앱의 아이콘</b> (2026-11-19 소유자 — 「아이콘 그림을 당신이 먼저 어울리는 것으로」 · writer-app WA5).
 ///
 /// 원본 <c>Assets/app-icon.png</c>에서 <c>tools/make-app-icons.py</c>가 구운 <c>app.ico</c>를 창과 실행 파일이 함께 쓴다.
 /// </summary>

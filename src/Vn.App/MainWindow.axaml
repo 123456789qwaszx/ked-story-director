@@ -52,7 +52,7 @@
                 </Menu>
 
                 <!-- ⛔ [🎮 게임 폴더…]는 2026-11-17에 걷혔다 — 형식마다 보낼 곳은 [⚙ 설정]의 「내보내기」에서 정한다
-                     (docs/work-orders/export-destinations-orders.md). -->
+                     (export-destinations). -->
 
                 <!--
                   진행 JSON · 대사 Yarn은 사람 손을 안 기다리고 저절로 나가므로, 사람이 할
@@ -63,7 +63,7 @@
                 <Button Grid.Column="2" x:Name="WorkFolderButton" Content="{x:Static s:Ui.Main_WorkFolder}" VerticalAlignment="Stretch"
                         ToolTip.Tip="{x:Static s:Ui.Main_OpensWorkFolderExportedIn}" />
 
-                <!-- 설정은 이 창 하나에 모은다(2026-11-17 · docs/work-orders/settings-orders.md). -->
+                <!-- 설정은 이 창 하나에 모은다(2026-11-17 · settings). -->
                 <Button Grid.Column="3" x:Name="SettingsButton" Content="{x:Static s:Ui.Main_Settings2}" Margin="6,0,0,0" VerticalAlignment="Stretch"
                         ToolTip.Tip="{x:Static s:Ui.Main_SettingsScriptBoardSizeMirror}" />
 

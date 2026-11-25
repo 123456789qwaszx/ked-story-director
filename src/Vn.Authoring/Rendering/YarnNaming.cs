@@ -3,10 +3,9 @@ namespace Vn.Authoring.Rendering;
 /// <summary>
 /// <b>대사 노드 하나가 게임의 Yarn에서 가질 노드 타이틀</b> — 그 규칙의 단 한 자리.
 ///
-/// 연출 든 게임용 Yarn은 <c>ked-story-compositor</c>가 내고, 대사만 있는 Yarn은 이 툴이 낸다(2026-11-17 —
-/// <see cref="Chapters.ChapterYarnExporter"/>). 규칙은 여기 하나다: <b>진행 JSON의 <c>DialogueEntryId</c></b>와 대사 Yarn의 노드 타이틀이
-/// 이 글자로 노드를 부르고(에피소드는 EpisodeId에서 짓는다), 런타임은 같은 글자로 <c>YarnProject</c>에서 노드를 찾는다. compositor의
-/// 이미터와 이 함수가 갈리면 진행 JSON이 없는 노드를 부른다 — 2026-08-23에 진행 JSON은 `new01`,
+/// 이 툴은 대사만 있는 Yarn을 낸다(<see cref="Chapters.ChapterYarnExporter"/>). 규칙은 여기 하나다: <b>진행 JSON의 <c>DialogueEntryId</c></b>와 대사 Yarn의 노드 타이틀이
+/// 이 글자로 노드를 부르고(에피소드는 EpisodeId에서 짓는다), 런타임은 같은 글자로 <c>YarnProject</c>에서 노드를 찾는다. 연출을 붙이는 쪽과
+/// 이 함수가 갈리면 진행 JSON이 없는 노드를 부른다 — 2026-08-23에 진행 JSON은 `new01`,
 /// yarn은 `Story_new01`로 갈렸던 것이 그 모양이다(`docs/runtime-contract.md` G장의 대사엔트리 이름 항목).
 ///
 /// <b>규칙은 접두가 아니라 정규화다</b> — <see cref="YarnSyntax.SanitizeNodeName"/>가

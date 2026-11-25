@@ -11,7 +11,7 @@ using Vn.Authoring.Model;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[구성] 탭 「ID로 보기」</b>(2026-11-18 소유자 · <c>docs/work-orders/id-view-orders.md</c>) — 처음에는 켜져 있어 하이어아키 · 카드가 ID로 서고,
+/// <b>[구성] 탭 「ID로 보기」</b>(2026-11-18 소유자 · id-view) — 처음에는 켜져 있어 하이어아키 · 카드가 ID로 서고,
 /// 끄면 [대본] 탭처럼 보이는 이름으로 선다. 카드 머리는 한 줄(⛔ 제목 아래 EpisodeId 둘째 줄은 걷혔다). 앱 설정에 기억한다.
 /// </summary>
 public sealed class ChapterIdViewTests : IDisposable

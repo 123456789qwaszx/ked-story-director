@@ -10,7 +10,7 @@ using Vn.App.Views;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[대본] 판 위의 휠</b> (2026-11-19 소유자 — 「트랙패드 수정을 합시다」 · <c>docs/work-orders/writer-app-orders.md</c> WA2).
+/// <b>[대본] 판 위의 휠</b> (2026-11-19 소유자 — 「트랙패드 수정을 합시다」 · writer-app WA2).
 ///
 /// 배율은 신호의 크기에 비례하고 가로 값은 판을 가로로 옮긴다 — [구성] 판과 한 벌이다(<see cref="BoardWheel"/> · 그쪽 시험은
 /// <see cref="ChapterGraphNavigationTests"/>). ⛔ 신호 하나마다 ×1.15 · ÷1.15여서 트랙패드에서 배율이 튀었고, 가로로 쓸면 축소됐다.

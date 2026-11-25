@@ -8,7 +8,7 @@ using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// <b>분기 카드 검증</b> (2026-11-17 · <c>docs/work-orders/branch-card-orders.md</c> B2).
+/// <b>분기 카드 검증</b> (2026-11-17 · branch-card B2).
 ///
 /// 분기 카드(<see cref="DialogueNode.IsBranchCard"/>)는 에피소드가 아니라 도달성 증명(<see cref="ChapterReachabilityProver"/> — 런타임의 오라클,
 /// 에피소드와 간선만)의 밖이다. 그래서 여기서 따로 본다:

@@ -9,7 +9,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>설명 간소화</b> — 설정 창 「기타」의 체크를 켜면 쓰는 법 안내글이 숨고, 「없습니다 — …」 줄은 상태만 남는다(2026-11-18 소유자 ·
-/// <c>docs/work-orders/brief-guides-orders.md</c>). 이 PC의 앱 설정이고 처음에는 꺼져 있다. 누르는 즉시 반영된다.
+/// brief-guides). 이 PC의 앱 설정이고 처음에는 꺼져 있다. 누르는 즉시 반영된다.
 /// </summary>
 public sealed class BriefGuidesTests : IDisposable
 {

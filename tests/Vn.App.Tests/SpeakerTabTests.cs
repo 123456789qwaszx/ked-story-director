@@ -11,7 +11,7 @@ using Path = System.IO.Path;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[구성] 탭의 [화자] 탭 = 캐릭터 키</b> (2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W3).
+/// <b>[구성] 탭의 [화자] 탭 = 캐릭터 키</b> (2026-11-16 · writer-fields W3).
 ///
 /// 화자 이름은 [대본] 탭(작가)이 더하고 고치고 지운다(<see cref="DirectorSpeakersTests"/>). 여기는 그 이름마다 캐릭터 키를 잇는
 /// 자리다 — 이름은 읽기만 하고, 더하는 폼도 ✕도 없다. 키가 없는 화자는 알린다(초상화 · 표정이 붙지 않는다).

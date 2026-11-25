@@ -33,7 +33,7 @@
                 <Button x:Name="DeleteButton" Content="{x:Static s:Ui.Board_Delete}" IsEnabled="False" ToolTip.ShowOnDisabled="True" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                 <!-- 작가용 글 서식 도구 막대(2026-11-22 소유자 — 한컴 · 엑셀처럼 위에서 글꼴 · 크기 · 굵게 · 기울임 · 취소선 · 색 · 정렬) — 작가가 보기 위한
-                     것이라 내보내기에 나가지 않는다. 내용은 코드가 짓는다(GraphEditorView.Writer · docs/plans/writer-formatting.md). -->
+                     것이라 내보내기에 나가지 않는다. 내용은 코드가 짓는다(GraphEditorView.Writer · writer-formatting). -->
                 <StackPanel x:Name="WriterToolbar" Orientation="Horizontal" Spacing="2" Background="Transparent"
                             ToolTip.ShowOnDisabled="True" />
                 <!-- 빈 선택지 숨기기는 툴바에 두지 않는다 — [대본] 탭은 카드마다 인스펙터(대사 편집기)의 체크로 정한다. -->

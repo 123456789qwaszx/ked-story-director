@@ -6,7 +6,7 @@ namespace Vn.App.Views;
 
 /// <summary>
 /// <b>설명 간소화의 스위치</b> — 앱 하나에 하나다(설정 창 「기타」의 「설명 간소화」 · 이 PC의 앱 설정 <c>BriefGuides</c>, 처음 꺼짐 · 2026-11-18 소유자 ·
-/// <c>docs/work-orders/brief-guides-orders.md</c>). 켜면 <see cref="GuideLine"/>이 짧은 꼴(없으면 숨김)로 선다.
+/// brief-guides). 켜면 <see cref="GuideLine"/>이 짧은 꼴(없으면 숨김)로 선다.
 /// </summary>
 internal static class GuideMode
 {

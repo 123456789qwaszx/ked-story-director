@@ -78,7 +78,7 @@ public static class ProjectStore
 
     /// <summary>
     /// <b>목차에서 빠진 판 파일을 지운다</b>(2026-11-18 소유자 — 챕터를 지운 뒤 저장해도 그 판 파일이 <c>story/</c>에 남아 쌓였다 ·
-    /// <c>docs/work-orders/stale-story-files-orders.md</c>). 지우는 것은 툴이 지은 것만이다 — <c>story/</c> 바로 안, 이름이
+    /// stale-story-files). 지우는 것은 툴이 지은 것만이다 — <c>story/</c> 바로 안, 이름이
     /// <see cref="IsToolMadeStoryFileName"/>인 것. 사람이 복사해 둔 파일 · 다른 이름 · 하위 폴더는 건드리지 않는다. 폴더에 다른 목차가 있으면
     /// (두 목차가 <c>story/</c>를 함께 쓰던 옛 배치) 아무것도 지우지 않는다. 지우지 못한 파일은 남긴다 — 저장은 이미 끝났고 다음 저장이 다시 본다.
     /// </summary>

@@ -9,7 +9,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>장면 프레임</b> — 챕터 박스 안에 한 겹 더 (R6 S-3b · `docs/plans/R6-explorer.md` §5).
+/// <b>장면 프레임</b> — 챕터 박스 안에 한 겹 더 (R6 S-3b · R6-explorer §5).
 ///
 /// 같은 장면의 카드가 한 영역으로 보여야 작가가 <b>어디까지가 한 수명</b>인지 안다 —
 /// 장면 안에서는 모든 게 물릴 수 있고, 장면이 끝나면 확정된다.

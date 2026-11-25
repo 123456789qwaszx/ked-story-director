@@ -17,7 +17,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>하이어아키에서 여러 줄 고르기</b> (2026-11-23 소유자 — 「여러개를 shift + 우클릭으로 한번에 선택하는게 가능할까요?」 → 고른 답 「Ctrl+클릭 · Shift+클릭」 ·
-/// 「섞어 고를 수 있음」 · 「마지막 줄을 따르고 [삭제]는 끔」 · <c>docs/plans/hierarchy.md</c> §5). 마우스로 줄을 눌러(보조 키와 함께) 본다.
+/// 「섞어 고를 수 있음」 · 「마지막 줄을 따르고 [삭제]는 끔」 · hierarchy §5). 마우스로 줄을 눌러(보조 키와 함께) 본다.
 /// </summary>
 public sealed class HierarchyMultiSelectTests : IDisposable
 {

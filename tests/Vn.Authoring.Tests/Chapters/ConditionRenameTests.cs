@@ -6,7 +6,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>조건 이름 바꾸기</b> (2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W4) — [대본] 탭에서 작가가 조건을 뜻으로 부르는 이름을
+/// <b>조건 이름 바꾸기</b> (2026-11-16 · writer-fields W4) — [대본] 탭에서 작가가 조건을 뜻으로 부르는 이름을
 /// 고친다. 라벨은 참조 열쇠라 간선의 표시조건 · 해금조건과 그 챕터 판의 줄 전환(대사 갈래 · 분기 카드 첫머리)이 따라간다. 식은 그대로다.
 /// 비울 수 없고, 이미 있는 이름으로는 바꾸지 않는다. 되돌리기 한 칸이다. ⛔ 2026-11-25까지는 판의 공급 사본이 Id를 지킨 채 이름만 갔다.
 /// </summary>

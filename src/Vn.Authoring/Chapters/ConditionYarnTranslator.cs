@@ -26,8 +26,7 @@ public sealed record ConditionYarnTranslation(string? Yarn, string? Problem)
 /// <item>변수로 심으면 <c>&lt;&lt;set $trust = 5&gt;&gt;</c>가 문법적으로 유효해지고, 그
 /// 쓰기는 세이브/로드 복귀와 도달성 증명이 <b>못 보는 뒷길</b>이다. 함수에는 왼쪽 변이 없다.</item>
 /// <item>런타임은 스탯을 Yarn 변수로 내보내지 않으므로 <c>$trust</c>를 내면
-/// 진행 스탯 검증(<c>ValidateProgressionStatReferences</c> — compositor에 있다)이 <b>차단</b>으로 잡아
-/// 내보내기 자체가 거절된다.</item>
+/// 런타임에 그런 변수가 없어 그 조건이 재생에서 깨진다.</item>
 /// </list>
 ///
 /// 원문 해석은 <see cref="ConditionExpressionParser"/>가 이미 했다(챕터 리더). 여기서는 그

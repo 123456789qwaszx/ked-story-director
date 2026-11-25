@@ -7,7 +7,7 @@ namespace Vn.App.Views;
 
 /// <summary>
 /// <b>[대본] 판 카드 글 칸의 글꼴 · 글자 크기 · 줄 간격</b>(2026-11-18 소유자 — 「글꼴이나, 줄 사이의 간격, 폰트 크기 같은 것들을 조정할 수 있다면
-/// 작가들이 좋아하겠습니다. 이런 것들을 설정에서」 · <c>docs/work-orders/writer-comfort-orders.md</c> WC5).
+/// 작가들이 좋아하겠습니다. 이런 것들을 설정에서」 · writer-comfort WC5).
 ///
 /// 이 PC의 앱 설정이다(<see cref="AppSettingsService.LoadScriptFont"/>). <see cref="GuideMode"/>와 같은 꼴: 처음 읽을 때 앱 설정에서 가져오고,
 /// 바꾸면 기억하고 알린다. 줄 간격은 글자 크기에 대한 %다(워드 프로세서의 「줄 간격 160%」와 같은 말). 칸의 높이는 그대로다 — 글이 넘치면 칸 안에서 흐른다.

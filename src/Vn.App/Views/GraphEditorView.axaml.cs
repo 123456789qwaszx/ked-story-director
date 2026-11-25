@@ -332,7 +332,7 @@ public partial class GraphEditorView : UserControl
     private Point _groupDragStart;
     private readonly Dictionary<string, Point> _groupStartPositions = new(StringComparer.Ordinal);
 
-    // 카드 안 글 칸 (D4 · 2026-10-29, docs/design/two-graphs.md §7 D4) — 노드마다 지금 선 칸과, 그 칸에
+    // 카드 안 글 칸 (D4 · 2026-10-29, docs/design/two-graphs.md §2.4) — 노드마다 지금 선 칸과, 그 칸에
     // 마지막으로 보인 글(= 모델의 글). 칸의 글이 이것과 같으면 넣을 것이 없다.
     private readonly Dictionary<string, TextBox> _writingBoxes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _writingShown = new(StringComparer.Ordinal);
@@ -340,7 +340,7 @@ public partial class GraphEditorView : UserControl
     /// <summary>글 칸마다 그 글의 줄 짝 — 분기 점을 그 대사 옆에 세우고, 고친 줄의 신원을 잇는다(2026-10-30).</summary>
     private readonly Dictionary<string, ScenarioWritingLayout> _writingLayouts = new(StringComparer.Ordinal);
 
-    // 끄는 동안의 자리 (D3 · 2026-10-29, docs/design/two-graphs.md §6-2) — 카드 · 무리 · 접힌 판
+    // 끄는 동안의 자리 (D3 · 2026-10-29, docs/design/two-graphs.md §2.3) — 카드 · 무리 · 접힌 판
     // 어느 끌기든 프로젝트에는 <b>놓을 때 한 번</b> 적는다(되돌리기 한 칸). 그때까지 화면은 이 값을 따른다.
     private readonly Dictionary<string, Point> _dragPositions = new(StringComparer.Ordinal);
     private GraphPosition _proxyPositionStart;
@@ -1150,7 +1150,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// <b>장면 프레임</b> — 챕터 프레임 안에 한 겹 더 (R6 S-3b · <c>docs/plans/R6-explorer.md</c> §5).
+    /// <b>장면 프레임</b> — 챕터 프레임 안에 한 겹 더 (R6 S-3b · R6-explorer §5).
     ///
     /// 같은 장면의 카드가 한 영역으로 보여야 작가가 <b>어디까지가 한 수명</b>인지 안다 —
     /// 장면 안에서는 모든 게 물릴 수 있고 장면이 끝나면 확정되기 때문이다.
@@ -4212,7 +4212,7 @@ public partial class GraphEditorView : UserControl
         string.Equals((a ?? string.Empty).TrimEnd(), (b ?? string.Empty).TrimEnd(), StringComparison.Ordinal);
 
     /// <summary>
-    /// <b>카드 안 글 칸</b> (D4 · 2026-10-29, two-graphs.md §7 D4 — 소유자: *"노드 안에 텍스트 공간이 있고 그곳에
+    /// <b>카드 안 글 칸</b> (D4 · 2026-10-29, two-graphs.md §2.4 — 소유자: *"노드 안에 텍스트 공간이 있고 그곳에
     /// 직접 글을 작성하는 것까지"*). 한 줄이 대사 한 줄이고 <c>화자: 대사</c>로 쓴다(화자가 없으면 지문).
     /// 보이는 글은 <see cref="WorkingDialoguePreview.ScenarioText"/>, 넣는 길은 <see cref="ApplyWriting"/>이다.
     ///
@@ -4890,7 +4890,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 펼친 판 안의 <b>접은 장면</b> 상자 (2026-10-30 — 하이어아키의 눈 · <c>docs/plans/hierarchy.md</c> SF). 접힌 판의 상자와
+    /// 펼친 판 안의 <b>접은 장면</b> 상자 (2026-10-30 — 하이어아키의 눈 · hierarchy SF). 접힌 판의 상자와
     /// 줄 · 치수가 같아 간선 끝 셈법(<see cref="ProxyRowAnchor"/>)이 하나다 — 다른 것은 머리(장면 색 · 이름 · 안쪽 길 수)뿐이고
     /// 장면 머리글이 없다(상자 하나가 장면 하나다).
     ///
@@ -5030,7 +5030,7 @@ public partial class GraphEditorView : UserControl
     /// 접힌 판 안의 <b>장면 머리글</b> 한 줄 (R6 S-3).
     ///
     /// ⚠ 누를 수 없다 — 장면은 담는 자리이고, 고르는 것은 노드다
-    /// (<c>docs/plans/R6-explorer.md</c> §1). 여기서 누르면 판 끌기가 된다.
+    /// (R6-explorer §1). 여기서 누르면 판 끌기가 된다.
     /// </summary>
     private static Border BuildProxySceneHeader(CollapsedSceneGroup scene) =>
         new()
@@ -7255,7 +7255,7 @@ public partial class GraphEditorView : UserControl
     /// <summary>
     /// <b>선택지를 잇거나 끊는다</b> (R7 P-3) — 이 손짓이 고치는 것은 <b>챕터 간선</b>이다.
     ///
-    /// ⛔ 연출 층에 사본을 두지 않는다(<c>docs/plans/R7.md</c> §2 ①). 그래서 여기서 그은 길이
+    /// ⛔ 연출 층에 사본을 두지 않는다(R7 §2 ①). 그래서 여기서 그은 길이
     /// [챕터 그래프]에도 그대로 보이고, 내보내기·도달성 증명·V1/V2 진단이 <b>하나도 안 바뀐
     /// 채</b> 그 값을 본다.
     /// </summary>
@@ -7312,7 +7312,7 @@ public partial class GraphEditorView : UserControl
 
         if (!choice.IsEmpty)
         {
-            // 이미 이어진 칸을 다른 노드로 옮긴 것이다 — 그 간선의 도착만 바꾼다(D3 · two-graphs.md §6-3).
+            // 이미 이어진 칸을 다른 노드로 옮긴 것이다 — 그 간선의 도착만 바꾼다(D3 · two-graphs.md §5-3).
             // ⛔ 예전에는 옛 길을 걷고 새로 그었다: 간선이 목록 끝으로 가 선택지 순서(= 런타임
             //    OptionIndex, §5-3)가 바뀌고, 관문 · 스탯 변화를 잃고, 되돌리기도 두 칸이었다.
             _session.Editor.SetEdgeRoute(
@@ -7555,7 +7555,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// <b>[＋ 에피소드]</b> — 에피소드는 늘 챕터와 장면에 속한다(2026-11-17 소유자 · <c>docs/work-orders/scene-required-orders.md</c> E1).
+    /// <b>[＋ 에피소드]</b> — 에피소드는 늘 챕터와 장면에 속한다(2026-11-17 소유자 · scene-required E1).
     /// 챕터는 지금 판(활성 판)의 챕터다 — 활성 판이 없으면(챕터가 하나도 없을 때) 단추가 꺼져 있다(<see cref="Rebuild"/>). 첫 챕터는 판
     /// 한가운데 [＋ 첫 챕터 만들기]나 「챕터 추가」로 세운다(first-chapter F1).
     /// 장면은 고른 장면(인스펙터에 장면 요약이 서 있다) → 고른 카드의 장면(분기 카드면 그 집의 장면) → <b>새 장면</b> 차례로 정한다(빈

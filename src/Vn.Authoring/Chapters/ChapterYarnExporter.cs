@@ -20,7 +20,7 @@ public sealed record ChapterYarnFile(
 }
 
 /// <summary>
-/// <b>대사만 있는 Yarn</b> — <c>exported/yarn/{챕터}_{장면}.yarn</c> (2026-11-17 · <c>docs/design/two-graphs.md</c> 7절 V).
+/// <b>대사만 있는 Yarn</b> — <c>exported/yarn/{챕터}_{장면}.yarn</c> (2026-11-17 · <c>docs/design/two-graphs.md</c> §3.3).
 ///
 /// 작가가 「대사만으로 굴러가는지」 확인하고, 연출을 붙이는 쪽(AI)이 장면 하나를 파일 하나로 읽는다. <b>장면 = 파일, 에피소드 = 노드.</b>
 /// 분기 카드는 그 집(부르는 에피소드 — <see cref="ChapterBranchCards.HomesOf"/>)의 노드 바로 뒤에 노드로 선다.

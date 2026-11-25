@@ -1,8 +1,8 @@
 # 작가에게 앱과 프로젝트를 건넨다 — 소유자(개발자)가 할 일
 
 작가는 Windows에서 **스토리 디렉터**로 쓴다. **지금은 프로젝트(`project.vnproject.json`이 있는 폴더)를 zip으로 주고받고**, 본격적으로 함께
-쓰게 되면 **GitHub 비공개 저장소(Git)** 로 옮긴다(2026-11-19 소유자 · [`docs/work-orders/writer-release-orders.md`](../work-orders/writer-release-orders.md)).
-작가 쪽 절차는 앱 꾸러미의 「먼저 읽어주세요.txt」(= [`docs/작가에게.txt`](../작가에게.txt)) 「프로젝트 주고받기」 절에 있다 — 이 문서는 그 짝이다.
+쓰게 되면 **GitHub 비공개 저장소(Git)** 로 옮긴다. 작가 쪽 절차는 앱 꾸러미의 「먼저 읽어주세요.txt」(= [`작가에게.txt`](작가에게.txt))
+「프로젝트 주고받기」 절에 있다 — 이 문서는 그 짝이다. 판을 내는 법은 3절, 판마다 섞어 쓰면 안 되는 까닭은 6절.
 
 | 지금 (zip) | 나중 (Git) |
 |---|---|
@@ -71,23 +71,29 @@ desktop.ini
 
 ## 3. 앱을 건넨다 — GitHub 릴리스
 
-이 저장소(ked-story-director)의 `main`에서 굽는다. 일은 `dev`에서 하고, 판을 낼 때 `dev`를 `main`에 올린다(기본 가지는 `main` — 2026-11-19).
+이 저장소(ked-story-director)의 `main`에서 굽는다. 일은 `dev`에서 하고, 판을 낼 때 `dev`를 `main`에 올린다(기본 가지는 `main`). `main`은 늘
+`dev`의 앞감기다 — 강제 밀기는 하지 않는다.
 
-0. `dev`를 `main`에 올린다 — 개발 세션에 「main에 올려 줘」(웹에서 하려면 Pull requests → New pull request → base `main` ← compare `dev` →
-   Create → Merge). 이미 같으면 건너뛴다.
+0. `dev`의 CI(Actions의 「test」 — Windows · 맥)가 초록인지 본다. 그다음 `dev`를 `main`에 올린다(PowerShell · 저장소 폴더에서):
+   `git checkout main` → `git pull --ff-only` → `git merge --ff-only dev` → `git push origin main` → `git checkout dev`. 이미 같으면 건너뛴다.
 1. github.com의 ked-story-director → **Releases** → **Draft a new release**.
 2. **Choose a tag** → `v0.1.0`처럼 적고 **Create new tag: v0.1.0 on publish** → **Target: `main`**.
-3. 제목(예: `스토리 디렉터 0.1.0`)과 바뀐 것 몇 줄 → **[Publish release]**.
+3. 제목(예: `스토리 디렉터 0.1.0`)과 릴리스 노트 → **[Publish release]**. 노트는 「받을 파일」(두 zip · 안에 든 「먼저 읽어주세요.txt」 ·
+   「Read me first.txt」 · 「THIRD-PARTY-NOTICES.txt」) · 「새로 생긴 것」 · 「고친 것 · 달라진 것」 · 「앞 판과 섞어 쓰지 마세요」(6절)로 쓴다.
 4. 10분쯤 뒤 그 릴리스에 `StoryDirector-0.1.0-windows.zip` · `StoryDirector-0.1.0-mac.zip`이 붙는다(Actions의 「release」 작업 —
    시험을 먼저 돌린다. 실패하면 붙지 않는다 — Actions 탭에서 까닭을 본다).
 5. Windows zip을 받아 작가에게 건넨다(메신저 · 드라이브). 저장소가 비공개라 작가는 릴리스 페이지에 들어오지 못한다.
 
 판 번호는 태그에서 온다 — 작가의 창 제목에 「스토리 디렉터 0.1.0」으로 선다. 새 판은 번호를 올려(`v0.1.1` · `v0.2.0`) 같은 길로 굽는다.
+릴리스 페이지에 GitHub가 저절로 붙이는 「Source code」 둘은 코드 묶음이라 건네지 않는다.
+
+**꾸러미로 볼 것** — 창 제목의 판 번호 · zip 안의 안내문 둘과 고지문 · [⚙ 설정] → 「기타」 → 「언어 (Language)」를 바꿔 다시 켜면 그 언어로 서는지
+(맥은 메뉴 막대 · 독의 앱 이름도).
 
 ## 4. 개발자 쪽의 흐름
 
 - 작가가 올린 것을 받는다(GitHub Desktop [Fetch origin] → [Pull origin]). 스토리 디렉터를 켜 둔 채 받아도 된다 — 저장하지 않은 것이 없으면
-  다시 읽고, 있으면 위에 노란 띠가 떠서 고르게 한다(WR1).
+  다시 읽고, 있으면 위에 노란 띠가 떠서 고르게 한다.
 - **게임 폴더로 내보내기는 개발자의 PC에서 저장할 때 일어난다** — `runtime.target.json`(보낼 곳)은 올리지 않으므로 각자의 것이다. 받은 뒤
   스토리 디렉터로 열고 저장(Ctrl+S)하면 진행 JSON이 게임 폴더로 간다.
 - [구성] 탭의 일(ID · 조건 식 · 스탯 · 캐릭터 키)을 할 때는 작가와 때를 나눈다 — 둘이 같은 파일을 함께 고치면 Git이 합치지 못한다.
@@ -98,3 +104,21 @@ desktop.ini
 JSON 파일의 충돌은 손으로 합치기 어렵다. 한쪽을 고른다 — GitHub Desktop에서 충돌 파일마다 **Use the version from main / origin**(어느
 쪽을 남길지)을 고르고 커밋한 뒤, 스토리 디렉터로 열어 [구성] 탭의 검증 보고를 본다. 버린 쪽의 내용은 Git 기록(History)에 남아 있어 필요한
 것을 다시 옮겨 적을 수 있다.
+
+## 6. 판마다 — 앞 판과 섞어 쓰지 않는다
+
+한 프로젝트를 두 판의 앱으로 번갈아 열지 않는다. 판이 올라갈 때 무엇이 달라지는지:
+
+| 판 | 프로젝트 형식 | 앞 판으로 열면 |
+|---|---|---|
+| 0.4.0 (준비 중) | **5**(판 파일 3) — 숨은 조건 공급 노드가 없고 대사의 조건이 챕터 조건의 이름을 가리킨다 | 0.3.x는 열지 않는다(「형식 버전 5」). 0.4.0도 0.3.x까지의 프로젝트(형식 4)를 열지 않는다 — 옮기는 길은 없다 |
+| 0.3.0 | 4 | 0.2.0으로도 열리지만, 저장할 때 카드마다의 가로 · 세로 글 맞춤과 줄 사이에 띄운 빈 줄이 사라진다 |
+| 0.2.0 | 4 | 0.1.0으로도 열리지만, 저장할 때 글 서식 · 화자 이름 색 · 바탕색 · 카드마다의 처음 글꼴 값이 사라진다 |
+| 0.1.0 | 4 | — |
+
+## 7. 제3자 소프트웨어 고지
+
+꾸러미에는 저장소 맨 위의 `THIRD-PARTY-NOTICES.txt`가 함께 든다(`publish-windows.ps1` · `publish-macos.sh`). 실려 나가는 패키지(Avalonia ·
+SkiaSharp · HarfBuzzSharp · ANGLE · .NET 런타임 등)의 고지문 원문을 고치지 않고 옮긴 것이다. 시험 `ThirdPartyNoticesTests`가 고지문이 싣는 패키지의
+판을 지금 판과 견준다 — 패키지 판을 올려 시험이 깨지면 새 판 패키지의 `LICENSE` · `THIRD-PARTY-NOTICES.txt`(NuGet 캐시의 그 패키지 폴더)를 다시
+옮기고 목록의 판 번호를 고친다. 새 패키지가 꾸러미에 실리면 목록과 시험의 `Shipped`에 더한다.

@@ -4,7 +4,7 @@ namespace Vn.Authoring.Tests;
 
 /// <summary>
 /// <b>이름 뒤의 조사는 받침으로 고른다</b> — 「'new01'을(를)」 같은 두 꼴 글을 걷고(2026-11-18 소유자 — 어색한 문구 교정 ·
-/// <c>docs/work-orders/finishing-orders.md</c> FX2). 한글 · 숫자 · 영문 · 닫는 글자를 못 박는다.
+/// finishing FX2). 한글 · 숫자 · 영문 · 닫는 글자를 못 박는다.
 /// </summary>
 public sealed class JosaTests
 {

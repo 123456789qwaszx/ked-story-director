@@ -10,7 +10,7 @@ using Vn.App.Views;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>화면 언어의 틀</b>(2026-11-25 소유자 · <c>docs/work-orders/english-ui-orders.md</c> E1) — 처음은 PC 언어(한국어 PC면 한국어, 그 밖은 영어),
+/// <b>화면 언어의 틀</b>(2026-11-25 소유자 · english-ui E1) — 처음은 PC 언어(한국어 PC면 한국어, 그 밖은 영어),
 /// 설정 창 「기타」의 언어 칸에서 고르면 다시 켤 때 바뀐다. 문구는 표(<c>Strings/Ui.resx</c> · <c>Ui.en.resx</c>)에서 꺼낸다 — 두 표의 키가 같고,
 /// 영어 칸이 비지 않고, 영어가 한국어에 없는 자리 표시(<c>{0}</c>)를 쓰지 않는다. 시험은 한국어로 돈다(<see cref="TestProcessIsolation"/>).
 /// </summary>

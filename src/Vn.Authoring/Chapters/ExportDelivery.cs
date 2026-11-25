@@ -42,7 +42,7 @@ public sealed record ExportDeliveryRun(
 
 /// <summary>
 /// <b>보내기</b> — 저장할 때 <c>exported/</c>를 형식마다 보낼 곳(<see cref="ExportDestinations"/>)으로 비춘다(2026-11-17 ·
-/// <c>docs/work-orders/export-destinations-orders.md</c>). <c>exported/</c>는 바뀔 때마다 나가는 툴의 작업 사본이고, 보낼 곳(게임 폴더 등
+/// export-destinations). <c>exported/</c>는 바뀔 때마다 나가는 툴의 작업 사본이고, 보낼 곳(게임 폴더 등
 /// 프로젝트 밖)에는 <b>저장할 때만</b> 쓴다 — 저장 안 된 중간 상태가 런타임 저장소에 나가 유니티가 다시 읽거나 git에 잡히지 않게.
 ///
 /// <b>보낸 기록</b>(<c>exported/.delivered.json</c>)이 이 툴이 보낸 파일과 그 바이트의 지문을 든다. 이번에 안 보낸 파일은 <b>기록과 바이트가
@@ -82,7 +82,7 @@ public static class ExportDelivery
                 continue;   // 끈 형식 — 옛 기록은 놓는다(옛 폴더를 건드리지 않는다)
             }
 
-            // 대사 Yarn은 게임 폴더(진행 JSON의 보낼 곳)로 보내지 않는다 — 게임의 Yarn 프로젝트가 compositor의 연출 든 Yarn과 같은
+            // 대사 Yarn은 게임 폴더(진행 JSON의 보낼 곳)로 보내지 않는다 — 게임의 Yarn 프로젝트가 연출 든 Yarn과 같은
             //   노드 이름을 둘 읽어 컴파일이 깨진다. 설정 창이 받지 않지만 손으로 고친 파일도 여기서 막는다.
             if (format == ExportFormat.DialogueYarn &&
                 destinations.Resolve(projectPath, ExportFormat.Progression) is { } game &&

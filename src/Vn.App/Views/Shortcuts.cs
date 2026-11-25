@@ -3,7 +3,7 @@ namespace Vn.App.Views;
 
 /// <summary>
 /// <b>쓸 수 있는 단축키 표</b> — 설정 창 「단축키」 묶음이 자리별로 보인다(2026-11-18 소유자 — 「설정 안에 사용가능한 단축키들을 정리해두는
-/// 것이 필요」 · <c>docs/work-orders/side-fold-settings-orders.md</c> K2).
+/// 것이 필요」 · side-fold-settings K2).
 ///
 /// 원천은 이 표 한 벌이다. 키를 더하거나 바꾸면 여기와 <c>docs/writer-guide.md</c>를 함께 고친다. 실제로 듣는 것만 적는다 — 적어 두고 안
 /// 들으면 표가 거짓말을 한다(그래서 이 표를 만들며 하이어아키 화살표가 실제 앱에서 듣지 않던 것을 고쳤다).

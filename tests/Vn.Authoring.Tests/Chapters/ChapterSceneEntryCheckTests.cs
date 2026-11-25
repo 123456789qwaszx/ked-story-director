@@ -3,7 +3,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>장면은 한 자리에서만 시작한다 — 저작 중에 말해 준다</b> (V2 · `docs/plans/R6.md` §9).
+/// <b>장면은 한 자리에서만 시작한다 — 저작 중에 말해 준다</b> (V2 · R6 §9).
 ///
 /// ⛔ 이 규칙은 내보내기 관문(코어의 `VerifySceneEntries`)에만 있었다. 잘못된 것이 나가지는
 /// 않았지만 기획자는 <b>관문에서야</b> 알았고, 그러면 어디를 고칠지 되짚어야 한다.

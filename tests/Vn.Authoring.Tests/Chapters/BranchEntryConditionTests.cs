@@ -122,7 +122,7 @@ public sealed class BranchEntryConditionTests
 
         RenderedDocument document = WorkingDialoguePreview.Compose(editor.Project, caller.Id);
 
-        // 문서 조각으로 잰다 — 게임용 Yarn은 ked-story-compositor가 이 조각을 그대로 옮겨 낸다.
+        // 문서 조각으로 잰다 — 대사 Yarn은 이 조각을 그대로 옮겨 낸다.
         Assert.Single(document.Segments, segment =>
             segment.Kind == RenderedSegmentKind.BranchDetour && segment.TargetNodeId == branch.Id);
         Assert.DoesNotContain(document.Segments, segment => segment.Kind == RenderedSegmentKind.ConditionBegin);

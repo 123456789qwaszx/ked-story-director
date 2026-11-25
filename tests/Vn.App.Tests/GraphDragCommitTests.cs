@@ -11,7 +11,7 @@ using Vn.Authoring.Script;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>연출 그래프의 끌기는 놓을 때 한 번 적는다</b> (<c>docs/design/two-graphs.md</c> §6-2).
+/// <b>연출 그래프의 끌기는 놓을 때 한 번 적는다</b> (<c>docs/design/two-graphs.md</c> §2.3).
 ///
 /// 끄는 동안은 화면만 움직이고, 놓을 때 <c>MoveNodes</c> 한 번(되돌리기 한 칸)이다. 포인터가 움직일 때마다
 /// 프로젝트에 적으면 되돌리기가 없고, 움직일 때마다 dirty 판정과 챕터 그래프 재읽기가 돈다.

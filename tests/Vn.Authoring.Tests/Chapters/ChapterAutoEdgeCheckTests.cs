@@ -3,8 +3,8 @@ using Vn.Authoring.Chapters;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>자동 길 규칙이 툴 소유 챕터에서도 돈다</b> (V1 · `docs/plans/R6.md` §9). ⛔ 다섯이던 규칙은 2026-11-18에 넷이 됐다 — 「같은 장면」을
-/// 런타임과 함께 걷었다(<c>docs/work-orders/auto-edge-across-scenes-orders.md</c>).
+/// <b>자동 길 규칙이 툴 소유 챕터에서도 돈다</b> (V1 · R6 §9). ⛔ 다섯이던 규칙은 2026-11-18에 넷이 됐다 — 「같은 장면」을
+/// 런타임과 함께 걷었다(auto-edge-across-scenes).
 ///
 /// ⛔ 이 다섯은 옛 워크북 리더(<c>ChapterWorkbookReader</c>) 안에만 있었다. R-F로 판의 주인이
 /// 워크북에서 프로젝트로 넘어가자 읽는 길이 사라졌고, 그와 함께 <b>조용히 안 돌게 됐다</b>.

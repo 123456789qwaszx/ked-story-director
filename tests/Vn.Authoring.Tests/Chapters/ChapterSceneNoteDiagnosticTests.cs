@@ -6,7 +6,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 주인 없는 장면 메모 (2026-11-16 · <c>docs/work-orders/scene-notes-orders.md</c> S3). 메모를 조용히 지우지 않는 대신 검증이 알린다 —
+/// 주인 없는 장면 메모 (2026-11-16 · scene-notes S3). 메모를 조용히 지우지 않는 대신 검증이 알린다 —
 /// 경고이고 내보내기를 막지 않는다.
 /// </summary>
 public sealed class ChapterSceneNoteDiagnosticTests

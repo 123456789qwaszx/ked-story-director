@@ -16,7 +16,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>하이어아키 찾기</b> (2026-11-23 소유자 — 「구성과 대본의 하이어아키에 검색기능만 추가합시다. 이게 생각보다 에피소드가 많을 때, 특정 에피소드 찾는게
-/// 힘들더라고요」 · <c>docs/plans/hierarchy.md</c> §6). 위의 찾기 칸에 치는 동안 맞는 줄과 그 위 줄만 남고(접어 둔 챕터 안도), ID와 이름 둘 다로 · 자음만으로도
+/// 힘들더라고요」 · hierarchy §6). 위의 찾기 칸에 치는 동안 맞는 줄과 그 위 줄만 남고(접어 둔 챕터 안도), ID와 이름 둘 다로 · 자음만으로도
 /// 찾는다. Enter는 첫 맞는 줄을 고르고(판이 따른다) Esc는 지운다 — 접힘은 그대로 돌아오고 고른 줄이 보인다. 두 탭 모두.
 /// </summary>
 public sealed class HierarchySearchTests : IDisposable

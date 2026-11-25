@@ -7,7 +7,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 스탯은 키만 있다 (2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W2). 표시 이름은 걷혔다 — 게임 화면의 글자는 게임 쪽이 키로
+/// 스탯은 키만 있다 (2026-11-16 · writer-fields W2). 표시 이름은 걷혔다 — 게임 화면의 글자는 게임 쪽이 키로
 /// 로컬라이즈한다. 옛 파일의 스탯 <c>displayName</c>은 읽지 않고 지나가고, 진행 JSON의 <c>DisplayName</c>에는 키가 나간다(계약 모양 그대로).
 /// </summary>
 public sealed class StatKeyOnlyTests : IDisposable

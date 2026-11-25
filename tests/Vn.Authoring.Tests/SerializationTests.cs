@@ -251,7 +251,7 @@ public class SerializationTests
     }
 
     /// <summary>
-    /// 지금 형식 이전은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c>) — 한 줄로 분명히. 형식 4(0.3.x — 조건 공급
+    /// 지금 형식 이전은 옮기지 않고 거절한다(2026-11-17 · legacy-read) — 한 줄로 분명히. 형식 4(0.3.x — 조건 공급
     /// 노드가 있던 판)도 2026-11-25부터 거절한다(condition-supply C1 — 소유자 「옛날 프로젝트의 호환을 신경써야해?」).
     /// </summary>
     [Theory]

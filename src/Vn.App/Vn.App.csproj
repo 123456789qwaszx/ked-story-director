@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RootNamespace>Vn.App</RootNamespace>
-    <!-- 작가에게 보이는 이름(2026-11-19 · docs/work-orders/writer-app-orders.md WA4) — 실행 파일은 StoryDirector(.exe), 탐색기 · 작업 관리자에는
+    <!-- 작가에게 보이는 이름(2026-11-19 · writer-app WA4) — 실행 파일은 StoryDirector(.exe), 탐색기 · 작업 관리자에는
          「스토리 디렉터」. 프로젝트 · 네임스페이스(Vn.App)는 안의 이름이라 그대로다. 창 제목의 이름은 Services/AppIdentity.cs. -->
     <AssemblyName>StoryDirector</AssemblyName>
     <AssemblyTitle>스토리 디렉터</AssemblyTitle>
@@ -22,7 +22,7 @@
     <AvaloniaResource Include="Assets\app.ico" />
   </ItemGroup>
 
-  <!-- 화면 문구 표(2026-11-25 · docs/work-orders/english-ui-orders.md E1) — Strings/Ui.resx(한국어 · 기본)와 Ui.en.resx(영어). 빌드가 표에서
+  <!-- 화면 문구 표(2026-11-25 · english-ui E1) — Strings/Ui.resx(한국어 · 기본)와 Ui.en.resx(영어). 빌드가 표에서
        Vn.App.Strings.Ui 클래스를 짓는다(키마다 속성 — 없는 키를 쓰면 빌드가 멈춘다). 영어 표는 en/StoryDirector.resources.dll로 따로 구워진다. -->
   <ItemGroup>
     <EmbeddedResource Update="Strings\Ui.resx">

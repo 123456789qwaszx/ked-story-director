@@ -11,7 +11,7 @@ using Yarn.Compiler;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 대사만 있는 Yarn <c>exported/yarn/{챕터}_{장면}.yarn</c> (2026-11-17 · <c>docs/design/two-graphs.md</c> 7절 V).
+/// 대사만 있는 Yarn <c>exported/yarn/{챕터}_{장면}.yarn</c> (2026-11-17 · <c>docs/design/two-graphs.md</c> §3.3).
 /// 지키는 것: <b>실제로 컴파일된다</b>(YarnSpinner.Compiler 3.2.1 — 앱은 컴파일러를 싣지 않고 여기서만 본다) · 노드 타이틀 = 진행 JSON의
 /// <c>DialogueEntryId</c> · 장면 메모와 에피소드 지시는 주석 · 작가의 글자가 그대로 문자열 표에 실린다 · 결정성.
 /// </summary>

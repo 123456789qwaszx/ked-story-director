@@ -9,7 +9,7 @@ namespace Vn.Authoring.Flow;
 /// <see cref="Id"/>는 챕터 조건의 이름이다 — 대본의 줄 전환이 이 글자로 가리킨다(이름을 바꾸면 전환도 함께 간다 · <c>ProjectEditor.RenameChapterCondition</c>).
 /// <see cref="Expression"/>은 대사 안에서 묻는 Yarn 식(<c>stat("trust") &gt;= 3</c>)이다.
 /// ⛔ 조건의 출처(<c>SourceKind</c> — 옛 「X 설정」 노드의 작가 조건 · 게임 전역 조건)를 가르던 칸은 걷혔다 — 조건의 자리는 챕터 하나다
-/// (<c>docs/work-orders/old-shapes-orders.md</c> O6 · <c>definition-split-orders.md</c> S2).
+/// (old-shapes O6 · <c>definition-split-orders.md</c> S2).
 /// </summary>
 public sealed record AvailableCondition(
     string Id,
@@ -148,7 +148,7 @@ public static class AvailableConditionResolver
     /// 화면에 세울 이름 — 조건의 이름 그대로다.
     ///
     /// ⛔ 2026-11-17 소유자: 챕터 조건 앞의 「[기획]」을 걷었다. 2026-08-17에는 작가가 고칠 수 없는 조건이 왜 보이는지를 이름으로
-    /// 말하려고 붙였지만, 이제 조건 이름은 작가가 [대본] 탭에서 짓고 분기에 직접 건다(two-graphs 7절 Q · S) — 작가의 것이다.
+    /// 말하려고 붙였지만, 이제 조건 이름은 작가가 [대본] 탭에서 짓고 분기에 직접 건다(two-graphs.md §4) — 작가의 것이다.
     /// </summary>
     public static string LayeredLabel(AvailableCondition condition)
     {

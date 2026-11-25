@@ -6,7 +6,7 @@ namespace Vn.App.Views;
 
 /// <summary>
 /// <b>판 위의 휠이 하는 일</b> — [구성] · [대본] 두 판의 한 벌(2026-11-19 소유자 — 「트랙패드 수정을 합시다」 ·
-/// <c>docs/work-orders/writer-app-orders.md</c> WA2 · WA3).
+/// writer-app WA2 · WA3).
 ///
 /// 휠이 하는 일은 스위치 하나가 가른다 — 설정 창 「기타」의 <b>「휠로 판 옮기기」</b>(<see cref="Pans"/> · 이 PC의 앱 설정):
 /// <list type="bullet">

@@ -7,7 +7,7 @@ using Vn.Authoring.Tests.Fixtures;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 장면 메모의 저장 (2026-11-16 · <c>docs/work-orders/scene-notes-orders.md</c> S1). 작가가 장면마다 자유롭게 적는
+/// 장면 메모의 저장 (2026-11-16 · scene-notes S1). 작가가 장면마다 자유롭게 적는
 /// 사정이고, AI가 장면 하나씩 연출 초안을 낼 때 대사와 함께 읽는다. 지키는 것:
 /// ① 저장을 왕복한다 ② 차례가 결정적이다(장면이 처음 나오는 차례, 주인 없는 메모는 뒤에 열쇠 차례) ③ 빈 메모는 쓰지 않는다
 /// ④ 메모가 없는 옛 프로젝트는 열고 저장해도 그대로다 ⑤ 같은 장면의 메모가 둘인 파일은 읽지 않는다.

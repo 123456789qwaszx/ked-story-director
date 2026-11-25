@@ -95,7 +95,7 @@ public sealed class ProjectFolderTests
             ExportDestinations loaded = ExportDestinations.LoadBeside(manifest);
             Assert.Equal((relative, "../yarn"), (loaded.Progression, loaded.DialogueYarn));
             Assert.Equal(Path.GetFullPath(game), loaded.ResolveExisting(manifest, ExportFormat.Progression));
-            Assert.Contains("\"gameFolder\"", File.ReadAllText(ExportDestinations.PathFor(manifest)), StringComparison.Ordinal);   // compositor가 읽는 칸
+            Assert.Contains("\"gameFolder\"", File.ReadAllText(ExportDestinations.PathFor(manifest)), StringComparison.Ordinal);
 
             // 가리키는 폴더가 없으면 만들지 않는다 — 다른 PC에서 엉뚱한 자리에 쌓이지 않게.
             Assert.Null(loaded.ResolveExisting(manifest, ExportFormat.DialogueYarn));
@@ -104,10 +104,10 @@ public sealed class ProjectFolderTests
             Assert.False(Directory.Exists(Path.GetFullPath(game)));
 
             // 모르는 칸(다른 툴의 것)은 지킨다 — 이 툴의 칸을 다 비워도 파일이 남는다.
-            File.WriteAllText(ExportDestinations.PathFor(manifest), "{ \"gameFolder\": \"../g\", \"compositorOnly\": 3 }");
+            File.WriteAllText(ExportDestinations.PathFor(manifest), "{ \"gameFolder\": \"../g\", \"otherToolOnly\": 3 }");
             ExportDestinations.SaveBeside(manifest, ExportDestinations.None);
             string kept = File.ReadAllText(ExportDestinations.PathFor(manifest));
-            Assert.Contains("compositorOnly", kept, StringComparison.Ordinal);
+            Assert.Contains("otherToolOnly", kept, StringComparison.Ordinal);
             Assert.DoesNotContain("\"gameFolder\":", kept, StringComparison.Ordinal);
 
             // 장면 파일의 칸(scenesFolder — 2026-11-18에 장면 파일과 함께 걷혔다)은 읽지 않고 모르는 칸으로 지킨다 — 그 전에 적은 파일도 그대로 연다.

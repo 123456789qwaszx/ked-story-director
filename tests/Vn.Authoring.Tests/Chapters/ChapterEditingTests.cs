@@ -121,7 +121,7 @@ public sealed class ChapterEditingTests
     [Fact]
     public void 배선을_고쳐도_목록의_자리와_관문이_남는다()
     {
-        // D3 · two-graphs.md §6-3 — 간선 순서가 곧 런타임 OptionIndex다(§5-3). 걷고 새로 그으면
+        // D3 · two-graphs.md §5-3 — 간선 순서가 곧 런타임 OptionIndex다(§5-3). 걷고 새로 그으면
         //    목록 끝으로 가고 관문을 잃는다.
         _editor.AddEpisode("ch01", "ep03", "지하", 400, 0, sceneId: "ep03");
         _editor.AddEdge("ch01", "ep01", "ep02", optionLabel: "위로", conditionLabel: "신뢰높음");

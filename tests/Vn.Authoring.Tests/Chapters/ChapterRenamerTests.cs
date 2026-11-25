@@ -12,7 +12,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 또 연출그래프에서도 조건노드가 이전의 챕터를 받고 있어").
 ///
 /// 옮기는 셋: <c>Project.Chapters</c>의 Id · 판 이름 · 조건 공급 노드 <c>챕터 {Id} 조건</c>
-/// (`docs/plans/excel-boundary.md` C2). 한 변경이라 되돌리기 한 칸이다. 에피소드의 카드와 원고는
+/// (excel-boundary C2). 한 변경이라 되돌리기 한 칸이다. 에피소드의 카드와 원고는
 /// 그 판 위에 서 있으므로 판과 함께 간다.
 ///
 /// ⚠ <b>이 파일의 첫 두 테스트가 신고 그 자체다.</b> 나머지는 고치면서 새로 생긴 사고

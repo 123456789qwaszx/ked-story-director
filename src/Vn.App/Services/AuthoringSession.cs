@@ -70,7 +70,7 @@ internal sealed class AuthoringSession
     public IReadOnlySet<string> ExpandedFileIds => _expandedFileIds;
 
     /// <summary>
-    /// 펼친 판 안에서 접어 둔 장면들 (하이어아키의 눈, <c>docs/plans/hierarchy.md</c>). 그 장면만 줄 목록
+    /// 펼친 판 안에서 접어 둔 장면들 (하이어아키의 눈, hierarchy). 그 장면만 줄 목록
     /// 상자로 간소화된다. <see cref="ExpandedFileIds"/>와 같은 작업 상태다 — 저장 · 되돌리기 대상이 아니다.
     /// </summary>
     public IReadOnlySet<GraphSceneKey> CollapsedScenes => _collapsedScenes;
@@ -430,7 +430,7 @@ internal sealed class AuthoringSession
 
     /// <summary>
     /// <b>챕터 하나를 세운다</b> — 이름을 받고, 판을 만들어 고른다. <b>스탯 없이 시작한다</b> — 스탯은 챕터마다 [구성] 탭에서 더한다
-    /// (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S1 — ⛔ 그 전에는 정의 파일의 <c>variables</c>로 깔았다.
+    /// (2026-11-17 소유자 · definition-split S1 — ⛔ 그 전에는 정의 파일의 <c>variables</c>로 깔았다.
     /// 그 목록은 더하기만 해서 지운 스탯이 새 챕터마다 되살아났다).
     ///
     /// <b>챕터를 세우는 규칙은 여기 한 벌이다.</b> 두 벌이면 어느 창구로 만들었느냐에 따라 챕터가 달라진다.

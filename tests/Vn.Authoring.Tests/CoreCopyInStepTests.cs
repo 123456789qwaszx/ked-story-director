@@ -4,7 +4,7 @@ using System.Text;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>코어 사본을 여기서 고치지 않았다</b> — 지문 (T2 · `docs/plans/R6.md` §9).
+/// <b>코어 사본을 여기서 고치지 않았다</b> — 지문 (T2 · R6 §9).
 ///
 /// ⛔ <c>src/Ked.Progression</c>은 <b>런타임의 사본</b>이다. 내보내기 관문이 이 사본으로
 /// 판정하고 게임은 저쪽 원본으로 판정하므로, 둘이 갈리면 <b>툴이 통과시킨 것을 게임이
@@ -19,7 +19,7 @@ namespace Vn.Authoring.Tests;
 /// 사람이 견준다(<c>src/Ked.Progression/UPSTREAM.md</c>의 「재반입 검산」).
 ///
 /// ⛔ 옆 폴더 런타임과 파일을 맞대던 <b>맞대조</b>는 2026-11-18에 걷혔다(소유자 — 이 저장소만 시나리오 작가에게 툴로 건네는 경우가 많다,
-/// <c>docs/work-orders/core-sync-orders.md</c> V2).
+/// core-sync V2).
 /// </summary>
 public sealed class CoreCopyInStepTests
 {

@@ -7,7 +7,7 @@ namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
 /// <b>캐릭터 키가 없는 화자</b> → 검증 보고의 경고(2026-11-18 소유자 — 「구성탭에서 캐릭터 키가 없을 경우, 검증보고에서 오류 알림을」 ·
-/// <c>docs/work-orders/writer-comfort-orders.md</c> WC6). 그 챕터의 대사에 나오는 화자마다 한 줄 — 지문은 세지 않고, 내보내기를 막지 않는다.
+/// writer-comfort WC6). 그 챕터의 대사에 나오는 화자마다 한 줄 — 지문은 세지 않고, 내보내기를 막지 않는다.
 /// </summary>
 public sealed class ChapterSpeakerKeyTests
 {

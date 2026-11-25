@@ -118,7 +118,7 @@ public partial class ChapterGraphView : UserControl
     /// </summary>
     internal event Action<string>? ChapterSelected;
 
-    // ── 하이어아키 (docs/plans/hierarchy.md) ──────────
+    // ── 하이어아키 (hierarchy) ──────────
     //
     // 내용(프로젝트 · 챕터 목록)과 접힘은 <b>셸(MainWindow)이 짓는다</b> — 두 탭의 하이어아키가 한 원천 · 한 접힘을 쓴다.
     // 이 탭의 하이어아키는 <b>읽기 전용</b>이다(셸이 ReadOnly로 세운다 — 차림표 · 이름 고치기 · 끌어 옮기기가 없다. 더하고 지우고
@@ -197,7 +197,7 @@ public partial class ChapterGraphView : UserControl
         Hierarchy.Show(pick);
     }
 
-    // ── 인스펙터 (docs/plans/hierarchy.md) ─────────────────────────────────
+    // ── 인스펙터 (hierarchy) ─────────────────────────────────
 
     /// <summary>인스펙터가 무엇을 보이나 — 고른 하나(에피소드 · 길 · 분기)거나, 하이어아키의 프로젝트 · 챕터 · 장면 줄이다.</summary>
     private enum InspectorMode

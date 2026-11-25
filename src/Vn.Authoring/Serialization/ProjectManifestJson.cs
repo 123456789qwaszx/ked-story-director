@@ -12,7 +12,7 @@ namespace Vn.Authoring.Serialization;
 /// 본문은 어디에도 없다. 카드와 그 대본은 <c>files</c>가 가리키는 판 파일에 있다.
 /// manifest가 커지지 않아야 파일을 나눈 이유가 남는다.
 ///
-/// <b>연출은 여기 없다</b> (2026-10-29 — <c>ked-story-compositor</c>의 것이다).
+/// <b>연출은 여기 없다</b>.
 /// </summary>
 public static class ProjectManifestJson
 {
@@ -137,7 +137,7 @@ public static class ProjectManifestJson
 
     /// <summary>
     /// 화자 목록 — manifest와 되돌리기 스냅숏이 같은 것을 쓴다. 비었으면 null(쓰지 않는다). 각 항목은 <c>{ "name", "characterId" }</c>이고
-    /// 키가 비었어도 칸을 쓴다(compositor가 읽는다 — 늘 같은 모양이 낫다).
+    /// 키가 비었어도 칸을 쓴다(늘 같은 모양이 낫다).
     /// </summary>
     internal static JsonArray? WriteSpeakers(IReadOnlyList<Speaker> speakers)
     {

@@ -10,7 +10,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>「조건 분기」 표식</b> — 분기 하나가 곧 포트 하나 (R7 P-5 · `docs/plans/R7.md`). 한 줄에 여럿일 수 있다(2026-10-29 · `docs/plans/multi-branch.md`).
+/// <b>「조건 분기」 표식</b> — 분기 하나가 곧 포트 하나 (R7 P-5 · R7). 한 줄에 여럿일 수 있다(2026-10-29 · multi-branch).
 ///
 /// ⛔ <b>조건이 아니다.</b> 연출 그래프는 "어디서 갈라지는가"만 짚는다 — 성립하든 말든
 /// 다녀오고, 다녀온 자유 씬이 제 첫머리에서 보고 아니면 곧바로 돌아온다.
@@ -130,7 +130,7 @@ public sealed class BranchMarkerTests
 
         RenderedDocument document = Rendered(editor, node);
 
-        // ⚠ 조각은 노드 <b>Id</b>를 든다 — compositor의 번들 이미터가 제 이름 규칙으로 옮긴다.
+        // ⚠ 조각은 노드 <b>Id</b>를 든다 — 대사 Yarn이 노드 이름 규칙으로 옮긴다.
         RenderedSegment detour = Assert.Single(
             document.Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
         Assert.Equal(Target(editor).Id, detour.TargetNodeId);
@@ -146,7 +146,7 @@ public sealed class BranchMarkerTests
             Rendered(editor, node).Segments, segment => segment.Kind == RenderedSegmentKind.BranchDetour);
     }
 
-    /// <summary>작업 상태를 문서 조각으로 편 것 — 게임용 Yarn은 compositor가 이 조각을 그대로 옮긴다.</summary>
+    /// <summary>작업 상태를 문서 조각으로 편 것 — 대사 Yarn은 이 조각을 그대로 옮긴다.</summary>
     private static RenderedDocument Rendered(ProjectEditor editor, DialogueNode node) =>
         WorkingDialoguePreview.Compose(editor.Project, node.Id);
 
@@ -260,7 +260,7 @@ public sealed class BranchMarkerTests
     {
         // ⛔ 2026-10-29까지는 줄 하나에 하나였다(칸이 하나뿐이었다). 소유자: *"하나의 줄에 여러개의 분기가 있을 수
         //    있게"* — 둘째는 첫째 <b>뒤에</b> 서고, 대본에도 그 차례로 `<<detour>>`가 나간다. 각자 제 첫머리 조건으로
-        //    들어갈지 정한다(`docs/plans/multi-branch.md`).
+        //    들어갈지 정한다(multi-branch).
         (ProjectEditor editor, DialogueNode node, string lineId) = World();
         DialogueNode first = editor.AddBranchMarker(node.Id, lineId);
         DialogueNode second = editor.AddBranchMarker(node.Id, lineId);

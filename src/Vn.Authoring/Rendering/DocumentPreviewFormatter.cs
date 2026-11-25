@@ -8,7 +8,7 @@ namespace Vn.Authoring.Rendering;
 /// Segment 목록과 원본 매핑은 그대로 두고, 사람이 보는 표기만 바꾼다.
 ///
 /// Yarn · 녹음 대본 · 번역 대본 표기는 2026-10-29에 걷혔다 — 그것을 고르던 Script Preview 탭이
-/// 유일한 독자였다(소유자: "더 이상 필요없으니 완전히 제거하십시오"). 게임용 Yarn은 ked-story-compositor가 낸다.
+/// 유일한 독자였다(소유자: "더 이상 필요없으니 완전히 제거하십시오").
 /// </summary>
 public static class DocumentPreviewFormatter
 {

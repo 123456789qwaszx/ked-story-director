@@ -6,7 +6,7 @@ using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// <b>Yarn 노드 이름은 프로젝트에서 하나다</b> (2026-11-17 소유자 · <c>docs/work-orders/auto-id-orders.md</c> I2). 게임은 모든 챕터의 Yarn을
+/// <b>Yarn 노드 이름은 프로젝트에서 하나다</b> (2026-11-17 소유자 · auto-id I2). 게임은 모든 챕터의 Yarn을
 /// 한 프로젝트로 컴파일하므로 챕터가 달라도 같은 이름의 노드가 둘이면 컴파일이 깨진다 — 툴의 내보내기는 챕터마다 따로 통과해도.
 ///
 /// 이 챕터의 Yarn 노드(에피소드의 대사 노드 — <see cref="ChapterProgressionExporter.DialogueEntryIdOf"/>, 분기 카드)가 다른 챕터의 것과

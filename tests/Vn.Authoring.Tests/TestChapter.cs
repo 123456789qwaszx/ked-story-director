@@ -4,7 +4,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// 시험의 판 — 챕터 하나와 그 판. 카드는 챕터 판에만 선다(2026-11-17 — 낙서판을 걷었다, <c>docs/work-orders/scene-required-orders.md</c>).
+/// 시험의 판 — 챕터 하나와 그 판. 카드는 챕터 판에만 선다(2026-11-17 — 낙서판을 걷었다, scene-required).
 /// </summary>
 internal static class TestChapter
 {

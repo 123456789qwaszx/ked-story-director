@@ -3,9 +3,9 @@
              xmlns:views="using:Vn.App.Views"
              x:Class="Vn.App.App"
              RequestedThemeVariant="Light">
-             <!-- 늘 밝게 (2026-11-18 소유자 · docs/work-orders/light-theme-orders.md) — 판(카드 · 미니맵 · 선택지 칸)의 색은 코드에 밝게
+             <!-- 늘 밝게 (2026-11-18 소유자 · light-theme) — 판(카드 · 미니맵 · 선택지 칸)의 색은 코드에 밝게
                   박혀 있어, 윈도우를 따라 어둡게 뜨면 틀만 어두워지고 카드 이름이 흰 바탕에 흰 글이 됐다. 진짜 다크 모드는
-                  docs/design/dark-mode-estimate.md의 (2)안 — 설정 창에서 고르게 할 때 이 줄을 앱 설정으로 바꾼다.
+                  dark-mode-estimate의 (2)안 — 설정 창에서 고르게 할 때 이 줄을 앱 설정으로 바꾼다.
                   ⛔ 그 전에는 "Default"(윈도우 설정을 따른다)였다. -->
 
     <Application.Styles>
@@ -29,7 +29,7 @@
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
-            <!-- 카드 글 칸(작가용 글 서식 · docs/plans/writer-formatting.md) — Fluent 테마의 TextBox 틀(Avalonia 12.1.1 Themes.Fluent/Controls/TextBox.xaml)을
+            <!-- 카드 글 칸(작가용 글 서식 · writer-formatting) — Fluent 테마의 TextBox 틀(Avalonia 12.1.1 Themes.Fluent/Controls/TextBox.xaml)을
                  그대로 옮기고 글자를 놓는 겹(PART_TextPresenter)만 서식을 그리는 WriterTextPresenter로 바꿨다. 모양 · 마우스 올림 · 초점은 바탕 틀에서 이어 받는다.
                  ⚠ 틀을 코드로 지었을 때(2026-11-22 첫 판) 윈도에서 Enter 뒤 첫 한글을 칠 때 칸이 맨 위로 스크롤됐다(dev에는 없음) — 테마 틀과 바이트까지 같게 둔다.
                  Avalonia를 올리면 새 판의 TextBox.xaml과 견줘 다시 옮긴다. -->

@@ -10,7 +10,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// [구성] 탭은 ID를 다룬다 (2026-11-16 · <c>docs/work-orders/display-names-orders.md</c> N4) — 챕터 · 장면 인스펙터에 ID 칸, 고치고 Enter.
+/// [구성] 탭은 ID를 다룬다 (2026-11-16 · display-names N4) — 챕터 · 장면 인스펙터에 ID 칸, 고치고 Enter.
 /// 챕터의 표시 이름 칸은 걷었다(이름은 [대본] 탭에서).
 /// </summary>
 public sealed class StructureIdFieldsTests : IDisposable

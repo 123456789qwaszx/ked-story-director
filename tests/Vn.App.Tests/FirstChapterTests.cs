@@ -12,7 +12,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>챕터가 없으면 판 한가운데에 [＋ 첫 챕터 만들기]가 선다</b>(2026-11-18 소유자 — 「구성에서는 대본탭으로 보내기 + 챕터 생성하는 버튼을
-/// 중앙에 두시고, 대본탭에서도 중앙에 챕터를 생성하는 버튼을」 · <c>docs/work-orders/first-chapter-orders.md</c>). 누르면 하이어아키 「챕터 추가」와
+/// 중앙에 두시고, 대본탭에서도 중앙에 챕터를 생성하는 버튼을」 · first-chapter). 누르면 하이어아키 「챕터 추가」와
 /// 같다 — 「새 챕터」가 장면 · 에피소드와 함께 서고 골라진다. [구성]의 단추는 [대본]으로 데려가 거기서 만든다.
 /// </summary>
 public sealed class FirstChapterTests : IDisposable

@@ -1,804 +1,256 @@
-# VnTool ↔ 런타임 계약서
+# 런타임 계약서
 
-> **현행 상태 (2026-09-03, R4 완료).** 실제 소비자 기준은
-> `ked-presentation-runtime/server_DB@d53cc2f`. R0~R4에서 툴의 `Ked.Progression` 사본,
-> `SceneId`, 명시적 `Auto`, 장면 진입 불변식, `ChapterReachability`,
-> 결정적 JSON/SHA-256, OptionIndex 기준선, 프리뷰 `Resolve`/`FoldChoices`,
-> Yarn 진행 스탯 격리까지 정렬됐다.
-> 아래의 2026-08~09-02 "미커밋 진행 중"·"착수 금지"·`§G-10~G-14` 미결 표시는
-> 당시 판단을 보존한 **역사 기록**이다. 현재 작업 지시로 읽지 않는다.
-> 완료 증거는 [`plans/PLAN.md`](plans/PLAN.md)와 R0~R4 세부 문서가 정본이다.
+ked-story-director가 게임(유니티 런타임 `ked-presentation-runtime`)에 건네는 것과 그 규칙이다. 이 툴이 내는 것은 둘뿐이다:
 
-> ⛔ **1부는 이제 이 툴의 몫이 아니다(2026-11-18 바로잡음).** 연출 층(연출 커맨드 · 게임용 Yarn 번들 · 발행)은 2026-10-29에
-> [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)로 갔다 — 1부의 「VnTool이 내는 것」은 이제 compositor가 낸다.
-> ked-story-director가 내는 것은 **2부의 진행 JSON**과 **연출 없는 대사 Yarn**(`exported/yarn/` — 2026-11-17, 게임 폴더로는 보내지 않는다)뿐이다.
-> 1부는 런타임 쪽 규칙의 기록으로 남긴다. 이 툴이 지키는 계약은 2부다.
-
-**표면이 둘로 갈렸다** (2026-08-17):
-
-| | 상대 | VnTool이 내는 것 |
+| 산출물 | 어디 | 누가 읽나 |
 |---|---|---|
-| **1부** | `ked-presentation-runtime` (유니티) | `.yarn` 텍스트 + 연출 커맨드 — ⛔ 지금은 compositor가 낸다 |
-| **2부** | `Ked.Progression` (순수 C# 진행 코어 — 2026-09-02 실측: **런타임 안에 복사 반입**, 정본은 형제 저장소 `ked-progression` — ⛔ 2026-11-18부터 정본은 `ked-presentation-runtime`, `src/Ked.Progression/UPSTREAM.md`) | `exported/{챕터}.progression.json` |
+| **진행 JSON** | `exported/{챕터Id}.progression.json` | 런타임의 진행 코어 `Ked.Progression` — 에피소드 · 선택지 · 조건 · 스탯변화 |
+| **대사만 있는 Yarn** | `exported/yarn/{챕터}_{장면}.yarn` | 작가(대사만으로 굴러가는지 본다) · 연출을 붙이는 쪽. 연출 커맨드는 없다 |
 
-이 문서와 어긋나는 출력은 컴파일이 되어도 **조용히 깨진다** — 대부분 즉시 오류가 아니라
-어긋난 재생으로 나타나므로 이미터 검증 단계에서 잡아야 한다.
+연출(표정 · 이동 · 카메라 같은 줄 단위 커맨드)과 연출이 든 게임용 Yarn은 이 툴의 일이 아니다.
 
-> **개정 이력**
-> - 2026-08-03 최초 — 런타임 소스 전수 분석
-> - 2026-08-17 §G 신설 — 진행 JSON 수입기 계약
-> - **2026-08-18 전면 개정** — 런타임이 크게 단순해졌고, 진행 계층이 **별도 패키지로
->   빠져나갔다.** §0이 무엇이 사라졌는지 먼저 적는다. 근거는 두 저장소 실측이다.
-> - **2026-09-02 재편 반영** — 런타임이 진행 코어를 **챕터 안으로 복사 반입**하고 **Scene
->   수명 계층**을 세웠으며 **세이브 층이 돌아왔다.** §0-1이 무엇이 바뀌었는지 먼저 적고
->   §C·§D·§E·§F·§G·§H를 그에 맞췄다. 근거는 09-02 런타임 실측(`server_DB`, G4 미커밋 진행 중).
->   ⛔ 소유자 지시: **저쪽이 굳은 뒤에** 툴 쪽 계획을 다시 점검하고 착수한다(§0-1).
+이 문서와 어긋나는 출력은 컴파일이 되어도 **조용히 깨진다** — 대부분 즉시 오류가 아니라 어긋난 재생으로 나타나므로 내보내기 단계에서 잡는다.
+그래서 진행 JSON은 내기 전에 **런타임과 같은 진행 코어**에 실어 본다(§4).
 
 ---
 
-## 0. ⚠ 2026-08-17 단순화 — 계약의 절반이 사라졌다
+## 1. 장면(Scene) — 툴이 알아야 하는 만큼
 
-런타임이 구조를 최대한 단순하게 만드는 방향으로 정리됐다. **실측**(`Assets` 전체 grep):
-
-| 개념 | 전 | 지금 | 이 문서에서 |
-|---|---|---|---|
-| **세이브/로드** | `VNSaveData` · 시킹 복원 | **0건** | 옛 §C가 근거를 잃음 |
-| **변수 저장소** | `VariableStorageBehaviour` 공유 | **0건** | 옛 §D1·D2·D4 폐기 |
-| **서브 레인(Pres 노드)** | `pres_start`~`pres_end` | **0건** (`pres_*` 전멸) | 옛 §A3~A7·§B 폐기 |
-| **SubLane · BeatLane** | 레인 타입 | **0건** | — |
-| **진행(Progression)** | `ChapterEpisodeProgressionSO` | **0건** — 별도 저장소로 이사 | 옛 §G의 대상이 바뀜 |
-| **선택지 리플레이** | `ChoiceReplay` 어셈블리 | **0건** | 옛 §C3 폐기 |
-
-**추가로 사라진 것** (2026-08-18 실측 — 첫 조사 때 `find`가 낡은 디렉터리 항목을 보여
-줘 잘못 적었던 것을 바로잡는다): **원샷 레인**(`OneShot` 0파일, `<<beat>>`는 테스트 픽스처
-문자열에만 남음) · **인라인 advance**(`InlineAdvance`·`[adv/]` 0파일).
-
-**살아남은 것**: 메인 레인 **하나** · 롤백 · 백로그 · 선택지와 효과 미리보기 ·
-연출 커맨드 · 라인 메타태그.
-
-**진행 계층은 `ked-progression`으로 빠졌다** — 유니티 전용이 아니라 **VnTool과 런타임이
-같은 구현을 공유하는** 순수 C# 패키지다. 규칙이 양쪽에 각자 있어 실제로 갈렸던 것이
-이유다(조건 종류 5종 vs 2종, 연산자가 양쪽에 각각 둘씩 없고, 관문 위치가 정반대, clamp는
-툴에만 있었다). **구현을 하나로 만들면 갈릴 수가 없다.**
-
-```
-[VnTool]  ──┐
-            ├──► Ked.Progression   (netstandard2.1 · 엔진 의존 0 · JSON 파서 없음)
-[Unity]   ──┘
-```
-
-## 0-0. Scene이란 무엇인가 — 툴이 알아야 하는 만큼 (2026-09-16 확정)
-
-> 계약이 굳었다(소유자). 정본은 `ked-progression-runtime/dev`.
-
-**Scene은 표시 이름도 유니티 씬도 아니다. 여러 Episode를 하나의 진행
-커밋/롤백/복원 수명으로 묶는 단위다.**
+**장면은 표시 이름도 유니티 씬도 아니다. 여러 에피소드를 하나의 진행 확정 · 롤백 · 복원 수명으로 묶는 단위다.**
 
 ```text
 Scenario(회차) > Chapter > Scene > Episode
 ```
 
-### 툴이 지켜야 하는 것 넷
+### 툴이 지키는 것 넷
 
 | | 규칙 | 근거 |
 |---|---|---|
-| ① | **정본은 `Episode.SceneId` 하나다.** 같은 값을 가진 에피소드들이 한 Scene이다 | 런타임에도 저장되는 Scene 테이블이 없다 — `SceneProgression`은 **실행 시** 만들어진다 |
-| ② | **늘 채운다** — 에피소드는 늘 장면에 속한다(2026-11-17 · 읽기는 2026-11-18). 런타임은 빈 값을 `__scene_{EpisodeId}`(에피소드 하나 = 장면 하나인 퇴화 상태)로 받지만 이 툴은 그 모양을 내지도 읽지도 않는다 | `EpisodeNode` 생성자가 빈 값에 발급(런타임의 구판 호환) · 툴은 저장 검증이 빈 장면ID를 거절한다 |
-| ③ | **Scene에 밖에서 들어오는 자리는 하나**(=루트). 챕터 시작도 그 하나로 센다. 같은 루트로 여러 간선·재진입은 정상 | `ChapterInvariants.VerifySceneEntries`. 롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 그 자리다 |
-| ④ | ~~**자동 간선은 장면을 못 넘는다**~~ ⛔ 2026-11-18에 걷혔다 — 자동 간선은 장면을 넘어도 된다 | 경계의 일(`Commit → Exit → Enter` — 무대 비우기 · 확정 · 저장)은 묻는 선택지로 넘을 때와 같고 박스만 뜨지 않는다. 런타임 `fix/progressionScene` `036535b`(`docs/PLAN_auto-edge-across-scenes.md`) · 툴 [`work-orders/auto-edge-across-scenes-orders.md`](work-orders/auto-edge-across-scenes-orders.md) |
+| ① | **정본은 `Episode.SceneId` 하나다.** 같은 값을 가진 에피소드들이 한 장면이다 | 런타임에도 저장되는 장면 표가 없다 — 실행할 때 만들어진다 |
+| ② | **늘 채운다** — 에피소드는 늘 장면에 속한다. 런타임은 빈 값을 `__scene_{EpisodeId}`(에피소드 하나 = 장면 하나)로 받지만 이 툴은 그 모양을 내지도 읽지도 않는다 | 저장 검증이 빈 장면ID를 거절한다 |
+| ③ | **장면에 밖에서 들어오는 자리는 하나**(= 시작점). 챕터 시작도 그 하나로 센다. 같은 시작점으로 여러 간선 · 재진입은 정상 | 코어의 `ChapterInvariants.VerifySceneEntries`. 롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 그 자리다 |
+| ④ | **자동 간선은 장면을 넘어도 된다** | 경계의 일(`Commit → Exit → Enter` — 무대 비우기 · 확정 · 저장)은 묻는 선택지로 넘을 때와 같고 박스만 뜨지 않는다 |
 
-⛔ **툴은 이 판정을 따로 구현하지 않는다.** 내보내기가 낸 JSON을 코어 로더에 되먹여
-코어의 Error를 `CoreRefusedChapter`로 세운다 — **판정의 주인은 코어 하나다.**
+**툴은 이 판정을 따로 구현하지 않는다.** 내보내기가 낸 JSON을 코어 로더에 되먹여 코어의 오류를 `CoreRefusedChapter`로 세운다 —
+판정의 주인은 코어 하나다(§4).
 
 ### 툴이 흉내 내지 않는 것
 
-수명주기(`Commit` / `Rollback` / `Replay` / `Stop`)는 **실행 층의 것**이다. 툴은 그 경계를
-**저작**할 뿐 재현하지 않는다. 참고로만 적어 둔다 — 같은 Scene 안 이동은 커밋 없음,
-다른 Scene으로 가면 `Commit → Exit → Enter`, 롤백은 같은 Scene을 유지한 채 루트부터 replay,
-Stop/New Game/Manual Load는 커밋 금지, Episode Skip은 연출 기능이라 진행을 안 건드린다.
-
-### 화면에서의 Scene — 아직 층이 아니다 (R6에서 세운다)
-
-지금 `SceneId`는 **값으로만** 있다 — 에피소드 칸 하나와 배지 하나. Chapter와 Episode를
-**잇는 자리가 없다**(2026-09-16 소유자 관찰). [R6](plans/R6.md)이 그것을 세운다:
-대본 탭과 연출 그래프가 `Chapter → Scene → Episode`로 접었다 펼 수 있게.
-
-⚠ 그때도 **Scene 엔티티를 만들지 않는다** — 화면의 층은 `Episode.SceneId`에서 나오는
-**파생 묶음**이다. 엔티티를 만들면 정본이 둘이 된다.
+수명주기(`Commit` / `Rollback` / `Replay` / `Stop`)는 **실행 층의 것**이다. 툴은 그 경계를 **저작**할 뿐 재현하지 않는다. 참고로만 —
+같은 장면 안 이동은 확정 없음, 다른 장면으로 가면 `Commit → Exit → Enter`, 롤백은 같은 장면을 유지한 채 시작점부터 다시 재생,
+멈춤 · 새 게임 · 수동 불러오기는 확정하지 않는다. 화면의 장면 묶음도 `Episode.SceneId`에서 나오는 **파생**이지 따로 선 엔티티가 아니다.
 
 ---
 
-## 0-1. ⚠ 2026-09-02 재편 — 진행 코어가 챕터 안으로 들어왔고, Scene이 섰다
+## 2. 진행 JSON — `exported/{챕터Id}.progression.json`
 
-런타임 실측(`server_DB`, 09-02 — G4 작업이 **미커밋으로 진행 중**인 트리. 내 두 읽기 사이에
-`ProgressionDriver.cs`가 바뀔 만큼 살아 있었다). 바뀐 것 다섯:
-
-| 무엇 | 전 (08-24 기준) | 지금 |
-|---|---|---|
-| **`Ked.Progression`의 자리** | 별도 저장소 `ked-progression`, UPM `#0.2.0` | **`Assets/Scripts/Ked.Progression/`에 복사 반입** (`Documentation~/vendoring.md`). 정본은 여전히 형제 저장소지만 **실제 작업은 사본에서** 일어나고, 정본은 08-25 커밋에 08-26 역동기화가 미커밋인 채 뒤처져 있다 |
-| **수명 계층** | 시나리오 > Chapter > Episode | **시나리오(회차) > Chapter > Scene(신설) > Episode.** 에피소드는 연출적으로 투명하고, Scene이 연출 연속(무대·스코프)·롤백·변수 체크포인트·커밋 확정·저장의 네 경계를 전부 갖는다 — *"장면 안에서는 모든 게 물릴 수 있고, 장면이 끝나면 확정된다."* (`docs/scene-boundary-plan.md`, 관문 G0~G5) |
-| **커밋 시점** | 선택 즉시 | **장면 끝에서 fold** — 장면 안 선택은 pending, 롤백이 물리고, 장면을 나가는 순간 원자 확정·보고 1회 (`ProgressionState.Fold` = `Commit` 합성). 장면 중간 멈춤은 pending을 버린다 |
-| **[2] 스탯 ↔ Yarn** | `PublishStats`로 Yarn 변수에 투영 | **투영 철거(G0).** Yarn 저장소는 순수하게 [3] 연출 변수의 집. **대사 안 `<<if $스탯>>` 금지** — 스탯 분기는 간선으로 |
-| **세이브** | 없음 (§C1·C3 보류) | **돌아왔다** (08-31) — 로컬 우선 슬롯 + 서버 동기화 큐 + 챕터 JSON checksum 대조 (§H-6) |
-
-실행 루프는 셋으로 갈렸다: `ProgressionDriver`(챕터 루프 — 어느 장면 다음에 어느 장면, Yarn
-변수 챕터 초기화) → `SceneRunner`(장면 루프 — 노드 재생 → 시청 기록 → `Fold(pending)`으로
-판정 → 선택 → Via → … → 장면 끝 fold) → `EpisodePlayer`(장면 진입 묶음·노드 실행·리플레이
-준비). 롤백은 복원이 아니라 **장면 루트부터 결정론적 리플레이**이고, 기록된 선택은 시크 중
-자동 응답한다. 선택지 대기 중에도 롤백된다.
-
-**이쪽에 생긴 일**은 §G-10~G-14에, **소유자 결정**은 §H-8에 있다. ⛔ **소유자 지시
-(2026-09-02): 저쪽 작업이 끝나 완전히 굳은 뒤에 툴 쪽은 계획을 다시 점검하고 착수한다.**
-그때까지 이 문서는 "무엇이 바뀌었는가"의 기록이지 작업 지시가 아니다.
-
-**갈림 실측 (2026-09-02)** — 건강한 것과 아닌 것:
-
-| 사본 | 상태 |
-|---|---|
-| `Ked.Presentation.Core` | **실질 갈림 0** — CRLF를 빼면 `SlideMotion.cs`·`StageReducer.Staging.cs` 79줄, 코드는 삼항식 줄바꿈 1건, 나머지는 이쪽이 더 풍부한 `///` 주석 |
-| 커맨드 어휘 | **차이 0** — 런타임 등록 126(리터럴 125 + `$"{frame}fr"` 동적 1) ↔ 카탈로그 126항목. ⚠ §E1·§G-3의 "179"는 낡은 수치였다 |
-| `ExportedTuning` | 08-22 이후 변화 없음 |
-| **`Ked.Progression`** | ✅ **맞물렸다 (2026-09-16 실측).** 두 사본이 **공유하는 24파일 중 23개가 차이 0**이고(CRLF 무시), 나머지 `Spec/ChapterDefinition.cs`도 필드·주석 **위치**만 다르다. `Spec/ChapterInvariants.cs`가 같으므로 `SceneId`·`VerifySceneEntries`·`VerifyAuto`가 **양쪽에서 같은 문장으로 판정한다**. 옛 서술("12파일 821줄 뒤" · "사라진 파일 셋 잔존" · "관문이 느슨하다")은 전부 낡았다 — `EndingRule.cs`·`ScenarioAdvance.cs`·`ScenarioTransition.cs`는 이쪽에도 없다.<br>⚠ **남은 차이는 의도한 것이다**: 이쪽에만 `Reachability/`(도달성 증명 G7 — 저작 전용), 저쪽에만 `Scene/`·`Contracts/`·`ProgressionDriver`(실행 층 — 툴은 실행하지 않는다). **정본은 `ked-progression-runtime/dev`다.** |
-
-### 이제 사람이 아니라 테스트가 잰다 (T2 · 2026-09-16)
-
-위 표는 **그날의 실측**이고, 실측은 아무도 다시 안 한다. `CoreCopyInStepTests`가 지킨다:
-
-| | |
-|---|---|
-| **지문** | `src/Ked.Progression/runtime-sync.txt` — 사본 파일의 <b>코드</b> 해시. 어느 기계에서든 돈다 — 사본을 여기서 고치면 잡는다 |
-| ~~**맞대조**~~ | ⛔ 2026-11-18에 걷혔다(소유자 — 이 저장소만 시나리오 작가에게 툴로 건네는 경우가 많다). 옆 폴더 런타임과 파일 내용을 직접 비교했다. 런타임(`ked-presentation-runtime` — 정본)이 바뀐 것은 옮겨 올 때 사람이 견준다(`src/Ked.Progression/UPSTREAM.md`의 「재반입 검산」 · `work-orders/core-sync-orders.md`) |
-
-재는 것은 **코드지 글이 아니다** — 주석은 이쪽이 더 두껍고 그건 의도다. 실제로 `ChapterDefinition.cs`의
-차이는 주석뿐이었고, 필드 위치만 저쪽에 맞춰 옮겼다(2026-09-16).
-
-**옮겨 왔을 때의 절차**: 저쪽을 고친다 → 파일을 이쪽으로 복사한다 → 테스트를 돌린다 →
-나온 `runtime-sync.txt.actual`을 확인하고 `runtime-sync.txt`로 바꾼다. ⛔ **지문을 갱신하는 것은
-"옮겨 왔다"는 선언**이다 — 사본을 이쪽에서 고쳐 놓고 지문만 맞추면 관문과 게임이 갈린다.
-
-#### 첫 실전 (2026-09-16 · 저쪽 `534f6c2`)
-
-만든 그날 바로 울렸다 — 런타임이 **`ChapterProgression` → `ChapterDefinition`**으로 개명하고
-`LoadResults`·`ProgressionLoader`를 따라 고쳤다. 손으로 재던 시절이었으면 **다음 실측 때까지
-몰랐을** 종류의 갈림이다(툴은 컴파일이 되니 아무 일도 안 일어난 것처럼 보인다).
-
-옮겨 온 것: 파일 개명(`Spec/ChapterDefinition.cs`) · 타입 이름 42자리 ·
-`CollectSceneRoots` → `CollectScenesRootEpisodeIds`. ⚠ **`ChapterProgressionDto`와
-`ChapterProgressionExporter`는 그대로다** — 앞은 JSON 계약의 이름이고 뒤는 이쪽 것이다.
-
----
-
-# 1부 — 연출 런타임 (`.yarn` 텍스트)
-
-> ⛔ **이 부의 「도구가 내보낼 때 합친다」 · 「이미터」는 지금 `ked-story-compositor`의 일이다**(2026-10-29 연출 층 이사 · 2026-11-18 바로잡음).
-> ked-story-director는 연출 없는 대사 Yarn만 낸다 — 그 Yarn에 연출 커맨드 · 선택지(`->`) · `<<jump>>` · `<<set>>` · `<<declare>>`는 없고, 분기는 `<<detour>>`, 조건 줄은
-> `<<if>>`, 스탯 읽기는 `stat("키")`다(`Rendering/YarnSyntax.cs` · `Chapters/ChapterYarnExporter.cs`).
-
-## A. 레인 구조
-
-**A1. 레인은 없다 — 대본 하나다.** Story 노드 하나에 대사·조건·선택지·연출이 모두 선다.
-`pres_*`도 `<<beat Set_X>>`도 출력하면 미등록 커맨드 오류가 난다.
-
-**합치는 쪽이 저작 도구다** (2026-08-18 소유자 결정). 런타임이 여러 레인을 읽고 동기화하고
-그것을 다시 롤백·세이브에 반영하는 값을 치르지 않기로 했다 — *"디버깅비용이 최소 10배
-이상은 드니까."* 그래서 **VNEditor(이 도구)가 내보낼 때 미리 합친다.**
-
-**A2. 연출 커맨드는 인라인이다.** 노드 셋업 커맨드는 대본 머리에, 줄에 붙은 연출은 자기
-대사 줄 **바로 앞**에 선다. 실제 출력:
-
-```yarn
-title: golden_ep
----
-<<camera wide>>                  ← 노드 셋업
-
-<<camera closeup>>               ← 이 줄의 연출
-라루: 첫 줄 그대로 #line:ln_004
-
-<<if $__t1_sf_test_favor >= 5>>
-    <<character_acting smile>>
-    윌로: 갈래 안 대사 #line:ln_005
-    <<detour A로_간다>>
-<<endif>>
-===
-```
-
-**A2-0. 노드 머리에 초기값 `set`은 없다** (2026-08-24 — 호스트 실측 요청
-`work-orders/chapter-scope-variables-orders.md`). 예전에는 설정노드의 할당이 **모든 대사
-노드의 머리**에 `<<set $x = 0>>`으로 박혔고, 그래서 그 초기화의 수명이 **에피소드**가
-됐다 — 에피소드1에서 켠 "열쇠를 찾았다"가 에피소드2 머리에서 지워졌다.
-
-연출 실행 변수(`__t1_…`)는 **챕터 단위로 산다.** 그래서 초기값은 `declarations.yarn`의
-`<<declare>>`로만 나가고, **되돌리는 일은 런타임이 챕터 진입에서 한 번** 한다
-(`ProgressionYarnBridge.BeginChapter` — 저장소를 비우고 `YarnProject.InitialValues`로
-다시 심는다). 챕터 안에서는 아무것도 안 지운다 — 에피소드 경계를 그대로 넘는다.
-
-⚠ 작가가 **줄에** 단 `<<set>>`은 그대로 나간다. 그건 이야기 도중의 변화다.
-
-**A2-1. 들렀다 오는 자리는 `<<detour>>`다** (2026-08-21). 들른 카드를 재생하고 **부른 자리로 돌아와** 나머지 대본을
-계속한다 — jump면 그 뒤의 대사가 전부 죽는다. 지금 `<<detour>>`를 내는 것은 분기점 하나다(줄 앞 · 분기 카드로만).
-⛔ 조건 갈래 끝에서 내던 것(갈래 출구 — `<<if>>` 안의 `<<detour>>`)은 2026-11-19에 걷혔다(usability UX28).
-⛔ `<<jump>>`로 나가던 것 — 선택지 옵션의 출구와 기본 출구 — 은 모두 걷혔다(대사 안 선택지 2026-11-04, 기본 출구 2026-11-17).
-이 툴의 Yarn에는 `<<jump>>`가 없다. 에피소드 사이는 진행 JSON이 잇는다.
-detour는 YarnSpinner 3.x 렉서 키워드라 런타임 등록이 필요 없다.
-
-**A2-2. ~~커스텀 씬 노드에는 출구가 없다~~ — 저작 쪽에서 폐지됐다** (2026-09-17, R7 P-6).
-
-원래 규칙(2026-08-21 소유자): detour로 재생된 씬은 대본이 끝나면 **호출한 갈래로 돌아가는
-것**이 곧 출구이므로 뒤에 `<<jump>>`가 서면 돌아가지 못한다 — 그래서 커스텀 씬에는 기본
-출구를 아예 안 줬다.
-
-⚠ **런타임이 보는 것은 하나도 안 바뀐다.** 바뀐 것은 저작 쪽의 *종류*다: 「커스텀(자유) 씬」
-이라는 종류가 없어져 **챕터 판의 대사 노드는 전부 에피소드**가 됐고, 그래서 "커스텀 씬에는
-출구를 안 준다"는 관문이 가릴 대상을 잃었다. 다녀왔다 돌아오는 자리는 여전히 `<<detour>>`이고,
-그런 노드는 `<<jump>>` 없이 `===`로 끝난다. ⛔ 2026-11-17까지는 작가가 기본 출구를 매달면 돌아오지 않고 그리로 갔다 —
-기본 출구는 그날 걷혔다(분기 카드는 늘 돌아온다).
-
-**A3. 메인 레인 전용 검사는 없어졌다.** 레인이 하나뿐이라 가릴 대상이 없다.
-⚠ 카탈로그의 `mainLaneOnly` 플래그는 이로써 **아무 데서도 안 쓰인다** — 레인이 다시
-생기면 그때 검사도 함께 돌아온다.
-
-**A4. `EpisodePlayer`는 Yarn 노드 이름 하나로 시작한다.** `StartGameAsync(string nodeName)` —
-챕터도 에피소드 구조도 모른다. 그 결정은 2부가 내리고 런타임은 **결정된 노드 이름만** 받는다.
-(`Assets/@Scripts/Game/EpisodePlayer.cs`)
-
-## B. 진행 단위
-
-**락스텝 예산 계산은 사라졌다.** 옛 §B의 "Pres 사본의 라인 수는 Story의 (대사 라인 +
-`[adv/]` 마커)와 정확히 같아야 한다"는 규칙도, `[adv/]` 마커 자체도 지킬 대상이 없다
-(런타임 실측 0파일 — 이미터도 2026-08-18에 마커 출력을 걷었다).
-
-| 요소 | 소비 |
-|---|---|
-| 일반 대사 라인 | 1 |
-| `#beat` 메타 라인 | 1 (박스·타자기 없음) |
-| 선택지(`->`) 블록 전체 | 0 |
-
-`SyncHub`는 남아 있지만 **역할이 바뀌었다** — 레인 간 락스텝이 아니라 **롤백 시킹 동기
-조절용**이다(2026-08-17 `253ef6c4`).
-
-## C. 식별자
-
-**C1. `#line:<LineId>` 태그는 이제 요구되지 않는다.** 근거였던 세이브 시킹이 사라졌다.
-런타임 자신도 쓰지 않는다 — 코드 주석이 **"이 프로젝트의 yarn 원문에는 `#line` 태그가
-없다(실측: 8개 파일 전부 0건)"**라고 적어 두었다
-(`Assets/@Scripts/Game/StageEquivalenceHarness.cs:21`). 롤백은 한 세션 안에서만 되감으므로
-Yarn 암묵 ID로 충분하다.
-
-> **그래도 LineId를 버리지 말 것.** VnTool 쪽에서 LineId는 **연출이 매달리는 열쇠**이자
-> 최상위 불변식이다(architecture-decisions A-2). 런타임이 요구하지 않을 뿐이다.
-> ✅ **세이브가 돌아왔는데도 되살아나지 않았다** (2026-09-02) — 스냅샷 기반이라 재개
-> 지점이 라인이 아니라 **장면 루트**다(§H-6). `#line:`은 계속 우리 쪽 열쇠로만 산다.
-
-**C2. 노드 타이틀은 여전히 진입 키다.** `EpisodePlayer`가 받는 것이 이 이름이고,
-2부의 `EpisodeNode.DialogueEntryId`가 이 값과 문자열로 만난다. **한 번 출시된 노드
-타이틀은 동결.** 코드가 강제하는 명명 규칙은 없다 — `Story_`·`Set_` 접두는 저작 관례였고 2026-08-24에 걷혔다.
-
-**C3. ~~선택지 리플레이는 위치 기반~~ → 제약이 다른 모양으로 돌아왔다 (2026-09-02).**
-`ChoiceReplay`는 사라졌지만, 런타임의 **서버 동기화 큐가 선택을 `OptionIndex`(원본
-`NextOptions`의 서수)로 보낸다**(`Save/SaveData.cs` `PendingChoice`). 즉 `간선` 시트의
-**행 순서가 서버 이력의 열쇠**다 — 출시 후 행을 기존 항목 위에 끼우면 화면이 아니라
-**서버에 쌓인 이력의 뜻이 바뀐다.** "삽입 금지"가 세이브가 아니라 서버 쪽 근거로 되살아났다.
-
-**C4. 챕터 JSON은 바이트 단위로 대조된다** (2026-09-02). 런타임 `ChapterVersionResolver`가
-에셋 바이트의 **SHA-256**을 서버의 버전 checksum과 맞춰 보고, 맞는 버전이 없으면 동기화를
-접는다("에셋을 서버에 수입시켜야 동기화 가능"). 그래서 **같은 워크북이면 같은 바이트**여야
-한다 — 내보내기의 정렬·포맷이 결정적인지가 계약이 됐다(§G-12).
-
-## D. 선택지
-
-**D1. Yarn 변수는 살아 있다 — 이제 [3] 연출 실행 상태의 집이고, 그것뿐이다.**
-`<<declare>>` · `<<set>>` · `<<if>>`는 그대로 컴파일되고 동작한다. 수명은 **챕터**
-(`ProgressionYarnBridge.BeginChapter`가 선언 초기값으로 되돌린다 — §A2-0), 그리고
-2026-09-02부터 **세션을 넘어선다**: 장면 끝에 통덤프(`YarnVariableSnapshot` — float·string·
-bool 세 사전)가 세이브에 들어가고, 이어하기가 `BeginChapter` 위에 덮는다(덤프에 없는 신규
-`declare`는 초기값으로 남는다).
-
-→ ~~**작가 계층(B) 변수는 그대로 내도 된다**~~ — ⛔ **계층이 하나가 됐다** (2026-09-17 소유자).
-**작가 전용 스탯이라는 개념을 폐지한다.** 대사가 물을 수 있는 낱말은 챕터 스탯 하나뿐이고,
-저쪽도 Yarn 안에서 지정해 쓰던 변수를 함께 지운다. 아래 §D1-1이 그 모양이다.
-→ ⛔ **A계층 스탯은 Yarn 변수로 심지 않는다** (G0, 2026-09-01 — 이 절반은 그대로다).
-예전에는 진행 층이 `PublishStats`로 [2] 스탯을 Yarn 변수에 투영했는데 그 다리를 걷었다.
-**쓰기가 가능했던 것**이 폐지 이유이고, 대사 중의 스탯 쓰기는 세이브/로드 복귀와 도달성
-증명이 못 보는 뒷길이다.
-
-### D1-1. 대사가 스탯을 **읽는** 표기 — `stat("키")` (2026-09-17, ✅ 양쪽 완료)
-
-```yarn
-<<if stat("trust") >= 3>>      // ✅ 읽기
-<<set $trust = 5>>             // ⛔ 애초에 만들 수 없다 — 변수가 아니다
-```
-
-**변수가 아니라 함수인 것이 핵심이다.** `$trust`로 심으면 읽기와 함께 쓰기가 문법적으로
-유효해지고, 그것이 G0가 다리를 걷은 이유다. 함수에는 왼쪽 변이 없다 — **금지가 아니라
-불가능**이다. 걷힌 다리는 양방향이었고, 되살리는 것은 **읽기 절반**이다.
-
-| | |
-|---|---|
-| 이쪽 | ✅ **완료 (2026-09-17)** — `YarnSyntax.StatRead` 한 곳이 표기의 주인이고, `ConditionYarnTranslator`가 그것만 부른다 |
-| 저쪽 | ✅ **완료 (2026-09-17)** — `ProgressionStatFunction.FunctionName` · `AddFunction<string, int>` · `VNAppBootstrap.CreateScenePlayback()`에서 등록. Yarn 소스 제너레이터가 컴파일 선언(`.ysls.json`)까지 낸다 |
-
-⚠ **읽는 값은 간선 관문이 보는 것과 같다** — 저쪽이 `ProgressionDriver.CurrentState`에서 매
-호출 읽고 사본을 만들지 않는다. 둘이 갈리면 *"선택지는 잠겼는데 대사는 통과"*가 생기고
-그건 화면에서 버그로 안 보인다.
-
-⚠ **없는 키·진행 없는 호출은 저쪽이 던진다.** 조용히 0으로 떨어뜨리지 않는다 — 오타 난
-조건이 *"언제나 통과하는 관문"*이 되는 것이 여기서 가장 찾기 힘든 버그이기 때문이다.
-Yarn은 어떤 키가 유효한지 모르므로 <b>1차 방어는 이쪽의 산출 전 검증</b>이다.
-
-⚠ **키는 정규화하지 않는다** (저쪽 §6.1이 잡았다). 진행 JSON의 `Stats[].Key`가 원본
-그대로 나가는데 대사만 다듬으면 갈린다 — `호감도 (윌로우)` → `stat("호감도__윌로우_")` →
-재생될 때 `KeyNotFoundException`. 함수의 인자는 식별자가 아니라 <b>문자열 리터럴</b>이라
-공백도 괄호도 그냥 들어간다. 깨뜨릴 수 있는 `"`와 ``만 이스케이프한다.
-
-⛔ **2026-09-01~09-17 사이에 이 기능은 죽어 있었다.** `SupplyChapterConditionsToBoard`가
-챕터 조건을 모든 대사 카드에 공급하는데(기능이다 — *"개발자를 안 부르고 조건을 건다"*)
-번역기가 `$trust`를 냈고, 다리가 걷혀 그 변수가 없었다.
-
-**다행히 조용히 틀리지는 않았다** — `YarnBundleEmitter.ValidateProgressionStatReferences`가
-`$진행스탯`을 **차단**으로 잡아 내보내기 자체가 거절됐다. 즉 *"고를 수는 있는데 고르면
-산출이 막힌다"*였다. 막은 그물이 §G-14가 *"아직 없다"*고 적어 둔 바로 그 검증이고, 실은
-**이미 있었다**. 미룬 근거(*"설정노드에 챕터 스탯을 안 주므로 나갈 길이 없다"*)는 틀렸지만
-— 안 오는 것은 스탯이고 조건은 온다 — **그물이 먼저 쳐져 있어 구멍이 안 됐다.**
-### D1-2. 작가 변수는 **없다** · `<<set>>`은 **안 나간다** (2026-09-17, ✅ 양쪽 완료)
-
-계층이 하나가 되면서 **작가 전용 변수라는 개념이 양쪽에서 사라졌다.**
-
-| | |
-|---|---|
-| 이쪽 | 모델·직렬화·편집 명령·발행·이미터에서 걷었다. 챕터 네임스페이스 접두(`__t1_`)도 함께 죽었다 — 어휘가 둘이라 이름이 부딪히던 것이다. `declarations.yarn`은 **아예 안 나간다** |
-| 저쪽 | Yarn 변수 층 전체를 걷었다 — `ProgressionYarnBridge`·`YarnVariableCheckpoint`·`YarnVariableSnapshot`·세이브의 `Variables` 칸. `VariableStorage`를 만지는 코드가 **0건**이고 `saveContentVersion`이 2로 올랐다 |
-
-⛔ **그래서 `<<set>>`은 한 줄도 내면 안 된다.** 아무도 초기화·저장·되감지 않으므로
-남아 있으면 챕터를 다시 시작해도 값이 안 돌아가고, 세이브에 안 실리고, 롤백에서 안 되감겨
-**리플레이가 다른 분기를 타고 시크 표적을 영영 못 찾는다** — §C1의 silent hang이다.
-이쪽 이미터·미리보기가 둘 다 그 조각을 버리고, `ValidateProgressionStatReferences`가
-손으로 적은 `$진행스탯`을 차단으로 잡는다.
-
-⚠ **리플레이 결정성의 주인이 바뀌었다**(저쪽 §3): 전에는 장면 시작에 Yarn 변수를 찍고
-리플레이 직전에 되돌렸는데, 이제 `SceneProgress.RewindAfter`가 pending을 자르고 기록된
-선택을 같은 순서로 다시 소비한다. `<<if>>`가 읽는 것이 `stat()`뿐이므로 성립한다.
-
-⚠ **남은 구멍 하나**(저쪽이 적어 뒀다): Yarn 내장 `visited()`/`visited_count()`는 변수
-저장소에 기댄다. 지금 쓰는 대본이 0건이라 영향이 없지만, 쓰기 시작하면 롤백에서 안 되감긴다 —
-그때는 그 기억도 챕터 깃발(스탯 0/1)로 올린다.
-
-⚠ **잃은 것**: 옵션 미리보기 태그(`#fatigue:+10`)는 줄의 `<<set>>`에서 **파생**되던
-표시용 글자라 함께 사라졌다(§D2). 선택지에 비용을 보이려면 간선의 `스탯변화`에서 다시
-내야 하고, **그 길은 아직 없다**.
-
-→ ~~`<<set>>` 이중 실행 주의~~는 서브 레인이 없어져 함께 사라졌다.
-
-> ⛔ **D2 · D3의 `->` 옵션 줄은 이 툴이 더 만들지 않는다 (2026-11-04).** 선택지는 2부의 간선(`EpisodeOption`)에서만 선다. 아래는 런타임 쪽 규칙의 기록이다.
-
-**D2. 옵션 해시태그는 표시 전용이다.** `-> 텍스트 #fatigue:+10`은 미리보기 라벨만 만든다.
-키는 소문자 정규화, 정수만(`+1.5`는 조용히 버려짐), `~`로 범위 표기 가능.
-(`VNOptionEffectPreviewParser`)
-
-> **⚠ 실제 효과는 이제 여기서 나오지 않는다.** 옛 규칙은 "효과는 옵션 본문의 `<<set>>`이
-> 담당"이었는데 그 자리가 사라졌다. **스탯이 변하는 유일한 자리는 2부의
-> `EpisodeOption.StatChanges`다.** 해시태그는 순수한 미리보기 문구다.
-
-**D3. ⚠ 옵션 라벨은 원문 그대로 렌더된다.** 접두를 벗기는 코드가 없다 — 이미터는 라벨에
-식별 접두(`s1` 등)를 넣지 말 것. (`VNOptionsPresentationFlow`)
-
-**D4. 비활성 옵션은 사라진다.** `<<if>>` 거짓인 옵션은 회색 처리가 아니라 미표시.
-
-## E. 커맨드 어휘
-
-**E1. 등록 지점 179곳** — `YarnBridge/CommandBridge*.cs` 실측(본체 160 · 이모지 프리셋 12 ·
-이모지 6 · 컨트롤 1). 옛 계약서의 "명명 커맨드 200개 + `1fr`~`48fr` 별칭 48개 · 카탈로그
-201항목"은 **단순화 이전 수치다.**
-→ ✅ 2026-08-18 재검증 완료 — 카탈로그가 **179항목**(등록 178 + 동적 별칭 `<N>fr`)이고 런타임에만 있는 것은 0개다. 죽은 22개(`pres_*`·`overlay_*`·`beat`·`beat_fx`·`seq`)를 걷었다.
-→ ✅ **2026-09-02 재실측 — 126.** 등록 자리 126(문자열 리터럴 125 + `$"{frame}fr"` 동적 1) ↔ 카탈로그 126항목(`outputCommand` 고유 126, `<N>fr`이 동적 등록과 짝). **런타임에만 0 · 카탈로그에만 0.** 179 → 126은 W65(2026-08-20, 56종 폐지)의 결과이고 이 문서가 그 수치를 안 따라갔던 것이다. ⚠ 등록 이름은 `runner.AddCommandHandler<…>(` **다음 줄**의 문자열이라 한 줄 grep으로는 0건이 나온다 — 다중행으로 뽑을 것.
-
-**E2. 레인 구분이 사라져 "메인 레인 전용"도 뜻을 잃었다.** 커맨드가 갈 곳이 대본 하나뿐이라 가릴 대상이 없다(§A3). `pres_*`는 전멸했고 `<<beat Set_X>>`도 마찬가지다.
-
-**E3. 커맨드 기본값은 여러 층에 있다** — 스펙 클래스 필드 초기값 · 브리지 파싱 기본 인자
-(**가장 큰 덩어리, 툴이 명시 인자를 출력하면 완전 우회 가능**) · 토큰 파서 폴백 ·
-프리셋(키가 곧 어휘).
-
-**E4. 매크로 커맨드.** `show`→4스펙, `cast`→4, `emoji`→6 등 1:N 확장이 있다. 툴은 텍스트
-커맨드 하나로 출력하면 된다.
-
-**E5. 라인 메타태그 어휘** (`DialogueBoxMetadataResolver` — 소문자 정규화, 첫 일치 우선).
-**실측으로 다시 뽑았다**:
-
-- 비트: `#beat` `#stage` `#stage_only` `#present`
-- 대기 수정자: `#stay` `#beat_stay` `#no_auto` `#hold`
-- 박스 종류: `#surface` `#surface_box` `#surfacebox` · `#portrait` · `#speaker` ·
-  `#letterbox` `#letter_box` · `#onlytext` `#only_text` · `#blackbook` `#black_book`
-- 박스 전환: `#box_keep` `#boxkeep` · `#box_cut` `#boxcut` · `#box_fade` `#boxfade` ·
-  `#box_fade_in` `#boxfadein` · `#box_hide` `#boxhide`
-- **`#main_free`는 없어졌다** — 서브 레인 전용이었다.
-
----
-
-# 2부 — 진행 계약 (`progression.json` → `Ked.Progression`)
-
-**대상이 바뀌었다 — 두 번.** 옛 §G는 유니티의 `ChapterEpisodeProgressionSO`를 겨눴고,
-2026-08-23에는 `ked-progression` UPM 패키지(`#0.2.0`)를 겨눴다. **2026-09-02 실측: 저쪽이
-UPM을 버리고 `Assets/Scripts/Ked.Progression/`에 복사 반입했다**("매일 바뀌는 중이라
-커밋→태그→푸시→재해결 왕복이 가장 큰 비용" — `Documentation~/vendoring.md`). 그래서 지금
-이 문서가 겨누는 **로더·DTO의 실물은 런타임 사본**이다.
-
-| 사본 | 어디 | 상태 (2026-09-16 실측) |
-|---|---|---|
-| **정본** | ⛔ 2026-11-18 소유자: **`ked-presentation-runtime`** — `Assets/Ked.Progression/Core/`가 툴의 사본이 따르는 곳이다(`src/Ked.Progression/UPSTREAM.md`). 아래는 2026-09-16의 기록: **`ked-progression-runtime` `dev`** — `Assets/Progression/Runtime/` (2026-09-16 소유자: *"Scenario/Chapter/Scene/Episode 계약이 완전히 굳었다"*). Core/Runtime/Host 세 층 |
-| 이쪽 사본 | `src/Ked.Progression/` | ✅ **공유 24파일 중 23개 차이 0.** 남은 하나도 위치 차이뿐. 이쪽에만 `Reachability/`(도달성 증명 — 저작 전용), 저쪽에만 `Scene/`·`Contracts/`·`ProgressionDriver`(실행 층) |
-| ~~옛 정본~~ | `ked-progression` `feat/host-integration` | **더는 정본이 아니다.** 08-25에서 멈춤 |
-| ~~옛 런타임 사본~~ | `ked-presentation-runtime/Assets/Scripts/Ked.Progression/` | 실제 작업이 `ked-progression-runtime`으로 옮겨 갔다 |
-
-> ⚠ **툴은 실행 층을 반입하지 않는다.** `SceneProgression`·`SceneRunner`·`ProgressionDriver`는
-> *언제 무엇을 실행하는가*이고, 툴은 *무엇이 유효한 진행인가*(Core)만 있으면 된다.
-> 툴이 실행 층을 흉내 내면 **수명주기의 주인이 둘**이 된다.
-
-**Gate D는 닫혔다 (2026-08-23)** — 로더·DTO·전이기가 서서 실제로 몰아 봤다(H1·H2·H4).
-그 뒤 저쪽이 세이브를 코어에서 걷어 호스트 `Save/` 층으로 옮겼다(§H-6).
-
-## F. 타입 대응 — JSON ↔ 모델
-
-`ChapterProgressionExporter`가 내는 것과 코어 타입의 대응. **키는 PascalCase다.**
-**2026-09-02 실측 — 런타임 DTO가 08-26에 파일 단위로 쪼개지고(`7eedce6b`) 레거시가 걷혔다.**
-저쪽이 지금 읽는 칸 전부:
+`ChapterProgressionExporter`가 낸다. **키는 PascalCase다.** 런타임 코어가 읽는 칸:
 
 ```
 { ChapterId, DisplayName, StartEpisodeId, Stats[], Nodes[] }
 
 Stat   : { Key, DisplayName, Type("Number"|"Bool"), Initial, Minimum, Maximum }
 
-Node   : { EpisodeId, DialogueEntryId, Title, EventKey, SceneId(선택), NextOptions[] }
+Node   : { EpisodeId, DialogueEntryId, Title, EventKey, SceneId, NextOptions[] }
 
-Option : { TargetEpisodeId, ChoiceLabel, VisibleConditions[], Conditions[],
-           LockedReasonText, StatChanges[{Key, Amount, Op("Add"|"Set")}] }
+Option : { TargetEpisodeId, ChoiceLabel, Auto, VisibleConditions[], Conditions[],
+           LockedReasonText, StatChanges[{ Key, Amount, Op("Add"|"Set") }] }
 
 조건   : { Kind("Stat"), Key, Op, IntValue }
 ```
 
-| JSON | 모델 | 비고 |
+이 밖에 툴이 함께 내는 칸 — 노드의 `IndexText` · 빈 `VisibleConditions` · `UnlockConditions` · `Position`(판 위 자리) — 은 코어 DTO에 없어
+로더가 버린다.
+
+### 2.1 칸 대응
+
+| JSON | 코어 모델 | 이 툴에서 |
 |---|---|---|
-| `ChapterId` · `DisplayName` · `StartEpisodeId` | `ChapterDefinition` | 시작은 실재 검사됨 |
-| **`Stats[]`** | `ChapterDefinition.Stats` | ✅ 2026-08-18부터 나간다. ⚠ `Type`은 **`"Number"`**다(이쪽 `Int`를 번역) |
-| `Nodes[]` | `EpisodeNode` | |
-| `NextOptions[]` | `EpisodeOption` | **배열 순서 = 화면 순서 = 서버 이력의 `OptionIndex`**(§C3). 정렬 금지 |
-| **`Node.EventKey`** | `EpisodeNode.EventKey` | ✅ **양쪽 다 섰다** — 이쪽 v14(08-26)부터 내고, 저쪽 DTO 칸도 같은 날(`665e47e1`). 해석 없이 실어 나르고, 장면 끝 fold에서 시청 보고(`PendingEvent`)의 열쇠가 된다. "칸 부탁 중"은 끝 |
-| **`Node.SceneId`** | `EpisodeNode.SceneId` | ✅ **양쪽 다 섰다 (2026-09-16 확인).** 이쪽은 에피소드의 장면ID를 그대로 낸다 — **늘 채운다**(2026-11-18 — 에피소드는 늘 장면에 속하고 빈 장면ID는 읽지 않는다; ⛔ 그 전에는 빈 값도 빈 문자열로 냈다). 비면 저쪽 `EpisodeNode` **생성자**가 `__scene_{EpisodeId}`를 발급해 **에피소드 하나 = 장면 하나인 퇴화 상태**가 된다(매 에피소드 무대 클리어, 에피소드를 넘는 롤백 없음) — 구판 호환은 그 자리에서 산다.<br>불변식: 장면마다 밖에서 들어오는 자리 하나(**챕터 시작도 그 하나로 센다**, 재진입 허용). 이어하기는 장면 루트에서만. 자동 간선은 장면을 넘어도 된다(2026-11-18 — ⛔ 그 전에는 못 넘었다).<br>⛔ **이쪽이 그 불변식을 따로 구현하지 않는다** — 내보내기가 낸 JSON을 코어 로더에 되먹여(`ProgressionLoader.Load`) 코어의 Error를 `CoreRefusedChapter`로 세우고 **그 에피소드 · 간선까지 짚는다**(`ChapterProgressionExporter.CoreRefusals`). 판정의 주인은 코어 하나다 |
-| ~~`EndingRules`~~ | **저쪽에서 폐지** (`5e424840`) | 이쪽은 여전히 빈 배열을 낸다 — Newtonsoft가 모르는 칸을 버려 무해. 재반입(§G-11)하면 이쪽 DTO에서도 사라진다 |
-| ~~`Option.Kind`~~ | **저쪽에서 폐지** (`adfda627` — 자동 진행 자체가 폐지) | §G-7 종결. 이쪽이 내는 값은 버려진다 |
-| ~~`Option.HideWhenLocked`~~ | **저쪽 DTO에 없다** | 옛 F4의 "저쪽 DTO는 그대로 둔다"는 낡았다 — 저쪽이 걷었다 |
-| ~~`Node.EndingKey`·`IsChapterEndingCandidate`·`IndexText`·`Position`·`DesignerNote`·`VisibleConditions`·`UnlockConditions`·`Attachments`~~ | **저쪽 DTO에 없다** (`7503462f`) | 이쪽이 내는 빈 값은 버려진다(저쪽 견본 `qwer.progression.json`이 이쪽 08-27 산출물이고 이 칸들이 8개씩 들어 있다 — 무해). 재반입 때 함께 걷는다 |
-| ~~`Node.DesignerNote`~~ | ⛔ **이쪽에서도 걷었다** (2026-11-17 소유자) | 에피소드 지시가 실려 나가던 칸 — 저쪽 DTO에 없어 늘 버려졌다. 지시의 집은 이제 대사 Yarn(`exported/yarn/`)의 주석이다(지시서 `yarn-output-orders.md` — 2026-11-18 닫고 걷음). 위 줄의 나머지 칸은 그대로 재반입 때 걷는다 |
+| `ChapterId` · `DisplayName` · `StartEpisodeId` | `ChapterDefinition` | `DisplayName`은 챕터 이름(비면 챕터ID). 시작은 챕터 에피소드 목록의 첫째 |
+| `Stats[]` | `ChapterDefinition.Stats` | 챕터의 스탯 표. 이쪽 「숫자(정수)」가 `"Number"`, 「활성/비활성」이 `"Bool"`(0/1). `DisplayName`은 `Key`와 같은 글자 — 게임이 키로 로컬라이즈한다 |
+| `Nodes[]` | `EpisodeNode` | 에피소드 하나 = 노드 하나. 분기 카드는 싣지 않는다 |
+| `Node.DialogueEntryId` | `EpisodeNode.DialogueEntryId` | 그 에피소드의 Yarn 노드 이름 — 대사 Yarn의 `title:`과 **같은 함수**를 지난다(§5.2) |
+| `Node.Title` | | 에피소드 제목(비면 에피소드ID) |
+| `Node.EventKey` | `EpisodeNode.EventKey` | 해석 없이 실어 나른다. 장면 끝 확정에서 시청 보고의 열쇠가 된다 |
+| `Node.SceneId` | `EpisodeNode.SceneId` | 에피소드의 장면ID — 늘 채운다(§1 ②) |
+| `NextOptions[]` | `EpisodeOption` | 간선 하나 = 하나. **배열 순서 = 화면 순서 = 서버 이력의 `OptionIndex`**(§3). 정렬하지 않는다 |
+| `Option.ChoiceLabel` · `Option.Auto` | `EpisodeOption` | 자동 길은 `Auto: true` · 빈 문구. 그 밖의 길은 문구가 있어야 한다 |
+| `Option.VisibleConditions` · `Option.Conditions` | | 표시조건 · 해금조건. 조건 이름은 나가지 않고 그 식이 항으로 펴져 나간다. 식 미정이면 빈 배열(관문 없음) |
+| `Option.LockedReasonText` | | 잠금 안내문 |
+| `Option.StatChanges` | | 스탯변화. `Op`는 늘 적는다 — `"Add"`(정수 증감) · `"Set"`(깃발 지정, 값 0/1) |
 
-**enum은 이름 문자열로 나간다** — 순서를 재배열해도 안 깨진다. 로더가 이름으로 맵핑하고,
-**알 수 없는 이름은 로더만의 검사 대상이다**(모델은 이미 enum이라 못 잡는다).
+**enum은 이름 문자열로 나간다** — 순서를 재배열해도 안 깨진다. 로더가 이름으로 맵핑하고, 모르는 이름은 로더가 잡는다.
 
-**F1. `IntValue`는 0이면 키 자체가 없다.** `JsonIgnoreCondition.WhenWritingDefault` —
-`trust >= 0`은 `{ "Kind":"Stat", "Key":"trust", "Op":"GreaterOrEqual" }`로 나간다.
-**DTO 필드는 반드시 `int`** — `int?`로 두면 가장 흔한 조건인 `flag == false`가 통째로
-어긋난다.
+### 2.2 규칙
 
-**F2. 비교 연산 5종 (+`Exists`는 죽었다).** `GreaterOrEqual` · `LessOrEqual` · `Equal` ·
-`GreaterThan` · `LessThan`(2026-08-16 개방). **`NotEqual`은 저작 파서가 닫아 두어 나오지
-않는다 — 넣지 말 것.** `Exists`는 `EpisodeCleared` 조건의 것이었고 그 종류가 2026-08-25에
-양쪽에서 폐지됐다(`cleared:` 문법은 비교 연산자가 없는 항으로 오류다 — ⛔ 2026-11-17까지는 고치는 법을 말하는 `ClearedRetired` 진단) — 나올 일이 없다.
+**`IntValue`는 0이면 키 자체가 없다.** `JsonIgnoreCondition.WhenWritingDefault` — `trust >= 0`은 `{ "Kind":"Stat", "Key":"trust", "Op":"GreaterOrEqual" }`로
+나간다. **DTO 필드는 반드시 `int`** — `int?`로 두면 가장 흔한 조건인 `flag == false`가 통째로 어긋난다.
 
-**F3. bool 스탯은 0/1 + `Equal`뿐이다.** 경계 0·1 고정, **크기 비교와 증감은 오류**.
-양쪽이 같은 자리에서 막는다(`ChapterWorkbookReader.VerifyBoolStatUsage` ↔
-`ChapterDefinition`). `== false`는 F1 때문에 `IntValue` 키가 없는 모양으로 나간다.
+**비교는 다섯이다** — `GreaterOrEqual` · `LessOrEqual` · `Equal` · `GreaterThan` · `LessThan`. **`NotEqual`은 저작 파서가 닫아 두어 나오지 않는다.**
+조건 종류는 `Stat` 하나다 — 클리어 이력 같은 다른 종류는 없고, 깃발(Bool 스탯)이 그 자리를 대신한다.
 
-**F4. 관문은 간선의 것이다** (v8). `Option.VisibleConditions` 미달 → **목록에 만들지
-않는다**(`ChapterAdvance.HiddenCount`로 개수만 센다 — 디버그용). `Option.Conditions` 미달 →
-**잠긴 채 보인다**(`ResolvedOption.Locked` — `LockedReasonText`와 첫 미달 조건을 든다).
-규칙의 주인은 `ChapterTransition.Resolve` 하나다.
+**Bool 스탯은 0/1 + `Equal`뿐이다.** 경계 0 · 1 고정, **크기 비교와 증감은 오류**(지정 `Set`만). 정수 스탯에는 `Set`을 쓰지 않는다.
+한 간선이 같은 깃발을 두 번 지정하면 오류다.
 
-~~`HideWhenLocked`~~ — 2026-08-24에 이쪽이 `잠금시 숨김`을 폐지했고(표시조건과 해금조건이
-이미 그 둘을 다 말한다), **저쪽도 DTO에서 칸을 걷었다**(2026-09-02 실측 — `EpisodeOptionDto`에
-없다). 이쪽이 아직 `false`를 내지만 Newtonsoft가 버린다. 재반입(§G-11) 때 이쪽 출력도 걷는다.
+**관문은 간선의 것이다.** `VisibleConditions` 미달 → **목록에 만들지 않는다**. `Conditions` 미달 → **잠긴 채 보인다**(`LockedReasonText`와 첫 미달
+조건을 든다). 규칙의 주인은 코어의 `ChapterTransition.Resolve` 하나다.
 
-**F5. 전이 규칙 2갈래 — 그리고 커밋은 장면 끝이다** (2026-09-02 정정).
-① 고를 수 있는 선택지가 하나라도 있으면 **`AwaitPlayerChoice`** — 고른 간선의
-`TargetEpisodeId`로 이동. `StatChanges`는 **즉시 커밋되지 않는다**: 장면 안의 선택은 pending으로
-쌓이고(`SceneRunner._picks`), 롤백이 그것을 물리며, **장면을 나가는 순간 `ProgressionState.Fold`가
-순서대로 `Commit`을 접어 원자 확정**한다(fold = Commit 합성이라 clamp·도달 확인 규칙이 갈릴 수
-없다). 장면 중간 멈춤은 pending을 **버린다**(확정도 보고도 안 한다).
-② 고를 수 있는 것이 없으면 **`ChapterEnded`** — 잠긴 것만 남아도 종료다.
+**전이는 세 갈래다.**
+① 나가는 간선이 자동 간선 하나면 **묻지 않고** 그리로 간다.
+② 고를 수 있는 선택지가 하나라도 있으면 **플레이어의 선택을 기다린다** — 고른 간선의 `TargetEpisodeId`로 간다.
+③ 고를 수 있는 것이 없으면 **챕터가 끝난다** — 잠긴 것만 남아도 끝이다.
 
-⛔ **"보이지 않는 기본"은 없다.** `ChoiceLabel`이 빈 간선은 **로드 오류**다
-(`ProgressionLoader` — *"간선의 문구가 비어 있다. 자동 진행은 폐지됐다 — 문구를 줄 것"*).
-이쪽 v12 리더(`HasNoOptionLabel` 오류)와 같은 자리에서 막는다.
+**스탯변화는 장면 끝에 확정된다**(런타임). 장면 안의 선택은 쌓여 있다가(롤백이 그것을 물린다) 장면을 나가는 순간 순서대로 접혀 한 번에
+확정된다. 판정은 진입 상태에 지금까지의 선택을 접은 값으로 한다 — 플레이어가 선택지를 보는 시점의 값이다. 값은 스탯의 최소 · 최대로 잘린다.
 
-**판정은 작업 상태로** — 진입 상태에 지금까지의 pending을 접은 값 = 플레이어가 선택지를
-보는 시점의 값. "커밋 전 값으로 판정"이라는 옛 문장과 결과가 같다.
+**자동 간선의 불변식** — 그 에피소드의 **유일한** 간선이고, 조건도 스탯변화도 없다. 문구가 빈 간선은 `Auto`가 켜져 있어야 한다 —
+「보이지 않는 기본」은 없다.
 
-**F6. 생성자를 통과했다는 것의 뜻.** 에피소드 ID·스탯 키 중복 없음 · 시작 실재 ·
-**모든 간선이 실재하는 에피소드에 착지** · 조건과 스탯변화가 **정의된 스탯만** 가리킴 ·
-bool 어휘 준수 · **장면마다 밖에서 들어오는 자리가 하나**(`VerifySceneEntries`, 2026-09-02 —
-같은 자리로 여러 간선이 들어오는 것과 장면을 나갔다 되돌아오는 재진입은 통과). 그래서
-전이기와 도달성 증명은 "허공으로 가는 간선"이나 "없는 키를 읽는 조건"을 다시 걱정하지 않고,
-이어하기는 **장면 루트에서만** 재개할 수 있다(무대 기준선이 거기 선다).
+**로드를 통과했다는 것의 뜻** — 에피소드 ID · 스탯 키 중복 없음 · 시작 실재 · **모든 간선이 실재하는 에피소드에 착지** · 조건과 스탯변화가
+**정의된 스탯만** 가리킴 · Bool 어휘 준수 · 자동 간선 불변식 · **장면마다 밖에서 들어오는 자리 하나**. 그래서 전이기와 도달성 증명은
+「허공으로 가는 간선」이나 「없는 키를 읽는 조건」을 다시 걱정하지 않고, 이어하기는 **장면 시작점에서만** 재개한다.
 
-**F7. 침묵 금지가 규율이다.** 없는 스탯 키를 0으로 읽지 않고 던진다(구 런타임은 조용히
-`false`였다). 초기값이 경계 밖이면 생성 거부 — 조용히 clamp하면 작가가 쓴 값과 다르게
-시작한다. 문구 없는 간선·엉터리 장면 데이터도 **로드에서** 죽인다 — 재생 중에 발견되면
-디버깅 비용이 크다.
+**침묵 금지.** 없는 스탯 키를 0으로 읽지 않고 던진다. 처음 값이 경계 밖이면 생성 거부 — 조용히 자르면 작가가 쓴 값과 다르게 시작한다.
+문구 없는 간선 · 엉터리 장면 데이터도 **로드에서** 죽인다 — 재생 중에 발견되면 디버깅 비용이 크다.
 
 ---
 
-# 3부 — 열린 항목
+## 3. 바이트와 순서 — 서버가 기대는 것
 
-## G. VnTool이 할 일
-
-**G-1. `Stats[]` 내보내기 — ✅ 2026-08-18 완료.**
-
-`ChapterJson.Stats`로 나간다. ⚠ **타입 이름을 번역한다** — 이쪽 `Int`가 저쪽 `Number`다
-(enum이 이름 문자열로 나가므로 그대로 내면 수입기가 모르는 이름을 만난다).
-고정: `스탯_정의가_최상위로_실려_나간다`. 아래는 그때의 사정 기록이다.
-
-`ChapterJson`이 `ChapterId · DisplayName · StartEpisodeId · Nodes · EndingRules`뿐이라
-`Stats`가 없다. 그래서 **스탯 관문이 있는 실데이터로는 `ChapterDefinition`을 만들 수
-없다** — "정의되지 않은 스탯"으로 거부된다. 저쪽이 **의도적으로** 막아 둔 것이고(F7),
-그 압력이 이 항목을 가리킨다.
-
-값의 주인은 챕터 워크북 `스탯` 시트다 — 같은 `trust`라도 챕터마다 초기값이 다를 수 있어
-게임 단위가 아니라 챕터에 실린다. 툴의 도달성 증명은 이미 `Math.Clamp(값, 최소, 최대)`로
-걷는데 런타임은 경계를 모른다. **경계가 실려 나가지 않으면 증명과 실제 플레이가 갈린다.**
-
-→ `ChapterProgressionExporter.ChapterJson`에 **`Stats` 한 줄 + 매핑 하나.**
-한 행 = `(Key, DisplayName, Initial, Minimum, Maximum, Type)`.
-
-> 2026-11-16(writer-fields W2): 툴에서 스탯 표시 이름을 걷었다 — **`DisplayName`은 `Key`와 같은 글자로 나간다**(칸 · 모양은 그대로).
-> 게임 화면에 보일 스탯 이름은 게임 쪽이 키로 로컬라이즈한다. 식이 빈 조건(「식 미정」)은 빈 `Conditions[]`로 나간다 — 관문 없음과 같다.
-
-**G-2. 서브 레인 출력 경로 제거 — ✅ 확인 완료 (2026-08-19).** 이미터가 내는 것은
-`StoryFileName` 하나뿐이다. `SetPrefix`·`PresPrefix` 상수는 **파일 인식에만** 남아 있고
-(고아 정리가 옛 프로젝트에 남은 `Set_*`·`Pres_*`를 "우리 것"으로 알아봐야 지운다) 생성
-경로는 없다 — `FileNameOf`를 부르는 자리가 그 둘뿐인 것으로 확인했다.
-
-**G-5. ~~`Option.ViaNodeId` 내보내기~~ — ⛔ 칸이 폐지됐다 (2026-09-17, 양쪽 완료).**
-
-2026-08-19에 들어왔고 2026-09-17에 양쪽에서 걷혔다. 「길에 매단 연출」을 같은 재생 순서의
-**에피소드 한 칸**으로 말할 수 있기 때문이다:
-
-```text
-전: A —"문구"→ B     (간선에 Via가 매달려 있다)
-후: A —"문구"→ 연출 —자동→ B
-```
-
-런타임이 A를 틀고, 고른 뒤 연출을 틀고, 묻지 않고 B로 간다 — **순서가 같다.** 곁칸은 같은
-것을 말하는 **두 번째 방법**이었고, 같은 것이 두 곳에 살면 갈린다.
-
-| | |
-|---|---|
-| 저쪽 | `EpisodeOption`·DTO·로더·`SceneRunner`의 Via 재생 분기·`ProgressionContentPreflight`의 존재 검사에서 걷었다. `EpisodeOption.Auto` 팩토리도 함께 갔다 |
-| 이쪽 | 이미터 DTO·`ChapterBoard`의 간선-씬 조회·`ViaSceneEmpty` 진단·프리뷰의 Via 재생을 걷고, 사본을 맞췄다 |
-
-⚠ **옛 JSON에 `"ViaNodeId": ""`가 남아 있어도 안 깨진다** — Newtonsoft가 모르는 필드를
-무시한다(저쪽 §4). 급히 재출력할 필요가 없다.
-
-⚠ 옛 프로젝트 호환은 **안 본다** (2026-09-17 소유자: *"이전의 프로젝트들은 모두 버리고
-이제부터 추가하며 작업할 것"*). 한때 판을 열 때 옛 배선을 펴 주는 `LiftViaScenes`가 있었고,
-그것도 함께 걷혔다.
-
-**G-6. 깃발(bool 스탯) 지정 — ✅ 2026-08-23 완료.** `ked-progression` `0.2.0`에
-`StatChangeDto.Op`가 서서 `BoolSetNotCarried` 거부를 지웠다. `StatChanges`의 각 항목이
-`Op`를 함께 싣는다 — `"Set"`은 깃발 지정(값은 0/1), `"Add"`는 정수 증감.
-⚠ **`"Add"`를 비우지 않고 명시한다**: 저쪽은 빈 문자열도 더하기로 읽지만(구 JSON 호환),
-적어 두면 "아무도 안 정한 것"과 "더하기로 정한 것"이 JSON에서 구별된다.
-규격: `bool-stat-orders.md`(2026-11-18 닫고 걷음).
-
-**G-7. ~~`Option.Kind` 내보내기~~ — 종결 (2026-09-02).** 저쪽이 칸을 세우는 대신
-**자동 진행 개념을 통째로 폐지했다**(`adfda627`, 08-26 — 문구 없는 간선은 로드 오류, §F5).
-이쪽이 내는 `Kind`는 Newtonsoft가 버린다. 재반입(§G-11) 때 이쪽 출력에서도 걷는다 — 간선
-`종류` 열 자체는 이미 v12에서 폐지됐다.
-
-**G-9. 내보내기가 코어 로더를 지난다 — ✅ 2026-08-23 완료.** `ChapterProgressionExporter`가
-낸 JSON을 `Ked.Progression`의 `ProgressionLoader`에 **실제로 실어 보고**, 오류 진단이 하나라도
-나오면 파일을 내지 않는다(`CoreRefusedChapter`).
-
-⚠ **왜 검증 규칙을 베끼지 않았나** — 툴 검증이 경고로 넘긴 것을 코어가 거부하는 자리가
-실재했다(문구 없는 간선에 걸린 관문). 그때 이쪽 심각도를 올려 맞추는 길은 버렸다: 같은
-규칙이 두 곳에 살면 저쪽이 하나 늘릴 때마다 또 갈리고, 그것이 이 저장소 셋이 없애려는
-바로 그 병이다. **저쪽 판정을 그대로 받는다.**
-
-코어 진단의 경로(`Nodes[ep].NextOptions[i]`)는 에피소드 · 간선으로 옮겨 싣는다(`CoreRefusals` — ⛔ 엑셀 시절에는 시트 · 행이었다) —
-"어딘가 잘못됐다"는 보고는 이 레이어에서 실패다. 코어의 **경고는 막지 않는다.**
-
-⛔ **2026-09-02 — 이 관문이 저쪽보다 느슨해졌다.** 이쪽 로더가 08-25 사본이라
-`VerifySceneEntries`를 모르고 `EndingRules`를 아직 읽는다. `SceneId`를 내지 않는 동안은
-퇴화 상태(에피소드 = 장면)라 갈림이 안 보이지만, 내기 시작하는 순간 "저작 통과 · 게임 로드
-실패"가 실전이 된다 — 08-24에 하루 겪은 그 모양. 답은 §G-11이다.
-
-**G-8. `DialogueEntryId` 이름 규칙 — ✅ 2026-08-23 완료 · 2026-11-18 EpisodeId에서.** ⚠ **EpisodeId가 적힌 글자 그대로 나가지 않는다.**
-`YarnNaming.StoryNodeTitleOf`를 통과한다(⛔ 2026-11-18까지는 에피소드의 `대사엔트리` 칸(판 카드의 이름)에서 지었다 — 칸째 걷혔다,
-[`work-orders/old-shapes-orders.md`](work-orders/old-shapes-orders.md) O5):
-
-```
-DialogueEntryId = SanitizeNodeName(EpisodeId)
-                  └ 영숫자·밑줄이 아닌 글자를 전부 '_'로  (`장면 1` → `장면_1`)
-```
-
-⛔ **`Story_` 접두는 2026-08-24에 폐지됐다** (소유자 — 런타임도 같은 날 `Story_*` 필터를
-걷었다). 접두가 **두 번** 붙고 있었다: 기획자가 `대사엔트리`에 이미 `Story_ch05_01`이라
-적는데 이미터가 또 붙여 **`Story_Story_ch05_01`**이 나갔다(견본 여섯 줄 전부). 이제
-**타이틀은 곧 대사엔트리**다 — 대사엔트리가 `Story_`로 시작하면 그 글자가 그대로 간다.
-
-1부의 yarn 타이틀과 **한 글자도 달라선 안 된다** — 런타임이 이 글자로 `YarnProject`에서
-노드를 찾는다. 2026-08-23까지 이 자리만 규칙 밖에 있어서 진행 JSON은 `new01`, yarn은
-`Story_new01`로 갈렸다(로드·검증·증명은 전부 통과하고 재생만 안 됐다. 호스트의
-`ProgressionContentPreflight`가 잡았다). **바깥에서 이름을 손으로 조립하지 말 것** —
-접두가 없어진 지금도 **정규화가 남아 있어** 규칙은 여전히 두 단계이고, 주인은 이미터
-하나다(`StoryNodeTitleOf`).
-
-⚠ **파일 이름도 접두가 없다**: `{대사엔트리}.yarn`. 그래서 `Story_*` 같은 이름 필터로
-산출물을 고르면 안 된다 — 폴더의 `.yarn` 전부가 대상이고, 무엇을 썼는지는 툴이
-`.vntool-output.json`에 적어 둔다. 선언 파일만 이름이 고정이다(`declarations.yarn`).
-규격: `dialogue-entry-naming-orders.md`(2026-11-18 닫고 걷음).
-
-**G-3. 커맨드 카탈로그 재검증 — ✅ 2026-08-18 완료.** 죽은 22개를 걷어 **179항목**으로 맞췄다(등록 178 + 동적 별칭 `<N>fr`). `docs/game.definition.json`은 문서가 아니라 **내장 리소스로 링크된 실물 팔레트**다 — 낡은 항목은 곧 작가가 고를 수 있는 unknown command다.
-→ ✅ **2026-09-02 재실측 — 126 ↔ 126, 차이 0** (§E1). W65 이후 수치가 안 따라갔던 것뿐이고 어휘는 맞다.
-
-**G-4. `Ked.Presentation.Core` — 패키지화를 기다린다 (소유자 방침, 2026-08-18).** 소스째
-복사하는 지금 방식은 **최종적으로 패키지로 가져오기로 했으므로 재복사로 때우지 않는다.**
-
-**실측 갱신 (2026-08-23, 동기화 후)** — 줄바꿈을 무시하고 파일 단위로 대조한 결과:
-
-| | |
-|---|---|
-| 같음 | **39 파일 (전부)** |
-| 실질 갈림 | **0** ✅ |
-| 저쪽에만 | `Tests/EditMode/` 24 파일 — **테스트는 안 옮긴다.** 정상 |
-
-⚠ **코드만으로는 반쪽이었다.** 런타임이 2026-08-21에 초상 에셋을 폴더 규약으로 옮기며
-**코드와 튜닝 덤프를 함께** 바꿨는데, 툴은 둘 다 못 받았다. `PortraitDimensionsDto.cs`만
-맞추면 덤프가 옛 규약(`"variant": "parkeunseol_a"`)이라 조회가 전부 실패한다. 그래서
-`tests/Vn.Authoring.Tests/TuningFixtures/ExportedTuning/`의 덤프 넷도 같은 내보내기
-(런타임 `ExportedTuning/`, 2026-08-21T14:00)로 맞췄다 —
-`portrait-dimensions.json` · `rig-schemas.json` · `export-report.json` · `schema.md`.
-
-**교훈: 이 사본의 단위는 파일이 아니라 "한 번의 내보내기"다.** 코드와 덤프는 같이 움직인다.
-
-이 문서가 적어 두었던 *"런타임에만 있는 파일 7개"*(`StageReducer.{Placement,Portrait,Shot,Show,Slot,Staging}.cs`·
-`PortraitSizingReduction.cs`)는 **낡았다 — 일곱 다 넘어와 있다.**
-
-갈린 하나가 무는 자리:
-
-```
-이쪽   변형 키 정규화 = 마지막 글자만    'school' → 'l',  'casual' → 'l'
-저쪽   변형 키 정규화 = 문자열 전체      'school' ≠ 'casual'   (런타임 38fef522, 2026-08-21)
-```
-
-`school`과 `casual`이 **툴에서만 같은 키가 된다** — 미리보기가 엉뚱한 초상 치수를 집고
-게임은 올바른 것을 집는데 **오류는 하나도 안 난다.** 소비자는 `Flow/CoreStageFold.cs` ·
-`Flow/MotionInspection.cs` · `Flow/StageMotionPlan.cs` · `Views/MiniStagePreview.axaml.cs`.
-
-⚠ **재복사는 해결이 아니다.** 이 사본이 갈리는 것은 사건이 아니라 구조다 — `ked-progression`은
-같은 문제를 **UPM 패키지 + 태그 고정**으로 끝냈고(`#0.2.0`, 2026-08-23) 그 절차가 이미
-검증됐다. 같은 수를 여기 한 번 더 두는 것이 답이다.
-
-✅ **2026-09-02 재실측 — 실질 갈림 0 유지.** CRLF를 빼면 `SlideMotion.cs`·
-`StageReducer.Staging.cs` 79줄이 다르고 코드는 삼항식 줄바꿈 1건, 나머지는 이쪽이 더 풍부한
-`///` 주석이다. `ExportedTuning`도 08-22 이후 변화 없음. ⚠ 바로 위 문단의 "UPM 패키지 +
-태그 고정으로 끝냈다"는 **낡았다** — 저쪽이 그 방식을 버리고 복사 반입으로 돌아갔다(2부 머리).
-"같은 수"는 이제 패키지가 아니라 **한 번의 통째 반입 + 대조 절차**다.
-
-**G-10. `Node.SceneId` 내보내기 — ⏸ 대기 (2026-09-02 소유자: 저쪽이 굳은 뒤 계획 점검).**
-접점은 확정됐다: JSON `Nodes[].SceneId`(문자열, 생략 가능), 불변식은 "장면마다 밖에서 들어오는
-자리 하나"(재진입 허용), 비면 `__scene_{EpisodeId}` 자동 발급(퇴화). 저쪽 계획서가 **"툴 쪽
-Scene 저작 UI·Exporter는 후속"**으로 명시했다(`docs/scene-boundary-plan.md` §5). 정할 것:
-에피소드 시트의 `장면` 열(v15?) · 검증(반입한 코어의 `VerifySceneEntries`를 그대로 쓴다 — 규칙을
-베끼지 않는다, §G-9) · 챕터 그래프의 장면 묶음 표시 · 프리뷰의 장면 경계(장면 시작 = 무대
-클리어 — 무대 승계는 저쪽도 v1 범위 밖).
-
-**G-11. `Ked.Progression` 재반입 — ⏸ 대기, 원천 문제 있음.** 규율은 "파일이 아니라 한 번의
-통째 교체"(`src/Ked.Progression/Ked.Progression.csproj` 머리). ⚠ 정본 저장소가 사본보다
-뒤처지고 미커밋이라 **원천을 런타임 사본으로 잡거나, 소유자가 정본을 먼저 커밋**해야 한다.
-반입하면 이쪽에서 `EndingRule`·`ScenarioAdvance`·`ScenarioTransition`·단일 `ProgressionDto.cs`
-참조 자리가 컴파일에서 드러나고, 내보내기의 레거시 칸(`EndingRules`·`Kind`·`HideWhenLocked`·
-`IndexText`·`Position`·노드 관문)을 함께 걷는다(`DesignerNote`는 2026-11-17에 먼저 걷었다). 저쪽 Scene 작업이 굳은 뒤
-§G-10과 한 번에.
-
-**G-12. 내보내기 결정성 · 선택지 순서 규율 — ⏸ 대기 (§C3·C4).** 같은 워크북이면 같은 바이트
-(checksum 대조)인지, `NextOptions` 순서를 바꾸는 편집이 서버 이력(`OptionIndex`)을 갈리게 함을
-저작이 알리는지. 지금은 둘 다 확인 안 됨.
-
-**G-13. 프리뷰 챕터 런 ↔ 런타임 판정 대조 — 작은 갈림 하나.** 무대 프리뷰의 에피소드 끝
-선택지(2026-08-27)는 `ChapterTransition.Resolve`와 같은 규칙으로 가른다(표시 미달 = 목록 제외 ·
-해금 미달 = 잠긴 채 표시). 다른 점 둘: 런타임은 장면 끝 fold, 프리뷰는 즉시 커밋(결과 동일 —
-fold가 Commit 합성) · **고를 수 있는 것이 없으면 런타임은 챕터 종료인데 프리뷰는 전부 잠긴
-목록을 보여 주고 기다린다.** 후자는 맞추는 편이 맞다.
-
-**G-14. ~~⏸ 대기~~ → ✅ 실은 내내 있었고, 2026-09-17에 뜻이 좁아졌다 (§D1-1).**
-
-두 가지가 틀려 있었다.
-
-1. **"아직 없다"가 아니었다.** `YarnBundleEmitter.ValidateProgressionStatReferences`가
-   진작부터 `$진행스탯`을 **차단**으로 잡고 있었다. 이 항목이 대기로 남아 있던 것은 기록의
-   누락이다.
-2. **미룬 근거도 틀렸다.** *"설정노드에 챕터 스탯을 안 주므로 나갈 길이 없다"* — 안 오는 것은
-   스탯이고 **조건은 온다**(`SupplyChapterConditionsToBoard`). 나갈 길은 내내 열려 있었다.
-   **그물이 먼저 쳐져 있었던 덕에** 구멍이 되지 않았을 뿐이다.
-
-계층이 하나가 되면서 **읽기는 열린다.** 그래서 검사가 막는 것은 이제 *스탯 사용*이 아니라
-**`$변수` 표기**다:
-
-| | |
-|---|---|
-| ✅ `<<if stat("trust") >= 3>>` | 읽기 — `$`가 없어 안 걸린다 |
-| ⛔ `<<set $trust = 5>>` | 쓰기 — **영원히 막는다** |
-| ⛔ `<<if $trust >= 3>>` | 그런 변수가 런타임에 없다 |
-
-⭐ **쓰기 차단은 사실 표기가 한다.** 함수에는 왼쪽 변이 없어 `stat(...)`로는 쓸 수가 없다 —
-이 검사는 손으로 `$`를 적은 자리를 잡는 **마지막 그물**이다. 세이브/로드 복귀와 도달성
-증명이 그 하나에 걸려 있으므로 경고가 아니라 **차단**으로 남는다.
-
-## H. 소유자가 정해야 하는 것
-
-**H-1. `Stats` 배달 경로 — ✅ 정해졌다 (가).** 챕터 JSON 최상위에 `Stats[]`, 로더는
-`Load(dto)` 하나. 값의 주인이 챕터 워크북이므로 챕터 JSON에 실리는 것이 자연스럽다.
-
-**H-2. 툴에 없는 세 개념을 살릴 것인가** — `Flag`는 **사실상 답이 나왔다**: 2026-08-19의
-깃발 지정이 `Stat` 0/1 + `Equal` 위에 섰으므로 별도 조건 종류가 필요 없다.
-남은 둘 — `ChapterCleared`(챕터 간 진행이 생기면 필요. **언제 넣을지를 적어 둘 것**) ·
-`Token`(아이템/열쇠 보유). ⚠ 옛 서술은 *"작가 계층에 개념은 있지만 Yarn 변수로 산다"*였는데,
-**작가 계층이 2026-09-17에 없어졌다**(§D1-2) — 되살린다면 갈 곳은 챕터 스탯(깃발)이다.
-
-**H-3. ~~`Option.ViaNodeId`~~ — ✅ 종결 (2026-09-17). 칸이 폐지됐다.**
-§G-5 참조. 저쪽 모델에는 커밋 `eb1786d`로 이미 있었다 — 이쪽이 "저쪽 대기"라고 적어 둔 것은
-**저장소를 안 열어 보고 자체 작업지시서 한 줄을 옮긴 탓**이었고, 없는 병목을 하나 만들었다.
-남의 저장소 상태를 적을 때는 남의 저장소를 본다.
-
-> ✅ **걷었다 (2026-09-17).** §G-5를 보라 — 양쪽이 같은 날 움직였고, 사본 지문도 맞췄다.
-> 옛 산출물에 빈 칸이 남아 있어도 저쪽 역직렬화기가 무시하므로 재출력은 급하지 않다.
-
-**H-4. ~~`EndingRules`의 모양~~ — 종결 (2026-09-02).** 저쪽이 `EndingRule`·`EndingRuleDto`·
-`ScenarioAdvance`·`ScenarioTransition`을 **폐지했다**(`5e424840`·`947d6c9b`, 08-26 — 이쪽 v14가
-간선 엔딩키를 걷은 것과 같은 날). 진행 상태는 **챕터 수명**이고 [1] 영구 계층은 아직 없다
-(`ProgressionState` 머리 주석). 챕터를 잇는 판이 생기면 그때 새 모양으로 — 옛 넷
-(`progression-handoff.md` §6)은 참고일 뿐 규격이 아니다.
-
-**H-7. 깃발의 수명 — 답이 나왔다 (2026-09-02).** **챕터다.** `ProgressionState`가 챕터
-수명 객체가 됐고(`7970e352`), [1] 영구 계층은 정본에서도 제거됐다(`ba0528b`). 챕터를 넘어
-사는 값은 지금 없다 — 세이브에도 `Stats`가 챕터 단위로 실린다(§H-6). 앨범/전역 진행은 여전히
-빈자리.
-
-**H-5. 부착(Attachment) 표시 조건** — v8에서 관문이 간선으로 내려가며 부착의 표시 조건이
-갈 곳을 잃었다(들어오는 간선이 없다). v1 비범위. 쓸 때 `EpisodeNode`의 표시 조건을
-**부착에 한해** 되살리고, "Main은 언제나 빈 배열"이라는 비대칭을 로더가 검사하게 하는 것이
-자연스럽다.
-
-**H-6. 세이브 — 돌아왔다 (2026-08-31 · G4 진행 중).** 코어의 `ProgressionSave`는 걷혔고
-(`e5ce1e04`), 대신 호스트 `Assets/Scripts/Save/`(14파일)가 섰다: **로컬 우선**
-`saves/slot{n}.json` + **서버 동기화 큐** `sync_queue.json` + 게스트 계정 + 챕터 JSON
-checksum 대조(§C4). 세이브의 뜻은 둘뿐 — **장면 진입 스냅샷** `{ ChapterId, CurrentEpisodeId
-(= 장면 루트), Stats, Variables([3] 통덤프), ChapterCompleted }` 아니면 **챕터 완료**.
-장면 중간 세이브는 만들지 않고, 구세이브·콘텐츠 불일치·장면 중간 지점은 **새 게임**
-("이어 가는 척하지 않는다", D-017).
-
-옛 §C1(`#line:` 필수)·§C3(순서 동결)은 **되살아나지 않았다** — 스냅샷 기반이라 라인이
-아니라 장면 루트에서 재개한다. 대신 §C3·C4가 **서버 쪽 근거**로 다른 모양의 제약을 세웠다
-(`OptionIndex` · checksum).
-
-⚠ **앨범은 이 세이브가 아니다.** "무엇을 본 적 있나"(엔딩·CG·읽은 줄)는 슬롯이 아니라
-**판을 넘는 전역 진행**에 산다. 서버 큐의 `PendingEvent`(EventKey 시청 보고)가 그 씨앗이지만
-슬롯 세이브와는 별개다.
-
-**H-8. Scene 저작의 규격 — 소유자 결정 대기 (2026-09-02).** 저쪽이 굳은 뒤 툴 쪽 계획을
-다시 점검하며 정한다(§G-10). 지금 적어 둘 것은 저쪽이 이미 확정한 셋뿐이다: 칸 이름
-`SceneId` · 장면 진입점 하나 · 재진입 허용(금지하면 장면을 넘는 순환이 전부 막혀 표현력이
-후퇴한다 — 저쪽 G1 §5).
+- **같은 프로젝트면 같은 바이트다.** UTF-8(BOM 없음) · LF · 들여쓴 JSON(`ChapterExportBytes`). 서버는 JSON의 뜻이 아니라 원본 바이트의
+  **SHA-256**을 버전 열쇠로 쓴다 — 맞는 버전이 없으면 동기화를 접는다. 내보내기는 바이트가 다를 때만 파일을 쓴다.
+- **선택지 순서가 서버 이력의 열쇠다.** 선택은 `OptionIndex`(원본 `NextOptions`의 서수)로 서버에 쌓인다. 출시 뒤 기존 선택지 앞에
+  끼우거나 지우거나 자리를 바꾸면 화면이 아니라 **이미 쌓인 이력의 뜻이 바뀐다.**
+- **출시 기준선** — 서버에 수입한 판을 프로젝트 폴더의 `release-baselines/{챕터Id}.progression.json`에 두면(사람이 `exported/`에서 복사한다),
+  내보내기가 각 에피소드의 `NextOptions`를 견준다(`ChapterReleaseBaseline.FindOrderChanges`). 기존 항목의 앞 끼우기 · 지우기 · 자리 바꾸기가
+  있으면 그 챕터의 진행 JSON 갱신을 막고 검증 보고에 그 에피소드를 짚는다. 끝에 더하기와 같은 자리의 문구 · 조건 · 효과 수정은 막지 않는다.
 
 ---
 
-## 참조 위치
+## 4. 진행 코어 사본 — `src/Ked.Progression/`
 
-| 무엇 | 어디 |
+진행 JSON을 읽는 코드는 **런타임과 이 툴이 같은 구현을 쓴다** — 규칙이 양쪽에 각자 있으면 갈린다. 정본은 런타임 저장소
+(`ked-presentation-runtime`의 `Assets/Ked.Progression/Core/`)이고, 이 툴은 그 순수 C# 부분을 **복사해 들인다**. 어느 커밋을 들였는지 ·
+무엇을 들이지 않는지는 [`src/Ked.Progression/UPSTREAM.md`](../src/Ked.Progression/UPSTREAM.md)에 적는다.
+
+- **들이는 것** — `Loading/` · `Spec/` · `State/` · `Transition/` · `Vocabulary/`(무엇이 유효한 진행인가).
+- **들이지 않는 것** — 장면 실행 층(`SceneRun/` · `ProgressionDriver` 등 — 언제 무엇을 실행하는가). 툴이 실행 층을 흉내 내면 수명주기의 주인이 둘이 된다.
+- **사본에만 있는 것** — `Reachability/`(도달성 증명 — 저작 전용).
+- **사본은 여기서 고치지 않는다.** 바꿀 것은 런타임에서 고친 뒤 다시 들인다. 지문 `src/Ked.Progression/runtime-sync.txt`(사본 파일의 **코드** 해시)를
+  `CoreCopyInStepTests`가 지킨다 — 사본을 여기서 고치면 잡는다.
+- **다시 들이는 절차** — 런타임을 고친다 → 파일을 이쪽으로 복사한다(UPSTREAM.md 「재반입 검산」으로 원천과 바이트를 견준다) → 테스트를 돌린다 →
+  나온 `runtime-sync.txt.actual`을 확인하고 `runtime-sync.txt`로 바꾼다 → UPSTREAM.md의 기준 커밋과 반입 기록을 고친다.
+  **지문을 갱신하는 것은 「옮겨 왔다」는 선언**이다 — 사본을 이쪽에서 고쳐 놓고 지문만 맞추면 관문과 게임이 갈린다.
+- `ChapterProgressionDto` 같은 JSON 계약의 이름은 코어의 것이고, `ChapterProgressionExporter`는 이쪽 것이다.
+
+**내보내기가 코어 로더를 지난다.** `ChapterProgressionExporter`가 낸 JSON을 `ProgressionLoader`에 **실제로 실어 보고**, 오류 진단이 하나라도
+나오면 파일을 내지 않는다(`CoreRefusedChapter`). 코어 진단의 경로(`Nodes[ep].NextOptions[i]`)는 에피소드 · 간선으로 옮겨 싣는다
+(`ChapterProgressionExporter.CoreRefusals`) — 「어딘가 잘못됐다」는 보고는 이 층에서 실패다. 코어의 **경고는 막지 않는다.**
+툴 검증이 같은 규칙을 베껴 심각도를 맞추는 길은 쓰지 않는다 — 같은 규칙이 두 곳에 살면 저쪽이 하나 늘릴 때마다 또 갈린다.
+
+---
+
+## 5. 대사 Yarn — `exported/yarn/{챕터}_{장면}.yarn`
+
+`ChapterYarnExporter`가 진행 JSON을 쓴 챕터마다 함께 낸다. **장면 = 파일, 에피소드 = 노드.** 분기 카드는 그 집(부르는 에피소드)의 노드
+바로 뒤에 노드로 선다. 막는 문제(아래)를 안은 장면은 쓰지 않고 그 장면의 옛 파일을 둔다.
+
+### 5.1 모양
+
+```yarn
+// 장면: 마감 전날의 교실 (scene01)
+// (장면 메모 — 줄마다 //)
+
+// 에피소드: 간판 완성
+// (에피소드 지시 — 줄마다 //)
+title: ch01_scene01_new01
+---
+하린: 다시 그린 간판, 훨씬 낫다. #line:ln_0001
+<<detour ch01_scene01_branch01>>
+카스미: 그럼 이제 붙이자. #line:ln_0002
+<<if stat("trust") >= 3>>
+    하린: 고마워. #line:ln_0003
+<<endif>>
+===
+// 분기 카드: ch01_scene01_branch01 — 「간판 완성」에서 들른다
+title: ch01_scene01_branch01
+---
+<<if stat("trust") >= 1>>
+    하린: 잠깐, 여기 한 글자 틀렸어. #line:ln_0004
+<<endif>>
+===
+```
+
+- **노드 하나 = 에피소드 하나**(카드나 줄이 없는 에피소드도 노드는 선다 — 진행 JSON이 그 이름을 부른다).
+- **대사 줄** — `화자: 대사 #line:{LineId}`(화자가 없으면 지문). 본문이 빈 줄은 보이지 않는 한 글자(U+00A0)로 채운다 — 빈 본문이면 `#line:`만 남아
+  Yarn이 읽지 못한다. 줄을 빼지 않는 까닭은 LineId다.
+- **조건** — `<<if 식>>` · `<<elseif 식>>` · `<<endif>>`, 안쪽은 네 칸 들여 쓴다. 식은 챕터 조건을 옮긴 것이다 — 항마다 `stat("키") 비교 값`,
+  여럿이면 `&&`. 식 미정이면 `true`.
+- **분기** — 분기점은 `<<detour 노드>>`다. 분기 카드를 재생하고 **부른 자리로 돌아와** 나머지를 계속한다. 분기 카드의 조건은 그 노드 첫머리의 `<<if>>`다.
+  `detour`는 YarnSpinner 3.x 키워드라 런타임 등록이 필요 없다.
+- **주석** — 장면 메모는 파일 머리에, 에피소드 지시는 그 노드 앞에 `//`로 선다. 게임은 읽지 않는다.
+- **없는 것** — 연출 커맨드 · 선택지(`->`) · `<<jump>>` · `<<set>>` · `<<declare>>`. 에피소드 사이는 진행 JSON이 잇고, 선택지는 간선의 것이다.
+- **결정적이다** — 같은 입력이면 같은 바이트(UTF-8 BOM 없음 · LF). 장면은 하이어아키 차례, 에피소드는 장면 안 차례.
+
+### 5.2 노드 이름
+
+```
+DialogueEntryId = title = SanitizeNodeName(EpisodeId)
+                          └ 영숫자 · 밑줄이 아닌 글자를 전부 '_'로  (`장면 1` → `장면_1`)
+```
+
+진행 JSON의 `DialogueEntryId`와 대사 Yarn의 `title:`은 **같은 함수**(`YarnNaming.StoryNodeTitleOf`)를 지난다 — 둘이 한 글자라도 갈리면 진행 JSON이
+없는 노드를 부르고, 로드 · 검증 · 증명은 다 통과하는데 재생만 안 된다. **바깥에서 이름을 손으로 조립하지 말 것.** 런타임은 이 글자로 Yarn
+프로젝트에서 노드를 찾는다 — **한 번 출시한 노드 이름은 바꾸지 않는다.** 분기 카드의 노드 이름은 그 카드의 ID다(자동 `ch01_scene01_branch01`).
+
+### 5.3 스탯 읽기 — `stat("키")`
+
+```yarn
+<<if stat("trust") >= 3>>      // ✅ 읽기
+<<set $trust = 5>>             // ⛔ 만들 수 없다 — 변수가 아니다
+```
+
+- 대사가 물을 수 있는 낱말은 **챕터 스탯 하나뿐**이고, 읽기만 한다. **변수가 아니라 함수인 것이 핵심이다** — 함수에는 왼쪽 변이 없어 쓰기가
+  문법적으로 불가능하다. 대사 중의 스탯 쓰기는 세이브 / 로드 복귀와 도달성 증명이 못 보는 뒷길이다.
+- 런타임이 `stat` 함수를 등록하고, **간선 관문이 보는 것과 같은 상태**를 매번 읽는다. 둘이 갈리면 「선택지는 잠겼는데 대사는 통과」가 생긴다.
+- **없는 키 · 진행 없는 호출은 런타임이 던진다** — 조용히 0으로 떨어뜨리지 않는다. Yarn은 어떤 키가 유효한지 모르므로 1차 방어는 이쪽의
+  산출 전 검증이다(없는 스탯을 읽는 대사는 검증 보고가 짚는다).
+- **키는 정규화하지 않는다.** 진행 JSON의 `Stats[].Key`가 원본 그대로 나가므로 대사도 그대로다. 인자는 문자열 리터럴이라 `"`와 `\`만 이스케이프한다
+  (`YarnSyntax.StatRead`). 스탯 키는 영문자로 시작하고 영문자 · 숫자 · `_`만 받는다.
+- 런타임에는 Yarn 변수 층이 없다 — 아무도 초기화 · 저장 · 되감지 않는다. 그래서 **`<<set>>`은 한 줄도 내지 않는다**: 남으면 롤백에서 안 되감겨
+  리플레이가 다른 갈래를 탄다. 손으로 적은 `$변수`도 같은 까닭으로 막는다.
+- Yarn 내장 `visited()` · `visited_count()`도 변수 저장소에 기대 롤백에서 안 되감긴다 — 쓰지 않는다. 「지나갔는가」는 챕터 깃발(Bool 스탯)로 적는다.
+
+### 5.4 글자 · 막는 문제
+
+- 대사에 `#` · `//` · `<<` · `\`를 써도 된다 — Yarn이 읽을 수 있게 바꿔 낸다. `{stat("키")}`는 스탯 읽기라 그대로 간다.
+- 화자 없이 `->`나 `===`로 시작하는 줄, 짝이 안 맞는 `{`는 Yarn이 읽지 못한다 — **막는 문제**라 그 장면의 파일은 나가지 않고 검증 보고 맨 위에
+  「챕터 · 장면: 무엇이 문제인지」가 선다.
+
+### 5.5 보낼 곳
+
+대사 Yarn은 **게임 폴더(진행 JSON의 보낼 곳)로 보내지 않는다** — 게임의 Yarn 프로젝트가 연출 든 Yarn과 같은 노드 이름을 둘 읽어 컴파일이
+깨진다. 따로 정한 보낼 곳(`runtime.target.json`의 `dialogueYarnFolder`)이 있으면 저장할 때 그리로 비춘다(`ExportDelivery`).
+
+---
+
+## 6. 런타임 쪽에서 이 툴이 기대는 것
+
+- **노드 이름으로 시작한다** — 런타임의 재생기는 Yarn 노드 이름 하나만 받는다. 어느 노드를 틀지는 진행 코어가 진행 JSON으로 정한다.
+- **`#line:` 태그는 런타임이 요구하지 않는다** — 롤백은 한 세션 안에서 되감고, 세이브는 줄이 아니라 장면 시작점에서 재개한다. LineId는 **이쪽의
+  열쇠**다 — 줄을 고쳐도 그 줄에 붙은 것(분기 · 서식 · 연출)이 따라오게 하는 최상위 불변식이다. 연출을 붙이는 쪽도 이 열쇠로 줄을 찾는다.
+- **이어하기는 장면 시작점에서 재개한다** — 그래서 장면마다 밖에서 들어오는 자리가 하나여야 한다(§1 ③). 진행 상태는 **챕터 수명**이다 —
+  챕터를 넘어 사는 값은 없다.
+- **선택 이력은 `OptionIndex`, 버전은 바이트의 SHA-256**으로 서버에 간다(§3).
+
+---
+
+## 7. 열린 것
+
+| 무엇 | 상태 |
 |---|---|
-| 진행 패키지 인수인계 | `ked-progression/docs/handoff.md` |
-| 진행 모델 스케치 + 미결 | `ked-progression/docs/model-draft.md` |
-| 연출 런타임 사용법 | `ked-presentation-runtime/README.md` |
-| **Scene 재편 정본 + 관문 계획서** | `ked-presentation-runtime/docs/scene-boundary-plan.md` · `docs/plans/G0~G5.md` (09-02 기준 저쪽 미추적) |
-| 저쪽 저장소 경계 · 어셈블리 경계 | `ked-presentation-runtime/SCOPE-BOUNDARY.md` · `Assets/Scripts/Ked.Presentation.Runtime/ASSEMBLY-BOUNDARY.md` |
-| 진행 코어 복사 반입 절차 · 대조 명령 | `ked-presentation-runtime/Assets/Scripts/Ked.Progression/Documentation~/vendoring.md` |
-| 내보내기 (여기에 `Stats` 추가) | `src/Vn.Authoring/Chapters/ChapterProgressionExporter.cs` |
-| 챕터 모델 (`ChapterStat`) | `src/Vn.Authoring/Chapters/ChapterGraphModel.cs` |
-| 도달성 증명 (이관 원본) | `src/Vn.Authoring/Chapters/ChapterReachabilityProver.cs` |
-| 저작 쪽 최신 규격 | [`handoff/current-state.md`](handoff/current-state.md) |
+| `NotEqual`(`!=`) | 저작 파서가 닫아 두었다 — 런타임에서 확인한 뒤 파서 · 문서 · 견본을 함께 연다 |
+| 챕터를 넘어 사는 값 | 없다. 코어의 `ScenarioDefinition`은 챕터를 묶는 자리뿐이다(영구 계층 없음). 챕터 사이 진행이 생기면 그때 새 모양으로 정한다 |
+| 다른 조건 종류(`ChapterCleared` · 아이템 보유) | 없다. 필요하면 갈 곳은 챕터 스탯(깃발)이다 |
+| 선택지의 비용 미리보기 | 간선의 스탯변화를 선택지 단추에 보이는 길이 아직 없다 |
+| 진행 JSON의 남은 칸 | `IndexText` · 노드의 빈 `VisibleConditions` · `UnlockConditions`는 코어가 읽지 않는다 — 걷으면 모든 챕터의 바이트가 바뀐다(§3) |

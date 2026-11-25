@@ -514,7 +514,7 @@ public sealed partial class ProjectEditor
 
     /// <summary>
     /// 여러 노드의 자리를 <b>한 번의 변경으로</b> 옮긴다 — 끌기를 놓을 때 쓴다
-    /// (<c>docs/design/two-graphs.md</c> §6-2).
+    /// (<c>docs/design/two-graphs.md</c> §2.3).
     ///
     /// <b>되돌리기 한 칸이다.</b> 포인터가 움직일 때마다 기록 없이 적으면 끈 자리는 되돌릴 수 없고,
     /// 앞선 편집을 되돌리면 끈 자리까지 조용히 돌아간다. 그래서 그래프는

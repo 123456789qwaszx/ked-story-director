@@ -5,7 +5,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 새로 만들 때의 자동 ID (2026-11-16 · <c>docs/work-orders/display-names-orders.md</c> N2). 작가는 ID를 정하지 않는다 — 겹치지 않는
+/// 새로 만들 때의 자동 ID (2026-11-16 · display-names N2). 작가는 ID를 정하지 않는다 — 겹치지 않는
 /// 자리표시가 붙는다.
 /// </summary>
 public sealed class NewNamesTests

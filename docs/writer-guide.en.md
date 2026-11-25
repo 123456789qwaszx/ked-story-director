@@ -183,10 +183,8 @@ A branch point appears before that line, and a **branch card** (purple · header
   Forks in the story are made with the choice slots under episode cards (step 3 of section 2 above).
 - Branch points connect **only to branch cards**. Dropping one on an episode is refused, and the status bar says why.
 - **Branch cards don't branch** — a branch card's line `＋` has no "＋ Add branch". The visit-and-return goes one level deep
-  — if you need to split further, add another branch to the calling episode. If one remains in a project made earlier, the [Structure] tab's "Validation report" flags it as an error
-  (and it isn't exported to the game folder meanwhile) — remove it with that line's `＋` → "✕ Delete branch", or select the line on the board and press **Delete**.
-- **To visit only when a condition holds**, set the branch card's "⑂ Condition" (below). The "branch exits" that used to go to another card at the end of an `<<if>>` block in a card's writing box
-  were removed on 2026-11-19 — if an old project has them, they're quietly dropped when it opens.
+  — if you need to split further, add another branch to the calling episode.
+- **To visit only when a condition holds**, set the branch card's "⑂ Condition" (below).
 - If you delete a branch card ([Delete branch card]), its branch point remains unconnected — **drag that branch point onto empty space** to create a new branch
   card there.
 - A branch card belongs to the calling episode's scene, and in the explorer it shows as a "⑂ title" row under that episode. Its title starts as "New branch";
@@ -264,7 +262,7 @@ opens the "Inspector", selecting a chapter opens "Conditions & stats", and click
 
 ## 5. Exchanging · backups
 
-For now, projects are exchanged with the developer as **zip (compressed) files** (2026-11-19). How to receive and send them back is in
+For now, projects are exchanged with the developer as **zip (compressed) files**. How to receive and send them back is in
 **"Read me first.txt" → "Sending projects back and forth"** in the app package. In short —
 
 - **When you receive one**: unzip the zip from the developer, then File → [Open…] → that folder.

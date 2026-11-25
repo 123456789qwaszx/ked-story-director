@@ -7,7 +7,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>[대본] 판 크기</b> (2026-11-17 · <c>docs/work-orders/settings-orders.md</c> C1) — 프로젝트에 싣고(기본이면 안 쓴다), 늘리면 크기만,
+/// <b>[대본] 판 크기</b> (2026-11-17 · settings C1) — 프로젝트에 싣고(기본이면 안 쓴다), 늘리면 크기만,
 /// 줄여서 판 밖으로 나가는 카드가 있으면 카드 전체의 자리와 선 꺾임을 같은 비율로 다시 적는다. 크기 · 자리 · 꺾임이 되돌리기 한 칸이다.
 /// </summary>
 public sealed class BoardSizeTests : IDisposable

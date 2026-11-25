@@ -225,8 +225,7 @@ public sealed class MainChromeTests
     [Fact]
     public void 위_띠에는_진행_JSON_폴더만_있고_Yarn_CSV_내보내기는_없다() => HeadlessUi.Run(() =>
     {
-        // 2026-10-29 — 게임용 Yarn과 문서(CSV)는 ked-story-compositor만 낸다(한 파일에는 내는 쪽이
-        // 하나다). 이 툴이 내는 것은 챕터 진행 JSON이고, 그것은 저절로 나가므로 꺼내 가는 단추만 있다.
+        // 이 툴이 내는 것은 챕터 진행 JSON과 대사 Yarn이고, 그것은 저절로 나가므로 꺼내 가는 단추만 있다.
         var window = new MainWindow();
         window.Show();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

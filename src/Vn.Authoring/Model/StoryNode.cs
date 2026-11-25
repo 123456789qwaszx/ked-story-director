@@ -64,7 +64,7 @@ public abstract class StoryNode
     public Dictionary<string, EdgeShape> EdgeShapes { get; init; } = new(StringComparer.Ordinal);
 
     // ⛔ `DefaultExitTargetNodeId`(기본 출구 — 노드가 끝난 뒤 이동할 노드 · 판 파일 `defaultExit`)는 2026-11-17에 걷혔다
-    //    (`docs/work-orders/default-exit-orders.md`). 에피소드 사이의 흐름은 챕터 간선이, 분기 카드는 부른 자리로 돌아오는 것이 맡아
+    //    (default-exit). 에피소드 사이의 흐름은 챕터 간선이, 분기 카드는 부른 자리로 돌아오는 것이 맡아
     //    쓰는 화면이 남지 않았다.
 
     // ⛔ `BranchExits`(갈래 출구 — 조건 갈래가 끝나면 들를 카드 · 판 파일 전환의 `exit` · `anchor`)는 2026-11-19에 걷혔다(usability UX28).
@@ -105,12 +105,12 @@ public sealed class DialogueNode : StoryNode
     ///
     /// 2026-10-29까지는 대본이 프로젝트에 따로 서고(<c>StoryProject.Scripts</c>) 카드는 <c>ScriptId</c>로 가리켰다.
     /// 따로 둔 까닭(작가 대본 가져오기 · 대본 나눠 쓰기 · 엑셀 대본 워크북)이 모두 걷혀 카드가 직접 든다
-    /// (<c>docs/plans/script-merge.md</c> S2).
+    /// (script-merge S2).
     /// </summary>
     public Script.ScriptDocument Script { get; set; } = new();
 
     /// <summary>
-    /// <b>분기 카드인가</b> (2026-11-17 · <c>docs/work-orders/branch-card-orders.md</c>) — 다른 카드 대사 중의 분기점(<c>&lt;&lt;detour&gt;&gt;</c>)으로
+    /// <b>분기 카드인가</b> (2026-11-17 · branch-card) — 다른 카드 대사 중의 분기점(<c>&lt;&lt;detour&gt;&gt;</c>)으로
     /// 들렀다 <b>돌아오는</b> 카드. 챕터의 에피소드가 아니다 — 게임의 「지금 에피소드」가 되지 않으므로 선택지 칸이 없고 진행 JSON에 실리지 않는다
     /// (Yarn 노드만). 「분기 추가」와 빈 곳에 놓은 분기점이 세운다. 만들 때 정하는 저장된 신원이다(판 파일의 <c>branchCard</c>).
     /// ⛔ R7 결정 ⑤(2026-09-17 — 판의 카드는 전부 에피소드)를 분기 카드에 한해 뒤집었다: 분기로 들른 카드의 선택지는 게임에 나오지 않는다.
@@ -118,7 +118,7 @@ public sealed class DialogueNode : StoryNode
     public bool IsBranchCard { get; set; }
 
     /// <summary>
-    /// <b>분기 카드의 보이는 제목</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c> I4) — [대본] 탭이 보이고 고친다(처음
+    /// <b>분기 카드의 보이는 제목</b> (2026-11-17 · auto-id I4) — [대본] 탭이 보이고 고친다(처음
     /// 「새 분기」, 비면 이름이 보인다). 분기 카드의 <see cref="StoryNode.Name"/>은 ID(= Yarn 노드 이름)이고 [구성] 탭에서 정한다 — 에피소드의
     /// 제목(<c>ChapterEpisode.Title</c>)과 EpisodeId가 갈린 것과 같다. 에피소드 카드에는 쓰지 않는다(제목은 챕터가 든다).
     /// </summary>
@@ -164,7 +164,7 @@ public sealed class DialogueNode : StoryNode
     public List<LineConditionTransition> TrailingTransitions { get; init; } = new();
 
     /// <summary>
-    /// <b>작가용 글 서식</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — LineId → 그 줄 대사 글(기본 언어 <c>Text</c>)의 서식 구간들.
+    /// <b>작가용 글 서식</b> (2026-11-22 소유자 · writer-formatting) — LineId → 그 줄 대사 글(기본 언어 <c>Text</c>)의 서식 구간들.
     /// 작가가 보기 위한 것이라 <b>내보내기(대사 Yarn · 진행 JSON)가 읽지 않는다</b>(WF-D1 · D2). 대사 논리(<see cref="LineExtensions"/>)와 섞지 않는다.
     /// 목록은 늘 정규형이고(<see cref="WriterMarkMath"/>) 빈 목록은 두지 않는다. 은퇴한 줄의 서식도 본문처럼 남긴다 — 되살아나면 돌아온다.
     /// 대사 글이 바뀌면 편집기가 자리를 옮긴다(<see cref="WriterMarkMath.Rebase"/>).
@@ -190,7 +190,7 @@ public sealed class DialogueNode : StoryNode
     public Dictionary<string, int> WriterGaps { get; init; } = new(StringComparer.Ordinal);
 
     // ⛔ `ChoiceExits`(선택지 문구 → 거쳐 갈 자유 씬 — 2026-08-17)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 대사 안 선택지가
-    //    2026-11-04에 걷힌 뒤로 만드는 곳도 읽는 곳도 없이 파일을 오가기만 했다(docs/work-orders/legacy-read-orders.md L5).
+    //    2026-11-04에 걷힌 뒤로 만드는 곳도 읽는 곳도 없이 파일을 오가기만 했다(legacy-read L5).
     // `ExcelLineMap`(인덱스 → LineId)은 2026-09-16에 걷혔다 (R-D, 지시서 §2:
     //    "툴이 LineId의 주인"). 워크북을 <b>다시 읽을 때</b> 어느 줄이 어느 줄인지
     //    맞추려고 들고 있던 표다 — 다시 읽지 않으면 맞출 상대가 없고, 신원은 이제

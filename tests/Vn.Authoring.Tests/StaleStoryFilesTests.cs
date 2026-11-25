@@ -6,7 +6,7 @@ namespace Vn.Authoring.Tests;
 
 /// <summary>
 /// <b>지운 챕터의 판 파일은 저장할 때 걷힌다</b>(2026-11-18 소유자 — 「확인하다 찾은 문제만 고쳐줘」 ·
-/// <c>docs/work-orders/stale-story-files-orders.md</c>). ⛔ 그 전에는 챕터를 지운 뒤 저장해도 그 판의 <c>story/sf_….vnstory.json</c>이 남아 쌓였다.
+/// stale-story-files). ⛔ 그 전에는 챕터를 지운 뒤 저장해도 그 판의 <c>story/sf_….vnstory.json</c>이 남아 쌓였다.
 ///
 /// 못 박는 것: ① 목차에서 빠진 판 파일은 지우고 남은 판은 그대로 ② 툴이 지은 이름만 — 복사본 · 다른 이름 · 하위 폴더 · 다른 파일은 그대로
 /// ③ 폴더에 다른 목차가 있으면 아무것도 지우지 않는다 ④ 되돌려서 다시 저장하면 판 파일이 다시 선다.

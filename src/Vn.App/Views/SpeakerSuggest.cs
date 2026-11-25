@@ -6,7 +6,7 @@ namespace Vn.App.Views;
 
 /// <summary>
 /// <b>화자 칸의 자동완성 — 첫 글자 · 자음부터</b>(2026-11-18 소유자 — 「자동완성의 도움을 받기위해서는 2글자 이상을 입력해야 … 자음만 입력하거나,
-/// 혹은 처음 한 글자만 입력하더라도 바로 자동완성이 시작되도록」 · <c>docs/work-orders/writer-comfort-orders.md</c> WC3).
+/// 혹은 처음 한 글자만 입력하더라도 바로 자동완성이 시작되도록」 · writer-comfort WC3).
 ///
 /// 한글은 치는 글자가 <b>조합 중</b>인 동안 칸의 글(<see cref="AutoCompleteBox.Text"/>)에 들어가지 않는다 — 둘째 글자를 쳐야 첫 글자가 확정되어,
 /// 칸의 글만 보는 자동완성은 둘째 글자부터 움직였다. 그래서 칸 안의 글 표시기(<see cref="TextPresenter"/>)가 들고 있는 조합 중인 글

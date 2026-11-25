@@ -7,7 +7,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>펼친 판 안에서 장면 하나만 접는다</b> (2026-10-30 — 하이어아키의 눈, <c>docs/plans/hierarchy.md</c> SF).
+/// <b>펼친 판 안에서 장면 하나만 접는다</b> (2026-10-30 — 하이어아키의 눈, hierarchy SF).
 ///
 /// 소유자: *"챕터가 접히는 건 현재를 유지하되, 챕터 내의 일부 장면만 접었을 경우, 접은 장면을 간소화 시키도록 해줘"* ·
 /// *"접힌 상태로 간선의 연결을 드러내줘야 해"*. 접은 장면은 줄 목록 상자(<see cref="CollapsedSceneProjection"/>)가 되고

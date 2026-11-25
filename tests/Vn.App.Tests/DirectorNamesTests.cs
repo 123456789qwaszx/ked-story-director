@@ -11,7 +11,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// [대본] 탭은 이름만 보인다 (2026-11-16 · <c>docs/work-orders/display-names-orders.md</c> N3) — 하이어아키의 챕터 · 장면 줄 · 인스펙터 머리 ·
+/// [대본] 탭은 이름만 보인다 (2026-11-16 · display-names N3) — 하이어아키의 챕터 · 장면 줄 · 인스펙터 머리 ·
 /// 판의 챕터 이름표가 이름(비면 ID)이다. [구성] 탭 하이어아키는 ID다.
 /// </summary>
 public sealed class DirectorNamesTests : IDisposable

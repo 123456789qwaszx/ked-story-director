@@ -4,7 +4,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>제3자 소프트웨어 고지</b>(저장소 맨 위의 <c>THIRD-PARTY-NOTICES.txt</c> — 두 꾸러미에 함께 담는다 · 2026-11-23 소유자 「THIRD-PARTY-NOTICES.txt
-/// 넣어주십시오」 · <c>docs/work-orders/writer-release-orders.md</c> 8절)가 지금 앱이 싣는 패키지의 판을 말한다. 패키지 판을 올리면 이 시험이 깨져 고지문도
+/// 넣어주십시오」 · writer-release 8절)가 지금 앱이 싣는 패키지의 판을 말한다. 패키지 판을 올리면 이 시험이 깨져 고지문도
 /// 다시 옮기라고 알린다 — 그 판의 패키지 안 LICENSE · THIRD-PARTY-NOTICES가 바뀌었을 수 있다.
 /// </summary>
 public sealed class ThirdPartyNoticesTests

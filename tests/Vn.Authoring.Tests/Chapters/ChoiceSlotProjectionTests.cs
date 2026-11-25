@@ -8,7 +8,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>노드 아래의 선택지 칸</b> (R7 P-1 · `docs/plans/R7.md`).
+/// <b>노드 아래의 선택지 칸</b> (R7 P-1 · R7).
 ///
 /// ⛔ 이 칸이 지고 있는 것은 <b>챕터 간선</b>이다 — 연출 층의 값이 아니다. 이어 붙는 순간
 /// 고쳐지는 것이 <c>ChapterDocument.Edges</c>이고, 그것이 내보내기·도달성 증명·런타임이

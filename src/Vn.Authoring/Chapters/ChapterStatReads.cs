@@ -8,7 +8,7 @@ namespace Vn.Authoring.Chapters;
 
 /// <summary>
 /// <b>대사 글이 읽는 스탯</b> — 작가가 대사에 붙인 <c>{stat("키")}</c>(<see cref="ChapterStatScript.InlineRead"/>). 2026-11-23 소유자 — 「키를 바꿀
-/// 때 대사 글의 같은 스탯도 바꾸는게 맞고」 · <c>docs/work-orders/stat-read-rename-orders.md</c> S1–S3. 키 바꾸기(<c>RenameChapterStat</c>)가 이것으로
+/// 때 대사 글의 같은 스탯도 바꾸는게 맞고」 · stat-read-rename S1–S3. 키 바꾸기(<c>RenameChapterStat</c>)가 이것으로
 /// 대사 글을 끌고 가고, 지우기의 「쓰는 곳」이 이것으로 대사 줄을 찾고, 검증 보고가 이것으로 없는 키를 읽는 대사를 짚는다.
 ///
 /// <b>중괄호 안만 본다</b> — Yarn이 식으로 푸는 자리가 <c>{…}</c>다. 그 밖의 <c>stat("…")</c>는 화면에 그대로 나오는 글이라 읽기가 아니다.

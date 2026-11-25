@@ -4,7 +4,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Graph;
 
 /// <summary>
-/// <b>새 카드가 연출 그래프에 설 자리</b> — 위에서 아래로 (D3 · 2026-10-29, <c>docs/design/two-graphs.md</c> §7 D3).
+/// <b>새 카드가 연출 그래프에 설 자리</b> — 위에서 아래로 (D3 · 2026-10-29, <c>docs/design/two-graphs.md</c> §2.3).
 ///
 /// 소유자: *"챕터 그래프처럼 위에서 아래로 진행시키도록 합니다 … 분기는 기존처럼 오른쪽으로 빠지도록."*
 ///

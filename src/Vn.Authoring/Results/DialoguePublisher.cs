@@ -203,7 +203,7 @@ public static class DialoguePublisher
             (PublishProblemKind kind, bool blocking) = problem.Kind switch
             {
                 // 여기서는 <b>막는 문제</b>로 짚는다 — 미리보기가 [주의]로 보여 준다. 게임으로
-                //    내보낼 때 빈 씬을 완화하는 것은 compositor의 몫이다(지금 상태를 그대로 보낸다).
+                //    내보낼 때 빈 씬을 완화하는 것은 연출을 붙이는 쪽의 몫이다(지금 상태를 그대로 보낸다).
                 FlowProblemKind.UnknownCondition => (PublishProblemKind.UnknownCondition, true),
                 FlowProblemKind.UnavailableCondition => (PublishProblemKind.UnknownCondition, true),
                 FlowProblemKind.ElseIfWithoutIf => (PublishProblemKind.InvalidConditionStructure, true),

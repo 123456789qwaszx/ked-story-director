@@ -294,7 +294,7 @@ public sealed class ChapterExportAndFixtureTests
         Assert.Equal("new01", nodes[1].GetProperty("DialogueEntryId").GetString());
 
         // 그리고 이 값의 규칙은 한 자리(YarnNaming)다 — 내보내기가 글자를 다시 조립하지 않는다.
-        // 규칙이 바뀌는 날 이 단언이 저절로 따라간다(compositor의 이미터도 같은 규칙을 지난다).
+        // 규칙이 바뀌는 날 이 단언이 저절로 따라간다(대사 Yarn도 같은 규칙을 지난다).
         Assert.Equal(
             YarnNaming.StoryNodeTitleOf("장면 1"),
             nodes[0].GetProperty("DialogueEntryId").GetString());

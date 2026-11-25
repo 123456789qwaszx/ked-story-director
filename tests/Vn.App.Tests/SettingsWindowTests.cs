@@ -15,7 +15,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[⚙ 설정] 창</b> (2026-11-17 · <c>docs/work-orders/settings-orders.md</c> C3) — 위 띠의 단추가 모달 창을 연다. [이 프로젝트] 묶음의
+/// <b>[⚙ 설정] 창</b> (2026-11-17 · settings C3) — 위 띠의 단추가 모달 창을 연다. [이 프로젝트] 묶음의
 /// 「[대본] 판 크기」를 고치고 [확인]하면 판이 바뀌고 되돌리기 한 칸이다. [취소] · Esc는 버린다. 줄여서 카드가 움직이면 미리 말한다.
 /// [내보내기] 묶음은 형식마다 보낼 곳을 정한다(export-destinations G2).
 /// </summary>

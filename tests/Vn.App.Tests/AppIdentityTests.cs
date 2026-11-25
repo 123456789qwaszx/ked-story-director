@@ -5,7 +5,7 @@ using Vn.App.Services;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>앱의 이름</b> (2026-11-19 소유자 — 「앱 이름 … 당신이 먼저 어울리는 것으로」 · <c>docs/work-orders/writer-app-orders.md</c> WA4).
+/// <b>앱의 이름</b> (2026-11-19 소유자 — 「앱 이름 … 당신이 먼저 어울리는 것으로」 · writer-app WA4).
 ///
 /// 보이는 이름은 「스토리 디렉터」, 실행 파일은 <c>StoryDirector</c>다. 이 PC의 설정 · 로그 폴더 이름은 앱의 이름을 따라가지 않는다.
 /// </summary>

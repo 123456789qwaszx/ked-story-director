@@ -12,7 +12,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// [대본] 탭 — 챕터를 고른 채 「인스펙터」 탭으로 가면 <b>그 챕터에 쓴 글자 수</b>가 선다(2026-11-18 소유자 — 「자기의 작업량을 알 수 있으니까요」 ·
-/// <c>docs/work-orders/writer-comfort-orders.md</c> WC7). 고르면 「조건 및 스탯」 탭이 열리는 것은 그대로다(chapter-pick Y1).
+/// writer-comfort WC7). 고르면 「조건 및 스탯」 탭이 열리는 것은 그대로다(chapter-pick Y1).
 /// </summary>
 public sealed class DirectorChapterTextAmountTests : IDisposable
 {

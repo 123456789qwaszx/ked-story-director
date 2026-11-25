@@ -5,7 +5,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>카드가 가면 그 대본도 간다</b> (2026-10-29 · <c>docs/plans/script-merge.md</c> S1).
+/// <b>카드가 가면 그 대본도 간다</b> (2026-10-29 · script-merge S1).
 ///
 /// 그 전에는 카드 · 에피소드 · 판을 지워도 대본을 일부러 남겼다 — "되돌리기 한 번이면 카드가 제 대본을 다시 찾는다".
 /// 되돌리기는 프로젝트를 통째로 되살리므로 남길 까닭이 없었고, 남은 대본은 저장할 때마다 쌓였다.

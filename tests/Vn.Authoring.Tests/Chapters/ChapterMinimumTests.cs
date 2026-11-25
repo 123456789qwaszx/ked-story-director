@@ -5,7 +5,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>챕터에는 장면 하나 · 에피소드 하나가 늘 남는다</b>(2026-11-18 소유자 · <c>docs/work-orders/chapter-minimum-orders.md</c> M2) — 지우기는 마지막 것을
+/// <b>챕터에는 장면 하나 · 에피소드 하나가 늘 남는다</b>(2026-11-18 소유자 · chapter-minimum M2) — 지우기는 마지막 것을
 /// 받지 않고, 아무것도 바꾸지 않는다(되돌리기 칸도 쓰지 않는다). 챕터째 지우기는 그대로다.
 /// </summary>
 public sealed class ChapterMinimumTests

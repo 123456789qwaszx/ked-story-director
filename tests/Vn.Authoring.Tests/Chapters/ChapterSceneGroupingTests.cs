@@ -3,7 +3,7 @@ using Vn.Authoring.Chapters;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>챕터를 장면으로 묶어 본다</b> (R6 S-1 · 2026-09-16, `docs/plans/R6.md`).
+/// <b>챕터를 장면으로 묶어 본다</b> (R6 S-1 · 2026-09-16, R6).
 ///
 /// ⛔ 이 묶음이 <b>저장되지 않는다</b>는 것이 요점이다. 정본은 `Episode.SceneId` 하나이고
 /// 여기서 나오는 것은 화면이 그릴 때마다 만드는 투영이다 — 런타임에도 장면 표가 없다.

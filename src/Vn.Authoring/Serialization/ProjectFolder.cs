@@ -10,7 +10,6 @@ namespace Vn.Authoring.Serialization;
 /// `story/` 판 파일을 두 manifest가 공유했다. 이제 사람은 <b>폴더</b>만 고른다: 새 프로젝트는 그 안에 고정 이름으로
 /// 깔리고, 열 때는 폴더 안의 유일한 manifest를 찾는다. 복제는 탐색기, 버전은 git이 한다.
 ///
-/// ked-story-director와 ked-story-compositor가 <b>같은 폴더</b>를 연다 — 같은 규칙이 두 저장소에 사본으로 있다.
 /// </summary>
 public static class ProjectFolder
 {

@@ -92,7 +92,7 @@ public static class ChapterSceneGrouping
                 .ToList();
 
             // 보이는 이름 — 작가가 붙인 장면 이름, 없으면 장면ID. 이름은 글자라 같은 이름의 장면이
-            // 여럿이어도 SceneId로 갈린다(docs/work-orders/display-names-orders.md).
+            // 여럿이어도 SceneId로 갈린다(display-names).
             scenes.Add(new ChapterScene(
                 group.Key,
                 ChapterSceneNotes.NameOf(chapter.SceneNotes, group.Key) ?? group.Key,

@@ -11,7 +11,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 편집기 명령이 아니라 <b>화면에</b> 살았기 때문이다 — 챕터 그래프는 <c>AddEpisode</c> 뒤에
 /// 노드 만들기를 한 줄 더 불렀고, 대본 탭은 <b>그 한 줄이 없었다</b>. 그래서 작가의 탭에서
 /// 만든 에피소드만 쓸 자리가 없었다. Id 규약도 갈렸다: 연출 그래프는 <c>장면 3</c>,
-/// 나머지는 <c>new01</c>(지금은 챕터 · 장면이 든 <c>ch01_scene01_new01</c> — <c>docs/work-orders/auto-id-orders.md</c>).
+/// 나머지는 <c>new01</c>(지금은 챕터 · 장면이 든 <c>ch01_scene01_new01</c> — auto-id).
 ///
 /// ⚠ <b>이 파일이 다음 갈림을 막는다.</b> 창구가 하나 더 생겨도 같은 것을 만들어야 한다.
 /// </summary>

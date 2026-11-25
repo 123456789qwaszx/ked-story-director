@@ -14,7 +14,7 @@ using Vn.Authoring.Strings;
 namespace Vn.App;
 
 /// <summary>
-/// [대본] 탭의 <b>조건 이름</b> — 오른쪽 기둥 「조건 및 스탯」 탭의 스탯 표 아래에 늘 선다(<c>docs/work-orders/writer-fields-orders.md</c> W4 ·
+/// [대본] 탭의 <b>조건 이름</b> — 오른쪽 기둥 「조건 및 스탯」 탭의 스탯 표 아래에 늘 선다(writer-fields W4 ·
 /// side-tabs V3 — ⛔ 그 전에는 하이어아키의 챕터 줄을 골라야 인스펙터에 섰다). 지금 챕터(활성 판)의 것이다.
 ///
 /// 작가가 조건을 뜻으로 부르는 이름(「하린과 친해졌을 때」)을 더하고 고치고 지운다. 식(<c>trust &gt;= 3</c>)은 [구성] 탭이 정한다 — 식이 빈

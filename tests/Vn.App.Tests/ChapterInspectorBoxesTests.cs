@@ -11,7 +11,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>[구성] 인스펙터의 글 칸은 [대본]과 같은 규칙이다</b> — Enter 넣기 · 다른 곳 누르기 넣기 · Esc 넣기 전 값으로(2026-11-18 소유자 ·
-/// <c>docs/work-orders/inspector-boxes-pan-orders.md</c> J1). ⛔ 그 전에는 ID 칸이 Enter로만 바뀌었고 Esc 되돌리기가 없었다.
+/// inspector-boxes-pan J1). ⛔ 그 전에는 ID 칸이 Enter로만 바뀌었고 Esc 되돌리기가 없었다.
 ///
 /// 못 박는 것: ① ID 칸은 다른 곳을 누르면 바뀐다 ② Esc는 지금 값으로 돌린다 ③ 판에서 다른 것을 고르기 전에 적던 ID가 원래 에피소드에
 /// 들어간다 — 같은 에피소드를 다시 누르면 새 ID로 고른다 ④ 받지 않으면 칸이 지금 값으로 돌아온다 ⑤ 챕터ID 칸 · 조건 식 칸도 같다.

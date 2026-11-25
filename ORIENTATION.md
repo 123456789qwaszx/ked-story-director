@@ -1,56 +1,50 @@
 # ked-story-director — 처음 보는 사람을 위한 지도
 
-> 2026-10-29 다시 씀(레거시 정리 L7 · [`docs/plans/legacy-cleanup.md`](docs/plans/legacy-cleanup.md)). 2026-11-18에 그때까지의 코드에 맞춰 고쳤다.
 > 이 문서는 정본을 **대체하지 않는다.** 지금 동작의 정본은 [`docs/design/two-graphs.md`](docs/design/two-graphs.md)이고,
 > 이 문서는 "어떤 순서로 읽고 무엇부터 건드릴지"를 정리한 안내판이다.
->
-> ⛔ 2026-09-15에 쓴 첫 판(VNStoryEditor_avalonia 시절 — 엑셀 원본 · `Vn.Core`/`Vn.Cli` · 게임용 Yarn 번들 · 연출 층)은
-> 갈아 썼다. 그 시절의 까닭은 [`docs/run-log.md`](docs/run-log.md)와 [`docs/handoff/current-state.md`](docs/handoff/current-state.md)(이력)에 있다.
 
 ---
 
 ## 1. 한 문장으로
 
-**이야기의 뼈대(챕터 그래프)와 대사(연출 그래프)를 쓰고, 검증해서 유니티 런타임이 먹는 `progression.json`과 연출 없는
-대사 Yarn을 내는 Avalonia 데스크톱 도구.** 원고(프로젝트 폴더)는 연출 도구 [`ked-story-compositor`](https://github.com/123456789qwaszx/ked-story-compositor)가
-읽기만 해서 제 연출과 합쳐 게임용 Yarn을 낸다.
+**이야기의 대사([대본])와 뼈대([구성])를 쓰고, 검증해서 유니티 런타임이 먹는 `progression.json`과 연출 없는
+대사 Yarn을 내는 Avalonia 데스크톱 도구.** 연출(줄 단위 명령 · 연출이 든 게임용 Yarn)은 이 툴 밖의 일이다.
 
 ## 2. 왜 이런 모양인가
 
 > **각 값의 주인은 한 곳뿐이다.**
 > 같은 사실이 두 곳에 있으면 어긋나고, 어긋남은 최종 출력에서야 드러난다.
 
-원본은 **프로젝트 하나**다(2026-10-29 D2에 엑셀 연동을 걷었다). 창구는 둘이어도 값이 사는 곳은 하나다 — 에피소드를 세우는 것과
+원본은 **프로젝트 하나**다. 창구는 둘이어도 값이 사는 곳은 하나다 — 에피소드를 세우는 것과
 간선을 긋는 것(카드 아래 선택지 칸)은 [대본]이고, 그 ID와 간선의 조건 · 스탯변화를 고치는 것은 [구성]이지만 둘 다 `ChapterDocument`를 고친다.
 
 | 층 | 화면 | 값이 사는 곳 |
 |---|---|---|
-| 기획 — 에피소드 · 간선 · 조건 · 스탯 | ① 챕터 그래프 [구성] — ID · 조건 식 · 스탯 · 간선의 조건/스탯변화. 에피소드와 간선은 ②에서 세우고 긋는다 | `StoryProject.Chapters`(`ChapterDocument`) |
-| 대사 — 카드 · 글 · 분기 · 조건 갈래 | ② 연출 그래프 [대본] — 챕터 · 장면 · 에피소드를 세우고 지우고, 이름(화자 · 조건 이름 포함)도 여기서 | `StoryProject.Files`(판 = 챕터 1:1) — 카드마다 제 대본(`DialogueNode.Script`) |
+| 대사 — 카드 · 글 · 분기 · 조건 갈래 · 작가용 서식 | [대본] 탭(`GraphEditorView`) — 챕터 · 장면 · 에피소드를 세우고 지우고, 이름(화자 · 조건 이름 포함)도 여기서 | `StoryProject.Files`(판 = 챕터 1:1) — 카드마다 제 대본(`DialogueNode.Script`) |
+| 기획 — 에피소드 · 간선 · 조건 · 스탯 | [구성] 탭(`ChapterGraphView`) — ID · 조건 식 · 스탯 · 간선의 조건/스탯변화. 에피소드와 간선은 [대본]에서 세우고 긋는다 | `StoryProject.Chapters`(`ChapterDocument`) |
 
-두 탭 모두 왼쪽에 하이어아키, 오른쪽에 탭 셋(인스펙터 · 화자 · 조건 및 스탯)이 서고 두 기둥은 접힌다. 화면의 탭 이름은
-[구성] · [대본]이고 문서와 코드는 옛 이름(챕터 그래프 · 연출 그래프)을 쓴다.
+두 탭 모두 왼쪽에 하이어아키, 오른쪽에 탭 셋(인스펙터 · 화자 · 조건 및 스탯)이 서고 두 기둥은 접힌다. 코드의 옛 이름은 [대본] =
+연출 그래프, [구성] = 챕터 그래프다.
 
-## 3. 세 저장소 관계
+## 3. 다른 저장소와의 관계
 
 ```
   ked-story-director   ← 이 레포. 원고 · 검증 · progression.json
         ├─ exported/{챕터}.progression.json ──────────→ 유니티 런타임 ked-presentation-runtime(진행 코어의 정본)
-        ├─ exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn(2026-11-17 — 게임 폴더로는 보내지 않는다)
-        └─ 프로젝트 폴더(원고, 읽기 전용) ─→ ked-story-compositor ─→ 게임용 Yarn 번들(연출 든 것)
+        └─ exported/yarn/{챕터}_{장면}.yarn  대사만 있는 Yarn(게임 폴더로는 보내지 않는다 — 보낼 곳을 따로 정할 수 있다)
 ```
 
-다른 저장소는 **읽어서 맞추되 고치지 않는다.** compositor는 이 툴의 파일을 읽기만 하므로, 그쪽이 읽는 칸
-(`SourceRevision` 등)은 여기서 쓰지 않아도 지우지 않는다.
+런타임 저장소는 **읽어서 맞추되 고치지 않는다.** 진행 코어(`Ked.Progression`)는 런타임 저장소가 정본이고 이 레포는 사본을 들어 낸 JSON을
+다시 실어 본다([`src/Ked.Progression/UPSTREAM.md`](src/Ked.Progression/UPSTREAM.md)).
 
 ## 4. 프로젝트 지도
 
 | 프로젝트 | 파일 · 줄 | 역할 | 경계 |
 |---|---:|---|---|
-| **`Vn.Authoring`** | 95 · 18k | 저작 도메인 · 검증 · 도달성 증명 · 내보내기 | **제품 핵심.** 화면을 모른다. 화면 없이 테스트한다 |
-| **`Vn.App`** | 38 · 21k | Avalonia 화면과 OS 연결 | 도메인 규칙을 소유하지 않는다 |
+| **`Vn.Authoring`** | 107 · 21k | 저작 도메인 · 검증 · 도달성 증명 · 내보내기 | **제품 핵심.** 화면을 모른다. 화면 없이 테스트한다 |
+| **`Vn.App`** | 53 · 30k | Avalonia 화면과 OS 연결 | 도메인 규칙을 소유하지 않는다 |
 | **`Ked.Progression`** | 29 · 2.5k | 런타임 진행 코어의 **사본** — 낸 JSON을 소비자 규칙으로 다시 실어 보는 오라클 | **고치지 않는다.** `CoreCopyInStepTests`의 지문이 지킨다 |
-| `Vn.Authoring.Tests` · `Vn.App.Tests` | 196 · 34k | xUnit · Avalonia 헤드리스 | |
+| `Vn.Authoring.Tests` · `Vn.App.Tests` | 250 · 45k | xUnit · Avalonia 헤드리스 | |
 
 참조 방향: `Ked.Progression → Vn.Authoring → Vn.App`.
 
@@ -65,9 +59,10 @@
 | `Flow/` | 계산 — 조건 갈래 해석(`ConditionFlowResolver`) · 출구 포트(`NodeConnections`) · 쓸 수 있는 조건(`AvailableConditionResolver`) |
 | `Graph/` | 화면에 *무엇을* 그릴지(`GraphProjectionBuilder`) · 선의 쪽(`EdgeSide`) · 선 모양 |
 | `Rendering/` | 대사 노드를 평평한 글로 펴기 — 카드 글 칸(`WorkingDialoguePreview.ScenarioText`) |
-| `Results/` | 대사 노드를 펼친 불변 결과(`DialoguePublisher.Draft`) — 합성기 · 검증이 읽는다(발행은 compositor로 갔다) |
+| `Results/` | 대사 노드를 펼친 불변 결과(`DialoguePublisher.Draft`) — 합성기 · 검증이 읽는다 |
 | `Serialization/` | 저장 형식 · 프로젝트 폴더(`ProjectFolder`) · 보낼 곳(`ExportDestinations`) |
-| `Text/` | 한국어 조사(`Josa`) |
+| `Strings/` | 문구 표(`Msg.resx` · `Msg.en.resx` — 검증 보고 · 거절 사유 · 파일 읽기 오류)와 영어 단수 · 복수(`Plural`) |
+| `Text/` | 한국어 조사(`Josa`) · 초성(`Hangul`) |
 
 ## 5. 데이터가 흐르는 길
 
@@ -104,8 +99,9 @@
 | 그래프에 무엇이 나타나는지 | `Graph/GraphProjectionBuilder.cs` — 화면이 아니라 여기 |
 | 챕터 값의 검사 하나 더하기 | `Chapters/ChapterStructureCheck.cs`(값의 흠) · `ChapterValidator.cs`(판과 맞대는 검사) |
 | 진행 JSON의 모양 | `Chapters/ChapterProgressionExporter.cs` — 런타임 계약 [`docs/runtime-contract.md`](docs/runtime-contract.md) |
-| 챕터 그래프 화면 | `Vn.App/Views/ChapterGraphView.axaml{,.cs}` |
-| 연출 그래프 화면 | `Vn.App/Views/GraphEditorView.axaml.cs` · 대사 편집기 `DialogueNodeEditor.axaml.cs` |
+| [구성] 화면 | `Vn.App/Views/ChapterGraphView.axaml{,.cs}` |
+| 화면 문구 | `Vn.App/Strings/Ui.resx` · `Ui.en.resx`(고치는 법은 [`docs/ui-text.md`](docs/ui-text.md)) |
+| [대본] 화면 | `Vn.App/Views/GraphEditorView.axaml.cs`(+ `.Writer` 서식 · `.Find` 찾기 · `.ChoiceDrop` 선택지 잇기) · 대사 편집기 `DialogueNodeEditor.axaml.cs` |
 | 도구 모음 · 창 | `Vn.App/MainWindow.axaml{,.cs}` · 맡은 일별 partial `MainWindow.*.cs`(하이어아키 · 화자 · 조건 · 장면 메모 · 선 인스펙터) |
 
 ## 7. 밟으면 조용히 터지는 지뢰
@@ -117,7 +113,7 @@
 - **간선 순서 = 화면의 이은 줄 차례 = 런타임 `OptionIndex`.** 출시된 선택지 사이에 간선을 끼우면 과거 플레이 이력의 뜻이 바뀐다.
 - **진행 스탯을 Yarn 변수로 읽지 않는다.** `stat("키")` 함수로만 읽는다(`YarnSyntax.StatRead`) — 변수면 대사 중에 쓸 수 있게 되어
   도달성 증명 밖의 뒷길이 생긴다.
-- **`LineId`는 영구 불변이다.** 화면에는 안 보이지만(E3) compositor가 연출을 거는 열쇠다. 글을 다시 넣을 때 확신이 없으면
+- **`LineId`는 영구 불변이다.** 화면에는 안 보이지만 세이브 · 번역 · 연출이 거는 열쇠다. 글을 다시 넣을 때 확신이 없으면
   도구가 잇지 않고 멈춘다.
 - **솔루션 단위 `dotnet test`는 빌드 실패한 프로젝트를 조용히 건너뛴다.** 요약 줄이 **2개**(`Vn.Authoring.Tests` · `Vn.App.Tests`)인지
   세고 나서 "전부 통과"라고 말할 것.
@@ -125,17 +121,9 @@
 
 ## 8. 지금 어디까지 왔나
 
-- 2026-10-29: VnTool에서 갈라져(D0) 엑셀 연동을 걷고(D2) 연출 그래프를 위→아래로 세우고(D3) 카드 안에서 쓰게 했다(D4).
-  연출 층은 compositor로 갔다. 그 뒤 화면 다듬기(E · G · H)와 레거시 정리(L0~L8)를 마쳤다 — 걷은 것 · 남긴 것 ·
-  찾은 결함은 [`docs/plans/legacy-cleanup.md`](docs/plans/legacy-cleanup.md).
-- 2026-11-04 ~ 11-18: 소유자 지시를 한 가지씩 받아 고쳤다 — 기록은 `two-graphs.md` 7절의 N 이후, 지시서는
-  [`docs/work-orders/`](docs/work-orders/). 큰 것만: 이름(표시 이름 · 제목)은 [대본] · ID는 [구성](P · Q), 분기 카드(Z · AA),
-  대사만 있는 Yarn(V), 보낼 곳과 저장할 때만 보내기(AC), 옛 모양을 읽을 때 거절(AF), 「에피소드 추가」는 길 없이(AH),
-  [대본] [삭제] · 판 우클릭 · Delete(AJ · AK), 장면 파일 걷기(AP), 오른쪽 기둥 탭 셋과 접기(AS · AT), [⚙ 설정] 창(W · AT · AY).
-- 2026-11-19: 작가에게 건네는 앱으로 다듬었다(7절 BE · [`docs/work-orders/writer-app-orders.md`](docs/work-orders/writer-app-orders.md)) —
-  보이는 이름 「스토리 디렉터」(실행 파일 `StoryDirector` · 설정 폴더는 `VnTool` 그대로) · 아이콘 · 맥 최소 지원(⌘ · ⌫ · `.app` 꾸러미 · CI의
-  macOS 작업) · 설정 「휠로 판 옮기기」(트랙패드). ⚠ 맥에서는 아직 손으로 돌려 보지 못했다 — 지시서 진행 표의 「확인할 것」.
-- 다음 일은 정해져 있지 않다. 화면의 동작과 "다시 쓸 때 지킬 것"은 [`docs/design/two-graphs.md`](docs/design/two-graphs.md).
+- 작가에게 건네 쓰고 있다 — GitHub 릴리스로 판을 낸다(0.1.0 · 0.2.0 · 0.3.0). 건네는 법과 판 내기는 [`docs/handover.md`](docs/handover.md).
+- 진행 중인 일은 [`docs/work-orders/`](docs/work-orders/)의 지시서에 있다(끝나면 지운다).
+- 화면의 동작과 "다시 쓸 때 지킬 것"은 [`docs/design/two-graphs.md`](docs/design/two-graphs.md).
 
 ## 9. 빌드하고 돌리는 법
 
@@ -157,16 +145,14 @@ powershell -ExecutionPolicy Bypass -File .\publish-windows.ps1   # 작가 배포
 2. [`docs/design/two-graphs.md`](docs/design/two-graphs.md) — **지금 동작의 정본.** 두 그래프의 기능 · 사용자 동작 · 다시 쓸 때 지킬 것
 3. `ARCHITECTURE.md` §3(프로젝트 구성) → §5.1(빠른 조회) — 코드 지도
 4. 손댈 자리가 정해지면 `ARCHITECTURE.md` §6(깨면 부서지는 규칙)
-5. "왜 이렇게 됐지?" — 2026-10-29 뒤의 단계와 결정은 [`docs/plans/`](docs/plans/)(`director-split` · `presentation-removal` ·
-   `excel-boundary` · `legacy-cleanup`)와 `two-graphs.md`의 절(11월부터는 7절 + [`docs/work-orders/`](docs/work-orders/)의 지시서)에, 그 전(VnTool 시절)은 [`docs/run-log.md`](docs/run-log.md)에 있다.
-   코드의 ⛔ 주석도 결정의 기록이다 — 무엇이 언제 왜 걷혔는지 그 자리에 남긴다
+5. "왜 이렇게 됐지?" — 코드의 ⛔ 주석이 그 자리에서 무엇이 언제 왜 걷혔는지 말한다. 주석의 꼬리표(예: `old-shapes O6` · `usability UX18`)는
+   지난 지시서의 이름이다 — 지시서는 끝나서 지웠고 git 기록에 남아 있다(`git log --all -- docs/work-orders/`)
 
 ## 11. 규모 감각
 
 | | 파일(`.cs` · `.axaml`) | 줄 |
 |---|---:|---:|
-| `src/` | 162 | 42k |
-| `tests/` | 196 | 34k |
+| `src/` | 189 | 53k |
+| `tests/` | 250 | 45k |
 
-문서 · 테스트 밀도가 높은 레포이고, 그게 이 프로젝트의 작업 방식이다 — 일은 계획 문서의 단계 표 한 줄(커밋 · CI 번호)로
-끝나고, 걷은 자리에는 ⛔ 주석이 남는다.
+테스트 밀도가 높은 레포이고, 그게 이 프로젝트의 작업 방식이다 — 일은 지시서의 단계 하나(커밋 하나)로 끝나고, 걷은 자리에는 ⛔ 주석이 남는다.

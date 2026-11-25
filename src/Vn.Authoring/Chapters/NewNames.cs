@@ -5,7 +5,7 @@ using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
-/// 새로 만드는 챕터 · 장면 · 에피소드의 <b>자동 ID와 처음 이름</b> (2026-11-16 · <c>docs/work-orders/display-names-orders.md</c> N2).
+/// 새로 만드는 챕터 · 장면 · 에피소드의 <b>자동 ID와 처음 이름</b> (2026-11-16 · display-names N2).
 ///
 /// [대본] 탭(작가 자리)은 이름만 다룬다 — 작가는 ID를 보지도 정하지도 않는다. 그래서 만들 때 ID는 겹치지 않는 자리표시가 붙고
 /// (챕터 <c>ch01</c> · 장면 <c>scene01</c> · 에피소드 <c>ch01_scene01_new01</c> · 분기 카드 <c>ch01_scene01_branch01</c>), 이름은 처음
@@ -15,7 +15,7 @@ namespace Vn.Authoring.Chapters;
 /// — 이름은 작가의 데이터이고, 처음 이름을 알아보는 곳은 없다(자동 ID만 앞머리로 알아본다 — <see cref="IsAuto"/>).
 /// ⛔ E0–E7에는 「데이터 낱말이라 한국어 그대로」였다 — 소유자의 뜻을 잘못 알아들었다.
 ///
-/// <b>에피소드 · 분기 카드의 ID에는 챕터와 장면이 든다</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c>) — 그 ID가 곧 Yarn 노드
+/// <b>에피소드 · 분기 카드의 ID에는 챕터와 장면이 든다</b> (2026-11-17 · auto-id) — 그 ID가 곧 Yarn 노드
 /// 이름이고, 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 프로젝트에서 하나여야 한다. ⛔ 전에는 챕터마다 <c>new01</c>부터 셌다.
 /// </summary>
 public static class NewNames

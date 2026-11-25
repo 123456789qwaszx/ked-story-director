@@ -208,7 +208,7 @@ public partial class MainWindow
         // 판에서 고른 선 — 인스펙터가 그 선을 설명한다(MainWindow.LineInspector.cs).
         Graph.LineSelected += line => UiGuard.Run(_session, Ui.Side_SelectLines, () => OnDirectorLinePicked(line));
 
-        // 눈 기둥은 연출 그래프의 하이어아키에만 — 접을 판이 거기 있다(SF2 · docs/plans/hierarchy.md §3).
+        // 눈 기둥은 연출 그래프의 하이어아키에만 — 접을 판이 거기 있다(SF2 · hierarchy §3).
         Graph.HierarchyView.EyeOf = DirectorEyeOf;
         Graph.HierarchyView.EyeToggled += row => UiGuard.Run(_session, Ui.Side_Show, () => OnDirectorEyeToggled(row));
 

@@ -10,7 +10,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// <b>[대본] 판을 끝까지 줄여도 판은 왼위에 붙어 보인다</b>(2026-11-18 소유자 — 「배율이 12%가 되면 … 위쪽 텅 빈 부분이 보이고, 10%가 되면 아예
-/// 화면에 아무것도 안 보입니다」 · <c>docs/work-orders/writer-comfort-orders.md</c> WC1). ⛔ 판이 화면보다 작아지면 배율 칸이 화면만큼 늘어나 판을
+/// 화면에 아무것도 안 보입니다」 · writer-comfort WC1). ⛔ 판이 화면보다 작아지면 배율 칸이 화면만큼 늘어나 판을
 /// 가운데로 밀었다 — 미니맵은 판이 왼위에 있다고 셈해 어긋났고, 더 줄이면 판이 화면 밖으로 나갔다.
 /// </summary>
 public sealed class BoardZoomOutTests : IDisposable

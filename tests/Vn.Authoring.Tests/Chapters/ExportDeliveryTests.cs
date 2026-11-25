@@ -6,7 +6,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>보내기</b> (2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c> G1) — 저장할 때 <c>exported/</c>를 형식마다 보낼 곳으로
+/// <b>보내기</b> (2026-11-17 · export-destinations G1) — 저장할 때 <c>exported/</c>를 형식마다 보낼 곳으로
 /// 비춘다. 지난 파일은 이 툴이 보낸 그대로일 때만 걷고(보낸 기록), 남의 파일 · 사람이 고친 파일 · 옛 보낼 곳은 건드리지 않는다.
 /// </summary>
 public sealed class ExportDeliveryTests : IDisposable
@@ -113,7 +113,7 @@ public sealed class ExportDeliveryTests : IDisposable
     [Fact]
     public void 대사_Yarn은_게임_폴더로_보내지_않는다()
     {
-        // 게임의 Yarn 프로젝트가 compositor의 연출 든 Yarn과 같은 노드 이름을 둘 읽어 컴파일이 깨진다.
+        // 게임의 Yarn 프로젝트가 연출 든 Yarn과 같은 노드 이름을 둘 읽어 컴파일이 깨진다.
         Export("ch01");
         string game = Folder("game");
 

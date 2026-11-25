@@ -13,7 +13,7 @@ using Vn.App.Strings;
 namespace Vn.App;
 
 /// <summary>
-/// <b>장면 메모 공간</b> — [대본] 탭 하이어아키에서 장면을 고르면 인스펙터에 선다(<c>docs/work-orders/scene-notes-orders.md</c> S4).
+/// <b>장면 메모 공간</b> — [대본] 탭 하이어아키에서 장면을 고르면 인스펙터에 선다(scene-notes S4).
 ///
 /// 둘로 이루어진다: 작가가 자유롭게 적는 <b>장면 메모</b> 한 칸과, [+ 에피소드]로 그 장면의 에피소드를 골라 붙이는 <b>에피소드 카드</b>
 /// (그 에피소드에만 해당하는 지시 — 에피소드의 <see cref="ChapterEpisode.Memo"/>). 카드를 붙였다는 것은 에피소드에

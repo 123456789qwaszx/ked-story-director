@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 namespace Vn.Authoring.Serialization;
 
 /// <summary>
-/// <b>프로젝트 파일의 디스크 지문</b> (2026-11-19 소유자 · <c>docs/work-orders/writer-release-orders.md</c> WR1) — 목차(<c>*.vnproject.json</c>)와
+/// <b>프로젝트 파일의 디스크 지문</b> (2026-11-19 소유자 · writer-release WR1) — 목차(<c>*.vnproject.json</c>)와
 /// <c>story/</c> 바로 안의 판 파일(<c>*.vnstory.json</c>)의 내용 해시. 열 때와 저장한 뒤에 찍어 두고, 그 사이 다른 곳(Git으로 받기 · 다른 PC의
 /// 동기화 · 손으로 고침)이 파일을 바꿨는지 견준다 — 바뀌었으면 저장이 그것을 말없이 덮지 않는다(<c>AuthoringSession</c>).
 ///

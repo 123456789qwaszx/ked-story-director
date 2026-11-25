@@ -100,7 +100,7 @@ public sealed class ChapterDocument
     /// 값에서는 <b>조용히 사라지는</b> 검사가 된다.
     ///
     /// ⛔ 「스탯이 game.definition.json에 없다」 경고(<c>StatMissingFromGameDefinition</c>)는 2026-11-17에 걷혔다 — 정의 파일의
-    /// <c>variables</c>는 챕터 스탯의 중복이었다. 스탯의 원천은 챕터 하나다(<c>docs/work-orders/definition-split-orders.md</c> S1).
+    /// <c>variables</c>는 챕터 스탯의 중복이었다. 스탯의 원천은 챕터 하나다(definition-split S1).
     /// </summary>
     private IReadOnlyList<ChapterDiagnostic> StatDiagnostics(string path)
     {
@@ -195,7 +195,7 @@ public sealed class ChapterDocument
     /// 식 원문에서 해석 결과를 다시 만든다 — 담아 둔 것을 믿지 않는다.
     ///
     /// <b>식이 빈 조건은 「식 미정」이고 항상 통과한다</b>(유효, 항 없음 — 관문이 없는 것과 같다). 작가가 [대본]에서 라벨만 먼저 걸고
-    /// 개발자가 [구성]에서 식을 나중에 채우는 흐름이다(2026-11-16 · <c>docs/work-orders/writer-fields-orders.md</c> W1). 진단은 경고다.
+    /// 개발자가 [구성]에서 식을 나중에 채우는 흐름이다(2026-11-16 · writer-fields W1). 진단은 경고다.
     ///
     /// 대사의 조건 목록(<see cref="Flow.AvailableConditionResolver"/>)이 Yarn 식으로 옮길 때도 이 해석을 쓴다.
     /// </summary>

@@ -14,7 +14,7 @@ namespace Vn.App.Tests;
 
 /// <summary>
 /// [구성] 검증 보고 — <b>캐릭터 키가 없는 화자</b>를 경고(🟡)로 알린다(2026-11-18 소유자 — 「구성탭에서 캐릭터 키가 없을 경우, 검증보고에서 오류
-/// 알림을」 · <c>docs/work-orders/writer-comfort-orders.md</c> WC6). 「화자」 탭에서 키를 적으면 그 줄이 걷힌다.
+/// 알림을」 · writer-comfort WC6). 「화자」 탭에서 키를 적으면 그 줄이 걷힌다.
 /// </summary>
 public sealed class ChapterSpeakerKeyReportTests : IDisposable
 {

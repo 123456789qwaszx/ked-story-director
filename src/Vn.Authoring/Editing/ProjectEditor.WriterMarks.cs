@@ -5,7 +5,7 @@ using Vn.Authoring.Strings;
 namespace Vn.Authoring.Editing;
 
 /// <summary>
-/// <b>작가용 글 서식</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — 작가가 보기 위한 굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 글꼴 ·
+/// <b>작가용 글 서식</b> (2026-11-22 소유자 · writer-formatting) — 작가가 보기 위한 굵게 · 기울임 · 취소선 · 글자색 · 바탕색 · 글꼴 ·
 /// 크기 · 정렬. 대사 글(<see cref="LocalizedLine.Text"/>)은 순수한 글자 그대로이고 서식은 그 밖(<see cref="DialogueNode.WriterMarks"/>)에 선다 —
 /// 내보내기가 읽지 않는다(WF-D2).
 ///

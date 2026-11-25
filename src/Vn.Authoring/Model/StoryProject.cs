@@ -13,10 +13,10 @@ namespace Vn.Authoring.Model;
 /// </code>
 ///
 /// 대본은 2026-10-29까지 카드와 따로 선 목록(<c>Scripts</c>)이었고 카드가 Id로 가리켰다. 카드와 늘 1:1이 된 뒤로
-/// 카드가 제 대본을 직접 든다(<see cref="DialogueNode.Script"/> · <c>docs/plans/script-merge.md</c> S2).
+/// 카드가 제 대본을 직접 든다(<see cref="DialogueNode.Script"/> · script-merge S2).
 ///
 /// <b>연출은 여기 없다</b> (2026-10-29). 연출 노드 · 명령 공급 · 발행 결과 · 곡선 · 빠른 명령 · 에셋
-/// 설정은 <c>ked-story-compositor</c>의 것이다 — 그 툴은 이 파일을 읽기만 하고 연출은 제 파일에 둔다.
+/// 설정은 이 툴에 없다 — 연출은 이 툴 밖에서 다룬다.
 ///
 /// 프로젝트는 여러 <see cref="StoryFile"/>을 가지고, 각 파일이 노드를 소유한다.
 /// 프로젝트 전체 노드 순서가 필요할 때는 <see cref="EnumerateNodes"/>를 사용한다.
@@ -26,8 +26,8 @@ public sealed class StoryProject
 {
     /// <summary>
     /// 지금 쓰는 형식 — <b>5</b>: 조건 공급 노드가 없고 대본의 줄 전환이 챕터 조건을 이름으로 가리킨다(2026-11-25 · condition-supply C1).
-    /// 4는 카드의 대본이 판 파일 안에 든 형식이었다(2026-10-29 · <c>docs/plans/script-merge.md</c>).
-    /// <b>이 형식만 연다</b> — 그 앞의 형식은 옮기지 않고 거절한다(2026-11-17 · <c>docs/work-orders/legacy-read-orders.md</c> — 2026-11-25 소유자
+    /// 4는 카드의 대본이 판 파일 안에 든 형식이었다(2026-10-29 · script-merge).
+    /// <b>이 형식만 연다</b> — 그 앞의 형식은 옮기지 않고 거절한다(2026-11-17 · legacy-read — 2026-11-25 소유자
     /// 「아직 본 작업에 들어가진 않아서 굳이 불필요한 형식을 신경쓰고 싶지 않아」).
     /// </summary>
     public const int CurrentFormatVersion = 5;
@@ -49,12 +49,12 @@ public sealed class StoryProject
     public List<ChapterDocument> Chapters { get; init; } = new();
 
     // ⛔ `Links`(조건 공급 연결 — 범위 결정에서는 2026-08-17에 빠졌다)는 2026-11-17에 옛 데이터 읽기와 함께 걷혔다. 조건 범위는
-    //    그 카드의 챕터다(<see cref="Flow.AvailableConditionResolver"/>) · docs/work-orders/legacy-read-orders.md L5. 유물이던 작가 화자
+    //    그 카드의 챕터다(<see cref="Flow.AvailableConditionResolver"/>) · legacy-read L5. 유물이던 작가 화자
     //    `WriterSpeakers`도 함께 걷혔다.
 
     /// <summary>
     /// <b>화자 목록</b> — 대본의 화자 이름 ↔ 초상화 · 표정의 캐릭터 키. 챕터가 아니라 <b>프로젝트</b>의 것이다 — 모든 챕터가 같은 목록을 쓴다
-    /// (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S3). 이름은 겹치지 않고 비지 않는다.
+    /// (2026-11-17 소유자 · definition-split S3). 이름은 겹치지 않고 비지 않는다.
     ///
     /// ⛔ 그 전에는 프로젝트 옆 <c>game.definition.json</c>의 <c>speakers</c>에 살아 되돌리기 밖이었고, 고칠 때 바로 디스크에 썼다.
     /// </summary>

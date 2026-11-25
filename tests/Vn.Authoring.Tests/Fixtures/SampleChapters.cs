@@ -12,9 +12,9 @@ namespace Vn.Authoring.Tests.Fixtures;
 /// 견본 챕터 — <c>tests/fixtures/chapter-samples/{이름}.chapter.json</c>.
 ///
 /// 프로젝트 매니페스트의 <c>chapters</c> 항목 하나와 같은 모양이다(<see cref="ChapterDocumentJson"/>).
-/// 2026-10-29까지 견본은 엑셀 워크북(<c>docs/chapter-graph-sample.xlsx</c> ·
-/// <c>docs/ch01.contract-sample.xlsx</c>)이었고 테스트가 그것을 리더로 읽었다. 엑셀 연동을 걷으면서
-/// 같은 내용을 프로젝트 형식으로 옮겼다(docs/design/two-graphs.md §7 D2).
+/// 2026-10-29까지 견본은 엑셀 워크북(chapter-graph-sample ·
+/// ch01.contract-sample)이었고 테스트가 그것을 리더로 읽었다. 엑셀 연동을 걷으면서
+/// 같은 내용을 프로젝트 형식으로 옮겼다.
 /// </summary>
 internal static class SampleChapters
 {

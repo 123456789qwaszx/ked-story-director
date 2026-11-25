@@ -16,7 +16,7 @@ namespace Vn.Authoring.Tests.Chapters;
 /// 없으면 쓰고(첫 실행), 있으면 견준다. 규격을 바꿨다면 파일을 지우고 한 번 돌리면 된다.
 ///
 /// 입력은 계약 견본 챕터다(<see cref="SampleChapters.Contract"/>). 2026-10-29(D2)까지는
-/// 같은 내용의 엑셀 워크북(<c>docs/ch01.contract-sample.xlsx</c>)을 리더로 읽었고, 챕터 Id는
+/// 같은 내용의 엑셀 워크북(ch01.contract-sample)을 리더로 읽었고, 챕터 Id는
 /// 그 파일 이름이었다 — 표본이 그 이름을 들고 있으므로 같은 Id로 세운다.
 /// </summary>
 public sealed class ProgressionSampleGoldenTests

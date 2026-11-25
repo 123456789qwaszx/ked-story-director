@@ -6,7 +6,7 @@ using Vn.Authoring.Model;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// 장면 메모 · 에피소드 지시의 편집 (2026-11-16 · <c>docs/work-orders/scene-notes-orders.md</c> S2). 지키는 것:
+/// 장면 메모 · 에피소드 지시의 편집 (2026-11-16 · scene-notes S2). 지키는 것:
 /// ① 쓰기 · 고치기 · 지우기가 되돌리기 한 칸씩이고 같은 값은 칸을 쓰지 않는다 ② 장면 이름 바꾸기가 메모를 데려간다(같은 칸)
 /// ③ 마지막 에피소드 지우기 · 다른 장면으로 합치기는 메모를 지우지 않는다 — 주인 없이 남는다.
 /// </summary>

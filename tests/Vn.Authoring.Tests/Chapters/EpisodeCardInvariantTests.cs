@@ -6,7 +6,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>에피소드와 카드는 한 칸에 서고 함께 지워진다</b>(2026-11-18 · <c>docs/work-orders/old-shapes-orders.md</c> O4). 에피소드마다 그 챕터 판에 표식 카드가
+/// <b>에피소드와 카드는 한 칸에 서고 함께 지워진다</b>(2026-11-18 · old-shapes O4). 에피소드마다 그 챕터 판에 표식 카드가
 /// 하나, 에피소드 카드는 그 챕터의 에피소드를 가리킨다. 편집 명령이 이것을 지키고, 그렇지 않은 프로젝트는 저장 검증(읽기 · 저장 · 되돌리기)이
 /// 받지 않는다 — 열 때 맞추던 길(⛔ 판 맞추기)은 걷혔다.
 /// </summary>

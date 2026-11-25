@@ -16,18 +16,18 @@ using Vn.Authoring.Strings;
 namespace Vn.App.Views;
 
 /// <summary>
-/// <b>[⚙ 설정] 창</b> (2026-11-17 · <c>docs/work-orders/settings-orders.md</c> C3) — 앞으로 필요할 설정을 한 창에 모은다.
+/// <b>[⚙ 설정] 창</b> (2026-11-17 · settings C3) — 앞으로 필요할 설정을 한 창에 모은다.
 ///
 /// 묶음은 넷이다 — ⛔ 묶음마다 어디에 저장되는가를 머리에 적던 것(C3)은 2026-11-18에 걷었다(소유자 — 「이런 설명은 필요없어」 ·
-/// <c>docs/work-orders/settings-wording-orders.md</c> Z2). [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
-/// 「내보내기 (복제할 폴더 선택)」(형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>
+/// settings-wording Z2). [이 프로젝트](「[대본] 판 크기」 — 프로젝트 파일)와
+/// 「내보내기 (복제할 폴더 선택)」(형식마다 보낼 곳 — 프로젝트 폴더의 <c>runtime.target.json</c>, 2026-11-17 · export-destinations
 /// G2 · ⛔ 위 띠의 [🎮 게임 폴더…]를 여기로 옮겼다), [단축키](읽기만 — <see cref="Shortcuts"/> · K2), [대본 글 칸](이 PC의 앱 설정 — 새 카드 글 칸의 글꼴 ·
 /// 글자 크기 · 줄 간격 · 굵기 · 글자색, <see cref="ScriptFont"/> · writer-comfort WC5 · writer-formatting WF-D13 · WF-D16 · WF-D19), [기타](이 PC의 앱 설정 — [대본] 미니맵 감추기 · 2026-11-18 소유자 ·
-/// <c>docs/work-orders/side-fold-settings-orders.md</c> K3, 설명 간소화 · 같은 날 brief-guides G1, 휠로 판 옮기기 · 2026-11-19 writer-app WA3).
+/// side-fold-settings K3, 설명 간소화 · 같은 날 brief-guides G1, 휠로 판 옮기기 · 2026-11-19 writer-app WA3).
 ///
 /// [확인]이 반영하고(<see cref="Confirm"/> — 판 크기는 <see cref="Vn.Authoring.Editing.ProjectEditor.SetBoardSize"/> 한 번, 되돌리기 한
 /// 칸 · 보낼 곳은 그 파일에 바로), [취소] · Esc는 버린다. 「대본 글 칸」과 「기타」는 [확인]을 기다리지 않고 고치는 즉시 앱 설정에 반영한다 — [취소]로
-/// 돌아가지 않는다(2026-11-18 소유자 · <c>docs/work-orders/inspector-boxes-pan-orders.md</c> J3). 줄여서 카드가 움직이면 [확인] 전에 미리 말한다(<see cref="BoardResize.Plan"/> — 바꾸기와 같은 계산).
+/// 돌아가지 않는다(2026-11-18 소유자 · inspector-boxes-pan J3). 줄여서 카드가 움직이면 [확인] 전에 미리 말한다(<see cref="BoardResize.Plan"/> — 바꾸기와 같은 계산).
 /// </summary>
 internal sealed class SettingsWindow : Window
 {
@@ -518,7 +518,7 @@ internal sealed class SettingsWindow : Window
     /// <summary>
     /// 그 형식의 보낼 곳을 정한다(폴더 고르기 창이 고른 절대 경로 · 비우면 끈다) — [확인] 전까지는 창 안에서만. 받지 않으면 그 까닭을 내고
     /// <see cref="ExportNote"/>에 보인다: <b>대사 Yarn은 게임 폴더(진행 JSON의 보낼 곳)와 같은 곳으로 보내지 않는다</b> — 게임의 Yarn 프로젝트가
-    /// compositor의 연출 든 Yarn과 같은 노드 이름을 둘 읽어 컴파일이 깨진다.
+    /// 연출 든 Yarn과 같은 노드 이름을 둘 읽어 컴파일이 깨진다.
     /// </summary>
     internal string? SetDestination(ExportFormat format, string? absoluteFolder)
     {

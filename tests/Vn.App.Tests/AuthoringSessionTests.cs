@@ -307,7 +307,7 @@ public class AuthoringSessionTests : IDisposable
     // ── 저장 · 보낼 곳 ──────────────────────────────────────────────
 
     /// <summary>
-    /// 저장은 프로젝트만 쓴다 — 정의 파일도 에셋 폴더도 만들지 않고, 옆에 있는 <c>game.definition.json</c>은 건드리지 않는다(compositor의 것).
+    /// 저장은 프로젝트만 쓴다 — 정의 파일도 에셋 폴더도 만들지 않고, 옆에 있는 <c>game.definition.json</c>은 건드리지 않는다.
     /// ⛔ 2026-11-17까지는 정의 파일의 뼈대를 깔았고, 잠깐 이 툴의 옛 칸을 걷기도 했다(소유자 — 옛 데이터를 다루는 길은 두지 않는다).
     /// </summary>
     [Fact]
@@ -322,7 +322,7 @@ public class AuthoringSessionTests : IDisposable
 
             string definition = Path.Combine(directory, "game.definition.json");
             Assert.False(File.Exists(definition));
-            Assert.False(Directory.Exists(Path.Combine(directory, "assets")));   // 에셋 폴더는 compositor의 일이다
+            Assert.False(Directory.Exists(Path.Combine(directory, "assets")));
 
             const string Theirs = """{ "variables": [], "speakers": [ { "name": "라루" } ], "presentationCommands": [] }""";
             File.WriteAllText(definition, Theirs);

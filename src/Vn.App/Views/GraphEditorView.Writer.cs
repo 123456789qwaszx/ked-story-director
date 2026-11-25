@@ -17,7 +17,7 @@ using Vn.Authoring.Strings;
 namespace Vn.App.Views;
 
 /// <summary>
-/// <b>작가용 글 서식</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — [대본] 위쪽 줄의 서식 도구 막대와 카드 글 칸의 꾸밈.
+/// <b>작가용 글 서식</b> (2026-11-22 소유자 · writer-formatting) — [대본] 위쪽 줄의 서식 도구 막대와 카드 글 칸의 꾸밈.
 ///
 /// <list type="bullet">
 /// <item><b>꾸밈</b> — 모델의 서식(<see cref="DialogueNode.WriterMarks"/> · 줄의 대사 글 기준)을 글 칸 좌표로 옮겨 <see cref="WriterTextBox.Looks"/>에 준다. 칸의 줄은

@@ -12,7 +12,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>[대본] 판이 프로젝트의 판 크기를 본다</b> (2026-11-17 · <c>docs/work-orders/settings-orders.md</c> C2) — 캔버스 크기 · 카드 자리 제한이
+/// <b>[대본] 판이 프로젝트의 판 크기를 본다</b> (2026-11-17 · settings C2) — 캔버스 크기 · 카드 자리 제한이
 /// <see cref="StoryProject.Board"/>를 따르고, 되돌리기로 돌아온다. 그려지는 카드가 판보다 바깥이면(옛 파일 · 손으로 고친 파일) 판을 그 카드까지
 /// 넓혀 그린다.
 /// </summary>

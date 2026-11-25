@@ -6,7 +6,7 @@ using Avalonia.Threading;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>앱은 늘 밝게 뜬다</b>(2026-11-18 소유자 — 「네. 밝게 고정해주십시오.」 · <c>docs/work-orders/light-theme-orders.md</c>). 판의 색은 코드에 밝게
+/// <b>앱은 늘 밝게 뜬다</b>(2026-11-18 소유자 — 「네. 밝게 고정해주십시오.」 · light-theme). 판의 색은 코드에 밝게
 /// 박혀 있어, 윈도우를 따라 어둡게 뜨면 틀만 어두워지고 카드 이름이 흰 바탕에 흰 글이 됐다. 진짜 다크 모드를 넣을 때까지는 윈도우 설정과
 /// 상관없이 밝게다.
 ///

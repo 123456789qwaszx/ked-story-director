@@ -6,7 +6,7 @@ using Vn.Authoring.Script;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>대사 노드 카드 안의 글 칸이 쓰는 길</b> (D4 · 2026-10-29, <c>docs/design/two-graphs.md</c> §7 D4) — 편집기 수준.
+/// <b>대사 노드 카드 안의 글 칸이 쓰는 길</b> (D4 · 2026-10-29, <c>docs/design/two-graphs.md</c> §2.4) — 편집기 수준.
 ///
 /// 카드는 <see cref="WorkingDialoguePreview.ScenarioText"/>를 보이고, 넣을 때
 /// <see cref="ProjectEditor.ApplyScenarioText"/>를 부른다. 그 길이 지켜야 할 셋: 새 카드의 빈 첫 줄이 거절을 부르지

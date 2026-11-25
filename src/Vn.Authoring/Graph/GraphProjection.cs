@@ -48,7 +48,7 @@ public sealed record ExpandedNodeProjection(
 /// <param name="Scenes">
 /// 장면 묶음 (R6 S-3 · 2026-09-16). 판이 어느 챕터인지 알 때만 갈린다 — 이름이 챕터와 맞는
 /// 판이 아니거나 <b>장면ID를 하나도 안 적은 챕터</b>면 묶음 하나로 온다
-/// (<c>docs/plans/R6-explorer.md</c> §2).
+/// (R6-explorer §2).
 /// </param>
 public sealed record CollapsedFileProjection(
     string FileId,
@@ -60,7 +60,7 @@ public sealed record CollapsedFileProjection(
     : GraphItemProjection(FileId, Position);
 
 /// <summary>
-/// 펼친 판 안에서 <b>접은 장면</b> 하나를 대신하는 상자 (2026-10-30 — 하이어아키의 눈, <c>docs/plans/hierarchy.md</c> SF).
+/// 펼친 판 안에서 <b>접은 장면</b> 하나를 대신하는 상자 (2026-10-30 — 하이어아키의 눈, hierarchy SF).
 ///
 /// 판은 펼친 채라 다른 장면의 카드는 그대로 서고 <b>이 장면만 줄 목록으로 간소화된다</b>(소유자: "챕터 내의 일부 장면만
 /// 접었을 경우, 접은 장면을 간소화"). 밖과 잇는 간선 · 선택지 길은 그 줄에 붙는다 — 접혀도 어디로 이어지는지 보여야
@@ -134,7 +134,7 @@ public enum GraphOutputPortKind
     ///
     /// 다른 포트와 달리 <b>이 노드의 것이 아니다.</b> 이어 붙는 순간 고쳐지는 것은
     /// <c>ChapterDocument.Edges</c>이고, 그것이 내보내기·도달성 증명·런타임이 보는 그 값이다
-    /// (<c>docs/plans/R7.md</c> §2 ①ᅳ 정본을 늘리지 않는다).
+    /// (R7 §2 ①ᅳ 정본을 늘리지 않는다).
     /// </summary>
     Choice
 }

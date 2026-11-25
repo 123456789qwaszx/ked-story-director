@@ -10,7 +10,7 @@ namespace Vn.Authoring.Chapters;
 /// <param name="Index">"05"·"05A"·"★"처럼 사람이 붙이는 표시용 순번. 숫자가 아니어도 된다.</param>
 /// <remarks>
 /// 런타임이 재생할 대사 엔트리(Yarn 노드 이름)는 <see cref="EpisodeId"/>에서 짓는다(<c>ChapterProgressionExporter.DialogueEntryIdOf</c>) —
-/// ⛔ 따로 적던 `대사엔트리` 칸은 2026-11-18에 걷혔다(늘 EpisodeId와 같았다 · <c>docs/work-orders/old-shapes-orders.md</c> O5).
+/// ⛔ 따로 적던 `대사엔트리` 칸은 2026-11-18에 걷혔다(늘 EpisodeId와 같았다 · old-shapes O5).
 /// </remarks>
 public sealed record ChapterEpisode(
     string EpisodeId,
@@ -195,7 +195,7 @@ public sealed record ChapterChoiceOption(
 
 /// <summary>
 /// <b>장면 메모 하나</b> — 작가가 장면마다 자유롭게 적는 사정(의도 · 인물의 감정 · 고비 · 자리). AI가 장면 하나씩
-/// 연출 초안을 낼 때 대사와 함께 읽는다(<c>docs/work-orders/scene-notes-orders.md</c>).
+/// 연출 초안을 낼 때 대사와 함께 읽는다(scene-notes).
 ///
 /// <b>장면이 아니라 장면에 붙는 곁 자료다.</b> 장면의 구성원 · 순서 · 루트는 여기 없다 — 늘 <see cref="ChapterEpisode.SceneId"/>에서
 /// 계산한다(계약 §0-0 "Scene 엔티티를 만들지 않는다"). 열쇠는 <see cref="ChapterEpisode.SceneId"/>다. 그 장면의
@@ -205,7 +205,7 @@ public sealed record ChapterChoiceOption(
 /// 에피소드마다의 지시는 여기 없다 — 그 에피소드의 <see cref="ChapterEpisode.Memo"/>다(에피소드를 따라다닌다).
 ///
 /// <b>장면 이름</b>(<paramref name="Name"/>)도 여기 산다 — 작가가 [대본] 탭에서 붙이는 이름이고, SceneId(런타임 저장 · 롤백 경계)와 따로다.
-/// 같은 이름의 장면이 여럿이어도 SceneId가 달라 합쳐지지 않는다(<c>docs/work-orders/display-names-orders.md</c>). 비면 SceneId가 보인다.
+/// 같은 이름의 장면이 여럿이어도 SceneId가 달라 합쳐지지 않는다(display-names). 비면 SceneId가 보인다.
 /// </summary>
 /// <param name="Text">장면 메모 — 비어도 된다(이름만 있는 항목).</param>
 /// <param name="Name">장면 이름 — 비면 null.</param>

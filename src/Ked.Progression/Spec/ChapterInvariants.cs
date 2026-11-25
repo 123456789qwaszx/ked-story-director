@@ -242,7 +242,7 @@ namespace Ked.Progression
         //
         // 장면은 넘어도 된다. 경계에서 일어나는 일(무대 비우기 · 확정 · 저장)은 묻는 선택지로 넘을 때와
         // 같고 박스만 뜨지 않는다. 자동(Auto)도 장면 소속(SceneId)도 저작자가 적은 것이라 런타임이
-        // 몰래 정하는 것이 없다(2026-11-18, docs/PLAN_auto-edge-across-scenes.md).
+        // 몰래 정하는 것이 없다(2026-11-18, PLAN_auto-edge-across-scenes).
         private static void VerifyAuto(
             int siblingCount,
             EpisodeOption option,

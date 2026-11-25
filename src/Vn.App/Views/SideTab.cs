@@ -1,7 +1,7 @@
 ﻿namespace Vn.App.Views;
 
 /// <summary>
-/// 오른쪽 기둥의 탭 셋 — 두 탭([구성] · [대본])이 같은 차례 · 같은 이름이다(<c>docs/work-orders/side-tabs-orders.md</c>).
+/// 오른쪽 기둥의 탭 셋 — 두 탭([구성] · [대본])이 같은 차례 · 같은 이름이다(side-tabs).
 /// 고르면 그것을 보이는 탭으로 간다. 콤보로 챕터를 바꾸는 것은 탭을 바꾸지 않는다.
 /// </summary>
 internal enum SideTab

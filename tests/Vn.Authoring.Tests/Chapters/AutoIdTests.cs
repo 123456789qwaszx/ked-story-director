@@ -7,7 +7,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
-/// <b>자동 ID에는 챕터와 장면이 든다</b> (2026-11-17 · <c>docs/work-orders/auto-id-orders.md</c> I1) — 에피소드 <c>{챕터}_{장면}_newNN</c>,
+/// <b>자동 ID에는 챕터와 장면이 든다</b> (2026-11-17 · auto-id I1) — 에피소드 <c>{챕터}_{장면}_newNN</c>,
 /// 분기 카드 <c>{챕터}_{장면}_branchNN</c>(장면은 집의 것). 그 ID가 곧 Yarn 노드 이름이라 프로젝트에서 겹치지 않게 짓는다.
 /// ⛔ 전에는 챕터마다 <c>new01</c>부터 세어 챕터가 여럿이면 겹쳤다.
 /// </summary>

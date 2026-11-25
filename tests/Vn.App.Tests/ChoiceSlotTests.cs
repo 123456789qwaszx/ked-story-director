@@ -425,7 +425,7 @@ public sealed class ChoiceSlotTests : IDisposable
     [Fact]
     public void 이어진_칸을_다른_카드로_옮겨도_순서와_스탯_변화가_남고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
     {
-        // two-graphs.md §6-3 — 옛 길을 걷고 새로 그으면 옮긴 선택지가 목록 끝으로
+        // two-graphs.md §5-3 — 옛 길을 걷고 새로 그으면 옮긴 선택지가 목록 끝으로
         //    가고(= 런타임 OptionIndex가 바뀐다) 스탯 변화를 잃고 되돌리기도 두 칸이 된다.
         (GraphEditorView graph, AuthoringSession session) = Show();
         session.Editor.AddEpisode("ch01", "b", title: "b", 0, 0, sceneId: "b");

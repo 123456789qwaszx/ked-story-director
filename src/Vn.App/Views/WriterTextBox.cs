@@ -17,7 +17,7 @@ internal readonly record struct BoxLook(int Start, int Length, WriterLook Look)
 }
 
 /// <summary>
-/// <b>작가용 글 서식을 그리는 카드 글 칸</b> (2026-11-22 소유자 · <c>docs/plans/writer-formatting.md</c>) — Avalonia의 <see cref="TextBox"/> 그대로다.
+/// <b>작가용 글 서식을 그리는 카드 글 칸</b> (2026-11-22 소유자 · writer-formatting) — Avalonia의 <see cref="TextBox"/> 그대로다.
 /// 입력 · 커서 · 고른 범위 · 한글 조합 · 되돌리기는 손대지 않고, 글자를 배치하는 겹(<see cref="WriterTextPresenter"/>)만 바꿔 구간마다 굵게 · 색 · 글꼴 ·
 /// 크기를 입힌다. Avalonia가 조합 중인 글자에 밑줄을 긋는 바로 그 길(글자 배치에 넘기는 구간별 모양)이다.
 ///

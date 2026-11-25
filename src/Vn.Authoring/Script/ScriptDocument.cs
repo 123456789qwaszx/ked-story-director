@@ -40,7 +40,7 @@ public sealed class ScriptLine
 /// <summary>
 /// 한 locale의 LineId별 화자·대사 표.
 ///
-/// LineId를 키로 쓰는 덕분에 언어를 추가해도 Dialogue 논리(그리고 compositor의 연출 binding)가
+/// LineId를 키로 쓰는 덕분에 언어를 추가해도 Dialogue 논리(그리고 연출이 거는 열쇠)가
 /// 가리키는 Id는 전혀 바뀌지 않는다.
 /// </summary>
 public sealed class ScriptLocale
@@ -74,7 +74,7 @@ public sealed class ScriptLocale
 /// 글을 다시 넣는 것은 <see cref="ScriptSynchronizer"/>를 지나는 명시적인 동작이다(LineId를 잇는다).
 ///
 /// 2026-10-29까지는 카드와 따로 선 문서였다 — 제 Id · 이름을 들고 <c>script/*.vnscript.json</c>에 따로 저장됐고 카드는
-/// Id로 가리켰다. 카드와 늘 1:1이 된 뒤로 카드가 직접 들고 카드와 함께 저장된다(<c>docs/plans/script-merge.md</c>).
+/// Id로 가리켰다. 카드와 늘 1:1이 된 뒤로 카드가 직접 들고 카드와 함께 저장된다(script-merge).
 /// </summary>
 public sealed class ScriptDocument
 {

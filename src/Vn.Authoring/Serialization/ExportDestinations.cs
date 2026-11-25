@@ -17,12 +17,11 @@ public enum ExportFormat
 
 /// <summary>
 /// <b>보낼 곳</b> — 형식마다 <c>exported/</c> 밖에 한 벌 더 낼 폴더. 프로젝트 폴더의 <c>runtime.target.json</c> 하나다
-/// (2026-11-17 · <c>docs/work-orders/export-destinations-orders.md</c>).
+/// (2026-11-17 · export-destinations).
 ///
-/// 진행 JSON의 보낼 곳은 <c>gameFolder</c> 칸이다 — <b>ked-story-compositor도 같은 칸을 읽어</b> 제 Yarn을 그 폴더에 쓴다(한 파일에는
-/// 내는 쪽이 하나 — 서로의 파일은 건드리지 않는다). 그래서 그 칸의 이름과 뜻은 그대로 두고 칸을 더했다: <c>dialogueYarnFolder</c>. 저장할 때
+/// 진행 JSON의 보낼 곳은 <c>gameFolder</c> 칸(게임 폴더), 대사 Yarn의 보낼 곳은 <c>dialogueYarnFolder</c> 칸이다. 저장할 때
 /// <b>모르는 칸은 지킨다</b>(다른 툴의 것일 수 있다). ⛔ 장면 파일의 <c>scenesFolder</c>는 2026-11-18에 장면 파일과 함께 걷혔다 — 적혀 있으면 모르는
-/// 칸으로 지킬 뿐 읽지 않는다(<c>docs/work-orders/scenes-file-removal-orders.md</c>).
+/// 칸으로 지킬 뿐 읽지 않는다(scenes-file-removal).
 ///
 /// 경로는 프로젝트 폴더 기준 상대 또는 절대. 저장소가 나란히 있으면 상대 경로가 PC 사이에서도 통한다. ⛔ 2026-11-17까지 이 파일은 게임 폴더
 /// 하나(<c>RuntimeTarget</c>)였고 위 띠의 [🎮 게임 폴더…]가 정했다 — 이제 [⚙ 설정]의 「내보내기」가 정한다.

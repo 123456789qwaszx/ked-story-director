@@ -7,7 +7,7 @@ namespace Vn.Authoring.Tests.Chapters;
 
 /// <summary>
 /// <b>스탯 키를 바꾸면 대사의 <c>{stat("키")}</c>도 따라간다</b>(2026-11-23 소유자 — 「키를 바꿀 때 대사 글의 같은 스탯도 바꾸는게 맞고」 ·
-/// <c>docs/work-orders/stat-read-rename-orders.md</c> S1–S3). 지우기의 「쓰는 곳」에 대사 줄이 들고(「모두 비우고 지우기」는 대사의 읽기를 남긴다 —
+/// stat-read-rename S1–S3). 지우기의 「쓰는 곳」에 대사 줄이 들고(「모두 비우고 지우기」는 대사의 읽기를 남긴다 —
 /// 2026-11-25 소유자 「남겨 두고 검증이 짚기」), 없는 스탯을 읽는 대사는 검증 보고가 경고로 짚는다(소유자 「🟡 경고로 짚기」).
 /// </summary>
 public sealed class StatReadRenameTests

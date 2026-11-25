@@ -5,7 +5,7 @@ using Vn.Authoring.Serialization;
 namespace Vn.Authoring.Tests;
 
 /// <summary>
-/// <b>화자는 프로젝트의 것이다</b> (2026-11-17 소유자 · <c>docs/work-orders/definition-split-orders.md</c> S3) — 「speaker는 전체 프로젝트 단위」.
+/// <b>화자는 프로젝트의 것이다</b> (2026-11-17 소유자 · definition-split S3) — 「speaker는 전체 프로젝트 단위」.
 /// 화자 명령은 조작마다 되돌리기 한 칸이고, 매니페스트와 되돌리기 스냅숏을 왕복한다.
 /// </summary>
 public class SpeakerCommandTests
