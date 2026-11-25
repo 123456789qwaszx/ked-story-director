@@ -200,12 +200,12 @@ public sealed class CardLiveWritingTests
         Assert.Equal(["첫 줄", "둘째 줄"], Said(Now(session, card)));
         TextBox now = Box(window, card.Id);
         Assert.True(now.IsFocused);
-        Assert.Equal("첫 줄\n둘째 줄", now.Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.Equal("첫 줄\n둘째 줄\n", now.Text!.Replace("\r\n", "\n", StringComparison.Ordinal));   // 끝의 빈 줄 — 이어 쓰기 자리(2026-11-25)
 
         Press(window, Avalonia.Input.Key.Y);
 
         Assert.Equal(["첫 줄", "둘째 줄", "새로 쓰는 줄"], Said(Now(session, card)));
-        Assert.Equal("첫 줄\n둘째 줄\n새로 쓰는 줄", Box(window, card.Id).Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.Equal("첫 줄\n둘째 줄\n새로 쓰는 줄\n", Box(window, card.Id).Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
 
         window.Close();
     });
@@ -229,7 +229,7 @@ public sealed class CardLiveWritingTests
         Assert.Equal(["첫 줄", "둘째 줄"], Said(Now(session, card)));
         TextBox now = Box(window, card.Id);
         Assert.True(now.IsFocused);
-        Assert.Equal("첫 줄\n둘째 줄", now.Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.Equal("첫 줄\n둘째 줄\n", now.Text!.Replace("\r\n", "\n", StringComparison.Ordinal));   // 끝의 빈 줄 — 이어 쓰기 자리(2026-11-25)
         Assert.True(now.CaretIndex <= now.Text!.Length);
 
         window.Close();
@@ -250,7 +250,7 @@ public sealed class CardLiveWritingTests
         Press(window, Avalonia.Input.Key.Z);
 
         Assert.Equal(["첫 줄", "둘째 줄"], Said(Now(session, card)));
-        Assert.Equal("첫 줄\n둘째 줄", Box(window, card.Id).Text!.Replace("\r\n", "\n", StringComparison.Ordinal));
+        Assert.Equal("첫 줄\n둘째 줄\n", Box(window, card.Id).Text!.Replace("\r\n", "\n", StringComparison.Ordinal));   // 끝의 빈 줄(2026-11-25)
 
         window.Close();
     });
@@ -273,7 +273,7 @@ public sealed class CardLiveWritingTests
 
         Release(window);
 
-        Assert.Equal("첫 줄\n\n둘째 줄", Box(window, card.Id).Text);
+        Assert.Equal("첫 줄\n\n둘째 줄\n", Box(window, card.Id).Text);   // 칸을 나오면 끝에 이어 쓰기 자리 빈 줄이 선다
 
         window.Close();
     });

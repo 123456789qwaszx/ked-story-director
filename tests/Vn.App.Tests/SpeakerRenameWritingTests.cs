@@ -48,8 +48,9 @@ public sealed class SpeakerRenameWritingTests : IDisposable
         Assert.NotNull(session.RenameSpeakerName("라루", "하린"));
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("하린: 처음.", Writing(graph, root).Text);
-        Assert.Equal("하린: 골목 끝.\n윌로: 응.", Writing(graph, a).Text);   // 고르지 않은 카드도
+        // 글 칸 끝에는 늘 빈 줄 하나가 붙는다(2026-11-25 — 이어 쓰기 자리).
+        Assert.Equal("하린: 처음.\n", Writing(graph, root).Text);
+        Assert.Equal("하린: 골목 끝.\n윌로: 응.\n", Writing(graph, a).Text);   // 고르지 않은 카드도
         Assert.Equal("라루: 아직 안 넣은 글.", Writing(graph, b).Text);       // 넣지 않은 글은 그대로
         Assert.Equal(rails, graph.RailDrawCount);                             // 판은 다시 짓지 않는다
 

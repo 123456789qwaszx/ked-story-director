@@ -125,13 +125,47 @@ public sealed class CardWritingBoxTests : IDisposable
         Box(window, second.Id).Focus();
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("라루: 하나\n\n윌로: 둘", Box(window, first.Id).Text);
+        Assert.Equal("라루: 하나\n\n윌로: 둘\n", Box(window, first.Id).Text);   // 끝에는 이어 쓰기 자리 빈 줄 하나(2026-11-25)
         long revision = session.Editor.Revision;
 
         Box(window, first.Id).Focus();
         Box(window, second.Id).Focus();
         Dispatcher.UIThread.RunJobs();
 
+        Assert.Equal(revision, session.Editor.Revision);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 글_칸_끝에는_늘_이어_쓸_빈_줄이_있고_아무것도_안_쓴_카드는_빈_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 「가장 아래쪽에 빈 줄이 생기도록 해줄래? … 가장 아랫줄의 우측 끝에서 엔터를 눌러서 새 줄을 생성 한 뒤에 이어써야 하는 데
+        // 너무 불편」. 끝의 빈 줄은 보이기만 한다 — 넣을 때 걷혀 모델 · 줄 수는 그대로다.
+        (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
+        DialogueNode second = Card(session, 40, 500);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(string.Empty, Box(window, second.Id).Text ?? string.Empty);   // 아무것도 안 쓴 카드 — 첫 줄이 곧 쓸 줄이다
+
+        session.Editor.ApplyScenarioText(first.Id, "라루: 하나");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("라루: 하나\n", Box(window, first.Id).Text);
+
+        // 그 빈 줄에 이어 쓰고 나온다 — 새 줄이 들어가고, 끝에는 다시 빈 줄이 선다.
+        TextBox box = Box(window, first.Id);
+        box.Focus();
+        box.Text = "라루: 하나\n윌로: 둘";
+        Box(window, second.Id).Focus();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(2, session.Project.FindDialogue(first.Id)!.Script.ActiveLines.Count());
+        Assert.Equal("라루: 하나\n윌로: 둘\n", Box(window, first.Id).Text);
+
+        // 눌렀다 나오기만 하면 아무것도 적지 않는다 — 끝의 빈 줄은 넣을 글이 아니다.
+        long revision = session.Editor.Revision;
+        Box(window, first.Id).Focus();
+        Box(window, second.Id).Focus();
+        Dispatcher.UIThread.RunJobs();
         Assert.Equal(revision, session.Editor.Revision);
 
         window.Close();
@@ -363,7 +397,7 @@ public sealed class CardWritingBoxTests : IDisposable
         session.Editor.SetScriptLineText(card.Id, lineId, "라루", "곁기둥에서 고쳤다");
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("라루: 곁기둥에서 고쳤다", Box(window, first.Id).Text);
+        Assert.Equal("라루: 곁기둥에서 고쳤다\n", Box(window, first.Id).Text);   // 끝의 빈 줄 — 이어 쓰기 자리(2026-11-25)
 
         window.Close();
     });

@@ -104,7 +104,7 @@ public sealed class CardFitTests : IDisposable
         Assert.True(IsOn(graph, root, width: true));
         Assert.True(session.Project.FindNode(root)!.Layout.Width > DefaultWidth);
         Assert.True(session.Project.FindNode(root)!.Layout.WritingHeight > DefaultHeight);
-        Assert.Equal(lines.Length, VisualLines(graph, root));   // 한 줄이 한 줄이다 — 꺾이지 않는다
+        Assert.Equal(lines.Length + 1, VisualLines(graph, root));   // 한 줄이 한 줄이다 — 꺾이지 않는다(+ 끝의 이어 쓰기 빈 줄)
         AssertAllVisible(graph, root);
 
         session.Editor.Undo();

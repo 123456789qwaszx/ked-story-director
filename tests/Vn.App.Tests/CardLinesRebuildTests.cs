@@ -43,7 +43,7 @@ public sealed class CardLinesRebuildTests : IDisposable
         Assert.Equal(cards + 1, graph.CardRebuildCount);
         Assert.Equal(rails, graph.RailDrawCount);                          // 판을 통째로 짓지 않았다
         Assert.Same(other, CardVisual(graph, Card(session, "a")));        // 다른 카드는 그 카드 그대로다
-        Assert.Equal("라루: 첫 줄.\n윌로: 둘째 줄.", WritingBox(graph, root).Text);
+        Assert.Equal("라루: 첫 줄.\n윌로: 둘째 줄.\n", WritingBox(graph, root).Text);   // 끝의 빈 줄 — 이어 쓰기 자리(2026-11-25)
         Assert.Single(graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>(), border => border.Tag as string == root);
 
         // 되돌리기는 판을 통째로 짓는다(되돌리면 객체가 모두 새것이다).

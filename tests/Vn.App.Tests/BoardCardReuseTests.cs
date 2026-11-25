@@ -119,7 +119,7 @@ public sealed class BoardCardReuseTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         Assert.NotSame(idle, Writing(graph, a));
-        Assert.Equal("윌로: 골목 끝.", Writing(graph, a).Text);
+        Assert.Equal("윌로: 골목 끝.\n", Writing(graph, a).Text);   // 끝의 빈 줄 — 이어 쓰기 자리(2026-11-25)
         Assert.Same(busy, Writing(graph, b));
         Assert.Equal("라루: 쓰는 중.", busy.Text);
         Assert.True(busy.IsFocused);

@@ -45,7 +45,7 @@ public sealed class BranchGateWritingTests : IDisposable
         (MainWindow window, AuthoringSession session, DialogueNode branch, TextBox box) = Stage();
         string shown = box.Text!;
         Assert.StartsWith("<<if ", shown, StringComparison.Ordinal);
-        Assert.EndsWith("<<endif>>", shown, StringComparison.Ordinal);
+        Assert.EndsWith("<<endif>>\n", shown, StringComparison.Ordinal);
 
         box.Focus();
         box.Text = typed.Replace("\n", Environment.NewLine, StringComparison.Ordinal);
@@ -57,7 +57,7 @@ public sealed class BranchGateWritingTests : IDisposable
 
         string now = Box(window, branch).Text!;
         Assert.StartsWith("<<if ", now, StringComparison.Ordinal);
-        Assert.EndsWith("<<endif>>", now, StringComparison.Ordinal);
+        Assert.EndsWith("<<endif>>\n", now, StringComparison.Ordinal);
 
         window.Close();
     });
@@ -85,7 +85,7 @@ public sealed class BranchGateWritingTests : IDisposable
 
         string now = Box(window, branch).Text!;
         Assert.StartsWith("<<if ", now, StringComparison.Ordinal);
-        Assert.EndsWith("<<endif>>", now, StringComparison.Ordinal);
+        Assert.EndsWith("<<endif>>\n", now, StringComparison.Ordinal);
 
         window.Close();
     });

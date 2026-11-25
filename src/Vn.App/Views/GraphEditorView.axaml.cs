@@ -2563,11 +2563,11 @@ public partial class GraphEditorView : UserControl
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, node.NodeId);
 
         return Math.Abs(box.Height - WritingHeightFor(node.NodeId)) <= 0.01 &&
-               string.Equals(_writingShown.GetValueOrDefault(card.NodeId), layout.Text, StringComparison.Ordinal) &&
+               string.Equals(_writingShown.GetValueOrDefault(card.NodeId), BoxText(layout), StringComparison.Ordinal) &&
                _writingLayouts.GetValueOrDefault(card.NodeId) is { } shown &&
                shown.RowOfLine.Count == layout.RowOfLine.Count &&
                shown.RowOfLine.All(pair => layout.RowOfLine.TryGetValue(pair.Key, out int row) && row == pair.Value) &&
-               (box.IsFocused || string.Equals(box.Text ?? string.Empty, layout.Text, StringComparison.Ordinal));
+               (box.IsFocused || string.Equals(box.Text ?? string.Empty, BoxText(layout), StringComparison.Ordinal));
     }
 
     /// <summary>판의 그림을 모두 뗀다 — 그대로 둘 카드(테두리 · 분기 점 · 공통 점)만 남긴다. 남길 것이 없으면 통째로 비운다.</summary>
@@ -3051,7 +3051,7 @@ public partial class GraphEditorView : UserControl
                      .Select(pair => pair.Key)
                      .ToList())
         {
-            if (!string.Equals(WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId).Text, _writingShown[nodeId], StringComparison.Ordinal))
+            if (!string.Equals(BoxText(WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId)), _writingShown[nodeId], StringComparison.Ordinal))
             {
                 RefreshWriting(nodeId);
             }
@@ -4149,6 +4149,21 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
+    /// <b>카드 글 칸에 보이는 글</b> — 모델의 글(<see cref="ScenarioWritingLayout.Text"/>) 끝에 <b>빈 줄 하나</b>를 붙인다(2026-11-25 소유자 — 「가장 아래쪽에 빈
+    /// 줄이 생기도록 … 쓰다가 다른 곳에 갔다가 다시 쓰려면, 가장 아랫줄의 우측 끝에서 엔터를 눌러서 새 줄을 생성 한 뒤에 이어써야 하는 데 너무 불편」). 칸의
+    /// 아래를 누르면 그 빈 줄에서 바로 이어 쓴다. 끝의 빈 줄은 넣을 때 걷히므로(<see cref="ScenarioTextParser"/>) 모델 · 내보내기는 그대로이고, 줄 짝(줄마다 몇
+    /// 번째 줄인가)도 그대로다 — 글 끝에 붙을 뿐이다. 아무것도 안 쓴 카드는 빈 칸 그대로다(첫 줄이 곧 쓸 줄이다). ⛔ 그 전에는 마지막 줄 끝에서 Enter를 쳐야 했다.
+    /// </summary>
+    internal static string BoxText(ScenarioWritingLayout layout) => layout.Text.Length == 0 ? string.Empty : layout.Text + "\n";
+
+    /// <summary>
+    /// 칸의 두 글이 넣기로는 같은가 — 끝의 빈 줄 · 공백만 다르면 같다(넣을 때 걷힌다). 쓰다 멈춰 들어간 뒤 칸에는 끝의 빈 줄이 없을 수 있다(쓰는 중인
+    /// 칸은 다시 채우지 않는다) — 그것을 「넣지 않은 글」로 보면 Ctrl+Z가 모델을 되돌리지 않고 칸만 되돌렸다.
+    /// </summary>
+    private static bool SameWriting(string? a, string? b) =>
+        string.Equals((a ?? string.Empty).TrimEnd(), (b ?? string.Empty).TrimEnd(), StringComparison.Ordinal);
+
+    /// <summary>
     /// <b>카드 안 글 칸</b> (D4 · 2026-10-29, two-graphs.md §7 D4 — 소유자: *"노드 안에 텍스트 공간이 있고 그곳에
     /// 직접 글을 작성하는 것까지"*). 한 줄이 대사 한 줄이고 <c>화자: 대사</c>로 쓴다(화자가 없으면 지문).
     /// 보이는 글은 <see cref="WorkingDialoguePreview.ScenarioText"/>, 넣는 길은 <see cref="ApplyWriting"/>이다.
@@ -4159,7 +4174,7 @@ public partial class GraphEditorView : UserControl
     private TextBox BuildWritingBox(string nodeId)
     {
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session!.Project, nodeId);
-        string shown = layout.Text;
+        string shown = BoxText(layout);
         _writingShown[nodeId] = shown;
         _writingLayouts[nodeId] = layout;
 
@@ -4218,6 +4233,11 @@ public partial class GraphEditorView : UserControl
             {
                 Dispatcher.UIThread.Post(() => ApplyWriting(nodeId, box, text, live: false));
             }
+            else if (_writingShown.TryGetValue(nodeId, out string? shownNow) && !string.Equals(box.Text ?? string.Empty, shownNow, StringComparison.Ordinal))
+            {
+                // 넣을 것은 없지만 모양이 다르다(쓰는 동안 들어가 끝의 빈 줄이 없다) — 보인 글로 다시 채운다(끝의 빈 줄 · BoxText).
+                box.Text = shownNow;
+            }
         };
 
         // ⭐ <b>쓰는 대로 들어간다</b> (2026-10-30 소유자: *"에피소드 노드 속의 텍스트 편집하는 게 그대로 반영이 바로바로
@@ -4258,7 +4278,7 @@ public partial class GraphEditorView : UserControl
     {
         string text = box.Text ?? string.Empty;
 
-        return string.Equals(text, _writingShown.GetValueOrDefault(nodeId), StringComparison.Ordinal) ? null : text;
+        return SameWriting(text, _writingShown.GetValueOrDefault(nodeId)) ? null : text;
     }
 
     /// <summary>
@@ -4322,7 +4342,7 @@ public partial class GraphEditorView : UserControl
             // 기준(처음 보인 글과 그 줄 짝)을 지금 모델의 글로 옮긴다 — 다음 넣기가 이 줄 짝으로 신원을 잇는다. 판이 다시
             // 그려졌으면 새 칸이 이미 그 기준을 들고 있다.
             ScenarioWritingLayout now = WorkingDialoguePreview.ScenarioWriting(session.Project, nodeId);
-            _writingShown[nodeId] = now.Text;
+            _writingShown[nodeId] = BoxText(now);
             _writingLayouts[nodeId] = now;
 
             TextBox current = _writingBoxes.GetValueOrDefault(nodeId) ?? box;
@@ -4340,11 +4360,11 @@ public partial class GraphEditorView : UserControl
             // 다 쓰고 나왔다 — 칸을 도구의 표기(화자 띄어쓰기 · 빈 줄 걷기)로 다시 쓴다.
             if (!current.IsFocused)
             {
-                current.Text = now.Text;
+                current.Text = BoxText(now);
             }
 
             // 쓰는 동안 이미 다 들어갔으면(표기만 달랐다) 알릴 것이 없다.
-            if (!string.Equals(before, now.Text, StringComparison.Ordinal))
+            if (!string.Equals(before, BoxText(now), StringComparison.Ordinal))
             {
                 session.SetStatus($"글을 넣었습니다 — {outcome.Summary()}. 되돌리기 한 번이면 돌아갑니다.");
             }
@@ -4559,14 +4579,14 @@ public partial class GraphEditorView : UserControl
 
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(session.Project, focus.NodeId);
 
-        if (string.Equals(layout.Text, box.Text, StringComparison.Ordinal))
+        if (string.Equals(BoxText(layout), box.Text, StringComparison.Ordinal))
         {
             return;
         }
 
-        _writingShown[focus.NodeId] = layout.Text;
+        _writingShown[focus.NodeId] = BoxText(layout);
         _writingLayouts[focus.NodeId] = layout;
-        box.Text = layout.Text;
+        box.Text = BoxText(layout);
         _liveWriting.Stop();
         PlaceCaret(box, focus);
     }
@@ -4599,16 +4619,16 @@ public partial class GraphEditorView : UserControl
         if (_session is null ||
             !_writingBoxes.TryGetValue(nodeId, out TextBox? box) ||
             box.IsFocused ||
-            !string.Equals(box.Text ?? string.Empty, _writingShown.GetValueOrDefault(nodeId), StringComparison.Ordinal) ||
+            !SameWriting(box.Text, _writingShown.GetValueOrDefault(nodeId)) ||
             _session.Project.FindDialogue(nodeId) is null)
         {
             return;
         }
 
         ScenarioWritingLayout layout = WorkingDialoguePreview.ScenarioWriting(_session.Project, nodeId);
-        _writingShown[nodeId] = layout.Text;
+        _writingShown[nodeId] = BoxText(layout);
         _writingLayouts[nodeId] = layout;
-        box.Text = layout.Text;
+        box.Text = BoxText(layout);
         UpdateLooks(nodeId, box);   // 글이 그대로여도 서식은 되돌렸을 수 있다(writer-formatting)
 
         // 글 맞춤은 여기서 하지 않는다 — 되돌리기 · 곁기둥이 다시 채운 글이고, 크기는 그때의 글에 맞춘 그대로 적혀 있다(쓰는 사람이 다시 넣을 때 맞는다).
@@ -4687,7 +4707,7 @@ public partial class GraphEditorView : UserControl
 
         return new WritingFocus(
             nodeId, text, box.SelectionStart, box.SelectionEnd,
-            Dirty: !string.Equals(text, _writingShown.GetValueOrDefault(nodeId), StringComparison.Ordinal),
+            Dirty: !SameWriting(text, _writingShown.GetValueOrDefault(nodeId)),
             Scroll: WritingScrollOf(box)?.Offset ?? default);
     }
 
