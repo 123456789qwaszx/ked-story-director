@@ -74,7 +74,7 @@ internal sealed class SettingsWindow : Window
             FontSize = 12,
             IsChecked = !session.ShowMinimap
         };
-        ToolTip.SetTip(HideMinimapCheck, "[대본] 판 오른쪽 아래의 전체 지도를 감춥니다. 지도만 걷히고 [전체 · 50 · 100 · 150] 배율 줄은 남습니다.");
+        ToolTip.SetTip(HideMinimapCheck, "[대본] 판 오른쪽 아래의 전체 지도와 배율 단추를 감춥니다. 지금 배율(예: 28%)만 연한 글자로 남고, 그 자리를 눌러도 밑의 글 칸이 눌립니다.");
 
         // 설명 간소화 — 오른쪽 기둥의 안내글을 걷고 「없습니다 — …」 줄은 상태만 남긴다(2026-11-18 소유자 · brief-guides G1). 누르는 즉시.
         BriefGuidesCheck = new CheckBox
@@ -380,7 +380,7 @@ internal sealed class SettingsWindow : Window
     /// <summary>「기타」의 「설명 간소화」 — 누르는 즉시 반영한다(<see cref="GuideMode"/>).</summary>
     internal CheckBox BriefGuidesCheck { get; }
 
-    /// <summary>「기타」의 「미니맵 감추기」 — 켜면 [대본] 판의 지도가 걷힌다. 누르는 즉시 반영한다.</summary>
+    /// <summary>「기타」의 「미니맵 감추기」 — 켜면 [대본] 판의 지도와 배율 단추가 걷히고 지금 배율 글자만 남는다. 누르는 즉시 반영한다.</summary>
     internal CheckBox HideMinimapCheck { get; }
 
     /// <summary>「기타」의 「휠로 판 옮기기」 — 켜면 두 판의 휠이 판을 옮긴다(<see cref="BoardWheel"/>). 누르는 즉시 반영한다.</summary>

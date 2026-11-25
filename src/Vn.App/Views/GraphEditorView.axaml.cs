@@ -733,15 +733,45 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 미니맵을 세우거나 걷는다(<see cref="AuthoringSession.ShowMinimap"/>). 걷는 것은 지도뿐이다 — [전체 · 50 · 100 · 150] 배율 줄은 남는다.
-    /// 지도가 없으면 배율 줄 위의 구분선도 걷는다.
+    /// 미니맵을 세우거나 걷는다(<see cref="AuthoringSession.ShowMinimap"/>). 감추면 <b>지금 배율만</b> 남는다 — 지도 · [전체 · 50 · 100 · 150] 단추 ·
+    /// 바탕 · 테두리가 걷히고 「28%」가 연한 회색 글자로 선다. 누를 것이 없으니 눌림도 받지 않는다 — 밑에 깔린 카드 글 칸을 그대로 누른다(2026-11-25 소유자 —
+    /// 「미니맵 만이 아니라 첨부한 미니맵 배율도 간소화를 해줘. 오직 현재 몇%의 배율인지 연한 회색으로 바탕없이 글자만」 · 「텍스트 박스에 걸려서 걸리적
+    /// 거린다」). 배율은 휠 · F(고른 것에 맞추기)로 바꾼다. ⛔ 그 전에는 지도만 걷고 배율 줄이 바탕째 남았다(2026-11-18 · side-fold K3).
     /// </summary>
     private void ApplyShowMinimap()
     {
         bool show = _session?.ShowMinimap != false;
+        _minimapLook ??= (MinimapPanel.Background, MinimapPanel.BorderThickness, ZoomBar.Padding, ZoomText.Margin, ZoomText.Opacity);
+        (IBrush? background, Thickness border, Thickness padding, Thickness margin, double opacity) = _minimapLook.Value;
+
         MinimapCanvas.IsVisible = show;
+        FitAllButton.IsVisible = show;
+        Zoom50Button.IsVisible = show;
+        Zoom100Button.IsVisible = show;
+        Zoom150Button.IsVisible = show;
         ZoomBar.BorderThickness = show ? new Thickness(0, 1, 0, 0) : default;
+        ZoomBar.Padding = show ? padding : default;
+        MinimapPanel.Background = show ? background : Brushes.Transparent;
+        MinimapPanel.BorderThickness = show ? border : default;
+        MinimapPanel.IsHitTestVisible = show;
+        ZoomText.Margin = show ? margin : default;
+        ZoomText.Opacity = show ? opacity : 1;
+
+        if (show)
+        {
+            ZoomText.ClearValue(TextBlock.ForegroundProperty);
+        }
+        else
+        {
+            ZoomText.Foreground = HiddenMinimapZoomBrush;
+        }
     }
+
+    /// <summary>미니맵을 감췄을 때 홀로 남는 배율 글자의 색 — 연한 회색(판은 늘 밝다).</summary>
+    private static readonly IBrush HiddenMinimapZoomBrush = new SolidColorBrush(Color.FromRgb(0xA0, 0xA0, 0xA0));
+
+    /// <summary>미니맵을 보일 때의 모양(axaml이 정한 것) — 감췄다 다시 보일 때 되돌린다. 처음 <see cref="ApplyShowMinimap"/>이 잰다.</summary>
+    private (IBrush? Background, Thickness Border, Thickness Padding, Thickness Margin, double Opacity)? _minimapLook;
 
     /// <summary>
     /// 인스펙터가 요약을 세운 줄(프로젝트 · 챕터 · 장면) — 셸이 하이어아키 · 판의 빈 곳에서 고른 것을 비춘다. 카드를 고르면 null이다.

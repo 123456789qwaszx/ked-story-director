@@ -100,8 +100,8 @@ internal sealed class AuthoringSession
     public event EventHandler? ShowIdsChanged;
 
     /// <summary>
-    /// [대본] 판의 미니맵(우하단 지도)을 보이는가 — 설정 창 「기타」(처음에는 보인다 · 2026-11-18 소유자 · side-fold K3). 끄면 지도만 걷고 배율 줄은
-    /// 남는다. 화면 편의라 사용자 설정에 기억한다(앱 전체).
+    /// [대본] 판의 미니맵(우하단 지도)을 보이는가 — 설정 창 「기타」(처음에는 보인다 · 2026-11-18 소유자 · side-fold K3). 끄면 지도와 배율 단추를 걷고
+    /// 지금 배율 글자만 남긴다(2026-11-25 — ⛔ 그 전에는 배율 줄이 바탕째 남았다). 화면 편의라 사용자 설정에 기억한다(앱 전체).
     /// </summary>
     public bool ShowMinimap { get; private set; } = AppSettingsService.LoadShowMinimap();
 

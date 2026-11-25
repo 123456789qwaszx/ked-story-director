@@ -3,6 +3,7 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
@@ -385,7 +386,8 @@ public sealed class SettingsWindowTests : IDisposable
     public void 기타_묶음의_미니맵_감추기는_처음_꺼져_있고_켜는_즉시_대본_판의_지도가_걷히며_다음에도_감춰져_있다() => HeadlessUi.Run(() =>
     {
         // 「기타」 — 이 PC의 앱 설정이다(2026-11-18 소유자 · side-fold K3). 체크는 누르는 즉시 반영한다(J3). 「미니맵 감추기」 — 처음 꺼져 있고
-        // 켜면 걷힌다(Z1 · ⛔ 그 전에는 「[대본] 탭 미니맵 보이기」가 처음 켜져 있었다). 지도만 걷고 배율 줄은 남는다.
+        // 켜면 걷힌다(Z1 · ⛔ 그 전에는 「[대본] 탭 미니맵 보이기」가 처음 켜져 있었다). 지도 · 배율 단추 · 바탕이 걷히고 지금 배율 글자만 남는다 — 눌림도
+        // 받지 않는다(2026-11-25 소유자 — 「텍스트 박스에 걸려서 걸리적 거린다」 · ⛔ 그 전에는 배율 줄이 바탕째 남았다).
         AppSettingsService.SaveShowMinimap(true);
 
         try
@@ -395,7 +397,11 @@ public sealed class SettingsWindowTests : IDisposable
             Canvas map = graph.FindControl<Canvas>("MinimapCanvas")!;
             Assert.True(map.IsVisible);
 
-            // 처음 꺼져 있다 — 켜는 즉시 걷힌다([확인] 전). 배율 줄은 남는다. 프로젝트는 바뀌지 않는다(되돌리기 없음).
+            // 처음 꺼져 있다 — 켜는 즉시 걷힌다([확인] 전). 배율 글자만 남는다. 프로젝트는 바뀌지 않는다(되돌리기 없음).
+            Border panel = graph.FindControl<Border>("MinimapPanel")!;
+            TextBlock zoom = graph.FindControl<TextBlock>("ZoomText")!;
+            IBrush? shownBackground = panel.Background;
+            Assert.True(panel.IsHitTestVisible);
             SettingsWindow settings = window.OpenSettings();
             Dispatcher.UIThread.RunJobs();
             Assert.Equal("미니맵 감추기", settings.HideMinimapCheck.Content);
@@ -403,7 +409,14 @@ public sealed class SettingsWindowTests : IDisposable
             settings.HideMinimapCheck.IsChecked = true;
             Dispatcher.UIThread.RunJobs();
             Assert.False(map.IsVisible);
-            Assert.True(graph.FindControl<Button>("FitAllButton")!.IsEffectivelyVisible);
+            Assert.All(
+                new[] { "FitAllButton", "Zoom50Button", "Zoom100Button", "Zoom150Button" },
+                name => Assert.False(graph.FindControl<Button>(name)!.IsEffectivelyVisible));
+            Assert.True(zoom.IsEffectivelyVisible);
+            Assert.EndsWith("%", zoom.Text, StringComparison.Ordinal);
+            Assert.Equal(Brushes.Transparent, panel.Background);
+            Assert.Equal(new Avalonia.Thickness(0), panel.BorderThickness);
+            Assert.False(panel.IsHitTestVisible);
             Assert.False(session.ShowMinimap);
             Assert.False(AppSettingsService.LoadShowMinimap());
             Assert.False(session.Editor.CanUndo);
@@ -423,10 +436,13 @@ public sealed class SettingsWindowTests : IDisposable
             Assert.False(next.FindControl<GraphEditorView>("Graph")!.FindControl<Canvas>("MinimapCanvas")!.IsVisible);
             next.Close();
 
-            // 끄면 바로 선다.
+            // 끄면 바로 선다 — 단추 · 바탕 · 눌림도 돌아온다.
             settings.HideMinimapCheck.IsChecked = false;
             Dispatcher.UIThread.RunJobs();
             Assert.True(map.IsVisible);
+            Assert.True(graph.FindControl<Button>("FitAllButton")!.IsEffectivelyVisible);
+            Assert.Same(shownBackground, panel.Background);
+            Assert.True(panel.IsHitTestVisible);
             settings.Close();
 
             window.Close();
