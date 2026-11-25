@@ -171,6 +171,84 @@ public sealed class CardBasePinBoardTests : IDisposable
     });
 
     [Fact]
+    public void 가로만_고정하는_설정이면_폭만_기본_폭이_되고_세로_글_맞춤은_쓰는_대로_따라온다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「가로만 활성으로 … 가로영역은 기본크기로 두되, 세로는 세로글 맞춤을 둘 수 있도록」.
+        using IDisposable widthOnly = CardDefaults.PinWidthOnlyForTest(true);
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");   // 세로 글 맞춤이 켜져 있다
+        ClickFit(graph, root, width: true);
+        Type(graph, root, Long + "\n윌로: 응.");
+        double wide = session.Project.FindNode(root)!.Layout.Width!.Value;
+        Assert.True(wide > CardDefaults.Width);
+        Assert.Contains("가로만", ToolTip.GetTip(BasePinButton(graph, root)) as string, StringComparison.Ordinal);
+
+        PressHeaderBlank(graph, root);
+        NodeLayout pinned = session.Project.FindNode(root)!.Layout;
+        Assert.True(pinned.PinnedToBase);
+        Assert.True(pinned.PinnedWidthOnly);
+        Assert.Equal(CardDefaults.Width, pinned.Width);
+        Assert.Equal(CardDefaults.Width, Card(graph, root).Width);
+        Assert.False(Fit(graph, root, width: true).IsEnabled);    // 가로 글 맞춤만 쉰다
+        Assert.True(Fit(graph, root, width: false).IsEnabled);
+        AssertAllVisible(graph, root);                             // 좁아진 폭에서 꺾인 줄까지 세로가 다시 맞췄다
+        Assert.Contains("기본 폭", session.StatusMessage, StringComparison.Ordinal);
+
+        // 더 쓰면 — 폭은 그대로, 글 칸 높이는 따라온다(넣기 전에도).
+        double height = WritingBox(graph, root).Height;
+        TextBox box = WritingBox(graph, root);
+        box.Focus();
+        box.Text = string.Join('\n', [Long, .. Enumerable.Range(1, 9).Select(index => $"윌로: {index}번째 대답이다.")]);
+        Settle(graph);
+        Assert.Equal(CardDefaults.Width, Card(graph, root).Width);
+        Assert.True(box.Height > height);
+        graph.CommitLiveWriting();
+        Settle(graph);
+        Assert.Equal(CardDefaults.Width, session.Project.FindNode(root)!.Layout.Width);
+        Assert.Equal(box.Height, session.Project.FindNode(root)!.Layout.WritingHeight);
+
+        // 풀면 폭이 돌아가고 켜 둔 가로 맞춤이 다시 맞춘다.
+        PressHeaderBlank(graph, root);
+        Assert.False(session.Project.FindNode(root)!.Layout.PinnedToBase);
+        Assert.True(Card(graph, root).Width > CardDefaults.Width);
+        Assert.True(Fit(graph, root, width: true).IsEnabled);
+    });
+
+    [Fact]
+    public void 설정_창의_가로만_고정은_처음_꺼져_있고_누르는_즉시_기억한다() => HeadlessUi.Run(() =>
+    {
+        bool before = CardDefaults.PinsWidthOnly;
+
+        try
+        {
+            CardDefaults.SetPinsWidthOnly(false);
+            (MainWindow window, _) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
+            SettingsWindow settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("기본 크기로 고정할 때 가로만 고정한다", settings.PinWidthOnlyCheck.Content);
+            Assert.False(settings.PinWidthOnlyCheck.IsChecked);
+
+            settings.PinWidthOnlyCheck.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(CardDefaults.PinsWidthOnly);
+            Assert.True(AppSettingsService.LoadPinWidthOnly());
+
+            // 처음 값으로 — 가로 · 세로 모두 고정으로 돌아간다.
+            settings.BaseSizeDefaultButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(CardDefaults.PinsWidthOnly);
+            Assert.False(settings.PinWidthOnlyCheck.IsChecked);
+
+            settings.Close();
+            window.Close();
+        }
+        finally
+        {
+            CardDefaults.SetPinsWidthOnly(before);
+        }
+    });
+
+    [Fact]
     public void 설정_창에서_새_카드_크기와_지키기를_바꾸고_기본으로_돌린다() => HeadlessUi.Run(() =>
     {
         try
@@ -291,6 +369,13 @@ public sealed class CardBasePinBoardTests : IDisposable
     private static Button Fit(GraphEditorView graph, string nodeId, bool width) =>
         Card(graph, nodeId).GetVisualDescendants().OfType<Button>().Single(button =>
             button.Tag as string == (width ? GraphEditorView.FitWidthToggleTag : GraphEditorView.FitHeightToggleTag) + nodeId);
+
+    /// <summary>글 칸이 스크롤 없이 모든 줄을 보인다.</summary>
+    private static void AssertAllVisible(GraphEditorView graph, string nodeId)
+    {
+        ScrollViewer scroll = WritingBox(graph, nodeId).GetVisualDescendants().OfType<ScrollViewer>().First();
+        Assert.True(scroll.Extent.Height <= scroll.Viewport.Height + 0.5, $"글 높이 {scroll.Extent.Height} · 보이는 높이 {scroll.Viewport.Height}");
+    }
 
     private static TextBox WritingBox(GraphEditorView graph, string nodeId) =>
         Card(graph, nodeId).GetVisualDescendants().OfType<TextBox>().Single(box => box.Tag as string == GraphEditorView.WritingTag + nodeId);

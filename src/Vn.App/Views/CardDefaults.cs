@@ -55,6 +55,31 @@ internal static class CardDefaults
     /// <summary>바뀌었다 — 판이 켜진 글 맞춤을 다시 맞춘다.</summary>
     internal static event Action? Changed;
 
+    private static bool? _pinsWidthOnly;
+
+    /// <summary>
+    /// <b>기본 크기로 고정할 때 가로만 고정한다</b>(2026-11-26 소유자 — 「가로만 활성으로 할 수 있도록 … 가로영역은 기본크기로 두되, 세로는 세로글 맞춤을 둘 수
+    /// 있도록」). 다음에 고정하는 카드부터 따른다 — 이미 고정한 카드는 고정할 때의 방식 그대로다(카드에 적힌다 · <see cref="Vn.Authoring.Model.NodeLayout.PinnedWidthOnly"/>).
+    /// 처음에는 꺼져 있다(가로 · 세로 모두).
+    /// </summary>
+    internal static bool PinsWidthOnly => _pinsWidthOnly ??= AppSettingsService.LoadPinWidthOnly();
+
+    /// <summary>고정 방식이 바뀌었다 — 판이 고정 단추의 풍선을 다시 단다.</summary>
+    internal static event Action? PinModeChanged;
+
+    /// <summary>바꾸고 기억한다. 같으면 아무것도 하지 않는다.</summary>
+    internal static void SetPinsWidthOnly(bool widthOnly)
+    {
+        if (widthOnly == PinsWidthOnly)
+        {
+            return;
+        }
+
+        _pinsWidthOnly = widthOnly;
+        AppSettingsService.SavePinWidthOnly(widthOnly);
+        PinModeChanged?.Invoke();
+    }
+
     /// <summary>바꾸고 기억한다 — 범위 밖은 끝으로 당긴다(정수로). 같으면 아무것도 하지 않는다.</summary>
     internal static void Set(double width, double writingHeight, bool fitKeepsSize)
     {
@@ -86,8 +111,20 @@ internal static class CardDefaults
         public void Dispose() => undo();
     }
 
-    /// <summary>기본값으로 — 320 × 160 · 글 맞춤이 기본 크기를 지킨다.</summary>
-    internal static void Reset() => Set(DefaultWidth, DefaultWritingHeight, fitKeepsSize: true);
+    /// <summary>처음 값으로 — 320 × 160 · 글 맞춤이 기본 크기를 지킨다 · 가로 · 세로 모두 고정한다.</summary>
+    internal static void Reset()
+    {
+        Set(DefaultWidth, DefaultWritingHeight, fitKeepsSize: true);
+        SetPinsWidthOnly(false);
+    }
+
+    /// <summary>시험의 손잡이 — 앱 설정에 적지 않고 그 동안만 고정 방식을 바꾼다.</summary>
+    internal static IDisposable PinWidthOnlyForTest(bool widthOnly)
+    {
+        bool before = PinsWidthOnly;
+        _pinsWidthOnly = widthOnly;
+        return new Unpin(() => _pinsWidthOnly = before);
+    }
 
     private static (double Width, double WritingHeight, bool FitKeeps) Clamp((double Width, double WritingHeight, bool FitKeeps) value) => (
         Math.Round(Math.Clamp(double.IsFinite(value.Width) ? value.Width : DefaultWidth, MinWidth, MaxWidth)),

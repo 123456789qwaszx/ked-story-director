@@ -1304,4 +1304,10 @@
   <data name="Doc_WarningLine" xml:space="preserve">
     <value>[Warning] {0}</value>
   </data>
+  <data name="File_LayoutPinnedWidthOnlyOfNode" xml:space="preserve">
+    <value>layout.pinnedWidthOnly of node '{0}'</value>
+  </data>
+  <data name="File_PinnedWidthOnlyWithoutPinnedToBase" xml:space="preserve">
+    <value>Node '{0}' isn't pinned to base size, but it says only the width is pinned (layout.pinnedWidthOnly).</value>
+  </data>
 </root>

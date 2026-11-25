@@ -509,6 +509,7 @@ public partial class GraphEditorView : UserControl
         ScriptFont.Changed += ApplyScriptFont;
         ApplyScriptFont();   // 떨어져 있던 사이에 바뀌었을 수 있다
         CardDefaults.Changed += RefitAll;
+        CardDefaults.PinModeChanged += ShowAllFitToggles;
 
         // 창을 떠나면(Windows 키 · Alt+Tab) 하던 끌기를 정리한다 — 놓음이 이 창으로 오지 않는다(usability UX20).
         _window = TopLevel.GetTopLevel(this) as WindowBase;
@@ -523,6 +524,7 @@ public partial class GraphEditorView : UserControl
     {
         ScriptFont.Changed -= ApplyScriptFont;
         CardDefaults.Changed -= RefitAll;
+        CardDefaults.PinModeChanged -= ShowAllFitToggles;
 
         if (_window is not null)
         {
@@ -591,11 +593,20 @@ public partial class GraphEditorView : UserControl
     /// 「[대본] 카드 기본 크기」 설정이 바뀌었다 — 글 맞춤이 지키는 크기가 바뀌었을 수 있으니 판의 카드 가운데 글 맞춤이 켜진 것을 다시 맞춘다(기본 크기로 고정한 카드는 쉰다).
     /// 맞춘 크기는 글을 넣을 때처럼 적는다(<see cref="Vn.Authoring.Editing.ProjectEditor.FitNodeSize"/>).
     /// </summary>
+    /// <summary>고정 방식(설정 「가로만」)이 바뀌었다 — 풀려 있는 카드의 고정 단추 풍선이 누르면 할 일을 말한다.</summary>
+    private void ShowAllFitToggles()
+    {
+        foreach (NodeCard card in _cards)
+        {
+            ShowFitToggles(card);
+        }
+    }
+
     private void RefitAll()
     {
         foreach (NodeCard card in _cards.ToList())
         {
-            if (_session?.Project.FindNode(card.NodeId)?.Layout is { PinnedToBase: false } layout && (layout.FitWidth || layout.FitHeight))
+            if (_session?.Project.FindNode(card.NodeId)?.Layout is { } layout && EffectiveFit(layout) is (true, _) or (_, true))
             {
                 QueueAutoFit(card.NodeId);
             }
@@ -3557,26 +3568,28 @@ public partial class GraphEditorView : UserControl
     {
         NodeLayout? layout = _session?.Project.FindNode(card.NodeId)?.Layout;
         bool basePinned = layout?.PinnedToBase == true;
+        bool widthOnly = basePinned && layout!.PinnedWidthOnly;
         ShowFitToggle(card.FitWidthToggle, card.Style.Accent, layout?.FitWidth == true, width: true);
         ShowFitToggle(card.FitHeightToggle, card.Style.Accent, layout?.FitHeight == true, width: false);
         ShowToggleLook(card.BasePinToggle, card.Style.Accent, basePinned);
 
         if (card.BasePinToggle is { } toggle)
         {
-            ToolTip.SetTip(toggle, string.Format(
-                basePinned ? Ui.Board_BasePinnedClickToUnpin : Ui.Board_BasePinTip,
-                CardDefaults.Width,
-                CardDefaults.WritingHeight));
+            // 풀려 있으면 누르면 할 일(그 PC의 고정 방식), 고정했으면 이 카드가 고정한 방식이다.
+            string tip = basePinned
+                ? (widthOnly ? Ui.Board_BasePinnedWidthClickToUnpin : Ui.Board_BasePinnedClickToUnpin)
+                : (CardDefaults.PinsWidthOnly ? Ui.Board_BasePinWidthTip : Ui.Board_BasePinTip);
+            ToolTip.SetTip(toggle, string.Format(tip, CardDefaults.Width, CardDefaults.WritingHeight));
         }
 
-        // 기본 크기로 고정한 동안 글 맞춤은 쉰다 — 단추는 켜진 것을 비추되 누를 수 없다(풀면 다시 맞춘다).
-        foreach (Button? fit in new[] { card.FitWidthToggle, card.FitHeightToggle })
+        // 기본 크기로 고정한 동안 글 맞춤은 쉰다 — 단추는 켜진 것을 비추되 누를 수 없다(풀면 다시 맞춘다). 가로만 고정했으면 가로 단추만 쉰다.
+        foreach ((Button? fit, bool rests) in new[] { (card.FitWidthToggle, basePinned), (card.FitHeightToggle, basePinned && !widthOnly) })
         {
             if (fit is not null)
             {
-                fit.IsEnabled = !basePinned;
+                fit.IsEnabled = !rests;
 
-                if (basePinned)
+                if (rests)
                 {
                     fit.Opacity = 0.3;
                     ToolTip.SetTip(fit, Ui.Board_FitRestsWhileBasePinned);
@@ -3620,6 +3633,9 @@ public partial class GraphEditorView : UserControl
         }
 
         bool basePin = !layout.PinnedToBase;
+
+        // 가로만 — 고정할 때는 그 PC의 설정, 풀 때는 이 카드가 고정한 방식(2026-11-26). 높이는 건드리지 않는다(세로 글 맞춤이 맡는다).
+        bool widthOnly = basePin ? CardDefaults.PinsWidthOnly : layout.PinnedWidthOnly;
         double? width = basePin ? DefaultWidthValue : layout.UnpinnedWidth;
         double? writingHeight = basePin ? DefaultWritingHeightValue : layout.UnpinnedWritingHeight;
 
@@ -3627,7 +3643,7 @@ public partial class GraphEditorView : UserControl
         {
             card.Visual.Width = Math.Clamp(width ?? CardWidth, CardWidth, MaxCardWidth);
 
-            if (card.WritingBox is { } box)
+            if (card.WritingBox is { } box && !widthOnly)
             {
                 box.Height = Math.Clamp(writingHeight ?? WritingBoxHeight, WritingBoxHeight, MaxWritingHeight);
             }
@@ -3642,7 +3658,7 @@ public partial class GraphEditorView : UserControl
         {
             if (basePin)
             {
-                _session.Editor.PinToBaseSize(nodeId, width, writingHeight);
+                _session.Editor.PinToBaseSize(nodeId, width, writingHeight, widthOnly);
             }
             else
             {
@@ -3659,13 +3675,16 @@ public partial class GraphEditorView : UserControl
             ShowFitToggles(shown);
         }
 
-        if (!basePin)
+        // 풀었으면 켜진 맞춤이 다시 맞춘다. 가로만 고정했으면 세로 글 맞춤이 새 폭에 다시 맞춘다(같은 칸).
+        if (!basePin || widthOnly)
         {
             AutoFit(nodeId);
         }
 
         _session.SetStatus(basePin
-            ? string.Format(Ui.Board_BasePinnedCard, CardDefaults.Width, CardDefaults.WritingHeight)
+            ? (widthOnly
+                ? string.Format(Ui.Board_BasePinnedWidthCard, CardDefaults.Width)
+                : string.Format(Ui.Board_BasePinnedCard, CardDefaults.Width, CardDefaults.WritingHeight))
             : Ui.Board_UnpinnedCard);
     }
 
@@ -3738,6 +3757,14 @@ public partial class GraphEditorView : UserControl
     private void QueueAutoFit(string nodeId) =>
         Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Board_FitToText, () => AutoFit(nodeId)), DispatcherPriority.Background);
 
+    /// <summary>
+    /// 지금 맞추는 쪽 — 켠 글 맞춤 가운데 쉬지 않는 쪽. 기본 크기로 고정한 카드는 쉰다 — 가로만 고정했으면 가로만 쉬고 세로는 맞춘다(2026-11-26).
+    /// </summary>
+    private static (bool Width, bool Height) EffectiveFit(NodeLayout layout) =>
+        layout.PinnedToBase
+            ? (false, layout.PinnedWidthOnly && layout.FitHeight)
+            : (layout.FitWidth, layout.FitHeight);
+
     /// <summary>쓰는 동안의 맞춤을 기다리는 카드 — 칠 때마다 쌓지 않고 배치가 끝난 뒤 한 번 잰다.</summary>
     private string? _liveFitNodeId;
 
@@ -3768,8 +3795,7 @@ public partial class GraphEditorView : UserControl
     private void LiveFit(string nodeId)
     {
         if (_session?.Project.FindNode(nodeId)?.Layout is not { } layout ||
-            !(layout.FitWidth || layout.FitHeight) ||
-            layout.PinnedToBase ||
+            EffectiveFit(layout) is not ((true, _) or (_, true)) ||
             _resizingCard is not null ||
             _projection is null ||
             FindCard(nodeId) is not { WritingBox: { } box } card ||
@@ -3779,8 +3805,9 @@ public partial class GraphEditorView : UserControl
         }
 
         card.Visual.UpdateLayout();
+        (bool fitWidth, bool fitHeight) = EffectiveFit(layout);
 
-        if (FitSizeOf(card, layout.FitWidth, layout.FitHeight) is not { } fit ||
+        if (FitSizeOf(card, fitWidth, fitHeight) is not { } fit ||
             (Math.Abs(card.Visual.Width - fit.Width) < 0.5 && Math.Abs(box.Height - fit.Height) < 0.5))
         {
             return;
@@ -3802,8 +3829,7 @@ public partial class GraphEditorView : UserControl
     internal void AutoFit(string nodeId)
     {
         if (_session?.Project.FindNode(nodeId)?.Layout is not { } layout ||
-            !(layout.FitWidth || layout.FitHeight) ||
-            layout.PinnedToBase ||
+            EffectiveFit(layout) is not ((true, _) or (_, true)) ||
             FindCard(nodeId) is not { WritingBox: { } box } card ||
             !_cards.Contains(card))
         {
@@ -3812,8 +3838,9 @@ public partial class GraphEditorView : UserControl
 
         // 넣기가 카드를 다시 지었으면 새 칸은 아직 배치 전일 수 있다 — 재기 전에 배치를 끝낸다(칸의 글 자리 · 스크롤을 찾는다).
         card.Visual.UpdateLayout();
+        (bool fitWidth, bool fitHeight) = EffectiveFit(layout);
 
-        if (FitSizeOf(card, layout.FitWidth, layout.FitHeight) is not { } fit)
+        if (FitSizeOf(card, fitWidth, fitHeight) is not { } fit)
         {
             return;
         }

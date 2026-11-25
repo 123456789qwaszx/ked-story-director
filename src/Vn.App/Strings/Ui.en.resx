@@ -885,7 +885,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Pin to base size</value>
   </data>
   <data name="Board_BasePinTip" xml:space="preserve">
-    <value>Pin to base size — sets the card to the base size ({0} × {1}) and pauses fitting (it keeps that size as you write). Double-clicking the empty part of the header does the same. Change the base size in [⚙ Settings] “[Script] Card base size”.</value>
+    <value>Pin to base size — sets the card to the base size ({0} × {1}) and pauses fitting (it keeps that size as you write). Double-clicking the empty part of the header does the same. Set the base size and whether to pin only the width in [⚙ Settings] “[Script] Card base size”.</value>
   </data>
   <data name="Board_BasePinnedClickToUnpin" xml:space="preserve">
     <value>Pinned to base size — click to unpin: the card returns to its size before pinning and any fit that’s on fits again (or double-click the empty part of the header).</value>
@@ -2964,10 +2964,25 @@ Chapters · scenes · episodes are added, deleted and edited in the [Script] tab
   </data>
   <data name="Settings_BaseSizeGuide" xml:space="preserve">
     <value>The size cards return to. Where it is used:
-• Pin to base size — click the button at the right end of a card’s title row, left of the fit buttons (↔ · ↕), or double-click the empty part of the card’s header: the card returns to this size and fitting pauses (it keeps this size as you write). Click again to unpin: the card returns to its size before pinning and any fit that’s on fits again.
+• Pin to base size — click the button at the right end of a card’s title row, left of the fit buttons (↔ · ↕), or double-click the empty part of the card’s header: the card returns to this size and fitting pauses (it keeps this size as you write). Click again to unpin: the card returns to its size before pinning and any fit that’s on fits again. With “Pin only the width to base size” below on, only the width goes to this width and only Fit width pauses — Fit height keeps fitting the writing box height.
 • New cards — new cards are this size.
 • Double-clicking a resize handle — the side that handle controls (width · height) returns to this size.
 • The lower limit of fitting — with the checkbox below on, Fit width · Fit height never shrink a card below this size, even for short text.
-Changing it leaves existing cards as they are (cards with fitting on refit right away).</value>
+Changing it leaves existing cards as they are (cards with fitting on refit right away). Already pinned cards keep the way they were pinned.</value>
+  </data>
+  <data name="Settings_PinWidthOnly" xml:space="preserve">
+    <value>Pin only the width to base size</value>
+  </data>
+  <data name="Settings_PinWidthOnlyTip" xml:space="preserve">
+    <value>When on, pinning a card to base size sets only its width to the base width and pauses only Fit width — on a card with Fit height on, the writing box height keeps fitting the text. When off, both width and height go to the base size and all fitting pauses. Applies to cards you pin from now on — already pinned cards keep the way they were pinned.</value>
+  </data>
+  <data name="Board_BasePinWidthTip" xml:space="preserve">
+    <value>Pin to base size (width only) — sets the card’s width to the base width ({0}) and pauses Fit width. Fit height keeps fitting the writing box height. Double-clicking the empty part of the header does the same. Set the base size and whether to pin only the width in [⚙ Settings] “[Script] Card base size”.</value>
+  </data>
+  <data name="Board_BasePinnedWidthClickToUnpin" xml:space="preserve">
+    <value>Width pinned to the base width — click to unpin: the card returns to its width before pinning and Fit width, if on, fits again (or double-click the empty part of the header).</value>
+  </data>
+  <data name="Board_BasePinnedWidthCard" xml:space="preserve">
+    <value>Pinned the card’s width to the base width ({0}) — Fit width is paused; Fit height keeps working. Undo (Ctrl+Z) brings it back.</value>
   </data>
 </root>

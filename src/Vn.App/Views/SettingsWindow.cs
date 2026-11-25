@@ -248,6 +248,11 @@ internal sealed class SettingsWindow : Window
         BaseHeightBox = CardSizeBox(CardDefaults.MinWritingHeight, CardDefaults.MaxWritingHeight, sizeTip);
         FitKeepsSizeCheck = new CheckBox { Content = Ui.Settings_FitKeepsBaseSize, FontSize = 12 };
         ToolTip.SetTip(FitKeepsSizeCheck, string.Format(Ui.Settings_FitKeepsBaseSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight));
+
+        // 기본 크기로 고정할 때 가로만(2026-11-26 소유자 — 「가로만 활성으로 … 가로영역은 기본크기로 두되, 세로는 세로글 맞춤을 둘 수 있도록」). 누르는 즉시 —
+        // 다음에 고정하는 카드부터 따른다.
+        PinWidthOnlyCheck = new CheckBox { Content = Ui.Settings_PinWidthOnly, FontSize = 12 };
+        ToolTip.SetTip(PinWidthOnlyCheck, Ui.Settings_PinWidthOnlyTip);
         BaseSizeDefaultButton = new Button
         {
             Content = string.Format(Ui.Settings_ResetBaseSize, CardDefaults.DefaultWidth, CardDefaults.DefaultWritingHeight),
@@ -257,6 +262,13 @@ internal sealed class SettingsWindow : Window
         BaseWidthBox.ValueChanged += (_, _) => OnBaseSizeEdited();
         BaseHeightBox.ValueChanged += (_, _) => OnBaseSizeEdited();
         FitKeepsSizeCheck.IsCheckedChanged += (_, _) => OnBaseSizeEdited();
+        PinWidthOnlyCheck.IsCheckedChanged += (_, _) =>
+        {
+            if (!_fillingBaseSize)
+            {
+                UiGuard.Run(_session, Ui.Settings_PinWidthOnly, () => CardDefaults.SetPinsWidthOnly(PinWidthOnlyCheck.IsChecked == true));
+            }
+        };
         BaseSizeDefaultButton.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_CardBaseSize, () =>
         {
             CardDefaults.Reset();
@@ -438,6 +450,9 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>「[대본] 카드 기본 크기」의 「글 맞춤이 이 크기보다 작게 줄이지 않는다」.</summary>
     internal CheckBox FitKeepsSizeCheck { get; }
+
+    /// <summary>「[대본] 카드 기본 크기」의 「기본 크기로 고정할 때 가로만 고정한다」(<see cref="CardDefaults.PinsWidthOnly"/>).</summary>
+    internal CheckBox PinWidthOnlyCheck { get; }
 
     internal Button BaseSizeDefaultButton { get; }
 
@@ -976,6 +991,7 @@ internal sealed class SettingsWindow : Window
             {
                 BaseSizeGuide,
                 grid,
+                PinWidthOnlyCheck,
                 FitKeepsSizeCheck,
                 BaseSizeDefaultButton
             }
@@ -1007,6 +1023,7 @@ internal sealed class SettingsWindow : Window
             BaseWidthBox.Value = (decimal)CardDefaults.Width;
             BaseHeightBox.Value = (decimal)CardDefaults.WritingHeight;
             FitKeepsSizeCheck.IsChecked = CardDefaults.FitKeepsSize;
+            PinWidthOnlyCheck.IsChecked = CardDefaults.PinsWidthOnly;
         }
         finally
         {

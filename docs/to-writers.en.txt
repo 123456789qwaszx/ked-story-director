@@ -112,7 +112,8 @@ Everyday tasks
 · Pin to base size      — in a card's header, double-click the empty space right of the title (or click the button
                           left of the fit buttons) and the card returns to the base size with fitting paused.
                           Double-click again to unpin. Change the base size in [⚙ Settings] →
-                          "[Script] Card base size".
+                          "[Script] Card base size". Turn on "Pin only the width" there to pin just the width
+                          and keep Fit height working.
 · Rename                — double-click a row in the Hierarchy. Only the shown name changes; the ID inside the game
                           stays the same, so feel free to polish names.
 · Select several rows   — in the Hierarchy, Ctrl (⌘ on Mac)+click adds them one by one, Shift+click selects everything in between.

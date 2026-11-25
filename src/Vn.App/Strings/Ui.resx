@@ -1173,7 +1173,7 @@
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_BasePinTip" xml:space="preserve">
-    <value>기본 크기로 고정 — 카드를 기본 크기({0} × {1})로 두고 글 맞춤을 쉽니다(글을 더 써도 크기가 그대로입니다). 머리의 빈 곳을 두 번 눌러도 됩니다. 기본 크기는 [⚙ 설정] 「[대본] 카드 기본 크기」에서 바꿉니다.</value>
+    <value>기본 크기로 고정 — 카드를 기본 크기({0} × {1})로 두고 글 맞춤을 쉽니다(글을 더 써도 크기가 그대로입니다). 머리의 빈 곳을 두 번 눌러도 됩니다. 기본 크기와 가로만 고정할지는 [⚙ 설정] 「[대본] 카드 기본 크기」에서 정합니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_BasePinnedClickToUnpin" xml:space="preserve">
@@ -3940,11 +3940,31 @@
   </data>
   <data name="Settings_BaseSizeGuide" xml:space="preserve">
     <value>카드가 돌아가 서는 크기입니다. 이 크기가 쓰이는 곳:
-• 기본 크기로 고정 — 카드 제목 줄 오른쪽 끝, 글 맞춤 단추(↔ · ↕) 왼쪽의 단추를 누르거나 카드 머리의 빈 곳을 두 번 누르면, 카드가 이 크기로 돌아가고 글 맞춤을 쉽니다(글을 더 써도 크기가 그대로입니다). 한 번 더 누르면 고정을 풀고, 고정하기 전 크기로 돌아가 켜 둔 글 맞춤이 다시 맞춥니다.
+• 기본 크기로 고정 — 카드 제목 줄 오른쪽 끝, 글 맞춤 단추(↔ · ↕) 왼쪽의 단추를 누르거나 카드 머리의 빈 곳을 두 번 누르면, 카드가 이 크기로 돌아가고 글 맞춤을 쉽니다(글을 더 써도 크기가 그대로입니다). 한 번 더 누르면 고정을 풀고, 고정하기 전 크기로 돌아가 켜 둔 글 맞춤이 다시 맞춥니다. 아래 「기본 크기로 고정할 때 가로만 고정한다」를 켜면 폭만 이 폭으로 두고 가로 글 맞춤만 쉽니다 — 세로 글 맞춤은 계속 글 칸 높이를 맞춥니다.
 • 새 카드 — 새로 만드는 카드가 이 크기로 섭니다.
 • 크기 손잡이 두 번 누르기 — 그 손잡이가 맡은 쪽(폭 · 높이)이 이 크기로 돌아갑니다.
 • 글 맞춤의 아래 끝 — 아래 체크가 켜져 있으면 가로 · 세로 글 맞춤이 글이 짧아도 카드를 이 크기보다 작게 줄이지 않습니다.
-바꿔도 서 있는 카드의 크기는 그대로입니다(글 맞춤이 켜진 카드는 곧바로 다시 맞춥니다).</value>
+바꿔도 서 있는 카드의 크기는 그대로입니다(글 맞춤이 켜진 카드는 곧바로 다시 맞춥니다). 이미 고정한 카드는 고정할 때의 방식 그대로입니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_PinWidthOnly" xml:space="preserve">
+    <value>기본 크기로 고정할 때 가로만 고정한다</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Settings_PinWidthOnlyTip" xml:space="preserve">
+    <value>켜면 카드를 기본 크기로 고정할 때 폭만 기본 폭으로 두고 가로 글 맞춤만 쉽니다 — 세로 글 맞춤이 켜진 카드는 글 칸 높이가 계속 글에 맞습니다. 끄면 가로 · 세로 모두 기본 크기로 두고 글 맞춤을 모두 쉽니다. 다음에 고정하는 카드부터 따릅니다 — 이미 고정한 카드는 고정할 때의 방식 그대로입니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Board_BasePinWidthTip" xml:space="preserve">
+    <value>기본 크기로 고정(가로만) — 카드의 폭을 기본 폭({0})으로 두고 가로 글 맞춤을 쉽니다. 세로 글 맞춤은 그대로 글 칸 높이를 맞춥니다. 머리의 빈 곳을 두 번 눌러도 됩니다. 기본 크기와 가로만 고정할지는 [⚙ 설정] 「[대본] 카드 기본 크기」에서 정합니다.</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Board_BasePinnedWidthClickToUnpin" xml:space="preserve">
+    <value>가로를 기본 폭으로 고정했습니다 — 누르면 고정을 풀고, 고정하기 전 폭으로 돌아가 켜 둔 가로 글 맞춤이 다시 맞춥니다(머리의 빈 곳을 두 번 눌러도 됩니다).</value>
+    <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Board_BasePinnedWidthCard" xml:space="preserve">
+    <value>카드의 폭을 기본 폭({0})으로 고정했습니다 — 가로 글 맞춤은 쉬고 세로 글 맞춤은 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
     <comment>SettingsWindow.cs</comment>
   </data>
 </root>

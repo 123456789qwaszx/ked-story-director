@@ -43,6 +43,13 @@ public sealed class NodeLayout
     /// </summary>
     public bool PinnedToBase { get; set; }
 
+    /// <summary>
+    /// <b>가로만 고정했다</b>(2026-11-26 소유자 — 「가로만 활성으로 … 가로영역은 기본크기로 두되, 세로는 세로글 맞춤을 둘 수 있도록」) — 기본 크기로 고정한 동안만
+    /// 뜻이 있다. 폭만 고정할 때의 기본 폭이고 가로 글 맞춤만 쉰다 — 글 칸 높이는 고정하지 않아 세로 글 맞춤이 그대로 맞춘다(풀어도 높이는 그대로다).
+    /// 어느 쪽을 고정할지는 고정할 때 그 PC의 설정이 정하고, 카드에 적혀 다른 PC에서도 같다.
+    /// </summary>
+    public bool PinnedWidthOnly { get; set; }
+
     /// <summary>기본 크기 고정을 풀면 돌아갈 카드 폭 — 기본 크기로 고정한 동안만 뜻이 있다(<c>null</c>이면 판의 가장 작은 폭).</summary>
     public double? UnpinnedWidth { get; set; }
 

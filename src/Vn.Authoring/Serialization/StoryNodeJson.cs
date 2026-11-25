@@ -80,6 +80,11 @@ internal static class StoryNodeJson
             var layoutJson = (JsonObject)json["layout"]!;
             layoutJson["pinnedToBase"] = true;
 
+            if (node.Layout.PinnedWidthOnly)
+            {
+                layoutJson["pinnedWidthOnly"] = true;   // 가로만(2026-11-26)
+            }
+
             if (node.Layout.UnpinnedWidth is { } unpinnedWidth)
             {
                 layoutJson["unpinnedWidth"] = Math.Round(unpinnedWidth, 2);
@@ -139,8 +144,15 @@ internal static class StoryNodeJson
             WritingHeight = JsonSupport.OptionalNumber(layout["writingHeight"], string.Format(Msg.File_LayoutWritingHeightOfNode, id)),
             FitWidth = JsonSupport.Flag(layout["fitWidth"], string.Format(Msg.File_LayoutFitWidthOfNode, id)),
             FitHeight = JsonSupport.Flag(layout["fitHeight"], string.Format(Msg.File_LayoutFitHeightOfNode, id)),
-            PinnedToBase = JsonSupport.Flag(layout["pinnedToBase"], string.Format(Msg.File_LayoutPinnedToBaseOfNode, id))
+            PinnedToBase = JsonSupport.Flag(layout["pinnedToBase"], string.Format(Msg.File_LayoutPinnedToBaseOfNode, id)),
+            PinnedWidthOnly = JsonSupport.Flag(layout["pinnedWidthOnly"], string.Format(Msg.File_LayoutPinnedWidthOnlyOfNode, id))
         };
+
+        // 가로만 고정은 고정한 카드에만 있다.
+        if (node.Layout.PinnedWidthOnly && !node.Layout.PinnedToBase)
+        {
+            throw new InvalidDataException(string.Format(Msg.File_PinnedWidthOnlyWithoutPinnedToBase, id));
+        }
 
         // 풀면 돌아갈 크기는 고정한 카드에만 있다 — 고정하지 않은 카드에 적혀 있으면 툴이 만들지 않는 모양이다.
         double? unpinnedWidth = JsonSupport.OptionalNumber(layout["unpinnedWidth"], string.Format(Msg.File_LayoutUnpinnedWidthOfNode, id));

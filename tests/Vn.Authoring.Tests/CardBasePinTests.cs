@@ -110,6 +110,65 @@ public sealed class CardBasePinTests
     }
 
     [Fact]
+    public void 가로만_고정하면_폭만_기본_폭으로_두고_높이는_세로_맞춤이_맡는다()
+    {
+        // 2026-11-26 소유자 — 「가로만 활성으로 … 가로영역은 기본크기로 두되, 세로는 세로글 맞춤을 둘 수 있도록」.
+        var sample = new Sample();
+        string id = sample.Dialogue.Id;
+        sample.Editor.SetNodeFit(id, fitWidth: true, fitHeight: true);
+        sample.Editor.ResizeNode(id, 480, 300);
+        sample.Editor.PinToBaseSize(id, 320, 160, widthOnly: true);
+
+        NodeLayout layout = sample.Project.FindNode(id)!.Layout;
+        Assert.True(layout.PinnedToBase);
+        Assert.True(layout.PinnedWidthOnly);
+        Assert.Equal((320, 300), (layout.Width, layout.WritingHeight));   // 높이는 그대로
+        Assert.Equal(480, layout.UnpinnedWidth);
+        Assert.Null(layout.UnpinnedWritingHeight);
+
+        // 글 맞춤은 높이만 적는다 — 폭은 고정한 그대로.
+        sample.Editor.FitNodeSize(id, 900, 420);
+        Assert.Equal((320, 420), (layout.Width, layout.WritingHeight));
+
+        // 손잡이로 높이만 정해도 고정은 그대로다(폭을 건드리지 않았다).
+        sample.Editor.ResizeNode(id, 320, 500, fitHeight: false);
+        Assert.True(layout.PinnedToBase);
+        Assert.Equal((320, 500), (layout.Width, layout.WritingHeight));
+
+        // 풀면 폭만 돌아간다 — 높이는 고정한 적이 없다.
+        sample.Editor.UnpinBaseSize(id);
+        Assert.False(layout.PinnedToBase);
+        Assert.False(layout.PinnedWidthOnly);
+        Assert.Equal((480, 500), (layout.Width, layout.WritingHeight));
+
+        // 폭을 손으로 정하면 풀린다.
+        sample.Editor.PinToBaseSize(id, 320, 160, widthOnly: true);
+        sample.Editor.ResizeNode(id, 400, 500, fitWidth: false);
+        Assert.False(layout.PinnedToBase);
+        Assert.False(layout.PinnedWidthOnly);
+    }
+
+    [Fact]
+    public void 가로만_고정은_파일에_적고_다시_읽으며_고정하지_않은_카드에_있으면_깨진_파일이다()
+    {
+        var sample = new Sample();
+        string id = sample.Dialogue.Id;
+        sample.Editor.ResizeNode(id, 480, 300);
+        sample.Editor.PinToBaseSize(id, 320, 160, widthOnly: true);
+
+        string json = ProjectSnapshotCodec.Encode(sample.Project);
+        Assert.Matches("\"pinnedWidthOnly\":\\s*true", json);
+        NodeLayout reloaded = ProjectSnapshotCodec.Decode(json).FindNode(id)!.Layout;
+        Assert.True(reloaded.PinnedToBase);
+        Assert.True(reloaded.PinnedWidthOnly);
+        Assert.Equal((320, 300), (reloaded.Width, reloaded.WritingHeight));
+
+        string broken = System.Text.RegularExpressions.Regex.Replace(json, "\"pinnedToBase\":\\s*true,?", string.Empty);
+        broken = System.Text.RegularExpressions.Regex.Replace(broken, "\"unpinnedWidth\":\\s*480,?", string.Empty);
+        Assert.ThrowsAny<Exception>(() => ProjectSnapshotCodec.Decode(broken));
+    }
+
+    [Fact]
     public void 손으로_크기를_정하면_기본_크기_고정이_풀린다()
     {
         var sample = new Sample();

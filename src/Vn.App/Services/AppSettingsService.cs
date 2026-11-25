@@ -286,6 +286,16 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>기본 크기로 고정할 때 가로만 고정하는가(설정 「[대본] 카드 기본 크기」 · 2026-11-26). 처음에는 꺼져 있다(가로 · 세로 모두).</summary>
+    public static bool LoadPinWidthOnly() => Load(SettingsPath).PinWidthOnly;
+
+    public static void SavePinWidthOnly(bool widthOnly)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.PinWidthOnly = widthOnly;
+        Save(settings);
+    }
+
     /// <summary>하이어아키 기둥을 접어 두었는가 (두 그래프가 함께 쓴다).</summary>
     public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
 
@@ -462,6 +472,9 @@ internal static class AppSettingsService
 
         /// <summary>글 맞춤이 새 카드 크기보다 작게 줄이지 않는가 — 처음(이 칸이 없는 설정 파일)에는 켜져 있다.</summary>
         public bool FitKeepsNewCardSize { get; set; } = true;
+
+        /// <summary>기본 크기로 고정할 때 가로만 고정하는가 — <see cref="LoadPinWidthOnly"/>. 처음에는 꺼져 있다.</summary>
+        public bool PinWidthOnly { get; set; }
 
         /// <summary>툴 화면의 언어 — <see cref="LoadLanguage"/>. null이면 PC 언어를 따른다.</summary>
         public string? Language { get; set; }

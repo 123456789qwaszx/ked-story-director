@@ -1733,4 +1733,10 @@
     <value>[주의] {0}</value>
     <comment>DocumentPreviewFormatter.cs — 펼친 글의 진단 줄(글 칸은 진단을 내지 않는다)</comment>
   </data>
+  <data name="File_LayoutPinnedWidthOnlyOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.pinnedWidthOnly</value>
+  </data>
+  <data name="File_PinnedWidthOnlyWithoutPinnedToBase" xml:space="preserve">
+    <value>노드 '{0}'은 기본 크기로 고정하지 않았는데 가로만 고정했다(layout.pinnedWidthOnly)고 적혀 있습니다.</value>
+  </data>
 </root>

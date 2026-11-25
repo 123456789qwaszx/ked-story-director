@@ -560,11 +560,18 @@ public sealed partial class ProjectEditor
     /// </summary>
     public void ResizeNode(string nodeId, double? width, double? writingHeight, bool? fitWidth = null, bool? fitHeight = null)
     {
-        if (Project.FindNode(nodeId) is not { } node ||
-            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight &&
-             (fitWidth ?? node.Layout.FitWidth) == node.Layout.FitWidth &&
-             (fitHeight ?? node.Layout.FitHeight) == node.Layout.FitHeight &&
-             !node.Layout.PinnedToBase))
+        if (Project.FindNode(nodeId) is not { } node)
+        {
+            return;
+        }
+
+        // 가로만 고정한 카드의 높이만 바꿨다 — 고정한 폭은 그대로라 고정도 그대로다(2026-11-26).
+        bool keepsPin = node.Layout is { PinnedToBase: true, PinnedWidthOnly: true } && node.Layout.Width == width;
+
+        if (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight &&
+            (fitWidth ?? node.Layout.FitWidth) == node.Layout.FitWidth &&
+            (fitHeight ?? node.Layout.FitHeight) == node.Layout.FitHeight &&
+            (!node.Layout.PinnedToBase || keepsPin))
         {
             return;
         }
@@ -576,16 +583,22 @@ public sealed partial class ProjectEditor
             node.Layout.WritingHeight = writingHeight;
             node.Layout.FitWidth = fitWidth ?? node.Layout.FitWidth;
             node.Layout.FitHeight = fitHeight ?? node.Layout.FitHeight;
-            ClearBasePin(node.Layout);
+
+            if (!keepsPin)
+            {
+                ClearBasePin(node.Layout);
+            }
         });
     }
 
     /// <summary>
     /// <b>카드를 기본 크기로 고정한다</b>(<see cref="NodeLayout.PinnedToBase"/> · 2026-11-25 소유자) — 지금 크기를 풀면 돌아갈 크기로 적어 두고 카드를
-    /// <paramref name="width"/> · <paramref name="writingHeight"/>(앱이 대는 그 PC의 새 카드 크기 · <c>null</c>이면 가장 작은 크기)로 둔다. 글 맞춤은 켜진 채 쉰다.
+    /// <paramref name="width"/> · <paramref name="writingHeight"/>(앱이 대는 그 PC의 기본 크기 · <c>null</c>이면 가장 작은 크기)로 둔다. 글 맞춤은 켜진 채 쉰다.
+    /// <paramref name="widthOnly"/>면 폭만 고정한다(<see cref="NodeLayout.PinnedWidthOnly"/> · 2026-11-26) — 높이는 그대로 두고(<paramref name="writingHeight"/>는
+    /// 읽지 않는다) 세로 글 맞춤은 쉬지 않는다.
     /// 되돌리기 한 칸. 없는 노드거나 이미 기본 크기로 고정했으면 아무것도 적지 않는다.
     /// </summary>
-    public void PinToBaseSize(string nodeId, double? width, double? writingHeight)
+    public void PinToBaseSize(string nodeId, double? width, double? writingHeight, bool widthOnly = false)
     {
         if (Project.FindNode(nodeId) is not { } node || node.Layout.PinnedToBase)
         {
@@ -595,10 +608,16 @@ public sealed partial class ProjectEditor
         Mutate(ProjectChangeKind.Layout, () =>
         {
             node.Layout.UnpinnedWidth = node.Layout.Width;
-            node.Layout.UnpinnedWritingHeight = node.Layout.WritingHeight;
             node.Layout.Width = width;
-            node.Layout.WritingHeight = writingHeight;
+
+            if (!widthOnly)
+            {
+                node.Layout.UnpinnedWritingHeight = node.Layout.WritingHeight;
+                node.Layout.WritingHeight = writingHeight;
+            }
+
             node.Layout.PinnedToBase = true;
+            node.Layout.PinnedWidthOnly = widthOnly;
         }, nodeId);
     }
 
@@ -616,7 +635,12 @@ public sealed partial class ProjectEditor
         Mutate(ProjectChangeKind.Layout, () =>
         {
             node.Layout.Width = node.Layout.UnpinnedWidth;
-            node.Layout.WritingHeight = node.Layout.UnpinnedWritingHeight;
+
+            if (!node.Layout.PinnedWidthOnly)
+            {
+                node.Layout.WritingHeight = node.Layout.UnpinnedWritingHeight;   // 가로만 고정했으면 높이는 고정한 적이 없다 — 그대로
+            }
+
             ClearBasePin(node.Layout);
         }, nodeId);
     }
@@ -624,6 +648,7 @@ public sealed partial class ProjectEditor
     private static void ClearBasePin(NodeLayout layout)
     {
         layout.PinnedToBase = false;
+        layout.PinnedWidthOnly = false;
         layout.UnpinnedWidth = null;
         layout.UnpinnedWritingHeight = null;
     }
@@ -669,10 +694,19 @@ public sealed partial class ProjectEditor
     /// </summary>
     public void FitNodeSize(string nodeId, double? width, double? writingHeight)
     {
-        // 기본 크기로 고정한 카드의 맞춤은 쉰다 — 크기는 고정할 때의 기본 크기 그대로다(2026-11-25).
+        // 기본 크기로 고정한 카드의 맞춤은 쉰다 — 크기는 고정할 때의 기본 크기 그대로다(2026-11-25). 가로만 고정했으면 폭만 그대로 두고 높이는 맞춘다(2026-11-26).
         if (Project.FindNode(nodeId) is not { } node ||
-            node.Layout.PinnedToBase ||
-            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
+            node.Layout is { PinnedToBase: true, PinnedWidthOnly: false })
+        {
+            return;
+        }
+
+        if (node.Layout.PinnedToBase)
+        {
+            width = node.Layout.Width;
+        }
+
+        if (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight)
         {
             return;
         }
