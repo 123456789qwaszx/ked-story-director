@@ -34,6 +34,20 @@ public sealed class NodeLayout
     /// 맞춘다(기본 높이보다 낮게는 줄이지 않는다). <b>새 카드는 이것만 켜고 선다</b>(소유자가 고름). 아래 손잡이로 높이를 끌면 꺼진다.
     /// </summary>
     public bool FitHeight { get; set; }
+
+    /// <summary>
+    /// <b>최소화</b>(2026-11-25 소유자 — 「가로 세로 크기 맞춤을 무시 + 기본크기로 돌려보내는 일종의 최소화 모드 / 반대로 그 상태에서 다시 더블 클릭하면
+    /// 가로 세로 크기맞춤의 영향을 받도록」) — 켜져 있는 동안 카드는 접을 때의 기본 크기(<see cref="Width"/> · <see cref="WritingHeight"/>에 적힌다)이고
+    /// 글 맞춤은 켜진 채 쉰다. 펴면 <see cref="ExpandedWidth"/> · <see cref="ExpandedWritingHeight"/>로 돌아가고 켜진 맞춤이 다시 맞춘다. 크기 손잡이로
+    /// 크기를 정하면 풀린다. 크기처럼 판의 모양이라 프로젝트에 싣는다.
+    /// </summary>
+    public bool Minimized { get; set; }
+
+    /// <summary>최소화를 풀면 돌아갈 카드 폭 — 최소화한 동안만 뜻이 있다(<c>null</c>이면 판의 가장 작은 폭).</summary>
+    public double? ExpandedWidth { get; set; }
+
+    /// <summary>최소화를 풀면 돌아갈 글 칸 높이 — 최소화한 동안만 뜻이 있다(<c>null</c>이면 판의 가장 작은 높이).</summary>
+    public double? ExpandedWritingHeight { get; set; }
 }
 
 /// <summary>

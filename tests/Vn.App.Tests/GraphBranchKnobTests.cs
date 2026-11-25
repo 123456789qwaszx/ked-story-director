@@ -45,7 +45,7 @@ public sealed class GraphBranchKnobTests
         AssertEdgeLeaves(canvas, center, PortRadius);
 
         // 글 칸은 분기가 있어도 커지지 않는다 — 줄 사이에 자리를 끼우지 않는다.
-        Assert.Equal(88, WritingBox(window, card.Id).Bounds.Height, 0.5);
+        Assert.Equal(CardDefaults.WritingHeight, WritingBox(window, card.Id).Bounds.Height, 0.5);
         Assert.DoesNotContain("\n\n", WritingBox(window, card.Id).Text, StringComparison.Ordinal);
 
         window.Close();

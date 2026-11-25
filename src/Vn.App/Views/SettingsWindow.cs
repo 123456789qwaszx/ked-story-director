@@ -241,6 +241,28 @@ internal sealed class SettingsWindow : Window
             FillScriptFont();
         });
 
+        // 「[대본] 새 카드」 — 새 카드의 크기와 「글 맞춤이 이 크기를 지킨다」(2026-11-25 소유자 — 「생성 시에 세팅해주는 기본크기는 별개여야 … 가로 세로 크기
+        // 맞춤은 이 기본 크기는 지켜주도록 세팅이 가능해야」). 「대본 글 칸」과 같은 규칙: 고치는 즉시 앱 설정에 넣는다.
+        string sizeTip = string.Format(Ui.Settings_NewCardSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight);
+        NewCardWidthBox = CardSizeBox(CardDefaults.MinWidth, CardDefaults.MaxWidth, sizeTip);
+        NewCardHeightBox = CardSizeBox(CardDefaults.MinWritingHeight, CardDefaults.MaxWritingHeight, sizeTip);
+        FitKeepsSizeCheck = new CheckBox { Content = Ui.Settings_FitKeepsNewCardSize, FontSize = 12 };
+        ToolTip.SetTip(FitKeepsSizeCheck, string.Format(Ui.Settings_FitKeepsNewCardSizeTip, CardDefaults.MinWidth, CardDefaults.MinWritingHeight));
+        NewCardDefaultButton = new Button
+        {
+            Content = string.Format(Ui.Settings_ResetNewCardSize, CardDefaults.DefaultWidth, CardDefaults.DefaultWritingHeight),
+            FontSize = 11
+        };
+        FillNewCard();
+        NewCardWidthBox.ValueChanged += (_, _) => OnNewCardEdited();
+        NewCardHeightBox.ValueChanged += (_, _) => OnNewCardEdited();
+        FitKeepsSizeCheck.IsCheckedChanged += (_, _) => OnNewCardEdited();
+        NewCardDefaultButton.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_NewCard, () =>
+        {
+            CardDefaults.Reset();
+            FillNewCard();
+        });
+
         ConfirmButton = new Button { Content = Ui.Settings_OK, IsDefault = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
         CancelButton = new Button { Content = Ui.Settings_Cancel, IsCancel = true, MinWidth = 72, HorizontalContentAlignment = HorizontalAlignment.Center };
         ConfirmButton.Click += (_, _) => Confirm();
@@ -300,6 +322,7 @@ internal sealed class SettingsWindow : Window
                     ExportGroup,   // 접는 묶음은 제 테두리가 있다
                     ShortcutGroup,
                     Group(Ui.Settings_ScriptWritingBox, ScriptFontSection()),
+                    Group(Ui.Settings_NewCard, NewCardSection()),
                     Group(Ui.Settings_Other, new StackPanel
                     {
                         Spacing = 4,
@@ -394,6 +417,17 @@ internal sealed class SettingsWindow : Window
     internal TextBox ScriptPreview { get; }
 
     internal Button ScriptFontDefaultButton { get; }
+
+    /// <summary>「[대본] 새 카드」의 폭.</summary>
+    internal NumericUpDown NewCardWidthBox { get; }
+
+    /// <summary>「[대본] 새 카드」의 글 칸 높이.</summary>
+    internal NumericUpDown NewCardHeightBox { get; }
+
+    /// <summary>「[대본] 새 카드」의 「글 맞춤이 이 크기보다 작게 줄이지 않는다」.</summary>
+    internal CheckBox FitKeepsSizeCheck { get; }
+
+    internal Button NewCardDefaultButton { get; }
 
     /// <summary>「대본 글 칸」의 굵게 — 새로 만드는 카드의 글(writer-formatting WF-D16).</summary>
     internal CheckBox ScriptBoldCheck { get; }
@@ -907,6 +941,84 @@ internal sealed class SettingsWindow : Window
                 ScriptFontDefaultButton
             }
         };
+    }
+
+    /// <summary>「[대본] 새 카드」 — 가로 · 글 칸 높이 · 글 맞춤이 이 크기를 지킨다.</summary>
+    private Control NewCardSection()
+    {
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            RowDefinitions = new RowDefinitions("Auto,Auto"),
+            ColumnSpacing = 10,
+            RowSpacing = 6
+        };
+
+        AddRow(grid, 0, Ui.Settings_NewCardWidth, NewCardWidthBox);
+        AddRow(grid, 1, Ui.Settings_NewCardWritingHeight, NewCardHeightBox);
+
+        return new StackPanel
+        {
+            Spacing = 6,
+            Children =
+            {
+                grid,
+                FitKeepsSizeCheck,
+                NewCardDefaultButton
+            }
+        };
+    }
+
+    private static NumericUpDown CardSizeBox(double minimum, double maximum, string tip)
+    {
+        var box = new NumericUpDown
+        {
+            Minimum = (decimal)minimum,
+            Maximum = (decimal)maximum,
+            Increment = 10,
+            FormatString = "0",
+            FontSize = 12,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+        ToolTip.SetTip(box, tip);
+        return box;
+    }
+
+    /// <summary>「[대본] 새 카드」의 칸들을 지금 설정으로 채운다 — 채우는 동안의 바뀜은 넣기로 치지 않는다.</summary>
+    private void FillNewCard()
+    {
+        _fillingNewCard = true;
+
+        try
+        {
+            NewCardWidthBox.Value = (decimal)CardDefaults.Width;
+            NewCardHeightBox.Value = (decimal)CardDefaults.WritingHeight;
+            FitKeepsSizeCheck.IsChecked = CardDefaults.FitKeepsSize;
+        }
+        finally
+        {
+            _fillingNewCard = false;
+        }
+    }
+
+    private bool _fillingNewCard;
+
+    /// <summary>「[대본] 새 카드」의 칸 하나를 고쳤다 — 셋을 함께 넣는다(범위 밖은 끝으로 당겨진다). 비운 숫자 칸은 기본값이다.</summary>
+    private void OnNewCardEdited()
+    {
+        if (_fillingNewCard)
+        {
+            return;
+        }
+
+        UiGuard.Run(_session, Ui.Settings_NewCard, () =>
+        {
+            CardDefaults.Set(
+                (double)(NewCardWidthBox.Value ?? (decimal)CardDefaults.DefaultWidth),
+                (double)(NewCardHeightBox.Value ?? (decimal)CardDefaults.DefaultWritingHeight),
+                FitKeepsSizeCheck.IsChecked == true);
+            FillNewCard();
+        });
     }
 
     /// <summary>칸들을 지금 설정으로 채우고 미리 보기에 입힌다 — 채우는 동안의 바뀜은 넣기로 치지 않는다.</summary>

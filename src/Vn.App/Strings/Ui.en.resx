@@ -283,6 +283,27 @@ The two climb the hill without a word.</value>
   <data name="Settings_TextColorForNewCards" xml:space="preserve">
     <value>Text color for new cards — existing cards stay as they are (change the color of selected text with the formatting toolbar at the top of [Script]).</value>
   </data>
+  <data name="Settings_NewCard" xml:space="preserve">
+    <value>[Script] new cards</value>
+  </data>
+  <data name="Settings_NewCardWidth" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="Settings_NewCardWritingHeight" xml:space="preserve">
+    <value>Writing box height</value>
+  </data>
+  <data name="Settings_NewCardSizeTip" xml:space="preserve">
+    <value>The size of new cards — existing cards stay as they are. Minimized cards, and double-clicking a resize handle, also use this size. The smallest size is {0} × {1}.</value>
+  </data>
+  <data name="Settings_FitKeepsNewCardSize" xml:space="preserve">
+    <value>Fit never shrinks a card below this size</value>
+  </data>
+  <data name="Settings_FitKeepsNewCardSizeTip" xml:space="preserve">
+    <value>When on, Fit width · Fit height don't shrink a card below this size even for short text. When off, they shrink down to the smallest size ({0} × {1}).</value>
+  </data>
+  <data name="Settings_ResetNewCardSize" xml:space="preserve">
+    <value>Reset to default ({0} × {1})</value>
+  </data>
   <data name="Settings_ScriptWritingBox" xml:space="preserve">
     <value>Script writing box</value>
   </data>
@@ -860,6 +881,24 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_CardSize" xml:space="preserve">
     <value>Card size</value>
   </data>
+  <data name="Board_Minimize" xml:space="preserve">
+    <value>Minimize</value>
+  </data>
+  <data name="Board_MinimizeTip" xml:space="preserve">
+    <value>Minimize — folds the card to the new-card size ({0} × {1}) and pauses fitting. Double-clicking the empty part of the header does the same.</value>
+  </data>
+  <data name="Board_MinimizedClickToRestore" xml:space="preserve">
+    <value>Minimized — click to return to the size before folding; any fit that's on fits again (or double-click the empty part of the header).</value>
+  </data>
+  <data name="Board_FitRestsWhileMinimized" xml:space="preserve">
+    <value>Fitting is paused while the card is minimized — it fits again when you restore it.</value>
+  </data>
+  <data name="Board_MinimizedCard" xml:space="preserve">
+    <value>Minimized the card ({0} × {1}) — fitting is paused. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_RestoredCard" xml:space="preserve">
+    <value>Restored the card — any fit that's on fits again. Undo (Ctrl+Z) brings it back.</value>
+  </data>
   <data name="Board_FitWidth" xml:space="preserve">
     <value>Fit width</value>
   </data>
@@ -867,10 +906,10 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Fit height</value>
   </data>
   <data name="Board_FitWidthWhileOnCard" xml:space="preserve">
-    <value>Fit width — while on, the card widens as you write so the longest line doesn't wrap (never narrower than the default width). </value>
+    <value>Fit width — while on, the card widens as you write so the longest line doesn't wrap (how far it shrinks is set in [⚙ Settings] “[Script] new cards”). </value>
   </data>
   <data name="Board_FitHeightWhileOnWriting" xml:space="preserve">
-    <value>Fit height — while on, the writing box grows as you write so every line shows without scrolling (never shorter than the default height). </value>
+    <value>Fit height — while on, the writing box grows as you write so every line shows without scrolling (how far it shrinks is set in [⚙ Settings] “[Script] new cards”). </value>
   </data>
   <data name="Board_OnNowClickToTurn" xml:space="preserve">
     <value>On now — click to turn it off (the size stays). Dragging an edge to resize also turns it off.</value>

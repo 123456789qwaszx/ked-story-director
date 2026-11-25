@@ -141,6 +141,8 @@ public sealed class CardFitTests : IDisposable
     [Fact]
     public void 글이_짧아지면_처음_크기로_돌아가고_처음보다_작게는_줄지_않는다() => HeadlessUi.Run(() =>
     {
+        // 새 카드 크기와 상관없는 시험 — 옛 판의 모양(새 카드 = 가장 작은 크기)으로 돈다.
+        using IDisposable pinned = CardDefaults.Pin(CardDefaults.MinWidth, CardDefaults.MinWritingHeight, fitKeepsSize: false);
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
         Click(graph, root, width: true);
@@ -159,6 +161,8 @@ public sealed class CardFitTests : IDisposable
     [Fact]
     public void 카드의_글자_크기와_줄_간격으로_잰다() => HeadlessUi.Run(() =>
     {
+        // 새 카드 크기와 상관없는 시험 — 옛 판의 모양(새 카드 = 가장 작은 크기)으로 돈다.
+        using IDisposable pinned = CardDefaults.Pin(CardDefaults.MinWidth, CardDefaults.MinWritingHeight, fitKeepsSize: false);
         // 카드의 처음 글자 크기 · 줄 간격(카드를 만들 때의 설정 · writer-formatting WF-D13 · WF-D19)으로 잰다.
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
@@ -242,6 +246,8 @@ public sealed class CardFitTests : IDisposable
     [Fact]
     public void 카드의_글자_크기를_바꾸면_켠_쪽이_곧바로_다시_맞는다() => HeadlessUi.Run(() =>
     {
+        // 새 카드 크기와 상관없는 시험 — 옛 판의 모양(새 카드 = 가장 작은 크기)으로 돈다.
+        using IDisposable pinned = CardDefaults.Pin(CardDefaults.MinWidth, CardDefaults.MinWritingHeight, fitKeepsSize: false);
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
         string[] lines = [Long, "윌로: 응.", "라루: 가자.", "윌로: 어디로?", "라루: 바다로.", "윌로: 좋아."];

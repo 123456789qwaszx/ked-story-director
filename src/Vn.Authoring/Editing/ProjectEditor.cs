@@ -62,6 +62,13 @@ public sealed partial class ProjectEditor
     public Func<WriterBase?>? NewCardWriterBase { get; set; }
 
     /// <summary>
+    /// 새 카드의 처음 크기(카드 폭 · 글 칸 높이)를 대는 곳(2026-11-25 소유자 — 「새 에피소드를 처음 만들었을 때, 줄일 수있는 최소 한도크기와는 별개로,
+    /// 생성 시에 세팅해주는 기본크기는 별개여야」) — 앱이 그 PC의 설정 「[대본] 새 카드」를 댄다. 카드를 만들 때 그 크기가 카드에 적힌다
+    /// (<see cref="NodeLayout.Width"/> · <see cref="NodeLayout.WritingHeight"/>). 판의 가장 작은 크기와 같은 쪽은 적지 않는다. 없으면 가장 작은 크기로 선다.
+    /// </summary>
+    public Func<(double Width, double WritingHeight)>? NewCardSize { get; set; }
+
+    /// <summary>
     /// 새로 잇는 선의 꼴을 대는 곳 — 앱이 그 PC의 설정 「새로 잇는 선」(직각 · 곡선 · 직선)을 댄다(2026-11-23 소유자 — 「대본탭의 간선의 형태도, 설정에서 직선,
     /// 곡선, 직각 중에 기본 생성을 선택할 수 있게」). 선택지 길(<see cref="AddEdge"/>)과 분기 선(분기 추가 · 분기점 잇기)이 <b>생길 때</b> 그 꼴을 적는다 —
     /// 이미 있는 선은 그대로다. 직각(기본 · <see cref="EdgeShape.IsDefault"/>)이면 적지 않는다. 없으면 직각이다.
@@ -196,8 +203,7 @@ public sealed partial class ProjectEditor
             ? NewNames.NextBranchName(Project, board, sceneId)
             : NewNames.NextEpisodeId(Project, board, sceneId)))
         {
-            // 세로 글 맞춤만 켜고 선다(2026-11-25 소유자 — 새 카드는 「세로만 켜짐」) — 쓰는 대로 아래로 늘고, 폭은 처음 폭이다.
-            Layout = new NodeLayout { X = x, Y = y, FitHeight = true },
+            Layout = NewLayout(x, y),
             IsBranchCard = branchCard,
 
             // 카드 글 칸의 처음 글꼴 · 크기 — 지금 그 PC의 설정(writer-formatting WF-D13). 뒤에 설정을 바꿔도 이 카드는 그대로다.
@@ -557,18 +563,84 @@ public sealed partial class ProjectEditor
         if (Project.FindNode(nodeId) is not { } node ||
             (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight &&
              (fitWidth ?? node.Layout.FitWidth) == node.Layout.FitWidth &&
-             (fitHeight ?? node.Layout.FitHeight) == node.Layout.FitHeight))
+             (fitHeight ?? node.Layout.FitHeight) == node.Layout.FitHeight &&
+             !node.Layout.Minimized))
         {
             return;
         }
 
+        // 손으로 정한 크기다 — 최소화도 풀린다(펴면 돌아갈 크기는 버린다 · 2026-11-25).
         Mutate(ProjectChangeKind.Layout, () =>
         {
             node.Layout.Width = width;
             node.Layout.WritingHeight = writingHeight;
             node.Layout.FitWidth = fitWidth ?? node.Layout.FitWidth;
             node.Layout.FitHeight = fitHeight ?? node.Layout.FitHeight;
+            ClearMinimized(node.Layout);
         });
+    }
+
+    /// <summary>
+    /// <b>카드를 최소화한다</b>(<see cref="NodeLayout.Minimized"/> · 2026-11-25 소유자) — 지금 크기를 펴면 돌아갈 크기로 적어 두고 카드를
+    /// <paramref name="width"/> · <paramref name="writingHeight"/>(앱이 대는 그 PC의 새 카드 크기 · <c>null</c>이면 가장 작은 크기)로 둔다. 글 맞춤은 켜진 채 쉰다.
+    /// 되돌리기 한 칸. 없는 노드거나 이미 최소화했으면 아무것도 적지 않는다.
+    /// </summary>
+    public void MinimizeNode(string nodeId, double? width, double? writingHeight)
+    {
+        if (Project.FindNode(nodeId) is not { } node || node.Layout.Minimized)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            node.Layout.ExpandedWidth = node.Layout.Width;
+            node.Layout.ExpandedWritingHeight = node.Layout.WritingHeight;
+            node.Layout.Width = width;
+            node.Layout.WritingHeight = writingHeight;
+            node.Layout.Minimized = true;
+        }, nodeId);
+    }
+
+    /// <summary>
+    /// <b>최소화를 푼다</b> — 접을 때 적어 둔 크기로 돌아간다. 켜진 글 맞춤은 앱이 곧바로 다시 맞춰 <see cref="FitNodeSize"/>로 적는다(이 칸에 든다).
+    /// 되돌리기 한 칸. 없는 노드거나 최소화하지 않았으면 아무것도 적지 않는다.
+    /// </summary>
+    public void RestoreNode(string nodeId)
+    {
+        if (Project.FindNode(nodeId) is not { } node || !node.Layout.Minimized)
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            node.Layout.Width = node.Layout.ExpandedWidth;
+            node.Layout.WritingHeight = node.Layout.ExpandedWritingHeight;
+            ClearMinimized(node.Layout);
+        }, nodeId);
+    }
+
+    private static void ClearMinimized(NodeLayout layout)
+    {
+        layout.Minimized = false;
+        layout.ExpandedWidth = null;
+        layout.ExpandedWritingHeight = null;
+    }
+
+    /// <summary>새 카드의 자리와 크기 — 세로 글 맞춤만 켜고, 크기는 <see cref="NewCardSize"/>(가장 작은 크기와 같은 쪽은 적지 않는다).</summary>
+    private NodeLayout NewLayout(double x, double y)
+    {
+        // 세로 글 맞춤만 켜고 선다(2026-11-25 소유자 — 새 카드는 「세로만 켜짐」) — 쓰는 대로 아래로 늘고, 폭은 처음 폭이다.
+        var layout = new NodeLayout { X = x, Y = y, FitHeight = true };
+
+        if (NewCardSize?.Invoke() is { } size)
+        {
+            layout.Width = size.Width > BoardSize.CardWidth ? size.Width : null;
+            layout.WritingHeight = size.WritingHeight > BoardSize.CardWritingHeight ? size.WritingHeight : null;
+        }
+
+        return layout;
     }
 
     /// <summary>
@@ -597,7 +669,9 @@ public sealed partial class ProjectEditor
     /// </summary>
     public void FitNodeSize(string nodeId, double? width, double? writingHeight)
     {
+        // 최소화한 카드의 맞춤은 쉰다 — 크기는 접을 때의 기본 크기 그대로다(2026-11-25).
         if (Project.FindNode(nodeId) is not { } node ||
+            node.Layout.Minimized ||
             (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
         {
             return;

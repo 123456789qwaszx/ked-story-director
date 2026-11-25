@@ -42,6 +42,8 @@ public sealed class BoardWorkAmountTests : IDisposable
     [Fact]
     public void 글을_넣어도_대본_판의_철도는_다시_긋지_않는다() => HeadlessUi.Run(() =>
     {
+        // 새 카드 크기와 상관없는 시험 — 옛 판의 모양(새 카드 = 가장 작은 크기)으로 돈다.
+        using IDisposable pinned = CardDefaults.Pin(CardDefaults.MinWidth, CardDefaults.MinWritingHeight, fitKeepsSize: false);
         (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         string cardId = EpisodeNaming.CardFor(session.Project, "ch01", "a")!.Id;

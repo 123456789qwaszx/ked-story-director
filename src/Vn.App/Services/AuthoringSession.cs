@@ -34,6 +34,7 @@ internal sealed class AuthoringSession
         {
             // 새 카드 글 칸의 처음 글꼴 · 크기는 그때의 설정 「대본 글 칸」(writer-formatting WF-D13).
             NewCardWriterBase = () => Views.ScriptFont.CardBase,
+            NewCardSize = () => (Views.CardDefaults.Width, Views.CardDefaults.WritingHeight),
 
             // 새로 잇는 선의 꼴은 그때의 설정 「기타」의 「새로 잇는 선」(2026-11-23 소유자).
             NewLineShape = () => Views.BoardLines.Kind

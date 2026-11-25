@@ -265,6 +265,18 @@
   <data name="File_LayoutFitHeightOfNode" xml:space="preserve">
     <value>layout.fitHeight of node '{0}'</value>
   </data>
+  <data name="File_LayoutMinimizedOfNode" xml:space="preserve">
+    <value>layout.minimized of node '{0}'</value>
+  </data>
+  <data name="File_LayoutExpandedWidthOfNode" xml:space="preserve">
+    <value>layout.expandedWidth of node '{0}'</value>
+  </data>
+  <data name="File_LayoutExpandedWritingHeightOfNode" xml:space="preserve">
+    <value>layout.expandedWritingHeight of node '{0}'</value>
+  </data>
+  <data name="File_ExpandedSizeWithoutMinimized" xml:space="preserve">
+    <value>Node '{0}' isn't minimized, but it has a size to restore (layout.expandedWidth · expandedWritingHeight).</value>
+  </data>
   <data name="File_EdgeShapesOfNode" xml:space="preserve">
     <value>edgeShapes of node '{0}'</value>
   </data>

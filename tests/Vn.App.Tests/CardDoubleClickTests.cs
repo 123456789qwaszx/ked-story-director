@@ -75,10 +75,15 @@ public sealed class CardDoubleClickTests : IDisposable
         Press(card, clicks: 1);
         Assert.False(graph.IsRenamingCard);
 
-        // 제목 글자 밖(머리 줄의 빈 곳)을 두 번 — 아무 칸도 서지 않는다(2026-11-25 소유자 — 「글자가 있는 부분까지만으로」).
+        // 제목 글자 밖(머리 줄의 빈 곳)을 두 번 — 제목 칸은 서지 않는다(2026-11-25 소유자 — 「글자가 있는 부분까지만으로」). 그 자리의 두 번 누르기는
+        // 최소화다(같은 날 소유자) — 한 번 더 두 번 누르면 풀린다(CardMinimizeBoardTests).
         TextBlock titleText = TitleText(card);
         PressAt(titleText, new Point(titleText.Bounds.Width + 30, 8), clicks: 2);
         Assert.False(graph.IsRenamingCard);
+        Assert.True(session.Project.FindNode(node.Id)!.Layout.Minimized);
+        PressAt(TitleText(CardOf(graph, node.Id)), new Point(TitleText(CardOf(graph, node.Id)).Bounds.Width + 30, 8), clicks: 2);
+        Assert.False(session.Project.FindNode(node.Id)!.Layout.Minimized);
+        card = CardOf(graph, node.Id);
 
         // 제목 글자 위를 두 번 — 제목 칸이 서고 지금 제목이 골라져 있다. 탭은 그대로다.
         PressTitle(card, clicks: 2);

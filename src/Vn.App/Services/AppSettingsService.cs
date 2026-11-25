@@ -270,6 +270,22 @@ internal static class AppSettingsService
         Save(settings);
     }
 
+    /// <summary>[대본] 판 새 카드의 크기와 「글 맞춤이 기본 크기를 지킨다」(설정 창 「[대본] 새 카드」 — 2026-11-25).</summary>
+    public static (double Width, double WritingHeight, bool FitKeeps) LoadNewCardSize()
+    {
+        AppSettings settings = Load(SettingsPath);
+        return (settings.NewCardWidth, settings.NewCardWritingHeight, settings.FitKeepsNewCardSize);
+    }
+
+    public static void SaveNewCardSize(double width, double writingHeight, bool fitKeeps)
+    {
+        AppSettings settings = Load(SettingsPath);
+        settings.NewCardWidth = width;
+        settings.NewCardWritingHeight = writingHeight;
+        settings.FitKeepsNewCardSize = fitKeeps;
+        Save(settings);
+    }
+
     /// <summary>하이어아키 기둥을 접어 두었는가 (두 그래프가 함께 쓴다).</summary>
     public static bool LoadHierarchyFolded() => Load(SettingsPath).HierarchyFolded;
 
@@ -437,6 +453,15 @@ internal static class AppSettingsService
 
         /// <summary>새 카드 글의 기본 글자색(<c>#RRGGBB</c>) — null이면 테마의 글자색.</summary>
         public string? ScriptFontColor { get; set; }
+
+        /// <summary>[대본] 새 카드의 폭 — <see cref="LoadNewCardSize"/>. 처음에는 320.</summary>
+        public double NewCardWidth { get; set; } = Views.CardDefaults.DefaultWidth;
+
+        /// <summary>[대본] 새 카드의 글 칸 높이 — 처음에는 160.</summary>
+        public double NewCardWritingHeight { get; set; } = Views.CardDefaults.DefaultWritingHeight;
+
+        /// <summary>글 맞춤이 새 카드 크기보다 작게 줄이지 않는가 — 처음(이 칸이 없는 설정 파일)에는 켜져 있다.</summary>
+        public bool FitKeepsNewCardSize { get; set; } = true;
 
         /// <summary>툴 화면의 언어 — <see cref="LoadLanguage"/>. null이면 PC 언어를 따른다.</summary>
         public string? Language { get; set; }

@@ -61,6 +61,8 @@ public sealed class CardResizeTests : IDisposable
     [Fact]
     public void 기본_폭보다_좁히지_않고_두_번_누르면_기본_폭으로_돌아온다() => HeadlessUi.Run(() =>
     {
+        // 새 카드 크기와 상관없는 시험 — 옛 판의 모양(새 카드 = 가장 작은 크기)으로 돈다.
+        using IDisposable pinned = CardDefaults.Pin(CardDefaults.MinWidth, CardDefaults.MinWritingHeight, fitKeepsSize: false);
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
 
@@ -123,6 +125,8 @@ public sealed class CardResizeTests : IDisposable
     [Fact]
     public void 모서리는_폭과_높이를_함께_바꾸고_두_번_누르면_둘_다_기본이며_가장자리는_제_것만_돌린다() => HeadlessUi.Run(() =>
     {
+        // 새 카드 크기와 상관없는 시험 — 옛 판의 모양(새 카드 = 가장 작은 크기)으로 돈다.
+        using IDisposable pinned = CardDefaults.Pin(CardDefaults.MinWidth, CardDefaults.MinWritingHeight, fitKeepsSize: false);
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
 
@@ -232,6 +236,8 @@ public sealed class CardResizeTests : IDisposable
     [Fact]
     public void 세로_글_맞춤이_켜져_있으면_폭을_바꿀_때_높이도_다시_맞고_한_칸이다() => HeadlessUi.Run(() =>
     {
+        // 새 카드 크기와 상관없는 시험 — 옛 판의 모양(새 카드 = 가장 작은 크기)으로 돈다.
+        using IDisposable pinned = CardDefaults.Pin(CardDefaults.MinWidth, CardDefaults.MinWritingHeight, fitKeepsSize: false);
         // 2026-11-25 소유자 — 「세로 줄을 활성화 해둔 상태이더라도, 가로 영역을 줄이는 경우에는 세로 영역 맞춤이 되지 않고 스크롤에 의존해야하는 게
         // 불편 … 자동으로 노드의 높이도 조절되도록」.
         (GraphEditorView graph, AuthoringSession session) = Show();

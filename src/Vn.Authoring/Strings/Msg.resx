@@ -348,6 +348,22 @@
     <value>노드 '{0}'의 layout.fitHeight</value>
     <comment>StoryNodeJson.cs</comment>
   </data>
+  <data name="File_LayoutMinimizedOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.minimized</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutExpandedWidthOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.expandedWidth</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutExpandedWritingHeightOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.expandedWritingHeight</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_ExpandedSizeWithoutMinimized" xml:space="preserve">
+    <value>노드 '{0}'은 최소화하지 않았는데 펴면 돌아갈 크기(layout.expandedWidth · expandedWritingHeight)가 적혀 있습니다.</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
   <data name="File_EdgeShapesOfNode" xml:space="preserve">
     <value>노드 '{0}'의 edgeShapes</value>
     <comment>StoryNodeJson.cs</comment>
