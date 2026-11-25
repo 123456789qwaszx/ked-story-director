@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Path = System.IO.Path;
 using Vn.App.Services;
@@ -50,6 +51,33 @@ public sealed class SceneFrameTests
         graph.Rebuild();
 
         Assert.Single(SceneLabels(graph));
+    });
+
+    [Fact]
+    public void 장면이_하나뿐인_챕터도_장면_테두리_바깥에_챕터의_빈_띠가_넉넉하다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 「챕터 하나에 장면만 있을 때 챕터와 장면 사이의 공간이 너무 좁아 우클릭으로 장면을 추가하기 불편」.
+        // 그 띠가 챕터 안 · 장면 밖 = 우클릭 「장면 추가」 자리다(⛔ 전에는 14, 위 20).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+
+        Chapter(session, ("opening", "ep01"), ("opening", "ep02"));
+        graph.Rebuild();
+
+        var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
+        Rect FrameOf(double corner)
+        {
+            Border frame = canvas.Children.OfType<Border>()
+                .Single(border => border.Child is null && !border.IsHitTestVisible && border.CornerRadius.TopLeft == corner);
+            return new Rect(Canvas.GetLeft(frame), Canvas.GetTop(frame), frame.Width, frame.Height);
+        }
+
+        Rect chapter = FrameOf(12);
+        Rect scene = FrameOf(8);
+
+        Assert.True(scene.X - chapter.X >= 40, $"왼쪽 띠 {scene.X - chapter.X}");
+        Assert.True(chapter.Right - scene.Right >= 40, $"오른쪽 띠 {chapter.Right - scene.Right}");
+        Assert.True(chapter.Bottom - scene.Bottom >= 40, $"아래 띠 {chapter.Bottom - scene.Bottom}");
+        Assert.True(scene.Y - chapter.Y >= 40, $"위 띠 {scene.Y - chapter.Y}");   // 챕터 이름표가 그 위에 앉는다
     });
 
     [Fact]

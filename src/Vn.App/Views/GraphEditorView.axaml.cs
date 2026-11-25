@@ -1086,8 +1086,8 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
-            // 위쪽은 이름표 자리까지 여유를 둔다.
-            area = area.Inflate(new Thickness(24, 46, 24, 24));
+            // 장면 테두리 바깥으로 넉넉히 — 그 띠가 챕터 안 · 장면 밖(우클릭 「장면 추가」) 자리다. 위쪽은 이름표 자리까지 더 둔다.
+            area = area.Inflate(ChapterFramePad);
 
             bool isActive = string.Equals(group.Key, _session.ActiveFileId, StringComparison.Ordinal);
             // 판 이름 = 챕터 ID — 이름표는 보이는 이름(표시 이름, 비면 ID)이다(display-names N3).
@@ -1239,14 +1239,24 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
-            // 챕터 프레임(24·46)보다 얕게 — 두 테두리가 붙어 보이지 않게 한다.
-            area = area.Inflate(new Thickness(10, 26, 10, 10));
+            // 챕터 프레임보다 얕게 — 두 테두리 사이에 챕터의 빈 곳이 남는다(<see cref="ChapterFramePad"/>).
+            area = area.Inflate(SceneFramePad);
 
             _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
             _frames.Add(SceneFrame(area));
             _frames.Add(SceneLabel(area, fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)));
         }
     }
+
+    /// <summary>장면 테두리가 카드에서 나오는 폭(왼 · 위 · 오른 · 아래) — 위는 장면 이름표 자리다.</summary>
+    private static readonly Thickness SceneFramePad = new(10, 26, 10, 10);
+
+    /// <summary>
+    /// 챕터 테두리가 카드에서 나오는 폭 — 장면 테두리(<see cref="SceneFramePad"/>) 바깥으로 옆 · 아래 40, 위 46(챕터 이름표가 그 위에 앉는다)을 더
+    /// 둔다(2026-11-25 소유자 — 「챕터 하나에 장면만 있을 때 챕터와 장면 사이의 공간이 너무 좁아 우클릭으로 장면을 추가하기 불편」 · ⛔ 그 전에는
+    /// (24, 46, 24, 24)라 장면 테두리 바깥 띠가 14(위 20)뿐이었다).
+    /// </summary>
+    private static readonly Thickness ChapterFramePad = new(50, 72, 50, 50);
 
     /// <summary>그 노드가 대신하는 에피소드 — 표식이 먼저고, 없으면 이름이다(EpisodeNaming 한 벌).</summary>
     private string? EpisodeOf(ExpandedNodeProjection node) =>
@@ -7188,9 +7198,9 @@ public partial class GraphEditorView : UserControl
             return null;
         }
 
-        // 테두리는 카드에서 (10, 26, 10, 10)만큼 나와 있다 — 새 카드가 들어가면 테두리가 그만큼 넓어진다.
-        double x = found.Area.Right - 10 + 40;
-        double y = found.Area.Y + 26;
+        // 테두리는 카드에서 SceneFramePad만큼 나와 있다 — 새 카드가 들어가면 테두리가 그만큼 넓어진다.
+        double x = found.Area.Right - SceneFramePad.Right + 40;
+        double y = found.Area.Y + SceneFramePad.Top;
         List<Rect> taken = _cards
             .Select(card => new Rect(Canvas.GetLeft(card.Visual), Canvas.GetTop(card.Visual), card.Visual.Width, CardHeightOf(card)))
             .ToList();
