@@ -227,6 +227,57 @@ public sealed class CardResizeTests : IDisposable
         Assert.True(session.Project.FindNode(root)!.Layout.FitWidth);
     });
 
+    [Fact]
+    public void 세로_글_맞춤이_켜져_있으면_폭을_바꿀_때_높이도_다시_맞고_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 「세로 줄을 활성화 해둔 상태이더라도, 가로 영역을 줄이는 경우에는 세로 영역 맞춤이 되지 않고 스크롤에 의존해야하는 게
+        // 불편 … 자동으로 노드의 높이도 조절되도록」.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        string line = "라루: 오늘따라 바람이 유난히 차가워서 겉옷을 챙겨 오지 않은 것을 몹시 후회했다.";
+        session.Editor.ApplyScenarioText(root, string.Join('\n', Enumerable.Repeat(line, 4)));
+        Dispatcher.UIThread.RunJobs();
+        graph.AutoFit(root);   // 세로 글 맞춤(새 카드는 켜져 있다) — 지금 폭에서 맞춘다
+        Dispatcher.UIThread.RunJobs();
+        double narrow = WritingBox(graph, root).Height;
+        Assert.True(narrow > 88);
+
+        // 넓히면 덜 꺾여 낮아진다 — 세로 맞춤은 켜진 채다(폭을 끈 쪽만 꺼진다).
+        DragGrip(graph, root, GraphEditorView.ResizeGripTag, dx: 300, dy: 0);
+        Dispatcher.UIThread.RunJobs();
+        double wide = WritingBox(graph, root).Height;
+        Assert.True(wide < narrow, $"넓힌 뒤 {wide} · 전 {narrow}");
+        Assert.True(session.Project.FindNode(root)!.Layout.FitHeight);
+        Assert.Equal(wide, session.Project.FindNode(root)!.Layout.WritingHeight ?? 88);
+        AssertAllVisible(graph, root);
+
+        // 다시 좁히면 높아진다 — 스크롤에 기대지 않는다.
+        DragGrip(graph, root, GraphEditorView.ResizeGripTag, dx: -200, dy: 0);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(WritingBox(graph, root).Height > wide);
+        AssertAllVisible(graph, root);
+
+        // 폭과 맞춘 높이가 한 칸이다.
+        session.Editor.Undo();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(wide, session.Project.FindNode(root)!.Layout.WritingHeight ?? 88);
+
+        // 손잡이를 두 번 눌러 처음 폭으로 돌려도 높이가 다시 맞는다.
+        Press(Grip(graph, root, GraphEditorView.ResizeGripTag), clickCount: 2);
+        Dispatcher.UIThread.RunJobs();
+        graph.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(session.Project.FindNode(root)!.Layout.Width);
+        Assert.Equal(narrow, WritingBox(graph, root).Height);
+    });
+
+    /// <summary>글 칸이 스크롤 없이 모든 줄을 보인다.</summary>
+    private static void AssertAllVisible(GraphEditorView graph, string nodeId)
+    {
+        ScrollViewer scroll = WritingBox(graph, nodeId).GetVisualDescendants().OfType<ScrollViewer>().First();
+        Assert.True(scroll.Extent.Height <= scroll.Viewport.Height + 0.5, $"글 높이 {scroll.Extent.Height} · 보이는 높이 {scroll.Viewport.Height}");
+    }
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>진짜 창의 [대본] 탭 — 셸이 편집을 받아 판을 고치는 길까지 함께 돈다(<see cref="HierarchyFixture"/>).</summary>

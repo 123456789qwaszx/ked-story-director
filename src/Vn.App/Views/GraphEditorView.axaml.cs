@@ -3358,6 +3358,12 @@ public partial class GraphEditorView : UserControl
                             edges.HasFlag(ResizeEdges.Bottom) ? null : layout.WritingHeight,
                             fitWidth: edges.HasFlag(ResizeEdges.Right) ? false : null,
                             fitHeight: edges.HasFlag(ResizeEdges.Bottom) ? false : null);
+
+                        // 폭만 처음으로 돌렸고 세로 글 맞춤이 켜져 있으면 그 폭에서 높이를 다시 맞춘다(2026-11-25 — 끌어 바꿀 때와 같다).
+                        if (!edges.HasFlag(ResizeEdges.Bottom))
+                        {
+                            QueueAutoFit(card.NodeId);
+                        }
                     }
                 });
                 return;
@@ -3689,6 +3695,14 @@ public partial class GraphEditorView : UserControl
             fitWidth: widthMoved ? false : null,
             fitHeight: heightMoved ? false : null));
         ShowFitToggles(card);
+
+        // 폭만 바꿨고 세로 글 맞춤이 켜져 있으면 그 폭에서 높이를 다시 맞춘다(2026-11-25 소유자 — 「세로 줄을 활성화 해둔 상태이더라도, 가로 영역을
+        // 줄이는 경우에는 세로 영역 맞춤이 되지 않고 스크롤에 의존해야하는 게 불편 … 자동으로 노드의 높이도 조절되도록」). 맞춘 높이는 이 크기 바꾸기의
+        // 되돌리기 칸에 든다(FitNodeSize).
+        if (widthMoved && !heightMoved)
+        {
+            QueueAutoFit(card.NodeId);
+        }
     }
 
     /// <summary>
