@@ -142,7 +142,7 @@ public sealed record ChapterEdge(
 }
 
 /// <summary>
-/// `조건` 시트 한 행. 라벨↔식 표이며 <c>ConditionDefinition{Name, Expression}</c>에 대응한다 (G-7).
+/// `조건` 시트 한 행. 라벨↔식 표다 — 라벨이 열쇠라 대사의 줄 전환 · 간선의 표시조건 · 해금조건이 이 글자로 가리킨다 (G-7 · condition-supply C1).
 /// <see cref="Parsed"/>는 툴이 검증에 쓰는 해석 결과일 뿐, <see cref="Expression"/> 원문이 정본이다 —
 /// 게임이 평가하는 것은 원문이고 툴은 그 의미를 소유하지 않는다(무해석성, §0.5).
 /// </summary>

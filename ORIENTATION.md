@@ -58,8 +58,8 @@
 
 | 폴더 | 무엇이 사는가 |
 |---|---|
-| `Chapters/` | 챕터 층 — `ChapterDocument`(저장 모델) · `ChapterGraphModel`(펼친 모델) · 검사(`ChapterStructureCheck` 등) · 검증(`ChapterValidator`) · 도달성 증명(`ChapterReachabilityProver`) · 내보내기(`ChapterProgressionExporter` · 대사 Yarn `ChapterYarnExporter` · `ChapterExportService`) · 판 공급(`ChapterBoardSupply`) |
-| `Model/` | 프로젝트 · 판(`StoryFile`) · 노드(`DialogueNode` · `SetNode`) · 줄 논리(`DialogueLineExtension`) |
+| `Chapters/` | 챕터 층 — `ChapterDocument`(저장 모델) · `ChapterGraphModel`(펼친 모델) · 검사(`ChapterStructureCheck` 등) · 검증(`ChapterValidator`) · 도달성 증명(`ChapterReachabilityProver`) · 내보내기(`ChapterProgressionExporter` · 대사 Yarn `ChapterYarnExporter` · `ChapterExportService`) |
+| `Model/` | 프로젝트 · 판(`StoryFile`) · 노드(`DialogueNode`) · 줄 논리(`DialogueLineExtension`) |
 | `Script/` | 대본 — **화자 · 대사의 유일한 원본.** 줄의 신원(`LineId`)과 본문을 나눈다. 카드 글 칸의 글을 신원을 지키며 잇는 `ScriptSynchronizer` |
 | `Editing/` | **모델을 바꾸는 유일한 통로**(`ProjectEditor`). 되돌리기 · 변경 알림을 함께 진다 |
 | `Flow/` | 계산 — 조건 갈래 해석(`ConditionFlowResolver`) · 출구 포트(`NodeConnections`) · 쓸 수 있는 조건(`AvailableConditionResolver`) |

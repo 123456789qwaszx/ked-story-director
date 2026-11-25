@@ -36,7 +36,7 @@
 MyStory/
 ├─ project.vnproject.json      매니페스트(폴더 안에 하나 — 새 프로젝트는 이 이름, `ProjectFolder`) — 판 목록 · 챕터(chapters[]) · 화자(speakers — 없으면 없다) · [대본] 판 크기(board — 기본이면 없다)
 ├─ game.definition.json        (있으면) compositor의 연출 어휘. 이 툴은 읽지도 쓰지도 않는다
-├─ story/*.vnstory.json        판 — 노드(대사 · 설정). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
+├─ story/*.vnstory.json        판 — 카드(대사 노드). 대사 카드는 제 대본(`script` 칸 — 줄 신원(LineId) · 개정 번호 ·
 │                              locale별 화자 · 글)과 그 위의 줄 논리 · 출구 · 선 모양을 든다
 │                              목차에서 빠진 판(지운 챕터의 판)은 저장할 때 지운다 — 툴이 지은 이름 `sf_` + ID 8자만, 폴더에 다른 목차가 없을 때만
 │                              (`ProjectStore.RemoveStaleStoryFiles` · 2026-11-18)
@@ -53,8 +53,8 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 
 | 형식 | 상수 | 파일 |
 |---|---|---|
-| 프로젝트 | `StoryProject.CurrentFormatVersion` = 4 (이 형식만 연다 — §8) | `*.vnproject.json` |
-| 판 | `StoryFileJson.CurrentFormatVersion` = 2 | `*.vnstory.json` |
+| 프로젝트 | `StoryProject.CurrentFormatVersion` = 5 (이 형식만 연다 — §8) | `*.vnproject.json` |
+| 판 | `StoryFileJson.CurrentFormatVersion` = 3 | `*.vnstory.json` |
 | 되돌리기 스냅샷 | `ProjectSnapshotCodec.CurrentSnapshotVersion` = 3 | (메모리) |
 
 ⛔ 형식 3까지는 대본이 `script/*.vnscript.json`에 따로 섰고(`ScriptDocumentJson` 형식 1) 카드는 그 Id를 가리켰다
@@ -88,7 +88,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 |---|---|
 | `StoryProject.cs` · `Speaker.cs` | 프로젝트 — 판(카드와 그 대본) · 챕터 · **화자 목록**(이름 · 캐릭터 키 — 모든 챕터가 쓴다, 2026-11-17 · ⛔ 그 전에는 정의 파일 speakers) · [대본] 판 크기 |
 | `StoryFile.cs` | 판 하나 — 노드 목록(순서 = 파일 순서, 그래프 좌표와 별개 — §6-7) |
-| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리(조건 전환 · 분기점) · 에피소드 표식(`MarkedEpisodeId`) · 분기 카드의 제목(`Title`)을 든다. ⛔ 기본 출구는 2026-11-17에, 갈래 출구(`BranchExits`)는 2026-11-19에 걷혔다) · `SetNode`(조건 공급자 — 카드가 없다) · `ConditionDefinition` |
+| `StoryNode.cs` | `DialogueNode`(제 대본 `Script`를 들고, 줄 논리(조건 전환 · 분기점) · 에피소드 표식(`MarkedEpisodeId`) · 분기 카드의 제목(`Title`)을 든다. ⛔ 기본 출구는 2026-11-17에, 갈래 출구(`BranchExits`)는 2026-11-19에 걷혔다) (⛔ `SetNode` · `ConditionDefinition` — 챕터 조건 공급 노드와 그 사본 — 는 2026-11-25에 걷혔다 · condition-supply C1) |
 | `DialogueLineExtension.cs` | 줄에 얹는 대사 논리 — 그 줄 **앞**의 조건 전환(`Transitions`)과 분기 표식(`DetourTargetNodeIds` — 한 줄에 여럿, 연결만 끊은 분기점은 `OpenDetourPositions`). 화자 · 글은 없다. ⛔ 대사 안 선택 전환은 2026-11-04에 걷혔다 — 선택지는 간선에서만 |
 | `EdgeShape.cs` | 사람이 고친 선 모양(꼴 · 굽이 — 자동 자리에서 옮긴 양) |
 | `Identifier.cs` | 식별자 형식 |
@@ -108,7 +108,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `ExportDelivery.cs` | 저장할 때 `exported/`를 형식마다 보낼 곳으로 비춘다 — 보낸 기록으로 이 툴이 보낸 그대로인 지난 파일만 걷는다 |
 | `ChapterExportBytes.cs` · `ChapterReleaseBaseline.cs` | 바이트 계약(서버가 SHA-256으로 버전을 식별) · 출시 기준선과 선택지 배열 비교 |
 | `ChapterBoard.cs` · `EpisodeNaming.cs` · `ChapterSpine.cs` | 에피소드 ↔ 판의 카드를 잇는 규약(그 챕터의 판에서만 찾는다) · 착지 카드 판정 |
-| `ChapterBoardSupply.cs` · `ConditionYarnTranslator.cs` | 챕터 조건을 판의 공급 노드(`챕터 {Id} 조건`)로 번역해 나른다 — 대사 카드의 조건 목록에 뜨는 길 |
+| `ConditionYarnTranslator.cs` | 챕터 조건의 식을 Yarn 식으로 옮긴다 — 대사 카드의 `<<if>>`와 대사 Yarn이 이 식을 쓴다(⛔ 판의 공급 노드로 나르던 `ChapterBoardSupply`는 2026-11-25에 걷혔다) |
 | `BranchEntryCondition.cs` · `ChapterBranchMarkers.cs` | 분기 에피소드의 첫머리 조건 · 분기 표식 모으기 |
 | `ConditionExpressionParser.cs` · `StatDeltaParser.cs` | 조건식 · 스탯변화 문법(스탯키 갈아 끼우기도 여기) |
 | `ChapterRenamer.cs` · `EpisodeRenamer.cs` · `ChapterDeleter.cs` · `EpisodeDeleter.cs` | 이름이 신원인 것들의 개명 · 삭제 — 참조를 함께 옮긴다 |
@@ -123,13 +123,13 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `DialogueScriptResolver.cs` | 대본 줄 + 줄 논리를 합친 읽기 전용 투영(고아 줄 포함) |
 | `BranchAnchor.cs` | 조건 갈래의 신원을 짓는 유일한 자리 |
 | `NodeConnections.cs` | 실행 출구 포트(`PortsOf`)와 간선 문구 |
-| `AvailableConditionResolver.cs` · `ConnectedSetNodeResolver.cs` | 쓸 수 있는 조건 — 그 판의 챕터 조건(공급 노드의 사본) |
+| `AvailableConditionResolver.cs` | 쓸 수 있는 조건 — 카드가 선 판의 챕터 조건을 바로(이름이 열쇠 · 줄 전환이 그 이름을 든다 · 식은 그때마다 옮긴다) |
 
 ### 3.5 `Vn.Authoring/Graph` — 그래프에 무엇을 그릴지
 
 | 파일 | 하는 일 |
 |---|---|
-| `GraphProjectionBuilder.cs` | 프로젝트 → `GraphProjection`. **화면이 아니라 여기가** 무엇이 보이는지 정한다 — 설정노드는 그리지 않는다(`IsHiddenPlumbing`), 접힌 판은 장면으로 묶는다 |
+| `GraphProjectionBuilder.cs` | 프로젝트 → `GraphProjection`. **화면이 아니라 여기가** 무엇이 보이는지 정한다 — 접힌 판은 장면으로 묶는다 |
 | `EdgeSide.cs` | 선이 나가는 쪽 — 도착 카드가 출발 카드보다 왼쪽이면 왼쪽(H1) |
 | `OrthogonalEdgeRouter.cs` · `EdgeShapeRouter.cs` | 자동 직각 경로 · 사람이 고친 모양(직각 · 곡선 · 직선)대로 긋기 |
 | `NodePlacement.cs` | 새 카드가 설 자리(위→아래, D3) |
@@ -144,7 +144,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `ProjectEditor.cs` | 판 · 노드 · 조건 · 출구(`SetExitTarget`) · 줄 전환 · 선 모양 · 되돌리기 |
 | `ProjectEditor.Scripts.cs` | 대본 줄(`InsertScriptLine` · `RetireScriptLine` · `MoveScriptLine` · `SetScriptLineText`) · 카드 글 반영(`ApplyScenarioText` — 화자 가르기는 프로젝트의 화자 목록을 본다) |
 | `ProjectEditor.Speakers.cs` | 화자 목록(`AddSpeaker` · `RemoveSpeaker` · `SetSpeakerCharacterId`) · 화자 개명(`RenameSpeaker` — 목록과 이미 쓴 줄을 한 칸에) |
-| `ProjectEditor.Chapters.cs` | 챕터 · 에피소드(장면을 꼭 받는다 — 카드와 한 칸에 서고 함께 지워진다) · 간선(`AddEdge(before:)` — 줄 자리에 끼운다) · 조건 · 스탯(개명 · 삭제 — 그 챕터의 공급 노드만) |
+| `ProjectEditor.Chapters.cs` | 챕터 · 에피소드(장면을 꼭 받는다 — 카드와 한 칸에 서고 함께 지워진다) · 간선(`AddEdge(before:)` — 줄 자리에 끼운다) · 조건 · 스탯(개명 · 삭제 — 그 챕터 판의 카드만) |
 | `ProjectEditor.WriterMarks.cs` | 작가용 글 서식(`ApplyWriterStyle` · `SetWriterAlign`) — 대사 글 밖(`DialogueNode.WriterMarks`)에 서고 글이 바뀌면 같은 글자를 따라간다(`ApplyScriptSync` · `SetScriptLineText` 안에서). **내보내기가 읽지 않는다**(`docs/plans/writer-formatting.md`) |
 | `ProjectChangedEventArgs.cs` | 변경의 종류(`ProjectChangeKind`) — 화면이 무엇을 다시 그릴지(`Vn.App/Services/ProjectRefreshPlanner`)의 근거 |
 
@@ -216,9 +216,9 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | 화자와 대사의 원본은 | `ScriptDocument`의 `ScriptLocale.Entries`. 바꾸는 코드는 `ProjectEditor.Scripts.cs`에만 있다 |
 | LineId는 글을 고친 뒤 어떻게 유지되나 | `ScriptSynchronizer`가 잇는다. 애매하면 멈춘다(§4.4) |
 | 에피소드 구조 · 간선 · 조건 · 스탯의 원본은 | `ChapterDocument`. 두 화면이 같은 `ProjectEditor.Chapters` 명령을 부른다 |
-| 챕터 조건이 대사 카드에 뜨는 길은 | 판의 공급 노드(`ChapterBoardSupply`) — 조건 편집 명령 안과 판이 서는 순간에 번역해 나른다 |
+| 챕터 조건이 대사 카드에 뜨는 길은 | 카드가 선 판의 챕터 조건을 바로 읽는다(`AvailableConditionResolver`) — 줄 전환은 조건 이름을 들고, 식은 그릴 때 · 내보낼 때 옮긴다 |
 | 런타임이 무엇을 받나 | 검증과 코어 재적재를 통과한 진행 JSON만(§4.5) |
-| 이전 프로젝트는 | 형식 4 이전(1~3)은 열지 않는다(§8) |
+| 이전 프로젝트는 | 형식 5 이전(1~4)은 열지 않는다(§8) |
 
 ### 4.1 조건은 반복 저장하지 않고 전환만 저장한다
 
@@ -281,8 +281,8 @@ Yarn이 없는 노드를 불러 게임이 멈췄고, 에피소드에 이으면 �
 
 ### 4.6 챕터 = 판 1:1, 범위는 챕터다
 
-EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 · 공급 노드 · 스탯 · 조건은 **그 챕터의 판에서만** 찾는다
-(`EpisodeNaming.BoardOf` · `ChapterBoard.For` · `SupplyNodesOf`). 프로젝트 전체를 훑으면 다른 챕터의 같은 이름을 집는다 — 이 저장소가
+EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 · 스탯 · 조건 · 조건을 쓰는 줄 전환은 **그 챕터의 판에서만** 찾는다
+(`EpisodeNaming.BoardOf` · `ChapterBoard.For` · `BoardDialoguesOf`). 프로젝트 전체를 훑으면 다른 챕터의 같은 이름을 집는다 — 이 저장소가
 여러 번 다친 자리다(C1 · L4b).
 
 ---
@@ -334,8 +334,8 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 | 도달성 | `Chapters/ChapterReachabilityProver.cs` |
 | 런타임에 나가는 필드 | `Chapters/ChapterProgressionExporter.cs` + [`docs/runtime-contract.md`](docs/runtime-contract.md) |
 | 진단이 짚는 자리 · 문장 | `Chapters/ChapterDiagnostic.cs`(에피소드는 `EpisodeId`, 간선은 메시지의 `ChapterEdge.Where`) |
-| 챕터 조건 → 대사 카드 | `Chapters/ChapterBoardSupply.cs`(사본은 **이름**으로 짝짓는다, 식 미정은 `true`) · `ConditionYarnTranslator.cs`, 분기에 거는 칸 `App/Views/BranchConditionPicker.cs` |
-| 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` · `RenameChapterCondition`(간선이 따라간다, 공급 사본은 Id 보존) |
+| 챕터 조건 → 대사 카드 | `Flow/AvailableConditionResolver.cs`(이름이 열쇠, 식 미정은 `true`) · `Chapters/ConditionYarnTranslator.cs`, 분기에 거는 칸 `App/Views/BranchConditionPicker.cs` |
+| 이름 바꾸기 · 지우기 | `ChapterRenamer` · `EpisodeRenamer` · `ChapterDeleter` · `EpisodeDeleter` · `ProjectEditor.RenameChapterStat` · `RenameChapterCondition`(간선과 그 챕터 판의 줄 전환이 따라간다) |
 | 화자 목록(이름 · 캐릭터 키) | 규칙 `App/Services/AuthoringSession.cs`의 `AddSpeakerName` · `RenameSpeakerName` · `RemoveSpeakerName` · `SetSpeakerCharacterId`(쓰면 `SpeakersChanged`), 화면 이름 `App/MainWindow.Speakers.cs`([대본] 「화자」 탭) · 키 `ChapterGraphView` 「화자」 탭([구성]) — 두 탭의 오른쪽 기둥은 탭 셋 `SideTabs`(`Views/SideTab.cs` · 2026-11-18) |
 | 조건 이름 · 식 미정 | 이름 화면 `App/MainWindow.Conditions.cs`([대본] 「조건 및 스탯」 탭 — 지금 챕터 = 활성 판), 식 · [＋ 조건](이름 + 식)은 `ChapterGraphView` 「조건 및 스탯」 탭의 조건 표([구성]). 빈 식 = 항상 통과 `ChapterDocument.Reparse`, 진단 `ConditionExpressionBlank`(경고) |
 | 장면 메모 · 에피소드 지시 | 규칙(주인 · 차례 · 주인 없는 메모 경고) `Chapters/ChapterSceneNotes.cs`, 편집 `ProjectEditor.SetSceneNote` · `UpdateEpisodeMemo` · `RenameScene`(메모를 데려간다), 화면 `App/MainWindow.SceneNotes.cs` |
@@ -423,9 +423,10 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 
 고정은 시간(ms)이 아니라 **일의 횟수**로 건다 — `ChapterGraphWorkAmountTests`.
 
-## 8. 이전 프로젝트 정책 — 형식 4만 연다
+## 8. 이전 프로젝트 정책 — 형식 5만 연다
 
-**형식 4 이전은 열지 않는다**(2026-11-17 · [`docs/work-orders/legacy-read-orders.md`](docs/work-orders/legacy-read-orders.md)).
+**형식 5 이전은 열지 않는다**(2026-11-17 · [`docs/work-orders/legacy-read-orders.md`](docs/work-orders/legacy-read-orders.md) — 형식 4(0.3.x까지 · 판마다 숨은
+챕터 조건 공급 노드가 있던 형식)도 2026-11-25부터 · [`docs/work-orders/condition-supply-orders.md`](docs/work-orders/condition-supply-orders.md) 4절).
 `ProjectManifestJson.Read`가 한 줄로 거절한다. **거부는 파괴적이지 않다** — 원본 파일도 세션도 그대로 남는다.
 ⛔ 그 전에는 형식 3(대본이 `script/*.vnscript.json`에 따로 선 형식)을 읽어서 옮기고 저장할 때 옛 대본 파일을 지웠다.
 
@@ -433,10 +434,10 @@ EpisodeId는 챕터 안에서만 유일하다. 그래서 에피소드의 카드 
 이름이 어긋난 조건 공급 사본)도 걷었다 — 그런 파일은 깨진 파일로 거절되거나 모르는 칸으로 지나간다. ⛔ 연출 층을 담은 옛 프로젝트(형식 3)는
 연출을 읽지 않고 원본을 `presentation-original/`에 한 번 남겼다 — 이제 열지 않는다.
 
-**형식 4 안에서도 쓰는 모양만 받는다**(2026-11-18 · [`docs/work-orders/old-shapes-orders.md`](docs/work-orders/old-shapes-orders.md)). 읽기는 늘 쓰는 칸이
+**형식 안에서도 쓰는 모양만 받는다**(2026-11-18 · [`docs/work-orders/old-shapes-orders.md`](docs/work-orders/old-shapes-orders.md)). 읽기는 늘 쓰는 칸이
 빠졌거나 모양이 다르면 거절하고(`JsonSupport`의 엄격한 읽기 — 비어서 안 쓰는 칸만 없어도 된다), 저장 검증(`JsonSupport.ValidateProject` — 읽기 ·
 저장 · 되돌리기 스냅샷이 모두 지난다)이 불변식을 지킨다: 판은 챕터마다 하나 · 에피소드마다 그 판에 표식 카드 하나(이름 = EpisodeId) · 분기 카드는
-표식이 없다 · 에피소드는 장면에 속한다 · 분기는 같은 판의 분기 카드로만 · 설정 노드는 판의 챕터 조건 공급 노드 하나 · 화자 이름은 비지 않고 겹치지
+표식이 없다 · 에피소드는 장면에 속한다 · 분기는 같은 판의 분기 카드로만 · 판에는 대사 카드만(설정 노드는 모르는 종류) · 화자 이름은 비지 않고 겹치지
 않는다. 툴이 만들지 않는 모양을 견디는 길은 두지 않는다. ⛔ 그 전에는 열 때 카드 없는 에피소드에 빈 카드를 세우고(`AlignBoardsWithChapters`),
 장면 없는 에피소드를 「미지정」 장면으로, 빠진 칸을 대신 값으로 읽었다.
 
