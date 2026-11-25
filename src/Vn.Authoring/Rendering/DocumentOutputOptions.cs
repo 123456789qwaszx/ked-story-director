@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Rendering;
 
 /// <summary>
@@ -87,7 +88,7 @@ public static class OutputPresetCatalog
     public static OutputPreset RuntimeFull { get; } = new(
         OutputPresetId.RuntimeFull,
         "Runtime Full",
-        "조건, LineId와 분기를 모두 포함한 Yarn 스타일 Preview",
+        Msg.Doc_YarnStylePreviewIncludingConditions,
         new DocumentOutputOptions(
             DocumentOutputFormat.YarnRuntime,
             includeStructure: true,
@@ -101,7 +102,7 @@ public static class OutputPresetCatalog
     public static OutputPreset ScenarioOnly { get; } = new(
         OutputPresetId.ScenarioOnly,
         "Scenario Only",
-        "조건과 화자·대사만 읽기 쉽게 표시",
+        Msg.Doc_ShowsOnlyConditionsAndSpeaker,
         new DocumentOutputOptions(
             DocumentOutputFormat.Scenario,
 

@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -96,8 +97,7 @@ public static class ChapterValidator
                     episode.EpisodeId,
                     // Yarn이 줄 없는 노드를 안 싣는다는 사정은 위 주석의 것이다 —
                     // 기획자에게는 고치는 법 한 문장이면 된다.
-                    $"'{episode.EpisodeId}'의 대사 노드 '{own.Name}'에 재생할 줄이 하나도 " +
-                    "없습니다. [대본] 탭의 그 카드에 대사를 한 줄이라도 적어 주세요."));
+                    string.Format(Msg.Diag_DialogueNodeOfHasNo, episode.EpisodeId, own.Name)));
             }
 
         }

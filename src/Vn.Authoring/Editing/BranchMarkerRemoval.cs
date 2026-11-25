@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Editing;
 
 /// <summary>
@@ -9,6 +10,6 @@ public sealed record BranchMarkerRemoval(string? KeptNodeName)
 {
     /// <summary>상태줄에 할 말.</summary>
     public string Describe() => KeptNodeName is { } kept
-        ? $"분기를 지웠습니다 — 카드 '{kept}'는 판에 남아 있습니다(없애려면 그 카드를 고르고 [분기 카드 삭제]). 되돌리기(Ctrl+Z)로 돌아옵니다."
-        : "분기를 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.";
+        ? string.Format(Msg.Edit_DeletedBranchCardStaysOn, kept)
+        : Msg.Edit_DeletedBranchUndoCtrlZ;
 }

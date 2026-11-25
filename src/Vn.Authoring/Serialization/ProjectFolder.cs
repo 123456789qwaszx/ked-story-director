@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Serialization;
 
 /// <summary>
@@ -30,7 +31,7 @@ public static class ProjectFolder
     {
         if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
         {
-            return new Found(null, $"폴더가 없습니다: {folder}");
+            return new Found(null, string.Format(Msg.File_FolderDoesnTExist, folder));
         }
 
         string[] manifests = Directory.GetFiles(folder, "*" + ProjectManifestJson.FileExtension, SearchOption.TopDirectoryOnly)
@@ -40,10 +41,10 @@ public static class ProjectFolder
         return manifests.Length switch
         {
             0 => new Found(null,
-                $"이 폴더에는 프로젝트({ProjectManifestJson.FileExtension})가 없습니다: {Path.GetFileName(folder)}"),
+                string.Format(Msg.File_ThisFolderHasNoProject, ProjectManifestJson.FileExtension, Path.GetFileName(folder))),
             1 => new Found(manifests[0], null),
             _ => new Found(null,
-                $"이 폴더에 프로젝트 파일이 {manifests.Length}개입니다 — 하나만 남기세요: " +
+                string.Format(Msg.File_ThisFolderHasProjectFiles, manifests.Length) +
                 string.Join(", ", manifests.Select(Path.GetFileName)))
         };
     }
@@ -63,7 +64,7 @@ public static class ProjectFolder
     {
         if (string.IsNullOrWhiteSpace(folder))
         {
-            return "폴더를 고르지 않았습니다.";
+            return Msg.File_NoFolderWasChosen;
         }
 
         if (!Directory.Exists(folder))
@@ -74,7 +75,7 @@ public static class ProjectFolder
         Found found = Find(folder);
 
         return found.IsFound
-            ? $"이 폴더에는 이미 프로젝트가 있습니다({Path.GetFileName(found.ManifestPath)}) — 새로 만들지 않고 엽니다."
+            ? string.Format(Msg.File_ThisFolderAlreadyHasProject, Path.GetFileName(found.ManifestPath))
             : null;
     }
 }

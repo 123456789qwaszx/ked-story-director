@@ -1,5 +1,6 @@
 using Vn.Authoring.Model;
 using System.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -42,7 +43,7 @@ public sealed record ChapterExportRun(
         get
         {
             string? removed = Removed is { Count: > 0 } gone
-                ? "지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷었습니다: " +
+                ? Msg.Export_RemovedOldProgressionJSONOf +
                   string.Join(", ", gone.Select(id => id + ChapterExportService.ExportFileSuffix))
                 : null;
 
@@ -57,10 +58,10 @@ public sealed record ChapterExportRun(
             string files = string.Join(", ", written.Select(Path.GetFileName));
 
             string yarn = YarnWritten is { Count: > 0 } scripts
-                ? $" · 대사 Yarn → {folder}/{ChapterYarnExporter.FolderName}/ ({scripts.Count}개)"
+                ? string.Format(Msg.Export_YarnDialogue2, folder, ChapterYarnExporter.FolderName, scripts.Count)
                 : string.Empty;
 
-            return $"진행 JSON → {folder}/ ({files})" + yarn + (delivered is null ? string.Empty : $" · {delivered}") +
+            return string.Format(Msg.Export_ProgressionJSON2, folder, files) + yarn + (delivered is null ? string.Empty : $" · {delivered}") +
                    (removed is null ? string.Empty : $" · {removed}");
         }
     }
@@ -79,25 +80,19 @@ public sealed record ChapterExportRun(
         {
             Refused.Count == 0
                 ? null
-                : $"검증 오류로 진행 JSON이 나가지 않았습니다: {string.Join(", ", Refused)}" +
-                  $" — 아래 오류를 고치면 저절로 나갑니다({ChapterExportService.ExportFolderName}/).",
+                : string.Format(Msg.Export_ProgressionJSONWasnTWritten, string.Join(", ", Refused), ChapterExportService.ExportFolderName),
             Failed.Count == 0
                 ? null
-                : $"진행 JSON을 쓰지 못했습니다: {string.Join(", ", Failed)}" +
-                  $" — {ChapterExportService.ExportFolderName}/ 의 파일이 다른 프로그램에 " +
-                  "잡혀 있는지 확인하세요.",
+                : string.Format(Msg.Export_CouldnTWriteProgressionJSON, string.Join(", ", Failed), ChapterExportService.ExportFolderName),
             Blocked.Count == 0
                 ? null
-                : $"출시 기준선 뒤 선택지 순번이 바뀌어 진행 JSON 갱신을 막았습니다: " +
-                  $"{string.Join(", ", Blocked)} — 과거 선택 이력의 OptionIndex가 다른 선택을 " +
-                  $"가리킬 수 있습니다. {ChapterReleaseBaseline.FolderName}/ 기준선과 순서를 확인하세요.",
+                : string.Format(Msg.Export_UpdatingProgressionJSONWasBlocked, string.Join(", ", Blocked), ChapterReleaseBaseline.FolderName),
             RemoveFailed is not { Count: > 0 } kept
                 ? null
-                : $"지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷지 못했습니다: {string.Join(", ", kept)}" +
-                  " — 파일이 다른 프로그램에 잡혀 있는지 확인하세요. 그냥 두면 게임이 없는 챕터를 계속 싣습니다.",
+                : string.Format(Msg.Export_CouldnTRemoveOldProgression, string.Join(", ", kept)),
             YarnProblems is not { Count: > 0 } yarn
                 ? null
-                : $"대사 Yarn이 나가지 않은 장면이 있습니다 — 그 장면의 옛 파일은 그대로 둡니다:\n" +
+                : Msg.Export_SomeScenesYarnDialogueWasn +
                   string.Join("\n", yarn.Select(problem => "• " + problem)),
             Delivery?.Problem
         }.Where(part => part is not null));
@@ -321,7 +316,7 @@ public sealed class ChapterExportService
             if (owners.TryGetValue(file.FileName, out string? owner) &&
                 !string.Equals(owner, entry.ChapterId, StringComparison.OrdinalIgnoreCase))
             {
-                problems.Add($"{where}: 챕터 '{owner}'의 장면과 파일 이름이 같습니다({file.FileName}) — 장면 ID나 챕터 ID를 고쳐 주세요.");
+                problems.Add(string.Format(Msg.Export_ItsFileNameIsSame, where, owner, file.FileName));
                 continue;
             }
 
@@ -330,7 +325,7 @@ public sealed class ChapterExportService
             if (file.Problems.FirstOrDefault(problem => problem.IsBlocking) is { } blocking)
             {
                 int more = file.Problems.Count(problem => problem.IsBlocking) - 1;
-                problems.Add($"{where}: {blocking.Message}" + (more > 0 ? $" (외 {more}개)" : string.Empty));
+                problems.Add($"{where}: {blocking.Message}" + (more > 0 ? string.Format(Msg.Export_AndMore, more) : string.Empty));
                 continue;
             }
 
@@ -348,7 +343,7 @@ public sealed class ChapterExportService
     }
 
     private static string YarnWriteFailedNote(string fileName) =>
-        $"{ExportFolderName}/{ChapterYarnExporter.FolderName}/{fileName}을 쓰지 못했습니다 — 파일이 다른 프로그램에 잡혀 있는지 확인하세요.";
+        string.Format(Msg.Export_CouldnTWriteCheckWhether, ExportFolderName, ChapterYarnExporter.FolderName, fileName);
 
     /// <summary>
     /// <c>exported/yarn/</c>에서 지금 없는 장면 · 챕터의 파일을 걷는다. 파일의 주인은 <b>이름이 가장 길게 맞는 챕터</b>다

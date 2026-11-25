@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -16,7 +17,7 @@ public static partial class StatKeyRule
     public const string Examples = "courage · met_harin · trust2";
 
     /// <summary>규칙 한 줄 — 툴팁 · 안내가 쓴다.</summary>
-    public const string Rule = "영어로 적습니다 — 영문자로 시작하고 영문자 · 숫자 · _만(예: " + Examples + "). 한글 · 빈칸 · 기호는 받지 않습니다";
+    public static string Rule => string.Format(Vn.Authoring.Strings.Msg.StatKey_Rule, Examples);
 
     /// <summary>그 키를 쓸 수 있는가 — 쓸 수 없으면 까닭, 되면 null.</summary>
     public static string? Problem(string? key)
@@ -29,8 +30,8 @@ public static partial class StatKeyRule
         }
 
         return Hangul().IsMatch(target)
-            ? $"스탯 키 '{target}'에 한글이 들었습니다 — 스탯 키는 Yarn에 그대로 들어가는 statKey라 영어로 적습니다(영문자로 시작 · 영문자 · 숫자 · _만, 예: {Examples})."
-            : $"스탯 키 '{target}'는 쓸 수 없습니다 — 영문자로 시작하고 영문자 · 숫자 · _만 씁니다(예: {Examples}). 빈칸 · 기호는 안 됩니다.";
+            ? string.Format(Msg.StatKey_StatKeyContainsHangulStat, target, Examples)
+            : string.Format(Msg.StatKey_StatKeyCanTBe, target, Examples);
     }
 
     [GeneratedRegex("^[A-Za-z][A-Za-z0-9_]*$")]

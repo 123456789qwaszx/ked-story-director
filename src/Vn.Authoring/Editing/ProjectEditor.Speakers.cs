@@ -1,5 +1,6 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Editing;
 
@@ -21,12 +22,12 @@ public sealed partial class ProjectEditor
 
         if (typed.Length == 0)
         {
-            throw new InvalidOperationException("화자 이름이 비어 있습니다.");
+            throw new InvalidOperationException(Msg.Edit_SpeakerNameIsEmpty);
         }
 
         if (Project.FindSpeaker(typed) is not null)
         {
-            throw new InvalidOperationException($"화자 '{typed}'은 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_SpeakerAlreadyExists, typed));
         }
 
         var speaker = new Speaker(typed, CharacterKey.NewTemp(typed, Project.Speakers.Select(item => item.CharacterId)));
@@ -167,7 +168,7 @@ public sealed partial class ProjectEditor
 
         if (listed is not null && Project.FindSpeaker(to) is not null)
         {
-            throw new InvalidOperationException($"화자 '{to}'은 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_SpeakerAlreadyExists, to));
         }
 
         List<(ScriptLocale Locale, string LineId, LocalizedLine Line)> hits = Project.EnumerateScripts()

@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -51,26 +52,25 @@ public static class ChapterAutoEdgeCheck
             if (outgoing.GetValueOrDefault(edge.FromEpisodeId) != 1)
             {
                 Error(ChapterDiagnosticCode.AutoEdgeHasSiblings,
-                    $"자동 길 '{edge.FromEpisodeId}'→'{edge.ToEpisodeId}'은 그 에피소드의 유일한 간선이어야 합니다. " +
-                    "자동 길에 문구를 적으면 선택지가 됩니다(또는 한쪽 길을 지웁니다).");
+                    string.Format(Msg.Diag_AutoPathMustBeEpisode, edge.FromEpisodeId, edge.ToEpisodeId));
             }
 
             if (edge.HasGate)
             {
                 Error(ChapterDiagnosticCode.AutoEdgeHasConditions,
-                    "자동 길에는 표시조건·해금조건을 둘 수 없습니다. 자동 진행은 언제나 같은 결과여야 합니다.");
+                    Msg.Diag_AutoPathCanTHave);
             }
 
             if (edge.StatChanges.Count > 0)
             {
                 Error(ChapterDiagnosticCode.AutoEdgeHasStatChanges,
-                    "자동 길에는 스탯변화를 둘 수 없습니다. 효과가 필요하면 일반 선택지로 바꾸세요.");
+                    Msg.Diag_AutoPathCanTHave2);
             }
 
             if (!edge.HasNoOptionLabel)
             {
                 Error(ChapterDiagnosticCode.AutoEdgeHasChoiceLabel,
-                    "자동 길의 선택지 문구는 비워야 합니다. 문구가 있으면 플레이어 선택과 자동 진행의 뜻이 충돌합니다.");
+                    Msg.Diag_AutoPathSChoiceText);
             }
         }
 

@@ -2,6 +2,7 @@ using System.Text;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Results;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -94,7 +95,7 @@ public static class ChapterYarnExporter
                     [
                         .. file.Problems,
                         new ChapterYarnProblem(
-                            $"장면 '{scene.SceneId}'와 '{taken}'의 파일 이름이 같습니다({file.FileName}) — 장면 ID를 고쳐 주세요.",
+                            string.Format(Msg.Diag_ScenesAndHaveSameFile, scene.SceneId, taken, file.FileName),
                             IsBlocking: true)
                     ]
                 };
@@ -244,7 +245,7 @@ public static class ChapterYarnExporter
         if (string.IsNullOrEmpty(lineId))
         {
             problems.Add(new ChapterYarnProblem(
-                $"대사 '{segment.Text}'에 LineId가 없어 #line: 태그를 만들 수 없습니다.", IsBlocking: true, episodeId));
+                string.Format(Msg.Diag_DialogueHasNoLineIdSo, segment.Text), IsBlocking: true, episodeId));
             return;
         }
 
@@ -253,7 +254,7 @@ public static class ChapterYarnExporter
             (body.StartsWith("->", StringComparison.Ordinal) || body.StartsWith("===", StringComparison.Ordinal)))
         {
             problems.Add(new ChapterYarnProblem(
-                $"대사 '{segment.Text}'가 `->`나 `===`로 시작합니다 — Yarn이 대사로 읽지 못합니다. 첫 글자를 고쳐 주세요.",
+                string.Format(Msg.Diag_DialogueStartsWithOrYarn, segment.Text),
                 IsBlocking: true,
                 episodeId,
                 lineId));
@@ -263,7 +264,7 @@ public static class ChapterYarnExporter
         if (body.Count(c => c == '{') != body.Count(c => c == '}'))
         {
             problems.Add(new ChapterYarnProblem(
-                $"대사 '{segment.Text}'의 중괄호 짝이 맞지 않습니다 — `{{ }}`는 스탯 읽기에만 씁니다.",
+                string.Format(Msg.Diag_BracesInDialogueDonT, segment.Text),
                 IsBlocking: true,
                 episodeId,
                 lineId));

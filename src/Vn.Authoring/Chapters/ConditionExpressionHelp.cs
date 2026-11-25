@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
@@ -36,35 +37,35 @@ public static class ConditionExpressionHelp
         if (number is not null)
         {
             int middle = Middle(number);
-            rows.Add(($"{number.Key} >= {middle}", $"{number.Key} 값이 {middle} 이상일 때"));
-            rows.Add(($"{number.Key} < {middle}", $"{number.Key} 값이 {middle} 미만일 때"));
-            rows.Add(($"{number.Key} == {number.Minimum}", $"{number.Key} 값이 꼭 {number.Minimum}일 때"));
+            rows.Add(($"{number.Key} >= {middle}", string.Format(Msg.Expr_WhenIsOrMore, number.Key, middle)));
+            rows.Add(($"{number.Key} < {middle}", string.Format(Msg.Expr_WhenIsLessThan, number.Key, middle)));
+            rows.Add(($"{number.Key} == {number.Minimum}", string.Format(Msg.Expr_WhenIsExactly, number.Key, number.Minimum)));
         }
 
         if (flag is not null)
         {
-            rows.Add(($"{flag.Key} == true", $"{flag.Key} 스탯이 켜져 있을 때 (활성/비활성 스탯)"));
-            rows.Add(($"{flag.Key} == false", $"{flag.Key} 스탯이 꺼져 있을 때"));
+            rows.Add(($"{flag.Key} == true", string.Format(Msg.Expr_WhenStatIsOnOn, flag.Key)));
+            rows.Add(($"{flag.Key} == false", string.Format(Msg.Expr_WhenStatIsOff, flag.Key)));
         }
 
         if (number is not null && flag is not null)
         {
-            rows.Add(($"{number.Key} >= {Middle(number)}; {flag.Key} == true", "둘 다 맞을 때 — 여럿은 ;로 잇습니다"));
+            rows.Add(($"{number.Key} >= {Middle(number)}; {flag.Key} == true", Msg.Expr_WhenBothHoldJoinSeveral));
         }
 
         int width = rows.Max(row => row.Expression.Length);
         var text = new System.Text.StringBuilder();
 
         text.AppendLine(sample
-            ? "식은 「스탯 키  비교  값」입니다. 이 챕터에는 스탯이 아직 없습니다 — 「조건 및 스탯」의 스탯 표에서 먼저 더하고, 예컨대 이렇게 적습니다:"
-            : "식은 「스탯 키  비교  값」입니다. 이 챕터의 스탯으로 적으면:");
+            ? Msg.Expr_ExpressionIsStatKeyComparison
+            : Msg.Expr_ExpressionIsStatKeyComparison2);
 
         foreach ((string expression, string meaning) in rows)
         {
             text.Append("    ").Append(expression.PadRight(width)).Append("    ").AppendLine(meaning);
         }
 
-        text.Append("비교는 >= · <= · > · < · == 다섯 가지, 값은 정수만(활성/비활성 스탯은 true · false)입니다. 스탯 키는 스탯 표에 있는 그대로 적습니다.");
+        text.Append(Msg.Expr_ThereAreFiveComparisonsAnd);
         return text.ToString();
     }
 

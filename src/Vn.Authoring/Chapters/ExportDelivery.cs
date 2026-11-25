@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using Vn.Authoring.Serialization;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -22,8 +23,8 @@ public sealed record ExportDeliveryRun(
     /// <summary>나간 자리 — 「보낸 곳 → 진행 JSON ../game · 대사 Yarn …」. 보낸 것이 없으면 null.</summary>
     public string? Where => Sent.Count == 0 && Removed.Count == 0
         ? null
-        : "복제한 곳 → " + string.Join(" · ", Sent) +
-          (Removed.Count == 0 ? string.Empty : $" · 지난 파일을 걷었습니다: {string.Join(", ", Removed)}");
+        : Msg.Export_CopiedTo + string.Join(" · ", Sent) +
+          (Removed.Count == 0 ? string.Empty : string.Format(Msg.Export_RemovedOldFiles, string.Join(", ", Removed)));
 
     /// <summary>복제하지 못한 것 — 없으면 null.</summary>
     public string? Problem => Missing.Count == 0 && Failed.Count == 0
@@ -32,10 +33,10 @@ public sealed record ExportDeliveryRun(
         {
             Missing.Count == 0
                 ? null
-                : $"복제할 폴더가 없어 복제하지 않았습니다: {string.Join(" · ", Missing)} — [⚙ 설정]의 「내보내기」에서 폴더를 확인하세요(폴더는 만들지 않습니다).",
+                : string.Format(Msg.Export_NotCopiedBecauseMirrorFolder, string.Join(" · ", Missing)),
             Failed.Count == 0
                 ? null
-                : $"복제할 폴더에 쓰거나 걷지 못했습니다: {string.Join(", ", Failed)} — 파일이 다른 프로그램에 잡혀 있는지 확인하세요."
+                : string.Format(Msg.Export_CouldnTWriteToOr, string.Join(", ", Failed))
         }.Where(part => part is not null));
 }
 
@@ -88,7 +89,7 @@ public static class ExportDelivery
                 destinations.Resolve(projectPath, format) is { } yarnFolder &&
                 SameFolder(game, yarnFolder))
             {
-                failed.Add($"{ExportDestinations.LabelOf(format)} — 게임 폴더와 같은 곳으로는 복제하지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다)");
+                failed.Add(string.Format(Msg.Export_NotCopiedToSamePlace, ExportDestinations.LabelOf(format)));
                 after.AddRange(before.Where(item => item.Format == format));
                 continue;
             }

@@ -1,4 +1,5 @@
 using Vn.Authoring.Editing;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -42,22 +43,22 @@ public static class ChapterRenamer
 
         if (oldId.Length == 0 || newId.Length == 0)
         {
-            return Result.Fail("챕터 이름이 비어 있습니다.");
+            return Result.Fail(Msg.Edit_ChapterNameIsEmpty);
         }
 
         if (string.Equals(oldId, newId, StringComparison.Ordinal))
         {
-            return Result.Fail("이름이 같습니다.");
+            return Result.Fail(Msg.Edit_NameIsSame);
         }
 
         if (editor.FindChapter(oldId) is null)
         {
-            return Result.Fail($"챕터 '{oldId}'가 프로젝트에 없습니다.");
+            return Result.Fail(string.Format(Msg.Edit_ChapterIsnTInProject, oldId));
         }
 
         if (editor.FindChapter(newId) is not null)
         {
-            return Result.Fail($"챕터 '{newId}'가 이미 있습니다.");
+            return Result.Fail(string.Format(Msg.Edit_ChapterAlreadyExists, newId));
         }
 
         // 챕터 Id · 판 · 배관이 한 변경으로 — 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 같은 칸에서 따라간다(2026-11-17).

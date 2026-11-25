@@ -3,6 +3,7 @@ using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -77,7 +78,7 @@ public static class ChapterBranchCards
 
         foreach (ChapterEpisode episode in chapter.Episodes)
         {
-            taken.TryAdd(ChapterProgressionExporter.DialogueEntryIdOf(episode), $"에피소드 「{episode.ShownTitle}」");
+            taken.TryAdd(ChapterProgressionExporter.DialogueEntryIdOf(episode), string.Format(Msg.Diag_Episode, episode.ShownTitle));
         }
 
         foreach (DialogueNode branch in cards.Where(card => card.IsBranchCard))
@@ -93,7 +94,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     null,
-                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}를 부르는 분기점이 없습니다 — 게임에서 재생되지 않습니다. 쓰지 않으면 지우고, 쓰려면 분기점을 이 카드에 이으세요."));
+                    string.Format(Msg.Diag_NoBranchPointCallsBranch, EpisodeNaming.BranchLabelOf(branch))));
             }
             else if (!played.Contains(branch.Id))
             {
@@ -103,8 +104,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}를 부르는 「{string.Join("」 · 「", callers.Select(caller => Shown(chapter, caller)))}」에 " +
-                    "도달할 수 없습니다 — 이 분기 카드도 게임에서 재생되지 않습니다."));
+                    string.Format(Msg.Diag_WhichCallsBranchCardCan, EpisodeNaming.BranchLabelOf(branch), string.Join("」 · 「", callers.Select(caller => Shown(chapter, caller))))));
             }
 
             // ③ Yarn 노드 이름이 겹친다 — 에피소드의 대사 노드 · 다른 분기 카드.
@@ -118,12 +118,11 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}의 Yarn 노드 이름 '{title}'{Josa.이가(title)} {owner}{Josa.과와(owner)} 겹칩니다 — 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 " +
-                    "컴파일이 깨집니다. [구성] 탭에서 분기 카드의 ID를 고쳐 주세요."));
+                    string.Format(Msg.Diag_YarnNodeNameOfBranch, EpisodeNaming.BranchLabelOf(branch), title, Josa.이가(title), owner, Josa.과와(owner))));
             }
             else
             {
-                taken[title] = $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}";
+                taken[title] = string.Format(Msg.Diag_BranchCard, EpisodeNaming.BranchLabelOf(branch));
             }
 
             // ② 줄이 없는 분기 카드.
@@ -135,7 +134,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)}에 재생할 줄이 하나도 없습니다. [대본] 탭의 그 카드에 대사를 한 줄이라도 적어 주세요."));
+                    string.Format(Msg.Diag_BranchCardHasNoLines, EpisodeNaming.BranchLabelOf(branch))));
             }
 
             // ④ 분기 카드 안의 분기 — 분기점(이어졌든 아니든). 판이 그 카드에 그리는 포트 그대로다.
@@ -147,8 +146,7 @@ public static class ChapterBranchCards
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     at,
-                    $"분기 카드 {EpisodeNaming.BranchLabelOf(branch)} 안에 분기가 있습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳이라 그 안에서 다시 " +
-                    "갈라지지 않습니다. [대본] 판에서 그 카드의 분기를 지워 주세요(줄의 ＋ → ✕ 분기 지우기, 또는 선을 고르고 Delete)."));
+                    string.Format(Msg.Diag_BranchCardHasBranchInside, EpisodeNaming.BranchLabelOf(branch))));
             }
         }
     }

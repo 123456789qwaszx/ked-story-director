@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -95,51 +96,51 @@ public static class ScriptDocumentJson
         // 쓰는 모양만 받는다(2026-11-18 · old-shapes O8) — ⛔ 그 전에는 빠진 locale · 판 · 줄 판에 대신 값을 넣고 객체 아닌 항목은 건너뛰었다.
         var document = new ScriptDocument
         {
-            PrimaryLocale = JsonSupport.RequiredText(root["primaryLocale"], $"'{owner}'의 대본 primaryLocale"),
-            SourceRevision = JsonSupport.RequiredInt(root["sourceRevision"], $"'{owner}'의 대본 sourceRevision"),
-            SourceContentHash = JsonSupport.OptionalString(root["sourceContentHash"], $"'{owner}'의 대본 sourceContentHash")
+            PrimaryLocale = JsonSupport.RequiredText(root["primaryLocale"], string.Format(Msg.File_ScriptPrimaryLocaleOf, owner)),
+            SourceRevision = JsonSupport.RequiredInt(root["sourceRevision"], string.Format(Msg.File_ScriptSourceRevisionOf, owner)),
+            SourceContentHash = JsonSupport.OptionalString(root["sourceContentHash"], string.Format(Msg.File_ScriptSourceContentHashOf, owner))
         };
 
         HashSet<string> lineIds = new(StringComparer.Ordinal);
 
-        foreach (JsonObject lineJson in JsonSupport.RequiredObjects(root["lines"], $"'{owner}'의 대본 lines"))
+        foreach (JsonObject lineJson in JsonSupport.RequiredObjects(root["lines"], string.Format(Msg.File_ScriptLinesOf, owner)))
         {
-            string lineId = JsonSupport.RequiredText(lineJson["id"], $"'{owner}'의 대본 줄 id");
+            string lineId = JsonSupport.RequiredText(lineJson["id"], string.Format(Msg.File_ScriptLineIdOf, owner));
 
             if (!lineIds.Add(lineId))
             {
-                throw new InvalidDataException($"'{owner}'의 대본에서 LineId '{lineId}'가 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_LineIdIsDuplicatedInScript, owner, lineId));
             }
 
             document.Lines.Add(new ScriptLine(
                 lineId,
-                JsonSupport.RequiredInt(lineJson["revision"], $"'{owner}'의 대본 줄 '{lineId}'의 revision"),
-                JsonSupport.Flag(lineJson["retired"], $"'{owner}'의 대본 줄 '{lineId}'의 retired")));
+                JsonSupport.RequiredInt(lineJson["revision"], string.Format(Msg.File_RevisionOfScriptLineOf, owner, lineId)),
+                JsonSupport.Flag(lineJson["retired"], string.Format(Msg.File_RetiredOfScriptLineOf, owner, lineId))));
         }
 
-        foreach (JsonObject localeJson in JsonSupport.RequiredObjects(root["locales"], $"'{owner}'의 대본 locales"))
+        foreach (JsonObject localeJson in JsonSupport.RequiredObjects(root["locales"], string.Format(Msg.File_ScriptLocalesOf, owner)))
         {
-            string locale = JsonSupport.RequiredText(localeJson["locale"], $"'{owner}'의 대본 locale 이름");
+            string locale = JsonSupport.RequiredText(localeJson["locale"], string.Format(Msg.File_ScriptLocaleNameOf, owner));
 
             if (document.FindLocale(locale) is not null)
             {
-                throw new InvalidDataException($"'{owner}'의 대본에서 locale '{locale}'이 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_LocaleIsDuplicatedInScript, owner, locale));
             }
 
             var target = new ScriptLocale(locale);
 
-            foreach ((string lineId, JsonNode? entry) in JsonSupport.RequiredObject(localeJson["entries"], $"'{owner}'의 대본 locale '{locale}'의 entries"))
+            foreach ((string lineId, JsonNode? entry) in JsonSupport.RequiredObject(localeJson["entries"], string.Format(Msg.File_EntriesOfScriptLocaleOf, owner, locale)))
             {
                 if (!lineIds.Contains(lineId))
                 {
                     throw new InvalidDataException(
-                        $"'{owner}'의 대본 locale '{locale}'이 없는 LineId '{lineId}'를 가리킵니다.");
+                        string.Format(Msg.File_ScriptLocaleOfPointsTo, owner, locale, lineId));
                 }
 
-                JsonObject text = JsonSupport.RequiredObject(entry, $"'{owner}'의 대본 locale '{locale}'의 줄 '{lineId}'");
+                JsonObject text = JsonSupport.RequiredObject(entry, string.Format(Msg.File_LineOfScriptLocaleOf, owner, locale, lineId));
                 target.Entries[lineId] = new LocalizedLine(
-                    JsonSupport.OptionalString(text["speaker"], $"'{owner}'의 대본 줄 '{lineId}'의 speaker") ?? string.Empty,
-                    JsonSupport.RequiredString(text["text"], $"'{owner}'의 대본 줄 '{lineId}'의 text"));
+                    JsonSupport.OptionalString(text["speaker"], string.Format(Msg.File_SpeakerOfScriptLineOf, owner, lineId)) ?? string.Empty,
+                    JsonSupport.RequiredString(text["text"], string.Format(Msg.File_TextOfScriptLineOf, owner, lineId)));
             }
 
             document.Locales.Add(target);

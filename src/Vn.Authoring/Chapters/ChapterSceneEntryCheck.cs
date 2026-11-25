@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -128,11 +129,8 @@ public static class ChapterSceneEntryCheck
                 path,
                 ChapterSheetNames.Edges,
                 null,
-                $"장면 '{sceneId}'에 밖에서 들어오는 자리가 {entries.Count}개입니다: " +
-                $"{string.Join(", ", entries)}. 장면은 한 자리에서만 시작해야 합니다 — " +
-                "롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 그 자리입니다. " +
-                "나머지 착지점은 다른 장면으로 나누세요." +
-                (edge is null ? string.Empty : $" 두 번째 자리를 만든 것: {edge.Where}.")));
+                string.Format(Msg.Diag_SceneHasEntrancesFromOutside, sceneId, entries.Count, string.Join(", ", entries)) +
+                (edge is null ? string.Empty : string.Format(Msg.Diag_WhatMadeSecondEntrance, edge.Where))));
         }
 
         return diagnostics;

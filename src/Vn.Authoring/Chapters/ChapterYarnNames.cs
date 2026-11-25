@@ -1,6 +1,7 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -26,7 +27,7 @@ public static class ChapterYarnNames
         {
             foreach ((string title, string owner, _) in NodesOf(project, other.ChapterId, other.Episodes))
             {
-                elsewhere.TryAdd(title, $"챕터 「{other.ShownName}」의 {owner}");
+                elsewhere.TryAdd(title, string.Format(Msg.Diag_OfChapter, other.ShownName, owner));
             }
         }
 
@@ -40,8 +41,7 @@ public static class ChapterYarnNames
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     episodeId,
-                    $"{owner}의 Yarn 노드 이름 '{title}'{Josa.이가(title)} {taken}{Josa.과와(taken)} 겹칩니다 — 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 " +
-                    "같은 이름의 노드가 둘이면 컴파일이 깨집니다. [구성] 탭에서 ID를 고쳐 주세요."));
+                    string.Format(Msg.Diag_YarnNodeNameOfClashes, owner, title, Josa.이가(title), taken, Josa.과와(taken))));
             }
         }
     }
@@ -54,7 +54,7 @@ public static class ChapterYarnNames
 
         foreach (ChapterEpisode episode in episodes)
         {
-            yield return (ChapterProgressionExporter.DialogueEntryIdOf(episode), $"에피소드 「{episode.ShownTitle}」", episode.EpisodeId);
+            yield return (ChapterProgressionExporter.DialogueEntryIdOf(episode), string.Format(Msg.Diag_Episode, episode.ShownTitle), episode.EpisodeId);
         }
 
         Dictionary<string, string> homes = ChapterBranchCards.HomesOf(project, chapterId)
@@ -62,7 +62,7 @@ public static class ChapterYarnNames
 
         foreach (DialogueNode card in EpisodeNaming.BoardOf(project, chapterId)?.Nodes.OfType<DialogueNode>().Where(node => node.IsBranchCard) ?? [])
         {
-            yield return (YarnNaming.StoryNodeTitleOf(card.Name, card.Id), $"분기 카드 {EpisodeNaming.BranchLabelOf(card)}", homes.GetValueOrDefault(card.Id));
+            yield return (YarnNaming.StoryNodeTitleOf(card.Name, card.Id), string.Format(Msg.Diag_BranchCard, EpisodeNaming.BranchLabelOf(card)), homes.GetValueOrDefault(card.Id));
         }
     }
 }

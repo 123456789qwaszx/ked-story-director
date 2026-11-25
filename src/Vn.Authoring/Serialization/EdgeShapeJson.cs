@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -47,11 +48,11 @@ internal static class EdgeShapeJson
             return null;
         }
 
-        JsonObject json = JsonSupport.RequiredObject(node, "선 모양");
+        JsonObject json = JsonSupport.RequiredObject(node, Msg.File_LineShape);
         var shape = new EdgeShape(
-            json["kind"] is null ? EdgeShapeKind.Elbow : KindOf(JsonSupport.RequiredText(json["kind"], "선 모양의 kind")),
-            JsonSupport.OptionalNumber(json["bendX"], "선 모양의 bendX") ?? 0,
-            JsonSupport.OptionalNumber(json["bendY"], "선 모양의 bendY") ?? 0);
+            json["kind"] is null ? EdgeShapeKind.Elbow : KindOf(JsonSupport.RequiredText(json["kind"], Msg.File_KindOfLineShape)),
+            JsonSupport.OptionalNumber(json["bendX"], Msg.File_BendXOfLineShape) ?? 0,
+            JsonSupport.OptionalNumber(json["bendY"], Msg.File_BendYOfLineShape) ?? 0);
 
         return shape.IsDefault ? null : shape;
     }
@@ -61,6 +62,6 @@ internal static class EdgeShapeJson
     {
         "curve" => EdgeShapeKind.Curve,
         "straight" => EdgeShapeKind.Straight,
-        _ => throw new InvalidDataException($"선 모양의 kind '{name}'를 모릅니다.")
+        _ => throw new InvalidDataException(string.Format(Msg.File_UnknownLineShapeKind, name))
     };
 }

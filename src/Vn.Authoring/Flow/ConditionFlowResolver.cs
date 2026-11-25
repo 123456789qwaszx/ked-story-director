@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Flow;
 
@@ -106,7 +107,7 @@ public static class ConditionFlowResolver
                             FlowProblemKind.NestedCondition,
                             line?.LineId,
 
-                            "조건 안에서 새 조건을 열었습니다. 조건 중첩은 지원하지 않아 같은 깊이의 다른 갈래로 다룹니다."));
+                            Msg.Diag_NewConditionWasOpenedInside));
                         conditionActive = Open(
                             line,
                             transition,
@@ -124,7 +125,7 @@ public static class ConditionFlowResolver
                             FlowProblemKind.ElseIfWithoutIf,
                             line?.LineId,
 
-                            "열린 조건이 없는데 elseif가 있습니다. 새 조건을 여는 것으로 다룹니다."));
+                            Msg.Diag_ThereSElseifWithNo));
                         chainIndex++;
                         conditionActive = Open(
                             line,
@@ -156,7 +157,7 @@ public static class ConditionFlowResolver
                             FlowProblemKind.EndIfWithoutIf,
                             line?.LineId,
 
-                            "열린 조건이 없는데 조건 종료가 있습니다. 무시합니다."));
+                            Msg.Diag_ThereSEndOfCondition));
                         break;
 
                     case ConditionTransitionKind.EndIf:
@@ -230,7 +231,7 @@ public static class ConditionFlowResolver
                     FlowProblemKind.UnknownCondition,
                     line?.LineId,
 
-                    "이 줄이 가리키는 조건 정의를 찾을 수 없습니다. 조건이 삭제되었을 수 있습니다."));
+                    Msg.Diag_CanTFindConditionDefinition));
             }
             else
             {
@@ -240,7 +241,7 @@ public static class ConditionFlowResolver
 
                     // 2026-08-17 — 범위가 판(챕터)이 됐다. "연결된 SetNode"는 더 이상 규칙이
                     // 아니므로 문구도 그 사실을 말한다: 다른 챕터에 있으면 여기서는 못 쓴다.
-                    $"조건 '{known.DisplayName}'은 이 챕터에 없습니다 — 다른 챕터의 조건은 여기서 쓸 수 없습니다."));
+                    string.Format(Msg.Diag_ConditionIsnTInThis, known.DisplayName)));
             }
         }
 
@@ -313,8 +314,8 @@ public static class ConditionFlowResolver
                 FlowProblemKind.OrphanedLineExtension,
                 orphan.Extension.LineId,
                 orphan.IsRetired
-                    ? "대본에서 사라진 줄에 조건 전환이 남아 있습니다. 지우지 않고 그대로 둡니다."
-                    : "이 대본에 없는 LineId에 조건 전환이 남아 있습니다. 대본을 바꾸었을 수 있습니다."));
+                    ? Msg.Diag_ConditionSwitchRemainsOnLine
+                    : Msg.Diag_ConditionSwitchRemainsOnLineId));
         }
     }
 

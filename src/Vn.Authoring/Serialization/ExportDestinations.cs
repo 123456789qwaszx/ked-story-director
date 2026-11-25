@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -68,8 +69,8 @@ public sealed record ExportDestinations(string? Progression, string? DialogueYar
     /// <summary>사람이 읽는 형식 이름 — 설정 창 · 보고가 같은 말을 쓴다.</summary>
     public static string LabelOf(ExportFormat format) => format switch
     {
-        ExportFormat.Progression => "진행 JSON",
-        _ => "대사 Yarn"
+        ExportFormat.Progression => Msg.Export_ProgressionJSON,
+        _ => Msg.Export_YarnDialogue
     };
 
     /// <summary>프로젝트(manifest) 옆의 설정 파일 자리.</summary>

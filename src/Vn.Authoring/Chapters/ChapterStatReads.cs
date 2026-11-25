@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -166,9 +167,7 @@ public static partial class ChapterStatReads
                 chapter.SourcePath,
                 ChapterSheetNames.Stats,
                 null,
-                $"대사의 {{{YarnSyntax.StatRead(missing.Key)}}} — 스탯 '{missing.Key}'가 이 챕터에 없습니다(대사 {missing.Lines}줄 · " +
-                $"처음 나오는 곳 — {missing.FirstPlace}). 게임에서 그 줄이 나오면 없는 스탯을 읽습니다. 지운 스탯이면 대사를 고치고, " +
-                "쓸 스탯이면 [구성] 탭 「조건 및 스탯」에서 더해 주세요."));
+                string.Format(Msg.Diag_InDialogueStatIsnT, YarnSyntax.StatRead(missing.Key), missing.Key, missing.Lines, missing.FirstPlace)));
         }
     }
 

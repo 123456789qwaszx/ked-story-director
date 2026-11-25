@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
@@ -12,12 +13,12 @@ namespace Vn.Authoring.Chapters;
 public static class ChapterMinimum
 {
     /// <summary>마지막 에피소드를 지우려 할 때의 까닭.</summary>
-    public const string LastEpisodeReason =
-        "챕터의 마지막 에피소드는 지울 수 없습니다 — 챕터에는 장면 하나 · 에피소드 하나가 늘 남습니다. 챕터째 지우려면 챕터를 고르고 [챕터 삭제]를 누르세요.";
+    public static string LastEpisodeReason =>
+        Msg.Edit_ChapterSLastEpisodeCan;
 
     /// <summary>마지막 장면을 지우려 할 때의 까닭.</summary>
-    public const string LastSceneReason =
-        "챕터의 마지막 장면은 지울 수 없습니다 — 챕터에는 장면 하나 · 에피소드 하나가 늘 남습니다. 챕터째 지우려면 챕터를 고르고 [챕터 삭제]를 누르세요.";
+    public static string LastSceneReason =>
+        Msg.Edit_ChapterSLastSceneCan;
 
     /// <summary>그 에피소드가 챕터에 남은 하나뿐인 에피소드인가.</summary>
     public static bool IsLastEpisode(IReadOnlyList<ChapterEpisode> episodes, string episodeId)

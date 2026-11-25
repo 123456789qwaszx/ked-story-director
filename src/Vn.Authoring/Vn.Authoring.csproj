@@ -3,6 +3,17 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Vn.Authoring</RootNamespace>
   </PropertyGroup>
+  <!-- 문구 표(english-ui E5) — Strings/Msg.resx(한국어 · 기본)와 Msg.en.resx(영어). 빌드가 Vn.Authoring.Strings.Msg 클래스를 짓는다. 언어는 앱이
+       켤 때 정한다(Vn.App의 UiLanguage가 Msg.Culture를 맞춘다) — 이 라이브러리는 언어를 스스로 고르지 않는다. -->
+  <ItemGroup>
+    <EmbeddedResource Update="Strings\Msg.resx">
+      <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
+      <StronglyTypedClassName>Msg</StronglyTypedClassName>
+      <StronglyTypedNamespace>Vn.Authoring.Strings</StronglyTypedNamespace>
+      <StronglyTypedFileName>$(IntermediateOutputPath)Msg.g.cs</StronglyTypedFileName>
+      <PublicClass>true</PublicClass>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Vn.Authoring.Tests" />
     <!-- 견본 챕터(tests/fixtures/chapter-samples)를 프로젝트 형식으로 읽는 도우미를 두 테스트가 나눠 쓴다. -->

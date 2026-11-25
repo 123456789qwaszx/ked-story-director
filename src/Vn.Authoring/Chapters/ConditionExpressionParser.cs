@@ -1,4 +1,5 @@
 using System.Globalization;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -108,7 +109,7 @@ public static class ConditionExpressionParser
             problems.Add(new ConditionParseProblem(
                 ConditionProblemKind.Empty,
                 string.Empty,
-                "조건식이 비어 있습니다."));
+                Msg.Expr_ConditionExpressionIsEmpty));
 
             return new ConditionParseResult(terms, problems);
         }
@@ -135,7 +136,7 @@ public static class ConditionExpressionParser
                 problems.Add(new ConditionParseProblem(
                     ConditionProblemKind.OperatorNotSupported,
                     term,
-                    $"'{term}' — 비교 연산자를 찾지 못했습니다. 쓸 수 있는 것은 >= · <= · == · > · < 입니다."));
+                    string.Format(Msg.Expr_NoComparisonOperatorFoundYou, term)));
                 continue;
             }
 
@@ -144,7 +145,7 @@ public static class ConditionExpressionParser
                 problems.Add(new ConditionParseProblem(
                     ConditionProblemKind.TermMalformed,
                     term,
-                    $"'{term}' — 비교 왼쪽에 스탯 키가 없습니다. 「키 >= 3」처럼 키를 먼저 적습니다."));
+                    string.Format(Msg.Expr_ThereSNoStatKey, term)));
                 continue;
             }
 
@@ -153,7 +154,7 @@ public static class ConditionExpressionParser
                 problems.Add(new ConditionParseProblem(
                     ConditionProblemKind.TermMalformed,
                     term,
-                    $"'{term}' — 스탯 키 앞에 $를 붙이지 않습니다. '{key.TrimStart('$')}'처럼 키만 적습니다."));
+                    string.Format(Msg.Expr_DonTPutBeforeStat, term, key.TrimStart('$'))));
                 continue;
             }
 
@@ -166,7 +167,7 @@ public static class ConditionExpressionParser
                     problems.Add(new ConditionParseProblem(
                         ConditionProblemKind.TermMalformed,
                         term,
-                        $"'{term}' — true/false는 == 로만 비교합니다."));
+                        string.Format(Msg.Expr_TrueFalseIsComparedOnly, term)));
                     continue;
                 }
 
@@ -187,10 +188,10 @@ public static class ConditionExpressionParser
                     ConditionProblemKind.ValueNotInteger,
                     term,
                     value.Length == 0
-                        ? $"'{term}' — 비교 오른쪽에 값이 없습니다. 「{key} >= 3」처럼 정수를 적습니다."
+                        ? string.Format(Msg.Expr_ThereSNoValueOn, term, key)
                         : value.Contains('.', StringComparison.Ordinal)
-                            ? $"'{term}' — 스탯 비교 값은 정수만 됩니다. 소수점은 쓸 수 없습니다(G-3)."
-                            : $"'{term}' — 비교 값 '{value}'이 정수가 아닙니다. 값은 정수(활성/비활성 스탯은 true · false)만 적습니다."));
+                            ? string.Format(Msg.Expr_StatComparisonValuesMustBe, term)
+                            : string.Format(Msg.Expr_ComparisonValueIsnTInteger, term, value)));
                 continue;
             }
 
@@ -208,7 +209,7 @@ public static class ConditionExpressionParser
             problems.Add(new ConditionParseProblem(
                 ConditionProblemKind.Empty,
                 source,
-                $"'{source}'에서 읽어낼 조건이 없습니다."));
+                string.Format(Msg.Expr_ThereSNoConditionTo, source)));
         }
 
         return new ConditionParseResult(terms, problems);
@@ -261,8 +262,8 @@ public static class ConditionExpressionParser
         ConditionProblemKind.UnknownStatKey,
         term,
         knownStatKeys.Count == 0
-            ? $"'{key}'는 스탯 표에 없는 키입니다 — 이 챕터에는 스탯이 아직 없습니다. 「조건 및 스탯」의 스탯 표에서 먼저 더합니다."
-            : $"'{key}'는 스탯 표에 없는 키입니다. 있는 키: {string.Join(", ", knownStatKeys)}");
+            ? string.Format(Msg.Expr_IsnTKeyInStat, key)
+            : string.Format(Msg.Expr_IsnTKeyInStat2, key, string.Join(", ", knownStatKeys)));
 
     /// <summary>
     /// 흔히 틀리는 꼴과 그 까닭 — 연산자를 거꾸로 적었거나(<c>=&gt;</c> · <c>=&lt;</c>), 「같음」을 <c>=</c> 하나로 적었거나, 없는 비교
@@ -272,18 +273,18 @@ public static class ConditionExpressionParser
     {
         if (term.Contains("=>", StringComparison.Ordinal))
         {
-            return (ConditionProblemKind.OperatorNotSupported, "'=>'는 순서가 거꾸로입니다. '>='로 씁니다.");
+            return (ConditionProblemKind.OperatorNotSupported, Msg.Expr_IsReversedWrite);
         }
 
         if (term.Contains("=<", StringComparison.Ordinal))
         {
-            return (ConditionProblemKind.OperatorNotSupported, "'=<'는 순서가 거꾸로입니다. '<='로 씁니다.");
+            return (ConditionProblemKind.OperatorNotSupported, Msg.Expr_IsReversedWrite2);
         }
 
         if (term.Contains("!=", StringComparison.Ordinal) || term.Contains("<>", StringComparison.Ordinal))
         {
             return (ConditionProblemKind.OperatorNotSupported,
-                "「같지 않다」(!= · <>)는 쓸 수 없습니다. 쓸 수 있는 것은 >= · <= · == · > · < 입니다(예: 「키 > 0」 · 「키 < 0」).");
+                Msg.Expr_NotEqualCanTBe);
         }
 
         if (term.Contains("&&", StringComparison.Ordinal) || term.Contains("||", StringComparison.Ordinal) ||
@@ -291,7 +292,7 @@ public static class ConditionExpressionParser
             System.Text.RegularExpressions.Regex.IsMatch(term, @"\s(and|or|AND|OR)\s"))
         {
             return (ConditionProblemKind.TermMalformed,
-                "여러 조건은 ';'로 잇습니다(모두 맞아야 통과). && · || · and · or · 쉼표는 쓸 수 없고, 「또는」은 조건을 둘로 나눠 만듭니다.");
+                Msg.Expr_JoinSeveralConditionsWithAll);
         }
 
         // 「=」 하나 — 「==」 · 「>=」 · 「<=」의 =가 아닌 것.
@@ -301,7 +302,7 @@ public static class ConditionExpressionParser
                 (i == 0 || term[i - 1] is not ('=' or '>' or '<' or '!')) &&
                 (i + 1 >= term.Length || term[i + 1] != '='))
             {
-                return (ConditionProblemKind.OperatorNotSupported, "「같다」는 '='가 아니라 '=='로 씁니다.");
+                return (ConditionProblemKind.OperatorNotSupported, Msg.Expr_EqualsIsWrittenNot);
             }
         }
 

@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -111,22 +112,20 @@ public sealed class ChapterDocument
             {
                 diagnostics.Add(Stat(
                     ChapterDiagnosticSeverity.Warning, ChapterDiagnosticCode.StatKeyNotEnglish, path,
-                    keyProblem + " 「조건 및 스탯」의 스탯 표 키 칸에서 고치면 간선 · 조건이 따라갑니다."));
+                    keyProblem + Msg.Diag_EditItInKeyBox));
             }
 
             if (stat.Minimum > stat.Maximum)
             {
                 diagnostics.Add(Stat(
                     ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
-                    $"스탯 '{stat.Key}'의 최소({stat.Minimum})가 최대({stat.Maximum})보다 큽니다. " +
-                    "이 범위는 도달성 증명(G7)의 탐색 경계라 비어 있으면 안 됩니다."));
+                    string.Format(Msg.Diag_StatHasMinimumGreaterThan, stat.Key, stat.Minimum, stat.Maximum)));
             }
             else if (stat.Initial < stat.Minimum || stat.Initial > stat.Maximum)
             {
                 diagnostics.Add(Stat(
                     ChapterDiagnosticSeverity.Error, ChapterDiagnosticCode.StatRangeInvalid, path,
-                    $"스탯 '{stat.Key}'의 초기값({stat.Initial})이 " +
-                    $"최소~최대({stat.Minimum}~{stat.Maximum}) 밖입니다."));
+                    string.Format(Msg.Diag_InitialValueOfStatIs, stat.Key, stat.Initial, stat.Minimum, stat.Maximum)));
             }
         }
 
@@ -158,7 +157,7 @@ public sealed class ChapterDocument
                     path,
                     ChapterSheetNames.Conditions,
                     null,
-                    $"조건 '{condition.Label}' — 식 미정입니다. [구성] 탭에서 식을 채울 때까지 항상 통과합니다."));
+                    string.Format(Msg.Diag_ConditionUndecidedItAlwaysPasses, condition.Label)));
                 continue;
             }
 
@@ -175,7 +174,7 @@ public sealed class ChapterDocument
                     path,
                     ChapterSheetNames.Conditions,
                     null,
-                    $"조건 '{condition.Label}' — 식이 성립하지 않습니다: {problems[index].Message}")
+                    string.Format(Msg.Diag_ConditionExpressionDoesnTHold, condition.Label, problems[index].Message))
                 {
                     Help = index == 0 ? ConditionExpressionHelp.Examples(Stats) : null
                 });

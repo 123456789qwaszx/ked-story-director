@@ -1,5 +1,6 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Editing;
 
@@ -244,11 +245,11 @@ public sealed partial class ProjectEditor
 
         if (lineSpacing <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(lineSpacing), lineSpacing, "줄 간격은 0보다 커야 합니다.");
+            throw new ArgumentOutOfRangeException(nameof(lineSpacing), lineSpacing, Msg.Edit_LineSpacingMustBeGreater);
         }
 
         WriterBase basis = node.WriterBase ?? NewCardWriterBase?.Invoke() ??
-            throw new InvalidOperationException($"카드 '{nodeId}'에 처음 글꼴 · 크기가 없어 줄 간격을 적을 수 없습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_CardHasNoStartingFont, nodeId));
 
         if (node.WriterBase is not null && basis.LineSpacing == lineSpacing)
         {

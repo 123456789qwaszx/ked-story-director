@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Flow;
 
@@ -112,7 +113,7 @@ public static class AvailableConditionResolver
     public static string UnavailableLabel(AvailableCondition? known, string conditionId)
     {
         string name = known?.DisplayName ?? conditionId;
-        return $"사용할 수 없음 · {name}";
+        return string.Format(Msg.Diag_Unavailable, name);
     }
 
     /// <summary>

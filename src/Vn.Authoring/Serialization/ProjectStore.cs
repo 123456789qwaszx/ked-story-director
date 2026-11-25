@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -23,13 +24,12 @@ public static class ProjectStore
     {
         string openedPath = Path.GetFullPath(path);
         string json = File.ReadAllText(openedPath, new UTF8Encoding(false));
-        JsonObject root = JsonSupport.ParseObject(json, "프로젝트");
+        JsonObject root = JsonSupport.ParseObject(json, Msg.File_Project);
 
         if (LooksLikeStandaloneStoryFile(root))
         {
             throw new InvalidDataException(
-                "이 파일은 프로젝트가 소유하는 StoryFile입니다. " +
-                $"개별 {StoryFileJson.FileExtension} 대신 {ProjectManifestJson.FileExtension} manifest를 여세요.");
+                string.Format(Msg.File_ThisFileIsStoryFileOwned, StoryFileJson.FileExtension, ProjectManifestJson.FileExtension));
         }
 
         ProjectManifest manifest = ProjectManifestJson.Read(json);
@@ -44,7 +44,7 @@ public static class ProjectStore
 
         string fullManifestPath = Path.GetFullPath(manifestPath);
         string rootDirectory = Path.GetDirectoryName(fullManifestPath)
-            ?? throw new InvalidOperationException("프로젝트 manifest 디렉터리를 찾을 수 없습니다.");
+            ?? throw new InvalidOperationException(Msg.File_CanTFindProjectManifest);
         Directory.CreateDirectory(rootDirectory);
 
         // 직렬화와 경로 검증은 디스크를 건드리기 전에 모두 끝낸다.
@@ -159,21 +159,21 @@ public static class ProjectStore
     {
         if (string.IsNullOrWhiteSpace(relativePath))
         {
-            throw new InvalidDataException("부속 파일 상대 경로가 비어 있습니다.");
+            throw new InvalidDataException(Msg.File_AttachedFileSRelativePath);
         }
 
         string normalized = relativePath.Replace('\\', '/').Trim();
 
         if (Path.IsPathRooted(normalized))
         {
-            throw new InvalidDataException($"부속 파일 경로 '{relativePath}'는 상대 경로여야 합니다.");
+            throw new InvalidDataException(string.Format(Msg.File_AttachedFilePathMustBe, relativePath));
         }
 
         string[] parts = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
         if (parts.Length == 0 || parts.Any(part => part is "." or ".."))
         {
-            throw new InvalidDataException($"부속 파일 경로 '{relativePath}'가 프로젝트 밖을 가리킬 수 있습니다.");
+            throw new InvalidDataException(string.Format(Msg.File_AttachedFilePathCouldPoint, relativePath));
         }
 
         normalized = string.Join('/', parts);
@@ -181,7 +181,7 @@ public static class ProjectStore
         if (!normalized.EndsWith(expectedExtension, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidDataException(
-                $"부속 파일 경로 '{relativePath}'는 {expectedExtension}으로 끝나야 합니다.");
+                string.Format(Msg.File_AttachedFilePathMustEnd, relativePath, expectedExtension));
         }
 
         return normalized;
@@ -192,7 +192,7 @@ public static class ProjectStore
         ProjectManifest manifest)
     {
         string rootDirectory = Path.GetDirectoryName(manifestPath)
-            ?? throw new InvalidDataException("프로젝트 manifest 디렉터리를 찾을 수 없습니다.");
+            ?? throw new InvalidDataException(Msg.File_CanTFindProjectManifest);
         var project = new StoryProject
         {
             Title = manifest.Title,
@@ -207,7 +207,7 @@ public static class ProjectStore
             if (!File.Exists(storyPath))
             {
                 throw new FileNotFoundException(
-                    $"프로젝트가 참조하는 StoryFile을 찾을 수 없습니다: {reference.RelativePath}",
+                    string.Format(Msg.File_CanTFindStoryFileProject, reference.RelativePath),
                     storyPath);
             }
 
@@ -216,13 +216,13 @@ public static class ProjectStore
             if (!string.Equals(file.Id, reference.Id, StringComparison.Ordinal))
             {
                 throw new InvalidDataException(
-                    $"manifest의 StoryFile Id '{reference.Id}'와 파일의 Id '{file.Id}'가 다릅니다.");
+                    string.Format(Msg.File_StoryFileIdInManifestDiffers, reference.Id, file.Id));
             }
 
             if (!string.Equals(file.Name, reference.Name, StringComparison.Ordinal))
             {
                 throw new InvalidDataException(
-                    $"manifest의 StoryFile 이름 '{reference.Name}'과 파일의 이름 '{file.Name}'이 다릅니다.");
+                    string.Format(Msg.File_StoryFileNameInManifestDiffers, reference.Name, file.Name));
             }
 
             file.RelativePath = reference.RelativePath;
@@ -257,7 +257,7 @@ public static class ProjectStore
 
         if (!combined.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidDataException($"부속 파일 경로 '{relativePath}'가 프로젝트 디렉터리 밖을 가리킵니다.");
+            throw new InvalidDataException(string.Format(Msg.File_AttachedFilePathPointsOutside, relativePath));
         }
 
         return combined;

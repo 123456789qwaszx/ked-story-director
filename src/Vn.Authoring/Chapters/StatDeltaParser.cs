@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -71,7 +72,7 @@ public static class StatDeltaParser
                 problems.Add(new ConditionParseProblem(
                     ConditionProblemKind.TermMalformed,
                     entry,
-                    $"'{entry}' — '스탯키 증감량' 형태여야 합니다(예: trust +1)."));
+                    string.Format(Msg.Expr_MustBeInFormStatKey, entry)));
                 continue;
             }
 
@@ -100,8 +101,8 @@ public static class StatDeltaParser
                     ConditionProblemKind.ValueNotInteger,
                     entry,
                     amount.Contains('.', StringComparison.Ordinal)
-                        ? $"'{entry}' — 스탯 증감량은 정수만 됩니다. 소수점은 쓸 수 없습니다(G-3)."
-                        : $"'{entry}' — 증감량 '{amount}'이 정수가 아닙니다."));
+                        ? string.Format(Msg.Expr_StatChangesMustBeIntegers, entry)
+                        : string.Format(Msg.Expr_ChangeIsnTInteger, entry, amount)));
                 continue;
             }
 
@@ -127,8 +128,9 @@ public static class StatDeltaParser
         string entry, string key, IReadOnlyCollection<string> knownStatKeys) =>
         new(ConditionProblemKind.UnknownStatKey,
             entry,
-            $"'{key}'는 `스탯` 시트에 없는 스탯키입니다. " +
-            $"선언된 키: {(knownStatKeys.Count == 0 ? "(없음)" : string.Join(", ", knownStatKeys))}");
+            knownStatKeys.Count == 0
+                ? string.Format(Msg.Expr_IsnTStatKeyIn, key)
+                : string.Format(Msg.Expr_IsnTStatKeyIn2, key, string.Join(", ", knownStatKeys)));
 
     /// <summary>
     /// 해석한 것을 <b>`스탯변화` 문법으로 되돌린다</b> — 이 파서가 읽는 그 모양이다.

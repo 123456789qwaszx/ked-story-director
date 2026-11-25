@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
@@ -162,10 +163,7 @@ public static class ChapterReachabilityProver
             chapter.SourcePath,
             ChapterSheetNames.Episodes,
             EpisodeId: null,
-            $"이 챕터의 도달성은 **증명하지 못했습니다** — 상태 {visited:N0}개에서 탐색을 " +
-            "멈췄습니다. 아래 「도달 불가」는 단정이 아니라 **찾지 못했다**는 뜻입니다. " +
-            "활성/비활성 스탯은 갈래마다 다르게 켜지면 상태 수를 두 배로 만듭니다 — " +
-            "간선의 표시조건·해금조건이 읽지 않는 활성/비활성 스탯이 많으면 그것이 원인입니다."));
+            string.Format(Msg.Diag_ThisChapterSReachabilityCouldn, visited)));
     }
 
     // ── 탐색 ────────────────────────────────────────────────────────────────
@@ -395,15 +393,14 @@ public static class ChapterReachabilityProver
                     chapter.SourcePath,
                     ChapterSheetNames.Edges,
                     walked.Episode[anchor],
-                    $"자동 길만으로 된 고리입니다 — {where}{Vn.Authoring.Text.Josa.을를(closed ? path[^1] : "…")} 묻지 않고 끝없이 돌아 챕터가 끝나지 않습니다. 고리 안의 카드 하나에 " +
-                    "선택지 문구를 적고 고리 밖으로 가는 길을 더하세요."));
+                    string.Format(Msg.Diag_LoopMadeOnlyOfAuto, where, Vn.Authoring.Text.Josa.을를(closed ? path[^1] : "…"))));
                 continue;
             }
 
             List<string> ordered = episodes
                 .OrderBy(episode => states.Where(state => walked.Episode[state] == episode).Min())
                 .ToList();
-            where = string.Join(" · ", ordered.Take(8).Select(episode => $"'{episode}'")) + (ordered.Count > 8 ? $" 외 {ordered.Count - 8}개" : string.Empty);
+            where = string.Join(" · ", ordered.Take(8).Select(episode => $"'{episode}'")) + (ordered.Count > 8 ? string.Format(Msg.Diag_AndMore, ordered.Count - 8) : string.Empty);
             bool always = ordered.All(episode => alwaysTrapped[episode]);
 
             diagnostics.Add(new ChapterDiagnostic(
@@ -412,8 +409,9 @@ public static class ChapterReachabilityProver
                 chapter.SourcePath,
                 ChapterSheetNames.Edges,
                 walked.Episode[anchor],
-                $"나갈 길이 없는 고리입니다 — {where}에 들어오면{(always ? string.Empty : " 스탯에 따라서는")} 어떤 선택지를 골라도 그 안만 돌아 챕터를 끝낼 수 " +
-                "없습니다. 고리 밖으로 가는 선택지를 더하거나, 이미 있으면 그 선택지의 표시조건 · 해금조건이 열리는지 보세요."));
+                always
+                    ? string.Format(Msg.Diag_LoopWithNoWayOut, where)
+                    : string.Format(Msg.Diag_LoopWithNoWayOut2, where)));
         }
     }
 
@@ -608,8 +606,7 @@ public static class ChapterReachabilityProver
                     chapter.SourcePath,
                     ChapterSheetNames.Episodes,
                     episode.EpisodeId,
-                    $"'{episode.EpisodeId}'는 시작에서 이어지지 않았습니다. {cause} 작업 중이면 그대로 두어도 됩니다 — 내보내기를 막지 않고, " +
-                    "게임에서는 거기 갈 길이 없습니다. 이으려면 다른 에피소드 카드 아래의 선택지 칸에서 이리로 잇습니다."));
+                    string.Format(Msg.Diag_IsnTConnectedFromStart, episode.EpisodeId, cause)));
                 continue;
             }
 
@@ -618,8 +615,8 @@ public static class ChapterReachabilityProver
                 : ChapterDiagnosticSeverity.Warning;
 
             string prefix = complete
-                ? $"'{episode.EpisodeId}'에 도달할 수 있는 경로가 없습니다"
-                : $"'{episode.EpisodeId}'에 도달하는 경로를 찾지 못했습니다(탐색이 상한에서 중단됨)";
+                ? string.Format(Msg.Diag_ThereSNoRouteThat, episode.EpisodeId)
+                : string.Format(Msg.Diag_CouldnTFindRouteTo, episode.EpisodeId);
 
             diagnostics.Add(new ChapterDiagnostic(
                 severity,
@@ -644,13 +641,12 @@ public static class ChapterReachabilityProver
 
         if (incoming.Count == 0)
         {
-            return "이 에피소드로 들어오는 간선이 `간선` 시트에 없습니다.";
+            return Msg.Diag_ThereSNoPathInto;
         }
 
         if (incoming.All(edge => !reachable.Contains(edge.FromEpisodeId)))
         {
-            return $"들어오는 간선의 출발점({string.Join(", ", incoming.Select(edge => edge.FromEpisodeId))})부터 " +
-                "도달 불가입니다.";
+            return string.Format(Msg.Diag_UnreachableFromSourcesOfIts, string.Join(", ", incoming.Select(edge => edge.FromEpisodeId)));
         }
 
         // 관문이 되는 조건들에서 만족 불가능한 항을 찾는다 (전부 간선의 것).
@@ -681,21 +677,19 @@ public static class ChapterReachabilityProver
                     maxSeen[index] < term.Value + (term.Comparison == ConditionComparison.Above ? 1 : 0))
                 {
                     string op = term.Comparison == ConditionComparison.Above ? ">" : ">=";
-                    return $"조건 '{label}'의 '{term.Key} {op} {term.Value}'가 원인입니다 — " +
-                        $"어떤 경로로도 {term.Key}는 최대 {maxSeen[index]}까지밖에 오르지 않습니다.";
+                    return string.Format(Msg.Diag_CauseIsOfConditionOn, label, term.Key, op, term.Value, maxSeen[index]);
                 }
 
                 if (term.Comparison is ConditionComparison.AtMost or ConditionComparison.Below &&
                     minSeen[index] > term.Value - (term.Comparison == ConditionComparison.Below ? 1 : 0))
                 {
                     string op = term.Comparison == ConditionComparison.Below ? "<" : "<=";
-                    return $"조건 '{label}'의 '{term.Key} {op} {term.Value}'가 원인입니다 — " +
-                        $"어떤 경로로도 {term.Key}는 최소 {minSeen[index]} 아래로 내려가지 않습니다.";
+                    return string.Format(Msg.Diag_CauseIsOfConditionOn2, label, term.Key, op, term.Value, minSeen[index]);
                 }
             }
         }
 
-        return "관문 조건들의 조합을 만족하는 경로가 없습니다.";
+        return Msg.Diag_NoRouteSatisfiesCombinationOf;
     }
 
     private static void Observe(int[] stats, int[] maxSeen, int[] minSeen)

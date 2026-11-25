@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -29,7 +30,7 @@ public static class EpisodeNaming
 
         return project.Chapters.FirstOrDefault(chapter =>
                    string.Equals(chapter.ChapterId, board.Name, StringComparison.Ordinal))
-               ?? throw new InvalidOperationException($"판 '{board.Name}'의 챕터가 없습니다.");
+               ?? throw new InvalidOperationException(string.Format(Msg.Edit_BoardHasNoChapter, board.Name));
     }
 
     /// <summary>
@@ -72,7 +73,7 @@ public static class EpisodeNaming
         ArgumentNullException.ThrowIfNull(node);
 
         return ChapterOfBoard(project, project.FindFileContainingNode(node.Id)
-            ?? throw new InvalidOperationException($"노드 '{node.Id}'가 프로젝트에 없습니다."));
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_NodeIsnTInProject, node.Id)));
     }
 
     /// <summary>

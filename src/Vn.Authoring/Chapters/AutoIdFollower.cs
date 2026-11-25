@@ -1,5 +1,6 @@
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -52,7 +53,7 @@ public static class AutoIdFollower
         ArgumentNullException.ThrowIfNull(editor);
 
         ChapterDocument chapter = editor.FindChapter(chapterId)
-            ?? throw new InvalidOperationException($"챕터 '{chapterId}'가 없습니다.");
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_ChapterDoesnTExist, chapterId));
         List<string> members = chapter.Episodes
             .Where(episode => string.Equals(episode.SceneId, oldSceneId, StringComparison.Ordinal))
             .Select(episode => episode.EpisodeId)
@@ -89,7 +90,7 @@ public static class AutoIdFollower
         ArgumentNullException.ThrowIfNull(editor);
 
         ChapterDocument chapter = editor.FindChapter(newChapterId)
-            ?? throw new InvalidOperationException($"챕터 '{newChapterId}'가 없습니다.");
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_ChapterDoesnTExist, newChapterId));
         List<(string CardId, string? SceneId)> branches = ChapterBranchCards.HomesOf(editor.Project, newChapterId)
             .Select(home => (home.Card.Id, chapter.Episodes.FirstOrDefault(episode =>
                 string.Equals(episode.EpisodeId, home.EpisodeId, StringComparison.Ordinal))?.SceneId))
@@ -156,5 +157,5 @@ public static class AutoIdFollower
     private static ChapterEpisode RequireEpisode(ProjectEditor editor, string chapterId, string episodeId) =>
         editor.FindChapter(chapterId)?.Episodes.FirstOrDefault(episode =>
             string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal))
-        ?? throw new InvalidOperationException($"챕터 '{chapterId}'에 에피소드 '{episodeId}'가 없습니다.");
+        ?? throw new InvalidOperationException(string.Format(Msg.Edit_ChapterHasNoEpisode, chapterId, episodeId));
 }

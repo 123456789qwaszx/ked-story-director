@@ -1,0 +1,1253 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vn.Authoring 문구 표 — 영어. 키는 Msg.resx(한국어)와 같다.
+  고치는 법은 docs/work-orders/english-ui-orders.md 「문구 표 고치기」.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="File_ChapterIdOfChapter" xml:space="preserve">
+    <value>chapterId of the chapter</value>
+  </data>
+  <data name="File_DisplayNameOfChapter" xml:space="preserve">
+    <value>displayName of the chapter</value>
+  </data>
+  <data name="File_EpisodeIdOfEpisode" xml:space="preserve">
+    <value>episodeId of an episode</value>
+  </data>
+  <data name="File_TitleOfEpisode" xml:space="preserve">
+    <value>title of an episode</value>
+  </data>
+  <data name="File_IndexOfEpisode" xml:space="preserve">
+    <value>index of an episode</value>
+  </data>
+  <data name="File_XOfEpisode" xml:space="preserve">
+    <value>x of an episode</value>
+  </data>
+  <data name="File_YOfEpisode" xml:space="preserve">
+    <value>y of an episode</value>
+  </data>
+  <data name="File_MemoOfEpisode" xml:space="preserve">
+    <value>memo of an episode</value>
+  </data>
+  <data name="File_EventKeyOfEpisode" xml:space="preserve">
+    <value>eventKey of an episode</value>
+  </data>
+  <data name="File_SceneIdOfEpisode" xml:space="preserve">
+    <value>sceneId of an episode</value>
+  </data>
+  <data name="File_NoteCardOfEpisode" xml:space="preserve">
+    <value>noteCard of an episode</value>
+  </data>
+  <data name="File_FromOfPath" xml:space="preserve">
+    <value>from of a path</value>
+  </data>
+  <data name="File_ToOfPath" xml:space="preserve">
+    <value>to of a path</value>
+  </data>
+  <data name="File_OptionLabelOfPath" xml:space="preserve">
+    <value>optionLabel of a path</value>
+  </data>
+  <data name="File_ConditionLabelOfPath" xml:space="preserve">
+    <value>conditionLabel of a path</value>
+  </data>
+  <data name="File_LockedMessageOfPath" xml:space="preserve">
+    <value>lockedMessage of a path</value>
+  </data>
+  <data name="File_AutoOfPath" xml:space="preserve">
+    <value>auto of a path</value>
+  </data>
+  <data name="File_VisibleConditionLabelOfPath" xml:space="preserve">
+    <value>visibleConditionLabel of a path</value>
+  </data>
+  <data name="File_KeyOfStatChange" xml:space="preserve">
+    <value>key of a stat change</value>
+  </data>
+  <data name="File_AmountOfStatChange" xml:space="preserve">
+    <value>amount of a stat change</value>
+  </data>
+  <data name="File_KindOfStatChange" xml:space="preserve">
+    <value>kind of a stat change</value>
+  </data>
+  <data name="File_LabelOfCondition" xml:space="preserve">
+    <value>label of a condition</value>
+  </data>
+  <data name="File_ExpressionOfCondition" xml:space="preserve">
+    <value>expression of a condition</value>
+  </data>
+  <data name="File_DescriptionOfCondition" xml:space="preserve">
+    <value>description of a condition</value>
+  </data>
+  <data name="File_KeyOfStat" xml:space="preserve">
+    <value>key of a stat</value>
+  </data>
+  <data name="File_InitialOfStat" xml:space="preserve">
+    <value>initial of a stat</value>
+  </data>
+  <data name="File_MinimumOfStat" xml:space="preserve">
+    <value>minimum of a stat</value>
+  </data>
+  <data name="File_MaximumOfStat" xml:space="preserve">
+    <value>maximum of a stat</value>
+  </data>
+  <data name="File_TypeOfStat" xml:space="preserve">
+    <value>type of a stat</value>
+  </data>
+  <data name="File_IndexOfChoice" xml:space="preserve">
+    <value>index of a choice</value>
+  </data>
+  <data name="File_TextOfChoice" xml:space="preserve">
+    <value>text of a choice</value>
+  </data>
+  <data name="File_MemoOfChoice" xml:space="preserve">
+    <value>memo of a choice</value>
+  </data>
+  <data name="File_StatsOfTestStart" xml:space="preserve">
+    <value>stats of a test start</value>
+  </data>
+  <data name="File_ValueOfTestStartStat" xml:space="preserve">
+    <value>value of test start stat '{0}'</value>
+  </data>
+  <data name="File_NameOfTestStart" xml:space="preserve">
+    <value>name of a test start</value>
+  </data>
+  <data name="File_ActiveOfTestStart" xml:space="preserve">
+    <value>active of a test start</value>
+  </data>
+  <data name="File_ChoicesOfTestStart" xml:space="preserve">
+    <value>choices of a test start</value>
+  </data>
+  <data name="File_FromOfTestStartChoice" xml:space="preserve">
+    <value>from of a test start choice</value>
+  </data>
+  <data name="File_ToOfTestStartChoice" xml:space="preserve">
+    <value>to of a test start choice</value>
+  </data>
+  <data name="File_SceneIdOfSceneNote" xml:space="preserve">
+    <value>sceneId of a scene note</value>
+  </data>
+  <data name="File_TextOfSceneNote" xml:space="preserve">
+    <value>text of a scene note</value>
+  </data>
+  <data name="File_NameOfSceneNote" xml:space="preserve">
+    <value>name of a scene note</value>
+  </data>
+  <data name="File_SceneNotesHasTwoNotesFor" xml:space="preserve">
+    <value>sceneNotes has two notes for scene '{0}'.</value>
+  </data>
+  <data name="File_SceneNotesEntryForSceneHas" xml:space="preserve">
+    <value>The sceneNotes entry for scene '{0}' has neither text nor a name.</value>
+  </data>
+  <data name="File_IsWrittenAsEmptyString" xml:space="preserve">
+    <value>{0} is written as an empty string — when empty, leave the field out.</value>
+  </data>
+  <data name="File_Unknown" xml:space="preserve">
+    <value>Unknown {0} '{1}'.</value>
+  </data>
+  <data name="File_RootOfFileIsnT" xml:space="preserve">
+    <value>The root of the {0} file isn't a JSON object.</value>
+  </data>
+  <data name="File_CanTReadFile" xml:space="preserve">
+    <value>Can't read the {0} file. {1}</value>
+  </data>
+  <data name="File_IsMissingOrNotString" xml:space="preserve">
+    <value>{0} is missing or not a string.</value>
+  </data>
+  <data name="File_IsEmpty" xml:space="preserve">
+    <value>{0} is empty.</value>
+  </data>
+  <data name="File_IsMissingOrNotNumber" xml:space="preserve">
+    <value>{0} is missing or not a number.</value>
+  </data>
+  <data name="File_IsMissingOrNotInteger" xml:space="preserve">
+    <value>{0} is missing or not an integer.</value>
+  </data>
+  <data name="File_IsWrittenAsTrueOnly" xml:space="preserve">
+    <value>{0} is written as true only when it's on.</value>
+  </data>
+  <data name="File_IsMissingOrNotObject" xml:space="preserve">
+    <value>{0} is missing or not an object.</value>
+  </data>
+  <data name="File_IsnTArray" xml:space="preserve">
+    <value>{0} isn't an array.</value>
+  </data>
+  <data name="File_HasItemThatIsnT" xml:space="preserve">
+    <value>{0} has an item that isn't an object.</value>
+  </data>
+  <data name="File_IsMissing" xml:space="preserve">
+    <value>{0} is missing.</value>
+  </data>
+  <data name="File_SpeakerNameIsEmptyOr" xml:space="preserve">
+    <value>Speaker name '{0}' is empty or duplicated.</value>
+  </data>
+  <data name="File_StoryFileIdIsDuplicated" xml:space="preserve">
+    <value>StoryFile Id '{0}' is duplicated.</value>
+  </data>
+  <data name="File_BoardIsnTChapterS" xml:space="preserve">
+    <value>Board '{0}' isn't a chapter's board, or the same chapter has two boards.</value>
+  </data>
+  <data name="File_StoryFilePathIsDuplicated" xml:space="preserve">
+    <value>StoryFile path '{0}' is duplicated.</value>
+  </data>
+  <data name="File_BoardHasSetNodeThat" xml:space="preserve">
+    <value>Board '{0}' has a set node that isn't the chapter condition supply node, or has two supply nodes.</value>
+  </data>
+  <data name="File_NodeIdIsDuplicatedAcross" xml:space="preserve">
+    <value>Node Id '{0}' is duplicated across the project.</value>
+  </data>
+  <data name="File_CanTFindStartNode" xml:space="preserve">
+    <value>Can't find the start node '{0}' in the project.</value>
+  </data>
+  <data name="File_EpisodeOfChapterHasNo" xml:space="preserve">
+    <value>Episode '{1}' of chapter '{0}' has no scene ID.</value>
+  </data>
+  <data name="File_CardOnBoardDoesnT" xml:space="preserve">
+    <value>Card '{1}' on board '{0}' doesn't point to exactly one episode of that chapter (no mark · a missing episode · duplicated · or its name differs from the EpisodeId).</value>
+  </data>
+  <data name="File_EpisodeOfChapterHasNo2" xml:space="preserve">
+    <value>Episode '{1}' of chapter '{0}' has no card.</value>
+  </data>
+  <data name="File_ScriptOfHasEmptyLineId" xml:space="preserve">
+    <value>The script of '{0}' has an empty LineId.</value>
+  </data>
+  <data name="File_LineIdIsDuplicatedInScript" xml:space="preserve">
+    <value>LineId '{1}' is duplicated in the script of '{0}'.</value>
+  </data>
+  <data name="File_LocaleIsDuplicatedInScript" xml:space="preserve">
+    <value>Locale '{1}' is duplicated in the script of '{0}'.</value>
+  </data>
+  <data name="File_LocaleInScriptOfPoints" xml:space="preserve">
+    <value>Locale '{1}' in the script of '{0}' points to LineId '{2}', which doesn't exist.</value>
+  </data>
+  <data name="File_LineIdEntryIsDuplicatedIn" xml:space="preserve">
+    <value>LineId '{1}' entry is duplicated in DialogueNode '{0}'.</value>
+  </data>
+  <data name="File_BranchOfDialogueNodePointsTo" xml:space="preserve">
+    <value>A branch of DialogueNode '{0}' points to '{1}', which isn't a branch card on the same board — branches connect only to branch cards on the same board.</value>
+  </data>
+  <data name="File_UnsupportedNodeKind" xml:space="preserve">
+    <value>Unsupported node kind '{0}'.</value>
+  </data>
+  <data name="File_IdOfNode" xml:space="preserve">
+    <value>id of a node</value>
+  </data>
+  <data name="File_NameOfNode" xml:space="preserve">
+    <value>name of node '{0}'</value>
+  </data>
+  <data name="File_KindOfNode" xml:space="preserve">
+    <value>kind of node '{0}'</value>
+  </data>
+  <data name="File_LayoutOfNode" xml:space="preserve">
+    <value>layout of node '{0}'</value>
+  </data>
+  <data name="File_LayoutXOfNode" xml:space="preserve">
+    <value>layout.x of node '{0}'</value>
+  </data>
+  <data name="File_LayoutYOfNode" xml:space="preserve">
+    <value>layout.y of node '{0}'</value>
+  </data>
+  <data name="File_LayoutWidthOfNode" xml:space="preserve">
+    <value>layout.width of node '{0}'</value>
+  </data>
+  <data name="File_LayoutWritingHeightOfNode" xml:space="preserve">
+    <value>layout.writingHeight of node '{0}'</value>
+  </data>
+  <data name="File_LayoutFitWidthOfNode" xml:space="preserve">
+    <value>layout.fitWidth of node '{0}'</value>
+  </data>
+  <data name="File_LayoutFitHeightOfNode" xml:space="preserve">
+    <value>layout.fitHeight of node '{0}'</value>
+  </data>
+  <data name="File_EdgeShapesOfNode" xml:space="preserve">
+    <value>edgeShapes of node '{0}'</value>
+  </data>
+  <data name="File_LineShapeOfNodeIs" xml:space="preserve">
+    <value>Line shape '{1}' of node '{0}' is empty.</value>
+  </data>
+  <data name="File_OpenDetoursPositionOf" xml:space="preserve">
+    <value>an openDetours position of {0}</value>
+  </data>
+  <data name="File_OpenDetoursOfIsArrayOf" xml:space="preserve">
+    <value>openDetours of {0} is an array of position numbers.</value>
+  </data>
+  <data name="File_OpenDetoursPositionsOfAreOut" xml:space="preserve">
+    <value>The openDetours positions of {0} are out of order (they must be ascending within the {1} branch points).</value>
+  </data>
+  <data name="File_ConditionsOfSetNode" xml:space="preserve">
+    <value>conditions of set node '{0}'</value>
+  </data>
+  <data name="File_ConditionIdOfSetNode" xml:space="preserve">
+    <value>condition id of set node '{0}'</value>
+  </data>
+  <data name="File_ConditionNameOfSetNode" xml:space="preserve">
+    <value>condition name of set node '{0}'</value>
+  </data>
+  <data name="File_ConditionExpressionOfSetNode" xml:space="preserve">
+    <value>condition expression of set node '{0}'</value>
+  </data>
+  <data name="File_DialogueNodeHasNoScript" xml:space="preserve">
+    <value>DialogueNode '{0}' has no script.</value>
+  </data>
+  <data name="File_OfDialogueNode" xml:space="preserve">
+    <value>{1} of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_LinesOfDialogueNode" xml:space="preserve">
+    <value>lines of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_LineIdOfLineEntryOf" xml:space="preserve">
+    <value>lineId of a line entry of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_LineOfDialogueNode" xml:space="preserve">
+    <value>line '{1}' of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_TrailingOfDialogueNode" xml:space="preserve">
+    <value>trailing of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_TransitionKindOfDialogueNode" xml:space="preserve">
+    <value>transition kind of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_TransitionConditionOfDialogueNode" xml:space="preserve">
+    <value>transition condition of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_TransitionOfLineOfDialogueNode" xml:space="preserve">
+    <value>transition of line '{1}' of DialogueNode '{0}'</value>
+  </data>
+  <data name="File_HasEitherOneConditionOr" xml:space="preserve">
+    <value>{0} has either one condition or two or more conditions.</value>
+  </data>
+  <data name="File_UnknownConditionTransitionKindIn" xml:space="preserve">
+    <value>Unknown condition transition kind '{1}' in DialogueNode '{0}'.</value>
+  </data>
+  <data name="File_ProjectManifest" xml:space="preserve">
+    <value>project manifest</value>
+  </data>
+  <data name="File_ThisProjectManifestIsFormat" xml:space="preserve">
+    <value>This project manifest is format version {0}. This tool can read up to {1}.</value>
+  </data>
+  <data name="File_ProjectsOfFormatVersionAren" xml:space="preserve">
+    <value>Projects of format version {0} aren't opened — this tool opens only format {1}.</value>
+  </data>
+  <data name="File_ThisIsnTProjectManifest" xml:space="preserve">
+    <value>This isn't a project manifest of this tool.</value>
+  </data>
+  <data name="File_FilesEntryOfProjectManifest" xml:space="preserve">
+    <value>The files entry of the project manifest isn't an object.</value>
+  </data>
+  <data name="File_IdOfFileEntryIn" xml:space="preserve">
+    <value>id of a file entry in the project manifest</value>
+  </data>
+  <data name="File_NameOfStoryFile" xml:space="preserve">
+    <value>name of StoryFile '{0}'</value>
+  </data>
+  <data name="File_PathOfStoryFile" xml:space="preserve">
+    <value>path of StoryFile '{0}'</value>
+  </data>
+  <data name="File_StoryFileIdIsDuplicatedIn" xml:space="preserve">
+    <value>StoryFile Id '{0}' is duplicated in the manifest.</value>
+  </data>
+  <data name="File_AttachedFilePathIsDuplicated" xml:space="preserve">
+    <value>Attached file path '{0}' is duplicated in the manifest.</value>
+  </data>
+  <data name="File_TitleOfProjectManifest" xml:space="preserve">
+    <value>title of the project manifest</value>
+  </data>
+  <data name="File_StartNodeOfProjectManifest" xml:space="preserve">
+    <value>startNode of the project manifest</value>
+  </data>
+  <data name="File_NameOfSpeaker" xml:space="preserve">
+    <value>name of a speaker</value>
+  </data>
+  <data name="File_CharacterIdOfSpeaker" xml:space="preserve">
+    <value>characterId of a speaker</value>
+  </data>
+  <data name="File_OfMustBeIntegerWithin" xml:space="preserve">
+    <value>{1} of {0} must be an integer within {3} ~ {4}.</value>
+  </data>
+  <data name="File_BoardSizeWidth" xml:space="preserve">
+    <value>board size width</value>
+  </data>
+  <data name="File_BoardSizeHeight" xml:space="preserve">
+    <value>board size height</value>
+  </data>
+  <data name="File_ScriptPrimaryLocaleOf" xml:space="preserve">
+    <value>script primaryLocale of '{0}'</value>
+  </data>
+  <data name="File_ScriptSourceRevisionOf" xml:space="preserve">
+    <value>script sourceRevision of '{0}'</value>
+  </data>
+  <data name="File_ScriptSourceContentHashOf" xml:space="preserve">
+    <value>script sourceContentHash of '{0}'</value>
+  </data>
+  <data name="File_ScriptLinesOf" xml:space="preserve">
+    <value>script lines of '{0}'</value>
+  </data>
+  <data name="File_ScriptLineIdOf" xml:space="preserve">
+    <value>script line id of '{0}'</value>
+  </data>
+  <data name="File_RevisionOfScriptLineOf" xml:space="preserve">
+    <value>revision of script line '{1}' of '{0}'</value>
+  </data>
+  <data name="File_RetiredOfScriptLineOf" xml:space="preserve">
+    <value>retired of script line '{1}' of '{0}'</value>
+  </data>
+  <data name="File_ScriptLocalesOf" xml:space="preserve">
+    <value>script locales of '{0}'</value>
+  </data>
+  <data name="File_ScriptLocaleNameOf" xml:space="preserve">
+    <value>script locale name of '{0}'</value>
+  </data>
+  <data name="File_EntriesOfScriptLocaleOf" xml:space="preserve">
+    <value>entries of script locale '{1}' of '{0}'</value>
+  </data>
+  <data name="File_ScriptLocaleOfPointsTo" xml:space="preserve">
+    <value>Script locale '{1}' of '{0}' points to LineId '{2}', which doesn't exist.</value>
+  </data>
+  <data name="File_LineOfScriptLocaleOf" xml:space="preserve">
+    <value>line '{2}' of script locale '{1}' of '{0}'</value>
+  </data>
+  <data name="File_SpeakerOfScriptLineOf" xml:space="preserve">
+    <value>speaker of script line '{1}' of '{0}'</value>
+  </data>
+  <data name="File_TextOfScriptLineOf" xml:space="preserve">
+    <value>text of script line '{1}' of '{0}'</value>
+  </data>
+  <data name="File_Project" xml:space="preserve">
+    <value>project</value>
+  </data>
+  <data name="File_ThisFileIsStoryFileOwned" xml:space="preserve">
+    <value>This file is a StoryFile owned by a project. Open the {1} manifest instead of a single {0}.</value>
+  </data>
+  <data name="File_CanTFindProjectManifest" xml:space="preserve">
+    <value>Can't find the project manifest folder.</value>
+  </data>
+  <data name="File_AttachedFileSRelativePath" xml:space="preserve">
+    <value>The attached file's relative path is empty.</value>
+  </data>
+  <data name="File_AttachedFilePathMustBe" xml:space="preserve">
+    <value>Attached file path '{0}' must be a relative path.</value>
+  </data>
+  <data name="File_AttachedFilePathCouldPoint" xml:space="preserve">
+    <value>Attached file path '{0}' could point outside the project.</value>
+  </data>
+  <data name="File_AttachedFilePathMustEnd" xml:space="preserve">
+    <value>Attached file path '{0}' must end with {1}.</value>
+  </data>
+  <data name="File_CanTFindStoryFileProject" xml:space="preserve">
+    <value>Can't find a StoryFile the project refers to: {0}</value>
+  </data>
+  <data name="File_StoryFileIdInManifestDiffers" xml:space="preserve">
+    <value>StoryFile Id '{0}' in the manifest differs from the file's Id '{1}'.</value>
+  </data>
+  <data name="File_StoryFileNameInManifestDiffers" xml:space="preserve">
+    <value>StoryFile name '{0}' in the manifest differs from the file's name '{1}'.</value>
+  </data>
+  <data name="File_AttachedFilePathPointsOutside" xml:space="preserve">
+    <value>Attached file path '{0}' points outside the project folder.</value>
+  </data>
+  <data name="File_ProjectSnapshot" xml:space="preserve">
+    <value>project snapshot</value>
+  </data>
+  <data name="File_UnsupportedProjectSnapshot" xml:space="preserve">
+    <value>Unsupported project snapshot.</value>
+  </data>
+  <data name="File_ProjectFormatVersionOfSnapshot" xml:space="preserve">
+    <value>projectFormatVersion of the snapshot</value>
+  </data>
+  <data name="File_ProjectFormatVersionOfSnapshot2" xml:space="preserve">
+    <value>Project format version {0} of the snapshot isn't supported.</value>
+  </data>
+  <data name="File_TitleOfSnapshot" xml:space="preserve">
+    <value>title of the snapshot</value>
+  </data>
+  <data name="File_StartNodeOfSnapshot" xml:space="preserve">
+    <value>startNode of the snapshot</value>
+  </data>
+  <data name="File_FilesEntryOfProjectSnapshot" xml:space="preserve">
+    <value>The files entry of the project snapshot isn't an object.</value>
+  </data>
+  <data name="File_PathOfFileInSnapshot" xml:space="preserve">
+    <value>path of file '{0}' in the snapshot</value>
+  </data>
+  <data name="File_StoryFileFormatVersionIsnT" xml:space="preserve">
+    <value>StoryFile format version {0} isn't supported. The current version is {1}.</value>
+  </data>
+  <data name="File_StoryFileHasNoNodesArray" xml:space="preserve">
+    <value>The StoryFile has no nodes array.</value>
+  </data>
+  <data name="File_FileIdOfStoryFile" xml:space="preserve">
+    <value>fileId of the StoryFile</value>
+  </data>
+  <data name="File_NodesOfStoryFile" xml:space="preserve">
+    <value>nodes of StoryFile '{0}'</value>
+  </data>
+  <data name="File_NodeIdIsDuplicatedWithin" xml:space="preserve">
+    <value>Node Id '{1}' is duplicated within StoryFile '{0}'.</value>
+  </data>
+  <data name="File_FolderDoesnTExist" xml:space="preserve">
+    <value>The folder doesn't exist: {0}</value>
+  </data>
+  <data name="File_ThisFolderHasNoProject" xml:space="preserve">
+    <value>This folder has no project ({0}): {1}</value>
+  </data>
+  <data name="File_ThisFolderHasProjectFiles" xml:space="preserve">
+    <value>This folder has {0} project files — keep just one: </value>
+  </data>
+  <data name="File_NoFolderWasChosen" xml:space="preserve">
+    <value>No folder was chosen.</value>
+  </data>
+  <data name="File_ThisFolderAlreadyHasProject" xml:space="preserve">
+    <value>This folder already has a project ({0}) — opening it instead of creating a new one.</value>
+  </data>
+  <data name="File_LineShape" xml:space="preserve">
+    <value>line shape</value>
+  </data>
+  <data name="File_KindOfLineShape" xml:space="preserve">
+    <value>kind of a line shape</value>
+  </data>
+  <data name="File_BendXOfLineShape" xml:space="preserve">
+    <value>bendX of a line shape</value>
+  </data>
+  <data name="File_BendYOfLineShape" xml:space="preserve">
+    <value>bendY of a line shape</value>
+  </data>
+  <data name="File_UnknownLineShapeKind" xml:space="preserve">
+    <value>Unknown line shape kind '{0}'.</value>
+  </data>
+  <data name="Export_ProgressionJSON" xml:space="preserve">
+    <value>Progression JSON</value>
+  </data>
+  <data name="Export_YarnDialogue" xml:space="preserve">
+    <value>Yarn dialogue</value>
+  </data>
+  <data name="File_TargetOfBranchDetour" xml:space="preserve">
+    <value>target of a branch (detour)</value>
+  </data>
+  <data name="File_BranchDetourIsEitherOne" xml:space="preserve">
+    <value>A branch (detour) is either one string or an array of two or more.</value>
+  </data>
+  <data name="File_BranchDetourHasSameTarget" xml:space="preserve">
+    <value>A branch (detour) has the same target twice.</value>
+  </data>
+  <data name="Edit_ChapterIsnTInProject" xml:space="preserve">
+    <value>Chapter '{0}' isn't in the project.</value>
+  </data>
+  <data name="Edit_ChapterAlreadyExists" xml:space="preserve">
+    <value>Chapter '{0}' already exists.</value>
+  </data>
+  <data name="Edit_EpisodeIdAlreadyExists" xml:space="preserve">
+    <value>EpisodeId '{0}' already exists.</value>
+  </data>
+  <data name="Edit_SceneIDCanTBe" xml:space="preserve">
+    <value>The scene ID can't be empty — an episode always belongs to a scene.</value>
+  </data>
+  <data name="Edit_SceneIDOfSceneEntry" xml:space="preserve">
+    <value>The scene ID of the scene entry is empty.</value>
+  </data>
+  <data name="Edit_PathAlreadyExistsWithSame" xml:space="preserve">
+    <value>Path {0}→{1} already exists with the same choice text.</value>
+  </data>
+  <data name="Edit_ChoiceTextIsEmpty" xml:space="preserve">
+    <value>The choice text is empty.</value>
+  </data>
+  <data name="Edit_IsAlreadyInChoiceDictionary" xml:space="preserve">
+    <value>'{0}' is already in the choice dictionary.</value>
+  </data>
+  <data name="Edit_ConditionLabelAlreadyExists" xml:space="preserve">
+    <value>Condition label '{0}' already exists.</value>
+  </data>
+  <data name="Edit_ConditionLabelDoesnTExist" xml:space="preserve">
+    <value>Condition label '{0}' doesn't exist.</value>
+  </data>
+  <data name="Edit_StatKeyIsEmpty" xml:space="preserve">
+    <value>The stat key is empty.</value>
+  </data>
+  <data name="Edit_ItSSameNameNothing" xml:space="preserve">
+    <value>It's the same name — nothing to change.</value>
+  </data>
+  <data name="Edit_StatIsnTInThis" xml:space="preserve">
+    <value>Stat '{0}' isn't in this chapter.</value>
+  </data>
+  <data name="Edit_StatAlreadyExistsToMerge" xml:space="preserve">
+    <value>Stat '{0}' already exists — to merge the two, delete one first.</value>
+  </data>
+  <data name="Edit_CanTDeleteStatIt" xml:space="preserve">
+    <value>Can't delete stat '{0}' — it's used in {1} places.</value>
+  </data>
+  <data name="Edit_Path" xml:space="preserve">
+    <value>Path {0} → {1}{2}</value>
+  </data>
+  <data name="Edit_StatChange" xml:space="preserve">
+    <value>Stat change: {0}</value>
+  </data>
+  <data name="Edit_Condition" xml:space="preserve">
+    <value>Condition '{0}'</value>
+  </data>
+  <data name="Edit_DialogueLine" xml:space="preserve">
+    <value>Dialogue {0} line {1}</value>
+  </data>
+  <data name="Edit_StatAlreadyExists" xml:space="preserve">
+    <value>Stat '{0}' already exists.</value>
+  </data>
+  <data name="Edit_ConditionIsnTInThis" xml:space="preserve">
+    <value>Condition '{0}' isn't in this chapter.</value>
+  </data>
+  <data name="Edit_CanTDeleteConditionIt" xml:space="preserve">
+    <value>Can't delete condition '{0}' — it's used in {1} places.</value>
+  </data>
+  <data name="Edit_ConditionNameCanTBe" xml:space="preserve">
+    <value>A condition name can't be empty — press ✕ to delete it.</value>
+  </data>
+  <data name="Edit_ConditionAlreadyExists" xml:space="preserve">
+    <value>Condition '{0}' already exists.</value>
+  </data>
+  <data name="Edit_ShowConditionUnlockCondition" xml:space="preserve">
+    <value>show condition · unlock condition</value>
+  </data>
+  <data name="Edit_UnlockCondition" xml:space="preserve">
+    <value>unlock condition</value>
+  </data>
+  <data name="Edit_ShowCondition" xml:space="preserve">
+    <value>show condition</value>
+  </data>
+  <data name="Edit_Dialogue" xml:space="preserve">
+    <value>Dialogue '{0}'</value>
+  </data>
+  <data name="Edit_BranchOfLine" xml:space="preserve">
+    <value>branch of line {0}</value>
+  </data>
+  <data name="Edit_BranchOfLineRemovedFrom" xml:space="preserve">
+    <value>branch of a line removed from the script</value>
+  </data>
+  <data name="Edit_EpisodeDoesnTExist" xml:space="preserve">
+    <value>Episode '{0}' doesn't exist.</value>
+  </data>
+  <data name="Edit_PathDoesnTExist" xml:space="preserve">
+    <value>Path {0}→{1} doesn't exist.</value>
+  </data>
+  <data name="Edit_StatChange2" xml:space="preserve">
+    <value>Stat change '{0}': {1}</value>
+  </data>
+  <data name="Edit_NodeIdIsDuplicatedIn" xml:space="preserve">
+    <value>Node Id '{0}' is duplicated in the project.</value>
+  </data>
+  <data name="Edit_EpisodeBelongsToSceneGive" xml:space="preserve">
+    <value>An episode belongs to a scene — give it a scene.</value>
+  </data>
+  <data name="Edit_BranchesCanOnlyBePlaced" xml:space="preserve">
+    <value>Branches can only be placed on dialogue nodes.</value>
+  </data>
+  <data name="Edit_ThisNodeIsnTOn" xml:space="preserve">
+    <value>This node isn't on a board.</value>
+  </data>
+  <data name="Edit_ThatLineIsnTIn" xml:space="preserve">
+    <value>That line isn't in this node's script.</value>
+  </data>
+  <data name="Edit_BranchCardsDonTBranch" xml:space="preserve">
+    <value>Branch cards don't branch — a branch card is visited from an episode and returns. If you need to split, add another branch to that episode.</value>
+  </data>
+  <data name="Edit_IsEpisodeCardItS" xml:space="preserve">
+    <value>'{0}' is an episode card — it's deleted along with the episode.</value>
+  </data>
+  <data name="Edit_IsEpisodeCardRenamingEpisode" xml:space="preserve">
+    <value>'{0}' is an episode card — renaming the episode moves its name too.</value>
+  </data>
+  <data name="Edit_ScriptIsEmptySoThere" xml:space="preserve">
+    <value>The script is empty, so there's nowhere to put a condition — write the first line first.</value>
+  </data>
+  <data name="Edit_IsnTSetNode" xml:space="preserve">
+    <value>'{0}' isn't a set node.</value>
+  </data>
+  <data name="Edit_CanTFindStoryFile" xml:space="preserve">
+    <value>Can't find StoryFile '{0}'.</value>
+  </data>
+  <data name="Edit_IsnTDialogueNode" xml:space="preserve">
+    <value>'{0}' isn't a dialogue node.</value>
+  </data>
+  <data name="Edit_ThereAreNoDialogueLines" xml:space="preserve">
+    <value>There are no dialogue lines to apply.</value>
+  </data>
+  <data name="Edit_ThereAreDeletedLinesSo" xml:space="preserve">
+    <value>There are {0} deleted lines, so confirmation is needed. {1}</value>
+  </data>
+  <data name="Edit_NotAppliedBecauseConfirmationIs" xml:space="preserve">
+    <value>Not applied because confirmation is needed. {0}</value>
+  </data>
+  <data name="Edit_NeedsConfirmation" xml:space="preserve">
+    <value>Needs confirmation</value>
+  </data>
+  <data name="Edit_NoneOfConditionsThisNode" xml:space="preserve">
+    <value>&lt;&lt;{0} {1}&gt;&gt; — none of the conditions this node can use has the same expression. The transition wasn't applied.</value>
+  </data>
+  <data name="Edit_ScriptWasnTSynchronizedBecause" xml:space="preserve">
+    <value>The script wasn't synchronized because some items need confirmation.</value>
+  </data>
+  <data name="Edit_SynchronizationPlanHasItemWithout" xml:space="preserve">
+    <value>The synchronization plan has an item without a LineId.</value>
+  </data>
+  <data name="Edit_SpeakerNameIsEmpty" xml:space="preserve">
+    <value>The speaker name is empty.</value>
+  </data>
+  <data name="Edit_SpeakerAlreadyExists" xml:space="preserve">
+    <value>Speaker '{0}' already exists.</value>
+  </data>
+  <data name="Edit_LineSpacingMustBeGreater" xml:space="preserve">
+    <value>Line spacing must be greater than 0.</value>
+  </data>
+  <data name="Edit_CardHasNoStartingFont" xml:space="preserve">
+    <value>Card '{0}' has no starting font · size, so its line spacing can't be written.</value>
+  </data>
+  <data name="Edit_DeletedBranchCardStaysOn" xml:space="preserve">
+    <value>Deleted the branch — card '{0}' stays on the board (to remove it, select the card and press [Delete branch card]). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Edit_DeletedBranchUndoCtrlZ" xml:space="preserve">
+    <value>Deleted the branch. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Export_RemovedOldProgressionJSONOf" xml:space="preserve">
+    <value>Removed the old progression JSON of deleted · renamed chapters: </value>
+  </data>
+  <data name="Export_YarnDialogue2" xml:space="preserve">
+    <value> · Yarn dialogue → {0}/{1}/ ({2})</value>
+  </data>
+  <data name="Export_ProgressionJSON2" xml:space="preserve">
+    <value>Progression JSON → {0}/ ({1})</value>
+  </data>
+  <data name="Export_ProgressionJSONWasnTWritten" xml:space="preserve">
+    <value>Progression JSON wasn't written because of validation errors: {0} — fix the errors below and it's written automatically ({1}/).</value>
+  </data>
+  <data name="Export_CouldnTWriteProgressionJSON" xml:space="preserve">
+    <value>Couldn't write the progression JSON: {0} — check whether another program has the files in {1}/ open.</value>
+  </data>
+  <data name="Export_UpdatingProgressionJSONWasBlocked" xml:space="preserve">
+    <value>Updating the progression JSON was blocked because choice order changed after the release baseline: {0} — the OptionIndex of past choice history could point to a different choice. Check the order against the baseline in {1}/.</value>
+  </data>
+  <data name="Export_CouldnTRemoveOldProgression" xml:space="preserve">
+    <value>Couldn't remove the old progression JSON of deleted · renamed chapters: {0} — check whether another program has the files open. If left, the game keeps loading chapters that no longer exist.</value>
+  </data>
+  <data name="Export_SomeScenesYarnDialogueWasn" xml:space="preserve">
+    <value>Some scenes' Yarn dialogue wasn't written — their old files are left as they are:
+</value>
+  </data>
+  <data name="Export_ItsFileNameIsSame" xml:space="preserve">
+    <value>{0}: its file name is the same as a scene of chapter '{1}' ({2}) — change the scene ID or chapter ID.</value>
+  </data>
+  <data name="Export_AndMore" xml:space="preserve">
+    <value> (and {0} more)</value>
+  </data>
+  <data name="Export_CouldnTWriteCheckWhether" xml:space="preserve">
+    <value>Couldn't write {0}/{1}/{2} — check whether another program has the file open.</value>
+  </data>
+  <data name="Diag_EpisodeIdIsEmpty" xml:space="preserve">
+    <value>EpisodeId is empty.</value>
+  </data>
+  <data name="Diag_EpisodeIdIsDuplicated" xml:space="preserve">
+    <value>EpisodeId '{0}' is duplicated.</value>
+  </data>
+  <data name="Diag_PathNeedsBothSourceAnd" xml:space="preserve">
+    <value>A path needs both a source and a target.</value>
+  </data>
+  <data name="Diag_Source" xml:space="preserve">
+    <value>source</value>
+  </data>
+  <data name="Diag_Target" xml:space="preserve">
+    <value>target</value>
+  </data>
+  <data name="Diag_StatChangeOnPathIsn" xml:space="preserve">
+    <value>Stat change '{2}' on path '{0}'→'{1}' isn't a stat of this chapter.</value>
+  </data>
+  <data name="Diag_PathHasNoChoiceText" xml:space="preserve">
+    <value>Path '{0}'→'{1}' has no choice text. Write text for regular choices.</value>
+  </data>
+  <data name="Diag_ThereAreSeveralPathsWith" xml:space="preserve">
+    <value>There are several {0}→{1} paths with the same choice text — make the text different or delete one.</value>
+  </data>
+  <data name="Diag_InChoiceGoesSeveralWays" xml:space="preserve">
+    <value>In '{0}', choice '{1}' goes several ways — the player sees two identical buttons, and the staging attached to this text exists only once, so both paths play the same staging.</value>
+  </data>
+  <data name="Diag_OfPathIsnTEpisode" xml:space="preserve">
+    <value>The {2} '{3}' of path '{0}'→'{1}' isn't an episode of this chapter.</value>
+  </data>
+  <data name="Diag_OfPathIsnTAmong" xml:space="preserve">
+    <value>The {2} '{3}' of path '{0}'→'{1}' isn't among this chapter's conditions. Chapter conditions are the source of label ↔ expression (G-7).</value>
+  </data>
+  <data name="Diag_IsOnOffStatSo" xml:space="preserve">
+    <value>'{0}' is an on/off stat, so its range must be 0~1 and its initial value 0 (off) or 1 (on) (now {1}~{2}, initial {3}).</value>
+  </data>
+  <data name="Diag_ConditionIsOnOffStat" xml:space="preserve">
+    <value>Condition '{0}': '{1}' is an on/off stat — it can only be written as '{1} == true' or '{1} == false'.</value>
+  </data>
+  <data name="Diag_PathIsOnOffStat" xml:space="preserve">
+    <value>Path '{0}'→'{1}': '{2}' is an on/off stat, so it can't be increased or decreased — to switch it, write '{2} true' or '{2} false'.</value>
+  </data>
+  <data name="Diag_PathIsIntegerStatSo" xml:space="preserve">
+    <value>Path '{0}'→'{1}': '{2}' is an integer stat, so it can't be set to true/false — write a change like '{2} +1'.</value>
+  </data>
+  <data name="Diag_PathSetsTwiceWriteIt" xml:space="preserve">
+    <value>Path '{0}'→'{1}' sets '{2}' twice — write it only once.</value>
+  </data>
+  <data name="Expr_ConditionExpressionIsEmpty" xml:space="preserve">
+    <value>The condition expression is empty.</value>
+  </data>
+  <data name="Expr_NoComparisonOperatorFoundYou" xml:space="preserve">
+    <value>'{0}' — no comparison operator found. You can use &gt;= · &lt;= · == · &gt; · &lt;.</value>
+  </data>
+  <data name="Expr_ThereSNoStatKey" xml:space="preserve">
+    <value>'{0}' — there's no stat key on the left of the comparison. Write the key first, like “key &gt;= 3”.</value>
+  </data>
+  <data name="Expr_DonTPutBeforeStat" xml:space="preserve">
+    <value>'{0}' — don't put $ before the stat key. Write just the key, like '{1}'.</value>
+  </data>
+  <data name="Expr_TrueFalseIsComparedOnly" xml:space="preserve">
+    <value>'{0}' — true/false is compared only with ==.</value>
+  </data>
+  <data name="Expr_ThereSNoValueOn" xml:space="preserve">
+    <value>'{0}' — there's no value on the right of the comparison. Write an integer, like “{1} &gt;= 3”.</value>
+  </data>
+  <data name="Expr_StatComparisonValuesMustBe" xml:space="preserve">
+    <value>'{0}' — stat comparison values must be integers. Decimals can't be used (G-3).</value>
+  </data>
+  <data name="Expr_ComparisonValueIsnTInteger" xml:space="preserve">
+    <value>'{0}' — the comparison value '{1}' isn't an integer. Write only integers (true · false for on/off stats).</value>
+  </data>
+  <data name="Expr_ThereSNoConditionTo" xml:space="preserve">
+    <value>There's no condition to read in '{0}'.</value>
+  </data>
+  <data name="Expr_IsnTKeyInStat" xml:space="preserve">
+    <value>'{0}' isn't a key in the stat table — this chapter has no stats yet. Add them first in the stat table of “Conditions &amp; stats”.</value>
+  </data>
+  <data name="Expr_IsnTKeyInStat2" xml:space="preserve">
+    <value>'{0}' isn't a key in the stat table. Existing keys: {1}</value>
+  </data>
+  <data name="Expr_IsReversedWrite" xml:space="preserve">
+    <value>'=&gt;' is reversed. Write '&gt;='.</value>
+  </data>
+  <data name="Expr_IsReversedWrite2" xml:space="preserve">
+    <value>'=&lt;' is reversed. Write '&lt;='.</value>
+  </data>
+  <data name="Expr_NotEqualCanTBe" xml:space="preserve">
+    <value>“Not equal” (!= · &lt;&gt;) can't be used. You can use &gt;= · &lt;= · == · &gt; · &lt; (e.g. “key &gt; 0” · “key &lt; 0”).</value>
+  </data>
+  <data name="Expr_JoinSeveralConditionsWithAll" xml:space="preserve">
+    <value>Join several conditions with ';' (all must hold to pass). &amp;&amp; · || · and · or · commas can't be used; for “or”, make two separate conditions.</value>
+  </data>
+  <data name="Expr_EqualsIsWrittenNot" xml:space="preserve">
+    <value>“Equals” is written '==', not '='.</value>
+  </data>
+  <data name="Diag_ThisChapterSReachabilityCouldn" xml:space="preserve">
+    <value>This chapter's reachability **couldn't be proven** — the search stopped at {0:N0} states. “Unreachable” below doesn't mean certain, it means **not found**. On/off stats double the number of states when they're switched differently per branch — if there are many on/off stats that paths' show · unlock conditions don't read, that's the cause.</value>
+  </data>
+  <data name="Diag_LoopMadeOnlyOfAuto" xml:space="preserve">
+    <value>A loop made only of auto paths — it goes around {0} forever without asking, so the chapter never ends. Write choice text on one card in the loop and add a path that leads out of it.</value>
+  </data>
+  <data name="Diag_AndMore" xml:space="preserve">
+    <value> and {0} more</value>
+  </data>
+  <data name="Diag_LoopWithNoWayOut" xml:space="preserve">
+    <value>A loop with no way out — once you enter {0}, whichever choice you pick you go around inside it and can't finish the chapter. Add a choice that leads out of the loop, or if there is one, check whether its show · unlock conditions open.</value>
+  </data>
+  <data name="Diag_LoopWithNoWayOut2" xml:space="preserve">
+    <value>A loop with no way out — once you enter {0}, depending on stats, whichever choice you pick you go around inside it and can't finish the chapter. Add a choice that leads out of the loop, or if there is one, check whether its show · unlock conditions open.</value>
+  </data>
+  <data name="Diag_IsnTConnectedFromStart" xml:space="preserve">
+    <value>'{0}' isn't connected from the start. {1} It's fine to leave it while you're working — it doesn't block export, and in the game there's no way to get there. To connect it, connect a choice slot under another episode card to it.</value>
+  </data>
+  <data name="Diag_ThereSNoRouteThat" xml:space="preserve">
+    <value>There's no route that can reach '{0}'</value>
+  </data>
+  <data name="Diag_CouldnTFindRouteTo" xml:space="preserve">
+    <value>Couldn't find a route to '{0}' (the search stopped at its limit)</value>
+  </data>
+  <data name="Diag_ThereSNoPathInto" xml:space="preserve">
+    <value>There's no path into this episode in the `간선` sheet.</value>
+  </data>
+  <data name="Diag_UnreachableFromSourcesOfIts" xml:space="preserve">
+    <value>Unreachable from the sources of its incoming paths ({0}).</value>
+  </data>
+  <data name="Diag_CauseIsOfConditionOn" xml:space="preserve">
+    <value>The cause is '{1} {2} {3}' of condition '{0}' — on every route {1} only goes up to {4}.</value>
+  </data>
+  <data name="Diag_CauseIsOfConditionOn2" xml:space="preserve">
+    <value>The cause is '{1} {2} {3}' of condition '{0}' — on every route {1} never goes below {4}.</value>
+  </data>
+  <data name="Diag_NoRouteSatisfiesCombinationOf" xml:space="preserve">
+    <value>No route satisfies the combination of gate conditions.</value>
+  </data>
+  <data name="Sync_Unchanged" xml:space="preserve">
+    <value>unchanged</value>
+  </data>
+  <data name="Sync_Modified" xml:space="preserve">
+    <value>modified</value>
+  </data>
+  <data name="Sync_Added" xml:space="preserve">
+    <value>added</value>
+  </data>
+  <data name="Sync_Deleted" xml:space="preserve">
+    <value>deleted</value>
+  </data>
+  <data name="Sync_Moved" xml:space="preserve">
+    <value>moved</value>
+  </data>
+  <data name="Sync_NeedsConfirmation" xml:space="preserve">
+    <value>needs confirmation</value>
+  </data>
+  <data name="Sync_NoChanges" xml:space="preserve">
+    <value>No changes</value>
+  </data>
+  <data name="Sync_CanTTellWhetherThis" xml:space="preserve">
+    <value>Can't tell whether this line disappeared or was rewritten as the new sentence below.</value>
+  </data>
+  <data name="Sync_RemovedFromScriptItS" xml:space="preserve">
+    <value>Removed from the script. It's kept as retired instead of being deleted.</value>
+  </data>
+  <data name="Sync_CanTTellWhichExisting" xml:space="preserve">
+    <value>Can't tell which existing line [{1}] '{0}' is a revision of. Confirm one side first or sync the script in parts.</value>
+  </data>
+  <data name="Sync_SyncPlanCouldnTClassify" xml:space="preserve">
+    <value>The sync plan couldn't classify line {0}.</value>
+  </data>
+  <data name="Color_Red" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="Color_Orange" xml:space="preserve">
+    <value>Orange</value>
+  </data>
+  <data name="Color_Yellow" xml:space="preserve">
+    <value>Yellow</value>
+  </data>
+  <data name="Color_Green" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="Color_Teal" xml:space="preserve">
+    <value>Teal</value>
+  </data>
+  <data name="Color_Blue" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="Color_Purple" xml:space="preserve">
+    <value>Purple</value>
+  </data>
+  <data name="Color_Pink" xml:space="preserve">
+    <value>Pink</value>
+  </data>
+  <data name="Color_Brown" xml:space="preserve">
+    <value>Brown</value>
+  </data>
+  <data name="Color_Gray" xml:space="preserve">
+    <value>Gray</value>
+  </data>
+  <data name="Expr_WhenIsOrMore" xml:space="preserve">
+    <value>when {0} is {1} or more</value>
+  </data>
+  <data name="Expr_WhenIsLessThan" xml:space="preserve">
+    <value>when {0} is less than {1}</value>
+  </data>
+  <data name="Expr_WhenIsExactly" xml:space="preserve">
+    <value>when {0} is exactly {1}</value>
+  </data>
+  <data name="Expr_WhenStatIsOnOn" xml:space="preserve">
+    <value>when the {0} stat is on (on/off stat)</value>
+  </data>
+  <data name="Expr_WhenStatIsOff" xml:space="preserve">
+    <value>when the {0} stat is off</value>
+  </data>
+  <data name="Expr_WhenBothHoldJoinSeveral" xml:space="preserve">
+    <value>when both hold — join several with ;</value>
+  </data>
+  <data name="Expr_ExpressionIsStatKeyComparison" xml:space="preserve">
+    <value>An expression is “stat key  comparison  value”. This chapter has no stats yet — add them first in the stat table of “Conditions &amp; stats”, then write, for example:</value>
+  </data>
+  <data name="Expr_ExpressionIsStatKeyComparison2" xml:space="preserve">
+    <value>An expression is “stat key  comparison  value”. With this chapter's stats:</value>
+  </data>
+  <data name="Expr_ThereAreFiveComparisonsAnd" xml:space="preserve">
+    <value>There are five comparisons, &gt;= · &lt;= · &gt; · &lt; · ==, and values are integers only (true · false for on/off stats). Write stat keys exactly as they are in the stat table.</value>
+  </data>
+  <data name="Diag_ScenesAndHaveSameFile" xml:space="preserve">
+    <value>Scenes '{0}' and '{1}' have the same file name ({2}) — change the scene ID.</value>
+  </data>
+  <data name="Diag_DialogueHasNoLineIdSo" xml:space="preserve">
+    <value>Dialogue '{0}' has no LineId, so its #line: tag can't be made.</value>
+  </data>
+  <data name="Diag_DialogueStartsWithOrYarn" xml:space="preserve">
+    <value>Dialogue '{0}' starts with `-&gt;` or `===` — Yarn can't read it as dialogue. Change its first character.</value>
+  </data>
+  <data name="Diag_BracesInDialogueDonT" xml:space="preserve">
+    <value>The braces in dialogue '{0}' don't pair up — `{{ }}` is only for reading stats.</value>
+  </data>
+  <data name="Diag_Path" xml:space="preserve">
+    <value>Path {0} → {1}</value>
+  </data>
+  <data name="Diag_NewConditionWasOpenedInside" xml:space="preserve">
+    <value>A new condition was opened inside a condition. Nested conditions aren't supported, so it's treated as another branch at the same depth.</value>
+  </data>
+  <data name="Diag_ThereSElseifWithNo" xml:space="preserve">
+    <value>There's an elseif with no open condition. It's treated as opening a new condition.</value>
+  </data>
+  <data name="Diag_ThereSEndOfCondition" xml:space="preserve">
+    <value>There's an end of condition with no open condition. It's ignored.</value>
+  </data>
+  <data name="Diag_CanTFindConditionDefinition" xml:space="preserve">
+    <value>Can't find the condition definition this line points to. The condition may have been deleted.</value>
+  </data>
+  <data name="Diag_ConditionIsnTInThis" xml:space="preserve">
+    <value>Condition '{0}' isn't in this chapter — conditions of other chapters can't be used here.</value>
+  </data>
+  <data name="Diag_ConditionSwitchRemainsOnLine" xml:space="preserve">
+    <value>A condition switch remains on a line removed from the script. It's left as is, not deleted.</value>
+  </data>
+  <data name="Diag_ConditionSwitchRemainsOnLineId" xml:space="preserve">
+    <value>A condition switch remains on a LineId not in this script. The script may have changed.</value>
+  </data>
+  <data name="Export_CopiedTo" xml:space="preserve">
+    <value>Copied to → </value>
+  </data>
+  <data name="Export_RemovedOldFiles" xml:space="preserve">
+    <value> · Removed old files: {0}</value>
+  </data>
+  <data name="Export_NotCopiedBecauseMirrorFolder" xml:space="preserve">
+    <value>Not copied because the mirror folder doesn't exist: {0} — check the folder in “Export” in [⚙ Settings] (folders aren't created).</value>
+  </data>
+  <data name="Export_CouldnTWriteToOr" xml:space="preserve">
+    <value>Couldn't write to or clean the mirror folder: {0} — check whether another program has the files open.</value>
+  </data>
+  <data name="Export_NotCopiedToSamePlace" xml:space="preserve">
+    <value>{0} — not copied to the same place as the game folder (node names would clash with the staged Yarn)</value>
+  </data>
+  <data name="Diag_Episode" xml:space="preserve">
+    <value>Episode “{0}”</value>
+  </data>
+  <data name="Diag_NoBranchPointCallsBranch" xml:space="preserve">
+    <value>No branch point calls branch card {0} — it isn't played in the game. Delete it if unused, or connect a branch point to this card to use it.</value>
+  </data>
+  <data name="Diag_WhichCallsBranchCardCan" xml:space="preserve">
+    <value>“{1}”, which calls branch card {0}, can't be reached — so this branch card isn't played in the game either.</value>
+  </data>
+  <data name="Diag_YarnNodeNameOfBranch" xml:space="preserve">
+    <value>The Yarn node name '{1}' of branch card {0} clashes with {3} — two nodes with the same name in one Yarn project break compilation. Change the branch card's ID in the [Structure] tab.</value>
+  </data>
+  <data name="Diag_BranchCard" xml:space="preserve">
+    <value>Branch card {0}</value>
+  </data>
+  <data name="Diag_BranchCardHasNoLines" xml:space="preserve">
+    <value>Branch card {0} has no lines to play. Write at least one line of dialogue in that card in the [Script] tab.</value>
+  </data>
+  <data name="Diag_BranchCardHasBranchInside" xml:space="preserve">
+    <value>Branch card {0} has a branch inside — a branch card is visited from an episode and returns, so it doesn't split again. Delete that card's branch on the [Script] board (line ＋ → ✕ Delete branch, or select the line and press Delete).</value>
+  </data>
+  <data name="Edit_SceneWouldHaveEntrancesFrom" xml:space="preserve">
+    <value>Scene '{0}' would have {1} entrances from outside — {2}.</value>
+  </data>
+  <data name="Edit_CanTMoveToScene" xml:space="preserve">
+    <value>Can't move '{0}' to scene '{2}'. </value>
+  </data>
+  <data name="Edit_SceneMustStartInOne" xml:space="preserve">
+    <value> A scene must start in one place (where rollback returns and Continue resumes). To move it, first disconnect the paths listed above or reconnect them to that scene's start, and reconnect them after moving.</value>
+  </data>
+  <data name="Edit_ChapterStart" xml:space="preserve">
+    <value>chapter start</value>
+  </data>
+  <data name="Edit_PathFromOutside" xml:space="preserve">
+    <value>a path from outside</value>
+  </data>
+  <data name="Edit_PathFromInAnotherScene" xml:space="preserve">
+    <value>a path from {0} in another scene</value>
+  </data>
+  <data name="Edit_DeletedAndItsPathTest" xml:space="preserve">
+    <value>Deleted '{0}' and its path · test start references.</value>
+  </data>
+  <data name="Edit_AlsoDeletedCardInScript" xml:space="preserve">
+    <value> Also deleted card '{0}' in the [Script] tab.</value>
+  </data>
+  <data name="Edit_UndoCtrlZBringsIt" xml:space="preserve">
+    <value> Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Edit_NameOfEpisodeToDelete" xml:space="preserve">
+    <value>The name of the episode to delete is empty.</value>
+  </data>
+  <data name="Edit_CouldnTFindChapter" xml:space="preserve">
+    <value>Couldn't find chapter '{0}'.</value>
+  </data>
+  <data name="Diag_EditItInKeyBox" xml:space="preserve">
+    <value> Edit it in the key box of the stat table in “Conditions &amp; stats” and paths · conditions follow.</value>
+  </data>
+  <data name="Diag_StatHasMinimumGreaterThan" xml:space="preserve">
+    <value>Stat '{0}' has a minimum ({1}) greater than its maximum ({2}). This range is the search bound of the reachability proof (G7), so it can't be empty.</value>
+  </data>
+  <data name="Diag_InitialValueOfStatIs" xml:space="preserve">
+    <value>The initial value ({1}) of stat '{0}' is outside min~max ({2}~{3}).</value>
+  </data>
+  <data name="Diag_ConditionUndecidedItAlwaysPasses" xml:space="preserve">
+    <value>Condition '{0}' — Undecided. It always passes until you fill in the expression in the [Structure] tab.</value>
+  </data>
+  <data name="Diag_ConditionExpressionDoesnTHold" xml:space="preserve">
+    <value>Condition '{0}' — the expression doesn't hold: {1}</value>
+  </data>
+  <data name="StatKey_StatKeyContainsHangulStat" xml:space="preserve">
+    <value>Stat key '{0}' contains Hangul — a stat key is the statKey that goes into Yarn as is, so write it in English (start with a letter · letters · digits · _ only, e.g. {1}).</value>
+  </data>
+  <data name="StatKey_StatKeyCanTBe" xml:space="preserve">
+    <value>Stat key '{0}' can't be used — start with a letter and use only letters · digits · _ (e.g. {1}). Spaces · symbols aren't allowed.</value>
+  </data>
+  <data name="Expr_MustBeInFormStatKey" xml:space="preserve">
+    <value>'{0}' — must be in the form 'statKey change' (e.g. trust +1).</value>
+  </data>
+  <data name="Expr_StatChangesMustBeIntegers" xml:space="preserve">
+    <value>'{0}' — stat changes must be integers. Decimals can't be used (G-3).</value>
+  </data>
+  <data name="Expr_ChangeIsnTInteger" xml:space="preserve">
+    <value>'{0}' — the change '{1}' isn't an integer.</value>
+  </data>
+  <data name="Expr_IsnTStatKeyIn" xml:space="preserve">
+    <value>'{0}' isn't a stat key in the `스탯` sheet. Declared keys: (none)</value>
+  </data>
+  <data name="Expr_IsnTStatKeyIn2" xml:space="preserve">
+    <value>'{0}' isn't a stat key in the `스탯` sheet. Declared keys: {1}</value>
+  </data>
+  <data name="Diag_OfChapter" xml:space="preserve">
+    <value>{1} of chapter “{0}”</value>
+  </data>
+  <data name="Diag_YarnNodeNameOfClashes" xml:space="preserve">
+    <value>The Yarn node name '{1}' of {0} clashes with {3} — the game compiles every chapter's Yarn into one project, so two nodes with the same name break compilation. Change the ID in the [Structure] tab.</value>
+  </data>
+  <data name="Edit_ChapterNameIsEmpty" xml:space="preserve">
+    <value>The chapter name is empty.</value>
+  </data>
+  <data name="Edit_NameIsSame" xml:space="preserve">
+    <value>The name is the same.</value>
+  </data>
+  <data name="Export_CouldnTReadBackWritten" xml:space="preserve">
+    <value>Couldn't read back the written JSON: {0}</value>
+  </data>
+  <data name="Export_WrittenJSONIsEmpty" xml:space="preserve">
+    <value>The written JSON is empty.</value>
+  </data>
+  <data name="Export_ProgressionCoreCanTLoad" xml:space="preserve">
+    <value>The progression core can't load this chapter — {0}</value>
+  </data>
+  <data name="Export_CorePath" xml:space="preserve">
+    <value> (core path: {0})</value>
+  </data>
+  <data name="Diag_AutoPathMustBeEpisode" xml:space="preserve">
+    <value>Auto path '{0}'→'{1}' must be the episode's only path. Writing text on the auto path makes it a choice (or delete one of the paths).</value>
+  </data>
+  <data name="Diag_AutoPathCanTHave" xml:space="preserve">
+    <value>An auto path can't have show · unlock conditions. Auto-advance must always have the same result.</value>
+  </data>
+  <data name="Diag_AutoPathCanTHave2" xml:space="preserve">
+    <value>An auto path can't have stat changes. If you need an effect, change it to a regular choice.</value>
+  </data>
+  <data name="Diag_AutoPathSChoiceText" xml:space="preserve">
+    <value>An auto path's choice text must be empty. With text, a player choice and auto-advance would conflict.</value>
+  </data>
+  <data name="Edit_CouldnTFindThatBranch" xml:space="preserve">
+    <value>Couldn't find that branch node.</value>
+  </data>
+  <data name="Edit_ThereAreLinesWrittenOutside" xml:space="preserve">
+    <value>There are lines written outside the condition lines (&lt;&lt;if&gt;&gt; · &lt;&lt;endif&gt;&gt;) or several conditions, so it can't be edited here. Edit this card's writing box in the [Script] tab and the outside lines move inside the condition, so you can edit it again.</value>
+  </data>
+  <data name="Edit_ConditionIsnTSuppliedTo" xml:space="preserve">
+    <value>Condition '{0}' isn't supplied to this board — check that it's in the chapter's `조건` sheet and that its expression is a form the tool can translate.</value>
+  </data>
+  <data name="Diag_LineIdAppearsTwiceInResult" xml:space="preserve">
+    <value>LineId '{0}' appears twice in the result.</value>
+  </data>
+  <data name="Diag_ThisCardHasNoLive" xml:space="preserve">
+    <value>This card has no live lines. That's fine for a scene that only carries staging; otherwise write dialogue.</value>
+  </data>
+  <data name="Diag_LinesOfDialogueFirstAppears" xml:space="preserve">
+    <value>{0} lines of dialogue (first appears in {1}) get no portrait · expressions.</value>
+  </data>
+  <data name="Diag_SpeakerHasNoCharacterKey" xml:space="preserve">
+    <value>Speaker '{0}' has no character key — {1} Enter the key in the “Speakers” tab on the right of the [Structure] tab.</value>
+  </data>
+  <data name="Diag_SpeakerIsnTInSpeaker" xml:space="preserve">
+    <value>Speaker '{0}' isn't in the speaker list, so it has no character key — {2} Add it in the “Speakers” tab of the [Script] tab, then enter the key in the “Speakers” tab of the [Structure] tab.</value>
+  </data>
+  <data name="Diag_ThereAreNoEpisodes" xml:space="preserve">
+    <value>There are no episodes.</value>
+  </data>
+  <data name="Diag_MetAgainAndStoppedAt" xml:space="preserve">
+    <value>Met '{0}' again and stopped at the loop.</value>
+  </data>
+  <data name="Diag_HasWaysForwardButTest" xml:space="preserve">
+    <value>'{0}' has {1} ways forward but the test start has no fixed choice. Write '{0}→…' in the fixed choice column.</value>
+  </data>
+  <data name="Edit_ChapterDoesnTExist" xml:space="preserve">
+    <value>Chapter '{0}' doesn't exist.</value>
+  </data>
+  <data name="Edit_ChapterHasNoEpisode" xml:space="preserve">
+    <value>Chapter '{0}' has no episode '{1}'.</value>
+  </data>
+  <data name="Doc_YarnStylePreviewIncludingConditions" xml:space="preserve">
+    <value>Yarn-style preview including conditions, LineIds and branches</value>
+  </data>
+  <data name="Doc_ShowsOnlyConditionsAndSpeaker" xml:space="preserve">
+    <value>Shows only conditions and speaker · dialogue, easy to read</value>
+  </data>
+  <data name="Sync_ChoicesArenTWrittenInside" xml:space="preserve">
+    <value>{0} — choices aren't written inside dialogue. Make choices on paths in the [Structure] tab.</value>
+  </data>
+  <data name="Sync_ThereSNoFollowingDialogue" xml:space="preserve">
+    <value>&lt;&lt;{0}&gt;&gt; — there's no following dialogue line to attach it to.</value>
+  </data>
+  <data name="Board_UnsupportedNodeType" xml:space="preserve">
+    <value>Unsupported node type: {0}</value>
+  </data>
+  <data name="Board_OutsideScenes" xml:space="preserve">
+    <value>Outside scenes</value>
+  </data>
+  <data name="Edit_BoardHasNoChapter" xml:space="preserve">
+    <value>Board '{0}' has no chapter.</value>
+  </data>
+  <data name="Edit_NodeIsnTInProject" xml:space="preserve">
+    <value>Node '{0}' isn't in the project.</value>
+  </data>
+  <data name="Diag_NoteOfSceneHasNo" xml:space="preserve">
+    <value>The note of scene '{0}' has no owner — that scene has no episodes</value>
+  </data>
+  <data name="Diag_BringSceneBackOrDelete" xml:space="preserve">
+    <value>Bring the scene back or delete the note in the chapter inspector.</value>
+  </data>
+  <data name="Diag_SceneHasEntrancesFromOutside" xml:space="preserve">
+    <value>Scene '{0}' has {1} entrances from outside: {2}. A scene must start in one place — that's where rollback returns and Continue resumes. Split the other landing points into other scenes.</value>
+  </data>
+  <data name="Diag_WhatMadeSecondEntrance" xml:space="preserve">
+    <value> What made the second entrance: {0}.</value>
+  </data>
+  <data name="Edit_ChapterSLastEpisodeCan" xml:space="preserve">
+    <value>The chapter's last episode can't be deleted — a chapter always keeps one scene · one episode. To delete the whole chapter, select it and press [Delete chapter].</value>
+  </data>
+  <data name="Edit_ChapterSLastSceneCan" xml:space="preserve">
+    <value>The chapter's last scene can't be deleted — a chapter always keeps one scene · one episode. To delete the whole chapter, select it and press [Delete chapter].</value>
+  </data>
+  <data name="Diag_Unavailable" xml:space="preserve">
+    <value>Unavailable · {0}</value>
+  </data>
+  <data name="Edit_NoNameWasChanged" xml:space="preserve">
+    <value>No name was changed.</value>
+  </data>
+  <data name="Diag_ExpressionOfConditionIsnT" xml:space="preserve">
+    <value>The expression of condition '{0}' isn't valid, so it can't be translated.</value>
+  </data>
+  <data name="Diag_DialogueNodeOfHasNo" xml:space="preserve">
+    <value>Dialogue node '{1}' of '{0}' has no lines to play. Write at least one line of dialogue in that card in the [Script] tab.</value>
+  </data>
+  <data name="Diag_InDialogueStatIsnT" xml:space="preserve">
+    <value>{{{0}}} in dialogue — stat '{1}' isn't in this chapter ({2} lines of dialogue · first appears in {3}). When that line comes up in the game, it reads a missing stat. If the stat was deleted, fix the dialogue; if you'll use it, add it in “Conditions &amp; stats” in the [Structure] tab.</value>
+  </data>
+  <data name="StatKey_Rule" xml:space="preserve">
+    <value>Write it in English — start with a letter and use only letters · digits · _ (e.g. {0}). Hangul · spaces · symbols aren't accepted</value>
+  </data>
+  <data name="Diag_ConditionHead" xml:space="preserve">
+    <value>Condition '{0}' — </value>
+  </data>
+</root>

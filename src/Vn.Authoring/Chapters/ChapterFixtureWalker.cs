@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <param name="EpisodeIds">지나간 에피소드, 순서대로. 첫 항목은 언제나 시작 에피소드다.</param>
@@ -24,7 +25,7 @@ public static class ChapterFixtureWalker
 
         if (chapter.StartEpisode is not { } start)
         {
-            return new FixtureWalkResult(path, "에피소드가 없습니다.");
+            return new FixtureWalkResult(path, Msg.Diag_ThereAreNoEpisodes);
         }
 
         int[] stats = chapter.Stats
@@ -40,7 +41,7 @@ public static class ChapterFixtureWalker
         {
             if (path.Contains(current))
             {
-                return new FixtureWalkResult(path, $"'{current}'를 다시 만나 순환에서 멈췄습니다.");
+                return new FixtureWalkResult(path, string.Format(Msg.Diag_MetAgainAndStoppedAt, current));
             }
 
             path.Add(current);
@@ -65,8 +66,7 @@ public static class ChapterFixtureWalker
             if (next is null)
             {
                 return new FixtureWalkResult(path,
-                    $"'{current}'에서 갈래가 {passable.Count}개인데 픽스처의 고정 선택이 없습니다. " +
-                    $"고정 선택 열에 '{current}→…'을 적어 주세요.");
+                    string.Format(Msg.Diag_HasWaysForwardButTest, current, passable.Count));
             }
 
             stats = ChapterReachabilityProver.ApplyDeltas(chapter, stats, next.StatChanges);

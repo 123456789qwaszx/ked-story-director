@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -32,13 +33,13 @@ internal static class DetourJson
         List<string> targets = node switch
         {
             null => [],
-            JsonArray { Count: > 1 } array => array.Select(item => JsonSupport.RequiredText(item, "분기(detour)의 대상")).ToList(),
-            JsonValue => [JsonSupport.RequiredText(node, "분기(detour)의 대상")],
-            _ => throw new InvalidDataException("분기(detour)는 문자열 하나이거나 둘 이상의 배열입니다.")
+            JsonArray { Count: > 1 } array => array.Select(item => JsonSupport.RequiredText(item, Msg.File_TargetOfBranchDetour)).ToList(),
+            JsonValue => [JsonSupport.RequiredText(node, Msg.File_TargetOfBranchDetour)],
+            _ => throw new InvalidDataException(Msg.File_BranchDetourIsEitherOne)
         };
 
         return targets.Distinct(StringComparer.Ordinal).Count() == targets.Count
             ? targets
-            : throw new InvalidDataException("분기(detour)에 같은 대상이 둘 있습니다.");
+            : throw new InvalidDataException(Msg.File_BranchDetourHasSameTarget);
     }
 }

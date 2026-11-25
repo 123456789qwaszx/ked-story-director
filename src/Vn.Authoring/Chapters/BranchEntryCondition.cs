@@ -2,6 +2,7 @@ using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -44,12 +45,12 @@ public static class BranchEntryCondition
 
         if (project.FindDialogue(nodeId) is not { } node)
         {
-            return State.Refuse("그 분기 노드를 찾지 못했습니다.");
+            return State.Refuse(Msg.Edit_CouldnTFindThatBranch);
         }
 
         if (node.Script.ActiveLines.FirstOrDefault() is not { } first)
         {
-            return State.Refuse("대본이 비어 있어 조건을 걸 자리가 없습니다 — 첫 줄을 먼저 쓰세요.");
+            return State.Refuse(Msg.Edit_ScriptIsEmptySoThere);
         }
 
         IReadOnlyList<LineConditionTransition> head =
@@ -65,8 +66,7 @@ public static class BranchEntryCondition
             head is not [{ ConditionId: { } conditionId }])
         {
             return State.Refuse(
-                "조건 줄(<<if>> · <<endif>>) 바깥에 쓴 줄이 있거나 조건이 여럿이라 여기서 고칠 수 없습니다. " +
-                "[대본] 탭에서 이 카드의 글 칸을 고치면 바깥 줄이 조건 안쪽으로 모여 다시 고칠 수 있습니다.");
+                Msg.Edit_ThereAreLinesWrittenOutside);
         }
 
         // 공급된 조건의 `이름`이 곧 챕터 조건의 라벨이다 (ChapterBoardSupply).
@@ -146,8 +146,7 @@ public static class BranchEntryCondition
 
         if (condition is null)
         {
-            return $"조건 '{label}'이 이 판에 공급되지 않았습니다 — 챕터의 `조건` 시트에 " +
-                   "있는지, 식이 툴이 옮길 수 있는 모양인지 확인하세요.";
+            return string.Format(Msg.Edit_ConditionIsnTSuppliedTo, label);
         }
 
         editor.SetEntryCondition(nodeId, condition.Id);

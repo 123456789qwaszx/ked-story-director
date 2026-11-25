@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -26,7 +27,7 @@ public static class StoryFileJson
         if (version != CurrentFormatVersion)
         {
             throw new InvalidDataException(
-                $"StoryFile 형식 버전 {version}은 지원하지 않습니다. 현재 버전은 {CurrentFormatVersion}입니다.");
+                string.Format(Msg.File_StoryFileFormatVersionIsnT, version, CurrentFormatVersion));
         }
 
         return ReadObject(root);
@@ -53,21 +54,21 @@ public static class StoryFileJson
     {
         if (root["nodes"] is not JsonArray nodes)
         {
-            throw new InvalidDataException("StoryFile에 nodes 배열이 없습니다.");
+            throw new InvalidDataException(Msg.File_StoryFileHasNoNodesArray);
         }
 
-        string id = JsonSupport.RequiredText(root["fileId"], "StoryFile의 fileId");
-        string name = JsonSupport.RequiredText(root["name"], $"StoryFile '{id}'의 name");
+        string id = JsonSupport.RequiredText(root["fileId"], Msg.File_FileIdOfStoryFile);
+        string name = JsonSupport.RequiredText(root["name"], string.Format(Msg.File_NameOfStoryFile, id));
         var file = new StoryFile(id, name);
         HashSet<string> nodeIds = new(StringComparer.Ordinal);
 
-        foreach (JsonObject nodeJson in JsonSupport.Objects(nodes, $"StoryFile '{id}'의 nodes"))
+        foreach (JsonObject nodeJson in JsonSupport.Objects(nodes, string.Format(Msg.File_NodesOfStoryFile, id)))
         {
             StoryNode node = StoryNodeJson.Read(nodeJson);
 
             if (!nodeIds.Add(node.Id))
             {
-                throw new InvalidDataException($"StoryFile '{id}' 안에서 노드 Id '{node.Id}'가 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_NodeIdIsDuplicatedWithin, id, node.Id));
             }
 
             file.Nodes.Add(node);
@@ -84,7 +85,7 @@ public static class StoryFileJson
             if (!nodeIds.Add(node.Id))
             {
                 throw new InvalidDataException(
-                    $"StoryFile '{file.Id}' 안에서 노드 Id '{node.Id}'가 중복됩니다.");
+                    string.Format(Msg.File_NodeIdIsDuplicatedWithin, file.Id, node.Id));
             }
         }
     }

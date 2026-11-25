@@ -1,5 +1,6 @@
 ﻿using Vn.Authoring.Model;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -29,7 +30,7 @@ public static class ChapterSpeakerKeys
         foreach (Missing missing in MissingOf(chapter, project))
         {
             string speaker = missing.Speaker;
-            string where = $"대사 {missing.Lines}줄(처음 나오는 곳 — {missing.FirstPlace})에 초상화 · 표정이 붙지 않습니다.";
+            string where = string.Format(Msg.Diag_LinesOfDialogueFirstAppears, missing.Lines, missing.FirstPlace);
             diagnostics.Add(new ChapterDiagnostic(
                 ChapterDiagnosticSeverity.Warning,
                 ChapterDiagnosticCode.SpeakerCharacterKeyMissing,
@@ -37,9 +38,8 @@ public static class ChapterSpeakerKeys
                 ChapterSheetNames.Speakers,
                 null,
                 missing.Registered
-                    ? $"화자 '{speaker}'의 캐릭터 키가 없습니다 — {where} [구성] 탭 오른쪽 「화자」 탭에서 키를 적어 주세요."
-                    : $"화자 '{speaker}'{Josa.은는(speaker)} 화자 목록에 없어 캐릭터 키가 없습니다 — {where} [대본] 탭 「화자」 탭에서 더한 뒤 " +
-                      "[구성] 탭 「화자」 탭에서 키를 적어 주세요."));
+                    ? string.Format(Msg.Diag_SpeakerHasNoCharacterKey, speaker, where)
+                    : string.Format(Msg.Diag_SpeakerIsnTInSpeaker, speaker, Josa.은는(speaker), where)));
         }
     }
 

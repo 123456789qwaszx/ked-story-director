@@ -1,4 +1,5 @@
 using Vn.Authoring.Editing;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -37,7 +38,7 @@ public static class EpisodeRenamer
         if (oldId.Length == 0 || newId.Length == 0 ||
             string.Equals(oldId, newId, StringComparison.Ordinal))
         {
-            return Result.Fail("바뀐 이름이 없습니다.");
+            return Result.Fail(Msg.Edit_NoNameWasChanged);
         }
 
         bool nodeRenamed = EpisodeNaming.CardFor(editor.Project, chapterId, oldId) is not null;

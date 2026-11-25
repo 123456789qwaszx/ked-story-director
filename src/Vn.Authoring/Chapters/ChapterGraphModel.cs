@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
@@ -110,7 +111,7 @@ public sealed record ChapterEdge(
     /// 사람이 판에서 찾아갈 수 있게 적는 이 간선 — <c>간선 a → b "문구"</c>. 진단 · 거절 목록이 쓴다.
     /// </summary>
     public string Where =>
-        $"간선 {FromEpisodeId} → {ToEpisodeId}" +
+        string.Format(Msg.Diag_Path, FromEpisodeId, ToEpisodeId) +
         (OptionLabel is { Length: > 0 } text ? $" \"{text}\"" : string.Empty);
 
     /// <summary>표시·해금 중 하나라도 걸려 있으면 관문 있는 길이다 — 그래프가 색으로 알린다.</summary>

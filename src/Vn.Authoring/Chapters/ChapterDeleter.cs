@@ -1,5 +1,6 @@
 using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -46,14 +47,14 @@ public static class ChapterDeleter
 
         if (chapterId.Length == 0)
         {
-            return Result.Fail("챕터 이름이 비어 있습니다.");
+            return Result.Fail(Msg.Edit_ChapterNameIsEmpty);
         }
 
         StoryFile? board = EpisodeNaming.BoardOf(editor.Project, chapterId);
 
         if (editor.FindChapter(chapterId) is null && board is null)
         {
-            return Result.Fail($"챕터 '{chapterId}'를 찾지 못했습니다.");
+            return Result.Fail(string.Format(Msg.Edit_CouldnTFindChapter, chapterId));
         }
 
         int nodesRemoved = editor.RemoveChapterWithBoard(chapterId);

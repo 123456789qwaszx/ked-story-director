@@ -1,4 +1,5 @@
 using Vn.Authoring.Editing;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -32,14 +33,14 @@ public static class EpisodeDeleter
         /// <summary>사람에게 할 말 — 화면이 제 사정(내보내기 결과)을 뒤에 붙인다.</summary>
         public string Describe(string episodeId)
         {
-            string text = $"'{episodeId}'과 그 간선·픽스처 참조를 지웠습니다.";
+            string text = string.Format(Msg.Edit_DeletedAndItsPathTest, episodeId);
 
             if (CardRemoved is { } removed)
             {
-                text += $" [대본] 탭의 카드 '{removed}'도 함께 지웠습니다.";
+                text += string.Format(Msg.Edit_AlsoDeletedCardInScript, removed);
             }
 
-            return text + " 되돌리기(Ctrl+Z)로 돌아옵니다.";
+            return text + Msg.Edit_UndoCtrlZBringsIt;
         }
     }
 
@@ -49,12 +50,12 @@ public static class EpisodeDeleter
 
         if (string.IsNullOrWhiteSpace(episodeId))
         {
-            return Result.Fail("지울 에피소드 이름이 비어 있습니다.");
+            return Result.Fail(Msg.Edit_NameOfEpisodeToDelete);
         }
 
         if (editor.FindChapter(chapterId) is not { } chapter)
         {
-            return Result.Fail($"챕터 '{chapterId}'를 찾지 못했습니다.");
+            return Result.Fail(string.Format(Msg.Edit_CouldnTFindChapter, chapterId));
         }
 
         // 챕터에는 에피소드 하나가 늘 남는다(2026-11-18 소유자 · ChapterMinimum).

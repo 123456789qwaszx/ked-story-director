@@ -1,6 +1,7 @@
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Editing;
 
@@ -19,14 +20,14 @@ public sealed record ScenarioPasteOutcome(
     {
         if (Plan is null)
         {
-            return "반영할 대사 줄이 없습니다.";
+            return Msg.Edit_ThereAreNoDialogueLines;
         }
 
         if (!Applied)
         {
             return NeedsDeleteConfirmation
-                ? $"삭제 {Plan.Count(ScriptSyncKind.Deleted)}줄이 있어 확인이 필요합니다. {Plan.Summary()}"
-                : $"확인이 필요해 반영하지 않았습니다. {Plan.Summary()}";
+                ? string.Format(Msg.Edit_ThereAreDeletedLinesSo, Plan.Count(ScriptSyncKind.Deleted), Plan.Summary())
+                : string.Format(Msg.Edit_NotAppliedBecauseConfirmationIs, Plan.Summary());
         }
 
         return Plan.Summary();
@@ -100,7 +101,7 @@ public sealed partial class ProjectEditor
 
         if (plan.HasConflicts)
         {
-            problems.AddRange(plan.Conflicts.Select(entry => entry.Message ?? "확인 필요"));
+            problems.AddRange(plan.Conflicts.Select(entry => entry.Message ?? Msg.Edit_NeedsConfirmation));
             return new ScenarioPasteOutcome(parsed, plan, Applied: false, NeedsDeleteConfirmation: false, problems);
         }
 
@@ -303,8 +304,7 @@ public sealed partial class ProjectEditor
                     {
                         // 비슷한 식을 추측해 잇지 않는다. 조건은 설정노드에서 먼저 만들어야 한다.
                         problems.Add(
-                            $"<<{(intent.Kind == ConditionTransitionKind.BeginIf ? "if" : "elseif")} {intent.Expression}>> — " +
-                            "이 노드가 쓸 수 있는 조건 중에 같은 식이 없습니다. 전환은 반영하지 않았습니다.");
+                            string.Format(Msg.Edit_NoneOfConditionsThisNode, (intent.Kind == ConditionTransitionKind.BeginIf ? "if" : "elseif"), intent.Expression));
 
                         return null;
                     }
@@ -364,7 +364,7 @@ public sealed partial class ProjectEditor
         if (plan.HasConflicts)
         {
             throw new InvalidOperationException(
-                "확인이 필요한 항목이 있어 대본을 동기화하지 않았습니다." + Environment.NewLine +
+                Msg.Edit_ScriptWasnTSynchronizedBecause + Environment.NewLine +
                 string.Join(
                     Environment.NewLine,
                     plan.Conflicts.Select(entry => "• " + (entry.Message ?? entry.LineId))));
@@ -409,7 +409,7 @@ public sealed partial class ProjectEditor
             foreach (ScriptSyncEntry entry in plan.Entries.Where(item => item.NewIndex is not null))
             {
                 string lineId = entry.LineId
-                    ?? throw new InvalidOperationException("동기화 계획에 LineId 없는 항목이 있습니다.");
+                    ?? throw new InvalidOperationException(Msg.Edit_SynchronizationPlanHasItemWithout);
 
                 if (!byId.TryGetValue(lineId, out ScriptLine? line))
                 {

@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -21,14 +22,14 @@ public static class ChapterScripts
         {
             if (board.EpisodeNodeFor(episode) is { } node)
             {
-                yield return (node, $"에피소드 「{episode.ShownTitle}」");
+                yield return (node, string.Format(Msg.Diag_Episode, episode.ShownTitle));
             }
         }
 
         foreach (DialogueNode card in EpisodeNaming.BoardOf(project, chapter.ChapterId)?.Nodes.OfType<DialogueNode>()
                      .Where(node => node.IsBranchCard) ?? [])
         {
-            yield return (card, $"분기 카드 {EpisodeNaming.BranchLabelOf(card)}");
+            yield return (card, string.Format(Msg.Diag_BranchCard, EpisodeNaming.BranchLabelOf(card)));
         }
     }
 

@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -57,8 +58,8 @@ internal static class ChapterDocumentJson
         {
             chapters.Add(new ChapterDocument
             {
-                ChapterId = JsonSupport.RequiredText(json["chapterId"], "챕터의 chapterId"),
-                DisplayName = Omittable(json["displayName"], "챕터의 displayName"),
+                ChapterId = JsonSupport.RequiredText(json["chapterId"], Msg.File_ChapterIdOfChapter),
+                DisplayName = Omittable(json["displayName"], Msg.File_DisplayNameOfChapter),
                 Episodes = Take(json["episodes"], "episodes", ReadEpisode),
                 Edges = Take(json["edges"], "edges", ReadEdge),
                 Conditions = Take(json["conditions"], "conditions", ReadCondition),
@@ -98,16 +99,16 @@ internal static class ChapterDocumentJson
     }
 
     private static ChapterEpisode ReadEpisode(JsonObject json) => new(
-        JsonSupport.RequiredText(json["episodeId"], "에피소드의 episodeId"),
-        Text(json["title"], "에피소드의 title"),
-        Text(json["index"], "에피소드의 index"),
-        JsonSupport.RequiredNumber(json["x"], "에피소드의 x"),
-        JsonSupport.RequiredNumber(json["y"], "에피소드의 y"),
-        Omittable(json["memo"], "에피소드의 memo"))
+        JsonSupport.RequiredText(json["episodeId"], Msg.File_EpisodeIdOfEpisode),
+        Text(json["title"], Msg.File_TitleOfEpisode),
+        Text(json["index"], Msg.File_IndexOfEpisode),
+        JsonSupport.RequiredNumber(json["x"], Msg.File_XOfEpisode),
+        JsonSupport.RequiredNumber(json["y"], Msg.File_YOfEpisode),
+        Omittable(json["memo"], Msg.File_MemoOfEpisode))
     {
-        EventKey = Omittable(json["eventKey"], "에피소드의 eventKey"),
-        SceneId = JsonSupport.RequiredText(json["sceneId"], "에피소드의 sceneId"),
-        NoteCard = JsonSupport.Flag(json["noteCard"], "에피소드의 noteCard")
+        EventKey = Omittable(json["eventKey"], Msg.File_EventKeyOfEpisode),
+        SceneId = JsonSupport.RequiredText(json["sceneId"], Msg.File_SceneIdOfEpisode),
+        NoteCard = JsonSupport.Flag(json["noteCard"], Msg.File_NoteCardOfEpisode)
     };
 
     // ── 간선 ────────────────────────────────────────────────────────────────
@@ -163,18 +164,18 @@ internal static class ChapterDocumentJson
     }
 
     private static ChapterEdge ReadEdge(JsonObject json) => new(
-        JsonSupport.RequiredText(json["from"], "간선의 from"),
-        JsonSupport.RequiredText(json["to"], "간선의 to"),
-        Omittable(json["optionLabel"], "간선의 optionLabel"),
-        Omittable(json["conditionLabel"], "간선의 conditionLabel"),
-        Omittable(json["lockedMessage"], "간선의 lockedMessage"))
+        JsonSupport.RequiredText(json["from"], Msg.File_FromOfPath),
+        JsonSupport.RequiredText(json["to"], Msg.File_ToOfPath),
+        Omittable(json["optionLabel"], Msg.File_OptionLabelOfPath),
+        Omittable(json["conditionLabel"], Msg.File_ConditionLabelOfPath),
+        Omittable(json["lockedMessage"], Msg.File_LockedMessageOfPath))
     {
-        Auto = JsonSupport.Flag(json["auto"], "간선의 auto"),
-        VisibleConditionLabel = Omittable(json["visibleConditionLabel"], "간선의 visibleConditionLabel"),
+        Auto = JsonSupport.Flag(json["auto"], Msg.File_AutoOfPath),
+        VisibleConditionLabel = Omittable(json["visibleConditionLabel"], Msg.File_VisibleConditionLabelOfPath),
         StatChanges = Take(json["statChanges"], "statChanges", change => new StatDelta(
-            JsonSupport.RequiredText(change["key"], "스탯 변화의 key"),
-            JsonSupport.RequiredInt(change["amount"], "스탯 변화의 amount"),
-            change["kind"] is null ? StatChangeKind.Add : Kind<StatChangeKind>(change["kind"], "스탯 변화의 kind"))),
+            JsonSupport.RequiredText(change["key"], Msg.File_KeyOfStatChange),
+            JsonSupport.RequiredInt(change["amount"], Msg.File_AmountOfStatChange),
+            change["kind"] is null ? StatChangeKind.Add : Kind<StatChangeKind>(change["kind"], Msg.File_KindOfStatChange))),
         Shape = EdgeShapeJson.Read(json["shape"])
     };
 
@@ -195,9 +196,9 @@ internal static class ChapterDocumentJson
 
     /// <summary><c>Parsed</c>·<c>IsValid</c>는 안 읽는다 — 식에서 다시 나온다.</summary>
     private static ChapterCondition ReadCondition(JsonObject json) => new(
-        JsonSupport.RequiredString(json["label"], "조건의 label"),
-        JsonSupport.RequiredString(json["expression"], "조건의 expression"),
-        Omittable(json["description"], "조건의 description"),
+        JsonSupport.RequiredString(json["label"], Msg.File_LabelOfCondition),
+        JsonSupport.RequiredString(json["expression"], Msg.File_ExpressionOfCondition),
+        Omittable(json["description"], Msg.File_DescriptionOfCondition),
         Parsed: [],
         IsValid: false);
 
@@ -220,11 +221,11 @@ internal static class ChapterDocumentJson
     }
 
     private static ChapterStat ReadStat(JsonObject json) => new(
-        JsonSupport.RequiredText(json["key"], "스탯의 key"),
-        JsonSupport.RequiredInt(json["initial"], "스탯의 initial"),
-        JsonSupport.RequiredInt(json["minimum"], "스탯의 minimum"),
-        JsonSupport.RequiredInt(json["maximum"], "스탯의 maximum"),
-        json["type"] is null ? ChapterStatType.Int : Kind<ChapterStatType>(json["type"], "스탯의 type"));
+        JsonSupport.RequiredText(json["key"], Msg.File_KeyOfStat),
+        JsonSupport.RequiredInt(json["initial"], Msg.File_InitialOfStat),
+        JsonSupport.RequiredInt(json["minimum"], Msg.File_MinimumOfStat),
+        JsonSupport.RequiredInt(json["maximum"], Msg.File_MaximumOfStat),
+        json["type"] is null ? ChapterStatType.Int : Kind<ChapterStatType>(json["type"], Msg.File_TypeOfStat));
 
     private static JsonObject WriteChoice(ChapterChoiceOption option)
     {
@@ -237,9 +238,9 @@ internal static class ChapterDocumentJson
     }
 
     private static ChapterChoiceOption ReadChoice(JsonObject json) => new(
-        Text(json["index"], "선택지의 index"),
-        JsonSupport.RequiredString(json["text"], "선택지의 text"),
-        Omittable(json["memo"], "선택지의 memo"));
+        Text(json["index"], Msg.File_IndexOfChoice),
+        JsonSupport.RequiredString(json["text"], Msg.File_TextOfChoice),
+        Omittable(json["memo"], Msg.File_MemoOfChoice));
 
     private static JsonObject WriteFixture(ChapterFixture fixture)
     {
@@ -283,19 +284,19 @@ internal static class ChapterDocumentJson
 
         if (json["stats"] is { } statsJson)
         {
-            foreach ((string key, JsonNode? value) in JsonSupport.RequiredObject(statsJson, "픽스처의 stats"))
+            foreach ((string key, JsonNode? value) in JsonSupport.RequiredObject(statsJson, Msg.File_StatsOfTestStart))
             {
-                stats[key] = JsonSupport.RequiredInt(value, $"픽스처 스탯 '{key}'의 값");
+                stats[key] = JsonSupport.RequiredInt(value, string.Format(Msg.File_ValueOfTestStartStat, key));
             }
         }
 
         return new ChapterFixture(
-            JsonSupport.RequiredString(json["name"], "픽스처의 name"),
-            JsonSupport.Flag(json["active"], "픽스처의 active"),
+            JsonSupport.RequiredString(json["name"], Msg.File_NameOfTestStart),
+            JsonSupport.Flag(json["active"], Msg.File_ActiveOfTestStart),
             stats,
-            Take(json["choices"], "픽스처의 choices", choice => new ChapterFixtureChoice(
-                JsonSupport.RequiredText(choice["from"], "픽스처 선택의 from"),
-                JsonSupport.RequiredText(choice["to"], "픽스처 선택의 to"))));
+            Take(json["choices"], Msg.File_ChoicesOfTestStart, choice => new ChapterFixtureChoice(
+                JsonSupport.RequiredText(choice["from"], Msg.File_FromOfTestStartChoice),
+                JsonSupport.RequiredText(choice["to"], Msg.File_ToOfTestStartChoice))));
     }
 
     // ── 장면 메모 ────────────────────────────────────────────────────────────
@@ -318,18 +319,18 @@ internal static class ChapterDocumentJson
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (ChapterSceneNote note in Take(node, "sceneNotes", json => new ChapterSceneNote(
-                     JsonSupport.RequiredText(json["sceneId"], "장면 메모의 sceneId"),
-                     Text(json["text"], "장면 메모의 text"),
-                     Omittable(json["name"], "장면 메모의 name"))))
+                     JsonSupport.RequiredText(json["sceneId"], Msg.File_SceneIdOfSceneNote),
+                     Text(json["text"], Msg.File_TextOfSceneNote),
+                     Omittable(json["name"], Msg.File_NameOfSceneNote))))
         {
             if (!seen.Add(note.SceneId))
             {
-                throw new InvalidDataException($"sceneNotes에 장면 '{note.SceneId}'의 메모가 둘 있습니다.");
+                throw new InvalidDataException(string.Format(Msg.File_SceneNotesHasTwoNotesFor, note.SceneId));
             }
 
             if (ChapterSceneNotes.IsBlank(note))
             {
-                throw new InvalidDataException($"sceneNotes의 장면 '{note.SceneId}' 항목에 글도 이름도 없습니다.");
+                throw new InvalidDataException(string.Format(Msg.File_SceneNotesEntryForSceneHas, note.SceneId));
             }
 
             notes.Add(note);
@@ -378,11 +379,11 @@ internal static class ChapterDocumentJson
             ? null
             : JsonSupport.RequiredString(node, what) is { Length: > 0 } text
                 ? text
-                : throw new InvalidDataException($"{what}{Josa.이가(what)} 빈 글자로 적혔습니다 — 비면 칸째 쓰지 않습니다.");
+                : throw new InvalidDataException(string.Format(Msg.File_IsWrittenAsEmptyString, what, Josa.이가(what)));
 
     /// <summary>종류 이름 — 쓰는 이름(<c>ToString()</c>) 밖은 받지 않는다.</summary>
     private static T Kind<T>(JsonNode? node, string what) where T : struct, Enum =>
         Enum.TryParse(JsonSupport.RequiredText(node, what), out T kind) && Enum.IsDefined(kind) && kind.ToString() == (string)node!
             ? kind
-            : throw new InvalidDataException($"{what} '{(string?)node}'를 모릅니다.");
+            : throw new InvalidDataException(string.Format(Msg.File_Unknown, what, (string?)node));
 }

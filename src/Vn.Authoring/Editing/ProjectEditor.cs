@@ -4,6 +4,7 @@ using Vn.Authoring.Model;
 using Vn.Authoring.Script;
 using Vn.Authoring.Serialization;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Editing;
 
@@ -131,7 +132,7 @@ public sealed partial class ProjectEditor
 
         if (Project.FindNode(node.Id) is not null)
         {
-            throw new InvalidOperationException($"노드 Id '{node.Id}'가 프로젝트 안에서 중복됩니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_NodeIdIsDuplicatedIn, node.Id));
         }
 
         Mutate(() =>
@@ -208,7 +209,7 @@ public sealed partial class ProjectEditor
 
         if (Project.FindNode(created.Id) is not null)
         {
-            throw new InvalidOperationException($"노드 Id '{created.Id}'가 프로젝트 안에서 중복됩니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_NodeIdIsDuplicatedIn, created.Id));
         }
 
         ScriptDocument script = created.Script;
@@ -254,12 +255,12 @@ public sealed partial class ProjectEditor
         // 에피소드는 늘 장면에 속한다 — 장면 없이 세우지 않는다(old-shapes O7).
         if (string.IsNullOrWhiteSpace(sceneId))
         {
-            throw new InvalidOperationException("에피소드는 장면에 속합니다 — 장면을 주세요.");
+            throw new InvalidOperationException(Msg.Edit_EpisodeBelongsToSceneGive);
         }
 
         if (FindEpisode(chapter, created.Name) is not null)
         {
-            throw new InvalidOperationException($"EpisodeId '{created.Name}'가 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_EpisodeIdAlreadyExists, created.Name));
         }
 
         created.MarkedEpisodeId = created.Name;
@@ -311,7 +312,7 @@ public sealed partial class ProjectEditor
     {
         if (Project.FindNode(nodeId) is not DialogueNode source)
         {
-            throw new InvalidOperationException("분기는 대사 노드에만 둘 수 있습니다.");
+            throw new InvalidOperationException(Msg.Edit_BranchesCanOnlyBePlaced);
         }
 
         if (!CanBranchFrom(nodeId))
@@ -321,13 +322,13 @@ public sealed partial class ProjectEditor
 
         if (Project.FindFileContainingNode(nodeId) is not { } file)
         {
-            throw new InvalidOperationException("판에 서 있지 않은 노드입니다.");
+            throw new InvalidOperationException(Msg.Edit_ThisNodeIsnTOn);
         }
 
         if (source.Script.ActiveLines.All(line =>
                 !string.Equals(line.Id, beforeLineId, StringComparison.Ordinal)))
         {
-            throw new InvalidOperationException("그 줄이 이 노드의 대본에 없습니다.");
+            throw new InvalidOperationException(Msg.Edit_ThatLineIsnTIn);
         }
 
         // 분기로 다녀갈 카드는 원본의 <b>오른쪽</b>에 선다. 아래는 선택지로 가는 다음 에피소드의 자리다.
@@ -374,8 +375,8 @@ public sealed partial class ProjectEditor
     public bool CanBranchFrom(string nodeId) => Project.FindNode(nodeId) is DialogueNode { IsBranchCard: false };
 
     /// <summary>분기 카드에서 분기를 내려 할 때 하는 말 — 편집기의 거절 · 화면의 상태줄이 같은 글을 쓴다.</summary>
-    public const string BranchCardBranchesRefusal =
-        "분기 카드 안에서는 분기를 내지 않습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳입니다. 갈라야 하면 그 에피소드에 분기를 하나 더 두세요.";
+    public static string BranchCardBranchesRefusal =>
+        Msg.Edit_BranchCardsDonTBranch;
 
     /// <summary>그 카드가 다른 판의 분기 카드인가 — 놓기를 거절할 때 까닭을 고른다.</summary>
     public bool IsBranchCardElsewhere(string fromNodeId, string nodeId) =>
@@ -459,7 +460,7 @@ public sealed partial class ProjectEditor
             Chapters.EpisodeNaming.ChapterOfBoard(Project, owner).Episodes.Any(episode =>
                 string.Equals(episode.EpisodeId, episodeId, StringComparison.Ordinal)))
         {
-            throw new InvalidOperationException($"'{episodeId}'{Josa.은는(episodeId)} 에피소드 카드입니다 — 에피소드와 함께 지웁니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_IsEpisodeCardItS, episodeId, Josa.은는(episodeId)));
         }
 
         Mutate(() => RemoveNodeCore(owner, node));
@@ -499,7 +500,7 @@ public sealed partial class ProjectEditor
     {
         if (Project.FindNode(nodeId) is DialogueNode { MarkedEpisodeId: { } episodeId })
         {
-            throw new InvalidOperationException($"'{episodeId}'{Josa.은는(episodeId)} 에피소드 카드입니다 — 이름은 에피소드 이름 바꾸기가 함께 옮깁니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_IsEpisodeCardRenamingEpisode, episodeId, Josa.은는(episodeId)));
         }
 
         if (Project.FindNode(nodeId) is { } node && !string.Equals(node.Name, name, StringComparison.Ordinal))
@@ -720,7 +721,7 @@ public sealed partial class ProjectEditor
         if (node.Script.ActiveLines.FirstOrDefault() is not { } first)
         {
             throw new InvalidOperationException(
-                "대본이 비어 있어 조건을 걸 자리가 없습니다 — 첫 줄을 먼저 쓰세요.");
+                Msg.Edit_ScriptIsEmptySoThere);
         }
 
         DialogueLineExtension? existing = node.FindExtension(first.Id);
@@ -1009,7 +1010,7 @@ public sealed partial class ProjectEditor
     internal ConditionDefinition AddCondition(string setNodeId, string name, string expression)
     {
         var setNode = Project.FindNode(setNodeId) as SetNode
-            ?? throw new InvalidOperationException($"'{setNodeId}'는 설정 노드가 아닙니다.");
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_IsnTSetNode, setNodeId));
 
         var condition = new ConditionDefinition { Name = name, Expression = expression };
         Mutate(() => setNode.Conditions.Add(condition));
@@ -1289,13 +1290,13 @@ public sealed partial class ProjectEditor
     private StoryFile RequireFile(string fileId)
     {
         return Project.FindFile(fileId)
-            ?? throw new InvalidOperationException($"StoryFile '{fileId}'를 찾을 수 없습니다.");
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_CanTFindStoryFile, fileId));
     }
 
     private DialogueNode RequireDialogue(string nodeId)
     {
         return Project.FindDialogue(nodeId)
-            ?? throw new InvalidOperationException($"'{nodeId}'는 대사 노드가 아닙니다.");
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_IsnTDialogueNode, nodeId));
     }
 
     /// <summary>

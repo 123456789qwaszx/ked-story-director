@@ -1,4 +1,5 @@
 using Vn.Authoring.Rendering;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -45,7 +46,7 @@ public static class ConditionYarnTranslator
         if (!condition.IsValid || condition.Parsed.Count == 0)
         {
             return new ConditionYarnTranslation(
-                null, $"조건 '{condition.Label}'의 식이 유효하지 않아 번역할 수 없습니다.");
+                null, string.Format(Msg.Diag_ExpressionOfConditionIsnT, condition.Label));
         }
 
         var parts = new List<string>();

@@ -4094,7 +4094,8 @@ public partial class ChapterGraphView : UserControl
             Margin = new Thickness(12, 0, 0, 0)
         };
 
-        string head = $"조건 '{label}' — ";
+        // 진단 문장의 머리와 같은 표에서 꺼낸다 — 화면 언어가 무엇이든 그 조건의 진단만 고른다(english-ui E5).
+        string head = string.Format(Vn.Authoring.Strings.Msg.Diag_ConditionHead, label);
 
         foreach (ChapterDiagnostic problem in model.Diagnostics.Where(item =>
                      item.Severity == ChapterDiagnosticSeverity.Error &&

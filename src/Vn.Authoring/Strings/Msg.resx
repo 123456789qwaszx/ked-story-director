@@ -1,0 +1,1664 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vn.Authoring 문구 표 — 한국어(기본) · 검증 보고 · 고치는 법 · 거절 사유 · 파일 읽기 오류. 영어는 같은 키로 Msg.en.resx에.
+  고치는 법은 docs/work-orders/english-ui-orders.md 「문구 표 고치기」.
+-->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="File_ChapterIdOfChapter" xml:space="preserve">
+    <value>챕터의 chapterId</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_DisplayNameOfChapter" xml:space="preserve">
+    <value>챕터의 displayName</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_EpisodeIdOfEpisode" xml:space="preserve">
+    <value>에피소드의 episodeId</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_TitleOfEpisode" xml:space="preserve">
+    <value>에피소드의 title</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_IndexOfEpisode" xml:space="preserve">
+    <value>에피소드의 index</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_XOfEpisode" xml:space="preserve">
+    <value>에피소드의 x</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_YOfEpisode" xml:space="preserve">
+    <value>에피소드의 y</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_MemoOfEpisode" xml:space="preserve">
+    <value>에피소드의 memo</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_EventKeyOfEpisode" xml:space="preserve">
+    <value>에피소드의 eventKey</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_SceneIdOfEpisode" xml:space="preserve">
+    <value>에피소드의 sceneId</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_NoteCardOfEpisode" xml:space="preserve">
+    <value>에피소드의 noteCard</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_FromOfPath" xml:space="preserve">
+    <value>간선의 from</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_ToOfPath" xml:space="preserve">
+    <value>간선의 to</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_OptionLabelOfPath" xml:space="preserve">
+    <value>간선의 optionLabel</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_ConditionLabelOfPath" xml:space="preserve">
+    <value>간선의 conditionLabel</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_LockedMessageOfPath" xml:space="preserve">
+    <value>간선의 lockedMessage</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_AutoOfPath" xml:space="preserve">
+    <value>간선의 auto</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_VisibleConditionLabelOfPath" xml:space="preserve">
+    <value>간선의 visibleConditionLabel</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_KeyOfStatChange" xml:space="preserve">
+    <value>스탯 변화의 key</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_AmountOfStatChange" xml:space="preserve">
+    <value>스탯 변화의 amount</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_KindOfStatChange" xml:space="preserve">
+    <value>스탯 변화의 kind</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_LabelOfCondition" xml:space="preserve">
+    <value>조건의 label</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_ExpressionOfCondition" xml:space="preserve">
+    <value>조건의 expression</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_DescriptionOfCondition" xml:space="preserve">
+    <value>조건의 description</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_KeyOfStat" xml:space="preserve">
+    <value>스탯의 key</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_InitialOfStat" xml:space="preserve">
+    <value>스탯의 initial</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_MinimumOfStat" xml:space="preserve">
+    <value>스탯의 minimum</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_MaximumOfStat" xml:space="preserve">
+    <value>스탯의 maximum</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_TypeOfStat" xml:space="preserve">
+    <value>스탯의 type</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_IndexOfChoice" xml:space="preserve">
+    <value>선택지의 index</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_TextOfChoice" xml:space="preserve">
+    <value>선택지의 text</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_MemoOfChoice" xml:space="preserve">
+    <value>선택지의 memo</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_StatsOfTestStart" xml:space="preserve">
+    <value>픽스처의 stats</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_ValueOfTestStartStat" xml:space="preserve">
+    <value>픽스처 스탯 '{0}'의 값</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_NameOfTestStart" xml:space="preserve">
+    <value>픽스처의 name</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_ActiveOfTestStart" xml:space="preserve">
+    <value>픽스처의 active</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_ChoicesOfTestStart" xml:space="preserve">
+    <value>픽스처의 choices</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_FromOfTestStartChoice" xml:space="preserve">
+    <value>픽스처 선택의 from</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_ToOfTestStartChoice" xml:space="preserve">
+    <value>픽스처 선택의 to</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_SceneIdOfSceneNote" xml:space="preserve">
+    <value>장면 메모의 sceneId</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_TextOfSceneNote" xml:space="preserve">
+    <value>장면 메모의 text</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_NameOfSceneNote" xml:space="preserve">
+    <value>장면 메모의 name</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_SceneNotesHasTwoNotesFor" xml:space="preserve">
+    <value>sceneNotes에 장면 '{0}'의 메모가 둘 있습니다.</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_SceneNotesEntryForSceneHas" xml:space="preserve">
+    <value>sceneNotes의 장면 '{0}' 항목에 글도 이름도 없습니다.</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_IsWrittenAsEmptyString" xml:space="preserve">
+    <value>{0}{1} 빈 글자로 적혔습니다 — 비면 칸째 쓰지 않습니다.</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_Unknown" xml:space="preserve">
+    <value>{0} '{1}'를 모릅니다.</value>
+    <comment>ChapterDocumentJson.cs</comment>
+  </data>
+  <data name="File_RootOfFileIsnT" xml:space="preserve">
+    <value>{0} 파일의 루트가 JSON 객체가 아닙니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_CanTReadFile" xml:space="preserve">
+    <value>{0} 파일을 읽을 수 없습니다. {1}</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsMissingOrNotString" xml:space="preserve">
+    <value>{0}{1} 없거나 문자열이 아닙니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsEmpty" xml:space="preserve">
+    <value>{0}{1} 비었습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsMissingOrNotNumber" xml:space="preserve">
+    <value>{0}{1} 없거나 수가 아닙니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsMissingOrNotInteger" xml:space="preserve">
+    <value>{0}{1} 없거나 정수가 아닙니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsWrittenAsTrueOnly" xml:space="preserve">
+    <value>{0}{1} 켤 때만 true로 적습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsMissingOrNotObject" xml:space="preserve">
+    <value>{0}{1} 없거나 객체가 아닙니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsnTArray" xml:space="preserve">
+    <value>{0}{1} 배열이 아닙니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_HasItemThatIsnT" xml:space="preserve">
+    <value>{0}에 객체가 아닌 항목이 있습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_IsMissing" xml:space="preserve">
+    <value>{0}{1} 없습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_SpeakerNameIsEmptyOr" xml:space="preserve">
+    <value>화자 이름 '{0}'이 비었거나 겹칩니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_StoryFileIdIsDuplicated" xml:space="preserve">
+    <value>StoryFile Id '{0}'가 중복됩니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_BoardIsnTChapterS" xml:space="preserve">
+    <value>판 '{0}'{1} 챕터의 판이 아니거나 같은 챕터의 판이 둘입니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_StoryFilePathIsDuplicated" xml:space="preserve">
+    <value>StoryFile 경로 '{0}'가 중복됩니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_BoardHasSetNodeThat" xml:space="preserve">
+    <value>판 '{0}'에 챕터 조건 공급 노드가 아닌 설정 노드가 있거나 공급 노드가 둘입니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_NodeIdIsDuplicatedAcross" xml:space="preserve">
+    <value>노드 Id '{0}'가 프로젝트 전체에서 중복됩니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_CanTFindStartNode" xml:space="preserve">
+    <value>시작 노드 '{0}'를 프로젝트에서 찾을 수 없습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_EpisodeOfChapterHasNo" xml:space="preserve">
+    <value>챕터 '{0}'의 에피소드 '{1}'에 장면ID가 없습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_CardOnBoardDoesnT" xml:space="preserve">
+    <value>판 '{0}'의 카드 '{1}'{2} 그 챕터의 에피소드 하나를 가리키지 않습니다(표식이 없거나 · 없는 에피소드거나 · 겹치거나 · 이름이 EpisodeId와 다릅니다).</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_EpisodeOfChapterHasNo2" xml:space="preserve">
+    <value>챕터 '{0}'의 에피소드 '{1}'에 카드가 없습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_ScriptOfHasEmptyLineId" xml:space="preserve">
+    <value>'{0}'의 대본에 빈 LineId가 있습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_LineIdIsDuplicatedInScript" xml:space="preserve">
+    <value>'{0}'의 대본에서 LineId '{1}'가 중복됩니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_LocaleIsDuplicatedInScript" xml:space="preserve">
+    <value>'{0}'의 대본에서 locale '{1}'이 중복됩니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_LocaleInScriptOfPoints" xml:space="preserve">
+    <value>'{0}'의 대본의 locale '{1}'이 없는 LineId '{2}'를 가리킵니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_LineIdEntryIsDuplicatedIn" xml:space="preserve">
+    <value>DialogueNode '{0}'에서 LineId '{1}' 항목이 중복됩니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_BranchOfDialogueNodePointsTo" xml:space="preserve">
+    <value>DialogueNode '{0}'의 분기가 같은 판의 분기 카드가 아닌 '{1}'를 가리킵니다 — 분기는 같은 판의 분기 카드에만 잇습니다.</value>
+    <comment>JsonSupport.cs</comment>
+  </data>
+  <data name="File_UnsupportedNodeKind" xml:space="preserve">
+    <value>지원하지 않는 노드 종류 '{0}'입니다.</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_IdOfNode" xml:space="preserve">
+    <value>노드의 id</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_NameOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 name</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_KindOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 kind</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutXOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.x</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutYOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.y</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutWidthOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.width</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutWritingHeightOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.writingHeight</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutFitWidthOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.fitWidth</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LayoutFitHeightOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 layout.fitHeight</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_EdgeShapesOfNode" xml:space="preserve">
+    <value>노드 '{0}'의 edgeShapes</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LineShapeOfNodeIs" xml:space="preserve">
+    <value>노드 '{0}'의 선 모양 '{1}'가 비었습니다.</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_OpenDetoursPositionOf" xml:space="preserve">
+    <value>{0}의 openDetours 자리</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_OpenDetoursOfIsArrayOf" xml:space="preserve">
+    <value>{0}의 openDetours는 자리 번호의 배열입니다.</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_OpenDetoursPositionsOfAreOut" xml:space="preserve">
+    <value>{0}의 openDetours 자리가 어긋났습니다(분기점 {1}개 안에서 오름차순이어야 합니다).</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_ConditionsOfSetNode" xml:space="preserve">
+    <value>설정 노드 '{0}'의 conditions</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_ConditionIdOfSetNode" xml:space="preserve">
+    <value>설정 노드 '{0}'의 조건 id</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_ConditionNameOfSetNode" xml:space="preserve">
+    <value>설정 노드 '{0}'의 조건 name</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_ConditionExpressionOfSetNode" xml:space="preserve">
+    <value>설정 노드 '{0}'의 조건 expression</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_DialogueNodeHasNoScript" xml:space="preserve">
+    <value>DialogueNode '{0}'에 대본(script)이 없습니다.</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_OfDialogueNode" xml:space="preserve">
+    <value>DialogueNode '{0}'의 {1}</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LinesOfDialogueNode" xml:space="preserve">
+    <value>DialogueNode '{0}'의 lines</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LineIdOfLineEntryOf" xml:space="preserve">
+    <value>DialogueNode '{0}'의 줄 항목의 lineId</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_LineOfDialogueNode" xml:space="preserve">
+    <value>DialogueNode '{0}'의 줄 '{1}'</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_TrailingOfDialogueNode" xml:space="preserve">
+    <value>DialogueNode '{0}'의 trailing</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_TransitionKindOfDialogueNode" xml:space="preserve">
+    <value>DialogueNode '{0}'의 전환 kind</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_TransitionConditionOfDialogueNode" xml:space="preserve">
+    <value>DialogueNode '{0}'의 전환 condition</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_TransitionOfLineOfDialogueNode" xml:space="preserve">
+    <value>DialogueNode '{0}'의 줄 '{1}'의 전환</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_HasEitherOneConditionOr" xml:space="preserve">
+    <value>{0}{1} condition 하나이거나 conditions 둘 이상입니다.</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_UnknownConditionTransitionKindIn" xml:space="preserve">
+    <value>DialogueNode '{0}'의 조건 전환 종류 '{1}'를 모릅니다.</value>
+    <comment>StoryNodeJson.cs</comment>
+  </data>
+  <data name="File_ProjectManifest" xml:space="preserve">
+    <value>프로젝트 manifest</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_ThisProjectManifestIsFormat" xml:space="preserve">
+    <value>이 프로젝트 manifest는 형식 버전 {0}입니다. 이 툴은 {1}까지 읽을 수 있습니다.</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_ProjectsOfFormatVersionAren" xml:space="preserve">
+    <value>형식 버전 {0} 프로젝트는 열지 않습니다 — 이 툴은 형식 {1}만 엽니다.</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_ThisIsnTProjectManifest" xml:space="preserve">
+    <value>이 툴의 프로젝트 manifest가 아닙니다.</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_FilesEntryOfProjectManifest" xml:space="preserve">
+    <value>프로젝트 manifest의 files 항목이 객체가 아닙니다.</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_IdOfFileEntryIn" xml:space="preserve">
+    <value>프로젝트 manifest의 파일 항목의 id</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_NameOfStoryFile" xml:space="preserve">
+    <value>StoryFile '{0}'의 name</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_PathOfStoryFile" xml:space="preserve">
+    <value>StoryFile '{0}'의 path</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_StoryFileIdIsDuplicatedIn" xml:space="preserve">
+    <value>StoryFile Id '{0}'가 manifest에서 중복됩니다.</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_AttachedFilePathIsDuplicated" xml:space="preserve">
+    <value>부속 파일 경로 '{0}'가 manifest에서 중복됩니다.</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_TitleOfProjectManifest" xml:space="preserve">
+    <value>프로젝트 manifest의 title</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_StartNodeOfProjectManifest" xml:space="preserve">
+    <value>프로젝트 manifest의 startNode</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_NameOfSpeaker" xml:space="preserve">
+    <value>화자의 name</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_CharacterIdOfSpeaker" xml:space="preserve">
+    <value>화자의 characterId</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_OfMustBeIntegerWithin" xml:space="preserve">
+    <value>{0} {1}{2} {3} ~ {4} 안의 정수여야 합니다.</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_BoardSizeWidth" xml:space="preserve">
+    <value>판 크기의 width</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_BoardSizeHeight" xml:space="preserve">
+    <value>판 크기의 height</value>
+    <comment>ProjectManifestJson.cs</comment>
+  </data>
+  <data name="File_ScriptPrimaryLocaleOf" xml:space="preserve">
+    <value>'{0}'의 대본 primaryLocale</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_ScriptSourceRevisionOf" xml:space="preserve">
+    <value>'{0}'의 대본 sourceRevision</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_ScriptSourceContentHashOf" xml:space="preserve">
+    <value>'{0}'의 대본 sourceContentHash</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_ScriptLinesOf" xml:space="preserve">
+    <value>'{0}'의 대본 lines</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_ScriptLineIdOf" xml:space="preserve">
+    <value>'{0}'의 대본 줄 id</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_RevisionOfScriptLineOf" xml:space="preserve">
+    <value>'{0}'의 대본 줄 '{1}'의 revision</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_RetiredOfScriptLineOf" xml:space="preserve">
+    <value>'{0}'의 대본 줄 '{1}'의 retired</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_ScriptLocalesOf" xml:space="preserve">
+    <value>'{0}'의 대본 locales</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_ScriptLocaleNameOf" xml:space="preserve">
+    <value>'{0}'의 대본 locale 이름</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_EntriesOfScriptLocaleOf" xml:space="preserve">
+    <value>'{0}'의 대본 locale '{1}'의 entries</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_ScriptLocaleOfPointsTo" xml:space="preserve">
+    <value>'{0}'의 대본 locale '{1}'이 없는 LineId '{2}'를 가리킵니다.</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_LineOfScriptLocaleOf" xml:space="preserve">
+    <value>'{0}'의 대본 locale '{1}'의 줄 '{2}'</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_SpeakerOfScriptLineOf" xml:space="preserve">
+    <value>'{0}'의 대본 줄 '{1}'의 speaker</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_TextOfScriptLineOf" xml:space="preserve">
+    <value>'{0}'의 대본 줄 '{1}'의 text</value>
+    <comment>ScriptDocumentJson.cs</comment>
+  </data>
+  <data name="File_Project" xml:space="preserve">
+    <value>프로젝트</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_ThisFileIsStoryFileOwned" xml:space="preserve">
+    <value>이 파일은 프로젝트가 소유하는 StoryFile입니다. 개별 {0} 대신 {1} manifest를 여세요.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_CanTFindProjectManifest" xml:space="preserve">
+    <value>프로젝트 manifest 디렉터리를 찾을 수 없습니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_AttachedFileSRelativePath" xml:space="preserve">
+    <value>부속 파일 상대 경로가 비어 있습니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_AttachedFilePathMustBe" xml:space="preserve">
+    <value>부속 파일 경로 '{0}'는 상대 경로여야 합니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_AttachedFilePathCouldPoint" xml:space="preserve">
+    <value>부속 파일 경로 '{0}'가 프로젝트 밖을 가리킬 수 있습니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_AttachedFilePathMustEnd" xml:space="preserve">
+    <value>부속 파일 경로 '{0}'는 {1}으로 끝나야 합니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_CanTFindStoryFileProject" xml:space="preserve">
+    <value>프로젝트가 참조하는 StoryFile을 찾을 수 없습니다: {0}</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_StoryFileIdInManifestDiffers" xml:space="preserve">
+    <value>manifest의 StoryFile Id '{0}'와 파일의 Id '{1}'가 다릅니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_StoryFileNameInManifestDiffers" xml:space="preserve">
+    <value>manifest의 StoryFile 이름 '{0}'과 파일의 이름 '{1}'이 다릅니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_AttachedFilePathPointsOutside" xml:space="preserve">
+    <value>부속 파일 경로 '{0}'가 프로젝트 디렉터리 밖을 가리킵니다.</value>
+    <comment>ProjectStore.cs</comment>
+  </data>
+  <data name="File_ProjectSnapshot" xml:space="preserve">
+    <value>프로젝트 스냅샷</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_UnsupportedProjectSnapshot" xml:space="preserve">
+    <value>지원하지 않는 프로젝트 스냅샷입니다.</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_ProjectFormatVersionOfSnapshot" xml:space="preserve">
+    <value>스냅샷의 projectFormatVersion</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_ProjectFormatVersionOfSnapshot2" xml:space="preserve">
+    <value>스냅샷의 프로젝트 형식 버전 {0}은 지원하지 않습니다.</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_TitleOfSnapshot" xml:space="preserve">
+    <value>스냅샷의 title</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_StartNodeOfSnapshot" xml:space="preserve">
+    <value>스냅샷의 startNode</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_FilesEntryOfProjectSnapshot" xml:space="preserve">
+    <value>프로젝트 스냅샷의 files 항목이 객체가 아닙니다.</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_PathOfFileInSnapshot" xml:space="preserve">
+    <value>스냅샷의 파일 '{0}'의 path</value>
+    <comment>ProjectSnapshotCodec.cs</comment>
+  </data>
+  <data name="File_StoryFileFormatVersionIsnT" xml:space="preserve">
+    <value>StoryFile 형식 버전 {0}은 지원하지 않습니다. 현재 버전은 {1}입니다.</value>
+    <comment>StoryFileJson.cs</comment>
+  </data>
+  <data name="File_StoryFileHasNoNodesArray" xml:space="preserve">
+    <value>StoryFile에 nodes 배열이 없습니다.</value>
+    <comment>StoryFileJson.cs</comment>
+  </data>
+  <data name="File_FileIdOfStoryFile" xml:space="preserve">
+    <value>StoryFile의 fileId</value>
+    <comment>StoryFileJson.cs</comment>
+  </data>
+  <data name="File_NodesOfStoryFile" xml:space="preserve">
+    <value>StoryFile '{0}'의 nodes</value>
+    <comment>StoryFileJson.cs</comment>
+  </data>
+  <data name="File_NodeIdIsDuplicatedWithin" xml:space="preserve">
+    <value>StoryFile '{0}' 안에서 노드 Id '{1}'가 중복됩니다.</value>
+    <comment>StoryFileJson.cs</comment>
+  </data>
+  <data name="File_FolderDoesnTExist" xml:space="preserve">
+    <value>폴더가 없습니다: {0}</value>
+    <comment>ProjectFolder.cs</comment>
+  </data>
+  <data name="File_ThisFolderHasNoProject" xml:space="preserve">
+    <value>이 폴더에는 프로젝트({0})가 없습니다: {1}</value>
+    <comment>ProjectFolder.cs</comment>
+  </data>
+  <data name="File_ThisFolderHasProjectFiles" xml:space="preserve">
+    <value>이 폴더에 프로젝트 파일이 {0}개입니다 — 하나만 남기세요: </value>
+    <comment>ProjectFolder.cs</comment>
+  </data>
+  <data name="File_NoFolderWasChosen" xml:space="preserve">
+    <value>폴더를 고르지 않았습니다.</value>
+    <comment>ProjectFolder.cs</comment>
+  </data>
+  <data name="File_ThisFolderAlreadyHasProject" xml:space="preserve">
+    <value>이 폴더에는 이미 프로젝트가 있습니다({0}) — 새로 만들지 않고 엽니다.</value>
+    <comment>ProjectFolder.cs</comment>
+  </data>
+  <data name="File_LineShape" xml:space="preserve">
+    <value>선 모양</value>
+    <comment>EdgeShapeJson.cs</comment>
+  </data>
+  <data name="File_KindOfLineShape" xml:space="preserve">
+    <value>선 모양의 kind</value>
+    <comment>EdgeShapeJson.cs</comment>
+  </data>
+  <data name="File_BendXOfLineShape" xml:space="preserve">
+    <value>선 모양의 bendX</value>
+    <comment>EdgeShapeJson.cs</comment>
+  </data>
+  <data name="File_BendYOfLineShape" xml:space="preserve">
+    <value>선 모양의 bendY</value>
+    <comment>EdgeShapeJson.cs</comment>
+  </data>
+  <data name="File_UnknownLineShapeKind" xml:space="preserve">
+    <value>선 모양의 kind '{0}'를 모릅니다.</value>
+    <comment>EdgeShapeJson.cs</comment>
+  </data>
+  <data name="Export_ProgressionJSON" xml:space="preserve">
+    <value>진행 JSON</value>
+    <comment>ExportDestinations.cs</comment>
+  </data>
+  <data name="Export_YarnDialogue" xml:space="preserve">
+    <value>대사 Yarn</value>
+    <comment>ExportDestinations.cs</comment>
+  </data>
+  <data name="File_TargetOfBranchDetour" xml:space="preserve">
+    <value>분기(detour)의 대상</value>
+    <comment>DetourJson.cs</comment>
+  </data>
+  <data name="File_BranchDetourIsEitherOne" xml:space="preserve">
+    <value>분기(detour)는 문자열 하나이거나 둘 이상의 배열입니다.</value>
+    <comment>DetourJson.cs</comment>
+  </data>
+  <data name="File_BranchDetourHasSameTarget" xml:space="preserve">
+    <value>분기(detour)에 같은 대상이 둘 있습니다.</value>
+    <comment>DetourJson.cs</comment>
+  </data>
+  <data name="Edit_ChapterIsnTInProject" xml:space="preserve">
+    <value>챕터 '{0}'가 프로젝트에 없습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ChapterAlreadyExists" xml:space="preserve">
+    <value>챕터 '{0}'가 이미 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_EpisodeIdAlreadyExists" xml:space="preserve">
+    <value>EpisodeId '{0}'가 이미 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_SceneIDCanTBe" xml:space="preserve">
+    <value>장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_SceneIDOfSceneEntry" xml:space="preserve">
+    <value>장면 항목의 장면ID가 비었습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_PathAlreadyExistsWithSame" xml:space="preserve">
+    <value>간선 {0}→{1}이 같은 선택지 문구로 이미 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ChoiceTextIsEmpty" xml:space="preserve">
+    <value>선택지 문구가 비어 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_IsAlreadyInChoiceDictionary" xml:space="preserve">
+    <value>'{0}'는 이미 선택지 사전에 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ConditionLabelAlreadyExists" xml:space="preserve">
+    <value>조건 라벨 '{0}'이 이미 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ConditionLabelDoesnTExist" xml:space="preserve">
+    <value>조건 라벨 '{0}'이 없습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_StatKeyIsEmpty" xml:space="preserve">
+    <value>스탯 키가 비어 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ItSSameNameNothing" xml:space="preserve">
+    <value>같은 이름입니다 — 바꿀 것이 없습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_StatIsnTInThis" xml:space="preserve">
+    <value>스탯 '{0}'이 이 챕터에 없습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_StatAlreadyExistsToMerge" xml:space="preserve">
+    <value>스탯 '{0}'가 이미 있습니다 — 둘을 합치려면 먼저 하나를 지우세요.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_CanTDeleteStatIt" xml:space="preserve">
+    <value>스탯 '{0}'을 지울 수 없습니다 — {1}곳에서 쓰고 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_Path" xml:space="preserve">
+    <value>간선 {0} → {1}{2}</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_StatChange" xml:space="preserve">
+    <value>스탯변화: {0}</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_Condition" xml:space="preserve">
+    <value>조건 '{0}'</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_DialogueLine" xml:space="preserve">
+    <value>대사 {0} {1}번째 줄</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_StatAlreadyExists" xml:space="preserve">
+    <value>스탯 '{0}'가 이미 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ConditionIsnTInThis" xml:space="preserve">
+    <value>조건 '{0}'이 이 챕터에 없습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_CanTDeleteConditionIt" xml:space="preserve">
+    <value>조건 '{0}'을 지울 수 없습니다 — {1}곳에서 쓰고 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ConditionNameCanTBe" xml:space="preserve">
+    <value>조건 이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ConditionAlreadyExists" xml:space="preserve">
+    <value>조건 '{0}'이 이미 있습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ShowConditionUnlockCondition" xml:space="preserve">
+    <value>표시조건 · 해금조건</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_UnlockCondition" xml:space="preserve">
+    <value>해금조건</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_ShowCondition" xml:space="preserve">
+    <value>표시조건</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_Dialogue" xml:space="preserve">
+    <value>대사 '{0}'</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_BranchOfLine" xml:space="preserve">
+    <value>{0}번째 줄의 갈래</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_BranchOfLineRemovedFrom" xml:space="preserve">
+    <value>대본에서 사라진 줄의 갈래</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_EpisodeDoesnTExist" xml:space="preserve">
+    <value>에피소드 '{0}'가 없습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_PathDoesnTExist" xml:space="preserve">
+    <value>간선 {0}→{1}이 없습니다.</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_StatChange2" xml:space="preserve">
+    <value>스탯변화 '{0}': {1}</value>
+    <comment>ProjectEditor.Chapters.cs</comment>
+  </data>
+  <data name="Edit_NodeIdIsDuplicatedIn" xml:space="preserve">
+    <value>노드 Id '{0}'가 프로젝트 안에서 중복됩니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_EpisodeBelongsToSceneGive" xml:space="preserve">
+    <value>에피소드는 장면에 속합니다 — 장면을 주세요.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_BranchesCanOnlyBePlaced" xml:space="preserve">
+    <value>분기는 대사 노드에만 둘 수 있습니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_ThisNodeIsnTOn" xml:space="preserve">
+    <value>판에 서 있지 않은 노드입니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_ThatLineIsnTIn" xml:space="preserve">
+    <value>그 줄이 이 노드의 대본에 없습니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_BranchCardsDonTBranch" xml:space="preserve">
+    <value>분기 카드 안에서는 분기를 내지 않습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳입니다. 갈라야 하면 그 에피소드에 분기를 하나 더 두세요.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_IsEpisodeCardItS" xml:space="preserve">
+    <value>'{0}'{1} 에피소드 카드입니다 — 에피소드와 함께 지웁니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_IsEpisodeCardRenamingEpisode" xml:space="preserve">
+    <value>'{0}'{1} 에피소드 카드입니다 — 이름은 에피소드 이름 바꾸기가 함께 옮깁니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_ScriptIsEmptySoThere" xml:space="preserve">
+    <value>대본이 비어 있어 조건을 걸 자리가 없습니다 — 첫 줄을 먼저 쓰세요.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_IsnTSetNode" xml:space="preserve">
+    <value>'{0}'는 설정 노드가 아닙니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_CanTFindStoryFile" xml:space="preserve">
+    <value>StoryFile '{0}'를 찾을 수 없습니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_IsnTDialogueNode" xml:space="preserve">
+    <value>'{0}'는 대사 노드가 아닙니다.</value>
+    <comment>ProjectEditor.cs</comment>
+  </data>
+  <data name="Edit_ThereAreNoDialogueLines" xml:space="preserve">
+    <value>반영할 대사 줄이 없습니다.</value>
+    <comment>ProjectEditor.Scripts.cs</comment>
+  </data>
+  <data name="Edit_ThereAreDeletedLinesSo" xml:space="preserve">
+    <value>삭제 {0}줄이 있어 확인이 필요합니다. {1}</value>
+    <comment>ProjectEditor.Scripts.cs</comment>
+  </data>
+  <data name="Edit_NotAppliedBecauseConfirmationIs" xml:space="preserve">
+    <value>확인이 필요해 반영하지 않았습니다. {0}</value>
+    <comment>ProjectEditor.Scripts.cs</comment>
+  </data>
+  <data name="Edit_NeedsConfirmation" xml:space="preserve">
+    <value>확인 필요</value>
+    <comment>ProjectEditor.Scripts.cs</comment>
+  </data>
+  <data name="Edit_NoneOfConditionsThisNode" xml:space="preserve">
+    <value>&lt;&lt;{0} {1}&gt;&gt; — 이 노드가 쓸 수 있는 조건 중에 같은 식이 없습니다. 전환은 반영하지 않았습니다.</value>
+    <comment>ProjectEditor.Scripts.cs</comment>
+  </data>
+  <data name="Edit_ScriptWasnTSynchronizedBecause" xml:space="preserve">
+    <value>확인이 필요한 항목이 있어 대본을 동기화하지 않았습니다.</value>
+    <comment>ProjectEditor.Scripts.cs</comment>
+  </data>
+  <data name="Edit_SynchronizationPlanHasItemWithout" xml:space="preserve">
+    <value>동기화 계획에 LineId 없는 항목이 있습니다.</value>
+    <comment>ProjectEditor.Scripts.cs</comment>
+  </data>
+  <data name="Edit_SpeakerNameIsEmpty" xml:space="preserve">
+    <value>화자 이름이 비어 있습니다.</value>
+    <comment>ProjectEditor.Speakers.cs</comment>
+  </data>
+  <data name="Edit_SpeakerAlreadyExists" xml:space="preserve">
+    <value>화자 '{0}'은 이미 있습니다.</value>
+    <comment>ProjectEditor.Speakers.cs</comment>
+  </data>
+  <data name="Edit_LineSpacingMustBeGreater" xml:space="preserve">
+    <value>줄 간격은 0보다 커야 합니다.</value>
+    <comment>ProjectEditor.WriterMarks.cs</comment>
+  </data>
+  <data name="Edit_CardHasNoStartingFont" xml:space="preserve">
+    <value>카드 '{0}'에 처음 글꼴 · 크기가 없어 줄 간격을 적을 수 없습니다.</value>
+    <comment>ProjectEditor.WriterMarks.cs</comment>
+  </data>
+  <data name="Edit_DeletedBranchCardStaysOn" xml:space="preserve">
+    <value>분기를 지웠습니다 — 카드 '{0}'는 판에 남아 있습니다(없애려면 그 카드를 고르고 [분기 카드 삭제]). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>BranchMarkerRemoval.cs</comment>
+  </data>
+  <data name="Edit_DeletedBranchUndoCtrlZ" xml:space="preserve">
+    <value>분기를 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>BranchMarkerRemoval.cs</comment>
+  </data>
+  <data name="Export_RemovedOldProgressionJSONOf" xml:space="preserve">
+    <value>지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷었습니다: </value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_YarnDialogue2" xml:space="preserve">
+    <value> · 대사 Yarn → {0}/{1}/ ({2}개)</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_ProgressionJSON2" xml:space="preserve">
+    <value>진행 JSON → {0}/ ({1})</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_ProgressionJSONWasnTWritten" xml:space="preserve">
+    <value>검증 오류로 진행 JSON이 나가지 않았습니다: {0} — 아래 오류를 고치면 저절로 나갑니다({1}/).</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_CouldnTWriteProgressionJSON" xml:space="preserve">
+    <value>진행 JSON을 쓰지 못했습니다: {0} — {1}/ 의 파일이 다른 프로그램에 잡혀 있는지 확인하세요.</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_UpdatingProgressionJSONWasBlocked" xml:space="preserve">
+    <value>출시 기준선 뒤 선택지 순번이 바뀌어 진행 JSON 갱신을 막았습니다: {0} — 과거 선택 이력의 OptionIndex가 다른 선택을 가리킬 수 있습니다. {1}/ 기준선과 순서를 확인하세요.</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_CouldnTRemoveOldProgression" xml:space="preserve">
+    <value>지운 · 이름을 바꾼 챕터의 옛 진행 JSON을 걷지 못했습니다: {0} — 파일이 다른 프로그램에 잡혀 있는지 확인하세요. 그냥 두면 게임이 없는 챕터를 계속 싣습니다.</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_SomeScenesYarnDialogueWasn" xml:space="preserve">
+    <value>대사 Yarn이 나가지 않은 장면이 있습니다 — 그 장면의 옛 파일은 그대로 둡니다:
+</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_ItsFileNameIsSame" xml:space="preserve">
+    <value>{0}: 챕터 '{1}'의 장면과 파일 이름이 같습니다({2}) — 장면 ID나 챕터 ID를 고쳐 주세요.</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_AndMore" xml:space="preserve">
+    <value> (외 {0}개)</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Export_CouldnTWriteCheckWhether" xml:space="preserve">
+    <value>{0}/{1}/{2}을 쓰지 못했습니다 — 파일이 다른 프로그램에 잡혀 있는지 확인하세요.</value>
+    <comment>ChapterExportService.cs</comment>
+  </data>
+  <data name="Diag_EpisodeIdIsEmpty" xml:space="preserve">
+    <value>EpisodeId가 비어 있습니다.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_EpisodeIdIsDuplicated" xml:space="preserve">
+    <value>EpisodeId '{0}'가 겹칩니다.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_PathNeedsBothSourceAnd" xml:space="preserve">
+    <value>간선의 출발·도착은 둘 다 있어야 합니다.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_Source" xml:space="preserve">
+    <value>출발</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_Target" xml:space="preserve">
+    <value>도착</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_StatChangeOnPathIsn" xml:space="preserve">
+    <value>'{0}'→'{1}' 길의 스탯변화 '{2}'가 이 챕터의 스탯이 아닙니다.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_PathHasNoChoiceText" xml:space="preserve">
+    <value>'{0}'→'{1}' 길에 선택지 문구가 없습니다. 일반 선택지에는 문구를 적으세요.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_ThereAreSeveralPathsWith" xml:space="preserve">
+    <value>{0}→{1} 간선이 같은 선택지 문구로 여럿 있습니다 — 문구를 다르게 하거나 하나를 지워 주세요.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_InChoiceGoesSeveralWays" xml:space="preserve">
+    <value>'{0}'에서 '{1}' 선택지가 여러 갈래로 갑니다 — 플레이어에게는 같은 버튼 둘로 보이고, 이 문구에 매단 연출도 한 벌뿐이라 두 길이 같은 연출을 탑니다.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_OfPathIsnTEpisode" xml:space="preserve">
+    <value>'{0}'→'{1}' 길의 {2} '{3}'가 이 챕터의 에피소드가 아닙니다.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_OfPathIsnTAmong" xml:space="preserve">
+    <value>'{0}'→'{1}' 길의 {2} '{3}'이 이 챕터의 조건에 없습니다. 라벨↔식의 원천은 챕터 조건입니다(G-7).</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_IsOnOffStatSo" xml:space="preserve">
+    <value>'{0}'는 활성/비활성 스탯이라 범위가 0~1이고 처음 값은 0(비활성)이나 1(활성)이어야 합니다 (지금 {1}~{2}, 처음 값 {3}).</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_ConditionIsOnOffStat" xml:space="preserve">
+    <value>조건 '{0}': '{1}'는 활성/비활성 스탯입니다 — '{1} == true' 또는 '{1} == false'로만 적을 수 있습니다.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_PathIsOnOffStat" xml:space="preserve">
+    <value>'{0}'→'{1}' 길: '{2}'는 활성/비활성 스탯이라 증감을 쓸 수 없습니다 — 켜고 끄려면 '{2} true' 또는 '{2} false'로 적어 주세요.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_PathIsIntegerStatSo" xml:space="preserve">
+    <value>'{0}'→'{1}' 길: '{2}'는 정수 스탯이라 true/false로 정할 수 없습니다 — '{2} +1'처럼 증감으로 적어 주세요.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Diag_PathSetsTwiceWriteIt" xml:space="preserve">
+    <value>'{0}'→'{1}' 길이 '{2}'를 두 번 정합니다 — 한 번만 적어 주세요.</value>
+    <comment>ChapterStructureCheck.cs</comment>
+  </data>
+  <data name="Expr_ConditionExpressionIsEmpty" xml:space="preserve">
+    <value>조건식이 비어 있습니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_NoComparisonOperatorFoundYou" xml:space="preserve">
+    <value>'{0}' — 비교 연산자를 찾지 못했습니다. 쓸 수 있는 것은 &gt;= · &lt;= · == · &gt; · &lt; 입니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_ThereSNoStatKey" xml:space="preserve">
+    <value>'{0}' — 비교 왼쪽에 스탯 키가 없습니다. 「키 &gt;= 3」처럼 키를 먼저 적습니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_DonTPutBeforeStat" xml:space="preserve">
+    <value>'{0}' — 스탯 키 앞에 $를 붙이지 않습니다. '{1}'처럼 키만 적습니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_TrueFalseIsComparedOnly" xml:space="preserve">
+    <value>'{0}' — true/false는 == 로만 비교합니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_ThereSNoValueOn" xml:space="preserve">
+    <value>'{0}' — 비교 오른쪽에 값이 없습니다. 「{1} &gt;= 3」처럼 정수를 적습니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_StatComparisonValuesMustBe" xml:space="preserve">
+    <value>'{0}' — 스탯 비교 값은 정수만 됩니다. 소수점은 쓸 수 없습니다(G-3).</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_ComparisonValueIsnTInteger" xml:space="preserve">
+    <value>'{0}' — 비교 값 '{1}'이 정수가 아닙니다. 값은 정수(활성/비활성 스탯은 true · false)만 적습니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_ThereSNoConditionTo" xml:space="preserve">
+    <value>'{0}'에서 읽어낼 조건이 없습니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_IsnTKeyInStat" xml:space="preserve">
+    <value>'{0}'는 스탯 표에 없는 키입니다 — 이 챕터에는 스탯이 아직 없습니다. 「조건 및 스탯」의 스탯 표에서 먼저 더합니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_IsnTKeyInStat2" xml:space="preserve">
+    <value>'{0}'는 스탯 표에 없는 키입니다. 있는 키: {1}</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_IsReversedWrite" xml:space="preserve">
+    <value>'=&gt;'는 순서가 거꾸로입니다. '&gt;='로 씁니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_IsReversedWrite2" xml:space="preserve">
+    <value>'=&lt;'는 순서가 거꾸로입니다. '&lt;='로 씁니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_NotEqualCanTBe" xml:space="preserve">
+    <value>「같지 않다」(!= · &lt;&gt;)는 쓸 수 없습니다. 쓸 수 있는 것은 &gt;= · &lt;= · == · &gt; · &lt; 입니다(예: 「키 &gt; 0」 · 「키 &lt; 0」).</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_JoinSeveralConditionsWithAll" xml:space="preserve">
+    <value>여러 조건은 ';'로 잇습니다(모두 맞아야 통과). &amp;&amp; · || · and · or · 쉼표는 쓸 수 없고, 「또는」은 조건을 둘로 나눠 만듭니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Expr_EqualsIsWrittenNot" xml:space="preserve">
+    <value>「같다」는 '='가 아니라 '=='로 씁니다.</value>
+    <comment>ConditionExpressionParser.cs</comment>
+  </data>
+  <data name="Diag_ThisChapterSReachabilityCouldn" xml:space="preserve">
+    <value>이 챕터의 도달성은 **증명하지 못했습니다** — 상태 {0:N0}개에서 탐색을 멈췄습니다. 아래 「도달 불가」는 단정이 아니라 **찾지 못했다**는 뜻입니다. 활성/비활성 스탯은 갈래마다 다르게 켜지면 상태 수를 두 배로 만듭니다 — 간선의 표시조건·해금조건이 읽지 않는 활성/비활성 스탯이 많으면 그것이 원인입니다.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_LoopMadeOnlyOfAuto" xml:space="preserve">
+    <value>자동 길만으로 된 고리입니다 — {0}{1} 묻지 않고 끝없이 돌아 챕터가 끝나지 않습니다. 고리 안의 카드 하나에 선택지 문구를 적고 고리 밖으로 가는 길을 더하세요.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_AndMore" xml:space="preserve">
+    <value> 외 {0}개</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_LoopWithNoWayOut" xml:space="preserve">
+    <value>나갈 길이 없는 고리입니다 — {0}에 들어오면 어떤 선택지를 골라도 그 안만 돌아 챕터를 끝낼 수 없습니다. 고리 밖으로 가는 선택지를 더하거나, 이미 있으면 그 선택지의 표시조건 · 해금조건이 열리는지 보세요.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_LoopWithNoWayOut2" xml:space="preserve">
+    <value>나갈 길이 없는 고리입니다 — {0}에 들어오면 스탯에 따라서는 어떤 선택지를 골라도 그 안만 돌아 챕터를 끝낼 수 없습니다. 고리 밖으로 가는 선택지를 더하거나, 이미 있으면 그 선택지의 표시조건 · 해금조건이 열리는지 보세요.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_IsnTConnectedFromStart" xml:space="preserve">
+    <value>'{0}'는 시작에서 이어지지 않았습니다. {1} 작업 중이면 그대로 두어도 됩니다 — 내보내기를 막지 않고, 게임에서는 거기 갈 길이 없습니다. 이으려면 다른 에피소드 카드 아래의 선택지 칸에서 이리로 잇습니다.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_ThereSNoRouteThat" xml:space="preserve">
+    <value>'{0}'에 도달할 수 있는 경로가 없습니다</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_CouldnTFindRouteTo" xml:space="preserve">
+    <value>'{0}'에 도달하는 경로를 찾지 못했습니다(탐색이 상한에서 중단됨)</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_ThereSNoPathInto" xml:space="preserve">
+    <value>이 에피소드로 들어오는 간선이 `간선` 시트에 없습니다.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_UnreachableFromSourcesOfIts" xml:space="preserve">
+    <value>들어오는 간선의 출발점({0})부터 도달 불가입니다.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_CauseIsOfConditionOn" xml:space="preserve">
+    <value>조건 '{0}'의 '{1} {2} {3}'가 원인입니다 — 어떤 경로로도 {1}는 최대 {4}까지밖에 오르지 않습니다.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_CauseIsOfConditionOn2" xml:space="preserve">
+    <value>조건 '{0}'의 '{1} {2} {3}'가 원인입니다 — 어떤 경로로도 {1}는 최소 {4} 아래로 내려가지 않습니다.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Diag_NoRouteSatisfiesCombinationOf" xml:space="preserve">
+    <value>관문 조건들의 조합을 만족하는 경로가 없습니다.</value>
+    <comment>ChapterReachabilityProver.cs</comment>
+  </data>
+  <data name="Sync_Unchanged" xml:space="preserve">
+    <value>유지</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_Modified" xml:space="preserve">
+    <value>수정</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_Added" xml:space="preserve">
+    <value>추가</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_Deleted" xml:space="preserve">
+    <value>삭제</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_Moved" xml:space="preserve">
+    <value>이동</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_NeedsConfirmation" xml:space="preserve">
+    <value>확인 필요</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_NoChanges" xml:space="preserve">
+    <value>변경 없음</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_CanTTellWhetherThis" xml:space="preserve">
+    <value>이 줄이 사라진 것인지 아래의 새 문장으로 고쳐진 것인지 확신할 수 없습니다.</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_RemovedFromScriptItS" xml:space="preserve">
+    <value>대본에서 사라졌습니다. 지우지 않고 은퇴 상태로 남깁니다.</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_CanTTellWhichExisting" xml:space="preserve">
+    <value>'{0}'가 기존 줄 [{1}] 중 어느 것의 수정인지 확신할 수 없습니다. 한쪽을 먼저 확정하거나 대본을 나누어 동기화해 주세요.</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Sync_SyncPlanCouldnTClassify" xml:space="preserve">
+    <value>동기화 계획이 {0}번째 줄을 분류하지 못했습니다.</value>
+    <comment>ScriptSynchronizer.cs</comment>
+  </data>
+  <data name="Color_Red" xml:space="preserve">
+    <value>빨강</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Orange" xml:space="preserve">
+    <value>주황</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Yellow" xml:space="preserve">
+    <value>노랑</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Green" xml:space="preserve">
+    <value>초록</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Teal" xml:space="preserve">
+    <value>청록</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Blue" xml:space="preserve">
+    <value>파랑</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Purple" xml:space="preserve">
+    <value>보라</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Pink" xml:space="preserve">
+    <value>분홍</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Brown" xml:space="preserve">
+    <value>갈색</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Color_Gray" xml:space="preserve">
+    <value>회색</value>
+    <comment>WriterMarks.cs</comment>
+  </data>
+  <data name="Expr_WhenIsOrMore" xml:space="preserve">
+    <value>{0} 값이 {1} 이상일 때</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_WhenIsLessThan" xml:space="preserve">
+    <value>{0} 값이 {1} 미만일 때</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_WhenIsExactly" xml:space="preserve">
+    <value>{0} 값이 꼭 {1}일 때</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_WhenStatIsOnOn" xml:space="preserve">
+    <value>{0} 스탯이 켜져 있을 때 (활성/비활성 스탯)</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_WhenStatIsOff" xml:space="preserve">
+    <value>{0} 스탯이 꺼져 있을 때</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_WhenBothHoldJoinSeveral" xml:space="preserve">
+    <value>둘 다 맞을 때 — 여럿은 ;로 잇습니다</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_ExpressionIsStatKeyComparison" xml:space="preserve">
+    <value>식은 「스탯 키  비교  값」입니다. 이 챕터에는 스탯이 아직 없습니다 — 「조건 및 스탯」의 스탯 표에서 먼저 더하고, 예컨대 이렇게 적습니다:</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_ExpressionIsStatKeyComparison2" xml:space="preserve">
+    <value>식은 「스탯 키  비교  값」입니다. 이 챕터의 스탯으로 적으면:</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Expr_ThereAreFiveComparisonsAnd" xml:space="preserve">
+    <value>비교는 &gt;= · &lt;= · &gt; · &lt; · == 다섯 가지, 값은 정수만(활성/비활성 스탯은 true · false)입니다. 스탯 키는 스탯 표에 있는 그대로 적습니다.</value>
+    <comment>ConditionExpressionHelp.cs</comment>
+  </data>
+  <data name="Diag_ScenesAndHaveSameFile" xml:space="preserve">
+    <value>장면 '{0}'와 '{1}'의 파일 이름이 같습니다({2}) — 장면 ID를 고쳐 주세요.</value>
+    <comment>ChapterYarnExporter.cs</comment>
+  </data>
+  <data name="Diag_DialogueHasNoLineIdSo" xml:space="preserve">
+    <value>대사 '{0}'에 LineId가 없어 #line: 태그를 만들 수 없습니다.</value>
+    <comment>ChapterYarnExporter.cs</comment>
+  </data>
+  <data name="Diag_DialogueStartsWithOrYarn" xml:space="preserve">
+    <value>대사 '{0}'가 `-&gt;`나 `===`로 시작합니다 — Yarn이 대사로 읽지 못합니다. 첫 글자를 고쳐 주세요.</value>
+    <comment>ChapterYarnExporter.cs</comment>
+  </data>
+  <data name="Diag_BracesInDialogueDonT" xml:space="preserve">
+    <value>대사 '{0}'의 중괄호 짝이 맞지 않습니다 — `{{ }}`는 스탯 읽기에만 씁니다.</value>
+    <comment>ChapterYarnExporter.cs</comment>
+  </data>
+  <data name="Diag_Path" xml:space="preserve">
+    <value>간선 {0} → {1}</value>
+    <comment>ChapterGraphModel.cs</comment>
+  </data>
+  <data name="Diag_NewConditionWasOpenedInside" xml:space="preserve">
+    <value>조건 안에서 새 조건을 열었습니다. 조건 중첩은 지원하지 않아 같은 깊이의 다른 갈래로 다룹니다.</value>
+    <comment>ConditionFlowResolver.cs</comment>
+  </data>
+  <data name="Diag_ThereSElseifWithNo" xml:space="preserve">
+    <value>열린 조건이 없는데 elseif가 있습니다. 새 조건을 여는 것으로 다룹니다.</value>
+    <comment>ConditionFlowResolver.cs</comment>
+  </data>
+  <data name="Diag_ThereSEndOfCondition" xml:space="preserve">
+    <value>열린 조건이 없는데 조건 종료가 있습니다. 무시합니다.</value>
+    <comment>ConditionFlowResolver.cs</comment>
+  </data>
+  <data name="Diag_CanTFindConditionDefinition" xml:space="preserve">
+    <value>이 줄이 가리키는 조건 정의를 찾을 수 없습니다. 조건이 삭제되었을 수 있습니다.</value>
+    <comment>ConditionFlowResolver.cs</comment>
+  </data>
+  <data name="Diag_ConditionIsnTInThis" xml:space="preserve">
+    <value>조건 '{0}'은 이 챕터에 없습니다 — 다른 챕터의 조건은 여기서 쓸 수 없습니다.</value>
+    <comment>ConditionFlowResolver.cs</comment>
+  </data>
+  <data name="Diag_ConditionSwitchRemainsOnLine" xml:space="preserve">
+    <value>대본에서 사라진 줄에 조건 전환이 남아 있습니다. 지우지 않고 그대로 둡니다.</value>
+    <comment>ConditionFlowResolver.cs</comment>
+  </data>
+  <data name="Diag_ConditionSwitchRemainsOnLineId" xml:space="preserve">
+    <value>이 대본에 없는 LineId에 조건 전환이 남아 있습니다. 대본을 바꾸었을 수 있습니다.</value>
+    <comment>ConditionFlowResolver.cs</comment>
+  </data>
+  <data name="Export_CopiedTo" xml:space="preserve">
+    <value>복제한 곳 → </value>
+    <comment>ExportDelivery.cs</comment>
+  </data>
+  <data name="Export_RemovedOldFiles" xml:space="preserve">
+    <value> · 지난 파일을 걷었습니다: {0}</value>
+    <comment>ExportDelivery.cs</comment>
+  </data>
+  <data name="Export_NotCopiedBecauseMirrorFolder" xml:space="preserve">
+    <value>복제할 폴더가 없어 복제하지 않았습니다: {0} — [⚙ 설정]의 「내보내기」에서 폴더를 확인하세요(폴더는 만들지 않습니다).</value>
+    <comment>ExportDelivery.cs</comment>
+  </data>
+  <data name="Export_CouldnTWriteToOr" xml:space="preserve">
+    <value>복제할 폴더에 쓰거나 걷지 못했습니다: {0} — 파일이 다른 프로그램에 잡혀 있는지 확인하세요.</value>
+    <comment>ExportDelivery.cs</comment>
+  </data>
+  <data name="Export_NotCopiedToSamePlace" xml:space="preserve">
+    <value>{0} — 게임 폴더와 같은 곳으로는 복제하지 않습니다(연출 든 Yarn과 노드 이름이 겹칩니다)</value>
+    <comment>ExportDelivery.cs</comment>
+  </data>
+  <data name="Diag_Episode" xml:space="preserve">
+    <value>에피소드 「{0}」</value>
+    <comment>ChapterBranchCards.cs</comment>
+  </data>
+  <data name="Diag_NoBranchPointCallsBranch" xml:space="preserve">
+    <value>분기 카드 {0}를 부르는 분기점이 없습니다 — 게임에서 재생되지 않습니다. 쓰지 않으면 지우고, 쓰려면 분기점을 이 카드에 이으세요.</value>
+    <comment>ChapterBranchCards.cs</comment>
+  </data>
+  <data name="Diag_WhichCallsBranchCardCan" xml:space="preserve">
+    <value>분기 카드 {0}를 부르는 「{1}」에 도달할 수 없습니다 — 이 분기 카드도 게임에서 재생되지 않습니다.</value>
+    <comment>ChapterBranchCards.cs</comment>
+  </data>
+  <data name="Diag_YarnNodeNameOfBranch" xml:space="preserve">
+    <value>분기 카드 {0}의 Yarn 노드 이름 '{1}'{2} {3}{4} 겹칩니다 — 한 Yarn 프로젝트에 같은 이름의 노드가 둘이면 컴파일이 깨집니다. [구성] 탭에서 분기 카드의 ID를 고쳐 주세요.</value>
+    <comment>ChapterBranchCards.cs</comment>
+  </data>
+  <data name="Diag_BranchCard" xml:space="preserve">
+    <value>분기 카드 {0}</value>
+    <comment>ChapterBranchCards.cs</comment>
+  </data>
+  <data name="Diag_BranchCardHasNoLines" xml:space="preserve">
+    <value>분기 카드 {0}에 재생할 줄이 하나도 없습니다. [대본] 탭의 그 카드에 대사를 한 줄이라도 적어 주세요.</value>
+    <comment>ChapterBranchCards.cs</comment>
+  </data>
+  <data name="Diag_BranchCardHasBranchInside" xml:space="preserve">
+    <value>분기 카드 {0} 안에 분기가 있습니다 — 분기 카드는 에피소드에서 들렀다 돌아오는 곳이라 그 안에서 다시 갈라지지 않습니다. [대본] 판에서 그 카드의 분기를 지워 주세요(줄의 ＋ → ✕ 분기 지우기, 또는 선을 고르고 Delete).</value>
+    <comment>ChapterBranchCards.cs</comment>
+  </data>
+  <data name="Edit_SceneWouldHaveEntrancesFrom" xml:space="preserve">
+    <value>장면 '{0}'에 밖에서 들어오는 자리가 {1}개가 됩니다 — {2}.</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_CanTMoveToScene" xml:space="preserve">
+    <value>'{0}'{1} 장면 '{2}'{3} 옮길 수 없습니다. </value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_SceneMustStartInOne" xml:space="preserve">
+    <value> 장면은 한 자리에서만 시작해야 합니다(롤백이 되돌아가고 이어하기가 재개하는 자리). 옮기려면 먼저 위에 적힌 길을 끊거나 그 장면의 시작점으로 돌려 잇고, 옮긴 뒤 다시 이으세요.</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterStart" xml:space="preserve">
+    <value>챕터 시작</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_PathFromOutside" xml:space="preserve">
+    <value>밖에서 오는 길</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_PathFromInAnotherScene" xml:space="preserve">
+    <value>다른 장면의 {0}에서 오는 길</value>
+    <comment>SceneMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_DeletedAndItsPathTest" xml:space="preserve">
+    <value>'{0}'과 그 간선·픽스처 참조를 지웠습니다.</value>
+    <comment>EpisodeDeleter.cs</comment>
+  </data>
+  <data name="Edit_AlsoDeletedCardInScript" xml:space="preserve">
+    <value> [대본] 탭의 카드 '{0}'도 함께 지웠습니다.</value>
+    <comment>EpisodeDeleter.cs</comment>
+  </data>
+  <data name="Edit_UndoCtrlZBringsIt" xml:space="preserve">
+    <value> 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>EpisodeDeleter.cs</comment>
+  </data>
+  <data name="Edit_NameOfEpisodeToDelete" xml:space="preserve">
+    <value>지울 에피소드 이름이 비어 있습니다.</value>
+    <comment>EpisodeDeleter.cs</comment>
+  </data>
+  <data name="Edit_CouldnTFindChapter" xml:space="preserve">
+    <value>챕터 '{0}'를 찾지 못했습니다.</value>
+    <comment>EpisodeDeleter.cs</comment>
+  </data>
+  <data name="Diag_EditItInKeyBox" xml:space="preserve">
+    <value> 「조건 및 스탯」의 스탯 표 키 칸에서 고치면 간선 · 조건이 따라갑니다.</value>
+    <comment>ChapterDocument.cs</comment>
+  </data>
+  <data name="Diag_StatHasMinimumGreaterThan" xml:space="preserve">
+    <value>스탯 '{0}'의 최소({1})가 최대({2})보다 큽니다. 이 범위는 도달성 증명(G7)의 탐색 경계라 비어 있으면 안 됩니다.</value>
+    <comment>ChapterDocument.cs</comment>
+  </data>
+  <data name="Diag_InitialValueOfStatIs" xml:space="preserve">
+    <value>스탯 '{0}'의 초기값({1})이 최소~최대({2}~{3}) 밖입니다.</value>
+    <comment>ChapterDocument.cs</comment>
+  </data>
+  <data name="Diag_ConditionUndecidedItAlwaysPasses" xml:space="preserve">
+    <value>조건 '{0}' — 식 미정입니다. [구성] 탭에서 식을 채울 때까지 항상 통과합니다.</value>
+    <comment>ChapterDocument.cs</comment>
+  </data>
+  <data name="Diag_ConditionExpressionDoesnTHold" xml:space="preserve">
+    <value>조건 '{0}' — 식이 성립하지 않습니다: {1}</value>
+    <comment>ChapterDocument.cs</comment>
+  </data>
+  <data name="StatKey_StatKeyContainsHangulStat" xml:space="preserve">
+    <value>스탯 키 '{0}'에 한글이 들었습니다 — 스탯 키는 Yarn에 그대로 들어가는 statKey라 영어로 적습니다(영문자로 시작 · 영문자 · 숫자 · _만, 예: {1}).</value>
+    <comment>StatKeyRule.cs</comment>
+  </data>
+  <data name="StatKey_StatKeyCanTBe" xml:space="preserve">
+    <value>스탯 키 '{0}'는 쓸 수 없습니다 — 영문자로 시작하고 영문자 · 숫자 · _만 씁니다(예: {1}). 빈칸 · 기호는 안 됩니다.</value>
+    <comment>StatKeyRule.cs</comment>
+  </data>
+  <data name="Expr_MustBeInFormStatKey" xml:space="preserve">
+    <value>'{0}' — '스탯키 증감량' 형태여야 합니다(예: trust +1).</value>
+    <comment>StatDeltaParser.cs</comment>
+  </data>
+  <data name="Expr_StatChangesMustBeIntegers" xml:space="preserve">
+    <value>'{0}' — 스탯 증감량은 정수만 됩니다. 소수점은 쓸 수 없습니다(G-3).</value>
+    <comment>StatDeltaParser.cs</comment>
+  </data>
+  <data name="Expr_ChangeIsnTInteger" xml:space="preserve">
+    <value>'{0}' — 증감량 '{1}'이 정수가 아닙니다.</value>
+    <comment>StatDeltaParser.cs</comment>
+  </data>
+  <data name="Expr_IsnTStatKeyIn" xml:space="preserve">
+    <value>'{0}'는 `스탯` 시트에 없는 스탯키입니다. 선언된 키: (없음)</value>
+    <comment>StatDeltaParser.cs</comment>
+  </data>
+  <data name="Expr_IsnTStatKeyIn2" xml:space="preserve">
+    <value>'{0}'는 `스탯` 시트에 없는 스탯키입니다. 선언된 키: {1}</value>
+    <comment>StatDeltaParser.cs</comment>
+  </data>
+  <data name="Diag_OfChapter" xml:space="preserve">
+    <value>챕터 「{0}」의 {1}</value>
+    <comment>ChapterYarnNames.cs</comment>
+  </data>
+  <data name="Diag_YarnNodeNameOfClashes" xml:space="preserve">
+    <value>{0}의 Yarn 노드 이름 '{1}'{2} {3}{4} 겹칩니다 — 게임은 모든 챕터의 Yarn을 한 프로젝트로 컴파일하므로 같은 이름의 노드가 둘이면 컴파일이 깨집니다. [구성] 탭에서 ID를 고쳐 주세요.</value>
+    <comment>ChapterYarnNames.cs</comment>
+  </data>
+  <data name="Edit_ChapterNameIsEmpty" xml:space="preserve">
+    <value>챕터 이름이 비어 있습니다.</value>
+    <comment>ChapterRenamer.cs</comment>
+  </data>
+  <data name="Edit_NameIsSame" xml:space="preserve">
+    <value>이름이 같습니다.</value>
+    <comment>ChapterRenamer.cs</comment>
+  </data>
+  <data name="Export_CouldnTReadBackWritten" xml:space="preserve">
+    <value>낸 JSON을 다시 읽지 못했습니다: {0}</value>
+    <comment>ChapterProgressionExporter.cs</comment>
+  </data>
+  <data name="Export_WrittenJSONIsEmpty" xml:space="preserve">
+    <value>낸 JSON이 비어 있습니다.</value>
+    <comment>ChapterProgressionExporter.cs</comment>
+  </data>
+  <data name="Export_ProgressionCoreCanTLoad" xml:space="preserve">
+    <value>진행 코어가 이 챕터를 싣지 못합니다 — {0}</value>
+    <comment>ChapterProgressionExporter.cs</comment>
+  </data>
+  <data name="Export_CorePath" xml:space="preserve">
+    <value> (코어 경로: {0})</value>
+    <comment>ChapterProgressionExporter.cs</comment>
+  </data>
+  <data name="Diag_AutoPathMustBeEpisode" xml:space="preserve">
+    <value>자동 길 '{0}'→'{1}'은 그 에피소드의 유일한 간선이어야 합니다. 자동 길에 문구를 적으면 선택지가 됩니다(또는 한쪽 길을 지웁니다).</value>
+    <comment>ChapterAutoEdgeCheck.cs</comment>
+  </data>
+  <data name="Diag_AutoPathCanTHave" xml:space="preserve">
+    <value>자동 길에는 표시조건·해금조건을 둘 수 없습니다. 자동 진행은 언제나 같은 결과여야 합니다.</value>
+    <comment>ChapterAutoEdgeCheck.cs</comment>
+  </data>
+  <data name="Diag_AutoPathCanTHave2" xml:space="preserve">
+    <value>자동 길에는 스탯변화를 둘 수 없습니다. 효과가 필요하면 일반 선택지로 바꾸세요.</value>
+    <comment>ChapterAutoEdgeCheck.cs</comment>
+  </data>
+  <data name="Diag_AutoPathSChoiceText" xml:space="preserve">
+    <value>자동 길의 선택지 문구는 비워야 합니다. 문구가 있으면 플레이어 선택과 자동 진행의 뜻이 충돌합니다.</value>
+    <comment>ChapterAutoEdgeCheck.cs</comment>
+  </data>
+  <data name="Edit_CouldnTFindThatBranch" xml:space="preserve">
+    <value>그 분기 노드를 찾지 못했습니다.</value>
+    <comment>BranchEntryCondition.cs</comment>
+  </data>
+  <data name="Edit_ThereAreLinesWrittenOutside" xml:space="preserve">
+    <value>조건 줄(&lt;&lt;if&gt;&gt; · &lt;&lt;endif&gt;&gt;) 바깥에 쓴 줄이 있거나 조건이 여럿이라 여기서 고칠 수 없습니다. [대본] 탭에서 이 카드의 글 칸을 고치면 바깥 줄이 조건 안쪽으로 모여 다시 고칠 수 있습니다.</value>
+    <comment>BranchEntryCondition.cs</comment>
+  </data>
+  <data name="Edit_ConditionIsnTSuppliedTo" xml:space="preserve">
+    <value>조건 '{0}'이 이 판에 공급되지 않았습니다 — 챕터의 `조건` 시트에 있는지, 식이 툴이 옮길 수 있는 모양인지 확인하세요.</value>
+    <comment>BranchEntryCondition.cs</comment>
+  </data>
+  <data name="Diag_LineIdAppearsTwiceInResult" xml:space="preserve">
+    <value>LineId '{0}'가 결과 안에서 두 번 나옵니다.</value>
+    <comment>DialoguePublisher.cs</comment>
+  </data>
+  <data name="Diag_ThisCardHasNoLive" xml:space="preserve">
+    <value>이 카드에 살아 있는 줄이 없습니다. 연출만 매다는 씬이면 정상이고, 아니라면 대사를 적어 주세요.</value>
+    <comment>DialoguePublisher.cs</comment>
+  </data>
+  <data name="Diag_LinesOfDialogueFirstAppears" xml:space="preserve">
+    <value>대사 {0}줄(처음 나오는 곳 — {1})에 초상화 · 표정이 붙지 않습니다.</value>
+    <comment>ChapterSpeakerKeys.cs</comment>
+  </data>
+  <data name="Diag_SpeakerHasNoCharacterKey" xml:space="preserve">
+    <value>화자 '{0}'의 캐릭터 키가 없습니다 — {1} [구성] 탭 오른쪽 「화자」 탭에서 키를 적어 주세요.</value>
+    <comment>ChapterSpeakerKeys.cs</comment>
+  </data>
+  <data name="Diag_SpeakerIsnTInSpeaker" xml:space="preserve">
+    <value>화자 '{0}'{1} 화자 목록에 없어 캐릭터 키가 없습니다 — {2} [대본] 탭 「화자」 탭에서 더한 뒤 [구성] 탭 「화자」 탭에서 키를 적어 주세요.</value>
+    <comment>ChapterSpeakerKeys.cs</comment>
+  </data>
+  <data name="Diag_ThereAreNoEpisodes" xml:space="preserve">
+    <value>에피소드가 없습니다.</value>
+    <comment>ChapterFixtureWalker.cs</comment>
+  </data>
+  <data name="Diag_MetAgainAndStoppedAt" xml:space="preserve">
+    <value>'{0}'를 다시 만나 순환에서 멈췄습니다.</value>
+    <comment>ChapterFixtureWalker.cs</comment>
+  </data>
+  <data name="Diag_HasWaysForwardButTest" xml:space="preserve">
+    <value>'{0}'에서 갈래가 {1}개인데 픽스처의 고정 선택이 없습니다. 고정 선택 열에 '{0}→…'을 적어 주세요.</value>
+    <comment>ChapterFixtureWalker.cs</comment>
+  </data>
+  <data name="Edit_ChapterDoesnTExist" xml:space="preserve">
+    <value>챕터 '{0}'가 없습니다.</value>
+    <comment>AutoIdFollower.cs</comment>
+  </data>
+  <data name="Edit_ChapterHasNoEpisode" xml:space="preserve">
+    <value>챕터 '{0}'에 에피소드 '{1}'가 없습니다.</value>
+    <comment>AutoIdFollower.cs</comment>
+  </data>
+  <data name="Doc_YarnStylePreviewIncludingConditions" xml:space="preserve">
+    <value>조건, LineId와 분기를 모두 포함한 Yarn 스타일 Preview</value>
+    <comment>DocumentOutputOptions.cs</comment>
+  </data>
+  <data name="Doc_ShowsOnlyConditionsAndSpeaker" xml:space="preserve">
+    <value>조건과 화자·대사만 읽기 쉽게 표시</value>
+    <comment>DocumentOutputOptions.cs</comment>
+  </data>
+  <data name="Sync_ChoicesArenTWrittenInside" xml:space="preserve">
+    <value>{0} — 대사 안 선택지는 쓰지 않습니다. 선택지는 [구성] 탭의 간선에서 만드세요.</value>
+    <comment>ScenarioTextParser.cs</comment>
+  </data>
+  <data name="Sync_ThereSNoFollowingDialogue" xml:space="preserve">
+    <value>&lt;&lt;{0}&gt;&gt; — 뒤따르는 대사 줄이 없어 붙일 곳이 없습니다.</value>
+    <comment>ScenarioTextParser.cs</comment>
+  </data>
+  <data name="Board_UnsupportedNodeType" xml:space="preserve">
+    <value>지원하지 않는 노드 타입입니다: {0}</value>
+    <comment>GraphProjectionBuilder.cs</comment>
+  </data>
+  <data name="Board_OutsideScenes" xml:space="preserve">
+    <value>장면 밖</value>
+    <comment>GraphProjectionBuilder.cs</comment>
+  </data>
+  <data name="Edit_BoardHasNoChapter" xml:space="preserve">
+    <value>판 '{0}'의 챕터가 없습니다.</value>
+    <comment>EpisodeNaming.cs</comment>
+  </data>
+  <data name="Edit_NodeIsnTInProject" xml:space="preserve">
+    <value>노드 '{0}'가 프로젝트에 없습니다.</value>
+    <comment>EpisodeNaming.cs</comment>
+  </data>
+  <data name="Diag_NoteOfSceneHasNo" xml:space="preserve">
+    <value>장면 '{0}'의 메모에 주인이 없습니다 — 그 장면의 에피소드가 없습니다</value>
+    <comment>ChapterSceneNotes.cs</comment>
+  </data>
+  <data name="Diag_BringSceneBackOrDelete" xml:space="preserve">
+    <value>장면을 되살리거나 챕터 인스펙터에서 지웁니다.</value>
+    <comment>ChapterSceneNotes.cs</comment>
+  </data>
+  <data name="Diag_SceneHasEntrancesFromOutside" xml:space="preserve">
+    <value>장면 '{0}'에 밖에서 들어오는 자리가 {1}개입니다: {2}. 장면은 한 자리에서만 시작해야 합니다 — 롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 그 자리입니다. 나머지 착지점은 다른 장면으로 나누세요.</value>
+    <comment>ChapterSceneEntryCheck.cs</comment>
+  </data>
+  <data name="Diag_WhatMadeSecondEntrance" xml:space="preserve">
+    <value> 두 번째 자리를 만든 것: {0}.</value>
+    <comment>ChapterSceneEntryCheck.cs</comment>
+  </data>
+  <data name="Edit_ChapterSLastEpisodeCan" xml:space="preserve">
+    <value>챕터의 마지막 에피소드는 지울 수 없습니다 — 챕터에는 장면 하나 · 에피소드 하나가 늘 남습니다. 챕터째 지우려면 챕터를 고르고 [챕터 삭제]를 누르세요.</value>
+    <comment>ChapterMinimum.cs</comment>
+  </data>
+  <data name="Edit_ChapterSLastSceneCan" xml:space="preserve">
+    <value>챕터의 마지막 장면은 지울 수 없습니다 — 챕터에는 장면 하나 · 에피소드 하나가 늘 남습니다. 챕터째 지우려면 챕터를 고르고 [챕터 삭제]를 누르세요.</value>
+    <comment>ChapterMinimum.cs</comment>
+  </data>
+  <data name="Diag_Unavailable" xml:space="preserve">
+    <value>사용할 수 없음 · {0}</value>
+    <comment>AvailableConditionResolver.cs</comment>
+  </data>
+  <data name="Edit_NoNameWasChanged" xml:space="preserve">
+    <value>바뀐 이름이 없습니다.</value>
+    <comment>EpisodeRenamer.cs</comment>
+  </data>
+  <data name="Diag_ExpressionOfConditionIsnT" xml:space="preserve">
+    <value>조건 '{0}'의 식이 유효하지 않아 번역할 수 없습니다.</value>
+    <comment>ConditionYarnTranslator.cs</comment>
+  </data>
+  <data name="Diag_DialogueNodeOfHasNo" xml:space="preserve">
+    <value>'{0}'의 대사 노드 '{1}'에 재생할 줄이 하나도 없습니다. [대본] 탭의 그 카드에 대사를 한 줄이라도 적어 주세요.</value>
+    <comment>ChapterValidator.cs</comment>
+  </data>
+  <data name="Diag_InDialogueStatIsnT" xml:space="preserve">
+    <value>대사의 {{{0}}} — 스탯 '{1}'가 이 챕터에 없습니다(대사 {2}줄 · 처음 나오는 곳 — {3}). 게임에서 그 줄이 나오면 없는 스탯을 읽습니다. 지운 스탯이면 대사를 고치고, 쓸 스탯이면 [구성] 탭 「조건 및 스탯」에서 더해 주세요.</value>
+    <comment>ChapterStatReads.cs</comment>
+  </data>
+  <data name="StatKey_Rule" xml:space="preserve">
+    <value>영어로 적습니다 — 영문자로 시작하고 영문자 · 숫자 · _만(예: {0}). 한글 · 빈칸 · 기호는 받지 않습니다</value>
+    <comment>StatKeyRule.cs — 스탯 키 규칙 한 줄(툴팁 · 안내). {0} = 예로 드는 키</comment>
+  </data>
+  <data name="Diag_ConditionHead" xml:space="preserve">
+    <value>조건 '{0}' — </value>
+    <comment>ChapterDocument.cs의 조건 진단 머리 — [구성] 간선 패널이 이 머리로 그 조건의 진단을 고른다(ChapterGraphView). 진단 문장의 앞과 글자가 같아야 한다</comment>
+  </data>
+</root>

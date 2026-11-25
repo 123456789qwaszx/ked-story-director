@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -66,26 +67,26 @@ public static class ProjectSnapshotCodec
 
     public static StoryProject Decode(string snapshot)
     {
-        JsonObject root = JsonSupport.ParseObject(snapshot, "프로젝트 스냅샷");
+        JsonObject root = JsonSupport.ParseObject(snapshot, Msg.File_ProjectSnapshot);
         int version = (int?)root["snapshotVersion"] ?? 0;
 
         if (version != CurrentSnapshotVersion || root["files"] is not JsonArray files)
         {
-            throw new InvalidDataException("지원하지 않는 프로젝트 스냅샷입니다.");
+            throw new InvalidDataException(Msg.File_UnsupportedProjectSnapshot);
         }
 
-        int projectFormatVersion = JsonSupport.RequiredInt(root["projectFormatVersion"], "스냅샷의 projectFormatVersion");
+        int projectFormatVersion = JsonSupport.RequiredInt(root["projectFormatVersion"], Msg.File_ProjectFormatVersionOfSnapshot);
 
         if (projectFormatVersion != StoryProject.CurrentFormatVersion)
         {
             throw new InvalidDataException(
-                $"스냅샷의 프로젝트 형식 버전 {projectFormatVersion}은 지원하지 않습니다.");
+                string.Format(Msg.File_ProjectFormatVersionOfSnapshot2, projectFormatVersion));
         }
 
         var project = new StoryProject
         {
-            Title = JsonSupport.RequiredString(root["title"], "스냅샷의 title"),
-            StartNodeId = JsonSupport.OptionalString(root["startNode"], "스냅샷의 startNode"),
+            Title = JsonSupport.RequiredString(root["title"], Msg.File_TitleOfSnapshot),
+            StartNodeId = JsonSupport.OptionalString(root["startNode"], Msg.File_StartNodeOfSnapshot),
             Speakers = ProjectManifestJson.ReadSpeakers(root["speakers"]),
             Board = ProjectManifestJson.ReadBoard(root["board"])
         };
@@ -94,7 +95,7 @@ public static class ProjectSnapshotCodec
         {
             if (item is not JsonObject fileObject)
             {
-                throw new InvalidDataException("프로젝트 스냅샷의 files 항목이 객체가 아닙니다.");
+                throw new InvalidDataException(Msg.File_FilesEntryOfProjectSnapshot);
             }
 
             var storyRoot = new JsonObject
@@ -107,7 +108,7 @@ public static class ProjectSnapshotCodec
 
             StoryFile file = StoryFileJson.ReadObject(storyRoot);   // 카드의 대본은 카드 안에 든다
             file.RelativePath = ProjectStore.NormalizeRelativeStoryPath(
-                JsonSupport.RequiredText(fileObject["path"], $"스냅샷의 파일 '{file.Id}'의 path"));
+                JsonSupport.RequiredText(fileObject["path"], string.Format(Msg.File_PathOfFileInSnapshot, file.Id)));
             project.Files.Add(file);
         }
 

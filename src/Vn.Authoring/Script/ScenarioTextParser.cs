@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Script;
 
@@ -109,7 +110,7 @@ public static class ScenarioTextParser
             if (line.StartsWith(OptionMarker, StringComparison.Ordinal))
             {
                 // 대사 안 선택지는 걷혔다 (2026-11-04) — 선택지는 챕터 간선(에피소드 끝)에서 만든다.
-                unparsed.Add($"{line} — 대사 안 선택지는 쓰지 않습니다. 선택지는 [구성] 탭의 간선에서 만드세요.");
+                unparsed.Add(string.Format(Msg.Sync_ChoicesArenTWrittenInside, line));
                 continue;
             }
 
@@ -139,7 +140,7 @@ public static class ScenarioTextParser
         // 전환만 예전대로 말한다 — 그건 진짜로 붙을 곳이 없다.
         foreach (ScenarioStructureIntent left in Unbalanced(pending))
         {
-            unparsed.Add($"<<{Describe(left)}>> — 뒤따르는 대사 줄이 없어 붙일 곳이 없습니다.");
+            unparsed.Add(string.Format(Msg.Sync_ThereSNoFollowingDialogue, Describe(left)));
         }
 
         return new ScenarioParseResult(lines, unparsed, pending.Count > 0 ? [.. pending] : null);

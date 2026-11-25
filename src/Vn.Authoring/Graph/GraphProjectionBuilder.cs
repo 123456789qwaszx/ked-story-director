@@ -1,6 +1,7 @@
 ﻿using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Graph;
 
@@ -406,7 +407,7 @@ public static class GraphProjectionBuilder
         {
             DialogueNode => GraphNodeKind.Dialogue,
             SetNode => GraphNodeKind.Set,
-            _ => throw new NotSupportedException($"지원하지 않는 노드 타입입니다: {node.GetType().Name}")
+            _ => throw new NotSupportedException(string.Format(Msg.Board_UnsupportedNodeType, node.GetType().Name))
         };
     }
 
@@ -450,7 +451,7 @@ public static class GraphProjectionBuilder
 
         if (outside.Count > 0)
         {
-            groups.Add(new CollapsedSceneGroup(string.Empty, "장면 밖", outside));
+            groups.Add(new CollapsedSceneGroup(string.Empty, Msg.Board_OutsideScenes, outside));
         }
 
         return groups;

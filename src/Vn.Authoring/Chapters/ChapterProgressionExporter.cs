@@ -6,6 +6,7 @@ using Vn.Authoring.Rendering;
 // 계약 이름의 정본은 코어의 enum이다. 별칭을 두는 이유는
 // 이름이 겹치기 때문이다 — 이쪽에도 `StatChangeKind`가 있다(저작 문법용).
 using Contract = Ked.Progression;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -120,12 +121,12 @@ public static class ChapterProgressionExporter
         catch (JsonException exception)
         {
             // 우리가 방금 쓴 글을 우리가 못 읽는다 — 조용히 넘기면 안 되는 종류다(규율 1).
-            return [Refusal(chapter, null, $"낸 JSON을 다시 읽지 못했습니다: {exception.Message}")];
+            return [Refusal(chapter, null, string.Format(Msg.Export_CouldnTReadBackWritten, exception.Message))];
         }
 
         if (dto is null)
         {
-            return [Refusal(chapter, null, "낸 JSON이 비어 있습니다.")];
+            return [Refusal(chapter, null, Msg.Export_WrittenJSONIsEmpty)];
         }
 
         Contract.ProgressionLoadResult load = Contract.ProgressionLoader.Load(dto);
@@ -149,9 +150,9 @@ public static class ChapterProgressionExporter
             chapter.SourcePath,
             sheet,
             episodeId,
-            $"진행 코어가 이 챕터를 싣지 못합니다 — {message}" +
+            string.Format(Msg.Export_ProgressionCoreCanTLoad, message) +
             (edge is null ? string.Empty : $" ({edge.Where})") +
-            (path is { Length: > 0 } ? $" (코어 경로: {path})" : string.Empty));
+            (path is { Length: > 0 } ? string.Format(Msg.Export_CorePath, path) : string.Empty));
     }
 
     private static (string? Sheet, string? EpisodeId, ChapterEdge? Edge) Locate(ChapterGraphModel chapter, string? path)

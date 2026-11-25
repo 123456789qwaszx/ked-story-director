@@ -1,6 +1,7 @@
 using Vn.Authoring.Model;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Script;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Editing;
 
@@ -29,7 +30,7 @@ public sealed partial class ProjectEditor
 
     private ChapterDocument RequireChapter(string chapterId) =>
         FindChapter(chapterId)
-        ?? throw new InvalidOperationException($"챕터 '{chapterId}'가 프로젝트에 없습니다.");
+        ?? throw new InvalidOperationException(string.Format(Msg.Edit_ChapterIsnTInProject, chapterId));
 
     /// <summary>빈 챕터 하나를 세운다. 같은 Id가 이미 있으면 그것을 돌려준다(멱등).</summary>
     public ChapterDocument EnsureChapter(string chapterId)
@@ -96,7 +97,7 @@ public sealed partial class ProjectEditor
 
         if (FindChapter(newId) is not null)
         {
-            throw new InvalidOperationException($"챕터 '{newId}'가 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_ChapterAlreadyExists, newId));
         }
 
         StoryFile? board = EpisodeNaming.BoardOf(Project, oldId);
@@ -139,7 +140,7 @@ public sealed partial class ProjectEditor
 
         if (FindEpisode(chapter, episodeId) is not null)
         {
-            throw new InvalidOperationException($"EpisodeId '{episodeId}'가 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_EpisodeIdAlreadyExists, episodeId));
         }
 
         (_, ChapterEpisode? episode, Action attach) = NewEpisodeCore(
@@ -194,7 +195,7 @@ public sealed partial class ProjectEditor
 
         if (sceneId is not null && string.IsNullOrWhiteSpace(sceneId))
         {
-            throw new InvalidOperationException("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
+            throw new InvalidOperationException(Msg.Edit_SceneIDCanTBe);
         }
 
         // 제목만 바꾸면 그 카드의 제목 변경이다 — 판은 그 카드의 제목 글만 고친다(usability UX15 · ⛔ 구조 — 판을 통째로).
@@ -227,7 +228,7 @@ public sealed partial class ProjectEditor
 
         if (wanted.Length == 0)
         {
-            throw new InvalidOperationException("장면ID는 비울 수 없습니다 — 에피소드는 늘 장면에 속합니다.");
+            throw new InvalidOperationException(Msg.Edit_SceneIDCanTBe);
         }
 
         List<int> members = Enumerable.Range(0, chapter.Episodes.Count)
@@ -293,7 +294,7 @@ public sealed partial class ProjectEditor
 
         if (string.IsNullOrWhiteSpace(sceneId))
         {
-            throw new ArgumentException("장면 항목의 장면ID가 비었습니다.", nameof(sceneId));
+            throw new ArgumentException(Msg.Edit_SceneIDOfSceneEntry, nameof(sceneId));
         }
 
         int index = chapter.SceneNotes.FindIndex(note => string.Equals(note.SceneId, sceneId, StringComparison.Ordinal));
@@ -489,7 +490,7 @@ public sealed partial class ProjectEditor
 
         if (FindEpisode(chapter, newId) is not null)
         {
-            throw new InvalidOperationException($"EpisodeId '{newId}'가 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_EpisodeIdAlreadyExists, newId));
         }
 
         DialogueNode? card = EpisodeNaming.CardFor(Project, chapterId, oldId);
@@ -702,7 +703,7 @@ public sealed partial class ProjectEditor
         if (HasEdge(chapter, fromEpisodeId, newToEpisodeId, newOptionLabel, exceptIndex: index))
         {
             throw new InvalidOperationException(
-                $"간선 {fromEpisodeId}→{newToEpisodeId}이 같은 선택지 문구로 이미 있습니다.");
+                string.Format(Msg.Edit_PathAlreadyExistsWithSame, fromEpisodeId, newToEpisodeId));
         }
 
         Mutate(ProjectChangeKind.ChoiceRoute, () =>
@@ -787,12 +788,12 @@ public sealed partial class ProjectEditor
 
         if (string.IsNullOrWhiteSpace(text))
         {
-            throw new InvalidOperationException("선택지 문구가 비어 있습니다.");
+            throw new InvalidOperationException(Msg.Edit_ChoiceTextIsEmpty);
         }
 
         if (FindChoice(chapter, text) is not null)
         {
-            throw new InvalidOperationException($"'{text}'는 이미 선택지 사전에 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_IsAlreadyInChoiceDictionary, text));
         }
 
         // 사전은 [대본] 판에 서지 않는다 — 판 · 인스펙터가 다시 세울 것이 없다([구성]은 어느 변경에든 다시 읽는다).
@@ -830,7 +831,7 @@ public sealed partial class ProjectEditor
 
         if (FindCondition(chapter, label) is not null)
         {
-            throw new InvalidOperationException($"조건 라벨 '{label}'이 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_ConditionLabelAlreadyExists, label));
         }
 
         // 조건과 그 조건의 공급이 <b>한 변경</b>이다 — 되돌리기 한 번에 함께 간다. 공급 노드는 판에 서지 않는 배관이라 판에는 조건만 바뀐 것이다(UX16).
@@ -849,7 +850,7 @@ public sealed partial class ProjectEditor
         ChapterDocument chapter = RequireChapter(chapterId);
 
         ChapterCondition condition = FindCondition(chapter, label)
-            ?? throw new InvalidOperationException($"조건 라벨 '{label}'이 없습니다.");
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_ConditionLabelDoesnTExist, label));
 
         int index = chapter.Conditions.IndexOf(condition);
 
@@ -926,12 +927,12 @@ public sealed partial class ProjectEditor
 
         if (from.Length == 0 || to.Length == 0)
         {
-            return StatRenameOutcome.Refuse("스탯 키가 비어 있습니다.");
+            return StatRenameOutcome.Refuse(Msg.Edit_StatKeyIsEmpty);
         }
 
         if (string.Equals(from, to, StringComparison.Ordinal))
         {
-            return StatRenameOutcome.Refuse("같은 이름입니다 — 바꿀 것이 없습니다.");
+            return StatRenameOutcome.Refuse(Msg.Edit_ItSSameNameNothing);
         }
 
         // 새 키도 영어로만 — 옛 한글 키를 영어로 고치는 것은 받는다(2026-11-23 소유자 · StatKeyRule).
@@ -945,12 +946,12 @@ public sealed partial class ProjectEditor
 
         if (index < 0)
         {
-            return StatRenameOutcome.Refuse($"스탯 '{from}'이 이 챕터에 없습니다.");
+            return StatRenameOutcome.Refuse(string.Format(Msg.Edit_StatIsnTInThis, from));
         }
 
         if (chapter.Stats.Any(stat => string.Equals(stat.Key, to, StringComparison.Ordinal)))
         {
-            return StatRenameOutcome.Refuse($"스탯 '{to}'가 이미 있습니다 — 둘을 합치려면 먼저 하나를 지우세요.");
+            return StatRenameOutcome.Refuse(string.Format(Msg.Edit_StatAlreadyExistsToMerge, to));
         }
 
         // 정규화 뒤에 겹치는 것은 막지 않는다 — `stat("키")`의 인자는
@@ -1160,7 +1161,7 @@ public sealed partial class ProjectEditor
 
         if (index < 0)
         {
-            return StatRemoveOutcome.Refuse($"스탯 '{target}'이 이 챕터에 없습니다.", []);
+            return StatRemoveOutcome.Refuse(string.Format(Msg.Edit_StatIsnTInThis, target), []);
         }
 
         IReadOnlyList<ChapterUse> uses = FindStatUses(chapterId, target);
@@ -1172,7 +1173,7 @@ public sealed partial class ProjectEditor
         if (uses.Count > 0 && !clearUses)
         {
             return StatRemoveOutcome.Refuse(
-                $"스탯 '{target}'을 지울 수 없습니다 — {uses.Count}곳에서 쓰고 있습니다.",
+                string.Format(Msg.Edit_CanTDeleteStatIt, target, uses.Count),
                 uses);
         }
 
@@ -1307,8 +1308,8 @@ public sealed partial class ProjectEditor
 
             uses.Add(new ChapterUse(
                 ChapterUseKind.Edge,
-                $"간선 {edge.FromEpisodeId} → {edge.ToEpisodeId}{label}",
-                $"스탯변화: {StatDeltaParser.Format(edge.StatChanges)}"));
+                string.Format(Msg.Edit_Path, edge.FromEpisodeId, edge.ToEpisodeId, label),
+                string.Format(Msg.Edit_StatChange, StatDeltaParser.Format(edge.StatChanges))));
         }
 
         foreach (ChapterCondition condition in chapter.Conditions)
@@ -1321,7 +1322,7 @@ public sealed partial class ProjectEditor
             {
                 uses.Add(new ChapterUse(
                     ChapterUseKind.Condition,
-                    $"조건 '{condition.Label}'",
+                    string.Format(Msg.Edit_Condition, condition.Label),
                     condition.Expression));
             }
         }
@@ -1331,7 +1332,7 @@ public sealed partial class ProjectEditor
         {
             uses.Add(new ChapterUse(
                 ChapterUseKind.DialogueRead,
-                $"대사 {read.Place} {read.Number}번째 줄",
+                string.Format(Msg.Edit_DialogueLine, read.Place, read.Number),
                 read.Node.Script.Text(read.ScriptLine.Id).Text));
         }
 
@@ -1366,7 +1367,7 @@ public sealed partial class ProjectEditor
 
         if (target.Length == 0)
         {
-            throw new InvalidOperationException("스탯 키가 비어 있습니다.");
+            throw new InvalidOperationException(Msg.Edit_StatKeyIsEmpty);
         }
 
         // 영어로만(2026-11-23 소유자 — Yarn에 그대로 들어가는 statKey다 · StatKeyRule).
@@ -1419,7 +1420,7 @@ public sealed partial class ProjectEditor
 
         if (index < 0)
         {
-            throw new InvalidOperationException($"스탯 '{target}'이 이 챕터에 없습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_StatIsnTInThis, target));
         }
 
         // 종류(정수 · 활성/비활성)가 바뀌면 식이 읽히는 모양도 바뀐다 — 판의 조건 사본도 함께(AddChapterStat과 같다 · 2026-11-23).
@@ -1459,7 +1460,7 @@ public sealed partial class ProjectEditor
         if (chapter.Stats.Any(stat => Other(stat) &&
                 string.Equals(stat.Key, key, StringComparison.Ordinal)))
         {
-            throw new InvalidOperationException($"스탯 '{key}'가 이미 있습니다.");
+            throw new InvalidOperationException(string.Format(Msg.Edit_StatAlreadyExists, key));
         }
 
         // 정규화 뒤 겹침은 막지 않는다 — `stat("키")`의 인자가 문자열 리터럴이라 정규화가 없다.
@@ -1489,7 +1490,7 @@ public sealed partial class ProjectEditor
 
         if (condition is null)
         {
-            return ChapterConditionRemoveOutcome.Refuse($"조건 '{target}'이 이 챕터에 없습니다.", []);
+            return ChapterConditionRemoveOutcome.Refuse(string.Format(Msg.Edit_ConditionIsnTInThis, target), []);
         }
 
         IReadOnlyList<ChapterUse> uses = FindConditionUses(chapterId, target);
@@ -1497,7 +1498,7 @@ public sealed partial class ProjectEditor
         if (uses.Count > 0)
         {
             return ChapterConditionRemoveOutcome.Refuse(
-                $"조건 '{target}'을 지울 수 없습니다 — {uses.Count}곳에서 쓰고 있습니다.", uses);
+                string.Format(Msg.Edit_CanTDeleteConditionIt, target, uses.Count), uses);
         }
 
         // 아무도 안 부르면 판에 공급된 사본도 함께 걷는다 — 남겨 두면 정의 없는 조건이
@@ -1532,22 +1533,22 @@ public sealed partial class ProjectEditor
 
         if (to.Length == 0)
         {
-            return ChapterConditionRenameOutcome.Refuse("조건 이름은 비울 수 없습니다 — 지우려면 ✕를 누르세요.");
+            return ChapterConditionRenameOutcome.Refuse(Msg.Edit_ConditionNameCanTBe);
         }
 
         if (string.Equals(from, to, StringComparison.Ordinal))
         {
-            return ChapterConditionRenameOutcome.Refuse("같은 이름입니다 — 바꿀 것이 없습니다.");
+            return ChapterConditionRenameOutcome.Refuse(Msg.Edit_ItSSameNameNothing);
         }
 
         if (FindCondition(chapter, from) is not { } condition)
         {
-            return ChapterConditionRenameOutcome.Refuse($"조건 '{from}'이 이 챕터에 없습니다.");
+            return ChapterConditionRenameOutcome.Refuse(string.Format(Msg.Edit_ConditionIsnTInThis, from));
         }
 
         if (FindCondition(chapter, to) is not null)
         {
-            return ChapterConditionRenameOutcome.Refuse($"조건 '{to}'이 이미 있습니다.");
+            return ChapterConditionRenameOutcome.Refuse(string.Format(Msg.Edit_ConditionAlreadyExists, to));
         }
 
         int index = chapter.Conditions.IndexOf(condition);
@@ -1619,7 +1620,7 @@ public sealed partial class ProjectEditor
             uses.Add(new ChapterUse(
                 ChapterUseKind.Edge,
                 edge.Where,
-                unlock && visible ? "표시조건 · 해금조건" : unlock ? "해금조건" : "표시조건"));
+                unlock && visible ? Msg.Edit_ShowConditionUnlockCondition : unlock ? Msg.Edit_UnlockCondition : Msg.Edit_ShowCondition));
         }
 
         var ids = new HashSet<string>(
@@ -1648,8 +1649,8 @@ public sealed partial class ProjectEditor
 
                 uses.Add(new ChapterUse(
                     ChapterUseKind.DialogueBranch,
-                    $"대사 '{node.Name}'",
-                    order > 0 ? $"{order}번째 줄의 갈래" : "대본에서 사라진 줄의 갈래"));
+                    string.Format(Msg.Edit_Dialogue, node.Name),
+                    order > 0 ? string.Format(Msg.Edit_BranchOfLine, order) : Msg.Edit_BranchOfLineRemovedFrom));
             }
         }
 
@@ -1692,7 +1693,7 @@ public sealed partial class ProjectEditor
 
         return index >= 0
             ? index
-            : throw new InvalidOperationException($"에피소드 '{episodeId}'가 없습니다.");
+            : throw new InvalidOperationException(string.Format(Msg.Edit_EpisodeDoesnTExist, episodeId));
     }
 
     /// <summary>
@@ -1710,7 +1711,7 @@ public sealed partial class ProjectEditor
 
         return index >= 0
             ? index
-            : throw new InvalidOperationException($"간선 {fromEpisodeId}→{toEpisodeId}이 없습니다.");
+            : throw new InvalidOperationException(string.Format(Msg.Edit_PathDoesnTExist, fromEpisodeId, toEpisodeId));
     }
 
     private ChapterEdge NewEdge(
@@ -1725,7 +1726,7 @@ public sealed partial class ProjectEditor
         if (HasEdge(chapter, fromEpisodeId, toEpisodeId, optionLabel))
         {
             throw new InvalidOperationException(
-                $"간선 {fromEpisodeId}→{toEpisodeId}이 같은 선택지 문구로 이미 있습니다.");
+                string.Format(Msg.Edit_PathAlreadyExistsWithSame, fromEpisodeId, toEpisodeId));
         }
 
         return new ChapterEdge(fromEpisodeId, toEpisodeId, optionLabel, NoneIfBlank(conditionLabel), LockedMessage: null)
@@ -1844,7 +1845,7 @@ public sealed partial class ProjectEditor
         return parsed.IsValid
             ? parsed.Deltas
             : throw new InvalidOperationException(
-                $"스탯변화 '{text}': {parsed.Problems[0].Message}");
+                string.Format(Msg.Edit_StatChange2, text, parsed.Problems[0].Message));
     }
 }
 

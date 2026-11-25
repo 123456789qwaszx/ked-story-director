@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -73,26 +74,25 @@ public static class ProjectManifestJson
 
     public static ProjectManifest Read(string json)
     {
-        JsonObject root = JsonSupport.ParseObject(json, "프로젝트 manifest");
+        JsonObject root = JsonSupport.ParseObject(json, Msg.File_ProjectManifest);
         int version = (int?)root["formatVersion"] ?? 0;
 
         if (version > CurrentFormatVersion)
         {
             throw new InvalidDataException(
-                $"이 프로젝트 manifest는 형식 버전 {version}입니다. " +
-                $"이 툴은 {CurrentFormatVersion}까지 읽을 수 있습니다.");
+                string.Format(Msg.File_ThisProjectManifestIsFormat, version, CurrentFormatVersion));
         }
 
         // 앞의 형식은 옮기지 않는다(2026-11-17). 거절만 분명히 한다 — 아니면 「manifest가 아닙니다」로 엉뚱하게 거절된다.
         if (version > 0 && version < CurrentFormatVersion)
         {
             throw new InvalidDataException(
-                $"형식 버전 {version} 프로젝트는 열지 않습니다 — 이 툴은 형식 {CurrentFormatVersion}만 엽니다.");
+                string.Format(Msg.File_ProjectsOfFormatVersionAren, version, CurrentFormatVersion));
         }
 
         if (version != CurrentFormatVersion || root["files"] is not JsonArray files)
         {
-            throw new InvalidDataException("이 툴의 프로젝트 manifest가 아닙니다.");
+            throw new InvalidDataException(Msg.File_ThisIsnTProjectManifest);
         }
 
         HashSet<string> allPaths = new(StringComparer.OrdinalIgnoreCase);
@@ -104,21 +104,21 @@ public static class ProjectManifestJson
         {
             if (item is not JsonObject file)
             {
-                throw new InvalidDataException("프로젝트 manifest의 files 항목이 객체가 아닙니다.");
+                throw new InvalidDataException(Msg.File_FilesEntryOfProjectManifest);
             }
 
-            string id = JsonSupport.RequiredText(file["id"], "프로젝트 manifest의 파일 항목의 id");
-            string name = JsonSupport.RequiredText(file["name"], $"StoryFile '{id}'의 name");
-            string path = ProjectStore.NormalizeRelativeStoryPath(JsonSupport.RequiredText(file["path"], $"StoryFile '{id}'의 path"));
+            string id = JsonSupport.RequiredText(file["id"], Msg.File_IdOfFileEntryIn);
+            string name = JsonSupport.RequiredText(file["name"], string.Format(Msg.File_NameOfStoryFile, id));
+            string path = ProjectStore.NormalizeRelativeStoryPath(JsonSupport.RequiredText(file["path"], string.Format(Msg.File_PathOfStoryFile, id)));
 
             if (!ids.Add(id))
             {
-                throw new InvalidDataException($"StoryFile Id '{id}'가 manifest에서 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_StoryFileIdIsDuplicatedIn, id));
             }
 
             if (!allPaths.Add(path))
             {
-                throw new InvalidDataException($"부속 파일 경로 '{path}'가 manifest에서 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_AttachedFilePathIsDuplicated, path));
             }
 
             references.Add(new ProjectStoryFileReference(id, name, path));
@@ -127,8 +127,8 @@ public static class ProjectManifestJson
         List<ChapterDocument> chapters = ChapterDocumentJson.Read(root["chapters"]);
 
         return new ProjectManifest(
-            JsonSupport.RequiredString(root["title"], "프로젝트 manifest의 title"),
-            JsonSupport.OptionalString(root["startNode"], "프로젝트 manifest의 startNode"),
+            JsonSupport.RequiredString(root["title"], Msg.File_TitleOfProjectManifest),
+            JsonSupport.OptionalString(root["startNode"], Msg.File_StartNodeOfProjectManifest),
             references,
             chapters,
             ReadSpeakers(root["speakers"]),
@@ -177,8 +177,8 @@ public static class ProjectManifestJson
     internal static List<Speaker> ReadSpeakers(JsonNode? node) =>
         JsonSupport.Objects(node, "speakers")
             .Select(item => new Speaker(
-                JsonSupport.RequiredString(item["name"], "화자의 name"),
-                JsonSupport.RequiredString(item["characterId"], "화자의 characterId"),
+                JsonSupport.RequiredString(item["name"], Msg.File_NameOfSpeaker),
+                JsonSupport.RequiredString(item["characterId"], Msg.File_CharacterIdOfSpeaker),
                 // 이름 색은 너그럽게 — 읽지 못하면 색 없이 선다(작가용 표시라 프로젝트를 막지 않는다).
                 item["color"] is JsonValue color && color.TryGetValue(out string? hex) ? WriterRgb.Parse(hex) : null,
                 item["fill"] is JsonValue fill && fill.TryGetValue(out string? fillHex) ? WriterRgb.Parse(fillHex) : null))
@@ -206,9 +206,9 @@ public static class ProjectManifestJson
         static double Side(JsonNode? value, string what) =>
             JsonSupport.RequiredNumber(value, what) is var side && side == BoardSize.ClampSide(side, side)
                 ? side
-                : throw new InvalidDataException($"{what} {side}{Josa.은는(side)} {BoardSize.Minimum} ~ {BoardSize.Maximum} 안의 정수여야 합니다.");
+                : throw new InvalidDataException(string.Format(Msg.File_OfMustBeIntegerWithin, what, side, Josa.은는(side), BoardSize.Minimum, BoardSize.Maximum));
 
-        return new BoardSize(Side(board["width"], "판 크기의 width"), Side(board["height"], "판 크기의 height"));
+        return new BoardSize(Side(board["width"], Msg.File_BoardSizeWidth), Side(board["height"], Msg.File_BoardSizeHeight));
     }
 }
 

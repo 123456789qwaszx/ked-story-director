@@ -51,6 +51,7 @@ internal static class UiLanguage
     {
         Current = language == English ? English : Korean;
         Ui.Culture = CultureInfo.GetCultureInfo(Current == English ? "en" : "ko-KR");
+        Vn.Authoring.Strings.Msg.Culture = Ui.Culture;   // 검증 보고 · 거절 사유도 같은 언어로(english-ui E5)
     }
 
     /// <summary>켤 때 한 번 — 앱 설정과 PC 언어로 정한다(<c>Program.Main</c> · 창을 짓기 전).</summary>

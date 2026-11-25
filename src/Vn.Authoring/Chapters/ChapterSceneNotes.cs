@@ -1,3 +1,4 @@
+using Vn.Authoring.Strings;
 namespace Vn.Authoring.Chapters;
 
 /// <summary>
@@ -74,9 +75,9 @@ public static class ChapterSceneNotes
                 path,
                 ChapterSheetNames.SceneNotes,
                 EpisodeId: null,
-                $"장면 '{note.Name?.Trim() ?? note.SceneId}'의 메모에 주인이 없습니다 — 그 장면의 에피소드가 없습니다" +
+                string.Format(Msg.Diag_NoteOfSceneHasNo, note.Name?.Trim() ?? note.SceneId) +
                 (string.IsNullOrWhiteSpace(note.Text) ? ". " : $"(「{Lead(note.Text)}」). ") +
-                "장면을 되살리거나 챕터 인스펙터에서 지웁니다."))
+                Msg.Diag_BringSceneBackOrDelete))
             .ToList();
 
     /// <summary>메모의 첫머리 한 줄 — 길면 자른다.</summary>

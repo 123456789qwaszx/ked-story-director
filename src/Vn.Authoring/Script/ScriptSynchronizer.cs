@@ -1,4 +1,5 @@
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Script;
 
@@ -81,18 +82,18 @@ public sealed class ScriptSyncPlan
             " · ",
             new (ScriptSyncKind Kind, string Label)[]
             {
-                (ScriptSyncKind.Unchanged, "유지"),
-                (ScriptSyncKind.Modified, "수정"),
-                (ScriptSyncKind.Inserted, "추가"),
-                (ScriptSyncKind.Deleted, "삭제"),
-                (ScriptSyncKind.Moved, "이동"),
-                (ScriptSyncKind.Ambiguous, "확인 필요")
+                (ScriptSyncKind.Unchanged, Msg.Sync_Unchanged),
+                (ScriptSyncKind.Modified, Msg.Sync_Modified),
+                (ScriptSyncKind.Inserted, Msg.Sync_Added),
+                (ScriptSyncKind.Deleted, Msg.Sync_Deleted),
+                (ScriptSyncKind.Moved, Msg.Sync_Moved),
+                (ScriptSyncKind.Ambiguous, Msg.Sync_NeedsConfirmation)
             }
                 .Select(pair => (pair.Label, Count: Count(pair.Kind)))
                 .Where(pair => pair.Count > 0)
                 .Select(pair => $"{pair.Label} {pair.Count}"));
 
-        return parts.Length == 0 ? "변경 없음" : parts;
+        return parts.Length == 0 ? Msg.Sync_NoChanges : parts;
     }
 }
 
@@ -255,8 +256,8 @@ public static class ScriptSynchronizer
                     document.Text(oldLines[oldIndex].Id, locale),
                     null,
                     ambiguous
-                        ? "이 줄이 사라진 것인지 아래의 새 문장으로 고쳐진 것인지 확신할 수 없습니다."
-                        : "대본에서 사라졌습니다. 지우지 않고 은퇴 상태로 남깁니다."));
+                        ? Msg.Sync_CanTTellWhetherThis
+                        : Msg.Sync_RemovedFromScriptItS));
             }
         }
 
@@ -366,9 +367,7 @@ public static class ScriptSynchronizer
             state.Classify(
                 newIndex,
                 ScriptSyncKind.Ambiguous,
-                $"'{Preview(new LocalizedLine(line.Speaker, line.Text))}'가 기존 줄 " +
-                $"[{candidates}] 중 어느 것의 수정인지 확신할 수 없습니다. " +
-                "한쪽을 먼저 확정하거나 대본을 나누어 동기화해 주세요.");
+                string.Format(Msg.Sync_CanTTellWhichExisting, Preview(new LocalizedLine(line.Speaker, line.Text)), candidates));
         }
 
         foreach (int oldIndex in remainingOld)
@@ -574,7 +573,7 @@ public static class ScriptSynchronizer
         {
             return _kinds[newIndex]
                 ?? throw new InvalidOperationException(
-                    $"동기화 계획이 {newIndex}번째 줄을 분류하지 못했습니다.");
+                    string.Format(Msg.Sync_SyncPlanCouldnTClassify, newIndex));
         }
 
         public IEnumerable<int> UnmatchedOld()

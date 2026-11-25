@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Serialization;
 
@@ -20,11 +21,11 @@ internal static class JsonSupport
         try
         {
             return JsonNode.Parse(json) as JsonObject
-                ?? throw new InvalidDataException($"{kind} 파일의 루트가 JSON 객체가 아닙니다.");
+                ?? throw new InvalidDataException(string.Format(Msg.File_RootOfFileIsnT, kind));
         }
         catch (JsonException exception)
         {
-            throw new InvalidDataException($"{kind} 파일을 읽을 수 없습니다. {exception.Message}", exception);
+            throw new InvalidDataException(string.Format(Msg.File_CanTReadFile, kind, exception.Message), exception);
         }
     }
 
@@ -36,13 +37,13 @@ internal static class JsonSupport
     internal static string RequiredString(JsonNode? node, string what) =>
         node is JsonValue value && value.GetValueKind() == JsonValueKind.String
             ? (string)value!
-            : throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 문자열이 아닙니다.");
+            : throw new InvalidDataException(string.Format(Msg.File_IsMissingOrNotString, what, Josa.이가(what)));
 
     /// <summary>비지 않은 문자열 칸 — Id · 이름 · 열쇠.</summary>
     internal static string RequiredText(JsonNode? node, string what) =>
         RequiredString(node, what) is { } text && !string.IsNullOrWhiteSpace(text)
             ? text
-            : throw new InvalidDataException($"{what}{Josa.이가(what)} 비었습니다.");
+            : throw new InvalidDataException(string.Format(Msg.File_IsEmpty, what, Josa.이가(what)));
 
     /// <summary>없어도 되는 문자열 칸 — 있으면 문자열이어야 한다.</summary>
     internal static string? OptionalString(JsonNode? node, string what) => node is null ? null : RequiredString(node, what);
@@ -50,14 +51,14 @@ internal static class JsonSupport
     internal static double RequiredNumber(JsonNode? node, string what) =>
         node is JsonValue value && value.GetValueKind() == JsonValueKind.Number && double.IsFinite((double)value)
             ? (double)value
-            : throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 수가 아닙니다.");
+            : throw new InvalidDataException(string.Format(Msg.File_IsMissingOrNotNumber, what, Josa.이가(what)));
 
     internal static double? OptionalNumber(JsonNode? node, string what) => node is null ? null : RequiredNumber(node, what);
 
     internal static int RequiredInt(JsonNode? node, string what) =>
         node is JsonValue value && value.GetValueKind() == JsonValueKind.Number && value.TryGetValue(out int number)
             ? number
-            : throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 정수가 아닙니다.");
+            : throw new InvalidDataException(string.Format(Msg.File_IsMissingOrNotInteger, what, Josa.이가(what)));
 
     /// <summary>켤 때만 쓰는 깃발 — 없으면 꺼짐, 있으면 <c>true</c>여야 한다(툴은 <c>false</c>를 쓰지 않는다).</summary>
     internal static bool Flag(JsonNode? node, string what) =>
@@ -65,10 +66,10 @@ internal static class JsonSupport
             ? false
             : node is JsonValue value && value.GetValueKind() == JsonValueKind.True
                 ? true
-                : throw new InvalidDataException($"{what}{Josa.은는(what)} 켤 때만 true로 적습니다.");
+                : throw new InvalidDataException(string.Format(Msg.File_IsWrittenAsTrueOnly, what, Josa.은는(what)));
 
     internal static JsonObject RequiredObject(JsonNode? node, string what) =>
-        node as JsonObject ?? throw new InvalidDataException($"{what}{Josa.이가(what)} 없거나 객체가 아닙니다.");
+        node as JsonObject ?? throw new InvalidDataException(string.Format(Msg.File_IsMissingOrNotObject, what, Josa.이가(what)));
 
     /// <summary>객체 배열 — 없으면 빈 것(비면 쓰지 않는 칸), 배열이 아니거나 객체 아닌 항목이 있으면 받지 않는다.</summary>
     internal static IEnumerable<JsonObject> Objects(JsonNode? node, string what)
@@ -80,15 +81,15 @@ internal static class JsonSupport
 
         if (node is not JsonArray array)
         {
-            throw new InvalidDataException($"{what}{Josa.이가(what)} 배열이 아닙니다.");
+            throw new InvalidDataException(string.Format(Msg.File_IsnTArray, what, Josa.이가(what)));
         }
 
-        return array.Select(item => item as JsonObject ?? throw new InvalidDataException($"{what}에 객체가 아닌 항목이 있습니다.")).ToList();
+        return array.Select(item => item as JsonObject ?? throw new InvalidDataException(string.Format(Msg.File_HasItemThatIsnT, what))).ToList();
     }
 
     /// <summary>늘 쓰는 객체 배열 — 없으면 받지 않는다.</summary>
     internal static IEnumerable<JsonObject> RequiredObjects(JsonNode? node, string what) =>
-        node is null ? throw new InvalidDataException($"{what}{Josa.이가(what)} 없습니다.") : Objects(node, what);
+        node is null ? throw new InvalidDataException(string.Format(Msg.File_IsMissing, what, Josa.이가(what))) : Objects(node, what);
 
     public static string ToDeterministicText(JsonObject root)
     {
@@ -146,7 +147,7 @@ internal static class JsonSupport
         {
             if (string.IsNullOrWhiteSpace(speaker.Name) || !speakerNames.Add(speaker.Name))
             {
-                throw new InvalidDataException($"화자 이름 '{speaker.Name}'이 비었거나 겹칩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_SpeakerNameIsEmptyOr, speaker.Name));
             }
         }
 
@@ -160,20 +161,20 @@ internal static class JsonSupport
         {
             if (!fileIds.Add(file.Id))
             {
-                throw new InvalidDataException($"StoryFile Id '{file.Id}'가 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_StoryFileIdIsDuplicated, file.Id));
             }
 
             // 판은 챕터의 판이다 — 판은 챕터와 함께 서고 바뀌고 지워진다(2026-11-18 · old-shapes O3). 챕터가 아닌 판은 옛 데이터라 받지 않는다.
             if (!chapterIds.Contains(file.Name) || !boardNames.Add(file.Name))
             {
-                throw new InvalidDataException($"판 '{file.Name}'{Josa.은는(file.Name)} 챕터의 판이 아니거나 같은 챕터의 판이 둘입니다.");
+                throw new InvalidDataException(string.Format(Msg.File_BoardIsnTChapterS, file.Name, Josa.은는(file.Name)));
             }
 
             string relativePath = ProjectStore.NormalizeRelativeStoryPath(file.RelativePath);
 
             if (!paths.Add(relativePath))
             {
-                throw new InvalidDataException($"StoryFile 경로 '{relativePath}'가 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_StoryFilePathIsDuplicated, relativePath));
             }
 
             // 설정 노드는 그 판의 챕터 조건 공급 노드 하나뿐이다 — 공급만 세운다(2026-11-18 · old-shapes O6). 옛 「X 설정」 노드는 받지 않는다.
@@ -181,14 +182,14 @@ internal static class JsonSupport
                     string.Equals(node.Name, Chapters.ChapterBoardSupply.ConditionSupplyNodeName(file.Name), StringComparison.Ordinal)) !=
                 file.Nodes.OfType<SetNode>().Count() || file.Nodes.OfType<SetNode>().Count() > 1)
             {
-                throw new InvalidDataException($"판 '{file.Name}'에 챕터 조건 공급 노드가 아닌 설정 노드가 있거나 공급 노드가 둘입니다.");
+                throw new InvalidDataException(string.Format(Msg.File_BoardHasSetNodeThat, file.Name));
             }
 
             foreach (StoryNode node in file.Nodes)
             {
                 if (!nodeIds.Add(node.Id))
                 {
-                    throw new InvalidDataException($"노드 Id '{node.Id}'가 프로젝트 전체에서 중복됩니다.");
+                    throw new InvalidDataException(string.Format(Msg.File_NodeIdIsDuplicatedAcross, node.Id));
                 }
 
                 if (node is DialogueNode dialogue)
@@ -203,7 +204,7 @@ internal static class JsonSupport
         if (project.StartNodeId is not null && project.FindNode(project.StartNodeId) is null)
         {
             throw new InvalidDataException(
-                $"시작 노드 '{project.StartNodeId}'를 프로젝트에서 찾을 수 없습니다.");
+                string.Format(Msg.File_CanTFindStartNode, project.StartNodeId));
         }
     }
 
@@ -219,7 +220,7 @@ internal static class JsonSupport
         {
             if (chapter.Episodes.FirstOrDefault(episode => string.IsNullOrWhiteSpace(episode.SceneId)) is { } sceneless)
             {
-                throw new InvalidDataException($"챕터 '{chapter.ChapterId}'의 에피소드 '{sceneless.EpisodeId}'에 장면ID가 없습니다.");
+                throw new InvalidDataException(string.Format(Msg.File_EpisodeOfChapterHasNo, chapter.ChapterId, sceneless.EpisodeId));
             }
 
             HashSet<string> episodes = chapter.Episodes.Select(episode => episode.EpisodeId).ToHashSet(StringComparer.Ordinal);
@@ -236,13 +237,13 @@ internal static class JsonSupport
                 if (!fits)
                 {
                     throw new InvalidDataException(
-                        $"판 '{chapter.ChapterId}'의 카드 '{card.Name}'{Josa.이가(card.Name)} 그 챕터의 에피소드 하나를 가리키지 않습니다(표식이 없거나 · 없는 에피소드거나 · 겹치거나 · 이름이 EpisodeId와 다릅니다).");
+                        string.Format(Msg.File_CardOnBoardDoesnT, chapter.ChapterId, card.Name, Josa.이가(card.Name)));
                 }
             }
 
             if (episodes.FirstOrDefault(episode => !marked.Contains(episode)) is { } lonely)
             {
-                throw new InvalidDataException($"챕터 '{chapter.ChapterId}'의 에피소드 '{lonely}'에 카드가 없습니다.");
+                throw new InvalidDataException(string.Format(Msg.File_EpisodeOfChapterHasNo2, chapter.ChapterId, lonely));
             }
         }
     }
@@ -256,12 +257,12 @@ internal static class JsonSupport
         {
             if (string.IsNullOrWhiteSpace(line.Id))
             {
-                throw new InvalidDataException($"'{node.Id}'의 대본에 빈 LineId가 있습니다.");
+                throw new InvalidDataException(string.Format(Msg.File_ScriptOfHasEmptyLineId, node.Id));
             }
 
             if (!lineIds.Add(line.Id))
             {
-                throw new InvalidDataException($"'{node.Id}'의 대본에서 LineId '{line.Id}'가 중복됩니다.");
+                throw new InvalidDataException(string.Format(Msg.File_LineIdIsDuplicatedInScript, node.Id, line.Id));
             }
         }
 
@@ -272,7 +273,7 @@ internal static class JsonSupport
             if (!locales.Add(locale.Locale))
             {
                 throw new InvalidDataException(
-                    $"'{node.Id}'의 대본에서 locale '{locale.Locale}'이 중복됩니다.");
+                    string.Format(Msg.File_LocaleIsDuplicatedInScript, node.Id, locale.Locale));
             }
 
             foreach (string lineId in locale.Entries.Keys)
@@ -280,7 +281,7 @@ internal static class JsonSupport
                 if (!lineIds.Contains(lineId))
                 {
                     throw new InvalidDataException(
-                        $"'{node.Id}'의 대본의 locale '{locale.Locale}'이 없는 LineId '{lineId}'를 가리킵니다.");
+                        string.Format(Msg.File_LocaleInScriptOfPoints, node.Id, locale.Locale, lineId));
                 }
             }
         }
@@ -303,7 +304,7 @@ internal static class JsonSupport
             if (!lineIds.Add(extension.LineId))
             {
                 throw new InvalidDataException(
-                    $"DialogueNode '{node.Id}'에서 LineId '{extension.LineId}' 항목이 중복됩니다.");
+                    string.Format(Msg.File_LineIdEntryIsDuplicatedIn, node.Id, extension.LineId));
             }
         }
 
@@ -316,7 +317,7 @@ internal static class JsonSupport
                 !ReferenceEquals(project.FindFileContainingNode(target), home))
             {
                 throw new InvalidDataException(
-                    $"DialogueNode '{node.Id}'의 분기가 같은 판의 분기 카드가 아닌 '{target}'를 가리킵니다 — 분기는 같은 판의 분기 카드에만 잇습니다.");
+                    string.Format(Msg.File_BranchOfDialogueNodePointsTo, node.Id, target));
             }
         }
     }

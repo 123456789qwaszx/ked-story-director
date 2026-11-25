@@ -1,4 +1,5 @@
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Chapters;
 
@@ -50,7 +51,7 @@ public static class SceneMoveGuard
             string scene = SceneName(chapter, sceneId);
             string list = string.Join(", ", now.Select(entry => $"'{entry.ShownTitle}'({Why(after, chapter.Edges, entry)})"));
 
-            reasons.Add($"장면 '{scene}'에 밖에서 들어오는 자리가 {now.Count}개가 됩니다 — {list}.");
+            reasons.Add(string.Format(Msg.Edit_SceneWouldHaveEntrancesFrom, scene, now.Count, list));
         }
 
         if (reasons.Count == 0)
@@ -60,10 +61,9 @@ public static class SceneMoveGuard
 
         string name = moving.ShownTitle;
 
-        return $"'{name}'{Josa.을를(name)} 장면 '{SceneName(chapter, newSceneId)}'{Josa.으로(SceneName(chapter, newSceneId))} 옮길 수 없습니다. " +
+        return string.Format(Msg.Edit_CanTMoveToScene, name, Josa.을를(name), SceneName(chapter, newSceneId), Josa.으로(SceneName(chapter, newSceneId))) +
                string.Join(" ", reasons) +
-               " 장면은 한 자리에서만 시작해야 합니다(롤백이 되돌아가고 이어하기가 재개하는 자리). " +
-               "옮기려면 먼저 위에 적힌 길을 끊거나 그 장면의 시작점으로 돌려 잇고, 옮긴 뒤 다시 이으세요.";
+               Msg.Edit_SceneMustStartInOne;
     }
 
     private static List<ChapterEpisode> Entries(
@@ -78,7 +78,7 @@ public static class SceneMoveGuard
     {
         if (episodes.Count > 0 && ReferenceEquals(episodes[0], entry))
         {
-            return "챕터 시작";
+            return Msg.Edit_ChapterStart;
         }
 
         List<string> from = edges
@@ -90,7 +90,7 @@ public static class SceneMoveGuard
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
-        return from.Count == 0 ? "밖에서 오는 길" : $"다른 장면의 {string.Join(" · ", from)}에서 오는 길";
+        return from.Count == 0 ? Msg.Edit_PathFromOutside : string.Format(Msg.Edit_PathFromInAnotherScene, string.Join(" · ", from));
     }
 
     /// <summary>장면의 보이는 이름 — 이름을 붙였으면 그것, 아니면 장면ID.</summary>

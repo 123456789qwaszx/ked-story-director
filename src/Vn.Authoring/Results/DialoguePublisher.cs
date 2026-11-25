@@ -1,5 +1,6 @@
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
+using Vn.Authoring.Strings;
 
 namespace Vn.Authoring.Results;
 
@@ -85,7 +86,7 @@ public static class DialoguePublisher
         ArgumentNullException.ThrowIfNull(project);
 
         DialogueNode node = project.FindDialogue(dialogueNodeId)
-            ?? throw new InvalidOperationException($"'{dialogueNodeId}'는 대사 노드가 아닙니다.");
+            ?? throw new InvalidOperationException(string.Format(Msg.Edit_IsnTDialogueNode, dialogueNodeId));
 
         DialogueScript script = DialogueScriptResolver.Resolve(project, node, locale);
         DialogueFlow flow = ConditionFlowResolver.Resolve(node, script, project);
@@ -106,7 +107,7 @@ public static class DialoguePublisher
                 problems.Add(new PublishProblem(
                     PublishProblemKind.DuplicateLineId,
                     line.LineId,
-                    $"LineId '{line.LineId}'가 결과 안에서 두 번 나옵니다.",
+                    string.Format(Msg.Diag_LineIdAppearsTwiceInResult, line.LineId),
                     IsBlocking: true));
             }
 
@@ -231,8 +232,7 @@ public static class DialoguePublisher
         problems.Add(new PublishProblem(
             PublishProblemKind.MissingScript,
             null,
-            "이 카드에 살아 있는 줄이 없습니다. " +
-            "연출만 매다는 씬이면 정상이고, 아니라면 대사를 적어 주세요.",
+            Msg.Diag_ThisCardHasNoLive,
             IsBlocking: true));
     }
 }
