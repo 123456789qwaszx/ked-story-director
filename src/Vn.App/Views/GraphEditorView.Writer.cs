@@ -82,20 +82,94 @@ public partial class GraphEditorView
     /// 그 카드(모르면 모든 카드) 글 칸의 꾸밈과 정렬을 모델로 다시 입힌다 — 서식이 바뀌었을 때(<see cref="Vn.Authoring.Editing.ProjectChangeKind.WriterMarks"/>) 셸이
     /// 부른다. 판도 칸의 글도 그대로다.
     /// </summary>
-    internal void RefreshWriterMarks(string? nodeId)
+    /// <param name="refit">
+    /// 글 맞춤을 켠 쪽을 새 모양에 다시 맞춘다(<see cref="AutoFit"/> — 칸을 바꿔 다시 지은 카드는 그 뒤의 새 칸으로 잰다). 줄 간격 · 글자 크기 · 글꼴 · 굵게는 글 칸의
+    /// 크기를 바꾼다(2026-11-25 소유자 — 「줄간 간격을 넓히는 경우나 텍스트의 크기를 조절한 경우에는 에피소드 크기 맞춤이 잘 안되네」 · ⛔ 그 전에는 글을 넣을 때만
+    /// 맞춰 다시 써야 맞았다). 맞춘 크기는 그 서식의 되돌리기 칸에 든다 — 되돌리기 · 다시 실행에서는 거짓이다(그때의 크기가 그때의 서식에 맞는다).
+    /// 글자의 크기 몫(<see cref="SizeShape"/>)이 그대로인 칸은 재지 않는다 — 화자 이름 색 하나가 모든 카드를 다시 칠해도 맞춤은 돌지 않는다.
+    /// </param>
+    internal void RefreshWriterMarks(string? nodeId, bool refit = false)
     {
         var swaps = new List<string>();
+        var drawn = new List<string>();
+        var reshaped = new List<string>();
 
         foreach ((string id, TextBox box) in _writingBoxes)
         {
-            if ((nodeId is null || string.Equals(id, nodeId, StringComparison.Ordinal)) && !DrawLooks(id, box))
+            if (nodeId is not null && !string.Equals(id, nodeId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            drawn.Add(id);
+            string shape = SizeShape(box);
+
+            if (!DrawLooks(id, box))
             {
                 swaps.Add(id);
+                reshaped.Add(id);   // 칸이 바뀐다 — 새 칸으로 잰다
+            }
+            else if (!string.Equals(shape, SizeShape(box), StringComparison.Ordinal))
+            {
+                reshaped.Add(id);
             }
         }
 
         SwapWritingBoxesLater(swaps);
         RefreshFormatToolbar();
+
+        // 칸 바꾸기(보통 차례)가 먼저 돌고 맞춤(배경 차례)이 그 뒤에 돈다 — 새 칸으로 잰다.
+        if (refit)
+        {
+            foreach (string id in reshaped)
+            {
+                QueueAutoFit(id);
+            }
+
+            return;
+        }
+
+        // 되돌리기 · 다시 실행 — 맞춘 크기도 그 서식의 칸에 들어 있어 함께 돌아온다. 크기가 달라진 카드는 다시 짓는다(크기는 카드를 지을 때 입는다 ·
+        // 철도도 새 높이를 따른다).
+        List<string> resized = drawn
+            .Where(id => FindCard(id) is { } card && _cards.Contains(card) && SizeDiffers(card))
+            .ToList();
+
+        if (resized.Count == 1)
+        {
+            RebuildCard(resized[0]);
+        }
+        else if (resized.Count > 1)
+        {
+            Rebuild();
+        }
+    }
+
+    /// <summary>
+    /// 글 칸의 <b>크기 몫</b> — 글이 차지하는 자리를 바꾸는 것만(글꼴 · 크기 · 줄 높이 · 굵기 · 기울임 · 구간마다의 글꼴 · 크기 · 굵게 · 기울임). 색 · 바탕색 ·
+    /// 취소선 · 정렬은 자리를 바꾸지 않는다. 서식을 입히기 전과 뒤가 같으면 글 맞춤을 다시 재지 않는다.
+    /// </summary>
+    private static string SizeShape(TextBox box)
+    {
+        var shape = new System.Text.StringBuilder()
+            .Append(box.FontFamily).Append('|').Append(box.FontSize).Append('|').Append(box.LineHeight).Append('|')
+            .Append(box.FontWeight).Append('|').Append(box.FontStyle);
+
+        if (box is WriterTextBox writer)
+        {
+            shape.Append('|').Append(writer.WantedLineHeight);
+
+            foreach (BoxLook look in writer.Looks)
+            {
+                if (look.Look.Bold || look.Look.Italic || look.Look.Font is not null || look.Look.Grow != 0)
+                {
+                    shape.Append('|').Append(look.Start).Append(',').Append(look.Length).Append(',').Append(look.Look.Bold).Append(',')
+                        .Append(look.Look.Italic).Append(',').Append(look.Look.Font).Append(',').Append(look.Look.Grow);
+                }
+            }
+        }
+
+        return shape.ToString();
     }
 
     /// <summary>

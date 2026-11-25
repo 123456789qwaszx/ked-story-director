@@ -373,8 +373,9 @@ public partial class MainWindow : Window
             }
             else if (plan.RefreshWriterMarks)
             {
-                // 작가용 글 서식만 — 그 카드의 글 칸 꾸밈만 다시 입힌다(writer-formatting).
-                Graph.RefreshWriterMarks(e.NodeId);
+                // 작가용 글 서식만 — 그 카드의 글 칸 꾸밈만 다시 입힌다(writer-formatting). 글 맞춤을 켠 카드는 새 모양에 다시 맞춘다(되돌리기 · 다시
+                // 실행은 빼고 — 그때의 크기가 이미 그때의 서식에 맞는다).
+                Graph.RefreshWriterMarks(e.NodeId, refit: !e.FromHistory);
             }
             else if (plan.RefreshSceneFrames)
             {

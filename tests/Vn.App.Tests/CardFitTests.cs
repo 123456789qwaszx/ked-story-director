@@ -206,6 +206,82 @@ public sealed class CardFitTests : IDisposable
     });
 
     [Fact]
+    public void 줄_간격을_바꾸면_쓰지_않아도_곧바로_다시_맞추고_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 「줄간 간격을 넓히는 경우나 텍스트의 크기를 조절한 경우에는 에피소드 크기 맞춤이 잘 안되네」. ⛔ 서식은 글을 넣지 않아
+        //    맞춤이 돌지 않았다 — 다시 써야 맞았다(위 시험의 「다시 쓰면」).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        Type(graph, root, string.Join('\n', Enumerable.Range(1, 8).Select(index => $"윌로: {index}번째 대답이다.")));
+        Leave(graph);   // 칸을 나오면 칸이 도구의 표기(끝의 이어 쓰기 빈 줄까지)로 다시 쓰이고 그 글로 맞는다
+        double before = session.Project.FindNode(root)!.Layout.WritingHeight!.Value;
+
+        session.Editor.SetWriterLineSpacing(root, 220);
+        Settle(graph);
+
+        double wide = session.Project.FindNode(root)!.Layout.WritingHeight!.Value;
+        Assert.True(wide > before);
+        Assert.Equal(WritingBox(graph, root).Height, session.Project.FindNode(root)!.Layout.WritingHeight);
+        AssertAllVisible(graph, root);
+
+        // 서식과 맞춘 크기가 한 칸이다 — 한 번 되돌리면 줄 간격도 크기도 그 전이다(되돌린 뒤에는 다시 맞추지 않는다 — 그때의 크기가 그때의 글에 맞는다).
+        session.Editor.Undo();
+        Settle(graph);
+        Assert.Equal(before, session.Project.FindNode(root)!.Layout.WritingHeight);
+        Assert.Equal(before, WritingBox(graph, root).Height);
+
+        // 넓혔다가 덜 넓히면 그만큼 줄어든다.
+        session.Editor.SetWriterLineSpacing(root, 220);
+        Settle(graph);
+        session.Editor.SetWriterLineSpacing(root, 180);
+        Settle(graph);
+        Assert.InRange(session.Project.FindNode(root)!.Layout.WritingHeight!.Value, before + 1, wide - 1);
+        AssertAllVisible(graph, root);
+    });
+
+    [Fact]
+    public void 카드의_글자_크기를_바꾸면_켠_쪽이_곧바로_다시_맞는다() => HeadlessUi.Run(() =>
+    {
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        string[] lines = [Long, "윌로: 응.", "라루: 가자.", "윌로: 어디로?", "라루: 바다로.", "윌로: 좋아."];
+        Click(graph, root, width: true);
+        Type(graph, root, string.Join('\n', lines));
+        (double Width, double Height) small = (session.Project.FindNode(root)!.Layout.Width!.Value, session.Project.FindNode(root)!.Layout.WritingHeight!.Value);
+
+        session.Editor.SetWriterBase([root], basis => basis with { Size = basis.Size + 4 });
+        Settle(graph);
+
+        Assert.True(session.Project.FindNode(root)!.Layout.Width > small.Width);
+        Assert.True(session.Project.FindNode(root)!.Layout.WritingHeight > small.Height);
+        Assert.Equal(lines.Length, VisualLines(graph, root));   // 꺾이지 않는다
+        AssertAllVisible(graph, root);
+    });
+
+    [Fact]
+    public void 글자_몇_개의_크기를_키워도_곧바로_다시_맞는다() => HeadlessUi.Run(() =>
+    {
+        // 서식이 처음 생기면 글 칸이 서식을 그리는 칸으로 바뀐다(카드를 다시 짓는다) — 맞춤은 그 뒤의 새 칸으로 잰다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        string[] lines = ["라루: 하나.", "윌로: 둘.", "라루: 셋.", "윌로: 넷.", "라루: 다섯.", "윌로: 여섯.", "라루: 일곱.", "윌로: 여덟."];
+        Click(graph, root, width: true);
+        Type(graph, root, string.Join('\n', lines));
+        (double Width, double Height) small = (session.Project.FindNode(root)!.Layout.Width ?? DefaultWidth, session.Project.FindNode(root)!.Layout.WritingHeight!.Value);
+
+        DialogueNode card = session.Project.FindDialogue(root)!;
+        session.Editor.ApplyWriterStyle(
+            root,
+            card.Script.ActiveLines.Select(line => new WriterRange(line.Id, 0, card.Script.Text(line.Id).Text.Length)).ToList(),
+            new WriterStyleChange(WriterStyleKind.Grow, Step: 10));
+        Settle(graph);
+
+        Assert.IsType<WriterTextBox>(WritingBox(graph, root));
+        Assert.True(session.Project.FindNode(root)!.Layout.WritingHeight > small.Height);
+        AssertAllVisible(graph, root);
+    });
+
+    [Fact]
     public void 아주_긴_줄은_끝에서_꺾고_그_폭에서_모든_줄이_보이게_늘린다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
@@ -276,6 +352,16 @@ public sealed class CardFitTests : IDisposable
         graph.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
         graph.UpdateLayout();
+    }
+
+    /// <summary>알림 · 미룬 일(칸 바꾸기 · 맞춤)이 다 돌고 배치가 끝나기를 기다린다.</summary>
+    private static void Settle(GraphEditorView graph)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            graph.UpdateLayout();
+        }
     }
 
     /// <summary>글 칸을 나온다 — 넣지 않은 글(지운 줄도)이 들어간다.</summary>

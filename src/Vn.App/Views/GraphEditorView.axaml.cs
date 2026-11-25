@@ -3163,10 +3163,12 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>지금 선 카드들의 크기가 프로젝트의 것과 다른가 — 폭과 글 칸 높이.</summary>
-    private bool SizesChanged() =>
-        _cards.Any(card =>
-            Math.Abs(card.Visual.Width - WidthFor(card.NodeId)) > 0.5 ||
-            (card.WritingBox is { } box && Math.Abs(box.Height - WritingHeightFor(card.NodeId)) > 0.5));
+    private bool SizesChanged() => _cards.Any(SizeDiffers);
+
+    /// <summary>그 카드의 화면 크기(폭 · 글 칸 높이)가 모델과 다른가.</summary>
+    private bool SizeDiffers(NodeCard card) =>
+        Math.Abs(card.Visual.Width - WidthFor(card.NodeId)) > 0.5 ||
+        (card.WritingBox is { } box && Math.Abs(box.Height - WritingHeightFor(card.NodeId)) > 0.5);
 
     /// <summary>지금 선 카드들의 포트 쪽(<see cref="GraphOutputPortProjection.OnLeft"/>)이 새 투영과 다른가.</summary>
     private bool PortSidesChanged(GraphProjection projection) =>

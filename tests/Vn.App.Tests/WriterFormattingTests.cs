@@ -747,7 +747,7 @@ public sealed class WriterFormattingTests
         DialogueNode card = session.Editor.AddDialogueNode(TestChapter.Board(session).Id, "본문", name: "본문");
         Assert.True(session.Editor.ApplyScenarioText(card.Id, string.Join('\n', lines)).Applied);
         session.Editor.MoveNode(card.Id, 60, 60);
-        session.Editor.ResizeNode(card.Id, 420, 160);
+        session.Editor.ResizeNode(card.Id, 420, 160, fitWidth: false, fitHeight: false);   // 손으로 정한 크기다 — 서식이 크기를 바꾸지 않는다(손잡이로 정하면 맞춤이 꺼진다)
         session.Select(card.Id);
         window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Script;
         Dispatcher.UIThread.RunJobs();
