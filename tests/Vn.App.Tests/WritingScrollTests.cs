@@ -34,6 +34,9 @@ public sealed class WritingScrollTests
             card.Id, string.Join('\n', Enumerable.Range(1, 14).Select(i => $"하린: {i}번째 줄"))).Applied);
         session.Editor.MoveNode(card.Id, 300, 400);
 
+        // 글 칸이 넘쳐 스크롤하는 카드다 — 세로 글 맞춤(새 카드는 켜고 선다 · 2026-11-25)을 끈다. 켜 두면 칸이 글에 맞게 늘어 스크롤할 것이 없다.
+        session.Editor.SetNodeFit(card.Id, fitWidth: false, fitHeight: false);
+
         if (sized)
         {
             session.Editor.ResizeNode(card.Id, 260, 140);   // 사람이 키운 카드 — 지을 때 「글에 맞춤」을 잰다

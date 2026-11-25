@@ -185,15 +185,46 @@ public sealed class CardResizeTests : IDisposable
         Assert.True(graph.RailFollowRedrawCount > followed, "넓힌 카드의 철도 묶음은 다시 그어야 한다");
         Assert.Equal(trunkBefore + 50, SlotLeft(graph, "root"), precision: 0);   // 그래도 줄기는 넓힌 카드의 가운데 아래다
 
-        // 「글에 맞춤」도 같다.
+        // 글 맞춤(가로를 켜 곧바로 맞춘다 — 2026-11-25 · ⛔ 그 전에는 「글에 맞춤」 단추)도 같다.
         rails = graph.RailDrawCount;
         session.Editor.ApplyScenarioText(root, "라루: 오늘따라 바람이 유난히 차가워서 겉옷을 챙겨 오지 않은 것을 몹시 후회했다.");
         Dispatcher.UIThread.RunJobs();
         rails = graph.RailDrawCount;
-        graph.FitCardToWriting(root);
+        graph.ToggleFit(root, width: true);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(rails, graph.RailDrawCount);
         Assert.Equal(Card(graph, root).Width / 2, SlotLeft(graph, "root") - Canvas.GetLeft(Card(graph, root)) - 14, precision: 0);
+    });
+
+    [Fact]
+    public void 손으로_끈_쪽의_글_맞춤은_꺼지고_다른_쪽은_그대로이며_되돌리기_한_칸이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-25 소유자 — 맞춤을 켠 쪽을 손잡이로 직접 끌면 「그 쪽 맞춤이 꺼진다」(손으로 정한 크기를 맞춤이 다시 덮지 않게).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        session.Editor.SetNodeFit(root, fitWidth: true, fitHeight: true);
+        Dispatcher.UIThread.RunJobs();
+
+        DragGrip(graph, root, GraphEditorView.ResizeHeightGripTag, dx: 0, dy: 60);
+
+        Vn.Authoring.Model.NodeLayout layout = session.Project.FindNode(root)!.Layout;
+        Assert.False(layout.FitHeight);
+        Assert.True(layout.FitWidth);
+        Assert.True(layout.WritingHeight > 88);
+
+        DragGrip(graph, root, GraphEditorView.ResizeGripTag, dx: 80, dy: 0);
+        Assert.False(session.Project.FindNode(root)!.Layout.FitWidth);
+
+        session.Editor.Undo();
+        Assert.True(session.Project.FindNode(root)!.Layout.FitWidth);
+        Assert.False(session.Project.FindNode(root)!.Layout.FitHeight);
+
+        // 손잡이를 두 번 눌러 처음 크기로 돌려도 그 쪽 맞춤은 꺼진다.
+        session.Editor.SetNodeFit(root, fitWidth: true, fitHeight: true);
+        Dispatcher.UIThread.RunJobs();
+        Press(Grip(graph, root, GraphEditorView.ResizeHeightGripTag), clickCount: 2);
+        Assert.False(session.Project.FindNode(root)!.Layout.FitHeight);
+        Assert.True(session.Project.FindNode(root)!.Layout.FitWidth);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────

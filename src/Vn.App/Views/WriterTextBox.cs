@@ -268,7 +268,7 @@ public sealed class WriterTextPresenter : TextPresenter
         return Build(line, FontSize, strut: false);
     }
 
-    /// <summary>「글에 맞춤」이 잰다 — 줄을 꺾지 않고 모양을 입혀 놓았을 때 가장 긴 줄의 폭.</summary>
+    /// <summary>가로 글 맞춤이 잰다 — 줄을 꺾지 않고 모양을 입혀 놓았을 때 가장 긴 줄의 폭.</summary>
     internal double UnwrappedWidth()
     {
         string text = Text ?? string.Empty;

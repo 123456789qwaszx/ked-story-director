@@ -195,7 +195,8 @@ public sealed partial class ProjectEditor
             ? NewNames.NextBranchName(Project, board, sceneId)
             : NewNames.NextEpisodeId(Project, board, sceneId)))
         {
-            Layout = new NodeLayout { X = x, Y = y },
+            // 세로 글 맞춤만 켜고 선다(2026-11-25 소유자 — 새 카드는 「세로만 켜짐」) — 쓰는 대로 아래로 늘고, 폭은 처음 폭이다.
+            Layout = new NodeLayout { X = x, Y = y, FitHeight = true },
             IsBranchCard = branchCard,
 
             // 카드 글 칸의 처음 글꼴 · 크기 — 지금 그 PC의 설정(writer-formatting WF-D13). 뒤에 설정을 바꿔도 이 카드는 그대로다.
@@ -549,11 +550,14 @@ public sealed partial class ProjectEditor
     /// <summary>
     /// 카드 크기를 바꾼다 — 폭과 글 칸 높이(<see cref="NodeLayout.WritingHeight"/>)를 함께 받고, <c>null</c>이면 판의 기본값으로
     /// 돌아간다. 끌기를 놓을 때 한 번 부르므로 되돌리기 한 칸이다. 없는 노드거나 크기가 그대로면 아무것도 적지 않는다.
+    /// <paramref name="fitWidth"/> · <paramref name="fitHeight"/>를 주면 글 맞춤도 그 값으로(같은 칸) — 손으로 끈 쪽의 맞춤은 꺼진다(2026-11-25).
     /// </summary>
-    public void ResizeNode(string nodeId, double? width, double? writingHeight)
+    public void ResizeNode(string nodeId, double? width, double? writingHeight, bool? fitWidth = null, bool? fitHeight = null)
     {
         if (Project.FindNode(nodeId) is not { } node ||
-            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
+            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight &&
+             (fitWidth ?? node.Layout.FitWidth) == node.Layout.FitWidth &&
+             (fitHeight ?? node.Layout.FitHeight) == node.Layout.FitHeight))
         {
             return;
         }
@@ -562,7 +566,57 @@ public sealed partial class ProjectEditor
         {
             node.Layout.Width = width;
             node.Layout.WritingHeight = writingHeight;
+            node.Layout.FitWidth = fitWidth ?? node.Layout.FitWidth;
+            node.Layout.FitHeight = fitHeight ?? node.Layout.FitHeight;
         });
+    }
+
+    /// <summary>
+    /// 카드의 가로 · 세로 글 맞춤을 켜고 끈다(<see cref="NodeLayout.FitWidth"/> · <see cref="NodeLayout.FitHeight"/> · 2026-11-25 소유자) — 되돌리기 한 칸.
+    /// 크기는 그대로다 — 켠 쪽은 판이 곧바로 맞춰 <see cref="FitNodeSize"/>로 적는다(이 칸에 든다). 그대로면 아무것도 적지 않는다.
+    /// </summary>
+    public void SetNodeFit(string nodeId, bool fitWidth, bool fitHeight)
+    {
+        if (Project.FindNode(nodeId) is not { } node ||
+            (node.Layout.FitWidth == fitWidth && node.Layout.FitHeight == fitHeight))
+        {
+            return;
+        }
+
+        Mutate(ProjectChangeKind.Layout, () =>
+        {
+            node.Layout.FitWidth = fitWidth;
+            node.Layout.FitHeight = fitHeight;
+        }, nodeId);
+    }
+
+    /// <summary>
+    /// <b>글에 맞춘 카드 크기를 적는다</b>(2026-11-25 — 가로 · 세로 글 맞춤) — [대본] 판이 글을 넣거나 맞춤을 켤 때 그 글을 재서 부른다. 맞춘 크기는 글을
+    /// 따르는 값이라 <b>제 되돌리기 칸이 없다</b> — 바로 앞의 넣기(또는 맞춤 켜기)의 칸에 든다. 그 칸을 되돌리면 크기도 그때의 것으로 돌아온다(스냅숏 —
+    /// 그때의 크기는 그때의 글에 맞춘 것이다). 다시 실행 목록도 건드리지 않는다. 그대로면 아무것도 적지 않는다.
+    /// </summary>
+    public void FitNodeSize(string nodeId, double? width, double? writingHeight)
+    {
+        if (Project.FindNode(nodeId) is not { } node ||
+            (node.Layout.Width == width && node.Layout.WritingHeight == writingHeight))
+        {
+            return;
+        }
+
+        if (_batchDepth > 0)
+        {
+            Mutate(ProjectChangeKind.Layout, () => SetSize(node, width, writingHeight), nodeId);
+            return;
+        }
+
+        SetSize(node, width, writingHeight);
+        Raise(ProjectChangeKind.Layout, nodeId: nodeId);
+
+        static void SetSize(StoryNode node, double? width, double? writingHeight)
+        {
+            node.Layout.Width = width;
+            node.Layout.WritingHeight = writingHeight;
+        }
     }
 
     // ── 줄에 얹는 대사 논리 ────────────────────────────────────────────────

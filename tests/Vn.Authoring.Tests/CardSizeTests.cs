@@ -38,6 +38,84 @@ public sealed class CardSizeTests
     }
 
     [Fact]
+    public void 새_카드는_세로_글_맞춤만_켜고_서고_켠_쪽만_파일에_적는다()
+    {
+        // 2026-11-25 소유자 — 가로 · 세로 글 맞춤(카드마다 · 새 카드는 「세로만 켜짐」). 칸이 없는 옛 파일의 카드는 둘 다 꺼져 있다.
+        var sample = new Sample();
+        NodeLayout made = sample.Project.FindNode(sample.Dialogue.Id)!.Layout;
+        Assert.False(made.FitWidth);
+        Assert.True(made.FitHeight);
+
+        string json = ProjectSnapshotCodec.Encode(sample.Project);
+        Assert.Matches("\"fitHeight\":\\s*true", json);
+        Assert.DoesNotContain("fitWidth", json, StringComparison.Ordinal);
+
+        sample.Editor.SetNodeFit(sample.Dialogue.Id, fitWidth: true, fitHeight: false);
+        StoryProject reloaded = ProjectSnapshotCodec.Decode(ProjectSnapshotCodec.Encode(sample.Project));
+        Assert.True(reloaded.FindNode(sample.Dialogue.Id)!.Layout.FitWidth);
+        Assert.False(reloaded.FindNode(sample.Dialogue.Id)!.Layout.FitHeight);
+
+        // 옛 파일 — 칸이 없으면 꺼져 있다(열기만 해서 크기가 바뀌지 않는다).
+        StoryProject old = ProjectSnapshotCodec.Decode(
+            System.Text.RegularExpressions.Regex.Replace(json, ",\\s*\"fitHeight\":\\s*true", string.Empty));
+        Assert.False(old.FindNode(sample.Dialogue.Id)!.Layout.FitHeight);
+        Assert.False(old.FindNode(sample.Dialogue.Id)!.Layout.FitWidth);
+    }
+
+    [Fact]
+    public void 맞춤_켜기는_되돌리기_한_칸이고_맞춘_크기는_그_칸에_든다()
+    {
+        var sample = new Sample();
+        string id = sample.Dialogue.Id;
+        int notifications = 0;
+        sample.Editor.Changed += (_, _) => notifications++;
+
+        sample.Editor.SetNodeFit(id, fitWidth: true, fitHeight: true);
+        sample.Editor.FitNodeSize(id, 480, 200);   // 판이 곧바로 맞춰 적는다 — 제 칸이 없다
+
+        Assert.Equal(2, notifications);
+        Assert.Equal((480, 200), (sample.Project.FindNode(id)!.Layout.Width, sample.Project.FindNode(id)!.Layout.WritingHeight));
+
+        // 같은 크기는 적지 않는다.
+        sample.Editor.FitNodeSize(id, 480, 200);
+        Assert.Equal(2, notifications);
+
+        // 한 번 되돌리면 켜기 전 — 맞춤도 크기도.
+        sample.Editor.Undo();
+        NodeLayout restored = sample.Project.FindNode(id)!.Layout;
+        Assert.False(restored.FitWidth);
+        Assert.Null(restored.Width);
+        Assert.Null(restored.WritingHeight);
+
+        // 다시 실행 목록을 건드리지 않는다 — 맞춘 크기를 적어도 다시 실행이 남는다.
+        Assert.True(sample.Editor.CanRedo);
+        sample.Editor.FitNodeSize(id, null, 150);
+        Assert.True(sample.Editor.CanRedo);
+    }
+
+    [Fact]
+    public void 크기를_적으며_그_쪽_맞춤을_끌_수_있고_한_칸이다()
+    {
+        var sample = new Sample();
+        string id = sample.Dialogue.Id;
+        sample.Editor.SetNodeFit(id, fitWidth: true, fitHeight: true);
+
+        sample.Editor.ResizeNode(id, null, 200, fitHeight: false);
+
+        NodeLayout layout = sample.Project.FindNode(id)!.Layout;
+        Assert.True(layout.FitWidth);
+        Assert.False(layout.FitHeight);
+        Assert.Equal(200, layout.WritingHeight);
+
+        // 크기는 그대로인데 맞춤만 끄는 것도 적는다.
+        sample.Editor.ResizeNode(id, null, 200, fitWidth: false);
+        Assert.False(sample.Project.FindNode(id)!.Layout.FitWidth);
+
+        sample.Editor.Undo();
+        Assert.True(sample.Project.FindNode(id)!.Layout.FitWidth);
+    }
+
+    [Fact]
     public void 넓힌_카드만_파일에_폭을_적고_다시_읽는다()
     {
         var sample = new Sample();

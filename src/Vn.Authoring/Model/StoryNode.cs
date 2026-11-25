@@ -20,6 +20,20 @@ public sealed class NodeLayout
     /// 2026-11-19에 걷혔다 · usability UX31.)
     /// </summary>
     public double? WritingHeight { get; set; }
+
+    /// <summary>
+    /// <b>가로 글 맞춤</b>(2026-11-25 소유자 — 「글에 맞춤 / 줄이기 단추를 없애고, 대신에 가로 글 맞춤, 세로 글 맞춤 OnOff 버튼을 둔 다음, 이 버튼을 킨
+    /// 상태라면 글을 쓰면서 자동으로 노드의 넓이가 맞춰지도록」) — 켜져 있으면 [대본] 판이 카드 글을 넣을 때마다 가장 긴 줄이 꺾이지 않게 폭(<see cref="Width"/>)을
+    /// 맞춘다. 맞춘 폭은 글을 따르는 값이라 제 되돌리기 칸이 없다(<see cref="Editing.ProjectEditor.FitNodeSize"/>). 크기 손잡이로 폭을 끌면 꺼진다.
+    /// 카드 크기처럼 판의 모양이라 프로젝트에 싣는다(같이 쓰는 사람에게도 같다). 처음은 꺼져 있다 — 새 카드는 세로만 켜고 선다.
+    /// </summary>
+    public bool FitWidth { get; set; }
+
+    /// <summary>
+    /// <b>세로 글 맞춤</b>(2026-11-25 소유자 · <see cref="FitWidth"/>와 같은 규칙) — 켜져 있으면 모든 줄이 스크롤 없이 보이게 글 칸 높이(<see cref="WritingHeight"/>)를
+    /// 맞춘다(기본 높이보다 낮게는 줄이지 않는다). <b>새 카드는 이것만 켜고 선다</b>(소유자가 고름). 아래 손잡이로 높이를 끌면 꺼진다.
+    /// </summary>
+    public bool FitHeight { get; set; }
 }
 
 /// <summary>

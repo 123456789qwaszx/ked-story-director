@@ -62,6 +62,17 @@ internal static class StoryNodeJson
             ((JsonObject)json["layout"]!)["writingHeight"] = Math.Round(writingHeight, 2);
         }
 
+        // 가로 · 세로 글 맞춤(2026-11-25) — 켠 쪽만 적는다. 이 칸이 없는 옛 파일의 카드는 둘 다 꺼져 있다(크기가 저절로 바뀌지 않는다).
+        if (node.Layout.FitWidth)
+        {
+            ((JsonObject)json["layout"]!)["fitWidth"] = true;
+        }
+
+        if (node.Layout.FitHeight)
+        {
+            ((JsonObject)json["layout"]!)["fitHeight"] = true;
+        }
+
         // 선 모양(G3) — "lines"는 대사 노드의 LineId별 논리가 이미 쓰는 칸이라 이름이 다르다.
         var shapes = new JsonObject();
 
@@ -113,7 +124,9 @@ internal static class StoryNodeJson
             X = JsonSupport.RequiredNumber(layout["x"], $"노드 '{id}'의 layout.x"),
             Y = JsonSupport.RequiredNumber(layout["y"], $"노드 '{id}'의 layout.y"),
             Width = JsonSupport.OptionalNumber(layout["width"], $"노드 '{id}'의 layout.width"),
-            WritingHeight = JsonSupport.OptionalNumber(layout["writingHeight"], $"노드 '{id}'의 layout.writingHeight")
+            WritingHeight = JsonSupport.OptionalNumber(layout["writingHeight"], $"노드 '{id}'의 layout.writingHeight"),
+            FitWidth = JsonSupport.Flag(layout["fitWidth"], $"노드 '{id}'의 layout.fitWidth"),
+            FitHeight = JsonSupport.Flag(layout["fitHeight"], $"노드 '{id}'의 layout.fitHeight")
         };
 
         if (json["edgeShapes"] is { } shapes)
