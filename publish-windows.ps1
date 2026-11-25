@@ -25,6 +25,12 @@ try {
     Remove-Item $publishDirectory -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
 
+    # ⭐ ReadyToRun으로 미리 기계어로 굽는다(2026-11-25 소유자 보고 — 「처음 프로젝트를 생성하고 글을 쓸 때 자꾸 멈추는 현상 … 1~2초 정도이며
+    #   3번정도 반복된 뒤에는 멈추는 일이 없었다」). 굽지 않으면 코드는 처음 불릴 때 그 자리에서 번역(JIT)된다. 카드 글 칸은 쓰다 멈출 때마다
+    #   (0.4초) 글을 넣고 검증 · 도달성 증명 · 진행 JSON · 대사 Yarn 내보내기까지 화면 스레드에서 도는데, 처음 몇 번은 그 길을 처음 타는
+    #   코드가 많아 번역에 1~2초를 썼다 — 한 번 번역된 코드는 다시 번역하지 않아 몇 번 뒤에는 멈추지 않았다.
+    #   ⛔ 2026-08-17의 배포 설정(Properties/PublishProfiles/win-x64.pubxml)은 ReadyToRun을 켰지만, 2026-11-19에 이 스크립트로 꾸러미를 굽기
+    #   시작하면서 그 설정이 빠졌다(v0.1.0 · v0.2.0은 굽지 않은 판이다). 꾸러미가 커진다(전에 잰 것: 53MB → 78MB).
     dotnet publish .\src\Vn.App\Vn.App.csproj `
         -c Release `
         -r win-x64 `
@@ -32,6 +38,7 @@ try {
         -p:PublishSingleFile=true `
         -p:IncludeNativeLibrariesForSelfExtract=true `
         -p:EnableCompressionInSingleFile=true `
+        -p:PublishReadyToRun=true `
         -p:DebugType=none `
         -p:Version=$Version `
         -o $publishDirectory

@@ -39,11 +39,14 @@ rm -rf "$out" "$zip"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 
 # 맥의 앱은 폴더(.app) 하나가 곧 앱이다 — 실행 파일 하나로 묶지 않고(Windows 꾸러미와 다르다) 그 안에 그대로 편다.
+# ⭐ ReadyToRun으로 미리 기계어로 굽는다(2026-11-25 소유자 보고 — 새 프로젝트에서 글을 쓰다 처음 몇 번 1~2초씩 멈췄다). 까닭은
+#   publish-windows.ps1의 같은 줄에 적었다 — 굽지 않으면 글을 넣을 때마다 도는 검증 · 내보내기 코드가 처음 몇 번은 그 자리에서 번역(JIT)된다.
 dotnet publish src/Vn.App/Vn.App.csproj \
     -c Release \
     -r "$rid" \
     --self-contained true \
     -p:DebugType=none \
+    -p:PublishReadyToRun=true \
     -p:Version="$version" \
     -o "$app/Contents/MacOS"
 
