@@ -68,7 +68,7 @@ namespace Ked.Progression
 
         public override string ToString()
         {
-            string head = IsAuto ? "(자동)" : $"\"{ChoiceLabel}\"";
+            string head = IsAuto ? "(auto)" : $"\"{ChoiceLabel}\"";
 
             return $"{head} → {TargetEpisodeId}";
         }

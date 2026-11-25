@@ -25,7 +25,7 @@ namespace Ked.Progression
             foreach (StatDefinition stat in stats)
             {
                 if (values.ContainsKey(stat.Key))
-                    throw new ArgumentException($"스탯 키 '{stat.Key}'가 중복 정의됐다.", nameof(stats));
+                    throw new ArgumentException($"Stat key '{stat.Key}' is defined more than once.", nameof(stats));
 
                 values[stat.Key] = stat.Initial;
             }
@@ -42,7 +42,7 @@ namespace Ked.Progression
             // - 작가가 오타 낸 조건이 언제나 true로써,
             // - "언제나 통과하는 관문"으로 조용히 바뀌기에 찾기 힘든 버그를 유발하기 때문.
             throw new KeyNotFoundException(
-                $"정의되지 않은 스탯 '{key}'. 정의된 것: {string.Join(", ", _stats.Keys)}");
+                $"Undefined stat '{key}'. Defined: {string.Join(", ", _stats.Keys)}");
         }
         
         // 장면 내, 현재까지의 pending choice를 적용한 작업 상태를 계산
@@ -80,7 +80,7 @@ namespace Ked.Progression
                 StatDefinition definition = chapter.StatsByKey[change.Key];
 
                 if (!stats.TryGetValue(change.Key, out int current))
-                    throw new InvalidOperationException($"{chapter.ChapterId} 상태에 스탯 '{change.Key}'가 없다.");
+                    throw new InvalidOperationException($"The state of {chapter.ChapterId} has no stat '{change.Key}'.");
 
                 stats[change.Key] = definition.Clamp(change.ApplyTo(current));
             }
@@ -96,7 +96,7 @@ namespace Ked.Progression
         {
             if (!chapter.TryGetNode(CurrentEpisodeId, out EpisodeNode node))
                 throw new ArgumentException(
-                    $"지금 에피소드 '{CurrentEpisodeId}'가 챕터 '{chapter.ChapterId}'에 없다.", nameof(chapter));
+                    $"The current episode '{CurrentEpisodeId}' is not in chapter '{chapter.ChapterId}'.", nameof(chapter));
 
             IReadOnlyList<EpisodeOption> options = node.NextOptions;
 
@@ -107,7 +107,7 @@ namespace Ked.Progression
             }
 
             throw new ArgumentException(
-                $"고른 간선({chosen})이 에피소드 '{CurrentEpisodeId}'에서 나가는 길이 아니다.", nameof(chosen));
+                $"The chosen edge ({chosen}) does not leave episode '{CurrentEpisodeId}'.", nameof(chosen));
         }
 
         public static ChapterState Restore(

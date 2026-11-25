@@ -17,7 +17,7 @@ namespace Ked.Progression
 
                 default:
                     throw new NotSupportedException(
-                        $"처리되지 않은 조건 종류 '{condition.Kind}'.");
+                        $"Unhandled condition kind '{condition.Kind}'.");
             }
         }
 
@@ -40,7 +40,7 @@ namespace Ked.Progression
 
                 default:
                     throw new NotSupportedException(
-                        $"처리되지 않은 비교 연산 '{condition.Op}'.");
+                        $"Unhandled comparison '{condition.Op}'.");
             }
         }
     }

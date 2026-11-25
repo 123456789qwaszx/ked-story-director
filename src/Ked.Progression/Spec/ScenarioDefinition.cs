@@ -24,7 +24,7 @@ namespace Ked.Progression
             IReadOnlyList<ChapterDefinition> chapters)
         {
             if (string.IsNullOrEmpty(scenarioId))
-                throw new ArgumentException("시나리오 ID가 비어 있다.", nameof(scenarioId));
+                throw new ArgumentException("The scenario ID is empty.", nameof(scenarioId));
 
             ScenarioId = scenarioId;
             DisplayName = displayName ?? string.Empty;
@@ -54,6 +54,6 @@ namespace Ked.Progression
         // 시작 챕터. 생성자에서 존재 보장.
         public ChapterDefinition StartChapter => _chaptersById[StartChapterId];
 
-        public override string ToString() => $"{ScenarioId}(챕터 {Chapters.Count})";
+        public override string ToString() => $"{ScenarioId}(chapters {Chapters.Count})";
     }
 }

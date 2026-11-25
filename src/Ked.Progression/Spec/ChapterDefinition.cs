@@ -50,7 +50,7 @@ namespace Ked.Progression
             IReadOnlyList<EpisodeNode> nodes)
         {
             if (string.IsNullOrEmpty(chapterId))
-                throw new ArgumentException("챕터 ID가 비어 있다.", nameof(chapterId));
+                throw new ArgumentException("The chapter ID is empty.", nameof(chapterId));
 
             ChapterId = chapterId;
             DisplayName = displayName ?? string.Empty;
@@ -134,6 +134,6 @@ namespace Ked.Progression
             ChapterState.CreateInitial(Stats, StartEpisodeId);
 
         public override string ToString() =>
-            $"{ChapterId}(에피소드 {Nodes.Count}, 스탯 {Stats.Count})";
+            $"{ChapterId}(episodes {Nodes.Count}, stats {Stats.Count})";
     }
 }

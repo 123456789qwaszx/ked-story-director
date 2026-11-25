@@ -25,7 +25,7 @@ namespace Ked.Progression
             if (dto == null)
             {
                 diagnostics.Add(ProgressionDiagnostic.Error(
-                    string.Empty, "챕터 DTO가 null이다. 역직렬화가 실패한 것은 아닌지 확인할 것."));
+                    string.Empty, "The chapter DTO is null. Check whether deserialization failed."));
 
                 return new ProgressionLoadResult(null, diagnostics);
             }
@@ -41,7 +41,7 @@ namespace Ked.Progression
                 stats, nodes, dto.StartEpisodeId, diagnostics, out _, out _);
 
             if (string.IsNullOrEmpty(dto.ChapterId))
-                diagnostics.Add(ProgressionDiagnostic.Error("ChapterId", "챕터 ID가 비어 있다."));
+                diagnostics.Add(ProgressionDiagnostic.Error("ChapterId", "The chapter ID is empty."));
             
             if (HasError(diagnostics))
                 return new ProgressionLoadResult(null, diagnostics);
@@ -69,7 +69,7 @@ namespace Ked.Progression
             var diagnostics = new List<ProgressionDiagnostic>();
 
             if (string.IsNullOrEmpty(scenarioId))
-                diagnostics.Add(ProgressionDiagnostic.Error("ScenarioId", "시나리오 ID가 비어 있다."));
+                diagnostics.Add(ProgressionDiagnostic.Error("ScenarioId", "The scenario ID is empty."));
             
             var chapters = new List<ChapterDefinition>();
             int count = chapterDtos == null ? 0 : chapterDtos.Count;
@@ -120,7 +120,7 @@ namespace Ked.Progression
             if (dto == null)
             {
                 diagnostics.Add(ProgressionDiagnostic.Error(
-                    string.Empty, "챕터 DTO가 null이다. 역직렬화가 실패한 것은 아닌지 확인할 것."));
+                    string.Empty, "The chapter DTO is null. Check whether deserialization failed."));
 
                 return new ScenarioLoadResult(null, diagnostics);
             }
@@ -130,7 +130,7 @@ namespace Ked.Progression
                 // 시나리오 ID와 시작 챕터 ID를 둘 다 여기서 가져온다 — 비면 감쌀 이름이 없다.
                 diagnostics.Add(ProgressionDiagnostic.Error(
                     "ChapterId",
-                    "챕터 ID가 비어 있다. 챕터 하나짜리 시나리오는 이 ID를 시나리오 ID로도 쓴다."));
+                    "The chapter ID is empty. A single-chapter scenario also uses this ID as its scenario ID."));
 
                 return new ScenarioLoadResult(null, diagnostics);
             }
@@ -158,7 +158,7 @@ namespace Ked.Progression
 
                 if (dto == null)
                 {
-                    into.Add(ProgressionDiagnostic.Error(at, "스탯 정의가 null이다."));
+                    into.Add(ProgressionDiagnostic.Error(at, "A stat definition is null."));
                     continue;
                 }
 
@@ -166,8 +166,8 @@ namespace Ked.Progression
                 {
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"알 수 없는 스탯 타입 '{dto.Type}'. 가능한 값: Number, Bool. " +
-                        "저작 쪽 Int가 여기서는 Number다 — 내보내기가 이름을 번역한다."));
+                        $"Unknown stat type '{dto.Type}'. Allowed values: Number, Bool. " +
+                        "The authoring side's Int is Number here — the exporter translates the name."));
                     continue;
                 }
 
@@ -202,7 +202,7 @@ namespace Ked.Progression
 
                 if (dto == null)
                 {
-                    into.Add(ProgressionDiagnostic.Error(at, "에피소드가 null이다."));
+                    into.Add(ProgressionDiagnostic.Error(at, "An episode is null."));
                     continue;
                 }
 
@@ -241,7 +241,7 @@ namespace Ked.Progression
 
                 if (dto == null)
                 {
-                    into.Add(ProgressionDiagnostic.Error(at, "간선이 null이다."));
+                    into.Add(ProgressionDiagnostic.Error(at, "An edge is null."));
                     continue;
                 }
 
@@ -250,14 +250,14 @@ namespace Ked.Progression
                 if (string.IsNullOrEmpty(dto.ChoiceLabel) && !dto.Auto)
                 {
                     into.Add(ProgressionDiagnostic.Error(
-                        at, "간선의 문구가 비어 있다. 묻지 않고 지나가려면 Auto를 켤 것 — 문구만 비우는 것으로는 안 된다."));
+                        at, "The edge's choice label is empty. To pass without asking, turn on Auto — leaving the label empty is not enough."));
 
                     continue;
                 }
 
                 if (string.IsNullOrEmpty(dto.TargetEpisodeId))
                 {
-                    into.Add(ProgressionDiagnostic.Error(at, "간선의 도착 에피소드가 비어 있다."));
+                    into.Add(ProgressionDiagnostic.Error(at, "The edge's target episode is empty."));
 
                     continue;
                 }
@@ -304,14 +304,14 @@ namespace Ked.Progression
 
                 if (dto == null)
                 {
-                    into.Add(ProgressionDiagnostic.Error(at, "조건이 null이다."));
+                    into.Add(ProgressionDiagnostic.Error(at, "A condition is null."));
                     continue;
                 }
 
                 if (!TryParseConditionKind(dto.Kind, out _))
                 {
                     into.Add(ProgressionDiagnostic.Error(
-                        at, $"알 수 없는 조건 종류 '{dto.Kind}'. 가능한 값: Stat."));
+                        at, $"Unknown condition kind '{dto.Kind}'. Allowed values: Stat."));
                     continue;
                 }
 
@@ -319,9 +319,9 @@ namespace Ked.Progression
                 {
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"알 수 없는 비교 연산 '{dto.Op}'. 가능한 값: " +
+                        $"Unknown comparison '{dto.Op}'. Allowed values: " +
                         "GreaterOrEqual, LessOrEqual, Equal, Exists, GreaterThan, LessThan. " +
-                        "(NotEqual은 일부러 없다 — 저작 파서가 닫아 두어 데이터로 나오지 않는다.)"));
+                        "(NotEqual is left out on purpose — the authoring parser keeps it closed, so it never appears in data.)"));
                     continue;
                 }
 
@@ -368,8 +368,8 @@ namespace Ked.Progression
                     // 안 하는 간선이 되고, 그 버그는 재생해 봐도 안 보인다.
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"알 수 없는 스탯 변화 종류 '{dto.Op}'. 가능한 값: Add, Set " +
-                        "(비어 있으면 Add)."));
+                        $"Unknown stat change kind '{dto.Op}'. Allowed values: Add, Set " +
+                        "(empty means Add)."));
 
                     continue;
                 }

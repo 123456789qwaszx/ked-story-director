@@ -41,7 +41,7 @@ namespace Ked.Progression
 
                 if (stat == null)
                 {
-                    into.Add(ProgressionDiagnostic.Error($"Stats[{i}]", "스탯 정의가 null이다."));
+                    into.Add(ProgressionDiagnostic.Error($"Stats[{i}]", "A stat definition is null."));
                     continue;
                 }
 
@@ -49,7 +49,7 @@ namespace Ked.Progression
                 {
                     // 뒤엣것이 이기면 초기값/경계가 조용히 갈린다.
                     into.Add(ProgressionDiagnostic.Error(
-                        $"Stats[{i}]", $"스탯 키 '{stat.Key}'가 중복 정의됐다."));
+                        $"Stats[{i}]", $"Stat key '{stat.Key}' is defined more than once."));
                     continue;
                 }
 
@@ -71,13 +71,13 @@ namespace Ked.Progression
 
                 if (node == null)
                 {
-                    into.Add(ProgressionDiagnostic.Error($"Nodes[{i}]", "에피소드가 null이다."));
+                    into.Add(ProgressionDiagnostic.Error($"Nodes[{i}]", "An episode is null."));
                     continue;
                 }
 
                 if (string.IsNullOrEmpty(node.EpisodeId))
                 {
-                    into.Add(ProgressionDiagnostic.Error($"Nodes[{i}]", "에피소드 ID가 비어 있다."));
+                    into.Add(ProgressionDiagnostic.Error($"Nodes[{i}]", "An episode ID is empty."));
                     continue;
                 }
 
@@ -85,7 +85,7 @@ namespace Ked.Progression
                 {
                     // 같은 ID가 둘이면 간선이 어느 쪽으로 가는지가 사전 구현에 달린다.
                     into.Add(ProgressionDiagnostic.Error(
-                        $"Nodes[{i}]", $"에피소드 ID '{node.EpisodeId}'가 중복이다."));
+                        $"Nodes[{i}]", $"Episode ID '{node.EpisodeId}' is duplicated."));
                     continue;
                 }
 
@@ -106,9 +106,9 @@ namespace Ked.Progression
             into.Add(ProgressionDiagnostic.Error(
                 "StartEpisodeId",
                 string.IsNullOrEmpty(startEpisodeId)
-                    ? "시작 에피소드가 비어 있다. 챕터를 시작할 자리가 없다."
-                    : $"시작 에피소드 '{startEpisodeId}'가 노드에 없다. " +
-                      $"있는 것: {Join(nodesById.Keys)}"));
+                    ? "The start episode is empty. The chapter has nowhere to start."
+                    : $"Start episode '{startEpisodeId}' is not among the nodes. " +
+                      $"Existing: {Join(nodesById.Keys)}"));
         }
 
         private static void VerifyEdges(
@@ -133,8 +133,8 @@ namespace Ked.Progression
                     {
                         into.Add(ProgressionDiagnostic.Error(
                             where,
-                            $"도착 '{option.TargetEpisodeId}'가 노드에 없다. " +
-                            $"있는 것: {Join(nodesById.Keys)}"));
+                            $"Target '{option.TargetEpisodeId}' is not among the nodes. " +
+                            $"Existing: {Join(nodesById.Keys)}"));
                     }
 
                     if (option.IsAuto)
@@ -211,10 +211,10 @@ namespace Ked.Progression
 
                 into.Add(ProgressionDiagnostic.Error(
                     offending[scene.Key],
-                    $"장면 '{scene.Key}'에 밖에서 들어오는 자리가 {scene.Value.Count}개다: " +
-                    $"{Join(scene.Value)}. 장면은 한 자리에서만 시작해야 한다 — " +
-                    "롤백이 되돌아갈 곳과 이어하기가 재개할 곳이 그 자리다. " +
-                    "나머지 착지점은 다른 장면으로 나눌 것."));
+                    $"Scene '{scene.Key}' has {scene.Value.Count} entrances from outside: " +
+                    $"{Join(scene.Value)}. A scene must start at one place only — " +
+                    "it is where rollback returns to and where Continue resumes. " +
+                    "Split the other landing points into another scene."));
             }
         }
 
@@ -242,7 +242,7 @@ namespace Ked.Progression
         //
         // 장면은 넘어도 된다. 경계에서 일어나는 일(무대 비우기 · 확정 · 저장)은 묻는 선택지로 넘을 때와
         // 같고 박스만 뜨지 않는다. 자동(Auto)도 장면 소속(SceneId)도 저작자가 적은 것이라 런타임이
-        // 몰래 정하는 것이 없다(2026-11-18, PLAN_auto-edge-across-scenes).
+        // 몰래 정하는 것이 없다(2026-11-18, docs/PLAN_auto-edge-across-scenes.md).
         private static void VerifyAuto(
             int siblingCount,
             EpisodeOption option,
@@ -253,22 +253,22 @@ namespace Ked.Progression
             {
                 into.Add(ProgressionDiagnostic.Error(
                     where,
-                    $"자동 간선은 그 에피소드의 유일한 간선이어야 한다. 지금 {siblingCount}개 — " +
-                    "고를 것이 있으면 묻는 선택지로, 없으면 나머지를 지울 것."));
+                    $"An auto edge must be the only edge of its episode. There are {siblingCount} now — " +
+                    "if there is something to choose, make it a choice that asks; otherwise remove the others."));
             }
 
             if (option.VisibleConditions.Count > 0 || option.Conditions.Count > 0)
             {
                 into.Add(ProgressionDiagnostic.Error(
-                    where, "자동 간선에는 조건을 둘 수 없다 — 판정할 것이 있으면 묻는 선택지다."));
+                    where, "An auto edge can't have conditions — if there is something to judge, it is a choice that asks."));
             }
 
             if (option.StatChanges.Count > 0)
             {
                 into.Add(ProgressionDiagnostic.Error(
                     where,
-                    "자동 간선에는 스탯 변화를 둘 수 없다 — 스탯 효과는 플레이어에게 보이는 선택지에서만 " +
-                    "일어난다. 스탯을 바꾸려면 문구를 주고 Auto를 끌 것."));
+                    "An auto edge can't have stat changes — stat effects happen only on choices the player can see. " +
+                    "To change a stat, give the edge a label and turn Auto off."));
             }
         }
 
@@ -286,7 +286,7 @@ namespace Ked.Progression
                 if (condition.Kind != ConditionKind.Stat)
                 {
                     into.Add(ProgressionDiagnostic.Error(
-                        at, $"처리되지 않은 조건 종류 '{condition.Kind}'."));
+                        at, $"Unhandled condition kind '{condition.Kind}'."));
                     continue;
                 }
 
@@ -296,8 +296,8 @@ namespace Ked.Progression
                     // "언제나 통과하는 관문"이 되고, 그 버그는 재생해 봐도 안 보인다.
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"정의되지 않은 스탯 '{condition.Key}'. " +
-                        $"정의된 것: {Join(statsByKey.Keys)}"));
+                        $"Undefined stat '{condition.Key}'. " +
+                        $"Defined: {Join(statsByKey.Keys)}"));
                     continue;
                 }
 
@@ -308,8 +308,8 @@ namespace Ked.Progression
                 {
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"'{condition.Key}'는 bool 스탯이라 Equal만 쓸 수 있다(§G4). " +
-                        $"받은 연산: {condition.Op}."));
+                        $"'{condition.Key}' is a bool stat, so only Equal can be used. " +
+                        $"Got: {condition.Op}."));
                     continue;
                 }
 
@@ -317,8 +317,8 @@ namespace Ked.Progression
                 {
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"'{condition.Key}'는 bool 스탯이라 비교값이 0 또는 1이어야 한다(§G4). " +
-                        $"받은 값: {condition.Value}."));
+                        $"'{condition.Key}' is a bool stat, so the value compared must be 0 or 1. " +
+                        $"Got: {condition.Value}."));
                 }
             }
         }
@@ -352,8 +352,8 @@ namespace Ked.Progression
                 {
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"정의되지 않은 스탯 '{change.Key}'을(를) 변경하려 한다. " +
-                        $"정의된 것: {Join(statsByKey.Keys)}"));
+                        $"Tries to change undefined stat '{change.Key}'. " +
+                        $"Defined: {Join(statsByKey.Keys)}"));
                     continue;
                 }
 
@@ -369,8 +369,8 @@ namespace Ked.Progression
                 {
                     into.Add(ProgressionDiagnostic.Error(
                         at,
-                        $"'{change.Key}'는 bool 스탯이라 증감을 쓸 수 없다(§G4). " +
-                        "켜고 끄려면 Op를 \"Set\"으로 둘 것."));
+                        $"'{change.Key}' is a bool stat, so it can't be increased or decreased. " +
+                        "To turn it on or off, set Op to \"Set\"."));
                 }
             }
         }
@@ -389,8 +389,8 @@ namespace Ked.Progression
             {
                 into.Add(ProgressionDiagnostic.Error(
                     at,
-                    $"'{change.Key}'는 숫자 스탯이라 지정(Set)을 쓸 수 없다(§G4). " +
-                    "지정은 bool 스탯(깃발)에만 쓴다 — 증감이면 Op를 비우거나 \"Add\"로 둘 것."));
+                    $"'{change.Key}' is a number stat, so Set can't be used. " +
+                    "Set is only for bool stats (flags) — for an increase or decrease, leave Op empty or set it to \"Add\"."));
 
                 return;
             }
@@ -399,9 +399,9 @@ namespace Ked.Progression
             {
                 into.Add(ProgressionDiagnostic.Error(
                     at,
-                    $"'{change.Key}'는 bool 스탯이라 정할 값이 0 또는 1이어야 한다(§G4). " +
-                    $"받은 값: {change.Amount}. " +
-                    "조용히 clamp하면 작가가 쓴 값과 다른 값으로 켜진다."));
+                    $"'{change.Key}' is a bool stat, so the value set must be 0 or 1. " +
+                    $"Got: {change.Amount}. " +
+                    "Clamping it silently would turn it on with a value other than the one the author wrote."));
 
                 return;
             }
@@ -410,9 +410,9 @@ namespace Ked.Progression
             {
                 into.Add(ProgressionDiagnostic.Error(
                     at,
-                    $"한 간선에서 '{change.Key}'를 두 번 정한다. 어느 쪽이 사는지가 " +
-                    "행 순서에 달리므로 시트에서 행을 옮기는 것만으로 결과가 바뀐다 — " +
-                    "하나만 남길 것."));
+                    $"One edge sets '{change.Key}' twice. Which one wins depends on " +
+                    "their order, so merely reordering them changes the result — " +
+                    "keep only one."));
             }
         }
 

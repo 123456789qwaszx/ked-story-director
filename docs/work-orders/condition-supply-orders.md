@@ -4,7 +4,7 @@
 「이 노드가 필요한가? 구조를 깔끔하게 하는데 필요해?」 → (필요 없다 — 걷으면 더 깔끔하다 · 파일 형식이 바뀌니 다음 판으로) → 「좋습니다. 두 문구만
 영어로 바꾸고, v0.4.0을 만들 때 합시다.」
 
-> **상태: 0.4.0 — C1 끝(2026-11-25 · `dev`).** 남은 것 C4(진행 코어 문장 — 정본 저장소에서) · C5(두 언어 점검 · 설명서 · 릴리스 노트).
+> **상태: 0.4.0 — C1 · C4 끝(2026-11-25 · `dev`).** 남은 것 C5(두 언어 점검 · 설명서 · 릴리스 노트).
 > 0.3.0은 그대로 냈다(2026-11-25). 결정은 4절, 기록은 5절.
 
 ## 1. 지금
@@ -50,3 +50,4 @@
 | 날 | # | 한 일 |
 |---|---|---|
 | 11-25 | C1 · C2 · C3 | **조건 공급 노드를 걷었다.** `SetNode` · `ConditionDefinition` · `ChapterBoardSupply` · `ConnectedSetNodeResolver` · `IsHiddenPlumbing` · `GraphNodeKind.Set` · `ProjectChangeKind.ConditionDefinition` · `AddSetNode` · `AddCondition` · `UpdateCondition` · `StoryProject.EnumerateConditions` / `FindCondition`이 없다. 줄 전환(`LineConditionTransition.ConditionId` — 대사 갈래 · 분기 카드 첫머리)이 **챕터 조건의 이름**을 든다. 대사가 고르는 목록은 카드가 선 판의 챕터 조건에서 바로 계산하고(`AvailableConditionResolver.Of` — 이름 = 열쇠 · 식은 `ConditionYarnTranslator`로 그때마다 · 식 미정은 `true` · 틀린 식은 적힌 글자 그대로), 다른 챕터의 이름이면 「사용할 수 없음」, 어디에도 없으면 「찾을 수 없음」이다. **조건 이름 바꾸기**가 간선 · 그 챕터 판의 줄 전환을 한 변경으로 고친다(되돌리기 한 칸). 쓰임 찾기 · 지우기 거절은 그 챕터 판의 카드만 본다. 스탯 개명 · 스탯 지우기 · 스탯 더하기는 대사 쪽에 고칠 것이 없다(식은 그릴 때 읽는다). 글 칸 넣기는 같은 식의 조건이 여럿이면(식 미정은 모두 `true`) **지금 걸린 쪽**을 고른다 — 안 그러면 넣을 때마다 갈래가 같은 식의 첫 조건으로 조용히 바뀐다. 스탯 개명 상태줄에서 「공급 조건 N」을 뺐다(`Structure_StatRenamedFollowed`). 문구 7개 걷음(`Edit_IsnTSetNode` · `Edit_ConditionIsnTSuppliedTo` → `Edit_ConditionIsnTInThis` · `File_BoardHasSetNodeThat` · `File_*OfSetNode` 넷). 형식 5 / 3(4절) — 시험 고정물 `festival-eve`(공급 노드 · 조건 Id 5곳 → 이름 · 시작 노드 → `Festival_Classroom`)와 `samples/RuntimeSamples/PresentationDemo`(판만 올림)를 새 형식으로 옮겼다. 시험: 공급을 재던 것은 이름 참조를 재는 것으로 바꿨다(`ConditionReferenceTests` · `Chapters/ConditionScopeTests` · `Chapters/ChapterConditionCatalogTests` · `ConditionRenameTests`의 줄 전환 · 분기 첫머리 · 되돌리기). 영어 화면에 남은 한국어 ①(공급 노드의 이름)이 사라졌다. |
+| 11-25 | C4 | **진행 코어의 문장을 영어 한 벌로.** 정본 `ked-presentation-runtime` `dev`의 `Assets/Ked.Progression/Core`에서 진단 · 예외 · 로그 문장과 `ToString`을 영어로 바꾸고(`5cc9a28` — 그 문장을 재던 EditMode 시험 둘도 · `Save/`는 그대로 · 원본 `ked-progression-runtime`에는 보내지 않았다, 런타임 `vendoring.md` 2026-11-25 줄), 그 판을 이 저장소에 다시 들였다 — 열 파일이 바뀌었고 원천과 바이트가 같다. 지문 `runtime-sync.txt`를 새로 적고 `UPSTREAM.md`의 기준 커밋 · 반입 기록을 고쳤다. 코어 문장을 재던 시험 하나(`ChapterExportAndFixtureTests` — 자동 간선 · 장면 입구 거절)를 영어 문장으로 바꿨다. 영어 화면에 남은 한국어 ②(코어 문장)가 사라졌다 — 한국어 화면에서는 「진행 코어가 이 챕터를 싣지 못합니다 — (영어 문장)」이 된다. |

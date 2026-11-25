@@ -28,14 +28,14 @@ namespace Ked.Progression
 
                 if (chapter == null)
                 {
-                    into.Add(ProgressionDiagnostic.Error($"Chapters[{i}]", "챕터가 null이다."));
+                    into.Add(ProgressionDiagnostic.Error($"Chapters[{i}]", "A chapter is null."));
                     continue;
                 }
 
                 if (byId.ContainsKey(chapter.ChapterId))
                 {
                     into.Add(ProgressionDiagnostic.Error(
-                        $"Chapters[{i}]", $"챕터 ID '{chapter.ChapterId}'가 중복이다."));
+                        $"Chapters[{i}]", $"Chapter ID '{chapter.ChapterId}' is duplicated."));
                     continue;
                 }
 
@@ -56,8 +56,8 @@ namespace Ked.Progression
             into.Add(ProgressionDiagnostic.Error(
                 "StartChapterId",
                 string.IsNullOrEmpty(startChapterId)
-                    ? "시작 챕터가 비어 있다. 시나리오를 시작할 자리가 없다."
-                    : $"시작 챕터 '{startChapterId}'가 없다. 있는 것: {Join(chaptersById.Keys)}"));
+                    ? "The start chapter is empty. The scenario has nowhere to start."
+                    : $"Start chapter '{startChapterId}' doesn't exist. Existing: {Join(chaptersById.Keys)}"));
         }
 
         private static string Join(IEnumerable<string> keys) => string.Join(", ", keys);

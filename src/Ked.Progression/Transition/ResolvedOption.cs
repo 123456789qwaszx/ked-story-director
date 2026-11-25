@@ -41,6 +41,6 @@ namespace Ked.Progression
             new(option, sourceIndex, false, option.LockedReasonText, blocking);
 
         public override string ToString() =>
-            IsSelectable ? $"{Option}" : $"{Option} [잠김: {BlockingCondition}]";
+            IsSelectable ? $"{Option}" : $"{Option} [locked: {BlockingCondition}]";
     }
 }

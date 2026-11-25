@@ -32,6 +32,6 @@ namespace Ked.Progression
             HiddenCount = hiddenCount;
         }
 
-        public override string ToString() => $"{Kind}(보임 {Options.Count}, 숨김 {HiddenCount})";
+        public override string ToString() => $"{Kind}(shown {Options.Count}, hidden {HiddenCount})";
     }
 }

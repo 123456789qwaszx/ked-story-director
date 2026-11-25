@@ -215,12 +215,12 @@ public sealed class ChapterExportAndFixtureTests
             item.Code == ChapterDiagnosticCode.CoreRefusedChapter &&
             item.Sheet == ChapterSheetNames.Edges &&
             item.Message.Contains("간선 root → a \"A로\"", StringComparison.Ordinal) &&
-            item.Message.Contains("유일한 간선", StringComparison.Ordinal));
+            item.Message.Contains("only edge", StringComparison.Ordinal));
         Assert.Contains(refusals, item =>
             item.Code == ChapterDiagnosticCode.CoreRefusedChapter &&
             item.Sheet == ChapterSheetNames.Edges &&
             item.Message.Contains("간선 root → b \"B로\"", StringComparison.Ordinal) &&
-            item.Message.Contains("밖에서 들어오는 자리", StringComparison.Ordinal));
+            item.Message.Contains("entrances from outside", StringComparison.Ordinal));
     }
 
     [Fact]
