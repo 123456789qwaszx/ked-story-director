@@ -2157,7 +2157,7 @@ public partial class GraphEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Cursor = new Cursor(StandardCursorType.Hand),
             [ToolTip.TipProperty] = slot.IsEmpty
-                ? live ? Ui.Board_DragOntoEpisodeCardIn : Ui.Board_WriteChoiceTextToBe
+                ? live ? Ui.Board_DragOntoEpisodeCardIn : Ui.Board_DragNowWriteLaterTip
                 : Ui.Board_ConnectedDragOntoAnotherEpisode
         };
 
@@ -2247,20 +2247,15 @@ public partial class GraphEditorView : UserControl
                 ? SlotEditor(slot, nodeId)
                 : label);
 
-        // 꺼진 점을 누르면 <b>켠다</b>, 켜진 점을 누르면 <b>끈다</b> — 손짓 하나가 한 가지 뜻이다.
+        // 점을 누르면 끌기가 시작된다 — 회색 빈 칸도 문구 없이 먼저 이을 수 있다(2026-11-26 소유자 — 「선택지부터 먼저 원하는 것에 연결하고, 그 다음에서야
+        // 선택지 문구를 쓰고 싶어지는 경우가 많다」). 이은 칸은 빨간 「문구를 적어 주세요」로 서고, 문구는 그 뒤에 적는다. 회색 점을 끌지 않고 눌렀다
+        // 떼면 문구 칸이 열린다(<see cref="_asleepKnobPress"/> — 놓을 때 본다). ⛔ 그 전에는 회색 점을 누르면 문구 칸만 열렸다 — 적어야 끌 수
+        // 있었다(2026-09-17 「살리는 것은 적는 행위」).
         knob.PointerPressed += (_, args) => UiGuard.Run(_session, Ui.Board_Choice, () =>
         {
             args.Handled = true;
-
-            if (live)
-            {
-                BeginSlotDrag(slot, knob, nodeId);
-                return;
-            }
-
-            // 꺼진 점을 누르면 <b>문구 칸을 연다</b> — 살리는 것은 적는 행위이지 누르는
-            // 행위가 아니다(2026-09-17 소유자). 점도 문구도 같은 자리로 데려간다.
-            EditSlot(slot, nodeId);
+            _asleepKnobPress = live ? null : knob.TranslatePoint(new Point(PortRadius, PortRadius), GraphCanvas);
+            BeginSlotDrag(slot, knob, nodeId);
         });
 
         return line;
@@ -5689,6 +5684,25 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 문구를 적고 있는 칸. 없으면 null.</summary>
     private string? _editingSlot;
 
+    /// <summary>
+    /// 회색(꺼진) 점을 눌러 시작한 끌기의 점 자리(판 좌표) — 끌지 않고 그 자리에서 떼면 끌기가 아니라 문구 칸 열기다(2026-11-26). 켜진 점 · 이은 점이면 null.
+    /// </summary>
+    private Point? _asleepKnobPress;
+
+    /// <summary>점을 눌렀다 뗀 것이 끌기가 아니라 누르기인가 — 점 둘레 안에서 뗐다(배율을 거슬러 화면에서 몇 점 안).</summary>
+    private bool IsKnobClick(Point pressed, Point released)
+    {
+        double reach = Math.Max(PortRadius * 1.5, 4 / Math.Max(_zoom, 0.01));
+        return Math.Abs(released.X - pressed.X) <= reach && Math.Abs(released.Y - pressed.Y) <= reach;
+    }
+
+    /// <summary>
+    /// 그 칸을 이으면 자동 길인가 — 이은 칸은 제 것 그대로, 안 이은 칸은 문구가 없고 <b>자동 길 자리</b>(<see cref="IsAutoSlot"/>)일 때만이다. 그 밖의
+    /// 빈 칸을 문구 없이 이으면 문구가 빈 선택지다(2026-11-26 소유자 — 먼저 잇고 나중에 적는다). 놓기(<c>JoinChoice</c>)와 끄는 동안의 판정이 이것 하나를 부른다.
+    /// </summary>
+    private bool JoinsAsAuto(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots, string label) =>
+        choice.IsEmpty ? label.Length == 0 && IsAutoSlot(choice, slots) : choice.IsAuto;
+
     /// <summary>문구 입력칸의 가장 좁은 폭 — 빈 칸에도 적을 자리가 보이게.</summary>
     private const double SlotEditorMinWidth = 90;
 
@@ -7626,6 +7640,8 @@ public partial class GraphEditorView : UserControl
 
         GraphOutputPortProjection port = _connectingFrom;
         _connectingFrom = null;
+        Point? asleepPress = _asleepKnobPress;
+        _asleepKnobPress = null;
         ClearChoiceDropFeedback();
 
         if (_connectingLine is not null)
@@ -7646,6 +7662,13 @@ public partial class GraphEditorView : UserControl
 
         if (port.ChoicePort is { } choice)
         {
+            // 회색 점을 끌지 않고 눌렀다 뗐다 — 문구 칸을 연다(끌어서 놓으면 잇는다 · 2026-11-26).
+            if (asleepPress is { } pressedAt && choice.IsEmpty && target is null && IsKnobClick(pressedAt, args.GetPosition(GraphCanvas)))
+            {
+                UiGuard.Run(_session, Ui.Board_Choice, () => EditSlot(choice, port.NodeId));
+                return;
+            }
+
             // ⚠ <b>UiGuard로 받는다.</b> 규칙 위반은 편집기가 예외로 거절하는데(신원 겹침 ·
             //    없는 에피소드), 놓임 처리기는 Avalonia가 부르는 자리라 그대로 터진다.
             //    거절은 상태줄로 가야 한다 — 이 저장소의 모든 편집 창구가 그 규약을 쓴다.
@@ -7755,14 +7778,25 @@ public partial class GraphEditorView : UserControl
 
         string label = LabelOf(choice);
 
-        // 문구가 없는 채로 살아 있는 칸은 <b>자동 길</b> 자리다 (§2 ③-a). 이미 이어진 자동 길을 옮기면
-        // 자동 길 그대로다. 자동 길은 장면을 넘어도 된다(⛔ 2026-11-18까지는 같은 장면 안에서만이라 여기서 먼저 거절했다).
-        bool auto = choice.IsEmpty ? label.Length == 0 : choice.IsAuto;
+        // 문구 없이 잇는 칸은 <b>자동 길 자리</b>(칸이 모두 빈 카드의 첫 칸 · §2 ③-a)일 때만 자동 길이고, 그 밖의 빈 칸은 문구가 빈 선택지다(2026-11-26 —
+        // 먼저 잇고 나중에 적는다). 이미 이어진 자동 길을 옮기면 자동 길 그대로다. 자동 길은 장면을 넘어도 된다(⛔ 2026-11-18까지는 같은 장면 안에서만).
+        bool auto = JoinsAsAuto(choice, slots, label);
         bool turnedAuto = false;
 
         if (string.Equals(choice.ToEpisodeId, episodeId, StringComparison.Ordinal))
         {
             return;   // 이어져 있던 그 카드에 도로 놓았다 — 바뀐 것이 없다(§5-8)
+        }
+
+        // 같은 신원(출발 · 도착 · 문구)의 길은 둘일 수 없다 — 문구 없이 같은 에피소드로 두 번 이은 것이 흔한 경우다. 편집기가 거절하기 전에 까닭을 말한다
+        // (끄는 동안의 판정과 같은 것을 부른다).
+        if (_session.Editor.FindChapter(chapterId) is { } chapter && HasSameEdge(chapter, choice, episodeId, label))
+        {
+            string name = ShownName(targetNodeId, episodeId);
+            _session.SetStatus(label.Length > 0
+                ? string.Format(Ui.Board_SameChoiceNotConnected, name, Josa.으로(name), label)
+                : string.Format(Ui.Board_SamePathNotConnected, name, Josa.으로(name)));
+            return;
         }
 
         // 장면 입구를 둘로 만드는 잇기는 받지 않는다 — 검증 오류가 날 길을 손짓 하나로 만들지 않는다(2026-11-22 소유자 · usability UX36).
@@ -7818,9 +7852,11 @@ public partial class GraphEditorView : UserControl
 
         _session.SetStatus(auto
             ? string.Format(Ui.Board_ConnectedAsAutoPathMoves, choice.FromEpisodeId, episodeId)
-            : turnedAuto
-                ? string.Format(Ui.Board_ConnectedWithChoiceAutoPath, choice.FromEpisodeId, episodeId, label)
-                : string.Format(Ui.Board_ConnectedWithChoice, choice.FromEpisodeId, episodeId, label));
+            : label.Length == 0
+                ? string.Format(turnedAuto ? Ui.Board_ConnectedBlankChoiceAutoPath : Ui.Board_ConnectedBlankChoice, choice.FromEpisodeId, episodeId)
+                : turnedAuto
+                    ? string.Format(Ui.Board_ConnectedWithChoiceAutoPath, choice.FromEpisodeId, episodeId, label)
+                    : string.Format(Ui.Board_ConnectedWithChoice, choice.FromEpisodeId, episodeId, label));
 
         DrawJoined(sourceNodeId);
     }

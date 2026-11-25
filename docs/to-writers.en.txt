@@ -102,6 +102,8 @@ Everyday tasks
 · Make a fork           — click the gray "Empty choice" slot under a card, write the choice text,
                           then drag its point onto the next episode's card (only within the same chapter ·
                           to another scene, only onto that scene's start ⌂ card).
+                          You can connect first — drag a gray point without writing anything and it becomes
+                          a red "Write the choice text" slot; click it later to write the text.
                           While you drag, a tag beside the pointer tells you in advance: connect · disconnect · can't connect.
                           Drop a connected point on empty space to disconnect it.
                           The shape of choice lines (elbow · curve · straight) is in [⚙ Settings] → "Other" → "Choice lines".

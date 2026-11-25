@@ -150,24 +150,16 @@ public partial class GraphEditorView
         }
 
         string label = LabelOf(choice);
-        bool auto = choice.IsEmpty ? label.Length == 0 : choice.IsAuto;
+
+        // 칸들은 문구 없이 안 이은 칸에만 묻는다(자동 길 자리인가) — 끄는 걸음마다 부르는 자리다.
+        bool auto = JoinsAsAuto(choice, choice.IsEmpty && label.Length == 0 ? SlotsOf(sourceNodeId) : [], label);
 
         if (_session.Editor.FindChapter(chapterId) is not { } chapter)
         {
             return new ChoiceDrop(ChoiceDropKind.Nothing, Ui.Board_NothingChanges, string.Empty, target);
         }
 
-        // 옮기면 지금 길(그 칸이 진 간선)은 빼고 본다 — 편집기(SetEdgeRoute)가 그 간선을 빼고 신원 겹침을 보듯이.
-        int replacing = ReplacedEdgeIndex(chapter, choice);
-
-        bool duplicate = chapter.Edges
-            .Where((_, index) => index != replacing)
-            .Any(edge =>
-                string.Equals(edge.FromEpisodeId, choice.FromEpisodeId, StringComparison.Ordinal) &&
-                string.Equals(edge.ToEpisodeId, episodeId, StringComparison.Ordinal) &&
-                string.Equals(edge.OptionLabel?.Trim() ?? string.Empty, label.Trim(), StringComparison.Ordinal));
-
-        if (duplicate)
+        if (HasSameEdge(chapter, choice, episodeId, label))
         {
             return new ChoiceDrop(
                 ChoiceDropKind.Refuse,
@@ -190,7 +182,9 @@ public partial class GraphEditorView
                 auto ? string.Format(Ui.Board_ConnectAsAutoPath, name) : string.Format(Ui.Board_Connect, name),
                 auto
                     ? string.Format(Ui.Board_DroppingHereMakesAutoPath, name, Josa.으로(name))
-                    : string.Format(Ui.Board_DroppingHereConnectsTo, label, Josa.을를(label), name),
+                    : label.Length == 0
+                        ? string.Format(Ui.Board_DroppingHereConnectsBlank, name)
+                        : string.Format(Ui.Board_DroppingHereConnectsTo, label, Josa.을를(label), name),
                 target);
         }
 
@@ -200,8 +194,27 @@ public partial class GraphEditorView
             string.Format(Ui.Board_Reconnect, name),
             auto
                 ? string.Format(Ui.Board_DroppingHereSendsAutoPath, was, name, Josa.으로(name))
-                : string.Format(Ui.Board_DroppingHereSendsToInstead, label, Josa.이가(label), was, name, Josa.으로(name)),
+                : label.Length == 0
+                    ? string.Format(Ui.Board_DroppingHereSendsBlank, was, name, Josa.으로(name))
+                    : string.Format(Ui.Board_DroppingHereSendsToInstead, label, Josa.이가(label), was, name, Josa.으로(name)),
             target);
+    }
+
+    /// <summary>
+    /// 그 칸을 그 에피소드에 이으면 같은 신원(출발 · 도착 · 문구)의 길이 둘이 되는가 — 옮기면 지금 길(그 칸이 진 간선)은 빼고 본다(편집기
+    /// <c>SetEdgeRoute</c>가 그 간선을 빼고 신원 겹침을 보듯이). 문구 없이 같은 에피소드로 두 번 이은 것이 흔한 경우다(2026-11-26 — 먼저 잇고 나중에
+    /// 적기). 판정과 놓기(<c>JoinChoice</c>)가 이것 하나를 부른다.
+    /// </summary>
+    private static bool HasSameEdge(ChapterDocument chapter, GraphChoicePort choice, string toEpisodeId, string label)
+    {
+        int replacing = ReplacedEdgeIndex(chapter, choice);
+
+        return chapter.Edges
+            .Where((_, index) => index != replacing)
+            .Any(edge =>
+                string.Equals(edge.FromEpisodeId, choice.FromEpisodeId, StringComparison.Ordinal) &&
+                string.Equals(edge.ToEpisodeId, toEpisodeId, StringComparison.Ordinal) &&
+                string.Equals(edge.OptionLabel?.Trim() ?? string.Empty, label.Trim(), StringComparison.Ordinal));
     }
 
     /// <summary>그 칸이 진 간선의 자리 — 안 이은 칸이거나 찾지 못하면 -1.</summary>
@@ -342,13 +355,14 @@ public partial class GraphEditorView
         knob.RenderTransformOrigin = RelativePoint.Center;
         knob.RenderTransform = new ScaleTransform(1.5, 1.5);
 
+        // 회색 점도 끌 수 있다 — 문구 없이 먼저 잇고 나중에 적는다(2026-11-26). ⛔ 그 전에는 「문구를 적으면 끌어서 이을 수 있습니다」(회색 꼬리표)였다.
         string text = !live
-            ? Ui.Board_WriteTextToDragAnd
+            ? Ui.Board_DragNowWriteLater
             : choice.IsEmpty
                 ? Ui.Board_DragOntoEpisodeCardIn2
                 : Ui.Board_DragOntoAnotherEpisodeTo;
 
-        ShowBadge(text, live ? DropJoinBrush : DropIdleBrush);
+        ShowBadge(text, DropJoinBrush);
 
         if (knob.TranslatePoint(new Point(PortRadius * 2, PortRadius * 2), GraphCanvas) is { } at)
         {

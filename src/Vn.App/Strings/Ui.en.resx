@@ -839,9 +839,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_DragOntoEpisodeCardIn" xml:space="preserve">
     <value>Drag onto an episode card in the same chapter to connect.</value>
   </data>
-  <data name="Board_WriteChoiceTextToBe" xml:space="preserve">
-    <value>Write the choice text to be able to drag it.</value>
-  </data>
   <data name="Board_ConnectedDragOntoAnotherEpisode" xml:space="preserve">
     <value>Connected. Drag onto another episode card to reconnect, or onto empty space to disconnect.</value>
   </data>
@@ -849,7 +846,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Choice</value>
   </data>
   <data name="Board_ClickToWriteChoiceText" xml:space="preserve">
-    <value>Click to write the choice text. You need to write it before you can drag to connect.</value>
+    <value>Click to write the choice text. You can also drag the point to connect first and write the text later.</value>
   </data>
   <data name="Board_Auto2" xml:space="preserve">
     <value>Auto</value>
@@ -1330,9 +1327,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   </data>
   <data name="Board_IsnTStartOfAnother" xml:space="preserve">
     <value>'{0}' isn't the start of another scene ('{2}') — that scene already starts at {3}. A scene must start in one place (where rollback returns and Continue resumes), so it isn't connected. Connect to that scene's start {3}, or split '{0}' into another scene first.</value>
-  </data>
-  <data name="Board_WriteTextToDragAnd" xml:space="preserve">
-    <value>Write the text to drag and connect</value>
   </data>
   <data name="Board_DragOntoEpisodeCardIn2" xml:space="preserve">
     <value>Drag onto an episode card in the same chapter to connect</value>
@@ -2523,7 +2517,7 @@ Stats on arrival —
     <value>Choices</value>
   </data>
   <data name="Structure_ThereSNoWayOut" xml:space="preserve">
-    <value>There's no way out — the chapter ends here. Choices are made in the [Script] tab by writing text in the slots under a card and dragging to connect.</value>
+    <value>There's no way out — the chapter ends here. Choices are made in the [Script] tab by dragging the point of a slot under a card (write the text before or after connecting).</value>
   </data>
   <data name="Structure_ThereSNoWayOut2" xml:space="preserve">
     <value>There's no way out — the chapter ends here.</value>
@@ -2625,7 +2619,7 @@ Stats on arrival —
     <value>This episode has {0:way|ways} out, and this slot is empty.</value>
   </data>
   <data name="Structure_InScriptTabWriteText" xml:space="preserve">
-    <value> In the [Script] tab, write text in a slot under the card and drag to connect, and this slot becomes a path.</value>
+    <value> In the [Script] tab, drag the point of a slot under the card to connect, and this slot becomes a path (you can write the text afterwards).</value>
   </data>
   <data name="Structure_RemovedConditionOfBranchCard" xml:space="preserve">
     <value>Removed the condition of branch card “{0}” — it always plays.</value>
@@ -2984,5 +2978,29 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   </data>
   <data name="Board_BasePinnedWidthCard" xml:space="preserve">
     <value>Pinned the card’s width to the base width ({0}) — Fit width is paused; Fit height keeps working. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_DragNowWriteLaterTip" xml:space="preserve">
+    <value>Drag onto an episode card in the same chapter to connect a choice without text — you can write the text afterwards. Click to write it now.</value>
+  </data>
+  <data name="Board_DragNowWriteLater" xml:space="preserve">
+    <value>Drag to connect and write the text later · click to write it now</value>
+  </data>
+  <data name="Board_DroppingHereConnectsBlank" xml:space="preserve">
+    <value>Dropping here connects a choice without text to '{0}' — then write its text in the red slot.</value>
+  </data>
+  <data name="Board_DroppingHereSendsBlank" xml:space="preserve">
+    <value>Dropping here sends the choice without text to '{1}' instead of '{0}' (conditions · stat changes stay).</value>
+  </data>
+  <data name="Board_ConnectedBlankChoice" xml:space="preserve">
+    <value>Connected '{0}' → '{1}' as a choice without text. Write its text in the red slot (this chapter's progression JSON isn't written until you do).</value>
+  </data>
+  <data name="Board_ConnectedBlankChoiceAutoPath" xml:space="preserve">
+    <value>Connected '{0}' → '{1}' as a choice without text — the auto path became a choice too. Write their text in the red slots (this chapter's progression JSON isn't written until you do). One undo (Ctrl+Z) brings both back.</value>
+  </data>
+  <data name="Board_SameChoiceNotConnected" xml:space="preserve">
+    <value>Not connected — this episode already has the choice “{2}” going to '{0}'. Change the text or connect it to another episode.</value>
+  </data>
+  <data name="Board_SamePathNotConnected" xml:space="preserve">
+    <value>Not connected — this episode already has a path without text going to '{0}'. Write that path's text first, or connect it to another episode.</value>
   </data>
 </root>

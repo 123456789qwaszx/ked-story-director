@@ -208,6 +208,40 @@ public sealed class ChoiceDropFeedbackTests : IDisposable
         Assert.Contains("같은 챕터의 에피소드 카드에 놓으면 잇습니다", graph.DropBadgeText, StringComparison.Ordinal);
         Hover(armed, InputElement.PointerExitedEvent);
         Assert.Null(graph.DropBadgeText);
+
+        // 회색 점도 끌 수 있다 — 문구는 나중에(2026-11-26). ⛔ 그 전에는 「문구를 적으면 끌어서 이을 수 있습니다」.
+        Ellipse asleep = Knob(graph, "root", 2);
+        Hover(asleep, InputElement.PointerEnteredEvent);
+        Assert.Contains("문구는 나중에", graph.DropBadgeText, StringComparison.Ordinal);
+        Assert.NotNull(asleep.RenderTransform);
+        Hover(asleep, InputElement.PointerExitedEvent);
+        Assert.Null(graph.DropBadgeText);
+    });
+
+    [Fact]
+    public void 회색_칸을_문구_없이_끌면_문구가_빈_선택지로_잇는다고_미리_말하고_놓으면_그렇게_잇는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 선택지부터 먼저 잇고 문구는 나중에. 자동 길 자리(칸이 모두 빈 카드의 첫 칸)가 아닌 빈 칸이다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+
+        Press(Knob(graph, "root", 1));
+        MoveOver(graph, session, "a");
+        Assert.Contains("잇기 → a", graph.DropBadgeText, StringComparison.Ordinal);
+        Assert.Same(GraphEditorView.DropJoinBrush, graph.ConnectingLineBrush);
+        Assert.Contains("문구가 빈 선택지로 'a'에 잇습니다", Hint(graph), StringComparison.Ordinal);
+
+        Release(graph, session, "a");
+        ChapterEdge joined = Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
+        Assert.Equal("a", joined.ToEpisodeId);
+        Assert.False(joined.Auto);
+        Assert.True(joined.HasNoOptionLabel);
+
+        // 첫 칸은 여전히 자동 자리가 아니다 — 다른 칸이 이어졌다. 그 첫 칸을 같은 카드로 끌면 같은 길(문구 없음)이 이미 있다고 말한다.
+        Press(Knob(graph, "root", 0));
+        MoveOver(graph, session, "a");
+        Assert.Contains("같은 선택지가 있음", graph.DropBadgeText, StringComparison.Ordinal);
+        Release(graph, session, "a");
+        Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────

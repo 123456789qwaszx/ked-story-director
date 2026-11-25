@@ -1112,10 +1112,6 @@
     <value>끌어서 같은 챕터의 에피소드 카드에 놓으면 잇습니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_WriteChoiceTextToBe" xml:space="preserve">
-    <value>선택지 문구를 적으면 끌 수 있습니다.</value>
-    <comment>GraphEditorView.axaml.cs</comment>
-  </data>
   <data name="Board_ConnectedDragOntoAnotherEpisode" xml:space="preserve">
     <value>이어져 있습니다. 끌어서 다른 에피소드 카드에 놓으면 옮겨 잇고, 빈 곳에 놓으면 끊깁니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
@@ -1125,7 +1121,7 @@
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_ClickToWriteChoiceText" xml:space="preserve">
-    <value>눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다.</value>
+    <value>눌러서 선택지 문구를 적습니다. 문구 없이 점을 먼저 끌어 이어도 됩니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_Auto2" xml:space="preserve">
@@ -1766,10 +1762,6 @@
   </data>
   <data name="Board_IsnTStartOfAnother" xml:space="preserve">
     <value>'{0}'{1} 다른 장면('{2}')의 시작점이 아닙니다 — 그 장면은 이미 {3}에서 시작합니다. 장면은 한 자리에서만 시작해야 해서(롤백이 되돌아가고 이어하기가 재개하는 자리) 잇지 않습니다. 그 장면의 시작점 {3}에 잇거나, '{0}'{4} 다른 장면으로 나눈 뒤 이으세요.</value>
-    <comment>GraphEditorView.ChoiceDrop.cs</comment>
-  </data>
-  <data name="Board_WriteTextToDragAnd" xml:space="preserve">
-    <value>문구를 적으면 끌어서 이을 수 있습니다</value>
     <comment>GraphEditorView.ChoiceDrop.cs</comment>
   </data>
   <data name="Board_DragOntoEpisodeCardIn2" xml:space="preserve">
@@ -3353,7 +3345,7 @@
     <comment>ChapterGraphView.axaml.cs</comment>
   </data>
   <data name="Structure_ThereSNoWayOut" xml:space="preserve">
-    <value>나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 잇습니다.</value>
+    <value>나가는 길이 없습니다 — 여기서 챕터가 끝납니다. 선택지는 [대본] 탭에서 카드 아래 칸의 점을 끌어 잇습니다(문구는 먼저 적어도, 이은 뒤에 적어도 됩니다).</value>
     <comment>ChapterGraphView.axaml.cs</comment>
   </data>
   <data name="Structure_ThereSNoWayOut2" xml:space="preserve">
@@ -3489,7 +3481,7 @@
     <comment>ChapterGraphView.axaml.cs</comment>
   </data>
   <data name="Structure_InScriptTabWriteText" xml:space="preserve">
-    <value> [대본] 탭에서 카드 아래 칸에 문구를 적고 끌어 이으면 이 칸이 길이 됩니다.</value>
+    <value> [대본] 탭에서 카드 아래 칸의 점을 끌어 이으면 이 칸이 길이 됩니다(문구는 이은 뒤에 적어도 됩니다).</value>
     <comment>ChapterGraphView.axaml.cs</comment>
   </data>
   <data name="Structure_RemovedConditionOfBranchCard" xml:space="preserve">
@@ -3966,5 +3958,37 @@
   <data name="Board_BasePinnedWidthCard" xml:space="preserve">
     <value>카드의 폭을 기본 폭({0})으로 고정했습니다 — 가로 글 맞춤은 쉬고 세로 글 맞춤은 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
     <comment>SettingsWindow.cs</comment>
+  </data>
+  <data name="Board_DragNowWriteLaterTip" xml:space="preserve">
+    <value>끌어서 같은 챕터의 에피소드 카드에 놓으면 문구가 빈 선택지로 잇습니다 — 문구는 이은 뒤에 적어도 됩니다. 누르면 문구 칸이 열립니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DragNowWriteLater" xml:space="preserve">
+    <value>끌어서 이으면 문구는 나중에 적습니다 · 누르면 지금 적기</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereConnectsBlank" xml:space="preserve">
+    <value>여기 놓으면 문구가 빈 선택지로 '{0}'에 잇습니다 — 이은 뒤 빨간 칸에 문구를 적으세요.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereSendsBlank" xml:space="preserve">
+    <value>여기 놓으면 문구가 빈 선택지가 '{0}' 대신 '{1}'{2} 갑니다(조건 · 스탯 변화는 그대로).</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_ConnectedBlankChoice" xml:space="preserve">
+    <value>'{0}' → '{1}' 문구가 빈 선택지로 이었습니다. 빨간 칸에 문구를 적으세요(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다).</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectedBlankChoiceAutoPath" xml:space="preserve">
+    <value>'{0}' → '{1}' 문구가 빈 선택지로 이었습니다 — 자동 길도 선택지가 됐습니다. 빨간 칸들에 문구를 적으세요(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SameChoiceNotConnected" xml:space="preserve">
+    <value>'{0}'{1} 가는 「{2}」 선택지가 이 에피소드에 이미 있어 잇지 않았습니다 — 문구를 바꾸거나 다른 에피소드에 이으세요.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SamePathNotConnected" xml:space="preserve">
+    <value>'{0}'{1} 가는 문구 없는 길이 이 에피소드에 이미 있어 잇지 않았습니다 — 그 길의 문구부터 적거나 다른 에피소드에 이으세요.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
   </data>
 </root>

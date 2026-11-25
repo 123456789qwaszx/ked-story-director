@@ -249,17 +249,97 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
-    public void 꺼진_점을_눌러도_켜지지_않고_문구_칸만_열린다() => HeadlessUi.Run(() =>
+    public void 꺼진_점을_끌지_않고_눌렀다_떼면_켜지지_않고_문구_칸만_열린다() => HeadlessUi.Run(() =>
     {
         // <b>살리는 것은 적는 행위다</b>. 점을 눌러 켜는 길은 두지 않는다 —
         //    켜기와 적기가 갈라지면 손짓이 둘이 되고, 켜 두고 안 적은 칸이
         //    뜻 없이 붉게 남는다. 점은 <b>적을 자리로 데려가기만</b> 한다.
+        //    끌면 문구 없이 잇는다(2026-11-26 — 아래 시험) — 그 자리에서 눌렀다 뗄 때만 문구 칸이다.
         (GraphEditorView graph, AuthoringSession session) = Show();
 
-        Press(Rows(graph, "root")[1].Children.OfType<Ellipse>().Single());
+        Click(graph, Rows(graph, "root")[1].Children.OfType<Ellipse>().Single());
 
         Assert.NotNull(graph.SlotLabelBox);
         Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[1]);
+        Assert.Empty(session.Editor.FindChapter("ch01")!.Edges);
+    });
+
+    [Fact]
+    public void 회색_칸을_문구_없이_끌어_이으면_빨간_문구_빈_선택지가_되고_문구는_나중에_적는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「선택지부터 먼저 원하는 것에 연결하고, 그 다음에서야 선택지 문구를 쓰고 싶어지는 경우가 많다」. 자동 길 자리(칸이 모두
+        // 빈 카드의 첫 칸)가 아닌 빈 칸은 문구 없이 이으면 문구가 빈 선택지다 — 빨간 「문구를 적어 주세요」로 서고, 적을 때까지 검증 오류다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+
+        Drag(graph, session, "root", slot: 1, onto: "a");
+
+        ChapterEdge edge = Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
+        Assert.Equal("a", edge.ToEpisodeId);
+        Assert.False(edge.Auto);
+        Assert.True(edge.HasNoOptionLabel);
+        Assert.Contains("문구가 빈 선택지로 이었습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        // 이은 칸은 제 줄(둘째)에 빨갛게 선다. 첫 칸은 더는 자동 자리가 아니다(이은 길이 있다).
+        Border needs = Assert.Single(Rows(graph, "root")[1].Children.OfType<Border>(), face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag);
+        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
+        Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[0]);
+
+        // 나중에 빨간 칸을 눌러 적으면 그 길의 문구가 된다.
+        Press(needs);
+        Assert.NotNull(graph.SlotLabelBox);
+        graph.SlotLabelBox!.Text = "따라간다";
+        Key(graph.SlotLabelBox, Avalonia.Input.Key.Enter);
+
+        ChapterEdge written = Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
+        Assert.Equal("따라간다", written.OptionLabel);
+        Assert.Equal("a", written.ToEpisodeId);
+    });
+
+    [Fact]
+    public void 자동_길이_있는데_빈_칸을_문구_없이_다른_에피소드에_이으면_둘_다_빨간_칸이고_차례는_그대로다() => HeadlessUi.Run(() =>
+    {
+        // 먼저 잇고 나중에 적기(2026-11-26)의 흔한 흐름 — 첫 칸을 이으면 자동 길, 둘째 칸을 이으면 첫 칸도 문구가 빈 선택지가 된다(auto-to-choice).
+        // 차례는 이은 차례 그대로다(= 간선 순서 = 런타임 OptionIndex).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        Seed(session, "ch01", string.Empty, 640, "b");
+        graph.Rebuild();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Drag(graph, session, "root", slot: 0, onto: "a");
+        Assert.True(Assert.Single(session.Editor.FindChapter("ch01")!.Edges).Auto);
+
+        Drag(graph, session, "root", slot: 1, onto: "b");
+
+        List<ChapterEdge> edges = session.Editor.FindChapter("ch01")!.Edges.Where(edge => edge.FromEpisodeId == "root").ToList();
+        Assert.Equal(["a", "b"], edges.Select(edge => edge.ToEpisodeId));
+        Assert.All(edges, edge =>
+        {
+            Assert.False(edge.Auto);
+            Assert.True(edge.HasNoOptionLabel);
+        });
+        Assert.Contains("자동 길도 선택지가 됐습니다", session.StatusMessage, StringComparison.Ordinal);
+
+        IReadOnlyList<StackPanel> rows = Rows(graph, "root");
+        Assert.All(new[] { 0, 1 }, index =>
+            Assert.Contains(rows[index].Children.OfType<Border>(), face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag));
+
+        // 되돌리기 한 번 — 새 길과 바꾼 것이 함께 돌아가 자동 길 하나로.
+        session.Editor.Undo();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.True(Assert.Single(session.Editor.FindChapter("ch01")!.Edges).Auto);
+    });
+
+    [Fact]
+    public void 문구_없이_같은_에피소드로_두_번은_잇지_않고_까닭을_말한다() => HeadlessUi.Run(() =>
+    {
+        // 간선의 신원은 (출발, 도착, 문구)다 — 문구가 둘 다 비면 같은 길이 둘이다. 자동 길도 선택지로 바꾸지 않는다(아무것도 안 바뀐다).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+
+        Drag(graph, session, "root", slot: 0, onto: "a");
+        Drag(graph, session, "root", slot: 1, onto: "a");
+
+        Assert.True(Assert.Single(session.Editor.FindChapter("ch01")!.Edges).Auto);
+        Assert.Contains("문구 없는 길이 이 에피소드에 이미 있어 잇지 않았습니다", session.StatusMessage, StringComparison.Ordinal);
     });
 
     [Fact]
@@ -486,7 +566,7 @@ public sealed class ChoiceSlotTests : IDisposable
         Drag(graph, session, "root", slot: 1, onto: "a");
 
         Assert.Single(session.Editor.FindChapter("ch01")!.Edges);
-        Assert.Contains("이미 있습니다", session.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("「왼쪽으로」 선택지가 이 에피소드에 이미 있어 잇지 않았습니다", session.StatusMessage, StringComparison.Ordinal);
     });
 
     [Fact]
@@ -618,6 +698,23 @@ public sealed class ChoiceSlotTests : IDisposable
 
         graph.SlotLabelBox!.Text = text;
         Key(graph.SlotLabelBox, Avalonia.Input.Key.Enter);
+    }
+
+    /// <summary>그 점을 끌지 않고 그 자리에서 눌렀다 뗀다 — 놓는 자리가 점 위다.</summary>
+    private static void Click(GraphEditorView graph, Control knob)
+    {
+        Press(knob);
+
+        var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
+        var root = (Visual)TopLevel.GetTopLevel(canvas)!;
+        Point at = knob.TranslatePoint(new Point(knob.Bounds.Width / 2, knob.Bounds.Height / 2), root)!.Value;
+
+        canvas.RaiseEvent(new PointerReleasedEventArgs(
+            canvas, new Pointer(0, PointerType.Mouse, true), root, at, 0,
+            new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
+            KeyModifiers.None, MouseButton.Left));
+
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
     }
 
     private static void Press(Control control)
