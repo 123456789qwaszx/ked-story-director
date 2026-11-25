@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -242,12 +243,12 @@ public partial class StoryHierarchy : UserControl
         // 빈 자리의 차림표 — 줄 위에서 우클릭하면 그 줄의 차림표가 먼저 뜨고, 빈 데서 눌렀을 때만 여기까지 온다.
         _emptyAreaMenu = new ContextMenu
         {
-            ItemsSource = new[] { MenuItemFor("챕터 추가", HierarchyCommand.AddChapter, row: null, anchor: TreeScroll) }
+            ItemsSource = new[] { MenuItemFor(Ui.Board_AddChapter, HierarchyCommand.AddChapter, row: null, anchor: TreeScroll) }
         };
         TreeScroll.ContextMenu = _emptyAreaMenu;
 
-        SearchBox.TextChanged += (_, _) => UiGuard.Run(null, "하이어아키 찾기", () => Search(SearchBox.Text));
-        SearchBox.KeyDown += (_, args) => UiGuard.Run(null, "하이어아키 찾기", () => SearchKey(args));
+        SearchBox.TextChanged += (_, _) => UiGuard.Run(null, Ui.Hierarchy_FindInHierarchy, () => Search(SearchBox.Text));
+        SearchBox.KeyDown += (_, args) => UiGuard.Run(null, Ui.Hierarchy_FindInHierarchy, () => SearchKey(args));
     }
 
     // ── 찾기 ────────────────────────────────────────────────────────────────
@@ -542,8 +543,8 @@ public partial class StoryHierarchy : UserControl
 
         rows.Add(new HierarchyRow(
             HierarchyKind.Project, ProjectKey, null, null, null,
-            string.IsNullOrWhiteSpace(_projectTitle) ? "프로젝트" : _projectTitle,
-            Detail: "화자", Depth: 0, IsSceneRoot: false, HasWarning: false));
+            string.IsNullOrWhiteSpace(_projectTitle) ? Ui.Side_Project : _projectTitle,
+            Detail: Ui.Board_Speakers, Depth: 0, IsSceneRoot: false, HasWarning: false));
 
         if (!IsExpanded(ProjectKey))
         {
@@ -589,7 +590,7 @@ public partial class StoryHierarchy : UserControl
                 Detail: string.Join(" · ", new[]
                 {
                     ShowEpisodeTitles ? null : NameBeside(scene.SceneId, scene.DisplayName),
-                    ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? "메모" : null
+                    ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? Ui.Hierarchy_Note : null
                 }.OfType<string>()) is { Length: > 0 } sceneDetail ? sceneDetail : null,
                 Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry,
                 Find: Findable(scene.SceneId, scene.DisplayName)));
@@ -762,7 +763,7 @@ public partial class StoryHierarchy : UserControl
         {
             RowHost.Children.Add(new TextBlock
             {
-                Text = $"「{_query}」에 맞는 것이 없습니다.",
+                Text = string.Format(Ui.Hierarchy_NothingMatches, _query),
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
                 FontSize = 11,
@@ -774,7 +775,7 @@ public partial class StoryHierarchy : UserControl
         {
             RowHost.Children.Add(new TextBlock
             {
-                Text = "프로젝트가 없습니다.",
+                Text = Ui.Hierarchy_NoProject,
                 Margin = new Thickness(8, 10),
                 Opacity = 0.55,
                 FontSize = 11
@@ -786,11 +787,11 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = !_saved
                     ? ReadOnly
-                        ? "프로젝트를 열거나 만들면 여기에 챕터가 섭니다."
-                        : "프로젝트를 열거나 만들면 여기에 챕터가 섭니다 — 판 가운데의 [열기…] · [새 프로젝트…]."
+                        ? Ui.Hierarchy_OpenOrCreateProjectAnd
+                        : Ui.Hierarchy_OpenOrCreateProjectAnd2
                     : ReadOnly
-                        ? "챕터가 없습니다. [대본] 탭에서 만드세요."
-                        : "챕터가 없습니다. 우클릭 「챕터 추가」나 판 가운데의 [＋ 첫 챕터 만들기]로 만드세요.",
+                        ? Ui.Hierarchy_NoChaptersCreateOneIn
+                        : Ui.Hierarchy_NoChaptersCreateOneWith,
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
                 FontSize = 11,
@@ -848,8 +849,8 @@ public partial class StoryHierarchy : UserControl
                 VerticalAlignment = VerticalAlignment.Center,
                 [ToolTip.TipProperty] = row.Kind switch
                 {
-                    HierarchyKind.Scene => "밖에서 들어오는 자리가 둘입니다 — 장면은 한 자리에서만 시작해야 합니다.",
-                    _ => "이 챕터에 오류가 있습니다 — 아래 검증 보고를 보세요."
+                    HierarchyKind.Scene => Ui.Hierarchy_ThereAreTwoEntrancesFrom,
+                    _ => Ui.Hierarchy_ThisChapterHasErrorsSee
                 }
             });
         }
@@ -869,7 +870,7 @@ public partial class StoryHierarchy : UserControl
         // 누를 때의 보조 키(Ctrl · ⌘ · Shift)를 적어 둔다 — 여러 줄 고르기(Press).
         button.AddHandler(PointerPressedEvent, (_, args) => _pressModifiers = args.KeyModifiers,
             Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
-        button.Click += (_, _) => UiGuard.Run(null, "하이어아키", () =>
+        button.Click += (_, _) => UiGuard.Run(null, Ui.Keys_Hierarchy, () =>
         {
             Avalonia.Input.KeyModifiers modifiers = _pressModifiers;
             _pressModifiers = Avalonia.Input.KeyModifiers.None;
@@ -883,7 +884,7 @@ public partial class StoryHierarchy : UserControl
             WireDrag(button, row);
 
             // 두 번 눌러 이름 고치기 — 고르기가 줄을 다시 세우지 않으므로(칠만 한다) 둘째 누름이 같은 단추에 떨어진다.
-            button.DoubleTapped += (_, args) => UiGuard.Run(null, "이름 고치기", () =>
+            button.DoubleTapped += (_, args) => UiGuard.Run(null, Ui.Hierarchy_Rename, () =>
             {
                 args.Handled = true;
                 BeginRename(row.Key);
@@ -948,14 +949,14 @@ public partial class StoryHierarchy : UserControl
         cell.Cursor = new Cursor(StandardCursorType.Hand);
         cell[ToolTip.TipProperty] = (row.Kind, row.Eye) switch
         {
-            (HierarchyKind.Chapter, HierarchyEye.Open) => "판에서 이 챕터를 접습니다 — 표 하나가 되고 간선은 그 줄에 붙습니다.",
-            (HierarchyKind.Chapter, _) => "판에서 이 챕터를 펼칩니다.",
-            (_, HierarchyEye.Open) => "판에서 이 장면만 접습니다 — 줄 목록으로 간소화되고 간선은 그 줄에 붙습니다.",
-            (_, HierarchyEye.Folded) => "판에서 이 장면을 펼칩니다.",
-            _ => "챕터가 접혀 있습니다 — 누르면 챕터를 펴고 이 장면을 보입니다."
+            (HierarchyKind.Chapter, HierarchyEye.Open) => Ui.Hierarchy_FoldThisChapterOnBoard,
+            (HierarchyKind.Chapter, _) => Ui.Hierarchy_UnfoldThisChapterOnBoard,
+            (_, HierarchyEye.Open) => Ui.Hierarchy_FoldJustThisSceneOn,
+            (_, HierarchyEye.Folded) => Ui.Hierarchy_UnfoldThisSceneOnBoard,
+            _ => Ui.Hierarchy_ChapterIsFoldedClickTo
         };
 
-        cell.PointerPressed += (_, args) => UiGuard.Run(null, "보이기", () =>
+        cell.PointerPressed += (_, args) => UiGuard.Run(null, Ui.Side_Show, () =>
         {
             args.Handled = true;
             EyeToggled?.Invoke(row);
@@ -1020,10 +1021,10 @@ public partial class StoryHierarchy : UserControl
     {
         List<Control> items = row.Kind switch
         {
-            HierarchyKind.Project => [MenuItemFor("챕터 추가", HierarchyCommand.AddChapter, row, anchor)],
+            HierarchyKind.Project => [MenuItemFor(Ui.Board_AddChapter, HierarchyCommand.AddChapter, row, anchor)],
             HierarchyKind.Chapter =>
             [
-                MenuItemFor("장면 추가", HierarchyCommand.AddScene, row, anchor),
+                MenuItemFor(Ui.Board_AddScene, HierarchyCommand.AddScene, row, anchor),
                 new Separator(),
                 RenameItem(row)
             ],
@@ -1031,14 +1032,14 @@ public partial class StoryHierarchy : UserControl
             // 에피소드는 늘 장면에 속한다 — 장면 줄에서만 더한다(그 장면에 길 없이 선다).
             HierarchyKind.Scene =>
             [
-                MenuItemFor("에피소드 추가", HierarchyCommand.AddEpisode, row, anchor),
+                MenuItemFor(Ui.Board_AddEpisode, HierarchyCommand.AddEpisode, row, anchor),
                 new Separator(),
                 RenameItem(row)
             ],
             HierarchyKind.Episode =>
             [
                 RenameItem(row),
-                LastEpisodeKept(MenuItemFor("에피소드 지우기", HierarchyCommand.DeleteEpisode, row, anchor), row)
+                LastEpisodeKept(MenuItemFor(Ui.Board_DeleteEpisode2, HierarchyCommand.DeleteEpisode, row, anchor), row)
             ],
             _ => []
         };
@@ -1049,7 +1050,7 @@ public partial class StoryHierarchy : UserControl
     private MenuItem MenuItemFor(string header, HierarchyCommand command, HierarchyRow? row, Control anchor)
     {
         var item = new MenuItem { Header = header, FontSize = 11, Tag = command };
-        item.Click += (_, _) => UiGuard.Run(null, "하이어아키 차림표", () =>
+        item.Click += (_, _) => UiGuard.Run(null, Ui.Side_HierarchyMenu, () =>
             CommandRequested?.Invoke(command, row ?? ProjectRow(), anchor));
 
         return item;
@@ -1071,8 +1072,8 @@ public partial class StoryHierarchy : UserControl
 
     private MenuItem RenameItem(HierarchyRow row)
     {
-        var item = new MenuItem { Header = "이름 바꾸기", FontSize = 11, Tag = "rename" };
-        item.Click += (_, _) => UiGuard.Run(null, "이름 고치기", () => BeginRename(row.Key));
+        var item = new MenuItem { Header = Ui.Board_Rename, FontSize = 11, Tag = "rename" };
+        item.Click += (_, _) => UiGuard.Run(null, Ui.Hierarchy_Rename, () => BeginRename(row.Key));
 
         return item;
     }
@@ -1156,7 +1157,7 @@ public partial class StoryHierarchy : UserControl
             }
         }
 
-        box.KeyDown += (_, args) => UiGuard.Run(null, "이름 고치기", () =>
+        box.KeyDown += (_, args) => UiGuard.Run(null, Ui.Hierarchy_Rename, () =>
         {
             if (args.Key is Avalonia.Input.Key.Enter or Avalonia.Input.Key.Escape)
             {
@@ -1165,7 +1166,7 @@ public partial class StoryHierarchy : UserControl
             }
         });
 
-        box.LostFocus += (_, _) => UiGuard.Run(null, "이름 고치기", () =>
+        box.LostFocus += (_, _) => UiGuard.Run(null, Ui.Hierarchy_Rename, () =>
         {
             if (string.Equals(_renamingKey, row.Key, StringComparison.Ordinal))
             {
@@ -1203,14 +1204,14 @@ public partial class StoryHierarchy : UserControl
         if (leaf)
         {
             arrow[ToolTip.TipProperty] = row.IsSceneRoot
-                ? "장면 시작점 — 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
+                ? Ui.Hierarchy_SceneStartWhereRollbackReturns
                 : null;
 
             return arrow;
         }
 
-        arrow[ToolTip.TipProperty] = Searching ? "찾는 동안은 모두 펴서 보입니다 — 찾기를 지우면 접어 둔 대로 돌아갑니다." : "접었다 폅니다";
-        arrow.PointerPressed += (_, args) => UiGuard.Run(null, "접기", () =>
+        arrow[ToolTip.TipProperty] = Searching ? Ui.Hierarchy_WhileSearchingEverythingIsExpanded : Ui.Hierarchy_CollapseExpand;
+        arrow.PointerPressed += (_, args) => UiGuard.Run(null, Ui.Hierarchy_Collapse, () =>
         {
             args.Handled = true;
 
@@ -1371,7 +1372,7 @@ public partial class StoryHierarchy : UserControl
 
         if (next is not null && !ReferenceEquals(next, current))
         {
-            UiGuard.Run(null, "하이어아키", () =>
+            UiGuard.Run(null, Ui.Keys_Hierarchy, () =>
             {
                 Press(next);
                 RowButton(next.Key)?.BringIntoView();
@@ -1586,7 +1587,7 @@ public partial class StoryHierarchy : UserControl
             HideGhost();
         }, both, handledEventsToo: true);
 
-        button.AddHandler(PointerMovedEvent, (_, args) => UiGuard.Run(null, "옮기기", () =>
+        button.AddHandler(PointerMovedEvent, (_, args) => UiGuard.Run(null, Ui.Hierarchy_Move, () =>
         {
             if (_dragKey is null)
             {
@@ -1604,7 +1605,7 @@ public partial class StoryHierarchy : UserControl
             }
         }), both, handledEventsToo: true);
 
-        button.AddHandler(PointerReleasedEvent, (_, args) => UiGuard.Run(null, "옮기기", () =>
+        button.AddHandler(PointerReleasedEvent, (_, args) => UiGuard.Run(null, Ui.Hierarchy_Move, () =>
         {
             if (_dragKey is not null)
             {
@@ -1613,7 +1614,7 @@ public partial class StoryHierarchy : UserControl
         }), both, handledEventsToo: true);
 
         // 놓음을 못 받고 포인터를 잃었다(창을 떠났다) — 잔상이 화면에 남지 않게 걷고 끌기를 그만둔다.
-        button.PointerCaptureLost += (_, _) => UiGuard.Run(null, "옮기기", () =>
+        button.PointerCaptureLost += (_, _) => UiGuard.Run(null, Ui.Hierarchy_Move, () =>
         {
             if (_dragGhost is null)
             {

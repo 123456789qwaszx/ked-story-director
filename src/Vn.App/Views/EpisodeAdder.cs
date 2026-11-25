@@ -1,5 +1,6 @@
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -21,7 +22,7 @@ internal static class EpisodeAdder
         ArgumentNullException.ThrowIfNull(session);
 
         ChapterDocument chapter = session.Editor.FindChapter(chapterId)
-            ?? throw new InvalidOperationException($"챕터 '{chapterId}'가 없습니다.");
+            ?? throw new InvalidOperationException(string.Format(Ui.Side_ChapterDoesnTExist, chapterId));
         string episodeId = session.Editor.NextEpisodeId(chapterId, sceneId);
         double x = chapter.Episodes.Count == 0
             ? 0

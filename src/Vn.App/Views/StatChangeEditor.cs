@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Vn.Authoring.Chapters;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -132,13 +133,13 @@ internal sealed class StatChangeEditor : StackPanel
 
             if (_stats.Count == 0)
             {
-                Children.Add(Hint("이 챕터에 스탯이 없습니다 — 「조건 및 스탯」 탭의 스탯 표에서 먼저 선언하세요."));
+                Children.Add(Hint(Ui.Side_ThisChapterHasNoStats3));
                 return;
             }
 
             if (_rows.Count == 0)
             {
-                Children.Add(Hint("이 길을 건너도 스탯이 변하지 않습니다."));
+                Children.Add(Hint(Ui.Side_CrossingThisPathDoesnT));
             }
 
             foreach (Row row in _rows)
@@ -148,12 +149,12 @@ internal sealed class StatChangeEditor : StackPanel
 
             var add = new Button
             {
-                Content = "＋ 스탯변화",
+                Content = Ui.Side_StatChange2,
                 FontSize = 10,
                 Padding = new Thickness(7, 1),
                 HorizontalAlignment = HorizontalAlignment.Left,
                 [ToolTip.TipProperty] =
-                    "이 길을 건너는 순간 1회 반영됩니다. 스탯은 「조건 및 스탯」 탭에서 선언한 것만 고를 수 있습니다."
+                    Ui.Side_AppliedOnceMomentThisPath
             };
 
             add.Click += (_, _) =>
@@ -235,7 +236,7 @@ internal sealed class StatChangeEditor : StackPanel
             FontSize = 11,
             MinWidth = isBool ? 84 : 54,
             Margin = new Thickness(4, 0, 0, 0),
-            ItemsSource = isBool ? new[] { "활성", "비활성" } : ["＋", "－"],
+            ItemsSource = isBool ? new[] { Ui.Side_On2, Ui.Side_Off2 } : ["＋", "－"],
             SelectedIndex = row.Seed >= 0 ? 0 : 1
         };
         signCombo.SelectionChanged += (_, _) =>
@@ -285,7 +286,7 @@ internal sealed class StatChangeEditor : StackPanel
             FontSize = 10,
             Padding = new Thickness(5, 1),
             Margin = new Thickness(4, 0, 0, 0),
-            [ToolTip.TipProperty] = "이 줄을 지웁니다."
+            [ToolTip.TipProperty] = Ui.Side_DeletesThisRow
         };
         remove.Click += (_, _) =>
         {

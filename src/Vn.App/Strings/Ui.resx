@@ -947,4 +947,1977 @@
     <value>아직 프로젝트가 없습니다 — 받은 프로젝트는 판 한가운데의 [열기…], 처음 시작하면 [새 프로젝트…]를 누르세요.</value>
     <comment>AuthoringSession.cs — 처음 켰을 때의 상태줄</comment>
   </data>
+  <data name="Board_NoChaptersYet" xml:space="preserve">
+    <value>아직 챕터가 없습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_NoProjectYetIfYou" xml:space="preserve">
+    <value>아직 프로젝트가 없습니다.
+받은 프로젝트가 있으면 [열기…]로 그 폴더를 고르고, 처음 시작하면 [새 프로젝트…]로 빈 폴더를 고르세요.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ChooseChapter" xml:space="preserve">
+    <value>챕터 고르기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CleanUpDrag" xml:space="preserve">
+    <value>끌기 정리</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_PlaceDeleteButton" xml:space="preserve">
+    <value>삭제 단추 맞추기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_PlaceFormatBox" xml:space="preserve">
+    <value>서식 칸 놓기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_PlaceFormattingToolbar" xml:space="preserve">
+    <value>서식 도구 맞추기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Rename" xml:space="preserve">
+    <value>이름 바꾸기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Delete" xml:space="preserve">
+    <value>삭제</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_PlaceLines" xml:space="preserve">
+    <value>선 놓기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FollowChapter" xml:space="preserve">
+    <value>챕터 따라가기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_UpdateChapterCombo" xml:space="preserve">
+    <value>챕터 콤보 맞추기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SeveralItemsAreSelectedIn" xml:space="preserve">
+    <value>하이어아키에서 여러 개를 골랐습니다 — 지우려면 하나만 고르세요(여러 개를 한꺼번에 지우지는 않습니다).</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CanTDelete" xml:space="preserve">
+    <value>삭제 불가</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeleteChapter" xml:space="preserve">
+    <value>챕터 삭제</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeleteScene" xml:space="preserve">
+    <value>장면 삭제</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeleteEpisode" xml:space="preserve">
+    <value>에피소드 삭제</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeleteBranchCard" xml:space="preserve">
+    <value>분기 카드 삭제</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeletesSelectedChapterWithIts" xml:space="preserve">
+    <value>고른 챕터와 그 장면 · 에피소드 · 카드를 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeletesSelectedSceneSEpisodes" xml:space="preserve">
+    <value>고른 장면의 에피소드 · 카드와 그 에피소드들이 부르던 분기 카드, 장면 이름 · 메모를 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeletesSelectedEpisodeAlongWith" xml:space="preserve">
+    <value>고른 에피소드를 간선 · 픽스처 참조까지 함께 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeletesBranchCardBranchPoints" xml:space="preserve">
+    <value>분기 카드를 지웁니다 — 부르던 분기점은 이어지지 않은 채 남습니다. 되돌리기 한 번으로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SelectChapterSceneEpisodeIn" xml:space="preserve">
+    <value>하이어아키나 판에서 챕터 · 장면 · 에피소드를 고르면 그것을 지웁니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Chapter" xml:space="preserve">
+    <value>챕터 {0} ⌄</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ClickToSelectEveryCard" xml:space="preserve">
+    <value>누르면 이 챕터의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 표 형태로 접고, 접힌 표를 더블클릭하면 다시 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Scene" xml:space="preserve">
+    <value>장면 {0}</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Note" xml:space="preserve">
+    <value> · 메모</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ClickToSelectEveryCard2" xml:space="preserve">
+    <value>누르면 이 장면의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 줄 목록으로 접습니다(간선은 접힌 줄에 붙습니다). 접힌 상자를 더블클릭하면 다시 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_PlaceRails" xml:space="preserve">
+    <value>철도 맞추기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Auto" xml:space="preserve">
+    <value>(진행)</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_IncomingPathsClickToOpen" xml:space="preserve">
+    <value>들어오는 길 {0}개 — 누르면 목록이 열립니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_PathsInto" xml:space="preserve">
+    <value>{0}로 들어오는 길</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectAndDisconnectFromChip" xml:space="preserve">
+    <value>잇고 끊는 곳은 출발 쪽 칩과 [구성] 탭입니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DragOntoEpisodeCardIn" xml:space="preserve">
+    <value>끌어서 같은 챕터의 에피소드 카드에 놓으면 잇습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_WriteChoiceTextToBe" xml:space="preserve">
+    <value>선택지 문구를 적으면 끌 수 있습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectedDragOntoAnotherEpisode" xml:space="preserve">
+    <value>이어져 있습니다. 끌어서 다른 에피소드 카드에 놓으면 옮겨 잇고, 빈 곳에 놓으면 끊깁니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Choice" xml:space="preserve">
+    <value>선택지</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ClickToWriteChoiceText" xml:space="preserve">
+    <value>눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Auto2" xml:space="preserve">
+    <value>자동</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_AutoPathMovesOnWithout" xml:space="preserve">
+    <value>자동 길 — 문구 없이 다음으로 갑니다. 선택지 문구를 하나라도 적으면 이 자리가 닫힙니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ThisChoiceHasNoText" xml:space="preserve">
+    <value>문구가 없는 선택지입니다 — 자동 길이었는데 다른 길을 이어 선택지가 됐습니다. 눌러서 문구를 적으세요. 적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ChoiceText" xml:space="preserve">
+    <value>선택지 문구</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_NoCard" xml:space="preserve">
+    <value>▢ {0} (카드 없음)</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CardForTargetEpisodeIsn" xml:space="preserve">
+    <value>도착 에피소드 '{0}'의 카드가 아직 이 판에 없습니다 — 프로젝트를 저장하고 다시 열면 빈 카드가 서고 여기로 이어집니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DragToChangeCardWidth" xml:space="preserve">
+    <value>끌어서 카드 폭을 바꿉니다 — 글 칸이 함께 넓어집니다. 두 번 누르면 처음 폭으로 돌아갑니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DragToChangeWritingBox" xml:space="preserve">
+    <value>끌어서 글 칸 높이를 바꿉니다. 두 번 누르면 처음 높이로 돌아갑니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DragToChangeCardWidth2" xml:space="preserve">
+    <value>끌어서 카드 폭과 글 칸 높이를 함께 바꿉니다. 두 번 누르면 처음 크기로 돌아갑니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CardSize" xml:space="preserve">
+    <value>카드 크기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FitWidth" xml:space="preserve">
+    <value>가로 글 맞춤</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FitHeight" xml:space="preserve">
+    <value>세로 글 맞춤</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FitWidthWhileOnCard" xml:space="preserve">
+    <value>가로 글 맞춤 — 켜 두면 글을 쓰는 대로 가장 긴 줄이 꺾이지 않게 카드 폭이 맞춰집니다(처음 폭보다 좁아지지는 않습니다). </value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FitHeightWhileOnWriting" xml:space="preserve">
+    <value>세로 글 맞춤 — 켜 두면 글을 쓰는 대로 모든 줄이 스크롤 없이 보이게 글 칸 높이가 맞춰집니다(처음 높이보다 낮아지지는 않습니다). </value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_OnNowClickToTurn" xml:space="preserve">
+    <value>지금 켜져 있습니다 — 누르면 끕니다(크기는 그대로). 가장자리를 끌어 크기를 바꿔도 꺼집니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_OffNowClickToTurn" xml:space="preserve">
+    <value>지금 꺼져 있습니다 — 누르면 켜고 곧바로 맞춥니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_TurnedOnFitWidthCard" xml:space="preserve">
+    <value>가로 글 맞춤을 켰습니다 — 글을 쓰는 대로 맞춰집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_TurnedOffFitWidthSize" xml:space="preserve">
+    <value>가로 글 맞춤을 껐습니다 — 크기는 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_TurnedOnFitHeightCard" xml:space="preserve">
+    <value>세로 글 맞춤을 켰습니다 — 글을 쓰는 대로 맞춰집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_TurnedOffFitHeightSize" xml:space="preserve">
+    <value>세로 글 맞춤을 껐습니다 — 크기는 그대로입니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FitToText" xml:space="preserve">
+    <value>글 맞춤</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CardVisitedThroughBranch" xml:space="preserve">
+    <value>분기로 다녀오는 카드입니다. {0} {1}</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Branch" xml:space="preserve">
+    <value>{0} 분기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SceneStartEpisodeWhereScene" xml:space="preserve">
+    <value>장면 시작점 — 장면이 시작하는 에피소드입니다. 롤백이 되돌아가고 이어하기가 재개하는 자리입니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_BranchCardVisitedFromAnother" xml:space="preserve">
+    <value>분기 카드 — 다른 카드의 분기점으로 들렀다가 그 자리로 돌아옵니다. 선택지가 없고 진행 JSON에 실리지 않습니다. 장면은 부르는 에피소드의 것입니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SpeakerDialogueOneLineIs" xml:space="preserve">
+    <value>화자: 대사 — 한 줄이 대사 한 줄</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ApplyText" xml:space="preserve">
+    <value>글 넣기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_EmptyTextIsnTApplied" xml:space="preserve">
+    <value>빈 글은 넣지 않습니다 — 줄을 모두 지우려면 노드를 지우세요.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CouldnTApplyTextText" xml:space="preserve">
+    <value>글을 넣지 못했습니다 — {0} (글은 칸에 그대로 있습니다)</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_AppliedTextOneUndoBrings" xml:space="preserve">
+    <value>글을 넣었습니다 — {0}. 되돌리기 한 번이면 돌아갑니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_KeptBranchConditionLinesRestored" xml:space="preserve">
+    <value>분기 조건 줄을 지켰습니다 — 조건 줄은 되살리고 바깥에 쓴 줄은 조건 안쪽으로 모았습니다. 이 카드에 들어갈 조건은 [구성] 탭의 분기 칸에서 바꿉니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FoldedNodes" xml:space="preserve">
+    <value>접힘 · {0}개 노드 · {1}</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_EmptyFile" xml:space="preserve">
+    <value>빈 파일</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DoubleClickToUnfoldThis" xml:space="preserve">
+    <value>더블클릭하면 이 챕터를 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FoldedNodes2" xml:space="preserve">
+    <value>접힘 · {0}개 노드</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_PathsInside" xml:space="preserve">
+    <value> · 안쪽 길 {0}개</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DoubleClickToUnfoldThis2" xml:space="preserve">
+    <value>더블클릭하면 이 장면을 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_NodesNotInThisChapter" xml:space="preserve">
+    <value>이 챕터의 진행에 안 실리는 노드들입니다 — 장면 경계가 없습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SceneEpisodesInSameScene" xml:space="preserve">
+    <value>장면 '{0}' — 같은 장면끼리 저장·롤백 구간을 공유합니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_EmptyChoice" xml:space="preserve">
+    <value>빈 선택지</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_WriteChoiceText" xml:space="preserve">
+    <value>문구를 적어 주세요</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_BranchVisitedBeforeThisLine" xml:space="preserve">
+    <value>분기 — 이 대사 앞에서 다녀온다. 끌어 다른 카드로 옮겨 잇고, 누르면 연결만 끊긴다(분기점은 남는다).</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_UnconnectedBranchPointDropIt" xml:space="preserve">
+    <value>이어지지 않은 분기점 — 끌어 카드에 놓으면 분기가 된다. 지우려면 곁기둥의 분기점 카드에서 [✕].</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_BranchesClickToExpandOr" xml:space="preserve">
+    <value>분기 {0}개 — 눌러 펼치고 접는다. 펼친 점을 끌어 다른 카드로 잇는다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DropOnBranchCardTo" xml:space="preserve">
+    <value>분기 카드 위에 놓으면 잇습니다. 빈 곳에 놓으면 그 자리에 새 분기 카드가 섭니다. 에피소드에는 잇지 않습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DropOnBranchCardTo2" xml:space="preserve">
+    <value>분기 카드 위에 놓으면 그리로 옮겨 잇습니다. 빈 곳에 놓으면 연결만 끊기고 분기점은 남습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_AddEpisode" xml:space="preserve">
+    <value>에피소드 추가</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_AddScene" xml:space="preserve">
+    <value>장면 추가</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_AddChapter" xml:space="preserve">
+    <value>챕터 추가</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Rename2" xml:space="preserve">
+    <value>제목 고치기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ShowInStructureTab" xml:space="preserve">
+    <value>[구성] 탭에서 보기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_TitleEmptyShowsBranchCard" xml:space="preserve">
+    <value>제목 (비우면 분기 카드 ID)</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_TitleEmptyShowsEpisodeID" xml:space="preserve">
+    <value>제목 (비우면 에피소드ID)</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_EditTitleAndPressEnter" xml:space="preserve">
+    <value>제목을 고치고 Enter — Esc는 그만두기. 비우면 ID가 보입니다(ID는 [구성] 탭에서 정합니다).</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CreatedSceneAndAddedEpisode" xml:space="preserve">
+    <value>장면 「{0}」을 세우고 누른 자리에 에피소드를 더했습니다 — 이름은 오른쪽 인스펙터 머리나 하이어아키에서 고칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_AddedEpisodeToSceneWhere" xml:space="preserve">
+    <value>장면 「{0}」의 누른 자리에 에피소드를 더했습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectChoice" xml:space="preserve">
+    <value>선택지 잇기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectBranch" xml:space="preserve">
+    <value>분기 잇기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeleteThisBranchPointFrom" xml:space="preserve">
+    <value> 이 분기점은 줄의 ＋에서 지웁니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CreatedBranchCardAndConnected" xml:space="preserve">
+    <value>분기 카드 '{0}'{1} 세우고 이었습니다 — 들러서 할 대사를 적으세요. {2}</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DropThisBranchOnEmpty" xml:space="preserve">
+    <value> 이 분기는 빈 곳에 놓으면 끊깁니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_IsBranchCardInAnother" xml:space="preserve">
+    <value>'{0}'{1} 다른 챕터의 분기 카드입니다 — 분기점은 같은 챕터의 분기 카드에만 잇습니다. 빈 곳에 놓으면 새 분기 카드가 섭니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_IsEpisodeBranchPointsConnect" xml:space="preserve">
+    <value>'{0}'{1} 에피소드입니다 — 분기점은 분기 카드에만 잇습니다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 나오지 않습니다). 빈 곳에 놓으면 새 분기 카드가 섭니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ChoicesDonTConnectTo" xml:space="preserve">
+    <value>분기 카드에는 선택지를 잇지 않습니다 — 분기 카드는 분기점으로 들렀다 돌아오는 카드입니다. 선택지는 에피소드에 잇습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectChoicesToEpisodes" xml:space="preserve">
+    <value>선택지는 에피소드에 잇습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_IsInAnotherChapterChoices" xml:space="preserve">
+    <value>'{0}'는 다른 챕터입니다 — 선택지는 챕터 안에서만 잇습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectedAsAutoPathMoves" xml:space="preserve">
+    <value>'{0}' → '{1}' 자동으로 이었습니다(문구 없이 지나갑니다).</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectedWithChoiceAutoPath" xml:space="preserve">
+    <value>'{0}' → '{1}' 선택지 '{2}'을 이었습니다 — 자동 길이 선택지가 됐습니다. 빨간 칸에 문구를 적으세요(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectedWithChoice" xml:space="preserve">
+    <value>'{0}' → '{1}' 선택지 '{2}'을 이었습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_RemovedPath" xml:space="preserve">
+    <value>'{0}' → '{1}' 길을 걷었습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_TextWasLeftInSlot" xml:space="preserve">
+    <value> 문구 '{0}'은 칸에 남겨 뒀습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConditionRightClickToDelete" xml:space="preserve">
+    <value>{0} — 조건 '{1}' → {2} · 우클릭으로 삭제</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CouldnTFindChapterTo" xml:space="preserve">
+    <value>새 카드를 세울 챕터를 찾지 못했습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CreatedChapterAndSceneAnd" xml:space="preserve">
+    <value>챕터 「{0}」와 장면 「{1}」을 세우고 에피소드를 더했습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_CreatedSceneAndAddedEpisode2" xml:space="preserve">
+    <value>장면 「{0}」을 세우고 에피소드를 더했습니다 — 장면이나 그 장면의 카드를 골라 두면 그 장면에 더합니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_AddedEpisodeToScene" xml:space="preserve">
+    <value>장면 「{0}」에 에피소드를 더했습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_IsEpisodeInChapterIts" xml:space="preserve">
+    <value>'{0}'은 챕터 '{1}'의 에피소드입니다. 간선·픽스처 참조까지 함께 지웁니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeleteEpisode2" xml:space="preserve">
+    <value>에피소드 지우기</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DeletedBranchCardBranchPoints" xml:space="preserve">
+    <value>분기 카드 '{0}'{1} 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_EpisodeIDEpisodeIDsAre" xml:space="preserve">
+    <value>에피소드ID: {0} — 에피소드ID는 [구성] 탭에서 정합니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_BranchCardIDIDYarn" xml:space="preserve">
+    <value>분기 카드 ID: {0} — ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_DragToBendLine" xml:space="preserve">
+    <value>끌어서 선을 굽힙니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_LineShape" xml:space="preserve">
+    <value>선 모양</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_BentLineMoveBendWith" xml:space="preserve">
+    <value>꺾인 선 — 손잡이로 꺾이는 자리를 옮깁니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_SmoothCurveMoveBendWith" xml:space="preserve">
+    <value>부드러운 곡선 — 손잡이로 굽이를 옮깁니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ConnectsTwoEndsStraight" xml:space="preserve">
+    <value>두 끝을 곧게 잇습니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_Auto3" xml:space="preserve">
+    <value>↺ 자동</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_ClearsEditedShapeAndReturns" xml:space="preserve">
+    <value>고친 모양을 걷고 처음 자리로 되돌립니다 — 설정 「새로 잇는 선」의 꼴({0})입니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Format_DefaultFont" xml:space="preserve">
+    <value>기본 글꼴</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ChangeWritingBox" xml:space="preserve">
+    <value>글 칸 바꾸기</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_FontForSelectedTextOr" xml:space="preserve">
+    <value>글꼴 — 고른 글자에(카드만 골랐으면 그 카드들의 글 전체에). 「기본 글꼴」은 이 카드의 처음 글꼴(카드를 만들 때 설정의 「대본 글 칸」 글꼴)입니다. 그 글꼴이 없는 PC에서는 기본 글꼴로 보입니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_SmallerShrinksSelectedTextBy" xml:space="preserve">
+    <value>글자 작게 — 고른 글자를 1pt 줄입니다(카드만 골랐으면 그 카드들의 기본 크기를)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_SizeOfSelectedTextPt" xml:space="preserve">
+    <value>고른 글자의 크기(pt) — 숫자를 적고 Enter면 고른 글자가 모두 그 크기가 됩니다(Esc는 그만두기). 이 카드의 처음 크기에 더한 차로 적히고, 크기가 섞였으면 비어 있습니다. 카드만 골랐으면(하이어아키 · 판) 그 카드들의 기본 크기입니다 — 일부만 키운 글자는 그 차를 지킵니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_LargerGrowsSelectedTextBy" xml:space="preserve">
+    <value>글자 크게 — 고른 글자를 1pt 키웁니다(카드만 골랐으면 그 카드들의 기본 크기를)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_BoldTurnsItOffIf" xml:space="preserve">
+    <value>굵게 — 고른 글자(카드만 골랐으면 그 카드들의 글 전체)가 모두 굵으면 풉니다</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ItalicSlantsSelectedTextOr" xml:space="preserve">
+    <value>기울임 — 고른 글자(카드만 골랐으면 그 카드들의 글 전체)를 기울입니다(한글은 기울임꼴이 없어 글자를 비스듬히 눕혀 그립니다)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_StrikethroughDrawsLineThroughSelected" xml:space="preserve">
+    <value>취소선 — 고른 글자(카드만 골랐으면 그 카드들의 글 전체)에 줄을 긋습니다</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_Text" xml:space="preserve">
+    <value>가</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_TextColorForSelectedText" xml:space="preserve">
+    <value>글자색 — 고른 글자에(카드만 골랐으면 그 카드들의 글 전체에)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_BackgroundColorBehindSelectedText" xml:space="preserve">
+    <value>바탕색 — 고른 글자 뒤에(카드만 골랐으면 그 카드들의 글 전체에)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_AlignLeftAllTextIn" xml:space="preserve">
+    <value>왼쪽 정렬 — 이 카드의 글 전체(카드를 여러 장 골랐으면 모두)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_AlignCenterAllTextIn" xml:space="preserve">
+    <value>가운데 정렬 — 이 카드의 글 전체(카드를 여러 장 골랐으면 모두)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_AlignRightAllTextIn" xml:space="preserve">
+    <value>오른쪽 정렬 — 이 카드의 글 전체(카드를 여러 장 골랐으면 모두)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_TighterLineSpacingAllText" xml:space="preserve">
+    <value>줄 간격 좁게 — 이 카드의 글 전체를 10%씩(카드를 여러 장 골랐으면 모두)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ThisCardSLineSpacing" xml:space="preserve">
+    <value>이 카드의 줄 간격 — 글자 크기에 대한 %. 숫자를 적고 Enter면 그 값이 됩니다(250까지 · Esc는 그만두기). 처음 값은 카드를 만들 때 설정 「대본 글 칸」의 줄 간격입니다. 그 글꼴 · 크기에서 가장 좁은 값(한글 한 줄 높이)에서 멈춥니다 — 더 좁히면 숫자만 내려가고 화면은 그대로라서.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_LooserLineSpacingAllText" xml:space="preserve">
+    <value>줄 간격 넓게 — 이 카드의 글 전체를 10%씩(카드를 여러 장 골랐으면 모두)</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_FormatValue" xml:space="preserve">
+    <value>서식 값</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_IsnTSizeTypeNumber" xml:space="preserve">
+    <value>「{0}」는 크기가 아닙니다 — 숫자(pt)를 적으세요.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_CardSBaseSizeIs" xml:space="preserve">
+    <value>카드의 기본 크기는 {0:0} ~ {1:0}pt입니다 — {2:0}pt로 맞췄습니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_SetBaseSizeOfSelected" xml:space="preserve">
+    <value>고른 카드 {0}장의 기본 크기를 {1:0}pt로 — 되돌리기(Ctrl+Z) 한 번에 모두 돌아옵니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ThisCardSTextSize" xml:space="preserve">
+    <value>이 카드의 글자 크기는 {0} ~ {1}pt입니다 — {2}pt로 맞췄습니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_IsnTLineSpacingType" xml:space="preserve">
+    <value>「{0}」는 줄 간격이 아닙니다 — 숫자(%)를 적으세요.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_LineSpacingGoesUpTo" xml:space="preserve">
+    <value>줄 간격은 {0}%까지입니다 — {0}%로 맞췄습니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_SetLineSpacingOfSelected" xml:space="preserve">
+    <value>고른 카드 {0}장의 줄 간격을 {1}%로 — 되돌리기(Ctrl+Z) 한 번에 모두 돌아옵니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_LineSpacingAllTextIn" xml:space="preserve">
+    <value>줄 간격 — 이 카드의 글 전체</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ClearBackgroundColor" xml:space="preserve">
+    <value>바탕색을 걷습니다</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ClearTextColor" xml:space="preserve">
+    <value>글자색을 걷습니다</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_TextFormatting" xml:space="preserve">
+    <value>글 서식</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_SelectTextToFormatFirst" xml:space="preserve">
+    <value>서식을 입힐 글자를 먼저 고르세요 — 글 칸에서 글자를 끌어 고릅니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ThisCardIsBoldFrom" xml:space="preserve">
+    <value>이 카드는 처음부터 굵게입니다(설정 「대본 글 칸」의 굵게로 만든 카드) — 일부만 가늘게 할 수는 없습니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_SelectionHasNoDialogueText" xml:space="preserve">
+    <value>고른 범위에 서식을 입힐 대사 글이 없습니다 — 화자 이름 · 조건 줄에는 입히지 않고, 넣지 못한 줄은 넣은 뒤에 입힙니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_CardsThatAreBoldFrom" xml:space="preserve">
+    <value>처음부터 굵게인 카드(설정 「대본 글 칸」의 굵게로 만든 카드)는 가늘게 할 수 없어 그대로 굵습니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_AppliedToSelectedCardsOne" xml:space="preserve">
+    <value>고른 카드 {0}장에 입혔습니다 — 되돌리기(Ctrl+Z) 한 번에 모두 돌아옵니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_TextAlignment" xml:space="preserve">
+    <value>글 정렬</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_LineSpacing" xml:space="preserve">
+    <value>줄 간격</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_ThisIsMinimumLineSpacing" xml:space="preserve">
+    <value>최소 줄 간격입니다.</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Format_TurnsOnWhenYouSelect" xml:space="preserve">
+    <value>하이어아키 · 판에서 에피소드를 고르거나, 카드의 글 칸에서 글자를 고르면 켜집니다</value>
+    <comment>GraphEditorView.Writer.cs</comment>
+  </data>
+  <data name="Board_NothingChanges" xml:space="preserve">
+    <value>놓아도 그대로</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereChangesNothingDrop" xml:space="preserve">
+    <value>여기 놓으면 아무것도 바뀌지 않습니다 — 같은 챕터의 에피소드 카드 위에서 놓으면 잇습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_Disconnect" xml:space="preserve">
+    <value>✂ 연결 끊기</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereDisconnectsPathTo" xml:space="preserve">
+    <value>여기 놓으면 '{0}'{1} 가던 연결이 끊깁니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_TextStaysInSlotSo" xml:space="preserve">
+    <value> 문구 「{0}」{1} 칸에 남아 다시 이을 수 있습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_ToKeepItDropOn" xml:space="preserve">
+    <value> 끊지 않으려면 다른 에피소드 카드 위에서 놓거나, 원래 카드 위에서 놓으세요.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_CanTConnectToBranch" xml:space="preserve">
+    <value>✕ 분기 카드에는 못 이음</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_IsBranchCardChoicesConnect" xml:space="preserve">
+    <value>'{0}'{1} 분기 카드입니다 — 선택지는 에피소드 카드에만 잇습니다(분기 카드는 분기점으로 들렀다 돌아오는 카드입니다). 여기 놓으면 아무것도 바뀌지 않습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_NotEpisode" xml:space="preserve">
+    <value>✕ 에피소드가 아님</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_IsnTEpisodeChoicesConnect" xml:space="preserve">
+    <value>'{0}'{1} 에피소드가 아닙니다 — 선택지는 에피소드 카드에 잇습니다. 여기 놓으면 아무것도 바뀌지 않습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_AnotherChapter" xml:space="preserve">
+    <value>✕ 다른 챕터</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_IsEpisodeInAnotherChapter" xml:space="preserve">
+    <value>'{0}'{1} 다른 챕터('{2}')의 에피소드입니다 — 선택지는 같은 챕터 안에서만 잇습니다. 여기 놓으면 아무것도 바뀌지 않습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_AlreadyConnected" xml:space="preserve">
+    <value>이미 이어짐</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_AlreadyConnectedToDroppingHere" xml:space="preserve">
+    <value>이미 '{0}'{1} 이어져 있습니다 — 여기 놓으면 그대로입니다. 빈 곳에 놓으면 끊깁니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_SameChoiceExists" xml:space="preserve">
+    <value>✕ 같은 선택지가 있음</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_ThisEpisodeAlreadyHasChoice" xml:space="preserve">
+    <value>'{0}'{1} 가는 「{2}」 선택지가 이 에피소드에 이미 있습니다 — 문구를 바꾸거나 다른 에피소드에 놓으세요. 여기 놓으면 아무것도 바뀌지 않습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_ThisEpisodeAlreadyHasPath" xml:space="preserve">
+    <value>'{0}'{1} 가는 문구 없는 길이 이 에피소드에 이미 있습니다 — 문구를 바꾸거나 다른 에피소드에 놓으세요. 여기 놓으면 아무것도 바뀌지 않습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_SceneWouldGetTwoEntrances" xml:space="preserve">
+    <value>✕ 장면 입구가 둘이 됨</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereChangesNothing" xml:space="preserve">
+    <value> 여기 놓으면 아무것도 바뀌지 않습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_ConnectAsAutoPath" xml:space="preserve">
+    <value>↪ 자동 길로 잇기 → {0}</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_Connect" xml:space="preserve">
+    <value>↪ 잇기 → {0}</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereMakesAutoPath" xml:space="preserve">
+    <value>여기 놓으면 문구 없이 '{0}'{1} 지나가는 자동 길이 됩니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereConnectsTo" xml:space="preserve">
+    <value>여기 놓으면 「{0}」{1} '{2}'에 잇습니다.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_Reconnect" xml:space="preserve">
+    <value>↪ 옮겨 잇기 → {0}</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereSendsAutoPath" xml:space="preserve">
+    <value>여기 놓으면 자동 길이 '{0}' 대신 '{1}'{2} 갑니다(조건 · 스탯 변화는 그대로).</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DroppingHereSendsToInstead" xml:space="preserve">
+    <value>여기 놓으면 「{0}」{1} '{2}' 대신 '{3}'{4} 갑니다(조건 · 스탯 변화는 그대로).</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_IsnTStartOfAnother" xml:space="preserve">
+    <value>'{0}'{1} 다른 장면('{2}')의 시작점이 아닙니다 — 그 장면은 이미 {3}에서 시작합니다. 장면은 한 자리에서만 시작해야 해서(롤백이 되돌아가고 이어하기가 재개하는 자리) 잇지 않습니다. 그 장면의 시작점 {3}에 잇거나, '{0}'{4} 다른 장면으로 나눈 뒤 이으세요.</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_WriteTextToDragAnd" xml:space="preserve">
+    <value>문구를 적으면 끌어서 이을 수 있습니다</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DragOntoEpisodeCardIn2" xml:space="preserve">
+    <value>끌어서 같은 챕터의 에피소드 카드에 놓으면 잇습니다</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_DragOntoAnotherEpisodeTo" xml:space="preserve">
+    <value>끌어서 다른 에피소드에 놓으면 옮겨 잇고 · 빈 곳에 놓으면 끊깁니다</value>
+    <comment>GraphEditorView.ChoiceDrop.cs</comment>
+  </data>
+  <data name="Board_None" xml:space="preserve">
+    <value>없음</value>
+    <comment>GraphEditorView.Find.cs</comment>
+  </data>
+  <data name="Board_Chapter2" xml:space="preserve">
+    <value>챕터</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_BoardNewNodesGoOn" xml:space="preserve">
+    <value>새 노드가 설 판입니다. [구성] 탭의 선택과 같은 값을 봅니다.</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_Episode" xml:space="preserve">
+    <value>+ 에피소드</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_CollapseHierarchyBoardGetsWider" xml:space="preserve">
+    <value>하이어아키를 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다.</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_ExpandHierarchy" xml:space="preserve">
+    <value>하이어아키를 펼칩니다</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_CreateFirstChapter" xml:space="preserve">
+    <value>＋ 첫 챕터 만들기</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_CreatesWithSceneAndOne" xml:space="preserve">
+    <value>「새 챕터」를 장면 「새 장면」 · 에피소드 하나와 함께 세웁니다 — 하이어아키 우클릭 「챕터 추가」와 같습니다. 되돌리기(Ctrl+Z)가 됩니다.</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_OpensProjectYouReceivedChoose" xml:space="preserve">
+    <value>받은 프로젝트를 엽니다 — project.vnproject.json이 든 폴더를 고르세요. File → [열기…]와 같습니다.</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_StartsFreshChooseEmptyFolder" xml:space="preserve">
+    <value>처음부터 시작합니다 — 프로젝트를 둘 빈 폴더를 고르세요. File → [새 프로젝트…]와 같습니다.</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_FitAll" xml:space="preserve">
+    <value>전체</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_FindDialogueSpeakersTitles" xml:space="preserve">
+    <value>찾기 — 대사 · 화자 · 제목</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_PreviousShiftEnter" xml:space="preserve">
+    <value>앞의 것 (Shift+Enter)</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_NextEnter" xml:space="preserve">
+    <value>다음 것 (Enter)</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_CloseEscKeepWritingRight" xml:space="preserve">
+    <value>닫기 (Esc) — 찾은 대사에서 바로 이어 씁니다</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_Inspector" xml:space="preserve">
+    <value>인스펙터</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_Speakers" xml:space="preserve">
+    <value>화자</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_SpeakersForWholeProject" xml:space="preserve">
+    <value>프로젝트 단위 화자</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_EveryChapterUsesSameList" xml:space="preserve">
+    <value>모든 챕터가 같은 목록을 씁니다</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_ConditionsStats" xml:space="preserve">
+    <value>조건 및 스탯</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_ConditionsStatsForThisChapter" xml:space="preserve">
+    <value>챕터 단위 조건 · 스탯</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_UsedOnlyInThisChapter" xml:space="preserve">
+    <value>이 챕터에서만 씁니다 — 챕터마다 따로입니다</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_ChapterThisTabShowsFollows" xml:space="preserve">
+    <value>이 탭이 보이는 챕터 — 지금 챕터를 따라갑니다. 고르면 그 챕터로 갑니다(툴바의 챕터 콤보와 같습니다).</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_CollapseSidePanelInspectorSpeakers" xml:space="preserve">
+    <value>오른쪽 기둥(인스펙터 · 화자 · 조건 및 스탯)을 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다.</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_ExpandSidePanel" xml:space="preserve">
+    <value>오른쪽 기둥을 펼칩니다</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Board_InspectorSpeakersConditionsStats" xml:space="preserve">
+    <value>인스펙터 · 화자 · 조건 및 스탯</value>
+    <comment>GraphEditorView.axaml</comment>
+  </data>
+  <data name="Dialogue_AddLineAtEnd" xml:space="preserve">
+    <value>맨 아래에 줄 추가</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddLine" xml:space="preserve">
+    <value>줄 추가</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ForAllSelectedEpisodeCards" xml:space="preserve">
+    <value>고른 에피소드 카드 {0}장 모두에 — 켜면 [대본] 탭에서 카드 아래에 이어진 선택지만 보입니다(안 이은 칸은 자동 칸까지 감춥니다).</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_OnlySomeAreOnNow" xml:space="preserve">
+    <value> 지금은 일부만 켜져 있습니다 — 누르면 모두 켭니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_WhenOnOnlyChoicesConnected" xml:space="preserve">
+    <value>켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요. 하이어아키에서 여러 개를 고르면(Ctrl · Shift+클릭) 그 에피소드 모두에 한 번에 켜고 끕니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_TitleShownInGameEdit" xml:space="preserve">
+    <value>게임에 보이는 제목입니다. 고치고 Enter. 비우면 에피소드ID({0})가 보입니다. 에피소드ID는 [구성] 탭에서 정합니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_BranchCardSTitleEdit" xml:space="preserve">
+    <value>분기 카드의 제목입니다. 고치고 Enter. 비우면 분기 카드 ID({0})가 보입니다. ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_PressAddLineToStart" xml:space="preserve">
+    <value>'줄 추가'를 누르면 바로 타이핑할 수 있습니다. 긴 대본은 카드 안 글 칸에 붙여 넣습니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddLineBelow" xml:space="preserve">
+    <value>아래에 줄 추가</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_InsertsNewLineRightBelow" xml:space="preserve">
+    <value>이 줄 바로 아래에 새 줄을 끼워 넣습니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_RemovesThisLineFromScript" xml:space="preserve">
+    <value>대본에서 이 줄을 뺍니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteLine" xml:space="preserve">
+    <value>줄 삭제</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Dialogue" xml:space="preserve">
+    <value>대사</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Speaker" xml:space="preserve">
+    <value>화자</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ChooseFromRegisteredSpeakers" xml:space="preserve">
+    <value>등록된 화자 목록에서 선택</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_NoSpeakersRegisteredAddSpeakers" xml:space="preserve">
+    <value>등록된 화자가 없습니다 — 오른쪽 「화자」 탭에서 화자를 더하면 여기 목록에 옵니다. 그때까지는 화자 칸에 직접 입력하세요.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_UnknownCondition" xml:space="preserve">
+    <value>알 수 없는 조건</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_EndOfCondition" xml:space="preserve">
+    <value>조건 종료</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ThisLineSConditionSwitch" xml:space="preserve">
+    <value>이 줄의 조건 전환입니다 — 분기 카드의 조건이나 대본 글의 &lt;&lt;if&gt;&gt;로 고칩니다. {0}</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_BranchPoint" xml:space="preserve">
+    <value>⑂ 분기점 {0}/{1}</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_BranchPoint2" xml:space="preserve">
+    <value>⑂ 분기점</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_NotConnected" xml:space="preserve">
+    <value> — 이어지지 않음</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteBranchPoint" xml:space="preserve">
+    <value>✕ 분기점 지우기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeletesUnconnectedBranchPointUndo" xml:space="preserve">
+    <value>이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ThereSNowhereToVisit" xml:space="preserve">
+    <value>다녀갈 곳이 없어 지나갑니다 — [대본] 판에서 이 분기점을 끌어 카드에 이으면 다시 분기가 됩니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_RightClickToDeleteThis" xml:space="preserve">
+    <value>우클릭하면 이 분기점을 지웁니다(✕ 분기점 지우기와 같다). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteBranchPoint2" xml:space="preserve">
+    <value>분기점 지우기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeletedUnconnectedBranchPoint" xml:space="preserve">
+    <value>이어지지 않은 분기점을 지웠습니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ConditionalBranch" xml:space="preserve">
+    <value>⑂ 조건 분기 {0}/{1}</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ConditionalBranch2" xml:space="preserve">
+    <value>⑂ 조건 분기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_VisitsThenContinuesFromThis" xml:space="preserve">
+    <value>다녀왔다가 이 줄부터 이어집니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_VisitsThenGoesToNext" xml:space="preserve">
+    <value>다녀왔다가 다음 분기로 갑니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_RightClickToDeleteThis2" xml:space="preserve">
+    <value>우클릭하면 이 분기를 지웁니다(✕ 분기 지우기와 같다) — 다녀가던 카드는 남습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Condition" xml:space="preserve">
+    <value>⑂ 조건</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_BranchIsAlwaysVisitedAnd" xml:space="preserve">
+    <value> 분기로는 늘 들르고, 이 카드가 첫머리에서 조건을 봅니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteBranch" xml:space="preserve">
+    <value>✕ 분기 지우기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeletesOnlyThisBranchBranch" xml:space="preserve">
+    <value>이 분기(분기점과 선)만 지웁니다 — 다녀가던 카드는 판에 남습니다. 카드를 없애려면 그 카드를 고르고 [분기 카드 삭제]를 누르세요. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteBranch2" xml:space="preserve">
+    <value>분기 지우기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddBranchBeforeThisLine" xml:space="preserve">
+    <value>이 줄 앞에 분기를 더하거나, 줄을 옮기고 지우고 아래에 더합니다. 열고 Tab — [아래에 줄 추가].</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Branch" xml:space="preserve">
+    <value>분기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ThereSOneBranchBefore" xml:space="preserve">
+    <value>이 줄 앞에 분기가 하나 있습니다 — 더하면 그 뒤에 서고 차례로 다녀옵니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ThereAreBranchesBeforeThis" xml:space="preserve">
+    <value>이 줄 앞에 분기가 {0}개 있습니다 — 위에서부터 차례로 다녀옵니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteBranch3" xml:space="preserve">
+    <value>✕ '{0}' 분기 지우기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteUnconnectedBranchPointNo" xml:space="preserve">
+    <value>✕ 이어지지 않은 분기점({0}번째) 지우기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_BranchCardsDonTBranch" xml:space="preserve">
+    <value>분기 카드 안에서는 분기를 내지 않습니다 — 들렀다 돌아오는 곳입니다. 갈라야 하면 부르는 에피소드에 분기를 하나 더 두세요.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ChapterEpisodeChoicesAndStat" xml:space="preserve">
+    <value>📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서 고칩니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Line" xml:space="preserve">
+    <value>줄</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Up" xml:space="preserve">
+    <value>▲ 위로</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Down" xml:space="preserve">
+    <value>▼ 아래로</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_Delete" xml:space="preserve">
+    <value>✕ 삭제</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddLineBelow2" xml:space="preserve">
+    <value>＋ 아래에 줄 추가</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddsNewLineRightBelow" xml:space="preserve">
+    <value>이 줄 바로 아래에 새 줄을 더하고 그 줄의 화자 칸으로 갑니다(Enter).</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddBranch" xml:space="preserve">
+    <value>＋ 분기 추가</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_SplitsBeforeThisLineBranch" xml:space="preserve">
+    <value>이 줄 앞에서 갈라집니다. 다녀올 분기 카드가 함께 서고 이미 이어진 상태입니다 — 처음에는 조건 없이 늘 다녀옵니다. </value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_IfThereSAlreadyBranch" xml:space="preserve">
+    <value> 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddBranch2" xml:space="preserve">
+    <value>분기 추가</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_AddedBranchForNowIt" xml:space="preserve">
+    <value>분기 '{0}'{1} 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {2}</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ConditionLeftOnLineRemoved" xml:space="preserve">
+    <value>대본에서 사라진 줄에 남은 조건</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_LastContent" xml:space="preserve">
+    <value>마지막 내용: {0}: {1}</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ThisLineIsnTIn" xml:space="preserve">
+    <value>이 대본에 없는 줄입니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_DeleteCondition" xml:space="preserve">
+    <value>조건 지우기</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_ThisIsFirstLineUnder" xml:space="preserve">
+    <value>분기 조건이 걸린 첫 줄이라 지우거나 옮길 수 없습니다 — 조건 구조가 깨집니다. 글은 카드의 글 칸에서 고치세요(조건 줄은 지켜집니다). 조건은 이 카드 위의 「⑂ 조건」에서 바꿉니다.</value>
+    <comment>DialogueNodeEditor.axaml.cs</comment>
+  </data>
+  <data name="Dialogue_SceneName" xml:space="preserve">
+    <value>장면 이름</value>
+    <comment>DialogueNodeEditor.axaml</comment>
+  </data>
+  <data name="Dialogue_HideEmptyChoices" xml:space="preserve">
+    <value>빈 선택지 숨기기</value>
+    <comment>DialogueNodeEditor.axaml</comment>
+  </data>
+  <data name="Dialogue_WhenOnOnlyChoicesConnected2" xml:space="preserve">
+    <value>켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요.</value>
+    <comment>DialogueNodeEditor.axaml</comment>
+  </data>
+  <data name="Side_LinkCharacterKeysInStructure" xml:space="preserve">
+    <value>[구성] 탭에서 캐릭터 키 잇기</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_SelectChapterToSeeIts" xml:space="preserve">
+    <value>챕터를 고르면 그 챕터의 조건 · 스탯이 여기 섭니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_NoChapterSelected" xml:space="preserve">
+    <value>고른 챕터가 없습니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_StatsAndConditionExpressionsAre" xml:space="preserve">
+    <value>스탯과 조건의 식은 [구성] 탭에서 정합니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_OpenConditionsStatsInStructure" xml:space="preserve">
+    <value>[구성] 탭에서 조건 · 스탯 열기</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ChapterNameEmptyShowsChapter" xml:space="preserve">
+    <value>챕터 이름 (비우면 챕터 ID)</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ChapterNameShownInGame" xml:space="preserve">
+    <value>게임에 보이는 챕터 이름입니다. 고치고 Enter. 비우면 챕터 ID({0})가 보입니다. ID는 [구성] 탭에서 정합니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ChapterName" xml:space="preserve">
+    <value>챕터 이름</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_SelectLines" xml:space="preserve">
+    <value>선 고르기</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Show" xml:space="preserve">
+    <value>보이기</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_HierarchyMenu" xml:space="preserve">
+    <value>하이어아키 차림표</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_MoveScene" xml:space="preserve">
+    <value>장면 옮기기</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ToScriptTab" xml:space="preserve">
+    <value>[대본] 탭으로</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ToStructureTab" xml:space="preserve">
+    <value>[구성] 탭으로</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Board" xml:space="preserve">
+    <value>판</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_UpdateSelection" xml:space="preserve">
+    <value>선택 맞추기</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_DialogueNode" xml:space="preserve">
+    <value>대사 노드 · {0}</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_SelectSomethingInHierarchyOr" xml:space="preserve">
+    <value>하이어아키나 판에서 고르면 여기서 편집합니다</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Project" xml:space="preserve">
+    <value>프로젝트</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_SpeakersAreInSpeakersTab" xml:space="preserve">
+    <value>화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ThisChapterSNameStats" xml:space="preserve">
+    <value>이 챕터의 이름 · 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_SceneNameEmptyShowsScene" xml:space="preserve">
+    <value>장면 이름 (비우면 장면 ID)</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_SceneNameEditAndPress" xml:space="preserve">
+    <value>장면 이름입니다. 고치고 Enter. 비우면 장면 ID({0})가 보입니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_SelectedItemIsGoneSelect" xml:space="preserve">
+    <value>고른 것이 사라졌습니다 — 하이어아키에서 다시 고르세요</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_TextWritten" xml:space="preserve">
+    <value>쓴 글</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_CharactersOfDialogueNarrationWritten" xml:space="preserve">
+    <value>이 챕터의 에피소드 · 분기 카드에 쓴 대사 · 지문의 글자 수입니다(공백 포함). 화자 이름은 세지 않습니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Characters" xml:space="preserve">
+    <value>자</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_WithoutSpacesLines" xml:space="preserve">
+    <value>공백 제외 {0}자 · {1}줄</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_StatsPasteIntoDialogue" xml:space="preserve">
+    <value>스탯 — 대사에 붙여 쓰기</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ThisChapterHasNoStats" xml:space="preserve">
+    <value>이 챕터에는 아직 스탯이 없습니다 — [구성] 탭에서 더합니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_ThisChapterHasNoStats2" xml:space="preserve">
+    <value>이 챕터에는 아직 스탯이 없습니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Stat" xml:space="preserve">
+    <value>스탯</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Range" xml:space="preserve">
+    <value>범위</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_TextForScript" xml:space="preserve">
+    <value>대본에 쓰는 글</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_OnOff10Starts" xml:space="preserve">
+    <value>활성/비활성(1/0) · 처음 </value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_On" xml:space="preserve">
+    <value>활성</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Off" xml:space="preserve">
+    <value>비활성</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Starts" xml:space="preserve">
+    <value>{0}~{1} · 처음 {2}</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Copy" xml:space="preserve">
+    <value>복사</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_CopiesPastedIntoDialogueIt" xml:space="preserve">
+    <value>{0}를 복사합니다 — 대사에 붙이면 그 자리에 {1}의 지금 값이 나옵니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_CopyStat" xml:space="preserve">
+    <value>스탯 복사</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_CanTAccessClipboardSelect" xml:space="preserve">
+    <value>클립보드에 접근할 수 없습니다 — 글을 끌어 골라 복사하세요.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_CopiedPastedIntoDialogueIt" xml:space="preserve">
+    <value>{0}를 복사했습니다 — 대사에 붙이면 그 자리에 {1}의 지금 값이 나옵니다.</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_Summary" xml:space="preserve">
+    <value>요약</value>
+    <comment>MainWindow.Hierarchy.cs</comment>
+  </data>
+  <data name="Side_EpisodesOfSceneAndBranch" xml:space="preserve">
+    <value>장면 「{0}」의 에피소드 {1}개와 그 에피소드가 부르던 분기 카드 {2}장이 [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_EpisodesOfSceneWillBe" xml:space="preserve">
+    <value>장면 「{0}」의 에피소드 {1}개가 [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_DeleteScene" xml:space="preserve">
+    <value>장면 지우기</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_DeletedSceneEpisodesBranchCards" xml:space="preserve">
+    <value>장면 「{0}」를 지웠습니다 — 에피소드 {1}개, 분기 카드 {2}장. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_DeletedSceneEpisodesUndoCtrl" xml:space="preserve">
+    <value>장면 「{0}」를 지웠습니다 — 에피소드 {1}개. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_ClearedTitleEpisodeIDIs" xml:space="preserve">
+    <value>제목을 비웠습니다 — 에피소드ID '{0}'{1} 보입니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_RenamedTitleToEpisodeID" xml:space="preserve">
+    <value>제목을 '{0}'{1} 바꿨습니다. 에피소드ID '{2}'{3} 그대로입니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_ClearedChapterNameChapterID" xml:space="preserve">
+    <value>챕터 이름을 비웠습니다 — 챕터 ID가 보입니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_RenamedChapterToUndoCtrl" xml:space="preserve">
+    <value>챕터 이름을 「{0}」{1} 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_ClearedSceneNameSceneID" xml:space="preserve">
+    <value>장면 이름을 비웠습니다 — 장면 ID가 보입니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_RenamedSceneToScenesWith" xml:space="preserve">
+    <value>장면 이름을 「{0}」{1} 바꿨습니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_MovedToSceneUndoCtrl" xml:space="preserve">
+    <value>'{0}'를 장면 '{1}'로 옮겼습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_MovedToSceneItsEpisode" xml:space="preserve">
+    <value>'{0}'를 장면 '{1}'로 옮겼습니다(에피소드ID는 '{2}'로 따라갔습니다). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_AddedRenameItByDouble" xml:space="preserve">
+    <value>「{0}」를 더했습니다. 이름은 하이어아키에서 두 번 눌러 고칩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_AddedSceneRenameItBy" xml:space="preserve">
+    <value>「{0}」 장면을 더했습니다. 이름은 하이어아키에서 두 번 눌러 고칩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Speakers_NamesToPickInScript" xml:space="preserve">
+    <value>대본의 화자 칸에서 고를 이름입니다. 모든 챕터가 같은 목록을 씁니다. 이름을 고치면 이미 쓴 대사 줄도 따라갑니다. 이름 앞의 색 단추로 대본 칸에서 그 이름이 보일 색을 정합니다(게임에는 나가지 않습니다). 캐릭터 키(초상화 · 표정)는 [구성] 탭에서 잇습니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_NoSpeakersYetTypeName" xml:space="preserve">
+    <value>아직 화자가 없습니다 — 아래에 이름을 적고 [＋ 추가]를 누르세요.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_NoSpeakersYet" xml:space="preserve">
+    <value>아직 화자가 없습니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_NewSpeakerName" xml:space="preserve">
+    <value>새 화자 이름</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_Add" xml:space="preserve">
+    <value>＋ 추가</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_EnterAlsoAddsSameName" xml:space="preserve">
+    <value>Enter로도 더합니다. 같은 이름은 한 번만 섭니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_AddSpeaker" xml:space="preserve">
+    <value>화자 추가</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_AddedSpeakerItCanBe" xml:space="preserve">
+    <value>화자 '{0}'을 더했습니다 — 모든 챕터의 대본에서 고를 수 있습니다. 캐릭터 키는 임시로 '{1}' — [구성] 탭에서 그림에 맞게 바꿉니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_NamesOnlyInScript" xml:space="preserve">
+    <value>대본에만 있는 이름 {0}개</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_NamesTypedDirectlyInDialogue" xml:space="preserve">
+    <value>대사의 화자 칸에 바로 적었지만 위 목록에 없는 이름입니다. [등록]하면 목록에 서고(캐릭터 키는 임시 키), 이름을 고치면 그 이름의 대사 줄이 모두 따라갑니다 — 목록에 있는 이름으로 고치면 그 화자로 합쳐집니다(오타 고치기).</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_RegisterRenamingUpdatesThoseLines" xml:space="preserve">
+    <value>[등록] · 이름을 고치면 그 줄들이 따라갑니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_RegisterAll" xml:space="preserve">
+    <value>모두 등록</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_PutsNamesAboveIntoSpeaker" xml:space="preserve">
+    <value>위 {0}개 이름을 한꺼번에 화자 목록에 올립니다 — 캐릭터 키는 임시 키. 되돌리기(Ctrl+Z) 한 번에 모두 돌아갑니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_RegisterAllSpeakers" xml:space="preserve">
+    <value>화자 모두 등록</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_RenamingUpdatesAllDialogueLines" xml:space="preserve">
+    <value>고치면 '{0}'{1} 화자인 대사 {2}줄이 모두 따라갑니다. 목록에 있는 이름으로 고치면 그 화자로 합쳐집니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_SpeakerNameInScript" xml:space="preserve">
+    <value>대본의 화자 이름</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_Lines" xml:space="preserve">
+    <value>{0}줄</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_Register" xml:space="preserve">
+    <value>등록</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_PutsInSpeakerListWith" xml:space="preserve">
+    <value>'{0}'{1} 화자 목록에 올립니다 — 캐릭터 키는 임시 키로 섭니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_RegisterSpeaker" xml:space="preserve">
+    <value>화자 등록</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_NameBackground" xml:space="preserve">
+    <value>이름 바탕색</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_NameColor" xml:space="preserve">
+    <value>이름 색</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_ClearNameBackgroundShownWithout" xml:space="preserve">
+    <value>이름 바탕색을 걷습니다 — 바탕 없이 보입니다</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_ClearNameColorShownIn" xml:space="preserve">
+    <value>이름 색을 걷습니다 — 보통 글자색으로 보입니다</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_InScriptBoxClickTo" xml:space="preserve">
+    <value>대본 칸에서 '{0}' {1} — {2}. 누르면 바꿉니다(게임에는 나가지 않습니다).</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_InScriptBoxNotSet" xml:space="preserve">
+    <value>대본 칸에서 '{0}' {1} — 정하지 않았습니다. 누르면 고릅니다(게임에는 나가지 않습니다).</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_Speaker" xml:space="preserve">
+    <value>화자 </value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_SetOfSpeakerToName" xml:space="preserve">
+    <value>화자 '{0}'의 {1}을 {2}로 정했습니다 — 대본 칸에서 그 이름이 그렇게 보입니다. 되돌리기 한 번이면 돌아갑니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_ClearedOfSpeaker" xml:space="preserve">
+    <value>화자 '{0}'의 {1}을 걷었습니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_SpeakerName" xml:space="preserve">
+    <value>화자 이름</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_RemovesFromListNamesAlready" xml:space="preserve">
+    <value>'{0}'를 목록에서 지웁니다. 이미 대본에 적힌 이름은 그대로 남습니다(화자 칸은 자유 입력).</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_DeleteSpeaker" xml:space="preserve">
+    <value>화자 삭제</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Speakers_RemovedSpeakerFromListNames" xml:space="preserve">
+    <value>화자 '{0}'를 목록에서 지웠습니다 — 이미 대본에 적힌 이름은 그대로입니다.</value>
+    <comment>MainWindow.Speakers.cs</comment>
+  </data>
+  <data name="Side_SelectedChoiceIsGoneSelect" xml:space="preserve">
+    <value>고른 선택지가 사라졌습니다 — 판에서 다시 고르세요</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_Choice" xml:space="preserve">
+    <value>선택지 · {0} → {1}</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_EditTextHereAndConditions" xml:space="preserve">
+    <value>문구는 여기서, 조건 · 스탯변화는 [구성] 탭에서 고칩니다</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_ShowCondition" xml:space="preserve">
+    <value>표시조건</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_OtherwiseItIsnTListed" xml:space="preserve">
+    <value>{0} — 아니면 목록에 안 보입니다</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_UnlockCondition" xml:space="preserve">
+    <value>해금조건</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_OtherwiseItSShownLocked" xml:space="preserve">
+    <value>{0} — 아니면 잠긴 채 보입니다</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_LockedHint" xml:space="preserve">
+    <value>잠금 안내문</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_StatChange" xml:space="preserve">
+    <value>스탯변화</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_NoConditionsOrStatChanges" xml:space="preserve">
+    <value>조건과 스탯변화가 없습니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_EditThisChoiceInStructure" xml:space="preserve">
+    <value>[구성] 탭에서 이 선택지 고치기</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_LeaveEmptyForAUTOMoves" xml:space="preserve">
+    <value>비우면 AUTO — 플레이어 입력 없이 넘어갑니다</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_Text" xml:space="preserve">
+    <value>문구</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_AUTOMovesOnWithoutPlayer" xml:space="preserve">
+    <value>AUTO — 플레이어 입력 없이 넘어갑니다. 문구를 적으면 선택지가 됩니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_AUTOMovesOnWithoutPlayer2" xml:space="preserve">
+    <value>AUTO — 플레이어 입력 없이 넘어갑니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_NoTextChoiceNeedsText" xml:space="preserve">
+    <value>⚠ 문구 없음 — 선택지에는 문구가 있어야 합니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_TextWasnTClearedChoices" xml:space="preserve">
+    <value>문구를 비우지 않았습니다 — 길이 둘 이상인 에피소드의 선택지에는 문구가 있어야 합니다. 자동 길(AUTO)은 하나뿐인 길만 될 수 있습니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_ClearingTextMadeItAuto" xml:space="preserve">
+    <value>문구를 지워 자동 길(AUTO)이 됐습니다 — 플레이어 입력 없이 넘어갑니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_AutoPathBecameChoiceUndo" xml:space="preserve">
+    <value>자동 길이 선택지 「{0}」가 됐습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_ChangedChoiceTextToUndo" xml:space="preserve">
+    <value>선택지 문구를 「{0}」로 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_ReselectChoice" xml:space="preserve">
+    <value>선택지 다시 고르기</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_Branch" xml:space="preserve">
+    <value>분기 · {0} → {1}</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_BranchCardVisitedAndReturned" xml:space="preserve">
+    <value>들렀다 돌아오는 분기 카드</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_ChooseConditionAtTopOf" xml:space="preserve">
+    <value> 조건은 분기 카드 「{0}」를 고르면 대본 위쪽에서 고릅니다.</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Side_OpenInStructureTab" xml:space="preserve">
+    <value>[구성] 탭에서 열기</value>
+    <comment>MainWindow.LineInspector.cs</comment>
+  </data>
+  <data name="Notes_WriteFreelyAboutThisScene" xml:space="preserve">
+    <value>이 장면의 사정을 자유롭게 적습니다 — 보여 줄 것 · 인물마다 감정(처음 → 끝) · 감정이 꺾이는 대사 · 무대에 있는 사람 · 장소 · 시간. 연출(움직임 · 표정 이름)은 적지 않습니다.</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_NotesDirectionsForThisEpisode" xml:space="preserve">
+    <value>이 에피소드에만 해당하는 사정 · 지시</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_SceneNote" xml:space="preserve">
+    <value>장면 메모</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_EpisodeDirection" xml:space="preserve">
+    <value>에피소드 지시</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_ChooseEpisodeInSceneAnd" xml:space="preserve">
+    <value>장면 안의 에피소드를 골라 그 에피소드에만 해당하는 지시를 적습니다. 지시가 비어도 카드는 남고, [빼기]로 뗍니다. Enter는 줄바꿈, Ctrl+Enter로 넣고 Esc로 되돌립니다.</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_Episode" xml:space="preserve">
+    <value>＋ 에피소드</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_EveryEpisodeInSceneHas" xml:space="preserve">
+    <value>장면의 에피소드마다 카드가 있습니다</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_Remove" xml:space="preserve">
+    <value>빼기</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_DeletesThisEpisodeSDirection" xml:space="preserve">
+    <value>이 에피소드의 지시를 지우고 카드를 뺍니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_RemoveEpisodeDirection" xml:space="preserve">
+    <value>에피소드 지시 빼기</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_RemovedDirectionCardForUndo" xml:space="preserve">
+    <value>'{0}'의 지시 카드를 뺐습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_EpisodeCard" xml:space="preserve">
+    <value>에피소드 카드</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_OrphanedSceneNote" xml:space="preserve">
+    <value>주인 없는 장면 메모</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_NoteWhoseSceneNoLonger" xml:space="preserve">
+    <value>그 장면의 에피소드가 없어진 메모입니다. 같은 이름으로 장면을 되살리면 다시 그 장면의 메모가 됩니다.</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_DeleteOrphanedNote" xml:space="preserve">
+    <value>주인 없는 메모 지우기</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_DeletedNoteForSceneUndo" xml:space="preserve">
+    <value>장면 '{0}'의 메모를 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Notes_NameOnly" xml:space="preserve">
+    <value> — (이름만)</value>
+    <comment>MainWindow.SceneNotes.cs</comment>
+  </data>
+  <data name="Side_Conditions" xml:space="preserve">
+    <value>조건</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_NamesToPickForPath" xml:space="preserve">
+    <value>간선의 표시조건 · 해금조건에 고를 이름입니다 — 뜻으로 적습니다(예: 하린과 친해졌을 때). 식은 [구성] 탭에서 정합니다. 식이 비면 「식 미정」으로 항상 통과합니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_ThisChapterHasNoConditions" xml:space="preserve">
+    <value>이 챕터에는 아직 조건이 없습니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_NewConditionName" xml:space="preserve">
+    <value>새 조건 이름</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_EnterAlsoAddsExpressionStarts" xml:space="preserve">
+    <value>Enter로도 더합니다. 식은 비어 있습니다(식 미정 — 항상 통과) — [구성] 탭에서 채웁니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_AddCondition" xml:space="preserve">
+    <value>조건 추가</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_TypeConditionName" xml:space="preserve">
+    <value>조건 이름을 적어 주세요.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_ConditionAlreadyExists" xml:space="preserve">
+    <value>조건 '{0}'이 이미 있습니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_AddedConditionUndecidedAlwaysPasses" xml:space="preserve">
+    <value>조건 '{0}'을 더했습니다 — 식 미정(항상 통과)입니다. 식은 [구성] 탭에서 채웁니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_ConditionName" xml:space="preserve">
+    <value>조건 이름</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_CouldnTRenameIt" xml:space="preserve">
+    <value>바꾸지 못했습니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_Condition" xml:space="preserve">
+    <value>조건 '{0}' → '{1}'.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_ConditionPathsFollowed" xml:space="preserve">
+    <value>조건 '{0}' → '{1}' — 간선 {2}개가 따라갔습니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_DeletesIfItSUsed" xml:space="preserve">
+    <value>'{0}'를 지웁니다 — 쓰는 곳이 있으면 어디인지 말하고 거절합니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_DeleteCondition" xml:space="preserve">
+    <value>조건 삭제</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_DeletedConditionUndoCtrlZ" xml:space="preserve">
+    <value>조건 '{0}'을 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_UndecidedAlwaysPasses" xml:space="preserve">
+    <value>⚠ 식 미정 — 항상 통과합니다</value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Side_Expression" xml:space="preserve">
+    <value>식 </value>
+    <comment>MainWindow.Conditions.cs</comment>
+  </data>
+  <data name="Hierarchy_FindInHierarchy" xml:space="preserve">
+    <value>하이어아키 찾기</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_Note" xml:space="preserve">
+    <value>메모</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_NothingMatches" xml:space="preserve">
+    <value>「{0}」에 맞는 것이 없습니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_NoProject" xml:space="preserve">
+    <value>프로젝트가 없습니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_OpenOrCreateProjectAnd" xml:space="preserve">
+    <value>프로젝트를 열거나 만들면 여기에 챕터가 섭니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_OpenOrCreateProjectAnd2" xml:space="preserve">
+    <value>프로젝트를 열거나 만들면 여기에 챕터가 섭니다 — 판 가운데의 [열기…] · [새 프로젝트…].</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_NoChaptersCreateOneIn" xml:space="preserve">
+    <value>챕터가 없습니다. [대본] 탭에서 만드세요.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_NoChaptersCreateOneWith" xml:space="preserve">
+    <value>챕터가 없습니다. 우클릭 「챕터 추가」나 판 가운데의 [＋ 첫 챕터 만들기]로 만드세요.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_ThereAreTwoEntrancesFrom" xml:space="preserve">
+    <value>밖에서 들어오는 자리가 둘입니다 — 장면은 한 자리에서만 시작해야 합니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_ThisChapterHasErrorsSee" xml:space="preserve">
+    <value>이 챕터에 오류가 있습니다 — 아래 검증 보고를 보세요.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_Rename" xml:space="preserve">
+    <value>이름 고치기</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_FoldThisChapterOnBoard" xml:space="preserve">
+    <value>판에서 이 챕터를 접습니다 — 표 하나가 되고 간선은 그 줄에 붙습니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_UnfoldThisChapterOnBoard" xml:space="preserve">
+    <value>판에서 이 챕터를 펼칩니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_FoldJustThisSceneOn" xml:space="preserve">
+    <value>판에서 이 장면만 접습니다 — 줄 목록으로 간소화되고 간선은 그 줄에 붙습니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_UnfoldThisSceneOnBoard" xml:space="preserve">
+    <value>판에서 이 장면을 펼칩니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_ChapterIsFoldedClickTo" xml:space="preserve">
+    <value>챕터가 접혀 있습니다 — 누르면 챕터를 펴고 이 장면을 보입니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_SceneStartWhereRollbackReturns" xml:space="preserve">
+    <value>장면 시작점 — 롤백이 되돌아가고 이어하기가 재개하는 자리입니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_WhileSearchingEverythingIsExpanded" xml:space="preserve">
+    <value>찾는 동안은 모두 펴서 보입니다 — 찾기를 지우면 접어 둔 대로 돌아갑니다.</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_CollapseExpand" xml:space="preserve">
+    <value>접었다 폅니다</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_Collapse" xml:space="preserve">
+    <value>접기</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_Move" xml:space="preserve">
+    <value>옮기기</value>
+    <comment>StoryHierarchy.axaml.cs</comment>
+  </data>
+  <data name="Hierarchy_FindNameID" xml:space="preserve">
+    <value>찾기 — 이름 · ID</value>
+    <comment>StoryHierarchy.axaml</comment>
+  </data>
+  <data name="Hierarchy_FindsEpisodesScenesChaptersBy" xml:space="preserve">
+    <value>에피소드 · 장면 · 챕터를 이름이나 ID로 찾습니다 — 자음만 쳐도 됩니다(「ㅅㅌ」). 치는 동안 맞는 줄과 그 위 줄만 남습니다. Enter · ↓는 첫 줄로, Esc는 지웁니다.</value>
+    <comment>StoryHierarchy.axaml</comment>
+  </data>
+  <data name="Branch_ConditionsAreChosenOnBranch" xml:space="preserve">
+    <value>조건은 분기 카드에서 고릅니다 — [대본] 탭은 그 카드를 골라 대본 위쪽 칸에서, [구성] 탭은 그 칩을 눌러서.</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_ConditionUndecided" xml:space="preserve">
+    <value>⑂ 조건: {0} (식 미정)</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_Condition" xml:space="preserve">
+    <value>⑂ 조건: {0}</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_ConditionWrittenByHand" xml:space="preserve">
+    <value>⑂ 조건: 직접 지음</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_NoCondition" xml:space="preserve">
+    <value>⑂ 조건 없음</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_ConditionItSUndecidedSo" xml:space="preserve">
+    <value>조건 「{0}」 — 식 미정이라 지금은 늘 다녀옵니다. [구성] 탭에서 식을 채우면 그 식이 맞을 때만 재생합니다.</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_PlaysOnlyWhenConditionHolds" xml:space="preserve">
+    <value>조건 「{0}」일 때만 재생합니다 — 아니면 들렀다가 바로 돌아옵니다.</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_ThereSConditionWrittenBy" xml:space="preserve">
+    <value>대사 편집기에서 직접 지은 조건이 있습니다 — [구성] 탭에서는 읽기만 합니다.</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_ForNowItSAlways" xml:space="preserve">
+    <value>지금은 조건 없이 늘 다녀옵니다.</value>
+    <comment>BranchConditionNote.cs</comment>
+  </data>
+  <data name="Branch_Always" xml:space="preserve">
+    <value>(언제나)</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Branch_Undecided" xml:space="preserve">
+    <value>{0} (식 미정)</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Branch_UndecidedAlwaysPassesForNow" xml:space="preserve">
+    <value>식 미정 — 지금은 항상 통과합니다. [구성] 탭에서 식을 채우면 이 분기가 그 식을 따릅니다.</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Branch_ChooseThisBranchSCondition" xml:space="preserve">
+    <value>이 분기의 조건을 고릅니다 — 조건이 맞을 때만 다녀옵니다. 조건 이름은 하이어아키의 챕터 줄을 눌러 더합니다.</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Branch_BranchCondition" xml:space="preserve">
+    <value>분기 조건</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Branch_RemovedConditionOfItS" xml:space="preserve">
+    <value>'{0}'의 조건을 걷었습니다 — 언제나 다녀옵니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Branch_SetConditionOnItS" xml:space="preserve">
+    <value>'{0}'에 조건 '{1}'을 걸었습니다 — 식 미정이라 지금은 늘 다녀옵니다. [구성] 탭에서 식을 채우면 따릅니다.</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Branch_IsVisitedOnlyWhenCondition" xml:space="preserve">
+    <value>'{0}'은 조건 '{1}'일 때만 다녀옵니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>BranchConditionPicker.cs</comment>
+  </data>
+  <data name="Side_ThisChapterHasNoStats3" xml:space="preserve">
+    <value>이 챕터에 스탯이 없습니다 — 「조건 및 스탯」 탭의 스탯 표에서 먼저 선언하세요.</value>
+    <comment>StatChangeEditor.cs</comment>
+  </data>
+  <data name="Side_CrossingThisPathDoesnT" xml:space="preserve">
+    <value>이 길을 건너도 스탯이 변하지 않습니다.</value>
+    <comment>StatChangeEditor.cs</comment>
+  </data>
+  <data name="Side_StatChange2" xml:space="preserve">
+    <value>＋ 스탯변화</value>
+    <comment>StatChangeEditor.cs</comment>
+  </data>
+  <data name="Side_AppliedOnceMomentThisPath" xml:space="preserve">
+    <value>이 길을 건너는 순간 1회 반영됩니다. 스탯은 「조건 및 스탯」 탭에서 선언한 것만 고를 수 있습니다.</value>
+    <comment>StatChangeEditor.cs</comment>
+  </data>
+  <data name="Side_On2" xml:space="preserve">
+    <value>활성</value>
+    <comment>StatChangeEditor.cs</comment>
+  </data>
+  <data name="Side_Off2" xml:space="preserve">
+    <value>비활성</value>
+    <comment>StatChangeEditor.cs</comment>
+  </data>
+  <data name="Side_DeletesThisRow" xml:space="preserve">
+    <value>이 줄을 지웁니다.</value>
+    <comment>StatChangeEditor.cs</comment>
+  </data>
+  <data name="Format_ColorsUsedInThisProject" xml:space="preserve">
+    <value>이 프로젝트에 쓴 색</value>
+    <comment>WriterColorChooser.cs</comment>
+  </data>
+  <data name="Format_RRGGBBTypeItInHex" xml:space="preserve">
+    <value>#RRGGBB — 16진수로 적고 Enter로 입힙니다</value>
+    <comment>WriterColorChooser.cs</comment>
+  </data>
+  <data name="Format_Apply" xml:space="preserve">
+    <value>입히기</value>
+    <comment>WriterColorChooser.cs</comment>
+  </data>
+  <data name="Format_ApplyThisColor" xml:space="preserve">
+    <value>이 색을 입힙니다</value>
+    <comment>WriterColorChooser.cs</comment>
+  </data>
+  <data name="Format_ChooseRGB" xml:space="preserve">
+    <value>직접 고르기 (RGB)</value>
+    <comment>WriterColorChooser.cs</comment>
+  </data>
+  <data name="Side_ClearedTitleBranchCardID" xml:space="preserve">
+    <value>제목을 비웠습니다 — 분기 카드 ID '{0}'{1} 보입니다.</value>
+    <comment>CardTitles.cs</comment>
+  </data>
+  <data name="Side_RenamedTitleToBranchCard" xml:space="preserve">
+    <value>제목을 '{0}'{1} 바꿨습니다. 분기 카드 ID '{2}'{3} 그대로입니다.</value>
+    <comment>CardTitles.cs</comment>
+  </data>
+  <data name="Side_ChapterDoesnTExist" xml:space="preserve">
+    <value>챕터 '{0}'가 없습니다.</value>
+    <comment>EpisodeAdder.cs</comment>
+  </data>
 </root>

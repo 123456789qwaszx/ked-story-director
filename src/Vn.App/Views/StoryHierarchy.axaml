@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:Vn.App.Strings"
              x:Class="Vn.App.Views.StoryHierarchy">
 
     <!-- 하이어아키 — 프로젝트 → 챕터 → 장면 → 에피소드.
@@ -14,8 +15,8 @@
                  Classes="clearButton"
                  Margin="4,4,4,0"
                  FontSize="12"
-                 PlaceholderText="찾기 — 이름 · ID"
-                 ToolTip.Tip="에피소드 · 장면 · 챕터를 이름이나 ID로 찾습니다 — 자음만 쳐도 됩니다(「ㅅㅌ」). 치는 동안 맞는 줄과 그 위 줄만 남습니다. Enter · ↓는 첫 줄로, Esc는 지웁니다." />
+                 PlaceholderText="{x:Static s:Ui.Hierarchy_FindNameID}"
+                 ToolTip.Tip="{x:Static s:Ui.Hierarchy_FindsEpisodesScenesChaptersBy}" />
 
         <ScrollViewer x:Name="TreeScroll"
                       Grid.Row="1"

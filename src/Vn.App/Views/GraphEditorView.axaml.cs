@@ -19,6 +19,7 @@ using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -166,8 +167,8 @@ public partial class GraphEditorView : UserControl
 
         EmptyBoardPanel.IsVisible = _chapters.Count == 0;
         EmptyBoardText.Text = saved
-            ? "아직 챕터가 없습니다."
-            : "아직 프로젝트가 없습니다.\n받은 프로젝트가 있으면 [열기…]로 그 폴더를 고르고, 처음 시작하면 [새 프로젝트…]로 빈 폴더를 고르세요.";
+            ? Ui.Board_NoChaptersYet
+            : Ui.Board_NoProjectYetIfYou;
         FirstChapterButton.IsVisible = saved;
         EmptyProjectButtons.IsVisible = !saved;
     }
@@ -237,7 +238,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        UiGuard.Run(_session, "챕터 고르기", () =>
+        UiGuard.Run(_session, Ui.Board_ChooseChapter, () =>
         {
             string board = _session.EnsureChapterBoard(chapterId);
             _session.SelectFile(board);
@@ -529,7 +530,7 @@ public partial class GraphEditorView : UserControl
     /// <summary>판이 선 창 — 창을 떠나는 순간을 듣는다(<see cref="EndGestures"/>).</summary>
     private WindowBase? _window;
 
-    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, "끌기 정리", EndGestures);
+    private void OnWindowDeactivated(object? sender, EventArgs e) => UiGuard.Run(_session, Ui.Board_CleanUpDrag, EndGestures);
 
     /// <summary>
     /// <b>하던 끌기를 정리한다</b> — 창을 떠나면 놓음이 이 창으로 오지 않아 끌기가 「끄는 중」으로 남는다(2026-11-19 소유자 — 범위 사각형이 판에 남아
@@ -594,11 +595,11 @@ public partial class GraphEditorView : UserControl
         BuildFormatToolbar();
 
         // 하이어아키에서 고른 줄이 여럿이 되거나 하나로 돌아오면 [삭제]를 맞춘다(여럿이면 끈다 · 2026-11-23).
-        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
+        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, Ui.Board_PlaceDeleteButton, RefreshDeleteButton);
 
         // 하이어아키에서 줄을 누르면 서식 도구는 글 칸이 아니라 고른 줄들의 카드에 입힌다(WF-D21 — 같은 카드의 줄을 눌러도). 고른 줄이 바뀌면 모습을 맞춘다.
-        Hierarchy.Picked += _ => UiGuard.Run(_session, "서식 칸 놓기", ReleaseFormatTarget);
-        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, "서식 도구 맞추기", RefreshFormatToolbarLater);
+        Hierarchy.Picked += _ => UiGuard.Run(_session, Ui.Board_PlaceFormatBox, ReleaseFormatTarget);
+        Hierarchy.SelectionsChanged += () => UiGuard.Run(_session, Ui.Board_PlaceFormattingToolbar, RefreshFormatToolbarLater);
 
         // 하이어아키 기둥 접기 (2026-10-30 HC) — 「‹」로 접고 띠를 눌러 편다.
         HierarchyDock = new ColumnDock(
@@ -620,8 +621,8 @@ public partial class GraphEditorView : UserControl
         FirstChapterButton.Click += (_, _) => FirstChapterRequested?.Invoke();
 
         // 머리의 이름 칸 — Enter · 초점 이탈 = 바꾸기, Esc = 그만두기(에피소드 이름 칸 · 하이어아키 이름 칸과 같은 손짓).
-        InspectorNameBox.LostFocus += (_, _) => UiGuard.Run(_session, "이름 바꾸기", CommitInspectorName);
-        InspectorNameBox.KeyDown += (_, args) => UiGuard.Run(_session, "이름 바꾸기", () =>
+        InspectorNameBox.LostFocus += (_, _) => UiGuard.Run(_session, Ui.Board_Rename, CommitInspectorName);
+        InspectorNameBox.KeyDown += (_, args) => UiGuard.Run(_session, Ui.Board_Rename, () =>
         {
             if (args.Key == Key.Enter)
             {
@@ -634,7 +635,7 @@ public partial class GraphEditorView : UserControl
                 InspectorNameBox.Text = _nameShown;
             }
         });
-        DeleteButton.Click += (_, _) => UiGuard.Run(_session, "삭제", DeleteSelected);
+        DeleteButton.Click += (_, _) => UiGuard.Run(_session, Ui.Board_Delete, DeleteSelected);
 
         // 찾기 띠(Ctrl+F · 2026-11-25 소유자 · GraphEditorView.Find).
         WireFind();
@@ -688,10 +689,10 @@ public partial class GraphEditorView : UserControl
 
         // 단추가 <b>무엇을 지울지</b>는 고른 것에 달렸다 — 고를 때마다 이름을 맞춘다.
         session.SelectionChanged += (_, _) =>
-            UiGuard.Run(_session, "삭제 단추 맞추기", RefreshDeleteButton);
+            UiGuard.Run(_session, Ui.Board_PlaceDeleteButton, RefreshDeleteButton);
 
         // 다른 것을 고르면(하이어아키 · 다른 카드) 서식 도구 막대가 입힐 칸을 놓는다 — 고른 카드의 글 칸에 초점이 오면 다시 잡는다(writer-formatting).
-        session.SelectionChanged += (_, _) => UiGuard.Run(_session, "서식 칸 놓기", () =>
+        session.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Board_PlaceFormatBox, () =>
         {
             if (_formatNodeId is not null && !string.Equals(_session?.SelectedNodeId, _formatNodeId, StringComparison.Ordinal))
             {
@@ -703,7 +704,7 @@ public partial class GraphEditorView : UserControl
         });
 
         // 카드를 고르면 고른 선은 놓는다 — 인스펙터는 그 카드를 보인다(셸이 선택을 보고 맞춘다).
-        session.SelectionChanged += (_, _) => UiGuard.Run(_session, "선 놓기", () =>
+        session.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Board_PlaceLines, () =>
         {
             if (_session?.SelectedNodeId is not null)
             {
@@ -713,7 +714,7 @@ public partial class GraphEditorView : UserControl
 
         // 고른 카드의 챕터가 활성 판이다(2026-11-18 소유자 — 「누른 챕터로 드롭다운의 챕터역시 바뀌도록」) — 하이어아키 · 판의 빈 곳은 셸이
         // 이미 그 판을 활성으로 한다. 판에서 다른 챕터의 카드를 눌렀을 때가 여기다. 보는 자리는 옮기지 않는다(reveal: false).
-        session.SelectionChanged += (_, _) => UiGuard.Run(_session, "챕터 따라가기", () =>
+        session.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Board_FollowChapter, () =>
         {
             if (_session?.SelectedNode is { } node &&
                 _session.Project.FindFileContainingNode(node.Id) is { } board &&
@@ -728,12 +729,12 @@ public partial class GraphEditorView : UserControl
         {
             if (args.ActiveFileChanged)
             {
-                UiGuard.Run(_session, "챕터 콤보 맞추기", RefreshChapterCombo);
+                UiGuard.Run(_session, Ui.Board_UpdateChapterCombo, RefreshChapterCombo);
             }
         };
 
         // 카드의 「빈 선택지 숨기기」 — 그 카드의 철도만 다시 긋는다(board-speed PF2).
-        session.HiddenChoicesChanged += nodeId => UiGuard.Run(_session, "선택지 칸", () => RedrawChoicesOf(nodeId));
+        session.HiddenChoicesChanged += nodeId => UiGuard.Run(_session, Ui.Main_ChoiceSlots, () => RedrawChoicesOf(nodeId));
 
         // 미니맵은 설정 창 「기타」가 켜고 끈다(side-fold K3).
         session.ShowMinimapChanged += (_, _) => ApplyShowMinimap();
@@ -805,7 +806,7 @@ public partial class GraphEditorView : UserControl
     /// <summary>하이어아키에서 여러 줄을 골랐는가 — 그동안 [삭제] · Delete 키는 지우지 않는다.</summary>
     private bool SeveralPicked => Hierarchy.Selections.Count > 1;
 
-    private const string SeveralPickedReason = "하이어아키에서 여러 개를 골랐습니다 — 지우려면 하나만 고르세요(여러 개를 한꺼번에 지우지는 않습니다).";
+    private static string SeveralPickedReason => Ui.Board_SeveralItemsAreSelectedIn;
 
     /// <summary>[삭제]가 지울 것.</summary>
     private enum DeleteTarget
@@ -876,7 +877,7 @@ public partial class GraphEditorView : UserControl
         if (SeveralPicked)
         {
             DeleteButton.IsEnabled = false;
-            DeleteButton.Content = "삭제";
+            DeleteButton.Content = Ui.Board_Delete;
             ToolTip.SetTip(DeleteButton, SeveralPickedReason);
             return;
         }
@@ -887,22 +888,21 @@ public partial class GraphEditorView : UserControl
         // 챕터의 마지막 에피소드 · 장면이면 꺼진 「삭제 불가」 — 툴팁이 까닭을 말한다(2026-11-18 소유자 · ChapterMinimum). ⛔ 처음에는 「에피소드 삭제」 ·
         //    「장면 삭제」 이름을 둔 채 껐는데, 같은 날 소유자가 「일종의 버그처럼 느껴집니다」 — 할 수 없는 일의 이름이 꺼진 채 서 있었다.
         DeleteButton.IsEnabled = target != DeleteTarget.None && kept is null;
-        DeleteButton.Content = kept is not null ? "삭제 불가" : target switch
+        DeleteButton.Content = kept is not null ? Ui.Board_CanTDelete : target switch
         {
-            DeleteTarget.Chapter => "챕터 삭제",
-            DeleteTarget.Scene => "장면 삭제",
-            DeleteTarget.Episode => "에피소드 삭제",
-            DeleteTarget.BranchCard => "분기 카드 삭제",
-            _ => "삭제"
+            DeleteTarget.Chapter => Ui.Board_DeleteChapter,
+            DeleteTarget.Scene => Ui.Board_DeleteScene,
+            DeleteTarget.Episode => Ui.Board_DeleteEpisode,
+            DeleteTarget.BranchCard => Ui.Board_DeleteBranchCard,
+            _ => Ui.Board_Delete
         };
         ToolTip.SetTip(DeleteButton, kept ?? target switch
         {
-            DeleteTarget.Chapter => "고른 챕터와 그 장면 · 에피소드 · 카드를 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
-            DeleteTarget.Scene => "고른 장면의 에피소드 · 카드와 그 에피소드들이 부르던 분기 카드, 장면 이름 · 메모를 지웁니다 — 한 번 더 확인합니다. " +
-                                  "되돌리기(Ctrl+Z)로 돌아옵니다.",
-            DeleteTarget.Episode => "고른 에피소드를 간선 · 픽스처 참조까지 함께 지웁니다 — 한 번 더 확인합니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
-            DeleteTarget.BranchCard => "분기 카드를 지웁니다 — 부르던 분기점은 이어지지 않은 채 남습니다. 되돌리기 한 번으로 돌아옵니다.",
-            _ => "하이어아키나 판에서 챕터 · 장면 · 에피소드를 고르면 그것을 지웁니다."
+            DeleteTarget.Chapter => Ui.Board_DeletesSelectedChapterWithIts,
+            DeleteTarget.Scene => Ui.Board_DeletesSelectedSceneSEpisodes,
+            DeleteTarget.Episode => Ui.Board_DeletesSelectedEpisodeAlongWith,
+            DeleteTarget.BranchCard => Ui.Board_DeletesBranchCardBranchPoints,
+            _ => Ui.Board_SelectChapterSceneEpisodeIn
         });
     }
 
@@ -1100,13 +1100,13 @@ public partial class GraphEditorView : UserControl
                 Cursor = new Cursor(StandardCursorType.Hand),
                 Child = new TextBlock
                 {
-                    Text = $"챕터 {chapterName} ⌄",
+                    Text = string.Format(Ui.Board_Chapter, chapterName),
                     FontSize = 11,
                     FontWeight = FontWeight.SemiBold,
                     Foreground = Brushes.White
                 }
             };
-            ToolTip.SetTip(label, "누르면 이 챕터의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 표 형태로 접고, 접힌 표를 더블클릭하면 다시 펼칩니다.");
+            ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard);
 
             // 이름표만 히트 대상이다(프레임은 아님) — 한 번 = 이 챕터의 카드를 모두 골라 함께 끈다, 두 번 = 접기(2026-11-18 소유자 · ⛔ 그 전에는 한 번에
             // 접었다 — PDF 9장 "체크해제하면 표형태").
@@ -1271,15 +1271,14 @@ public partial class GraphEditorView : UserControl
             {
                 // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
                 // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
-                Text = $"장면 {scene.DisplayName}" + (hasMemo ? " · 메모" : string.Empty) +
+                Text = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
                 FontSize = 10,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Brushes.White
             }
         };
-        ToolTip.SetTip(label, "누르면 이 장면의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 줄 목록으로 접습니다(간선은 접힌 줄에 " +
-                              "붙습니다). 접힌 상자를 더블클릭하면 다시 펼칩니다.");
+        ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
 
         string sceneId = scene.SceneId;
         label.PointerPressed += (_, args) => OnFrameLabelPressed(
@@ -1503,7 +1502,7 @@ public partial class GraphEditorView : UserControl
             {
                 _settleQueued = false;
                 _railsGuessed = false;
-                UiGuard.Run(_session, "철도 맞추기", FollowRails);
+                UiGuard.Run(_session, Ui.Board_PlaceRails, FollowRails);
             },
             DispatcherPriority.Background);
     }
@@ -1860,7 +1859,7 @@ public partial class GraphEditorView : UserControl
                 }
 
                 list.Add((EpisodeNaming.EpisodeIdOf(source),
-                    edge.HasNoOptionLabel ? "(진행)" : edge.OptionLabel!));
+                    edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!));
             }
 
             branchY += RailBranchGap;
@@ -1921,7 +1920,7 @@ public partial class GraphEditorView : UserControl
                 arrivals[edge.ToEpisodeId] = list = new List<(string, string)>();
             }
 
-            list.Add((episodeId, edge.HasNoOptionLabel ? "(진행)" : edge.OptionLabel!));
+            list.Add((episodeId, edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!));
         }
     }
 
@@ -2033,7 +2032,7 @@ public partial class GraphEditorView : UserControl
             Fill = RailChipBrush,
             Cursor = new Cursor(StandardCursorType.Hand)
         };
-        ToolTip.SetTip(port, $"들어오는 길 {incoming.Count}개 — 누르면 목록이 열립니다.");
+        ToolTip.SetTip(port, string.Format(Ui.Board_IncomingPathsClickToOpen, incoming.Count));
         Canvas.SetLeft(port, junctionX - 5);
         Canvas.SetTop(port, junctionY - 5);
 
@@ -2046,7 +2045,7 @@ public partial class GraphEditorView : UserControl
             var panel = new StackPanel { Spacing = 3, MinWidth = 200 };
             panel.Children.Add(new TextBlock
             {
-                Text = $"{captured}로 들어오는 길",
+                Text = string.Format(Ui.Board_PathsInto, captured),
                 FontSize = 11,
                 FontWeight = FontWeight.SemiBold
             });
@@ -2063,7 +2062,7 @@ public partial class GraphEditorView : UserControl
 
             panel.Children.Add(new TextBlock
             {
-                Text = "잇고 끊는 곳은 출발 쪽 칩과 [구성] 탭입니다.",
+                Text = Ui.Board_ConnectAndDisconnectFromChip,
                 FontSize = 10,
                 Opacity = 0.5,
                 TextWrapping = TextWrapping.Wrap,
@@ -2104,13 +2103,13 @@ public partial class GraphEditorView : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Cursor = new Cursor(StandardCursorType.Hand),
             [ToolTip.TipProperty] = slot.IsEmpty
-                ? live ? "끌어서 같은 챕터의 에피소드 카드에 놓으면 잇습니다." : "선택지 문구를 적으면 끌 수 있습니다."
-                : "이어져 있습니다. 끌어서 다른 에피소드 카드에 놓으면 옮겨 잇고, 빈 곳에 놓으면 끊깁니다."
+                ? live ? Ui.Board_DragOntoEpisodeCardIn : Ui.Board_WriteChoiceTextToBe
+                : Ui.Board_ConnectedDragOntoAnotherEpisode
         };
 
         // 포인터를 올리면 점이 커지고 꼬리표가 할 수 있는 일을 말한다 — 풍선은 늦게 뜬다(2026-11-22 소유자 · usability UX36).
-        knob.PointerEntered += (_, _) => UiGuard.Run(_session, "선택지", () => HoverKnob(knob, slot, live));
-        knob.PointerExited += (_, _) => UiGuard.Run(_session, "선택지", () => LeaveKnob(knob));
+        knob.PointerEntered += (_, _) => UiGuard.Run(_session, Ui.Board_Choice, () => HoverKnob(knob, slot, live));
+        knob.PointerExited += (_, _) => UiGuard.Run(_session, Ui.Board_Choice, () => LeaveKnob(knob));
 
         // 빈 칸(자동 자리가 아니고 문구가 없다)은 <b>적는 칸 모양</b>이다(2026-11-18 소유자 — 「무엇을 입력할 수 있다는 걸 모르는 것 같습니다」):
         // 네모 칸에 회색 「빈 선택지」. 폭은 문구 칸(SlotEditor)의 가장 좁은 폭과 같아 누르면 그 자리에서 칸이 열린다. ⛔ 그 전의 「＋ 선택지」는
@@ -2128,11 +2127,11 @@ public partial class GraphEditorView : UserControl
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotPlaceholderTag,
                 Child = new TextBlock { Text = SlotPlaceholderText, FontSize = 10, Foreground = SlotPlaceholderInk },
-                [ToolTip.TipProperty] = "눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다."
+                [ToolTip.TipProperty] = Ui.Board_ClickToWriteChoiceText
             }
             : new TextBlock
             {
-                Text = auto ? "자동" : text,
+                Text = auto ? Ui.Board_Auto2 : text,
                 FontSize = 11,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = dot,
@@ -2144,8 +2143,8 @@ public partial class GraphEditorView : UserControl
                 Background = Brushes.Transparent,
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 [ToolTip.TipProperty] = auto
-                    ? "자동 길 — 문구 없이 다음으로 갑니다. 선택지 문구를 하나라도 적으면 이 자리가 닫힙니다."
-                    : "눌러서 선택지 문구를 적습니다. 적어야 끌어서 이을 수 있습니다."
+                    ? Ui.Board_AutoPathMovesOnWithout
+                    : Ui.Board_ClickToWriteChoiceText
             };
 
         // 이어졌는데 문구가 없는 선택지(자동 길이 두 번째 길에 밀려 선택지가 됐다 — auto-to-choice A2)는 빨갛게 「문구를 적어 주세요」다 — 문구를 적을 때까지
@@ -2163,13 +2162,13 @@ public partial class GraphEditorView : UserControl
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotNeedsLabelTag,
                 Child = new TextBlock { Text = SlotNeedsLabelText, FontSize = 10, FontWeight = FontWeight.SemiBold, Foreground = SlotNeedsLabelInk },
-                [ToolTip.TipProperty] = "문구가 없는 선택지입니다 — 자동 길이었는데 다른 길을 이어 선택지가 됐습니다. 눌러서 문구를 적으세요. 적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다."
+                [ToolTip.TipProperty] = Ui.Board_ThisChoiceHasNoText
             };
         }
 
         if (!slot.IsAuto)
         {
-            label.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
+            label.PointerPressed += (_, args) => UiGuard.Run(_session, Ui.Board_ChoiceText, () =>
             {
                 args.Handled = true;
                 EditSlot(slot, nodeId);
@@ -2195,7 +2194,7 @@ public partial class GraphEditorView : UserControl
                 : label);
 
         // 꺼진 점을 누르면 <b>켠다</b>, 켜진 점을 누르면 <b>끈다</b> — 손짓 하나가 한 가지 뜻이다.
-        knob.PointerPressed += (_, args) => UiGuard.Run(_session, "선택지", () =>
+        knob.PointerPressed += (_, args) => UiGuard.Run(_session, Ui.Board_Choice, () =>
         {
             args.Handled = true;
 
@@ -2391,14 +2390,13 @@ public partial class GraphEditorView : UserControl
         // 선을 긋는 대신 여기서 멈추고, 어디로 가는 길인지는 문구가 말한다.
         var pending = new TextBlock
         {
-            Text = $"▢ {edge.ToEpisodeId} (카드 없음)",
+            Text = string.Format(Ui.Board_NoCard, edge.ToEpisodeId),
             FontSize = 10,
             Opacity = 0.55,
             Foreground = RailChipBrush
         };
         ToolTip.SetTip(pending,
-            $"도착 에피소드 '{edge.ToEpisodeId}'의 카드가 아직 이 판에 없습니다 — " +
-            "프로젝트를 저장하고 다시 열면 빈 카드가 서고 여기로 이어집니다.");
+            string.Format(Ui.Board_CardForTargetEpisodeIsn, edge.ToEpisodeId));
         pending.Measure(Size.Infinity);
 
         _railVisuals.Add(RailLine(cursorX, y, cursorX + (toward * 18), y));
@@ -3316,7 +3314,7 @@ public partial class GraphEditorView : UserControl
                 grip.VerticalAlignment = VerticalAlignment.Stretch;
                 grip.Cursor = new Cursor(StandardCursorType.SizeWestEast);
                 grip.Tag = ResizeGripTag + card.NodeId;
-                ToolTip.SetTip(grip, "끌어서 카드 폭을 바꿉니다 — 글 칸이 함께 넓어집니다. 두 번 누르면 처음 폭으로 돌아갑니다.");
+                ToolTip.SetTip(grip, Ui.Board_DragToChangeCardWidth);
                 break;
 
             case ResizeEdges.Bottom:
@@ -3326,7 +3324,7 @@ public partial class GraphEditorView : UserControl
                 grip.VerticalAlignment = VerticalAlignment.Bottom;
                 grip.Cursor = new Cursor(StandardCursorType.SizeNorthSouth);
                 grip.Tag = ResizeHeightGripTag + card.NodeId;
-                ToolTip.SetTip(grip, "끌어서 글 칸 높이를 바꿉니다. 두 번 누르면 처음 높이로 돌아갑니다.");
+                ToolTip.SetTip(grip, Ui.Board_DragToChangeWritingBox);
                 break;
 
             default:
@@ -3337,7 +3335,7 @@ public partial class GraphEditorView : UserControl
                 grip.VerticalAlignment = VerticalAlignment.Bottom;
                 grip.Cursor = new Cursor(StandardCursorType.BottomRightCorner);
                 grip.Tag = ResizeCornerGripTag + card.NodeId;
-                ToolTip.SetTip(grip, "끌어서 카드 폭과 글 칸 높이를 함께 바꿉니다. 두 번 누르면 처음 크기로 돌아갑니다.");
+                ToolTip.SetTip(grip, Ui.Board_DragToChangeCardWidth2);
                 break;
         }
 
@@ -3366,7 +3364,7 @@ public partial class GraphEditorView : UserControl
             {
                 // 그 손잡이가 맡은 크기만 기본으로 — 다른 쪽 크기는 그대로 둔다.
                 _resizingCard = null;
-                UiGuard.Run(_session, "카드 크기", () =>
+                UiGuard.Run(_session, Ui.Board_CardSize, () =>
                 {
                     if (_session?.Project.FindNode(card.NodeId)?.Layout is { } layout)
                     {
@@ -3453,7 +3451,7 @@ public partial class GraphEditorView : UserControl
         toggle.Click += (_, args) =>
         {
             args.Handled = true;
-            UiGuard.Run(_session, width ? "가로 글 맞춤" : "세로 글 맞춤", () => ToggleFit(nodeId, width));
+            UiGuard.Run(_session, width ? Ui.Board_FitWidth : Ui.Board_FitHeight, () => ToggleFit(nodeId, width));
         };
         return toggle;
     }
@@ -3480,13 +3478,13 @@ public partial class GraphEditorView : UserControl
         ToolTip.SetTip(toggle, (width ? FitWidthTip : FitHeightTip) + (on ? FitOnTip : FitOffTip));
     }
 
-    private const string FitWidthTip = "가로 글 맞춤 — 켜 두면 글을 쓰는 대로 가장 긴 줄이 꺾이지 않게 카드 폭이 맞춰집니다(처음 폭보다 좁아지지는 않습니다). ";
+    private static string FitWidthTip => Ui.Board_FitWidthWhileOnCard;
 
-    private const string FitHeightTip = "세로 글 맞춤 — 켜 두면 글을 쓰는 대로 모든 줄이 스크롤 없이 보이게 글 칸 높이가 맞춰집니다(처음 높이보다 낮아지지는 않습니다). ";
+    private static string FitHeightTip => Ui.Board_FitHeightWhileOnWriting;
 
-    private const string FitOnTip = "지금 켜져 있습니다 — 누르면 끕니다(크기는 그대로). 가장자리를 끌어 크기를 바꿔도 꺼집니다.";
+    private static string FitOnTip => Ui.Board_OnNowClickToTurn;
 
-    private const string FitOffTip = "지금 꺼져 있습니다 — 누르면 켜고 곧바로 맞춥니다.";
+    private static string FitOffTip => Ui.Board_OffNowClickToTurn;
 
     /// <summary>
     /// 가로(<paramref name="width"/>) 또는 세로 글 맞춤을 켜고 끈다 — 되돌리기 한 칸(<see cref="Vn.Authoring.Editing.ProjectEditor.SetNodeFit"/>). 켰으면 곧바로 맞춘다
@@ -3526,12 +3524,14 @@ public partial class GraphEditorView : UserControl
             AutoFit(nodeId);
         }
 
-        _session.SetStatus($"{(width ? "가로" : "세로")} 글 맞춤을 {(on ? "켰습니다 — 글을 쓰는 대로 맞춰집니다" : "껐습니다 — 크기는 그대로입니다")}. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        _session.SetStatus(width
+            ? (on ? Ui.Board_TurnedOnFitWidthCard : Ui.Board_TurnedOffFitWidthSize)
+            : (on ? Ui.Board_TurnedOnFitHeightCard : Ui.Board_TurnedOffFitHeightSize));
     }
 
     /// <summary>글을 넣은 뒤 그 카드를 글에 맞춘다 — 배치가 끝난 뒤에(넣기가 카드를 다시 지었으면 새 카드는 아직 배치 전이다).</summary>
     private void QueueAutoFit(string nodeId) =>
-        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "글 맞춤", () => AutoFit(nodeId)), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Board_FitToText, () => AutoFit(nodeId)), DispatcherPriority.Background);
 
     /// <summary>
     /// <b>글 맞춤을 켠 쪽을 지금 글에 맞춘다</b>(2026-11-25) — 글 칸의 글(넣지 않은 글도)을 지금 모양으로 재서(<see cref="FitSizeOf"/>) 켠 쪽만 바꾼다. 화면의
@@ -3707,7 +3707,7 @@ public partial class GraphEditorView : UserControl
         // 손으로 끈 쪽의 글 맞춤은 꺼진다(2026-11-25 소유자 — 손으로 정한 크기를 맞춤이 다시 덮지 않게). 같은 되돌리기 칸이다.
         bool widthMoved = Math.Abs(width - _resizeStartWidth) >= 0.5;
         bool heightMoved = Math.Abs(height - _resizeStartHeight) >= 0.5;
-        UiGuard.Run(_session, "카드 크기", () => WriteSize(
+        UiGuard.Run(_session, Ui.Board_CardSize, () => WriteSize(
             card,
             width <= CardWidth ? null : width,
             card.WritingBox is null || height <= WritingBoxHeight ? null : height,
@@ -3950,7 +3950,7 @@ public partial class GraphEditorView : UserControl
                 MaxWidth = 110,
                 TextTrimming = TextTrimming.CharacterEllipsis
             },
-            [ToolTip.TipProperty] = $"분기로 다녀오는 카드입니다. {BranchConditionNote.Sentence(state, undecided)} {BranchConditionNote.Where}"
+            [ToolTip.TipProperty] = string.Format(Ui.Board_CardVisitedThroughBranch, BranchConditionNote.Sentence(state, undecided), BranchConditionNote.Where)
         };
 
         // 누르기는 카드로 흘린다 — 카드를 누른 것과 같다(고른다 · 끈다).
@@ -4004,16 +4004,15 @@ public partial class GraphEditorView : UserControl
 
         var titleIcon = new TextBlock
         {
-            Text = branchCard ? $"{style.Icon} 분기" : style.Icon,
+            Text = branchCard ? string.Format(Ui.Board_Branch, style.Icon) : style.Icon,
             FontSize = 11,
             Foreground = new SolidColorBrush(style.Accent),
             Margin = new Thickness(0, 0, 5, 0),
             VerticalAlignment = VerticalAlignment.Center,
             [ToolTip.TipProperty] = sceneRoot
-                ? "장면 시작점 — 장면이 시작하는 에피소드입니다. 롤백이 되돌아가고 이어하기가 재개하는 자리입니다."
+                ? Ui.Board_SceneStartEpisodeWhereScene
                 : branchCard
-                    ? "분기 카드 — 다른 카드의 분기점으로 들렀다가 그 자리로 돌아옵니다. 선택지가 없고 진행 JSON에 실리지 않습니다. " +
-                      "장면은 부르는 에피소드의 것입니다."
+                    ? Ui.Board_BranchCardVisitedFromAnother
                     : null
         };
 
@@ -4226,7 +4225,7 @@ public partial class GraphEditorView : UserControl
         box.Height = WritingHeightFor(nodeId);
         box.Margin = new Thickness(0, WritingBoxGap, 0, 0);
         box.Padding = new Thickness(4, 3);
-        box.PlaceholderText = "화자: 대사 — 한 줄이 대사 한 줄";
+        box.PlaceholderText = Ui.Board_SpeakerDialogueOneLineIs;
         box.Tag = WritingTag + nodeId;
         ScrollViewer.SetVerticalScrollBarVisibility(box, Avalonia.Controls.Primitives.ScrollBarVisibility.Auto);
 
@@ -4340,7 +4339,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        UiGuard.Run(session, "글 넣기", () =>
+        UiGuard.Run(session, Ui.Board_ApplyText, () =>
         {
             // 분기로 다녀오는 카드의 첫머리 조건 줄은 [구성] 탭이 정한다 — 글 칸에서 지우거나 고쳤으면 그 줄을 되살리고, 조건
             // 줄 바깥(위 · 아래)에 쓴 줄은 조건 안쪽으로 모은다.
@@ -4371,10 +4370,10 @@ public partial class GraphEditorView : UserControl
             {
                 IReadOnlyList<string> problems = outcome.Problems.Count > 0
                     ? outcome.Problems
-                    : ["빈 글은 넣지 않습니다 — 줄을 모두 지우려면 노드를 지우세요."];
+                    : [Ui.Board_EmptyTextIsnTApplied];
 
                 MarkWriting(box, string.Join(Environment.NewLine, problems.Select(problem => $"• {problem}")));
-                session.SetStatus($"글을 넣지 못했습니다 — {problems[0]} (글은 칸에 그대로 있습니다)");
+                session.SetStatus(string.Format(Ui.Board_CouldnTApplyTextText, problems[0]));
                 return;
             }
 
@@ -4405,13 +4404,12 @@ public partial class GraphEditorView : UserControl
             // 쓰는 동안 이미 다 들어갔으면(표기만 달랐다) 알릴 것이 없다.
             if (!string.Equals(before, BoxText(now), StringComparison.Ordinal))
             {
-                session.SetStatus($"글을 넣었습니다 — {outcome.Summary()}. 되돌리기 한 번이면 돌아갑니다.");
+                session.SetStatus(string.Format(Ui.Board_AppliedTextOneUndoBrings, outcome.Summary()));
             }
 
             if (gateRestored)
             {
-                session.SetStatus("분기 조건 줄을 지켰습니다 — 조건 줄은 되살리고 바깥에 쓴 줄은 조건 안쪽으로 모았습니다. " +
-                                  "이 카드에 들어갈 조건은 [구성] 탭의 분기 칸에서 바꿉니다.");
+                session.SetStatus(Ui.Board_KeptBranchConditionLinesRestored);
             }
         });
     }
@@ -4703,7 +4701,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "선택지 문구", () =>
+        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Board_ChoiceText, () =>
         {
             if (ReferenceEquals(_finishSlot, finish))
             {
@@ -4800,7 +4798,7 @@ public partial class GraphEditorView : UserControl
 
         content.Children.Add(ProxyHeader(
             file.FileName,
-            $"접힘 · {file.Nodes.Count}개 노드 · {file.RelativePath}",
+            string.Format(Ui.Board_FoldedNodes, file.Nodes.Count, file.RelativePath),
             new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80))));
 
         var rows = new List<ProxyNodeRow>();
@@ -4812,7 +4810,7 @@ public partial class GraphEditorView : UserControl
                 Height = ProxyRowHeight,
                 Child = new TextBlock
                 {
-                    Text = "빈 파일",
+                    Text = Ui.Board_EmptyFile,
                     Margin = new Thickness(22, 0),
                     FontSize = 10,
                     Opacity = 0.5,
@@ -4870,7 +4868,7 @@ public partial class GraphEditorView : UserControl
         };
 
         // 접힌 표를 더블클릭 = 펼치기 — 이름표 클릭(접기)의 짝이다.
-        ToolTip.SetTip(visual, "더블클릭하면 이 챕터를 펼칩니다.");
+        ToolTip.SetTip(visual, Ui.Board_DoubleClickToUnfoldThis);
         visual.DoubleTapped += (_, args) =>
         {
             args.Handled = true;
@@ -4892,8 +4890,8 @@ public partial class GraphEditorView : UserControl
     {
         var content = new StackPanel { Spacing = 0 };
         content.Children.Add(ProxyHeader(
-            $"장면 {scene.DisplayName}",
-            $"접힘 · {scene.Nodes.Count}개 노드" + (scene.InnerCount > 0 ? $" · 안쪽 길 {scene.InnerCount}개" : string.Empty),
+            string.Format(Ui.Board_Scene, scene.DisplayName),
+            string.Format(Ui.Board_FoldedNodes2, scene.Nodes.Count) + (scene.InnerCount > 0 ? string.Format(Ui.Board_PathsInside, scene.InnerCount) : string.Empty),
             new SolidColorBrush(SceneColor)));
 
         var rows = new List<ProxyNodeRow>();
@@ -4933,7 +4931,7 @@ public partial class GraphEditorView : UserControl
             BeginProxyDrag(visual, args, scene.FileId, scene.SceneId, storyFile.Nodes.Where(node => inside.Contains(node.Id)));
         };
 
-        ToolTip.SetTip(visual, "더블클릭하면 이 장면을 펼칩니다.");
+        ToolTip.SetTip(visual, Ui.Board_DoubleClickToUnfoldThis2);
         visual.DoubleTapped += (_, args) =>
         {
             args.Handled = true;
@@ -5038,8 +5036,8 @@ public partial class GraphEditorView : UserControl
                 Opacity = 0.7,
                 VerticalAlignment = VerticalAlignment.Center,
                 [ToolTip.TipProperty] = scene.SceneId.Length == 0
-                    ? "이 챕터의 진행에 안 실리는 노드들입니다 — 장면 경계가 없습니다."
-                    : $"장면 '{scene.DisplayName}' — 같은 장면끼리 저장·롤백 구간을 공유합니다."
+                    ? Ui.Board_NodesNotInThisChapter
+                    : string.Format(Ui.Board_SceneEpisodesInSameScene, scene.DisplayName)
             }
         };
 
@@ -5288,13 +5286,13 @@ public partial class GraphEditorView : UserControl
     private const double SlotEditorMinWidth = 90;
 
     /// <summary>빈 선택지 칸의 글 — 회색으로 선다. 시험이 이 글로 찾는다.</summary>
-    internal const string SlotPlaceholderText = "빈 선택지";
+    internal static string SlotPlaceholderText => Ui.Board_EmptyChoice;
 
     /// <summary>빈 선택지 칸(네모)의 Tag — 칸 줄 안에서 글자 대신 선 그 칸을 찾는다.</summary>
     internal const string SlotPlaceholderTag = "slot-placeholder";
 
     /// <summary>이어졌는데 문구가 없는 선택지 칸의 글(auto-to-choice A2) — 빨갛다.</summary>
-    internal const string SlotNeedsLabelText = "문구를 적어 주세요";
+    internal static string SlotNeedsLabelText => Ui.Board_WriteChoiceText;
 
     /// <summary>이어졌는데 문구가 없는 선택지 칸의 표 — 시험의 손잡이다.</summary>
     internal const string SlotNeedsLabelTag = "slot-needs-label";
@@ -5351,7 +5349,7 @@ public partial class GraphEditorView : UserControl
             EditSlot(null, nodeId);
         }
 
-        box.KeyDown += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
+        box.KeyDown += (_, args) => UiGuard.Run(_session, Ui.Board_ChoiceText, () =>
         {
             if (args.Key is Key.Enter or Key.Escape)
             {
@@ -5360,7 +5358,7 @@ public partial class GraphEditorView : UserControl
             }
         });
 
-        box.LostFocus += (_, _) => UiGuard.Run(_session, "선택지 문구", () =>
+        box.LostFocus += (_, _) => UiGuard.Run(_session, Ui.Board_ChoiceText, () =>
         {
             if (string.Equals(_editingSlot, SlotKey(choice), StringComparison.Ordinal))
             {
@@ -5648,8 +5646,8 @@ public partial class GraphEditorView : UserControl
             Tag = LineKnobTag + port.Key
         };
         ToolTip.SetTip(knob, port.IsConnected
-            ? "분기 — 이 대사 앞에서 다녀온다. 끌어 다른 카드로 옮겨 잇고, 누르면 연결만 끊긴다(분기점은 남는다)."
-            : "이어지지 않은 분기점 — 끌어 카드에 놓으면 분기가 된다. 지우려면 곁기둥의 분기점 카드에서 [✕].");
+            ? Ui.Board_BranchVisitedBeforeThisLine
+            : Ui.Board_UnconnectedBranchPointDropIt);
 
         knob.PointerPressed += (_, args) => OnPortPressed(port, card, index, args);
         return knob;
@@ -5789,7 +5787,7 @@ public partial class GraphEditorView : UserControl
                 VerticalAlignment = VerticalAlignment.Center
             }
         };
-        ToolTip.SetTip(dot, $"분기 {count}개 — 눌러 펼치고 접는다. 펼친 점을 끌어 다른 카드로 잇는다.");
+        ToolTip.SetTip(dot, string.Format(Ui.Board_BranchesClickToExpandOr, count));
 
         var fan = new ShapePath
         {
@@ -6514,8 +6512,8 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.Children.Add(_connectingLine);
         // 공급 포트 안내는 2026-08-22에 사라졌다 — 끌 수 있는 포트가 실행 출구뿐이다.
         SetHint(port.ExecutionPort is { IsOpenDetour: true }
-            ? "분기 카드 위에 놓으면 잇습니다. 빈 곳에 놓으면 그 자리에 새 분기 카드가 섭니다. 에피소드에는 잇지 않습니다."
-            : "분기 카드 위에 놓으면 그리로 옮겨 잇습니다. 빈 곳에 놓으면 연결만 끊기고 분기점은 남습니다.");
+            ? Ui.Board_DropOnBranchCardTo
+            : Ui.Board_DropOnBranchCardTo2);
 
         args.Handled = true;
     }
@@ -6577,10 +6575,10 @@ public partial class GraphEditorView : UserControl
     private void ShowBoardMenu(Point at)
     {
         (string header, Action act) = SceneAt(at) is { } scene
-            ? ("에피소드 추가", () => AddEpisodeAt(scene.ChapterId, scene.SceneId, at))
+            ? (Ui.Board_AddEpisode, () => AddEpisodeAt(scene.ChapterId, scene.SceneId, at))
             : ChapterAt(at) is { } chapterId
-                ? ("장면 추가", () => AddEpisodeAt(chapterId, sceneId: null, at))
-                : ("챕터 추가", (Action)(() => ChapterAddRequested?.Invoke(at)));
+                ? (Ui.Board_AddScene, () => AddEpisodeAt(chapterId, sceneId: null, at))
+                : (Ui.Board_AddChapter, (Action)(() => ChapterAddRequested?.Invoke(at)));
 
         var item = new MenuItem { Header = header };
         item.Click += (_, _) =>
@@ -6601,16 +6599,16 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private void ShowCardMenu(string nodeId)
     {
-        var rename = new MenuItem { Header = "제목 고치기", Tag = "card-rename" };
+        var rename = new MenuItem { Header = Ui.Board_Rename2, Tag = "card-rename" };
         rename.Click += (_, _) =>
         {
             BoardMenu?.Close();
 
             // 차림표가 닫히며 초점을 돌려준 뒤에 칸을 연다 — 바로 열면 닫히는 차림표가 칸의 초점을 앗아 칸이 곧장 닫힌다.
-            Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "제목 고치기", () => BeginCardRename(nodeId)), DispatcherPriority.Input);
+            Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Board_Rename2, () => BeginCardRename(nodeId)), DispatcherPriority.Input);
         };
 
-        var open = new MenuItem { Header = "[구성] 탭에서 보기", Tag = "card-open-chapter" };
+        var open = new MenuItem { Header = Ui.Board_ShowInStructureTab, Tag = "card-open-chapter" };
         open.Click += (_, _) =>
         {
             BoardMenu?.Close();
@@ -6663,9 +6661,9 @@ public partial class GraphEditorView : UserControl
             Height = TitleHeight,
             Padding = new Thickness(3, 0),
             VerticalContentAlignment = VerticalAlignment.Center,
-            PlaceholderText = node.IsBranchCard ? "제목 (비우면 분기 카드 ID)" : "제목 (비우면 에피소드ID)"
+            PlaceholderText = node.IsBranchCard ? Ui.Board_TitleEmptyShowsBranchCard : Ui.Board_TitleEmptyShowsEpisodeID
         };
-        ToolTip.SetTip(box, "제목을 고치고 Enter — Esc는 그만두기. 비우면 ID가 보입니다(ID는 [구성] 탭에서 정합니다).");
+        ToolTip.SetTip(box, Ui.Board_EditTitleAndPressEnter);
         Grid.SetColumn(box, Grid.GetColumn(title));
         title.IsVisible = false;
         row.Children.Add(box);
@@ -6732,7 +6730,7 @@ public partial class GraphEditorView : UserControl
 
         if (commit && _session is { } session)
         {
-            UiGuard.Run(session, "제목 고치기", () => CardTitles.Rename(session, open.NodeId, wanted));
+            UiGuard.Run(session, Ui.Board_Rename2, () => CardTitles.Rename(session, open.NodeId, wanted));
         }
     }
 
@@ -6785,8 +6783,8 @@ public partial class GraphEditorView : UserControl
 
         _session.Select(made.Card.Id);
         _session.SetStatus(made.SceneMade is not null
-            ? $"장면 「{NewNames.Scene}」을 세우고 누른 자리에 에피소드를 더했습니다 — 이름은 오른쪽 인스펙터 머리나 하이어아키에서 고칩니다."
-            : $"장면 「{(ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId!) is { Length: > 0 } named ? named : sceneId)}」의 누른 자리에 에피소드를 더했습니다.");
+            ? string.Format(Ui.Board_CreatedSceneAndAddedEpisode, NewNames.Scene)
+            : string.Format(Ui.Board_AddedEpisodeToSceneWhere, (ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId!) is { Length: > 0 } named ? named : sceneId)));
     }
 
     /// <summary>
@@ -7167,7 +7165,7 @@ public partial class GraphEditorView : UserControl
             // ⚠ <b>UiGuard로 받는다.</b> 규칙 위반은 편집기가 예외로 거절하는데(신원 겹침 ·
             //    없는 에피소드), 놓임 처리기는 Avalonia가 부르는 자리라 그대로 터진다.
             //    거절은 상태줄로 가야 한다 — 이 저장소의 모든 편집 창구가 그 규약을 쓴다.
-            UiGuard.Run(_session, "선택지 잇기", () => JoinChoice(choice, port.NodeId, SlotsOf(port.NodeId), target));
+            UiGuard.Run(_session, Ui.Board_ConnectChoice, () => JoinChoice(choice, port.NodeId, SlotsOf(port.NodeId), target));
             return;
         }
 
@@ -7175,7 +7173,7 @@ public partial class GraphEditorView : UserControl
         if (port.ExecutionPort is { } detour)
         {
             Point at = args.GetPosition(GraphCanvas);
-            UiGuard.Run(_session, "분기 잇기", () => JoinBranch(detour, target, at));
+            UiGuard.Run(_session, Ui.Board_ConnectBranch, () => JoinBranch(detour, target, at));
         }
     }
 
@@ -7203,13 +7201,13 @@ public partial class GraphEditorView : UserControl
             // 분기 카드의 분기점(그 전의 파일)에는 새 카드를 세우지 않는다 — 분기 카드는 분기를 내지 않는다(UX27).
             if (!_session.Editor.CanBranchFrom(detour.NodeId))
             {
-                _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 분기점은 줄의 ＋에서 지웁니다.");
+                _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + Ui.Board_DeleteThisBranchPointFrom);
                 return;
             }
 
             if (_session.Editor.AddBranchCardAt(detour, ClampNodeX(at.X), ClampNodeY(at.Y - (TitleHeight / 2))) is { } created)
             {
-                _session.SetStatus($"분기 카드 '{created.Name}'{Josa.을를(created.Name)} 세우고 이었습니다 — 들러서 할 대사를 적으세요. {BranchConditionNote.Where}");
+                _session.SetStatus(string.Format(Ui.Board_CreatedBranchCardAndConnected, created.Name, Josa.을를(created.Name), BranchConditionNote.Where));
             }
 
             return;
@@ -7217,7 +7215,7 @@ public partial class GraphEditorView : UserControl
 
         if (!_session.Editor.CanBranchFrom(detour.NodeId))
         {
-            _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + " 이 분기는 빈 곳에 놓으면 끊깁니다.");
+            _session.SetStatus(ProjectEditor.BranchCardBranchesRefusal + Ui.Board_DropThisBranchOnEmpty);
             return;
         }
 
@@ -7225,9 +7223,8 @@ public partial class GraphEditorView : UserControl
         {
             string name = EpisodeNaming.ShownNameOf(_session.Project, _session.Project.FindNode(target)!);
             _session.SetStatus(_session.Editor.IsBranchCardElsewhere(detour.NodeId, target)
-                ? $"'{name}'{Josa.은는(name)} 다른 챕터의 분기 카드입니다 — 분기점은 같은 챕터의 분기 카드에만 잇습니다. 빈 곳에 놓으면 새 분기 카드가 섭니다."
-                : $"'{name}'{Josa.은는(name)} 에피소드입니다 — 분기점은 분기 카드에만 잇습니다(들렀다 돌아오는 동안 그 에피소드의 선택지는 게임에 " +
-                  "나오지 않습니다). 빈 곳에 놓으면 새 분기 카드가 섭니다.");
+                ? string.Format(Ui.Board_IsBranchCardInAnother, name, Josa.은는(name))
+                : string.Format(Ui.Board_IsEpisodeBranchPointsConnect, name, Josa.은는(name)));
             return;
         }
 
@@ -7258,8 +7255,8 @@ public partial class GraphEditorView : UserControl
         if (EpisodeAt(targetNodeId) is not var (chapterId, episodeId))
         {
             _session.SetStatus(IsBranchCard(targetNodeId)
-                ? "분기 카드에는 선택지를 잇지 않습니다 — 분기 카드는 분기점으로 들렀다 돌아오는 카드입니다. 선택지는 에피소드에 잇습니다."
-                : "선택지는 에피소드에 잇습니다.");
+                ? Ui.Board_ChoicesDonTConnectTo
+                : Ui.Board_ConnectChoicesToEpisodes);
             return;
         }
 
@@ -7268,7 +7265,7 @@ public partial class GraphEditorView : UserControl
         if (!string.Equals(chapterId, choice.ChapterId, StringComparison.Ordinal))
         {
             _session.SetStatus(
-                $"'{chapterId}'는 다른 챕터입니다 — 선택지는 챕터 안에서만 잇습니다.");
+                string.Format(Ui.Board_IsInAnotherChapterChoices, chapterId));
             return;
         }
 
@@ -7336,11 +7333,10 @@ public partial class GraphEditorView : UserControl
         }
 
         _session.SetStatus(auto
-            ? $"'{choice.FromEpisodeId}' → '{episodeId}' 자동으로 이었습니다(문구 없이 지나갑니다)."
+            ? string.Format(Ui.Board_ConnectedAsAutoPathMoves, choice.FromEpisodeId, episodeId)
             : turnedAuto
-                ? $"'{choice.FromEpisodeId}' → '{episodeId}' 선택지 '{label}'을 이었습니다 — 자동 길이 선택지가 됐습니다. 빨간 칸에 문구를 적으세요" +
-                  "(적을 때까지 이 챕터의 진행 JSON이 나가지 않습니다). 되돌리기(Ctrl+Z) 한 번이면 둘 다 돌아옵니다."
-                : $"'{choice.FromEpisodeId}' → '{episodeId}' 선택지 '{label}'을 이었습니다.");
+                ? string.Format(Ui.Board_ConnectedWithChoiceAutoPath, choice.FromEpisodeId, episodeId, label)
+                : string.Format(Ui.Board_ConnectedWithChoice, choice.FromEpisodeId, episodeId, label));
 
         DrawJoined(sourceNodeId);
     }
@@ -7376,8 +7372,8 @@ public partial class GraphEditorView : UserControl
         }
 
         _session!.SetStatus(
-            $"'{choice.FromEpisodeId}' → '{choice.ToEpisodeId}' 길을 걷었습니다." +
-            (choice.Label.Length > 0 ? $" 문구 '{choice.Label}'은 칸에 남겨 뒀습니다." : string.Empty));
+            string.Format(Ui.Board_RemovedPath, choice.FromEpisodeId, choice.ToEpisodeId) +
+            (choice.Label.Length > 0 ? string.Format(Ui.Board_TextWasLeftInSlot, choice.Label) : string.Empty));
 
         DrawJoined(sourceNodeId);
     }
@@ -7492,7 +7488,7 @@ public partial class GraphEditorView : UserControl
 
         string sourceName = FindNodeName(edge.Connection.SourceNodeId) ?? edge.Connection.SourceNodeId;
         string targetName = FindNodeName(edge.Connection.TargetNodeId) ?? edge.Connection.TargetNodeId;
-        SetHint($"{sourceName} — 조건 '{edge.Connection.Label}' → {targetName} · 우클릭으로 삭제");
+        SetHint(string.Format(Ui.Board_ConditionRightClickToDelete, sourceName, edge.Connection.Label, targetName));
     }
 
     /// <summary>
@@ -7606,17 +7602,17 @@ public partial class GraphEditorView : UserControl
 
         if (created is null)
         {
-            _session.SetStatus(failure ?? "새 카드를 세울 챕터를 찾지 못했습니다.");
+            _session.SetStatus(failure ?? Ui.Board_CouldnTFindChapterTo);
             return;
         }
 
         _session.Select(created.Id);
         _session.SetStatus(
             chapterMade is not null
-                ? $"챕터 「{NewNames.Chapter}」와 장면 「{NewNames.Scene}」을 세우고 에피소드를 더했습니다 — 이름은 하이어아키에서 두 번 눌러 고칩니다."
+                ? string.Format(Ui.Board_CreatedChapterAndSceneAnd, NewNames.Chapter, NewNames.Scene)
                 : sceneMade is not null
-                    ? $"장면 「{NewNames.Scene}」을 세우고 에피소드를 더했습니다 — 장면이나 그 장면의 카드를 골라 두면 그 장면에 더합니다."
-                    : $"장면 「{sceneName}」에 에피소드를 더했습니다.");
+                    ? string.Format(Ui.Board_CreatedSceneAndAddedEpisode2, NewNames.Scene)
+                    : string.Format(Ui.Board_AddedEpisodeToScene, sceneName));
     }
 
     /// <summary>
@@ -7722,9 +7718,8 @@ public partial class GraphEditorView : UserControl
                 DeleteConfirmButton = ConfirmFlyout.Show(
                     DeleteButton,
                     _session,
-                    $"'{episodeId}'은 챕터 '{chapter.ChapterId}'의 에피소드입니다. " +
-                    "간선·픽스처 참조까지 함께 지웁니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.",
-                    "에피소드 지우기",
+                    string.Format(Ui.Board_IsEpisodeInChapterIts, episodeId, chapter.ChapterId),
+                    Ui.Board_DeleteEpisode2,
                     () => DeleteEpisodeOfCard(chapter.ChapterId, episodeId),
                     closed: () => DeleteConfirmButton = null);
                 return;
@@ -7779,8 +7774,7 @@ public partial class GraphEditorView : UserControl
         DialogueNode branch = (DialogueNode)_session!.SelectedNode!;
         _session.Editor.RemoveNode(branch.Id);
         _session.SetStatus(
-            $"분기 카드 '{branch.Name}'{Josa.을를(branch.Name)} 지웠습니다 — 부르던 분기점은 이어지지 않은 채 남습니다(빈 곳에 놓으면 새 분기 카드가 섭니다). " +
-            "되돌리기(Ctrl+Z)로 돌아옵니다.");
+            string.Format(Ui.Board_DeletedBranchCardBranchPoints, branch.Name, Josa.을를(branch.Name)));
     }
 
     /// <summary>
@@ -7851,9 +7845,9 @@ public partial class GraphEditorView : UserControl
     private string? TitleTip(string nodeId) => _session?.Project.FindNode(nodeId) switch
     {
         DialogueNode { MarkedEpisodeId: not null } episode =>
-            $"에피소드ID: {EpisodeNaming.EpisodeIdOf(episode)} — 에피소드ID는 [구성] 탭에서 정합니다.",
+            string.Format(Ui.Board_EpisodeIDEpisodeIDsAre, EpisodeNaming.EpisodeIdOf(episode)),
         DialogueNode { IsBranchCard: true } branch =>
-            $"분기 카드 ID: {branch.Name} — ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.",
+            string.Format(Ui.Board_BranchCardIDIDYarn, branch.Name),
         _ => null
     };
 
@@ -8197,7 +8191,7 @@ public partial class GraphEditorView : UserControl
                 StrokeThickness = 2,
                 ZIndex = 1000,
                 Cursor = new Cursor(StandardCursorType.SizeAll),
-                [ToolTip.TipProperty] = "끌어서 선을 굽힙니다."
+                [ToolTip.TipProperty] = Ui.Board_DragToBendLine
             };
             _bendHandle.PointerPressed += OnBendPressed;
             _bendHandle.PointerMoved += OnBendMoved;
@@ -8259,7 +8253,7 @@ public partial class GraphEditorView : UserControl
             }
 
             // 꼴을 바꾸면 굽이는 처음부터다 — 직각에서 민 양이 곡선에서는 다른 뜻이다.
-            button.Click += (_, _) => UiGuard.Run(_session, "선 모양", () =>
+            button.Click += (_, _) => UiGuard.Run(_session, Ui.Board_LineShape, () =>
             {
                 if ((SelectedLineShape() ?? EdgeShape.Default).Kind != kind)
                 {
@@ -8270,31 +8264,31 @@ public partial class GraphEditorView : UserControl
             return button;
         }
 
-        _shapeButtons.Children.Add(Choice("직각", "꺾인 선 — 손잡이로 꺾이는 자리를 옮깁니다.", EdgeShapeKind.Elbow));
-        _shapeButtons.Children.Add(Choice("곡선", "부드러운 곡선 — 손잡이로 굽이를 옮깁니다.", EdgeShapeKind.Curve));
-        _shapeButtons.Children.Add(Choice("직선", "두 끝을 곧게 잇습니다.", EdgeShapeKind.Straight));
+        _shapeButtons.Children.Add(Choice(Ui.Settings_Elbow, Ui.Board_BentLineMoveBendWith, EdgeShapeKind.Elbow));
+        _shapeButtons.Children.Add(Choice(Ui.Settings_Curve, Ui.Board_SmoothCurveMoveBendWith, EdgeShapeKind.Curve));
+        _shapeButtons.Children.Add(Choice(Ui.Settings_Straight, Ui.Board_ConnectsTwoEndsStraight, EdgeShapeKind.Straight));
 
         // 「↺ 자동」은 설정의 「새로 잇는 선」 꼴의 처음 자리로(2026-11-23 — 새로 잇는 선이 곡선이면 곡선으로 · BoardLines). 직각이면 전처럼 모양을 걷는다.
         EdgeShape fresh = BoardLines.Default;
         var reset = new Button
         {
-            Content = "↺ 자동",
+            Content = Ui.Board_Auto3,
             FontSize = 10,
             Padding = new Thickness(6, 1),
             MinHeight = 0,
             IsEnabled = !stored.Equals(fresh),
-            [ToolTip.TipProperty] = $"고친 모양을 걷고 처음 자리로 되돌립니다 — 설정 「새로 잇는 선」의 꼴({BoardLineName(fresh.Kind)})입니다."
+            [ToolTip.TipProperty] = string.Format(Ui.Board_ClearsEditedShapeAndReturns, BoardLineName(fresh.Kind))
         };
-        reset.Click += (_, _) => UiGuard.Run(_session, "선 모양", () => ApplyShape(fresh.IsDefault ? null : fresh));
+        reset.Click += (_, _) => UiGuard.Run(_session, Ui.Board_LineShape, () => ApplyShape(fresh.IsDefault ? null : fresh));
         _shapeButtons.Children.Add(reset);
     }
 
     /// <summary>선 꼴의 이름 — 선 위의 차림 · 설정과 같다.</summary>
     private static string BoardLineName(EdgeShapeKind kind) => kind switch
     {
-        EdgeShapeKind.Curve => "곡선",
-        EdgeShapeKind.Straight => "직선",
-        _ => "직각"
+        EdgeShapeKind.Curve => Ui.Settings_Curve,
+        EdgeShapeKind.Straight => Ui.Settings_Straight,
+        _ => Ui.Settings_Elbow
     };
 
     /// <summary>고른 선에 모양을 적는다 — 실행 선은 노드에, 선택지 레인은 간선에.</summary>
@@ -8375,7 +8369,7 @@ public partial class GraphEditorView : UserControl
         // 누르기만 하고 놓았으면 적을 것이 없다.
         if (bent is not null)
         {
-            UiGuard.Run(_session, "선 모양", () => ApplyShape(bent));
+            UiGuard.Run(_session, Ui.Board_LineShape, () => ApplyShape(bent));
         }
     }
 

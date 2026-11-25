@@ -10,6 +10,7 @@ using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Model;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -35,13 +36,11 @@ public partial class MainWindow
     {
         IReadOnlyList<Speaker> speakers = _session.Project.Speakers;
 
-        Guide("대본의 화자 칸에서 고를 이름입니다. 모든 챕터가 같은 목록을 씁니다. 이름을 고치면 이미 쓴 대사 줄도 따라갑니다. " +
-              "이름 앞의 색 단추로 대본 칸에서 그 이름이 보일 색을 정합니다(게임에는 나가지 않습니다). " +
-              "캐릭터 키(초상화 · 표정)는 [구성] 탭에서 잇습니다.");
+        Guide(Ui.Speakers_NamesToPickInScript);
 
         if (speakers.Count == 0)
         {
-            Guide("아직 화자가 없습니다 — 아래에 이름을 적고 [＋ 추가]를 누르세요.", "아직 화자가 없습니다.");
+            Guide(Ui.Speakers_NoSpeakersYetTypeName, Ui.Speakers_NoSpeakersYet);
         }
 
         var rows = new StackPanel { Spacing = 3, Margin = new Thickness(0, 4, 0, 0) };
@@ -53,17 +52,17 @@ public partial class MainWindow
 
         _sheet.Children.Add(rows);
 
-        var addBox = new TextBox { FontSize = 12, PlaceholderText = "새 화자 이름", Tag = "speaker-add-name" };
+        var addBox = new TextBox { FontSize = 12, PlaceholderText = Ui.Speakers_NewSpeakerName, Tag = "speaker-add-name" };
         var addButton = new Button
         {
-            Content = "＋ 추가",
+            Content = Ui.Speakers_Add,
             FontSize = 11,
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "speaker-add"
         };
-        ToolTip.SetTip(addButton, "Enter로도 더합니다. 같은 이름은 한 번만 섭니다.");
+        ToolTip.SetTip(addButton, Ui.Speakers_EnterAlsoAddsSameName);
 
-        void Add() => UiGuard.Run(_session, "화자 추가", () =>
+        void Add() => UiGuard.Run(_session, Ui.Speakers_AddSpeaker, () =>
         {
             string typed = (addBox.Text ?? string.Empty).Trim();
 
@@ -75,7 +74,7 @@ public partial class MainWindow
 
             _speakerFocusTag = "speaker-add-name";
             string key = _session.Project.FindSpeaker(typed)?.CharacterId ?? string.Empty;
-            _session.SetStatus($"화자 '{typed}'을 더했습니다 — 모든 챕터의 대본에서 고를 수 있습니다. 캐릭터 키는 임시로 '{key}' — [구성] 탭에서 그림에 맞게 바꿉니다.");
+            _session.SetStatus(string.Format(Ui.Speakers_AddedSpeakerItCanBe, typed, key));
         });
 
         addButton.Click += (_, _) => Add();
@@ -114,15 +113,14 @@ public partial class MainWindow
 
         _sheet.Children.Add(new TextBlock
         {
-            Text = $"대본에만 있는 이름 {unlisted.Count}개",
+            Text = string.Format(Ui.Speakers_NamesOnlyInScript, unlisted.Count),
             FontSize = 12,
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(0, 16, 0, 0),
             Tag = "speaker-unlisted-header"
         });
-        Guide("대사의 화자 칸에 바로 적었지만 위 목록에 없는 이름입니다. [등록]하면 목록에 서고(캐릭터 키는 임시 키), 이름을 고치면 그 이름의 " +
-              "대사 줄이 모두 따라갑니다 — 목록에 있는 이름으로 고치면 그 화자로 합쳐집니다(오타 고치기).",
-              "[등록] · 이름을 고치면 그 줄들이 따라갑니다.");
+        Guide(Ui.Speakers_NamesTypedDirectlyInDialogue,
+              Ui.Speakers_RegisterRenamingUpdatesThoseLines);
 
         var rows = new StackPanel { Spacing = 3, Margin = new Thickness(0, 4, 0, 0) };
 
@@ -140,14 +138,14 @@ public partial class MainWindow
 
         var all = new Button
         {
-            Content = "모두 등록",
+            Content = Ui.Speakers_RegisterAll,
             FontSize = 11,
             HorizontalAlignment = HorizontalAlignment.Right,
             Margin = new Thickness(0, 6, 0, 0),
             Tag = "speaker-register-all"
         };
-        ToolTip.SetTip(all, $"위 {unlisted.Count}개 이름을 한꺼번에 화자 목록에 올립니다 — 캐릭터 키는 임시 키. 되돌리기(Ctrl+Z) 한 번에 모두 돌아갑니다.");
-        all.Click += (_, _) => UiGuard.Run(_session, "화자 모두 등록", () =>
+        ToolTip.SetTip(all, string.Format(Ui.Speakers_PutsNamesAboveIntoSpeaker, unlisted.Count));
+        all.Click += (_, _) => UiGuard.Run(_session, Ui.Speakers_RegisterAllSpeakers, () =>
         {
             // 누른 때의 대본으로 다시 본다 — 이름 칸을 고치던 중이면 초점이 떠나며 먼저 고쳐졌다.
             if (_session.RegisterSpeakerNames(UnlistedSpeakers.Of(_session.Project).Select(entry => entry.Name)) is { } report)
@@ -163,9 +161,9 @@ public partial class MainWindow
     {
         string speakerName = entry.Name;
         var name = new TextBox { Text = speakerName, FontSize = 12, Tag = "speaker-unlisted:" + speakerName };
-        ToolTip.SetTip(name, $"고치면 '{speakerName}'{Josa.이가(speakerName)} 화자인 대사 {entry.Lines}줄이 모두 따라갑니다. 목록에 있는 이름으로 고치면 그 화자로 합쳐집니다.");
+        ToolTip.SetTip(name, string.Format(Ui.Speakers_RenamingUpdatesAllDialogueLines, speakerName, Josa.이가(speakerName), entry.Lines));
 
-        void Commit() => UiGuard.Run(_session, "대본의 화자 이름", () =>
+        void Commit() => UiGuard.Run(_session, Ui.Speakers_SpeakerNameInScript, () =>
         {
             string typed = (name.Text ?? string.Empty).Trim();
 
@@ -206,7 +204,7 @@ public partial class MainWindow
 
         var lines = new TextBlock
         {
-            Text = $"{entry.Lines}줄",
+            Text = string.Format(Ui.Speakers_Lines, entry.Lines),
             FontSize = 11,
             Opacity = 0.65,
             MinWidth = 34,
@@ -218,13 +216,13 @@ public partial class MainWindow
 
         var register = new Button
         {
-            Content = "등록",
+            Content = Ui.Speakers_Register,
             FontSize = 11,
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "speaker-register:" + speakerName
         };
-        ToolTip.SetTip(register, $"'{speakerName}'{Josa.을를(speakerName)} 화자 목록에 올립니다 — 캐릭터 키는 임시 키로 섭니다.");
-        register.Click += (_, _) => UiGuard.Run(_session, "화자 등록", () =>
+        ToolTip.SetTip(register, string.Format(Ui.Speakers_PutsInSpeakerListWith, speakerName, Josa.을를(speakerName)));
+        register.Click += (_, _) => UiGuard.Run(_session, Ui.Speakers_RegisterSpeaker, () =>
         {
             // 그 칸을 고치던 중이면 초점이 떠나며 이름이 먼저 고쳐졌다 — 이제 아무 줄도 쓰지 않는 옛 이름은 올리지 않는다.
             if (!UnlistedSpeakers.Of(_session.Project).Any(item => string.Equals(item.Name, speakerName, StringComparison.Ordinal)))
@@ -260,8 +258,8 @@ public partial class MainWindow
     {
         string speakerName = speaker.Name;
         WriterRgb? now = fill ? speaker.Fill : speaker.Color;
-        string what = fill ? "이름 바탕색" : "이름 색";
-        var chooser = new WriterColorChooser(fill, fill ? "이름 바탕색을 걷습니다 — 바탕 없이 보입니다" : "이름 색을 걷습니다 — 보통 글자색으로 보입니다");
+        string what = fill ? Ui.Speakers_NameBackground : Ui.Speakers_NameColor;
+        var chooser = new WriterColorChooser(fill, fill ? Ui.Speakers_ClearNameBackgroundShownWithout : Ui.Speakers_ClearNameColorShownIn);
         var flyout = new Flyout { Content = chooser.Content, Placement = Avalonia.Controls.PlacementMode.BottomEdgeAlignedLeft };
         var swatch = new Border
         {
@@ -278,7 +276,7 @@ public partial class MainWindow
         {
             var glyph = new TextBlock
             {
-                Text = "가",
+                Text = Ui.Format_Text,
                 FontSize = 10,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
@@ -302,20 +300,20 @@ public partial class MainWindow
             Tag = (fill ? "speaker-fill:" : "speaker-color:") + speakerName
         };
         ToolTip.SetTip(button, now is { } shown
-            ? $"대본 칸에서 '{speakerName}' {what} — {shown.Hex}. 누르면 바꿉니다(게임에는 나가지 않습니다)."
-            : $"대본 칸에서 '{speakerName}' {what} — 정하지 않았습니다. 누르면 고릅니다(게임에는 나가지 않습니다).");
+            ? string.Format(Ui.Speakers_InScriptBoxClickTo, speakerName, what, shown.Hex)
+            : string.Format(Ui.Speakers_InScriptBoxNotSet, speakerName, what));
 
         flyout.Opening += (_, _) => chooser.Prepare(GraphEditorView.ProjectColors(_session.Project, fill), now);
         chooser.Picked += picked =>
         {
             flyout.Hide();
-            UiGuard.Run(_session, "화자 " + what, () =>
+            UiGuard.Run(_session, Ui.Speakers_Speaker + what, () =>
             {
                 if (fill ? _session.Editor.SetSpeakerFill(speakerName, picked) : _session.Editor.SetSpeakerColor(speakerName, picked))
                 {
                     _session.SetStatus(picked is { } rgb
-                        ? $"화자 '{speakerName}'의 {what}을 {rgb.Hex}로 정했습니다 — 대본 칸에서 그 이름이 그렇게 보입니다. 되돌리기 한 번이면 돌아갑니다."
-                        : $"화자 '{speakerName}'의 {what}을 걷었습니다.");
+                        ? string.Format(Ui.Speakers_SetOfSpeakerToName, speakerName, what, rgb.Hex)
+                        : string.Format(Ui.Speakers_ClearedOfSpeaker, speakerName, what));
                 }
             });
         };
@@ -329,7 +327,7 @@ public partial class MainWindow
         string speakerName = speaker.Name;
         var name = new TextBox { Text = speakerName, FontSize = 12, Tag = "speaker-name:" + speakerName };
 
-        void Commit() => UiGuard.Run(_session, "화자 이름", () =>
+        void Commit() => UiGuard.Run(_session, Ui.Speakers_SpeakerName, () =>
         {
             string typed = (name.Text ?? string.Empty).Trim();
 
@@ -376,12 +374,12 @@ public partial class MainWindow
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "speaker-remove:" + speakerName
         };
-        ToolTip.SetTip(remove, $"'{speakerName}'를 목록에서 지웁니다. 이미 대본에 적힌 이름은 그대로 남습니다(화자 칸은 자유 입력).");
-        remove.Click += (_, _) => UiGuard.Run(_session, "화자 삭제", () =>
+        ToolTip.SetTip(remove, string.Format(Ui.Speakers_RemovesFromListNamesAlready, speakerName));
+        remove.Click += (_, _) => UiGuard.Run(_session, Ui.Speakers_DeleteSpeaker, () =>
         {
             if (_session.RemoveSpeakerName(speakerName))
             {
-                _session.SetStatus($"화자 '{speakerName}'를 목록에서 지웠습니다 — 이미 대본에 적힌 이름은 그대로입니다.");
+                _session.SetStatus(string.Format(Ui.Speakers_RemovedSpeakerFromListNames, speakerName));
             }
         });
 
@@ -401,7 +399,7 @@ public partial class MainWindow
     }
 
     /// <summary>화자 목록이 바뀌었다 — 「화자」 탭을 다시 세운다(넣기가 끝난 뒤에 — 넣는 칸을 그 자리에서 걷지 않게).</summary>
-    private void OnSpeakersChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "화자", () =>
+    private void OnSpeakersChanged(object? sender, EventArgs e) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Board_Speakers, () =>
     {
         FillSpeakerTab();
 

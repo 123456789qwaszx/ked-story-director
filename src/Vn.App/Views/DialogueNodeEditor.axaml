@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:Vn.App.Strings"
              x:Class="Vn.App.Views.DialogueNodeEditor">
     <Grid RowDefinitions="Auto,Auto,*">
         <Border Grid.Row="0"
@@ -8,16 +9,16 @@
                 BorderThickness="0,0,0,1">
             <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="*,Auto">
-                    <TextBox x:Name="NameBox" FontWeight="SemiBold" PlaceholderText="장면 이름" />
+                    <TextBox x:Name="NameBox" FontWeight="SemiBold" PlaceholderText="{x:Static s:Ui.Dialogue_SceneName}" />
                     <!-- 빈 선택지 숨기기 — 에피소드 카드만. 다 이은 카드는 안 이은 칸이 판만 어지럽힌다. -->
                     <CheckBox Grid.Column="1"
                               x:Name="HideEmptyChoicesBox"
-                              Content="빈 선택지 숨기기"
+                              Content="{x:Static s:Ui.Dialogue_HideEmptyChoices}"
                               FontSize="11"
                               Margin="8,0,0,0"
                               VerticalAlignment="Center"
                               IsVisible="False"
-                              ToolTip.Tip="켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요." />
+                              ToolTip.Tip="{x:Static s:Ui.Dialogue_WhenOnOnlyChoicesConnected2}" />
                 </Grid>
 
                 <!-- 분기 카드의 조건 — 대본 위쪽(2026-11-17 소유자: 분기는 무조건 들른 뒤 그 카드에서 if로 본다). 분기 카드일 때만 선다. -->
@@ -38,11 +39,11 @@
               ColumnDefinitions="30,96,*,Auto"
               Margin="25,6,12,0">
             <TextBlock Grid.Column="0" Text="#" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
-            <TextBlock Grid.Column="1" Text="화자" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
-            <TextBlock Grid.Column="2" Text="대사" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
+            <TextBlock Grid.Column="1" Text="{x:Static s:Ui.Dialogue_Speaker}" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
+            <TextBlock Grid.Column="2" Text="{x:Static s:Ui.Dialogue_Dialogue}" FontSize="9" Opacity="0.45" VerticalAlignment="Bottom" />
             <Button Grid.Column="3"
                     x:Name="AddLineButton"
-                    Content="줄 추가"
+                    Content="{x:Static s:Ui.Dialogue_AddLine}"
                     FontSize="11" />
         </Grid>
 

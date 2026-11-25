@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Vn.Authoring.Model;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -36,7 +37,7 @@ internal sealed class WriterColorChooser
 
         var none = new Button
         {
-            Content = "없음",
+            Content = Ui.Board_None,
             FontSize = 11,
             Margin = new Thickness(2),
             Focusable = false,
@@ -45,7 +46,7 @@ internal sealed class WriterColorChooser
         none.Click += (_, _) => Picked?.Invoke(null);
         palette.Children.Add(none);
 
-        UsedTitle = new TextBlock { Text = "이 프로젝트에 쓴 색", FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7, IsVisible = false };
+        UsedTitle = new TextBlock { Text = Ui.Format_ColorsUsedInThisProject, FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7, IsVisible = false };
         Used = new WrapPanel { Orientation = Orientation.Horizontal, MaxWidth = 5 * 28, IsVisible = false };
 
         Preview = new Border
@@ -60,9 +61,9 @@ internal sealed class WriterColorChooser
         {
             Width = 86,
             FontSize = 12,
-            [ToolTip.TipProperty] = "#RRGGBB — 16진수로 적고 Enter로 입힙니다"
+            [ToolTip.TipProperty] = Ui.Format_RRGGBBTypeItInHex
         };
-        Apply = new Button { Content = "입히기", FontSize = 11, Focusable = false, [ToolTip.TipProperty] = "이 색을 입힙니다" };
+        Apply = new Button { Content = Ui.Format_Apply, FontSize = 11, Focusable = false, [ToolTip.TipProperty] = Ui.Format_ApplyThisColor };
         Channels = new Slider[3];
         var rows = new StackPanel { Spacing = 0 };
 
@@ -122,7 +123,7 @@ internal sealed class WriterColorChooser
                 palette,
                 UsedTitle,
                 Used,
-                new TextBlock { Text = "직접 고르기 (RGB)", FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7 },
+                new TextBlock { Text = Ui.Format_ChooseRGB, FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7 },
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(2, 0), Children = { Preview, Hex, Apply } },
                 rows
             }

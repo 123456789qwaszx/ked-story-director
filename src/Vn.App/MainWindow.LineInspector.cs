@@ -8,6 +8,7 @@ using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Graph;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -76,46 +77,46 @@ public partial class MainWindow
 
         if (chapter is null || edge is null)
         {
-            Graph.SetInspectorHeader("인스펙터", "고른 선택지가 사라졌습니다 — 판에서 다시 고르세요");
+            Graph.SetInspectorHeader(Ui.Board_Inspector, Ui.Side_SelectedChoiceIsGoneSelect);
             return;
         }
 
         Graph.SetInspectorHeader(
-            $"선택지 · {TitleOf(chapter, edge.FromEpisodeId)} → {TitleOf(chapter, edge.ToEpisodeId)}",
-            "문구는 여기서, 조건 · 스탯변화는 [구성] 탭에서 고칩니다");
+            string.Format(Ui.Side_Choice, TitleOf(chapter, edge.FromEpisodeId), TitleOf(chapter, edge.ToEpisodeId)),
+            Ui.Side_EditTextHereAndConditions);
 
         ChoiceLabelEditor(choice, chapter, edge);
 
         if (edge.VisibleConditionLabel is { } visible)
         {
-            Fact("표시조건", $"{visible} — 아니면 목록에 안 보입니다");
+            Fact(Ui.Side_ShowCondition, string.Format(Ui.Side_OtherwiseItIsnTListed, visible));
         }
 
         if (edge.ConditionLabel is { } unlock)
         {
-            Fact("해금조건", $"{unlock} — 아니면 잠긴 채 보입니다");
+            Fact(Ui.Side_UnlockCondition, string.Format(Ui.Side_OtherwiseItSShownLocked, unlock));
 
             if (edge.LockedMessage is { Length: > 0 } locked)
             {
-                Fact("잠금 안내문", locked);
+                Fact(Ui.Side_LockedHint, locked);
             }
         }
 
         if (edge.StatChanges.Count > 0)
         {
-            Fact("스탯변화", string.Join(" · ", edge.StatChanges.Select(delta => ChapterGraphView.DeltaText(chapter.Stats, delta))));
+            Fact(Ui.Side_StatChange, string.Join(" · ", edge.StatChanges.Select(delta => ChapterGraphView.DeltaText(chapter.Stats, delta))));
         }
 
         if (!edge.HasGate && edge.StatChanges.Count == 0)
         {
-            Note("조건과 스탯변화가 없습니다.");
+            Note(Ui.Side_NoConditionsOrStatChanges);
         }
 
         // 출발 · 도착 고리는 두지 않는다(2026-11-17 소유자) — 머리글이 이미 말한다.
         string from = edge.FromEpisodeId;
         string to = edge.ToEpisodeId;
         string label = edge.OptionLabel?.Trim() ?? string.Empty;
-        ChapterTabButton("[구성] 탭에서 이 선택지 고치기", () =>
+        ChapterTabButton(Ui.Side_EditThisChoiceInStructure, () =>
         {
             MainTabs.SelectedItem = ChapterTabItem;
             ChapterGraph.SelectChapter(choice.ChapterId);
@@ -134,13 +135,13 @@ public partial class MainWindow
         {
             Text = shown,
             FontSize = 12,
-            PlaceholderText = "비우면 AUTO — 플레이어 입력 없이 넘어갑니다",
+            PlaceholderText = Ui.Side_LeaveEmptyForAUTOMoves,
             Tag = "summary-label"
         };
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
         row.Children.Add(new TextBlock
         {
-            Text = "문구",
+            Text = Ui.Side_Text,
             FontSize = 12,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 8, 0)
@@ -151,11 +152,11 @@ public partial class MainWindow
 
         if (edge.Auto)
         {
-            Guide("AUTO — 플레이어 입력 없이 넘어갑니다. 문구를 적으면 선택지가 됩니다.", "AUTO — 플레이어 입력 없이 넘어갑니다.");
+            Guide(Ui.Side_AUTOMovesOnWithoutPlayer, Ui.Side_AUTOMovesOnWithoutPlayer2);
         }
         else if (edge.HasNoOptionLabel)
         {
-            Note("⚠ 문구 없음 — 선택지에는 문구가 있어야 합니다.");
+            Note(Ui.Side_NoTextChoiceNeedsText);
         }
 
         bool applied = false;
@@ -171,7 +172,7 @@ public partial class MainWindow
             ApplyChoiceLabel(choice, chapter, edge, box.Text?.Trim() ?? string.Empty);
         }
 
-        box.KeyDown += (_, args) => UiGuard.Run(_session, "선택지 문구", () =>
+        box.KeyDown += (_, args) => UiGuard.Run(_session, Ui.Board_ChoiceText, () =>
         {
             if (args.Key == Key.Enter)
             {
@@ -186,7 +187,7 @@ public partial class MainWindow
         });
 
         // 딴 데를 누르면 Enter처럼 넣는다 — 넣기는 판 · 인스펙터를 다시 세우므로 초점 처리가 끝난 뒤로 미룬다.
-        box.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "선택지 문구", Apply));
+        box.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Board_ChoiceText, Apply));
     }
 
     /// <summary>
@@ -216,8 +217,7 @@ public partial class MainWindow
 
             if (ways > 1)
             {
-                _session.SetStatus("문구를 비우지 않았습니다 — 길이 둘 이상인 에피소드의 선택지에는 문구가 있어야 합니다. " +
-                                   "자동 길(AUTO)은 하나뿐인 길만 될 수 있습니다.");
+                _session.SetStatus(Ui.Side_TextWasnTClearedChoices);
                 ShowSelectedNode();
                 return;
             }
@@ -230,16 +230,16 @@ public partial class MainWindow
             auto: toAuto);
 
         _session.SetStatus(toAuto
-            ? "문구를 지워 자동 길(AUTO)이 됐습니다 — 플레이어 입력 없이 넘어갑니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
+            ? Ui.Side_ClearingTextMadeItAuto
             : edge.Auto
-                ? $"자동 길이 선택지 「{wanted}」가 됐습니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
-                : $"선택지 문구를 「{wanted}」로 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                ? string.Format(Ui.Side_AutoPathBecameChoiceUndo, wanted)
+                : string.Format(Ui.Side_ChangedChoiceTextToUndo, wanted));
 
         string chapterId = choice.ChapterId;
         string fromId = edge.FromEpisodeId;
         string toId = edge.ToEpisodeId;
         Dispatcher.UIThread.Post(
-            () => UiGuard.Run(_session, "선택지 다시 고르기", () => Graph.SelectChoiceRail(chapterId, fromId, toId, wanted)),
+            () => UiGuard.Run(_session, Ui.Side_ReselectChoice, () => Graph.SelectChoiceRail(chapterId, fromId, toId, wanted)),
             DispatcherPriority.Background);
     }
 
@@ -251,13 +251,13 @@ public partial class MainWindow
 
         if (port is { Kind: ExitPortKind.Detour, TargetNodeId: { } target })
         {
-            Graph.SetInspectorHeader($"분기 · {from} → {to}", "들렀다 돌아오는 분기 카드");
+            Graph.SetInspectorHeader(string.Format(Ui.Side_Branch, from, to), Ui.Side_BranchCardVisitedAndReturned);
             BranchEntryCondition.State state = BranchEntryCondition.Read(_session.Project, target);
 
             // 조건은 여기서 고르지 않는다 — 그 분기 카드를 고르면 대본 위쪽에 칸이 선다(2026-11-17 소유자: 분기는 무조건 들른 뒤
             // 그 카드에서 if로 보므로). ⛔ 같은 날 아침에는 여기 칸이 있었다.
             string sentence = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, target, state.Label));
-            Guide(sentence + $" 조건은 분기 카드 「{to}」를 고르면 대본 위쪽에서 고릅니다.", sentence);
+            Guide(sentence + string.Format(Ui.Side_ChooseConditionAtTopOf, to), sentence);
             return;
         }
 
@@ -291,7 +291,7 @@ public partial class MainWindow
             Margin = new Thickness(0, 8, 0, 0),
             Tag = "summary-open"
         };
-        button.Click += (_, _) => UiGuard.Run(_session, "[구성] 탭에서 열기", open);
+        button.Click += (_, _) => UiGuard.Run(_session, Ui.Side_OpenInStructureTab, open);
         _sheet.Children.Add(button);
     }
 }

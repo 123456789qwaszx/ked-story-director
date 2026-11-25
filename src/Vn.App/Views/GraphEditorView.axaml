@@ -1,5 +1,6 @@
 ﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="using:Vn.App.Strings"
              xmlns:views="using:Vn.App.Views"
              x:Class="Vn.App.Views.GraphEditorView">
     <Grid RowDefinitions="Auto,*,Auto">
@@ -18,18 +19,18 @@
                   활성이 되고, 그 뒤의 [+ 에피소드]가 거기에 선다.
                   ⛔ 2026-11-18에 걷었다가 같은 날 되살렸다(소유자 — 써 보니 있는 편이 직관적이다).
                 -->
-                <TextBlock Text="챕터" FontSize="11" Opacity="0.6" VerticalAlignment="Center"
+                <TextBlock Text="{x:Static s:Ui.Board_Chapter2}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"
                            Margin="0,0,4,0" />
                 <!-- 주의: 치수는 챕터 그래프의 콤보와 <b>한 쌍</b>이다 —
                      짝: `ChapterGraphView.axaml`의 ChapterCombo. -->
                 <ComboBox x:Name="ChapterCombo" MinWidth="180" FontSize="11"
-                          ToolTip.Tip="새 노드가 설 판입니다. [구성] 탭의 선택과 같은 값을 봅니다." />
+                          ToolTip.Tip="{x:Static s:Ui.Board_BoardNewNodesGoOn}" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
-                <Button x:Name="AddEpisodeButton" Content="+ 에피소드" />
+                <Button x:Name="AddEpisodeButton" Content="{x:Static s:Ui.Board_Episode}" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                 <!-- [삭제] — 고른 것을 지운다(2026-11-18 소유자): 아무것도 안 골랐으면 꺼진 「삭제」, 챕터 · 장면 · 에피소드 · 분기 카드를 고르면 그 이름
                      (「챕터 삭제」 …). 하이어아키 차림표의 「챕터 지우기」 · 「장면 지우기」를 갈음한다. -->
-                <Button x:Name="DeleteButton" Content="삭제" IsEnabled="False" ToolTip.ShowOnDisabled="True" />
+                <Button x:Name="DeleteButton" Content="{x:Static s:Ui.Board_Delete}" IsEnabled="False" ToolTip.ShowOnDisabled="True" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
                 <!-- 작가용 글 서식 도구 막대(2026-11-22 소유자 — 한컴 · 엑셀처럼 위에서 글꼴 · 크기 · 굵게 · 기울임 · 취소선 · 색 · 정렬) — 작가가 보기 위한
                      것이라 내보내기에 나가지 않는다. 내용은 코드가 짓는다(GraphEditorView.Writer · docs/plans/writer-formatting.md). -->
@@ -67,7 +68,7 @@
                             <!-- ⛔ 머리의 [＋](새 챕터)는 2026-11-18에 걷혔다(소유자). 새 챕터는 하이어아키 · 판의 챕터 밖 우클릭 「챕터 추가」가
                                  바로 세우고, 챕터가 하나도 없으면 판 한가운데 [＋ 첫 챕터 만들기]가 선다. -->
                             <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Text="하이어아키" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <Button Grid.Column="1"
                                     x:Name="FoldHierarchyButton"
                                     Content="‹"
@@ -76,7 +77,7 @@
                                     Margin="4,0,0,0"
                                     VerticalAlignment="Top"
                                     Background="Transparent"
-                                    ToolTip.Tip="하이어아키를 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다." />
+                                    ToolTip.Tip="{x:Static s:Ui.Board_CollapseHierarchyBoardGetsWider}" />
                             </Grid>
                         </Border>
                         <views:StoryHierarchy Grid.Row="1" x:Name="Hierarchy" />
@@ -92,14 +93,14 @@
                             Padding="0,6"
                             Background="Transparent"
                             BorderThickness="0"
-                            ToolTip.Tip="하이어아키를 펼칩니다">
+                            ToolTip.Tip="{x:Static s:Ui.Board_ExpandHierarchy}">
                         <StackPanel Spacing="8">
                             <TextBlock Text="›" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
                             <LayoutTransformControl>
                                 <LayoutTransformControl.LayoutTransform>
                                     <RotateTransform Angle="90" />
                                 </LayoutTransformControl.LayoutTransform>
-                                <TextBlock Text="하이어아키" FontSize="11" Opacity="0.7" />
+                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontSize="11" Opacity="0.7" />
                             </LayoutTransformControl>
                         </StackPanel>
                     </Button>
@@ -146,30 +147,30 @@
                         VerticalAlignment="Center"
                         Spacing="12">
                 <TextBlock x:Name="EmptyBoardText"
-                           Text="아직 챕터가 없습니다."
+                           Text="{x:Static s:Ui.Board_NoChaptersYet}"
                            HorizontalAlignment="Center"
                            TextAlignment="Center"
                            TextWrapping="Wrap"
                            MaxWidth="420"
                            Opacity="0.55" />
                 <Button x:Name="FirstChapterButton"
-                        Content="＋ 첫 챕터 만들기"
+                        Content="{x:Static s:Ui.Board_CreateFirstChapter}"
                         HorizontalAlignment="Center"
                         Padding="16,6"
-                        ToolTip.Tip="「새 챕터」를 장면 「새 장면」 · 에피소드 하나와 함께 세웁니다 — 하이어아키 우클릭 「챕터 추가」와 같습니다. 되돌리기(Ctrl+Z)가 됩니다." />
+                        ToolTip.Tip="{x:Static s:Ui.Board_CreatesWithSceneAndOne}" />
                 <StackPanel x:Name="EmptyProjectButtons"
                             Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             Spacing="10"
                             IsVisible="False">
                     <Button x:Name="EmptyOpenProjectButton"
-                            Content="열기…"
+                            Content="{x:Static s:Ui.Main_Open}"
                             Padding="16,6"
-                            ToolTip.Tip="받은 프로젝트를 엽니다 — project.vnproject.json이 든 폴더를 고르세요. File → [열기…]와 같습니다." />
+                            ToolTip.Tip="{x:Static s:Ui.Board_OpensProjectYouReceivedChoose}" />
                     <Button x:Name="EmptyNewProjectButton"
-                            Content="새 프로젝트…"
+                            Content="{x:Static s:Ui.Main_NewProject2}"
                             Padding="16,6"
-                            ToolTip.Tip="처음부터 시작합니다 — 프로젝트를 둘 빈 폴더를 고르세요. File → [새 프로젝트…]와 같습니다." />
+                            ToolTip.Tip="{x:Static s:Ui.Board_StartsFreshChooseEmptyFolder}" />
                 </StackPanel>
             </StackPanel>
 
@@ -196,7 +197,7 @@
                     <!-- 전체 보기·배율 프리셋 — 큰 판의 길찾기. -->
                     <Border x:Name="ZoomBar" BorderBrush="#33808080" BorderThickness="0,1,0,0" Padding="4,2">
                         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
-                            <Button Grid.Column="0" x:Name="FitAllButton" Content="전체"
+                            <Button Grid.Column="0" x:Name="FitAllButton" Content="{x:Static s:Ui.Board_FitAll}"
                                     FontSize="9" Padding="5,1" Margin="0,0,3,0" />
                             <Button Grid.Column="1" x:Name="Zoom50Button" Content="50"
                                     FontSize="9" Padding="4,1" Margin="0,0,2,0" />
@@ -237,7 +238,7 @@
                              MinHeight="0"
                              Padding="6,3"
                              VerticalContentAlignment="Center"
-                             PlaceholderText="찾기 — 대사 · 화자 · 제목" />
+                             PlaceholderText="{x:Static s:Ui.Board_FindDialogueSpeakersTitles}" />
                     <TextBlock x:Name="FindCount"
                                FontSize="11"
                                Opacity="0.7"
@@ -245,11 +246,11 @@
                                TextAlignment="Center"
                                VerticalAlignment="Center" />
                     <Button x:Name="FindPrevButton" Content="▲" FontSize="10" Padding="6,2" Focusable="False"
-                            ToolTip.Tip="앞의 것 (Shift+Enter)" />
+                            ToolTip.Tip="{x:Static s:Ui.Board_PreviousShiftEnter}" />
                     <Button x:Name="FindNextButton" Content="▼" FontSize="10" Padding="6,2" Focusable="False"
-                            ToolTip.Tip="다음 것 (Enter)" />
+                            ToolTip.Tip="{x:Static s:Ui.Board_NextEnter}" />
                     <Button x:Name="FindCloseButton" Content="✕" FontSize="10" Padding="6,2" Focusable="False"
-                            ToolTip.Tip="닫기 (Esc) — 찾은 대사에서 바로 이어 씁니다" />
+                            ToolTip.Tip="{x:Static s:Ui.Board_CloseEscKeepWritingRight}" />
                 </StackPanel>
             </Border>
 
@@ -279,7 +280,7 @@
                         </Style>
                     </TabControl.Styles>
 
-                    <TabItem x:Name="InspectorTabItem" Header="인스펙터">
+                    <TabItem x:Name="InspectorTabItem" Header="{x:Static s:Ui.Board_Inspector}">
                         <Grid RowDefinitions="Auto,*">
                             <Border Grid.Row="0"
                                     Padding="10,6"
@@ -289,7 +290,7 @@
                                     <!-- 장면 요약의 머리는 이름 칸이다(2026-11-18 소유자 — 에피소드의 이름 칸처럼 여기서 고친다). 그 밖에는 이름 글 —
                                          챕터 이름 칸은 「조건 및 스탯」 탭 맨 위다(chapter-pick Y1 · ⛔ 그 전에는 챕터 요약의 머리도 이름 칸이었다). -->
                                     <TextBox x:Name="InspectorNameBox" FontWeight="SemiBold" IsVisible="False" />
-                                    <TextBlock x:Name="InspectorTitle" Text="인스펙터" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="InspectorTitle" Text="{x:Static s:Ui.Board_Inspector}" FontWeight="SemiBold" />
                                     <TextBlock x:Name="InspectorSubtitle"
                                                FontSize="11"
                                                Opacity="0.65"
@@ -301,15 +302,15 @@
                     </TabItem>
 
                     <!-- 화자 — 프로젝트 전체의 캐스트. 이름을 더하고 고치고 지운다(writer-fields W3). 캐릭터 키는 [구성] 탭이다. -->
-                    <TabItem x:Name="SpeakerTabItem" Header="화자">
+                    <TabItem x:Name="SpeakerTabItem" Header="{x:Static s:Ui.Board_Speakers}">
                         <Grid RowDefinitions="Auto,*">
                             <Border Grid.Row="0"
                                     Padding="10,6"
                                     BorderBrush="{DynamicResource ThemeBorderLowBrush}"
                                     BorderThickness="0,0,0,1">
                                 <StackPanel Spacing="1">
-                                    <TextBlock Text="프로젝트 단위 화자" FontWeight="SemiBold" />
-                                    <views:GuideLine Full="모든 챕터가 같은 목록을 씁니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Static s:Ui.Board_SpeakersForWholeProject}" FontWeight="SemiBold" />
+                                    <views:GuideLine Full="{x:Static s:Ui.Board_EveryChapterUsesSameList}" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </Border>
                             <ContentControl Grid.Row="1" x:Name="SpeakerHost" />
@@ -318,7 +319,7 @@
 
                     <!-- 조건 및 스탯 — 챕터 단위다. 머리가 그것을 말하고, 오른쪽 위 작은 드롭다운이 지금 챕터(활성 판 — 툴바 콤보와 같은 값)를
                          비춘다. 고르면 툴바 콤보로 고른 것과 같다(2026-11-18 소유자). 스탯 표(대사에 붙여 쓰기) · 조건 이름(writer-fields W4). -->
-                    <TabItem x:Name="ConditionTabItem" Header="조건 및 스탯">
+                    <TabItem x:Name="ConditionTabItem" Header="{x:Static s:Ui.Board_ConditionsStats}">
                         <Grid RowDefinitions="Auto,*">
                             <Border Grid.Row="0"
                                     Padding="10,6"
@@ -326,8 +327,8 @@
                                     BorderThickness="0,0,0,1">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Spacing="1" VerticalAlignment="Center">
-                                        <TextBlock Text="챕터 단위 조건 · 스탯" FontWeight="SemiBold" />
-                                        <views:GuideLine Full="이 챕터에서만 씁니다 — 챕터마다 따로입니다" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Static s:Ui.Board_ConditionsStatsForThisChapter}" FontWeight="SemiBold" />
+                                        <views:GuideLine Full="{x:Static s:Ui.Board_UsedOnlyInThisChapter}" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                     <ComboBox Grid.Column="1"
                                               x:Name="ConditionChapterCombo"
@@ -337,7 +338,7 @@
                                               Padding="6,0"
                                               Margin="8,0,0,0"
                                               VerticalAlignment="Top"
-                                              ToolTip.Tip="이 탭이 보이는 챕터 — 지금 챕터를 따라갑니다. 고르면 그 챕터로 갑니다(툴바의 챕터 콤보와 같습니다)." />
+                                              ToolTip.Tip="{x:Static s:Ui.Board_ChapterThisTabShowsFollows}" />
                                 </Grid>
                             </Border>
                             <ContentControl Grid.Row="1" x:Name="ConditionHost" />
@@ -353,7 +354,7 @@
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
                             Background="Transparent"
-                            ToolTip.Tip="오른쪽 기둥(인스펙터 · 화자 · 조건 및 스탯)을 접습니다 — 판이 넓어집니다. 접힌 띠를 누르면 다시 폅니다." />
+                            ToolTip.Tip="{x:Static s:Ui.Board_CollapseSidePanelInspectorSpeakers}" />
                 </Panel>
 
                 <!-- 접힌 오른쪽 기둥 — 세로 띠 하나. 누르면 편다(ColumnDock). -->
@@ -366,14 +367,14 @@
                         Padding="0,6"
                         Background="Transparent"
                         BorderThickness="0"
-                        ToolTip.Tip="오른쪽 기둥을 펼칩니다">
+                        ToolTip.Tip="{x:Static s:Ui.Board_ExpandSidePanel}">
                     <StackPanel Spacing="8">
                         <TextBlock Text="‹" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <LayoutTransformControl>
                             <LayoutTransformControl.LayoutTransform>
                                 <RotateTransform Angle="90" />
                             </LayoutTransformControl.LayoutTransform>
-                            <TextBlock Text="인스펙터 · 화자 · 조건 및 스탯" FontSize="11" Opacity="0.7" />
+                            <TextBlock Text="{x:Static s:Ui.Board_InspectorSpeakersConditionsStats}" FontSize="11" Opacity="0.7" />
                         </LayoutTransformControl>
                     </StackPanel>
                 </Button>

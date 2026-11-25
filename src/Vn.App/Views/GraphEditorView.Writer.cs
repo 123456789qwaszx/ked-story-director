@@ -11,6 +11,7 @@ using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -69,7 +70,7 @@ public partial class GraphEditorView
     private TextBox? _selectionHold;
 
     /// <summary>글꼴 고르기의 첫 칸 — 설정의 「대본 글 칸」 글꼴로 되돌린다.</summary>
-    private const string DefaultFontItem = "기본 글꼴";
+    private static string DefaultFontItem => Ui.Format_DefaultFont;
 
     /// <summary>시험이 본다 — 서식 도구 막대가 켜져 있는가(입힐 글 칸이 있는가).</summary>
     internal bool FormatToolbarEnabled => _formatNodeId is not null;
@@ -122,7 +123,7 @@ public partial class GraphEditorView
             return;
         }
 
-        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "글 칸 바꾸기", () =>
+        Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Format_ChangeWritingBox, () =>
         {
             List<string> still = nodeIds
                 .Where(id => _writingBoxes.GetValueOrDefault(id) is { } box && (box is WriterTextBox) != WantsWriterBox(id))
@@ -380,8 +381,8 @@ public partial class GraphEditorView
         {
             Width = 132,
             FontSize = 11,
-            PlaceholderText = "글꼴",
-            [ToolTip.TipProperty] = "글꼴 — 고른 글자에(카드만 골랐으면 그 카드들의 글 전체에). 「기본 글꼴」은 이 카드의 처음 글꼴(카드를 만들 때 설정의 「대본 글 칸」 글꼴)입니다. 그 글꼴이 없는 PC에서는 기본 글꼴로 보입니다."
+            PlaceholderText = Ui.Settings_Font,
+            [ToolTip.TipProperty] = Ui.Format_FontForSelectedTextOr
         };
         _fontItems = FontNames();
         _fontBox.ItemsSource = _fontItems;
@@ -397,34 +398,33 @@ public partial class GraphEditorView
         _fontBox.DropDownClosed += (_, _) => RestoreFormatFocusLater();
         bar.Children.Add(_fontBox);
 
-        bar.Children.Add(FormatButton("−", "글자 작게 — 고른 글자를 1pt 줄입니다(카드만 골랐으면 그 카드들의 기본 크기를)", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: -1))));
+        bar.Children.Add(FormatButton("−", Ui.Format_SmallerShrinksSelectedTextBy, () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: -1))));
         _sizeEntry = ValueEntry(
             36,
-            "고른 글자의 크기(pt) — 숫자를 적고 Enter면 고른 글자가 모두 그 크기가 됩니다(Esc는 그만두기). 이 카드의 처음 크기에 더한 차로 적히고, " +
-            "크기가 섞였으면 비어 있습니다. 카드만 골랐으면(하이어아키 · 판) 그 카드들의 기본 크기입니다 — 일부만 키운 글자는 그 차를 지킵니다.",
+            Ui.Format_SizeOfSelectedTextPt,
             ApplyTypedSize);
         bar.Children.Add(_sizeEntry);
-        bar.Children.Add(FormatButton("+", "글자 크게 — 고른 글자를 1pt 키웁니다(카드만 골랐으면 그 카드들의 기본 크기를)", () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: 1))));
+        bar.Children.Add(FormatButton("+", Ui.Format_LargerGrowsSelectedTextBy, () => ApplyFormat(new WriterStyleChange(WriterStyleKind.Grow, Step: 1))));
         bar.Children.Add(Separator());
 
-        _boldButton = ToggleFormat(new TextBlock { Text = "B", FontWeight = FontWeight.Bold }, "굵게 — 고른 글자(카드만 골랐으면 그 카드들의 글 전체)가 모두 굵으면 풉니다", WriterStyleKind.Bold);
-        _italicButton = ToggleFormat(new TextBlock { Text = "I", FontStyle = FontStyle.Italic }, "기울임 — 고른 글자(카드만 골랐으면 그 카드들의 글 전체)를 기울입니다(한글은 기울임꼴이 없어 글자를 비스듬히 눕혀 그립니다)", WriterStyleKind.Italic);
-        _strikeButton = ToggleFormat(new TextBlock { Text = "S", TextDecorations = TextDecorations.Strikethrough }, "취소선 — 고른 글자(카드만 골랐으면 그 카드들의 글 전체)에 줄을 긋습니다", WriterStyleKind.Strike);
+        _boldButton = ToggleFormat(new TextBlock { Text = "B", FontWeight = FontWeight.Bold }, Ui.Format_BoldTurnsItOffIf, WriterStyleKind.Bold);
+        _italicButton = ToggleFormat(new TextBlock { Text = "I", FontStyle = FontStyle.Italic }, Ui.Format_ItalicSlantsSelectedTextOr, WriterStyleKind.Italic);
+        _strikeButton = ToggleFormat(new TextBlock { Text = "S", TextDecorations = TextDecorations.Strikethrough }, Ui.Format_StrikethroughDrawsLineThroughSelected, WriterStyleKind.Strike);
         bar.Children.Add(_boldButton);
         bar.Children.Add(_italicButton);
         bar.Children.Add(_strikeButton);
 
-        (Button colorButton, _colorBar) = ColorButton("가", "글자색 — 고른 글자에(카드만 골랐으면 그 카드들의 글 전체에)", WriterStyleKind.Color);
-        (Button fillButton, _fillBar) = ColorButton(null, "바탕색 — 고른 글자 뒤에(카드만 골랐으면 그 카드들의 글 전체에)", WriterStyleKind.Fill);
+        (Button colorButton, _colorBar) = ColorButton(Ui.Format_Text, Ui.Format_TextColorForSelectedText, WriterStyleKind.Color);
+        (Button fillButton, _fillBar) = ColorButton(null, Ui.Format_BackgroundColorBehindSelectedText, WriterStyleKind.Fill);
         bar.Children.Add(colorButton);
         bar.Children.Add(fillButton);
         bar.Children.Add(Separator());
 
         foreach ((WriterAlign align, string tip) in new[]
                  {
-                     (WriterAlign.Left, "왼쪽 정렬 — 이 카드의 글 전체(카드를 여러 장 골랐으면 모두)"),
-                     (WriterAlign.Center, "가운데 정렬 — 이 카드의 글 전체(카드를 여러 장 골랐으면 모두)"),
-                     (WriterAlign.Right, "오른쪽 정렬 — 이 카드의 글 전체(카드를 여러 장 골랐으면 모두)")
+                     (WriterAlign.Left, Ui.Format_AlignLeftAllTextIn),
+                     (WriterAlign.Center, Ui.Format_AlignCenterAllTextIn),
+                     (WriterAlign.Right, Ui.Format_AlignRightAllTextIn)
                  })
         {
             var button = new ToggleButton
@@ -444,14 +444,13 @@ public partial class GraphEditorView
         // 줄 간격 — 카드 단위(정렬처럼 · 2026-11-23 소유자 「서식도구에 줄 간격 조절을 새로 넣는게 맞습니다」 · WF-D19).
         bar.Children.Add(Separator());
         bar.Children.Add(LineSpacingIcon());
-        bar.Children.Add(FormatButton("−", "줄 간격 좁게 — 이 카드의 글 전체를 10%씩(카드를 여러 장 골랐으면 모두)", () => ApplyLineSpacing(-LineSpacingStep)));
+        bar.Children.Add(FormatButton("−", Ui.Format_TighterLineSpacingAllText, () => ApplyLineSpacing(-LineSpacingStep)));
         _lineSpacingEntry = ValueEntry(
             48,
-            "이 카드의 줄 간격 — 글자 크기에 대한 %. 숫자를 적고 Enter면 그 값이 됩니다(250까지 · Esc는 그만두기). 처음 값은 카드를 만들 때 설정 " +
-            "「대본 글 칸」의 줄 간격입니다. 그 글꼴 · 크기에서 가장 좁은 값(한글 한 줄 높이)에서 멈춥니다 — 더 좁히면 숫자만 내려가고 화면은 그대로라서.",
+            Ui.Format_ThisCardSLineSpacing,
             ApplyTypedLineSpacing);
         bar.Children.Add(_lineSpacingEntry);
-        bar.Children.Add(FormatButton("+", "줄 간격 넓게 — 이 카드의 글 전체를 10%씩(카드를 여러 장 골랐으면 모두)", () => ApplyLineSpacing(LineSpacingStep)));
+        bar.Children.Add(FormatButton("+", Ui.Format_LooserLineSpacingAllText, () => ApplyLineSpacing(LineSpacingStep)));
 
         _formatControls.Add(_fontBox);
         RefreshFormatToolbar();
@@ -513,7 +512,7 @@ public partial class GraphEditorView
             {
                 args.Handled = true;
                 string typed = entry.Text ?? string.Empty;
-                UiGuard.Run(_session, "서식 값", () => commit(typed));
+                UiGuard.Run(_session, Ui.Format_FormatValue, () => commit(typed));
                 LeaveValueEntry();
             }
             else if (args.Key == Key.Escape)
@@ -524,7 +523,7 @@ public partial class GraphEditorView
         }, RoutingStrategies.Tunnel);
 
         // 다른 데로 갔다 — 적던 것은 버리고, 칸에 돌아가지 않았으면 붙든 범위를 놓는다(초점이 옮겨 간 뒤에 본다).
-        entry.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "서식 값", () =>
+        entry.LostFocus += (_, _) => Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Format_FormatValue, () =>
         {
             if (entry.IsFocused)
             {
@@ -584,7 +583,7 @@ public partial class GraphEditorView
 
         if (TypedNumber(typed) is not { } points)
         {
-            session.SetStatus($"「{typed.Trim()}」는 크기가 아닙니다 — 숫자(pt)를 적으세요.");
+            session.SetStatus(string.Format(Ui.Format_IsnTSizeTypeNumber, typed.Trim()));
             return;
         }
 
@@ -596,11 +595,11 @@ public partial class GraphEditorView
             session.Editor.SetWriterBase(cards.Select(card => card.Id).ToList(), basis => basis with { Size = size });
             if (size != points)
             {
-                session.SetStatus($"카드의 기본 크기는 {ScriptFont.MinSize:0} ~ {ScriptFont.MaxSize:0}pt입니다 — {size:0}pt로 맞췄습니다.");
+                session.SetStatus(string.Format(Ui.Format_CardSBaseSizeIs, ScriptFont.MinSize, ScriptFont.MaxSize, size));
             }
             else if (cards.Count > 1)
             {
-                session.SetStatus($"고른 카드 {cards.Count}장의 기본 크기를 {size:0}pt로 — 되돌리기(Ctrl+Z) 한 번에 모두 돌아옵니다.");
+                session.SetStatus(string.Format(Ui.Format_SetBaseSizeOfSelected, cards.Count, size));
             }
 
             return;
@@ -611,7 +610,7 @@ public partial class GraphEditorView
 
         if (cardSize + grow != points)
         {
-            session.SetStatus($"이 카드의 글자 크기는 {cardSize + WriterMarkMath.MinGrow} ~ {cardSize + WriterMarkMath.MaxGrow}pt입니다 — {cardSize + grow}pt로 맞췄습니다.");
+            session.SetStatus(string.Format(Ui.Format_ThisCardSTextSize, cardSize + WriterMarkMath.MinGrow, cardSize + WriterMarkMath.MaxGrow, cardSize + grow));
         }
 
         ApplyFormat(new WriterStyleChange(WriterStyleKind.Size, Step: grow));
@@ -627,7 +626,7 @@ public partial class GraphEditorView
 
         if (TypedNumber(typed) is not { } percent)
         {
-            session.SetStatus($"「{typed.Trim()}」는 줄 간격이 아닙니다 — 숫자(%)를 적으세요.");
+            session.SetStatus(string.Format(Ui.Format_IsnTLineSpacingType, typed.Trim()));
             return;
         }
 
@@ -650,11 +649,11 @@ public partial class GraphEditorView
         }
         else if (percent > ScriptFont.MaxLineSpacing)
         {
-            session.SetStatus($"줄 간격은 {ScriptFont.MaxLineSpacing}%까지입니다 — {ScriptFont.MaxLineSpacing}%로 맞췄습니다.");
+            session.SetStatus(string.Format(Ui.Format_LineSpacingGoesUpTo, ScriptFont.MaxLineSpacing));
         }
         else if (cards.Count > 1)
         {
-            session.SetStatus($"고른 카드 {cards.Count}장의 줄 간격을 {percent}%로 — 되돌리기(Ctrl+Z) 한 번에 모두 돌아옵니다.");
+            session.SetStatus(string.Format(Ui.Format_SetLineSpacingOfSelected, cards.Count, percent));
         }
     }
 
@@ -670,7 +669,7 @@ public partial class GraphEditorView
         Height = 13,
         Margin = new Thickness(2, 0),
         VerticalAlignment = VerticalAlignment.Center,
-        [ToolTip.TipProperty] = "줄 간격 — 이 카드의 글 전체"
+        [ToolTip.TipProperty] = Ui.Format_LineSpacingAllTextIn
     };
 
     /// <summary>바탕색 그림 — 형광 펜(비스듬한 펜 끝).</summary>
@@ -747,7 +746,7 @@ public partial class GraphEditorView
     private (Button Button, Border Bar) ColorButton(string? glyph, string tip, WriterStyleKind kind)
     {
         bool fill = kind == WriterStyleKind.Fill;
-        var chooser = new WriterColorChooser(fill, fill ? "바탕색을 걷습니다" : "글자색을 걷습니다");
+        var chooser = new WriterColorChooser(fill, fill ? Ui.Format_ClearBackgroundColor : Ui.Format_ClearTextColor);
         var bar = new Border { Height = 3, Margin = new Thickness(0, 1, 0, 0), Background = WriterPalette.Brush(chooser.Last) };
         var flyout = new Flyout { Content = chooser.Content, Placement = PlacementMode.BottomEdgeAlignedLeft };
         _colorMenus[kind] = new ColorMenu(flyout, bar, chooser);
@@ -847,7 +846,7 @@ public partial class GraphEditorView
     /// </summary>
     internal void ApplyFormat(WriterStyleChange change)
     {
-        UiGuard.Run(_session, "글 서식", () =>
+        UiGuard.Run(_session, Ui.Format_TextFormatting, () =>
         {
             if (FormatTarget() is null && CardTargets() is { Count: > 0 } cards)
             {
@@ -862,7 +861,7 @@ public partial class GraphEditorView
 
             if (target.End <= target.Start)
             {
-                session.SetStatus("서식을 입힐 글자를 먼저 고르세요 — 글 칸에서 글자를 끌어 고릅니다.");
+                session.SetStatus(Ui.Format_SelectTextToFormatFirst);
                 return;
             }
 
@@ -871,7 +870,7 @@ public partial class GraphEditorView
             // 처음부터 굵은 카드(WF-D16)에서는 일부만 가늘게 할 수 없다 — 서식의 굵게는 그 위에 더하는 것이다.
             if (change.Kind == WriterStyleKind.Bold && session.Project.FindDialogue(nodeId)?.WriterBase is { Bold: true })
             {
-                session.SetStatus("이 카드는 처음부터 굵게입니다(설정 「대본 글 칸」의 굵게로 만든 카드) — 일부만 가늘게 할 수는 없습니다.");
+                session.SetStatus(Ui.Format_ThisCardIsBoldFrom);
                 return;
             }
 
@@ -891,7 +890,7 @@ public partial class GraphEditorView
 
             if (ranges.Count == 0)
             {
-                session.SetStatus("고른 범위에 서식을 입힐 대사 글이 없습니다 — 화자 이름 · 조건 줄에는 입히지 않고, 넣지 못한 줄은 넣은 뒤에 입힙니다.");
+                session.SetStatus(Ui.Format_SelectionHasNoDialogueText);
                 return;
             }
 
@@ -932,21 +931,21 @@ public partial class GraphEditorView
             if (change.Kind == WriterStyleKind.Bold && cards.Any(card => card.WriterBase is { Bold: true }) &&
                 cards.All(card => card.Script.ActiveLines.All(line => !(card.WriterMarks.GetValueOrDefault(line.Id)?.Any(span => span.Look.Bold) ?? false))))
             {
-                session.SetStatus("처음부터 굵게인 카드(설정 「대본 글 칸」의 굵게로 만든 카드)는 가늘게 할 수 없어 그대로 굵습니다.");
+                session.SetStatus(Ui.Format_CardsThatAreBoldFrom);
                 return;
             }
         }
 
         if (cards.Count > 1)
         {
-            session.SetStatus($"고른 카드 {cards.Count}장에 입혔습니다 — 되돌리기(Ctrl+Z) 한 번에 모두 돌아옵니다.");
+            session.SetStatus(string.Format(Ui.Format_AppliedToSelectedCardsOne, cards.Count));
         }
     }
 
     /// <summary>카드 글 칸의 좌우 정렬 — 고른 글자가 없어도 그 칸이면 된다. 카드만 골랐으면 그 카드들 모두(WF-D21).</summary>
     private void ApplyAlign(WriterAlign align)
     {
-        UiGuard.Run(_session, "글 정렬", () =>
+        UiGuard.Run(_session, Ui.Format_TextAlignment, () =>
         {
             if (FormatTarget() is { } target)
             {
@@ -968,7 +967,7 @@ public partial class GraphEditorView
     /// </summary>
     private void ApplyLineSpacing(int step)
     {
-        UiGuard.Run(_session, "줄 간격", () =>
+        UiGuard.Run(_session, Ui.Format_LineSpacing, () =>
         {
             if (FormatTarget() is { } target && _session?.Project.FindDialogue(target.NodeId) is { } node)
             {
@@ -1027,7 +1026,7 @@ public partial class GraphEditorView
     /// 가장 좁은 값에서 멈췄다고 말한다 — 「최소 줄 간격입니다」(2026-11-23 소유자 — 「이 카드의 글꼴, 크기에서는 줄 간격 135%가 가장 좁습니다 이 문구를,
     /// 그냥 최소 줄 간격입니다로 고쳐줘」). ⛔ 그 전에는 그 값과 까닭(숫자만 내려가고 화면은 그대로)을 말했다.
     /// </summary>
-    private void SayNarrowest(IReadOnlyList<DialogueNode> cards) => _session?.SetStatus("최소 줄 간격입니다.");
+    private void SayNarrowest(IReadOnlyList<DialogueNode> cards) => _session?.SetStatus(Ui.Format_ThisIsMinimumLineSpacing);
 
     /// <summary>
     /// 입힐 칸에 초점과 고른 범위를 되돌린다 — 도구 막대를 쓴 뒤. 초점을 가져가는 도구가 다 닫혔으면 붙든 범위도 놓는다.
@@ -1179,7 +1178,7 @@ public partial class GraphEditorView
             control.IsEnabled = cards.Count > 0;
         }
 
-        WriterToolbar.SetValue(ToolTip.TipProperty, cards.Count == 0 ? "하이어아키 · 판에서 에피소드를 고르거나, 카드의 글 칸에서 글자를 고르면 켜집니다" : null);
+        WriterToolbar.SetValue(ToolTip.TipProperty, cards.Count == 0 ? Ui.Format_TurnsOnWhenYouSelect : null);
 
         bool any = false;
         bool bold = true;

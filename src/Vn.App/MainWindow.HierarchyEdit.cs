@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -98,16 +99,16 @@ public partial class MainWindow
         RemoveConfirmButton = ConfirmFlyout.Show(
             anchor,
             _session,
-            $"장면 「{scene.DisplayName}」의 에피소드 {scene.Episodes.Count}개" +
-            (branchCards > 0 ? $"와 그 에피소드가 부르던 분기 카드 {branchCards}장이" : "가") +
-            " [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.",
-            "장면 지우기",
+            branchCards > 0
+                ? string.Format(Ui.Side_EpisodesOfSceneAndBranch, scene.DisplayName, scene.Episodes.Count, branchCards)
+                : string.Format(Ui.Side_EpisodesOfSceneWillBe, scene.DisplayName, scene.Episodes.Count),
+            Ui.Side_DeleteScene,
             () =>
             {
                 Vn.Authoring.Editing.ProjectEditor.RemovedScene removed = _session.Editor.RemoveScene(chapterId, sceneId);
-                _session.SetStatus(
-                    $"장면 「{scene.DisplayName}」를 지웠습니다 — 에피소드 {removed.Episodes}개" +
-                    (removed.BranchCards > 0 ? $", 분기 카드 {removed.BranchCards}장" : "") + ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                _session.SetStatus(removed.BranchCards > 0
+                    ? string.Format(Ui.Side_DeletedSceneEpisodesBranchCards, scene.DisplayName, removed.Episodes, removed.BranchCards)
+                    : string.Format(Ui.Side_DeletedSceneEpisodesUndoCtrl, scene.DisplayName, removed.Episodes));
                 ForgetRemovedPick();
             },
             closed: () => RemoveConfirmButton = null);
@@ -134,8 +135,8 @@ public partial class MainWindow
             case HierarchyKind.Episode when tree.ShowEpisodeTitles && row.ChapterId is { } chapterId && row.EpisodeId is { } episodeId:
                 _session.Editor.UpdateEpisode(chapterId, episodeId, title: name);
                 _session.SetStatus(name.Length == 0
-                    ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'{Josa.이가(episodeId)} 보입니다."
-                    : $"제목을 '{name}'{Josa.으로(name)} 바꿨습니다. 에피소드ID '{episodeId}'{Josa.은는(episodeId)} 그대로입니다.");
+                    ? string.Format(Ui.Side_ClearedTitleEpisodeIDIs, episodeId, Josa.이가(episodeId))
+                    : string.Format(Ui.Side_RenamedTitleToEpisodeID, name, Josa.으로(name), episodeId, Josa.은는(episodeId)));
                 break;
 
             // [대본] 탭은 이름만 고친다 — 챕터는 표시 이름, 장면은 장면 이름. ID는 그대로다(display-names N3).
@@ -155,8 +156,8 @@ public partial class MainWindow
     {
         _session.Editor.UpdateChapterDisplayName(chapterId, name);
         _session.SetStatus(name.Length == 0
-            ? "챕터 이름을 비웠습니다 — 챕터 ID가 보입니다."
-            : $"챕터 이름을 「{name}」{Josa.으로(name)} 바꿨습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            ? Ui.Side_ClearedChapterNameChapterID
+            : string.Format(Ui.Side_RenamedChapterToUndoCtrl, name, Josa.으로(name)));
         return _session.Editor.FindChapter(chapterId)?.ShownName ?? chapterId;
     }
 
@@ -166,8 +167,8 @@ public partial class MainWindow
     {
         _session.Editor.SetSceneName(chapterId, sceneId, name);
         _session.SetStatus(name.Length == 0
-            ? "장면 이름을 비웠습니다 — 장면 ID가 보입니다."
-            : $"장면 이름을 「{name}」{Josa.으로(name)} 바꿨습니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.");
+            ? Ui.Side_ClearedSceneNameSceneID
+            : string.Format(Ui.Side_RenamedSceneToScenesWith, name, Josa.으로(name)));
         return _session.Editor.FindChapter(chapterId) is { } chapter &&
                ChapterSceneNotes.NameOf(chapter.SceneNotes, sceneId) is { Length: > 0 } named
             ? named
@@ -202,8 +203,9 @@ public partial class MainWindow
 
         // 자동 모양 그대로인 ID는 새 장면의 이름으로 따라간다(분기 카드도 — AutoIdFollower, 같은 되돌리기 칸).
         string moved = AutoIdFollower.MoveEpisodeToScene(_session.Editor, chapterId, episodeId, sceneId);
-        _session.SetStatus($"'{episodeId}'를 장면 '{sceneId}'로 옮겼습니다" +
-            (moved == episodeId ? "" : $"(에피소드ID는 '{moved}'로 따라갔습니다)") + ". 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        _session.SetStatus(moved == episodeId
+            ? string.Format(Ui.Side_MovedToSceneUndoCtrl, episodeId, sceneId)
+            : string.Format(Ui.Side_MovedToSceneItsEpisode, episodeId, sceneId, moved));
     }
 
     /// <summary>
@@ -230,9 +232,9 @@ public partial class MainWindow
             _session.Select(card.Id);
         }
 
-        _session.SetStatus(
-            (sceneName is null ? $"「{NewNames.Episode}」를 더했습니다" : $"「{sceneName}」 장면을 더했습니다") +
-            ". 이름은 하이어아키에서 두 번 눌러 고칩니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        _session.SetStatus(sceneName is null
+            ? string.Format(Ui.Side_AddedRenameItByDouble, NewNames.Episode)
+            : string.Format(Ui.Side_AddedSceneRenameItBy, sceneName));
     }
 
 }

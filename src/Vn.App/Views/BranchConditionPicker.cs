@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using Vn.App.Services;
 using Vn.Authoring.Chapters;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -18,7 +19,7 @@ namespace Vn.App.Views;
 internal static class BranchConditionPicker
 {
     /// <summary>조건을 안 건 분기 — 언제나 다녀온다.</summary>
-    internal const string Always = "(언제나)";
+    internal static string Always => Ui.Branch_Always;
 
     /// <param name="targetNodeId">분기 카드 — 조건은 그 카드의 첫머리에 선다.</param>
     /// <param name="tag">칸의 Tag — 화면마다 제 표를 단다.</param>
@@ -37,13 +38,13 @@ internal static class BranchConditionPicker
             bool undecided = string.IsNullOrWhiteSpace(condition.Expression);
             var item = new ComboBoxItem
             {
-                Content = undecided ? $"{condition.Label} (식 미정)" : condition.Label,
+                Content = undecided ? string.Format(Ui.Branch_Undecided, condition.Label) : condition.Label,
                 Tag = condition.Label
             };
 
             if (undecided)
             {
-                ToolTip.SetTip(item, "식 미정 — 지금은 항상 통과합니다. [구성] 탭에서 식을 채우면 이 분기가 그 식을 따릅니다.");
+                ToolTip.SetTip(item, Ui.Branch_UndecidedAlwaysPassesForNow);
             }
 
             items.Add(item);
@@ -65,7 +66,7 @@ internal static class BranchConditionPicker
             Tag = tag
         };
         ToolTip.SetTip(combo, state.Blocked ??
-            "이 분기의 조건을 고릅니다 — 조건이 맞을 때만 다녀옵니다. 조건 이름은 하이어아키의 챕터 줄을 눌러 더합니다.");
+            Ui.Branch_ChooseThisBranchSCondition);
 
         string? current = state.Label;
 
@@ -78,7 +79,7 @@ internal static class BranchConditionPicker
 
             string? label = picked.Tag as string;
 
-            Dispatcher.UIThread.Post(() => UiGuard.Run(session, "분기 조건", () =>
+            Dispatcher.UIThread.Post(() => UiGuard.Run(session, Ui.Branch_BranchCondition, () =>
             {
                 string name = session.Project.FindNode(targetNodeId) is { } node
                     ? EpisodeNaming.ShownNameOf(session.Project, node)
@@ -95,10 +96,10 @@ internal static class BranchConditionPicker
                 }
 
                 session.SetStatus(failure ?? (label is null
-                    ? $"'{name}'의 조건을 걷었습니다 — 언제나 다녀옵니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
+                    ? string.Format(Ui.Branch_RemovedConditionOfItS, name)
                     : BranchConditionNote.IsUndecided(session.Project, targetNodeId, label)
-                        ? $"'{name}'에 조건 '{label}'을 걸었습니다 — 식 미정이라 지금은 늘 다녀옵니다. [구성] 탭에서 식을 채우면 따릅니다."
-                        : $"'{name}'은 조건 '{label}'일 때만 다녀옵니다. 되돌리기(Ctrl+Z)로 돌아옵니다."));
+                        ? string.Format(Ui.Branch_SetConditionOnItS, name, label)
+                        : string.Format(Ui.Branch_IsVisitedOnlyWhenCondition, name, label)));
                 applied?.Invoke();
             }));
         };

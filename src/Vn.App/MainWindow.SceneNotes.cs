@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -25,35 +26,33 @@ namespace Vn.App;
 /// </summary>
 public partial class MainWindow
 {
-    internal const string SceneNoteGuide =
-        "이 장면의 사정을 자유롭게 적습니다 — 보여 줄 것 · 인물마다 감정(처음 → 끝) · 감정이 꺾이는 대사 · " +
-        "무대에 있는 사람 · 장소 · 시간. 연출(움직임 · 표정 이름)은 적지 않습니다.";
+    internal static string SceneNoteGuide =>
+        Ui.Notes_WriteFreelyAboutThisScene;
 
-    internal const string EpisodeNoteGuide = "이 에피소드에만 해당하는 사정 · 지시";
+    internal static string EpisodeNoteGuide => Ui.Notes_NotesDirectionsForThisEpisode;
 
     /// <summary>장면 요약 칸의 메모 공간 — 장면 메모 칸, 에피소드 카드, [+ 에피소드].</summary>
     private void SceneNoteSpace(string chapterId, ChapterScene scene)
     {
         string sceneId = scene.SceneId;
 
-        Heading("장면 메모");
+        Heading(Ui.Notes_SceneNote);
 
         TextBox sceneBox = NoteBox("scene-note", SceneNoteNow(chapterId, sceneId), SceneNoteGuide, minHeight: 72);
-        WireNote(sceneBox, "장면 메모",
+        WireNote(sceneBox, Ui.Notes_SceneNote,
             () => SceneNoteNow(chapterId, sceneId),
             text => _session.Editor.SetSceneNote(chapterId, sceneId, text),
             committed: null);
         _sheet.Children.Add(sceneBox);
 
-        Heading("에피소드 지시");
-        Guide("장면 안의 에피소드를 골라 그 에피소드에만 해당하는 지시를 적습니다. 지시가 비어도 카드는 남고, [빼기]로 뗍니다. " +
-              "Enter는 줄바꿈, Ctrl+Enter로 넣고 Esc로 되돌립니다.");
+        Heading(Ui.Notes_EpisodeDirection);
+        Guide(Ui.Notes_ChooseEpisodeInSceneAnd);
 
         var cards = new StackPanel { Spacing = 6 };
         var shown = new List<string>();   // 카드가 선 에피소드 — 장면 안 차례로
         var add = new ComboBox
         {
-            PlaceholderText = "＋ 에피소드",
+            PlaceholderText = Ui.Notes_Episode,
             FontSize = 11,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Tag = "scene-note-add"
@@ -81,7 +80,7 @@ public partial class MainWindow
                 add.SelectedIndex = -1;
                 add.ItemsSource = items;
                 add.IsEnabled = items.Count > 0;
-                add.PlaceholderText = add.IsEnabled ? "＋ 에피소드" : "장면의 에피소드마다 카드가 있습니다";
+                add.PlaceholderText = add.IsEnabled ? Ui.Notes_Episode : Ui.Notes_EveryEpisodeInSceneHas;
             }
             finally
             {
@@ -107,12 +106,12 @@ public partial class MainWindow
 
             var remove = new Button
             {
-                Content = "빼기",
+                Content = Ui.Notes_Remove,
                 FontSize = 10,
                 Padding = new Thickness(6, 1),
                 Tag = "episode-note-remove:" + episodeId
             };
-            ToolTip.SetTip(remove, "이 에피소드의 지시를 지우고 카드를 뺍니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.");
+            ToolTip.SetTip(remove, Ui.Notes_DeletesThisEpisodeSDirection);
             DockPanel.SetDock(remove, Dock.Right);
 
             var head = new DockPanel { LastChildFill = true };
@@ -136,16 +135,16 @@ public partial class MainWindow
                 Child = new StackPanel { Spacing = 4, Children = { head, box } }
             };
 
-            WireNote(box, "에피소드 지시",
+            WireNote(box, Ui.Notes_EpisodeDirection,
                 () => EpisodeMemoNow(chapterId, episodeId),
                 text => _session.Editor.UpdateEpisodeMemo(chapterId, episodeId, text),
                 committed: null);   // 지시를 비워도 카드는 남는다 — [빼기]만 뗀다
 
-            remove.Click += (_, _) => UiGuard.Run(_session, "에피소드 지시 빼기", () =>
+            remove.Click += (_, _) => UiGuard.Run(_session, Ui.Notes_RemoveEpisodeDirection, () =>
             {
                 _session.Editor.RemoveEpisodeNoteCard(chapterId, episodeId);
                 Drop(episodeId, card);
-                _session.SetStatus($"'{episode.ShownTitle}'의 지시 카드를 뺐습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                _session.SetStatus(string.Format(Ui.Notes_RemovedDirectionCardForUndo, episode.ShownTitle));
             });
 
             cards.Children.Insert(at, card);
@@ -157,7 +156,7 @@ public partial class MainWindow
             Card(episode);
         }
 
-        add.SelectionChanged += (_, _) => UiGuard.Run(_session, "에피소드 카드", () =>
+        add.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Notes_EpisodeCard, () =>
         {
             if (refilling || add.SelectedItem is not ComboBoxItem { Tag: string tag } ||
                 scene.Episodes.FirstOrDefault(episode => "scene-note-add:" + episode.EpisodeId == tag) is not { } picked)
@@ -166,7 +165,7 @@ public partial class MainWindow
             }
 
             // 고르기가 끝난 뒤에 세운다 — 고르는 중에 목록을 바꾸면 고르기가 엉킨다.
-            Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "에피소드 카드", () =>
+            Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Notes_EpisodeCard, () =>
             {
                 if (shown.Contains(picked.EpisodeId))
                 {
@@ -197,8 +196,8 @@ public partial class MainWindow
             return;
         }
 
-        Heading("주인 없는 장면 메모");
-        Guide("그 장면의 에피소드가 없어진 메모입니다. 같은 이름으로 장면을 되살리면 다시 그 장면의 메모가 됩니다.");
+        Heading(Ui.Notes_OrphanedSceneNote);
+        Guide(Ui.Notes_NoteWhoseSceneNoLonger);
 
         foreach (ChapterSceneNote orphan in orphans)
         {
@@ -206,16 +205,16 @@ public partial class MainWindow
 
             var remove = new Button
             {
-                Content = "지우기",
+                Content = Ui.Main_Delete,
                 FontSize = 10,
                 Padding = new Thickness(6, 1),
                 VerticalAlignment = VerticalAlignment.Top,
                 Tag = "orphan-note-remove:" + sceneId
             };
-            remove.Click += (_, _) => UiGuard.Run(_session, "주인 없는 메모 지우기", () =>
+            remove.Click += (_, _) => UiGuard.Run(_session, Ui.Notes_DeleteOrphanedNote, () =>
             {
                 _session.Editor.RemoveSceneNote(chapterId, sceneId);
-                _session.SetStatus($"장면 '{orphan.Name?.Trim() ?? sceneId}'의 메모를 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                _session.SetStatus(string.Format(Ui.Notes_DeletedNoteForSceneUndo, orphan.Name?.Trim() ?? sceneId));
                 ShowSelectedNode();
             });
             DockPanel.SetDock(remove, Dock.Right);
@@ -225,7 +224,7 @@ public partial class MainWindow
             row.Children.Add(new SelectableTextBlock
             {
                 Text = $"{orphan.Name?.Trim() ?? sceneId}" +
-                       (string.IsNullOrWhiteSpace(orphan.Text) ? " — (이름만)" : $" — {orphan.Text}"),
+                       (string.IsNullOrWhiteSpace(orphan.Text) ? Ui.Notes_NameOnly : $" — {orphan.Text}"),
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap
             });

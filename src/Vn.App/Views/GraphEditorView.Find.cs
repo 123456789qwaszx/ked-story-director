@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using Vn.App.Services;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -38,11 +39,11 @@ public partial class GraphEditorView
 
     private void WireFind()
     {
-        FindBox.TextChanged += (_, _) => UiGuard.Run(_session, "찾기", () => RunFind(fresh: true));
-        FindBox.KeyDown += (_, args) => UiGuard.Run(_session, "찾기", () => FindKey(args));
-        FindNextButton.Click += (_, _) => UiGuard.Run(_session, "찾기", () => StepFind(+1));
-        FindPrevButton.Click += (_, _) => UiGuard.Run(_session, "찾기", () => StepFind(-1));
-        FindCloseButton.Click += (_, _) => UiGuard.Run(_session, "찾기", () => CloseFind(writeAtHit: false));
+        FindBox.TextChanged += (_, _) => UiGuard.Run(_session, Ui.Main_Find, () => RunFind(fresh: true));
+        FindBox.KeyDown += (_, args) => UiGuard.Run(_session, Ui.Main_Find, () => FindKey(args));
+        FindNextButton.Click += (_, _) => UiGuard.Run(_session, Ui.Main_Find, () => StepFind(+1));
+        FindPrevButton.Click += (_, _) => UiGuard.Run(_session, Ui.Main_Find, () => StepFind(-1));
+        FindCloseButton.Click += (_, _) => UiGuard.Run(_session, Ui.Main_Find, () => CloseFind(writeAtHit: false));
     }
 
     /// <summary>
@@ -151,7 +152,7 @@ public partial class GraphEditorView
     private void ShowFindCount() =>
         FindCount.Text = string.IsNullOrEmpty(FindBox.Text)
             ? string.Empty
-            : _findHits.Count == 0 ? "없음" : $"{_findIndex + 1}/{_findHits.Count}";
+            : _findHits.Count == 0 ? Ui.Board_None : $"{_findIndex + 1}/{_findHits.Count}";
 
     /// <summary>
     /// 판의 모든 대사 카드에서 찾는다 — 챕터 판 차례, 판 안에서는 위에서 아래 · 왼쪽에서 오른쪽(줄이 같으면). 카드마다 제목이 먼저, 그다음 글 칸의 글 차례.
@@ -210,7 +211,7 @@ public partial class GraphEditorView
         {
             if (unfoldTries > 0 && UnfoldFor(hit.NodeId))
             {
-                Dispatcher.UIThread.Post(() => UiGuard.Run(_session, "찾기", () =>
+                Dispatcher.UIThread.Post(() => UiGuard.Run(_session, Ui.Main_Find, () =>
                 {
                     if (_findIndex == index && CurrentHit() == hit)
                     {

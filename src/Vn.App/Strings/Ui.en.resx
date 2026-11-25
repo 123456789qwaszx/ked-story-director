@@ -715,4 +715,1484 @@ The two climb the hill without a word.</value>
   <data name="Session_NoProjectYet" xml:space="preserve">
     <value>No project yet — press [Open…] in the middle of the board for a project you received, or [New project…] to start fresh.</value>
   </data>
+  <data name="Board_NoChaptersYet" xml:space="preserve">
+    <value>No chapters yet.</value>
+  </data>
+  <data name="Board_NoProjectYetIfYou" xml:space="preserve">
+    <value>No project yet.
+If you received a project, choose its folder with [Open…]; to start fresh, choose an empty folder with [New project…].</value>
+  </data>
+  <data name="Board_ChooseChapter" xml:space="preserve">
+    <value>Choose chapter</value>
+  </data>
+  <data name="Board_CleanUpDrag" xml:space="preserve">
+    <value>Clean up drag</value>
+  </data>
+  <data name="Board_PlaceDeleteButton" xml:space="preserve">
+    <value>Place delete button</value>
+  </data>
+  <data name="Board_PlaceFormatBox" xml:space="preserve">
+    <value>Place format box</value>
+  </data>
+  <data name="Board_PlaceFormattingToolbar" xml:space="preserve">
+    <value>Place formatting toolbar</value>
+  </data>
+  <data name="Board_Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Board_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Board_PlaceLines" xml:space="preserve">
+    <value>Place lines</value>
+  </data>
+  <data name="Board_FollowChapter" xml:space="preserve">
+    <value>Follow chapter</value>
+  </data>
+  <data name="Board_UpdateChapterCombo" xml:space="preserve">
+    <value>Update chapter combo</value>
+  </data>
+  <data name="Board_SeveralItemsAreSelectedIn" xml:space="preserve">
+    <value>Several items are selected in the Hierarchy — select just one to delete (several can't be deleted at once).</value>
+  </data>
+  <data name="Board_CanTDelete" xml:space="preserve">
+    <value>Can't delete</value>
+  </data>
+  <data name="Board_DeleteChapter" xml:space="preserve">
+    <value>Delete chapter</value>
+  </data>
+  <data name="Board_DeleteScene" xml:space="preserve">
+    <value>Delete scene</value>
+  </data>
+  <data name="Board_DeleteEpisode" xml:space="preserve">
+    <value>Delete episode</value>
+  </data>
+  <data name="Board_DeleteBranchCard" xml:space="preserve">
+    <value>Delete branch card</value>
+  </data>
+  <data name="Board_DeletesSelectedChapterWithIts" xml:space="preserve">
+    <value>Deletes the selected chapter with its scenes · episodes · cards — you'll be asked once more. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_DeletesSelectedSceneSEpisodes" xml:space="preserve">
+    <value>Deletes the selected scene's episodes · cards, the branch cards those episodes called, and the scene's name · note — you'll be asked once more. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_DeletesSelectedEpisodeAlongWith" xml:space="preserve">
+    <value>Deletes the selected episode along with its path · test start references — you'll be asked once more. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_DeletesBranchCardBranchPoints" xml:space="preserve">
+    <value>Deletes the branch card — the branch points that called it stay, unconnected. One undo brings it back.</value>
+  </data>
+  <data name="Board_SelectChapterSceneEpisodeIn" xml:space="preserve">
+    <value>Select a chapter · scene · episode in the Hierarchy or on the board to delete it.</value>
+  </data>
+  <data name="Board_Chapter" xml:space="preserve">
+    <value>Chapter {0} ⌄</value>
+  </data>
+  <data name="Board_ClickToSelectEveryCard" xml:space="preserve">
+    <value>Click to select every card in this chapter — drag right away to move them together. Double-click to fold it into a table; double-click the folded table to unfold it.</value>
+  </data>
+  <data name="Board_Scene" xml:space="preserve">
+    <value>Scene {0}</value>
+  </data>
+  <data name="Board_Note" xml:space="preserve">
+    <value> · note</value>
+  </data>
+  <data name="Board_ClickToSelectEveryCard2" xml:space="preserve">
+    <value>Click to select every card in this scene — drag right away to move them together. Double-click to fold it into a list of rows (paths attach to the folded rows). Double-click the folded box to unfold it.</value>
+  </data>
+  <data name="Board_PlaceRails" xml:space="preserve">
+    <value>Place rails</value>
+  </data>
+  <data name="Board_Auto" xml:space="preserve">
+    <value>(auto)</value>
+  </data>
+  <data name="Board_IncomingPathsClickToOpen" xml:space="preserve">
+    <value>{0} incoming paths — click to open the list.</value>
+  </data>
+  <data name="Board_PathsInto" xml:space="preserve">
+    <value>Paths into {0}</value>
+  </data>
+  <data name="Board_ConnectAndDisconnectFromChip" xml:space="preserve">
+    <value>Connect and disconnect from the chip on the source side and in the [Structure] tab.</value>
+  </data>
+  <data name="Board_DragOntoEpisodeCardIn" xml:space="preserve">
+    <value>Drag onto an episode card in the same chapter to connect.</value>
+  </data>
+  <data name="Board_WriteChoiceTextToBe" xml:space="preserve">
+    <value>Write the choice text to be able to drag it.</value>
+  </data>
+  <data name="Board_ConnectedDragOntoAnotherEpisode" xml:space="preserve">
+    <value>Connected. Drag onto another episode card to reconnect, or onto empty space to disconnect.</value>
+  </data>
+  <data name="Board_Choice" xml:space="preserve">
+    <value>Choice</value>
+  </data>
+  <data name="Board_ClickToWriteChoiceText" xml:space="preserve">
+    <value>Click to write the choice text. You need to write it before you can drag to connect.</value>
+  </data>
+  <data name="Board_Auto2" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="Board_AutoPathMovesOnWithout" xml:space="preserve">
+    <value>Auto path — moves on without choice text. Writing any choice text closes this slot.</value>
+  </data>
+  <data name="Board_ThisChoiceHasNoText" xml:space="preserve">
+    <value>This choice has no text — it was an auto path that became a choice when another path was connected. Click to write the text. This chapter's progression JSON isn't written until you do.</value>
+  </data>
+  <data name="Board_ChoiceText" xml:space="preserve">
+    <value>Choice text</value>
+  </data>
+  <data name="Board_NoCard" xml:space="preserve">
+    <value>▢ {0} (no card)</value>
+  </data>
+  <data name="Board_CardForTargetEpisodeIsn" xml:space="preserve">
+    <value>The card for target episode '{0}' isn't on this board yet — save the project and reopen it to create an empty card connected here.</value>
+  </data>
+  <data name="Board_DragToChangeCardWidth" xml:space="preserve">
+    <value>Drag to change the card width — the writing box widens with it. Double-click to return to the default width.</value>
+  </data>
+  <data name="Board_DragToChangeWritingBox" xml:space="preserve">
+    <value>Drag to change the writing box height. Double-click to return to the default height.</value>
+  </data>
+  <data name="Board_DragToChangeCardWidth2" xml:space="preserve">
+    <value>Drag to change the card width and writing box height together. Double-click to return to the default size.</value>
+  </data>
+  <data name="Board_CardSize" xml:space="preserve">
+    <value>Card size</value>
+  </data>
+  <data name="Board_FitWidth" xml:space="preserve">
+    <value>Fit width</value>
+  </data>
+  <data name="Board_FitHeight" xml:space="preserve">
+    <value>Fit height</value>
+  </data>
+  <data name="Board_FitWidthWhileOnCard" xml:space="preserve">
+    <value>Fit width — while on, the card widens as you write so the longest line doesn't wrap (never narrower than the default width). </value>
+  </data>
+  <data name="Board_FitHeightWhileOnWriting" xml:space="preserve">
+    <value>Fit height — while on, the writing box grows as you write so every line shows without scrolling (never shorter than the default height). </value>
+  </data>
+  <data name="Board_OnNowClickToTurn" xml:space="preserve">
+    <value>On now — click to turn it off (the size stays). Dragging an edge to resize also turns it off.</value>
+  </data>
+  <data name="Board_OffNowClickToTurn" xml:space="preserve">
+    <value>Off now — click to turn it on and fit right away.</value>
+  </data>
+  <data name="Board_TurnedOnFitWidthCard" xml:space="preserve">
+    <value>Turned on Fit width — the card follows your text. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_TurnedOffFitWidthSize" xml:space="preserve">
+    <value>Turned off Fit width — the size stays. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_TurnedOnFitHeightCard" xml:space="preserve">
+    <value>Turned on Fit height — the card follows your text. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_TurnedOffFitHeightSize" xml:space="preserve">
+    <value>Turned off Fit height — the size stays. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_FitToText" xml:space="preserve">
+    <value>Fit to text</value>
+  </data>
+  <data name="Board_CardVisitedThroughBranch" xml:space="preserve">
+    <value>A card visited through a branch. {0} {1}</value>
+  </data>
+  <data name="Board_Branch" xml:space="preserve">
+    <value>{0} branch</value>
+  </data>
+  <data name="Board_SceneStartEpisodeWhereScene" xml:space="preserve">
+    <value>Scene start — the episode where the scene begins. Rollback returns here and Continue resumes here.</value>
+  </data>
+  <data name="Board_BranchCardVisitedFromAnother" xml:space="preserve">
+    <value>Branch card — visited from another card's branch point, then returns there. It has no choices and isn't in the progression JSON. Its scene is the calling episode's.</value>
+  </data>
+  <data name="Board_SpeakerDialogueOneLineIs" xml:space="preserve">
+    <value>Speaker: dialogue — one line is one dialogue line</value>
+  </data>
+  <data name="Board_ApplyText" xml:space="preserve">
+    <value>Apply text</value>
+  </data>
+  <data name="Board_EmptyTextIsnTApplied" xml:space="preserve">
+    <value>Empty text isn't applied — to remove every line, delete the node.</value>
+  </data>
+  <data name="Board_CouldnTApplyTextText" xml:space="preserve">
+    <value>Couldn't apply the text — {0} (the text is still in the box)</value>
+  </data>
+  <data name="Board_AppliedTextOneUndoBrings" xml:space="preserve">
+    <value>Applied the text — {0}. One undo brings it back.</value>
+  </data>
+  <data name="Board_KeptBranchConditionLinesRestored" xml:space="preserve">
+    <value>Kept the branch condition lines — restored the condition lines and moved lines written outside them inside. Change the conditions for this card in the branch section of the [Structure] tab.</value>
+  </data>
+  <data name="Board_FoldedNodes" xml:space="preserve">
+    <value>Folded · {0} nodes · {1}</value>
+  </data>
+  <data name="Board_EmptyFile" xml:space="preserve">
+    <value>Empty file</value>
+  </data>
+  <data name="Board_DoubleClickToUnfoldThis" xml:space="preserve">
+    <value>Double-click to unfold this chapter.</value>
+  </data>
+  <data name="Board_FoldedNodes2" xml:space="preserve">
+    <value>Folded · {0} nodes</value>
+  </data>
+  <data name="Board_PathsInside" xml:space="preserve">
+    <value> · {0} paths inside</value>
+  </data>
+  <data name="Board_DoubleClickToUnfoldThis2" xml:space="preserve">
+    <value>Double-click to unfold this scene.</value>
+  </data>
+  <data name="Board_NodesNotInThisChapter" xml:space="preserve">
+    <value>Nodes not in this chapter's progression — no scene boundary.</value>
+  </data>
+  <data name="Board_SceneEpisodesInSameScene" xml:space="preserve">
+    <value>Scene '{0}' — episodes in the same scene share a save · rollback span.</value>
+  </data>
+  <data name="Board_EmptyChoice" xml:space="preserve">
+    <value>Empty choice</value>
+  </data>
+  <data name="Board_WriteChoiceText" xml:space="preserve">
+    <value>Write the choice text</value>
+  </data>
+  <data name="Board_BranchVisitedBeforeThisLine" xml:space="preserve">
+    <value>Branch — visited before this line. Drag to reconnect to another card; click to disconnect only (the branch point stays).</value>
+  </data>
+  <data name="Board_UnconnectedBranchPointDropIt" xml:space="preserve">
+    <value>Unconnected branch point — drop it on a card to make a branch. To delete it, use [✕] on the branch point card in the side panel.</value>
+  </data>
+  <data name="Board_BranchesClickToExpandOr" xml:space="preserve">
+    <value>{0} branches — click to expand or collapse. Drag an expanded point onto another card to connect.</value>
+  </data>
+  <data name="Board_DropOnBranchCardTo" xml:space="preserve">
+    <value>Drop on a branch card to connect. Drop on empty space to create a new branch card there. It doesn't connect to episodes.</value>
+  </data>
+  <data name="Board_DropOnBranchCardTo2" xml:space="preserve">
+    <value>Drop on a branch card to reconnect there. Drop on empty space to disconnect only — the branch point stays.</value>
+  </data>
+  <data name="Board_AddEpisode" xml:space="preserve">
+    <value>Add episode</value>
+  </data>
+  <data name="Board_AddScene" xml:space="preserve">
+    <value>Add scene</value>
+  </data>
+  <data name="Board_AddChapter" xml:space="preserve">
+    <value>Add chapter</value>
+  </data>
+  <data name="Board_Rename2" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Board_ShowInStructureTab" xml:space="preserve">
+    <value>Show in [Structure] tab</value>
+  </data>
+  <data name="Board_TitleEmptyShowsBranchCard" xml:space="preserve">
+    <value>Title (empty shows the branch card ID)</value>
+  </data>
+  <data name="Board_TitleEmptyShowsEpisodeID" xml:space="preserve">
+    <value>Title (empty shows the episode ID)</value>
+  </data>
+  <data name="Board_EditTitleAndPressEnter" xml:space="preserve">
+    <value>Edit the title and press Enter — Esc cancels. Leave it empty to show the ID (IDs are set in the [Structure] tab).</value>
+  </data>
+  <data name="Board_CreatedSceneAndAddedEpisode" xml:space="preserve">
+    <value>Created scene “{0}” and added an episode where you clicked — rename it at the top of the Inspector on the right or in the Hierarchy.</value>
+  </data>
+  <data name="Board_AddedEpisodeToSceneWhere" xml:space="preserve">
+    <value>Added an episode to scene “{0}” where you clicked.</value>
+  </data>
+  <data name="Board_ConnectChoice" xml:space="preserve">
+    <value>Connect choice</value>
+  </data>
+  <data name="Board_ConnectBranch" xml:space="preserve">
+    <value>Connect branch</value>
+  </data>
+  <data name="Board_DeleteThisBranchPointFrom" xml:space="preserve">
+    <value> Delete this branch point from the line's ＋.</value>
+  </data>
+  <data name="Board_CreatedBranchCardAndConnected" xml:space="preserve">
+    <value>Created branch card '{0}' and connected it — write the lines to say there. {2}</value>
+  </data>
+  <data name="Board_DropThisBranchOnEmpty" xml:space="preserve">
+    <value> Drop this branch on empty space to disconnect it.</value>
+  </data>
+  <data name="Board_IsBranchCardInAnother" xml:space="preserve">
+    <value>'{0}' is a branch card in another chapter — branch points connect only to branch cards in the same chapter. Drop on empty space to create a new branch card.</value>
+  </data>
+  <data name="Board_IsEpisodeBranchPointsConnect" xml:space="preserve">
+    <value>'{0}' is an episode — branch points connect only to branch cards (while visiting and returning, that episode's choices wouldn't appear in the game). Drop on empty space to create a new branch card.</value>
+  </data>
+  <data name="Board_ChoicesDonTConnectTo" xml:space="preserve">
+    <value>Choices don't connect to branch cards — a branch card is visited from a branch point and returns. Connect choices to episodes.</value>
+  </data>
+  <data name="Board_ConnectChoicesToEpisodes" xml:space="preserve">
+    <value>Connect choices to episodes.</value>
+  </data>
+  <data name="Board_IsInAnotherChapterChoices" xml:space="preserve">
+    <value>'{0}' is in another chapter — choices connect only within a chapter.</value>
+  </data>
+  <data name="Board_ConnectedAsAutoPathMoves" xml:space="preserve">
+    <value>Connected '{0}' → '{1}' as an auto path (moves on without text).</value>
+  </data>
+  <data name="Board_ConnectedWithChoiceAutoPath" xml:space="preserve">
+    <value>Connected '{0}' → '{1}' with choice '{2}' — the auto path became a choice. Write its text in the red slot (this chapter's progression JSON isn't written until you do). One undo (Ctrl+Z) brings both back.</value>
+  </data>
+  <data name="Board_ConnectedWithChoice" xml:space="preserve">
+    <value>Connected '{0}' → '{1}' with choice '{2}'.</value>
+  </data>
+  <data name="Board_RemovedPath" xml:space="preserve">
+    <value>Removed the path '{0}' → '{1}'.</value>
+  </data>
+  <data name="Board_TextWasLeftInSlot" xml:space="preserve">
+    <value> The text '{0}' was left in the slot.</value>
+  </data>
+  <data name="Board_ConditionRightClickToDelete" xml:space="preserve">
+    <value>{0} — condition '{1}' → {2} · right-click to delete</value>
+  </data>
+  <data name="Board_CouldnTFindChapterTo" xml:space="preserve">
+    <value>Couldn't find the chapter to put the new card in.</value>
+  </data>
+  <data name="Board_CreatedChapterAndSceneAnd" xml:space="preserve">
+    <value>Created chapter “{0}” and scene “{1}” and added an episode — rename them by double-clicking in the Hierarchy.</value>
+  </data>
+  <data name="Board_CreatedSceneAndAddedEpisode2" xml:space="preserve">
+    <value>Created scene “{0}” and added an episode — select a scene or one of its cards first to add to that scene.</value>
+  </data>
+  <data name="Board_AddedEpisodeToScene" xml:space="preserve">
+    <value>Added an episode to scene “{0}”.</value>
+  </data>
+  <data name="Board_IsEpisodeInChapterIts" xml:space="preserve">
+    <value>'{0}' is an episode in chapter '{1}'. Its path · test start references are deleted with it — Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_DeleteEpisode2" xml:space="preserve">
+    <value>Delete episode</value>
+  </data>
+  <data name="Board_DeletedBranchCardBranchPoints" xml:space="preserve">
+    <value>Deleted branch card '{0}' — the branch points that called it stay, unconnected (drop one on empty space to create a new branch card). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Board_EpisodeIDEpisodeIDsAre" xml:space="preserve">
+    <value>Episode ID: {0} — episode IDs are set in the [Structure] tab.</value>
+  </data>
+  <data name="Board_BranchCardIDIDYarn" xml:space="preserve">
+    <value>Branch card ID: {0} — the ID (= Yarn node name) is set in the [Structure] tab.</value>
+  </data>
+  <data name="Board_DragToBendLine" xml:space="preserve">
+    <value>Drag to bend the line.</value>
+  </data>
+  <data name="Board_LineShape" xml:space="preserve">
+    <value>Line shape</value>
+  </data>
+  <data name="Board_BentLineMoveBendWith" xml:space="preserve">
+    <value>Bent line — move the bend with the handle.</value>
+  </data>
+  <data name="Board_SmoothCurveMoveBendWith" xml:space="preserve">
+    <value>Smooth curve — move the bend with the handle.</value>
+  </data>
+  <data name="Board_ConnectsTwoEndsStraight" xml:space="preserve">
+    <value>Connects the two ends straight.</value>
+  </data>
+  <data name="Board_Auto3" xml:space="preserve">
+    <value>↺ Auto</value>
+  </data>
+  <data name="Board_ClearsEditedShapeAndReturns" xml:space="preserve">
+    <value>Clears the edited shape and returns to the default position — the shape set in Settings “New lines” ({0}).</value>
+  </data>
+  <data name="Format_DefaultFont" xml:space="preserve">
+    <value>Default font</value>
+  </data>
+  <data name="Format_ChangeWritingBox" xml:space="preserve">
+    <value>Change writing box</value>
+  </data>
+  <data name="Format_FontForSelectedTextOr" xml:space="preserve">
+    <value>Font — for the selected text (or, if only cards are selected, all text in those cards). “Default font” is this card's starting font (the “Script writing box” font in Settings when the card was made). On a PC without that font, the default font is shown.</value>
+  </data>
+  <data name="Format_SmallerShrinksSelectedTextBy" xml:space="preserve">
+    <value>Smaller — shrinks the selected text by 1pt (or, if only cards are selected, those cards' base size)</value>
+  </data>
+  <data name="Format_SizeOfSelectedTextPt" xml:space="preserve">
+    <value>Size of the selected text (pt) — type a number and press Enter to set all selected text to that size (Esc cancels). It's stored as a difference from this card's starting size, and is empty when sizes are mixed. If only cards are selected (Hierarchy · board), it's those cards' base size — text partly enlarged keeps its difference.</value>
+  </data>
+  <data name="Format_LargerGrowsSelectedTextBy" xml:space="preserve">
+    <value>Larger — grows the selected text by 1pt (or, if only cards are selected, those cards' base size)</value>
+  </data>
+  <data name="Format_BoldTurnsItOffIf" xml:space="preserve">
+    <value>Bold — turns it off if all selected text (or, if only cards are selected, all their text) is already bold</value>
+  </data>
+  <data name="Format_ItalicSlantsSelectedTextOr" xml:space="preserve">
+    <value>Italic — slants the selected text (or, if only cards are selected, all their text) (Hangul has no italic face, so the letters are drawn slanted)</value>
+  </data>
+  <data name="Format_StrikethroughDrawsLineThroughSelected" xml:space="preserve">
+    <value>Strikethrough — draws a line through the selected text (or, if only cards are selected, all their text)</value>
+  </data>
+  <data name="Format_Text" xml:space="preserve">
+    <value>A</value>
+  </data>
+  <data name="Format_TextColorForSelectedText" xml:space="preserve">
+    <value>Text color — for the selected text (or, if only cards are selected, all their text)</value>
+  </data>
+  <data name="Format_BackgroundColorBehindSelectedText" xml:space="preserve">
+    <value>Background color — behind the selected text (or, if only cards are selected, all their text)</value>
+  </data>
+  <data name="Format_AlignLeftAllTextIn" xml:space="preserve">
+    <value>Align left — all text in this card (all selected cards if several)</value>
+  </data>
+  <data name="Format_AlignCenterAllTextIn" xml:space="preserve">
+    <value>Align center — all text in this card (all selected cards if several)</value>
+  </data>
+  <data name="Format_AlignRightAllTextIn" xml:space="preserve">
+    <value>Align right — all text in this card (all selected cards if several)</value>
+  </data>
+  <data name="Format_TighterLineSpacingAllText" xml:space="preserve">
+    <value>Tighter line spacing — all text in this card, by 10% (all selected cards if several)</value>
+  </data>
+  <data name="Format_ThisCardSLineSpacing" xml:space="preserve">
+    <value>This card's line spacing — a % of the font size. Type a number and press Enter to set it (up to 250 · Esc cancels). The starting value is the line spacing in Settings “Script writing box” when the card was made. It stops at the narrowest value for the font and size (the height of one line of Hangul) — going lower would only lower the number, not the screen.</value>
+  </data>
+  <data name="Format_LooserLineSpacingAllText" xml:space="preserve">
+    <value>Looser line spacing — all text in this card, by 10% (all selected cards if several)</value>
+  </data>
+  <data name="Format_FormatValue" xml:space="preserve">
+    <value>Format value</value>
+  </data>
+  <data name="Format_IsnTSizeTypeNumber" xml:space="preserve">
+    <value>“{0}” isn't a size — type a number (pt).</value>
+  </data>
+  <data name="Format_CardSBaseSizeIs" xml:space="preserve">
+    <value>A card's base size is {0:0} ~ {1:0}pt — set to {2:0}pt.</value>
+  </data>
+  <data name="Format_SetBaseSizeOfSelected" xml:space="preserve">
+    <value>Set the base size of {0} selected cards to {1:0}pt — one undo (Ctrl+Z) brings them all back.</value>
+  </data>
+  <data name="Format_ThisCardSTextSize" xml:space="preserve">
+    <value>This card's text size is {0} ~ {1}pt — set to {2}pt.</value>
+  </data>
+  <data name="Format_IsnTLineSpacingType" xml:space="preserve">
+    <value>“{0}” isn't a line spacing — type a number (%).</value>
+  </data>
+  <data name="Format_LineSpacingGoesUpTo" xml:space="preserve">
+    <value>Line spacing goes up to {0}% — set to {0}%.</value>
+  </data>
+  <data name="Format_SetLineSpacingOfSelected" xml:space="preserve">
+    <value>Set the line spacing of {0} selected cards to {1}% — one undo (Ctrl+Z) brings them all back.</value>
+  </data>
+  <data name="Format_LineSpacingAllTextIn" xml:space="preserve">
+    <value>Line spacing — all text in this card</value>
+  </data>
+  <data name="Format_ClearBackgroundColor" xml:space="preserve">
+    <value>Clear the background color</value>
+  </data>
+  <data name="Format_ClearTextColor" xml:space="preserve">
+    <value>Clear the text color</value>
+  </data>
+  <data name="Format_TextFormatting" xml:space="preserve">
+    <value>Text formatting</value>
+  </data>
+  <data name="Format_SelectTextToFormatFirst" xml:space="preserve">
+    <value>Select the text to format first — drag across text in a writing box.</value>
+  </data>
+  <data name="Format_ThisCardIsBoldFrom" xml:space="preserve">
+    <value>This card is bold from the start (made with bold in Settings “Script writing box”) — part of it can't be made regular.</value>
+  </data>
+  <data name="Format_SelectionHasNoDialogueText" xml:space="preserve">
+    <value>The selection has no dialogue text to format — speaker names · condition lines aren't formatted, and lines not yet applied are formatted after they're applied.</value>
+  </data>
+  <data name="Format_CardsThatAreBoldFrom" xml:space="preserve">
+    <value>Cards that are bold from the start (made with bold in Settings “Script writing box”) can't be made regular, so they stay bold.</value>
+  </data>
+  <data name="Format_AppliedToSelectedCardsOne" xml:space="preserve">
+    <value>Applied to {0} selected cards — one undo (Ctrl+Z) brings them all back.</value>
+  </data>
+  <data name="Format_TextAlignment" xml:space="preserve">
+    <value>Text alignment</value>
+  </data>
+  <data name="Format_LineSpacing" xml:space="preserve">
+    <value>Line spacing</value>
+  </data>
+  <data name="Format_ThisIsMinimumLineSpacing" xml:space="preserve">
+    <value>This is the minimum line spacing.</value>
+  </data>
+  <data name="Format_TurnsOnWhenYouSelect" xml:space="preserve">
+    <value>Turns on when you select an episode in the Hierarchy · on the board, or select text in a card's writing box</value>
+  </data>
+  <data name="Board_NothingChanges" xml:space="preserve">
+    <value>Nothing changes</value>
+  </data>
+  <data name="Board_DroppingHereChangesNothingDrop" xml:space="preserve">
+    <value>Dropping here changes nothing — drop on an episode card in the same chapter to connect.</value>
+  </data>
+  <data name="Board_Disconnect" xml:space="preserve">
+    <value>✂ Disconnect</value>
+  </data>
+  <data name="Board_DroppingHereDisconnectsPathTo" xml:space="preserve">
+    <value>Dropping here disconnects the path to '{0}'.</value>
+  </data>
+  <data name="Board_TextStaysInSlotSo" xml:space="preserve">
+    <value> The text “{0}” stays in the slot so you can connect it again.</value>
+  </data>
+  <data name="Board_ToKeepItDropOn" xml:space="preserve">
+    <value> To keep it, drop on another episode card or back on the original card.</value>
+  </data>
+  <data name="Board_CanTConnectToBranch" xml:space="preserve">
+    <value>✕ Can't connect to a branch card</value>
+  </data>
+  <data name="Board_IsBranchCardChoicesConnect" xml:space="preserve">
+    <value>'{0}' is a branch card — choices connect only to episode cards (a branch card is visited from a branch point and returns). Dropping here changes nothing.</value>
+  </data>
+  <data name="Board_NotEpisode" xml:space="preserve">
+    <value>✕ Not an episode</value>
+  </data>
+  <data name="Board_IsnTEpisodeChoicesConnect" xml:space="preserve">
+    <value>'{0}' isn't an episode — choices connect to episode cards. Dropping here changes nothing.</value>
+  </data>
+  <data name="Board_AnotherChapter" xml:space="preserve">
+    <value>✕ Another chapter</value>
+  </data>
+  <data name="Board_IsEpisodeInAnotherChapter" xml:space="preserve">
+    <value>'{0}' is an episode in another chapter ('{2}') — choices connect only within the same chapter. Dropping here changes nothing.</value>
+  </data>
+  <data name="Board_AlreadyConnected" xml:space="preserve">
+    <value>Already connected</value>
+  </data>
+  <data name="Board_AlreadyConnectedToDroppingHere" xml:space="preserve">
+    <value>Already connected to '{0}' — dropping here keeps it as is. Drop on empty space to disconnect.</value>
+  </data>
+  <data name="Board_SameChoiceExists" xml:space="preserve">
+    <value>✕ Same choice exists</value>
+  </data>
+  <data name="Board_ThisEpisodeAlreadyHasChoice" xml:space="preserve">
+    <value>This episode already has the choice “{2}” going to '{0}' — change the text or drop on another episode. Dropping here changes nothing.</value>
+  </data>
+  <data name="Board_ThisEpisodeAlreadyHasPath" xml:space="preserve">
+    <value>This episode already has a path without text going to '{0}' — change the text or drop on another episode. Dropping here changes nothing.</value>
+  </data>
+  <data name="Board_SceneWouldGetTwoEntrances" xml:space="preserve">
+    <value>✕ Scene would get two entrances</value>
+  </data>
+  <data name="Board_DroppingHereChangesNothing" xml:space="preserve">
+    <value> Dropping here changes nothing.</value>
+  </data>
+  <data name="Board_ConnectAsAutoPath" xml:space="preserve">
+    <value>↪ Connect as auto path → {0}</value>
+  </data>
+  <data name="Board_Connect" xml:space="preserve">
+    <value>↪ Connect → {0}</value>
+  </data>
+  <data name="Board_DroppingHereMakesAutoPath" xml:space="preserve">
+    <value>Dropping here makes an auto path that moves on to '{0}' without text.</value>
+  </data>
+  <data name="Board_DroppingHereConnectsTo" xml:space="preserve">
+    <value>Dropping here connects “{0}” to '{2}'.</value>
+  </data>
+  <data name="Board_Reconnect" xml:space="preserve">
+    <value>↪ Reconnect → {0}</value>
+  </data>
+  <data name="Board_DroppingHereSendsAutoPath" xml:space="preserve">
+    <value>Dropping here sends the auto path to '{1}' instead of '{0}' (conditions · stat changes stay).</value>
+  </data>
+  <data name="Board_DroppingHereSendsToInstead" xml:space="preserve">
+    <value>Dropping here sends “{0}” to '{3}' instead of '{2}' (conditions · stat changes stay).</value>
+  </data>
+  <data name="Board_IsnTStartOfAnother" xml:space="preserve">
+    <value>'{0}' isn't the start of another scene ('{2}') — that scene already starts at {3}. A scene must start in one place (where rollback returns and Continue resumes), so it isn't connected. Connect to that scene's start {3}, or split '{0}' into another scene first.</value>
+  </data>
+  <data name="Board_WriteTextToDragAnd" xml:space="preserve">
+    <value>Write the text to drag and connect</value>
+  </data>
+  <data name="Board_DragOntoEpisodeCardIn2" xml:space="preserve">
+    <value>Drag onto an episode card in the same chapter to connect</value>
+  </data>
+  <data name="Board_DragOntoAnotherEpisodeTo" xml:space="preserve">
+    <value>Drag onto another episode to reconnect · onto empty space to disconnect</value>
+  </data>
+  <data name="Board_None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Board_Chapter2" xml:space="preserve">
+    <value>Chapter</value>
+  </data>
+  <data name="Board_BoardNewNodesGoOn" xml:space="preserve">
+    <value>The board new nodes go on. Shows the same selection as the [Structure] tab.</value>
+  </data>
+  <data name="Board_Episode" xml:space="preserve">
+    <value>+ Episode</value>
+  </data>
+  <data name="Board_CollapseHierarchyBoardGetsWider" xml:space="preserve">
+    <value>Collapse the Hierarchy — the board gets wider. Click the collapsed strip to expand it again.</value>
+  </data>
+  <data name="Board_ExpandHierarchy" xml:space="preserve">
+    <value>Expand the Hierarchy</value>
+  </data>
+  <data name="Board_CreateFirstChapter" xml:space="preserve">
+    <value>＋ Create first chapter</value>
+  </data>
+  <data name="Board_CreatesWithSceneAndOne" xml:space="preserve">
+    <value>Creates “새 챕터” with scene “새 장면” and one episode — same as “Add chapter” in the Hierarchy's right-click menu. Undo (Ctrl+Z) works.</value>
+  </data>
+  <data name="Board_OpensProjectYouReceivedChoose" xml:space="preserve">
+    <value>Opens a project you received — choose the folder containing project.vnproject.json. Same as File → [Open…].</value>
+  </data>
+  <data name="Board_StartsFreshChooseEmptyFolder" xml:space="preserve">
+    <value>Starts fresh — choose an empty folder to put the project in. Same as File → [New project…].</value>
+  </data>
+  <data name="Board_FitAll" xml:space="preserve">
+    <value>Fit all</value>
+  </data>
+  <data name="Board_FindDialogueSpeakersTitles" xml:space="preserve">
+    <value>Find — dialogue · speakers · titles</value>
+  </data>
+  <data name="Board_PreviousShiftEnter" xml:space="preserve">
+    <value>Previous (Shift+Enter)</value>
+  </data>
+  <data name="Board_NextEnter" xml:space="preserve">
+    <value>Next (Enter)</value>
+  </data>
+  <data name="Board_CloseEscKeepWritingRight" xml:space="preserve">
+    <value>Close (Esc) — keep writing right at the found line</value>
+  </data>
+  <data name="Board_Inspector" xml:space="preserve">
+    <value>Inspector</value>
+  </data>
+  <data name="Board_Speakers" xml:space="preserve">
+    <value>Speakers</value>
+  </data>
+  <data name="Board_SpeakersForWholeProject" xml:space="preserve">
+    <value>Speakers for the whole project</value>
+  </data>
+  <data name="Board_EveryChapterUsesSameList" xml:space="preserve">
+    <value>Every chapter uses the same list</value>
+  </data>
+  <data name="Board_ConditionsStats" xml:space="preserve">
+    <value>Conditions &amp; stats</value>
+  </data>
+  <data name="Board_ConditionsStatsForThisChapter" xml:space="preserve">
+    <value>Conditions · stats for this chapter</value>
+  </data>
+  <data name="Board_UsedOnlyInThisChapter" xml:space="preserve">
+    <value>Used only in this chapter — each chapter has its own</value>
+  </data>
+  <data name="Board_ChapterThisTabShowsFollows" xml:space="preserve">
+    <value>The chapter this tab shows — follows the current chapter. Choosing one goes to that chapter (same as the chapter combo in the toolbar).</value>
+  </data>
+  <data name="Board_CollapseSidePanelInspectorSpeakers" xml:space="preserve">
+    <value>Collapse the side panel (Inspector · Speakers · Conditions &amp; stats) — the board gets wider. Click the collapsed strip to expand it again.</value>
+  </data>
+  <data name="Board_ExpandSidePanel" xml:space="preserve">
+    <value>Expand the side panel</value>
+  </data>
+  <data name="Board_InspectorSpeakersConditionsStats" xml:space="preserve">
+    <value>Inspector · Speakers · Conditions &amp; stats</value>
+  </data>
+  <data name="Dialogue_AddLineAtEnd" xml:space="preserve">
+    <value>Add line at the end</value>
+  </data>
+  <data name="Dialogue_AddLine" xml:space="preserve">
+    <value>Add line</value>
+  </data>
+  <data name="Dialogue_ForAllSelectedEpisodeCards" xml:space="preserve">
+    <value>For all {0} selected episode cards — when on, only connected choices show under the card in the [Script] tab (unconnected slots, even the auto slot, are hidden).</value>
+  </data>
+  <data name="Dialogue_OnlySomeAreOnNow" xml:space="preserve">
+    <value> Only some are on now — click to turn them all on.</value>
+  </data>
+  <data name="Dialogue_WhenOnOnlyChoicesConnected" xml:space="preserve">
+    <value>When on, only the choices connected under this card show in the [Script] tab — unconnected slots, even the auto slot, are hidden. Turn it off to connect new paths or write choice text. Select several in the Hierarchy (Ctrl · Shift+click) to turn it on or off for all those episodes at once.</value>
+  </data>
+  <data name="Dialogue_TitleShownInGameEdit" xml:space="preserve">
+    <value>The title shown in the game. Edit and press Enter. If empty, the episode ID ({0}) is shown. Episode IDs are set in the [Structure] tab.</value>
+  </data>
+  <data name="Dialogue_BranchCardSTitleEdit" xml:space="preserve">
+    <value>The branch card's title. Edit and press Enter. If empty, the branch card ID ({0}) is shown. The ID (= Yarn node name) is set in the [Structure] tab.</value>
+  </data>
+  <data name="Dialogue_PressAddLineToStart" xml:space="preserve">
+    <value>Press “Add line” to start typing right away. Paste long scripts into the writing box inside the card.</value>
+  </data>
+  <data name="Dialogue_AddLineBelow" xml:space="preserve">
+    <value>Add line below</value>
+  </data>
+  <data name="Dialogue_InsertsNewLineRightBelow" xml:space="preserve">
+    <value>Inserts a new line right below this one.</value>
+  </data>
+  <data name="Dialogue_RemovesThisLineFromScript" xml:space="preserve">
+    <value>Removes this line from the script.</value>
+  </data>
+  <data name="Dialogue_DeleteLine" xml:space="preserve">
+    <value>Delete line</value>
+  </data>
+  <data name="Dialogue_Dialogue" xml:space="preserve">
+    <value>Dialogue</value>
+  </data>
+  <data name="Dialogue_Speaker" xml:space="preserve">
+    <value>Speaker</value>
+  </data>
+  <data name="Dialogue_ChooseFromRegisteredSpeakers" xml:space="preserve">
+    <value>Choose from the registered speakers</value>
+  </data>
+  <data name="Dialogue_NoSpeakersRegisteredAddSpeakers" xml:space="preserve">
+    <value>No speakers registered — add speakers in the “Speakers” tab on the right and they'll be listed here. Until then, type in the speaker field directly.</value>
+  </data>
+  <data name="Dialogue_UnknownCondition" xml:space="preserve">
+    <value>Unknown condition</value>
+  </data>
+  <data name="Dialogue_EndOfCondition" xml:space="preserve">
+    <value>End of condition</value>
+  </data>
+  <data name="Dialogue_ThisLineSConditionSwitch" xml:space="preserve">
+    <value>This line's condition switch — change it with the branch card's condition or &lt;&lt;if&gt;&gt; in the script text. {0}</value>
+  </data>
+  <data name="Dialogue_BranchPoint" xml:space="preserve">
+    <value>⑂ Branch point {0}/{1}</value>
+  </data>
+  <data name="Dialogue_BranchPoint2" xml:space="preserve">
+    <value>⑂ Branch point</value>
+  </data>
+  <data name="Dialogue_NotConnected" xml:space="preserve">
+    <value> — not connected</value>
+  </data>
+  <data name="Dialogue_DeleteBranchPoint" xml:space="preserve">
+    <value>✕ Delete branch point</value>
+  </data>
+  <data name="Dialogue_DeletesUnconnectedBranchPointUndo" xml:space="preserve">
+    <value>Deletes the unconnected branch point. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Dialogue_ThereSNowhereToVisit" xml:space="preserve">
+    <value>There's nowhere to visit, so it's skipped — drag this branch point onto a card on the [Script] board to make it a branch again.</value>
+  </data>
+  <data name="Dialogue_RightClickToDeleteThis" xml:space="preserve">
+    <value>Right-click to delete this branch point (same as ✕ Delete branch point). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Dialogue_DeleteBranchPoint2" xml:space="preserve">
+    <value>Delete branch point</value>
+  </data>
+  <data name="Dialogue_DeletedUnconnectedBranchPoint" xml:space="preserve">
+    <value>Deleted the unconnected branch point.</value>
+  </data>
+  <data name="Dialogue_ConditionalBranch" xml:space="preserve">
+    <value>⑂ Conditional branch {0}/{1}</value>
+  </data>
+  <data name="Dialogue_ConditionalBranch2" xml:space="preserve">
+    <value>⑂ Conditional branch</value>
+  </data>
+  <data name="Dialogue_VisitsThenContinuesFromThis" xml:space="preserve">
+    <value>Visits, then continues from this line.</value>
+  </data>
+  <data name="Dialogue_VisitsThenGoesToNext" xml:space="preserve">
+    <value>Visits, then goes to the next branch.</value>
+  </data>
+  <data name="Dialogue_RightClickToDeleteThis2" xml:space="preserve">
+    <value>Right-click to delete this branch (same as ✕ Delete branch) — the visited card stays. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Dialogue_Condition" xml:space="preserve">
+    <value>⑂ Condition</value>
+  </data>
+  <data name="Dialogue_BranchIsAlwaysVisitedAnd" xml:space="preserve">
+    <value> The branch is always visited, and this card checks the condition at its start.</value>
+  </data>
+  <data name="Dialogue_DeleteBranch" xml:space="preserve">
+    <value>✕ Delete branch</value>
+  </data>
+  <data name="Dialogue_DeletesOnlyThisBranchBranch" xml:space="preserve">
+    <value>Deletes only this branch (the branch point and line) — the visited card stays on the board. To remove the card, select it and press [Delete branch card]. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Dialogue_DeleteBranch2" xml:space="preserve">
+    <value>Delete branch</value>
+  </data>
+  <data name="Dialogue_AddBranchBeforeThisLine" xml:space="preserve">
+    <value>Add a branch before this line, or move, delete, or add a line below. Open it and press Tab — [Add line below].</value>
+  </data>
+  <data name="Dialogue_Branch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Dialogue_ThereSOneBranchBefore" xml:space="preserve">
+    <value>There's one branch before this line — a new one goes after it and they're visited in order.</value>
+  </data>
+  <data name="Dialogue_ThereAreBranchesBeforeThis" xml:space="preserve">
+    <value>There are {0} branches before this line — they're visited in order from the top.</value>
+  </data>
+  <data name="Dialogue_DeleteBranch3" xml:space="preserve">
+    <value>✕ Delete branch '{0}'</value>
+  </data>
+  <data name="Dialogue_DeleteUnconnectedBranchPointNo" xml:space="preserve">
+    <value>✕ Delete unconnected branch point (no. {0})</value>
+  </data>
+  <data name="Dialogue_BranchCardsDonTBranch" xml:space="preserve">
+    <value>Branch cards don't branch — they're a place to visit and return from. If you need to split, add another branch to the calling episode.</value>
+  </data>
+  <data name="Dialogue_ChapterEpisodeChoicesAndStat" xml:space="preserve">
+    <value>📄 Chapter episode — choices and stat changes are edited on the paths.</value>
+  </data>
+  <data name="Dialogue_Line" xml:space="preserve">
+    <value>Line</value>
+  </data>
+  <data name="Dialogue_Up" xml:space="preserve">
+    <value>▲ Up</value>
+  </data>
+  <data name="Dialogue_Down" xml:space="preserve">
+    <value>▼ Down</value>
+  </data>
+  <data name="Dialogue_Delete" xml:space="preserve">
+    <value>✕ Delete</value>
+  </data>
+  <data name="Dialogue_AddLineBelow2" xml:space="preserve">
+    <value>＋ Add line below</value>
+  </data>
+  <data name="Dialogue_AddsNewLineRightBelow" xml:space="preserve">
+    <value>Adds a new line right below this one and goes to its speaker field (Enter).</value>
+  </data>
+  <data name="Dialogue_AddBranch" xml:space="preserve">
+    <value>＋ Add branch</value>
+  </data>
+  <data name="Dialogue_SplitsBeforeThisLineBranch" xml:space="preserve">
+    <value>Splits before this line. A branch card to visit is created and already connected — at first it's always visited, without a condition. </value>
+  </data>
+  <data name="Dialogue_IfThereSAlreadyBranch" xml:space="preserve">
+    <value> If there's already a branch, the new one goes after it and they're visited in order.</value>
+  </data>
+  <data name="Dialogue_AddBranch2" xml:space="preserve">
+    <value>Add branch</value>
+  </data>
+  <data name="Dialogue_AddedBranchForNowIt" xml:space="preserve">
+    <value>Added branch '{0}' — for now it's always visited, without a condition. {2}</value>
+  </data>
+  <data name="Dialogue_ConditionLeftOnLineRemoved" xml:space="preserve">
+    <value>Condition left on a line removed from the script</value>
+  </data>
+  <data name="Dialogue_LastContent" xml:space="preserve">
+    <value>Last content: {0}: {1}</value>
+  </data>
+  <data name="Dialogue_ThisLineIsnTIn" xml:space="preserve">
+    <value>This line isn't in the script.</value>
+  </data>
+  <data name="Dialogue_DeleteCondition" xml:space="preserve">
+    <value>Delete condition</value>
+  </data>
+  <data name="Dialogue_ThisIsFirstLineUnder" xml:space="preserve">
+    <value>This is the first line under a branch condition, so it can't be deleted or moved — that would break the condition structure. Edit the text in the card's writing box (condition lines are kept). Change the condition with “⑂ Condition” at the top of this card.</value>
+  </data>
+  <data name="Dialogue_SceneName" xml:space="preserve">
+    <value>Scene name</value>
+  </data>
+  <data name="Dialogue_HideEmptyChoices" xml:space="preserve">
+    <value>Hide empty choices</value>
+  </data>
+  <data name="Dialogue_WhenOnOnlyChoicesConnected2" xml:space="preserve">
+    <value>When on, only the choices connected under this card show in the [Script] tab — unconnected slots, even the auto slot, are hidden. Turn it off to connect new paths or write choice text.</value>
+  </data>
+  <data name="Side_LinkCharacterKeysInStructure" xml:space="preserve">
+    <value>Link character keys in the [Structure] tab</value>
+  </data>
+  <data name="Side_SelectChapterToSeeIts" xml:space="preserve">
+    <value>Select a chapter to see its conditions · stats here.</value>
+  </data>
+  <data name="Side_NoChapterSelected" xml:space="preserve">
+    <value>No chapter selected.</value>
+  </data>
+  <data name="Side_StatsAndConditionExpressionsAre" xml:space="preserve">
+    <value>Stats and condition expressions are set in the [Structure] tab.</value>
+  </data>
+  <data name="Side_OpenConditionsStatsInStructure" xml:space="preserve">
+    <value>Open conditions · stats in the [Structure] tab</value>
+  </data>
+  <data name="Side_ChapterNameEmptyShowsChapter" xml:space="preserve">
+    <value>Chapter name (empty shows the chapter ID)</value>
+  </data>
+  <data name="Side_ChapterNameShownInGame" xml:space="preserve">
+    <value>The chapter name shown in the game. Edit and press Enter. If empty, the chapter ID ({0}) is shown. The ID is set in the [Structure] tab.</value>
+  </data>
+  <data name="Side_ChapterName" xml:space="preserve">
+    <value>Chapter name</value>
+  </data>
+  <data name="Side_SelectLines" xml:space="preserve">
+    <value>Select lines</value>
+  </data>
+  <data name="Side_Show" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Side_HierarchyMenu" xml:space="preserve">
+    <value>Hierarchy menu</value>
+  </data>
+  <data name="Side_MoveScene" xml:space="preserve">
+    <value>Move scene</value>
+  </data>
+  <data name="Side_ToScriptTab" xml:space="preserve">
+    <value>To [Script] tab</value>
+  </data>
+  <data name="Side_ToStructureTab" xml:space="preserve">
+    <value>To [Structure] tab</value>
+  </data>
+  <data name="Side_Board" xml:space="preserve">
+    <value>Board</value>
+  </data>
+  <data name="Side_UpdateSelection" xml:space="preserve">
+    <value>Update selection</value>
+  </data>
+  <data name="Side_DialogueNode" xml:space="preserve">
+    <value>Dialogue node · {0}</value>
+  </data>
+  <data name="Side_SelectSomethingInHierarchyOr" xml:space="preserve">
+    <value>Select something in the Hierarchy or on the board to edit it here</value>
+  </data>
+  <data name="Side_Project" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Side_SpeakersAreInSpeakersTab" xml:space="preserve">
+    <value>Speakers are in the “Speakers” tab, and conditions · stats in the “Conditions &amp; stats” tab (per chapter).</value>
+  </data>
+  <data name="Side_ThisChapterSNameStats" xml:space="preserve">
+    <value>This chapter's name · stats · conditions are in the “Conditions &amp; stats” tab.</value>
+  </data>
+  <data name="Side_SceneNameEmptyShowsScene" xml:space="preserve">
+    <value>Scene name (empty shows the scene ID)</value>
+  </data>
+  <data name="Side_SceneNameEditAndPress" xml:space="preserve">
+    <value>The scene name. Edit and press Enter. If empty, the scene ID ({0}) is shown. Scenes with the same name aren't merged.</value>
+  </data>
+  <data name="Side_SelectedItemIsGoneSelect" xml:space="preserve">
+    <value>The selected item is gone — select again in the Hierarchy</value>
+  </data>
+  <data name="Side_TextWritten" xml:space="preserve">
+    <value>Text written</value>
+  </data>
+  <data name="Side_CharactersOfDialogueNarrationWritten" xml:space="preserve">
+    <value>Characters of dialogue · narration written in this chapter's episodes · branch cards (spaces included). Speaker names aren't counted.</value>
+  </data>
+  <data name="Side_Characters" xml:space="preserve">
+    <value> characters</value>
+  </data>
+  <data name="Side_WithoutSpacesLines" xml:space="preserve">
+    <value>{0} without spaces · {1} lines</value>
+  </data>
+  <data name="Side_StatsPasteIntoDialogue" xml:space="preserve">
+    <value>Stats — paste into dialogue</value>
+  </data>
+  <data name="Side_ThisChapterHasNoStats" xml:space="preserve">
+    <value>This chapter has no stats yet — add them in the [Structure] tab.</value>
+  </data>
+  <data name="Side_ThisChapterHasNoStats2" xml:space="preserve">
+    <value>This chapter has no stats yet.</value>
+  </data>
+  <data name="Side_Stat" xml:space="preserve">
+    <value>Stat</value>
+  </data>
+  <data name="Side_Range" xml:space="preserve">
+    <value>Range</value>
+  </data>
+  <data name="Side_TextForScript" xml:space="preserve">
+    <value>Text for the script</value>
+  </data>
+  <data name="Side_OnOff10Starts" xml:space="preserve">
+    <value>On/Off (1/0) · starts </value>
+  </data>
+  <data name="Side_On" xml:space="preserve">
+    <value>on</value>
+  </data>
+  <data name="Side_Off" xml:space="preserve">
+    <value>off</value>
+  </data>
+  <data name="Side_Starts" xml:space="preserve">
+    <value>{0}~{1} · starts {2}</value>
+  </data>
+  <data name="Side_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Side_CopiesPastedIntoDialogueIt" xml:space="preserve">
+    <value>Copies {0} — pasted into dialogue, it shows the current value of {1} there.</value>
+  </data>
+  <data name="Side_CopyStat" xml:space="preserve">
+    <value>Copy stat</value>
+  </data>
+  <data name="Side_CanTAccessClipboardSelect" xml:space="preserve">
+    <value>Can't access the clipboard — select the text by dragging and copy it.</value>
+  </data>
+  <data name="Side_CopiedPastedIntoDialogueIt" xml:space="preserve">
+    <value>Copied {0} — pasted into dialogue, it shows the current value of {1} there.</value>
+  </data>
+  <data name="Side_Summary" xml:space="preserve">
+    <value>Summary</value>
+  </data>
+  <data name="Side_EpisodesOfSceneAndBranch" xml:space="preserve">
+    <value>{1} episodes of scene “{0}” and the {2} branch cards they called will be removed along with their cards in the [Script] tab. Undo (Ctrl+Z) brings them back.</value>
+  </data>
+  <data name="Side_EpisodesOfSceneWillBe" xml:space="preserve">
+    <value>{1} episodes of scene “{0}” will be removed along with their cards in the [Script] tab. Undo (Ctrl+Z) brings them back.</value>
+  </data>
+  <data name="Side_DeleteScene" xml:space="preserve">
+    <value>Delete scene</value>
+  </data>
+  <data name="Side_DeletedSceneEpisodesBranchCards" xml:space="preserve">
+    <value>Deleted scene “{0}” — {1} episodes, {2} branch cards. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_DeletedSceneEpisodesUndoCtrl" xml:space="preserve">
+    <value>Deleted scene “{0}” — {1} episodes. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_ClearedTitleEpisodeIDIs" xml:space="preserve">
+    <value>Cleared the title — episode ID '{0}' is shown.</value>
+  </data>
+  <data name="Side_RenamedTitleToEpisodeID" xml:space="preserve">
+    <value>Renamed the title to '{0}'. Episode ID '{2}' stays the same.</value>
+  </data>
+  <data name="Side_ClearedChapterNameChapterID" xml:space="preserve">
+    <value>Cleared the chapter name — the chapter ID is shown.</value>
+  </data>
+  <data name="Side_RenamedChapterToUndoCtrl" xml:space="preserve">
+    <value>Renamed the chapter to “{0}”. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_ClearedSceneNameSceneID" xml:space="preserve">
+    <value>Cleared the scene name — the scene ID is shown.</value>
+  </data>
+  <data name="Side_RenamedSceneToScenesWith" xml:space="preserve">
+    <value>Renamed the scene to “{0}”. Scenes with the same name aren't merged.</value>
+  </data>
+  <data name="Side_MovedToSceneUndoCtrl" xml:space="preserve">
+    <value>Moved '{0}' to scene '{1}'. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_MovedToSceneItsEpisode" xml:space="preserve">
+    <value>Moved '{0}' to scene '{1}' (its episode ID followed to '{2}'). Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_AddedRenameItByDouble" xml:space="preserve">
+    <value>Added “{0}”. Rename it by double-clicking in the Hierarchy. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_AddedSceneRenameItBy" xml:space="preserve">
+    <value>Added scene “{0}”. Rename it by double-clicking in the Hierarchy. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Speakers_NamesToPickInScript" xml:space="preserve">
+    <value>Names to pick in the script's speaker field. Every chapter uses the same list. Renaming also updates dialogue lines already written. The color button before a name sets the color that name shows in the script box (not sent to the game). Character keys (portrait · expressions) are linked in the [Structure] tab.</value>
+  </data>
+  <data name="Speakers_NoSpeakersYetTypeName" xml:space="preserve">
+    <value>No speakers yet — type a name below and press [＋ Add].</value>
+  </data>
+  <data name="Speakers_NoSpeakersYet" xml:space="preserve">
+    <value>No speakers yet.</value>
+  </data>
+  <data name="Speakers_NewSpeakerName" xml:space="preserve">
+    <value>New speaker name</value>
+  </data>
+  <data name="Speakers_Add" xml:space="preserve">
+    <value>＋ Add</value>
+  </data>
+  <data name="Speakers_EnterAlsoAddsSameName" xml:space="preserve">
+    <value>Enter also adds. The same name appears only once.</value>
+  </data>
+  <data name="Speakers_AddSpeaker" xml:space="preserve">
+    <value>Add speaker</value>
+  </data>
+  <data name="Speakers_AddedSpeakerItCanBe" xml:space="preserve">
+    <value>Added speaker '{0}' — it can be picked in every chapter's script. Its character key is temporarily '{1}' — change it to match the art in the [Structure] tab.</value>
+  </data>
+  <data name="Speakers_NamesOnlyInScript" xml:space="preserve">
+    <value>{0} names only in the script</value>
+  </data>
+  <data name="Speakers_NamesTypedDirectlyInDialogue" xml:space="preserve">
+    <value>Names typed directly in dialogue speaker fields but not in the list above. [Register] puts one in the list (with a temporary character key); renaming updates all dialogue lines with that name — renaming to a name in the list merges them into that speaker (fixing typos).</value>
+  </data>
+  <data name="Speakers_RegisterRenamingUpdatesThoseLines" xml:space="preserve">
+    <value>[Register] · renaming updates those lines.</value>
+  </data>
+  <data name="Speakers_RegisterAll" xml:space="preserve">
+    <value>Register all</value>
+  </data>
+  <data name="Speakers_PutsNamesAboveIntoSpeaker" xml:space="preserve">
+    <value>Puts the {0} names above into the speaker list at once — with temporary character keys. One undo (Ctrl+Z) brings them all back.</value>
+  </data>
+  <data name="Speakers_RegisterAllSpeakers" xml:space="preserve">
+    <value>Register all speakers</value>
+  </data>
+  <data name="Speakers_RenamingUpdatesAllDialogueLines" xml:space="preserve">
+    <value>Renaming updates all {2} dialogue lines whose speaker is '{0}'. Renaming to a name in the list merges them into that speaker.</value>
+  </data>
+  <data name="Speakers_SpeakerNameInScript" xml:space="preserve">
+    <value>Speaker name in the script</value>
+  </data>
+  <data name="Speakers_Lines" xml:space="preserve">
+    <value>{0} lines</value>
+  </data>
+  <data name="Speakers_Register" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="Speakers_PutsInSpeakerListWith" xml:space="preserve">
+    <value>Puts '{0}' in the speaker list — with a temporary character key.</value>
+  </data>
+  <data name="Speakers_RegisterSpeaker" xml:space="preserve">
+    <value>Register speaker</value>
+  </data>
+  <data name="Speakers_NameBackground" xml:space="preserve">
+    <value>name background</value>
+  </data>
+  <data name="Speakers_NameColor" xml:space="preserve">
+    <value>name color</value>
+  </data>
+  <data name="Speakers_ClearNameBackgroundShownWithout" xml:space="preserve">
+    <value>Clear the name background — shown without a background</value>
+  </data>
+  <data name="Speakers_ClearNameColorShownIn" xml:space="preserve">
+    <value>Clear the name color — shown in the normal text color</value>
+  </data>
+  <data name="Speakers_InScriptBoxClickTo" xml:space="preserve">
+    <value>'{0}' {1} in the script box — {2}. Click to change it (not sent to the game).</value>
+  </data>
+  <data name="Speakers_InScriptBoxNotSet" xml:space="preserve">
+    <value>'{0}' {1} in the script box — not set. Click to choose (not sent to the game).</value>
+  </data>
+  <data name="Speakers_Speaker" xml:space="preserve">
+    <value>Speaker </value>
+  </data>
+  <data name="Speakers_SetOfSpeakerToName" xml:space="preserve">
+    <value>Set the {1} of speaker '{0}' to {2} — the name shows that way in the script box. One undo brings it back.</value>
+  </data>
+  <data name="Speakers_ClearedOfSpeaker" xml:space="preserve">
+    <value>Cleared the {1} of speaker '{0}'.</value>
+  </data>
+  <data name="Speakers_SpeakerName" xml:space="preserve">
+    <value>Speaker name</value>
+  </data>
+  <data name="Speakers_RemovesFromListNamesAlready" xml:space="preserve">
+    <value>Removes '{0}' from the list. Names already written in the script stay (the speaker field is free text).</value>
+  </data>
+  <data name="Speakers_DeleteSpeaker" xml:space="preserve">
+    <value>Delete speaker</value>
+  </data>
+  <data name="Speakers_RemovedSpeakerFromListNames" xml:space="preserve">
+    <value>Removed speaker '{0}' from the list — names already written in the script stay.</value>
+  </data>
+  <data name="Side_SelectedChoiceIsGoneSelect" xml:space="preserve">
+    <value>The selected choice is gone — select it again on the board</value>
+  </data>
+  <data name="Side_Choice" xml:space="preserve">
+    <value>Choice · {0} → {1}</value>
+  </data>
+  <data name="Side_EditTextHereAndConditions" xml:space="preserve">
+    <value>Edit the text here, and conditions · stat changes in the [Structure] tab</value>
+  </data>
+  <data name="Side_ShowCondition" xml:space="preserve">
+    <value>Show condition</value>
+  </data>
+  <data name="Side_OtherwiseItIsnTListed" xml:space="preserve">
+    <value>{0} — otherwise it isn't listed</value>
+  </data>
+  <data name="Side_UnlockCondition" xml:space="preserve">
+    <value>Unlock condition</value>
+  </data>
+  <data name="Side_OtherwiseItSShownLocked" xml:space="preserve">
+    <value>{0} — otherwise it's shown locked</value>
+  </data>
+  <data name="Side_LockedHint" xml:space="preserve">
+    <value>Locked hint</value>
+  </data>
+  <data name="Side_StatChange" xml:space="preserve">
+    <value>Stat change</value>
+  </data>
+  <data name="Side_NoConditionsOrStatChanges" xml:space="preserve">
+    <value>No conditions or stat changes.</value>
+  </data>
+  <data name="Side_EditThisChoiceInStructure" xml:space="preserve">
+    <value>Edit this choice in the [Structure] tab</value>
+  </data>
+  <data name="Side_LeaveEmptyForAUTOMoves" xml:space="preserve">
+    <value>Leave empty for AUTO — moves on without player input</value>
+  </data>
+  <data name="Side_Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Side_AUTOMovesOnWithoutPlayer" xml:space="preserve">
+    <value>AUTO — moves on without player input. Writing text makes it a choice.</value>
+  </data>
+  <data name="Side_AUTOMovesOnWithoutPlayer2" xml:space="preserve">
+    <value>AUTO — moves on without player input.</value>
+  </data>
+  <data name="Side_NoTextChoiceNeedsText" xml:space="preserve">
+    <value>⚠ No text — a choice needs text.</value>
+  </data>
+  <data name="Side_TextWasnTClearedChoices" xml:space="preserve">
+    <value>The text wasn't cleared — choices of an episode with two or more paths need text. Only a single path can be an auto path (AUTO).</value>
+  </data>
+  <data name="Side_ClearingTextMadeItAuto" xml:space="preserve">
+    <value>Clearing the text made it an auto path (AUTO) — moves on without player input. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_AutoPathBecameChoiceUndo" xml:space="preserve">
+    <value>The auto path became the choice “{0}”. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_ChangedChoiceTextToUndo" xml:space="preserve">
+    <value>Changed the choice text to “{0}”. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_ReselectChoice" xml:space="preserve">
+    <value>Reselect choice</value>
+  </data>
+  <data name="Side_Branch" xml:space="preserve">
+    <value>Branch · {0} → {1}</value>
+  </data>
+  <data name="Side_BranchCardVisitedAndReturned" xml:space="preserve">
+    <value>A branch card visited and returned from</value>
+  </data>
+  <data name="Side_ChooseConditionAtTopOf" xml:space="preserve">
+    <value> Choose the condition at the top of the script after selecting branch card “{0}”.</value>
+  </data>
+  <data name="Side_OpenInStructureTab" xml:space="preserve">
+    <value>Open in [Structure] tab</value>
+  </data>
+  <data name="Notes_WriteFreelyAboutThisScene" xml:space="preserve">
+    <value>Write freely about this scene — what to show · each character's feelings (start → end) · the line where the feeling turns · who's on stage · place · time. Don't write staging (movements · expression names).</value>
+  </data>
+  <data name="Notes_NotesDirectionsForThisEpisode" xml:space="preserve">
+    <value>Notes · directions for this episode only</value>
+  </data>
+  <data name="Notes_SceneNote" xml:space="preserve">
+    <value>Scene note</value>
+  </data>
+  <data name="Notes_EpisodeDirection" xml:space="preserve">
+    <value>Episode direction</value>
+  </data>
+  <data name="Notes_ChooseEpisodeInSceneAnd" xml:space="preserve">
+    <value>Choose an episode in the scene and write directions just for it. The card stays even if the direction is empty — remove it with [Remove]. Enter is a new line; Ctrl+Enter applies and Esc reverts.</value>
+  </data>
+  <data name="Notes_Episode" xml:space="preserve">
+    <value>＋ Episode</value>
+  </data>
+  <data name="Notes_EveryEpisodeInSceneHas" xml:space="preserve">
+    <value>Every episode in the scene has a card</value>
+  </data>
+  <data name="Notes_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Notes_DeletesThisEpisodeSDirection" xml:space="preserve">
+    <value>Deletes this episode's direction and removes the card — Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Notes_RemoveEpisodeDirection" xml:space="preserve">
+    <value>Remove episode direction</value>
+  </data>
+  <data name="Notes_RemovedDirectionCardForUndo" xml:space="preserve">
+    <value>Removed the direction card for '{0}'. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Notes_EpisodeCard" xml:space="preserve">
+    <value>Episode card</value>
+  </data>
+  <data name="Notes_OrphanedSceneNote" xml:space="preserve">
+    <value>Orphaned scene note</value>
+  </data>
+  <data name="Notes_NoteWhoseSceneNoLonger" xml:space="preserve">
+    <value>A note whose scene no longer has episodes. Bring the scene back under the same name and it becomes that scene's note again.</value>
+  </data>
+  <data name="Notes_DeleteOrphanedNote" xml:space="preserve">
+    <value>Delete orphaned note</value>
+  </data>
+  <data name="Notes_DeletedNoteForSceneUndo" xml:space="preserve">
+    <value>Deleted the note for scene '{0}'. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Notes_NameOnly" xml:space="preserve">
+    <value> — (name only)</value>
+  </data>
+  <data name="Side_Conditions" xml:space="preserve">
+    <value>Conditions</value>
+  </data>
+  <data name="Side_NamesToPickForPath" xml:space="preserve">
+    <value>Names to pick for a path's show condition · unlock condition — name them by meaning (e.g. when you've become close to Harin). Expressions are set in the [Structure] tab. With no expression it's “Undecided” and always passes.</value>
+  </data>
+  <data name="Side_ThisChapterHasNoConditions" xml:space="preserve">
+    <value>This chapter has no conditions yet.</value>
+  </data>
+  <data name="Side_NewConditionName" xml:space="preserve">
+    <value>New condition name</value>
+  </data>
+  <data name="Side_EnterAlsoAddsExpressionStarts" xml:space="preserve">
+    <value>Enter also adds. The expression starts empty (Undecided — always passes) — fill it in the [Structure] tab.</value>
+  </data>
+  <data name="Side_AddCondition" xml:space="preserve">
+    <value>Add condition</value>
+  </data>
+  <data name="Side_TypeConditionName" xml:space="preserve">
+    <value>Type a condition name.</value>
+  </data>
+  <data name="Side_ConditionAlreadyExists" xml:space="preserve">
+    <value>Condition '{0}' already exists.</value>
+  </data>
+  <data name="Side_AddedConditionUndecidedAlwaysPasses" xml:space="preserve">
+    <value>Added condition '{0}' — Undecided (always passes). Fill in the expression in the [Structure] tab.</value>
+  </data>
+  <data name="Side_ConditionName" xml:space="preserve">
+    <value>Condition name</value>
+  </data>
+  <data name="Side_CouldnTRenameIt" xml:space="preserve">
+    <value>Couldn't rename it.</value>
+  </data>
+  <data name="Side_Condition" xml:space="preserve">
+    <value>Condition '{0}' → '{1}'.</value>
+  </data>
+  <data name="Side_ConditionPathsFollowed" xml:space="preserve">
+    <value>Condition '{0}' → '{1}' — {2} paths followed.</value>
+  </data>
+  <data name="Side_DeletesIfItSUsed" xml:space="preserve">
+    <value>Deletes '{0}' — if it's used somewhere, it says where and refuses.</value>
+  </data>
+  <data name="Side_DeleteCondition" xml:space="preserve">
+    <value>Delete condition</value>
+  </data>
+  <data name="Side_DeletedConditionUndoCtrlZ" xml:space="preserve">
+    <value>Deleted condition '{0}'. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_UndecidedAlwaysPasses" xml:space="preserve">
+    <value>⚠ Undecided — always passes</value>
+  </data>
+  <data name="Side_Expression" xml:space="preserve">
+    <value>Expression </value>
+  </data>
+  <data name="Hierarchy_FindInHierarchy" xml:space="preserve">
+    <value>Find in Hierarchy</value>
+  </data>
+  <data name="Hierarchy_Note" xml:space="preserve">
+    <value>note</value>
+  </data>
+  <data name="Hierarchy_NothingMatches" xml:space="preserve">
+    <value>Nothing matches “{0}”.</value>
+  </data>
+  <data name="Hierarchy_NoProject" xml:space="preserve">
+    <value>No project.</value>
+  </data>
+  <data name="Hierarchy_OpenOrCreateProjectAnd" xml:space="preserve">
+    <value>Open or create a project and its chapters appear here.</value>
+  </data>
+  <data name="Hierarchy_OpenOrCreateProjectAnd2" xml:space="preserve">
+    <value>Open or create a project and its chapters appear here — [Open…] · [New project…] in the middle of the board.</value>
+  </data>
+  <data name="Hierarchy_NoChaptersCreateOneIn" xml:space="preserve">
+    <value>No chapters. Create one in the [Script] tab.</value>
+  </data>
+  <data name="Hierarchy_NoChaptersCreateOneWith" xml:space="preserve">
+    <value>No chapters. Create one with right-click “Add chapter” or [＋ Create first chapter] in the middle of the board.</value>
+  </data>
+  <data name="Hierarchy_ThereAreTwoEntrancesFrom" xml:space="preserve">
+    <value>There are two entrances from outside — a scene must start in one place.</value>
+  </data>
+  <data name="Hierarchy_ThisChapterHasErrorsSee" xml:space="preserve">
+    <value>This chapter has errors — see the validation report below.</value>
+  </data>
+  <data name="Hierarchy_Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Hierarchy_FoldThisChapterOnBoard" xml:space="preserve">
+    <value>Fold this chapter on the board — it becomes one table and paths attach to its rows.</value>
+  </data>
+  <data name="Hierarchy_UnfoldThisChapterOnBoard" xml:space="preserve">
+    <value>Unfold this chapter on the board.</value>
+  </data>
+  <data name="Hierarchy_FoldJustThisSceneOn" xml:space="preserve">
+    <value>Fold just this scene on the board — it's simplified to a list of rows and paths attach to them.</value>
+  </data>
+  <data name="Hierarchy_UnfoldThisSceneOnBoard" xml:space="preserve">
+    <value>Unfold this scene on the board.</value>
+  </data>
+  <data name="Hierarchy_ChapterIsFoldedClickTo" xml:space="preserve">
+    <value>The chapter is folded — click to unfold the chapter and show this scene.</value>
+  </data>
+  <data name="Hierarchy_SceneStartWhereRollbackReturns" xml:space="preserve">
+    <value>Scene start — where rollback returns and Continue resumes.</value>
+  </data>
+  <data name="Hierarchy_WhileSearchingEverythingIsExpanded" xml:space="preserve">
+    <value>While searching, everything is expanded — clear the search to return to how you folded it.</value>
+  </data>
+  <data name="Hierarchy_CollapseExpand" xml:space="preserve">
+    <value>Collapse / expand</value>
+  </data>
+  <data name="Hierarchy_Collapse" xml:space="preserve">
+    <value>Collapse</value>
+  </data>
+  <data name="Hierarchy_Move" xml:space="preserve">
+    <value>Move</value>
+  </data>
+  <data name="Hierarchy_FindNameID" xml:space="preserve">
+    <value>Find — name · ID</value>
+  </data>
+  <data name="Hierarchy_FindsEpisodesScenesChaptersBy" xml:space="preserve">
+    <value>Finds episodes · scenes · chapters by name or ID — typing only the initial consonants works too (“ㅅㅌ”). While you type, only matching rows and their parents remain. Enter · ↓ go to the first row; Esc clears.</value>
+  </data>
+  <data name="Branch_ConditionsAreChosenOnBranch" xml:space="preserve">
+    <value>Conditions are chosen on the branch card — in the [Script] tab select that card and use the box above the script; in the [Structure] tab click its chip.</value>
+  </data>
+  <data name="Branch_ConditionUndecided" xml:space="preserve">
+    <value>⑂ Condition: {0} (undecided)</value>
+  </data>
+  <data name="Branch_Condition" xml:space="preserve">
+    <value>⑂ Condition: {0}</value>
+  </data>
+  <data name="Branch_ConditionWrittenByHand" xml:space="preserve">
+    <value>⑂ Condition: written by hand</value>
+  </data>
+  <data name="Branch_NoCondition" xml:space="preserve">
+    <value>⑂ No condition</value>
+  </data>
+  <data name="Branch_ConditionItSUndecidedSo" xml:space="preserve">
+    <value>Condition “{0}” — it's undecided, so for now it's always visited. Fill in the expression in the [Structure] tab and it plays only when that holds.</value>
+  </data>
+  <data name="Branch_PlaysOnlyWhenConditionHolds" xml:space="preserve">
+    <value>Plays only when condition “{0}” holds — otherwise it visits and returns right away.</value>
+  </data>
+  <data name="Branch_ThereSConditionWrittenBy" xml:space="preserve">
+    <value>There's a condition written by hand in the dialogue editor — the [Structure] tab only reads it.</value>
+  </data>
+  <data name="Branch_ForNowItSAlways" xml:space="preserve">
+    <value>For now it's always visited, without a condition.</value>
+  </data>
+  <data name="Branch_Always" xml:space="preserve">
+    <value>(always)</value>
+  </data>
+  <data name="Branch_Undecided" xml:space="preserve">
+    <value>{0} (undecided)</value>
+  </data>
+  <data name="Branch_UndecidedAlwaysPassesForNow" xml:space="preserve">
+    <value>Undecided — always passes for now. Fill in the expression in the [Structure] tab and this branch follows it.</value>
+  </data>
+  <data name="Branch_ChooseThisBranchSCondition" xml:space="preserve">
+    <value>Choose this branch's condition — it's visited only when the condition holds. Add condition names by clicking the chapter row in the Hierarchy.</value>
+  </data>
+  <data name="Branch_BranchCondition" xml:space="preserve">
+    <value>Branch condition</value>
+  </data>
+  <data name="Branch_RemovedConditionOfItS" xml:space="preserve">
+    <value>Removed the condition of '{0}' — it's always visited. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Branch_SetConditionOnItS" xml:space="preserve">
+    <value>Set condition '{1}' on '{0}' — it's undecided, so for now it's always visited. Fill in the expression in the [Structure] tab and it follows it.</value>
+  </data>
+  <data name="Branch_IsVisitedOnlyWhenCondition" xml:space="preserve">
+    <value>'{0}' is visited only when condition '{1}' holds. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="Side_ThisChapterHasNoStats3" xml:space="preserve">
+    <value>This chapter has no stats — declare them first in the stat table of the “Conditions &amp; stats” tab.</value>
+  </data>
+  <data name="Side_CrossingThisPathDoesnT" xml:space="preserve">
+    <value>Crossing this path doesn't change any stat.</value>
+  </data>
+  <data name="Side_StatChange2" xml:space="preserve">
+    <value>＋ Stat change</value>
+  </data>
+  <data name="Side_AppliedOnceMomentThisPath" xml:space="preserve">
+    <value>Applied once the moment this path is crossed. Only stats declared in the “Conditions &amp; stats” tab can be chosen.</value>
+  </data>
+  <data name="Side_On2" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Side_Off2" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Side_DeletesThisRow" xml:space="preserve">
+    <value>Deletes this row.</value>
+  </data>
+  <data name="Format_ColorsUsedInThisProject" xml:space="preserve">
+    <value>Colors used in this project</value>
+  </data>
+  <data name="Format_RRGGBBTypeItInHex" xml:space="preserve">
+    <value>#RRGGBB — type it in hex and press Enter to apply</value>
+  </data>
+  <data name="Format_Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Format_ApplyThisColor" xml:space="preserve">
+    <value>Apply this color</value>
+  </data>
+  <data name="Format_ChooseRGB" xml:space="preserve">
+    <value>Choose (RGB)</value>
+  </data>
+  <data name="Side_ClearedTitleBranchCardID" xml:space="preserve">
+    <value>Cleared the title — branch card ID '{0}' is shown.</value>
+  </data>
+  <data name="Side_RenamedTitleToBranchCard" xml:space="preserve">
+    <value>Renamed the title to '{0}'. Branch card ID '{2}' stays the same.</value>
+  </data>
+  <data name="Side_ChapterDoesnTExist" xml:space="preserve">
+    <value>Chapter '{0}' doesn't exist.</value>
+  </data>
 </root>

@@ -8,6 +8,7 @@ using Vn.App.Services;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -31,9 +32,8 @@ public partial class MainWindow
             return;
         }
 
-        Heading("조건");
-        Guide("간선의 표시조건 · 해금조건에 고를 이름입니다 — 뜻으로 적습니다(예: 하린과 친해졌을 때). 식은 [구성] 탭에서 정합니다. " +
-              "식이 비면 「식 미정」으로 항상 통과합니다.");
+        Heading(Ui.Side_Conditions);
+        Guide(Ui.Side_NamesToPickForPath);
 
         var rows = new StackPanel { Spacing = 3 };
 
@@ -44,39 +44,39 @@ public partial class MainWindow
 
         if (chapter.Conditions.Count == 0)
         {
-            Note("이 챕터에는 아직 조건이 없습니다.");
+            Note(Ui.Side_ThisChapterHasNoConditions);
         }
 
         _sheet.Children.Add(rows);
 
-        var addBox = new TextBox { FontSize = 12, PlaceholderText = "새 조건 이름", Tag = "condition-add-name" };
+        var addBox = new TextBox { FontSize = 12, PlaceholderText = Ui.Side_NewConditionName, Tag = "condition-add-name" };
         var addButton = new Button
         {
-            Content = "＋ 추가",
+            Content = Ui.Speakers_Add,
             FontSize = 11,
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "condition-add"
         };
-        ToolTip.SetTip(addButton, "Enter로도 더합니다. 식은 비어 있습니다(식 미정 — 항상 통과) — [구성] 탭에서 채웁니다.");
+        ToolTip.SetTip(addButton, Ui.Side_EnterAlsoAddsExpressionStarts);
 
-        void Add() => UiGuard.Run(_session, "조건 추가", () =>
+        void Add() => UiGuard.Run(_session, Ui.Side_AddCondition, () =>
         {
             string typed = (addBox.Text ?? string.Empty).Trim();
 
             if (typed.Length == 0)
             {
-                _session.SetStatus("조건 이름을 적어 주세요.");
+                _session.SetStatus(Ui.Side_TypeConditionName);
                 return;
             }
 
             if (chapter.Conditions.Any(item => string.Equals(item.Label, typed, StringComparison.Ordinal)))
             {
-                _session.SetStatus($"조건 '{typed}'이 이미 있습니다.");
+                _session.SetStatus(string.Format(Ui.Side_ConditionAlreadyExists, typed));
                 return;
             }
 
             _session.Editor.AddChapterCondition(chapterId, typed, string.Empty);   // 요약이 다시 선다(되돌리기 한 칸)
-            _session.SetStatus($"조건 '{typed}'을 더했습니다 — 식 미정(항상 통과)입니다. 식은 [구성] 탭에서 채웁니다.");
+            _session.SetStatus(string.Format(Ui.Side_AddedConditionUndecidedAlwaysPasses, typed));
             FocusConditionBox("condition-add-name");
         });
 
@@ -103,7 +103,7 @@ public partial class MainWindow
         string label = condition.Label;
         var name = new TextBox { Text = label, FontSize = 12, Tag = "condition-label:" + label };
 
-        void Commit() => UiGuard.Run(_session, "조건 이름", () =>
+        void Commit() => UiGuard.Run(_session, Ui.Side_ConditionName, () =>
         {
             string typed = (name.Text ?? string.Empty).Trim();
 
@@ -118,13 +118,13 @@ public partial class MainWindow
             if (!outcome.Applied)
             {
                 name.Text = label;
-                _session.SetStatus(outcome.Refusal ?? "바꾸지 못했습니다.");
+                _session.SetStatus(outcome.Refusal ?? Ui.Side_CouldnTRenameIt);
                 return;
             }
 
             _session.SetStatus(outcome.Edges == 0
-                ? $"조건 '{label}' → '{typed}'."
-                : $"조건 '{label}' → '{typed}' — 간선 {outcome.Edges}개가 따라갔습니다.");
+                ? string.Format(Ui.Side_Condition, label, typed)
+                : string.Format(Ui.Side_ConditionPathsFollowed, label, typed, outcome.Edges));
         });
 
         name.LostFocus += (_, _) => Commit();
@@ -149,19 +149,19 @@ public partial class MainWindow
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "condition-remove:" + label
         };
-        ToolTip.SetTip(remove, $"'{label}'를 지웁니다 — 쓰는 곳이 있으면 어디인지 말하고 거절합니다.");
-        remove.Click += (_, _) => UiGuard.Run(_session, "조건 삭제", () =>
+        ToolTip.SetTip(remove, string.Format(Ui.Side_DeletesIfItSUsed, label));
+        remove.Click += (_, _) => UiGuard.Run(_session, Ui.Side_DeleteCondition, () =>
         {
             ChapterConditionRemoveOutcome outcome = _session.Editor.RemoveChapterCondition(chapterId, label);
             _session.SetStatus(outcome.Applied
-                ? $"조건 '{label}'을 지웠습니다. 되돌리기(Ctrl+Z)로 돌아옵니다."
+                ? string.Format(Ui.Side_DeletedConditionUndoCtrlZ, label)
                 : ChapterGraphView.Explain(outcome.Refusal, outcome.Uses));
         });
 
         bool undecided = string.IsNullOrWhiteSpace(condition.Expression);
         var expression = new TextBlock
         {
-            Text = undecided ? "⚠ 식 미정 — 항상 통과합니다" : "식 " + condition.Expression.Trim(),
+            Text = undecided ? Ui.Side_UndecidedAlwaysPasses : Ui.Side_Expression + condition.Expression.Trim(),
             FontSize = 10,
             Opacity = 0.6,
             Margin = new Thickness(4, 1, 0, 0),

@@ -11,6 +11,7 @@ using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
+using Vn.App.Strings;
 
 namespace Vn.App;
 
@@ -69,7 +70,7 @@ public partial class MainWindow
     private void FillSpeakerTab() => FillSheet(DirectorSpeakers, () =>
     {
         SpeakerList();
-        OpenInChapterGraph(HierarchyPick.Project, "[구성] 탭에서 캐릭터 키 잇기");
+        OpenInChapterGraph(HierarchyPick.Project, Ui.Side_LinkCharacterKeysInStructure);
     });
 
     /// <summary>「조건 및 스탯」 탭이 보이는 챕터 — 활성 판의 챕터다(툴바 콤보 · 탭의 작은 드롭다운과 같은 값).</summary>
@@ -83,17 +84,17 @@ public partial class MainWindow
     {
         if (ConditionTabChapter is not { } chapter)
         {
-            Guide("챕터를 고르면 그 챕터의 조건 · 스탯이 여기 섭니다.", "고른 챕터가 없습니다.");
+            Guide(Ui.Side_SelectChapterToSeeIts, Ui.Side_NoChapterSelected);
             return;
         }
 
         ChapterNameBox(chapter);
-        Guide("스탯과 조건의 식은 [구성] 탭에서 정합니다.");
+        Guide(Ui.Side_StatsAndConditionExpressionsAre);
         StatTable(chapter.Model.Stats);
 
         // 조건 이름은 여기서 더하고 고치고 지운다(writer-fields W4). 식은 [구성] 탭이다.
         ConditionList(chapter.ChapterId);
-        OpenInChapterGraph(new HierarchyPick(HierarchyKind.Chapter, chapter.ChapterId), "[구성] 탭에서 조건 · 스탯 열기");
+        OpenInChapterGraph(new HierarchyPick(HierarchyKind.Chapter, chapter.ChapterId), Ui.Side_OpenConditionsStatsInStructure);
     });
 
     /// <summary>
@@ -109,12 +110,12 @@ public partial class MainWindow
             Text = shown,
             FontSize = 13,
             FontWeight = FontWeight.SemiBold,
-            PlaceholderText = "챕터 이름 (비우면 챕터 ID)",
+            PlaceholderText = Ui.Side_ChapterNameEmptyShowsChapter,
             Tag = "chapter-name"
         };
-        ToolTip.SetTip(box, $"게임에 보이는 챕터 이름입니다. 고치고 Enter. 비우면 챕터 ID({chapterId})가 보입니다. ID는 [구성] 탭에서 정합니다.");
+        ToolTip.SetTip(box, string.Format(Ui.Side_ChapterNameShownInGame, chapterId));
 
-        void Commit() => UiGuard.Run(_session, "챕터 이름", () =>
+        void Commit() => UiGuard.Run(_session, Ui.Side_ChapterName, () =>
         {
             string wanted = (box.Text ?? string.Empty).Trim();
 
@@ -144,7 +145,7 @@ public partial class MainWindow
         }, RoutingStrategies.Tunnel);
 
         // 칸 이름 — 머리(「챕터 단위 조건 · 스탯」) 바로 아래 맨 칸이 무엇인지 말한다. 칸 이름이라 설명 간소화에도 남는다.
-        _sheet.Children.Add(new TextBlock { Text = "챕터 이름", FontSize = 11, Opacity = 0.65 });
+        _sheet.Children.Add(new TextBlock { Text = Ui.Side_ChapterName, FontSize = 11, Opacity = 0.65 });
         _sheet.Children.Add(box);
     }
 
@@ -191,7 +192,7 @@ public partial class MainWindow
         ChapterGraph.SideDock.Changed += value => OnSideDockChanged(Graph.SideDock, value);
         Graph.SideDock.Changed += value => OnSideDockChanged(ChapterGraph.SideDock, value);
 
-        Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, "하이어아키", () =>
+        Graph.HierarchyView.Picked += pick => UiGuard.Run(_session, Ui.Keys_Hierarchy, () =>
         {
             OnDirectorHierarchyPicked(pick);
 
@@ -204,46 +205,46 @@ public partial class MainWindow
         });
 
         // 판에서 고른 선 — 인스펙터가 그 선을 설명한다(MainWindow.LineInspector.cs).
-        Graph.LineSelected += line => UiGuard.Run(_session, "선 고르기", () => OnDirectorLinePicked(line));
+        Graph.LineSelected += line => UiGuard.Run(_session, Ui.Side_SelectLines, () => OnDirectorLinePicked(line));
 
         // 눈 기둥은 연출 그래프의 하이어아키에만 — 접을 판이 거기 있다(SF2 · docs/plans/hierarchy.md §3).
         Graph.HierarchyView.EyeOf = DirectorEyeOf;
-        Graph.HierarchyView.EyeToggled += row => UiGuard.Run(_session, "보이기", () => OnDirectorEyeToggled(row));
+        Graph.HierarchyView.EyeToggled += row => UiGuard.Run(_session, Ui.Side_Show, () => OnDirectorEyeToggled(row));
 
         // 두 하이어아키의 차림표 · 이름 고치기는 같은 규칙 한 벌로 한다(HY4 — MainWindow.HierarchyEdit.cs).
         foreach (StoryHierarchy tree in new[] { ChapterGraph.HierarchyView, Graph.HierarchyView })
         {
             tree.CommandRequested += (command, row, anchor) =>
-                UiGuard.Run(_session, "하이어아키 차림표", () => OnHierarchyCommand(command, row, anchor));
+                UiGuard.Run(_session, Ui.Side_HierarchyMenu, () => OnHierarchyCommand(command, row, anchor));
             tree.RenameRequested += (row, name) =>
-                UiGuard.Run(_session, "이름 바꾸기", () => OnHierarchyRename(tree, row, name));
+                UiGuard.Run(_session, Ui.Board_Rename, () => OnHierarchyRename(tree, row, name));
             tree.Dropped += (source, target) =>
-                UiGuard.Run(_session, "장면 옮기기", () => OnHierarchyDropped(source, target));
+                UiGuard.Run(_session, Ui.Side_MoveScene, () => OnHierarchyDropped(source, target));
 
             // 옮기면 장면 입구가 둘이 되는 이동은 받지 않고 까닭을 말한다(usability UX37 — SceneMoveGuard). 끄는 동안과 놓을 때 같은 판정이다.
             tree.MoveRefusal = HierarchyMoveRefusal;
-            tree.MoveRefused += reason => UiGuard.Run(_session, "장면 옮기기", () => _session.SetStatus(reason));
+            tree.MoveRefused += reason => UiGuard.Run(_session, Ui.Side_MoveScene, () => _session.SetStatus(reason));
         }
 
         // 카드를 두 번 누르면 다른 탭의 같은 에피소드로 간다.
         ChapterGraph.EpisodeOpened += (chapterId, episodeId) =>
-            UiGuard.Run(_session, "[대본] 탭으로", () => OpenInDirector(chapterId, episodeId));
-        ChapterGraph.BranchCardOpened += nodeId => UiGuard.Run(_session, "[대본] 탭으로", () => OpenBranchInDirector(nodeId));
-        Graph.CardOpened += nodeId => UiGuard.Run(_session, "[구성] 탭으로", () => OpenInChapterGraph(nodeId));
+            UiGuard.Run(_session, Ui.Side_ToScriptTab, () => OpenInDirector(chapterId, episodeId));
+        ChapterGraph.BranchCardOpened += nodeId => UiGuard.Run(_session, Ui.Side_ToScriptTab, () => OpenBranchInDirector(nodeId));
+        Graph.CardOpened += nodeId => UiGuard.Run(_session, Ui.Side_ToStructureTab, () => OpenInChapterGraph(nodeId));
 
         // 판의 빈 곳을 누르면 하이어아키에서 그 줄을 고른 것과 같다(2026-11-17) — 장면 영역은 메모 공간, 챕터 영역은 스탯 · 조건,
         // 챕터 밖의 빈 판은 화자.
-        Graph.AreaPicked += pick => UiGuard.Run(_session, "판", () => PickInDirector(pick));
+        Graph.AreaPicked += pick => UiGuard.Run(_session, Ui.Side_Board, () => PickInDirector(pick));
 
         // [대본] 툴바의 [삭제]가 고른 챕터 · 장면을 지우자고 한다 — 확인 칸은 셸이 띄운다(챕터 · 장면 지우기는 셸의 일이다).
-        Graph.RemoveRequested += (pick, anchor) => UiGuard.Run(_session, "삭제", () => OnDirectorRemoveRequested(pick, anchor));
+        Graph.RemoveRequested += (pick, anchor) => UiGuard.Run(_session, Ui.Board_Delete, () => OnDirectorRemoveRequested(pick, anchor));
 
         // [대본] 판의 챕터 밖 빈 곳 우클릭 「챕터 추가」 — 하이어아키의 「챕터 추가」와 같다(세우고 고른다).
-        Graph.ChapterAddRequested += at => UiGuard.Run(_session, "챕터 추가", () => CreateChapterNow(at));
-        Graph.FirstChapterRequested += () => UiGuard.Run(_session, "챕터 추가", () => CreateChapterNow(null));
+        Graph.ChapterAddRequested += at => UiGuard.Run(_session, Ui.Board_AddChapter, () => CreateChapterNow(at));
+        Graph.FirstChapterRequested += () => UiGuard.Run(_session, Ui.Board_AddChapter, () => CreateChapterNow(null));
 
         // [구성] 빈 판의 단추는 [대본] 탭으로 데려가 거기서 만든다 — 만드는 일은 [대본]의 것이다(first-chapter F2).
-        ChapterGraph.FirstChapterRequested += () => UiGuard.Run(_session, "챕터 추가", () =>
+        ChapterGraph.FirstChapterRequested += () => UiGuard.Run(_session, Ui.Board_AddChapter, () =>
         {
             MainTabs.SelectedItem = GraphTabItem;
             CreateChapterNow(null);
@@ -251,12 +252,12 @@ public partial class MainWindow
 
         // 선택지 간선도 두 번 누르면 다른 탭의 같은 간선으로 간다.
         ChapterGraph.ChoiceOpened += (chapterId, from, to, label) =>
-            UiGuard.Run(_session, "[대본] 탭으로", () => OpenChoiceInDirector(chapterId, from, to, label));
+            UiGuard.Run(_session, Ui.Side_ToScriptTab, () => OpenChoiceInDirector(chapterId, from, to, label));
         Graph.ChoiceOpened += (chapterId, from, to, label) =>
-            UiGuard.Run(_session, "[구성] 탭으로", () => OpenChoiceInChapterGraph(chapterId, from, to, label));
+            UiGuard.Run(_session, Ui.Side_ToStructureTab, () => OpenChoiceInChapterGraph(chapterId, from, to, label));
 
         // 챕터 그래프에서 고른 에피소드가 세션의 선택(그 카드)이 된다 — 연출 그래프로 넘어가도 같은 것을 본다.
-        ChapterGraph.EpisodePicked += (chapterId, episodeId) => UiGuard.Run(_session, "선택 맞추기", () =>
+        ChapterGraph.EpisodePicked += (chapterId, episodeId) => UiGuard.Run(_session, Ui.Side_UpdateSelection, () =>
         {
             if (_syncingSelection || EpisodeNaming.CardFor(_session.Project, chapterId, episodeId) is not { } card)
             {
@@ -341,7 +342,7 @@ public partial class MainWindow
         MainTabs.SelectedItem = GraphTabItem;
         _session.SelectFile(_session.EnsureChapterBoard(chapterId), reveal: false);
         Dispatcher.UIThread.Post(
-            () => UiGuard.Run(_session, "[대본] 탭으로", () => Graph.SelectChoiceRail(chapterId, from, to, label)),
+            () => UiGuard.Run(_session, Ui.Side_ToScriptTab, () => Graph.SelectChoiceRail(chapterId, from, to, label)),
             DispatcherPriority.Background);
     }
 
@@ -573,12 +574,12 @@ public partial class MainWindow
         {
             // 에피소드 카드는 「{챕터} - {장면}」이다. 부제는 두지 않는다.
             Graph.SetInspectorHeader(
-                PickOf(dialogue) is not null ? EpisodeHeader(dialogue) : $"대사 노드 · {dialogue.Name}",
+                PickOf(dialogue) is not null ? EpisodeHeader(dialogue) : string.Format(Ui.Side_DialogueNode, dialogue.Name),
                 string.Empty);
         }
         else
         {
-            Graph.SetInspectorHeader("인스펙터", "하이어아키나 판에서 고르면 여기서 편집합니다");
+            Graph.SetInspectorHeader(Ui.Board_Inspector, Ui.Side_SelectSomethingInHierarchyOr);
         }
 
         // 요약이 선 줄(프로젝트 · 챕터 · 장면) — [삭제]가 무엇을 지울지 본다(2026-11-18 소유자).
@@ -610,8 +611,8 @@ public partial class MainWindow
             case HierarchyKind.Project:
             {
                 // 화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭에 늘 서 있다(side-tabs V3) — 여기는 그 안내뿐이다.
-                Graph.SetInspectorHeader("프로젝트", string.Empty);
-                Guide("화자는 「화자」 탭, 조건 · 스탯은 「조건 및 스탯」 탭(챕터마다)에서 다룹니다.");
+                Graph.SetInspectorHeader(Ui.Side_Project, string.Empty);
+                Guide(Ui.Side_SpeakersAreInSpeakersTab);
                 break;
             }
 
@@ -621,7 +622,7 @@ public partial class MainWindow
                 // chapter-pick Y1, ⛔ 그 전에는 이 머리가 이름 칸이었다 — M3). 챕터를 고르면 그 탭이 열린다 — 이 보기는 탭을 손으로 열었을 때다.
                 Graph.SetInspectorHeader(chapter.Model.ShownName, string.Empty);
                 ChapterTextAmount(chapter);
-                Guide("이 챕터의 이름 · 스탯 · 조건은 「조건 및 스탯」 탭에 있습니다.");
+                Guide(Ui.Side_ThisChapterSNameStats);
                 OrphanSceneNotes(chapter.ChapterId);
 
                 // 장면 · 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자).
@@ -638,8 +639,8 @@ public partial class MainWindow
                 Graph.SetInspectorNameEditor(
                     StoryHierarchy.SceneKey(sceneChapterId, sceneId),
                     scene.DisplayName,
-                    "장면 이름 (비우면 장면 ID)",
-                    $"장면 이름입니다. 고치고 Enter. 비우면 장면 ID({sceneId})가 보입니다. 같은 이름의 장면이 있어도 합쳐지지 않습니다.",
+                    Ui.Side_SceneNameEmptyShowsScene,
+                    string.Format(Ui.Side_SceneNameEditAndPress, sceneId),
                     name => RenameScene(sceneChapterId, sceneId, name));
 
                 // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가
@@ -650,7 +651,7 @@ public partial class MainWindow
             }
 
             default:
-                Graph.SetInspectorHeader("인스펙터", "고른 것이 사라졌습니다 — 하이어아키에서 다시 고르세요");
+                Graph.SetInspectorHeader(Ui.Board_Inspector, Ui.Side_SelectedItemIsGoneSelect);
                 break;
         }
     }
@@ -663,14 +664,14 @@ public partial class MainWindow
     /// </summary>
     private void ChapterTextAmount(ChapterEntry chapter)
     {
-        Heading("쓴 글");
+        Heading(Ui.Side_TextWritten);
         var total = new TextBlock
         {
             FontSize = 20,
             FontWeight = FontWeight.SemiBold,
             Tag = "chapter-characters"
         };
-        ToolTip.SetTip(total, "이 챕터의 에피소드 · 분기 카드에 쓴 대사 · 지문의 글자 수입니다(공백 포함). 화자 이름은 세지 않습니다.");
+        ToolTip.SetTip(total, Ui.Side_CharactersOfDialogueNarrationWritten);
         var detail = new TextBlock
         {
             FontSize = 11,
@@ -698,8 +699,8 @@ public partial class MainWindow
 
         ChapterTextCount count = ChapterScripts.Count(document.ToGraphModel(shown.ChapterId), _session.Project);
         System.Globalization.CultureInfo number = System.Globalization.CultureInfo.InvariantCulture;
-        shown.Total.Text = count.Characters.ToString("N0", number) + "자";
-        shown.Detail.Text = $"공백 제외 {count.CharactersWithoutSpaces.ToString("N0", number)}자 · {count.Lines.ToString("N0", number)}줄";
+        shown.Total.Text = count.Characters.ToString("N0", number) + Ui.Side_Characters;
+        shown.Detail.Text = string.Format(Ui.Side_WithoutSpacesLines, count.CharactersWithoutSpaces.ToString("N0", number), count.Lines.ToString("N0", number));
     }
 
     /// <summary>요약 칸의 작은 제목 — 챕터 요약의 「쓴 글」 · 「스탯」 · 「장면」.</summary>
@@ -717,11 +718,11 @@ public partial class MainWindow
     /// </summary>
     private void StatTable(IReadOnlyList<ChapterStat> stats)
     {
-        Heading("스탯 — 대사에 붙여 쓰기");
+        Heading(Ui.Side_StatsPasteIntoDialogue);
 
         if (stats.Count == 0)
         {
-            Guide("이 챕터에는 아직 스탯이 없습니다 — [구성] 탭에서 더합니다.", "이 챕터에는 아직 스탯이 없습니다.");
+            Guide(Ui.Side_ThisChapterHasNoStats, Ui.Side_ThisChapterHasNoStats2);
             return;
         }
 
@@ -742,9 +743,9 @@ public partial class MainWindow
         TextBlock Head(string text) => new() { Text = text, FontSize = 10, Opacity = 0.6 };
 
         table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        Cell(Head("스탯"), 0, 0);
-        Cell(Head("범위"), 0, 1);
-        Cell(Head("대본에 쓰는 글"), 0, 2);
+        Cell(Head(Ui.Side_Stat), 0, 0);
+        Cell(Head(Ui.Side_Range), 0, 1);
+        Cell(Head(Ui.Side_TextForScript), 0, 2);
 
         int row = 1;
 
@@ -753,8 +754,8 @@ public partial class MainWindow
             string snippet = ChapterStatScript.InlineRead(stat);
             string name = stat.Key;   // 스탯은 키만 있다(writer-fields W2)
             string range = stat.Type == ChapterStatType.Bool
-                ? "활성/비활성(1/0) · 처음 " + (stat.Initial != 0 ? "활성" : "비활성")   // ⛔ 「참/거짓」(usability UX12)
-                : $"{stat.Minimum}~{stat.Maximum} · 처음 {stat.Initial}";
+                ? Ui.Side_OnOff10Starts + (stat.Initial != 0 ? Ui.Side_On : Ui.Side_Off)   // ⛔ 「참/거짓」(usability UX12)
+                : string.Format(Ui.Side_Starts, stat.Minimum, stat.Maximum, stat.Initial);
 
             table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
             Cell(new TextBlock { Text = name, FontSize = 11, VerticalAlignment = VerticalAlignment.Center }, row, 0);
@@ -771,13 +772,13 @@ public partial class MainWindow
 
             var copy = new Button
             {
-                Content = "복사",
+                Content = Ui.Side_Copy,
                 FontSize = 10,
                 Padding = new Thickness(6, 1),
                 Tag = "stat-copy:" + stat.Key
             };
-            ToolTip.SetTip(copy, $"{snippet}를 복사합니다 — 대사에 붙이면 그 자리에 {name}의 지금 값이 나옵니다.");
-            copy.Click += async (_, _) => await UiGuard.RunAsync(_session, "스탯 복사", () => CopySnippetAsync(snippet, name));
+            ToolTip.SetTip(copy, string.Format(Ui.Side_CopiesPastedIntoDialogueIt, snippet, name));
+            copy.Click += async (_, _) => await UiGuard.RunAsync(_session, Ui.Side_CopyStat, () => CopySnippetAsync(snippet, name));
             Cell(copy, row, 3);
 
             row++;
@@ -790,12 +791,12 @@ public partial class MainWindow
     {
         if (Clipboard is not { } clipboard)
         {
-            _session.SetStatus("클립보드에 접근할 수 없습니다 — 글을 끌어 골라 복사하세요.");
+            _session.SetStatus(Ui.Side_CanTAccessClipboardSelect);
             return;
         }
 
         await clipboard.SetTextAsync(snippet);
-        _session.SetStatus($"{snippet}를 복사했습니다 — 대사에 붙이면 그 자리에 {name}의 지금 값이 나옵니다.");
+        _session.SetStatus(string.Format(Ui.Side_CopiedPastedIntoDialogueIt, snippet, name));
     }
 
     /// <summary>요약 칸에서 고른 것 — 연출 그래프 하이어아키의 그 줄을 누른 것과 같다.</summary>
@@ -837,7 +838,7 @@ public partial class MainWindow
             HorizontalContentAlignment = HorizontalAlignment.Left,
             Tag = tag
         };
-        button.Click += (_, _) => UiGuard.Run(_session, "요약", onClick);
+        button.Click += (_, _) => UiGuard.Run(_session, Ui.Side_Summary, onClick);
         _sheet.Children.Add(button);
     }
 

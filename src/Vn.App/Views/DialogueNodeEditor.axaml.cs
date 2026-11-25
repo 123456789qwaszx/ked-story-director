@@ -10,6 +10,7 @@ using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Script;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -71,7 +72,7 @@ public partial class DialogueNodeEditor : UserControl
 
         // 하이어아키에서 여러 줄을 골랐으면 그 에피소드 카드 모두를 한 번에 켜고 끈다(2026-11-23 소유자 — 「선택 된것들 모두 일괄적으로 키고 꺼지도록」).
         // 섞여 있으면(일부만 켜짐) 체크가 반쯤이고, 누르면 모두 켠다.
-        HideEmptyChoicesBox.IsCheckedChanged += (_, _) => UiGuard.Run(_session, "선택지 칸", () =>
+        HideEmptyChoicesBox.IsCheckedChanged += (_, _) => UiGuard.Run(_session, Ui.Main_ChoiceSlots, () =>
         {
             if (_building || _nodeId is null || _session is null)
             {
@@ -84,7 +85,7 @@ public partial class DialogueNodeEditor : UserControl
         });
 
         // Enter = 바꾸기, Esc = 그만두기 — 하이어아키의 이름 칸과 같은 손짓.
-        NameBox.KeyDown += (_, args) => UiGuard.Run(_session, "이름 바꾸기", () =>
+        NameBox.KeyDown += (_, args) => UiGuard.Run(_session, Ui.Board_Rename, () =>
         {
             if (args.Key == Avalonia.Input.Key.Enter)
             {
@@ -136,7 +137,7 @@ public partial class DialogueNodeEditor : UserControl
 
         var add = new Button
         {
-            Content = "맨 아래에 줄 추가",
+            Content = Ui.Dialogue_AddLineAtEnd,
             FontSize = 11,
             Padding = new Thickness(10, 4),
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -146,7 +147,7 @@ public partial class DialogueNodeEditor : UserControl
         add.Click += (_, _) =>
         {
             flyout.Hide();
-            UiGuard.Run(_session, "줄 추가", AddLineAtEnd);
+            UiGuard.Run(_session, Ui.Dialogue_AddLine, AddLineAtEnd);
         };
         panel.Children.Add(add);
 
@@ -154,7 +155,7 @@ public partial class DialogueNodeEditor : UserControl
 
         panel.Children.Add(new Button
         {
-            Content = "삭제",
+            Content = Ui.Board_Delete,
             FontSize = 11,
             Padding = new Thickness(10, 4),
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -181,7 +182,7 @@ public partial class DialogueNodeEditor : UserControl
     internal void Attach(AuthoringSession session)
     {
         _session = session;
-        session.HiddenChoicesChanged += _ => UiGuard.Run(_session, "선택지 칸", RefreshHideEmpty);
+        session.HiddenChoicesChanged += _ => UiGuard.Run(_session, Ui.Main_ChoiceSlots, RefreshHideEmpty);
     }
 
     /// <summary>
@@ -224,8 +225,8 @@ public partial class DialogueNodeEditor : UserControl
             _hideMixed = hidden > 0 && hidden < targets.Count;
             HideEmptyChoicesBox.IsChecked = _hideMixed ? null : hidden > 0;
             ToolTip.SetTip(HideEmptyChoicesBox, targets.Count > 1
-                ? $"고른 에피소드 카드 {targets.Count}장 모두에 — 켜면 [대본] 탭에서 카드 아래에 이어진 선택지만 보입니다(안 이은 칸은 자동 칸까지 감춥니다)." +
-                  (_hideMixed ? " 지금은 일부만 켜져 있습니다 — 누르면 모두 켭니다." : string.Empty)
+                ? string.Format(Ui.Dialogue_ForAllSelectedEpisodeCards, targets.Count) +
+                  (_hideMixed ? Ui.Dialogue_OnlySomeAreOnNow : string.Empty)
                 : HideEmptyTip);
         }
         finally
@@ -234,9 +235,8 @@ public partial class DialogueNodeEditor : UserControl
         }
     }
 
-    private const string HideEmptyTip =
-        "켜면 [대본] 탭에서 이 카드 아래에 이어진 선택지만 보입니다 — 안 이은 칸은 자동 칸까지 감춥니다. 새로 잇거나 문구를 적으려면 끄세요. " +
-        "하이어아키에서 여러 개를 고르면(Ctrl · Shift+클릭) 그 에피소드 모두에 한 번에 켜고 끕니다.";
+    private static string HideEmptyTip =>
+        Ui.Dialogue_WhenOnOnlyChoicesConnected;
 
     /// <summary>어떤 노드를 편집할지 정하고 화면을 만든다.</summary>
     internal void Show(string? nodeId)
@@ -269,11 +269,10 @@ public partial class DialogueNodeEditor : UserControl
 
             // 에피소드 카드의 이름 칸은 보이는 제목이다(비면 EpisodeId가 보인다). EpisodeId는 [구성] 탭에서 정한다.
             NameBox.Text = EpisodeNaming.ShownNameOf(_session.Project, node);
-            NameBox.PlaceholderText = _chapterEpisode ? "제목 (비우면 에피소드ID)" : "제목 (비우면 분기 카드 ID)";
+            NameBox.PlaceholderText = _chapterEpisode ? Ui.Board_TitleEmptyShowsEpisodeID : Ui.Board_TitleEmptyShowsBranchCard;
             ToolTip.SetTip(NameBox, _chapterEpisode
-                ? $"게임에 보이는 제목입니다. 고치고 Enter. 비우면 에피소드ID({EpisodeNaming.EpisodeIdOf(node)})가 보입니다. " +
-                  "에피소드ID는 [구성] 탭에서 정합니다."
-                : $"분기 카드의 제목입니다. 고치고 Enter. 비우면 분기 카드 ID({node.Name})가 보입니다. ID(= Yarn 노드 이름)는 [구성] 탭에서 정합니다.");
+                ? string.Format(Ui.Dialogue_TitleShownInGameEdit, EpisodeNaming.EpisodeIdOf(node))
+                : string.Format(Ui.Dialogue_BranchCardSTitleEdit, node.Name));
 
             // 선택지 칸은 챕터 판의 에피소드 카드에만 선다 — 체크도 그 카드에만.
             HideEmptyChoicesBox.IsVisible = _chapterEpisode;
@@ -326,7 +325,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 LineHost.Children.Add(new TextBlock
                 {
-                    Text = "'줄 추가'를 누르면 바로 타이핑할 수 있습니다. 긴 대본은 카드 안 글 칸에 붙여 넣습니다.",
+                    Text = Ui.Dialogue_PressAddLineToStart,
                     Opacity = 0.6,
                     TextWrapping = TextWrapping.Wrap
                 });
@@ -417,21 +416,21 @@ public partial class DialogueNodeEditor : UserControl
 
         var flyout = new Flyout { Content = panel };
 
-        Button add = Item("아래에 줄 추가", "이 줄 바로 아래에 새 줄을 끼워 넣습니다.");
+        Button add = Item(Ui.Dialogue_AddLineBelow, Ui.Dialogue_InsertsNewLineRightBelow);
         add.Click += (_, _) =>
         {
             flyout.Hide();
-            UiGuard.Run(_session, "줄 추가", AddLine); // 선택된 줄 아래에 — 위의 SelectLine이 이미 골랐다
+            UiGuard.Run(_session, Ui.Dialogue_AddLine, AddLine); // 선택된 줄 아래에 — 위의 SelectLine이 이미 골랐다
         };
 
         // 추가와 삭제 사이에 구분선 —성격이 반대인 두 동작이 붙어 있으면 헷갈린다.
         panel.Children.Add(MenuSeparator());
 
-        Button remove = Item("삭제", "대본에서 이 줄을 뺍니다.");
+        Button remove = Item(Ui.Board_Delete, Ui.Dialogue_RemovesThisLineFromScript);
         remove.Click += (_, _) =>
         {
             flyout.Hide();
-            UiGuard.Run(_session, "줄 삭제", () => _session!.Editor.RetireScriptLine(nodeId, lineId));
+            UiGuard.Run(_session, Ui.Dialogue_DeleteLine, () => _session!.Editor.RetireScriptLine(nodeId, lineId));
         };
 
         // 분기 조건이 걸린 첫 줄은 지우지 않는다(줄 칸의 [✕ 삭제]와 같은 까닭).
@@ -578,7 +577,7 @@ public partial class DialogueNodeEditor : UserControl
         var text = new TextBox
         {
             Text = resolved.Line.Text,
-            PlaceholderText = "대사",
+            PlaceholderText = Ui.Dialogue_Dialogue,
             AcceptsReturn = false,
             TextWrapping = TextWrapping.NoWrap,
             FontSize = 12,
@@ -636,7 +635,7 @@ public partial class DialogueNodeEditor : UserControl
             speaker = new AutoCompleteBox
             {
                 Text = resolved.Line.Speaker,
-                PlaceholderText = "화자",
+                PlaceholderText = Ui.Dialogue_Speaker,
                 FontSize = 11,
                 MinHeight = 26,
                 ItemsSource = SpeakerNames(),
@@ -659,7 +658,7 @@ public partial class DialogueNodeEditor : UserControl
                 VerticalAlignment = VerticalAlignment.Stretch,
                 Margin = new Thickness(1, 0, 0, 0)
             };
-            ToolTip.SetTip(pick, "등록된 화자 목록에서 선택");
+            ToolTip.SetTip(pick, Ui.Dialogue_ChooseFromRegisteredSpeakers);
             pick.Click += (_, _) => ShowSpeakerFlyout(pick, speakerBox, Commit);
 
             var speakerCell = new Grid
@@ -701,8 +700,7 @@ public partial class DialogueNodeEditor : UserControl
         if (candidates.Count == 0)
         {
             _session!.SetStatus(
-                "등록된 화자가 없습니다 — 오른쪽 「화자」 탭에서 화자를 더하면 여기 목록에 옵니다. " +
-                "그때까지는 화자 칸에 직접 입력하세요.");
+                Ui.Dialogue_NoSpeakersRegisteredAddSpeakers);
             return;
         }
 
@@ -805,7 +803,7 @@ public partial class DialogueNodeEditor : UserControl
             ? AvailableConditionResolver.LayeredLabel(condition)
             : known is not null
                 ? AvailableConditionResolver.UnavailableLabel(known, conditionId)
-                : "알 수 없는 조건";
+                : Ui.Dialogue_UnknownCondition;
     }
 
     /// <summary>
@@ -821,11 +819,11 @@ public partial class DialogueNodeEditor : UserControl
             ConditionTransitionKind.BeginIf or ConditionTransitionKind.BeginElseIf =>
                 (ConditionLabelOf(node, resolved.Branch?.ConditionId ?? string.Empty),
                     resolved.Branch is { } branch ? BranchPalette.Accent(PaletteOf(branch)) : (IBrush)neutral),
-            _ => ("조건 종료", neutral)
+            _ => (Ui.Dialogue_EndOfCondition, neutral)
         };
 
         Border tag = TagChip(label, background);
-        ToolTip.SetTip(tag, $"이 줄의 조건 전환입니다 — 분기 카드의 조건이나 대본 글의 <<if>>로 고칩니다. {BranchConditionNote.Where}");
+        ToolTip.SetTip(tag, string.Format(Ui.Dialogue_ThisLineSConditionSwitch, BranchConditionNote.Where));
 
         return tag;
     }
@@ -887,15 +885,15 @@ public partial class DialogueNodeEditor : UserControl
         var head = new DockPanel { LastChildFill = true };
         head.Children.Add(new TextBlock
         {
-            Text = (count > 1 ? $"⑂ 분기점 {order + 1}/{count}" : "⑂ 분기점") + " — 이어지지 않음",
+            Text = (count > 1 ? string.Format(Ui.Dialogue_BranchPoint, order + 1, count) : Ui.Dialogue_BranchPoint2) + Ui.Dialogue_NotConnected,
             FontSize = 11,
             FontWeight = FontWeight.Bold,
             Foreground = BranchPalette.Accent(palette),
             VerticalAlignment = VerticalAlignment.Center
         });
 
-        Button remove = SmallButton("✕ 분기점 지우기", () => RemoveOpenDetour(node, lineId, order));
-        ToolTip.SetTip(remove, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        Button remove = SmallButton(Ui.Dialogue_DeleteBranchPoint, () => RemoveOpenDetour(node, lineId, order));
+        ToolTip.SetTip(remove, Ui.Dialogue_DeletesUnconnectedBranchPointUndo);
         DockPanel.SetDock(remove, Dock.Right);
         head.Children.Insert(0, remove);
 
@@ -915,7 +913,7 @@ public partial class DialogueNodeEditor : UserControl
                     head,
                     new TextBlock
                     {
-                        Text = "다녀갈 곳이 없어 지나갑니다 — [대본] 판에서 이 분기점을 끌어 카드에 이으면 다시 분기가 됩니다.",
+                        Text = Ui.Dialogue_ThereSNowhereToVisit,
                         FontSize = 10,
                         Opacity = 0.7,
                         TextWrapping = TextWrapping.Wrap,
@@ -924,7 +922,7 @@ public partial class DialogueNodeEditor : UserControl
                 }
             }
         };
-        ToolTip.SetTip(card, "우클릭하면 이 분기점을 지웁니다(✕ 분기점 지우기와 같다). 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        ToolTip.SetTip(card, Ui.Dialogue_RightClickToDeleteThis);
 
         card.PointerPressed += (_, args) =>
         {
@@ -942,10 +940,10 @@ public partial class DialogueNodeEditor : UserControl
 
     /// <summary>이어지지 않은 분기점 하나를 지운다 — 분기점 카드의 [✕] · 우클릭 · ＋ 메뉴가 같은 길이다.</summary>
     private void RemoveOpenDetour(DialogueNode node, string lineId, int position) =>
-        UiGuard.Run(_session!, "분기점 지우기", () =>
+        UiGuard.Run(_session!, Ui.Dialogue_DeleteBranchPoint2, () =>
         {
             _session!.Editor.RemoveOpenDetour(node.Id, lineId, position);
-            _session.SetStatus("이어지지 않은 분기점을 지웠습니다.");
+            _session.SetStatus(Ui.Dialogue_DeletedUnconnectedBranchPoint);
         });
 
     private Control BuildBranchMarkerCard(
@@ -968,7 +966,7 @@ public partial class DialogueNodeEditor : UserControl
         row.Children.Add(new TextBlock
         {
             // 여럿이면 차례를 붙인다 — 위에서부터 다녀온다.
-            Text = count > 1 ? $"⑂ 조건 분기 {order + 1}/{count}" : "⑂ 조건 분기",
+            Text = count > 1 ? string.Format(Ui.Dialogue_ConditionalBranch, order + 1, count) : Ui.Dialogue_ConditionalBranch2,
             FontSize = 11,
             FontWeight = FontWeight.Bold,
             Foreground = BranchPalette.Accent(palette),
@@ -989,8 +987,8 @@ public partial class DialogueNodeEditor : UserControl
         detail.Children.Add(new TextBlock
         {
             Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, targetId, state.Label)) + " " + (lastConnected
-                ? "다녀왔다가 이 줄부터 이어집니다."
-                : "다녀왔다가 다음 분기로 갑니다."),
+                ? Ui.Dialogue_VisitsThenContinuesFromThis
+                : Ui.Dialogue_VisitsThenGoesToNext),
             FontSize = 10,
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
@@ -1012,7 +1010,7 @@ public partial class DialogueNodeEditor : UserControl
             Background = BranchPalette.Background(palette),
             Child = new StackPanel { Children = { head, detail } }
         };
-        ToolTip.SetTip(card, "우클릭하면 이 분기를 지웁니다(✕ 분기 지우기와 같다) — 다녀가던 카드는 남습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+        ToolTip.SetTip(card, Ui.Dialogue_RightClickToDeleteThis2);
 
         card.PointerPressed += (_, args) =>
         {
@@ -1055,7 +1053,7 @@ public partial class DialogueNodeEditor : UserControl
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
         row.Children.Add(new TextBlock
         {
-            Text = "⑂ 조건",
+            Text = Ui.Dialogue_Condition,
             FontSize = 12,
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(0, 0, 8, 0),
@@ -1068,7 +1066,7 @@ public partial class DialogueNodeEditor : UserControl
         BranchConditionHost.Children.Add(new TextBlock
         {
             Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, node.Id, state.Label)) +
-                   " 분기로는 늘 들르고, 이 카드가 첫머리에서 조건을 봅니다.",
+                   Ui.Dialogue_BranchIsAlwaysVisitedAnd,
             FontSize = 10,
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
@@ -1083,19 +1081,18 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>
     /// [✕ 분기 지우기] — 분기 카드와 그 줄의 ＋ 메뉴가 같은 단추를 쓴다. 분기만 지운다 — 카드는 남는다.
     /// </summary>
-    private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId, string label = "✕ 분기 지우기")
+    private Button RemoveBranchButton(DialogueNode node, string lineId, string targetId, string? label = null)
     {
-        Button remove = SmallButton(label, () => RemoveBranch(node, lineId, targetId));
+        Button remove = SmallButton(label ?? Ui.Dialogue_DeleteBranch, () => RemoveBranch(node, lineId, targetId));
         ToolTip.SetTip(
             remove,
-            "이 분기(분기점과 선)만 지웁니다 — 다녀가던 카드는 판에 남습니다. 카드를 없애려면 그 카드를 고르고 [분기 카드 삭제]를 누르세요. " +
-            "되돌리기(Ctrl+Z)로 돌아옵니다.");
+            Ui.Dialogue_DeletesOnlyThisBranchBranch);
         return remove;
     }
 
     /// <summary>그 분기 하나를 지운다 — [✕ 분기 지우기] · 분기 카드 우클릭 · ＋ 메뉴가 같은 길이다.</summary>
     private void RemoveBranch(DialogueNode node, string lineId, string targetId) =>
-        UiGuard.Run(_session!, "분기 지우기", () =>
+        UiGuard.Run(_session!, Ui.Dialogue_DeleteBranch2, () =>
         {
             if (_session!.Editor.RemoveBranchMarker(node.Id, lineId, targetId) is { } removal)
             {
@@ -1122,7 +1119,7 @@ public partial class DialogueNodeEditor : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
-        ToolTip.SetTip(plus, "이 줄 앞에 분기를 더하거나, 줄을 옮기고 지우고 아래에 더합니다. 열고 Tab — [아래에 줄 추가].");
+        ToolTip.SetTip(plus, Ui.Dialogue_AddBranchBeforeThisLine);
         plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, resolved);
 
         // 초점이 ＋에 남아 있으면(차림이 초점을 가져가지 않았다) Tab이 차림 밖 다음 줄로 간다 — 열린 차림의 [아래에 줄 추가]로 데려간다.
@@ -1163,7 +1160,7 @@ public partial class DialogueNodeEditor : UserControl
         //    카드에 포트가 하나 뚫리며, 다녀올 에피소드가 함께 서서 이미 이어진 상태가 된다.
         //    조건이 성립하든 말든 다녀오고, 다녀온 곳이 제 첫머리에서 보고 아니면 곧바로
         //    돌아온다 — "어디서 갈라지는가"만 짚는 것이 연출 그래프의 몫이기 때문이다.
-        Section("분기");
+        Section(Ui.Dialogue_Branch);
 
         // 이미 분기가 있어도 「＋ 분기 추가」가 선다 — 한 줄에 분기가 여럿일 수 있다.
         //    새 분기는 그 뒤에 서고 차례로 다녀온다. 있는 분기는 하나씩 지운다.
@@ -1179,8 +1176,8 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = existing.Count == 1
-                    ? "이 줄 앞에 분기가 하나 있습니다 — 더하면 그 뒤에 서고 차례로 다녀옵니다."
-                    : $"이 줄 앞에 분기가 {existing.Count}개 있습니다 — 위에서부터 차례로 다녀옵니다.",
+                    ? Ui.Dialogue_ThereSOneBranchBefore
+                    : string.Format(Ui.Dialogue_ThereAreBranchesBeforeThis, existing.Count),
                 FontSize = 10,
                 Opacity = 0.6,
                 TextWrapping = TextWrapping.Wrap,
@@ -1190,7 +1187,7 @@ public partial class DialogueNodeEditor : UserControl
             foreach (string target in existing)
             {
                 string name = EpisodeNaming.ShownNameOf(_session!.Project, _session.Project.FindNode(target)!);
-                panel.Children.Add(RemoveBranchButton(node, resolved.Line.LineId, target, $"✕ '{name}' 분기 지우기"));
+                panel.Children.Add(RemoveBranchButton(node, resolved.Line.LineId, target, string.Format(Ui.Dialogue_DeleteBranch3, name)));
             }
         }
 
@@ -1198,8 +1195,8 @@ public partial class DialogueNodeEditor : UserControl
         foreach (int position in openPoints)
         {
             Button removeOpen = SmallButton(
-                $"✕ 이어지지 않은 분기점({position + 1}번째) 지우기", () => RemoveOpenDetour(node, resolved.Line.LineId, position));
-            ToolTip.SetTip(removeOpen, "이어지지 않은 분기점을 지웁니다. 되돌리기(Ctrl+Z)로 돌아옵니다.");
+                string.Format(Ui.Dialogue_DeleteUnconnectedBranchPointNo, position + 1), () => RemoveOpenDetour(node, resolved.Line.LineId, position));
+            ToolTip.SetTip(removeOpen, Ui.Dialogue_DeletesUnconnectedBranchPointUndo);
             panel.Children.Add(removeOpen);
         }
 
@@ -1207,7 +1204,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             panel.Children.Add(new TextBlock
             {
-                Text = "분기 카드 안에서는 분기를 내지 않습니다 — 들렀다 돌아오는 곳입니다. 갈라야 하면 부르는 에피소드에 분기를 하나 더 두세요.",
+                Text = Ui.Dialogue_BranchCardsDonTBranch,
                 FontSize = 10,
                 Opacity = 0.65,
                 TextWrapping = TextWrapping.Wrap,
@@ -1221,7 +1218,7 @@ public partial class DialogueNodeEditor : UserControl
             // 여기서 막는 것은 챕터의 것이다 — 선택지와 스탯변화는 간선.
             panel.Children.Add(new TextBlock
             {
-                Text = "📄 챕터 에피소드 — 선택지와 스탯변화는 간선에서 고칩니다.",
+                Text = Ui.Dialogue_ChapterEpisodeChoicesAndStat,
                 FontSize = 10,
                 Opacity = 0.65,
                 TextWrapping = TextWrapping.Wrap,
@@ -1233,17 +1230,17 @@ public partial class DialogueNodeEditor : UserControl
 
         // ▲▼✕ 줄 이동 · 삭제의 진입점 — 행에는 단추를 두지 않고 여기서 한다.
         // 줄 구성의 주인은 프로젝트라 모든 노드에서 선다.
-        Section("줄");
+        Section(Ui.Dialogue_Line);
         string nodeId = _nodeId ?? string.Empty;
         string lineId = resolved.Line.LineId;
         var lineRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        Button up = SmallButton("▲ 위로", () =>
+        Button up = SmallButton(Ui.Dialogue_Up, () =>
             _session!.Editor.MoveScriptLine(nodeId, lineId, -1));
-        Button down = SmallButton("▼ 아래로", () =>
+        Button down = SmallButton(Ui.Dialogue_Down, () =>
             _session!.Editor.MoveScriptLine(nodeId, lineId, 1));
-        Button remove = SmallButton("✕ 삭제", () =>
+        Button remove = SmallButton(Ui.Dialogue_Delete, () =>
             _session!.Editor.RetireScriptLine(nodeId, lineId));
-        ToolTip.SetTip(remove, "대본에서 이 줄을 뺍니다.");
+        ToolTip.SetTip(remove, Ui.Dialogue_RemovesThisLineFromScript);
         lineRow.Children.Add(up);
         lineRow.Children.Add(down);
         lineRow.Children.Add(remove);
@@ -1252,7 +1249,7 @@ public partial class DialogueNodeEditor : UserControl
         // [아래에 줄 추가] — 차림 맨 아래. ＋에서 Tab이면 여기로 오고, 누르면 이 줄 아래에 새 줄이 서고 그 줄의 화자 칸으로 간다(usability UX26).
         var addBelow = new Button
         {
-            Content = "＋ 아래에 줄 추가",
+            Content = Ui.Dialogue_AddLineBelow2,
             FontSize = 11,
             Padding = new Thickness(8, 3),
             Margin = new Thickness(0, 6, 0, 0),
@@ -1260,8 +1257,8 @@ public partial class DialogueNodeEditor : UserControl
             HorizontalContentAlignment = HorizontalAlignment.Center,
             Tag = LineMetaAddTag
         };
-        ToolTip.SetTip(addBelow, "이 줄 바로 아래에 새 줄을 더하고 그 줄의 화자 칸으로 갑니다(Enter).");
-        addBelow.Click += (_, _) => UiGuard.Run(_session, "줄 추가", () =>
+        ToolTip.SetTip(addBelow, Ui.Dialogue_AddsNewLineRightBelow);
+        addBelow.Click += (_, _) => UiGuard.Run(_session, Ui.Dialogue_AddLine, () =>
         {
             _lineMetaFlyout?.Hide();
             SelectLine(lineId);
@@ -1307,14 +1304,14 @@ public partial class DialogueNodeEditor : UserControl
     {
         var addBranch = new Button
         {
-            Content = "＋ 분기 추가",
+            Content = Ui.Dialogue_AddBranch,
             FontSize = 10,
             Padding = new Thickness(7, 2)
         };
         ToolTip.SetTip(
             addBranch,
-            "이 줄 앞에서 갈라집니다. 다녀올 분기 카드가 함께 서고 이미 이어진 상태입니다 — 처음에는 조건 없이 늘 다녀옵니다. " +
-            BranchConditionNote.Where + " 이미 분기가 있으면 그 뒤에 서고 차례로 다녀옵니다.");
+            Ui.Dialogue_SplitsBeforeThisLineBranch +
+            BranchConditionNote.Where + Ui.Dialogue_IfThereSAlreadyBranch);
 
         addBranch.Click += (_, _) =>
         {
@@ -1324,10 +1321,10 @@ public partial class DialogueNodeEditor : UserControl
             }
 
             // 새 분기에는 조건이 없다 — 만든 순간에 그 사실과 정하는 자리를 말한다.
-            UiGuard.Run(_session!, "분기 추가", () =>
+            UiGuard.Run(_session!, Ui.Dialogue_AddBranch2, () =>
             {
                 DialogueNode created = _session!.Editor.AddBranchMarker(node.Id, resolved.Line.LineId);
-                _session.SetStatus($"분기 '{created.Name}'{Josa.을를(created.Name)} 더했습니다 — 지금은 조건 없이 늘 다녀옵니다. {BranchConditionNote.Where}");
+                _session.SetStatus(string.Format(Ui.Dialogue_AddedBranchForNowIt, created.Name, Josa.을를(created.Name), BranchConditionNote.Where));
             });
         };
 
@@ -1356,7 +1353,7 @@ public partial class DialogueNodeEditor : UserControl
 
         LineHost.Children.Add(new TextBlock
         {
-            Text = "대본에서 사라진 줄에 남은 조건",
+            Text = Ui.Dialogue_ConditionLeftOnLineRemoved,
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(0, 10, 0, 0)
         });
@@ -1368,14 +1365,14 @@ public partial class DialogueNodeEditor : UserControl
             content.Children.Add(new TextBlock
             {
                 Text = orphan.LastKnownText is { } text
-                    ? $"마지막 내용: {text.Speaker}: {text.Text}"
-                    : "이 대본에 없는 줄입니다.",
+                    ? string.Format(Ui.Dialogue_LastContent, text.Speaker, text.Text)
+                    : Ui.Dialogue_ThisLineIsnTIn,
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap
             });
 
             content.Children.Add(SmallButton(
-                "조건 지우기",
+                Ui.Dialogue_DeleteCondition,
                 () => _session!.Editor.SetLineTransition(node.Id, orphan.Extension.LineId, null)));
 
             LineHost.Children.Add(new Border
@@ -1444,9 +1441,8 @@ public partial class DialogueNodeEditor : UserControl
             : branch.PaletteIndex;
 
     /// <summary>분기 조건이 걸린 첫 줄의 막힌 손짓이 하는 말.</summary>
-    private const string EntryGuardTip =
-        "분기 조건이 걸린 첫 줄이라 지우거나 옮길 수 없습니다 — 조건 구조가 깨집니다. 글은 카드의 글 칸에서 고치세요(조건 줄은 지켜집니다). " +
-        "조건은 이 카드 위의 「⑂ 조건」에서 바꿉니다.";
+    private static string EntryGuardTip =>
+        Ui.Dialogue_ThisIsFirstLineUnder;
 
     /// <summary>첫머리 조건을 지켜야 하는 분기 카드인가(<see cref="BranchEntryCondition.IsGuarded"/>).</summary>
     private bool GuardsEntry(DialogueNode node) =>

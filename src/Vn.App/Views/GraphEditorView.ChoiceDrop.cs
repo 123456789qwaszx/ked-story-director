@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -92,24 +93,24 @@ public partial class GraphEditorView
             {
                 return new ChoiceDrop(
                     ChoiceDropKind.Nothing,
-                    "놓아도 그대로",
-                    "여기 놓으면 아무것도 바뀌지 않습니다 — 같은 챕터의 에피소드 카드 위에서 놓으면 잇습니다.",
+                    Ui.Board_NothingChanges,
+                    Ui.Board_DroppingHereChangesNothingDrop,
                     null);
             }
 
             string arrival = ArrivalName(choice);
             return new ChoiceDrop(
                 ChoiceDropKind.Unjoin,
-                "✂ 연결 끊기",
-                $"여기 놓으면 '{arrival}'{Josa.으로(arrival)} 가던 연결이 끊깁니다." +
-                (choice.Label.Length > 0 ? $" 문구 「{choice.Label}」{Josa.은는(choice.Label)} 칸에 남아 다시 이을 수 있습니다." : string.Empty) +
-                " 끊지 않으려면 다른 에피소드 카드 위에서 놓거나, 원래 카드 위에서 놓으세요.",
+                Ui.Board_Disconnect,
+                string.Format(Ui.Board_DroppingHereDisconnectsPathTo, arrival, Josa.으로(arrival)) +
+                (choice.Label.Length > 0 ? string.Format(Ui.Board_TextStaysInSlotSo, choice.Label, Josa.은는(choice.Label)) : string.Empty) +
+                Ui.Board_ToKeepItDropOn,
                 null);
         }
 
         if (_session is null)
         {
-            return new ChoiceDrop(ChoiceDropKind.Nothing, "놓아도 그대로", string.Empty, null);
+            return new ChoiceDrop(ChoiceDropKind.Nothing, Ui.Board_NothingChanges, string.Empty, null);
         }
 
         string name = ShownName(target, target);
@@ -119,14 +120,13 @@ public partial class GraphEditorView
             return IsBranchCard(target)
                 ? new ChoiceDrop(
                     ChoiceDropKind.Refuse,
-                    "✕ 분기 카드에는 못 이음",
-                    $"'{name}'{Josa.은는(name)} 분기 카드입니다 — 선택지는 에피소드 카드에만 잇습니다(분기 카드는 분기점으로 들렀다 돌아오는 카드입니다). " +
-                    "여기 놓으면 아무것도 바뀌지 않습니다.",
+                    Ui.Board_CanTConnectToBranch,
+                    string.Format(Ui.Board_IsBranchCardChoicesConnect, name, Josa.은는(name)),
                     target)
                 : new ChoiceDrop(
                     ChoiceDropKind.Refuse,
-                    "✕ 에피소드가 아님",
-                    $"'{name}'{Josa.은는(name)} 에피소드가 아닙니다 — 선택지는 에피소드 카드에 잇습니다. 여기 놓으면 아무것도 바뀌지 않습니다.",
+                    Ui.Board_NotEpisode,
+                    string.Format(Ui.Board_IsnTEpisodeChoicesConnect, name, Josa.은는(name)),
                     target);
         }
 
@@ -135,9 +135,8 @@ public partial class GraphEditorView
         {
             return new ChoiceDrop(
                 ChoiceDropKind.Refuse,
-                "✕ 다른 챕터",
-                $"'{name}'{Josa.은는(name)} 다른 챕터('{chapterId}')의 에피소드입니다 — 선택지는 같은 챕터 안에서만 잇습니다. " +
-                "여기 놓으면 아무것도 바뀌지 않습니다.",
+                Ui.Board_AnotherChapter,
+                string.Format(Ui.Board_IsEpisodeInAnotherChapter, name, Josa.은는(name), chapterId),
                 target);
         }
 
@@ -145,8 +144,8 @@ public partial class GraphEditorView
         {
             return new ChoiceDrop(
                 ChoiceDropKind.Same,
-                "이미 이어짐",
-                $"이미 '{name}'{Josa.으로(name)} 이어져 있습니다 — 여기 놓으면 그대로입니다. 빈 곳에 놓으면 끊깁니다.",
+                Ui.Board_AlreadyConnected,
+                string.Format(Ui.Board_AlreadyConnectedToDroppingHere, name, Josa.으로(name)),
                 target);
         }
 
@@ -155,7 +154,7 @@ public partial class GraphEditorView
 
         if (_session.Editor.FindChapter(chapterId) is not { } chapter)
         {
-            return new ChoiceDrop(ChoiceDropKind.Nothing, "놓아도 그대로", string.Empty, target);
+            return new ChoiceDrop(ChoiceDropKind.Nothing, Ui.Board_NothingChanges, string.Empty, target);
         }
 
         // 옮기면 지금 길(그 칸이 진 간선)은 빼고 본다 — 편집기(SetEdgeRoute)가 그 간선을 빼고 신원 겹침을 보듯이.
@@ -172,35 +171,36 @@ public partial class GraphEditorView
         {
             return new ChoiceDrop(
                 ChoiceDropKind.Refuse,
-                "✕ 같은 선택지가 있음",
-                $"'{name}'{Josa.으로(name)} 가는 " + (label.Length > 0 ? $"「{label}」 선택지가" : "문구 없는 길이") +
-                " 이 에피소드에 이미 있습니다 — 문구를 바꾸거나 다른 에피소드에 놓으세요. 여기 놓으면 아무것도 바뀌지 않습니다.",
+                Ui.Board_SameChoiceExists,
+                label.Length > 0
+                    ? string.Format(Ui.Board_ThisEpisodeAlreadyHasChoice, name, Josa.으로(name), label)
+                    : string.Format(Ui.Board_ThisEpisodeAlreadyHasPath, name, Josa.으로(name)),
                 target);
         }
 
         if (SceneEntryRefusal(choice, chapterId, episodeId) is { } refusal)
         {
-            return new ChoiceDrop(ChoiceDropKind.Refuse, "✕ 장면 입구가 둘이 됨", refusal + " 여기 놓으면 아무것도 바뀌지 않습니다.", target);
+            return new ChoiceDrop(ChoiceDropKind.Refuse, Ui.Board_SceneWouldGetTwoEntrances, refusal + Ui.Board_DroppingHereChangesNothing, target);
         }
-
-        string what = auto ? "자동 길" : $"「{label}」";
 
         if (choice.IsEmpty)
         {
             return new ChoiceDrop(
                 ChoiceDropKind.Join,
-                auto ? $"↪ 자동 길로 잇기 → {name}" : $"↪ 잇기 → {name}",
+                auto ? string.Format(Ui.Board_ConnectAsAutoPath, name) : string.Format(Ui.Board_Connect, name),
                 auto
-                    ? $"여기 놓으면 문구 없이 '{name}'{Josa.으로(name)} 지나가는 자동 길이 됩니다."
-                    : $"여기 놓으면 {what}{Josa.을를(label)} '{name}'에 잇습니다.",
+                    ? string.Format(Ui.Board_DroppingHereMakesAutoPath, name, Josa.으로(name))
+                    : string.Format(Ui.Board_DroppingHereConnectsTo, label, Josa.을를(label), name),
                 target);
         }
 
         string was = ArrivalName(choice);
         return new ChoiceDrop(
             ChoiceDropKind.Move,
-            $"↪ 옮겨 잇기 → {name}",
-            $"여기 놓으면 {what}{Josa.이가(auto ? "길" : label)} '{was}' 대신 '{name}'{Josa.으로(name)} 갑니다(조건 · 스탯 변화는 그대로).",
+            string.Format(Ui.Board_Reconnect, name),
+            auto
+                ? string.Format(Ui.Board_DroppingHereSendsAutoPath, was, name, Josa.으로(name))
+                : string.Format(Ui.Board_DroppingHereSendsToInstead, label, Josa.이가(label), was, name, Josa.으로(name)),
             target);
     }
 
@@ -257,9 +257,7 @@ public partial class GraphEditorView
             .Where(episode => !string.Equals(episode.EpisodeId, toEpisodeId, StringComparison.Ordinal))
             .Select(episode => $"'{episode.ShownTitle}'"));
 
-        return $"'{to.ShownTitle}'{Josa.은는(to.ShownTitle)} 다른 장면('{to.SceneId}')의 시작점이 아닙니다 — 그 장면은 이미 {others}에서 시작합니다. " +
-               "장면은 한 자리에서만 시작해야 해서(롤백이 되돌아가고 이어하기가 재개하는 자리) 잇지 않습니다. " +
-               $"그 장면의 시작점 {others}에 잇거나, '{to.ShownTitle}'{Josa.을를(to.ShownTitle)} 다른 장면으로 나눈 뒤 이으세요.";
+        return string.Format(Ui.Board_IsnTStartOfAnother, to.ShownTitle, Josa.은는(to.ShownTitle), to.SceneId, others, Josa.을를(to.ShownTitle));
     }
 
     private static List<ChapterEpisode> EntriesOf(ChapterDocument chapter, IReadOnlyList<ChapterEdge> edges, string sceneId) =>
@@ -345,10 +343,10 @@ public partial class GraphEditorView
         knob.RenderTransform = new ScaleTransform(1.5, 1.5);
 
         string text = !live
-            ? "문구를 적으면 끌어서 이을 수 있습니다"
+            ? Ui.Board_WriteTextToDragAnd
             : choice.IsEmpty
-                ? "끌어서 같은 챕터의 에피소드 카드에 놓으면 잇습니다"
-                : "끌어서 다른 에피소드에 놓으면 옮겨 잇고 · 빈 곳에 놓으면 끊깁니다";
+                ? Ui.Board_DragOntoEpisodeCardIn2
+                : Ui.Board_DragOntoAnotherEpisodeTo;
 
         ShowBadge(text, live ? DropJoinBrush : DropIdleBrush);
 

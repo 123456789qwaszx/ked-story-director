@@ -2,6 +2,7 @@ using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Text;
+using Vn.App.Strings;
 
 namespace Vn.App.Views;
 
@@ -32,8 +33,8 @@ internal static class CardTitles
         {
             session.Editor.SetBranchCardTitle(node.Id, title);
             session.SetStatus(title.Length == 0
-                ? $"제목을 비웠습니다 — 분기 카드 ID '{node.Name}'{Josa.이가(node.Name)} 보입니다."
-                : $"제목을 '{title}'{Josa.으로(title)} 바꿨습니다. 분기 카드 ID '{node.Name}'{Josa.은는(node.Name)} 그대로입니다.");
+                ? string.Format(Ui.Side_ClearedTitleBranchCardID, node.Name, Josa.이가(node.Name))
+                : string.Format(Ui.Side_RenamedTitleToBranchCard, title, Josa.으로(title), node.Name, Josa.은는(node.Name)));
             return true;
         }
 
@@ -42,8 +43,8 @@ internal static class CardTitles
         string episodeId = EpisodeNaming.EpisodeIdOf(node);
         session.Editor.UpdateEpisode(chapter.ChapterId, episodeId, title: title);
         session.SetStatus(title.Length == 0
-            ? $"제목을 비웠습니다 — 에피소드ID '{episodeId}'{Josa.이가(episodeId)} 보입니다."
-            : $"제목을 '{title}'{Josa.으로(title)} 바꿨습니다. 에피소드ID '{episodeId}'{Josa.은는(episodeId)} 그대로입니다.");
+            ? string.Format(Ui.Side_ClearedTitleEpisodeIDIs, episodeId, Josa.이가(episodeId))
+            : string.Format(Ui.Side_RenamedTitleToEpisodeID, title, Josa.으로(title), episodeId, Josa.은는(episodeId)));
         return true;
     }
 }
