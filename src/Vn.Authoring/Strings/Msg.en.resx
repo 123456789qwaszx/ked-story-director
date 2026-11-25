@@ -281,7 +281,7 @@
     <value>openDetours of {0} is an array of position numbers.</value>
   </data>
   <data name="File_OpenDetoursPositionsOfAreOut" xml:space="preserve">
-    <value>The openDetours positions of {0} are out of order (they must be ascending within the {1} branch points).</value>
+    <value>The openDetours positions of {0} are out of order (they must be ascending within the {1:branch point|branch points}).</value>
   </data>
   <data name="File_ConditionsOfSetNode" xml:space="preserve">
     <value>conditions of set node '{0}'</value>
@@ -500,7 +500,7 @@
     <value>This folder has no project ({0}): {1}</value>
   </data>
   <data name="File_ThisFolderHasProjectFiles" xml:space="preserve">
-    <value>This folder has {0} project files — keep just one: </value>
+    <value>This folder has {0:project file|project files} — keep just one: </value>
   </data>
   <data name="File_NoFolderWasChosen" xml:space="preserve">
     <value>No folder was chosen.</value>
@@ -581,7 +581,7 @@
     <value>Stat '{0}' already exists — to merge the two, delete one first.</value>
   </data>
   <data name="Edit_CanTDeleteStatIt" xml:space="preserve">
-    <value>Can't delete stat '{0}' — it's used in {1} places.</value>
+    <value>Can't delete stat '{0}' — it's used in {1:place|places}.</value>
   </data>
   <data name="Edit_Path" xml:space="preserve">
     <value>Path {0} → {1}{2}</value>
@@ -602,7 +602,7 @@
     <value>Condition '{0}' isn't in this chapter.</value>
   </data>
   <data name="Edit_CanTDeleteConditionIt" xml:space="preserve">
-    <value>Can't delete condition '{0}' — it's used in {1} places.</value>
+    <value>Can't delete condition '{0}' — it's used in {1:place|places}.</value>
   </data>
   <data name="Edit_ConditionNameCanTBe" xml:space="preserve">
     <value>A condition name can't be empty — press ✕ to delete it.</value>
@@ -677,7 +677,7 @@
     <value>There are no dialogue lines to apply.</value>
   </data>
   <data name="Edit_ThereAreDeletedLinesSo" xml:space="preserve">
-    <value>There are {0} deleted lines, so confirmation is needed. {1}</value>
+    <value>{0:deleted line|deleted lines} — confirmation is needed. {1}</value>
   </data>
   <data name="Edit_NotAppliedBecauseConfirmationIs" xml:space="preserve">
     <value>Not applied because confirmation is needed. {0}</value>
@@ -1044,7 +1044,7 @@
     <value>Branch card {0} has a branch inside — a branch card is visited from an episode and returns, so it doesn't split again. Delete that card's branch on the [Script] board (line ＋ → ✕ Delete branch, or select the line and press Delete).</value>
   </data>
   <data name="Edit_SceneWouldHaveEntrancesFrom" xml:space="preserve">
-    <value>Scene '{0}' would have {1} entrances from outside — {2}.</value>
+    <value>Scene '{0}' would have {1:entrance|entrances} from outside — {2}.</value>
   </data>
   <data name="Edit_CanTMoveToScene" xml:space="preserve">
     <value>Can't move '{0}' to scene '{2}'. </value>
@@ -1164,7 +1164,7 @@
     <value>This card has no live lines. That's fine for a scene that only carries staging; otherwise write dialogue.</value>
   </data>
   <data name="Diag_LinesOfDialogueFirstAppears" xml:space="preserve">
-    <value>{0} lines of dialogue (first appears in {1}) get no portrait · expressions.</value>
+    <value>{0:line|lines} of dialogue (first appears in {1}) will have no portrait · expressions.</value>
   </data>
   <data name="Diag_SpeakerHasNoCharacterKey" xml:space="preserve">
     <value>Speaker '{0}' has no character key — {1} Enter the key in the “Speakers” tab on the right of the [Structure] tab.</value>
@@ -1179,7 +1179,7 @@
     <value>Met '{0}' again and stopped at the loop.</value>
   </data>
   <data name="Diag_HasWaysForwardButTest" xml:space="preserve">
-    <value>'{0}' has {1} ways forward but the test start has no fixed choice. Write '{0}→…' in the fixed choice column.</value>
+    <value>'{0}' has {1:way|ways} forward but the test start has no fixed choice. Write '{0}→…' in the fixed choice column.</value>
   </data>
   <data name="Edit_ChapterDoesnTExist" xml:space="preserve">
     <value>Chapter '{0}' doesn't exist.</value>
@@ -1218,7 +1218,7 @@
     <value>Bring the scene back or delete the note in the chapter inspector.</value>
   </data>
   <data name="Diag_SceneHasEntrancesFromOutside" xml:space="preserve">
-    <value>Scene '{0}' has {1} entrances from outside: {2}. A scene must start in one place — that's where rollback returns and Continue resumes. Split the other landing points into other scenes.</value>
+    <value>Scene '{0}' has {1:entrance|entrances} from outside: {2}. A scene must start in one place — that's where rollback returns and Continue resumes. Split the other landing points into other scenes.</value>
   </data>
   <data name="Diag_WhatMadeSecondEntrance" xml:space="preserve">
     <value> What made the second entrance: {0}.</value>
@@ -1242,7 +1242,7 @@
     <value>Dialogue node '{1}' of '{0}' has no lines to play. Write at least one line of dialogue in that card in the [Script] tab.</value>
   </data>
   <data name="Diag_InDialogueStatIsnT" xml:space="preserve">
-    <value>{{{0}}} in dialogue — stat '{1}' isn't in this chapter ({2} lines of dialogue · first appears in {3}). When that line comes up in the game, it reads a missing stat. If the stat was deleted, fix the dialogue; if you'll use it, add it in “Conditions &amp; stats” in the [Structure] tab.</value>
+    <value>{{{0}}} in dialogue — stat '{1}' isn't in this chapter ({2:line|lines} of dialogue · first appears in {3}). When that line comes up in the game, it reads a missing stat. If the stat was deleted, fix the dialogue; if you'll use it, add it in “Conditions &amp; stats” in the [Structure] tab.</value>
   </data>
   <data name="StatKey_Rule" xml:space="preserve">
     <value>Write it in English — start with a letter and use only letters · digits · _ (e.g. {0}). Hangul · spaces · symbols aren't accepted</value>

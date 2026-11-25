@@ -179,7 +179,7 @@ internal static class StoryNodeJson
         {
             if (positions[index] < 0 || positions[index] >= total || (index > 0 && positions[index] <= positions[index - 1]))
             {
-                throw new InvalidDataException(string.Format(Msg.File_OpenDetoursPositionsOfAreOut, owner, total));
+                throw new InvalidDataException(Plural.Format(Msg.File_OpenDetoursPositionsOfAreOut, owner, total));
             }
         }
 

@@ -14,6 +14,7 @@ using Vn.App.Services;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App.Views;
 
@@ -296,7 +297,7 @@ public partial class ChapterGraphView : UserControl
 
     private (string Title, string Subtitle) SceneHeader(ChapterGraphModel? model) =>
         InspectedScene(model) is { } scene
-            ? (string.Format(Ui.Structure_Scene, scene.DisplayName), string.Format(Ui.Structure_Episodes, scene.Episodes.Count))
+            ? (string.Format(Ui.Structure_Scene, scene.DisplayName), Plural.Format(Ui.Structure_Episodes, scene.Episodes.Count))
             : (Ui.Structure_Scene2, Ui.Structure_ThisSceneIsGone);
 
     /// <summary>장면 인스펙터가 보이는 장면 — 이 챕터를 지금 묶어 본 것에서 찾는다(장면은 엔티티가 아니다).</summary>
@@ -323,7 +324,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         SceneHintText.Set(
-            string.Format(Ui.Structure_GroupOfEpisodesWithThis, scene.Episodes.Count),
+            Plural.Format(Ui.Structure_GroupOfEpisodesWithThis, scene.Episodes.Count),
             brief: null);
 
         foreach (ChapterEpisode episode in scene.Episodes)
@@ -819,9 +820,9 @@ public partial class ChapterGraphView : UserControl
             {
                 Text = (missing, temporary) switch
                 {
-                    (> 0, > 0) => string.Format(Ui.Structure_SpeakersWithoutCharacterKeySpeakers, missing, temporary),
-                    (> 0, _) => string.Format(Ui.Structure_SpeakersWithoutCharacterKeyTheir, missing),
-                    _ => string.Format(Ui.Structure_SpeakersWithTemporaryKeyTemp, temporary)
+                    (> 0, > 0) => Plural.Format(Ui.Structure_SpeakersWithoutCharacterKeySpeakers, missing, temporary),
+                    (> 0, _) => Plural.Format(Ui.Structure_SpeakersWithoutCharacterKeyTheir, missing),
+                    _ => Plural.Format(Ui.Structure_SpeakersWithTemporaryKeyTemp, temporary)
                 },
                 FontSize = 10,
                 Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
@@ -3284,10 +3285,10 @@ public partial class ChapterGraphView : UserControl
 
         int stray = model.Episodes.Count - board.Count;
         _session.SetStatus(board.Count == 0
-            ? string.Format(Ui.Structure_ReLaidOutCardsOf, chapterId, model.Episodes.Count)
+            ? Plural.Format(Ui.Structure_ReLaidOutCardsOf, chapterId, model.Episodes.Count)
             : stray > 0
-                ? string.Format(Ui.Structure_ReLaidOutCardsOf2, chapterId, model.Episodes.Count, stray)
-                : string.Format(Ui.Structure_ReLaidOutCardsOf3, chapterId, model.Episodes.Count));
+                ? Plural.Format(Ui.Structure_ReLaidOutCardsOf2, chapterId, model.Episodes.Count, stray)
+                : Plural.Format(Ui.Structure_ReLaidOutCardsOf3, chapterId, model.Episodes.Count));
     }
 
     /// <summary>
@@ -4109,7 +4110,7 @@ public partial class ChapterGraphView : UserControl
 
         if (others > 0)
         {
-            host.Children.Add(Note(string.Format(Ui.Structure_ThisConditionIsAlsoUsed, others)));
+            host.Children.Add(Note(Plural.Format(Ui.Structure_ThisConditionIsAlsoUsed, others)));
         }
     }
 
@@ -4401,7 +4402,7 @@ public partial class ChapterGraphView : UserControl
         });
         string slotState = options == 0
             ? Ui.Structure_ThisEpisodeHasNoWay
-            : string.Format(Ui.Structure_ThisEpisodeHasWaysOut, options);
+            : Plural.Format(Ui.Structure_ThisEpisodeHasWaysOut, options);
         SlotDetailText.Set(slotState + Ui.Structure_InScriptTabWriteText, slotState);
     }
 
@@ -4584,7 +4585,7 @@ public partial class ChapterGraphView : UserControl
         // 자동 모양 그대로인 에피소드ID · 분기 카드 이름도 새 장면ID로 따라간다(AutoIdFollower — 같은 되돌리기 칸).
         int moved = AutoIdFollower.RenameScene(_session.Editor, chapterId, oldId, newId);
         _inspectedSceneId = newId;
-        _session.SetStatus(string.Format(Ui.Structure_SceneIDEpisodesSceneName, oldId, newId, moved));
+        _session.SetStatus(Plural.Format(Ui.Structure_SceneIDEpisodesSceneName, oldId, newId, moved));
     }
 
 
@@ -4676,7 +4677,7 @@ public partial class ChapterGraphView : UserControl
             }
 
             _session.SetStatus(
-                string.Format(Ui.Structure_PathsConditionsSuppliedConditionsTest, stat.Key, to, outcome.Edges, outcome.Conditions, outcome.SuppliedConditions, outcome.Fixtures, outcome.DialogueLines));
+                Plural.Format(Ui.Structure_PathsConditionsSuppliedConditionsTest, stat.Key, to, outcome.Edges, outcome.Conditions, outcome.SuppliedConditions, outcome.Fixtures, outcome.DialogueLines));
             return null;
         });
         ToolTip.SetTip(key, string.Format(Ui.Structure_KeyKeyInSaveData, StatKeyRule.Rule));
@@ -4860,7 +4861,7 @@ public partial class ChapterGraphView : UserControl
 
             _session.SetStatus(outcome.Edges == 0
                 ? string.Format(Ui.Side_Condition, condition.Label, to)
-                : string.Format(Ui.Side_ConditionPathsFollowed, condition.Label, to, outcome.Edges));
+                : Plural.Format(Ui.Side_ConditionPathsFollowed, condition.Label, to, outcome.Edges));
             return null;
         });
         bool undecided = string.IsNullOrWhiteSpace(condition.Expression);
@@ -5147,7 +5148,7 @@ public partial class ChapterGraphView : UserControl
                 }
 
                 _session.SetStatus(
-                    string.Format(Ui.Structure_DeletedStatRemovedItsTerm, key, done.EdgesCleared, done.ConditionsCleared) +
+                    Plural.Format(Ui.Structure_DeletedStatRemovedItsTerm, key, done.EdgesCleared, done.ConditionsCleared) +
                     (done.DialogueReadsLeft > 0
                         ? string.Format(Ui.Structure_DialogueLinesReadingThisStat, done.DialogueReadsLeft)
                         : string.Empty));
@@ -5262,7 +5263,7 @@ public partial class ChapterGraphView : UserControl
         {
             episode.EpisodeId,
             string.Format(Ui.Structure_PositionXY, episode.X, episode.Y),
-            string.Format(Ui.Structure_Choices3, model.Edges.Count(edge => string.Equals(edge.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
+            Plural.Format(Ui.Structure_Choices3, model.Edges.Count(edge => string.Equals(edge.FromEpisodeId, episode.EpisodeId, StringComparison.Ordinal)))
         };
 
         string gate = GateSummary(GatedIncoming(model, episode));
@@ -5333,7 +5334,7 @@ public partial class ChapterGraphView : UserControl
 
         if (header.Length == Ui.Structure_ValidationReport.Length)
         {
-            header.Append(string.Format(Ui.Structure_NoErrorsNotices, all.Count));
+            header.Append(Plural.Format(Ui.Structure_NoErrorsNotices, all.Count));
         }
 
         DiagnosticsExpander.Header = header.ToString();
@@ -5486,7 +5487,7 @@ public partial class ChapterGraphView : UserControl
         }
 
         await clipboard.SetTextAsync(string.Join(Environment.NewLine, lines));
-        _session?.SetStatus(string.Format(Ui.Structure_CopiedLinesOfValidationReport, lines.Count));
+        _session?.SetStatus(Plural.Format(Ui.Structure_CopiedLinesOfValidationReport, lines.Count));
     }
 
     // SelectableTextBlock — [보고 복사]가 전체를 들고 가고, 드래그는 한 줄만 집어 간다.

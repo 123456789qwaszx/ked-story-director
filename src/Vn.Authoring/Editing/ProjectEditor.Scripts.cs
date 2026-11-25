@@ -26,7 +26,7 @@ public sealed record ScenarioPasteOutcome(
         if (!Applied)
         {
             return NeedsDeleteConfirmation
-                ? string.Format(Msg.Edit_ThereAreDeletedLinesSo, Plan.Count(ScriptSyncKind.Deleted), Plan.Summary())
+                ? Plural.Format(Msg.Edit_ThereAreDeletedLinesSo, Plan.Count(ScriptSyncKind.Deleted), Plan.Summary())
                 : string.Format(Msg.Edit_NotAppliedBecauseConfirmationIs, Plan.Summary());
         }
 

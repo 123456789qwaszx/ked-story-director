@@ -44,7 +44,7 @@ public static class ProjectFolder
                 string.Format(Msg.File_ThisFolderHasNoProject, ProjectManifestJson.FileExtension, Path.GetFileName(folder))),
             1 => new Found(manifests[0], null),
             _ => new Found(null,
-                string.Format(Msg.File_ThisFolderHasProjectFiles, manifests.Length) +
+                Plural.Format(Msg.File_ThisFolderHasProjectFiles, manifests.Length) +
                 string.Join(", ", manifests.Select(Path.GetFileName)))
         };
     }

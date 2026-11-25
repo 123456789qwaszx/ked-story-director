@@ -12,6 +12,7 @@ using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App.Views;
 
@@ -599,7 +600,7 @@ public partial class GraphEditorView
             }
             else if (cards.Count > 1)
             {
-                session.SetStatus(string.Format(Ui.Format_SetBaseSizeOfSelected, cards.Count, size));
+                session.SetStatus(Plural.Format(Ui.Format_SetBaseSizeOfSelected, cards.Count, size));
             }
 
             return;
@@ -653,7 +654,7 @@ public partial class GraphEditorView
         }
         else if (cards.Count > 1)
         {
-            session.SetStatus(string.Format(Ui.Format_SetLineSpacingOfSelected, cards.Count, percent));
+            session.SetStatus(Plural.Format(Ui.Format_SetLineSpacingOfSelected, cards.Count, percent));
         }
     }
 
@@ -938,7 +939,7 @@ public partial class GraphEditorView
 
         if (cards.Count > 1)
         {
-            session.SetStatus(string.Format(Ui.Format_AppliedToSelectedCardsOne, cards.Count));
+            session.SetStatus(Plural.Format(Ui.Format_AppliedToSelectedCardsOne, cards.Count));
         }
     }
 

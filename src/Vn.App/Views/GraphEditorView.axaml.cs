@@ -20,6 +20,7 @@ using Vn.Authoring.Rendering;
 using Vn.Authoring.Script;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App.Views;
 
@@ -2032,7 +2033,7 @@ public partial class GraphEditorView : UserControl
             Fill = RailChipBrush,
             Cursor = new Cursor(StandardCursorType.Hand)
         };
-        ToolTip.SetTip(port, string.Format(Ui.Board_IncomingPathsClickToOpen, incoming.Count));
+        ToolTip.SetTip(port, Plural.Format(Ui.Board_IncomingPathsClickToOpen, incoming.Count));
         Canvas.SetLeft(port, junctionX - 5);
         Canvas.SetTop(port, junctionY - 5);
 
@@ -4798,7 +4799,7 @@ public partial class GraphEditorView : UserControl
 
         content.Children.Add(ProxyHeader(
             file.FileName,
-            string.Format(Ui.Board_FoldedNodes, file.Nodes.Count, file.RelativePath),
+            Plural.Format(Ui.Board_FoldedNodes, file.Nodes.Count, file.RelativePath),
             new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80))));
 
         var rows = new List<ProxyNodeRow>();
@@ -4891,7 +4892,7 @@ public partial class GraphEditorView : UserControl
         var content = new StackPanel { Spacing = 0 };
         content.Children.Add(ProxyHeader(
             string.Format(Ui.Board_Scene, scene.DisplayName),
-            string.Format(Ui.Board_FoldedNodes2, scene.Nodes.Count) + (scene.InnerCount > 0 ? string.Format(Ui.Board_PathsInside, scene.InnerCount) : string.Empty),
+            Plural.Format(Ui.Board_FoldedNodes2, scene.Nodes.Count) + (scene.InnerCount > 0 ? Plural.Format(Ui.Board_PathsInside, scene.InnerCount) : string.Empty),
             new SolidColorBrush(SceneColor)));
 
         var rows = new List<ProxyNodeRow>();
@@ -5787,7 +5788,7 @@ public partial class GraphEditorView : UserControl
                 VerticalAlignment = VerticalAlignment.Center
             }
         };
-        ToolTip.SetTip(dot, string.Format(Ui.Board_BranchesClickToExpandOr, count));
+        ToolTip.SetTip(dot, Plural.Format(Ui.Board_BranchesClickToExpandOr, count));
 
         var fan = new ShapePath
         {

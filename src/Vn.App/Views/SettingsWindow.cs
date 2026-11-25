@@ -11,6 +11,7 @@ using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 using Vn.Authoring.Text;
+using Vn.Authoring.Strings;
 
 namespace Vn.App.Views;
 
@@ -845,7 +846,7 @@ internal sealed class SettingsWindow : Window
 
         if (plan.MovedCards > 0)
         {
-            notes.Add(string.Format(Ui.Settings_CardsWouldGoOffBoard, plan.MovedCards));
+            notes.Add(Plural.Format(Ui.Settings_CardsWouldGoOffBoard, plan.MovedCards));
         }
 
         // 적은 값(범위 안으로 들인 것)보다 실제 크기가 크면 비켜 서느라 넓어진 것이다.

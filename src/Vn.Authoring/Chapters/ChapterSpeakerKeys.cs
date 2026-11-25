@@ -30,7 +30,7 @@ public static class ChapterSpeakerKeys
         foreach (Missing missing in MissingOf(chapter, project))
         {
             string speaker = missing.Speaker;
-            string where = string.Format(Msg.Diag_LinesOfDialogueFirstAppears, missing.Lines, missing.FirstPlace);
+            string where = Plural.Format(Msg.Diag_LinesOfDialogueFirstAppears, missing.Lines, missing.FirstPlace);
             diagnostics.Add(new ChapterDiagnostic(
                 ChapterDiagnosticSeverity.Warning,
                 ChapterDiagnosticCode.SpeakerCharacterKeyMissing,

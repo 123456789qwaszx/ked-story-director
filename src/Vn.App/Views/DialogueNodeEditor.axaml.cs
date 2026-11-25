@@ -11,6 +11,7 @@ using Vn.Authoring.Model;
 using Vn.Authoring.Script;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App.Views;
 
@@ -225,7 +226,7 @@ public partial class DialogueNodeEditor : UserControl
             _hideMixed = hidden > 0 && hidden < targets.Count;
             HideEmptyChoicesBox.IsChecked = _hideMixed ? null : hidden > 0;
             ToolTip.SetTip(HideEmptyChoicesBox, targets.Count > 1
-                ? string.Format(Ui.Dialogue_ForAllSelectedEpisodeCards, targets.Count) +
+                ? Plural.Format(Ui.Dialogue_ForAllSelectedEpisodeCards, targets.Count) +
                   (_hideMixed ? Ui.Dialogue_OnlySomeAreOnNow : string.Empty)
                 : HideEmptyTip);
         }

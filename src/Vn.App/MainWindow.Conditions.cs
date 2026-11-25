@@ -9,6 +9,7 @@ using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App;
 
@@ -124,7 +125,7 @@ public partial class MainWindow
 
             _session.SetStatus(outcome.Edges == 0
                 ? string.Format(Ui.Side_Condition, label, typed)
-                : string.Format(Ui.Side_ConditionPathsFollowed, label, typed, outcome.Edges));
+                : Plural.Format(Ui.Side_ConditionPathsFollowed, label, typed, outcome.Edges));
         });
 
         name.LostFocus += (_, _) => Commit();

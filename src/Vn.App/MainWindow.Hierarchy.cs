@@ -12,6 +12,7 @@ using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App;
 
@@ -700,7 +701,7 @@ public partial class MainWindow
         ChapterTextCount count = ChapterScripts.Count(document.ToGraphModel(shown.ChapterId), _session.Project);
         System.Globalization.CultureInfo number = System.Globalization.CultureInfo.InvariantCulture;
         shown.Total.Text = count.Characters.ToString("N0", number) + Ui.Side_Characters;
-        shown.Detail.Text = string.Format(Ui.Side_WithoutSpacesLines, count.CharactersWithoutSpaces.ToString("N0", number), count.Lines.ToString("N0", number));
+        shown.Detail.Text = Plural.Format(Ui.Side_WithoutSpacesLines, count.CharactersWithoutSpaces.ToString("N0", number), count.Lines.ToString("N0", number));
     }
 
     /// <summary>요약 칸의 작은 제목 — 챕터 요약의 「쓴 글」 · 「스탯」 · 「장면」.</summary>

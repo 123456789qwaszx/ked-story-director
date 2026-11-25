@@ -89,7 +89,7 @@
     <value>Delete chapter</value>
   </data>
   <data name="Main_DeletedChapterAndCardsIn" xml:space="preserve">
-    <value>Deleted chapter “{0}” (and {1} cards in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
+    <value>Deleted chapter “{0}” (and {1:card|cards} in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Main_FolderForNewProject" xml:space="preserve">
     <value>Folder for the new project</value>
@@ -377,7 +377,7 @@ The two climb the hill without a word.</value>
     <value>All chapters' cards sit on one board. Make it bigger as the script grows. Each side is {0:N0} ~ {1:N0} and grows from the top left to the right and down. If shrinking pushes cards off the board, all card positions are scaled down by the same ratio to fit.</value>
   </data>
   <data name="Settings_CardsWouldGoOffBoard" xml:space="preserve">
-    <value>⚠ {0} cards would go off the board — all card positions will be scaled down by the same ratio to bring them in. One undo (Ctrl+Z) brings them back.</value>
+    <value>⚠ {0:card|cards} would go off the board — all card positions will be scaled down by the same ratio to bring them in. One undo (Ctrl+Z) reverts it all.</value>
   </data>
   <data name="Settings_BoardWillBeToMake" xml:space="preserve">
     <value>The board will be {0:N0} × {1:N0} to make room for the cards.</value>
@@ -635,7 +635,7 @@ The two climb the hill without a word.</value>
     <value> · Copied on save to: </value>
   </data>
   <data name="Session_Nodes" xml:space="preserve">
-    <value>{0}/ · {1} nodes</value>
+    <value>{0}/ · {1:node|nodes}</value>
   </data>
   <data name="Session_ThereSNoPathTo" xml:space="preserve">
     <value>There's no path to save to.</value>
@@ -662,13 +662,13 @@ The two climb the hill without a word.</value>
     <value>Speaker '{0}' → '{1}'.</value>
   </data>
   <data name="Session_SpeakerLinesFollowed" xml:space="preserve">
-    <value>Speaker '{0}' → '{1}' — {2} lines followed.</value>
+    <value>Speaker '{0}' → '{1}' — {2:line|lines} followed.</value>
   </data>
   <data name="Session_AddedToSpeakerListIts" xml:space="preserve">
     <value>Added '{0}' to the speaker list — its character key is temporarily '{2}'. Change it to match the art in the [Structure] tab.</value>
   </data>
   <data name="Session_AddedSpeakersToListTheir" xml:space="preserve">
-    <value>Added {0} speakers to the list — their character keys are temporary keys (temp_…). Change them to match the art in the [Structure] tab.</value>
+    <value>Added {0:speaker|speakers} to the list with temporary character keys (temp_…). Change the keys to match the art in the [Structure] tab.</value>
   </data>
   <data name="Session_NameCanTBeEmpty2" xml:space="preserve">
     <value>The name can't be empty — to drop the speaker, clear the speaker field of those lines.</value>
@@ -683,10 +683,10 @@ The two climb the hill without a word.</value>
     <value>No line has '{0}' as its speaker — the script has changed.</value>
   </data>
   <data name="Session_MergedLinesOfIntoSpeaker" xml:space="preserve">
-    <value>Merged {1} lines of '{0}' into speaker '{2}'.</value>
+    <value>Merged {1:line|lines} of '{0}' into speaker '{2}'.</value>
   </data>
   <data name="Session_ChangedLinesThisNameIsn" xml:space="preserve">
-    <value>'{0}' → '{1}' — changed {2} lines. This name isn't in the list yet.</value>
+    <value>'{0}' → '{1}' — changed {2:line|lines}. This name isn't in the list yet.</value>
   </data>
   <data name="Session_TypeChapterID" xml:space="preserve">
     <value>Type a chapter ID.</value>
@@ -807,7 +807,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>(auto)</value>
   </data>
   <data name="Board_IncomingPathsClickToOpen" xml:space="preserve">
-    <value>{0} incoming paths — click to open the list.</value>
+    <value>{0:incoming path|incoming paths} — click to open the list.</value>
   </data>
   <data name="Board_PathsInto" xml:space="preserve">
     <value>Paths into {0}</value>
@@ -924,7 +924,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Kept the branch condition lines — restored the condition lines and moved lines written outside them inside. Change the conditions for this card in the branch section of the [Structure] tab.</value>
   </data>
   <data name="Board_FoldedNodes" xml:space="preserve">
-    <value>Folded · {0} nodes · {1}</value>
+    <value>Folded · {0:node|nodes} · {1}</value>
   </data>
   <data name="Board_EmptyFile" xml:space="preserve">
     <value>Empty file</value>
@@ -933,10 +933,10 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Double-click to unfold this chapter.</value>
   </data>
   <data name="Board_FoldedNodes2" xml:space="preserve">
-    <value>Folded · {0} nodes</value>
+    <value>Folded · {0:node|nodes}</value>
   </data>
   <data name="Board_PathsInside" xml:space="preserve">
-    <value> · {0} paths inside</value>
+    <value> · {0:path|paths} inside</value>
   </data>
   <data name="Board_DoubleClickToUnfoldThis2" xml:space="preserve">
     <value>Double-click to unfold this scene.</value>
@@ -960,7 +960,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Unconnected branch point — drop it on a card to make a branch. To delete it, use [✕] on the branch point card in the side panel.</value>
   </data>
   <data name="Board_BranchesClickToExpandOr" xml:space="preserve">
-    <value>{0} branches — click to expand or collapse. Drag an expanded point onto another card to connect.</value>
+    <value>{0:branch|branches} — click to expand or collapse. Drag an expanded point onto another card to connect.</value>
   </data>
   <data name="Board_DropOnBranchCardTo" xml:space="preserve">
     <value>Drop on a branch card to connect. Drop on empty space to create a new branch card there. It doesn't connect to episodes.</value>
@@ -1158,7 +1158,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>A card's base size is {0:0} ~ {1:0}pt — set to {2:0}pt.</value>
   </data>
   <data name="Format_SetBaseSizeOfSelected" xml:space="preserve">
-    <value>Set the base size of {0} selected cards to {1:0}pt — one undo (Ctrl+Z) brings them all back.</value>
+    <value>Set the base size of {0:selected card|selected cards} to {1:0}pt — one undo (Ctrl+Z) reverts it all.</value>
   </data>
   <data name="Format_ThisCardSTextSize" xml:space="preserve">
     <value>This card's text size is {0} ~ {1}pt — set to {2}pt.</value>
@@ -1170,7 +1170,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Line spacing goes up to {0}% — set to {0}%.</value>
   </data>
   <data name="Format_SetLineSpacingOfSelected" xml:space="preserve">
-    <value>Set the line spacing of {0} selected cards to {1}% — one undo (Ctrl+Z) brings them all back.</value>
+    <value>Set the line spacing of {0:selected card|selected cards} to {1}% — one undo (Ctrl+Z) reverts it all.</value>
   </data>
   <data name="Format_LineSpacingAllTextIn" xml:space="preserve">
     <value>Line spacing — all text in this card</value>
@@ -1197,7 +1197,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Cards that are bold from the start (made with bold in Settings “Script writing box”) can't be made regular, so they stay bold.</value>
   </data>
   <data name="Format_AppliedToSelectedCardsOne" xml:space="preserve">
-    <value>Applied to {0} selected cards — one undo (Ctrl+Z) brings them all back.</value>
+    <value>Applied to {0:selected card|selected cards} — one undo (Ctrl+Z) reverts it all.</value>
   </data>
   <data name="Format_TextAlignment" xml:space="preserve">
     <value>Text alignment</value>
@@ -1386,7 +1386,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Add line</value>
   </data>
   <data name="Dialogue_ForAllSelectedEpisodeCards" xml:space="preserve">
-    <value>For all {0} selected episode cards — when on, only connected choices show under the card in the [Script] tab (unconnected slots, even the auto slot, are hidden).</value>
+    <value>For {0:selected episode card|selected episode cards} — when on, only connected choices show under the card in the [Script] tab (unconnected slots, even the auto slot, are hidden).</value>
   </data>
   <data name="Dialogue_OnlySomeAreOnNow" xml:space="preserve">
     <value> Only some are on now — click to turn them all on.</value>
@@ -1656,7 +1656,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value> characters</value>
   </data>
   <data name="Side_WithoutSpacesLines" xml:space="preserve">
-    <value>{0} without spaces · {1} lines</value>
+    <value>{0:character|characters} without spaces · {1:line|lines}</value>
   </data>
   <data name="Side_StatsPasteIntoDialogue" xml:space="preserve">
     <value>Stats — paste into dialogue</value>
@@ -1707,19 +1707,19 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Summary</value>
   </data>
   <data name="Side_EpisodesOfSceneAndBranch" xml:space="preserve">
-    <value>{1} episodes of scene “{0}” and the {2} branch cards they called will be removed along with their cards in the [Script] tab. Undo (Ctrl+Z) brings them back.</value>
+    <value>{1:episode|episodes} of scene “{0}” and {2:branch card|branch cards} called from the scene will be removed together with their cards in the [Script] tab. Undo (Ctrl+Z) restores everything.</value>
   </data>
   <data name="Side_EpisodesOfSceneWillBe" xml:space="preserve">
-    <value>{1} episodes of scene “{0}” will be removed along with their cards in the [Script] tab. Undo (Ctrl+Z) brings them back.</value>
+    <value>{1:episode|episodes} of scene “{0}” will be removed together with their cards in the [Script] tab. Undo (Ctrl+Z) restores everything.</value>
   </data>
   <data name="Side_DeleteScene" xml:space="preserve">
     <value>Delete scene</value>
   </data>
   <data name="Side_DeletedSceneEpisodesBranchCards" xml:space="preserve">
-    <value>Deleted scene “{0}” — {1} episodes, {2} branch cards. Undo (Ctrl+Z) brings it back.</value>
+    <value>Deleted scene “{0}” — {1:episode|episodes}, {2:branch card|branch cards}. Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Side_DeletedSceneEpisodesUndoCtrl" xml:space="preserve">
-    <value>Deleted scene “{0}” — {1} episodes. Undo (Ctrl+Z) brings it back.</value>
+    <value>Deleted scene “{0}” — {1:episode|episodes}. Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Side_ClearedTitleEpisodeIDIs" xml:space="preserve">
     <value>Cleared the title — episode ID '{0}' is shown.</value>
@@ -1776,7 +1776,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Added speaker '{0}' — it can be picked in every chapter's script. Its character key is temporarily '{1}' — change it to match the art in the [Structure] tab.</value>
   </data>
   <data name="Speakers_NamesOnlyInScript" xml:space="preserve">
-    <value>{0} names only in the script</value>
+    <value>{0:name|names} only in the script</value>
   </data>
   <data name="Speakers_NamesTypedDirectlyInDialogue" xml:space="preserve">
     <value>Names typed directly in dialogue speaker fields but not in the list above. [Register] puts one in the list (with a temporary character key); renaming updates all dialogue lines with that name — renaming to a name in the list merges them into that speaker (fixing typos).</value>
@@ -1788,19 +1788,19 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Register all</value>
   </data>
   <data name="Speakers_PutsNamesAboveIntoSpeaker" xml:space="preserve">
-    <value>Puts the {0} names above into the speaker list at once — with temporary character keys. One undo (Ctrl+Z) brings them all back.</value>
+    <value>Puts the {0:name|names} above into the speaker list at once — with temporary character keys. One undo (Ctrl+Z) reverts it all.</value>
   </data>
   <data name="Speakers_RegisterAllSpeakers" xml:space="preserve">
     <value>Register all speakers</value>
   </data>
   <data name="Speakers_RenamingUpdatesAllDialogueLines" xml:space="preserve">
-    <value>Renaming updates all {2} dialogue lines whose speaker is '{0}'. Renaming to a name in the list merges them into that speaker.</value>
+    <value>Renaming updates the {2:dialogue line|dialogue lines} whose speaker is '{0}'. Renaming to a name in the list merges them into that speaker.</value>
   </data>
   <data name="Speakers_SpeakerNameInScript" xml:space="preserve">
     <value>Speaker name in the script</value>
   </data>
   <data name="Speakers_Lines" xml:space="preserve">
-    <value>{0} lines</value>
+    <value>{0:line|lines}</value>
   </data>
   <data name="Speakers_Register" xml:space="preserve">
     <value>Register</value>
@@ -2013,7 +2013,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Condition '{0}' → '{1}'.</value>
   </data>
   <data name="Side_ConditionPathsFollowed" xml:space="preserve">
-    <value>Condition '{0}' → '{1}' — {2} paths followed.</value>
+    <value>Condition '{0}' → '{1}' — {2:path|paths} followed.</value>
   </data>
   <data name="Side_DeletesIfItSUsed" xml:space="preserve">
     <value>Deletes '{0}' — if it's used somewhere, it says where and refuses.</value>
@@ -2223,7 +2223,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Scene · {0}</value>
   </data>
   <data name="Structure_Episodes" xml:space="preserve">
-    <value>{0} episodes</value>
+    <value>{0:episode|episodes}</value>
   </data>
   <data name="Structure_Scene2" xml:space="preserve">
     <value>Scene</value>
@@ -2238,7 +2238,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>This scene is gone.</value>
   </data>
   <data name="Structure_GroupOfEpisodesWithThis" xml:space="preserve">
-    <value>A group of {0} episodes with this scene ID. Rename the scene on its row in the [Script] tab's Hierarchy. The scene start (⌂) is the entrance from outside — where rollback returns and Continue resumes.</value>
+    <value>A group of {0:episode|episodes} with this scene ID. Rename the scene on its row in the [Script] tab's Hierarchy. The scene start (⌂) is the entrance from outside — where rollback returns and Continue resumes.</value>
   </data>
   <data name="Structure_SelectEpisode" xml:space="preserve">
     <value>Select episode</value>
@@ -2283,13 +2283,13 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>No speakers yet — speaker names are added in the “Speakers” tab of the [Script] tab.</value>
   </data>
   <data name="Structure_SpeakersWithoutCharacterKeySpeakers" xml:space="preserve">
-    <value>⚠ {0} speakers without a character key · {1} speakers with a temporary key (temp_) — change them to keys that match the art.</value>
+    <value>⚠ {0:speaker|speakers} without a character key · {1:speaker|speakers} with a temporary key (temp_) — change them to keys that match the art.</value>
   </data>
   <data name="Structure_SpeakersWithoutCharacterKeyTheir" xml:space="preserve">
-    <value>⚠ {0} speakers without a character key — their dialogue gets no portrait · expressions.</value>
+    <value>⚠ {0:speaker|speakers} without a character key — their dialogue gets no portrait · expressions.</value>
   </data>
   <data name="Structure_SpeakersWithTemporaryKeyTemp" xml:space="preserve">
-    <value>⚠ {0} speakers with a temporary key (temp_) — change them to keys that match the art.</value>
+    <value>⚠ {0:speaker|speakers} with a temporary key (temp_) — change them to keys that match the art.</value>
   </data>
   <data name="Structure_NoCharacterKeyNameIs" xml:space="preserve">
     <value>'{0}' — no character key. The name is edited in the [Script] tab.</value>
@@ -2439,13 +2439,13 @@ Stats on arrival —
     <value>Episode position</value>
   </data>
   <data name="Structure_ReLaidOutCardsOf" xml:space="preserve">
-    <value>Re-laid out {1} cards of '{0}' in flow order (there are no cards in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
+    <value>Re-laid out {1:card|cards} of '{0}' in flow order (there are no cards in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Structure_ReLaidOutCardsOf2" xml:space="preserve">
-    <value>Re-laid out {1} cards of '{0}' as they are in the [Script] tab (the {2} cards not in the [Script] tab go on the bottom row). Undo (Ctrl+Z) brings it back.</value>
+    <value>Re-laid out {1:card|cards} of '{0}' as they are in the [Script] tab (cards not in the [Script] tab — {2} — go on the bottom row). Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Structure_ReLaidOutCardsOf3" xml:space="preserve">
-    <value>Re-laid out {1} cards of '{0}' as they are in the [Script] tab. Undo (Ctrl+Z) brings it back.</value>
+    <value>Re-laid out {1:card|cards} of '{0}' as they are in the [Script] tab. Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Structure_Drag" xml:space="preserve">
     <value>Drag</value>
@@ -2517,7 +2517,7 @@ Stats on arrival —
     <value>Expression</value>
   </data>
   <data name="Structure_ThisConditionIsAlsoUsed" xml:space="preserve">
-    <value>This condition is also used in {0} other places — editing the expression changes them too.</value>
+    <value>This condition is also used in {0:other place|other places} — editing the expression changes them too.</value>
   </data>
   <data name="Structure_NewConditionThisChoiceShows" xml:space="preserve">
     <value>New condition — this choice shows only when it holds.</value>
@@ -2583,7 +2583,7 @@ Stats on arrival —
     <value>This episode has no way out yet.</value>
   </data>
   <data name="Structure_ThisEpisodeHasWaysOut" xml:space="preserve">
-    <value>This episode has {0} ways out, and this slot is empty.</value>
+    <value>This episode has {0:way|ways} out, and this slot is empty.</value>
   </data>
   <data name="Structure_InScriptTabWriteText" xml:space="preserve">
     <value> In the [Script] tab, write text in a slot under the card and drag to connect, and this slot becomes a path.</value>
@@ -2613,7 +2613,7 @@ Stats on arrival —
     <value>Scene ID '{0}' is used by another scene — changing it would merge the two scenes. To merge, drag episodes in the [Script] tab.</value>
   </data>
   <data name="Structure_SceneIDEpisodesSceneName" xml:space="preserve">
-    <value>Scene ID '{0}' → '{1}' — {2} episodes, the scene name · note and automatic IDs followed. Undo (Ctrl+Z) brings it back.</value>
+    <value>Scene ID '{0}' → '{1}' — {2:episode|episodes}, the scene name · note and automatic IDs followed. Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Structure_NoStatsTypeKeyIn" xml:space="preserve">
     <value>No stats — type a key in the box below and press [＋ Add].</value>
@@ -2643,7 +2643,7 @@ Stats on arrival —
     <value>Rename stat key</value>
   </data>
   <data name="Structure_PathsConditionsSuppliedConditionsTest" xml:space="preserve">
-    <value>'{0}' → '{1}' — {2} paths · {3} conditions · {4} supplied conditions · {5} test starts · {6} dialogue lines followed. ⚠ This stat drops to its initial value in saves already made.</value>
+    <value>'{0}' → '{1}' — {2:path|paths} · {3:condition|conditions} · {4:supplied condition|supplied conditions} · {5:test start|test starts} · {6:dialogue line|dialogue lines} followed. ⚠ This stat drops to its initial value in saves already made.</value>
   </data>
   <data name="Structure_KeyKeyInSaveData" xml:space="preserve">
     <value>Key — the key in save data and the name used in condition expressions · {{stat("key")}} in dialogue (the statKey that goes into Yarn as is). {0}. Edit and press Enter (or leave the box) — paths · conditions · {{stat("key")}} in this chapter's dialogue follow. Esc cancels.</value>
@@ -2730,10 +2730,10 @@ Stats on arrival —
     <value>Clear and delete stat</value>
   </data>
   <data name="Structure_DeletedStatRemovedItsTerm" xml:space="preserve">
-    <value>Deleted stat '{0}' — removed its term from {1} paths and emptied the expression of {2} conditions.</value>
+    <value>Deleted stat '{0}' — removed its term from {1:path|paths} and emptied the expression of {2:condition|conditions}.</value>
   </data>
   <data name="Structure_DialogueLinesReadingThisStat" xml:space="preserve">
-    <value> {0} dialogue lines reading this stat remain — the validation report flags them.</value>
+    <value> Dialogue lines reading this stat were kept ({0}) — the validation report flags them.</value>
   </data>
   <data name="Structure_RenamedPathsTestStartsDialogue" xml:space="preserve">
     <value>Renamed '{0}' → '{1}'. Paths · test starts · dialogue nodes followed.</value>
@@ -2742,7 +2742,7 @@ Stats on arrival —
     <value>Position: X={0:0.##} Y={1:0.##}</value>
   </data>
   <data name="Structure_Choices3" xml:space="preserve">
-    <value>{0} choices</value>
+    <value>{0:choice|choices}</value>
   </data>
   <data name="Structure_GateOfIncomingPaths" xml:space="preserve">
     <value>Gate of incoming paths —</value>
@@ -2760,7 +2760,7 @@ Stats on arrival —
     <value> · {0} progression JSON not written</value>
   </data>
   <data name="Structure_NoErrorsNotices" xml:space="preserve">
-    <value> — no errors ({0} notices)</value>
+    <value> — no errors ({0:notice|notices})</value>
   </data>
   <data name="Structure_ProgressionJSONNoChapterWritten" xml:space="preserve">
     <value>Progression JSON — no chapter written yet.</value>
@@ -2778,7 +2778,7 @@ Stats on arrival —
     <value>Can't access the clipboard.</value>
   </data>
   <data name="Structure_CopiedLinesOfValidationReport" xml:space="preserve">
-    <value>Copied {0} lines of the validation report.</value>
+    <value>Copied {0:line|lines} of the validation report.</value>
   </data>
   <data name="Structure_ReLaysOutEveryCard" xml:space="preserve">
     <value>Re-lays out every card as it's placed in the [Script] tab. Positions moved by hand are lost — one undo (Ctrl+Z) brings them back.</value>

@@ -129,7 +129,7 @@ public static class ChapterSceneEntryCheck
                 path,
                 ChapterSheetNames.Edges,
                 null,
-                string.Format(Msg.Diag_SceneHasEntrancesFromOutside, sceneId, entries.Count, string.Join(", ", entries)) +
+                Plural.Format(Msg.Diag_SceneHasEntrancesFromOutside, sceneId, entries.Count, string.Join(", ", entries)) +
                 (edge is null ? string.Empty : string.Format(Msg.Diag_WhatMadeSecondEntrance, edge.Where))));
         }
 

@@ -1173,7 +1173,7 @@ public sealed partial class ProjectEditor
         if (uses.Count > 0 && !clearUses)
         {
             return StatRemoveOutcome.Refuse(
-                string.Format(Msg.Edit_CanTDeleteStatIt, target, uses.Count),
+                Plural.Format(Msg.Edit_CanTDeleteStatIt, target, uses.Count),
                 uses);
         }
 
@@ -1498,7 +1498,7 @@ public sealed partial class ProjectEditor
         if (uses.Count > 0)
         {
             return ChapterConditionRemoveOutcome.Refuse(
-                string.Format(Msg.Edit_CanTDeleteConditionIt, target, uses.Count), uses);
+                Plural.Format(Msg.Edit_CanTDeleteConditionIt, target, uses.Count), uses);
         }
 
         // 아무도 안 부르면 판에 공급된 사본도 함께 걷는다 — 남겨 두면 정의 없는 조건이

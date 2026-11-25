@@ -5,6 +5,7 @@ using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App.Services;
 
@@ -231,7 +232,7 @@ internal sealed class AuthoringSession
         _deliveryRequested = false;
         _savedSnapshot = ProjectSnapshotCodec.Encode(project);
         StatusMessage =
-            string.Format(Ui.Session_Nodes, Path.GetFileName(Path.GetDirectoryName(ProjectPath)), project.EnumerateNodes().Count()) +
+            Plural.Format(Ui.Session_Nodes, Path.GetFileName(Path.GetDirectoryName(ProjectPath)), project.EnumerateNodes().Count()) +
             DestinationsNote();
 
         AppSettingsService.SaveRecentProject(loaded.ManifestPath);
@@ -350,7 +351,7 @@ internal sealed class AuthoringSession
 
         return lines == 0
             ? string.Format(Ui.Session_Speaker, oldName, typed)
-            : string.Format(Ui.Session_SpeakerLinesFollowed, oldName, typed, lines);
+            : Plural.Format(Ui.Session_SpeakerLinesFollowed, oldName, typed, lines);
     }
 
     /// <summary>화자를 목록에서 지운다 — [대본] 탭. 이미 대본에 적힌 이름은 그대로 남는다(화자 칸은 자유 입력).</summary>
@@ -369,7 +370,7 @@ internal sealed class AuthoringSession
         {
             0 => null,
             1 => string.Format(Ui.Session_AddedToSpeakerListIts, added[0].Name, Josa.을를(added[0].Name), added[0].CharacterId),
-            _ => string.Format(Ui.Session_AddedSpeakersToListTheir, added.Count)
+            _ => Plural.Format(Ui.Session_AddedSpeakersToListTheir, added.Count)
         };
     }
 
@@ -413,8 +414,8 @@ internal sealed class AuthoringSession
         }
 
         return listed
-            ? string.Format(Ui.Session_MergedLinesOfIntoSpeaker, oldName, lines, typed, Josa.으로(typed))
-            : string.Format(Ui.Session_ChangedLinesThisNameIsn, oldName, typed, lines);
+            ? Plural.Format(Ui.Session_MergedLinesOfIntoSpeaker, oldName, lines, typed, Josa.으로(typed))
+            : Plural.Format(Ui.Session_ChangedLinesThisNameIsn, oldName, typed, lines);
     }
 
     /// <summary>화자의 캐릭터 키 — [구성] 탭. 초상화 · 표정이 이 키로 붙는다. 같은 값이면 기록하지 않는다.</summary>

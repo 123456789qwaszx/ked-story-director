@@ -51,7 +51,7 @@ public static class SceneMoveGuard
             string scene = SceneName(chapter, sceneId);
             string list = string.Join(", ", now.Select(entry => $"'{entry.ShownTitle}'({Why(after, chapter.Edges, entry)})"));
 
-            reasons.Add(string.Format(Msg.Edit_SceneWouldHaveEntrancesFrom, scene, now.Count, list));
+            reasons.Add(Plural.Format(Msg.Edit_SceneWouldHaveEntrancesFrom, scene, now.Count, list));
         }
 
         if (reasons.Count == 0)

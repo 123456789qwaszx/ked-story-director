@@ -11,6 +11,7 @@ using Vn.App.Views;
 using Vn.Authoring.Model;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App;
 
@@ -113,7 +114,7 @@ public partial class MainWindow
 
         _sheet.Children.Add(new TextBlock
         {
-            Text = string.Format(Ui.Speakers_NamesOnlyInScript, unlisted.Count),
+            Text = Plural.Format(Ui.Speakers_NamesOnlyInScript, unlisted.Count),
             FontSize = 12,
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(0, 16, 0, 0),
@@ -144,7 +145,7 @@ public partial class MainWindow
             Margin = new Thickness(0, 6, 0, 0),
             Tag = "speaker-register-all"
         };
-        ToolTip.SetTip(all, string.Format(Ui.Speakers_PutsNamesAboveIntoSpeaker, unlisted.Count));
+        ToolTip.SetTip(all, Plural.Format(Ui.Speakers_PutsNamesAboveIntoSpeaker, unlisted.Count));
         all.Click += (_, _) => UiGuard.Run(_session, Ui.Speakers_RegisterAllSpeakers, () =>
         {
             // 누른 때의 대본으로 다시 본다 — 이름 칸을 고치던 중이면 초점이 떠나며 먼저 고쳐졌다.
@@ -161,7 +162,7 @@ public partial class MainWindow
     {
         string speakerName = entry.Name;
         var name = new TextBox { Text = speakerName, FontSize = 12, Tag = "speaker-unlisted:" + speakerName };
-        ToolTip.SetTip(name, string.Format(Ui.Speakers_RenamingUpdatesAllDialogueLines, speakerName, Josa.이가(speakerName), entry.Lines));
+        ToolTip.SetTip(name, Plural.Format(Ui.Speakers_RenamingUpdatesAllDialogueLines, speakerName, Josa.이가(speakerName), entry.Lines));
 
         void Commit() => UiGuard.Run(_session, Ui.Speakers_SpeakerNameInScript, () =>
         {
@@ -204,7 +205,7 @@ public partial class MainWindow
 
         var lines = new TextBlock
         {
-            Text = string.Format(Ui.Speakers_Lines, entry.Lines),
+            Text = Plural.Format(Ui.Speakers_Lines, entry.Lines),
             FontSize = 11,
             Opacity = 0.65,
             MinWidth = 34,

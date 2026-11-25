@@ -12,6 +12,7 @@ using Vn.Authoring.Editing;
 using Vn.Authoring.Model;
 using Vn.Authoring.Serialization;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App;
 
@@ -573,7 +574,7 @@ public partial class MainWindow : Window
                 ForgetRemovedPick();
                 RefreshShell();
                 _session.SetStatus(
-                    string.Format(Ui.Main_DeletedChapterAndCardsIn, shown, result.NodesRemoved) +
+                    Plural.Format(Ui.Main_DeletedChapterAndCardsIn, shown, result.NodesRemoved) +
                     StaleExportNote(result.StaleExport, chapterId));
             },
             closed: () => RemoveConfirmButton = null);

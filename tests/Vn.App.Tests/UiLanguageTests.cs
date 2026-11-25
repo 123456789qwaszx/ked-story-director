@@ -125,6 +125,44 @@ public sealed class UiLanguageTests : IDisposable
             Table("Ui.en.resx").Where(pair => Regex.IsMatch(pair.Value, "[가-힣ㄱ-ㅎㅏ-ㅣ]")).Select(pair => pair.Key).Order(StringComparer.Ordinal));
     }
 
+    [Fact]
+    public void 수_낱말_꼴은_영어에만_있고_그_키는_Plural_Format으로만_편다()
+    {
+        // 「{2:line|lines}」(english-ui E9) — string.Format으로 펴면 「line|lines」가 그대로 찍힌다. 그 꼴을 처음 넣은 키는 코드도 Plural.Format으로 바꾼다.
+        Dictionary<string, string> english = Table("Ui.en.resx");
+        string[] keys = english.Where(pair => Vn.Authoring.Strings.Plural.Token.IsMatch(pair.Value)).Select(pair => pair.Key).ToArray();
+
+        Assert.NotEmpty(keys);
+        Assert.DoesNotContain(Table("Ui.resx"), pair => Vn.Authoring.Strings.Plural.Token.IsMatch(pair.Value));
+        Assert.Empty(UsesOutsidePlural(keys));
+        Assert.Equal("Speaker 'a' → 'b' — 1 line followed.", Vn.Authoring.Strings.Plural.Format(english["Session_SpeakerLinesFollowed"], "a", "b", 1));
+        Assert.Equal("Speaker 'a' → 'b' — 2 lines followed.", Vn.Authoring.Strings.Plural.Format(english["Session_SpeakerLinesFollowed"], "a", "b", 2));
+    }
+
+    /// <summary>그 키를 <c>Plural.Format</c> 밖에서 쓰는 자리 — 「파일: 쓰인 글」. 앞에 이름공간(<c>Vn.….Strings.</c>)이 붙어도 된다.</summary>
+    private static IEnumerable<string> UsesOutsidePlural(IReadOnlyCollection<string> keys)
+    {
+        var use = new Regex(@"\bUi\.(" + string.Join("|", keys.Select(Regex.Escape)) + @")\b");
+        string root = Path.GetFullPath("../../../../../");
+
+        foreach (string folder in new[] { "src/Vn.App" })
+        {
+            foreach (string file in Directory.EnumerateFiles(Path.Combine(root, folder), "*.cs", SearchOption.AllDirectories)
+                         .Where(path => !path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(part => part is "bin" or "obj")))
+            {
+                string text = File.ReadAllText(file);
+
+                foreach (Match match in use.Matches(text))
+                {
+                    if (!Regex.IsMatch(text[..match.Index], @"Plural\.Format\(\s*(?:[\w.]+\.)?$"))
+                    {
+                        yield return $"{Path.GetFileName(file)}: {match.Value}";
+                    }
+                }
+            }
+        }
+    }
+
     private static Dictionary<string, string> Table(string file) =>
         XDocument.Load(Path.Combine(StringsFolder, file)).Root!.Elements("data")
             .ToDictionary(data => (string)data.Attribute("name")!, data => (string?)data.Element("value") ?? string.Empty, StringComparer.Ordinal);

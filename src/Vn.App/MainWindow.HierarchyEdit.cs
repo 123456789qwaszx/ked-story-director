@@ -3,6 +3,7 @@ using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
+using Vn.Authoring.Strings;
 
 namespace Vn.App;
 
@@ -100,15 +101,15 @@ public partial class MainWindow
             anchor,
             _session,
             branchCards > 0
-                ? string.Format(Ui.Side_EpisodesOfSceneAndBranch, scene.DisplayName, scene.Episodes.Count, branchCards)
-                : string.Format(Ui.Side_EpisodesOfSceneWillBe, scene.DisplayName, scene.Episodes.Count),
+                ? Plural.Format(Ui.Side_EpisodesOfSceneAndBranch, scene.DisplayName, scene.Episodes.Count, branchCards)
+                : Plural.Format(Ui.Side_EpisodesOfSceneWillBe, scene.DisplayName, scene.Episodes.Count),
             Ui.Side_DeleteScene,
             () =>
             {
                 Vn.Authoring.Editing.ProjectEditor.RemovedScene removed = _session.Editor.RemoveScene(chapterId, sceneId);
                 _session.SetStatus(removed.BranchCards > 0
-                    ? string.Format(Ui.Side_DeletedSceneEpisodesBranchCards, scene.DisplayName, removed.Episodes, removed.BranchCards)
-                    : string.Format(Ui.Side_DeletedSceneEpisodesUndoCtrl, scene.DisplayName, removed.Episodes));
+                    ? Plural.Format(Ui.Side_DeletedSceneEpisodesBranchCards, scene.DisplayName, removed.Episodes, removed.BranchCards)
+                    : Plural.Format(Ui.Side_DeletedSceneEpisodesUndoCtrl, scene.DisplayName, removed.Episodes));
                 ForgetRemovedPick();
             },
             closed: () => RemoveConfirmButton = null);

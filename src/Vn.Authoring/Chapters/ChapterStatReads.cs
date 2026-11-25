@@ -167,7 +167,7 @@ public static partial class ChapterStatReads
                 chapter.SourcePath,
                 ChapterSheetNames.Stats,
                 null,
-                string.Format(Msg.Diag_InDialogueStatIsnT, YarnSyntax.StatRead(missing.Key), missing.Key, missing.Lines, missing.FirstPlace)));
+                Plural.Format(Msg.Diag_InDialogueStatIsnT, YarnSyntax.StatRead(missing.Key), missing.Key, missing.Lines, missing.FirstPlace)));
         }
     }
 

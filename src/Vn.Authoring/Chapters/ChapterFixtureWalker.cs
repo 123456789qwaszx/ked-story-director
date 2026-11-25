@@ -66,7 +66,7 @@ public static class ChapterFixtureWalker
             if (next is null)
             {
                 return new FixtureWalkResult(path,
-                    string.Format(Msg.Diag_HasWaysForwardButTest, current, passable.Count));
+                    Plural.Format(Msg.Diag_HasWaysForwardButTest, current, passable.Count));
             }
 
             stats = ChapterReachabilityProver.ApplyDeltas(chapter, stats, next.StatChanges);
