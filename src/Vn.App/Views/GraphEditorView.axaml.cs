@@ -1841,8 +1841,8 @@ public partial class GraphEditorView : UserControl
         // 그 자리에 끼워 넣기 때문이다(<see cref="JoinChoice"/>).
         // ⛔ 예전에는 이은 길이 늘 위로, 적어만 둔 칸이 그 아래로 모였다 — 아래 칸을 먼저 이으면 그 줄이 위로 올라가
         //    적은 순서가 뒤바뀌었다.
-        // ⚠ 문구 없는 길(진행)은 이은 줄 가운데 맨 아래다 — 소유자 보고("진행이 선택지 위에 서니 헷갈린다"). 보이지 않는
-        //   기본은 플레이어에게 버튼으로 안 뜨므로 선택지 순서를 왜곡하지도 않는다.
+        // ⚠ 자동 길은 이은 줄 가운데 맨 아래다 — 소유자 보고("진행이 선택지 위에 서니 헷갈린다"). 플레이어에게 버튼으로 안 뜨므로 선택지 순서를
+        //   왜곡하지 않는다. 문구가 빈 선택지(자동 길이 바뀐 것 · auto-to-choice)는 버튼이라 제 자리다(2026-11-26).
         foreach (GraphChoicePort slot in slots)
         {
             if (slot.IsEmpty)
@@ -2287,10 +2287,14 @@ public partial class GraphEditorView : UserControl
             return raw;
         }
 
-        // 이은 칸은 간선 순서대로 — 단 문구 없는 길(진행)은 그 가운데 맨 아래다(소유자: "진행이 선택지 위에 서니 헷갈린다").
+        // 이은 칸은 간선 순서대로다(= 런타임 OptionIndex) — 문구가 빈 선택지도 제 자리다(2026-11-26 소유자 — 「자동으로 이어져 있던 에피소드의 두 번째
+        // 칸에 문구를 적어 다른 에피소드에 이으면 기존 자동의 것이 두 번째로 밀려난다 … 순서를 뒤섞지 말고 유지」 · ⛔ 그 전에는 문구 없는 길을 모두 맨
+        // 아래로 내렸다 — 자동 길이 선택지와 함께 서던 때의 규칙(소유자: "진행이 선택지 위에 서니 헷갈린다")인데, 그 뒤로 두 번째 길을 이으면 자동 길이
+        // 그 자리에서 문구가 빈 선택지가 되므로(auto-to-choice) 그 선택지만 화면에서 아래로 밀렸다). 자동 길은 다른 길과 함께 설 수 없으니(검증) 맨 아래로
+        // 내리는 것은 옛 파일의 자동 길뿐이다.
         List<GraphChoicePort> joined = raw
             .Where(choice => !choice.IsEmpty)
-            .OrderBy(choice => choice.Label.Length == 0)
+            .OrderBy(choice => choice.IsAuto)
             .ToList();
         List<ChoiceRow?> rows = RowsOf(raw[0].ChapterId, raw[0].FromEpisodeId, joined.Count);
         var slots = new List<GraphChoicePort>();
@@ -7783,10 +7787,10 @@ public partial class GraphEditorView : UserControl
             // 그 줄 자리 그대로 잇는다 (H2 · 2026-10-29 소유자: "선택지 문구의 순서를 유지해") — 간선은 이 줄 아래의 첫
             // 이은 줄 앞에 끼워 넣는다. 그래야 이은 줄끼리의 차례(= 간선 순서 = 런타임 OptionIndex, §5-3)가 화면과 같다.
             // ⛔ 예전에는 간선을 끝에 붙이고 이은 줄을 위로 모았다 — 아래 칸을 먼저 이으면 그 줄이 위로 올라갔다.
-            // ⚠ 문구 없는 길(진행)은 화면에서만 맨 아래로 내려 서므로 기준으로 삼지 않는다 — 간선 순서의 엉뚱한 자리다.
+            // ⚠ 자동 길은 화면에서만 맨 아래로 내려 서므로 기준으로 삼지 않는다 — 간선 순서의 엉뚱한 자리다. 문구가 빈 선택지는 제 자리라 기준이 된다(2026-11-26).
             ChapterEdge? before = slots
                 .Skip(choice.Slot + 1)
-                .Where(slot => !slot.IsEmpty && slot.Label.Length > 0)
+                .Where(slot => !slot.IsEmpty && !slot.IsAuto)
                 .Select(EdgeOf)
                 .FirstOrDefault(edge => edge is not null);
 

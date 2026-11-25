@@ -117,6 +117,15 @@ public sealed class ChoiceSlotTests : IDisposable
             face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag);
         Assert.Equal(GraphEditorView.SlotNeedsLabelText, TextOf(needs));
 
+        // 차례는 그대로다 — 자동이던 길이 첫 줄, 새 길이 둘째 줄(2026-11-26 소유자 — 「기존 오토의 것이 두번째 선택지로 밀려나는 문제 … 순서를
+        // 뒤섞지 말고 유지」). 간선 순서(= 런타임 OptionIndex)와 같다.
+        Assert.Equal(0, Rows(graph, "root").ToList().FindIndex(row =>
+            row.Children.OfType<Border>().Any(face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag)));
+        Assert.Equal("다른 길", TextOf(Rows(graph, "root")[1].Children.First(child => child is TextBlock)));
+        Assert.Equal(["a", "a"], edges.Select(edge => edge.ToEpisodeId));
+        Assert.True(edges[0].HasNoOptionLabel);
+        Assert.Equal("다른 길", edges[1].OptionLabel);
+
         // 되돌리기 한 번 — 새 길과 바꾼 것이 함께 돌아간다.
         session.Editor.Undo();
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();

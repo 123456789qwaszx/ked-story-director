@@ -97,7 +97,7 @@ public sealed class ChapterRailTests
     });
 
     [Fact]
-    public void 에피소드_카드의_선택지는_칸으로_서고_진행은_맨_아래다() => HeadlessUi.Run(() =>
+    public void 에피소드_카드의_선택지는_칸으로_서고_문구가_빈_선택지도_간선_순서_그대로다() => HeadlessUi.Run(() =>
     {
         // 에피소드 카드의 선택지는 카드 아래 칸에 선다. 칸의 주인은 챕터 간선이다.
         (GraphEditorView graph, AuthoringSession session, string fileId) = ShowBoard("ch01");
@@ -107,7 +107,8 @@ public sealed class ChapterRailTests
         session.Editor.SetScriptLineText(ep00.Id, script.ActiveLines.First().Id, "윌로", "첫 줄");
         AddEpisodeCard(session, fileId, "EP01").Layout.X = 1200;
 
-        // 진행 간선을 일부러 먼저 둔다 — 그래도 화면은 선택지가 위여야 한다(반대면 헷갈린다).
+        // 문구 없는 간선을 먼저 둔다 — 화면도 그 차례다(= 런타임 OptionIndex · 2026-11-26 소유자 — 「선택지의 순서를 뒤섞지 말고 유지」). ⛔ 그 전에는 문구
+        // 없는 길을 맨 아래로 내렸다(「진행이 선택지 위에 서니 헷갈린다」 — 자동 길이 선택지와 함께 서던 때). 문구 없는 길은 이제 문구를 적을 선택지다.
         Chapter(session, "ch01",
             episodes: ["EP00", "EP01"],
             edges:
@@ -118,7 +119,7 @@ public sealed class ChapterRailTests
             ]);
         graph.Rebuild();
 
-        // 칸의 차례 — 선택지(간선 순서)가 위, 문구 없는 진행이 그 아래다.
+        // 칸의 차례 — 간선 순서 그대로다.
         var canvas = graph.FindControl<Canvas>("GraphCanvas")!;
         List<string> order = Rows(canvas, "EP00")
             .Take(3)
@@ -126,10 +127,10 @@ public sealed class ChapterRailTests
                            (row.Children.OfType<Border>().Single().Child as TextBlock)!.Text ?? string.Empty)
             .ToList();
 
-        Assert.Equal("라루를 믿는다", order[0]);
-        Assert.Equal("의심한다", order[1]);
-        // 문구 없는 진행(자동이 아닌 이은 길) — 빨갛게 「문구를 적어 주세요」다(2026-11-25 auto-to-choice A2 · ⛔ 2026-11-18부터는 회색 「빈 선택지」).
-        Assert.Equal(GraphEditorView.SlotNeedsLabelText, order[2]);
+        // 문구 없는 길(자동이 아닌 이은 길) — 빨갛게 「문구를 적어 주세요」다(2026-11-25 auto-to-choice A2 · ⛔ 2026-11-18부터는 회색 「빈 선택지」).
+        Assert.Equal(GraphEditorView.SlotNeedsLabelText, order[0]);
+        Assert.Equal("라루를 믿는다", order[1]);
+        Assert.Equal("의심한다", order[2]);
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
