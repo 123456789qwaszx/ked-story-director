@@ -92,8 +92,8 @@ This one document takes you from getting started to handing over your work.
    - There's always one blank line at the bottom of the writing box — even after going elsewhere, click that line and keep writing (no need to press Enter first).
    - If the text can't be applied, the box's border turns red, and hovering over the box shows why (it also appears in the status bar below). The text stays in the box, so just fix it.
    - Select a card and its lines appear as a table (`#` · speaker · dialogue) in the "Inspector" on the right. You can edit line by line here too —
-     type **just the first letter or initial consonants** in the speaker field ("샤" · "ㅅ" · "ㅅㅌ") and candidates from the names registered in the "Speakers" tab appear right away. Click **▾** beside the field to choose
-     from all names. To add a line, use [Add line] at the right of the table header; right-click a line for `Add line below` · `Delete`.
+     type **just the first letter or initial consonants** in the speaker field ("샤" · "ㅅ" · "ㅅㅌ") and candidates from the names registered in the "Speakers" tab appear right away. Click a candidate, or move through them with **↑ · ↓ and press Enter** (`Esc` goes back to
+     what you typed). Click **▾** beside the field to choose from all names. To add a line, use [Add line] at the right of the table header; right-click a line for `Add line below` · `Delete`.
    - The **font · font size** in [⚙ Settings] → "Script writing box" are the font and size for **new cards** — they're written into a card when it's made (in the project file ·
      shown the same to people you work with), and changing the setting later doesn't change existing cards. To change the font or size of existing text, select the text and use the formatting
      tools at the top. **Bold · text color** are set in the same place and follow the same rule (they're for new cards) — a card that's bold from the start can't have just part of it made regular.

@@ -705,7 +705,19 @@ public partial class DialogueNodeEditor : UserControl
             }
             else if (field is AutoCompleteBox auto)
             {
-                auto.TextChanged += (_, _) => Commit();
+                // 후보 사이를 화살표로 오가는 동안은 칸에 그 이름이 미리 보일 뿐 넣지 않는다 — 고르면(Enter · 누르기 · 목록이 닫힐 때) 넣는다
+                // (2026-11-26 소유자 — 화살표로 고르고 Enter로 넣기 · 오간 이름마다 되돌리기 칸이 쌓이지 않게).
+                auto.TextChanged += (_, _) =>
+                {
+                    if (auto.IsDropDownOpen && auto.SelectedItem is string previewing &&
+                        string.Equals(auto.Text, previewing, StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
+                    Commit();
+                };
+                auto.DropDownClosed += (_, _) => Commit();
             }
         }
 
