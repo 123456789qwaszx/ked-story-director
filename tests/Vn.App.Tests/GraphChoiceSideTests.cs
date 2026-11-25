@@ -15,7 +15,8 @@ namespace Vn.App.Tests;
 /// 하나하나의 방향이 바뀐다.
 ///
 /// 도착 카드가 출발 카드보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다 — 점이 줄기 쪽 · 문구가 그 왼쪽에 서고 레인은 카드
-/// 왼쪽으로 빠진다. 줄기는 언제나 카드 가운데 아래다. 분기 포트도 같은 쪽 규칙이다.
+/// 왼쪽으로 빠진다. 줄기는 언제나 카드 왼쪽에서 같은 자리다(<see cref="GraphEditorView.RailTrunkInset"/> · 2026-11-25 — ⛔ 그 전에는 카드 가운데 아래).
+/// 쪽을 재는 기준은 그대로 카드의 지금 폭의 가운데다(usability UX6). 분기 포트도 같은 쪽 규칙이다.
 ///
 /// 시험마다 챕터 시작 카드(start)를 멀리 오른쪽에 둔다 — 시작 카드 기준으로 카드째 뒤집는 규칙이면 결과가 달라진다.
 /// </summary>
@@ -45,11 +46,11 @@ public sealed class GraphChoiceSideTests : IDisposable
         Redraw(graph);
 
         double sceneX = CardX(graph, session, "scene");
-        double trunkX = sceneX + (CardWidth / 2);
+        double trunkX = sceneX + GraphEditorView.RailTrunkInset;
         StackPanel leftRow = Row(graph, "scene", "왼쪽 길");
         StackPanel rightRow = Row(graph, "scene", "오른쪽 길");
 
-        // 줄기는 가운데 — 왼쪽 줄은 줄기 왼쪽에(점이 줄기 쪽), 오른쪽 줄은 줄기 오른쪽에(점이 줄기 쪽) 선다.
+        // 줄기는 카드 왼쪽에서 늘 같은 자리 — 왼쪽 줄은 줄기 왼쪽에(점이 줄기 쪽), 오른쪽 줄은 줄기 오른쪽에(점이 줄기 쪽) 선다.
         Assert.Equal(trunkX - 14, Canvas.GetLeft(leftRow) + leftRow.DesiredSize.Width, precision: 3);
         Assert.IsType<Ellipse>(leftRow.Children[^1]);
         Assert.Equal(trunkX + 14, Canvas.GetLeft(rightRow), precision: 3);
@@ -61,7 +62,7 @@ public sealed class GraphChoiceSideTests : IDisposable
     });
 
     [Fact]
-    public void 어느_쪽으로_나가든_줄기는_카드_가운데_아래다() => HeadlessUi.Run(() =>
+    public void 어느_쪽으로_나가든_줄기는_카드_왼쪽에서_같은_자리다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show(
             ("start", 2400, 0), ("east", 800, 0), ("west", 800, 1400),
@@ -72,14 +73,14 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Editor.AddEdge("ch01", "west", "d", optionLabel: "서쪽 셋");
         Redraw(graph);
 
-        // 선택지는 쪽과 상관없이 언제나 노드 가운데 아래에서 나온다 — 한쪽으로 치우치지 않는다.
+        // 선택지는 쪽과 상관없이 언제나 카드 왼쪽에서 같은 자리의 줄기에서 나온다 — 줄 하나를 이어도 줄기가 옆으로 뛰지 않는다.
 
-        // 오른쪽뿐(빈 칸도 오른쪽) — 줄기는 가운데, 줄은 그 오른쪽에 선다.
+        // 오른쪽뿐(빈 칸도 오른쪽) — 줄은 줄기 오른쪽에 선다.
         StackPanel east = Row(graph, "east", "동쪽");
-        Assert.Equal(CardX(graph, session, "east") + (CardWidth / 2) + 14, Canvas.GetLeft(east), precision: 3);
+        Assert.Equal(CardX(graph, session, "east") + GraphEditorView.RailTrunkInset + 14, Canvas.GetLeft(east), precision: 3);
 
-        // 셋이 다 왼쪽(빈 칸이 없다) — 줄기는 역시 가운데, 줄은 그 왼쪽에 선다.
-        double westCenter = CardX(graph, session, "west") + (CardWidth / 2);
+        // 셋이 다 왼쪽(빈 칸이 없다) — 줄기는 같은 자리, 줄은 그 왼쪽에 선다.
+        double westCenter = CardX(graph, session, "west") + GraphEditorView.RailTrunkInset;
 
         foreach (string label in new[] { "서쪽 하나", "서쪽 둘", "서쪽 셋" })
         {
@@ -89,7 +90,7 @@ public sealed class GraphChoiceSideTests : IDisposable
 
         // 빈 칸만 있는 새 카드도 같은 자리다.
         StackPanel blank = Rows(graph, "a").First();
-        Assert.Equal(CardX(graph, session, "a") + (CardWidth / 2) + 14, Canvas.GetLeft(blank), precision: 3);
+        Assert.Equal(CardX(graph, session, "a") + GraphEditorView.RailTrunkInset + 14, Canvas.GetLeft(blank), precision: 3);
     });
 
     [Fact]
@@ -130,7 +131,7 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Editor.AddEdge("ch01", "scene", "under-right", optionLabel: "오른쪽 아래");
         Redraw(graph);
 
-        double trunkX = CardX(graph, session, "scene") + 500;   // 줄기는 넓힌 카드의 가운데 아래다
+        double trunkX = CardX(graph, session, "scene") + GraphEditorView.RailTrunkInset;   // 줄기는 넓혀도 카드 왼쪽에서 같은 자리다 — 쪽을 재는 기준만 지금 폭의 가운데다
         StackPanel left = Row(graph, "scene", "왼쪽 아래");
         StackPanel right = Row(graph, "scene", "오른쪽 아래");
 

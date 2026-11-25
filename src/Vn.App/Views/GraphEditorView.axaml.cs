@@ -1305,6 +1305,13 @@ public partial class GraphEditorView : UserControl
     private const double RailLaneGap = 8;       // 레인끼리 가로 간격 — 같은 줄로 겹치지 않게 (D3)
 
     /// <summary>
+    /// 선택지 줄기 — 카드 <b>왼쪽 가장자리에서</b> 이만큼(기본 폭 210의 가운데 105보다 조금 왼쪽). 카드 폭과 상관없이 늘 같은 자리다(2026-11-25
+    /// 소유자 — 「에피소드노드의 길이를 가로로 늘리는 경우가 많은데, 그럴 때 마다 선택지의 위치가 화면 바깥으로 벗어나는 경우가 많으니 엄청
+    /// 곤란했어 … 조금 좌측으로 옮기고, 에피소드 노드의 크기와 상관없이 항상 그 위치에」).
+    /// </summary>
+    internal const double RailTrunkInset = 72;
+
+    /// <summary>
     /// 챕터 간선을 철도 노선처럼 (T1, 소유자 그림) — 출발 카드에서 수직 줄기가 내려오고,
     /// 단일 분기점에서 가지들이 갈라져 도착 카드로 들어간다. 선택은 항상 에피소드 끝이므로
     /// (CHOICE는 파일 맨 끝 0~1개) 분기점은 하나다 — Line 비율 같은 것은 존재하지 않는다.
@@ -1831,11 +1838,11 @@ public partial class GraphEditorView : UserControl
                 : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, row.Left, row.Right - row.Left))
             .ToList();
 
-        // 줄기는 <b>언제나 카드 가운데 아래</b>다 (2026-10-29 소유자: "항상 노드 중앙 아래쪽에 선택지가 있도록").
-        // ⛔ H1에서는 줄들이 나가는 쪽의 반대편에 섰다(전부 오른쪽이면 카드 왼쪽 안, 전부 왼쪽이면 오른쪽 안, 섞이면
-        //    가운데) — 선 하나를 이으면 줄기가 옆으로 뛰어 카드마다 선택지 자리가 달라 보였다. 문구가 길면 레인이 그만큼
-        //    바깥으로 비켜 가므로(`DrawRailBranch`의 dropX) 반폭이어도 겹치지 않는다.
-        double trunkX = sourceRect.X + (sourceRect.Width / 2);
+        // 줄기는 <b>언제나 카드 왼쪽에서 같은 자리</b>다(<see cref="RailTrunkInset"/> · 2026-11-25 소유자 — 카드를 넓혀도 선택지가 화면 밖으로 밀려나지
+        // 않게). 문구가 길면 레인이 그만큼 바깥으로 비켜 가므로(`DrawRailBranch`의 dropX) 겹치지 않는다.
+        // ⛔ 2026-10-29 ~ 11-25에는 카드 가운데 아래였다("항상 노드 중앙 아래쪽에 선택지가 있도록") — 넓힌 카드에서 선택지가 넓힌 만큼의 절반씩
+        //    오른쪽으로 밀렸다. 그 전(H1)에는 줄들이 나가는 쪽의 반대편에 섰다 — 선 하나를 이으면 줄기가 옆으로 뛰었다.
+        double trunkX = sourceRect.X + RailTrunkInset;
         double branchY = sourceRect.Bottom + RailFirstDrop;
         int leftLane = 0;
         int rightLane = 0;
