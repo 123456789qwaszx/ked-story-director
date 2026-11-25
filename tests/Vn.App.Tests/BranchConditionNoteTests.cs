@@ -185,8 +185,10 @@ public sealed class BranchConditionNoteTests : IDisposable
         TextBlock title = row.Children.OfType<TextBlock>().Single(block => block.Tag as string == GraphEditorView.CardTitleTag);
         Control toggles = row.Children.Single(child => Grid.GetColumn(child) == CardTitleRow.TogglesColumn);
 
-        Assert.True(title.Bounds.Width >= chip.Bounds.Width, $"제목 {title.Bounds.Width:0} · 표 {chip.Bounds.Width:0}");
-        Assert.True(title.Bounds.Width > 40, $"제목 {title.Bounds.Width:0}");
+        // 견주는 것은 제목이 받은 칸의 폭이다 — 줄임표로 줄인 글자는 칸보다 한 글자쯤 좁게 설 수 있다(글꼴마다 다르다 · Windows CI에서 글 40 · 표 45).
+        double titleRoom = row.ColumnDefinitions[CardTitleRow.TitleColumn].ActualWidth;
+        Assert.True(titleRoom >= chip.Bounds.Width, $"제목 칸 {titleRoom:0} · 표 {chip.Bounds.Width:0}");
+        Assert.True(title.Bounds.Width > 20, $"제목 {title.Bounds.Width:0}");   // 사라지지 않고 몇 글자는 보인다
         Assert.True(chip.Bounds.Width > 0);
         Assert.True(chip.Bounds.Right <= toggles.Bounds.Left + 0.5, "표가 글 맞춤 단추를 덮지 않는다");
         Assert.Equal("⑂ 조건: " + Long, ((TextBlock)chip.Child!).Text);   // 글은 그대로 — 줄임표는 그리기만 줄인다

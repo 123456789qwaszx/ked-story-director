@@ -24,7 +24,7 @@ namespace Vn.App;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private static readonly string BaseTitle = AppIdentity.TitleName;
+    private static string BaseTitle => AppIdentity.TitleName;   // 그때그때 — 정적 필드로 두면 화면 언어를 정하기 전에 지어질 수 있다(시험 격리 · 2026-11-25)
 
     private readonly AuthoringSession _session = new();
 

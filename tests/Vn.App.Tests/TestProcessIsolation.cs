@@ -40,10 +40,14 @@ internal static class TestProcessIsolation
             // 다른 테스트 실행이 같은 파일을 쥐고 있다 — 같은 격리 파일이므로 그대로 쓴다.
         }
 
+        // 화면 언어가 <b>맨 먼저</b>다 — 아래 줄이 MainWindow 같은 형식을 처음 건드리면 그 형식의 정적 필드가 그 자리에서 지어지는데, 언어를 정하기
+        // 전이면 문구 표가 PC 언어(CurrentUICulture)로 꺼내진다. 한국어 PC에서는 드러나지 않고 영어 CI(GitHub Actions)에서만 창 제목이
+        // 「Story Director dev build」로 나왔다(2026-11-25 · english-ui 뒤 CI).
+        UiLanguage.OsCulture = System.Globalization.CultureInfo.GetCultureInfo("ko-KR");
+        UiLanguage.Apply(UiLanguage.Korean);
+
         AppSettingsService.SettingsPathOverride = path;
         MainWindow.RestoreRecentProjectOnOpen = false;
         Views.PlatformKeys.IsMac = false;
-        UiLanguage.OsCulture = System.Globalization.CultureInfo.GetCultureInfo("ko-KR");
-        UiLanguage.Apply(UiLanguage.Korean);
     }
 }
