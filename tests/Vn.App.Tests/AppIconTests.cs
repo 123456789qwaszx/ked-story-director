@@ -38,9 +38,10 @@ public sealed class AppIconTests : IDisposable
     });
 
     [Fact]
-    public void 아이콘_파일은_작은_것부터_256까지_여덟_크기를_담는다()
+    public void 아이콘_파일은_작은_것부터_256까지_여덟_크기를_담는다() => HeadlessUi.Run(() =>
     {
         // 작업 표시줄(16~48) · 탐색기의 큰 아이콘(256)이 제 크기를 골라 쓴다 — 한 크기뿐이면 늘이거나 줄여 뭉갠다.
+        // ⚠ 헤드리스 앱 안에서 읽는다 — AssetLoader는 앱이 선 뒤에만 있다. 밖에서 읽으면 이 시험이 먼저 돌 때 「Unable to locate IAssetLoader」로 깨진다.
         using Stream stream = AssetLoader.Open(new Uri("avares://StoryDirector/Assets/app.ico"));
         using var reader = new BinaryReader(stream);
 
@@ -56,5 +57,5 @@ public sealed class AppIconTests : IDisposable
         }
 
         Assert.Equal([16, 20, 24, 32, 40, 48, 64, 256], sizes);
-    }
+    });
 }
