@@ -238,71 +238,56 @@ public sealed class CardWritingBoxTests : IDisposable
     });
 
     [Fact]
-    public void 고른_카드의_글_칸이_넘치지_않으면_휠은_판을_확대도_스크롤도_하지_않는다() => HeadlessUi.Run(() =>
+    public void 쓰는_중인_칸_위에서도_휠은_판을_확대한다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-17 소유자 보고 — 글이 칸에 다 들어가 칸에 스크롤이 없으면, 칸이 받지 않은 휠이 판의 ScrollViewer까지
-        // 올라가 판 전체가 세로로 스크롤됐다. 고른 카드의 칸 위의 휠은 칸의 것이다 — 칸이 스크롤할 것이 없으면 아무 일도 없다.
+        // 2026-11-25 소유자 — 「글을 쓰다가 확대를 하려고 … 글 내부 스크롤에 걸려서 확대 축소가 안 되니 불편 … 글을 쓰는 와중이더라도 … 확대 축소가
+        // 되도록」. 카드 글 칸은 휠을 먹지 않는다 — 고른 카드 · 쓰는 중인(초점을 쥔) 칸 위에서도 휠은 판의 배율이다. 판 전체가 세로로 스크롤되지도 않는다.
+        // ⛔ 2026-11-17 ~ 11-25에는 고른 카드의 칸 위의 휠이 칸의 것이었다(스크롤할 것이 없으면 아무 일도 없었다).
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
         ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
         session.Select(first.Id);
         Dispatcher.UIThread.RunJobs();
-        string zoom = ZoomOf(graph);
-        Assert.True(scroll.Extent.Height > scroll.Viewport.Height);   // 판은 세로로 스크롤할 자리가 있다
-        Vector before = scroll.Offset;
-
         TextBox box = Box(window, first.Id);
-        Point inside = box.TranslatePoint(new Point(30, 20), window)!.Value;
+        box.Focus();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(box.IsFocused);
+        string zoom = ZoomOf(graph);
 
-        for (int turn = 0; turn < 3; turn++)
-        {
-            window.MouseWheel(inside, new Vector(0, -1));
-            Dispatcher.UIThread.RunJobs();
-        }
-
-        Assert.Equal(before, scroll.Offset);
-        Assert.Equal(zoom, ZoomOf(graph));
-
-        // 칸 밖(빈 판)의 휠은 카드를 골라 두었어도 확대다.
-        Point empty = scroll.TranslatePoint(
-            new Point(scroll.Bounds.Width * 0.6, scroll.Bounds.Height * 0.5), window)!.Value;
-        window.MouseWheel(empty, new Vector(0, 1));
+        window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, 1));
         Dispatcher.UIThread.RunJobs();
 
         Assert.NotEqual(zoom, ZoomOf(graph));
+        Assert.True(Box(window, first.Id).IsFocused);   // 쓰던 칸은 그대로 쓰는 중이다
 
         window.Close();
     });
 
     [Fact]
-    public void 고른_카드의_넘치는_글은_칸이_스크롤하고_끝에_닿아도_판으로_넘기지_않는다() => HeadlessUi.Run(() =>
+    public void 넘치는_글_칸_위에서도_휠은_확대이고_칸은_스크롤하지_않는다() => HeadlessUi.Run(() =>
     {
+        // 고르고 쓰는 중인 칸이 넘쳐도 휠은 칸을 스크롤하지 않는다 — 판이 확대된다(2026-11-25 소유자 — 「스크롤 기능은 실제론 거의 사용하지 않는 경우가
+        // 대다수」). 넘치는 글은 칸의 스크롤 막대를 끌거나 세로 글 맞춤으로 본다.
         (MainWindow window, AuthoringSession session, DialogueNode first) = Stage();
         GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
-        ScrollViewer scroll = graph.FindControl<ScrollViewer>("GraphScroll")!;
         session.Select(first.Id);
         Dispatcher.UIThread.RunJobs();
-        string zoom = ZoomOf(graph);
-        Vector before = scroll.Offset;
 
         TextBox box = Box(window, first.Id);
+        box.Focus();
         box.Text = string.Join("\n", Enumerable.Range(1, 40).Select(index => $"라루: {index}번째 줄"));
+        box.CaretIndex = 0;
         Dispatcher.UIThread.RunJobs();
+        string zoom = ZoomOf(graph);
 
         ScrollViewer inner = box.GetVisualDescendants().OfType<ScrollViewer>().First();
         Assert.True(inner.Extent.Height > inner.Viewport.Height);
-        Point inside = box.TranslatePoint(new Point(30, 20), window)!.Value;
+        double offset = inner.Offset.Y;
+        window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, -1));
+        Dispatcher.UIThread.RunJobs();
 
-        // 칸의 끝을 넘도록 넉넉히 굴린다 — 끝에 닿은 뒤의 휠도 판으로 올라가지 않는다.
-        for (int turn = 0; turn < 60; turn++)
-        {
-            window.MouseWheel(inside, new Vector(0, -1));
-            Dispatcher.UIThread.RunJobs();
-        }
-
-        Assert.True(inner.Offset.Y > 0);
-        Assert.Equal(before, scroll.Offset);
-        Assert.Equal(zoom, ZoomOf(graph));
+        Assert.Equal(offset, inner.Offset.Y);
+        Assert.NotEqual(zoom, ZoomOf(graph));
 
         window.Close();
     });
@@ -332,10 +317,10 @@ public sealed class CardWritingBoxTests : IDisposable
     });
 
     [Fact]
-    public void 휠로_판_옮기기를_켜도_글_칸의_휠은_고른_카드에서만_칸의_것이다() => HeadlessUi.Run(() =>
+    public void 휠로_판_옮기기를_켜면_글_칸_위에서도_판이_움직인다() => HeadlessUi.Run(() =>
     {
-        // 설정 「휠로 판 옮기기」(writer-app WA3)를 켜면 휠은 배율이 아니라 판 옮기기다 — 칸의 규칙은 그대로다: 고르지 않은 카드의 칸 위에서는
-        // 칸이 휠을 먹지 않고 판이 움직이고(판이 터널에서 옮긴다 — 스크롤에 맡기면 넘치는 칸이 먼저 먹는다), 고른 카드의 칸 위에서는 칸이 스크롤한다.
+        // 설정 「휠로 판 옮기기」(writer-app WA3)를 켜면 휠은 배율이 아니라 판 옮기기다 — 글 칸 위에서도 칸이 휠을 먹지 않고 판이 움직인다(판이 터널에서
+        // 옮긴다 — 스크롤에 맡기면 넘치는 칸이 먼저 먹는다). 고른 카드도 같다(2026-11-25).
         BoardWheel.Set(true);
 
         try
@@ -361,7 +346,7 @@ public sealed class CardWritingBoxTests : IDisposable
             Assert.Equal(before.Y + BoardWheel.PanStep, scroll.Offset.Y, 1);
             Assert.Equal(zoom, ZoomOf(graph));
 
-            // 골랐다 — 칸이 스크롤하고 판은 그대로다.
+            // 골라도 같다 — 칸은 그대로고 판이 내려간다(2026-11-25 · ⛔ 그 전에는 고른 카드의 칸이 스크롤했다).
             session.Select(first.Id);
             Dispatcher.UIThread.RunJobs();
             box = Box(window, first.Id);
@@ -370,8 +355,8 @@ public sealed class CardWritingBoxTests : IDisposable
             window.MouseWheel(box.TranslatePoint(new Point(30, 20), window)!.Value, new Vector(0, -1));
             Dispatcher.UIThread.RunJobs();
 
-            Assert.True(inner.Offset.Y > 0);
-            Assert.Equal(before, scroll.Offset);
+            Assert.Equal(0, inner.Offset.Y);
+            Assert.Equal(before.Y + BoardWheel.PanStep, scroll.Offset.Y, 1);
 
             window.Close();
         }

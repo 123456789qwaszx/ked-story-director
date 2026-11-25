@@ -4169,7 +4169,7 @@ public partial class GraphEditorView : UserControl
     /// 보이는 글은 <see cref="WorkingDialoguePreview.ScenarioText"/>, 넣는 길은 <see cref="ApplyWriting"/>이다.
     ///
     /// ⚠ 칸 안의 손짓을 카드와 판이 가로채지 않는다 — 누르기는 TextBox가 받아 끝내므로 끌기가 시작되지
-    ///   않고, 휠은 판을 확대하지 않고 칸이 스크롤한다(<see cref="InWritingBox"/>).
+    ///   않는다(<see cref="InWritingBox"/>). 휠은 칸 위에서도 판의 것이다(<see cref="WheelBelongsToBox"/> · 2026-11-25).
     /// </summary>
     private TextBox BuildWritingBox(string nodeId)
     {
@@ -5904,7 +5904,7 @@ public partial class GraphEditorView : UserControl
     {
         if (WheelBelongsToBox(args.Source))
         {
-            return;   // 고른 카드의 글 칸 위다 — 칸이 스크롤한다
+            return;   // 초점을 쥔 칸(선택지 문구 칸) 위다 — 칸의 것이다(카드 글 칸은 아니다 — 2026-11-25)
         }
 
         BoardWheel.Move move = BoardWheel.Read(args);
@@ -5932,26 +5932,22 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// <b>이 휠이 글 칸의 것인가</b> (2026-11-17 소유자) — <b>고른 카드</b>의 글 칸 위이거나, 초점을 쥔 칸(적고 있는 선택지 문구 칸) 위일
-    /// 때만이다. 그때는 칸이 스크롤하고(스크롤할 것이 없으면 아무 일도 없다) 판은 확대도 스크롤도 하지 않는다. 고르지 않은 카드의 글 칸
-    /// 위에서는 칸 밖과 같이 판을 확대한다 — 카드는 거의 글 칸이라, 칸 위라는 이유로 휠을 먹으면 판을 확대할 자리가 없다
-    /// (⛔ 전에는 모든 글 칸이 휠을 먹어 글이 칸에 다 들어간 카드 위에서는 휠이 아무 일도 안 했다).
+    /// <b>이 휠이 판 위의 칸의 것인가</b> — <b>카드 글 칸은 휠을 먹지 않는다</b>(2026-11-25 소유자 — 「글 내부 스크롤을 쓰는 경우가 거의 없는데 비해서,
+    /// 종종 글을 쓰다가 확대를 하려고 … 글 내부 스크롤에 걸려서 확대 축소가 안 되니 불편 … 세로 글 맞춤 기능이 추가 됨에 따라서 글을 쓰는 와중이더라도
+    /// 드래그 혹은 터치패드 쪽에서도 확대 축소가 되도록」). 쓰는 중인 칸 · 고른 카드의 칸 위에서도 휠 · 트랙패드는 칸 밖과 같이 판의 것이다(배율, 「휠로
+    /// 판 옮기기」면 옮기기). 넘치는 글은 칸의 스크롤 막대를 끌거나 세로 글 맞춤을 켜서 본다. 카드 글 칸이 아닌 칸(적고 있는 선택지 문구 칸)은 초점을
+    /// 쥐었을 때만 칸의 것이다. ⛔ 2026-11-17 ~ 11-25에는 고른 카드의 글 칸 · 초점을 쥔 칸 위의 휠이 칸의 것이라(칸이 스크롤하고 판은 그대로) 쓰다가
+    /// 확대하려면 칸 밖으로 포인터를 옮겨야 했다. 그 전에는 모든 글 칸이 휠을 먹었다.
     /// </summary>
     private bool WheelBelongsToBox(object? source)
     {
-        if ((source as Visual)?.FindAncestorOfType<TextBox>(includeSelf: true) is not { } box)
+        if ((source as Visual)?.FindAncestorOfType<TextBox>(includeSelf: true) is not { } box ||
+            (box.Tag is string tag && tag.StartsWith(WritingTag, StringComparison.Ordinal)))
         {
             return false;
         }
 
-        if (box.IsKeyboardFocusWithin)
-        {
-            return true;
-        }
-
-        return box.Tag is string tag &&
-               tag.StartsWith(WritingTag, StringComparison.Ordinal) &&
-               string.Equals(tag[WritingTag.Length..], _session?.SelectedNodeId, StringComparison.Ordinal);
+        return box.IsKeyboardFocusWithin;
     }
 
     /// <summary>
