@@ -14,9 +14,9 @@ namespace Vn.App.Tests;
 /// <b>선택지 줄 하나하나가 제 도착을 보고 쪽을 고른다</b> — 카드째가 아니라 이어진 루트
 /// 하나하나의 방향이 바뀐다.
 ///
-/// 도착 카드가 출발 카드보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다 — 점이 줄기 쪽 · 문구가 그 왼쪽에 서고 레인은 카드
+/// 도착 카드가 선택지가 달린 줄기보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다 — 점이 줄기 쪽 · 문구가 그 왼쪽에 서고 레인은 카드
 /// 왼쪽으로 빠진다. 줄기는 언제나 카드 왼쪽에서 같은 자리다(<see cref="GraphEditorView.RailTrunkInset"/> · 2026-11-25 — ⛔ 그 전에는 카드 가운데 아래).
-/// 쪽을 재는 기준은 그대로 카드의 지금 폭의 가운데다(usability UX6). 분기 포트도 같은 쪽 규칙이다.
+/// 쪽을 재는 기준도 그 줄기다 — 도착의 가운데가 줄기보다 왼쪽이면 왼쪽(2026-11-26 · ⛔ 그 전에는 카드의 지금 폭의 가운데). 분기 포트는 카드의 가운데에서 잰다.
 ///
 /// 시험마다 챕터 시작 카드(start)를 멀리 오른쪽에 둔다 — 시작 카드 기준으로 카드째 뒤집는 규칙이면 결과가 달라진다.
 /// </summary>
@@ -121,23 +121,28 @@ public sealed class GraphChoiceSideTests : IDisposable
     });
 
     [Fact]
-    public void 넓힌_카드는_지금_폭의_가운데로_쪽을_잰다() => HeadlessUi.Run(() =>
+    public void 넓힌_카드도_선택지가_달린_줄기에서_쪽을_잰다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-19 소유자 — 「선택지 좌우로 붙는 기준을 … 에피소드의 현재 가로넓이를 기준으로」(usability UX6). 넓힌 카드(800 ~ 1800 · 가운데 1300)
-        // 아래 왼쪽 반의 도착은 왼쪽, 오른쪽 반의 도착은 오른쪽이다. ⛔ 왼쪽 X끼리 재면 둘 다 오른쪽이었다.
+        // 2026-11-26 소유자 — 「선택지가 달려있는 에피소드의 좌우 넓이에 영향을 받다보니 … 이상한 느낌」. 넓힌 카드(800 ~ 1800 · 가운데 1300)의 줄기는
+        // 카드 왼쪽에서 같은 자리(872)다 — 그 줄기보다 왼쪽의 도착만 왼쪽이고, 줄기와 카드 가운데 사이의 도착(가운데 1005)은 오른쪽이다.
+        // ⛔ 2026-11-19 ~ 25에는 카드의 지금 폭의 가운데에서 재서, 그 사이의 도착으로도 선이 왼쪽으로 나갔다.
         (GraphEditorView graph, AuthoringSession session) = Show(
-            ("start", 2400, 0), ("scene", 800, 0), ("under-left", 900, 700), ("under-right", 1450, 700));
+            ("start", 2400, 0), ("scene", 800, 0), ("under-left", 500, 700), ("under-mid", 900, 700), ("under-right", 1450, 700));
         session.Editor.ResizeNode(Card(session, "scene").Id, 1000, null);
         session.Editor.AddEdge("ch01", "scene", "under-left", optionLabel: "왼쪽 아래");
+        session.Editor.AddEdge("ch01", "scene", "under-mid", optionLabel: "바로 아래");
         session.Editor.AddEdge("ch01", "scene", "under-right", optionLabel: "오른쪽 아래");
         Redraw(graph);
 
-        double trunkX = CardX(graph, session, "scene") + GraphEditorView.RailTrunkInset;   // 줄기는 넓혀도 카드 왼쪽에서 같은 자리다 — 쪽을 재는 기준만 지금 폭의 가운데다
+        double trunkX = CardX(graph, session, "scene") + GraphEditorView.RailTrunkInset;   // 줄기는 넓혀도 카드 왼쪽에서 같은 자리다 — 쪽도 여기서 잰다
         StackPanel left = Row(graph, "scene", "왼쪽 아래");
+        StackPanel mid = Row(graph, "scene", "바로 아래");
         StackPanel right = Row(graph, "scene", "오른쪽 아래");
 
         Assert.Equal(trunkX - 14, Canvas.GetLeft(left) + left.DesiredSize.Width, precision: 3);
         Assert.IsType<Ellipse>(left.Children[^1]);
+        Assert.Equal(trunkX + 14, Canvas.GetLeft(mid), precision: 3);
+        Assert.IsType<Ellipse>(mid.Children[0]);
         Assert.Equal(trunkX + 14, Canvas.GetLeft(right), precision: 3);
         Assert.IsType<Ellipse>(right.Children[0]);
     });

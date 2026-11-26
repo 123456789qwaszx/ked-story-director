@@ -1888,13 +1888,14 @@ public partial class GraphEditorView : UserControl
         }
 
         // 선택지마다 제 도착을 본다 (H1 · 2026-10-29 소유자: "연결되어 있는 하나의 루트의 선택지 방향이 바뀌길") —
-        // 도착 카드가 이 카드보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다: 점이 줄기 쪽 · 문구가 그 왼쪽에 서고,
+        // 도착이 <b>선택지가 달린 줄기</b>보다 왼쪽이면(EdgeSide.ChoiceGoesLeft · 2026-11-26 소유자 — 카드의 폭이 아니라 선택지의 실제 자리에서 잰다)
+        // <b>그 줄만</b> 거울에 비춘 모양이다: 점이 줄기 쪽 · 문구가 그 왼쪽에 서고,
         // 내려가는 레인은 카드 <b>왼쪽</b>으로 빠진다. 아직 안 이은 칸은 오른쪽이다. 지금 그린 자리로 재므로 끄는 동안에도
         // 넘어가는 순간 뒤집힌다.
         List<bool> lefts = branches
             .Select(branch => branch.Target is { } target
-                ? EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, target.X, target.Width)
-                : branch.Row is { } row && EdgeSide.GoesLeft(sourceRect.X, sourceRect.Width, row.Left, row.Right - row.Left))
+                ? EdgeSide.ChoiceGoesLeft(sourceRect.X + RailTrunkInset, target.X, target.Width)
+                : branch.Row is { } row && EdgeSide.ChoiceGoesLeft(sourceRect.X + RailTrunkInset, row.Left, row.Right - row.Left))
             .ToList();
 
         // 줄기는 <b>언제나 카드 왼쪽에서 같은 자리</b>다(<see cref="RailTrunkInset"/> · 2026-11-25 소유자 — 카드를 넓혀도 선택지가 화면 밖으로 밀려나지

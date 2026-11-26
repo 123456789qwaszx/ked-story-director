@@ -34,6 +34,16 @@ public sealed class EdgeSideTests
     }
 
     [Fact]
+    public void 선택지_줄은_도착의_가운데가_줄기보다_왼쪽일_때만_왼쪽이다()
+    {
+        // 줄기 872(카드 800 + 72). 출발 카드의 폭은 묻지 않는다 — 카드를 넓혀도 선택지가 달린 자리는 그대로다(2026-11-26).
+        Assert.True(EdgeSide.ChoiceGoesLeft(872, 500, 210));     // 도착의 가운데 605
+        Assert.False(EdgeSide.ChoiceGoesLeft(872, 900, 210));    // 가운데 1005 — 넓힌 카드의 가운데(1300)보다는 왼쪽이지만 줄기보다 오른쪽
+        Assert.False(EdgeSide.ChoiceGoesLeft(872, 767, 210));    // 가운데 872 — 같으면 늘 쓰던 오른쪽
+        Assert.True(EdgeSide.ChoiceGoesLeft(872, 766, 210));
+    }
+
+    [Fact]
     public void 같은_자리면_늘_쓰던_오른쪽이다()
     {
         Assert.True(EdgeSide.GoesLeft(800, 210, 100, 210));
