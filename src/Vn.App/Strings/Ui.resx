@@ -32,6 +32,26 @@
     <value>다시 켜면 {0}로 바뀝니다.</value>
     <comment>언어를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 언어 이름.</comment>
   </data>
+  <data name="Settings_ThemeLabel" xml:space="preserve">
+    <value>테마</value>
+    <comment>설정 창 「기타」 — 테마 칸의 이름.</comment>
+  </data>
+  <data name="Settings_ThemeTip" xml:space="preserve">
+    <value>툴의 색 · 모양입니다 — 대사와 프로젝트 데이터는 바뀌지 않습니다. 바꾸면 다시 켤 때 바뀝니다.</value>
+    <comment>설정 창 테마 칸의 풍선.</comment>
+  </data>
+  <data name="Settings_ThemeRestart" xml:space="preserve">
+    <value>다시 켜면 「{0}」 테마로 바뀝니다.</value>
+    <comment>테마를 바꾼 뒤 칸 아래 · 상태줄. {0} = 바뀔 테마의 이름.</comment>
+  </data>
+  <data name="Theme_PastelSky" xml:space="preserve">
+    <value>파스텔 하늘</value>
+    <comment>테마의 이름 — 설정 창 테마 칸(Theming/ThemeCatalog.cs).</comment>
+  </data>
+  <data name="Theme_Classic" xml:space="preserve">
+    <value>기본</value>
+    <comment>테마의 이름 — 0.5.0까지의 모양(Theming/ThemeCatalog.cs).</comment>
+  </data>
   <data name="Main_SelectNodeToEditIt" xml:space="preserve">
     <value>노드를 선택하면 여기서 편집합니다.</value>
     <comment>MainWindow.axaml.cs</comment>

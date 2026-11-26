@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.App.Strings;
@@ -128,7 +129,7 @@ public partial class MainWindow
             var card = new Border
             {
                 BorderThickness = new Thickness(1),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(70, 128, 128, 128)),
+                BorderBrush = Skin.Hairline.Brush(70),
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(6),
                 Tag = "episode-note-card:" + episodeId,

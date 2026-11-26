@@ -3,6 +3,7 @@ using Avalonia.Collections;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Text;
@@ -49,9 +50,9 @@ public partial class GraphEditorView
     /// <summary>판정 — 꼬리표(짧은 말), 아래 띠(까닭까지), 놓을 카드.</summary>
     internal sealed record ChoiceDrop(ChoiceDropKind Kind, string Badge, string Hint, string? TargetNodeId);
 
-    internal static readonly IBrush DropJoinBrush = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB));
-    internal static readonly IBrush DropCutBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
-    internal static readonly IBrush DropIdleBrush = new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80));
+    internal static IBrush DropJoinBrush => Skin.Join.Brush();
+    internal static IBrush DropCutBrush => Skin.Danger.Brush();
+    internal static IBrush DropIdleBrush => Skin.Neutral.Brush();
 
     /// <summary>포인터 옆 꼬리표 — 끄는 동안과 점에 포인터를 올렸을 때. 판(<c>GraphCanvas</c>) 위에 서되 배율을 거슬러 늘 같은 크기다.</summary>
     private Border? _dropBadge;
@@ -403,7 +404,7 @@ public partial class GraphEditorView
             {
                 FontSize = 11,
                 FontWeight = FontWeight.SemiBold,
-                Foreground = Brushes.White
+                Foreground = Skin.OnAccent.Brush()
             };
 
             _dropBadge = new Border

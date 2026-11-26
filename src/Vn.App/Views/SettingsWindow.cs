@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Vn.App.Services;
 using Vn.App.Strings;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
 using Vn.Authoring.Model;
@@ -152,6 +153,36 @@ internal sealed class SettingsWindow : Window
             if (changes)
             {
                 _session.SetStatus(LanguageNote.Text);
+            }
+        });
+
+        // 테마 — 툴의 색 · 모양(2026-11-26 소유자 · themes — 처음은 파스텔 하늘, 바꾸면 다시 켤 때). 언어 칸과 같은 꼴이다: 고르는 즉시 앱 설정에 넣고
+        // 화면은 그대로 두며, 칸 아래와 상태줄이 다시 켜면 바뀐다고 말한다. 차림은 테마 목록(ThemeCatalog.All)을 그대로 돈다.
+        ThemeCombo = new ComboBox
+        {
+            FontSize = 12,
+            ItemsSource = ThemeCatalog.All.Select(theme => theme.Name()).ToList(),
+            SelectedIndex = ThemeIndex(ThemeCatalog.Resolve(AppSettingsService.LoadTheme()))
+        };
+        ToolTip.SetTip(ThemeCombo, Ui.Settings_ThemeTip);
+        ThemeNote = new TextBlock { FontSize = 11, Opacity = 0.75, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        ThemeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_ThemeLabel, () =>
+        {
+            if (ThemeCombo.SelectedIndex is not (>= 0 and var index) || index >= ThemeCatalog.All.Count)
+            {
+                return;
+            }
+
+            ThemeInfo chosen = ThemeCatalog.All[index];
+            AppSettingsService.SaveTheme(chosen.Id);
+
+            bool changes = !ReferenceEquals(chosen, ThemeService.Current);
+            ThemeNote.Text = changes ? string.Format(Ui.Settings_ThemeRestart, chosen.Name()) : string.Empty;
+            ThemeNote.IsVisible = changes;
+
+            if (changes)
+            {
+                _session.SetStatus(ThemeNote.Text);
             }
         });
 
@@ -361,7 +392,19 @@ internal sealed class SettingsWindow : Window
                                     LanguageCombo
                                 }
                             },
-                            LanguageNote
+                            LanguageNote,
+                            new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Spacing = 8,
+                                Margin = new Thickness(0, 4, 0, 0),
+                                Children =
+                                {
+                                    new TextBlock { Text = Ui.Settings_ThemeLabel, FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
+                                    ThemeCombo
+                                }
+                            },
+                            ThemeNote
                         }
                     })
                 }
@@ -470,7 +513,7 @@ internal sealed class SettingsWindow : Window
         Height = 14,
         CornerRadius = new CornerRadius(2),
         BorderThickness = new Thickness(1),
-        BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0)),
+        BorderBrush = Skin.SwatchBorder.Brush(0x66),
         VerticalAlignment = VerticalAlignment.Center
     };
 
@@ -496,6 +539,25 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>언어 칸 아래 — 고른 언어가 지금 화면과 다르면 「다시 켜면 … 바뀝니다」.</summary>
     internal TextBlock LanguageNote { get; }
+
+    /// <summary>「기타」의 테마 칸 — 테마 목록(<see cref="ThemeCatalog.All"/>)의 차례. 고르는 즉시 앱 설정에 들고 다시 켤 때 바뀐다.</summary>
+    internal ComboBox ThemeCombo { get; }
+
+    /// <summary>테마 칸 아래 — 고른 테마가 지금 화면과 다르면 「다시 켜면 … 바뀝니다」.</summary>
+    internal TextBlock ThemeNote { get; }
+
+    private static int ThemeIndex(ThemeInfo theme)
+    {
+        for (int index = 0; index < ThemeCatalog.All.Count; index++)
+        {
+            if (ReferenceEquals(ThemeCatalog.All[index], theme))
+            {
+                return index;
+            }
+        }
+
+        return 0;
+    }
 
     /// <summary>언어 칸의 차림 — 첫째는 PC 언어 따라(지금 그것이 정하는 언어를 붙인다), 그다음 언어마다 그 언어로 적은 이름.</summary>
     private static List<string> LanguageItems() =>
@@ -573,7 +635,7 @@ internal sealed class SettingsWindow : Window
         FontSize = 11,
         TextWrapping = TextWrapping.Wrap,
         IsVisible = false,
-        Foreground = new SolidColorBrush(Color.Parse("#B9770E"))
+        Foreground = Skin.Warning.Brush()
     };
 
     /// <summary>
@@ -771,7 +833,7 @@ internal sealed class SettingsWindow : Window
                 FontSize = 11,
                 TextWrapping = TextWrapping.Wrap,
                 IsVisible = false,
-                Foreground = new SolidColorBrush(Color.Parse("#B9770E"))
+                Foreground = Skin.Warning.Brush()
             };
 
             _destinationBoxes[format] = box;
@@ -922,7 +984,7 @@ internal sealed class SettingsWindow : Window
         BoardNote.IsVisible = notes.Count > 0;
         if (plan.MovedCards > 0)
         {
-            BoardNote.Foreground = new SolidColorBrush(Color.Parse("#B9770E"));
+            BoardNote.Foreground = Skin.Warning.Brush();
         }
         else
         {
@@ -1187,7 +1249,7 @@ internal sealed class SettingsWindow : Window
     /// <summary>묶음 하나 — 머리(이름)와 그 아래 설정들. ⛔ 머리 아래 「어디에 저장되는가」 줄은 2026-11-18에 걷었다(Z2).</summary>
     private static Control Group(string title, Control body) => new Border
     {
-        BorderBrush = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128)),
+        BorderBrush = Skin.Hairline.Brush(60),
         BorderThickness = new Thickness(1),
         CornerRadius = new CornerRadius(4),
         Padding = new Thickness(12, 10),

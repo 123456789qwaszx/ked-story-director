@@ -1,0 +1,24 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 파스텔 하늘 — 컨트롤의 모양 · 글꼴. 색은 Tokens.axaml(Fluent 테마의 이름을 덮는다)에 있고, 여기는 색 이름만으로 못 바꾸는 것을 적는다.
+         코드가 지은 것은 클래스로 고른다 — 카드 제목은 「card-title」(GraphEditorView.BuildCard). -->
+
+    <!-- 글꼴 — 창마다(주 창 · 설정 창). 창 안의 글은 이것을 물려받는다. -->
+    <Style Selector=":is(Window)">
+        <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
+    </Style>
+
+    <!-- 제목 글꼴 — 탭 머리 · 카드 제목 -->
+    <Style Selector="TabItem">
+        <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+    </Style>
+    <Style Selector="TextBlock.card-title">
+        <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+
+    <!-- 단추 — 알약 모양 -->
+    <Style Selector="Button">
+        <Setter Property="CornerRadius" Value="14" />
+    </Style>
+</Styles>

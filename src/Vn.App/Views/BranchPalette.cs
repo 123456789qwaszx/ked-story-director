@@ -1,4 +1,5 @@
 using Avalonia.Media;
+using Vn.App.Theming;
 
 namespace Vn.App.Views;
 
@@ -14,36 +15,29 @@ namespace Vn.App.Views;
 /// </summary>
 internal static class BranchPalette
 {
-    private static readonly Color[] Accents =
-    {
-        Color.FromRgb(0x3B, 0x82, 0xF6), // 파랑
-        Color.FromRgb(0x8B, 0x5C, 0xF6), // 보라
-        Color.FromRgb(0x0E, 0x9F, 0x6E), // 초록
-        Color.FromRgb(0xD9, 0x77, 0x06), // 주황
-        Color.FromRgb(0xDB, 0x27, 0x77), // 자홍
-        Color.FromRgb(0x08, 0x91, 0xB2)  // 청록
-    };
+    /// <summary>갈래 색 여섯 — 테마가 정한다(<see cref="Skin.BranchLines"/> · 기본 테마는 파랑 · 보라 · 초록 · 주황 · 자홍 · 청록).</summary>
+    private static IReadOnlyList<Color> Accents => Skin.BranchLines;
 
     /// <summary>갈래의 강조색. 왼쪽 테두리와 라벨에 쓴다.</summary>
     public static IBrush Accent(int paletteIndex)
     {
-        return new SolidColorBrush(AccentColor(paletteIndex));
+        return AccentColor(paletteIndex).Brush();
     }
 
     /// <summary>갈래 카드의 배경. 강조색을 아주 옅게 깐 것이다.</summary>
     public static IBrush Background(int paletteIndex)
     {
         Color color = AccentColor(paletteIndex);
-        return new SolidColorBrush(Color.FromArgb(28, color.R, color.G, color.B));
+        return color.Brush(28);
     }
 
     private static Color AccentColor(int paletteIndex)
     {
         if (paletteIndex < 0)
         {
-            return Color.FromRgb(0x6B, 0x72, 0x80);
+            return Skin.Neutral;
         }
 
-        return Accents[paletteIndex % Accents.Length];
+        return Accents[paletteIndex % Accents.Count];
     }
 }

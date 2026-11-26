@@ -28,6 +28,21 @@
   <data name="Settings_LanguageRestart" xml:space="preserve">
     <value>Restart the app to switch to {0}.</value>
   </data>
+  <data name="Settings_ThemeLabel" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="Settings_ThemeTip" xml:space="preserve">
+    <value>The tool's colors and shapes — your dialogue and project data don't change. Changes take effect the next time you start the app.</value>
+  </data>
+  <data name="Settings_ThemeRestart" xml:space="preserve">
+    <value>Restart the app to switch to the “{0}” theme.</value>
+  </data>
+  <data name="Theme_PastelSky" xml:space="preserve">
+    <value>Pastel sky</value>
+  </data>
+  <data name="Theme_Classic" xml:space="preserve">
+    <value>Classic</value>
+  </data>
   <data name="Main_SelectNodeToEditIt" xml:space="preserve">
     <value>Select a node to edit it here.</value>
   </data>

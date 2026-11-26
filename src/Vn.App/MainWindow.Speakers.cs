@@ -7,6 +7,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Model;
 using Vn.Authoring.Text;
@@ -268,7 +269,7 @@ public partial class MainWindow
             Height = fill ? 16 : 14,
             CornerRadius = new CornerRadius(2),
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0, 0, 0)),
+            BorderBrush = Skin.SwatchBorder.Brush(0x66),
             Background = now is { } color ? WriterPalette.Brush(color) : Brushes.Transparent
         };
 

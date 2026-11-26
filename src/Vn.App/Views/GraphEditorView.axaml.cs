@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using System.Text.RegularExpressions;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
 using Vn.Authoring.Flow;
@@ -109,7 +110,7 @@ public partial class GraphEditorView : UserControl
     internal const string SceneLabelTag = "scene-label:";
 
     /// <summary>장면 색 — 장면 프레임 · 이름표 · 접은 장면 상자가 함께 쓴다.</summary>
-    private static readonly Color SceneColor = Color.FromRgb(217, 119, 6);
+    private static Color SceneColor => Skin.Scene;
 
     private readonly List<NodeCard> _cards = new();
     private readonly List<FileProxyVisual> _proxies = new();
@@ -811,7 +812,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>미니맵을 감췄을 때 홀로 남는 배율 글자의 색 — 연한 회색(판은 늘 밝다).</summary>
-    private static readonly IBrush HiddenMinimapZoomBrush = new SolidColorBrush(Color.FromRgb(0xA0, 0xA0, 0xA0));
+    private static IBrush HiddenMinimapZoomBrush => Skin.MinimapZoomHidden.Brush();
 
     /// <summary>미니맵을 보일 때의 모양(axaml이 정한 것) — 감췄다 다시 보일 때 되돌린다. 처음 <see cref="ApplyShowMinimap"/>이 잰다.</summary>
     private (IBrush? Background, Thickness Border, Thickness Padding, Thickness Margin, double Opacity)? _minimapLook;
@@ -1117,12 +1118,10 @@ public partial class GraphEditorView : UserControl
             {
                 Width = area.Width,
                 Height = area.Height,
-                CornerRadius = new CornerRadius(12),
+                CornerRadius = new CornerRadius(Skin.ChapterFrameRadius),
                 BorderThickness = new Thickness(isActive ? 1.6 : 1),
-                BorderBrush = new SolidColorBrush(
-                    isActive ? Color.FromArgb(150, 61, 123, 217) : Color.FromArgb(70, 128, 128, 128)),
-                Background = new SolidColorBrush(
-                    isActive ? Color.FromArgb(12, 61, 123, 217) : Color.FromArgb(8, 128, 128, 128)),
+                BorderBrush = isActive ? Skin.Accent.Brush(150) : Skin.Hairline.Brush(70),
+                Background = isActive ? Skin.Accent.Brush(12) : Skin.Hairline.Brush(8),
                 IsHitTestVisible = false
             };
             Canvas.SetLeft(frame, area.X);
@@ -1130,17 +1129,16 @@ public partial class GraphEditorView : UserControl
 
             var label = new Border
             {
-                CornerRadius = new CornerRadius(4),
+                CornerRadius = new CornerRadius(Skin.LabelRadius),
                 Padding = new Thickness(8, 3),
-                Background = new SolidColorBrush(
-                    isActive ? Color.FromArgb(220, 61, 123, 217) : Color.FromArgb(160, 107, 114, 128)),
+                Background = isActive ? Skin.Accent.Brush(220) : Skin.Neutral.Brush(160),
                 Cursor = new Cursor(StandardCursorType.Hand),
                 Child = new TextBlock
                 {
                     Text = string.Format(Ui.Board_Chapter, chapterName),
                     FontSize = 11,
                     FontWeight = FontWeight.SemiBold,
-                    Foreground = Brushes.White
+                    Foreground = Skin.OnAccent.Brush()
                 }
             };
             ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard);
@@ -1286,10 +1284,10 @@ public partial class GraphEditorView : UserControl
         {
             Width = area.Width,
             Height = area.Height,
-            CornerRadius = new CornerRadius(8),
+            CornerRadius = new CornerRadius(Skin.SceneFrameRadius),
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(90, 217, 119, 6)),
-            Background = new SolidColorBrush(Color.FromArgb(10, 217, 119, 6)),
+            BorderBrush = SceneColor.Brush(90),
+            Background = SceneColor.Brush(10),
             IsHitTestVisible = false
         };
 
@@ -1309,9 +1307,9 @@ public partial class GraphEditorView : UserControl
     {
         var label = new Border
         {
-            CornerRadius = new CornerRadius(3),
+            CornerRadius = new CornerRadius(Skin.ChipRadius),
             Padding = new Thickness(6, 1),
-            Background = new SolidColorBrush(Color.FromArgb(180, SceneColor.R, SceneColor.G, SceneColor.B)),
+            Background = SceneColor.Brush(180),
             Cursor = new Cursor(StandardCursorType.Hand),
             Tag = SceneLabelTag + scene.SceneId,
             Child = new TextBlock
@@ -1322,7 +1320,7 @@ public partial class GraphEditorView : UserControl
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
                 FontSize = 10,
                 FontWeight = FontWeight.SemiBold,
-                Foreground = Brushes.White
+                Foreground = Skin.OnAccent.Brush()
             }
         };
         ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
@@ -1342,8 +1340,8 @@ public partial class GraphEditorView : UserControl
 
     // ── 챕터 간선 철도 배선 (T1) ────────────────────────────────────────────
 
-    private static readonly IBrush RailBrush = new SolidColorBrush(Color.FromArgb(170, 120, 120, 120));
-    private static readonly IBrush RailChipBrush = new SolidColorBrush(Color.FromRgb(0xC0, 0x6A, 0x14));
+    private static IBrush RailBrush => Skin.Rail.Brush();
+    private static IBrush RailChipBrush => Skin.ChoiceInk.Brush();
     private const double RailBranchGap = 44;    // 가지 사이 세로 간격
     private const double RailFirstDrop = 36;    // 카드 아래 첫 가지까지
     private const double RailArrivalRise = 26;  // 도착 카드 위 가운데 접점까지의 높이 (D3)
@@ -2176,7 +2174,7 @@ public partial class GraphEditorView : UserControl
                 BorderThickness = new Thickness(1),
                 BorderBrush = SlotPlaceholderBorder,
                 CornerRadius = new CornerRadius(3),
-                Background = Brushes.White,
+                Background = Skin.Surface.Brush(),
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotPlaceholderTag,
@@ -2212,7 +2210,7 @@ public partial class GraphEditorView : UserControl
                 BorderThickness = new Thickness(1),
                 BorderBrush = SlotNeedsLabelInk,
                 CornerRadius = new CornerRadius(3),
-                Background = Brushes.White,
+                Background = Skin.Surface.Brush(),
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotNeedsLabelTag,
@@ -2356,7 +2354,7 @@ public partial class GraphEditorView : UserControl
         {
             StartPoint = start,
             EndPoint = start,
-            Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
+            Stroke = Skin.Selection.Brush(),
             StrokeThickness = 2,
             StrokeDashArray = new AvaloniaList<double> { 4, 3 }
         };
@@ -3371,7 +3369,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private Border BuildResizeGrip(NodeCard card, ResizeEdges edges)
     {
-        IBrush hover = new SolidColorBrush(Color.FromArgb(70, card.Style.Accent.R, card.Style.Accent.G, card.Style.Accent.B));
+        IBrush hover = card.Style.Accent.Brush(70);
 
         var grip = new Border { Background = Brushes.Transparent };
 
@@ -3606,8 +3604,8 @@ public partial class GraphEditorView : UserControl
         }
 
         toggle.Classes.Set(FitOnClass, on);
-        toggle.Background = new SolidColorBrush(Color.FromArgb(on ? (byte)0x40 : (byte)0x0A, accent.R, accent.G, accent.B));
-        toggle.BorderBrush = on ? new SolidColorBrush(Color.FromArgb(0x99, accent.R, accent.G, accent.B)) : Brushes.Transparent;
+        toggle.Background = accent.Brush(on ? (byte)0x40 : (byte)0x0A);
+        toggle.BorderBrush = on ? accent.Brush(0x99) : Brushes.Transparent;
         toggle.Opacity = on ? 1 : 0.5;
     }
 
@@ -3696,8 +3694,8 @@ public partial class GraphEditorView : UserControl
         }
 
         toggle.Classes.Set(FitOnClass, on);
-        toggle.Background = new SolidColorBrush(Color.FromArgb(on ? (byte)0x40 : (byte)0x0A, accent.R, accent.G, accent.B));
-        toggle.BorderBrush = on ? new SolidColorBrush(Color.FromArgb(0x99, accent.R, accent.G, accent.B)) : Brushes.Transparent;
+        toggle.Background = accent.Brush(on ? (byte)0x40 : (byte)0x0A);
+        toggle.BorderBrush = on ? accent.Brush(0x99) : Brushes.Transparent;
         toggle.Opacity = on ? 1 : 0.5;
         ToolTip.SetTip(toggle, (width ? FitWidthTip : FitHeightTip) + (on ? FitOnTip : FitOffTip));
     }
@@ -3958,7 +3956,7 @@ public partial class GraphEditorView : UserControl
     private static Avalonia.Controls.Shapes.Path FitGlyph(Geometry glyph, Color accent) => new()
     {
         Data = glyph,
-        Stroke = new SolidColorBrush(accent),
+        Stroke = accent.Brush(),
         StrokeThickness = 1.7,
         StrokeLineCap = PenLineCap.Round,
         StrokeJoin = PenLineJoin.Round,
@@ -4113,8 +4111,8 @@ public partial class GraphEditorView : UserControl
             bool grouped = _multiSelected.Contains(card.NodeId); // 범위 선택 무리 (W40)
 
             card.Visual.BorderBrush = selected || grouped
-                ? new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB))
-                : new SolidColorBrush(card.Style.Border);
+                ? Skin.Selection.Brush()
+                : card.Style.Border.Brush();
 
             card.Visual.BorderThickness = new Thickness(selected || grouped ? 2 : 1);
         }
@@ -4125,7 +4123,7 @@ public partial class GraphEditorView : UserControl
             {
                 bool selected = string.Equals(row.NodeId, _session?.SelectedNodeId, StringComparison.Ordinal);
                 row.Visual.Background = selected
-                    ? new SolidColorBrush(Color.FromArgb(42, 37, 99, 235))
+                    ? Skin.Selection.Brush(42)
                     : Brushes.Transparent;
             }
         }
@@ -4166,17 +4164,13 @@ public partial class GraphEditorView : UserControl
     {
         // 분기 카드(2026-11-17) — 들렀다 돌아오는 카드. 에피소드와 다른 물건이라 색 · 표가 다르다(보라 · ⑂).
         GraphNodeKind.Dialogue when branchCard => new CardStyle(
-            Color.FromRgb(0x7C, 0x5C, 0xC4), Color.FromRgb(0xF6, 0xF3, 0xFC),
-            Color.FromRgb(0xD5, 0xCB, 0xEE), 4, "⑂"),
+            Skin.BranchAccent, Skin.BranchSurface, Skin.BranchBorder, Skin.CardRadius, "⑂"),
         GraphNodeKind.Dialogue when sceneRoot => new CardStyle(
-            Color.FromRgb(0x3D, 0x7B, 0xD9), Color.FromRgb(0xEF, 0xF4, 0xFC),
-            Color.FromRgb(0xC3, 0xD5, 0xEF), 4, "⌂"),
+            Skin.SceneRootAccent, Skin.SceneRootSurface, Skin.SceneRootBorder, Skin.CardRadius, "⌂"),
         GraphNodeKind.Dialogue => new CardStyle(
-            Color.FromRgb(0xD9, 0x77, 0x06), Color.FromRgb(0xFB, 0xF6, 0xEA),
-            Color.FromRgb(0xE3, 0xD5, 0xB7), 4, "📄"),
+            Skin.EpisodeAccent, Skin.EpisodeSurface, Skin.EpisodeBorder, Skin.CardRadius, "📄"),
         _ => new CardStyle(
-            Color.FromRgb(0x3B, 0x82, 0xF6), Color.FromRgb(0xEF, 0xF6, 0xFF),
-            Color.FromArgb(90, 128, 128, 128), 10, "⚙")
+            Skin.OtherCardAccent, Skin.OtherCardSurface, Skin.OtherCardBorder, Skin.OtherCardRadius, "⚙")
     };
 
     /// <summary>분기로 다녀오는 카드 → 그 분기 선의 색 번호. 판을 다시 세울 때마다 묻는다(<see cref="BranchEntries"/>).</summary>
@@ -4306,7 +4300,7 @@ public partial class GraphEditorView : UserControl
         {
             Text = branchCard ? string.Format(Ui.Board_Branch, style.Icon) : style.Icon,
             FontSize = 11,
-            Foreground = new SolidColorBrush(style.Accent),
+            Foreground = style.Accent.Brush(),
             Margin = new Thickness(0, 0, 5, 0),
             VerticalAlignment = VerticalAlignment.Center,
             [ToolTip.TipProperty] = sceneRoot
@@ -4321,6 +4315,7 @@ public partial class GraphEditorView : UserControl
         {
             Text = ShownName(node.NodeId, node.NodeName),
             Tag = CardTitleTag,   // 제목만 바뀌면 이 글만 고친다(RefreshCardTitle)
+            Classes = { "card-title" },   // 테마가 제목 글꼴을 고르는 손잡이(Themes/*/Controls.axaml)
             FontWeight = FontWeight.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
@@ -4369,7 +4364,7 @@ public partial class GraphEditorView : UserControl
         var spine = new Border
         {
             Width = 3,
-            Background = new SolidColorBrush(style.Accent),
+            Background = style.Accent.Brush(),
             CornerRadius = new CornerRadius(1.5),
             Margin = new Thickness(0, 1, SpineInset - 3, 1),
             VerticalAlignment = VerticalAlignment.Stretch
@@ -4390,9 +4385,10 @@ public partial class GraphEditorView : UserControl
             Width = WidthFor(node.NodeId),
             Padding = new Thickness(CardPadding),
             CornerRadius = new CornerRadius(style.Radius),
-            Background = new SolidColorBrush(style.Background),
+            Background = style.Background.Brush(),
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(style.Border),
+            BorderBrush = style.Border.Brush(),
+            BoxShadow = Skin.CardShadow,
             Child = frame,
             Tag = node.NodeId
         };
@@ -5123,7 +5119,7 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        box.BorderBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+        box.BorderBrush = Skin.Danger.Brush();
         ToolTip.SetTip(box, problem);
     }
 
@@ -5202,7 +5198,7 @@ public partial class GraphEditorView : UserControl
         content.Children.Add(ProxyHeader(
             file.FileName,
             Plural.Format(Ui.Board_FoldedNodes, file.Nodes.Count, file.RelativePath),
-            new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80))));
+            Skin.Neutral.Brush()));
 
         var rows = new List<ProxyNodeRow>();
 
@@ -5247,8 +5243,8 @@ public partial class GraphEditorView : UserControl
         {
             Width = ProxyWidth,
             CornerRadius = new CornerRadius(8),
-            Background = new SolidColorBrush(Color.FromRgb(0xF3, 0xF4, 0xF6)),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF)),
+            Background = Skin.ProxySurface.Brush(),
+            BorderBrush = Skin.NeutralLight.Brush(),
             BorderThickness = new Thickness(1),
             ClipToBounds = false,
             Child = content,
@@ -5295,7 +5291,7 @@ public partial class GraphEditorView : UserControl
         content.Children.Add(ProxyHeader(
             string.Format(Ui.Board_Scene, scene.DisplayName),
             Plural.Format(Ui.Board_FoldedNodes2, scene.Nodes.Count) + (scene.InnerCount > 0 ? Plural.Format(Ui.Board_PathsInside, scene.InnerCount) : string.Empty),
-            new SolidColorBrush(SceneColor)));
+            SceneColor.Brush()));
 
         var rows = new List<ProxyNodeRow>();
 
@@ -5310,8 +5306,8 @@ public partial class GraphEditorView : UserControl
         {
             Width = ProxyWidth,
             CornerRadius = new CornerRadius(8),
-            Background = new SolidColorBrush(Color.FromRgb(0xFE, 0xF7, 0xEC)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(170, SceneColor.R, SceneColor.G, SceneColor.B)),
+            Background = Skin.SceneProxySurface.Brush(),
+            BorderBrush = SceneColor.Brush(170),
             BorderThickness = new Thickness(1),
             ClipToBounds = false,
             Child = content,
@@ -5429,7 +5425,7 @@ public partial class GraphEditorView : UserControl
         new()
         {
             Height = ProxyRowHeight,
-            Background = new SolidColorBrush(Color.FromArgb(26, 107, 114, 128)),
+            Background = Skin.Neutral.Brush(26),
             Child = new TextBlock
             {
                 Text = scene.SceneId.Length == 0 ? scene.DisplayName : "▸ " + scene.DisplayName,
@@ -5446,7 +5442,7 @@ public partial class GraphEditorView : UserControl
 
     private ProxyNodeRow BuildProxyRow(CollapsedNodeEntry entry, int index)
     {
-        IBrush dotBrush = new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80));
+        IBrush dotBrush = Skin.Neutral.Brush();
 
         var input = new Ellipse
         {
@@ -5495,7 +5491,7 @@ public partial class GraphEditorView : UserControl
         {
             Height = ProxyRowHeight,
             Padding = new Thickness(0, 0),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(35, 107, 114, 128)),
+            BorderBrush = Skin.Neutral.Brush(35),
             BorderThickness = new Thickness(0, index == 0 ? 1 : 0, 0, 1),
             Child = grid,
             Cursor = new Cursor(StandardCursorType.Hand),
@@ -5720,13 +5716,13 @@ public partial class GraphEditorView : UserControl
     internal TextBox? SlotLabelBox { get; private set; }
 
     /// <summary>안 이은 활성 칸의 붉은 점.</summary>
-    internal static readonly IBrush SlotLive = new SolidColorBrush(Color.FromRgb(0xD9, 0x3A, 0x3A));
+    internal static IBrush SlotLive => Skin.SlotLive.Brush();
 
     /// <summary>이어진 칸의 초록 점.</summary>
-    internal static readonly IBrush SlotJoined = new SolidColorBrush(Color.FromRgb(0x1F, 0x9D, 0x55));
+    internal static IBrush SlotJoined => Skin.Success.Brush();
 
     /// <summary>아직 못 쓰는 칸의 회색 테두리.</summary>
-    internal static readonly IBrush SlotAsleep = new SolidColorBrush(Color.FromArgb(120, 150, 150, 150));
+    internal static IBrush SlotAsleep => Skin.SlotAsleep.Brush();
 
     /// <summary>
     /// 그 칸의 색 — <b>세 자리를 한눈에</b> 가른다 (2026-09-16 소유자).
@@ -5775,10 +5771,10 @@ public partial class GraphEditorView : UserControl
     /// <summary>이어졌는데 문구가 없는 선택지 칸의 표 — 시험의 손잡이다.</summary>
     internal const string SlotNeedsLabelTag = "slot-needs-label";
 
-    private static readonly IBrush SlotNeedsLabelInk = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+    private static IBrush SlotNeedsLabelInk => Skin.Danger.Brush();
 
-    private static readonly IBrush SlotPlaceholderInk = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF));
-    private static readonly IBrush SlotPlaceholderBorder = new SolidColorBrush(Color.FromRgb(0xB8, 0xBC, 0xC4));
+    private static IBrush SlotPlaceholderInk => Skin.NeutralLight.Brush();
+    private static IBrush SlotPlaceholderBorder => Skin.SlotPlaceholderBorder.Brush();
 
     /// <summary>문구 입력칸의 여유 — 테두리 · 안쪽 여백 · 커서 자리.</summary>
     private const double SlotEditorSlack = 24;
@@ -5924,7 +5920,7 @@ public partial class GraphEditorView : UserControl
                 Text = connection.Label,
                 FontSize = 9,
                 FontWeight = FontWeight.Bold,
-                Foreground = Brushes.White
+                Foreground = Skin.OnAccent.Brush()
             }
         };
 
@@ -6220,8 +6216,8 @@ public partial class GraphEditorView : UserControl
     private static double LineOpacity(NodeCard card, int portIndex) =>
         card.Ports[portIndex].ExecutionPort?.BranchOpenLineId is { } lineId && card.LineOutOfView.Contains(lineId) ? 0.45 : 1;
 
-    private static readonly IBrush BranchHubBrush = new SolidColorBrush(Color.FromRgb(0x33, 0x41, 0x55));
-    private static readonly IBrush BranchHubOpenBrush = new SolidColorBrush(Color.FromRgb(0x94, 0xA3, 0xB8));
+    private static IBrush BranchHubBrush => Skin.BranchHub.Brush();
+    private static IBrush BranchHubOpenBrush => Skin.BranchHubOpen.Brush();
 
     /// <summary>접은 공통 점이 지는 표 — <c>{접두}{노드}:{대사 LineId}</c>(왼쪽으로 나가는 무리면 끝에 <c>:left</c>).</summary>
     internal const string BranchHubTag = "detour-hub:";
@@ -6250,7 +6246,7 @@ public partial class GraphEditorView : UserControl
             Height = BranchHubRadius * 2,
             CornerRadius = new CornerRadius(BranchHubRadius),
             Background = BranchHubBrush,
-            BorderBrush = Brushes.White,
+            BorderBrush = Skin.Surface.Brush(),
             BorderThickness = new Thickness(1.5),
             Cursor = new Cursor(StandardCursorType.Hand),
             ZIndex = 51,
@@ -6260,7 +6256,7 @@ public partial class GraphEditorView : UserControl
                 Text = count.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 FontSize = 9,
                 FontWeight = FontWeight.Bold,
-                Foreground = Brushes.White,
+                Foreground = Skin.OnAccent.Brush(),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             }
@@ -6788,14 +6784,14 @@ public partial class GraphEditorView : UserControl
                 Canvas.GetTop(proxy.Visual),
                 ProxyWidth,
                 ProxyHeaderHeight + (proxy.VisualRowCount * ProxyRowHeight),
-                Color.FromRgb(0x6B, 0x72, 0x80));
+                Skin.Neutral);
         }
 
         _minimapViewport = new Rectangle
         {
-            Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
+            Stroke = Skin.Selection.Brush(),
             StrokeThickness = 1,
-            Fill = new SolidColorBrush(Color.FromArgb(20, 37, 99, 235)),
+            Fill = Skin.Selection.Brush(20),
             IsHitTestVisible = false
         };
         MinimapCanvas.Children.Add(_minimapViewport);
@@ -6808,7 +6804,7 @@ public partial class GraphEditorView : UserControl
         {
             Width = Math.Max(2, width * (MinimapWidth / CanvasWidth)),
             Height = Math.Max(2, height * (MinimapHeight / CanvasHeight)),
-            Fill = new SolidColorBrush(Color.FromArgb(170, color.R, color.G, color.B)),
+            Fill = color.Brush(170),
             RadiusX = 1,
             RadiusY = 1,
             IsHitTestVisible = false
@@ -6991,7 +6987,7 @@ public partial class GraphEditorView : UserControl
         {
             StartPoint = start,
             EndPoint = start,
-            Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
+            Stroke = Skin.Selection.Brush(),
             StrokeThickness = 2,
             StrokeDashArray = new AvaloniaList<double> { 4, 3 }
         };
@@ -8438,7 +8434,7 @@ public partial class GraphEditorView : UserControl
         return connection.Kind switch
         {
             GraphConnectionKind.ExecutionBranch => BranchPalette.Accent(connection.PaletteIndex),
-            _ => new SolidColorBrush(Color.FromArgb(150, 100, 100, 100))
+            _ => Skin.Connection.Brush()
         };
     }
 
@@ -8581,7 +8577,7 @@ public partial class GraphEditorView : UserControl
     // 굽고, 도구줄로 직각 · 곡선 · 직선을 고르거나 자동으로 되돌린다. 끄는 동안은 화면만 바뀌고 놓을 때 한 번 적는다
     // (되돌리기 한 칸 — 카드 끌기와 같다).
 
-    private static readonly IBrush SelectedLineBrush = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB));
+    private static IBrush SelectedLineBrush => Skin.Selection.Brush();
 
     /// <summary>고른 선택지 레인 — 챕터 간선의 신원(출발, 도착, 문구)이다.</summary>
     private sealed record RailKey(string ChapterId, string From, string To, string? Label);
@@ -8766,7 +8762,7 @@ public partial class GraphEditorView : UserControl
             {
                 Width = 12,
                 Height = 12,
-                Fill = Brushes.White,
+                Fill = Skin.Surface.Brush(),
                 Stroke = SelectedLineBrush,
                 StrokeThickness = 2,
                 ZIndex = 1000,
@@ -8784,8 +8780,8 @@ public partial class GraphEditorView : UserControl
                 Padding = new Thickness(2),
                 CornerRadius = new CornerRadius(4),
                 BorderThickness = new Thickness(1),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(0x66, 0x80, 0x80, 0x80)),
-                Background = new SolidColorBrush(Color.FromArgb(0xF2, 0xF6, 0xF7, 0xFA)),
+                BorderBrush = Skin.FloatingBorder.Brush(),
+                Background = Skin.FloatingSurface.Brush(),
                 ZIndex = 1000
             };
         }

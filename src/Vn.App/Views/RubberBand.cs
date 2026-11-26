@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Collections;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
+using Vn.App.Theming;
 
 namespace Vn.App.Views;
 
@@ -20,10 +21,10 @@ internal static class RubberBand
     {
         var band = new Rectangle
         {
-            Stroke = new SolidColorBrush(Color.FromRgb(0x25, 0x63, 0xEB)),
+            Stroke = Skin.Selection.Brush(),
             StrokeThickness = 1,
             StrokeDashArray = new AvaloniaList<double> { 4, 3 },
-            Fill = new SolidColorBrush(Color.FromArgb(28, 37, 99, 235)),
+            Fill = Skin.Selection.Brush(28),
             IsHitTestVisible = false
         };
         Avalonia.Controls.Canvas.SetLeft(band, start.X);

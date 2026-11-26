@@ -12,19 +12,17 @@
         <FluentTheme />
     </Application.Styles>
 
-    <!-- ThemeBorderLowBrush · ThemeForegroundBrush는 Simple 테마의 키라 FluentTheme에는 없다 — 참조가 전부
-         null로 풀려 구분선이 조용히 사라진다(그래프 캔버스 히트테스트 불능과 같은 뿌리).
-         화면 18곳이 ThemeBorderLowBrush를, [구성] 인스펙터의 「▾ 대사」 접기 제목이 ThemeForegroundBrush를 부르므로 여기 한 번만
-         정의해 전부 살린다. ThemeForegroundBrush의 밝게 값은 정의 전에 풀리던 그 검정이다(밝은 화면의 색은 그대로). -->
+    <!-- ThemeForegroundBrush는 Simple 테마의 키라 FluentTheme에는 없다 — 참조가 null로 풀린다(그래프 캔버스 히트테스트 불능과 같은 뿌리).
+         [구성] 인스펙터의 「▾ 대사」 접기 제목이 부르므로 여기 한 번만 정의해 살린다. 밝게 값은 정의 전에 풀리던 그 검정이다(밝은 화면의 색은 그대로).
+         ⛔ 틀의 구분선(ThemeBorderLowBrush — 화면 18곳)은 2026-11-26에 테마의 이름 Divider로 옮겼다(Themes/Classic/Tokens.axaml · themes) —
+         이 사전(ThemeDictionaries)에 든 이름은 테마가 덮지 못한다(얹는 사전보다 먼저 풀린다). 테마가 바꿀 색은 여기 두지 않는다. -->
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="ThemeBorderLowBrush" Color="#33555555" />
                     <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#FF000000" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="ThemeBorderLowBrush" Color="#4DAAAAAA" />
                     <SolidColorBrush x:Key="ThemeForegroundBrush" Color="#FFFFFFFF" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>

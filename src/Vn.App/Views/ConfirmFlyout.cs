@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Vn.App.Services;
+using Vn.App.Theming;
 
 namespace Vn.App.Views;
 
@@ -98,7 +99,7 @@ internal static class ConfirmFlyout
             HorizontalAlignment = HorizontalAlignment.Stretch,
 
             // 지우는 단추는 붉다 — 누르기 전에 색이 먼저 말한다.
-            Foreground = new SolidColorBrush(Color.FromRgb(190, 60, 60))
+            Foreground = Skin.DangerButton.Brush()
         };
 
         confirm.Click += (_, _) => UiGuard.Run(session, confirmText, () =>

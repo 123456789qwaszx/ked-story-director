@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Vn.App.Theming;
 using Vn.Authoring.Model;
 using Vn.App.Strings;
 
@@ -55,7 +56,7 @@ internal sealed class WriterColorChooser
             Height = 26,
             CornerRadius = new CornerRadius(3),
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x55, 0, 0, 0))
+            BorderBrush = Skin.SwatchBorder.Brush(0x55)
         };
         Hex = new TextBox
         {

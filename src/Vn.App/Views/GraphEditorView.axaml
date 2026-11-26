@@ -7,7 +7,7 @@
         <!-- 툴바 위아래 여백 4 — 위 띠 · 탭 줄과 붙인다(2026-11-18 소유자 · chrome-card-header U1, ⛔ 그 전에는 8). -->
         <Border Grid.Row="0"
                 Padding="10,4"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" Spacing="6">
                 <!-- [+ 설정 노드]는 두지 않는다 — 설정노드는 챕터마다
@@ -25,13 +25,13 @@
                      짝: `ChapterGraphView.axaml`의 ChapterCombo. -->
                 <ComboBox x:Name="ChapterCombo" MinWidth="180" FontSize="11"
                           ToolTip.Tip="{x:Static s:Ui.Board_BoardNewNodesGoOn}" />
-                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                <Border Width="1" Margin="4,2" Background="{DynamicResource Divider}" />
                 <Button x:Name="AddEpisodeButton" Content="{x:Static s:Ui.Board_Episode}" />
-                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                <Border Width="1" Margin="4,2" Background="{DynamicResource Divider}" />
                 <!-- [삭제] — 고른 것을 지운다(2026-11-18 소유자): 아무것도 안 골랐으면 꺼진 「삭제」, 챕터 · 장면 · 에피소드 · 분기 카드를 고르면 그 이름
                      (「챕터 삭제」 …). 하이어아키 차림표의 「챕터 지우기」 · 「장면 지우기」를 갈음한다. -->
                 <Button x:Name="DeleteButton" Content="{x:Static s:Ui.Board_Delete}" IsEnabled="False" ToolTip.ShowOnDisabled="True" />
-                <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                <Border Width="1" Margin="4,2" Background="{DynamicResource Divider}" />
                 <!-- 작가용 글 서식 도구 막대(2026-11-22 소유자 — 한컴 · 엑셀처럼 위에서 글꼴 · 크기 · 굵게 · 기울임 · 취소선 · 색 · 정렬) — 작가가 보기 위한
                      것이라 내보내기에 나가지 않는다. 내용은 코드가 짓는다(GraphEditorView.Writer · writer-formatting). -->
                 <StackPanel x:Name="WriterToolbar" Orientation="Horizontal" Spacing="2" Background="Transparent"
@@ -57,13 +57,13 @@
 
             <!-- 하이어아키 — 챕터 그래프와 같은 StoryHierarchy, 내용은 셸이 채운다. -->
             <Border Grid.Column="0"
-                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                    BorderBrush="{DynamicResource Divider}"
                     BorderThickness="0,0,1,0">
                 <Panel>
                     <Grid x:Name="HierarchyOpen" RowDefinitions="Auto,*">
                         <Border Grid.Row="0"
                                 Padding="10,6"
-                                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                BorderBrush="{DynamicResource Divider}"
                                 BorderThickness="0,0,0,1">
                             <!-- ⛔ 머리의 [＋](새 챕터)는 2026-11-18에 걷혔다(소유자). 새 챕터는 하이어아키 · 판의 챕터 밖 우클릭 「챕터 추가」가
                                  바로 세우고, 챕터가 하나도 없으면 판 한가운데 [＋ 첫 챕터 만들기]가 선다. -->
@@ -110,11 +110,16 @@
             <GridSplitter Grid.Column="1"
                           x:Name="HierarchySplitter"
                           ResizeDirection="Columns"
-                          Background="{DynamicResource ThemeBorderLowBrush}" />
+                          Background="{DynamicResource Divider}" />
 
             <!-- 초점이 바뀌어도 판을 스크롤하지 않는다 — 글 칸을 반영하면 판을 다시 그리고 새 칸에 초점을 돌려주는데,
                  그 칸은 아직 자리가 잡히기 전이라 판이 엉뚱한 자리로 튄다. 판 안에서 초점을 받는 칸은 사람이 지금
                  보고 누른 칸이라 따로 데려올 까닭이 없다. 쓰는 커서를 따라가는 스크롤은 그대로다. -->
+            <!-- 판의 바탕 — 테마가 정한다(BoardBackground · 기본 테마에는 없어 비어 있다). 누름을 받지 않는 깔개라 판의 누르기 · 끌기는 그대로다. -->
+            <Border Grid.Column="2"
+                    x:Name="BoardBackdrop"
+                    Background="{DynamicResource BoardBackground}"
+                    IsHitTestVisible="False" />
             <ScrollViewer Grid.Column="2"
                           x:Name="GraphScroll"
                           BringIntoViewOnFocusChange="False"
@@ -185,8 +190,8 @@
                     Margin="0,0,18,18"
                     CornerRadius="6"
                     BorderThickness="1"
-                    BorderBrush="#66808080"
-                    Background="#F2F6F7FA">
+                    BorderBrush="{DynamicResource FloatingBorder}"
+                    Background="{DynamicResource FloatingSurface}">
                 <StackPanel>
                     <Canvas x:Name="MinimapCanvas"
                             Width="180"
@@ -195,7 +200,7 @@
                             Background="Transparent"
                             Cursor="Hand" />
                     <!-- 전체 보기·배율 프리셋 — 큰 판의 길찾기. -->
-                    <Border x:Name="ZoomBar" BorderBrush="#33808080" BorderThickness="0,1,0,0" Padding="4,2">
+                    <Border x:Name="ZoomBar" BorderBrush="{DynamicResource FloatingDivider}" BorderThickness="0,1,0,0" Padding="4,2">
                         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
                             <Button Grid.Column="0" x:Name="FitAllButton" Content="{x:Static s:Ui.Board_FitAll}"
                                     FontSize="9" Padding="5,1" Margin="0,0,3,0" />
@@ -229,8 +234,8 @@
                     Padding="6,4"
                     CornerRadius="6"
                     BorderThickness="1"
-                    BorderBrush="#66808080"
-                    Background="#F7F8FAFC">
+                    BorderBrush="{DynamicResource FloatingBorder}"
+                    Background="{DynamicResource FindBarSurface}">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                     <TextBox x:Name="FindBox"
                              Width="220"
@@ -257,7 +262,7 @@
             <GridSplitter Grid.Column="3"
                           x:Name="SideSplitter"
                           ResizeDirection="Columns"
-                          Background="{DynamicResource ThemeBorderLowBrush}" />
+                          Background="{DynamicResource Divider}" />
 
             <!-- 우측 기둥 = 탭 셋 — 인스펙터 · 화자 · 조건 및 스탯([구성] 탭과 같은 차례 · 같은 이름 — 2026-11-18 소유자 · side-tabs V3).
                  ⛔ 그 전에는 인스펙터 하나였고 화자 · 조건 · 스탯은 하이어아키의 프로젝트 · 챕터 줄을 골라야만 섰다.
@@ -266,7 +271,7 @@
                  ⛔ 그 전에는 인스펙터 머리였다 — M3), 그 밖 → 인스펙터.
                  콤보로 챕터를 바꾸는 것은 탭을 바꾸지 않는다. -->
             <Border Grid.Column="4"
-                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                    BorderBrush="{DynamicResource Divider}"
                     BorderThickness="1,0,0,0">
                 <Panel>
                 <Panel x:Name="SideOpen">
@@ -284,7 +289,7 @@
                         <Grid RowDefinitions="Auto,*">
                             <Border Grid.Row="0"
                                     Padding="10,6"
-                                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                    BorderBrush="{DynamicResource Divider}"
                                     BorderThickness="0,0,0,1">
                                 <StackPanel Spacing="1">
                                     <!-- 장면 요약의 머리는 이름 칸이다(2026-11-18 소유자 — 에피소드의 이름 칸처럼 여기서 고친다). 그 밖에는 이름 글 —
@@ -306,7 +311,7 @@
                         <Grid RowDefinitions="Auto,*">
                             <Border Grid.Row="0"
                                     Padding="10,6"
-                                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                    BorderBrush="{DynamicResource Divider}"
                                     BorderThickness="0,0,0,1">
                                 <StackPanel Spacing="1">
                                     <TextBlock Text="{x:Static s:Ui.Board_SpeakersForWholeProject}" FontWeight="SemiBold" />
@@ -323,7 +328,7 @@
                         <Grid RowDefinitions="Auto,*">
                             <Border Grid.Row="0"
                                     Padding="10,6"
-                                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                    BorderBrush="{DynamicResource Divider}"
                                     BorderThickness="0,0,0,1">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Spacing="1" VerticalAlignment="Center">
@@ -393,7 +398,7 @@
                 x:Name="HintBar"
                 Padding="10,6"
                 IsVisible="False"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,1,0,0">
             <TextBlock x:Name="HintText"
                        FontSize="11"

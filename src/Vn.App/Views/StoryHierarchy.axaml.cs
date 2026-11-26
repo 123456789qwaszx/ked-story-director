@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Text;
 using Vn.App.Strings;
@@ -845,7 +846,7 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = "⚠",
                 FontSize = 10,
-                Foreground = Brushes.DarkOrange,
+                Foreground = Skin.WarningMark.Brush(),
                 VerticalAlignment = VerticalAlignment.Center,
                 [ToolTip.TipProperty] = row.Kind switch
                 {
@@ -968,7 +969,7 @@ public partial class StoryHierarchy : UserControl
     /// <summary>눈 모양 — 뜬 눈(테두리 + 눈동자) 또는 감은 눈(아래로 굽은 눈꺼풀 + 속눈썹).</summary>
     private static Control EyeGlyph(HierarchyEye eye)
     {
-        IBrush ink = new SolidColorBrush(Color.FromRgb(0x4B, 0x55, 0x63));
+        IBrush ink = Skin.NeutralDark.Brush();
         var glyph = new Canvas
         {
             Width = 14,
@@ -1462,9 +1463,9 @@ public partial class StoryHierarchy : UserControl
     /// <summary>테스트의 손잡이 — 잔상의 테두리 붓.</summary>
     internal IBrush? DragGhostBorder => _dragGhost?.BorderBrush;
 
-    private static readonly IBrush GhostIdle = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF));
-    private static readonly IBrush GhostAccept = new SolidColorBrush(Color.FromRgb(0x3D, 0x7B, 0xD9));
-    private static readonly IBrush GhostRefuse = new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+    private static IBrush GhostIdle => Skin.NeutralLight.Brush();
+    private static IBrush GhostAccept => Skin.Accent.Brush();
+    private static IBrush GhostRefuse => Skin.Danger.Brush();
 
     /// <summary>끄는 동안 포인터를 따라간다 — 문턱을 넘으면 잔상을 세운다.</summary>
     private void FollowGhost(HierarchyRow row, Avalonia.Input.PointerEventArgs args)
@@ -1489,7 +1490,7 @@ public partial class StoryHierarchy : UserControl
                 Child = _dragGhostText,
                 Padding = new Thickness(8, 3),
                 CornerRadius = new CornerRadius(4),
-                Background = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
+                Background = Skin.Surface.Brush(235),
                 BorderBrush = GhostIdle,
                 BorderThickness = new Thickness(1.5),
                 Opacity = 0.8,
@@ -1664,7 +1665,7 @@ public partial class StoryHierarchy : UserControl
             if (RowHost.Children[index] is DockPanel host && host.Children.OfType<Button>().FirstOrDefault() is { } button)
             {
                 button.Background = selected.Contains(_rows[index].Key)
-                    ? new SolidColorBrush(Color.FromArgb(48, 61, 123, 217))
+                    ? Skin.Accent.Brush(48)
                     : Brushes.Transparent;
 
                 // 끌고 지나가는 동안 받아 줄 자리에 테두리 — 아무 표시가 없으면 놓아도 되는지 모른 채 손을 놓는다.
@@ -1695,8 +1696,8 @@ public partial class StoryHierarchy : UserControl
                 button.BorderBrush = !landing
                     ? Brushes.Transparent
                     : why is null
-                        ? new SolidColorBrush(Color.FromArgb(220, 61, 123, 217))
-                        : new SolidColorBrush(Color.FromRgb(0xDC, 0x26, 0x26));
+                        ? Skin.Accent.Brush(220)
+                        : Skin.Danger.Brush();
             }
         }
 

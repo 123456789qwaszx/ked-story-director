@@ -7,7 +7,7 @@
         <!-- 툴바 위아래 여백 4 — 위 띠 · 탭 줄과 붙인다(2026-11-18 소유자 · chrome-card-header U1, ⛔ 그 전에는 8). -->
         <Border Grid.Row="0"
                 Padding="10,4"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,0,0,1">
             <!-- [다시 읽기] 단추는 두지 않는다 — **화면이 저절로 따라오기 때문이다.** 판은 프로젝트에서 오고(파일을 읽지 않는다),
                  프로젝트가 바뀌면 세션의 변경 알림이 다시 읽기를 부른다(QueueReload). -->
@@ -26,7 +26,7 @@
                     <!-- [내보내기] 단추는 두지 않는다.
                          챕터 진행 JSON이 사람 손을 기다리면 누른 순간의 낡은 파일이 디스크에
                          남는다. 다시 읽을 때마다 저절로 나간다 — 내보내기의 거부 규칙은 그대로 적용된다. -->
-                    <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                    <Border Width="1" Margin="4,2" Background="{DynamicResource Divider}" />
                     <!-- [＋ 에피소드] 단추는 두지 않는다 — [구성] 탭에서는 에피소드를 더하지 않는다(하이어아키도 읽기 전용). 에피소드는 [대본] 탭의
                          [＋ 에피소드] · 하이어아키 장면 줄 우클릭 「에피소드 추가」로 더한다. -->
 
@@ -41,7 +41,7 @@
                     <Button x:Name="FitChapterButton"
                             Content="{x:Static s:Ui.Structure_FitToScreen}"
                             ToolTip.Tip="{x:Static s:Ui.Structure_SetsZoomAndPositionSo}" />
-                    <Border Width="1" Margin="4,2" Background="{DynamicResource ThemeBorderLowBrush}" />
+                    <Border Width="1" Margin="4,2" Background="{DynamicResource Divider}" />
                     <!-- 빈 선택지 숨기기 — [구성] 판 전체에 하나다. [대본] 탭은 카드마다 인스펙터의 체크로 정한다. -->
                     <CheckBox x:Name="HideEmptyChoicesCheck" Content="{x:Static s:Ui.Dialogue_HideEmptyChoices}" FontSize="11" VerticalAlignment="Center"
                               ToolTip.Tip="{x:Static s:Ui.Structure_WhenOnHidesUnconnectedEmpty}" />
@@ -79,13 +79,13 @@
                  주의: 줄을 고른 뒤의 일(챕터 · 에피소드 고르기, 오른쪽 탭 바꾸기)은 이 뷰가, 내용(프로젝트 · 챕터 목록)과
                  접힘은 셸(MainWindow)이 짓는다 — 두 탭의 하이어아키가 한 원천 · 한 접힘을 쓴다. -->
             <Border Grid.Column="0"
-                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                    BorderBrush="{DynamicResource Divider}"
                     BorderThickness="0,0,1,0">
                 <Panel>
                 <Grid x:Name="HierarchyOpen" RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
-                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderBrush="{DynamicResource Divider}"
                             BorderThickness="0,0,0,1">
                         <!-- 새 챕터는 여기서 만들지 않는다 — [대본] 탭의 하이어아키 · 판 우클릭 「챕터 추가」로 만든다. 챕터가 하나도 없으면 두 탭의 판 한가운데
                              [＋ 첫 챕터 만들기]가 선다(이 탭의 것은 [대본]으로 데려가 거기서 만든다 — first-chapter F2). -->
@@ -139,7 +139,7 @@
             <GridSplitter Grid.Column="1"
                           x:Name="HierarchySplitter"
                           ResizeDirection="Columns"
-                          Background="{DynamicResource ThemeBorderLowBrush}" />
+                          Background="{DynamicResource Divider}" />
 
             <Grid Grid.Column="2">
                 <!-- 휠 확대·축소(Ctrl 없이) / 가운데 단추 끌어 이동.
@@ -158,9 +158,9 @@
                          그 안에서 판을 가운데로 미는 거리가 배율로 줄지 않아, 판이 오른쪽 · 아래로 밀려 잘렸다(⛔ 2026-11-19까지 · usability UX10 —
                          [대본] 판의 같은 뿌리는 writer-comfort WC1에서 왼위에 붙여 고쳤다).
                          배율 칸은 판 밖을 자르지 않는다 — 범위 사각형 · 판 밖으로 끄는 카드가 바깥에서도 보인다(⛔ 잘려 사라져 보였다 · UX22). -->
-                    <Panel x:Name="BoardDesk" Background="#E9ECF0">
+                    <Panel x:Name="BoardDesk" Background="{DynamicResource StructureDesk}">
                         <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Left" VerticalAlignment="Top" ClipToBounds="False">
-                            <Canvas x:Name="GraphCanvas" Background="White" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                            <Canvas x:Name="GraphCanvas" Background="{DynamicResource Surface}" HorizontalAlignment="Left" VerticalAlignment="Top" />
                         </LayoutTransformControl>
                     </Panel>
                 </ScrollViewer>
@@ -207,7 +207,7 @@
             <GridSplitter Grid.Column="3"
                           x:Name="SideSplitter"
                           ResizeDirection="Columns"
-                          Background="{DynamicResource ThemeBorderLowBrush}" />
+                          Background="{DynamicResource Divider}" />
 
             <!-- 오른쪽 기둥 — 탭 셋(인스펙터 · 화자 · 조건 및 스탯)이고 접힌다. 챕터 구조의 편집은 여기서, 대사는 연출 그래프의 카드에서.
                  모든 편집은 프로젝트를 고치고, 변경 알림이 그래프를 다시 그린다. -->
@@ -236,7 +236,7 @@
                 <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
-                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderBrush="{DynamicResource Divider}"
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
                             <!-- 줄을 넘긴다 — 선택지 간선은 문구가 머리글이다(2026-11-17), 긴 문구도 다 보여야 한다. -->
@@ -301,7 +301,7 @@
                              읽는 폭만 좁힌다. **얇은 구분선 + 접기 토글 + 흐르는 글**
                              뿐이고, 스크롤은 편집 탭 하나만 쓴다. 대사를 고치며 읽는 화면이라
                              가독성이 가장 위다. -->
-                        <Border BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                        <Border BorderBrush="{DynamicResource Divider}"
                                 BorderThickness="0,1,0,0"
                                 Margin="0,14,0,0"
                                 Padding="0,10,0,0">
@@ -492,7 +492,7 @@
                 <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
-                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderBrush="{DynamicResource Divider}"
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
                             <TextBlock Text="{x:Static s:Ui.Board_SpeakersForWholeProject}" FontWeight="SemiBold" />
@@ -524,7 +524,7 @@
                 <Grid RowDefinitions="Auto,*">
                     <Border Grid.Row="0"
                             Padding="10,6"
-                            BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                            BorderBrush="{DynamicResource Divider}"
                             BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="1" VerticalAlignment="Center">
@@ -616,7 +616,7 @@
         </Grid>
 
         <Border Grid.Row="2"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,1,0,0">
             <!-- 검증 보고는 <b>늘 서 있되 작아야 한다</b> — 원할 때 언제든 확인할 수
                  있어야 하지만 시각적으로 크게 보일 필요는 없다.

@@ -10,9 +10,11 @@
     <!-- 창 제목(앱 이름 — 프로젝트 이름)은 코드가 단다(RefreshShell · AppIdentity.Name). -->
     <DockPanel>
         <!-- 위아래 여백은 4 — 위 띠 · 탭 줄 · 툴바 세 줄을 붙인다(2026-11-18 소유자 — 「불필요하게 공간을 활용」 · chrome-card-header U1, ⛔ 그 전에는 10). -->
+        <!-- 바탕은 테마가 정한다(TopBarBackground · 기본 테마에는 없어 비어 있다 · themes). -->
         <Border DockPanel.Dock="Top"
                 Padding="12,4"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                Background="{DynamicResource TopBarBackground}"
+                BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,0,0,1">
             <Grid x:Name="TopBar" ColumnDefinitions="Auto,16,Auto,Auto,*,Auto">
                 <!-- File 메뉴 (2026-11-17 소유자 — 유니티처럼 눌러 목록에서 고른다). 되돌리기 · 다시 실행도 여기 있다(2026-11-18 소유자 —
@@ -83,6 +85,14 @@
             </Grid>
         </Border>
 
+        <!-- 위 띠 아래의 꾸밈 줄 — 테마가 높이와 무늬를 정한다(TopBarEdgeHeight · TopBarEdgeBrush · 「파스텔 하늘」의 구름 물결). 기본 테마에는 두 이름이
+             없어 높이 0으로 접힌다. 누름을 받지 않는다. -->
+        <Border x:Name="TopBarEdge"
+                DockPanel.Dock="Top"
+                Height="{DynamicResource TopBarEdgeHeight}"
+                Background="{DynamicResource TopBarEdgeBrush}"
+                IsHitTestVisible="False" />
+
         <!-- 바깥에서 바뀐 프로젝트 — 연 뒤에 다른 곳(GitHub Desktop의 받기 등)이 프로젝트 파일을 바꿨는데 이 창에 고친 것이 남아 있을 때만 선다
              (2026-11-19 · writer-release WR1). 고른 것이 없으면 저장 · 자동 저장이 덮어쓰지 않는다. 고친 것이 없으면 이 띠 없이 다시 읽는다
              (MainWindow.CheckOutsideChanges). 창을 띄우지 않는다 — Ctrl+S 같은 키에는 붙을 자리가 없고, 띠는 읽던 판을 덮지 않는다. -->
@@ -90,15 +100,15 @@
                 DockPanel.Dock="Top"
                 IsVisible="False"
                 Padding="12,6"
-                Background="#FFF4D6"
-                BorderBrush="#E0B84A"
+                Background="{DynamicResource NoticeSurface}"
+                BorderBrush="{DynamicResource NoticeBorder}"
                 BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="*,Auto,8,Auto">
                 <TextBlock x:Name="OutsideChangeText"
                            Grid.Column="0"
                            VerticalAlignment="Center"
                            TextWrapping="Wrap"
-                           Foreground="#5A4300"
+                           Foreground="{DynamicResource NoticeInk}"
                            Text="{x:Static s:Ui.Main_ThisProjectSFilesWere}" />
                 <Button x:Name="OutsideReloadButton" Grid.Column="1" Content="{x:Static s:Ui.Main_ReloadDiscardChangesHere}" />
                 <Button x:Name="OutsideOverwriteButton" Grid.Column="3" Content="{x:Static s:Ui.Main_OverwriteWithMine}" />
@@ -110,7 +120,7 @@
              볼 것이 아니다. 이 저장소가 곁정보에 쓰는 11로 맞춘다. -->
         <Border DockPanel.Dock="Bottom"
                 Padding="12,4"
-                BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,1,0,0">
             <TextBlock x:Name="StatusText" FontSize="11" TextWrapping="Wrap" />
         </Border>

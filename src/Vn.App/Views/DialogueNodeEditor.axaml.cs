@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
@@ -29,7 +30,7 @@ namespace Vn.App.Views;
 /// </summary>
 public partial class DialogueNodeEditor : UserControl
 {
-    private static readonly SolidColorBrush LineSelectionBrush = new(Color.FromArgb(200, 37, 99, 235));
+    private static IBrush LineSelectionBrush => Skin.Selection.Brush(200);
 
     private AuthoringSession? _session;
     private string? _nodeId;
@@ -397,7 +398,7 @@ public partial class DialogueNodeEditor : UserControl
     {
         Height = 1,
         Margin = new Thickness(4, 2),
-        Background = new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
+        Background = Skin.Hairline.Brush(60)
     };
 
     /// <summary>줄 카드 우클릭 메뉴 —추가·삭제는 ＋ 플라이아웃과 같은 편집 경로 하나를 쓴다.</summary>
@@ -565,7 +566,7 @@ public partial class DialogueNodeEditor : UserControl
                 ? new Thickness(1)
                 : new Thickness(3, 1, 1, 1),
             BorderBrush = branch is null
-                ? new SolidColorBrush(Color.FromArgb(60, 128, 128, 128))
+                ? Skin.Hairline.Brush(60)
                 : BranchPalette.Accent(palette),
             Background = branch is null ? null : BranchPalette.Background(palette),
             Child = body
@@ -635,7 +636,7 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>지울 줄 카드의 표 — 시험이 찾는다.</summary>
     internal const string PendingRemovalTag = "pending-removal";
 
-    private static readonly IBrush PendingRemovalBrush = new SolidColorBrush(Color.FromArgb(170, 0xDC, 0x26, 0x26));
+    private static IBrush PendingRemovalBrush => Skin.Danger.Brush(170);
 
     /// <summary>Index | 화자 | 대사 | ＋ 의 메인 행. 높이는 한 줄로 고정이다.</summary>
     private Control BuildMainRow(DialogueNode node, DialogueScript script, ResolvedLine resolved)
@@ -872,7 +873,7 @@ public partial class DialogueNodeEditor : UserControl
                 Text = text,
                 FontSize = 9,
                 FontWeight = FontWeight.Bold,
-                Foreground = Brushes.White
+                Foreground = Skin.OnAccent.Brush()
             },
             Background = background,
             Padding = new Thickness(6, 1),
@@ -903,7 +904,7 @@ public partial class DialogueNodeEditor : UserControl
     /// </summary>
     private Control BuildTransitionTag(DialogueNode node, ResolvedLine resolved)
     {
-        var neutral = new SolidColorBrush(Color.FromArgb(160, 107, 114, 128));
+        IBrush neutral = Skin.Neutral.Brush(160);
 
         (string label, IBrush background) = resolved.Line.Transition!.Kind switch
         {
@@ -1470,7 +1471,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 Padding = new Thickness(10),
                 CornerRadius = new CornerRadius(6),
-                Background = new SolidColorBrush(Color.FromArgb(20, 220, 38, 38)),
+                Background = Skin.Danger.Brush(20),
                 Child = content
             });
         }

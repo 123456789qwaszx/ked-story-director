@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
 using Vn.Authoring.Rendering;
@@ -552,7 +553,7 @@ public partial class GraphEditorView
         return new Avalonia.Controls.Shapes.Path
         {
             Data = Geometry.Parse(lines.ToString()),
-            Stroke = Brushes.Black,
+            Stroke = Skin.IconInk.Brush(),
             StrokeThickness = 1.3,
             Width = 12,
             Height = 12,
@@ -736,7 +737,7 @@ public partial class GraphEditorView
     private static Control LineSpacingIcon() => new Avalonia.Controls.Shapes.Path
     {
         Data = Geometry.Parse("M2.5,1.5 V11.5 M0.5,3.5 L2.5,1.5 L4.5,3.5 M0.5,9.5 L2.5,11.5 L4.5,9.5 M7,2.5 H13 M7,6.5 H13 M7,10.5 H13"),
-        Stroke = Brushes.Black,
+        Stroke = Skin.IconInk.Brush(),
         StrokeThickness = 1.1,
         StrokeLineCap = PenLineCap.Round,
         StrokeJoin = PenLineJoin.Round,
@@ -751,7 +752,7 @@ public partial class GraphEditorView
     private static Control MarkerIcon() => new Avalonia.Controls.Shapes.Path
     {
         Data = Geometry.Parse("M3,10 L8,3 L11,5.5 L6,12 L3,12 Z M8,3 L9.5,1 L12.5,3.5 L11,5.5"),
-        Stroke = Brushes.Black,
+        Stroke = Skin.IconInk.Brush(),
         StrokeThickness = 1.1,
         StrokeLineCap = PenLineCap.Round,
         StrokeJoin = PenLineJoin.Round,
@@ -760,7 +761,7 @@ public partial class GraphEditorView
         HorizontalAlignment = HorizontalAlignment.Center
     };
 
-    private static Border Separator() => new() { Width = 1, Margin = new Thickness(4, 2), Background = new SolidColorBrush(Color.FromArgb(0x33, 0x55, 0x55, 0x55)) };
+    private static Border Separator() => new() { Width = 1, Margin = new Thickness(4, 2), Background = Skin.Divider.Brush() };
 
     private Button FormatButton(string glyph, string tip, Action run)
     {
