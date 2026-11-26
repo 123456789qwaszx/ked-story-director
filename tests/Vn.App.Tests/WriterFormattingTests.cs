@@ -607,6 +607,10 @@ public sealed class WriterFormattingTests
         TextBox box = Box(window, card.Id);
         double cardSize = box.FontSize;
 
+        // 값이 섞였거나 입힐 곳이 없어 칸이 비면 「—」가 선다 — 빈 알약으로 남지 않는다(2026-11-26).
+        Assert.Equal(GraphEditorView.MixedValueMark, size.PlaceholderText);
+        Assert.Equal(GraphEditorView.MixedValueMark, spacing.PlaceholderText);
+
         // 크기 — 「긴 하루」를 20pt로.
         Select(box, "긴 하루");
         Type(window, size, "20");

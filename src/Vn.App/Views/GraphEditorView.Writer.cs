@@ -566,6 +566,12 @@ public partial class GraphEditorView
     /// 붙든 채 초점을 받고 글이 모두 골라진다. Enter면 <paramref name="commit"/>이 적은 글을 받아 입히고 칸으로 초점을 돌려준다. Esc나 다른 데를 누르면 적던
     /// 것은 버리고 지금 값을 다시 보인다.
     /// </summary>
+    /// <summary>
+    /// 값 칸이 비었을 때 보이는 표 — 고른 카드들의 값이 섞였거나 입힐 곳이 없다(2026-11-26 — ⛔ 그 전에는 빈 알약으로 남아 고장 난 것처럼 보였다).
+    /// 칸의 글이 아니라 자리 글(PlaceholderText)이라, 눌러 바로 숫자를 적으면 된다.
+    /// </summary>
+    internal const string MixedValueMark = "—";
+
     private TextBox ValueEntry(double width, string tip, Action<string> commit)
     {
         var entry = new TextBox
@@ -578,6 +584,7 @@ public partial class GraphEditorView
             VerticalContentAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center,
             AcceptsReturn = false,
+            PlaceholderText = MixedValueMark,
             [ToolTip.TipProperty] = tip
         };
 

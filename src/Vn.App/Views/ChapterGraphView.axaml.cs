@@ -2319,8 +2319,9 @@ public partial class ChapterGraphView : UserControl
 
         if (model.IsSceneRoot(episode))
         {
-            // 「장면 시작점」(2026-11-18 소유자 — ⛔ 같은 날 H2에서 「시작점」으로 줄였다가 되돌렸다).
-            Border root = CardChip(Ui.Structure_SceneStart, Skin.Accent, FontWeight.Bold);
+            // 「장면 시작점」(2026-11-18 소유자 — ⛔ 같은 날 H2에서 「시작점」으로 줄였다가 되돌렸다). 색은 [대본]의 장면 첫 에피소드와 같은 시작의 색이다
+            // (2026-11-26 — ⛔ 그 전에는 강조색이었는데, 강조색은 「고른 것」의 파랑이다).
+            Border root = CardChip(Ui.Structure_SceneStart, Skin.SceneRootAccent, FontWeight.Bold);
             ToolTip.SetTip(root, start
                 ? Ui.Structure_StartingEpisodeAndSceneStart
                 : Ui.Structure_SceneStartEnteredFromAnother);

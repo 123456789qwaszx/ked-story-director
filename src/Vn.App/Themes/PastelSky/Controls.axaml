@@ -16,6 +16,12 @@
     <Style Selector="Button">
         <Setter Property="CornerRadius" Value="10" />
     </Style>
+
+    <!-- 체크 상자는 네모다(2026-11-26 — 윈도우의 문법: 동그라미는 「하나만 고르기」(라디오 단추)다). Fluent는 체크 상자의 모서리를 컨트롤 공통
+         모서리(ControlCornerRadius 12)로 그려 20px 칸이 동그라미가 됐다. 라디오 단추는 그대로 동그라미다. -->
+    <Style Selector="CheckBox">
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
     <!-- 올림 · 눌림의 반응은 어디서나 같다 — 올리면 옅은 하늘색 면, 누르면 한 단계 짙은 면(색은 Tokens.axaml)으로 짧게 바뀐다. -->
     <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Transitions">

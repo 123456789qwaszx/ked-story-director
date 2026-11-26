@@ -1405,13 +1405,16 @@ public partial class GraphEditorView : UserControl
     /// <summary>
     /// 선택지의 길 색 — 카드 아래 칸의 차례(왼쪽부터 0 · 1 · 2)대로 셋이 돈다(2026-11-26 소유자 — 「어느 노드에서 출발해서 어떤 노드로 연결되는지 추적하기 쉽도록
     /// 색같은 걸로 구분」 · 「선택지 문구가 왼쪽선의 것인지 오른쪽 선의 것인지 조금 헷갈리기도」). 이은 칸의 문구 · 가로 줄에서 내려오는 선 · 도착까지 가는 선이 같은
-    /// 색이다. 줄기 · 가로 줄 · 안 이은 칸 · 도착 화살표는 길 하나의 것이 아니라 <see cref="RailBrush"/> 그대로다.
+    /// 색이다. 줄기 · 가로 줄 · 안 이은 칸은 길 하나의 것이 아니라 <see cref="RailBrush"/> 그대로다. 도착 접점 · 화살촉은 들어오는 길들이 한 색이면 그 색, 색이 다른
+    /// 길이 모이면 철도 색이다(<see cref="DrawArrivalPort"/>).
     /// </summary>
-    private static IBrush LaneBrush(int order) => (order % 3) switch
+    private static IBrush LaneBrush(int order) => LaneColor(order).Brush();
+
+    private static Color LaneColor(int order) => (order % 3) switch
     {
-        0 => Skin.ChoiceLine1.Brush(),
-        1 => Skin.ChoiceLine2.Brush(),
-        _ => Skin.ChoiceLine3.Brush()
+        0 => Skin.ChoiceLine1,
+        1 => Skin.ChoiceLine2,
+        _ => Skin.ChoiceLine3
     };
     private static IBrush RailChipBrush => Skin.ChoiceInk.Brush();
     private const double RailBusDrop = 16;      // 카드 아래 가로 줄까지
@@ -1472,7 +1475,7 @@ public partial class GraphEditorView : UserControl
 
             // 도착 포트 (2026-08-15 소유자) — 여러 선택지가 같은 에피소드로 이어지는 일이
             // 많으므로, 들어오는 가지들은 도착 카드 앞의 접점 하나로 모인다.
-            var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
+            var arrivals = new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal);
 
             foreach ((string episodeId, (DialogueNode node, Rect _)) in board.Spots)
             {
@@ -1489,7 +1492,7 @@ public partial class GraphEditorView : UserControl
                 }
             }
 
-            foreach ((string toId, List<(string From, string Label)> incoming) in arrivals)
+            foreach ((string toId, List<(string From, string Label, Color? Ink)> incoming) in arrivals)
             {
                 (DialogueNode target, Rect rect) = board.Spots[toId];
                 RecordRailGroup(new RailOrigin.Arrival(fileId, toId, incoming), [target.Id], drawnAt,
@@ -1534,7 +1537,7 @@ public partial class GraphEditorView : UserControl
         public sealed record FromRow(string FileId, string EpisodeId) : RailOrigin(FileId);
 
         /// <summary>도착 카드 위의 접점 · 화살표 · 포트.</summary>
-        public sealed record Arrival(string FileId, string EpisodeId, List<(string From, string Label)> Incoming) : RailOrigin(FileId);
+        public sealed record Arrival(string FileId, string EpisodeId, List<(string From, string Label, Color? Ink)> Incoming) : RailOrigin(FileId);
     }
 
     /// <summary>철도 묶음 하나 — 그 그림과, 그림이 기대는 자리(카드 Id · 접은 상자 열쇠)를 그었을 때의 사각형.</summary>
@@ -1676,7 +1679,7 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>그 카드에서 나가는 가지들을 긋는다.</summary>
-    private void DrawRailsFromCard(RailBoard board, string episodeId, Dictionary<string, List<(string From, string Label)>> arrivals)
+    private void DrawRailsFromCard(RailBoard board, string episodeId, Dictionary<string, List<(string From, string Label, Color? Ink)>> arrivals)
     {
         if (!board.Spots.TryGetValue(episodeId, out (DialogueNode Node, Rect Rect) spot))
         {
@@ -1806,7 +1809,7 @@ public partial class GraphEditorView : UserControl
     private void RedrawRailGroups(
         List<RailGroup> stale,
         Dictionary<string, Rect> now,
-        Dictionary<string, List<(string From, string Label)>>? arrivals = null)
+        Dictionary<string, List<(string From, string Label, Color? Ink)>>? arrivals = null)
     {
         if (stale.Count == 0)
         {
@@ -1840,12 +1843,12 @@ public partial class GraphEditorView : UserControl
                 // 이웃 출발의 도착 장부는 그대로다 — 도착 포트는 도착 카드에만 기대어 제 묶음으로 따라간다.
                 case RailOrigin.FromCard card:
                     DrawRailsFromCard(board, card.EpisodeId,
-                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                        arrivals ?? new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.FromRow row when board.Folded.TryGetValue(row.EpisodeId, out FoldedRow? folded):
                     DrawRailsFromRow(board.BoardName, row.EpisodeId, folded, board.Chapter.Edges, board.Spots, board.Folded,
-                        arrivals ?? new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal));
+                        arrivals ?? new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal));
                     break;
 
                 case RailOrigin.Arrival arrival when board.Spots.TryGetValue(arrival.EpisodeId, out (DialogueNode Node, Rect Rect) spot):
@@ -1880,6 +1883,7 @@ public partial class GraphEditorView : UserControl
             .OfType<RailOrigin.Arrival>()
             .Where(arrival => string.Equals(arrival.EpisodeId, episodeId, StringComparison.Ordinal))
             .SelectMany(arrival => arrival.Incoming)
+            .Select(item => (item.From, item.Label))
             .ToList();
 
     /// <summary>
@@ -1903,7 +1907,7 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<ChapterEdge> edges,
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
         IReadOnlyDictionary<string, FoldedRow> folded,
-        Dictionary<string, List<(string From, string Label)>> arrivals)
+        Dictionary<string, List<(string From, string Label, Color? Ink)>> arrivals)
     {
         // 이 에피소드의 선택지 칸들 (R7) — 가지마다 제 칸을 얹어 <b>철도 위에서</b> 고치고 잇는다.
         IReadOnlyList<GraphChoicePort> slots = ShownSlotsOf(source.Id);
@@ -1992,13 +1996,14 @@ public partial class GraphEditorView : UserControl
             if (edge is not null && target is not null)
             {
                 // 도착 포트 장부 — 어느 에피소드의 어느 선택지가 여기로 들어오는가.
-                if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label)>? list))
+                if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label, Color? Ink)>? list))
                 {
-                    arrivals[edge.ToEpisodeId] = list = new List<(string, string)>();
+                    arrivals[edge.ToEpisodeId] = list = new List<(string, string, Color?)>();
                 }
 
                 list.Add((EpisodeNaming.EpisodeIdOf(source),
-                    edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!));
+                    edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!,
+                    LaneColor(index)));
             }
 
             lastLaneX = laneX;
@@ -2052,7 +2057,7 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<ChapterEdge> chapterEdges,
         IReadOnlyDictionary<string, (DialogueNode Node, Rect Rect)> spots,
         IReadOnlyDictionary<string, FoldedRow> folded,
-        Dictionary<string, List<(string From, string Label)>> arrivals)
+        Dictionary<string, List<(string From, string Label, Color? Ink)>> arrivals)
     {
         int leftLane = 0;
         int rightLane = 0;
@@ -2087,12 +2092,12 @@ public partial class GraphEditorView : UserControl
             (double junctionX, double junctionY) = ArrivalJunction(toCard!.Value);
             DrawLane(key, edge.Shape, from, toward, laneX, new GraphPosition(junctionX, junctionY));
 
-            if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label)>? list))
+            if (!arrivals.TryGetValue(edge.ToEpisodeId, out List<(string From, string Label, Color? Ink)>? list))
             {
-                arrivals[edge.ToEpisodeId] = list = new List<(string, string)>();
+                arrivals[edge.ToEpisodeId] = list = new List<(string, string, Color?)>();
             }
 
-            list.Add((episodeId, edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!));
+            list.Add((episodeId, edge.HasNoOptionLabel ? Ui.Board_Auto : edge.OptionLabel!, null));
         }
     }
 
@@ -2198,18 +2203,23 @@ public partial class GraphEditorView : UserControl
     /// 누르면 어느 에피소드의 어느 선택지들이 여기로 이어지는지 목록이 열린다(읽기 전용 —
     /// 잇고 끊는 곳은 출발 쪽 칩과 챕터 그래프다).
     /// </summary>
-    private void DrawArrivalPort(Rect target, string episodeId, IReadOnlyList<(string From, string Label)> incoming)
+    private void DrawArrivalPort(Rect target, string episodeId, IReadOnlyList<(string From, string Label, Color? Ink)> incoming)
     {
         (double junctionX, double junctionY) = ArrivalJunction(target);
 
-        _railVisuals.Add(RailLine(junctionX, junctionY, junctionX, target.Y - 10));
-        _railVisuals.Add(RailArrow(junctionX, target.Y - 9));
+        // 접점 · 짧은 줄 · 화살촉은 들어오는 선과 한 색이다 — 들어오는 길들이 모두 같은 색(대개 하나)이면 그 색, 색이 다른 길이 모이면 길 하나의 것이
+        // 아니니 철도 색이다(2026-11-26 — ⛔ 그 전에는 선은 길 색, 접점은 선택지 글 색(ChoiceInk), 화살촉은 회색으로 셋이 달랐다).
+        IReadOnlyList<Color?> inks = incoming.Select(item => item.Ink).Distinct().ToList();
+        IBrush ink = inks is [Color shared] ? shared.Brush() : RailBrush;
+
+        _railVisuals.Add(RailLine(junctionX, junctionY, junctionX, target.Y - 10, ink));
+        _railVisuals.Add(RailArrow(junctionX, target.Y - 9, ink));
 
         var port = new Ellipse
         {
             Width = 10,
             Height = 10,
-            Fill = RailChipBrush,
+            Fill = ink,
             Cursor = new Cursor(StandardCursorType.Hand)
         };
         ToolTip.SetTip(port, Plural.Format(Ui.Board_IncomingPathsClickToOpen, incoming.Count));
@@ -2230,7 +2240,7 @@ public partial class GraphEditorView : UserControl
                 FontWeight = FontWeight.SemiBold
             });
 
-            foreach ((string from, string label) in capturedIncoming)
+            foreach ((string from, string label, _) in capturedIncoming)
             {
                 panel.Children.Add(new TextBlock
                 {
@@ -2623,21 +2633,21 @@ public partial class GraphEditorView : UserControl
         return junctionX >= laneX ? blockedRight + RailLaneOut : blockedLeft - RailLaneOut;
     }
 
-    private static Line RailLine(double x1, double y1, double x2, double y2) => new()
+    private static Line RailLine(double x1, double y1, double x2, double y2, IBrush? stroke = null) => new()
     {
         StartPoint = new Point(x1, y1),
         EndPoint = new Point(x2, y2),
-        Stroke = RailBrush,
+        Stroke = stroke ?? RailBrush,
         StrokeThickness = 1.4 * Skin.LineWeight,
         IsHitTestVisible = false
     };
 
     /// <summary>아래로 드는 화살촉 — 도착 접점에서 카드 위 가운데로 든다.</summary>
-    private static Polygon RailArrow(double x, double y)
+    private static Polygon RailArrow(double x, double y, IBrush? fill = null)
     {
         var arrow = new Polygon
         {
-            Fill = RailBrush,
+            Fill = fill ?? RailBrush,
             IsHitTestVisible = false,
             Points = [new Point(-4, 0), new Point(0, 7), new Point(4, 0)]
         };
@@ -3146,7 +3156,7 @@ public partial class GraphEditorView : UserControl
                 .ToDictionary(dep => dep, dep => now[dep], StringComparer.Ordinal);
         }
 
-        var arrivals = new Dictionary<string, List<(string From, string Label)>>(StringComparer.Ordinal);
+        var arrivals = new Dictionary<string, List<(string From, string Label, Color? Ink)>>(StringComparer.Ordinal);
         RedrawRailGroups(from, now, arrivals);
 
         // 도착 포트 — 이 출발의 몫을 빼고 새 몫을 넣어, 출발의 차례(통째로 그을 때 도는 차례)로 다시 세운다.
@@ -3164,10 +3174,10 @@ public partial class GraphEditorView : UserControl
 
         foreach (string target in ports.Keys.Union(arrivals.Keys, StringComparer.Ordinal).ToList())
         {
-            List<(string From, string Label)> before = ports.TryGetValue(target, out RailGroup? port)
+            List<(string From, string Label, Color? Ink)> before = ports.TryGetValue(target, out RailGroup? port)
                 ? ((RailOrigin.Arrival)port.Origin).Incoming
                 : [];
-            List<(string From, string Label)> after = before
+            List<(string From, string Label, Color? Ink)> after = before
                 .Where(item => !string.Equals(item.From, episodeId, StringComparison.Ordinal))
                 .Concat(arrivals.GetValueOrDefault(target) ?? [])
                 .OrderBy(item => rank.GetValueOrDefault(item.From, int.MaxValue))

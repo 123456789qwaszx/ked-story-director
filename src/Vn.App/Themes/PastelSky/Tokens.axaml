@@ -47,12 +47,15 @@
     <Color x:Key="EpisodeAccent">#5B6B79</Color>
     <Color x:Key="EpisodeSurface">#FFFEFA</Color>
     <Color x:Key="EpisodeBorder">#7C8FA0</Color>
-    <Color x:Key="SceneRootAccent">#A87A12</Color>
+    <Color x:Key="SceneRootAccent">#8C6410</Color>
     <Color x:Key="SceneRootSurface">#FFFEFA</Color>
     <Color x:Key="SceneRootBorder">#7C8FA0</Color>
-    <Color x:Key="BranchAccent">#6F5BB0</Color>
+    <!-- 분기 카드는 갈색이다 — 분기 선의 첫 색(BranchLine1) · 「분기」 이름표와 한 색(2026-11-26 — ⛔ 그 전에는 라벤더였다: 보라가 선택지 셋째 선 ·
+         분기 카드 · [구성]의 장면 꼬리표로 세 뜻이었다). 장면의 첫 에피소드 · [구성]의 「장면 시작점」 꼬리표는 금빛(SceneRootAccent — 흰 글이 읽히게 짙게),
+         [구성]의 장면 꼬리표(SceneChip)는 회색이다. -->
+    <Color x:Key="BranchAccent">#8A5A3C</Color>
     <Color x:Key="BranchSurface">#FFFEFA</Color>
-    <Color x:Key="BranchBorder">#9A8BC6</Color>
+    <Color x:Key="BranchBorder">#C2A48C</Color>
     <Color x:Key="OtherCardAccent">#5B6B79</Color>
     <Color x:Key="OtherCardSurface">#FFFEFA</Color>
     <Color x:Key="OtherCardBorder">#7C8FA0</Color>
@@ -87,7 +90,7 @@
     <Color x:Key="SceneLabelInk">#26323E</Color>
     <Color x:Key="EpisodeBand">#E4E9ED</Color>
     <Color x:Key="SceneRootBand">#F6E3A1</Color>
-    <Color x:Key="BranchBand">#DCD3F1</Color>
+    <Color x:Key="BranchBand">#EEDFD2</Color>
     <Color x:Key="OtherCardBand">#E4E9ED</Color>
     <Color x:Key="SelectedBand">#CCE8FF</Color>
     <Color x:Key="SlotSurface">#FFFEFA</Color>
@@ -119,7 +122,7 @@
     <Color x:Key="CardName">#26323E</Color>
     <Color x:Key="StatKey">#33709C</Color>
     <Color x:Key="StatValue">#26323E</Color>
-    <Color x:Key="SceneChip">#6E5CA8</Color>
+    <Color x:Key="SceneChip">#5B6B79</Color>
 
     <!-- 모양 -->
     <x:Double x:Key="CardRadius">14</x:Double>
