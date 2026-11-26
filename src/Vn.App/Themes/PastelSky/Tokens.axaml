@@ -140,7 +140,7 @@
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          틀 — XAML만 쓰는 이름. 기본 테마에는 없어서 거기서는 비어 있다(바탕 없음 · 높이 0).
-         작가가 「내 테마」로 바꿀 수 있는 이름과 설명은 Theming/ThemeKeys.cs에 있다 — 여기에 이름을 더하면 거기에도 더한다.
+         이름의 목록과 설명은 Theming/ThemeKeys.cs에 있다 — 여기에 이름을 더하면 거기에도 더한다.
          ───────────────────────────────────────────────────────────────────────── -->
     <!-- 창의 바탕 — 새하얀색이 아닌 따뜻한 종이빛(넓은 흰 면의 눈부심을 줄인다) -->
     <SolidColorBrush x:Key="WindowBackground" Color="#FAF8F4" />
@@ -162,7 +162,7 @@
             </DrawingGroup>
         </DrawingBrush.Drawing>
     </DrawingBrush>
-    <!-- 물결 위에 얹는 그림 — 이 테마에는 없다(투명). 작가의 「내 테마」가 그림 파일을 주면 그 그림이 가로로 되풀이된다. -->
+    <!-- 물결 위에 얹는 그림 — 이 테마에는 없다(투명). -->
     <SolidColorBrush x:Key="TopBarEdgeBrush" Color="Transparent" />
     <!-- 판 아래 안내 줄의 바탕 -->
     <SolidColorBrush x:Key="HintSurface" Color="#F9F3E0" />

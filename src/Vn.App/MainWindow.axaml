@@ -88,7 +88,7 @@
         <!-- 위 띠 아래의 꾸밈 줄 — 테마가 높이와 무늬를 정한다(TopBarEdgeHeight · TopBarEdgeBrush · 「파스텔 하늘」의 구름 물결). 기본 테마에는 두 이름이
              없어 높이 0으로 접힌다. 누름을 받지 않는다. -->
         <!-- 세 겹이다 — 위 띠의 색 · 그 위에 모양(가리개 TopBarEdgeMask)대로 창의 바탕색 · 맨 위에 그림(TopBarEdgeBrush). 그래서 위 띠나 창의 바탕색을
-             바꾸면 물결도 따라 바뀌고, 그림을 주면 그림이 얹힌다(themes · 작가의 「내 테마」). -->
+             바꾸면 물결도 따라 바뀌고, 그림을 주면 그림이 얹힌다(themes). -->
         <Panel x:Name="TopBarEdge"
                DockPanel.Dock="Top"
                Height="{DynamicResource TopBarEdgeHeight}"

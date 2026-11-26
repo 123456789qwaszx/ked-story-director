@@ -1,6 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- 파스텔 하늘 — 컨트롤의 모양 · 글꼴 · 눌림. 색은 모두 Tokens.axaml에 이름으로 있다(여기에 색을 숫자로 적지 않는다 — 작가가 「내 테마」로 바꿀 수 있게 · ThemeTests가 지킨다).
+    <!-- 파스텔 하늘 — 컨트롤의 모양 · 글꼴 · 눌림. 색은 모두 Tokens.axaml에 이름으로 있다(여기에 색을 숫자로 적지 않는다 — 이름의 목록 Theming/ThemeKeys.cs 하나로 모든 색을 고칠 수 있게 · ThemeTests가 지킨다).
          화면이 붙여 둔 클래스로 고른다 — 「chunky」(틀의 큰 단추 · 「primary」 만들기 · 「danger」 지우기), 「card-title」(카드 제목), 「frame-title」(챕터 · 장면 이름표),
          「card-writing」(카드 글 칸). 클래스는 기본 테마에서는 아무 일도 하지 않는다. -->
 

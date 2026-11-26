@@ -193,7 +193,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | `Views/RubberBand.cs` · `EscToRevert.cs` · `GuideLine.cs` | 범위 선택(두 판) · 글 칸의 Esc = 넣기 전 값 · 안내글 한 줄과 설명 간소화 스위치(`GuideMode`) |
 | `Services/AuthoringSession.cs` | 열린 프로젝트 · 경로 · 저장 여부 · 선택 · 화자 창구 · 보낼 곳 · 화면 편의 상태 · 상태줄 |
 | `Services/ProjectRefreshPlanner.cs` | 변경 종류 → 그래프 · 곁기둥 중 무엇을 다시 만들지 |
-| `Theming/` · `Themes/` | 테마 — 색 · 모양의 이름표(`Skin`) · 테마 목록(`ThemeCatalog`) · 입히기(`ThemeService` — 켤 때 한 번) · 테마 폴더마다 값(`Tokens.axaml`) · 컨트롤 모양(`Controls.axaml`) · 글꼴. 화면 코드는 색을 숫자로 적지 않고 `Skin`에서 꺼낸다 — [`docs/themes.md`](docs/themes.md) |
+| `Theming/` · `Themes/` | 테마 — 색 · 모양의 이름표(`Skin`) · 이름의 목록(`ThemeKeys` — 꼴 · 묶음 · 설명) · 테마 목록(`ThemeCatalog`) · 입히기(`ThemeService` — 켤 때 한 번) · 테마 폴더마다 값(`Tokens.axaml`) · 컨트롤 모양(`Controls.axaml`) · 글꼴. 화면 코드는 색을 숫자로 적지 않고 `Skin`에서 꺼낸다 — [`docs/themes.md`](docs/themes.md) |
 | `Services/WorkFolder.cs` | 작업 폴더(`exported/`)를 찾고, 그 형식의 파일을 고른 채 탐색기를 연다 |
 | `Services/AppSettingsService.cs` · `StartupLog.cs` · `UiGuard.cs` | 최근 프로젝트 · 화면 편의(기둥 접기 · 「빈 선택지 숨기기」 · 「ID로 보기」 · 미니맵 · 설명 간소화(`Views/GuideLine.cs`) · 휠로 판 옮기기(`Views/BoardWheel.cs`) · 새로 잇는 선(`Views/BoardLines.cs`) — PC별) · 시작 오류 로그 · 이벤트 핸들러의 예외를 붙잡아 알린다(크래시 금지) |
 

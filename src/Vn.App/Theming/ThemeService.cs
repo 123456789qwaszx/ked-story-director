@@ -8,11 +8,10 @@ using Vn.App.Services;
 namespace Vn.App.Theming;
 
 /// <summary>
-/// <b>테마를 앱에 입힌다</b>(2026-11-26 · themes). 겹이 넷이다 — 뒤의 겹이 앞의 같은 이름을 덮는다:
+/// <b>테마를 앱에 입힌다</b>(2026-11-26 · themes). 겹이 셋이다 — 뒤의 겹이 앞의 같은 이름을 덮는다:
 /// <list type="number">
 /// <item>기본 테마(<see cref="ThemeCatalog.Classic"/>)의 값 — 늘 깔린다. 그래서 테마는 바꾸고 싶은 것만 적으면 된다.</item>
-/// <item>고른 앱의 테마(「내 테마」면 그 밑바탕)의 값과 컨트롤 모양.</item>
-/// <item>작가의 「내 테마」 파일(theme.json)에 적힌 값(<see cref="UserThemes"/>).</item>
+/// <item>고른 테마의 값과 컨트롤 모양.</item>
 /// <item>셈한 값 — 글자 크기 단계(<c>TextXxs</c> ~ <c>TextLg</c>)와 곁글의 진하기(<c>Dim45</c> ~ <c>Dim70</c>)를 <see cref="Skin.FontScale"/> · <see cref="Skin.DimLift"/>에서.</item>
 /// </list>
 /// XAML은 같은 이름을 <c>{DynamicResource 이름}</c>으로, 코드는 <see cref="Skin"/>으로 꺼낸다.
@@ -28,12 +27,6 @@ internal static class ThemeService
     /// <summary>지금 입힌 테마.</summary>
     public static ThemeInfo Current { get; private set; } = ThemeCatalog.Classic;
 
-    /// <summary>「내 테마」 파일에서 읽지 못한 것 — 켤 때 상태줄과 테마 폴더의 <c>theme-problems.txt</c>로 알린다. 앱에 든 테마면 비어 있다.</summary>
-    public static IReadOnlyList<string> Problems { get; private set; } = [];
-
-    /// <summary>「내 테마」 파일에 적힌 그대로의 값 — 이름 → 글(「내 테마」를 복사할 때 그대로 옮긴다 · 그림 파일 이름 · 글꼴 이름도).</summary>
-    public static IReadOnlyDictionary<string, string> UserWritten { get; private set; } = new Dictionary<string, string>();
-
     /// <summary>글자 크기 단계 — 기본 테마의 크기.</summary>
     private static readonly (string Key, double Size)[] TextSteps =
         [("TextXxs", 9), ("TextXs", 10), ("TextSm", 11), ("TextMd", 12), ("TextLg", 14)];
@@ -45,7 +38,6 @@ internal static class ThemeService
     private static Application? _app;
     private static ResourceDictionary? _base;
     private static ResourceDictionary? _overlay;
-    private static ResourceDictionary? _user;
     private static ResourceDictionary? _computed;
     private static IStyle? _controls;
 
@@ -60,10 +52,10 @@ internal static class ThemeService
     {
         if (!ReferenceEquals(_app, app))
         {
-            (_app, _base, _overlay, _user, _computed, _controls) = (app, null, null, null, null, null);
+            (_app, _base, _overlay, _computed, _controls) = (app, null, null, null, null);
         }
 
-        foreach (ResourceDictionary? layer in new[] { _overlay, _user, _computed })
+        foreach (ResourceDictionary? layer in new[] { _overlay, _computed })
         {
             if (layer is not null)
             {
@@ -71,7 +63,7 @@ internal static class ThemeService
             }
         }
 
-        (_overlay, _user, _computed) = (null, null, null);
+        (_overlay, _computed) = (null, null);
 
         if (_controls is not null)
         {
@@ -86,32 +78,17 @@ internal static class ThemeService
             app.Resources.MergedDictionaries.Add(_base);
         }
 
-        ThemeInfo builtIn = theme.BuiltIn;
-
-        if (!ReferenceEquals(builtIn, ThemeCatalog.Classic))
+        if (!ReferenceEquals(theme, ThemeCatalog.Classic))
         {
-            _overlay = (ResourceDictionary)AvaloniaXamlLoader.Load(builtIn.TokensUri);
+            _overlay = (ResourceDictionary)AvaloniaXamlLoader.Load(theme.TokensUri);
             ParseShadows(_overlay);
             app.Resources.MergedDictionaries.Add(_overlay);
         }
 
-        if (builtIn.HasControls)
+        if (theme.HasControls)
         {
-            _controls = (IStyle)AvaloniaXamlLoader.Load(builtIn.ControlsUri);
+            _controls = (IStyle)AvaloniaXamlLoader.Load(theme.ControlsUri);
             app.Styles.Add(_controls);
-        }
-
-        Problems = [];
-        UserWritten = new Dictionary<string, string>();
-
-        if (theme.UserFolder is not null)
-        {
-            UserThemes.Loaded loaded = UserThemes.Load(theme, key => Existing(app, key));
-            _user = loaded.Resources;
-            Problems = loaded.Problems;
-            UserWritten = loaded.Written;
-            app.Resources.MergedDictionaries.Add(_user);
-            UserThemes.WriteProblems(theme, loaded.Problems);
         }
 
         lock (BrushCache)
@@ -134,10 +111,6 @@ internal static class ThemeService
         Current = theme;
     }
 
-    /// <summary>지금까지 깐 겹(앱 · 테마)에서 그 이름의 값 — 「내 테마」가 그림의 깔기(되풀이 · 늘이기)를 앱의 그림에서 이어 받는다.</summary>
-    private static object? Existing(Application app, string key) =>
-        app.TryGetResource(key, ThemeVariant.Light, out object? value) ? value : null;
-
     /// <summary>그림자는 글로 적는다(<c>0 3 0 0 #C9DCE8</c>) — XAML이 쓰도록 그림자 값으로 바꿔 둔다. <c>none</c>이면 그림자가 없다.</summary>
     private static void ParseShadows(ResourceDictionary layer)
     {
@@ -159,7 +132,7 @@ internal static class ThemeService
     /// <summary>테마가 정한 값 — 뒤의 겹부터 찾는다. 어디에도 없으면 이름을 잘못 적은 것이다(<c>ThemeTests</c>가 지킨다).</summary>
     internal static object Token(string key)
     {
-        foreach (ResourceDictionary? layer in new[] { _computed, _user, _overlay, _base })
+        foreach (ResourceDictionary? layer in new[] { _computed, _overlay, _base })
         {
             if (layer is not null && layer.TryGetValue(key, out object? value) && value is not null)
             {

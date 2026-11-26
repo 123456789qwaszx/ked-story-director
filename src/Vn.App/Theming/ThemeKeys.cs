@@ -1,37 +1,37 @@
 namespace Vn.App.Theming;
 
-/// <summary>테마 값의 꼴 — 작가의 「내 테마」 파일(theme.json)에서 값을 읽고 쓰는 법이 꼴마다 다르다(<see cref="UserThemes"/>).</summary>
+/// <summary>테마 값의 꼴 — 이름마다 어떤 값이 드는지(색 · 그림 · 수 …). 테마를 고치는 기능을 더할 때 값을 고르고 적는 법을 이것으로 가른다.</summary>
 internal enum ThemeValueKind
 {
-    /// <summary>색 — <c>"#RRGGBB"</c> · 투명도를 줄 때 <c>"#AARRGGBB"</c>. 리소스는 <c>Color</c>.</summary>
+    /// <summary>색 — 리소스는 <c>Color</c>.</summary>
     Color,
 
-    /// <summary>색 — 쓰는 법은 <see cref="Color"/>와 같고 리소스는 단색 붓(<c>SolidColorBrush</c>)이다.</summary>
+    /// <summary>색 — 리소스는 단색 붓(<c>SolidColorBrush</c>).</summary>
     Brush,
 
-    /// <summary>바탕 — 색이나 그림 파일 이름.</summary>
+    /// <summary>바탕 — 색이나 그림(붓).</summary>
     Paint,
 
-    /// <summary>그림 — 그림 파일 이름(png · jpg). <c>"none"</c>이면 그림이 없다.</summary>
+    /// <summary>그림(붓) — 없을 수도 있다.</summary>
     Picture,
 
     /// <summary>수.</summary>
     Number,
 
-    /// <summary>네 방향의 거리 — <c>"왼쪽,위,오른쪽,아래"</c>.</summary>
+    /// <summary>네 방향의 거리(<c>Thickness</c>) — 왼쪽,위,오른쪽,아래.</summary>
     Thickness,
 
-    /// <summary>모서리 둥글기 — 수 하나, 또는 네 모서리 <c>"왼위,오른위,오른아래,왼아래"</c>.</summary>
+    /// <summary>모서리 둥글기(<c>CornerRadius</c>).</summary>
     Corner,
 
-    /// <summary>그림자 — <c>"x y 번짐 퍼짐 색"</c>(예: <c>"0 3 0 0 #C9DCE8"</c>) · 여럿이면 쉼표로 · <c>"none"</c>이면 없다.</summary>
+    /// <summary>그림자 — 테마 파일에는 <c>"x y 번짐 퍼짐 색"</c>(예: <c>"0 3 0 0 #C9DCE8"</c>)으로 적고, <c>none</c>이면 없다.</summary>
     Shadow,
 
-    /// <summary>글꼴 — 이 PC에 설치된 글꼴의 이름(여럿이면 쉼표로 — 앞의 글꼴에 없는 글자는 뒤의 글꼴로).</summary>
+    /// <summary>글꼴(<c>FontFamily</c>).</summary>
     Font
 }
 
-/// <summary>작가에게 보이는 묶음 — 「내 테마」 파일에서 이 차례로 놓인다.</summary>
+/// <summary>사람에게 보일 묶음 — 테마를 고치는 화면이 생기면 이 차례로 놓는다.</summary>
 internal enum ThemeKeyGroup
 {
     /// <summary>자주 바꾸는 것.</summary>
@@ -74,11 +74,12 @@ internal sealed record ThemeKey(string Name, ThemeValueKind Kind, ThemeKeyGroup 
 }
 
 /// <summary>
-/// <b>작가가 「내 테마」로 바꿀 수 있는 이름의 목록</b>(2026-11-26 · themes) — 「내 테마」 파일(theme.json)이 받는 이름은 여기 있는 것뿐이고, 파일을 만들 때
-/// 이 차례 · 설명 그대로 적는다(<see cref="UserThemes.Create"/>). <see cref="Skin"/>의 이름은 모두 여기 있어야 하고(<c>ThemeTests</c>가 지킨다),
-/// 그 밖은 XAML만 쓰는 이름(<c>Themes/PastelSky/Tokens.axaml</c> · Fluent 테마의 이름)이다.
+/// <b>테마가 정하는 이름의 목록</b>(2026-11-26 · themes) — 이름(리소스 키) · 값의 꼴 · 묶음 · 무엇인지(두 언어)를 한 곳에 모은다. 나중에 테마를 고치는 기능을
+/// 더할 때 이 목록을 돈다(2026-11-26 소유자 — 「차후에 원한다면 테마 편집 관련 기능을 추가할 수 있도록 이름과 목록을 한 군데에 모아두는 정리만」).
+/// <see cref="Skin"/>(코드가 쓰는 이름)은 모두 여기 있어야 하고, 그 밖은 XAML만 쓰는 이름(<c>Themes/PastelSky/Tokens.axaml</c> · Fluent 테마의 이름)이다.
+/// <c>ThemeTests</c>가 이 목록과 테마가 맞는지 본다.
 ///
-/// 이름을 더하려면: 테마의 Tokens.axaml에 값 · 여기 한 줄(꼴 · 묶음 · 작가가 알아들을 설명 두 언어). 설명은 어디에 보이는지를 말한다 — 코드의 낱말이 아니라.
+/// 이름을 더하려면: 테마의 Tokens.axaml에 값 · 여기 한 줄(꼴 · 묶음 · 설명 두 언어). 설명은 화면 어디에 보이는지를 말한다 — 코드의 낱말이 아니라.
 /// </summary>
 internal static class ThemeKeys
 {
