@@ -2709,7 +2709,7 @@
     <comment>MainWindow.Conditions.cs</comment>
   </data>
   <data name="Side_DeletesIfItSUsed" xml:space="preserve">
-    <value>'{0}'를 지웁니다 — 쓰는 곳이 있으면 어디인지 말하고 거절합니다.</value>
+    <value>'{0}'를 지웁니다 — 쓰는 곳이 있으면 어디인지 보여 주고 한 번 더 묻습니다.</value>
     <comment>MainWindow.Conditions.cs</comment>
   </data>
   <data name="Side_DeleteCondition" xml:space="preserve">
@@ -3867,7 +3867,7 @@
     <comment>ChapterGraphView.axaml</comment>
   </data>
   <data name="Structure_SetExpressionForEachCondition" xml:space="preserve">
-    <value>조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 칸에 이름을 적고 [＋ 추가](또는 Enter)로 만들고, 식은 그 줄에서 채웁니다. 이름은 줄의 이름 칸에서 고칩니다 — 그 이름을 건 선택지가 따라갑니다. 지우는 것은 [대본] 탭에서 합니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다.</value>
+    <value>조건마다 식을 정합니다. 식은 `trust &gt;= 3`처럼 스탯 키와 정수를 비교합니다(&gt;= · &lt;= · &gt; · &lt; · ==). 여럿이면 `;`로 잇고, 모두 맞아야 통과합니다. 예/아니오 스탯은 `키 == true` · `키 == false`. 식이 비면 「식 미정」 — 항상 통과하고 검증 보고에 경고만 뜹니다. 표 아래 칸에 이름을 적고 [＋ 추가](또는 Enter)로 만들고, 식은 그 줄에서 채웁니다. 이름은 줄의 이름 칸에서 고칩니다 — 그 이름을 건 선택지가 따라갑니다. 지우는 것은 줄 끝 [✕]입니다 — 쓰는 곳이 있으면 어디인지 보이고 한 번 더 묻습니다. 고치면 바로 반영되고 되돌리기(Ctrl+Z)가 됩니다.</value>
     <comment>ChapterGraphView.axaml</comment>
   </data>
   <data name="Structure_Stats" xml:space="preserve">
@@ -4030,5 +4030,29 @@
   <data name="Confirm_Cancel" xml:space="preserve">
     <value>취소</value>
     <comment>확인 칸의 [취소]</comment>
+  </data>
+  <data name="Structure_ExpressionExamples" xml:space="preserve">
+    <value>식 예시 보기</value>
+    <comment>ChapterGraphView.axaml.cs — [＋ 새 조건] 칸의 만들기 단추 오른쪽. 손을 올리면 이 챕터의 스탯으로 든 예시가 뜬다</comment>
+  </data>
+  <data name="Structure_DetachingSetsJustThat" xml:space="preserve">
+    <value>떼면 그 길의 표시조건 · 해금조건만 「없음」이 됩니다 — 길과 잠금 안내문은 그대로 남습니다. 되돌리기(Ctrl+Z) 한 번에 함께 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs — 쓰는 조건의 [✕] 확인 칸(길에서만 쓸 때)</comment>
+  </data>
+  <data name="Structure_ClearDialogueConditionsFirst" xml:space="preserve">
+    <value>대사 안의 조건 블록과 분기 카드의 첫머리 조건은 툴이 걷지 않습니다 — [대본] 탭에서 그 자리의 조건을 먼저 걷고 다시 지워 주세요.</value>
+    <comment>ChapterGraphView.axaml.cs — 쓰는 조건의 [✕] 확인 칸(대사 줄의 갈래가 쓸 때)</comment>
+  </data>
+  <data name="Structure_DetachAllAndDelete" xml:space="preserve">
+    <value>모두 떼고 지우기</value>
+    <comment>ChapterGraphView.axaml.cs — 쓰는 조건의 [✕] 확인 칸의 단추</comment>
+  </data>
+  <data name="Structure_DetachAndDeleteCondition" xml:space="preserve">
+    <value>조건 떼고 삭제</value>
+    <comment>ChapterGraphView.axaml.cs — 오류 상태줄의 말머리</comment>
+  </data>
+  <data name="Structure_DeletedConditionDetachedPaths" xml:space="preserve">
+    <value>조건 '{0}'{1} 지웠습니다 — 길 {2}개에서 뗐습니다. 되돌리기(Ctrl+Z)로 함께 돌아옵니다.</value>
+    <comment>ChapterGraphView.axaml.cs — {1}은 조사(을/를)</comment>
   </data>
 </root>

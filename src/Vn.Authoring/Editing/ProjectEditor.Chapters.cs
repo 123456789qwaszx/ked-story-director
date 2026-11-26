@@ -1478,8 +1478,13 @@ public sealed partial class ProjectEditor
     /// <item><b>대사 줄의 갈래</b>(분기 카드의 첫머리 조건도) — 그 챕터 판의 카드가 줄 전환에 라벨로 적는다. 지우면 갈래는 살아 있는데
     /// 무엇을 묻는지는 아무 데도 없다.</item>
     /// </list>
+    ///
+    /// <paramref name="clearEdges"/>면 <b>간선에서만 쓰는</b> 조건은 그 간선들의 표시조건 · 해금조건을 「없음」으로 떼고 지운다 — 한 변경이라
+    /// 되돌리기 한 칸에 함께 돌아온다(2026-11-26 소유자 — 「조건을 추가는 할 수 있는데, 지울 수 없다는 게 조금 아쉽고」 · 스탯의 「모두 비우고
+    /// 지우기」와 같은 결). 길과 잠금 안내문은 남는다 — 길을 걷으면 이야기 구조가 바뀌고, 안내문은 해금조건을 다시 걸면 그대로 돌아온다.
+    /// 대사 줄의 갈래가 하나라도 쓰면 그래도 거절한다 — 툴이 대사의 조건 블록을 걷으면 작가가 쓴 글의 모양이 바뀐다.
     /// </summary>
-    public ChapterConditionRemoveOutcome RemoveChapterCondition(string chapterId, string label)
+    public ChapterConditionRemoveOutcome RemoveChapterCondition(string chapterId, string label, bool clearEdges = false)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
         string target = (label ?? string.Empty).Trim();
@@ -1493,16 +1498,43 @@ public sealed partial class ProjectEditor
         }
 
         IReadOnlyList<ChapterUse> uses = FindConditionUses(chapterId, target);
+        bool detach = clearEdges && uses.All(use => use.Kind == ChapterUseKind.Edge);
 
-        if (uses.Count > 0)
+        if (uses.Count > 0 && !detach)
         {
             return ChapterConditionRemoveOutcome.Refuse(
                 Plural.Format(Msg.Edit_CanTDeleteConditionIt, target, uses.Count), uses);
         }
 
-        Mutate(() => chapter.Conditions.Remove(condition));
+        var edges = new List<(int Index, ChapterEdge Edge)>();
 
-        return new ChapterConditionRemoveOutcome(true, [], null);
+        for (int i = 0; detach && i < chapter.Edges.Count; i++)
+        {
+            ChapterEdge edge = chapter.Edges[i];
+            bool unlock = string.Equals(edge.ConditionLabel, target, StringComparison.Ordinal);
+            bool visible = string.Equals(edge.VisibleConditionLabel, target, StringComparison.Ordinal);
+
+            if (unlock || visible)
+            {
+                edges.Add((i, edge with
+                {
+                    ConditionLabel = unlock ? null : edge.ConditionLabel,
+                    VisibleConditionLabel = visible ? null : edge.VisibleConditionLabel
+                }));
+            }
+        }
+
+        Mutate(() =>
+        {
+            chapter.Conditions.Remove(condition);
+
+            foreach ((int at, ChapterEdge edge) in edges)
+            {
+                chapter.Edges[at] = edge;
+            }
+        });
+
+        return new ChapterConditionRemoveOutcome(true, [], null, edges.Count);
     }
 
     /// <summary>
@@ -1906,10 +1938,12 @@ public sealed record StatRemoveOutcome(
 /// <param name="Applied">지웠는가. false면 <b>아무것도 안 건드렸다</b>.</param>
 /// <param name="Uses">거절의 <b>근거</b> — 먼저 비워야 할 자리들.</param>
 /// <param name="Refusal">거절 사유. <paramref name="Applied"/>가 false일 때만 있다.</param>
+/// <param name="EdgesCleared">`clearEdges`로 그 조건을 뗀 간선 수(표시조건 · 해금조건).</param>
 public sealed record ChapterConditionRemoveOutcome(
     bool Applied,
     IReadOnlyList<ChapterUse> Uses,
-    string? Refusal)
+    string? Refusal,
+    int EdgesCleared = 0)
 {
     public static ChapterConditionRemoveOutcome Refuse(string reason, IReadOnlyList<ChapterUse> uses) =>
         new(false, uses, reason);

@@ -4195,6 +4195,19 @@ public partial class ChapterGraphView : UserControl
             HorizontalAlignment = HorizontalAlignment.Left,
             Tag = "new-condition-create"
         };
+        create.VerticalAlignment = VerticalAlignment.Center;
+
+        // 만들기 단추 오른쪽의 「식 예시 보기」 — 손을 올리면 이 챕터의 스탯으로 든 예시가 선다(2026-11-26 소유자).
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            Children =
+            {
+                create,
+                ExpressionExamplesLink(_session?.Editor.FindChapter(chapterId)?.Stats ?? [])
+            }
+        };
         var panel = new StackPanel
         {
             Spacing = 4,
@@ -4204,7 +4217,7 @@ public partial class ChapterGraphView : UserControl
                 new TextBlock { Text = intro, FontSize = Skin.Font(10), TextWrapping = TextWrapping.Wrap },
                 name,
                 expression,
-                create
+                actions
             }
         };
         var flyout = new Flyout { Content = panel };
@@ -4240,6 +4253,48 @@ public partial class ChapterGraphView : UserControl
         flyout.ShowAt(anchor);
         name.Focus();
     }
+
+    /// <summary>
+    /// 「식 예시 보기」 — 손을 올리면 <b>이 챕터의 스탯으로 든 식 예시</b>가 풍선으로 선다(2026-11-26 소유자 — 「호버를 하면 창이 뜨면서 구체적인
+    /// 예시를 보여주도록」). 글은 검증 보고의 고치는 법과 같은 것(<see cref="ConditionExpressionHelp.Examples"/>)이고 상자 모양도 같다 — 적기 전에
+    /// 보는 예시와 틀린 뒤에 보는 예시가 한 벌이다. 스탯이 아직 없으면 스탯부터 더하라고 말하고 흔한 이름으로 든다.
+    ///
+    /// 풍선은 보통 풍선보다 빨리 뜨고(<see cref="ExamplesShowDelay"/>) 넓다 — 예시의 식 칸이 한 줄에 서야 줄이 맞는다.
+    /// 글자에 손이 닿지 않는 틈에서도 뜨게 투명한 바탕의 상자에 단다.
+    /// </summary>
+    private static Control ExpressionExamplesLink(IReadOnlyList<ChapterStat> stats)
+    {
+        var link = new Border
+        {
+            Background = Brushes.Transparent,
+            Padding = new Thickness(2, 3),
+            VerticalAlignment = VerticalAlignment.Center,
+            Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Help),
+            Tag = ExpressionExamplesTag,
+            Child = new TextBlock
+            {
+                Text = Ui.Structure_ExpressionExamples,
+                FontSize = Skin.Font(10),
+                Foreground = Skin.Accent.Brush(),
+                TextDecorations = TextDecorations.Underline
+            }
+        };
+
+        ToolTip.SetTip(link, new ToolTip
+        {
+            MaxWidth = 640,
+            Content = ExamplesBox(ConditionExpressionHelp.Examples(stats), margin: default)
+        });
+        ToolTip.SetShowDelay(link, ExamplesShowDelay);
+        ToolTip.SetPlacement(link, PlacementMode.BottomEdgeAlignedLeft);
+        return link;
+    }
+
+    /// <summary>「식 예시 보기」 — 화면 시험이 찾는다.</summary>
+    internal const string ExpressionExamplesTag = "expression-examples";
+
+    /// <summary>「식 예시 보기」 풍선이 뜨기까지(ms) — 보통 풍선(400)보다 빠르다. 보려고 손을 올린 자리다.</summary>
+    internal const int ExamplesShowDelay = 150;
 
     /// <summary>
     /// 분기 카드(칩)의 패널 — 부르는 곳 · 조건(고친다) · 대본(읽기 전용). 분기 선을 고른 것과 같은 조건 칸이다 — 조건은 분기마다가 아니라
@@ -4796,7 +4851,7 @@ public partial class ChapterGraphView : UserControl
     };
 
     /// <summary>
-    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>이름</b>과 <b>식</b>을 고친다. 지우는 것은 [대본] 탭이다(writer-fields W4).
+    /// 「조건 및 스탯」 탭의 <b>조건 표</b> — 조건마다 <b>이름</b>과 <b>식</b>을 고치고 [✕]로 지운다(⛔ 2026-11-26까지 지우기는 [대본] 탭 · writer-fields W4).
     /// 더하기는 표 아래에 늘 서 있는 줄 — 이름 칸 + [＋ 추가](writer-comfort WC4 — ⛔ [＋ 조건] → 이름과 식을 함께 받는 플라이아웃은 걷었다 ·
     /// 그 전 side-tabs V2). 식이 빈 조건은 「식 미정」(항상 통과)이라 ⚠로 알린다.
     /// </summary>
@@ -4847,15 +4902,17 @@ public partial class ChapterGraphView : UserControl
     }
 
     /// <summary>
-    /// 조건 한 줄 — 이름 칸(고정 폭 <see cref="ConditionLabelWidth"/>) · 식. 식 칸은 남은 폭을 채운다. 지우기는 [대본] 탭의 일이다.
+    /// 조건 한 줄 — 이름 칸(고정 폭 <see cref="ConditionLabelWidth"/>) · 식 · [✕]. 식 칸은 남은 폭을 채운다.
     /// 이름은 그 자리에서 고친다 — 그 이름을 건 간선(표시조건 · 해금조건)이 따라간다(<see cref="ProjectEditor.RenameChapterCondition"/> ·
     /// writer-comfort WC4 — ⛔ 그 전에는 읽기만 했다). 칸에 다 안 들어가는 이름은 마우스를 올리면 다 보인다.
+    /// [✕]는 스탯 줄의 것과 같다 — 아무 데서도 안 쓰면 지우고, 쓰면 어디인지 보이고 한 번 더 묻는다(<see cref="ShowConditionRemoveFlyout"/>).
+    /// ⛔ 2026-11-26까지 지우기는 [대본] 탭의 일이었다(writer-fields W4) — 소유자: 「조건을 추가는 할 수 있는데, 지울 수 없다는 게 조금 아쉽고」.
     /// </summary>
     private Control ConditionRow(ChapterCondition condition)
     {
         var row = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*"),
+            ColumnDefinitions = new ColumnDefinitions($"{ConditionLabelWidth},*,Auto"),
             Tag = $"condition:{condition.Label}"
         };
 
@@ -4893,8 +4950,129 @@ public partial class ChapterGraphView : UserControl
         Grid.SetColumn(expression, 1);
         row.Children.Add(expression);
 
+        var remove = new Button
+        {
+            Content = "✕",
+            FontSize = Skin.Font(10),
+            Padding = new Thickness(5, 1),
+            Margin = new Thickness(3, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = "condition-remove:" + condition.Label
+        };
+        ToolTip.SetTip(remove, Ui.Structure_DeletesItIfItS);
+        remove.Click += (_, _) => UiGuard.Run(_session, Ui.Side_DeleteCondition, () => RemoveCondition(remove, chapterId, condition.Label));
+        Grid.SetColumn(remove, 2);
+        row.Children.Add(remove);
+
         return row;
     }
+
+    /// <summary>조건 [✕] — 안 쓰면 지우고(되돌리기 한 칸), 쓰면 그 자리들을 보이고 한 번 더 묻는다.</summary>
+    private void RemoveCondition(Control anchor, string chapterId, string label)
+    {
+        Vn.Authoring.Editing.ChapterConditionRemoveOutcome outcome = _session!.Editor.RemoveChapterCondition(chapterId, label);
+
+        if (outcome.Applied)
+        {
+            _session.SetStatus(string.Format(Ui.Side_DeletedConditionUndoCtrlZ, label));
+            return;
+        }
+
+        if (outcome.Uses.Count == 0)
+        {
+            throw new InvalidOperationException(outcome.Refusal ?? Ui.Structure_CouldnTDeleteIt);
+        }
+
+        ShowConditionRemoveFlyout(anchor, _session, chapterId, label, outcome);
+    }
+
+    /// <summary>
+    /// 쓰는 조건의 [✕] — 쓰는 곳을 <b>보여 주고</b>, 간선에서만 쓰면 「모두 떼고 지우기」를 내놓는다. [대본] · [구성] 두 탭의 조건 표가 같이 쓴다.
+    /// 상태줄에도 같은 목록이 선다(그 전의 거절 문장 그대로).
+    ///
+    /// 떼기는 그 길의 표시조건 · 해금조건만 「없음」으로 한다 — 길과 잠금 안내문은 남는다. 스탯의 「모두 비우고 지우기」와 같은 결이다
+    /// (<see cref="ShowClearAndDeleteFlyout"/>). 대사 줄의 갈래(조건 블록 · 분기 카드 첫머리)가 쓰면 단추가 없다 — 툴이 대사의 조건을 걷으면
+    /// 작가가 쓴 글의 모양이 바뀐다. 그 자리를 먼저 걷으라고 말한다.
+    /// </summary>
+    internal static void ShowConditionRemoveFlyout(
+        Control anchor,
+        AuthoringSession session,
+        string chapterId,
+        string label,
+        Vn.Authoring.Editing.ChapterConditionRemoveOutcome refused)
+    {
+        session.SetStatus(Explain(refused.Refusal, refused.Uses));
+
+        bool edgesOnly = refused.Uses.All(use => use.Kind == Vn.Authoring.Editing.ChapterUseKind.Edge);
+        var panel = new StackPanel { Spacing = 4, MaxWidth = 420, Tag = ConditionRemovePanelTag };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = refused.Refusal ?? string.Empty,
+            FontSize = Skin.Font(11),
+            FontWeight = FontWeight.SemiBold,
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        foreach (Vn.Authoring.Editing.ChapterUse use in refused.Uses)
+        {
+            panel.Children.Add(new SelectableTextBlock
+            {
+                Text = $"· {use.Where} — {use.Detail}",
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.75),
+                TextWrapping = TextWrapping.Wrap
+            });
+        }
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = edgesOnly ? Ui.Structure_DetachingSetsJustThat : Ui.Structure_ClearDialogueConditionsFirst,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.6),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 4, 0, 0)
+        });
+
+        var flyout = new Flyout { Content = panel };
+
+        if (edgesOnly)
+        {
+            var detach = new Button
+            {
+                Content = Ui.Structure_DetachAllAndDelete,
+                FontSize = Skin.Font(10),
+                Padding = new Thickness(7, 2),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Tag = "condition-detach-delete"
+            };
+
+            detach.Click += (_, _) =>
+            {
+                flyout.Hide();
+
+                UiGuard.Run(session, Ui.Structure_DetachAndDeleteCondition, () =>
+                {
+                    Vn.Authoring.Editing.ChapterConditionRemoveOutcome done =
+                        session.Editor.RemoveChapterCondition(chapterId, label, clearEdges: true);
+
+                    if (!done.Applied)
+                    {
+                        throw new InvalidOperationException(Explain(done.Refusal, done.Uses));
+                    }
+
+                    session.SetStatus(Plural.Format(Ui.Structure_DeletedConditionDetachedPaths, label, Josa.을를(label), done.EdgesCleared));
+                });
+            };
+
+            panel.Children.Add(detach);
+        }
+
+        flyout.ShowAt(anchor);
+    }
+
+    /// <summary>조건 [✕]의 확인 플라이아웃 — 화면 시험이 찾는다.</summary>
+    internal const string ConditionRemovePanelTag = "condition-remove-panel";
 
     /// <summary>조건 표의 이름 칸 폭 — 「성실 3 이상 · 요령 3 미만」쯤은 다 보인다. 더 길면 칸 안에서 흐르고 손을 올리면 다 보인다.</summary>
     internal const double ConditionLabelWidth = 150;
@@ -5444,10 +5622,15 @@ public partial class ChapterGraphView : UserControl
     /// 진단 아래의 고치는 법(<see cref="ChapterDiagnostic.Help"/>) — 연한 바탕의 상자에 고정폭 글꼴로, 예시의 식이 한 칸으로 줄을 선다(2026-11-23 소유자 —
     /// 「구체적인 예시까지 보기좋게 설명」). 고를 수 있고 [보고 복사]에도 든다.
     /// </summary>
-    private static Border DiagnosticHelp(string help) => new()
+    private static Border DiagnosticHelp(string help) => ExamplesBox(help, new Thickness(14, 1, 0, 6), DiagnosticHelpTag);
+
+    /// <summary>
+    /// 식 예시 상자 — 검증 보고의 고치는 법과 「식 예시 보기」 풍선이 같이 쓴다. 고정폭 글꼴이라 예시의 식이 한 칸으로 줄을 선다.
+    /// </summary>
+    private static Border ExamplesBox(string text, Thickness margin, string? tag = null) => new()
     {
-        Tag = DiagnosticHelpTag,
-        Margin = new Thickness(14, 1, 0, 6),
+        Tag = tag,
+        Margin = margin,
         Padding = new Thickness(8, 5),
         CornerRadius = new CornerRadius(4),
         BorderThickness = new Thickness(2, 0, 0, 0),
@@ -5455,7 +5638,7 @@ public partial class ChapterGraphView : UserControl
         Background = Skin.Hairline.Brush(0x14),
         Child = new SelectableTextBlock
         {
-            Text = help,
+            Text = text,
             FontSize = Skin.Font(11),
             FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
             TextWrapping = TextWrapping.Wrap,

@@ -517,8 +517,8 @@
                 </Grid>
                 </TabItem>
 
-                <!-- 조건 및 스탯 — 챕터 단위다. 판 전체에 걸린 표들 — 조건의 식과 스탯을 여기서 정한다(조건 이름 고치기 · 지우기는 [대본] 탭 —
-                     writer-fields W4). 머리가 챕터 단위임을 말하고, 오른쪽 위 작은 드롭다운이 지금 챕터를 비춘다 — 고르면 툴바 콤보로 고른 것과
+                <!-- 조건 및 스탯 — 챕터 단위다. 판 전체에 걸린 표들 — 조건의 식과 스탯을 여기서 정한다(조건 이름 고치기 · 지우기도 여기서 한다 —
+                     ⛔ 2026-11-26까지 지우기는 [대본] 탭 · writer-fields W4). 머리가 챕터 단위임을 말하고, 오른쪽 위 작은 드롭다운이 지금 챕터를 비춘다 — 고르면 툴바 콤보로 고른 것과
                      같다(2026-11-18 소유자). 에피소드·간선은 그래프가 이미 그리므로 여기 반복하지 않는다. -->
                 <TabItem x:Name="ConditionTabItem" Header="{x:Static s:Ui.Board_ConditionsStats}">
                 <Grid RowDefinitions="Auto,*">
@@ -547,7 +547,7 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="ConditionSection" Margin="10" Spacing="4">
-                            <!-- 조건의 이름과 식은 여기서 고친다 — 더하기는 표 아래 늘 서 있는 이름 칸 + [＋ 추가](writer-comfort WC4), 지우기는 [대본] 탭. -->
+                            <!-- 조건의 이름과 식은 여기서 고친다 — 더하기는 표 아래 늘 서 있는 이름 칸 + [＋ 추가](writer-comfort WC4), 지우기는 줄 끝 [✕](2026-11-26). -->
                             <TextBlock Text="{x:Static s:Ui.Structure_ConditionsNameExpression}"
                                        FontWeight="SemiBold"
                                        FontSize="{DynamicResource TextMd}" />

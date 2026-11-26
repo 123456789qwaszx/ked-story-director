@@ -2037,7 +2037,7 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
     <value>Condition '{0}' → '{1}' — {2:path|paths} followed.</value>
   </data>
   <data name="Side_DeletesIfItSUsed" xml:space="preserve">
-    <value>Deletes '{0}' — if it's used somewhere, it says where and refuses.</value>
+    <value>Deletes '{0}' — if it's used somewhere, shows where and asks once more.</value>
   </data>
   <data name="Side_DeleteCondition" xml:space="preserve">
     <value>Delete condition</value>
@@ -2909,7 +2909,7 @@ Chapters · scenes · episodes are added, deleted and edited in the [Script] tab
     <value>Conditions (name → expression)</value>
   </data>
   <data name="Structure_SetExpressionForEachCondition" xml:space="preserve">
-    <value>Set an expression for each condition. An expression compares a stat key with an integer, like `trust &gt;= 3` (&gt;= · &lt;= · &gt; · &lt; · ==). Join several with `;`; all must hold to pass. For yes/no stats use `key == true` · `key == false`. An empty expression is “Undecided” — it always passes and only shows a warning in the validation report. Create one by typing a name in the box below the table and pressing [＋ Add] (or Enter), then fill in the expression on its row. Rename it in the row's name box — choices using that name follow. Deleting is done in the [Script] tab. Edits apply right away and can be undone (Ctrl+Z).</value>
+    <value>Set an expression for each condition. An expression compares a stat key with an integer, like `trust &gt;= 3` (&gt;= · &lt;= · &gt; · &lt; · ==). Join several with `;`; all must hold to pass. For yes/no stats use `key == true` · `key == false`. An empty expression is “Undecided” — it always passes and only shows a warning in the validation report. Create one by typing a name in the box below the table and pressing [＋ Add] (or Enter), then fill in the expression on its row. Rename it in the row's name box — choices using that name follow. Delete it with the row's [✕] — if something uses it, it shows where and asks once more. Edits apply right away and can be undone (Ctrl+Z).</value>
   </data>
   <data name="Structure_Stats" xml:space="preserve">
     <value>Stats</value>
@@ -3032,5 +3032,23 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   </data>
   <data name="Confirm_Cancel" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="Structure_ExpressionExamples" xml:space="preserve">
+    <value>Expression examples</value>
+  </data>
+  <data name="Structure_DetachingSetsJustThat" xml:space="preserve">
+    <value>Detaching sets only the show/unlock condition of those paths to “None” — the paths and their locked messages stay. One undo (Ctrl+Z) brings it all back.</value>
+  </data>
+  <data name="Structure_ClearDialogueConditionsFirst" xml:space="preserve">
+    <value>The tool doesn't remove condition blocks in dialogue or a branch card's entry condition — clear them in the [Script] tab first, then delete again.</value>
+  </data>
+  <data name="Structure_DetachAllAndDelete" xml:space="preserve">
+    <value>Detach all and delete</value>
+  </data>
+  <data name="Structure_DetachAndDeleteCondition" xml:space="preserve">
+    <value>Detach and delete condition</value>
+  </data>
+  <data name="Structure_DeletedConditionDetachedPaths" xml:space="preserve">
+    <value>Deleted condition '{0}' — detached it from {2:path|paths}. Undo (Ctrl+Z) brings both back.</value>
   </data>
 </root>

@@ -270,8 +270,11 @@ A condition is registered once in a **name ↔ expression** table, and called **
      this chapter's stats**.
    - As soon as the expression is filled in, the condition line (`<<if …>>`) in the writing boxes of cards using that condition changes too. An expression that names a stat
      not yet created goes onto the board the moment that stat is added.
-   - A condition's **name** is edited in the row's name box — choices · branch cards using that name follow (Esc cancels). Deleting is done in the [Script] tab's
-     "Conditions & stats" tab. A condition with an empty expression is "Undecided" — it always passes and only warns.
+   - A condition's **name** is edited in the row's name box — choices · branch cards using that name follow (Esc cancels). Deleting is the row's **[✕]**
+     (same as the stat rows · and the [Script] tab's condition list). If nothing uses it, it's deleted right away; if something does, it shows where and asks once
+     more — **if only paths use it, [Detach all and delete]** sets just those paths' show/unlock condition to “None” and deletes the condition (the paths and their
+     locked messages stay, and one undo brings it all back). If a condition block in dialogue or a branch card's entry condition uses it, the tool doesn't remove
+     those — clear them in the [Script] tab first. A condition with an empty expression is "Undecided" — it always passes and only warns.
    - Stats too: type a key in the box under the stat table in the same tab and press [＋ Add] (it starts as a number (integer) 0, 0–100) — the type ("Number (integer)" ·
      "On/Off") and values are edited on its row, and the **key** in the row's key box.
    - **Write stat keys in English** — start with a letter and use only letters · digits · `_` (e.g. `courage` · `met_harin`). The key goes into Yarn as is, so Hangul ·
@@ -279,7 +282,8 @@ A condition is registered once in a **name ↔ expression** table, and called **
      English in the key box and paths · conditions follow. Entering the key box shows a warning on that row — the key is the name stored in saves, so changing it after
      release returns that stat to its initial value in playthroughs already saved.
 2. **Click a choice line** on the board → choose that name in one of the two combos of the path panel (the condition's expression box appears below the combo, and
-   [＋ New condition] beside it creates the name and expression and sets it right away).
+   [＋ New condition] beside it creates the name and expression and sets it right away — hover **“Expression examples”** to the right of its create button for
+   examples using this chapter's stats).
    - **Show condition** = if not met, **the choice itself isn't shown**
    - **Unlock condition** = if not met, **it's shown locked** with the `Locked hint` (e.g. "Not enough trust")
 

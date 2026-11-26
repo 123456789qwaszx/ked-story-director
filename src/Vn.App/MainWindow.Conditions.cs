@@ -20,7 +20,8 @@ namespace Vn.App;
 ///
 /// 작가가 조건을 뜻으로 부르는 이름(「하린과 친해졌을 때」)을 더하고 고치고 지운다. 식(<c>trust &gt;= 3</c>)은 [구성] 탭이 정한다 — 식이 빈
 /// 조건은 「식 미정」으로 항상 통과하고 경고만 한다. 이름을 고치면 그 이름을 가리키던 간선(표시조건 · 해금조건)이 따라간다
-/// (<see cref="ProjectEditor.RenameChapterCondition"/>). 지우기는 쓰는 곳이 있으면 어디인지 말하고 거절한다.
+/// (<see cref="ProjectEditor.RenameChapterCondition"/>). 지우기는 쓰는 곳이 있으면 어디인지 보이고 한 번 더 묻는다 — 길에서만 쓰면 「모두 떼고 지우기」,
+/// 대사 줄의 갈래가 쓰면 그 자리를 먼저 걷으라고 말한다([구성] 탭의 조건 표와 같다 — <see cref="ChapterGraphView.ShowConditionRemoveFlyout"/>).
 ///
 /// 칸은 초점이 떠날 때와 Enter에 넣고, Esc는 넣지 않은 글을 걷는다. 넣기는 되돌리기 한 칸이고 요약이 다시 선다.
 /// </summary>
@@ -155,9 +156,17 @@ public partial class MainWindow
         remove.Click += (_, _) => UiGuard.Run(_session, Ui.Side_DeleteCondition, () =>
         {
             ChapterConditionRemoveOutcome outcome = _session.Editor.RemoveChapterCondition(chapterId, label);
-            _session.SetStatus(outcome.Applied
-                ? string.Format(Ui.Side_DeletedConditionUndoCtrlZ, label)
-                : ChapterGraphView.Explain(outcome.Refusal, outcome.Uses));
+
+            if (outcome.Applied || outcome.Uses.Count == 0)
+            {
+                _session.SetStatus(outcome.Applied
+                    ? string.Format(Ui.Side_DeletedConditionUndoCtrlZ, label)
+                    : ChapterGraphView.Explain(outcome.Refusal, outcome.Uses));
+                return;
+            }
+
+            // 쓰는 곳을 보이고 한 번 더 묻는다 — [구성] 탭의 조건 표와 같은 플라이아웃(상태줄에도 같은 목록이 선다).
+            ChapterGraphView.ShowConditionRemoveFlyout(remove, _session, chapterId, label, outcome);
         });
 
         bool undecided = string.IsNullOrWhiteSpace(condition.Expression);

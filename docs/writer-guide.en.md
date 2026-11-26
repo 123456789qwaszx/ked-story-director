@@ -226,8 +226,9 @@ opens the "Inspector", selecting a chapter opens "Conditions & stats", and click
 - **Conditions** — the condition list appears under the stat table in the **"Conditions & stats" tab**. This tab is **per chapter** — it belongs to the current chapter (the same chapter as the chapter combo above the board),
   and the small drop-down at the top right of the tab goes to another chapter. Name conditions **by meaning** (e.g. `when you've become close to Harin`).
   A condition made with [＋ Add] is **"Undecided"** — since what it checks isn't decided yet, it **always passes** (only a 🟡 warning in the validation report).
-  The real expression (`trust >= 3`) is filled in by the developer in the [Structure] tab (conditions can also be added and renamed in the [Structure] tab). Renaming a condition updates the paths that use it, and [✕], if paths use it,
-  says where and doesn't delete it.
+  The real expression (`trust >= 3`) is filled in by the developer in the [Structure] tab (conditions can also be added and renamed in the [Structure] tab). Renaming a condition updates the paths that use it, and [✕], if something uses it,
+  shows where and asks once more — if only paths use it, [Detach all and delete] detaches it from them and deletes it; if a condition block in dialogue or a branch
+  card's entry condition uses it, it asks you to clear that first.
 - **Stats** are created by the developer in the [Structure] tab. A stat is called by one **key** — the text on the game screen is decided by the game.
   To put a stat's current value in dialogue, paste the `{stat("key")}` you [Copy] from the stat table in the "Conditions & stats" tab.
   If the developer changes a stat key, `{stat("key")}` in that chapter's dialogue changes to the new key too (translation fields too · the translation isn't treated as outdated). Deleting a stat

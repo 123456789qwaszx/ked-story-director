@@ -147,6 +147,36 @@ public sealed class EdgeConditionPanelTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 식_예시_보기는_만들기_단추_오른쪽에_서고_손을_올리면_이_챕터의_스탯으로_든_예시가_뜬다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「만들고 표시조건으로 걸기 … 우측에, 식 예시 보기가 있으면 좋겠다 … 호버를 하면 창이 뜨면서 구체적인 예시를」.
+        (Window window, ChapterGraphView view, AuthoringSession session) = Show();
+
+        foreach (string button in new[] { "EdgeVisibleNewButton", "EdgeUnlockNewButton" })
+        {
+            StackPanel panel = OpenNew(view, button);
+            Control link = panel.GetLogicalDescendants().OfType<Control>().Single(item => Equals(item.Tag, ChapterGraphView.ExpressionExamplesTag));
+            var row = Assert.IsType<StackPanel>(link.Parent);
+            Assert.Equal(Avalonia.Layout.Orientation.Horizontal, row.Orientation);
+            Assert.Equal("new-condition-create", Assert.IsType<Button>(row.Children[0]).Tag);
+            Assert.Same(link, row.Children[1]);   // 만들기 단추의 오른쪽
+
+            Assert.Contains("식 예시 보기", link.GetLogicalDescendants().OfType<TextBlock>().Select(block => block.Text));
+
+            // 풍선 — 넓게(예시의 식이 한 줄에 서야 줄이 맞는다) · 빨리 뜬다. 글은 검증 보고의 고치는 법과 같은 상자다.
+            var tip = Assert.IsType<ToolTip>(ToolTip.GetTip(link));
+            Assert.True(tip.MaxWidth >= 600, $"풍선이 좁다: {tip.MaxWidth}");
+            Assert.True(ToolTip.GetShowDelay(link) < 400);
+            string examples = Assert.IsType<SelectableTextBlock>(Assert.IsType<Border>(tip.Content).Child).Text ?? string.Empty;
+            Assert.Equal(ConditionExpressionHelp.Examples(session.Editor.FindChapter("ch01")!.Stats), examples);
+            Assert.Contains("trust >= ", examples, StringComparison.Ordinal);   // 이 챕터의 스탯으로 든다
+            Assert.DoesNotContain("met_harin", examples, StringComparison.Ordinal);
+        }
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static ComboBox Combo(ChapterGraphView view, string name) => view.FindControl<ComboBox>(name)!;
@@ -171,7 +201,8 @@ public sealed class EdgeConditionPanelTests : IDisposable
 
     private static void Click(StackPanel panel, string tag)
     {
-        panel.Children.OfType<Button>().Single(button => (string?)button.Tag == tag).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        // 만들기 단추는 「식 예시 보기」와 한 줄에 선다 — 칸의 자식이 아니라 그 안의 줄에 있다.
+        panel.GetLogicalDescendants().OfType<Button>().Single(button => (string?)button.Tag == tag).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
     }
 
