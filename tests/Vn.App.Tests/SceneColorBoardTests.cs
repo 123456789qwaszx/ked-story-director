@@ -55,13 +55,15 @@ public sealed class SceneColorBoardTests : IDisposable
         int auto = Colors(session)["hall"];
         int picked = (auto % SceneColors.Count) + 1;
 
-        session.Editor.SetSceneColor("ch01", "hall", picked);
+        session.Editor.SetSceneColor("ch01", "hall", picked);   // 창의 셸이 판을 다시 짓는다(NodeMetadata) — 여기서는 손으로
+        graph.Rebuild();
         Settle(graph);
 
         Assert.Equal(Skin.SceneTintOf(picked), ((ISolidColorBrush)Frame(graph, "hall").Background!).Color);
         Assert.Equal(Skin.SceneMarkOf(picked), ((ISolidColorBrush)Dot(graph, "hall").Fill!).Color);
 
         session.Editor.Undo();
+        graph.Rebuild();
         Settle(graph);
 
         Assert.Equal(Skin.SceneTintOf(auto), ((ISolidColorBrush)Frame(graph, "hall").Background!).Color);

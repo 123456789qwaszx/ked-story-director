@@ -3051,4 +3051,40 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   <data name="Structure_DeletedConditionDetachedPaths" xml:space="preserve">
     <value>Deleted condition '{0}' — detached it from {2:path|paths}. Undo (Ctrl+Z) brings both back.</value>
   </data>
+  <data name="SceneColor_Menu" xml:space="preserve">
+    <value>Scene color</value>
+  </data>
+  <data name="SceneColor_Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="SceneColor_AutoNow" xml:space="preserve">
+    <value>Auto (now: {0})</value>
+  </data>
+  <data name="SceneColor_1" xml:space="preserve">
+    <value>Sage</value>
+  </data>
+  <data name="SceneColor_2" xml:space="preserve">
+    <value>Rose</value>
+  </data>
+  <data name="SceneColor_3" xml:space="preserve">
+    <value>Mint</value>
+  </data>
+  <data name="SceneColor_4" xml:space="preserve">
+    <value>Lime</value>
+  </data>
+  <data name="SceneColor_5" xml:space="preserve">
+    <value>Lilac</value>
+  </data>
+  <data name="SceneColor_Set" xml:space="preserve">
+    <value>Set scene '{0}' to {1}. Undo (Ctrl+Z) brings it back.</value>
+  </data>
+  <data name="SceneColor_BackToAuto" xml:space="preserve">
+    <value>Scene '{0}' is back to its automatic color.</value>
+  </data>
+  <data name="SceneColor_SetMany" xml:space="preserve">
+    <value>Set {0:scene|scenes} to {1}. One undo (Ctrl+Z) brings them all back.</value>
+  </data>
+  <data name="SceneColor_ManyBackToAuto" xml:space="preserve">
+    <value>Returned {0:scene|scenes} to automatic colors.</value>
+  </data>
 </root>

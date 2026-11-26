@@ -153,6 +153,8 @@ internal sealed record HierarchyPick(
 /// </summary>
 /// <param name="Key">그 줄의 신원 — 접힘과 선택을 다시 그린 뒤에도 같은 줄에 잇는다(줄 번호는 편집 한 번에 바뀐다).</param>
 /// <param name="Find">찾기가 견주는 글 — ID와 이름(줄마다 하나 · <c>\n</c>으로 가른다). 보이는 글이 ID든 이름이든 둘 다로 찾는다. null이면 보이는 글.</param>
+/// <param name="SceneColor">장면 줄 — 그 장면의 색 칸(1 ~ 5 · <see cref="SceneColors"/>). 이름 앞에 그 색의 점이 선다. 0이면 점이 없다.</param>
+/// <param name="SceneColorChosen">장면 줄 — 작가가 고른 칸. null이면 자동(「장면 색」 메뉴의 ✓).</param>
 internal sealed record HierarchyRow(
     HierarchyKind Kind,
     string Key,
@@ -166,7 +168,9 @@ internal sealed record HierarchyRow(
     bool HasWarning,
     HierarchyEye Eye = HierarchyEye.None,
     string? NodeId = null,
-    string? Find = null)
+    string? Find = null,
+    int SceneColor = 0,
+    int? SceneColorChosen = null)
 {
     public HierarchyPick Pick => new(Kind, ChapterId, SceneId, EpisodeId, NodeId);
 }
@@ -360,6 +364,12 @@ public partial class StoryHierarchy : UserControl
 
     /// <summary>줄의 우클릭 차림표에서 무엇을 하자고 했다 — 그 줄과, 차림을 띄울 과녁(그 줄의 컨트롤)과 함께.</summary>
     internal event Action<HierarchyCommand, HierarchyRow, Control>? CommandRequested;
+
+    /// <summary>
+    /// 장면 줄의 우클릭 「장면 색」에서 색을 골랐다 — 칠할 장면 줄들(누른 줄이 여러 줄 고르기 안이면 고른 장면 줄 모두, 아니면 누른 줄)과 칸(자동이면 null).
+    /// 넣는 것은 셸이다(<see cref="SceneColorMenu.Apply"/>).
+    /// </summary>
+    internal event Action<IReadOnlyList<HierarchyRow>, int?>? SceneColorRequested;
 
     /// <summary>
     /// 이름을 고쳐 달라고 했다(줄을 두 번 눌러 새 이름을 적고 Enter). 여기서 고치지 않는다 — 챕터 개명은 판 · 조건 배관을,
@@ -565,6 +575,7 @@ public partial class StoryHierarchy : UserControl
         string chapterId = chapter.ChapterId;
         string key = ChapterKey(chapterId);
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(chapter.Model);
+        IReadOnlyDictionary<string, int> sceneColors = SceneColors.Of(scenes, chapter.Model.SceneNotes);
 
         rows.Add(new HierarchyRow(
             // [대본] 탭은 이름(표시 이름, 비면 ID), [구성] 탭은 ID에 곁글로 이름이다(에피소드처럼 — 2026-11-18 소유자). ⛔ [구성] 곁글 「챕터 조건
@@ -594,7 +605,9 @@ public partial class StoryHierarchy : UserControl
                     ChapterSceneNotes.HasMemo(chapter.Model.SceneNotes, scene) ? Ui.Hierarchy_Note : null
                 }.OfType<string>()) is { Length: > 0 } sceneDetail ? sceneDetail : null,
                 Depth: 2, IsSceneRoot: false, HasWarning: scene.HasSplitEntry,
-                Find: Findable(scene.SceneId, scene.DisplayName)));
+                Find: Findable(scene.SceneId, scene.DisplayName),
+                SceneColor: SceneColors.ColorOf(sceneColors, scene.SceneId),
+                SceneColorChosen: ChapterSceneNotes.ColorOf(chapter.Model.SceneNotes, scene.SceneId)));
 
             if (!IsExpanded(sceneKey))
             {
@@ -809,6 +822,14 @@ public partial class StoryHierarchy : UserControl
     private Control Build(HierarchyRow row)
     {
         var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+
+        // 장면 줄은 이름 앞에 그 장면 색의 점 — 판의 장면 바탕 · 이름표 점과 한 색이다(design/scene-colors.md 4절 · 두 탭이 같다).
+        if (row.Kind == HierarchyKind.Scene && row.SceneColor > 0)
+        {
+            Ellipse dot = SceneColorMenu.Dot(row.SceneColor, 8);
+            dot.Tag = SceneDotTag;
+            line.Children.Add(dot);
+        }
 
         // 종류가 한눈에 갈려야 한다 — 들여쓰기만으로는 같은 글자로 보인다. 크기와 무게를 함께 준다.
         (double size, FontWeight weight, double dim) = row.Kind switch
@@ -1035,7 +1056,8 @@ public partial class StoryHierarchy : UserControl
             [
                 MenuItemFor(Ui.Board_AddEpisode, HierarchyCommand.AddEpisode, row, anchor),
                 new Separator(),
-                RenameItem(row)
+                RenameItem(row),
+                SceneColorItem(row)
             ],
             HierarchyKind.Episode =>
             [
@@ -1070,6 +1092,44 @@ public partial class StoryHierarchy : UserControl
 
         return item;
     }
+
+    /// <summary>
+    /// 장면 줄의 「장면 색」 — 자동(지금 색)과 다섯 색(<see cref="SceneColorMenu"/>). 누른 줄이 여러 줄 고르기 안이면 고른 장면 줄 모두에 칠한다(되돌리기 한 칸 ·
+    /// 2026-11-27 소유자 — 「권고대로」).
+    /// </summary>
+    private MenuItem SceneColorItem(HierarchyRow row)
+    {
+        var item = new MenuItem
+        {
+            Header = Ui.SceneColor_Menu,
+            Icon = SceneColorMenu.Dot(Math.Max(1, row.SceneColor), 10),
+            FontSize = Skin.Font(11),
+            Tag = "scene-color"
+        };
+
+        item.ItemsSource = SceneColorMenu.Items(Math.Max(1, row.SceneColor), row.SceneColorChosen, color =>
+            UiGuard.Run(null, Ui.SceneColor_Menu, () => SceneColorRequested?.Invoke(SceneColorTargets(row), color)));
+        return item;
+    }
+
+    /// <summary>「장면 색」을 칠할 장면 줄들 — 누른 줄이 여러 줄 고르기 안이면 고른 것 가운데 장면 줄 모두(보이는 차례), 아니면 누른 줄 하나.</summary>
+    private IReadOnlyList<HierarchyRow> SceneColorTargets(HierarchyRow row)
+    {
+        if (_picks.Count > 1 && _picks.Contains(row.Pick))
+        {
+            List<HierarchyRow> picked = _rows.Where(item => item.Kind == HierarchyKind.Scene && _picks.Contains(item.Pick)).ToList();
+
+            if (picked.Count > 0)
+            {
+                return picked;
+            }
+        }
+
+        return [row];
+    }
+
+    /// <summary>장면 줄 이름 앞의 장면 색 점 — 화면 시험이 찾는다.</summary>
+    internal const string SceneDotTag = "scene-dot";
 
     private MenuItem RenameItem(HierarchyRow row)
     {

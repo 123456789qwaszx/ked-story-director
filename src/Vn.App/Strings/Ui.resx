@@ -4055,4 +4055,52 @@
     <value>조건 '{0}'{1} 지웠습니다 — 길 {2}개에서 뗐습니다. 되돌리기(Ctrl+Z)로 함께 돌아옵니다.</value>
     <comment>ChapterGraphView.axaml.cs — {1}은 조사(을/를)</comment>
   </data>
+  <data name="SceneColor_Menu" xml:space="preserve">
+    <value>장면 색</value>
+    <comment>SceneColorMenu.cs — 하이어아키 장면 줄 우클릭 · 인스펙터 장면 요약의 머리</comment>
+  </data>
+  <data name="SceneColor_Auto" xml:space="preserve">
+    <value>자동</value>
+    <comment>MainWindow.SceneColors.cs — 인스펙터 장면 색 줄의 단추</comment>
+  </data>
+  <data name="SceneColor_AutoNow" xml:space="preserve">
+    <value>자동 (지금: {0})</value>
+    <comment>SceneColorMenu.cs — {0}은 지금 자동으로 고른 색 이름</comment>
+  </data>
+  <data name="SceneColor_1" xml:space="preserve">
+    <value>세이지</value>
+    <comment>SceneColorMenu.cs — 장면 색 1</comment>
+  </data>
+  <data name="SceneColor_2" xml:space="preserve">
+    <value>장미</value>
+    <comment>SceneColorMenu.cs — 장면 색 2</comment>
+  </data>
+  <data name="SceneColor_3" xml:space="preserve">
+    <value>민트</value>
+    <comment>SceneColorMenu.cs — 장면 색 3</comment>
+  </data>
+  <data name="SceneColor_4" xml:space="preserve">
+    <value>연두</value>
+    <comment>SceneColorMenu.cs — 장면 색 4</comment>
+  </data>
+  <data name="SceneColor_5" xml:space="preserve">
+    <value>라일락</value>
+    <comment>SceneColorMenu.cs — 장면 색 5</comment>
+  </data>
+  <data name="SceneColor_Set" xml:space="preserve">
+    <value>장면 '{0}'의 색을 {1}{2} 했습니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
+    <comment>SceneColorMenu.cs — {2}는 조사(으로/로)</comment>
+  </data>
+  <data name="SceneColor_BackToAuto" xml:space="preserve">
+    <value>장면 '{0}'의 색을 자동으로 돌렸습니다.</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="SceneColor_SetMany" xml:space="preserve">
+    <value>장면 {0}개의 색을 {1}{2} 했습니다. 되돌리기(Ctrl+Z) 한 번에 함께 돌아옵니다.</value>
+    <comment>SceneColorMenu.cs — {2}는 조사(으로/로)</comment>
+  </data>
+  <data name="SceneColor_ManyBackToAuto" xml:space="preserve">
+    <value>장면 {0}개의 색을 자동으로 돌렸습니다.</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
 </root>

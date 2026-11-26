@@ -121,6 +121,27 @@ public partial class GraphEditorView : UserControl
     /// <summary>장면 이름표의 Tag 머리 — 뒤에 장면ID가 붙는다. 누르면 그 장면을 접는다.</summary>
     internal const string SceneLabelTag = "scene-label:";
 
+    /// <summary>판의 장면 이름표 우클릭 — 「자동」과 다섯 색. 고르면 넣고(되돌리기 한 칸) 판이 다시 선다.</summary>
+    private void OpenSceneColorMenu(Control anchor, string chapterId, string sceneId, string name, int color, int? chosen)
+    {
+        var menu = new ContextMenu
+        {
+            ItemsSource = SceneColorMenu.Items(color, chosen, picked => UiGuard.Run(_session, Ui.SceneColor_Menu, () =>
+            {
+                if (_session is { } session)
+                {
+                    SceneColorMenu.Apply(session, [(chapterId, sceneId, name)], picked);
+                }
+            }))
+        };
+
+        SceneColorMenuShown = menu;
+        menu.Open(anchor);
+    }
+
+    /// <summary>마지막으로 연 장면 이름표의 색 메뉴 — 화면 시험이 찾는다.</summary>
+    internal ContextMenu? SceneColorMenuShown { get; private set; }
+
     /// <summary>장면 이름표 앞 장면 색 점의 Tag — 시험이 찾는다.</summary>
     internal const string SceneDotTag = "scene-dot";
 
@@ -1365,7 +1386,9 @@ public partial class GraphEditorView : UserControl
             _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
             _frames.Add(SceneFrame(area, Skin.SceneTintOf(color)));
 
-            Border label = SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene), Skin.SceneMarkOf(color));
+            Border label = SceneLabel(
+                fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene),
+                color, ChapterSceneNotes.ColorOf(chapter.SceneNotes, scene.SceneId));
             AddFrameLabel(new FrameLabel(label, chapter: false, area, 10 + (6 * Skin.FrameLabelGrow))
             {
                 Container = chapterArea
@@ -1421,8 +1444,11 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     /// <param name="members">그 장면에 서 있는 카드(에피소드와 집이 그 장면인 분기 카드) — 테두리를 잰 그 카드들이다.</param>
     /// <returns>이름표 — 자리는 화면 겹에서 <see cref="PlaceFrameLabels"/>가 정한다(늘 장면의 왼위 · 이름 그대로).</returns>
-    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo, Color mark)
+    /// <param name="color">그 장면의 색 칸(1 ~ 5) — 이름 앞 점의 색.</param>
+    /// <param name="chosen">작가가 고른 칸 — null이면 자동(우클릭 「장면 색」의 ✓).</param>
+    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo, int color, int? chosen)
     {
+        Color mark = Skin.SceneMarkOf(color);
         string shown = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄");
 
@@ -1471,11 +1497,22 @@ public partial class GraphEditorView : UserControl
 
         string sceneId = scene.SceneId;
 
-        void Pressed(object? sender, PointerPressedEventArgs args) => OnFrameLabelPressed(
-            args,
-            members,
-            new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
-            () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
+        // 우클릭 = 장면 색(자동 · 다섯 색 — 하이어아키의 「장면 색」과 같은 항목 · 2026-11-27 소유자 — 「권고대로」). 왼쪽 누름은 고르기 · 끌기, 두 번은 접기.
+        void Pressed(object? sender, PointerPressedEventArgs args)
+        {
+            if (args.GetCurrentPoint(label).Properties.IsRightButtonPressed)
+            {
+                args.Handled = true;
+                OpenSceneColorMenu(label, chapterId, sceneId, scene.DisplayName, color, chosen);
+                return;
+            }
+
+            OnFrameLabelPressed(
+                args,
+                members,
+                new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
+                () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
+        }
 
         label.PointerPressed += Pressed;
         return label;

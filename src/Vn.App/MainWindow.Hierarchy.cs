@@ -220,6 +220,13 @@ public partial class MainWindow
                 UiGuard.Run(_session, Ui.Side_HierarchyMenu, () => OnHierarchyCommand(command, row, anchor));
             tree.RenameRequested += (row, name) =>
                 UiGuard.Run(_session, Ui.Board_Rename, () => OnHierarchyRename(tree, row, name));
+            tree.SceneColorRequested += (rows, color) =>
+                UiGuard.Run(_session, Ui.SceneColor_Menu, () => SceneColorMenu.Apply(
+                    _session,
+                    rows.Where(row => row.ChapterId is not null && row.SceneId is not null)
+                        .Select(row => (row.ChapterId!, row.SceneId!, row.Text))
+                        .ToList(),
+                    color));
             tree.Dropped += (source, target) =>
                 UiGuard.Run(_session, Ui.Side_MoveScene, () => OnHierarchyDropped(source, target));
 
@@ -650,7 +657,8 @@ public partial class MainWindow
 
                 // 에피소드 목록은 세우지 않는다 — 왼쪽 하이어아키가 같은 것을 보인다(2026-11-16 소유자). 메모 공간의 [＋ 에피소드]가
                 // 그 장면의 에피소드를 고르는 자리다.
-                // 「[구성] 탭에서 장면 열기」도 두지 않는다(2026-11-16 소유자) — 장면 요약은 메모 공간이다.
+                // 「[구성] 탭에서 장면 열기」도 두지 않는다(2026-11-16 소유자) — 장면 요약은 장면 색 줄과 메모 공간이다.
+                SceneColorRow(chapter.ChapterId, scene, chapter.Model);
                 SceneNoteSpace(chapter.ChapterId, scene);
                 break;
             }
