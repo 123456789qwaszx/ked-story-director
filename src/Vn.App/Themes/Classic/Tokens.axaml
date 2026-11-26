@@ -128,8 +128,6 @@
     <x:Double x:Key="LineWeight">1</x:Double>
     <x:Double x:Key="SlotRadius">3</x:Double>
     <x:Double x:Key="SlotPill">0</x:Double>
-    <x:Double x:Key="ChapterLabelTop">10</x:Double>
-    <x:Double x:Key="SceneLabelTop">6</x:Double>
     <x:Double x:Key="ChapterLabelFont">14</x:Double>
     <x:Double x:Key="SceneLabelFont">12</x:Double>
     <x:Double x:Key="FrameLabelGrow">0</x:Double>

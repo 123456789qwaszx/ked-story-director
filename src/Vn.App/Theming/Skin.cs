@@ -370,12 +370,6 @@ internal static class Skin
     public static BoxShadows CardSelectedShadow =>
         ThemeService.ShadowsOf(nameof(CardSelectedShadow)) is { Count: > 0 } ring ? ring : CardShadow;
 
-    /// <summary>챕터 이름표의 세로 자리 — 챕터 테두리의 위쪽 선에서 잰다(기본 10 = 테두리 안쪽, 음수면 선 위에 걸터앉는다).</summary>
-    public static double ChapterLabelTop => N();
-
-    /// <summary>장면 이름표의 세로 자리 — 장면 테두리의 위쪽 선에서 잰다(기본 6).</summary>
-    public static double SceneLabelTop => N();
-
     /// <summary>챕터 이름표의 글자 크기(판 위의 글 — 배율을 따른다).</summary>
     public static double ChapterLabelFont => N();
 

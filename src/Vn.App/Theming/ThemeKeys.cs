@@ -282,8 +282,6 @@ internal static class ThemeKeys
         new("CardSpineOpacity", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "카드 왼쪽 막대의 진하기(0이면 안 보인다)", "Opacity of the card’s left bar (0 hides it)"),
         new("SlotPill", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "1이면 선택지 문구를 둥근 칸에 담는다, 0이면 글만", "1 puts choice text in rounded slots, 0 shows text only"),
         new("LineRowBoxed", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "1이면 인스펙터의 대사 줄마다 상자, 0이면 구분선만", "1 boxes each line in the inspector, 0 uses dividers only"),
-        new("ChapterLabelTop", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "챕터 이름표의 높이 자리 — 음수면 테두리 선 위", "Vertical place of chapter labels — negative sits on the border line"),
-        new("SceneLabelTop", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "장면 이름표의 높이 자리 — 음수면 테두리 선 위", "Vertical place of scene labels — negative sits on the border line"),
         new("ChapterLabelFont", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "챕터 이름표의 글자 크기", "Text size of chapter labels"),
         new("SceneLabelFont", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "장면 이름표의 글자 크기", "Text size of scene labels"),
         new("FrameWeight", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "챕터 · 장면 테두리의 굵기 배수", "Thickness multiplier of chapter and scene frames"),

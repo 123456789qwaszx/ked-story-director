@@ -38,8 +38,9 @@ src/Vn.App/
   그 컨트롤에 클래스만 붙인다.
 - **판 위의 모양**(코드가 짓는 것)도 이름으로 정한다 — 카드의 머리 띠(`EpisodeBand` … 투명이면 띠를 짓지 않는다) · 등뼈의 진하기(`CardSpineOpacity`) ·
   고른 카드의 그림자(`CardSelectedShadow`) · 길의 굵기(`LineWeight`) · 선택지 칸(`SlotSurface` · `SlotRadius` · `SlotPill`) · 챕터와 장면의
-  테두리 · 이름표(`ChapterFrame…` · `SceneFrame…` · `…Label`) · 테두리의 굵기 배수(`FrameWeight`) · 문구 없는 선택지 칸의 바탕(`SlotAlertSurface`) · 이름표의 자리와 크기(`ChapterLabelTop` · `SceneLabelTop` — 테두리의 위쪽 선에서 잰 자리,
-  음수면 선 위에 걸터앉는다 · `ChapterLabelFont` · `SceneLabelFont` · `FrameLabelGrow` · `FrameLabelShadow`). **치수를 바꾸는 값은 두지 않는다** — 카드의 여백 · 머리 높이는 테마와 상관없이 같아서
+  테두리 · 이름표(`ChapterFrame…` · `SceneFrame…` · `…Label`) · 테두리의 굵기 배수(`FrameWeight`) · 문구 없는 선택지 칸의 바탕(`SlotAlertSurface`) · 이름표의 크기(`ChapterLabelFont` · `SceneLabelFont` ·
+  `FrameLabelGrow` · `FrameLabelShadow`). 이름표의 **자리**는 테마가 아니라 판의 규칙이다([design/board-zoom.md](design/board-zoom.md) 4절 — 챕터는 테두리 바깥 위,
+  장면은 첫 카드 위에서 위로 자란다 · ⛔ 2026-11-26까지는 `ChapterLabelTop` · `SceneLabelTop`이 테두리의 위쪽 선에서 잰 자리를 정했다). **치수를 바꾸는 값은 두지 않는다** — 카드의 여백 · 머리 높이는 테마와 상관없이 같아서
   선이 닿는 자리의 셈이 그대로다.
 - **틀의 글자 크기**도 테마가 정한다 — 코드는 `FontSize = Skin.Font(11)`(기본 테마의 크기를 주면 테마의 배수 `FontScale`을 곱한다), XAML은
   `FontSize="{DynamicResource TextSm}"`(단계 `TextXxs` 9 · `TextXs` 10 · `TextSm` 11 · `TextMd` 12 · `TextLg` 14 — 테마는 `FontScale`과 같은 비율로
@@ -187,7 +188,8 @@ src/Vn.App/
 - **선은 필요한 만큼만 굵게**(`LineWeight` 1.4) — 굵고 짙은 선이 판을 가로지르면 카드의 글보다 먼저 보인다.
 - **줄인 판은 덜 그린다**(2026-11-26 — 디자인 점검 7번 · 두 테마 모두 · 코드의 `GraphEditorView.BoardDetail`) — 50% 아래면 카드의 글 칸과 머리 줄이 걷히고 제목만
   화면에서 14px(`ZoomedTitlePx`)로 선다. 선택지 칸은 점과 선만 남는다. 25% 아래면 카드는 머리 띠의 색(`EpisodeBand` · `SceneRootBand` · `BranchBand` · 고르면 `SelectedBand` · 띠가 없는 테마는 종의 색)의 덩어리다.
-  챕터 · 장면 이름표는 화면에서 12px(`FrameLabelMinPx`) 아래로 줄지 않는다 — 판 위에서 커진다. **카드의 치수 · 자리는 그대로다**(글 칸 · 문구는 투명해질 뿐) —
+  챕터 · 장면 이름표는 판 위에 겹친 화면 겹에 서서 화면에서 챕터 13px · 장면 12px 아래로 줄지 않고, 서로 · 카드와 겹치지 않는 자리를 찾는다(설계 4절 — 자리가
+  없으면 장면 이름표가 물러난다). **카드의 치수 · 자리는 그대로다**(글 칸 · 문구는 투명해질 뿐) —
   길 · 테두리 · 미니맵 · 끌기가 배율과 상관없이 같다. ⛔ 그 전에는 10%에서도 글 칸의 글과 선택지 문구가 점처럼 그려져 판의 짜임을 가렸다.
 
 ## 8. 알아 둘 것

@@ -25,7 +25,7 @@ namespace Vn.App.Tests;
 /// 곁기둥 셋 · 검증 보고 펼침) · 설정 창(묶음 모두 펼침) — 을 그려 임시 폴더의 <c>vn-ui-probe/언어폭/</c>에 그림(PNG)과 <c>report.tsv</c>를 남긴다.
 /// 보고는 보이는 글 가운데 <b>칸보다 긴 것</b>이다: <c>W</c> 한 줄 글이 칸보다 넓다(줄임표 「…」로 잘리거나 넘친다) · <c>H</c> 줄을 넘기는 글이
 /// 칸 높이를 넘는다 · <c>CLIP</c> 조상이 글의 일부를 가린다(가로 스크롤이 있는 자리 — 검증 보고 — 는 괜찮다) · <c>HIDDEN</c> 창 밖으로 밀렸다.
-/// 판(카드 · 선택지 칸) 위의 글은 판이 움직여 보는 자리라 가림은 세지 않는다(제 칸보다 넓은 것만 센다).
+/// 판(카드 · 선택지 칸) 위의 글과 판 위 화면 겹의 이름표는 판이 움직여 보는 자리라 가림은 세지 않는다(제 칸보다 넓은 것만 센다).
 /// 영어로 돌리면 둘을 더 적는다(english-ui E8): <c>KO</c> 화면에 보이는 한글(점검 프로젝트의 데이터는 모두 영어라 한글은 표에서 온 것이다 —
 /// 언어 칸의 「한국어」 · 「(언어)」는 뺀다) · <c>FILE-KO</c> 저장하며 내보낸 파일(진행 JSON · 대사 Yarn · 그 밖의 툴이 쓴 파일)에 든 한글.
 ///
@@ -246,7 +246,7 @@ public sealed class UiTextFitProbe
             }
         }
 
-        if (block.GetVisualAncestors().Any(ancestor => ancestor is Control { Name: "GraphCanvas" or "ZoomHost" }))
+        if (block.GetVisualAncestors().Any(ancestor => ancestor is Control { Name: "GraphCanvas" or "ZoomHost" or "FrameLabelLayer" }))
         {
             return null;
         }

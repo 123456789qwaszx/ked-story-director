@@ -94,7 +94,7 @@ public sealed class SceneFoldTests
         (GraphEditorView graph, AuthoringSession session, string board) = Show();
         Canvas canvas = BoardCanvas(graph);
 
-        Border label = canvas.Children.OfType<Border>()
+        Border label = Labels(graph).Children.OfType<Border>()
             .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "hall");
         label.RaiseEvent(Press(label));
         Assert.Empty(session.CollapsedScenes);   // 한 번은 접지 않는다
@@ -127,7 +127,7 @@ public sealed class SceneFoldTests
         (double X, double Y) aAt = Shown(a);
         (double X, double Y) bAt = (b.Layout.X, b.Layout.Y);
 
-        Border label = canvas.Children.OfType<Border>()
+        Border label = Labels(graph).Children.OfType<Border>()
             .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
         var top = (Visual)TopLevel.GetTopLevel(canvas)!;
         var pointer = new Pointer(0, PointerType.Mouse, true);
@@ -179,7 +179,7 @@ public sealed class SceneFoldTests
             new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased), KeyModifiers.None, MouseButton.Left));
 
         // 장면 이름표를 눌렀다 놓는다 — 그 장면의 카드가 무리다.
-        Border label = canvas.Children.OfType<Border>()
+        Border label = Labels(graph).Children.OfType<Border>()
             .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
         Point onLabel = label.TranslatePoint(new Point(4, 4), top)!.Value;
         label.RaiseEvent(new PointerPressedEventArgs(
@@ -239,6 +239,9 @@ public sealed class SceneFoldTests
     }
 
     private static Canvas BoardCanvas(GraphEditorView graph) => graph.FindControl<Canvas>("GraphCanvas")!;
+
+    /// <summary>챕터 · 장면 이름표가 서는 화면 겹(design/board-zoom.md 4절).</summary>
+    private static Canvas Labels(GraphEditorView graph) => graph.FindControl<Canvas>("FrameLabelLayer")!;
 
     private static DialogueNode Card(AuthoringSession session, string episodeId) =>
         EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!;

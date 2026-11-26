@@ -128,7 +128,7 @@ public partial class GraphEditorView : UserControl
     private readonly List<FileProxyVisual> _proxies = new();
     private readonly List<EdgeVisual> _edges = new();
 
-    /// <summary>챕터(판) 박스 — 펼친 판의 노드들을 감싸는 배경 프레임 + 이름표 (2단계 무대 3번).</summary>
+    /// <summary>챕터(판) · 장면 박스 — 펼친 판의 노드들을 감싸는 배경 프레임 (2단계 무대 3번). 이름표는 화면 겹에 따로 선다(<see cref="_frameLabels"/>).</summary>
     private readonly List<Control> _frames = new();
 
     /// <summary>
@@ -336,9 +336,6 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>줄인 판에서 카드 제목의 화면 크기(px) — 배율과 상관없이.</summary>
     internal const double ZoomedTitlePx = 14;
-
-    /// <summary>챕터 · 장면 이름표가 화면에서 이보다 작아지지 않는다(px) — 줄일수록 이름표가 판 위에서 커진다.</summary>
-    internal const double FrameLabelMinPx = 12;
 
     /// <summary>줄인 판에서 카드 위에 얹는 겹(<see cref="BuildOverview"/>)의 Tag — 시험이 찾는다.</summary>
     internal const string CardOverviewTag = "card-overview";
@@ -773,6 +770,12 @@ public partial class GraphEditorView : UserControl
         GraphScroll.AddHandler(PointerReleasedEvent, OnGraphPanReleased, RoutingStrategies.Tunnel);
         GraphScroll.ScrollChanged += (_, _) => RefreshMinimapViewport();
         GraphScroll.ScrollChanged += (_, _) => BoardBackdrop.Track(GraphScroll.Offset, _zoom);   // 깔개의 점이 판을 따라온다(themes)
+        GraphScroll.ScrollChanged += (_, _) => PlaceFrameLabels();   // 이름표의 화면 겹도 판을 따라온다(design/board-zoom.md 4절)
+
+        // 이름표의 화면 겹은 판(스크롤) 밖이다 — 이름표 위에서도 휠 · 집기 · 가운데 단추의 판 옮기기가 판의 것이다.
+        FrameLabelLayer.AddHandler(PointerWheelChangedEvent, OnGraphWheel, RoutingStrategies.Tunnel);
+        FrameLabelLayer.AddHandler(PointerTouchPadGestureMagnifyEvent, OnGraphMagnify, RoutingStrategies.Bubble);
+        FrameLabelLayer.AddHandler(PointerPressedEvent, OnGraphPanPressed, RoutingStrategies.Tunnel);
 
         // 맞추기로 한 판이 남아 있는데 화면 크기가 이제 섰다(탭이 처음 보였다) — 그때 맞춘다.
         GraphScroll.PropertyChanged += (_, args) =>
@@ -1073,6 +1076,7 @@ public partial class GraphEditorView : UserControl
         _proxies.Clear();
         _edges.Clear();
         _frames.Clear();
+        ClearFrameLabels();
         _sceneAreas.Clear();
         _chapterAreas.Clear();
         bool hadLine = _selectedEdge is not null || _selectedRail is not null;
@@ -1147,6 +1151,7 @@ public partial class GraphEditorView : UserControl
         }
 
         _frames.Clear();
+        ClearFrameLabels();
         _sceneAreas.Clear();
         _chapterAreas.Clear();
 
@@ -1154,6 +1159,8 @@ public partial class GraphEditorView : UserControl
         {
             return;
         }
+
+        CollectLabelObstacles();
 
         // 펼친 판의 카드와 그 판 안의 접은 장면 상자(2026-10-30)를 함께 감싼다 — 장면을 다 접어도 챕터 박스는 선다.
         foreach (IGrouping<string, GraphItemProjection> group in _projection.Items
@@ -1215,10 +1222,12 @@ public partial class GraphEditorView : UserControl
                 Background = (isActive ? Skin.ChapterLabel : Skin.ChapterLabelIdle).Brush(),
                 BoxShadow = Skin.FrameLabelShadow,
                 Cursor = new Cursor(StandardCursorType.Hand),
+                Tag = ChapterLabelTag + boardName,
                 Child = new TextBlock
                 {
                     Text = string.Format(Ui.Board_Chapter, chapterName),
                     Classes = { "frame-title" },   // 테마가 이름표의 글꼴을 고르는 손잡이(Themes/*/Controls.axaml)
+                    TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭에서 말줄임한다(PlaceFrameLabels)
                     FontSize = Skin.ChapterLabelFont,
                     FontWeight = FontWeight.SemiBold,
                     Foreground = Skin.ChapterLabelInk.Brush()
@@ -1239,13 +1248,11 @@ public partial class GraphEditorView : UserControl
                 new HierarchyPick(HierarchyKind.Chapter, boardName),
                 () => _session?.SetFileExpanded(frameFileId, expanded: false));
 
-            // 이름표의 자리는 테마가 정한다 — 기본은 테두리 안쪽 왼위, 「파스텔 하늘」은 테두리의 위쪽 선 위에 걸터앉는다(2026-11-26 소유자 —
-            // 「안에 있으니 그 위치도 잘 안 보이고 중요도가 너무 떨어져 보입니다」 · themes).
-            Canvas.SetLeft(label, area.X + 12 + (8 * Skin.FrameLabelGrow));
-            Canvas.SetTop(label, LabelTop(area.Y, Skin.ChapterLabelTop));
-
+            // 이름표는 판 위의 화면 겹에 선다 — 테두리 바깥 위에 얹고, 자리 · 크기는 배율 · 스크롤을 따라 PlaceFrameLabels가 정한다(design/board-zoom.md 4절 ·
+            // 2026-11-26 소유자 — 「챕터는 경계 줄 대신, 경계 바깥 아웃라인 위쪽에 얹고」). ⛔ 그 전에는 판에 서서 자리를 테마가 정했다(기본은 테두리 안쪽 왼위,
+            // 「파스텔 하늘」은 위쪽 선 위에 걸터앉음 — ChapterLabelTop).
             _frames.Add(frame);
-            _frames.Add(label);
+            AddFrameLabel(new FrameLabel(label, chapter: true, area, 12 + (8 * Skin.FrameLabelGrow), chapterCards));
 
             // 챕터 안에 장면을 한 겹 더 (R6 S-3b) — 챕터 프레임 <b>뒤에</b> 더해야 그 위에
             // 깔린다(아래 Insert가 목록 순서대로 넣는다).
@@ -1257,8 +1264,6 @@ public partial class GraphEditorView : UserControl
         {
             GraphCanvas.Children.Insert(index, _frames[index]);
         }
-
-        FitFrameLabels();   // 줄인 판에서도 이름표는 읽히는 크기다(BoardDetail)
 
         if (followRails)
         {
@@ -1286,6 +1291,8 @@ public partial class GraphEditorView : UserControl
                 _railReachChanged = false;
             }
         }
+
+        PlaceFrameLabels();   // 테두리 · 철도가 다 선 뒤에 — 이름표가 비켜 갈 선택지 칸의 자리까지 안다
     }
 
     /// <summary>선택지 칸의 폭이 바뀌어 테두리를 다시 긋는 중 — 그 안에서 또 다시 긋지 않는다.</summary>
@@ -1366,7 +1373,12 @@ public partial class GraphEditorView : UserControl
 
             _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
             _frames.Add(SceneFrame(area));
-            _frames.Add(SceneLabel(area, fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)));
+            AddFrameLabel(new FrameLabel(
+                SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)),
+                chapter: false,
+                area,
+                10 + (6 * Skin.FrameLabelGrow),
+                members));
         }
     }
 
@@ -1374,7 +1386,8 @@ public partial class GraphEditorView : UserControl
     private static readonly Thickness SceneFramePad = new(10, 26, 10, 10);
 
     /// <summary>
-    /// 챕터 테두리가 카드에서 나오는 폭 — 장면 테두리(<see cref="SceneFramePad"/>) 바깥으로 옆 · 아래 40, 위 46(챕터 이름표가 그 위에 앉는다)을 더
+    /// 챕터 테두리가 카드에서 나오는 폭 — 장면 테두리(<see cref="SceneFramePad"/>) 바깥으로 옆 · 아래 40, 위 46(줄인 판에서 장면 이름표가 위로 자라는 자리 ·
+    /// 챕터 이름표는 테두리 바깥 위에 선다)을 더
     /// 둔다(2026-11-25 소유자 — 「챕터 하나에 장면만 있을 때 챕터와 장면 사이의 공간이 너무 좁아 우클릭으로 장면을 추가하기 불편」 · ⛔ 그 전에는
     /// (24, 46, 24, 24)라 장면 테두리 바깥 띠가 14(위 20)뿐이었다).
     /// </summary>
@@ -1411,7 +1424,7 @@ public partial class GraphEditorView : UserControl
     /// 편다. 하이어아키의 눈과 같은 상태다.
     /// </summary>
     /// <param name="members">그 장면에 서 있는 카드(에피소드와 집이 그 장면인 분기 카드) — 테두리를 잰 그 카드들이다.</param>
-    private Border SceneLabel(Rect area, string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
+    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
     {
         var label = new Border
         {
@@ -1430,6 +1443,7 @@ public partial class GraphEditorView : UserControl
                 Text = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
                 Classes = { "frame-title" },
+                TextTrimming = TextTrimming.CharacterEllipsis,   // 장면의 폭에서 말줄임한다(PlaceFrameLabels)
                 FontSize = Skin.SceneLabelFont,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Skin.SceneLabelInk.Brush()
@@ -1444,18 +1458,8 @@ public partial class GraphEditorView : UserControl
             new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
             () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
 
-        Canvas.SetLeft(label, area.X + 10 + (6 * Skin.FrameLabelGrow));
-        Canvas.SetTop(label, LabelTop(area.Y, Skin.SceneLabelTop));
-
-        return label;
+        return label;   // 자리는 화면 겹에서 PlaceFrameLabels가 정한다
     }
-
-    /// <summary>
-    /// 이름표의 세로 자리 — 테두리의 위쪽 선에서 테마가 정한 만큼. 선 위에 걸터앉는 이름표(음수)는 판의 맨 위 밖으로 나가지 않게 붙든다(테두리가 판의
-    /// 위쪽 끝에 닿아 있어도 이름표가 잘리지 않는다). 기본 테마의 자리(테두리 안쪽)는 그대로다.
-    /// </summary>
-    private static double LabelTop(double frameTop, double offset) =>
-        offset < 0 ? Math.Max(0, frameTop + offset) : frameTop + offset;
 
     // ── 챕터 간선 철도 배선 (T1) ────────────────────────────────────────────
 
@@ -7212,6 +7216,7 @@ public partial class GraphEditorView : UserControl
             Math.Max(0, (content.X * _zoom) - pivot.X),
             Math.Max(0, (content.Y * _zoom) - pivot.Y));
         RefreshMinimapViewport();
+        PlaceFrameLabels();
     }
 
     /// <summary>배율의 변환·표시만 — 오프셋은 호출자가 자기 규칙(고정점·중앙)으로 정한다.</summary>
@@ -7230,7 +7235,7 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// 배율에 맞춰 판을 덜 그리거나 다시 다 그린다(<see cref="BoardDetail"/>). 그림이 바뀔 때만 카드 · 선택지 칸을 고치고, 제목만 남은 동안에는 제목의 크기를
-    /// 배율마다 맞춘다. 챕터 · 장면 이름표는 배율마다 맞춘다(<see cref="FitFrameLabels"/>).
+    /// 배율마다 맞춘다. 챕터 · 장면 이름표는 배율마다 다시 놓는다(<see cref="PlaceFrameLabels"/>).
     /// </summary>
     private void ApplyBoardDetail()
     {
@@ -7254,7 +7259,7 @@ public partial class GraphEditorView : UserControl
             }
         }
 
-        FitFrameLabels();
+        PlaceFrameLabels();
     }
 
     /// <summary>
@@ -7396,25 +7401,6 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 챕터 · 장면 이름표가 화면에서 <see cref="FrameLabelMinPx"/>보다 작아지지 않게 판 위에서 키운다 — 왼쪽 끝과 세로 가운데를 축으로(테두리의 선 위에
-    /// 걸터앉은 이름표는 그 선에 남는다). 그리기만 키운다 — 자리 · 테두리 셈은 그대로이고, 누를 곳은 보이는 만큼이다.
-    /// </summary>
-    private void FitFrameLabels()
-    {
-        foreach (Border label in _frames.OfType<Border>())
-        {
-            if (label.Child is not TextBlock name || !name.Classes.Contains("frame-title") || name.FontSize <= 0)
-            {
-                continue;
-            }
-
-            double grow = FrameLabelMinPx / (name.FontSize * _zoom);
-            label.RenderTransformOrigin = new RelativePoint(0, 0.5, RelativeUnit.Relative);
-            label.RenderTransform = grow > 1 ? new ScaleTransform(grow, grow) : null;
-        }
-    }
-
-    /// <summary>
     /// 특정 챕터(판)로 이동 — 그 판의 노드들이 여백을 두고 들어오는 배율과 위치.
     /// 하이어아키의 챕터 줄이나 툴바 콤보로 챕터를 골랐을 때(<see cref="GoToBoard"/>) 여러 챕터 박스 사이에서 그 챕터를 눈앞에 가져온다.
     /// </summary>
@@ -7474,6 +7460,7 @@ public partial class GraphEditorView : UserControl
             Math.Max(0, (point.X * _zoom) - (GraphScroll.Viewport.Width / 2)),
             Math.Max(0, (point.Y * _zoom) - (GraphScroll.Viewport.Height / 2)));
         RefreshMinimapViewport();
+        PlaceFrameLabels();
     }
 
     /// <summary>F로 카드에 맞출 때의 배율 — 글 칸을 읽고 쓰기에 알맞은 크기.</summary>
@@ -7891,6 +7878,7 @@ public partial class GraphEditorView : UserControl
         _multiSelected.UnionWith(members);
         _groupPressedNodeId = null;
         BeginGroupDrag(args.GetPosition(GraphCanvas));
+        args.Pointer.Capture(GraphCanvas);   // 이름표는 판 밖의 화면 겹에 있다 — 끄는 움직임 · 놓음은 판이 받는다
     }
 
     private void OnPortPressed(

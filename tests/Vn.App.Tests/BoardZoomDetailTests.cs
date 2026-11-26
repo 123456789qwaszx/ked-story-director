@@ -87,24 +87,32 @@ public sealed class BoardZoomDetailTests : IDisposable
     });
 
     [Fact]
-    public void 이름표는_화면에서_12px_아래로_줄지_않는다() => HeadlessUi.Run(() =>
+    public void 이름표는_화면에서_바닥_크기_아래로_줄지_않는다() => HeadlessUi.Run(() =>
     {
+        // 이름표는 판 위의 화면 겹에 선다 — 그리는 배수가 곧 화면의 배수다(design/board-zoom.md 4절). 챕터 13px · 장면 12px.
         (GraphEditorView graph, _) = Show();
-        Assert.Null(SceneLabel(graph).RenderTransform);   // 100%에서는 테마의 크기 그대로
+        Assert.Equal(1d, ScaleOf(Label(graph, GraphEditorView.SceneLabelTag + "opening")));   // 100%에서는 판에 그리던 크기 그대로
 
         foreach (double zoom in new[] { 0.4, 0.15 })
         {
             graph.ZoomTo(zoom);
             Settle(graph);
-            Border label = SceneLabel(graph);
-            double grow = label.RenderTransform is ScaleTransform scale ? scale.ScaleX : 1;
-            Assert.Equal(GraphEditorView.FrameLabelMinPx, ((TextBlock)label.Child!).FontSize * grow * zoom, 3);
+            AssertFloor(Label(graph, GraphEditorView.SceneLabelTag + "opening"), GraphEditorView.SceneLabelMinPx);
+            AssertFloor(Label(graph, GraphEditorView.ChapterLabelTag + "ch01"), GraphEditorView.ChapterLabelMinPx);
         }
 
         graph.ZoomTo(1);
         Settle(graph);
-        Assert.Null(SceneLabel(graph).RenderTransform);
+        Assert.Equal(1d, ScaleOf(Label(graph, GraphEditorView.SceneLabelTag + "opening")));
     });
+
+    private static double ScaleOf(Border label) => label.RenderTransform is ScaleTransform scale ? scale.ScaleX : 1;
+
+    private static void AssertFloor(Border label, double floor) =>
+        Assert.True(((TextBlock)label.Child!).FontSize * ScaleOf(label) >= floor - 0.01, $"{label.Tag}: {((TextBlock)label.Child!).FontSize * ScaleOf(label)}px");
+
+    private static Border Label(GraphEditorView graph, string tag) =>
+        graph.FindControl<Canvas>("FrameLabelLayer")!.Children.OfType<Border>().Single(border => border.Tag as string == tag);
 
     private (GraphEditorView Graph, AuthoringSession Session) Show()
     {
@@ -128,10 +136,6 @@ public sealed class BoardZoomDetailTests : IDisposable
         Assert.Equal(expected.Width, card.Bounds.Width, 3);
         Assert.Equal(expected.Height, card.Bounds.Height, 3);
     }
-
-    private static Border SceneLabel(GraphEditorView graph) =>
-        graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<Border>()
-            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
 
     private static string CardId(AuthoringSession session, string episodeId) =>
         EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id;
