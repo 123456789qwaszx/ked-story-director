@@ -75,6 +75,9 @@ public partial class GraphEditorView : UserControl
     /// <summary>카드 머리 오른쪽 끝의 고정 · 맞춤 단추 묶음의 클래스 — 테마의 손잡이다.</summary>
     internal const string CardTogglesClass = "card-toggles";
 
+    /// <summary>선택지 칸(점 + 문구 한 줄 · <see cref="SlotChip"/>)의 클래스 — 판을 줄이면 문구를 감추려고 찾는다(<see cref="ApplySlotDetail"/>).</summary>
+    internal const string SlotChipClass = "slot-chip";
+
     /// <summary>글에 맞출 때 더하는 몫 — 커서 · 반올림에 줄이 꺾이지 않게.</summary>
     private const double FitSlack = 4;
 
@@ -307,6 +310,51 @@ public partial class GraphEditorView : UserControl
     private const double MinimapHeight = 120;
 
     private double _zoom = 1;
+
+    /// <summary>
+    /// <b>줄인 판의 그림</b>(2026-11-26 — 디자인 점검 7번 「축소했을 때의 판」). 배율이 낮으면 카드의 글은 어차피 읽히지 않고 판만 어지럽힌다 —
+    /// 덜 그려서 판의 짜임(챕터 · 장면 · 카드 · 길)이 읽히게 한다. <b>카드의 치수와 자리는 그대로다</b> — 글 칸 · 선택지 문구는 투명해질 뿐 제 자리를
+    /// 지킨다. 그래서 철도 · 테두리 · 미니맵 · 끌기가 배율과 상관없이 같다. 테마와 상관없이 같다.
+    /// </summary>
+    internal enum BoardDetail
+    {
+        /// <summary><see cref="TitlesBelow"/> 이상 — 다 그린다.</summary>
+        Full,
+
+        /// <summary><see cref="TitlesBelow"/> 아래 — 카드의 글 칸과 머리 줄을 감추고 제목만 화면에서 <see cref="ZoomedTitlePx"/>로 세운다. 선택지 칸은 점과 선만 남는다.</summary>
+        Titles,
+
+        /// <summary><see cref="BlocksBelow"/> 아래 — 카드는 머리 색의 덩어리다(제목도 걷힌다).</summary>
+        Blocks
+    }
+
+    /// <summary>이 배율 아래면 카드에 제목만 남는다.</summary>
+    internal const double TitlesBelow = 0.5;
+
+    /// <summary>이 배율 아래면 카드는 머리 색의 덩어리다.</summary>
+    internal const double BlocksBelow = 0.25;
+
+    /// <summary>줄인 판에서 카드 제목의 화면 크기(px) — 배율과 상관없이.</summary>
+    internal const double ZoomedTitlePx = 14;
+
+    /// <summary>챕터 · 장면 이름표가 화면에서 이보다 작아지지 않는다(px) — 줄일수록 이름표가 판 위에서 커진다.</summary>
+    internal const double FrameLabelMinPx = 12;
+
+    /// <summary>줄인 판에서 카드 위에 얹는 겹(<see cref="BuildOverview"/>)의 Tag — 시험이 찾는다.</summary>
+    internal const string CardOverviewTag = "card-overview";
+
+    /// <summary>그 배율의 그림.</summary>
+    internal static BoardDetail DetailFor(double zoom) =>
+        zoom < BlocksBelow ? BoardDetail.Blocks : zoom < TitlesBelow ? BoardDetail.Titles : BoardDetail.Full;
+
+    private BoardDetail _detail = BoardDetail.Full;
+
+    /// <summary>지금 판의 그림 — 시험이 본다.</summary>
+    internal BoardDetail Detail => _detail;
+
+    /// <summary>줄인 판에서 감춘 선택지 문구와 그 전의 투명도 — 다시 키우면 돌려준다(빈 칸의 흐린 문구는 0.45다).</summary>
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, System.Runtime.CompilerServices.StrongBox<double>> _hiddenSlotParts = new();
+
     private bool _panning;
     private Point _panStart;
     private Vector _panStartOffset;
@@ -1209,6 +1257,8 @@ public partial class GraphEditorView : UserControl
         {
             GraphCanvas.Children.Insert(index, _frames[index]);
         }
+
+        FitFrameLabels();   // 줄인 판에서도 이름표는 읽히는 크기다(BoardDetail)
 
         if (followRails)
         {
@@ -2373,6 +2423,7 @@ public partial class GraphEditorView : UserControl
             Orientation = Orientation.Horizontal,
             Spacing = 6,
             Background = Brushes.Transparent,
+            Classes = { SlotChipClass },
 
             // 어느 에피소드의 몇 번 칸인지 — 검증이 그 줄을 찾는 자리다.
             Tag = SlotKey(slot)
@@ -2395,6 +2446,12 @@ public partial class GraphEditorView : UserControl
             _asleepKnobPress = live ? null : knob.TranslatePoint(new Point(PortRadius, PortRadius), GraphCanvas);
             BeginSlotDrag(slot, knob, nodeId);
         });
+
+        // 줄인 판에서는 점만 남는다(BoardDetail) — 칸의 폭은 그대로라 길 · 테두리의 셈은 배율과 상관없다.
+        if (_detail != BoardDetail.Full)
+        {
+            ApplySlotDetail(line);
+        }
 
         return line;
     }
@@ -4770,6 +4827,12 @@ public partial class GraphEditorView : UserControl
         // 카드 더블클릭 = 제목 고치기(BeginCardRename) · 우클릭 = 차림표(제목 고치기 · [구성] 탭에서 보기 — CardOpened) — 2026-11-25 소유자. ⛔ 그 전에는
         // 더블클릭이 [구성] 탭의 그 에피소드로 데려갔다.
         // ⛔ 옛 「무대에서 본다」는 2026-10-29에 무대가 ked-story-compositor로 가며 사라졌다.
+
+        // 줄인 판에서 지은 카드는 곧바로 줄인 그림으로 선다(BoardDetail).
+        if (_detail != BoardDetail.Full)
+        {
+            ApplyCardDetail(visual);
+        }
 
         return visual;
     }
@@ -7157,8 +7220,198 @@ public partial class GraphEditorView : UserControl
         _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         ZoomHost.LayoutTransform = new ScaleTransform(_zoom, _zoom);
         ZoomText.Text = $"{Math.Round(_zoom * 100)}%";
+        ApplyBoardDetail();   // 줄인 판은 덜 그린다(BoardDetail) — 치수는 그대로라 아래 배치에 영향이 없다
         ZoomHost.UpdateLayout(); // 새 크기를 알아야 오프셋 상한이 맞는다
         BoardBackdrop.Track(GraphScroll.Offset, _zoom);
+    }
+
+    /// <summary>배율을 그 값으로 — 화면 가운데가 그 자리에 남는다. 시험이 줄인 판을 본다.</summary>
+    internal void ZoomTo(double zoom) => ApplyZoom(zoom, null);
+
+    /// <summary>
+    /// 배율에 맞춰 판을 덜 그리거나 다시 다 그린다(<see cref="BoardDetail"/>). 그림이 바뀔 때만 카드 · 선택지 칸을 고치고, 제목만 남은 동안에는 제목의 크기를
+    /// 배율마다 맞춘다. 챕터 · 장면 이름표는 배율마다 맞춘다(<see cref="FitFrameLabels"/>).
+    /// </summary>
+    private void ApplyBoardDetail()
+    {
+        BoardDetail detail = DetailFor(_zoom);
+        bool changed = detail != _detail;
+        _detail = detail;
+
+        if (changed || detail == BoardDetail.Titles)
+        {
+            foreach (NodeCard card in _cards)
+            {
+                ApplyCardDetail(card);
+            }
+        }
+
+        if (changed)
+        {
+            foreach (Panel chip in _railVisuals.OfType<Panel>().Where(visual => visual.Classes.Contains(SlotChipClass)))
+            {
+                ApplySlotDetail(chip);
+            }
+        }
+
+        FitFrameLabels();
+    }
+
+    /// <summary>
+    /// 카드 하나를 지금 그림으로 — 글 칸과 머리 줄(표 · 제목 · 조건 표 · 맞춤 단추)은 투명해지고 누름을 받지 않는다(누르면 카드를 고르고 끈다). 그 위에
+    /// 제목만 크게 쓴 겹(<see cref="BuildOverview"/>)이 선다 — 덩어리면 그 겹이 머리 색으로 찬다.
+    /// </summary>
+    private void ApplyCardDetail(NodeCard card)
+    {
+        bool full = _detail == BoardDetail.Full;
+
+        if (card.WritingBox is { } box)
+        {
+            box.Opacity = full ? 1 : 0;
+            box.IsHitTestVisible = full;
+        }
+
+        card.TitleRow.Opacity = full ? 1 : 0;
+        card.TitleRow.IsHitTestVisible = full;
+
+        if (full)
+        {
+            if (card.Overview is { } shown)
+            {
+                shown.IsVisible = false;
+            }
+
+            return;
+        }
+
+        if (card.Overview is null && !BuildOverview(card))
+        {
+            return;
+        }
+
+        if (card.Overview is not { } overview || card.OverviewFill is not { } fill || card.OverviewTitle is not { } title)
+        {
+            return;
+        }
+
+        bool blocks = _detail == BoardDetail.Blocks;
+        overview.IsVisible = true;
+        fill.IsVisible = blocks;
+        title.IsVisible = !blocks;
+        title.FontSize = ZoomedTitlePx / _zoom;   // 판은 배율로 그려진다 — 화면에서 늘 ZoomedTitlePx
+    }
+
+    /// <summary>
+    /// 줄인 판에서 카드 위에 얹는 겹 — 머리 색의 면(덩어리일 때)과 크게 쓴 제목. 카드의 안 여백을 거슬러 테두리 안쪽까지 닿고(머리 띠와 같다), 누름을 받지 않으며,
+    /// <b>카드의 크기를 바꾸지 않는다</b>(캔버스는 크기를 내놓지 않는다 — 제목이 넘치면 잘린다). 제목 · 머리 색은 카드의 것을 따라간다(제목을 고치거나 고르면).
+    /// 처음 줄일 때 짓는다.
+    /// </summary>
+    private static bool BuildOverview(NodeCard card)
+    {
+        if (card.Frame is not { } frame)
+        {
+            return false;
+        }
+
+        var fill = new Border { IsHitTestVisible = false };
+
+        if (card.Band is { } band)
+        {
+            fill.Bind(Border.BackgroundProperty, band.GetObservable(Border.BackgroundProperty));   // 고른 카드의 띠 색도 따라간다
+        }
+        else
+        {
+            fill.Background = card.Style.Accent.Brush();   // 머리 띠가 없는 테마(기본) — 카드 종의 색
+        }
+
+        var title = new TextBlock
+        {
+            Classes = { "card-title" },   // 테마의 제목 글꼴
+            FontWeight = FontWeight.SemiBold,
+            TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            IsHitTestVisible = false
+        };
+        title.Bind(TextBlock.TextProperty, card.Title.GetObservable(TextBlock.TextProperty));
+        title.Bind(TextBlock.ForegroundProperty, card.Title.GetObservable(TextBlock.ForegroundProperty));
+        Canvas.SetLeft(title, CardPadding);
+        Canvas.SetTop(title, CardPadding);
+
+        var room = new Canvas { IsHitTestVisible = false };
+        room.Children.Add(title);
+        room.SizeChanged += (_, args) =>
+        {
+            title.Width = Math.Max(0, args.NewSize.Width - (CardPadding * 2));
+            title.MaxHeight = Math.Max(0, args.NewSize.Height - (CardPadding * 2));
+        };
+
+        var overview = new Border
+        {
+            Margin = new Thickness(-CardPadding),
+            CornerRadius = new CornerRadius(Math.Max(0, card.Style.Radius - 1)),
+            ClipToBounds = true,
+            IsHitTestVisible = false,
+            Tag = CardOverviewTag,
+            Child = new Panel { Children = { fill, room } }
+        };
+
+        frame.Children.Add(overview);
+        card.Overview = overview;
+        card.OverviewFill = fill;
+        card.OverviewTitle = title;
+        return true;
+    }
+
+    /// <summary>
+    /// 선택지 칸 하나를 지금 그림으로 — 줄인 판에서는 점만 남고 문구 · [+] · 「문구를 적어 주세요」는 투명해지며 누름을 받지 않는다(자리는 그대로다 —
+    /// 칸의 폭으로 테두리와 길을 셈한다). 적고 있는 칸은 감추지 않는다.
+    /// </summary>
+    private void ApplySlotDetail(Panel chip)
+    {
+        bool full = _detail == BoardDetail.Full;
+
+        foreach (Control part in chip.Children)
+        {
+            if (part is Ellipse || part is TextBox || part.IsKeyboardFocusWithin)
+            {
+                continue;
+            }
+
+            if (full)
+            {
+                if (_hiddenSlotParts.TryGetValue(part, out System.Runtime.CompilerServices.StrongBox<double>? was))
+                {
+                    part.Opacity = was.Value;
+                    part.IsHitTestVisible = true;
+                    _hiddenSlotParts.Remove(part);
+                }
+            }
+            else if (!_hiddenSlotParts.TryGetValue(part, out _))
+            {
+                _hiddenSlotParts.Add(part, new System.Runtime.CompilerServices.StrongBox<double>(part.Opacity));
+                part.Opacity = 0;
+                part.IsHitTestVisible = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 챕터 · 장면 이름표가 화면에서 <see cref="FrameLabelMinPx"/>보다 작아지지 않게 판 위에서 키운다 — 왼쪽 끝과 세로 가운데를 축으로(테두리의 선 위에
+    /// 걸터앉은 이름표는 그 선에 남는다). 그리기만 키운다 — 자리 · 테두리 셈은 그대로이고, 누를 곳은 보이는 만큼이다.
+    /// </summary>
+    private void FitFrameLabels()
+    {
+        foreach (Border label in _frames.OfType<Border>())
+        {
+            if (label.Child is not TextBlock name || !name.Classes.Contains("frame-title") || name.FontSize <= 0)
+            {
+                continue;
+            }
+
+            double grow = FrameLabelMinPx / (name.FontSize * _zoom);
+            label.RenderTransformOrigin = new RelativePoint(0, 0.5, RelativeUnit.Relative);
+            label.RenderTransform = grow > 1 ? new ScaleTransform(grow, grow) : null;
+        }
     }
 
     /// <summary>
@@ -7541,7 +7794,9 @@ public partial class GraphEditorView : UserControl
         //   ② 두 번째 누름도 끌기로 시작하고, <b>놓을 때</b> 움직이지 않았으면 그때 오간다(CommitDrag) — 다시 눌러 끈 것은 끌기다.
         //   ③ 세 번째 누름(ClickCount 3)은 다시 오가지 않는다 — 접혔다가 곧바로 펴지지 않는다.
         // ⛔ 그 전에는 ClickCount가 2 이상이면 누르는 즉시 오갔다(끌기도 시작하지 않았다).
-        bool headerBlank = pressed.IsLeftButtonPressed && card.WritingBox is not null && OnHeaderBlank(card, args);
+        // 줄인 판에서는 머리 줄이 감춰져 있다 — 보이지 않는 단추 · 제목을 두 번 눌러 고치지 않는다(BoardDetail).
+        bool fullCard = _detail == BoardDetail.Full;
+        bool headerBlank = fullCard && pressed.IsLeftButtonPressed && card.WritingBox is not null && OnHeaderBlank(card, args);
         (string NodeId, ulong At)? firstBlank = _headerBlankPress;
         _headerBlankPress = headerBlank && args.ClickCount == 1 ? (card.NodeId, args.Timestamp) : null;
         _pendingBasePin = headerBlank && args.ClickCount == 2 &&
@@ -7561,7 +7816,7 @@ public partial class GraphEditorView : UserControl
 
         // 두 번 누름 — 제목 글자 위면 그 자리에서 제목을 고친다(2026-11-25 소유자 · ⛔ 그 전에는 [구성] 탭으로 데려갔다 · 같은 날 머리 줄 전체에서 글자
         // 위로 줄였다). 끌기를 시작하지 않는다(첫 누름이 시작한 끌기는 놓을 때 끝났다). 글자 밖의 두 번 누름은 한 번 누름과 같다.
-        if (args.ClickCount >= 2 && pressed.IsLeftButtonPressed && OnTitleText(card, args))
+        if (fullCard && args.ClickCount >= 2 && pressed.IsLeftButtonPressed && OnTitleText(card, args))
         {
             args.Handled = true;
             BeginCardRename(card.NodeId);
@@ -9190,6 +9445,15 @@ public partial class GraphEditorView : UserControl
 
         /// <summary>인스펙터에서 쓰고 있는 줄의 표시(카드 왼쪽 바깥의 화살촉 + 막대) — 처음 필요할 때 짓는다(<see cref="PlaceEditingMarker"/>).</summary>
         public Control? EditingMarker { get; set; }
+
+        /// <summary>줄인 판의 겹(<see cref="BuildOverview"/>) — 처음 줄일 때 짓는다. 다 그린 판에서는 감춰져 있다.</summary>
+        public Border? Overview { get; set; }
+
+        /// <summary>줄인 판의 겹에서 머리 색의 면 — 덩어리일 때만 보인다.</summary>
+        public Border? OverviewFill { get; set; }
+
+        /// <summary>줄인 판의 겹에서 크게 쓴 제목.</summary>
+        public TextBlock? OverviewTitle { get; set; }
     }
 
     private sealed class FileProxyVisual

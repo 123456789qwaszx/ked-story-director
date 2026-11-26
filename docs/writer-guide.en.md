@@ -238,6 +238,7 @@ opens the "Inspector", selecting a chapter opens "Conditions & stats", and click
 | What you want | How |
 |---|---|
 | Zoom | Mouse wheel · trackpad — even over a card's writing box and while writing. On a Mac trackpad, pinch with two fingers too |
+| See from afar | Below 50% the cards' writing boxes step aside and **only the titles** stay, at a readable size. Choices keep just their dots and lines. Below 25% a card is a block of its header color. Chapter · scene labels stay readable however far you zoom out. You can still click a card to pick it and drag it, and zooming back in brings everything back |
 | Get around with a touchpad · trackpad | Turn on [⚙ Settings] → "Other" → **"Wheel pans the board (for touchpads)"** (on from the start on Mac) — a two-finger swipe (= wheel) moves the board, and zoom is **Ctrl (⌘ on Mac)+wheel**. Shift+wheel moves sideways. Turn it off and the wheel zooms again. The [Structure] board follows too |
 | Scroll text inside a card | Drag the scroll bar on the right of the writing box (the wheel zooms the board). To show all the text, turn on Fit height (↕) |
 | When the board runs out of room | In the top bar, [⚙ Settings] → "[Script] board size", increase the width · height (4,000 ~ 60,000). The board grows to the right and down, and you can undo (Ctrl+Z). If shrinking pushes cards off the board, all cards are gathered in by the same ratio — it tells you how many before [OK] |
