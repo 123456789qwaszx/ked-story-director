@@ -100,14 +100,16 @@ public sealed class MainChromeTests
         settings.ClearValue(Avalonia.Layout.Layoutable.MinHeightProperty);
         window.UpdateLayout();
 
-        // 세 줄(위 띠 · 탭 줄 · 툴바) — 탭 머리는 34, 툴바의 챕터 콤보는 창 위에서 90 안에 선다(⛔ 그 전에는 48 · 111).
+        // 두 줄(위 띠 · 툴바) — 탭 머리는 위 띠의 File 옆에 선다(2026-11-26 — 디자인 점검 3번 · ⛔ 그 전에는 위 띠 · 탭 줄 · 툴바 세 줄이었다). 탭 머리는 34,
+        // 툴바의 챕터 콤보는 창 위에서 70 안에 선다(⛔ 세 줄일 때 90 · 그 전에는 48 · 111).
         TabItem tab = window.FindControl<TabItem>("ChapterTabItem")!;
+        Assert.Same(window.FindControl<Grid>("TopBar"), window.FindControl<TabControl>("MainTabs")!.Parent);
         Assert.Equal(18, tab.FontSize);
         Assert.True(tab.Bounds.Height <= 36, $"탭 머리 높이 {tab.Bounds.Height}");
         SelectTab(window, "ChapterTabItem");   // [구성] 판의 툴바를 잰다(창은 [대본]으로 열린다 — UX23)
         ComboBox combo = window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<ComboBox>("ChapterCombo")!;
         double top = combo.TranslatePoint(new Avalonia.Point(0, 0), window)!.Value.Y;
-        Assert.True(top <= 90, $"툴바가 창 위에서 {top}에 선다");
+        Assert.True(top <= 70, $"툴바가 창 위에서 {top}에 선다");
 
         // 판 안 오른쪽 기둥의 탭은 제 크기 그대로다(「>」 자식 고르기).
         Assert.Equal(12, window.FindControl<ChapterGraphView>("ChapterGraph")!.FindControl<TabItem>("InspectorTabItem")!.FontSize);

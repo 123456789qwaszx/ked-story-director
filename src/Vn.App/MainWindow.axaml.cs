@@ -873,6 +873,7 @@ public partial class MainWindow : Window
 
         ProjectNameText.Text = name;
         ProjectPathText.Text = _session.ProjectPath ?? Ui.Main_NotSaved;
+        ToolTip.SetTip(ProjectNameText, ProjectPathText.Text);   // 경로를 감추는 테마(「파스텔 하늘」)에서는 이름의 풍선으로 본다
         ChapterGraph.ChapterSummaryText.Text = _session.ActiveFile is { } activeFile
             ? string.Format(Ui.Main_Current, activeFile.Name)
             : Ui.Main_NoCurrentFile;

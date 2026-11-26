@@ -11,10 +11,11 @@
         <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     </Style>
 
-    <!-- 단추의 모양은 둘뿐이다 — 작은 단추(기본 · 얇은 테두리 · 그림자 없음)와 두툼한 단추(.chunky · 틀의 큰 일).
-         켜고 끄는 단추(서식 도구)는 작은 단추와 같은 모양이고, 켜지면 하늘색 면이다(색은 Tokens.axaml). -->
+    <!-- 단추의 모양은 하나다 — 1px 테두리 · 모서리 6 · 평평한 면(2026-11-26 — 디자인 점검 3번 「단추 언어를 하나로」). 틀의 큰 일(.chunky)은 같은 모양에
+         굵은 글 · 조금 큰 여백이다. 켜고 끄는 단추(서식 도구)는 켜지면 옅은 파랑 면이다(색은 Tokens.axaml).
+         ⛔ 그 전에는 작은 단추(모서리 10)와 두툼한 「스티커」 단추(2px 테두리에 아래만 5px · 모서리 14 · 누르면 내려앉음)의 두 말이 섞였다. -->
     <Style Selector="Button">
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="6" />
     </Style>
 
     <!-- 체크 상자는 네모다(2026-11-26 — 윈도우의 문법: 동그라미는 「하나만 고르기」(라디오 단추)다). Fluent는 체크 상자의 모서리를 컨트롤 공통
@@ -38,21 +39,20 @@
         </Setter>
     </Style>
     <Style Selector="ToggleButton">
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="BorderThickness" Value="1.5" />
     </Style>
 
-    <!-- 두툼한 단추(스티커) — 주 탭([대본] · [구성])과 같은 짜임이다: 2px 테두리에 아래쪽만 5px. 누르면 그 두께만큼 내려앉는다(아래 두께가 걷히고 위에 그만큼 틈이 생긴다 —
-         차지하는 높이는 같아서 이웃이 밀리지 않는다).
-         ⛔ 2026-11-26까지는 두께를 「번지지 않는 아래 그림자」(BoxShadow)로 냈다 — 실제 화면에서 그림자가 단추 밖으로 그려지지 않고 잘렸고, 잘린 그림자가 아래 모서리의
-         둥근 바깥을 메워 단추 아래가 잘린 것처럼 보였다(소유자 — 「아래쪽이 잘려보이는 것 같고」). 탭이 그래서 굵은 아래 테두리를 쓴다 — 단추도 같은 길로 맞췄다. -->
-    <!-- 글은 단추 전체의 한가운데에 선다 — 아래쪽 두께(5)가 위(2)보다 3 두꺼워 면이 위로 1.5 올라가 있으니, 위 · 아래 여백을 6 · 3으로 나눠 그만큼 내린다.
-         제목 글꼴(Pretendard)의 한글은 글줄의 한가운데에 앉아 글꼴 몫의 보정은 없다(2026-11-26 — 디자인 점검 1번 · ⛔ Jua일 때는 Jua가 1.5쯤 높이 앉아 7 · 2였다 ·
-         소유자 — 「중앙보다 위쪽에 글자가 써져있어서 굉장히 불편」). 아래 두께를 걷으면(점검 3번) 여백도 위 · 아래 같아진다. -->
+    <!-- 틀의 큰 단추(.chunky — 작업 폴더 · 설정 · + 에피소드 · 삭제 · 자동 정렬 …) — 여느 단추와 같은 1px 테두리 · 모서리 6에 굵은 글(SemiBold)이다.
+         높이 28 안팎, 글은 위 · 아래 여백이 같아 한가운데에 선다(제목 글꼴 Pretendard의 한글은 글줄의 한가운데에 앉는다). 누르면 면만 한 단계 짙어지고
+         자리는 그대로다. ⛔ 2026-11-26(디자인 점검 3번)까지는 2px 테두리에 아래만 5px인 「스티커」였다 — 누르면 내려앉았고, 아래 두께 몫만큼 여백을
+         비틀어야 글이 가운데에 섰다(6 · 3). 그 전에는 두께를 아래 그림자로 냈다가 단추 밖에서 잘렸다. -->
     <Style Selector="Button.chunky">
-        <Setter Property="CornerRadius" Value="14" />
-        <Setter Property="BorderThickness" Value="2,2,2,5" />
-        <Setter Property="Padding" Value="12,6,12,3" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="12,4" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Margin" Value="0" />
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -71,8 +71,6 @@
     </Style>
     <Style Selector="Button.chunky:pressed">
         <Setter Property="RenderTransform" Value="none" />
-        <Setter Property="BorderThickness" Value="2" />
-        <Setter Property="Margin" Value="0,3,0,0" />
     </Style>
 
     <!-- 만들기 — 강조색(하늘) 면에 흰 글 -->
@@ -83,6 +81,11 @@
     </Style>
     <Style Selector="Button.chunky.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource ChunkyPrimaryBackgroundHover}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ChunkyPrimaryBorder}" />
+    </Style>
+    <!-- 누르면 한 단계 짙은 파랑(테두리의 색) — 자리는 그대로다 -->
+    <Style Selector="Button.chunky.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ChunkyPrimaryBorder}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ChunkyPrimaryBorder}" />
     </Style>
 
@@ -110,15 +113,11 @@
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
+    <!-- File도 이웃 단추와 같은 1px 테두리 · 모서리 6이다 — 글은 옮기지 않아도 한가운데에 선다(⛔ 아래 5px 두께가 있을 때는 글만 1.5 · Jua일 때는 3 내렸다). -->
     <Style Selector="Menu#MainMenu > MenuItem:not(:disabled) /template/ Border#PART_LayoutRoot">
-        <Setter Property="CornerRadius" Value="14" />
-        <Setter Property="BorderThickness" Value="2,2,2,5" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="BorderBrush" Value="{DynamicResource TopBarButtonBorder}" />
-    </Style>
-    <!-- File의 글도 이웃 단추와 같이 한가운데로 — 메뉴의 여백은 창이 정해 두어(ButtonPadding) 글만 아래로 옮긴다(배치는 그대로). 옮기는 것은 아래쪽 두께 몫(1.5)뿐이다
-         (⛔ Jua일 때는 글꼴 몫 1.5를 더해 3이었다 · 아래 두께를 걷으면 옮기지 않는다). -->
-    <Style Selector="Menu#MainMenu > MenuItem /template/ ContentPresenter#PART_HeaderPresenter">
-        <Setter Property="RenderTransform" Value="translateY(1.5px)" />
     </Style>
 
     <!-- 탭 — 밑줄 대신 면(먹색)으로 고른 것을 말한다. 기둥의 탭(인스펙터 · 화자 · 조건 및 스탯)은 작은 알약, 주 탭([대본] · [구성])은 두툼한 스티커 탭이다. -->
@@ -127,7 +126,7 @@
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TabItem:not(:disabled) /template/ Border#PART_LayoutRoot">
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="10,2" />   <!-- 위 · 아래 같다(⛔ Jua일 때는 높이 앉는 만큼 1 내려 10,3,10,1이었다) -->
     </Style>
     <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
@@ -138,32 +137,52 @@
         <Setter Property="Background" Value="{DynamicResource TabSelectedBackground}" />
         <Setter Property="TextElement.Foreground" Value="{DynamicResource TabItemHeaderForegroundSelected}" />
     </Style>
+    <!-- 주 탭([대본] · [구성]) — 위 띠의 File 옆에 선 한 덩어리의 전환 단추다(2026-11-26 — 디자인 점검 3번): 옅은 회색 바닥(MainTabTrack · 모서리 8 ·
+         안쪽 2) 위에 두 칸이 붙어 서고, 고른 칸만 흰 면 + 옅은 테두리로 떠오른다. 안 고른 칸은 테두리 · 면이 없다.
+         ⛔ 그 전에는 위 띠 아래 따로 선 줄에 두툼한 스티커 탭 둘(2px 테두리에 아래만 5px · 고르면 파란 테두리)이 떨어져 섰다. -->
     <Style Selector="TabControl#MainTabs">
-        <Setter Property="Margin" Value="10,4,0,2" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource MainTabTrack}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="2" />
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem">
-        <Setter Property="Margin" Value="0,0,8,2" />
-        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="MinHeight" Value="30" />
     </Style>
-    <!-- ⚠ 템플릿이 묶어 둔 값(TemplateBinding)은 보통 스타일보다 세다 — 조건이 붙은 스타일(:not(:disabled) · :selected)이어야 그 위에 선다.
-         그림자는 탭 줄이 잘라 내므로, 두께는 아래쪽이 굵은 테두리로 낸다. -->
-    <!-- 주 탭의 글도 큰 단추와 같은 까닭으로 아래쪽 두께 몫(1.5)만 내린다 — 위 · 아래 여백 4 · 1(⛔ Jua일 때는 5 · 0). -->
+    <!-- ⚠ 템플릿이 묶어 둔 값(TemplateBinding)은 보통 스타일보다 세다 — 조건이 붙은 스타일(:not(:disabled) · :selected)이어야 그 위에 선다. -->
     <Style Selector="TabControl#MainTabs > TabItem:not(:disabled) /template/ Border#PART_LayoutRoot">
-        <Setter Property="Padding" Value="18,4,18,1" />
-        <Setter Property="CornerRadius" Value="14" />
-        <Setter Property="BorderThickness" Value="2,2,2,5" />
-        <Setter Property="BorderBrush" Value="{DynamicResource MainTabBorder}" />
-        <Setter Property="Background" Value="{DynamicResource MainTabBackground}" />
+        <Setter Property="Padding" Value="16,2" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem:pointerover /template/ Border#PART_LayoutRoot">
         <Setter Property="Background" Value="{DynamicResource TabHoverBackground}" />
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem:selected /template/ Border#PART_LayoutRoot">
-        <Setter Property="Background" Value="{DynamicResource TabSelectedBackground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource MainTabSelectedBorder}" />
+        <Setter Property="Background" Value="{DynamicResource MainTabBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MainTabBorder}" />
         <Setter Property="TextElement.Foreground" Value="{DynamicResource TabItemHeaderForegroundSelected}" />
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem:selected /template/ Border#PART_SelectedPipe">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- [대본] 툴바의 서식 도구 단추 — 평소에는 테두리 · 면 없이 글자만, 마우스를 올리거나 켜진 것만 면이 선다(2026-11-26 — 디자인 점검 3번 · ⛔ 그 전에는
+         크기가 제각각인 동그라미가 줄지어 섰다). -->
+    <Style Selector="StackPanel#WriterToolbar Button:not(:pointerover):not(:pressed) /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="StackPanel#WriterToolbar ToggleButton:not(:checked):not(:pointerover):not(:pressed) /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- 위 띠의 프로젝트 경로 — 이 테마에서는 이름만 보이고 경로는 이름에 마우스를 올리면 풍선으로 보인다(2026-11-26 — 디자인 점검 3번). -->
+    <Style Selector="TextBlock#ProjectPathText">
         <Setter Property="IsVisible" Value="False" />
     </Style>
 

@@ -80,15 +80,19 @@
     <Color x:Key="BranchLine6">#B08C70</Color>
 
     <!-- [대본] 판 — 테두리 · 머리 띠 · 선택지 칸 -->
-    <Color x:Key="ChapterFrameBorder">#FF5B8FB3</Color>
-    <Color x:Key="ChapterFrameBorderIdle">#FFA7B4C0</Color>
+    <!-- 챕터 · 장면은 면만 있고 테두리가 없다(2026-11-26 — 디자인 점검 4번 「면이나 테두리 중 하나만」): 챕터는 흰 면 + 부드러운 그림자로 책상에서 떠 있고,
+         장면은 차가운 회색 면이다. 테두리는 카드에만 남아 무게가 카드에 모인다. 지금 챕터(콤보의 챕터)는 흰 면 · 짙은 이름표, 다른 챕터는 옅은 회색 면 · 흐린
+         이름표다. ⛔ 그 전에는 챕터(흰 면 + 테두리 + 그림자) 안에 장면(베이지 면 + 테두리), 그 안에 카드(테두리 + 아래로 진 그림자)로 테두리가 세 겹이었고,
+         판의 차가운 회청색 위에 따뜻한 베이지가 얹혀 색온도도 섞였다. 테두리 자리(두께)는 남아 치수는 같다. -->
+    <Color x:Key="ChapterFrameBorder">#005B8FB3</Color>
+    <Color x:Key="ChapterFrameBorderIdle">#00A7B4C0</Color>
     <Color x:Key="ChapterFrameFill">#FFFDFCFA</Color>
-    <Color x:Key="ChapterFrameFillIdle">#FFF1F0EC</Color>
+    <Color x:Key="ChapterFrameFillIdle">#FFEEF1F4</Color>
     <Color x:Key="ChapterLabel">#FF34414F</Color>
     <Color x:Key="ChapterLabelIdle">#FF8796A4</Color>
     <Color x:Key="ChapterLabelInk">#FFFFFF</Color>
-    <Color x:Key="SceneFrameBorder">#FFB0AB9F</Color>
-    <Color x:Key="SceneFrameFill">#FFE8E6E1</Color>
+    <Color x:Key="SceneFrameBorder">#00B0AB9F</Color>
+    <Color x:Key="SceneFrameFill">#FFE3E8EC</Color>
     <Color x:Key="SceneLabel">#FFFFFEFA</Color>
     <Color x:Key="SceneLabelBorder">#34414F</Color>
     <Color x:Key="SceneLabelInk">#26323E</Color>
@@ -130,10 +134,10 @@
     <Color x:Key="SceneChip">#5B6B79</Color>
 
     <!-- 모양 -->
-    <x:Double x:Key="CardRadius">14</x:Double>
-    <x:Double x:Key="OtherCardRadius">14</x:Double>
-    <x:Double x:Key="ChapterFrameRadius">24</x:Double>
-    <x:Double x:Key="SceneFrameRadius">20</x:Double>
+    <x:Double x:Key="CardRadius">10</x:Double>
+    <x:Double x:Key="OtherCardRadius">10</x:Double>
+    <x:Double x:Key="ChapterFrameRadius">16</x:Double>
+    <x:Double x:Key="SceneFrameRadius">12</x:Double>
     <x:Double x:Key="LabelRadius">11</x:Double>
     <x:Double x:Key="ChipRadius">9</x:Double>
     <x:Double x:Key="CardSpineOpacity">0</x:Double>
@@ -146,7 +150,7 @@
     <x:Double x:Key="SceneLabelFont">18</x:Double>
     <x:Double x:Key="FrameLabelGrow">1</x:Double>
     <x:Double x:Key="FrameWeight">1.5</x:Double>
-    <x:Double x:Key="StructureCardRadius">12</x:Double>
+    <x:Double x:Key="StructureCardRadius">10</x:Double>
     <x:Double x:Key="LineRowBoxed">0</x:Double>
     <CornerRadius x:Key="FloatingCorner">14</CornerRadius>
     <x:Double x:Key="DimLift">0.5</x:Double>
@@ -158,9 +162,10 @@
     <x:Double x:Key="TypeBody">15</x:Double>
     <x:Double x:Key="TypeHeading">18</x:Double>
     <x:Double x:Key="TypeTitle">22</x:Double>
-    <x:String x:Key="FrameLabelShadow">0 2 0 0 #9FB0BE</x:String>
-    <x:String x:Key="CardSelectedShadow">0 3 0 0 #A7B3BD, 0 0 18 2 #330067C0</x:String>
-    <x:String x:Key="CardShadow">0 3 0 0 #A7B3BD</x:String>
+    <!-- 그림자는 부드럽게 번진다 — 아래로 딱 떨어지는 「스티커」 그림자(0 3 0 0)는 걷었다(2026-11-26 — 디자인 점검 4번). 고른 카드의 파란 번짐은 그대로다. -->
+    <x:String x:Key="FrameLabelShadow">0 1 2 0 #3326323E</x:String>
+    <x:String x:Key="CardSelectedShadow">0 1 3 0 #2626323E, 0 0 18 2 #330067C0</x:String>
+    <x:String x:Key="CardShadow">0 1 3 0 #2626323E</x:String>
     <!-- 챕터의 종이가 책상에서 떠 있다 — 부드러운 그림자로 「책상 위에 놓인 한 장」임을 말한다. -->
     <x:String x:Key="ChapterFrameShadow">0 6 20 0 #3326323E</x:String>
 
@@ -235,7 +240,7 @@
     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#26323E" />
 
     <!-- 모서리 -->
-    <CornerRadius x:Key="ControlCornerRadius">12</CornerRadius>
+    <CornerRadius x:Key="ControlCornerRadius">6</CornerRadius>
     <CornerRadius x:Key="OverlayCornerRadius">14</CornerRadius>
 
     <!-- 두툼한 단추(Controls.axaml의 Button.chunky) — 테두리(아래쪽이 굵다 — 그것이 단추의 두께다). 그림자는 쓰지 않는다(실제 화면에서 단추 밖으로 그려지지 않고 잘린다). -->
@@ -261,6 +266,8 @@
     <!-- 탭 — 기둥의 탭(인스펙터 · 화자 · 조건 및 스탯)과 주 탭([대본] · [구성]). 고른 탭은 옅은 파랑 면에 강조색 표시(기둥의 탭은 아래 막대 · 주 탭은 파란 테두리 — 아래가 굵다). -->
     <SolidColorBrush x:Key="TabHoverBackground" Color="#E6ECF1" />
     <SolidColorBrush x:Key="TabSelectedBackground" Color="#E5F1FB" />
+    <!-- 주 탭은 위 띠의 전환 단추다 — 옅은 회색 바닥(MainTabTrack) 위에서 고른 칸만 흰 면(MainTabBackground) + 옅은 테두리(MainTabBorder). -->
+    <SolidColorBrush x:Key="MainTabTrack" Color="#E1E6EB" />
     <SolidColorBrush x:Key="MainTabBackground" Color="#FFFEFA" />
     <SolidColorBrush x:Key="MainTabBorder" Color="#B9C7D2" />
     <SolidColorBrush x:Key="MainTabSelectedBorder" Color="#0067C0" />

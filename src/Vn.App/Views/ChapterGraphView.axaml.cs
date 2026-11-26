@@ -2206,10 +2206,13 @@ public partial class ChapterGraphView : UserControl
             tip.Add(Ui.Structure_StatChange + string.Join(" · ", edge.StatChanges.Select(delta => DescribeDelta(delta).Text)));
         }
 
+        // 선 위의 작은 알약 — 옅은 구분선 테두리가 있어 판의 면과 갈린다(2026-11-26 — 디자인 점검 4번 · ⛔ 그 전에는 바탕이 판과 거의 같아 선 위에 맨 글자처럼 보였다).
         var text = new Border
         {
             Background = Skin.StructureLabelSurface.Brush(),
-            CornerRadius = new CornerRadius(3),
+            BorderBrush = Skin.Divider.Brush(),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
             Padding = new Thickness(4, 1),
             Child = rows,
             Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand),

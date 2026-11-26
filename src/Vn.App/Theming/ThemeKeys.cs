@@ -128,6 +128,7 @@ internal static class ThemeKeys
         new("FontScale", ThemeValueKind.Number, ThemeKeyGroup.Favorites, "틀의 글자 크기 배수 — 1은 기본 크기, 1.15는 15% 크게(판 위의 글은 따르지 않는다)", "Text size multiplier for panels — 1 is the default size, 1.15 is 15% larger (text on the board doesn't follow)"),
         new("TopBarEdgeHeight", ThemeValueKind.Number, ThemeKeyGroup.Window, "맨 위 띠 아래 줄의 높이(0이면 없다)", "Height of the strip below the top bar (0 hides it)"),
         new("TopBarEdgeMask", ThemeValueKind.Picture, ThemeKeyGroup.Window, "맨 위 띠 아래 줄의 모양 — 그림의 불투명한 자리에 창의 바탕색이 선다(지금은 구름 물결)", "Shape of the strip below the top bar — the window colour shows where the picture is opaque (now: cloud waves)"),
+        new("MainTabTrack", ThemeValueKind.Brush, ThemeKeyGroup.Window, "주 탭([대본] · [구성]) 전환 단추의 바닥", "Track behind the main tab switch ([Script] · [Structure])"),
         new("TopBarButtonBorder", ThemeValueKind.Brush, ThemeKeyGroup.Window, "맨 위 띠 위 단추의 테두리", "Border of buttons on the top bar"),
         new("HintSurface", ThemeValueKind.Brush, ThemeKeyGroup.Window, "판 아래 안내 줄의 바탕", "Background of the hint line below the board"),
         new("SystemAccentColor", ThemeValueKind.Color, ThemeKeyGroup.Window, "강조색 — 글 칸의 초점 테두리 · 체크 표시 · 고른 글", "Accent — focused text box border, check marks, selected text"),
