@@ -96,6 +96,29 @@ public sealed class CardStageTests : IDisposable
     });
 
     [Fact]
+    public void 글줄_단계에서_카드를_늘이면_머리_띠도_따라_늘어난다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 「줄여서 에피소드 제목이 간략화된 상태에서 노드의 가로길이를 늘일경우, 에피소드 제목의 폭은 그대로여서 늘린공간이
+        // 뻥 뚫려보이는 현상」. 겹의 머리 띠는 카드 폭으로 지어 두므로 카드의 크기가 바뀌면 다시 맞춘다(손잡이로 끄는 동안에도).
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        graph.ZoomTo(0.2);
+        Settle(graph);
+        Assert.Equal(Stage.Lines, graph.CardStageOf(root));
+
+        Border card = Card(graph, root);
+        Border header = Header(Overview(graph, root)!);
+        double border = card.BorderThickness.Left;
+        Assert.Equal(card.Width - (border * 2), header.Width, 3);
+
+        card.Width += 240;   // 손잡이로 오른쪽을 끄는 것과 같다(끄는 동안은 화면의 카드만 키운다)
+        Settle(graph);
+
+        Assert.Equal(card.Width - (border * 2), header.Width, 3);
+        Assert.Equal(card.Width - (border * 2), Header(Overview(graph, root)!).Bounds.Width, 3);
+    });
+
+    [Fact]
     public void 문턱_근처에서는_오던_단계에_머문다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
@@ -193,6 +216,11 @@ public sealed class CardStageTests : IDisposable
 
     private static Border? Overview(GraphEditorView graph, string nodeId) =>
         Card(graph, nodeId).GetVisualDescendants().OfType<Border>().SingleOrDefault(border => border.Tag as string == GraphEditorView.CardOverviewTag);
+
+    /// <summary>글줄 단계의 머리 띠 — 제목(card-title)을 든 줄의 Border.</summary>
+    private static Border Header(Border overview) =>
+        (Border)((Grid)overview.GetVisualDescendants().OfType<TextBlock>()
+            .First(text => text.Classes.Contains("card-title") && text.IsEffectivelyVisible).Parent!).Parent!;
 
     private static Avalonia.Controls.Shapes.Path Bars(Border overview, string tag) =>
         overview.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Single(path => path.Tag as string == tag);

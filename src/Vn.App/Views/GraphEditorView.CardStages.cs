@@ -108,7 +108,11 @@ public partial class GraphEditorView
     private CardStage StageFor(NodeCard card, CardStage current) =>
         NextStage(current, CardBaseFont(card.NodeId) * _zoom, CardHeightOf(card) * _zoom);
 
-    /// <summary>지은 카드를 제 단계로 세운다 — 글 단계에서 출발한다(새로 지은 카드는 글 그대로다).</summary>
+    /// <summary>
+    /// 지은 카드를 제 단계로 세운다 — 글 단계에서 출발한다(새로 지은 카드는 글 그대로다). 카드의 크기가 바뀌면(손잡이로 늘이기 · 글 맞춤) 단계와 겹을 다시
+    /// 맞춘다 — 겹의 머리 띠 · 덩어리의 제목은 카드 폭으로 지어 두므로, 안 맞추면 늘린 자리가 비어 보인다(2026-11-27 소유자 — 「줄여서 에피소드 제목이
+    /// 간략화된 상태에서 노드의 가로길이를 늘일경우, 에피소드 제목의 폭은 그대로여서 늘린공간이 뻥 뚫려보이는 현상」).
+    /// </summary>
     private void InitCardStage(NodeCard card)
     {
         card.Stage = StageFor(card, CardStage.Text);
@@ -116,6 +120,24 @@ public partial class GraphEditorView
         if (card.Stage != CardStage.Text)
         {
             ApplyCardStage(card);
+        }
+
+        card.Visual.SizeChanged += (_, _) => FitCardStage(card);
+    }
+
+    /// <summary>카드의 크기가 바뀌었다 — 단계가 바뀌면 다시 칠하고(덩어리 문턱은 카드의 화면 높이다), 그대로면 글을 보이지 않는 카드의 겹 크기만 맞춘다.</summary>
+    private void FitCardStage(NodeCard card)
+    {
+        CardStage next = StageFor(card, card.Stage);
+
+        if (next != card.Stage)
+        {
+            card.Stage = next;
+            ApplyCardStage(card);
+        }
+        else if (next != CardStage.Text)
+        {
+            SizeOverview(card);
         }
     }
 
