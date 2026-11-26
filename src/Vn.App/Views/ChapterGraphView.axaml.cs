@@ -370,7 +370,7 @@ public partial class ChapterGraphView : UserControl
     {
         SelectEdgeKey(from, to, label);
 
-        if (clickCount >= 2 && _selectedChapterId is { } chapterId)
+        if (Clicks.IsDouble(clickCount) && _selectedChapterId is { } chapterId)
         {
             ChoiceOpened?.Invoke(chapterId, from, to, label);
         }
@@ -1849,8 +1849,8 @@ public partial class ChapterGraphView : UserControl
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제 · 범위 선택)까지 흘러가면 곧바로 풀린다
             UiGuard.Run(_session, Ui.Structure_SelectBranchCard, () => SelectBranchCard(nodeId));
 
-            // 두 번 누름 — 에피소드 카드처럼 셸에 알린다([대본] 탭의 그 분기 카드로).
-            if (e.ClickCount >= 2)
+            // 두 번 누름 — 에피소드 카드처럼 셸에 알린다([대본] 탭의 그 분기 카드로). 짝수째 누름만이다(<see cref="Clicks"/>).
+            if (Clicks.IsDouble(e))
             {
                 BranchCardOpened?.Invoke(nodeId);
             }
@@ -3028,8 +3028,8 @@ public partial class ChapterGraphView : UserControl
             e.Handled = true; // 캔버스(빈 공간 = 선택 해제)로 흘러가면 방금 한 선택이 풀린다
             SelectEpisode(episode.EpisodeId);
 
-            // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다).
-            if (e.ClickCount >= 2)
+            // 두 번 누름 — 끌기를 시작하지 않고 셸에 알린다(첫 누름이 시작한 끌기는 놓을 때 끝났다). 짝수째 누름만이다(<see cref="Clicks"/>).
+            if (Clicks.IsDouble(e))
             {
                 if (_selectedChapterId is { } chapterId)
                 {

@@ -164,6 +164,27 @@ public sealed class CardBasePinBoardTests : IDisposable
     });
 
     [Fact]
+    public void 쉬지_않고_잇달아_누르면_두_번마다_한_번_오간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 「에피소드 노드의 제목을 더블클릭 해서 한번 상태를 바꾼 다음, 멈추지 않고 계속 클릭을 하면 그 뒤로는 더블클릭해도 아무런 반응이
+        // 없습니다」. 운영체제의 셈은 쉬지 않고 누르는 동안 3 · 4 · 5 …로 는다 — 짝수째가 두 번 누름이다(Clicks). ⛔ 그 전에는 「꼭 1 · 꼭 2」로 세어 셋째부터
+        // 아무 반응이 없었다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        bool Pinned() => session.Project.FindNode(root)!.Layout.PinnedToBase;
+
+        var states = new List<bool>();
+
+        for (int clicks = 1; clicks <= 6; clicks++)
+        {
+            PressHeaderBlankOnce(graph, root, clicks);
+            states.Add(Pinned());
+        }
+
+        Assert.Equal([false, true, true, false, false, true], states);
+    });
+
+    [Fact]
     public void 맞춤_단추_왼쪽의_기본_크기_고정_단추도_같고_손잡이로_크기를_정하면_풀린다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();

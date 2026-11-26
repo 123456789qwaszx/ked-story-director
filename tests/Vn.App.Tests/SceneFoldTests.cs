@@ -173,6 +173,28 @@ public sealed class SceneFoldTests
     });
 
     [Fact]
+    public void 이름표를_쉬지_않고_누르면_두_번마다_한_번_접고_편다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 「한번 더블클릭을 해서 상태를 바꾼 다음에는, 특정 시간 내에 한번만 클릭해도 바로 더블클릭을 한 듯 상태가 바뀝니다」. 접은 뒤
+        // 같은 자리에 선 접힌 이름표를 셋째로 누르면(운영체제의 셈 3) 한 번 누름이다 — 펴지 않는다. 넷째가 두 번 누름이라 편다. ⛔ 그 전에는 2 이상이 모두
+        // 두 번 누름이라 셋째에 곧바로 다시 펴졌다.
+        (GraphEditorView graph, AuthoringSession session, string board) = Show();
+        var states = new List<bool>();
+
+        for (int clicks = 1; clicks <= 6; clicks++)
+        {
+            graph.Rebuild();
+            Settle(graph);
+            Border label = SceneLabel(graph, "hall");   // 접으면 이름표가 접힌 상자의 것으로 갈린다 — 그 자리의 이름표를 누른다
+            label.RaiseEvent(Press(label, clickCount: clicks));
+            Dispatcher.UIThread.RunJobs();
+            states.Add(session.CollapsedScenes.Contains(new Vn.Authoring.Graph.GraphSceneKey(board, "hall")));
+        }
+
+        Assert.Equal([false, true, true, false, false, true], states);
+    });
+
+    [Fact]
     public void 접힌_판의_표에도_챕터_이름표가_표_위에_서고_두_번_누르면_펴진다() => HeadlessUi.Run(() =>
     {
         // 2026-11-27 소유자 — 접힌 챕터도 펼쳤을 때와 같은 챕터 이름표(먹색 면 · 흰 글)가 표의 위 바깥에 선다. 표의 폭으로 말줄임하지 않는다.

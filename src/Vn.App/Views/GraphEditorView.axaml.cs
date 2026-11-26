@@ -3830,7 +3830,7 @@ public partial class GraphEditorView : UserControl
                 HighlightSelection();
             }
 
-            if (args.ClickCount >= 2)
+            if (Clicks.IsDouble(args))
             {
                 // 그 손잡이가 맡은 크기만 기본으로 — 다른 쪽 크기는 그대로 둔다. 기본은 기본 크기다(설정 「[대본] 카드 기본 크기」 · 2026-11-25 — ⛔ 그 전에는
                 // 가장 작은 크기였다). 기본 크기로 고정한 카드면 기본 크기 고정이 풀린다.
@@ -7782,14 +7782,16 @@ public partial class GraphEditorView : UserControl
         //   ① 운영체제의 두 번 누름 셈(ClickCount)은 <b>무엇을 눌렀든</b> 같은 자리 · 짧은 틈이면 2가 된다 — 카드를 한 번 눌러 고르고 곧바로 다시 눌러 끌려던 것,
         //      맞춤 단추를 누른 뒤 줄어든 카드의 머리 빈 곳이 그 자리에 온 것도 2다. 그래서 첫 누름이 이 카드의 머리 빈 곳이었는지 직접 적어 둔다.
         //   ② 두 번째 누름도 끌기로 시작하고, <b>놓을 때</b> 움직이지 않았으면 그때 오간다(CommitDrag) — 다시 눌러 끈 것은 끌기다.
-        //   ③ 세 번째 누름(ClickCount 3)은 다시 오가지 않는다 — 접혔다가 곧바로 펴지지 않는다.
+        //   ③ 셈은 짝수째가 두 번 누름이다(<see cref="Clicks"/>) — 세 번째 누름(ClickCount 3)은 한 번 누름이라 다시 오가지 않고(접혔다가 곧바로 펴지지 않는다),
+        //      쉬지 않고 누르면 네 번째에 다시 오간다(2026-11-27 소유자 — 「멈추지 않고 계속 클릭을 하면 그 뒤로는 더블클릭해도 아무런 반응이 없습니다」 · ⛔ 그 전에는
+        //      첫 누름을 「꼭 1」, 두 번째를 「꼭 2」로 세어 셋째부터는 셈이 다시 1로 돌아갈 때까지 아무 반응이 없었다).
         // ⛔ 그 전에는 ClickCount가 2 이상이면 누르는 즉시 오갔다(끌기도 시작하지 않았다).
         // 글을 보이지 않는 카드(글줄 · 덩어리 단계)는 머리 줄이 감춰져 있다 — 보이지 않는 단추 · 제목을 두 번 눌러 고치지 않는다(CardStages).
         bool fullCard = card.Stage == CardStage.Text;
         bool headerBlank = fullCard && pressed.IsLeftButtonPressed && card.WritingBox is not null && OnHeaderBlank(card, args);
         (string NodeId, ulong At)? firstBlank = _headerBlankPress;
-        _headerBlankPress = headerBlank && args.ClickCount == 1 ? (card.NodeId, args.Timestamp) : null;
-        _pendingBasePin = headerBlank && args.ClickCount == 2 &&
+        _headerBlankPress = headerBlank && Clicks.IsSingle(args.ClickCount) ? (card.NodeId, args.Timestamp) : null;
+        _pendingBasePin = headerBlank && Clicks.IsDouble(args) &&
                           firstBlank is { } first &&
                           string.Equals(first.NodeId, card.NodeId, StringComparison.Ordinal) &&
                           args.Timestamp >= first.At && args.Timestamp - first.At <= DoublePressWindow
@@ -7806,7 +7808,7 @@ public partial class GraphEditorView : UserControl
 
         // 두 번 누름 — 제목 글자 위면 그 자리에서 제목을 고친다(2026-11-25 소유자 · ⛔ 그 전에는 [구성] 탭으로 데려갔다 · 같은 날 머리 줄 전체에서 글자
         // 위로 줄였다). 끌기를 시작하지 않는다(첫 누름이 시작한 끌기는 놓을 때 끝났다). 글자 밖의 두 번 누름은 한 번 누름과 같다.
-        if (fullCard && args.ClickCount >= 2 && pressed.IsLeftButtonPressed && OnTitleText(card, args))
+        if (fullCard && Clicks.IsDouble(args) && pressed.IsLeftButtonPressed && OnTitleText(card, args))
         {
             args.Handled = true;
             BeginCardRename(card.NodeId);
@@ -7872,7 +7874,8 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (args.ClickCount >= 2)
+        // 짝수째 누름만 두 번 누름이다(<see cref="Clicks"/>) — 접은 바로 뒤 셋째 누름이 다시 펴지 않는다.
+        if (Clicks.IsDouble(args))
         {
             CancelDrag(); // 첫 누름이 시작한 끌기 상태를 걷는다
             unfold();
@@ -7951,7 +7954,9 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        if (args.ClickCount >= 2)
+        // 짝수째 누름만 두 번 누름이다(<see cref="Clicks"/> — 2026-11-27 소유자 — 「한번 더블클릭을 해서 상태를 바꾼 다음에는, 특정 시간 내에 한번만 클릭해도
+        // 바로 더블클릭을 한 듯 상태가 바뀝니다」). ⛔ 그 전에는 2 이상이라 접은 뒤 같은 자리의 이름표를 한 번 더 누르면(셋째) 곧바로 다시 펴졌다.
+        if (Clicks.IsDouble(args))
         {
             fold();
             return;
@@ -9668,7 +9673,7 @@ public partial class GraphEditorView : UserControl
             SelectRail(key);
 
             // 두 번 누르면 [구성] 탭의 그 간선으로 간다(셸이 데려간다).
-            if (args.ClickCount >= 2)
+            if (Clicks.IsDouble(args))
             {
                 ChoiceOpened?.Invoke(key.ChapterId, key.From, key.To, key.Label?.Trim() ?? string.Empty);
             }
