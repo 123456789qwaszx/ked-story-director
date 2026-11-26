@@ -147,7 +147,7 @@ public partial class MainWindow
         }, RoutingStrategies.Tunnel);
 
         // 칸 이름 — 머리(「챕터 단위 조건 · 스탯」) 바로 아래 맨 칸이 무엇인지 말한다. 칸 이름이라 설명 간소화에도 남는다.
-        _sheet.Children.Add(new TextBlock { Text = Ui.Side_ChapterName, FontSize = Skin.Font(11), Opacity = 0.65 });
+        _sheet.Children.Add(new TextBlock { Text = Ui.Side_ChapterName, FontSize = Skin.Font(11), Opacity = Skin.Dim(0.65) });
         _sheet.Children.Add(box);
     }
 
@@ -680,7 +680,7 @@ public partial class MainWindow
         var detail = new TextBlock
         {
             FontSize = Skin.Font(11),
-            Opacity = 0.7,
+            Opacity = Skin.Dim(0.7),
             Margin = new Thickness(0, 0, 0, 6),
             Tag = "chapter-characters-detail"
         };
@@ -745,7 +745,7 @@ public partial class MainWindow
             table.Children.Add(cell);
         }
 
-        TextBlock Head(string text) => new() { Text = text, FontSize = Skin.Font(10), Opacity = 0.6 };
+        TextBlock Head(string text) => new() { Text = text, FontSize = Skin.Font(10), Opacity = Skin.Dim(0.6) };
 
         table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         Cell(Head(Ui.Side_Stat), 0, 0);
@@ -764,7 +764,7 @@ public partial class MainWindow
 
             table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
             Cell(new TextBlock { Text = name, FontSize = Skin.Font(11), VerticalAlignment = VerticalAlignment.Center }, row, 0);
-            Cell(new TextBlock { Text = range, FontSize = Skin.Font(11), Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center }, row, 1);
+            Cell(new TextBlock { Text = range, FontSize = Skin.Font(11), Opacity = Skin.Dim(0.7), VerticalAlignment = VerticalAlignment.Center }, row, 1);
             Cell(new SelectableTextBlock
             {
                 Text = snippet,
@@ -815,7 +815,7 @@ public partial class MainWindow
     {
         Text = text,
         FontSize = Skin.Font(11),
-        Opacity = 0.65,
+        Opacity = Skin.Dim(0.65),
         TextWrapping = TextWrapping.Wrap
     });
 
@@ -828,7 +828,7 @@ public partial class MainWindow
         Full = full,
         Brief = brief,
         FontSize = Skin.Font(11),
-        Opacity = 0.65,
+        Opacity = Skin.Dim(0.65),
         TextWrapping = TextWrapping.Wrap
     });
 

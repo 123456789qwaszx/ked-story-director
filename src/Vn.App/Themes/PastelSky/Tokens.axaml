@@ -92,6 +92,9 @@
     <Color x:Key="RowSelected">#FFE3EC</Color>
 
     <!-- [구성] 판 -->
+    <Color x:Key="StructureBoard">#EEF7FD</Color>
+    <Color x:Key="StructureSelection">#EE6B9E</Color>
+    <Color x:Key="SelectedRibbon">#F58FB0</Color>
     <Color x:Key="StructureDesk">#DCEFFA</Color>
     <Color x:Key="StructureCardSurface">#FFFFFFFF</Color>
     <Color x:Key="StructureSlot">#7FA6C2</Color>
@@ -120,6 +123,16 @@
     <x:Double x:Key="LineWeight">1.7</x:Double>
     <x:Double x:Key="SlotRadius">10</x:Double>
     <x:Double x:Key="SlotPill">1</x:Double>
+    <x:Double x:Key="StructureCardRadius">12</x:Double>
+    <x:Double x:Key="LineRowBoxed">0</x:Double>
+    <CornerRadius x:Key="FloatingCorner">14</CornerRadius>
+    <x:Double x:Key="DimLift">0.45</x:Double>
+    <x:Double x:Key="Dim45">0.6975</x:Double>
+    <x:Double x:Key="Dim50">0.725</x:Double>
+    <x:Double x:Key="Dim55">0.7525</x:Double>
+    <x:Double x:Key="Dim60">0.78</x:Double>
+    <x:Double x:Key="Dim65">0.8075</x:Double>
+    <x:Double x:Key="Dim70">0.835</x:Double>
     <x:Double x:Key="FontScale">1.15</x:Double>
     <x:Double x:Key="TextXxs">10.5</x:Double>
     <x:Double x:Key="TextXs">11.5</x:Double>
@@ -150,14 +163,36 @@
     </DrawingBrush>
     <!-- 판 아래 안내 줄의 바탕 -->
     <SolidColorBrush x:Key="HintSurface" Color="#FFF6D6" />
-    <!-- [대본] 판의 바탕 -->
-    <SolidColorBrush x:Key="BoardBackground" Color="#DCEFFA" />
+    <!-- [대본] 판의 바탕 — 하늘색에 옅은 점무늬(24 × 24 조각). 판 뒤에 붙박인 깔개라 판을 옮기거나 배율을 바꿔도 그대로다. -->
+    <DrawingBrush x:Key="BoardBackground" TileMode="Tile" SourceRect="0,0,24,24" DestinationRect="0,0,24,24">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="#DCEFFA" Geometry="M0,0 H24 V24 H0 Z" />
+                <GeometryDrawing Brush="#C3E0F3">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="12,12" RadiusX="1.4" RadiusY="1.4" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+    <!-- 판 왼쪽 아래 구석의 꾸밈 — 흰 구름과 반짝이 둘(300 × 130). 카드 뒤에 깔린다. -->
+    <DrawingBrush x:Key="BoardDecorBrush" Stretch="Uniform" AlignmentX="Left" AlignmentY="Bottom">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="Transparent" Geometry="M0,0 H300 V130 H0 Z" />
+                <GeometryDrawing Brush="#E6FFFFFF" Geometry="M36,112 a26,26 0 0 1 0,-52 a36,36 0 0 1 67,-12 a31,31 0 0 1 55,14 a25,25 0 0 1 45,50 z" />
+                <GeometryDrawing Brush="#FFD966" Geometry="M232,14 L235,24.2 L245.2,27.2 L235,30.2 L232,40.4 L229,30.2 L218.8,27.2 L229,24.2 Z" />
+                <GeometryDrawing Brush="#F7B6CB" Geometry="M262,52 L263.6,57.5 L269.2,59.2 L263.6,60.8 L262,66.4 L260.4,60.8 L254.8,59.2 L260.4,57.5 Z" />
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
 
-    <!-- 글꼴 — 테마 폴더의 Fonts/에 실은 것. 본문은 Gowun Dodum(한글 11,172자 모두), 제목은 Jua(없는 글자는 본문 글꼴로 그려진다) — 둘 다 SIL OFL 1.1.
+    <!-- 글꼴 — 테마 폴더의 Fonts/에 실은 것. 본문은 Gowun Dodum(한글 11,172자 모두), 제목은 Jua Story Director(Jua에 말줄임표를 더한 판 — tools/patch-jua-ellipsis.py · 없는 글자는 본문 글꼴로 그려진다) — 둘 다 SIL OFL 1.1.
          목록의 끝은 아이콘 글꼴(Story Director Icons)이다 — 화면의 아이콘 글자(📂 ⚙ ⌂ ⑂ 📄 ⚠ ✕ …)는 본문 글꼴에 없어서 여기의 선 그림으로 그려진다
          (PC의 이모지 글꼴 대신 · 글자색과 크기를 따른다). 그림은 tools/make-theme-icons.py가 굽는다. -->
     <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
-    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua, avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua Story Director, avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          컨트롤의 색 · 모서리 — Fluent 테마가 쓰는 이름을 덮는다(단추 · 글 칸 · 고르기 칸 · 탭 · 풍선 · 메뉴).
@@ -258,6 +293,10 @@
     <SolidColorBrush x:Key="ExpanderHeaderBorderBrush" Color="#CFE6F5" />
     <SolidColorBrush x:Key="ExpanderContentBackground" Color="#F7FBFE" />
     <SolidColorBrush x:Key="ExpanderContentBorderBrush" Color="#CFE6F5" />
+
+    <!-- 스크롤 막대 -->
+    <Color x:Key="ScrollBarThumbBackgroundColor">#9AD0F2</Color>
+    <Color x:Key="ScrollBarPanningThumbBackgroundColor">#9AD0F2</Color>
 
     <!-- 풍선 · 메뉴 -->
     <SolidColorBrush x:Key="ToolTipBackground" Color="#FFFDF5" />

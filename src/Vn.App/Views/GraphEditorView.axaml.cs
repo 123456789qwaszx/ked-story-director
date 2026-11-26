@@ -4114,6 +4114,11 @@ public partial class GraphEditorView : UserControl
             card.Visual.BorderThickness = new Thickness(selected || grouped ? 2 : 1);
             card.Visual.BoxShadow = selected || grouped ? Skin.CardSelectedShadow : Skin.CardShadow;
 
+            if (card.Ribbon is { } ribbon)
+            {
+                ribbon.IsVisible = selected;
+            }
+
             if (card.Band is { } band)
             {
                 band.Background = (selected || grouped ? Skin.SelectedBand : card.Style.Band).Brush();
@@ -4405,6 +4410,25 @@ public partial class GraphEditorView : UserControl
 
         frame.Children.Add(layout);
 
+        // 리본 — 고른 카드의 머리 위에 꽂히는 책갈피(테마가 색을 줄 때만 · themes). 카드 위쪽 가장자리에 걸쳐 서고 누름을 받지 않는다.
+        ShapePath? ribbon = Skin.SelectedRibbon.A == 0
+            ? null
+            : new ShapePath
+            {
+                Data = Geometry.Parse("M0,0 H14 V20 L7,15 L0,20 Z"),
+                Fill = Skin.SelectedRibbon.Brush(),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, -(CardPadding + 8), 64, 0),
+                IsVisible = false,
+                IsHitTestVisible = false
+            };
+
+        if (ribbon is not null)
+        {
+            frame.Children.Add(ribbon);
+        }
+
         var card = new Border
         {
             Width = WidthFor(node.NodeId),
@@ -4434,6 +4458,7 @@ public partial class GraphEditorView : UserControl
             Title = titleName,
             TitleRow = title,
             Band = band,
+            Ribbon = ribbon,
             BasePinToggle = basePin,
             FitWidthToggle = fitWidth,
             FitHeightToggle = fitHeight
@@ -8589,6 +8614,9 @@ public partial class GraphEditorView : UserControl
 
         /// <summary>머리 띠 — 테마가 띠의 색을 줄 때만 있다(고르면 색이 바뀐다 · themes).</summary>
         public Border? Band { get; init; }
+
+        /// <summary>고른 카드 위의 리본 — 테마가 색을 줄 때만 있다(themes).</summary>
+        public ShapePath? Ribbon { get; init; }
     }
 
     private sealed class FileProxyVisual

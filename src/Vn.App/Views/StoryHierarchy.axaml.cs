@@ -766,7 +766,7 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = string.Format(Ui.Hierarchy_NothingMatches, _query),
                 Margin = new Thickness(26, 6),
-                Opacity = 0.55,
+                Opacity = Skin.Dim(0.55),
                 FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
@@ -778,7 +778,7 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = Ui.Hierarchy_NoProject,
                 Margin = new Thickness(8, 10),
-                Opacity = 0.55,
+                Opacity = Skin.Dim(0.55),
                 FontSize = Skin.Font(11)
             });
         }
@@ -794,7 +794,7 @@ public partial class StoryHierarchy : UserControl
                         ? Ui.Hierarchy_NoChaptersCreateOneIn
                         : Ui.Hierarchy_NoChaptersCreateOneWith,
                 Margin = new Thickness(26, 6),
-                Opacity = 0.55,
+                Opacity = Skin.Dim(0.55),
                 FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
@@ -835,7 +835,7 @@ public partial class StoryHierarchy : UserControl
             {
                 Text = detail,
                 FontSize = Skin.Font(10),
-                Opacity = 0.5,
+                Opacity = Skin.Dim(0.5),
                 VerticalAlignment = VerticalAlignment.Center
             });
         }
@@ -1493,7 +1493,7 @@ public partial class StoryHierarchy : UserControl
                 Background = Skin.Surface.Brush(235),
                 BorderBrush = GhostIdle,
                 BorderThickness = new Thickness(1.5),
-                Opacity = 0.8,
+                Opacity = Skin.Dim(0.8),
                 IsHitTestVisible = false
             };
             layer.Children.Add(_dragGhost);

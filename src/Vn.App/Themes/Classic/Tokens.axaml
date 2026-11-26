@@ -92,6 +92,9 @@
     <Color x:Key="RowSelected">#303D7BD9</Color>
 
     <!-- [구성] 판 -->
+    <Color x:Key="StructureBoard">#FFFFFF</Color>
+    <Color x:Key="StructureSelection">#3D7BD9</Color>
+    <Color x:Key="SelectedRibbon">#00FFFFFF</Color>
     <Color x:Key="StructureDesk">#E9ECF0</Color>
     <Color x:Key="StructureCardSurface">#FAFBFCFD</Color>
     <Color x:Key="StructureSlot">#7F8A96</Color>
@@ -120,6 +123,16 @@
     <x:Double x:Key="LineWeight">1</x:Double>
     <x:Double x:Key="SlotRadius">3</x:Double>
     <x:Double x:Key="SlotPill">0</x:Double>
+    <x:Double x:Key="StructureCardRadius">5</x:Double>
+    <x:Double x:Key="LineRowBoxed">1</x:Double>
+    <CornerRadius x:Key="FloatingCorner">6</CornerRadius>
+    <x:Double x:Key="DimLift">0</x:Double>
+    <x:Double x:Key="Dim45">0.45</x:Double>
+    <x:Double x:Key="Dim50">0.5</x:Double>
+    <x:Double x:Key="Dim55">0.55</x:Double>
+    <x:Double x:Key="Dim60">0.6</x:Double>
+    <x:Double x:Key="Dim65">0.65</x:Double>
+    <x:Double x:Key="Dim70">0.7</x:Double>
     <x:Double x:Key="FontScale">1</x:Double>
     <x:Double x:Key="TextXxs">9</x:Double>
     <x:Double x:Key="TextXs">10</x:Double>

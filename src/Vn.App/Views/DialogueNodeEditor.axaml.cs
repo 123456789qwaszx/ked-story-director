@@ -341,7 +341,7 @@ public partial class DialogueNodeEditor : UserControl
                 LineHost.Children.Add(new TextBlock
                 {
                     Text = Ui.Dialogue_PressAddLineToStart,
-                    Opacity = 0.6,
+                    Opacity = Skin.Dim(0.6),
                     TextWrapping = TextWrapping.Wrap
                 });
             }
@@ -562,9 +562,10 @@ public partial class DialogueNodeEditor : UserControl
             Margin = new Thickness(resolved.Depth * 20, 0, 0, 0),
             Padding = new Thickness(6, 3),
             CornerRadius = new CornerRadius(4),
-            BorderThickness = branch is null
-                ? new Thickness(1)
-                : new Thickness(3, 1, 1, 1),
+            // 줄마다 상자를 두르거나(기본 테마), 줄 아래 구분선만 둔다(Skin.LineRowBoxed · themes) — 조건 안의 줄은 어느 쪽이든 왼쪽 색 막대가 선다.
+            BorderThickness = Skin.LineRowBoxed > 0
+                ? (branch is null ? new Thickness(1) : new Thickness(3, 1, 1, 1))
+                : new Thickness(branch is null ? 0 : 3, 0, 0, 1),
             BorderBrush = branch is null
                 ? Skin.Hairline.Brush(60)
                 : BranchPalette.Accent(palette),
@@ -586,7 +587,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             Text = resolved.Index.ToString(),
             FontSize = Skin.Font(10),
-            Opacity = 0.45,
+            Opacity = Skin.Dim(0.45),
             VerticalAlignment = VerticalAlignment.Center
         };
         row.Children.Add(index);
@@ -598,7 +599,7 @@ public partial class DialogueNodeEditor : UserControl
             TextDecorations = TextDecorations.Strikethrough,
             TextTrimming = TextTrimming.CharacterEllipsis,
             FontSize = Skin.Font(12),
-            Opacity = 0.55,
+            Opacity = Skin.Dim(0.55),
             MinHeight = 26,
             Padding = new Thickness(6, 5),
             Margin = new Thickness(4, 0, 0, 0),
@@ -647,7 +648,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             Text = resolved.Index.ToString(),
             FontSize = Skin.Font(10),
-            Opacity = 0.45,
+            Opacity = Skin.Dim(0.45),
             VerticalAlignment = VerticalAlignment.Center
         };
         Grid.SetColumn(index, 0);
@@ -1007,7 +1008,7 @@ public partial class DialogueNodeEditor : UserControl
                     {
                         Text = Ui.Dialogue_ThereSNowhereToVisit,
                         FontSize = Skin.Font(10),
-                        Opacity = 0.7,
+                        Opacity = Skin.Dim(0.7),
                         TextWrapping = TextWrapping.Wrap,
                         Margin = new Thickness(0, 2, 0, 0)
                     }
@@ -1069,7 +1070,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             Text = $"→ {name}",
             FontSize = Skin.Font(11),
-            Opacity = 0.8,
+            Opacity = Skin.Dim(0.8),
             VerticalAlignment = VerticalAlignment.Center
         });
 
@@ -1082,7 +1083,7 @@ public partial class DialogueNodeEditor : UserControl
                 ? Ui.Dialogue_VisitsThenContinuesFromThis
                 : Ui.Dialogue_VisitsThenGoesToNext),
             FontSize = Skin.Font(10),
-            Opacity = 0.7,
+            Opacity = Skin.Dim(0.7),
             TextWrapping = TextWrapping.Wrap
         });
 
@@ -1160,7 +1161,7 @@ public partial class DialogueNodeEditor : UserControl
             Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, node.Id, state.Label)) +
                    Ui.Dialogue_BranchIsAlwaysVisitedAnd,
             FontSize = Skin.Font(10),
-            Opacity = 0.7,
+            Opacity = Skin.Dim(0.7),
             TextWrapping = TextWrapping.Wrap
         });
     }
@@ -1240,7 +1241,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 Text = title,
                 FontSize = Skin.Font(10),
-                Opacity = 0.6,
+                Opacity = Skin.Dim(0.6),
                 Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 0)
             });
         }
@@ -1271,7 +1272,7 @@ public partial class DialogueNodeEditor : UserControl
                     ? Ui.Dialogue_ThereSOneBranchBefore
                     : string.Format(Ui.Dialogue_ThereAreBranchesBeforeThis, existing.Count),
                 FontSize = Skin.Font(10),
-                Opacity = 0.6,
+                Opacity = Skin.Dim(0.6),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
@@ -1298,7 +1299,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 Text = Ui.Dialogue_BranchCardsDonTBranch,
                 FontSize = Skin.Font(10),
-                Opacity = 0.65,
+                Opacity = Skin.Dim(0.65),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });
@@ -1312,7 +1313,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 Text = Ui.Dialogue_ChapterEpisodeChoicesAndStat,
                 FontSize = Skin.Font(10),
-                Opacity = 0.65,
+                Opacity = Skin.Dim(0.65),
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
             });

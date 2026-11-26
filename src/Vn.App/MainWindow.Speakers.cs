@@ -208,7 +208,7 @@ public partial class MainWindow
         {
             Text = Plural.Format(Ui.Speakers_Lines, entry.Lines),
             FontSize = Skin.Font(11),
-            Opacity = 0.65,
+            Opacity = Skin.Dim(0.65),
             MinWidth = 34,
             TextAlignment = TextAlignment.Right,   // 줄 수의 자릿수가 달라도 이름 칸 끝이 나란하다
             VerticalAlignment = VerticalAlignment.Center,

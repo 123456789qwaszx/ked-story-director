@@ -40,7 +40,7 @@ internal sealed class SettingsWindow : Window
         _destinations = session.Destinations;
 
         Title = Ui.Main_Settings;
-        Width = 560;
+        Width = Math.Round(560 * Skin.FontScale);   // 틀의 글자가 커지는 테마에서는 창도 그만큼 넓다(긴 안내 글이 잘리지 않게 · themes)
 
         // 크기 — 끌어서 바꾼다(2026-11-19 소유자 · usability UX1 · ⛔ 그 전에는 고정이었다). 처음 세로는 내용에 맞추되 화면을 넘지 않는다
         // (FitScreen이 MaxHeight를 준다) — 넘는 만큼은 묶음들이 스크롤한다. 사람이 끌어 바꾸면 Avalonia가 내용 맞춤을 끈다 — 그 뒤로는
@@ -134,7 +134,7 @@ internal sealed class SettingsWindow : Window
             SelectedIndex = LanguageIndex(AppSettingsService.LoadLanguage())
         };
         ToolTip.SetTip(LanguageCombo, Ui.Settings_LanguageTip);
-        LanguageNote = new TextBlock { FontSize = Skin.Font(11), Opacity = 0.75, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        LanguageNote = new TextBlock { FontSize = Skin.Font(11), Opacity = Skin.Dim(0.75), TextWrapping = TextWrapping.Wrap, IsVisible = false };
         LanguageCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_Language, () =>
         {
             string? chosen = LanguageCombo.SelectedIndex switch
@@ -165,7 +165,7 @@ internal sealed class SettingsWindow : Window
             SelectedIndex = ThemeIndex(ThemeCatalog.Resolve(AppSettingsService.LoadTheme()))
         };
         ToolTip.SetTip(ThemeCombo, Ui.Settings_ThemeTip);
-        ThemeNote = new TextBlock { FontSize = Skin.Font(11), Opacity = 0.75, TextWrapping = TextWrapping.Wrap, IsVisible = false };
+        ThemeNote = new TextBlock { FontSize = Skin.Font(11), Opacity = Skin.Dim(0.75), TextWrapping = TextWrapping.Wrap, IsVisible = false };
         ThemeCombo.SelectionChanged += (_, _) => UiGuard.Run(_session, Ui.Settings_ThemeLabel, () =>
         {
             if (ThemeCombo.SelectedIndex is not (>= 0 and var index) || index >= ThemeCatalog.All.Count)
@@ -331,7 +331,7 @@ internal sealed class SettingsWindow : Window
                         // 무엇이 「복제」인지만 말한다 — 저장 위치(runtime.target.json)는 걷었다(Z2).
                         Text = Ui.Settings_AlwaysWrittenToWorkFolder,
                         FontSize = Skin.Font(11),
-                        Opacity = 0.6,
+                        Opacity = Skin.Dim(0.6),
                         TextWrapping = TextWrapping.Wrap
                     },
                     ExportSection()
@@ -481,7 +481,7 @@ internal sealed class SettingsWindow : Window
     {
         Full = Ui.Settings_BaseSizeGuide,
         FontSize = Skin.Font(11),
-        Opacity = 0.75,
+        Opacity = Skin.Dim(0.75),
         TextWrapping = TextWrapping.Wrap
     };
 
@@ -852,7 +852,7 @@ internal sealed class SettingsWindow : Window
         {
             Text = Ui.Settings_MirrorFolderForProgressionJSON,
             FontSize = Skin.Font(11),
-            Opacity = 0.7,
+            Opacity = Skin.Dim(0.7),
             TextWrapping = TextWrapping.Wrap
         });
         panel.Children.Add(ExportNote);
@@ -939,7 +939,7 @@ internal sealed class SettingsWindow : Window
                 {
                     Text = string.Format(Ui.Settings_AllChaptersCardsSitOn, BoardSize.Minimum, BoardSize.Maximum),
                     FontSize = Skin.Font(11),
-                    Opacity = 0.7,
+                    Opacity = Skin.Dim(0.7),
                     TextWrapping = TextWrapping.Wrap
                 },
                 grid,
@@ -1226,7 +1226,7 @@ internal sealed class SettingsWindow : Window
                 {
                     Text = entry.Does,
                     FontSize = Skin.Font(11),
-                    Opacity = 0.8,
+                    Opacity = Skin.Dim(0.8),
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 2)
                 }, index, 1);

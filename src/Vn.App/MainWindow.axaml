@@ -71,7 +71,7 @@
 
                 <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock x:Name="ProjectNameText" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                    <TextBlock x:Name="ProjectPathText" FontSize="{DynamicResource TextSm}" Opacity="0.6" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="ProjectPathText" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim60}" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
 
                 <!-- 주의: <b>맨 끝 열(마지막 Auto)이 이 표시의 자리다.</b> 앞에 단추를 하나

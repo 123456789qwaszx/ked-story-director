@@ -183,7 +183,7 @@ internal sealed class StatChangeEditor : StackPanel
     {
         Text = text,
         FontSize = Skin.Font(10),
-        Opacity = 0.5,
+        Opacity = Skin.Dim(0.5),
         TextWrapping = TextWrapping.Wrap
     };
 

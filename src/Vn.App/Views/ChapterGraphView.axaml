@@ -19,7 +19,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <TextBlock Text="{x:Static s:Ui.Board_Chapter2}"
                                FontSize="{DynamicResource TextSm}"
-                               Opacity="0.6"
+                               Opacity="{DynamicResource Dim60}"
                                VerticalAlignment="Center"
                                Margin="0,0,4,0" />
                     <ComboBox x:Name="ChapterCombo" MinWidth="180" FontSize="{DynamicResource TextSm}" />
@@ -94,7 +94,7 @@
                                 <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontWeight="SemiBold" />
                                 <TextBlock x:Name="ChapterSummary"
                                            FontSize="{DynamicResource TextSm}"
-                                           Opacity="0.65"
+                                           Opacity="{DynamicResource Dim65}"
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                             <Button Grid.Column="1"
@@ -129,7 +129,7 @@
                                 <LayoutTransformControl.LayoutTransform>
                                     <RotateTransform Angle="90" />
                                 </LayoutTransformControl.LayoutTransform>
-                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontSize="{DynamicResource TextSm}" Opacity="0.7" />
+                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim70}" />
                             </LayoutTransformControl>
                         </StackPanel>
                     </Button>
@@ -160,7 +160,7 @@
                          배율 칸은 판 밖을 자르지 않는다 — 범위 사각형 · 판 밖으로 끄는 카드가 바깥에서도 보인다(⛔ 잘려 사라져 보였다 · UX22). -->
                     <Panel x:Name="BoardDesk" Background="{DynamicResource StructureDesk}">
                         <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Left" VerticalAlignment="Top" ClipToBounds="False">
-                            <Canvas x:Name="GraphCanvas" Background="{DynamicResource Surface}" HorizontalAlignment="Left" VerticalAlignment="Top" />
+                            <Canvas x:Name="GraphCanvas" Background="{DynamicResource StructureBoard}" HorizontalAlignment="Left" VerticalAlignment="Top" />
                         </LayoutTransformControl>
                     </Panel>
                 </ScrollViewer>
@@ -183,7 +183,7 @@
                     <TextBlock x:Name="EmptyText"
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
-                               Opacity="0.55"
+                               Opacity="{DynamicResource Dim55}"
                                TextWrapping="Wrap"
                                MaxWidth="420" />
                     <!-- 빈 판의 첫걸음 — 프로젝트가 아직 없으면 [새 프로젝트]가 판 한가운데 선다(배선은 셸: File 메뉴의
@@ -243,7 +243,7 @@
                             <TextBlock x:Name="InspectorTitle" Text="{x:Static s:Ui.Board_Inspector}" FontWeight="SemiBold" TextWrapping="Wrap" />
                             <TextBlock x:Name="InspectorSubtitle"
                                        FontSize="{DynamicResource TextSm}"
-                                       Opacity="0.65"
+                                       Opacity="{DynamicResource Dim65}"
                                        TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </Border>
@@ -257,7 +257,7 @@
                     <TextBlock x:Name="NoSelectionText"
                                Text="{x:Static s:Ui.Structure_ClickNodeSelectClickLine}"
                                FontSize="{DynamicResource TextSm}"
-                               Opacity="0.55"
+                               Opacity="{DynamicResource Dim55}"
                                TextWrapping="Wrap" />
 
                     <!-- 장면 — 장면은 엔티티가 아니다: 이 장면ID를 든 에피소드들의 묶음이다. 이름은 머리글이 보이고, 고치는
@@ -267,11 +267,11 @@
                         <!-- 장면ID 칸 — 런타임 저장 · 롤백 경계. 고치고 Enter(RenameScene — 장면 이름 · 메모가 함께 간다). 장면 이름은
                              [대본] 탭에서 고친다(display-names N4). -->
                         <Grid x:Name="SceneIdGrid" ColumnDefinitions="70,*">
-                            <TextBlock Text="{x:Static s:Ui.Structure_SceneID}" FontSize="{DynamicResource TextSm}" Opacity="0.7" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Static s:Ui.Structure_SceneID}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim70}" VerticalAlignment="Center" />
                             <TextBox Grid.Column="1" x:Name="SceneIdBox" FontSize="{DynamicResource TextSm}"
                                      ToolTip.Tip="{x:Static s:Ui.Structure_EditAndPressEnterTo}" />
                         </Grid>
-                        <views:GuideLine x:Name="SceneHintText" FontSize="{DynamicResource TextXs}" Opacity="0.55" TextWrapping="Wrap" />
+                        <views:GuideLine x:Name="SceneHintText" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim55}" TextWrapping="Wrap" />
                         <TextBlock Text="{x:Static s:Ui.Structure_Episode}" FontWeight="SemiBold" FontSize="{DynamicResource TextMd}" Margin="0,6,0,0" />
                         <StackPanel x:Name="SceneEpisodesPanel" Spacing="2" />
                     </StackPanel>
@@ -281,7 +281,7 @@
                              카드가 함께 따라간다). 제목은 머리글(「장면 - 제목」)이 보이고 [대본] 탭에서 고친다. 장면은 여기서
                              정하지 않는다 — 하이어아키에서 에피소드를 장면 줄로 끌고, 장면 줄에서 이름을 바꾼다. -->
                         <Grid x:Name="EpisodeFieldsGrid" ColumnDefinitions="70,*" RowDefinitions="Auto">
-                            <TextBlock Grid.Row="0" Text="{x:Static s:Ui.Structure_EpisodeID}" FontSize="{DynamicResource TextSm}" Opacity="0.7" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="0" Text="{x:Static s:Ui.Structure_EpisodeID}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim70}" VerticalAlignment="Center" />
                             <TextBox Grid.Row="0" Grid.Column="1" x:Name="IdBox" FontSize="{DynamicResource TextSm}"
                                      ToolTip.Tip="{x:Static s:Ui.Structure_ChangesWhenYouPressEnter}" />
                         </Grid>
@@ -351,7 +351,7 @@
                                     <views:GuideLine Grid.Column="1"
                                                x:Name="DialoguePreviewHeader"
                                                FontSize="{DynamicResource TextXs}"
-                                               Opacity="0.55"
+                                               Opacity="{DynamicResource Dim55}"
                                                Margin="8,0,0,0"
                                                VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis" />
@@ -379,11 +379,11 @@
 
                         <!-- 자동 진행 길이면 그렇다고 말하고 칸을 잠근다 — 자동 길은 문구 · 조건 · 스탯변화를 갖지 않는다.
                              자동인지는 여기서 정하지 않는다([대본] 탭에서 문구 없이 이은 길이다). -->
-                        <TextBlock x:Name="EdgeAutoNote" FontSize="{DynamicResource TextXs}" Opacity="0.7" TextWrapping="Wrap" IsVisible="False"
+                        <TextBlock x:Name="EdgeAutoNote" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim70}" TextWrapping="Wrap" IsVisible="False"
                                    Text="{x:Static s:Ui.Structure_AutoPathMovesOnWithout}" />
 
                         <TextBlock Text="{x:Static s:Ui.Side_Conditions}" FontWeight="SemiBold" FontSize="{DynamicResource TextMd}" />
-                        <TextBlock Text="{x:Static s:Ui.Structure_ShowConditionThisChoiceShows}" FontSize="{DynamicResource TextXs}" Opacity="0.6" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_ShowConditionThisChoiceShows}" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim60}" />
                         <Grid ColumnDefinitions="*,Auto">
                             <ComboBox x:Name="EdgeVisibleCombo" FontSize="{DynamicResource TextSm}" HorizontalAlignment="Stretch"
                                       ToolTip.Tip="{x:Static s:Ui.Structure_IfNotMetChoiceDoesn}" />
@@ -393,7 +393,7 @@
                         </Grid>
                         <StackPanel x:Name="EdgeVisibleExpressionHost" Spacing="2" />
 
-                        <TextBlock Text="{x:Static s:Ui.Structure_UnlockConditionCanBePicked}" FontSize="{DynamicResource TextXs}" Opacity="0.6"
+                        <TextBlock Text="{x:Static s:Ui.Structure_UnlockConditionCanBePicked}" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim60}"
                                    TextWrapping="Wrap" Margin="0,4,0,0" />
                         <Grid ColumnDefinitions="*,Auto">
                             <ComboBox x:Name="EdgeConditionCombo" FontSize="{DynamicResource TextSm}" HorizontalAlignment="Stretch"
@@ -419,7 +419,7 @@
                         <!-- [적용] 단추는 없다 — 고르는 순간 반영된다. 글자 칸만 초점을 잃거나 Enter일 때 낸다.
                              길을 끊거나 자동으로 바꾸는 것은 여기서 하지 않는다 — 선택지를 잇고 끊는 것은 [대본] 탭이다. -->
                         <views:GuideLine Full="{x:Static s:Ui.Structure_EditsApplyRightAwayAnd}"
-                                   FontSize="{DynamicResource TextXs}" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                   FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim50}" TextWrapping="Wrap" Margin="0,2,0,0" />
                     </StackPanel>
 
                     <!-- 분기 — 선택지와 <b>다른 종류</b>다. 조작을 단순하게 두려고 문구도
@@ -434,13 +434,13 @@
                         <!-- 분기 카드 ID 칸 — 카드 이름(= Yarn 노드 이름). 고치고 Enter. 부르는 쪽은 노드 Id로 이으므로 이름만 바뀐다.
                              제목(머리글)은 [대본] 탭에서 고친다(2026-11-17 · auto-id-orders I4). -->
                         <Grid x:Name="BranchIdGrid" ColumnDefinitions="80,*">
-                            <TextBlock Text="{x:Static s:Ui.Structure_BranchCardID}" FontSize="{DynamicResource TextSm}" Opacity="0.7" VerticalAlignment="Center" />
+                            <TextBlock Text="{x:Static s:Ui.Structure_BranchCardID}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim70}" VerticalAlignment="Center" />
                             <TextBox Grid.Column="1" x:Name="BranchIdBox" FontSize="{DynamicResource TextSm}"
                                      ToolTip.Tip="{x:Static s:Ui.Structure_BranchCardSIDGame}" />
                         </Grid>
                         <WrapPanel x:Name="BranchFromToPanel" Orientation="Horizontal" ItemSpacing="4" LineSpacing="2" />
 
-                        <TextBlock Text="{x:Static s:Ui.Structure_BranchCardSContentPlays}" FontSize="{DynamicResource TextXs}" Opacity="0.6" Margin="0,4,0,0" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_BranchCardSContentPlays}" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim60}" Margin="0,4,0,0" />
                         <ComboBox x:Name="BranchConditionCombo" FontSize="{DynamicResource TextSm}" HorizontalAlignment="Stretch"
                                   ToolTip.Tip="{x:Static s:Ui.Structure_BranchIsAlwaysVisitedOnce}" />
 
@@ -451,9 +451,9 @@
                                    IsVisible="False" />
 
                         <views:GuideLine Full="{x:Static s:Ui.Structure_ConditionIsWrittenAtTop}"
-                                   FontSize="{DynamicResource TextXs}" Opacity="0.5" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                   FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim50}" TextWrapping="Wrap" Margin="0,2,0,0" />
 
-                        <TextBlock Text="{x:Static s:Ui.Structure_ScriptReadOnlyEditIt}" FontSize="{DynamicResource TextXs}" Opacity="0.6" Margin="0,8,0,0" />
+                        <TextBlock Text="{x:Static s:Ui.Structure_ScriptReadOnlyEditIt}" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim60}" Margin="0,8,0,0" />
                         <TextBlock x:Name="BranchScriptText" FontSize="{DynamicResource TextSm}" TextWrapping="Wrap" />
                     </StackPanel>
 
@@ -461,7 +461,7 @@
                     <StackPanel x:Name="SlotPanel" Spacing="6" IsVisible="False">
                         <TextBlock x:Name="SlotTitleText" FontWeight="SemiBold" FontSize="{DynamicResource TextMd}" />
                         <StackPanel x:Name="SlotFromPanel" Orientation="Horizontal" Spacing="4" />
-                        <views:GuideLine x:Name="SlotDetailText" FontSize="{DynamicResource TextXs}" Opacity="0.7" TextWrapping="Wrap" />
+                        <views:GuideLine x:Name="SlotDetailText" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim70}" TextWrapping="Wrap" />
                     </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
@@ -475,11 +475,11 @@
                             <!-- 챕터ID 칸 — [구성] 탭은 ID를 다룬다(챕터 이름은 [대본] 탭에서 — display-names N4). 고치고 Enter면
                                  개명이다(ChapterRenamer — 판 · 조건 노드 · 진행 JSON 파일 이름이 함께 간다). -->
                             <Grid x:Name="ChapterIdGrid" ColumnDefinitions="70,*">
-                                <TextBlock Text="{x:Static s:Ui.Structure_ChapterID}" FontSize="{DynamicResource TextSm}" Opacity="0.7" VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Static s:Ui.Structure_ChapterID}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim70}" VerticalAlignment="Center" />
                                 <TextBox Grid.Column="1" x:Name="ChapterIdBox" FontSize="{DynamicResource TextSm}"
                                          ToolTip.Tip="{x:Static s:Ui.Structure_EditAndPressEnterTo2}" />
                             </Grid>
-                            <views:GuideLine x:Name="OverviewText" FontSize="{DynamicResource TextXs}" Opacity="0.55" TextWrapping="Wrap" />
+                            <views:GuideLine x:Name="OverviewText" FontSize="{DynamicResource TextXs}" Opacity="{DynamicResource Dim55}" TextWrapping="Wrap" />
                         </StackPanel>
                     </ScrollViewer>
                     </Panel>
@@ -496,7 +496,7 @@
                             BorderThickness="0,0,0,1">
                         <StackPanel Spacing="1">
                             <TextBlock Text="{x:Static s:Ui.Board_SpeakersForWholeProject}" FontWeight="SemiBold" />
-                            <views:GuideLine Full="{x:Static s:Ui.Board_EveryChapterUsesSameList}" FontSize="{DynamicResource TextSm}" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                            <views:GuideLine Full="{x:Static s:Ui.Board_EveryChapterUsesSameList}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim65}" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </Border>
                     <ScrollViewer Grid.Row="1"
@@ -507,7 +507,7 @@
                             <views:GuideLine x:Name="SpeakerHintText"
                                        Full="{x:Static s:Ui.Structure_LinkCharacterKeyToEach}"
                                        FontSize="{DynamicResource TextXs}"
-                                       Opacity="0.55"
+                                       Opacity="{DynamicResource Dim55}"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,6" />
 
@@ -529,7 +529,7 @@
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="1" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Static s:Ui.Board_ConditionsStatsForThisChapter}" FontWeight="SemiBold" />
-                                <views:GuideLine Full="{x:Static s:Ui.Board_UsedOnlyInThisChapter}" FontSize="{DynamicResource TextSm}" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                <views:GuideLine Full="{x:Static s:Ui.Board_UsedOnlyInThisChapter}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim65}" TextTrimming="CharacterEllipsis" />
                             </StackPanel>
                             <ComboBox Grid.Column="1"
                                       x:Name="ConditionChapterCombo"
@@ -553,7 +553,7 @@
                                        FontSize="{DynamicResource TextMd}" />
                             <views:GuideLine Full="{x:Static s:Ui.Structure_SetExpressionForEachCondition}"
                                        FontSize="{DynamicResource TextXs}"
-                                       Opacity="0.55"
+                                       Opacity="{DynamicResource Dim55}"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,4" />
                             <StackPanel x:Name="ConditionListPanel" Spacing="2" />
@@ -566,7 +566,7 @@
                                  "어디서 고치나"의 대답도 같은 모양이어야 눈이 한 번에 읽는다. -->
                             <views:GuideLine Full="{x:Static s:Ui.Structure_CreateAndEditThemHere}"
                                        FontSize="{DynamicResource TextXs}"
-                                       Opacity="0.55"
+                                       Opacity="{DynamicResource Dim55}"
                                        TextWrapping="Wrap" />
                             <StackPanel x:Name="StatListPanel" Spacing="2" />
                         </StackPanel>
@@ -603,7 +603,7 @@
                             <LayoutTransformControl.LayoutTransform>
                                 <RotateTransform Angle="90" />
                             </LayoutTransformControl.LayoutTransform>
-                            <TextBlock Text="{x:Static s:Ui.Board_InspectorSpeakersConditionsStats}" FontSize="{DynamicResource TextSm}" Opacity="0.7" />
+                            <TextBlock Text="{x:Static s:Ui.Board_InspectorSpeakersConditionsStats}" FontSize="{DynamicResource TextSm}" Opacity="{DynamicResource Dim70}" />
                         </LayoutTransformControl>
                     </StackPanel>
                 </Button>

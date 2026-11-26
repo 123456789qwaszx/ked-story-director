@@ -14,6 +14,21 @@
     <Style Selector="Button">
         <Setter Property="CornerRadius" Value="10" />
     </Style>
+    <!-- 올림 · 눌림의 반응은 어디서나 같다 — 올리면 옅은 하늘색 면, 누르면 한 단계 짙은 면(색은 Tokens.axaml)으로 짧게 바뀐다. -->
+    <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.08" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="ToggleButton /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.08" />
+            </Transitions>
+        </Setter>
+    </Style>
     <Style Selector="ToggleButton">
         <Setter Property="CornerRadius" Value="10" />
         <Setter Property="BorderThickness" Value="1.5" />
@@ -23,7 +38,7 @@
     <Style Selector="Button.chunky">
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="BorderThickness" Value="2" />
-        <Setter Property="Padding" Value="14,5" />
+        <Setter Property="Padding" Value="12,5" />
         <Setter Property="Margin" Value="0,0,0,3" />
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
         <Setter Property="RenderTransform" Value="none" />
@@ -34,6 +49,7 @@
         <Setter Property="Transitions">
             <Transitions>
                 <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.08" />
+                <BrushTransition Property="Background" Duration="0:0:0.08" />
             </Transitions>
         </Setter>
     </Style>

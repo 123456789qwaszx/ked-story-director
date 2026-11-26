@@ -57,7 +57,7 @@ public sealed class ThemeTests : IDisposable
     }
 
     private static string ElementFor(Type type) =>
-        type == typeof(Color) ? "Color" : type == typeof(double) ? "Double" : "String";
+        type == typeof(Color) ? "Color" : type == typeof(double) ? "Double" : type == typeof(CornerRadius) ? "CornerRadius" : "String";
 
     [Fact]
     public void 이름표의_이름은_모두_기본_테마에_제_꼴로_있다()

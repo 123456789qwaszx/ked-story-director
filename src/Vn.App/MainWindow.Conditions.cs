@@ -165,7 +165,7 @@ public partial class MainWindow
         {
             Text = undecided ? Ui.Side_UndecidedAlwaysPasses : Ui.Side_Expression + condition.Expression.Trim(),
             FontSize = Skin.Font(10),
-            Opacity = 0.6,
+            Opacity = Skin.Dim(0.6),
             Margin = new Thickness(4, 1, 0, 0),
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
             Tag = "condition-expression:" + label

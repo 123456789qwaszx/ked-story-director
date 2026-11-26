@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
@@ -69,7 +70,7 @@ public partial class MainWindow : Window
         Text = Ui.Main_SelectNodeToEditIt,
         HorizontalAlignment = HorizontalAlignment.Center,
         VerticalAlignment = VerticalAlignment.Center,
-        Opacity = 0.5
+        Opacity = Skin.Dim(0.5)
     };
 
     private readonly DispatcherTimer _autoSaveTimer;

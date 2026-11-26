@@ -335,7 +335,7 @@ public partial class ChapterGraphView : UserControl
             var link = new Button
             {
                 Content = (root ? "⌂ " : "· ") + episodeId,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 Padding = new Thickness(6, 2),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -804,8 +804,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_NoSpeakersYetSpeakerNames,
                 Brief = Ui.Speakers_NoSpeakersYet,   // 설명 간소화(brief-guides G1)
-                FontSize = 10,
-                Opacity = 0.55,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.55),
                 TextWrapping = TextWrapping.Wrap
             });
             return;
@@ -825,7 +825,7 @@ public partial class ChapterGraphView : UserControl
                     (> 0, _) => Plural.Format(Ui.Structure_SpeakersWithoutCharacterKeyTheir, missing),
                     _ => Plural.Format(Ui.Structure_SpeakersWithTemporaryKeyTemp, temporary)
                 },
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Foreground = UnlockConditionInk,   // 같은 호박색 — 「아직 비었다」
                 TextWrapping = TextWrapping.Wrap,
                 Tag = "speaker-missing-keys"
@@ -850,7 +850,7 @@ public partial class ChapterGraphView : UserControl
         var name = new TextBlock
         {
             Text = missing || temporary ? "⚠ " + speakerName : speakerName,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
             Tag = "speaker-name:" + speakerName
@@ -864,7 +864,7 @@ public partial class ChapterGraphView : UserControl
         {
             Text = speaker.CharacterId,
             Margin = new Thickness(6, 0, 0, 0),
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             PlaceholderText = Ui.Structure_CharacterKey,
             Tag = "speaker-key:" + speakerName
         };
@@ -2427,7 +2427,8 @@ public partial class ChapterGraphView : UserControl
             //   키를 늘릴 이유가 없다. v4까지는 선택지 줄마다 18px씩 자랐다. 스탯 줄 수로는 자란다(UX3).
             Height = CardHeightOf(episode.EpisodeId),
             Padding = new Thickness(9, 7),
-            CornerRadius = new CornerRadius(5),
+            CornerRadius = new CornerRadius(Skin.StructureCardRadius),
+            BoxShadow = Skin.CardShadow,
             BorderThickness = new Thickness(hasError ? 2 : 1),
             BorderBrush = hasError
                 ? Skin.DangerText.Brush()
@@ -3497,7 +3498,7 @@ public partial class ChapterGraphView : UserControl
 
         if (_selectedBranchCardId is { } chipId && _branchChips.TryGetValue(chipId, out Border? selectedChip))
         {
-            selectedChip.BorderBrush = Skin.Accent.Brush();
+            selectedChip.BorderBrush = Skin.StructureSelection.Brush();
             selectedChip.BorderThickness = new Thickness(2.4);
         }
 
@@ -3509,7 +3510,7 @@ public partial class ChapterGraphView : UserControl
 
         if (_selectedSlot is { } slot && _emptySlotDots.TryGetValue(slot, out Ellipse? selectedDot))
         {
-            selectedDot.Stroke = Skin.Accent.Brush();
+            selectedDot.Stroke = Skin.StructureSelection.Brush();
             selectedDot.StrokeThickness = 3;
         }
 
@@ -3518,14 +3519,14 @@ public partial class ChapterGraphView : UserControl
         {
             if (_cardById.TryGetValue(member, out Border? grouped))
             {
-                grouped.BorderBrush = Skin.Accent.Brush();
+                grouped.BorderBrush = Skin.StructureSelection.Brush();
                 grouped.BorderThickness = new Thickness(2);
             }
         }
 
         if (_selectedEpisodeId is { } episodeId && _cardById.TryGetValue(episodeId, out Border? selected))
         {
-            selected.BorderBrush = Skin.Accent.Brush();
+            selected.BorderBrush = Skin.StructureSelection.Brush();
             selected.BorderThickness = new Thickness(2.4);
         }
 
@@ -3533,7 +3534,7 @@ public partial class ChapterGraphView : UserControl
         {
             foreach (Line line in selectedLines)
             {
-                line.Stroke = Skin.Accent.Brush();
+                line.Stroke = Skin.StructureSelection.Brush();
                 line.StrokeThickness = 3.4;
             }
         }
@@ -3838,7 +3839,7 @@ public partial class ChapterGraphView : UserControl
         void Line(string text) => lines.Children.Add(new TextBlock
         {
             Text = text,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             TextWrapping = TextWrapping.Wrap
         });
 
@@ -3900,8 +3901,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_ThereSNoWayOut,
                 Brief = Ui.Structure_ThereSNoWayOut2,
-                FontSize = 10,
-                Opacity = 0.5,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.5),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -3927,8 +3928,8 @@ public partial class ChapterGraphView : UserControl
             Child = new TextBlock
             {
                 Text = (rowIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
-                FontSize = 10,
-                Opacity = 0.8
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.8)
             }
         });
 
@@ -3936,7 +3937,7 @@ public partial class ChapterGraphView : UserControl
         var text = new TextBlock
         {
             Text = $"{label}   → {edge.ToEpisodeId}",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Opacity = edge.HasNoOptionLabel ? 0.7 : 1,
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -4041,7 +4042,7 @@ public partial class ChapterGraphView : UserControl
         var box = new TextBox
         {
             Text = stored,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             PlaceholderText = Ui.Structure_UndecidedAlwaysPassesEG,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
@@ -4075,8 +4076,8 @@ public partial class ChapterGraphView : UserControl
         row.Children.Add(new TextBlock
         {
             Text = Ui.Structure_Expression,
-            FontSize = 10,
-            Opacity = 0.6,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.6),
             Margin = new Thickness(0, 0, 6, 0),
             VerticalAlignment = VerticalAlignment.Center
         });
@@ -4087,7 +4088,7 @@ public partial class ChapterGraphView : UserControl
         TextBlock Note(string text, IBrush? ink = null) => new()
         {
             Text = text,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Opacity = ink is null ? 0.6 : 1,
             Foreground = ink,
             TextWrapping = TextWrapping.Wrap,
@@ -4174,12 +4175,12 @@ public partial class ChapterGraphView : UserControl
     private void ShowConditionFlyout(
         Button anchor, string chapterId, string intro, string createText, Func<string, string, bool> accept)
     {
-        var name = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = Ui.Structure_ConditionNameByMeaningE, Tag = "new-condition-name" };
-        var expression = new TextBox { FontSize = 11, MinWidth = 240, PlaceholderText = Ui.Structure_ExpressionEmptyMeansUndecidedE, Tag = "new-condition-expression" };
+        var name = new TextBox { FontSize = Skin.Font(11), MinWidth = 240, PlaceholderText = Ui.Structure_ConditionNameByMeaningE, Tag = "new-condition-name" };
+        var expression = new TextBox { FontSize = Skin.Font(11), MinWidth = 240, PlaceholderText = Ui.Structure_ExpressionEmptyMeansUndecidedE, Tag = "new-condition-expression" };
         var create = new Button
         {
             Content = createText,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2),
             HorizontalAlignment = HorizontalAlignment.Left,
             Tag = "new-condition-create"
@@ -4190,7 +4191,7 @@ public partial class ChapterGraphView : UserControl
             MaxWidth = 340,
             Children =
             {
-                new TextBlock { Text = intro, FontSize = 10, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = intro, FontSize = Skin.Font(10), TextWrapping = TextWrapping.Wrap },
                 name,
                 expression,
                 create
@@ -4241,8 +4242,8 @@ public partial class ChapterGraphView : UserControl
         BranchFromToPanel.Children.Add(new TextBlock
         {
             Text = Ui.Structure_CalledFrom,
-            FontSize = 11,
-            Opacity = 0.6,
+            FontSize = Skin.Font(11),
+            Opacity = Skin.Dim(0.6),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         });
 
@@ -4264,8 +4265,8 @@ public partial class ChapterGraphView : UserControl
             BranchFromToPanel.Children.Add(new TextBlock
             {
                 Text = Ui.Structure_NoneNotPlayed,
-                FontSize = 11,
-                Opacity = 0.6,
+                FontSize = Skin.Font(11),
+                Opacity = Skin.Dim(0.6),
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
             });
         }
@@ -4362,7 +4363,7 @@ public partial class ChapterGraphView : UserControl
         var link = new TextBlock
         {
             Text = $"⑂ {name}",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             TextDecorations = TextDecorations.Underline,
             Foreground = Skin.SceneChip.Brush(),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
@@ -4395,8 +4396,8 @@ public partial class ChapterGraphView : UserControl
         SlotFromPanel.Children.Add(new TextBlock
         {
             Text = Ui.Structure_NoPathYet,
-            FontSize = 11,
-            Opacity = 0.6,
+            FontSize = Skin.Font(11),
+            Opacity = Skin.Dim(0.6),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         });
         string slotState = options == 0
@@ -4448,7 +4449,7 @@ public partial class ChapterGraphView : UserControl
             Text = title.Length == 0 || string.Equals(title, episodeId, StringComparison.Ordinal)
                 ? episodeId
                 : $"{episodeId} ({title})",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             TextDecorations = TextDecorations.Underline,
             Foreground = Skin.Accent.Brush(),
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
@@ -4622,8 +4623,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_NoStatsTypeKeyIn,
                 Brief = Ui.Structure_NoStats,
-                FontSize = 10,
-                Opacity = 0.5
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.5)
             });
         }
 
@@ -4686,7 +4687,7 @@ public partial class ChapterGraphView : UserControl
 
         var type = new ComboBox
         {
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             MinHeight = 0,
             Padding = new Thickness(8, 2, 4, 2),
             Margin = new Thickness(4, 0, 0, 0),
@@ -4706,7 +4707,7 @@ public partial class ChapterGraphView : UserControl
         Grid.SetColumn(type, 1);
         head.Children.Add(type);
 
-        var remove = new Button { Content = "✕", FontSize = 10, Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
+        var remove = new Button { Content = "✕", FontSize = Skin.Font(10), Padding = new Thickness(5, 1), Margin = new Thickness(3, 0, 0, 0) };
         ToolTip.SetTip(remove, Ui.Structure_DeletesItIfItS);
         remove.Click += (_, _) => UiGuard.Run(_session, Ui.Structure_DeleteStat, () => RemoveStat(remove, stat.Key));
         Grid.SetColumn(remove, 2);
@@ -4718,7 +4719,7 @@ public partial class ChapterGraphView : UserControl
         var caution = new TextBlock
         {
             Text = Ui.Structure_KeyIsKeyInSave,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Foreground = UnlockConditionInk,
             TextWrapping = TextWrapping.Wrap,
             IsVisible = false,
@@ -4743,7 +4744,7 @@ public partial class ChapterGraphView : UserControl
 
             var initial = new ComboBox
             {
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 MinHeight = 0,
                 Padding = new Thickness(8, 2, 4, 2),
                 ItemsSource = new[] { Ui.Side_Off2, Ui.Side_On2 },   // ⛔ 「아니오」 · 「예」(usability UX12)
@@ -4778,8 +4779,8 @@ public partial class ChapterGraphView : UserControl
     private static TextBlock ValueLabel(string text) => new()
     {
         Text = text,
-        FontSize = 10,
-        Opacity = 0.7,
+        FontSize = Skin.Font(10),
+        Opacity = Skin.Dim(0.7),
         Margin = new Thickness(6, 0, 3, 0),
         VerticalAlignment = VerticalAlignment.Center
     };
@@ -4814,8 +4815,8 @@ public partial class ChapterGraphView : UserControl
             {
                 Full = Ui.Structure_NoConditionsTypeNameIn,
                 Brief = Ui.Structure_NoConditions,
-                FontSize = 10,
-                Opacity = 0.5
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.5)
             });
         }
 
@@ -4899,7 +4900,7 @@ public partial class ChapterGraphView : UserControl
         var box = new TextBox
         {
             Text = value,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Width = width,
             MinHeight = 0,
             Padding = new Thickness(4, 1),
@@ -4961,7 +4962,7 @@ public partial class ChapterGraphView : UserControl
         var box = new TextBox
         {
             Text = name,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             FontWeight = FontWeight.SemiBold,
             MinHeight = 0,
             MinWidth = 0,
@@ -5007,7 +5008,7 @@ public partial class ChapterGraphView : UserControl
     {
         var box = new TextBox
         {
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             MinHeight = 0,
             Padding = new Thickness(4, 2),
             PlaceholderText = placeholder,
@@ -5016,7 +5017,7 @@ public partial class ChapterGraphView : UserControl
         var button = new Button
         {
             Content = Ui.Speakers_Add,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2),
             Margin = new Thickness(4, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center,
@@ -5094,7 +5095,7 @@ public partial class ChapterGraphView : UserControl
         panel.Children.Add(new TextBlock
         {
             Text = refused.Refusal ?? string.Empty,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             FontWeight = FontWeight.SemiBold,
             TextWrapping = TextWrapping.Wrap
         });
@@ -5104,8 +5105,8 @@ public partial class ChapterGraphView : UserControl
             panel.Children.Add(new SelectableTextBlock
             {
                 Text = $"· {use.Where} — {use.Detail}",
-                FontSize = 10,
-                Opacity = 0.75,
+                FontSize = Skin.Font(10),
+                Opacity = Skin.Dim(0.75),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -5116,8 +5117,8 @@ public partial class ChapterGraphView : UserControl
                    (refused.Uses.Any(use => use.Kind == Vn.Authoring.Editing.ChapterUseKind.DialogueRead)
                        ? string.Format(Ui.Structure_StatInDialogueIsnT, key)
                        : string.Empty),
-            FontSize = 10,
-            Opacity = 0.6,
+            FontSize = Skin.Font(10),
+            Opacity = Skin.Dim(0.6),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 4, 0, 0)
         });
@@ -5125,7 +5126,7 @@ public partial class ChapterGraphView : UserControl
         var clear = new Button
         {
             Content = Ui.Structure_ClearAllAndDelete,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2),
             HorizontalAlignment = HorizontalAlignment.Left
         };
@@ -5401,8 +5402,8 @@ public partial class ChapterGraphView : UserControl
                 Text = model.Episodes.Count == 0
                     ? Ui.Structure_NoEpisodesYetOnceYou
                     : Ui.Structure_NothingToReport,
-                FontSize = 11,
-                Opacity = 0.55
+                FontSize = Skin.Font(11),
+                Opacity = Skin.Dim(0.55)
             });
 
             return;
@@ -5445,7 +5446,7 @@ public partial class ChapterGraphView : UserControl
         Child = new SelectableTextBlock
         {
             Text = help,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             FontFamily = new FontFamily("Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"),
             TextWrapping = TextWrapping.Wrap,
             FontFeatures = AsTyped
@@ -5494,7 +5495,7 @@ public partial class ChapterGraphView : UserControl
         string text, IBrush? foreground, bool dim, bool bold = false) => new SelectableTextBlock
     {
         Text = text,
-        FontSize = 11,
+        FontSize = Skin.Font(11),
         TextWrapping = TextWrapping.Wrap,
         Foreground = foreground,
         FontWeight = bold ? FontWeight.SemiBold : FontWeight.Normal,

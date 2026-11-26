@@ -5,7 +5,7 @@
 
 | 테마 | 이름(앱 설정) | 폴더 | 무엇 |
 |---|---|---|---|
-| 파스텔 하늘 | `pastel-sky` | `Themes/PastelSky/` | 하늘색 바탕 · 흰 스티커 카드 · 분홍과 버터색 포인트 · 글꼴 Jua / Gowun Dodum |
+| 파스텔 하늘 | `pastel-sky` | `Themes/PastelSky/` | 하늘색 바탕 · 흰 스티커 카드 · 분홍과 버터색 포인트 · 글꼴 Jua Story Director / Gowun Dodum |
 | 기본 | `classic` | `Themes/Classic/` | 0.5.0까지의 모양 그대로. **모든 테마의 밑바탕**이다 |
 
 ## 1. 짜임
@@ -43,10 +43,13 @@ src/Vn.App/
   `FontSize="{DynamicResource TextSm}"`(단계 `TextXxs` 9 · `TextXs` 10 · `TextSm` 11 · `TextMd` 12 · `TextLg` 14 — 테마는 `FontScale`과 같은 비율로
   적는다). 틀에 새 글을 놓을 때 크기를 숫자로 적지 않는다(코드에 적은 값은 스타일로 못 덮는다). **판 위의 글**(카드 · 선택지 칸 · 이름표 —
   `GraphEditorView.axaml.cs` · `ChapterGraphView.axaml.cs`)은 따르지 않는다 — 치수가 정해져 있고 배율로 본다.
+- **틀의 곁글**(투명도로 낮춘 글)의 진하기도 같다 — 코드는 `Opacity = Skin.Dim(0.6)`(테마의 `DimLift`만큼 되올린다), XAML은
+  `Opacity="{DynamicResource Dim60}"`. 옅은 바탕의 테마에서 곁글이 읽히지 않을 만큼 흐려지지 않게 한다.
 - ⚠ **템플릿이 묶어 둔 값은 보통 스타일보다 세다.** 템플릿 안쪽 부품(`/template/ Border#PART_…`)의 값 가운데 템플릿이 `TemplateBinding`으로 묶은 것은
   조건 없는 스타일로는 안 바뀐다 — 조건이 붙은 스타일(`:not(:disabled)` · `:selected` · 클래스)로 적는다(주 탭이 그렇게 한다).
 - **테마만의 꾸밈**은 그 테마만 적는 이름으로 한다. 기본 테마에 없는 이름은 XAML에서 비어 있게 풀린다 — 위 띠의 바탕(`TopBarBackground`), 위 띠 아래
-  꾸밈 줄(`TopBarEdgeHeight` · `TopBarEdgeBrush`), [대본] 판의 바탕(`BoardBackground`), 판 아래 안내 줄의 바탕(`HintSurface`). 기본 테마에서는 바탕이 없고 줄의 높이가 0이다.
+  꾸밈 줄(`TopBarEdgeHeight` · `TopBarEdgeBrush`), [대본] 판의 바탕(`BoardBackground` — 점무늬) · 구석의 꾸밈(`BoardDecorBrush` — 구름과 별), 판 아래 안내 줄의
+  바탕(`HintSurface`). 기본 테마에서는 바탕이 없고 줄의 높이가 0이다.
 
 ## 2. 새 테마 더하기
 
@@ -105,3 +108,5 @@ src/Vn.App/
   갈린다. `ThemeService.Apply`는 다시 입힐 수 있게 지어져 있다(시험이 쓴다) — 켠 채 바꾸기를 넣으려면 두 판을 다시 짓는 길이 함께 있어야 한다.
 - **Avalonia를 올리면** 파스텔 하늘이 덮는 Fluent 이름들이 그대로인지 본다(이름이 바뀌면 조용히 기본 색으로 돌아간다 — 그림으로 확인).
 - 「파스텔 하늘」의 제목 글꼴 Jua에는 한글이 2,350자쯤만 있다 — 없는 글자는 본문 글꼴(Gowun Dodum · 11,172자 모두)로 그려진다.
+- **잘린 글의 말줄임표(…)는 그 글의 글꼴만으로 그려진다**(다른 글꼴로 넘어가지 않는다) — 글꼴에 없으면 □가 된다. 그래서 제목 글꼴은 Jua에 말줄임표를
+  더한 판(`JuaStoryDirector-Regular.ttf` — `tools/patch-jua-ellipsis.py` · 고지문 9 · B-2)이다. 새 글꼴을 들일 때 U+2026이 있는지 본다.

@@ -262,6 +262,15 @@ internal static class Skin
 
     // ── [구성] 판 ─────────────────────────────────────────────
 
+    /// <summary>[구성] 판(카드가 놓이는 면).</summary>
+    public static Color StructureBoard => C();
+
+    /// <summary>[구성]에서 고른 것 — 카드 · 분기 표 · 빈 칸 점 · 길.</summary>
+    public static Color StructureSelection => C();
+
+    /// <summary>고른 [대본] 카드 위의 리본(투명이면 짓지 않는다).</summary>
+    public static Color SelectedRibbon => C();
+
     /// <summary>판 바깥 책상.</summary>
     public static Color StructureDesk => C();
 
@@ -345,6 +354,44 @@ internal static class Skin
     /// <summary>고른 [대본] 카드의 그림자(테두리 밖의 고리까지) — 테마가 적지 않으면 <see cref="CardShadow"/>와 같다.</summary>
     public static BoxShadows CardSelectedShadow =>
         ThemeService.ShadowsOf(nameof(CardSelectedShadow)) is { Count: > 0 } ring ? ring : CardShadow;
+
+    /// <summary>[구성] 카드의 모서리.</summary>
+    public static double StructureCardRadius => N();
+
+    /// <summary>1이면 인스펙터의 대사 줄마다 테두리 상자를 두르고, 0이면 줄 아래 구분선만 둔다.</summary>
+    public static double LineRowBoxed => N();
+
+    /// <summary>판 위에 뜬 것(미니맵 · 찾기 띠)의 모서리.</summary>
+    public static CornerRadius FloatingCorner => ThemeService.CornerOf(nameof(FloatingCorner));
+
+    // ── 곁글의 진하기 ─────────────────────────────────────────────
+
+    /// <summary>곁글(투명도로 낮춘 글)을 얼마나 되올리는가 — 0이면 그대로, 1이면 본문과 같다. 코드는 <see cref="Dim"/>으로 쓴다.</summary>
+    public static double DimLift => N();
+
+    /// <summary>XAML이 쓰는 곁글의 진하기(기본 0.45 ~ 0.7) — <c>Opacity="{DynamicResource Dim60}"</c>. 테마는 <see cref="DimLift"/>와 같은 셈으로 적는다.</summary>
+    public static double Dim45 => N();
+
+    /// <summary>기본 0.5.</summary>
+    public static double Dim50 => N();
+
+    /// <summary>기본 0.55.</summary>
+    public static double Dim55 => N();
+
+    /// <summary>기본 0.6.</summary>
+    public static double Dim60 => N();
+
+    /// <summary>기본 0.65.</summary>
+    public static double Dim65 => N();
+
+    /// <summary>기본 0.7.</summary>
+    public static double Dim70 => N();
+
+    /// <summary>
+    /// 틀의 곁글의 진하기 — 기본 테마의 투명도를 주면 테마가 정한 만큼 되올린다(기본 테마는 준 값 그대로). 옅은 바탕색의 테마에서 곁글이
+    /// 읽히지 않을 만큼 흐려지지 않게 한다.
+    /// </summary>
+    public static double Dim(double opacity) => opacity + ((1 - opacity) * DimLift);
 
     // ── 글자 크기(틀) ─────────────────────────────────────────────
 

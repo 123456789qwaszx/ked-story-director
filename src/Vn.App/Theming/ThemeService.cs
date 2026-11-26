@@ -112,6 +112,13 @@ internal static class ThemeService
         object other => throw new InvalidCastException($"Theme token '{key}' is {other.GetType().Name}, not a Double.")
     };
 
+    internal static CornerRadius CornerOf(string key) => Token(key) switch
+    {
+        CornerRadius corner => corner,
+        double all => new CornerRadius(all),
+        object other => throw new InvalidCastException($"Theme token '{key}' is {other.GetType().Name}, not a CornerRadius.")
+    };
+
     /// <summary>그림자 — 값은 CSS처럼 적은 글이다(<c>0 3 0 0 #B5D9EF</c>). <c>none</c>이면 그림자가 없다.</summary>
     internal static BoxShadows ShadowsOf(string key) =>
         Token(key) is string text && !string.Equals(text.Trim(), "none", StringComparison.OrdinalIgnoreCase)
