@@ -40,21 +40,6 @@
   <data name="Theme_PastelSky" xml:space="preserve">
     <value>Pastel sky</value>
   </data>
-  <data name="Settings_ThemeCreate" xml:space="preserve">
-    <value>Make my theme</value>
-  </data>
-  <data name="Settings_ThemeCreateTip" xml:space="preserve">
-    <value>Copies the current theme into a new “My theme” folder and opens it — edit theme.json or add pictures there, then restart. You can also ask an AI to edit it (see “Read me.txt” in the folder).</value>
-  </data>
-  <data name="Settings_ThemeFolder" xml:space="preserve">
-    <value>Open theme folder</value>
-  </data>
-  <data name="Settings_ThemeFolderTip" xml:space="preserve">
-    <value>Opens the folder that holds your own themes — they are used on this PC only.</value>
-  </data>
-  <data name="Settings_ThemeCreated" xml:space="preserve">
-    <value>Made the “{0}” theme — edit theme.json in the opened folder and restart to see it.</value>
-  </data>
   <data name="Theme_MyTheme" xml:space="preserve">
     <value>My theme</value>
   </data>
@@ -92,7 +77,7 @@
     <value>Unknown base theme “{0}” — used “{1}” instead</value>
   </data>
   <data name="Theme_ProblemUnknownName" xml:space="preserve">
-    <value>Unknown name “{0}” — only the names listed in a file made with [Make my theme] can be changed</value>
+    <value>Unknown name “{0}” — this name can’t be changed</value>
   </data>
   <data name="Theme_ProblemBadValue" xml:space="preserve">
     <value>Couldn’t read “{1}” for “{0}” — expected: {2}</value>
@@ -129,9 +114,6 @@ Edit this file and restart Story Director to see the change (choose this theme i
     <value>Story Director — my theme folder
 
 Each folder inside this folder is one of your own themes. They are used on this PC only.
-
-Making one
-  [⚙ Settings] → “Other” → [Make my theme] copies the current theme into a new folder and opens it.
 
 Editing
   1. Open theme.json in that folder with Notepad or any text editor. Every line has a description.

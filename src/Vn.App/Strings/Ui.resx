@@ -48,26 +48,6 @@
     <value>파스텔 하늘</value>
     <comment>테마의 이름 — 설정 창 테마 칸(Theming/ThemeCatalog.cs).</comment>
   </data>
-  <data name="Settings_ThemeCreate" xml:space="preserve">
-    <value>내 테마 만들기</value>
-    <comment>설정 창 「기타」 — 테마 칸 아래 단추.</comment>
-  </data>
-  <data name="Settings_ThemeCreateTip" xml:space="preserve">
-    <value>지금 테마를 복사해 「내 테마」 폴더를 만들고 엽니다 — 그 안의 theme.json을 고치거나 그림을 넣고 다시 켜면 바뀝니다. AI에게 고쳐 달라고 해도 됩니다(폴더의 「읽어 주세요.txt」).</value>
-    <comment>그 단추의 풍선.</comment>
-  </data>
-  <data name="Settings_ThemeFolder" xml:space="preserve">
-    <value>테마 폴더 열기</value>
-    <comment>설정 창 「기타」 — 테마 칸 아래 단추.</comment>
-  </data>
-  <data name="Settings_ThemeFolderTip" xml:space="preserve">
-    <value>「내 테마」들이 든 폴더를 엽니다 — 이 PC에서만 쓰입니다.</value>
-    <comment>그 단추의 풍선.</comment>
-  </data>
-  <data name="Settings_ThemeCreated" xml:space="preserve">
-    <value>「{0}」 테마를 만들었습니다 — 열린 폴더의 theme.json을 고치고 다시 켜면 바뀝니다.</value>
-    <comment>상태줄 · 테마 칸 아래. {0} = 새 테마의 이름.</comment>
-  </data>
   <data name="Theme_MyTheme" xml:space="preserve">
     <value>내 테마</value>
     <comment>새로 만드는 「내 테마」의 처음 이름 · 폴더 이름.</comment>
@@ -117,7 +97,7 @@
     <comment>{0} = 적힌 base · {1} = 대신 쓴 테마 이름.</comment>
   </data>
   <data name="Theme_ProblemUnknownName" xml:space="preserve">
-    <value>모르는 이름 「{0}」 — 이 이름은 바꿀 수 없습니다([내 테마 만들기]로 만든 파일에 적힌 이름만 쓸 수 있습니다)</value>
+    <value>모르는 이름 「{0}」 — 이 이름은 바꿀 수 없습니다</value>
     <comment>{0} = 적힌 이름.</comment>
   </data>
   <data name="Theme_ProblemBadValue" xml:space="preserve">
@@ -163,9 +143,6 @@
     <value>스토리 디렉터 — 내 테마 폴더
 
 이 폴더 안의 폴더 하나가 「내 테마」 하나입니다. 이 PC에서만 쓰입니다.
-
-만들기
-  [⚙ 설정] → 「기타」 → [내 테마 만들기]를 누르면 지금 테마를 복사한 폴더가 생기고 열립니다.
 
 고치기
   1. 그 폴더의 theme.json을 메모장 등으로 엽니다. 줄마다 무엇인지 설명이 붙어 있습니다.

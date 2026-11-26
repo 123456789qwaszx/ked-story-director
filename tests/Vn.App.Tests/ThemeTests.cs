@@ -428,40 +428,6 @@ public sealed class ThemeTests : IDisposable
         }
     });
 
-    [Fact]
-    public void 설정_창에서_내_테마를_만들면_폴더가_열리고_그_테마가_골라진다() => HeadlessUi.Run(() =>
-    {
-        string? opened = null;
-        Action<string> open = SettingsWindow.OpenFolder;
-        SettingsWindow.OpenFolder = folder => opened = folder;
-
-        try
-        {
-            (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
-            SettingsWindow settings = window.OpenSettings();
-            Dispatcher.UIThread.RunJobs();
-
-            settings.ThemeCreateButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            Dispatcher.UIThread.RunJobs();
-
-            ThemeInfo made = Assert.Single(ThemeCatalog.All, theme => theme.UserFolder is not null);
-            Assert.Equal(made.UserFolder, opened);
-            Assert.Equal(made.Id, AppSettingsService.LoadTheme());
-            Assert.Equal(ThemeCatalog.All.ToList().IndexOf(made), settings.ThemeCombo.SelectedIndex);
-            Assert.Contains(made.Name(), session.StatusMessage, StringComparison.Ordinal);
-
-            settings.ThemeFolderButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            Assert.Equal(ThemeCatalog.UserThemesFolder, opened);
-
-            settings.Close();
-            window.Close();
-        }
-        finally
-        {
-            SettingsWindow.OpenFolder = open;
-        }
-    });
-
     private static object? Resource(Application app, string key) =>
         app.TryGetResource(key, ThemeVariant.Light, out object? value) ? value : null;
 
