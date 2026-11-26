@@ -2240,11 +2240,11 @@ public partial class GraphEditorView : UserControl
                 FontWeight = FontWeight.SemiBold
             });
 
-            foreach ((string from, string label, _) in capturedIncoming)
+            foreach ((string From, string Label, Color? Ink) item in capturedIncoming)
             {
                 panel.Children.Add(new TextBlock
                 {
-                    Text = $"{from} · {label}",
+                    Text = $"{item.From} · {item.Label}",
                     FontSize = 11,
                     Opacity = 0.85
                 });
