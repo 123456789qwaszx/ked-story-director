@@ -147,14 +147,15 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
-    public void 이어진_칸은_초록이다() => HeadlessUi.Run(() =>
+    public void 이어진_칸의_점은_그_칸의_길_색이다() => HeadlessUi.Run(() =>
     {
+        // 2026-11-26 — 디자인 점검 2번: 점 · 문구 · 선이 한 색이다(⛔ 그 전에는 이은 점이 초록이었다).
         (GraphEditorView graph, AuthoringSession session) = Show();
 
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "왼쪽으로");
         graph.Rebuild();
 
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[0]);
+        Assert.Equal(GraphEditorView.LaneBrush(0), Dots(graph, "root")[0]);
     });
 
     [Fact]
@@ -283,7 +284,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         // 이은 칸은 제 줄(둘째)에 빨갛게 선다. 첫 칸은 더는 자동 자리가 아니다(이은 길이 있다).
         Border needs = Assert.Single(Rows(graph, "root")[1].Children.OfType<Border>(), face => face.Tag as string == GraphEditorView.SlotNeedsLabelTag);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
+        Assert.Equal(GraphEditorView.LaneBrush(1), Dots(graph, "root")[1]);
         Assert.Equal(GraphEditorView.SlotAsleep, Dots(graph, "root")[0]);
 
         // 적을 때까지 게임에는 임시 문구로 나간다 — 칸의 풍선이 그 문구를 그대로 보인다(2026-11-26 · MissingChoiceText).

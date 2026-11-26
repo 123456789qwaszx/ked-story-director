@@ -131,7 +131,7 @@ This one document takes you from getting started to handing over your work.
      - While you choose a font or color, the selected text stays lightly highlighted, and afterward those characters remain selected so you can apply another format right away.
      - Clicking outside the writing box (empty board · a card's header) turns the tools off — select text in a writing box again to turn them on.
 3. **Connect choices** — choice slots appear side by side under an episode card (each a point and a text — left to right is the order of the choices, and a connected line drops down from its point. A choice text and its line share a colour).
-   - Click the **[+]** beside an empty slot's point — the text box opens ready to type; write the choice text (Enter), then drag the point (now red) onto the next episode card to connect it. A connected point is green.
+   - Click the **[+]** beside an empty slot's point — the text box opens ready to type; write the choice text (Enter), then drag the point (now filled in) onto the next episode card to connect it. A connected point, its text and its line share one colour (teal, olive or purple, in slot order).
    - **You can connect first and write the text later** — drag a gray point straight onto a card without writing anything, and it connects as a red **"Write the choice text"** slot.
      Click that slot to write the text (until you do, it stays a 🟡 warning in the "Validation report" and goes to the game with the placeholder `[TODO] Missing choice text -> destination episode ID`). Clicking a gray point without dragging opens the text box.
    - On a card with no choice text yet, the first slot is **"Auto"** — drag and drop its point without writing text to make a path that moves on without asking.

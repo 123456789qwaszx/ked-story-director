@@ -59,7 +59,9 @@
     <Color x:Key="OtherCardAccent">#5B6B79</Color>
     <Color x:Key="OtherCardSurface">#FFFEFA</Color>
     <Color x:Key="OtherCardBorder">#7C8FA0</Color>
-    <Color x:Key="SlotLive">#D4493A</Color>
+    <!-- 선택지 칸의 점은 모양으로 말한다 — 빈 칸은 속이 빈 회색 원, 켜진 칸(자동 자리 · 문구를 적은 칸)은 속이 찬 진한 회색 원, 이은 칸은 그 칸의 길 색으로
+         찬 원(코드가 칠한다). ⛔ 그 전에는 켜짐이 빨강 · 이음이 초록이라 「● 자동」이 오류처럼 읽혔다(2026-11-26 — 디자인 점검 2번 · 빨강은 위험 · 오류에만). -->
+    <Color x:Key="SlotLive">#5B6B79</Color>
     <Color x:Key="SlotAsleep">#A07F93A3</Color>
     <Color x:Key="SlotPlaceholderBorder">#A9B8C4</Color>
     <Color x:Key="Rail">#8796A4</Color>
@@ -68,12 +70,14 @@
     <Color x:Key="BranchHub">#34414F</Color>
     <Color x:Key="BranchHubOpen">#8796A4</Color>
     <Color x:Key="MinimapZoomHidden">#7F93A3</Color>
+    <!-- 분기 선은 갈색 한 식구의 점선이다 — 한 카드에서 여러 갈래가 나가면 밝기로 가른다(조건 이름이 늘 함께 붙는다). 선택지의 길 색(청록 · 올리브 · 자주) ·
+         고름의 파랑 · 위험의 빨강 · 시작의 금빛과 겹치지 않는다(2026-11-26 — 디자인 점검 2번 · ⛔ 그 전에는 보라 · 청록 · 금빛 · 분홍 · 하늘이 섞여 선택지 선과 겹쳤다). -->
     <Color x:Key="BranchLine1">#8A5A3C</Color>
-    <Color x:Key="BranchLine2">#7D6BB5</Color>
-    <Color x:Key="BranchLine3">#2F7F6D</Color>
-    <Color x:Key="BranchLine4">#B87A00</Color>
-    <Color x:Key="BranchLine5">#C2557D</Color>
-    <Color x:Key="BranchLine6">#2F8799</Color>
+    <Color x:Key="BranchLine2">#6A4630</Color>
+    <Color x:Key="BranchLine3">#A57C5B</Color>
+    <Color x:Key="BranchLine4">#7C5D4E</Color>
+    <Color x:Key="BranchLine5">#523A2B</Color>
+    <Color x:Key="BranchLine6">#B08C70</Color>
 
     <!-- [대본] 판 — 테두리 · 머리 띠 · 선택지 칸 -->
     <Color x:Key="ChapterFrameBorder">#FF5B8FB3</Color>
@@ -98,9 +102,10 @@
     <Color x:Key="RowSelected">#CCE8FF</Color>
     <Color x:Key="SlotAlertSurface">#FBE3DC</Color>
     <!-- 선택지의 길 색 — 카드 아래 칸의 차례대로(첫째 · 둘째 · 셋째, 넷째부터는 돈다). 이은 칸의 문구와 그 선이 같은 색이라 문구가 어느 선의 것인지,
-         선이 어디로 가는지가 색으로 따라가진다. 점의 색(초록 · 붉은색 · 회색 — 칸의 상태)과 고른 것의 파랑(고른 선)은 피한다 — 청록 · 주황 · 자주. -->
+         선이 어디로 가는지가 색으로 따라가진다(이은 점 · 도착 접점도 그 색). 고름의 파랑 · 위험의 빨강 · 분기의 갈색 · 시작의 금빛은 피한다 — 청록 · 올리브 · 자주.
+         ⛔ 둘째가 주황이었을 때는 분기의 갈색과 닮아 어느 선이 분기인지 헷갈렸다(2026-11-26 — 디자인 점검 2번). -->
     <Color x:Key="ChoiceLine1">#0C716B</Color>
-    <Color x:Key="ChoiceLine2">#A55608</Color>
+    <Color x:Key="ChoiceLine2">#5E7C16</Color>
     <Color x:Key="ChoiceLine3">#8A3F96</Color>
 
     <!-- [구성] 판 -->
@@ -165,8 +170,9 @@
          ───────────────────────────────────────────────────────────────────────── -->
     <!-- 창의 바탕 — 새하얀색이 아닌 따뜻한 종이빛(넓은 흰 면의 눈부심을 줄인다) -->
     <SolidColorBrush x:Key="WindowBackground" Color="#FAF8F4" />
-    <!-- 위 띠의 바탕 — 채도를 낮춘 회하늘색(화면에서 가장 진한 큰 면이 되지 않게 · 눈이 판에 머문다) -->
-    <SolidColorBrush x:Key="TopBarBackground" Color="#C3D6E2" />
+    <!-- 위 띠의 바탕 — 중립 회색(아래 1px 구분선 Divider). 파랑은 「고른 것」에만 쓴다(2026-11-26 — 디자인 점검 2번 · ⛔ 그 전에는 회하늘색 #C3D6E2라
+         화면에서 가장 무거운 띠였다). -->
+    <SolidColorBrush x:Key="TopBarBackground" Color="#EEF1F4" />
     <!-- 위 띠 아래의 꾸밈 줄 — 이 테마에는 없다(높이 0 · 위 띠는 구분선 하나로 끝난다). ⛔ 구름 물결(볼록볼록한 반원)은 2026-11-26에 걷었다(소유자 —
          「어울리지 않는 것 같습니다」). 자리(높이 · 가리개 TopBarEdgeMask · 그림 TopBarEdgeBrush)는 남아 있어 높이를 주면 다시 선다 — 가리개의 불투명한
          자리에 창의 바탕색이 서고 나머지에는 위 띠의 색이 보인다. -->
@@ -249,8 +255,8 @@
     <SolidColorBrush x:Key="ChunkyDisabledBackground" Color="#EFF1F3" />
     <SolidColorBrush x:Key="ChunkyDisabledBorder" Color="#D3DAE0" />
     <SolidColorBrush x:Key="ChunkyDisabledForeground" Color="#8796A4" />
-    <!-- 위 띠 위의 두툼한 단추 · File 메뉴 — 위 띠보다 한 단계 짙은 회하늘색 테두리 -->
-    <SolidColorBrush x:Key="TopBarButtonBorder" Color="#9DB6C6" />
+    <!-- 위 띠 위의 두툼한 단추 · File 메뉴 — 다른 두툼한 단추와 같은 테두리(위 띠가 옅어져 따로 짙게 할 까닭이 없다) -->
+    <SolidColorBrush x:Key="TopBarButtonBorder" Color="#B9C7D2" />
 
     <!-- 탭 — 기둥의 탭(인스펙터 · 화자 · 조건 및 스탯)과 주 탭([대본] · [구성]). 고른 탭은 옅은 파랑 면에 강조색 표시(기둥의 탭은 아래 막대 · 주 탭은 파란 테두리 — 아래가 굵다). -->
     <SolidColorBrush x:Key="TabHoverBackground" Color="#E6ECF1" />

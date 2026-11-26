@@ -1408,7 +1408,7 @@ public partial class GraphEditorView : UserControl
     /// 색이다. 줄기 · 가로 줄 · 안 이은 칸은 길 하나의 것이 아니라 <see cref="RailBrush"/> 그대로다. 도착 접점 · 화살촉은 들어오는 길들이 한 색이면 그 색, 색이 다른
     /// 길이 모이면 철도 색이다(<see cref="DrawArrivalPort"/>).
     /// </summary>
-    private static IBrush LaneBrush(int order) => LaneColor(order).Brush();
+    internal static IBrush LaneBrush(int order) => LaneColor(order).Brush();
 
     private static Color LaneColor(int order) => (order % 3) switch
     {
@@ -2284,7 +2284,8 @@ public partial class GraphEditorView : UserControl
         bool live = IsLive(slot, ports);
         bool auto = IsAutoSlot(slot, ports);
         string text = LabelOf(slot);
-        IBrush dot = SlotDot(slot, ports);
+        // 이은 칸의 점은 그 칸의 길 색이다 — 점 · 문구 · 선 · 도착 접점이 한 색(2026-11-26 — 디자인 점검 2번 · ⛔ 그 전에는 이은 점이 초록이었다).
+        IBrush dot = ink ?? SlotDot(slot, ports);
         double size = SlotFontSize(nodeId);
 
         var knob = new Ellipse
@@ -6013,21 +6014,21 @@ public partial class GraphEditorView : UserControl
     /// <summary>지금 문구를 적고 있는 칸 — <b>테스트의 손잡이</b>이자 실제 입력칸이다.</summary>
     internal TextBox? SlotLabelBox { get; private set; }
 
-    /// <summary>안 이은 활성 칸의 붉은 점.</summary>
+    /// <summary>안 이은 활성 칸(자동 자리 · 문구를 적은 칸)의 속이 찬 점 — 「파스텔 하늘」은 진한 회색이다(빨강은 위험 · 오류에만 쓴다).</summary>
     internal static IBrush SlotLive => Skin.SlotLive.Brush();
 
-    /// <summary>이어진 칸의 초록 점.</summary>
+    /// <summary>이어진 칸의 점 — 판에서는 그 칸의 길 색으로 칠한다(<see cref="LaneBrush"/>). 길 색을 모를 때만 이것(초록)이다.</summary>
     internal static IBrush SlotJoined => Skin.Success.Brush();
 
     /// <summary>아직 못 쓰는 칸의 회색 테두리.</summary>
     internal static IBrush SlotAsleep => Skin.SlotAsleep.Brush();
 
     /// <summary>
-    /// 그 칸의 색 — <b>세 자리를 한눈에</b> 가른다 (2026-09-16 소유자).
+    /// 그 칸의 색 — <b>세 자리를 한눈에</b> 가른다 (2026-09-16 소유자). 색보다 <b>모양</b>이 먼저 말한다(2026-11-26 — 디자인 점검 2번):
     ///
-    /// | 텅 빈 회색 | 아직 꺼져 있다 — 눌러서 켠다 |
-    /// | 붉은색 | 켜졌다 — 끌어다 놓을 수 있다 |
-    /// | 초록색 | 이어졌다 |
+    /// | 속이 빈 회색 원 | 아직 꺼져 있다 — 눌러서 켠다 |
+    /// | 속이 찬 원(켜짐 색 — 「파스텔 하늘」은 진한 회색 · 기본 테마는 붉은색) | 켜졌다 — 끌어다 놓을 수 있다 |
+    /// | 속이 찬 원(그 칸의 길 색) | 이어졌다 |
     /// </summary>
     private IBrush SlotDot(GraphChoicePort choice, IReadOnlyList<GraphChoicePort> slots) =>
         !choice.IsEmpty ? SlotJoined : IsLive(choice, slots) ? SlotLive : SlotAsleep;
@@ -6300,7 +6301,10 @@ public partial class GraphEditorView : UserControl
         {
             Stroke = stroke,
             StrokeThickness = 2 * Skin.LineWeight,
-            StrokeJoin = PenLineJoin.Round
+            StrokeJoin = PenLineJoin.Round,
+
+            // 분기(들렀다 돌아오는 길)는 점선이다 — 선택지의 실선과 색이 아니라 모양으로 갈린다([구성]의 분기 선과 같다 · 2026-11-26 — 디자인 점검 2번).
+            StrokeDashArray = connection.Kind == GraphConnectionKind.ExecutionBranch ? new AvaloniaList<double> { 5, 3 } : null
         };
 
         bool showLabel = connection.Kind == GraphConnectionKind.ExecutionBranch;
