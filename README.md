@@ -85,7 +85,7 @@ Actions의 실행 화면 아래 Artifacts에서 받습니다. 인텔 맥은 인�
 
 둘 다 .NET 런타임을 함께 담으므로 받는 PC에 개발 환경이 필요 없습니다. 서명은 없습니다 — Windows는 파란 경고 창을, 맥은 「그래도 열기」를
 처음 한 번 지납니다([`docs/작가에게.txt`](docs/작가에게.txt)). 맥의 서명 · 공증은 하지 않았습니다(Apple 개발자 계정이 듭니다).
-판 번호는 `-Version 0.5.0`(맥은 둘째 인자)으로 정하고, GitHub 릴리스로 굽는 길은 [`docs/handover.md`](docs/handover.md) 3절입니다.
+판 번호는 `-Version 0.6.0`(맥은 둘째 인자)으로 정하고, GitHub 릴리스로 굽는 길은 [`docs/handover.md`](docs/handover.md) 3절입니다.
 
 `THIRD-PARTY-NOTICES.txt`(저장소 맨 위)는 함께 담기는 오픈소스와 글꼴(Inter)의 저작권 고지 · 라이선스 원문입니다. 패키지 판을 올리면 다시
 옮깁니다 — 시험(`ThirdPartyNoticesTests`)이 알립니다([`docs/handover.md`](docs/handover.md) 7절).
