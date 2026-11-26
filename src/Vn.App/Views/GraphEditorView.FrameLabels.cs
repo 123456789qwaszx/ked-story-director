@@ -149,10 +149,10 @@ public partial class GraphEditorView
     }
 
     /// <summary>
-    /// 그 카드가 지금 글을 보이나 — 장면 이름표는 글을 보이는 카드를 덮지 않는다(지명식도). ⚠ 지금은 1차 구현의 판 전체 그림(<see cref="BoardDetail"/>)을
-    /// 따른다 — 설계 3절(카드마다 화면 글자 크기로 고르는 단계)로 갈아 끼운다.
+    /// 그 카드가 지금 글을 보이나(글 단계 · <see cref="CardStage"/>) — 장면 이름표는 글을 보이는 카드를 덮지 않는다(지명식도). 카드의 그림자도 이것을 따른다.
+    /// 판에 없는 카드는 글을 보이는 것으로 친다.
     /// </summary>
-    private bool CardShowsText(string nodeId) => _detail == BoardDetail.Full || FindCard(nodeId) is null;
+    private bool CardShowsText(string nodeId) => FindCard(nodeId) is not { } card || card.Stage == CardStage.Text;
 
     /// <summary>
     /// 이름표의 자리와 크기를 지금 배율 · 스크롤에 맞춘다(design/board-zoom.md 4.2절). 챕터를 먼저 세우고(숨지 않는다), 장면은 위에서부터 자리 후보를 대 본다:

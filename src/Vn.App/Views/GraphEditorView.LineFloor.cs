@@ -26,6 +26,9 @@ public partial class GraphEditorView
     /// <summary>고른 선 · 고른 카드 테두리 · 끄는 선이 화면에서 이보다 가늘어지지 않는다(px).</summary>
     internal const double PickedLineFloorPx = 2;
 
+    /// <summary>덩어리 단계의 고른 카드 — 바깥 고리가 화면에서 이보다 가늘어지지 않는다(px · 설계 3절 「덩어리」).</summary>
+    internal const double BlockPickedFloorPx = 3;
+
     /// <summary>선을 누르는 투명한 띠가 화면에서 이보다 좁아지지 않는다(px) — 줄인 판에서도 선을 겨눌 수 있다.</summary>
     internal const double HitLineFloorPx = 8;
 
@@ -94,6 +97,11 @@ public partial class GraphEditorView
             {
                 ApplyFloor(shape);
             }
+
+            if (item is Control control)
+            {
+                ApplyMark(control);   // 점 · 화살촉의 화면 바닥(CardStages)
+            }
         }
     }
 
@@ -102,14 +110,15 @@ public partial class GraphEditorView
         string.Equals(nodeId, _session?.SelectedNodeId, StringComparison.Ordinal) || _multiSelected.Contains(nodeId);
 
     /// <summary>
-    /// 카드의 테두리 · 그림자. 테두리의 굵기는 판 단위 그대로(1 · 고르면 2 — 카드의 안쪽 치수가 같다)이고, 화면 바닥(1 · 고르면 2px)에 모자라면 같은 색의
+    /// 카드의 테두리 · 그림자. 테두리의 굵기는 판 단위 그대로(1 · 고르면 2 — 카드의 안쪽 치수가 같다)이고, 화면 바닥(1 · 고르면 2px · 고른 덩어리는 3px)에 모자라면 같은 색의
     /// 바깥 고리를 더한다. 그림자(고르면 파란 번짐까지)는 글을 보이는 카드에만 둔다.
     /// </summary>
     private void PaintCardEdge(NodeCard card, bool picked)
     {
         Color edge = picked ? Skin.Selection : card.Style.Border;
         double width = picked ? 2 : 1;
-        double need = (picked ? PickedLineFloorPx : LineFloorPx) / Math.Max(_zoom, 0.01);
+        double floor = !picked ? LineFloorPx : card.Stage == CardStage.Block ? BlockPickedFloorPx : PickedLineFloorPx;
+        double need = floor / Math.Max(_zoom, 0.01);
 
         card.Visual.BorderBrush = edge.Brush();
         card.Visual.BorderThickness = new Thickness(width);

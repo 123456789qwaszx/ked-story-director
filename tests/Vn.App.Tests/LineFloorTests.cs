@@ -75,12 +75,14 @@ public sealed class LineFloorTests : IDisposable
         Assert.Equal(2, picked.BorderThickness.Left);
         Assert.Equal(size, plain.Bounds.Size);
 
-        // 바닥 1px(고르면 2px) ÷ 10% = 판 위 10(20) — 테두리에 모자란 만큼이 번짐 없는 고리다. 글을 보이지 않는 카드라 그림자는 없다.
+        // 바닥 1px ÷ 10% = 판 위 10 — 테두리에 모자란 만큼이 번짐 없는 고리다. 10%의 카드는 덩어리 단계라(화면에서 20px보다 낮다) 그림자가 없고, 고른
+        // 덩어리는 고리가 3px이다(3 ÷ 10% − 테두리 2 = 28).
+        Assert.Equal(GraphEditorView.CardStage.Block, graph.CardStageOf(root));
         Assert.Equal(1, plain.BoxShadow.Count);
         Assert.Equal(9, plain.BoxShadow[0].Spread, 3);
         Assert.Equal(0, plain.BoxShadow[0].Blur);
         Assert.Equal(1, picked.BoxShadow.Count);
-        Assert.Equal(18, picked.BoxShadow[0].Spread, 3);
+        Assert.Equal((GraphEditorView.BlockPickedFloorPx / 0.1) - 2, picked.BoxShadow[0].Spread, 3);
         Assert.Equal(Skin.Selection, picked.BoxShadow[0].Color);
     });
 

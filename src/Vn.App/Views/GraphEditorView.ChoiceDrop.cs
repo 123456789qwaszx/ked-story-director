@@ -353,8 +353,17 @@ public partial class GraphEditorView
 
         UnhoverKnob();
         _hoveredKnob = knob;
-        knob.RenderTransformOrigin = RelativePoint.Center;
-        knob.RenderTransform = new ScaleTransform(1.5, 1.5);
+
+        // 점이 커진다 — 줄인 판에서 키운 점(Marked)이면 그 배수의 1.5배다(CardStages).
+        if (double.IsNaN(knob.GetValue(MarkSizeProperty)))
+        {
+            knob.RenderTransformOrigin = RelativePoint.Center;
+            knob.RenderTransform = new ScaleTransform(1.5, 1.5);
+        }
+        else
+        {
+            ApplyMark(knob);
+        }
 
         // 회색 점도 끌 수 있다 — 문구 없이 먼저 잇고 나중에 적는다(2026-11-26). ⛔ 그 전에는 「문구를 적으면 끌어서 이을 수 있습니다」(회색 꼬리표)였다.
         string text = !live
@@ -390,8 +399,17 @@ public partial class GraphEditorView
             return;
         }
 
-        _hoveredKnob.RenderTransform = null;
+        Control knob = _hoveredKnob;
         _hoveredKnob = null;
+
+        if (double.IsNaN(knob.GetValue(MarkSizeProperty)))
+        {
+            knob.RenderTransform = null;
+        }
+        else
+        {
+            ApplyMark(knob);   // 줄인 판의 키움으로 돌아간다
+        }
     }
 
     // ── 꼬리표 · 테두리 ──────────────────────────────────────────────────────
