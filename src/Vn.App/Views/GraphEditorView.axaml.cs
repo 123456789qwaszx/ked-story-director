@@ -177,13 +177,6 @@ public partial class GraphEditorView : UserControl
             sceneId);
     }
 
-    /// <summary>비치는 색을 바탕 위에 한 겹 — 비치면 안 되는 자리(접은 장면 상자)에 같은 색을 불투명하게.</summary>
-    private static Color Over(Color top, Color under)
-    {
-        double alpha = top.A / 255d;
-        byte Mix(byte t, byte u) => (byte)Math.Round((t * alpha) + (u * (1 - alpha)));
-        return Color.FromRgb(Mix(top.R, under.R), Mix(top.G, under.G), Mix(top.B, under.B));
-    }
 
     private readonly List<NodeCard> _cards = new();
     private readonly List<FileProxyVisual> _proxies = new();
@@ -5810,7 +5803,7 @@ public partial class GraphEditorView : UserControl
         {
             Width = ProxyWidth,
             CornerRadius = new CornerRadius(8),
-            Background = Over(Skin.SceneTintOf(color), Skin.ChapterFrameFill).Brush(),   // 펼친 장면과 같은 색 — 상자는 비치지 않는다(아래 선이 보이지 않게)
+            Background = Skin.SceneProxyFillOf(color).Brush(),   // 펼친 장면과 같은 색 — 상자는 비치지 않는다(아래 선이 보이지 않게)
             BorderBrush = Skin.SceneMarkOf(color).Brush(170),
             BorderThickness = new Thickness(1),
             ClipToBounds = false,

@@ -248,6 +248,15 @@ public sealed class ThemeTests : IDisposable
 
             ThemeService.Apply(app, ThemeCatalog.Classic);
             Assert.Equal(11d, Skin.Font(11));   // 기본 테마는 단계가 없다 — 준 크기 그대로
+
+            // 접은 장면 상자의 바탕 — 기본 테마의 챕터 바탕은 비치는 옅은 파랑이라 흰 종이 위에 얹어 셈한다. 상자는 옅다(2026-11-27 — ⛔ 챕터 바탕의 RGB를
+            // 불투명하게 섞어 진한 파랑이었다).
+            for (int slot = 1; slot <= 5; slot++)
+            {
+                Color fill = Skin.SceneProxyFillOf(slot);
+                Assert.Equal(255, fill.A);
+                Assert.True(Contrast(fill, Colors.White) < 1.25, $"기본 테마 칸 {slot}의 접은 상자 {fill}가 옅지 않다");
+            }
             Assert.Equal(Color.Parse("#2563EB"), Skin.Selection);
             Assert.Equal(4, Skin.CardRadius);
             Assert.Equal(default, Skin.CardShadow);

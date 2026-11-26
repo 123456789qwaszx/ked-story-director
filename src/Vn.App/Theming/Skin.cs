@@ -341,6 +341,13 @@ internal static class Skin
     /// <summary>비치는 바탕이면 흰 종이 위에 얹은 색으로(기본 테마의 챕터 바탕은 비친다).</summary>
     private static Color Opaque(Color color) => color.A == 255 ? color : Over(color, Colors.White);
 
+    /// <summary>
+    /// 접은 장면 상자의 바탕 — 그 장면의 비치는 바탕(<see cref="SceneTintOf"/>)을 챕터 바탕 위에 한 겹 얹은 <b>불투명한</b> 색(상자 밑의 선이 비치지 않게).
+    /// 챕터 바탕이 비치는 색이면(기본 테마 — 옅은 파랑 #0C3D7BD9) 흰 종이 위에 얹은 색으로 셈한다. ⛔ 2026-11-27까지는 챕터 바탕의 RGB를 불투명하게
+    /// 섞어, 기본 테마에서 접은 장면 상자가 진한 파랑(#3D7BD9 쪽)이었다.
+    /// </summary>
+    public static Color SceneProxyFillOf(int color) => Over(SceneTintOf(color), Opaque(ChapterFrameFill));
+
     /// <summary>상대 휘도(WCAG).</summary>
     internal static double Luminance(Color color)
     {
