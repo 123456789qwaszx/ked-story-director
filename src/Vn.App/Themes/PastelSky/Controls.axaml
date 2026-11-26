@@ -1,13 +1,13 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- 파스텔 하늘 — 컨트롤의 모양 · 글꼴 · 눌림. 색은 Tokens.axaml(Fluent 테마의 이름을 덮는다)에 있고, 여기는 색 이름만으로 못 바꾸는 것을 적는다.
+    <!-- 파스텔 하늘 — 컨트롤의 모양 · 글꼴 · 눌림. 색은 모두 Tokens.axaml에 이름으로 있다(여기에 색을 숫자로 적지 않는다 — 작가가 「내 테마」로 바꿀 수 있게 · ThemeTests가 지킨다).
          화면이 붙여 둔 클래스로 고른다 — 「chunky」(틀의 큰 단추 · 「primary」 만들기 · 「danger」 지우기), 「card-title」(카드 제목), 「frame-title」(챕터 · 장면 이름표),
          「card-writing」(카드 글 칸). 클래스는 기본 테마에서는 아무 일도 하지 않는다. -->
 
     <!-- 글꼴 — 창마다(주 창 · 설정 창). 창 안의 글은 이것을 물려받는다. -->
     <!-- 창의 바탕은 새하얀색이 아니라 따뜻한 종이빛이다 — 넓은 흰 면의 눈부심을 줄인다(위 띠 아래 구름 물결의 색과 같다 · Tokens.axaml). -->
     <Style Selector=":is(Window)">
-        <Setter Property="Background" Value="#FAF8F4" />
+        <Setter Property="Background" Value="{DynamicResource WindowBackground}" />
         <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     </Style>
 
@@ -46,8 +46,8 @@
         <Setter Property="RenderTransform" Value="none" />
     </Style>
     <Style Selector="Button.chunky /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="BorderBrush" Value="#C9DCE8" />
-        <Setter Property="BoxShadow" Value="0 3 0 0 #C9DCE8" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ChunkyBorder}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource ChunkyShadow}" />
         <Setter Property="Transitions">
             <Transitions>
                 <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.08" />
@@ -56,52 +56,52 @@
         </Setter>
     </Style>
     <Style Selector="Button.chunky:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="BoxShadow" Value="0 3 0 0 #A9D0E6" />
+        <Setter Property="BoxShadow" Value="{DynamicResource ChunkyShadowHover}" />
     </Style>
     <Style Selector="Button.chunky:pressed">
         <Setter Property="RenderTransform" Value="translateY(3px)" />
     </Style>
     <Style Selector="Button.chunky:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="BoxShadow" Value="0 0 0 0 #A9D0E6" />
+        <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
 
     <!-- 만들기(버터) -->
     <Style Selector="Button.chunky.primary /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="#F6E7B8" />
-        <Setter Property="BorderBrush" Value="#E2C678" />
-        <Setter Property="BoxShadow" Value="0 3 0 0 #E2C678" />
+        <Setter Property="Background" Value="{DynamicResource ChunkyPrimaryBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ChunkyPrimaryBorder}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource ChunkyPrimaryShadow}" />
     </Style>
     <Style Selector="Button.chunky.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="#F2DFA6" />
+        <Setter Property="Background" Value="{DynamicResource ChunkyPrimaryBackgroundHover}" />
     </Style>
     <Style Selector="Button.chunky.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="BoxShadow" Value="0 0 0 0 #E2C678" />
+        <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
 
     <!-- 지우기(산호) -->
     <Style Selector="Button.chunky.danger /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="#F9E9E8" />
-        <Setter Property="BorderBrush" Value="#E9BFBE" />
-        <Setter Property="BoxShadow" Value="0 3 0 0 #E9BFBE" />
-        <Setter Property="Foreground" Value="#A2424B" />
+        <Setter Property="Background" Value="{DynamicResource ChunkyDangerBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ChunkyDangerBorder}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource ChunkyDangerShadow}" />
+        <Setter Property="Foreground" Value="{DynamicResource ChunkyDangerForeground}" />
     </Style>
     <Style Selector="Button.chunky.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="BoxShadow" Value="0 0 0 0 #E9BFBE" />
+        <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
     <Style Selector="Button.chunky.danger:disabled /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="#F3F5F6" />
-        <Setter Property="BorderBrush" Value="#DDE5EA" />
-        <Setter Property="BoxShadow" Value="0 3 0 0 #DDE5EA" />
-        <Setter Property="Foreground" Value="#94A3AF" />
+        <Setter Property="Background" Value="{DynamicResource ChunkyDisabledBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ChunkyDisabledBorder}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource ChunkyDisabledShadow}" />
+        <Setter Property="Foreground" Value="{DynamicResource ChunkyDisabledForeground}" />
     </Style>
 
     <!-- 위 띠(하늘색 바탕) 위의 두툼한 단추 — 그림자가 바탕에 묻히지 않게 한 단계 짙다. File 메뉴도 같은 모양이다. -->
     <Style Selector="Grid#TopBar Button.chunky /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="BorderBrush" Value="#FFFFFF" />
-        <Setter Property="BoxShadow" Value="0 3 0 0 #86B7D3" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TopBarButtonBorder}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource TopBarButtonShadow}" />
     </Style>
     <Style Selector="Grid#TopBar Button.chunky:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="BoxShadow" Value="0 0 0 0 #86B7D3" />
+        <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
     </Style>
     <Style Selector="Menu#MainMenu > MenuItem">
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
@@ -110,8 +110,8 @@
     <Style Selector="Menu#MainMenu > MenuItem:not(:disabled) /template/ Border#PART_LayoutRoot">
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="BorderThickness" Value="2" />
-        <Setter Property="BorderBrush" Value="#FFFFFF" />
-        <Setter Property="BoxShadow" Value="0 3 0 0 #86B7D3" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TopBarButtonBorder}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource TopBarButtonShadow}" />
     </Style>
 
     <!-- 탭 — 밑줄 대신 면으로 고른 것을 말한다. 기둥의 탭(인스펙터 · 화자 · 조건 및 스탯)은 작은 알약, 주 탭([대본] · [구성])은 두툼한 스티커 탭이다. -->
@@ -123,10 +123,10 @@
         <Setter Property="Padding" Value="10,2" />
     </Style>
     <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
-        <Setter Property="Background" Value="#EEF4F7" />
+        <Setter Property="Background" Value="{DynamicResource TabHoverBackground}" />
     </Style>
     <Style Selector="TabItem:selected /template/ Border#PART_LayoutRoot">
-        <Setter Property="Background" Value="#F9E3E9" />
+        <Setter Property="Background" Value="{DynamicResource TabSelectedBackground}" />
     </Style>
     <Style Selector="TabItem:selected /template/ Border#PART_SelectedPipe">
         <Setter Property="IsVisible" Value="False" />
@@ -144,15 +144,15 @@
         <Setter Property="Padding" Value="18,0" />
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="BorderThickness" Value="2,2,2,5" />
-        <Setter Property="BorderBrush" Value="#C9DCE8" />
-        <Setter Property="Background" Value="#FFFEFA" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MainTabBorder}" />
+        <Setter Property="Background" Value="{DynamicResource MainTabBackground}" />
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem:pointerover /template/ Border#PART_LayoutRoot">
-        <Setter Property="Background" Value="#EEF4F7" />
+        <Setter Property="Background" Value="{DynamicResource TabHoverBackground}" />
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem:selected /template/ Border#PART_LayoutRoot">
-        <Setter Property="Background" Value="#F9E3E9" />
-        <Setter Property="BorderBrush" Value="#E7A0B6" />
+        <Setter Property="Background" Value="{DynamicResource TabSelectedBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MainTabSelectedBorder}" />
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem:selected /template/ Border#PART_SelectedPipe">
         <Setter Property="IsVisible" Value="False" />
@@ -178,10 +178,10 @@
     </Style>
     <Style Selector="TextBox.card-writing:pointerover /template/ Border#PART_BorderElement">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="#D9E9F2" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardWritingHoverBorder}" />
     </Style>
     <Style Selector="TextBox.card-writing:focus /template/ Border#PART_BorderElement">
-        <Setter Property="Background" Value="#FFFEFA" />
-        <Setter Property="BorderBrush" Value="#A9D0E6" />
+        <Setter Property="Background" Value="{DynamicResource CardWritingFocusBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardWritingFocusBorder}" />
     </Style>
 </Styles>

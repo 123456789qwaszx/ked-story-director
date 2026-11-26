@@ -123,8 +123,9 @@
             <!-- 판의 꾸밈 — 테마가 그림을 줄 때만 보인다(BoardDecorBrush · 「파스텔 하늘」의 구름과 별). 판의 왼쪽 아래 구석에, 카드 뒤에 깔리고 누름을 받지 않는다. -->
             <Border Grid.Column="2"
                     x:Name="BoardDecor"
-                    Width="300" Height="130"
-                    Margin="24,0,0,18"
+                    Width="{DynamicResource BoardDecorWidth}"
+                    Height="{DynamicResource BoardDecorHeight}"
+                    Margin="{DynamicResource BoardDecorMargin}"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Bottom"
                     Background="{DynamicResource BoardDecorBrush}"

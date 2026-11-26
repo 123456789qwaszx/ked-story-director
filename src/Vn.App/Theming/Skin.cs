@@ -384,26 +384,11 @@ internal static class Skin
 
     // ── 곁글의 진하기 ─────────────────────────────────────────────
 
-    /// <summary>곁글(투명도로 낮춘 글)을 얼마나 되올리는가 — 0이면 그대로, 1이면 본문과 같다. 코드는 <see cref="Dim"/>으로 쓴다.</summary>
+    /// <summary>
+    /// 곁글(투명도로 낮춘 글)을 얼마나 되올리는가 — 0이면 그대로, 1이면 본문과 같다. 코드는 <see cref="Dim"/>으로 쓰고, XAML은 이 값에서 셈한
+    /// <c>Dim45</c> ~ <c>Dim70</c>(기본 0.45 ~ 0.7)을 <c>Opacity="{DynamicResource Dim60}"</c>로 쓴다(<see cref="ThemeService"/>가 테마를 입힐 때 셈한다).
+    /// </summary>
     public static double DimLift => N();
-
-    /// <summary>XAML이 쓰는 곁글의 진하기(기본 0.45 ~ 0.7) — <c>Opacity="{DynamicResource Dim60}"</c>. 테마는 <see cref="DimLift"/>와 같은 셈으로 적는다.</summary>
-    public static double Dim45 => N();
-
-    /// <summary>기본 0.5.</summary>
-    public static double Dim50 => N();
-
-    /// <summary>기본 0.55.</summary>
-    public static double Dim55 => N();
-
-    /// <summary>기본 0.6.</summary>
-    public static double Dim60 => N();
-
-    /// <summary>기본 0.65.</summary>
-    public static double Dim65 => N();
-
-    /// <summary>기본 0.7.</summary>
-    public static double Dim70 => N();
 
     /// <summary>
     /// 틀의 곁글의 진하기 — 기본 테마의 투명도를 주면 테마가 정한 만큼 되올린다(기본 테마는 준 값 그대로). 옅은 바탕색의 테마에서 곁글이
@@ -413,23 +398,12 @@ internal static class Skin
 
     // ── 글자 크기(틀) ─────────────────────────────────────────────
 
-    /// <summary>틀(하이어아키 · 인스펙터 · 설정 창 · 도구 막대)의 글자 크기 배수 — 코드는 <see cref="Font"/>로 쓴다. 판 위의 글은 따르지 않는다.</summary>
+    /// <summary>
+    /// 틀(하이어아키 · 인스펙터 · 설정 창 · 도구 막대)의 글자 크기 배수 — 코드는 <see cref="Font"/>로 쓰고, XAML은 이 값에서 셈한 단계
+    /// <c>TextXxs</c> 9 · <c>TextXs</c> 10 · <c>TextSm</c> 11 · <c>TextMd</c> 12 · <c>TextLg</c> 14(기본 테마의 크기)를 <c>{DynamicResource TextSm}</c>으로 쓴다
+    /// (<see cref="ThemeService"/>가 테마를 입힐 때 셈한다). 판 위의 글은 따르지 않는다.
+    /// </summary>
     public static double FontScale => N();
-
-    /// <summary>XAML이 쓰는 글자 크기 단계(기본 9 · 10 · 11 · 12 · 14) — <c>{DynamicResource TextSm}</c>. 테마는 <see cref="FontScale"/>과 같은 비율로 적는다.</summary>
-    public static double TextXxs => N();
-
-    /// <summary>기본 10.</summary>
-    public static double TextXs => N();
-
-    /// <summary>기본 11.</summary>
-    public static double TextSm => N();
-
-    /// <summary>기본 12.</summary>
-    public static double TextMd => N();
-
-    /// <summary>기본 14.</summary>
-    public static double TextLg => N();
 
     /// <summary>
     /// 틀의 글자 크기 — 기본 테마의 크기를 주면 테마의 배수를 곱해 0.5 단위로 맞춘다(기본 테마는 준 값 그대로).

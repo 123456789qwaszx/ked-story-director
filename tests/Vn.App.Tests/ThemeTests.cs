@@ -29,6 +29,13 @@ public sealed class ThemeTests : IDisposable
     {
         AppSettingsService.SaveTheme(null);
 
+        if (Directory.Exists(ThemeCatalog.UserThemesFolder))
+        {
+            Directory.Delete(ThemeCatalog.UserThemesFolder, recursive: true);
+        }
+
+        ThemeCatalog.Refresh();
+
         if (Directory.Exists(_directory))
         {
             Directory.Delete(_directory, recursive: true);
@@ -80,7 +87,7 @@ public sealed class ThemeTests : IDisposable
     {
         Dictionary<string, Type> names = SkinNames();
 
-        foreach (ThemeInfo theme in ThemeCatalog.All)
+        foreach (ThemeInfo theme in ThemeCatalog.BuiltIns)
         {
             foreach ((string name, string element) in Written(theme))
             {
@@ -95,11 +102,11 @@ public sealed class ThemeTests : IDisposable
     [Fact]
     public void 목록의_테마는_폴더와_이름이_있고_이름이_겹치지_않는다()
     {
-        Assert.Contains(ThemeCatalog.Classic, ThemeCatalog.All);
-        Assert.Contains(ThemeCatalog.Default, ThemeCatalog.All);
-        Assert.Equal(ThemeCatalog.All.Count, ThemeCatalog.All.Select(theme => theme.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Contains(ThemeCatalog.Classic, ThemeCatalog.BuiltIns);
+        Assert.Contains(ThemeCatalog.Default, ThemeCatalog.BuiltIns);
+        Assert.Equal(ThemeCatalog.BuiltIns.Count, ThemeCatalog.BuiltIns.Select(theme => theme.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count());
 
-        foreach (ThemeInfo theme in ThemeCatalog.All)
+        foreach (ThemeInfo theme in ThemeCatalog.BuiltIns)
         {
             Assert.False(string.IsNullOrWhiteSpace(theme.Name()), $"{theme.Id}: 이름이 비었습니다");
             Assert.True(File.Exists(Path.Combine(ThemesFolder, theme.Folder, "Tokens.axaml")), $"{theme.Id}: Tokens.axaml이 없습니다");
@@ -138,10 +145,16 @@ public sealed class ThemeTests : IDisposable
 
         try
         {
-            foreach (ThemeInfo theme in ThemeCatalog.All)
+            foreach (ThemeInfo theme in ThemeCatalog.BuiltIns)
             {
                 ThemeService.Apply(app, theme);
                 Assert.Same(theme, ThemeService.Current);
+
+                // 글자 크기 단계 · 곁글의 진하기는 테마의 배수에서 셈한다.
+                Assert.True(app.TryGetResource("TextSm", ThemeVariant.Light, out object? textSm));
+                Assert.Equal(Skin.Font(11), Assert.IsType<double>(textSm));
+                Assert.True(app.TryGetResource("Dim60", ThemeVariant.Light, out object? dim60));
+                Assert.Equal(Skin.Dim(0.6), Assert.IsType<double>(dim60));
 
                 // 이름표의 모든 이름이 값을 낸다(없는 이름 · 틀린 꼴이면 여기서 터진다).
                 foreach (PropertyInfo property in typeof(Skin).GetProperties(BindingFlags.Public | BindingFlags.Static))
@@ -200,7 +213,7 @@ public sealed class ThemeTests : IDisposable
 
         try
         {
-            foreach (ThemeInfo theme in ThemeCatalog.All)
+            foreach (ThemeInfo theme in ThemeCatalog.BuiltIns)
             {
                 ThemeService.Apply(app, theme);
 
@@ -209,7 +222,7 @@ public sealed class ThemeTests : IDisposable
                 window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
                 Dispatcher.UIThread.RunJobs();
 
-                Border edge = window.FindControl<Border>("TopBarEdge")!;
+                Panel edge = window.FindControl<Panel>("TopBarEdge")!;
                 Assert.Equal(ReferenceEquals(theme, ThemeCatalog.Classic) ? 0 : 10, edge.Bounds.Height);
 
                 SettingsWindow settings = window.OpenSettings();
@@ -264,4 +277,198 @@ public sealed class ThemeTests : IDisposable
         settings.Close();
         window.Close();
     });
+
+    // ── 작가의 「내 테마」 ─────────────────────────────────────────────
+
+    [Fact]
+    public void 바꿀_수_있는_이름의_목록은_이름표와_테마에_맞는다() => HeadlessUi.Run(() =>
+    {
+        Dictionary<string, Type> skin = SkinNames();
+
+        // 이름표(Skin)의 이름은 모두 목록에 있고, 꼴이 맞는다.
+        foreach ((string name, Type type) in skin)
+        {
+            ThemeKey key = Assert.IsType<ThemeKey>(ThemeKeys.Find(name));
+            ThemeValueKind expected = type == typeof(Color) ? ThemeValueKind.Color
+                : type == typeof(double) ? ThemeValueKind.Number
+                : type == typeof(CornerRadius) ? ThemeValueKind.Corner
+                : ThemeValueKind.Shadow;
+            Assert.True(key.Kind == expected, $"{name}: 목록의 꼴 {key.Kind} ≠ {expected}");
+        }
+
+        // 목록의 이름은 모두 「파스텔 하늘」에서 값이 있다 — 쓰는 곳 없는 이름 · 잘못 적은 이름이 없다. 설명은 두 언어 다 있다.
+        Application app = Application.Current!;
+        ThemeInfo before = ThemeService.Current;
+
+        try
+        {
+            ThemeService.Apply(app, ThemeCatalog.PastelSky);
+
+            foreach (ThemeKey key in ThemeKeys.All)
+            {
+                Assert.True(app.TryGetResource(key.Name, ThemeVariant.Light, out _), $"{key.Name}: 「파스텔 하늘」에 값이 없습니다");
+                Assert.False(string.IsNullOrWhiteSpace(key.Korean), key.Name);
+                Assert.False(string.IsNullOrWhiteSpace(key.English), key.Name);
+                Assert.DoesNotMatch("[가-힣]", key.English);
+            }
+        }
+        finally
+        {
+            ThemeService.Apply(app, before);
+        }
+    });
+
+    [Fact]
+    public void 컨트롤_모양_파일에는_색을_숫자로_적지_않는다()
+    {
+        // 색은 모두 Tokens.axaml에 이름으로 — 작가가 「내 테마」로 단추 색을 바꿀 수 있게(2026-11-26).
+        string controls = File.ReadAllText(Path.Combine(ThemesFolder, "PastelSky", "Controls.axaml"));
+        Assert.Empty(System.Text.RegularExpressions.Regex.Matches(controls, "#[0-9A-Fa-f]{3,8}\\b"));
+    }
+
+    [Fact]
+    public void 내_테마는_만들고_고치고_다시_켜면_그대로_선다() => HeadlessUi.Run(() =>
+    {
+        Application app = Application.Current!;
+        ThemeInfo before = ThemeService.Current;
+
+        try
+        {
+            ThemeService.Apply(app, ThemeCatalog.PastelSky);
+            string folder = UserThemes.Create(app);
+
+            // 만든 파일 — 쓰는 법 · 밑바탕 · 바꿀 수 있는 이름과 지금 값 · 설명. 폴더 맨 위에 쓰는 법 파일도 생긴다.
+            string file = Path.Combine(folder, UserThemes.FileName);
+            string text = File.ReadAllText(file);
+            Assert.StartsWith("// ", text, StringComparison.Ordinal);
+            Assert.Contains("\"base\": \"pastel-sky\"", text, StringComparison.Ordinal);
+            Assert.Contains("\"TopBarBackground\": \"#A9D0E6\"", text, StringComparison.Ordinal);
+            Assert.Contains("\"BoardDecorBrush\": \"\"", text, StringComparison.Ordinal);
+            Assert.True(File.Exists(Path.Combine(ThemeCatalog.UserThemesFolder, Strings.Ui.Theme_ReadmeFileName)));
+
+            // 그대로 켜도 읽지 못한 것이 없다(주석 · 빈 값 · 지금 값을 모두 읽는다).
+            ThemeInfo made = ThemeCatalog.All.Single(theme => theme.UserFolder == folder);
+            Assert.Same(ThemeCatalog.PastelSky, made.Parent);
+            ThemeService.Apply(app, made);
+            Assert.Empty(ThemeService.Problems);
+            Assert.Equal(Color.Parse("#A9D0E6"), ((ISolidColorBrush)Resource(app, "TopBarBackground")!).Color);
+
+            // 작가(또는 AI)가 고친다 — 색 · 그림 · 수, 그리고 틀린 것 둘.
+            SavePicture(Path.Combine(folder, "decor.png"));
+            text = text
+                .Replace("\"Selection\": \"#DE8AA6\"", "\"Selection\": \"#123456\"", StringComparison.Ordinal)
+                .Replace("\"BoardDecorBrush\": \"\"", "\"BoardDecorBrush\": \"decor.png\"", StringComparison.Ordinal)
+                .Replace("\"TopBarEdgeMask\": \"\"", "\"TopBarEdgeMask\": \"none\"", StringComparison.Ordinal)
+                .Replace("\"FontScale\": 1.15", "\"FontScale\": 1.3", StringComparison.Ordinal)
+                .Replace("\"CardRadius\": 14", "\"CardRadius\": \"둥글게\"", StringComparison.Ordinal)
+                .Replace("\"values\": {", "\"values\": {\n    \"Sparkles\": \"#FFFFFF\",", StringComparison.Ordinal);
+            File.WriteAllText(file, text);
+
+            ThemeCatalog.Refresh();
+            made = ThemeCatalog.All.Single(theme => theme.UserFolder == folder);
+            ThemeService.Apply(app, made);
+
+            Assert.Equal(Color.Parse("#123456"), Skin.Selection);
+            Assert.IsType<ImageBrush>(Resource(app, "BoardDecorBrush"));
+            Assert.Null(Resource(app, "TopBarEdgeMask"));
+            Assert.Equal(14.5, Assert.IsType<double>(Resource(app, "TextSm")));   // 11 × 1.3 = 14.3 → 0.5 단위
+            Assert.Equal(14, Skin.CardRadius);                                    // 못 읽은 값은 밑바탕 테마의 값 그대로
+
+            // 틀린 것은 그것만 건너뛰고 알린다 — 앱은 켜진다.
+            Assert.Equal(2, ThemeService.Problems.Count);
+            Assert.Contains(ThemeService.Problems, problem => problem.Contains("Sparkles", StringComparison.Ordinal));
+            Assert.Contains(ThemeService.Problems, problem => problem.Contains("CardRadius", StringComparison.Ordinal));
+            Assert.True(File.Exists(Path.Combine(folder, UserThemes.ProblemsFileName)));
+
+            // 「내 테마」를 또 복사하면 고친 값과 그림이 함께 옮겨 간다.
+            string copy = UserThemes.Create(app);
+            Assert.True(File.Exists(Path.Combine(copy, "decor.png")));
+            string copied = File.ReadAllText(Path.Combine(copy, UserThemes.FileName));
+            Assert.Contains("\"Selection\": \"#123456\"", copied, StringComparison.Ordinal);
+            Assert.Contains("\"BoardDecorBrush\": \"decor.png\"", copied, StringComparison.Ordinal);
+            Assert.Contains("\"FontScale\": 1.3", copied, StringComparison.Ordinal);
+
+            // 다 고치면 알림 파일이 걷힌다.
+            File.WriteAllText(file, text.Replace("\"CardRadius\": \"둥글게\"", "\"CardRadius\": 20", StringComparison.Ordinal)
+                .Replace("    \"Sparkles\": \"#FFFFFF\",\n", string.Empty, StringComparison.Ordinal));
+            ThemeService.Apply(app, made);
+            Assert.Empty(ThemeService.Problems);
+            Assert.Equal(20, Skin.CardRadius);
+            Assert.False(File.Exists(Path.Combine(folder, UserThemes.ProblemsFileName)));
+        }
+        finally
+        {
+            ThemeService.Apply(app, before);
+        }
+    });
+
+    [Fact]
+    public void 깨진_테마_파일도_앱을_막지_않는다() => HeadlessUi.Run(() =>
+    {
+        Application app = Application.Current!;
+        ThemeInfo before = ThemeService.Current;
+        string folder = Path.Combine(ThemeCatalog.UserThemesFolder, "깨진 테마");
+        Directory.CreateDirectory(folder);
+        File.WriteAllText(Path.Combine(folder, UserThemes.FileName), "{ \"name\": \"깨진\", \"values\": { \"Selection\": ");
+        ThemeCatalog.Refresh();
+
+        try
+        {
+            ThemeInfo broken = ThemeCatalog.All.Single(theme => theme.UserFolder == folder);
+            Assert.Equal("깨진 테마", broken.Name());          // 이름을 못 읽으면 폴더 이름
+            Assert.Same(ThemeCatalog.Default, broken.Parent);  // 밑바탕을 못 읽으면 처음 테마
+
+            ThemeService.Apply(app, broken);
+            Assert.Single(ThemeService.Problems);
+            Assert.Equal(Color.Parse("#DE8AA6"), Skin.Selection);   // 밑바탕 테마 그대로
+        }
+        finally
+        {
+            ThemeService.Apply(app, before);
+        }
+    });
+
+    [Fact]
+    public void 설정_창에서_내_테마를_만들면_폴더가_열리고_그_테마가_골라진다() => HeadlessUi.Run(() =>
+    {
+        string? opened = null;
+        Action<string> open = SettingsWindow.OpenFolder;
+        SettingsWindow.OpenFolder = folder => opened = folder;
+
+        try
+        {
+            (MainWindow window, AuthoringSession session) = HierarchyFixture.Open(_directory, tab: MainTab.Script);
+            SettingsWindow settings = window.OpenSettings();
+            Dispatcher.UIThread.RunJobs();
+
+            settings.ThemeCreateButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+
+            ThemeInfo made = Assert.Single(ThemeCatalog.All, theme => theme.UserFolder is not null);
+            Assert.Equal(made.UserFolder, opened);
+            Assert.Equal(made.Id, AppSettingsService.LoadTheme());
+            Assert.Equal(ThemeCatalog.All.ToList().IndexOf(made), settings.ThemeCombo.SelectedIndex);
+            Assert.Contains(made.Name(), session.StatusMessage, StringComparison.Ordinal);
+
+            settings.ThemeFolderButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(ThemeCatalog.UserThemesFolder, opened);
+
+            settings.Close();
+            window.Close();
+        }
+        finally
+        {
+            SettingsWindow.OpenFolder = open;
+        }
+    });
+
+    private static object? Resource(Application app, string key) =>
+        app.TryGetResource(key, ThemeVariant.Light, out object? value) ? value : null;
+
+    /// <summary>작은 그림 파일 하나.</summary>
+    private static void SavePicture(string path)
+    {
+        using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(8, 8));
+        bitmap.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+    }
 }

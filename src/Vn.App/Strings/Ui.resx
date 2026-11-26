@@ -48,6 +48,141 @@
     <value>파스텔 하늘</value>
     <comment>테마의 이름 — 설정 창 테마 칸(Theming/ThemeCatalog.cs).</comment>
   </data>
+  <data name="Settings_ThemeCreate" xml:space="preserve">
+    <value>내 테마 만들기</value>
+    <comment>설정 창 「기타」 — 테마 칸 아래 단추.</comment>
+  </data>
+  <data name="Settings_ThemeCreateTip" xml:space="preserve">
+    <value>지금 테마를 복사해 「내 테마」 폴더를 만들고 엽니다 — 그 안의 theme.json을 고치거나 그림을 넣고 다시 켜면 바뀝니다. AI에게 고쳐 달라고 해도 됩니다(폴더의 「읽어 주세요.txt」).</value>
+    <comment>그 단추의 풍선.</comment>
+  </data>
+  <data name="Settings_ThemeFolder" xml:space="preserve">
+    <value>테마 폴더 열기</value>
+    <comment>설정 창 「기타」 — 테마 칸 아래 단추.</comment>
+  </data>
+  <data name="Settings_ThemeFolderTip" xml:space="preserve">
+    <value>「내 테마」들이 든 폴더를 엽니다 — 이 PC에서만 쓰입니다.</value>
+    <comment>그 단추의 풍선.</comment>
+  </data>
+  <data name="Settings_ThemeCreated" xml:space="preserve">
+    <value>「{0}」 테마를 만들었습니다 — 열린 폴더의 theme.json을 고치고 다시 켜면 바뀝니다.</value>
+    <comment>상태줄 · 테마 칸 아래. {0} = 새 테마의 이름.</comment>
+  </data>
+  <data name="Theme_MyTheme" xml:space="preserve">
+    <value>내 테마</value>
+    <comment>새로 만드는 「내 테마」의 처음 이름 · 폴더 이름.</comment>
+  </data>
+  <data name="Theme_BaseHint" xml:space="preserve">
+    <value>밑바탕 테마 — pastel-sky(파스텔 하늘) · classic(기본). 여기 적지 않은 값은 이 테마의 값입니다</value>
+    <comment>theme.json의 base 줄 끝 설명.</comment>
+  </data>
+  <data name="Theme_KindColor" xml:space="preserve">
+    <value>색 #RRGGBB</value>
+    <comment>theme.json 설명 끝의 적는 법 — 색.</comment>
+  </data>
+  <data name="Theme_KindPaint" xml:space="preserve">
+    <value>색 #RRGGBB 또는 그림 파일 이름</value>
+    <comment>적는 법 — 색이나 그림.</comment>
+  </data>
+  <data name="Theme_KindPicture" xml:space="preserve">
+    <value>그림 파일 이름 · none이면 없음 · 비우면 테마의 그림</value>
+    <comment>적는 법 — 그림.</comment>
+  </data>
+  <data name="Theme_KindNumber" xml:space="preserve">
+    <value>수</value>
+    <comment>적는 법 — 수.</comment>
+  </data>
+  <data name="Theme_KindThickness" xml:space="preserve">
+    <value>왼쪽,위,오른쪽,아래</value>
+    <comment>적는 법 — 네 방향의 거리.</comment>
+  </data>
+  <data name="Theme_KindCorner" xml:space="preserve">
+    <value>수, 또는 왼위,오른위,오른아래,왼아래</value>
+    <comment>적는 법 — 모서리.</comment>
+  </data>
+  <data name="Theme_KindShadow" xml:space="preserve">
+    <value>x y 번짐 퍼짐 #색 · none이면 없음</value>
+    <comment>적는 법 — 그림자.</comment>
+  </data>
+  <data name="Theme_KindFont" xml:space="preserve">
+    <value>이 PC에 설치된 글꼴 이름 · 비우면 테마의 글꼴</value>
+    <comment>적는 법 — 글꼴.</comment>
+  </data>
+  <data name="Theme_ProblemBadFile" xml:space="preserve">
+    <value>theme.json을 읽지 못했습니다 — {0}</value>
+    <comment>theme-problems.txt · 상태줄. {0} = 까닭.</comment>
+  </data>
+  <data name="Theme_ProblemUnknownBase" xml:space="preserve">
+    <value>밑바탕 테마 「{0}」을 몰라 「{1}」 위에 얹었습니다</value>
+    <comment>{0} = 적힌 base · {1} = 대신 쓴 테마 이름.</comment>
+  </data>
+  <data name="Theme_ProblemUnknownName" xml:space="preserve">
+    <value>모르는 이름 「{0}」 — 이 이름은 바꿀 수 없습니다([내 테마 만들기]로 만든 파일에 적힌 이름만 쓸 수 있습니다)</value>
+    <comment>{0} = 적힌 이름.</comment>
+  </data>
+  <data name="Theme_ProblemBadValue" xml:space="preserve">
+    <value>「{0}」의 값 「{1}」을 읽지 못했습니다 — 적는 법: {2}</value>
+    <comment>{0} = 이름 · {1} = 적힌 값 · {2} = 적는 법(Theme_Kind…).</comment>
+  </data>
+  <data name="Theme_ProblemMissingFile" xml:space="preserve">
+    <value>「{0}」의 그림 「{1}」이 이 테마 폴더에 없습니다</value>
+    <comment>{0} = 이름 · {1} = 파일 이름.</comment>
+  </data>
+  <data name="Theme_ProblemBadPicture" xml:space="preserve">
+    <value>「{0}」의 그림 「{1}」을 열지 못했습니다 — png · jpg인지 확인하세요</value>
+    <comment>{0} = 이름 · {1} = 파일 이름.</comment>
+  </data>
+  <data name="Theme_ProblemFontMissing" xml:space="preserve">
+    <value>「{0}」의 글꼴 「{1}」이 이 PC에 없습니다 — 기본 글꼴로 보입니다</value>
+    <comment>{0} = 이름 · {1} = 글꼴 이름.</comment>
+  </data>
+  <data name="Theme_ProblemsFileHeader" xml:space="preserve">
+    <value>「{0}」 테마에서 읽지 못한 것 — 이 값만 빠지고 나머지는 적용됐습니다. theme.json을 고치고 다시 켜세요.</value>
+    <comment>theme-problems.txt의 첫 줄. {0} = 테마 이름.</comment>
+  </data>
+  <data name="Theme_ProblemsStatus" xml:space="preserve">
+    <value>「{0}」 테마에서 값 {1}개를 읽지 못했습니다 — {2} (테마 폴더의 theme-problems.txt)</value>
+    <comment>켤 때 상태줄. {0} = 테마 · {1} = 수 · {2} = 첫째 까닭.</comment>
+  </data>
+  <data name="Theme_ReadmeFileName" xml:space="preserve">
+    <value>읽어 주세요.txt</value>
+    <comment>테마 폴더 맨 위의 쓰는 법 파일 이름.</comment>
+  </data>
+  <data name="Theme_FileHeader" xml:space="preserve">
+    <value>스토리 디렉터 — 내 테마
+이 파일을 고치고 스토리 디렉터를 다시 켜면 바뀝니다([⚙ 설정] → 「기타」 → 「테마」에서 이 테마를 고르세요).
+· 바꾸고 싶은 줄의 값만 고치세요. 값을 ""로 비우면 밑바탕 테마의 값 그대로입니다. 줄을 지워도 됩니다.
+· 색은 "#RRGGBB"(예: "#A9D0E6"), 반투명은 앞에 두 자리를 더해 "#80A9D0E6"입니다.
+· 그림은 이 폴더에 png · jpg 파일을 넣고 파일 이름을 적습니다(예: "decor.png"). "none"이면 그림이 없습니다.
+· 줄 끝의 // 뒤는 설명입니다. 왼쪽의 이름은 바꾸지 마세요.
+· 읽지 못한 값이 있으면 이 폴더에 theme-problems.txt가 생깁니다.
+· AI에게 맡길 때: 이 파일을 통째로 붙여 넣고 「이 테마 파일의 값만 바꿔서 ○○ 느낌으로 만들어 줘. 이름과 짜임은 그대로 두고 파일 전체를 돌려줘」라고 하세요.</value>
+    <comment>theme.json 맨 위의 주석(줄마다 // 가 붙는다).</comment>
+  </data>
+  <data name="Theme_Readme" xml:space="preserve">
+    <value>스토리 디렉터 — 내 테마 폴더
+
+이 폴더 안의 폴더 하나가 「내 테마」 하나입니다. 이 PC에서만 쓰입니다.
+
+만들기
+  [⚙ 설정] → 「기타」 → [내 테마 만들기]를 누르면 지금 테마를 복사한 폴더가 생기고 열립니다.
+
+고치기
+  1. 그 폴더의 theme.json을 메모장 등으로 엽니다. 줄마다 무엇인지 설명이 붙어 있습니다.
+  2. 색을 바꾸려면 값을 고칩니다(예: "#A9D0E6").
+  3. 그림을 바꾸려면 png · jpg 파일을 그 폴더에 넣고, 그림 자리(예: "BoardDecorBrush")에 파일 이름을 적습니다.
+  4. 저장하고 스토리 디렉터를 다시 켭니다. [⚙ 설정] → 「기타」 → 「테마」에서 그 테마를 고릅니다.
+
+AI에게 맡기기
+  theme.json을 통째로 AI에게 붙여 넣고 원하는 느낌을 말하세요. 예:
+  「이 스토리 디렉터 테마 파일에서 값만 바꿔서 따뜻한 베이지와 초록 느낌으로 만들어 줘. 이름과 짜임은 그대로 두고 파일 전체를 돌려줘.」
+  돌려받은 글로 theme.json을 덮어쓰고 다시 켜면 됩니다. 그림은 직접 만들거나 구해서 폴더에 넣습니다.
+
+잘 안 될 때
+  읽지 못한 값이 있으면 그 테마 폴더에 theme-problems.txt가 생기고, 켤 때 상태줄에도 나옵니다. 그 값만 빠지고 나머지는 적용됩니다.
+  처음으로 돌리려면 [⚙ 설정] → 「테마」에서 「파스텔 하늘」이나 「기본」을 고르세요. 「내 테마」 폴더를 지우면 목록에서도 사라집니다.</value>
+    <comment>테마 폴더 맨 위의 「읽어 주세요.txt」 내용.</comment>
+  </data>
   <data name="Theme_Classic" xml:space="preserve">
     <value>기본</value>
     <comment>테마의 이름 — 0.5.0까지의 모양(Theming/ThemeCatalog.cs).</comment>

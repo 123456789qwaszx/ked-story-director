@@ -133,34 +133,28 @@
     <x:Double x:Key="LineRowBoxed">0</x:Double>
     <CornerRadius x:Key="FloatingCorner">14</CornerRadius>
     <x:Double x:Key="DimLift">0.45</x:Double>
-    <x:Double x:Key="Dim45">0.6975</x:Double>
-    <x:Double x:Key="Dim50">0.725</x:Double>
-    <x:Double x:Key="Dim55">0.7525</x:Double>
-    <x:Double x:Key="Dim60">0.78</x:Double>
-    <x:Double x:Key="Dim65">0.8075</x:Double>
-    <x:Double x:Key="Dim70">0.835</x:Double>
     <x:Double x:Key="FontScale">1.15</x:Double>
-    <x:Double x:Key="TextXxs">10.5</x:Double>
-    <x:Double x:Key="TextXs">11.5</x:Double>
-    <x:Double x:Key="TextSm">12.5</x:Double>
-    <x:Double x:Key="TextMd">14</x:Double>
-    <x:Double x:Key="TextLg">16</x:Double>
     <x:String x:Key="FrameLabelShadow">0 2 0 0 #C5D9E5</x:String>
     <x:String x:Key="CardSelectedShadow">0 0 0 2 #DE8AA6, 0 4 0 0 #EFC4D0</x:String>
     <x:String x:Key="CardShadow">0 3 0 0 #CFDDE6</x:String>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          틀 — XAML만 쓰는 이름. 기본 테마에는 없어서 거기서는 비어 있다(바탕 없음 · 높이 0).
+         작가가 「내 테마」로 바꿀 수 있는 이름과 설명은 Theming/ThemeKeys.cs에 있다 — 여기에 이름을 더하면 거기에도 더한다.
          ───────────────────────────────────────────────────────────────────────── -->
+    <!-- 창의 바탕 — 새하얀색이 아닌 따뜻한 종이빛(넓은 흰 면의 눈부심을 줄인다) -->
+    <SolidColorBrush x:Key="WindowBackground" Color="#FAF8F4" />
     <!-- 위 띠의 바탕 -->
     <SolidColorBrush x:Key="TopBarBackground" Color="#A9D0E6" />
-    <!-- 위 띠 아래의 구름 물결 — 하늘색 띠 위로 흰 반원이 솟는다(24 × 10 조각을 가로로 깐다) -->
+    <!-- 위 띠 아래의 꾸밈 줄 — 높이 · 모양(TopBarEdgeMask) · 그림(TopBarEdgeBrush — 아래).
+         모양은 「가리개」다: 불투명한 자리에 창의 바탕색이 서고, 나머지에는 위 띠의 색이 보인다 — 그래서 두 색을 바꾸면 물결도 따라 바뀐다.
+         여기서는 24 × 10 조각의 반원(구름 물결)을 가로로 깐다. -->
     <x:Double x:Key="TopBarEdgeHeight">10</x:Double>
-    <DrawingBrush x:Key="TopBarEdgeBrush" TileMode="Tile" SourceRect="0,0,24,10" DestinationRect="0,0,24,10">
+    <DrawingBrush x:Key="TopBarEdgeMask" TileMode="Tile" SourceRect="0,0,24,10" DestinationRect="0,0,24,10">
         <DrawingBrush.Drawing>
             <DrawingGroup>
-                <GeometryDrawing Brush="#A9D0E6" Geometry="M0,0 H24 V10 H0 Z" />
-                <GeometryDrawing Brush="#FAF8F4">
+                <GeometryDrawing Brush="Transparent" Geometry="M0,0 H24 V10 H0 Z" />
+                <GeometryDrawing Brush="Black">
                     <GeometryDrawing.Geometry>
                         <EllipseGeometry Center="12,11" RadiusX="11" RadiusY="10" />
                     </GeometryDrawing.Geometry>
@@ -168,10 +162,16 @@
             </DrawingGroup>
         </DrawingBrush.Drawing>
     </DrawingBrush>
+    <!-- 물결 위에 얹는 그림 — 이 테마에는 없다(투명). 작가의 「내 테마」가 그림 파일을 주면 그 그림이 가로로 되풀이된다. -->
+    <SolidColorBrush x:Key="TopBarEdgeBrush" Color="Transparent" />
     <!-- 판 아래 안내 줄의 바탕 -->
     <SolidColorBrush x:Key="HintSurface" Color="#F9F3E0" />
     <!-- [대본] 판의 바탕 — 무늬 없는 한 가지 색. ⛔ 점무늬는 2026-11-26에 걷었다(촘촘히 되풀이되는 무늬는 오래 보면 눈이 피로하다 · docs/themes.md 6절). -->
     <SolidColorBrush x:Key="BoardBackground" Color="#E6EEF2" />
+    <!-- 판 구석의 꾸밈 — 크기 · 자리(판의 왼쪽 아래 구석에서 띄운 거리 — 왼쪽,위,오른쪽,아래) -->
+    <x:Double x:Key="BoardDecorWidth">300</x:Double>
+    <x:Double x:Key="BoardDecorHeight">130</x:Double>
+    <Thickness x:Key="BoardDecorMargin">24,0,0,18</Thickness>
     <!-- 판 왼쪽 아래 구석의 꾸밈 — 흰 구름과 반짝이 둘(300 × 130). 카드 뒤에 깔린다. -->
     <DrawingBrush x:Key="BoardDecorBrush" Stretch="Uniform" AlignmentX="Left" AlignmentY="Bottom">
         <DrawingBrush.Drawing>
@@ -210,6 +210,41 @@
     <!-- 모서리 -->
     <CornerRadius x:Key="ControlCornerRadius">12</CornerRadius>
     <CornerRadius x:Key="OverlayCornerRadius">14</CornerRadius>
+
+    <!-- 두툼한 단추(Controls.axaml의 Button.chunky) — 테두리 · 아래 그림자(번지지 않는 「x y 번짐 퍼짐 색」) -->
+    <SolidColorBrush x:Key="ChunkyBorder" Color="#C9DCE8" />
+    <x:String x:Key="ChunkyShadow">0 3 0 0 #C9DCE8</x:String>
+    <x:String x:Key="ChunkyShadowHover">0 3 0 0 #A9D0E6</x:String>
+    <!-- 만들기(버터) -->
+    <SolidColorBrush x:Key="ChunkyPrimaryBackground" Color="#F6E7B8" />
+    <SolidColorBrush x:Key="ChunkyPrimaryBackgroundHover" Color="#F2DFA6" />
+    <SolidColorBrush x:Key="ChunkyPrimaryBorder" Color="#E2C678" />
+    <x:String x:Key="ChunkyPrimaryShadow">0 3 0 0 #E2C678</x:String>
+    <!-- 지우기(산호) -->
+    <SolidColorBrush x:Key="ChunkyDangerBackground" Color="#F9E9E8" />
+    <SolidColorBrush x:Key="ChunkyDangerBorder" Color="#E9BFBE" />
+    <x:String x:Key="ChunkyDangerShadow">0 3 0 0 #E9BFBE</x:String>
+    <SolidColorBrush x:Key="ChunkyDangerForeground" Color="#A2424B" />
+    <!-- 못 누르는 두툼한 단추 -->
+    <SolidColorBrush x:Key="ChunkyDisabledBackground" Color="#F3F5F6" />
+    <SolidColorBrush x:Key="ChunkyDisabledBorder" Color="#DDE5EA" />
+    <x:String x:Key="ChunkyDisabledShadow">0 3 0 0 #DDE5EA</x:String>
+    <SolidColorBrush x:Key="ChunkyDisabledForeground" Color="#94A3AF" />
+    <!-- 위 띠 위의 두툼한 단추 · File 메뉴 -->
+    <SolidColorBrush x:Key="TopBarButtonBorder" Color="#FFFFFF" />
+    <x:String x:Key="TopBarButtonShadow">0 3 0 0 #86B7D3</x:String>
+
+    <!-- 탭 — 기둥의 탭(인스펙터 · 화자 · 조건 및 스탯)과 주 탭([대본] · [구성]) -->
+    <SolidColorBrush x:Key="TabHoverBackground" Color="#EEF4F7" />
+    <SolidColorBrush x:Key="TabSelectedBackground" Color="#F9E3E9" />
+    <SolidColorBrush x:Key="MainTabBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="MainTabBorder" Color="#C9DCE8" />
+    <SolidColorBrush x:Key="MainTabSelectedBorder" Color="#E7A0B6" />
+
+    <!-- 카드의 글 칸 — 마우스를 올릴 때의 테두리 · 쓰는 동안의 바탕과 테두리 -->
+    <SolidColorBrush x:Key="CardWritingHoverBorder" Color="#D9E9F2" />
+    <SolidColorBrush x:Key="CardWritingFocusBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="CardWritingFocusBorder" Color="#A9D0E6" />
 
     <!-- 단추 -->
     <SolidColorBrush x:Key="ButtonBackground" Color="#FFFEFA" />

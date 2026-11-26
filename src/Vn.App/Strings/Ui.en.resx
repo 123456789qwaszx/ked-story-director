@@ -40,6 +40,114 @@
   <data name="Theme_PastelSky" xml:space="preserve">
     <value>Pastel sky</value>
   </data>
+  <data name="Settings_ThemeCreate" xml:space="preserve">
+    <value>Make my theme</value>
+  </data>
+  <data name="Settings_ThemeCreateTip" xml:space="preserve">
+    <value>Copies the current theme into a new “My theme” folder and opens it — edit theme.json or add pictures there, then restart. You can also ask an AI to edit it (see “Read me.txt” in the folder).</value>
+  </data>
+  <data name="Settings_ThemeFolder" xml:space="preserve">
+    <value>Open theme folder</value>
+  </data>
+  <data name="Settings_ThemeFolderTip" xml:space="preserve">
+    <value>Opens the folder that holds your own themes — they are used on this PC only.</value>
+  </data>
+  <data name="Settings_ThemeCreated" xml:space="preserve">
+    <value>Made the “{0}” theme — edit theme.json in the opened folder and restart to see it.</value>
+  </data>
+  <data name="Theme_MyTheme" xml:space="preserve">
+    <value>My theme</value>
+  </data>
+  <data name="Theme_BaseHint" xml:space="preserve">
+    <value>Base theme — pastel-sky or classic. Values not written here come from it</value>
+  </data>
+  <data name="Theme_KindColor" xml:space="preserve">
+    <value>colour #RRGGBB</value>
+  </data>
+  <data name="Theme_KindPaint" xml:space="preserve">
+    <value>colour #RRGGBB or a picture file name</value>
+  </data>
+  <data name="Theme_KindPicture" xml:space="preserve">
+    <value>picture file name · none hides it · empty keeps the theme’s picture</value>
+  </data>
+  <data name="Theme_KindNumber" xml:space="preserve">
+    <value>number</value>
+  </data>
+  <data name="Theme_KindThickness" xml:space="preserve">
+    <value>left,top,right,bottom</value>
+  </data>
+  <data name="Theme_KindCorner" xml:space="preserve">
+    <value>number, or topleft,topright,bottomright,bottomleft</value>
+  </data>
+  <data name="Theme_KindShadow" xml:space="preserve">
+    <value>x y blur spread #colour · none hides it</value>
+  </data>
+  <data name="Theme_KindFont" xml:space="preserve">
+    <value>name of a font installed on this PC · empty keeps the theme’s font</value>
+  </data>
+  <data name="Theme_ProblemBadFile" xml:space="preserve">
+    <value>Couldn’t read theme.json — {0}</value>
+  </data>
+  <data name="Theme_ProblemUnknownBase" xml:space="preserve">
+    <value>Unknown base theme “{0}” — used “{1}” instead</value>
+  </data>
+  <data name="Theme_ProblemUnknownName" xml:space="preserve">
+    <value>Unknown name “{0}” — only the names listed in a file made with [Make my theme] can be changed</value>
+  </data>
+  <data name="Theme_ProblemBadValue" xml:space="preserve">
+    <value>Couldn’t read “{1}” for “{0}” — expected: {2}</value>
+  </data>
+  <data name="Theme_ProblemMissingFile" xml:space="preserve">
+    <value>The picture “{1}” for “{0}” isn’t in this theme folder</value>
+  </data>
+  <data name="Theme_ProblemBadPicture" xml:space="preserve">
+    <value>Couldn’t open the picture “{1}” for “{0}” — use a png or jpg file</value>
+  </data>
+  <data name="Theme_ProblemFontMissing" xml:space="preserve">
+    <value>The font “{1}” for “{0}” isn’t installed on this PC — the default font is shown</value>
+  </data>
+  <data name="Theme_ProblemsFileHeader" xml:space="preserve">
+    <value>What couldn’t be read in the “{0}” theme — only these values were skipped; the rest is applied. Fix theme.json and restart.</value>
+  </data>
+  <data name="Theme_ProblemsStatus" xml:space="preserve">
+    <value>“{0}” theme: some values couldn’t be read ({1}) — {2} (see theme-problems.txt in the theme folder)</value>
+  </data>
+  <data name="Theme_ReadmeFileName" xml:space="preserve">
+    <value>Read me.txt</value>
+  </data>
+  <data name="Theme_FileHeader" xml:space="preserve">
+    <value>Story Director — my theme
+Edit this file and restart Story Director to see the change (choose this theme in [⚙ Settings] → “Other” → “Theme”).
+· Change only the values you want. An empty value "" keeps the base theme’s value. You may also delete lines.
+· Colours are "#RRGGBB" (e.g. "#A9D0E6"); add two digits in front for transparency: "#80A9D0E6".
+· For pictures, put a png or jpg file in this folder and write its file name (e.g. "decor.png"). "none" means no picture.
+· Text after // at the end of a line is a description. Don’t change the names on the left.
+· If a value can’t be read, theme-problems.txt appears in this folder.
+· To ask an AI: paste this whole file and say “Change only the values in this theme file to give it a ___ feel. Keep the names and structure and return the whole file.”</value>
+  </data>
+  <data name="Theme_Readme" xml:space="preserve">
+    <value>Story Director — my theme folder
+
+Each folder inside this folder is one of your own themes. They are used on this PC only.
+
+Making one
+  [⚙ Settings] → “Other” → [Make my theme] copies the current theme into a new folder and opens it.
+
+Editing
+  1. Open theme.json in that folder with Notepad or any text editor. Every line has a description.
+  2. To change a colour, edit its value (e.g. "#A9D0E6").
+  3. To change a picture, put a png or jpg file in the folder and write its file name in the picture’s line (e.g. "BoardDecorBrush").
+  4. Save and restart Story Director. Choose the theme in [⚙ Settings] → “Other” → “Theme”.
+
+Asking an AI
+  Paste the whole theme.json to an AI and describe the feel you want, for example:
+  “Change only the values in this Story Director theme file to a warm beige and green feel. Keep the names and structure and return the whole file.”
+  Replace theme.json with the text you get back and restart. Pictures you make or find yourself and put in the folder.
+
+If something goes wrong
+  Values that can’t be read are listed in theme-problems.txt in that theme folder and in the status bar at start-up. Only those values are skipped.
+  To go back, choose “Pastel sky” or “Classic” in [⚙ Settings] → “Theme”. Deleting a theme folder removes it from the list.</value>
+  </data>
   <data name="Theme_Classic" xml:space="preserve">
     <value>Classic</value>
   </data>

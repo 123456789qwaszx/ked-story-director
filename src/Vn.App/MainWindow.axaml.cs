@@ -82,6 +82,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // 「내 테마」에서 읽지 못한 값 — 켤 때 상태줄로 알린다(자세한 것은 테마 폴더의 theme-problems.txt · themes). 앱은 그 값만 빼고 켜진다.
+        if (ThemeService.Problems.Count > 0)
+        {
+            _session.SetStatus(string.Format(
+                Ui.Theme_ProblemsStatus, ThemeService.Current.Name(), ThemeService.Problems.Count, ThemeService.Problems[0]));
+        }
+
         // 탭 줄은 머리만 — 고른 탭의 판만 보인다. 두 판은 늘 화면 나무에 붙어 있다(usability UX14).
         MainTabs.SelectionChanged += (_, _) => ShowTab();
         ShowTab();

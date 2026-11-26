@@ -186,6 +186,30 @@ internal sealed class SettingsWindow : Window
             }
         });
 
+        // 「내 테마」 — 지금 테마를 복사한 폴더를 만들어 열고, 고른 것으로 둔다(2026-11-26 소유자 — 작가가 그림 · 색을 자기 것으로 · 파일 고치고 다시 켜기).
+        ThemeCreateButton = new Button { Content = Ui.Settings_ThemeCreate, FontSize = Skin.Font(12) };
+        ToolTip.SetTip(ThemeCreateButton, Ui.Settings_ThemeCreateTip);
+        ThemeCreateButton.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_ThemeCreate, () =>
+        {
+            string folder = UserThemes.Create(Application.Current!);
+            ThemeCombo.ItemsSource = ThemeCatalog.All.Select(theme => theme.Name()).ToList();
+            ThemeInfo made = ThemeCatalog.All.First(theme => string.Equals(theme.UserFolder, folder, StringComparison.Ordinal));
+            ThemeCombo.SelectedIndex = ThemeIndex(made);   // 고른 것으로 둔다 — 다시 켜면 선다
+            string note = string.Format(Ui.Settings_ThemeCreated, made.Name());
+            ThemeNote.Text = note;
+            ThemeNote.IsVisible = true;
+            _session.SetStatus(note);
+            OpenFolder(folder);
+        });
+
+        ThemeFolderButton = new Button { Content = Ui.Settings_ThemeFolder, FontSize = Skin.Font(12) };
+        ToolTip.SetTip(ThemeFolderButton, Ui.Settings_ThemeFolderTip);
+        ThemeFolderButton.Click += (_, _) => UiGuard.Run(_session, Ui.Settings_ThemeFolder, () =>
+        {
+            UserThemes.WriteReadme(ThemeCatalog.UserThemesFolder);
+            OpenFolder(ThemeCatalog.UserThemesFolder);
+        });
+
         ScriptFontCombo = new ComboBox { FontSize = Skin.Font(12), HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = FontNames() };
         ScriptFontSizeBox = new NumericUpDown
         {
@@ -404,6 +428,12 @@ internal sealed class SettingsWindow : Window
                                     ThemeCombo
                                 }
                             },
+                            new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Spacing = 6,
+                                Children = { ThemeCreateButton, ThemeFolderButton }
+                            },
                             ThemeNote
                         }
                     })
@@ -545,6 +575,15 @@ internal sealed class SettingsWindow : Window
 
     /// <summary>테마 칸 아래 — 고른 테마가 지금 화면과 다르면 「다시 켜면 … 바뀝니다」.</summary>
     internal TextBlock ThemeNote { get; }
+
+    /// <summary>「내 테마 만들기」 — 지금 테마를 복사한 「내 테마」 폴더를 만들어 연다(<see cref="UserThemes.Create"/>).</summary>
+    internal Button ThemeCreateButton { get; }
+
+    /// <summary>「테마 폴더 열기」 — 「내 테마」들이 든 폴더를 연다.</summary>
+    internal Button ThemeFolderButton { get; }
+
+    /// <summary>폴더를 탐색기로 연다 — 시험은 이것을 갈아 끼워 창을 띄우지 않는다.</summary>
+    internal static Action<string> OpenFolder { get; set; } = WorkFolder.Open;
 
     private static int ThemeIndex(ThemeInfo theme)
     {

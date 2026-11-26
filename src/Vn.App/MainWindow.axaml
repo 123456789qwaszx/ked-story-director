@@ -87,11 +87,16 @@
 
         <!-- 위 띠 아래의 꾸밈 줄 — 테마가 높이와 무늬를 정한다(TopBarEdgeHeight · TopBarEdgeBrush · 「파스텔 하늘」의 구름 물결). 기본 테마에는 두 이름이
              없어 높이 0으로 접힌다. 누름을 받지 않는다. -->
-        <Border x:Name="TopBarEdge"
-                DockPanel.Dock="Top"
-                Height="{DynamicResource TopBarEdgeHeight}"
-                Background="{DynamicResource TopBarEdgeBrush}"
-                IsHitTestVisible="False" />
+        <!-- 세 겹이다 — 위 띠의 색 · 그 위에 모양(가리개 TopBarEdgeMask)대로 창의 바탕색 · 맨 위에 그림(TopBarEdgeBrush). 그래서 위 띠나 창의 바탕색을
+             바꾸면 물결도 따라 바뀌고, 그림을 주면 그림이 얹힌다(themes · 작가의 「내 테마」). -->
+        <Panel x:Name="TopBarEdge"
+               DockPanel.Dock="Top"
+               Height="{DynamicResource TopBarEdgeHeight}"
+               Background="{DynamicResource TopBarBackground}"
+               IsHitTestVisible="False">
+            <Border Background="{DynamicResource WindowBackground}" OpacityMask="{DynamicResource TopBarEdgeMask}" />
+            <Border Background="{DynamicResource TopBarEdgeBrush}" />
+        </Panel>
 
         <!-- 바깥에서 바뀐 프로젝트 — 연 뒤에 다른 곳(GitHub Desktop의 받기 등)이 프로젝트 파일을 바꿨는데 이 창에 고친 것이 남아 있을 때만 선다
              (2026-11-19 · writer-release WR1). 고른 것이 없으면 저장 · 자동 저장이 덮어쓰지 않는다. 고친 것이 없으면 이 띠 없이 다시 읽는다
