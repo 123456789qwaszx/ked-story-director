@@ -538,22 +538,44 @@ public partial class DialogueNodeEditor : UserControl
     /// [대본] 판의 카드 글 칸에서 커서가 선 줄을 고른 줄로 삼는다(2026-11-26 소유자 — 「그래프 뷰에서 특정 줄을 수정하는데, 그것과 별개로 우측 인스펙터에서는
     /// 다른 줄을 파랗게 강조하니 되게 헷갈립니다 … 동기화」 · <see cref="GraphEditorView.CaretLineChanged"/>). 파란 띠가 그 줄로 옮기고, 그 줄이 보이게
     /// 줄 표를 내린다. 초점은 가져가지 않는다. 다른 노드를 보고 있거나 인스펙터의 줄 칸에서 쓰는 중이면 하지 않는다 — 사람이 쓰는 칸이 먼저다.
+    /// 이미 고른 줄이어도 보이게는 한다 — 카드 글 칸에 다시 들어왔을 때 그 줄이 줄 표 밖에 있을 수 있다.
     /// </summary>
     internal void FollowCaretLine(string nodeId, string lineId)
     {
-        if (!string.Equals(_nodeId, nodeId, StringComparison.Ordinal) ||
-            LineHost.IsKeyboardFocusWithin ||
-            string.Equals(_selectedLineId, lineId, StringComparison.Ordinal))
+        if (!string.Equals(_nodeId, nodeId, StringComparison.Ordinal) || LineHost.IsKeyboardFocusWithin)
         {
             return;
         }
 
         SelectLine(lineId);
+        BringLineIntoViewLater(lineId);
+    }
 
-        if (_lineCards.TryGetValue(lineId, out Border? card))
+    /// <summary>줄 표를 그 줄이 보이게 내릴 줄 — 배치가 끝난 뒤에 내린다(<see cref="BringLineIntoViewLater"/>).</summary>
+    private string? _scrollLineId;
+
+    /// <summary>
+    /// 그 줄이 보이게 줄 표를 내린다 — <b>배치가 끝난 뒤에</b>(2026-11-26 소유자 — 「처음 에피소드 노드 내부의 특정 줄을 처음 클릭했을 때 … 강조자체는 제대로
+    /// 되는데 그 줄로 바로 이동하는게 안 되는 경우」). 카드 글 칸을 처음 누르면 그 카드가 골라지며 줄 표를 새로 세우는데, 막 세운 줄은 아직 자리가 없어 곧바로
+    /// 내리면 아무 일도 없었다. 그 사이에 줄 표를 또 세웠으면 그때의 줄을 찾는다. 여러 번 부르면 마지막 줄이다.
+    /// </summary>
+    private void BringLineIntoViewLater(string lineId)
+    {
+        _scrollLineId = lineId;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            card.BringIntoView();
-        }
+            if (_scrollLineId is not { } pending)
+            {
+                return;
+            }
+
+            _scrollLineId = null;
+
+            if (_lineCards.TryGetValue(pending, out Border? card) && card.IsAttachedToVisualTree())
+            {
+                card.BringIntoView();
+            }
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     private void SelectLine(string lineId)

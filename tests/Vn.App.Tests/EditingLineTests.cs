@@ -110,6 +110,34 @@ public sealed class EditingLineTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 고르지_않은_카드의_글_칸을_처음_눌러도_인스펙터가_그_줄까지_내려간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「처음 에피소드 노드 내부의 특정 줄을 처음 클릭했을 때, 이 경우에는 우측 인스펙터에서 강조자체는 제대로 되는데 그 줄로 바로
+        // 이동하는게 안 되는 경우가 있네. 그 이후로는 정상적으로 잘 동작해」. 처음 누르면 카드가 골라지며 줄 표를 새로 세우는데, 막 세운 줄은 아직 자리가
+        // 없어 곧바로 내리면 아무 일도 없었다.
+        string script = string.Join("\n", Enumerable.Range(1, 40).Select(index => $"라루: {index}번째 줄 — 인스펙터 줄 표를 넘칠 만큼 길게 이어진다."));
+        (MainWindow window, AuthoringSession session, DialogueNodeEditor editor, DialogueNode card) = Show(script);
+        GraphEditorView graph = window.FindControl<GraphEditorView>("Graph")!;
+        string last = card.Script.ActiveLines.Last().Id;
+
+        session.Select(null);   // 아직 고르지 않은 카드다
+        Dispatcher.UIThread.RunJobs();
+
+        TextBox box = WritingBox(graph, card.Id);
+        box.Focus();
+        box.CaretIndex = box.Text!.IndexOf("40번째", StringComparison.Ordinal);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(last, editor.SelectedLineId);
+        ScrollViewer scroll = editor.FindControl<StackPanel>("LineHost")!.FindAncestorOfType<ScrollViewer>()!;
+        Assert.True(scroll.Offset.Y > 0, "줄 표가 그 줄까지 내려갔다");
+        double top = Bodies(editor).Last().TranslatePoint(default, scroll)!.Value.Y;
+        Assert.InRange(top, 0, scroll.Viewport.Height);
+
+        window.Close();
+    });
+
     // ── 기반 ───────────────────────────────────────────────────────────────
 
     /// <summary>[대본] 탭 — ch01의 root 카드에 글을 넣고 고른다. 인스펙터가 그 카드의 줄 표를 세운다.</summary>
