@@ -1216,7 +1216,7 @@ public partial class GraphEditorView : UserControl
 
             // 챕터 안에 장면을 한 겹 더 (R6 S-3b) — 챕터 프레임 <b>뒤에</b> 더해야 그 위에
             // 깔린다(아래 Insert가 목록 순서대로 넣는다).
-            DrawSceneFrames(group.Key, group.OfType<ExpandedNodeProjection>());
+            DrawSceneFrames(group.Key, group.OfType<ExpandedNodeProjection>(), area);
         }
 
         // 카드·간선보다 뒤에 깔리도록 맨 앞 인덱스에 순서대로 끼운다.
@@ -1271,7 +1271,8 @@ public partial class GraphEditorView : UserControl
     /// ⚠ 히트 대상이 아니다 — 클릭·드래그·포트에 아무 영향이 없다(챕터 프레임과 같다). 테두리 안의 빈 곳을 <b>누르면</b>(끌지 않고)
     /// 그 장면을 고른다 — 자리를 <see cref="_sceneAreas"/>에 적어 두고 범위 선택이 아무것도 못 잡았을 때 찾는다(2026-11-17).
     /// </summary>
-    private void DrawSceneFrames(string fileId, IEnumerable<ExpandedNodeProjection> nodes)
+    /// <param name="chapterArea">그 챕터의 테두리(판 자리) — 장면 이름표는 이 안에 선다(<see cref="PlaceFrameLabels"/>).</param>
+    private void DrawSceneFrames(string fileId, IEnumerable<ExpandedNodeProjection> nodes, Rect chapterArea)
     {
         if (_session?.Project.Files.FirstOrDefault(file =>
                 string.Equals(file.Id, fileId, StringComparison.Ordinal)) is not { } board)
@@ -1333,12 +1334,28 @@ public partial class GraphEditorView : UserControl
 
             _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
             _frames.Add(SceneFrame(area));
-            AddFrameLabel(new FrameLabel(
-                SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene)),
-                chapter: false,
-                area,
-                10 + (6 * Skin.FrameLabelGrow),
-                members));
+
+            // 아주 멀리서(장면의 카드가 모두 덩어리) 장면 한가운데에 옅게 깔리는 장면 이름 — 이름표와 다른 모양으로 카드 뒤에 선다(설계 4.2 · 2026-11-26 소유자).
+            var watermark = new TextBlock
+            {
+                Classes = { "frame-title" },
+                FontWeight = FontWeight.SemiBold,
+                Foreground = Skin.SceneLabelInk.Brush(),
+                Opacity = 0.35,
+                IsHitTestVisible = false,
+                IsVisible = false,
+                Tag = SceneWatermarkTag + scene.SceneId
+            };
+            _frames.Add(watermark);
+
+            (Border label, Border chip) = SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene));
+            AddFrameLabel(new FrameLabel(label, chapter: false, area, 10 + (6 * Skin.FrameLabelGrow), members)
+            {
+                Chip = chip,
+                Watermark = watermark,
+                Name = scene.DisplayName,
+                Container = chapterArea
+            });
         }
     }
 
@@ -1384,8 +1401,12 @@ public partial class GraphEditorView : UserControl
     /// 편다. 하이어아키의 눈과 같은 상태다.
     /// </summary>
     /// <param name="members">그 장면에 서 있는 카드(에피소드와 집이 그 장면인 분기 카드) — 테두리를 잰 그 카드들이다.</param>
-    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
+    /// <returns>이름표와, 자리가 모자랄 때 그 자리에 대신 서는 작은 표(같은 손잡이 · 이름은 풍선).</returns>
+    private (Border Label, Border Chip) SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
     {
+        string shown = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
+                       (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄");
+
         var label = new Border
         {
             CornerRadius = new CornerRadius(Skin.ChipRadius),
@@ -1400,8 +1421,7 @@ public partial class GraphEditorView : UserControl
             {
                 // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
                 // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
-                Text = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
-                       (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
+                Text = shown,
                 Classes = { "frame-title" },
                 TextTrimming = TextTrimming.CharacterEllipsis,   // 장면의 폭에서 말줄임한다(PlaceFrameLabels)
                 FontSize = Skin.SceneLabelFont,
@@ -1411,14 +1431,42 @@ public partial class GraphEditorView : UserControl
         };
         ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
 
+        // 작은 표 — 장면 색 점과 ⌄. 이름표와 같은 자리에 서고 같은 손짓을 받는다(설계 4.2 — 이름표는 옮기지도 숨기지도 않는다 · 2026-11-26 소유자).
+        var chip = new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(5, 1, 4, 1),
+            Background = Skin.SceneLabel.Brush(),
+            BorderThickness = new Thickness(1),
+            BorderBrush = Skin.SceneLabelBorder.Brush(),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Tag = SceneChipTag + scene.SceneId,
+            IsVisible = false,
+            Child = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 3,
+                Children =
+                {
+                    new Ellipse { Width = 7, Height = 7, Fill = SceneColor.Brush(), VerticalAlignment = VerticalAlignment.Center },
+                    new TextBlock { Text = "⌄", FontSize = 11, Foreground = Skin.SceneLabelInk.Brush(), VerticalAlignment = VerticalAlignment.Center }
+                }
+            }
+        };
+        ToolTip.SetTip(chip, shown + "\n" + Ui.Board_ClickToSelectEveryCard2);
+
         string sceneId = scene.SceneId;
-        label.PointerPressed += (_, args) => OnFrameLabelPressed(
+
+        void Pressed(object? sender, PointerPressedEventArgs args) => OnFrameLabelPressed(
             args,
             members,
             new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
             () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
 
-        return label;   // 자리는 화면 겹에서 PlaceFrameLabels가 정한다
+        label.PointerPressed += Pressed;
+        chip.PointerPressed += Pressed;
+
+        return (label, chip);   // 자리는 화면 겹에서 PlaceFrameLabels가 정한다
     }
 
     // ── 챕터 간선 철도 배선 (T1) ────────────────────────────────────────────

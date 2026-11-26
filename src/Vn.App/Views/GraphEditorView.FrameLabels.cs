@@ -10,9 +10,14 @@ namespace Vn.App.Views;
 /// 경계 바깥 아웃라인 위쪽에 얹고, 장면의 경우 최소 축소로 축소하더라도, 장면 자체의 영역을 벗어나지는 않도록」).
 ///
 /// 이름표는 판(<c>GraphCanvas</c>)이 아니라 판 위에 겹친 화면 겹(<c>FrameLabelLayer</c>)에 선다. 판의 여백은 판 단위로 고정인데 이름표는 화면에서 읽히는
-/// 크기를 지켜야 해서, 판 위에서 키우면 줄일수록 이름표가 판을 1/배율만큼 차지해 서로 · 카드와 겹쳤다(⛔ 1차 구현 `135a508b`). 화면 겹에서는 자리와 크기를
-/// 화면 기준으로 셈하고, <b>자리 후보를 차례로 대 보아 겹치지 않는 첫 자리에 선다</b> — 지도의 지명처럼 위계(챕터 > 장면)가 있고, 자리가 없으면 장면 이름표가
-/// 물러난다.
+/// 크기를 지켜야 해서, 판 위에서 키우면 줄일수록 이름표가 판을 1/배율만큼 차지해 서로 · 카드와 겹쳤다(⛔ 1차 구현 `135a508b`).
+///
+/// <b>장면 이름표는 옮기지도 숨기지도 않는다</b>(같은 날 소유자 — 「장면 이름표가 숨는 타이밍이 있다는 것 자체가 어색하고 … 원래라면 위쪽이름표를 토대로 무슨
+/// 장면인지 구분하던 게, 갑자기 중앙에 장면 이름이 생기니 저게 도대체 뭔지 헷갈린다」). 이름표는 손잡이이고 작가가 자리로 기억하는 표지다 — 자리는 늘
+/// 장면의 왼위이고, 자리가 모자라면 그 자리에서 글자를 줄이다가(<see cref="SceneLabelShrinkPx"/>까지) 이름이 빠진 작은 표(장면 색 점 + ⌄ · 이름은 풍선)가 된다.
+/// 위로는 챕터 테두리 안까지만 자란다 — 테두리 밖의 챕터 이름표와 부딪힐 수 없다. 아주 멀리서(장면의 카드가 모두 덩어리)는 장면 한가운데에 장면 이름이
+/// 옅게 깔린다 — 이름표와 다른 모양으로 카드 뒤에(판 위의 글), 구석의 이름표 · 작은 표는 그대로. ⛔ 같은 날 처음에는 자리가 없으면 장면 이름표가 한가운데로
+/// 옮겨 가거나 물러났다(35%에서 첫 장면의 이름표가 사라졌다).
 ///
 /// 크기는 「판에서의 크기 × 배율」, 단 화면 최소(챕터 <see cref="ChapterLabelMinPx"/> · 장면 <see cref="SceneLabelMinPx"/>)다 — 큰 배율에서는 판과 함께 커지고
 /// 작아질 때만 바닥에서 멈춘다. 이름표는 판 단위로 지어 두고 그 배수로 그린다(100%에서는 판에 그리던 것과 같은 모양이다).
@@ -25,17 +30,29 @@ public partial class GraphEditorView
     /// <summary>챕터 이름표가 화면에서 이보다 작아지지 않는다(px).</summary>
     internal const double ChapterLabelMinPx = 13;
 
-    /// <summary>장면 이름표가 화면에서 이보다 작아지지 않는다(px).</summary>
+    /// <summary>장면 이름표가 화면에서 이보다 작아지지 않는다(px) — 자리가 넉넉하면.</summary>
     internal const double SceneLabelMinPx = 12;
 
-    /// <summary>장면 이름표를 이보다 좁게 말줄임해야 하면 서지 않는다(px) — 「장면 …」만 남은 이름표는 읽히지 않는다.</summary>
+    /// <summary>자리가 모자라면 장면 이름표의 글자가 여기까지 줄어든다(px). 그래도 모자라면 작은 표가 된다.</summary>
+    internal const double SceneLabelShrinkPx = 10;
+
+    /// <summary>장면 이름표를 이보다 좁게 말줄임해야 하면 작은 표가 된다(px) — 「장면 …」만 남은 이름표는 읽히지 않는다.</summary>
     internal const double LabelShortestPx = 36;
 
     /// <summary>장면 이름표의 아래 끝과 장면의 첫 카드 사이(판 단위).</summary>
     private const double SceneLabelGap = 4;
 
+    /// <summary>멀리서 장면 한가운데에 깔리는 장면 이름의 화면 크기(px) — 장면이 좁으면 <see cref="SceneLabelMinPx"/>까지 줄고, 그보다 좁으면 쓰지 않는다.</summary>
+    internal const double SceneWatermarkPx = 18;
+
     /// <summary>챕터 이름표의 Tag 머리 — 뒤에 챕터 ID가 붙는다.</summary>
     internal const string ChapterLabelTag = "chapter-label:";
+
+    /// <summary>장면 이름표 대신 서는 작은 표의 Tag 머리 — 뒤에 장면ID가 붙는다.</summary>
+    internal const string SceneChipTag = "scene-chip:";
+
+    /// <summary>멀리서 장면 한가운데에 깔리는 장면 이름(판 위의 글)의 Tag 머리 — 뒤에 장면ID가 붙는다.</summary>
+    internal const string SceneWatermarkTag = "scene-watermark:";
 
     /// <summary>이름표가 선 자리(<see cref="PlaceFrameLabels"/>).</summary>
     internal enum FrameLabelPlace
@@ -46,14 +63,11 @@ public partial class GraphEditorView
         /// <summary>챕터 — 판의 맨 위라 바깥에 자리가 없어 테두리 안쪽 왼위.</summary>
         Inside,
 
-        /// <summary>장면 — 장면 위 여백의 아래 끝에 아래 끝을 붙여 위로 자란 자리(100%에서는 위 테두리 선에 걸터앉는다).</summary>
-        Rising,
+        /// <summary>장면 — 왼위, 장면 위 여백의 아래 끝에 아래 끝을 붙여 위로 자란 이름표(100%에서는 위 테두리 선에 걸터앉는다 · 자리가 모자라면 글자가 준다).</summary>
+        Corner,
 
-        /// <summary>장면 — 장면 한가운데(지명식). 장면의 카드가 모두 글을 보이지 않을 때만.</summary>
-        Center,
-
-        /// <summary>장면 — 설 자리가 없어 물러났다.</summary>
-        Hidden
+        /// <summary>장면 — 같은 자리의 작은 표(장면 색 점 + ⌄ · 이름은 풍선).</summary>
+        Chip
     }
 
     /// <summary>화면 겹의 이름표 하나 — 판의 테두리 자리와 그 테두리의 카드를 안다.</summary>
@@ -78,8 +92,20 @@ public partial class GraphEditorView
         /// <summary>테두리 왼쪽 선에서 이름표까지(판 단위).</summary>
         public double Inset { get; }
 
-        /// <summary>그 테두리의 카드 — 장면 이름표가 위로 자랄 때 비켜 갈 것에서 빠지고, 지명식으로 설 수 있는지 본다.</summary>
+        /// <summary>그 테두리의 카드 — 장면 이름표가 위로 자랄 때 비켜 갈 것에서 빠지고, 멀리서 장면 이름을 깔지 본다.</summary>
         public HashSet<string> Members { get; }
+
+        /// <summary>장면 — 자리가 모자랄 때 같은 자리에 서는 작은 표(화면 겹 · 배수 없이 화면 크기 그대로).</summary>
+        public Border? Chip { get; init; }
+
+        /// <summary>장면 — 멀리서 장면 한가운데에 깔리는 장면 이름(판 위의 글).</summary>
+        public TextBlock? Watermark { get; init; }
+
+        /// <summary>장면의 이름(보이는 이름).</summary>
+        public string Name { get; init; } = string.Empty;
+
+        /// <summary>장면 — 그 장면이 든 챕터의 테두리(판 단위). 이름표는 이 위로 나가지 않는다.</summary>
+        public Rect Container { get; init; }
 
         /// <summary>판 단위의 제 크기(말줄임 전).</summary>
         public Size Natural { get; set; }
@@ -111,14 +137,24 @@ public partial class GraphEditorView
         label.Visual.RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Relative);
         _frameLabels.Add(label);
         FrameLabelLayer.Children.Add(label.Visual);
+
+        if (label.Chip is { } chip)
+        {
+            FrameLabelLayer.Children.Add(chip);
+        }
     }
 
-    /// <summary>화면 겹의 이름표를 모두 걷는다.</summary>
+    /// <summary>화면 겹의 이름표를 모두 걷는다(멀리서 깔리는 장면 이름은 판의 테두리와 함께 걷힌다).</summary>
     private void ClearFrameLabels()
     {
         foreach (FrameLabel label in _frameLabels)
         {
             FrameLabelLayer.Children.Remove(label.Visual);
+
+            if (label.Chip is { } chip)
+            {
+                FrameLabelLayer.Children.Remove(chip);
+            }
         }
 
         _frameLabels.Clear();
@@ -149,14 +185,14 @@ public partial class GraphEditorView
     }
 
     /// <summary>
-    /// 그 카드가 지금 글을 보이나(글 단계 · <see cref="CardStage"/>) — 장면 이름표는 글을 보이는 카드를 덮지 않는다(지명식도). 카드의 그림자도 이것을 따른다.
-    /// 판에 없는 카드는 글을 보이는 것으로 친다.
+    /// 그 카드가 지금 글을 보이나(글 단계 · <see cref="CardStage"/>) — 카드의 그림자가 이것을 따른다. 판에 없는 카드는 글을 보이는 것으로 친다.
     /// </summary>
     private bool CardShowsText(string nodeId) => FindCard(nodeId) is not { } card || card.Stage == CardStage.Text;
 
     /// <summary>
-    /// 이름표의 자리와 크기를 지금 배율 · 스크롤에 맞춘다(design/board-zoom.md 4.2절). 챕터를 먼저 세우고(숨지 않는다), 장면은 위에서부터 자리 후보를 대 본다:
-    /// ① 위로 자라는 자리 → ② 지명식(장면의 카드가 모두 글을 보이지 않을 때) → ③ 물러남. 배율 · 스크롤 · 테두리가 바뀔 때마다 부른다.
+    /// 이름표의 자리와 크기를 지금 배율 · 스크롤에 맞춘다(design/board-zoom.md 4.2절). 챕터는 테두리 바깥 위(판 맨 위면 안쪽). 장면은 늘 왼위 —
+    /// 위로 자랄 자리(챕터 테두리 안 · 위쪽의 다른 장면의 카드 · 선택지 칸 아래까지)에 맞춰 글자를 줄이고, 그래도 모자라면 같은 자리의 작은 표다. 멀리서는 장면
+    /// 한가운데에 장면 이름을 깐다. 배율 · 스크롤 · 테두리가 바뀔 때마다 부른다.
     /// </summary>
     internal void PlaceFrameLabels()
     {
@@ -204,75 +240,110 @@ public partial class GraphEditorView
         foreach (FrameLabel label in _frameLabels.Where(label => !label.Chapter).OrderBy(label => label.Area.Y).ThenBy(label => label.Area.X))
         {
             MeasureLabel(label, attached);
-            double scale = ScaleOf(label, zoom);
+            PlaceWatermark(label, zoom);
+
+            double full = ScaleOf(label, zoom);
+            double font = FontOf(label);
             Rect frame = Screen(label.Area);
             double inset = Math.Max(4, label.Inset * zoom);
-            double natural = label.Natural.Width * scale;
+            double left = frame.X + inset;
             double room = frame.Width - inset - 4;
-            double height = label.Natural.Height * scale;
 
-            // 장면의 폭에서 말줄임한다 — 너무 좁으면 서지 않는다.
-            if (natural > room && room < LabelShortestPx)
-            {
-                ShowLabel(label, default, scale, FrameLabelPlace.Hidden);
-                continue;
-            }
-
-            double width = Math.Min(natural, room);
-
-            // ① 위로 자라는 자리 — 장면 위 여백의 아래 끝(첫 카드 바로 위)에 아래 끝을 붙인다. 판의 맨 위 밖으로는 나가지 않는다(그때는 제 카드를 덮을 수 있다 —
-            //    판의 맨 위에 붙은 장면).
+            // 아래 끝 — 장면 위 여백의 아래 끝(첫 카드 바로 위). 위 끝의 천장 — 챕터 테두리 안 · 판의 맨 위 · 위쪽에 놓인 남의 카드(선택지 칸까지) · 접은 상자.
             double bottom = ((label.Area.Y + SceneFramePad.Top - SceneLabelGap) * zoom) - offset.Y;
-            var rising = new Rect(frame.X + inset, Math.Max(boardTop, bottom - height), width, height);
-
-            if (Free(rising, label, textOnly: false))
-            {
-                ShowLabel(label, rising, scale, FrameLabelPlace.Rising);
-                placed.Add(rising);
-                continue;
-            }
-
-            // ② 지명식 — 장면 한가운데. 장면의 카드가 모두 글을 보이지 않을 때만(글을 읽는 카드는 덮지 않는다).
-            if (label.Members.All(nodeId => !CardShowsText(nodeId)) && width <= frame.Width - 8 && height <= frame.Height - 8)
-            {
-                var center = new Rect(frame.Center.X - (width / 2), frame.Center.Y - (height / 2), width, height);
-
-                if (Free(center, label, textOnly: true))
-                {
-                    ShowLabel(label, center, scale, FrameLabelPlace.Center);
-                    placed.Add(center);
-                    continue;
-                }
-            }
-
-            // ③ 물러난다 — 챕터 이름표는 남아 있다.
-            ShowLabel(label, default, scale, FrameLabelPlace.Hidden);
-        }
-
-        // 겹치지 않나 — 이미 선 이름표, 제 장면 밖의 카드(그 아래 선택지 칸까지) · 접은 상자. 지명식은 글을 보이는 카드만 피한다(접은 상자는 늘 피한다).
-        bool Free(Rect rect, FrameLabel label, bool textOnly)
-        {
-            if (placed.Any(other => other.Intersects(rect)))
-            {
-                return false;
-            }
+            double ceiling = Math.Max(boardTop, Screen(label.Container).Y + 2);
 
             foreach ((Rect area, string? nodeId) in obstacles)
             {
-                if (nodeId is not null && label.Members.Contains(nodeId))
-                {
-                    continue;
-                }
+                bool mine = nodeId is not null && label.Members.Contains(nodeId);
 
-                if (area.Intersects(rect) && (!textOnly || nodeId is null || CardShowsText(nodeId)))
+                if (!mine && area.Bottom <= bottom && area.Bottom > ceiling && area.Right > left && area.X < left + Math.Max(room, 0))
                 {
-                    return false;
+                    ceiling = area.Bottom + 2;
                 }
             }
 
-            return true;
+            // 자리에 맞춰 글자를 줄인다 — 화면 SceneLabelShrinkPx까지. 장면의 폭에서는 말줄임한다.
+            double scale = Math.Min(full, (bottom - ceiling) / Math.Max(label.Natural.Height, 1));
+            double width = Math.Min(label.Natural.Width * scale, room);
+            bool fits = font * scale >= SceneLabelShrinkPx - 0.01 && room >= Math.Min(LabelShortestPx, label.Natural.Width * scale);
+
+            if (fits)
+            {
+                double height = label.Natural.Height * scale;
+                var corner = new Rect(left, bottom - height, width, height);
+
+                if (!placed.Any(other => other.Intersects(corner)))
+                {
+                    ShowLabel(label, corner, scale, FrameLabelPlace.Corner);
+                    placed.Add(corner);
+                    continue;
+                }
+            }
+
+            // 같은 자리의 작은 표 — 화면 크기 그대로. 천장 아래로만(넘치면 제 장면 안쪽으로 내려온다 — 멀리서는 카드가 글을 보이지 않는다).
+            Size chip = ChipSize(label);
+            var spot = new Rect(left, Math.Max(ceiling, bottom - chip.Height), chip.Width, chip.Height);
+            ShowLabel(label, spot, 1, FrameLabelPlace.Chip);
+            placed.Add(spot);
         }
     }
+
+    /// <summary>
+    /// 멀리서 장면 한가운데에 장면 이름을 깐다 — 장면의 카드가 모두 덩어리일 때만, 화면 <see cref="SceneWatermarkPx"/>(장면이 좁으면 <see cref="SceneLabelMinPx"/>까지
+    /// 줄고, 그래도 넘치면 쓰지 않는다). 판 위의 글이라 카드 뒤에 선다.
+    /// </summary>
+    private void PlaceWatermark(FrameLabel label, double zoom)
+    {
+        if (label.Watermark is not { } mark)
+        {
+            return;
+        }
+
+        bool far = label.Members.Count > 0 && label.Members.All(nodeId => CardStageOf(nodeId) == CardStage.Block);
+
+        if (!far)
+        {
+            mark.IsVisible = false;
+            mark.Text = string.Empty;   // 글 그대로의 판에는 글자가 남지 않는다
+            return;
+        }
+
+        double scale = Math.Max(zoom, 0.01);
+        mark.Text = label.Name;
+        mark.FontSize = SceneWatermarkPx / scale;
+        mark.Measure(Size.Infinity);
+        double room = label.Area.Width - (16 / scale);
+
+        if (mark.DesiredSize.Width > room)
+        {
+            mark.FontSize = Math.Max(SceneLabelMinPx / scale, mark.FontSize * room / Math.Max(mark.DesiredSize.Width, 1));
+            mark.Measure(Size.Infinity);
+        }
+
+        mark.IsVisible = mark.DesiredSize.Width <= room && mark.DesiredSize.Height <= label.Area.Height;
+        Canvas.SetLeft(mark, label.Area.Center.X - (mark.DesiredSize.Width / 2));
+        Canvas.SetTop(mark, label.Area.Center.Y - (mark.DesiredSize.Height / 2));
+    }
+
+    /// <summary>작은 표의 화면 크기.</summary>
+    private static Size ChipSize(FrameLabel label)
+    {
+        if (label.Chip is not { } chip)
+        {
+            return new Size(24, 16);
+        }
+
+        bool shown = chip.IsVisible;
+        chip.IsVisible = true;   // 감춘 컨트롤은 크기가 0으로 재인다
+        chip.Measure(Size.Infinity);
+        Size size = chip.DesiredSize;
+        chip.IsVisible = shown;
+        return size;
+    }
+
+    private static double FontOf(FrameLabel label) =>
+        label.Visual.Child is TextBlock name && name.FontSize > 0 ? name.FontSize : 12;
 
     /// <summary>이름표의 제 크기(판 단위)를 잰다 — 처음 한 번, 창에서 떨어져 쟀으면 붙은 뒤에 다시.</summary>
     private static void MeasureLabel(FrameLabel label, bool attached)
@@ -291,23 +362,31 @@ public partial class GraphEditorView
     }
 
     /// <summary>그리는 배수 — 판의 배율, 단 화면 글자가 바닥(챕터 13 · 장면 12px)보다 작아지지 않는다.</summary>
-    private static double ScaleOf(FrameLabel label, double zoom)
-    {
-        double font = label.Visual.Child is TextBlock name && name.FontSize > 0 ? name.FontSize : 12;
-        return Math.Max(zoom, (label.Chapter ? ChapterLabelMinPx : SceneLabelMinPx) / font);
-    }
+    private static double ScaleOf(FrameLabel label, double zoom) =>
+        Math.Max(zoom, (label.Chapter ? ChapterLabelMinPx : SceneLabelMinPx) / FontOf(label));
 
-    /// <summary>이름표를 그 자리에 그 배수로 — 말줄임 폭은 판 단위로 돌려 건다. 자리는 화면의 온 픽셀에 맞춘다(글자가 번지지 않게).</summary>
+    /// <summary>
+    /// 이름표를 그 자리에 그 배수로 — 말줄임 폭은 판 단위로 돌려 건다. 작은 표의 자리면 이름표를 감추고 작은 표를 세운다(작은 표는 배수 없이 화면 크기
+    /// 그대로다). 자리는 화면의 온 픽셀에 맞춘다(글자가 번지지 않게).
+    /// </summary>
     private static void ShowLabel(FrameLabel label, Rect rect, double scale, FrameLabelPlace place)
     {
         Border visual = label.Visual;
         label.Place = place;
         label.Screen = rect;
 
-        if (place == FrameLabelPlace.Hidden)
+        if (place == FrameLabelPlace.Chip && label.Chip is { } chip)
         {
             visual.IsVisible = false;
+            Canvas.SetLeft(chip, Math.Round(rect.X));
+            Canvas.SetTop(chip, Math.Round(rect.Y));
+            chip.IsVisible = true;
             return;
+        }
+
+        if (label.Chip is { } unused)
+        {
+            unused.IsVisible = false;
         }
 
         double maxWidth = rect.Width < (label.Natural.Width * scale) - 0.5 ? rect.Width / scale : double.PositiveInfinity;
