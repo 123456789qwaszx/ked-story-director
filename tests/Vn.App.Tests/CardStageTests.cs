@@ -36,11 +36,12 @@ public sealed class CardStageTests : IDisposable
     [Fact]
     public void 문턱과_되돌아가는_문턱()
     {
-        // 글 → 글줄은 4px 아래에서, 글줄 → 글은 4.4px부터. 덩어리는 1.5px 아래 · 카드가 화면에서 20px보다 낮을 때, 돌아오는 것은 1.65px · 22px부터.
-        Assert.Equal(Stage.Text, GraphEditorView.NextStage(Stage.Text, 4.0, 100));
-        Assert.Equal(Stage.Lines, GraphEditorView.NextStage(Stage.Text, 3.9, 100));
-        Assert.Equal(Stage.Lines, GraphEditorView.NextStage(Stage.Lines, 4.3, 100));
-        Assert.Equal(Stage.Text, GraphEditorView.NextStage(Stage.Lines, 4.4, 100));
+        // 글 → 글줄은 2.6px 아래에서, 글줄 → 글은 2.86px부터(× 1.1). 덩어리는 1.5px 아래 · 카드가 화면에서 20px보다 낮을 때, 돌아오는 것은 1.65px · 22px부터.
+        Assert.Equal(2.6, GraphEditorView.TextFloorPx);   // 새 카드(11)는 24%까지 글이다 — 2026-11-26 소유자
+        Assert.Equal(Stage.Text, GraphEditorView.NextStage(Stage.Text, 2.6, 100));
+        Assert.Equal(Stage.Lines, GraphEditorView.NextStage(Stage.Text, 2.5, 100));
+        Assert.Equal(Stage.Lines, GraphEditorView.NextStage(Stage.Lines, 2.8, 100));
+        Assert.Equal(Stage.Text, GraphEditorView.NextStage(Stage.Lines, 2.9, 100));
         Assert.Equal(Stage.Block, GraphEditorView.NextStage(Stage.Lines, 1.4, 100));
         Assert.Equal(Stage.Block, GraphEditorView.NextStage(Stage.Text, 5, 19));
         Assert.Equal(Stage.Block, GraphEditorView.NextStage(Stage.Block, 1.6, 100));
@@ -56,14 +57,14 @@ public sealed class CardStageTests : IDisposable
         string root = CardId(session, "root");
         Size size = Card(graph, root).Bounds.Size;
 
-        // 40% — 11 × 0.4 = 4.4px. 글 그대로다(⛔ 1차 구현은 50%에서 글을 걷었다).
-        graph.ZoomTo(0.4);
+        // 24% — 11 × 0.24 = 2.64px. 글 그대로다(2026-11-26 소유자 — 「24%까지도 글은 남아있는 게 좋겠음」 · ⛔ 1차 구현은 50%에서 글을 걷었다).
+        graph.ZoomTo(0.24);
         Settle(graph);
         Assert.Equal(Stage.Text, graph.CardStageOf(root));
         Assert.Equal(1d, WritingBox(graph, root).Opacity);
 
-        // 30% — 3.3px. 글줄: 글 칸은 투명하고 누름을 받지 않으며, 머리에 화면 12px 이상의 제목, 글 칸 자리에 막대(화자 머리는 따로).
-        graph.ZoomTo(0.3);
+        // 20% — 2.2px. 글줄: 글 칸은 투명하고 누름을 받지 않으며, 머리에 화면 12px 이상의 제목, 글 칸 자리에 막대(화자 머리는 따로).
+        graph.ZoomTo(0.2);
         Settle(graph);
         Assert.Equal(Stage.Lines, graph.CardStageOf(root));
         TextBox box = WritingBox(graph, root);
@@ -73,7 +74,7 @@ public sealed class CardStageTests : IDisposable
         Assert.True(overview.IsEffectivelyVisible);
         TextBlock title = overview.GetVisualDescendants().OfType<TextBlock>().First(text => text.Classes.Contains("card-title") && text.IsEffectivelyVisible);
         Assert.Equal(HeaderTitle(graph, root).Text, title.Text);
-        Assert.True(title.FontSize * 0.3 >= GraphEditorView.CardTitleMinPx - 0.01);
+        Assert.True(title.FontSize * 0.2 >= GraphEditorView.CardTitleMinPx - 0.01);
         Assert.False(Bars(overview, GraphEditorView.CardBarsTag).Data!.Bounds.Width <= 0, "본문 막대가 없다");
         Assert.False(Bars(overview, GraphEditorView.CardSpeakerBarsTag).Data!.Bounds.Width <= 0, "화자 막대가 없다");
         AssertSize(size, Card(graph, root));
@@ -99,13 +100,13 @@ public sealed class CardStageTests : IDisposable
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
         string root = CardId(session, "root");
-        double near = 4.2 / Base;   // 4.2px — 글 → 글줄 문턱(4)과 되돌아가는 문턱(4.4) 사이
+        double near = 2.75 / Base;   // 2.75px — 글 → 글줄 문턱(2.6)과 되돌아가는 문턱(2.86) 사이
 
         graph.ZoomTo(near);
         Settle(graph);
         Assert.Equal(Stage.Text, graph.CardStageOf(root));   // 글에서 왔다
 
-        graph.ZoomTo(0.3);
+        graph.ZoomTo(0.2);
         Settle(graph);
         graph.ZoomTo(near);
         Settle(graph);
@@ -121,12 +122,13 @@ public sealed class CardStageTests : IDisposable
         Border plus = chips.SelectMany(chip => chip.Children).OfType<Border>().First(part => part.Tag as string == GraphEditorView.SlotPlaceholderTag);
         Ellipse knob = chips[0].Children.OfType<Ellipse>().Single();
 
-        graph.ZoomTo(0.3);
+        graph.ZoomTo(0.2);
         Settle(graph);
+        Assert.Equal(Stage.Lines, graph.CardStageOf(CardId(session, "root")));
         Assert.Equal(0d, plus.Opacity);
         Assert.False(plus.IsHitTestVisible);
         Assert.Equal(1d, knob.Opacity);
-        Assert.True((knob.RenderTransform as ScaleTransform)?.ScaleX * knob.Width * 0.3 >= GraphEditorView.MarkFloorPx - 0.01);   // 점은 화면 4px 이상
+        Assert.True((knob.RenderTransform as ScaleTransform)?.ScaleX * knob.Width * 0.2 >= GraphEditorView.MarkFloorPx - 0.01);   // 점은 화면 4px 이상
 
         graph.ZoomTo(0.1);
         Settle(graph);

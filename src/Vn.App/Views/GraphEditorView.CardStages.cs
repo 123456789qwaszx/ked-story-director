@@ -45,8 +45,11 @@ public partial class GraphEditorView
         Block
     }
 
-    /// <summary>화면 글자가 이 크기(px) 이상이면 글 단계다.</summary>
-    internal const double TextFloorPx = 4;
+    /// <summary>
+    /// 화면 글자가 이 크기(px) 이상이면 글 단계다 — 새 카드(11)는 배율 24%까지 글이다(2026-11-26 소유자 — 「24%까지도 글은 남아있는 게 좋겠음. 그 아래로
+    /// 내려가야 막대로 변경」 · ⛔ 처음에는 4px — 36%였다). 11 × 0.24 = 2.64라 소수점 어긋남에도 24%가 글이 되게 2.6으로 둔다.
+    /// </summary>
+    internal const double TextFloorPx = 2.6;
 
     /// <summary>화면 글자가 이 크기(px) 미만이면 덩어리 단계다.</summary>
     internal const double BlockBelowPx = 1.5;
