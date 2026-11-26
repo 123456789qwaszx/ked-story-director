@@ -54,11 +54,11 @@ public partial class MainWindow
 
         _sheet.Children.Add(rows);
 
-        var addBox = new TextBox { FontSize = 12, PlaceholderText = Ui.Speakers_NewSpeakerName, Tag = "speaker-add-name" };
+        var addBox = new TextBox { FontSize = Skin.Font(12), PlaceholderText = Ui.Speakers_NewSpeakerName, Tag = "speaker-add-name" };
         var addButton = new Button
         {
             Content = Ui.Speakers_Add,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "speaker-add"
         };
@@ -116,7 +116,7 @@ public partial class MainWindow
         _sheet.Children.Add(new TextBlock
         {
             Text = Plural.Format(Ui.Speakers_NamesOnlyInScript, unlisted.Count),
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(0, 16, 0, 0),
             Tag = "speaker-unlisted-header"
@@ -141,7 +141,7 @@ public partial class MainWindow
         var all = new Button
         {
             Content = Ui.Speakers_RegisterAll,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             HorizontalAlignment = HorizontalAlignment.Right,
             Margin = new Thickness(0, 6, 0, 0),
             Tag = "speaker-register-all"
@@ -162,7 +162,7 @@ public partial class MainWindow
     private Control UnlistedSpeakerRow(UnlistedSpeakers.Entry entry)
     {
         string speakerName = entry.Name;
-        var name = new TextBox { Text = speakerName, FontSize = 12, Tag = "speaker-unlisted:" + speakerName };
+        var name = new TextBox { Text = speakerName, FontSize = Skin.Font(12), Tag = "speaker-unlisted:" + speakerName };
         ToolTip.SetTip(name, Plural.Format(Ui.Speakers_RenamingUpdatesAllDialogueLines, speakerName, Josa.이가(speakerName), entry.Lines));
 
         void Commit() => UiGuard.Run(_session, Ui.Speakers_SpeakerNameInScript, () =>
@@ -207,7 +207,7 @@ public partial class MainWindow
         var lines = new TextBlock
         {
             Text = Plural.Format(Ui.Speakers_Lines, entry.Lines),
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Opacity = 0.65,
             MinWidth = 34,
             TextAlignment = TextAlignment.Right,   // 줄 수의 자릿수가 달라도 이름 칸 끝이 나란하다
@@ -219,7 +219,7 @@ public partial class MainWindow
         var register = new Button
         {
             Content = Ui.Speakers_Register,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "speaker-register:" + speakerName
         };
@@ -279,7 +279,7 @@ public partial class MainWindow
             var glyph = new TextBlock
             {
                 Text = Ui.Format_Text,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -327,7 +327,7 @@ public partial class MainWindow
     private Control SpeakerRow(Speaker speaker)
     {
         string speakerName = speaker.Name;
-        var name = new TextBox { Text = speakerName, FontSize = 12, Tag = "speaker-name:" + speakerName };
+        var name = new TextBox { Text = speakerName, FontSize = Skin.Font(12), Tag = "speaker-name:" + speakerName };
 
         void Commit() => UiGuard.Run(_session, Ui.Speakers_SpeakerName, () =>
         {
@@ -372,7 +372,7 @@ public partial class MainWindow
         var remove = new Button
         {
             Content = "✕",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "speaker-remove:" + speakerName
         };

@@ -39,7 +39,7 @@ internal sealed class WriterColorChooser
         var none = new Button
         {
             Content = Ui.Board_None,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(2),
             Focusable = false,
             [ToolTip.TipProperty] = noneTip
@@ -47,7 +47,7 @@ internal sealed class WriterColorChooser
         none.Click += (_, _) => Picked?.Invoke(null);
         palette.Children.Add(none);
 
-        UsedTitle = new TextBlock { Text = Ui.Format_ColorsUsedInThisProject, FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7, IsVisible = false };
+        UsedTitle = new TextBlock { Text = Ui.Format_ColorsUsedInThisProject, FontSize = Skin.Font(11), Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7, IsVisible = false };
         Used = new WrapPanel { Orientation = Orientation.Horizontal, MaxWidth = 5 * 28, IsVisible = false };
 
         Preview = new Border
@@ -61,10 +61,10 @@ internal sealed class WriterColorChooser
         Hex = new TextBox
         {
             Width = 86,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             [ToolTip.TipProperty] = Ui.Format_RRGGBBTypeItInHex
         };
-        Apply = new Button { Content = Ui.Format_Apply, FontSize = 11, Focusable = false, [ToolTip.TipProperty] = Ui.Format_ApplyThisColor };
+        Apply = new Button { Content = Ui.Format_Apply, FontSize = Skin.Font(11), Focusable = false, [ToolTip.TipProperty] = Ui.Format_ApplyThisColor };
         Channels = new Slider[3];
         var rows = new StackPanel { Spacing = 0 };
 
@@ -82,7 +82,7 @@ internal sealed class WriterColorChooser
                 Focusable = false,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            _values[index] = new TextBlock { Width = 26, FontSize = 11, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            _values[index] = new TextBlock { Width = 26, FontSize = Skin.Font(11), TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
             Channels[index].ValueChanged += (_, _) =>
             {
                 if (!_syncing)
@@ -94,7 +94,7 @@ internal sealed class WriterColorChooser
             {
                 Orientation = Orientation.Horizontal,
                 Spacing = 4,
-                Children = { new TextBlock { Text = label, Width = 10, FontSize = 11, VerticalAlignment = VerticalAlignment.Center }, Channels[index], _values[index] }
+                Children = { new TextBlock { Text = label, Width = 10, FontSize = Skin.Font(11), VerticalAlignment = VerticalAlignment.Center }, Channels[index], _values[index] }
             });
         }
 
@@ -124,7 +124,7 @@ internal sealed class WriterColorChooser
                 palette,
                 UsedTitle,
                 Used,
-                new TextBlock { Text = Ui.Format_ChooseRGB, FontSize = 11, Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7 },
+                new TextBlock { Text = Ui.Format_ChooseRGB, FontSize = Skin.Font(11), Margin = new Thickness(2, 6, 2, 1), Opacity = 0.7 },
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(2, 0), Children = { Preview, Hex, Apply } },
                 rows
             }

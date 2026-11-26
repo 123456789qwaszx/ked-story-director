@@ -14,7 +14,7 @@
                  Grid.Row="0"
                  Classes="clearButton"
                  Margin="4,4,4,0"
-                 FontSize="12"
+                 FontSize="{DynamicResource TextMd}"
                  PlaceholderText="{x:Static s:Ui.Hierarchy_FindNameID}"
                  ToolTip.Tip="{x:Static s:Ui.Hierarchy_FindsEpisodesScenesChaptersBy}" />
 

@@ -140,7 +140,7 @@ public partial class DialogueNodeEditor : UserControl
         var add = new Button
         {
             Content = Ui.Dialogue_AddLineAtEnd,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(10, 4),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -158,7 +158,7 @@ public partial class DialogueNodeEditor : UserControl
         panel.Children.Add(new Button
         {
             Content = Ui.Board_Delete,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(10, 4),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -418,7 +418,7 @@ public partial class DialogueNodeEditor : UserControl
             var button = new Button
             {
                 Content = label,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 Padding = new Thickness(10, 4),
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Left,
@@ -585,7 +585,7 @@ public partial class DialogueNodeEditor : UserControl
         var index = new TextBlock
         {
             Text = resolved.Index.ToString(),
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Opacity = 0.45,
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -597,7 +597,7 @@ public partial class DialogueNodeEditor : UserControl
             Text = speaker.Length > 0 ? $"{speaker}: {resolved.Line.Text}" : resolved.Line.Text,
             TextDecorations = TextDecorations.Strikethrough,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             Opacity = 0.55,
             MinHeight = 26,
             Padding = new Thickness(6, 5),
@@ -610,7 +610,7 @@ public partial class DialogueNodeEditor : UserControl
         var chip = new TextBlock
         {
             Text = Ui.Dialogue_PendingRemoval,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Foreground = PendingRemovalBrush,
             Margin = new Thickness(6, 0, 2, 0),
             VerticalAlignment = VerticalAlignment.Center
@@ -646,7 +646,7 @@ public partial class DialogueNodeEditor : UserControl
         var index = new TextBlock
         {
             Text = resolved.Index.ToString(),
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Opacity = 0.45,
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -660,7 +660,7 @@ public partial class DialogueNodeEditor : UserControl
             PlaceholderText = Ui.Dialogue_Dialogue,
             AcceptsReturn = false,
             TextWrapping = TextWrapping.NoWrap,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             MinHeight = 26,
             Padding = new Thickness(6, 3),
             VerticalContentAlignment = VerticalAlignment.Center,
@@ -728,7 +728,7 @@ public partial class DialogueNodeEditor : UserControl
             {
                 Text = resolved.Line.Speaker,
                 PlaceholderText = Ui.Dialogue_Speaker,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 MinHeight = 26,
                 ItemsSource = SpeakerNames(),
             };
@@ -744,7 +744,7 @@ public partial class DialogueNodeEditor : UserControl
             var pick = new Button
             {
                 Content = "▾",
-                FontSize = 8,
+                FontSize = Skin.Font(8),
                 Padding = new Thickness(3, 0),
                 MinWidth = 16,
                 VerticalAlignment = VerticalAlignment.Stretch,
@@ -810,7 +810,7 @@ public partial class DialogueNodeEditor : UserControl
             var item = new Button
             {
                 Content = name,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 Padding = new Thickness(10, 4),
                 MinWidth = 140,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -871,7 +871,7 @@ public partial class DialogueNodeEditor : UserControl
             Child = new TextBlock
             {
                 Text = text,
-                FontSize = 9,
+                FontSize = Skin.Font(9),
                 FontWeight = FontWeight.Bold,
                 Foreground = Skin.OnAccent.Brush()
             },
@@ -978,7 +978,7 @@ public partial class DialogueNodeEditor : UserControl
         head.Children.Add(new TextBlock
         {
             Text = (count > 1 ? string.Format(Ui.Dialogue_BranchPoint, order + 1, count) : Ui.Dialogue_BranchPoint2) + Ui.Dialogue_NotConnected,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             FontWeight = FontWeight.Bold,
             Foreground = BranchPalette.Accent(palette),
             VerticalAlignment = VerticalAlignment.Center
@@ -1006,7 +1006,7 @@ public partial class DialogueNodeEditor : UserControl
                     new TextBlock
                     {
                         Text = Ui.Dialogue_ThereSNowhereToVisit,
-                        FontSize = 10,
+                        FontSize = Skin.Font(10),
                         Opacity = 0.7,
                         TextWrapping = TextWrapping.Wrap,
                         Margin = new Thickness(0, 2, 0, 0)
@@ -1059,7 +1059,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             // 여럿이면 차례를 붙인다 — 위에서부터 다녀온다.
             Text = count > 1 ? string.Format(Ui.Dialogue_ConditionalBranch, order + 1, count) : Ui.Dialogue_ConditionalBranch2,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             FontWeight = FontWeight.Bold,
             Foreground = BranchPalette.Accent(palette),
             VerticalAlignment = VerticalAlignment.Center
@@ -1068,7 +1068,7 @@ public partial class DialogueNodeEditor : UserControl
         row.Children.Add(new TextBlock
         {
             Text = $"→ {name}",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Opacity = 0.8,
             VerticalAlignment = VerticalAlignment.Center
         });
@@ -1081,7 +1081,7 @@ public partial class DialogueNodeEditor : UserControl
             Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, targetId, state.Label)) + " " + (lastConnected
                 ? Ui.Dialogue_VisitsThenContinuesFromThis
                 : Ui.Dialogue_VisitsThenGoesToNext),
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
         });
@@ -1146,7 +1146,7 @@ public partial class DialogueNodeEditor : UserControl
         row.Children.Add(new TextBlock
         {
             Text = Ui.Dialogue_Condition,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             FontWeight = FontWeight.SemiBold,
             Margin = new Thickness(0, 0, 8, 0),
             VerticalAlignment = VerticalAlignment.Center
@@ -1159,7 +1159,7 @@ public partial class DialogueNodeEditor : UserControl
         {
             Text = BranchConditionNote.Sentence(state, BranchConditionNote.IsUndecided(_session.Project, node.Id, state.Label)) +
                    Ui.Dialogue_BranchIsAlwaysVisitedAnd,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Opacity = 0.7,
             TextWrapping = TextWrapping.Wrap
         });
@@ -1204,7 +1204,7 @@ public partial class DialogueNodeEditor : UserControl
         var plus = new Button
         {
             Content = "＋",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(5, 1),
             MinHeight = 0,
             Margin = new Thickness(2, 0, 0, 0),
@@ -1239,7 +1239,7 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = title,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Opacity = 0.6,
                 Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 0)
             });
@@ -1270,7 +1270,7 @@ public partial class DialogueNodeEditor : UserControl
                 Text = existing.Count == 1
                     ? Ui.Dialogue_ThereSOneBranchBefore
                     : string.Format(Ui.Dialogue_ThereAreBranchesBeforeThis, existing.Count),
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Opacity = 0.6,
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
@@ -1297,7 +1297,7 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = Ui.Dialogue_BranchCardsDonTBranch,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Opacity = 0.65,
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
@@ -1311,7 +1311,7 @@ public partial class DialogueNodeEditor : UserControl
             panel.Children.Add(new TextBlock
             {
                 Text = Ui.Dialogue_ChapterEpisodeChoicesAndStat,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Opacity = 0.65,
                 TextWrapping = TextWrapping.Wrap,
                 MaxWidth = 250
@@ -1342,7 +1342,7 @@ public partial class DialogueNodeEditor : UserControl
         var addBelow = new Button
         {
             Content = Ui.Dialogue_AddLineBelow2,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(8, 3),
             Margin = new Thickness(0, 6, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -1397,7 +1397,7 @@ public partial class DialogueNodeEditor : UserControl
         var addBranch = new Button
         {
             Content = Ui.Dialogue_AddBranch,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(7, 2)
         };
         ToolTip.SetTip(
@@ -1459,7 +1459,7 @@ public partial class DialogueNodeEditor : UserControl
                 Text = orphan.LastKnownText is { } text
                     ? string.Format(Ui.Dialogue_LastContent, text.Speaker, text.Text)
                     : Ui.Dialogue_ThisLineIsnTIn,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
 
@@ -1545,7 +1545,7 @@ public partial class DialogueNodeEditor : UserControl
         var button = new Button
         {
             Content = glyph,
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Padding = new Thickness(6, 2),
             Margin = new Thickness(2, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center

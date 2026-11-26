@@ -767,7 +767,7 @@ public partial class StoryHierarchy : UserControl
                 Text = string.Format(Ui.Hierarchy_NothingMatches, _query),
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -779,7 +779,7 @@ public partial class StoryHierarchy : UserControl
                 Text = Ui.Hierarchy_NoProject,
                 Margin = new Thickness(8, 10),
                 Opacity = 0.55,
-                FontSize = 11
+                FontSize = Skin.Font(11)
             });
         }
         else if (_chapters.Count == 0)
@@ -795,7 +795,7 @@ public partial class StoryHierarchy : UserControl
                         : Ui.Hierarchy_NoChaptersCreateOneWith,
                 Margin = new Thickness(26, 6),
                 Opacity = 0.55,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 TextWrapping = TextWrapping.Wrap
             });
         }
@@ -834,7 +834,7 @@ public partial class StoryHierarchy : UserControl
             line.Children.Add(new TextBlock
             {
                 Text = detail,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Opacity = 0.5,
                 VerticalAlignment = VerticalAlignment.Center
             });
@@ -845,7 +845,7 @@ public partial class StoryHierarchy : UserControl
             line.Children.Add(new TextBlock
             {
                 Text = "⚠",
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Foreground = Skin.WarningMark.Brush(),
                 VerticalAlignment = VerticalAlignment.Center,
                 [ToolTip.TipProperty] = row.Kind switch
@@ -1050,7 +1050,7 @@ public partial class StoryHierarchy : UserControl
 
     private MenuItem MenuItemFor(string header, HierarchyCommand command, HierarchyRow? row, Control anchor)
     {
-        var item = new MenuItem { Header = header, FontSize = 11, Tag = command };
+        var item = new MenuItem { Header = header, FontSize = Skin.Font(11), Tag = command };
         item.Click += (_, _) => UiGuard.Run(null, Ui.Side_HierarchyMenu, () =>
             CommandRequested?.Invoke(command, row ?? ProjectRow(), anchor));
 
@@ -1073,7 +1073,7 @@ public partial class StoryHierarchy : UserControl
 
     private MenuItem RenameItem(HierarchyRow row)
     {
-        var item = new MenuItem { Header = Ui.Board_Rename, FontSize = 11, Tag = "rename" };
+        var item = new MenuItem { Header = Ui.Board_Rename, FontSize = Skin.Font(11), Tag = "rename" };
         item.Click += (_, _) => UiGuard.Run(null, Ui.Hierarchy_Rename, () => BeginRename(row.Key));
 
         return item;
@@ -1132,7 +1132,7 @@ public partial class StoryHierarchy : UserControl
         var box = new TextBox
         {
             Text = current,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(4, 1),
             Margin = new Thickness((row.Depth * 14) + 16, 0, 0, 0),
             Tag = "rename:" + row.Key
@@ -1484,7 +1484,7 @@ public partial class StoryHierarchy : UserControl
                 return;
             }
 
-            _dragGhostText = new TextBlock { Text = row.Text, FontSize = 12, FontWeight = FontWeight.SemiBold };
+            _dragGhostText = new TextBlock { Text = row.Text, FontSize = Skin.Font(12), FontWeight = FontWeight.SemiBold };
             _dragGhost = new Border
             {
                 Child = _dragGhostText,
@@ -1743,7 +1743,7 @@ public partial class StoryHierarchy : UserControl
             return;
         }
 
-        ToolTip.SetTip(on, new TextBlock { Text = (refuses ? "✕ " : "↪ ") + why, TextWrapping = TextWrapping.Wrap, MaxWidth = 380, FontSize = 12 });
+        ToolTip.SetTip(on, new TextBlock { Text = (refuses ? "✕ " : "↪ ") + why, TextWrapping = TextWrapping.Wrap, MaxWidth = 380, FontSize = Skin.Font(12) });
         ToolTip.SetPlacement(on, PlacementMode.Right);
         ToolTip.SetIsOpen(on, true);
 

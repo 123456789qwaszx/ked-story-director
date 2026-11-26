@@ -9,13 +9,19 @@
         <Setter Property="FontFamily" Value="{DynamicResource UiFont}" />
     </Style>
 
-    <!-- 단추 — 둥근 알약 -->
+    <!-- 단추의 모양은 둘뿐이다 — 작은 단추(기본 · 얇은 테두리 · 그림자 없음)와 두툼한 단추(.chunky · 틀의 큰 일).
+         켜고 끄는 단추(서식 도구)는 작은 단추와 같은 모양이고, 켜지면 하늘색 면이다(색은 Tokens.axaml). -->
     <Style Selector="Button">
-        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="CornerRadius" Value="10" />
+    </Style>
+    <Style Selector="ToggleButton">
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="BorderThickness" Value="1.5" />
     </Style>
 
     <!-- 두툼한 단추(스티커) — 2px 테두리 + 번지지 않는 아래 그림자. 누르면 그림자만큼 내려앉는다. -->
     <Style Selector="Button.chunky">
+        <Setter Property="CornerRadius" Value="14" />
         <Setter Property="BorderThickness" Value="2" />
         <Setter Property="Padding" Value="14,5" />
         <Setter Property="Margin" Value="0,0,0,3" />
@@ -23,6 +29,7 @@
         <Setter Property="RenderTransform" Value="none" />
     </Style>
     <Style Selector="Button.chunky /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="#BFDDF0" />
         <Setter Property="BoxShadow" Value="0 3 0 0 #BFDDF0" />
         <Setter Property="Transitions">
             <Transitions>
@@ -70,9 +77,41 @@
         <Setter Property="Foreground" Value="#8DA3B5" />
     </Style>
 
-    <!-- 주 탭([대본] · [구성]) — 두툼한 스티커 탭. 밑줄 대신 면으로 고른 것을 말한다. -->
+    <!-- 위 띠(하늘색 바탕) 위의 두툼한 단추 — 그림자가 바탕에 묻히지 않게 한 단계 짙다. File 메뉴도 같은 모양이다. -->
+    <Style Selector="Grid#TopBar Button.chunky /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="#FFFFFF" />
+        <Setter Property="BoxShadow" Value="0 3 0 0 #5FAEDD" />
+    </Style>
+    <Style Selector="Grid#TopBar Button.chunky:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BoxShadow" Value="0 0 0 0 #5FAEDD" />
+    </Style>
+    <Style Selector="Menu#MainMenu > MenuItem">
+        <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+        <Setter Property="Margin" Value="0,0,0,3" />
+    </Style>
+    <Style Selector="Menu#MainMenu > MenuItem:not(:disabled) /template/ Border#PART_LayoutRoot">
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="BorderBrush" Value="#FFFFFF" />
+        <Setter Property="BoxShadow" Value="0 3 0 0 #5FAEDD" />
+    </Style>
+
+    <!-- 탭 — 밑줄 대신 면으로 고른 것을 말한다. 기둥의 탭(인스펙터 · 화자 · 조건 및 스탯)은 작은 알약, 주 탭([대본] · [구성])은 두툼한 스티커 탭이다. -->
     <Style Selector="TabItem">
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+    </Style>
+    <Style Selector="TabItem:not(:disabled) /template/ Border#PART_LayoutRoot">
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="10,2" />
+    </Style>
+    <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="#EAF5FC" />
+    </Style>
+    <Style Selector="TabItem:selected /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="#FFD9E5" />
+    </Style>
+    <Style Selector="TabItem:selected /template/ Border#PART_SelectedPipe">
+        <Setter Property="IsVisible" Value="False" />
     </Style>
     <Style Selector="TabControl#MainTabs">
         <Setter Property="Margin" Value="10,4,0,2" />
@@ -119,6 +158,6 @@
     </Style>
     <Style Selector="TextBox.card-writing:focus /template/ Border#PART_BorderElement">
         <Setter Property="Background" Value="#FFFFFF" />
-        <Setter Property="BorderBrush" Value="#F58FB0" />
+        <Setter Property="BorderBrush" Value="#8CCBF0" />
     </Style>
 </Styles>

@@ -19,11 +19,11 @@
                   활성이 되고, 그 뒤의 [+ 에피소드]가 거기에 선다.
                   ⛔ 2026-11-18에 걷었다가 같은 날 되살렸다(소유자 — 써 보니 있는 편이 직관적이다).
                 -->
-                <TextBlock Text="{x:Static s:Ui.Board_Chapter2}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"
+                <TextBlock Text="{x:Static s:Ui.Board_Chapter2}" FontSize="{DynamicResource TextSm}" Opacity="0.6" VerticalAlignment="Center"
                            Margin="0,0,4,0" />
                 <!-- 주의: 치수는 챕터 그래프의 콤보와 <b>한 쌍</b>이다 —
                      짝: `ChapterGraphView.axaml`의 ChapterCombo. -->
-                <ComboBox x:Name="ChapterCombo" MinWidth="180" FontSize="11"
+                <ComboBox x:Name="ChapterCombo" MinWidth="180" FontSize="{DynamicResource TextSm}"
                           ToolTip.Tip="{x:Static s:Ui.Board_BoardNewNodesGoOn}" />
                 <Border Width="1" Margin="4,2" Background="{DynamicResource Divider}" />
                 <Button x:Name="AddEpisodeButton" Classes="chunky primary" Content="{x:Static s:Ui.Board_Episode}" />
@@ -72,7 +72,7 @@
                                 <Button Grid.Column="1"
                                     x:Name="FoldHierarchyButton"
                                     Content="‹"
-                                    FontSize="12"
+                                    FontSize="{DynamicResource TextMd}"
                                     Padding="7,0"
                                     Margin="4,0,0,0"
                                     VerticalAlignment="Top"
@@ -95,12 +95,12 @@
                             BorderThickness="0"
                             ToolTip.Tip="{x:Static s:Ui.Board_ExpandHierarchy}">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="›" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <TextBlock Text="›" FontSize="{DynamicResource TextLg}" FontWeight="SemiBold" HorizontalAlignment="Center" />
                             <LayoutTransformControl>
                                 <LayoutTransformControl.LayoutTransform>
                                     <RotateTransform Angle="90" />
                                 </LayoutTransformControl.LayoutTransform>
-                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontSize="11" Opacity="0.7" />
+                                <TextBlock Text="{x:Static s:Ui.Keys_Hierarchy}" FontSize="{DynamicResource TextSm}" Opacity="0.7" />
                             </LayoutTransformControl>
                         </StackPanel>
                     </Button>
@@ -203,17 +203,17 @@
                     <Border x:Name="ZoomBar" BorderBrush="{DynamicResource FloatingDivider}" BorderThickness="0,1,0,0" Padding="4,2">
                         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*">
                             <Button Grid.Column="0" x:Name="FitAllButton" Content="{x:Static s:Ui.Board_FitAll}"
-                                    FontSize="9" Padding="5,1" Margin="0,0,3,0" />
+                                    FontSize="{DynamicResource TextXxs}" Padding="5,1" Margin="0,0,3,0" />
                             <Button Grid.Column="1" x:Name="Zoom50Button" Content="50"
-                                    FontSize="9" Padding="4,1" Margin="0,0,2,0" />
+                                    FontSize="{DynamicResource TextXxs}" Padding="4,1" Margin="0,0,2,0" />
                             <Button Grid.Column="2" x:Name="Zoom100Button" Content="100"
-                                    FontSize="9" Padding="4,1" Margin="0,0,2,0" />
+                                    FontSize="{DynamicResource TextXxs}" Padding="4,1" Margin="0,0,2,0" />
                             <Button Grid.Column="3" x:Name="Zoom150Button" Content="150"
-                                    FontSize="9" Padding="4,1" />
+                                    FontSize="{DynamicResource TextXxs}" Padding="4,1" />
                             <TextBlock Grid.Column="4"
                                        x:Name="ZoomText"
                                        Margin="6,0,0,0"
-                                       FontSize="10"
+                                       FontSize="{DynamicResource TextXs}"
                                        Opacity="0.7"
                                        HorizontalAlignment="Right"
                                        VerticalAlignment="Center"
@@ -239,22 +239,22 @@
                 <StackPanel Orientation="Horizontal" Spacing="4">
                     <TextBox x:Name="FindBox"
                              Width="220"
-                             FontSize="12"
+                             FontSize="{DynamicResource TextMd}"
                              MinHeight="0"
                              Padding="6,3"
                              VerticalContentAlignment="Center"
                              PlaceholderText="{x:Static s:Ui.Board_FindDialogueSpeakersTitles}" />
                     <TextBlock x:Name="FindCount"
-                               FontSize="11"
+                               FontSize="{DynamicResource TextSm}"
                                Opacity="0.7"
                                MinWidth="44"
                                TextAlignment="Center"
                                VerticalAlignment="Center" />
-                    <Button x:Name="FindPrevButton" Content="▲" FontSize="10" Padding="6,2" Focusable="False"
+                    <Button x:Name="FindPrevButton" Content="▲" FontSize="{DynamicResource TextXs}" Padding="6,2" Focusable="False"
                             ToolTip.Tip="{x:Static s:Ui.Board_PreviousShiftEnter}" />
-                    <Button x:Name="FindNextButton" Content="▼" FontSize="10" Padding="6,2" Focusable="False"
+                    <Button x:Name="FindNextButton" Content="▼" FontSize="{DynamicResource TextXs}" Padding="6,2" Focusable="False"
                             ToolTip.Tip="{x:Static s:Ui.Board_NextEnter}" />
-                    <Button x:Name="FindCloseButton" Content="✕" FontSize="10" Padding="6,2" Focusable="False"
+                    <Button x:Name="FindCloseButton" Content="✕" FontSize="{DynamicResource TextXs}" Padding="6,2" Focusable="False"
                             ToolTip.Tip="{x:Static s:Ui.Board_CloseEscKeepWritingRight}" />
                 </StackPanel>
             </Border>
@@ -297,7 +297,7 @@
                                     <TextBox x:Name="InspectorNameBox" FontWeight="SemiBold" IsVisible="False" />
                                     <TextBlock x:Name="InspectorTitle" Text="{x:Static s:Ui.Board_Inspector}" FontWeight="SemiBold" />
                                     <TextBlock x:Name="InspectorSubtitle"
-                                               FontSize="11"
+                                               FontSize="{DynamicResource TextSm}"
                                                Opacity="0.65"
                                                TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
@@ -315,7 +315,7 @@
                                     BorderThickness="0,0,0,1">
                                 <StackPanel Spacing="1">
                                     <TextBlock Text="{x:Static s:Ui.Board_SpeakersForWholeProject}" FontWeight="SemiBold" />
-                                    <views:GuideLine Full="{x:Static s:Ui.Board_EveryChapterUsesSameList}" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                    <views:GuideLine Full="{x:Static s:Ui.Board_EveryChapterUsesSameList}" FontSize="{DynamicResource TextSm}" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                             </Border>
                             <ContentControl Grid.Row="1" x:Name="SpeakerHost" />
@@ -333,11 +333,11 @@
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Spacing="1" VerticalAlignment="Center">
                                         <TextBlock Text="{x:Static s:Ui.Board_ConditionsStatsForThisChapter}" FontWeight="SemiBold" />
-                                        <views:GuideLine Full="{x:Static s:Ui.Board_UsedOnlyInThisChapter}" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
+                                        <views:GuideLine Full="{x:Static s:Ui.Board_UsedOnlyInThisChapter}" FontSize="{DynamicResource TextSm}" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                     <ComboBox Grid.Column="1"
                                               x:Name="ConditionChapterCombo"
-                                              FontSize="11"
+                                              FontSize="{DynamicResource TextSm}"
                                               MinHeight="24"
                                               MaxWidth="150"
                                               Padding="6,0"
@@ -353,7 +353,7 @@
                     <!-- 기둥 접기 — 탭 줄 오른쪽 끝(2026-11-18 소유자 · side-fold K1). 하이어아키의 「‹」와 같은 손짓이다(ColumnDock). -->
                     <Button x:Name="FoldSideButton"
                             Content="›"
-                            FontSize="12"
+                            FontSize="{DynamicResource TextMd}"
                             Padding="7,0"
                             Margin="0,5,4,0"
                             HorizontalAlignment="Right"
@@ -374,12 +374,12 @@
                         BorderThickness="0"
                         ToolTip.Tip="{x:Static s:Ui.Board_ExpandSidePanel}">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="‹" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        <TextBlock Text="‹" FontSize="{DynamicResource TextLg}" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <LayoutTransformControl>
                             <LayoutTransformControl.LayoutTransform>
                                 <RotateTransform Angle="90" />
                             </LayoutTransformControl.LayoutTransform>
-                            <TextBlock Text="{x:Static s:Ui.Board_InspectorSpeakersConditionsStats}" FontSize="11" Opacity="0.7" />
+                            <TextBlock Text="{x:Static s:Ui.Board_InspectorSpeakersConditionsStats}" FontSize="{DynamicResource TextSm}" Opacity="0.7" />
                         </LayoutTransformControl>
                     </StackPanel>
                 </Button>
@@ -402,7 +402,7 @@
                 BorderBrush="{DynamicResource Divider}"
                 BorderThickness="0,1,0,0">
             <TextBlock x:Name="HintText"
-                       FontSize="11"
+                       FontSize="{DynamicResource TextSm}"
                        Opacity="0.7"
                        TextWrapping="Wrap" />
         </Border>

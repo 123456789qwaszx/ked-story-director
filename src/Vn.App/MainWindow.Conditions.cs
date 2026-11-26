@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Editing;
@@ -50,11 +51,11 @@ public partial class MainWindow
 
         _sheet.Children.Add(rows);
 
-        var addBox = new TextBox { FontSize = 12, PlaceholderText = Ui.Side_NewConditionName, Tag = "condition-add-name" };
+        var addBox = new TextBox { FontSize = Skin.Font(12), PlaceholderText = Ui.Side_NewConditionName, Tag = "condition-add-name" };
         var addButton = new Button
         {
             Content = Ui.Speakers_Add,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "condition-add"
         };
@@ -102,7 +103,7 @@ public partial class MainWindow
     private Control ConditionRow(string chapterId, ChapterCondition condition)
     {
         string label = condition.Label;
-        var name = new TextBox { Text = label, FontSize = 12, Tag = "condition-label:" + label };
+        var name = new TextBox { Text = label, FontSize = Skin.Font(12), Tag = "condition-label:" + label };
 
         void Commit() => UiGuard.Run(_session, Ui.Side_ConditionName, () =>
         {
@@ -146,7 +147,7 @@ public partial class MainWindow
         var remove = new Button
         {
             Content = "✕",
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Margin = new Thickness(6, 0, 0, 0),
             Tag = "condition-remove:" + label
         };
@@ -163,7 +164,7 @@ public partial class MainWindow
         var expression = new TextBlock
         {
             Text = undecided ? Ui.Side_UndecidedAlwaysPasses : Ui.Side_Expression + condition.Expression.Trim(),
-            FontSize = 10,
+            FontSize = Skin.Font(10),
             Opacity = 0.6,
             Margin = new Thickness(4, 1, 0, 0),
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,

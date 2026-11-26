@@ -11,7 +11,7 @@
     <Color x:Key="Divider">#CFE6F5</Color>
     <Color x:Key="SwatchBorder">#24415E</Color>
     <Color x:Key="Neutral">#56708A</Color>
-    <Color x:Key="NeutralLight">#8DA3B5</Color>
+    <Color x:Key="NeutralLight">#7088A0</Color>
     <Color x:Key="NeutralDark">#3D5873</Color>
 
     <!-- 상태 -->
@@ -57,7 +57,7 @@
     <Color x:Key="SlotLive">#E0526A</Color>
     <Color x:Key="SlotAsleep">#788DA3B5</Color>
     <Color x:Key="SlotPlaceholderBorder">#F2D675</Color>
-    <Color x:Key="Rail">#F58FB0</Color>
+    <Color x:Key="Rail">#E8B84A</Color>
     <Color x:Key="ChoiceInk">#A86B00</Color>
     <Color x:Key="Connection">#E05BB4E8</Color>
     <Color x:Key="BranchHub">#3D5873</Color>
@@ -73,13 +73,13 @@
     <!-- [대본] 판 — 테두리 · 머리 띠 · 선택지 칸 -->
     <Color x:Key="ChapterFrameBorder">#FF8CCBF0</Color>
     <Color x:Key="ChapterFrameBorderIdle">#99B5D9EF</Color>
-    <Color x:Key="ChapterFrameFill">#59FFFFFF</Color>
+    <Color x:Key="ChapterFrameFill">#26FFFFFF</Color>
     <Color x:Key="ChapterFrameFillIdle">#33FFFFFF</Color>
     <Color x:Key="ChapterLabel">#FF8CCBF0</Color>
     <Color x:Key="ChapterLabelIdle">#FFCFE6F5</Color>
     <Color x:Key="ChapterLabelInk">#24415E</Color>
     <Color x:Key="SceneFrameBorder">#FFFFFFFF</Color>
-    <Color x:Key="SceneFrameFill">#8CFFFFFF</Color>
+    <Color x:Key="SceneFrameFill">#55FFFFFF</Color>
     <Color x:Key="SceneLabel">#FFFFFFFF</Color>
     <Color x:Key="SceneLabelInk">#24415E</Color>
     <Color x:Key="EpisodeBand">#CDE9F9</Color>
@@ -120,6 +120,12 @@
     <x:Double x:Key="LineWeight">1.7</x:Double>
     <x:Double x:Key="SlotRadius">10</x:Double>
     <x:Double x:Key="SlotPill">1</x:Double>
+    <x:Double x:Key="FontScale">1.15</x:Double>
+    <x:Double x:Key="TextXxs">10.5</x:Double>
+    <x:Double x:Key="TextXs">11.5</x:Double>
+    <x:Double x:Key="TextSm">12.5</x:Double>
+    <x:Double x:Key="TextMd">14</x:Double>
+    <x:Double x:Key="TextLg">16</x:Double>
     <x:String x:Key="CardSelectedShadow">0 0 0 2 #EE6B9E, 0 5 0 0 #F7B6CB</x:String>
     <x:String x:Key="CardShadow">0 4 0 0 #B5D9EF</x:String>
 
@@ -154,14 +160,14 @@
     <!-- ─────────────────────────────────────────────────────────────────────────
          컨트롤의 색 · 모서리 — Fluent 테마가 쓰는 이름을 덮는다(단추 · 글 칸 · 고르기 칸 · 탭 · 풍선 · 메뉴).
          ───────────────────────────────────────────────────────────────────────── -->
-    <!-- 강조색(고른 글 · 초점 테두리 · 체크) — 벚꽃 -->
-    <Color x:Key="SystemAccentColor">#E8588F</Color>
-    <Color x:Key="SystemAccentColorDark1">#D6457A</Color>
-    <Color x:Key="SystemAccentColorDark2">#C23A6B</Color>
-    <Color x:Key="SystemAccentColorDark3">#A82E5A</Color>
-    <Color x:Key="SystemAccentColorLight1">#F58FB0</Color>
-    <Color x:Key="SystemAccentColorLight2">#F9B4CB</Color>
-    <Color x:Key="SystemAccentColorLight3">#FFD9E5</Color>
+    <!-- 강조색(글 칸의 초점 테두리 · 체크 · 고른 글) — 하늘. 분홍은 「지금 고른 것」(탭 · 카드 · 줄)에만 쓴다. -->
+    <Color x:Key="SystemAccentColor">#3D9BDC</Color>
+    <Color x:Key="SystemAccentColorDark1">#2E8FD0</Color>
+    <Color x:Key="SystemAccentColorDark2">#2478B8</Color>
+    <Color x:Key="SystemAccentColorDark3">#1F6FAE</Color>
+    <Color x:Key="SystemAccentColorLight1">#6BB8EA</Color>
+    <Color x:Key="SystemAccentColorLight2">#9AD0F2</Color>
+    <Color x:Key="SystemAccentColorLight3">#CDE9F9</Color>
 
     <!-- 글 -->
     <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#24415E" />
@@ -174,35 +180,60 @@
     <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF" />
     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#EAF5FC" />
     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D6ECFA" />
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#BFDDF0" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#CFE6F5" />
     <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#8CCBF0" />
     <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#8CCBF0" />
     <SolidColorBrush x:Key="ButtonForeground" Color="#24415E" />
     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#24415E" />
     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#24415E" />
     <Thickness x:Key="ButtonBorderThemeThickness">1.5</Thickness>
-    <Thickness x:Key="TextControlBorderThemeThickness">2</Thickness>
+    <Thickness x:Key="TextControlBorderThemeThickness">1.5</Thickness>
     <Thickness x:Key="TextControlBorderThemeThicknessFocused">2</Thickness>
-    <Thickness x:Key="ComboBoxBorderThemeThickness">2</Thickness>
+    <Thickness x:Key="ComboBoxBorderThemeThickness">1.5</Thickness>
 
     <!-- 글 칸 -->
     <SolidColorBrush x:Key="TextControlBackground" Color="#FFFFFF" />
     <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#FFFFFF" />
     <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="TextControlBorderBrush" Color="#BFDDF0" />
+    <SolidColorBrush x:Key="TextControlBorderBrush" Color="#CFE6F5" />
     <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#8CCBF0" />
     <SolidColorBrush x:Key="TextControlForeground" Color="#24415E" />
     <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#24415E" />
     <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#24415E" />
 
+    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#647F99" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#647F99" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#647F99" />
+
+    <!-- 켜고 끄는 단추(서식 도구) — 켜지면 하늘색 면 -->
+    <SolidColorBrush x:Key="ToggleButtonBackground" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="#EAF5FC" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="#D6ECFA" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="#CDE9F9" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="#BFE1F6" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#B0D9F3" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="#CFE6F5" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="#8CCBF0" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushPressed" Color="#8CCBF0" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="#8CCBF0" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="#8CCBF0" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="#8CCBF0" />
+    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#24415E" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#24415E" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundPressed" Color="#24415E" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#24415E" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="#24415E" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="#24415E" />
+
     <!-- 고르기 칸 -->
     <SolidColorBrush x:Key="ComboBoxBackground" Color="#FFFFFF" />
     <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#EAF5FC" />
     <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#D6ECFA" />
-    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#BFDDF0" />
+    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#CFE6F5" />
     <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#8CCBF0" />
     <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#8CCBF0" />
     <SolidColorBrush x:Key="ComboBoxForeground" Color="#24415E" />
+    <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#647F99" />
     <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#BFDDF0" />
     <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#EAF5FC" />
     <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#FFD9E5" />

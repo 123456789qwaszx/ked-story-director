@@ -346,6 +346,32 @@ internal static class Skin
     public static BoxShadows CardSelectedShadow =>
         ThemeService.ShadowsOf(nameof(CardSelectedShadow)) is { Count: > 0 } ring ? ring : CardShadow;
 
+    // ── 글자 크기(틀) ─────────────────────────────────────────────
+
+    /// <summary>틀(하이어아키 · 인스펙터 · 설정 창 · 도구 막대)의 글자 크기 배수 — 코드는 <see cref="Font"/>로 쓴다. 판 위의 글은 따르지 않는다.</summary>
+    public static double FontScale => N();
+
+    /// <summary>XAML이 쓰는 글자 크기 단계(기본 9 · 10 · 11 · 12 · 14) — <c>{DynamicResource TextSm}</c>. 테마는 <see cref="FontScale"/>과 같은 비율로 적는다.</summary>
+    public static double TextXxs => N();
+
+    /// <summary>기본 10.</summary>
+    public static double TextXs => N();
+
+    /// <summary>기본 11.</summary>
+    public static double TextSm => N();
+
+    /// <summary>기본 12.</summary>
+    public static double TextMd => N();
+
+    /// <summary>기본 14.</summary>
+    public static double TextLg => N();
+
+    /// <summary>
+    /// 틀의 글자 크기 — 기본 테마의 크기를 주면 테마의 배수를 곱해 0.5 단위로 맞춘다(기본 테마는 준 값 그대로).
+    /// 판 위의 글(카드 · 선택지 칸 · 이름표)에는 쓰지 않는다 — 그쪽은 치수가 정해져 있고 배율로 본다.
+    /// </summary>
+    public static double Font(double size) => Math.Round(size * FontScale * 2, MidpointRounding.AwayFromZero) / 2;
+
     /// <summary>[대본] 카드의 그림자 — 기본 테마는 없다.</summary>
     public static BoxShadows CardShadow => ThemeService.ShadowsOf(nameof(CardShadow));
 

@@ -456,7 +456,7 @@ public partial class GraphEditorView
         _fontBox = new ComboBox
         {
             Width = 132,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             PlaceholderText = Ui.Settings_Font,
             [ToolTip.TipProperty] = Ui.Format_FontForSelectedTextOr
         };
@@ -572,7 +572,7 @@ public partial class GraphEditorView
         {
             Width = width,
             MinWidth = 0,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(4, 2),
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
@@ -771,7 +771,7 @@ public partial class GraphEditorView
             Focusable = false,
             Padding = new Thickness(6, 1),
             MinWidth = 24,
-            FontSize = 12,
+            FontSize = Skin.Font(12),
             [ToolTip.TipProperty] = tip
         };
         button.Click += (_, _) => run();
@@ -781,7 +781,7 @@ public partial class GraphEditorView
 
     private ToggleButton ToggleFormat(TextBlock glyph, string tip, WriterStyleKind kind)
     {
-        glyph.FontSize = 12;
+        glyph.FontSize = Skin.Font(12);
         var button = new ToggleButton
         {
             Content = glyph,
@@ -861,7 +861,7 @@ public partial class GraphEditorView
             {
                 Children =
                 {
-                    glyph is null ? MarkerIcon() : new TextBlock { Text = glyph, FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center },
+                    glyph is null ? MarkerIcon() : new TextBlock { Text = glyph, FontSize = Skin.Font(12), HorizontalAlignment = HorizontalAlignment.Center },
                     bar
                 }
             },

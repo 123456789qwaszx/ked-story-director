@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Graph;
@@ -109,7 +110,7 @@ public partial class MainWindow
         var box = new TextBox
         {
             Text = shown,
-            FontSize = 13,
+            FontSize = Skin.Font(13),
             FontWeight = FontWeight.SemiBold,
             PlaceholderText = Ui.Side_ChapterNameEmptyShowsChapter,
             Tag = "chapter-name"
@@ -146,7 +147,7 @@ public partial class MainWindow
         }, RoutingStrategies.Tunnel);
 
         // 칸 이름 — 머리(「챕터 단위 조건 · 스탯」) 바로 아래 맨 칸이 무엇인지 말한다. 칸 이름이라 설명 간소화에도 남는다.
-        _sheet.Children.Add(new TextBlock { Text = Ui.Side_ChapterName, FontSize = 11, Opacity = 0.65 });
+        _sheet.Children.Add(new TextBlock { Text = Ui.Side_ChapterName, FontSize = Skin.Font(11), Opacity = 0.65 });
         _sheet.Children.Add(box);
     }
 
@@ -671,14 +672,14 @@ public partial class MainWindow
         Heading(Ui.Side_TextWritten);
         var total = new TextBlock
         {
-            FontSize = 20,
+            FontSize = Skin.Font(20),
             FontWeight = FontWeight.SemiBold,
             Tag = "chapter-characters"
         };
         ToolTip.SetTip(total, Ui.Side_CharactersOfDialogueNarrationWritten);
         var detail = new TextBlock
         {
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Opacity = 0.7,
             Margin = new Thickness(0, 0, 0, 6),
             Tag = "chapter-characters-detail"
@@ -711,7 +712,7 @@ public partial class MainWindow
     private void Heading(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,
-        FontSize = 12,
+        FontSize = Skin.Font(12),
         FontWeight = FontWeight.SemiBold,
         Margin = new Thickness(0, 8, 0, 0)
     });
@@ -744,7 +745,7 @@ public partial class MainWindow
             table.Children.Add(cell);
         }
 
-        TextBlock Head(string text) => new() { Text = text, FontSize = 10, Opacity = 0.6 };
+        TextBlock Head(string text) => new() { Text = text, FontSize = Skin.Font(10), Opacity = 0.6 };
 
         table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         Cell(Head(Ui.Side_Stat), 0, 0);
@@ -762,12 +763,12 @@ public partial class MainWindow
                 : string.Format(Ui.Side_Starts, stat.Minimum, stat.Maximum, stat.Initial);
 
             table.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            Cell(new TextBlock { Text = name, FontSize = 11, VerticalAlignment = VerticalAlignment.Center }, row, 0);
-            Cell(new TextBlock { Text = range, FontSize = 11, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center }, row, 1);
+            Cell(new TextBlock { Text = name, FontSize = Skin.Font(11), VerticalAlignment = VerticalAlignment.Center }, row, 0);
+            Cell(new TextBlock { Text = range, FontSize = Skin.Font(11), Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center }, row, 1);
             Cell(new SelectableTextBlock
             {
                 Text = snippet,
-                FontSize = 11,
+                FontSize = Skin.Font(11),
                 FontFamily = new FontFamily("Consolas, Menlo, monospace"),
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
@@ -777,7 +778,7 @@ public partial class MainWindow
             var copy = new Button
             {
                 Content = Ui.Side_Copy,
-                FontSize = 10,
+                FontSize = Skin.Font(10),
                 Padding = new Thickness(6, 1),
                 Tag = "stat-copy:" + stat.Key
             };
@@ -813,7 +814,7 @@ public partial class MainWindow
     private void Note(string text) => _sheet.Children.Add(new TextBlock
     {
         Text = text,
-        FontSize = 11,
+        FontSize = Skin.Font(11),
         Opacity = 0.65,
         TextWrapping = TextWrapping.Wrap
     });
@@ -826,7 +827,7 @@ public partial class MainWindow
     {
         Full = full,
         Brief = brief,
-        FontSize = 11,
+        FontSize = Skin.Font(11),
         Opacity = 0.65,
         TextWrapping = TextWrapping.Wrap
     });
@@ -836,7 +837,7 @@ public partial class MainWindow
         var button = new Button
         {
             Content = text,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             Padding = new Thickness(6, 2),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Left,

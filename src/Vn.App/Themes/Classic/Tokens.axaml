@@ -120,6 +120,12 @@
     <x:Double x:Key="LineWeight">1</x:Double>
     <x:Double x:Key="SlotRadius">3</x:Double>
     <x:Double x:Key="SlotPill">0</x:Double>
+    <x:Double x:Key="FontScale">1</x:Double>
+    <x:Double x:Key="TextXxs">9</x:Double>
+    <x:Double x:Key="TextXs">10</x:Double>
+    <x:Double x:Key="TextSm">11</x:Double>
+    <x:Double x:Key="TextMd">12</x:Double>
+    <x:Double x:Key="TextLg">14</x:Double>
     <x:String x:Key="CardSelectedShadow">none</x:String>
     <x:String x:Key="CardShadow">none</x:String>
 </ResourceDictionary>

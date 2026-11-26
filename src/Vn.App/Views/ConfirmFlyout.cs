@@ -47,7 +47,7 @@ internal static class ConfirmFlyout
         panel.Children.Add(new TextBlock
         {
             Text = caution,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.85
         });
@@ -95,7 +95,7 @@ internal static class ConfirmFlyout
         var confirm = new Button
         {
             Content = confirmText,
-            FontSize = 11,
+            FontSize = Skin.Font(11),
             HorizontalAlignment = HorizontalAlignment.Stretch,
 
             // 지우는 단추는 붉다 — 누르기 전에 색이 먼저 말한다.

@@ -39,6 +39,10 @@ src/Vn.App/
   고른 카드의 고리와 그림자(`CardSelectedShadow`) · 길의 굵기(`LineWeight`) · 선택지 칸(`SlotSurface` · `SlotRadius` · `SlotPill`) · 챕터와 장면의
   테두리 · 이름표(`ChapterFrame…` · `SceneFrame…` · `…Label`). **치수를 바꾸는 값은 두지 않는다** — 카드의 여백 · 머리 높이는 테마와 상관없이 같아서
   선이 닿는 자리의 셈이 그대로다.
+- **틀의 글자 크기**도 테마가 정한다 — 코드는 `FontSize = Skin.Font(11)`(기본 테마의 크기를 주면 테마의 배수 `FontScale`을 곱한다), XAML은
+  `FontSize="{DynamicResource TextSm}"`(단계 `TextXxs` 9 · `TextXs` 10 · `TextSm` 11 · `TextMd` 12 · `TextLg` 14 — 테마는 `FontScale`과 같은 비율로
+  적는다). 틀에 새 글을 놓을 때 크기를 숫자로 적지 않는다(코드에 적은 값은 스타일로 못 덮는다). **판 위의 글**(카드 · 선택지 칸 · 이름표 —
+  `GraphEditorView.axaml.cs` · `ChapterGraphView.axaml.cs`)은 따르지 않는다 — 치수가 정해져 있고 배율로 본다.
 - ⚠ **템플릿이 묶어 둔 값은 보통 스타일보다 세다.** 템플릿 안쪽 부품(`/template/ Border#PART_…`)의 값 가운데 템플릿이 `TemplateBinding`으로 묶은 것은
   조건 없는 스타일로는 안 바뀐다 — 조건이 붙은 스타일(`:not(:disabled)` · `:selected` · 클래스)로 적는다(주 탭이 그렇게 한다).
 - **테마만의 꾸밈**은 그 테마만 적는 이름으로 한다. 기본 테마에 없는 이름은 XAML에서 비어 있게 풀린다 — 위 띠의 바탕(`TopBarBackground`), 위 띠 아래
@@ -73,7 +77,18 @@ src/Vn.App/
 - 그림으로 보기 — `UiTextFitProbe`(docs/ui-text.md 1절)에 `VN_TEST_THEME`을 함께 주면 그 테마로 주요 화면을 그린다:
   `$env:VN_UI_PROBE="ko"; $env:VN_TEST_THEME="pastel-sky"; dotnet test tests/Vn.App.Tests --filter "FullyQualifiedName~UiTextFitProbe"`.
 
-## 5. 알아 둘 것
+## 5. 「파스텔 하늘」의 규칙
+
+테마를 손볼 때 지키는 것 — 어기면 다시 「색만 갈아 끼운」 화면이 된다.
+
+- **단추의 모양은 둘뿐이다.** 작은 단추(기본 — 얇은 테두리 · 그림자 없음)와 두툼한 단추(`chunky` — 위 띠 · 툴바의 큰 일). 켜고 끄는 단추는 작은 단추와
+  같은 모양이고 켜지면 하늘색 면이다. 셋째 모양을 만들지 않는다.
+- **분홍은 「지금 고른 것」에만 쓴다** — 고른 카드 · 탭 · 하이어아키의 줄. 글 칸의 초점 · 체크 · 켜진 단추는 하늘, 선택지(칸 · 선)는 버터, 지우기는 산호,
+  분기는 라벤더다.
+- **테두리에 강약을 둔다** — 두툼한 단추 2px + 그림자 > 글 칸 · 작은 단추 1.5px > 구분선 1px. 같은 굵기를 겹쳐 두르지 않는다.
+- **글 쓰는 자리는 조용하게** — 카드의 글 칸은 흰 면에 녹아 있고 쓰는 동안에만 테두리가 선다.
+
+## 6. 알아 둘 것
 
 - **켜 있는 동안은 바꾸지 않는다.** 판의 카드 · 선은 코드가 지을 때 색을 꺼내 쓰므로, 켜 있는 동안 바꾸면 이미 지은 것과 새로 짓는 것의 색이
   갈린다. `ThemeService.Apply`는 다시 입힐 수 있게 지어져 있다(시험이 쓴다) — 켠 채 바꾸기를 넣으려면 두 판을 다시 짓는 길이 함께 있어야 한다.

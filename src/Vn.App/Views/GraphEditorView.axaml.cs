@@ -4231,7 +4231,7 @@ public partial class GraphEditorView : UserControl
 
         var chip = new Border
         {
-            CornerRadius = new CornerRadius(3),
+            CornerRadius = new CornerRadius(Skin.ChipRadius),
             Padding = new Thickness(4, 0),
             Margin = new Thickness(4, 0, 0, 0),
             BorderThickness = new Thickness(1),
@@ -5960,7 +5960,7 @@ public partial class GraphEditorView : UserControl
         var label = new Border
         {
             Padding = new Thickness(5, 1),
-            CornerRadius = new CornerRadius(3),
+            CornerRadius = new CornerRadius(Skin.ChipRadius),
             Background = showLabel ? stroke : Brushes.Transparent,
             IsVisible = showLabel,
             Child = new TextBlock
