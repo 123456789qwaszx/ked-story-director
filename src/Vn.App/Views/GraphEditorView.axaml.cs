@@ -5832,7 +5832,7 @@ public partial class GraphEditorView : UserControl
                 Fill = Skin.SlotSurface.Brush(),
                 Outline = SlotPlaceholderBorder,
                 Radius = Skin.SlotRadius,
-                Padding = new Thickness(8, 1)
+                Padding = new Thickness(8, 2)
             }
             : new TextBlock();
 

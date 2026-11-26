@@ -44,8 +44,8 @@ and license texts are reproduced in this file, unmodified.
    고친 판 / Modified Version: 말줄임표(… U+2026) 한 글자를 더하고 이름을 「Jua Story Director」로 바꿨습니다(tools/patch-jua-ellipsis.py) /
    one glyph (horizontal ellipsis, U+2026) was added and the font was renamed "Jua Story Director".
 
-10. Gowun Dodum (typeface — 「파스텔 하늘」 테마의 본문 글꼴 / the "Pastel sky" theme's text font) — SIL Open Font License 1.1 (B-3)
-    Copyright 2021 The Gowun Dodum Project Authors (https://github.com/yangheeryu/Gowun-Dodum)
+10. NanumGothic 나눔고딕 (typeface — Regular · Bold, 「파스텔 하늘」 테마의 본문 글꼴 / the "Pastel sky" theme's text font) — SIL Open Font License 1.1 (B-3)
+    Copyright (c) 2010, NHN Corporation (http://www.nhncorp.com)
 
 ================================================================================
 A-1. Avalonia — MIT License
@@ -347,11 +347,13 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ================================================================================
-B-3. Gowun Dodum — SIL Open Font License 1.1 (OFL.txt)
+B-3. NanumGothic — SIL Open Font License 1.1 (OFL.txt)
 ================================================================================
 
-Copyright 2021 The Gowun Dodum Project Authors (https://github.com/yangheeryu/Gowun-Dodum)
-
+Copyright (c) 2010, NHN Corporation (http://www.nhncorp.com),
+with Reserved Font Name Nanum, Naver Nanum, NanumGothic, Naver 
+NanumGothic, NanumMyeongjo, Naver NanumMyeongjo, NanumBrush, Naver
+NanumBrush, NanumPen, Naver NanumPen.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

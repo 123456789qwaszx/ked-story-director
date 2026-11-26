@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\app.ico" />
-    <!-- 테마가 싣는 글꼴(themes) — 「파스텔 하늘」의 Jua · Gowun Dodum(SIL OFL 1.1 — THIRD-PARTY-NOTICES.txt의 B-2 · B-3). 테마 폴더 안에 둔다. -->
+    <!-- 테마가 싣는 글꼴(themes) — 「파스텔 하늘」의 Jua Story Director · 나눔고딕(SIL OFL 1.1 — THIRD-PARTY-NOTICES.txt의 B-2 · B-3)과 아이콘 글꼴. 테마 폴더 안에 둔다. -->
     <AvaloniaResource Include="Themes\**\Fonts\*.ttf" />
   </ItemGroup>
 

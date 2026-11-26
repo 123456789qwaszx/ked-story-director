@@ -1,116 +1,116 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- 파스텔 하늘 — 하늘색 바탕 · 흰 스티커 카드 · 분홍과 버터색 포인트. 기본 테마(Themes/Classic/Tokens.axaml) 위에 얹힌다 —
+    <!-- 파스텔 하늘 — 차분한 하늘색 바탕 · 종이빛 스티커 카드 · 분홍과 버터색 포인트. 오래 봐도 편하게 채도와 밝기를 낮춰 잡았다(docs/themes.md 6절). 기본 테마(Themes/Classic/Tokens.axaml) 위에 얹힌다 —
          여기 없는 이름은 기본 테마의 값이다. 단추 · 탭 같은 컨트롤의 모양은 Controls.axaml. -->
 
     <!-- 공통 -->
     <Color x:Key="OnAccent">#FFFFFF</Color>
-    <Color x:Key="Surface">#FFFFFF</Color>
-    <Color x:Key="IconInk">#24415E</Color>
-    <Color x:Key="Hairline">#6FA3C7</Color>
-    <Color x:Key="Divider">#CFE6F5</Color>
-    <Color x:Key="SwatchBorder">#24415E</Color>
-    <Color x:Key="Neutral">#56708A</Color>
-    <Color x:Key="NeutralLight">#7088A0</Color>
-    <Color x:Key="NeutralDark">#3D5873</Color>
+    <Color x:Key="Surface">#FFFEFA</Color>
+    <Color x:Key="IconInk">#2B3A48</Color>
+    <Color x:Key="Hairline">#8FA9B9</Color>
+    <Color x:Key="Divider">#D6E3EB</Color>
+    <Color x:Key="SwatchBorder">#2B3A48</Color>
+    <Color x:Key="Neutral">#5B6B79</Color>
+    <Color x:Key="NeutralLight">#78899A</Color>
+    <Color x:Key="NeutralDark">#445666</Color>
 
     <!-- 상태 -->
-    <Color x:Key="Selection">#EE6B9E</Color>
-    <Color x:Key="Join">#1F6FAE</Color>
-    <Color x:Key="Accent">#2478B8</Color>
-    <Color x:Key="Danger">#D4365A</Color>
-    <Color x:Key="DangerDeep">#C2334F</Color>
-    <Color x:Key="DangerText">#C2334F</Color>
-    <Color x:Key="DangerButton">#C2334F</Color>
-    <Color x:Key="Success">#1C8A5F</Color>
+    <Color x:Key="Selection">#DE8AA6</Color>
+    <Color x:Key="Join">#2F6C98</Color>
+    <Color x:Key="Accent">#33709C</Color>
+    <Color x:Key="Danger">#BE4A63</Color>
+    <Color x:Key="DangerDeep">#B5465A</Color>
+    <Color x:Key="DangerText">#B5465A</Color>
+    <Color x:Key="DangerButton">#B5465A</Color>
+    <Color x:Key="Success">#2F8266</Color>
     <Color x:Key="Warning">#9A6700</Color>
     <Color x:Key="WarningText">#9A6700</Color>
-    <Color x:Key="WarningMark">#F2A93B</Color>
-    <Color x:Key="ProblemInk">#C2334F</Color>
+    <Color x:Key="WarningMark">#E3A952</Color>
+    <Color x:Key="ProblemInk">#B5465A</Color>
 
     <!-- 틀 -->
     <Color x:Key="FloatingSurface">#F7FFFFFF</Color>
-    <Color x:Key="FloatingBorder">#B5D9EF</Color>
-    <Color x:Key="FloatingDivider">#CFE6F5</Color>
+    <Color x:Key="FloatingBorder">#C5D9E5</Color>
+    <Color x:Key="FloatingDivider">#D6E3EB</Color>
     <Color x:Key="FindBarSurface">#FAFFFFFF</Color>
-    <Color x:Key="NoticeSurface">#FFF6D6</Color>
-    <Color x:Key="NoticeBorder">#F2D675</Color>
+    <Color x:Key="NoticeSurface">#F9F3E0</Color>
+    <Color x:Key="NoticeBorder">#E6D5A0</Color>
     <Color x:Key="NoticeInk">#5A4300</Color>
-    <Color x:Key="NoteBorder">#F2C94C</Color>
+    <Color x:Key="NoteBorder">#E2C678</Color>
 
     <!-- [대본] 판 -->
-    <Color x:Key="Scene">#18806A</Color>
-    <Color x:Key="SceneProxySurface">#EFFAF6</Color>
-    <Color x:Key="ProxySurface">#F3FAFE</Color>
-    <Color x:Key="EpisodeAccent">#4AA3DB</Color>
-    <Color x:Key="EpisodeSurface">#FFFFFF</Color>
-    <Color x:Key="EpisodeBorder">#B5D9EF</Color>
-    <Color x:Key="SceneRootAccent">#D99A0B</Color>
-    <Color x:Key="SceneRootSurface">#FFFFFF</Color>
-    <Color x:Key="SceneRootBorder">#B5D9EF</Color>
-    <Color x:Key="BranchAccent">#7B62C9</Color>
-    <Color x:Key="BranchSurface">#FFFFFF</Color>
-    <Color x:Key="BranchBorder">#C9B8F0</Color>
-    <Color x:Key="OtherCardAccent">#4AA3DB</Color>
-    <Color x:Key="OtherCardSurface">#FFFFFF</Color>
-    <Color x:Key="OtherCardBorder">#B5D9EF</Color>
-    <Color x:Key="SlotLive">#E0526A</Color>
-    <Color x:Key="SlotAsleep">#788DA3B5</Color>
-    <Color x:Key="SlotPlaceholderBorder">#F2D675</Color>
-    <Color x:Key="Rail">#E8B84A</Color>
+    <Color x:Key="Scene">#2F7F6D</Color>
+    <Color x:Key="SceneProxySurface">#F1F7F4</Color>
+    <Color x:Key="ProxySurface">#F4F7F9</Color>
+    <Color x:Key="EpisodeAccent">#5A9BC2</Color>
+    <Color x:Key="EpisodeSurface">#FFFEFA</Color>
+    <Color x:Key="EpisodeBorder">#C5D9E5</Color>
+    <Color x:Key="SceneRootAccent">#C9973A</Color>
+    <Color x:Key="SceneRootSurface">#FFFEFA</Color>
+    <Color x:Key="SceneRootBorder">#C5D9E5</Color>
+    <Color x:Key="BranchAccent">#7D6BB5</Color>
+    <Color x:Key="BranchSurface">#FFFEFA</Color>
+    <Color x:Key="BranchBorder">#D2C7EA</Color>
+    <Color x:Key="OtherCardAccent">#5A9BC2</Color>
+    <Color x:Key="OtherCardSurface">#FFFEFA</Color>
+    <Color x:Key="OtherCardBorder">#C5D9E5</Color>
+    <Color x:Key="SlotLive">#D2667A</Color>
+    <Color x:Key="SlotAsleep">#7894A3AF</Color>
+    <Color x:Key="SlotPlaceholderBorder">#E6D5A0</Color>
+    <Color x:Key="Rail">#D4BC80</Color>
     <Color x:Key="ChoiceInk">#A86B00</Color>
-    <Color x:Key="Connection">#E05BB4E8</Color>
-    <Color x:Key="BranchHub">#3D5873</Color>
-    <Color x:Key="BranchHubOpen">#8DA3B5</Color>
-    <Color x:Key="MinimapZoomHidden">#8DA3B5</Color>
-    <Color x:Key="BranchLine1">#2478B8</Color>
-    <Color x:Key="BranchLine2">#7B62C9</Color>
-    <Color x:Key="BranchLine3">#18806A</Color>
+    <Color x:Key="Connection">#E07FB0CE</Color>
+    <Color x:Key="BranchHub">#445666</Color>
+    <Color x:Key="BranchHubOpen">#94A3AF</Color>
+    <Color x:Key="MinimapZoomHidden">#94A3AF</Color>
+    <Color x:Key="BranchLine1">#33709C</Color>
+    <Color x:Key="BranchLine2">#7D6BB5</Color>
+    <Color x:Key="BranchLine3">#2F7F6D</Color>
     <Color x:Key="BranchLine4">#B87A00</Color>
-    <Color x:Key="BranchLine5">#CF3F74</Color>
-    <Color x:Key="BranchLine6">#1389A6</Color>
+    <Color x:Key="BranchLine5">#C2557D</Color>
+    <Color x:Key="BranchLine6">#2F8799</Color>
 
     <!-- [대본] 판 — 테두리 · 머리 띠 · 선택지 칸 -->
-    <Color x:Key="ChapterFrameBorder">#FF8CCBF0</Color>
-    <Color x:Key="ChapterFrameBorderIdle">#99B5D9EF</Color>
+    <Color x:Key="ChapterFrameBorder">#FFA9D0E6</Color>
+    <Color x:Key="ChapterFrameBorderIdle">#99C5D9E5</Color>
     <Color x:Key="ChapterFrameFill">#26FFFFFF</Color>
     <Color x:Key="ChapterFrameFillIdle">#33FFFFFF</Color>
-    <Color x:Key="ChapterLabel">#FF8CCBF0</Color>
-    <Color x:Key="ChapterLabelIdle">#FFCFE6F5</Color>
-    <Color x:Key="ChapterLabelInk">#24415E</Color>
+    <Color x:Key="ChapterLabel">#FFA9D0E6</Color>
+    <Color x:Key="ChapterLabelIdle">#FFD6E3EB</Color>
+    <Color x:Key="ChapterLabelInk">#2B3A48</Color>
     <Color x:Key="SceneFrameBorder">#FFFFFFFF</Color>
     <Color x:Key="SceneFrameFill">#55FFFFFF</Color>
     <Color x:Key="SceneLabel">#FFFFFFFF</Color>
-    <Color x:Key="SceneLabelInk">#24415E</Color>
-    <Color x:Key="EpisodeBand">#CDE9F9</Color>
-    <Color x:Key="SceneRootBand">#CDE9F9</Color>
-    <Color x:Key="BranchBand">#E3DAF9</Color>
-    <Color x:Key="OtherCardBand">#CDE9F9</Color>
-    <Color x:Key="SelectedBand">#FFD9E5</Color>
-    <Color x:Key="SlotSurface">#FFF6D6</Color>
-    <Color x:Key="SlotInk">#24415E</Color>
-    <Color x:Key="RowSelected">#FFE3EC</Color>
+    <Color x:Key="SceneLabelInk">#2B3A48</Color>
+    <Color x:Key="EpisodeBand">#D9E9F2</Color>
+    <Color x:Key="SceneRootBand">#D9E9F2</Color>
+    <Color x:Key="BranchBand">#E8E2F4</Color>
+    <Color x:Key="OtherCardBand">#D9E9F2</Color>
+    <Color x:Key="SelectedBand">#F9E3E9</Color>
+    <Color x:Key="SlotSurface">#F9F3E0</Color>
+    <Color x:Key="SlotInk">#2B3A48</Color>
+    <Color x:Key="RowSelected">#FAE9EE</Color>
 
     <!-- [구성] 판 -->
-    <Color x:Key="StructureBoard">#EEF7FD</Color>
-    <Color x:Key="StructureSelection">#EE6B9E</Color>
-    <Color x:Key="SelectedRibbon">#F58FB0</Color>
-    <Color x:Key="StructureDesk">#DCEFFA</Color>
-    <Color x:Key="StructureCardSurface">#FFFFFFFF</Color>
-    <Color x:Key="StructureSlot">#7FA6C2</Color>
-    <Color x:Key="StructureEdge">#7FB5DA</Color>
-    <Color x:Key="StructureEdgeConditioned">#D9A441</Color>
-    <Color x:Key="StructureEdgeInk">#3D5873</Color>
+    <Color x:Key="StructureBoard">#F1F5F7</Color>
+    <Color x:Key="StructureSelection">#DE8AA6</Color>
+    <Color x:Key="SelectedRibbon">#E7A0B6</Color>
+    <Color x:Key="StructureDesk">#E6EEF2</Color>
+    <Color x:Key="StructureCardSurface">#FFFFFEFA</Color>
+    <Color x:Key="StructureSlot">#92A9B8</Color>
+    <Color x:Key="StructureEdge">#93B5C9</Color>
+    <Color x:Key="StructureEdgeConditioned">#CFA85A</Color>
+    <Color x:Key="StructureEdgeInk">#445666</Color>
     <Color x:Key="StructureLabelSurface">#F0FFFFFF</Color>
-    <Color x:Key="StructureBranchChipSurface">#F7F3FF</Color>
-    <Color x:Key="StructureInk">#24415E</Color>
-    <Color x:Key="StructureInkSoft">#56708A</Color>
-    <Color x:Key="ConditionVisible">#7B62C9</Color>
+    <Color x:Key="StructureBranchChipSurface">#F8F6FC</Color>
+    <Color x:Key="StructureInk">#2B3A48</Color>
+    <Color x:Key="StructureInkSoft">#5B6B79</Color>
+    <Color x:Key="ConditionVisible">#7D6BB5</Color>
     <Color x:Key="ConditionUnlock">#9A6700</Color>
-    <Color x:Key="CardName">#24415E</Color>
-    <Color x:Key="StatKey">#2478B8</Color>
-    <Color x:Key="StatValue">#24415E</Color>
-    <Color x:Key="SceneChip">#6B52B8</Color>
+    <Color x:Key="CardName">#2B3A48</Color>
+    <Color x:Key="StatKey">#33709C</Color>
+    <Color x:Key="StatValue">#2B3A48</Color>
+    <Color x:Key="SceneChip">#6E5CA8</Color>
 
     <!-- 모양 -->
     <x:Double x:Key="CardRadius">14</x:Double>
@@ -120,7 +120,7 @@
     <x:Double x:Key="LabelRadius">11</x:Double>
     <x:Double x:Key="ChipRadius">9</x:Double>
     <x:Double x:Key="CardSpineOpacity">0</x:Double>
-    <x:Double x:Key="LineWeight">1.7</x:Double>
+    <x:Double x:Key="LineWeight">1.4</x:Double>
     <x:Double x:Key="SlotRadius">10</x:Double>
     <x:Double x:Key="SlotPill">1</x:Double>
     <x:Double x:Key="StructureCardRadius">12</x:Double>
@@ -139,21 +139,21 @@
     <x:Double x:Key="TextSm">12.5</x:Double>
     <x:Double x:Key="TextMd">14</x:Double>
     <x:Double x:Key="TextLg">16</x:Double>
-    <x:String x:Key="CardSelectedShadow">0 0 0 2 #EE6B9E, 0 5 0 0 #F7B6CB</x:String>
-    <x:String x:Key="CardShadow">0 4 0 0 #B5D9EF</x:String>
+    <x:String x:Key="CardSelectedShadow">0 0 0 2 #DE8AA6, 0 4 0 0 #EFC4D0</x:String>
+    <x:String x:Key="CardShadow">0 3 0 0 #CFDDE6</x:String>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          틀 — XAML만 쓰는 이름. 기본 테마에는 없어서 거기서는 비어 있다(바탕 없음 · 높이 0).
          ───────────────────────────────────────────────────────────────────────── -->
     <!-- 위 띠의 바탕 -->
-    <SolidColorBrush x:Key="TopBarBackground" Color="#8CCBF0" />
+    <SolidColorBrush x:Key="TopBarBackground" Color="#A9D0E6" />
     <!-- 위 띠 아래의 구름 물결 — 하늘색 띠 위로 흰 반원이 솟는다(24 × 10 조각을 가로로 깐다) -->
     <x:Double x:Key="TopBarEdgeHeight">10</x:Double>
     <DrawingBrush x:Key="TopBarEdgeBrush" TileMode="Tile" SourceRect="0,0,24,10" DestinationRect="0,0,24,10">
         <DrawingBrush.Drawing>
             <DrawingGroup>
-                <GeometryDrawing Brush="#8CCBF0" Geometry="M0,0 H24 V10 H0 Z" />
-                <GeometryDrawing Brush="#FFFFFF">
+                <GeometryDrawing Brush="#A9D0E6" Geometry="M0,0 H24 V10 H0 Z" />
+                <GeometryDrawing Brush="#FAF8F4">
                     <GeometryDrawing.Geometry>
                         <EllipseGeometry Center="12,11" RadiusX="11" RadiusY="10" />
                     </GeometryDrawing.Geometry>
@@ -162,151 +162,142 @@
         </DrawingBrush.Drawing>
     </DrawingBrush>
     <!-- 판 아래 안내 줄의 바탕 -->
-    <SolidColorBrush x:Key="HintSurface" Color="#FFF6D6" />
-    <!-- [대본] 판의 바탕 — 하늘색에 옅은 점무늬(24 × 24 조각). 판 뒤에 붙박인 깔개라 판을 옮기거나 배율을 바꿔도 그대로다. -->
-    <DrawingBrush x:Key="BoardBackground" TileMode="Tile" SourceRect="0,0,24,24" DestinationRect="0,0,24,24">
-        <DrawingBrush.Drawing>
-            <DrawingGroup>
-                <GeometryDrawing Brush="#DCEFFA" Geometry="M0,0 H24 V24 H0 Z" />
-                <GeometryDrawing Brush="#C3E0F3">
-                    <GeometryDrawing.Geometry>
-                        <EllipseGeometry Center="12,12" RadiusX="1.4" RadiusY="1.4" />
-                    </GeometryDrawing.Geometry>
-                </GeometryDrawing>
-            </DrawingGroup>
-        </DrawingBrush.Drawing>
-    </DrawingBrush>
+    <SolidColorBrush x:Key="HintSurface" Color="#F9F3E0" />
+    <!-- [대본] 판의 바탕 — 무늬 없는 한 가지 색. ⛔ 점무늬는 2026-11-26에 걷었다(촘촘히 되풀이되는 무늬는 오래 보면 눈이 피로하다 · docs/themes.md 6절). -->
+    <SolidColorBrush x:Key="BoardBackground" Color="#E6EEF2" />
     <!-- 판 왼쪽 아래 구석의 꾸밈 — 흰 구름과 반짝이 둘(300 × 130). 카드 뒤에 깔린다. -->
     <DrawingBrush x:Key="BoardDecorBrush" Stretch="Uniform" AlignmentX="Left" AlignmentY="Bottom">
         <DrawingBrush.Drawing>
             <DrawingGroup>
                 <GeometryDrawing Brush="Transparent" Geometry="M0,0 H300 V130 H0 Z" />
-                <GeometryDrawing Brush="#E6FFFFFF" Geometry="M36,112 a26,26 0 0 1 0,-52 a36,36 0 0 1 67,-12 a31,31 0 0 1 55,14 a25,25 0 0 1 45,50 z" />
-                <GeometryDrawing Brush="#FFD966" Geometry="M232,14 L235,24.2 L245.2,27.2 L235,30.2 L232,40.4 L229,30.2 L218.8,27.2 L229,24.2 Z" />
-                <GeometryDrawing Brush="#F7B6CB" Geometry="M262,52 L263.6,57.5 L269.2,59.2 L263.6,60.8 L262,66.4 L260.4,60.8 L254.8,59.2 L260.4,57.5 Z" />
+                <GeometryDrawing Brush="#A6FFFFFF" Geometry="M36,112 a26,26 0 0 1 0,-52 a36,36 0 0 1 67,-12 a31,31 0 0 1 55,14 a25,25 0 0 1 45,50 z" />
+                <GeometryDrawing Brush="#F1DC9A" Geometry="M232,14 L235,24.2 L245.2,27.2 L235,30.2 L232,40.4 L229,30.2 L218.8,27.2 L229,24.2 Z" />
+                <GeometryDrawing Brush="#EFC4D0" Geometry="M262,52 L263.6,57.5 L269.2,59.2 L263.6,60.8 L262,66.4 L260.4,60.8 L254.8,59.2 L260.4,57.5 Z" />
             </DrawingGroup>
         </DrawingBrush.Drawing>
     </DrawingBrush>
 
-    <!-- 글꼴 — 테마 폴더의 Fonts/에 실은 것. 본문은 Gowun Dodum(한글 11,172자 모두), 제목은 Jua Story Director(Jua에 말줄임표를 더한 판 — tools/patch-jua-ellipsis.py · 없는 글자는 본문 글꼴로 그려진다) — 둘 다 SIL OFL 1.1.
+    <!-- 글꼴 — 테마 폴더의 Fonts/에 실은 것(SIL OFL 1.1). 본문은 나눔고딕(Regular · Bold — 한글 11,172자 모두), 제목은 Jua Story Director(Jua에 말줄임표를
+         더한 판 — tools/patch-jua-ellipsis.py · 없는 글자는 본문 글꼴로 그려진다). ⛔ 본문은 2026-11-26까지 Gowun Dodum이었다 — 획이 가늘고 굵은 글씨가
+         없어(가짜 굵게) 오래 읽기에 피로했다(docs/themes.md 6절).
          목록의 끝은 아이콘 글꼴(Story Director Icons)이다 — 화면의 아이콘 글자(📂 ⚙ ⌂ ⑂ 📄 ⚠ ✕ …)는 본문 글꼴에 없어서 여기의 선 그림으로 그려진다
          (PC의 이모지 글꼴 대신 · 글자색과 크기를 따른다). 그림은 tools/make-theme-icons.py가 굽는다. -->
-    <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
-    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua Story Director, avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/PastelSky/Fonts#NanumGothic, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua Story Director, avares://StoryDirector/Themes/PastelSky/Fonts#NanumGothic, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          컨트롤의 색 · 모서리 — Fluent 테마가 쓰는 이름을 덮는다(단추 · 글 칸 · 고르기 칸 · 탭 · 풍선 · 메뉴).
          ───────────────────────────────────────────────────────────────────────── -->
     <!-- 강조색(글 칸의 초점 테두리 · 체크 · 고른 글) — 하늘. 분홍은 「지금 고른 것」(탭 · 카드 · 줄)에만 쓴다. -->
-    <Color x:Key="SystemAccentColor">#3D9BDC</Color>
-    <Color x:Key="SystemAccentColorDark1">#2E8FD0</Color>
-    <Color x:Key="SystemAccentColorDark2">#2478B8</Color>
-    <Color x:Key="SystemAccentColorDark3">#1F6FAE</Color>
-    <Color x:Key="SystemAccentColorLight1">#6BB8EA</Color>
-    <Color x:Key="SystemAccentColorLight2">#9AD0F2</Color>
-    <Color x:Key="SystemAccentColorLight3">#CDE9F9</Color>
+    <Color x:Key="SystemAccentColor">#5596C2</Color>
+    <Color x:Key="SystemAccentColorDark1">#4788B5</Color>
+    <Color x:Key="SystemAccentColorDark2">#33709C</Color>
+    <Color x:Key="SystemAccentColorDark3">#2F6C98</Color>
+    <Color x:Key="SystemAccentColorLight1">#7FB0CE</Color>
+    <Color x:Key="SystemAccentColorLight2">#B4CFDD</Color>
+    <Color x:Key="SystemAccentColorLight3">#D9E9F2</Color>
 
     <!-- 글 -->
-    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#24415E" />
+    <SolidColorBrush x:Key="SystemControlForegroundBaseHighBrush" Color="#2B3A48" />
 
     <!-- 모서리 -->
     <CornerRadius x:Key="ControlCornerRadius">12</CornerRadius>
     <CornerRadius x:Key="OverlayCornerRadius">14</CornerRadius>
 
     <!-- 단추 -->
-    <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#EAF5FC" />
-    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#D6ECFA" />
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#CFE6F5" />
-    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ButtonForeground" Color="#24415E" />
-    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#24415E" />
-    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#24415E" />
+    <SolidColorBrush x:Key="ButtonBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#EEF4F7" />
+    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#DFEAF1" />
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#D6E3EB" />
+    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ButtonForeground" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#2B3A48" />
     <Thickness x:Key="ButtonBorderThemeThickness">1.5</Thickness>
     <Thickness x:Key="TextControlBorderThemeThickness">1.5</Thickness>
     <Thickness x:Key="TextControlBorderThemeThicknessFocused">2</Thickness>
     <Thickness x:Key="ComboBoxBorderThemeThickness">1.5</Thickness>
 
     <!-- 글 칸 -->
-    <SolidColorBrush x:Key="TextControlBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="TextControlBorderBrush" Color="#CFE6F5" />
-    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="TextControlForeground" Color="#24415E" />
-    <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#24415E" />
-    <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#24415E" />
+    <SolidColorBrush x:Key="TextControlBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="TextControlBorderBrush" Color="#D6E3EB" />
+    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="TextControlForeground" Color="#2B3A48" />
+    <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#2B3A48" />
+    <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#2B3A48" />
 
-    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#647F99" />
-    <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#647F99" />
-    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#647F99" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#6B7C8C" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#6B7C8C" />
+    <SolidColorBrush x:Key="TextControlPlaceholderForegroundFocused" Color="#6B7C8C" />
 
     <!-- 켜고 끄는 단추(서식 도구) — 켜지면 하늘색 면 -->
-    <SolidColorBrush x:Key="ToggleButtonBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="#EAF5FC" />
-    <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="#D6ECFA" />
-    <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="#CDE9F9" />
-    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="#BFE1F6" />
-    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#B0D9F3" />
-    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="#CFE6F5" />
-    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ToggleButtonBorderBrushPressed" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#24415E" />
-    <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#24415E" />
-    <SolidColorBrush x:Key="ToggleButtonForegroundPressed" Color="#24415E" />
-    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#24415E" />
-    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="#24415E" />
-    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="#24415E" />
+    <SolidColorBrush x:Key="ToggleButtonBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="#EEF4F7" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="#DFEAF1" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="#D9E9F2" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="#CFE2EC" />
+    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#C4DAE6" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="#D6E3EB" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushPressed" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ToggleButtonForeground" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundPressed" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="#2B3A48" />
 
     <!-- 고르기 칸 -->
-    <SolidColorBrush x:Key="ComboBoxBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#EAF5FC" />
-    <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#D6ECFA" />
-    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#CFE6F5" />
-    <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#8CCBF0" />
-    <SolidColorBrush x:Key="ComboBoxForeground" Color="#24415E" />
-    <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#647F99" />
-    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#BFDDF0" />
-    <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#EAF5FC" />
-    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#FFD9E5" />
-    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#FFD9E5" />
-    <SolidColorBrush x:Key="ComboBoxItemForeground" Color="#24415E" />
-    <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="#24415E" />
+    <SolidColorBrush x:Key="ComboBoxBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#EEF4F7" />
+    <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#DFEAF1" />
+    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#D6E3EB" />
+    <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#A9D0E6" />
+    <SolidColorBrush x:Key="ComboBoxForeground" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ComboBoxPlaceHolderForeground" Color="#6B7C8C" />
+    <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#C9DCE8" />
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#EEF4F7" />
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#F9E3E9" />
+    <SolidColorBrush x:Key="ComboBoxItemBackgroundSelectedPointerOver" Color="#F9E3E9" />
+    <SolidColorBrush x:Key="ComboBoxItemForeground" Color="#2B3A48" />
+    <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="#2B3A48" />
 
     <!-- 탭 -->
-    <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="#F58FB0" />
-    <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="#24415E" />
-    <SolidColorBrush x:Key="TabItemHeaderForegroundSelectedPointerOver" Color="#24415E" />
-    <SolidColorBrush x:Key="TabItemHeaderForegroundSelectedPressed" Color="#24415E" />
-    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselected" Color="#56708A" />
-    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselectedPointerOver" Color="#24415E" />
-    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselectedPressed" Color="#24415E" />
+    <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="#E7A0B6" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="#2B3A48" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundSelectedPointerOver" Color="#2B3A48" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundSelectedPressed" Color="#2B3A48" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselected" Color="#5B6B79" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselectedPointerOver" Color="#2B3A48" />
+    <SolidColorBrush x:Key="TabItemHeaderForegroundUnselectedPressed" Color="#2B3A48" />
 
     <!-- 접는 묶음(설정 창) -->
-    <SolidColorBrush x:Key="ExpanderHeaderBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="ExpanderHeaderBackgroundPointerOver" Color="#EAF5FC" />
-    <SolidColorBrush x:Key="ExpanderHeaderBorderBrush" Color="#CFE6F5" />
-    <SolidColorBrush x:Key="ExpanderContentBackground" Color="#F7FBFE" />
-    <SolidColorBrush x:Key="ExpanderContentBorderBrush" Color="#CFE6F5" />
+    <SolidColorBrush x:Key="ExpanderHeaderBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="ExpanderHeaderBackgroundPointerOver" Color="#EEF4F7" />
+    <SolidColorBrush x:Key="ExpanderHeaderBorderBrush" Color="#D6E3EB" />
+    <SolidColorBrush x:Key="ExpanderContentBackground" Color="#F6F8F9" />
+    <SolidColorBrush x:Key="ExpanderContentBorderBrush" Color="#D6E3EB" />
 
     <!-- 스크롤 막대 -->
-    <Color x:Key="ScrollBarThumbBackgroundColor">#9AD0F2</Color>
-    <Color x:Key="ScrollBarPanningThumbBackgroundColor">#9AD0F2</Color>
+    <Color x:Key="ScrollBarThumbBackgroundColor">#B4CFDD</Color>
+    <Color x:Key="ScrollBarPanningThumbBackgroundColor">#B4CFDD</Color>
 
     <!-- 풍선 · 메뉴 -->
-    <SolidColorBrush x:Key="ToolTipBackground" Color="#FFFDF5" />
-    <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#F2D675" />
-    <SolidColorBrush x:Key="ToolTipForeground" Color="#24415E" />
-    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#BFDDF0" />
-    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#EAF5FC" />
-    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#D6ECFA" />
-    <SolidColorBrush x:Key="MenuFlyoutItemForeground" Color="#24415E" />
-    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver" Color="#24415E" />
-    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed" Color="#24415E" />
+    <SolidColorBrush x:Key="ToolTipBackground" Color="#FDFBF4" />
+    <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#E6D5A0" />
+    <SolidColorBrush x:Key="ToolTipForeground" Color="#2B3A48" />
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="MenuFlyoutPresenterBorderBrush" Color="#C9DCE8" />
+    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPointerOver" Color="#EEF4F7" />
+    <SolidColorBrush x:Key="MenuFlyoutItemBackgroundPressed" Color="#DFEAF1" />
+    <SolidColorBrush x:Key="MenuFlyoutItemForeground" Color="#2B3A48" />
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver" Color="#2B3A48" />
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed" Color="#2B3A48" />
 </ResourceDictionary>

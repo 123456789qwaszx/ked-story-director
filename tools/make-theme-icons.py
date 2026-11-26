@@ -16,7 +16,7 @@ from fontTools.ttLib import TTFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FONTS = os.path.join(HERE, "..", "src", "Vn.App", "Themes", "PastelSky", "Fonts")
-BODY = os.path.join(FONTS, "GowunDodum-Regular.ttf")   # 줄 높이를 본문 글꼴과 맞춘다
+BODY = os.path.join(FONTS, "NanumGothic-Regular.ttf")   # 줄 높이를 본문 글꼴과 맞춘다
 OUT = os.path.join(FONTS, "StoryDirectorIcons.ttf")
 
 UPM = 1000

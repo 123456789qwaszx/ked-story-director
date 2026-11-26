@@ -160,7 +160,7 @@ public sealed class ThemeTests : IDisposable
 
             // 틀의 구분선(위 띠 · 툴바 · 기둥 사이)도 테마가 정한다 — XAML이 Divider로 부른다.
             Assert.True(app.TryGetResource(nameof(Skin.Divider), ThemeVariant.Light, out object? divider));
-            Assert.Equal(Color.Parse("#CFE6F5"), Assert.IsType<Color>(divider));
+            Assert.Equal(Color.Parse("#D6E3EB"), Assert.IsType<Color>(divider));
 
             // 색 이름을 붓 자리에 걸면 붓으로 든다(XAML의 {DynamicResource 이름}).
             var probe = new Border { [!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(nameof(Skin.Divider)) };
