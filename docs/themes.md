@@ -32,8 +32,17 @@ src/Vn.App/
 - **컨트롤의 색**(단추 · 글 칸 · 고르기 칸 · 탭 · 풍선 · 메뉴)은 Fluent 테마가 쓰는 리소스 이름(`ButtonBackground` · `TextControlBorderBrush` …)을
   테마의 `Tokens.axaml`에서 덮는다. **모양 · 글꼴**처럼 이름만으로 못 바꾸는 것은 `Controls.axaml`의 스타일로 적는다. 코드가 지은 것은 클래스로
   고른다(카드 제목 = `TextBlock.card-title`).
+- **화면이 붙여 둔 클래스**로 `Controls.axaml`이 고른다 — `Button.chunky`(틀의 큰 단추 — 위 띠 · 툴바 · `primary` 만들기 · `danger` 지우기),
+  `TextBlock.card-title`(카드 제목), `TextBox.card-writing`(카드 글 칸). 클래스는 기본 테마에서는 아무 일도 하지 않는다. 새 자리에 같은 모양을 주려면
+  그 컨트롤에 클래스만 붙인다.
+- **판 위의 모양**(코드가 짓는 것)도 이름으로 정한다 — 카드의 머리 띠(`EpisodeBand` … 투명이면 띠를 짓지 않는다) · 등뼈의 진하기(`CardSpineOpacity`) ·
+  고른 카드의 고리와 그림자(`CardSelectedShadow`) · 길의 굵기(`LineWeight`) · 선택지 칸(`SlotSurface` · `SlotRadius` · `SlotPill`) · 챕터와 장면의
+  테두리 · 이름표(`ChapterFrame…` · `SceneFrame…` · `…Label`). **치수를 바꾸는 값은 두지 않는다** — 카드의 여백 · 머리 높이는 테마와 상관없이 같아서
+  선이 닿는 자리의 셈이 그대로다.
+- ⚠ **템플릿이 묶어 둔 값은 보통 스타일보다 세다.** 템플릿 안쪽 부품(`/template/ Border#PART_…`)의 값 가운데 템플릿이 `TemplateBinding`으로 묶은 것은
+  조건 없는 스타일로는 안 바뀐다 — 조건이 붙은 스타일(`:not(:disabled)` · `:selected` · 클래스)로 적는다(주 탭이 그렇게 한다).
 - **테마만의 꾸밈**은 그 테마만 적는 이름으로 한다. 기본 테마에 없는 이름은 XAML에서 비어 있게 풀린다 — 위 띠의 바탕(`TopBarBackground`), 위 띠 아래
-  꾸밈 줄(`TopBarEdgeHeight` · `TopBarEdgeBrush`), [대본] 판의 바탕(`BoardBackground`). 기본 테마에서는 바탕이 없고 줄의 높이가 0이다.
+  꾸밈 줄(`TopBarEdgeHeight` · `TopBarEdgeBrush`), [대본] 판의 바탕(`BoardBackground`), 판 아래 안내 줄의 바탕(`HintSurface`). 기본 테마에서는 바탕이 없고 줄의 높이가 0이다.
 
 ## 2. 새 테마 더하기
 

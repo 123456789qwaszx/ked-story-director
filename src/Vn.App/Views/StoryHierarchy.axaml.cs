@@ -1665,7 +1665,7 @@ public partial class StoryHierarchy : UserControl
             if (RowHost.Children[index] is DockPanel host && host.Children.OfType<Button>().FirstOrDefault() is { } button)
             {
                 button.Background = selected.Contains(_rows[index].Key)
-                    ? Skin.Accent.Brush(48)
+                    ? Skin.RowSelected.Brush()
                     : Brushes.Transparent;
 
                 // 끌고 지나가는 동안 받아 줄 자리에 테두리 — 아무 표시가 없으면 놓아도 되는지 모른 채 손을 놓는다.

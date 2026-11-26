@@ -1120,8 +1120,8 @@ public partial class GraphEditorView : UserControl
                 Height = area.Height,
                 CornerRadius = new CornerRadius(Skin.ChapterFrameRadius),
                 BorderThickness = new Thickness(isActive ? 1.6 : 1),
-                BorderBrush = isActive ? Skin.Accent.Brush(150) : Skin.Hairline.Brush(70),
-                Background = isActive ? Skin.Accent.Brush(12) : Skin.Hairline.Brush(8),
+                BorderBrush = (isActive ? Skin.ChapterFrameBorder : Skin.ChapterFrameBorderIdle).Brush(),
+                Background = (isActive ? Skin.ChapterFrameFill : Skin.ChapterFrameFillIdle).Brush(),
                 IsHitTestVisible = false
             };
             Canvas.SetLeft(frame, area.X);
@@ -1131,14 +1131,14 @@ public partial class GraphEditorView : UserControl
             {
                 CornerRadius = new CornerRadius(Skin.LabelRadius),
                 Padding = new Thickness(8, 3),
-                Background = isActive ? Skin.Accent.Brush(220) : Skin.Neutral.Brush(160),
+                Background = (isActive ? Skin.ChapterLabel : Skin.ChapterLabelIdle).Brush(),
                 Cursor = new Cursor(StandardCursorType.Hand),
                 Child = new TextBlock
                 {
                     Text = string.Format(Ui.Board_Chapter, chapterName),
                     FontSize = 11,
                     FontWeight = FontWeight.SemiBold,
-                    Foreground = Skin.OnAccent.Brush()
+                    Foreground = Skin.ChapterLabelInk.Brush()
                 }
             };
             ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard);
@@ -1286,8 +1286,8 @@ public partial class GraphEditorView : UserControl
             Height = area.Height,
             CornerRadius = new CornerRadius(Skin.SceneFrameRadius),
             BorderThickness = new Thickness(1),
-            BorderBrush = SceneColor.Brush(90),
-            Background = SceneColor.Brush(10),
+            BorderBrush = Skin.SceneFrameBorder.Brush(),
+            Background = Skin.SceneFrameFill.Brush(),
             IsHitTestVisible = false
         };
 
@@ -1309,7 +1309,7 @@ public partial class GraphEditorView : UserControl
         {
             CornerRadius = new CornerRadius(Skin.ChipRadius),
             Padding = new Thickness(6, 1),
-            Background = SceneColor.Brush(180),
+            Background = Skin.SceneLabel.Brush(),
             Cursor = new Cursor(StandardCursorType.Hand),
             Tag = SceneLabelTag + scene.SceneId,
             Child = new TextBlock
@@ -1320,7 +1320,7 @@ public partial class GraphEditorView : UserControl
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
                 FontSize = 10,
                 FontWeight = FontWeight.SemiBold,
-                Foreground = Skin.OnAccent.Brush()
+                Foreground = Skin.SceneLabelInk.Brush()
             }
         };
         ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
@@ -2173,31 +2173,28 @@ public partial class GraphEditorView : UserControl
                 Padding = new Thickness(4, 1),
                 BorderThickness = new Thickness(1),
                 BorderBrush = SlotPlaceholderBorder,
-                CornerRadius = new CornerRadius(3),
-                Background = Skin.Surface.Brush(),
+                CornerRadius = new CornerRadius(Skin.SlotRadius),
+                Background = Skin.SlotSurface.Brush(),
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotPlaceholderTag,
                 Child = new TextBlock { Text = SlotPlaceholderText, FontSize = 10, Foreground = SlotPlaceholderInk },
                 [ToolTip.TipProperty] = Ui.Board_ClickToWriteChoiceText
             }
-            : new TextBlock
+            : NewSlotText(pill =>
             {
-                Text = auto ? Ui.Board_Auto2 : text,
-                FontSize = 11,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = dot,
-                Opacity = live ? 1 : 0.45,
-                VerticalAlignment = VerticalAlignment.Center,
-
-                // ⚠ 배경이 없으면 <b>눌림이 안 온다</b> — 투명한 TextBlock은 히트 대상이 아니다.
-                //   2026-09-16에 "문구를 적을 칸이 안 열린다"의 진짜 원인이 이것이었다.
-                Background = Brushes.Transparent,
-                Cursor = new Cursor(StandardCursorType.Ibeam),
-                [ToolTip.TipProperty] = auto
+                pill.Text = auto ? Ui.Board_Auto2 : text;
+                pill.FontSize = 11;
+                pill.FontWeight = FontWeight.SemiBold;
+                pill.Foreground = Skin.SlotInk.A == 0 ? dot : Skin.SlotInk.Brush();
+                pill.Opacity = live ? 1 : 0.45;
+                pill.VerticalAlignment = VerticalAlignment.Center;
+                pill.Background = Brushes.Transparent;
+                pill.Cursor = new Cursor(StandardCursorType.Ibeam);
+                pill[ToolTip.TipProperty] = auto
                     ? Ui.Board_AutoPathMovesOnWithout
-                    : Ui.Board_ClickToWriteChoiceText
-            };
+                    : Ui.Board_ClickToWriteChoiceText;
+            });
 
         // 이어졌는데 문구가 없는 선택지(자동 길이 두 번째 길에 밀려 선택지가 됐다 — auto-to-choice A2 · 회색 칸을 문구 없이 먼저 이었다 — 2026-11-26)는
         // 빨갛게 「문구를 적어 주세요」다 — 문구를 적을 때까지 검증 경고(OptionLabelBlank)이고 게임에는 임시 문구(MissingChoiceText)로 나간다
@@ -2209,8 +2206,8 @@ public partial class GraphEditorView : UserControl
                 Padding = new Thickness(4, 1),
                 BorderThickness = new Thickness(1),
                 BorderBrush = SlotNeedsLabelInk,
-                CornerRadius = new CornerRadius(3),
-                Background = Skin.Surface.Brush(),
+                CornerRadius = new CornerRadius(Skin.SlotRadius),
+                Background = Skin.SlotSurface.Brush(),
                 VerticalAlignment = VerticalAlignment.Center,
                 Cursor = new Cursor(StandardCursorType.Ibeam),
                 Tag = SlotNeedsLabelTag,
@@ -2462,7 +2459,7 @@ public partial class GraphEditorView : UserControl
         StartPoint = new Point(x1, y1),
         EndPoint = new Point(x2, y2),
         Stroke = RailBrush,
-        StrokeThickness = 1.4,
+        StrokeThickness = 1.4 * Skin.LineWeight,
         IsHitTestVisible = false
     };
 
@@ -4115,6 +4112,12 @@ public partial class GraphEditorView : UserControl
                 : card.Style.Border.Brush();
 
             card.Visual.BorderThickness = new Thickness(selected || grouped ? 2 : 1);
+            card.Visual.BoxShadow = selected || grouped ? Skin.CardSelectedShadow : Skin.CardShadow;
+
+            if (card.Band is { } band)
+            {
+                band.Background = (selected || grouped ? Skin.SelectedBand : card.Style.Band).Brush();
+            }
         }
 
         foreach (FileProxyVisual proxy in _proxies)
@@ -4147,8 +4150,9 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>노드 종 하나의 시각 언어 — 등뼈(왼쪽 색 막대)·바탕·테두리·모서리·아이콘.</summary>
+    /// <param name="Band">머리 띠의 색 — 투명이면 띠를 짓지 않는다(기본 테마 · themes).</param>
     private readonly record struct CardStyle(
-        Color Accent, Color Background, Color Border, double Radius, string Icon);
+        Color Accent, Color Background, Color Border, double Radius, string Icon, Color Band);
 
     /// <summary>
     /// 종별 시각 체계 (2026-08-15 소유자 — "대본노드와 엑셀노드가 똑같이 생겨서 구분이 어렵다").
@@ -4164,13 +4168,13 @@ public partial class GraphEditorView : UserControl
     {
         // 분기 카드(2026-11-17) — 들렀다 돌아오는 카드. 에피소드와 다른 물건이라 색 · 표가 다르다(보라 · ⑂).
         GraphNodeKind.Dialogue when branchCard => new CardStyle(
-            Skin.BranchAccent, Skin.BranchSurface, Skin.BranchBorder, Skin.CardRadius, "⑂"),
+            Skin.BranchAccent, Skin.BranchSurface, Skin.BranchBorder, Skin.CardRadius, "⑂", Skin.BranchBand),
         GraphNodeKind.Dialogue when sceneRoot => new CardStyle(
-            Skin.SceneRootAccent, Skin.SceneRootSurface, Skin.SceneRootBorder, Skin.CardRadius, "⌂"),
+            Skin.SceneRootAccent, Skin.SceneRootSurface, Skin.SceneRootBorder, Skin.CardRadius, "⌂", Skin.SceneRootBand),
         GraphNodeKind.Dialogue => new CardStyle(
-            Skin.EpisodeAccent, Skin.EpisodeSurface, Skin.EpisodeBorder, Skin.CardRadius, "📄"),
+            Skin.EpisodeAccent, Skin.EpisodeSurface, Skin.EpisodeBorder, Skin.CardRadius, "📄", Skin.EpisodeBand),
         _ => new CardStyle(
-            Skin.OtherCardAccent, Skin.OtherCardSurface, Skin.OtherCardBorder, Skin.OtherCardRadius, "⚙")
+            Skin.OtherCardAccent, Skin.OtherCardSurface, Skin.OtherCardBorder, Skin.OtherCardRadius, "⚙", Skin.OtherCardBand)
     };
 
     /// <summary>분기로 다녀오는 카드 → 그 분기 선의 색 번호. 판을 다시 세울 때마다 묻는다(<see cref="BranchEntries"/>).</summary>
@@ -4365,6 +4369,7 @@ public partial class GraphEditorView : UserControl
         {
             Width = 3,
             Background = style.Accent.Brush(),
+            Opacity = Skin.CardSpineOpacity,   // 테마가 등뼈를 감출 수 있다(머리 띠를 쓰는 테마) — 자리는 그대로라 카드의 치수는 같다
             CornerRadius = new CornerRadius(1.5),
             Margin = new Thickness(0, 1, SpineInset - 3, 1),
             VerticalAlignment = VerticalAlignment.Stretch
@@ -4378,6 +4383,26 @@ public partial class GraphEditorView : UserControl
 
         // 카드 안의 한 겹 — 내용 위에 오른쪽 가장자리의 폭 손잡이가 얹힌다(아래 BuildResizeGrip).
         var frame = new Panel();
+
+        // 머리 띠 — 제목 줄 뒤에 카드 폭 가득 깔리는 색 면(테마가 색을 줄 때만 · themes). 카드의 안 여백을 거슬러 테두리 안쪽까지 닿고, 누름을 받지 않는다.
+        // 기본 테마는 띠가 투명이라 짓지 않는다 — 카드의 짜임이 0.5.0까지와 같다.
+        Border? band = style.Band.A == 0
+            ? null
+            : new Border
+            {
+                Height = CardPadding + TitleHeight + (HeaderGap / 2),
+                Margin = new Thickness(-CardPadding, -CardPadding, -CardPadding, 0),
+                CornerRadius = new CornerRadius(Math.Max(0, style.Radius - 1), Math.Max(0, style.Radius - 1), 0, 0),
+                Background = style.Band.Brush(),
+                VerticalAlignment = VerticalAlignment.Top,
+                IsHitTestVisible = false
+            };
+
+        if (band is not null)
+        {
+            frame.Children.Add(band);
+        }
+
         frame.Children.Add(layout);
 
         var card = new Border
@@ -4408,6 +4433,7 @@ public partial class GraphEditorView : UserControl
             BranchPalette = branchEntry ? palette : null,
             Title = titleName,
             TitleRow = title,
+            Band = band,
             BasePinToggle = basePin,
             FitWidthToggle = fitWidth,
             FitHeightToggle = fitHeight
@@ -4517,6 +4543,7 @@ public partial class GraphEditorView : UserControl
         // 서식이 든 카드만 서식을 그리는 글 칸(WriterTextBox)을 받는다 — 서식 없는 카드는 dev와 같은 보통 TextBox다(writer-formatting · 2026-11-22
         // 소유자 보고: 윈도에서 Enter를 치면 칸이 맨 위로 스크롤됐다 — dev에는 없음). 서식이 생기거나 다 걷히면 그 카드를 다시 지어 칸을 바꾼다(UpdateLooks).
         TextBox box = WantsWriterBox(nodeId) ? new WriterTextBox() : new TextBox();
+        box.Classes.Add("card-writing");   // 테마가 카드 글 칸의 테두리 · 바탕을 고르는 손잡이(Themes/*/Controls.axaml)
         box.Text = shown;
         box.AcceptsReturn = true;
         box.TextWrapping = TextWrapping.Wrap;
@@ -5768,6 +5795,26 @@ public partial class GraphEditorView : UserControl
     /// <summary>이어졌는데 문구가 없는 선택지 칸의 글(auto-to-choice A2) — 빨갛다.</summary>
     internal static string SlotNeedsLabelText => Ui.Board_WriteChoiceText;
 
+    /// <summary>
+    /// 선택지 칸의 글 — 테마가 알약 칸을 바라면(<see cref="Skin.SlotPill"/>) 바탕을 스스로 그리는 글(<see cref="PillTextBlock"/>)이고, 아니면 맨 글이다.
+    /// 어느 쪽이든 줄에는 글 하나가 선다(짜임이 같다 · themes).
+    /// </summary>
+    private static TextBlock NewSlotText(Action<TextBlock> fill)
+    {
+        TextBlock text = Skin.SlotPill > 0
+            ? new PillTextBlock
+            {
+                Fill = Skin.SlotSurface.Brush(),
+                Outline = SlotPlaceholderBorder,
+                Radius = Skin.SlotRadius,
+                Padding = new Thickness(8, 1)
+            }
+            : new TextBlock();
+
+        fill(text);
+        return text;
+    }
+
     /// <summary>이어졌는데 문구가 없는 선택지 칸의 표 — 시험의 손잡이다.</summary>
     internal const string SlotNeedsLabelTag = "slot-needs-label";
 
@@ -5905,7 +5952,8 @@ public partial class GraphEditorView : UserControl
         var path = new ShapePath
         {
             Stroke = stroke,
-            StrokeThickness = 2
+            StrokeThickness = 2 * Skin.LineWeight,
+            StrokeJoin = PenLineJoin.Round
         };
 
         bool showLabel = connection.Kind == GraphConnectionKind.ExecutionBranch;
@@ -7543,7 +7591,7 @@ public partial class GraphEditorView : UserControl
     {
         foreach (EdgeVisual item in _edges)
         {
-            item.Path.StrokeThickness = ReferenceEquals(item, _selectedEdge) ? 4 : 2;
+            item.Path.StrokeThickness = (2 * Skin.LineWeight) + (ReferenceEquals(item, _selectedEdge) ? 2 : 0);   // 기본 테마: 고른 선 4 · 그 밖 2
         }
     }
 
@@ -8538,6 +8586,9 @@ public partial class GraphEditorView : UserControl
 
         /// <summary>머리 줄 — 분기 조건 표가 여기 선다(조건이 바뀌면 제자리에서 바꿔 단다 · <see cref="RefreshBranchConditions"/>).</summary>
         public Grid TitleRow { get; init; } = null!;
+
+        /// <summary>머리 띠 — 테마가 띠의 색을 줄 때만 있다(고르면 색이 바뀐다 · themes).</summary>
+        public Border? Band { get; init; }
     }
 
     private sealed class FileProxyVisual
@@ -8615,7 +8666,8 @@ public partial class GraphEditorView : UserControl
         {
             Data = ShapedGeometry(lane),
             Stroke = selected ? SelectedLineBrush : RailBrush,
-            StrokeThickness = selected ? 2.4 : 1.4,
+            StrokeThickness = (selected ? 2.4 : 1.4) * Skin.LineWeight,
+            StrokeJoin = PenLineJoin.Round,
             IsHitTestVisible = false,
             Tag = $"레인:{key.From}>{key.To}"
         });

@@ -62,11 +62,11 @@
                   연출 든 게임용 Yarn은 ked-story-compositor가 낸다.
                 -->
                 <!-- ⛔ 2026-11-18까지 이름이 [📂 챕터진행]이었다(소유자 — 「작업 폴더로 바꿔주십시오」). -->
-                <Button Grid.Column="2" x:Name="WorkFolderButton" Content="{x:Static s:Ui.Main_WorkFolder}" VerticalAlignment="Stretch"
+                <Button Grid.Column="2" x:Name="WorkFolderButton" Classes="chunky" Content="{x:Static s:Ui.Main_WorkFolder}" VerticalAlignment="Stretch"
                         ToolTip.Tip="{x:Static s:Ui.Main_OpensWorkFolderExportedIn}" />
 
                 <!-- 설정은 이 창 하나에 모은다(2026-11-17 · settings). -->
-                <Button Grid.Column="3" x:Name="SettingsButton" Content="{x:Static s:Ui.Main_Settings2}" Margin="6,0,0,0" VerticalAlignment="Stretch"
+                <Button Grid.Column="3" x:Name="SettingsButton" Classes="chunky" Content="{x:Static s:Ui.Main_Settings2}" Margin="6,0,0,0" VerticalAlignment="Stretch"
                         ToolTip.Tip="{x:Static s:Ui.Main_SettingsScriptBoardSizeMirror}" />
 
                 <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="8,0">

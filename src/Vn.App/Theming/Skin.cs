@@ -201,6 +201,65 @@ internal static class Skin
     /// <summary>분기 선 색 6 — 청록.</summary>
     public static Color BranchLine6 => C();
 
+    // ── [대본] 판 — 테두리 · 머리 띠 · 선택지 칸 ─────────────────────────────────────────────
+
+    /// <summary>지금 챕터의 테두리.</summary>
+    public static Color ChapterFrameBorder => C();
+
+    /// <summary>다른 챕터의 테두리.</summary>
+    public static Color ChapterFrameBorderIdle => C();
+
+    /// <summary>지금 챕터의 바탕.</summary>
+    public static Color ChapterFrameFill => C();
+
+    /// <summary>다른 챕터의 바탕.</summary>
+    public static Color ChapterFrameFillIdle => C();
+
+    /// <summary>지금 챕터 이름표의 바탕.</summary>
+    public static Color ChapterLabel => C();
+
+    /// <summary>다른 챕터 이름표의 바탕.</summary>
+    public static Color ChapterLabelIdle => C();
+
+    /// <summary>챕터 이름표의 글.</summary>
+    public static Color ChapterLabelInk => C();
+
+    /// <summary>장면 테두리.</summary>
+    public static Color SceneFrameBorder => C();
+
+    /// <summary>장면 바탕.</summary>
+    public static Color SceneFrameFill => C();
+
+    /// <summary>장면 이름표의 바탕.</summary>
+    public static Color SceneLabel => C();
+
+    /// <summary>장면 이름표의 글.</summary>
+    public static Color SceneLabelInk => C();
+
+    /// <summary>에피소드 카드 — 머리 띠(투명이면 띠를 짓지 않는다).</summary>
+    public static Color EpisodeBand => C();
+
+    /// <summary>장면 시작 카드 — 머리 띠.</summary>
+    public static Color SceneRootBand => C();
+
+    /// <summary>분기 카드 — 머리 띠.</summary>
+    public static Color BranchBand => C();
+
+    /// <summary>그 밖의 카드 — 머리 띠.</summary>
+    public static Color OtherCardBand => C();
+
+    /// <summary>고른 카드 — 머리 띠.</summary>
+    public static Color SelectedBand => C();
+
+    /// <summary>선택지 칸의 바탕.</summary>
+    public static Color SlotSurface => C();
+
+    /// <summary>선택지 문구의 글(투명이면 점의 색을 따른다).</summary>
+    public static Color SlotInk => C();
+
+    /// <summary>하이어아키에서 고른 줄의 바탕.</summary>
+    public static Color RowSelected => C();
+
     // ── [구성] 판 ─────────────────────────────────────────────
 
     /// <summary>판 바깥 책상.</summary>
@@ -270,6 +329,22 @@ internal static class Skin
 
     /// <summary>작은 표(장면 이름표 · 분기 조건 표)의 모서리.</summary>
     public static double ChipRadius => N();
+
+    /// <summary>[대본] 카드 왼쪽 등뼈 막대의 진하기(0이면 안 보인다 — 자리는 그대로).</summary>
+    public static double CardSpineOpacity => N();
+
+    /// <summary>[대본] 판의 길(선택지 선 · 분기 선)의 굵기 배수.</summary>
+    public static double LineWeight => N();
+
+    /// <summary>선택지 칸의 모서리.</summary>
+    public static double SlotRadius => N();
+
+    /// <summary>1이면 적힌 선택지 문구도 알약 칸에 담는다.</summary>
+    public static double SlotPill => N();
+
+    /// <summary>고른 [대본] 카드의 그림자(테두리 밖의 고리까지) — 테마가 적지 않으면 <see cref="CardShadow"/>와 같다.</summary>
+    public static BoxShadows CardSelectedShadow =>
+        ThemeService.ShadowsOf(nameof(CardSelectedShadow)) is { Count: > 0 } ring ? ring : CardShadow;
 
     /// <summary>[대본] 카드의 그림자 — 기본 테마는 없다.</summary>
     public static BoxShadows CardShadow => ThemeService.ShadowsOf(nameof(CardShadow));

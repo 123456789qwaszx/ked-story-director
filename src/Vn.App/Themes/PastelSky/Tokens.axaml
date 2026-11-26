@@ -46,18 +46,18 @@
     <Color x:Key="EpisodeSurface">#FFFFFF</Color>
     <Color x:Key="EpisodeBorder">#B5D9EF</Color>
     <Color x:Key="SceneRootAccent">#D99A0B</Color>
-    <Color x:Key="SceneRootSurface">#FFFDF5</Color>
-    <Color x:Key="SceneRootBorder">#F2D675</Color>
+    <Color x:Key="SceneRootSurface">#FFFFFF</Color>
+    <Color x:Key="SceneRootBorder">#B5D9EF</Color>
     <Color x:Key="BranchAccent">#7B62C9</Color>
-    <Color x:Key="BranchSurface">#F7F3FF</Color>
+    <Color x:Key="BranchSurface">#FFFFFF</Color>
     <Color x:Key="BranchBorder">#C9B8F0</Color>
     <Color x:Key="OtherCardAccent">#4AA3DB</Color>
-    <Color x:Key="OtherCardSurface">#F3FAFE</Color>
+    <Color x:Key="OtherCardSurface">#FFFFFF</Color>
     <Color x:Key="OtherCardBorder">#B5D9EF</Color>
     <Color x:Key="SlotLive">#E0526A</Color>
     <Color x:Key="SlotAsleep">#788DA3B5</Color>
-    <Color x:Key="SlotPlaceholderBorder">#BFDDF0</Color>
-    <Color x:Key="Rail">#AA7FA6C2</Color>
+    <Color x:Key="SlotPlaceholderBorder">#F2D675</Color>
+    <Color x:Key="Rail">#F58FB0</Color>
     <Color x:Key="ChoiceInk">#A86B00</Color>
     <Color x:Key="Connection">#E05BB4E8</Color>
     <Color x:Key="BranchHub">#3D5873</Color>
@@ -69,6 +69,27 @@
     <Color x:Key="BranchLine4">#B87A00</Color>
     <Color x:Key="BranchLine5">#CF3F74</Color>
     <Color x:Key="BranchLine6">#1389A6</Color>
+
+    <!-- [대본] 판 — 테두리 · 머리 띠 · 선택지 칸 -->
+    <Color x:Key="ChapterFrameBorder">#FF8CCBF0</Color>
+    <Color x:Key="ChapterFrameBorderIdle">#99B5D9EF</Color>
+    <Color x:Key="ChapterFrameFill">#59FFFFFF</Color>
+    <Color x:Key="ChapterFrameFillIdle">#33FFFFFF</Color>
+    <Color x:Key="ChapterLabel">#FF8CCBF0</Color>
+    <Color x:Key="ChapterLabelIdle">#FFCFE6F5</Color>
+    <Color x:Key="ChapterLabelInk">#24415E</Color>
+    <Color x:Key="SceneFrameBorder">#FFFFFFFF</Color>
+    <Color x:Key="SceneFrameFill">#8CFFFFFF</Color>
+    <Color x:Key="SceneLabel">#FFFFFFFF</Color>
+    <Color x:Key="SceneLabelInk">#24415E</Color>
+    <Color x:Key="EpisodeBand">#CDE9F9</Color>
+    <Color x:Key="SceneRootBand">#CDE9F9</Color>
+    <Color x:Key="BranchBand">#E3DAF9</Color>
+    <Color x:Key="OtherCardBand">#CDE9F9</Color>
+    <Color x:Key="SelectedBand">#FFD9E5</Color>
+    <Color x:Key="SlotSurface">#FFF6D6</Color>
+    <Color x:Key="SlotInk">#24415E</Color>
+    <Color x:Key="RowSelected">#FFE3EC</Color>
 
     <!-- [구성] 판 -->
     <Color x:Key="StructureDesk">#DCEFFA</Color>
@@ -95,7 +116,12 @@
     <x:Double x:Key="SceneFrameRadius">20</x:Double>
     <x:Double x:Key="LabelRadius">11</x:Double>
     <x:Double x:Key="ChipRadius">9</x:Double>
-    <x:String x:Key="CardShadow">0 3 0 0 #B5D9EF</x:String>
+    <x:Double x:Key="CardSpineOpacity">0</x:Double>
+    <x:Double x:Key="LineWeight">1.7</x:Double>
+    <x:Double x:Key="SlotRadius">10</x:Double>
+    <x:Double x:Key="SlotPill">1</x:Double>
+    <x:String x:Key="CardSelectedShadow">0 0 0 2 #EE6B9E, 0 5 0 0 #F7B6CB</x:String>
+    <x:String x:Key="CardShadow">0 4 0 0 #B5D9EF</x:String>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          틀 — XAML만 쓰는 이름. 기본 테마에는 없어서 거기서는 비어 있다(바탕 없음 · 높이 0).
@@ -116,6 +142,8 @@
             </DrawingGroup>
         </DrawingBrush.Drawing>
     </DrawingBrush>
+    <!-- 판 아래 안내 줄의 바탕 -->
+    <SolidColorBrush x:Key="HintSurface" Color="#FFF6D6" />
     <!-- [대본] 판의 바탕 -->
     <SolidColorBrush x:Key="BoardBackground" Color="#DCEFFA" />
 
@@ -153,6 +181,9 @@
     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#24415E" />
     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#24415E" />
     <Thickness x:Key="ButtonBorderThemeThickness">1.5</Thickness>
+    <Thickness x:Key="TextControlBorderThemeThickness">2</Thickness>
+    <Thickness x:Key="TextControlBorderThemeThicknessFocused">2</Thickness>
+    <Thickness x:Key="ComboBoxBorderThemeThickness">2</Thickness>
 
     <!-- 글 칸 -->
     <SolidColorBrush x:Key="TextControlBackground" Color="#FFFFFF" />

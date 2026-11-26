@@ -34,11 +34,11 @@
                          필요한 짝이다. 손으로 옮기다 판이 엉키면 되돌릴 길이 있어야 한다.
                          연출 그래프의 카드 자리를 본뜬다(`ChapterBranchPlanner.LayoutLikeBoard`).
                          주의: 한 번의 변경이라 Ctrl+Z 한 번이면 옮기기 전으로 돌아온다. -->
-                    <Button x:Name="AutoArrangeButton"
+                    <Button x:Name="AutoArrangeButton" Classes="chunky"
                             Content="{x:Static s:Ui.Structure_AutoLayout}"
                             ToolTip.Tip="{x:Static s:Ui.Structure_ReLaysOutEveryCard}" />
                     <!-- 화면 맞춤 — 화면(배율 · 스크롤)만 맞춘다. 카드 자리는 그대로다. ⛔ 2026-11-18까지 이름이 「전체 보기」였다(소유자). -->
-                    <Button x:Name="FitChapterButton"
+                    <Button x:Name="FitChapterButton" Classes="chunky"
                             Content="{x:Static s:Ui.Structure_FitToScreen}"
                             ToolTip.Tip="{x:Static s:Ui.Structure_SetsZoomAndPositionSo}" />
                     <Border Width="1" Margin="4,2" Background="{DynamicResource Divider}" />
