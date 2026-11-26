@@ -1,4 +1,5 @@
 using Vn.Authoring.Editing;
+using Vn.Authoring.Flow;
 using Vn.Authoring.Model;
 using Vn.Authoring.Strings;
 
@@ -54,6 +55,53 @@ public static class AutoIdFollower
         });
 
         return new SceneMoveResult(current, plan.Cuts);
+    }
+
+    /// <summary>
+    /// 에피소드를 <b>다른 챕터</b>의 장면으로 옮긴다(2026-11-26 소유자) — <see cref="ChapterMoveGuard.Plan"/>대로, 한 되돌리기 칸에: 다른 카드도 부르는
+    /// 분기 카드로 가는 분기점은 이어지지 않은 채 남기고, 새 챕터에 없는 스탯 · 조건을 함께 적고(스탯 먼저 — 조건의 식이 읽는다), 에피소드 · 카드 ·
+    /// 그 에피소드만 부르는 분기 카드를 넘기고(<see cref="ProjectEditor.TransferEpisode"/> — 선은 모두 걷힌다), 자동 모양 분기 카드 이름을 새 자리로.
+    /// 옮기지 못하는 이동(챕터 시작 · 출시 기준선이 있는 챕터 · 새 챕터에 같은 ID)은 그 까닭으로 던진다 — 부르는 쪽이 먼저 묻는다.
+    /// </summary>
+    /// <param name="sourceReleased">옛 챕터에 출시 기준선이 있는가(파일은 부르는 쪽이 본다).</param>
+    public static ChapterMoveResult MoveEpisodeToChapter(
+        ProjectEditor editor, string fromChapterId, string episodeId, string toChapterId, string sceneId, bool sourceReleased = false)
+    {
+        ArgumentNullException.ThrowIfNull(editor);
+
+        string? oldSceneId = RequireEpisode(editor, fromChapterId, episodeId).SceneId;
+        ChapterMovePlan plan = ChapterMoveGuard.Plan(editor.Project, fromChapterId, episodeId, toChapterId, sceneId, sourceReleased);
+
+        if (plan.Refusal is { } refusal)
+        {
+            throw new InvalidOperationException(refusal);
+        }
+
+        editor.Batch(() =>
+        {
+            foreach (ChapterMoveDetour detour in plan.SharedDetours)
+            {
+                editor.SetExitTarget(
+                    new ExitPort(ExitPortKind.Detour, detour.NodeId, detour.LineId, string.Empty, detour.TargetNodeId, 0), null);
+            }
+
+            foreach (ChapterStat stat in plan.CopiedStats)
+            {
+                editor.AddChapterStat(toChapterId, stat.Key, stat.Initial, stat.Minimum, stat.Maximum, stat.Type);
+            }
+
+            foreach (ChapterCondition condition in plan.CopiedConditions)
+            {
+                editor.AddChapterCondition(toChapterId, condition.Label, condition.Expression, condition.Description);
+            }
+
+            editor.TransferEpisode(fromChapterId, episodeId, toChapterId, sceneId, plan.EpisodeId, plan.BranchCardIds);
+            FollowBranches(
+                editor, toChapterId, plan.BranchCardIds,
+                NewNames.BranchPrefix(fromChapterId, oldSceneId), NewNames.BranchPrefix(toChapterId, sceneId), keepNumber: false);
+        });
+
+        return new ChapterMoveResult(plan.EpisodeId, plan.Cuts);
     }
 
     /// <summary>
@@ -175,3 +223,6 @@ public static class AutoIdFollower
 
 /// <summary>장면 옮기기의 결과 — 옮긴 뒤의 EpisodeId(따라가지 않았으면 그대로)와 끊은 선(옮기기 전의 신원).</summary>
 public sealed record SceneMoveResult(string EpisodeId, IReadOnlyList<ChapterEdge> Cut);
+
+/// <summary>다른 챕터로 옮기기의 결과 — 옮긴 뒤의 EpisodeId와 걷은 옛 챕터의 간선(옮기기 전의 신원).</summary>
+public sealed record ChapterMoveResult(string EpisodeId, IReadOnlyList<ChapterEdge> Cut);

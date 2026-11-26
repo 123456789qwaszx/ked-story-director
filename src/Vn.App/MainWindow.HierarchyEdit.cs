@@ -181,20 +181,49 @@ public partial class MainWindow
     /// <see cref="SceneMoveGuard"/>). 옮겨도 되면(끊을 선이 있어도) null.
     /// </summary>
     private string? HierarchyMoveRefusal(HierarchyRow source, HierarchyRow target) =>
-        HierarchyMovePlan(source, target)?.Refusal;
+        IsChapterMove(source, target)
+            ? HierarchyChapterMovePlan(source, target)?.Refusal
+            : HierarchyMovePlan(source, target)?.Refusal;
 
-    /// <summary>옮기면 끊을 선을 미리 말한다 — 끊을 선이 없거나 옮기지 못하면 null(2026-11-26).</summary>
-    private string? HierarchyMoveNote(HierarchyRow source, HierarchyRow target) =>
-        HierarchyMovePlan(source, target) is { Refusal: null, Cuts.Count: > 0 } plan &&
-        _session.Editor.FindChapter(source.ChapterId!) is { } chapter
-            ? SceneMoveGuard.CutNote(chapter, plan.Cuts, done: false)
+    /// <summary>
+    /// 옮기면 함께 일어나는 일을 미리 말한다 — 같은 챕터면 끊을 선, 다른 챕터면 끊을 선 · 함께 적을 조건과 스탯 · 남는 분기 카드(2026-11-26).
+    /// 아무 일도 없거나 옮기지 못하면 null.
+    /// </summary>
+    private string? HierarchyMoveNote(HierarchyRow source, HierarchyRow target)
+    {
+        if (IsChapterMove(source, target))
+        {
+            return HierarchyChapterMovePlan(source, target) is { Refusal: null } plan &&
+                   ChapterMoveGuard.Note(_session.Project, source.ChapterId!, target.ChapterId!, plan, done: false) is { Length: > 0 } note
+                ? string.Format(Ui.Side_ChapterMoveNote, note)
+                : null;
+        }
+
+        return HierarchyMovePlan(source, target) is { Refusal: null, Cuts.Count: > 0 } scenePlan &&
+               _session.Editor.FindChapter(source.ChapterId!) is { } chapter
+            ? SceneMoveGuard.CutNote(chapter, scenePlan.Cuts, done: false)
             : null;
+    }
 
     private SceneMovePlan? HierarchyMovePlan(HierarchyRow source, HierarchyRow target) =>
         source.ChapterId is { } chapterId && source.EpisodeId is { } episodeId && target.SceneId is { } sceneId &&
         _session.Editor.FindChapter(chapterId) is { } chapter
             ? SceneMoveGuard.Plan(chapter, episodeId, sceneId)
             : null;
+
+    /// <summary>다른 챕터의 장면 줄로 끄는가(2026-11-26).</summary>
+    private static bool IsChapterMove(HierarchyRow source, HierarchyRow target) =>
+        source.ChapterId is { } from && target.ChapterId is { } to && !string.Equals(from, to, StringComparison.Ordinal);
+
+    private ChapterMovePlan? HierarchyChapterMovePlan(HierarchyRow source, HierarchyRow target) =>
+        source.ChapterId is { } fromChapterId && source.EpisodeId is { } episodeId &&
+        target.ChapterId is { } toChapterId && target.SceneId is { } sceneId
+            ? ChapterMoveGuard.Plan(_session.Project, fromChapterId, episodeId, toChapterId, sceneId, IsReleased(fromChapterId))
+            : null;
+
+    /// <summary>그 챕터에 출시 기준선이 있는가 — 서버에 낸 뒤 사람이 승격한 것(<see cref="ChapterReleaseBaseline"/>). 저장 전 프로젝트는 없다.</summary>
+    private bool IsReleased(string chapterId) =>
+        _session.ProjectPath is { } path && File.Exists(ChapterReleaseBaseline.PathFor(path, chapterId));
 
     /// <summary>
     /// 에피소드를 끌어 놓았다 — 다른 장면 줄이면 그 장면으로(장면ID가 그 장면의 것이 된다). 장면 입구가 둘이 되게 하는 선은 끊고(2026-11-26 ·
@@ -209,6 +238,12 @@ public partial class MainWindow
 
         if (target.SceneId is not { } sceneId)
         {
+            return;
+        }
+
+        if (IsChapterMove(source, target))
+        {
+            MoveToChapter(chapterId, episodeId, target.ChapterId!, sceneId);
             return;
         }
 
@@ -239,6 +274,40 @@ public partial class MainWindow
             : moved == episodeId
                 ? string.Format(Ui.Side_MovedToSceneCut, episodeId, sceneId, note)
                 : string.Format(Ui.Side_MovedToSceneItsEpisodeCut, episodeId, sceneId, moved, note));
+    }
+
+    /// <summary>
+    /// 에피소드를 <b>다른 챕터</b>의 장면으로 옮긴다(2026-11-26 소유자 — <see cref="ChapterMoveGuard"/>). 그 에피소드에 닿은 선은 모두 끊고(챕터끼리는
+    /// 잇지 못한다), 끊은 선택지의 문구는 그 칸에 적힌 채 남는다 — 옛 챕터에 남는 카드는 그 자리에, 옮긴 카드는 새 챕터의 제 칸에. 한 되돌리기 칸.
+    /// </summary>
+    private void MoveToChapter(string fromChapterId, string episodeId, string toChapterId, string sceneId)
+    {
+        bool released = IsReleased(fromChapterId);
+        ChapterMovePlan plan = ChapterMoveGuard.Plan(_session.Project, fromChapterId, episodeId, toChapterId, sceneId, released);
+
+        if (plan.Refusal is { } refusal)
+        {
+            _session.SetStatus(refusal);
+            return;
+        }
+
+        string note = ChapterMoveGuard.Note(_session.Project, fromChapterId, toChapterId, plan, done: true);
+        string target = _session.Editor.FindChapter(toChapterId)?.ShownName ?? toChapterId;
+        Graph.KeepCutChoiceTexts(fromChapterId, plan.Cuts);
+
+        string moved = AutoIdFollower.MoveEpisodeToChapter(_session.Editor, fromChapterId, episodeId, toChapterId, sceneId, released).EpisodeId;
+        Graph.FollowChoiceRows(fromChapterId, episodeId, moved, toChapterId);
+
+        string done = moved == episodeId
+            ? string.Format(Ui.Side_MovedToChapter, episodeId, target, sceneId)
+            : string.Format(Ui.Side_MovedToChapterItsEpisode, episodeId, target, sceneId, moved);
+        _session.SetStatus(string.Join(" ", new[]
+        {
+            done,
+            note,
+            plan.Cuts.Count > 0 ? Ui.Side_CutChoiceTextsStay : string.Empty,
+            Ui.Side_UndoBringsAllBack,
+        }.Where(part => part.Length > 0)));
     }
 
     /// <summary>

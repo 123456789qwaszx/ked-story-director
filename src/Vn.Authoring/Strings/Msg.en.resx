@@ -1322,4 +1322,43 @@
   <data name="Edit_CutPathItemWithText" xml:space="preserve">
     <value>'{0}'→'{1}' “{2}”</value>
   </data>
+  <data name="Edit_ChapterStartCanTLeave" xml:space="preserve">
+    <value>'{0}' can't move to another chapter — it's the start episode of chapter '{2}'. A chapter starts at its first episode in the list, so moving it would make whichever episode is left the start.</value>
+  </data>
+  <data name="Edit_ReleasedChapterKeepsEpisode" xml:space="preserve">
+    <value>'{0}' can't move to another chapter — chapter '{2}' has a release baseline. Player saves point at that episode in this chapter, and cutting its paths would change the choice order.</value>
+  </data>
+  <data name="Edit_TargetChapterHasEpisodeId" xml:space="preserve">
+    <value>'{0}' can't move — chapter '{2}' already has an episode with the ID '{3}'. Change the ID in the [Structure] tab's Inspector first.</value>
+  </data>
+  <data name="Edit_SameChapterTransfer" xml:space="preserve">
+    <value>Episodes aren't handed over within chapter '{0}' — moving between scenes of one chapter is a separate move.</value>
+  </data>
+  <data name="Edit_ChapterMoveCutsPaths" xml:space="preserve">
+    <value>Chapters can't be connected, so it cuts all {0:path|paths} touching this episode — {1}.</value>
+  </data>
+  <data name="Edit_ChapterMoveCutPaths" xml:space="preserve">
+    <value>Cut the {0:path|paths} touching this episode — {1}.</value>
+  </data>
+  <data name="Edit_ChapterMoveCopies" xml:space="preserve">
+    <value>Adds what '{0}' doesn't have — {1}.</value>
+  </data>
+  <data name="Edit_ChapterMoveCopied" xml:space="preserve">
+    <value>Added what '{0}' didn't have — {1}.</value>
+  </data>
+  <data name="Edit_ChapterMoveSameNames" xml:space="preserve">
+    <value>These use what '{0}' already has under the same name — {1}.</value>
+  </data>
+  <data name="Edit_ChapterMoveLeavesBranches" xml:space="preserve">
+    <value>Branch cards that other episodes also call stay in the old chapter, and the branch points to them are left unconnected — {0}.</value>
+  </data>
+  <data name="Edit_ChapterMoveLeftBranches" xml:space="preserve">
+    <value>Branch cards that other episodes also call stayed in the old chapter, and the branch points to them were left unconnected — {0}.</value>
+  </data>
+  <data name="Edit_ConditionItem" xml:space="preserve">
+    <value>condition '{0}'</value>
+  </data>
+  <data name="Edit_StatItem" xml:space="preserve">
+    <value>stat '{0}'</value>
+  </data>
 </root>

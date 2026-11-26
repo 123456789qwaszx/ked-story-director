@@ -1523,14 +1523,15 @@ public partial class StoryHierarchy : UserControl
     private string? _hoverKey;
 
     /// <summary>
-    /// 놓을 수 있는 자리인가 — 에피소드를 <b>같은 챕터의</b> 다른 장면 줄에(그 장면으로). ⛔ 챕터 줄에 놓아 장면에서 빼던 것은
-    /// 걷었다(2026-11-17 — 에피소드는 늘 장면에 속한다).
+    /// 놓을 수 있는 자리인가 — 에피소드를 다른 장면 줄에(그 장면으로). 다른 챕터의 장면 줄도 받는다(2026-11-26 소유자 — 그 에피소드에 닿은 선은
+    /// 모두 끊긴다 · <c>ChapterMoveGuard</c> · ⛔ 그 전에는 같은 챕터의 장면 줄만). ⛔ 챕터 줄에 놓아 장면에서 빼던 것은 걷었다(2026-11-17 —
+    /// 에피소드는 늘 장면에 속한다).
     /// </summary>
     internal static bool Accepts(HierarchyRow source, HierarchyRow target) =>
         source.Kind == HierarchyKind.Episode &&
         target.Kind == HierarchyKind.Scene &&
-        string.Equals(source.ChapterId, target.ChapterId, StringComparison.Ordinal) &&
-        !string.Equals(source.SceneId, target.SceneId, StringComparison.Ordinal);
+        (!string.Equals(source.ChapterId, target.ChapterId, StringComparison.Ordinal) ||
+         !string.Equals(source.SceneId, target.SceneId, StringComparison.Ordinal));
 
     /// <summary>화면 없이 끌기를 재는 자리 — 누름 · 놓임 두 번을 대신한다.</summary>
     internal void Drag(string sourceKey, string targetKey)

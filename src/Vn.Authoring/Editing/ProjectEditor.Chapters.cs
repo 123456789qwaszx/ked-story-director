@@ -529,6 +529,97 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
+    /// <b>에피소드를 다른 챕터의 장면으로 넘긴다</b> — 알맹이 한 칸(2026-11-26). 옛 챕터에서 그 에피소드에 닿은 간선을 모두 걷고(챕터끼리는 잇지
+    /// 못한다) 픽스처 고정 선택도 걷고, 에피소드 행을 새 챕터의 그 장면으로(맨 뒤 — 챕터 시작이 되지 않는다), 그 카드와
+    /// <paramref name="branchCardIds"/>의 분기 카드를 새 챕터의 판으로 옮긴다. 카드는 그 장면 카드들의 밑에 서고(<see cref="Graph.NodePlacement.InScene"/>)
+    /// 분기 카드는 카드와 같은 거리를 지킨다. 노드는 같은 것이라(Id 그대로) 글 · 화자 · 서식 · 메모 · 크기 · 분기 연결이 그대로 간다.
+    ///
+    /// 계획(어느 분기 카드가 함께 가는가 · 새 ID · 조건과 스탯 · 옮겨도 되는가)은 <see cref="ChapterMoveGuard.Plan"/>이 세우고, 묶음은
+    /// <see cref="AutoIdFollower.MoveEpisodeToChapter"/>가 한다 — 여기는 그 계획을 받아 넘기기만 한다.
+    /// </summary>
+    public void TransferEpisode(
+        string fromChapterId, string episodeId, string toChapterId, string sceneId, string newEpisodeId,
+        IReadOnlyCollection<string> branchCardIds)
+    {
+        ArgumentNullException.ThrowIfNull(branchCardIds);
+
+        ChapterDocument from = RequireChapter(fromChapterId);
+        ChapterDocument to = RequireChapter(toChapterId);
+        string scene = (sceneId ?? string.Empty).Trim();
+
+        if (ReferenceEquals(from, to))
+        {
+            throw new InvalidOperationException(string.Format(Msg.Edit_SameChapterTransfer, fromChapterId));
+        }
+
+        if (scene.Length == 0)
+        {
+            throw new InvalidOperationException(Msg.Edit_SceneIDCanTBe);
+        }
+
+        int index = RequireEpisodeIndex(from, episodeId);
+
+        if (FindEpisode(to, newEpisodeId) is not null)
+        {
+            throw new InvalidOperationException(string.Format(Msg.Edit_EpisodeIdAlreadyExists, newEpisodeId));
+        }
+
+        ChapterEpisode episode = from.Episodes[index];
+        DialogueNode? card = EpisodeNaming.CardFor(Project, fromChapterId, episodeId);
+        StoryFile? fromBoard = card is null ? null : Project.FindFileContainingNode(card.Id);
+        List<DialogueNode> branches = fromBoard is null
+            ? []
+            : branchCardIds
+                .Select(id => fromBoard.Nodes.OfType<DialogueNode>().FirstOrDefault(node => string.Equals(node.Id, id, StringComparison.Ordinal)))
+                .OfType<DialogueNode>()
+                .Where(node => node.IsBranchCard)
+                .ToList();
+
+        // 판이 없는 챕터면 먼저 세운다(그 자체로 한 칸이지만 부르는 묶음 안이다). 자리는 카드가 판에 들기 전에 묻는다.
+        StoryFile toBoard = Project.Files.First(file => string.Equals(file.Id, EnsureChapterBoard(toChapterId), StringComparison.Ordinal));
+        (double cardX, double cardY) = Graph.NodePlacement.InScene(Project, toChapterId, scene);
+        double chapterX = to.Episodes.Count == 0 ? 0 : to.Episodes.Max(item => item.X) + ChapterBranchPlanner.SiblingSpacing;
+
+        Mutate(() =>
+        {
+            from.Episodes.RemoveAt(index);
+            from.Edges.RemoveAll(edge =>
+                string.Equals(edge.FromEpisodeId, episodeId, StringComparison.Ordinal) ||
+                string.Equals(edge.ToEpisodeId, episodeId, StringComparison.Ordinal));
+            Retarget(from, episodeId, null);
+
+            to.Episodes.Add(episode with { EpisodeId = newEpisodeId, SceneId = scene, X = chapterX, Y = 0 });
+
+            if (card is null || fromBoard is null)
+            {
+                return;
+            }
+
+            double dx = cardX - card.Layout.X;
+            double dy = cardY - card.Layout.Y;
+
+            fromBoard.Nodes.Remove(card);
+            toBoard.Nodes.Add(card);
+            card.Layout.X = cardX;
+            card.Layout.Y = cardY;
+
+            if (!string.Equals(newEpisodeId, episodeId, StringComparison.Ordinal))
+            {
+                card.MarkedEpisodeId = newEpisodeId;
+                card.Name = newEpisodeId;
+            }
+
+            foreach (DialogueNode branch in branches)
+            {
+                fromBoard.Nodes.Remove(branch);
+                toBoard.Nodes.Add(branch);
+                branch.Layout.X += dx;
+                branch.Layout.Y += dy;
+            }
+        });
+    }
+
+    /// <summary>
     /// 장면 지우기 — 그 장면의 에피소드를 <see cref="RemoveEpisode"/>와 같이 걷고(카드 · 간선 · 픽스처 참조) 장면 항목(이름 · 메모)도 걷는다.
     /// 그 에피소드들이 부르던 분기 카드도 걷는다 — 장면을 걷은 뒤 집을 잃는 것만(<see cref="ChapterBranchCards.GoingWithScene"/> · 2026-11-18
     /// 소유자 — 「장면 지우기시에 분기카드까지 함께」). 한 되돌리기 칸이다. 장면째 지우는 것이라 메모를 주인 없이 남기지 않는다(에피소드를 지우거나

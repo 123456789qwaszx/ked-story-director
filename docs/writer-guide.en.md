@@ -79,12 +79,17 @@ This one document takes you from getting started to handing over your work.
      **Only the shown name changes** — the ID inside the game stays the same, so feel free to polish names.
      Two scenes with the same name aren't merged. If you clear a name, the ID (like `ch01`, `scene01`) shows.
    - Chapter IDs are assigned automatically — rename by double-clicking the row.
-   - **Drag an episode onto another scene row in the same chapter** to move it into that scene. It doesn't move to other chapters.
+   - **Drag an episode onto another scene row** to move it into that scene. Dropping it on a scene row of another chapter moves it to that chapter (below).
      While you drag, a translucent tag with the episode's name follows the pointer — a blue border means you can drop there, red means you can't.
      Paths (choice lines) that would give a scene two entrances are **cut, and the episode moves** — while you drag, a balloon beside that scene row (and the status bar below)
      says in advance which lines get cut. Lines that end up inside one scene · lines that go into that scene's start stay. The text of a cut choice stays written in its slot, so you
      don't retype it when reconnecting, and one Ctrl+Z brings back both the lines and the place. Only moving the chapter's start episode into a scene that already has a start isn't
      accepted (a red border and a balloon say why — the chapter's start is always its scene's entrance).
+     **Moving to another chapter** cuts **all** paths touching the episode, since chapters can't be connected (a balloon says so in advance while you drag). The dialogue card
+     (text · speakers · formatting · notes · size) and the branch cards only that episode calls go along, and the conditions · stats those cards use that the new chapter lacks are
+     added to it (if the same name already exists, the new chapter's is used). Branch cards other episodes also call stay in the old chapter, and the branch points to them are left
+     unconnected. Automatically made IDs (`ch01_scene01_new01`) follow the new chapter and scene's numbering. A chapter's start episode, and episodes of a chapter with a release
+     baseline, don't move to another chapter. One Ctrl+Z brings everything back.
      There's no way to take an episode out of scenes — an episode always belongs to a scene.
 2. **Write** — in an episode card's writing box, write `Speaker: dialogue` one line at a time. One line is one line of dialogue; leave out the speaker for narration.
    **There's no button to press** — it's applied when you pause for a moment or leave the box. Deleted lines are removed when you leave the box (or press Ctrl+S);

@@ -3999,4 +3999,24 @@
     <value>'{0}'를 장면 '{1}'로 옮겼습니다(에피소드ID는 '{2}'로 따라갔습니다). {3} 끊은 선택지의 문구는 그 칸에 적힌 채 남습니다. 되돌리기(Ctrl+Z) 한 번이면 모두 돌아옵니다.</value>
     <comment>MainWindow.HierarchyEdit.cs</comment>
   </data>
+  <data name="Side_ChapterMoveNote" xml:space="preserve">
+    <value>옮기면 {0} 되돌리기(Ctrl+Z) 한 번이면 함께 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_MovedToChapter" xml:space="preserve">
+    <value>'{0}'를 챕터 '{1}'의 장면 '{2}'로 옮겼습니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_MovedToChapterItsEpisode" xml:space="preserve">
+    <value>'{0}'를 챕터 '{1}'의 장면 '{2}'로 옮겼습니다(에피소드ID는 '{3}'로 따라갔습니다).</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_CutChoiceTextsStay" xml:space="preserve">
+    <value>끊은 선택지의 문구는 그 칸에 적힌 채 남습니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Side_UndoBringsAllBack" xml:space="preserve">
+    <value>되돌리기(Ctrl+Z) 한 번이면 모두 돌아옵니다.</value>
+    <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
 </root>

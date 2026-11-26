@@ -67,6 +67,32 @@ public static class NodePlacement
     }
 
     /// <summary>
+    /// 그 장면에 들어올 카드의 자리 — 그 장면 카드들 가운데 맨 아래 것의 밑(장면 틀 안). 장면에 카드가 없으면 판의 맨 아래 카드 밑, 판이 비었으면
+    /// 원점. 다른 챕터에서 옮겨 오는 에피소드(길이 모두 끊겨 부모가 없다)가 쓴다(2026-11-26). 카드가 판에 들기 <b>전에</b> 묻는다.
+    /// </summary>
+    public static (double X, double Y) InScene(StoryProject project, string chapterId, string sceneId)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        if (EpisodeNaming.BoardOf(project, chapterId) is not { } board)
+        {
+            return (0, 0);
+        }
+
+        List<DialogueNode> members = project.Chapters
+            .FirstOrDefault(item => string.Equals(item.ChapterId, chapterId, StringComparison.Ordinal))?.Episodes
+            .Where(episode => string.Equals(episode.SceneId, sceneId, StringComparison.Ordinal))
+            .Select(episode => EpisodeNaming.CardFor(project, chapterId, episode.EpisodeId))
+            .OfType<DialogueNode>()
+            .ToList() ?? [];
+        List<DialogueNode> cards = members.Count > 0 ? members : board.Nodes.OfType<DialogueNode>().ToList();
+
+        return cards.Count == 0
+            ? (0, 0)
+            : FirstFree(board, cards.Min(card => card.Layout.X), cards.Max(card => card.Layout.Y + ExtraHeight(card)) + Row);
+    }
+
+    /// <summary>
     /// 원본의 오른쪽 — 분기로 다녀갈 카드의 자리. 차 있으면 같은 열의 아래로 비켜 선다.
     ///
     /// 2026-10-29까지는 더 오른쪽으로 비켰다 — 분기가 둘이면 둘째 카드가 첫째의 오른쪽에 서서, 원본에서 둘째로 가는

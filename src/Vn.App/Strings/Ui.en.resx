@@ -3009,4 +3009,19 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   <data name="Side_MovedToSceneItsEpisodeCut" xml:space="preserve">
     <value>Moved '{0}' to scene '{1}' (its episode ID followed to '{2}'). {3} The text of the cut choices stays written in their slots. One undo (Ctrl+Z) brings everything back.</value>
   </data>
+  <data name="Side_ChapterMoveNote" xml:space="preserve">
+    <value>Moving it: {0} One undo (Ctrl+Z) brings it all back.</value>
+  </data>
+  <data name="Side_MovedToChapter" xml:space="preserve">
+    <value>Moved '{0}' to scene '{2}' of chapter '{1}'.</value>
+  </data>
+  <data name="Side_MovedToChapterItsEpisode" xml:space="preserve">
+    <value>Moved '{0}' to scene '{2}' of chapter '{1}' (its episode ID followed to '{3}').</value>
+  </data>
+  <data name="Side_CutChoiceTextsStay" xml:space="preserve">
+    <value>The text of the cut choices stays written in their slots.</value>
+  </data>
+  <data name="Side_UndoBringsAllBack" xml:space="preserve">
+    <value>One undo (Ctrl+Z) brings everything back.</value>
+  </data>
 </root>

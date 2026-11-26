@@ -1755,4 +1755,56 @@
     <value>'{0}'→'{1}' 「{2}」</value>
     <comment>SceneMoveGuard.cs</comment>
   </data>
+  <data name="Edit_ChapterStartCanTLeave" xml:space="preserve">
+    <value>'{0}'{1} 다른 챕터로 옮길 수 없습니다 — 챕터 '{2}'의 시작 에피소드입니다. 챕터 시작은 목록의 첫 에피소드라, 옮기면 남은 아무 에피소드나 시작이 됩니다.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ReleasedChapterKeepsEpisode" xml:space="preserve">
+    <value>'{0}'{1} 다른 챕터로 옮길 수 없습니다 — 챕터 '{2}'에는 출시 기준선이 있습니다. 플레이어 세이브가 이 챕터의 그 에피소드를 가리키고, 끊는 선이 선택지 순서를 바꿉니다.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_TargetChapterHasEpisodeId" xml:space="preserve">
+    <value>'{0}'{1} 옮길 수 없습니다 — 챕터 '{2}'에 에피소드ID가 '{3}'인 에피소드가 이미 있습니다. [구성] 탭 인스펙터에서 ID를 바꾼 뒤 옮기세요.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_SameChapterTransfer" xml:space="preserve">
+    <value>챕터 '{0}' 안에서는 넘기지 않습니다 — 같은 챕터의 장면 옮기기는 따로 있습니다.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterMoveCutsPaths" xml:space="preserve">
+    <value>챕터끼리는 이을 수 없어 이 에피소드에 닿은 선 {0}개를 모두 끊습니다 — {1}.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterMoveCutPaths" xml:space="preserve">
+    <value>이 에피소드에 닿은 선 {0}개를 끊었습니다 — {1}.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterMoveCopies" xml:space="preserve">
+    <value>'{0}'에 없는 것을 함께 적습니다 — {1}.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterMoveCopied" xml:space="preserve">
+    <value>'{0}'에 없던 것을 함께 적었습니다 — {1}.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterMoveSameNames" xml:space="preserve">
+    <value>같은 이름이 이미 있어 '{0}'의 것을 씁니다 — {1}.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterMoveLeavesBranches" xml:space="preserve">
+    <value>다른 에피소드도 부르는 분기 카드는 옛 챕터에 남고, 그리로 가는 분기점은 이어지지 않은 채 남습니다 — {0}.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ChapterMoveLeftBranches" xml:space="preserve">
+    <value>다른 에피소드도 부르는 분기 카드는 옛 챕터에 남았고, 그리로 가던 분기점은 이어지지 않은 채 남았습니다 — {0}.</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_ConditionItem" xml:space="preserve">
+    <value>조건 '{0}'</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
+  <data name="Edit_StatItem" xml:space="preserve">
+    <value>스탯 '{0}'</value>
+    <comment>ChapterMoveGuard.cs</comment>
+  </data>
 </root>

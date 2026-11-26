@@ -135,7 +135,7 @@ In other words, **everything can be taken back within a scene, and it's committe
 
 - A new episode belongs to a scene from the start — right-click a scene row in the [Script] Hierarchy → "Add episode" · right-click empty space inside a scene's frame on the
   board → "Add episode" add it to that scene; the toolbar's [＋ Episode] decides in the order selected scene → selected card's scene → new scene.
-- To move it to another scene, **drag** the episode row in the [Script] Hierarchy **onto another scene row in the same chapter**.
+- To move it to another scene, **drag** the episode row in the [Script] Hierarchy **onto another scene row**. Dropped on a scene row of another chapter, it moves to that chapter, and since chapters can't be connected, every path touching the episode is cut (conditions · stats the new chapter lacks are added to it).
 - New scenes are created with right-click a chapter row → "Add scene" · right-click empty space inside a chapter's frame (outside scenes) on the board → "Add scene".
 - A scene's ID (`Scene ID` — the name of the save · rollback boundary) is edited in the `Scene ID` box of the "Inspector" tab after selecting the scene row in [Structure] —
   every episode of that scene follows. The scene name is edited in the [Script] tab.

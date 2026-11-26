@@ -5625,16 +5625,21 @@ public partial class GraphEditorView : UserControl
         }
     }
 
-    /// <summary>에피소드 ID가 따라갔다(장면 옮기기 — 자동 모양 ID) — 그 에피소드의 줄 차례(적어 둔 문구)도 새 열쇠로 옮긴다.</summary>
-    internal void FollowChoiceRows(string chapterId, string oldEpisodeId, string newEpisodeId)
+    /// <summary>
+    /// 에피소드가 옮겨 갔다(장면 옮기기 — 자동 모양 ID가 따라갔다 · 다른 챕터로 옮기기 — <paramref name="newChapterId"/>) — 그 에피소드의 줄
+    /// 차례(적어 둔 문구)도 새 열쇠로 옮긴다. 다른 챕터로 가면 이은 줄은 모두 적어 둔 줄이 되어 있다(<see cref="KeepCutChoiceTexts"/>).
+    /// </summary>
+    internal void FollowChoiceRows(string chapterId, string oldEpisodeId, string newEpisodeId, string? newChapterId = null)
     {
-        if (string.Equals(oldEpisodeId, newEpisodeId, StringComparison.Ordinal) ||
+        string toChapter = newChapterId ?? chapterId;
+
+        if ((string.Equals(oldEpisodeId, newEpisodeId, StringComparison.Ordinal) && string.Equals(chapterId, toChapter, StringComparison.Ordinal)) ||
             !_rows.Remove(RowsKey(chapterId, oldEpisodeId), out List<ChoiceRow?>? rows))
         {
             return;
         }
 
-        _rows[RowsKey(chapterId, newEpisodeId)] = rows;
+        _rows[RowsKey(toChapter, newEpisodeId)] = rows;
     }
 
     /// <summary>꼬리의 빈 칸은 들고 있을 이유가 없다 — 다 비면 열쇠째 걷는다.</summary>
