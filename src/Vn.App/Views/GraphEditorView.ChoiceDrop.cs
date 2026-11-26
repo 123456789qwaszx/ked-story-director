@@ -470,15 +470,17 @@ public partial class GraphEditorView
 
         if (_dropFrame is null)
         {
-            _dropFrame = new Rectangle
-            {
-                StrokeThickness = 3,
-                RadiusX = 8,
-                RadiusY = 8,
-                Fill = Brushes.Transparent,
-                IsHitTestVisible = false,
-                ZIndex = 1999
-            };
+            _dropFrame = Floored(
+                new Rectangle
+                {
+                    StrokeThickness = 3,
+                    RadiusX = 8,
+                    RadiusY = 8,
+                    Fill = Brushes.Transparent,
+                    IsHitTestVisible = false,
+                    ZIndex = 1999
+                },
+                PickedLineFloorPx);   // 줄인 판에서도 놓을 카드의 테두리가 보인다(LineFloor)
 
             GraphCanvas.Children.Add(_dropFrame);
         }

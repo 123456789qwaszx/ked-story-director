@@ -760,6 +760,7 @@ public partial class GraphEditorView : UserControl
         GraphCanvas.PointerMoved += OnCanvasPointerMoved;
         GraphCanvas.PointerReleased += OnCanvasPointerReleased;
         GraphCanvas.PointerPressed += OnCanvasPointerPressed;
+        GraphCanvas.Children.CollectionChanged += OnCanvasChildrenChanged;   // 판에 붙는 선은 화면 바닥을 건다(design/board-zoom.md 5절)
 
         // 그래프 내비게이션 (W40) — 휠 줌·중간 버튼 팬은 스크롤보다 먼저 가로챈다.
         GraphScroll.AddHandler(PointerWheelChangedEvent, OnGraphWheel, RoutingStrategies.Tunnel);
@@ -2552,14 +2553,16 @@ public partial class GraphEditorView : UserControl
         Point start = knob.TranslatePoint(new Point(PortRadius, PortRadius), GraphCanvas)
             ?? new Point(0, 0);
 
-        _connectingLine = new Line
-        {
-            StartPoint = start,
-            EndPoint = start,
-            Stroke = Skin.Selection.Brush(),
-            StrokeThickness = 2,
-            StrokeDashArray = new AvaloniaList<double> { 4, 3 }
-        };
+        _connectingLine = Floored(
+            new Line
+            {
+                StartPoint = start,
+                EndPoint = start,
+                Stroke = Skin.Selection.Brush(),
+                StrokeThickness = 2,
+                StrokeDashArray = new AvaloniaList<double> { 4, 3 }
+            },
+            PickedLineFloorPx);
 
         GraphCanvas.Children.Add(_connectingLine);
 
@@ -2704,14 +2707,14 @@ public partial class GraphEditorView : UserControl
         return junctionX >= laneX ? blockedRight + RailLaneOut : blockedLeft - RailLaneOut;
     }
 
-    private static Line RailLine(double x1, double y1, double x2, double y2, IBrush? stroke = null) => new()
+    private static Line RailLine(double x1, double y1, double x2, double y2, IBrush? stroke = null) => Floored(new Line
     {
         StartPoint = new Point(x1, y1),
         EndPoint = new Point(x2, y2),
         Stroke = stroke ?? RailBrush,
         StrokeThickness = 1.4 * Skin.LineWeight,
         IsHitTestVisible = false
-    };
+    });
 
     /// <summary>아래로 드는 화살촉 — 도착 접점에서 카드 위 가운데로 든다.</summary>
     private static Polygon RailArrow(double x, double y, IBrush? fill = null)
@@ -4401,12 +4404,7 @@ public partial class GraphEditorView : UserControl
             bool selected = string.Equals(card.NodeId, _session?.SelectedNodeId, StringComparison.Ordinal);
             bool grouped = _multiSelected.Contains(card.NodeId); // 범위 선택 무리 (W40)
 
-            card.Visual.BorderBrush = selected || grouped
-                ? Skin.Selection.Brush()
-                : card.Style.Border.Brush();
-
-            card.Visual.BorderThickness = new Thickness(selected || grouped ? 2 : 1);
-            card.Visual.BoxShadow = selected || grouped ? Skin.CardSelectedShadow : Skin.CardShadow;
+            PaintCardEdge(card, selected || grouped);   // 테두리 · 그림자 — 줄인 판에서도 화면 바닥을 지킨다(LineFloor)
             card.Visual.Classes.Set(PickedCardClass, selected || grouped);
 
             if (card.Ribbon is { } ribbon)
@@ -4838,6 +4836,7 @@ public partial class GraphEditorView : UserControl
             ApplyCardDetail(visual);
         }
 
+        PaintCardEdge(visual, CardIsPicked(node.NodeId));   // 테두리의 화면 바닥 · 그림자(LineFloor)
         return visual;
     }
 
@@ -6377,15 +6376,16 @@ public partial class GraphEditorView : UserControl
         }
 
         IBrush stroke = ConnectionBrush(connection);
-        var path = new ShapePath
+        ShapePath path = Floored(new ShapePath
         {
             Stroke = stroke,
             StrokeThickness = 2 * Skin.LineWeight,
             StrokeJoin = PenLineJoin.Round,
 
             // 분기(들렀다 돌아오는 길)는 점선이다 — 선택지의 실선과 색이 아니라 모양으로 갈린다([구성]의 분기 선과 같다 · 2026-11-26 — 디자인 점검 2번).
+            // 점선의 마디는 선 굵기의 배수라 바닥으로 굵어지면 마디도 함께 커진다 — 화면에서 같은 무늬다.
             StrokeDashArray = connection.Kind == GraphConnectionKind.ExecutionBranch ? new AvaloniaList<double> { 5, 3 } : null
-        };
+        });
 
         bool showLabel = connection.Kind == GraphConnectionKind.ExecutionBranch;
         var label = new Border
@@ -6761,7 +6761,7 @@ public partial class GraphEditorView : UserControl
         };
         ToolTip.SetTip(dot, Plural.Format(Ui.Board_BranchesClickToExpandOr, count));
 
-        var fan = new ShapePath
+        ShapePath fan = Floored(new ShapePath
         {
             Stroke = BranchHubOpenBrush,
             StrokeThickness = 1.5,
@@ -6769,7 +6769,7 @@ public partial class GraphEditorView : UserControl
             IsVisible = false,
             ZIndex = 49,
             Tag = BranchHubTag + card.NodeId + ":" + group + ":fan"
-        };
+        });
 
         dot.PointerPressed += (_, args) =>
         {
@@ -7257,6 +7257,14 @@ public partial class GraphEditorView : UserControl
             {
                 ApplySlotDetail(chip);
             }
+        }
+
+        // 선 · 카드 테두리의 화면 바닥과 카드 그림자 — 배율마다(design/board-zoom.md 5절).
+        FloorLines();
+
+        foreach (NodeCard card in _cards)
+        {
+            PaintCardEdge(card, CardIsPicked(card.NodeId));
         }
 
         PlaceFrameLabels();
@@ -7890,14 +7898,16 @@ public partial class GraphEditorView : UserControl
         _connectingFrom = port;
 
         Point start = PortAnchor(card, index);
-        _connectingLine = new Line
-        {
-            StartPoint = start,
-            EndPoint = start,
-            Stroke = Skin.Selection.Brush(),
-            StrokeThickness = 2,
-            StrokeDashArray = new AvaloniaList<double> { 4, 3 }
-        };
+        _connectingLine = Floored(
+            new Line
+            {
+                StartPoint = start,
+                EndPoint = start,
+                Stroke = Skin.Selection.Brush(),
+                StrokeThickness = 2,
+                StrokeDashArray = new AvaloniaList<double> { 4, 3 }
+            },
+            PickedLineFloorPx);
 
         GraphCanvas.Children.Add(_connectingLine);
         // 공급 포트 안내는 2026-08-22에 사라졌다 — 끌 수 있는 포트가 실행 출구뿐이다.
@@ -7939,7 +7949,7 @@ public partial class GraphEditorView : UserControl
             }
 
             _rubberStart = args.GetPosition(GraphCanvas);
-            _rubberBand = RubberBand.Create(_rubberStart);
+            _rubberBand = Floored(RubberBand.Create(_rubberStart));
             GraphCanvas.Children.Add(_rubberBand);
             args.Pointer.Capture(GraphCanvas);
         }
@@ -8450,7 +8460,8 @@ public partial class GraphEditorView : UserControl
     {
         foreach (EdgeVisual item in _edges)
         {
-            item.Path.StrokeThickness = (2 * Skin.LineWeight) + (ReferenceEquals(item, _selectedEdge) ? 2 : 0);   // 기본 테마: 고른 선 4 · 그 밖 2
+            bool picked = ReferenceEquals(item, _selectedEdge);
+            SetLineWidth(item.Path, (2 * Skin.LineWeight) + (picked ? 2 : 0), picked ? PickedLineFloorPx : LineFloorPx);   // 기본 테마: 고른 선 4 · 그 밖 2
         }
     }
 
@@ -9522,25 +9533,29 @@ public partial class GraphEditorView : UserControl
         bool selected = key.Equals(_selectedRail);
         ShapedEdge lane = route(stored, selected ? _shapePreview : null);
 
-        _railVisuals.Add(new ShapePath
-        {
-            Data = ShapedGeometry(lane),
-            Stroke = selected ? SelectedLineBrush : stroke ?? RailBrush,
-            StrokeThickness = (selected ? 2.4 : 1.4) * Skin.LineWeight,
-            StrokeJoin = PenLineJoin.Round,
-            IsHitTestVisible = false,
-            Tag = $"레인:{key.From}>{key.To}"
-        });
+        _railVisuals.Add(Floored(
+            new ShapePath
+            {
+                Data = ShapedGeometry(lane),
+                Stroke = selected ? SelectedLineBrush : stroke ?? RailBrush,
+                StrokeThickness = (selected ? 2.4 : 1.4) * Skin.LineWeight,
+                StrokeJoin = PenLineJoin.Round,
+                IsHitTestVisible = false,
+                Tag = $"레인:{key.From}>{key.To}"
+            },
+            selected ? PickedLineFloorPx : LineFloorPx));
 
         // 누르는 자리 — 1.4px 선은 겨누기 어렵다. 넓고 투명한 같은 선이 받는다(카드 뒤라 카드를 가리지 않는다).
-        var hit = new ShapePath
-        {
-            Data = ShapedGeometry(lane),
-            Stroke = Brushes.Transparent,
-            StrokeThickness = 10,
-            Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = key
-        };
+        ShapePath hit = Floored(
+            new ShapePath
+            {
+                Data = ShapedGeometry(lane),
+                Stroke = Brushes.Transparent,
+                StrokeThickness = 10,
+                Cursor = new Cursor(StandardCursorType.Hand),
+                Tag = key
+            },
+            HitLineFloorPx);   // 줄인 판에서도 선을 겨눌 수 있다
         hit.PointerPressed += (_, args) =>
         {
             args.Handled = true;
