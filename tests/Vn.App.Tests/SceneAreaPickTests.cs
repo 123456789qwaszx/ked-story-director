@@ -238,7 +238,7 @@ public sealed class SceneAreaPickTests : IDisposable
         Assert.Equal(scenes + 1, Ch01().Episodes.Select(episode => episode.SceneId).Distinct().Count());
         Assert.Equal(NewNames.Scene, ChapterSceneNotes.NameOf(Ch01().SceneNotes, SceneOf(sceneCard)));
         Assert.Equal(before + 1, session.Editor.Revision);   // 장면 · 카드 · 이름이 한 칸
-        Assert.True(Math.Abs(sceneCard.Layout.Y - (inChapter.Y - 20)) < 1 || sceneCard.Layout.Y == 0);
+        Assert.True(Math.Abs(sceneCard.Layout.Y - Math.Max(inChapter.Y - 20, graph.BoardTopFloor)) < 1, $"{sceneCard.Layout.Y}");   // 판 맨 위 근처면 챕터 이름표가 판 안에 서는 끝까지
 
         // 장면 안 — 그 장면에, 누른 자리에.
         Point inHall = InsideScene(graph, "hall");

@@ -269,6 +269,9 @@ public partial class GraphEditorView : UserControl
     private NodeCard? _draggingCard;
     private Point _dragOffset;
 
+    /// <summary>끄는 카드 하나가 끌기를 시작한 자리 — 옮김을 판 안으로 막는 기준(<see cref="ClampDragMove"/>).</summary>
+    private Point _dragStart;
+
     // 크기 끌기 — 끄는 동안 화면의 카드만 키우고 놓을 때 한 번 적는다(CommitResize).
     private NodeCard? _resizingCard;
     private ResizeEdges _resizeEdges;
@@ -1120,8 +1123,6 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        CollectLabelObstacles();
-
         // 펼친 판의 카드와 그 판 안의 접은 장면 상자(2026-10-30)를 함께 감싼다 — 장면을 다 접어도 챕터 박스는 선다.
         foreach (IGrouping<string, GraphItemProjection> group in _projection.Items
                      .Where(item => item is ExpandedNodeProjection or CollapsedSceneProjection)
@@ -1212,7 +1213,7 @@ public partial class GraphEditorView : UserControl
             // 2026-11-26 소유자 — 「챕터는 경계 줄 대신, 경계 바깥 아웃라인 위쪽에 얹고」). ⛔ 그 전에는 판에 서서 자리를 테마가 정했다(기본은 테두리 안쪽 왼위,
             // 「파스텔 하늘」은 위쪽 선 위에 걸터앉음 — ChapterLabelTop).
             _frames.Add(frame);
-            AddFrameLabel(new FrameLabel(label, chapter: true, area, 12 + (8 * Skin.FrameLabelGrow), chapterCards));
+            AddFrameLabel(new FrameLabel(label, chapter: true, area, 12 + (8 * Skin.FrameLabelGrow)));
 
             // 챕터 안에 장면을 한 겹 더 (R6 S-3b) — 챕터 프레임 <b>뒤에</b> 더해야 그 위에
             // 깔린다(아래 Insert가 목록 순서대로 넣는다).
@@ -1335,25 +1336,9 @@ public partial class GraphEditorView : UserControl
             _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
             _frames.Add(SceneFrame(area));
 
-            // 아주 멀리서(장면의 카드가 모두 덩어리) 장면 한가운데에 옅게 깔리는 장면 이름 — 이름표와 다른 모양으로 카드 뒤에 선다(설계 4.2 · 2026-11-26 소유자).
-            var watermark = new TextBlock
+            Border label = SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene));
+            AddFrameLabel(new FrameLabel(label, chapter: false, area, 10 + (6 * Skin.FrameLabelGrow))
             {
-                Classes = { "frame-title" },
-                FontWeight = FontWeight.SemiBold,
-                Foreground = Skin.SceneLabelInk.Brush(),
-                Opacity = 0.35,
-                IsHitTestVisible = false,
-                IsVisible = false,
-                Tag = SceneWatermarkTag + scene.SceneId
-            };
-            _frames.Add(watermark);
-
-            (Border label, Border chip) = SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene));
-            AddFrameLabel(new FrameLabel(label, chapter: false, area, 10 + (6 * Skin.FrameLabelGrow), members)
-            {
-                Chip = chip,
-                Watermark = watermark,
-                Name = scene.DisplayName,
                 Container = chapterArea
             });
         }
@@ -1401,8 +1386,8 @@ public partial class GraphEditorView : UserControl
     /// 편다. 하이어아키의 눈과 같은 상태다.
     /// </summary>
     /// <param name="members">그 장면에 서 있는 카드(에피소드와 집이 그 장면인 분기 카드) — 테두리를 잰 그 카드들이다.</param>
-    /// <returns>이름표와, 자리가 모자랄 때 그 자리에 대신 서는 작은 표(같은 손잡이 · 이름은 풍선).</returns>
-    private (Border Label, Border Chip) SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
+    /// <returns>이름표 — 자리는 화면 겹에서 <see cref="PlaceFrameLabels"/>가 정한다(늘 장면의 왼위 · 이름 그대로).</returns>
+    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
     {
         string shown = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄");
@@ -1423,37 +1408,13 @@ public partial class GraphEditorView : UserControl
                 // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
                 Text = shown,
                 Classes = { "frame-title" },
-                TextTrimming = TextTrimming.CharacterEllipsis,   // 장면의 폭에서 말줄임한다(PlaceFrameLabels)
+                TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭을 넘는 이름만 말줄임한다(PlaceFrameLabels)
                 FontSize = Skin.SceneLabelFont,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Skin.SceneLabelInk.Brush()
             }
         };
         ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
-
-        // 작은 표 — 장면 색 점과 ⌄. 이름표와 같은 자리에 서고 같은 손짓을 받는다(설계 4.2 — 이름표는 옮기지도 숨기지도 않는다 · 2026-11-26 소유자).
-        var chip = new Border
-        {
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(5, 1, 4, 1),
-            Background = Skin.SceneLabel.Brush(),
-            BorderThickness = new Thickness(1),
-            BorderBrush = Skin.SceneLabelBorder.Brush(),
-            Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = SceneChipTag + scene.SceneId,
-            IsVisible = false,
-            Child = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 3,
-                Children =
-                {
-                    new Ellipse { Width = 7, Height = 7, Fill = SceneColor.Brush(), VerticalAlignment = VerticalAlignment.Center },
-                    new TextBlock { Text = "⌄", FontSize = 11, Foreground = Skin.SceneLabelInk.Brush(), VerticalAlignment = VerticalAlignment.Center }
-                }
-            }
-        };
-        ToolTip.SetTip(chip, shown + "\n" + Ui.Board_ClickToSelectEveryCard2);
 
         string sceneId = scene.SceneId;
 
@@ -1464,9 +1425,7 @@ public partial class GraphEditorView : UserControl
             () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
 
         label.PointerPressed += Pressed;
-        chip.PointerPressed += Pressed;
-
-        return (label, chip);   // 자리는 화면 겹에서 PlaceFrameLabels가 정한다
+        return label;
     }
 
     // ── 챕터 간선 철도 배선 (T1) ────────────────────────────────────────────
@@ -7673,9 +7632,10 @@ public partial class GraphEditorView : UserControl
 
         _draggingCard = card;
         Point position = args.GetPosition(GraphCanvas);
+        _dragStart = new Point(Canvas.GetLeft(card.Visual), Canvas.GetTop(card.Visual));
         _dragOffset = new Point(
-            position.X - Canvas.GetLeft(card.Visual),
-            position.Y - Canvas.GetTop(card.Visual));
+            position.X - _dragStart.X,
+            position.Y - _dragStart.Y);
 
         args.Handled = true;
     }
@@ -8381,14 +8341,11 @@ public partial class GraphEditorView : UserControl
 
         if (_draggingGroup)
         {
-            double deltaX = position.X - _groupDragStart.X;
-            double deltaY = position.Y - _groupDragStart.Y;
+            Vector move = ClampDragMove(_groupStartPositions.Values, position.X - _groupDragStart.X, position.Y - _groupDragStart.Y);
 
             foreach ((string nodeId, Point start) in _groupStartPositions)
             {
-                _dragPositions[nodeId] = new Point(
-                    ClampNodeX(start.X + deltaX),
-                    ClampNodeY(start.Y + deltaY));
+                _dragPositions[nodeId] = new Point(start.X + move.X, start.Y + move.Y);
             }
 
             PreviewDrag();
@@ -8397,17 +8354,14 @@ public partial class GraphEditorView : UserControl
 
         if (_draggingProxyFileId is not null)
         {
-            double deltaX = position.X - _proxyDragStart.X;
-            double deltaY = position.Y - _proxyDragStart.Y;
+            Vector move = ClampDragMove(_proxyStartPositions.Values, position.X - _proxyDragStart.X, position.Y - _proxyDragStart.Y);
 
             foreach ((string nodeId, Point start) in _proxyStartPositions)
             {
-                _dragPositions[nodeId] = new Point(
-                    ClampNodeX(start.X + deltaX),
-                    ClampNodeY(start.Y + deltaY));
+                _dragPositions[nodeId] = new Point(start.X + move.X, start.Y + move.Y);
             }
 
-            _proxyDragDelta = new Vector(deltaX, deltaY);
+            _proxyDragDelta = move;
             PreviewDrag();
             return;
         }
@@ -8417,16 +8371,43 @@ public partial class GraphEditorView : UserControl
             return;
         }
 
-        _dragPositions[_draggingCard.NodeId] = new Point(
-            ClampNodeX(position.X - _dragOffset.X),
-            ClampNodeY(position.Y - _dragOffset.Y));
+        Vector single = ClampDragMove([_dragStart], position.X - _dragOffset.X - _dragStart.X, position.Y - _dragOffset.Y - _dragStart.Y);
+        _dragPositions[_draggingCard.NodeId] = new Point(_dragStart.X + single.X, _dragStart.Y + single.Y);
         PreviewDrag();
     }
 
-    // 판 경계 클램프 (GB-4) — 카드가 스크롤이 닿지 않는 바깥으로 끌려 나가지 않는다.
-    private double ClampNodeX(double x) => Math.Clamp(x, 0, CanvasWidth - CardWidth);
+    // 판 경계 클램프 (GB-4) — 카드가 스크롤이 닿지 않는 바깥으로 끌려 나가지 않는다. 위 · 왼쪽 끝은 판의 0이 아니라 챕터 종이와 그 이름표가 판 안에 다
+    // 서는 자리다(BoardTopFloor · BoardLeftFloor — 2026-11-26 소유자: 「화면 바깥으로는 안 끌리게」).
+    private double ClampNodeX(double x) => Math.Clamp(x, Math.Min(BoardLeftFloor, CanvasWidth - CardWidth), CanvasWidth - CardWidth);
 
-    private double ClampNodeY(double y) => Math.Clamp(y, 0, CanvasHeight - BoardSize.CardHeight);
+    private double ClampNodeY(double y) => Math.Clamp(y, Math.Min(BoardTopFloor, CanvasHeight - BoardSize.CardHeight), CanvasHeight - BoardSize.CardHeight);
+
+    /// <summary>
+    /// 끄는 카드(들)의 옮김을 판 안으로 — <b>묶음째</b> 멈춘다. 카드마다 따로 막으면 가장자리에서 무리가 찌그러진다(⛔ 2026-11-26까지 그랬다).
+    /// 위 · 왼쪽 끝은 <see cref="BoardTopFloor"/> · <see cref="BoardLeftFloor"/>다 — 챕터를 끌어 그 이름표가 판 맨 위 밖으로 나가게 할 수 없다. 이미 그 끝을
+    /// 넘어 있는 카드(옛 파일 · 줄인 판에서 끝이 바뀐 것)는 끌기를 시작해도 끝으로 끌려 내려가지 않는다 — 더 바깥으로만 못 간다.
+    /// </summary>
+    private Vector ClampDragMove(IEnumerable<Point> starts, double moveX, double moveY)
+    {
+        double left = BoardLeftFloor;
+        double top = BoardTopFloor;
+        double right = CanvasWidth - CardWidth;
+        double bottom = CanvasHeight - BoardSize.CardHeight;
+        double minX = double.NegativeInfinity, maxX = double.PositiveInfinity;
+        double minY = double.NegativeInfinity, maxY = double.PositiveInfinity;
+
+        foreach (Point start in starts)
+        {
+            minX = Math.Max(minX, Math.Min(left - start.X, 0));
+            maxX = Math.Min(maxX, Math.Max(right - start.X, 0));
+            minY = Math.Max(minY, Math.Min(top - start.Y, 0));
+            maxY = Math.Min(maxY, Math.Max(bottom - start.Y, 0));
+        }
+
+        return new Vector(
+            double.IsFinite(minX) ? Math.Clamp(moveX, minX, maxX) : moveX,
+            double.IsFinite(minY) ? Math.Clamp(moveY, minY, maxY) : moveY);
+    }
 
     private void OnCanvasPointerReleased(object? sender, PointerReleasedEventArgs args)
     {
