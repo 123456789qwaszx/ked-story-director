@@ -62,13 +62,13 @@
         <!-- 인스펙터 폭 340 — 조건 식·대사 미리보기가 300에서는 줄바꿈으로 부서진다. -->
         <Grid Grid.Row="1" x:Name="BoardColumns">
             <!-- 하이어아키 · 판 · 인스펙터 — 유니티와 같은 차례. 하이어아키 폭은 사람이 끈다(최소 140 —
-                 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). -->
+                 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). 오른쪽 기둥도 끌어서는 최소 300까지다 — 아예 접는 것은 「›」 단추로만(2026-11-26 소유자). -->
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="230" MinWidth="140" />
                 <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="6" />
-                <ColumnDefinition Width="340" />
+                <ColumnDefinition Width="340" MinWidth="300" />
             </Grid.ColumnDefinitions>
 
             <!-- 하이어아키: 프로젝트 → 챕터 → 장면 → 에피소드를

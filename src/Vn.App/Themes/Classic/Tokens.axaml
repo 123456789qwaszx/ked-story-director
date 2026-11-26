@@ -91,6 +91,10 @@
     <Color x:Key="SlotSurface">#FFFFFF</Color>
     <Color x:Key="SlotInk">#00000000</Color>
     <Color x:Key="RowSelected">#303D7BD9</Color>
+    <Color x:Key="SlotAlertSurface">#FFFFFF</Color>
+    <Color x:Key="ChoiceLine1">#0B7A70</Color>
+    <Color x:Key="ChoiceLine2">#A85A10</Color>
+    <Color x:Key="ChoiceLine3">#8A3F96</Color>
 
     <!-- [구성] 판 -->
     <Color x:Key="StructureBoard">#FFFFFF</Color>
@@ -126,9 +130,10 @@
     <x:Double x:Key="SlotPill">0</x:Double>
     <x:Double x:Key="ChapterLabelTop">10</x:Double>
     <x:Double x:Key="SceneLabelTop">6</x:Double>
-    <x:Double x:Key="ChapterLabelFont">11</x:Double>
-    <x:Double x:Key="SceneLabelFont">10</x:Double>
+    <x:Double x:Key="ChapterLabelFont">14</x:Double>
+    <x:Double x:Key="SceneLabelFont">12</x:Double>
     <x:Double x:Key="FrameLabelGrow">0</x:Double>
+    <x:Double x:Key="FrameWeight">1</x:Double>
     <x:Double x:Key="StructureCardRadius">5</x:Double>
     <x:Double x:Key="LineRowBoxed">1</x:Double>
     <CornerRadius x:Key="FloatingCorner">6</CornerRadius>
@@ -137,4 +142,5 @@
     <x:String x:Key="FrameLabelShadow">none</x:String>
     <x:String x:Key="CardSelectedShadow">none</x:String>
     <x:String x:Key="CardShadow">none</x:String>
+    <x:String x:Key="ChapterFrameShadow">none</x:String>
 </ResourceDictionary>

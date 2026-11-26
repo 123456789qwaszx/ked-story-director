@@ -124,14 +124,6 @@
     <value> 옛 진행 JSON '{0}'은 걷었습니다(복제할 폴더의 같은 파일은 다음 저장 때 걷습니다).</value>
     <comment>MainWindow.axaml.cs</comment>
   </data>
-  <data name="Main_ChapterWillBeRemovedAlong" xml:space="preserve">
-    <value>챕터 「{0}」와 그 장면 · 에피소드 · [대본] 탭의 카드가 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
-    <comment>MainWindow.axaml.cs</comment>
-  </data>
-  <data name="Main_DeleteChapter" xml:space="preserve">
-    <value>챕터 지우기</value>
-    <comment>MainWindow.axaml.cs</comment>
-  </data>
   <data name="Main_DeletedChapterAndCardsIn" xml:space="preserve">
     <value>챕터 「{0}」를 지웠습니다([대본] 탭의 카드 {1}장도 함께). 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
     <comment>MainWindow.axaml.cs</comment>
@@ -1452,10 +1444,6 @@
     <value> 문구 '{0}'은 칸에 남겨 뒀습니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
-  <data name="Board_ConditionRightClickToDelete" xml:space="preserve">
-    <value>{0} — 조건 '{1}' → {2} · 우클릭으로 삭제</value>
-    <comment>GraphEditorView.axaml.cs</comment>
-  </data>
   <data name="Board_CouldnTFindChapterTo" xml:space="preserve">
     <value>새 카드를 세울 챕터를 찾지 못했습니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
@@ -1470,10 +1458,6 @@
   </data>
   <data name="Board_AddedEpisodeToScene" xml:space="preserve">
     <value>장면 「{0}」에 에피소드를 더했습니다.</value>
-    <comment>GraphEditorView.axaml.cs</comment>
-  </data>
-  <data name="Board_IsEpisodeInChapterIts" xml:space="preserve">
-    <value>'{0}'은 챕터 '{1}'의 에피소드입니다. 간선·픽스처 참조까지 함께 지웁니다 — 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_DeleteEpisode2" xml:space="preserve">
@@ -1952,14 +1936,6 @@
     <value>화자</value>
     <comment>DialogueNodeEditor.axaml.cs</comment>
   </data>
-  <data name="Dialogue_ChooseFromRegisteredSpeakers" xml:space="preserve">
-    <value>등록된 화자 목록에서 선택</value>
-    <comment>DialogueNodeEditor.axaml.cs</comment>
-  </data>
-  <data name="Dialogue_NoSpeakersRegisteredAddSpeakers" xml:space="preserve">
-    <value>등록된 화자가 없습니다 — 오른쪽 「화자」 탭에서 화자를 더하면 여기 목록에 옵니다. 그때까지는 화자 칸에 직접 입력하세요.</value>
-    <comment>DialogueNodeEditor.axaml.cs</comment>
-  </data>
   <data name="Dialogue_UnknownCondition" xml:space="preserve">
     <value>알 수 없는 조건</value>
     <comment>DialogueNodeEditor.axaml.cs</comment>
@@ -2331,18 +2307,6 @@
   <data name="Side_Summary" xml:space="preserve">
     <value>요약</value>
     <comment>MainWindow.Hierarchy.cs</comment>
-  </data>
-  <data name="Side_EpisodesOfSceneAndBranch" xml:space="preserve">
-    <value>장면 「{0}」의 에피소드 {1}개와 그 에피소드가 부르던 분기 카드 {2}장이 [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
-    <comment>MainWindow.HierarchyEdit.cs</comment>
-  </data>
-  <data name="Side_EpisodesOfSceneWillBe" xml:space="preserve">
-    <value>장면 「{0}」의 에피소드 {1}개가 [대본] 탭의 카드와 함께 사라집니다. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
-    <comment>MainWindow.HierarchyEdit.cs</comment>
-  </data>
-  <data name="Side_DeleteScene" xml:space="preserve">
-    <value>장면 지우기</value>
-    <comment>MainWindow.HierarchyEdit.cs</comment>
   </data>
   <data name="Side_DeletedSceneEpisodesBranchCards" xml:space="preserve">
     <value>장면 「{0}」를 지웠습니다 — 에피소드 {1}개, 분기 카드 {2}장. 되돌리기(Ctrl+Z)로 돌아옵니다.</value>
@@ -4038,5 +4002,33 @@
   <data name="Side_UndoBringsAllBack" xml:space="preserve">
     <value>되돌리기(Ctrl+Z) 한 번이면 모두 돌아옵니다.</value>
     <comment>MainWindow.HierarchyEdit.cs</comment>
+  </data>
+  <data name="Confirm_DeleteEpisode" xml:space="preserve">
+    <value>「{0}」 에피소드를 정말 삭제하시겠습니까?</value>
+    <comment>[삭제] 뒤의 확인 칸 — {0} = 에피소드 제목</comment>
+  </data>
+  <data name="Confirm_DeleteScene" xml:space="preserve">
+    <value>「{0}」 장면을 정말 삭제하시겠습니까?</value>
+    <comment>[삭제] 뒤의 확인 칸 — {0} = 장면 이름</comment>
+  </data>
+  <data name="Confirm_DeleteChapter" xml:space="preserve">
+    <value>「{0}」 챕터를 정말 삭제하시겠습니까?</value>
+    <comment>[삭제] 뒤의 확인 칸 — {0} = 챕터 이름</comment>
+  </data>
+  <data name="Confirm_SceneTakesEpisodes" xml:space="preserve">
+    <value>에피소드 {0}개도 함께 지워집니다.</value>
+    <comment>장면 확인 칸의 둘째 줄</comment>
+  </data>
+  <data name="Confirm_SceneTakesEpisodesAndBranches" xml:space="preserve">
+    <value>에피소드 {0}개와 분기 카드 {1}장도 함께 지워집니다.</value>
+    <comment>장면 확인 칸의 둘째 줄 — 그 장면의 에피소드가 부르던 분기 카드가 있을 때</comment>
+  </data>
+  <data name="Confirm_ChapterTakesAll" xml:space="preserve">
+    <value>그 챕터의 장면과 에피소드도 모두 함께 지워집니다.</value>
+    <comment>챕터 확인 칸의 둘째 줄</comment>
+  </data>
+  <data name="Confirm_Cancel" xml:space="preserve">
+    <value>취소</value>
+    <comment>확인 칸의 [취소]</comment>
   </data>
 </root>

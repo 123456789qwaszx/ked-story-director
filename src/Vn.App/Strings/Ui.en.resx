@@ -97,12 +97,6 @@
   <data name="Main_RemovedOldProgressionJSONSame" xml:space="preserve">
     <value> Removed the old progression JSON '{0}' (the same file in the mirror folder is removed on the next save).</value>
   </data>
-  <data name="Main_ChapterWillBeRemovedAlong" xml:space="preserve">
-    <value>Chapter “{0}” will be removed along with its scenes, episodes, and its cards in the [Script] tab. Undo (Ctrl+Z) brings it back.</value>
-  </data>
-  <data name="Main_DeleteChapter" xml:space="preserve">
-    <value>Delete chapter</value>
-  </data>
   <data name="Main_DeletedChapterAndCardsIn" xml:space="preserve">
     <value>Deleted chapter “{0}” (and {1:card|cards} in the [Script] tab). Undo (Ctrl+Z) brings it back.</value>
   </data>
@@ -1094,9 +1088,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_TextWasLeftInSlot" xml:space="preserve">
     <value> The text '{0}' was left in the slot.</value>
   </data>
-  <data name="Board_ConditionRightClickToDelete" xml:space="preserve">
-    <value>{0} — condition '{1}' → {2} · right-click to delete</value>
-  </data>
   <data name="Board_CouldnTFindChapterTo" xml:space="preserve">
     <value>Couldn't find the chapter to put the new card in.</value>
   </data>
@@ -1108,9 +1099,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   </data>
   <data name="Board_AddedEpisodeToScene" xml:space="preserve">
     <value>Added an episode to scene “{0}”.</value>
-  </data>
-  <data name="Board_IsEpisodeInChapterIts" xml:space="preserve">
-    <value>'{0}' is an episode in chapter '{1}'. Its path · test start references are deleted with it — Undo (Ctrl+Z) brings it back.</value>
   </data>
   <data name="Board_DeleteEpisode2" xml:space="preserve">
     <value>Delete episode</value>
@@ -1469,12 +1457,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Dialogue_Speaker" xml:space="preserve">
     <value>Speaker</value>
   </data>
-  <data name="Dialogue_ChooseFromRegisteredSpeakers" xml:space="preserve">
-    <value>Choose from the registered speakers</value>
-  </data>
-  <data name="Dialogue_NoSpeakersRegisteredAddSpeakers" xml:space="preserve">
-    <value>No speakers registered — add speakers in the “Speakers” tab on the right and they'll be listed here. Until then, type in the speaker field directly.</value>
-  </data>
   <data name="Dialogue_UnknownCondition" xml:space="preserve">
     <value>Unknown condition</value>
   </data>
@@ -1753,15 +1735,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   </data>
   <data name="Side_Summary" xml:space="preserve">
     <value>Summary</value>
-  </data>
-  <data name="Side_EpisodesOfSceneAndBranch" xml:space="preserve">
-    <value>{1:episode|episodes} of scene “{0}” and {2:branch card|branch cards} called from the scene will be removed together with their cards in the [Script] tab. Undo (Ctrl+Z) restores everything.</value>
-  </data>
-  <data name="Side_EpisodesOfSceneWillBe" xml:space="preserve">
-    <value>{1:episode|episodes} of scene “{0}” will be removed together with their cards in the [Script] tab. Undo (Ctrl+Z) restores everything.</value>
-  </data>
-  <data name="Side_DeleteScene" xml:space="preserve">
-    <value>Delete scene</value>
   </data>
   <data name="Side_DeletedSceneEpisodesBranchCards" xml:space="preserve">
     <value>Deleted scene “{0}” — {1:episode|episodes}, {2:branch card|branch cards}. Undo (Ctrl+Z) brings it back.</value>
@@ -3038,5 +3011,26 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   </data>
   <data name="Side_UndoBringsAllBack" xml:space="preserve">
     <value>One undo (Ctrl+Z) brings everything back.</value>
+  </data>
+  <data name="Confirm_DeleteEpisode" xml:space="preserve">
+    <value>Are you sure you want to delete the episode “{0}”?</value>
+  </data>
+  <data name="Confirm_DeleteScene" xml:space="preserve">
+    <value>Are you sure you want to delete the scene “{0}”?</value>
+  </data>
+  <data name="Confirm_DeleteChapter" xml:space="preserve">
+    <value>Are you sure you want to delete the chapter “{0}”?</value>
+  </data>
+  <data name="Confirm_SceneTakesEpisodes" xml:space="preserve">
+    <value>{0:episode|episodes} will be deleted with it.</value>
+  </data>
+  <data name="Confirm_SceneTakesEpisodesAndBranches" xml:space="preserve">
+    <value>{0:episode|episodes} and {1:branch card|branch cards} will be deleted with it.</value>
+  </data>
+  <data name="Confirm_ChapterTakesAll" xml:space="preserve">
+    <value>All of its scenes and episodes will be deleted with it.</value>
+  </data>
+  <data name="Confirm_Cancel" xml:space="preserve">
+    <value>Cancel</value>
   </data>
 </root>

@@ -61,21 +61,23 @@ public sealed class ChoiceSlotTests : IDisposable
     });
 
     [Fact]
-    public void 빈_칸은_회색_빈_선택지가_든_네모_칸이고_누르면_그_자리에서_문구_칸이_열린다() => HeadlessUi.Run(() =>
+    public void 빈_칸은_점_옆의_더하기_단추이고_누르면_문구_칸이_열려_곧바로_적을_수_있다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-18 소유자 — 「비어있는 선택지점 옆쪽에 입력할 수 있는 네모난 박스를 두고 그 안에 "빈 선택지"라는 글자를 회색으로」.
+        // 2026-11-26 소유자 — 「바로 텍스트 박스를 노출 시키는 것보다는 개별 선택지 옆에 +버튼을 두는 방식」 · 「빈선택지를 누르더라도 바로 텍스트 박스가
+        // 활성화 되는게 아니라 그 상태에서 다시 한 번 눌러야지 선택지를 입력할 수 있게 되는데 이 버그도」. 세 칸은 그대로 늘 선다 — 칸마다 제 [+]다.
         (GraphEditorView graph, AuthoringSession session) = Show();
         IReadOnlyList<Control> faces = Labels(graph, "root");
 
-        Assert.Equal(["자동", GraphEditorView.SlotPlaceholderText, GraphEditorView.SlotPlaceholderText], faces.Select(TextOf));
-        Border box = Assert.IsType<Border>(faces[1]);
-        Assert.True(box.BorderThickness.Left > 0);   // 네모 칸
-        TextBlock text = Assert.IsType<TextBlock>(box.Child);
-        Assert.NotNull(text.Foreground);             // ⛔ 「＋ 선택지」는 붓이 없어 보이지 않았다
+        Assert.Equal(["자동", "+", "+"], faces.Select(TextOf));
+        Border plus = Assert.IsType<Border>(faces[1]);
+        Assert.True(plus.BorderThickness.Left > 0);      // 단추 모양의 네모
+        Assert.Equal(plus.Width, plus.Height);           // 작은 정사각 — 적는 칸 모양이 아니다
+        TextBlock text = Assert.IsType<TextBlock>(plus.Child);
+        Assert.NotNull(text.Foreground);                 // ⛔ 「＋ 선택지」는 붓이 없어 보이지 않았다
 
-        Press(box);
+        Press(plus);
         Assert.NotNull(graph.SlotLabelBox);
-        Assert.Equal(box.Width, graph.SlotLabelBox!.Width);   // 같은 폭 — 누르면 그 자리에서 열린다
+        Assert.True(graph.SlotLabelBox!.IsFocused);      // 한 번 누르면 곧바로 적는다 — 한 번 더 누를 일이 없다
     });
 
     [Fact]

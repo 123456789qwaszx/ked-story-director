@@ -263,6 +263,18 @@ internal static class Skin
     /// <summary>하이어아키에서 고른 줄의 바탕.</summary>
     public static Color RowSelected => C();
 
+    /// <summary>이어졌는데 문구가 없는 선택지 칸(「문구를 적어 주세요」)의 바탕 — 테두리 · 글은 <see cref="Danger"/>다.</summary>
+    public static Color SlotAlertSurface => C();
+
+    /// <summary>선택지의 길 색 — 카드 아래 칸의 차례대로 첫째. 이은 칸의 문구와 그 선이 같은 색이다(문구가 어느 선의 것인지 · 선이 어디로 가는지).</summary>
+    public static Color ChoiceLine1 => C();
+
+    /// <summary>선택지의 길 색 — 둘째 칸.</summary>
+    public static Color ChoiceLine2 => C();
+
+    /// <summary>선택지의 길 색 — 셋째 칸(넷째부터는 첫째로 돌아간다).</summary>
+    public static Color ChoiceLine3 => C();
+
     // ── [구성] 판 ─────────────────────────────────────────────
 
     /// <summary>[구성] 판(카드가 놓이는 면).</summary>
@@ -373,6 +385,9 @@ internal static class Skin
     /// <summary>1이면 챕터 · 장면 이름표의 여백을 넉넉히 하고 장면 이름표에 테두리를 두른다(선 위에 걸터앉는 이름표), 0이면 기본.</summary>
     public static double FrameLabelGrow => N();
 
+    /// <summary>챕터 · 장면 테두리의 굵기 배수 — 기본 테마의 굵기(지금 챕터 1.6 · 다른 챕터 1 · 장면 1)에 곱한다.</summary>
+    public static double FrameWeight => N();
+
     /// <summary>[구성] 카드의 모서리.</summary>
     public static double StructureCardRadius => N();
 
@@ -416,6 +431,9 @@ internal static class Skin
 
     /// <summary>[대본] 카드의 그림자 — 기본 테마는 없다.</summary>
     public static BoxShadows CardShadow => ThemeService.ShadowsOf(nameof(CardShadow));
+
+    /// <summary>챕터 테두리의 그림자 — 챕터의 면이 판의 바탕에서 떠 보이게(없으면 none).</summary>
+    public static BoxShadows ChapterFrameShadow => ThemeService.ShadowsOf(nameof(ChapterFrameShadow));
 
     /// <summary>분기 선의 색 여섯 — <see cref="Views.BranchPalette"/>가 차례로 쓴다.</summary>
     public static IReadOnlyList<Color> BranchLines =>

@@ -162,6 +162,51 @@ public sealed class SceneFoldTests
         Assert.Empty(session.CollapsedScenes);
     });
 
+    [Fact]
+    public void 이름표로_고른_무리에서_카드_하나를_눌렀다_놓으면_그_카드만_고른다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「챕터나 장면을 눌러서 그것에 포함된 여러 에피소드들이 선택된 상태에서, 다시 개별 에피소드를 누를 경우 … 다른것들까지
+        // 모두 선택강조가 유지되는 버그」. 누르고 끌면 무리가 함께 움직이고(위 시험), 끌지 않고 놓으면 그 카드 하나만이다 — 윈도우의 목록과 같다.
+        (GraphEditorView graph, AuthoringSession session, string _) = Show();
+        Canvas canvas = BoardCanvas(graph);
+        DialogueNode root = Card(session, "root");
+        DialogueNode a = Card(session, "a");
+        var top = (Visual)TopLevel.GetTopLevel(canvas)!;
+        var pointer = new Pointer(0, PointerType.Mouse, true);
+
+        void Release(Point at) => canvas.RaiseEvent(new PointerReleasedEventArgs(
+            canvas, pointer, top, at, 0,
+            new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased), KeyModifiers.None, MouseButton.Left));
+
+        // 장면 이름표를 눌렀다 놓는다 — 그 장면의 카드가 무리다.
+        Border label = canvas.Children.OfType<Border>()
+            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + "opening");
+        Point onLabel = label.TranslatePoint(new Point(4, 4), top)!.Value;
+        label.RaiseEvent(new PointerPressedEventArgs(
+            label, pointer, top, onLabel, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed), KeyModifiers.None));
+        Release(onLabel);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(2, CardOf(canvas, root.Id)!.BorderThickness.Left);
+        Assert.Equal(2, CardOf(canvas, a.Id)!.BorderThickness.Left);
+
+        // 무리 안의 a를 눌렀다 그 자리에서 놓는다 — a만 고른다.
+        Border cardA = CardOf(canvas, a.Id)!;
+        Point onA = cardA.TranslatePoint(new Point(20, 10), top)!.Value;
+        long before = session.Editor.Revision;
+        cardA.RaiseEvent(new PointerPressedEventArgs(
+            cardA, pointer, top, onA, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed), KeyModifiers.None));
+        Release(onA);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(a.Id, session.SelectedNodeId);
+        Assert.Equal(2, CardOf(canvas, a.Id)!.BorderThickness.Left);
+        Assert.Equal(1, CardOf(canvas, root.Id)!.BorderThickness.Left);   // 무리가 풀렸다
+        Assert.Equal(before, session.Editor.Revision);                     // 움직이지 않았으니 적은 것이 없다
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>ch01: opening(root · a), hall(b) — 위에서 아래로. 선택지 길 root→a · a→b.</summary>

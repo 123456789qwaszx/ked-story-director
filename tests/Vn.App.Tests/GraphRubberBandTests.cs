@@ -40,9 +40,14 @@ public sealed class GraphRubberBandTests : IDisposable
         session.Select(CardId(session, "a"));
         Dispatcher.UIThread.RunJobs();
 
-        // 두 레인(root→b는 x=222, root→a는 x=232)을 가로지른다 — 카드는 안 걸린다. 놓은 자리(x=300)에 root→a가 가깝다.
-        // 시작한 자리(x=215)에는 root→b가 가깝지만 그것은 보지 않는다.
-        Band(graph, new Point(215, 300), new Point(300, 330));
+        // 두 길의 내려가는 줄을 가로지른다(root 카드와 a 카드 사이의 띠 — 카드는 안 걸린다). root→b는 첫 칸 밑으로 곧게 내려가면 a 카드 뒤를 지나므로
+        // 카드 오른쪽 바깥(x=222)으로 비켜 내려가고, root→a는 둘째 칸 밑에서 곧게 내려간다. 두 길 다 접점(카드 가운데)이 세로 줄보다 왼쪽이라 세로 줄이
+        // 길에서 가장 오른쪽이다. 놓은 자리에 가까운 길을 고른다 — 시작한 자리에 가까운 길은 보지 않는다.
+        double laneA = Lane(graph, "a").Data!.Bounds.Right;
+        double laneB = Lane(graph, "b").Data!.Bounds.Right;
+        var besideA = new Point(laneA < laneB ? laneA - 8 : laneA + 8, 345);
+        var besideB = new Point(laneA < laneB ? laneB + 8 : laneB - 8, 360);
+        Band(graph, besideB, besideA);
 
         Assert.Null(session.SelectedNodeId);
         Assert.Equal("선택지 · root → a", Title(graph));
@@ -50,8 +55,8 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
         Assert.False(Editor(window).IsVisible);
 
-        // 거꾸로 그으면 놓은 자리(x=215)에 root→b가 가깝다.
-        Band(graph, new Point(300, 300), new Point(215, 330));
+        // 거꾸로 그으면 놓은 자리에 root→b가 가깝다.
+        Band(graph, besideA, besideB);
 
         Assert.Equal("선택지 · root → b", Title(graph));
         Assert.Equal("교무실로 간다", graph.FindControl<ContentControl>("SideHost")!.GetLogicalDescendants().OfType<TextBox>()
@@ -171,7 +176,7 @@ public sealed class GraphRubberBandTests : IDisposable
 
     /// <summary>
     /// [대본] 탭 — ch01에 선택지 하나(root → b, 해금조건 · 스탯변화)를 놓는다. ch02 판은 접는다: 두 판이 같은 자리에 펼쳐지면 카드가
-    /// 겹친다. 카드는 위에서 아래로 root(0,0) · a(0,400) · b(0,800)이고, 레인은 root 칩에서 x=222를 타고 내려가 b 앞 접점으로 든다.
+    /// 겹친다. 카드는 위에서 아래로 root(0,0) · a(0,400) · b(0,800)이고, 길은 root의 첫 칸 밑에서 내려와 사이의 a 카드를 비켜 x=222를 타고 b 앞 접점으로 든다.
     /// </summary>
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Show()
     {

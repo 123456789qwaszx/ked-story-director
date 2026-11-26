@@ -77,10 +77,13 @@ public sealed class CardDoubleClickTests : IDisposable
 
         // 제목 글자 밖(머리 줄의 빈 곳)을 두 번 — 제목 칸은 서지 않는다(2026-11-25 소유자 — 「글자가 있는 부분까지만으로」). 그 자리의 두 번 누르기는
         // 기본 크기 고정이다(같은 날 소유자) — 한 번 더 두 번 누르면 풀린다(CardBasePinBoardTests).
+        // 두 번 누름은 누르고 떼고, 누르고 떼고다 — 첫 누름도 그 빈 곳이어야 한다(2026-11-26 소유자 — 한 번 눌렀는데 오가던 결함).
         TextBlock titleText = TitleText(card);
+        PressAt(titleText, new Point(titleText.Bounds.Width + 30, 8), clicks: 1);
         PressAt(titleText, new Point(titleText.Bounds.Width + 30, 8), clicks: 2);
         Assert.False(graph.IsRenamingCard);
         Assert.True(session.Project.FindNode(node.Id)!.Layout.PinnedToBase);
+        PressAt(TitleText(CardOf(graph, node.Id)), new Point(TitleText(CardOf(graph, node.Id)).Bounds.Width + 30, 8), clicks: 1);
         PressAt(TitleText(CardOf(graph, node.Id)), new Point(TitleText(CardOf(graph, node.Id)).Bounds.Width + 30, 8), clicks: 2);
         Assert.False(session.Project.FindNode(node.Id)!.Layout.PinnedToBase);
         card = CardOf(graph, node.Id);

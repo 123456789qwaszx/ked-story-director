@@ -203,11 +203,14 @@ public sealed class GraphEdgeShapeTests : IDisposable
         Canvas(graph).Children.OfType<Avalonia.Controls.Shapes.Path>()
             .Single(path => path.Tag as string == "레인:a>b");
 
-    /// <summary>레인 위의 한 점 — 내려가는 세로 줄(레인에서 가장 오른쪽)의 가운데.</summary>
+    /// <summary>
+    /// 길 위의 한 점 — 내려가는 세로 줄의 가운데. 길은 a의 첫 선택지 칸(줄기 — 카드 왼쪽에서 <see cref="GraphEditorView.RailTrunkInset"/>) 밑에서 곧게 내려가
+    /// b의 접점(카드 가운데 — 줄기보다 오른쪽) 높이에서 건너므로, 세로 줄은 길에서 가장 왼쪽이다(2026-11-26 · ⛔ 그 전에는 카드 오른쪽 바깥의 레인 — 가장 오른쪽).
+    /// </summary>
     private static Point LanePoint(GraphEditorView graph)
     {
         Rect bounds = Lane(graph).Data!.Bounds;
-        return new Point(bounds.Right, bounds.Y + (bounds.Height / 2));
+        return new Point(bounds.X, bounds.Y + (bounds.Height / 2));
     }
 
     private static Point Center(Window window, Control control) =>

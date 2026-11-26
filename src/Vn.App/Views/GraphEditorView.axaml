@@ -46,13 +46,15 @@
              배선이 세션·선택 전환과 얽혀 있어 뷰로 옮기면 그 배선이 두 벌이 된다. -->
         <Grid Grid.Row="1" x:Name="BoardColumns">
             <!-- 하이어아키 · 판 · 인스펙터 — 유니티와 같은 차례.
-                 하이어아키 폭은 사람이 끈다(최소 140 — 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). -->
+                 하이어아키 폭은 사람이 끈다(최소 140 — 0까지 끌어 사라지면 다시 잡을 손잡이가 없다). 오른쪽 기둥도 끌어서는 최소 320까지다 — 아예 접는 것은
+                 「›」 단추로만(2026-11-26 소유자 — 「드래그 해서 완전히 접어버릴 수 있는데, 최소크기를 두어 주십시오」). 접으면 ColumnDock이 최소를 띠의 폭으로
+                 내렸다가 펼 때 되돌린다. -->
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="230" MinWidth="140" />
                 <ColumnDefinition Width="6" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="6" />
-                <ColumnDefinition Width="460" />
+                <ColumnDefinition Width="460" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
             <!-- 하이어아키 — 챕터 그래프와 같은 StoryHierarchy, 내용은 셸이 채운다. -->
@@ -115,21 +117,17 @@
             <!-- 초점이 바뀌어도 판을 스크롤하지 않는다 — 글 칸을 반영하면 판을 다시 그리고 새 칸에 초점을 돌려주는데,
                  그 칸은 아직 자리가 잡히기 전이라 판이 엉뚱한 자리로 튄다. 판 안에서 초점을 받는 칸은 사람이 지금
                  보고 누른 칸이라 따로 데려올 까닭이 없다. 쓰는 커서를 따라가는 스크롤은 그대로다. -->
-            <!-- 판의 바탕 — 테마가 정한다(BoardBackground · 기본 테마에는 없어 비어 있다). 누름을 받지 않는 깔개라 판의 누르기 · 끌기는 그대로다. -->
-            <Border Grid.Column="2"
-                    x:Name="BoardBackdrop"
-                    Background="{DynamicResource BoardBackground}"
-                    IsHitTestVisible="False" />
-            <!-- 판의 꾸밈 — 테마가 그림을 줄 때만 보인다(BoardDecorBrush · 「파스텔 하늘」의 구름과 별). 판의 왼쪽 아래 구석에, 카드 뒤에 깔리고 누름을 받지 않는다. -->
-            <Border Grid.Column="2"
-                    x:Name="BoardDecor"
-                    Width="{DynamicResource BoardDecorWidth}"
-                    Height="{DynamicResource BoardDecorHeight}"
-                    Margin="{DynamicResource BoardDecorMargin}"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Bottom"
-                    Background="{DynamicResource BoardDecorBrush}"
-                    IsHitTestVisible="False" />
+            <!-- 판의 깔개 — 테마가 정한다(BoardBackground · BoardDot … · 기본 테마에는 없어 아무것도 그리지 않는다). 한 가지 색 면에 일정한 간격의 점이고,
+                 점은 판과 함께 움직인다(코드비하인드가 스크롤 · 배율을 일러 준다 — DotGridBackdrop.Track). 챕터의 테두리가 불투명한 면으로 그 위를 덮어, 점이 보이는
+                 곳이 곧 챕터 바깥이다. 누름을 받지 않는 깔개라 판의 누르기 · 끌기는 그대로다.
+                 ⛔ 판 구석의 꾸밈 그림(구름과 반짝이 — BoardDecor)은 2026-11-26에 걷었다(소유자 — 선택지 칸과 겹쳤다). -->
+            <views:DotGridBackdrop Grid.Column="2"
+                                   x:Name="BoardBackdrop"
+                                   Fill="{DynamicResource BoardBackground}"
+                                   Dot="{DynamicResource BoardDot}"
+                                   Spacing="{DynamicResource BoardDotSpacing}"
+                                   DotSize="{DynamicResource BoardDotSize}"
+                                   IsHitTestVisible="False" />
             <ScrollViewer Grid.Column="2"
                           x:Name="GraphScroll"
                           BringIntoViewOnFocusChange="False"
@@ -401,8 +399,9 @@
              늘 서 있는 조작법 설명은 두지 않는다 — 손이 이미 아는 것을 화면이 매번 다시
              일러 주면 정작 무언가를 말해야 할 때 눈에 안 띈다.
 
-             말하는 것은 둘: 포트를 끄는 중의 안내(어디에 놓으면 되는가·빈 곳은 끊기)와
-             고른 간선의 정체다. 할 말이 없으면 띠 자체가 접힌다 — 빈 칸이 서 있으면
+             말하는 것은 하나: 선을 끄는 동안 놓으면 무엇이 되는가(어디에 놓으면 되는가·빈 곳은 끊기).
+             고른 선의 정체(「A → B · 「문구」」)는 2026-11-26에 걷혔다(소유자 — 필요 없다).
+             할 말이 없으면 띠 자체가 접힌다 — 빈 칸이 서 있으면
              그것도 소음이다. 여닫는 문은 SetHint 하나다. -->
         <Border Grid.Row="2"
                 x:Name="HintBar"

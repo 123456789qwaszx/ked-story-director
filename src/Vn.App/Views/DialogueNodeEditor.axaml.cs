@@ -32,6 +32,9 @@ public partial class DialogueNodeEditor : UserControl
 {
     private static IBrush LineSelectionBrush => Skin.Selection.Brush(200);
 
+    /// <summary>고른 줄의 면 — 하이어아키의 고른 줄과 같은 색이다(<see cref="Skin.RowSelected"/>).</summary>
+    private static IBrush LineSelectionFill => Skin.RowSelected.Brush();
+
     private AuthoringSession? _session;
     private string? _nodeId;
     private bool _building;
@@ -71,6 +74,24 @@ public partial class DialogueNodeEditor : UserControl
         InitializeComponent();
 
         NameBox.LostFocus += (_, _) => CommitName();
+
+        // 줄의 칸(화자 · 대사)에 초점이 들어오면 그 줄이 「쓰고 있는 줄」이다 — 그 줄을 고르고(왼쪽 띠 · [줄 추가]의 자리) 셸에 알린다(판의 카드 왼쪽에 표시).
+        // 초점이 줄 표를 떠나면 걷는다. 다른 줄의 칸으로 옮기면 들어온 쪽이 먼저 알린다.
+        LineHost.GotFocus += (_, args) => UiGuard.Run(_session, Ui.Dialogue_Dialogue, () =>
+        {
+            if (LineOf(args.Source as Visual) is { } lineId)
+            {
+                SelectLine(lineId);
+                SetEditingLine(lineId);
+            }
+        });
+        LineHost.LostFocus += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (!LineHost.IsKeyboardFocusWithin)
+            {
+                SetEditingLine(null);
+            }
+        });
 
         // 하이어아키에서 여러 줄을 골랐으면 그 에피소드 카드 모두를 한 번에 켜고 끈다(2026-11-23 소유자 — 「선택 된것들 모두 일괄적으로 키고 꺼지도록」).
         // 섞여 있으면(일부만 켜짐) 체크가 반쯤이고, 누르면 모두 켠다.
@@ -249,12 +270,61 @@ public partial class DialogueNodeEditor : UserControl
     private static string HideEmptyTip =>
         Ui.Dialogue_WhenOnOnlyChoicesConnected;
 
+    /// <summary>
+    /// 인스펙터에서 지금 쓰고 있는 줄이 바뀌었다 — (노드, 줄). 줄의 칸(화자 · 대사)에 초점이 있는 동안 그 줄이고, 초점이 줄 표를 떠나면 (null, null)이다.
+    /// 셸이 [대본] 판의 그 카드 왼쪽에 표시한다(2026-11-26 소유자 — 「인스펙터에서 대사를 수정할 때 … 노드 왼쪽으로 현재 수정 중인 줄을 화살표로든 혹은
+    /// 파란색 막대로든 표시」 · <see cref="GraphEditorView.ShowEditingLine"/>).
+    /// </summary>
+    internal event Action<string?, string?>? EditingLineChanged;
+
+    private string? _editingLineId;
+
+    /// <summary>지금 쓰고 있는 줄 — 시험의 손잡이.</summary>
+    internal string? EditingLineId => _editingLineId;
+
+    private void SetEditingLine(string? lineId)
+    {
+        if (string.Equals(_editingLineId, lineId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _editingLineId = lineId;
+        EditingLineChanged?.Invoke(lineId is null ? null : _nodeId, lineId);
+    }
+
+    /// <summary>그 칸이 든 줄 — 줄을 감싼 띠(<see cref="WrapForLineSelection"/>)를 거슬러 찾는다. 줄 밖(조건 · 고아 카드)이면 null.</summary>
+    private string? LineOf(Visual? source)
+    {
+        foreach (Visual at in source?.GetSelfAndVisualAncestors() ?? [])
+        {
+            if (ReferenceEquals(at, LineHost))
+            {
+                return null;
+            }
+
+            if (at is Border wrapper)
+            {
+                foreach ((string lineId, Border card) in _lineCards)
+                {
+                    if (ReferenceEquals(card, wrapper))
+                    {
+                        return lineId;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>어떤 노드를 편집할지 정하고 화면을 만든다.</summary>
     internal void Show(string? nodeId)
     {
         if (!string.Equals(_nodeId, nodeId, StringComparison.Ordinal))
         {
             _selectedLineId = null;
+            SetEditingLine(null);
         }
 
         _nodeId = nodeId;
@@ -362,7 +432,8 @@ public partial class DialogueNodeEditor : UserControl
         {
             // Transparent는 보이지 않지만 히트테스트는 된다 — 배경 없는 일반 대사 카드의
             // 빈 부분을 클릭해도 선택이 되게 한다(글자 위만 반응하지 않도록).
-            Background = Brushes.Transparent,
+            // 고른 줄은 윈도우의 목록처럼 옅은 파랑 면에 왼쪽 강조색 띠다(2026-11-26 소유자 — 고른 것의 시각 언어를 윈도우 문법으로).
+            Background = string.Equals(lineId, _selectedLineId, StringComparison.Ordinal) ? LineSelectionFill : Brushes.Transparent,
             BorderThickness = new Thickness(3, 0, 0, 0),
             BorderBrush = string.Equals(lineId, _selectedLineId, StringComparison.Ordinal)
                 ? LineSelectionBrush
@@ -460,6 +531,31 @@ public partial class DialogueNodeEditor : UserControl
         flyout.ShowAt(anchor, showAtPointer: true);
     }
 
+    /// <summary>고른 줄(파란 띠) — 시험의 손잡이.</summary>
+    internal string? SelectedLineId => _selectedLineId;
+
+    /// <summary>
+    /// [대본] 판의 카드 글 칸에서 커서가 선 줄을 고른 줄로 삼는다(2026-11-26 소유자 — 「그래프 뷰에서 특정 줄을 수정하는데, 그것과 별개로 우측 인스펙터에서는
+    /// 다른 줄을 파랗게 강조하니 되게 헷갈립니다 … 동기화」 · <see cref="GraphEditorView.CaretLineChanged"/>). 파란 띠가 그 줄로 옮기고, 그 줄이 보이게
+    /// 줄 표를 내린다. 초점은 가져가지 않는다. 다른 노드를 보고 있거나 인스펙터의 줄 칸에서 쓰는 중이면 하지 않는다 — 사람이 쓰는 칸이 먼저다.
+    /// </summary>
+    internal void FollowCaretLine(string nodeId, string lineId)
+    {
+        if (!string.Equals(_nodeId, nodeId, StringComparison.Ordinal) ||
+            LineHost.IsKeyboardFocusWithin ||
+            string.Equals(_selectedLineId, lineId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        SelectLine(lineId);
+
+        if (_lineCards.TryGetValue(lineId, out Border? card))
+        {
+            card.BringIntoView();
+        }
+    }
+
     private void SelectLine(string lineId)
     {
         if (string.Equals(_selectedLineId, lineId, StringComparison.Ordinal))
@@ -471,9 +567,9 @@ public partial class DialogueNodeEditor : UserControl
 
         foreach ((string cardLineId, Border card) in _lineCards)
         {
-            card.BorderBrush = string.Equals(cardLineId, lineId, StringComparison.Ordinal)
-                ? LineSelectionBrush
-                : Brushes.Transparent;
+            bool picked = string.Equals(cardLineId, lineId, StringComparison.Ordinal);
+            card.BorderBrush = picked ? LineSelectionBrush : Brushes.Transparent;
+            card.Background = picked ? LineSelectionFill : Brushes.Transparent;
         }
     }
 
@@ -639,7 +735,11 @@ public partial class DialogueNodeEditor : UserControl
 
     private static IBrush PendingRemovalBrush => Skin.Danger.Brush(170);
 
-    /// <summary>Index | 화자 | 대사 | ＋ 의 메인 행. 높이는 한 줄로 고정이다.</summary>
+    /// <summary>
+    /// Index | 화자 | 대사 | ＋ 의 메인 행. 긴 대사는 칸 안에서 아래로 줄을 바꾸며 행이 그만큼 높아진다 — 번호 · 화자 · ＋는 첫 줄에 맞춰 위에 선다
+    /// (2026-11-26 소유자 — 「줄의 뒷부분이 화면 바깥으로 넘어가면 아예 안 보이는데 … 아래쪽으로 줄바꿈하면서 보여주는 게 맞겠습니다」 · ⛔ 그 전에는 한 줄로
+    /// 고정하고 칸 안에서 가로로 흘렀다).
+    /// </summary>
     private Control BuildMainRow(DialogueNode node, DialogueScript script, ResolvedLine resolved)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions(RowColumns) };
@@ -649,18 +749,19 @@ public partial class DialogueNodeEditor : UserControl
             Text = resolved.Index.ToString(),
             FontSize = Skin.Font(10),
             Opacity = Skin.Dim(0.45),
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 6, 0, 0)
         };
         Grid.SetColumn(index, 0);
         row.Children.Add(index);
 
-        // 긴 대사가 카드 높이를 늘리지 않는다 — 칸 안에서 가로로 흐른다.
+        // 긴 대사는 칸 안에서 아래로 줄을 바꾼다 — 칸(과 행)이 그만큼 높아진다. Enter는 줄을 넣지 않는다(한 줄 = 대사 하나).
         var text = new TextBox
         {
             Text = resolved.Line.Text,
             PlaceholderText = Ui.Dialogue_Dialogue,
             AcceptsReturn = false,
-            TextWrapping = TextWrapping.NoWrap,
+            TextWrapping = TextWrapping.Wrap,
             FontSize = Skin.Font(12),
             MinHeight = 26,
             Padding = new Thickness(6, 3),
@@ -740,31 +841,12 @@ public partial class DialogueNodeEditor : UserControl
             // 지금 화자 목록에서 — 방금 등록한 화자도 카드를 다시 짓지 않고 나온다.
             SpeakerSuggest.Attach(speaker, SpeakerNames);
 
-            // ▾ = 등록 화자 전체 목록 — 자동완성은 타이핑해야 열리니 클릭 한 번 길을 따로 둔다.
-            AutoCompleteBox speakerBox = speaker;
-            var pick = new Button
-            {
-                Content = "▾",
-                FontSize = Skin.Font(8),
-                Padding = new Thickness(3, 0),
-                MinWidth = 16,
-                VerticalAlignment = VerticalAlignment.Stretch,
-                Margin = new Thickness(1, 0, 0, 0)
-            };
-            ToolTip.SetTip(pick, Ui.Dialogue_ChooseFromRegisteredSpeakers);
-            pick.Click += (_, _) => ShowSpeakerFlyout(pick, speakerBox, Commit);
-
-            var speakerCell = new Grid
-            {
-                ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-                Margin = new Thickness(4, 0, 0, 0)
-            };
-            Grid.SetColumn(speaker, 0);
-            Grid.SetColumn(pick, 1);
-            speakerCell.Children.Add(speaker);
-            speakerCell.Children.Add(pick);
-            Grid.SetColumn(speakerCell, 1);
-            row.Children.Add(speakerCell);
+            // ⛔ 옆의 ▾(등록 화자 전체 목록 — 누르면 이름 목록이 떴다)는 2026-11-26에 걷었다(소유자 — 「인스펙터에서 등록된 화자 목록 드롭다운은 필요가
+            //    없을 것 같습니다」). 등록 화자는 칸에 적기 시작하면 후보로 뜬다(SpeakerSuggest).
+            speaker.Margin = new Thickness(4, 0, 0, 0);
+            speaker.VerticalAlignment = VerticalAlignment.Top;
+            Grid.SetColumn(speaker, 1);
+            row.Children.Add(speaker);
         }
 
         Wire(text);
@@ -772,62 +854,12 @@ public partial class DialogueNodeEditor : UserControl
         row.Children.Add(text);
 
         Button plus = BuildPlusButton(node, resolved);
+        plus.VerticalAlignment = VerticalAlignment.Top;
+        plus.Margin = new Thickness(plus.Margin.Left, 3, plus.Margin.Right, 0);
         Grid.SetColumn(plus, 3);
         row.Children.Add(plus);
 
         return row;
-    }
-
-    /// <summary>
-    /// 등록 화자 드롭다운. 항목 클릭 = 그 이름이 화자 칸에 들어간다 —
-    /// TextChanged가 대본에 반영하므로 자유 입력과 같은 길 하나를 쓴다.
-    /// </summary>
-    /// <param name="commit">
-    /// 고른 이름을 실제로 내는 손. <b>있어야 한다</b> — ▾로 고르는 길에는 초점이 오간 적이 없어서,
-    /// 초점에 기대는 저장만으로는 고른 이름이 칸에만 앉아 있다가 다음 다시 그리기에 지워진다.
-    /// </param>
-    private void ShowSpeakerFlyout(Button anchor, AutoCompleteBox speaker, Action commit)
-    {
-        List<string> candidates = SpeakerNames();
-
-        if (candidates.Count == 0)
-        {
-            _session!.SetStatus(
-                Ui.Dialogue_NoSpeakersRegisteredAddSpeakers);
-            return;
-        }
-
-        var panel = new StackPanel();
-        var flyout = new Flyout
-        {
-            Content = new ScrollViewer { MaxHeight = 260, Content = panel },
-            Placement = PlacementMode.Bottom
-        };
-
-        // 머리글이 없다 — 원천이 하나라 구역을 가를 것이 없고, 머리글은 이름 목록 위에 붙는
-        // 상표일 뿐이다.
-        foreach (string name in candidates)
-        {
-            var item = new Button
-            {
-                Content = name,
-                FontSize = Skin.Font(11),
-                Padding = new Thickness(10, 4),
-                MinWidth = 140,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                HorizontalContentAlignment = HorizontalAlignment.Left,
-                Background = Brushes.Transparent
-            };
-            item.Click += (_, _) =>
-            {
-                speaker.Text = name;
-                flyout.Hide();
-                commit();
-            };
-            panel.Children.Add(item);
-        }
-
-        flyout.ShowAt(anchor);
     }
 
     /// <summary>

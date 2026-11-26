@@ -64,7 +64,7 @@ This one document takes you from getting started to handing over your work.
    - **Right-clicking empty space on the board** works too — inside a scene's frame `Add episode`, outside scenes but inside a chapter's frame `Add scene`, outside chapters `Add chapter`.
      Episodes · scenes · chapters (their first episode) put the card where you clicked.
    - **Delete with [Delete] above the board** — with nothing selected it's a gray "Delete". Select a chapter and it becomes "Delete chapter", a scene "Delete scene", an episode
-     "Delete episode", and clicking it shows a confirmation box beside it once more. To cancel, click elsewhere or press Esc.
+     "Delete episode", and clicking it asks “Are you sure you want to delete …?” beside it ([Delete] [Cancel] — for a scene or chapter, one more line says what goes with it). To cancel, click [Cancel], click elsewhere or press Esc.
      - Delete chapter — that chapter's scenes · episodes · cards go with it.
      - Delete scene — that scene's episodes · cards, the branch cards those episodes called, and the scene's name · note go with it. Branch cards also called from other scenes stay.
      - Select a branch card and it's "Delete branch card" — deletes just that card without asking (the branch points that called it stay, unconnected).
@@ -98,9 +98,10 @@ This one document takes you from getting started to handing over your work.
    - To space out lines, leave blank lines — they stay as you spaced them. Blank lines are for reading only and don't go into the dialogue sent to the game.
    - There's always one blank line at the bottom of the writing box — even after going elsewhere, click that line and keep writing (no need to press Enter first).
    - If the text can't be applied, the box's border turns red, and hovering over the box shows why (it also appears in the status bar below). The text stays in the box, so just fix it.
-   - Select a card and its lines appear as a table (`#` · speaker · dialogue) in the "Inspector" on the right. You can edit line by line here too —
+   - Select a card and its lines appear as a table (`#` · speaker · dialogue) in the "Inspector" on the right. Long dialogue wraps downward inside its field so all of it shows.
+     While you're typing in a line's field, a **blue arrow and bar** on the left of that card on the board points at that line. The other way round, when you type in a card's text box on the board, the Inspector's highlighted row follows the line your cursor is on. You can edit line by line here too —
      type **just the first letter or initial consonants** in the speaker field ("샤" · "ㅅ" · "ㅅㅌ") and candidates from the names registered in the "Speakers" tab appear right away. Click a candidate, or move through them with **↑ · ↓ and press Enter** (`Esc` goes back to
-     what you typed). Click **▾** beside the field to choose from all names. To add a line, use [Add line] at the right of the table header; right-click a line for `Add line below` · `Delete`.
+     what you typed). To add a line, use [Add line] at the right of the table header; right-click a line for `Add line below` · `Delete`.
    - The **font · font size** in [⚙ Settings] → "Script writing box" are the font and size for **new cards** — they're written into a card when it's made (in the project file ·
      shown the same to people you work with), and changing the setting later doesn't change existing cards. To change the font or size of existing text, select the text and use the formatting
      tools at the top. **Bold · text color** are set in the same place and follow the same rule (they're for new cards) — a card that's bold from the start can't have just part of it made regular.
@@ -129,8 +130,8 @@ This one document takes you from getting started to handing over your work.
        the default font is shown.
      - While you choose a font or color, the selected text stays lightly highlighted, and afterward those characters remain selected so you can apply another format right away.
      - Clicking outside the writing box (empty board · a card's header) turns the tools off — select text in a writing box again to turn them on.
-3. **Connect choices** — choice slots appear under an episode card (a point and a text).
-   - Click a gray **"Empty choice"** slot, write the choice text (Enter), then drag the point (now red) onto the next episode card to connect it. A connected point is green.
+3. **Connect choices** — choice slots appear side by side under an episode card (each a point and a text — left to right is the order of the choices, and a connected line drops down from its point. A choice text and its line share a colour).
+   - Click the **[+]** beside an empty slot's point — the text box opens ready to type; write the choice text (Enter), then drag the point (now red) onto the next episode card to connect it. A connected point is green.
    - **You can connect first and write the text later** — drag a gray point straight onto a card without writing anything, and it connects as a red **"Write the choice text"** slot.
      Click that slot to write the text (until you do, it stays a 🟡 warning in the "Validation report" and goes to the game with the placeholder `[TODO] Missing choice text -> destination episode ID`). Clicking a gray point without dragging opens the text box.
    - On a card with no choice text yet, the first slot is **"Auto"** — drag and drop its point without writing text to make a path that moves on without asking.

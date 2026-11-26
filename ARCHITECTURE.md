@@ -121,7 +121,7 @@ runtime.target.json                  (있으면) 보낼 곳 — 형식마다 exp
 | 파일 | 하는 일 |
 |---|---|
 | `GraphProjectionBuilder.cs` | 프로젝트 → `GraphProjection`. **화면이 아니라 여기가** 무엇이 보이는지 정한다 — 접힌 판은 장면으로 묶는다 |
-| `EdgeSide.cs` | 선이 나가는 쪽 — 도착이 선이 나가는 자리보다 왼쪽이면 왼쪽(H1). 분기 포트는 카드의 가운데, 카드 아래 선택지 줄은 선택지가 달린 줄기에서 잰다 |
+| `EdgeSide.cs` | 선이 나가는 쪽 — 도착이 선이 나가는 자리보다 왼쪽이면 왼쪽(H1). 분기 포트 · 접은 장면 상자의 줄은 카드(상자)의 가운데에서 잰다. 카드 아래 선택지 칸에는 쪽이 없다 — 가로로 나란히 서고 선은 아래로 나간다(`EdgeShapeRouter.Drop` · 2026-11-26) |
 | `OrthogonalEdgeRouter.cs` · `EdgeShapeRouter.cs` | 자동 직각 경로 · 사람이 고친 모양(직각 · 곡선 · 직선)대로 긋기 |
 | `NodePlacement.cs` | 새 카드가 설 자리(위→아래, D3) |
 

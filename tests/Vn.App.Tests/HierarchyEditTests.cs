@@ -429,7 +429,14 @@ public sealed class HierarchyEditTests : IDisposable
         Press(delete);
         Assert.NotNull(session.Editor.FindChapter("ch02"));
         Button confirm = window.RemoveConfirmButton!;
-        Assert.Equal("챕터 지우기", confirm.Content);
+        Assert.Equal("삭제", confirm.Content);
+
+        // 2026-11-26 소유자 — 「설명을 하는 게 아니라, 정말 삭제하시겠습니까? 라고 물어야지」. 묻는 말이 먼저 서고, [삭제] [취소]가 나란히 선다.
+        (string question, string? detail, string[] buttons) = Confirmation(confirm);
+        Assert.Contains("축제 당일", question, StringComparison.Ordinal);
+        Assert.EndsWith("챕터를 정말 삭제하시겠습니까?", question, StringComparison.Ordinal);
+        Assert.Equal("그 챕터의 장면과 에피소드도 모두 함께 지워집니다.", detail);
+        Assert.Equal(["삭제", "취소"], buttons);
 
         long before = session.Editor.Revision;
         confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -465,7 +472,10 @@ public sealed class HierarchyEditTests : IDisposable
         Press(delete);
         Assert.Equal(3, Chapter(session).Episodes.Count);   // 확인 전에는 지우지 않는다
         Button confirm = window.RemoveConfirmButton!;
-        Assert.Equal("장면 지우기", confirm.Content);
+        Assert.Equal("삭제", confirm.Content);
+        (string question, string? detail, _) = Confirmation(confirm);
+        Assert.EndsWith("장면을 정말 삭제하시겠습니까?", question, StringComparison.Ordinal);
+        Assert.Equal("에피소드 2개와 분기 카드 1장도 함께 지워집니다.", detail);   // opening의 root · a, root가 부르던 분기 카드
 
         long before = session.Editor.Revision;
         confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -487,6 +497,15 @@ public sealed class HierarchyEditTests : IDisposable
 
         window.Close();
     });
+
+    /// <summary>확인 칸을 읽는다 — 묻는 말 · (있으면) 함께 지워지는 것 한 줄 · 단추 글자들. 확인 단추에서 거슬러 올라간다.</summary>
+    private static (string Question, string? Detail, string[] Buttons) Confirmation(Button confirm)
+    {
+        var row = (StackPanel)confirm.Parent!;
+        var panel = (StackPanel)row.Parent!;
+        TextBlock[] texts = panel.Children.OfType<TextBlock>().ToArray();
+        return (texts[0].Text!, texts.Length > 1 ? texts[1].Text : null, row.Children.OfType<Button>().Select(button => (string)button.Content!).ToArray());
+    }
 
     [Fact]
     public void 확인_칸은_바깥을_누르거나_Esc면_닫히고_아무것도_지우지_않는다() => HeadlessUi.Run(() =>
@@ -514,6 +533,16 @@ public sealed class HierarchyEditTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         Assert.Null(window.RemoveConfirmButton);
         Assert.False(second.IsAttachedToVisualTree());
+
+        // [취소](2026-11-26 소유자 — 확인 칸은 윈도우의 확인 창처럼 [삭제] [취소]).
+        Pick(tree, StoryHierarchy.ChapterKey("ch02"));
+        Press(DeleteButton(window));
+        Button third = window.RemoveConfirmButton!;
+        Button cancel = ((StackPanel)third.Parent!).Children.OfType<Button>().Single(button => (string?)button.Content == "취소");
+        cancel.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(window.RemoveConfirmButton);
+        Assert.False(third.IsAttachedToVisualTree());
 
         Assert.NotNull(session.Editor.FindChapter("ch02"));
         Assert.Equal(before, session.Editor.Revision);

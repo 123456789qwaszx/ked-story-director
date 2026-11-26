@@ -11,14 +11,15 @@ using Vn.Authoring.Serialization;
 namespace Vn.App.Tests;
 
 /// <summary>
-/// <b>선택지 줄 하나하나가 제 도착을 보고 쪽을 고른다</b> — 카드째가 아니라 이어진 루트
-/// 하나하나의 방향이 바뀐다.
+/// <b>선택지 칸은 카드 아래에 가로로 나란히 서고, 선은 제 칸 밑에서 아래로 나간다</b>(2026-11-26 소유자 — 작가들의 보드처럼 아래로 뻗는다).
 ///
-/// 도착 카드가 선택지가 달린 줄기보다 왼쪽이면 <b>그 줄만</b> 거울에 비춘 모양이다 — 점이 줄기 쪽 · 문구가 그 왼쪽에 서고 레인은 카드
-/// 왼쪽으로 빠진다. 줄기는 언제나 카드 왼쪽에서 같은 자리다(<see cref="GraphEditorView.RailTrunkInset"/> · 2026-11-25 — ⛔ 그 전에는 카드 가운데 아래).
-/// 쪽을 재는 기준도 그 줄기다 — 도착의 가운데가 줄기보다 왼쪽이면 왼쪽(2026-11-26 · ⛔ 그 전에는 카드의 지금 폭의 가운데). 분기 포트는 카드의 가운데에서 잰다.
+/// 줄기는 언제나 카드 왼쪽에서 같은 자리다(<see cref="GraphEditorView.RailTrunkInset"/> · 2026-11-25) — 첫 칸의 점이 그 줄기 바로 밑이고, 다음 칸들이 칸의 차례대로
+/// 그 오른쪽에 선다. 도착이 어느 쪽에 있든 칸의 모양은 같다(점이 왼쪽 · 문구가 오른쪽). 길은 칸 밑에서 곧게 내려가 도착 접점의 높이에서 건너고, 내려가는
+/// 자리를 다른 카드가 막으면 그 카드의 바깥으로 비켜 내려간다.
+/// ⛔ 2026-10-29 ~ 11-26에는 칸이 줄기에 세로로 쌓였고, 도착이 줄기보다 왼쪽인 칸만 거울처럼 뒤집었다(소유자 — 「좌우 뒤집기는 없애도 됩니다」).
+/// 분기 포트(카드 안 실행 포트)는 전처럼 카드의 가운데에서 쪽을 잰다.
 ///
-/// 시험마다 챕터 시작 카드(start)를 멀리 오른쪽에 둔다 — 시작 카드 기준으로 카드째 뒤집는 규칙이면 결과가 달라진다.
+/// 시험마다 챕터 시작 카드(start)를 멀리 오른쪽에 둔다.
 /// </summary>
 public sealed class GraphChoiceSideTests : IDisposable
 {
@@ -37,7 +38,7 @@ public sealed class GraphChoiceSideTests : IDisposable
     }
 
     [Fact]
-    public void 도착이_왼쪽인_선택지만_왼쪽으로_나간다() => HeadlessUi.Run(() =>
+    public void 선택지_칸은_줄기에서_오른쪽으로_나란히_서고_선은_제_칸_밑에서_내려간다() => HeadlessUi.Run(() =>
     {
         // 한 카드의 두 선택지가 왼쪽 카드와 오른쪽 카드로 간다.
         (GraphEditorView graph, AuthoringSession session) = Show(
@@ -46,24 +47,31 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Editor.AddEdge("ch01", "scene", "right", optionLabel: "오른쪽 길");
         Redraw(graph);
 
-        double sceneX = CardX(graph, session, "scene");
-        double trunkX = sceneX + GraphEditorView.RailTrunkInset;
-        StackPanel leftRow = Row(graph, "scene", "왼쪽 길");
-        StackPanel rightRow = Row(graph, "scene", "오른쪽 길");
+        double trunkX = CardX(graph, session, "scene") + GraphEditorView.RailTrunkInset;
+        StackPanel first = Row(graph, "scene", "왼쪽 길");
+        StackPanel second = Row(graph, "scene", "오른쪽 길");
 
-        // 줄기는 카드 왼쪽에서 늘 같은 자리 — 왼쪽 줄은 줄기 왼쪽에(점이 줄기 쪽), 오른쪽 줄은 줄기 오른쪽에(점이 줄기 쪽) 선다.
-        Assert.Equal(trunkX - 14, Canvas.GetLeft(leftRow) + leftRow.DesiredSize.Width, precision: 3);
-        Assert.IsType<Ellipse>(leftRow.Children[^1]);
-        Assert.Equal(trunkX + 14, Canvas.GetLeft(rightRow), precision: 3);
-        Assert.IsType<Ellipse>(rightRow.Children[0]);
+        // 첫 칸의 점이 줄기 바로 밑이고, 둘째 칸은 그 오른쪽에 같은 높이로 선다 — 도착이 왼쪽이든 오른쪽이든 점이 왼쪽 · 문구가 오른쪽이다.
+        Assert.Equal(trunkX - GraphEditorView.PortRadius, Canvas.GetLeft(first), precision: 3);
+        Assert.True(Canvas.GetLeft(second) > Canvas.GetLeft(first) + first.DesiredSize.Width, "둘째 칸은 첫 칸의 문구 오른쪽에 선다");
+        Assert.Equal(MiddleY(first), MiddleY(second), precision: 3);
+        Assert.IsType<Ellipse>(first.Children[0]);
+        Assert.IsType<Ellipse>(second.Children[0]);
 
-        // 레인도 제 쪽으로 빠진다.
-        Assert.True(Lane(graph, "scene>left").Data!.Bounds.Left < sceneX);
-        Assert.True(Lane(graph, "scene>right").Data!.Bounds.Right > sceneX + CardWidth);
+        // 선은 제 칸의 점 바로 밑에서 나가 아래로 내려간다 — 왼쪽 도착으로는 왼쪽으로, 오른쪽 도착으로는 오른쪽으로 건넌다.
+        Rect toLeft = Lane(graph, "scene>left").Data!.Bounds;
+        Rect toRight = Lane(graph, "scene>right").Data!.Bounds;
+
+        Assert.Equal(MiddleY(first) + GraphEditorView.PortRadius, toLeft.Top, precision: 3);
+        Assert.Equal(trunkX, toLeft.Right, precision: 3);
+        Assert.True(toLeft.Left < CardX(graph, session, "scene"));
+        Assert.Equal(MiddleY(second) + GraphEditorView.PortRadius, toRight.Top, precision: 3);
+        Assert.Equal(Canvas.GetLeft(second) + GraphEditorView.PortRadius, toRight.Left, precision: 3);
+        Assert.True(toRight.Right > CardX(graph, session, "scene") + CardWidth);
     });
 
     [Fact]
-    public void 어느_쪽으로_나가든_줄기는_카드_왼쪽에서_같은_자리다() => HeadlessUi.Run(() =>
+    public void 어디로_가든_칸은_카드_왼쪽에서_같은_자리의_줄기에서_시작한다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show(
             ("start", 2400, 0), ("east", 800, 0), ("west", 800, 1400),
@@ -74,24 +82,42 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Editor.AddEdge("ch01", "west", "d", optionLabel: "서쪽 셋");
         Redraw(graph);
 
-        // 선택지는 쪽과 상관없이 언제나 카드 왼쪽에서 같은 자리의 줄기에서 나온다 — 줄 하나를 이어도 줄기가 옆으로 뛰지 않는다.
-
-        // 오른쪽뿐(빈 칸도 오른쪽) — 줄은 줄기 오른쪽에 선다.
+        // 오른쪽으로 가는 길 하나(나머지는 빈 칸) — 첫 칸의 점이 줄기 밑이다.
         StackPanel east = Row(graph, "east", "동쪽");
-        Assert.Equal(CardX(graph, session, "east") + GraphEditorView.RailTrunkInset + 14, Canvas.GetLeft(east), precision: 3);
+        Assert.Equal(CardX(graph, session, "east") + GraphEditorView.RailTrunkInset - GraphEditorView.PortRadius, Canvas.GetLeft(east), precision: 3);
 
-        // 셋이 다 왼쪽(빈 칸이 없다) — 줄기는 같은 자리, 줄은 그 왼쪽에 선다.
-        double westCenter = CardX(graph, session, "west") + GraphEditorView.RailTrunkInset;
-
-        foreach (string label in new[] { "서쪽 하나", "서쪽 둘", "서쪽 셋" })
-        {
-            StackPanel row = Row(graph, "west", label);
-            Assert.Equal(westCenter - 14, Canvas.GetLeft(row) + row.DesiredSize.Width, precision: 3);
-        }
+        // 셋이 다 왼쪽으로 가도(빈 칸이 없다) 칸은 줄기에서 오른쪽으로 칸의 차례대로 선다 — 줄 하나를 이어도 줄기가 옆으로 뛰지 않고 칸이 뒤집히지 않는다.
+        List<StackPanel> west = new[] { "서쪽 하나", "서쪽 둘", "서쪽 셋" }.Select(label => Row(graph, "west", label)).ToList();
+        Assert.Equal(CardX(graph, session, "west") + GraphEditorView.RailTrunkInset - GraphEditorView.PortRadius, Canvas.GetLeft(west[0]), precision: 3);
+        Assert.True(Canvas.GetLeft(west[1]) > Canvas.GetLeft(west[0]) + west[0].DesiredSize.Width);
+        Assert.True(Canvas.GetLeft(west[2]) > Canvas.GetLeft(west[1]) + west[1].DesiredSize.Width);
+        Assert.All(west, row => Assert.IsType<Ellipse>(row.Children[0]));
 
         // 빈 칸만 있는 새 카드도 같은 자리다.
         StackPanel blank = Rows(graph, "a").First();
-        Assert.Equal(CardX(graph, session, "a") + GraphEditorView.RailTrunkInset + 14, Canvas.GetLeft(blank), precision: 3);
+        Assert.Equal(CardX(graph, session, "a") + GraphEditorView.RailTrunkInset - GraphEditorView.PortRadius, Canvas.GetLeft(blank), precision: 3);
+    });
+
+    [Fact]
+    public void 내려가는_자리를_다른_카드가_막으면_그_카드의_바깥으로_비켜_내려간다() => HeadlessUi.Run(() =>
+    {
+        // root 아래로 mid · far가 한 줄로 서 있다 — root → far의 길이 첫 칸 밑으로 곧게 내려가면 mid 카드 뒤를 지나 보이지 않는다.
+        (GraphEditorView graph, AuthoringSession session) = Show(
+            ("start", 2400, 0), ("root", 100, 0), ("mid", 100, 400), ("far", 100, 800));
+        session.Editor.AddEdge("ch01", "root", "far", optionLabel: "건너뛴다");
+        session.Editor.AddEdge("ch01", "root", "mid", optionLabel: "바로 아래");
+        Redraw(graph);
+
+        double midRight = CardX(graph, session, "mid") + CardWidth;
+
+        // far의 접점(카드 가운데)은 줄기보다 오른쪽이다 — 막은 카드의 오른쪽 바깥으로 비켜 내려간다.
+        Assert.True(Lane(graph, "root>far").Data!.Bounds.Right > midRight, "mid 카드의 오른쪽 바깥으로 비켜 간다");
+
+        // 막는 카드가 없는 길(도착 카드는 막는 카드가 아니다)은 제 칸 밑에서 곧게 내려간다.
+        Assert.Equal(
+            Canvas.GetLeft(Row(graph, "root", "바로 아래")) + GraphEditorView.PortRadius,
+            Lane(graph, "root>mid").Data!.Bounds.Right,
+            precision: 3);
     });
 
     [Fact]
@@ -121,11 +147,10 @@ public sealed class GraphChoiceSideTests : IDisposable
     });
 
     [Fact]
-    public void 넓힌_카드도_선택지가_달린_줄기에서_쪽을_잰다() => HeadlessUi.Run(() =>
+    public void 넓힌_카드도_칸은_카드_왼쪽에서_같은_자리에_선다() => HeadlessUi.Run(() =>
     {
-        // 2026-11-26 소유자 — 「선택지가 달려있는 에피소드의 좌우 넓이에 영향을 받다보니 … 이상한 느낌」. 넓힌 카드(800 ~ 1800 · 가운데 1300)의 줄기는
-        // 카드 왼쪽에서 같은 자리(872)다 — 그 줄기보다 왼쪽의 도착만 왼쪽이고, 줄기와 카드 가운데 사이의 도착(가운데 1005)은 오른쪽이다.
-        // ⛔ 2026-11-19 ~ 25에는 카드의 지금 폭의 가운데에서 재서, 그 사이의 도착으로도 선이 왼쪽으로 나갔다.
+        // 2026-11-25 소유자 — 카드를 넓혀도 선택지가 오른쪽으로 밀려나지 않는다. 넓힌 카드(800 ~ 1800)의 줄기는 카드 왼쪽에서 같은 자리(872)다 —
+        // 도착이 그 왼쪽 아래든 바로 아래든 오른쪽 아래든 칸은 거기서부터 차례대로 선다.
         (GraphEditorView graph, AuthoringSession session) = Show(
             ("start", 2400, 0), ("scene", 800, 0), ("under-left", 500, 700), ("under-mid", 900, 700), ("under-right", 1450, 700));
         session.Editor.ResizeNode(Card(session, "scene").Id, 1000, null);
@@ -134,17 +159,15 @@ public sealed class GraphChoiceSideTests : IDisposable
         session.Editor.AddEdge("ch01", "scene", "under-right", optionLabel: "오른쪽 아래");
         Redraw(graph);
 
-        double trunkX = CardX(graph, session, "scene") + GraphEditorView.RailTrunkInset;   // 줄기는 넓혀도 카드 왼쪽에서 같은 자리다 — 쪽도 여기서 잰다
+        double trunkX = CardX(graph, session, "scene") + GraphEditorView.RailTrunkInset;
         StackPanel left = Row(graph, "scene", "왼쪽 아래");
         StackPanel mid = Row(graph, "scene", "바로 아래");
         StackPanel right = Row(graph, "scene", "오른쪽 아래");
 
-        Assert.Equal(trunkX - 14, Canvas.GetLeft(left) + left.DesiredSize.Width, precision: 3);
-        Assert.IsType<Ellipse>(left.Children[^1]);
-        Assert.Equal(trunkX + 14, Canvas.GetLeft(mid), precision: 3);
-        Assert.IsType<Ellipse>(mid.Children[0]);
-        Assert.Equal(trunkX + 14, Canvas.GetLeft(right), precision: 3);
-        Assert.IsType<Ellipse>(right.Children[0]);
+        Assert.Equal(trunkX - GraphEditorView.PortRadius, Canvas.GetLeft(left), precision: 3);
+        Assert.True(Canvas.GetLeft(mid) > Canvas.GetLeft(left) + left.DesiredSize.Width);
+        Assert.True(Canvas.GetLeft(right) > Canvas.GetLeft(mid) + mid.DesiredSize.Width);
+        Assert.All(new[] { left, mid, right }, row => Assert.IsType<Ellipse>(row.Children[0]));
     });
 
     // ── 기반 ────────────────────────────────────────────────────────────────
@@ -193,6 +216,9 @@ public sealed class GraphChoiceSideTests : IDisposable
         graph.FindControl<Canvas>("GraphCanvas")!.Children.OfType<StackPanel>()
             .Single(row => (row.Tag as string)?.StartsWith(episodeId + "#", StringComparison.Ordinal) == true &&
                            row.Children.OfType<TextBlock>().Any(text => text.Text == label));
+
+    /// <summary>칸의 가운데 높이 — 칸들이 매달린 줄의 높이다(문구가 접혀 칸의 키가 달라도 가운데는 같다).</summary>
+    private static double MiddleY(StackPanel row) => Canvas.GetTop(row) + (row.DesiredSize.Height / 2);
 
     /// <summary>선택지 레인 — Tag가 <c>레인:{출발}>{도착}</c>이다.</summary>
     private static Avalonia.Controls.Shapes.Path Lane(GraphEditorView graph, string fromTo) =>

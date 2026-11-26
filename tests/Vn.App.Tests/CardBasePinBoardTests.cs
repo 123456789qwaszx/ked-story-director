@@ -133,6 +133,37 @@ public sealed class CardBasePinBoardTests : IDisposable
     });
 
     [Fact]
+    public void 머리의_빈_곳은_같은_카드의_빈_곳을_잇달아_두_번_눌렀다_떼야만_오가고_한_번_다시_눌러_끌기_세_번째에는_오가지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「더블클릭이 아니라, 그저 클릭 한번만 했는데도 좁아지거나 펴지는 경우가 있습니다」. 운영체제의 두 번 누름 셈은 무엇을 눌렀든
+        // 같은 자리 · 짧은 틈이면 2가 된다 — 카드를 눌러 고르고 곧바로 다시 눌러 끌려던 것도 2였다.
+        (GraphEditorView graph, AuthoringSession session) = Show();
+        string root = CardId(session, "root");
+        bool Pinned() => session.Project.FindNode(root)!.Layout.PinnedToBase;
+
+        // 운영체제가 2로 센 누름이라도 바로 앞의 누름이 이 카드의 머리 빈 곳이 아니었으면(맞춤 단추 · 다른 데) 오가지 않는다.
+        PressHeaderBlankOnce(graph, root, clicks: 2);
+        Assert.False(Pinned());
+
+        // 한 번 — 오가지 않는다.
+        PressHeaderBlankOnce(graph, root, clicks: 1);
+        Assert.False(Pinned());
+
+        // 곧바로 다시 눌러 끌었다 — 끌기다. 오가지 않고 카드가 옮겨진다.
+        double left = Canvas.GetLeft(Card(graph, root));
+        PressHeaderBlankOnce(graph, root, clicks: 2, dragX: 80, dragY: 40);
+        Assert.False(Pinned());
+        Assert.True(Canvas.GetLeft(Card(graph, root)) > left + 40);
+
+        // 세 번 — 두 번째에 한 번만 오간다(접혔다가 곧바로 펴지지 않는다).
+        PressHeaderBlankOnce(graph, root, clicks: 1);
+        PressHeaderBlankOnce(graph, root, clicks: 2);
+        Assert.True(Pinned());
+        PressHeaderBlankOnce(graph, root, clicks: 3);
+        Assert.True(Pinned());
+    });
+
+    [Fact]
     public void 맞춤_단추_왼쪽의_기본_크기_고정_단추도_같고_손잡이로_크기를_정하면_풀린다() => HeadlessUi.Run(() =>
     {
         (GraphEditorView graph, AuthoringSession session) = Show();
@@ -328,20 +359,48 @@ public sealed class CardBasePinBoardTests : IDisposable
         Settle(graph);
     }
 
-    /// <summary>제목 글자 오른쪽의 빈 곳(제목 줄 안)을 두 번 누른다.</summary>
+    /// <summary>제목 글자 오른쪽의 빈 곳(제목 줄 안)을 두 번 눌렀다 뗀다 — 사람의 두 번 누름 그대로(누르고 떼고, 누르고 떼고).</summary>
     private static void PressHeaderBlank(GraphEditorView graph, string nodeId)
+    {
+        PressHeaderBlankOnce(graph, nodeId, clicks: 1);
+        PressHeaderBlankOnce(graph, nodeId, clicks: 2);
+    }
+
+    /// <summary>
+    /// 제목 글자 오른쪽의 빈 곳을 한 번 눌렀다 뗀다 — <paramref name="clicks"/>는 운영체제가 센 누름 수(ClickCount)다. <paramref name="dragX"/> ·
+    /// <paramref name="dragY"/>만큼 누른 채 끌었다가 뗄 수 있다.
+    /// </summary>
+    private static void PressHeaderBlankOnce(GraphEditorView graph, string nodeId, int clicks, double dragX = 0, double dragY = 0)
     {
         TextBlock title = Card(graph, nodeId).GetVisualDescendants().OfType<TextBlock>()
             .First(block => block.Tag as string == GraphEditorView.CardTitleTag);
         var at = new Point(title.Bounds.Width + 30, 8);
         var root = (Visual)TopLevel.GetTopLevel(title)!;
         Point onRoot = title.TranslatePoint(at, root) ?? default;
+        var pointer = new Pointer(0, PointerType.Mouse, true);
         title.RaiseEvent(new PointerPressedEventArgs(
-            title, new Pointer(0, PointerType.Mouse, true), root, onRoot, 0,
+            title, pointer, root, onRoot, 0,
             new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
-            KeyModifiers.None, 2));
+            KeyModifiers.None, clicks));
+        Dispatcher.UIThread.RunJobs();
+
+        Point end = new(onRoot.X + dragX, onRoot.Y + dragY);
+
+        if (dragX != 0 || dragY != 0)
+        {
+            Canvas canvas = graph.FindControl<Canvas>("GraphCanvas")!;
+
+            for (int step = 1; step <= 4; step++)
+            {
+                canvas.RaiseEvent(new PointerEventArgs(InputElement.PointerMovedEvent, canvas, pointer, root,
+                    new Point(onRoot.X + (dragX * step / 4), onRoot.Y + (dragY * step / 4)), 0,
+                    new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other), KeyModifiers.None));
+                Dispatcher.UIThread.RunJobs();
+            }
+        }
+
         title.RaiseEvent(new PointerReleasedEventArgs(
-            title, new Pointer(0, PointerType.Mouse, true), root, onRoot, 0,
+            title, pointer, root, end, 0,
             new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
             KeyModifiers.None, MouseButton.Left));
         Settle(graph);

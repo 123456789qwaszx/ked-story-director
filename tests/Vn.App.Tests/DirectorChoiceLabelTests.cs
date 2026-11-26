@@ -126,6 +126,21 @@ public sealed class DirectorChoiceLabelTests : IDisposable
         window.Close();
     });
 
+    [Fact]
+    public void 선택지_선을_골라도_아래_띠에_선의_정체를_적지_않는다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-26 소유자 — 「선택지를 연결 할 때마다 이상한 문구가 생기는데, 솔직히 이건 필요없어보입니다」(「새 에피소드 → 새 에피소드 · 「선택지2」」).
+        // 잇고 나면 그 선이 골라진다 — 고른 선을 띠에 적지 않으면 이을 때도 아무 줄이 서지 않는다.
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();
+        session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
+        Pick(graph, "a", "가자");
+
+        Assert.False(graph.FindControl<Border>("HintBar")!.IsVisible);
+        Assert.True(string.IsNullOrEmpty(graph.FindControl<TextBlock>("HintText")!.Text));
+
+        window.Close();
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private (MainWindow Window, AuthoringSession Session, GraphEditorView Graph) Open()

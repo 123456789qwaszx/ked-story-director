@@ -120,6 +120,12 @@ public partial class MainWindow : Window
         ChapterGraph.Attach(_session);
         DialogueEditor.Attach(_session);
 
+        // 인스펙터에서 쓰고 있는 줄을 [대본] 판의 카드 왼쪽에 표시한다(2026-11-26 소유자).
+        DialogueEditor.EditingLineChanged += (nodeId, lineId) => UiGuard.Run(_session, Ui.Dialogue_Dialogue, () => Graph.ShowEditingLine(nodeId, lineId));
+
+        // 반대쪽 — 카드 글 칸의 커서 줄을 인스펙터의 고른 줄이 따라온다(2026-11-26 소유자 — 「그래프 뷰의 텍스트 공간에서 입력하는 것과 동기화」).
+        Graph.CaretLineChanged += (nodeId, lineId) => UiGuard.Run(_session, Ui.Dialogue_Dialogue, () => DialogueEditor.FollowCaretLine(nodeId, lineId));
+
         // 인스펙터의 「빈 선택지 숨기기」는 하이어아키에서 고른 줄들에 든 에피소드 모두에 한 번에(2026-11-23 소유자) — 고른 줄이 바뀌면 체크를 맞춘다.
         DialogueEditor.BatchCards = Graph.PickedCards;
         Graph.HierarchyView.SelectionsChanged += () => UiGuard.Run(_session, Ui.Main_ChoiceSlots, DialogueEditor.RefreshHideEmpty);
@@ -560,8 +566,8 @@ public partial class MainWindow : Window
         RemoveConfirmButton = ConfirmFlyout.Show(
             anchor,
             _session,
-            string.Format(Ui.Main_ChapterWillBeRemovedAlong, shown),
-            Ui.Main_DeleteChapter,
+            string.Format(Ui.Confirm_DeleteChapter, shown),
+            Ui.Board_Delete,
             () =>
             {
                 ChapterDeleter.Result result = ChapterDeleter.Delete(_session.Editor, _session.ProjectPath, chapterId);
@@ -579,6 +585,7 @@ public partial class MainWindow : Window
                     Plural.Format(Ui.Main_DeletedChapterAndCardsIn, shown, result.NodesRemoved) +
                     StaleExportNote(result.StaleExport, chapterId));
             },
+            detail: Ui.Confirm_ChapterTakesAll,
             closed: () => RemoveConfirmButton = null);
     }
 

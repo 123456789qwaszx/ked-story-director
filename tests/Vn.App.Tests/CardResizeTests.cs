@@ -49,7 +49,7 @@ public sealed class CardResizeTests : IDisposable
 
         // 선택지 줄기는 카드 왼쪽에서 늘 같은 자리다 — 넓혀도 선택지가 오른쪽으로 밀려 화면 밖으로 나가지 않는다(2026-11-25 소유자).
         Assert.Equal(trunkBefore, SlotLeft(graph, "root"), precision: 0);
-        Assert.Equal(GraphEditorView.RailTrunkInset + 14, SlotLeft(graph, "root") - Canvas.GetLeft(Card(graph, root)), precision: 0);
+        Assert.Equal(GraphEditorView.RailTrunkInset, SlotLeft(graph, "root") + GraphEditorView.PortRadius - Canvas.GetLeft(Card(graph, root)), precision: 0);
 
         session.Editor.Undo();
         Dispatcher.UIThread.RunJobs();
@@ -199,7 +199,7 @@ public sealed class CardResizeTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(rails, graph.RailDrawCount);
         Assert.True(Card(graph, root).Width > DefaultWidth + 100, "가로 맞춤으로 넓어졌다");
-        Assert.Equal(GraphEditorView.RailTrunkInset, SlotLeft(graph, "root") - Canvas.GetLeft(Card(graph, root)) - 14, precision: 0);
+        Assert.Equal(GraphEditorView.RailTrunkInset, SlotLeft(graph, "root") + GraphEditorView.PortRadius - Canvas.GetLeft(Card(graph, root)), precision: 0);
     });
 
     [Fact]
@@ -311,7 +311,7 @@ public sealed class CardResizeTests : IDisposable
         Card(graph, nodeId).GetVisualDescendants().OfType<TextBox>()
             .Single(box => box.Tag as string == GraphEditorView.WritingTag + nodeId);
 
-    /// <summary>그 에피소드의 첫 선택지 칸 줄의 왼쪽 — 줄기(카드 왼쪽에서 <see cref="GraphEditorView.RailTrunkInset"/>)에서 오른쪽으로 선다.</summary>
+    /// <summary>그 에피소드의 첫 선택지 칸의 왼쪽 — 칸의 점(반지름 <see cref="GraphEditorView.PortRadius"/>)이 줄기(카드 왼쪽에서 <see cref="GraphEditorView.RailTrunkInset"/>) 바로 밑에 선다.</summary>
     private static double SlotLeft(GraphEditorView graph, string episodeId) => Canvas.GetLeft(FirstSlot(graph, episodeId));
 
     /// <summary>그 에피소드의 첫 선택지 칸 줄의 위 — 카드 아래 끝에서 내려간다.</summary>

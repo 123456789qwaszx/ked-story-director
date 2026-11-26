@@ -166,7 +166,7 @@ public sealed class ThemeTests : IDisposable
 
             // 틀의 구분선(위 띠 · 툴바 · 기둥 사이)도 테마가 정한다 — XAML이 Divider로 부른다.
             Assert.True(app.TryGetResource(nameof(Skin.Divider), ThemeVariant.Light, out object? divider));
-            Assert.Equal(Color.Parse("#D6E3EB"), Assert.IsType<Color>(divider));
+            Assert.Equal(Color.Parse("#C9D4DC"), Assert.IsType<Color>(divider));
 
             // 색 이름을 붓 자리에 걸면 붓으로 든다(XAML의 {DynamicResource 이름}).
             var probe = new Border { [!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(nameof(Skin.Divider)) };
@@ -176,9 +176,10 @@ public sealed class ThemeTests : IDisposable
             host.Close();
             Assert.Same(Skin.Selection.Brush(), Skin.Selection.Brush());   // 같은 색은 같은 붓
 
-            // 아이콘 글자(⌂ ⑂ ⚙ 📂 📄 ⚠)는 본문 글꼴에 없어 테마의 아이콘 글꼴이 그린다 — PC의 이모지 글꼴로 넘어가지 않는다.
+            // 아이콘 글자(⌂ ⑂ ⚙ 📂 📄)는 본문 글꼴(Inter)에 없어 테마의 아이콘 글꼴이 그린다 — PC의 이모지 글꼴로 넘어가지 않는다.
+            // ⚠은 Inter에 있어 Inter가 그린다(글자색 · 크기를 따르는 것은 같다).
             Assert.True(app.TryGetResource("UiFont", ThemeVariant.Light, out object? uiFont));
-            foreach (int icon in new[] { 0x2302, 0x2442, 0x2699, 0x1F4C2, 0x1F4C4, 0x26A0 })
+            foreach (int icon in new[] { 0x2302, 0x2442, 0x2699, 0x1F4C2, 0x1F4C4 })
             {
                 Assert.True(FontManager.Current.TryMatchCharacter(
                     icon, FontStyle.Normal, FontWeight.Normal, FontStretch.Normal, (FontFamily)uiFont!, null, out Typeface drawn));
@@ -215,8 +216,14 @@ public sealed class ThemeTests : IDisposable
                 window.FindControl<TabControl>("MainTabs")!.SelectedIndex = MainTab.Structure;
                 Dispatcher.UIThread.RunJobs();
 
+                // 위 띠 아래의 꾸밈 줄 — 지금은 어느 테마도 쓰지 않는다(「파스텔 하늘」의 구름 물결은 2026-11-26에 걷었다 — 높이 0으로 접힌다).
                 Panel edge = window.FindControl<Panel>("TopBarEdge")!;
-                Assert.Equal(ReferenceEquals(theme, ThemeCatalog.Classic) ? 0 : 10, edge.Bounds.Height);
+                Assert.Equal(0, edge.Bounds.Height);
+
+                // [대본] 판의 깔개 — 테마가 점을 줄 때만 점을 그린다(기본 테마는 0.5.0까지처럼 아무것도 그리지 않는다).
+                DotGridBackdrop backdrop = window.FindControl<GraphEditorView>("Graph")!.FindControl<DotGridBackdrop>("BoardBackdrop")!;
+                Assert.Equal(!ReferenceEquals(theme, ThemeCatalog.Classic), backdrop.Step > 0);
+                Assert.Equal(!ReferenceEquals(theme, ThemeCatalog.Classic), backdrop.Fill is not null);
 
                 SettingsWindow settings = window.OpenSettings();
                 Dispatcher.UIThread.RunJobs();
@@ -270,6 +277,19 @@ public sealed class ThemeTests : IDisposable
         settings.Close();
         window.Close();
     });
+
+    /// <summary>
+    /// 판의 깔개의 점(2026-11-26 소유자 — 챕터 바깥에 일정한 간격의 점) — 배율을 줄이면 한 칸씩 건너뛰어, 화면에서 점 사이가 18px보다 촘촘해지지 않는다.
+    /// </summary>
+    [Theory]
+    [InlineData(24, 1.0, 24)]
+    [InlineData(24, 2.0, 48)]
+    [InlineData(24, 0.61, 29.28)]   // 14.64는 촘촘하다 — 한 칸 건너뛴다
+    [InlineData(24, 0.25, 24)]      // 6 → 12 → 24
+    [InlineData(24, 0.1, 19.2)]
+    [InlineData(0, 1.0, 0)]         // 간격이 0이면 점이 없다(기본 테마)
+    public void 깔개의_점은_배율을_줄여도_화면에서_촘촘해지지_않는다(double spacing, double zoom, double expected) =>
+        Assert.Equal(expected, DotGridBackdrop.StepFor(spacing, zoom), 6);
 
     // ── 바꿀 수 있는 이름의 목록 ─────────────────────────────────────────────
 
