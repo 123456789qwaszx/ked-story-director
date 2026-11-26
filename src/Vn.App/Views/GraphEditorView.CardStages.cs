@@ -297,8 +297,8 @@ public partial class GraphEditorView
 
         var lines = new Canvas { IsHitTestVisible = false, Children = { body, speaker, header } };
 
-        // 덩어리 — 종류의 색(⚠ 테마의 덩어리 색은 설계 10절 4단계에서 견본으로 고른다 · 그때까지 종의 색).
-        var fill = new Border { Background = card.Style.Accent.Brush(), IsHitTestVisible = false };
+        // 덩어리 — 종류의 색(테마의 Block… — 장면 바탕과 대비 3:1 이상 · 기본 테마는 종의 색).
+        var fill = new Border { Background = card.Style.Block.Brush(), IsHitTestVisible = false };
         var blockTitle = new TextBlock
         {
             Classes = { "card-title" },

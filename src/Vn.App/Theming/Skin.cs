@@ -254,6 +254,18 @@ internal static class Skin
     /// <summary>고른 카드 — 머리 띠.</summary>
     public static Color SelectedBand => C();
 
+    /// <summary>줄인 판의 덩어리(design/board-zoom.md 3절) — 에피소드 카드. 장면 바탕과 대비 3:1 이상.</summary>
+    public static Color BlockEpisode => C();
+
+    /// <summary>줄인 판의 덩어리 — 장면 시작 카드.</summary>
+    public static Color BlockSceneRoot => C();
+
+    /// <summary>줄인 판의 덩어리 — 분기 카드.</summary>
+    public static Color BlockBranch => C();
+
+    /// <summary>줄인 판의 덩어리 — 그 밖의 카드.</summary>
+    public static Color BlockOther => C();
+
     /// <summary>선택지 칸의 바탕.</summary>
     public static Color SlotSurface => C();
 

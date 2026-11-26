@@ -88,6 +88,11 @@
     <Color x:Key="BranchBand">#00FFFFFF</Color>
     <Color x:Key="OtherCardBand">#00FFFFFF</Color>
     <Color x:Key="SelectedBand">#00FFFFFF</Color>
+    <!-- 줄인 판의 덩어리 — 기본 테마는 카드 종류의 색(…Accent)이다. -->
+    <Color x:Key="BlockEpisode">#D97706</Color>
+    <Color x:Key="BlockSceneRoot">#3D7BD9</Color>
+    <Color x:Key="BlockBranch">#7C5CC4</Color>
+    <Color x:Key="BlockOther">#3B82F6</Color>
     <Color x:Key="SlotSurface">#FFFFFF</Color>
     <Color x:Key="SlotInk">#00000000</Color>
     <Color x:Key="RowSelected">#303D7BD9</Color>

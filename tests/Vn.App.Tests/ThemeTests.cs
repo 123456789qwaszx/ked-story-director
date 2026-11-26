@@ -196,6 +196,13 @@ public sealed class ThemeTests : IDisposable
                 Assert.All(runs, run => Assert.StartsWith("Pretendard", run.GlyphRun.GlyphTypeface.FamilyName, StringComparison.Ordinal));
             }
 
+            // 줄인 판(design/board-zoom.md 4단계 · 2026-11-26 소유자가 견본에서 골랐다) — 장면 바탕은 세이지, 덩어리는 장면 바탕과 대비 3:1 이상이다.
+            Assert.Equal(Color.Parse("#E0E7E1"), Skin.SceneFrameFill);
+            foreach (Color block in new[] { Skin.BlockEpisode, Skin.BlockSceneRoot, Skin.BlockBranch, Skin.BlockOther })
+            {
+                Assert.True(Contrast(block, Skin.SceneFrameFill) >= 3, $"{block} ↔ 장면 바탕 {Contrast(block, Skin.SceneFrameFill):0.00}:1");
+            }
+
             // 틀의 글자 크기는 다섯 단계 가운데 하나다 — 꼬리표 12 · 단추 · 탭 13 · 읽는 글 15 · 제목 18 · 큰 제목 22.
             Assert.Equal(new[] { 12d, 12d, 13d, 15d, 18d, 22d }, new[] { 9d, 10d, 11d, 12d, 14d, 20d }.Select(Skin.Font));
             Assert.True(app.TryGetResource("TextSm", ThemeVariant.Light, out object? pastelSm));
@@ -357,4 +364,23 @@ public sealed class ThemeTests : IDisposable
 
     private static object? Resource(Application app, string key) =>
         app.TryGetResource(key, ThemeVariant.Light, out object? value) ? value : null;
+
+    /// <summary>두 색의 대비(WCAG — 상대 휘도).</summary>
+    private static double Contrast(Color a, Color b)
+    {
+        static double Luminance(Color color)
+        {
+            static double Channel(byte value)
+            {
+                double c = value / 255d;
+                return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+
+            return (0.2126 * Channel(color.R)) + (0.7152 * Channel(color.G)) + (0.0722 * Channel(color.B));
+        }
+
+        double x = Luminance(a);
+        double y = Luminance(b);
+        return (Math.Max(x, y) + 0.05) / (Math.Min(x, y) + 0.05);
+    }
 }

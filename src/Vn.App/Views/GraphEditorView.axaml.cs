@@ -4414,7 +4414,7 @@ public partial class GraphEditorView : UserControl
     /// <summary>노드 종 하나의 시각 언어 — 등뼈(왼쪽 색 막대)·바탕·테두리·모서리·아이콘.</summary>
     /// <param name="Band">머리 띠의 색 — 투명이면 띠를 짓지 않는다(기본 테마 · themes).</param>
     private readonly record struct CardStyle(
-        Color Accent, Color Background, Color Border, double Radius, string Icon, Color Band);
+        Color Accent, Color Background, Color Border, double Radius, string Icon, Color Band, Color Block);
 
     /// <summary>
     /// 종별 시각 체계 (2026-08-15 소유자 — "대본노드와 엑셀노드가 똑같이 생겨서 구분이 어렵다").
@@ -4430,13 +4430,13 @@ public partial class GraphEditorView : UserControl
     {
         // 분기 카드(2026-11-17) — 들렀다 돌아오는 카드. 에피소드와 다른 물건이라 색 · 표가 다르다(보라 · ⑂).
         GraphNodeKind.Dialogue when branchCard => new CardStyle(
-            Skin.BranchAccent, Skin.BranchSurface, Skin.BranchBorder, Skin.CardRadius, "⑂", Skin.BranchBand),
+            Skin.BranchAccent, Skin.BranchSurface, Skin.BranchBorder, Skin.CardRadius, "⑂", Skin.BranchBand, Skin.BlockBranch),
         GraphNodeKind.Dialogue when sceneRoot => new CardStyle(
-            Skin.SceneRootAccent, Skin.SceneRootSurface, Skin.SceneRootBorder, Skin.CardRadius, "⌂", Skin.SceneRootBand),
+            Skin.SceneRootAccent, Skin.SceneRootSurface, Skin.SceneRootBorder, Skin.CardRadius, "⌂", Skin.SceneRootBand, Skin.BlockSceneRoot),
         GraphNodeKind.Dialogue => new CardStyle(
-            Skin.EpisodeAccent, Skin.EpisodeSurface, Skin.EpisodeBorder, Skin.CardRadius, "📄", Skin.EpisodeBand),
+            Skin.EpisodeAccent, Skin.EpisodeSurface, Skin.EpisodeBorder, Skin.CardRadius, "📄", Skin.EpisodeBand, Skin.BlockEpisode),
         _ => new CardStyle(
-            Skin.OtherCardAccent, Skin.OtherCardSurface, Skin.OtherCardBorder, Skin.OtherCardRadius, "⚙", Skin.OtherCardBand)
+            Skin.OtherCardAccent, Skin.OtherCardSurface, Skin.OtherCardBorder, Skin.OtherCardRadius, "⚙", Skin.OtherCardBand, Skin.BlockOther)
     };
 
     /// <summary>분기로 다녀오는 카드 → 그 분기 선의 색 번호. 판을 다시 세울 때마다 묻는다(<see cref="BranchEntries"/>).</summary>

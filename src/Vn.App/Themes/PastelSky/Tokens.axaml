@@ -92,7 +92,9 @@
     <Color x:Key="ChapterLabelIdle">#FF8796A4</Color>
     <Color x:Key="ChapterLabelInk">#FFFFFF</Color>
     <Color x:Key="SceneFrameBorder">#00B0AB9F</Color>
-    <Color x:Key="SceneFrameFill">#FFE3E8EC</Color>
+    <!-- 장면 바탕은 세이지(초록 기운 회색 — 2026-11-26 소유자가 견본에서 골랐다 · 디자인 점검 7번 4단계). 에피소드 머리 띠(#E4E9ED)와 색조가 갈려 카드 머리가
+         바탕에 묻히지 않고, 책상의 회청색과도 섞이지 않는다. ⛔ 회청 #E3E8EC는 띠와 거의 같은 색이었다 · 푸른 쟁반 #DFE7EE · 따뜻한 베이지 #E8E6E1도 걷혔다. -->
+    <Color x:Key="SceneFrameFill">#FFE0E7E1</Color>
     <Color x:Key="SceneLabel">#FFFFFEFA</Color>
     <Color x:Key="SceneLabelBorder">#34414F</Color>
     <Color x:Key="SceneLabelInk">#26323E</Color>
@@ -101,6 +103,12 @@
     <Color x:Key="BranchBand">#EEDFD2</Color>
     <Color x:Key="OtherCardBand">#E4E9ED</Color>
     <Color x:Key="SelectedBand">#CCE8FF</Color>
+    <!-- 줄인 판의 덩어리 — 종의 색을 한 단계 밝게(2026-11-26 소유자가 견본에서 골랐다). 장면 바탕(세이지)과 대비 3:1 이상이고, 진한 종 색(…Accent)보다 가벼워
+         줄인 판이 무겁지 않다. -->
+    <Color x:Key="BlockEpisode">#6F8292</Color>
+    <Color x:Key="BlockSceneRoot">#A07A22</Color>
+    <Color x:Key="BlockBranch">#A47552</Color>
+    <Color x:Key="BlockOther">#7D8288</Color>
     <Color x:Key="SlotSurface">#FFFEFA</Color>
     <Color x:Key="SlotInk">#00000000</Color>
     <Color x:Key="RowSelected">#CCE8FF</Color>
