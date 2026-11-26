@@ -67,7 +67,7 @@ public sealed record CollapsedFileProjection(
 /// 한다. 장면 안끼리의 길은 상자 안에 그리지 않고 <see cref="InnerCount"/>로 센다.
 /// </summary>
 /// <param name="Position">장면의 카드들이 서던 자리의 <b>왼쪽 위</b> — 접어도 그 자리에 선다(다른 카드는 안 움직인다).</param>
-/// <param name="Nodes">줄 순서 = 판의 노드 순서. 들고 나는 수는 <b>그려지는 것</b>(밖과 잇는 간선 · 선택지 길)만 센다.</param>
+/// <param name="Nodes">줄 순서 = 하이어아키의 차례(에피소드는 이야기 차례, 그 뒤에 그 에피소드가 부르는 분기 카드 · 2026-11-27 — ⛔ 그 전에는 판의 노드 순서). 들고 나는 수는 <b>그려지는 것</b>(밖과 잇는 간선 · 선택지 길)만 센다.</param>
 /// <param name="InnerCount">장면 안끼리 잇는 간선 · 선택지 길의 수 — 상자 머리에 적는다.</param>
 public sealed record CollapsedSceneProjection(
     string FileId,

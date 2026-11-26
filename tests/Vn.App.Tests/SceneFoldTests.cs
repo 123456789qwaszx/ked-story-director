@@ -22,9 +22,10 @@ namespace Vn.App.Tests;
 /// </summary>
 public sealed class SceneFoldTests
 {
-    // 줄 상자의 치수 — GraphEditorView의 ProxyHeaderHeight · ProxyRowHeight와 같다.
+    // 줄 상자의 치수 — GraphEditorView의 ProxyHeaderHeight · ProxyRowHeight · ProxyWidth와 같다.
     private const double HeaderHeight = 50;
     private const double RowHeight = 28;
+    private const double ProxyWidth = 250;
 
     [Fact]
     public void 장면을_접으면_그_장면만_줄_상자가_되고_다른_장면의_카드와_챕터_박스는_선다() => HeadlessUi.Run(() =>
@@ -64,6 +65,34 @@ public sealed class SceneFoldTests
         Assert.Equal(rowY, lane.Data!.Bounds.Bottom, precision: 1);
         Assert.DoesNotContain(canvas.Children.OfType<TextBlock>(), text =>
             text.Text?.Contains("카드 없음", StringComparison.Ordinal) == true);
+    });
+
+    [Fact]
+    public void 상자가_출발보다_왼쪽이어도_길은_줄의_입구_왼쪽으로_든다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 「다른 장면에서 Root로 연결되는 것 역시, 선택지보다 왼쪽에 있더라도 … 입구로 연결되는 게 맞는 것 같은데, 왼쪽에 있을 경우에는
+        // 출구로 연결되어버리는 현상」. 줄의 왼쪽 점이 입구, 오른쪽 점이 출구다.
+        (GraphEditorView graph, AuthoringSession session, string board) = Show(openingX: 1200, hallX: 0);
+
+        session.SetSceneCollapsed(board, "hall", collapsed: true);
+        graph.Rebuild();
+
+        Canvas canvas = BoardCanvas(graph);
+        Border proxy = SceneProxy(canvas, board, "hall");
+        double left = Canvas.GetLeft(proxy);
+        double rowY = Canvas.GetTop(proxy) + HeaderHeight + (RowHeight / 2);
+
+        // a(오른쪽 위) → b(왼쪽 아래 상자): 길은 상자의 왼쪽 바깥으로 돌아 줄 높이에서 끝난다 — 상자 위로 건너 상자를 가로지르지 않는다.
+        ShapePath lane = Lane(canvas, "a", "b");
+        Assert.True(lane.Data!.Bounds.Left < left, $"길이 상자 왼쪽 바깥으로 돌아야 한다 — {lane.Data.Bounds.Left} ≥ {left}");
+        Assert.Equal(rowY, lane.Data.Bounds.Bottom, precision: 1);
+
+        // 화살촉은 줄의 왼쪽 점(입구)에 닿는다 — 오른쪽 점(출구)에는 없다.
+        List<Avalonia.Controls.Shapes.Polygon> arrows = canvas.Children.OfType<Avalonia.Controls.Shapes.Polygon>()
+            .Where(arrow => Math.Abs(Canvas.GetTop(arrow) - rowY) < 0.5)
+            .ToList();
+        Assert.Contains(arrows, arrow => Math.Abs(Canvas.GetLeft(arrow) - left) < 0.5);
+        Assert.DoesNotContain(arrows, arrow => Math.Abs(Canvas.GetLeft(arrow) - (left + ProxyWidth)) < 0.5);
     });
 
     [Fact]
@@ -209,8 +238,8 @@ public sealed class SceneFoldTests
 
     // ── 기반 ────────────────────────────────────────────────────────────────
 
-    /// <summary>ch01: opening(root · a), hall(b) — 위에서 아래로. 선택지 길 root→a · a→b.</summary>
-    private static (GraphEditorView Graph, AuthoringSession Session, string Board) Show()
+    /// <summary>ch01: opening(root · a), hall(b) — 위에서 아래로. 선택지 길 root→a · a→b. 장면마다 가로 자리를 줄 수 있다.</summary>
+    private static (GraphEditorView Graph, AuthoringSession Session, string Board) Show(double openingX = 0, double hallX = 0)
     {
         var session = new AuthoringSession();
         string directory = Path.Combine(Path.GetTempPath(), "vn-scene-fold", Guid.NewGuid().ToString("N"));
@@ -222,9 +251,9 @@ public sealed class SceneFoldTests
 
         session.Editor.EnsureChapter("ch01");
         string board = session.EnsureChapterBoard("ch01");
-        session.Editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "opening");
-        session.Editor.AddEpisode("ch01", "a", "a", 0, 400, sceneId: "opening");
-        session.Editor.AddEpisode("ch01", "b", "b", 0, 900, sceneId: "hall");
+        session.Editor.AddEpisode("ch01", "root", "root", openingX, 0, sceneId: "opening");
+        session.Editor.AddEpisode("ch01", "a", "a", openingX, 400, sceneId: "opening");
+        session.Editor.AddEpisode("ch01", "b", "b", hallX, 900, sceneId: "hall");
         session.Editor.AddEdge("ch01", "root", "a", optionLabel: "가자");
         session.Editor.AddEdge("ch01", "a", "b", optionLabel: "다음");
 

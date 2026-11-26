@@ -151,6 +151,43 @@ public static class EdgeShapeRouter
         }
     }
 
+    /// <summary>
+    /// 선택지의 길이 <b>접은 장면 상자의 줄 입구</b>(<paramref name="entry"/> — 줄의 왼쪽 점)로 든다(2026-11-27 소유자 — 「다른 장면에서 Root로 연결되는 것
+    /// 역시 … 입구로 연결되는 게 맞는 것 같은데, 왼쪽에 있을 경우에는 출구로 연결되어버리는」). 칸의 점 바로 밑(<paramref name="from"/>)에서 아래로 나가
+    /// 건너는 줄(<paramref name="crossY"/>)에서 상자 왼쪽 바깥의 세로 길(<paramref name="laneX"/>)까지 가로로 건너고, 줄 높이까지 가서 입구로 옆에서 든다.
+    /// 건너는 줄은 부르는 쪽이 상자 위(또는 아래)에 준다 — 상자가 길 위에 그려지므로 상자를 가로지르면 길이 상자 뒤로 사라진다. 건널 것이 없으면(세로 길이 곧
+    /// 칸 밑) 부르는 쪽이 줄 높이를 준다 — 곧게 내려가 든다.
+    /// 꺾이는 점(손잡이) = 건너는 줄이 세로 길을 만나는 모퉁이. 옆으로 끌면 세로 길이, 위아래로 끌면 건너는 줄이 움직인다.
+    /// 곡선 · 직선은 사람이 고른 모양이라 비켜 가지 않는다.
+    /// </summary>
+    public static ShapedEdge IntoSide(GraphPosition from, GraphPosition entry, double laneX, double crossY, EdgeShape? shape)
+    {
+        shape ??= EdgeShape.Default;
+
+        switch (shape.Kind)
+        {
+            case EdgeShapeKind.Straight:
+                return new ShapedEdge(EdgeShapeKind.Straight, [from, entry], null, FreeY: false);
+
+            case EdgeShapeKind.Curve:
+                return Curve(
+                    from,
+                    new GraphPosition(from.X, from.Y + Math.Max(CurveReach, Math.Abs(entry.Y - from.Y) / 2)),
+                    new GraphPosition(entry.X - Math.Max(CurveReach, Math.Abs(entry.X - from.X) / 2), entry.Y),
+                    entry,
+                    shape);
+
+            default:
+                var bend = new GraphPosition(laneX + shape.BendX, crossY + shape.BendY);
+
+                return new ShapedEdge(
+                    EdgeShapeKind.Elbow,
+                    [from, new GraphPosition(from.X, bend.Y), bend, new GraphPosition(bend.X, entry.Y), entry],
+                    bend,
+                    FreeY: true);
+        }
+    }
+
     /// <summary>선택지의 길이 칸의 점 밑에서 곧게 내려오는 거리 — 여기서 세로 길로 옮겨 탄다(이웃 칸의 문구 아래다).</summary>
     public const double DropStep = 20;
 

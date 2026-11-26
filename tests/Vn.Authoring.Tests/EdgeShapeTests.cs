@@ -209,6 +209,31 @@ public sealed class EdgeShapeTests
     }
 
     [Fact]
+    public void 접은_장면의_줄로_드는_길은_상자_왼쪽_바깥을_타고_입구로_옆에서_든다()
+    {
+        // 2026-11-27 소유자 — 줄의 왼쪽 점이 입구다. 칸(오른쪽 위 400)에서 내려와 상자 위(180)에서 왼쪽 바깥(88)으로 건너고, 줄 높이(264)에서 입구(100)로 든다.
+        var knob = new GraphPosition(400, 50);
+        var entry = new GraphPosition(100, 264);
+
+        ShapedEdge auto = EdgeShapeRouter.IntoSide(knob, entry, laneX: 88, crossY: 180, shape: null);
+
+        Assert.Equal(
+            [knob, new GraphPosition(400, 180), new GraphPosition(88, 180), new GraphPosition(88, 264), entry],
+            auto.Points);
+        Assert.Equal(new GraphPosition(88, 180), auto.Handle);
+        Assert.True(auto.FreeY);
+
+        // 손으로 민 만큼 세로 길과 건너는 줄이 움직인다 — 입구에는 늘 옆에서 든다.
+        ShapedEdge moved = EdgeShapeRouter.IntoSide(knob, entry, laneX: 88, crossY: 180, new EdgeShape(BendX: -20, BendY: 30));
+        Assert.Equal(new GraphPosition(68, 210), moved.Handle);
+        Assert.Equal(new GraphPosition(68, 264), moved.Points[^2]);
+        Assert.Equal(entry, moved.Points[^1]);
+
+        // 직선은 두 끝만 잇는다(사람이 고른 모양이다).
+        Assert.Equal([knob, entry], EdgeShapeRouter.IntoSide(knob, entry, 88, 180, new EdgeShape(Kind: EdgeShapeKind.Straight)).Points);
+    }
+
+    [Fact]
     public void 선택지의_길은_칸_밑에서_내려가_도착_접점의_높이에서_건넌다()
     {
         // 2026-11-26 소유자 — 선택지 칸이 가로로 나란히 서고 선은 칸에서 아래로 나간다.

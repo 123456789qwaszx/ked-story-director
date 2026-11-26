@@ -409,8 +409,10 @@ public static class GraphProjectionBuilder
 
         foreach (ChapterScene scene in map.Scenes)
         {
+            // 장면 안은 하이어아키의 차례다(<see cref="SceneMap.OrderOf"/>) — 판의 노드 순서(만든 순서)가 아니다.
             List<CollapsedNodeEntry> inScene = entries
                 .Where(entry => string.Equals(SceneFor(entry), scene.SceneId, StringComparison.Ordinal))
+                .OrderBy(entry => map.OrderOf(project.FindNode(entry.NodeId) as DialogueNode, entry.NodeId, entry.NodeName))
                 .ToList();
 
             if (inScene.Count > 0)
@@ -447,24 +449,33 @@ public static class GraphProjectionBuilder
         }
 
         var sceneOf = new Dictionary<string, string>(StringComparer.Ordinal);
+        var episodeRank = new Dictionary<string, int>(StringComparer.Ordinal);
 
         foreach (ChapterScene scene in scenes)
         {
             foreach (ChapterEpisode episode in scene.Episodes)
             {
                 sceneOf[episode.EpisodeId] = scene.SceneId;
+                episodeRank.TryAdd(episode.EpisodeId, episodeRank.Count);
             }
         }
 
-        // 분기 카드는 집(부르는 에피소드)의 장면에 든다 — 저장하지 않고 연결에서 읽는다(2026-11-17).
-        var homeOf = ChapterBranchCards.HomesOf(project, chapter.ChapterId)
-            .ToDictionary(home => home.Card.Id, home => home.EpisodeId, StringComparer.Ordinal);
+        // 분기 카드는 집(부르는 에피소드)의 장면에 든다 — 저장하지 않고 연결에서 읽는다(2026-11-17). 차례는 하이어아키와 같은 대본 차례다.
+        IReadOnlyList<BranchCardHome> homes = ChapterBranchCards.HomesOf(project, chapter.ChapterId);
+        var homeOf = homes.ToDictionary(home => home.Card.Id, home => home.EpisodeId, StringComparer.Ordinal);
+        var branchRank = new Dictionary<string, int>(StringComparer.Ordinal);
 
-        return new SceneMap(chapter, scenes, sceneOf, homeOf);
+        foreach (BranchCardHome home in homes)
+        {
+            branchRank.TryAdd(home.Card.Id, branchRank.Count);
+        }
+
+        return new SceneMap(chapter, scenes, sceneOf, homeOf, episodeRank, branchRank);
     }
 
     /// <summary>
-    /// 펼친 판의 접은 장면들을 상자로 (2026-10-30). 장면 순서는 챕터의 장면 순서, 줄 순서는 판의 노드 순서다.
+    /// 펼친 판의 접은 장면들을 상자로 (2026-10-30). 장면 순서는 챕터의 장면 순서, 줄 순서는 하이어아키의 차례다(<see cref="SceneMap.OrderOf"/> ·
+    /// 2026-11-27 — ⛔ 그 전에는 판의 노드 순서(만든 순서)였다).
     ///
     /// <b>들고 나는 수는 그려지는 것만 센다</b> — 밖과 잇는 실행 간선과 선택지 길. 장면 안끼리의 길은 줄에 선이 안 붙으므로
     ///   점을 채우면 거짓말이고, 대신 상자 머리의 <see cref="CollapsedSceneProjection.InnerCount"/>가 된다.
@@ -481,6 +492,7 @@ public static class GraphProjectionBuilder
             var key = new GraphSceneKey(file.Id, scene.SceneId);
             List<StoryNode> nodes = file.Nodes
                 .Where(node => foldedSceneByNodeId.TryGetValue(node.Id, out GraphSceneKey owner) && owner == key)
+                .OrderBy(node => map.OrderOf(node as DialogueNode, node.Id, node.Name))
                 .ToList();
 
             if (nodes.Count == 0)
@@ -533,13 +545,36 @@ public static class GraphProjectionBuilder
     ///   화면마다 다르게 짚는다).
     /// </summary>
     /// <param name="HomeOfBranchCard">분기 카드 → 집(부르는 에피소드) — <see cref="ChapterBranchCards.HomesOf"/>.</param>
+    /// <param name="EpisodeRank">에피소드 → 하이어아키의 차례(장면 차례 · 장면 안은 이야기 차례 — <see cref="ChapterSceneGrouping.Of"/>).</param>
+    /// <param name="BranchRank">분기 카드 → 대본 차례(<see cref="ChapterBranchCards.HomesOf"/>의 순서).</param>
     private sealed record SceneMap(
         ChapterDocument Chapter,
         IReadOnlyList<ChapterScene> Scenes,
         IReadOnlyDictionary<string, string> SceneOfEpisode,
-        IReadOnlyDictionary<string, string> HomeOfBranchCard)
+        IReadOnlyDictionary<string, string> HomeOfBranchCard,
+        IReadOnlyDictionary<string, int> EpisodeRank,
+        IReadOnlyDictionary<string, int> BranchRank)
     {
         public string? EpisodeOf(StoryNode node) => EpisodeOf(node as DialogueNode, node.Name);
+
+        /// <summary>
+        /// 접은 상자의 줄 차례 = <b>하이어아키의 차례</b>(2026-11-27 소유자 — 「에피소드의 깊이에 따라 하이어아키에서는 정리되지만, 이런 축소했을 때의 순서는
+        /// 그거랑 상관없이 생성된 순서」): 에피소드는 이야기 차례(시작에서 먼 차례)이고, 에피소드마다 바로 뒤에 그 에피소드가 부르는 분기 카드가 대본 차례로
+        /// 선다(<c>StoryHierarchy.AddBranches</c>와 같다). 장면에 안 든 노드는 맨 뒤 — 판의 노드 순서 그대로(정렬이 안정하다).
+        /// </summary>
+        public (int Episode, int Branch) OrderOf(DialogueNode? dialogue, string nodeId, string nodeName)
+        {
+            if (dialogue is { IsBranchCard: true })
+            {
+                return HomeOfBranchCard.TryGetValue(nodeId, out string? home) && EpisodeRank.TryGetValue(home, out int homeRank)
+                    ? (homeRank, 1 + BranchRank.GetValueOrDefault(nodeId))
+                    : (int.MaxValue, 0);
+            }
+
+            return EpisodeOf(dialogue, nodeName) is { } episodeId && EpisodeRank.TryGetValue(episodeId, out int rank)
+                ? (rank, 0)
+                : (int.MaxValue, 0);
+        }
 
         /// <summary>그 카드가 든 장면 — 에피소드면 제 장면, 분기 카드면 집의 장면.</summary>
         public string? SceneOf(StoryProject project, string nodeId, string nodeName)

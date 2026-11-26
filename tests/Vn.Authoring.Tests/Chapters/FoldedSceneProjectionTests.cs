@@ -31,9 +31,10 @@ public sealed class FoldedSceneProjectionTests
         Assert.Equal("hall", scene.SceneId);
         Assert.Equal(board.File.Id, scene.FileId);
 
-        // 줄 순서 = 판의 노드 순서. inner는 b(hall)가 부르는 분기 카드라 hall에 든다 — 분기 카드의 장면은 집(부르는 에피소드)의 것이다.
+        // 줄 순서 = 하이어아키의 차례 — 에피소드는 이야기 차례, 그 뒤에 그 에피소드가 부르는 분기 카드. inner는 b(hall)가 부르는 분기 카드라 hall에 들고
+        // b 바로 뒤에 선다 — 분기 카드의 장면은 집(부르는 에피소드)의 것이다(⛔ 2026-11-27까지는 판의 노드 순서라 b · c · inner였다).
         Assert.Equal(
-            [board.B.Id, board.C.Id, board.Inner.Id],
+            [board.B.Id, board.Inner.Id, board.C.Id],
             scene.Nodes.Select(entry => entry.NodeId));
 
         // 자리는 그 장면 카드들이 서던 자리의 왼쪽 위 — 접어도 그 자리에 선다.
@@ -57,7 +58,7 @@ public sealed class FoldedSceneProjectionTests
 
         Assert.Equal(GraphEndpointKind.CollapsedSceneNodeOutput, detour.Source.Kind);
         Assert.Equal("hall", detour.Source.SceneId);
-        Assert.Equal(1, detour.Source.ProxyRowIndex);   // b · c — 머리글 줄이 없다(상자 하나가 장면 하나다)
+        Assert.Equal(2, detour.Source.ProxyRowIndex);   // b · inner · c — 머리글 줄이 없다(상자 하나가 장면 하나다)
         Assert.Equal(GraphEndpointKind.ExpandedNodeInput, detour.Target.Kind);
     }
 
@@ -98,6 +99,37 @@ public sealed class FoldedSceneProjectionTests
 
         Assert.Empty(folded.Items.OfType<CollapsedSceneProjection>());
         Assert.Single(folded.Items.OfType<CollapsedFileProjection>());
+    }
+
+    [Fact]
+    public void 상자의_줄은_만든_순서가_아니라_하이어아키의_차례다()
+    {
+        // 2026-11-27 소유자 — 「그 에피소드의 깊이에 따라 하이어아키에서는 정리되지만, 이런 축소했을 때의 순서는 그거랑 상관없이 생성된 순서」.
+        // hall은 deep을 먼저 만들었지만 이야기 차례는 entry(루트) → deep이다. entry가 부르는 분기 카드 side는 entry 바로 뒤에 선다.
+        var editor = new ProjectEditor(new StoryProject());
+        editor.EnsureChapter("ch01");
+        editor.EnsureChapterBoard("ch01");
+        editor.AddEpisode("ch01", "root", "root", 0, 0, sceneId: "opening");
+        editor.AddEpisode("ch01", "deep", "deep", 0, 900, sceneId: "hall");
+        editor.AddEpisode("ch01", "entry", "entry", 0, 600, sceneId: "hall");
+        editor.AddEdge("ch01", "root", "entry", optionLabel: "가자");
+        editor.AddEdge("ch01", "entry", "deep", optionLabel: "더");
+
+        DialogueNode root = Card(editor, "root");
+        DialogueNode entry = Card(editor, "entry");
+        DialogueNode deep = Card(editor, "deep");
+        DialogueNode side = editor.AddBranchMarker(entry.Id, entry.Script.ActiveLines.First().Id);
+        StoryFile file = EpisodeNaming.BoardOf(editor.Project, "ch01")!;
+
+        // 펼친 판 안에서 장면만 접은 상자.
+        CollapsedSceneProjection scene = Project(editor, new HashSet<GraphSceneKey> { new(file.Id, "hall") })
+            .Items.OfType<CollapsedSceneProjection>().Single();
+        Assert.Equal([entry.Id, side.Id, deep.Id], scene.Nodes.Select(item => item.NodeId));
+
+        // 판째 접은 상자도 같은 차례다.
+        CollapsedFileProjection proxy = GraphProjectionBuilder.Build(editor.Project, new HashSet<string>(StringComparer.Ordinal))
+            .Items.OfType<CollapsedFileProjection>().Single();
+        Assert.Equal([root.Id, entry.Id, side.Id, deep.Id], proxy.Nodes.Select(item => item.NodeId));
     }
 
     // ── 기반 ────────────────────────────────────────────────────────────────

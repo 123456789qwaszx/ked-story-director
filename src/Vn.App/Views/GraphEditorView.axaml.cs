@@ -2168,8 +2168,8 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// 접은 장면 상자의 줄에서 나가는 길 (2026-10-30 — 하이어아키의 눈). 상자는 간소화된 자리라 선택지 칸은 서지 않고, <b>이은
-    /// 길만</b> 줄의 가장자리에서 나간다 — 오른쪽(도착이 왼쪽이면 왼쪽)으로 빠져 레인을 타고 도착 카드의 접점이나 다른 상자의
-    /// 줄로 든다. 같은 상자 안끼리의 길은 긋지 않는다(상자 머리가 센다). 도착 카드가 판에 없는 길도 긋지 않는다.
+    /// 길만</b> 줄의 가장자리에서 나간다 — 오른쪽(출구 · 도착이 왼쪽이면 왼쪽)으로 빠져 레인을 타고 도착 카드의 접점이나 다른 상자의
+    /// 줄의 입구(왼쪽)로 든다. 같은 상자 안끼리의 길은 긋지 않는다(상자 머리가 센다). 도착 카드가 판에 없는 길도 긋지 않는다.
     /// </summary>
     private void DrawRailsFromRow(
         string chapterId,
@@ -2196,8 +2196,10 @@ public partial class GraphEditorView : UserControl
                 continue;
             }
 
+            // 다른 상자의 줄로 가는 길은 그 줄의 입구(왼쪽)로 들므로, 도착 상자가 온전히 오른쪽에 있을 때만 오른쪽(출구)으로 나간다 — 아니면 왼쪽으로
+            // 나가 도착 상자의 왼쪽 바깥으로 내려간다(오른쪽으로 나갔다가 되돌아오면 제 상자를 가로지른다 · <see cref="DrawLaneIntoRow"/>).
             bool left = toRow is { } arrival
-                ? EdgeSide.GoesLeft(row.Left, row.Right - row.Left, arrival.Left, arrival.Right - arrival.Left)
+                ? arrival.Left <= row.Right + RailLaneOut
                 : EdgeSide.GoesLeft(row.Left, row.Right - row.Left, toCard!.Value.X, toCard.Value.Width);
             double toward = left ? -1 : 1;
             var from = new GraphPosition(left ? row.Left : row.Right, row.Y);
@@ -2206,7 +2208,7 @@ public partial class GraphEditorView : UserControl
 
             if (toRow is not null)
             {
-                DrawLaneIntoRow(key, edge.Shape, from, toward, laneX, toRow);
+                DrawLaneIntoRow(key, edge.Shape, from, laneX, toRow);
                 continue;
             }
 
@@ -2223,25 +2225,43 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 레인을 접은 장면 상자의 줄로 들인다 — 레인이 상자 왼쪽에서 내려오면 줄의 왼쪽(들어오는 점)으로, 오른쪽에서 내려오면
-    /// 오른쪽으로 든다(왼쪽 포트의 선이 도착 카드의 오른쪽으로 드는 것과 같은 규칙).
+    /// 레인을 접은 장면 상자의 줄로 들인다 — <b>늘 줄의 왼쪽 점(입구)으로 든다</b>. 줄의 오른쪽 점은 출구다(나가는 길이 거기서 나간다 · 실행 선도 들어오는 끝은
+    /// 늘 왼쪽이다 — <see cref="ProxyRowAnchor"/>). 레인이 상자의 왼쪽 바깥보다 오른쪽에서 오면(상자가 출발보다 왼쪽에 있거나 바로 아래) 상자의 왼쪽 바깥으로
+    /// 비켜 내려와 든다 — 상자가 레인 위에 그려지므로 상자의 폭 안을 지나는 레인은 상자 뒤로 사라진다.
     ///
-    /// ⚠ <b>레인이 상자의 폭 안으로 내려오면 바깥으로 비킨다</b> — 위아래로 쌓인 판에서는 카드 오른쪽 레인이 바로 아래 상자의
-    ///   몸통을 지나 상자 뒤로 사라진다(상자가 레인 위에 그려진다). 나아가던 쪽으로 비킨다: 되돌아가면 칩을 가로지른다.
+    /// 2026-11-27 소유자 — 「다른 장면에서 Root로 연결되는 것 역시, 선택지보다 왼쪽에 있더라도 … 입구로 연결되는 게 맞는 것 같은데, 왼쪽에 있을 경우에는 출구로
+    /// 연결되어버리는 현상」. ⛔ 그 전에는 레인이 오른쪽에서 내려오면 줄의 오른쪽(출구)으로 들었다.
     /// </summary>
-    private void DrawLaneIntoRow(
-        RailKey key, EdgeShape? stored, GraphPosition from, double toward, double laneX, FoldedRow row)
+    /// <param name="fromSlot">
+    /// 카드의 선택지 칸에서 오는 길인가 — 칸에서는 아래로 나가(<see cref="EdgeShapeRouter.IntoSide"/>) 상자 위(출발이 상자보다 높으면)나 아래로 건너 상자를
+    /// 가로지르지 않는다. 아니면(다른 상자의 줄) 옆으로 나가 레인을 탄다(<see cref="EdgeShapeRouter.Lane"/>).
+    /// </param>
+    private void DrawLaneIntoRow(RailKey key, EdgeShape? stored, GraphPosition from, double laneX, FoldedRow row, bool fromSlot = false)
     {
-        if (laneX > row.Left && laneX < row.Right)
+        if (laneX > row.Left - RailLaneOut)
         {
-            laneX = toward > 0 ? row.Right + RailLaneOut : row.Left - RailLaneOut;
+            laneX = row.Left - RailLaneOut;
         }
 
-        bool fromLeft = laneX <= row.Left;
-        var entry = new GraphPosition(fromLeft ? row.Left : row.Right, row.Y);
+        var entry = new GraphPosition(row.Left, row.Y);
 
-        DrawLane(key, stored, from, toward, laneX, entry);
-        _railVisuals.Add(RailArrowInto(entry.X, entry.Y, fromLeft));
+        if (fromSlot)
+        {
+            // 세로 길이 칸 밑에서 비켜나야 하면 상자 위로 건넌다(출발이 상자 위보다 높을 때) — 아니면 상자 아래로 돌아 올라와 든다. 비켜날 것이 없으면 곧게 간다.
+            double crossY = laneX >= from.X - 0.5
+                ? entry.Y
+                : from.Y + EdgeShapeRouter.DropStep <= row.Top - RailLaneOut
+                    ? row.Top - RailLaneOut
+                    : Math.Max(from.Y + EdgeShapeRouter.DropStep, row.Bottom + RailLaneOut);
+
+            DrawLane(key, stored, (shape, preview) => EdgeShapeRouter.IntoSide(from, entry, laneX, crossY, preview ?? shape));
+        }
+        else
+        {
+            DrawLane(key, stored, from, laneX < from.X ? -1 : 1, laneX, entry);
+        }
+
+        _railVisuals.Add(RailArrowInto(entry.X, entry.Y, fromLeft: true));
     }
 
     /// <summary>옆으로 드는 화살촉 — 접은 장면 상자의 줄 가장자리에 끝이 닿는다.</summary>
@@ -2285,12 +2305,16 @@ public partial class GraphEditorView : UserControl
         return rows;
     }
 
-    /// <summary>접은 장면 상자의 한 줄 — 레인이 붙는 양쪽 가장자리와 줄의 가운데 높이.</summary>
+    /// <summary>접은 장면 상자의 한 줄 — 레인이 붙는 양쪽 가장자리(왼쪽이 입구 · 오른쪽이 출구)와 줄의 가운데 높이, 상자의 위아래.</summary>
     private sealed record FoldedRow(FileProxyVisual Proxy, ProxyNodeRow Row)
     {
         public double Left => Canvas.GetLeft(Proxy.Visual);
 
         public double Right => Left + ProxyWidth;
+
+        public double Top => Canvas.GetTop(Proxy.Visual);
+
+        public double Bottom => Top + ProxyHeaderHeight + (Proxy.VisualRowCount * ProxyRowHeight);
 
         public double Y => ProxyRowAnchor(Proxy, Row.Index, output: false).Y;
     }
@@ -2698,8 +2722,8 @@ public partial class GraphEditorView : UserControl
 
         if (row is not null)
         {
-            // 도착이 접은 장면에 들었다 (2026-10-30) — 그 상자의 줄로 든다. 상자가 바로 아래면 상자의 가까운 옆으로 비켜 든다.
-            DrawLaneIntoRow(key, edge.Shape, from, laneX < (row.Left + row.Right) / 2 ? -1 : 1, laneX, row);
+            // 도착이 접은 장면에 들었다 (2026-10-30) — 그 상자의 줄의 입구(왼쪽)로 든다. 상자가 왼쪽이나 바로 아래면 상자의 왼쪽 바깥으로 비켜 든다.
+            DrawLaneIntoRow(key, edge.Shape, from, laneX, row, fromSlot: true);
 
             return;
         }
