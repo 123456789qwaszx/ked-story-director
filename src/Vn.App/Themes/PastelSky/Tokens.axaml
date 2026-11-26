@@ -138,7 +138,7 @@
     <x:Double x:Key="ChapterLabelTop">-21</x:Double>
     <x:Double x:Key="SceneLabelTop">-17</x:Double>
     <x:Double x:Key="ChapterLabelFont">22</x:Double>
-    <x:Double x:Key="SceneLabelFont">17</x:Double>
+    <x:Double x:Key="SceneLabelFont">18</x:Double>
     <x:Double x:Key="FrameLabelGrow">1</x:Double>
     <x:Double x:Key="FrameWeight">1.5</x:Double>
     <x:Double x:Key="StructureCardRadius">12</x:Double>
@@ -146,6 +146,13 @@
     <CornerRadius x:Key="FloatingCorner">14</CornerRadius>
     <x:Double x:Key="DimLift">0.5</x:Double>
     <x:Double x:Key="FontScale">1.15</x:Double>
+    <!-- 틀의 글자 크기는 다섯 단계 가운데 하나다(Skin.Font — 배수를 곱한 크기 이상인 가장 작은 단계): 꼬리표 · 줄 번호 12 · 단추 · 입력 · 탭 13 ·
+         읽는 글 15 · 제목 18 · 큰 제목 22(챕터 이름표와 같다). ⛔ 그 전에는 10.5 · 11.5 · 12.5 · 14 · 16 · 23이 섞여 있었다. -->
+    <x:Double x:Key="TypeMeta">12</x:Double>
+    <x:Double x:Key="TypeUi">13</x:Double>
+    <x:Double x:Key="TypeBody">15</x:Double>
+    <x:Double x:Key="TypeHeading">18</x:Double>
+    <x:Double x:Key="TypeTitle">22</x:Double>
     <x:String x:Key="FrameLabelShadow">0 2 0 0 #9FB0BE</x:String>
     <x:String x:Key="CardSelectedShadow">0 3 0 0 #A7B3BD, 0 0 18 2 #330067C0</x:String>
     <x:String x:Key="CardShadow">0 3 0 0 #A7B3BD</x:String>
@@ -193,14 +200,18 @@
     <!-- ⛔ 판 왼쪽 아래 구석의 꾸밈(흰 구름과 반짝이 둘 — BoardDecorBrush)은 2026-11-26에 걷었다(소유자 — 카드 · 선택지 칸과 겹쳐 읽기를 방해했다).
          글 쓰는 판 안에는 꾸밈 그림을 두지 않는다. -->
 
-    <!-- 글꼴 — 본문은 기본 테마와 같다: 앱의 기본 글꼴(Inter)이고 한글은 PC의 글꼴(Windows는 맑은 고딕)이 그린다. 카드의 글 · 인스펙터처럼 오래 읽고 쓰는
-         글이 작게 줄여 보아도 또렷해야 한다(2026-11-26 소유자 — 「노드 내부의 글자 가독성」 · 「테마가 없는게 가시성이 좋습니다」).
-         ⛔ 그 전에는 나눔고딕(획이 가늘어 줄여 보면 흐렸다), 그 전에는 Gowun Dodum이었다.
-         제목(이름표 · 단추 · 탭 · 카드 제목)은 Jua Story Director(Jua에 말줄임표를 더한 판 — tools/patch-jua-ellipsis.py)이고, Jua에 없는 한글은 나눔고딕이 그린다.
-         목록의 끝은 아이콘 글꼴(Story Director Icons)이다 — 화면의 아이콘 글자(📂 ⚙ ⌂ ⑂ 📄 ✕ …) 가운데 앞의 글꼴에 없는 것이 여기의 선 그림으로 그려진다
-         (PC의 이모지 글꼴 대신 · 글자색과 크기를 따른다 · 그림은 tools/make-theme-icons.py가 굽는다). Inter에 있는 글자(⚠ ↪ ↺ ▢)는 Inter가 그린다. -->
-    <FontFamily x:Key="UiFont">fonts:Inter#Inter, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
-    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua Story Director, avares://StoryDirector/Themes/PastelSky/Fonts#NanumGothic, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <!-- 글꼴(2026-11-26 — 디자인 점검 1번) — 본문 · 제목은 Pretendard 한 벌이다(한글과 영문을 함께 짠 글꼴 · Regular · SemiBold · Bold · SIL OFL — 고지문 11 · B-4).
+         ⛔ 그 전에는 본문이 Inter였고 Inter에는 한글이 없어 한글은 PC의 글꼴(Windows는 맑은 고딕)로 넘어갔고, 제목(단추 · 탭 · 카드 제목)은 Jua였다 — 한 화면에
+         한글 글꼴이 셋이었고, 글꼴마다 글줄 안에서 앉는 높이가 달라 단추 글자를 가운데에 놓으려고 여백을 비틀어야 했다. Pretendard의 한글은 글줄의 한가운데에
+         앉는다(잉크의 가운데 = 글줄의 가운데 · 0.355em).
+         둘째 Inter는 Pretendard에 없는 몇 글자(▾ 따위)를 그린다. 끝의 아이콘 글꼴(Story Director Icons)은 화면의 아이콘 글자(📂 ⚙ ⌂ ⑂ 📄 ✕ …) 가운데 앞의
+         글꼴에 없는 것을 선 그림으로 그린다(PC의 이모지 글꼴 대신 · 글자색과 크기를 따른다 · tools/make-theme-icons.py가 굽는다).
+         제목 글꼴(DisplayFont)도 Pretendard다 — 굵기(SemiBold)는 컨트롤 모양(Controls.axaml)이 정한다.
+         말랑한 Jua는 챕터 · 장면 이름표(FrameFont)에만 남긴다 — Jua Story Director(Jua에 말줄임표를 더한 판 — tools/patch-jua-ellipsis.py)이고, Jua에 없는 한글은
+         나눔고딕이 그린다. -->
+    <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/PastelSky/Fonts#Pretendard, fonts:Inter#Inter, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Pretendard, fonts:Inter#Inter, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="FrameFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua Story Director, avares://StoryDirector/Themes/PastelSky/Fonts#NanumGothic, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          컨트롤의 색 · 모서리 — Fluent 테마가 쓰는 이름을 덮는다(단추 · 글 칸 · 고르기 칸 · 탭 · 풍선 · 메뉴).

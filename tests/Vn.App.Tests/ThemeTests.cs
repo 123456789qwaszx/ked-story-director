@@ -186,7 +186,23 @@ public sealed class ThemeTests : IDisposable
                 Assert.Equal("Story Director Icons", drawn.FontFamily.Name);
             }
 
+            // 디자인 점검 1번(2026-11-26) — 본문 · 제목의 한글과 영문은 Pretendard 한 벌이 그린다(PC의 한글 글꼴로 넘어가지 않는다 · 굵게 청해도 Pretendard다).
+            Assert.True(app.TryGetResource("DisplayFont", ThemeVariant.Light, out object? displayFont));
+            foreach ((FontFamily family, FontWeight weight) in new[] { ((FontFamily)uiFont!, FontWeight.Normal), ((FontFamily)displayFont!, FontWeight.SemiBold) })
+            {
+                using var layout = new Avalonia.Media.TextFormatting.TextLayout("대본 File", new Typeface(family, weight: weight), 20, Brushes.Black);
+                List<Avalonia.Media.TextFormatting.ShapedTextRun> runs = layout.TextLines[0].TextRuns.OfType<Avalonia.Media.TextFormatting.ShapedTextRun>().ToList();
+                Assert.NotEmpty(runs);
+                Assert.All(runs, run => Assert.StartsWith("Pretendard", run.GlyphRun.GlyphTypeface.FamilyName, StringComparison.Ordinal));
+            }
+
+            // 틀의 글자 크기는 다섯 단계 가운데 하나다 — 꼬리표 12 · 단추 · 탭 13 · 읽는 글 15 · 제목 18 · 큰 제목 22.
+            Assert.Equal(new[] { 12d, 12d, 13d, 15d, 18d, 22d }, new[] { 9d, 10d, 11d, 12d, 14d, 20d }.Select(Skin.Font));
+            Assert.True(app.TryGetResource("TextSm", ThemeVariant.Light, out object? pastelSm));
+            Assert.Equal(13d, Assert.IsType<double>(pastelSm));
+
             ThemeService.Apply(app, ThemeCatalog.Classic);
+            Assert.Equal(11d, Skin.Font(11));   // 기본 테마는 단계가 없다 — 준 크기 그대로
             Assert.Equal(Color.Parse("#2563EB"), Skin.Selection);
             Assert.Equal(4, Skin.CardRadius);
             Assert.Equal(default, Skin.CardShadow);

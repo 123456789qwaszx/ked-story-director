@@ -139,6 +139,11 @@
     <CornerRadius x:Key="FloatingCorner">6</CornerRadius>
     <x:Double x:Key="DimLift">0</x:Double>
     <x:Double x:Key="FontScale">1</x:Double>
+    <x:Double x:Key="TypeMeta">0</x:Double>
+    <x:Double x:Key="TypeUi">0</x:Double>
+    <x:Double x:Key="TypeBody">0</x:Double>
+    <x:Double x:Key="TypeHeading">0</x:Double>
+    <x:Double x:Key="TypeTitle">0</x:Double>
     <x:String x:Key="FrameLabelShadow">none</x:String>
     <x:String x:Key="CardSelectedShadow">none</x:String>
     <x:String x:Key="CardShadow">none</x:String>

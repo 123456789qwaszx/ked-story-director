@@ -124,6 +124,7 @@ internal static class ThemeKeys
         new("SystemControlForegroundBaseHighBrush", ThemeValueKind.Brush, ThemeKeyGroup.Favorites, "본문 글자의 색", "Colour of body text"),
         new("UiFont", ThemeValueKind.Font, ThemeKeyGroup.Favorites, "본문 글꼴", "Body font"),
         new("DisplayFont", ThemeValueKind.Font, ThemeKeyGroup.Favorites, "제목 글꼴(탭 · 단추 · 카드 제목)", "Title font (tabs, buttons, card titles)"),
+        new("FrameFont", ThemeValueKind.Font, ThemeKeyGroup.Favorites, "챕터 · 장면 이름표의 글꼴", "Font of chapter and scene labels"),
         new("FontScale", ThemeValueKind.Number, ThemeKeyGroup.Favorites, "틀의 글자 크기 배수 — 1은 기본 크기, 1.15는 15% 크게(판 위의 글은 따르지 않는다)", "Text size multiplier for panels — 1 is the default size, 1.15 is 15% larger (text on the board doesn't follow)"),
         new("TopBarEdgeHeight", ThemeValueKind.Number, ThemeKeyGroup.Window, "맨 위 띠 아래 줄의 높이(0이면 없다)", "Height of the strip below the top bar (0 hides it)"),
         new("TopBarEdgeMask", ThemeValueKind.Picture, ThemeKeyGroup.Window, "맨 위 띠 아래 줄의 모양 — 그림의 불투명한 자리에 창의 바탕색이 선다(지금은 구름 물결)", "Shape of the strip below the top bar — the window colour shows where the picture is opaque (now: cloud waves)"),
@@ -286,6 +287,11 @@ internal static class ThemeKeys
         new("SceneLabelFont", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "장면 이름표의 글자 크기", "Text size of scene labels"),
         new("FrameWeight", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "챕터 · 장면 테두리의 굵기 배수", "Thickness multiplier of chapter and scene frames"),
         new("FrameLabelGrow", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "1이면 이름표를 크고 넉넉하게, 0이면 작게", "1 makes labels large and roomy, 0 small"),
+        new("TypeMeta", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "틀의 글자 크기 단계 — 꼬리표 · 줄 번호 · 열 머리(다섯 단계 가운데 하나라도 0이면 단계를 두지 않는다)", "Panel text size step — tags, row numbers, column headers (if any of the five steps is 0, there are no steps)"),
+        new("TypeUi", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "틀의 글자 크기 단계 — 단추 · 입력 칸 · 탭", "Panel text size step — buttons, input boxes, tabs"),
+        new("TypeBody", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "틀의 글자 크기 단계 — 읽는 글(인스펙터의 대사)", "Panel text size step — text to read (the Inspector's lines)"),
+        new("TypeHeading", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "틀의 글자 크기 단계 — 제목", "Panel text size step — headings"),
+        new("TypeTitle", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "틀의 글자 크기 단계 — 큰 제목", "Panel text size step — large titles"),
         new("DimLift", ThemeValueKind.Number, ThemeKeyGroup.Shapes, "옅은 곁글을 얼마나 진하게 — 0은 그대로, 1은 본문과 같다", "How much to darken faint secondary text — 0 as is, 1 same as body text")
     ];
 

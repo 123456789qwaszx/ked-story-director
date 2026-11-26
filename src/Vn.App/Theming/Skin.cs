@@ -421,10 +421,51 @@ internal static class Skin
     public static double FontScale => N();
 
     /// <summary>
-    /// 틀의 글자 크기 — 기본 테마의 크기를 주면 테마의 배수를 곱해 0.5 단위로 맞춘다(기본 테마는 준 값 그대로).
+    /// 틀의 글자 크기 — 기본 테마의 크기를 주면 테마의 배수를 곱해 0.5 단위로 맞추고, 테마가 크기 단계를 두면(<see cref="TypeMeta"/> ~ <see cref="TypeTitle"/>)
+    /// 그 값 이상인 가장 작은 단계로 올린다(가장 큰 단계를 넘으면 가장 큰 단계). 기본 테마는 단계가 없어 준 값 그대로다.
     /// 판 위의 글(카드 · 선택지 칸 · 이름표)에는 쓰지 않는다 — 그쪽은 치수가 정해져 있고 배율로 본다.
     /// </summary>
-    public static double Font(double size) => Math.Round(size * FontScale * 2, MidpointRounding.AwayFromZero) / 2;
+    public static double Font(double size)
+    {
+        double scaled = Math.Round(size * FontScale * 2, MidpointRounding.AwayFromZero) / 2;
+        double[] steps = [TypeMeta, TypeUi, TypeBody, TypeHeading, TypeTitle];
+
+        if (steps.Any(step => step <= 0))
+        {
+            return scaled;
+        }
+
+        Array.Sort(steps);
+
+        foreach (double step in steps)
+        {
+            if (step >= scaled)
+            {
+                return step;
+            }
+        }
+
+        return steps[^1];
+    }
+
+    /// <summary>
+    /// 틀의 글자 크기 단계(2026-11-26 — 디자인 점검 1번 「크기가 제각각」): 꼬리표 · 줄 번호 · 열 머리(<see cref="TypeMeta"/>) · 단추 · 입력 · 탭(<see cref="TypeUi"/>) ·
+    /// 읽는 글(<see cref="TypeBody"/>) · 제목(<see cref="TypeHeading"/>) · 큰 제목(<see cref="TypeTitle"/>). 틀의 글자는 이 다섯 크기 가운데 하나로 선다(<see cref="Font"/>).
+    /// 하나라도 0이면 단계를 두지 않는다(기본 테마).
+    /// </summary>
+    public static double TypeMeta => N();
+
+    /// <inheritdoc cref="TypeMeta"/>
+    public static double TypeUi => N();
+
+    /// <inheritdoc cref="TypeMeta"/>
+    public static double TypeBody => N();
+
+    /// <inheritdoc cref="TypeMeta"/>
+    public static double TypeHeading => N();
+
+    /// <inheritdoc cref="TypeMeta"/>
+    public static double TypeTitle => N();
 
     /// <summary>챕터 · 장면 이름표의 그림자 — 기본 테마는 없다.</summary>
     public static BoxShadows FrameLabelShadow => ThemeService.ShadowsOf(nameof(FrameLabelShadow));

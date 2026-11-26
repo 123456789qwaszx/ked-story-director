@@ -46,14 +46,16 @@
          차지하는 높이는 같아서 이웃이 밀리지 않는다).
          ⛔ 2026-11-26까지는 두께를 「번지지 않는 아래 그림자」(BoxShadow)로 냈다 — 실제 화면에서 그림자가 단추 밖으로 그려지지 않고 잘렸고, 잘린 그림자가 아래 모서리의
          둥근 바깥을 메워 단추 아래가 잘린 것처럼 보였다(소유자 — 「아래쪽이 잘려보이는 것 같고」). 탭이 그래서 굵은 아래 테두리를 쓴다 — 단추도 같은 길로 맞췄다. -->
-    <!-- 글은 아래로 2.5만큼 내려 단추의 한가운데에 선다 — 아래쪽 두께(5) 때문에 면이 위로 1.5 올라가 있고, 제목 글꼴(Jua)의 한글은 글줄 안에서 1.5쯤 높이
-         앉는다. 그대로 두면 글이 단추보다 3쯤 위에 보였다(2026-11-26 소유자 — 「중앙보다 위쪽에 글자가 써져있어서 굉장히 불편」). 위 · 아래 여백을 7 · 2로 나눠 낸다. -->
+    <!-- 글은 단추 전체의 한가운데에 선다 — 아래쪽 두께(5)가 위(2)보다 3 두꺼워 면이 위로 1.5 올라가 있으니, 위 · 아래 여백을 6 · 3으로 나눠 그만큼 내린다.
+         제목 글꼴(Pretendard)의 한글은 글줄의 한가운데에 앉아 글꼴 몫의 보정은 없다(2026-11-26 — 디자인 점검 1번 · ⛔ Jua일 때는 Jua가 1.5쯤 높이 앉아 7 · 2였다 ·
+         소유자 — 「중앙보다 위쪽에 글자가 써져있어서 굉장히 불편」). 아래 두께를 걷으면(점검 3번) 여백도 위 · 아래 같아진다. -->
     <Style Selector="Button.chunky">
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="BorderThickness" Value="2,2,2,5" />
-        <Setter Property="Padding" Value="12,7,12,2" />
+        <Setter Property="Padding" Value="12,6,12,3" />
         <Setter Property="Margin" Value="0" />
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="RenderTransform" Value="none" />
     </Style>
     <Style Selector="Button.chunky /template/ ContentPresenter#PART_ContentPresenter">
@@ -106,24 +108,27 @@
     </Style>
     <Style Selector="Menu#MainMenu > MenuItem">
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Menu#MainMenu > MenuItem:not(:disabled) /template/ Border#PART_LayoutRoot">
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="BorderThickness" Value="2,2,2,5" />
         <Setter Property="BorderBrush" Value="{DynamicResource TopBarButtonBorder}" />
     </Style>
-    <!-- File의 글도 이웃 단추와 같이 한가운데로 — 메뉴의 여백은 창이 정해 두어(ButtonPadding) 글만 아래로 3 옮긴다(배치는 그대로). -->
+    <!-- File의 글도 이웃 단추와 같이 한가운데로 — 메뉴의 여백은 창이 정해 두어(ButtonPadding) 글만 아래로 옮긴다(배치는 그대로). 옮기는 것은 아래쪽 두께 몫(1.5)뿐이다
+         (⛔ Jua일 때는 글꼴 몫 1.5를 더해 3이었다 · 아래 두께를 걷으면 옮기지 않는다). -->
     <Style Selector="Menu#MainMenu > MenuItem /template/ ContentPresenter#PART_HeaderPresenter">
-        <Setter Property="RenderTransform" Value="translateY(3px)" />
+        <Setter Property="RenderTransform" Value="translateY(1.5px)" />
     </Style>
 
     <!-- 탭 — 밑줄 대신 면(먹색)으로 고른 것을 말한다. 기둥의 탭(인스펙터 · 화자 · 조건 및 스탯)은 작은 알약, 주 탭([대본] · [구성])은 두툼한 스티커 탭이다. -->
     <Style Selector="TabItem">
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TabItem:not(:disabled) /template/ Border#PART_LayoutRoot">
         <Setter Property="CornerRadius" Value="10" />
-        <Setter Property="Padding" Value="10,3,10,1" />   <!-- 제목 글꼴의 한글이 높이 앉는 만큼(1) 내린다 -->
+        <Setter Property="Padding" Value="10,2" />   <!-- 위 · 아래 같다(⛔ Jua일 때는 높이 앉는 만큼 1 내려 10,3,10,1이었다) -->
     </Style>
     <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
         <Setter Property="Background" Value="{DynamicResource TabHoverBackground}" />
@@ -142,9 +147,9 @@
     </Style>
     <!-- ⚠ 템플릿이 묶어 둔 값(TemplateBinding)은 보통 스타일보다 세다 — 조건이 붙은 스타일(:not(:disabled) · :selected)이어야 그 위에 선다.
          그림자는 탭 줄이 잘라 내므로, 두께는 아래쪽이 굵은 테두리로 낸다. -->
-    <!-- 주 탭의 글도 큰 단추와 같은 까닭으로 아래로 2.5 내린다(위 여백 5). -->
+    <!-- 주 탭의 글도 큰 단추와 같은 까닭으로 아래쪽 두께 몫(1.5)만 내린다 — 위 · 아래 여백 4 · 1(⛔ Jua일 때는 5 · 0). -->
     <Style Selector="TabControl#MainTabs > TabItem:not(:disabled) /template/ Border#PART_LayoutRoot">
-        <Setter Property="Padding" Value="18,5,18,0" />
+        <Setter Property="Padding" Value="18,4,18,1" />
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="BorderThickness" Value="2,2,2,5" />
         <Setter Property="BorderBrush" Value="{DynamicResource MainTabBorder}" />
@@ -162,9 +167,9 @@
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
-    <!-- 챕터 · 장면 이름표 — 제목 글꼴 -->
+    <!-- 챕터 · 장면 이름표 — 이름표 글꼴(Jua · 말랑한 인상은 여기 두 곳에서만 낸다) -->
     <Style Selector="TextBlock.frame-title">
-        <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FrameFont}" />
         <Setter Property="FontWeight" Value="Normal" />
     </Style>
 
@@ -188,7 +193,7 @@
     <!-- 카드 제목 -->
     <Style Selector="TextBlock.card-title">
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
-        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="15" />
     </Style>
 
