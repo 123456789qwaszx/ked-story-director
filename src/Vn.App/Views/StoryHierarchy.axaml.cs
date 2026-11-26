@@ -372,6 +372,12 @@ public partial class StoryHierarchy : UserControl
     internal event Action<IReadOnlyList<HierarchyRow>, int?>? SceneColorRequested;
 
     /// <summary>
+    /// 장면 줄의 우클릭 「장면 색」 ▸ 「직접 고르기 (RGB)…」 — 칠할 장면 줄들과 차림을 열 자리. 차림을 열고 넣는 것은 셸이다(<see cref="SceneColorMenu.ShowChooser"/> ·
+    /// 2026-11-27).
+    /// </summary>
+    internal event Action<IReadOnlyList<HierarchyRow>, Control>? SceneColorChooserRequested;
+
+    /// <summary>
     /// 이름을 고쳐 달라고 했다(줄을 두 번 눌러 새 이름을 적고 Enter). 여기서 고치지 않는다 — 챕터 개명은 판 · 조건 배관을,
     /// 에피소드 개명은 간선 · 카드를 함께 끌고 간다(규칙은 셸 쪽 한 벌).
     /// </summary>
@@ -1057,7 +1063,7 @@ public partial class StoryHierarchy : UserControl
                 MenuItemFor(Ui.Board_AddEpisode, HierarchyCommand.AddEpisode, row, anchor),
                 new Separator(),
                 RenameItem(row),
-                SceneColorItem(row)
+                SceneColorItem(row, anchor)
             ],
             HierarchyKind.Episode =>
             [
@@ -1097,7 +1103,7 @@ public partial class StoryHierarchy : UserControl
     /// 장면 줄의 「장면 색」 — 자동(지금 색)과 다섯 색(<see cref="SceneColorMenu"/>). 누른 줄이 여러 줄 고르기 안이면 고른 장면 줄 모두에 칠한다(되돌리기 한 칸 ·
     /// 2026-11-27 소유자 — 「권고대로」).
     /// </summary>
-    private MenuItem SceneColorItem(HierarchyRow row)
+    private MenuItem SceneColorItem(HierarchyRow row, Control anchor)
     {
         var item = new MenuItem
         {
@@ -1107,8 +1113,11 @@ public partial class StoryHierarchy : UserControl
             Tag = "scene-color"
         };
 
-        item.ItemsSource = SceneColorMenu.Items(Math.Max(1, row.SceneColor), row.SceneColorChosen, color =>
-            UiGuard.Run(null, Ui.SceneColor_Menu, () => SceneColorRequested?.Invoke(SceneColorTargets(row), color)));
+        item.ItemsSource = SceneColorMenu.Items(
+            Math.Max(1, row.SceneColor),
+            row.SceneColorChosen,
+            color => UiGuard.Run(null, Ui.SceneColor_Menu, () => SceneColorRequested?.Invoke(SceneColorTargets(row), color)),
+            () => UiGuard.Run(null, Ui.SceneColor_Menu, () => SceneColorChooserRequested?.Invoke(SceneColorTargets(row), anchor)));
         return item;
     }
 

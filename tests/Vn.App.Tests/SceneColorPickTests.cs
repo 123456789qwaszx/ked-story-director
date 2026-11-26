@@ -8,9 +8,11 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Path = System.IO.Path;
 using Vn.App.Services;
+using Vn.App.Strings;
 using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
+using Vn.Authoring.Model;
 
 namespace Vn.App.Tests;
 
@@ -130,7 +132,7 @@ public sealed class SceneColorPickTests : IDisposable
 
         WrapPanel row = graph.ShownSideHost.GetLogicalDescendants().OfType<WrapPanel>().Single(panel => Equals(panel.Tag, MainWindow.SceneColorRowTag));
         List<Button> buttons = row.Children.OfType<Button>().ToList();
-        Assert.Equal(SceneColors.Count + 1, buttons.Count);   // 자동 + 다섯 색
+        Assert.Equal(SceneColors.Count + 2, buttons.Count);   // 자동 + 다섯 색 + 직접 고르기(RGB)
         Button Of(string tag) => buttons.Single(button => button.Tag as string == SceneColorMenu.ItemTag + tag);
         Assert.Equal(Skin.Selection, ((ISolidColorBrush)Of("auto").BorderBrush!).Color);   // 처음은 자동에 고리
 
@@ -139,6 +141,77 @@ public sealed class SceneColorPickTests : IDisposable
         Assert.Equal(4, Chosen(session, "hall"));
         Assert.Equal(Skin.Selection, ((ISolidColorBrush)Of("4").BorderBrush!).Color);
         Assert.Equal(Colors.Transparent, ((ISolidColorBrush)Of("auto").BorderBrush!).Color);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 인스펙터의_직접_고르기는_지금_색에서_열리고_고른_RGB를_칠하며_다시_열면_쓴_색의_맨_앞이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 「장면색을 원한다면, RGB 표에서 선택도 할 수 있게 해줄래? 그게 최근 사용한 항목에 반영이 되도록 해주고, 또 특정 장면색을 선택한
+        // 상태에서 열면 그 색이 선택된 상태로 RGB가 열리도록」. 서식 도구 · 화자 이름 색과 같은 색 차림이다.
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();
+        session.Editor.SetSceneColor("ch01", "hall", 3);
+        Press(window, graph.HierarchyView, StoryHierarchy.SceneKey("ch01", "hall"));
+
+        WrapPanel row = graph.ShownSideHost.GetLogicalDescendants().OfType<WrapPanel>().Single(panel => Equals(panel.Tag, MainWindow.SceneColorRowTag));
+        Button rgb = row.Children.OfType<Button>().Single(button => button.Tag as string == SceneColorMenu.ItemTag + "rgb");
+
+        // 고른 칸(3)의 색에서 시작한다.
+        rgb.Flyout!.ShowAt(rgb);
+        Dispatcher.UIThread.RunJobs();
+        WriterColorChooser chooser = SceneColorMenu.LastChooser!;
+        Assert.Equal(SceneColorMenu.RgbOf(3).Hex, chooser.Hex.Text);
+
+        chooser.Hex.Text = "#3366CC";
+        Dispatcher.UIThread.RunJobs();
+        Click(chooser.Apply);
+
+        int blue = SceneColors.Custom(0x3366CC);
+        Assert.Equal(blue, Chosen(session, "hall"));
+        Assert.Contains("#3366CC", session.StatusMessage, StringComparison.Ordinal);
+
+        // 고른 RGB의 단추가 다섯 색 뒤에 서고 고리가 그것에 간다.
+        Button custom = row.Children.OfType<Button>().Single(button => button.Tag as string == SceneColorMenu.ItemTag + "custom");
+        Assert.Equal(Skin.Selection, ((ISolidColorBrush)custom.BorderBrush!).Color);
+        Assert.Equal(row.Children.IndexOf(rgb) - 1, row.Children.IndexOf(custom));
+
+        // 다시 열면 — 직접 고르기는 그 색에서, 「이 프로젝트에 쓴 색」의 맨 앞이 그 색이다.
+        rgb.Flyout!.ShowAt(rgb);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("#3366CC", chooser.Hex.Text);
+        Assert.True(chooser.UsedTitle.IsVisible);
+        Assert.Equal(new WriterRgb(0x33, 0x66, 0xCC), chooser.Used.Children.OfType<Button>().First().Tag);
+
+        // 「자동」은 고른 색을 걷는다.
+        Click(chooser.Content.GetLogicalDescendants().OfType<Button>().Single(button => Equals(button.Content, Ui.SceneColor_Auto)));
+        Assert.Null(Chosen(session, "hall"));
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 장면_줄_우클릭에도_직접_고르기가_있고_고른_RGB는_메뉴에_한_줄로_선다() => HeadlessUi.Run(() =>
+    {
+        (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();
+        int now = SceneColorsOf(session)["hall"];
+
+        Click(ColorItem(graph.HierarchyView, "hall", "rgb"));
+        Dispatcher.UIThread.RunJobs();
+        WriterColorChooser chooser = SceneColorMenu.LastChooser!;
+        Assert.Equal(SceneColorMenu.RgbOf(now).Hex, chooser.Hex.Text);   // 자동 색에서 시작한다
+
+        chooser.Hex.Text = "#8A2BE2";
+        Dispatcher.UIThread.RunJobs();
+        Click(chooser.Apply);
+
+        int violet = SceneColors.Custom(0x8A2BE2);
+        Assert.Equal(violet, Chosen(session, "hall"));
+
+        // 다시 세운 줄의 점이 그 색(점 색)이고, 메뉴에 그 색이 ✓로 한 줄 선다.
+        var line = (StackPanel)graph.HierarchyView.RowButton(StoryHierarchy.SceneKey("ch01", "hall"))!.Content!;
+        Assert.Equal(Skin.SceneMarkOf(violet), ((ISolidColorBrush)((Avalonia.Controls.Shapes.Ellipse)line.Children[0]).Fill!).Color);
+        Assert.Equal("#8A2BE2  ✓", (string)ColorItem(graph.HierarchyView, "hall", "custom").Header!);
 
         window.Close();
     });

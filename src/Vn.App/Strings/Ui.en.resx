@@ -3093,4 +3093,13 @@ Changing it leaves existing cards as they are (cards with fitting on refit right
   <data name="SceneColor_ManyBackToAuto" xml:space="preserve">
     <value>Returned {0:scene|scenes} to automatic colors.</value>
   </data>
+  <data name="SceneColor_ChooseRgb" xml:space="preserve">
+    <value>Choose RGB…</value>
+  </data>
+  <data name="SceneColor_ChooseRgbTip" xml:space="preserve">
+    <value>Opens the color picker — preset colors · colors used in this project · choose RGB. Choose RGB starts from the scene's current color. The board background shows the chosen color as a light see-through tint, and dots · tags use the chosen color (the tool adjusts colors that are too light or too dark so text stays readable).</value>
+  </data>
+  <data name="SceneColor_ChooserAutoTip" xml:space="preserve">
+    <value>Clears the chosen color and goes back to the automatic color.</value>
+  </data>
 </root>

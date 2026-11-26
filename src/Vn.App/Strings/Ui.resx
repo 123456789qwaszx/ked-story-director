@@ -4111,4 +4111,16 @@
     <value>장면 {0}개의 색을 자동으로 돌렸습니다.</value>
     <comment>SceneColorMenu.cs</comment>
   </data>
+  <data name="SceneColor_ChooseRgb" xml:space="preserve">
+    <value>직접 고르기 (RGB)…</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="SceneColor_ChooseRgbTip" xml:space="preserve">
+    <value>색 차림을 엽니다 — 정해 둔 색 · 이 프로젝트에 쓴 색 · 직접 고르기(RGB). 직접 고르기는 지금 장면 색에서 시작합니다. 판의 바탕은 고른 색을 옅게 비치게, 점 · 꼬리표는 고른 색으로 칠합니다(너무 옅거나 짙으면 글이 읽히게 툴이 맞춥니다).</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
+  <data name="SceneColor_ChooserAutoTip" xml:space="preserve">
+    <value>고른 색을 걷고 자동 색으로 돌립니다.</value>
+    <comment>SceneColorMenu.cs</comment>
+  </data>
 </root>

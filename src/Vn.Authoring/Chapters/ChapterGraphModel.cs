@@ -207,12 +207,12 @@ public sealed record ChapterChoiceOption(
 /// <b>장면 이름</b>(<paramref name="Name"/>)도 여기 산다 — 작가가 [대본] 탭에서 붙이는 이름이고, SceneId(런타임 저장 · 롤백 경계)와 따로다.
 /// 같은 이름의 장면이 여럿이어도 SceneId가 달라 합쳐지지 않는다(display-names). 비면 SceneId가 보인다.
 ///
-/// <b>장면 색</b>(<paramref name="Color"/>)도 여기 산다 — 작가가 고른 팔레트 칸(1 ~ <see cref="SceneColors.Count"/>). 비면 자동(<see cref="SceneColors"/> ·
+/// <b>장면 색</b>(<paramref name="Color"/>)도 여기 산다 — 작가가 고른 팔레트 칸(1 ~ <see cref="SceneColors.Count"/>)이나 RGB로 고른 색. 비면 자동(<see cref="SceneColors"/> ·
 /// design/scene-colors.md). 런타임은 읽지 않는다.
 /// </summary>
 /// <param name="Text">장면 메모 — 비어도 된다(이름만 있는 항목).</param>
 /// <param name="Name">장면 이름 — 비면 null.</param>
-/// <param name="Color">장면 색 — 고른 팔레트 칸(1 ~ 5). 비면 자동.</param>
+/// <param name="Color">장면 색 — 고른 팔레트 칸(1 ~ 5)이나 RGB로 고른 색(<see cref="SceneColors.Custom"/>). 비면 자동.</param>
 public sealed record ChapterSceneNote(string SceneId, string Text, string? Name = null, int? Color = null);
 
 /// <param name="From">고정 선택의 출발 에피소드.</param>

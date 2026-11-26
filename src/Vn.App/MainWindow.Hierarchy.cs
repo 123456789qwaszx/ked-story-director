@@ -227,6 +227,27 @@ public partial class MainWindow
                         .Select(row => (row.ChapterId!, row.SceneId!, row.Text))
                         .ToList(),
                     color));
+
+            // 「직접 고르기 (RGB)…」 — 색 차림을 그 줄에 연다. 직접 고르기는 누른 줄 장면의 지금 색에서 시작한다(2026-11-27).
+            tree.SceneColorChooserRequested += (rows, anchor) =>
+            {
+                List<(string ChapterId, string SceneId, string Name)> scenes = rows
+                    .Where(row => row.ChapterId is not null && row.SceneId is not null)
+                    .Select(row => (row.ChapterId!, row.SceneId!, row.Text))
+                    .ToList();
+
+                if (scenes.Count == 0)
+                {
+                    return;
+                }
+
+                (string ChapterId, string SceneId, string Name) first = scenes[0];
+                SceneColorMenu.ShowChooser(
+                    anchor,
+                    _session,
+                    () => SceneColorMenu.ColorNow(_session, first.ChapterId, first.SceneId),
+                    color => UiGuard.Run(_session, Ui.SceneColor_Menu, () => SceneColorMenu.Apply(_session, scenes, color)));
+            };
             tree.Dropped += (source, target) =>
                 UiGuard.Run(_session, Ui.Side_MoveScene, () => OnHierarchyDropped(source, target));
 

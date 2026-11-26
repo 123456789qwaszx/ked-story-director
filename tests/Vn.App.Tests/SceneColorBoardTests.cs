@@ -131,6 +131,27 @@ public sealed class SceneColorBoardTests : IDisposable
         Assert.Equal((mark.R, mark.G, mark.B), (fill.R, fill.G, fill.B));
     });
 
+    [Fact]
+    public void RGB로_고른_색도_판의_면은_비치고_이름표_점은_그_색이다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 「RGB 표에서 선택도」. 면은 고른 색을 비치게(짙으면 더 옅게), 점은 고른 색(옅으면 짙게)이다.
+        (GraphEditorView graph, AuthoringSession session, string board) = Show();
+        int blue = SceneColors.Custom(0x3366CC);
+
+        session.Editor.SetSceneColor("ch01", "hall", blue);
+        graph.Rebuild();
+        Settle(graph);
+
+        Color fill = ((ISolidColorBrush)Frame(graph, "hall").Background!).Color;
+        Assert.Equal(Skin.SceneTintOf(blue), fill);
+        Assert.InRange(fill.A, 1, Skin.SceneTint1.A);
+        Assert.Equal((0x33, 0x66, 0xCC), ((int)fill.R, (int)fill.G, (int)fill.B));
+        Assert.Equal(Color.Parse("#3366CC"), ((ISolidColorBrush)Dot(graph, "hall").Fill!).Color);
+
+        // 미니맵 · 접은 상자도 같은 색이다.
+        Assert.Equal(Skin.SceneTintOf(blue), ((ISolidColorBrush)MinimapScene(graph.FindControl<Canvas>("MinimapCanvas")!, board, "hall").Fill!).Color);
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     /// <summary>미니맵에서 그 장면의 자리(펼친 장면의 면 · 접은 장면의 상자).</summary>

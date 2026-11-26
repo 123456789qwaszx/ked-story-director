@@ -136,6 +136,62 @@ public sealed class SceneColorsTests
         Assert.Throws<InvalidDataException>(() => ChapterDocumentJson.Read(json));
     }
 
+    [Fact]
+    public void RGB로_고른_색은_칸_번호와_겹치지_않고_자동보다_먼저다()
+    {
+        // 2026-11-27 소유자 — 「장면색을 원한다면, RGB 표에서 선택도 할 수 있게」. 0x1RRGGBB로 담아 팔레트 칸(1 ~ 5)과 겹치지 않는다.
+        int blue = SceneColors.Custom(0x3366CC);
+
+        Assert.True(SceneColors.IsCustom(blue));
+        Assert.True(SceneColors.IsValid(blue));
+        Assert.False(SceneColors.IsSlot(blue));
+        Assert.Equal(0x3366CC, SceneColors.RgbOf(blue));
+        Assert.Equal("#3366CC", SceneColors.HexOf(blue));
+        Assert.All(Enumerable.Range(1, SceneColors.Count), slot => Assert.False(SceneColors.IsCustom(slot)));
+        Assert.True(SceneColors.TryParseHex("#3366cc", out int parsed));
+        Assert.Equal(blue, parsed);
+        Assert.False(SceneColors.TryParseHex("#36C", out _));
+
+        // 고른 RGB가 먼저 — 다음 장면의 자동 색은 팔레트 안에서 그대로 정해진다.
+        ProjectEditor editor = Editor();
+        editor.SetSceneColor("ch01", "hall", blue);
+        IReadOnlyDictionary<string, int> colors = SceneColors.Of(Grouping(editor), Chapter(editor).SceneNotes);
+        Assert.Equal(blue, colors["hall"]);
+        Assert.True(SceneColors.IsSlot(colors["rooftop"]));
+
+        editor.Undo();
+        Assert.Null(ChapterSceneNotes.ColorOf(Chapter(editor).SceneNotes, "hall"));
+    }
+
+    [Fact]
+    public void RGB로_고른_색은_rgb로_저장을_왕복하고_꼴이_틀리거나_color와_함께면_읽지_않는다()
+    {
+        // color(1 ~ 5)에 넣지 않고 rgb로 따로 적는다 — 옛 리더는 모르는 칸을 읽지 않아 그 장면을 자동 색으로 연다.
+        var chapter = new ChapterDocument { ChapterId = "ch01" };
+        chapter.Episodes.Add(new ChapterEpisode("ep01", "", "", 0, 0, Memo: null) { SceneId = "hall" });
+        chapter.SceneNotes.Add(new ChapterSceneNote("hall", string.Empty, Color: SceneColors.Custom(0x3366CC)));
+
+        JsonArray json = ChapterDocumentJson.Write([chapter])!;
+        JsonNode note = json[0]!["sceneNotes"]![0]!;
+        Assert.Equal("#3366CC", (string)note["rgb"]!);
+        Assert.Null(note["color"]);
+
+        ChapterDocument read = Assert.Single(ChapterDocumentJson.Read(json));
+        Assert.Equal(SceneColors.Custom(0x3366CC), ChapterSceneNotes.ColorOf(read.SceneNotes, "hall"));
+
+        note["rgb"] = "3366CC";   // # 없이는 받지 않는다
+        Assert.Throws<InvalidDataException>(() => ChapterDocumentJson.Read(json));
+
+        note["rgb"] = "#3366CC";
+        note["color"] = 2;        // 둘이 함께면 어느 것인지 정할 수 없다
+        Assert.Throws<InvalidDataException>(() => ChapterDocumentJson.Read(json));
+
+        note["rgb"] = null;
+        note.AsObject().Remove("rgb");
+        note["color"] = SceneColors.Custom(0x3366CC);   // color에는 팔레트 칸만
+        Assert.Throws<InvalidDataException>(() => ChapterDocumentJson.Read(json));
+    }
+
     // ── 기반 ────────────────────────────────────────────────────────────────
 
     private static List<ChapterScene> Scenes(params string[] ids) =>

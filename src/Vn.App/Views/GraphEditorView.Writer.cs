@@ -817,12 +817,16 @@ public partial class GraphEditorView
     internal ColorMenu ColorMenuOf(WriterStyleKind kind) => _colorMenus[kind];
 
     /// <summary>
-    /// 이 프로젝트에 쓴 색 — 서식의 글자색(화자 이름 색도 글자색이다 · WF-D15) 또는 바탕색(화자 이름 바탕색도 · WF-D22). 색 차림의 「이 프로젝트에 쓴 색」(WF-D14).
+    /// 이 프로젝트에 쓴 색 — 서식의 글자색(화자 이름 색도 글자색이다 · WF-D15) 또는 바탕색(화자 이름 바탕색도 · WF-D22), 그리고 장면 색으로 RGB를 고른 것(둘 다 ·
+    /// 2026-11-27 — <see cref="SceneColorMenu.Chooser"/>). 색 차림의 「이 프로젝트에 쓴 색」(WF-D14).
     /// </summary>
     internal static IEnumerable<WriterRgb> ProjectColors(StoryProject project, bool fill)
     {
         IEnumerable<WriterRgb> marks = WriterMarkMath.UsedColors(project.EnumerateNodes().OfType<DialogueNode>(), fill);
-        return marks.Concat(project.Speakers.Select(speaker => fill ? speaker.Fill : speaker.Color).OfType<WriterRgb>()).Distinct();
+        return marks
+            .Concat(project.Speakers.Select(speaker => fill ? speaker.Fill : speaker.Color).OfType<WriterRgb>())
+            .Concat(SceneColorMenu.UsedInProject(project))
+            .Distinct();
     }
 
     /// <summary>글자색 · 바탕색 — 단추 밑의 색 띠가 마지막에 쓴 색이고, 누르면 색 차림이 열린다(WF-D14).</summary>

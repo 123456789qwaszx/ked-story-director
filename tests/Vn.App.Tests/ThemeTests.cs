@@ -221,6 +221,26 @@ public sealed class ThemeTests : IDisposable
                 Assert.True(Contrast(Over(tint, single), single) > 1.08, $"칸 {slot}: 겹친 자리가 진해지지 않는다");
             }
 
+            // RGB로 고른 장면 색(2026-11-27 소유자 — 「RGB 표에서 선택도」) — 바탕은 팔레트만큼(또는 덜) 비치고, 챕터 바탕 위 한 겹이 줄인 판의 덩어리와 3:1 이상이다
+            // (짙은 색은 옅게 깔린다). 점 · [구성] 꼬리표는 흰 글과 4.5:1 이상이다(옅은 색은 같은 빛깔로 짙게).
+            foreach (int rgb in new[] { 0x000000, 0xFFFFFF, 0xFF0000, 0xFFFF00, 0x00FF00, 0x3366CC, 0x8000FF, 0xF4C2C2 })
+            {
+                int custom = Vn.Authoring.Chapters.SceneColors.Custom(rgb);
+                Color tint = Skin.SceneTintOf(custom);
+                Assert.InRange(tint.A, 1, Skin.SceneTint1.A);
+                Assert.Equal(((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF), ((int)tint.R, (int)tint.G, (int)tint.B));   // 고른 색 그대로 비친다
+                Color single = Over(tint, Skin.ChapterFrameFill);
+
+                foreach (Color block in new[] { Skin.BlockEpisode, Skin.BlockSceneRoot, Skin.BlockBranch, Skin.BlockOther })
+                {
+                    Assert.True(Contrast(block, single) >= 3, $"#{rgb:X6}: {block} ↔ 장면 바탕 {Contrast(block, single):0.00}:1");
+                }
+
+                Assert.True(Contrast(Skin.OnAccent, Skin.SceneMarkOf(custom)) >= 4.5, $"#{rgb:X6}의 꼬리표 글 {Contrast(Skin.OnAccent, Skin.SceneMarkOf(custom)):0.00}:1");
+            }
+
+            Assert.Equal(Color.Parse("#3366CC"), Skin.SceneMarkOf(Vn.Authoring.Chapters.SceneColors.Custom(0x3366CC)));   // 짙은 색은 점이 그 색 그대로
+
             // 틀의 글자 크기는 다섯 단계 가운데 하나다 — 꼬리표 12 · 단추 · 탭 13 · 읽는 글 15 · 제목 18 · 큰 제목 22.
             Assert.Equal(new[] { 12d, 12d, 13d, 15d, 18d, 22d }, new[] { 9d, 10d, 11d, 12d, 14d, 20d }.Select(Skin.Font));
             Assert.True(app.TryGetResource("TextSm", ThemeVariant.Light, out object? pastelSm));

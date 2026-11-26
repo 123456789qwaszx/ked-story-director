@@ -16,8 +16,44 @@ public static class SceneColors
     /// <summary>팔레트의 칸 수 — 칸은 1부터 센다.</summary>
     public const int Count = 5;
 
-    /// <summary>칸이 팔레트 안인가(1 ~ <see cref="Count"/>).</summary>
-    public static bool IsValid(int color) => color is >= 1 and <= Count;
+    /// <summary>
+    /// <b>RGB로 고른 색</b>의 표(2026-11-27 소유자 — 「장면색을 원한다면, RGB 표에서 선택도 할 수 있게」) — 칸 번호와 같은 자리(<c>int</c>)에 <c>0x1RRGGBB</c>로 담는다.
+    /// 팔레트 칸(1 ~ 5)과 겹치지 않는다. 판의 면 · 점의 색은 테마가 이 RGB에서 짓는다(<c>Skin.SceneTintOf</c> · <c>SceneMarkOf</c>) — 파일에는 <c>rgb</c>로 적는다.
+    /// </summary>
+    public const int CustomFlag = 0x1000000;
+
+    /// <summary>RGB로 고른 색인가.</summary>
+    public static bool IsCustom(int color) => (color & ~0xFFFFFF) == CustomFlag;
+
+    /// <summary>RGB(<c>0xRRGGBB</c>)를 색 값으로.</summary>
+    public static int Custom(int rgb) => CustomFlag | (rgb & 0xFFFFFF);
+
+    /// <summary>RGB로 고른 색의 <c>0xRRGGBB</c>.</summary>
+    public static int RgbOf(int color) => color & 0xFFFFFF;
+
+    /// <summary>RGB로 고른 색의 <c>#RRGGBB</c>.</summary>
+    public static string HexOf(int color) => "#" + RgbOf(color).ToString("X6", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary><c>#RRGGBB</c>(앞의 #은 없어도 된다 · 대소문자 상관없다)를 RGB로 고른 색 값으로.</summary>
+    public static bool TryParseHex(string? text, out int color)
+    {
+        color = 0;
+        string hex = (text ?? string.Empty).Trim().TrimStart('#');
+
+        if (hex.Length != 6 || !int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out int rgb))
+        {
+            return false;
+        }
+
+        color = Custom(rgb);
+        return true;
+    }
+
+    /// <summary>팔레트 칸인가(1 ~ <see cref="Count"/>).</summary>
+    public static bool IsSlot(int color) => color is >= 1 and <= Count;
+
+    /// <summary>장면 색으로 쓸 수 있는 값인가 — 팔레트 칸(1 ~ <see cref="Count"/>)이나 RGB로 고른 색.</summary>
+    public static bool IsValid(int color) => IsSlot(color) || IsCustom(color);
 
     /// <summary>
     /// 장면마다의 칸 — <paramref name="scenes"/>는 이야기 차례(<see cref="ChapterSceneGrouping.Of"/>)다. 고른 칸이 먼저, 그 밖은 자동.

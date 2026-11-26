@@ -126,13 +126,28 @@ public partial class GraphEditorView : UserControl
     {
         var menu = new ContextMenu
         {
-            ItemsSource = SceneColorMenu.Items(color, chosen, picked => UiGuard.Run(_session, Ui.SceneColor_Menu, () =>
-            {
-                if (_session is { } session)
+            ItemsSource = SceneColorMenu.Items(
+                color,
+                chosen,
+                picked => UiGuard.Run(_session, Ui.SceneColor_Menu, () =>
                 {
-                    SceneColorMenu.Apply(session, [(chapterId, sceneId, name)], picked);
-                }
-            }))
+                    if (_session is { } session)
+                    {
+                        SceneColorMenu.Apply(session, [(chapterId, sceneId, name)], picked);
+                    }
+                }),
+                // 「직접 고르기 (RGB)…」 — 색 차림을 이름표 자리에 연다(2026-11-27). 직접 고르기는 그 장면의 지금 색에서 시작한다.
+                () =>
+                {
+                    if (_session is { } session)
+                    {
+                        SceneColorMenu.ShowChooser(
+                            anchor,
+                            session,
+                            () => SceneColorMenu.ColorNow(session, chapterId, sceneId),
+                            picked => UiGuard.Run(session, Ui.SceneColor_Menu, () => SceneColorMenu.Apply(session, [(chapterId, sceneId, name)], picked)));
+                    }
+                })
         };
 
         SceneColorMenuShown = menu;

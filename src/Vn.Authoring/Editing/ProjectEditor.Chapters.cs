@@ -283,7 +283,7 @@ public sealed partial class ProjectEditor
         UpdateSceneEntry(chapterId, sceneId, text: null, string.IsNullOrWhiteSpace(name) ? null : name.Trim(), setName: true);
 
     /// <summary>
-    /// 장면 색 — 작가가 고른 팔레트 칸(1 ~ <see cref="SceneColors.Count"/>). null이면 「자동」으로 돌린다(<see cref="SceneColors"/>). 되돌리기 한 칸, 같은 값이면
+    /// 장면 색 — 작가가 고른 팔레트 칸(1 ~ <see cref="SceneColors.Count"/>)이나 RGB로 고른 색(<see cref="SceneColors.Custom"/>). null이면 「자동」으로 돌린다(<see cref="SceneColors"/>). 되돌리기 한 칸, 같은 값이면
     /// 칸을 쓰지 않는다(design/scene-colors.md 5.1).
     /// </summary>
     public void SetSceneColor(string chapterId, string sceneId, int? color)

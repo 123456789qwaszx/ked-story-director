@@ -257,25 +257,108 @@ internal static class Skin
     /// <summary>장면의 점 — 칸 5.</summary>
     public static Color SceneMark5 => C();
 
-    /// <summary>그 칸의 장면 바탕(1 ~ 5 · 밖이면 1).</summary>
-    public static Color SceneTintOf(int color) => color switch
-    {
-        2 => SceneTint2,
-        3 => SceneTint3,
-        4 => SceneTint4,
-        5 => SceneTint5,
-        _ => SceneTint1
-    };
+    /// <summary>그 장면 색의 비치는 바탕 — 팔레트 칸(1 ~ 5 · 밖이면 1)이나 RGB로 고른 색(<see cref="CustomSceneTint"/>).</summary>
+    public static Color SceneTintOf(int color) => Vn.Authoring.Chapters.SceneColors.IsCustom(color)
+        ? CustomSceneTint(Vn.Authoring.Chapters.SceneColors.RgbOf(color))
+        : color switch
+        {
+            2 => SceneTint2,
+            3 => SceneTint3,
+            4 => SceneTint4,
+            5 => SceneTint5,
+            _ => SceneTint1
+        };
 
-    /// <summary>그 칸의 장면 점(1 ~ 5 · 밖이면 1).</summary>
-    public static Color SceneMarkOf(int color) => color switch
+    /// <summary>그 장면 색의 점(이름표 · 하이어아키 · [구성] 꼬리표 · 띠) — 팔레트 칸(1 ~ 5 · 밖이면 1)이나 RGB로 고른 색(<see cref="CustomSceneMark"/>).</summary>
+    public static Color SceneMarkOf(int color) => Vn.Authoring.Chapters.SceneColors.IsCustom(color)
+        ? CustomSceneMark(Vn.Authoring.Chapters.SceneColors.RgbOf(color))
+        : color switch
+        {
+            2 => SceneMark2,
+            3 => SceneMark3,
+            4 => SceneMark4,
+            5 => SceneMark5,
+            _ => SceneMark1
+        };
+
+    /// <summary>
+    /// <b>RGB로 고른 장면 색의 바탕</b>(2026-11-27 소유자 — 「장면색을 원한다면, RGB 표에서 선택도」) — 고른 색을 팔레트와 같은 만큼 비치게 깐다(<see cref="SceneTint1"/>의
+    /// 알파 — 장면이 겹친 자리는 팔레트처럼 한 겹 더 진하다). 단 챕터 바탕 위 한 겹이 팔레트의 가장 어두운 칸보다 어두워지지 않게 알파를 낮춘다 — 줄인 판의 덩어리와의
+    /// 대비(3:1 · design/board-zoom.md)가 고른 색에서도 지켜진다. 그래서 짙은 색일수록 옅게 깔린다.
+    /// </summary>
+    internal static Color CustomSceneTint(int rgb)
     {
-        2 => SceneMark2,
-        3 => SceneMark3,
-        4 => SceneMark4,
-        5 => SceneMark5,
-        _ => SceneMark1
-    };
+        Color picked = RgbColor(rgb);
+        Color paper = Opaque(ChapterFrameFill);
+        double floor = Enumerable.Range(1, Vn.Authoring.Chapters.SceneColors.Count).Min(slot => Luminance(Over(SceneTintOf(slot), paper)));
+
+        for (int alpha = SceneTint1.A; alpha > 1; alpha--)
+        {
+            Color tint = picked.Alpha((byte)alpha);
+
+            if (Luminance(Over(tint, paper)) >= floor - 0.0005)
+            {
+                return tint;
+            }
+        }
+
+        return picked.Alpha(1);
+    }
+
+    /// <summary>
+    /// <b>RGB로 고른 장면 색의 점</b>(2026-11-27) — 고른 색 그대로다. 단 [구성] 카드 꼬리표의 흰 글(<see cref="OnAccent"/>)과 대비 4.5:1이 안 되면(옅은 색) 같은 빛깔로
+    /// 짙게 한다 — 점 · 꼬리표 · 띠는 작아서 옅은 색으로는 보이지 않는다(팔레트의 점과 같은 까닭).
+    /// </summary>
+    internal static Color CustomSceneMark(int rgb)
+    {
+        Color picked = RgbColor(rgb);
+
+        for (int step = 0; step <= 50; step++)
+        {
+            double keep = 1 - (step * 0.02);
+            var mark = Color.FromRgb(
+                (byte)Math.Round(picked.R * keep), (byte)Math.Round(picked.G * keep), (byte)Math.Round(picked.B * keep));
+
+            if (Contrast(mark, OnAccent) >= 4.6)
+            {
+                return mark;
+            }
+        }
+
+        return Colors.Black;
+    }
+
+    private static Color RgbColor(int rgb) => Color.FromRgb((byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF));
+
+    /// <summary>비치는 색을 바탕 위에 한 겹 — 불투명한 색이 된다.</summary>
+    internal static Color Over(Color top, Color under)
+    {
+        double alpha = top.A / 255d;
+        byte Mix(byte t, byte u) => (byte)Math.Round((t * alpha) + (u * (1 - alpha)));
+        return Color.FromRgb(Mix(top.R, under.R), Mix(top.G, under.G), Mix(top.B, under.B));
+    }
+
+    /// <summary>비치는 바탕이면 흰 종이 위에 얹은 색으로(기본 테마의 챕터 바탕은 비친다).</summary>
+    private static Color Opaque(Color color) => color.A == 255 ? color : Over(color, Colors.White);
+
+    /// <summary>상대 휘도(WCAG).</summary>
+    internal static double Luminance(Color color)
+    {
+        static double Linear(byte channel)
+        {
+            double value = channel / 255d;
+            return value <= 0.04045 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        return (0.2126 * Linear(color.R)) + (0.7152 * Linear(color.G)) + (0.0722 * Linear(color.B));
+    }
+
+    /// <summary>두 색의 대비(WCAG — 1 ~ 21).</summary>
+    internal static double Contrast(Color a, Color b)
+    {
+        double one = Luminance(a), two = Luminance(b);
+        return (Math.Max(one, two) + 0.05) / (Math.Min(one, two) + 0.05);
+    }
 
     /// <summary>장면 이름표의 바탕.</summary>
     public static Color SceneLabel => C();

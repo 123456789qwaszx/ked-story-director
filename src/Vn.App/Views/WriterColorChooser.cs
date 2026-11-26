@@ -24,7 +24,8 @@ internal sealed class WriterColorChooser
 
     /// <param name="fill">바탕색이면 참 — 정해 둔 열 가지의 옅은 색을 보인다.</param>
     /// <param name="noneTip">「없음」의 풍선 글.</param>
-    public WriterColorChooser(bool fill, string noneTip)
+    /// <param name="noneLabel">「없음」 단추의 글 — 장면 색은 「자동」이다(2026-11-27). 없으면 「없음」.</param>
+    public WriterColorChooser(bool fill, string noneTip, string? noneLabel = null)
     {
         _fill = fill;
         Last = WriterSwatch.All[fill ? 2 : 0].Of(fill);   // 바탕은 노랑, 글자는 빨강부터
@@ -38,7 +39,7 @@ internal sealed class WriterColorChooser
 
         var none = new Button
         {
-            Content = Ui.Board_None,
+            Content = noneLabel ?? Ui.Board_None,
             FontSize = Skin.Font(11),
             Margin = new Thickness(2),
             Focusable = false,
