@@ -37,7 +37,8 @@ src/Vn.App/
   그 컨트롤에 클래스만 붙인다.
 - **판 위의 모양**(코드가 짓는 것)도 이름으로 정한다 — 카드의 머리 띠(`EpisodeBand` … 투명이면 띠를 짓지 않는다) · 등뼈의 진하기(`CardSpineOpacity`) ·
   고른 카드의 고리와 그림자(`CardSelectedShadow`) · 길의 굵기(`LineWeight`) · 선택지 칸(`SlotSurface` · `SlotRadius` · `SlotPill`) · 챕터와 장면의
-  테두리 · 이름표(`ChapterFrame…` · `SceneFrame…` · `…Label`). **치수를 바꾸는 값은 두지 않는다** — 카드의 여백 · 머리 높이는 테마와 상관없이 같아서
+  테두리 · 이름표(`ChapterFrame…` · `SceneFrame…` · `…Label`) · 이름표의 자리와 크기(`ChapterLabelTop` · `SceneLabelTop` — 테두리의 위쪽 선에서 잰 자리,
+  음수면 선 위에 걸터앉는다 · `ChapterLabelFont` · `SceneLabelFont` · `FrameLabelGrow` · `FrameLabelShadow`). **치수를 바꾸는 값은 두지 않는다** — 카드의 여백 · 머리 높이는 테마와 상관없이 같아서
   선이 닿는 자리의 셈이 그대로다.
 - **틀의 글자 크기**도 테마가 정한다 — 코드는 `FontSize = Skin.Font(11)`(기본 테마의 크기를 주면 테마의 배수 `FontScale`을 곱한다), XAML은
   `FontSize="{DynamicResource TextSm}"`(단계 `TextXxs` 9 · `TextXs` 10 · `TextSm` 11 · `TextMd` 12 · `TextLg` 14 — 테마는 `FontScale`과 같은 비율로

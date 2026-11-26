@@ -1,7 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- 파스텔 하늘 — 컨트롤의 모양 · 글꼴 · 눌림. 색은 Tokens.axaml(Fluent 테마의 이름을 덮는다)에 있고, 여기는 색 이름만으로 못 바꾸는 것을 적는다.
-         화면이 붙여 둔 클래스로 고른다 — 「chunky」(틀의 큰 단추 · 「primary」 만들기 · 「danger」 지우기), 「card-title」(카드 제목),
+         화면이 붙여 둔 클래스로 고른다 — 「chunky」(틀의 큰 단추 · 「primary」 만들기 · 「danger」 지우기), 「card-title」(카드 제목), 「frame-title」(챕터 · 장면 이름표),
          「card-writing」(카드 글 칸). 클래스는 기본 테마에서는 아무 일도 하지 않는다. -->
 
     <!-- 글꼴 — 창마다(주 창 · 설정 창). 창 안의 글은 이것을 물려받는다. -->
@@ -156,6 +156,12 @@
     </Style>
     <Style Selector="TabControl#MainTabs > TabItem:selected /template/ Border#PART_SelectedPipe">
         <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- 챕터 · 장면 이름표 — 제목 글꼴 -->
+    <Style Selector="TextBlock.frame-title">
+        <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
+        <Setter Property="FontWeight" Value="Normal" />
     </Style>
 
     <!-- 카드 제목 -->

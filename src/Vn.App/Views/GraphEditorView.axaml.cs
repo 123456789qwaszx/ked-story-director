@@ -1130,13 +1130,15 @@ public partial class GraphEditorView : UserControl
             var label = new Border
             {
                 CornerRadius = new CornerRadius(Skin.LabelRadius),
-                Padding = new Thickness(8, 3),
+                Padding = new Thickness(8 + (4 * Skin.FrameLabelGrow), 3 + Skin.FrameLabelGrow),
                 Background = (isActive ? Skin.ChapterLabel : Skin.ChapterLabelIdle).Brush(),
+                BoxShadow = Skin.FrameLabelShadow,
                 Cursor = new Cursor(StandardCursorType.Hand),
                 Child = new TextBlock
                 {
                     Text = string.Format(Ui.Board_Chapter, chapterName),
-                    FontSize = 11,
+                    Classes = { "frame-title" },   // 테마가 이름표의 글꼴을 고르는 손잡이(Themes/*/Controls.axaml)
+                    FontSize = Skin.ChapterLabelFont,
                     FontWeight = FontWeight.SemiBold,
                     Foreground = Skin.ChapterLabelInk.Brush()
                 }
@@ -1156,8 +1158,10 @@ public partial class GraphEditorView : UserControl
                 new HierarchyPick(HierarchyKind.Chapter, boardName),
                 () => _session?.SetFileExpanded(frameFileId, expanded: false));
 
-            Canvas.SetLeft(label, area.X + 12);
-            Canvas.SetTop(label, area.Y + 10);
+            // 이름표의 자리는 테마가 정한다 — 기본은 테두리 안쪽 왼위, 「파스텔 하늘」은 테두리의 위쪽 선 위에 걸터앉는다(2026-11-26 소유자 —
+            // 「안에 있으니 그 위치도 잘 안 보이고 중요도가 너무 떨어져 보입니다」 · themes).
+            Canvas.SetLeft(label, area.X + 12 + (8 * Skin.FrameLabelGrow));
+            Canvas.SetTop(label, LabelTop(area.Y, Skin.ChapterLabelTop));
 
             _frames.Add(frame);
             _frames.Add(label);
@@ -1308,8 +1312,11 @@ public partial class GraphEditorView : UserControl
         var label = new Border
         {
             CornerRadius = new CornerRadius(Skin.ChipRadius),
-            Padding = new Thickness(6, 1),
+            Padding = new Thickness(6 + (4 * Skin.FrameLabelGrow), 1 + (2 * Skin.FrameLabelGrow)),
             Background = Skin.SceneLabel.Brush(),
+            BorderThickness = new Thickness(1.5 * Skin.FrameLabelGrow),
+            BorderBrush = Skin.SceneLabelBorder.Brush(),
+            BoxShadow = Skin.FrameLabelShadow,
             Cursor = new Cursor(StandardCursorType.Hand),
             Tag = SceneLabelTag + scene.SceneId,
             Child = new TextBlock
@@ -1318,7 +1325,8 @@ public partial class GraphEditorView : UserControl
                 // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
                 Text = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄"),
-                FontSize = 10,
+                Classes = { "frame-title" },
+                FontSize = Skin.SceneLabelFont,
                 FontWeight = FontWeight.SemiBold,
                 Foreground = Skin.SceneLabelInk.Brush()
             }
@@ -1332,11 +1340,18 @@ public partial class GraphEditorView : UserControl
             new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
             () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: true));
 
-        Canvas.SetLeft(label, area.X + 10);
-        Canvas.SetTop(label, area.Y + 6);
+        Canvas.SetLeft(label, area.X + 10 + (6 * Skin.FrameLabelGrow));
+        Canvas.SetTop(label, LabelTop(area.Y, Skin.SceneLabelTop));
 
         return label;
     }
+
+    /// <summary>
+    /// 이름표의 세로 자리 — 테두리의 위쪽 선에서 테마가 정한 만큼. 선 위에 걸터앉는 이름표(음수)는 판의 맨 위 밖으로 나가지 않게 붙든다(테두리가 판의
+    /// 위쪽 끝에 닿아 있어도 이름표가 잘리지 않는다). 기본 테마의 자리(테두리 안쪽)는 그대로다.
+    /// </summary>
+    private static double LabelTop(double frameTop, double offset) =>
+        offset < 0 ? Math.Max(0, frameTop + offset) : frameTop + offset;
 
     // ── 챕터 간선 철도 배선 (T1) ────────────────────────────────────────────
 

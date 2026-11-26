@@ -81,6 +81,7 @@
     <Color x:Key="SceneFrameBorder">#FFFFFFFF</Color>
     <Color x:Key="SceneFrameFill">#55FFFFFF</Color>
     <Color x:Key="SceneLabel">#FFFFFFFF</Color>
+    <Color x:Key="SceneLabelBorder">#B9CFDC</Color>
     <Color x:Key="SceneLabelInk">#2B3A48</Color>
     <Color x:Key="EpisodeBand">#D9E9F2</Color>
     <Color x:Key="SceneRootBand">#D9E9F2</Color>
@@ -123,6 +124,11 @@
     <x:Double x:Key="LineWeight">1.4</x:Double>
     <x:Double x:Key="SlotRadius">10</x:Double>
     <x:Double x:Key="SlotPill">1</x:Double>
+    <x:Double x:Key="ChapterLabelTop">-15</x:Double>
+    <x:Double x:Key="SceneLabelTop">-12</x:Double>
+    <x:Double x:Key="ChapterLabelFont">14</x:Double>
+    <x:Double x:Key="SceneLabelFont">12</x:Double>
+    <x:Double x:Key="FrameLabelGrow">1</x:Double>
     <x:Double x:Key="StructureCardRadius">12</x:Double>
     <x:Double x:Key="LineRowBoxed">0</x:Double>
     <CornerRadius x:Key="FloatingCorner">14</CornerRadius>
@@ -139,6 +145,7 @@
     <x:Double x:Key="TextSm">12.5</x:Double>
     <x:Double x:Key="TextMd">14</x:Double>
     <x:Double x:Key="TextLg">16</x:Double>
+    <x:String x:Key="FrameLabelShadow">0 2 0 0 #C5D9E5</x:String>
     <x:String x:Key="CardSelectedShadow">0 0 0 2 #DE8AA6, 0 4 0 0 #EFC4D0</x:String>
     <x:String x:Key="CardShadow">0 3 0 0 #CFDDE6</x:String>
 

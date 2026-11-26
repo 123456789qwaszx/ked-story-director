@@ -233,6 +233,9 @@ internal static class Skin
     /// <summary>장면 이름표의 바탕.</summary>
     public static Color SceneLabel => C();
 
+    /// <summary>장면 이름표의 테두리(<see cref="FrameLabelGrow"/>일 때만 선다).</summary>
+    public static Color SceneLabelBorder => C();
+
     /// <summary>장면 이름표의 글.</summary>
     public static Color SceneLabelInk => C();
 
@@ -355,6 +358,21 @@ internal static class Skin
     public static BoxShadows CardSelectedShadow =>
         ThemeService.ShadowsOf(nameof(CardSelectedShadow)) is { Count: > 0 } ring ? ring : CardShadow;
 
+    /// <summary>챕터 이름표의 세로 자리 — 챕터 테두리의 위쪽 선에서 잰다(기본 10 = 테두리 안쪽, 음수면 선 위에 걸터앉는다).</summary>
+    public static double ChapterLabelTop => N();
+
+    /// <summary>장면 이름표의 세로 자리 — 장면 테두리의 위쪽 선에서 잰다(기본 6).</summary>
+    public static double SceneLabelTop => N();
+
+    /// <summary>챕터 이름표의 글자 크기(판 위의 글 — 배율을 따른다).</summary>
+    public static double ChapterLabelFont => N();
+
+    /// <summary>장면 이름표의 글자 크기.</summary>
+    public static double SceneLabelFont => N();
+
+    /// <summary>1이면 챕터 · 장면 이름표의 여백을 넉넉히 하고 장면 이름표에 테두리를 두른다(선 위에 걸터앉는 이름표), 0이면 기본.</summary>
+    public static double FrameLabelGrow => N();
+
     /// <summary>[구성] 카드의 모서리.</summary>
     public static double StructureCardRadius => N();
 
@@ -418,6 +436,9 @@ internal static class Skin
     /// 판 위의 글(카드 · 선택지 칸 · 이름표)에는 쓰지 않는다 — 그쪽은 치수가 정해져 있고 배율로 본다.
     /// </summary>
     public static double Font(double size) => Math.Round(size * FontScale * 2, MidpointRounding.AwayFromZero) / 2;
+
+    /// <summary>챕터 · 장면 이름표의 그림자 — 기본 테마는 없다.</summary>
+    public static BoxShadows FrameLabelShadow => ThemeService.ShadowsOf(nameof(FrameLabelShadow));
 
     /// <summary>[대본] 카드의 그림자 — 기본 테마는 없다.</summary>
     public static BoxShadows CardShadow => ThemeService.ShadowsOf(nameof(CardShadow));
