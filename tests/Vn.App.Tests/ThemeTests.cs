@@ -215,6 +215,9 @@ public sealed class ThemeTests : IDisposable
                 }
 
                 Assert.True(Contrast(Skin.SceneMarkOf(slot), Skin.SceneLabel) >= 3, $"칸 {slot}의 점 ↔ 이름표 {Contrast(Skin.SceneMarkOf(slot), Skin.SceneLabel):0.00}:1");
+
+                // [구성] 카드의 장면 꼬리표는 점 색 바탕에 흰 작은 글이다 — 4.5:1 이상(2026-11-27 세이지 · 민트를 조금 낮췄다).
+                Assert.True(Contrast(Skin.OnAccent, Skin.SceneMarkOf(slot)) >= 4.5, $"칸 {slot}의 꼬리표 글 {Contrast(Skin.OnAccent, Skin.SceneMarkOf(slot)):0.00}:1");
                 Assert.True(Contrast(Over(tint, single), single) > 1.08, $"칸 {slot}: 겹친 자리가 진해지지 않는다");
             }
 

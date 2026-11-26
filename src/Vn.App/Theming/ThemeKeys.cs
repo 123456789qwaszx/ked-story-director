@@ -256,7 +256,7 @@ internal static class ThemeKeys
         new("CardName", ThemeValueKind.Color, ThemeKeyGroup.Structure, "카드 이름", "Card names"),
         new("StatKey", ThemeValueKind.Color, ThemeKeyGroup.Structure, "스탯 키", "Stat keys"),
         new("StatValue", ThemeValueKind.Color, ThemeKeyGroup.Structure, "스탯 값", "Stat values"),
-        new("SceneChip", ThemeValueKind.Color, ThemeKeyGroup.Structure, "장면 이름 표", "Scene name tags"),
+        new("SceneChip", ThemeValueKind.Color, ThemeKeyGroup.Structure, "분기 카드로 가는 고리", "Links to branch cards"),
         new("NoteBorder", ThemeValueKind.Color, ThemeKeyGroup.Structure, "안내 쪽지의 왼쪽 줄", "Left line of guide notes"),
         new("Accent", ThemeValueKind.Color, ThemeKeyGroup.Status, "강조 — 지금 챕터 · 자동 길", "Highlight — current chapter, automatic paths"),
         new("Danger", ThemeValueKind.Color, ThemeKeyGroup.Status, "막힘 · 끊기 · 문구 없음", "Blocked, disconnect, missing text"),

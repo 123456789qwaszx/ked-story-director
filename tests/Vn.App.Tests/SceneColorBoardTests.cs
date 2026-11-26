@@ -15,7 +15,7 @@ namespace Vn.App.Tests;
 /// <summary>
 /// <b>[대본] 판의 장면은 장면마다 색이 다르다</b>(design/scene-colors.md · 2026-11-26 소유자 — 「권고대로」). 장면 면은 그 장면 색의 <b>비치는</b> 바탕이라 장면이
 /// 겹친 자리는 한 겹 더 진하고(소유자 — 「같은 색의 장면끼리 겹칠 때, 이게 아예 구분이 안 가는데」), 장면 이름표 앞에는 같은 색의 점이 선다. 접은 장면 상자도
-/// 그 장면의 색이다. 색은 고른 칸이 먼저, 그 밖은 자동(<see cref="SceneColors"/>).
+/// 그 장면의 색이다. 색은 고른 칸이 먼저, 그 밖은 자동(<see cref="SceneColors"/>). 미니맵에도 장면 자리가 그 장면 색으로 깔린다(2026-11-27).
 /// </summary>
 public sealed class SceneColorBoardTests : IDisposable
 {
@@ -90,7 +90,53 @@ public sealed class SceneColorBoardTests : IDisposable
         Assert.NotEqual(Skin.ChapterFrameFill, background);
     });
 
+    [Fact]
+    public void 미니맵에_장면_자리가_그_장면_색으로_카드_밑에_깔린다() => HeadlessUi.Run(() =>
+    {
+        // design/scene-colors.md ⑤ — 미니맵에서도 장면 덩어리가 보인다. ⛔ 그 전에는 카드만 그렸다.
+        (GraphEditorView graph, AuthoringSession session, string board) = Show();
+        IReadOnlyDictionary<string, int> colors = Colors(session);
+        Canvas map = graph.FindControl<Canvas>("MinimapCanvas")!;
+
+        foreach (string sceneId in new[] { "opening", "hall" })
+        {
+            Avalonia.Controls.Shapes.Rectangle area = MinimapScene(map, board, sceneId);
+            Assert.Equal(Skin.SceneTintOf(colors[sceneId]), ((ISolidColorBrush)area.Fill!).Color);   // 판과 같은 비치는 색
+            Assert.True(area.Width > 2 && area.Height > 2, "장면 자리는 카드 여럿을 품는 크기다");
+        }
+
+        // 판의 자리대로 — opening(위)이 hall(아래)보다 위다.
+        Assert.True(Canvas.GetTop(MinimapScene(map, board, "opening")) < Canvas.GetTop(MinimapScene(map, board, "hall")));
+
+        // 카드 밑에 깔린다 — 장면 자리를 모두 먼저 그리고 카드(꼬리표 없는 사각형)가 그 뒤에 선다.
+        List<Control> children = map.Children.ToList();
+        int lastScene = children.FindLastIndex(child => (child.Tag as string)?.StartsWith(GraphEditorView.MinimapSceneTag, StringComparison.Ordinal) == true);
+        int firstCard = children.FindIndex(child => child is Avalonia.Controls.Shapes.Rectangle && child.Tag is null);
+        Assert.True(lastScene >= 0 && firstCard > lastScene, $"장면 {lastScene} · 카드 {firstCard}");
+    });
+
+    [Fact]
+    public void 미니맵의_접은_장면_상자도_그_장면의_색이다() => HeadlessUi.Run(() =>
+    {
+        (GraphEditorView graph, AuthoringSession session, string board) = Show();
+        int color = Colors(session)["hall"];
+
+        session.SetSceneCollapsed(board, "hall", collapsed: true);
+        graph.Rebuild();
+        Settle(graph);
+
+        // 접으면 장면 자리 대신 상자 하나 — 그 장면의 점 색 덩어리다(판의 상자 테두리 · 점과 한 색).
+        Color fill = ((ISolidColorBrush)MinimapScene(graph.FindControl<Canvas>("MinimapCanvas")!, board, "hall").Fill!).Color;
+        Color mark = Skin.SceneMarkOf(color);
+        Assert.Equal((mark.R, mark.G, mark.B), (fill.R, fill.G, fill.B));
+    });
+
     // ── 기반 ────────────────────────────────────────────────────────────────
+
+    /// <summary>미니맵에서 그 장면의 자리(펼친 장면의 면 · 접은 장면의 상자).</summary>
+    private static Avalonia.Controls.Shapes.Rectangle MinimapScene(Canvas map, string board, string sceneId) =>
+        map.Children.OfType<Avalonia.Controls.Shapes.Rectangle>()
+            .Single(rect => rect.Tag as string == GraphEditorView.MinimapSceneTag + board + "/" + sceneId);
 
     private static IReadOnlyDictionary<string, int> Colors(AuthoringSession session)
     {

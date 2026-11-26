@@ -179,9 +179,10 @@ public partial class GraphEditorView : UserControl
 
     /// <summary>
     /// 판에 그린 장면 테두리의 자리 — 빈 곳을 눌렀을 때 그 자리가 어느 장면 안인지 찾는다(<see cref="SceneAt"/>). 테두리는 손을
-    /// 받지 않으므로(카드 · 선 · 범위 선택이 먼저다) 자리로 찾는다. 테두리를 그릴 때마다 다시 채운다.
+    /// 받지 않으므로(카드 · 선 · 범위 선택이 먼저다) 자리로 찾는다. 테두리를 그릴 때마다 다시 채운다. 미니맵도 이것으로 장면 자리를 그 장면 색(<c>Color</c> —
+    /// 팔레트 칸)으로 깐다(<see cref="RefreshMinimap"/>).
     /// </summary>
-    private readonly List<(Rect Area, string FileId, string ChapterId, string SceneId)> _sceneAreas = new();
+    private readonly List<(Rect Area, string FileId, string ChapterId, string SceneId, int Color)> _sceneAreas = new();
 
     /// <summary>판에 그린 챕터 테두리의 자리(챕터인 판만) — 장면 밖 · 챕터 안의 빈 곳을 찾는다.</summary>
     private readonly List<(Rect Area, string ChapterId)> _chapterAreas = new();
@@ -1383,7 +1384,7 @@ public partial class GraphEditorView : UserControl
             area = area.Inflate(SceneFramePad);
 
             int color = SceneColors.ColorOf(colors, scene.SceneId);
-            _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
+            _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId, color));
             _frames.Add(SceneFrame(area, Skin.SceneTintOf(color)));
 
             Border label = SceneLabel(
@@ -5778,7 +5779,7 @@ public partial class GraphEditorView : UserControl
             _session?.SetSceneCollapsed(scene.FileId, scene.SceneId, collapsed: false);
         };
 
-        return new FileProxyVisual(scene.FileId, visual, rows, Math.Max(1, rows.Count), scene.SceneId);
+        return new FileProxyVisual(scene.FileId, visual, rows, Math.Max(1, rows.Count), scene.SceneId, color);
     }
 
     /// <summary>상자 머리 — 색 점 · 이름 · 한 줄 설명. 접힌 판과 접은 장면이 함께 쓴다.</summary>
@@ -7552,10 +7553,21 @@ public partial class GraphEditorView : UserControl
         }
     }
 
-    /// <summary>미니맵 전체 다시 그리기 — 카드·프록시를 축소 사각형으로, 위에 뷰포트 틀.</summary>
+    /// <summary>미니맵의 장면 자리 — 꼬리표 뒤는 「판 ID/장면ID」(검증이 집는다). 펼친 장면은 그 장면의 옅은 면, 접은 장면 상자는 그 장면의 점 색이다.</summary>
+    internal const string MinimapSceneTag = "minimap-scene:";
+
+    /// <summary>미니맵 전체 다시 그리기 — 장면 자리를 깔고, 카드·프록시를 축소 사각형으로, 위에 뷰포트 틀.</summary>
     private void RefreshMinimap()
     {
         MinimapCanvas.Children.Clear();
+
+        // 장면 자리를 그 장면의 옅은 면(판과 같은 비치는 색)으로 먼저 깐다 — 카드가 그 위에 서서 미니맵에서도 장면 덩어리가 보인다(design/scene-colors.md ⑤ ·
+        // 2026-11-27 소유자 — 「다음 단계 진행」). 겹친 장면은 판처럼 한 겹 더 진하다. ⛔ 그 전에는 카드만 그렸다.
+        foreach ((Rect Area, string FileId, string ChapterId, string SceneId, int Color) scene in _sceneAreas)
+        {
+            AddMinimapRect(scene.Area.X, scene.Area.Y, scene.Area.Width, scene.Area.Height, Skin.SceneTintOf(scene.Color).Brush())
+                .Tag = MinimapSceneTag + scene.FileId + "/" + scene.SceneId;
+        }
 
         foreach (NodeCard card in _cards)
         {
@@ -7564,17 +7576,23 @@ public partial class GraphEditorView : UserControl
                 Canvas.GetTop(card.Visual),
                 card.Visual.Width,
                 CardHeightOf(card),
-                card.Style.Accent); // 카드와 같은 시각 언어 — 미니맵에서도 에피소드·분기 카드가 갈린다.
+                card.Style.Accent.Brush(170)); // 카드와 같은 시각 언어 — 미니맵에서도 에피소드·분기 카드가 갈린다.
         }
 
         foreach (FileProxyVisual proxy in _proxies)
         {
-            AddMinimapRect(
+            // 접은 장면 상자는 그 장면의 점 색 덩어리다(판의 상자 테두리 · 점과 한 색). 판째 접힌 상자는 회색 그대로.
+            Rectangle box = AddMinimapRect(
                 Canvas.GetLeft(proxy.Visual),
                 Canvas.GetTop(proxy.Visual),
                 ProxyWidth,
                 ProxyHeaderHeight + (proxy.VisualRowCount * ProxyRowHeight),
-                Skin.Neutral);
+                (proxy.SceneId is null ? Skin.Neutral : Skin.SceneMarkOf(proxy.SceneColor)).Brush(170));
+
+            if (proxy.SceneId is { } sceneId)
+            {
+                box.Tag = MinimapSceneTag + proxy.FileId + "/" + sceneId;
+            }
         }
 
         _minimapViewport = new Rectangle
@@ -7588,13 +7606,13 @@ public partial class GraphEditorView : UserControl
         RefreshMinimapViewport();
     }
 
-    private void AddMinimapRect(double x, double y, double width, double height, Color color)
+    private Rectangle AddMinimapRect(double x, double y, double width, double height, IBrush fill)
     {
         var rect = new Rectangle
         {
             Width = Math.Max(2, width * (MinimapWidth / CanvasWidth)),
             Height = Math.Max(2, height * (MinimapHeight / CanvasHeight)),
-            Fill = color.Brush(170),
+            Fill = fill,
             RadiusX = 1,
             RadiusY = 1,
             IsHitTestVisible = false
@@ -7602,6 +7620,7 @@ public partial class GraphEditorView : UserControl
         Canvas.SetLeft(rect, x * (MinimapWidth / CanvasWidth));
         Canvas.SetTop(rect, y * (MinimapHeight / CanvasHeight));
         MinimapCanvas.Children.Add(rect);
+        return rect;
     }
 
     /// <summary>뷰포트 틀만 옮긴다 — 스크롤·줌마다 불리므로 전체를 다시 그리지 않는다.</summary>
@@ -8285,12 +8304,12 @@ public partial class GraphEditorView : UserControl
     /// <summary>그 자리를 품은 장면 테두리. 장면 테두리는 서로 겹치지 않게 서지만, 겹쳤다면 작은 쪽이 먼저다.</summary>
     private (string FileId, string ChapterId, string SceneId)? SceneAt(Point point)
     {
-        foreach ((Rect area, string fileId, string chapterId, string sceneId) in
+        foreach ((Rect Area, string FileId, string ChapterId, string SceneId, int Color) scene in
                  _sceneAreas.OrderBy(item => item.Area.Width * item.Area.Height))
         {
-            if (area.Contains(point))
+            if (scene.Area.Contains(point))
             {
-                return (fileId, chapterId, sceneId);
+                return (scene.FileId, scene.ChapterId, scene.SceneId);
             }
         }
 
@@ -9370,19 +9389,23 @@ public partial class GraphEditorView : UserControl
     private sealed class FileProxyVisual
     {
         public FileProxyVisual(
-            string fileId, Border visual, IReadOnlyList<ProxyNodeRow> rows, int visualRowCount, string? sceneId = null)
+            string fileId, Border visual, IReadOnlyList<ProxyNodeRow> rows, int visualRowCount, string? sceneId = null, int sceneColor = 0)
         {
             FileId = fileId;
             Visual = visual;
             Rows = rows;
             VisualRowCount = visualRowCount;
             SceneId = sceneId;
+            SceneColor = sceneColor;
         }
 
         public string FileId { get; }
 
         /// <summary>펼친 판 안의 접은 장면 상자면 그 장면 — 판째 접힌 상자면 null이다 (2026-10-30).</summary>
         public string? SceneId { get; }
+
+        /// <summary>접은 장면 상자의 장면 색(팔레트 칸 1 ~) — 판째 접힌 상자면 0이다. 미니맵이 상자를 이 색으로 그린다.</summary>
+        public int SceneColor { get; }
         public Border Visual { get; }
         public IReadOnlyList<ProxyNodeRow> Rows { get; }
 

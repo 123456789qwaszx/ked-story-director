@@ -390,7 +390,10 @@ internal static class Skin
     /// <summary>스탯 값.</summary>
     public static Color StatValue => C();
 
-    /// <summary>장면 이름 표 · 장면으로 가는 글.</summary>
+    /// <summary>
+    /// 분기 카드로 가는 글(「⑂ 이름」). ⛔ [구성] 카드의 장면 꼬리표는 2026-11-27부터 그 장면의 색이다(<see cref="SceneMarkOf"/> · design/scene-colors.md ⑥) —
+    /// 그 전에는 이 색(회색)이었다.
+    /// </summary>
     public static Color SceneChip => C();
 
     // ── 모양 ─────────────────────────────────────────────

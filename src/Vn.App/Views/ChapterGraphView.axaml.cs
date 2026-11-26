@@ -1593,9 +1593,12 @@ public partial class ChapterGraphView : UserControl
         DrawEpisodeRails(model);
         DrawBranchMarkers();
 
+        // 장면 색 — [대본] 판 · 하이어아키와 같은 셈이다(고른 칸이 먼저, 그 밖은 자동 · design/scene-colors.md). 두 탭에서 같은 장면이 한 색이다.
+        IReadOnlyDictionary<string, int> sceneColors = SceneColors.Of(ChapterSceneGrouping.Of(model), model.SceneNotes);
+
         foreach (ChapterEpisode episode in model.Episodes)
         {
-            DrawPart([episode.EpisodeId], () => DrawEpisode(model, episode), redrawable: false);
+            DrawPart([episode.EpisodeId], () => DrawEpisode(model, episode, sceneColors), redrawable: false);
         }
 
         // 칩은 카드 위에 선다 — 카드 사이가 좁으면 옆 카드에 걸치는데, 그래도 읽히고 눌려야 한다(자리는 에피소드를 옮겨 낸다).
@@ -2307,7 +2310,7 @@ public partial class ChapterGraphView : UserControl
         _lineBase[key] = (stroke, thickness);
     }
 
-    private void DrawEpisode(ChapterGraphModel model, ChapterEpisode episode)
+    private void DrawEpisode(ChapterGraphModel model, ChapterEpisode episode, IReadOnlyDictionary<string, int> sceneColors)
     {
         // 모델의 오류든 도달 불가든 노드에는 같은 ⚠로 선다 — 기획자에게는 둘 다 "고칠 것"이다.
         bool hasError = model.EpisodeHasError(episode) || IsUnreachable(episode);
@@ -2332,12 +2335,19 @@ public partial class ChapterGraphView : UserControl
         }
 
         // 장면ID만(2026-11-18 소유자 · ⛔ 그 전에는 「장면 · {장면ID}」) — 「ID로 보기」를 끄면 장면 이름. 무엇인지는 툴팁이 말한다.
+        //
+        // 꼬리표는 그 장면의 색(점 색 — SceneMark1 ~)이고, 카드 왼쪽 가장자리에 같은 색의 얇은 띠가 선다(<see cref="SceneStripeSurface"/>) — [대본] 판의 장면 면 ·
+        // 하이어아키의 점과 한 색이라 두 탭에서 같은 장면을 색으로 찾는다(design/scene-colors.md ⑥ · 2026-11-27 소유자 — 「권고대로」). [구성] 판에는 장면
+        // 테두리를 그리지 않는다: 카드가 흐름 차례로 서고 따로 옮겨져 한 장면의 카드가 흩어질 수 있어, 감싸는 면은 남의 카드까지 품고 서로 겹친다.
+        // ⛔ 그 전에는 꼬리표가 모든 장면에서 회색(SceneChip)이었다.
+        Color sceneMark = Skin.SceneMarkOf(SceneColors.ColorOf(sceneColors, episode.SceneId));
         Border scene = CardChip(
             showIds ? episode.SceneId : ChapterSceneNotes.NameOf(model.SceneNotes, episode.SceneId) is { Length: > 0 } sceneName
                 ? sceneName
                 : episode.SceneId,
-            Skin.SceneChip,
+            sceneMark,
             FontWeight.SemiBold);
+        scene.Tag = SceneChipTag;
         ToolTip.SetTip(scene, string.Format(Ui.Structure_SceneEpisodesWithSameScene, episode.SceneId));
         header.Children.Add(scene);
 
@@ -2437,7 +2447,7 @@ public partial class ChapterGraphView : UserControl
             BorderBrush = hasError
                 ? Skin.DangerText.Brush()
                 : Skin.StructureSlot.Brush(),
-            Background = Skin.StructureCardSurface.Brush(),
+            Background = SceneStripeSurface(sceneMark),
             Child = body,
             // 노드 카드임을 EpisodeId로 표시한다. 간선 라벨도 Border라서, 표식이 없으면
             // 검증이 카드와 라벨을 구별하지 못한다.
@@ -2673,6 +2683,29 @@ public partial class ChapterGraphView : UserControl
         new("Malgun Gothic, Apple SD Gothic Neo, Noto Sans KR, Noto Sans CJK KR, $Default");
 
     /// <summary>카드 머리 칩 하나 — 높이를 박고(<see cref="CardChipHeight"/>) 글은 가운데에 선다.</summary>
+    /// <summary>[구성] 카드의 장면 꼬리표 — 검증이 글자 짐작 없이 집는다.</summary>
+    internal const string SceneChipTag = "scene-chip";
+
+    /// <summary>카드 왼쪽 가장자리의 장면 색 띠 폭(판 단위 · 테두리 밑까지) — 테두리 안에 3이 보인다. 글(안쪽 여백 9)과는 떨어져 선다.</summary>
+    internal const double SceneStripeWidth = 4;
+
+    /// <summary>
+    /// [구성] 카드의 바탕 — 왼쪽 가장자리에 그 장면 색(점 색)의 얇은 띠, 나머지는 카드 면(<see cref="Skin.StructureCardSurface"/>). 띠를 바탕의 끊긴
+    /// 그라데이션으로 그려 카드의 둥근 모서리를 그대로 따르고, 고름 · 오류 · 관문이 바꾸는 테두리와 다투지 않는다(테두리를 바꿔도 띠는 남는다).
+    /// 띠는 얇아 옅은 면 색(SceneTint)으로는 보이지 않는다 — 점처럼 진한 색이다.
+    /// </summary>
+    private static IBrush SceneStripeSurface(Color mark) => new LinearGradientBrush
+    {
+        StartPoint = new RelativePoint(0, 0, RelativeUnit.Absolute),
+        EndPoint = new RelativePoint(SceneStripeWidth, 0, RelativeUnit.Absolute),
+        GradientStops =
+        {
+            new GradientStop(mark, 0),
+            new GradientStop(mark, 1),
+            new GradientStop(Skin.StructureCardSurface, 1)   // 끝에서 끊기고, 그 뒤는 끝 색(카드 면)이 이어진다
+        }
+    };
+
     private static Border CardChip(string text, Color color, FontWeight weight) => new()
     {
         Background = color.Brush(),
