@@ -49,6 +49,9 @@ public partial class DialogueNodeEditor : UserControl
     /// <summary>줄마다의 화자 칸 — 줄을 더하면 새 줄의 이 칸으로 초점을 옮긴다(<see cref="FocusLineLater"/>).</summary>
     private readonly Dictionary<string, AutoCompleteBox> _speakerBoxes = new(StringComparer.Ordinal);
 
+    /// <summary>줄마다의 대사 칸 — 줄의 빈 곳을 누르면 그 줄의 이 칸으로 초점을 옮긴다(<see cref="FocusLineText"/>).</summary>
+    private readonly Dictionary<string, TextBox> _textBoxes = new(StringComparer.Ordinal);
+
     /// <summary>다시 세운 뒤 초점을 옮길 줄 — 줄을 더한 직후 셸이 표를 다시 세우므로 그 뒤에 새 칸을 찾는다.</summary>
     private string? _focusLineId;
 
@@ -370,6 +373,7 @@ public partial class DialogueNodeEditor : UserControl
             LineHost.Children.Clear();
             _lineCards.Clear();
             _speakerBoxes.Clear();
+            _textBoxes.Clear();
 
             // 분기로 다녀오는 카드의 첫머리 조건 묶음도 그 분기의 색이다 — 판의 분기 선 · 카드 표와 같은 번호로 칠한다.
             _entryGate = BranchEntryCondition.EntryPalette(_session.Project, node.Id) is { } gatePalette &&
@@ -451,6 +455,15 @@ public partial class DialogueNodeEditor : UserControl
             (_, args) =>
             {
                 SelectLine(lineId);
+
+                // 줄의 빈 곳(번호 · 칸 사이)을 누르면 그 줄의 대사 칸으로 초점이 간다 — 안 그러면 앞서 쓰던 다른 줄의 칸이 초점을 쥔 채 커서가 깜빡여, 고른
+                // 줄과 쓰는 줄이 갈렸다(2026-11-27 소유자 — 「다른 줄을 클릭했는데도, 여전히 화자칸이 열린채 깜빡이는」). 칸 · 단추를 누르면 그것이 초점을 갖는다.
+                if (args.GetCurrentPoint(wrapper).Properties.IsLeftButtonPressed &&
+                    !wrapper.IsKeyboardFocusWithin &&
+                    !PressedOnFocusable(args.Source as Visual, wrapper))
+                {
+                    FocusLineText(lineId);
+                }
 
                 // 우클릭 = 줄 추가/삭제 바로가기 — ＋ 플라이아웃을 거치지 않는 짧은 길.
                 // 텍스트 입력 칸 위에서는 비켜선다 —잘라내기/복사/붙여넣기 기본
@@ -580,6 +593,35 @@ public partial class DialogueNodeEditor : UserControl
                 card.BringIntoView();
             }
         }, Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>누른 자리가 초점을 받는 것(대사 · 화자 칸 · 단추) 안인가 — 줄(<paramref name="row"/>) 안에서만 본다.</summary>
+    private static bool PressedOnFocusable(Visual? source, Visual row)
+    {
+        foreach (Visual at in source?.GetSelfAndVisualAncestors() ?? [])
+        {
+            if (ReferenceEquals(at, row))
+            {
+                return false;
+            }
+
+            if (at is Avalonia.Input.InputElement { Focusable: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>그 줄의 대사 칸으로 초점을 옮기고 커서를 글 끝에 둔다.</summary>
+    private void FocusLineText(string lineId)
+    {
+        if (_textBoxes.TryGetValue(lineId, out TextBox? box) && box.IsAttachedToVisualTree())
+        {
+            box.Focus(Avalonia.Input.NavigationMethod.Pointer);
+            box.CaretIndex = box.Text?.Length ?? 0;
+        }
     }
 
     private void SelectLine(string lineId)
@@ -890,6 +932,7 @@ public partial class DialogueNodeEditor : UserControl
         }
 
         Wire(text);
+        _textBoxes[resolved.Line.LineId] = text;
         Grid.SetColumn(text, 2);
         row.Children.Add(text);
 

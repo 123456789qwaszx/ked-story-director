@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -134,6 +135,36 @@ public sealed class EditingLineTests : IDisposable
         Assert.True(scroll.Offset.Y > 0, "줄 표가 그 줄까지 내려갔다");
         double top = Bodies(editor).Last().TranslatePoint(default, scroll)!.Value.Y;
         Assert.InRange(top, 0, scroll.Viewport.Height);
+
+        window.Close();
+    });
+
+    [Fact]
+    public void 다른_줄의_빈_곳을_누르면_그_줄의_대사_칸으로_초점이_간다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 「대본탭의 인스펙터에서 다른 줄을 클릭했는데도, 여전히 화자칸이 열린채 깜빡이는」. 줄의 번호 · 칸 사이를 누르면 줄만
+        // 골라지고 앞서 쓰던 줄의 화자 칸이 초점을 쥔 채 남았다.
+        (MainWindow window, AuthoringSession session, DialogueNodeEditor editor, DialogueNode card) = Show("라루: 첫 줄\n라루: 둘째 줄\n라루: 셋째 줄");
+        IReadOnlyList<string> lineIds = card.Script.ActiveLines.Select(line => line.Id).ToList();
+        StackPanel host = editor.FindControl<StackPanel>("LineHost")!;
+
+        TextBox speaker = host.GetVisualDescendants().OfType<AutoCompleteBox>().First().GetVisualDescendants().OfType<TextBox>().First();
+        speaker.Focus();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(lineIds[0], editor.EditingLineId);
+
+        // 셋째 줄의 번호를 누른다 — 초점을 받지 않는 자리다.
+        TextBlock index = host.GetVisualDescendants().OfType<TextBlock>().First(text => text.Text == "3" && text.FindAncestorOfType<TextBox>() is null);
+        var top = (Visual)TopLevel.GetTopLevel(index)!;
+        index.RaiseEvent(new PointerPressedEventArgs(index, new Pointer(0, PointerType.Mouse, true), top, index.TranslatePoint(new Point(2, 2), top)!.Value, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed), KeyModifiers.None));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(lineIds[2], editor.SelectedLineId);
+        Assert.False(speaker.IsFocused);                 // 첫 줄의 화자 칸은 초점을 놓았다
+        Assert.True(Bodies(editor)[2].IsFocused);        // 셋째 줄의 대사 칸에서 이어 쓴다
+        Assert.Equal(Bodies(editor)[2].Text!.Length, Bodies(editor)[2].CaretIndex);
+        Assert.Equal(lineIds[2], editor.EditingLineId);   // 판의 쓰는 줄 표시도 그 줄이다
 
         window.Close();
     });
