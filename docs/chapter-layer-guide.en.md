@@ -182,6 +182,7 @@ In other words, **everything can be taken back within a scene, and it's committe
 **People decide positions.** **Drag** cards to move them, and the position you drop them at is saved as is — the same handling as the [Script] tab.
 If you moved one by mistake, one **Ctrl+Z** (one drag is one undo). Zoom with the wheel, drag with the middle button to move the board, and the
 toolbar's **[Fit to screen]** adjusts only the zoom and scroll so all of this chapter's cards fit on one screen (card positions stay).
+When you zoom out, the choice text on the lines doesn't get smaller than at 100% — you can read it while seeing the whole chapter (it grows in place on its line).
 
 **The board (white) and outside the board (gray)** — the board is as big as this chapter's cards plus margins, and if it's smaller than the screen, the surroundings are the
 gray outside. The outside accepts input like the board: click and drag to select an area, and cards and the selection rectangle dragged outside the board stay visible. Drop

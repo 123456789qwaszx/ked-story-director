@@ -1124,6 +1124,7 @@ public partial class ChapterGraphView : UserControl
 
         _zoom = Math.Clamp(zoom, MinZoom, MaxZoom);
         ZoomHost.LayoutTransform = new ScaleTransform(_zoom, _zoom);
+        ScaleEdgeLabels();
         ZoomText.Text = $"{Math.Round(_zoom * 100)}%";
         ZoomResetButton.IsVisible = Math.Abs(_zoom - 1) > 0.001;
         _centerSheet = true;   // 배율이 바뀌면 판이 화면보다 작은 쪽은 가운데에 다시 선다
@@ -1133,6 +1134,53 @@ public partial class ChapterGraphView : UserControl
         GraphScroll.Offset = new Vector(
             Math.Max(0, (content.X * _zoom) + _sheetOffset.X - pivot.X),
             Math.Max(0, (content.Y * _zoom) + _sheetOffset.Y - pivot.Y));
+    }
+
+    /// <summary>
+    /// 선택지 문구 상자의 배수 — 판을 줄여도 화면에서 100%일 때보다 작아지지 않는다(2026-11-27 소유자 — 「구성탭에서는 저 간선 중앙에 있는 선택지 문구가
+    /// 중요한데, 현재는 … 배율을 축소해서 넓은 화면을 볼 때, 저 선택지 문구가 잘 보이지 않습니다」). [대본] 판의 챕터 · 장면 이름표와 같은 바닥이다
+    /// (design/board-zoom.md 4절 — 「판에서의 크기 × 배율, 단 화면 최소」). 상자는 제 가운데(선 위의 그 자리)를 축으로 커지므로 선을 떠나지 않는다.
+    /// 100% 이상에서는 판과 함께 커진다(1). ⛔ 그 전에는 판과 함께 줄어 40%에서 4px 글자였다.
+    /// </summary>
+    internal double EdgeLabelScale => Math.Max(1, 1 / _zoom);
+
+    /// <summary>그 배율로(화면 가운데를 축으로) — 시험이 판을 줄인다.</summary>
+    internal void ZoomTo(double zoom) => ApplyZoom(zoom, anchor: null);
+
+    /// <summary>판의 선택지 문구 상자에 지금 배수를 입힌다 — 배율이 바뀔 때 · 문구를 새로 그었을 때.</summary>
+    private void ScaleEdgeLabels()
+    {
+        foreach (Control label in GraphCanvas.Children)
+        {
+            if (label.Tag is EdgeLabelMark)
+            {
+                label.RenderTransform = EdgeLabelTransform(default);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 선택지 문구 상자의 그리기 변환 — 배수(<see cref="EdgeLabelScale"/> · 가운데를 축으로)에 끄는 동안의 옮김(<paramref name="by"/>)을 겹친다. 둘 다 없으면 없다.
+    /// </summary>
+    private Transform? EdgeLabelTransform(Vector by)
+    {
+        double scale = EdgeLabelScale;
+        bool moved = Math.Abs(by.X) >= 0.01 || Math.Abs(by.Y) >= 0.01;
+
+        if (scale <= 1.0001)
+        {
+            return moved ? new TranslateTransform(by.X, by.Y) : null;
+        }
+
+        var group = new TransformGroup();
+        group.Children.Add(new ScaleTransform(scale, scale));
+
+        if (moved)
+        {
+            group.Children.Add(new TranslateTransform(by.X, by.Y));
+        }
+
+        return group;
     }
 
     /// <summary>
@@ -2244,6 +2292,10 @@ public partial class ChapterGraphView : UserControl
         _labelRects.Add(spot);
         Canvas.SetLeft(text, spot.X);
         Canvas.SetTop(text, spot.Y);
+
+        // 판을 줄여도 화면에서 100%일 때의 크기 아래로 줄지 않는다(<see cref="EdgeLabelScale"/>) — 제 가운데를 축으로 커진다.
+        text.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+        text.RenderTransform = EdgeLabelTransform(default);
         GraphCanvas.Children.Add(text);
     }
 
@@ -2931,7 +2983,10 @@ public partial class ChapterGraphView : UserControl
 
                 foreach (Control visual in part.Visuals)
                 {
-                    visual.RenderTransform = still ? null : new TranslateTransform(by.X, by.Y);
+                    // 선택지 문구 상자는 제 배수(판을 줄여도 화면에서 작아지지 않는다)를 지킨 채 옮긴다.
+                    visual.RenderTransform = visual.Tag is EdgeLabelMark
+                        ? EdgeLabelTransform(still ? default : by)
+                        : still ? null : new TranslateTransform(by.X, by.Y);
                     visual.IsVisible = true;
                 }
 
