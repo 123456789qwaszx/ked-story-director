@@ -69,7 +69,10 @@ public sealed class FrameLabelLayerTests : IDisposable
 
                 Assert.Equal(GraphEditorView.FrameLabelPlace.Corner, place);
                 Assert.True(label.IsVisible, $"{zoom:P0}: {key}가 숨었다");
-                Assert.True(double.IsPositiveInfinity(label.MaxWidth), $"{zoom:P0}: {key}를 말줄임했다");   // 이름 그대로
+                // 이름 그대로 — 말줄임은 챕터의 폭을 넘는 이름만이다(design/board-zoom.md 4.2절 장면 2번). 아주 멀리서 챕터가 이름표보다 좁으면 챕터 안에서 끝난다.
+                Assert.True(
+                    double.IsPositiveInfinity(label.MaxWidth) || screen.Right <= chapter.Right - 4 + 0.5,
+                    $"{zoom:P0}: {key}를 챕터의 폭이 아닌 데서 말줄임했다 — {screen} · 챕터 {chapter}");
                 double shown = NameOf(label).FontSize * (label.RenderTransform is ScaleTransform scale ? scale.ScaleX : 1);
                 Assert.True(shown >= GraphEditorView.SceneLabelMinPx - 0.01, $"{zoom:P0}: {key} 글자 {shown:0.0}px");
 
@@ -254,10 +257,19 @@ public sealed class FrameLabelLayerTests : IDisposable
         graph.FrameLabelPlaces.Single(item => item.Key == key);
 
     /// <summary>판의 네모가 화면 겹에서 선 자리 — 코드의 셈과 따로, 실제 배치(배율 변환 · 스크롤)를 거쳐 잰다.</summary>
+    /// <summary>
+    /// 판의 자리 → 화면 겹의 자리. 창을 거쳐 잰다 — 판에서 화면 겹으로 곧장 <c>TranslatePoint</c>하면 배율이 1이 아닐 때 가로가 하이어아키 기둥의 폭 × (배율 − 1)만큼
+    /// 어긋난다(Avalonia 12.1.1 · 배율 칸(LayoutTransformControl)을 품은 스크롤과 그 곁의 겹 사이 — 세로는 맞다). 창까지는 둘 다 조상으로 곧장 가는 길이라 맞는다
+    /// (판에 작은 상자를 놓고 그려 본 화소와 같다).
+    /// </summary>
     private static Rect ScreenOf(GraphEditorView graph, Rect board)
     {
         Canvas canvas = graph.FindControl<Canvas>("GraphCanvas")!;
-        return new Rect(canvas.TranslatePoint(board.TopLeft, Layer(graph))!.Value, canvas.TranslatePoint(board.BottomRight, Layer(graph))!.Value);
+        var window = (Visual)TopLevel.GetTopLevel(graph)!;
+        Point layer = Layer(graph).TranslatePoint(default, window)!.Value;
+        return new Rect(
+            canvas.TranslatePoint(board.TopLeft, window)!.Value - layer,
+            canvas.TranslatePoint(board.BottomRight, window)!.Value - layer);
     }
 
     private static List<Rect> CardRects(GraphEditorView graph, AuthoringSession session) =>

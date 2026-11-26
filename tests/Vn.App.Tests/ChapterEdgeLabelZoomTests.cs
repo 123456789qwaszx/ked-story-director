@@ -49,10 +49,12 @@ public sealed class ChapterEdgeLabelZoomTests : IDisposable
             Assert.Equal(label.Bounds.Width * Math.Max(zoom, 1), right.X - left.X, precision: 1);
             Assert.Equal(Math.Max(1, 1 / zoom), view.EdgeLabelScale, precision: 6);
 
-            // 가운데는 그대로 — 판의 그 자리(선 위)가 화면에서 서는 곳이다.
+            // 가운데는 그대로 — 판의 그 자리(선 위)가 화면에서 서는 곳이다. 그 자리는 판이 상자를 놓은 자리(Bounds)로 잰다 — Canvas.Left는 소수라
+            // 놓을 때 화소에 맞춰 반올림되고, 그 차이(판에서 0.5 아래)가 배율만큼 커져 보인다(⛔ Canvas.Left로 재면 1.5배에서 0.375 어긋났다).
             Point center = label.TranslatePoint(new Point(label.Bounds.Width / 2, label.Bounds.Height / 2), window)!.Value;
             Point spot = canvas.TranslatePoint(
-                new Point(Canvas.GetLeft(label) + (label.Bounds.Width / 2), Canvas.GetTop(label) + (label.Bounds.Height / 2)), window)!.Value;
+                new Point(label.Bounds.X + (label.Bounds.Width / 2), label.Bounds.Y + (label.Bounds.Height / 2)), window)!.Value;
+            Assert.True(Math.Abs(label.Bounds.X - Canvas.GetLeft(label)) < 0.5, $"{zoom}: 판의 그 자리에 놓였다");
             Assert.Equal(spot.X, center.X, precision: 1);
             Assert.Equal(spot.Y, center.Y, precision: 1);
         }

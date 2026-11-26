@@ -45,8 +45,8 @@ public sealed class SceneFoldTests
         Assert.NotNull(CardOf(canvas, Card(session, "root").Id));
         Assert.NotNull(CardOf(canvas, Card(session, "a").Id));
 
-        // 챕터 박스는 그대로다 — 판째 접힌 것이 아니다.
-        Assert.Contains(canvas.Children.OfType<Border>(), border =>
+        // 챕터 박스는 그대로다 — 판째 접힌 것이 아니다(그 이름표는 판 위의 화면 겹에 선다).
+        Assert.Contains(Labels(graph).Children.OfType<Border>(), border =>
             (border.Child as TextBlock)?.Text?.StartsWith("챕터 ch01", StringComparison.Ordinal) == true);
     });
 
@@ -214,7 +214,9 @@ public sealed class SceneFoldTests
         var placed = graph.FrameLabelPlaces.Single(item => item.Key == GraphEditorView.ChapterLabelTag + "ch01");
         Assert.Equal(GraphEditorView.FrameLabelPlace.Above, placed.Place);
         Assert.Equal(top.Y, placed.Screen.Bottom, precision: 0);
-        Assert.DoesNotContain(Texts(table), text => text.Contains("ch01", StringComparison.Ordinal));   // 머리에는 이름이 없다
+        // 머리에는 이름이 없다 — 접힘 · 노드 수와 파일 자리만(파일 자리에는 판 이름이 든다).
+        Assert.DoesNotContain(Texts(table), text => text == "ch01");
+        Assert.Contains(Texts(table), text => text.StartsWith("접힘", StringComparison.Ordinal));
 
         label.RaiseEvent(Press(label, clickCount: 2));
         Assert.Contains(board, session.ExpandedFileIds);

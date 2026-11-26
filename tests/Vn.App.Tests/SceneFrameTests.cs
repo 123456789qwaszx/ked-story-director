@@ -104,7 +104,7 @@ public sealed class SceneFrameTests
 
     private static List<string> SceneLabels(GraphEditorView graph) =>
         graph.FindControl<Canvas>("FrameLabelLayer")!.Children.OfType<Border>()
-            .Select(border => (border.Child as TextBlock)?.Text)
+            .Select(border => (border.Child as Panel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text)   // 점 · 이름 줄(장면 색 1 ~ 3단계)
             .Where(text => text is not null && text.StartsWith("장면 ", StringComparison.Ordinal))
             .Select(text => text!)
             .ToList();

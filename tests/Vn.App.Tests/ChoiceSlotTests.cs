@@ -389,7 +389,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         Assert.Equal(["asdsad", "rrrrrrr"], Labels(graph, "root").Take(2).Select(TextOf));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
+        Assert.Equal(GraphEditorView.LaneBrush(1), Dots(graph, "root")[1]);   // 이은 점은 그 칸의 길 색(디자인 점검 2번)
 
         // 첫째 칸을 나중에 이어도 그 자리다 — 간선은 그 줄 자리에 끼워 들어가, 런타임 선택지 순서도 화면과 같다.
         Drag(graph, session, "root", slot: 0, onto: "a");
@@ -413,7 +413,7 @@ public sealed class ChoiceSlotTests : IDisposable
 
         Assert.Equal(["하나", "둘"], Labels(graph, "root").Take(2).Select(TextOf));
         Assert.Equal(GraphEditorView.SlotLive, Dots(graph, "root")[0]);
-        Assert.Equal(GraphEditorView.SlotJoined, Dots(graph, "root")[1]);
+        Assert.Equal(GraphEditorView.LaneBrush(1), Dots(graph, "root")[1]);   // 이은 점은 그 칸의 길 색(디자인 점검 2번)
 
         // 다시 이으면 도로 첫째다 — 간선도 「둘」 앞에 선다.
         Drag(graph, session, "root", slot: 0, onto: "a");

@@ -418,11 +418,11 @@ public sealed class CardLiveWritingTests
         DialogueNode node = window.SessionProbe.Project.FindDialogue(nodeId)!;
         List<string> active = node.Script.ActiveLines.Select(line => line.Id).ToList();
 
-        // 줄 카드는 줄 차례로 선다 — 지울 줄 카드의 차례로 LineId를 읽는다.
+        // 줄 카드는 줄 차례로 선다 — 지울 줄 카드의 차례로 LineId를 읽는다. 보이는 번호는 1부터다(디자인 점검 6번).
         return editor.GetLogicalDescendants().OfType<Border>()
             .Where(border => border.Tag as string is DialogueNodeEditor.PendingRemovalTag)
             .Select(border => border.GetLogicalDescendants().OfType<TextBlock>().First().Text!)
-            .Select(index => active[int.Parse(index, System.Globalization.CultureInfo.InvariantCulture)])
+            .Select(number => active[int.Parse(number, System.Globalization.CultureInfo.InvariantCulture) - 1])
             .ToList();
     }
 

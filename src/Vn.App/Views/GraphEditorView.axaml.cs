@@ -7378,6 +7378,9 @@ public partial class GraphEditorView : UserControl
     /// <summary>배율을 그 값으로 — 화면 가운데가 그 자리에 남는다. 시험이 줄인 판을 본다.</summary>
     internal void ZoomTo(double zoom) => ApplyZoom(zoom, null);
 
+    /// <summary>지금 배율 — 화면 시험이 화면 바닥(<see cref="LineFloorPx"/>)으로 굵어진 선의 굵기를 셈할 때 쓴다.</summary>
+    internal double Zoom => _zoom;
+
     /// <summary>
     /// 특정 챕터(판)로 이동 — 그 판의 노드들이 여백을 두고 들어오는 배율과 위치.
     /// 하이어아키의 챕터 줄이나 툴바 콤보로 챕터를 골랐을 때(<see cref="GoToBoard"/>) 여러 챕터 박스 사이에서 그 챕터를 눈앞에 가져온다.

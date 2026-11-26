@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Path = System.IO.Path;
 using ShapePath = Avalonia.Controls.Shapes.Path;
 using Vn.App.Services;
+using Vn.App.Theming;
 using Vn.App.Views;
 using Vn.Authoring.Chapters;
 using Vn.Authoring.Model;
@@ -51,8 +52,8 @@ public sealed class GraphRubberBandTests : IDisposable
 
         Assert.Null(session.SelectedNodeId);
         Assert.Equal("선택지 · root → a", Title(graph));
-        Assert.Equal(2.4, Lane(graph, "a").StrokeThickness);
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Picked(graph), Lane(graph, "a").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
         Assert.False(Editor(window).IsVisible);
 
         // 거꾸로 그으면 놓은 자리에 root→b가 가깝다.
@@ -63,8 +64,8 @@ public sealed class GraphRubberBandTests : IDisposable
             .First(box => box.IsEffectivelyVisible && box.Tag as string == "summary-label").Text);   // 문구는 고치는 칸에 선다
         Assert.Contains("해금조건: 용기 — 아니면 잠긴 채 보입니다", Facts(graph));
         Assert.Contains("스탯변화: trust +2", Facts(graph));
-        Assert.Equal(1.4, Lane(graph, "a").StrokeThickness);
-        Assert.Equal(2.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "a").StrokeThickness);
+        Assert.Equal(Picked(graph), Lane(graph, "b").StrokeThickness);
 
         // 고치는 곳은 [구성] 탭 — 단추가 그 선택지를 고른 채로 데려간다.
         Summary(graph, "summary-open").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -93,7 +94,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal(1, Card(graph, CardId(session, "root")).BorderThickness.Left);
 
         // 함께 걸친 레인은 고르지도 칠하지도 않는다.
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
 
         // 빈 판을 다시 누르면 무리가 풀린다.
         Press(Canvas(graph), At(graph, new Point(400, 300)));
@@ -124,7 +125,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Assert.Equal(CardId(session, "b"), session.SelectedNodeId);
         Assert.True(Editor(window).IsVisible);
         Assert.Equal("ch01 - hall", Title(graph));
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
 
         // 다시 레인을 고른 뒤 빈 판을 누르면 설명이 내려간다 — 챕터 밖의 빈 판이라 프로젝트가 선다(2026-11-17 — 화자는 「화자」 탭 · side-tabs V3).
         Press(LaneHit(graph), At(graph, new Point(222, 400)));
@@ -133,7 +134,7 @@ public sealed class GraphRubberBandTests : IDisposable
         Release(Canvas(graph), At(graph, new Point(3000, 3000)));
 
         Assert.Equal("프로젝트", Title(graph));
-        Assert.Equal(1.4, Lane(graph, "b").StrokeThickness);
+        Assert.Equal(Plain(graph), Lane(graph, "b").StrokeThickness);
 
         window.Close();
     });
@@ -191,6 +192,14 @@ public sealed class GraphRubberBandTests : IDisposable
 
     private static string CardId(AuthoringSession session, string episodeId) =>
         EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id;
+
+    /// <summary>
+    /// 고른 레인 · 그 밖 레인의 굵기 — 판의 굵기(2.4 · 1.4 × 테마의 선 굵기), 단 화면 바닥(design/board-zoom.md 5절)보다 가늘어지지 않는다. 이 판은 열 때 챕터에
+    /// 맞춰 100%보다 작게 서므로(화면 맞춤) 고른 레인은 바닥 2px ÷ 배율로 굵어진다.
+    /// </summary>
+    private static double Picked(GraphEditorView graph) => Math.Max(2.4 * Skin.LineWeight, GraphEditorView.PickedLineFloorPx / graph.Zoom);
+
+    private static double Plain(GraphEditorView graph) => Math.Max(1.4 * Skin.LineWeight, GraphEditorView.LineFloorPx / graph.Zoom);
 
     private static Canvas Canvas(GraphEditorView graph) => graph.FindControl<Canvas>("GraphCanvas")!;
 

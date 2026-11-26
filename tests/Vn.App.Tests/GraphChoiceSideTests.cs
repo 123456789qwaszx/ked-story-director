@@ -113,11 +113,13 @@ public sealed class GraphChoiceSideTests : IDisposable
         // far의 접점(카드 가운데)은 줄기보다 오른쪽이다 — 막은 카드의 오른쪽 바깥으로 비켜 내려간다.
         Assert.True(Lane(graph, "root>far").Data!.Bounds.Right > midRight, "mid 카드의 오른쪽 바깥으로 비켜 간다");
 
-        // 막는 카드가 없는 길(도착 카드는 막는 카드가 아니다)은 제 칸 밑에서 곧게 내려간다.
-        Assert.Equal(
-            Canvas.GetLeft(Row(graph, "root", "바로 아래")) + GraphEditorView.PortRadius,
-            Lane(graph, "root>mid").Data!.Bounds.Right,
-            precision: 3);
+        // 막는 카드가 없는 길(도착 카드는 막는 카드가 아니다)은 제 칸 밑에서 곧게 내려가 접점(도착 카드의 위 가운데)의 높이에서 건넌다 — 길의 가로 폭은 칸의 점과
+        // 접점 사이뿐이다(비켜 가지 않는다). 칸의 점이 접점의 어느 쪽인지는 앞 칸 문구의 폭(글꼴)에 달렸다.
+        double dot = Canvas.GetLeft(Row(graph, "root", "바로 아래")) + GraphEditorView.PortRadius;
+        double arrival = CardX(graph, session, "mid") + (CardWidth / 2);
+        Rect straight = Lane(graph, "root>mid").Data!.Bounds;
+        Assert.Equal(Math.Min(dot, arrival), straight.Left, precision: 3);
+        Assert.Equal(Math.Max(dot, arrival), straight.Right, precision: 3);
     });
 
     [Fact]

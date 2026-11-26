@@ -152,6 +152,7 @@ public sealed class SceneColorPickTests : IDisposable
         // 상태에서 열면 그 색이 선택된 상태로 RGB가 열리도록」. 서식 도구 · 화자 이름 색과 같은 색 차림이다.
         (MainWindow window, AuthoringSession session, GraphEditorView graph) = Open();
         session.Editor.SetSceneColor("ch01", "hall", 3);
+        Dispatcher.UIThread.RunJobs();   // 하이어아키가 그 바뀜으로 줄을 다시 세운 뒤에 누른다
         Press(window, graph.HierarchyView, StoryHierarchy.SceneKey("ch01", "hall"));
 
         WrapPanel row = graph.ShownSideHost.GetLogicalDescendants().OfType<WrapPanel>().Single(panel => Equals(panel.Tag, MainWindow.SceneColorRowTag));

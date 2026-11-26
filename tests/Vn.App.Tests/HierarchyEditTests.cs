@@ -47,7 +47,7 @@ public sealed class HierarchyEditTests : IDisposable
         // 2026-11-18 소유자 — 줄마다 제 일만 선다. 챕터 · 장면 지우기는 차림표에 없다 — 줄을 고르고 툴바의 [삭제]로 지운다.
         Assert.Equal(["챕터 추가"], Headers(tree, StoryHierarchy.ProjectKey));
         Assert.Equal(["장면 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.ChapterKey("ch01")));
-        Assert.Equal(["에피소드 추가", "이름 바꾸기"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));
+        Assert.Equal(["에피소드 추가", "이름 바꾸기", "장면 색"], Headers(tree, StoryHierarchy.SceneKey("ch01", "opening")));   // 2026-11-27 — 장면 색(장면 색 4단계)
         Assert.Equal(["이름 바꾸기", "에피소드 지우기"], Headers(tree, StoryHierarchy.EpisodeKey("ch01", "root")));
 
         window.Close();
