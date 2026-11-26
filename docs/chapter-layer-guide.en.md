@@ -80,8 +80,8 @@ Except for `release-baselines/`, the tool builds and edits all of them — you n
     It removes the chapter with its scenes · episodes · the cards on the board, and undo (Ctrl+Z) brings it back. Don't delete files from the folder by hand — the board and
     nodes stay in the project and blow up with "no calling node".
 - **Center** — the graph board. Card = episode, line = path (edge).
-  - Chips on the first row of a card's header: blue `Scene start` = where the scene is entered from outside (the chapter's starting episode — the first in the chapter's episode
-    list — gets this chip too) · purple `{scene ID}` (the scene name with "Show IDs" off) · `🔒` = an incoming path has a show/unlock condition · `⚠` = an error or unreachable
+  - Chips on the first row of a card's header: gold `Scene start` = where the scene is entered from outside (the chapter's starting episode — the first in the chapter's episode
+    list — gets this chip too) · `{scene ID}` in the scene's color (the scene name with "Show IDs" off — the thin stripe on the card's left edge is the same color) · `🔒` = an incoming path has a show/unlock condition · `⚠` = an error or unreachable
     (there's a path, but a condition stops it from being reached). The second row is the episode ID (the title with it off). **A faded card** = not yet connected from the start —
     a warning because it's work in progress, and it doesn't block export. The event key is a value the tool doesn't interpret, so cards have no badge for it (§6).
   - On a line: a text box — the choice text in the middle (`AUTO` for an auto path, `⚠ No text` if empty), "Show: …" · "Unlock: …" above, stat changes below.
@@ -154,7 +154,10 @@ In other words, **everything can be taken back within a scene, and it's committe
 
 ### On screen
 
-- **Cards**: chips on the first row of the header — a blue `Scene start` on the card where a scene starts, and a purple `{scene ID}` — with the episode ID on the second row.
+- **Cards**: chips on the first row of the header — a gold `Scene start` on the card where a scene starts, and `{scene ID}` in the scene's color — with the episode ID on
+  the second row. The thin stripe on the card's left edge is the scene's color too. Each scene gets one of five colors, the same as its background on the [Script] board and
+  its dot in the Hierarchy, so you can find the same scene by color in both tabs (colors are picked in the [Script] tab — see "Scene colors" in the writer guide). The
+  [Structure] board has no scene outlines.
   Turn off **Show IDs** in the toolbar (on at first) and the Hierarchy and cards show names (scene names · episode titles), like the [Script] tab — remembered on this PC.
 - **Folded board** ([Script] tab — double-click a chapter label): the inside of the board is shown **grouped by scene**. Branch cards no episode calls gather at the bottom
   under `Outside scenes`.
