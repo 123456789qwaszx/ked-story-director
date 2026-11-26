@@ -83,6 +83,12 @@ public partial class GraphEditorView
         /// <summary>장면 — 그 장면이 든 챕터의 테두리(판 단위). 이름표는 이 위로 나가지 않고, 이 챕터의 이름표와 겹치지 않는다.</summary>
         public Rect Container { get; init; }
 
+        /// <summary>
+        /// 테두리의 폭으로 말줄임하지 않는다 — 접힌 판의 표에 단 챕터 이름표(<see cref="FoldedChapterLabel"/>). 표는 폭이 정해져 줄인 판에서 좁아지는데, 접어도
+        /// 이름은 다 읽혀야 한다(2026-11-27).
+        /// </summary>
+        public bool KeepWhole { get; init; }
+
         /// <summary>판 단위의 제 크기(말줄임 전).</summary>
         public Size Natural { get; set; }
 
@@ -155,7 +161,9 @@ public partial class GraphEditorView
             double scale = ScaleOf(label, zoom);
             Rect frame = Screen(label.Area);
             double inset = Math.Max(4, label.Inset * zoom);
-            double width = Math.Min(label.Natural.Width * scale, Math.Max(frame.Width - inset - 4, LabelShortestPx));
+            double width = label.KeepWhole
+                ? label.Natural.Width * scale
+                : Math.Min(label.Natural.Width * scale, Math.Max(frame.Width - inset - 4, LabelShortestPx));
             double height = label.Natural.Height * scale;
 
             // 테두리 바깥 위 — 위 선에 아래 끝을 붙인다. 판의 맨 위라 바깥에 자리가 없으면 테두리 안쪽.

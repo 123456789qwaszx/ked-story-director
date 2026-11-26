@@ -1084,6 +1084,18 @@
     <value>챕터 {0} ⌄</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
+  <data name="Board_ChapterFolded" xml:space="preserve">
+    <value>챕터 {0} ›</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FoldedChapterLabelTip" xml:space="preserve">
+    <value>누르면 이 챕터를 고릅니다 — 그대로 끌면 접힌 표째 움직입니다. 더블클릭하면 다시 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
+  <data name="Board_FoldedSceneLabelTip" xml:space="preserve">
+    <value>누르면 이 장면을 고릅니다 — 그대로 끌면 접힌 상자째 움직입니다. 더블클릭하면 다시 펼칩니다.</value>
+    <comment>GraphEditorView.axaml.cs</comment>
+  </data>
   <data name="Board_ClickToSelectEveryCard" xml:space="preserve">
     <value>누르면 이 챕터의 카드를 모두 고릅니다 — 그대로 끌면 함께 움직입니다. 더블클릭하면 표 형태로 접고, 접힌 표를 더블클릭하면 다시 펼칩니다.</value>
     <comment>GraphEditorView.axaml.cs</comment>
@@ -1282,10 +1294,6 @@
   </data>
   <data name="Board_KeptBranchConditionLinesRestored" xml:space="preserve">
     <value>분기 조건 줄을 지켰습니다 — 조건 줄은 되살리고 바깥에 쓴 줄은 조건 안쪽으로 모았습니다. 이 카드에 들어갈 조건은 [구성] 탭의 분기 칸에서 바꿉니다.</value>
-    <comment>GraphEditorView.axaml.cs</comment>
-  </data>
-  <data name="Board_FoldedNodes" xml:space="preserve">
-    <value>접힘 · {0}개 노드 · {1}</value>
     <comment>GraphEditorView.axaml.cs</comment>
   </data>
   <data name="Board_EmptyFile" xml:space="preserve">

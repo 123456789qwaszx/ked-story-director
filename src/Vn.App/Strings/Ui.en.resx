@@ -818,6 +818,15 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   <data name="Board_Chapter" xml:space="preserve">
     <value>Chapter {0} ⌄</value>
   </data>
+  <data name="Board_ChapterFolded" xml:space="preserve">
+    <value>Chapter {0} ›</value>
+  </data>
+  <data name="Board_FoldedChapterLabelTip" xml:space="preserve">
+    <value>Click to select this chapter — drag right away to move the folded table. Double-click to unfold it.</value>
+  </data>
+  <data name="Board_FoldedSceneLabelTip" xml:space="preserve">
+    <value>Click to select this scene — drag right away to move the folded box. Double-click to unfold it.</value>
+  </data>
   <data name="Board_ClickToSelectEveryCard" xml:space="preserve">
     <value>Click to select every card in this chapter — drag right away to move them together. Double-click to fold it into a table; double-click the folded table to unfold it.</value>
   </data>
@@ -967,9 +976,6 @@ If you received a project, choose its folder with [Open…]; to start fresh, cho
   </data>
   <data name="Board_KeptBranchConditionLinesRestored" xml:space="preserve">
     <value>Kept the branch condition lines — restored the condition lines and moved lines written outside them inside. Change the conditions for this card in the branch section of the [Structure] tab.</value>
-  </data>
-  <data name="Board_FoldedNodes" xml:space="preserve">
-    <value>Folded · {0:node|nodes} · {1}</value>
   </data>
   <data name="Board_EmptyFile" xml:space="preserve">
     <value>Empty file</value>

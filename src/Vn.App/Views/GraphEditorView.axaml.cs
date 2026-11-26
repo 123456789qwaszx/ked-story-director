@@ -1223,24 +1223,7 @@ public partial class GraphEditorView : UserControl
             Canvas.SetLeft(frame, area.X);
             Canvas.SetTop(frame, area.Y);
 
-            var label = new Border
-            {
-                CornerRadius = new CornerRadius(Skin.LabelRadius),
-                Padding = new Thickness(8 + (8 * Skin.FrameLabelGrow), 3 + (4 * Skin.FrameLabelGrow)),   // 끌어 옮기는 손잡이다 — 넉넉하게(2026-11-26 소유자)
-                Background = (isActive ? Skin.ChapterLabel : Skin.ChapterLabelIdle).Brush(),
-                BoxShadow = Skin.FrameLabelShadow,
-                Cursor = new Cursor(StandardCursorType.Hand),
-                Tag = ChapterLabelTag + boardName,
-                Child = new TextBlock
-                {
-                    Text = string.Format(Ui.Board_Chapter, chapterName),
-                    Classes = { "frame-title" },   // 테마가 이름표의 글꼴을 고르는 손잡이(Themes/*/Controls.axaml)
-                    TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭에서 말줄임한다(PlaceFrameLabels)
-                    FontSize = Skin.ChapterLabelFont,
-                    FontWeight = FontWeight.SemiBold,
-                    Foreground = Skin.ChapterLabelInk.Brush()
-                }
-            };
+            Border label = ChapterLabel(boardName, chapterName, isActive, folded: false);
             ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard);
 
             // 이름표만 히트 대상이다(프레임은 아님) — 한 번 = 이 챕터의 카드를 모두 골라 함께 끈다, 두 번 = 접기(2026-11-18 소유자 · ⛔ 그 전에는 한 번에
@@ -1265,6 +1248,15 @@ public partial class GraphEditorView : UserControl
             // 챕터 안에 장면을 한 겹 더 (R6 S-3b) — 챕터 프레임 <b>뒤에</b> 더해야 그 위에
             // 깔린다(아래 Insert가 목록 순서대로 넣는다).
             DrawSceneFrames(group.Key, group.OfType<ExpandedNodeProjection>(), area);
+        }
+
+        // 접힌 판(챕터)의 표에도 펼쳤을 때와 같은 챕터 이름표 — 표의 위 바깥에 선다(<see cref="FoldedChapterLabel"/>).
+        foreach (FileProxyVisual proxy in _proxies.Where(item => item.SceneId is null))
+        {
+            if (FoldedChapterLabel(proxy) is { } folded)
+            {
+                AddFrameLabel(new FrameLabel(folded, chapter: true, ProxyRect(proxy), 12 + (8 * Skin.FrameLabelGrow)) { KeepWhole = true });
+            }
         }
 
         // 카드·간선보다 뒤에 깔리도록 맨 앞 인덱스에 순서대로 끼운다.
@@ -1377,6 +1369,19 @@ public partial class GraphEditorView : UserControl
 
             if (bounds is not { } area)
             {
+                // 접은 장면 — 상자에도 펼쳤을 때와 같은 이름표를 단다(<see cref="SceneLabel"/> · 2026-11-27). 상자를 장면 테두리처럼 감싼 자리의 왼위라 펼쳤을 때와
+                // 같은 자리 — 접고 펴도 이름이 그 자리에 그대로 있다(상자의 자리 = 장면 카드들이 서던 자리의 왼쪽 위).
+                if (FindSceneProxy(fileId, scene.SceneId) is { } proxy)
+                {
+                    Border folded = SceneLabel(
+                        fileId, chapter.ChapterId, scene, [], ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene),
+                        SceneColors.ColorOf(colors, scene.SceneId), ChapterSceneNotes.ColorOf(chapter.SceneNotes, scene.SceneId), proxy);
+                    AddFrameLabel(new FrameLabel(folded, chapter: false, ProxyRect(proxy).Inflate(SceneFramePad), 10 + (6 * Skin.FrameLabelGrow))
+                    {
+                        Container = chapterArea
+                    });
+                }
+
                 continue;
             }
 
@@ -1447,11 +1452,18 @@ public partial class GraphEditorView : UserControl
     /// <returns>이름표 — 자리는 화면 겹에서 <see cref="PlaceFrameLabels"/>가 정한다(늘 장면의 왼위 · 이름 그대로).</returns>
     /// <param name="color">그 장면의 색 칸(1 ~ 5) — 이름 앞 점의 색.</param>
     /// <param name="chosen">작가가 고른 칸 — null이면 자동(우클릭 「장면 색」의 ✓).</param>
-    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo, int color, int? chosen)
+    /// <param name="folded">
+    /// 접은 장면이면 그 상자 — 접어도 이름표는 펼쳤을 때와 같다(2026-11-27 소유자 — 「당신이 권하는 방향대로」 · ⛔ 그 전에는 상자 머리의 작은 글뿐이라 접으면 크고
+    /// 또렷하던 이름이 사라졌다). 끝의 표만 「›」(접힘)이고, 한 번 누르면 그 장면을 골라 그대로 끌면 상자째 옮기고, 두 번 누르면 편다.
+    /// </param>
+    private Border SceneLabel(
+        string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo, int color, int? chosen,
+        FileProxyVisual? folded = null)
     {
         Color mark = Skin.SceneMarkOf(color);
+        string fold = folded is null ? "⌄" : "›";
         string shown = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
-                       (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄");
+                       (scene.HasSplitEntry ? " ⚠ " : " ") + fold;
 
         var label = new Border
         {
@@ -1494,7 +1506,7 @@ public partial class GraphEditorView : UserControl
         row.Children.Add(swatch);
         row.Children.Add(name);
         label.Child = row;
-        ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
+        ToolTip.SetTip(label, folded is null ? Ui.Board_ClickToSelectEveryCard2 : Ui.Board_FoldedSceneLabelTip);
 
         string sceneId = scene.SceneId;
 
@@ -1505,6 +1517,16 @@ public partial class GraphEditorView : UserControl
             {
                 args.Handled = true;
                 OpenSceneColorMenu(label, chapterId, sceneId, scene.DisplayName, color, chosen);
+                return;
+            }
+
+            if (folded is not null)
+            {
+                OnFoldedLabelPressed(
+                    args,
+                    new HierarchyPick(HierarchyKind.Scene, chapterId, SceneId: sceneId),
+                    folded,
+                    () => _session?.SetSceneCollapsed(fileId, sceneId, collapsed: false));
                 return;
             }
 
@@ -5659,9 +5681,10 @@ public partial class GraphEditorView : UserControl
         // 이 수를 쓴다(노드 행 수만 쓰면 머리글만큼 짧아진다).
         int visualRows = 0;
 
+        // 이름은 표 위 바깥의 챕터 이름표가 말한다(<see cref="FoldedChapterLabel"/>) — 머리는 접힘 · 노드 수 · 파일 자리만(2026-11-27).
         content.Children.Add(ProxyHeader(
-            file.FileName,
-            Plural.Format(Ui.Board_FoldedNodes, file.Nodes.Count, file.RelativePath),
+            Plural.Format(Ui.Board_FoldedNodes2, file.Nodes.Count),
+            file.RelativePath,
             Skin.Neutral.Brush()));
 
         var rows = new List<ProxyNodeRow>();
@@ -5690,7 +5713,7 @@ public partial class GraphEditorView : UserControl
             {
                 if (scene.HasHeader)
                 {
-                    content.Children.Add(BuildProxySceneHeader(scene));
+                    content.Children.Add(BuildProxySceneHeader(scene, scene.SceneId.Length == 0 ? null : SceneColorOf(file.FileId, scene.SceneId)));
                     visualRows++;
                 }
 
@@ -5753,9 +5776,10 @@ public partial class GraphEditorView : UserControl
     {
         int color = SceneColorOf(scene.FileId, scene.SceneId);
         var content = new StackPanel { Spacing = 0 };
+        // 이름은 상자 위 바깥의 장면 이름표가 말한다(<see cref="SceneLabel"/>) — 머리는 접힘 · 노드 수 · 안쪽 길 수만(2026-11-27).
         content.Children.Add(ProxyHeader(
-            string.Format(Ui.Board_Scene, scene.DisplayName),
             Plural.Format(Ui.Board_FoldedNodes2, scene.Nodes.Count) + (scene.InnerCount > 0 ? Plural.Format(Ui.Board_PathsInside, scene.InnerCount) : string.Empty),
+            null,
             Skin.SceneMarkOf(color).Brush()));
 
         var rows = new List<ProxyNodeRow>();
@@ -5806,8 +5830,11 @@ public partial class GraphEditorView : UserControl
         return new FileProxyVisual(scene.FileId, visual, rows, Math.Max(1, rows.Count), scene.SceneId, color);
     }
 
-    /// <summary>상자 머리 — 색 점 · 이름 · 한 줄 설명. 접힌 판과 접은 장면이 함께 쓴다.</summary>
-    private static Grid ProxyHeader(string title, string subtitle, IBrush dot)
+    /// <summary>
+    /// 상자 머리 — 색 점 · 접힘과 수 · (판이면) 파일 자리. 접힌 판과 접은 장면이 함께 쓴다. 이름은 상자 위 바깥의 이름표가 말한다(2026-11-27 — ⛔ 그 전에는
+    /// 여기에 굵은 이름이 섰다).
+    /// </summary>
+    private static Grid ProxyHeader(string title, string? subtitle, IBrush dot)
     {
         var headerDot = new Ellipse
         {
@@ -5826,12 +5853,14 @@ public partial class GraphEditorView : UserControl
                 new TextBlock
                 {
                     Text = title,
-                    FontWeight = FontWeight.SemiBold,
+                    FontSize = 11,
+                    Opacity = 0.75,
                     TextTrimming = TextTrimming.CharacterEllipsis
                 },
                 new TextBlock
                 {
-                    Text = subtitle,
+                    Text = subtitle ?? string.Empty,
+                    IsVisible = subtitle is { Length: > 0 },
                     FontSize = 9,
                     Opacity = 0.6,
                     TextTrimming = TextTrimming.CharacterEllipsis
@@ -5881,29 +5910,47 @@ public partial class GraphEditorView : UserControl
     }
 
     /// <summary>
-    /// 접힌 판 안의 <b>장면 머리글</b> 한 줄 (R6 S-3).
+    /// 접힌 판 안의 <b>장면 머리글</b> 한 줄 (R6 S-3). 장면이면 이름 앞에 그 장면 색의 점이 선다(2026-11-27 — 판의 장면 이름표 · 하이어아키와 한 색 ·
+    /// ⛔ 그 전에는 「▸」).
     ///
     /// ⚠ 누를 수 없다 — 장면은 담는 자리이고, 고르는 것은 노드다
     /// (R6-explorer §1). 여기서 누르면 판 끌기가 된다.
     /// </summary>
-    private static Border BuildProxySceneHeader(CollapsedSceneGroup scene) =>
-        new()
+    /// <param name="color">그 장면의 색 칸 — 장면 밖 묶음이면 null(점 없음).</param>
+    private static Border BuildProxySceneHeader(CollapsedSceneGroup scene, int? color)
+    {
+        var name = new TextBlock
         {
-            Height = ProxyRowHeight,
-            Background = Skin.Neutral.Brush(26),
-            Child = new TextBlock
-            {
-                Text = scene.SceneId.Length == 0 ? scene.DisplayName : "▸ " + scene.DisplayName,
-                Margin = new Thickness(14, 0),
-                FontSize = 10,
-                FontWeight = FontWeight.SemiBold,
-                Opacity = 0.7,
-                VerticalAlignment = VerticalAlignment.Center,
-                [ToolTip.TipProperty] = scene.SceneId.Length == 0
-                    ? Ui.Board_NodesNotInThisChapter
-                    : string.Format(Ui.Board_SceneEpisodesInSameScene, scene.DisplayName)
-            }
+            Text = scene.DisplayName,
+            FontSize = 10,
+            FontWeight = FontWeight.SemiBold,
+            Opacity = 0.7,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
         };
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(14, 0), VerticalAlignment = VerticalAlignment.Center };
+
+        if (color is int slot)
+        {
+            row.Children.Add(new Ellipse
+            {
+                Width = 7,
+                Height = 7,
+                Fill = Skin.SceneMarkOf(slot).Brush(),
+                Margin = new Thickness(0, 0, 6, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = SceneDotTag
+            });
+        }
+
+        row.Children.Add(name);
+
+        var header = new Border { Height = ProxyRowHeight, Background = Skin.Neutral.Brush(26), Child = row };
+        ToolTip.SetTip(header, scene.SceneId.Length == 0
+            ? Ui.Board_NodesNotInThisChapter
+            : string.Format(Ui.Board_SceneEpisodesInSameScene, scene.DisplayName));
+        return header;
+    }
 
     private ProxyNodeRow BuildProxyRow(CollapsedNodeEntry entry, int index)
     {
@@ -7797,6 +7844,89 @@ public partial class GraphEditorView : UserControl
     /// 포함된 에피소드나, 그 장면 내에 포함된 모든 에피소드가 클릭되도록 해서 이동시키는 용도」). 한 번 = 그 안의 카드를 모두 무리로 고르고(인스펙터 ·
     /// 하이어아키는 그 챕터 · 장면 — 판의 빈 곳을 누른 것과 같다) 그대로 끌면 함께 움직인다. 두 번 = 접기.
     /// </summary>
+    /// <summary>
+    /// 접힌 상자의 이름표를 눌렀다(2026-11-27) — 펼친 이름표의 짝이다: 한 번 = 그 챕터 · 장면을 고르고(인스펙터 · 하이어아키) 그대로 끌면 상자째 옮긴다(상자를
+    /// 눌러 끄는 것과 같다), 두 번 = 펴기.
+    /// </summary>
+    private void OnFoldedLabelPressed(PointerPressedEventArgs args, HierarchyPick pick, FileProxyVisual proxy, Action unfold)
+    {
+        args.Handled = true;
+
+        if (!args.GetCurrentPoint(GraphCanvas).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (args.ClickCount >= 2)
+        {
+            CancelDrag(); // 첫 누름이 시작한 끌기 상태를 걷는다
+            unfold();
+            return;
+        }
+
+        ReleaseWritingFocus();
+        SelectEdge(null);
+        AreaPicked?.Invoke(pick);
+
+        if (_session?.Project.FindFile(proxy.FileId) is { Nodes.Count: > 0 } storyFile)
+        {
+            var inside = proxy.Rows.Select(row => row.NodeId).ToHashSet(StringComparer.Ordinal);
+            BeginProxyDrag(
+                proxy.Visual, args, proxy.FileId, proxy.SceneId,
+                proxy.SceneId is null ? storyFile.Nodes : storyFile.Nodes.Where(node => inside.Contains(node.Id)));
+            args.Pointer.Capture(GraphCanvas);   // 이름표는 판 밖의 화면 겹에 있다 — 끄는 움직임 · 놓음은 판이 받는다
+        }
+    }
+
+    /// <summary>
+    /// 챕터 이름표 — 먹색 면에 흰 글(다른 챕터는 흐린 회색). 펼친 챕터의 테두리와 접힌 판의 표가 같은 것을 단다(끝의 표만 「⌄」 · 「›」).
+    /// </summary>
+    private static Border ChapterLabel(string boardName, string chapterName, bool isActive, bool folded) => new()
+    {
+        CornerRadius = new CornerRadius(Skin.LabelRadius),
+        Padding = new Thickness(8 + (8 * Skin.FrameLabelGrow), 3 + (4 * Skin.FrameLabelGrow)),   // 끌어 옮기는 손잡이다 — 넉넉하게(2026-11-26 소유자)
+        Background = (isActive ? Skin.ChapterLabel : Skin.ChapterLabelIdle).Brush(),
+        BoxShadow = Skin.FrameLabelShadow,
+        Cursor = new Cursor(StandardCursorType.Hand),
+        Tag = ChapterLabelTag + boardName,
+        Child = new TextBlock
+        {
+            Text = string.Format(folded ? Ui.Board_ChapterFolded : Ui.Board_Chapter, chapterName),
+            Classes = { "frame-title" },   // 테마가 이름표의 글꼴을 고르는 손잡이(Themes/*/Controls.axaml)
+            TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭에서 말줄임한다(PlaceFrameLabels)
+            FontSize = Skin.ChapterLabelFont,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = Skin.ChapterLabelInk.Brush()
+        }
+    };
+
+    /// <summary>
+    /// 접힌 판(챕터)의 표에 다는 챕터 이름표(2026-11-27 소유자 — 「당신이 권하는 방향대로」) — 펼쳤을 때와 같은 모양 · 같은 크기 규칙(화면 13px 아래로 안 준다)으로
+    /// 표의 위 바깥에 선다. 표의 폭으로 말줄임하지 않는다 — 줄인 판에서 표는 좁아도 이름은 다 읽혀야 한다. 한 번 누르면 그 챕터를 골라 그대로 끌면 표째 옮기고,
+    /// 두 번 누르면 편다. ⛔ 그 전에는 표 머리의 작은 굵은 글뿐이라 접으면 챕터 이름이 사라진 것처럼 보였다.
+    /// </summary>
+    private Border? FoldedChapterLabel(FileProxyVisual proxy)
+    {
+        if (_session?.Project.Files.FirstOrDefault(file => string.Equals(file.Id, proxy.FileId, StringComparison.Ordinal)) is not { } board)
+        {
+            return null;
+        }
+
+        string name = _session.Editor.FindChapter(board.Name)?.ShownName ?? board.Name;
+        bool isActive = string.Equals(proxy.FileId, _session.ActiveFileId, StringComparison.Ordinal);
+        Border label = ChapterLabel(board.Name, name, isActive, folded: true);
+        ToolTip.SetTip(label, Ui.Board_FoldedChapterLabelTip);
+
+        string fileId = proxy.FileId;
+        label.PointerPressed += (_, args) => OnFoldedLabelPressed(
+            args,
+            new HierarchyPick(HierarchyKind.Chapter, board.Name),
+            proxy,
+            () => _session?.SetFileExpanded(fileId, expanded: true));
+
+        return label;
+    }
+
     private void OnFrameLabelPressed(PointerPressedEventArgs args, IReadOnlyList<string> members, HierarchyPick pick, Action fold)
     {
         args.Handled = true;

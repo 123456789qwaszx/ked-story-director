@@ -38,7 +38,9 @@ public sealed class SceneFoldTests
         Canvas canvas = BoardCanvas(graph);
         Border proxy = SceneProxy(canvas, board, "hall");
 
-        Assert.Contains("장면 hall", Texts(proxy));
+        // 이름은 상자 위 바깥의 장면 이름표가 말한다 — 상자 머리에는 접힘 · 수만(2026-11-27).
+        Assert.Contains(Texts(SceneLabel(graph, "hall")), text => text.StartsWith("장면 hall", StringComparison.Ordinal) && text.EndsWith("›", StringComparison.Ordinal));
+        Assert.DoesNotContain(Texts(proxy), text => text.Contains("hall", StringComparison.Ordinal));
         Assert.Null(CardOf(canvas, Card(session, "b").Id));
         Assert.NotNull(CardOf(canvas, Card(session, "root").Id));
         Assert.NotNull(CardOf(canvas, Card(session, "a").Id));
@@ -139,6 +141,61 @@ public sealed class SceneFoldTests
 
         graph.Rebuild();
         Assert.NotNull(CardOf(canvas, Card(session, "b").Id));
+    });
+
+    [Fact]
+    public void 접어도_장면_이름표는_펼쳤을_때와_같은_자리에_같은_모양으로_서고_두_번_누르면_펴진다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 접으면 크고 또렷하던 이름이 사라지던 것(「당신이 권하는 방향대로」). 접어도 같은 이름표가 상자의 왼위 바깥 — 펼쳤을 때와 같은
+        // 자리에 선다. 끝의 표만 「⌄」(펼침) → 「›」(접힘)이다.
+        (GraphEditorView graph, AuthoringSession session, string board) = Show();
+        Settle(graph);
+        Rect before = Place(graph, GraphEditorView.SceneLabelTag + "hall");
+
+        session.SetSceneCollapsed(board, "hall", collapsed: true);
+        graph.Rebuild();
+        Settle(graph);
+
+        Rect after = Place(graph, GraphEditorView.SceneLabelTag + "hall");
+        Assert.Equal(before.X, after.X, precision: 1);
+        Assert.Equal(before.Bottom, after.Bottom, precision: 1);
+        Assert.Equal(before.Height, after.Height, precision: 1);   // 같은 크기 규칙
+
+        // 이름 앞의 점도 그대로 — 그 장면의 색이다.
+        Border label = SceneLabel(graph, "hall");
+        Assert.Contains(((Panel)label.Child!).Children, child => Equals(child.Tag, GraphEditorView.SceneDotTag));
+
+        // 두 번 누르면 편다(펼친 이름표를 두 번 누르면 접는 것의 짝).
+        label.RaiseEvent(Press(label));
+        Assert.NotEmpty(session.CollapsedScenes);   // 한 번은 펴지 않는다 — 그 장면을 고르고 끌 채비만
+        label.RaiseEvent(Press(label, clickCount: 2));
+        Assert.Empty(session.CollapsedScenes);
+    });
+
+    [Fact]
+    public void 접힌_판의_표에도_챕터_이름표가_표_위에_서고_두_번_누르면_펴진다() => HeadlessUi.Run(() =>
+    {
+        // 2026-11-27 소유자 — 접힌 챕터도 펼쳤을 때와 같은 챕터 이름표(먹색 면 · 흰 글)가 표의 위 바깥에 선다. 표의 폭으로 말줄임하지 않는다.
+        (GraphEditorView graph, AuthoringSession session, string board) = Show();
+
+        session.SetFileExpanded(board, expanded: false);
+        graph.Rebuild();
+        Settle(graph);
+
+        Border label = Labels(graph).Children.OfType<Border>()
+            .Single(border => border.Tag as string == GraphEditorView.ChapterLabelTag + "ch01");
+        Assert.Equal("챕터 ch01 ›", ((TextBlock)label.Child!).Text);
+
+        // 표의 위 바깥 — 이름표의 아래 끝이 표의 위 끝에 붙는다(화면 겹의 좌표로 잰다).
+        Border table = BoardCanvas(graph).Children.OfType<Border>().Single(border => border.Tag as string == board);
+        Point top = table.TranslatePoint(new Point(0, 0), Labels(graph))!.Value;
+        var placed = graph.FrameLabelPlaces.Single(item => item.Key == GraphEditorView.ChapterLabelTag + "ch01");
+        Assert.Equal(GraphEditorView.FrameLabelPlace.Above, placed.Place);
+        Assert.Equal(top.Y, placed.Screen.Bottom, precision: 0);
+        Assert.DoesNotContain(Texts(table), text => text.Contains("ch01", StringComparison.Ordinal));   // 머리에는 이름이 없다
+
+        label.RaiseEvent(Press(label, clickCount: 2));
+        Assert.Contains(board, session.ExpandedFileIds);
     });
 
     [Fact]
@@ -271,6 +328,24 @@ public sealed class SceneFoldTests
 
     /// <summary>챕터 · 장면 이름표가 서는 화면 겹(design/board-zoom.md 4절).</summary>
     private static Canvas Labels(GraphEditorView graph) => graph.FindControl<Canvas>("FrameLabelLayer")!;
+
+    private static Border SceneLabel(GraphEditorView graph, string sceneId) =>
+        Labels(graph).Children.OfType<Border>().Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + sceneId);
+
+    /// <summary>배치를 마치고 이름표를 지금 배율 · 스크롤에 다시 세운다 — 화면 겹의 자리를 잴 수 있게.</summary>
+    private static void Settle(GraphEditorView graph)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            graph.UpdateLayout();
+        }
+
+        graph.PlaceFrameLabels();
+    }
+
+    /// <summary>그 이름표가 선 자리(화면 겹의 좌표).</summary>
+    private static Rect Place(GraphEditorView graph, string key) => graph.FrameLabelPlaces.Single(item => item.Key == key).Screen;
 
     private static DialogueNode Card(AuthoringSession session, string episodeId) =>
         EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!;
