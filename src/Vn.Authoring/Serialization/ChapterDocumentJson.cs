@@ -306,6 +306,12 @@ internal static class ChapterDocumentJson
         var json = new JsonObject { ["sceneId"] = note.SceneId };
         Text(json, "name", string.IsNullOrWhiteSpace(note.Name) ? null : note.Name);
         Text(json, "text", string.IsNullOrWhiteSpace(note.Text) ? null : note.Text);
+
+        if (note.Color is int color)
+        {
+            json["color"] = color;   // 고른 장면 색(1 ~ 5) — 자동이면 적지 않는다(design/scene-colors.md 5.1)
+        }
+
         return json;
     }
 
@@ -321,8 +327,14 @@ internal static class ChapterDocumentJson
         foreach (ChapterSceneNote note in Take(node, "sceneNotes", json => new ChapterSceneNote(
                      JsonSupport.RequiredText(json["sceneId"], Msg.File_SceneIdOfSceneNote),
                      Text(json["text"], Msg.File_TextOfSceneNote),
-                     Omittable(json["name"], Msg.File_NameOfSceneNote))))
+                     Omittable(json["name"], Msg.File_NameOfSceneNote),
+                     json["color"] is { } color ? JsonSupport.RequiredInt(color, Msg.File_ColorOfSceneNote) : null)))
         {
+            if (note.Color is int picked && !SceneColors.IsValid(picked))
+            {
+                throw new InvalidDataException(string.Format(Msg.File_SceneColorOutOfRange, note.SceneId, picked, SceneColors.Count));
+            }
+
             if (!seen.Add(note.SceneId))
             {
                 throw new InvalidDataException(string.Format(Msg.File_SceneNotesHasTwoNotesFor, note.SceneId));

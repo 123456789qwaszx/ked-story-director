@@ -111,11 +111,7 @@ internal static class Skin
 
     // ── [대본] 판 ─────────────────────────────────────────────
 
-    /// <summary>장면 — 프레임 · 이름표 · 접은 장면 상자.</summary>
-    public static Color Scene => C();
-
-    /// <summary>접은 장면 상자의 바탕.</summary>
-    public static Color SceneProxySurface => C();
+    // ⛔ 장면 한 색(Scene) · 접은 장면 상자의 바탕(SceneProxySurface)은 2026-11-26에 걷었다 — 장면마다 색이 갈린다(SceneTint1 ~ · SceneMark1 ~).
 
     /// <summary>접은 판 상자의 바탕.</summary>
     public static Color ProxySurface => C();
@@ -227,8 +223,59 @@ internal static class Skin
     /// <summary>장면 테두리.</summary>
     public static Color SceneFrameBorder => C();
 
-    /// <summary>장면 바탕.</summary>
-    public static Color SceneFrameFill => C();
+    /// <summary>
+    /// 장면 바탕 — 팔레트 칸 1 ~ 5(세이지 · 장미 · 민트 · 연두 · 라일락 · design/scene-colors.md). <b>비치는 색</b>이다 — 챕터 바탕 위에 한 겹이면 견본의 옅은 색이고,
+    /// 장면이 겹친 자리는 한 겹 더 진해진다(같은 색이면 진한 그 색, 다른 색이면 섞인 색 · 2026-11-26 소유자 — 「같은 색의 장면끼리 겹칠 때, 이게 아예 구분이
+    /// 안 가는데 … 색을 겹치게 해서」). 칸은 <see cref="SceneTintOf"/>로 고른다.
+    /// </summary>
+    public static Color SceneTint1 => C();
+
+    /// <summary>장면 바탕 — 칸 2(장미). <see cref="SceneTint1"/> 참조.</summary>
+    public static Color SceneTint2 => C();
+
+    /// <summary>장면 바탕 — 칸 3(민트).</summary>
+    public static Color SceneTint3 => C();
+
+    /// <summary>장면 바탕 — 칸 4(연두).</summary>
+    public static Color SceneTint4 => C();
+
+    /// <summary>장면 바탕 — 칸 5(라일락).</summary>
+    public static Color SceneTint5 => C();
+
+    /// <summary>장면의 점 — 칸 1 ~ 5의 진한 색(장면 이름표 · 접은 장면 상자 · 하이어아키 · [구성] 꼬리표). 옅은 바탕은 작은 점으로 보이지 않는다.</summary>
+    public static Color SceneMark1 => C();
+
+    /// <summary>장면의 점 — 칸 2.</summary>
+    public static Color SceneMark2 => C();
+
+    /// <summary>장면의 점 — 칸 3.</summary>
+    public static Color SceneMark3 => C();
+
+    /// <summary>장면의 점 — 칸 4.</summary>
+    public static Color SceneMark4 => C();
+
+    /// <summary>장면의 점 — 칸 5.</summary>
+    public static Color SceneMark5 => C();
+
+    /// <summary>그 칸의 장면 바탕(1 ~ 5 · 밖이면 1).</summary>
+    public static Color SceneTintOf(int color) => color switch
+    {
+        2 => SceneTint2,
+        3 => SceneTint3,
+        4 => SceneTint4,
+        5 => SceneTint5,
+        _ => SceneTint1
+    };
+
+    /// <summary>그 칸의 장면 점(1 ~ 5 · 밖이면 1).</summary>
+    public static Color SceneMarkOf(int color) => color switch
+    {
+        2 => SceneMark2,
+        3 => SceneMark3,
+        4 => SceneMark4,
+        5 => SceneMark5,
+        _ => SceneMark1
+    };
 
     /// <summary>장면 이름표의 바탕.</summary>
     public static Color SceneLabel => C();

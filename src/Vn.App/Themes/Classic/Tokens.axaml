@@ -39,8 +39,6 @@
     <Color x:Key="NoteBorder">#C9A227</Color>
 
     <!-- [대본] 판 -->
-    <Color x:Key="Scene">#D97706</Color>
-    <Color x:Key="SceneProxySurface">#FEF7EC</Color>
     <Color x:Key="ProxySurface">#F3F4F6</Color>
     <Color x:Key="EpisodeAccent">#D97706</Color>
     <Color x:Key="EpisodeSurface">#FBF6EA</Color>
@@ -79,7 +77,17 @@
     <Color x:Key="ChapterLabelIdle">#A06B7280</Color>
     <Color x:Key="ChapterLabelInk">#FFFFFF</Color>
     <Color x:Key="SceneFrameBorder">#5AD97706</Color>
-    <Color x:Key="SceneFrameFill">#0AD97706</Color>
+    <!-- 장면 바탕 — 다섯 색조를 옅게 비치게(파스텔 하늘의 점 색 · design/scene-colors.md). 겹친 자리는 한 겹 더 진하다. -->
+    <Color x:Key="SceneTint1">#1445845D</Color>
+    <Color x:Key="SceneTint2">#149E5D77</Color>
+    <Color x:Key="SceneTint3">#14188489</Color>
+    <Color x:Key="SceneTint4">#147C7733</Color>
+    <Color x:Key="SceneTint5">#147D68A2</Color>
+    <Color x:Key="SceneMark1">#45845D</Color>
+    <Color x:Key="SceneMark2">#9E5D77</Color>
+    <Color x:Key="SceneMark3">#188489</Color>
+    <Color x:Key="SceneMark4">#7C7733</Color>
+    <Color x:Key="SceneMark5">#7D68A2</Color>
     <Color x:Key="SceneLabel">#B4D97706</Color>
     <Color x:Key="SceneLabelBorder">#00FFFFFF</Color>
     <Color x:Key="SceneLabelInk">#FFFFFF</Color>

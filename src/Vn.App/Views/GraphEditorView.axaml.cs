@@ -121,8 +121,33 @@ public partial class GraphEditorView : UserControl
     /// <summary>장면 이름표의 Tag 머리 — 뒤에 장면ID가 붙는다. 누르면 그 장면을 접는다.</summary>
     internal const string SceneLabelTag = "scene-label:";
 
-    /// <summary>장면 색 — 장면 프레임 · 이름표 · 접은 장면 상자가 함께 쓴다.</summary>
-    private static Color SceneColor => Skin.Scene;
+    /// <summary>장면 이름표 앞 장면 색 점의 Tag — 시험이 찾는다.</summary>
+    internal const string SceneDotTag = "scene-dot";
+
+    /// <summary>
+    /// 그 판 · 장면의 색 칸(1 ~ 5) — 고른 칸이 먼저, 그 밖은 자동(<see cref="SceneColors"/>). 접은 장면 상자가 쓴다 — 펼친 장면의 테두리는 챕터마다 한 번
+    /// 셈한다(<see cref="DrawSceneFrames"/>). 판이 챕터 판이 아니면 1.
+    /// </summary>
+    private int SceneColorOf(string fileId, string sceneId)
+    {
+        if (_session?.Project.Files.FirstOrDefault(file => string.Equals(file.Id, fileId, StringComparison.Ordinal)) is not { } board)
+        {
+            return 1;
+        }
+
+        ChapterDocument chapter = EpisodeNaming.ChapterOfBoard(_session.Project, board);
+        return SceneColors.ColorOf(
+            SceneColors.Of(ChapterSceneGrouping.Of(chapter.ToGraphModel(chapter.ChapterId)), chapter.SceneNotes),
+            sceneId);
+    }
+
+    /// <summary>비치는 색을 바탕 위에 한 겹 — 비치면 안 되는 자리(접은 장면 상자)에 같은 색을 불투명하게.</summary>
+    private static Color Over(Color top, Color under)
+    {
+        double alpha = top.A / 255d;
+        byte Mix(byte t, byte u) => (byte)Math.Round((t * alpha) + (u * (1 - alpha)));
+        return Color.FromRgb(Mix(top.R, under.R), Mix(top.G, under.G), Mix(top.B, under.B));
+    }
 
     private readonly List<NodeCard> _cards = new();
     private readonly List<FileProxyVisual> _proxies = new();
@@ -1286,6 +1311,9 @@ public partial class GraphEditorView : UserControl
         IReadOnlyList<ChapterScene> scenes = ChapterSceneGrouping.Of(
             chapter.ToGraphModel(chapter.ChapterId));
 
+        // 장면 색 — 고른 칸이 먼저, 그 밖은 자동(장면ID · 이야기 차례로 앞 두 장면과 다르게 · design/scene-colors.md).
+        IReadOnlyDictionary<string, int> colors = SceneColors.Of(scenes, chapter.SceneNotes);
+
         var sceneOf = new Dictionary<string, ChapterScene>(StringComparer.Ordinal);
 
         foreach (ChapterScene scene in scenes)
@@ -1333,10 +1361,11 @@ public partial class GraphEditorView : UserControl
             // 챕터 프레임보다 얕게 — 두 테두리 사이에 챕터의 빈 곳이 남는다(<see cref="ChapterFramePad"/>).
             area = area.Inflate(SceneFramePad);
 
+            int color = SceneColors.ColorOf(colors, scene.SceneId);
             _sceneAreas.Add((area, fileId, chapter.ChapterId, scene.SceneId));
-            _frames.Add(SceneFrame(area));
+            _frames.Add(SceneFrame(area, Skin.SceneTintOf(color)));
 
-            Border label = SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene));
+            Border label = SceneLabel(fileId, chapter.ChapterId, scene, members, ChapterSceneNotes.HasMemo(chapter.SceneNotes, scene), Skin.SceneMarkOf(color));
             AddFrameLabel(new FrameLabel(label, chapter: false, area, 10 + (6 * Skin.FrameLabelGrow))
             {
                 Container = chapterArea
@@ -1361,7 +1390,12 @@ public partial class GraphEditorView : UserControl
             ? EpisodeNaming.EpisodeIdOf(dialogue)
             : null;
 
-    private static Border SceneFrame(Rect area)
+    /// <summary>
+    /// 장면 테두리의 면 — 그 장면 색의 <b>비치는</b> 바탕(<see cref="Skin.SceneTint1"/>). 장면이 겹친 자리는 한 겹 더 진해진다(같은 색이면 진한 그 색, 다른 색이면
+    /// 섞인 색 — 2026-11-26 소유자: 「같은 색의 장면끼리 겹칠 때, 이게 아예 구분이 안 가는데 … 색을 겹치게 해서 보여준다던지」). ⛔ 그 전에는 모든 장면이 같은
+    /// 불투명한 세이지라 겹친 장면의 경계가 사라졌다.
+    /// </summary>
+    private static Border SceneFrame(Rect area, Color fill)
     {
         var frame = new Border
         {
@@ -1370,7 +1404,7 @@ public partial class GraphEditorView : UserControl
             CornerRadius = new CornerRadius(Skin.SceneFrameRadius),
             BorderThickness = new Thickness(Skin.FrameWeight),
             BorderBrush = Skin.SceneFrameBorder.Brush(),
-            Background = Skin.SceneFrameFill.Brush(),
+            Background = fill.Brush(),
             IsHitTestVisible = false
         };
 
@@ -1387,7 +1421,7 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     /// <param name="members">그 장면에 서 있는 카드(에피소드와 집이 그 장면인 분기 카드) — 테두리를 잰 그 카드들이다.</param>
     /// <returns>이름표 — 자리는 화면 겹에서 <see cref="PlaceFrameLabels"/>가 정한다(늘 장면의 왼위 · 이름 그대로).</returns>
-    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo)
+    private Border SceneLabel(string fileId, string chapterId, ChapterScene scene, IReadOnlyList<string> members, bool hasMemo, Color mark)
     {
         string shown = string.Format(Ui.Board_Scene, scene.DisplayName) + (hasMemo ? Ui.Board_Note : string.Empty) +
                        (scene.HasSplitEntry ? " ⚠ ⌄" : " ⌄");
@@ -1401,19 +1435,38 @@ public partial class GraphEditorView : UserControl
             BorderBrush = Skin.SceneLabelBorder.Brush(),
             BoxShadow = Skin.FrameLabelShadow,
             Cursor = new Cursor(StandardCursorType.Hand),
-            Tag = SceneLabelTag + scene.SceneId,
-            Child = new TextBlock
-            {
-                // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
-                // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
-                Text = shown,
-                Classes = { "frame-title" },
-                TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭을 넘는 이름만 말줄임한다(PlaceFrameLabels)
-                FontSize = Skin.SceneLabelFont,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = Skin.SceneLabelInk.Brush()
-            }
+            Tag = SceneLabelTag + scene.SceneId
         };
+
+        // 이름 앞에 그 장면 색의 점 — 하이어아키 · 접은 상자 · [구성] 꼬리표와 한 색이다(design/scene-colors.md 4절). 이름표 바탕은 장면마다 같은 흰색이다 —
+        // 끌어 옮기는 손잡이의 모양은 하나다. 점 · 이름은 칸(Auto · *)에 서야 이름표 폭이 줄 때 이름이 말줄임된다.
+        double dot = Math.Round(Skin.SceneLabelFont * 0.5);
+        var name = new TextBlock
+        {
+            // ⚠ 장면이 확정·롤백의 경계라는 것이 이름표에서 읽혀야 한다.
+            // 장면 메모나 에피소드 지시가 있으면 「· 메모」 — 하이어아키의 장면 줄과 같은 표시다.
+            Text = shown,
+            Classes = { "frame-title" },
+            TextTrimming = TextTrimming.CharacterEllipsis,   // 챕터의 폭을 넘는 이름만 말줄임한다(PlaceFrameLabels)
+            FontSize = Skin.SceneLabelFont,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = Skin.SceneLabelInk.Brush(),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var swatch = new Ellipse
+        {
+            Width = dot,
+            Height = dot,
+            Fill = mark.Brush(),
+            Margin = new Thickness(0, 0, Math.Round(dot * 0.7), 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Tag = SceneDotTag
+        };
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+        Grid.SetColumn(name, 1);
+        row.Children.Add(swatch);
+        row.Children.Add(name);
+        label.Child = row;
         ToolTip.SetTip(label, Ui.Board_ClickToSelectEveryCard2);
 
         string sceneId = scene.SceneId;
@@ -5636,11 +5689,12 @@ public partial class GraphEditorView : UserControl
     /// </summary>
     private FileProxyVisual BuildSceneProxy(CollapsedSceneProjection scene)
     {
+        int color = SceneColorOf(scene.FileId, scene.SceneId);
         var content = new StackPanel { Spacing = 0 };
         content.Children.Add(ProxyHeader(
             string.Format(Ui.Board_Scene, scene.DisplayName),
             Plural.Format(Ui.Board_FoldedNodes2, scene.Nodes.Count) + (scene.InnerCount > 0 ? Plural.Format(Ui.Board_PathsInside, scene.InnerCount) : string.Empty),
-            SceneColor.Brush()));
+            Skin.SceneMarkOf(color).Brush()));
 
         var rows = new List<ProxyNodeRow>();
 
@@ -5655,8 +5709,8 @@ public partial class GraphEditorView : UserControl
         {
             Width = ProxyWidth,
             CornerRadius = new CornerRadius(8),
-            Background = Skin.SceneProxySurface.Brush(),
-            BorderBrush = SceneColor.Brush(170),
+            Background = Over(Skin.SceneTintOf(color), Skin.ChapterFrameFill).Brush(),   // 펼친 장면과 같은 색 — 상자는 비치지 않는다(아래 선이 보이지 않게)
+            BorderBrush = Skin.SceneMarkOf(color).Brush(170),
             BorderThickness = new Thickness(1),
             ClipToBounds = false,
             Child = content,

@@ -41,8 +41,6 @@
     <Color x:Key="NoteBorder">#E2C678</Color>
 
     <!-- [대본] 판 -->
-    <Color x:Key="Scene">#2F7F6D</Color>
-    <Color x:Key="SceneProxySurface">#EEF5F2</Color>
     <Color x:Key="ProxySurface">#EEF2F5</Color>
     <Color x:Key="EpisodeAccent">#5B6B79</Color>
     <Color x:Key="EpisodeSurface">#FFFEFA</Color>
@@ -92,9 +90,21 @@
     <Color x:Key="ChapterLabelIdle">#FF8796A4</Color>
     <Color x:Key="ChapterLabelInk">#FFFFFF</Color>
     <Color x:Key="SceneFrameBorder">#00B0AB9F</Color>
-    <!-- 장면 바탕은 세이지(초록 기운 회색 — 2026-11-26 소유자가 견본에서 골랐다 · 디자인 점검 7번 4단계). 에피소드 머리 띠(#E4E9ED)와 색조가 갈려 카드 머리가
-         바탕에 묻히지 않고, 책상의 회청색과도 섞이지 않는다. ⛔ 회청 #E3E8EC는 띠와 거의 같은 색이었다 · 푸른 쟁반 #DFE7EE · 따뜻한 베이지 #E8E6E1도 걷혔다. -->
-    <Color x:Key="SceneFrameFill">#FFE0E7E1</Color>
+    <!-- 장면 바탕은 장면마다 다섯 색 가운데 하나다(design/scene-colors.md — 2026-11-26 소유자가 견본에서 「옅게」를 골랐다): 세이지 · 장미 · 민트 · 연두 · 라일락.
+         다섯 모두 세이지와 밝기가 같아 줄인 판의 덩어리와 대비 3:1이 지켜지고, 고름의 파랑 · 시작의 금빛 · 분기의 갈색 · 카드 띠의 회청 색조는 비운다.
+         비치는 색(알파 0x59)이다 — 챕터 바탕(#FDFCFA) 위 한 겹이면 견본의 색(#D5EBDC · #F8DFE7 · #CEEBEC · #E7E7D0 · #E9E2F8)이고, 장면이 겹친 자리는
+         한 겹 더 진하다(같은 색이면 진한 그 색, 다른 색이면 섞인 색 — 소유자: 「같은 색의 장면끼리 겹칠 때 … 아예 구분이 안 가는데」). 점은 같은 색조의
+         진한 색이다(흰 이름표 위 대비 4.4 ~ 4.9:1). ⛔ 그 전에는 모든 장면이 불투명한 세이지 한 색(#E0E7E1)이었다. -->
+    <Color x:Key="SceneTint1">#598ACBA4</Color>
+    <Color x:Key="SceneTint2">#59EFA9C4</Color>
+    <Color x:Key="SceneTint3">#5976CBD2</Color>
+    <Color x:Key="SceneTint4">#59BEC082</Color>
+    <Color x:Key="SceneTint5">#59C4B2F4</Color>
+    <Color x:Key="SceneMark1">#45845D</Color>
+    <Color x:Key="SceneMark2">#9E5D77</Color>
+    <Color x:Key="SceneMark3">#188489</Color>
+    <Color x:Key="SceneMark4">#7C7733</Color>
+    <Color x:Key="SceneMark5">#7D68A2</Color>
     <Color x:Key="SceneLabel">#FFFFFEFA</Color>
     <Color x:Key="SceneLabelBorder">#34414F</Color>
     <Color x:Key="SceneLabelInk">#26323E</Color>

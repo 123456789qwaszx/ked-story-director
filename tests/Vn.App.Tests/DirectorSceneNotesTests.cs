@@ -342,6 +342,6 @@ public sealed class DirectorSceneNotesTests : IDisposable
             .Children.OfType<TextBlock>().Select(block => block.Text ?? string.Empty).ToList();
 
     private static string Label(GraphEditorView graph, string sceneId) =>
-        ((TextBlock)graph.FindControl<Canvas>("FrameLabelLayer")!.Children.OfType<Border>()   // 이름표는 판 위의 화면 겹에 선다
-            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + sceneId).Child!).Text ?? string.Empty;
+        ((Panel)graph.FindControl<Canvas>("FrameLabelLayer")!.Children.OfType<Border>()   // 이름표는 판 위의 화면 겹에 선다 — 점 · 이름 줄
+            .Single(border => border.Tag as string == GraphEditorView.SceneLabelTag + sceneId).Child!).Children.OfType<TextBlock>().Single().Text ?? string.Empty;
 }

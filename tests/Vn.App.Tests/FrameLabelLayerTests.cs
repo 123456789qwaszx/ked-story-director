@@ -70,7 +70,7 @@ public sealed class FrameLabelLayerTests : IDisposable
                 Assert.Equal(GraphEditorView.FrameLabelPlace.Corner, place);
                 Assert.True(label.IsVisible, $"{zoom:P0}: {key}가 숨었다");
                 Assert.True(double.IsPositiveInfinity(label.MaxWidth), $"{zoom:P0}: {key}를 말줄임했다");   // 이름 그대로
-                double shown = ((TextBlock)label.Child!).FontSize * (label.RenderTransform is ScaleTransform scale ? scale.ScaleX : 1);
+                double shown = NameOf(label).FontSize * (label.RenderTransform is ScaleTransform scale ? scale.ScaleX : 1);
                 Assert.True(shown >= GraphEditorView.SceneLabelMinPx - 0.01, $"{zoom:P0}: {key} 글자 {shown:0.0}px");
 
                 // 챕터 이름표와는 겹치지 않고, 챕터 테두리 위로 나가지 않는다.
@@ -216,6 +216,9 @@ public sealed class FrameLabelLayerTests : IDisposable
         EpisodeNaming.CardFor(session.Project, "ch01", episodeId)!.Id;
 
     private static Canvas Layer(GraphEditorView graph) => graph.FindControl<Canvas>("FrameLabelLayer")!;
+
+    /// <summary>장면 이름표의 이름 — 점 · 이름 줄의 글.</summary>
+    private static TextBlock NameOf(Border label) => ((Panel)label.Child!).Children.OfType<TextBlock>().Single();
 
     private static Dictionary<string, (double X, double Y)> Positions(AuthoringSession session) =>
         new[] { "root", "a", "b" }.ToDictionary(

@@ -223,8 +223,11 @@ public partial class GraphEditorView
         return Math.Ceiling(label.Natural.Height * ScaleOf(label, zoom) / zoom);
     }
 
+    /// <summary>이름표 글의 판 크기 — 챕터는 글 하나, 장면은 점 · 이름 줄(<see cref="SceneLabel"/>)의 이름.</summary>
     private static double FontOf(FrameLabel label) =>
-        label.Visual.Child is TextBlock name && name.FontSize > 0 ? name.FontSize : 12;
+        (label.Visual.Child as TextBlock ?? (label.Visual.Child as Panel)?.Children.OfType<TextBlock>().FirstOrDefault()) is { FontSize: > 0 } name
+            ? name.FontSize
+            : 12;
 
     /// <summary>이름표의 제 크기(판 단위)를 잰다 — 처음 한 번, 창에서 떨어져 쟀으면 붙은 뒤에 다시.</summary>
     private static void MeasureLabel(FrameLabel label, bool attached)

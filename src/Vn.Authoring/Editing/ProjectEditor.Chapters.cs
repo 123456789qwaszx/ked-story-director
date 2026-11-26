@@ -208,6 +208,8 @@ public sealed partial class ProjectEditor
     /// <item>새 장면ID에 메모가 없으면 옛 메모가 새 열쇠로 간다(바꾸기 · 메모 없는 장면으로 합치기).</item>
     /// <item>받는 장면에 이미 메모가 있으면 그것을 두고, 보낸 장면의 메모는 옛 열쇠에 <b>주인 없이</b> 남는다.</item>
     /// </list>
+    /// 새 장면ID가 아직 없는 장면이면(바꾸기) <b>장면 색을 묶는다</b> — 자동 색은 장면ID에서 나오므로(<see cref="SceneColors"/>) 그대로 두면 바꾸는 순간
+    /// 색이 바뀐다. 고른 색이 없으면 그때의 자동 색을 고른 색으로 적는다(design/scene-colors.md 5.2).
     /// </summary>
     /// <returns>장면ID가 바뀐 에피소드 수 — 그 장면의 에피소드가 없으면 0이고 아무것도 하지 않는다.</returns>
     public int RenameScene(string chapterId, string sceneId, string name)
@@ -229,11 +231,32 @@ public sealed partial class ProjectEditor
             return 0;
         }
 
+        // 바꾸기(받는 장면이 없다)면 지금 보이는 색을 묶는다 — 합치기면 받는 장면의 색을 따른다.
+        int? keep = !string.Equals(sceneId, wanted, StringComparison.Ordinal) &&
+                    !ChapterSceneNotes.IsOwned(chapter.Episodes, wanted) &&
+                    ChapterSceneNotes.ColorOf(chapter.SceneNotes, sceneId) is null
+            ? SceneColors.ColorOf(SceneColors.Of(ChapterSceneGrouping.Of(chapter.ToGraphModel(chapterId)), chapter.SceneNotes), sceneId)
+            : null;
+
         Mutate(() =>
         {
             foreach (int index in members)
             {
                 chapter.Episodes[index] = chapter.Episodes[index] with { SceneId = wanted };
+            }
+
+            if (keep is int color)
+            {
+                int at = chapter.SceneNotes.FindIndex(note => string.Equals(note.SceneId, sceneId, StringComparison.Ordinal));
+
+                if (at >= 0)
+                {
+                    chapter.SceneNotes[at] = chapter.SceneNotes[at] with { Color = color };
+                }
+                else
+                {
+                    chapter.SceneNotes.Add(new ChapterSceneNote(sceneId, string.Empty, Color: color));
+                }
             }
 
             CarrySceneNote(chapter, sceneId, wanted);
@@ -259,6 +282,20 @@ public sealed partial class ProjectEditor
     public void SetSceneName(string chapterId, string sceneId, string? name) =>
         UpdateSceneEntry(chapterId, sceneId, text: null, string.IsNullOrWhiteSpace(name) ? null : name.Trim(), setName: true);
 
+    /// <summary>
+    /// 장면 색 — 작가가 고른 팔레트 칸(1 ~ <see cref="SceneColors.Count"/>). null이면 「자동」으로 돌린다(<see cref="SceneColors"/>). 되돌리기 한 칸, 같은 값이면
+    /// 칸을 쓰지 않는다(design/scene-colors.md 5.1).
+    /// </summary>
+    public void SetSceneColor(string chapterId, string sceneId, int? color)
+    {
+        if (color is int picked && !SceneColors.IsValid(picked))
+        {
+            throw new ArgumentOutOfRangeException(nameof(color), picked, string.Format(Msg.Edit_SceneColorOutOfRange, picked, SceneColors.Count));
+        }
+
+        UpdateSceneEntry(chapterId, sceneId, text: null, name: null, setName: false, color, setColor: true);
+    }
+
     /// <summary>장면 항목(이름 · 메모)을 통째로 지운다 — 주인 없는 항목의 [지우기]. 되돌리기 한 칸, 없으면 칸을 쓰지 않는다.</summary>
     public void RemoveSceneNote(string chapterId, string sceneId)
     {
@@ -274,10 +311,12 @@ public sealed partial class ProjectEditor
     }
 
     /// <summary>
-    /// 장면 항목 하나를 고친다 — <paramref name="text"/>가 null이면 글을, <paramref name="setName"/>이 거짓이면 이름을 그대로 둔다.
-    /// 둘 다 비면 항목을 지운다. 글자라 <c>NodeMetadata</c>로 알린다 — 인스펙터를 다시 세우면 쓰던 칸이 사라진다.
+    /// 장면 항목 하나를 고친다 — <paramref name="text"/>가 null이면 글을, <paramref name="setName"/>이 거짓이면 이름을,
+    /// <paramref name="setColor"/>가 거짓이면 색을 그대로 둔다. 모두 비면 항목을 지운다. 글자라 <c>NodeMetadata</c>로 알린다 — 인스펙터를 다시 세우면
+    /// 쓰던 칸이 사라진다.
     /// </summary>
-    private void UpdateSceneEntry(string chapterId, string sceneId, string? text, string? name, bool setName)
+    private void UpdateSceneEntry(
+        string chapterId, string sceneId, string? text, string? name, bool setName, int? color = null, bool setColor = false)
     {
         ChapterDocument chapter = RequireChapter(chapterId);
 
@@ -291,11 +330,13 @@ public sealed partial class ProjectEditor
         ChapterSceneNote wanted = current with
         {
             Text = text ?? (string.IsNullOrWhiteSpace(current.Text) ? string.Empty : current.Text),
-            Name = setName ? name : (string.IsNullOrWhiteSpace(current.Name) ? null : current.Name)
+            Name = setName ? name : (string.IsNullOrWhiteSpace(current.Name) ? null : current.Name),
+            Color = setColor ? color : current.Color
         };
 
         bool same = string.Equals(Normal(current.Text), Normal(wanted.Text), StringComparison.Ordinal) &&
-                    string.Equals(Normal(current.Name), Normal(wanted.Name), StringComparison.Ordinal);
+                    string.Equals(Normal(current.Name), Normal(wanted.Name), StringComparison.Ordinal) &&
+                    current.Color == wanted.Color;
 
         if (same)
         {

@@ -196,11 +196,26 @@ public sealed class ThemeTests : IDisposable
                 Assert.All(runs, run => Assert.StartsWith("Pretendard", run.GlyphRun.GlyphTypeface.FamilyName, StringComparison.Ordinal));
             }
 
-            // 줄인 판(design/board-zoom.md 4단계 · 2026-11-26 소유자가 견본에서 골랐다) — 장면 바탕은 세이지, 덩어리는 장면 바탕과 대비 3:1 이상이다.
-            Assert.Equal(Color.Parse("#E0E7E1"), Skin.SceneFrameFill);
-            foreach (Color block in new[] { Skin.BlockEpisode, Skin.BlockSceneRoot, Skin.BlockBranch, Skin.BlockOther })
+            // 장면 색(design/scene-colors.md · 2026-11-26 소유자가 견본에서 「옅게」를 골랐다) — 비치는 바탕이 챕터 바탕 위 한 겹이면 견본의 색이고,
+            // 줄인 판의 덩어리는 그 위에서 대비 3:1 이상이다(design/board-zoom.md 4단계). 점은 흰 장면 이름표 위에서 3:1 이상, 겹친 자리는 한 겹 더 진하다.
+            string[] swatch = ["#D5EBDC", "#F8DFE7", "#CEEBEC", "#E7E7D0", "#E9E2F8"];
+
+            for (int slot = 1; slot <= 5; slot++)
             {
-                Assert.True(Contrast(block, Skin.SceneFrameFill) >= 3, $"{block} ↔ 장면 바탕 {Contrast(block, Skin.SceneFrameFill):0.00}:1");
+                Color tint = Skin.SceneTintOf(slot);
+                Assert.InRange(tint.A, 1, 254);   // 비친다
+                Color single = Over(tint, Skin.ChapterFrameFill);
+                Color expected = Color.Parse(swatch[slot - 1]);
+                Assert.True(Math.Abs(single.R - expected.R) <= 1 && Math.Abs(single.G - expected.G) <= 1 && Math.Abs(single.B - expected.B) <= 1,
+                    $"칸 {slot}: {single} ≠ {expected}");
+
+                foreach (Color block in new[] { Skin.BlockEpisode, Skin.BlockSceneRoot, Skin.BlockBranch, Skin.BlockOther })
+                {
+                    Assert.True(Contrast(block, single) >= 3, $"칸 {slot}: {block} ↔ 장면 바탕 {Contrast(block, single):0.00}:1");
+                }
+
+                Assert.True(Contrast(Skin.SceneMarkOf(slot), Skin.SceneLabel) >= 3, $"칸 {slot}의 점 ↔ 이름표 {Contrast(Skin.SceneMarkOf(slot), Skin.SceneLabel):0.00}:1");
+                Assert.True(Contrast(Over(tint, single), single) > 1.08, $"칸 {slot}: 겹친 자리가 진해지지 않는다");
             }
 
             // 틀의 글자 크기는 다섯 단계 가운데 하나다 — 꼬리표 12 · 단추 · 탭 13 · 읽는 글 15 · 제목 18 · 큰 제목 22.
@@ -366,6 +381,14 @@ public sealed class ThemeTests : IDisposable
         app.TryGetResource(key, ThemeVariant.Light, out object? value) ? value : null;
 
     /// <summary>두 색의 대비(WCAG — 상대 휘도).</summary>
+    /// <summary>비치는 색을 바탕 위에 한 겹 — 그리는 쪽(sRGB 그대로 섞는다)과 같은 셈.</summary>
+    private static Color Over(Color top, Color under)
+    {
+        double a = top.A / 255d;
+        byte Mix(byte t, byte u) => (byte)Math.Round((t * a) + (u * (1 - a)));
+        return Color.FromRgb(Mix(top.R, under.R), Mix(top.G, under.G), Mix(top.B, under.B));
+    }
+
     private static double Contrast(Color a, Color b)
     {
         static double Luminance(Color color)
