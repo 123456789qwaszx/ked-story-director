@@ -338,7 +338,7 @@
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_ChoiceLines" xml:space="preserve">
-    <value>선택지 선</value>
+    <value>기본 선택지 선</value>
     <comment>SettingsWindow.cs</comment>
   </data>
   <data name="Settings_Language" xml:space="preserve">

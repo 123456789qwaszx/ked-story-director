@@ -258,7 +258,7 @@
     <value>The shape of choice lines (branch lines too) newly drawn on the [Script] board — existing lines stay as they are (select a line to change it from the menu on the line). A line’s “↺ Auto” also returns to this shape’s default.</value>
   </data>
   <data name="Settings_ChoiceLines" xml:space="preserve">
-    <value>Choice lines</value>
+    <value>Default choice lines</value>
   </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Language</value>
