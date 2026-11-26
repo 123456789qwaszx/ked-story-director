@@ -442,6 +442,10 @@ public partial class DialogueNodeEditor : UserControl
             Child = card
         };
 
+        // 줄의 표(테마가 고른 줄 · 마우스를 올린 줄에만 「화자」 자리 글과 [+]를 보이는 손잡이 — Themes/*/Controls.axaml · 2026-11-26 디자인 점검 6번).
+        wrapper.Classes.Add(LineRowClass);
+        wrapper.Classes.Set(PickedLineClass, string.Equals(lineId, _selectedLineId, StringComparison.Ordinal));
+
         wrapper.AddHandler(
             PointerPressedEvent,
             (_, args) =>
@@ -592,8 +596,21 @@ public partial class DialogueNodeEditor : UserControl
             bool picked = string.Equals(cardLineId, lineId, StringComparison.Ordinal);
             card.BorderBrush = picked ? LineSelectionBrush : Brushes.Transparent;
             card.Background = picked ? LineSelectionFill : Brushes.Transparent;
+            card.Classes.Set(PickedLineClass, picked);
         }
     }
+
+    /// <summary>줄 표의 한 줄(고름 띠)의 클래스 — 테마의 손잡이다.</summary>
+    internal const string LineRowClass = "line-row";
+
+    /// <summary>고른 줄의 클래스 — 테마의 손잡이다.</summary>
+    internal const string PickedLineClass = "picked";
+
+    /// <summary>줄마다의 화자 칸 · [+]의 클래스 — 테마가 고른 줄 · 마우스를 올린 줄에만 보인다(「파스텔 하늘」).</summary>
+    internal const string LineSpeakerClass = "line-speaker";
+
+    /// <inheritdoc cref="LineSpeakerClass"/>
+    internal const string LineAddClass = "line-add";
 
     // ── 대본 ────────────────────────────────────────────────────────────────
 
@@ -703,7 +720,7 @@ public partial class DialogueNodeEditor : UserControl
 
         var index = new TextBlock
         {
-            Text = resolved.Index.ToString(),
+            Text = (resolved.Index + 1).ToString(),   // 사람이 세는 번호 — 1부터(2026-11-26 — 디자인 점검 6번 · 「n번째 줄」 알림과 같다 · ⛔ 0부터)
             FontSize = Skin.Font(10),
             Opacity = Skin.Dim(0.45),
             VerticalAlignment = VerticalAlignment.Center
@@ -768,7 +785,7 @@ public partial class DialogueNodeEditor : UserControl
 
         var index = new TextBlock
         {
-            Text = resolved.Index.ToString(),
+            Text = (resolved.Index + 1).ToString(),   // 사람이 세는 번호 — 1부터(2026-11-26 — 디자인 점검 6번 · 「n번째 줄」 알림과 같다 · ⛔ 0부터)
             FontSize = Skin.Font(10),
             Opacity = Skin.Dim(0.45),
             VerticalAlignment = VerticalAlignment.Top,
@@ -855,6 +872,7 @@ public partial class DialogueNodeEditor : UserControl
                 FontSize = Skin.Font(11),
                 MinHeight = 26,
                 ItemsSource = SpeakerNames(),
+                Classes = { LineSpeakerClass }
             };
             Wire(speaker);
             _speakerBoxes[resolved.Line.LineId] = speaker;
@@ -1264,7 +1282,8 @@ public partial class DialogueNodeEditor : UserControl
             MinHeight = 0,
             Margin = new Thickness(2, 0, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            Classes = { LineAddClass }
         };
         ToolTip.SetTip(plus, Ui.Dialogue_AddBranchBeforeThisLine);
         plus.Click += (_, _) => OpenLineMetaFlyout(plus, node, resolved);

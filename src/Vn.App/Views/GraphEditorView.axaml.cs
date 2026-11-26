@@ -66,6 +66,15 @@ public partial class GraphEditorView : UserControl
     /// <summary>켜진 글 맞춤 단추 · 기본 크기로 고정한 카드의 기본 크기 고정 단추가 지는 class — 화면 시험의 손잡이다.</summary>
     internal const string FitOnClass = "fit-on";
 
+    /// <summary>판의 카드(겉 테두리)의 클래스 — 테마의 손잡이다.</summary>
+    internal const string BoardCardClass = "board-card";
+
+    /// <summary>고른 카드(범위로 고른 무리도)의 클래스 — 테마의 손잡이다.</summary>
+    internal const string PickedCardClass = "picked";
+
+    /// <summary>카드 머리 오른쪽 끝의 고정 · 맞춤 단추 묶음의 클래스 — 테마의 손잡이다.</summary>
+    internal const string CardTogglesClass = "card-toggles";
+
     /// <summary>글에 맞출 때 더하는 몫 — 커서 · 반올림에 줄이 꺾이지 않게.</summary>
     private const double FitSlack = 4;
 
@@ -3699,7 +3708,8 @@ public partial class GraphEditorView : UserControl
             Orientation = Orientation.Horizontal,
             Spacing = 2,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(4, -overflow, -overflow, -overflow)
+            Margin = new Thickness(4, -overflow, -overflow, -overflow),
+            Classes = { CardTogglesClass }   // 테마가 고른 카드 · 마우스를 올린 카드에만 보이는 손잡이(「파스텔 하늘」 · 디자인 점검 5번)
         };
         toggles.Children.Add(basePin);
         toggles.Children.Add(fitWidth);
@@ -4336,6 +4346,7 @@ public partial class GraphEditorView : UserControl
 
             card.Visual.BorderThickness = new Thickness(selected || grouped ? 2 : 1);
             card.Visual.BoxShadow = selected || grouped ? Skin.CardSelectedShadow : Skin.CardShadow;
+            card.Visual.Classes.Set(PickedCardClass, selected || grouped);
 
             if (card.Ribbon is { } ribbon)
             {
@@ -4662,7 +4673,8 @@ public partial class GraphEditorView : UserControl
             BorderBrush = style.Border.Brush(),
             BoxShadow = Skin.CardShadow,
             Child = frame,
-            Tag = node.NodeId
+            Tag = node.NodeId,
+            Classes = { BoardCardClass }   // 테마의 손잡이 — 고른 카드에는 PickedCardClass가 붙는다(HighlightSelection)
         };
 
         // ⛔ <b>선택지 칸은 카드 안에 없다</b> (2026-09-16 소유자: "아래쪽으로 3개").
@@ -6103,7 +6115,8 @@ public partial class GraphEditorView : UserControl
             Height = side,
             BorderThickness = new Thickness(1),
             BorderBrush = SlotPlaceholderBorder,
-            CornerRadius = new CornerRadius(Math.Min(Skin.SlotRadius, side / 2)),
+            // 단추로 읽히게 작은 네모(모서리 4) — 옆의 점(동그라미)과 모양이 갈린다(2026-11-26 — 디자인 점검 5번 · ⛔ 테마의 칸 모서리를 받아 동그라미였다).
+            CornerRadius = new CornerRadius(Math.Min(4, side / 2)),
             Background = Skin.SlotSurface.Brush(),
             VerticalAlignment = VerticalAlignment.Center,
             Cursor = new Cursor(StandardCursorType.Hand),

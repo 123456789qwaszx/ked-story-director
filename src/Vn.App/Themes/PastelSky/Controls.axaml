@@ -132,9 +132,9 @@
     <Style Selector="TabItem:pointerover /template/ Border#PART_LayoutRoot">
         <Setter Property="Background" Value="{DynamicResource TabHoverBackground}" />
     </Style>
-    <!-- 고른 탭은 옅은 파랑 면이다(윈도우의 고름 · 강조색). 글자색은 면과 한 쌍이라 여기서 함께 정한다. 기둥의 탭은 아래에 강조색 막대가 선다(PART_SelectedPipe). -->
+    <!-- 기둥의 고른 탭은 면 없이 짙은 글 + 아래 강조색 막대(PART_SelectedPipe)다 — 윈도우 설정 창의 탭과 같다(2026-11-26 — 디자인 점검 6번 · ⛔ 옅은 파랑 면에
+         막대까지 둘이었다). 주 탭은 아래에서 따로 정한다(전환 단추의 흰 칸). -->
     <Style Selector="TabItem:selected /template/ Border#PART_LayoutRoot">
-        <Setter Property="Background" Value="{DynamicResource TabSelectedBackground}" />
         <Setter Property="TextElement.Foreground" Value="{DynamicResource TabItemHeaderForegroundSelected}" />
     </Style>
     <!-- 주 탭([대본] · [구성]) — 위 띠의 File 옆에 선 한 덩어리의 전환 단추다(2026-11-26 — 디자인 점검 3번): 옅은 회색 바닥(MainTabTrack · 모서리 8 ·
@@ -208,12 +208,31 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
     </Style>
+    <!-- 빈 화자 칸의 「화자」 자리 글과 줄마다의 [+]는 고른 줄 · 마우스를 올린 줄에만 보인다(2026-11-26 — 디자인 점검 6번 · ⛔ 모든 줄에 회색 「화자」와 동그라미 [+]가
+         되풀이돼 대사보다 먼저 보였다). 자리는 그대로라 줄이 흔들리지 않는다. -->
+    <Style Selector="Border.line-row:not(.picked):not(:pointerover) Button.line-add">
+        <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="Border.line-row:not(.picked):not(:pointerover) AutoCompleteBox.line-speaker /template/ TextBox#PART_TextBox /template/ TextBlock#PART_Placeholder">
+        <Setter Property="Opacity" Value="0" />
+    </Style>
 
     <!-- 카드 제목 -->
     <Style Selector="TextBlock.card-title">
         <Setter Property="FontFamily" Value="{DynamicResource DisplayFont}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="15" />
+    </Style>
+
+    <!-- 카드 머리의 고정 · 맞춤 단추는 고른 카드와 마우스를 올린 카드에만 보인다 — 켜진 것(fit-on — 기본 크기로 고정 · 글 맞춤)은 상태를 말하므로 늘 보인다
+         (2026-11-26 — 디자인 점검 5번 · 피그마의 카드 머리와 같다 · ⛔ 작고 흐린 아이콘 셋이 카드마다 늘 서 있었다). 누르려고 다가가면 보인다(자리는 그대로). -->
+    <Style Selector="Border.board-card:not(.picked):not(:pointerover) StackPanel.card-toggles > Button:not(.fit-on)">
+        <Setter Property="Opacity" Value="0" />
+    </Style>
+    <!-- 글 맞춤을 끈 카드의 글 칸 스크롤 막대 — 고른 카드이거나 글 칸에 마우스를 올렸을 때만 선다(움직이는 판 위의 카드에 막대가 늘 서 있으면 판의 스크롤과
+         헷갈린다 · 디자인 점검 5번). -->
+    <Style Selector="Border.board-card:not(.picked) TextBox.card-writing:not(:pointerover) /template/ ScrollViewer#PART_ScrollViewer /template/ ScrollBar">
+        <Setter Property="Opacity" Value="0" />
     </Style>
 
     <!-- 카드 글 칸 — 카드의 흰 면이 곧 글 칸이다. 테두리 자리는 그대로 두고(치수가 같다) 색만 걷는다. 쓰는 동안에는 강조색 테두리가 선다. -->
