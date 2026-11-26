@@ -170,6 +170,15 @@ public sealed class ThemeTests : IDisposable
             host.Close();
             Assert.Same(Skin.Selection.Brush(), Skin.Selection.Brush());   // 같은 색은 같은 붓
 
+            // 아이콘 글자(⌂ ⑂ ⚙ 📂 📄 ⚠)는 본문 글꼴에 없어 테마의 아이콘 글꼴이 그린다 — PC의 이모지 글꼴로 넘어가지 않는다.
+            Assert.True(app.TryGetResource("UiFont", ThemeVariant.Light, out object? uiFont));
+            foreach (int icon in new[] { 0x2302, 0x2442, 0x2699, 0x1F4C2, 0x1F4C4, 0x26A0 })
+            {
+                Assert.True(FontManager.Current.TryMatchCharacter(
+                    icon, FontStyle.Normal, FontWeight.Normal, FontStretch.Normal, (FontFamily)uiFont!, null, out Typeface drawn));
+                Assert.Equal("Story Director Icons", drawn.FontFamily.Name);
+            }
+
             ThemeService.Apply(app, ThemeCatalog.Classic);
             Assert.Equal(Color.Parse("#2563EB"), Skin.Selection);
             Assert.Equal(4, Skin.CardRadius);

@@ -153,9 +153,11 @@
     <!-- [대본] 판의 바탕 -->
     <SolidColorBrush x:Key="BoardBackground" Color="#DCEFFA" />
 
-    <!-- 글꼴 — 테마 폴더의 Fonts/에 실은 것(SIL OFL 1.1). 본문은 Gowun Dodum(한글 11,172자 모두), 제목은 Jua(없는 글자는 본문 글꼴로 그려진다) -->
-    <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum</FontFamily>
-    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua, avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum</FontFamily>
+    <!-- 글꼴 — 테마 폴더의 Fonts/에 실은 것. 본문은 Gowun Dodum(한글 11,172자 모두), 제목은 Jua(없는 글자는 본문 글꼴로 그려진다) — 둘 다 SIL OFL 1.1.
+         목록의 끝은 아이콘 글꼴(Story Director Icons)이다 — 화면의 아이콘 글자(📂 ⚙ ⌂ ⑂ 📄 ⚠ ✕ …)는 본문 글꼴에 없어서 여기의 선 그림으로 그려진다
+         (PC의 이모지 글꼴 대신 · 글자색과 크기를 따른다). 그림은 tools/make-theme-icons.py가 굽는다. -->
+    <FontFamily x:Key="UiFont">avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
+    <FontFamily x:Key="DisplayFont">avares://StoryDirector/Themes/PastelSky/Fonts#Jua, avares://StoryDirector/Themes/PastelSky/Fonts#Gowun Dodum, avares://StoryDirector/Themes/PastelSky/Fonts#Story Director Icons</FontFamily>
 
     <!-- ─────────────────────────────────────────────────────────────────────────
          컨트롤의 색 · 모서리 — Fluent 테마가 쓰는 이름을 덮는다(단추 · 글 칸 · 고르기 칸 · 탭 · 풍선 · 메뉴).
